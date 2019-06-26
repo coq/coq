@@ -20,6 +20,7 @@ open Environ
 open Reduction
 open Type_errors
 open Context.Rel.Declaration
+open Stages
 
 type mind_specif = mutual_inductive_body * one_inductive_body
 
@@ -33,7 +34,7 @@ let lookup_mind_specif env (kn,tyi) =
 let find_rectype env c =
   let (t, l) = decompose_app (whd_all env c) in
   match kind t with
-  | Ind (ind, _) -> (ind, l)
+  | Ind (ind, s) -> (ind, l, s)
   | _ -> raise Not_found
 
 let find_inductive env c =
@@ -76,7 +77,7 @@ let constructor_instantiate ?s:annot mind u mib c =
   | Some annot ->
     let l, c = Term.decompose_prod ty in
     let l' = List.Smart.map (fun (x, t) -> x, annotate mind annot t) l in
-    let c' = annotate mind (Stages.succ_annot annot) c in
+    let c' = annotate mind (succ_annot annot) c in
     Term.compose_prod l' c'
 
 let instantiate_params full t u args sign =
@@ -88,7 +89,7 @@ let instantiate_params full t u args sign =
         match (decl, largs, kind ty) with
           | (LocalAssum _, a::args, Prod(_,_,t)) -> (args, a::subs, t)
           | (LocalDef (_,b,_), _, LetIn(_,_,_,t))    ->
-             (largs, (substl subs (subst_instance_constr u b))::subs, t)
+            (largs, (substl subs (subst_instance_constr u b))::subs, t)
           | (_,[],_)                -> if full then fail() else ([], subs, ty)
           | _                       -> fail ())
       sign
@@ -102,8 +103,8 @@ let full_inductive_instantiate mib u params sign =
   let t = Term.mkArity (Vars.subst_instance_context u sign,dummy) in
     fst (Term.destArity (instantiate_params true t u params mib.mind_params_ctxt))
 
-let full_constructor_instantiate ((mind,_),u,(mib,_),params) t =
-  let inst_ind = constructor_instantiate mind u mib t in
+let full_constructor_instantiate ((mind,_),u,(mib,_),params) t s =
+  let inst_ind = constructor_instantiate ~s mind u mib t in
    instantiate_params true inst_ind u params mib.mind_params_ctxt
 
 (************************************************************************)
@@ -322,10 +323,10 @@ let is_primitive_record (mib,_) =
   | PrimRecord _ -> true
   | NotRecord | FakeRecord -> false
 
-let build_dependent_inductive ind (_,mip) params =
+let build_dependent_inductive ind (_,mip) params s =
   let realargs,_ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
   Term.applist
-    (mkIndU ind,
+    (mkIndUS ind (succ_annot s),
        List.map (lift mip.mind_nrealdecls) params
        @ Context.Rel.to_extended_list mkRel 0 realargs)
 
@@ -337,31 +338,32 @@ let check_allowed_sort ksort specif =
     let s = inductive_sort_family (snd specif) in
     raise (LocalArity (Some(elim_sort specif, ksort,s,error_elim_explain ksort s)))
 
-let is_correct_arity env c pj ind specif params =
+let is_correct_arity env c pj ind specif params s =
   let arsign,_ = get_instantiated_arity ind specif params in
   let rec srec env pt ar =
     let pt' = whd_all env pt in
     match kind pt', ar with
       | Prod (na1,a1,t), (LocalAssum (_,a1'))::ar' ->
-          let _ =
-            try conv env a1 a1'
-            with NotConvertible -> raise (LocalArity None) in
-          srec (push_rel (LocalAssum (na1,a1)) env) t ar'
+        let cstrnts =
+          try conv env a1 a1'
+          with NotConvertible -> raise (LocalArity None) in
+        let cstrnts_srec = srec (push_rel (LocalAssum (na1,a1)) env) t ar' in
+        union_constraint cstrnts cstrnts_srec
       (* The last Prod domain is the type of the scrutinee *)
       | Prod (na1,a1,a2), [] -> (* whnf of t was not needed here! *)
-         let env' = push_rel (LocalAssum (na1,a1)) env in
-         let ksort = match kind (whd_all env' a2) with
-         | Sort s -> Sorts.family s
-         | _ -> raise (LocalArity None) in
-         let dep_ind = build_dependent_inductive ind specif params in
-         let _ =
-           try conv env a1 dep_ind
-           with NotConvertible -> raise (LocalArity None) in
-           check_allowed_sort ksort specif
+        let env' = push_rel (LocalAssum (na1,a1)) env in
+        let ksort = match kind (whd_all env' a2) with
+          | Sort s -> Sorts.family s
+          | _ -> raise (LocalArity None) in
+        let dep_ind = build_dependent_inductive ind specif params s in
+        let cstrnts =
+          try conv env a1 dep_ind
+          with NotConvertible -> raise (LocalArity None) in
+        check_allowed_sort ksort specif; cstrnts
       | _, (LocalDef _ as d)::ar' ->
-          srec (push_rel d env) (lift 1 pt') ar'
+        srec (push_rel d env) (lift 1 pt') ar'
       | _ ->
-          raise (LocalArity None)
+        raise (LocalArity None)
   in
   try srec env pj.uj_type (List.rev arsign)
   with LocalArity kinds ->
@@ -373,10 +375,10 @@ let is_correct_arity env c pj ind specif params =
 
 (* [p] is the predicate, [i] is the constructor number (starting from 0),
    and [cty] is the type of the constructor (params not instantiated) *)
-let build_branches_type (ind,u) (_,mip as specif) params p =
+let build_branches_type (ind,u) (_,mip as specif) params p s =
   let build_one_branch i (ctx, c) =
     let cty = Term.it_mkProd_or_LetIn c ctx in
-    let typi = full_constructor_instantiate (ind,u,specif,params) cty in
+    let typi = full_constructor_instantiate (ind,u,specif,params) cty s in
     let (cstrsign,ccl) = Term.decompose_prod_assum typi in
     let nargs = Context.Rel.length cstrsign in
     let (_,allargs) = decompose_app ccl in
@@ -394,15 +396,15 @@ let build_branches_type (ind,u) (_,mip as specif) params p =
 let build_case_type env n p c realargs =
   whd_betaiota env (Term.lambda_appvect_assum (n+1) p (Array.of_list (realargs@[c])))
 
-let type_case_branches env (pind,largs) pj c =
+let type_case_branches env (pind,largs) pj c s =
   let specif = lookup_mind_specif env (fst pind) in
   let nparams = inductive_params specif in
   let (params,realargs) = List.chop nparams largs in
   let p = pj.uj_val in
-  let () = is_correct_arity env c pj pind specif params in
-  let lc = build_branches_type pind specif params p in
+  let cstrnts = is_correct_arity env c pj pind specif params s in
+  let lc = build_branches_type pind specif params p s in
   let ty = build_case_type env (snd specif).mind_nrealdecls p c realargs in
-  (lc, ty)
+  lc, ty, cstrnts
 
 
 (************************************************************************)

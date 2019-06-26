@@ -33,5 +33,6 @@ val empty_constraint : constraints
 val union_constraint : constraints -> constraints -> constraints
 val union_constraints : constraints list -> constraints
 val add_constraint : stage -> stage -> constraints -> constraints
+val add_constraint_from_annot : annot -> annot -> constraints -> constraints
 val add_constraint_ref_option : annot -> annot -> (constraints ref) option -> unit
 val pr_constraints : constraints -> Pp.t

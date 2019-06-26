@@ -126,9 +126,14 @@ let add_constraint s1 s2 csts =
     SConstraint.add new_cst csts
   | _ -> SConstraint.add (s1, s2) csts
 
+let add_constraint_from_annot a1 a2 cstrnts =
+  match a1, a2 with
+  | Stage s1, Stage s2 -> add_constraint s1 s2 cstrnts
+  | _ -> cstrnts
+
 let add_constraint_ref_option a1 a2 cstrnts =
-  match a1, a2, cstrnts with
-    | Stage s1, Stage s2, Some cstrnts_ref -> cstrnts_ref := add_constraint s1 s2 !cstrnts_ref
+  match cstrnts with
+    | Some cstrnts_ref -> cstrnts_ref := add_constraint_from_annot a1 a2 !cstrnts_ref
     | _ -> ()
 
 let show_constraints cstrnts =

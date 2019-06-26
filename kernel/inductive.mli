@@ -22,7 +22,7 @@ open Environ
    only a coinductive type.
    They raise [Not_found] if not convertible to a recursive type. *)
 
-val find_rectype     : env -> types -> pinductive * constr list
+val find_rectype     : env -> types -> pinductive * constr list * Stages.annot
 val find_inductive   : env -> types -> pinductive * constr list
 val find_coinductive : env -> types -> pinductive * constr list
 
@@ -87,12 +87,12 @@ val inductive_params : mind_specif -> int
    the universe constraints generated.
  *)
 val type_case_branches :
-  env -> pinductive * constr list -> unsafe_judgment -> constr
-    -> types array * types
+  env -> pinductive * constr list -> unsafe_judgment -> constr -> Stages.annot
+    -> types array * types * Stages.constraints
 
 val build_branches_type :
   pinductive -> mutual_inductive_body * one_inductive_body ->
-    constr list -> constr -> types array
+    constr list -> constr -> Stages.annot -> types array
 
 (** Return the arity of an inductive type *)
 val mind_arity : one_inductive_body -> Constr.rel_context * Sorts.family

@@ -630,7 +630,7 @@ let type_case_branches_with_names env sigma indspec p c =
   let (mib,mip as specif) = Inductive.lookup_mind_specif env (fst ind) in
   let nparams = mib.mind_nparams in
   let (params,realargs) = List.chop nparams args in
-  let lbrty = Inductive.build_branches_type ind specif params p in
+  let lbrty = Inductive.build_branches_type ind specif params p Stages.Empty in
   let lbrty = Array.map EConstr.of_constr lbrty in
   (* Build case type *)
   let conclty = lambda_appvect_assum (mip.mind_nrealdecls+1) p (Array.of_list (realargs@[c])) in

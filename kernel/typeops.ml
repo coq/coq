@@ -412,8 +412,8 @@ let check_branch_types env (ind,u) c ct lft explft =
     | Invalid_argument _ ->
         error_number_branches env (make_judge c ct) (Array.length explft)
 
-let type_of_case env ci p pt c ct _lf lft =
-  let (pind, _ as indspec) =
+let type_of_case env stg ci p pt c ct _lf lft =
+  let pind, largs, r =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct) in
   let _, sp = try dest_arity env pt
@@ -423,14 +423,16 @@ let type_of_case env ci p pt c ct _lf lft =
     else (warn_bad_relevance_ci (); {ci with ci_relevance=rp})
   in
   let () = check_case_info env pind rp ci in
-  let (bty,rslty) =
-    type_case_branches env indspec (make_judge p pt) c in
-  let cstrnts = check_branch_types env pind c ct lft bty in
-  ci, rslty, cstrnts
+  let s, stg = next_stage_state stg in
+  let bty, rslty, cstrnts_rsl =
+    type_case_branches env (pind, largs) (make_judge p pt) c s in
+  let cstrnts_branch = check_branch_types env pind c ct lft bty in
+  let cstrnts = union_constraint cstrnts_rsl cstrnts_branch in
+  stg, ci, rslty, add_constraint_from_annot r (succ_annot s) cstrnts
 
 let type_of_projection env p c ct =
   let pty = lookup_projection p env in
-  let (ind,u), args =
+  let (ind,u), args, _ =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct)
   in
@@ -581,14 +583,15 @@ let rec execute env stg cstr =
       stg, cstrnt, cstr, t
 
     | Case (ci,p,c,lf) ->
-        let _, _, c', ct = execute env stg c in
-        let _, _, p', pt = execute env stg p in
-        let _, _, lf', lft = execute_array env stg lf in
-        let ci', t, cstrnt = type_of_case env ci p' pt c' ct lf' lft in
-        let cstr = if ci == ci' && c == c' && p == p' && lf == lf' then cstr
-          else mkCase(ci',p',c',lf')
-        in
-        stg, cstrnt, cstr, t
+      let stgc, cstrntc, c', ct = execute env stg c in
+      let stgp, cstrntp, p', pt = execute env stgc p in
+      let stglf, cstrntlf, lf', lft = execute_array env stgp lf in
+      let stg, ci', t, cstrntci = type_of_case env stglf ci p' pt c' ct lf' lft in
+      let cstrnt = union_constraints [cstrntc; cstrntp; cstrntlf; cstrntci] in
+      let cstr = if ci == ci' && c == c' && p == p' && lf == lf' then cstr
+        else mkCase(ci',p',c',lf')
+      in
+      stg, cstrnt, cstr, t
 
     | Fix ((_vn,i as vni),recdef as fix) ->
       let _, _, fix_ty,recdef' = execute_recdef env stg recdef i in
@@ -742,7 +745,7 @@ let judge_of_constructor env cu =
 
 let judge_of_case env ci pj cj lfj =
   let lf, lft = dest_judgev lfj in
-  let ci, t, _ = type_of_case env ci pj.uj_val pj.uj_type cj.uj_val cj.uj_type lf lft in
+  let _, ci, t, _ = type_of_case env init_stage_state ci pj.uj_val pj.uj_type cj.uj_val cj.uj_type lf lft in
   make_judge (mkCase (ci, (*nf_betaiota*) pj.uj_val, cj.uj_val, lft)) t
 
 (* Building type of primitive operators and type *)
