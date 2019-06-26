@@ -512,9 +512,9 @@ let rec execute env stg cstr =
       stg, cstrnt, cstr, t
 
     | Proj (p, c) ->
-      let _, _, c', ct = execute env stg c in
+      let stg, cstrnt, c', ct = execute env stg c in
       let cstr = if c == c' then cstr else mkProj (p,c') in
-      stg, empty_constraint, cstr, type_of_projection env p c' ct
+      stg, cstrnt, cstr, type_of_projection env p c' ct
 
     (* Lambda calculus operators *)
     | App (f,args) ->
