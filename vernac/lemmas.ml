@@ -486,16 +486,11 @@ let save_lemma_admitted ~(lemma : t) : unit =
 (* Saving a lemma-like constant                                         *)
 (************************************************************************)
 
-let finish_proved env sigma opaque idopt po info =
+let finish_proved env sigma idopt po info =
   let open Proof_global in
   let { Info.hook; compute_guard; impargs; other_thms; scope; kind } = info in
   match po with
   | { name; entries=[const]; universes; udecl; poly } ->
-    let is_opaque = match opaque with
-      | Transparent -> false
-      | Opaque      -> true
-    in
-    assert (is_opaque == const.proof_entry_opaque);
     let name = match idopt with
       | None -> name
       | Some { CAst.v = save_id } -> check_anonymity name save_id; save_id in
@@ -533,16 +528,16 @@ let finish_proved env sigma opaque idopt po info =
   | _ ->
     CErrors.anomaly Pp.(str "[standard_proof_terminator] close_proof returned more than one proof term")
 
-let finish_derived ~f ~name ~idopt ~opaque ~entries =
+let finish_derived ~f ~name ~idopt ~entries =
   (* [f] and [name] correspond to the proof of [f] and of [suchthat], respectively. *)
 
   if Option.has_some idopt then
     CErrors.user_err Pp.(str "Cannot save a proof of Derive with an explicit name.");
 
-  let opaque, f_def, lemma_def =
+  let f_def, lemma_def =
     match entries with
     | [_;f_def;lemma_def] ->
-      opaque <> Proof_global.Transparent , f_def , lemma_def
+      f_def, lemma_def
     | _ -> assert false
   in
   (* The opacity of [f_def] is adjusted to be [false], as it
@@ -568,9 +563,8 @@ let finish_derived ~f ~name ~idopt ~opaque ~entries =
   let lemma_body = Future.chain Proof_global.(lemma_def.proof_entry_body) (fun ((b,ctx),fx) -> (substf b, ctx), fx) in
   let lemma_def = let open Proof_global in
     { lemma_def with
-      proof_entry_body = lemma_body ;
-      proof_entry_type = Some lemma_type ;
-      proof_entry_opaque = opaque ; }
+      proof_entry_body = lemma_body;
+      proof_entry_type = Some lemma_type }
   in
   let lemma_def =
     Declare.DefinitionEntry lemma_def ,
@@ -579,7 +573,7 @@ let finish_derived ~f ~name ~idopt ~opaque ~entries =
   let _ : Names.Constant.t = Declare.declare_constant name lemma_def in
   ()
 
-let finish_proved_equations opaque lid kind proof_obj hook i types wits sigma0 =
+let finish_proved_equations lid kind proof_obj hook i types wits sigma0 =
 
   let open Decl_kinds in
   let obls = ref 1 in
@@ -603,25 +597,25 @@ let finish_proved_equations opaque lid kind proof_obj hook i types wits sigma0 =
   in
   hook recobls sigma
 
-let finalize_proof idopt env sigma opaque proof_obj proof_info =
+let finalize_proof idopt env sigma proof_obj proof_info =
   let open Proof_global in
   let open Proof_ending in
   match CEphemeron.default proof_info.Info.proof_ending Regular with
   | Regular ->
-    finish_proved env sigma opaque idopt proof_obj proof_info
+    finish_proved env sigma idopt proof_obj proof_info
   | End_obligation oinfo ->
-    DeclareObl.obligation_terminator opaque proof_obj.entries proof_obj.universes oinfo
+    DeclareObl.obligation_terminator proof_obj.entries proof_obj.universes oinfo
   | End_derive { f ; name } ->
-    finish_derived ~f ~name ~idopt ~opaque ~entries:proof_obj.entries
+    finish_derived ~f ~name ~idopt ~entries:proof_obj.entries
   | End_equations { hook; i; types; wits; sigma } ->
-    finish_proved_equations opaque idopt proof_info.Info.kind proof_obj hook i types wits sigma
+    finish_proved_equations idopt proof_info.Info.kind proof_obj hook i types wits sigma
 
 let save_lemma_proved ~lemma ~opaque ~idopt =
   (* Env and sigma are just used for error printing in save_remaining_recthms *)
   let env = Global.env () in
   let { Proof.sigma } = Proof.data (Proof_global.get_proof lemma.proof) in
   let proof_obj = Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) lemma.proof in
-  finalize_proof idopt env sigma opaque proof_obj lemma.info
+  finalize_proof idopt env sigma proof_obj lemma.info
 
 (***********************************************************************)
 (* Special case to close a lemma without forcing a proof               *)
@@ -645,8 +639,8 @@ let save_lemma_admitted_delayed ~proof ~info =
   let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
   finish_admitted env sigma ~name ~poly ~scope (sec_vars, (typ, ctx), None) universes hook ~udecl impargs other_thms
 
-let save_lemma_proved_delayed ~proof ~info ~opaque ~idopt =
+let save_lemma_proved_delayed ~proof ~info ~idopt =
   (* Env and sigma are just used for error printing in save_remaining_recthms *)
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  finalize_proof idopt env sigma opaque proof info
+  finalize_proof idopt env sigma proof info

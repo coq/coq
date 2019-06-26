@@ -148,6 +148,5 @@ val save_lemma_admitted_delayed : proof:Proof_global.proof_object -> info:Info.t
 val save_lemma_proved_delayed
   :  proof:Proof_global.proof_object
   -> info:Info.t
-  -> opaque:Proof_global.opacity_flag
   -> idopt:Names.lident option
   -> unit

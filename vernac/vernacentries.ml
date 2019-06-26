@@ -2778,8 +2778,8 @@ let interp_qed_delayed_proof ~proof ~info ~st ?loc pe : Vernacstate.t =
     let () = match pe with
       | Admitted ->
         save_lemma_admitted_delayed ~proof ~info
-      | Proved (opaque,idopt) ->
-        save_lemma_proved_delayed ~proof ~info ~opaque ~idopt in
+      | Proved (_,idopt) ->
+        save_lemma_proved_delayed ~proof ~info ~idopt in
     { st with Vernacstate.lemmas = stack }
   with exn ->
     let exn = CErrors.push exn in
