@@ -17,30 +17,11 @@ type t
 (** [Lemmas.t] represents a constant that is being proved, usually
     interactively *)
 
-module Stack : sig
-
-  type lemma = t
-  type t
-
-  val pop : t -> lemma * t option
-  val push : t option -> lemma -> t
-
-  val map_top : f:(lemma -> lemma) -> t -> t
-  val map_top_pstate : f:(Proof_global.t -> Proof_global.t) -> t -> t
-
-  val with_top : t -> f:(lemma -> 'a ) -> 'a
-  val with_top_pstate : t -> f:(Proof_global.t -> 'a ) -> 'a
-
-  val get_all_proof_names : t -> Names.Id.t list
-
-  val copy_info : src:t -> tgt:t -> t
-  (** Gets the current info without checking that the proof has been
-     completed. Useful for the likes of [Admitted]. *)
-
-end
-
 val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
+
 val pf_map : (Proof_global.t -> Proof_global.t) -> t -> t
+(** [pf_map f l] map the underlying proof object *)
+
 val pf_fold : (Proof_global.t -> 'a) -> t -> 'a
 (** [pf_fold f l] fold over the underlying proof object *)
 

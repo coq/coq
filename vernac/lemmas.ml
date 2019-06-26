@@ -307,41 +307,6 @@ let initialize_named_context_for_proof () =
       let d = if variable_opacity id then NamedDecl.drop_body d else d in
       Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
 
-module Stack = struct
-
-  type lemma = t
-  type nonrec t = t * t list
-
-  let map f (pf, pfl) = (f pf, List.map f pfl)
-
-  let map_top ~f (pf, pfl) = (f pf, pfl)
-  let map_top_pstate ~f (pf, pfl) = (pf_map f pf, pfl)
-
-  let pop (ps, p) = match p with
-    | [] -> ps, None
-    | pp :: p -> ps, Some (pp, p)
-
-  let with_top (p, _) ~f = f p
-  let with_top_pstate (p, _) ~f = f p.proof
-
-  let push ontop a =
-    match ontop with
-    | None -> a , []
-    | Some (l,ls) -> a, (l :: ls)
-
-  let get_all_proof_names (pf : t) =
-    let prj x = Proof_global.get_proof x in
-    let (pn, pns) = map Proof.(function pf -> (data (prj pf.proof)).name) pf in
-    pn :: pns
-
-  let copy_info ~src ~tgt =
-    let (ps, psl), (ts,tsl) = src, tgt in
-    assert(List.length psl = List.length tsl);
-    { ps with proof = ts.proof },
-    List.map2 (fun op p -> { op with proof = p.proof }) psl tsl
-
-end
-
 (* Starting a goal *)
 let start_lemma ~name ~poly
     ?(udecl=UState.default_univ_decl)
