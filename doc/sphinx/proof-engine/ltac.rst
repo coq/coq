@@ -127,7 +127,7 @@ mode but it can also be used in toplevel definitions as shown below.
                      : gfail [`natural`] [`message_token` ... `message_token`]
                      : fresh [ `component` … `component` ]
                      : context `ident` [`term`]
-                     : eval `redexpr` in `term`
+                     : eval `red_expr` in `term`
                      : type of `term`
                      : constr : `term`
                      : uconstr : `term`
@@ -984,9 +984,9 @@ Computing in a constr
 
 Evaluation of a term can be performed with:
 
-.. tacn:: eval @redexpr in @term
+.. tacn:: eval @red_expr in @term
 
-   where :n:`@redexpr` is a reduction tactic among :tacn:`red`, :tacn:`hnf`,
+   where :n:`@red_expr` is a reduction tactic among :tacn:`red`, :tacn:`hnf`,
    :tacn:`compute`, :tacn:`simpl`, :tacn:`cbv`, :tacn:`lazy`, :tacn:`unfold`,
    :tacn:`fold`, :tacn:`pattern`.
 
