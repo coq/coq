@@ -189,8 +189,6 @@ let sort_dependencies evl =
     | [] -> List.rev list
   in aux evl Evar.Set.empty []
 
-open Environ
-
 let eterm_obligations env name evm fs ?status t ty =
   (* 'Serialize' the evars *)
   let nc = Environ.named_context env in
@@ -290,13 +288,6 @@ let subst_deps expand obls deps t =
 let subst_deps_obl obls obl =
   let t' = subst_deps true obls obl.obl_deps obl.obl_type in
     { obl with obl_type = t' }
-
-open Evd
-
-let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
-
-let add_hint local prg cst =
-  Hints.add_hints ~local [Id.to_string prg.prg_name] (unfold_entry cst)
 
 let init_prog_info ?(opaque = false) ?hook n udecl b t ctx deps fixkind
                    notations obls impls ~scope ~poly ~kind reduce =
@@ -438,40 +429,6 @@ let solve_by_tac ?loc name evi t poly ctx =
     warn_solve_errored ?loc err;
     None
 
-let obligation_hook prg obl num auto { DeclareDef.Hook.S.uctx = ctx'; dref; _ } =
-  let obls, rem = prg.prg_obligations in
-  let cst = match dref with GlobRef.ConstRef cst -> cst | _ -> assert false in
-  let transparent = evaluable_constant cst (Global.env ()) in
-  let () = match obl.obl_status with
-      (true, Evar_kinds.Expand)
-    | (true, Evar_kinds.Define true) ->
-       if not transparent then err_not_transp ()
-    | _ -> ()
-  in
-  let inst, ctx' =
-    if not prg.prg_poly (* Not polymorphic *) then
-      (* The universe context was declared globally, we continue
-         from the new global environment. *)
-      let ctx = UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ()) in
-      let ctx' = UState.merge_subst ctx (UState.subst ctx') in
-      Univ.Instance.empty, ctx'
-    else
-      (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
-      let uctx = UState.context ctx' in
-      Univ.UContext.instance uctx, ctx'
-  in
-  let obl = { obl with obl_body = Some (DefinedObl (cst, inst)) } in
-  let () = if transparent then add_hint true prg cst in
-  let obls = Array.copy obls in
-  let () = obls.(num) <- obl in
-  let prg = { prg with prg_ctx = ctx' } in
-  let () = ignore (update_obls prg obls (pred rem)) in
-  if pred rem > 0 then begin
-    let deps = dependencies obls num in
-    if not (Int.Set.is_empty deps) then
-      ignore (auto (Some prg.prg_name) deps None)
-  end
-
 let rec solve_obligation prg num tac =
   let user_num = succ num in
   let obls, rem = prg.prg_obligations in
@@ -491,8 +448,7 @@ let rec solve_obligation prg num tac =
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n oblset tac = auto_solve_obligations n ~oblset tac in
   let proof_ending = Lemmas.Proof_ending.End_obligation (DeclareObl.{name = prg.prg_name; num; auto}) in
-  let hook = DeclareDef.Hook.make (obligation_hook prg obl num auto) in
-  let info = Lemmas.Info.make ~hook ~proof_ending ~scope ~kind () in
+  let info = Lemmas.Info.make ~proof_ending ~scope ~kind () in
   let poly = prg.prg_poly in
   let lemma = Lemmas.start_lemma ~name:obl.obl_name ~poly ~info evd (EConstr.of_constr obl.obl_type) in
   let lemma = fst @@ Lemmas.by !default_tactic lemma in

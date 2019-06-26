@@ -484,7 +484,7 @@ type obligation_qed_info =
   ; auto : Id.t option -> Int.Set.t -> unit Proofview.tactic option -> progress
   }
 
-let obligation_terminator entries uctx { name; num; auto } =
+let obligation_finish_proof entries uctx { name; num; auto } =
   match entries with
   | [entry] ->
     let env = Global.env () in

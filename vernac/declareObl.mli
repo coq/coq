@@ -75,11 +75,11 @@ type obligation_qed_info =
   ; auto : Id.t option -> Int.Set.t -> unit Proofview.tactic option -> progress
   }
 
-val obligation_terminator
+val obligation_finish_proof
   : Evd.side_effects Declare.proof_entry list
   -> UState.t
   -> obligation_qed_info -> unit
-(** [obligation_terminator] part 2 of saving an obligation *)
+(** [obligation_finish_proof] domain-specific part of saving an obligation *)
 
 val update_obls :
      program_info
@@ -103,7 +103,6 @@ val obl_substitution :
 
 val dependencies : obligation array -> int -> Int.Set.t
 
-val err_not_transp : unit -> unit
 val progmap_add : ProgMap.key -> program_info CEphemeron.key -> unit
 
 (* This is a hack to make it possible for Obligations to craft a Qed

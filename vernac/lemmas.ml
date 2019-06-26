@@ -445,7 +445,7 @@ let finalize_proof idopt env sigma proof_obj proof_info =
   | Regular ->
     finish_proved env sigma idopt proof_obj proof_info
   | End_obligation oinfo ->
-    DeclareObl.obligation_terminator proof_obj.entries proof_obj.universes oinfo
+    DeclareObl.obligation_finish_proof proof_obj.entries proof_obj.universes oinfo
   | End_derive { f ; name } ->
     finish_derived ~f ~name ~idopt ~entries:proof_obj.entries
   | End_equations { hook; i; types; wits; sigma } ->
