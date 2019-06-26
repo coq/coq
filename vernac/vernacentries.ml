@@ -2292,36 +2292,30 @@ let vernac_timeout ?timeout (f : 'a -> 'b) (x : 'a) : 'b =
     f x
 
 (* Fail *)
-exception HasNotFailed
-exception HasFailed of Pp.t
-
 let test_mode = ref false
 
-(* XXX STATE: this type hints that restoring the state should be the
-   caller's responsibility *)
-let with_fail ~st f =
+(* Restoring the state is the caller's responsibility *)
+let with_fail f : (Pp.t, unit) result =
   try
-    (* If the command actually works, ignore its effects on the state.
-       * Note that error has to be printed in the right state, hence
-       * within the purified function *)
-    try let _ = f () in raise HasNotFailed
-    with
-    | HasNotFailed as e -> raise e
-    | e when CErrors.noncritical e || e = Timeout ->
-      let e = CErrors.push e in
-      raise (HasFailed (CErrors.iprint (ExplainErr.process_vernac_interp_error e)))
-  with e when CErrors.noncritical e ->
-    (* Restore the previous state XXX Careful here with the cache! *)
-    Vernacstate.invalidate_cache ();
-    Vernacstate.unfreeze_interp_state st;
-    let (e, _) = CErrors.push e in
-    match e with
-    | HasNotFailed ->
-      user_err ~hdr:"Fail" (str "The command has not failed!")
-    | HasFailed msg ->
-      if not !Flags.quiet || !test_mode then Feedback.msg_info
-          (str "The command has indeed failed with message:" ++ fnl () ++ msg)
-    | _ -> assert false
+    let _ = f () in
+    Error ()
+  with
+  (* Fail Timeout is a common pattern so we need to support it. *)
+  | e when CErrors.noncritical e || e = Timeout ->
+    (* The error has to be printed in the failing state *)
+    Ok CErrors.(iprint ExplainErr.(process_vernac_interp_error (push e)))
+
+(* We restore the state always *)
+let with_fail ~st f =
+  let res = with_fail f in
+  Vernacstate.invalidate_cache ();
+  Vernacstate.unfreeze_interp_state st;
+  match res with
+  | Error () ->
+    user_err ~hdr:"Fail" (str "The command has not failed!")
+  | Ok msg ->
+    if not !Flags.quiet || !test_mode
+    then Feedback.msg_info (str "The command has indeed failed with message:" ++ fnl () ++ msg)
 
 let locate_if_not_already ?loc (e, info) =
   match Loc.get_loc info with
