@@ -57,17 +57,15 @@ type mutual_inductive_entry = {
 }
 
 (** {6 Constants (Definition/Axiom) } *)
-type 'a proof_output = constr Univ.in_universe_context_set * 'a
-type 'a const_entry_body = 'a proof_output Future.computation
 
 type definition_entry = {
-  const_entry_body   : constr Univ.in_universe_context_set;
+  const_entry_body : constr;
   (* List of section variables *)
   const_entry_secctx : Constr.named_context option;
   (* State id on which the completion of type checking is reported *)
   const_entry_feedback : Stateid.t option;
-  const_entry_type        : types option;
-  const_entry_universes   : universes_entry;
+  const_entry_type : types option;
+  const_entry_universes : universes_entry;
   const_entry_inline_code : bool }
 
 type section_def_entry = {
@@ -97,6 +95,9 @@ type primitive_entry = {
   prim_entry_univs : Univ.ContextSet.t; (* always monomorphic *)
   prim_entry_content : CPrimitives.op_or_type;
 }
+
+type 'a proof_output = constr Univ.in_universe_context_set * 'a
+type 'a const_entry_body = 'a proof_output Future.computation
 
 type 'a constant_entry =
   | DefinitionEntry of definition_entry
