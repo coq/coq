@@ -4,10 +4,7 @@ type annot = Empty | Star | Stage of stage
 
 val succ_annot : annot -> annot
 val is_stage : annot -> bool
-val compare_stage : stage -> stage -> int
-val pr_stage : stage -> Pp.t
 val compare_annot : annot -> annot -> int
-val leq_annot : annot -> annot -> bool
 val show_annot : annot -> string
 val pr_annot : annot -> Pp.t
 val hash_stage_annot : annot -> int
@@ -32,7 +29,5 @@ type 'a constrained = 'a * constraints
 val empty_constraint : constraints
 val union_constraint : constraints -> constraints -> constraints
 val union_constraints : constraints list -> constraints
-val add_constraint : stage -> stage -> constraints -> constraints
-val add_constraint_from_annot : annot -> annot -> constraints -> constraints
-val add_constraint_ref_option : annot -> annot -> (constraints ref) option -> unit
+val add_constraint : annot -> annot -> constraints -> constraints
 val pr_constraints : constraints -> Pp.t

@@ -15,6 +15,7 @@ open Util
 open Nativevalues
 open Nativecode
 open Environ
+open Substaging
 
 (** This module implements the conversion test by compiling to OCaml code *)
 
@@ -167,9 +168,10 @@ let native_conv_gen pb sigma env univs t1 t2 =
 (* Wrapper for [native_conv] above *)
 let native_conv cv_pb sigma env t1 t2 =
   let univs = Environ.universes env in
+  let compare_annot = add_constraint_from_ind env in
   let b, cstrnts =
-    if cv_pb = CUMUL then Constr.leq_constr_univs univs t1 t2
-    else Constr.eq_constr_univs univs t1 t2
+    if cv_pb = CUMUL then Constr.leq_constr_univs compare_annot univs t1 t2
+    else Constr.eq_constr_univs compare_annot univs t1 t2
   in
   if b then cstrnts else
     let univs = (univs, checked_universes) in

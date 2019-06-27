@@ -30,15 +30,6 @@ let compare_stage s1 s2 =
       if not (Int.equal nc 0) then nc
       else Int.compare size1 size2
 
-let show_stage s =
-  match s with
-  | Infty -> "∞"
-  | StageVar (s, n) ->
-    let str = "s" ^ string_of_int s in
-    if Int.equal n 0 then str else
-    str ^ "+" ^ string_of_int n
-let pr_stage = mkPr show_stage
-
 let compare_annot a1 a2 =
   match a1, a2 with
   | Empty, Empty -> 0
@@ -47,19 +38,20 @@ let compare_annot a1 a2 =
   | Star, _  -> -1 | _, Star  -> 1
   | Stage s1, Stage s2 -> compare_stage s1 s2
 
-let leq_annot a1 a2 =
-  match a1, a2 with
-  | Empty, Empty -> true
-  | Star,  Star  -> true
-  | Stage (StageVar (name1, size1)), Stage (StageVar (name2, size2)) ->
-    Int.equal name1 name2 && size1 <= size2
-  | _, _ -> false
+let show_stage s =
+  match s with
+  | Infty -> "∞"
+  | StageVar (s, n) ->
+    let str = "s" ^ string_of_int s in
+    if Int.equal n 0 then str else
+    str ^ "+" ^ string_of_int n
 
 let show_annot a =
   match a with
   | Empty -> ""
   | Star  -> "*"
   | Stage s -> show_stage s
+
 let pr_annot = mkPr show_annot
 
 let hash_stage_annot a =
@@ -86,9 +78,7 @@ let show_stage_state (stg, vars) =
   "<" ^ stg_str ^ "," ^ "{" ^ vars_str ^ "}" ^ ">"
 let pr_stage_state = mkPr show_stage_state
 
-(** Stage constraints and sets of constraints
-   N.B. For a constraint to be "larger" than another has no inherent meaning;
-        the ordering is just for using Set. *)
+(** Stage constraints and sets of constraints *)
 
 module SConstraintOrd =
 struct
@@ -115,7 +105,7 @@ let empty_constraint = SConstraint.empty
 let union_constraint = SConstraint.union
 let union_constraints = List.fold_left union_constraint empty_constraint
 
-let add_constraint s1 s2 csts =
+let add_stage_constraint s1 s2 csts =
   match s1, s2 with
   | Infty, Infty -> csts
   | StageVar (name1, size1), StageVar (name2, size2)
@@ -126,15 +116,10 @@ let add_constraint s1 s2 csts =
     SConstraint.add new_cst csts
   | _ -> SConstraint.add (s1, s2) csts
 
-let add_constraint_from_annot a1 a2 cstrnts =
+let add_constraint a1 a2 cstrnts =
   match a1, a2 with
-  | Stage s1, Stage s2 -> add_constraint s1 s2 cstrnts
+  | Stage s1, Stage s2 -> add_stage_constraint s1 s2 cstrnts
   | _ -> cstrnts
-
-let add_constraint_ref_option a1 a2 cstrnts =
-  match cstrnts with
-    | Some cstrnts_ref -> cstrnts_ref := add_constraint_from_annot a1 a2 !cstrnts_ref
-    | _ -> ()
 
 let show_constraints cstrnts =
   let f (s1, s2) str = "(" ^ show_stage s1 ^ "⊑" ^ show_stage s2 ^ ")" ^ str in

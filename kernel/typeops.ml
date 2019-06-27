@@ -428,7 +428,7 @@ let type_of_case env stg ci p pt c ct _lf lft =
     type_case_branches env (pind, largs) (make_judge p pt) c s in
   let cstrnts_branch = check_branch_types env pind c ct lft bty in
   let cstrnts = union_constraint cstrnts_rsl cstrnts_branch in
-  stg, ci, rslty, add_constraint_from_annot r (succ_annot s) cstrnts
+  stg, ci, rslty, add_constraint r (succ_annot s) cstrnts
 
 let type_of_projection env p c ct =
   let pty = lookup_projection p env in

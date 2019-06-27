@@ -382,14 +382,14 @@ let eq_constr sigma c1 c2 =
   let kind c = kind sigma c in
   let eq_inst _ _ i1 i2 = EInstance.equal sigma i1 i2 in
   let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
-  let rec eq_constr ?cstrnts nargs c1 c2 =
+  let rec eq_constr nargs c1 c2 =
     compare_gen kind eq_inst eq_sorts eq_constr nargs c1 c2
   in
   eq_constr 0 c1 c2
 
 let eq_constr_nounivs sigma c1 c2 =
   let kind c = kind sigma c in
-  let rec eq_constr ?cstrnts nargs c1 c2 =
+  let rec eq_constr nargs c1 c2 =
     compare_gen kind (fun _ _ _ _ -> true) (fun _ _ -> true) eq_constr nargs c1 c2
   in
   eq_constr 0 c1 c2
@@ -398,7 +398,7 @@ let compare_constr sigma cmp c1 c2 =
   let kind c = kind sigma c in
   let eq_inst _ _ i1 i2 = EInstance.equal sigma i1 i2 in
   let eq_sorts s1 s2 = ESorts.equal sigma s1 s2 in
-  let cmp ?cstrnts nargs c1 c2 = cmp c1 c2 in
+  let cmp nargs c1 c2 = cmp c1 c2 in
   compare_gen kind eq_inst eq_sorts cmp 0 c1 c2
 
 let compare_cumulative_instances cv_pb nargs_ok variances u u' cstrs =
@@ -488,13 +488,13 @@ let test_constr_universes env sigma leq m n =
            (ULe (Sorts.univ_of_sort s1,Sorts.univ_of_sort s2)) !cstrs;
          true)
     in
-    let rec eq_constr' ?cstrnts nargs m n = compare_gen kind eq_universes eq_sorts eq_constr' nargs m n in
+    let rec eq_constr' nargs m n = compare_gen kind eq_universes eq_sorts eq_constr' nargs m n in
     let res =
       if leq then
-        let rec compare_leq ?cstrnts nargs m n =
+        let rec compare_leq nargs m n =
           Constr.compare_head_gen_leq_with kind kind leq_universes leq_sorts
-            eq_constr' leq_constr' ?cstrnts nargs m n
-        and leq_constr' ?cstrnts nargs m n = m == n || compare_leq ?cstrnts nargs m n in
+            eq_constr' leq_constr' nargs m n
+        and leq_constr' nargs m n = m == n || compare_leq nargs m n in
         compare_leq 0 m n
       else
         Constr.compare_head_gen_with kind kind eq_universes eq_sorts eq_constr' 0 m n
