@@ -562,6 +562,16 @@ Proof.
   apply Qdiv_mult_l; auto.
 Qed.
 
+Lemma Qinv_plus_distr : forall a b c, ((a # c) + (b # c) == (a+b) # c)%Q.
+Proof.
+  intros. unfold Qeq. simpl. rewrite Pos2Z.inj_mul. ring.
+Qed.
+
+Lemma Qinv_minus_distr : forall a b c, (a # c) + - (b # c) == (a-b) # c.
+Proof.
+  intros. unfold Qeq. simpl. rewrite Pos2Z.inj_mul. ring.
+Qed.
+
 (** Injectivity of Qmult (requires theory about Qinv above): *)
 
 Lemma Qmult_inj_r (x y z: Q): ~ z == 0 -> (x * z == y * z <-> x == y).

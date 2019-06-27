@@ -101,10 +101,11 @@ let bigint_of_z c = match DAst.get c with
 
 let rdefinitions = ["Coq";"Reals";"Rdefinitions"]
 let r_modpath = MPfile (make_dir rdefinitions)
+let r_base_modpath = MPdot (r_modpath, Label.make "RbaseSymbolsImpl")
 let r_path = make_path rdefinitions "R"
 
 let glob_IZR = GlobRef.ConstRef (Constant.make2 r_modpath @@ Label.make "IZR")
-let glob_Rmult = GlobRef.ConstRef (Constant.make2 r_modpath @@ Label.make "Rmult")
+let glob_Rmult = GlobRef.ConstRef (Constant.make2 r_base_modpath @@ Label.make "Rmult")
 let glob_Rdiv = GlobRef.ConstRef (Constant.make2 r_modpath @@ Label.make "Rdiv")
 
 let binintdef = ["Coq";"ZArith";"BinIntDef"]
