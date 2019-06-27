@@ -151,7 +151,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_universes = Monomorphic univs;
         cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
         cook_inline = false;
-        cook_context = c.opaque_entry_secctx;
+        cook_context = Some c.opaque_entry_secctx;
       }
 
   (** Similar case for polymorphic entries. *)
@@ -188,7 +188,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_universes = Polymorphic auctx;
         cook_relevance = Sorts.relevance_of_sort tj.utj_type;
         cook_inline = false;
-        cook_context = c.opaque_entry_secctx;
+        cook_context = Some c.opaque_entry_secctx;
       }
 
   (** Other definitions have to be processed immediately. *)
@@ -237,17 +237,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_context = c.const_entry_secctx;
       }
 
-let record_aux env s_ty s_bo =
-  let in_ty = keep_hyps env s_ty in
-  let v =
-    String.concat " "
-      (CList.map_filter (fun decl ->
-          let id = NamedDecl.get_id decl in
-          if List.exists (NamedDecl.get_id %> Id.equal id) in_ty then None
-          else Some (Id.to_string id))
-        (keep_hyps env s_bo)) in
-  Aux_file.record_in_aux "context_used" v
-
 let build_constant_declaration env result =
   let open Cooking in
   let typ = result.cook_type in
@@ -279,24 +268,22 @@ let build_constant_declaration env result =
     let context_ids = List.map NamedDecl.get_id (named_context env) in
     let def = result.cook_body in
     match result.cook_context with
-    | None when not (List.is_empty context_ids) -> 
+    | None ->
+      if List.is_empty context_ids then
+        (* Empty section context: no need to check *)
+        [], def
+      else
         (* No declared section vars, and non-empty section context:
            we must look at the body NOW, if any *)
         let ids_typ = global_vars_set env typ in
         let ids_def = match def with
         | Undef _ | Primitive _ -> Id.Set.empty
         | Def cs -> global_vars_set env (Mod_subst.force_constr cs)
-        | OpaqueDef lc ->
-            let (lc, _) = Future.force lc in
-            let vars = global_vars_set env lc in
-            if !Flags.record_aux_file then record_aux env ids_typ vars;
-            vars
+        | OpaqueDef _ ->
+          (* Opaque definitions always come with their section variables *)
+          assert false
         in
         keep_hyps env (Id.Set.union ids_typ ids_def), def
-    | None ->
-        if !Flags.record_aux_file then
-          record_aux env Id.Set.empty Id.Set.empty;
-        [], def (* Empty section context: no need to check *)
     | Some declared ->
         (* We use the declared set and chain a check of correctness *)
         sort declared,
@@ -371,31 +358,12 @@ let translate_local_def env _id centry =
   } in
   let decl = infer_declaration ~trust:Pure env (DefinitionEntry centry) in
   let typ = decl.cook_type in
-  if Option.is_empty decl.cook_context && !Flags.record_aux_file then begin
-    match decl.cook_body with
-    | Undef _ -> ()
-    | Primitive _ -> ()
-    | Def _ -> ()
-    | OpaqueDef lc ->
-       let ids_typ = global_vars_set env typ in
-       let ids_def = global_vars_set env (fst (Future.force lc)) in
-       record_aux env ids_typ ids_def
-  end;
   let () = match decl.cook_universes with
   | Monomorphic ctx -> assert (Univ.ContextSet.is_empty ctx)
   | Polymorphic _ -> assert false
   in
   let c = match decl.cook_body with
   | Def c -> Mod_subst.force_constr c
-  | OpaqueDef o ->
-    let (p, cst) = Future.force o in
-    (** Let definitions are ensured to have no extra constraints coming from
-        the body by virtue of the typing of [Entries.section_def_entry]. *)
-    let () = match cst with
-    | Opaqueproof.PrivateMonomorphic ctx -> assert (Univ.ContextSet.is_empty ctx)
-    | Opaqueproof.PrivatePolymorphic (_, ctx) -> assert (Univ.ContextSet.is_empty ctx)
-    in
-    p
-  | Undef _ | Primitive _ -> assert false
+  | Undef _ | Primitive _ | OpaqueDef _ -> assert false
   in
   c, decl.cook_relevance, typ

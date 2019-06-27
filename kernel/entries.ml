@@ -80,7 +80,7 @@ type section_def_entry = {
 type 'a opaque_entry = {
   opaque_entry_body   : 'a;
   (* List of section variables *)
-  opaque_entry_secctx : Constr.named_context option;
+  opaque_entry_secctx : Constr.named_context;
   (* State id on which the completion of type checking is reported *)
   opaque_entry_feedback : Stateid.t option;
   opaque_entry_type        : types;

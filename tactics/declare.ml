@@ -27,6 +27,8 @@ open Cooking
 open Decls
 open Decl_kinds
 
+module NamedDecl = Context.Named.Declaration
+
 type import_status = ImportDefaultBehavior | ImportNeedQualified
 
 (** Declaration of constants and parameters *)
@@ -144,6 +146,18 @@ let register_side_effect (c, role) =
   | None -> ()
   | Some (Evd.Schema (ind, kind)) -> !declare_scheme kind [|ind,c|]
 
+let record_aux env s_ty s_bo =
+  let open Environ in
+  let in_ty = keep_hyps env s_ty in
+  let v =
+    String.concat " "
+      (CList.map_filter (fun decl ->
+          let id = NamedDecl.get_id decl in
+          if List.exists (NamedDecl.get_id %> Id.equal id) in_ty then None
+          else Some (Id.to_string id))
+        (keep_hyps env s_bo)) in
+  Aux_file.record_in_aux "context_used" v
+
 let default_univ_entry = Monomorphic_entry Univ.ContextSet.empty
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     ?(univs=default_univ_entry) ?(eff=Evd.empty_side_effects) body =
@@ -168,15 +182,39 @@ let cast_proof_entry e =
     const_entry_inline_code = e.proof_entry_inline_code;
   }
 
-let cast_opaque_proof_entry e =
+let cast_opaque_proof_entry (type a) (pure : a Safe_typing.effect_entry) (e : a Proof_global.proof_entry) =
   let open Proof_global in
   let typ = match e.proof_entry_type with
   | None -> assert false
   | Some typ -> typ
   in
+  let secctx = match e.proof_entry_secctx with
+  | None ->
+    let open Environ in
+    let env = Global.env () in
+    let hyp_typ, hyp_def =
+      if List.is_empty (Environ.named_context env) then
+        Id.Set.empty, Id.Set.empty
+      else
+        let ids_typ = global_vars_set env typ in
+        let pf, env = match pure with
+        | PureEntry ->
+          let (pf, _), () = Future.force e.proof_entry_body in
+          pf, env
+        | EffectEntry ->
+          let (pf, _), eff = Future.force e.proof_entry_body in
+          pf, Safe_typing.push_private_constants env eff
+        in
+        let vars = global_vars_set env pf in
+        ids_typ, vars
+    in
+    let () = if !Flags.record_aux_file then record_aux env hyp_typ hyp_def in
+    keep_hyps env (Id.Set.union hyp_typ hyp_def)
+  | Some hyps -> hyps
+  in
   {
     opaque_entry_body = e.proof_entry_body;
-    opaque_entry_secctx = e.proof_entry_secctx;
+    opaque_entry_secctx = secctx;
     opaque_entry_feedback = e.proof_entry_feedback;
     opaque_entry_type = typ;
     opaque_entry_universes = e.proof_entry_universes;
@@ -208,7 +246,7 @@ let define_constant ~side_effect id cd =
       let export = get_roles export eff in
       let de = { de with proof_entry_body = Future.from_val (body, ()) } in
       let cd = match de.proof_entry_opaque with
-      | true -> Entries.OpaqueEntry (cast_opaque_proof_entry de)
+      | true -> Entries.OpaqueEntry (cast_opaque_proof_entry PureEntry de)
       | false -> Entries.DefinitionEntry (cast_proof_entry de)
       in
       export, ConstantEntry (PureEntry, cd)
@@ -217,7 +255,7 @@ let define_constant ~side_effect id cd =
       let map (body, eff) = body, eff.Evd.seff_private in
       let body = Future.chain de.proof_entry_body map in
       let de = { de with proof_entry_body = body } in
-      let de = cast_opaque_proof_entry de in
+      let de = cast_opaque_proof_entry EffectEntry de in
       [], ConstantEntry (EffectEntry, Entries.OpaqueEntry de)
     | ParameterEntry e ->
       [], ConstantEntry (PureEntry, Entries.ParameterEntry e)
