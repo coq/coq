@@ -26,6 +26,7 @@ Ltac present_obj from to :=
            | [ |- context[from ?obj ?C] ] => progress change (from obj C) with (to obj C) in *
          end.
 
+#[universes(polymorphic)]
 Section NaturalTransformationComposition.
   Set Universe Polymorphism.
   Context `(C : @Category objC).
@@ -58,6 +59,7 @@ Polymorphic Definition Cat0 : Category Empty_set
 Polymorphic Definition FunctorFrom0 objC (C : Category objC) : Functor Cat0 C
   := Build_Functor Cat0 C (fun x => match x with end).
 
+#[universes(polymorphic)]
 Section Law0.
   Polymorphic Variable objC : Type.
   Polymorphic Variable C : Category objC.

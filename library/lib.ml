@@ -436,30 +436,32 @@ type section_data = {
   sec_entry : secentry list;
   sec_workl : Opaqueproof.work_list;
   sec_abstr : abstr_list;
+  sec_poly  : bool;
 }
 
-let empty_section_data = {
+let empty_section_data ~poly = {
   sec_entry = [];
   sec_workl = (Names.Cmap.empty,Names.Mindmap.empty);
   sec_abstr = (Names.Cmap.empty,Names.Mindmap.empty);
+  sec_poly  = poly;
 }
 
 let sectab =
   Summary.ref ([] : section_data list) ~name:"section-context"
 
-let add_section () =
-  sectab := empty_section_data :: !sectab
-
-let check_same_poly p vars =
-  let pred = function Context _ -> p = false | Variable {poly} -> p != poly in
-  if List.exists pred vars then
+let check_same_poly p sec =
+  if p != sec.sec_poly then
     user_err Pp.(str  "Cannot mix universe polymorphic and monomorphic declarations in sections.")
+
+let add_section ~poly () =
+  List.iter (fun tab -> check_same_poly poly tab) !sectab;
+  sectab := empty_section_data ~poly :: !sectab
 
 let add_section_variable ~name ~kind ~poly univs =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | s :: sl ->
-       List.iter (fun tab -> check_same_poly poly tab.sec_entry) !sectab;
+       List.iter (fun tab -> check_same_poly poly tab) !sectab;
        let s = { s with sec_entry = Variable {id=name;kind;poly;univs} :: s.sec_entry } in
        sectab := s :: sl
 
@@ -467,7 +469,7 @@ let add_section_context ctx =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | s :: sl ->
-       check_same_poly true s.sec_entry;
+       check_same_poly true s;
        let s = { s with sec_entry = Context ctx :: s.sec_entry } in
        sectab := s :: sl
 
@@ -525,7 +527,7 @@ let add_section_replacement f g poly hyps =
   match !sectab with
   | [] -> ()
   | s :: sl ->
-    let () = check_same_poly poly s.sec_entry in
+    let () = check_same_poly poly s in
     let sechyps,ctx = extract_hyps (s.sec_entry, hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
     let inst = Univ.UContext.instance ctx in
@@ -593,7 +595,7 @@ let is_in_section ref =
 
 (*************)
 (* Sections. *)
-let open_section id =
+let open_section ~poly id =
   let opp = !lib_state.path_prefix in
   let obj_dir = add_dirpath_suffix opp.Nametab.obj_dir id in
   let prefix = Nametab.{ obj_dir; obj_mp = opp.obj_mp; obj_sec = add_dirpath_suffix opp.obj_sec id } in
@@ -604,7 +606,7 @@ let open_section id =
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection prefix));
   lib_state := { !lib_state with path_prefix = prefix };
-  add_section ()
+  add_section ~poly ()
 
 
 (* Restore lib_stk and summaries as before the section opening, and

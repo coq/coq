@@ -963,9 +963,9 @@ let vernac_include l =
 
 (* Sections *)
 
-let vernac_begin_section ({v=id} as lid) =
+let vernac_begin_section ~poly ({v=id} as lid) =
   Dumpglob.dump_definition lid true "sec";
-  Lib.open_section id
+  Lib.open_section ~poly id
 
 let vernac_end_section {CAst.loc} =
   Dumpglob.dump_reference ?loc
@@ -2396,8 +2396,7 @@ let rec translate_vernac ~atts v = let open Vernacextend in match v with
   (* Gallina extensions *)
   | VernacBeginSection lid ->
     VtNoProof(fun () ->
-        unsupported_attributes atts;
-        vernac_begin_section lid)
+        vernac_begin_section ~poly:(only_polymorphism atts) lid)
   | VernacEndSegment lid ->
     VtNoProof(fun () ->
         unsupported_attributes atts;

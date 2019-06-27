@@ -5,6 +5,7 @@ Class PreOrder (A : Type) (r : A -> A -> Type) : Type :=
 
 (* FAILURE 1 *)
 
+#[universes(polymorphic)]
 Section foo.
   Polymorphic Universes A.
   Polymorphic Context {A : Type@{A}} {rA : A -> A -> Prop} {PO : PreOrder A rA}.
@@ -30,6 +31,7 @@ End ILogic.
 Set Printing Universes.
 
 (* There is still a problem if the class is universe polymorphic *)
+#[universes(polymorphic)]
 Section Embed_ILogic_Pre.
   Polymorphic Universes A T.
   Fail Context {A : Type@{A}} {ILA: ILogic.ILogic@{A} A}.
