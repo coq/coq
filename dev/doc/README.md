@@ -2,27 +2,9 @@
 
 ## Getting dependencies
 
-Assuming one is running Ubuntu (if not, replace `apt` with the package manager of choice)
-
-```
-$ sudo apt-get install make opam git
-
-# At the time of writing, <latest-ocaml-version> is 4.07.0.
-# The latest version number is available at: https://ocaml.org/releases/
-
-$ opam init --comp <latest-ocaml-version>
-
-# Then follow the advice displayed at the end as how to update your
-  ~/.bashrc and ~/.ocamlinit files.
-
-$ source ~/.bashrc
-
-# needed if you want to build "coqide" target
-
-$ sudo apt-get install liblablgtksourceview2-ocaml-dev \
-  libgtk2.0-dev libgtksourceview2.0-dev
-$ opam install lablgtk
-```
+See the first section of [`INSTALL`](../../INSTALL).  Developers are
+recommended to use a recent OCaml version, which they can get through
+opam or Nix, in particular.
 
 ## Building `coqtop`
 The general workflow is to first setup a development environment with
