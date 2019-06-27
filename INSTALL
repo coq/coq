@@ -1,31 +1,9 @@
-
-            INSTALLATION PROCEDURE
-            ----------------------
+            INSTALLING FROM SOURCES
+            -----------------------
 
 
 WHAT DO YOU NEED ?
 ==================
-
-   Your OS may already contain Coq under the form of a precompiled
-   package or ready-to-compile port. In this case, and if the supplied
-   version suits you, follow the usual procedure for your OS to
-   install it. E.g.:
-
-   - Debian GNU/Linux derivatives (or Debian GNU/k*BSD or ...):
-
-     aptitude install coq
-
-   - Gentoo GNU/Linux:
-
-     emerge sci-mathematics/coq
-
-   - Fedora GNU/Linux:
-
-     urpmi coq
-
-   - MacPorts for MacOS X
-
-     port install coq
 
    To compile Coq yourself, you need:
 
