@@ -497,7 +497,7 @@ type obligation_qed_info =
   ; auto : Id.t option -> Int.Set.t -> unit Proofview.tactic option -> progress
   }
 
-let obligation_terminator opq entries uctx { name; num; auto } =
+let obligation_terminator entries uctx { name; num; auto } =
   let open Proof_global in
   match entries with
   | [entry] ->
@@ -517,13 +517,13 @@ let obligation_terminator opq entries uctx { name; num; auto } =
     let obls, rem = prg.prg_obligations in
     let obl = obls.(num) in
     let status =
-      match obl.obl_status, opq with
-      | (_, Evar_kinds.Expand), Opaque -> err_not_transp ()
-      | (true, _), Opaque -> err_not_transp ()
-      | (false, _), Opaque -> Evar_kinds.Define true
-      | (_, Evar_kinds.Define true), Transparent ->
+      match obl.obl_status, entry.proof_entry_opaque with
+      | (_, Evar_kinds.Expand), true -> err_not_transp ()
+      | (true, _), true -> err_not_transp ()
+      | (false, _), true -> Evar_kinds.Define true
+      | (_, Evar_kinds.Define true), false ->
         Evar_kinds.Define false
-      | (_, status), Transparent -> status
+      | (_, status), false -> status
     in
     let obl = { obl with obl_status = false, status } in
     let ctx =

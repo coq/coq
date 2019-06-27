@@ -129,21 +129,9 @@ val initialize_named_context_for_proof : unit -> Environ.named_context_val
 
 (** {4 Saving proofs} *)
 
-(** The extra [?proof] parameter here is due to problems with the
-    lower-level [Proof_global.close_proof] API; we cannot inject closed
-    proofs properly in the proof state so we must leave this backdoor open.
-
-    The regular user can ignore it.
-*)
-
-val save_lemma_admitted
-  :  ?proof:(Proof_global.proof_object * Info.t)
-  -> lemma:t
-  -> unit
-
+val save_lemma_admitted : lemma:t -> unit
 val save_lemma_proved
-  :  ?proof:(Proof_global.proof_object * Info.t)
-  -> ?lemma:t
+  :  lemma:t
   -> opaque:Proof_global.opacity_flag
   -> idopt:Names.lident option
   -> unit
@@ -153,3 +141,12 @@ module Internal : sig
   val get_info : t -> Info.t
   (** Only needed due to the Proof_global compatibility layer. *)
 end
+
+(** Special cases for delayed proofs, in this case we must provide the
+   proof information so the proof won't be forced. *)
+val save_lemma_admitted_delayed : proof:Proof_global.proof_object -> info:Info.t -> unit
+val save_lemma_proved_delayed
+  :  proof:Proof_global.proof_object
+  -> info:Info.t
+  -> idopt:Names.lident option
+  -> unit

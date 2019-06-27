@@ -47,16 +47,6 @@ let vernac_pperr_endline pp =
    instead enviroment/state selection should be done at the Vernac DSL
    level. *)
 
-(* EJGA: Only used in close_proof, can remove once the ?proof hack is no more *)
-let vernac_require_open_lemma ~stack f =
-  match stack with
-  | Some stack -> f ~stack
-  | None -> user_err Pp.(str "Command not supported (No proof-editing in progress)")
-
-let with_pstate ~stack f =
-  vernac_require_open_lemma ~stack
-    (fun ~stack -> Vernacstate.LemmaStack.with_top_pstate stack ~f:(fun pstate -> f ~pstate))
-
 let get_current_or_global_context ~pstate =
   match pstate with
   | None -> let env = Global.env () in Evd.(from_env env, env)
@@ -642,27 +632,17 @@ let vernac_start_proof ~atts kind l =
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
   start_proof_and_print ~program_mode:atts.program ~poly:atts.polymorphic ~scope ~kind:(Proof kind) l
 
-let vernac_end_proof ?stack ?proof = let open Vernacexpr in function
+let vernac_end_proof ~lemma = let open Vernacexpr in function
   | Admitted ->
-    vernac_require_open_lemma ~stack (fun ~stack ->
-      let lemma, stack = Vernacstate.LemmaStack.pop stack in
-      save_lemma_admitted ?proof ~lemma;
-      stack)
+    save_lemma_admitted ~lemma
   | Proved (opaque,idopt) ->
-    let lemma, stack = match stack with
-      | None -> None, None
-      | Some stack ->
-        let lemma, stack = Vernacstate.LemmaStack.pop stack in
-        Some lemma, stack
-    in
-    save_lemma_proved ?lemma ?proof ~opaque ~idopt;
-    stack
+    save_lemma_proved ~lemma ~opaque ~idopt
 
 let vernac_exact_proof ~lemma c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the beginning of a proof. *)
   let lemma, status = Lemmas.by (Tactics.exact_proof c) lemma in
-  let () = save_lemma_proved ?proof:None ~lemma ~opaque:Proof_global.Opaque ~idopt:None in
+  let () = save_lemma_proved ~lemma ~opaque:Proof_global.Opaque ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_assumption ~atts discharge kind l nl =
@@ -2324,6 +2304,12 @@ let locate_if_not_already ?loc (e, info) =
 
 exception End_of_input
 
+(* EJGA: We may remove this, only used twice below *)
+let vernac_require_open_lemma ~stack f =
+  match stack with
+  | Some stack -> f stack
+  | None -> user_err Pp.(str "Command not supported (No proof-editing in progress)")
+
 let interp_typed_vernac c ~stack =
   let open Vernacextend in
   match c with
@@ -2334,7 +2320,7 @@ let interp_typed_vernac c ~stack =
     let () = f () in
     stack
   | VtCloseProof f ->
-    vernac_require_open_lemma ~stack (fun ~stack ->
+    vernac_require_open_lemma ~stack (fun stack ->
         let lemma, stack = Vernacstate.LemmaStack.pop stack in
         f ~lemma;
         stack)
@@ -2347,13 +2333,13 @@ let interp_typed_vernac c ~stack =
     f ~pstate;
     stack
   | VtReadProof f ->
-    with_pstate ~stack f;
+    vernac_require_open_lemma ~stack
+      (Vernacstate.LemmaStack.with_top_pstate ~f:(fun pstate -> f ~pstate));
     stack
 
 (* We interpret vernacular commands to a DSL that specifies their
    allowed actions on proof states *)
 let translate_vernac ~atts v = let open Vernacextend in match v with
-  | VernacEndProof _
   | VernacAbortAll
   | VernacRestart
   | VernacUndo _
@@ -2664,6 +2650,9 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacProofMode mn ->
     VtDefault(fun () -> unsupported_attributes atts)
 
+  | VernacEndProof pe ->
+    VtCloseProof (vernac_end_proof pe)
+
   (* Extensions *)
   | VernacExtend (opn,args) ->
     Vernacextend.type_vernac ~atts opn args
@@ -2697,11 +2686,6 @@ let rec interp_expr ?proof ~atts ~st c =
   | VernacLoad (verbosely,fname) ->
     unsupported_attributes atts;
     vernac_load ~verbosely ~st fname
-
-  (* Special: ?proof parameter doesn't allow for uniform pstate pop :S *)
-  | VernacEndProof e ->
-    unsupported_attributes atts;
-    vernac_end_proof ?proof ?stack e
 
   | v ->
     let fv = translate_vernac ~atts v in
@@ -2773,16 +2757,32 @@ let () =
       optwrite = ((:=) default_timeout) }
 
 (* Be careful with the cache here in case of an exception. *)
-let interp ?(verbosely=true) ?proof ~st cmd =
+let interp ?(verbosely=true) ~st cmd =
   Vernacstate.unfreeze_interp_state st;
   try vernac_timeout (fun st ->
       let v_mod = if verbosely then Flags.verbosely else Flags.silently in
-      let ontop = v_mod (interp_control ?proof ~st) cmd in
+      let ontop = v_mod (interp_control ~st) cmd in
       Vernacstate.Proof_global.set ontop [@ocaml.warning "-3"];
       Vernacstate.freeze_interp_state ~marshallable:false
     ) st
   with exn ->
     let exn = CErrors.push exn in
     let exn = locate_if_not_already ?loc:cmd.CAst.loc exn in
+    Vernacstate.invalidate_cache ();
+    iraise exn
+
+let interp_qed_delayed_proof ~proof ~info ~st ?loc pe : Vernacstate.t =
+  let stack = st.Vernacstate.lemmas in
+  let stack = Option.cata (fun stack -> snd @@ Vernacstate.LemmaStack.pop stack) None stack in
+  try
+    let () = match pe with
+      | Admitted ->
+        save_lemma_admitted_delayed ~proof ~info
+      | Proved (_,idopt) ->
+        save_lemma_proved_delayed ~proof ~info ~idopt in
+    { st with Vernacstate.lemmas = stack }
+  with exn ->
+    let exn = CErrors.push exn in
+    let exn = locate_if_not_already ?loc exn in
     Vernacstate.invalidate_cache ();
     iraise exn
