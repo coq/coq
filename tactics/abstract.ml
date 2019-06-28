@@ -149,9 +149,12 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
     let (_, info) = CErrors.push src in
     iraise (e, info)
   in
+  let body, effs = Future.force const.Declare.proof_entry_body in
+  (* We drop the side-effects from the entry, they already exist in the ambient environment *)
+  let const = { const with Declare.proof_entry_body = Future.from_val (body, ()) } in
   let const, args = shrink_entry sign const in
   let args = List.map EConstr.of_constr args in
-  let cd = Declare.DefinitionEntry { const with Declare.proof_entry_opaque = opaque } in
+  let cd = { const with Declare.proof_entry_opaque = opaque } in
   let kind = if opaque then Decls.(IsProof Lemma) else Decls.(IsDefinition Definition) in
   let cst () =
     (* do not compute the implicit arguments, it may be costly *)
@@ -172,8 +175,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   in
   let lem = mkConstU (cst, inst) in
   let evd = Evd.set_universe_context evd ectx in
-  let effs = Evd.concat_side_effects eff
-      (snd (Future.force const.Declare.proof_entry_body)) in
+  let effs = Evd.concat_side_effects eff effs in
   let solve =
     Proofview.tclEFFECTS effs <*>
     tacK lem args

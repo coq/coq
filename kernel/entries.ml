@@ -99,9 +99,6 @@ type primitive_entry = {
 type 'a proof_output = constr Univ.in_universe_context_set * 'a
 type 'a const_entry_body = 'a proof_output Future.computation
 
-(** Dummy wrapper type discriminable from unit *)
-type 'a seff_wrap = { seff_wrap : 'a }
-
 type constant_entry =
   | DefinitionEntry : definition_entry -> constant_entry
   | ParameterEntry : parameter_entry -> constant_entry

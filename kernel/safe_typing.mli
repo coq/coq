@@ -73,13 +73,13 @@ val is_joined_environment : safe_environment -> bool
 
 (** Insertion of global axioms or definitions *)
 
-type 'a effect_entry =
-| EffectEntry : private_constants Entries.seff_wrap effect_entry
-| PureEntry : unit effect_entry
-
 type global_declaration =
 | ConstantEntry : Entries.constant_entry -> global_declaration
 | OpaqueEntry : private_constants Entries.const_entry_body Entries.opaque_entry -> global_declaration
+
+type side_effect_declaration =
+| DefinitionEff : Entries.definition_entry -> side_effect_declaration
+| OpaqueEff : unit Entries.const_entry_body Entries.opaque_entry -> side_effect_declaration
 
 type exported_private_constant = Constant.t
 
@@ -87,10 +87,13 @@ val export_private_constants :
   private_constants Entries.proof_output ->
   (Constr.constr Univ.in_universe_context_set * exported_private_constant list) safe_transformer
 
-(** returns the main constant plus a certificate of its validity *)
+(** returns the main constant *)
 val add_constant :
-  side_effect:'a effect_entry -> Label.t -> global_declaration ->
-    (Constant.t * 'a) safe_transformer
+  Label.t -> global_declaration -> Constant.t safe_transformer
+
+(** Similar to add_constant but also returns a certificate *)
+val add_private_constant :
+  Label.t -> side_effect_declaration -> (Constant.t * private_constants) safe_transformer
 
 (** Adding an inductive type *)
 

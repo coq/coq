@@ -51,7 +51,9 @@ val export_private_constants :
   Constr.constr Univ.in_universe_context_set * Safe_typing.exported_private_constant list
 
 val add_constant :
-  side_effect:'a Safe_typing.effect_entry -> Id.t -> Safe_typing.global_declaration -> Constant.t * 'a
+  Id.t -> Safe_typing.global_declaration -> Constant.t
+val add_private_constant :
+  Id.t -> Safe_typing.side_effect_declaration -> Constant.t * Safe_typing.private_constants
 val add_mind :
   Id.t -> Entries.mutual_inductive_entry -> MutInd.t
 

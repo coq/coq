@@ -572,11 +572,6 @@ let add_field ?(is_include=false) ((l,sfb) as field) gn senv =
 
 let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 
-(** Insertion of constants and parameters in environment *)
-type 'a effect_entry =
-| EffectEntry : private_constants Entries.seff_wrap effect_entry
-| PureEntry : unit effect_entry
-
 type global_declaration =
 | ConstantEntry : Entries.constant_entry -> global_declaration
 | OpaqueEntry : private_constants Entries.const_entry_body Entries.opaque_entry -> global_declaration
@@ -811,9 +806,9 @@ let export_private_constants ce senv =
   let senv = List.fold_left add_constant_aux senv bodies in
   (ce, exported), senv
 
-let add_constant (type a) ~(side_effect : a effect_entry) l decl senv : (Constant.t * a) * safe_environment =
+let add_constant l decl senv =
   let kn = Constant.make2 senv.modpath l in
-    let cb = 
+    let cb =
       match decl with
       | OpaqueEntry ce ->
         let handle env body eff =
@@ -859,10 +854,31 @@ let add_constant (type a) ~(side_effect : a effect_entry) l decl senv : (Constan
       add_retroknowledge (Retroknowledge.Register_type(t,kn)) senv
     | _ -> senv
   in
-  let eff : a = match side_effect with
-  | PureEntry -> ()
-  | EffectEntry ->
-    let body, univs = match cb.const_body with
+  kn, senv
+
+let add_private_constant l decl senv : (Constant.t * private_constants) * safe_environment =
+  let kn = Constant.make2 senv.modpath l in
+    let cb =
+      match decl with
+      | OpaqueEff ce ->
+        let handle _env body () = body, Univ.ContextSet.empty, 0 in
+        let cb, ctx = Term_typing.translate_opaque senv.env kn ce in
+        let map pf = Term_typing.check_delayed handle ctx pf in
+        let pf = Future.chain ce.Entries.opaque_entry_body map in
+        { cb with const_body = OpaqueDef pf }
+      | DefinitionEff ce ->
+        Term_typing.translate_constant senv.env kn (Entries.DefinitionEntry ce)
+    in
+  let senv, cb, body = match cb.const_body with
+  | Def _ as const_body -> senv, { cb with const_body }, const_body
+  | OpaqueDef c ->
+    let senv, o = push_opaque_proof c senv in
+    senv, { cb with const_body = OpaqueDef o }, cb.const_body
+  | Undef _ | Primitive _ -> assert false
+  in
+  let senv = add_constant_aux senv (kn, cb) in
+  let eff =
+    let body, univs = match body with
     | (Primitive _ | Undef _) -> assert false
     | Def c -> (Def c, cb.const_universes)
     | OpaqueDef o ->
@@ -884,7 +900,7 @@ let add_constant (type a) ~(side_effect : a effect_entry) l decl senv : (Constan
       seff_constant = kn;
       seff_body = cb;
     } in
-    { Entries.seff_wrap = SideEffects.add eff empty_private_constants }
+    SideEffects.add eff empty_private_constants
   in
   (kn, eff), senv
 

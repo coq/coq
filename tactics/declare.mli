@@ -78,7 +78,7 @@ val declare_private_constant
   -> ?local:import_status
   -> name:Id.t
   -> kind:Decls.logical_kind
-  -> Evd.side_effects constant_entry
+  -> unit proof_entry
   -> Constant.t * Evd.side_effects
 
 (** Since transparent constants' side effects are globally declared, we
