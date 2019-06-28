@@ -173,12 +173,21 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
 let cast_proof_entry e =
   let open Proof_global in
   let (body, ctx), () = Future.force e.proof_entry_body in
+  let univs =
+    if Univ.ContextSet.is_empty ctx then e.proof_entry_universes
+    else match e.proof_entry_universes with
+      | Monomorphic_entry ctx' ->
+        (* This can actually happen, try compiling EqdepFacts for instance *)
+        Monomorphic_entry (Univ.ContextSet.union ctx' ctx)
+      | Polymorphic_entry _ ->
+        anomaly Pp.(str "Local universes in non-opaque polymorphic definition.");
+  in
   {
-    const_entry_body = (body, ctx);
+    const_entry_body = body;
     const_entry_secctx = e.proof_entry_secctx;
     const_entry_feedback = e.proof_entry_feedback;
     const_entry_type = e.proof_entry_type;
-    const_entry_universes = e.proof_entry_universes;
+    const_entry_universes = univs;
     const_entry_inline_code = e.proof_entry_inline_code;
   }
 

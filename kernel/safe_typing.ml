@@ -698,7 +698,7 @@ let constant_entry_of_side_effect eff =
   }
   else
   DefinitionEntry {
-    const_entry_body = (p, Univ.ContextSet.empty);
+    const_entry_body = p;
     const_entry_secctx = Some cb.const_hyps;
     const_entry_feedback = None;
     const_entry_type = Some cb.const_type;

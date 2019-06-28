@@ -194,14 +194,13 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
   (** Other definitions have to be processed immediately. *)
   | DefinitionEntry c ->
       let { const_entry_type = typ; _ } = c in
-      let { const_entry_body = (body, ctx); const_entry_feedback = feedback_id; _ } = c in
+      let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
       let () = match trust with
       | Pure -> ()
       | SideEffects _ -> assert false
       in
       let env, usubst, univs = match c.const_entry_universes with
-      | Monomorphic_entry univs ->
-        let ctx = Univ.ContextSet.union univs ctx in
+      | Monomorphic_entry ctx ->
         let env = push_context_set ~strict:true ctx env in
         env, Univ.empty_level_subst, Monomorphic ctx
       | Polymorphic_entry (nas, uctx) ->
@@ -210,10 +209,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         let env = push_context ~strict:false uctx env in
         let sbst, auctx = Univ.abstract_universes nas uctx in
         let sbst = Univ.make_instance_subst sbst in
-        let () =
-          if not (Univ.ContextSet.is_empty ctx) then
-            CErrors.anomaly Pp.(str "Local universes in non-opaque polymorphic definition.")
-        in
         env, sbst, Polymorphic auctx
       in
       let j = Typeops.infer env body in
@@ -347,9 +342,8 @@ let translate_recipe env _kn r =
 
 let translate_local_def env _id centry =
   let open Cooking in
-  let body = (centry.secdef_body, Univ.ContextSet.empty) in
   let centry = {
-    const_entry_body = body;
+    const_entry_body = centry.secdef_body;
     const_entry_secctx = centry.secdef_secctx;
     const_entry_feedback = centry.secdef_feedback;
     const_entry_type = centry.secdef_type;
