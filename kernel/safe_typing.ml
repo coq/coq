@@ -767,22 +767,24 @@ let export_side_effects mb env (b_ctx, eff) =
               let kn = eff.seff_constant in
                let ce = constant_entry_of_side_effect eff in
                let open Entries in
-               let open Term_typing in
                let cb = match ce with
                | DefinitionEff ce ->
-                Term_typing.translate_constant Pure env kn (DefinitionEntry ce)
+                Term_typing.translate_constant env kn (DefinitionEntry ce)
                | OpaqueEff ce ->
-                let handle _env c () = (c, Univ.ContextSet.empty, 0) in
-                Term_typing.translate_constant (SideEffects handle) env kn (OpaqueEntry ce)
+                Term_typing.translate_constant env kn (OpaqueEntry ce)
                in
-              let map cu =
-                let (c, u) = Future.force cu in
+              let map ctx = match ce with
+              | OpaqueEff e ->
+                let body = Future.force e.Entries.opaque_entry_body in
+                let handle _env c () = (c, Univ.ContextSet.empty, 0) in
+                let (c, u) = Term_typing.check_delayed handle ctx body in
                 let () = match u with
                 | Opaqueproof.PrivateMonomorphic ctx
                 | Opaqueproof.PrivatePolymorphic (_, ctx) ->
                   assert (Univ.ContextSet.is_empty ctx)
                 in
                 c
+              | _ -> assert false
               in
                let cb = map_constant map cb in
                let eff = { eff with seff_body = cb } in
@@ -824,15 +826,23 @@ let add_constant (type a) ~(side_effect : a effect_entry) l decl senv : (Constan
   let kn = Constant.make2 senv.modpath l in
     let cb = 
       match decl with
-      | ConstantEntry (EffectEntry, ce) ->
+      | ConstantEntry (EffectEntry, Entries.OpaqueEntry e) ->
         let handle env body eff =
           let body, uctx, signatures = inline_side_effects env body eff in
           let trusted = check_signatures senv.revstruct signatures in
           body, uctx, trusted
         in
-        Term_typing.translate_constant (Term_typing.SideEffects handle) senv.env kn ce
+        let cb = Term_typing.translate_constant senv.env kn (Entries.OpaqueEntry e) in
+        let ctx = match cb.const_body with
+        | OpaqueDef ctx -> ctx
+        | _ -> assert false
+        in
+        let map pf = Term_typing.check_delayed handle ctx pf in
+        let pf = Future.chain e.Entries.opaque_entry_body map in
+        { cb with const_body = OpaqueDef pf }
       | ConstantEntry (PureEntry, ce) ->
-        Term_typing.translate_constant Term_typing.Pure senv.env kn ce
+        let cb = Term_typing.translate_constant senv.env kn ce in
+        map_constant (fun _ -> assert false) cb
     in
   let senv =
     let senv, cb, delayed_cst = match cb.const_body with

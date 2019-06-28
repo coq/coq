@@ -29,10 +29,6 @@ module NamedDecl = Context.Named.Declaration
 type 'a effect_handler =
   env -> Constr.t -> 'a -> (Constr.t * Univ.ContextSet.t * int)
 
-type _ trust =
-| Pure : unit trust
-| SideEffects : 'a effect_handler -> 'a Entries.seff_wrap trust
-
 let skip_trusted_seff sl b e =
   let rec aux sl b e acc =
     let open Context.Rel.Declaration in
@@ -64,7 +60,11 @@ let feedback_completion_typecheck =
   Option.iter (fun state_id ->
       Feedback.feedback ~id:state_id Feedback.Complete)
 
-let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
+type typing_context =
+| MonoTyCtx of Environ.env * unsafe_type_judgment * Univ.ContextSet.t * Id.Set.t * Stateid.t option
+| PolyTyCtx of Environ.env * unsafe_type_judgment * Univ.universe_level_subst * Univ.AUContext.t * Id.Set.t * Stateid.t option
+
+let infer_declaration (type a) env (dcl : a constant_entry) =
   match dcl with
     | ParameterEntry (ctx,(t,uctx),nl) ->
       let env = match uctx with
@@ -118,25 +118,10 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
   | OpaqueEntry ({ opaque_entry_type = typ;
                        opaque_entry_universes = Monomorphic_entry univs; _ } as c) ->
       let env = push_context_set ~strict:true univs env in
-      let { opaque_entry_body = body; opaque_entry_feedback = feedback_id; _ } = c in
+      let { opaque_entry_feedback = feedback_id; _ } = c in
       let tyj = Typeops.infer_type env typ in
-      let proofterm =
-        Future.chain body begin fun ((body,uctx),side_eff) ->
-          (* don't redeclare universes which are declared for the type *)
-          let uctx = Univ.ContextSet.diff uctx univs in
-          let SideEffects handle = trust in
-          let (body, uctx', valid_signatures) = handle env body side_eff in
-          let uctx = Univ.ContextSet.union uctx uctx' in
-          let env = push_context_set uctx env in
-          let body,env,ectx = skip_trusted_seff valid_signatures body env in
-          let j = Typeops.infer env body in
-          let j = unzip ectx j in
-          let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
-          let c = j.uj_val in
-          feedback_completion_typecheck feedback_id;
-          c, Opaqueproof.PrivateMonomorphic uctx
-      end in
-      let def = OpaqueDef proofterm in
+      let context = MonoTyCtx (env, tyj, univs, c.opaque_entry_secctx, feedback_id) in
+      let def = OpaqueDef context in
       {
         Cooking.cook_body = def;
         cook_type = tyj.utj_val;
@@ -150,26 +135,13 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
 
   | OpaqueEntry ({ opaque_entry_type = typ;
                        opaque_entry_universes = Polymorphic_entry (nas, uctx); _ } as c) ->
-      let { opaque_entry_body = body; opaque_entry_feedback = feedback_id; _ } = c in
+      let { opaque_entry_feedback = feedback_id; _ } = c in
       let env = push_context ~strict:false uctx env in
       let tj = Typeops.infer_type env typ in
       let sbst, auctx = Univ.abstract_universes nas uctx in
       let usubst = Univ.make_instance_subst sbst in
-      let proofterm = Future.chain body begin fun ((body, ctx), side_eff) ->
-        let SideEffects handle = trust in
-        let body, ctx', _ = handle env body side_eff in
-        let ctx = Univ.ContextSet.union ctx ctx' in
-        (** [ctx] must contain local universes, such that it has no impact
-            on the rest of the graph (up to transitivity). *)
-        let env = push_subgraph ctx env in
-        let private_univs = on_snd (Univ.subst_univs_level_constraints usubst) ctx in
-        let j = Typeops.infer env body in
-        let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
-        let def = Vars.subst_univs_level_constr usubst j.uj_val in
-        let () = feedback_completion_typecheck feedback_id in
-        def, Opaqueproof.PrivatePolymorphic (Univ.AUContext.size auctx, private_univs)
-      end in
-      let def = OpaqueDef proofterm in
+      let context = PolyTyCtx (env, tj, usubst, auctx, c.opaque_entry_secctx, feedback_id) in
+      let def = OpaqueDef context in
       let typ = Vars.subst_univs_level_constr usubst tj.utj_val in
       {
         Cooking.cook_body = def;
@@ -184,7 +156,6 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
   | DefinitionEntry c ->
       let { const_entry_type = typ; _ } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
-      let Pure = trust in
       let env, usubst, univs = match c.const_entry_universes with
       | Monomorphic_entry ctx ->
         let env = push_context_set ~strict:true ctx env in
@@ -218,25 +189,29 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
         cook_context = c.const_entry_secctx;
       }
 
+let check_section_variables env declared_set typ body =
+  let ids_typ = global_vars_set env typ in
+  let ids_def = global_vars_set env body in
+  let inferred_set = Environ.really_needed env (Id.Set.union ids_typ ids_def) in
+  if not (Id.Set.subset inferred_set declared_set) then
+    let l = Id.Set.elements (Id.Set.diff inferred_set declared_set) in
+    let n = List.length l in
+    let declared_vars = Pp.pr_sequence Id.print (Id.Set.elements declared_set) in
+    let inferred_vars = Pp.pr_sequence Id.print (Id.Set.elements inferred_set) in
+    let missing_vars  = Pp.pr_sequence Id.print (List.rev l) in
+    user_err Pp.(prlist str
+        ["The following section "; (String.plural n "variable"); " ";
+        (String.conjugate_verb_to_be n); " used but not declared:"] ++ fnl () ++
+        missing_vars ++ str "." ++ fnl () ++ fnl () ++
+        str "You can either update your proof to not depend on " ++ missing_vars ++
+        str ", or you can update your Proof line from" ++ fnl () ++
+        str "Proof using " ++ declared_vars ++ fnl () ++
+        str "to" ++ fnl () ++
+        str "Proof using " ++ inferred_vars)
+
 let build_constant_declaration env result =
   let open Cooking in
   let typ = result.cook_type in
-  let check declared_set inferred_set =
-    if not (Id.Set.subset inferred_set declared_set) then
-      let l = Id.Set.elements (Id.Set.diff inferred_set declared_set) in
-      let n = List.length l in
-      let declared_vars = Pp.pr_sequence Id.print (Id.Set.elements declared_set) in
-      let inferred_vars = Pp.pr_sequence Id.print (Id.Set.elements inferred_set) in
-      let missing_vars  = Pp.pr_sequence Id.print (List.rev l) in
-      user_err Pp.(prlist str
-         ["The following section "; (String.plural n "variable"); " ";
-          (String.conjugate_verb_to_be n); " used but not declared:"] ++ fnl () ++
-         missing_vars ++ str "." ++ fnl () ++ fnl () ++
-         str "You can either update your proof to not depend on " ++ missing_vars ++
-         str ", or you can update your Proof line from" ++ fnl () ++
-         str "Proof using " ++ declared_vars ++ fnl () ++
-         str "to" ++ fnl () ++
-         str "Proof using " ++ inferred_vars) in
   (* We try to postpone the computation of used section variables *)
   let hyps, def =
     let context_ids = List.map NamedDecl.get_id (named_context env) in
@@ -265,22 +240,10 @@ let build_constant_declaration env result =
         (* We use the declared set and chain a check of correctness *)
         declared,
         match def with
-        | Undef _ | Primitive _ as x -> x (* nothing to check *)
+        | Undef _ | Primitive _ | OpaqueDef _ as x -> x (* nothing to check *)
         | Def cs as x ->
-            let ids_typ = global_vars_set env typ in
-            let ids_def = global_vars_set env (Mod_subst.force_constr cs) in
-            let inferred = Environ.really_needed env (Id.Set.union ids_typ ids_def) in
-            check declared inferred;
-            x
-        | OpaqueDef lc -> (* In this case we can postpone the check *)
-          let iter k cu = Future.chain cu (fun (c, _ as p) -> k c; p) in
-          let kont c =
-            let ids_typ = global_vars_set env typ in
-            let ids_def = global_vars_set env c in
-            let inferred = Environ.really_needed env (Id.Set.union ids_typ ids_def) in
-            check declared inferred
-          in
-          OpaqueDef (iter kont lc)
+          let () = check_section_variables env declared typ (Mod_subst.force_constr cs) in
+          x
   in
   let univs = result.cook_universes in
   let hyps = List.filter (fun d -> Id.Set.mem (NamedDecl.get_id d) hyps) (Environ.named_context env) in
@@ -297,11 +260,42 @@ let build_constant_declaration env result =
     const_inline_code = result.cook_inline;
     const_typing_flags = Environ.typing_flags env }
 
+let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_output) = match tyenv with
+| MonoTyCtx (env, tyj, univs, declared, feedback_id) ->
+  let ((body, uctx), side_eff) = body in
+  (* don't redeclare universes which are declared for the type *)
+  let uctx = Univ.ContextSet.diff uctx univs in
+  let (body, uctx', valid_signatures) = handle env body side_eff in
+  let uctx = Univ.ContextSet.union uctx uctx' in
+  let env = push_context_set uctx env in
+  let body,env,ectx = skip_trusted_seff valid_signatures body env in
+  let j = Typeops.infer env body in
+  let j = unzip ectx j in
+  let _ = Typeops.judge_of_cast env j DEFAULTcast tyj in
+  let c = j.uj_val in
+  let () = check_section_variables env declared tyj.utj_val body in
+  feedback_completion_typecheck feedback_id;
+  c, Opaqueproof.PrivateMonomorphic uctx
+| PolyTyCtx (env, tj, usubst, auctx, declared, feedback_id) ->
+  let ((body, ctx), side_eff) = body in
+  let body, ctx', _ = handle env body side_eff in
+  let ctx = Univ.ContextSet.union ctx ctx' in
+  (** [ctx] must contain local universes, such that it has no impact
+      on the rest of the graph (up to transitivity). *)
+  let env = push_subgraph ctx env in
+  let private_univs = on_snd (Univ.subst_univs_level_constraints usubst) ctx in
+  let j = Typeops.infer env body in
+  let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
+  let () = check_section_variables env declared tj.utj_val body in
+  let def = Vars.subst_univs_level_constr usubst j.uj_val in
+  let () = feedback_completion_typecheck feedback_id in
+  def, Opaqueproof.PrivatePolymorphic (Univ.AUContext.size auctx, private_univs)
+
 (*s Global and local constant declaration. *)
 
-let translate_constant mb env _kn ce =
+let translate_constant env _kn ce =
   build_constant_declaration env
-    (infer_declaration ~trust:mb env ce)
+    (infer_declaration env ce)
 
 let translate_local_assum env t =
   let j = Typeops.infer env t in
@@ -336,7 +330,7 @@ let translate_local_def env _id centry =
     const_entry_universes = Monomorphic_entry Univ.ContextSet.empty;
     const_entry_inline_code = false;
   } in
-  let decl = infer_declaration ~trust:Pure env (DefinitionEntry centry) in
+  let decl = infer_declaration env (DefinitionEntry centry) in
   let typ = decl.cook_type in
   let () = match decl.cook_universes with
   | Monomorphic ctx -> assert (Univ.ContextSet.is_empty ctx)
