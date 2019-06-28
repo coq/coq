@@ -16,6 +16,7 @@ open Sorts
 open Term
 open Constr
 open Stages
+open Substaging
 open Context
 open Vars
 open Declarations
@@ -428,7 +429,7 @@ let type_of_case env stg ci p pt c ct _lf lft =
     type_case_branches env (pind, largs) (make_judge p pt) c s in
   let cstrnts_branch = check_branch_types env pind c ct lft bty in
   let cstrnts = union_constraint cstrnts_rsl cstrnts_branch in
-  stg, ci, rslty, add_constraint r (succ_annot s) cstrnts
+  stg, ci, rslty, add_constraint_from_ind env cstrnts (fst pind) r (succ_annot s)
 
 let type_of_projection env p c ct =
   let pty = lookup_projection p env in
@@ -538,7 +539,7 @@ let rec execute env stg cstr =
       let env1 = push_rel (LocalAssum (name',c1')) env in
       let stg2, cstrnt2, c2', c2t = execute env1 stg1 c2 in
       let cstrnt = union_constraint cstrnt1 cstrnt2 in
-      let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkLambda(name',c1',c2') in
+      let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkLambda(name', erase c1',c2') in
       stg2, cstrnt, cstr, type_of_abstraction env name' c1 c2t
 
     | Prod (name,c1,c2) ->

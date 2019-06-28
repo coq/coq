@@ -202,7 +202,7 @@ let vm_conv_gen cv_pb env univs t1 t2 =
 
 let vm_conv cv_pb env t1 t2 =
   let univs = Environ.universes env in
-  let compare_annot = add_constraint_from_ind env in
+  let compare_annot = add_constraint_from_ind_ref env in
   let b, cstrnts =
     if cv_pb = CUMUL then Constr.leq_constr_univs compare_annot univs t1 t2
     else Constr.eq_constr_univs compare_annot univs t1 t2

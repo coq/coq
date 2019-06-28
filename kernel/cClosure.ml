@@ -598,7 +598,7 @@ let rec to_constr lfts v =
         Term.compose_lam (List.rev tys) f
       else
         let subs = comp_subs lfts e in
-        let tys = List.mapi (fun i (na, c) -> na, subst_constr (subs_liftn i subs) c) tys in
+        let tys = List.mapi (fun i (na, c) -> na, Constr.erase (subst_constr (subs_liftn i subs) c)) tys in
         let f = subst_constr (subs_liftn len subs) f in
         Term.compose_lam (List.rev tys) f
     | FProd (n, t, c, e) ->

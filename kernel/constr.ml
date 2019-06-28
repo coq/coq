@@ -811,10 +811,14 @@ let map_with_binders g f l c0 = match kind c0 with
 (* Stage annotations *)
 (*********************)
 
-(* FIXME: Should not erase position anotations in (Co)Fix *)
 let rec erase c =
   match c with
-  | Ind (iu, _) -> Ind (iu, Empty)
+  | Ind (iu, a) ->
+    begin
+    match a with
+    | Star -> c
+    | _ -> Ind (iu, Empty)
+    end
   | _ -> map erase c
 
 let rec annotate ind s c =

@@ -723,7 +723,7 @@ let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
     lft_tab = create_tab ();
     rgt_tab = create_tab ();
   } in
-  ccnv (add_constraint_from_ind env cstrnts) cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs, !cstrnts
+  ccnv (add_constraint_from_ind_ref env cstrnts) cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs, !cstrnts
 
 
 let check_eq univs u u' =
@@ -817,7 +817,7 @@ let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
     compare_cumul_instances = infer_inductive_instances; }
 
 let gen_conv cv_pb l2r reds env evars univs t1 t2 =
-  let compare_annot = add_constraint_from_ind env in
+  let compare_annot = add_constraint_from_ind_ref env in
   let b, cstrnts =
     if cv_pb = CUMUL then leq_constr_univs compare_annot univs t1 t2
     else eq_constr_univs compare_annot univs t1 t2
