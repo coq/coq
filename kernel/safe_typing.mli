@@ -78,7 +78,8 @@ type 'a effect_entry =
 | PureEntry : unit effect_entry
 
 type global_declaration =
-  | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
+| ConstantEntry : Entries.constant_entry -> global_declaration
+| OpaqueEntry : private_constants Entries.const_entry_body Entries.opaque_entry -> global_declaration
 
 type exported_private_constant = Constant.t
 

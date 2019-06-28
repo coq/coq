@@ -64,7 +64,7 @@ type typing_context =
 | MonoTyCtx of Environ.env * unsafe_type_judgment * Univ.ContextSet.t * Id.Set.t * Stateid.t option
 | PolyTyCtx of Environ.env * unsafe_type_judgment * Univ.universe_level_subst * Univ.AUContext.t * Id.Set.t * Stateid.t option
 
-let infer_declaration (type a) env (dcl : a constant_entry) =
+let infer_declaration env (dcl : constant_entry) =
   match dcl with
     | ParameterEntry (ctx,(t,uctx),nl) ->
       let env = match uctx with
@@ -112,47 +112,6 @@ let infer_declaration (type a) env (dcl : a constant_entry) =
         cook_relevance = Sorts.Relevant;
       }
 
-  (** Definition [c] is opaque (Qed), non polymorphic and with a specified type,
-      so we delay the typing and hash consing of its body. *)
-
-  | OpaqueEntry ({ opaque_entry_type = typ;
-                       opaque_entry_universes = Monomorphic_entry univs; _ } as c) ->
-      let env = push_context_set ~strict:true univs env in
-      let { opaque_entry_feedback = feedback_id; _ } = c in
-      let tyj = Typeops.infer_type env typ in
-      let context = MonoTyCtx (env, tyj, univs, c.opaque_entry_secctx, feedback_id) in
-      let def = OpaqueDef context in
-      {
-        Cooking.cook_body = def;
-        cook_type = tyj.utj_val;
-        cook_universes = Monomorphic univs;
-        cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
-        cook_inline = false;
-        cook_context = Some c.opaque_entry_secctx;
-      }
-
-  (** Similar case for polymorphic entries. *)
-
-  | OpaqueEntry ({ opaque_entry_type = typ;
-                       opaque_entry_universes = Polymorphic_entry (nas, uctx); _ } as c) ->
-      let { opaque_entry_feedback = feedback_id; _ } = c in
-      let env = push_context ~strict:false uctx env in
-      let tj = Typeops.infer_type env typ in
-      let sbst, auctx = Univ.abstract_universes nas uctx in
-      let usubst = Univ.make_instance_subst sbst in
-      let context = PolyTyCtx (env, tj, usubst, auctx, c.opaque_entry_secctx, feedback_id) in
-      let def = OpaqueDef context in
-      let typ = Vars.subst_univs_level_constr usubst tj.utj_val in
-      {
-        Cooking.cook_body = def;
-        cook_type = typ;
-        cook_universes = Polymorphic auctx;
-        cook_relevance = Sorts.relevance_of_sort tj.utj_type;
-        cook_inline = false;
-        cook_context = Some c.opaque_entry_secctx;
-      }
-
-  (** Other definitions have to be processed immediately. *)
   | DefinitionEntry c ->
       let { const_entry_type = typ; _ } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id; _ } = c in
@@ -188,6 +147,43 @@ let infer_declaration (type a) env (dcl : a constant_entry) =
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
       }
+
+(** Definition is opaque (Qed), so we delay the typing of its body. *)
+let infer_opaque env = function
+  | ({ opaque_entry_type = typ;
+                       opaque_entry_universes = Monomorphic_entry univs; _ } as c) ->
+      let env = push_context_set ~strict:true univs env in
+      let { opaque_entry_feedback = feedback_id; _ } = c in
+      let tyj = Typeops.infer_type env typ in
+      let context = MonoTyCtx (env, tyj, univs, c.opaque_entry_secctx, feedback_id) in
+      let def = OpaqueDef () in
+      {
+        Cooking.cook_body = def;
+        cook_type = tyj.utj_val;
+        cook_universes = Monomorphic univs;
+        cook_relevance = Sorts.relevance_of_sort tyj.utj_type;
+        cook_inline = false;
+        cook_context = Some c.opaque_entry_secctx;
+      }, context
+
+  | ({ opaque_entry_type = typ;
+                       opaque_entry_universes = Polymorphic_entry (nas, uctx); _ } as c) ->
+      let { opaque_entry_feedback = feedback_id; _ } = c in
+      let env = push_context ~strict:false uctx env in
+      let tj = Typeops.infer_type env typ in
+      let sbst, auctx = Univ.abstract_universes nas uctx in
+      let usubst = Univ.make_instance_subst sbst in
+      let context = PolyTyCtx (env, tj, usubst, auctx, c.opaque_entry_secctx, feedback_id) in
+      let def = OpaqueDef () in
+      let typ = Vars.subst_univs_level_constr usubst tj.utj_val in
+      {
+        Cooking.cook_body = def;
+        cook_type = typ;
+        cook_universes = Polymorphic auctx;
+        cook_relevance = Sorts.relevance_of_sort tj.utj_type;
+        cook_inline = false;
+        cook_context = Some c.opaque_entry_secctx;
+      }, context
 
 let check_section_variables env declared_set typ body =
   let ids_typ = global_vars_set env typ in
@@ -296,6 +292,10 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
 let translate_constant env _kn ce =
   build_constant_declaration env
     (infer_declaration env ce)
+
+let translate_opaque env _kn ce =
+  let def, ctx = infer_opaque env ce in
+  build_constant_declaration env def, ctx
 
 let translate_local_assum env t =
   let j = Typeops.infer env t in

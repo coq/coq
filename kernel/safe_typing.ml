@@ -299,13 +299,6 @@ let lift_constant c =
   in
   { c with const_body = body }
 
-let map_constant f c =
-  let body = match c.const_body with
-  | OpaqueDef o -> OpaqueDef (f o)
-  | Def _ | Undef _ | Primitive _ as body -> body
-  in
-  { c with const_body = body }
-
 let push_private_constants env eff =
   let eff = side_effects_of_private_constants eff in
   let add_if_undefined env eff =
@@ -585,7 +578,8 @@ type 'a effect_entry =
 | PureEntry : unit effect_entry
 
 type global_declaration =
-  | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
+| ConstantEntry : Entries.constant_entry -> global_declaration
+| OpaqueEntry : private_constants Entries.const_entry_body Entries.opaque_entry -> global_declaration
 
 type exported_private_constant = Constant.t
 
@@ -765,17 +759,14 @@ let export_side_effects mb env (b_ctx, eff) =
           if Int.equal sl 0 then
             let env, cb =
               let kn = eff.seff_constant in
-               let ce = constant_entry_of_side_effect eff in
-               let open Entries in
-               let cb = match ce with
-               | DefinitionEff ce ->
+              let ce = constant_entry_of_side_effect eff in
+              let open Entries in
+              let cb = match ce with
+              | DefinitionEff ce ->
                 Term_typing.translate_constant env kn (DefinitionEntry ce)
-               | OpaqueEff ce ->
-                Term_typing.translate_constant env kn (OpaqueEntry ce)
-               in
-              let map ctx = match ce with
-              | OpaqueEff e ->
-                let body = Future.force e.Entries.opaque_entry_body in
+              | OpaqueEff ce ->
+                let cb, ctx = Term_typing.translate_opaque env kn ce in
+                let body = Future.force ce.Entries.opaque_entry_body in
                 let handle _env c () = (c, Univ.ContextSet.empty, 0) in
                 let (c, u) = Term_typing.check_delayed handle ctx body in
                 let () = match u with
@@ -783,10 +774,8 @@ let export_side_effects mb env (b_ctx, eff) =
                 | Opaqueproof.PrivatePolymorphic (_, ctx) ->
                   assert (Univ.ContextSet.is_empty ctx)
                 in
-                c
-              | _ -> assert false
+                { cb with const_body = OpaqueDef c }
               in
-               let cb = map_constant map cb in
                let eff = { eff with seff_body = cb } in
                (push_seff env eff, export_eff eff)
             in
@@ -826,23 +815,18 @@ let add_constant (type a) ~(side_effect : a effect_entry) l decl senv : (Constan
   let kn = Constant.make2 senv.modpath l in
     let cb = 
       match decl with
-      | ConstantEntry (EffectEntry, Entries.OpaqueEntry e) ->
+      | OpaqueEntry ce ->
         let handle env body eff =
           let body, uctx, signatures = inline_side_effects env body eff in
           let trusted = check_signatures senv.revstruct signatures in
           body, uctx, trusted
         in
-        let cb = Term_typing.translate_constant senv.env kn (Entries.OpaqueEntry e) in
-        let ctx = match cb.const_body with
-        | OpaqueDef ctx -> ctx
-        | _ -> assert false
-        in
+        let cb, ctx = Term_typing.translate_opaque senv.env kn ce in
         let map pf = Term_typing.check_delayed handle ctx pf in
-        let pf = Future.chain e.Entries.opaque_entry_body map in
+        let pf = Future.chain ce.Entries.opaque_entry_body map in
         { cb with const_body = OpaqueDef pf }
-      | ConstantEntry (PureEntry, ce) ->
-        let cb = Term_typing.translate_constant senv.env kn ce in
-        map_constant (fun _ -> assert false) cb
+      | ConstantEntry ce ->
+        Term_typing.translate_constant senv.env kn ce
     in
   let senv =
     let senv, cb, delayed_cst = match cb.const_body with
@@ -870,7 +854,7 @@ let add_constant (type a) ~(side_effect : a effect_entry) l decl senv : (Constan
 
   let senv =
     match decl with
-    | ConstantEntry (_,(Entries.PrimitiveEntry { Entries.prim_entry_content = CPrimitives.OT_type t; _ })) ->
+    | ConstantEntry (Entries.PrimitiveEntry { Entries.prim_entry_content = CPrimitives.OT_type t; _ }) ->
       if sections_are_opened senv then CErrors.anomaly (Pp.str "Primitive type not allowed in sections");
       add_retroknowledge (Retroknowledge.Register_type(t,kn)) senv
     | _ -> senv

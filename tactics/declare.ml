@@ -259,17 +259,17 @@ let define_constant ~side_effect ~name cd =
       let export = get_roles export eff in
       let de = { de with proof_entry_body = Future.from_val (body, ()) } in
       let cd = Entries.DefinitionEntry (cast_proof_entry de) in
-      export, ConstantEntry (PureEntry, cd), false
+      export, ConstantEntry cd, false
     else
       let map (body, eff) = body, eff.Evd.seff_private in
       let body = Future.chain de.proof_entry_body map in
       let de = { de with proof_entry_body = body } in
       let de = cast_opaque_proof_entry de in
-      [], ConstantEntry (EffectEntry, Entries.OpaqueEntry de), false
+      [], OpaqueEntry de, false
   | ParameterEntry e ->
-    [], ConstantEntry (PureEntry, Entries.ParameterEntry e), not (Lib.is_modtype_strict())
+    [], ConstantEntry (Entries.ParameterEntry e), not (Lib.is_modtype_strict())
   | PrimitiveEntry e ->
-    [], ConstantEntry (PureEntry, Entries.PrimitiveEntry e), false
+    [], ConstantEntry (Entries.PrimitiveEntry e), false
   in
   let kn, eff = Global.add_constant ~side_effect name decl in
   if unsafe || is_unsafe_typing_flags() then feedback_axiom();
