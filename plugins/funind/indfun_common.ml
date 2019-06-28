@@ -123,9 +123,9 @@ open DeclareDef
 
 let definition_message = Declare.definition_message
 
-let save id const ?hook uctx locality kind =
+let save id const ?hook uctx scope kind =
   let fix_exn = Future.fix_exn_of const.Proof_global.proof_entry_body in
-  let r = match locality with
+  let r = match scope with
     | Discharge ->
         let k = Kindops.logical_kind_of_goal_kind kind in
         let c = SectionLocalDef const in
@@ -136,7 +136,7 @@ let save id const ?hook uctx locality kind =
         let kn = declare_constant id ~local (Declare.DefinitionEntry const, k) in
         ConstRef kn
   in
-  DeclareDef.Hook.call ?hook ~fix_exn uctx [] locality r;
+  DeclareDef.Hook.(call ?hook ~fix_exn { S.uctx; obls = []; scope; dref = r });
   definition_message id
 
 let with_full_print f a =

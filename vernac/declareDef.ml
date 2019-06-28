@@ -18,19 +18,26 @@ type locality = Discharge | Global of Declare.import_status
 (* Hooks naturally belong here as they apply to both definitions and lemmas *)
 module Hook = struct
   module S = struct
-    type t = UState.t
-      -> (Names.Id.t * Constr.t) list
-      -> locality
-      -> Names.GlobRef.t
-      -> unit
+    type t =
+      { uctx : UState.t
+      (** [ustate]: universe constraints obtained when the term was closed *)
+      ; obls : (Names.Id.t * Constr.t) list
+      (** [(n1,t1),...(nm,tm)]: association list between obligation
+          name and the corresponding defined term (might be a constant,
+          but also an arbitrary term in the Expand case of obligations) *)
+      ; scope : locality
+      (**  [locality]: Locality of the original declaration *)
+      ; dref : Names.GlobRef.t
+      (** [ref]: identifier of the original declaration *)
+      }
   end
 
-  type t = S.t CEphemeron.key
+  type t = (S.t -> unit) CEphemeron.key
 
   let make hook = CEphemeron.create hook
 
-  let call ?hook ?fix_exn uctx trans l c =
-    try Option.iter (fun hook -> CEphemeron.get hook uctx trans l c) hook
+  let call ?hook ?fix_exn x =
+    try Option.iter (fun hook -> CEphemeron.get hook x) hook
     with e when CErrors.noncritical e ->
       let e = CErrors.push e in
       let e = Option.cata (fun fix -> fix e) e fix_exn in
@@ -55,8 +62,8 @@ let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
   begin
     match hook_data with
     | None -> ()
-    | Some (hook, uctx, extra_defs) ->
-      Hook.call ~fix_exn ~hook uctx extra_defs scope gr
+    | Some (hook, uctx, obls) ->
+      Hook.call ~fix_exn ~hook { Hook.S.uctx; obls; scope; dref = gr }
   end;
   gr
 

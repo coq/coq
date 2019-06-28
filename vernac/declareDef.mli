@@ -22,23 +22,22 @@ module Hook : sig
      as a Coercion, perform some cleanup, update the search database,
      etc...  *)
   module S : sig
-    (** [S.t] passes to the client: *)
-    type t
-      =  UState.t
+    type t =
+      { uctx : UState.t
       (** [ustate]: universe constraints obtained when the term was closed *)
-      -> (Id.t * Constr.t) list
+      ; obls : (Id.t * Constr.t) list
       (** [(n1,t1),...(nm,tm)]: association list between obligation
           name and the corresponding defined term (might be a constant,
           but also an arbitrary term in the Expand case of obligations) *)
-      -> locality
-      (**  [locality]: Locality of the original declaration *)
-      -> GlobRef.t
-      (** [ref]: identifier of the original declaration *)
-      -> unit
+      ; scope : locality
+      (** [scope]: Locality of the original declaration *)
+      ; dref : GlobRef.t
+      (** [dref]: identifier of the original declaration *)
+      }
   end
 
-  val make : S.t -> t
-  val call : ?hook:t -> ?fix_exn:Future.fix_exn -> S.t
+  val make : (S.t -> unit) -> t
+  val call : ?hook:t -> ?fix_exn:Future.fix_exn -> S.t -> unit
 end
 
 val declare_definition

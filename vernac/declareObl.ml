@@ -455,10 +455,10 @@ let declare_mutual_definition l =
     (Metasyntax.add_notation_interpretation (Global.env ()))
     first.prg_notations;
   Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
-  let gr = List.hd kns in
-  DeclareDef.Hook.call ?hook:first.prg_hook ~fix_exn first.prg_ctx obls scope gr;
+  let dref = List.hd kns in
+  DeclareDef.Hook.(call ?hook:first.prg_hook ~fix_exn { S.uctx = first.prg_ctx; obls; scope; dref });
   List.iter progmap_remove l;
-  gr
+  dref
 
 let update_obls prg obls rem =
   let prg' = {prg with prg_obligations = (obls, rem)} in
