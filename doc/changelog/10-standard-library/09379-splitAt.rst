@@ -1,4 +1,5 @@
-- Added ``uncons`` and ``splitAt`` functions over vectors,
-  and proved some lemmas about them
+- Added ``splitAt`` function and lemmas about ``splitAt`` and ``uncons``
   (`#9379 <https://github.com/coq/coq/pull/9379>`_,
-  by Yishuai Li, with help of Konstantinos Kallas).
+  by Yishuai Li, with help of Konstantinos Kallas,
+  follow-up of `#8365 <https://github.com/coq/coq/pull/8365>`_,
+  which added ``uncons`` in 8.10+beta1).
