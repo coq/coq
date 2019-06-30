@@ -392,7 +392,7 @@ let handle_exn (e, info) =
   let loc_of e = match Loc.get_loc e with
     | Some loc -> Some (Loc.unloc loc)
     | _        -> None in
-  let mk_msg () = CErrors.print ~info e in
+  let mk_msg () = CErrors.iprint (e,info) in
   match e with
   | e ->
       match Stateid.get info with

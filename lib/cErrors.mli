@@ -21,9 +21,6 @@ val push : exn -> Exninfo.iexn
  [Anomaly] is used for system errors and [UserError] for the
    user's ones. *)
 
-val make_anomaly : ?label:string -> Pp.t -> exn
-(** Create an anomaly. *)
-
 val anomaly : ?loc:Loc.t -> ?label:string -> Pp.t -> 'a
 (** Raise an anomaly, with an optional location and an optional
     label identifying the anomaly. *)
@@ -40,14 +37,6 @@ exception UserError of string option * Pp.t
 val user_err : ?loc:Loc.t -> ?hdr:string -> Pp.t -> 'a
 (** Main error raising primitive. [user_err ?loc ?hdr pp] signals an
     error [pp] with optional header and location [hdr] [loc] *)
-
-val invalid_arg : ?loc:Loc.t -> string -> 'a
-
-(** [todo] is for running of an incomplete code its implementation is
-   "do nothing" (or print a message), but this function should not be
-   used in a released code *)
-
-val todo : string -> unit
 
 exception Timeout
 
@@ -72,7 +61,7 @@ exception Unhandled
 val register_handler : (exn -> Pp.t) -> unit
 
 (** The standard exception printer *)
-val print : ?info:Exninfo.info -> exn -> Pp.t
+val print : exn -> Pp.t
 val iprint : Exninfo.iexn -> Pp.t
 
 (** Same as [print], except that the "Please report" part of an anomaly
