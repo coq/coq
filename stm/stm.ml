@@ -1114,6 +1114,7 @@ module Backtrack : sig
   (* Returns the state that the command should backtract to *)
   val undo_vernac_classifier : vernac_control -> doc:doc -> Stateid.t
   val get_prev_proof : doc:doc -> Stateid.t -> Proof.t option
+  val get_proof : doc:doc -> Stateid.t -> Proof.t option
 
 end = struct (* {{{ *)
 
@@ -1259,6 +1260,7 @@ end = struct (* {{{ *)
 end (* }}} *)
 
 let get_prev_proof = Backtrack.get_prev_proof
+let get_proof = Backtrack.get_proof
 
 let hints = ref Aux_file.empty_aux_file
 let set_compilation_hints file =

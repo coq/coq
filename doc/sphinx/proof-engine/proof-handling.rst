@@ -600,6 +600,14 @@ Requesting information
       its normalized form at the current stage of the proof, useful for
       debugging universe inconsistencies.
 
+   .. cmdv:: Show Goal @num at @num
+      :name: Show Goal
+
+      This command is only available in coqtop.  Displays a goal at a
+      proof state using the goal ID number and the proof state ID number.
+      It is primarily for use by tools such as Prooftree that need to fetch
+      goal history in this way.  Prooftree is a tool for visualizing a proof
+      as a tree that runs in Proof General.
 
 .. cmd:: Guarded
 

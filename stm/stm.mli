@@ -119,6 +119,8 @@ the specified state AND that has differences in the underlying proof (i.e.,
 ignoring proofview-only changes).  Used to compute proof diffs. *)
 val get_prev_proof : doc:doc -> Stateid.t -> Proof.t option
 
+val get_proof : doc:doc -> Stateid.t -> Proof.t option
+
 (* [query at ?report_with cmd] Executes [cmd] at a given state [at],
    throwing away side effects except messages. Feedback will
    be sent with [report_with], which defaults to the dummy state id *)
