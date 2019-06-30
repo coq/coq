@@ -2610,7 +2610,7 @@ let rec translate_vernac ~atts v = let open Vernacextend in match v with
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-and interp_expr ?proof ~atts ~st c =
+and interp_expr ~atts ~st c =
   let stack = st.Vernacstate.lemmas in
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
@@ -2660,7 +2660,7 @@ and vernac_load ~verbosely fname =
     try
       let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) stack in
       let stack =
-        v_mod (interp_control ?proof:None ~st:{ st with Vernacstate.lemmas = stack })
+        v_mod (interp_control ~st:{ st with Vernacstate.lemmas = stack })
           (parse_sentence proof_mode input) in
       load_loop ~stack
     with
@@ -2673,22 +2673,23 @@ and vernac_load ~verbosely fname =
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
   ()
 
-and interp_control ?proof ~st v = match v with
-  | { v=VernacExpr (atts, cmd) } ->
+and pop_control cl = CAst.map (fun cmd -> { cmd with control = cl })
+and interp_control ~st ({ v = cmd } as vernac) = match cmd.control with
+  | [] ->
     let before_univs = Global.universes () in
-    let pstack = interp_expr ?proof ~atts ~st cmd in
+    let pstack = interp_expr ~atts:cmd.attrs ~st cmd.expr in
     if before_univs == Global.universes () then pstack
     else Option.map (Vernacstate.LemmaStack.map_top_pstate ~f:Proof_global.update_global_env) pstack
-  | { v=VernacFail v } ->
-    with_fail ~st (fun () -> interp_control ?proof ~st v);
+  | ControlFail :: cl ->
+    with_fail ~st (fun () -> interp_control ~st (pop_control cl vernac));
     st.Vernacstate.lemmas
-  | { v=VernacTimeout (timeout,v) } ->
-    vernac_timeout ~timeout (interp_control ?proof ~st) v
-  | { v=VernacRedirect (s, v) } ->
-    Topfmt.with_output_to_file s (interp_control ?proof ~st) v
-  | { v=VernacTime (batch, cmd) }->
-    let header = if batch then Topfmt.pr_cmd_header cmd else Pp.mt () in
-    System.with_time ~batch ~header (interp_control ?proof ~st) cmd
+  | ControlTimeout timeout :: cl ->
+    vernac_timeout ~timeout (interp_control ~st) (pop_control cl vernac)
+  | ControlRedirect s :: cl ->
+    Topfmt.with_output_to_file s (interp_control ~st) (pop_control cl vernac)
+  | ControlTime batch :: cl ->
+    let header = if batch then Topfmt.pr_cmd_header vernac else Pp.mt () in
+    System.with_time ~batch ~header (interp_control ~st) (pop_control cl vernac)
 
 let () =
   declare_int_option

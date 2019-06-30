@@ -77,17 +77,18 @@ include Util
 (* ****************** - foo - bar - baz *********************************** *)
 
 let static_bullet ({ entry_point; prev_node } as view) =
+  let open Vernacexpr in
   assert (not (Vernacprop.has_Fail entry_point.ast));
-  match Vernacprop.under_control entry_point.ast with
-  | Vernacexpr.VernacBullet b ->
+  match entry_point.ast.CAst.v.expr with
+  | VernacBullet b ->
       let base = entry_point.indentation in
       let last_tac = prev_node entry_point in
       crawl view ~init:last_tac (fun prev node ->
         if node.indentation < base then `Stop else
         if node.indentation > base then `Cont node else
         if Vernacprop.has_Fail node.ast then `Stop
-        else match Vernacprop.under_control node.ast with
-        | Vernacexpr.VernacBullet b' when b = b' ->
+        else match node.ast.CAst.v.expr with
+        | VernacBullet b' when b = b' ->
           `Found { block_stop = entry_point.id; block_start = prev.id;
                    dynamic_switch = node.id; carry_on_data = of_bullet_val b }
         | _ -> `Stop) entry_point
@@ -99,7 +100,7 @@ let dynamic_bullet doc { dynamic_switch = id; carry_on_data = b } =
       `ValidBlock {
          base_state = id;
          goals_to_admit = focused;
-         recovery_command = Some (CAst.make @@ Vernacexpr.VernacExpr([], Vernacexpr.VernacBullet (to_bullet_val b)))
+         recovery_command = Some (CAst.make Vernacexpr.{ control = []; attrs = []; expr = VernacBullet (to_bullet_val b)})
       }
   | `Not -> `Leaks
 
@@ -109,16 +110,17 @@ let () = register_proof_block_delimiter
 (* ******************** { block } ***************************************** *)
   
 let static_curly_brace ({ entry_point; prev_node } as view) =
-  assert(Vernacprop.under_control entry_point.ast = Vernacexpr.VernacEndSubproof);
+  let open Vernacexpr in
+  assert(entry_point.ast.CAst.v.expr = VernacEndSubproof);
   crawl view (fun (nesting,prev) node ->
     if Vernacprop.has_Fail node.ast then `Cont (nesting,node)
-    else match Vernacprop.under_control node.ast with
-    | Vernacexpr.VernacSubproof _ when nesting = 0 ->
+    else match node.ast.CAst.v.expr with
+    | VernacSubproof _ when nesting = 0 ->
       `Found { block_stop = entry_point.id; block_start = prev.id;
                dynamic_switch = node.id; carry_on_data = unit_val }
-    | Vernacexpr.VernacSubproof _ ->
+    | VernacSubproof _ ->
       `Cont (nesting - 1,node)
-    | Vernacexpr.VernacEndSubproof ->
+    | VernacEndSubproof ->
       `Cont (nesting + 1,node)
     | _ -> `Cont (nesting,node)) (-1, entry_point)
 
@@ -128,7 +130,7 @@ let dynamic_curly_brace doc { dynamic_switch = id } =
       `ValidBlock {
          base_state = id;
          goals_to_admit = focused;
-         recovery_command = Some (CAst.make @@ Vernacexpr.VernacExpr ([], Vernacexpr.VernacEndSubproof))
+         recovery_command = Some (CAst.make Vernacexpr.{ control = []; attrs = []; expr = VernacEndSubproof })
       }
   | `Not -> `Leaks
 

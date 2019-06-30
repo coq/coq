@@ -72,16 +72,29 @@ let parse_compat_version = let open Flags in function
     CErrors.user_err ~hdr:"get_compat_version"
       Pp.(str "Unknown compatibility version \"" ++ str s ++ str "\".")
 
+(* For now we just keep the top-level location of the whole
+   vernacular, that is to say, including attributes and control flags;
+   this is not very convenient for advanced clients tho, so in the
+   future it'd be cool to actually locate the attributes and control
+   flags individually too. *)
+let add_control_flag ~loc ~flag { CAst.v = cmd } =
+  CAst.make ~loc { cmd with control = flag :: cmd.control }
+
 }
 
 GRAMMAR EXTEND Gram
   GLOBAL: vernac_control quoted_attributes gallina_ext noedit_mode subprf;
   vernac_control: FIRST
-    [ [ IDENT "Time"; c = vernac_control -> { CAst.make ~loc @@ VernacTime (false,c) }
-      | IDENT "Redirect"; s = ne_string; c = vernac_control -> { CAst.make ~loc @@ VernacRedirect (s, c) }
-      | IDENT "Timeout"; n = natural; v = vernac_control -> { CAst.make ~loc @@ VernacTimeout(n,v) }
-      | IDENT "Fail"; v = vernac_control -> { CAst.make ~loc @@ VernacFail v }
-      | v = decorated_vernac -> { let (f, v) = v in CAst.make ~loc @@ VernacExpr(f, v) } ]
+    [ [ IDENT "Time"; c = vernac_control ->
+        { add_control_flag ~loc ~flag:(ControlTime false) c }
+      | IDENT "Redirect"; s = ne_string; c = vernac_control ->
+        { add_control_flag ~loc ~flag:(ControlRedirect s) c }
+      | IDENT "Timeout"; n = natural; c = vernac_control ->
+        { add_control_flag ~loc ~flag:(ControlTimeout n) c }
+      | IDENT "Fail"; c = vernac_control ->
+        { add_control_flag ~loc ~flag:ControlFail c }
+      | v = decorated_vernac ->
+        { let (attrs, expr) = v in CAst.make ~loc { control = []; attrs; expr = expr } } ]
     ]
   ;
   decorated_vernac:

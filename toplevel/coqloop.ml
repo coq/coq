@@ -340,8 +340,8 @@ let print_anyway_opts = [
 
 let print_anyway c =
   let open Vernacexpr in
-  match c with
-  | VernacExpr (_, VernacSetOption (_, opt, _)) -> List.mem opt print_anyway_opts
+  match c.expr with
+  | VernacSetOption (_, opt, _) -> List.mem opt print_anyway_opts
   | _ -> false
 
 (* We try to behave better when goal printing raises an exception
