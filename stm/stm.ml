@@ -1054,9 +1054,9 @@ end = struct (* {{{ *)
 end (* }}} *)
 
 (* Wrapper for the proof-closing special path for Qed *)
-let stm_qed_delay_proof ?route ~proof ~info ~id ~st ~loc pending : Vernacstate.t =
+let stm_qed_delay_proof ?route ~proof ~info ~id ~st ~loc ~control pending : Vernacstate.t =
   set_id_for_feedback ?route dummy_doc id;
-  Vernacentries.interp_qed_delayed_proof ~proof ~info ~st ?loc:loc pending
+  Vernacentries.interp_qed_delayed_proof ~proof ~info ~st ?loc:loc ~control pending
 
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 (* It is currently called 19 times, this number should be certainly
@@ -1532,7 +1532,7 @@ end = struct (* {{{ *)
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
           stm_qed_delay_proof ~st ~id:stop
-            ~proof:pobject ~info:(Lemmas.Info.make ()) ~loc (Proved (opaque,None))) in
+            ~proof:pobject ~info:(Lemmas.Info.make ()) ~loc ~control:[] (Proved (opaque,None))) in
         ignore(Future.join checked_proof);
       end;
       (* STATE: Restore the state XXX: handle exn *)
@@ -1683,7 +1683,7 @@ end = struct (* {{{ *)
        *)
       (* STATE We use the state resulting from reaching start. *)
       let st = Vernacstate.freeze_interp_state ~marshallable:false in
-      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~info ~loc (Proved (opaque,None)));
+      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~info ~loc ~control:[] (Proved (opaque,None)));
       `OK proof
       end
     with e ->
@@ -2352,7 +2352,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
      believe as proof injection shouldn't happen here. *)
   let extract_pe (x : aast) =
     match x.expr.CAst.v.expr with
-    | VernacEndProof pe -> pe
+    | VernacEndProof pe -> x.expr.CAst.v.control, pe
     | _ -> CErrors.anomaly Pp.(str "Non-qed command classified incorrectly") in
 
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
@@ -2487,7 +2487,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
                     let st = Vernacstate.freeze_interp_state ~marshallable:false in
-                    ignore(stm_qed_delay_proof ~id ~st ~proof ~info ~loc (extract_pe x));
+                    let control, pe = extract_pe x in
+                    ignore(stm_qed_delay_proof ~id ~st ~proof ~info ~loc ~control pe);
                     feedback ~id:id Incomplete
                 | { VCS.kind = `Master }, _ -> assert false
                 end;
@@ -2527,7 +2528,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 let _st = match proof with
                   | None ->  stm_vernac_interp id st x
                   | Some (proof, info) ->
-                    stm_qed_delay_proof ~id ~st ~proof ~info ~loc (extract_pe x)
+                    let control, pe = extract_pe x in
+                    stm_qed_delay_proof ~id ~st ~proof ~info ~loc ~control pe
                 in
                 let wall_clock3 = Unix.gettimeofday () in
                 Aux_file.record_in_aux_at ?loc:x.expr.CAst.loc "proof_check_time"

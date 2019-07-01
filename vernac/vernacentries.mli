@@ -18,6 +18,7 @@ val interp_qed_delayed_proof
   -> info:Lemmas.Info.t
   -> st:Vernacstate.t
   -> ?loc:Loc.t
+  -> control:Vernacexpr.control_flag list
   -> Vernacexpr.proof_end
   -> Vernacstate.t
 
