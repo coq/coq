@@ -429,6 +429,11 @@ let quit = ref false
 (** Disabled *)
 let print_ast id = Xml_datatype.PCData "ERROR"
 
+let idetop_make_cases iname =
+  let qualified_iname = Libnames.qualid_of_string iname in
+  let iref = Nametab.global_inductive qualified_iname in
+  ComInductive.make_cases iref
+
 (** Grouping all call handlers together + error handling *)
 let eval_call c =
   let interruptible f x =
@@ -449,7 +454,7 @@ let eval_call c =
     Interface.search = interruptible search;
     Interface.get_options = interruptible get_options;
     Interface.set_options = interruptible set_options;
-    Interface.mkcases = interruptible Vernacentries.make_cases;
+    Interface.mkcases = interruptible idetop_make_cases;
     Interface.quit = (fun () -> quit := true);
     Interface.init = interruptible init;
     Interface.about = interruptible about;

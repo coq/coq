@@ -645,7 +645,6 @@ let separate_extraction lr =
     is \verb!Extraction! [qualid]. *)
 
 let simple_extraction r =
-  Vernacentries.dump_global CAst.(make (Constrexpr.AN r));
   match locate_ref [r] with
   | ([], [mp]) as p -> full_extr None p
   | [r],[] ->
