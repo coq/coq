@@ -398,8 +398,6 @@ let run_tactic env tac pr =
 
 (*** Commands ***)
 
-let in_proof p k = k (Proofview.return p.proofview)
-
 (* Remove all the goals from the shelf and adds them at the end of the
    focused goals. *)
 let unshelve p =

@@ -177,7 +177,8 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
      have existential variables in the initial types of goals, we need to
      normalise them for the kernel. *)
   let subst_evar k =
-    Proof.in_proof proof (fun m -> Evd.existential_opt_value0 m k) in
+    let { Proof.sigma } = Proof.data proof in
+    Evd.existential_opt_value0 sigma k in
   let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar
     (UState.subst universes) in
 
@@ -307,7 +308,7 @@ let close_proof ~opaque ~keep_body_ucst_separate fix_exn ps =
 
 let update_global_env =
   map_proof (fun p ->
-      Proof.in_proof p (fun sigma ->
-          let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
-          let p,(status,info),_ = Proof.run_tactic (Global.env ()) tac p in
-          p))
+      let { Proof.sigma } = Proof.data p in
+      let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
+      let p, (status,info), _ = Proof.run_tactic (Global.env ()) tac p in
+      p)

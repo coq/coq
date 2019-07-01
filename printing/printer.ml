@@ -825,9 +825,9 @@ let pr_nth_open_subgoal ~proof n =
 
 let pr_goal_by_id ~proof id =
   try
-    Proof.in_proof proof (fun sigma ->
-      let g = Evd.evar_key id sigma in
-      pr_selected_subgoal (pr_id id) sigma g)
+    let { Proof.sigma } = Proof.data proof in
+    let g = Evd.evar_key id sigma in
+    pr_selected_subgoal (pr_id id) sigma g
   with Not_found -> user_err Pp.(str "No such goal.")
 
 (** print a goal identified by the goal id as it appears in -emacs mode.
@@ -843,7 +843,8 @@ let pr_goal_emacs ~proof gid sid =
           ++ pr_goal gs)
     in
     try
-      Proof.in_proof proof (fun sigma -> pr {it=(Evar.unsafe_of_int gid);sigma=sigma;})
+      let { Proof.sigma } = Proof.data proof in
+      pr { it = Evar.unsafe_of_int gid ; sigma }
     with Not_found -> user_err Pp.(str "No such goal.")
 
 (* Printer function for sets of Assumptions.assumptions.
