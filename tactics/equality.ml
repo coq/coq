@@ -334,6 +334,21 @@ let jmeq_same_dom env sigma = function
       | _, [dom1; _; dom2;_] -> is_conv env sigma dom1 dom2
       | _ -> false
 
+let eq_elimination_ref l2r sort =
+  let name =
+    if l2r then
+      match sort with
+      | InProp -> "core.eq.ind_r"
+      | InSProp -> "core.eq.sind_r"
+      | InSet | InType -> "core.eq.rect_r"
+    else
+      match sort with
+      | InProp -> "core.eq.ind"
+      | InSProp -> "core.eq.sind"
+      | InSet | InType -> "core.eq.rect"
+  in
+  if Coqlib.has_ref name then Some (Coqlib.lib_ref name) else None
+
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. *)
 
@@ -345,35 +360,35 @@ let find_elim hdcncl lft2rgt dep cls ot =
   in
   let inccl = Option.is_empty cls in
   let env = Proofview.Goal.env gl in
-  (* if (is_global Coqlib.glob_eq hdcncl || *)
-  (*     (is_global Coqlib.glob_jmeq hdcncl && *)
-  (*        jmeq_same_dom env sigma ot)) && not dep *)
-  if (is_global_exists "core.eq.type" hdcncl ||
-      (is_global_exists "core.JMeq.type" hdcncl
-       && jmeq_same_dom env sigma ot)) && not dep
+  let is_eq = is_global_exists "core.eq.type" hdcncl in
+  let is_jmeq = is_global_exists "core.JMeq.type" hdcncl && jmeq_same_dom env sigma ot in
+  if (is_eq || is_jmeq) && not dep
   then
+    let sort = elimination_sort_of_clause cls gl in
     let c =
       match EConstr.kind sigma hdcncl with 
       | Ind (ind_sp,u) ->
-        let pr1 =
-          lookup_eliminator env ind_sp (elimination_sort_of_clause cls gl)
-        in
         begin match lft2rgt, cls with
         | Some true, None
         | Some false, Some _ ->
-          let c1 = destConstRef pr1 in
-          let mp,l = Constant.repr2 (Constant.make1 (Constant.canonical c1)) in
-          let l' = Label.of_id (add_suffix (Label.to_id l) "_r")  in
-          let c1' = Global.constant_of_delta_kn (KerName.make mp l') in
-          begin
+          begin match if is_eq then eq_elimination_ref true sort else None with
+          | Some r -> destConstRef r
+          | None ->
+            let c1 = destConstRef (lookup_eliminator env ind_sp sort) in
+            let mp,l = Constant.repr2 (Constant.make1 (Constant.canonical c1)) in
+            let l' = Label.of_id (add_suffix (Label.to_id l) "_r")  in
+            let c1' = Global.constant_of_delta_kn (KerName.make mp l') in
             try
-              let _ = Global.lookup_constant c1' in
-                c1'
+              let _ = Global.lookup_constant c1' in c1'
             with Not_found ->
 	      user_err ~hdr:"Equality.find_elim"
                 (str "Cannot find rewrite principle " ++ Label.print l' ++ str ".")
 	  end
-        | _ -> destConstRef pr1
+        | _ ->
+          begin match if is_eq then eq_elimination_ref false sort else None with
+          | Some r -> destConstRef r
+          | None -> destConstRef (lookup_eliminator env ind_sp sort)
+          end
         end
       | _ -> 
 	  (* cannot occur since we checked that we are in presence of 
