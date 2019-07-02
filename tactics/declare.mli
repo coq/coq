@@ -36,7 +36,7 @@ val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
   -> variable_declaration
-  -> Libobject.object_name
+  -> unit
 
 (** Declaration of global constructions
    i.e. Definition/Theorem/Axiom/Parameter/... *)
