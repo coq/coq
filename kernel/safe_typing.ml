@@ -430,12 +430,11 @@ let push_named_def (id,de) senv =
   let env'' = safe_push_named (LocalDef (x, c, typ)) senv.env in
   { senv with env = env'' }
 
-let push_named_assum ((id,t,poly),ctx) senv =
-  let senv' = push_context_set poly ctx senv in
-  let t, r = Term_typing.translate_local_assum senv'.env t in
-  let x = Context.make_annot id r in
-  let env'' = safe_push_named (LocalAssum (x,t)) senv'.env in
-    {senv' with env=env''}
+let push_named_assum (x,t) senv =
+  let t, r = Term_typing.translate_local_assum senv.env t in
+  let x = Context.make_annot x r in
+  let env'' = safe_push_named (LocalAssum (x,t)) senv.env in
+    {senv with env=env''}
 
 
 (** {6 Insertion of new declarations to current environment } *)

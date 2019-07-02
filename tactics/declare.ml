@@ -311,9 +311,10 @@ let cache_variable (_,o) =
 
   let impl,opaque,poly,univs = match d with (* Fails if not well-typed *)
     | SectionLocalAssum {typ;univs;poly;impl} ->
-      let () = Global.push_named_assum ((id,typ,poly),univs) in
+      let () = Global.push_context_set poly univs in
+      let () = Global.push_named_assum (id,typ) in
       let impl = if impl then Decl_kinds.Implicit else Decl_kinds.Explicit in
-        impl, true, poly, univs
+      impl, true, poly, univs
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
