@@ -314,7 +314,9 @@ let compare_path p q = !path_comparator p q
 
 let warn_ambiguous_path =
   CWarnings.create ~name:"ambiguous-paths" ~category:"typechecker"
-    (fun l -> strbrk"Ambiguous paths: " ++ prlist_with_sep fnl print_path l)
+    (fun l -> prlist_with_sep fnl (fun (c,p,q) ->
+         str"New coercion path " ++ print_path (c,p) ++
+         str" is ambiguous with existing " ++ print_path (c, q) ++ str".") l)
 
 (* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit
                          coercion,source,target *)
@@ -331,13 +333,13 @@ let different_class_params i =
 let add_coercion_in_graph (ic,source,target) =
   let old_inheritance_graph = !inheritance_graph in
   let ambig_paths =
-    (ref [] : ((cl_index * cl_index) * inheritance_path) list ref) in
+    (ref [] : ((cl_index * cl_index) * inheritance_path * inheritance_path) list ref) in
   let try_add_new_path (i,j as ij) p =
     if not (Bijint.Index.equal i j) || different_class_params i then
       match lookup_path_between_class ij with
       | q ->
         if not (compare_path p q) then
-          ambig_paths := (ij,p)::!ambig_paths;
+          ambig_paths := (ij,p,q)::!ambig_paths;
         false
       | exception Not_found -> (add_new_path ij p; true)
     else
