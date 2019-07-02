@@ -41,7 +41,7 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
     hostname
-    python2 time # coq-makefile timing tools
+    python3 time # coq-makefile timing tools
     dune
   ]
   ++ (with ocamlPackages; [ ocaml findlib num ])
