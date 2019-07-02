@@ -2290,7 +2290,7 @@ let interp_typed_vernac c ~stack =
 
 (* We interpret vernacular commands to a DSL that specifies their
    allowed actions on proof states *)
-let translate_vernac ~atts v = let open Vernacextend in match v with
+let rec translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacAbortAll
   | VernacRestart
   | VernacUndo _
@@ -2299,8 +2299,7 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacResetInitial
   | VernacBack _
   | VernacBackTo _
-  | VernacAbort _
-  | VernacLoad _ ->
+  | VernacAbort _ ->
     anomaly (str "type_vernac")
   (* Syntax *)
   | VernacSyntaxExtension (infix, sl) ->
@@ -2604,6 +2603,11 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacEndProof pe ->
     VtCloseProof (vernac_end_proof pe)
 
+  | VernacLoad (verbosely,fname) ->
+    VtNoProof(fun () ->
+      unsupported_attributes atts;
+      vernac_load ~verbosely fname)
+
   (* Extensions *)
   | VernacExtend (opn,args) ->
     Vernacextend.type_vernac ~atts opn args
@@ -2612,7 +2616,7 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-let rec interp_expr ?proof ~atts ~st c =
+and interp_expr ?proof ~atts ~st c =
   let stack = st.Vernacstate.lemmas in
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
@@ -2632,12 +2636,6 @@ let rec interp_expr ?proof ~atts ~st c =
   (* This one is possible to handle here *)
   | VernacAbort id    -> CErrors.user_err  (str "Abort cannot be used through the Load command")
 
-  (* Loading a file requires access to the control interpreter so
-     [vernac_load] is mutually-recursive with [interp_expr] *)
-  | VernacLoad (verbosely,fname) ->
-    unsupported_attributes atts;
-    vernac_load ~verbosely ~st fname
-
   | v ->
     let fv = translate_vernac ~atts v in
     interp_typed_vernac ~stack fv
@@ -2647,13 +2645,10 @@ let rec interp_expr ?proof ~atts ~st c =
    the classifier. The proper fix is to move it to the STM, however,
    the way the proof mode is set there makes the task non trivial
    without a considerable amount of refactoring.
- *)
-and vernac_load ~verbosely ~st fname =
-  let there_are_pending_proofs ~stack = not Option.(is_empty stack) in
-  let stack = st.Vernacstate.lemmas in
-  if there_are_pending_proofs ~stack then
-    CErrors.user_err Pp.(str "Load is not supported inside proofs.");
-  (* Open the file *)
+*)
+and vernac_load ~verbosely fname =
+  (* Note that no proof should be open here, so the state here is just token for now *)
+  let st = Vernacstate.freeze_interp_state ~marshallable:false in
   let fname =
     Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) fname in
   let fname = CUnix.make_suffix fname ".v" in
@@ -2664,10 +2659,10 @@ and vernac_load ~verbosely ~st fname =
   (* Parsing loop *)
   let v_mod = if verbosely then Flags.verbosely else Flags.silently in
   let parse_sentence proof_mode = Flags.with_option Flags.we_are_parsing
-    (fun po ->
-    match Pcoq.Entry.parse (Pvernac.main_entry proof_mode) po with
-      | Some x -> x
-      | None -> raise End_of_input) in
+      (fun po ->
+         match Pcoq.Entry.parse (Pvernac.main_entry proof_mode) po with
+         | Some x -> x
+         | None -> raise End_of_input) in
   let rec load_loop ~stack =
     try
       let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) stack in
@@ -2679,11 +2674,11 @@ and vernac_load ~verbosely ~st fname =
       End_of_input ->
       stack
   in
-  let stack = load_loop ~stack in
+  let stack = load_loop ~stack:st.Vernacstate.lemmas in
   (* If Load left a proof open, we fail too. *)
-  if there_are_pending_proofs ~stack then
+  if Option.has_some stack then
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
-  stack
+  ()
 
 and interp_control ?proof ~st v = match v with
   | { v=VernacExpr (atts, cmd) } ->
