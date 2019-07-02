@@ -624,15 +624,15 @@ and execute_is_type env stg constr =
     stg, cstrnt, c, check_type env constr t
 
 and execute_recdef env stg (names, lar, vdef as recdef) i =
-  let stg_annot, lar_annot = annotate_star_array stg lar in
-  let star_vars = diff_stage_vars (get_stage_vars stg_annot) (get_stage_vars stg) in
-  let stg_lar, cstrnt_lar, lar', lart = execute_array env stg_annot lar_annot in
+  let stg_lar, cstrnt_lar, lar', lart = execute_array env stg lar in
   let names' = Array.Smart.map_i (fun i na -> check_assumption env na lar'.(i) lart.(i)) names in
-  let env1 = push_rec_types (names', lar', vdef) env in (* vdef is ignored *)
-  let stg_vdef, cstrnt_vdef, vdef', vdeft = execute_array env1 stg_lar vdef in
-  let lar_succ = succ_annots_array star_vars lar' in
+  let stg_annot, lar_annot = annotate_star_array stg_lar lar' in
+  let star_vars = diff_stage_vars (get_stage_vars stg_annot) (get_stage_vars stg_lar) in
+  let lar_succ = succ_annots_array star_vars lar_annot in
+  let env1 = push_rec_types (names', lar_annot, vdef) env in (* vdef is ignored *)
+  let stg_vdef, cstrnt_vdef, vdef', vdeft = execute_array env1 stg_annot vdef in
   let cstrnt_fix = check_fixpoint env1 names' lar_succ vdef' vdeft in
-  let cstrnt_succ = conv_leq_vecti env lar' lar_succ in
+  let cstrnt_succ = conv_leq_vecti env lar_annot lar_succ in
   let recdef = if names == names' && lar == lar' && vdef == vdef' then recdef else (names',lar',vdef') in
     stg_vdef, union_constraints [cstrnt_lar; cstrnt_vdef; cstrnt_fix; cstrnt_succ], lar'.(i), recdef
 
