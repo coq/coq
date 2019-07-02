@@ -301,7 +301,7 @@ type section_variable_entry =
 
 type variable_declaration = DirPath.t * section_variable_entry
 
-let cache_variable ((sp,_),o) =
+let cache_variable (_,o) =
   match o with
   | Inl ctx -> Global.push_context_set false ctx
   | Inr (id,(path,d),kind) ->
@@ -339,7 +339,7 @@ let cache_variable ((sp,_),o) =
       let () = Global.push_named_def (id, se) in
       Decl_kinds.Explicit, de.proof_entry_opaque,
       poly, univs in
-  Nametab.push (Nametab.Until 1) (Libnames.restrict_path 0 sp) (GlobRef.VarRef id);
+  Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty id) (GlobRef.VarRef id);
   add_section_variable ~name:id ~kind:impl ~poly univs;
   Decls.(add_variable_data id {path;opaque;univs;poly;kind})
 
