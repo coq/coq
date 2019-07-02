@@ -1310,27 +1310,27 @@ let set_of_evctx l =
 (** Weaken the existentials so that they can be typed in sign and raise
     an error if the term otherwise mentions variables not bound in sign. *)
 let thin_evars env sigma sign c =
-  let evdref = ref sigma in
+  let sigma = ref sigma in
   let ctx = set_of_evctx sign in
   let rec applyrec (env,acc) t =
-    match kind sigma t with
+    match kind !sigma t with
     | Evar (ev, args) ->
-       let evi = Evd.find_undefined sigma ev in
-       let filter = Array.map (fun c -> Id.Set.subset (collect_vars sigma c) ctx) args in
+       let evi = Evd.find_undefined !sigma ev in
+       let filter = Array.map (fun c -> Id.Set.subset (collect_vars !sigma c) ctx) args in
        let filter = Filter.make (Array.to_list filter) in
        let candidates = Option.map (List.map EConstr.of_constr) (evar_candidates evi) in
-       let evd, ev = restrict_evar !evdref ev filter candidates in
-       evdref := evd; whd_evar !evdref t
+       let evd, ev = restrict_evar !sigma ev filter candidates in
+       sigma := evd; whd_evar !sigma t
     | Var id ->
-       if not (Id.Set.mem id ctx) then raise (TypingFailed sigma)
+       if not (Id.Set.mem id ctx) then raise (TypingFailed !sigma)
        else t
     | _ ->
-       map_constr_with_binders_left_to_right !evdref
+       map_constr_with_binders_left_to_right !sigma
         (fun d (env,acc) -> (push_rel d env, acc+1))
         applyrec (env,acc) t
   in
   let c' = applyrec (env,0) c in
-  (!evdref, c')
+  (!sigma, c')
 
 let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   try
