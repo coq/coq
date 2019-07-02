@@ -284,6 +284,7 @@ build:quick:
 
 windows64:
   extends: .windows-template
+  allow_failure: true # Pending on https://github.com/coq/coq/issues/10463
   variables:
     ARCH: "64"
 
