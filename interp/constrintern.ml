@@ -375,20 +375,17 @@ let check_hidden_implicit_parameters ?loc id impls =
 let pure_push_name_env (id,implargs) env =
   {env with ids = Id.Set.add id env.ids; impls = Id.Map.add id implargs env.impls}
 
-let push_name_env ?(global_level=false) ntnvars implargs env =
+let push_name_env ntnvars implargs env =
   let open CAst in
   function
   | { loc; v = Anonymous } ->
-      if global_level then
-	user_err ?loc (str "Anonymous variables not allowed");
       env
   | { loc; v = Name id } ->
       check_hidden_implicit_parameters ?loc id env.impls ;
       if Id.Map.is_empty ntnvars && Id.equal id ldots_var
         then error_ldots_var ?loc;
       set_var_scope ?loc id false (env.tmp_scope,env.scopes) ntnvars;
-      if global_level then Dumpglob.dump_definition CAst.(make ?loc id) true "var"
-      else Dumpglob.dump_binding ?loc id;
+      Dumpglob.dump_binding ?loc id;
       pure_push_name_env (id,implargs) env
 
 let remember_binders_impargs env bl =
@@ -400,7 +397,7 @@ let remember_binders_impargs env bl =
 let restore_binders_impargs env l =
   List.fold_right pure_push_name_env l env
 
-let intern_generalized_binder ?(global_level=false) intern_type ntnvars
+let intern_generalized_binder intern_type ntnvars
     env {loc;v=na} b' t ty =
   let ids = (match na with Anonymous -> fun x -> x | Name na -> Id.Set.add na) env.ids in
   let ty, ids' =
@@ -410,7 +407,7 @@ let intern_generalized_binder ?(global_level=false) intern_type ntnvars
   let ty' = intern_type {env with ids = ids; unb = true} ty in
   let fvs = Implicit_quantifiers.generalizable_vars_of_glob_constr ~bound:ids ~allowed:ids' ty' in
   let env' = List.fold_left
-    (fun env {loc;v=x} -> push_name_env ~global_level ntnvars (Variable,[],[],[])(*?*) env (make ?loc @@ Name x))
+    (fun env {loc;v=x} -> push_name_env ntnvars (Variable,[],[],[])(*?*) env (make ?loc @@ Name x))
     env fvs in
   let bl = List.map
     CAst.(map (fun id ->
@@ -419,9 +416,7 @@ let intern_generalized_binder ?(global_level=false) intern_type ntnvars
   in
   let na = match na with
     | Anonymous ->
-	if global_level then na
-	else
-	  let name =
+          let name =
 	    let id =
 	      match ty with
               | { v = CApp ((_, { v = CRef (qid,_) } ), _) } when qualid_is_ident qid ->
@@ -430,7 +425,7 @@ let intern_generalized_binder ?(global_level=false) intern_type ntnvars
 	    in Implicit_quantifiers.make_fresh ids' (Global.env ()) id
 	  in Name name
     | _ -> na
-  in (push_name_env ~global_level ntnvars (impls_type_list ty')(*?*) env' (make ?loc na)), (make ?loc (na,b',ty')) :: List.rev bl
+  in (push_name_env ntnvars (impls_type_list ty')(*?*) env' (make ?loc na)), (make ?loc (na,b',ty')) :: List.rev bl
 
 let intern_assumption intern ntnvars env nal bk ty =
   let intern_type env = intern (set_type_scope env) in
@@ -481,7 +476,7 @@ let intern_cases_pattern_as_binder ?loc ntnvars env p =
   let na = make ?loc @@ Name id in
   env,((disjpat,il),id),na
 
-let intern_local_binder_aux ?(global_level=false) intern ntnvars (env,bl) = function
+let intern_local_binder_aux intern ntnvars (env,bl) = function
   | CLocalAssum(nal,bk,ty) ->
       let env, bl' = intern_assumption intern ntnvars env nal bk ty in
       let bl' = List.map (fun {loc;v=(na,c,t)} -> DAst.make ?loc @@ GLocalAssum (na,c,t)) bl' in
@@ -2424,12 +2419,12 @@ let interp_binder_evars env sigma na t =
 let my_intern_constr env lvar acc c =
   internalize env acc false lvar c
 
-let intern_context global_level env impl_env binders =
+let intern_context env impl_env binders =
   try
   let lvar = (empty_ltac_sign, Id.Map.empty) in
   let lenv, bl = List.fold_left
 	    (fun (lenv, bl) b ->
-	       let (env, bl) = intern_local_binder_aux ~global_level (my_intern_constr env lvar) Id.Map.empty (lenv, bl) b in
+               let (env, bl) = intern_local_binder_aux (my_intern_constr env lvar) Id.Map.empty (lenv, bl) b in
 	       (env, bl))
 	    ({ids = extract_ids env; unb = false;
 	      tmp_scope = None; scopes = []; impls = impl_env}, []) binders in
@@ -2465,7 +2460,7 @@ let interp_glob_context_evars ?(program_mode=false) env sigma k bl =
       (env,sigma,[],k+1,[]) (List.rev bl)
   in sigma, ((env, par), List.rev impls)
 
-let interp_context_evars ?program_mode ?(global_level=false) ?(impl_env=empty_internalization_env) ?(shift=0) env sigma params =
-  let int_env,bl = intern_context global_level env impl_env params in
+let interp_context_evars ?program_mode ?(impl_env=empty_internalization_env) ?(shift=0) env sigma params =
+  let int_env,bl = intern_context env impl_env params in
   let sigma, x = interp_glob_context_evars ?program_mode env sigma shift bl in
   sigma, (int_env, x)
