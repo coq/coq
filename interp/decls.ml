@@ -62,8 +62,6 @@ type logical_kind =
 type variable_data =
   { path:DirPath.t
   ; opaque:bool
-  ; univs:Univ.ContextSet.t
-  ; poly:bool
   ; kind:logical_kind
   }
 
@@ -75,8 +73,6 @@ let add_variable_data id o = vartab := Id.Map.add id o !vartab
 let variable_path id = let {path} = Id.Map.find id !vartab in path
 let variable_opacity id = let {opaque} = Id.Map.find id !vartab in opaque
 let variable_kind id = let {kind} = Id.Map.find id !vartab in kind
-let variable_context id = let {univs} = Id.Map.find id !vartab in univs
-let variable_polymorphic id = let {poly} = Id.Map.find id !vartab in poly
 
 let variable_secpath id =
   let dir = drop_dirpath_prefix (Lib.library_dp()) (variable_path id) in

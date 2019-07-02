@@ -359,7 +359,7 @@ let declare_variable ~name ~kind (path,d) =
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
   add_section_variable ~name ~kind:impl ~poly univs;
-  Decls.(add_variable_data name {path;opaque;univs;poly;kind});
+  Decls.(add_variable_data name {path;opaque;kind});
   add_anonymous_leaf (inVariable ());
   Impargs.declare_var_implicits name;
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)

@@ -63,8 +63,6 @@ type logical_kind =
 type variable_data =
   { path:DirPath.t
   ; opaque:bool
-  ; univs:Univ.ContextSet.t
-  ; poly:bool
   ; kind:logical_kind
   }
 
@@ -81,6 +79,4 @@ val variable_kind : variable -> logical_kind
 val variable_opacity : variable -> bool
 
 (* Used in declare, very dubious *)
-val variable_context : variable -> Univ.ContextSet.t
-val variable_polymorphic : variable -> bool
 val variable_exists : variable -> bool
