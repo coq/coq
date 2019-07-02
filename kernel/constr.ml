@@ -816,15 +816,35 @@ let rec erase c =
   | Ind (iu, a) ->
     begin
     match a with
-    | Star -> c
+    | Star | Empty -> c
     | _ -> Ind (iu, Empty)
     end
   | _ -> map erase c
 
 let rec annotate ind s c =
   match c with
-  | Ind (((i, _), _) as iu, _) when MutInd.equal ind i -> Ind (iu, s)
+  | Ind (((i, _), _) as iu, _)
+    when MutInd.equal ind i ->
+    Ind (iu, s)
   | _ -> map (annotate ind s) c
+
+let annotate_star_array =
+  let rec annotate_star stg c =
+    match c with
+    | Ind (iu, Star) ->
+      let (s, stg) = next_stage_state stg in
+      stg, Ind (iu, s)
+    | _ -> fold_map annotate_star stg c in
+  Array.Smart.fold_left_map annotate_star
+
+let succ_annots_array vars =
+  let rec succ_annots vars c =
+    match c with
+    | Ind (iu, (Stage (StageVar (na, _i)) as s))
+      when mem_stage_vars na vars ->
+      Ind (iu, succ_annot s)
+    | _ -> map (succ_annots vars) c in
+  Array.Smart.map (succ_annots vars)
 
 (*********************)
 (*      Lifting      *)

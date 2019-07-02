@@ -15,6 +15,7 @@ type stage_state
 val init_stage_state : stage_state
 val next_stage_state : stage_state -> annot * stage_state
 val get_stage_vars : stage_state -> stage_vars
+val mem_stage_vars : stage_name -> stage_vars -> bool
 val diff_stage_vars : stage_vars -> stage_vars -> stage_vars
 val pr_stage_state : stage_state -> Pp.t
 

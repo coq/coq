@@ -69,6 +69,7 @@ type stage_state  = stage_name * stage_vars
 let init_stage_state = (0, Int.Set.empty)
 let next_stage_state (next, vs) = (Stage (StageVar (next, 0)), (next + 1, Int.Set.add next vs))
 let get_stage_vars (_, vs) = vs
+let mem_stage_vars = Int.Set.mem
 let diff_stage_vars = Int.Set.diff
 
 let show_stage_state (stg, vars) =
