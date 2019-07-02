@@ -145,19 +145,25 @@ Declaring Coercions
   .. exn:: Cannot recognize @class as a source class of @qualid.
      :undocumented:
 
-  .. exn:: @qualid does not respect the uniform inheritance condition.
+  .. warn:: @qualid does not respect the uniform inheritance condition.
      :undocumented:
 
   .. exn:: Found target class ... instead of ...
      :undocumented:
 
-  .. warn:: Ambiguous path.
+  .. warn:: New coercion path ... is ambiguous with existing ...
 
-     When the coercion :token:`qualid` is added to the inheritance graph,
-     invalid coercion paths are ignored. The :cmd:`Coercion` command tries to check
-     that they are convertible with existing ones on the same classes.
-     The paths for which this check fails are displayed by a warning in the form
-     :g:`[f₁;..;fₙ] : C >-> D`.
+     When the coercion :token:`qualid` is added to the inheritance graph, new
+     coercion paths which have the same classes as existing ones are ignored.
+     The :cmd:`Coercion` command tries to check the convertibility of new ones and
+     existing ones. The paths for which this check fails are displayed by a warning
+     in the form :g:`[f₁;..;fₙ] : C >-> D`.
+
+     The convertibility checking procedure for coercion paths is complete for
+     paths consisting of coercions satisfying the uniform inheritance condition,
+     but some coercion paths could be reported as ambiguous even if they are
+     convertible with existing ones when they have coercions that don't satisfy
+     the uniform inheritance condition.
 
   .. cmdv:: Local Coercion @qualid : @class >-> @class
 
