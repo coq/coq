@@ -33,6 +33,19 @@ module NamedDecl = Context.Named.Declaration
 
 type import_status = ImportDefaultBehavior | ImportNeedQualified
 
+(** Monomorphic universes need to survive sections. *)
+
+let input_universe_context : Univ.ContextSet.t -> Libobject.obj =
+  declare_object @@ local_object "Monomorphic section universes"
+    ~cache:(fun (na, uctx) -> Global.push_context_set false uctx)
+    ~discharge:(fun (_, x) -> Some x)
+
+let declare_universe_context ~poly ctx =
+  if poly then
+    (Global.push_context_set true ctx; Lib.add_section_context ctx)
+  else
+    Lib.add_anonymous_leaf (input_universe_context ctx)
+
 (** Declaration of constants and parameters *)
 
 type constant_obj = {
@@ -552,19 +565,6 @@ let assumption_message id =
   the type of the object than to the name of the object (see
   discussion on coqdev: "Chapter 4 of the Reference Manual", 8/10/2015) *)
   Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is declared")
-
-(** Monomorphic universes need to survive sections. *)
-
-let input_universe_context : Univ.ContextSet.t -> Libobject.obj =
-  declare_object @@ local_object "Monomorphic section universes"
-    ~cache:(fun (na, uctx) -> Global.push_context_set false uctx)
-    ~discharge:(fun (_, x) -> Some x)
-
-let declare_universe_context ~poly ctx =
-  if poly then
-    (Global.push_context_set true ctx; Lib.add_section_context ctx)
-  else
-    Lib.add_anonymous_leaf (input_universe_context ctx)
 
 (** Global universes are not substitutive objects but global objects
    bound at the *library* or *module* level. The polymorphic flag is
