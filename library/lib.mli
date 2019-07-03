@@ -42,11 +42,11 @@ val subst_atomic_objects : Mod_subst.substitution -> lib_atomic_objects -> lib_a
 
 (** [classify_segment seg] verifies that there are no OpenedThings,
    clears ClosedSections and FrozenStates and divides Leafs according
-   to their answers to the [classify_object] function in three groups:
-   [Substitute], [Keep], [Anticipate] respectively.  The order of each
-   returned list is the same as in the input list. *)
+   to their answers to the [classify_object] function in two groups:
+   [Substitute] and [Keep] respectively. The order of each returned list is
+   the same as in the input list. *)
 val classify_segment :
-  library_segment -> lib_objects * lib_objects * Libobject.t list
+  library_segment -> lib_objects * lib_objects
 
 (** [segment_of_objects prefix objs] forms a list of Leafs *)
 val segment_of_objects :

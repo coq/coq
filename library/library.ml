@@ -427,61 +427,18 @@ let register_library m =
     m.library_extra_univs;
   register_loaded_library (mk_summary m)
 
-(* Follow the semantics of Anticipate object:
-   - called at module or module type closing when a Require occurs in
-     the module or module type
-   - not called from a library (i.e. a module identified with a file) *)
-let load_require _ (_,(needed,modl,_)) =
-  List.iter register_library needed
-
-let open_require i (_,(_,modl,export)) =
-  Option.iter (fun exp -> open_libraries exp (List.map find_library modl))
-    export
-
-  (* [needed] is the ordered list of libraries not already loaded *)
-let cache_require o =
-  load_require 1 o;
-  open_require 1 o
-
-let discharge_require (_,o) = Some o
-
-(* open_function is never called from here because an Anticipate object *)
-
-type require_obj = library_t list * DirPath.t list * bool option
-
-let in_require : require_obj -> obj =
-  declare_object {(default_object "REQUIRE") with
-       cache_function = cache_require;
-       load_function = load_require;
-       open_function = (fun _ _ -> assert false);
-       discharge_function = discharge_require;
-       classify_function = (fun o -> Anticipate o) }
-
 (* Require libraries, import them if [export <> None], mark them for export
    if [export = Some true] *)
-
-let warn_require_in_module =
-  CWarnings.create ~name:"require-in-module" ~category:"deprecated"
-                   (fun () -> strbrk "Require inside a module is" ++
-                              strbrk " deprecated and strongly discouraged. " ++
-                              strbrk "You can Require a module at toplevel " ++
-                              strbrk "and optionally Import it inside another one.")
+let do_require (needed,modl,export) =
+  List.iter register_library needed;
+  Option.iter (fun exp -> open_libraries exp (List.map find_library modl))
+    export
 
 let require_library_from_dirpath ~lib_resolver modrefl export =
   let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPMap.empty) modrefl in
   let needed = List.rev_map (fun dir -> DPMap.find dir contents) needed in
   let modrefl = List.map fst modrefl in
-    if Lib.is_module_or_modtype () then
-      begin
-        warn_require_in_module ();
-	add_anonymous_leaf (in_require (needed,modrefl,None));
-	Option.iter (fun exp ->
-	  add_anonymous_leaf (in_import_library (modrefl,exp)))
-	  export
-      end
-    else
-      add_anonymous_leaf (in_require (needed,modrefl,export));
-  ()
+  do_require (needed,modrefl,export)
 
 (* the function called by Vernacentries.vernac_import *)
 

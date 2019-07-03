@@ -65,29 +65,27 @@ let subst_atomic_objects subst seg =
     node :: seg) [] seg)
 *)
 let classify_segment seg =
-  let rec clean ((substl,keepl,anticipl) as acc) = function
+  let rec clean ((substl,keepl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
     | ((sp,kn),Leaf o) :: stk ->
           let id = Names.Label.to_id (Names.KerName.label kn) in
     begin match o with
     | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ ->
-      clean ((id,o)::substl, keepl, anticipl) stk
+      clean ((id,o)::substl, keepl) stk
     | KeepObject _ ->
-      clean (substl, (id,o)::keepl, anticipl) stk
+      clean (substl, (id,o)::keepl) stk
     | ImportObject { export } ->
       if export then
-        clean ((id,o)::substl, keepl, anticipl) stk
+        clean ((id,o)::substl, keepl) stk
       else
         clean acc stk
     | AtomicObject obj ->
       begin match classify_object obj with
         | Dispose -> clean acc stk
         | Keep o' ->
-          clean (substl, (id,AtomicObject o')::keepl, anticipl) stk
+          clean (substl, (id,AtomicObject o')::keepl) stk
         | Substitute o' ->
-          clean ((id,AtomicObject o')::substl, keepl, anticipl) stk
-        | Anticipate o' ->
-          clean (substl, keepl, AtomicObject o'::anticipl) stk
+          clean ((id,AtomicObject o')::substl, keepl) stk
       end
     end
     | (_,OpenedSection _) :: _ -> user_err Pp.(str "there are still opened sections")
@@ -95,7 +93,7 @@ let classify_segment seg =
       user_err ~hdr:"Lib.classify_segment"
         (str "there are still opened " ++ str (module_kind ty) ++ str "s")
   in
-    clean ([],[],[]) (List.rev seg)
+    clean ([],[]) (List.rev seg)
 
 
 let segment_of_objects prefix =

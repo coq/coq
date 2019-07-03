@@ -651,14 +651,14 @@ let start_module interp_modast export id args res fs =
 
 let end_module () =
   let oldoname,oldprefix,fs,lib_stack = Lib.end_module () in
-  let substitute, keep, special = Lib.classify_segment lib_stack in
+  let substitute, keep = Lib.classify_segment lib_stack in
   let m_info = !openmod_info in
 
   (* For sealed modules, we use the substitutive objects of their signatures *)
-  let sobjs0, keep, special = match m_info.cur_typ with
-    | None -> ([], Objs substitute), keep, special
+  let sobjs0, keep = match m_info.cur_typ with
+    | None -> ([], Objs substitute), keep
     | Some (mty, inline) ->
-      get_module_sobjs false (Global.env()) inline mty, [], []
+      get_module_sobjs false (Global.env()) inline mty, []
   in
   let id = basename (fst oldoname) in
   let mp,mbids,resolver = Global.end_module fs id m_info.cur_typ in
@@ -676,8 +676,8 @@ let end_module () =
   let node = ModuleObject sobjs in
   (* We add the keep objects, if any, and if this isn't a functor *)
   let objects = match keep, mbids with
-    | [], _ | _, _ :: _ -> special@[node]
-    | _ -> special@[node;KeepObject keep]
+    | [], _ | _, _ :: _ -> [node]
+    | _ -> [node;KeepObject keep]
   in
   let newoname = add_leaves id objects in
 
@@ -770,12 +770,12 @@ let start_modtype interp_modast id args mtys fs =
 let end_modtype () =
   let oldoname,prefix,fs,lib_stack = Lib.end_modtype () in
   let id = basename (fst oldoname) in
-  let substitute, _, special = Lib.classify_segment lib_stack in
+  let substitute, _ = Lib.classify_segment lib_stack in
   let sub_mty_l = !openmodtype_info in
   let mp, mbids = Global.end_modtype fs id in
   let modtypeobjs = (mbids, Objs substitute) in
   check_subtypes_mt mp sub_mty_l;
-  let oname = add_leaves id (special@[ModuleTypeObject modtypeobjs])
+  let oname = add_leaf id (ModuleTypeObject modtypeobjs)
   in
   (* Check name consistence : start_ vs. end_modtype, kernel vs. library *)
   assert (eq_full_path (fst oname) (fst oldoname));
@@ -975,7 +975,7 @@ let end_library ?except ~output_native_objects dir =
   let mp,cenv,ast = Global.export ?except ~output_native_objects dir in
   let prefix, lib_stack = Lib.end_compilation oname in
   assert (ModPath.equal mp (MPfile dir));
-  let substitute, keep, _ = Lib.classify_segment lib_stack in
+  let substitute, keep = Lib.classify_segment lib_stack in
   cenv,(substitute,keep),ast
 
 let import_module export mp =

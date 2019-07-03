@@ -14,7 +14,7 @@ open Names
 module Dyn = Dyn.Make ()
 
 type 'a substitutivity =
-    Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
+    Dispose | Substitute of 'a | Keep of 'a
 
 type object_name = Libnames.full_path * Names.KerName.t
 
@@ -107,7 +107,6 @@ let declare_object_full odecl =
   | Dispose -> Dispose
   | Substitute atomic_obj -> Substitute (infun atomic_obj)
   | Keep atomic_obj -> Keep (infun atomic_obj)
-  | Anticipate (atomic_obj) -> Anticipate (infun atomic_obj)
   and discharge (oname,lobj) =
     Option.map infun (odecl.discharge_function (oname,outfun lobj))
   and rebuild lobj = infun (odecl.rebuild_function (outfun lobj))

@@ -36,9 +36,6 @@ open Mod_subst
                   the module name must be updated
      Keep       - the object is not substitutive, but survives module
                   closing
-     Anticipate - this is for objects that have to be explicitly
-                  managed by the [end_module] function (like Require
-                  and Read markers)
 
      The classification function is also an occasion for a cleanup
      (if this function returns Keep or Substitute of some object, the
@@ -64,7 +61,7 @@ open Mod_subst
 *)
 
 type 'a substitutivity =
-    Dispose | Substitute of 'a | Keep of 'a | Anticipate of 'a
+    Dispose | Substitute of 'a | Keep of 'a
 
 (** Both names are passed to objects: a "semantic" [kernel_name], which
    can be substituted and a "syntactic" [full_path] which can be printed

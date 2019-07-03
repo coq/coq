@@ -985,14 +985,11 @@ let vernac_end_segment ({v=id} as lid) =
 
 (* Libraries *)
 
-let warn_require_in_section =
-  let name = "require-in-section" in
-  let category = "deprecated" in
-  CWarnings.create ~name ~category
-    (fun () -> strbrk "Use of “Require” inside a section is deprecated.")
-
 let vernac_require from import qidl =
-  if Lib.sections_are_opened () then warn_require_in_section ();
+  if Lib.is_module_or_modtype () then
+    CErrors.user_err Pp.(str "The \"Require\" command is not supported inside modules or module types.");
+  if Lib.sections_are_opened () then
+    CErrors.user_err Pp.(str "The \"Require\" command is not supported inside sections.");
   let root = match from with
   | None -> None
   | Some from ->
