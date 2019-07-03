@@ -539,6 +539,27 @@ let fabs accu x =
   if is_float x then no_check_fabs x
   else accu x
 
+let no_check_feq x y =
+  mk_bool (Float64.eq (to_float x) (to_float y))
+
+let feq accu x y =
+  if is_float x && is_float y then no_check_feq x y
+  else accu x y
+
+let no_check_flt x y =
+  mk_bool (Float64.lt (to_float x) (to_float y))
+
+let flt accu x y =
+  if is_float x && is_float y then no_check_flt x y
+  else accu x y
+
+let no_check_fle x y =
+  mk_bool (Float64.le (to_float x) (to_float y))
+
+let fle accu x y =
+  if is_float x && is_float y then no_check_fle x y
+  else accu x y
+
 type coq_fcmp =
   | CFcmpAccu of t
   | CFcmpEq

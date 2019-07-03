@@ -35,6 +35,9 @@ type t =
   | Int63compare
   | Float64opp
   | Float64abs
+  | Float64eq
+  | Float64lt
+  | Float64le
   | Float64compare
   | Float64classify
   | Float64add
@@ -92,6 +95,9 @@ let hash = function
   | Float64ldshiftexp -> 37
   | Float64next_up -> 38
   | Float64next_down -> 39
+  | Float64eq -> 40
+  | Float64lt -> 41
+  | Float64le -> 42
 
 (* Should match names in nativevalues.ml *)
 let to_string = function
@@ -121,6 +127,9 @@ let to_string = function
   | Int63compare -> "compare"
   | Float64opp -> "fopp"
   | Float64abs -> "fabs"
+  | Float64eq -> "feq"
+  | Float64lt -> "flt"
+  | Float64le -> "fle"
   | Float64compare -> "fcompare"
   | Float64classify -> "fclassify"
   | Float64add -> "fadd"
@@ -176,6 +185,7 @@ let types =
   | Float64ofInt63 -> [int_ty; float_ty]
   | Float64normfr_mantissa -> [float_ty; int_ty]
   | Float64frshiftexp -> [float_ty; PITT_ind (PIT_pair, (PT_float64, PT_int63))]
+  | Float64eq | Float64lt | Float64le -> [float_ty; float_ty; PITT_ind (PIT_bool, ())]
   | Float64compare -> [float_ty; float_ty; PITT_ind (PIT_f_cmp, ())]
   | Float64classify -> [float_ty; PITT_ind (PIT_f_class, ())]
   | Float64add | Float64sub | Float64mul

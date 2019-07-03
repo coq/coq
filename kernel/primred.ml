@@ -261,6 +261,15 @@ struct
       let f = get_float1 evd args in E.mkFloat env (Float64.opp f)
     | Float64abs ->
       let f = get_float1 evd args in E.mkFloat env (Float64.abs f)
+    | Float64eq ->
+      let i1, i2 = get_float2 evd args in
+      E.mkBool env (Float64.eq i1 i2)
+    | Float64lt ->
+      let i1, i2 = get_float2 evd args in
+      E.mkBool env (Float64.lt i1 i2)
+    | Float64le ->
+      let i1, i2 = get_float2 evd args in
+      E.mkBool env (Float64.le i1 i2)
     | Float64compare ->
       let f1, f2 = get_float2 evd args in
       (match Float64.compare f1 f2 with

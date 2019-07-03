@@ -228,7 +228,7 @@ let v_pol_arity =
   v_tuple "polymorphic_arity" [|List(Opt v_level);v_univ|]
 
 let v_primitive =
-  v_enum "primitive" 41 (* Number of "Primitive" in Int63.v and PrimFloat.v *)
+  v_enum "primitive" 44 (* Number of "Primitive" in Int63.v and PrimFloat.v *)
 
 let v_cst_def =
   v_sum "constant_def" 0

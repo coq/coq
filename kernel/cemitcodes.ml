@@ -236,6 +236,9 @@ let check_prim_op = function
   | Int63compare   -> opCHECKCOMPAREINT63
   | Float64opp     -> opCHECKOPPFLOAT
   | Float64abs     -> opCHECKABSFLOAT
+  | Float64eq      -> opCHECKEQFLOAT
+  | Float64lt      -> opCHECKLTFLOAT
+  | Float64le      -> opCHECKLEFLOAT
   | Float64compare -> opCHECKCOMPAREFLOAT
   | Float64classify -> opCHECKCLASSIFYFLOAT
   | Float64add     -> opCHECKADDFLOAT

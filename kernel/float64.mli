@@ -34,6 +34,12 @@ val abs : t -> t
 
 type float_comparison = FEq | FLt | FGt | FNotComparable
 
+val eq : t -> t -> bool
+
+val lt : t -> t -> bool
+
+val le : t -> t -> bool
+
 (** The IEEE 754 float comparison.
  * NotComparable is returned if there is a NaN in the arguments *)
 val compare : t -> t -> float_comparison

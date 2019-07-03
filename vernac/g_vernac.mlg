@@ -275,6 +275,9 @@ GRAMMAR EXTEND Gram
        | "#int63_compare" -> { CPrimitives.Int63compare }
        | "#float64_opp" -> { CPrimitives.Float64opp }
        | "#float64_abs" -> { CPrimitives.Float64abs }
+       | "#float64_eq" -> { CPrimitives.Float64eq }
+       | "#float64_lt" -> { CPrimitives.Float64lt }
+       | "#float64_le" -> { CPrimitives.Float64le }
        | "#float64_compare" -> { CPrimitives.Float64compare }
        | "#float64_classify" -> { CPrimitives.Float64classify }
        | "#float64_add" -> { CPrimitives.Float64add }

@@ -42,6 +42,15 @@ let abs = abs_float
 
 type float_comparison = FEq | FLt | FGt | FNotComparable
 
+let eq x y = x = y
+[@@ocaml.inline always]
+
+let lt x y = x < y
+[@@ocaml.inline always]
+
+let le x y = x <= y
+[@@ocaml.inline always]
+
 (* inspired by lib/util.ml; see also #10471 *)
 let pervasives_compare = compare
 

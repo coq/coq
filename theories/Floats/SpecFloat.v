@@ -183,6 +183,24 @@ Section FloatOps.
       end
     end.
 
+  Definition SFeqb f1 f2 :=
+    match SFcompare f1 f2 with
+    | Some Eq => true
+    | _ => false
+    end.
+
+  Definition SFltb f1 f2 :=
+    match SFcompare f1 f2 with
+    | Some Lt => true
+    | _ => false
+    end.
+
+  Definition SFleb f1 f2 :=
+    match SFcompare f1 f2 with
+    | Some Le => true
+    | _ => false
+    end.
+
   Definition SFclassify f :=
     match f with
     | S754_nan => NaN

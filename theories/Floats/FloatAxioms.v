@@ -26,6 +26,10 @@ Qed.
 Axiom opp_spec : forall x, Prim2SF (-x)%float = SFopp (Prim2SF x).
 Axiom abs_spec : forall x, Prim2SF (abs x) = SFabs (Prim2SF x).
 
+Axiom eqb_spec : forall x y, (x == y)%float = SFeqb (Prim2SF x) (Prim2SF y).
+Axiom ltb_spec : forall x y, (x < y)%float = SFltb (Prim2SF x) (Prim2SF y).
+Axiom leb_spec : forall x y, (x <= y)%float = SFleb (Prim2SF x) (Prim2SF y).
+
 Definition flatten_cmp_opt c :=
   match c with
   | None => FNotComparable

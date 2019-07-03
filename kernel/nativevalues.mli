@@ -261,6 +261,9 @@ val is_float : t -> bool
 
 val fopp : t -> t -> t
 val fabs : t -> t -> t
+val feq : t -> t -> t -> t
+val flt : t -> t -> t -> t
+val fle : t -> t -> t -> t
 val fcompare : t -> t -> t -> t
 val fclassify : t -> t -> t
 val fadd : t -> t -> t -> t
@@ -280,6 +283,15 @@ val no_check_fopp : t -> t
 [@@ocaml.inline always]
 
 val no_check_fabs : t -> t
+[@@ocaml.inline always]
+
+val no_check_feq : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_flt : t -> t -> t
+[@@ocaml.inline always]
+
+val no_check_fle : t -> t -> t
 [@@ocaml.inline always]
 
 val no_check_fcompare : t -> t -> t

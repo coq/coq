@@ -35,6 +35,9 @@ type t =
   | Int63compare
   | Float64opp
   | Float64abs
+  | Float64eq
+  | Float64lt
+  | Float64le
   | Float64compare
   | Float64classify
   | Float64add

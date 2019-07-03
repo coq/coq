@@ -1545,6 +1545,33 @@ value coq_interprete
         Next;
       }
 
+      Instruct (CHECKEQFLOAT) {
+        print_instr("CHECKEQFLOAT");
+        CheckFloat2();
+        accu = coq_feq(Double_val(accu), Double_val(*sp++)) ? coq_true : coq_false;
+        Next;
+      }
+
+      Instruct (CHECKLTFLOAT) {
+        print_instr("CHECKLTFLOAT");
+        CheckFloat2();
+      }
+      Instruct (LTFLOAT) {
+        print_instr("LTFLOAT");
+        accu = coq_flt(Double_val(accu), Double_val(*sp++)) ? coq_true : coq_false;
+        Next;
+      }
+
+      Instruct (CHECKLEFLOAT) {
+        print_instr("CHECKLEFLOAT");
+        CheckFloat2();
+      }
+      Instruct (LEFLOAT) {
+        print_instr("LEFLOAT");
+        accu = coq_fle(Double_val(accu), Double_val(*sp++)) ? coq_true : coq_false;
+        Next;
+      }
+
       Instruct (CHECKCOMPAREFLOAT) {
         double x, y;
         print_instr("CHECKCOMPAREFLOAT");
