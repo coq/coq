@@ -67,9 +67,6 @@ type variable_data = {
 
 val add_variable_data : variable -> variable_data -> unit
 
-(* Not used *)
-val variable_path : variable -> DirPath.t
-
 (* Only used in dumpglob *)
 val variable_secpath : variable -> qualid
 val variable_kind : variable -> logical_kind
