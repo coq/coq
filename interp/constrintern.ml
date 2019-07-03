@@ -949,16 +949,17 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
     (* Is [id] a goal or section variable *)
     let _ = Environ.lookup_named_ctxt id namedctx in
       try
-	(* [id] a section variable *)
-	(* Redundant: could be done in intern_qualid *)
-	let ref = VarRef id in
-	let impls = implicits_of_global ref in
-	let scopes = find_arguments_scope ref in
-	Dumpglob.dump_reference ?loc "<>" (string_of_qualid (Decls.variable_secpath id)) "var";
-	DAst.make ?loc @@ GRef (ref, us), impls, scopes, []
+        (* [id] a section variable *)
+        (* Redundant: could be done in intern_qualid *)
+        let ref = VarRef id in
+        let impls = implicits_of_global ref in
+        let scopes = find_arguments_scope ref in
+        Dumpglob.dump_secvar ?loc id; (* this raises Not_found when not a section variable *)
+        (* Someday we should stop relying on Dumglob raising exceptions *)
+        DAst.make ?loc @@ GRef (ref, us), impls, scopes, []
       with e when CErrors.noncritical e ->
-	(* [id] a goal variable *)
-	gvar (loc,id) us, [], [], []
+        (* [id] a goal variable *)
+        gvar (loc,id) us, [], [], []
 
 let find_appl_head_data c =
   match DAst.get c with
