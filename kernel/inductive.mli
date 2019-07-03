@@ -110,7 +110,7 @@ val check_case_info : env -> pinductive -> Sorts.relevance -> case_info -> unit
 val check_fix : env -> fixpoint -> unit
 val check_cofix : env -> cofixpoint -> unit
 
-val rec_stage_vars : int array -> constr array -> Stages.stage_name array
+val rec_stage_vars : env -> int array -> constr array -> Stages.stage_name array
 
 (** {6 Support for sort-polymorphic inductive types } *)
 
