@@ -29,24 +29,27 @@ open Common
 
 let toplevel_env () =
   let get_reference = function
-    | (_,kn), Lib.Leaf o ->
-        let mp,l = KerName.repr kn in
-	begin match Libobject.object_tag o with
-	  | "CONSTANT" ->
-            let constant = Global.lookup_constant (Constant.make1 kn) in
-            Some (l, SFBconst constant)
-	  | "INDUCTIVE" ->
-            let inductive = Global.lookup_mind (MutInd.make1 kn) in
-            Some (l, SFBmind inductive)
-	  | "MODULE" ->
-            let modl = Global.lookup_module (MPdot (mp, l)) in
-            Some (l, SFBmodule modl)
-	  | "MODULE TYPE" ->
-            let modtype = Global.lookup_modtype (MPdot (mp, l)) in
-            Some (l, SFBmodtype modtype)
-          | "INCLUDE" -> user_err Pp.(str "No extraction of toplevel Include yet.")
-	  | _ -> None
-        end
+    | (_,kn), Lib.Leaf Libobject.AtomicObject o ->
+      let mp,l = KerName.repr kn in
+            begin match Libobject.object_tag o with
+            | "CONSTANT" ->
+        let constant = Global.lookup_constant (Constant.make1 kn) in
+        Some (l, SFBconst constant)
+            | "INDUCTIVE" ->
+        let inductive = Global.lookup_mind (MutInd.make1 kn) in
+        Some (l, SFBmind inductive)
+            | _ -> None
+      end
+    | (_,kn), Lib.Leaf Libobject.ModuleObject _ ->
+      let mp,l = KerName.repr kn in
+      let modl = Global.lookup_module (MPdot (mp, l)) in
+      Some (l, SFBmodule modl)
+    | (_,kn), Lib.Leaf Libobject.ModuleTypeObject _ ->
+      let mp,l = KerName.repr kn in
+      let modtype = Global.lookup_modtype (MPdot (mp, l)) in
+      Some (l, SFBmodtype modtype)
+    | (_,kn), Lib.Leaf Libobject.IncludeObject _ ->
+      user_err Pp.(str "No extraction of toplevel Include yet.")
     | _ -> None
   in
   List.rev (List.map_filter get_reference (Lib.contents ()))

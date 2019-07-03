@@ -44,22 +44,6 @@ let inl2intopt = function
   | InlineAt i -> Some i
   | DefaultInline -> default_inline ()
 
-(** {6 Substitutive objects}
-
-   - The list of bound identifiers is nonempty only if the objects
-     are owned by a functor
-
-   - Then comes either the object segment itself (for interactive
-     modules), or a compact way to store derived objects (path to
-     a earlier module + substitution).
-*)
-
-type algebraic_objects =
-  | Objs of Lib.lib_objects
-  | Ref of ModPath.t * substitution
-
-type substitutive_objects = MBId.t list * algebraic_objects
-
 (** ModSubstObjs : a cache of module substitutive objects
 
    This table is common to modules and module types.
@@ -99,17 +83,45 @@ module ModSubstObjs :
 
 let sobjs_no_functor (mbids,_) = List.is_empty mbids
 
-let subst_aobjs sub = function
-  | Objs o -> Objs (Lib.subst_objects sub o)
-  | Ref (mp, sub0) -> Ref (mp, join sub0 sub)
+let rec subst_aobjs sub = function
+  | Objs o as objs ->
+    let o' = subst_objects sub o in
+    if o == o' then objs else Objs o'
+  | Ref (mp, sub0) as r ->
+    let sub0' = join sub0 sub in
+    if sub0' == sub0 then r else Ref (mp, sub0')
 
-let subst_sobjs sub (mbids,aobjs) = (mbids, subst_aobjs sub aobjs)
+and subst_sobjs sub (mbids,aobjs as sobjs) =
+  let aobjs' = subst_aobjs sub aobjs in
+  if aobjs' == aobjs then sobjs else (mbids, aobjs')
+
+and subst_objects subst seg =
+  let subst_one (id,obj as node) =
+    match obj with
+    | AtomicObject obj ->
+      let obj' = Libobject.subst_object (subst,obj) in
+      if obj' == obj then node else (id, AtomicObject obj')
+    | ModuleObject sobjs ->
+      let sobjs' = subst_sobjs subst sobjs in
+      if sobjs' == sobjs then node else (id, ModuleObject sobjs')
+    | ModuleTypeObject sobjs ->
+      let sobjs' = subst_sobjs subst sobjs in
+      if sobjs' == sobjs then node else (id, ModuleTypeObject sobjs')
+    | IncludeObject aobjs ->
+      let aobjs' = subst_aobjs subst aobjs in
+      if aobjs' == aobjs then node else (id, IncludeObject aobjs')
+    | ImportObject { export; mp } ->
+      let mp' = subst_mp subst mp in
+      if mp'==mp then node else (id, ImportObject { export; mp = mp' })
+    | KeepObject _ -> assert false
+  in
+  List.Smart.map subst_one seg
 
 let expand_aobjs = function
   | Objs o -> o
   | Ref (mp, sub) ->
     match ModSubstObjs.get mp with
-      | (_,Objs o) -> Lib.subst_objects sub o
+      | (_,Objs o) -> subst_objects sub o
       | _ -> assert false (* Invariant : any alias points to concrete objs *)
 
 let expand_sobjs (_,aobjs) = expand_aobjs aobjs
@@ -216,51 +228,6 @@ let do_module' exists iter_objects i ((sp,kn),sobjs) =
 (** Nota: Interactive modules and module types cannot be recached!
     This used to be checked here via a flag along the substobjs. *)
 
-let cache_module = do_module' false Lib.load_objects 1
-let load_module = do_module' false Lib.load_objects
-let open_module = do_module' true Lib.open_objects
-let subst_module (subst,sobjs) = subst_sobjs subst sobjs
-let classify_module sobjs = Substitute sobjs
-
-let (in_module : substitutive_objects -> obj),
-    (out_module : obj -> substitutive_objects) =
-  declare_object_full {(default_object "MODULE") with
-    cache_function = cache_module;
-    load_function = load_module;
-    open_function = open_module;
-    subst_function = subst_module;
-    classify_function = classify_module }
-
-
-(** {6 Declaration of module keep objects} *)
-
-let cache_keep _ = anomaly (Pp.str "This module should not be cached!")
-
-let load_keep i ((sp,kn),kobjs) =
-  (* Invariant : seg isn't empty *)
-  let obj_dir = dir_of_sp sp and obj_mp  = mp_of_kn kn in
-  let prefix = Nametab.{ obj_dir ; obj_mp; obj_sec = DirPath.empty } in
-  let prefix',sobjs,kobjs0 =
-    try ModObjs.get obj_mp
-    with Not_found -> assert false (* a substobjs should already be loaded *)
-  in
-  assert Nametab.(eq_op prefix' prefix);
-  assert (List.is_empty kobjs0);
-  ModObjs.set obj_mp (prefix,sobjs,kobjs);
-  Lib.load_objects i prefix kobjs
-
-let open_keep i ((sp,kn),kobjs) =
-  let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
-  let prefix = Nametab.{ obj_dir; obj_mp; obj_sec = DirPath.empty } in
-  Lib.open_objects i prefix kobjs
-
-let in_modkeep : Lib.lib_objects -> obj =
-  declare_object {(default_object "MODULE KEEP") with
-    cache_function = cache_keep;
-    load_function = load_keep;
-    open_function = open_keep }
-
-
 (** {6 Declaration of module type substitutive objects} *)
 
 (** Nota: Interactive modules and module types cannot be recached!
@@ -272,12 +239,63 @@ let do_modtype i sp mp sobjs =
   Nametab.push_modtype (Nametab.Until i) sp mp;
   ModSubstObjs.set mp sobjs
 
-let cache_modtype ((sp,kn),sobjs) = do_modtype 1 sp (mp_of_kn kn) sobjs
-let load_modtype i ((sp,kn),sobjs) = do_modtype i sp (mp_of_kn kn) sobjs
-let subst_modtype (subst,sobjs) = subst_sobjs subst sobjs
-let classify_modtype sobjs = Substitute sobjs
+(** {6 Declaration of substitutive objects for Include} *)
 
-let open_modtype i ((sp,kn),_) =
+let rec load_object i (name, obj) =
+  match obj with
+  | AtomicObject o -> Libobject.load_object i (name, o)
+  | ModuleObject sobjs -> do_module' false load_objects i (name, sobjs)
+  | ModuleTypeObject sobjs ->
+    let (sp,kn) = name in
+    do_modtype i sp (mp_of_kn kn) sobjs
+  | IncludeObject aobjs -> load_include i (name, aobjs)
+  | ImportObject _ -> ()
+  | KeepObject objs -> load_keep i (name, objs)
+
+and load_objects i prefix objs =
+  List.iter (fun (id, obj) -> load_object i (Lib.make_oname prefix id, obj)) objs
+
+and load_include i ((sp,kn), aobjs) =
+  let obj_dir = Libnames.dirpath sp in
+  let obj_mp = KerName.modpath kn in
+  let prefix = Nametab.{ obj_dir; obj_mp; obj_sec = DirPath.empty } in
+  let o = expand_aobjs aobjs in
+  load_objects i prefix o
+
+and load_keep i ((sp,kn),kobjs) =
+  (* Invariant : seg isn't empty *)
+  let obj_dir = dir_of_sp sp and obj_mp  = mp_of_kn kn in
+  let prefix = Nametab.{ obj_dir ; obj_mp; obj_sec = DirPath.empty } in
+  let prefix',sobjs,kobjs0 =
+    try ModObjs.get obj_mp
+    with Not_found -> assert false (* a substobjs should already be loaded *)
+  in
+  assert Nametab.(eq_op prefix' prefix);
+  assert (List.is_empty kobjs0);
+  ModObjs.set obj_mp (prefix,sobjs,kobjs);
+  load_objects i prefix kobjs
+
+(** {6 Implementation of Import and Export commands} *)
+
+let rec really_import_module mp =
+  (* May raise Not_found for unknown module and for functors *)
+  let prefix,sobjs,keepobjs = ModObjs.get mp in
+  open_objects 1 prefix sobjs;
+  open_objects 1 prefix keepobjs
+
+and open_object i (name, obj) =
+  match obj with
+  | AtomicObject o -> Libobject.open_object i (name, o)
+  | ModuleObject sobjs -> do_module' true open_objects i (name, sobjs)
+  | ModuleTypeObject sobjs -> open_modtype i (name, sobjs)
+  | IncludeObject aobjs -> open_include i (name, aobjs)
+  | ImportObject { mp; _ } -> open_import i mp
+  | KeepObject objs -> open_keep i (name, objs)
+
+and open_objects i prefix objs =
+  List.iter (fun (id, obj) -> open_object i (Lib.make_oname prefix id, obj)) objs
+
+and open_modtype i ((sp,kn),_) =
   let mp = mp_of_kn kn in
   let mp' =
     try Nametab.locate_modtype (qualid_of_path sp)
@@ -287,41 +305,61 @@ let open_modtype i ((sp,kn),_) =
   assert (ModPath.equal mp mp');
   Nametab.push_modtype (Nametab.Exactly i) sp mp
 
-let (in_modtype : substitutive_objects -> obj),
-    (out_modtype : obj -> substitutive_objects) =
-  declare_object_full {(default_object "MODULE TYPE") with
-      cache_function = cache_modtype;
-      open_function = open_modtype;
-      load_function = load_modtype;
-      subst_function = subst_modtype;
-      classify_function = classify_modtype }
-
-
-(** {6 Declaration of substitutive objects for Include} *)
-
-let do_include do_load do_open i ((sp,kn),aobjs) =
+and open_include i ((sp,kn), aobjs) =
   let obj_dir = Libnames.dirpath sp in
   let obj_mp = KerName.modpath kn in
   let prefix = Nametab.{ obj_dir; obj_mp; obj_sec = DirPath.empty } in
   let o = expand_aobjs aobjs in
-  if do_load then Lib.load_objects i prefix o;
-  if do_open then Lib.open_objects i prefix o
+  open_objects i prefix o
 
-let cache_include = do_include true true 1
-let load_include = do_include true false
-let open_include = do_include false true
-let subst_include (subst,aobjs) = subst_aobjs subst aobjs
-let classify_include aobjs = Substitute aobjs
+and open_import i mp =
+  if Int.equal i 1 then really_import_module mp
 
-let (in_include : algebraic_objects -> obj),
-    (out_include : obj -> algebraic_objects) =
-  declare_object_full {(default_object "INCLUDE") with
-    cache_function = cache_include;
-    load_function = load_include;
-    open_function = open_include;
-    subst_function = subst_include;
-    classify_function = classify_include }
+and open_keep i ((sp,kn),kobjs) =
+  let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
+  let prefix = Nametab.{ obj_dir; obj_mp; obj_sec = DirPath.empty } in
+  open_objects i prefix kobjs
 
+let rec cache_object (name, obj) =
+  match obj with
+  | AtomicObject o -> Libobject.cache_object (name, o)
+  | ModuleObject sobjs -> do_module' false load_objects 1 (name, sobjs)
+  | ModuleTypeObject sobjs ->
+    let (sp,kn) = name in
+    do_modtype 1 sp (mp_of_kn kn) sobjs
+  | IncludeObject aobjs -> cache_include (name, aobjs)
+  | ImportObject { mp } -> really_import_module mp
+  | KeepObject objs -> cache_keep (name, objs)
+
+and cache_include ((sp,kn), aobjs) =
+  let obj_dir = Libnames.dirpath sp in
+  let obj_mp = KerName.modpath kn in
+  let prefix = Nametab.{ obj_dir; obj_mp; obj_sec = DirPath.empty } in
+  let o = expand_aobjs aobjs in
+  load_objects 1 prefix o;
+  open_objects 1 prefix o
+
+and cache_keep ((sp,kn),kobjs) =
+  anomaly (Pp.str "This module should not be cached!")
+
+(* Adding operations with containers *)
+
+let add_leaf id obj =
+  if ModPath.equal (Lib.current_mp ()) ModPath.initial then
+    user_err Pp.(str "No session module started (use -top dir)");
+  let oname = Lib.make_foname id in
+  cache_object (oname,obj);
+  Lib.add_entry oname (Lib.Leaf obj);
+  oname
+
+let add_leaves id objs =
+  let oname = Lib.make_foname id in
+  let add_obj obj =
+    Lib.add_entry oname (Lib.Leaf obj);
+    load_object 1 (oname,obj)
+  in
+  List.iter add_obj objs;
+  oname
 
 (** {6 Handler for missing entries in ModSubstObjs} *)
 
@@ -331,11 +369,11 @@ let (in_include : algebraic_objects -> obj),
 
 let mp_id mp id = MPdot (mp, Label.of_id id)
 
-let rec register_mod_objs mp (id,obj) = match object_tag obj with
-  | "MODULE" -> ModSubstObjs.set (mp_id mp id) (out_module obj)
-  | "MODULE TYPE" -> ModSubstObjs.set (mp_id mp id) (out_modtype obj)
-  | "INCLUDE" ->
-    List.iter (register_mod_objs mp) (expand_aobjs (out_include obj))
+let rec register_mod_objs mp (id,obj) = match obj with
+  | ModuleObject sobjs -> ModSubstObjs.set (mp_id mp id) sobjs
+  | ModuleTypeObject sobjs -> ModSubstObjs.set (mp_id mp id) sobjs
+  | IncludeObject aobjs ->
+    List.iter (register_mod_objs mp) (expand_aobjs aobjs)
   | _ -> ()
 
 let handle_missing_substobjs mp = match mp with
@@ -387,15 +425,18 @@ let rec replace_module_object idl mp0 objs0 mp1 objs1 =
   match idl, objs0 with
   | _,[] -> []
   | id::idl,(id',obj)::tail when Id.equal id id' ->
-    assert (String.equal (object_tag obj) "MODULE");
-    let mp_id = MPdot(mp0, Label.of_id id) in
-    let objs = match idl with
-      | [] -> Lib.subst_objects (map_mp mp1 mp_id empty_delta_resolver) objs1
-      | _ ->
-        let objs_id = expand_sobjs (out_module obj) in
-        replace_module_object idl mp_id objs_id mp1 objs1
-    in
-    (id, in_module ([], Objs objs))::tail
+    begin match obj with
+    | ModuleObject sobjs ->
+      let mp_id = MPdot(mp0, Label.of_id id) in
+      let objs = match idl with
+        | [] -> subst_objects (map_mp mp1 mp_id empty_delta_resolver) objs1
+        | _ ->
+          let objs_id = expand_sobjs sobjs in
+          replace_module_object idl mp_id objs_id mp1 objs1
+      in
+      (id, ModuleObject ([], Objs objs))::tail
+    | _ -> assert false
+    end
   | idl,lobj::tail -> lobj::replace_module_object idl mp0 tail mp1 objs1
 
 let type_of_mod mp env = function
@@ -450,7 +491,7 @@ let process_module_binding mbid me =
   let sobjs = get_module_sobjs false (Global.env()) (default_inline ()) me in
   let subst = map_mp (get_module_path me) mp empty_delta_resolver in
   let sobjs = subst_sobjs subst sobjs in
-  do_module false Lib.load_objects 1 dir mp sobjs []
+  do_module false load_objects 1 dir mp sobjs []
 
 (** Process a declaration of functor parameter(s) (Id1 .. Idn : Typ)
     i.e. possibly multiple names with the same module type.
@@ -473,7 +514,7 @@ let intern_arg interp_modast (acc, cst) (idl,(typ,ann)) =
     let mp = MPbound mbid in
     let resolver = Global.add_module_parameter mbid mty inl in
     let sobjs = subst_sobjs (map_mp mp0 mp resolver) sobjs in
-    do_module false Lib.load_objects 1 dir mp sobjs [];
+    do_module false load_objects 1 dir mp sobjs [];
     (mbid,mty,inl)::acc
   in
   let acc = List.fold_left fold acc idl in
@@ -632,13 +673,13 @@ let end_module () =
       | Some (mty, _) ->
         subst_sobjs (map_mp (get_module_path mty) mp resolver) sobjs
   in
-  let node = in_module sobjs in
+  let node = ModuleObject sobjs in
   (* We add the keep objects, if any, and if this isn't a functor *)
   let objects = match keep, mbids with
     | [], _ | _, _ :: _ -> special@[node]
-    | _ -> special@[node;in_modkeep keep]
+    | _ -> special@[node;KeepObject keep]
   in
-  let newoname = Lib.add_leaves id objects in
+  let newoname = add_leaves id objects in
 
   (* Name consistency check : start_ vs. end_module, kernel vs. library *)
   assert (eq_full_path (fst newoname) (fst oldoname));
@@ -705,7 +746,7 @@ let declare_module interp_modast id args res mexpr_o fs =
   check_subtypes mp subs;
 
   let sobjs = subst_sobjs (map_mp mp0 mp resolver) sobjs in
-  ignore (Lib.add_leaf id (in_module sobjs));
+  ignore (add_leaf id (ModuleObject sobjs));
   mp
 
 end
@@ -734,7 +775,7 @@ let end_modtype () =
   let mp, mbids = Global.end_modtype fs id in
   let modtypeobjs = (mbids, Objs substitute) in
   check_subtypes_mt mp sub_mty_l;
-  let oname = Lib.add_leaves id (special@[in_modtype modtypeobjs])
+  let oname = add_leaves id (special@[ModuleTypeObject modtypeobjs])
   in
   (* Check name consistence : start_ vs. end_modtype, kernel vs. library *)
   assert (eq_full_path (fst oname) (fst oldoname));
@@ -779,7 +820,7 @@ let declare_modtype interp_modast id args mtys (mty,ann) fs =
   (* Subtyping checks *)
   check_subtypes_mt mp sub_mty_l;
 
-  ignore (Lib.add_leaf id (in_modtype sobjs));
+  ignore (add_leaf id (ModuleTypeObject sobjs));
   mp
 
 end
@@ -834,7 +875,7 @@ let declare_one_include interp_modast (me_ast,annot) =
   let resolver = Global.add_include me is_mod inl in
   let subst = join subst_self (map_mp base_mp cur_mp resolver) in
   let aobjs = subst_aobjs subst aobjs in
-  ignore (Lib.add_leaf (Lib.current_mod_id ()) (in_include aobjs))
+  ignore (add_leaf (Lib.current_mod_id ()) (IncludeObject aobjs))
 
 let declare_include interp me_asts =
   List.iter (declare_one_include interp) me_asts
@@ -913,7 +954,7 @@ let register_library dir cenv (objs:library_objects) digest univ =
         anomaly (Pp.str "Unexpected disk module name.");
   in
   let sobjs,keepobjs = objs in
-  do_module false Lib.load_objects 1 dir mp ([],Objs sobjs) keepobjs
+  do_module false load_objects 1 dir mp ([],Objs sobjs) keepobjs
 
 let get_library_native_symbols dir =
   Safe_typing.get_library_native_symbols (Global.safe_env ()) dir
@@ -937,45 +978,16 @@ let end_library ?except ~output_native_objects dir =
   let substitute, keep, _ = Lib.classify_segment lib_stack in
   cenv,(substitute,keep),ast
 
-
-
-(** {6 Implementation of Import and Export commands} *)
-
-let really_import_module mp =
-  (* May raise Not_found for unknown module and for functors *)
-  let prefix,sobjs,keepobjs = ModObjs.get mp in
-  Lib.open_objects 1 prefix sobjs;
-  Lib.open_objects 1 prefix keepobjs
-
-let cache_import (_,(_,mp)) = really_import_module mp
-
-let open_import i obj =
-  if Int.equal i 1 then cache_import obj
-
-let classify_import (export,_ as obj) =
-  if export then Substitute obj else Dispose
-
-let subst_import (subst,(export,mp as obj)) =
-  let mp' = subst_mp subst mp in
-  if mp'==mp then obj else (export,mp')
-
-let in_import : bool * ModPath.t -> obj =
-  declare_object {(default_object "IMPORT MODULE") with
-    cache_function = cache_import;
-    open_function = open_import;
-    subst_function = subst_import;
-    classify_function = classify_import }
-
 let import_module export mp =
-  Lib.add_anonymous_leaf (in_import (export,mp))
-
+  really_import_module mp;
+  Lib.add_anonymous_entry (Lib.Leaf (ImportObject { export; mp }))
 
 (** {6 Iterators} *)
 
 let iter_all_segments f =
-  let rec apply_obj prefix (id,obj) = match object_tag obj with
-    | "INCLUDE" ->
-      let objs = expand_aobjs (out_include obj) in
+  let rec apply_obj prefix (id,obj) = match obj with
+    | IncludeObject aobjs ->
+      let objs = expand_aobjs aobjs in
       List.iter (apply_obj prefix) objs
     | _ -> f (Lib.make_oname prefix id) obj
   in

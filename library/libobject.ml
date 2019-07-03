@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Pp
+open Names
 
 module Dyn = Dyn.Make ()
 
@@ -34,7 +35,7 @@ let default_object s = {
   open_function = (fun _ _ -> ());
   subst_function = (fun _ ->
     CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!"));
-  classify_function = (fun obj -> Keep obj);
+  classify_function = (fun atomic_obj -> Keep atomic_obj);
   discharge_function = (fun _ -> None);
   rebuild_function = (fun x -> x)}
 
@@ -52,7 +53,34 @@ let default_object s = {
 
 let ident_subst_function (_,a) = a
 
+
 type obj = Dyn.t (* persistent dynamic objects *)
+
+(** {6 Substitutive objects}
+
+    - The list of bound identifiers is nonempty only if the objects
+      are owned by a functor
+
+    - Then comes either the object segment itself (for interactive
+      modules), or a compact way to store derived objects (path to
+      a earlier module + substitution).
+*)
+
+type algebraic_objects =
+  | Objs of objects
+  | Ref of Names.ModPath.t * Mod_subst.substitution
+
+and t =
+  | ModuleObject of substitutive_objects
+  | ModuleTypeObject of substitutive_objects
+  | IncludeObject of algebraic_objects
+  | KeepObject of objects
+  | ImportObject of { export : bool; mp : ModPath.t }
+  | AtomicObject of obj
+
+and objects = (Names.Id.t * t) list
+
+and substitutive_objects = MBId.t list * algebraic_objects
 
 type dynamic_object_declaration = {
   dyn_cache_function : object_name * obj -> unit;
@@ -77,9 +105,9 @@ let declare_object_full odecl =
   and substituter (sub,lobj) = infun (odecl.subst_function (sub,outfun lobj))
   and classifier lobj = match odecl.classify_function (outfun lobj) with
   | Dispose -> Dispose
-  | Substitute obj -> Substitute (infun obj)
-  | Keep obj -> Keep (infun obj)
-  | Anticipate (obj) -> Anticipate (infun obj)
+  | Substitute atomic_obj -> Substitute (infun atomic_obj)
+  | Keep atomic_obj -> Keep (infun atomic_obj)
+  | Anticipate (atomic_obj) -> Anticipate (infun atomic_obj)
   and discharge (oname,lobj) =
     Option.map infun (odecl.discharge_function (oname,outfun lobj))
   and rebuild lobj = infun (odecl.rebuild_function (outfun lobj))

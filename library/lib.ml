@@ -28,7 +28,7 @@ let make_oname Nametab.{ obj_dir; obj_mp } id =
 
 (* let make_oname (dirpath,(mp,dir)) id = *)
 type node =
-  | Leaf of obj
+  | Leaf of Libobject.t
   | CompilingLibrary of Nametab.object_prefix
   | OpenedModule of is_type * export * Nametab.object_prefix * Summary.frozen
   | OpenedSection of Nametab.object_prefix * Summary.frozen
@@ -37,7 +37,8 @@ type library_entry = object_name * node
 
 type library_segment = library_entry list
 
-type lib_objects =  (Names.Id.t * obj) list
+type lib_atomic_objects = (Id.t * Libobject.obj) list
+type lib_objects =  (Names.Id.t * Libobject.t) list
 
 let module_kind is_type =
   if is_type then "module type" else "module"
@@ -45,10 +46,10 @@ let module_kind is_type =
 let iter_objects f i prefix =
   List.iter (fun (id,obj) -> f i (make_oname prefix id, obj))
 
-let load_objects i pr = iter_objects load_object i pr
-let open_objects i pr = iter_objects open_object i pr
+let load_atomic_objects i pr = iter_objects load_object i pr
+let open_atomic_objects i pr = iter_objects open_object i pr
 
-let subst_objects subst seg = 
+let subst_atomic_objects subst seg =
   let subst_one = fun (id,obj as node) ->
     let obj' = subst_object (subst,obj) in
       if obj' == obj then node else
@@ -67,15 +68,28 @@ let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
     | ((sp,kn),Leaf o) :: stk ->
-	let id = Names.Label.to_id (Names.KerName.label kn) in
-	  (match classify_object o with
-	     | Dispose -> clean acc stk
-	     | Keep o' ->
-		 clean (substl, (id,o')::keepl, anticipl) stk
-	     | Substitute o' ->
-		 clean ((id,o')::substl, keepl, anticipl) stk
-	     | Anticipate o' ->
-		 clean (substl, keepl, o'::anticipl) stk)
+          let id = Names.Label.to_id (Names.KerName.label kn) in
+    begin match o with
+    | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ ->
+      clean ((id,o)::substl, keepl, anticipl) stk
+    | KeepObject _ ->
+      clean (substl, (id,o)::keepl, anticipl) stk
+    | ImportObject { export } ->
+      if export then
+        clean ((id,o)::substl, keepl, anticipl) stk
+      else
+        clean acc stk
+    | AtomicObject obj ->
+      begin match classify_object obj with
+        | Dispose -> clean acc stk
+        | Keep o' ->
+          clean (substl, (id,AtomicObject o')::keepl, anticipl) stk
+        | Substitute o' ->
+          clean ((id,AtomicObject o')::substl, keepl, anticipl) stk
+        | Anticipate o' ->
+          clean (substl, keepl, AtomicObject o'::anticipl) stk
+      end
+    end
     | (_,OpenedSection _) :: _ -> user_err Pp.(str "there are still opened sections")
     | (_,OpenedModule (ty,_,_,_)) :: _ ->
       user_err ~hdr:"Lib.classify_segment"
@@ -223,19 +237,19 @@ let add_leaf id obj =
     user_err Pp.(str "No session module started (use -top dir)");
   let oname = make_foname id in
   cache_object (oname,obj);
-  add_entry oname (Leaf obj);
+  add_entry oname (Leaf (AtomicObject obj));
   oname
 
 let add_discharged_leaf id obj =
   let oname = make_foname id in
   let newobj = rebuild_object obj in
   cache_object (oname,newobj);
-  add_entry oname (Leaf newobj)
+  add_entry oname (Leaf (AtomicObject newobj))
 
 let add_leaves id objs =
   let oname = make_foname id in
   let add_obj obj =
-    add_entry oname (Leaf obj);
+    add_entry oname (Leaf (AtomicObject obj));
     load_object 1 (oname,obj)
   in
   List.iter add_obj objs;
@@ -246,9 +260,9 @@ let add_anonymous_leaf ?(cache_first = true) obj =
   let oname = make_foname id in
   if cache_first then begin
     cache_object (oname,obj);
-    add_entry oname (Leaf obj)
+    add_entry oname (Leaf (AtomicObject obj))
   end else begin
-    add_entry oname (Leaf obj);
+    add_entry oname (Leaf (AtomicObject obj));
     cache_object (oname,obj)
   end
 
@@ -583,7 +597,12 @@ let open_section id =
 let discharge_item ((sp,_ as oname),e) =
   match e with
   | Leaf lobj ->
-      Option.map (fun o -> (basename sp,o)) (discharge_object (oname,lobj))
+    begin match lobj with
+    | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _
+    | ImportObject _ -> None
+    | AtomicObject obj ->
+      Option.map (fun o -> (basename sp,o)) (discharge_object (oname,obj))
+    end
   | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
       anomaly (Pp.str "discharge_item.")
 
