@@ -63,20 +63,38 @@ let hash_stage_annot a =
 
 (** Stage sets *)
 
+(* [stage_state] =
+  ( name of next stage variable
+  , all used stage variables
+  , stage variables used to replace star annotations
+  ) *)
 type stage_vars = Int.Set.t
-type stage_state  = stage_name * stage_vars
+type stage_state = stage_name * stage_vars * stage_vars
 
-let init_stage_state = (0, Int.Set.empty)
-let next_stage_state (next, vs) = (Stage (StageVar (next, 0)), (next + 1, Int.Set.add next vs))
-let get_stage_vars (_, vs) = vs
+let empty_stage_vars = Int.Set.empty
+let add_stage_vars = Int.Set.add
 let mem_stage_vars = Int.Set.mem
 let diff_stage_vars = Int.Set.diff
 
-let show_stage_state (stg, vars) =
+let init_stage_state = (0, empty_stage_vars, empty_stage_vars)
+let get_stage_vars (_, vs, _) = vs
+let get_pos_stage_vars (_, _, stars) = stars
+let next_stage_state ?s:(s=Empty) ((next, vs, stars) as stg) =
+  match s with
+  | Empty | Stage Infty ->
+    Stage (StageVar (next, 0)),
+    (succ next, add_stage_vars next vs, stars)
+  | Star ->
+    Stage (StageVar (next, 0)),
+    (succ next, add_stage_vars next vs, add_stage_vars next stars)
+  | _ -> (s, stg)
+
+let show_stage_state (stg, vars, stars) =
   let f i str = string_of_int i ^ "," ^ str in
-  let vars_str = Int.Set.fold f vars "∞" in
   let stg_str = string_of_int stg in
-  "<" ^ stg_str ^ "," ^ "{" ^ vars_str ^ "}" ^ ">"
+  let vars_str = "{" ^ Int.Set.fold f vars "∞" ^ "}" in
+  let stars_str = "{" ^ Int.Set.fold f stars ": *" ^ "}" in
+  "<" ^ stg_str ^ "," ^ vars_str ^ "," ^ stars_str ^ ">"
 let pr_stage_state = mkPr show_stage_state
 
 (** Stage constraints and sets of constraints *)

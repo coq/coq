@@ -522,7 +522,7 @@ let rec execute env stg cstr =
       let stga, cstrnta, args', argst = execute_array env stg args in
       let stgf, cstrntf, f', ft = match kind f with
       | Ind (ind, s) when Environ.template_polymorphic_pind ind env ->
-        let s', stg' = if is_stage s then (s, stga) else next_stage_state stga in
+        let s', stg' = next_stage_state ~s stg in
         let t, cstrnt = type_of_inductive_knowing_parameters env ind argst in
         stg', cstrnt, mkIndUS ind s', t
       | _ -> (* No template polymorphism *)
@@ -574,7 +574,7 @@ let rec execute env stg cstr =
 
     (* Inductive types *)
     | Ind (ind, s) ->
-      let s', stg' = if is_stage s then (s, stg) else next_stage_state stg in
+      let s', stg' = next_stage_state ~s stg in
       let t, cstrnt = type_of_inductive env ind in
       stg', cstrnt, mkIndUS ind s', t
 
@@ -626,14 +626,14 @@ and execute_is_type env stg constr =
 and execute_recdef env stg (names, lar, vdef as recdef) i =
   let stg_lar, cstrnt_lar, lar', lart = execute_array env stg lar in
   let names' = Array.Smart.map_i (fun i na -> check_assumption env na lar'.(i) lart.(i)) names in
-  let stg_annot, lar_annot = annotate_star_array stg_lar lar' in
-  let star_vars = diff_stage_vars (get_stage_vars stg_annot) (get_stage_vars stg_lar) in
-  let lar_succ = succ_annots_array star_vars lar_annot in
-  let env1 = push_rec_types (names', lar_annot, vdef) env in (* vdef is ignored *)
-  let stg_vdef, cstrnt_vdef, vdef', vdeft = execute_array env1 stg_annot vdef in
+  let env1 = push_rec_types (names', lar', vdef) env in (* vdef is ignored *)
+  let stg_vdef, cstrnt_vdef, vdef', vdeft = execute_array env1 stg_lar vdef in
+  let star_vars = get_pos_stage_vars stg_vdef in
+  let lar_succ = Array.Smart.map (succ_annots star_vars) lar' in
+  let lar_star = Array.Smart.map (pos_annots star_vars) lar' in
   let cstrnt_fix = check_fixpoint env1 names' lar_succ vdef' vdeft in
-  let cstrnt_succ = conv_leq_vecti env lar_annot lar_succ in
-  let recdef = if names == names' && lar == lar' && vdef == vdef' then recdef else (names',lar',vdef') in
+  let cstrnt_succ = conv_leq_vecti env lar' lar_succ in
+  let recdef = if names == names' && lar == lar_star && vdef == vdef' then recdef else (names',lar_star,vdef') in
     stg_vdef, union_constraints [cstrnt_lar; cstrnt_vdef; cstrnt_fix; cstrnt_succ], lar'.(i), recdef
 
 and execute_array env stg cs =

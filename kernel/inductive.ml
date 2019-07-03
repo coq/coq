@@ -1310,3 +1310,29 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
     done
   else
     ()
+
+(************************************************************************)
+(************************************************************************)
+
+(* Functions for sized (co)fixpoints *)
+
+(* [rec_stage_var i ty_sized] returns the stage variable of
+  the [i]th parameter of [ty_sized], the recursive parameter of the fix
+  We assume that the types in the product [ty_sized] are in WHNF,
+  i.e. reduced to Ind or otherwise... can we? *)
+
+let rec_stage_var i ty_sized =
+  let open Context.Rel in
+  let ctxt_sized = Term.prod_assum ty_sized in
+  let assums_sized = List.filter is_local_assum ctxt_sized in
+  match lookup (length ctxt_sized - i) assums_sized with
+    | LocalAssum (_, ty) ->
+      begin
+      match kind ty with
+      | Ind (_, Stage (StageVar (s, _))) -> s
+      | _ -> error_bad_relevance empty_env (* FIXME!!! *)
+      end
+    | _ -> error_bad_relevance empty_env (* FIXME!!! *)
+
+let rec_stage_vars is tys_sized =
+  Array.map2 rec_stage_var is tys_sized

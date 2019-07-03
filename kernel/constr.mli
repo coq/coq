@@ -535,16 +535,15 @@ val erase : constr -> constr
 
 val annotate : Names.MutInd.t -> annot -> constr -> constr
 
-(** [annotate_star_array stg cs] replaces all position (star) annotations in [cs]
-   with new stage annotations from [stg] and returns the new stage stage along with
-   the annotated terms *)
-
-val annotate_star_array : stage_state -> constr array -> stage_state * constr array
-
-(** [succ_annots_array vars cs] calls [succ_annot] on all the stage annotations in [cs]
+(** [succ_annots vars c] calls [succ_annot] on all the stage annotations in [c]
    if the stage variables are in [vars] *)
 
-val succ_annots_array : stage_vars -> constr array -> constr array
+val succ_annots : stage_vars -> constr -> constr
+
+(** [pos_annots vars c] sets all stage annotations in [c]
+   whose stage variables are in [vars] to star position annotations *)
+
+val pos_annots : stage_vars -> constr -> constr
 
 (** [iter f c] iters [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
