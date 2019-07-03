@@ -183,7 +183,7 @@ open Declareops;;
 
 let constbody_of_string s =
   let b = Global.lookup_constant (Nametab.locate_constant (qualid_of_string s)) in
-  Option.get (Global.body_of_constant_body Library.indirect_accessor b);;
+  COption.get (Global.body_of_constant_body Library.indirect_accessor b);;
 
 (* Get the current goal *)
 (*
@@ -201,7 +201,7 @@ let _ = Flags.in_toplevel := true
 let _ = Constrextern.set_extern_reference
   (fun ?loc _ r -> Nametab.shortest_qualid_of_global ?loc Id.Set.empty r);;
 
-let go () = Coqloop.(loop ~opts:Option.(get !drop_args) ~state:Option.(get !drop_last_doc))
+let go () = Coqloop.(loop ~opts:COption.(get !drop_args) ~state:Option.(get !drop_last_doc))
 
 let _ =
  print_string

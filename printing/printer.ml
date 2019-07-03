@@ -211,7 +211,7 @@ let pr_universe_ctx sigma ?variance c =
 
 let pr_abstract_universe_ctx sigma ?variance ?priv c =
   let open Univ in
-  let priv = Option.default Univ.ContextSet.empty priv in
+  let priv = COption.default Univ.ContextSet.empty priv in
   let has_priv = not (ContextSet.is_empty priv) in
   if !Detyping.print_universes && (not (Univ.AUContext.is_empty c) || has_priv) then
     let prlev u = Termops.pr_evd_level sigma u in
@@ -565,7 +565,7 @@ let pr_subgoal n sigma =
   let rec prrec p = function
     | [] -> user_err Pp.(str "No such goal.")
     | g::rest ->
-	if Int.equal p 1 then
+        if CInt.equal p 1 then
           pr_selected_subgoal (int n) sigma g
 	else
 	  prrec (p-1) rest
@@ -606,7 +606,7 @@ let print_evar_constraints gl sigma =
              spc () ++ pr_leconstr_env env sigma t2)
   in
   let pr_candidate ev evi (candidates,acc) =
-    if Option.has_some evi.evar_candidates then
+    if COption.has_some evi.evar_candidates then
       (succ candidates, acc ++ pr_evar sigma (ev,evi) ++ fnl ())
     else (candidates, acc)
   in
@@ -704,7 +704,7 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
     | [] -> Pp.mt ()
     | a::l -> Pp.spc () ++ str"(" ++ print_comma_separated_list a l ++ str")"
   in
-  let extra = Option.List.flatten [ print_unfocused_nums stack ; print_shelf shelf ] in
+  let extra = COption.List.flatten [ print_unfocused_nums stack ; print_shelf shelf ] in
   let print_extra = print_extra_list extra in
   let focused_if_needed =
     let needed = not (CList.is_empty extra) && pr_first in
@@ -1009,7 +1009,7 @@ let pr_assumptionset env sigma s =
       opt_list (str "Opaque constants:") opaque;
       opt_list (str "Theory:") theory;
     ] in
-    prlist_with_sep fnl (fun x -> x) (Option.List.flatten assums)
+    prlist_with_sep fnl (fun x -> x) (COption.List.flatten assums)
 
 (* print the proof step, possibly with diffs highlighted, *)
 let print_and_diff oldp newp =

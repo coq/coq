@@ -99,7 +99,7 @@ let of_ident {loc;v=id} = inj_wit ?loc wit_ident id
 
 let of_constr ?delimiters c =
   let loc = Constrexpr_ops.constr_loc c in
-  let c = Option.cata
+  let c = COption.cata
       (List.fold_left (fun c d ->
            CAst.make ?loc @@ Constrexpr.CDelimiters(Id.to_string d, c))
           c)

@@ -19,7 +19,7 @@ module Pair (M:S) (N:S) = struct
 
   let compare (a,b) (a',b') =
     let i = M.compare a a' in
-    if Int.equal i 0 then N.compare b b'
+    if CInt.equal i 0 then N.compare b b'
     else i
 end
 

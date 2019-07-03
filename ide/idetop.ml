@@ -85,7 +85,7 @@ let ide_cmd_warns ~id { CAst.loc; v } =
 (** Interpretation (cf. [Ide_intf.interp]) *)
 
 let ide_doc = ref None
-let get_doc () = Option.get !ide_doc
+let get_doc () = COption.get !ide_doc
 let set_doc doc = ide_doc := Some doc
 
 let add ((s,eid),(sid,verbose)) =
@@ -490,7 +490,7 @@ let slave_feeder fmt xml_oc msg =
     trying to answer malformed requests. *)
 
 let msg_format = ref (fun () ->
-    let margin = Option.default 72 (Topfmt.get_margin ()) in
+    let margin = COption.default 72 (Topfmt.get_margin ()) in
     Xmlprotocol.Richpp margin
   )
 

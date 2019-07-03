@@ -35,10 +35,10 @@ module Hook = struct
   let make hook = CEphemeron.create hook
 
   let call ?hook ?fix_exn x =
-    try Option.iter (fun hook -> CEphemeron.get hook x) hook
+    try COption.iter (fun hook -> CEphemeron.get hook x) hook
     with e when CErrors.noncritical e ->
       let e = CErrors.push e in
-      let e = Option.cata (fun fix -> fix e) e fix_exn in
+      let e = COption.cata (fun fix -> fix e) e fix_exn in
       Util.iraise e
 end
 
@@ -79,7 +79,7 @@ let check_definition_evars ~allow_evars sigma =
 let prepare_definition ~allow_evars ?opaque ?inline ~poly sigma udecl ~types ~body =
   check_definition_evars ~allow_evars sigma;
   let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:(not allow_evars)
-      sigma (fun nf -> nf body, Option.map nf types)
+      sigma (fun nf -> nf body, COption.map nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   sigma, definition_entry ?opaque ?inline ?types ~univs body

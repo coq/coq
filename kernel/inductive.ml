@@ -387,9 +387,9 @@ let check_case_info env (indsp,u) r ci =
   let (mib,mip as spec) = lookup_mind_specif env indsp in
   if
     not (eq_ind indsp ci.ci_ind) ||
-    not (Int.equal mib.mind_nparams ci.ci_npar) ||
-    not (Array.equal Int.equal mip.mind_consnrealdecls ci.ci_cstr_ndecls) ||
-    not (Array.equal Int.equal mip.mind_consnrealargs ci.ci_cstr_nargs) ||
+    not (CInt.equal mib.mind_nparams ci.ci_npar) ||
+    not (Array.equal CInt.equal mip.mind_consnrealdecls ci.ci_cstr_ndecls) ||
+    not (Array.equal CInt.equal mip.mind_consnrealargs ci.ci_cstr_nargs) ||
     not (ci.ci_relevance == r) ||
     is_primitive_record spec
   then raise (TypeError(env,WrongCaseInfo((indsp,u),ci)))
@@ -555,7 +555,7 @@ let branches_specif renv c_spec ci =
 	   (match Lazy.force c_spec with
 		Subterm (_,t) when match_inductive ci.ci_ind (dest_recarg t) ->
 		  let vra = Array.of_list (dest_subterms t).(i) in
-		  assert (Int.equal nca (Array.length vra));
+                  assert (CInt.equal nca (Array.length vra));
 		  Array.map spec_of_tree vra
 	      | Dead_code -> Array.make nca Dead_code
 	      | _ -> Array.make nca Not_subterm) in
@@ -591,7 +591,7 @@ let ienv_push_inductive (env, ra_env) ((mind,u),lpar) =
   (env, lra_ind @ ra_env)
 
 let rec ienv_decompose_prod (env,_ as ienv) n c =
- if Int.equal n 0 then (ienv,c) else
+ if CInt.equal n 0 then (ienv,c) else
    let c' = whd_all env c in
    match kind c' with
    Prod(na,a,b) ->
@@ -610,7 +610,7 @@ let lambda_implicit_lift n a =
    nested inductive types only ) *)
 let abstract_mind_lc ntyps npars lc =
   let lc = Array.map (fun (ctx, c) -> Term.it_mkProd_or_LetIn c ctx) lc in
-  if Int.equal npars 0 then
+  if CInt.equal npars 0 then
     lc
   else
     let make_abs =
@@ -664,7 +664,7 @@ let get_recargs_approx env tree ind args =
     computed statically. This is fine because nested inductive types with
     mutually recursive containers are not supported. *)
     let trees =
-      if Int.equal auxntyp 1 then [|dest_subterms tree|]
+      if CInt.equal auxntyp 1 then [|dest_subterms tree|]
       else Array.map (fun mip -> dest_subterms mip.mind_recargs) mib.mind_packets
     in
     let mk_irecargs j specif =
@@ -979,7 +979,7 @@ let check_one_fix renv recpos trees def =
               let renv' = push_fix_renv renv recdef in
               let stack' = push_stack_closures renv l stack in
               bodies |> Array.iteri (fun j body ->
-                if Int.equal i j && (List.length stack' > decrArg) then
+                if CInt.equal i j && (List.length stack' > decrArg) then
                   let recArg = List.nth stack' decrArg in
                   let arg_sp = stack_element_specif recArg in
                   check_nested_fix_body renv' (decrArg+1) arg_sp body
@@ -1066,7 +1066,7 @@ let check_one_fix renv recpos trees def =
         | (App _ | LetIn _ | Cast _) -> assert false (* beta zeta reduction *)
 
   and check_nested_fix_body renv decr recArgsDecrArg body =
-    if Int.equal decr 0 then
+    if CInt.equal decr 0 then
       check_rec_call (assign_var_spec renv (1,recArgsDecrArg)) [] body
     else
       match kind body with
@@ -1084,10 +1084,10 @@ let judgment_of_fixpoint (_, types, bodies) =
 
 let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
   let nbfix = Array.length bodies in
-  if Int.equal nbfix 0
-    || not (Int.equal (Array.length nvect) nbfix)
-    || not (Int.equal (Array.length types) nbfix)
-    || not (Int.equal (Array.length names) nbfix)
+  if CInt.equal nbfix 0
+    || not (CInt.equal (Array.length nvect) nbfix)
+    || not (CInt.equal (Array.length types) nbfix)
+    || not (CInt.equal (Array.length names) nbfix)
     || bodynum < 0
     || bodynum >= nbfix
   then anomaly (Pp.str "Ill-formed fix term.");
@@ -1104,7 +1104,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
         | Lambda (x,a,b) ->
 	    if noccur_with_meta n nbfix a then
               let env' = push_rel (LocalAssum (x,a)) env in
-              if Int.equal n (k + 1) then
+              if CInt.equal n (k + 1) then
                 (* get the inductive type of the fixpoint *)
                 let (mind, _) =
                   try find_inductive env a

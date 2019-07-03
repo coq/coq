@@ -97,7 +97,7 @@ let rec print_gen ~anomaly ~extra_msg stk (e, info) =
   | h::stk' ->
     try
       let err_msg = h e in
-      Option.cata (fun msg -> msg ++ err_msg) err_msg extra_msg
+      COption.cata (fun msg -> msg ++ err_msg) err_msg extra_msg
     with
     | Unhandled -> print_gen ~anomaly ~extra_msg stk' (e,info)
     | any -> print_gen ~anomaly ~extra_msg stk' (any,info)
@@ -110,7 +110,7 @@ let print_gen ~anomaly (e, info) =
   let extra_msg, info = match extra_info with
     | None -> None, info
     | Some (loc, msg) ->
-      let info = Option.cata (fun l -> Loc.add_loc info l) info loc in
+      let info = COption.cata (fun l -> Loc.add_loc info l) info loc in
       msg, info
   in
   print_gen ~anomaly ~extra_msg !handle_stack (e,info)

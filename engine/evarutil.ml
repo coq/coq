@@ -254,7 +254,7 @@ type csubst = {
   csubst_var : Constr.t Id.Map.t;
   (** A mapping of variables to variables. We use the more general
       [Constr.t] to share allocations, but all values are of shape [Var _]. *)
-  csubst_rel : Constr.t Int.Map.t;
+  csubst_rel : Constr.t CInt.Map.t;
   (** A contiguous mapping of integers to variables. Same remark for values. *)
   csubst_rev : subst_val Id.Map.t;
   (** Reverse mapping of the substitution *)
@@ -266,7 +266,7 @@ type csubst = {
 
 let empty_csubst = {
   csubst_len = 0;
-  csubst_rel = Int.Map.empty;
+  csubst_rel = CInt.Map.empty;
   csubst_var = Id.Map.empty;
   csubst_rev = Id.Map.empty;
 }
@@ -277,7 +277,7 @@ let csubst_subst { csubst_len = k; csubst_var = v; csubst_rel = s } c =
   let rec subst n c = match Constr.kind c with
   | Rel m ->
     if m <= n then c
-    else if m - n <= k then Int.Map.find (k - m + n) s
+    else if m - n <= k then CInt.Map.find (k - m + n) s
     else mkRel (m - k)
   | Var id ->
     begin try Id.Map.find id v with Not_found -> c end
@@ -290,7 +290,7 @@ type ext_named_context =
   csubst * Id.Set.t * EConstr.named_context
 
 let push_var id { csubst_len = n; csubst_var = v; csubst_rel = s; csubst_rev = r } =
-  let s = Int.Map.add n (Constr.mkVar id) s in
+  let s = CInt.Map.add n (Constr.mkVar id) s in
   let r = Id.Map.add id (SRel n) r in
   { csubst_len = succ n; csubst_var = v; csubst_rel = s; csubst_rev = r }
 
@@ -310,7 +310,7 @@ let update_var src tgt subst =
     let csubst_rev = Id.Map.add tgt bnd (Id.Map.remove src subst.csubst_rev) in
     match bnd with
     | SRel m ->
-      let csubst_rel = Int.Map.add m (Constr.mkVar tgt) subst.csubst_rel in
+      let csubst_rel = CInt.Map.add m (Constr.mkVar tgt) subst.csubst_rel in
       { subst with csubst_rel; csubst_rev }
     | SVar id ->
       let csubst_var = Id.Map.add id (Constr.mkVar tgt) subst.csubst_var in
@@ -416,7 +416,7 @@ let new_pure_evar_full evd ?typeclass_candidate evi =
 let new_pure_evar?(src=default_source) ?(filter = Filter.identity) ?(abstract_arguments = Abstraction.identity)
     ?candidates ?naming ?typeclass_candidate ?(principal=false) sign evd typ =
   let default_naming = IntroAnonymous in
-  let naming = Option.default default_naming naming in
+  let naming = COption.default default_naming naming in
   let name = match naming with
   | IntroAnonymous -> None
   | IntroIdentifier id -> Some id
@@ -464,7 +464,7 @@ let new_evar ?src ?filter ?abstract_arguments ?candidates ?naming ?typeclass_can
     ?principal ?hypnaming env evd typ =
   let sign,typ',instance,subst = push_rel_context_to_named_context ?hypnaming env evd typ in
   let map c = csubst_subst subst c in
-  let candidates = Option.map (fun l -> List.map map l) candidates in
+  let candidates = COption.map (fun l -> List.map map l) candidates in
   let instance =
     match filter with
     | None -> instance
@@ -530,7 +530,7 @@ let filter_effective_candidates evd evi filter candidates =
 
 let restrict_evar evd evk filter ?src candidates =
   let evar_info = Evd.find_undefined evd evk in
-  let candidates = Option.map (filter_effective_candidates evd evar_info filter) candidates in
+  let candidates = COption.map (filter_effective_candidates evd evar_info filter) candidates in
   match candidates with
   | Some [] -> raise (ClearDependencyError (*FIXME*)(Id.of_string "blah", (NoCandidatesLeft evk), None))
   | _ ->
@@ -612,7 +612,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
               let filter = Evd.Filter.apply_subfilter origfilter filter in
               let evd = !evdref in
               let candidates = Evd.evar_candidates evi in
-              let candidates = Option.map (List.map EConstr.of_constr) candidates in
+              let candidates = COption.map (List.map EConstr.of_constr) candidates in
               let (evd,_) = restrict_evar evd evk filter candidates in
               evdref := evd;
               Evd.existential_value0 !evdref ev
@@ -814,7 +814,7 @@ let occur_evar_upto sigma n c =
   let c = EConstr.Unsafe.to_constr c in
   let rec occur_rec c = match kind c with
     | Evar (sp,_) when Evar.equal sp n -> raise Occur
-    | Evar e -> Option.iter occur_rec (existential_opt_value0 sigma e)
+    | Evar e -> COption.iter occur_rec (existential_opt_value0 sigma e)
     | _ -> Constr.iter occur_rec c
   in
   try occur_rec c; false with Occur -> true

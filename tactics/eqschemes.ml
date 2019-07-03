@@ -132,8 +132,8 @@ let error msg = user_err Pp.(str msg)
 
 let get_sym_eq_data env (ind,u) =
   let (mib,mip as specif) = lookup_mind_specif env ind in
-  if not (Int.equal (Array.length mib.mind_packets) 1) ||
-    not (Int.equal (Array.length mip.mind_nf_lc) 1) then
+  if not (CInt.equal (Array.length mib.mind_packets) 1) ||
+    not (CInt.equal (Array.length mip.mind_nf_lc) 1) then
     error "Not an inductive type with a single constructor.";
   let arityctxt = Vars.subst_instance_context u mip.mind_arity_ctxt in
   let realsign,_ = List.chop mip.mind_nrealdecls arityctxt in
@@ -141,7 +141,7 @@ let get_sym_eq_data env (ind,u) =
     error "Inductive equalities with local definitions in arity not supported.";
   let constrsign,ccl = mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
-  if not (Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
+  if not (CInt.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
     error "Constructor must have no arguments"; (* This can be relaxed... *)
   let params,constrargs = List.chop mib.mind_nparams constrargs in
   if mip.mind_nrealargs > mib.mind_nparams then
@@ -167,8 +167,8 @@ let get_sym_eq_data env (ind,u) =
 
 let get_non_sym_eq_data env (ind,u) =
   let (mib,mip as specif) = lookup_mind_specif env ind in
-  if not (Int.equal (Array.length mib.mind_packets) 1) ||
-    not (Int.equal (Array.length mip.mind_nf_lc) 1) then
+  if not (CInt.equal (Array.length mib.mind_packets) 1) ||
+    not (CInt.equal (Array.length mip.mind_nf_lc) 1) then
     error "Not an inductive type with a single constructor.";
   let arityctxt = Vars.subst_instance_context u mip.mind_arity_ctxt in
   let realsign,_ = List.chop mip.mind_nrealdecls arityctxt in
@@ -176,7 +176,7 @@ let get_non_sym_eq_data env (ind,u) =
     error "Inductive equalities with local definitions in arity not supported";
   let constrsign,ccl = mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
-  if not (Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
+  if not (CInt.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
     error "Constructor must have no arguments";
   let _,constrargs = List.chop mib.mind_nparams constrargs in
   let constrargs = List.map (Vars.subst_instance_constr u) constrargs in
@@ -775,9 +775,9 @@ let build_congr env (eq,refl,ctx) ind =
   let (ind,u as indu), ctx = with_context_set ctx 
     (UnivGen.fresh_inductive_instance env ind) in
   let (mib,mip) = lookup_mind_specif env ind in
-  if not (Int.equal (Array.length mib.mind_packets) 1) || not (Int.equal (Array.length mip.mind_nf_lc) 1) then
+  if not (CInt.equal (Array.length mib.mind_packets) 1) || not (CInt.equal (Array.length mip.mind_nf_lc) 1) then
     error "Not an inductive type with a single constructor.";
-  if not (Int.equal mip.mind_nrealargs 1) then
+  if not (CInt.equal mip.mind_nrealargs 1) then
     error "Expect an inductive type with one predicate parameter.";
   let i = 1 in
   let arityctxt = Vars.subst_instance_context u mip.mind_arity_ctxt in
@@ -792,7 +792,7 @@ let build_congr env (eq,refl,ctx) ind =
   in
   let constrsign,ccl = mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
-  if not (Int.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
+  if not (CInt.equal (Context.Rel.length constrsign) (Context.Rel.length mib.mind_params_ctxt)) then
     error "Constructor must have no arguments";
   let b = List.nth constrargs (i + mib.mind_nparams - 1) in
   let varB = fresh env (Id.of_string "B") in

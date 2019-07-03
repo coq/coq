@@ -44,17 +44,17 @@ let expand_path_macros ~warn s =
     else i in
   let rec expand_macros s i =
     let l = String.length s in
-    if Int.equal i l then s else
+    if CInt.equal i l then s else
       match s.[i] with
 	| '$' ->
 	  let n = expand_atom s (i+1) in
 	  let v = safe_getenv warn (String.sub s (i+1) (n-i-1)) in
 	  let s = (String.sub s 0 i)^v^(String.sub s n (l-n)) in
 	  expand_macros s (i + String.length v)
-	| '~' when Int.equal i 0 ->
+        | '~' when CInt.equal i 0 ->
 	  let n = expand_atom s (i+1) in
 	  let v =
-	    if Int.equal n (i + 1) then home ~warn
+            if CInt.equal n (i + 1) then home ~warn
 	    else (Unix.getpwnam (String.sub s (i+1) (n-i-1))).Unix.pw_dir
 	  in
 	  let s = v^(String.sub s n (l-n)) in
@@ -117,7 +117,7 @@ let set_coqlib ~fail =
     let lib = guess_coqlib fail in
     coqlib := Some lib
 
-let coqlib () = Option.default "" !coqlib
+let coqlib () = COption.default "" !coqlib
 
 let docdir () =
   (* This assumes implicitly that the suffix is non-trivial *)

@@ -339,7 +339,7 @@ let do_fixpoint ~scope ~poly l =
         | _, _ -> r
       in
         build_wellfounded (id, univs, binders, rtype, out_def body_def) poly
-          (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m notations
+          (COption.default (CAst.make @@ CRef (lt_ref,None)) r) m notations
 
     | _, _ when List.for_all (fun ro -> match ro with None | Some { CAst.v = CStructRec _} -> true | _ -> false) g ->
       let annots = List.map (fun fix ->

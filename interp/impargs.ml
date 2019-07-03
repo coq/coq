@@ -115,7 +115,7 @@ type argument_position =
 
 let argument_position_eq p1 p2 = match p1, p2 with
 | Conclusion, Conclusion -> true
-| Hyp h1, Hyp h2 -> Int.equal h1 h2
+| Hyp h1, Hyp h2 -> CInt.equal h1 h2
 | _ -> false
 
 type implicit_explanation =
@@ -631,7 +631,7 @@ let declare_manual_implicits local ref ?enriching l =
   let sigma = Evd.from_env env in
   let t, _ = Typeops.type_of_global_in_context env ref in
   let t = of_constr t in
-  let enriching = Option.default flags.auto enriching in
+  let enriching = COption.default flags.auto enriching in
   let autoimpls = compute_auto_implicits env sigma flags enriching t in
   let l = [DefaultImpArgs, set_manual_implicits flags enriching autoimpls l] in
   let req =
@@ -707,7 +707,7 @@ let extract_impargs_data impls =
 let make_implicits_list l = [DefaultImpArgs, l]
 
 let rec drop_first_implicits p l =
-  if Int.equal p 0 then l else match l with
+  if CInt.equal p 0 then l else match l with
   | _,[] as x -> x
   | DefaultImpArgs,imp::impls ->
       drop_first_implicits (p-1) (DefaultImpArgs,impls)

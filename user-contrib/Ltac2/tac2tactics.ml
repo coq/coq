@@ -87,7 +87,7 @@ let mk_hyp_location (id, occs, h) =
   ((mk_occurrences_expr occs, id), h)
 
 let mk_clause cl = {
-  Locus.onhyps = Option.map (fun l -> List.map mk_hyp_location l) cl.onhyps;
+  Locus.onhyps = COption.map (fun l -> List.map mk_hyp_location l) cl.onhyps;
   Locus.concl_occs = mk_occurrences_expr cl.concl_occs;
 }
 
@@ -104,7 +104,7 @@ let apply adv ev cb cl =
   match cl with
   | None -> Tactics.apply_with_delayed_bindings_gen adv ev cb
   | Some (id, cl) ->
-    let cl = Option.map mk_intro_pattern cl in
+    let cl = COption.map mk_intro_pattern cl in
     Tactics.apply_delayed_in adv ev id cb cl
 
 let mk_destruction_arg = function
@@ -115,19 +115,19 @@ let mk_destruction_arg = function
 | ElimOnAnonHyp n -> Tactics.ElimOnAnonHyp n
 
 let mk_induction_clause (arg, eqn, as_, occ) =
-  let eqn = Option.map (fun ipat -> CAst.make @@ mk_intro_pattern_naming ipat) eqn in
-  let as_ = Option.map (fun ipat -> CAst.make @@ mk_or_and_intro_pattern ipat) as_ in
-  let occ = Option.map mk_clause occ in
+  let eqn = COption.map (fun ipat -> CAst.make @@ mk_intro_pattern_naming ipat) eqn in
+  let as_ = COption.map (fun ipat -> CAst.make @@ mk_or_and_intro_pattern ipat) as_ in
+  let occ = COption.map mk_clause occ in
   ((None, mk_destruction_arg arg), (eqn, as_), occ)
 
 let induction_destruct isrec ev (ic : induction_clause list) using =
   let ic = List.map mk_induction_clause ic in
-  let using = Option.map mk_with_bindings using in
+  let using = COption.map mk_with_bindings using in
   Tactics.induction_destruct isrec ev (ic, using)
 
 let elim ev c copt =
   let c = mk_with_bindings c in
-  let copt = Option.map mk_with_bindings copt in
+  let copt = COption.map mk_with_bindings copt in
   Tactics.elim ev None c copt
 
 let generalize pl =
@@ -157,7 +157,7 @@ let split_with_bindings ev bnd =
 
 let specialize c pat =
   let c = mk_with_bindings c in
-  let pat = Option.map mk_intro_pattern pat in
+  let pat = COption.map mk_intro_pattern pat in
   Tactics.specialize c pat
 
 let change pat c cl =
@@ -174,11 +174,11 @@ let change pat c cl =
 let rewrite ev rw cl by =
   let map_rw (orient, repeat, c) =
     let c = c >>= fun c -> return (mk_with_bindings c) in
-    (Option.default true orient, repeat, None, delayed_of_tactic c)
+    (COption.default true orient, repeat, None, delayed_of_tactic c)
   in
   let rw = List.map map_rw rw in
   let cl = mk_clause cl in
-  let by = Option.map (fun tac -> Tacticals.New.tclCOMPLETE (thaw Tac2ffi.unit tac), Equality.Naive) by in
+  let by = COption.map (fun tac -> Tacticals.New.tclCOMPLETE (thaw Tac2ffi.unit tac), Equality.Naive) by in
   Equality.general_multi_rewrite ev rw cl by
 
 let symmetry cl =
@@ -186,7 +186,7 @@ let symmetry cl =
   Tactics.intros_symmetry cl
 
 let forward fst tac ipat c =
-  let ipat = Option.map mk_intro_pattern ipat in
+  let ipat = COption.map mk_intro_pattern ipat in
   Tactics.forward fst tac ipat c
 
 let assert_ = function
@@ -194,12 +194,12 @@ let assert_ = function
   let ipat = CAst.make @@ Tactypes.IntroNaming (Namegen.IntroIdentifier id) in
   Tactics.forward true None (Some ipat) c
 | AssertType (ipat, c, tac) ->
-  let ipat = Option.map mk_intro_pattern ipat in
-  let tac = Option.map (fun tac -> thaw Tac2ffi.unit tac) tac in
+  let ipat = COption.map mk_intro_pattern ipat in
+  let tac = COption.map (fun tac -> thaw Tac2ffi.unit tac) tac in
   Tactics.forward true (Some tac) ipat c
 
 let letin_pat_tac ev ipat na c cl =
-  let ipat = Option.map (fun (b, ipat) -> (b, CAst.make @@ mk_intro_pattern_naming ipat)) ipat in
+  let ipat = COption.map (fun (b, ipat) -> (b, CAst.make @@ mk_intro_pattern_naming ipat)) ipat in
   let cl = mk_clause cl in
   Tactics.letin_pat_tac ev ipat na c cl
 
@@ -225,7 +225,7 @@ let reduce r cl =
   Tactics.reduce r cl
 
 let simpl flags where cl =
-  let where = Option.map map_pattern_with_occs where in
+  let where = COption.map map_pattern_with_occs where in
   let cl = mk_clause cl in
   Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
   let flags = { flags with rConst } in
@@ -264,12 +264,12 @@ let pattern where cl =
   Tactics.reduce (Pattern where) cl
 
 let vm where cl =
-  let where = Option.map map_pattern_with_occs where in
+  let where = COption.map map_pattern_with_occs where in
   let cl = mk_clause cl in
   Tactics.reduce (CbvVm where) cl
 
 let native where cl =
-  let where = Option.map map_pattern_with_occs where in
+  let where = COption.map map_pattern_with_occs where in
   let cl = mk_clause cl in
   Tactics.reduce (CbvNative where) cl
 
@@ -288,7 +288,7 @@ let eval_hnf c =
   eval_fun Hnf c
 
 let eval_simpl flags where c =
-  let where = Option.map map_pattern_with_occs where in
+  let where = COption.map map_pattern_with_occs where in
   Proofview.Monad.List.map get_evaluable_reference flags.rConst >>= fun rConst ->
   let flags = { flags with rConst } in
   eval_fun (Simpl (flags, where)) c
@@ -324,11 +324,11 @@ let eval_pattern where c =
   eval_fun (Pattern where) c
 
 let eval_vm where c =
-  let where = Option.map map_pattern_with_occs where in
+  let where = COption.map map_pattern_with_occs where in
   eval_fun (CbvVm where) c
 
 let eval_native where c =
-  let where = Option.map map_pattern_with_occs where in
+  let where = COption.map map_pattern_with_occs where in
   eval_fun (CbvNative where) c
 
 let on_destruction_arg tac ev arg =
@@ -358,12 +358,12 @@ let on_destruction_arg tac ev arg =
   end
 
 let discriminate ev arg =
-  let arg = Option.map (fun arg -> None, arg) arg in
+  let arg = COption.map (fun arg -> None, arg) arg in
   on_destruction_arg Equality.discr_tac ev arg
 
 let injection ev ipat arg =
-  let arg = Option.map (fun arg -> None, arg) arg in
-  let ipat = Option.map mk_intro_patterns ipat in
+  let arg = COption.map (fun arg -> None, arg) arg in
+  let ipat = COption.map mk_intro_patterns ipat in
   let tac ev arg = Equality.injClause None ipat ev arg in
   on_destruction_arg tac ev arg
 
@@ -381,12 +381,12 @@ let autorewrite ~all by ids cl =
 
 let trivial debug lems dbs =
   let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
-  let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
+  let dbs = COption.map (fun l -> List.map Id.to_string l) dbs in
   Auto.h_trivial ~debug lems dbs
 
 let auto debug n lems dbs =
   let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
-  let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
+  let dbs = COption.map (fun l -> List.map Id.to_string l) dbs in
   Auto.h_auto ~debug n lems dbs
 
 let new_auto debug n lems dbs =
@@ -400,7 +400,7 @@ let new_auto debug n lems dbs =
 
 let eauto debug n p lems dbs =
   let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
-  let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
+  let dbs = COption.map (fun l -> List.map Id.to_string l) dbs in
   Eauto.gen_eauto (Eauto.make_dimension n p) lems dbs
 
 let typeclasses_eauto strategy depth dbs =
@@ -444,5 +444,5 @@ let inversion knd arg pat ids =
   on_destruction_arg inversion true (Some (None, arg))
 
 let contradiction c =
-  let c = Option.map mk_with_bindings c in
+  let c = COption.map mk_with_bindings c in
   Contradiction.contradiction c

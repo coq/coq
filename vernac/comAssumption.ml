@@ -199,7 +199,7 @@ let do_assumptions ~program_mode ~poly ~scope ~kind nl l =
   declare_assumptions ~poly ~scope ~kind (univs,ubinders) nl l
 
 let context_subst subst (name,b,t,impl) =
-  name, Option.map (Vars.substl subst) b, Vars.substl subst t, impl
+  name, COption.map (Vars.substl subst) b, Vars.substl subst t, impl
 
 let context_insection sigma ~poly ctx =
   let uctx = Evd.universe_context_set sigma in
@@ -254,7 +254,7 @@ let context_nosection sigma ~poly ctx =
     let () = Declare.assumption_message name in
     let env = Global.env () in
     (* why local when is_modtype? *)
-    let () = if Lib.is_modtype() || Option.is_empty b then
+    let () = if Lib.is_modtype() || COption.is_empty b then
         Classes.declare_instance env sigma None (Lib.is_modtype()) (GlobRef.ConstRef cst)
     in
     Constr.mkConstU (cst,instance_of_univ_entry univs) :: subst
@@ -277,7 +277,7 @@ let context ~poly l =
         | Anonymous -> user_err Pp.(str "Anonymous variables not allowed in contexts.")
         | Name id -> id
       in
-      let b = Option.map (EConstr.to_constr sigma) b in
+      let b = COption.map (EConstr.to_constr sigma) b in
       let t = EConstr.to_constr sigma t in
       let test x = match x.CAst.v with
         | Some (Name id',_) -> Id.equal name id'

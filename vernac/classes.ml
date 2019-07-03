@@ -142,7 +142,7 @@ let warning_not_a_class =
 
 let declare_instance ?(warn = false) env sigma info local glob =
   let ty, _ = Typeops.type_of_global_in_context env glob in
-  let info = Option.default {hint_priority = None; hint_pattern = None} info in
+  let info = COption.default {hint_priority = None; hint_pattern = None} info in
   match class_of_constr env sigma (EConstr.of_constr ty) with
   | Some (rels, ((tc,_), args) as _cl) ->
     assert (not (isVarRef glob) || local);
@@ -161,10 +161,10 @@ let subst_class (subst,cl) =
   and do_subst_gr gr = fst (subst_global subst gr) in
   let do_subst_ctx = List.Smart.map (RelDecl.map_constr do_subst) in
   let do_subst_context (grs,ctx) =
-    List.Smart.map (Option.Smart.map do_subst_gr) grs,
+    List.Smart.map (COption.Smart.map do_subst_gr) grs,
     do_subst_ctx ctx in
   let do_subst_projs projs = List.Smart.map (fun (x, y, z) ->
-    (x, y, Option.Smart.map do_subst_con z)) projs in
+    (x, y, COption.Smart.map do_subst_con z)) projs in
   { cl_univs = cl.cl_univs;
     cl_impl = do_subst_gr cl.cl_impl;
     cl_context = do_subst_context cl.cl_context;
@@ -261,13 +261,13 @@ let add_class env sigma cl =
 let intern_info {hint_priority;hint_pattern} =
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let hint_pattern = Option.map (Constrintern.intern_constr_pattern env sigma) hint_pattern in
+  let hint_pattern = COption.map (Constrintern.intern_constr_pattern env sigma) hint_pattern in
   {hint_priority;hint_pattern}
 
 (** TODO: add subinstances *)
 let existing_instance glob g info =
   let c = Nametab.global g in
-  let info = Option.default Hints.empty_hint_info info in
+  let info = COption.default Hints.empty_hint_info info in
   let info = intern_info info in
   let env = Global.env() in
   let sigma = Evd.from_env env in
@@ -377,10 +377,10 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids t
   let lemma = Lemmas.start_lemma ~name:id ~poly ~udecl ~info sigma (EConstr.of_constr termtype) in
   (* spiwack: I don't know what to do with the status here. *)
   let lemma =
-    if not (Option.is_empty term) then
+    if not (COption.is_empty term) then
       let init_refine =
         Tacticals.New.tclTHENLIST [
-          Refine.refine ~typecheck:false (fun sigma -> (sigma, Option.get term));
+          Refine.refine ~typecheck:false (fun sigma -> (sigma, COption.get term));
           Proofview.Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state gls);
           Tactics.New.reduce_after_refine;
         ]
@@ -406,7 +406,7 @@ let do_instance_subst_constructor_and_ty subst k u ctx =
   in
   let (app, ty_constr) = instance_constructor (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr ctx in
-  let term = it_mkLambda_or_LetIn (Option.get app) ctx in
+  let term = it_mkLambda_or_LetIn (COption.get app) ctx in
   term, termtype
 
 let do_instance_resolve_TC term termtype sigma env =
@@ -439,7 +439,7 @@ let do_instance_type_ctx_instance props k env' ctx' sigma ~program_mode subst =
              let {CAst.loc;v=mid} = get_id loc_mid in
              List.iter (fun (n, _, x) ->
                  if Name.equal n (Name mid) then
-                   Option.iter (fun x -> Dumpglob.add_glob ?loc (GlobRef.ConstRef x)) x) k.cl_projs;
+                   COption.iter (fun x -> Dumpglob.add_glob ?loc (GlobRef.ConstRef x)) x) k.cl_projs;
              c :: props, rest'
            with Not_found ->
              ((CAst.make @@ CHole (None(* Some Evar_kinds.GoalEvar *), Namegen.IntroAnonymous, None)) :: props), rest
@@ -515,8 +515,8 @@ let do_instance_program env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri 
         do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
       Some term, termtype, sigma in
   let termtype, sigma = do_instance_resolve_TC term termtype sigma env in
-  if not (Evd.has_undefined sigma) && not (Option.is_empty opt_props) then
-    let term = to_constr sigma (Option.get term) in
+  if not (Evd.has_undefined sigma) && not (COption.is_empty opt_props) then
+    let term = to_constr sigma (COption.get term) in
     declare_instance_constant pri global imps ?hook id decl poly sigma term termtype
   else
     declare_instance_program  env sigma ~global ~poly id pri imps decl term termtype

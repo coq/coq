@@ -159,7 +159,7 @@ let mkLetIn (x,c1,t,c2) = LetIn (x,c1,t,c2)
 (* We ensure applicative terms have at least one argument and the
    function is not itself an applicative term *)
 let mkApp (f, a) =
-  if Int.equal (Array.length a) 0 then f else
+  if CInt.equal (Array.length a) 0 then f else
     match f with
       | App (g, cl) -> App (g, Array.append cl a)
       | _ -> App (f, a)
@@ -317,7 +317,7 @@ let isCast c = match kind c with Cast _ -> true | _ -> false
 (* Tests if a de Bruijn index *)
 let isRel c = match kind c with Rel _ -> true | _ -> false
 let isRelN n c =
-  match kind c with Rel n' -> Int.equal n n' | _ -> false
+  match kind c with Rel n' -> CInt.equal n n' | _ -> false
 (* Tests if a variable *)
 let isVar c = match kind c with Var _ -> true | _ -> false
 let isVarId id c = match kind c with Var id' -> Id.equal id id' | _ -> false
@@ -848,8 +848,8 @@ type 'constr constr_compare_fn = int -> 'constr -> 'constr -> bool
 let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t1 t2 =
   match kind_nocast_gen kind1 t1, kind_nocast_gen kind2 t2 with
   | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
-  | Rel n1, Rel n2 -> Int.equal n1 n2
-  | Meta m1, Meta m2 -> Int.equal m1 m2
+  | Rel n1, Rel n2 -> CInt.equal n1 n2
+  | Meta m1, Meta m2 -> CInt.equal m1 m2
   | Var id1, Var id2 -> Id.equal id1 id2
   | Int i1, Int i2 -> Uint63.equal i1 i2
   | Sort s1, Sort s2 -> leq_sorts s1 s2
@@ -859,7 +859,7 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
   (* Why do we suddenly make a special case for Cast here? *)
   | App (c1, l1), App (c2, l2) ->
     let len = Array.length l1 in
-    Int.equal len (Array.length l2) &&
+    CInt.equal len (Array.length l2) &&
     leq (nargs+len) c1 c2 && Array.equal_norefl (eq 0) l1 l2
   | Proj (p1,c1), Proj (p2,c2) -> Projection.equal p1 p2 && eq 0 c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && Array.equal (eq 0) l1 l2
@@ -872,10 +872,10 @@ let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
     eq 0 p1 p2 && eq 0 c1 c2 && Array.equal (eq 0) bl1 bl2
   | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
-    Int.equal i1 i2 && Array.equal Int.equal ln1 ln2
+    CInt.equal i1 i2 && Array.equal CInt.equal ln1 ln2
     && Array.equal_norefl (eq 0) tl1 tl2 && Array.equal_norefl (eq 0) bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-    Int.equal ln1 ln2 && Array.equal_norefl (eq 0) tl1 tl2 && Array.equal_norefl (eq 0) bl1 bl2
+    CInt.equal ln1 ln2 && Array.equal_norefl (eq 0) tl1 tl2 && Array.equal_norefl (eq 0) bl1 bl2
   | (Rel _ | Meta _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _
     | Proj _ | Evar _ | Const _ | Ind _ | Construct _ | Case _ | Fix _
     | CoFix _ | Int _), _ -> false
@@ -1001,12 +1001,12 @@ let rec eq_constr_nounivs m n =
 let constr_ord_int f t1 t2 =
   let (=?) f g i1 i2 j1 j2=
     let c = f i1 i2 in
-    if Int.equal c 0 then g j1 j2 else c in
+    if CInt.equal c 0 then g j1 j2 else c in
   let (==?) fg h i1 i2 j1 j2 k1 k2=
     let c=fg i1 i2 j1 j2 in
-    if Int.equal c 0 then h k1 k2 else c in
+    if CInt.equal c 0 then h k1 k2 else c in
   let fix_cmp (a1, i1) (a2, i2) =
-    ((Array.compare Int.compare) =? Int.compare) a1 a2 i1 i2
+    ((Array.compare CInt.compare) =? CInt.compare) a1 a2 i1 i2
   in
   match kind t1, kind t2 with
     | Cast (c1,_,_), _ -> f c1 t2
@@ -1014,11 +1014,11 @@ let constr_ord_int f t1 t2 =
     (* Why this special case? *)
     | App (Cast(c1,_,_),l1), _ -> f (mkApp (c1,l1)) t2
     | _, App (Cast(c2, _,_),l2) -> f t1 (mkApp (c2,l2))
-    | Rel n1, Rel n2 -> Int.compare n1 n2
+    | Rel n1, Rel n2 -> CInt.compare n1 n2
     | Rel _, _ -> -1 | _, Rel _ -> 1
     | Var id1, Var id2 -> Id.compare id1 id2
     | Var _, _ -> -1 | _, Var _ -> 1
-    | Meta m1, Meta m2 -> Int.compare m1 m2
+    | Meta m1, Meta m2 -> CInt.compare m1 m2
     | Meta _, _ -> -1 | _, Meta _ -> 1
     | Evar (e1,l1), Evar (e2,l2) ->
         (Evar.compare =? (Array.compare f)) e1 e2 l1 l2
@@ -1049,7 +1049,7 @@ let constr_ord_int f t1 t2 =
         ln1 ln2 tl1 tl2 bl1 bl2
     | Fix _, _ -> -1 | _, Fix _ -> 1
     | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-        ((Int.compare =? (Array.compare f)) ==? (Array.compare f))
+        ((CInt.compare =? (Array.compare f)) ==? (Array.compare f))
         ln1 ln2 tl1 tl2 bl1 bl2
     | CoFix _, _ -> -1 | _, CoFix _ -> 1
     | Proj (p1,c1), Proj (p2,c2) -> (Projection.compare =? f) p1 p2 c1 c2
@@ -1103,9 +1103,9 @@ let rec compare m n=
 
 let array_eqeq t1 t2 =
   t1 == t2 ||
-  (Int.equal (Array.length t1) (Array.length t2) &&
+  (CInt.equal (Array.length t1) (Array.length t2) &&
    let rec aux i =
-     (Int.equal i (Array.length t1)) || (t1.(i) == t2.(i) && aux (i + 1))
+     (CInt.equal i (Array.length t1)) || (t1.(i) == t2.(i) && aux (i + 1))
    in aux 0)
 
 let hasheq t1 t2 =
@@ -1128,13 +1128,13 @@ let hasheq t1 t2 =
     | Case (ci1,p1,c1,bl1), Case (ci2,p2,c2,bl2) ->
       ci1 == ci2 && p1 == p2 && c1 == c2 && array_eqeq bl1 bl2
     | Fix ((ln1, i1),(lna1,tl1,bl1)), Fix ((ln2, i2),(lna2,tl2,bl2)) ->
-      Int.equal i1 i2
-      && Array.equal Int.equal ln1 ln2
+      CInt.equal i1 i2
+      && Array.equal CInt.equal ln1 ln2
       && array_eqeq lna1 lna2
       && array_eqeq tl1 tl2
       && array_eqeq bl1 bl2
     | CoFix(ln1,(lna1,tl1,bl1)), CoFix(ln2,(lna2,tl2,bl2)) ->
-      Int.equal ln1 ln2
+      CInt.equal ln1 ln2
       && array_eqeq lna1 lna2
       && array_eqeq tl1 tl2
       && array_eqeq bl1 bl2
@@ -1327,9 +1327,9 @@ struct
   let eq ci ci' =
     ci.ci_ind == ci'.ci_ind &&
     ci.ci_relevance == ci'.ci_relevance &&
-    Int.equal ci.ci_npar ci'.ci_npar &&
-    Array.equal Int.equal ci.ci_cstr_ndecls ci'.ci_cstr_ndecls && (* we use [Array.equal] on purpose *)
-    Array.equal Int.equal ci.ci_cstr_nargs ci'.ci_cstr_nargs && (* we use [Array.equal] on purpose *)
+    CInt.equal ci.ci_npar ci'.ci_npar &&
+    Array.equal CInt.equal ci.ci_cstr_ndecls ci'.ci_cstr_ndecls && (* we use [Array.equal] on purpose *)
+    Array.equal CInt.equal ci.ci_cstr_nargs ci'.ci_cstr_nargs && (* we use [Array.equal] on purpose *)
     pp_info_equal ci.ci_pp_info ci'.ci_pp_info  (* we use (=) on purpose *)
   open Hashset.Combine
   let hash_bool b = if b then 0 else 1
@@ -1346,7 +1346,7 @@ struct
     combine3 h1 h2 h3
   let hash ci =
     let h1 = ind_hash ci.ci_ind in
-    let h2 = Int.hash ci.ci_npar in
+    let h2 = CInt.hash ci.ci_npar in
     let h3 = Array.fold_left combine 0 ci.ci_cstr_ndecls in
     let h4 = Array.fold_left combine 0 ci.ci_cstr_nargs in
     let h5 = hash_pp_info ci.ci_pp_info in

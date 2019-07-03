@@ -109,7 +109,7 @@ open Auto
 (* A tactic similar to Auto, but using EApply, Assumption and e_give_exact *)
 (***************************************************************************)
 
-let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
+let priority l = List.map snd (List.filter (fun (pr,_) -> CInt.equal pr 0) l)
 
 let unify_e_resolve poly flags (c,clenv) =
   Proofview.Goal.enter begin fun gl ->
@@ -244,14 +244,14 @@ module SearchProblem = struct
      number of remaining goals. *)
   let compare s s' =
     let d = s'.depth - s.depth in
-    let d' = Int.compare s.priority s'.priority in
+    let d' = CInt.compare s.priority s'.priority in
     let nbgoals s = List.length (sig_it s.tacres) in
-    if not (Int.equal d 0) then d
-    else if not (Int.equal d' 0) then d'
-    else Int.compare (nbgoals s) (nbgoals s')
+    if not (CInt.equal d 0) then d
+    else if not (CInt.equal d' 0) then d'
+    else CInt.compare (nbgoals s) (nbgoals s')
 
   let branching s =
-    if Int.equal s.depth 0 then
+    if CInt.equal s.depth 0 then
       []
     else
       let ps = if s.prev == Unknown then Unknown else State s in

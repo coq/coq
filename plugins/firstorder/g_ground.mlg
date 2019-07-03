@@ -157,15 +157,15 @@ END
 
 TACTIC EXTEND firstorder
 |   [ "firstorder" tactic_opt(t) firstorder_using(l) ] ->
-      { gen_ground_tac true (Option.map (tactic_of_value ist) t) l [] }
+      { gen_ground_tac true (COption.map (tactic_of_value ist) t) l [] }
 |   [ "firstorder" tactic_opt(t) "with" ne_preident_list(l) ] ->
-      { gen_ground_tac true (Option.map (tactic_of_value ist) t) [] l }
+      { gen_ground_tac true (COption.map (tactic_of_value ist) t) [] l }
 |   [ "firstorder" tactic_opt(t) firstorder_using(l)
        "with" ne_preident_list(l') ] ->
-      { gen_ground_tac true (Option.map (tactic_of_value ist) t) l l' }
+      { gen_ground_tac true (COption.map (tactic_of_value ist) t) l l' }
 END
 
 TACTIC EXTEND gintuition
 | [ "gintuition" tactic_opt(t) ] ->
-     { gen_ground_tac false (Option.map (tactic_of_value ist) t) [] [] }
+     { gen_ground_tac false (COption.map (tactic_of_value ist) t) [] [] }
 END

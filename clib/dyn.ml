@@ -74,7 +74,7 @@ module Self : PreS = struct
 
   type any = Any : 'a tag -> any
 
-  let dyntab = ref (Int.Map.empty : string Int.Map.t)
+  let dyntab = ref (CInt.Map.empty : string CInt.Map.t)
   (** Instead of working with tags as strings, which are costly, we use their
       hash. We ensure unicity of the hash in the [create] function. If ever a
       collision occurs, which is unlikely, it is sufficient to tweak the offending
@@ -82,55 +82,55 @@ module Self : PreS = struct
 
   let create (s : string) =
     let hash = Hashtbl.hash s in
-    if Int.Map.mem hash !dyntab then begin
-      let old = Int.Map.find hash !dyntab in
+    if CInt.Map.mem hash !dyntab then begin
+      let old = CInt.Map.find hash !dyntab in
       Printf.eprintf "Dynamic tag collision: %s vs. %s\n%!" s old;
       assert false
     end;
-    dyntab := Int.Map.add hash s !dyntab;
+    dyntab := CInt.Map.add hash s !dyntab;
     hash
 
   let anonymous n =
-    if Int.Map.mem n !dyntab then begin
+    if CInt.Map.mem n !dyntab then begin
       Printf.eprintf "Dynamic tag collision: %d\n%!" n;
       assert false
     end;
-    dyntab := Int.Map.add n "<anonymous>" !dyntab;
+    dyntab := CInt.Map.add n "<anonymous>" !dyntab;
     n
 
   let eq : 'a 'b. 'a tag -> 'b tag -> ('a, 'b) CSig.eq option =
-    fun h1 h2 -> if Int.equal h1 h2 then Some (Obj.magic CSig.Refl) else None
+    fun h1 h2 -> if CInt.equal h1 h2 then Some (Obj.magic CSig.Refl) else None
 
   let repr s =
-    try Int.Map.find s !dyntab
+    try CInt.Map.find s !dyntab
     with Not_found ->
       let () = Printf.eprintf "Unknown dynamic tag %i\n%!" s in
       assert false
 
   let name s =
     let hash = Hashtbl.hash s in
-    if Int.Map.mem hash !dyntab then Some (Any hash) else None
+    if CInt.Map.mem hash !dyntab then Some (Any hash) else None
 
-  let dump () = Int.Map.bindings !dyntab
+  let dump () = CInt.Map.bindings !dyntab
 
   module Map(Value: ValueS) =
   struct
-    type t = Obj.t Value.t Int.Map.t
+    type t = Obj.t Value.t CInt.Map.t
     type 'a key = 'a tag
     type 'a value = 'a Value.t
     let cast : 'a value -> 'b value = Obj.magic
-    let empty = Int.Map.empty
-    let add tag v m = Int.Map.add tag (cast v) m
-    let remove tag m = Int.Map.remove tag m
-    let find tag m = cast (Int.Map.find tag m)
-    let mem = Int.Map.mem
+    let empty = CInt.Map.empty
+    let add tag v m = CInt.Map.add tag (cast v) m
+    let remove tag m = CInt.Map.remove tag m
+    let find tag m = cast (CInt.Map.find tag m)
+    let mem = CInt.Map.mem
 
     type map = { map : 'a. 'a tag -> 'a value -> 'a value }
-    let map f m = Int.Map.mapi f.map m
+    let map f m = CInt.Map.mapi f.map m
 
     type any = Any : 'a tag * 'a value -> any
-    let iter f m = Int.Map.iter (fun k v -> f (Any (k, v))) m
-    let fold f m accu = Int.Map.fold (fun k v accu -> f (Any (k, v)) accu) m accu
+    let iter f m = CInt.Map.iter (fun k v -> f (Any (k, v))) m
+    let fold f m accu = CInt.Map.fold (fun k v accu -> f (Any (k, v)) accu) m accu
   end
 end
 include Self

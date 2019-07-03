@@ -47,7 +47,7 @@ let compact el ({ solution } as pv) =
     Evd.({ ei with
        evar_concl =  nf ei.evar_concl;
        evar_hyps = Environ.map_named_val (fun d -> map_constr nf0 d) ei.evar_hyps;
-       evar_candidates = Option.map (List.map nf) ei.evar_candidates }) in
+       evar_candidates = COption.map (List.map nf) ei.evar_candidates }) in
   let new_solution = Evd.raw_map_undefined apply_subst_einfo pruned_solution in
   let new_size = Evd.fold (fun _ _ i -> i+1) new_solution 0 in
   Feedback.msg_info (Pp.str (Printf.sprintf "Evars: %d -> %d\n" size new_size));
@@ -153,7 +153,7 @@ let focus i j sp =
 let cleared_alias evd g =
   let evk = drop_state g in
   let state = get_state g in
-  Option.map (fun g -> goal_with_state g state) (Evarutil.advance evd evk)
+  COption.map (fun g -> goal_with_state g state) (Evarutil.advance evd evk)
 
 (** [undefined defs l] is the list of goals in [l] which are still
     unsolved (after advancing cleared goals). Note that order matters. *)
@@ -357,7 +357,7 @@ end
     is restored at the end of the tactic). If the range [i]-[j] is not
     valid, then it [tclFOCUS_gen nosuchgoal i j t] is [nosuchgoal]. *)
 let tclFOCUS ?nosuchgoal i j t =
-  let nosuchgoal = Option.default (tclZERO (NoSuchGoals (j+1-i))) nosuchgoal in
+  let nosuchgoal = COption.default (tclZERO (NoSuchGoals (j+1-i))) nosuchgoal in
   let open Proof in
   Pv.get >>= fun initial ->
   try
@@ -792,8 +792,8 @@ let swap i j =
     let i = goodmod i l and j = goodmod j l in
     CList.map_i begin fun k x ->
       match k with
-      | k when Int.equal k i -> CList.nth initial j
-      | k when Int.equal k j -> CList.nth initial i
+      | k when CInt.equal k i -> CList.nth initial j
+      | k when CInt.equal k j -> CList.nth initial i
       | _ -> x
     end 0 initial
   end
@@ -1149,7 +1149,7 @@ module Goal = struct
 
   let unsolved { self=self } =
     tclEVARMAP >>= fun sigma ->
-    tclUNIT (not (Option.is_empty (Evarutil.advance sigma self)))
+    tclUNIT (not (COption.is_empty (Evarutil.advance sigma self)))
 
   (* compatibility *)
   let goal { self=self } = self

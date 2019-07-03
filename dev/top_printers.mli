@@ -55,7 +55,7 @@ val ppfconstr : CClosure.fconstr -> unit
 
 val ppbigint : Bigint.bigint -> unit
 
-val ppintset : Int.Set.t -> unit
+val ppintset : CInt.Set.t -> unit
 val ppidset : Names.Id.Set.t -> unit
 
 val pridmap : (Names.Id.Map.key -> 'a -> Pp.t) -> 'a Names.Id.Map.t -> Pp.t

@@ -135,13 +135,13 @@ let invfun qhyp f =
           let f1,_ = decompose_app sigma args.(1) in
           try
             if not (isConst sigma f1) then raise NoFunction;
-            let finfos = Option.get (find_Function_infos (fst (destConst sigma f1))) in
-            let f_correct = mkConst(Option.get finfos.correctness_lemma)
+            let finfos = COption.get (find_Function_infos (fst (destConst sigma f1))) in
+            let f_correct = mkConst(COption.get finfos.correctness_lemma)
             and kn = fst finfos.graph_ind
             in
             functional_inversion kn hid f1 f_correct
           with
-          | NoFunction | Option.IsNone ->
+          | NoFunction | COption.IsNone ->
             let f2,_ = decompose_app sigma args.(2) in
             if isConst sigma f2 then
               match find_Function_infos (fst (destConst sigma f2)) with

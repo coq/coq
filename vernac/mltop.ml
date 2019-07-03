@@ -102,7 +102,7 @@ let report_on_load_obj_error exc =
   if Obj.is_block x && String.equal (Obj.magic (Obj.field (Obj.field x 0) 0)) "Symtable.Error"
   then
     let err_block = Obj.field x 1 in
-    if Int.equal (Obj.tag err_block) 0 then
+    if CInt.equal (Obj.tag err_block) 0 then
       (* Symtable.Undefined_global of string *)
       str "reference to undefined global " ++
       str (Obj.magic (Obj.field err_block 0))
@@ -314,7 +314,7 @@ let trigger_ml_object verb cache reinit ?path name =
     user_err ~hdr:"Mltop.trigger_ml_object"
       (str "Dynamic link not supported (module " ++ str name ++ str ")")
   else begin
-    let file = file_of_name (Option.default name path) in
+    let file = file_of_name (COption.default name path) in
     let path =
       if_verbose_load (verb && not !Flags.quiet) load_ml_object name ?path file in
     add_loaded_module name (Some path);

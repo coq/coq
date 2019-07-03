@@ -224,7 +224,7 @@ let map_evar_info f evi =
     evar_body = map_evar_body f evi.evar_body;
     evar_hyps = map_named_val (fun d -> NamedDecl.map_constr f d) evi.evar_hyps;
     evar_concl = f evi.evar_concl;
-    evar_candidates = Option.map (List.map f) evi.evar_candidates }
+    evar_candidates = COption.map (List.map f) evi.evar_candidates }
 
 (* This exception is raised by *.existential_value *)
 exception NotInstantiatedEvar
@@ -235,7 +235,7 @@ let evar_instance_array test_id info args =
   let len = Array.length args in
   let rec instrec filter ctxt i = match filter, ctxt with
   | [], [] ->
-    if Int.equal i len then []
+    if CInt.equal i len then []
     else instance_mismatch ()
   | false :: filter, _ :: ctxt ->
     instrec filter ctxt i
@@ -280,16 +280,16 @@ type 'a in_evar_universe_context = 'a * UState.t
 
 type 'a freelisted = {
   rebus : 'a;
-  freemetas : Int.Set.t }
+  freemetas : CInt.Set.t }
 
 (* Collects all metavars appearing in a constr *)
 let metavars_of c =
   let rec collrec acc c =
     match kind c with
-      | Meta mv -> Int.Set.add mv acc
+      | Meta mv -> CInt.Set.add mv acc
       | _         -> Constr.fold collrec acc c
   in
-  collrec Int.Set.empty c
+  collrec CInt.Set.empty c
 
 let mk_freelisted c =
   { rebus = c; freemetas = metavars_of c }
@@ -344,9 +344,9 @@ let clb_name = function
 
 (***********************)
 
-module Metaset = Int.Set
+module Metaset = CInt.Set
 
-module Metamap = Int.Map
+module Metamap = CInt.Map
 
 let metamap_to_list m =
   Metamap.fold (fun n v l -> (n,v)::l) m []
@@ -1041,14 +1041,14 @@ let eval_side_effects evd = evd.effects
 (* Future goals *)
 let declare_future_goal ?tag evk evd =
   { evd with future_goals = evk::evd.future_goals;
-             future_goals_status = Option.fold_right (EvMap.add evk) tag evd.future_goals_status }
+             future_goals_status = COption.fold_right (EvMap.add evk) tag evd.future_goals_status }
 
 let declare_principal_goal ?tag evk evd =
   match evd.principal_future_goal with
   | None -> { evd with
     future_goals = evk::evd.future_goals;
     principal_future_goal=Some evk;
-    future_goals_status = Option.fold_right (EvMap.add evk) tag evd.future_goals_status;
+    future_goals_status = COption.fold_right (EvMap.add evk) tag evd.future_goals_status;
     }
   | Some _ -> CErrors.user_err Pp.(str "Only one main subgoal per instantiation.")
 
@@ -1075,10 +1075,10 @@ let fold_future_goals f sigma (gls,pgl,map) =
 let map_filter_future_goals f (gls,pgl,map) =
   (* Note: map is now a superset of filtered evs, but its size should
     not be too big, so that's probably ok not to update it *)
-  (List.map_filter f gls,Option.bind pgl f,map)
+  (List.map_filter f gls,COption.bind pgl f,map)
 
 let filter_future_goals f (gls,pgl,map) =
-  (List.filter f gls,Option.bind pgl (fun a -> if f a then Some a else None),map)
+  (List.filter f gls,COption.bind pgl (fun a -> if f a then Some a else None),map)
 
 let dispatch_future_goals_gen distinguish_shelf (gls,pgl,map) =
   let rec aux (comb,shelf,givenup as acc) = function
@@ -1135,7 +1135,7 @@ let undefined_metas evd =
     | (n,Cltyp (_,typ))  -> Some n
   in
   let m = List.map_filter filter (meta_list evd) in
-  List.sort Int.compare m
+  List.sort CInt.compare m
 
 let map_metas_fvalue f evd =
   let map = function

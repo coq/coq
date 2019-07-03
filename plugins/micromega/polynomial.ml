@@ -86,8 +86,8 @@ end
     fun m1 m2 ->
     let s1 = sum_degree m1
     and s2 = sum_degree m2 in
-    if Int.equal s1 s2 then Map.compare Int.compare m1 m2
-    else Int.compare s1 s2
+    if CInt.equal s1 s2 then Map.compare CInt.compare m1 m2
+    else CInt.compare s1 s2
 
   let is_const m = (m = Map.empty)
 

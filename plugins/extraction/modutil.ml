@@ -78,7 +78,7 @@ let struct_iter do_decl do_spec do_mp s =
 type do_ref = GlobRef.t -> unit
 
 let record_iter_references do_term = function
-  | Record l -> List.iter (Option.iter do_term) l
+  | Record l -> List.iter (COption.iter do_term) l
   | _ -> ()
 
 let type_iter_references do_type t =
@@ -136,7 +136,7 @@ let decl_iter_references do_term do_cons do_type =
 
 let spec_iter_references do_term do_cons do_type = function
   | Sind (kn,ind) -> ind_iter_references do_term do_cons do_type kn ind
-  | Stype (r,_,ot) -> do_type r; Option.iter (type_iter_references do_type) ot
+  | Stype (r,_,ot) -> do_type r; COption.iter (type_iter_references do_type) ot
   | Sval (r,t) -> do_term r; type_iter_references do_type t
 
 (*s Searching occurrences of a particular term (no lifting done). *)
@@ -172,7 +172,7 @@ let spec_type_search f = function
   | Sind (_,{ind_packets=p}) ->
       Array.iter
 	(fun {ip_types=v} -> Array.iter (List.iter (type_search f)) v) p
-  | Stype (_,_,ot) -> Option.iter (type_search f) ot
+  | Stype (_,_,ot) -> COption.iter (type_search f) ot
   | Sval (_,u) -> type_search f u
 
 let struct_type_search f s =
@@ -352,7 +352,7 @@ let compute_deps_spec = function
       (* Todo Later : avoid dependencies when Extract Inductive *)
       ind_iter_references add_needed add_needed add_needed kn ind
   | Stype (r,ids,t) ->
-      if not (is_custom r) then Option.iter (type_iter_references add_needed) t
+      if not (is_custom r) then COption.iter (type_iter_references add_needed) t
   | Sval (r,t) ->
       type_iter_references add_needed t
 

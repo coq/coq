@@ -476,7 +476,7 @@ let discharge_item ((sp,_ as oname),e) =
     | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _
     | ExportObject _ -> None
     | AtomicObject obj ->
-      Option.map (fun o -> (basename sp,o)) (discharge_object (oname,obj))
+      COption.map (fun o -> (basename sp,o)) (discharge_object (oname,obj))
     end
   | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
       anomaly (Pp.str "discharge_item.")
@@ -494,7 +494,7 @@ let close_section () =
   pop_path_prefix ();
   let newdecls = List.map discharge_item secdecls in
   let () = Global.close_section fs in
-  List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls
+  List.iter (COption.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls
 
 (* State and initialization. *)
 

@@ -152,7 +152,7 @@ let print_top_val env v = Pptactic.pr_value Pptactic.ltop v
 
 let catching_error call_trace fail (e, info) =
   let inner_trace =
-    Option.default [] (Exninfo.get info ltac_trace_info)
+    COption.default [] (Exninfo.get info ltac_trace_info)
   in
   if List.is_empty call_trace && List.is_empty inner_trace then fail (e, info)
   else begin
@@ -412,7 +412,7 @@ let interp_hyp_location_list ist env sigma l =
   List.flatten (List.map (interp_hyp_location_list_as_list ist env sigma) l)
 
 let interp_clause ist env sigma { onhyps=ol; concl_occs=occs } : clause =
-  { onhyps=Option.map (interp_hyp_location_list ist env sigma) ol;
+  { onhyps=COption.map (interp_hyp_location_list ist env sigma) ol;
     concl_occs=interp_occurrences ist occs }
 
 (* Interpretation of constructions *)
@@ -694,11 +694,11 @@ let interp_red_expr ist env sigma = function
       sigma , Pattern l_interp
   | Simpl (f,o) ->
      sigma , Simpl (interp_flag ist env sigma f,
-		    Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
+                    COption.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
   | CbvVm o ->
-    sigma , CbvVm (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
+    sigma , CbvVm (COption.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
   | CbvNative o ->
-    sigma , CbvNative (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
+    sigma , CbvNative (COption.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
   | (Red _ |  Hnf | ExtraRedExpr _ as r) -> sigma , r
 
 let interp_may_eval f ist env sigma = function
@@ -1104,7 +1104,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       Profile_ltac.do_profile "eval_tactic:TacAbstract" trace
         (catch_error_tac trace begin
       Proofview.Goal.enter begin fun gl -> Abstract.tclABSTRACT
-        (Option.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic ist t)
+        (COption.map (interp_ident ist (pf_env gl) (project gl)) ido) (interp_tactic ist t)
       end end)
   | TacThen (t1,t) ->
       Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
@@ -1212,7 +1212,7 @@ and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
   | ArgArg (loc,r) ->
       Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
       let ids = extract_ids [] ist.lfun Id.Set.empty in
-      let loc_info = (Option.default loc loc',LtacNameCall r) in
+      let loc_info = (COption.default loc loc',LtacNameCall r) in
       let extra = TacStore.set ist.extra f_avoid_ids ids in
       push_trace loc_info ist >>= fun trace ->
       let extra = TacStore.set extra f_trace trace in
@@ -1621,7 +1621,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let env = Proofview.Goal.env gl in
         let sigma = project gl in 
         let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
-        let sigma, cbo = Option.fold_left_map (interp_open_constr_with_bindings ist env) sigma cbo in
+        let sigma, cbo = COption.fold_left_map (interp_open_constr_with_bindings ist env) sigma cbo in
         let named_tac =
           let tac = Tactics.elim ev keep cb cbo in
           name_atomic ~env (TacElim (ev,(keep,cb),cbo)) tac
@@ -1675,15 +1675,15 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = project gl in
         let (sigma,c) =
           let expected_type =
-            if Option.is_empty t then WithoutTypeConstraint else IsType in
+            if COption.is_empty t then WithoutTypeConstraint else IsType in
           let flags = open_constr_use_classes_flags () in
           interp_open_constr ~expected_type ~flags ist env sigma c
         in
         let sigma, ipat' = interp_intro_pattern_option ist env sigma ipat in
-        let tac = Option.map (Option.map (interp_tactic ist)) t in
+        let tac = COption.map (COption.map (interp_tactic ist)) t in
         Tacticals.New.tclWITHHOLES ev
         (name_atomic ~env
-          (TacAssert(ev,b,Option.map (Option.map ignore) t,ipat,c))
+          (TacAssert(ev,b,COption.map (COption.map ignore) t,ipat,c))
           (Tactics.forward b tac ipat' c)) sigma
       end
   | TacGeneralize cl ->
@@ -1710,7 +1710,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
           let let_tac =
             if b then Tactics.pose_tac na c_interp
             else
-              let id = Option.default (make IntroAnonymous) eqpat in
+              let id = COption.default (make IntroAnonymous) eqpat in
               let with_eq = Some (true, id) in
               Tactics.letin_tac with_eq na c_interp None Locusops.nowhere
           in
@@ -1721,7 +1721,7 @@ and interp_atomic ist tac : unit Proofview.tactic =
         else
         (* We try to keep the pattern structure as much as possible *)
           let let_pat_tac b na c cl eqpat =
-            let id = Option.default (make IntroAnonymous) eqpat in
+            let id = COption.default (make IntroAnonymous) eqpat in
             let with_eq = if b then None else Some (true,id) in
             Tactics.letin_pat_tac ev with_eq na c cl
           in
@@ -1749,13 +1749,13 @@ and interp_atomic ist tac : unit Proofview.tactic =
             let ipato = interp_intro_pattern_naming_option ist env sigma ipato in
             let ipatsp = ipats in
             let sigma,ipats = interp_or_and_intro_pattern_option ist env sigma ipats in
-            let cls = Option.map (interp_clause ist env sigma) cls in
+            let cls = COption.map (interp_clause ist env sigma) cls in
             sigma,((c,(ipato,ipats),cls),(cp,(ipato,ipatsp),cls))
           end sigma l
         in
         let l,lp = List.split l in
         let sigma,el =
-          Option.fold_left_map (interp_open_constr_with_bindings ist env) sigma el in
+          COption.fold_left_map (interp_open_constr_with_bindings ist env) sigma el in
         Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
         (name_atomic ~env
           (TacInductionDestruct(isrec,ev,(lp,el)))
@@ -1831,9 +1831,9 @@ and interp_atomic ist tac : unit Proofview.tactic =
         let sigma = project gl in
         let cl = interp_clause ist env sigma cl in
         name_atomic ~env
-          (TacRewrite (ev,l,cl,Option.map ignore by))
+          (TacRewrite (ev,l,cl,COption.map ignore by))
           (Equality.general_multi_rewrite ev l' cl
-             (Option.map (fun by -> Tacticals.New.tclCOMPLETE (interp_tactic ist by),
+             (COption.map (fun by -> Tacticals.New.tclCOMPLETE (interp_tactic ist by),
                Equality.Naive)
                 by))
       end

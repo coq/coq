@@ -24,11 +24,11 @@ let red_flags=ref CClosure.betaiotazeta
 
 let (=?) f g i1 i2 j1 j2=
   let c=f i1 i2 in
-    if Int.equal c 0 then g j1 j2 else c
+    if CInt.equal c 0 then g j1 j2 else c
 
 let (==?) fg h i1 i2 j1 j2 k1 k2=
   let c=fg i1 i2 j1 j2 in
-    if Int.equal c 0 then h k1 k2 else c
+    if CInt.equal c 0 then h k1 k2 else c
 
 type ('a,'b) sum = Left of 'a | Right of 'b
 
@@ -93,19 +93,19 @@ let kind_of_formula env sigma term =
 		    let u = EConstr.EInstance.kind sigma u in
 		    let (mib,mip) = Global.lookup_inductive ind in
 		    let nconstr=Array.length mip.mind_consnames in
-		      if Int.equal nconstr 0 then
+                      if CInt.equal nconstr 0 then
 			False((ind,u),l)
 		      else
 			let has_realargs=(n>0) in
 			let is_trivial=
-                          let is_constant n = Int.equal n 0 in
+                          let is_constant n = CInt.equal n 0 in
                             Array.exists is_constant mip.mind_consnrealargs in
 			  if Inductiveops.mis_is_recursive (ind,mib,mip) ||
 			    (has_realargs && not is_trivial)
 			  then
 			    Atom cciterm
 			  else
-			    if Int.equal nconstr 1 then
+                            if CInt.equal nconstr 1 then
 			      And((ind,u),l,is_trivial)
 			    else
 			      Or((ind,u),l,is_trivial)

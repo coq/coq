@@ -68,7 +68,7 @@ VERNAC COMMAND EXTEND WhatAreThese CLASSIFIED AS QUERY
    }
 | [ "And" "is" int_opt(o) "provided" ] ->
    {
-     let print o = strbrk (if Option.has_some o then "Yes" else "No") in
+     let print o = strbrk (if COption.has_some o then "Yes" else "No") in
      Feedback.msg_notice (print o)
    }
 END

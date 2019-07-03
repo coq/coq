@@ -72,7 +72,7 @@ END
 VERNAC COMMAND EXTEND Typeclasses_Settings CLASSIFIED AS SIDEFF
  | [ "Typeclasses" "eauto" ":=" debug(d) eauto_search_strategy(s) int_opt(depth) ] -> {
      set_typeclasses_debug d;
-     Option.iter set_typeclasses_strategy s;
+     COption.iter set_typeclasses_strategy s;
      set_typeclasses_depth depth
    }
 END

@@ -383,7 +383,7 @@ type n_closure =
 | NClosure : 'a arity * (valexpr list -> 'a) -> n_closure
 
 let rec abstract n f =
-  if Int.equal n 1 then NClosure (OneAty, fun accu v -> f (List.rev (v :: accu)))
+  if CInt.equal n 1 then NClosure (OneAty, fun accu v -> f (List.rev (v :: accu)))
   else
     let NClosure (arity, fe) = abstract (n - 1) f in
     NClosure (AddAty arity, fun accu v -> fe (v :: accu))

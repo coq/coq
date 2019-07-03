@@ -109,7 +109,7 @@ let declare_object_full odecl =
   | Keep atomic_obj -> Keep (infun atomic_obj)
   | Anticipate (atomic_obj) -> Anticipate (infun atomic_obj)
   and discharge (oname,lobj) =
-    Option.map infun (odecl.discharge_function (oname,outfun lobj))
+    COption.map infun (odecl.discharge_function (oname,outfun lobj))
   and rebuild lobj = infun (odecl.rebuild_function (outfun lobj))
   in
   Hashtbl.add cache_tab na { dyn_cache_function = cacher;
@@ -169,7 +169,7 @@ let local_object s ~cache ~discharge =
     discharge_function = discharge }
 
 let global_object_nodischarge s ~cache ~subst =
-  let import i o = if Int.equal i 1 then cache o in
+  let import i o = if CInt.equal i 1 then cache o in
   { (default_object s) with
     cache_function = cache;
     open_function = import;
@@ -178,7 +178,7 @@ let global_object_nodischarge s ~cache ~subst =
         | Some subst -> subst;
       );
     classify_function =
-      if Option.has_some subst then (fun o -> Substitute o) else (fun o -> Keep o);
+      if COption.has_some subst then (fun o -> Substitute o) else (fun o -> Keep o);
   }
 
 let global_object s ~cache ~subst ~discharge =
@@ -194,7 +194,7 @@ let superglobal_object_nodischarge s ~cache ~subst =
         | Some subst -> subst;
       );
     classify_function =
-      if Option.has_some subst then (fun o -> Substitute o) else (fun o -> Keep o);
+      if COption.has_some subst then (fun o -> Substitute o) else (fun o -> Keep o);
   }
 
 let superglobal_object s ~cache ~subst ~discharge =

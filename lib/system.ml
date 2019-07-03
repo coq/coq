@@ -231,7 +231,7 @@ let raw_intern_state magic filename =
   try
     let channel = open_in_bin filename in
     let actual_magic = input_binary_int filename channel in
-    if not (Int.equal actual_magic magic) then
+    if not (CInt.equal actual_magic magic) then
         raise (Bad_magic_number {
             filename=filename;
             actual=actual_magic;

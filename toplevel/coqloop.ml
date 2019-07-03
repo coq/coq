@@ -56,8 +56,8 @@ let emacs_prompt_endstring   () = if !print_emacs then "</prompt>" else ""
    beginning of line. *)
 let prompt_char doc ic ibuf count =
   let bol = match ibuf.bols with
-    | ll::_ -> Int.equal ibuf.len ll
-    | [] -> Int.equal ibuf.len 0
+    | ll::_ -> CInt.equal ibuf.len ll
+    | [] -> CInt.equal ibuf.len 0
   in
   if bol && not !print_emacs then top_stderr (str (ibuf.prompt doc));
   try
@@ -100,7 +100,7 @@ let get_bols_of_loc ibuf (bp,ep) =
         lines_rec ll nafter fl
   in
   let (fl,ll) = lines_rec ibuf.len ([],None) ibuf.bols in
-  (fl,Option.get ll)
+  (fl,COption.get ll)
 
 let dotted_location (b,e) =
   if e-b < 3 then
@@ -279,7 +279,7 @@ let extract_default_loc loc doc_id sid : Loc.t option =
   | None ->
     try
       let doc = Stm.get_doc doc_id in
-      Option.cata (fun {CAst.loc} -> loc) None Stm.(get_ast ~doc sid)
+      COption.cata (fun {CAst.loc} -> loc) None Stm.(get_ast ~doc sid)
     with _ -> loc
 
 (** Coqloop Console feedback handler *)
@@ -351,7 +351,7 @@ let print_anyway c =
    generic way, but that'll do for now *)
 let top_goal_print ~doc c oldp newp =
   try
-    let proof_changed = not (Option.equal cproof oldp newp) in
+    let proof_changed = not (COption.equal cproof oldp newp) in
     let print_goals = proof_changed && Vernacstate.Proof_global.there_are_pending_proofs () ||
                       print_anyway c in
     if not !Flags.quiet && print_goals then begin
@@ -421,7 +421,7 @@ let rec vernac_loop ~state =
     | Some VernacShowProofDiffs removed ->
       (* extension of Vernacentries.show_proof *)
       let to_pp pstate =
-        let p = Option.get pstate in
+        let p = COption.get pstate in
         let sigma, env = Pfedit.get_proof_context p in
         let pprf = Proof.partial_proof p in
         Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
@@ -444,7 +444,7 @@ let rec vernac_loop ~state =
                 Pp_diff.diff_pp_combined ~tokenize_string ?show_removed o_pp n_pp
               with
               | Pfedit.NoSuchGoal
-              | Option.IsNone -> n_pp
+              | COption.IsNone -> n_pp
               | Pp_diff.Diff_Failure msg -> begin
                 (* todo: print the unparsable string (if we know it) *)
                 Feedback.msg_warning Pp.(str ("Diff failure: " ^ msg) ++ cut()
@@ -455,7 +455,7 @@ let rec vernac_loop ~state =
               n_pp
           with
           | Pfedit.NoSuchGoal
-          | Option.IsNone ->
+          | COption.IsNone ->
             CErrors.user_err (str "No goals to show.")
         in
         Feedback.msg_notice out;

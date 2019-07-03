@@ -110,7 +110,7 @@ let unbox wit v ans = match ans with
 
 let rec prj : type a. a Val.tag -> Val.t -> a = fun tag v -> match tag with
 | Val.List tag -> List.map (fun v -> prj tag v) (unbox Val.typ_list v (to_list v))
-| Val.Opt tag -> Option.map (fun v -> prj tag v) (unbox Val.typ_opt v (to_option v))
+| Val.Opt tag -> COption.map (fun v -> prj tag v) (unbox Val.typ_opt v (to_option v))
 | Val.Pair (tag1, tag2) ->
   let (x, y) = unbox Val.typ_pair v (to_pair v) in
   (prj tag1 x, prj tag2 y)

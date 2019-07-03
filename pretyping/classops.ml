@@ -51,7 +51,7 @@ let coe_info_typ_equal c1 c2 =
     c1.coe_local == c2.coe_local &&
     c1.coe_is_identity == c2.coe_is_identity &&
     c1.coe_is_projection == c2.coe_is_projection &&
-    Int.equal c1.coe_param c2.coe_param
+    CInt.equal c1.coe_param c2.coe_param
 
 let cl_typ_ord t1 t2 = match t1, t2 with
   | CL_SECVAR v1, CL_SECVAR v2 -> Id.compare v1 v2
@@ -67,9 +67,9 @@ end
 
 module ClTypMap = Map.Make(ClTyp)
 
-module IntMap = Map.Make(Int)
+module IntMap = Map.Make(CInt)
 
-let cl_typ_eq t1 t2 = Int.equal (cl_typ_ord t1 t2) 0
+let cl_typ_eq t1 t2 = CInt.equal (cl_typ_ord t1 t2) 0
 
 type inheritance_path = coe_info_typ list
 
@@ -95,7 +95,7 @@ end
 =
 struct
 
-  module Index = struct include Int let print = Pp.int end
+  module Index = struct include CInt let print = Pp.int end
 
   type 'a t = { v : (cl_typ * 'a) IntMap.t; s : int; inv : int ClTypMap.t }
   let empty = { v = IntMap.empty; s = 0; inv = ClTypMap.empty }
@@ -124,7 +124,7 @@ struct
   type t = cl_index * cl_index
   let compare (i1, j1) (i2, j2) =
     let c = Bijint.Index.compare i1 i2 in
-    if Int.equal c 0 then Bijint.Index.compare j1 j2 else c
+    if CInt.equal c 0 then Bijint.Index.compare j1 j2 else c
 end
 
 module ClPairMap = Map.Make(ClPairOrd)
@@ -215,7 +215,7 @@ let class_of env sigma t =
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, u, args)
   in
-  if Int.equal (List.length args) n1 then t, i else raise Not_found
+  if CInt.equal (List.length args) n1 then t, i else raise Not_found
 
 let inductive_class_of ind = fst (class_info (CL_IND ind))
 
@@ -253,14 +253,14 @@ let apply_on_class_of env sigma t cont =
   try
     let (cl,u,args) = find_class_type sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
-    if not (Int.equal (List.length args) n1) then raise Not_found;
+    if not (CInt.equal (List.length args) n1) then raise Not_found;
     t, cont i
   with Not_found ->
     (* Is it worth to be more incremental on the delta steps? *)
     let t = Tacred.hnf_constr env sigma t in
     let (cl, u, args) = find_class_type sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
-    if not (Int.equal (List.length args) n1) then raise Not_found;
+    if not (CInt.equal (List.length args) n1) then raise Not_found;
     t, cont i
 
 let lookup_path_between env sigma (s,t) =
@@ -379,7 +379,7 @@ let subst_coercion subst c =
   let coe = subst_coe_typ subst c.coercion_type in
   let cls = subst_cl_typ subst c.coercion_source in
   let clt = subst_cl_typ subst c.coercion_target in
-  let clp = Option.Smart.map (subst_proj_repr subst) c.coercion_is_proj in
+  let clp = COption.Smart.map (subst_proj_repr subst) c.coercion_is_proj in
   if c.coercion_type == coe && c.coercion_source == cls &&
      c.coercion_target == clt && c.coercion_is_proj == clp
   then c

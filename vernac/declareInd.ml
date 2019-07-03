@@ -187,7 +187,7 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) mie p
         but isn't *)
   begin match mie.mind_entry_finite with
     | Declarations.BiFinite when is_recursive mie ->
-      if Option.has_some mie.mind_entry_record then
+      if COption.has_some mie.mind_entry_record then
         CErrors.user_err Pp.(str "Records declared with the keywords Record or Structure cannot be recursive. You can, however, define recursive records using the Inductive or CoInductive command.")
       else
         CErrors.user_err Pp.(str ("Types declared with the keyword Variant cannot be recursive. Recursive types are defined with the Inductive and CoInductive command."))

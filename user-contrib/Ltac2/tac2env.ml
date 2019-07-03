@@ -90,7 +90,7 @@ struct
   type t = ml_tactic_name
   let compare n1 n2 =
     let c = String.compare n1.mltac_plugin n2.mltac_plugin in
-    if Int.equal c 0 then String.compare n1.mltac_tactic n2.mltac_tactic
+    if CInt.equal c 0 then String.compare n1.mltac_tactic n2.mltac_tactic
     else c
 end
 

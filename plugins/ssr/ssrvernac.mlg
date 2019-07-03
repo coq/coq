@@ -289,7 +289,7 @@ let interp_search_notation ?loc tag okey =
     try Notation.interp_notation ?loc ntn (None, []) with _ ->
     let e = pr_ntn ntn ++ spc() ++ str "is defined " ++ pr_scs scs' in
     err (hov 4 (str "ambiguous: " ++ pr_tag_sc "in" ++ e)) in
-  let sc = Option.default "" osc in
+  let sc = COption.default "" osc in
   let _ =
     let m_sc =
       if osc <> None then str "In " ++ str sc ++ pr_comma() else mt() in
@@ -377,9 +377,9 @@ let coerce_search_pattern_to_sort hpat =
   let coerce hp coe_index =
     let coe_ref = coe_index.Classops.coe_value in
     try
-      let n_imps = Option.get (Classops.hide_coercion coe_ref) in
+      let n_imps = COption.get (Classops.hide_coercion coe_ref) in
       mkPApp (Pattern.PRef coe_ref) n_imps [|hp|]
-    with Not_found | Option.IsNone ->
+    with Not_found | COption.IsNone ->
     errorstrm (str "need explicit coercion " ++ pr_global coe_ref ++ spc ()
             ++ str "to interpret head search pattern as type") in
   filter_head, List.fold_left coerce hpat' coe_path

@@ -95,7 +95,7 @@ let compare cmp v1 v2 =
   if v1 == v2 then 0
   else
     let len = Array.length v1 in
-    let c = Int.compare len (Array.length v2) in
+    let c = CInt.compare len (Array.length v2) in
     if c <> 0 then c else
       let rec loop i =
         if i < 0 then 0
@@ -110,7 +110,7 @@ let compare cmp v1 v2 =
 
 let equal_norefl cmp t1 t2 =
   let len = Array.length t1 in
-  if not (Int.equal len (Array.length t2)) then false
+  if not (CInt.equal len (Array.length t2)) then false
   else
     let rec aux i =
       if i < 0 then true
@@ -125,7 +125,7 @@ let equal cmp t1 t2 =
   if t1 == t2 then true else equal_norefl cmp t1 t2
     
 
-let is_empty array = Int.equal (Array.length array) 0
+let is_empty array = CInt.equal (Array.length array) 0
 
 let exists2 f v1 v2 =
   let rec exrec = function
@@ -334,8 +334,8 @@ let chop n v =
 let map2_i f v1 v2 =
   let len1 = Array.length v1 in
   let len2 = Array.length v2 in
-  let () = if not (Int.equal len1 len2) then invalid_arg "Array.map2" in
-  if Int.equal len1 0 then
+  let () = if not (CInt.equal len1 len2) then invalid_arg "Array.map2" in
+  if CInt.equal len1 0 then
     [| |]
   else begin
     let res = Array.make len1 (f 0 (uget v1 0) (uget v2 0)) in
@@ -351,7 +351,7 @@ let map3 f v1 v2 v3 =
     if len1 <> Array.length v2 || len1 <> Array.length v3
     then invalid_arg "Array.map3"
   in
-  if Int.equal len1 0 then
+  if CInt.equal len1 0 then
     [| |]
   else begin
     let res = Array.make len1 (f (uget v1 0) (uget v2 0) (uget v3 0)) in
@@ -365,8 +365,8 @@ let map3_i f v1 v2 v3 =
   let len1 = Array.length v1 in
   let len2 = Array.length v2 in
   let len3 = Array.length v3 in
-  let () = if not (Int.equal len1 len2 && Int.equal len1 len3) then invalid_arg "Array.map3_i" in
-  if Int.equal len1 0 then
+  let () = if not (CInt.equal len1 len2 && CInt.equal len1 len3) then invalid_arg "Array.map3_i" in
+  if CInt.equal len1 0 then
     [| |]
   else begin
     let res = Array.make len1 (f 0 (uget v1 0) (uget v2 0) (uget v3 0)) in
@@ -378,7 +378,7 @@ let map3_i f v1 v2 v3 =
 
 let map_left f a = (* Ocaml does not guarantee Array.map is LR *)
   let l = Array.length a in (* (even if so), then we rewrite it *)
-  if Int.equal l 0 then [||] else begin
+  if CInt.equal l 0 then [||] else begin
     let r = Array.make l (f (uget a 0)) in
     for i = 1 to l - 1 do
       Array.unsafe_set r i (f (uget a i))
@@ -389,7 +389,7 @@ let map_left f a = (* Ocaml does not guarantee Array.map is LR *)
 let iter2_i f v1 v2 =
   let len1 = Array.length v1 in
   let len2 = Array.length v2 in
-  let () = if not (Int.equal len2 len1) then invalid_arg "Array.iter2" in
+  let () = if not (CInt.equal len2 len1) then invalid_arg "Array.iter2" in
   for i = 0 to len1 - 1 do f i (uget v1 i) (uget v2 i) done
 
 let pure_functional = false
@@ -516,7 +516,7 @@ struct
   let map2 f aux_ar ar =
     let len = Array.length ar in
     let aux_len = Array.length aux_ar in
-    let () = if not (Int.equal len aux_len) then invalid_arg "Array.Smart.map2" in
+    let () = if not (CInt.equal len aux_len) then invalid_arg "Array.Smart.map2" in
     let i = ref 0 in
     let break = ref true in
     let temp = ref None in
@@ -583,7 +583,7 @@ struct
   let fold_left2_map f accu aux_ar ar =
     let len = Array.length ar in
     let aux_len = Array.length aux_ar in
-    let () = if not (Int.equal len aux_len) then invalid_arg "Array.Smart.fold_left2_map" in
+    let () = if not (CInt.equal len aux_len) then invalid_arg "Array.Smart.fold_left2_map" in
     let i = ref 0 in
     let break = ref true in
     let r = ref accu in
@@ -643,7 +643,7 @@ struct
   let iter2 f arg v1 v2 =
     let len1 = Array.length v1 in
     let len2 = Array.length v2 in
-    let () = if not (Int.equal len2 len1) then invalid_arg "Array.Fun1.iter2" in
+    let () = if not (CInt.equal len2 len1) then invalid_arg "Array.Fun1.iter2" in
     for i = 0 to pred len1 do
       let x1 = uget v1 i in
       let x2 = uget v2 i in

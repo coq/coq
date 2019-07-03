@@ -116,7 +116,7 @@ let rec isType sigma c = match kind sigma c with
 let isVarId sigma id c =
   match kind sigma c with Var id' -> Id.equal id id' | _ -> false
 let isRelN sigma n c =
-  match kind sigma c with Rel n' -> Int.equal n n' | _ -> false
+  match kind sigma c with Rel n' -> CInt.equal n n' | _ -> false
 
 let destRel sigma c = match kind sigma c with
 | Rel p -> p
@@ -222,7 +222,7 @@ let decompose_lam_n_assum sigma n c =
   if n < 0 then
     user_err Pp.(str "decompose_lam_n_assum: integer parameter must be positive");
   let rec lamdec_rec l n c =
-    if Int.equal n 0 then l,c
+    if CInt.equal n 0 then l,c
     else
       match kind sigma c with
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
@@ -237,7 +237,7 @@ let decompose_lam_n_decls sigma n =
   if n < 0 then
     user_err Pp.(str "decompose_lam_n_decls: integer parameter must be positive");
   let rec lamdec_rec l n c =
-    if Int.equal n 0 then l,c
+    if CInt.equal n 0 then l,c
     else
       match kind sigma c with
       | Lambda (x,t,c)  -> lamdec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
@@ -258,7 +258,7 @@ let lamn n env b =
 let compose_lam l b = lamn (List.length l) l b
 
 let rec to_lambda sigma n prod =
-  if Int.equal n 0 then
+  if CInt.equal n 0 then
     prod
   else
     match kind sigma prod with
@@ -290,7 +290,7 @@ let decompose_prod_n_assum sigma n c =
   if n < 0 then
     user_err Pp.(str "decompose_prod_n_assum: integer parameter must be positive");
   let rec prodec_rec l n c =
-    if Int.equal n 0 then l,c
+    if CInt.equal n 0 then l,c
     else
       match kind sigma c with
       | Prod (x,t,c)    -> prodec_rec (Context.Rel.add (LocalAssum (x,t)) l) (n-1) c
@@ -413,7 +413,7 @@ let cmp_inductives cv_pb (mind,ind as spec) nargs u1 u2 cstrs =
   | None -> enforce_eq_instances_univs false u1 u2 cstrs
   | Some variances ->
     let num_param_arity = Reduction.inductive_cumulativity_arguments spec in
-    compare_cumulative_instances cv_pb (Int.equal num_param_arity nargs) variances u1 u2 cstrs
+    compare_cumulative_instances cv_pb (CInt.equal num_param_arity nargs) variances u1 u2 cstrs
 
 let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
   let open UnivProblem in
@@ -421,7 +421,7 @@ let cmp_constructors (mind, ind, cns as spec) nargs u1 u2 cstrs =
   | None -> enforce_eq_instances_univs false u1 u2 cstrs
   | Some _ ->
     let num_cnstr_args = Reduction.constructor_cumulativity_arguments spec in
-    if not (Int.equal num_cnstr_args nargs)
+    if not (CInt.equal num_cnstr_args nargs)
     then enforce_eq_instances_univs false u1 u2 cstrs
     else
       Array.fold_left2 (fun cstrs u1 u2 -> UnivProblem.(Set.add (UWeak (u1,u2)) cstrs))
@@ -608,7 +608,7 @@ let subst_univs_level_constr subst c =
 (** Operations that dot NOT commute with evar-normalization *)
 let noccurn sigma n term =
   let rec occur_rec n c = match kind sigma c with
-    | Rel m -> if Int.equal m n then raise LocalOccur
+    | Rel m -> if CInt.equal m n then raise LocalOccur
     | _ -> iter_with_binders sigma succ occur_rec n c
   in
   try occur_rec n term; true with LocalOccur -> false

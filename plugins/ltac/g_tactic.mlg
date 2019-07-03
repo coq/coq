@@ -88,7 +88,7 @@ let check_for_coloneq =
       let rec skip_to_rpar p n =
 	match List.last (Stream.npeek n strm) with
         | KEYWORD "(" -> skip_to_rpar (p+1) (n+1)
-        | KEYWORD ")" -> if Int.equal p 0 then n+1 else skip_to_rpar (p-1) (n+1)
+        | KEYWORD ")" -> if CInt.equal p 0 then n+1 else skip_to_rpar (p-1) (n+1)
 	| KEYWORD "." -> err ()
 	| _ -> skip_to_rpar p (n+1) in
       let rec skip_names n =
@@ -130,7 +130,7 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
   (id,n, CAst.make ~loc @@ CProdN(bl,ty))
 
 let mk_cofix_tac (loc,id,bl,ann,ty) =
-  let _ = Option.map (fun { CAst.loc = aloc } ->
+  let _ = COption.map (fun { CAst.loc = aloc } ->
     user_err ?loc:aloc
       ~hdr:"Constr:mk_cofix_tac"
       (Pp.str"Annotation forbidden in cofix expression.")) ann in

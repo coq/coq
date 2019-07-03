@@ -693,7 +693,7 @@ let doquery query sn =
   ignore
 
 let queryif command sn =
-  Option.iter (fun query -> doquery (query ^ ".") sn)
+  COption.iter (fun query -> doquery (query ^ ".") sn)
     begin try
       let i = CString.string_index_from command 0 "..." in
       let word = get_current_word sn in
@@ -869,7 +869,7 @@ let toggle_items menu_name l =
   let f d =
     let label = d.Opt.label in
     let k, name = get_shortcut label in
-    let accel = Option.map ((^) modifier_for_display#get) k in
+    let accel = COption.map ((^) modifier_for_display#get) k in
     toggle_item name ~label ?accel ~active:d.Opt.init
       ~callback:(printopts_callback d.Opt.opts)
       menu_name

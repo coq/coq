@@ -218,7 +218,7 @@ and subst_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body ->
   in
   let ty' = subst_signature sub do_delta ty in
   let me' = subst_impl sub me in
-  let aty' = Option.Smart.map (subst_expression sub id_delta) aty in
+  let aty' = COption.Smart.map (subst_expression sub id_delta) aty in
   let retro' = subst_retro sub retro in
   let delta' = do_delta mb.mod_delta sub in
   if mp==mp' && me==me' && ty==ty' && aty==aty'
@@ -612,7 +612,7 @@ let join_constant_body except otab cb =
 
 let join_structure except otab s =
   let rec join_module : 'a. 'a generic_module_body -> unit = fun mb ->
-    Option.iter join_expression mb.mod_type_alg;
+    COption.iter join_expression mb.mod_type_alg;
     join_signature mb.mod_type
   and join_field (_l,body) = match body with
     |SFBconst sb -> join_constant_body except otab sb

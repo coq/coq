@@ -238,7 +238,7 @@ and pp_pat env pv =
   prvecti
     (fun i x ->
        pp_one_pat env pv.(i) ++
-       if Int.equal i (Array.length pv - 1) then str "}" else
+       if CInt.equal i (Array.length pv - 1) then str "}" else
 	 (str ";" ++ fnl ()))
     pv
 

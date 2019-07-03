@@ -59,7 +59,7 @@ let with_delayed_uconstr ist c tac =
 
 let replace_in_clause_maybe_by ist c1 c2 cl tac =
   with_delayed_uconstr ist c1
-  (fun c1 -> replace_in_clause_maybe_by c1 c2 cl (Option.map (Tacinterp.tactic_of_value ist) tac))
+  (fun c1 -> replace_in_clause_maybe_by c1 c2 cl (COption.map (Tacinterp.tactic_of_value ist) tac))
 
 let replace_term ist dir_opt c cl =
   with_delayed_uconstr ist c (fun c -> replace_term dir_opt c cl)
@@ -281,7 +281,7 @@ END
 {
 
 let rewrite_star ist clause orient occs c (tac : Geninterp.Val.t option) =
-  let tac' = Option.map (fun t -> Tacinterp.tactic_of_value ist t, FirstSolved) tac in
+  let tac' = COption.map (fun t -> Tacinterp.tactic_of_value ist t, FirstSolved) tac in
   with_delayed_uconstr ist c
     (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true)
 
@@ -319,7 +319,7 @@ let add_rewrite_hint ~poly bases ort t lcsr =
           (Declare.declare_universe_context ~poly:false ctx;
            Univ.ContextSet.empty)
     in
-      CAst.make ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, Option.map (in_gen (rawwit wit_ltac)) t) in
+      CAst.make ?loc:(Constrexpr_ops.constr_loc ce) ((c, ctx), ort, COption.map (in_gen (rawwit wit_ltac)) t) in
   let eqs = List.map f lcsr in
   let add_hints base = add_rew_rules base eqs in
   List.iter add_hints bases
@@ -621,7 +621,7 @@ let subst_var_with_hole occ tid t =
         if Id.equal id tid 
         then
 	  (decr occref;
-	   if Int.equal !occref 0 then x
+           if CInt.equal !occref 0 then x
            else
 	     (incr locref;
               DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
@@ -646,7 +646,7 @@ let subst_hole_with_term occ tc t =
                 Evar_kinds.qm_record_field=None;
            }, IntroAnonymous, s) ->
         decr occref;
-        if Int.equal !occref 0 then tc
+        if CInt.equal !occref 0 then tc
         else
 	  (incr locref;
            DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
@@ -675,7 +675,7 @@ let hResolve id c occ t =
     with
       | Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) as e ->
           let (e, info) = CErrors.push e in
-          let loc_begin = Option.cata (fun l -> fst (Loc.unloc l)) 0 (Loc.get_loc info) in
+          let loc_begin = COption.cata (fun l -> fst (Loc.unloc l)) 0 (Loc.get_loc info) in
           resolve_hole (subst_hole_with_term loc_begin c_raw t_hole)
   in
   let t_constr,ctx = resolve_hole (subst_var_with_hole occ id t_raw) in
@@ -1040,7 +1040,7 @@ END
 {
 
 let interp_cmp = function
-  | Eq -> Int.equal
+  | Eq -> CInt.equal
   | Lt -> ((<):int->int->bool)
   | Le -> ((<=):int->int->bool)
   | Gt -> ((>):int->int->bool)

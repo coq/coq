@@ -317,7 +317,7 @@ module Make(T : Task) () = struct
       | x::tl -> l := tl; x
 
   let slave_handshake () =
-    Pool.worker_handshake (Option.get !slave_ic) (Option.get !slave_oc)
+    Pool.worker_handshake (COption.get !slave_ic) (COption.get !slave_oc)
 
   let pp_pid pp = Pp.(str (Spawned.process_id () ^ " ") ++ pp)
 
@@ -332,23 +332,23 @@ module Make(T : Task) () = struct
       Control.protect_sigalrm (fun () ->
           Marshal.to_channel oc (RespFeedback (debug_with_pid fb)) []; flush oc) ()
     in
-    ignore (Feedback.add_feeder (fun x -> slave_feeder (Option.get !slave_oc) x));
+    ignore (Feedback.add_feeder (fun x -> slave_feeder (COption.get !slave_oc) x));
     (* We ask master to allocate universe identifiers *)
     UnivGen.set_remote_new_univ_id (bufferize @@ Control.protect_sigalrm (fun () ->
-      marshal_response (Option.get !slave_oc) RespGetCounterNewUnivLevel;
-      match unmarshal_more_data (Option.get !slave_ic) with
+      marshal_response (COption.get !slave_oc) RespGetCounterNewUnivLevel;
+      match unmarshal_more_data (COption.get !slave_ic) with
       | MoreDataUnivLevel l -> l));
     let working = ref false in
     slave_handshake ();
     while true do
       try
         working := false;
-        let request = unmarshal_request (Option.get !slave_ic) in
+        let request = unmarshal_request (COption.get !slave_ic) in
         working := true;
         report_status (name_of_request request);
         let response = slave_respond request in
         report_status "Idle";
-        marshal_response (Option.get !slave_oc) response;
+        marshal_response (COption.get !slave_oc) response;
         CEphemeron.clean ()
       with
       | MarshalError s ->

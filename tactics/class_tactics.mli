@@ -34,7 +34,7 @@ val typeclasses_eauto :
   (** The transparent_state used when working with local hypotheses  *)
   -> ?strategy:search_strategy
   (** Is a traversing-strategy specified? *)
-  -> depth:(Int.t option)
+  -> depth:(CInt.t option)
   (** Bounded or unbounded search *)
   -> Hints.hint_db_name list
   (** The list of hint databases to use *)
@@ -58,7 +58,7 @@ module Search : sig
     (** Should non-class goals be shelved and resolved at the end *)
     -> ?strategy:search_strategy
     (** Is a traversing-strategy specified? *)
-    -> depth:Int.t option
+    -> depth:CInt.t option
     (** Bounded or unbounded search *)
     -> dep:bool
     (** Should the tactic be made backtracking on the initial goals,

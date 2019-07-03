@@ -138,7 +138,7 @@ let spawn_with_control prefer_sock env prog args =
     else spawn_pipe env prog args, false in
   let oob_resp, oob_req =
     if not_Unix then
-      let _, oob_resp, oob_req = accept (Option.get control_sock) in
+      let _, oob_resp, oob_req = accept (COption.get control_sock) in
       Some oob_resp, Some oob_req
     else
       None, None in
@@ -174,12 +174,12 @@ let kill ({ pid = unixpid; oob_resp; oob_req; cin; cout; alive; watch } as p) =
   p.alive <- false;
   if not alive then prerr_endline "This process is already dead"
   else begin try
-    Option.iter ML.remove_watch watch;
-    Option.iter (output_death_sentence (uid p)) oob_req;
+    COption.iter ML.remove_watch watch;
+    COption.iter (output_death_sentence (uid p)) oob_req;
     close_in_noerr cin;
     close_out_noerr cout;
-    Option.iter close_in_noerr oob_resp;
-    Option.iter close_out_noerr oob_req;
+    COption.iter close_in_noerr oob_resp;
+    COption.iter close_out_noerr oob_req;
     if Sys.os_type = "Unix" then Unix.kill unixpid 9;
     p.watch <- None
   with e -> prerr_endline ("kill: "^Printexc.to_string e) end
@@ -245,11 +245,11 @@ let kill ({ pid = unixpid; oob_req; oob_resp; cin; cout; alive } as p) =
   p.alive <- false;
   if not alive then prerr_endline "This process is already dead"
   else begin try
-    Option.iter (output_death_sentence (uid p)) oob_req;
+    COption.iter (output_death_sentence (uid p)) oob_req;
     close_in_noerr cin;
     close_out_noerr cout;
-    Option.iter close_in_noerr oob_resp;
-    Option.iter close_out_noerr oob_req;
+    COption.iter close_in_noerr oob_resp;
+    COption.iter close_out_noerr oob_req;
     if Sys.os_type = "Unix" then Unix.kill unixpid 9;
   with e -> prerr_endline ("kill: "^Printexc.to_string e) end
 

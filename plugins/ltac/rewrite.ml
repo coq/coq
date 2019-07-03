@@ -181,7 +181,7 @@ end) = struct
     fun env sigma -> class_info env sigma (Lazy.force r)
 
   let proper_proj env sigma =
-    mkConst (Option.get (pi3 (List.hd (proper_class env sigma).cl_projs)))
+    mkConst (COption.get (pi3 (List.hd (proper_class env sigma).cl_projs)))
 
   let proper_type env (sigma,cstrs) =
     let l = (proper_class env sigma).cl_impl in
@@ -238,7 +238,7 @@ end) = struct
             let pred = mkLambda (na, ty, b) in
             let liftarg = mkLambda (na, ty, arg) in
             let evars, arg' = app_poly env evars forall_relation [| ty ; pred ; liftarg |] in
-              if Option.is_empty obj then evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
+              if COption.is_empty obj then evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
 	      else user_err Pp.(str "build_signature: no constraint can apply on a dependent argument")
 	| _, obj :: _ -> anomaly ~label:"build_signature" (Pp.str "not enough products.")
 	| _, [] ->
@@ -286,7 +286,7 @@ end) = struct
 	(app_poly env evd arrow [| a; b |]), unfold_impl
 
   let rec decomp_pointwise sigma n c =
-    if Int.equal n 0 then c
+    if CInt.equal n 0 then c
     else
       match EConstr.kind sigma c with
       | App (f, [| a; b; relb |]) when Termops.is_global sigma (pointwise_relation_ref ()) f ->
@@ -322,7 +322,7 @@ end) = struct
       | Some (ty, Some rel) -> evars, rel
     in
     let rec aux evars env prod n = 
-      if Int.equal n 0 then start evars env prod
+      if CInt.equal n 0 then start evars env prod
       else
         let sigma = goalevars evars in
 	match EConstr.kind sigma (Reductionops.whd_all env sigma prod) with
@@ -783,7 +783,7 @@ let resolve_subrelation env avoid car rel sort prf rel' res =
 
 let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) evars =
   let evars, morph_instance, proj, sigargs, m', args, args' =
-    let first = match (Array.findi (fun _ b -> not (Option.is_empty b)) args') with
+    let first = match (Array.findi (fun _ b -> not (COption.is_empty b)) args') with
     | Some i -> i
     | None -> invalid_arg "resolve_morphism" in
     let morphargs, morphobjs = Array.chop first args in
@@ -791,7 +791,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
     let appm = mkApp(m, morphargs) in
     let appmtype = Typing.unsafe_type_of env (goalevars evars) appm in
     let cstrs = List.map 
-      (Option.map (fun r -> r.rew_car, get_opt_rew_rel r.rew_prf)) 
+      (COption.map (fun r -> r.rew_car, get_opt_rew_rel r.rew_prf))
       (Array.to_list morphobjs') 
     in
       (* Desired signature *)
@@ -836,7 +836,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
 		 [ snd proof; r.rew_to; x ] @ acc, subst, evars, 
 	      sigargs, r.rew_to :: typeargs')
 	  | None ->
-	      if not (Option.is_empty y) then 
+              if not (COption.is_empty y) then
 		user_err Pp.(str "Cannot rewrite inside dependent arguments of a function");
 	      x :: acc, x :: subst, evars, sigargs, x :: typeargs')
       ([], [], evars, sigargs, []) args args'
@@ -979,14 +979,14 @@ let is_rew_cast = function RewCast _ -> true | _ -> false
 let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
   let rec aux { state ; env ; unfresh ;
 		term1 = t ; ty1 = ty ; cstr = (prop, cstr) ; evars } =
-    let cstr' = Option.map (fun c -> (ty, Some c)) cstr in
+    let cstr' = COption.map (fun c -> (ty, Some c)) cstr in
       match EConstr.kind (goalevars evars) t with
       | App (m, args) ->
 	  let rewrite_args state success =
 	    let state, (args', evars', progress) =
 	      Array.fold_left
 		(fun (state, (acc, evars, progress)) arg ->
-		  if not (Option.is_empty progress) && not all then 
+                  if not (COption.is_empty progress) && not all then
 		    state, (None :: acc, evars, progress)
 		  else
 		    let argty = Retyping.get_type_of env (goalevars evars) arg in
@@ -998,7 +998,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 		    let res' = 
 		      match res with
 		      | Identity ->
-			let progress = if Option.is_empty progress then Some false else progress in
+                        let progress = if COption.is_empty progress then Some false else progress in
 			  (None :: acc, evars, progress)
 		      | Success r -> 
 			(Some r :: acc, r.rew_evars, Some true)
@@ -1198,12 +1198,12 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
 	    let res = make_leibniz_proof env case ty r in
 	      state, Success (coerce env unfresh (prop,cstr) res)
 	  | Fail | Identity ->
-	    if Array.for_all (Int.equal 0) ci.ci_cstr_ndecls then
+            if Array.for_all (CInt.equal 0) ci.ci_cstr_ndecls then
 	      let evars', eqty = app_poly_sort prop env evars coq_eq [| ty |] in
 	      let cstr = Some eqty in
 	      let state, found, brs' = Array.fold_left 
 		(fun (state, found, acc) br ->
-		  if not (Option.is_empty found) then 
+                  if not (COption.is_empty found) then
 		    (state, found, fun x -> lift 1 br :: acc x)
 		  else
 		    let state, res = s.strategy { state ; env ; unfresh ;
@@ -1920,7 +1920,7 @@ let build_morphism_signature env sigma m =
   let evd = ref evars in
   let _ = List.iter
     (fun (ty, rel) ->
-      Option.iter (fun rel ->
+      COption.iter (fun rel ->
 	let default = e_app_poly env evd PropGlobal.default_relation [| ty; rel |] in
 	  ignore(e_new_cstr_evar env evd default))
 	rel)

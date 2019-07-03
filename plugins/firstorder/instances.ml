@@ -31,8 +31,8 @@ let compare_instance inst1 inst2=
 	      (cmp d1 d2)
 	  | Real((m1,c1),n1),Real((m2,c2),n2)->
 	      ((-) =? (-) ==? cmp) m2 m1 n1 n2 c1 c2
-	  | Phantom(_),Real((m,_),_)-> if Int.equal m 0 then -1 else 1
-	  | Real((m,_),_),Phantom(_)-> if Int.equal m 0 then 1 else -1
+          | Phantom(_),Real((m,_),_)-> if CInt.equal m 0 then -1 else 1
+          | Real((m,_),_),Phantom(_)-> if CInt.equal m 0 then 1 else -1
 
 let compare_gr id1 id2 =
   if id1==id2 then 0 else
@@ -112,7 +112,7 @@ let mk_open_instance env evmap id idc m t =
 	  | Anonymous ->  dummy_bvid in
   let revt=substl (List.init m (fun i->mkRel (m-i))) t in
   let rec aux n avoid env evmap decls =
-    if Int.equal n 0 then evmap, decls else
+    if CInt.equal n 0 then evmap, decls else
       let nid=(fresh_id_in_env avoid var_id env) in
       let (evmap, (c, _)) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
       let decl = LocalAssum (Context.make_annot (Name nid) Sorts.Relevant, c) in

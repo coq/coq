@@ -196,13 +196,13 @@ let retrieve_first_recthm uctx = function
     let uctx = UState.context uctx in
     let inst = Univ.UContext.instance uctx in
     let map (c, _, _) = Vars.subst_instance_constr inst c in
-    (Option.map map (Global.body_of_constant_body Library.indirect_accessor cb), is_opaque cb)
+    (COption.map map (Global.body_of_constant_body Library.indirect_accessor cb), is_opaque cb)
   | _ -> assert false
 
 (* Helper for process_recthms *)
 let save_remaining_recthms env sigma ~poly ~scope ~udecl uctx body opaq i { Recthm.name; typ; impargs } =
   let norm c = EConstr.to_constr (Evd.from_ctx uctx) c in
-  let body = Option.map EConstr.of_constr body in
+  let body = COption.map EConstr.of_constr body in
   let univs = UState.check_univ_decl ~poly uctx udecl in
   let t_i = norm typ in
   let kind = Decls.(IsAssumption Conjectural) in
@@ -350,7 +350,7 @@ let finish_proved env sigma idopt po info =
     let () = try
       let const = adjust_guardness_conditions const compute_guard in
       let should_suggest = const.Declare.proof_entry_opaque &&
-                           Option.is_empty const.Declare.proof_entry_secctx in
+                           COption.is_empty const.Declare.proof_entry_secctx in
       let open DeclareDef in
       let r = match scope with
         | Discharge ->
@@ -383,7 +383,7 @@ let finish_proved env sigma idopt po info =
 let finish_derived ~f ~name ~idopt ~entries =
   (* [f] and [name] correspond to the proof of [f] and of [suchthat], respectively. *)
 
-  if Option.has_some idopt then
+  if COption.has_some idopt then
     CErrors.user_err Pp.(str "Cannot save a proof of Derive with an explicit name.");
 
   let f_def, lemma_def =

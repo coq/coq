@@ -126,7 +126,7 @@ let pr_evar_source env sigma = function
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let open Globnames in
       let print_constr = print_kconstr in
-      let id = Option.get ido in
+      let id = COption.get ido in
       str "parameter " ++ Id.print id ++ spc () ++ str "of" ++
       spc () ++ print_constr env sigma (EConstr.of_constr @@ printable_constr_of_global c)
   | Evar_kinds.InternalHole -> str "internal placeholder"
@@ -197,7 +197,7 @@ let evar_dependency_closure n sigma =
      undefined evars. *)
   let graph = compute_evar_dependency_graph sigma in
   let rec aux n curr accu =
-    if Int.equal n 0 then Evar.Set.union curr accu
+    if CInt.equal n 0 then Evar.Set.union curr accu
     else
       let fold evk accu =
         try
@@ -344,7 +344,7 @@ let pr_evar_by_depth depth env sigma = match depth with
 | Some n ->
   (* Print closure of undefined evars *)
   str"UNDEFINED EVARS:"++
-  (if Int.equal n 0 then mt() else str" (+level "++int n++str" closure):")++
+  (if CInt.equal n 0 then mt() else str" (+level "++int n++str" closure):")++
   brk(0,1)++
   pr_evar_list env sigma (evar_dependency_closure n sigma) ++ fnl()
 
@@ -519,7 +519,7 @@ let rec strip_head_cast sigma c = match EConstr.kind sigma c with
       let rec collapse_rec f cl2 = match EConstr.kind sigma f with
 	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
 	| Cast (c,_,_) -> collapse_rec c cl2
-	| _ -> if Int.equal (Array.length cl2) 0 then f else EConstr.mkApp (f,cl2)
+        | _ -> if CInt.equal (Array.length cl2) 0 then f else EConstr.mkApp (f,cl2)
       in
       collapse_rec f cl
   | Cast (c,_,_) -> strip_head_cast sigma c
@@ -548,7 +548,7 @@ let decompose_app_vect sigma c =
 let adjust_app_list_size f1 l1 f2 l2 =
   let open EConstr in
   let len1 = List.length l1 and len2 = List.length l2 in
-  if Int.equal len1 len2 then (f1,l1,f2,l2)
+  if CInt.equal len1 len2 then (f1,l1,f2,l2)
   else if len1 < len2 then
    let extras,restl2 = List.chop (len2-len1) l2 in
     (f1, l1, applist (f2,extras), restl2)
@@ -559,7 +559,7 @@ let adjust_app_list_size f1 l1 f2 l2 =
 let adjust_app_array_size f1 l1 f2 l2 =
   let open EConstr in
   let len1 = Array.length l1 and len2 = Array.length l2 in
-  if Int.equal len1 len2 then (f1,l1,f2,l2)
+  if CInt.equal len1 len2 then (f1,l1,f2,l2)
   else if len1 < len2 then
     let extras,restl2 = Array.chop (len2-len1) l2 in
     (f1, l1, mkApp (f2,extras), restl2)
@@ -585,7 +585,7 @@ let fold_rec_types g (lna,typarray,_) e =
 
 let map_left2 f a g b =
   let l = Array.length a in
-  if Int.equal l 0 then [||], [||] else begin
+  if CInt.equal l 0 then [||], [||] else begin
     let r = Array.make l (f a.(0)) in
     let s = Array.make l (g b.(0)) in
     for i = 1 to l - 1 do
@@ -789,7 +789,7 @@ let occur_meta_or_existential sigma c =
 
 let occur_metavariable sigma m c =
   let rec occrec c = match EConstr.kind sigma c with
-  | Meta m' -> if Int.equal m m' then raise Occur
+  | Meta m' -> if CInt.equal m m' then raise Occur
   | _ -> EConstr.iter sigma occrec c
   in
   try occrec c; false with Occur -> true
@@ -832,10 +832,10 @@ let local_occur_var sigma id c =
 
 let free_rels sigma m =
   let rec frec depth acc c = match EConstr.kind sigma c with
-    | Rel n       -> if n >= depth then Int.Set.add (n-depth+1) acc else acc
+    | Rel n       -> if n >= depth then CInt.Set.add (n-depth+1) acc else acc
     | _ -> fold_constr_with_binders sigma succ frec depth acc c
   in
-  frec 1 Int.Set.empty m
+  frec 1 CInt.Set.empty m
 
 (* collects all metavar occurrences, in left-to-right order, preserving
  * repetitions and all. *)
@@ -843,7 +843,7 @@ let free_rels sigma m =
 let collect_metas sigma c =
   let rec collrec acc c =
     match EConstr.kind sigma c with
-      | Meta mv -> List.add_set Int.equal mv acc
+      | Meta mv -> List.add_set CInt.equal mv acc
       | _       -> EConstr.fold sigma collrec acc c
   in
   List.rev (collrec [] c)
@@ -918,11 +918,11 @@ type meta_type_map = (metavariable * types) list
 type meta_value_map = (metavariable * constr) list
 
 let isMetaOf sigma mv c =
-  match EConstr.kind sigma c with Meta mv' -> Int.equal mv mv' | _ -> false
+  match EConstr.kind sigma c with Meta mv' -> CInt.equal mv mv' | _ -> false
 
 let rec subst_meta bl c =
   match kind c with
-    | Meta i -> (try Int.List.assoc i bl with Not_found -> c)
+    | Meta i -> (try CInt.List.assoc i bl with Not_found -> c)
     | _ -> Constr.map (subst_meta bl) c
 
 let rec strip_outer_cast sigma c = match EConstr.kind sigma c with
@@ -1144,7 +1144,7 @@ let eq_constr sigma t1 t2 = constr_cmp sigma Reduction.CONV t1 t2
 let split_app sigma c = match EConstr.kind sigma c with
     App(c,l) ->
       let len = Array.length l in
-      if Int.equal len 0 then ([],c) else
+      if CInt.equal len 0 then ([],c) else
 	let last = Array.get l (len-1) in
 	let prev = Array.sub l 0 (len-1) in
 	c::(Array.to_list prev), last
@@ -1249,7 +1249,7 @@ let rec eta_reduce_head sigma c =
                  (match EConstr.kind sigma cl.(lastn) with
                     | Rel 1 ->
 			let c' =
-                          if Int.equal lastn 0 then f
+                          if CInt.equal lastn 0 then f
 			  else mkApp (f, Array.sub cl 0 lastn)
 			in
 			if noccurn sigma 1 c'
@@ -1400,7 +1400,7 @@ let prod_applist sigma c l =
 let prod_applist_assum sigma n c l =
   let open EConstr in
   let rec app n subst c l =
-    if Int.equal n 0 then
+    if CInt.equal n 0 then
       if l == [] then Vars.substl subst c
       else anomaly (Pp.str "Not enough arguments.")
     else match EConstr.kind sigma c, l with

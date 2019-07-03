@@ -202,13 +202,13 @@ let subst_Function (subst,finfos) =
   in
   let function_constant' = do_subst_con finfos.function_constant in
   let graph_ind' = do_subst_ind finfos.graph_ind in
-  let equation_lemma' = Option.Smart.map do_subst_con finfos.equation_lemma in
-  let correctness_lemma' = Option.Smart.map do_subst_con finfos.correctness_lemma in
-  let completeness_lemma' = Option.Smart.map do_subst_con finfos.completeness_lemma in
-  let rect_lemma' = Option.Smart.map do_subst_con finfos.rect_lemma in
-  let rec_lemma' = Option.Smart.map do_subst_con finfos.rec_lemma in
-  let prop_lemma' =  Option.Smart.map do_subst_con finfos.prop_lemma in
-  let sprop_lemma' = Option.Smart.map do_subst_con finfos.sprop_lemma in
+  let equation_lemma' = COption.Smart.map do_subst_con finfos.equation_lemma in
+  let correctness_lemma' = COption.Smart.map do_subst_con finfos.correctness_lemma in
+  let completeness_lemma' = COption.Smart.map do_subst_con finfos.completeness_lemma in
+  let rect_lemma' = COption.Smart.map do_subst_con finfos.rect_lemma in
+  let rec_lemma' = COption.Smart.map do_subst_con finfos.rec_lemma in
+  let prop_lemma' =  COption.Smart.map do_subst_con finfos.prop_lemma in
+  let sprop_lemma' = COption.Smart.map do_subst_con finfos.sprop_lemma in
   if function_constant' == finfos.function_constant &&
     graph_ind' == finfos.graph_ind &&
     equation_lemma' == finfos.equation_lemma &&
@@ -235,7 +235,7 @@ let subst_Function (subst,finfos) =
 let discharge_Function (_,finfos) = Some finfos
 
 let pr_ocst env sigma c =
-  Option.fold_right (fun v acc -> Printer.pr_lconstr_env env sigma (mkConst v)) c (mt ())
+  COption.fold_right (fun v acc -> Printer.pr_lconstr_env env sigma (mkConst v)) c (mt ())
 
 let pr_info env sigma f_info =
   str "function_constant := " ++
@@ -480,7 +480,7 @@ let list_rewrite (rev:bool) (eqs: (EConstr.constr*bool) list) =
 let decompose_lam_n sigma n =
   if n < 0 then CErrors.user_err Pp.(str "decompose_lam_n: integer parameter must be positive");
   let rec lamdec_rec l n c =
-    if Int.equal n 0 then l,c
+    if CInt.equal n 0 then l,c
     else match EConstr.kind sigma c with
       | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) (n-1) c
       | Cast (c,_,_)     -> lamdec_rec l n c

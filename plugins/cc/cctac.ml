@@ -97,7 +97,7 @@ let atom_of_constr env sigma term =
   let kot = EConstr.kind sigma wh in
     match kot with
       App (f,args)->
-	if is_global sigma (Lazy.force _eq) f && Int.equal (Array.length args) 3
+        if is_global sigma (Lazy.force _eq) f && CInt.equal (Array.length args) 3
 	  then `Eq (args.(0),
 		   decompose_term env sigma args.(1),
 		   decompose_term env sigma args.(2))
@@ -111,7 +111,7 @@ let rec pattern_of_constr env sigma c =
 	let pargs,lrels = List.split
 	  (Array.map_to_list (pattern_of_constr env sigma) args) in
 	  PApp (pf,List.rev pargs),
-	List.fold_left Int.Set.union Int.Set.empty lrels
+        List.fold_left CInt.Set.union CInt.Set.empty lrels
     | Prod (_,a,_b) when noccurn sigma 1 _b ->
 	let b = Termops.pop _b in
 	let pa,sa = pattern_of_constr env sigma a in
@@ -119,11 +119,11 @@ let rec pattern_of_constr env sigma c =
 	let sort_b = sf_of env sigma b in
 	let sort_a = sf_of env sigma a in
 	  PApp(Product (sort_a,sort_b),
-	       [pa;pb]),(Int.Set.union sa sb)
-    | Rel i -> PVar i,Int.Set.singleton i
+               [pa;pb]),(CInt.Set.union sa sb)
+    | Rel i -> PVar i,CInt.Set.singleton i
     | _ ->
 	let pf = decompose_term env sigma c in
-	  PApp (pf,[]),Int.Set.empty
+          PApp (pf,[]),CInt.Set.empty
 
 let non_trivial = function
     PVar _ -> false
@@ -132,16 +132,16 @@ let non_trivial = function
 let patterns_of_constr env sigma nrels term=
   let f,args=
     try destApp sigma (whd_delta env sigma term) with DestKO -> raise Not_found in
-	if is_global sigma (Lazy.force _eq) f && Int.equal (Array.length args) 3
+        if is_global sigma (Lazy.force _eq) f && CInt.equal (Array.length args) 3
 	then
 	  let patt1,rels1 = pattern_of_constr env sigma args.(1)
 	  and patt2,rels2 = pattern_of_constr env sigma args.(2) in
 	  let valid1 =
-	    if not (Int.equal (Int.Set.cardinal rels1) nrels) then Creates_variables
+            if not (CInt.equal (CInt.Set.cardinal rels1) nrels) then Creates_variables
 	    else if non_trivial patt1 then Normal
 	    else Trivial (EConstr.to_constr sigma args.(0))
 	  and valid2 =
-	    if not (Int.equal (Int.Set.cardinal rels2) nrels) then Creates_variables
+            if not (CInt.equal (CInt.Set.cardinal rels2) nrels) then Creates_variables
 	    else if non_trivial patt2 then Normal
 	    else Trivial (EConstr.to_constr sigma args.(0)) in
 	    if valid1 != Creates_variables
@@ -242,7 +242,7 @@ let app_global f args k =
   Tacticals.New.pf_constr_of_global (Lazy.force f) >>= fun fc -> k (mkApp (fc, args))
 
 let rec gen_holes env sigma t n accu =
-  if Int.equal n 0 then (sigma, List.rev accu)
+  if CInt.equal n 0 then (sigma, List.rev accu)
   else match EConstr.kind sigma t with
   | Prod (_, u, t) ->
     let (sigma, ev) = Evarutil.new_evar env sigma u in
@@ -517,7 +517,7 @@ let f_equal =
       begin match EConstr.kind sigma concl with
       | App (r,[|_;t;t'|]) when is_global sigma (Lazy.force _eq) r ->
 	  begin match EConstr.kind sigma t, EConstr.kind sigma t' with
-	  | App (f,v), App (f',v') when Int.equal (Array.length v) (Array.length v') ->
+          | App (f,v), App (f',v') when CInt.equal (Array.length v) (Array.length v') ->
 	      let rec cuts i =
 		if i < 0 then Tacticals.New.tclTRY (congruence_tac 1000 [])
 		else Tacticals.New.tclTHENFIRST (cut_eq v.(i) v'.(i)) (cuts (i-1))

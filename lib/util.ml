@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* OCaml compat *)
 type 'a pervasives_ref = 'a ref
 let pervasives_ref = ref
 let pervasives_compare = compare
@@ -172,9 +173,9 @@ let iraise = Exninfo.iraise
 
 let open_utf8_file_in fname =
   let is_bom s =
-    Int.equal (Char.code (Bytes.get s 0)) 0xEF &&
-    Int.equal (Char.code (Bytes.get s 1)) 0xBB &&
-    Int.equal (Char.code (Bytes.get s 2)) 0xBF
+    CInt.equal (Char.code (Bytes.get s 0)) 0xEF &&
+    CInt.equal (Char.code (Bytes.get s 1)) 0xBB &&
+    CInt.equal (Char.code (Bytes.get s 2)) 0xBF
   in
   let in_chan = open_in fname in
   let s = Bytes.make 3 ' ' in

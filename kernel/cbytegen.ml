@@ -104,9 +104,9 @@ let compare e1 e2 = match e1, e2 with
 | FVnamed id1, FVnamed id2 -> Id.compare id1 id2
 | FVnamed _, (FVrel _ | FVuniv_var _ | FVevar _) -> -1
 | FVrel _, FVnamed _ -> 1
-| FVrel r1, FVrel r2 -> Int.compare r1 r2
+| FVrel r1, FVrel r2 -> CInt.compare r1 r2
 | FVrel _, (FVuniv_var _ | FVevar _) -> -1
-| FVuniv_var i1, FVuniv_var i2 -> Int.compare i1 i2
+| FVuniv_var i1, FVuniv_var i2 -> CInt.compare i1 i2
 | FVuniv_var _, (FVnamed _ | FVrel _) -> 1
 | FVuniv_var _, FVevar _ -> -1
 | FVevar _, (FVnamed _ | FVrel _ | FVuniv_var _) -> 1
@@ -188,7 +188,7 @@ let ensure_stack_capacity f x =
 (*i Creation functions for comp_env *)
 
 let rec add_param n sz l =
-  if Int.equal n 0 then l else add_param (n - 1) sz (n+sz::l)
+  if CInt.equal n 0 then l else add_param (n - 1) sz (n+sz::l)
 
 let comp_env_fun ?(univs=0) arity =
   { arity;
@@ -392,14 +392,14 @@ let rec is_tailcall = function
 let rec add_pop n = function
   | Kpop m :: cont -> add_pop (n+m) cont
   | Kreturn m:: cont -> Kreturn (n+m) ::cont
-  | cont -> if Int.equal n 0 then cont else Kpop n :: cont
+  | cont -> if CInt.equal n 0 then cont else Kpop n :: cont
 
 let add_grab arity lbl cont =
-  if Int.equal arity 1 then Klabel lbl :: cont
+  if CInt.equal arity 1 then Klabel lbl :: cont
   else Krestart :: Klabel lbl :: Kgrab (arity - 1) :: cont
 
 let add_grabrec rec_arg arity lbl cont =
-  if Int.equal arity 1 && rec_arg < arity then
+  if CInt.equal arity 1 && rec_arg < arity then
     Klabel lbl :: Kgrabrec 0 :: Krestart :: cont
   else
     Krestart :: Klabel lbl :: Kgrabrec rec_arg ::
@@ -468,7 +468,7 @@ let comp_args comp_expr cenv args sz cont =
 
 let comp_app comp_fun comp_arg cenv f args sz cont =
   let nargs = Array.length args in
-  if Int.equal nargs 0 then comp_fun cenv f sz cont
+  if CInt.equal nargs 0 then comp_fun cenv f sz cont
   else
   match is_tailcall cont with
   | Some k ->
@@ -697,7 +697,7 @@ let rec compile_lam env cenv lam sz cont =
       let sz_b,branch,is_tailcall =
         match branch1 with
         | Kreturn k ->
-          assert (Int.equal k sz) ;
+          assert (CInt.equal k sz) ;
           sz, branch1, true
         | Kbranch _ -> sz+3, Kjump, false
         | _ -> assert false
@@ -841,7 +841,7 @@ let compile ~fail_on_error ?universes:(universes=0) env c =
   let cont = [Kstop] in
   try
     let cenv, init_code =
-      if Int.equal universes 0 then
+      if CInt.equal universes 0 then
         let lam = lambda_of_constr ~optimize:true env c in
         let cenv = empty_comp_env () in
         cenv, ensure_stack_capacity (compile_lam env cenv lam 0) cont
@@ -889,7 +889,7 @@ let compile_constant_body ~fail_on_error env univs = function
 	      Some (BCalias (get_alias env con))
 	| _ ->
             let res = compile ~fail_on_error ~universes:instance_size env body in
-	      Option.map (fun x -> BCdefined (to_memory x)) res
+              COption.map (fun x -> BCdefined (to_memory x)) res
 
 (* Shortcut of the previous function used during module strengthening *)
 

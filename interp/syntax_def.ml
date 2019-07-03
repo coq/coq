@@ -48,7 +48,7 @@ let is_alias_of_already_visible_name sp = function
 
 let open_syntax_constant i ((sp,kn),(_local,syndef)) =
   let pat = syndef.syndef_pattern in
-  if not (Int.equal i 1 && is_alias_of_already_visible_name sp pat) then begin
+  if not (CInt.equal i 1 && is_alias_of_already_visible_name sp pat) then begin
     Nametab.push_syndef (Nametab.Exactly i) sp kn;
     if not syndef.syndef_onlyparsing then
       (* Redeclare it to be used as (short) name in case an other (distfix)
@@ -100,13 +100,13 @@ let warn_deprecated_syntactic_definition =
 let search_syntactic_definition ?loc kn =
   let syndef = KNmap.find kn !syntax_table in
   let def = out_pat syndef.syndef_pattern in
-  Option.iter (fun d -> warn_deprecated_syntactic_definition ?loc (kn,d)) syndef.syndef_deprecation;
+  COption.iter (fun d -> warn_deprecated_syntactic_definition ?loc (kn,d)) syndef.syndef_deprecation;
   def
 
 let search_filtered_syntactic_definition ?loc filter kn =
   let syndef = KNmap.find kn !syntax_table in
   let def = out_pat syndef.syndef_pattern in
   let res = filter def in
-  if Option.has_some res then
-    Option.iter (fun d -> warn_deprecated_syntactic_definition ?loc (kn,d)) syndef.syndef_deprecation;
+  if COption.has_some res then
+    COption.iter (fun d -> warn_deprecated_syntactic_definition ?loc (kn,d)) syndef.syndef_deprecation;
   res

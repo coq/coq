@@ -49,7 +49,7 @@ let compare s1 s2 =
     | Type u1, Type u2 -> Universe.compare u1 u2
     | Type _, _ -> -1
 
-let equal s1 s2 = Int.equal (compare s1 s2) 0
+let equal s1 s2 = CInt.equal (compare s1 s2) 0
 
 let super = function
   | SProp | Prop | Set -> Type (Universe.type1)

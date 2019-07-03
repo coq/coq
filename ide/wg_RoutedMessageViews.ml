@@ -39,7 +39,7 @@ object
     Hashtbl.fold (fun _ v -> (||) v#has_selection) route_table false
 
   method get_selected_text =
-    Option.default ""
+    COption.default ""
       (Hashtbl.fold (fun _ v acc ->
          if v#has_selection then Some v#get_selected_text else acc)
       route_table None)

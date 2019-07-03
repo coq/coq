@@ -123,7 +123,7 @@ type term =
 
 let const n =
   if eq_num n num_0 then Zero else Const n
-let pow(p,i) = if Int.equal i 1 then p else Pow(p,i)
+let pow(p,i) = if CInt.equal i 1 then p else Pow(p,i)
 let add = function
     (Zero,q) -> q
   | (p,Zero) -> p
@@ -195,7 +195,7 @@ let rec mkt_term t  =  match t with
 | Add (t1,t2) -> mkt_app  ttadd [Lazy.force tz; mkt_term t1; mkt_term t2]
 | Sub (t1,t2) -> mkt_app  ttsub [Lazy.force tz; mkt_term t1; mkt_term t2]
 | Mul (t1,t2) -> mkt_app  ttmul [Lazy.force tz; mkt_term t1; mkt_term t2]
-| Pow (t1,n) ->  if Int.equal n 0 then
+| Pow (t1,n) ->  if CInt.equal n 0 then
     mkt_app ttconst [Lazy.force tz; mkt_z num_1]
 else
     mkt_app ttpow [Lazy.force tz; mkt_term t1; mkt_n (num_of_int n)]
@@ -328,16 +328,16 @@ let pol_sparse_to_term n2 p =
 		if m.(k)>0
 		then i0:=k
 	      done;
-	      if Int.equal !i0 0
+              if CInt.equal !i0 0
 	      then (r,d)
 	      else if !i0 > r
 	      then (!i0, m.(!i0))
-	      else if Int.equal !i0 r && m.(!i0)<d
+              else if CInt.equal !i0 r && m.(!i0)<d
 	      then (!i0, m.(!i0))
 	      else (r,d))
 	  (0,0)
 	  p in
-      if Int.equal i0 0
+      if CInt.equal i0 0
       then
 	let mp = polrec_to_term a in
         if List.is_empty p1 then mp else add (mp, aux p1)
@@ -353,7 +353,7 @@ let pol_sparse_to_term n2 p =
         in
         let (p1, p2) = List.fold_left fold ([], []) p in
 	let vm =
-	  if Int.equal e0 1
+          if CInt.equal e0 1
 	  then Var (string_of_int (i0))
 	  else pow (Var (string_of_int (i0)),e0) in
 	add (mul(vm, aux (List.rev p1)), aux (List.rev p2))

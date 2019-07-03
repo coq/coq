@@ -10,8 +10,8 @@ open Csymtable
 
 let compare_zipper z1 z2 =
   match z1, z2 with
-  | Zapp args1, Zapp args2 -> Int.equal (nargs args1) (nargs args2)
-  | Zfix(_f1,args1), Zfix(_f2,args2) ->  Int.equal (nargs args1) (nargs args2)
+  | Zapp args1, Zapp args2 -> CInt.equal (nargs args1) (nargs args2)
+  | Zfix(_f1,args1), Zfix(_f2,args2) ->  CInt.equal (nargs args1) (nargs args2)
   | Zswitch _, Zswitch _ | Zproj _, Zproj _ -> true
   | Zapp _ , _ | Zfix _, _ | Zswitch _, _ | Zproj _, _ -> false
 
@@ -26,7 +26,7 @@ let rec compare_stack stk1 stk2 =
 (* Conversion *)
 let conv_vect fconv vect1 vect2 cu =
   let n = Array.length vect1 in
-  if Int.equal n (Array.length vect2) then
+  if CInt.equal n (Array.length vect2) then
     let rcu = ref cu in
     for i = 0 to n - 1 do
       rcu := fconv vect1.(i) vect2.(i) !rcu
@@ -60,11 +60,11 @@ and conv_whd env pb k whd1 whd2 cu =
       if nargs args1 <> nargs args2 then raise NotConvertible
       else conv_arguments env k args1 args2 (conv_cofix env k cf1 cf2 cu)
   | Vconstr_const i1, Vconstr_const i2 ->
-      if Int.equal i1 i2 then cu else raise NotConvertible
+      if CInt.equal i1 i2 then cu else raise NotConvertible
   | Vconstr_block b1, Vconstr_block b2 ->
       let tag1 = btag b1 and tag2 = btag b2 in
       let sz = bsize b1 in
-      if Int.equal tag1 tag2 && Int.equal sz (bsize b2) then
+      if CInt.equal tag1 tag2 && CInt.equal sz (bsize b2) then
 	let rcu = ref cu in
 	for i = 0 to sz - 1 do
 	  rcu := conv_val env CONV k (bfield b1 i) (bfield b2 i) !rcu
@@ -168,7 +168,7 @@ and conv_arguments env ?from:(from=0) k args1 args2 cu =
   if args1 == args2 then cu
   else
     let n = nargs args1 in
-    if Int.equal n (nargs args2) then
+    if CInt.equal n (nargs args2) then
       let rcu = ref cu in
       for i = from to n - 1 do
 	rcu := conv_val env CONV k (arg args1 i) (arg args2 i) !rcu

@@ -1217,7 +1217,7 @@ let unprotecttac gl =
   let c, gl = pf_mkSsrConst "protect_term" gl in
   let prot, _ = EConstr.destConst (project gl) c in
   Tacticals.onClause (fun idopt ->
-    let hyploc = Option.map (fun id -> id, InHyp) idopt in
+    let hyploc = COption.map (fun id -> id, InHyp) idopt in
     Proofview.V82.of_tactic (Tactics.reduct_option ~check:false
       (Reductionops.clos_norm_flags 
         (CClosure.RedFlags.mkflags 
@@ -1504,7 +1504,7 @@ let state_field : S.state Proofview_monad.StateStore.field =
 (* FIXME: should not inject fresh_state, but initialize it at the beginning *)
 let lift_upd_state upd s =
   let open Proofview_monad.StateStore in
-  let old_state = Option.default S.init (get s state_field) in
+  let old_state = COption.default S.init (get s state_field) in
   upd old_state >>= fun new_state ->
   tclUNIT (set s state_field new_state)
 
@@ -1520,12 +1520,12 @@ end
 
 let tclGET k = Goal.enter begin fun gl ->
   let open Proofview_monad.StateStore in
-  k (Option.default S.init (get (Goal.state gl) state_field))
+  k (COption.default S.init (get (Goal.state gl) state_field))
 end
 
 let tclGET1 k = Goal.enter_one begin fun gl ->
   let open Proofview_monad.StateStore in
-  k (Option.default S.init (get (Goal.state gl) state_field))
+  k (COption.default S.init (get (Goal.state gl) state_field))
 end
 
 
@@ -1539,7 +1539,7 @@ let tclSET new_s =
   Unsafe.tclSETGOALS gls
 
 let get g =
-  Option.default S.init
+  COption.default S.init
     (Proofview_monad.StateStore.get (Goal.state g) state_field)
 
 end

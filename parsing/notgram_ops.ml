@@ -37,7 +37,7 @@ open Extend
 
 let parenRelation_eq t1 t2 = match t1, t2 with
 | L, L | E, E | Any, Any -> true
-| Prec l1, Prec l2 -> Int.equal l1 l2
+| Prec l1, Prec l2 -> CInt.equal l1 l2
 | _ -> false
 
 let production_position_eq pp1 pp2 = match (pp1,pp2) with
@@ -47,7 +47,7 @@ let production_position_eq pp1 pp2 = match (pp1,pp2) with
 
 let production_level_eq l1 l2 = match (l1,l2) with
 | NextLevel, NextLevel -> true
-| NumLevel n1, NumLevel n2 -> Int.equal n1 n2
+| NumLevel n1, NumLevel n2 -> CInt.equal n1 n2
 | (NextLevel | NumLevel _), _ -> false
 
 let constr_entry_key_eq eq v1 v2 = match v1, v2 with
@@ -56,16 +56,16 @@ let constr_entry_key_eq eq v1 v2 = match v1, v2 with
 | ETBigint, ETBigint -> true
 | ETBinder b1, ETBinder b2 -> b1 == b2
 | ETConstr (s1,bko1,lev1), ETConstr (s2,bko2,lev2) ->
-   notation_entry_eq s1 s2 && eq lev1 lev2 && Option.equal (=) bko1 bko2
-| ETPattern (b1,n1), ETPattern (b2,n2) -> b1 = b2 && Option.equal Int.equal n1 n2
+   notation_entry_eq s1 s2 && eq lev1 lev2 && COption.equal (=) bko1 bko2
+| ETPattern (b1,n1), ETPattern (b2,n2) -> b1 = b2 && COption.equal CInt.equal n1 n2
 | (ETIdent | ETGlobal | ETBigint | ETBinder _ | ETConstr _ | ETPattern _), _ -> false
 
 let level_eq_gen strict (s1, l1, t1, u1) (s2, l2, t2, u2) =
-  let tolerability_eq (i1, r1) (i2, r2) = Int.equal i1 i2 && parenRelation_eq r1 r2 in
+  let tolerability_eq (i1, r1) (i2, r2) = CInt.equal i1 i2 && parenRelation_eq r1 r2 in
   let prod_eq (l1,pp1) (l2,pp2) =
     not strict ||
     (production_level_eq l1 l2 && production_position_eq pp1 pp2) in
-  notation_entry_eq s1 s2 && Int.equal l1 l2 && List.equal tolerability_eq t1 t2
+  notation_entry_eq s1 s2 && CInt.equal l1 l2 && List.equal tolerability_eq t1 t2
   && List.equal (constr_entry_key_eq prod_eq) u1 u2
 
 let level_eq = level_eq_gen false

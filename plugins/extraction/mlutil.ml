@@ -59,8 +59,8 @@ let rec eq_ml_type t1 t2 = match t1, t2 with
   eq_ml_type tl1 tl2 && eq_ml_type tr1 tr2
 | Tglob (gr1, t1), Tglob (gr2, t2) ->
   GlobRef.equal gr1 gr2 && List.equal eq_ml_type t1 t2
-| Tvar i1, Tvar i2 -> Int.equal i1 i2
-| Tvar' i1, Tvar' i2 -> Int.equal i1 i2
+| Tvar i1, Tvar i2 -> CInt.equal i1 i2
+| Tvar' i1, Tvar' i2 -> CInt.equal i1 i2
 | Tmeta m1, Tmeta m2 -> eq_ml_meta m1 m2
 | Tdummy k1, Tdummy k2 -> k1 == k2
 | Tunknown, Tunknown -> true
@@ -69,7 +69,7 @@ let rec eq_ml_type t1 t2 = match t1, t2 with
   -> false
 
 and eq_ml_meta m1 m2 =
- Int.equal m1.id m2.id && Option.equal eq_ml_type m1.contents m2.contents
+ CInt.equal m1.id m2.id && COption.equal eq_ml_type m1.contents m2.contents
 
 (* Simultaneous substitution of [[Tvar 1; ... ; Tvar n]] by [l] in a ML type. *)
 
@@ -103,7 +103,7 @@ let instantiation (nb,t) = type_subst_vect (Array.init nb new_meta) t
 
 let rec type_occurs alpha t =
   match t with
-  | Tmeta {id=beta; contents=None} -> Int.equal alpha beta
+  | Tmeta {id=beta; contents=None} -> CInt.equal alpha beta
   | Tmeta {contents=Some u} -> type_occurs alpha u
   | Tarr (t1, t2) -> type_occurs alpha t1 || type_occurs alpha t2
   | Tglob (r,l) -> List.exists (type_occurs alpha) l
@@ -112,7 +112,7 @@ let rec type_occurs alpha t =
 (*s Most General Unificator *)
 
 let rec mgu = function
-  | Tmeta m, Tmeta m' when Int.equal m.id m'.id -> ()
+  | Tmeta m, Tmeta m' when CInt.equal m.id m'.id -> ()
   | Tmeta m, t | t, Tmeta m ->
     (match m.contents with
       | Some u -> mgu (u, t)
@@ -123,8 +123,8 @@ let rec mgu = function
   | Tglob (r,l), Tglob (r',l') when GlobRef.equal r r' ->
        List.iter mgu (List.combine l l')
   | Tdummy _, Tdummy _ -> ()
-  | Tvar i, Tvar j when Int.equal i j -> ()
-  | Tvar' i, Tvar' j when  Int.equal i j -> ()
+  | Tvar i, Tvar j when CInt.equal i j -> ()
+  | Tvar' i, Tvar' j when  CInt.equal i j -> ()
   | Tunknown, Tunknown -> ()
   | Taxiom, Taxiom -> ()
   | _ -> raise Impossible
@@ -171,7 +171,7 @@ module Mlenv = struct
   (* [find_free] finds the free meta in a type. *)
 
   let rec find_free set = function
-    | Tmeta m when Option.is_empty m.contents -> Metaset.add m set
+    | Tmeta m when COption.is_empty m.contents -> Metaset.add m set
     | Tmeta {contents = Some t} -> find_free set t
     | Tarr (a,b) -> find_free (find_free set a) b
     | Tglob (_,l) -> List.fold_left find_free set l
@@ -195,12 +195,12 @@ module Mlenv = struct
 
   let generalization mle t =
     let c = ref 0 in
-    let map = ref (Int.Map.empty : int Int.Map.t) in
-    let add_new i = incr c; map := Int.Map.add i !c !map; !c in
+    let map = ref (CInt.Map.empty : int CInt.Map.t) in
+    let add_new i = incr c; map := CInt.Map.add i !c !map; !c in
     let rec meta2var t = match t with
       | Tmeta {contents=Some u} -> meta2var u
       | Tmeta ({id=i} as m) ->
-	  (try Tvar (Int.Map.find i !map)
+          (try Tvar (CInt.Map.find i !map)
 	   with Not_found ->
 	     if Metaset.mem m mle.free then t
 	     else Tvar (add_new i))
@@ -377,7 +377,7 @@ let eq_ml_ident i1 i2 = match i1, i2 with
 
 let rec eq_ml_ast t1 t2 = match t1, t2 with
 | MLrel i1, MLrel i2 ->
-  Int.equal i1 i2
+  CInt.equal i1 i2
 | MLapp (f1, t1), MLapp (f2, t2) ->
   eq_ml_ast f1 f2 && List.equal eq_ml_ast t1 t2
 | MLlam (na1, t1), MLlam (na2, t2) ->
@@ -392,7 +392,7 @@ let rec eq_ml_ast t1 t2 = match t1, t2 with
 | MLcase (t1, c1, p1), MLcase (t2, c2, p2) ->
   eq_ml_type t1 t2 && eq_ml_ast c1 c2 && Array.equal eq_ml_branch p1 p2
 | MLfix (i1, id1, t1), MLfix (i2, id2, t2) ->
-  Int.equal i1 i2 && Array.equal Id.equal id1 id2 && Array.equal eq_ml_ast t1 t2
+  CInt.equal i1 i2 && Array.equal Id.equal id1 id2 && Array.equal eq_ml_ast t1 t2
 | MLexn e1, MLexn e2 -> String.equal e1 e2
 | MLdummy k1, MLdummy k2 -> k1 == k2
 | MLaxiom, MLaxiom -> true
@@ -406,7 +406,7 @@ and eq_ml_pattern p1 p2 = match p1, p2 with
 | Ptuple p1, Ptuple p2 ->
   List.equal eq_ml_pattern p1 p2
 | Prel i1, Prel i2 ->
-  Int.equal i1 i2
+  CInt.equal i1 i2
 | Pwild, Pwild -> true
 | Pusual gr1, Pusual gr2 -> GlobRef.equal gr1 gr2
 | _ -> false
@@ -489,7 +489,7 @@ let ast_iter f = function
 
 let ast_occurs k t =
   try
-    ast_iter_rel (fun i -> if Int.equal i k then raise Found) t; false
+    ast_iter_rel (fun i -> if CInt.equal i k then raise Found) t; false
   with Found -> true
 
 (*s [occurs_itvl k k' t] returns [true] if there is a [(Rel i)]
@@ -505,7 +505,7 @@ let ast_occurs_itvl k k' t =
 
 let nb_occur_match =
   let rec nb k = function
-    | MLrel i -> if Int.equal i k then 1 else 0
+    | MLrel i -> if CInt.equal i k then 1 else 0
     | MLcase(_,a,v) ->
         (nb k a) +
 	Array.fold_left
@@ -591,7 +591,7 @@ let ast_lift k t =
   let rec liftrec n = function
     | MLrel i as a -> if i-n < 1 then a else MLrel (i+k)
     | a -> ast_map_lift liftrec n a
-  in if Int.equal k 0 then t else liftrec 0 t
+  in if CInt.equal k 0 then t else liftrec 0 t
 
 let ast_pop t = ast_lift (-1) t
 
@@ -615,7 +615,7 @@ let ast_subst e =
   let rec subst n = function
     | MLrel i as a ->
 	let i' = i-n in
-	if Int.equal i' 1 then ast_lift n e
+        if CInt.equal i' 1 then ast_lift n e
 	else if i'<1 then a
 	else MLrel (i-1)
     | a -> ast_map_lift subst n a
@@ -660,7 +660,7 @@ let is_regular_match br =
 	match pat with
 	  | Pusual r -> r
 	  | Pcons (r,l) ->
-            let is_rel i = function Prel j -> Int.equal i j | _ -> false in
+            let is_rel i = function Prel j -> CInt.equal i j | _ -> false in
 	    if not (List.for_all_i is_rel 1 (List.rev l))
 	    then raise Impossible;
 	    r
@@ -671,7 +671,7 @@ let is_regular_match br =
 	| _ -> raise Impossible
       in
       let is_ref i tr = match get_r tr with
-      | GlobRef.ConstructRef (ind', j) -> eq_ind ind ind' && Int.equal j (i + 1)
+      | GlobRef.ConstructRef (ind', j) -> eq_ind ind ind' && CInt.equal j (i + 1)
       | _ -> false
       in
       Array.for_all_i is_ref 0 br
@@ -692,7 +692,7 @@ let collect_lams =
 
 let collect_n_lams =
   let rec collect acc n t =
-    if Int.equal n 0 then acc,t
+    if CInt.equal n 0 then acc,t
     else match t with
       | MLlam(id,t) -> collect (id::acc) (n-1) t
       | _ -> assert false
@@ -701,7 +701,7 @@ let collect_n_lams =
 (*s [remove_n_lams] just removes some [MLlam]. *)
 
 let rec remove_n_lams n t =
-  if Int.equal n 0 then t
+  if CInt.equal n 0 then t
   else match t with
       | MLlam(_,t) -> remove_n_lams (n-1) t
       | _ -> assert false
@@ -739,7 +739,7 @@ let rec anonym_or_dummy_lams a = function
 (*s The following function creates [MLrel n;...;MLrel 1] *)
 
 let rec eta_args n =
-  if Int.equal n 0 then [] else (MLrel n)::(eta_args (pred n))
+  if CInt.equal n 0 then [] else (MLrel n)::(eta_args (pred n))
 
 (*s Same, but filtered by a signature. *)
 
@@ -751,8 +751,8 @@ let rec eta_args_sign n = function
 (*s This one tests [MLrel (n+k); ... ;MLrel (1+k)] *)
 
 let rec test_eta_args_lift k n = function
-  | [] -> Int.equal n 0
-  | MLrel m :: q -> Int.equal (k+n) m && (test_eta_args_lift k (pred n) q)
+  | [] -> CInt.equal n 0
+  | MLrel m :: q -> CInt.equal (k+n) m && (test_eta_args_lift k (pred n) q)
   | _ -> false
 
 (*s Computes an eta-reduction. *)
@@ -760,12 +760,12 @@ let rec test_eta_args_lift k n = function
 let eta_red e =
   let ids,t = collect_lams e in
   let n = List.length ids in
-  if Int.equal n 0 then e
+  if CInt.equal n 0 then e
   else match t with
     | MLapp (f,a) ->
 	let m = List.length a in
 	let ids,body,args =
-	  if Int.equal m n then
+          if CInt.equal m n then
 	    [], f, a
 	  else if m < n then
 	    List.skipn m ids, f, a
@@ -894,18 +894,18 @@ let census_add, census_max, census_clean =
   let rec add k v = function
   | [] -> raise Not_found
   | (k', s) as p :: l ->
-    if eq_ml_ast k k' then (k', Int.Set.add v s) :: l
+    if eq_ml_ast k k' then (k', CInt.Set.add v s) :: l
     else p :: add k v l
   in
   let addf k i =
     try h := add k i !h
-    with Not_found -> h := (k, Int.Set.singleton i) :: !h
+    with Not_found -> h := (k, CInt.Set.singleton i) :: !h
   in
   let maxf () =
-    let len = ref 0 and lst = ref Int.Set.empty and elm = ref MLaxiom in
+    let len = ref 0 and lst = ref CInt.Set.empty and elm = ref MLaxiom in
     List.iter
       (fun (e, s) ->
-	 let n = Int.Set.cardinal s in
+         let n = CInt.Set.cardinal s in
 	 if n > !len then begin len := n; lst := s; elm := e end)
       !h;
     (!elm,!lst)
@@ -933,8 +933,8 @@ let factor_branches o typ br =
     done;
     let br_factor, br_set = census_max () in
     census_clean ();
-    let n = Int.Set.cardinal br_set in
-    if Int.equal n 0 then None
+    let n = CInt.Set.cardinal br_set in
+    if CInt.equal n 0 then None
     else if Array.length br >= 2 && n < 2 then None
     else Some (br_factor, br_set)
   end
@@ -955,7 +955,7 @@ let permut_case_fun br acc =
 		let ids, c = collect_lams t in
 		let n = List.length ids in
 		if (n < !nb) && (not (is_exn c)) then nb := n) br;
-  if Int.equal !nb  max_int || Int.equal !nb 0 then ([],br)
+  if CInt.equal !nb  max_int || CInt.equal !nb 0 then ([],br)
   else begin
     let br = Array.copy br in
     let ids = ref [] in
@@ -993,7 +993,7 @@ let rec iota_red i lift br ((typ,r,a) as cons) =
       let c = named_lams (List.rev ids) c in
       let c = ast_lift lift c
       in MLapp (c,a)
-    | Prel 1 when Int.equal (List.length ids) 1 ->
+    | Prel 1 when CInt.equal (List.length ids) 1 ->
       let c = MLlam (List.hd ids, c) in
       let c = ast_lift lift c
       in MLapp(c,[MLcons(typ,r,a)])
@@ -1059,7 +1059,7 @@ let rec simpl o = function
       if
 	(is_atomic c) || (is_atomic e) ||
 	(let n = nb_occur_match e in
-	 (Int.equal n 0 || (Int.equal n 1 && expand_linear_let o id e)))
+         (CInt.equal n 0 || (CInt.equal n 1 && expand_linear_let o id e)))
       then
 	simpl o (ast_subst c e)
       else
@@ -1128,14 +1128,14 @@ and simpl_case o typ br e =
     (* Swap the case and the lam if possible *)
     let ids,br = if o.opt_case_fun then permut_case_fun br [] else [],br in
     let n = List.length ids in
-    if not (Int.equal n 0) then
+    if not (CInt.equal n 0) then
       simpl o (named_lams ids (MLcase (typ, ast_lift n e, br)))
     else
       (* Can we merge several branches as the same constant or function ? *)
       if lang() == Scheme || is_custom_match br
       then MLcase (typ, e, br)
       else match factor_branches o typ br with
-	| Some (f,ints) when Int.equal (Int.Set.cardinal ints) (Array.length br) ->
+        | Some (f,ints) when CInt.equal (CInt.Set.cardinal ints) (Array.length br) ->
 	  (* If all branches have been factorized, we remove the match *)
 	  simpl o (MLletin (Tmp anonymous_name, e, f))
 	| Some (f,ints) ->
@@ -1144,7 +1144,7 @@ and simpl_case o typ br e =
 	    else ([], Pwild, ast_pop f)
 	  in
 	  let brl = Array.to_list br in
-	  let brl_opt = List.filteri (fun i _ -> not (Int.Set.mem i ints)) brl in
+          let brl_opt = List.filteri (fun i _ -> not (CInt.Set.mem i ints)) brl in
 	  let brl_opt = brl_opt @ [last_br] in
 	  MLcase (typ, e, Array.of_list brl_opt)
 	| None -> MLcase (typ, e, br)
@@ -1174,8 +1174,8 @@ let is_impl_kill = function Kill (Kimplicit _) -> true | _ -> false
 let kill_some_lams bl (ids,c) =
   let n = List.length bl in
   let n' = List.fold_left (fun n b -> if b == Keep then (n+1) else n) 0 bl in
-  if Int.equal n n' then ids,c
-  else if Int.equal n' 0 && not (List.exists is_impl_kill bl)
+  if CInt.equal n n' then ids,c
+  else if CInt.equal n' 0 && not (List.exists is_impl_kill bl)
   then [],ast_lift (-n) c
   else begin
     let v = Array.make n None in
@@ -1265,7 +1265,7 @@ let kill_dummy_args (ids,bl) r t =
   let m = List.length ids in
   let sign = List.rev bl in
   let rec found n = function
-    | MLrel r' when Int.equal r' (r + n) -> true
+    | MLrel r' when CInt.equal r' (r + n) -> true
     | MLmagic e -> found n e
     | _ -> false
   in
@@ -1370,7 +1370,7 @@ let optimize_fix a =
   else
     let ids,a' = collect_lams a in
     let n = List.length ids in
-    if Int.equal n 0 then a
+    if CInt.equal n 0 then a
     else match a' with
       | MLfix(_,[|f|],[|c|]) ->
 	  let new_f = MLapp (MLrel (n+1),eta_args n) in
@@ -1438,7 +1438,7 @@ let rec non_stricts add cand = function
       let cand = if add then 1::cand else cand in
       pop 1 (non_stricts add cand t)
   | MLrel n ->
-      List.filter (fun m -> not (Int.equal m n)) cand
+      List.filter (fun m -> not (CInt.equal m n)) cand
   | MLapp (t,l)->
       let cand = non_stricts false cand t in
       List.fold_left (non_stricts false) cand l
@@ -1462,7 +1462,7 @@ let rec non_stricts add cand = function
 	   let n = List.length i in
 	   let cand = lift n cand in
 	   let cand = pop n (non_stricts add cand t) in
-	   List.merge Int.compare cand c) [] v
+           List.merge CInt.compare cand c) [] v
 	(* [merge] may duplicates some indices, but I don't mind. *)
   | MLmagic t ->
       non_stricts add cand t

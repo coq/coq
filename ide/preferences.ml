@@ -682,7 +682,7 @@ let load_pref_file loader warn name =
   with Not_found ->
   (* Compatibility with oldest versions of CoqIDE (<= 8.4) *)
   try
-    let old_user_file = get_config_file [Option.default "" (Glib.get_home_dir ())] ("."^name) in
+    let old_user_file = get_config_file [COption.default "" (Glib.get_home_dir ())] ("."^name) in
     warn ~delay:5000 ("No " ^ name ^ ", trying to recover from an older version of CoqIDE");
     try_load_pref_file loader warn old_user_file
   with Not_found ->

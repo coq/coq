@@ -168,7 +168,7 @@ let max_var l = Array.fold_right (fun p m -> max (max_var_pol2 p) m) l 0
 let rec equal p q =
   match (p,q) with
       (Pint a,Pint b) -> C.equal a b
-    |(Prec(x,p1),Prec(y,q1)) -> (Int.equal x y) && Array.for_all2 equal p1 q1
+    |(Prec(x,p1),Prec(y,q1)) -> (CInt.equal x y) && Array.for_all2 equal p1 q1
     | (_,_) -> false
 
 (* normalize polynomial: remove head zeros, coefficients are normalized
@@ -184,8 +184,8 @@ let norm p = match p with
 	 n:=!n-1;
        done;
        if !n<0 then Pint coef0
-       else if Int.equal !n 0 then a.(0)
-       else if Int.equal !n d then p
+       else if CInt.equal !n 0 then a.(0)
+       else if CInt.equal !n d then p
        else (let b=Array.make (!n+1) (Pint coef0) in
                for i=0 to !n do b.(i)<-a.(i);done;
                Prec(x,b))
@@ -194,7 +194,7 @@ let norm p = match p with
 (* degree in v, v >= max var of p *)
 let deg v p =
   match p with
-      Prec(x,p1) when Int.equal x v -> Array.length p1 -1
+      Prec(x,p1) when CInt.equal x v -> Array.length p1 -1
     |_ -> 0
 
 
@@ -214,8 +214,8 @@ let rec copyP p =
 (* coefficient of degree i in v, v >= max var of p *)
 let coef v i p =
   match p with
-      Prec (x,p1) when Int.equal x v  -> if i<(Array.length p1) then p1.(i) else Pint coef0
-    |_ -> if Int.equal i 0 then p else Pint coef0
+      Prec (x,p1) when CInt.equal x v  -> if i<(Array.length p1) then p1.(i) else Pint coef0
+    |_ -> if CInt.equal i 0 then p else Pint coef0
 
 (* addition *)
 
@@ -272,7 +272,7 @@ let rec vars=function
 (* multiply p by v^n, v >= max_var p *)
 let multx n v p =
   match p with
-      Prec (x,p1) when Int.equal x v -> let p2= Array.make ((Array.length p1)+n) (Pint coef0) in
+      Prec (x,p1) when CInt.equal x v -> let p2= Array.make ((Array.length p1)+n) (Pint coef0) in
         for i=0 to (Array.length p1)-1 do
           p2.(i+n)<-p1.(i);
         done;
@@ -311,9 +311,9 @@ let rec multP p q =
 let deriv v p =
   match p with
       Pint a -> Pint coef0
-    | Prec(x,p1) when Int.equal x v ->
+    | Prec(x,p1) when CInt.equal x v ->
        let d = Array.length p1 -1 in
-         if Int.equal d 1 then p1.(1)
+         if CInt.equal d 1 then p1.(1)
          else
            (let p2 = Array.make d (Pint coef0) in
               for i=0 to d-1 do
@@ -421,7 +421,7 @@ let rec string_of_Pcut p =
       else (
 	let si=string_of_Pcut  t.(i) in
 	sp:="";
-	if Int.equal i 1
+        if CInt.equal i 1
 	then (
 	  if not (String.equal si "0")
 	  then (nsP:=(!nsP)-1;
@@ -468,7 +468,7 @@ let print_lpoly lp = print_tpoly (Array.of_list lp)
 
 (* return (s,r) s.t. p = s*q+r *)
 let rec quo_rem_pol p q x =
-  if Int.equal x 0
+  if CInt.equal x 0
   then (match (p,q) with
           |(Pint a, Pint b) ->
 	     if C.equal (C.modulo a b) coef0
@@ -532,7 +532,7 @@ let div_pol_rat p q=
 let pseudo_div p q x =
   match q with
       Pint _ -> (cf0, q,1, p)
-    | Prec (v,q1) when not (Int.equal x v) -> (cf0, q,1, p)
+    | Prec (v,q1) when not (CInt.equal x v) -> (cf0, q,1, p)
     | Prec (v,q1) ->
 	(
 	  (*  pr "pseudo_division: c^d*p = s*q + r";*)
@@ -569,13 +569,13 @@ and pgcd_pol p q x =
 
 and content_pol p x =
   match p with
-      Prec(v,p1) when Int.equal v x ->
+      Prec(v,p1) when CInt.equal v x ->
         Array.fold_left (fun a b -> pgcd_pol_rec a b (x-1)) cf0 p1
     | _ -> p
 
 and pgcd_coef_pol c p x =
   match p with
-      Prec(v,p1) when Int.equal x v ->
+      Prec(v,p1) when CInt.equal x v ->
         Array.fold_left (fun a b -> pgcd_pol_rec a b (x-1)) c  p1
     |_ -> pgcd_pol_rec c p (x-1)
 
@@ -587,9 +587,9 @@ and pgcd_pol_rec p q x =
 	  then q
 	  else if equal q cf0
 	  then p
-	  else if Int.equal (deg x q) 0
+          else if CInt.equal (deg x q) 0
 	  then pgcd_coef_pol q p x
-	  else if Int.equal (deg x p) 0
+          else if CInt.equal (deg x p) 0
 	  then pgcd_coef_pol p q x
 	  else (
 	    let a = content_pol p x in

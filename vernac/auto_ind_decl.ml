@@ -220,7 +220,7 @@ let build_beq_scheme mode kn =
                 let args =
                   Array.append
                     (Array.of_list (List.map (fun x -> lift lifti x) a)) eqa in
-                if Int.equal (Array.length args) 0 then eq, eff
+                if CInt.equal (Array.length args) 0 then eq, eff
                 else mkApp (eq, args), eff
               with Not_found -> raise(EqNotFound (ind', fst ind))
             end
@@ -275,7 +275,7 @@ let build_beq_scheme mode kn =
           let ar2 = Array.make n (ff ()) in
           let constrsj = constrs (3+nparrec+nb_cstr_args) in
 	    for j=0 to n-1 do
-	      if Int.equal i j then
+              if CInt.equal i j then
 		ar2.(j) <- let cc = (match nb_cstr_args with
                     | 0 -> tt ()
                     | _ -> let eqs = Array.make nb_cstr_args (tt ()) in
@@ -388,7 +388,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
       (* Works in specific situations where the args have to be already declared as a
          Parameter (see example "J" in test file SchemeEquality.v) *)
         let lbl = Label.to_string (Constant.label cst) in
-        let newlbl = if Int.equal offset 1 then ("eq_" ^ lbl) else (lbl ^ "_lb") in
+        let newlbl = if CInt.equal offset 1 then ("eq_" ^ lbl) else (lbl ^ "_lb") in
         mkConst (Constant.change_label cst (Label.make newlbl))
     | _ -> raise (ConstructorWithNonParametricInductiveType (fst hd))
 
@@ -448,7 +448,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
       (* Works in specific situations where the args have to be already declared as a
          Parameter (see example "J" in test file SchemeEquality.v) *)
         let lbl = Label.to_string (Constant.label cst) in
-        let newlbl = if Int.equal offset 1 then ("eq_" ^ lbl) else (lbl ^ "_bl") in
+        let newlbl = if CInt.equal offset 1 then ("eq_" ^ lbl) else (lbl ^ "_bl") in
         mkConst (Constant.change_label cst (Label.make newlbl))
     | _ -> raise (ConstructorWithNonParametricInductiveType (fst hd))
   in
@@ -522,7 +522,7 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
         with DestKO -> Tacticals.New.tclZEROMSG (str "The expected type is an inductive one.")
       end
   end >>= fun (sp2,i2) ->
-  if not (MutInd.equal sp1 sp2) || not (Int.equal i1 i2)
+  if not (MutInd.equal sp1 sp2) || not (CInt.equal i1 i2)
   then Tacticals.New.tclZEROMSG (str "Eq should be on the same type")
   else aux (Array.to_list ca1) (Array.to_list ca2)
 
@@ -681,7 +681,7 @@ let side_effect_of_mode = function
 
 let make_bl_scheme mode mind =
   let mib = Global.lookup_mind mind in
-  if not (Int.equal (Array.length mib.mind_packets) 1) then
+  if not (CInt.equal (Array.length mib.mind_packets) 1) then
     user_err 
       (str "Automatic building of boolean->Leibniz lemmas not supported");
   let ind = (mind,0) in
@@ -811,7 +811,7 @@ let lb_scheme_kind_aux = ref (fun () -> failwith "Undefined")
 
 let make_lb_scheme mode mind =
   let mib = Global.lookup_mind mind in
-  if not (Int.equal (Array.length mib.mind_packets) 1) then
+  if not (CInt.equal (Array.length mib.mind_packets) 1) then
     user_err 
       (str "Automatic building of Leibniz->boolean lemmas not supported");
   let ind = (mind,0) in
@@ -990,7 +990,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
 
 let make_eq_decidability mode mind =
   let mib = Global.lookup_mind mind in
-  if not (Int.equal (Array.length mib.mind_packets) 1) then
+  if not (CInt.equal (Array.length mib.mind_packets) 1) then
     raise DecidabilityMutualNotSupported;
   let ind = (mind,0) in
   let nparams = mib.mind_nparams in

@@ -42,13 +42,13 @@ struct
 
     let make dp i = (DirPath.hcons dp,i)
 
-    let equal (d, i) (d', i') = DirPath.equal d d' && Int.equal i i'
+    let equal (d, i) (d', i') = DirPath.equal d d' && CInt.equal i i'
 
     let hash (d,i) = Hashset.Combine.combine i (DirPath.hash d)
 
     let compare (d, i) (d', i') =
-      let c = Int.compare i i' in
-      if Int.equal c 0 then DirPath.compare d d'
+      let c = CInt.compare i i' in
+      if CInt.equal c 0 then DirPath.compare d d'
       else c
   end
 
@@ -68,7 +68,7 @@ struct
       | Prop, Prop -> true
       | Set, Set -> true
       | Level l, Level l' -> UGlobal.equal l l'
-      | Var n, Var n' -> Int.equal n n'
+      | Var n, Var n' -> CInt.equal n n'
       | _ -> false
 
   let compare u v =
@@ -88,7 +88,7 @@ struct
       else DirPath.compare dp1 dp2
     | Level _, _ -> -1
     | _, Level _ -> 1
-    | Var n, Var m -> Int.compare n m
+    | Var n, Var m -> CInt.compare n m
 
   let hequal x y =
     x == y ||
@@ -138,7 +138,7 @@ module Level = struct
     data : RawLevel.t }
 
   let equal x y = 
-    x == y || Int.equal x.hash y.hash && RawLevel.equal x.data y.data
+    x == y || CInt.equal x.hash y.hash && RawLevel.equal x.data y.data
 
   let hash x = x.hash
 
@@ -320,7 +320,7 @@ struct
       if u == v then 0
       else 
 	let (x, n) = u and (x', n') = v in
-	  if Int.equal n n' then Level.compare x x'
+          if CInt.equal n n' then Level.compare x x'
 	  else n - n'
 
     let sprop = hcons (Level.sprop, 0)
@@ -334,13 +334,13 @@ struct
 
     let equal x y = x == y ||
       (let (u,n) = x and (v,n') = y in
-	 Int.equal n n' && Level.equal u v)
+         CInt.equal n n' && Level.equal u v)
 
     let hash = ExprHash.hash
 
     let leq (u,n) (v,n') =
       let cmp = Level.compare u v in
-	if Int.equal cmp 0 then n <= n'
+        if CInt.equal cmp 0 then n <= n'
 	else if n <= n' then 
           (Level.is_prop u && not (Level.is_sprop v))
 	else false
@@ -369,7 +369,7 @@ struct
        left expression is "smaller" than the right one in both cases. *)
     let super (u,n) (v,n') =
       let cmp = Level.compare u v in
-        if Int.equal cmp 0 then SuperSame (n < n')
+        if CInt.equal cmp 0 then SuperSame (n < n')
 	else
           let open RawLevel in
           match Level.data u, n, Level.data v, n' with
@@ -382,13 +382,13 @@ struct
           | _, _, _, _ -> SuperDiff cmp
 
     let to_string (v, n) =
-      if Int.equal n 0 then Level.to_string v
+      if CInt.equal n 0 then Level.to_string v
       else Level.to_string v ^ "+" ^ string_of_int n
 
     let pr x = str(to_string x)
 
     let pr_with f (v, n) = 
-      if Int.equal n 0 then f v
+      if CInt.equal n 0 then f v
       else f v ++ str"+" ++ int n
 
     let is_level = function
@@ -594,10 +594,10 @@ struct
   type t = univ_constraint
   let compare (u,c,v) (u',c',v') =
     let i = constraint_type_ord c c' in
-    if not (Int.equal i 0) then i
+    if not (CInt.equal i 0) then i
     else
       let i' = Level.compare u u' in
-      if not (Int.equal i' 0) then i'
+      if not (CInt.equal i' 0) then i'
       else Level.compare v v'
 end
 
@@ -719,12 +719,12 @@ let enforce_leq_level u v c =
    occur in a universe *)
 
 let univ_level_mem u v =
-  List.exists (fun (l, n) -> Int.equal n 0 && Level.equal u l) v
+  List.exists (fun (l, n) -> CInt.equal n 0 && Level.equal u l) v
 
 let univ_level_rem u v min = 
   match Universe.level v with
   | Some u' -> if Level.equal u u' then min else v
-  | None -> List.filter (fun (l, n) -> not (Int.equal n 0 && Level.equal u l)) v
+  | None -> List.filter (fun (l, n) -> not (CInt.equal n 0 && Level.equal u l)) v
 
 (* Is u mentioned in v (or equals to v) ? *)
 
@@ -824,7 +824,7 @@ struct
 
     let hashcons huniv a = 
       let len = Array.length a in
-	if Int.equal len 0 then empty
+        if CInt.equal len 0 then empty
 	else begin
 	  for i = 0 to len - 1 do
 	    let x = Array.unsafe_get a i in
@@ -837,9 +837,9 @@ struct
 
     let eq t1 t2 =
       t1 == t2 ||
-	(Int.equal (Array.length t1) (Array.length t2) &&
+        (CInt.equal (Array.length t1) (Array.length t2) &&
 	   let rec aux i =
-	     (Int.equal i (Array.length t1)) || (t1.(i) == t2.(i) && aux (i + 1))
+             (CInt.equal i (Array.length t1)) || (t1.(i) == t2.(i) && aux (i + 1))
 	   in aux 0)
 	
     let hash a = 
@@ -864,7 +864,7 @@ struct
 	      
   let empty = hcons [||]
 
-  let is_empty x = Int.equal (Array.length x) 0
+  let is_empty x = CInt.equal (Array.length x) 0
 
   let append x y =
     if Array.length x = 0 then y
@@ -887,7 +887,7 @@ struct
 
   let pr prl ?variance =
     let ppu i u =
-      let v = Option.map (fun v -> v.(i)) variance in
+      let v = COption.map (fun v -> v.(i)) variance in
       pr_opt_no_spc Variance.pr v ++ prl u
     in
     prvecti_with_sep spc ppu
@@ -1121,7 +1121,7 @@ let subst_univs_level_constraint subst (u,d,v) =
 
 let subst_univs_level_constraints subst csts =
   Constraint.fold 
-    (fun c -> Option.fold_right Constraint.add (subst_univs_level_constraint subst c))
+    (fun c -> COption.fold_right Constraint.add (subst_univs_level_constraint subst c))
     csts Constraint.empty 
 
 let subst_univs_level_abstract_universe_context subst (inst, csts) =
@@ -1168,7 +1168,7 @@ let make_abstract_instance (ctx, _) =
 
 let abstract_universes nas ctx =
   let instance = UContext.instance ctx in
-  let () = assert (Int.equal (Array.length nas) (Instance.length instance)) in
+  let () = assert (CInt.equal (Array.length nas) (Instance.length instance)) in
   let subst = make_instance_subst instance in
   let cstrs = subst_univs_level_constraints subst 
       (UContext.constraints ctx)

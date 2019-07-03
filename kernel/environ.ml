@@ -361,7 +361,7 @@ let reset_context = reset_with_named_context empty_named_context_val
 
 let pop_rel_context n env =
   let rec skip n ctx =
-    if Int.equal n 0 then ctx
+    if CInt.equal n 0 then ctx
     else match match_rel_context_val ctx with
     | None -> invalid_arg "List.skipn"
     | Some (_, _, ctx) -> skip (pred n) ctx
@@ -564,7 +564,7 @@ let type_in_type_constant cst env =
 let lookup_projection p env =
   let mind,i = Projection.inductive p in
   let mib = lookup_mind mind env in
-  (if not (Int.equal mib.mind_nparams (Projection.npars p))
+  (if not (CInt.equal mib.mind_nparams (Projection.npars p))
    then anomaly ~label:"lookup_projection" Pp.(str "Bad number of parameters on projection."));
   match mib.mind_record with
   | NotRecord | FakeRecord -> anomaly ~label:"lookup_projection" Pp.(str "not a projection")

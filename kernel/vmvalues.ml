@@ -25,7 +25,7 @@ let _ = init_vm ()
 (******************************************************)
 
 (* The representation of values relies on this assertion *)
-let _ = assert (Int.equal Obj.first_non_constant_constructor_tag 0)
+let _ = assert (CInt.equal Obj.first_non_constant_constructor_tag 0)
 
 (* Values of the abstract machine *)
 type values
@@ -71,9 +71,9 @@ let rec eq_structured_values v1 v2 =
   else
     let t1 = Obj.tag o1 in
     let t2 = Obj.tag o2 in
-    if Int.equal t1 t2 &&
-       Int.equal (Obj.size o1) (Obj.size o2)
-    then if Int.equal t1 Obj.custom_tag
+    if CInt.equal t1 t2 &&
+       CInt.equal (Obj.size o1) (Obj.size o2)
+    then if CInt.equal t1 Obj.custom_tag
       then Int64.equal (Obj.magic v1 : int64) (Obj.magic v2 : int64)
     else begin
       assert (t1 <= Obj.last_non_constant_constructor_tag &&
@@ -97,7 +97,7 @@ let eq_structured_constant c1 c2 = match c1, c2 with
 | Const_sort _, _ -> false
 | Const_ind i1, Const_ind i2 -> eq_ind i1 i2
 | Const_ind _, _ -> false
-| Const_b0 t1, Const_b0 t2 -> Int.equal t1 t2
+| Const_b0 t1, Const_b0 t2 -> CInt.equal t1 t2
 | Const_b0 _, _ -> false
 | Const_univ_level l1 , Const_univ_level l2 -> Univ.Level.equal l1 l2
 | Const_univ_level _ , _ -> false
@@ -111,7 +111,7 @@ let hash_structured_constant c =
   match c with
   | Const_sort s -> combinesmall 1 (Sorts.hash s)
   | Const_ind i -> combinesmall 2 (ind_hash i)
-  | Const_b0 t -> combinesmall 3 (Int.hash t)
+  | Const_b0 t -> combinesmall 3 (CInt.hash t)
   | Const_univ_level l -> combinesmall 4 (Univ.Level.hash l)
   | Const_val v -> combinesmall 5 (hash_structured_values v)
   | Const_uint i -> combinesmall 6 (Uint63.hash i)
@@ -119,10 +119,10 @@ let hash_structured_constant c =
 let eq_annot_switch asw1 asw2 =
   let eq_ci ci1 ci2 =
     eq_ind ci1.ci_ind ci2.ci_ind &&
-    Int.equal ci1.ci_npar ci2.ci_npar &&
-    CArray.equal Int.equal ci1.ci_cstr_ndecls ci2.ci_cstr_ndecls
+    CInt.equal ci1.ci_npar ci2.ci_npar &&
+    CArray.equal CInt.equal ci1.ci_cstr_ndecls ci2.ci_cstr_ndecls
   in
-  let eq_rlc (i1, j1) (i2, j2) = Int.equal i1 i2 && Int.equal j1 j2 in
+  let eq_rlc (i1, j1) (i2, j2) = CInt.equal i1 i2 && CInt.equal j1 j2 in
   eq_ci asw1.ci asw2.ci &&
   CArray.equal eq_rlc asw1.rtbl asw2.rtbl &&
   (asw1.tailcall : bool) == asw2.tailcall
@@ -249,13 +249,13 @@ type vswitch = {
 type id_key =
 | ConstKey of Constant.t
 | VarKey of Id.t
-| RelKey of Int.t
+| RelKey of CInt.t
 | EvarKey of Evar.t
 
 let eq_id_key (k1 : id_key) (k2 : id_key) = match k1, k2 with
 | ConstKey c1, ConstKey c2 -> Constant.equal c1 c2
 | VarKey id1, VarKey id2 -> Id.equal id1 id2
-| RelKey n1, RelKey n2 -> Int.equal n1 n2
+| RelKey n1, RelKey n2 -> CInt.equal n1 n2
 | EvarKey evk1, EvarKey evk2 -> Evar.equal evk1 evk2
 | _ -> false
 
@@ -324,11 +324,11 @@ let uni_lvl_val (v : values) : Univ.Level.t =
 
 let rec whd_accu a stk =
   let stk =
-    if Int.equal (Obj.size a) 2 then stk
+    if CInt.equal (Obj.size a) 2 then stk
     else Zapp (Obj.obj a) :: stk in
   let at = Obj.field a 1 in
   match Obj.tag at with
-  | i when Int.equal i type_atom_tag ->
+  | i when CInt.equal i type_atom_tag ->
      begin match stk with
      | [] -> Vatom_stk(Obj.magic at, stk)
      | [Zapp args] ->
@@ -345,18 +345,18 @@ let rec whd_accu a stk =
      end
   | i when i <= max_atom_tag ->
       Vatom_stk(Obj.magic at, stk)
-  | i when Int.equal i proj_tag ->
+  | i when CInt.equal i proj_tag ->
      let zproj = Zproj (Obj.obj (Obj.field at 0)) in
      whd_accu (Obj.field at 1) (zproj :: stk)
-  | i when Int.equal i fix_app_tag ->
+  | i when CInt.equal i fix_app_tag ->
       let fa = Obj.field at 1 in
       let zfix  =
         Zfix (Obj.obj (Obj.field fa 1), Obj.obj fa) in
       whd_accu (Obj.field at 0) (zfix :: stk)
-  | i when Int.equal i switch_tag ->
+  | i when CInt.equal i switch_tag ->
       let zswitch = Zswitch (Obj.obj (Obj.field at 1)) in
       whd_accu (Obj.field at 0) (zswitch :: stk)
-  | i when Int.equal i cofix_tag ->
+  | i when CInt.equal i cofix_tag ->
       let vcfx = Obj.obj (Obj.field at 0) in
       let to_up = Obj.obj a in
       begin match stk with
@@ -364,7 +364,7 @@ let rec whd_accu a stk =
       | [Zapp args] -> Vcofix(vcfx, to_up, Some args)
       | _           -> assert false
       end
-  | i when Int.equal i cofix_evaluated_tag ->
+  | i when CInt.equal i cofix_evaluated_tag ->
       let vcofix = Obj.obj (Obj.field at 0) in
       let res = Obj.obj a in
       begin match stk with
@@ -372,7 +372,7 @@ let rec whd_accu a stk =
       | [Zapp args] -> Vcofix(vcofix, res, Some args)
       | _           -> assert false
       end
-  | i when Int.equal i Obj.custom_tag ->
+  | i when CInt.equal i Obj.custom_tag ->
     Vint64 (Obj.magic i)
   | tg ->
     CErrors.anomaly
@@ -402,7 +402,7 @@ let whd_val : values -> whd =
            | 2 -> Vfix(Obj.obj (Obj.field o 1), Some (Obj.obj o))
            | 3 -> Vatom_stk(Aid(RelKey(int_tcode (fun_code o) 1)), [])
            | _ -> CErrors.anomaly ~label:"Vm.whd " (Pp.str "kind_of_closure does not work."))
-        else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
+        else if CInt.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
         else
            Vconstr_block(Obj.obj o)
 
@@ -462,7 +462,7 @@ struct
   let hash : t -> tag = function
   | ConstKey c -> combinesmall 1 (Constant.hash c)
   | VarKey id -> combinesmall 2 (Id.hash id)
-  | RelKey i -> combinesmall 3 (Int.hash i)
+  | RelKey i -> combinesmall 3 (CInt.hash i)
   | EvarKey evk -> combinesmall 4 (Evar.hash evk)
 end
 
@@ -643,7 +643,7 @@ let bfield b i =
 let check_switch sw1 sw2 = sw1.sw_annot.rtbl = sw2.sw_annot.rtbl
 
 let branch_arg k (tag,arity) =
-  if Int.equal arity 0 then  ((Obj.magic tag):values)
+  if CInt.equal arity 0 then  ((Obj.magic tag):values)
   else
     let b, ofs =
       if tag < Obj.last_non_constant_constructor_tag then Obj.new_block tag arity, 0

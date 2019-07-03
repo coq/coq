@@ -36,7 +36,7 @@ let rec lift_rtree_rec depth n = function
   | Rec(j,defs) ->
       Rec(j, Array.map (lift_rtree_rec (depth+1) n) defs)
 
-let lift n t = if Int.equal n 0 then t else lift_rtree_rec 0 n t
+let lift n t = if CInt.equal n 0 then t else lift_rtree_rec 0 n t
 
 (* The usual subst operation *)
 let rec subst_rtree_rec depth sub = function
@@ -66,11 +66,11 @@ let rec expand = function
 let mk_rec defs =
   let rec check histo d = match expand d with
   | Param (0, j) ->
-    if Int.Set.mem j histo then failwith "invalid rec call"
-    else check (Int.Set.add j histo) defs.(j)
+    if CInt.Set.mem j histo then failwith "invalid rec call"
+    else check (CInt.Set.add j histo) defs.(j)
   | _ -> ()
   in
-  Array.mapi (fun i d -> check (Int.Set.singleton i) d; Rec(i,defs)) defs
+  Array.mapi (fun i d -> check (CInt.Set.singleton i) d; Rec(i,defs)) defs
 (*
 let v(i,j) = lift i (mk_rec_calls(j+1)).(j);;
 let r = (mk_rec[|(mk_rec[|v(1,0)|]).(0)|]).(0);;
@@ -118,9 +118,9 @@ end
 (** Structural equality test, parametrized by an equality on elements *)
 
 let rec raw_eq cmp t t' = match t, t' with
-  | Param (i,j), Param (i',j') -> Int.equal i i' && Int.equal j j'
+  | Param (i,j), Param (i',j') -> CInt.equal i i' && CInt.equal j j'
   | Node (x, a), Node (x', a') -> cmp x x' && Array.equal (raw_eq cmp) a a'
-  | Rec (i, a), Rec (i', a') -> Int.equal i i' && Array.equal (raw_eq cmp) a a'
+  | Rec (i, a), Rec (i', a') -> CInt.equal i i' && Array.equal (raw_eq cmp) a a'
   | _ -> false
 
 let raw_eq2 cmp (t,u) (t',u') = raw_eq cmp t t' && raw_eq cmp u u'
@@ -136,7 +136,7 @@ let equiv cmp cmp' =
     match expand t, expand t' with
     | Node(x,v), Node(x',v') ->
         cmp' x x' &&
-        Int.equal (Array.length v) (Array.length v') &&
+        CInt.equal (Array.length v) (Array.length v') &&
         Array.for_all2 (compare ((t,t')::histo)) v v'
     | _ -> false
   in compare []
@@ -155,14 +155,14 @@ let rec inter cmp interlbl def n histo t t' =
   with Not_found ->
   match t, t' with
   | Param (i,j), Param (i',j') ->
-      assert (Int.equal i i' && Int.equal j j'); t
+      assert (CInt.equal i i' && CInt.equal j j'); t
   | Node (x, a), Node (x', a') ->
       (match interlbl x x' with
       | None -> mk_node def [||]
       | Some x'' -> Node (x'', Array.map2 (inter cmp interlbl def n histo) a a'))
   | Rec (i,v), Rec (i',v') ->
      (* If possible, we preserve the shape of input trees *)
-     if Int.equal i i' && Int.equal (Array.length v) (Array.length v') then
+     if CInt.equal i i' && CInt.equal (Array.length v) (Array.length v') then
        let histo = ((t,t'),(n,i))::histo in
        Rec(i, Array.map2 (inter cmp interlbl def (n+1) histo) v v')
      else
@@ -203,8 +203,8 @@ let rec pp_tree prl t =
         hov 2 (str"("++prl lab++str","++brk(1,0)++
                prvect_with_sep pr_comma (pp_tree prl) v++str")")
     | Rec(i,v) ->
-        if Int.equal (Array.length v) 0 then str"Rec{}"
-        else if Int.equal (Array.length v) 1 then
+        if CInt.equal (Array.length v) 0 then str"Rec{}"
+        else if CInt.equal (Array.length v) 1 then
           hov 2 (str"Rec{"++pp_tree prl v.(0)++str"}")
         else
           hov 2 (str"Rec{"++int i++str","++brk(1,0)++

@@ -58,14 +58,14 @@ let add_dirpath_suffix p id = DirPath.make (id :: DirPath.repr p)
 let parse_dir s =
   let len = String.length s in
   let rec decoupe_dirs dirs n =
-    if Int.equal n len && n > 0 then user_err Pp.(str @@ s ^ " is an invalid path.");
+    if CInt.equal n len && n > 0 then user_err Pp.(str @@ s ^ " is an invalid path.");
     if n >= len then dirs else
     let pos =
       try
 	String.index_from s n '.'
       with Not_found -> len
     in
-    if Int.equal pos n then user_err Pp.(str @@ s ^ " is an invalid path.");
+    if CInt.equal pos n then user_err Pp.(str @@ s ^ " is an invalid path.");
     let dir = String.sub s n (pos-n) in
     decoupe_dirs ((Id.of_string dir)::dirs) (pos+1)
   in
@@ -109,7 +109,7 @@ let sp_ord sp1 sp2 =
   let (p1,id1) = repr_path sp1
   and (p2,id2) = repr_path sp2 in
   let p_bit = DirPath.compare p1 p2 in
-  if Int.equal p_bit 0 then Id.compare id1 id2 else p_bit
+  if CInt.equal p_bit 0 then Id.compare id1 id2 else p_bit
 
 module SpOrdered =
   struct

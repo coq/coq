@@ -193,7 +193,7 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
 	   | None -> None
 	   | Some (Backward, _) -> None
 	   | Some (Forward, info) ->
-	     let proj = Option.get proj in
+             let proj = COption.get proj in
 	     let rels = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) rels in
 	     let u = EConstr.EInstance.kind sigma u in
 	     let body = it_mkLambda_or_LetIn (mkApp (mkConstU (proj,u), projargs)) rels in

@@ -154,7 +154,7 @@ let pf_nf gl c = pf_apply Tacred.simpl gl c
 let rev_assoc k =
   let rec loop = function
     | [] -> raise Not_found
-    | (v,k')::_ when Int.equal k k' -> v
+    | (v,k')::_ when CInt.equal k k' -> v
     | _ :: l -> loop l
   in
   loop
@@ -670,7 +670,7 @@ let simpl_coeffs path_init path_k =
   Proofview.Goal.enter begin fun gl ->
   let sigma = project gl in
   let rec loop n t =
-    if Int.equal n 0 then pf_nf gl t
+    if CInt.equal n 0 then pf_nf gl t
     else
       (* t should be of the form ((v * c) + ...) *)
       match EConstr.kind sigma t with
@@ -736,7 +736,7 @@ let rec shuffle p (t1,t2) =
 let shuffle_mult p_init k1 e1 k2 e2 =
   let rec loop p = function
     | (({c=c1;v=v1}::l1) as l1'),(({c=c2;v=v2}::l2) as l2') ->
-	if Int.equal v1 v2 then
+        if CInt.equal v1 v2 then
           let tac =
             clever_rewrite p [[P_APP 1; P_APP 1; P_APP 1; P_APP 1];
                               [P_APP 1; P_APP 1; P_APP 1; P_APP 2];
@@ -793,7 +793,7 @@ let shuffle_mult p_init k1 e1 k2 e2 =
 let shuffle_mult_right p_init e1 k2 e2 =
   let rec loop p = function
     | (({c=c1;v=v1}::l1) as l1'),(({c=c2;v=v2}::l2) as l2') ->
-	if Int.equal v1 v2 then
+        if CInt.equal v1 v2 then
           let tac =
             clever_rewrite p
               [[P_APP 1; P_APP 1; P_APP 1];
@@ -1018,7 +1018,7 @@ let reduce_factor p = function
 
 let rec condense p = function
   | Oplus(f1,(Oplus(f2,r) as t)) ->
-      if Int.equal (weight f1) (weight f2) then begin
+      if CInt.equal (weight f1) (weight f2) then begin
 	let shrink_tac,t = shrink_pair (P_APP 1 :: p) f1 f2 in
 	let assoc_tac =
           clever_rewrite p
@@ -1034,7 +1034,7 @@ let rec condense p = function
   | Oplus(f1,Oz n) ->
       let tac,f1' = reduce_factor (P_APP 1 :: p) f1 in tac,Oplus(f1',Oz n)
   | Oplus(f1,f2) ->
-      if Int.equal (weight f1) (weight f2) then begin
+      if CInt.equal (weight f1) (weight f2) then begin
 	let tac_shrink,t = shrink_pair p f1 f2 in
 	let tac,t' = condense p t in
 	tac_shrink :: tac,t'

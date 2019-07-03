@@ -82,7 +82,7 @@ module MakeTable =
         let cache_options (_,(f,p)) = match f with
           | GOadd -> t := MySet.add p !t
           | GOrmv -> t := MySet.remove p !t in
-        let load_options i o = if Int.equal i 1 then cache_options o in
+        let load_options i o = if CInt.equal i 1 then cache_options o in
 	let subst_options (subst,(f,p as obj)) = 
 	  let p' = A.subst subst p in
 	    if p' == p then obj else
@@ -249,7 +249,7 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
         assert false
       in
       let open_options i  (_, (l, _, _) as o) = match l with
-      | OptExport -> if Int.equal i 1 then cache_options o
+      | OptExport -> if CInt.equal i 1 then cache_options o
       | OptGlobal -> ()
       | OptLocal | OptDefault ->
         (* Ruled out by classify_function *)

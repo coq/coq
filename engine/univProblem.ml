@@ -49,16 +49,16 @@ module Set = struct
       match x, y with
       | ULe (u, v), ULe (u', v') ->
         let i = Universe.compare u u' in
-        if Int.equal i 0 then Universe.compare v v'
+        if CInt.equal i 0 then Universe.compare v v'
         else i
       | UEq (u, v), UEq (u', v') ->
         let i = Universe.compare u u' in
-        if Int.equal i 0 then Universe.compare v v'
+        if CInt.equal i 0 then Universe.compare v v'
         else if Universe.equal u v' && Universe.equal v u' then 0
         else i
       | ULub (u, v), ULub (u', v') | UWeak (u, v), UWeak (u', v') ->
         let i = Level.compare u u' in
-        if Int.equal i 0 then Level.compare v v'
+        if CInt.equal i 0 then Level.compare v v'
         else if Level.equal u v' && Level.equal v u' then 0
         else i
       | ULe _, _ -> -1
@@ -91,7 +91,7 @@ module Set = struct
 
   let subst_univs subst csts =
     fold
-      (fun c -> Option.fold_right add (subst_univs subst c))
+      (fun c -> COption.fold_right add (subst_univs subst c))
       csts empty
 end
 

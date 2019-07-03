@@ -27,7 +27,7 @@ let interp_typed_vernac c ~stack =
   match c with
   | VtDefault f -> f (); stack
   | VtNoProof f ->
-    if Option.has_some stack then
+    if COption.has_some stack then
       CErrors.user_err (Pp.str "Command not supported (Open proofs remain)");
     let () = f () in
     stack
@@ -39,9 +39,9 @@ let interp_typed_vernac c ~stack =
   | VtOpenProof f ->
     Some (Vernacstate.LemmaStack.push stack (f ()))
   | VtModifyProof f ->
-    Option.map (Vernacstate.LemmaStack.map_top_pstate ~f:(fun pstate -> f ~pstate)) stack
+    COption.map (Vernacstate.LemmaStack.map_top_pstate ~f:(fun pstate -> f ~pstate)) stack
   | VtReadProofOpt f ->
-    let pstate = Option.map (Vernacstate.LemmaStack.with_top_pstate ~f:(fun x -> x)) stack in
+    let pstate = COption.map (Vernacstate.LemmaStack.with_top_pstate ~f:(fun x -> x)) stack in
     f ~pstate;
     stack
   | VtReadProof f ->
@@ -113,7 +113,7 @@ let with_fail ~st f =
 
 let locate_if_not_already ?loc (e, info) =
   match Loc.get_loc info with
-  | None   -> (e, Option.cata (Loc.add_loc info) info loc)
+  | None   -> (e, COption.cata (Loc.add_loc info) info loc)
   | Some l -> (e, info)
 
 let mk_time_header =
@@ -194,7 +194,7 @@ and vernac_load ~verbosely fname =
          | None -> raise End_of_input) in
   let rec load_loop ~stack =
     try
-      let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) stack in
+      let proof_mode = COption.map (fun _ -> get_default_proof_mode ()) stack in
       let stack =
         v_mod (interp_control ~st:{ st with Vernacstate.lemmas = stack })
           (parse_sentence proof_mode input) in
@@ -205,7 +205,7 @@ and vernac_load ~verbosely fname =
   in
   let stack = load_loop ~stack:st.Vernacstate.lemmas in
   (* If Load left a proof open, we fail too. *)
-  if Option.has_some stack then
+  if COption.has_some stack then
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
   stack
 
@@ -217,7 +217,7 @@ and interp_control ~st ({ CAst.v = cmd } as vernac) =
        let before_univs = Global.universes () in
        let pstack = interp_expr ~atts:cmd.attrs ~st cmd.expr in
        if before_univs == Global.universes () then pstack
-       else Option.map (Vernacstate.LemmaStack.map_top_pstate ~f:Proof_global.update_global_env) pstack)
+       else COption.map (Vernacstate.LemmaStack.map_top_pstate ~f:Proof_global.update_global_env) pstack)
     ~st
 
 (* XXX: This won't properly set the proof mode, as of today, it is
@@ -230,7 +230,7 @@ and interp_control ~st ({ CAst.v = cmd } as vernac) =
 (* Interpreting a possibly delayed proof *)
 let interp_qed_delayed ~proof ~info ~st pe : Vernacstate.LemmaStack.t option =
   let stack = st.Vernacstate.lemmas in
-  let stack = Option.cata (fun stack -> snd @@ Vernacstate.LemmaStack.pop stack) None stack in
+  let stack = COption.cata (fun stack -> snd @@ Vernacstate.LemmaStack.pop stack) None stack in
   let () = match pe with
     | Admitted ->
       Lemmas.save_lemma_admitted_delayed ~proof ~info

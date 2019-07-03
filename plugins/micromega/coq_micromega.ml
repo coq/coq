@@ -2051,9 +2051,9 @@ module CacheCsdp = MakeCache(struct
                    type prover_option = provername
                    type coeff = Mc.q
                    let hash_prover_option = Hash.(hash_pair hash_string
-                                                    (hash_elt (Option.hash (fun x -> x))))
+                                                    (hash_elt (COption.hash (fun x -> x))))
                    let eq_prover_option = Hash.(eq_pair String.equal
-                                                  (Option.equal Int.equal))
+                                                  (COption.equal Int.equal))
                    let hash_coeff = Hash.hash_q
                    let eq_coeff   = Hash.eq_q
                      end)

@@ -503,13 +503,13 @@ GRAMMAR EXTEND Gram
   ;
   simple_assum_coe:
     [ [ idl = LIST1 ident_decl; oc = of_type_with_opt_coercion; c = lconstr ->
-        { (not (Option.is_empty oc),(idl,c)) } ] ]
+        { (not (COption.is_empty oc),(idl,c)) } ] ]
   ;
 
   constructor_type:
     [[ l = binders;
       t= [ coe = of_type_with_opt_coercion; c = lconstr ->
-	            { fun l id -> (not (Option.is_empty coe),(id,mkProdCN ~loc l c)) }
+                    { fun l id -> (not (COption.is_empty coe),(id,mkProdCN ~loc l c)) }
             |  ->
                  { fun l id -> (false,(id,mkProdCN ~loc l (CAst.make ~loc @@ CHole (None, IntroAnonymous, None)))) } ]
 	 -> { t l }
@@ -773,18 +773,18 @@ GRAMMAR EXTEND Gram
            | [] -> []
            | `Id x :: args -> x :: parse_args (i+1) args
            | `Slash :: args ->
-              if Option.is_empty !slash_position then
+              if COption.is_empty !slash_position then
                 (slash_position := Some i; parse_args i args)
               else
                 user_err Pp.(str "The \"/\" modifier can occur only once")
            | `Ampersand :: args ->
-             if Option.is_empty !ampersand_position then
+             if COption.is_empty !ampersand_position then
                (ampersand_position := Some i; parse_args i args)
              else
                user_err Pp.(str "The \"&\" modifier can occur only once")
          in
          let args = parse_args 0 (List.flatten args) in
-         let more_implicits = Option.default [] more_implicits in
+         let more_implicits = COption.default [] more_implicits in
          VernacArguments (qid, args, more_implicits, !slash_position, !ampersand_position, mods) }
 
       | IDENT "Implicit"; "Type"; bl = reserv_list ->
@@ -822,7 +822,7 @@ GRAMMAR EXTEND Gram
   ;
   argument_spec: [
        [ b = OPT "!"; id = name ; s = OPT scope ->
-       { id.CAst.v, not (Option.is_empty b), Option.map (fun x -> CAst.make ~loc x) s }
+       { id.CAst.v, not (COption.is_empty b), COption.map (fun x -> CAst.make ~loc x) s }
     ]
   ];
   (* List of arguments implicit status, scope, modifiers *)
@@ -836,7 +836,7 @@ GRAMMAR EXTEND Gram
     | "&" -> { [`Ampersand] }
     | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
        { let f x = match sc, x with
-         | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
+         | None, x -> x | x, None -> COption.map (fun y -> CAst.make ~loc y) x
          | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
@@ -844,7 +844,7 @@ GRAMMAR EXTEND Gram
                  implicit_status = NotImplicit}) items }
     | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
        { let f x = match sc, x with
-         | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
+         | None, x -> x | x, None -> COption.map (fun y -> CAst.make ~loc y) x
          | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;
@@ -852,7 +852,7 @@ GRAMMAR EXTEND Gram
                  implicit_status = Implicit}) items }
     | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
        { let f x = match sc, x with
-         | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
+         | None, x -> x | x, None -> COption.map (fun y -> CAst.make ~loc y) x
          | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
            `Id { name=name; recarg_like=recarg_like;

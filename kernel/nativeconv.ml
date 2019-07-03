@@ -32,16 +32,16 @@ let rec conv_val env pb lvl v1 v2 cu =
     | Vaccu k1, Vaccu k2 ->
 	conv_accu env pb lvl k1 k2 cu
     | Vconst i1, Vconst i2 -> 
-	if Int.equal i1 i2 then cu else raise NotConvertible
+        if CInt.equal i1 i2 then cu else raise NotConvertible
     | Vint64 i1, Vint64 i2 ->
       if Int64.equal i1 i2 then cu else raise NotConvertible
     | Vblock b1, Vblock b2 ->
 	let n1 = block_size b1 in
         let n2 = block_size b2 in
-	if not (Int.equal (block_tag b1) (block_tag b2)) || not (Int.equal n1 n2) then
+        if not (CInt.equal (block_tag b1) (block_tag b2)) || not (CInt.equal n1 n2) then
 	  raise NotConvertible;
 	let rec aux lvl max b1 b2 i cu =
-	  if Int.equal i max then 
+          if CInt.equal i max then
 	    conv_val env CONV lvl (block_field b1 i) (block_field b2 i) cu
 	  else
 	    let cu = conv_val env CONV lvl (block_field b1 i) (block_field b2 i) cu in
@@ -53,8 +53,8 @@ let rec conv_val env pb lvl v1 v2 cu =
 and conv_accu env pb lvl k1 k2 cu =
   let n1 = accu_nargs k1 in
   let n2 = accu_nargs k2 in
-  if not (Int.equal n1 n2) then raise NotConvertible;
-  if Int.equal n1 0 then 
+  if not (CInt.equal n1 n2) then raise NotConvertible;
+  if CInt.equal n1 0 then
     conv_atom env pb lvl (atom_of_accu k1) (atom_of_accu k2) cu
   else
     let cu = conv_atom env pb lvl (atom_of_accu k1) (atom_of_accu k2) cu in
@@ -65,13 +65,13 @@ and conv_atom env pb lvl a1 a2 cu =
   else
     match a1, a2 with
     | Ameta (m1,_), Ameta (m2,_) ->
-      if Int.equal m1 m2 then cu else raise NotConvertible
+      if CInt.equal m1 m2 then cu else raise NotConvertible
     | Aevar (ev1, args1), Aevar (ev2, args2) ->
       if Evar.equal ev1 ev2 then
         Array.fold_right2 (conv_val env CONV lvl) args1 args2 cu
       else raise NotConvertible
     | Arel i1, Arel i2 -> 
-	if Int.equal i1 i2 then cu else raise NotConvertible
+        if CInt.equal i1 i2 then cu else raise NotConvertible
     | Aind (ind1,u1), Aind (ind2,u2) ->
        if eq_ind ind1 ind2 then convert_instances ~flex:false u1 u2 cu
        else raise NotConvertible
@@ -87,37 +87,37 @@ and conv_atom env pb lvl a1 a2 cu =
 	let cu = conv_accu env CONV lvl ac1 ac2 cu in
 	let tbl = a1.asw_reloc in
 	let len = Array.length tbl in
-	if Int.equal len 0 then conv_val env CONV lvl p1 p2 cu
+        if CInt.equal len 0 then conv_val env CONV lvl p1 p2 cu
 	else begin
 	    let cu = conv_val env CONV lvl p1 p2 cu in
 	    let max = len - 1 in
 	    let rec aux i cu =
 	      let tag,arity = tbl.(i) in
 	      let ci =
-		if Int.equal arity 0 then mk_const tag
+                if CInt.equal arity 0 then mk_const tag
 		else mk_block tag (mk_rels_accu lvl arity) in
 	      let bi1 = bs1 ci and bi2 = bs2 ci in
-	      if Int.equal i max then conv_val env CONV (lvl + arity) bi1 bi2 cu
+              if CInt.equal i max then conv_val env CONV (lvl + arity) bi1 bi2 cu
 	      else aux (i+1) (conv_val env CONV (lvl + arity) bi1 bi2 cu) in
 	    aux 0 cu
 	  end
     | Afix(t1,f1,rp1,s1), Afix(t2,f2,rp2,s2) ->
-	if not (Int.equal s1 s2) || not (Array.equal Int.equal rp1 rp2) then raise NotConvertible;
+        if not (CInt.equal s1 s2) || not (Array.equal CInt.equal rp1 rp2) then raise NotConvertible;
 	if f1 == f2 then cu
 	else conv_fix env lvl t1 f1 t2 f2 cu
     | (Acofix(t1,f1,s1,_) | Acofixe(t1,f1,s1,_)),
       (Acofix(t2,f2,s2,_) | Acofixe(t2,f2,s2,_)) ->
-	if not (Int.equal s1 s2) then raise NotConvertible;
+        if not (CInt.equal s1 s2) then raise NotConvertible;
 	if f1 == f2 then cu
 	else
-	  if not (Int.equal (Array.length f1) (Array.length f2)) then raise NotConvertible
+          if not (CInt.equal (Array.length f1) (Array.length f2)) then raise NotConvertible
 	  else conv_fix env lvl t1 f1 t2 f2 cu 
     | Aprod(_,d1,_c1), Aprod(_,d2,_c2) ->
        let cu = conv_val env CONV lvl d1 d2 cu in
        let v = mk_rel_accu lvl in
        conv_val env pb (lvl + 1) (d1 v) (d2 v) cu
     | Aproj((ind1, i1), ac1), Aproj((ind2, i2), ac2) ->
-       if not (eq_ind ind1 ind2 && Int.equal i1 i2) then raise NotConvertible
+       if not (eq_ind ind1 ind2 && CInt.equal i1 i2) then raise NotConvertible
        else conv_accu env CONV lvl ac1 ac2 cu
     | Arel _, _ | Aind _, _ | Aconstant _, _ | Asort _, _ | Avar _, _
     | Acase _, _ | Afix _, _ | Acofix _, _ | Acofixe _, _ | Aprod _, _
@@ -133,7 +133,7 @@ and conv_fix env lvl t1 f1 t2 f2 cu =
     let cu = conv_val env CONV lvl t1.(i) t2.(i) cu in
     let fi1 = napply f1.(i) fargs in
     let fi2 = napply f2.(i) fargs in
-    if Int.equal i max then conv_val env CONV flvl fi1 fi2 cu
+    if CInt.equal i max then conv_val env CONV flvl fi1 fi2 cu
     else aux (i+1) (conv_val env CONV flvl fi1 fi2 cu) in
   aux 0 cu
 

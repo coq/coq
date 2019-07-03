@@ -100,7 +100,7 @@ GRAMMAR EXTEND Gram
   ;
   tactic_then_locality: (* [true] for the local variant [TacThens] and [false]
                            for [TacExtend] *)
-  [ [ "[" ; l = OPT">" -> { if Option.is_empty l then true else false } ] ]
+  [ [ "[" ; l = OPT">" -> { if COption.is_empty l then true else false } ] ]
   ;
   tactic_expr:
     [ "5" RIGHTA
@@ -252,7 +252,7 @@ GRAMMAR EXTEND Gram
 	      | { CAst.v = CCast (t, (CastConv ty | CastVM ty | CastNative ty)) } -> Term t, Some (Term ty)
 	      | _ -> mpv, None)
 	    | _ -> mpv, None
-	  in Def (na, t, Option.default (Term (CAst.make @@ CHole (None, IntroAnonymous, None))) ty) }
+          in Def (na, t, COption.default (Term (CAst.make @@ CHole (None, IntroAnonymous, None))) ty) }
     ] ]
   ;
   match_context_rule:
@@ -314,11 +314,11 @@ GRAMMAR EXTEND Gram
   range_selector_or_nth:
     [ [ n = natural ; "-" ; m = natural;
         l = OPT [","; l = LIST1 range_selector SEP "," -> { l } ] ->
-        { Goal_select.SelectList ((n, m) :: Option.default [] l) }
+        { Goal_select.SelectList ((n, m) :: COption.default [] l) }
       | n = natural;
         l = OPT [","; l = LIST1 range_selector SEP "," -> { l } ] ->
         { let open Goal_select in
-          Option.cata (fun l -> SelectList ((n, n) :: l)) (SelectNth n) l } ] ]
+          COption.cata (fun l -> SelectList ((n, n) :: l)) (SelectNth n) l } ] ]
   ;
   selector_body:
   [ [ l = range_selector_or_nth -> { l }
@@ -379,7 +379,7 @@ let vernac_solve ~pstate n info tcom b =
   let pstate, status = Proof_global.map_fold_proof_endline (fun etac p ->
       let with_end_tac = if b then Some etac else None in
       let global = match n with SelectAll | SelectList _ -> true | _ -> false in
-      let info = Option.append info !print_info_trace in
+      let info = COption.append info !print_info_trace in
       let (p,status) =
         Pfedit.solve n info (Tacinterp.hide_interp global tcom None) ?with_end_tac p
       in
@@ -437,7 +437,7 @@ let is_explicit_terminator = function TacSolve _ -> true | _ -> false
 VERNAC { tactic_mode } EXTEND VernacSolve STATE proof
 | [ ltac_selector_opt(g) ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
     { classify_as_proofstep } -> {
-    let g = Option.default (Goal_select.get_default_goal_selector ()) g in
+    let g = COption.default (Goal_select.get_default_goal_selector ()) g in
     vernac_solve g n t def
   }
 | [ "par" ":" ltac_info_opt(n) tactic(t) ltac_use_default(def) ] =>
@@ -495,7 +495,7 @@ VERNAC COMMAND EXTEND VernacTacticNotation
   [ "Tactic" "Notation" ltac_tactic_level_opt(n) ne_ltac_production_item_list(r) ":=" tactic(e) ] =>
   { VtSideff ([], VtNow) } ->
   {
-    let n = Option.default 0 n in
+    let n = COption.default 0 n in
     Tacentries.add_tactic_notation (Locality.make_module_locality locality) n ?deprecation r e;
   }
 END

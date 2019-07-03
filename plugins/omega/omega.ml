@@ -550,30 +550,30 @@ let rec depend relie_on accu = function
   | act :: l ->
       begin match act with
 	| DIVIDE_AND_APPROX (e,_,_,_) ->
-            if Int.List.mem e.id relie_on then depend relie_on (act::accu) l
+            if CInt.List.mem e.id relie_on then depend relie_on (act::accu) l
             else depend relie_on accu l
 	| EXACT_DIVIDE (e,_) ->
-            if Int.List.mem e.id relie_on then depend relie_on (act::accu) l
+            if CInt.List.mem e.id relie_on then depend relie_on (act::accu) l
             else depend relie_on accu l
 	| WEAKEN (e,_) ->
-            if Int.List.mem e relie_on then depend relie_on (act::accu) l
+            if CInt.List.mem e relie_on then depend relie_on (act::accu) l
             else depend relie_on accu l
 	| SUM (e,(_,e1),(_,e2)) ->
-            if Int.List.mem e relie_on then
+            if CInt.List.mem e relie_on then
 	      depend (e1.id::e2.id::relie_on) (act::accu) l
             else
 	      depend relie_on accu l
 	| STATE {st_new_eq=e;st_orig=o} ->
-            if Int.List.mem e.id relie_on then depend (o.id::relie_on) (act::accu) l
+            if CInt.List.mem e.id relie_on then depend (o.id::relie_on) (act::accu) l
             else depend relie_on accu l
 	| HYP e ->
-            if Int.List.mem e.id relie_on then depend relie_on (act::accu) l
+            if CInt.List.mem e.id relie_on then depend relie_on (act::accu) l
             else depend relie_on accu l
 	| FORGET_C _ -> depend relie_on accu l
 	| FORGET _ -> depend relie_on accu l
 	| FORGET_I _ -> depend relie_on accu l
 	| MERGE_EQ (e,e1,e2) ->
-            if Int.List.mem e relie_on then
+            if CInt.List.mem e relie_on then
 	      depend (e1.id::e2::relie_on) (act::accu) l
             else
 	      depend relie_on accu l
@@ -664,7 +664,7 @@ let simplify_strong ((new_eq_id,new_var_id,print_var) as new_ids) system =
            try let _ = loop2 sys in raise NO_CONTRADICTION
            with UNSOLVABLE ->
              let relie_on,path = depend [] [] (history ()) in
-             let dc,_ = List.partition (fun (_,id,_) -> Int.List.mem id relie_on) decomp in
+             let dc,_ = List.partition (fun (_,id,_) -> CInt.List.mem id relie_on) decomp in
              let red = List.map (fun (x,_,_) -> x) dc in
              (red,relie_on,decomp,path))
         sys_exploded
@@ -690,15 +690,15 @@ let simplify_strong ((new_eq_id,new_var_id,print_var) as new_ids) system =
         let s1,s2 =
           List.partition (fun (_,_,decomp,_) -> sign decomp) systems in
         let remove_int (dep,ro,dc,pa) =
-          (Util.List.except Int.equal id dep,ro,dc,pa)
+          (Util.List.except CInt.equal id dep,ro,dc,pa)
         in
         let s1' = List.map remove_int s1 in
         let s2' = List.map remove_int s2 in
         let (r1,relie1) = solve s1'
 	and (r2,relie2) = solve s2' in
-	let (eq,id1,id2) = Int.List.assoc id explode_map in
+        let (eq,id1,id2) = CInt.List.assoc id explode_map in
 	[SPLIT_INEQ(eq,(id1,r1),(id2, r2))],
-        eq.id :: Util.List.union Int.equal relie1 relie2
+        eq.id :: Util.List.union CInt.equal relie1 relie2
       with FULL_SOLUTION (x0,x1) -> (x0,x1)
     in
     let act,relie_on = solve all_solutions in

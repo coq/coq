@@ -121,7 +121,7 @@ let define_mutual_scheme_base kind suff f mode names mind =
   let (cl, ctx), eff = f mode mind in
   let mib = Global.lookup_mind mind in
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
-      try Int.List.assoc i names
+      try CInt.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
   let fold i effs id cl =
     let role = Evd.Schema ((mind, i), kind)in

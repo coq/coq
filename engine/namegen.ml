@@ -254,7 +254,7 @@ let restart_subscript id =
     forget_subscript id
 
 let visible_ids sigma (nenv, c) =
-  let accu = ref (GlobRef.Set_env.empty, Int.Set.empty, Id.Set.empty) in
+  let accu = ref (GlobRef.Set_env.empty, CInt.Set.empty, Id.Set.empty) in
   let rec visible_ids n c = match EConstr.kind sigma c with
   | Const _ | Ind _ | Construct _ | Var _ as c ->
     let (gseen, vseen, ids) = !accu in
@@ -271,8 +271,8 @@ let visible_ids sigma (nenv, c) =
       end
   | Rel p ->
     let (gseen, vseen, ids) = !accu in
-    if p > n && not (Int.Set.mem p vseen) then
-      let vseen = Int.Set.add p vseen in
+    if p > n && not (CInt.Set.mem p vseen) then
+      let vseen = CInt.Set.add p vseen in
       let name =
         try Some (List.nth nenv (p - n - 1))
         with Invalid_argument _ | Failure _ ->

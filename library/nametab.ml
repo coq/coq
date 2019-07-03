@@ -182,7 +182,7 @@ let rec push_exactly uname o level tree = function
 | [] ->
   anomaly (Pp.str "Prefix longer than path! Impossible!")
 | modid :: path ->
-  if Int.equal level 0 then
+  if CInt.equal level 0 then
     let this =
       match tree.path with
         | Absolute (n,_) ->

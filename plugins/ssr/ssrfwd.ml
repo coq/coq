@@ -37,8 +37,8 @@ let ssrposetac (id, (_, t)) gl =
   posetac id t (pf_merge_uc ucst gl)
 
 let ssrsettac id ((_, (pat, pty)), (_, occ)) gl =
-  let pty = Option.map (fun { Ssrast.body; interp_env } ->
-    let ist = Option.get interp_env in
+  let pty = COption.map (fun { Ssrast.body; interp_env } ->
+    let ist = COption.get interp_env in
     (mkRHole, Some body), ist) pty in
   let pat = interp_cpattern gl pat pty in
   let cl, sigma, env = pf_concl gl, project gl, pf_env gl in
@@ -210,7 +210,7 @@ let destProd_or_LetIn sigma c =
   | _ -> raise DestKO
 
 let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
-  let clr0 = Option.default [] clr0 in
+  let clr0 = COption.default [] clr0 in
   let pats = tclCompileIPats pats in
   let mkabs gen = abs_wgen false (fun x -> x) gen in
   let mkclr gen clrs = clr_of_wgen gen clrs in
@@ -298,7 +298,7 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
 (** The "suffice" tactic *)
 
 let sufftac ist ((((clr, pats),binders),simpl), ((_, c), hint)) =
-  let clr = Option.default [] clr in
+  let clr = COption.default [] clr in
   let pats = tclCompileIPats pats in
   let binders = tclCompileIPats binders in
   let simpl = tclCompileIPats simpl in

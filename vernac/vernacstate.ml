@@ -114,7 +114,7 @@ module Proof_global = struct
   let set x = s_lemmas := x
 
   let get_pstate () =
-    Option.map (LemmaStack.with_top ~f:(Lemmas.pf_fold (fun x -> x))) !s_lemmas
+    COption.map (LemmaStack.with_top ~f:(Lemmas.pf_fold (fun x -> x))) !s_lemmas
 
   let freeze ~marshallable:_ = get ()
   let unfreeze x = s_lemmas := Some x
@@ -150,7 +150,7 @@ module Proof_global = struct
   let there_are_pending_proofs () = !s_lemmas <> None
   let get_open_goals () = cc get_open_goals
 
-  let give_me_the_proof_opt () = Option.map (LemmaStack.with_top_pstate ~f:get_proof) !s_lemmas
+  let give_me_the_proof_opt () = COption.map (LemmaStack.with_top_pstate ~f:get_proof) !s_lemmas
   let give_me_the_proof () = cc get_proof
   let get_current_proof_name () = cc get_proof_name
 

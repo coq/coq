@@ -531,7 +531,7 @@ val hcons_construct : constructor -> constructor
 type 'a tableKey =
   | ConstKey of 'a
   | VarKey of Id.t
-  | RelKey of Int.t
+  | RelKey of CInt.t
 
 type inv_rel_key = int (** index in the [rel_context] part of environment
 			  starting by the end, {e inverse}

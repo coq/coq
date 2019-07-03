@@ -32,7 +32,7 @@ let string_of_vernac_classification = function
   | VtQed VtDrop -> "Qed(drop)"
   | VtProofStep { parallel; proof_block_detection } ->
       "ProofStep " ^ string_of_parallel parallel ^
-        Option.default "" proof_block_detection
+        COption.default "" proof_block_detection
   | VtQuery -> "Query"
   | VtMeta -> "Meta "
   | VtProofMode _ -> "Proof Mode"

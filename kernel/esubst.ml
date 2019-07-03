@@ -33,14 +33,14 @@ let el_id = ELID
 let el_shft_rec n = function
   | ELSHFT(el,k) -> ELSHFT(el,k+n)
   | el           -> ELSHFT(el,n)
-let el_shft n el = if Int.equal n 0 then el else el_shft_rec n el
+let el_shft n el = if CInt.equal n 0 then el else el_shft_rec n el
 
 (* cross n binders *)
 let el_liftn_rec n = function
   | ELID        -> ELID
   | ELLFT(k,el) -> ELLFT(n+k, el)
   | el          -> ELLFT(n, el)
-let el_liftn n el = if Int.equal n 0 then el else el_liftn_rec n el
+let el_liftn n el = if CInt.equal n 0 then el else el_liftn_rec n el
 
 let el_lift el = el_liftn_rec 1 el
 
@@ -53,7 +53,7 @@ let rec reloc_rel n = function
 
 let rec is_lift_id = function
   | ELID -> true
-  | ELSHFT(e,n) -> Int.equal n 0 && is_lift_id e
+  | ELSHFT(e,n) -> CInt.equal n 0 && is_lift_id e
   | ELLFT (_,e) -> is_lift_id e
 
 (*********************)
@@ -77,7 +77,7 @@ type 'a subs =
 
 let subs_id i = ESID i
 
-let subs_cons(x,s) = if Int.equal (Array.length x) 0 then s else CONS(x,s)
+let subs_cons(x,s) = if CInt.equal (Array.length x) 0 then s else CONS(x,s)
 
 let subs_liftn n = function
   | ESID p        -> ESID (p+n) (* bounded identity lifted extends by p *)
@@ -85,13 +85,13 @@ let subs_liftn n = function
   | lenv          -> LIFT (n,lenv)
 
 let subs_lift a = subs_liftn 1 a
-let subs_liftn n a = if Int.equal n 0 then a else subs_liftn n a
+let subs_liftn n a = if CInt.equal n 0 then a else subs_liftn n a
 
 let subs_shft = function
   | (0, s)            -> s
   | (n, SHIFT (k,s1)) -> SHIFT (k+n, s1)
   | (n, s)            -> SHIFT (n,s)
-let subs_shft s = if Int.equal (fst s) 0 then snd s else subs_shft s
+let subs_shft s = if CInt.equal (fst s) 0 then snd s else subs_shft s
 
 let subs_shift_cons = function
   (0, s, t)           -> CONS(t,s)
@@ -103,7 +103,7 @@ let rec is_subs_id = function
     ESID _     -> true
   | LIFT(_,s)  -> is_subs_id s
   | SHIFT(0,s) -> is_subs_id s
-  | CONS(x,s)  -> Int.equal (Array.length x) 0 && is_subs_id s
+  | CONS(x,s)  -> CInt.equal (Array.length x) 0 && is_subs_id s
   | _          -> false
 
 (* Expands de Bruijn k in the explicit substitution subs

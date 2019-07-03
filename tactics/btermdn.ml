@@ -104,7 +104,7 @@ let constr_pat_discr_st ts t =
   | _ -> None
 
 let bounded_constr_pat_discr_st st (t,depth) =
-  if Int.equal depth 0 then
+  if CInt.equal depth 0 then
     None
   else
     match constr_pat_discr_st st t with
@@ -112,7 +112,7 @@ let bounded_constr_pat_discr_st st (t,depth) =
       | Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
 
 let bounded_constr_val_discr_st sigma st (t,depth) =
-  if Int.equal depth 0 then
+  if CInt.equal depth 0 then
     Nothing
   else
     match constr_val_discr_st sigma st t with
@@ -121,7 +121,7 @@ let bounded_constr_val_discr_st sigma st (t,depth) =
       | Everything -> Everything
 
 let bounded_constr_pat_discr (t,depth) =
-  if Int.equal depth 0 then
+  if CInt.equal depth 0 then
     None
   else
     match constr_pat_discr t with
@@ -129,7 +129,7 @@ let bounded_constr_pat_discr (t,depth) =
       | Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
 
 let bounded_constr_val_discr sigma (t,depth) =
-  if Int.equal depth 0 then
+  if CInt.equal depth 0 then
     Nothing
   else
     match constr_val_discr sigma t with

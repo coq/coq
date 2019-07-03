@@ -95,7 +95,7 @@ let occur_meta_evd sigma mv c =
     (* Note: evars are not instantiated by terms with metas *)
     let c = whd_meta sigma c in
     match EConstr.kind sigma c with
-    | Meta mv' when Int.equal mv mv' -> raise Occur
+    | Meta mv' when CInt.equal mv mv' -> raise Occur
     | _ -> EConstr.iter sigma occrec c
   in try occrec c; false with Occur -> true
 
@@ -186,7 +186,7 @@ let extract_instance_status = function
 let rec subst_meta_instances sigma bl c =
   match EConstr.kind sigma c with
     | Meta i ->
-      let select (j,_,_) = Int.equal i j in
+      let select (j,_,_) = CInt.equal i j in
       (try pi2 (List.find select bl) with Not_found -> c)
     | _ -> EConstr.map sigma (subst_meta_instances sigma bl) c
 
@@ -493,7 +493,7 @@ let unfold_projection env p stk =
   s :: stk
 
 let expand_key ts env sigma = function
-  | Some (IsKey k) -> Option.map EConstr.of_constr (expand_table_key env k)
+  | Some (IsKey k) -> COption.map EConstr.of_constr (expand_table_key env k)
   | Some (IsProj (p, c)) -> 
     let red = Stack.zip sigma (whd_betaiota_deltazeta_for_iota_state ts env sigma
                                (c, unfold_projection env p []))
@@ -622,7 +622,7 @@ let subst_defined_metas_evars sigma (bl,el) c =
   let c = EConstr.Unsafe.to_constr c in
   let rec substrec c = match Constr.kind c with
     | Meta i ->
-      let select (j,_,_) = Int.equal i j in
+      let select (j,_,_) = CInt.equal i j in
       substrec (EConstr.Unsafe.to_constr (pi2 (List.find select bl)))
     | Evar (evk,args) ->
       let eq c1 c2 = Constr.equal c1 (EConstr.Unsafe.to_constr c2) in
@@ -706,7 +706,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     in
       match (EConstr.kind sigma cM, EConstr.kind sigma cN) with
 	| Meta k1, Meta k2 ->
-            if Int.equal k1 k2 then substn else
+            if CInt.equal k1 k2 then substn else
 	    let stM,stN = extract_instance_status pb in
             let sigma = 
 	      if opt.with_types && flags.check_applied_meta_types then
@@ -731,7 +731,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	      else sigma
 	    in
 	    (* Here we check that [cN] does not contain any local variables *)
-	    if Int.equal nb 0 then
+            if CInt.equal nb 0 then
               sigma,(k,cN,snd (extract_instance_status pb))::metasubst,evarsubst
             else if noccur_between sigma 1 nb cN then
               (sigma,
@@ -751,7 +751,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	    else sigma
 	  in
 	    (* Here we check that [cM] does not contain any local variables *)
-	    if Int.equal nb 0 then
+            if CInt.equal nb 0 then
               (sigma,(k,cM,fst (extract_instance_status pb))::metasubst,evarsubst)
 	    else if noccur_between sigma 1 nb cM
 	    then
@@ -771,14 +771,14 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
             when is_evar_allowed flags evk
 	      && not (occur_evar sigma evk cN) ->
 	    let cmvars = free_rels sigma cM and cnvars = free_rels sigma cN in
-	      if Int.Set.subset cnvars cmvars then
+              if CInt.Set.subset cnvars cmvars then
 		sigma,metasubst,((curenv,ev,cN)::evarsubst)
 	      else error_cannot_unify_local curenv sigma (m,n,cN)
 	| _, Evar (evk,_ as ev)
             when is_evar_allowed flags evk
 	      && not (occur_evar sigma evk cM) ->
 	    let cmvars = free_rels sigma cM and cnvars = free_rels sigma cN in
-	      if Int.Set.subset cmvars cnvars then
+              if CInt.Set.subset cmvars cnvars then
 		sigma,metasubst,((curenv,ev,cM)::evarsubst)
 	      else error_cannot_unify_local curenv sigma (m,n,cN)
 	| Sort s1, Sort s2 ->
@@ -861,7 +861,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	       reduce curenvnb pb opt substn cM cN)
 
         | Fix ((ln1,i1),(lna1,tl1,bl1)), Fix ((ln2,i2),(_,tl2,bl2)) when
-               Int.equal i1 i2 && Array.equal Int.equal ln1 ln2 ->
+               CInt.equal i1 i2 && Array.equal CInt.equal ln1 ln2 ->
             (try
              let opt' = {opt with at_top = true; with_types = false} in
              let curenvnb' = Array.fold_right2 (fun na t -> push (na,t)) lna1 tl1 curenvnb in
@@ -871,7 +871,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
                reduce curenvnb pb opt substn cM cN)
 
         | CoFix (i1,(lna1,tl1,bl1)), CoFix (i2,(_,tl2,bl2)) when
-               Int.equal i1 i2 ->
+               CInt.equal i1 i2 ->
             (try
              let opt' = {opt with at_top = true; with_types = false} in
              let curenvnb' = Array.fold_right2 (fun na t -> push (na,t)) lna1 tl1 curenvnb in
@@ -1099,7 +1099,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
       let (evd,ks,_) =
 	List.fold_left
 	  (fun (evd,ks,m) b ->
-	    if match n with Some n -> Int.equal m n | None -> false then
+            if match n with Some n -> CInt.equal m n | None -> false then
                 (evd,t2::ks, m-1)
             else
               let mv = new_meta () in
@@ -1269,7 +1269,7 @@ let merge_instances env sigma flags st1 st2 c1 c2 =
 
 let applyHead env evd n c  =
   let rec apprec n c cty evd =
-    if Int.equal n 0 then
+    if CInt.equal n 0 then
       (evd, c)
     else
       match EConstr.kind evd (whd_all env evd cty) with
@@ -1532,7 +1532,7 @@ let w_typed_unify_array env evd flags f1 l1 f2 l2 =
 let iter_fail f a =
   let n = Array.length a in
   let rec ffail i =
-    if Int.equal i n then user_err Pp.(str "iter_fail")
+    if CInt.equal i n then user_err Pp.(str "iter_fail")
     else
       try f a.(i)
       with ex when precatchable_exception ex -> ffail (i+1)
@@ -1849,7 +1849,7 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags ()) (op,cl) =
   let bind_iter f a =
     let n = Array.length a in
     let rec ffail i =
-      if Int.equal i n then fun a -> a
+      if CInt.equal i n then fun a -> a
       else bind (f a.(i)) (ffail (i+1))
     in ffail 0
   in
@@ -2008,7 +2008,7 @@ let w_unify env evd cv_pb ?(flags=default_unify_flags ()) ty1 ty2 =
     match EConstr.kind evd hd1, not is_empty1, EConstr.kind evd hd2, not is_empty2 with
       (* Pattern case *)
       | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)
-	  when Int.equal (Array.length l1) (Array.length l2) ->
+          when CInt.equal (Array.length l1) (Array.length l2) ->
 	  (try
 	      w_typed_unify_array env evd flags hd1 l1 hd2 l2
 	    with ex when precatchable_exception ex ->

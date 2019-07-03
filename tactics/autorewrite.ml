@@ -30,7 +30,7 @@ let subst_hint subst hint =
   let cst' = subst_mps subst hint.rew_lemma in
   let typ' = subst_mps subst hint.rew_type in
   let pat' = subst_mps subst hint.rew_pat in
-  let t' = Option.Smart.map (Genintern.generic_substitute subst) hint.rew_tac in
+  let t' = COption.Smart.map (Genintern.generic_substitute subst) hint.rew_tac in
     if hint.rew_lemma == cst' && hint.rew_type == typ' && hint.rew_tac == t' then hint else
       { hint with
 	rew_lemma = cst'; rew_type = typ';
@@ -83,7 +83,7 @@ let print_rewrite_hintdb bas =
 	   (fun h ->
 	     str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
                Printer.pr_lconstr_env env sigma h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr_env env sigma h.rew_type ++
-	       Option.cata (fun tac -> str " then use tactic " ++
+               COption.cata (fun tac -> str " then use tactic " ++
                Pputils.pr_glb_generic env sigma tac) (mt ()) h.rew_tac)
 	   (find_rewrites bas))
 
@@ -284,7 +284,7 @@ let add_rew_rules base lrul =
 	let pat = if b then info.hyp_left else info.hyp_right in
 	let rul = { rew_lemma = c; rew_type = info.hyp_ty;
 		    rew_pat = pat; rew_ctx = ctx; rew_l2r = b;
-		    rew_tac = Option.map intern t}
+                    rew_tac = COption.map intern t}
 	in incr counter;
 	  HintDN.add pat (!counter, rul) dn) HintDN.empty lrul
   in Lib.add_anonymous_leaf (inHintRewrite (base,lrul))

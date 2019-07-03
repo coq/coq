@@ -26,7 +26,7 @@ type occurrence_error =
   | IncorrectInValueOccurrence of Id.t
 
 let explain_invalid_occurrence l =
-  let l = List.sort_uniquize Int.compare l in
+  let l = List.sort_uniquize CInt.compare l in
   str ("Invalid occurrence " ^ String.plural (List.length l) "number" ^": ")
   ++ prlist_with_sep spc int l ++ str "."
 
@@ -110,7 +110,7 @@ let replace_term_occ_gen_modulo sigma occs like_first test bywhat cl occ t =
       test.testing_state <- test.merge_fun subst test.testing_state;
       test.last_found <- Some ((cl,!pos),t)
     with NotUnifiable e when not like_first ->
-      let lastpos = Option.get test.last_found in
+      let lastpos = COption.get test.last_found in
      raise (SubtermUnificationError (!nested,((cl,!pos),t),lastpos,e)) in
   let rec substrec k t =
     if nowhere_except_in && !pos > maxocc then t else
@@ -120,7 +120,7 @@ let replace_term_occ_gen_modulo sigma occs like_first test bywhat cl occ t =
         (if !nested then begin
           (* in case it is nested but not later detected as unconvertible,
              as when matching "id _" in "id (id 0)" *)
-          let lastpos = Option.get test.last_found in
+          let lastpos = COption.get test.last_found in
           raise (SubtermUnificationError (!nested,((cl,!pos),t),lastpos,None))
          end;
          add_subst t subst; incr pos;

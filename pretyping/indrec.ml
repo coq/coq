@@ -81,7 +81,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   let projs = get_projections env ind in
   let relevance = Sorts.relevance_of_sort_family kind in
 
-  let () = if Option.is_empty projs then check_privacy_block mib in
+  let () = if COption.is_empty projs then check_privacy_block mib in
   let () = 
     if not (Sorts.family_leq kind (elim_sort specif)) then
       raise
@@ -95,7 +95,7 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   let env' = push_rel_context lnamespar env in
 
   let rec add_branch env k =
-    if Int.equal k (Array.length mip.mind_consnames) then
+    if CInt.equal k (Array.length mip.mind_consnames) then
       let nbprod = k+1 in
 
       let indf' = lift_inductive_family nbprod indf in
@@ -329,7 +329,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
     Array.map (fun mip -> mip.mind_recargs) mib.mind_packets in
   (* recarg information for non recursive parameters *)
   let rec recargparn l n =
-    if Int.equal n 0 then l else recargparn (mk_norec::l) (n-1) in
+    if CInt.equal n 0 then l else recargparn (mk_norec::l) (n-1) in
   let recargpar = recargparn [] (nparams-nparrec) in
   let make_one_rec p =
     let makefix nbconstruct =
@@ -442,7 +442,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
           let tyi = snd indi in
 	  let nconstr = Array.length mipi.mind_consnames in
 	  let rec onerec env j =
-	    if Int.equal j nconstr then
+            if CInt.equal j nconstr then
 	      make_branch env (i+j) rest
 	    else
 	      let recarg = (dest_subterms recargsvec.(tyi)).(j) in
@@ -533,7 +533,7 @@ let weaken_sort_scheme env evd set sort npars term ty =
   let rec drec np elim =
     match kind elim with
       | Prod (n,t,c) ->
-	  if Int.equal np 0 then
+          if CInt.equal np 0 then
             let osort, t' = change_sort_arity sort t in
 	      evdref := (if set then Evd.set_eq_sort else Evd.set_leq_sort) env !evdref sort osort;
               mkProd (n, t', c),
@@ -560,7 +560,7 @@ let check_arities env listdepkind =
        if not (Sorts.family_leq kind kelim) then raise
 	 (RecursionSchemeError
           (env, NotAllowedCaseAnalysis (true, fst (UnivGen.fresh_sort_in_family kind),(mind,u))))
-       else if Int.List.mem ni ln then raise
+       else if CInt.List.mem ni ln then raise
          (RecursionSchemeError (env, NotMutualInScheme (mind,mind)))
        else ni::ln)
 	    [] listdepkind

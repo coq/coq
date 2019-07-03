@@ -92,7 +92,7 @@ let mis_is_recursive_subset listind rarg =
     List.exists
       (fun ra ->
         match dest_recarg ra with
-          | Mrec (_,i) -> Int.List.mem i listind
+          | Mrec (_,i) -> CInt.List.mem i listind
           | _ -> false) rvec
   in
   Array.exists one_is_rec (dest_subterms rarg)
@@ -247,13 +247,13 @@ let constructor_has_local_defs env (indsp,j) =
   let (mib,mip) = Inductive.lookup_mind_specif env indsp in
   let l1 = mip.mind_consnrealdecls.(j-1) + Context.Rel.length (mib.mind_params_ctxt) in
   let l2 = recarg_length mip.mind_recargs j + mib.mind_nparams in
-  not (Int.equal l1 l2)
+  not (CInt.equal l1 l2)
 
 let inductive_has_local_defs env ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let l1 = Context.Rel.length (mib.mind_params_ctxt) + mip.mind_nrealdecls in
   let l2 = mib.mind_nparams + mip.mind_nrealargs in
-  not (Int.equal l1 l2)
+  not (CInt.equal l1 l2)
 
 let top_allowed_sort env (kn,i as ind) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
@@ -381,10 +381,10 @@ let get_arity env ((ind,u),params) =
        uniform parameter only or also of recursively non-uniform
        parameters *)
     let nparams = List.length params in
-    if Int.equal nparams mib.mind_nparams then
+    if CInt.equal nparams mib.mind_nparams then
       mib.mind_params_ctxt
     else begin
-      assert (Int.equal nparams mib.mind_nparams_rec);
+      assert (CInt.equal nparams mib.mind_nparams_rec);
       let nnonrecparamdecls = mib.mind_nparams - mib.mind_nparams_rec in
       snd (Termops.context_chop nnonrecparamdecls mib.mind_params_ctxt)
     end in

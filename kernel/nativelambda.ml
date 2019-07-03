@@ -197,7 +197,7 @@ let rec lam_exlift el lam =
   | _ -> map_lam_with_binders el_liftn lam_exlift el lam
 
 let lam_lift k lam =
-  if Int.equal k 0 then lam
+  if CInt.equal k 0 then lam
   else lam_exlift (el_shft k el_id) lam
 
 let lam_subst_rel lam id n subst =
@@ -247,7 +247,7 @@ let merge_if t bt bf =
   let nt = Array.length idst in
   let nf = Array.length idsf in
   let common,idst,idsf = 
-    if Int.equal nt nf then idst, [||], [||] 
+    if CInt.equal nt nf then idst, [||], [||]
     else
       if nt < nf then idst,[||], Array.sub idsf nt (nf - nt)
       else idsf, Array.sub idst nf (nt - nf), [||] in
@@ -348,7 +348,7 @@ let make_args start _end =
 let expand_constructor prefix ind tag nparams arity =
   let anon = Context.make_annot Anonymous Sorts.Relevant in (* TODO relevance *)
   let ids = Array.make (nparams + arity) anon in
-  if Int.equal arity 0 then mkLlam ids (Lint tag)
+  if CInt.equal arity 0 then mkLlam ids (Lint tag)
   else
   let args = make_args arity 1 in
   Llam(ids, Lmakeblock (prefix, ind, tag, args))
@@ -361,7 +361,7 @@ let makeblock env ind tag nparams arity args =
     mkLapp (expand_constructor prefix ind tag nparams arity) args
   else
   (* The constructor is fully applied *)
-  if Int.equal arity 0 then Lint tag
+  if CInt.equal arity 0 then Lint tag
   else
   if Array.for_all is_value args then
     let args = Array.map get_value args in
@@ -447,7 +447,7 @@ let empty_evars =
 (** Extract the inductive type over which a fixpoint is decreasing *)
 let rec get_fix_struct env i t = match kind (Reduction.whd_all env t) with
 | Prod (na, dom, t) ->
-  if Int.equal i 0 then
+  if CInt.equal i 0 then
     let dom = Reduction.whd_all env dom in
     let (dom, _) = decompose_appvect dom in
     match kind dom with

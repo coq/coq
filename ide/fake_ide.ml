@@ -180,7 +180,7 @@ let print_document () =
         Pp.str (Printf.sprintf "%s[%10s, %3s] %s"
           (if b then "*" else " ")
           name
-          (Stateid.to_string (Option.default Stateid.dummy state_id))
+          (Stateid.to_string (COption.default Stateid.dummy state_id))
           (ellipsize text)))))
 
 (* This module is the logic a GUI has to implement *)

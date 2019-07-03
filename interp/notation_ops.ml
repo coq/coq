@@ -31,7 +31,7 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
 | NRef gr1, NRef gr2 -> GlobRef.equal gr1 gr2
 | NVar id1, NVar id2 -> (
    match (get_var_ndx id1 vars1,get_var_ndx id2 vars2) with
-   | Some n,Some m -> Int.equal n m
+   | Some n,Some m -> CInt.equal n m
    | None  ,None   -> Id.equal id1 id2
    | _             -> false)
 | NApp (t1, a1), NApp (t2, a2) ->
@@ -49,7 +49,7 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
   (eq_notation_constr vars) u1 u2 && b1 == b2
 | NLetIn (na1, b1, t1, u1), NLetIn (na2, b2, t2, u2) ->
   Name.equal na1 na2 && eq_notation_constr vars b1 b2 &&
-  Option.equal (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
+  COption.equal (eq_notation_constr vars) t1 t2 && (eq_notation_constr vars) u1 u2
 | NCases (_, o1, r1, p1), NCases (_, o2, r2, p2) -> (* FIXME? *)
   let eqpat (p1, t1) (p2, t2) =
     List.equal cases_pattern_eq p1 p2 &&
@@ -57,27 +57,27 @@ let rec eq_notation_constr (vars1,vars2 as vars) t1 t2 = match t1, t2 with
   in
   let eqf (t1, (na1, o1)) (t2, (na2, o2)) =
     let eq (i1, n1) (i2, n2) = eq_ind i1 i2 && List.equal Name.equal n1 n2 in
-    (eq_notation_constr vars) t1 t2 && Name.equal na1 na2 && Option.equal eq o1 o2
+    (eq_notation_constr vars) t1 t2 && Name.equal na1 na2 && COption.equal eq o1 o2
   in
-  Option.equal (eq_notation_constr vars) o1 o2 &&
+  COption.equal (eq_notation_constr vars) o1 o2 &&
   List.equal eqf r1 r2 &&
   List.equal eqpat p1 p2
 | NLetTuple (nas1, (na1, o1), t1, u1), NLetTuple (nas2, (na2, o2), t2, u2) ->
   List.equal Name.equal nas1 nas2 &&
   Name.equal na1 na2 &&
-  Option.equal (eq_notation_constr vars) o1 o2 &&
+  COption.equal (eq_notation_constr vars) o1 o2 &&
   (eq_notation_constr vars) t1 t2 &&
   (eq_notation_constr vars) u1 u2
 | NIf (t1, (na1, o1), u1, r1), NIf (t2, (na2, o2), u2, r2) ->
   (eq_notation_constr vars) t1 t2 &&
   Name.equal na1 na2 &&
-  Option.equal (eq_notation_constr vars) o1 o2 &&
+  COption.equal (eq_notation_constr vars) o1 o2 &&
   (eq_notation_constr vars) u1 u2 &&
   (eq_notation_constr vars) r1 r2
 | NRec (_, ids1, ts1, us1, rs1), NRec (_, ids2, ts2, us2, rs2) -> (* FIXME? *)
   let eq (na1, o1, t1) (na2, o2, t2) =
     Name.equal na1 na2 &&
-    Option.equal (eq_notation_constr vars) o1 o2 &&
+    COption.equal (eq_notation_constr vars) o1 o2 &&
     (eq_notation_constr vars) t1 t2
   in
   Array.equal Id.equal ids1 ids2 &&
@@ -178,13 +178,13 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
       let outerl = (ldots_var,inner)::(if swap then [] else [y, lt @@ GVar x]) in
       DAst.get (subst_glob_vars outerl it)
   | NLambda (na,ty,c) ->
-      let e',disjpat,na = g e na in GLambda (na,Explicit,f e ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
+      let e',disjpat,na = g e na in GLambda (na,Explicit,f e ty,COption.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
   | NProd (na,ty,c) ->
-      let e',disjpat,na = g e na in GProd (na,Explicit,f e ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
+      let e',disjpat,na = g e na in GProd (na,Explicit,f e ty,COption.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
   | NLetIn (na,b,t,c) ->
       let e',disjpat,na = g e na in
       (match disjpat with
-       | None -> GLetIn (na,f e b,Option.map (f e) t,f e' c)
+       | None -> GLetIn (na,f e b,COption.map (f e) t,f e' c)
        | Some (disjpat,_id) -> DAst.get (apply_cases_pattern_term ?loc disjpat (f e b) (f e' c)))
   | NCases (sty,rtntypopt,tml,eqnl) ->
       let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
@@ -203,18 +203,18 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
           List.fold_left_map (cases_pattern_fold_map ?loc fold) ([],e) patl in
         let disjpatl = product_of_cases_patterns patl in
         List.map (fun patl -> CAst.make (idl,patl,f e rhs)) disjpatl) eqnl in
-      GCases (sty,Option.map (f e') rtntypopt,tml',List.flatten eqnl')
+      GCases (sty,COption.map (f e') rtntypopt,tml',List.flatten eqnl')
   | NLetTuple (nal,(na,po),b,c) ->
       let e',nal = List.fold_left_map (protect g) e nal in
       let e'',na = protect g e na in
-      GLetTuple (nal,(na,Option.map (f e'') po),f e b,f e' c)
+      GLetTuple (nal,(na,COption.map (f e'') po),f e b,f e' c)
   | NIf (c,(na,po),b1,b2) ->
       let e',na = protect g e na in
-      GIf (f e c,(na,Option.map (f e') po),f e b1,f e b2)
+      GIf (f e c,(na,COption.map (f e') po),f e b1,f e b2)
   | NRec (fk,idl,dll,tl,bl) ->
       let e,dll = Array.fold_left_map (List.fold_left_map (fun e (na,oc,b) ->
           let e,na = protect g e na in
-	  (e,(na,Explicit,Option.map (f e) oc,f e b)))) e dll in
+          (e,(na,Explicit,COption.map (f e) oc,f e b)))) e dll in
       let e',idl = Array.fold_left_map (to_id (protect g)) e idl in
       GRec (fk,idl,dll,Array.map (f e) tl,Array.map (f e') bl)
   | NCast (c,k) -> GCast (f e c,map_cast_type (f e) k)
@@ -272,8 +272,8 @@ let split_at_recursive_part c =
   | _ -> outer_iterator, c
 
 let subtract_loc loc1 loc2 =
-  let l1 = fst (Option.cata Loc.unloc (0,0) loc1) in
-  let l2 = fst (Option.cata Loc.unloc (0,0) loc2) in
+  let l1 = fst (COption.cata Loc.unloc (0,0) loc1) in
+  let l2 = fst (COption.cata Loc.unloc (0,0) loc2) in
   Some (Loc.make_loc (l1,l2-1))
 
 let check_is_hole id t = match DAst.get t with GHole _ -> () | _ ->
@@ -360,7 +360,7 @@ let compare_recursive_parts recvars found f f' (iterator,subc) =
     match !diff with
     | None ->
 	let loc1 = loc_of_glob_constr iterator in
-	let loc2 = loc_of_glob_constr (Option.get !terminator) in
+        let loc2 = loc_of_glob_constr (COption.get !terminator) in
         (* Here, we would need a loc made of several parts ... *)
         user_err ?loc:(subtract_loc loc1 loc2)
           (str "Both ends of the recursive pattern are the same.")
@@ -372,14 +372,14 @@ let compare_recursive_parts recvars found f f' (iterator,subc) =
         (* found variables have been collected by compare_constr *)
         found := { !found with vars = List.remove Id.equal y (!found).vars;
                                recursive_term_vars = List.add_set (pair_equal Id.equal Id.equal) (x,y) (!found).recursive_term_vars };
-        NList (x,y,iterator,f (Option.get !terminator),revert)
+        NList (x,y,iterator,f (COption.get !terminator),revert)
     | Some (x,y,RecursiveBinders revert) ->
         let iterator =
           f' (if revert then iterator else subst_glob_vars [x, DAst.make @@ GVar y] iterator) in
         (* found have been collected by compare_constr *)
         found := { !found with vars = List.remove Id.equal y (!found).vars;
                                recursive_binders_vars = List.add_set (pair_equal Id.equal Id.equal) (x,y) (!found).recursive_binders_vars };
-        NBinderList (x,y,iterator,f (Option.get !terminator),revert)
+        NBinderList (x,y,iterator,f (COption.get !terminator),revert)
   else
     raise Not_found
 
@@ -411,29 +411,29 @@ let notation_constr_and_vars_of_glob_constr recvars a =
   | GApp (g,args) -> NApp (aux g, List.map aux args)
   | GLambda (na,bk,ty,c) -> add_name found na; NLambda (na,aux ty,aux c)
   | GProd (na,bk,ty,c) -> add_name found na; NProd (na,aux ty,aux c)
-  | GLetIn (na,b,t,c) -> add_name found na; NLetIn (na,aux b,Option.map aux t, aux c)
+  | GLetIn (na,b,t,c) -> add_name found na; NLetIn (na,aux b,COption.map aux t, aux c)
   | GCases (sty,rtntypopt,tml,eqnl) ->
       let f {CAst.v=(idl,pat,rhs)} = List.iter (add_id found) idl; (pat,aux rhs) in
-      NCases (sty,Option.map aux rtntypopt,
+      NCases (sty,COption.map aux rtntypopt,
         List.map (fun (tm,(na,x)) ->
 	  add_name found na;
-	  Option.iter
+          COption.iter
             (fun {CAst.v=(_,nl)} -> List.iter (add_name found) nl) x;
-          (aux tm,(na,Option.map (fun {CAst.v=(ind,nal)} -> (ind,nal)) x))) tml,
+          (aux tm,(na,COption.map (fun {CAst.v=(ind,nal)} -> (ind,nal)) x))) tml,
         List.map f eqnl)
   | GLetTuple (nal,(na,po),b,c) ->
       add_name found na;
       List.iter (add_name found) nal;
-      NLetTuple (nal,(na,Option.map aux po),aux b,aux c)
+      NLetTuple (nal,(na,COption.map aux po),aux b,aux c)
   | GIf (c,(na,po),b1,b2) ->
       add_name found na;
-      NIf (aux c,(na,Option.map aux po),aux b1,aux b2)
+      NIf (aux c,(na,COption.map aux po),aux b1,aux b2)
   | GRec (fk,idl,dll,tl,bl) ->
       Array.iter (add_id found) idl;
       let dll = Array.map (List.map (fun (na,bk,oc,b) ->
 	 if bk != Explicit then
 	   user_err Pp.(str "Binders marked as implicit not allowed in notations.");
-	 add_name found na; (na,Option.map aux oc,aux b))) dll in
+         add_name found na; (na,COption.map aux oc,aux b))) dll in
       NRec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
   | GCast (c,k) -> NCast (aux c,map_cast_type aux k)
   | GSort s -> NSort s
@@ -572,17 +572,17 @@ let rec subst_notation_constr subst bound raw =
 
   | NLetIn (n,r1,t,r2) ->
       let r1' = subst_notation_constr subst bound r1 in
-      let t' = Option.Smart.map (subst_notation_constr subst bound) t in
+      let t' = COption.Smart.map (subst_notation_constr subst bound) t in
       let r2' = subst_notation_constr subst bound r2 in
 	if r1' == r1 && t == t' && r2' == r2 then raw else
 	  NLetIn (n,r1',t',r2')
 
   | NCases (sty,rtntypopt,rl,branches) ->
-      let rtntypopt' = Option.Smart.map (subst_notation_constr subst bound) rtntypopt
+      let rtntypopt' = COption.Smart.map (subst_notation_constr subst bound) rtntypopt
       and rl' = List.Smart.map
         (fun (a,(n,signopt) as x) ->
 	  let a' = subst_notation_constr subst bound a in
-	  let signopt' = Option.map (fun ((indkn,i),nal as z) ->
+          let signopt' = COption.map (fun ((indkn,i),nal as z) ->
 	    let indkn' = subst_mind subst indkn in
 	    if indkn == indkn' then z else ((indkn',i),nal)) signopt in
 	  if a' == a && signopt' == signopt then x else (a',(n,signopt')))
@@ -600,14 +600,14 @@ let rec subst_notation_constr subst bound raw =
           NCases (sty,rtntypopt',rl',branches')
 
   | NLetTuple (nal,(na,po),b,c) ->
-      let po' = Option.Smart.map (subst_notation_constr subst bound) po
+      let po' = COption.Smart.map (subst_notation_constr subst bound) po
       and b' = subst_notation_constr subst bound b
       and c' = subst_notation_constr subst bound c in
 	if po' == po && b' == b && c' == c then raw else
 	  NLetTuple (nal,(na,po'),b',c')
 
   | NIf (c,(na,po),b1,b2) ->
-      let po' = Option.Smart.map (subst_notation_constr subst bound) po
+      let po' = COption.Smart.map (subst_notation_constr subst bound) po
       and b1' = subst_notation_constr subst bound b1
       and b2' = subst_notation_constr subst bound b2
       and c' = subst_notation_constr subst bound c in
@@ -617,7 +617,7 @@ let rec subst_notation_constr subst bound raw =
   | NRec (fk,idl,dll,tl,bl) ->
       let dll' =
         Array.Smart.map (List.Smart.map (fun (na,oc,b as x) ->
-          let oc' =  Option.Smart.map (subst_notation_constr subst bound) oc in
+          let oc' =  COption.Smart.map (subst_notation_constr subst bound) oc in
 	  let b' =  subst_notation_constr subst bound b in
 	  if oc' == oc && b' == b then x else (na,oc',b'))) dll in
       let tl' = Array.Smart.map (subst_notation_constr subst bound) tl in
@@ -635,7 +635,7 @@ let rec subst_notation_constr subst bound raw =
       if nref == ref then knd else Evar_kinds.ImplicitArg (nref, i, b)
     | _ -> knd
     in
-    let nsolve = Option.Smart.map (Genintern.generic_substitute subst) solve in
+    let nsolve = COption.Smart.map (Genintern.generic_substitute subst) solve in
     if nsolve == solve && nknd == knd then raw
     else NHole (nknd, naming, nsolve)
 
@@ -652,7 +652,7 @@ let subst_interpretation subst (metas,pat) =
 (* Pattern-matching a [glob_constr] against a [notation_constr]       *)
 
 let abstract_return_type_context pi mklam tml rtno =
-  Option.map (fun rtn ->
+  COption.map (fun rtn ->
     let nal =
       List.flatten (List.map (fun (_,(na,t)) ->
 	match t with Some x -> (pi x)@[na] | None -> [na]) tml) in
@@ -954,14 +954,14 @@ let bind_bindinglist_as_termlist_env alp (terms,termlists,binders,binderlists) v
 
 let match_fix_kind fk1 fk2 =
   match (fk1,fk2) with
-  | GCoFix n1, GCoFix n2 -> Int.equal n1 n2
+  | GCoFix n1, GCoFix n2 -> CInt.equal n1 n2
   | GFix (nl1,n1), GFix (nl2,n2) ->
       let test n1 n2 = match n1, n2 with
       | _, None -> true
-      | Some id1, Some id2 -> Int.equal id1 id2
+      | Some id1, Some id2 -> CInt.equal id1 id2
       | _ -> false
       in
-      Int.equal n1 n2 &&
+      CInt.equal n1 n2 &&
       Array.for_all2 test nl1 nl2
   | _ -> false
 
@@ -995,7 +995,7 @@ let rec match_cases_pattern_binders allow_catchall metas (alp,sigma as acc) pat1
   | PatVar na1, PatVar na2 -> match_names metas acc na1 na2
   | _, PatVar Anonymous when allow_catchall -> acc
   | PatCstr (c1,patl1,na1), PatCstr (c2,patl2,na2)
-      when eq_constructor c1 c2 && Int.equal (List.length patl1) (List.length patl2) ->
+      when eq_constructor c1 c2 && CInt.equal (List.length patl1) (List.length patl2) ->
       List.fold_left2 (match_cases_pattern_binders false metas)
         (match_names metas acc na1 na2) patl1 patl2
   | _ -> raise No_match
@@ -1145,12 +1145,12 @@ let rec match_ inner u alp metas sigma a1 a2 =
      match_binders u alp metas na1 na2
        (match_in u alp metas (match_in u alp metas sigma b1 b2) t1 t2) c1 c2
   | GCases (sty1,rtno1,tml1,eqnl1), NCases (sty2,rtno2,tml2,eqnl2)
-      when sty1 == sty2 && Int.equal (List.length tml1) (List.length tml2) ->
+      when sty1 == sty2 && CInt.equal (List.length tml1) (List.length tml2) ->
       let rtno1' = abstract_return_type_context_glob_constr tml1 rtno1 in
       let rtno2' = abstract_return_type_context_notation_constr tml2 rtno2 in
       let sigma =
-	try Option.fold_left2 (match_in u alp metas) sigma rtno1' rtno2'
-	with Option.Heterogeneous -> raise No_match
+        try COption.fold_left2 (match_in u alp metas) sigma rtno1' rtno2'
+        with COption.Heterogeneous -> raise No_match
       in
       let sigma = List.fold_left2
       (fun s (tm1,_) (tm2,_) ->
@@ -1164,7 +1164,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
            (Detyping.factorize_eqns eqnl1)
            (List.map (fun (patl,rhs) -> ([patl],rhs)) eqnl2))
   | GLetTuple (nal1,(na1,to1),b1,c1), NLetTuple (nal2,(na2,to2),b2,c2)
-      when Int.equal (List.length nal1) (List.length nal2) ->
+      when CInt.equal (List.length nal1) (List.length nal2) ->
       let sigma = match_opt (match_binders u alp metas na1 na2) sigma to1 to2 in
       let sigma = match_in u alp metas sigma b1 b2 in
       let (alp,sigma) =
@@ -1174,8 +1174,8 @@ let rec match_ inner u alp metas sigma a1 a2 =
       let sigma = match_opt (match_binders u alp metas na1 na2) sigma to1 to2 in
       List.fold_left2 (match_in u alp metas) sigma [a1;b1;c1] [a2;b2;c2]
   | GRec (fk1,idl1,dll1,tl1,bl1), NRec (fk2,idl2,dll2,tl2,bl2)
-      when match_fix_kind fk1 fk2 && Int.equal (Array.length idl1) (Array.length idl2) &&
-	Array.for_all2 (fun l1 l2 -> Int.equal (List.length l1) (List.length l2)) dll1 dll2
+      when match_fix_kind fk1 fk2 && CInt.equal (Array.length idl1) (Array.length idl2) &&
+        Array.for_all2 (fun l1 l2 -> CInt.equal (List.length l1) (List.length l2)) dll1 dll2
 	->
       let alp,sigma = Array.fold_left2
 	(List.fold_left2 (fun (alp,sigma) (na1,_,oc1,b1) (na2,oc2,b2) ->
@@ -1343,7 +1343,7 @@ let rec match_cases_pattern metas (terms,termlists,(),() as sigma) a1 a2 =
       when eq_constructor r1 r2 ->
       let l1 = try add_patterns_for_params_remove_local_defs (Global.env()) r1 args1 with Not_found -> raise No_match in
       let le2 = List.length l2 in
-      if Int.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length l1
+      if CInt.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length l1
       then
 	raise No_match
       else
@@ -1366,7 +1366,7 @@ let match_ind_pattern metas sigma ind pats a2 =
   | NApp (NRef (GlobRef.IndRef r2),l2)
       when eq_ind ind r2 ->
       let le2 = List.length l2 in
-      if Int.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length pats
+      if CInt.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length pats
       then
 	raise No_match
       else

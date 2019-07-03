@@ -284,7 +284,7 @@ let make_discr_match_el  =
 let make_discr_match_brl i =
   List.map_i
     (fun j {CAst.v=(idl,patl,_)} -> CAst.make @@
-       if Int.equal j i
+       if CInt.equal j i
        then (idl,patl, mkGRef (Lazy.force coq_True_ref))
        else (idl,patl, mkGRef (Lazy.force coq_False_ref))
     )
@@ -654,7 +654,7 @@ let rec build_entry_lc env sigma funnames avoid rt : glob_constr build_entry_ret
                                Printer.pr_glob_constr_env env rt ++ str ". try again with a cast")
 	in
 	let case_pats = build_constructors_of_type (fst ind) [] in
-	assert (Int.equal (Array.length case_pats) 2);
+        assert (CInt.equal (Array.length case_pats) 2);
 	let brl =
 	  List.map_i
             (fun i x -> CAst.make ([],[case_pats.(i)],x))
@@ -686,7 +686,7 @@ let rec build_entry_lc env sigma funnames avoid rt : glob_constr build_entry_ret
                                  Printer.pr_glob_constr_env env rt ++ str ". try again with a cast")
 	  in
 	  let case_pats = build_constructors_of_type (fst ind) nal_as_glob_constr in
-	  assert (Int.equal (Array.length case_pats) 1);
+          assert (CInt.equal (Array.length case_pats) 1);
           let br = CAst.make ([],[case_pats.(0)],e) in
 	  let match_expr = mkGCases(None,[b,(Anonymous,None)],[br]) in
           build_entry_lc env sigma funnames avoid match_expr
@@ -906,7 +906,7 @@ let decompose_raw_eq env lhs rhs =
     observe (str "lrhs := " ++ int (List.length lrhs));
     let sllhs = List.length llhs in
     let slrhs = List.length lrhs in
-    if same_raw_term lhd rhd && Int.equal sllhs slrhs
+    if same_raw_term lhd rhd && CInt.equal sllhs slrhs
     then
       (* let _ = assert false in  *)
       List.fold_right2 decompose_raw_eq	llhs lrhs acc
@@ -1181,7 +1181,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		Id.Set.filter not_free_in_t id_to_exclude
 	end
     | GLetTuple(nal,(na,rto),t,b) ->
-	assert (Option.is_empty rto);
+        assert (COption.is_empty rto);
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in
 	  let new_t,id_to_exclude' =
@@ -1244,7 +1244,7 @@ let rec compute_cst_params relnames params gt = DAst.with_val (function
       compute_cst_params relnames t_params b
   | GLetIn(_,v,t,b) ->
       let v_params = compute_cst_params relnames params v in
-      let t_params = Option.fold_left (compute_cst_params relnames) v_params t in
+      let t_params = COption.fold_left (compute_cst_params relnames) v_params t in
       compute_cst_params relnames t_params b
   | GCases _ ->
       params  (* If there is still cases at this point they can only be
@@ -1281,7 +1281,7 @@ let compute_params_name relnames (args : (Name.t * Glob_term.glob_constr * glob_
 	   if Array.for_all
 	     (fun l ->
 		let (n',nt',typ') = List.nth l i in
-		Name.equal n n' && glob_constr_eq nt nt' && Option.equal glob_constr_eq typ typ')
+                Name.equal n n' && glob_constr_eq nt nt' && COption.equal glob_constr_eq typ typ')
 	     rels_params
 	   then
 	     l := param::!l

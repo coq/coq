@@ -305,7 +305,7 @@ end
 
 let tacFILTER_HYP_EXIST hyps k = Goal.enter begin fun gl ->
   let ctx = Goal.hyps gl in
-  k (Option.bind hyps (fun h ->
+  k (COption.bind hyps (fun h ->
       if Ssrcommon.test_hyp_exists ctx h &&
          Ssrcommon.(not_section_id (hyp_id h)) then Some h else None))
 end
@@ -485,7 +485,7 @@ let rec ipat_tac1 ipat : bool tactic =
       tacCHECK_HYPS_EXIST must <*>
       tacFILTER_HYP_EXIST may (fun may ->
         let must = List.map Ssrcommon.hyp_id must in
-        let cl = Option.fold_left (fun cls (SsrHyp(_,id)) ->
+        let cl = COption.fold_left (fun cls (SsrHyp(_,id)) ->
           if CList.mem_f Id.equal id cls then begin
             duplicate_clear id;
             cls
@@ -590,7 +590,7 @@ let main ?eqtac ~first_case_is_dispatch iops =
   let ip_before, case, ip_after = split_at_first_case iops in
   let case = ssr_exception first_case_is_dispatch case in
   let case = option_to_list case in
-  let eqtac = option_to_list (Option.map (fun x -> IOpEqGen x) eqtac) in
+  let eqtac = option_to_list (COption.map (fun x -> IOpEqGen x) eqtac) in
   let ipats = ip_before @ case @ eqtac @ ip_after in
   Ssrcommon.tcl0G ~default:() (ipat_tac ipats <*> intro_end)
 
@@ -947,7 +947,7 @@ let ssrabstract dgens =
     Ssrcommon.tacMK_SSR_CONST "abstract" >>= fun abstract ->
     Ssrcommon.tacMK_SSR_CONST "abstract_key" >>= fun abstract_key ->
     Ssrcommon.tacINTERP_CPATTERN cid >>= fun cid ->
-    let id = EConstr.mkVar (Option.get (Ssrmatching.id_of_pattern cid)) in
+    let id = EConstr.mkVar (COption.get (Ssrmatching.id_of_pattern cid)) in
     tacEXAMINE_ABSTRACT id >>= fun (idty, args_id) ->
     let abstract_n = args_id.(1) in
     tacFIND_ABSTRACT_PROOF true abstract_n >>= fun abstract_proof ->

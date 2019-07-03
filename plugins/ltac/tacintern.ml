@@ -129,7 +129,7 @@ let warn_deprecated_alias =
 let intern_isolated_global_tactic_reference qid =
   let loc = qid.CAst.loc in
   let kn = Tacenv.locate_tactic qid in
-  Option.iter (fun depr -> warn_deprecated_tactic ?loc (qid,depr)) @@
+  COption.iter (fun depr -> warn_deprecated_tactic ?loc (qid,depr)) @@
     Tacenv.tac_deprecation kn;
   TacCall (CAst.make ?loc (ArgArg (loc,kn),[]))
 
@@ -151,7 +151,7 @@ let intern_isolated_tactic_reference strict ist qid =
 let intern_applied_global_tactic_reference qid =
   let loc = qid.CAst.loc in
   let kn = Tacenv.locate_tactic qid in
-  Option.iter (fun depr -> warn_deprecated_tactic ?loc (qid,depr)) @@
+  COption.iter (fun depr -> warn_deprecated_tactic ?loc (qid,depr)) @@
     Tacenv.tac_deprecation kn;
   ArgArg (loc,kn)
 
@@ -420,23 +420,23 @@ let intern_red_expr ist = function
   | Pattern l -> Pattern (List.map (intern_constr_with_occurrences ist) l)
   | Simpl (f,o) ->
     Simpl (intern_flag ist f,
-           Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
-  | CbvVm o -> CbvVm (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
-  | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
+           COption.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
+  | CbvVm o -> CbvVm (COption.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
+  | CbvNative o -> CbvNative (COption.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
   | (Red _ | Hnf | ExtraRedExpr _ as r ) -> r
 
 let intern_in_hyp_as ist lf (id,ipat) =
-  (intern_hyp ist id, Option.map (intern_intro_pattern lf ist) ipat)
+  (intern_hyp ist id, COption.map (intern_intro_pattern lf ist) ipat)
 
 let intern_hyp_list ist = List.map (intern_hyp ist)
 
 let intern_inversion_strength lf ist = function
   | NonDepInversion (k,idl,ids) ->
       NonDepInversion (k,intern_hyp_list ist idl,
-      Option.map (intern_or_and_intro_pattern_loc lf ist) ids)
+      COption.map (intern_or_and_intro_pattern_loc lf ist) ids)
   | DepInversion (k,copt,ids) ->
-      DepInversion (k, Option.map (intern_constr ist) copt,
-      Option.map (intern_or_and_intro_pattern_loc lf ist) ids)
+      DepInversion (k, COption.map (intern_constr ist) copt,
+      COption.map (intern_or_and_intro_pattern_loc lf ist) ids)
   | InversionUsing (c,idl) ->
       InversionUsing (intern_constr ist c, intern_hyp_list ist idl)
 
@@ -508,10 +508,10 @@ let rec intern_atomic lf ist x =
       TacIntroPattern (ev,List.map (intern_intro_pattern lf ist) l)
   | TacApply (a,ev,cb,inhyp) ->
       TacApply (a,ev,List.map (intern_constr_with_bindings_arg ist) cb,
-                Option.map (intern_in_hyp_as ist lf) inhyp)
+                COption.map (intern_in_hyp_as ist lf) inhyp)
   | TacElim (ev,cb,cbo) ->
       TacElim (ev,intern_constr_with_bindings_arg ist cb,
-               Option.map (intern_constr_with_bindings ist) cbo)
+               COption.map (intern_constr_with_bindings ist) cbo)
   | TacCase (ev,cb) -> TacCase (ev,intern_constr_with_bindings_arg ist cb)
   | TacMutualFix (id,n,l) ->
       let f (id,n,c) = (intern_ident lf ist id,n,intern_type ist c) in
@@ -520,9 +520,9 @@ let rec intern_atomic lf ist x =
       let f (id,c) = (intern_ident lf ist id,intern_type ist c) in
       TacMutualCofix (intern_ident lf ist id, List.map f l)
   | TacAssert (ev,b,otac,ipat,c) ->
-      TacAssert (ev,b,Option.map (Option.map (intern_pure_tactic ist)) otac,
-                 Option.map (intern_intro_pattern lf ist) ipat,
-                 intern_constr_gen false (not (Option.is_empty otac)) ist c)
+      TacAssert (ev,b,COption.map (COption.map (intern_pure_tactic ist)) otac,
+                 COption.map (intern_intro_pattern lf ist) ipat,
+                 intern_constr_gen false (not (COption.is_empty otac)) ist c)
   | TacGeneralize cl ->
       TacGeneralize (List.map (fun (c,na) ->
 	               intern_constr_with_occurrences ist c,
@@ -531,16 +531,16 @@ let rec intern_atomic lf ist x =
       let na = intern_name lf ist na in
       TacLetTac (ev,na,intern_constr ist c,
                  (clause_app (intern_hyp_location ist) cls),b,
-		 (Option.map (intern_intro_pattern_naming_loc lf ist) eqpat))
+                 (COption.map (intern_intro_pattern_naming_loc lf ist) eqpat))
 
   (* Derived basic tactics *)
   | TacInductionDestruct (ev,isrec,(l,el)) ->
       TacInductionDestruct (ev,isrec,(List.map (fun (c,(ipato,ipats),cls) ->
 	      (intern_destruction_arg ist c,
-               (Option.map (intern_intro_pattern_naming_loc lf ist) ipato,
-               Option.map (intern_or_and_intro_pattern_loc lf ist) ipats),
-               Option.map (clause_app (intern_hyp_location ist)) cls)) l,
-               Option.map (intern_constr_with_bindings ist) el))
+               (COption.map (intern_intro_pattern_naming_loc lf ist) ipato,
+               COption.map (intern_or_and_intro_pattern_loc lf ist) ipats),
+               COption.map (clause_app (intern_hyp_location ist)) cls)) l,
+               COption.map (intern_constr_with_bindings ist) el))
   (* Conversion *)
   | TacReduce (r,cl) ->
       dump_glob_red_expr r;
@@ -573,7 +573,7 @@ let rec intern_atomic lf ist x =
 	(ev,
 	List.map (fun (b,m,c) -> (b,m,intern_constr_with_bindings_arg ist c)) l,
 	clause_app (intern_hyp_location ist) cl,
-	Option.map (intern_pure_tactic ist) by)
+        COption.map (intern_pure_tactic ist) by)
   | TacInversion (inv,hyp) ->
       TacInversion (intern_inversion_strength lf ist inv,
         intern_quantified_hypothesis ist hyp)
@@ -660,7 +660,7 @@ and intern_tactic_seq onlytac ist = function
   (* For extensions *)
   | TacAlias { loc; v=(s,l) } ->
       let alias = Tacenv.interp_alias s in
-      Option.iter (fun o -> warn_deprecated_alias ?loc (s,o)) @@ alias.Tacenv.alias_deprecation;
+      COption.iter (fun o -> warn_deprecated_alias ?loc (s,o)) @@ alias.Tacenv.alias_deprecation;
       let l = List.map (intern_tacarg !strict_check false ist) l in
       ist.ltacvars, TacAlias (CAst.make ?loc (s,l))
   | TacML { loc; v=(opn,l) } ->

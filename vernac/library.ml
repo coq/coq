@@ -340,7 +340,7 @@ let load_require _ (_,(needed,modl,_)) =
   List.iter register_library needed
 
 let open_require i (_,(_,modl,export)) =
-  Option.iter (fun export -> Declaremods.import_modules ~export @@ List.map (fun m -> MPfile m) modl) export
+  COption.iter (fun export -> Declaremods.import_modules ~export @@ List.map (fun m -> MPfile m) modl) export
 
   (* [needed] is the ordered list of libraries not already loaded *)
 let cache_require o =
@@ -379,7 +379,7 @@ let require_library_from_dirpath ~lib_resolver modrefl export =
       begin
         warn_require_in_module ();
               add_anonymous_leaf (in_require (needed,modrefl,None));
-        Option.iter (fun export ->
+        COption.iter (fun export ->
           List.iter (fun m -> Declaremods.import_module ~export (MPfile m)) modrefl)
                 export
       end
@@ -400,8 +400,8 @@ let load_library_todo f =
   close_in ch;
   if tasks = None then user_err ~hdr:"restart" (str"not a .vio file");
   if s2 = None then user_err ~hdr:"restart" (str"not a .vio file");
-  if snd (Option.get s2) then user_err ~hdr:"restart" (str"not a .vio file");
-  s0, s1, Option.get s2, Option.get tasks, s4
+  if snd (COption.get s2) then user_err ~hdr:"restart" (str"not a .vio file");
+  s0, s1, COption.get s2, COption.get tasks, s4
 
 (************************************************************************)
 (*s [save_library dir] ends library [dir] and save it to the disk. *)

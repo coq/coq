@@ -27,7 +27,7 @@ let rec equal v1 v2 =
   | [] , _    -> false
   | _::_ , [] -> false
   | (i1,n1)::v1 , (i2,n2)::v2 ->
-     (Int.equal i1 i2) && n1 =/ n2 && equal v1 v2
+     (CInt.equal i1 i2) && n1 =/ n2 && equal v1 v2
 
 let hash v =
   let rec hash i = function
@@ -44,7 +44,7 @@ let is_null v =
   | _  -> false
 
 let pp_var_num pp_var o (v,n) =
-  if Int.equal v 0
+  if CInt.equal v 0
   then if eq_num (Int 0) n then ()
        else Printf.fprintf o "%s" (string_of_num n)
   else
@@ -55,7 +55,7 @@ let pp_var_num pp_var o (v,n) =
     |  _     -> Printf.fprintf o "%s*%a" (string_of_num n) pp_var v
 
 let pp_var_num_smt pp_var o (v,n) =
-  if Int.equal v 0
+  if CInt.equal v 0
   then if eq_num (Int 0) n then ()
        else Printf.fprintf o "%s" (string_of_num n)
   else
@@ -110,7 +110,7 @@ let rec update i f t =
   match t with
   | [] -> cons i (f zero_num) []
   | (k,v)::l ->
-     match Int.compare i k with
+     match CInt.compare i k with
      | 0 -> cons k (f v) l
      | -1 -> cons i (f zero_num) t
      |  1 -> (k,v) ::(update i f l)
@@ -120,7 +120,7 @@ let rec set i n t =
   match t with
   | [] -> cons i n []
   | (k,v)::l ->
-     match Int.compare i k with
+     match CInt.compare i k with
      | 0 -> cons k n l
      | -1 -> cons i n t
      |  1 -> (k,v) :: (set i n l)
@@ -180,7 +180,7 @@ let mul_add n1 ve1 n2 ve2 =
 
 let compare : t -> t -> int = Mutils.Cmp.compare_list (fun x y -> Mutils.Cmp.compare_lexical
                                                                     [
-                                                                      (fun () -> Int.compare (fst x) (fst y));
+                                                                      (fun () -> CInt.compare (fst x) (fst y));
                                                                       (fun () -> compare_num (snd x) (snd y))])
 
 (** [tail v vect] returns
@@ -193,7 +193,7 @@ let rec tail (v:var) (vect:t) =
   match vect with
   | [] -> None
   | (v',vl)::vect' ->
-     match Int.compare v' v with
+     match CInt.compare v' v with
      | 0 -> Some (vl,vect) (* Ok, found *)
      | -1 -> tail v vect' (* Might be in the tail *)
      | _  -> None (* Hopeless *)
@@ -282,23 +282,23 @@ open Big_int
 
 let gcd v =
   let res = fold (fun c _ n  ->
-                assert (Int.equal (compare_big_int (denominator n)  unit_big_int) 0);
+                assert (CInt.equal (compare_big_int (denominator n)  unit_big_int) 0);
                 gcd_big_int c (numerator n)) zero_big_int v in
-  if Int.equal (compare_big_int res zero_big_int) 0
+  if CInt.equal (compare_big_int res zero_big_int) 0
   then unit_big_int else res
 
 let normalise v =
   let ppcm = fold (fun c _ n -> ppcm c (denominator n)) unit_big_int v in
   let gcd  =
     let gcd = fold (fun c _ n -> gcd_big_int c (numerator n)) zero_big_int v in
-    if Int.equal (compare_big_int gcd zero_big_int) 0 then unit_big_int else gcd in
+    if CInt.equal (compare_big_int gcd zero_big_int) 0 then unit_big_int else gcd in
   List.map (fun (x,v) -> (x, v */ (Big_int ppcm) // (Big_int gcd))) v
 
 let rec exists2 p vect1 vect2 =
       match vect1 , vect2 with
     | _ , [] | [], _ -> None
     | (v1,n1)::vect1' , (v2, n2) :: vect2' ->
-       if Int.equal v1 v2
+       if CInt.equal v1 v2
        then
          if p n1 n2
          then Some (v1,n1,n2)

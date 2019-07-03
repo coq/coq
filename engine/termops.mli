@@ -99,7 +99,7 @@ val occur_var_in_decl :
 (** As {!occur_var} but assume the identifier not to be a section variable *)
 val local_occur_var : Evd.evar_map -> Id.t -> constr -> bool
 
-val free_rels : Evd.evar_map -> constr -> Int.Set.t
+val free_rels : Evd.evar_map -> constr -> CInt.Set.t
 
 (** [dependent m t] tests whether [m] is a subterm of [t] *)
 val dependent : Evd.evar_map -> constr -> constr -> bool

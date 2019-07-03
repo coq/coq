@@ -195,12 +195,12 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
         let t2 = destRel sigma t2  in
         begin
           try
-            let t1' = Int.Map.find t2 sub in
+            let t1' = CInt.Map.find t2 sub in
             if not (eq_constr t1 t1') then nochange "twice bound variable";
             sub
           with Not_found ->
             assert (closed0 sigma t1);
-            Int.Map.add t2 t1 sub
+            CInt.Map.add t2 t1 sub
         end
       else if isAppConstruct sigma t1 && isAppConstruct sigma t2
       then
@@ -214,14 +214,14 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
       else
         if (eq_constr t1 t2) then sub else nochange ~t':(make_refl_eq constructor (Reductionops.whd_all env sigma t1) t2)  "cannot solve (diff)"
     in
-    let sub = compute_substitution Int.Map.empty (snd t1) (snd t2) in
+    let sub = compute_substitution CInt.Map.empty (snd t1) (snd t2) in
     let sub = compute_substitution sub (fst t1) (fst t2) in
     let end_of_type_with_pop = pop end_of_type in (*the equation will be removed *)
     let new_end_of_type =
       (* Ugly hack to prevent Map.fold order change between ocaml-3.08.3 and ocaml-3.08.4
          Can be safely replaced by the next comment for Ocaml >= 3.08.4
       *)
-      let sub = Int.Map.bindings sub in
+      let sub = CInt.Map.bindings sub in
       List.fold_left (fun end_of_type (i,t)  -> liftn 1 i (substnl  [t] (i-1) end_of_type))
         end_of_type_with_pop
         sub
@@ -236,7 +236,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
       List.fold_left_i
         (fun i (end_of_type,ctxt_size,witness_fun) decl ->
            try
-             let witness = Int.Map.find i sub in
+             let witness = CInt.Map.find i sub in
              if is_local_def decl then anomaly (Pp.str "can not redefine a rel!");
       (pop end_of_type,ctxt_size,mkLetIn (RelDecl.get_annot decl,
                                             witness, RelDecl.get_type decl, witness_fun))
@@ -881,7 +881,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
 (*   observe (str "rec_args_num := " ++ str (string_of_int (rec_args_num + 1) )); *)
   let f_def = Global.lookup_constant (fst (destConst evd f)) in
   let eq_lhs = mkApp(f,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i))) in
-  let (f_body, _, _) = Option.get (Global.body_of_constant_body Library.indirect_accessor f_def) in
+  let (f_body, _, _) = COption.get (Global.body_of_constant_body Library.indirect_accessor f_def) in
   let f_body = EConstr.of_constr f_body in
   let params,f_body_with_params = decompose_lam_n evd nb_params f_body in
   let (_,num),(_,_,bodies) = destFix evd f_body_with_params in
@@ -936,8 +936,8 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
         | None -> raise Not_found
         | Some finfos -> finfos
       in
-      mkConst (Option.get finfos.equation_lemma)
-    with (Not_found | Option.IsNone as e) ->
+      mkConst (COption.get finfos.equation_lemma)
+    with (Not_found | COption.IsNone as e) ->
       let f_id = Label.to_id (Constant.label (fst (destConst !evd f))) in
       (*i The next call to mk_equation_id is valid since we will construct the lemma
         Ensures by: obvious
@@ -946,7 +946,7 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
       evd := generate_equation_lemma !evd all_funs  f fun_num (List.length params) (List.length rev_args_id) rec_arg_num;
       let _ =
         match e with
-          | Option.IsNone ->
+          | COption.IsNone ->
             let finfos = match find_Function_infos (fst (destConst !evd f)) with
               | None -> raise Not_found
               | Some finfos -> finfos

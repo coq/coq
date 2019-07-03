@@ -30,7 +30,7 @@ to OCaml code. *)
 type lname = { lname : Name.t; luid : int }
 
 let eq_lname ln1 ln2 =
-  Int.equal ln1.luid ln2.luid
+  CInt.equal ln1.luid ln2.luid
 
 let dummy_lname = { lname = Anonymous; luid = -1 }
 
@@ -69,21 +69,21 @@ let eq_gname gn1 gn2 =
   | Gconstant (s1, c1), Gconstant (s2, c2) ->
       String.equal s1 s2 && Constant.equal c1 c2
   | Gproj (s1, ind1, i1), Gproj (s2, ind2, i2) ->
-    String.equal s1 s2 && eq_ind ind1 ind2 && Int.equal i1 i2
-  | Gcase (None, i1), Gcase (None, i2) -> Int.equal i1 i2
-  | Gcase (Some l1, i1), Gcase (Some l2, i2) -> Int.equal i1 i2 && Label.equal l1 l2
-  | Gpred (None, i1), Gpred (None, i2) -> Int.equal i1 i2
-  | Gpred (Some l1, i1), Gpred (Some l2, i2) -> Int.equal i1 i2 && Label.equal l1 l2
-  | Gfixtype (None, i1), Gfixtype (None, i2) -> Int.equal i1 i2
+    String.equal s1 s2 && eq_ind ind1 ind2 && CInt.equal i1 i2
+  | Gcase (None, i1), Gcase (None, i2) -> CInt.equal i1 i2
+  | Gcase (Some l1, i1), Gcase (Some l2, i2) -> CInt.equal i1 i2 && Label.equal l1 l2
+  | Gpred (None, i1), Gpred (None, i2) -> CInt.equal i1 i2
+  | Gpred (Some l1, i1), Gpred (Some l2, i2) -> CInt.equal i1 i2 && Label.equal l1 l2
+  | Gfixtype (None, i1), Gfixtype (None, i2) -> CInt.equal i1 i2
   | Gfixtype (Some l1, i1), Gfixtype (Some l2, i2) ->
-      Int.equal i1 i2 && Label.equal l1 l2
-  | Gnorm (None, i1), Gnorm (None, i2) -> Int.equal i1 i2
-  | Gnorm (Some l1, i1), Gnorm (Some l2, i2) -> Int.equal i1 i2 && Label.equal l1 l2
-  | Gnormtbl (None, i1), Gnormtbl (None, i2) -> Int.equal i1 i2
+      CInt.equal i1 i2 && Label.equal l1 l2
+  | Gnorm (None, i1), Gnorm (None, i2) -> CInt.equal i1 i2
+  | Gnorm (Some l1, i1), Gnorm (Some l2, i2) -> CInt.equal i1 i2 && Label.equal l1 l2
+  | Gnormtbl (None, i1), Gnormtbl (None, i2) -> CInt.equal i1 i2
   | Gnormtbl (Some l1, i1), Gnormtbl (Some l2, i2) ->
-      Int.equal i1 i2 && Label.equal l1 l2
+      CInt.equal i1 i2 && Label.equal l1 l2
   | Ginternal s1, Ginternal s2 -> String.equal s1 s2
-  | Grel i1, Grel i2 -> Int.equal i1 i2
+  | Grel i1, Grel i2 -> CInt.equal i1 i2
   | Gnamed id1, Gnamed id2 -> Id.equal id1 id2
   | (Gind _| Gconstant _ | Gproj _ | Gcase _ | Gpred _
     | Gfixtype _ | Gnorm _ | Gnormtbl _ | Ginternal _ | Grel _ | Gnamed _), _ ->
@@ -99,13 +99,13 @@ let gname_hash gn = match gn with
    combinesmall 1 (combine (String.hash s) (ind_hash ind))
 | Gconstant (s, c) ->
    combinesmall 2 (combine (String.hash s) (Constant.hash c))
-| Gcase (l, i) -> combinesmall 3 (combine (Option.hash Label.hash l) (Int.hash i))
-| Gpred (l, i) -> combinesmall 4 (combine (Option.hash Label.hash l) (Int.hash i))
-| Gfixtype (l, i) -> combinesmall 5 (combine (Option.hash Label.hash l) (Int.hash i))
-| Gnorm (l, i) -> combinesmall 6 (combine (Option.hash Label.hash l) (Int.hash i))
-| Gnormtbl (l, i) -> combinesmall 7 (combine (Option.hash Label.hash l) (Int.hash i))
+| Gcase (l, i) -> combinesmall 3 (combine (COption.hash Label.hash l) (CInt.hash i))
+| Gpred (l, i) -> combinesmall 4 (combine (COption.hash Label.hash l) (CInt.hash i))
+| Gfixtype (l, i) -> combinesmall 5 (combine (COption.hash Label.hash l) (CInt.hash i))
+| Gnorm (l, i) -> combinesmall 6 (combine (COption.hash Label.hash l) (CInt.hash i))
+| Gnormtbl (l, i) -> combinesmall 7 (combine (COption.hash Label.hash l) (CInt.hash i))
 | Ginternal s -> combinesmall 8 (String.hash s)
-| Grel i -> combinesmall 9 (Int.hash i)
+| Grel i -> combinesmall 9 (CInt.hash i)
 | Gnamed id -> combinesmall 10 (Id.hash id)
 | Gproj (s, p, i) -> combinesmall 11 (combine (String.hash s) (combine (ind_hash p) i))
 
@@ -151,10 +151,10 @@ let eq_symbol sy1 sy2 =
   | SymbConst kn1, SymbConst kn2 -> Constant.equal kn1 kn2
   | SymbMatch sw1, SymbMatch sw2 -> eq_annot_sw sw1 sw2
   | SymbInd ind1, SymbInd ind2 -> eq_ind ind1 ind2
-  | SymbMeta m1, SymbMeta m2 -> Int.equal m1 m2
+  | SymbMeta m1, SymbMeta m2 -> CInt.equal m1 m2
   | SymbEvar evk1, SymbEvar evk2 -> Evar.equal evk1 evk2
   | SymbLevel l1, SymbLevel l2 -> Univ.Level.equal l1 l2
-  | SymbProj (i1, k1), SymbProj (i2, k2) -> eq_ind i1 i2 && Int.equal k1 k2
+  | SymbProj (i1, k1), SymbProj (i2, k2) -> eq_ind i1 i2 && CInt.equal k1 k2
   | _, _ -> false
 
 let hash_symbol symb =
@@ -291,9 +291,9 @@ let eq_primitive p1 p2 =
   | Mk_ind, Mk_ind -> true
   | Mk_const, Mk_const -> true
   | Mk_sw, Mk_sw -> true
-  | Mk_fix (rp1, i1), Mk_fix (rp2, i2) -> Int.equal i1 i2 && eq_rec_pos rp1 rp2
-  | Mk_cofix i1, Mk_cofix i2 -> Int.equal i1 i2
-  | Mk_rel i1, Mk_rel i2 -> Int.equal i1 i2
+  | Mk_fix (rp1, i1), Mk_fix (rp2, i2) -> CInt.equal i1 i2 && eq_rec_pos rp1 rp2
+  | Mk_cofix i1, Mk_cofix i2 -> CInt.equal i1 i2
+  | Mk_rel i1, Mk_rel i2 -> CInt.equal i1 i2
   | Mk_var id1, Mk_var id2 -> Id.equal id1 id2
   | Cast_accu, Cast_accu -> true
   | Upd_cofix, Upd_cofix -> true
@@ -312,12 +312,12 @@ let primitive_hash = function
   | Mk_const -> 4
   | Mk_sw -> 5
   | Mk_fix (r, i) ->
-     let h = Array.fold_left (fun h i -> combine h (Int.hash i)) 0 r in
-     combinesmall 6 (combine h (Int.hash i))
+     let h = Array.fold_left (fun h i -> combine h (CInt.hash i)) 0 r in
+     combinesmall 6 (combine h (CInt.hash i))
   | Mk_cofix i ->
-     combinesmall 7 (Int.hash i)
+     combinesmall 7 (CInt.hash i)
   | Mk_rel i ->
-     combinesmall 8 (Int.hash i)
+     combinesmall 8 (CInt.hash i)
   | Mk_var id ->
      combinesmall 9 (Id.hash id)
   | Is_int -> 11
@@ -389,7 +389,7 @@ let rec eq_mllambda gn1 gn2 n env1 env2 t1 t2 =
   match t1, t2 with
   | MLlocal ln1, MLlocal ln2 ->
      (try
-      Int.equal (LNmap.find ln1 env1) (LNmap.find ln2 env2)
+      CInt.equal (LNmap.find ln1 env1) (LNmap.find ln2 env2)
      with Not_found ->
       eq_lname ln1 ln2)
   | MLglobal gn1', MLglobal gn2' ->
@@ -397,12 +397,12 @@ let rec eq_mllambda gn1 gn2 n env1 env2 t1 t2 =
       || (eq_gname gn1 gn2' && eq_gname gn2 gn1')
   | MLprimitive prim1, MLprimitive prim2 -> eq_primitive prim1 prim2
   | MLlam (lns1, ml1), MLlam (lns2, ml2) ->
-      Int.equal (Array.length lns1) (Array.length lns2) &&
+      CInt.equal (Array.length lns1) (Array.length lns2) &&
       let env1 = push_lnames n env1 lns1 in
       let env2 = push_lnames n env2 lns2 in
       eq_mllambda gn1 gn2 (n+Array.length lns1) env1 env2 ml1 ml2
   | MLletrec (defs1, body1), MLletrec (defs2, body2) ->
-      Int.equal (Array.length defs1) (Array.length defs2) &&
+      CInt.equal (Array.length defs1) (Array.length defs2) &&
       let lns1 = Array.map (fun (x,_,_) -> x) defs1 in
       let lns2 = Array.map (fun (x,_,_) -> x) defs2 in
       let env1 = push_lnames n env1 lns1 in
@@ -430,10 +430,10 @@ let rec eq_mllambda gn1 gn2 n env1 env2 t1 t2 =
   | MLconstruct (pf1, ind1, tag1, args1), MLconstruct (pf2, ind2, tag2, args2) ->
       String.equal pf1 pf2 &&
       eq_ind ind1 ind2 &&
-      Int.equal tag1 tag2 &&
+      CInt.equal tag1 tag2 &&
       Array.equal (eq_mllambda gn1 gn2 n env1 env2) args1 args2
   | MLint i1, MLint i2 ->
-      Int.equal i1 i2
+      CInt.equal i1 i2
   | MLuint i1, MLuint i2 ->
       Uint63.equal i1 i2
   | MLsetref (id1, ml1), MLsetref (id2, ml2) ->
@@ -454,7 +454,7 @@ let rec eq_mllambda gn1 gn2 n env1 env2 t1 t2 =
 
 and eq_letrec gn1 gn2 n env1 env2 defs1 defs2 =
   let eq_def (_,args1,ml1) (_,args2,ml2) =
-    Int.equal (Array.length args1) (Array.length args2) &&
+    CInt.equal (Array.length args1) (Array.length args2) &&
     let env1 = push_lnames n env1 args1 in
     let env2 = push_lnames n env2 args2 in
     eq_mllambda gn1 gn2 (n + Array.length args1) env1 env2 ml1 ml2
@@ -464,7 +464,7 @@ and eq_letrec gn1 gn2 n env1 env2 defs1 defs2 =
 (* we require here that patterns have the same order, which may be too strong *)
 and eq_mllam_branches gn1 gn2 n env1 env2 br1 br2 =
   let eq_cargs args1 args2 body1 body2 =
-    Int.equal (Array.length args1) (Array.length args2) &&
+    CInt.equal (Array.length args1) (Array.length args2) &&
     let env1 = opush_lnames n env1 args1 in
     let env2 = opush_lnames n env2 args2 in
     eq_mllambda gn1 gn2 (n + Array.length args1) env1 env2 body1 body2
@@ -472,9 +472,9 @@ and eq_mllam_branches gn1 gn2 n env1 env2 br1 br2 =
   let eq_pattern pat1 pat2 body1 body2 =
     match pat1, pat2 with
     | ConstPattern tag1, ConstPattern tag2 ->
-      Int.equal tag1 tag2 && eq_mllambda gn1 gn2 n env1 env2 body1 body2
+      CInt.equal tag1 tag2 && eq_mllambda gn1 gn2 n env1 env2 body1 body2
     | NonConstPattern (tag1,args1), NonConstPattern (tag2,args2) ->
-      Int.equal tag1 tag2 && eq_cargs args1 args2 body1 body2
+      CInt.equal tag1 tag2 && eq_cargs args1 args2 body1 body2
     | (ConstPattern _ | NonConstPattern _), _ -> false
   in
   let eq_branch (patl1,body1) (patl2,body2) =
@@ -517,7 +517,7 @@ let rec hash_mllambda gn n env t =
   | MLconstruct (pf, ind, tag, args) ->
       let hpf = String.hash pf in
       let hcs = ind_hash ind in
-      let htag = Int.hash tag in
+      let htag = CInt.hash tag in
       combinesmall 10 (hash_mllambda_array gn n env (combine3 hpf hcs htag) args)
   | MLint i ->
       combinesmall 11 i
@@ -555,8 +555,8 @@ and hash_mllam_branches gn n env init br =
     combine nargs hbody
   in
   let hash_pattern pat body = match pat with
-    | ConstPattern i -> combinesmall 1 (Int.hash i)
-    | NonConstPattern (tag,args) -> combinesmall 2 (combine (Int.hash tag) (hash_cargs args body))
+    | ConstPattern i -> combinesmall 1 (CInt.hash i)
+    | NonConstPattern (tag,args) -> combinesmall 2 (combine (CInt.hash tag) (hash_cargs args body))
   in
   let hash_branch acc (ptl,body) =
     List.fold_left (fun acc t -> combine (hash_pattern t body) acc) acc ptl
@@ -659,8 +659,8 @@ let eq_global g1 g2 =
   match g1, g2 with
   | Gtblnorm (gn1,lns1,mls1), Gtblnorm (gn2,lns2,mls2)
   | Gtblfixtype (gn1,lns1,mls1), Gtblfixtype (gn2,lns2,mls2) ->
-      Int.equal (Array.length lns1) (Array.length lns2) &&
-      Int.equal (Array.length mls1) (Array.length mls2) &&
+      CInt.equal (Array.length lns1) (Array.length lns2) &&
+      CInt.equal (Array.length mls1) (Array.length mls2) &&
       let env1 = push_lnames 0 LNmap.empty lns1 in
       let env2 = push_lnames 0 LNmap.empty lns2 in
       Array.for_all2 (eq_mllambda gn1 gn2 (Array.length lns1) env1 env2) mls1 mls2
@@ -668,7 +668,7 @@ let eq_global g1 g2 =
       eq_mllambda gn1 gn2 0 LNmap.empty LNmap.empty def1 def2
   | Gletcase (gn1,lns1,annot1,c1,accu1,br1),
       Gletcase (gn2,lns2,annot2,c2,accu2,br2) ->
-      Int.equal (Array.length lns1) (Array.length lns2) &&
+      CInt.equal (Array.length lns1) (Array.length lns2) &&
       let env1 = push_lnames 0 LNmap.empty lns1 in
       let env2 = push_lnames 0 LNmap.empty lns2 in
       let t1 = MLmatch (annot1,c1,accu1,br1) in
@@ -677,7 +677,7 @@ let eq_global g1 g2 =
   | Gopen s1, Gopen s2 -> String.equal s1 s2
   | Gtype (ind1, arr1), Gtype (ind2, arr2) ->
     eq_ind ind1 ind2 &&
-    Array.equal (fun (tag1,ar1) (tag2,ar2) -> Int.equal tag1 tag2 && Int.equal ar1 ar2) arr1 arr2
+    Array.equal (fun (tag1,ar1) (tag2,ar2) -> CInt.equal tag1 tag2 && CInt.equal ar1 ar2) arr1 arr2
   | Gcomment s1, Gcomment s2 -> String.equal s1 s2
   | _, _ -> false
 
@@ -705,7 +705,7 @@ let hash_global g =
   | Gopen s -> combinesmall 5 (String.hash s)
   | Gtype (ind, arr) ->
     let hash_aux acc (tag,ar) =
-      combine3 acc (Int.hash tag) (Int.hash ar)
+      combine3 acc (CInt.hash tag) (CInt.hash ar)
     in
     combinesmall 6 (combine (ind_hash ind) (Array.fold_left hash_aux 0 arr))
   | Gcomment s -> combinesmall 7 (String.hash s)
@@ -787,7 +787,7 @@ let get_rel env id i =
     List.nth env.env_rel (i-1)
   else 
     let i = i - env.env_bound in
-    try Int.List.assoc i !(env.env_urel)
+    try CInt.List.assoc i !(env.env_urel)
     with Not_found ->
       let local = MLlocal (fresh_lname id) in
       env.env_urel := (i,local) :: !(env.env_urel);
@@ -1034,7 +1034,7 @@ let ml_of_instance instance u =
   let ml_of_level l =
     match Univ.Level.var_index l with
     | Some i ->
-       let univ = MLapp(MLprimitive MLmagic, [|MLlocal (Option.get instance)|]) in
+       let univ = MLapp(MLprimitive MLmagic, [|MLlocal (COption.get instance)|]) in
        mkMLapp (MLprimitive MLarrayget) [|univ; MLint i|]
     | None -> let i = push_symbol (SymbLevel l) in get_level_code i
   in
@@ -1368,12 +1368,12 @@ let subst s l =
 
 let add_subst id v s =
   match v with
-  | MLlocal id' when Int.equal id.luid id'.luid -> s
+  | MLlocal id' when CInt.equal id.luid id'.luid -> s
   | _ -> LNmap.add id v s
 
 let subst_norm params args s =
   let len = Array.length params in
-  assert (Int.equal (Array.length args) len && Array.for_all can_subst args);
+  assert (CInt.equal (Array.length args) len && Array.for_all can_subst args);
   let s = ref s in
   for i = 0 to len - 1 do
     s := add_subst params.(i) args.(i) !s
@@ -1383,7 +1383,7 @@ let subst_norm params args s =
 let subst_case params args s =
   let len = Array.length params in
   assert (len > 0 && 
-	  Int.equal (Array.length args) len && 
+          CInt.equal (Array.length args) len &&
 	  let r = ref true and i = ref 0 in
 	  (* we test all arguments excepted the last *)
 	  while !i < len - 1  && !r do r := can_subst args.(!i); incr i done;
@@ -1394,14 +1394,14 @@ let subst_case params args s =
   done;
   !s, params.(len-1), args.(len-1)
     
-let empty_gdef = Int.Map.empty, Int.Map.empty
-let get_norm (gnorm, _) i = Int.Map.find i gnorm
-let get_case (_, gcase) i = Int.Map.find i gcase
+let empty_gdef = CInt.Map.empty, CInt.Map.empty
+let get_norm (gnorm, _) i = CInt.Map.find i gnorm
+let get_case (_, gcase) i = CInt.Map.find i gcase
 
 let all_lam n bs = 
   let f (_, l) = 
     match l with
-    | MLlam(params, _) -> Int.equal (Array.length params) n
+    | MLlam(params, _) -> CInt.equal (Array.length params) n
     | _ -> false in
   Array.for_all f bs
 
@@ -1481,10 +1481,10 @@ let optimize_stk stk =
     match g with
     | Glet (Gnorm (_,i), body) ->
 	let (gnorm, gcase) = gdef in
-	(Int.Map.add i (decompose_MLlam body) gnorm, gcase)
+        (CInt.Map.add i (decompose_MLlam body) gnorm, gcase)
     | Gletcase(Gcase (_,i), params, annot,a,accu,bs) ->
 	let (gnorm,gcase) = gdef in
-	(gnorm, Int.Map.add i (params,MLmatch(annot,a,accu,bs)) gcase)
+        (gnorm, CInt.Map.add i (params,MLmatch(annot,a,accu,bs)) gcase)
     | Gletcase _ -> assert false
     | _ -> gdef in
   let gdef = List.fold_left add_global empty_gdef stk in
@@ -1792,7 +1792,7 @@ let pp_global fmt g =
       Format.fprintf fmt "@[open %s@]@." s
   | Gtype (ind, lar) ->
     let rec aux s arity =
-      if Int.equal arity 0 then s else aux (s^" * Nativevalues.t") (arity-1) in
+      if CInt.equal arity 0 then s else aux (s^" * Nativevalues.t") (arity-1) in
     let pp_const_sig fmt (tag,arity) =
       if arity > 0 then
         let sig_str = aux "of Nativevalues.t" (arity-1) in
@@ -1949,7 +1949,7 @@ let compile_mind mb mind stack =
     let name = Gind ("", ind) in
     let accu =
       let args =
-	if Int.equal (Univ.AUContext.size u) 0 then
+        if CInt.equal (Univ.AUContext.size u) 0 then
 	  [|get_ind_code j; MLarray [||]|]
 	else [|get_ind_code j|]
       in
@@ -1971,7 +1971,7 @@ let compile_mind mb mind stack =
       assert (arity > 0);
       let ci_uid = fresh_lname Anonymous in
       let cargs = Array.init arity
-        (fun i -> if Int.equal i proj_arg then Some ci_uid else None)
+        (fun i -> if CInt.equal i proj_arg then Some ci_uid else None)
       in
       let i = push_symbol (SymbProj (ind, proj_arg)) in
       let accu = MLapp (MLprimitive Cast_accu, [|MLlocal cf_uid|]) in

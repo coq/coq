@@ -117,7 +117,7 @@ let appvectc f l = mkApp (f,l)
 (* to_lambda n (x1:T1)...(xn:Tn)T =
  * [x1:T1]...[xn:Tn]T *)
 let rec to_lambda n prod =
-  if Int.equal n 0 then
+  if CInt.equal n 0 then
     prod
   else
     match kind prod with
@@ -126,7 +126,7 @@ let rec to_lambda n prod =
       | _   -> user_err ~hdr:"to_lambda" (mt ())
 
 let rec to_prod n lam =
-  if Int.equal n 0 then
+  if CInt.equal n 0 then
     lam
   else
     match kind lam with
@@ -151,7 +151,7 @@ let lambda_appvect c v = lambda_applist c (Array.to_list v)
 
 let lambda_applist_assum n c l =
   let rec app n subst t l =
-    if Int.equal n 0 then
+    if CInt.equal n 0 then
       if l == [] then substl subst t
       else anomaly (Pp.str "Too many arguments.")
     else match kind t, l with
@@ -177,7 +177,7 @@ let prod_appvect c v = prod_applist c (Array.to_list v)
 
 let prod_applist_assum n c l =
   let rec app n subst t l =
-    if Int.equal n 0 then
+    if CInt.equal n 0 then
       if l == [] then substl subst t
       else anomaly (Pp.str "Too many arguments.")
     else match kind t, l with
@@ -218,7 +218,7 @@ let decompose_lam =
 let decompose_prod_n n =
   if n < 0 then user_err (str "decompose_prod_n: integer parameter must be positive");
   let rec prodec_rec l n c =
-    if Int.equal n 0 then l,c
+    if CInt.equal n 0 then l,c
     else match kind c with
       | Prod (x,t,c) -> prodec_rec ((x,t)::l) (n-1) c
       | Cast (c,_,_)   -> prodec_rec l n c
@@ -231,7 +231,7 @@ let decompose_prod_n n =
 let decompose_lam_n n =
   if n < 0 then user_err (str "decompose_lam_n: integer parameter must be positive");
   let rec lamdec_rec l n c =
-    if Int.equal n 0 then l,c
+    if CInt.equal n 0 then l,c
     else match kind c with
       | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) (n-1) c
       | Cast (c,_,_)     -> lamdec_rec l n c
@@ -273,7 +273,7 @@ let decompose_prod_n_assum n =
   if n < 0 then
     user_err (str "decompose_prod_n_assum: integer parameter must be positive");
   let rec prodec_rec l n c =
-    if Int.equal n 0 then l,c
+    if CInt.equal n 0 then l,c
     else
       let open Context.Rel.Declaration in
       match kind c with
@@ -294,7 +294,7 @@ let decompose_lam_n_assum n =
   if n < 0 then
     user_err (str  "decompose_lam_n_assum: integer parameter must be positive");
   let rec lamdec_rec l n c =
-    if Int.equal n 0 then l,c
+    if CInt.equal n 0 then l,c
     else
       let open Context.Rel.Declaration in
       match kind c with
@@ -310,7 +310,7 @@ let decompose_lam_n_decls n =
   if n < 0 then
     user_err (str "decompose_lam_n_decls: integer parameter must be positive");
   let rec lamdec_rec l n c =
-    if Int.equal n 0 then l,c
+    if CInt.equal n 0 then l,c
     else
       let open Context.Rel.Declaration in
       match kind c with

@@ -88,7 +88,7 @@ let search_guard ?loc env possible_indexes fixdefs =
     (try check_fix env fix
      with reraise ->
        let (e, info) = CErrors.push reraise in
-       let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
+       let info = COption.cata (fun loc -> Loc.add_loc info loc) info loc in
        iraise (e, info));
     indexes
   else
@@ -217,7 +217,7 @@ type frozen =
   (** Proper partition of the evar map as described above. *)
 
 let frozen_and_pending_holes (sigma, sigma') =
-  let undefined0 = Option.cata Evd.undefined_map Evar.Map.empty sigma in
+  let undefined0 = COption.cata Evd.undefined_map Evar.Map.empty sigma in
   (* Fast path when the undefined evars where not modified *)
   if undefined0 == Evd.undefined_map sigma' then
     FrozenId undefined0
@@ -628,7 +628,7 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
             (try check_cofix !!env (i, nf_fix sigma fixdecls)
              with reraise ->
                let (e, info) = CErrors.push reraise in
-               let info = Option.cata (Loc.add_loc info) info loc in
+               let info = COption.cata (Loc.add_loc info) info loc in
                iraise (e, info));
 	    make_judge (mkCoFix cofix) ftys.(i)
       in
@@ -646,7 +646,7 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
       (* if `f` is a global, we retrieve bidirectionality hints *)
       try
         let (gr,_) = destRef sigma fj.uj_val in
-        Option.default length @@ GlobRef.Map.find_opt gr !bidi_hints
+        COption.default length @@ GlobRef.Map.find_opt gr !bidi_hints
       with DestKO ->
         length
     in
@@ -664,7 +664,7 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
         | Some ty ->
           let ((ind, i), u) = destConstruct sigma fj.uj_val in
           let npars = inductive_nparams !!env ind in
-          if Int.equal npars 0 then []
+          if CInt.equal npars 0 then []
           else
             try
               let IndType (indf, args) = find_rectype !!env sigma ty in
@@ -677,11 +677,11 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
     let app_f = 
       match EConstr.kind sigma fj.uj_val with
       | Const (p, u) when Recordops.is_primitive_projection p ->
-        let p = Option.get @@ Recordops.find_primitive_projection p in
+        let p = COption.get @@ Recordops.find_primitive_projection p in
         let p = Projection.make p false in
         let npars = Projection.npars p in
         fun n ->
-          if Int.equal n npars then fun _ v -> mkProj (p, v)
+          if CInt.equal n npars then fun _ v -> mkProj (p, v)
           else fun f v -> applist (f, [v])
       | _ -> fun _ f v -> applist (f, [v])
     in
@@ -696,7 +696,7 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
         | Prod (na,c1,c2) ->
           let tycon = Some c1 in
           let (sigma, hj), bidiargs =
-            if bidi && Option.has_some tycon then
+            if bidi && COption.has_some tycon then
               (* We want to get some typing information from the context before
               typing the argument, so we replace it by an existential
               variable *)
@@ -794,7 +794,7 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
         judge_of_product !!env name j j'
       with TypeError _ as e ->
         let (e, info) = CErrors.push e in
-        let info = Option.cata (Loc.add_loc info) info loc in
+        let info = COption.cata (Loc.add_loc info) info loc in
         iraise (e, info) in
       inh_conv_coerce_to_tycon ?loc env sigma resj tycon
 
@@ -829,11 +829,11 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
     in
     let ind = fst (fst (dest_ind_family indf)) in
     let cstrs = get_constructors !!env indf in
-    if not (Int.equal (Array.length cstrs) 1) then
+    if not (CInt.equal (Array.length cstrs) 1) then
       user_err ?loc  (str "Destructing let is only for inductive types" ++
 	str " with one constructor.");
     let cs = cstrs.(0) in
-    if not (Int.equal (List.length nal) cs.cs_nargs) then
+    if not (CInt.equal (List.length nal) cs.cs_nargs) then
       user_err ?loc:loc (str "Destructing let on this type expects " ++ 
 	int cs.cs_nargs ++ str " variables.");
     let fsign, record = 
@@ -920,7 +920,7 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
 	let cloc = loc_of_glob_constr c in
           error_case_not_inductive ?loc:cloc !!env sigma cj in
     let cstrs = get_constructors !!env indf in
-      if not (Int.equal (Array.length cstrs) 2) then
+      if not (CInt.equal (Array.length cstrs) 2) then
         user_err ?loc 
 		      (str "If is only for inductive types with two constructors.");
 
@@ -1030,7 +1030,7 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
 and pretype_instance ~program_mode ~poly resolve_tc env sigma loc hyps evk update =
   let f decl (subst,update,sigma) =
     let id = NamedDecl.get_id decl in
-    let b = Option.map (replace_vars subst) (NamedDecl.get_value decl) in
+    let b = COption.map (replace_vars subst) (NamedDecl.get_value decl) in
     let t = replace_vars subst (NamedDecl.get_type decl) in
     let check_body sigma id c =
       match b, c with
@@ -1066,7 +1066,7 @@ and pretype_instance ~program_mode ~poly resolve_tc env sigma loc hyps evk updat
       try
         let (n,b',t') = lookup_rel_id id (rel_context !!env) in
         check_type sigma id (lift n t');
-        check_body sigma id (Option.map (lift n) b');
+        check_body sigma id (COption.map (lift n) b');
         sigma, mkRel n, update
       with Not_found ->
       try

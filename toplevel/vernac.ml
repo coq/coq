@@ -27,7 +27,7 @@ let checknav { CAst.loc; v = { expr } }  =
 (* Echo from a buffer based on position.
    XXX: Should move to utility file. *)
 let vernac_echo ?loc in_chan = let open Loc in
-  Option.iter (fun loc ->
+  COption.iter (fun loc ->
       let len = loc.ep - loc.bp in
       seek_in in_chan loc.bp;
       Feedback.msg_notice @@ str @@ really_input_string in_chan len
@@ -75,7 +75,7 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
       let (reraise, info) = CErrors.push reraise in
       let info = begin
         match Loc.get_loc info with
-        | None   -> Option.cata (Loc.add_loc info) info loc
+        | None   -> COption.cata (Loc.add_loc info) info loc
         | Some _ -> info
       end in iraise (reraise, info)
 
@@ -84,7 +84,7 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
   (* Keep in sync *)
   let in_chan = open_utf8_file_in file in
   let in_echo = if echo then Some (open_utf8_file_in file) else None in
-  let input_cleanup () = close_in in_chan; Option.iter close_in in_echo in
+  let input_cleanup () = close_in in_chan; COption.iter close_in in_echo in
 
   let in_pa =
     Pcoq.Parsable.make ~loc:(Loc.initial (Loc.InFile file))
@@ -102,7 +102,7 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
       state, ids, Pcoq.Parsable.comment_state in_pa
     | Some ast ->
       (* Printing of AST for -compile-verbose *)
-      Option.iter (vernac_echo ?loc:ast.CAst.loc) in_echo;
+      COption.iter (vernac_echo ?loc:ast.CAst.loc) in_echo;
 
       checknav ast;
 
@@ -135,9 +135,9 @@ let set_formatter_translator ch =
   ft
 
 let pr_new_syntax ?loc ft_beautify ocom =
-  let loc = Option.cata Loc.unloc (0,0) loc in
+  let loc = COption.cata Loc.unloc (0,0) loc in
   let before = comment (Pputils.extract_comments (fst loc)) in
-  let com = Option.cata Ppvernac.pr_vernac (mt ()) ocom in
+  let com = COption.cata Ppvernac.pr_vernac (mt ()) ocom in
   let after = comment (Pputils.extract_comments (snd loc)) in
   if !Flags.beautify_file then
     (Pp.pp_with ft_beautify (hov 0 (before ++ com ++ after));

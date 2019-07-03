@@ -117,7 +117,7 @@ let bugged_is_binary sigma t =
     match EConstr.kind sigma hdapp with
     | Ind (ind,u)  ->
         let (mib,mip) = Global.lookup_inductive ind in
-         Int.equal mib.Declarations.mind_nparams 2
+         CInt.equal mib.Declarations.mind_nparams 2
     | _ -> false
 
 (** Dealing with conjunction *)

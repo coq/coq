@@ -42,7 +42,7 @@ let relevance_of_projection env p =
 let rec relevance_of_rel_extra env extra n =
   match extra with
   | [] -> relevance_of_rel env n
-  | r :: _ when Int.equal n 1 -> r
+  | r :: _ when CInt.equal n 1 -> r
   | _ :: extra -> relevance_of_rel_extra env extra (n-1)
 
 let relevance_of_flex env extra lft = function

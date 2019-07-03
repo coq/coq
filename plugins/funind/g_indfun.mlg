@@ -91,7 +91,7 @@ END
 {
 
 let functional_induction b c x pat =
-  functional_induction true c x (Option.map out_disjunctive pat)
+  functional_induction true c x (COption.map out_disjunctive pat)
 
 }
 

@@ -207,7 +207,7 @@ let interval n m =
 
 let addn n v =
   let rec aux n l =
-    if Int.equal n 0 then l
+    if CInt.equal n 0 then l
     else aux (pred n) (v :: l)
   in
   if n < 0 then invalid_arg "List.addn"
@@ -217,7 +217,7 @@ let make n v =
   addn n v []
 
 let rec init_loop len f p i =
-  if Int.equal i len then ()
+  if CInt.equal i len then ()
   else
     let c = { head = f i; tail = [] } in
     p.tail <- cast c;
@@ -225,7 +225,7 @@ let rec init_loop len f p i =
 
 let init len f =
   if len < 0 then invalid_arg "List.init"
-  else if Int.equal len 0 then []
+  else if CInt.equal len 0 then []
   else
     let c = { head = f 0; tail = [] } in
     init_loop len f c 1;
@@ -489,7 +489,7 @@ let map4 f l1 l2 l3 l4 = match l1, l2, l3, l4 with
   | _ -> invalid_arg "List.map4"
 
 let rec map_of_array_loop f p a i l =
-  if Int.equal i l then ()
+  if CInt.equal i l then ()
   else
     let c = { head = f (Array.unsafe_get a i); tail = [] } in
     p.tail <- cast c;
@@ -497,7 +497,7 @@ let rec map_of_array_loop f p a i l =
 
 let map_of_array f a =
   let l = Array.length a in
-  if Int.equal l 0 then []
+  if CInt.equal l 0 then []
   else
     let c = { head = f (Array.unsafe_get a 0); tail = [] } in
     map_of_array_loop f c a 1 l;
@@ -694,7 +694,7 @@ let subset l1 l2 =
 exception IndexOutOfRange
 let goto n l =
   let rec goto i acc = function
-    | tl when Int.equal i 0 -> (acc, tl)
+    | tl when CInt.equal i 0 -> (acc, tl)
     | h :: t -> goto (pred i) (h :: acc) t
     | [] -> raise IndexOutOfRange
   in
@@ -750,7 +750,7 @@ let rec last = function
 let lastn n l =
   let len = List.length l in
   let rec aux m l =
-    if Int.equal m n then l else aux (m - 1) (List.tl l)
+    if CInt.equal m n then l else aux (m - 1) (List.tl l)
   in
   if len < n then failwith "lastn" else aux len l
 
@@ -890,7 +890,7 @@ let rec merge_set cmp l1 l2 = match l1, l2 with
   | l1, [] -> l1
   | h1 :: t1, h2 :: t2 ->
     let c = cmp h1 h2 in
-    if Int.equal c 0
+    if CInt.equal c 0
     then h1 :: merge_set cmp t1 t2
     else if c <= 0
     then h1 :: merge_set cmp t1 l2
@@ -934,7 +934,7 @@ let distinct l =
 
 let distinct_f cmp l =
   let rec loop = function
-    | a :: b :: _ when Int.equal (cmp a b) 0 -> false
+    | a :: b :: _ when CInt.equal (cmp a b) 0 -> false
     | a :: l -> loop l
     | [] -> true
   in loop (List.sort cmp l)
@@ -957,7 +957,7 @@ let uniquize l =
     [uniquize], when the order of the elements is irrelevant *)
 
 let rec uniquize_sorted cmp = function
-  | a :: b :: l when Int.equal (cmp a b) 0 -> uniquize_sorted cmp (a :: l)
+  | a :: b :: l when CInt.equal (cmp a b) 0 -> uniquize_sorted cmp (a :: l)
   | a :: l -> a :: uniquize_sorted cmp l
   | [] -> []
 

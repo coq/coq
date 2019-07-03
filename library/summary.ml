@@ -70,7 +70,7 @@ let empty_frozen = { summaries = String.Map.empty; ml_module = None }
 let freeze_summaries ~marshallable : frozen =
   let smap decl = decl.freeze_function ~marshallable in
   { summaries = String.Map.map smap !sum_map;
-    ml_module = Option.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod;
+    ml_module = COption.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod;
   }
 
 let warn_summary_out_of_scope =
@@ -88,7 +88,7 @@ let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
    * may modify the content of [summaries] by loading new ML modules *)
   begin match !sum_mod with
   | None -> anomaly (str "Undeclared summary " ++ str ml_modules ++ str ".")
-  | Some decl -> Option.iter (fun state -> decl.unfreeze_function state) ml_module
+  | Some decl -> COption.iter (fun state -> decl.unfreeze_function state) ml_module
   end;
   (* We must be independent on the order of the map! *)
   let ufz name decl =
@@ -114,7 +114,7 @@ let nop () = ()
 let project_from_summary { summaries } tag =
   let id = unmangle (Dyn.repr tag) in
   let state = String.Map.find id summaries in
-  Option.get (Dyn.Easy.prj state tag)
+  COption.get (Dyn.Easy.prj state tag)
 
 let modify_summary st tag v =
   let id = unmangle (Dyn.repr tag) in

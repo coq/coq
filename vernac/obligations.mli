@@ -21,7 +21,7 @@ val sort_dependencies : (Evar.t * evar_info * Evar.Set.t) list -> (Evar.t * evar
 (* ident, type, location, (opaque or transparent, expand or define), dependencies, tactic to solve it *)
 type obligation_info =
   (Id.t * types * Evar_kinds.t Loc.located *
-   (bool * Evar_kinds.obligation_definition_status) * Int.Set.t * unit Proofview.tactic option) array
+   (bool * Evar_kinds.obligation_definition_status) * CInt.Set.t * unit Proofview.tactic option) array
 
 (* env, id, evars, number of function prototypes to try to clear from
    evars contexts, object and type *)

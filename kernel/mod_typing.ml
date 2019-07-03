@@ -126,7 +126,7 @@ let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
         { cb with
           const_body = def;
           const_universes = univs ;
-          const_body_code = Option.map Cemitcodes.from_val
+          const_body_code = COption.map Cemitcodes.from_val
               (Cbytegen.compile_constant_body ~fail_on_error:false env' cb.const_universes def) }
       in
       before@(lab,SFBconst(cb'))::after, c', ctx'
@@ -334,7 +334,7 @@ let translate_module env mp inl = function
     module_body_of_type mp mtb
   |MExpr (params,mse,oty) ->
     let (sg,alg,reso,cst) = translate_mse_funct env (Some mp) inl mse params in
-    let restype = Option.map (fun ty -> ((params,ty),inl)) oty in
+    let restype = COption.map (fun ty -> ((params,ty),inl)) oty in
     finalize_module env mp (sg,Some alg,reso,cst) restype
 
 (** We now forbid any Include of functors with restricted signatures.

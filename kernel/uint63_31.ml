@@ -163,7 +163,7 @@ let tail0 x =
 
 (* May an object be safely cast into an Uint63.t ? *)
 let is_uint63 t =
-  Obj.is_block t && Int.equal (Obj.tag t) Obj.custom_tag
+  Obj.is_block t && CInt.equal (Obj.tag t) Obj.custom_tag
   && le (Obj.magic t) maxuint63
 
 (* Arithmetic with explicit carries *)

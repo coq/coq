@@ -56,8 +56,8 @@ end
 =
 struct
 type elt = int
-let equal = Int.equal
-module Map = Int.Map
+let equal = CInt.equal
+module Map = CInt.Map
 
 type 'a node =
 | Canon of int * 'a option
@@ -69,7 +69,7 @@ type 'a t = {
 }
 
 let resize p =
-  if Int.equal (Array.length p.uf_data) p.uf_size then begin
+  if CInt.equal (Array.length p.uf_data) p.uf_size then begin
     let nsize = 2 * p.uf_size + 1 in
     let v = Array.make nsize (Equiv 0) in
     Array.blit p.uf_data 0 v 0 (Array.length p.uf_data);
@@ -91,7 +91,7 @@ let rec lookup n p =
   | Canon (size, v) -> n, size, v
   | Equiv y ->
     let ((z, _, _) as res) = lookup y p in
-    if not (Int.equal z y) then Array.set p.uf_data n (Equiv z);
+    if not (CInt.equal z y) then Array.set p.uf_data n (Equiv z);
     res
 
 let find n p =
@@ -103,14 +103,14 @@ let union x y p =
   let xcan, ycan = if size1 < size2 then xcan, ycan else ycan, xcan in
   let x, _, xnode = xcan in
   let y, _, ynode = ycan in
-  assert (Option.is_empty xnode);
-  assert (Option.is_empty ynode);
+  assert (COption.is_empty xnode);
+  assert (COption.is_empty ynode);
   p.uf_data.(x) <- Equiv y;
   p.uf_data.(y) <- Canon (size1 + size2, None)
 
 let set x v p =
   let (x, s, v') = lookup x p in
-  assert (Option.is_empty v');
+  assert (COption.is_empty v');
   p.uf_data.(x) <- Canon (s, Some v)
 
 end
@@ -151,7 +151,7 @@ let env_name env =
     let base = num mod 26 in
     let rem = num / 26 in
     let name = String.make 1 (Char.chr (97 + base)) in
-    let suff = if Int.equal rem 0 then "" else string_of_int rem in
+    let suff = if CInt.equal rem 0 then "" else string_of_int rem in
     let name = name ^ suff in
     name
   in
@@ -234,7 +234,7 @@ let rec intern_type env ({loc;v=t} : raw_typexpr) : UF.elt glb_typexpr = match t
   in
   let nargs = List.length args in
   let () =
-    if not (Int.equal nparams nargs) then
+    if not (CInt.equal nparams nargs) then
       let qid = match rel with
       | RelId lid -> lid
       | AbsKn (Other kn) -> shortest_qualid_of_type ?loc kn
@@ -341,7 +341,7 @@ let unify_var env id t = match kind env t with
   with Occur -> raise (CannotUnify (GTypVar id, t))
 
 let eq_or_tuple eq t1 t2 = match t1, t2 with
-| Tuple n1, Tuple n2 -> Int.equal n1 n2
+| Tuple n1, Tuple n2 -> CInt.equal n1 n2
 | Other o1, Other o2 -> eq o1 o2
 | _ -> false
 
@@ -582,7 +582,7 @@ let get_pattern_kind env pl = match pl with
     end
   | GPatRef (Other kn, pl) ->
     let data = Tac2env.interp_constructor kn in
-    if Option.is_empty data.cdata_indx then PKind_open data.cdata_type
+    if COption.is_empty data.cdata_indx then PKind_open data.cdata_type
     else PKind_variant (Other data.cdata_type)
   | GPatRef (Tuple _, tp) -> PKind_variant (Tuple (List.length tp))
   in
@@ -913,14 +913,14 @@ and intern_case env loc e pl =
         let (br', brT) = intern_rec env br in
         (* Fill all remaining branches *)
         let fill (ncst, narg) arity =
-          if Int.equal arity 0 then
+          if CInt.equal arity 0 then
             let () =
-              if Option.is_empty const.(ncst) then const.(ncst) <- Some br'
+              if COption.is_empty const.(ncst) then const.(ncst) <- Some br'
             in
             (succ ncst, narg)
           else
             let () =
-              if Option.is_empty nonconst.(narg) then
+              if COption.is_empty nonconst.(narg) then
                 let ids = Array.make arity Anonymous in
                 nonconst.(narg) <- Some (ids, br')
             in
@@ -935,7 +935,7 @@ and intern_case env loc e pl =
         | Tuple n -> Tuple n, 0, List.init n (fun i -> GTypVar i)
         | Other knc ->
           let data = Tac2env.interp_constructor knc in
-          let index = Option.get data.cdata_indx in
+          let index = COption.get data.cdata_indx in
           Other data.cdata_type, index, data.cdata_args
         in
         let () =
@@ -952,7 +952,7 @@ and intern_case env loc e pl =
         let () = match knc with
         | Tuple n -> assert (n == nids)
         | Other knc ->
-          if not (Int.equal nids nargs) then error_nargs_mismatch ?loc knc nargs nids
+          if not (CInt.equal nids nargs) then error_nargs_mismatch ?loc knc nargs nids
         in
         let fold env id tpe =
           (* Instantiate all arguments *)
@@ -964,11 +964,11 @@ and intern_case env loc e pl =
         let (br', brT) = intern_rec nenv br in
         let () =
           if List.is_empty args then
-            if Option.is_empty const.(index) then const.(index) <- Some br'
+            if COption.is_empty const.(index) then const.(index) <- Some br'
             else warn_redundant_clause ?loc ()
           else
             let ids = Array.of_list ids in
-            if Option.is_empty nonconst.(index) then nonconst.(index) <- Some (ids, br')
+            if COption.is_empty nonconst.(index) then nonconst.(index) <- Some (ids, br')
             else warn_redundant_clause ?loc ()
         in
         brT
@@ -1025,7 +1025,7 @@ and intern_case env loc e pl =
         let nids = List.length ids in
         let nargs = List.length data.cdata_args in
         let () =
-          if not (Int.equal nids nargs) then error_nargs_mismatch ?loc knc nargs nids
+          if not (CInt.equal nids nargs) then error_nargs_mismatch ?loc knc nargs nids
         in
         let fold env id tpe =
           (* Instantiate all arguments *)
@@ -1051,7 +1051,7 @@ and intern_constructor env loc kn args = match kn with
 | Other kn ->
   let cstr = interp_constructor kn in
   let nargs = List.length cstr.cdata_args in
-  if Int.equal nargs (List.length args) then
+  if CInt.equal nargs (List.length args) then
     let subst = Array.init cstr.cdata_prms (fun _ -> fresh_id env) in
     let substf i = GTypVar subst.(i) in
     let types = List.map (fun t -> subst_type substf t) cstr.cdata_args in
@@ -1067,7 +1067,7 @@ and intern_constructor env loc kn args = match kn with
   else
     error_nargs_mismatch ?loc kn nargs (List.length args)
 | Tuple n ->
-  assert (Int.equal n (List.length args));
+  assert (CInt.equal n (List.length args));
   let types = List.init n (fun i -> GTypVar (fresh_id env)) in
   let map arg tpe = intern_rec_with_constraint env arg tpe in
   let args = List.map2 map args types in
@@ -1112,13 +1112,13 @@ and intern_record env loc fs =
         pertain to record definition " ++ pr_typref pinfo.pdata_type)
   in
   let () = List.iter iter fs in
-  let () = match Array.findi (fun _ o -> Option.is_empty o) args with
+  let () = match Array.findi (fun _ o -> COption.is_empty o) args with
   | None -> ()
   | Some i ->
     let (field, _, _) = List.nth typdef i in
     user_err ?loc (str "Field " ++ Id.print field ++ str " is undefined")
   in
-  let args = Array.map_to_list Option.get args in
+  let args = Array.map_to_list COption.get args in
   let tparam = List.init params (fun i -> GTypVar subst.(i)) in
   (GTacCst (Other kn, 0, args), GTypRef (Other kn, tparam))
 
@@ -1371,7 +1371,7 @@ let rec subst_expr subst e = match e with
 
 let subst_typedef subst e = match e with
 | GTydDef t ->
-  let t' = Option.Smart.map (fun t -> subst_type subst t) t in
+  let t' = COption.Smart.map (fun t -> subst_type subst t) t in
   if t' == t then e else GTydDef t'
 | GTydAlg galg ->
   let map (c, tl as p) =

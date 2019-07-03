@@ -79,18 +79,18 @@ let compare_mon (m : mon) (m' : mon) =
     let res=ref 0 in
     let i=ref 1 in (* 1 si lexico pur 0 si degre*)
     while (!res=0) && (!i<=d) do
-      res:= (Int.compare m.(!i) m'.(!i));
+      res:= (CInt.compare m.(!i) m'.(!i));
       i:=!i+1;
     done;
     !res)
   else (
      (* degre lexicographique inverse *)
-    match Int.compare m.(0) m'.(0) with
+    match CInt.compare m.(0) m'.(0) with
     | 0 -> (* meme degre total *)
 	let res=ref 0 in
 	let i=ref d in
 	while (!res=0) && (!i>=1) do
-	  res:= - (Int.compare m.(!i) m'.(!i));
+          res:= - (CInt.compare m.(!i) m'.(!i));
 	  i:=!i-1;
 	done;
 	!res

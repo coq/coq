@@ -89,6 +89,6 @@ let detachable ?title =
     GContainer.pack_container
       ~create:(fun p ->
          let d = new detachable (GtkPack.Box.create `HORIZONTAL p) in
-         Option.iter d#set_title title;
+         COption.iter d#set_title title;
          d))
 

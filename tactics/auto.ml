@@ -29,7 +29,7 @@ open Hints
 (*          tactics with a trace mechanism for automatic search           *)
 (**************************************************************************)
 
-let priority l = List.filter (fun (_, hint) -> Int.equal hint.pri 0) l
+let priority l = List.filter (fun (_, hint) -> CInt.equal hint.pri 0) l
 
 let compute_secvars gl =
   let hyps = Proofview.Goal.hyps gl in
@@ -253,7 +253,7 @@ let rec cleanup_info_trace depth acc = function
 
 and erase_subtree depth = function
   | [] -> []
-  | (d,_) :: l -> if Int.equal d depth then l else erase_subtree depth l
+  | (d,_) :: l -> if CInt.equal d depth then l else erase_subtree depth l
 
 let pr_info_atom env sigma (d,pp) =
   str (String.make d ' ') ++ pp env sigma ++ str "."
@@ -386,7 +386,7 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=
         (unify_resolve_gen ~poly flags (c,cl))
 	(* With "(debug) trivial", we shouldn't end here, and
 	   with "debug auto" we don't display the details of inner trivial *)
-        (trivial_fail_db (no_dbg dbg) (not (Option.is_empty flags)) db_list local_db)
+        (trivial_fail_db (no_dbg dbg) (not (COption.is_empty flags)) db_list local_db)
     | Unfold_nth c ->
       Proofview.Goal.enter begin fun gl ->
        if exists_evaluable_reference (Tacmach.New.pf_env gl) c then
@@ -488,7 +488,7 @@ let search d n mod_delta db_list local_db =
     (* spiwack: the test of [n] to 0 must be done independently in
        each goal. Hence the [tclEXTEND] *)
     Proofview.tclEXTEND [] begin
-      if Int.equal n 0 then Tacticals.New.tclZEROMSG (str"BOUND 2") else
+      if CInt.equal n 0 then Tacticals.New.tclZEROMSG (str"BOUND 2") else
         Tacticals.New.tclORELSE0 (dbg_assumption d)
 	  (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
 	     ( Proofview.Goal.enter begin fun gl ->

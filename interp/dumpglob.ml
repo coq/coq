@@ -143,11 +143,11 @@ let interval loc =
 let dump_ref ?loc filepath modpath ident ty =
   match !glob_output with
   | Feedback ->
-    Option.iter (fun loc ->
+    COption.iter (fun loc ->
         Feedback.feedback (Feedback.GlobRef (loc, filepath, modpath, ident, ty))
       ) loc
   | NoGlob -> ()
-  | _ -> Option.iter (fun loc ->
+  | _ -> COption.iter (fun loc ->
     let bl,el = interval loc in
     dump_string (Printf.sprintf "R%d:%d %s %s %s %s\n"
 		  bl el filepath modpath ident ty)
@@ -186,7 +186,7 @@ let cook_notation (from,df) sc =
   let open Bytes in             (* Bytes.set *)
   while !i <= l do
     assert (df.[!i] != ' ');
-    if df.[!i] == '_' && (Int.equal !i l || df.[!i+1] == ' ') then
+    if df.[!i] == '_' && (CInt.equal !i l || df.[!i+1] == ' ') then
       (* Next token is a non-terminal *)
       (set ntn !j 'x'; incr j; incr i)
     else begin
@@ -248,7 +248,7 @@ let add_glob_kn ?loc kn =
 
 let dump_binding ?loc id = ()
 
-let dump_def ?loc ty secpath id = Option.iter (fun loc ->
+let dump_def ?loc ty secpath id = COption.iter (fun loc ->
   if !glob_output = Feedback then
     Feedback.feedback (Feedback.GlobDef (loc, id, secpath, ty))
   else
@@ -269,7 +269,7 @@ let dump_moddef ?loc mp ty =
   let mp = Names.DirPath.to_string (Names.DirPath.make l) in
   dump_def ?loc ty "<>" mp
 
-let dump_notation (loc,(df,_)) sc sec = Option.iter (fun loc ->
+let dump_notation (loc,(df,_)) sc sec = COption.iter (fun loc ->
   (* We dump the location of the opening '"' *)
   let i = fst (Loc.unloc loc) in
   let location = (Loc.make_loc (i, i+1)) in

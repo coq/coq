@@ -104,7 +104,7 @@ let rec make_form env sigma atom_env term =
       Bot
     else
       make_atom atom_env (normalize term)
-  | App(hd,argv) when Int.equal (Array.length argv) 2 ->
+  | App(hd,argv) when CInt.equal (Array.length argv) 2 ->
     begin
       try
         let ind, _ = destInd sigma hd in
@@ -137,7 +137,7 @@ let rec make_hyps env sigma atom_env lenv = function
 
 let rec build_pos n =
   if n<=1 then force node_count l_xH
-  else if Int.equal (n land 1) 0 then
+  else if CInt.equal (n land 1) 0 then
     mkApp (force node_count l_xO,[|build_pos (n asr 1)|])
   else
     mkApp (force node_count l_xI,[|build_pos (n asr 1)|])

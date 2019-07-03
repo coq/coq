@@ -567,7 +567,7 @@ let rec explain_evar_kind env sigma evk ty =
   | Evar_kinds.BinderType Anonymous ->
       strbrk "the type of this anonymous binder"
   | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
-      let id = Option.get ido in
+      let id = COption.get ido in
       strbrk "the implicit parameter " ++ Id.print id ++ spc () ++ str "of" ++
       spc () ++ Nametab.pr_global_env Id.Set.empty c ++
       strbrk " whose type is " ++ ty
@@ -888,7 +888,7 @@ let explain_pretype_error env sigma err =
   | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type env sigma m n
   | CannotFindWellTypedAbstraction (p,l,e) ->
       explain_cannot_find_well_typed_abstraction env sigma p l
-        (Option.map (fun (env',e) -> explain_type_error env' sigma e) e)
+        (COption.map (fun (env',e) -> explain_type_error env' sigma e) e)
   | WrongAbstractionType (n,a,t,u) ->
       explain_wrong_abstraction_type env sigma n a t u
   | AbstractionOverMeta (m,n) -> explain_abstraction_over_meta env m n
@@ -970,7 +970,7 @@ let explain_not_match_error = function
     in
     str "incompatible polymorphic binders: got" ++ spc () ++ h 0 (pr_auctx got) ++ spc() ++
     str "but expected" ++ spc() ++ h 0 (pr_auctx expect) ++
-    (if not (Int.equal (AUContext.size got) (AUContext.size expect)) then mt() else
+    (if not (CInt.equal (AUContext.size got) (AUContext.size expect)) then mt() else
        fnl() ++ str "(incompatible constraints)")
   | IncompatibleVariance ->
     str "incompatible variance information"
@@ -1164,19 +1164,19 @@ let error_ill_formed_inductive env c v =
 
 let error_ill_formed_constructor env id c v nparams nargs =
   let pv = pr_lconstr_env env (Evd.from_env env) v in
-  let atomic = Int.equal (nb_prod Evd.empty (EConstr.of_constr c)) (* FIXME *) 0 in
+  let atomic = CInt.equal (nb_prod Evd.empty (EConstr.of_constr c)) (* FIXME *) 0 in
   str "The type of constructor" ++ brk(1,1) ++ Id.print id ++ brk(1,1) ++
   str "is not valid;" ++ brk(1,1) ++
   strbrk (if atomic then "it must be " else "its conclusion must be ") ++
   pv ++
   (* warning: because of implicit arguments it is difficult to say which
      parameters must be explicitly given *)
-  (if not (Int.equal nparams 0) then
+  (if not (CInt.equal nparams 0) then
     strbrk " applied to its " ++ str (String.plural nparams "parameter")
   else
     mt()) ++
-  (if not (Int.equal nargs 0) then
-     str (if not (Int.equal nparams 0) then " and" else " applied") ++
+  (if not (CInt.equal nargs 0) then
+     str (if not (CInt.equal nparams 0) then " and" else " applied") ++
      strbrk " to some " ++ str (String.plural nargs "argument")
    else
      mt()) ++ str "."
@@ -1286,8 +1286,8 @@ let explain_bad_constructor env cstr ind =
   str "is expected."
 
 let decline_string n s =
-  if Int.equal n 0 then str "no " ++ str s ++ str "s"
-  else if Int.equal n 1 then str "1 " ++ str s
+  if CInt.equal n 0 then str "no " ++ str s ++ str "s"
+  else if CInt.equal n 1 then str "1 " ++ str s
   else (int n ++ str " " ++ str s ++ str "s")
 
 let explain_wrong_numarg_constructor env cstr n =
@@ -1411,7 +1411,7 @@ let rec vernac_interp_error_handler = function
     let s = Lazy.force s in
     str "Tactic failure" ++
     (if Pp.ismt s then s else str ": " ++ s) ++
-    if Int.equal i 0 then str "." else str " (level " ++ int i ++ str")."
+    if CInt.equal i 0 then str "." else str " (level " ++ int i ++ str")."
   | Logic_monad.TacticFailure e ->
     vernac_interp_error_handler e
   | _ ->

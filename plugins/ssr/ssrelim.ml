@@ -179,16 +179,16 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
       let pred = List.assoc pred_id elim_args in
       let elimty = Reductionops.whd_all env (project gl) elimty in
       let cty, gl =
-        if Option.is_empty oc then None, gl
+        if COption.is_empty oc then None, gl
         else
-          let c = Option.get oc in let gl, c_ty = pfe_type_of gl c in
+          let c = COption.get oc in let gl, c_ty = pfe_type_of gl c in
           let pc = match c_gen with
             | Some p -> interp_cpattern orig_gl p None
             | _ -> mkTpat gl c in
           Some(c, c_ty, pc), gl in
       seed, cty, elim, elimty, elim_args, n_elim_args, elim_is_dep, is_rec, pred, gl
     | None ->
-      let c = Option.get oc in let gl, c_ty = pfe_type_of gl c in
+      let c = COption.get oc in let gl, c_ty = pfe_type_of gl c in
       let ((kn, i),_ as indu), unfolded_c_ty =
         pf_reduce_to_quantified_ind gl c_ty in
       let sort = Tacticals.elimination_sort_of_goal gl in

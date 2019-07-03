@@ -310,7 +310,7 @@ and collect_one_export mp (exports,objs as acc) =
   else acc
 
 and collect_export i mpl acc =
-  if Int.equal i 1 then
+  if CInt.equal i 1 then
     List.fold_right collect_one_export mpl acc
   else acc
 

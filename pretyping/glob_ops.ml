@@ -40,7 +40,7 @@ let mkGApp ?loc p t = DAst.make ?loc @@
   | _          -> GApp (p,[t])
 
 let map_glob_decl_left_to_right f (na,k,obd,ty) =
-  let comp1 = Option.map f obd in
+  let comp1 = COption.map f obd in
   let comp2 = f ty in
   (na,k,comp1,comp2)
 
@@ -63,7 +63,7 @@ let glob_sort_family = let open Sorts in function
 let glob_sort_eq u1 u2 = match u1, u2 with
   | UAnonymous {rigid=r1}, UAnonymous {rigid=r2} -> r1 = r2
   | UNamed l1, UNamed l2 ->
-    List.equal (fun (x,m) (y,n) -> glob_sort_name_eq x y && Int.equal m n) l1 l2
+    List.equal (fun (x,m) (y,n) -> glob_sort_name_eq x y && CInt.equal m n) l1 l2
   | (UNamed _ | UAnonymous _), _ -> false
 
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with
@@ -102,7 +102,7 @@ let tomatch_tuple_eq f (c1, p1) (c2, p2) =
   let eqp {CAst.v=(i1, na1)} {CAst.v=(i2, na2)} =
     eq_ind i1 i2 && List.equal Name.equal na1 na2
   in
-  let eq_pred (n1, o1) (n2, o2) = Name.equal n1 n2 && Option.equal eqp o1 o2 in
+  let eq_pred (n1, o1) (n2, o2) = Name.equal n1 n2 && COption.equal eqp o1 o2 in
   f c1 c2 && eq_pred p1 p2
 
 and cases_clause_eq f {CAst.v=(id1, p1, c1)} {CAst.v=(id2, p2, c2)} =
@@ -110,12 +110,12 @@ and cases_clause_eq f {CAst.v=(id1, p1, c1)} {CAst.v=(id2, p2, c2)} =
 
 let glob_decl_eq f (na1, bk1, c1, t1) (na2, bk2, c2, t2) =
   Name.equal na1 na2 && binding_kind_eq bk1 bk2 &&
-  Option.equal f c1 c2 && f t1 t2
+  COption.equal f c1 c2 && f t1 t2
 
 let fix_kind_eq k1 k2 = match k1, k2 with
   | GFix (a1, i1), GFix (a2, i2) ->
-    Int.equal i1 i2 && Array.equal (Option.equal Int.equal) a1 a2
-  | GCoFix i1, GCoFix i2 -> Int.equal i1 i2
+    CInt.equal i1 i2 && Array.equal (COption.equal CInt.equal) a1 a2
+  | GCoFix i1, GCoFix i2 -> CInt.equal i1 i2
   | (GFix _ | GCoFix _), _ -> false
 
 let instance_eq f (x1,c1) (x2,c2) =
@@ -134,24 +134,24 @@ let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
   | GProd (na1, bk1, t1, c1), GProd (na2, bk2, t2, c2) ->
     Name.equal na1 na2 && binding_kind_eq bk1 bk2 && f t1 t2 && f c1 c2
   | GLetIn (na1, b1, t1, c1), GLetIn (na2, b2, t2, c2) ->
-    Name.equal na1 na2 && f b1 b2 && Option.equal f t1 t2 && f c1 c2
+    Name.equal na1 na2 && f b1 b2 && COption.equal f t1 t2 && f c1 c2
   | GCases (st1, c1, tp1, cl1), GCases (st2, c2, tp2, cl2) ->
-    case_style_eq st1 st2 && Option.equal f c1 c2 &&
+    case_style_eq st1 st2 && COption.equal f c1 c2 &&
     List.equal (tomatch_tuple_eq f) tp1 tp2 &&
     List.equal (cases_clause_eq f) cl1 cl2
   | GLetTuple (na1, (n1, p1), c1, t1), GLetTuple (na2, (n2, p2), c2, t2) ->
     List.equal Name.equal na1 na2 && Name.equal n1 n2 &&
-    Option.equal f p1 p2 && f c1 c2 && f t1 t2
+    COption.equal f p1 p2 && f c1 c2 && f t1 t2
   | GIf (m1, (pat1, p1), c1, t1), GIf (m2, (pat2, p2), c2, t2) ->
     f m1 m2 && Name.equal pat1 pat2 &&
-    Option.equal f p1 p2 && f c1 c2 && f t1 t2
+    COption.equal f p1 p2 && f c1 c2 && f t1 t2
   | GRec (kn1, id1, decl1, t1, c1), GRec (kn2, id2, decl2, t2, c2) ->
     fix_kind_eq kn1 kn2 && Array.equal Id.equal id1 id2 &&
     Array.equal (fun l1 l2 -> List.equal (glob_decl_eq f) l1 l2) decl1 decl2 &&
     Array.equal f c1 c2 && Array.equal f t1 t2
   | GSort s1, GSort s2 -> glob_sort_eq s1 s2
   | GHole (kn1, nam1, gn1), GHole (kn2, nam2, gn2) ->
-    Option.equal (==) gn1 gn2 (* Only thing sensible *) &&
+    COption.equal (==) gn1 gn2 (* Only thing sensible *) &&
     Namegen.intro_pattern_naming_eq nam1 nam2
   | GCast (c1, t1), GCast (c2, t2) ->
     f c1 c2 && cast_type_eq f t1 t2
@@ -192,21 +192,21 @@ let map_glob_constr_left_to_right f = DAst.map (function
       GProd (na,bk,comp1,comp2)
   | GLetIn (na,b,t,c) ->
       let comp1 = f b in
-      let compt = Option.map f t in
+      let compt = COption.map f t in
       let comp2 = f c in
       GLetIn (na,comp1,compt,comp2)
   | GCases (sty,rtntypopt,tml,pl) ->
-      let comp1 = Option.map f rtntypopt in
+      let comp1 = COption.map f rtntypopt in
       let comp2 = Util.List.map_left (fun (tm,x) -> (f tm,x)) tml in
       let comp3 = Util.List.map_left (CAst.map (fun (idl,p,c) -> (idl,p,f c))) pl in
       GCases (sty,comp1,comp2,comp3)
   | GLetTuple (nal,(na,po),b,c) ->
-      let comp1 = Option.map f po in
+      let comp1 = COption.map f po in
       let comp2 = f b in
       let comp3 = f c in
       GLetTuple (nal,(na,comp1),comp2,comp3)
   | GIf (c,(na,po),b1,b2) ->
-      let comp1 = Option.map f po in
+      let comp1 = COption.map f po in
       let comp2 = f b1 in
       let comp3 = f b2 in
       GIf (f c,(na,comp1),comp2,comp3)
@@ -224,7 +224,7 @@ let map_glob_constr_left_to_right f = DAst.map (function
 
 let map_glob_constr = map_glob_constr_left_to_right
 
-let fold_return_type f acc (na,tyopt) = Option.fold_left f acc tyopt
+let fold_return_type f acc (na,tyopt) = COption.fold_left f acc tyopt
 
 let fold_glob_constr f acc = DAst.with_val (function
   | GVar _ -> acc
@@ -232,11 +232,11 @@ let fold_glob_constr f acc = DAst.with_val (function
   | GLambda (_,_,b,c) | GProd (_,_,b,c) ->
     f (f acc b) c
   | GLetIn (_,b,t,c) ->
-    f (Option.fold_left f (f acc b) t) c
+    f (COption.fold_left f (f acc b) t) c
   | GCases (_,rtntypopt,tml,pl) ->
     let fold_pattern acc {CAst.v=(idl,p,c)} = f acc c in
     List.fold_left fold_pattern
-      (List.fold_left f (Option.fold_left f acc rtntypopt) (List.map fst tml))
+      (List.fold_left f (COption.fold_left f acc rtntypopt) (List.map fst tml))
       pl
   | GLetTuple (_,rtntyp,b,c) ->
     f (f (fold_return_type f acc rtntyp) b) c
@@ -245,7 +245,7 @@ let fold_glob_constr f acc = DAst.with_val (function
   | GRec (_,_,bl,tyl,bv) ->
     let acc = Array.fold_left
       (List.fold_left (fun acc (na,k,bbd,bty) ->
-	f (Option.fold_left f acc bbd) bty)) acc bl in
+        f (COption.fold_left f acc bbd) bty)) acc bl in
     Array.fold_left f (Array.fold_left f acc tyl) bv
   | GCast (c,k) ->
     let acc = match k with
@@ -254,7 +254,7 @@ let fold_glob_constr f acc = DAst.with_val (function
   | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GInt _) -> acc
   )
 let fold_return_type_with_binders f g v acc (na,tyopt) =
-  Option.fold_left (f (Name.fold_right g na v)) acc tyopt
+  COption.fold_left (f (Name.fold_right g na v)) acc tyopt
 
 let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
   | GVar _ -> acc
@@ -262,16 +262,16 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
   | GLambda (na,_,b,c) | GProd (na,_,b,c) ->
     f (Name.fold_right g na v) (f v acc b) c
   | GLetIn (na,b,t,c) ->
-    f (Name.fold_right g na v) (Option.fold_left (f v) (f v acc b) t) c
+    f (Name.fold_right g na v) (COption.fold_left (f v) (f v acc b) t) c
   | GCases (_,rtntypopt,tml,pl) ->
     let fold_pattern acc {v=(idl,p,c)} = f (List.fold_right g idl v) acc c in
     let fold_tomatch (v',acc) (tm,(na,onal)) =
       ((if rtntypopt = None then v' else
-       Option.fold_left (fun v'' {v=(_,nal)} -> List.fold_right (Name.fold_right g) nal v'')
+       COption.fold_left (fun v'' {v=(_,nal)} -> List.fold_right (Name.fold_right g) nal v'')
                         (Name.fold_right g na v') onal),
        f v acc tm) in
     let (v',acc) = List.fold_left fold_tomatch (v,acc) tml in
-    let acc = Option.fold_left (f v') acc rtntypopt in
+    let acc = COption.fold_left (f v') acc rtntypopt in
     List.fold_left fold_pattern acc pl
   | GLetTuple (nal,rtntyp,b,c) ->
     f (List.fold_right (Name.fold_right g) nal v)
@@ -284,7 +284,7 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
       let v,acc =
 	List.fold_left
 	  (fun (v,acc) (na,k,bbd,bty) ->
-            (Name.fold_right g na v, f v (Option.fold_left (f v) acc bbd) bty))
+            (Name.fold_right g na v, f v (COption.fold_left (f v) acc bbd) bty))
           (v,acc)
           bll.(i) in
       f v' (f v acc tyl.(i)) (bv.(i)) in
@@ -362,7 +362,7 @@ let map_inpattern_binders f ({loc;v=(id,nal)} as x) =
   else CAst.make ?loc (id,r)
 
 let map_tomatch_binders f ((c,(na,inp)) as x) : tomatch_tuple =
-  let r = Option.Smart.map (fun p -> map_inpattern_binders f p) inp in
+  let r = COption.Smart.map (fun p -> map_inpattern_binders f p) inp in
   if r == inp then x
   else c,(f na, r)
 
@@ -453,29 +453,29 @@ let rec rename_glob_vars l c = force @@ DAst.map_with_loc (fun ?loc -> function
       GLambda (na',bk,rename_glob_vars l t,rename_glob_vars l' c)
   | GLetIn (na,b,t,c) ->
       let na',l' = update_subst na l in
-      GLetIn (na',rename_glob_vars l b,Option.map (rename_glob_vars l) t,rename_glob_vars l' c)
+      GLetIn (na',rename_glob_vars l b,COption.map (rename_glob_vars l) t,rename_glob_vars l' c)
   (* Lazy strategy: we fail if a collision with renaming occurs, rather than renaming further *)
   | GCases (ci,po,tomatchl,cls) ->
       let test_pred_pat (na,ino) =
-        test_na l na; Option.iter (fun {v=(_,nal)} -> List.iter (test_na l) nal) ino in
+        test_na l na; COption.iter (fun {v=(_,nal)} -> List.iter (test_na l) nal) ino in
       let test_clause idl = List.iter (test_id l) idl in
-      let po = Option.map (rename_glob_vars l) po in
+      let po = COption.map (rename_glob_vars l) po in
       let tomatchl = Util.List.map_left (fun (tm,x) -> test_pred_pat x; (rename_glob_vars l tm,x)) tomatchl in
       let cls = Util.List.map_left (CAst.map (fun (idl,p,c) -> test_clause idl; (idl,p,rename_glob_vars l c))) cls in
       GCases (ci,po,tomatchl,cls)
   | GLetTuple (nal,(na,po),c,b) ->
      List.iter (test_na l) (na::nal);
-     GLetTuple (nal,(na,Option.map (rename_glob_vars l) po),
+     GLetTuple (nal,(na,COption.map (rename_glob_vars l) po),
                 rename_glob_vars l c,rename_glob_vars l b)
   | GIf (c,(na,po),b1,b2) ->
      test_na l na;
-     GIf (rename_glob_vars l c,(na,Option.map (rename_glob_vars l) po),
+     GIf (rename_glob_vars l c,(na,COption.map (rename_glob_vars l) po),
           rename_glob_vars l b1,rename_glob_vars l b2)
   | GRec (k,idl,decls,bs,ts) ->
      Array.iter (test_id l) idl;
      GRec (k,idl,
            Array.map (List.map (fun (na,k,bbd,bty) ->
-             test_na l na; (na,k,Option.map (rename_glob_vars l) bbd,rename_glob_vars l bty))) decls,
+             test_na l na; (na,k,COption.map (rename_glob_vars l) bbd,rename_glob_vars l bty))) decls,
            Array.map (rename_glob_vars l) bs,
            Array.map (rename_glob_vars l) ts)
   | _ -> DAst.get (map_glob_constr (rename_glob_vars l) c)

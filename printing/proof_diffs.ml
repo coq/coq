@@ -449,7 +449,7 @@ let match_goals ot nt =
     in
     let fix_expr ogname exp exp2 =
       let (l,ro,lb,ce1,ce2), (l2,ro2,lb2,ce12,ce22) = exp,exp2 in
-        Option.iter2 (recursion_order_expr ogname) ro ro2;
+        COption.iter2 (recursion_order_expr ogname) ro ro2;
         iter2 (local_binder_expr ogname) lb lb2;
         constr_expr ogname ce1 ce12;
         constr_expr ogname ce2 ce22

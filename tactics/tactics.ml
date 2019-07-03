@@ -512,7 +512,7 @@ let rec mk_holes env sigma = function
 
 let rec check_mutind env sigma k cl = match EConstr.kind sigma (strip_outer_cast sigma cl) with
 | Prod (na, c1, b) ->
-  if Int.equal k 1 then
+  if CInt.equal k 1 then
     try
       let ((sp, _), u), _ = find_inductive env sigma c1 in
       (sp, u)
@@ -1353,7 +1353,7 @@ let check_unresolved_evars_of_metas sigma clenv =
   (meta_list clenv.evd)
 
 let do_replace id = function
-  | NamingMustBe {CAst.v=id'} when Option.equal Id.equal id (Some id') -> true
+  | NamingMustBe {CAst.v=id'} when COption.equal Id.equal id (Some id') -> true
   | _ -> false
 
 (* For a clenv expressing some lemma [C[?1:T1,...,?n:Tn] : P] and some
@@ -1391,7 +1391,7 @@ let last_arg sigma c = match EConstr.kind sigma c with
   | _ -> anomaly (Pp.str "last_arg.")
 
 let nth_arg sigma i c =
-  if Int.equal i (-1) then last_arg sigma c else
+  if CInt.equal i (-1) then last_arg sigma c else
   match EConstr.kind sigma c with
   | App (f,cl) -> cl.(i)
   | _ -> anomaly (Pp.str "nth_arg.")
@@ -1468,7 +1468,7 @@ let general_elim_clause with_evars flags where indclause elim =
     Clenvtac.res_pf elimclause ~with_evars ~with_classes:true ~flags
   | Some id ->
     let hypmv =
-      match List.remove Int.equal indmv (clenv_independent elimclause) with
+      match List.remove CInt.equal indmv (clenv_independent elimclause) with
       | [a] -> a
       | _ -> user_err ~hdr:"elimination_clause"
               (str "The type of elimination clause is not well-formed.")
@@ -1735,7 +1735,7 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
       with Redelimination ->
         (* Last chance: if the head is a variable, apply may try
             second order unification *)
-        let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
+        let info = COption.cata (fun loc -> Loc.add_loc info loc) info loc in
         let tac =
           if with_destruct then
             descend_in_conjunctions Id.Set.empty
@@ -1746,7 +1746,7 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
               (exn0, info) c
           else
             Proofview.tclZERO ~info exn0 in
-        if not (Int.equal concl_nprod 0) then
+        if not (CInt.equal concl_nprod 0) then
           tclORELSEOPT
             (try_apply thm_ty 0)
             (function (e, info) -> match e with
@@ -2184,9 +2184,9 @@ let revert hyps =
 (************************)
 
 let check_number_of_constructors expctdnumopt i nconstr =
-  if Int.equal i 0 then error "The constructors are numbered starting from 1.";
+  if CInt.equal i 0 then error "The constructors are numbered starting from 1.";
   begin match expctdnumopt with
-    | Some n when not (Int.equal n nconstr) ->
+    | Some n when not (CInt.equal n nconstr) ->
 	user_err ~hdr:"Tactics.check_number_of_constructors"
           (str "Not an inductive goal with " ++ int n ++ str (String.plural n " constructor") ++ str ".")
     | _ -> ()
@@ -2230,14 +2230,14 @@ let any_constructor with_evars tacopt =
     | None -> tac
     | Some t -> fun cstr -> Tacticals.New.tclTHEN (tac cstr) t in
   let rec any_constr ind n i () =
-    if Int.equal i n then one_constr (ind,i)
+    if CInt.equal i n then one_constr (ind,i)
     else Tacticals.New.tclORD (one_constr (ind,i)) (any_constr ind n (i + 1)) in
   Proofview.Goal.enter begin fun gl ->
     let cl = Tacmach.New.pf_concl gl in
     let (ind,_),redcl = Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl cl in
     let nconstr =
       Array.length (snd (Global.lookup_inductive ind)).mind_consnames in
-    if Int.equal nconstr 0 then error "The type has no constructors.";
+    if CInt.equal nconstr 0 then error "The type has no constructors.";
     Tacticals.New.tclTHENLIST [
       convert_concl ~check:false redcl DEFAULTcast;
       intros;
@@ -2270,15 +2270,15 @@ let (forward_general_rewrite_clause, general_rewrite_clause) = Hook.make ()
 let (forward_subst_one, subst_one) = Hook.make ()
 
 let error_unexpected_extra_pattern loc bound pat =
-  let _,nb = Option.get bound in
+  let _,nb = COption.get bound in
   let s1,s2,s3 = match pat with
   | IntroNaming (IntroIdentifier _) ->
       "name", (String.plural nb " introduction pattern"), "no"
   | _ -> "introduction pattern", "", "none" in
   user_err ?loc  (str "Unexpected " ++ str s1 ++ str " (" ++
-    (if Int.equal nb 0 then (str s3 ++ str s2) else
+    (if CInt.equal nb 0 then (str s3 ++ str s2) else
       (str "at most " ++ int nb ++ str s2)) ++ spc () ++
-       str (if Int.equal nb 1 then "was" else "were") ++
+       str (if CInt.equal nb 1 then "was" else "were") ++
       strbrk " expected in the branch).")
 
 let intro_decomp_eq_function = ref (fun _ -> failwith "Not implemented")
@@ -2897,7 +2897,7 @@ let generalize_dep ?(with_let=false) c =
   let is_var, body = match EConstr.kind sigma c with
   | Var id ->
     let body = NamedDecl.get_value (pf_get_hyp id gl) in
-    let is_var = Option.is_empty body && not (List.mem id init_ids) in
+    let is_var = COption.is_empty body && not (List.mem id init_ids) in
     if with_let then is_var, body else is_var, None
   | _ -> false, None
   in
@@ -2912,7 +2912,7 @@ let generalize_dep ?(with_let=false) c =
   let args = Context.Named.to_instance mkVar to_quantify_rev in
   tclTHENLIST
     [ Proofview.Unsafe.tclEVARS evd;
-      apply_type ~typecheck:false cl'' (if Option.is_empty body then c::args else args);
+      apply_type ~typecheck:false cl'' (if COption.is_empty body then c::args else args);
       clear (List.rev tothin')]
   end
 
@@ -2924,7 +2924,7 @@ let generalize_gen_let lconstr = Proofview.Goal.enter begin fun gl ->
       (Tacmach.New.pf_concl gl,Tacmach.New.project gl)
   in
   let (evd, _) = Typing.type_of env evd newcl in
-  let map ((_, c, b),_) = if Option.is_empty b then Some c else None in
+  let map ((_, c, b),_) = if COption.is_empty b then Some c else None in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd)
   (apply_type ~typecheck:false newcl (List.map_filter map lconstr))
 end
@@ -2939,7 +2939,7 @@ let new_generalize_gen_let lconstr =
       List.fold_right_i 
 	(fun i ((_,c,b),_ as o) (cl, sigma, args) ->
 	  let sigma, t = Typing.type_of env sigma c in
-	  let args = if Option.is_empty b then c :: args else args in
+          let args = if COption.is_empty b then c :: args else args in
           let cl, sigma = generalize_goal_gen env sigma ids i o t cl in
           (cl, sigma, args))
 	0 lconstr (concl, sigma, [])
@@ -3319,7 +3319,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
   let params' = List.map (expand_projections env' sigma) params in
   (* le gl est important pour ne pas préévaluer *)
   let rec atomize_one i args args' avoid =
-    if Int.equal i nparams then
+    if CInt.equal i nparams then
       let t = applist (hd, params@args) in
       Tacticals.New.tclTHEN
         (change_in_hyp ~check:false None (make_change_arg t) (hyp0,InHypTypeOnly))
@@ -3455,7 +3455,7 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
       rhyp
     end else
       let dephyp0 = List.is_empty inhyps && 
-	(Option.cata (fun id -> occur_var_in_decl env sigma id decl) false hyp0_opt)
+        (COption.cata (fun id -> occur_var_in_decl env sigma id decl) false hyp0_opt)
       in
       let depother = List.is_empty inhyps &&
 	(Id.Set.exists (fun id -> occur_var_in_decl env sigma id decl) indvars ||
@@ -3501,7 +3501,7 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
       | MoveAfter hyp -> Some hyp
       | _ -> assert false in
     let statuslists = (!lstatus,List.rev !rstatus) in
-    let recargdests = AfterFixedPosition (if Option.is_empty hyp0_opt then None else lhyp0) in
+    let recargdests = AfterFixedPosition (if COption.is_empty hyp0_opt then None else lhyp0) in
     (statuslists, (recargdests,None), !toclear, !decldeps, !avoid, !maindep)
 
 (*
@@ -3568,7 +3568,7 @@ let empty_scheme =
   }
 
 let make_base n id =
-  if Int.equal n 0 || Int.equal n 1 then id
+  if CInt.equal n 0 || CInt.equal n 1 then id
   else
     (* This extends the name to accept new digits if it already ends with *)
     (* digits *)
@@ -3589,7 +3589,7 @@ let make_up_names n ind_opt cname =
     else add_prefix ind_prefix cname in
   let hyprecname = make_base n base_ind in
   let avoid =
-    if Int.equal n 1 (* Only one recursive argument *) || Int.equal n 0 then Id.Set.empty
+    if CInt.equal n 1 (* Only one recursive argument *) || CInt.equal n 0 then Id.Set.empty
     else
       (* Forbid to use cname, cname0, hyprecname and hyprecname0 *)
       (* in order to get names such as f1, f2, ... *)
@@ -3708,7 +3708,7 @@ let make_abstract_generalize env id typ concl dep ctx body c eqs args refls =
     (* Apply the old arguments giving the proper instantiation of the hyp *)
   let instc = mkApp (genc, Array.of_list args) in
     (* Then apply to the original instantiated hyp. *)
-  let instc = Option.cata (fun _ -> instc) (mkApp (instc, [| mkVar id |])) body in
+  let instc = COption.cata (fun _ -> instc) (mkApp (instc, [| mkVar id |])) body in
     (* Apply the reflexivity proofs on the indices. *)
   let appeqs = mkApp (instc, Array.of_list refls) in
     (* Finally, apply the reflexivity proof for the original hyp, to get a term of type gl again. *)
@@ -4029,7 +4029,7 @@ let compute_elim_sig sigma ?elimc elimt =
 
   let ccl = exchange_hd_app sigma (mkVar (Id.of_string "__QI_DUMMY__")) conclusion in
   let concl_with_args = it_mkProd_or_LetIn ccl args_indargs in
-  let nparams = Int.Set.cardinal (free_rels sigma concl_with_args) in
+  let nparams = CInt.Set.cardinal (free_rels sigma concl_with_args) in
   let preds,params = List.chop (List.length params_preds - nparams) params_preds in
 
   (* A first approximation, further analysis will tweak it *)
@@ -4053,7 +4053,7 @@ let compute_elim_sig sigma ?elimc elimt =
       raise Exit
     end;
     (* 2- If no args_indargs (=!res.nargs at this point) then no indarg *)
-    if Int.equal !res.nargs 0 then raise Exit;
+    if CInt.equal !res.nargs 0 then raise Exit;
     (* 3- Look at last arg: is it the indarg? *)
     ignore (
       match List.hd args_indargs with
@@ -4068,7 +4068,7 @@ let compute_elim_sig sigma ?elimc elimt =
 		| Construct _ -> true
 		| _ -> false in
 	    let hi_args_enough = (* hi a le bon nbre d'arguments *)
-	      Int.equal (List.length hi_args) (List.length params + !res.nargs -1) in
+              CInt.equal (List.length hi_args) (List.length params + !res.nargs -1) in
 	    (* FIXME: Ces deux tests ne sont pas suffisants. *)
 	    if not (hi_is_ind && hi_args_enough) then raise Exit (* No indarg *)
 	    else (* Last arg is the indarg *)
@@ -4212,7 +4212,7 @@ let find_induction_type isrec elim hyp0 gl =
     | Some e ->
 	let evd, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
 	let scheme = compute_elim_sig sigma ~elimc elimt in
-	if Option.is_empty scheme.indarg then error "Cannot find induction type";
+        if COption.is_empty scheme.indarg then error "Cannot find induction type";
 	let indsign = compute_scheme_signature evd scheme hyp0 ind_guess in
         let elim = ({ elimindex = Some(-1); elimbody = elimc },elimt) in
 	scheme, ElimUsing (elim,indsign)
@@ -4229,7 +4229,7 @@ let is_functional_induction elimc gl =
   let scheme = compute_elim_sig sigma ~elimc (Tacmach.New.pf_unsafe_type_of gl (fst elimc)) in
   (* The test is not safe: with non-functional induction on non-standard
      induction scheme, this may fail *)
-  Option.is_empty scheme.indarg
+  COption.is_empty scheme.indarg
 
 (* Wait the last moment to guess the eliminator so as to know if we
    need a dependent one or not *)
@@ -4308,7 +4308,7 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
     let env = Proofview.Goal.env gl in
     let concl = Tacmach.New.pf_concl gl in
     let statuslists,lhyp0,toclear,deps,avoid,dep_in_hyps = cook_sign hyp0 inhyps indvars env sigma in
-    let dep_in_concl = Option.cata (fun id -> occur_var env sigma id concl) false hyp0 in
+    let dep_in_concl = COption.cata (fun id -> occur_var env sigma id concl) false hyp0 in
     let dep = dep_in_hyps || dep_in_concl in
     let tmpcl = it_mkNamedProd_or_LetIn concl deps in
     let s = Retyping.get_sort_family_of env sigma tmpcl in
@@ -4365,7 +4365,7 @@ let induction_without_atomization isrec with_evars elim names lid =
   let sigma, (indsign,scheme) = get_elim_signature elim (List.hd lid) gl in
   let nargs_indarg_farg =
     scheme.nargs + (if scheme.farg_in_concl then 1 else 0) in
-  if not (Int.equal (List.length lid) (scheme.nparams + nargs_indarg_farg))
+  if not (CInt.equal (List.length lid) (scheme.nparams + nargs_indarg_farg))
   then
     Tacticals.New.tclZEROMSG (msg_not_right_number_induction_arguments scheme)
   else
@@ -4390,7 +4390,7 @@ let induction_without_atomization isrec with_evars elim names lid =
     (* FIXME: Tester ca avec un principe dependant et non-dependant *)
     induction_tac with_evars params realindvars elim;
   ] in
-  let elim = ElimUsing (({ elimindex = Some (-1); elimbody = Option.get scheme.elimc }, scheme.elimt), indsign) in
+  let elim = ElimUsing (({ elimindex = Some (-1); elimbody = COption.get scheme.elimc }, scheme.elimt), indsign) in
   apply_induction_in_context with_evars None [] elim indvars names induct_tac
   end
 
@@ -4496,8 +4496,8 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
   match res with
   | None ->
       (* pattern not found *)
-      let with_eq = Option.map (fun eq -> (false,mk_eq_name env id eq)) eqname in
-      let inhyps = if List.is_empty inhyps then inhyps else Option.fold_left (fun inhyps (_,heq) -> heq::inhyps) inhyps with_eq in
+      let with_eq = COption.map (fun eq -> (false,mk_eq_name env id eq)) eqname in
+      let inhyps = if List.is_empty inhyps then inhyps else COption.fold_left (fun inhyps (_,heq) -> heq::inhyps) inhyps with_eq in
       (* we restart using bindings after having tried type-class
          resolution etc. on the term given by the user *)
       let flags = tactic_infer_flags (with_evars && (* do not give a success semantics to edestruct on an open term yet *) false) in
@@ -4530,8 +4530,8 @@ let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
       (* pattern found *)
       (* TODO: if ind has predicate parameters, use JMeq instead of eq *)
       let env = reset_with_named_context sign env in
-      let with_eq = Option.map (fun eq -> (false,mk_eq_name env id eq)) eqname in
-      let inhyps = if List.is_empty inhyps then inhyps else Option.fold_left (fun inhyps (_,heq) -> heq::inhyps) inhyps with_eq in
+      let with_eq = COption.map (fun eq -> (false,mk_eq_name env id eq)) eqname in
+      let inhyps = if List.is_empty inhyps then inhyps else COption.fold_left (fun inhyps (_,heq) -> heq::inhyps) inhyps with_eq in
       let tac =
       Tacticals.New.tclTHENLIST [
         Refine.refine ~typecheck:false begin fun sigma ->
@@ -4557,11 +4557,11 @@ let induction_gen clear_flag isrec with_evars elim
   let env = Proofview.Goal.env gl in
   let evd = Proofview.Goal.sigma gl in
   let ccl = Proofview.Goal.concl gl in
-  let cls = Option.default allHypsAndConcl cls in
+  let cls = COption.default allHypsAndConcl cls in
   let t = typ_of env evd c in
   let is_arg_pure_hyp =
     isVar evd c && not (mem_named_context_val (destVar evd c) (Global.named_context_val ()))
-    && lbind == NoBindings && not with_evars && Option.is_empty eqname
+    && lbind == NoBindings && not with_evars && COption.is_empty eqname
     && clear_flag == None
     && has_generic_occurrences_but_goal cls (destVar evd c) env evd ccl in
   let enough_applied = check_enough_applied env evd elim t in
@@ -4654,7 +4654,7 @@ let induction_destruct isrec with_evars (lc,elim) =
     | Some elim when is_functional_induction elim gl ->
       (* Standard induction on non-standard induction schemes *)
       (* will be removable when is_functional_induction will be more clever *)
-      if not (Option.is_empty cls) then error "'in' clause not supported here.";
+      if not (COption.is_empty cls) then error "'in' clause not supported here.";
       let _,c = force_destruction_arg false env sigma c in
       onInductionArg
 	(fun _clear_flag c ->
@@ -4702,7 +4702,7 @@ let induction_destruct isrec with_evars (lc,elim) =
 	  lc in
       (* Check that "as", if any, is given only on the last argument *)
       let names,rest = List.sep_last (List.map snd newlc) in
-      if List.exists (fun n -> not (Option.is_empty n)) rest then
+      if List.exists (fun n -> not (COption.is_empty n)) rest then
         error "'as' clause with multiple arguments and 'using' clause can only occur last.";
       let newlc = List.map (fun (x,_) -> (x,None)) newlc in
       induction_gen_l isrec with_evars elim names newlc

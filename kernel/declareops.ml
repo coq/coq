@@ -113,7 +113,7 @@ let subst_const_body sub cb =
         const_body = body';
         const_type = type';
         const_body_code =
-          Option.map (Cemitcodes.subst_to_patch_subst sub) cb.const_body_code;
+          COption.map (Cemitcodes.subst_to_patch_subst sub) cb.const_body_code;
         const_universes = cb.const_universes;
         const_relevance = cb.const_relevance;
         const_inline_code = cb.const_inline_code;
@@ -261,7 +261,7 @@ let inductive_is_polymorphic mib =
   | Polymorphic _ctx -> true
 
 let inductive_is_cumulative mib =
-  Option.has_some mib.mind_variance
+  COption.has_some mib.mind_variance
 
 let inductive_make_projection ind mib ~proj_arg =
   match mib.mind_record with

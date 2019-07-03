@@ -89,13 +89,13 @@ let change_vars =
       | GLetIn(name,def,typ,b) ->
 	  GLetIn(name,
 		 change_vars mapping def,
-		 Option.map (change_vars mapping) typ,
+                 COption.map (change_vars mapping) typ,
 		 change_vars (remove_name_from_mapping mapping name) b
 		)
       | GLetTuple(nal,(na,rto),b,e) ->
 	  let new_mapping = List.fold_left remove_name_from_mapping mapping nal in
 	  GLetTuple(nal,
-		    (na, Option.map (change_vars mapping) rto),
+                    (na, COption.map (change_vars mapping) rto),
 		    change_vars mapping b,
 		    change_vars new_mapping e
 		   )
@@ -107,7 +107,7 @@ let change_vars =
 		)
       | GIf(b,(na,e_option),lhs,rhs) ->
 	  GIf(change_vars mapping b,
-	      (na,Option.map (change_vars mapping) e_option),
+              (na,COption.map (change_vars mapping) e_option),
 	      change_vars mapping lhs,
 	      change_vars mapping rhs
 	     )
@@ -212,7 +212,7 @@ let rec alpha_rt excluded rt =
 	GProd(Anonymous,k,new_t,new_b)
     | GLetIn(Anonymous,b,t,c) ->
 	let new_b = alpha_rt excluded b in
-	let new_t = Option.map (alpha_rt excluded) t in
+        let new_t = COption.map (alpha_rt excluded) t in
 	let new_c = alpha_rt excluded c in
 	GLetIn(Anonymous,new_b,new_t,new_c)
     | GLambda(Name id,k,t,b) ->
@@ -249,7 +249,7 @@ let rec alpha_rt excluded rt =
 	in
 	let new_excluded = new_id::excluded in
 	let new_b = alpha_rt new_excluded b in
-	let new_t = Option.map (alpha_rt new_excluded) t in
+        let new_t = COption.map (alpha_rt new_excluded) t in
 	let new_c = alpha_rt new_excluded c in
 	GLetIn(Name new_id,new_b,new_t,new_c)
 
@@ -275,11 +275,11 @@ let rec alpha_rt excluded rt =
 	  if Id.Map.is_empty mapping
 	  then rto,t,b
 	  else let replace = change_vars mapping in
-	  (Option.map replace rto, t,replace b)
+          (COption.map replace rto, t,replace b)
 	in
 	let new_t = alpha_rt new_excluded new_t in
 	let new_b = alpha_rt new_excluded new_b in
-	let new_rto = Option.map (alpha_rt new_excluded) new_rto  in
+        let new_rto = COption.map (alpha_rt new_excluded) new_rto  in
 	GLetTuple(new_nal,(na,new_rto),new_t,new_b)
     | GCases(sty,infos,el,brl) ->
 	let new_el =
@@ -288,7 +288,7 @@ let rec alpha_rt excluded rt =
 	GCases(sty,infos,new_el,List.map (alpha_br excluded) brl)
     | GIf(b,(na,e_o),lhs,rhs) ->
 	GIf(alpha_rt excluded b,
-	    (na,Option.map (alpha_rt excluded) e_o),
+            (na,COption.map (alpha_rt excluded) e_o),
 	    alpha_rt excluded lhs,
 	    alpha_rt excluded rhs
 	   )
@@ -337,7 +337,7 @@ let is_free_in id =
 	    | Name id' -> not (Id.equal id' id)
 	    | _ -> true
 	in
-	is_free_in b || Option.cata is_free_in true t || (check_in_c && is_free_in c)
+        is_free_in b || COption.cata is_free_in true t || (check_in_c && is_free_in c)
     | GCases(_,_,el,brl) ->
 	(List.exists (fun (e,_) -> is_free_in e) el) ||
 	  List.exists is_free_in_br brl
@@ -418,7 +418,7 @@ let replace_var_by_term x_id term =
       | GLetIn(name,def,typ,b) ->
 	  GLetIn(name,
 		 replace_var_by_pattern def,
-		 Option.map (replace_var_by_pattern) typ,
+                 COption.map (replace_var_by_pattern) typ,
 		 replace_var_by_pattern b
 		)
       | GLetTuple(nal,_,_,_) as rt
@@ -426,7 +426,7 @@ let replace_var_by_term x_id term =
 	  rt
       | GLetTuple(nal,(na,rto),def,b) ->
 	  GLetTuple(nal,
-		    (na,Option.map replace_var_by_pattern rto),
+                    (na,COption.map replace_var_by_pattern rto),
 		    replace_var_by_pattern def,
 		    replace_var_by_pattern b
 		   )
@@ -438,7 +438,7 @@ let replace_var_by_term x_id term =
 		)
       | GIf(b,(na,e_option),lhs,rhs) ->
 	  GIf(replace_var_by_pattern b,
-	      (na,Option.map replace_var_by_pattern e_option),
+              (na,COption.map replace_var_by_pattern e_option),
 	      replace_var_by_pattern lhs,
 	      replace_var_by_pattern rhs
 	     )
@@ -539,19 +539,19 @@ let expand_as =
       | GApp(f,args) -> GApp(expand_as map f,List.map (expand_as map) args)
       | GLambda(na,k,t,b) -> GLambda(na,k,expand_as map t, expand_as map b)
       | GProd(na,k,t,b) -> GProd(na,k,expand_as map t, expand_as map b)
-      | GLetIn(na,v,typ,b) -> GLetIn(na, expand_as map v,Option.map (expand_as map) typ,expand_as map b)
+      | GLetIn(na,v,typ,b) -> GLetIn(na, expand_as map v,COption.map (expand_as map) typ,expand_as map b)
       | GLetTuple(nal,(na,po),v,b) ->
-	  GLetTuple(nal,(na,Option.map (expand_as map) po),
+          GLetTuple(nal,(na,COption.map (expand_as map) po),
 		    expand_as map v, expand_as map b)
       | GIf(e,(na,po),br1,br2) ->
-	  GIf(expand_as map e,(na,Option.map (expand_as map) po),
+          GIf(expand_as map e,(na,COption.map (expand_as map) po),
 	      expand_as map br1, expand_as map br2)
       | GRec _ ->  user_err Pp.(str "Not handled GRec")
       | GCast(b,c) ->
 	  GCast(expand_as map b,
                 Glob_ops.map_cast_type (expand_as map) c)
       | GCases(sty,po,el,brl) ->
-	  GCases(sty, Option.map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
+          GCases(sty, COption.map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
 		List.map (expand_as_br map) brl)
     )
   and expand_as_br map {CAst.loc; v=(idl,cpl,rt)} =

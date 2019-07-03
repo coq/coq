@@ -46,12 +46,12 @@ module ST=struct
 
   (* l: sign -> term r: term -> sign *)
 
-  module IntTable = Hashtbl.Make(Int)
+  module IntTable = Hashtbl.Make(CInt)
   module IntPair =
   struct
     type t = int * int
-    let equal (i1, j1) (i2, j2) = Int.equal i1 i2 && Int.equal j1 j2
-    let hash (i, j) = Hashset.Combine.combine (Int.hash i) (Int.hash j)
+    let equal (i1, j1) (i2, j2) = CInt.equal i1 i2 && CInt.equal j1 j2
+    let hash (i, j) = Hashset.Combine.combine (CInt.hash i) (CInt.hash j)
   end
   module IntPairTable = Hashtbl.Make(IntPair)
 
@@ -78,7 +78,7 @@ module ST=struct
     with
 	Not_found -> ()
 
-  let delete_set st s = Int.Set.iter (delete st) s
+  let delete_set st s = CInt.Set.iter (delete st) s
 
 end
 
@@ -100,11 +100,11 @@ struct
   type t = pa_constructor
   let compare { cnode = cnode0; arity = arity0; args = args0 }
               { cnode = cnode1; arity = arity1; args = args1 } =
-    let cmp = Int.compare cnode0 cnode1 in
+    let cmp = CInt.compare cnode0 cnode1 in
     if cmp = 0 then
-      let cmp' = Int.compare arity0 arity1 in
+      let cmp' = CInt.compare arity0 arity1 in
       if cmp' = 0 then
-        List.compare Int.compare args0 args1
+        List.compare CInt.compare args0 args1
       else
         cmp'
     else
@@ -115,9 +115,9 @@ module PafOrd =
 struct
   type t = pa_fun
   let compare { fsym = fsym0; fnargs = fnargs0 } { fsym = fsym1; fnargs = fnargs1 } =
-    let cmp = Int.compare fsym0 fsym1 in
+    let cmp = CInt.compare fsym0 fsym1 in
     if cmp = 0 then
-      Int.compare fnargs0 fnargs1
+      CInt.compare fnargs0 fnargs1
     else
       cmp
 end
@@ -151,7 +151,7 @@ let rec term_equal t1 t2 =
     | Appli (t1, u1), Appli (t2, u2) -> term_equal t1 t2 && term_equal u1 u2
     | Constructor {ci_constr=(c1,u1); ci_arity=i1; ci_nhyps=j1},
       Constructor {ci_constr=(c2,u2); ci_arity=i2; ci_nhyps=j2} ->
-      Int.equal i1 i2 && Int.equal j1 j2 && eq_constructor c1 c2 (* FIXME check eq? *)
+      CInt.equal i1 i2 && CInt.equal j1 j2 && eq_constructor c1 c2 (* FIXME check eq? *)
     | _ -> false
 
 open Hashset.Combine
@@ -215,11 +215,11 @@ type inductive_status =
 
 type representative=
     {mutable weight:int;
-     mutable lfathers:Int.Set.t;
-     mutable fathers:Int.Set.t;
+     mutable lfathers:CInt.Set.t;
+     mutable fathers:CInt.Set.t;
      mutable inductive_status: inductive_status;
      class_type : types;
-     mutable functions: Int.Set.t PafMap.t} (*pac -> term = app(constr,t) *)
+     mutable functions: CInt.Set.t PafMap.t} (*pac -> term = app(constr,t) *)
 
 type cl = Rep of representative| Eqto of int*equality
 
@@ -262,16 +262,16 @@ type forest=
 type state =
     {uf: forest;
      sigtable:ST.t;
-     mutable terms: Int.Set.t;
+     mutable terms: CInt.Set.t;
      combine: equality Queue.t;
      marks: (int * pa_mark) Queue.t;
      mutable diseq: disequality list;
      mutable quant: quant_eq list;
-     mutable pa_classes: Int.Set.t;
+     mutable pa_classes: CInt.Set.t;
      q_history: (int array) Identhash.t;
      mutable rew_depth:int;
      mutable changed:bool;
-     by_type: Int.Set.t Typehash.t;
+     by_type: CInt.Set.t Typehash.t;
      mutable env:Environ.env;
      sigma:Evd.evar_map}
 
@@ -297,13 +297,13 @@ let empty_forest() =
 let empty depth gls:state =
   {
     uf= empty_forest ();
-    terms=Int.Set.empty;
+    terms=CInt.Set.empty;
     combine=Queue.create ();
     marks=Queue.create ();
     sigtable=ST.empty ();
     diseq=[];
     quant=[];
-    pa_classes=Int.Set.empty;
+    pa_classes=CInt.Set.empty;
     q_history=Identhash.create init_size;
     rew_depth=depth;
     by_type=Constrhash.create init_size;
@@ -353,13 +353,13 @@ let epsilons uf = uf.epsilons
 let add_lfather uf i t=
   let r=get_representative uf i in
     r.weight<-r.weight+1;
-    r.lfathers<-Int.Set.add t r.lfathers;
-    r.fathers <-Int.Set.add t r.fathers
+    r.lfathers<-CInt.Set.add t r.lfathers;
+    r.fathers <-CInt.Set.add t r.fathers
 
 let add_rfather uf i t=
   let r=get_representative uf i in
     r.weight<-r.weight+1;
-    r.fathers <-Int.Set.add t r.fathers
+    r.fathers <-CInt.Set.add t r.fathers
 
 exception Discriminable of int * pa_constructor * int * pa_constructor
 
@@ -378,8 +378,8 @@ let add_pac node pac t =
 
 let add_paf rep paf t =
   let already =
-    try PafMap.find paf rep.functions with Not_found -> Int.Set.empty in
-    rep.functions<- PafMap.add paf (Int.Set.add t already) rep.functions
+    try PafMap.find paf rep.functions with Not_found -> CInt.Set.empty in
+    rep.functions<- PafMap.add paf (CInt.Set.add t already) rep.functions
 
 let term uf i=uf.map.(i).term
 
@@ -394,7 +394,7 @@ let signature uf i=
 let next uf=
   let size=uf.size in
   let nsize= succ size in
-    if Int.equal nsize uf.max_size then
+    if CInt.equal nsize uf.max_size then
       let newmax=uf.max_size * 3 / 2 + 1 in
       let newmap=Array.make newmax dummy_node in
 	begin
@@ -408,8 +408,8 @@ let next uf=
 
 let new_representative typ =
   {weight=0;
-   lfathers=Int.Set.empty;
-   fathers=Int.Set.empty;
+   lfathers=CInt.Set.empty;
+   fathers=CInt.Set.empty;
    inductive_status=Unknown;
    class_type=typ;
    functions=PafMap.empty}
@@ -516,7 +516,7 @@ let rec add_term state t=
 		  let i1=add_term state t1 and i2=add_term state t2 in
 		    add_lfather uf (find uf i1) b;
 		    add_rfather uf (find uf i2) b;
-		    state.terms<-Int.Set.add b state.terms;
+                    state.terms<-CInt.Set.add b state.terms;
 		    {clas= Rep (new_representative typ);
 		     cpath= -1;
 		     constructors=PacMap.empty;
@@ -541,9 +541,9 @@ let rec add_term state t=
 	    uf.map.(b)<-new_node;
 	    Termhash.add uf.syms t b;
 	    Typehash.replace state.by_type typ
-	      (Int.Set.add b
+              (CInt.Set.add b
 		 (try Typehash.find state.by_type typ with
-		      Not_found -> Int.Set.empty));
+                      Not_found -> CInt.Set.empty));
 	    b
 
 let add_equality state c s t=
@@ -573,7 +573,7 @@ let is_redundant state id args =
     let prev_args = Identhash.find_all state.q_history id in
     List.exists
       (fun old_args ->
-	 Util.Array.for_all2 (fun i j -> Int.equal i (find state.uf j))
+         Util.Array.for_all2 (fun i j -> CInt.equal i (find state.uf j))
          norm_args old_args)
       prev_args
     with Not_found -> false
@@ -623,7 +623,7 @@ let rec down_path uf i l=
       Eqto (j,eq) ->down_path uf j (((i,j),eq)::l)
     | Rep _ ->l
 
-let eq_pair (i1, j1) (i2, j2) = Int.equal i1 i2 && Int.equal j1 j2
+let eq_pair (i1, j1) (i2, j2) = CInt.equal i1 i2 && CInt.equal j1 j2
 
 let rec min_path=function
     ([],l2)->([],l2)
@@ -632,7 +632,7 @@ let rec min_path=function
   | cpl -> cpl
 
 let join_path uf i j=
-  assert (Int.equal (find uf i) (find uf j));
+  assert (CInt.equal (find uf i) (find uf j));
   min_path (down_path uf i [],down_path uf j [])
 
 let union state i1 i2 eq=
@@ -642,34 +642,34 @@ let union state i1 i2 eq=
   and r2= get_representative state.uf i2 in
     link state.uf i1 i2 eq;
     Constrhash.replace state.by_type r1.class_type
-      (Int.Set.remove i1
+      (CInt.Set.remove i1
 	 (try Constrhash.find state.by_type r1.class_type with
-	      Not_found -> Int.Set.empty));
-    let f= Int.Set.union r1.fathers r2.fathers in
-      r2.weight<-Int.Set.cardinal f;
+              Not_found -> CInt.Set.empty));
+    let f= CInt.Set.union r1.fathers r2.fathers in
+      r2.weight<-CInt.Set.cardinal f;
       r2.fathers<-f;
-      r2.lfathers<-Int.Set.union r1.lfathers r2.lfathers;
+      r2.lfathers<-CInt.Set.union r1.lfathers r2.lfathers;
       ST.delete_set state.sigtable r1.fathers;
-      state.terms<-Int.Set.union state.terms r1.fathers;
+      state.terms<-CInt.Set.union state.terms r1.fathers;
       PacMap.iter
 	(fun pac b -> Queue.add (b,Cmark pac) state.marks)
 	state.uf.map.(i1).constructors;
       PafMap.iter
-	(fun paf -> Int.Set.iter
+        (fun paf -> CInt.Set.iter
 	   (fun b -> Queue.add (b,Fmark paf) state.marks))
 	r1.functions;
       match r1.inductive_status,r2.inductive_status with
 	  Unknown,_ -> ()
 	| Partial pac,Unknown ->
 	    r2.inductive_status<-Partial pac;
-	    state.pa_classes<-Int.Set.remove i1 state.pa_classes;
-	    state.pa_classes<-Int.Set.add i2 state.pa_classes
+            state.pa_classes<-CInt.Set.remove i1 state.pa_classes;
+            state.pa_classes<-CInt.Set.add i2 state.pa_classes
 	| Partial _ ,(Partial _ |Partial_applied) ->
-	    state.pa_classes<-Int.Set.remove i1 state.pa_classes
+            state.pa_classes<-CInt.Set.remove i1 state.pa_classes
 	| Partial_applied,Unknown ->
 	    r2.inductive_status<-Partial_applied
 	| Partial_applied,Partial _ ->
-	    state.pa_classes<-Int.Set.remove i2 state.pa_classes;
+            state.pa_classes<-CInt.Set.remove i2 state.pa_classes;
 	    r2.inductive_status<-Partial_applied
 	| Total cpl,Unknown -> r2.inductive_status<-Total cpl;
 	| Total (i,pac),Total _ -> Queue.add (i,Cmark pac) state.marks
@@ -682,7 +682,7 @@ let merge eq state = (* merge and no-merge *)
   let uf=state.uf in
   let i=find uf eq.lhs
   and j=find uf eq.rhs in
-    if not (Int.equal i j) then
+    if not (CInt.equal i j) then
       if (size uf i)<(size uf j) then
 	union state i j eq
       else
@@ -698,7 +698,7 @@ let update t state = (* update 1 and 2 *)
       match rep.inductive_status with
 	  Partial _ ->
 	    rep.inductive_status <- Partial_applied;
-	    state.pa_classes <- Int.Set.remove i state.pa_classes
+            state.pa_classes <- CInt.Set.remove i state.pa_classes
 	| _ -> ()
     end;
     PacMap.iter
@@ -715,13 +715,13 @@ let update t state = (* update 1 and 2 *)
 
 let process_function_mark t rep paf state  =
   add_paf rep paf t;
-  state.terms<-Int.Set.union rep.lfathers state.terms
+  state.terms<-CInt.Set.union rep.lfathers state.terms
 
 let process_constructor_mark t i rep pac state =
      add_pac state.uf.map.(i) pac t;
      match rep.inductive_status with
 	Total (s,opac) ->
-	  if not (Int.equal pac.cnode opac.cnode) then (* Conflict *)
+          if not (CInt.equal pac.cnode opac.cnode) then (* Conflict *)
 	    raise (Discriminable (s,opac,t,pac))
 	  else (* Match *)
 	    let cinfo = get_constructor_info state.uf pac.cnode in
@@ -738,16 +738,16 @@ let process_constructor_mark t i rep pac state =
 	    in f cinfo.ci_nhyps opac.args pac.args
       | Partial_applied | Partial _ ->
 (*	  add_pac state.uf.map.(i) pac t; *)
-	  state.terms<-Int.Set.union rep.lfathers state.terms
+          state.terms<-CInt.Set.union rep.lfathers state.terms
       | Unknown ->
-	  if Int.equal pac.arity 0 then
+          if CInt.equal pac.arity 0 then
 	    rep.inductive_status <- Total (t,pac)
 	  else
 	    begin
 	     (* add_pac state.uf.map.(i) pac t; *)
-	      state.terms<-Int.Set.union rep.lfathers state.terms;
+              state.terms<-CInt.Set.union rep.lfathers state.terms;
 	      rep.inductive_status <- Partial pac;
-	      state.pa_classes<- Int.Set.add i state.pa_classes
+              state.pa_classes<- CInt.Set.add i state.pa_classes
 	    end
 
 let process_mark t m state =
@@ -769,7 +769,7 @@ let check_disequalities state =
   let rec check_aux = function
     | dis::q ->
         let (info, ans) =
-          if Int.equal (find uf dis.lhs) (find uf dis.rhs) then (str "Yes", Some dis)
+          if CInt.equal (find uf dis.lhs) (find uf dis.rhs) then (str "Yes", Some dis)
           else (str "No", check_aux q)
         in
         let _ = debug
@@ -792,8 +792,8 @@ let one_step state =
 	  true
       with Queue.Empty ->
 	try
-	  let t = Int.Set.choose state.terms in
-	    state.terms<-Int.Set.remove t state.terms;
+          let t = CInt.Set.choose state.terms in
+            state.terms<-CInt.Set.remove t state.terms;
 	    update t state;
 	    true
 	with Not_found -> false
@@ -828,7 +828,7 @@ let complete_one_class state i=
     | _ -> anomaly (Pp.str "wrong incomplete class.")
 
 let complete state =
-  Int.Set.iter (complete_one_class state) state.pa_classes
+  CInt.Set.iter (complete_one_class state) state.pa_classes
 
 type matching_problem =
 {mp_subst : int array;
@@ -846,8 +846,8 @@ let make_fun_table state =
 	       (fun paf _ ->
 		  let elem =
 		    try PafMap.find paf !funtab
-		    with Not_found -> Int.Set.empty in
-		    funtab:= PafMap.add paf (Int.Set.add i elem) !funtab)
+                    with Not_found -> CInt.Set.empty in
+                    funtab:= PafMap.add paf (CInt.Set.add i elem) !funtab)
 	       rep.functions
 	 | _ -> ()) state.uf.map;
     !funtab
@@ -868,13 +868,13 @@ let do_match state res pb_stack =
 		      Stack.push {mp with mp_stack=remains} pb_stack
 		    end
 		  else
-		    if Int.equal mp.mp_subst.(pred i) cl then
+                    if CInt.equal mp.mp_subst.(pred i) cl then
 		      Stack.push {mp with mp_stack=remains} pb_stack
 		    else (* mismatch for non-linear variable in pattern *) ()
 	      | PApp (f,[]) ->
 		  begin
 		    try let j=Termhash.find uf.syms f in
-		      if Int.equal (find uf j) cl then
+                      if CInt.equal (find uf j) cl then
 			Stack.push {mp with mp_stack=remains} pb_stack
 		    with Not_found -> ()
 		  end
@@ -892,7 +892,7 @@ let do_match state res pb_stack =
 			     mp_stack=
 			      (PApp(f,rem_args),s) ::
 				(last_arg,t) :: remains} pb_stack in
-		      Int.Set.iter aux good_terms
+                      CInt.Set.iter aux good_terms
 		  with Not_found -> ()
 
 let paf_of_patt syms = function
@@ -909,21 +909,21 @@ let init_pb_stack state =
     begin
       let good_classes =
 	match inst.qe_lhs_valid with
-	  Creates_variables -> Int.Set.empty
+          Creates_variables -> CInt.Set.empty
 	| Normal ->
 	    begin
 	      try
 		let paf= paf_of_patt syms inst.qe_lhs in
 		  PafMap.find paf funtab
-	      with Not_found -> Int.Set.empty
+              with Not_found -> CInt.Set.empty
 	    end
 	| Trivial typ ->
 	    begin
 	      try
 		Typehash.find state.by_type typ
-	      with Not_found -> Int.Set.empty
+              with Not_found -> CInt.Set.empty
 	    end in
-	Int.Set.iter (fun i ->
+        CInt.Set.iter (fun i ->
 		       Stack.push
 			 {mp_subst = Array.make inst.qe_nvars (-1);
 			  mp_inst=inst;
@@ -932,21 +932,21 @@ let init_pb_stack state =
     begin
       let good_classes =
 	match inst.qe_rhs_valid with
-	  Creates_variables -> Int.Set.empty
+          Creates_variables -> CInt.Set.empty
 	| Normal ->
 	    begin
 	      try
 		let paf= paf_of_patt syms inst.qe_rhs in
 		  PafMap.find paf funtab
-	      with Not_found -> Int.Set.empty
+              with Not_found -> CInt.Set.empty
 	    end
 	| Trivial typ ->
 	    begin
 	      try
 		Typehash.find state.by_type typ
-	      with Not_found -> Int.Set.empty
+              with Not_found -> CInt.Set.empty
 	    end in
-	Int.Set.iter (fun i ->
+        CInt.Set.iter (fun i ->
 		       Stack.push
 			 {mp_subst = Array.make inst.qe_nvars (-1);
 			  mp_inst=inst;
@@ -978,7 +978,7 @@ let rec execute first_run state =
     done;
     match check_disequalities state with
 	None ->
-	  if not(Int.Set.is_empty state.pa_classes) then
+          if not(CInt.Set.is_empty state.pa_classes) then
 	    begin
 	      debug (fun () -> str "First run was incomplete, completing ... ");
 	      complete state;

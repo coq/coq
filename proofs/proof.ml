@@ -70,7 +70,7 @@ exception FullyUnfocused
 let _ = CErrors.register_handler begin function
   | CannotUnfocusThisWay ->
     CErrors.user_err Pp.(str "This proof is focused, but cannot be unfocused this way")
-  | NoSuchGoals (i,j) when Int.equal i j ->
+  | NoSuchGoals (i,j) when CInt.equal i j ->
       CErrors.user_err ~hdr:"Focus" Pp.(str"No such goal (" ++ int i ++ str").")
   | NoSuchGoals (i,j) ->
       CErrors.user_err ~hdr:"Focus" Pp.(
@@ -87,17 +87,17 @@ end
 let check_cond_kind c k =
   let kind_of_cond = function
     | CondNo (_,k) | CondDone(_,k) | CondEndStack k -> k in
-  Int.equal (kind_of_cond c) k
+  CInt.equal (kind_of_cond c) k
 
 let test_cond c k1 pw =
   match c with
-  | CondNo(_,     k) when Int.equal k k1 -> Strict
+  | CondNo(_,     k) when CInt.equal k k1 -> Strict
   | CondNo(true,  _)             -> Loose
   | CondNo(false, _)             -> Cannot NotThisWay
-  | CondDone(_,     k) when Int.equal k k1 && Proofview.finished pw -> Strict
+  | CondDone(_,     k) when CInt.equal k k1 && Proofview.finished pw -> Strict
   | CondDone(true,  _)                                      -> Loose
   | CondDone(false, _)                                      -> Cannot NotThisWay
-  | CondEndStack k when Int.equal k k1 -> Strict
+  | CondEndStack k when CInt.equal k k1 -> Strict
   | CondEndStack _             -> Cannot AlreadyNoFocus
 
 let no_cond ?(loose_end=false) k = CondNo (loose_end, k)
@@ -328,7 +328,7 @@ exception OpenProof of Names.Id.t option * open_error_reason
 let _ = CErrors.register_handler begin function
     | OpenProof (pid, reason) ->
       let open Pp in
-      Option.cata (fun pid ->
+      COption.cata (fun pid ->
           str " (in proof " ++ Names.Id.print pid ++ str "): ") (mt()) pid ++ print_open_error_reason reason
     | _ -> raise CErrors.Unhandled
   end

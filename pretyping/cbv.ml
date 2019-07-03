@@ -99,7 +99,7 @@ let rec shift_value n = function
       PRIMITIVE(op,c,Array.map (shift_value n) args)
 
 let shift_value n v =
-  if Int.equal n 0 then v else shift_value n v
+  if CInt.equal n 0 then v else shift_value n v
 
 (* Contracts a fixpoint: given a fixpoint and a bindings,
  * returns the corresponding fixpoint body, and the bindings in which
@@ -125,7 +125,7 @@ let make_constr_ref n k t =
 
 (* Adds an application list. Collapse APPs! *)
 let stack_app appl stack =
-  if Int.equal (Array.length appl) 0 then stack else
+  if CInt.equal (Array.length appl) 0 then stack else
     match stack with
     | APP(args,stk) -> APP(Array.append appl args,stk)
     | _             -> APP(appl, stack)

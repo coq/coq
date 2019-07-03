@@ -78,7 +78,7 @@ type _ ty_sig =
 
 type ty_ml = TyML : 'r ty_sig * 'r -> ty_ml
 
-val tactic_extend : string -> string -> level:Int.t ->
+val tactic_extend : string -> string -> level:CInt.t ->
   ?deprecation:Deprecation.t -> ty_ml list -> unit
 
 (** {5 ARGUMENT EXTEND} *)

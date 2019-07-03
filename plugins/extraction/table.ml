@@ -78,7 +78,7 @@ let rec prefixes_mp mp = match mp with
   | _ -> MPset.singleton mp
 
 let rec get_nth_label_mp n = function
-  | MPdot (mp,l) -> if Int.equal n 1 then l else get_nth_label_mp (n-1) mp
+  | MPdot (mp,l) -> if CInt.equal n 1 then l else get_nth_label_mp (n-1) mp
   | _ -> failwith "get_nth_label: not enough MPdot"
 
 let common_prefix_from_list mp0 mpl =
@@ -305,7 +305,7 @@ let err s = user_err ~hdr:"Extraction" s
 let warn_extraction_axiom_to_realize =
   CWarnings.create ~name:"extraction-axiom-to-realize" ~category:"extraction"
          (fun axioms ->
-          let s = if Int.equal (List.length axioms) 1 then "axiom" else "axioms" in
+          let s = if CInt.equal (List.length axioms) 1 then "axiom" else "axioms" in
           strbrk ("The following "^s^" must be realized in the extracted code:")
                    ++ hov 1 (spc () ++ prlist_with_sep spc safe_pr_global axioms)
                    ++ str "." ++ fnl ())
@@ -314,7 +314,7 @@ let warn_extraction_logical_axiom =
   CWarnings.create ~name:"extraction-logical-axiom" ~category:"extraction"
          (fun axioms ->
           let s =
-            if Int.equal (List.length axioms) 1 then "axiom was" else "axioms were"
+            if CInt.equal (List.length axioms) 1 then "axiom was" else "axioms were"
           in
           (strbrk ("The following logical "^s^" encountered:") ++
              hov 1 (spc () ++ prlist_with_sep spc safe_pr_global axioms ++ str ".\n")
@@ -541,7 +541,7 @@ type opt_flag =
       opt_lin_let : bool;   (* 512 *)
       opt_lin_beta : bool } (* 1024 *)
 
-let kth_digit n k = not (Int.equal (n land (1 lsl k)) 0)
+let kth_digit n k = not (CInt.equal (n land (1 lsl k)) 0)
 
 let flag_of_int n =
     { opt_kill_dum = kth_digit n 0;
@@ -577,7 +577,7 @@ let () = declare_bool_option
 	  {optdepr = false;
 	   optname = "Extraction Optimize";
 	   optkey = ["Extraction"; "Optimize"];
-	   optread = (fun () -> not (Int.equal !int_flag_ref 0));
+           optread = (fun () -> not (CInt.equal !int_flag_ref 0));
 	   optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
 
 let () = declare_int_option
@@ -701,25 +701,25 @@ type int_or_id = ArgInt of int | ArgId of Id.t
 let implicits_table = Summary.ref Refmap'.empty ~name:"ExtrImplicit"
 
 let implicits_of_global r =
- try Refmap'.find r !implicits_table with Not_found -> Int.Set.empty
+ try Refmap'.find r !implicits_table with Not_found -> CInt.Set.empty
 
 let add_implicits r l =
   let names = argnames_of_global r in
   let n = List.length names in
   let add_arg s = function
     | ArgInt i ->
-	if 1 <= i && i <= n then Int.Set.add i s
+        if 1 <= i && i <= n then CInt.Set.add i s
 	else err (int i ++ str " is not a valid argument number for " ++
 		  safe_pr_global r)
     | ArgId id ->
        try
          let i = List.index Name.equal (Name id) names in
-         Int.Set.add i s
+         CInt.Set.add i s
        with Not_found ->
 	 err (str "No argument " ++ Id.print id ++ str " for " ++
 	      safe_pr_global r)
   in
-  let ints = List.fold_left add_arg Int.Set.empty l in
+  let ints = List.fold_left add_arg CInt.Set.empty l in
   implicits_table := Refmap'.add r ints !implicits_table
 
 (* Registration of operations for rollback. *)
@@ -860,7 +860,7 @@ let extract_constant_inline inline r ids s =
 	if Reduction.is_arity env typ
 	  then begin
 	    let nargs = Hook.get use_type_scheme_nb_args env typ in
-	    if not (Int.equal (List.length ids) nargs) then error_axiom_scheme g nargs
+            if not (CInt.equal (List.length ids) nargs) then error_axiom_scheme g nargs
 	  end;
 	Lib.add_anonymous_leaf (inline_extraction (inline,[g]));
 	Lib.add_anonymous_leaf (in_customs (g,ids,s))
@@ -875,10 +875,10 @@ let extract_inductive r s l optstr =
     | GlobRef.IndRef ((kn,i) as ip) ->
 	let mib = Global.lookup_mind kn in
 	let n = Array.length mib.mind_packets.(i).mind_consnames in
-	if not (Int.equal n (List.length l)) then error_nb_cons ();
+        if not (CInt.equal n (List.length l)) then error_nb_cons ();
 	Lib.add_anonymous_leaf (inline_extraction (true,[g]));
 	Lib.add_anonymous_leaf (in_customs (g,[],s));
-	Option.iter (fun s -> Lib.add_anonymous_leaf (in_custom_matchs (g,s)))
+        COption.iter (fun s -> Lib.add_anonymous_leaf (in_custom_matchs (g,s)))
 	  optstr;
 	List.iteri
 	  (fun j s ->

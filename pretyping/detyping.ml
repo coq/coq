@@ -154,9 +154,9 @@ let encode_inductive env r =
 (* Tables for Cases printing under a "if" form, a "let" form,  *)
 
 let has_two_constructors lc =
-  Int.equal (Array.length lc) 2 (* & lc.(0) = 0 & lc.(1) = 0 *)
+  CInt.equal (Array.length lc) 2 (* & lc.(0) = 0 & lc.(1) = 0 *)
 
-let isomorphic_to_tuple lc = Int.equal (Array.length lc) 1
+let isomorphic_to_tuple lc = CInt.equal (Array.length lc) 1
 
 let encode_bool env ({CAst.loc} as r) =
   let (x,lc) = encode_inductive env r in
@@ -295,7 +295,7 @@ let computable sigma p k =
        engendrera un prédicat non dépendant) *)
 
   let sign,ccl = decompose_lam_assum sigma p in
-  Int.equal (Context.Rel.length sign) (k + 1)
+  CInt.equal (Context.Rel.length sign) (k + 1)
   &&
   noccur_between sigma 1 (k+1) ccl
 
@@ -319,9 +319,9 @@ let lookup_index_as_renamed env sigma t n =
           (match Namegen.compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name.binder_name c' with
                (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
-		 if Int.equal n 0 then
+                 if CInt.equal n 0 then
 		   Some (d-1)
-		 else if Int.equal n 1 then
+                 else if CInt.equal n 1 then
 		   Some d
 		 else
 		   lookup (n-1) (d+1) c')
@@ -329,15 +329,15 @@ let lookup_index_as_renamed env sigma t n =
           (match Namegen.compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name.binder_name c' with
              | (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
-		 if Int.equal n 0 then
+                 if CInt.equal n 0 then
 		   Some (d-1)
-		 else if Int.equal n 1 then
+                 else if CInt.equal n 1 then
 		   Some d
 		 else
 		   lookup (n-1) (d+1) c'
 	  )
     | Cast (c,_,_) -> lookup n d c
-    | _ -> if Int.equal n 0 then Some (d-1) else None
+    | _ -> if CInt.equal n 0 then Some (d-1) else None
   in lookup n 1 t
 
 (**********************************************************************)
@@ -467,7 +467,7 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
     match EConstr.kind sigma c with
     | Case (ci,p,c,cl) when
         eq_constr sigma c (mkRel (List.index Name.equal na (fst (snd e))))
-        && not (Int.equal (Array.length cl) 0)
+        && not (CInt.equal (Array.length cl) 0)
 	&& (* don't contract if p dependent *)
 	computable sigma p (List.length ci.ci_pp_info.ind_tags) (* FIXME: can do better *) ->
 	let clauses = build_tree na isgoal e sigma ci cl in
@@ -537,7 +537,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
   let synth_type = synthetize_type () in
   let tomatch = detype c in
   let alias, aliastyp, pred=
-    if (not !Flags.raw_print) && synth_type && computable && not (Int.equal (Array.length bl) 0)
+    if (not !Flags.raw_print) && synth_type && computable && not (CInt.equal (Array.length bl) 0)
     then
       Anonymous, None, None
     else
@@ -577,7 +577,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
 	Array.map3 (extract_nondep_branches testdep) bl bl' constagsl in
       if Array.for_all ((!=) None) nondepbrs then
 	GIf (tomatch,(alias,pred),
-             Option.get nondepbrs.(0),Option.get nondepbrs.(1))
+             COption.get nondepbrs.(0),COption.get nondepbrs.(1))
       else
 	let eqnl = detype_eqns constructs constagsl bl in
 	GCases (tag,pred,[tomatch,(alias,aliastyp)],eqnl)
@@ -810,8 +810,8 @@ and detype_r d flags avoid env sigma t =
           | Some id -> id
           in
           let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl in
-          let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> match EConstr.kind sigma c with Rel n -> (fvs,Int.Set.add n rels) | Var id -> (Id.Set.add id fvs,rels) | _ -> (fvs,rels)) (Id.Set.empty,Int.Set.empty) l in
-          let l = Evd.evar_instance_array (fun d c -> not !print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel sigma c && Int.Set.mem (destRel sigma c) rels || isVar sigma c && (Id.Set.mem (destVar sigma c) fvs)))) (Evd.find sigma evk) cl in
+          let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> match EConstr.kind sigma c with Rel n -> (fvs,CInt.Set.add n rels) | Var id -> (Id.Set.add id fvs,rels) | _ -> (fvs,rels)) (Id.Set.empty,CInt.Set.empty) l in
+          let l = Evd.evar_instance_array (fun d c -> not !print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel sigma c && CInt.Set.mem (destRel sigma c) rels || isVar sigma c && (Id.Set.mem (destVar sigma c) fvs)))) (Evd.find sigma evk) cl in
           id,l
         with Not_found ->
           Id.of_string ("X" ^ string_of_int (Evar.repr evk)),
@@ -896,14 +896,14 @@ and detype_binder d flags bk avoid env sigma {binder_name=na} body ty c =
   | BProd   -> GProd (na',Explicit,detype d { flags with flg_isgoal = false } avoid env sigma ty, r)
   | BLambda -> GLambda (na',Explicit,detype d { flags with flg_isgoal = false } avoid env sigma ty, r)
   | BLetIn ->
-      let c = detype d { flags with flg_isgoal = false } avoid env sigma (Option.get body) in
+      let c = detype d { flags with flg_isgoal = false } avoid env sigma (COption.get body) in
       (* Heuristic: we display the type if in Prop *)
       let s = try Retyping.get_sort_family_of (snd env) sigma ty with _ when !Flags.in_debugger || !Flags.in_toplevel -> InType (* Can fail because of sigma missing in debugger *) in
       let t = if s != InProp  && not !Flags.raw_print then None else Some (detype d { flags with flg_isgoal = false } avoid env sigma ty) in
       GLetIn (na', c, t, r)
 
 let detype_rel_context d flags where avoid env sigma sign =
-  let where = Option.map (fun c -> EConstr.it_mkLambda_or_LetIn c sign) where in
+  let where = COption.map (fun c -> EConstr.it_mkLambda_or_LetIn c sign) where in
   let rec aux avoid env = function
   | [] -> []
   | decl::rest ->
@@ -920,7 +920,7 @@ let detype_rel_context d flags where avoid env sigma sign =
 	      | LocalAssum _ -> None
               | LocalDef (_,b,_) -> Some b
       in
-      let b' = Option.map (detype d flags avoid env sigma) b in
+      let b' = COption.map (detype d flags avoid env sigma) b in
       let t' = detype d flags avoid env sigma t in
       (na',Explicit,b',t') :: aux avoid' (add_name na' b t env) rest
   in aux avoid env (List.rev sign)
@@ -980,7 +980,7 @@ let detype_closed_glob ?lax isgoal avoid env sigma t =
         GProd(id,k,detype_closed_glob cl t, detype_closed_glob cl c)
     | GLetIn (id,b,t,e) ->
         let id = convert_name cl id in
-        GLetIn(id,detype_closed_glob cl b, Option.map (detype_closed_glob cl) t, detype_closed_glob cl e)
+        GLetIn(id,detype_closed_glob cl b, COption.map (detype_closed_glob cl) t, detype_closed_glob cl e)
     | GLetTuple (ids,(n,r),b,e) ->
         let ids = List.map (convert_name cl) ids in
         let n = convert_name cl n in
@@ -1048,17 +1048,17 @@ let rec subst_glob_constr env subst = DAst.map (function
   | GLetIn (n,r1,t,r2) as raw ->
       let r1' = subst_glob_constr env subst r1 in
       let r2' = subst_glob_constr env subst r2 in
-      let t' = Option.Smart.map (subst_glob_constr env subst) t in
+      let t' = COption.Smart.map (subst_glob_constr env subst) t in
 	if r1' == r1 && t == t' && r2' == r2 then raw else
 	  GLetIn (n,r1',t',r2')
 
   | GCases (sty,rtno,rl,branches) as raw ->
     let open CAst in
-      let rtno' = Option.Smart.map (subst_glob_constr env subst) rtno
+      let rtno' = COption.Smart.map (subst_glob_constr env subst) rtno
       and rl' = List.Smart.map (fun (a,x as y) ->
         let a' = subst_glob_constr env subst a in
         let (n,topt) = x in
-        let topt' = Option.Smart.map
+        let topt' = COption.Smart.map
           (fun ({loc;v=((sp,i),y)} as t) ->
             let sp' = subst_mind subst sp in
             if sp == sp' then t else CAst.(make ?loc ((sp',i),y))) topt in
@@ -1076,14 +1076,14 @@ let rec subst_glob_constr env subst = DAst.map (function
 	  GCases (sty,rtno',rl',branches')
 
   | GLetTuple (nal,(na,po),b,c) as raw ->
-      let po' = Option.Smart.map (subst_glob_constr env subst) po
+      let po' = COption.Smart.map (subst_glob_constr env subst) po
       and b' = subst_glob_constr env subst b
       and c' = subst_glob_constr env subst c in
 	if po' == po && b' == b && c' == c then raw else
           GLetTuple (nal,(na,po'),b',c')
 
   | GIf (c,(na,po),b1,b2) as raw ->
-      let po' = Option.Smart.map (subst_glob_constr env subst) po
+      let po' = COption.Smart.map (subst_glob_constr env subst) po
       and b1' = subst_glob_constr env subst b1
       and b2' = subst_glob_constr env subst b2
       and c' = subst_glob_constr env subst c in
@@ -1096,7 +1096,7 @@ let rec subst_glob_constr env subst = DAst.map (function
       let bl' = Array.Smart.map
         (List.Smart.map (fun (na,k,obd,ty as dcl) ->
           let ty' = subst_glob_constr env subst ty in
-          let obd' = Option.Smart.map (subst_glob_constr env subst) obd in
+          let obd' = COption.Smart.map (subst_glob_constr env subst) obd in
           if ty'==ty && obd'==obd then dcl else (na,k,obd',ty')))
         bl in
 	if ra1' == ra1 && ra2' == ra2 && bl'==bl then raw else
@@ -1109,7 +1109,7 @@ let rec subst_glob_constr env subst = DAst.map (function
       if nref == ref then knd else Evar_kinds.ImplicitArg (nref, i, b)
     | _ -> knd
     in
-    let nsolve = Option.Smart.map (Hook.get f_subst_genarg subst) solve in
+    let nsolve = COption.Smart.map (Hook.get f_subst_genarg subst) solve in
     if nsolve == solve && nknd == knd then raw
     else GHole (nknd, naming, nsolve)
 

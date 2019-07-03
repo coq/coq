@@ -124,7 +124,7 @@ let occur_vars_in_decl env sigma hyps d =
 
 let reorder_context env sigma sign ord =
   let ords = List.fold_right Id.Set.add ord Id.Set.empty in
-  if not (Int.equal (List.length ord) (Id.Set.cardinal ords)) then
+  if not (CInt.equal (List.length ord) (Id.Set.cardinal ords)) then
     user_err Pp.(str "Order list has duplicates");
   let rec step ord expected ctxt_head moved_hyps ctxt_tail =
     match ord with
@@ -313,7 +313,7 @@ let collect_meta_variables c =
   List.rev (collrec false [] c)
 
 let check_meta_variables env sigma c =
-  if not (List.distinct_f Int.compare (collect_meta_variables c)) then
+  if not (List.distinct_f CInt.compare (collect_meta_variables c)) then
     raise (RefinerError (env, sigma, NonLinearProof c))
 
 let check_conv_leq_goal env sigma arg ty conclty =
@@ -382,7 +382,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	    let ty = 
 	      (* Template polymorphism of definitions and inductive types *)
 	      let firstmeta = Array.findi (fun i x -> occur_meta sigma (EConstr.of_constr x)) l in
-	      let args, _ = Option.cata (fun i -> CArray.chop i l) (l, [||]) firstmeta in
+              let args, _ = COption.cata (fun i -> CArray.chop i l) (l, [||]) firstmeta in
 	        type_of_global_reference_knowing_parameters env sigma (EConstr.of_constr f) (Array.map EConstr.of_constr args)
 	    in
 	    let ty = EConstr.Unsafe.to_constr ty in
@@ -559,11 +559,11 @@ let convert_hyp ~check ~reorder env sigma d =
     if check then error_no_such_hypothesis env sigma id
     else sign
   | d' ->
-    let c = Option.map EConstr.of_constr (NamedDecl.get_value d') in
+    let c = COption.map EConstr.of_constr (NamedDecl.get_value d') in
     if check && not (is_conv env sigma (NamedDecl.get_type d) (EConstr.of_constr (NamedDecl.get_type d'))) then
       user_err ~hdr:"Logic.convert_hyp"
         (str "Incorrect change of the type of " ++ Id.print id ++ str ".");
-    if check && not (Option.equal (is_conv env sigma) b c) then
+    if check && not (COption.equal (is_conv env sigma) b c) then
       user_err ~hdr:"Logic.convert_hyp"
         (str "Incorrect change of the body of "++ Id.print id ++ str ".");
     let sign' = apply_to_hyp sign id (fun _ _ _ -> EConstr.Unsafe.to_named_decl d) in

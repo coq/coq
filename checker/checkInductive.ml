@@ -70,7 +70,7 @@ let check_arity env ar1 ar2 = match ar1, ar2 with
     Constr.equal ar.mind_user_arity mind_user_arity &&
     Sorts.equal ar.mind_sort mind_sort
   | TemplateArity ar, TemplateArity {template_param_levels;template_level} ->
-    List.equal (Option.equal Univ.Level.equal) ar.template_param_levels template_param_levels &&
+    List.equal (COption.equal Univ.Level.equal) ar.template_param_levels template_param_levels &&
     UGraph.check_leq (universes env) template_level ar.template_level
     (* template_level is inferred by indtypes, so functor application can produce a smaller one *)
   | (RegularArity _ | TemplateArity _), _ -> false
@@ -86,7 +86,7 @@ let eq_recarg a1 a2 = match a1, a2 with
   | Imbr i1, Imbr i2 -> eq_ind_chk i1 i2
   | (Norec | Mrec _ | Imbr _), _ -> false
 
-let eq_reloc_tbl = Array.equal (fun x y -> Int.equal (fst x) (fst y) && Int.equal (snd x) (snd y))
+let eq_reloc_tbl = Array.equal (fun x y -> CInt.equal (fst x) (fst y) && CInt.equal (snd x) (snd y))
 
 let eq_in_context (ctx1, t1) (ctx2, t2) =
   Context.Rel.equal Constr.equal ctx1 ctx2 && Constr.equal t1 t2
@@ -103,23 +103,23 @@ let check_packet env mind ind
   check "mind_arity" (check_arity env ind.mind_arity mind_arity);
   ignore mind_consnames; (* passed through *)
   check "mind_user_lc" (Array.equal Constr.equal ind.mind_user_lc mind_user_lc);
-  check "mind_nrealargs" Int.(equal ind.mind_nrealargs mind_nrealargs);
-  check "mind_nrealdecls" Int.(equal ind.mind_nrealdecls mind_nrealdecls);
+  check "mind_nrealargs" CInt.(equal ind.mind_nrealargs mind_nrealargs);
+  check "mind_nrealdecls" CInt.(equal ind.mind_nrealdecls mind_nrealdecls);
   check "mind_kelim" (check_kelim ind.mind_kelim mind_kelim);
 
   check "mind_nf_lc" (Array.equal eq_in_context ind.mind_nf_lc mind_nf_lc);
   (* NB: here syntactic equality is not just an optimisation, we also
      care about the shape of the terms *)
 
-  check "mind_consnrealargs" (Array.equal Int.equal ind.mind_consnrealargs mind_consnrealargs);
-  check "mind_consnrealdecls" (Array.equal Int.equal ind.mind_consnrealdecls mind_consnrealdecls);
+  check "mind_consnrealargs" (Array.equal CInt.equal ind.mind_consnrealargs mind_consnrealargs);
+  check "mind_consnrealdecls" (Array.equal CInt.equal ind.mind_consnrealdecls mind_consnrealdecls);
 
   check "mind_recargs" (Rtree.equal eq_recarg ind.mind_recargs mind_recargs);
 
   check "mind_relevant" (Sorts.relevance_equal ind.mind_relevance mind_relevance);
 
-  check "mind_nb_args" Int.(equal ind.mind_nb_args mind_nb_args);
-  check "mind_nb_constant" Int.(equal ind.mind_nb_constant mind_nb_constant);
+  check "mind_nb_args" CInt.(equal ind.mind_nb_args mind_nb_args);
+  check "mind_nb_constant" CInt.(equal ind.mind_nb_constant mind_nb_constant);
   check "mind_reloc_tbl" (eq_reloc_tbl ind.mind_reloc_tbl mind_reloc_tbl);
 
   ()
@@ -155,9 +155,9 @@ let check_inductive env mind mb =
   Array.iter2 (check_packet env mind) mb.mind_packets mind_packets;
   check "mind_record" (check_same_record mb.mind_record mind_record);
   check "mind_finite" (mb.mind_finite == mind_finite);
-  check "mind_ntypes" Int.(equal mb.mind_ntypes mind_ntypes);
+  check "mind_ntypes" CInt.(equal mb.mind_ntypes mind_ntypes);
   check "mind_hyps" (Context.Named.equal Constr.equal mb.mind_hyps mind_hyps);
-  check "mind_nparams" Int.(equal mb.mind_nparams mind_nparams);
+  check "mind_nparams" CInt.(equal mb.mind_nparams mind_nparams);
 
   check "mind_nparams_rec" (mb.mind_nparams_rec <= mind_nparams_rec);
   (* module substitution can increase the real number of recursively

@@ -83,16 +83,16 @@ struct
 	DFix (ia,i,Array.map f ta,Array.map f ca)
     | DCoFix(i,ta,ca) ->
 	DCoFix (i,Array.map f ta,Array.map f ca)
-    | DCons ((t,topt),u) -> DCons ((f t,Option.map f topt), f u)
+    | DCons ((t,topt),u) -> DCons ((f t,COption.map f topt), f u)
 
   let compare_ci ci1 ci2 =
     let c = ind_ord ci1.ci_ind ci2.ci_ind in
     if c = 0 then
-      let c = Int.compare ci1.ci_npar ci2.ci_npar in
+      let c = CInt.compare ci1.ci_npar ci2.ci_npar in
       if c = 0 then
-        let c = Array.compare Int.compare ci1.ci_cstr_ndecls ci2.ci_cstr_ndecls in
+        let c = Array.compare CInt.compare ci1.ci_cstr_ndecls ci2.ci_cstr_ndecls in
         if c = 0 then
-          Array.compare Int.compare ci1.ci_cstr_nargs ci2.ci_cstr_nargs
+          Array.compare CInt.compare ci1.ci_cstr_nargs ci2.ci_cstr_nargs
         else c
       else c
     else c
@@ -127,9 +127,9 @@ struct
   | DCase _, _ -> -1 | _, DCase _ -> 1
 
   | DFix (i1, j1, tl1, pl1), DFix (i2, j2, tl2, pl2) ->
-    let c = Int.compare j1 j2 in
+    let c = CInt.compare j1 j2 in
     if c = 0 then
-      let c = Array.compare Int.compare i1 i2 in
+      let c = Array.compare CInt.compare i1 i2 in
       if c = 0 then
         let c = Array.compare cmp tl1 tl2 in
         if c = 0 then Array.compare cmp pl1 pl2
@@ -139,7 +139,7 @@ struct
   | DFix _, _ -> -1 | _, DFix _ -> 1
 
   | DCoFix (i1, tl1, pl1), DCoFix (i2, tl2, pl2) ->
-    let c = Int.compare i1 i2 in
+    let c = CInt.compare i1 i2 in
     if c = 0 then
       let c = Array.compare cmp tl1 tl2 in
       if c = 0 then Array.compare cmp pl1 pl2
@@ -153,9 +153,9 @@ struct
 
   | DCons ((t1, ot1), u1), DCons ((t2, ot2), u2) ->
      let c = cmp t1 t2 in
-     if Int.equal c 0 then
-       let c = Option.compare cmp ot1 ot2 in
-       if Int.equal c 0 then cmp u1 u2
+     if CInt.equal c 0 then
+       let c = COption.compare cmp ot1 ot2 in
+       if CInt.equal c 0 then cmp u1 u2
        else c
      else c
   | DCons _, _ -> -1 | _, DCons _ -> 1
@@ -172,7 +172,7 @@ struct
 	Array.fold_left f (Array.fold_left f acc ta) ca
     | DCoFix(i,ta,ca) ->
 	Array.fold_left f (Array.fold_left f acc ta) ca
-    | DCons ((t,topt),u) -> f (Option.fold_left f (f acc t) topt) u
+    | DCons ((t,topt),u) -> f (COption.fold_left f (f acc t) topt) u
 
   let choose f = function
     | (DRel | DSort | DNil | DRef _ | DInt _) -> invalid_arg "choose"
@@ -188,7 +188,7 @@ struct
 
   let fold2 (f:'a -> 'b -> 'c -> 'a) (acc:'a) (c1:'b t) (c2:'c t) : 'a =
     let head w = map (fun _ -> ()) w in
-    if not (Int.equal (compare dummy_cmp (head c1) (head c2)) 0)
+    if not (CInt.equal (compare dummy_cmp (head c1) (head c2)) 0)
     then invalid_arg "fold2:compare" else
       match c1,c2 with
         | (DRel, DRel | DNil, DNil | DSort, DSort | DRef _, DRef _
@@ -203,13 +203,13 @@ struct
 	| DCoFix(i,ta1,ca1), DCoFix(_,ta2,ca2) ->
 	    Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
 	| DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
-	    f (Option.fold_left2 f (f acc t1 t2) topt1 topt2) u1 u2
+            f (COption.fold_left2 f (f acc t1 t2) topt1 topt2) u1 u2
         | (DRel | DNil | DSort | DRef _ | DCtx _ | DApp _ | DLambda _ | DCase _
            | DFix _ | DCoFix _ | DCons _ | DInt _), _ -> assert false
 
   let map2 (f:'a -> 'b -> 'c) (c1:'a t) (c2:'b t) : 'c t =
     let head w = map (fun _ -> ()) w in
-    if not (Int.equal (compare dummy_cmp (head c1) (head c2)) 0)
+    if not (CInt.equal (compare dummy_cmp (head c1) (head c2)) 0)
     then invalid_arg "map2_t:compare" else
       match c1,c2 with
         | (DRel, DRel | DSort, DSort | DNil, DNil | DRef _, DRef _
@@ -225,7 +225,7 @@ struct
 	| DCoFix (i,ta1,ca1), DCoFix (_,ta2,ca2) ->
 	    DCoFix (i,Array.map2 f ta1 ta2,Array.map2 f ca1 ca2)
 	| DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
-	    DCons ((f t1 t2,Option.lift2 f topt1 topt2), f u1 u2)
+            DCons ((f t1 t2,COption.lift2 f topt1 topt2), f u1 u2)
         | (DRel | DNil | DSort | DRef _ | DCtx _ | DApp _ | DLambda _ | DCase _
            | DFix _ | DCoFix _ | DCons _ | DInt _), _ -> assert false
 
@@ -270,7 +270,7 @@ struct
   module TDnet : Dnet.S with type ident=Ident.t
 			and  type 'a structure = 'a DTerm.t
 			and  type meta = int
-    = Dnet.Make(DTerm)(Ident)(Int)
+    = Dnet.Make(DTerm)(Ident)(CInt)
 
   type t = TDnet.t
 
@@ -410,12 +410,12 @@ struct
   let map f dn = TDnet.map f (fun x -> x) dn
 
   let refresh_metas dn =
-    let new_metas = ref Int.Map.empty in
+    let new_metas = ref CInt.Map.empty in
     let refresh_one_meta i =
-      try Int.Map.find i !new_metas
+      try CInt.Map.find i !new_metas
       with Not_found ->
         let new_meta = fresh_meta () in
-        let () = new_metas := Int.Map.add i new_meta !new_metas in
+        let () = new_metas := CInt.Map.add i new_meta !new_metas in
         new_meta
     in
     TDnet.map_metas refresh_one_meta dn

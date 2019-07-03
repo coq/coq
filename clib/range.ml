@@ -20,7 +20,7 @@ let empty = Nil
 
 let cons x l = match l with
 | Cons (h1, t1, Cons (h2, t2, rem)) ->
-  if Int.equal h1 h2 then Cons (1 + h1 + h2, Node (x, t1, t2), rem)
+  if CInt.equal h1 h2 then Cons (1 + h1 + h2, Node (x, t1, t2), rem)
   else Cons (1, Leaf x, l)
 | _ -> Cons (1, Leaf x, l)
 

@@ -221,21 +221,21 @@ let solve_constraints_system levels level_bounds =
       levels in
   let v = Array.copy level_bounds in
   let nind = Array.length v in
-  let clos = Array.map (fun _ -> Int.Set.empty) levels in
+  let clos = Array.map (fun _ -> CInt.Set.empty) levels in
   (* First compute the transitive closure of the levels dependencies *)
   for i=0 to nind-1 do
     for j=0 to nind-1 do
-      if not (Int.equal i j) && is_direct_sort_constraint levels.(j) v.(i) then
-        clos.(i) <- Int.Set.add j clos.(i);
+      if not (CInt.equal i j) && is_direct_sort_constraint levels.(j) v.(i) then
+        clos.(i) <- CInt.Set.add j clos.(i);
     done;
   done;
   let rec closure () =
     let continue = ref false in
       Array.iteri (fun i deps ->
         let deps' =
-          Int.Set.fold (fun j acc -> Int.Set.union acc clos.(j)) deps deps
+          CInt.Set.fold (fun j acc -> CInt.Set.union acc clos.(j)) deps deps
         in
-          if Int.Set.equal deps deps' then ()
+          if CInt.Set.equal deps deps' then ()
           else (clos.(i) <- deps'; continue := true))
         clos;
       if !continue then closure ()
@@ -244,7 +244,7 @@ let solve_constraints_system levels level_bounds =
   closure ();
   for i=0 to nind-1 do
     for j=0 to nind-1 do
-      if not (Int.equal i j) && Int.Set.mem j clos.(i) then
+      if not (CInt.equal i j) && CInt.Set.mem j clos.(i) then
         (v.(i) <- Universe.sup v.(i) level_bounds.(j));
     done;
   done;
@@ -329,11 +329,11 @@ let check_named {CAst.loc;v=na} = match na with
 let template_polymorphism_candidate env uctx params concl =
   match uctx with
   | Entries.Monomorphic_entry uctx ->
-    let concltemplate = Option.cata (fun s -> not (Sorts.is_small s)) false concl in
+    let concltemplate = COption.cata (fun s -> not (Sorts.is_small s)) false concl in
     if not concltemplate then false
     else
       let template_check = Environ.check_template env in
-      let conclu = Option.cata Sorts.univ_of_sort Univ.type0m_univ concl in
+      let conclu = COption.cata Sorts.univ_of_sort Univ.type0m_univ concl in
       let params, conclunivs = IndTyping.template_polymorphic_univs ~template_check uctx params conclu in
       not (template_check && Univ.LSet.is_empty conclunivs)
   | Entries.Polymorphic_entry _ -> false
@@ -381,7 +381,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let arities = List.map (intern_ind_arity env_params sigma) indl in
 
   let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, params, userimpls, useruimpls, impls, udecl), arities, is_template =
-    let is_template = List.exists (fun (_,_,_,pseudo_poly) -> not (Option.is_empty pseudo_poly)) arities in
+    let is_template = List.exists (fun (_,_,_,pseudo_poly) -> not (COption.is_empty pseudo_poly)) arities in
     if not poly && is_template then
       (* In case of template polymorphism, we need to compute more constraints *)
       let env0 = Environ.set_universes_lbound env0 Univ.Level.prop in
@@ -447,7 +447,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let arities = List.map (fun (template, arity) -> template, nf arity) arities in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf cl,impsl)) constructors in
   let ctx_params = List.map Termops.(map_rel_decl (EConstr.to_constr sigma)) ctx_params in
-  let arityconcl = List.map (Option.map (fun (anon, s) -> EConstr.ESorts.kind sigma s)) arityconcl in
+  let arityconcl = List.map (COption.map (fun (anon, s) -> EConstr.ESorts.kind sigma s)) arityconcl in
   let sigma = restrict_inductive_universes sigma ctx_params (List.map snd arities) constructors in
   let uctx = Evd.check_univ_decl ~poly sigma udecl in
   List.iter (fun c -> check_evars env_params (Evd.from_env env_params) sigma (EConstr.of_constr (snd c))) arities;
@@ -521,7 +521,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun ({CAst.v=indname},_,ar,lc) -> {
     ind_name = indname;
-    ind_arity = Option.cata (fun x -> x) (CAst.make @@ CSort (Glob_term.UAnonymous {rigid=true})) ar;
+    ind_arity = COption.cata (fun x -> x) (CAst.make @@ CSort (Glob_term.UAnonymous {rigid=true})) ar;
     ind_lc = List.map (fun (_,({CAst.v=id},t)) -> (id,t)) lc
   }) indl
 

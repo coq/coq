@@ -49,17 +49,17 @@ let el_stack el stk =
 let compare_stack_shape stk1 stk2 =
   let rec compare_rec bal stk1 stk2 =
   match (stk1,stk2) with
-      ([],[]) -> Int.equal bal 0
+      ([],[]) -> CInt.equal bal 0
     | ((Zupdate _|Zshift _)::s1, _) -> compare_rec bal s1 stk2
     | (_, (Zupdate _|Zshift _)::s2) -> compare_rec bal stk1 s2
     | (Zapp l1::s1, _) -> compare_rec (bal+Array.length l1) s1 stk2
     | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
     | (Zproj _p1::s1, Zproj _p2::s2) ->
-        Int.equal bal 0 && compare_rec 0 s1 s2
+        CInt.equal bal 0 && compare_rec 0 s1 s2
     | (ZcaseT(_c1,_,_,_)::s1, ZcaseT(_c2,_,_,_)::s2) ->
-        Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
+        CInt.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
-        Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
+        CInt.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
     | Zprimitive(op1,_,rargs1, _kargs1)::s1, Zprimitive(op2,_,rargs2, _kargs2)::s2 ->
         bal=0 && op1=op2 && List.length rargs1=List.length rargs2 &&
         compare_rec 0 s1 s2
@@ -246,7 +246,7 @@ let convert_inductives_gen cmp_instances cmp_cumul cv_pb (mind,ind) nargs u1 u2 
   | None -> cmp_instances u1 u2 s
   | Some variances ->
     let num_param_arity = inductive_cumulativity_arguments (mind,ind) in
-    if not (Int.equal num_param_arity nargs) then
+    if not (CInt.equal num_param_arity nargs) then
       cmp_instances u1 u2 s
     else
       cmp_cumul cv_pb variances u1 u2 s
@@ -264,7 +264,7 @@ let convert_constructors_gen cmp_instances cmp_cumul (mind, ind, cns) nargs u1 u
   | None -> cmp_instances u1 u2 s
   | Some _ ->
     let num_cnstr_args = constructor_cumulativity_arguments (mind,ind,cns) in
-    if not (Int.equal num_cnstr_args nargs) then
+    if not (CInt.equal num_cnstr_args nargs) then
       cmp_instances u1 u2 s
     else
       (** By invariant, both constructors have a common supertype,
@@ -286,7 +286,7 @@ let conv_table_key infos k1 k2 cuniv =
 	&& RedFlags.red_set (info_flags infos) (RedFlags.fCONST cst)
       in convert_instances ~flex u u' cuniv
   | VarKey id, VarKey id' when Id.equal id id' -> cuniv
-  | RelKey n, RelKey n' when Int.equal n n' -> cuniv
+  | RelKey n, RelKey n' when CInt.equal n n' -> cuniv
   | _ -> raise NotConvertible
 
 exception IrregularPatternShape
@@ -319,14 +319,14 @@ let push_relevances infos nas =
   { infos with relevances = Array.fold_left (fun l x -> x.Context.binder_relevance :: l) infos.relevances nas }
 
 let rec skip_pattern infos relevances n c1 c2 =
-  if Int.equal n 0 then {infos with relevances}, c1, c2
+  if CInt.equal n 0 then {infos with relevances}, c1, c2
   else match kind c1, kind c2 with
     | Lambda (x, _, c1), Lambda (_, _, c2) ->
       skip_pattern infos (x.Context.binder_relevance :: relevances) (pred n) c1 c2
     | _ -> raise IrregularPatternShape
 
 let skip_pattern infos n c1 c2 =
-  if Int.equal n 0 then infos, c1, c2
+  if CInt.equal n 0 then infos, c1, c2
   else skip_pattern infos infos.relevances n c1 c2
 
 let is_irrelevant infos lft c =
@@ -357,7 +357,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 		 anomaly (Pp.str "conversion was given ill-typed terms (Sort).");
               sort_cmp_universes (info_env infos.cnv_inf) cv_pb s1 s2 cuniv
 	   | (Meta n, Meta m) ->
-               if Int.equal n m
+               if CInt.equal n m
                then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
                else raise NotConvertible
 	   | _ -> raise NotConvertible)
@@ -375,7 +375,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     | (FRel n, FRel m) ->
         let el1 = el_stack lft1 v1 in
         let el2 = el_stack lft2 v2 in
-        if Int.equal (reloc_rel n el1) (reloc_rel m el2)
+        if CInt.equal (reloc_rel n el1) (reloc_rel m el2)
         then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
@@ -548,7 +548,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos.cnv_inf) in
           let nargs = CClosure.stack_args_size v1 in
-          if not (Int.equal nargs (CClosure.stack_args_size v2))
+          if not (CInt.equal nargs (CClosure.stack_args_size v2))
           then raise NotConvertible
           else
             let cuniv = convert_inductives cv_pb (mind, snd ind1) nargs u1 u2 cuniv in
@@ -556,14 +556,14 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       else raise NotConvertible
 
     | (FConstruct ((ind1,j1),u1), FConstruct ((ind2,j2),u2)) ->
-      if Int.equal j1 j2 && eq_ind ind1 ind2 then
+      if CInt.equal j1 j2 && eq_ind ind1 ind2 then
         if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
           let cuniv = convert_instances ~flex:false u1 u2 cuniv in
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos.cnv_inf) in
           let nargs = CClosure.stack_args_size v1 in
-          if not (Int.equal nargs (CClosure.stack_args_size v2))
+          if not (CInt.equal nargs (CClosure.stack_args_size v2))
           then raise NotConvertible
           else
             let cuniv = convert_constructors (mind, snd ind1, j1) nargs u1 u2 cuniv in
@@ -586,7 +586,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
        with Not_found -> raise NotConvertible)
 
     | (FFix (((op1, i1),(na1,tys1,cl1)),e1), FFix(((op2, i2),(_,tys2,cl2)),e2)) ->
-        if Int.equal i1 i2 && Array.equal Int.equal op1 op2
+        if CInt.equal i1 i2 && Array.equal CInt.equal op1 op2
 	then
 	  let n = Array.length cl1 in
           let fty1 = Array.map (mk_clos e1) tys1 in
@@ -605,7 +605,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         else raise NotConvertible
 
     | (FCoFix ((op1,(na1,tys1,cl1)),e1), FCoFix((op2,(_,tys2,cl2)),e2)) ->
-        if Int.equal op1 op2
+        if CInt.equal op1 op2
         then
 	  let n = Array.length cl1 in
           let fty1 = Array.map (mk_clos e1) tys1 in
@@ -670,7 +670,7 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
 and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
   let lv1 = Array.length v1 in
   let lv2 = Array.length v2 in
-  if Int.equal lv1 lv2
+  if CInt.equal lv1 lv2
   then
     let rec fold n cuniv =
       if n >= lv1 then cuniv
@@ -901,7 +901,7 @@ let hnf_prod_applist env t nl =
 
 let hnf_prod_applist_assum env n c l =
   let rec app n subst t l =
-    if Int.equal n 0 then
+    if CInt.equal n 0 then
       if l == [] then substl subst t
       else anomaly (Pp.str "Too many arguments.")
     else match kind (whd_allnolet env t), l with

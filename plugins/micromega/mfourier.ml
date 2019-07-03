@@ -25,7 +25,7 @@ type vector = Vect.t
     {coeffs = v ; bound = (l,r) } models the constraints l <= v <= r
 **)
 
-module ISet = Set.Make(Int)
+module ISet = Set.Make(CInt)
 
 module System = Hashtbl.Make(Vect)
 
@@ -92,7 +92,7 @@ let pp_system o sys=
 let merge_cstr_info i1 i2 =
   let { pos = p1 ; neg = n1 ; bound = i1 ; prf = prf1 } = i1
   and { pos = p2 ; neg = n2 ; bound = i2 ; prf = prf2 } = i2 in
-    assert (Int.equal p1 p2 && Int.equal n1 n2) ;
+    assert (CInt.equal p1 p2 && CInt.equal n1 n2) ;
     match inter i1 i2 with
       | None -> None (* Could directly raise a system contradiction exception *)
       | Some bnd ->
@@ -115,7 +115,7 @@ let xadd_cstr vect cstr_info sys =
 exception TimeOut
          
 let xadd_cstr vect cstr_info sys = 
-  if debug && Int.equal (System.length sys mod 1000) 0 then (print_string "*" ; flush stdout) ;
+  if debug && CInt.equal (System.length sys mod 1000) 0 then (print_string "*" ; flush stdout) ;
  if System.length sys < !max_nb_cstr
  then xadd_cstr vect cstr_info sys
  else raise TimeOut
@@ -137,9 +137,9 @@ let normalise_cstr vect cinfo =
        | None -> if Itv.in_bound (l,r) (Int 0) then Redundant else Contradiction
        | Some (_,n,_) -> Cstr(Vect.div n vect,
 			     let divn x = x // n in
-			       if Int.equal (sign_num n) 1
-                               then{cinfo with bound = (Option.map divn l , Option.map  divn r) }
-                               else {cinfo with pos = cinfo.neg ; neg = cinfo.pos ; bound = (Option.map divn r , Option.map divn l)})
+                               if CInt.equal (sign_num n) 1
+                               then{cinfo with bound = (COption.map divn l , COption.map  divn r) }
+                               else {cinfo with pos = cinfo.neg ; neg = cinfo.pos ; bound = (COption.map divn r , COption.map divn l)})
 
 
 (** For compatibility, there is an external representation of constraints *)
@@ -149,7 +149,7 @@ let count v =
   Vect.fold (fun (n,p) _ vl ->
       let sg = sign_num vl in
       assert (sg <> 0) ;
-      if Int.equal sg 1 then (n,p+1)else (n+1, p)) (0,0) v
+      if CInt.equal sg 1 then (n,p+1)else (n+1, p)) (0,0) v
 
 
 let norm_cstr {coeffs = v ; op = o ; cst = c} idx =
@@ -227,7 +227,7 @@ let split x (vect: vector) info (l,m,r) =
               | Some bnd -> (vl,vect,{info with bound = Some bnd,None})::lst in
 
           let lb,rb = info.bound in
-            if Int.equal (sign_num vl) 1
+            if CInt.equal (sign_num vl) 1
             then  (cons_bound l lb,m,cons_bound r rb)
             else (* sign_num vl = -1 *)
               (cons_bound l rb,m,cons_bound r lb)
@@ -249,8 +249,8 @@ let project vr sys =
       let {neg = n1 ; pos = p1 ; bound = bound1 ; prf = prf1} = info1
       and {neg = n2 ; pos = p2 ; bound = bound2 ; prf = prf2} = info2 in
 
-      let bnd1 = Option.get (fst bound1)
-      and bnd2 = Option.get (fst bound2) in
+      let bnd1 = COption.get (fst bound1)
+      and bnd2 = COption.get (fst bound2) in
       let bound = (bnd1 // v1) +/ (bnd2 // minus_num v2) in
       let vres,(n,p) = add (vect1,v1) (vect2,minus_num v2)  in
         (vres,{neg = n ; pos = p ; bound = (Some bound, None); prf = Elim(vr,info1.prf,info2.prf)}) in
@@ -288,7 +288,7 @@ let project_using_eq vr c vect bound  prf (vect',info') =
 	let bndres =
 	  let f x = cst +/ x // c2 in
 	  let (l,r) = info'.bound in
-            (Option.map f l , Option.map f r) in
+            (COption.map f l , COption.map f r) in
 
 	  (vres,{neg = n ; pos = p ; bound = bndres ; prf = Elim(vr,prf,info'.prf)})
 
@@ -313,7 +313,7 @@ let elim_var_using_eq vr vect cst  prf sys =
 (** [size sys] computes the number of entries in the system of constraints *)
 let size sys = System.fold (fun v iref s -> s + (!iref).neg + (!iref).pos) sys 0
 
-module IMap = CMap.Make(Int)
+module IMap = CMap.Make(CInt)
 
 (** [eval_vect map vect] evaluates vector [vect] using the values of [map].
     If [map] binds all the variables of [vect], we get
@@ -339,8 +339,8 @@ let restrict_bound n sum (itv:interval) =
       | 0 -> if in_bound itv sum
 	then (None,None) (* redundant *)
 	else failwith "SystemContradiction"
-      | 1 ->  Option.map f l , Option.map f r
-      | _ -> Option.map f r , Option.map f l
+      | 1 ->  COption.map f l , COption.map f r
+      | _ -> COption.map f r , COption.map f l
 
 
 (** [bound_of_variable map v sys] computes the interval of [v] in
@@ -430,7 +430,7 @@ struct
             match  Vect.choose l1 with
             | None -> xpart rl ((Vect.null,info)::ltl) n (info.neg+info.pos+z) p
             | Some(vr, vl, rl1) ->
-		if Int.equal v vr
+                if CInt.equal v vr
 		then
 		  let cons_bound lst bd =
 		    match  bd with
@@ -438,7 +438,7 @@ struct
 		      | Some bnd -> info.neg+info.pos::lst in
 
 		  let lb,rb = info.bound in
-		    if Int.equal (sign_num vl) 1
+                    if CInt.equal (sign_num vl) 1
 		    then  xpart rl ((rl1,info)::ltl) (cons_bound n lb) z (cons_bound p rb)
 		    else  xpart rl ((rl1,info)::ltl) (cons_bound n rb) z (cons_bound p lb)
 		else
@@ -483,7 +483,7 @@ struct
   let rec unroll_until v l =
     match Vect.choose l with
       | None -> (false,Vect.null)
-      | Some(i,_,rl) -> if Int.equal i v
+      | Some(i,_,rl) -> if CInt.equal i v
 	then (true,rl)
 	else if i < v then unroll_until v rl else (false,l)
 
@@ -516,7 +516,7 @@ struct
         | None -> None
         | Some(i,_,vect) ->
 	    let nb_eq = is_primal_equation_var i in
-	      if Int.equal nb_eq 2 
+              if CInt.equal nb_eq 2
 	      then Some i else find_var vect in
 
     let rec find_eq_var eqs =
@@ -574,7 +574,7 @@ struct
 
 	      (*      pp_list (fun o ((v,eq,_,_),cst) -> Printf.fprintf o "((%i,%a),%i)\n" v pp_vect eq cst) stdout all_costs ; *)
 
-	      List.sort (fun x y -> Int.compare (snd x) (snd y) ) all_costs
+              List.sort (fun x y -> CInt.compare (snd x) (snd y) ) all_costs
 	| Some (v,vect, const,prf,_) -> [(v,vect,const,prf),0]
 
 
@@ -663,7 +663,7 @@ struct
       match Vect.get v v1 , Vect.get v v2 with
         | Int 0 , _ | _ , Int 0 -> None
         |  a   ,  b   ->
-            if Int.equal ((sign_num a) * (sign_num b)) (-1)
+            if CInt.equal ((sign_num a) * (sign_num b)) (-1)
             then 
 	      Some (add (p1,abs_num a) (p2,abs_num b) ,
                       {coeffs = add (v1,abs_num a) (v2,abs_num b) ;

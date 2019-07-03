@@ -41,14 +41,14 @@ type opaque =
 | Indirect of substitution list * cooking_info list * DirPath.t * int (* subst, discharge, lib, index *)
 
 type opaquetab = {
-  opaque_val : proofterm Int.Map.t;
+  opaque_val : proofterm CInt.Map.t;
   (** Actual proof terms *)
   opaque_len : int;
   (** Size of the above map *)
   opaque_dir : DirPath.t;
 }
 let empty_opaquetab = {
-  opaque_val = Int.Map.empty;
+  opaque_val = CInt.Map.empty;
   opaque_len = 0;
   opaque_dir = DirPath.initial;
 }
@@ -67,7 +67,7 @@ let create dp cu tab =
   in
   let cu = Future.chain cu hcons in
   let id = tab.opaque_len in
-  let opaque_val = Int.Map.add id cu tab.opaque_val in
+  let opaque_val = CInt.Map.add id cu tab.opaque_val in
   let opaque_dir =
     if DirPath.equal dp tab.opaque_dir then tab.opaque_dir
     else if DirPath.equal tab.opaque_dir DirPath.initial then dp
@@ -93,7 +93,7 @@ let join except cu = match except with
 let join_opaque ?except { opaque_val = prfs; opaque_dir = odp; _ } = function
 | Indirect (_,_,dp,i) ->
     if DirPath.equal dp odp then
-      let fp = Int.Map.find i prfs in
+      let fp = CInt.Map.find i prfs in
       join except fp
 
 let force_proof access { opaque_val = prfs; opaque_dir = odp; _ } = function
@@ -101,7 +101,7 @@ let force_proof access { opaque_val = prfs; opaque_dir = odp; _ } = function
       let c, u =
         if DirPath.equal dp odp
         then
-          let cu = Int.Map.find i prfs in
+          let cu = CInt.Map.find i prfs in
           let (c, u) = Future.force cu in
           access.access_discharge d (c, drop_mono u)
         else
@@ -121,7 +121,7 @@ let force_constraints _access { opaque_val = prfs; opaque_dir = odp; _ } = funct
 | Indirect (_,_,dp,i) ->
       if DirPath.equal dp odp
       then
-        let cu = Int.Map.find i prfs in
+        let cu = CInt.Map.find i prfs in
         get_mono (Future.force cu)
       else Univ.ContextSet.empty
 
@@ -145,5 +145,5 @@ let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _
     in
     opaque_table.(n) <- c
   in
-  let () = Int.Map.iter iter otab in
+  let () = CInt.Map.iter iter otab in
   opaque_table, !f2t_map

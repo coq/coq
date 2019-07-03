@@ -56,7 +56,7 @@ let toplevel_env () =
 
 let environment_until dir_opt =
   let rec parse = function
-    | [] when Option.is_empty dir_opt -> [Lib.current_mp (), toplevel_env ()]
+    | [] when COption.is_empty dir_opt -> [Lib.current_mp (), toplevel_env ()]
     | [] -> []
     | d :: l ->
       let meb =
@@ -146,8 +146,8 @@ let check_fix env sg cb i =
   match cb.const_body with
     | Def lbody ->
         (match EConstr.kind sg (get_body lbody) with
-          | Fix ((_,j),recd) when Int.equal i j -> check_arity env cb; (true,recd)
-	  | CoFix (j,recd) when Int.equal i j -> check_arity env cb; (false,recd)
+          | Fix ((_,j),recd) when CInt.equal i j -> check_arity env cb; (true,recd)
+          | CoFix (j,recd) when CInt.equal i j -> check_arity env cb; (false,recd)
 	  | _ -> raise Impossible)
     | Undef _ | OpaqueDef _ | Primitive _ -> raise Impossible
 
@@ -159,7 +159,7 @@ let prec_declaration_equal sg (na1, ca1, ta1) (na2, ca2, ta2) =
 let factor_fix env sg l cb msb =
   let _,recd as check = check_fix env sg cb 0 in
   let n = Array.length (let fi,_,_ = recd in fi) in
-  if Int.equal n 1 then [|l|], recd, msb
+  if CInt.equal n 1 then [|l|], recd, msb
   else begin
     if List.length msb < n-1 then raise Impossible;
     let msb', msb'' = List.chop (n-1) msb in
@@ -409,7 +409,7 @@ and extract_module env mp ~all mb =
      implementation *)
   let typ = match mb.mod_expr with
     | FullStruct ->
-      assert (Option.is_empty mb.mod_type_alg);
+      assert (COption.is_empty mb.mod_type_alg);
       mtyp_of_mexpr impl
     | _ -> extract_mbody_spec env mp mb
   in
@@ -459,7 +459,7 @@ let mono_filename f =
 	    with UserError _ ->
               user_err Pp.(str "Extraction: provided filename is not a valid identifier")
 	in
-	Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id
+        Some (f^d.file_suffix), COption.map ((^) f) d.sig_suffix, id
 
 (* Builds a suitable filename from a module id *)
 
@@ -467,7 +467,7 @@ let module_filename mp =
   let f = file_of_modfile mp in
   let d = descr () in
   let p = d.file_naming mp ^ d.file_suffix in
-  Some p, Option.map ((^) f) d.sig_suffix, Id.of_string f
+  Some p, COption.map ((^) f) d.sig_suffix, Id.of_string f
 
 (*s Extraction of one decl to stdout. *)
 
@@ -533,7 +533,7 @@ let print_structure_to_file (fn,si,mo) dry struc =
   ignore (d.pp_struct struc);
   let opened = opened_libraries () in
   (* Print the implementation *)
-  let cout = if dry then None else Option.map open_out fn in
+  let cout = if dry then None else COption.map open_out fn in
   let ft = formatter dry cout in
   let comment = get_comment () in
   begin try
@@ -542,14 +542,14 @@ let print_structure_to_file (fn,si,mo) dry struc =
     pp_with ft (d.preamble mo comment opened unsafe_needs);
     pp_with ft (d.pp_struct struc);
     Format.pp_print_flush ft ();
-    Option.iter close_out cout;
+    COption.iter close_out cout;
   with reraise ->
     Format.pp_print_flush ft ();
-    Option.iter close_out cout; raise reraise
+    COption.iter close_out cout; raise reraise
   end;
-  if not dry then Option.iter info_file fn;
+  if not dry then COption.iter info_file fn;
   (* Now, let's print the signature *)
-  Option.iter
+  COption.iter
     (fun si ->
        let cout = open_out si in
        let ft = formatter false (Some cout) in
@@ -566,7 +566,7 @@ let print_structure_to_file (fn,si,mo) dry struc =
        info_file si)
     (if dry then None else si);
   (* Print the buffer content via Coq standard formatter (ok with coqide). *)
-  if not (Int.equal (Buffer.length buf) 0) then begin
+  if not (CInt.equal (Buffer.length buf) 0) then begin
     Feedback.msg_notice (str (Buffer.contents buf));
     Buffer.reset buf
   end

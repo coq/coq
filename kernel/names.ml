@@ -38,7 +38,7 @@ struct
 
   let check_valid ?(strict=true) x =
     let iter (fatal, x) = if fatal || strict then CErrors.user_err Pp.(str x) in
-    Option.iter iter (Unicode.ident_refutation x)
+    COption.iter iter (Unicode.ident_refutation x)
 
   let is_valid s = match Unicode.ident_refutation s with
   | None -> true
@@ -217,25 +217,25 @@ struct
     if x == y then 0
     else match (x, y) with
     | (nl, idl, dpl), (nr, idr, dpr) ->
-      let ans = Int.compare nl nr in
-      if not (Int.equal ans 0) then ans
+      let ans = CInt.compare nl nr in
+      if not (CInt.equal ans 0) then ans
       else
         let ans = Id.compare idl idr in
-        if not (Int.equal ans 0) then ans
+        if not (CInt.equal ans 0) then ans
         else
           DirPath.compare dpl dpr
 
   let equal x y = x == y ||
     let (i1, id1, p1) = x in
     let (i2, id2, p2) = y in
-    Int.equal i1 i2 && Id.equal id1 id2 && DirPath.equal p1 p2
+    CInt.equal i1 i2 && Id.equal id1 id2 && DirPath.equal p1 p2
 
   let to_id (_, s, _) = s
 
   open Hashset.Combine
 
   let hash (i, id, dp) =
-    combine3 (Int.hash i) (Id.hash id) (DirPath.hash dp)
+    combine3 (CInt.hash i) (Id.hash id) (DirPath.hash dp)
 
   module Self_Hashcons =
     struct
@@ -244,7 +244,7 @@ struct
       let hashcons (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
       let eq ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
         (x == y) ||
-        (Int.equal n1 n2 && s1 == s2 && dir1 == dir2)
+        (CInt.equal n1 n2 && s1 == s2 && dir1 == dir2)
       let hash = hash
     end
 
@@ -301,7 +301,7 @@ module ModPath = struct
       | MPbound id1, MPbound id2 -> MBId.compare id1 id2
       | MPdot (mp1, l1), MPdot (mp2, l2) ->
         let c = String.compare l1 l2 in
-        if not (Int.equal c 0) then c
+        if not (CInt.equal c 0) then c
         else compare mp1 mp2
       | MPfile _, _ -> -1
       | MPbound _, MPfile _ -> 1
@@ -397,14 +397,14 @@ module KerName = struct
     if kn1 == kn2 then 0
     else
       let c = String.compare kn1.knlabel kn2.knlabel in
-      if not (Int.equal c 0) then c
+      if not (CInt.equal c 0) then c
       else
         ModPath.compare kn1.modpath kn2.modpath
 
   let equal kn1 kn2 =
     let h1 = kn1.refhash in
     let h2 = kn2.refhash in
-    if 0 <= h1 && 0 <= h2 && not (Int.equal h1 h2) then false
+    if 0 <= h1 && 0 <= h2 && not (CInt.equal h1 h2) then false
     else
       Label.equal kn1.knlabel kn2.knlabel &&
       ModPath.equal kn1.modpath kn2.modpath
@@ -533,7 +533,7 @@ module KerPair = struct
       | Same knx, Same kny -> KerName.compare knx kny
       | Dual (knux,kncx), Dual (knuy,kncy) ->
         let c = KerName.compare knux knuy in
-        if not (Int.equal c 0) then c
+        if not (CInt.equal c 0) then c
         else KerName.compare kncx kncy
       | Same _, _ -> -1
       | Dual _, _ -> 1
@@ -618,51 +618,51 @@ let ith_constructor_of_inductive ind i = (ind, i)
 let inductive_of_constructor (ind, _i) = ind
 let index_of_constructor (_ind, i) = i
 
-let eq_ind (m1, i1) (m2, i2) = Int.equal i1 i2 && MutInd.equal m1 m2
+let eq_ind (m1, i1) (m2, i2) = CInt.equal i1 i2 && MutInd.equal m1 m2
 let eq_user_ind (m1, i1) (m2, i2) =
-  Int.equal i1 i2 && MutInd.UserOrd.equal m1 m2
+  CInt.equal i1 i2 && MutInd.UserOrd.equal m1 m2
 let eq_syntactic_ind (m1, i1) (m2, i2) =
-  Int.equal i1 i2 && MutInd.SyntacticOrd.equal m1 m2
+  CInt.equal i1 i2 && MutInd.SyntacticOrd.equal m1 m2
 
 let ind_ord (m1, i1) (m2, i2) =
-  let c = Int.compare i1 i2 in
-  if Int.equal c 0 then MutInd.CanOrd.compare m1 m2 else c
+  let c = CInt.compare i1 i2 in
+  if CInt.equal c 0 then MutInd.CanOrd.compare m1 m2 else c
 let ind_user_ord (m1, i1) (m2, i2) =
-  let c = Int.compare i1 i2 in
-  if Int.equal c 0 then MutInd.UserOrd.compare m1 m2 else c
+  let c = CInt.compare i1 i2 in
+  if CInt.equal c 0 then MutInd.UserOrd.compare m1 m2 else c
 let ind_syntactic_ord (m1, i1) (m2, i2) =
-  let c = Int.compare i1 i2 in
-  if Int.equal c 0 then MutInd.SyntacticOrd.compare m1 m2 else c
+  let c = CInt.compare i1 i2 in
+  if CInt.equal c 0 then MutInd.SyntacticOrd.compare m1 m2 else c
 
 let ind_hash (m, i) =
-  Hashset.Combine.combine (MutInd.hash m) (Int.hash i)
+  Hashset.Combine.combine (MutInd.hash m) (CInt.hash i)
 let ind_user_hash (m, i) =
-  Hashset.Combine.combine (MutInd.UserOrd.hash m) (Int.hash i)
+  Hashset.Combine.combine (MutInd.UserOrd.hash m) (CInt.hash i)
 let ind_syntactic_hash (m, i) =
-  Hashset.Combine.combine (MutInd.SyntacticOrd.hash m) (Int.hash i)
+  Hashset.Combine.combine (MutInd.SyntacticOrd.hash m) (CInt.hash i)
 
-let eq_constructor (ind1, j1) (ind2, j2) = Int.equal j1 j2 && eq_ind ind1 ind2
+let eq_constructor (ind1, j1) (ind2, j2) = CInt.equal j1 j2 && eq_ind ind1 ind2
 let eq_user_constructor (ind1, j1) (ind2, j2) =
-  Int.equal j1 j2 && eq_user_ind ind1 ind2
+  CInt.equal j1 j2 && eq_user_ind ind1 ind2
 let eq_syntactic_constructor (ind1, j1) (ind2, j2) =
-  Int.equal j1 j2 && eq_syntactic_ind ind1 ind2
+  CInt.equal j1 j2 && eq_syntactic_ind ind1 ind2
 
 let constructor_ord (ind1, j1) (ind2, j2) =
-  let c = Int.compare j1 j2 in
-  if Int.equal c 0 then ind_ord ind1 ind2 else c
+  let c = CInt.compare j1 j2 in
+  if CInt.equal c 0 then ind_ord ind1 ind2 else c
 let constructor_user_ord (ind1, j1) (ind2, j2) =
-  let c = Int.compare j1 j2 in
-  if Int.equal c 0 then ind_user_ord ind1 ind2 else c
+  let c = CInt.compare j1 j2 in
+  if CInt.equal c 0 then ind_user_ord ind1 ind2 else c
 let constructor_syntactic_ord (ind1, j1) (ind2, j2) =
-  let c = Int.compare j1 j2 in
-  if Int.equal c 0 then ind_syntactic_ord ind1 ind2 else c
+  let c = CInt.compare j1 j2 in
+  if CInt.equal c 0 then ind_syntactic_ord ind1 ind2 else c
 
 let constructor_hash (ind, i) =
-  Hashset.Combine.combine (ind_hash ind) (Int.hash i)
+  Hashset.Combine.combine (ind_hash ind) (CInt.hash i)
 let constructor_user_hash (ind, i) =
-  Hashset.Combine.combine (ind_user_hash ind) (Int.hash i)
+  Hashset.Combine.combine (ind_user_hash ind) (CInt.hash i)
 let constructor_syntactic_hash (ind, i) =
-  Hashset.Combine.combine (ind_syntactic_hash ind) (Int.hash i)
+  Hashset.Combine.combine (ind_syntactic_hash ind) (CInt.hash i)
 
 module InductiveOrdered = struct
   type t = inductive
@@ -701,7 +701,7 @@ module Hind = Hashcons.Make(
     type t = inductive
     type u = MutInd.t -> MutInd.t
     let hashcons hmind (mind, i) = (hmind mind, i)
-    let eq (mind1,i1) (mind2,i2) = mind1 == mind2 && Int.equal i1 i2
+    let eq (mind1,i1) (mind2,i2) = mind1 == mind2 && CInt.equal i1 i2
     let hash = ind_hash
   end)
 
@@ -710,7 +710,7 @@ module Hconstruct = Hashcons.Make(
     type t = constructor
     type u = inductive -> inductive
     let hashcons hind (ind, j) = (hind ind, j)
-    let eq (ind1, j1) (ind2, j2) = ind1 == ind2 && Int.equal j1 j2
+    let eq (ind1, j1) (ind2, j2) = ind1 == ind2 && CInt.equal j1 j2
     let hash = constructor_hash
   end)
 
@@ -724,7 +724,7 @@ let hcons_construct = Hashcons.simple_hcons Hconstruct.generate Hconstruct.hcons
 type 'a tableKey =
   | ConstKey of 'a
   | VarKey of Id.t
-  | RelKey of Int.t
+  | RelKey of CInt.t
 
 type inv_rel_key = int (* index in the [rel_context] part of environment
 			  starting by the end, {\em inverse}
@@ -735,11 +735,11 @@ let eq_table_key f ik1 ik2 =
   else match ik1,ik2 with
   | ConstKey c1, ConstKey c2 -> f c1 c2
   | VarKey id1, VarKey id2 -> Id.equal id1 id2
-  | RelKey k1, RelKey k2 -> Int.equal k1 k2
+  | RelKey k1, RelKey k2 -> CInt.equal k1 k2
   | _ -> false
 
 let eq_mind_chk = MutInd.UserOrd.equal
-let eq_ind_chk (kn1,i1) (kn2,i2) = Int.equal i1 i2 && eq_mind_chk kn1 kn2
+let eq_ind_chk (kn1,i1) (kn2,i2) = CInt.equal i1 i2 && eq_mind_chk kn1 kn2
 
 (*******************************************************************)
 (** Compatibility layers *)
@@ -780,7 +780,7 @@ struct
     let arg c = c.proj_arg
 
     let equal a b =
-      eq_ind a.proj_ind b.proj_ind && Int.equal a.proj_arg b.proj_arg
+      eq_ind a.proj_ind b.proj_ind && CInt.equal a.proj_arg b.proj_arg
 
     let hash p =
       Hashset.Combine.combinesmall p.proj_arg (ind_hash p.proj_ind)
@@ -788,7 +788,7 @@ struct
     module SyntacticOrd = struct
       let compare a b =
         let c = ind_syntactic_ord a.proj_ind b.proj_ind in
-        if c == 0 then Int.compare a.proj_arg b.proj_arg
+        if c == 0 then CInt.compare a.proj_arg b.proj_arg
         else c
 
       let equal a b =
@@ -800,7 +800,7 @@ struct
     module CanOrd = struct
       let compare a b =
         let c = ind_ord a.proj_ind b.proj_ind in
-        if c == 0 then Int.compare a.proj_arg b.proj_arg
+        if c == 0 then CInt.compare a.proj_arg b.proj_arg
         else c
 
       let equal a b =
@@ -812,7 +812,7 @@ struct
     module UserOrd = struct
       let compare a b =
         let c = ind_user_ord a.proj_ind b.proj_ind in
-        if c == 0 then Int.compare a.proj_arg b.proj_arg
+        if c == 0 then CInt.compare a.proj_arg b.proj_arg
         else c
 
       let equal a b =
@@ -824,7 +824,7 @@ struct
 
     let compare a b =
       let c = ind_ord a.proj_ind b.proj_ind in
-      if c == 0 then Int.compare a.proj_arg b.proj_arg
+      if c == 0 then CInt.compare a.proj_arg b.proj_arg
       else c
 
     module Self_Hashcons = struct

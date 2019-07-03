@@ -32,8 +32,8 @@ let get_sel_txt b = let i, j = get_sel b in i#get_text ~stop:j
 type status = { move : int option; kill : (string * bool) option; sel: bool }
 
 let pr_status { move; kill; sel } =
-  let move = Option.cata (fun i -> string_of_int i) "" move in
-  let kill = Option.cata (fun (s,b) -> sprintf "kill(%b) %S" b s) "" kill in
+  let move = COption.cata (fun i -> string_of_int i) "" move in
+  let kill = COption.cata (fun (s,b) -> sprintf "kill(%b) %S" b s) "" kill in
   let sel = string_of_bool sel in
   Printf.sprintf "{ move: %s; kill: %s; sel: %s }" move kill sel
 let pr_key t =
@@ -174,13 +174,13 @@ let emacs = insert emacs "Emacs" [] [
   mkE ~mods:mM _a "a" "Move to beginning of sentence" (Motion(fun s i ->
     i#backward_sentence_start, { s with move = None }));
   mkE _n "n" "Move to next line" (Motion(fun s i ->
-    let orig_off = Option.default i#line_offset s.move in
+    let orig_off = COption.default i#line_offset s.move in
     let i = i#forward_line in
     let new_off = min (i#chars_in_line - 1) orig_off in
     (if new_off > 0 then i#set_line_offset new_off else i),
     { s with move = Some orig_off }));
   mkE _p "p" "Move to previous line" (Motion(fun s i ->
-    let orig_off = Option.default i#line_offset s.move in
+    let orig_off = COption.default i#line_offset s.move in
     let i = i#backward_line in
     let new_off = min (i#chars_in_line - 1) orig_off in
     (if new_off > 0 then i#set_line_offset new_off else i),

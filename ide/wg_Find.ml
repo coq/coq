@@ -109,7 +109,7 @@ class finder name (view : GText.view) =
         let found = self#forward_search iter in
         match found with
         | None ->
-           let tot_str = if Int.equal ct tot then "" else " of " ^ string_of_int tot in
+           let tot_str = if CInt.equal ct tot then "" else " of " ^ string_of_int tot in
            let occ_str = CString.plural tot "occurrence" in
            let _ = Ideutils.flash_info ("Replaced " ^ string_of_int ct ^ tot_str ^ " " ^ occ_str) in
            ()

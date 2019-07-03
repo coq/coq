@@ -101,7 +101,7 @@ let rec build_lambda sigma vars ctx m = match vars with
   | [] -> true
   | _ ->
     let rels = free_rels sigma t in
-    let check i b = b || not (Int.Set.mem i rels) in
+    let check i b = b || not (CInt.Set.mem i rels) in
     List.for_all_i check 1 clear
   in
   let fold (_, _, t) clear = is_nondep t clear :: clear in
@@ -154,7 +154,7 @@ let rec build_lambda sigma vars ctx m = match vars with
 let rec extract_bound_aux k accu frels ctx = match ctx with
 | [] -> accu
 | (na, _, _) :: ctx ->
-  if Int.Set.mem k frels then
+  if CInt.Set.mem k frels then
     begin match na with
     | Name id ->
       let () = if Id.Set.mem id accu then raise PatternMatchingFailure in
@@ -208,8 +208,8 @@ let rec match_under_common_fix_binders sorec sigma binding_vars ctx ctx' env env
      let env = EConstr.push_rel (LocalDef (na2,c2,t2)) env in
      let subst = sorec ctx env subst c1 c2 in
      let subst = sorec ctx env subst c1' c2' in
-     let subst = Option.fold_left (fun subst u1 -> sorec ctx env subst u1 u2) subst u1 in
-     let subst = Option.fold_left (fun subst u1' -> sorec ctx env subst u1' u2') subst u1' in
+     let subst = COption.fold_left (fun subst u1 -> sorec ctx env subst u1 u2) subst u1 in
+     let subst = COption.fold_left (fun subst u1' -> sorec ctx env subst u1' u2') subst u1' in
      let subst = add_binders na1 na2 binding_vars subst in
      match_under_common_fix_binders sorec sigma binding_vars
        ctx ctx' env env' subst t1 t2 b1 b2
@@ -230,7 +230,7 @@ let merge_binding sigma allow_bound_rels ctx n cT subst =
       (ordered_vars, Vars.substl renaming cT)
     else
       let depth = List.length ctx in
-      let min_elt = try Int.Set.min_elt frels with Not_found -> succ depth in
+      let min_elt = try CInt.Set.min_elt frels with Not_found -> succ depth in
       if depth < min_elt then
         ([], Vars.lift (- depth) cT)
       else raise PatternMatchingFailure
@@ -255,13 +255,13 @@ let matches_core env sigma allow_bound_rels
       | PSoApp (n,args),m ->
         let fold (ans, seen) = function
         | PRel n ->
-          let () = if Int.Set.mem n seen then user_err (str "Non linear second-order pattern") in
-          (n :: ans, Int.Set.add n seen)
+          let () = if CInt.Set.mem n seen then user_err (str "Non linear second-order pattern") in
+          (n :: ans, CInt.Set.add n seen)
         | _ -> user_err (str "Only bound indices allowed in second order pattern matching.")
         in
-        let relargs, relset = List.fold_left fold ([], Int.Set.empty) args in
+        let relargs, relset = List.fold_left fold ([], CInt.Set.empty) args in
         let frels = free_rels sigma cT in
-        if Int.Set.subset frels relset then
+        if CInt.Set.subset frels relset then
           constrain sigma n ([], build_lambda sigma relargs ctx cT) subst
         else
           raise PatternMatchingFailure
@@ -276,7 +276,7 @@ let matches_core env sigma allow_bound_rels
 
       | PRef ref, _ when convref ref cT -> subst
 
-      | PRel n1, Rel n2 when Int.equal n1 n2 -> subst
+      | PRel n1, Rel n2 when CInt.equal n1 n2 -> subst
 
       | PSort ps, Sort s ->
         if Sorts.family_equal ps (Sorts.family (ESorts.kind sigma s))
@@ -377,7 +377,7 @@ let matches_core env sigma allow_bound_rels
             if not (eq_ind ind1 ci2.ci_ind) then raise PatternMatchingFailure
           in
           let () =
-            if not ci1.cip_extensible && not (Int.equal (List.length br1) n2)
+            if not ci1.cip_extensible && not (CInt.equal (List.length br1) n2)
             then raise PatternMatchingFailure
           in
 	  let chk_branch subst (j,n,c) =
@@ -390,7 +390,7 @@ let matches_core env sigma allow_bound_rels
 	  List.fold_left chk_branch chk_head br1
 
       |	PFix ((ln1,i1),(lna1,tl1,bl1)), Fix ((ln2,i2),(lna2,tl2,bl2))
-           when Array.equal Int.equal ln1 ln2 && i1 = i2 ->
+           when Array.equal CInt.equal ln1 ln2 && i1 = i2 ->
           let ctx' = Array.fold_left3 (fun ctx na1 na2 t2 -> push_binder na1 na2 t2 ctx) ctx lna1 lna2 tl2 in
           let env' = Array.fold_left2 (fun env na2 c2 -> EConstr.push_rel (LocalAssum (na2,c2)) env) env lna2 tl2 in
           let subst = Array.fold_left4 (match_under_common_fix_binders sorec sigma binding_vars ctx ctx' env env') subst tl1 tl2 bl1 bl2 in

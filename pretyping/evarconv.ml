@@ -101,7 +101,7 @@ let eval_flexible_term ts env evd c =
   match EConstr.kind evd c with
   | Const (c, u) ->
       if TransparentState.is_transparent_constant ts c
-      then Option.map EConstr.of_constr (constant_opt_value_in env (c, EInstance.kind evd u))
+      then COption.map EConstr.of_constr (constant_opt_value_in env (c, EInstance.kind evd u))
       else None
   | Rel n ->
       (try match lookup_rel n env with
@@ -131,8 +131,8 @@ let is_frozen flags (evk, _) = Evar.Set.mem evk flags.frozen_evars
 let flex_kind_of_term flags env evd c sk =
   match EConstr.kind evd c with
     | LetIn _ | Rel _ | Const _ | Var _ | Proj _ ->
-      Option.cata (fun x -> MaybeFlexible x) Rigid (eval_flexible_term flags.open_ts env evd c)
-    | Lambda _ when not (Option.is_empty (Stack.decomp sk)) ->
+      COption.cata (fun x -> MaybeFlexible x) Rigid (eval_flexible_term flags.open_ts env evd c)
+    | Lambda _ when not (COption.is_empty (Stack.decomp sk)) ->
        if flags.modulo_betaiota then MaybeFlexible c
        else Rigid
     | Evar ev ->
@@ -293,7 +293,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
       | _ -> raise Not_found in
   let us2,extra_args2 =
     let l_us = List.length us in
-      if Int.equal l_us 0 then Stack.empty,sk2_effective
+      if CInt.equal l_us 0 then Stack.empty,sk2_effective
       else match (Stack.strip_n_app (l_us-1) sk2_effective) with
       | None -> raise Not_found
       | Some (l',el,s') -> (l'@Stack.append_app [|el|] Stack.empty,s') in
@@ -356,7 +356,7 @@ let ise_array2 evd f v1 v2 =
 	| Success i' -> allrec i' (n-1)
 	| UnifFailure _ as x -> x in
   let lv1 = Array.length v1 in
-  if Int.equal lv1 (Array.length v2) then allrec evd (pred lv1)
+  if CInt.equal lv1 (Array.length v2) then allrec evd (pred lv1)
   else UnifFailure (evd,NotSameArgSize)
 
 (* Applicative node of stack are read from the outermost to the innermost
@@ -395,7 +395,7 @@ let ise_stack2 no_app env evd f sk1 sk2 =
        else fail (UnifFailure (i, NotSameHead))
     | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1,_)::q1,
       Stack.Fix (((li2, i2),(_,tys2,bds2)),a2,_)::q2 ->
-      if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
+      if CInt.equal i1 i2 && Array.equal CInt.equal li1 li2 then
         match ise_and i [
 	  (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
 	  (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
@@ -424,7 +424,7 @@ let exact_ise_stack2 env evd f sk1 sk2 =
       (fun i -> f env i CONV t1 t2)]
     | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1,_)::q1,
       Stack.Fix (((li2, i2),(_,tys2,bds2)),a2,_)::q2 ->
-      if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
+      if CInt.equal i1 i2 && Array.equal CInt.equal li1 li2 then
 	ise_and i [
 	  (fun i -> ise_stack2 i q1 q2);
 	  (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
@@ -586,7 +586,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
               let nparamsaplied = Stack.args_size sk in
               let nparamsaplied' = Stack.args_size sk' in
               let needed = Reduction.inductive_cumulativity_arguments (mind,i) in
-              if not (Int.equal nparamsaplied needed && Int.equal nparamsaplied' needed)
+              if not (CInt.equal nparamsaplied needed && CInt.equal nparamsaplied' needed)
               then check_strict evd u u'
               else
                 compare_cumulative_instances evd variances u u'
@@ -605,7 +605,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
               let nparamsaplied = Stack.args_size sk in
               let nparamsaplied' = Stack.args_size sk' in
               let needed = Reduction.constructor_cumulativity_arguments (mind,ind,ctor) in
-              if not (Int.equal nparamsaplied needed && Int.equal nparamsaplied' needed)
+              if not (CInt.equal nparamsaplied needed && CInt.equal nparamsaplied' needed)
               then check_strict evd u u'
               else
                 Success (compare_constructor_instances evd u u')
@@ -1007,7 +1007,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                  evar_conv_x flags (push_rel (RelDecl.LocalAssum (na,c)) env) i pbty c'1 c'2)]
 
 	| Rel x1, Rel x2 ->
-	    if Int.equal x1 x2 then
+            if CInt.equal x1 x2 then
               exact_ise_stack2 env evd (evar_conv_x flags) sk1 sk2
             else UnifFailure (evd,NotSameHead)
 
@@ -1038,7 +1038,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           eta_constructor flags env evd sk2 u sk1 term1
 
         | Fix ((li1, i1),(_,tys1,bds1 as recdef1)), Fix ((li2, i2),(_,tys2,bds2)) -> (* Partially applied fixs *)
-	  if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
+          if CInt.equal i1 i2 && Array.equal CInt.equal li1 li2 then
             ise_and evd [
               (fun i -> ise_array2 i (fun i' -> evar_conv_x flags env i' CONV) tys1 tys2);
               (fun i -> ise_array2 i (fun i' -> evar_conv_x flags (push_rec_types recdef1 env) i' CONV) bds1 bds2);
@@ -1046,7 +1046,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
 	  else UnifFailure (evd, NotSameHead)
 
         | CoFix (i1,(_,tys1,bds1 as recdef1)), CoFix (i2,(_,tys2,bds2)) ->
-            if Int.equal i1 i2  then
+            if CInt.equal i1 i2  then
               ise_and evd
                 [(fun i -> ise_array2 i
                     (fun i -> evar_conv_x flags env i CONV) tys1 tys2);
@@ -1103,7 +1103,7 @@ and conv_record flags env evd (ctx,(h,h2),c,bs,(params,params1),(us,us2),(sk1,sk
     let (evd',ks,_,test) =
       List.fold_left
 	(fun (i,ks,m,test) b ->
-	  if match n with Some n -> Int.equal m n | None -> false then
+          if match n with Some n -> CInt.equal m n | None -> false then
 	    let ty = Retyping.get_type_of env i t2 in
             let test i = evar_conv_x flags env i CUMUL ty (substl ks b) in
 	      (i,t2::ks, m-1, test)
@@ -1262,7 +1262,7 @@ let filter_possible_projections evd c ty ctxt args =
     (* Here we make an approximation, for instance, we could also be *)
     (* interested in finding a term u convertible to c such that a occurs *)
     (* in u *)
-    isRel evd a && Int.Set.mem (destRel evd a) fv1 ||
+    isRel evd a && CInt.Set.mem (destRel evd a) fv1 ||
     isVar evd a && Id.Set.mem (destVar evd a) fv2 ||
     Id.Set.mem (NamedDecl.get_id decl) tyvars)
     0 ctxt
@@ -1318,7 +1318,7 @@ let thin_evars env sigma sign c =
        let evi = Evd.find_undefined !sigma ev in
        let filter = Array.map (fun c -> Id.Set.subset (collect_vars !sigma c) ctx) args in
        let filter = Filter.make (Array.to_list filter) in
-       let candidates = Option.map (List.map EConstr.of_constr) (evar_candidates evi) in
+       let candidates = COption.map (List.map EConstr.of_constr) (evar_candidates evi) in
        let evd, ev = restrict_evar !sigma ev filter candidates in
        sigma := evd; whd_evar !sigma t
     | Var id ->
@@ -1454,7 +1454,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                                 prc env_rhs evd c);
      let rec force_instantiation evd = function
      | (evk,evty,inst,abstract)::evs ->
-       let evk = Option.default evk (Evarutil.advance evd evk) in
+       let evk = COption.default evk (Evarutil.advance evd evk) in
        let evd =
          if is_undefined evd evk then
          (* We try abstraction or concretisation for *)

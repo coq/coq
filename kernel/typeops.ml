@@ -132,7 +132,7 @@ let check_hyps_inclusion env ?evars f c sign =
                needed or not for typechecking: *) ()
         | LocalDef _, LocalAssum _ -> raise NotConvertible
         | LocalDef (_,b2,_), LocalDef (_,b1,_) -> conv env b2 b1);
-      with Not_found | NotConvertible | Option.Heterogeneous ->
+      with Not_found | NotConvertible | COption.Heterogeneous ->
         error_reference_variables env id (f c))
     sign
     ~init:()
@@ -187,7 +187,7 @@ let type_of_apply env func funt argsv argstv =
   let infos = create_clos_infos all env in
   let tab = create_tab () in
   let rec apply_rec i typ =
-    if Int.equal i len then term_of_fconstr typ
+    if CInt.equal i len then term_of_fconstr typ
     else
       let typ, stk = whd_stack infos tab typ [] in
       (** The return stack is known to be empty *)
@@ -244,7 +244,7 @@ let type_of_prim env t =
     | None -> CErrors.user_err Pp.(str"The type carry must be registered before this primitive.")
   in
   let rec nary_int63_op arity ty =
-    if Int.equal arity 0 then ty
+    if CInt.equal arity 0 then ty
       else Constr.mkProd(Context.nameR (Id.of_string "x"), int_ty, nary_int63_op (arity-1) ty)
   in
   let return_ty =
@@ -432,7 +432,7 @@ let type_of_projection env p c ct =
 
 let check_fixpoint env lna lar vdef vdeft =
   let lt = Array.length vdeft in
-  assert (Int.equal (Array.length lar) lt);
+  assert (CInt.equal (Array.length lar) lt);
   try
     conv_leq_vecti env vdeft (Array.map (fun ty -> lift lt ty) lar)
   with NotConvertibleVect i ->

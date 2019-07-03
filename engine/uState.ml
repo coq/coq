@@ -320,9 +320,9 @@ let constrain_variables diff ctx =
           | Some u ->
              (LSet.add l univs,
               LMap.remove l vars,
-              Constraint.add (l, Eq, Option.get (Universe.level u)) cstrs)
+              Constraint.add (l, Eq, COption.get (Universe.level u)) cstrs)
           | None -> (univs, vars, cstrs)
-        with Not_found | Option.IsNone -> (univs, vars, cstrs))
+        with Not_found | COption.IsNone -> (univs, vars, cstrs))
       diff (univs, ctx.uctx_univ_variables, local)
   in
   { ctx with uctx_local = (univs, local); uctx_univ_variables = vars }
@@ -330,8 +330,8 @@ let constrain_variables diff ctx =
 let qualid_of_level uctx =
   let map, map_rev = uctx.uctx_names in 
     fun l ->
-      try Some (Libnames.qualid_of_ident (Option.get (LMap.find l map_rev).uname))
-      with Not_found | Option.IsNone ->
+      try Some (Libnames.qualid_of_ident (COption.get (LMap.find l map_rev).uname))
+      with Not_found | COption.IsNone ->
         UnivNames.qualid_of_level l
 
 let pr_uctx_level uctx l =
@@ -611,7 +611,7 @@ let make_flexible_variable ctx ~algebraic u =
       if algebraic then
         let uu = Universe.make u in
         let substu_not_alg u' v =
-          Option.cata (fun vu -> Universe.equal uu vu && not (LSet.mem u' avars)) false v
+          COption.cata (fun vu -> Universe.equal uu vu && not (LSet.mem u' avars)) false v
         in
         let has_upper_constraint () =
           Constraint.exists
@@ -702,7 +702,7 @@ let refresh_undefined_univ_variables uctx =
     LMap.fold
       (fun u v acc ->
         LMap.add (subst_fn u)
-          (Option.map (subst_univs_level_universe subst) v) acc)
+          (COption.map (subst_univs_level_universe subst) v) acc)
       uctx.uctx_univ_variables LMap.empty
   in
   let weak = UPairSet.fold (fun (u,v) acc -> UPairSet.add (subst_fn u, subst_fn v) acc) uctx.uctx_weak_constraints UPairSet.empty in

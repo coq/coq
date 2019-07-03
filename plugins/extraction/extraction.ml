@@ -200,7 +200,7 @@ let sign_with_implicits r s nb_params =
   let implicits = implicits_of_global r in
   let rec add_impl i = function
     | [] -> []
-    | Keep::s when Int.Set.mem i implicits ->
+    | Keep::s when CInt.Set.mem i implicits ->
        Kill (Kimplicit (r,i)) :: add_impl (i+1) s
     | sign::s -> sign :: add_impl (i+1) s
   in
@@ -224,8 +224,8 @@ let db_from_sign s =
   an inductive type (see just below). *)
 
 let rec db_from_ind dbmap i =
-  if Int.equal i 0 then []
-  else (try Int.Map.find i dbmap with Not_found -> 0)::(db_from_ind dbmap (i-1))
+  if CInt.equal i 0 then []
+  else (try CInt.Map.find i dbmap with Not_found -> 0)::(db_from_ind dbmap (i-1))
 
 (*s [parse_ind_args] builds a map: [i->j] iff the i-th Coq argument
   of a constructor corresponds to the j-th type var of the ML inductive. *)
@@ -239,11 +239,11 @@ let rec db_from_ind dbmap i =
 
 let parse_ind_args si args relmax =
   let rec parse i j = function
-    | [] -> Int.Map.empty
+    | [] -> CInt.Map.empty
     | Kill _ :: s -> parse (i+1) j s
     | Keep :: s ->
       (match Constr.kind args.(i-1) with
-	 | Rel k -> Int.Map.add (relmax+1-k) j (parse (i+1) (j+1) s)
+         | Rel k -> CInt.Map.add (relmax+1-k) j (parse (i+1) (j+1) s)
 	 | _ -> parse (i+1) (j+1) s)
   in parse 1 1 si
 
@@ -300,7 +300,7 @@ let rec extract_type env sg db j c args =
 	       (* Asks [db] a translation for [n]. *)
 	       if n > List.length db then Tunknown
 	       else let n' = List.nth db (n-1) in
-	       if Int.equal n' 0 then Tunknown else Tvar n')
+               if CInt.equal n' 0 then Tunknown else Tvar n')
     | Const (kn,u) ->
         let r = GlobRef.ConstRef kn in
         let typ = type_of env sg (EConstr.mkConstU (kn,u)) in
@@ -378,7 +378,7 @@ and extract_type_app env sg db (r,s) args =
 (* [db] is a context for translating Coq [Rel] into ML type [Tvar]. *)
 
 and extract_type_scheme env sg db c p =
-  if Int.equal p 0 then extract_type env sg db 0 c []
+  if CInt.equal p 0 then extract_type env sg db 0 c []
   else
     let c = whd_betaiotazeta sg c in
     match EConstr.kind sg c with
@@ -483,14 +483,14 @@ and extract_really_ind env kn mib =
         let r = GlobRef.IndRef ip in
 	if is_custom r then raise (I Standard);
         if mib.mind_finite == CoFinite then raise (I Coinductive);
-	if not (Int.equal mib.mind_ntypes 1) then raise (I Standard);
+        if not (CInt.equal mib.mind_ntypes 1) then raise (I Standard);
 	let p,u = packets.(0) in
 	if p.ip_logical then raise (I Standard);
-	if not (Int.equal (Array.length p.ip_types) 1) then raise (I Standard);
+        if not (CInt.equal (Array.length p.ip_types) 1) then raise (I Standard);
 	let typ = p.ip_types.(0) in
 	let l = List.filter (fun t -> not (isTdummy (expand env t))) typ in
 	if not (keep_singleton ()) &&
-	    Int.equal (List.length l) 1 && not (type_mem_kn kn (List.hd l))
+            CInt.equal (List.length l) 1 && not (type_mem_kn kn (List.hd l))
 	then raise (I Singleton);
 	if List.is_empty l then raise (I Standard);
         if mib.mind_record == Declarations.NotRecord then raise (I Standard);
@@ -504,7 +504,7 @@ and extract_really_ind env kn mib =
 	in
 	let field_names =
 	  List.skipn mib.mind_nparams (names_prod mip0.mind_user_lc.(0)) in
-	assert (Int.equal (List.length field_names) (List.length typ));
+        assert (CInt.equal (List.length field_names) (List.length typ));
 	let projs = ref Cset.empty in
 	let mp = MutInd.modpath kn in
 	let rec select_fields l typs = match l,typs with
@@ -530,7 +530,7 @@ and extract_really_ind env kn mib =
           let n = nb_default_params env sg (EConstr.of_constr ty) in
           let check_proj kn = if Cset.mem kn !projs then add_projection n kn ip
           in
-	  List.iter (Option.iter check_proj) (lookup_projections ip)
+          List.iter (COption.iter check_proj) (lookup_projections ip)
 	with Not_found -> ()
 	end;
 	Record field_glob
@@ -557,7 +557,7 @@ and extract_type_cons env sg db dbmap c i =
   match EConstr.kind sg (whd_all env sg c) with
     | Prod (n,t,d) ->
         let env' = push_rel_assum (n,t) env in
-        let db' = (try Int.Map.find i dbmap with Not_found -> 0) :: db in
+        let db' = (try CInt.Map.find i dbmap with Not_found -> 0) :: db in
         let l = extract_type_cons env' sg db' dbmap d (i+1) in
         (extract_type env sg db 0 t []) :: l
     | _ -> []
@@ -828,7 +828,7 @@ and extract_cons_app env sg mle mlt (((kn,i) as ip,j) as cp) args =
       (dummy_lams (anonym_or_dummy_lams head' s) (params_nb - la))
   else
     let mla = make_mlargs env sg mle s args' metas in
-    if Int.equal la (ls + params_nb)
+    if CInt.equal la (ls + params_nb)
     then put_magic_if (magic2 && not magic1) (head mla)
     else (* [ params_nb <= la <= ls + params_nb ] *)
       let ls' = params_nb + ls - la in
@@ -843,8 +843,8 @@ and extract_case env sg mle ((kn,i) as ip,c,br) mlt =
   (* [ni]: number of arguments without parameters in each branch *)
   let ni = constructors_nrealargs env ip in
   let br_size = Array.length br in
-  assert (Int.equal (Array.length ni) br_size);
-  if Int.equal br_size 0 then begin
+  assert (CInt.equal (Array.length ni) br_size);
+  if CInt.equal br_size 0 then begin
     add_recursors env kn; (* May have passed unseen if logical ... *)
     MLexn "absurd case"
   end else
@@ -856,7 +856,7 @@ and extract_case env sg mle ((kn,i) as ip,c,br) mlt =
 	add_recursors env kn; (* May have passed unseen if logical ... *)
 	(* Logical singleton case: *)
 	(* [match c with C i j k -> t] becomes [t'] *)
-	assert (Int.equal br_size 1);
+        assert (CInt.equal br_size 1);
 	let s = iterate (fun l -> Kill Kprop :: l) ni.(0) [] in
 	let mlt = iterate (fun t -> Tarr (Tdummy Kprop, t)) ni.(0) mlt in
         let e = extract_maybe_term env sg mle mlt br.(0) in
@@ -888,9 +888,9 @@ and extract_case env sg mle ((kn,i) as ip,c,br) mlt =
 	begin
 	  (* Informative singleton case: *)
 	  (* [match c with C i -> t] becomes [let i = c' in t'] *)
-	  assert (Int.equal br_size 1);
+          assert (CInt.equal br_size 1);
 	  let (ids,_,e') = extract_branch 0 in
-	  assert (Int.equal (List.length ids) 1);
+          assert (CInt.equal (List.length ids) 1);
 	  MLletin (tmp_id (List.hd ids),a,e')
 	end
       else
@@ -972,7 +972,7 @@ let extract_std_constant env sg kn body typ =
     let k = sign_kind s in
     let empty_s = (k == EmptySig || k == SafeLogicalSig) in
     if lang () == Ocaml && empty_s && not (gentypvar_ok sg c)
-      && not (List.is_empty s') && not (Int.equal (type_maxvar t) 0)
+      && not (List.is_empty s') && not (CInt.equal (type_maxvar t) 0)
     then decomp_lams_eta_n (n+1) n env sg body typ
     else rels,c
   in
@@ -1197,7 +1197,7 @@ let extract_inductive env kn =
       | [] -> []
       | t::l ->
 	  let l' = filter (succ i) l in
-	  if isTdummy (expand env t) || Int.Set.mem i implicits then l'
+          if isTdummy (expand env t) || CInt.Set.mem i implicits then l'
 	  else t::l'
     in filter (1+ind.ind_nparams) l
   in

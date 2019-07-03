@@ -48,8 +48,8 @@ let invert_tag cst tag reloc_tbl =
   try
     for j = 0 to Array.length reloc_tbl - 1 do
       let tagj,arity = reloc_tbl.(j) in
-      let no_arity = Int.equal arity 0 in
-      if Int.equal tag tagj && (cst && no_arity || not (cst || no_arity)) then
+      let no_arity = CInt.equal arity 0 in
+      if CInt.equal tag tagj && (cst && no_arity || not (cst || no_arity)) then
 	raise (Find_at j)
       else ()
     done;raise Not_found
@@ -70,7 +70,7 @@ let type_constructor mind mib u (ctx, typ) params =
   let ctyp = substl s typ in
   let ctyp = subst_instance_constr u ctyp in
   let ndecls = Context.Rel.length mib.mind_params_ctxt in
-  if Int.equal ndecls 0 then ctyp
+  if CInt.equal ndecls 0 then ctyp
   else
     let _,ctyp = decompose_prod_n_assum ndecls ctyp in
     substl (List.rev (adjust_subst_to_rel_context mib.mind_params_ctxt (Array.to_list params)))
@@ -187,7 +187,7 @@ and nf_whd env sigma whd typ =
 
 and nf_univ_args ~nb_univs mk env sigma stk =
   let u =
-    if Int.equal nb_univs 0 then Univ.Instance.empty
+    if CInt.equal nb_univs 0 then Univ.Instance.empty
     else match stk with
     | Zapp args :: _ ->
        let inst =
@@ -310,7 +310,7 @@ and nf_predicate env sigma ind mip params v pT =
       let name = Name (Id.of_string "c") in
       let n = mip.mind_nrealargs in
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
-      let params = if Int.equal n 0 then params else Array.map (lift n) params in
+      let params = if CInt.equal n 0 then params else Array.map (lift n) params in
       let dom = mkApp(mkIndU ind,Array.append params rargs) in
       let r = Inductive.relevance_of_inductive env (fst ind) in
       let name = make_annot name r in

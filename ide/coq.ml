@@ -359,9 +359,9 @@ let input_watch handle respawner feedback_processor =
 
 let bind_self_as f =
   let me = ref None in
-  let get_me () = Option.get !me in
+  let get_me () = COption.get !me in
   me := Some(f get_me);
-  Option.get !me
+  COption.get !me
 
 (** This launches a fresh handle from its command line arguments. *)
 let spawn_handle args respawner feedback_processor =

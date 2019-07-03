@@ -94,19 +94,19 @@ let pr_custom_grammar name = pr_registered_grammar ("constr:"^name)
 let parse_format ({CAst.loc;v=str} : lstring) =
   let len = String.length str in
   (* TODO: update the line of the location when the string contains newlines *)
-  let make_loc i j = Option.map (Loc.shift_loc (i+1) (j-len)) loc in
+  let make_loc i j = COption.map (Loc.shift_loc (i+1) (j-len)) loc in
   let push_token loc a = function
     | (i,cur)::l -> (i,(loc,a)::cur)::l
     | [] -> assert false in
   let push_white i n l =
-    if Int.equal n 0 then l else push_token (make_loc i (i+n)) (UnpTerminal (String.make n ' ')) l in
+    if CInt.equal n 0 then l else push_token (make_loc i (i+n)) (UnpTerminal (String.make n ' ')) l in
   let close_box start stop b = function
     | (_,a)::(_::_ as l) -> push_token (make_loc start stop) (UnpBox (b,a)) l
     | [a] -> user_err ?loc:(make_loc start stop) Pp.(str "Non terminated box in format.")
     | [] -> assert false in
   let close_quotation start i =
     if i < len && str.[i] == '\'' then
-      if (Int.equal (i+1) len || str.[i+1] == ' ')
+      if (CInt.equal (i+1) len || str.[i+1] == ' ')
       then i+1
       else user_err ?loc:(make_loc (i+1) (i+1)) Pp.(str "Space expected after quoted expression.")
     else
@@ -118,7 +118,7 @@ let parse_format ({CAst.loc;v=str} : lstring) =
     if i < len && str.[i] != ' ' then
       if str.[i] == '\'' && quoted &&
         (i+1 >= len || str.[i+1] == ' ')
-      then if Int.equal n 0 then user_err ?loc:(make_loc (i-1) i) Pp.(str "Empty quoted token.") else n
+      then if CInt.equal n 0 then user_err ?loc:(make_loc (i-1) i) Pp.(str "Empty quoted token.") else n
       else nonspaces quoted (n+1) (i+1)
     else
       if quoted then user_err ?loc:(make_loc i i) Pp.(str "Spaces are not allowed in (quoted) symbols.")
@@ -163,7 +163,7 @@ let parse_format ({CAst.loc;v=str} : lstring) =
 	  push_token (make_loc i (i+n-1)) (UnpTerminal (String.sub str (i-1) (n+2)))
 	    (parse_token 1 (close_quotation i (i+n))))
     else
-      if Int.equal n 0 then []
+      if CInt.equal n 0 then []
       else user_err ?loc:(make_loc (len-n) len) Pp.(str "Ending spaces non part of a format annotation.")
   and parse_box start box i =
     let n = spaces 0 i in
@@ -202,7 +202,7 @@ let msg_expected_form_of_recursive_notation =
   "In the notation, the special symbol \"..\" must occur in\na configuration of the form \"x symbs .. symbs y\"."
 
 let rec find_pattern nt xl = function
-  | Break n as x :: l, Break n' :: l' when Int.equal n n' ->
+  | Break n as x :: l, Break n' :: l' when CInt.equal n n' ->
       find_pattern nt (x::xl) (l,l')
   | Terminal s as x :: l, Terminal s' :: l' when String.equal s s' ->
       find_pattern nt (x::xl) (l,l')
@@ -318,11 +318,11 @@ let precedence_of_entry_type (from_custom,from_level) = function
 (* "< x , y > { z , t }" : "< x , / y > / { z , / t }" *)
 
 let starts_with_left_bracket s =
-  let l = String.length s in not (Int.equal l 0) &&
+  let l = String.length s in not (CInt.equal l 0) &&
   (s.[0] == '{' || s.[0] == '[' || s.[0] == '(')
 
 let ends_with_right_bracket s =
-  let l = String.length s in not (Int.equal l 0) &&
+  let l = String.length s in not (CInt.equal l 0) &&
   (s.[l-1] == '}' || s.[l-1] == ']' || s.[l-1] == ')')
 
 let is_left_bracket s =
@@ -332,11 +332,11 @@ let is_right_bracket s =
   not (starts_with_left_bracket s) && ends_with_right_bracket s
 
 let is_comma s =
-  let l = String.length s in not (Int.equal l 0) &&
+  let l = String.length s in not (CInt.equal l 0) &&
   (s.[0] == ',' || s.[0] == ';')
 
 let is_operator s =
-  let l = String.length s in not (Int.equal l 0) &&
+  let l = String.length s in not (CInt.equal l 0) &&
   (s.[0] == '+' || s.[0] == '*' || s.[0] == '=' ||
    s.[0] == '-' || s.[0] == '/' || s.[0] == '<' || s.[0] == '>' ||
    s.[0] == '@' || s.[0] == '\\' || s.[0] == '&' || s.[0] == '~' || s.[0] == '$')
@@ -608,7 +608,7 @@ let expand_list_rule s typ tkl x n p ll =
   let tks = List.map (fun x -> GramConstrTerminal x) tkl in
   let rec aux i hds ll =
   if i < p then aux (i+1) (main :: tks @ hds) ll
-  else if Int.equal i (p+n) then
+  else if CInt.equal i (p+n) then
     let hds =
       GramConstrListMark (p+n,true,p) :: hds
       @	[GramConstrNonTerminal (ETProdConstrList (typ,tkl), Some x)] in
@@ -696,10 +696,10 @@ let recompute_assoc typs = let open Gramlib.Gramext in
 
 let pr_arg_level from (lev,typ) =
   let pplev = function
-  | (n,L) when Int.equal n from -> str "at next level"
+  | (n,L) when CInt.equal n from -> str "at next level"
   | (n,E) -> str "at level " ++ int n
   | (n,L) -> str "at level below " ++ int n
-  | (n,Prec m) when Int.equal m n -> str "at level " ++ int n
+  | (n,Prec m) when CInt.equal m n -> str "at level " ++ int n
   | (n,_) -> str "Unknown level" in
   Ppvernac.pr_set_entry_type (fun _ -> (*TO CHECK*) mt()) typ ++
   (match typ with
@@ -782,7 +782,7 @@ let classify_syntax_definition (local, _ as o) =
 
 let inSyntaxExtension : syntax_extension_obj -> obj =
   declare_object {(default_object "SYNTAX-EXTENSION") with
-       open_function = (fun i o -> if Int.equal i 1 then cache_syntax_extension o);
+       open_function = (fun i o -> if CInt.equal i 1 then cache_syntax_extension o);
        cache_function = cache_syntax_extension;
        subst_function = subst_syntax_extension;
        classify_function = classify_syntax_definition}
@@ -860,18 +860,18 @@ let interp_modifiers modl = let open NotationMods in
         if acc.level <> None then
           (if n = None then
             user_err (str ("use \"in custom " ^ s ^ " at level " ^
-                         string_of_int (Option.get acc.level) ^
+                         string_of_int (COption.get acc.level) ^
                          "\"") ++ spc () ++ str "rather than" ++ spc () ++
                          str ("\"at level " ^
-                         string_of_int (Option.get acc.level) ^ "\"") ++
+                         string_of_int (COption.get acc.level) ^ "\"") ++
                          spc () ++ str "isolated.")
           else
-            user_err (str ("isolated \"at level " ^ string_of_int (Option.get acc.level) ^ "\" unexpected.")));
+            user_err (str ("isolated \"at level " ^ string_of_int (COption.get acc.level) ^ "\" unexpected.")));
         if acc.custom <> InConstrEntry then
            user_err (str "Entry is already assigned to custom " ++ str s ++ (match acc.level with None -> mt () | Some lev -> str " at level " ++ int lev) ++ str ".");
         interp subtyps { acc with custom = InCustomEntry s; level = n } l
     | SetAssoc a :: l ->
-	if not (Option.is_empty acc.assoc) then user_err Pp.(str "An associativity is given more than once.");
+        if not (COption.is_empty acc.assoc) then user_err Pp.(str "An associativity is given more than once.");
         interp subtyps { acc with assoc = Some a; } l
      | SetOnlyParsing :: l ->
         interp subtyps { acc with only_parsing = true; } l
@@ -880,7 +880,7 @@ let interp_modifiers modl = let open NotationMods in
     | SetCompatVersion v :: l ->
         interp subtyps { acc with compat = Some v; } l
     | SetFormat ("text",s) :: l ->
-	if not (Option.is_empty acc.format) then user_err Pp.(str "A format is given more than once.");
+        if not (COption.is_empty acc.format) then user_err Pp.(str "A format is given more than once.");
         interp subtyps { acc with format = Some s; } l
     | SetFormat (k,s) :: l ->
         interp subtyps { acc with extra = (k,s.CAst.v)::acc.extra; } l
@@ -998,7 +998,7 @@ let subentry_of_constr_prod_entry = function
 
 let make_interpretation_vars recvars allvars typs =
   let eq_subscope (sc1, l1) (sc2, l2) =
-    Option.equal String.equal sc1 sc2 &&
+    COption.equal String.equal sc1 sc2 &&
     List.equal String.equal l1 l2
   in
   let check (x, y) =
@@ -1093,9 +1093,9 @@ let find_precedence custom lev etyps symbols onlyprint =
   | Some (NonTerminal x) ->
       let test () =
         if onlyprint then
-          if Option.is_empty lev then
+          if COption.is_empty lev then
             user_err Pp.(str "Explicit level needed in only-printing mode when the level of the leftmost non-terminal is given.")
-          else [],Option.get lev
+          else [],COption.get lev
         else
           user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.") in
       (try match List.assoc x etyps, custom with
@@ -1111,20 +1111,20 @@ let find_precedence custom lev etyps symbols onlyprint =
             end
         | (ETPattern _ | ETBinder _ | ETConstr _), _ ->
             (* Give a default ? *)
-            if Option.is_empty lev then
+            if COption.is_empty lev then
               user_err Pp.(str "Need an explicit level.")
-            else [],Option.get lev
+            else [],COption.get lev
       with Not_found ->
-	if Option.is_empty lev then
+        if COption.is_empty lev then
 	  user_err Pp.(str "A left-recursive notation must have an explicit level.")
-	else [],Option.get lev)
+        else [],COption.get lev)
   | Some (Terminal _) when last_is_terminal () ->
-      if Option.is_empty lev then
+      if COption.is_empty lev then
 	([Feedback.msg_info ?loc:None ,strbrk "Setting notation at level 0."], 0)
-      else [],Option.get lev
+      else [],COption.get lev
   | Some _ ->
-      if Option.is_empty lev then user_err Pp.(str "Cannot determine the level.");
-      [],Option.get lev
+      if COption.is_empty lev then user_err Pp.(str "Cannot determine the level.");
+      [],COption.get lev
 
 let check_curly_brackets_notation_exists () =
   try let _ = Notgram_ops.level_of_notation (InConstrEntrySomeLevel,"{ _ }") in ()
@@ -1240,7 +1240,7 @@ let compute_syntax_data ~local deprecation df modifiers =
   let onlyparse = mods.only_parsing in
   let deprecation, _ = merge_compat_deprecation mods.compat deprecation in
   if onlyprint && onlyparse then user_err (str "A notation cannot be both 'only printing' and 'only parsing'.");
-  let assoc = Option.append mods.assoc (Some Gramlib.Gramext.NonA) in
+  let assoc = COption.append mods.assoc (Some Gramlib.Gramext.NonA) in
   let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprint df in
   let _ = check_useless_entry_types recvars mainvars mods.etyps in
   let _ = check_binder_type recvars mods.etyps in
@@ -1322,9 +1322,9 @@ let load_notation_common silently_define_scope_if_undefined _ (_, nobj) =
   if silently_define_scope_if_undefined then
     (* Don't warn if the scope is not defined: *)
     (* there was already a warning at "cache" time *)
-    Option.iter Notation.declare_scope nobj.notobj_scope
+    COption.iter Notation.declare_scope nobj.notobj_scope
   else
-    Option.iter Notation.ensure_scope nobj.notobj_scope
+    COption.iter Notation.ensure_scope nobj.notobj_scope
 
 let load_notation =
   load_notation_common true
@@ -1336,7 +1336,7 @@ let open_notation i (_, nobj) =
   let onlyprint = nobj.notobj_onlyprint  in
   let deprecation = nobj.notobj_deprecation in
   let fresh = not (Notation.exists_notation_in_scope scope ntn onlyprint pat) in
-  if Int.equal i 1 && fresh then begin
+  if CInt.equal i 1 && fresh then begin
     (* Declare the interpretation *)
     let () = Notation.declare_notation_interpretation ntn scope pat df ~onlyprint deprecation in
     (* Declare the uninterpretation *)
@@ -1544,7 +1544,7 @@ let set_notation_for_interpretation env impls ({CAst.v=df},c,sc) =
     (Flags.silently (fun () -> add_notation_interpretation_core ~local:false df env ~impls c sc false false None) ());
   with NoSyntaxRule ->
     user_err Pp.(str "Parsing rule for this notation has to be previously declared."));
-  Option.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
+  COption.iter (fun sc -> Notation.open_close_scope (false,true,sc)) sc
 
 (* Main entry point *)
 
@@ -1610,7 +1610,7 @@ let load_scope_command =
   load_scope_command_common true
 
 let open_scope_command i (_,(local,scope,o)) =
-  if Int.equal i 1 then
+  if CInt.equal i 1 then
     match o with
     | ScopeDeclare -> ()
     | ScopeDelimAdd dlm -> Notation.declare_delimiters scope dlm

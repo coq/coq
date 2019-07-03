@@ -106,7 +106,7 @@ let afterHyp id gl =
    --Eduardo (8/8/97)
 *)
 
-let fullGoal gl = None :: List.map Option.make (pf_ids_of_hyps gl)
+let fullGoal gl = None :: List.map COption.make (pf_ids_of_hyps gl)
 
 let onAllHyps tac gl = tclMAP tac (pf_ids_of_hyps gl) gl
 let onAllHypsAndConcl tac gl = tclMAP tac (fullGoal gl) gl
@@ -173,15 +173,15 @@ let check_or_and_pattern_size ?loc check_and names branchsigns =
     user_err ?loc  (strbrk "Unexpected non atomic pattern.") in
   match names with
   | IntroAndPattern l ->
-      if not (Int.equal n 1) then errn n;
+      if not (CInt.equal n 1) then errn n;
       let l' = List.filter CAst.(function {v=IntroForthcoming _} -> true | {v=IntroNaming _} | {v=IntroAction _} -> false) l in
       if l' != [] then errforthcoming ?loc:(List.hd l').CAst.loc;
       if check_and then
         let p1 = List.count (fun x -> x) branchsigns.(0) in
         let p2 = List.length branchsigns.(0) in
         let p = List.length l in
-        if not (Int.equal p p1 || Int.equal p p2) then err1 p1 p2;
-        if Int.equal p p1 then
+        if not (CInt.equal p p1 || CInt.equal p p2) then err1 p1 p2;
+        if CInt.equal p p1 then
           IntroAndPattern
             (List.extend branchsigns.(0) (CAst.make @@ IntroNaming Namegen.IntroAnonymous) l)
         else
@@ -189,8 +189,8 @@ let check_or_and_pattern_size ?loc check_and names branchsigns =
       else
         names
   | IntroOrPattern ll ->
-      if not (Int.equal n (List.length ll)) then
-        if Int.equal n 1 then
+      if not (CInt.equal n (List.length ll)) then
+        if CInt.equal n 1 then
           let p1 = List.count (fun x -> x) branchsigns.(0) in
           let p2 = List.length branchsigns.(0) in
           err1' p1 p2 else errn n;
@@ -222,7 +222,7 @@ let compute_constructor_signatures ~rec_flag ((_,k as ity),u) =
         begin match Declareops.dest_recarg recarg with
         | Norec | Imbr _  -> true :: rest
         | Mrec (_,j)  ->
-            if rec_flag && Int.equal j k then true :: true :: rest
+            if rec_flag && CInt.equal j k then true :: true :: rest
             else true :: rest
         end
     | RelDecl.LocalDef _ :: c, rest -> false :: analrec c rest
@@ -604,7 +604,7 @@ module New = struct
 
   let fullGoal gl =
     let hyps = Tacmach.New.pf_ids_of_hyps gl in
-    None :: List.map Option.make hyps
+    None :: List.map COption.make hyps
 
   let tryAllHyps tac =
     Proofview.Goal.enter begin fun gl ->

@@ -50,13 +50,13 @@ type oblinfo =
     ev_src: Evar_kinds.t Loc.located;
     ev_typ: types;
     ev_tac: unit Proofview.tactic option;
-    ev_deps: Int.Set.t }
+    ev_deps: CInt.Set.t }
 
 (** Substitute evar references in t using de Bruijn indices,
   where n binders were passed through. *)
 
 let subst_evar_constr evm evs n idf t =
-  let seen = ref Int.Set.empty in
+  let seen = ref CInt.Set.empty in
   let transparent = ref Id.Set.empty in
   let evar_info id = List.assoc_f Evar.equal id evs in
   let rec substrec (depth, fixrels) c = match EConstr.kind evm c with
@@ -67,7 +67,7 @@ let subst_evar_constr evm evs n idf t =
 	  with Not_found ->
 	    anomaly ~label:"eterm" (Pp.str "existential variable " ++ int (Evar.repr k) ++ str " not found.")
 	in
-        seen := Int.Set.add id !seen;
+        seen := CInt.Set.add id !seen;
 	  (* Evar arguments are created in inverse order,
 	     and we must not apply to defined ones (i.e. LetIn's)
 	  *)
@@ -90,7 +90,7 @@ let subst_evar_constr evm evs n idf t =
 	in
 	  if List.exists
             (fun x -> match EConstr.kind evm x with
-            | Rel n -> Int.List.mem n fixrels
+            | Rel n -> CInt.List.mem n fixrels
             | _ -> false) args
           then
 	    transparent := Id.Set.add idstr !transparent;
@@ -124,14 +124,14 @@ let etype_of_evar evm evs hyps concl =
         let t', s, trans = subst_evar_constr evm evs n EConstr.mkVar (NamedDecl.get_type decl) in
 	let t'' = subst_vars acc 0 t' in
 	let rest, s', trans' = aux (NamedDecl.get_id decl :: acc) (succ n) tl in
-	let s' = Int.Set.union s s' in
+        let s' = CInt.Set.union s s' in
 	let trans' = Id.Set.union trans trans' in
 	  (match decl with
             | LocalDef (id,c,_) ->
                 let c', s'', trans'' = subst_evar_constr evm evs n EConstr.mkVar c in
 		let c' = subst_vars acc 0 c' in
                   mkNamedProd_or_LetIn (LocalDef (id, c', t'')) rest,
-		Int.Set.union s'' s',
+                CInt.Set.union s'' s',
 		Id.Set.union trans'' trans'
             | LocalAssum (id,_) ->
                 mkNamedProd_or_LetIn (LocalAssum (id, t'')) rest, s', trans')
@@ -146,7 +146,7 @@ let trunc_named_context n ctx =
 
 let rec chop_product n t =
   let pop t = Vars.lift (-1) t in
-  if Int.equal n 0 then Some t
+  if CInt.equal n 0 then Some t
   else
     match Constr.kind t with
       | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (pop b) else None
@@ -229,7 +229,7 @@ let eterm_obligations env name evm fs ?status t ty =
          in
          let force_status, status, chop = match status with
 	   | Evar_kinds.Define true as stat ->
-	      if not (Int.equal chop fs) then true, Evar_kinds.Define false, None
+              if not (CInt.equal chop fs) then true, Evar_kinds.Define false, None
 	      else false, stat, Some chop
 	   | s -> false, s, None
 	 in
@@ -275,7 +275,7 @@ let explain_no_obligations = function
 type obligation_info =
     (Names.Id.t * types * Evar_kinds.t Loc.located *
        (bool * Evar_kinds.obligation_definition_status)
-       * Int.Set.t * unit Proofview.tactic option) array
+       * CInt.Set.t * unit Proofview.tactic option) array
 
 let assumption_message = Declare.assumption_message
 
@@ -303,11 +303,11 @@ let init_prog_info ?(opaque = false) ?hook n udecl b t ctx deps fixkind
   let obls', b =
     match b with
     | None ->
-	assert(Int.equal (Array.length obls) 0);
+        assert(CInt.equal (Array.length obls) 0);
 	let n = Nameops.add_suffix n "_obligation" in
 	  [| { obl_name = n; obl_body = None;
 	       obl_location = Loc.tag Evar_kinds.InternalHole; obl_type = t;
-	       obl_status = false, Evar_kinds.Expand; obl_deps = Int.Set.empty;
+               obl_status = false, Evar_kinds.Expand; obl_deps = CInt.Set.empty;
 	       obl_tac = None } |],
 	mkVar n
     | Some b ->
@@ -387,10 +387,10 @@ let get_any_prog_err () =
 let all_programs () =
   ProgMap.fold (fun k p l -> p :: l) (get_prg_info_map ()) []
 
-let is_defined obls x = not (Option.is_empty obls.(x).obl_body)
+let is_defined obls x = not (COption.is_empty obls.(x).obl_body)
 
 let deps_remaining obls deps =
-  Int.Set.fold
+  CInt.Set.fold
     (fun x acc ->
       if is_defined obls x then acc
       else x :: acc)
@@ -468,7 +468,7 @@ let obligation_hook prg obl num auto { DeclareDef.Hook.S.uctx = ctx'; dref; _ } 
   let () = ignore (update_obls prg obls (pred rem)) in
   if pred rem > 0 then begin
     let deps = dependencies obls num in
-    if not (Int.Set.is_empty deps) then
+    if not (CInt.Set.is_empty deps) then
       ignore (auto (Some prg.prg_name) deps None)
   end
 
@@ -478,7 +478,7 @@ let rec solve_obligation prg num tac =
   let obl = obls.(num) in
   let remaining = deps_remaining obls obl.obl_deps in
   let () =
-    if not (Option.is_empty obl.obl_body) then
+    if not (COption.is_empty obl.obl_body) then
       pperror (str "Obligation" ++ spc () ++ int user_num ++ str "already" ++ spc() ++ str "solved.");
     if not (List.is_empty remaining) then
       pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
@@ -496,7 +496,7 @@ let rec solve_obligation prg num tac =
   let poly = prg.prg_poly in
   let lemma = Lemmas.start_lemma ~name:obl.obl_name ~poly ~info evd (EConstr.of_constr obl.obl_type) in
   let lemma = fst @@ Lemmas.by !default_tactic lemma in
-  let lemma = Option.cata (fun tac -> Lemmas.set_endline_tactic tac lemma) lemma tac in
+  let lemma = COption.cata (fun tac -> Lemmas.set_endline_tactic tac lemma) lemma tac in
   lemma
 
 and obligation (user_num, name, typ) tac =
@@ -549,11 +549,11 @@ and solve_prg_obligations prg ?oblset tac =
   let obls, rem = prg.prg_obligations in
   let rem = ref rem in
   let obls' = Array.copy obls in
-  let set = ref Int.Set.empty in
+  let set = ref CInt.Set.empty in
   let p = match oblset with
     | None -> (fun _ -> true)
     | Some s -> set := s;
-      (fun i -> Int.Set.mem i !set)
+      (fun i -> CInt.Set.mem i !set)
   in
   let prgref = ref prg in
   let () =
@@ -564,7 +564,7 @@ and solve_prg_obligations prg ?oblset tac =
  	| Some prg' ->
 	   prgref := prg';
 	   let deps = dependencies obls i in
- 	   (set := Int.Set.union !set deps;
+           (set := CInt.Set.union !set deps;
  	    decr rem))
       obls'
   in
@@ -636,7 +636,7 @@ let add_definition ~name ?term t ctx ?(univdecl=UState.default_univ_decl)
   let info = Id.print name ++ str " has type-checked" in
   let prg = init_prog_info ~opaque name univdecl term t ctx [] None [] obls implicits ~poly ~scope ~kind reduce ?hook in
   let obls,_ = prg.prg_obligations in
-  if Int.equal (Array.length obls) 0 then (
+  if CInt.equal (Array.length obls) 0 then (
     Flags.if_verbose Feedback.msg_info (info ++ str ".");
     let cst = DeclareObl.declare_definition prg in
     Defined cst)
@@ -710,7 +710,7 @@ let next_obligation n tac =
   | Some _ -> get_prog_err n
   in
   let obls, rem = prg.prg_obligations in
-  let is_open _ x = Option.is_empty x.obl_body && List.is_empty (deps_remaining obls x.obl_deps) in
+  let is_open _ x = COption.is_empty x.obl_body && List.is_empty (deps_remaining obls x.obl_deps) in
   let i = match Array.findi is_open obls with
   | Some i -> i
   | None -> anomaly (Pp.str "Could not find a solvable obligation.")

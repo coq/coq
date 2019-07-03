@@ -14,7 +14,7 @@ open Recordops
 let open_canonical_structure i (_, o) =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  if Int.equal i 1 then register_canonical_structure env sigma ~warn:false o
+  if CInt.equal i 1 then register_canonical_structure env sigma ~warn:false o
 
 let cache_canonical_structure (_, o) =
   let env = Global.env () in

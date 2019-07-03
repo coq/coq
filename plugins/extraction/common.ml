@@ -304,7 +304,7 @@ struct
   type t = ModPath.t * Label.t
   let compare (mp1, l1) (mp2, l2) =
     let c = Label.compare l1 l2 in
-    if Int.equal c 0 then ModPath.compare mp1 mp2 else c
+    if CInt.equal c 0 then ModPath.compare mp1 mp2 else c
 end
 
 module DupMap = Map.Make(DupOrd)
@@ -507,7 +507,7 @@ let pp_duplicate k' prefix mp rls olab =
   let rls', lbl =
     if k' != Mod then
       (* Here rls=[s], the ref to print is <prefix>.<s>, and olab<>None *)
-      rls, Option.get olab
+      rls, COption.get olab
     else
       (* Here rls=s::rls', we search the label for s inside mp *)
       List.tl rls, get_nth_label_mp (mp_length mp - mp_length prefix) mp

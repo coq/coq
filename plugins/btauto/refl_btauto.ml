@@ -68,7 +68,7 @@ module Env = struct
     (* we need to get an ordered list *)
     let fold constr key accu = (key, constr) :: accu in
     let l = ConstrHashtbl.fold fold env [] in
-    let sorted_l = List.sort (fun p1 p2 -> Int.compare (fst p1) (fst p2)) l in
+    let sorted_l = List.sort (fun p1 p2 -> CInt.compare (fst p1) (fst p2)) l in
     List.map snd sorted_l
 
 end

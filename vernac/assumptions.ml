@@ -172,7 +172,7 @@ let rec traverse current ctx accu t =
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
   traverse_object accu body (VarRef id)
 | Const (kn, _) ->
-  let body () = Option.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in
+  let body () = COption.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in
   traverse_object accu body (ConstRef kn)
 | Ind ((mind, _) as ind, _) ->
   traverse_inductive accu mind (IndRef ind)
@@ -185,7 +185,7 @@ let rec traverse current ctx accu t =
     | Lambda(_,_,oty), Const (kn, _)
       when Vars.noccurn 1 oty &&
       not (Declareops.constant_has_body (lookup_constant kn)) ->
-        let body () = Option.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in
+        let body () = COption.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in
         traverse_object
           ~inhabits:(current,ctx,Vars.subst1 mkProp oty) accu body (ConstRef kn)
     | _ ->
@@ -203,8 +203,8 @@ and traverse_object ?inhabits (curr, data, ax2ty) body obj =
         let data =
           if not already_in then GlobRef.Map_env.add obj GlobRef.Set_env.empty data else data in
         let ax2ty =
-          if Option.is_empty inhabits then ax2ty else
-          let ty = Option.get inhabits in
+          if COption.is_empty inhabits then ax2ty else
+          let ty = COption.get inhabits in
           try let l = GlobRef.Map_env.find obj ax2ty in GlobRef.Map_env.add obj (ty::l) ax2ty
           with Not_found -> GlobRef.Map_env.add obj [ty] ax2ty in
         data, ax2ty

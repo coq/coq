@@ -69,9 +69,9 @@ let warn_no_listeners = ref true
 let feedback ?did ?id ?route what =
   let m = {
      contents = what;
-     route    = Option.default !feedback_route route;
-     doc_id   = Option.default !doc_id did;
-     span_id  = Option.default !span_id id;
+     route    = COption.default !feedback_route route;
+     doc_id   = COption.default !doc_id did;
+     span_id  = COption.default !span_id id;
   } in
   if !warn_no_listeners && Hashtbl.length feeders = 0 then
     Format.eprintf "Warning, feedback message received but no listener to handle it!@\n%!";

@@ -135,7 +135,7 @@ let generate_makefile oc conf_file local_file dep_file args project =
       "@LOCAL_FILE@", local_file;
       "@DEP_FILE@", dep_file;
       "@COQ_VERSION@", Coq_config.version;
-      "@PROJECT_FILE@", (Option.default "" project.project_file);
+      "@PROJECT_FILE@", (COption.default "" project.project_file);
       "@COQ_MAKEFILE_INVOCATION@",String.concat " " (List.map quote args);
     ] in
   output_string oc s
@@ -402,7 +402,7 @@ let _ =
     with Parsing_error s -> prerr_endline s; usage_coq_makefile () in
 
   if only_destination <> None then begin
-    destination_of project (Option.get only_destination);
+    destination_of project (COption.get only_destination);
     exit 0
   end;
 
@@ -411,9 +411,9 @@ let _ =
     (* We want to know the name of the Makefile (say m) in order to
      * generate m.conf and include m.local *)
 
-  let conf_file = Option.default "CoqMakefile" project.makefile ^ ".conf" in
-  let local_file = Option.default "CoqMakefile" project.makefile ^ ".local" in
-  let dep_file = "." ^ Option.default "CoqMakefile" project.makefile ^ ".d" in
+  let conf_file = COption.default "CoqMakefile" project.makefile ^ ".conf" in
+  let local_file = COption.default "CoqMakefile" project.makefile ^ ".local" in
+  let dep_file = "." ^ COption.default "CoqMakefile" project.makefile ^ ".d" in
 
   if project.extra_targets <> [] then begin
     eprintf "Warning: -extra and -extra-phony are deprecated.\n";
@@ -435,7 +435,7 @@ let _ =
 
   Envars.set_coqlib ~fail:(fun x -> Printf.eprintf "Error: %s\n" x; exit 1);
 
-  let ocm = Option.cata open_out stdout project.makefile in
+  let ocm = COption.cata open_out stdout project.makefile in
   generate_makefile ocm conf_file local_file dep_file (prog :: args) project;
   close_out ocm;
   let occ = open_out conf_file in

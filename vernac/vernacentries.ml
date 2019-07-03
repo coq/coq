@@ -100,7 +100,7 @@ let with_def_attributes ~atts f =
 let show_proof ~pstate =
   (* spiwack: this would probably be cooler with a bit of polishing. *)
   try
-    let pstate = Option.get pstate in
+    let pstate = COption.get pstate in
     let p = Proof_global.get_proof pstate in
     let sigma, env = Pfedit.get_current_context pstate in
     let pprf = Proof.partial_proof p in
@@ -108,7 +108,7 @@ let show_proof ~pstate =
   (* We print nothing if there are no goals left *)
   with
   | Pfedit.NoSuchGoal
-  | Option.IsNone ->
+  | COption.IsNone ->
     user_err (str "No goals to show.")
 
 let show_top_evars ~proof =
@@ -680,7 +680,7 @@ let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
   | [] -> assert false
   | (((coe,(id,udecl)),b,c,k,d),e) :: rest ->
     let rest = List.map (fun (((coe,(id,udecl)),b,c,k,d),e) ->
-        if Option.has_some udecl
+        if COption.has_some udecl
         then user_err ~hdr:"inductive udecl" Pp.(strbrk "Universe binders must be on the first inductive of the block.")
         else (((coe,id),b,c,k,d),e))
         rest
@@ -717,9 +717,9 @@ let vernac_inductive ~atts cum lo finite indl =
   | [ ( id , bl , c , Class _, Constructors [l]), [] ] -> Some (id, bl, c, l)
   | _ -> None
   in
-  if Option.has_some is_defclass then
+  if COption.has_some is_defclass then
     (* Definitional class case *)
-    let (id, bl, c, l) = Option.get is_defclass in
+    let (id, bl, c, l) = COption.get is_defclass in
     let (coe, (lid, ce)) = l in
     let coe' = if coe then Some true else None in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce),
@@ -831,7 +831,7 @@ let vernac_cofixpoint ~atts discharge l =
 let vernac_scheme l =
   if Dumpglob.dump () then
     List.iter (fun (lid, s) ->
-	       Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid;
+	       COption.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid;
 	       match s with
 	       | InductionScheme (_, r, _)
 	       | CaseScheme (_, r, _) 
@@ -876,13 +876,13 @@ let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
     user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
   let binders_ast = List.map
    (fun (export,idl,ty) ->
-     if not (Option.is_empty export) then
+     if not (COption.is_empty export) then
       user_err Pp.(str "Arguments of a functor declaration cannot be exported. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
      else (idl,ty)) binders_ast in
   let mp = Declaremods.declare_module id binders_ast (Declaremods.Enforce mty_ast) [] in
   Dumpglob.dump_moddef ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is declared");
-  Option.iter (fun export -> vernac_import export [qualid_of_ident id]) export
+  COption.iter (fun export -> vernac_import export [qualid_of_ident id]) export
 
 let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
@@ -902,13 +902,13 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
          (str "Interactive Module " ++ Id.print id ++ str " started");
        List.iter
          (fun (export,id) ->
-           Option.iter
+           COption.iter
              (fun export -> vernac_import export [qualid_of_ident id]) export
          ) argsexport
     | _::_ ->
        let binders_ast = List.map
         (fun (export,idl,ty) ->
-          if not (Option.is_empty export) then
+          if not (COption.is_empty export) then
            user_err Pp.(str "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
           else (idl,ty)) binders_ast in
        let mp =
@@ -918,14 +918,14 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
 	 (str "Module " ++ Id.print id ++ str " is defined");
-       Option.iter (fun export -> vernac_import export [qualid_of_ident id])
+       COption.iter (fun export -> vernac_import export [qualid_of_ident id])
          export
 
 let vernac_end_module export {loc;v=id} =
   let mp = Declaremods.end_module () in
   Dumpglob.dump_modref ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is defined");
-  Option.iter (fun export -> vernac_import export [qualid_of_ident ?loc id]) export
+  COption.iter (fun export -> vernac_import export [qualid_of_ident ?loc id]) export
 
 let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
   if Global.sections_are_opened () then
@@ -945,14 +945,14 @@ let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
 	 (str "Interactive Module Type " ++ Id.print id ++ str " started");
        List.iter
          (fun (export,id) ->
-           Option.iter
+           COption.iter
              (fun export -> vernac_import export [qualid_of_ident ?loc id]) export
          ) argsexport
 
     | _ :: _ ->
 	let binders_ast = List.map
           (fun (export,idl,ty) ->
-            if not (Option.is_empty export) then
+            if not (COption.is_empty export) then
               user_err Pp.(str "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
             else (idl,ty)) binders_ast in
         let mp = Declaremods.declare_modtype id binders_ast mty_sign mty_ast_l in
@@ -1139,7 +1139,7 @@ let expand filename =
 let vernac_add_loadpath implicit pdir ldiropt =
   let open Loadpath in
   let pdir = expand pdir in
-  let alias = Option.default Libnames.default_root_prefix ldiropt in
+  let alias = COption.default Libnames.default_root_prefix ldiropt in
   add_coq_path { recursive = true;
                  path_spec = VoPath { unix_path = pdir; coq_path = alias; has_ml = AddTopML; implicit } }
 
@@ -1152,7 +1152,7 @@ let vernac_add_ml_path isrec path =
   add_coq_path { recursive = isrec; path_spec = MlPath (expand path) }
 
 let vernac_declare_ml_module ~local l =
-  let local = Option.default false local in
+  let local = COption.default false local in
   Mltop.declare_ml_modules local (List.map expand l)
 
 let vernac_chdir = function
@@ -1230,7 +1230,7 @@ let discharge_bidi_hints (_name, (gr, ohint)) =
   else
     let vars = Lib.variable_section_segment_of_reference gr in
     let n = List.length vars in
-    Some (gr, Option.map ((+) n) ohint)
+    Some (gr, COption.map ((+) n) ohint)
 
 let inBidiHints =
   let open Libobject in
@@ -1287,7 +1287,7 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
     try Arguments_renaming.arguments_names sr with Not_found -> inf_names
   in
   let num_args = List.length inf_names in
-  assert (Int.equal num_args (List.length prev_names));
+  assert (CInt.equal num_args (List.length prev_names));
 
   let names_of args = List.map (fun a -> a.name) args in
 
@@ -1322,13 +1322,13 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
     else args, scopes
   in
 
-  if Option.cata (fun n -> n > num_args) false nargs_for_red then
+  if COption.cata (fun n -> n > num_args) false nargs_for_red then
     user_err Pp.(str "The \"/\" modifier should be put before any extra scope.");
 
-  if Option.cata (fun n -> n > num_args) false nargs_before_bidi then
+  if COption.cata (fun n -> n > num_args) false nargs_before_bidi then
     user_err Pp.(str "The \"&\" modifier should be put before any extra scope.");
 
-  let scopes_specified = List.exists Option.has_some scopes in
+  let scopes_specified = List.exists COption.has_some scopes in
   
   if scopes_specified && clear_scopes_flag then
     user_err Pp.(str "The \"clear scopes\" flag is incompatible with scope annotations.");
@@ -1341,7 +1341,7 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
   let save_example_renaming renaming =
     rename_flag_required := !rename_flag_required
                             || not (Name.equal (fst renaming) Anonymous);
-    if Option.is_empty !example_renaming then
+    if COption.is_empty !example_renaming then
       example_renaming := Some renaming
   in
 
@@ -1378,7 +1378,7 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
   in
   
   let names = rename prev_names names in
-  let renaming_specified = Option.has_some !example_renaming in
+  let renaming_specified = COption.has_some !example_renaming in
 
   if !rename_flag_required && not rename_flag then begin
     let msg =
@@ -1437,9 +1437,9 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
   in
 
 
-  let red_modifiers_specified = Option.has_some red_behavior in
+  let red_modifiers_specified = COption.has_some red_behavior in
 
-  let bidi_hint_specified = Option.has_some nargs_before_bidi in
+  let bidi_hint_specified = COption.has_some nargs_before_bidi in
 
   if bidi_hint_specified && clear_bidi_hint then
     err_incompat "clear bidirectionality hint" "&";
@@ -1452,7 +1452,7 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
   end;
 
   if scopes_specified || clear_scopes_flag then begin
-      let scopes = List.map (Option.map (fun {loc;v=k} ->
+      let scopes = List.map (COption.map (fun {loc;v=k} ->
         try ignore (Notation.find_scope k); k
         with UserError _ ->
           Notation.find_delimiters_scope ?loc k)) scopes
@@ -1470,7 +1470,7 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
     match sr with
     | GlobRef.ConstRef _ as c ->
        Reductionops.ReductionBehaviour.set
-         ~local:section_local c (Option.get red_behavior)
+         ~local:section_local c (COption.get red_behavior)
 
     | _ -> user_err
              (strbrk "Modifiers of the behavior of the simpl tactic "++
@@ -1478,7 +1478,7 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
   end;
 
   if bidi_hint_specified then begin
-    let n = Option.get nargs_before_bidi in
+    let n = COption.get nargs_before_bidi in
     if section_local then
       Pretyping.add_bidirectionality_hint sr n
     else
@@ -1515,7 +1515,7 @@ let vernac_reserve bl =
   in List.iter sb_decl bl
 
 let vernac_generalizable ~local =
-  let local = Option.default true local in
+  let local = COption.default true local in
   Implicit_quantifiers.declare_generalizable ~local
 
 let () =
@@ -1645,7 +1645,7 @@ let () =
       optkey   = ["Inline";"Level"];
       optread  = (fun () -> Some (Flags.get_inline_level ()));
       optwrite = (fun o ->
-	           let lev = Option.default Flags.default_inline_level o in
+	           let lev = COption.default Flags.default_inline_level o in
 	           Flags.set_inline_level lev) }
 
 let () =
@@ -1761,7 +1761,7 @@ let _ =
       optwrite = (fun b -> Global.set_check_universes b) }
 
 let vernac_set_strategy ~local l =
-  let local = Option.default false local in
+  let local = COption.default false local in
   let glob_ref r =
     match smart_global r with
       | GlobRef.ConstRef sp -> EvalConstRef sp
@@ -1772,7 +1772,7 @@ let vernac_set_strategy ~local l =
   Redexpr.set_strategy local l
 
 let vernac_set_opacity ~local (v,l) =
-  let local = Option.default true local in
+  let local = COption.default true local in
   let glob_ref r =
     match smart_global r with
       | GlobRef.ConstRef sp -> EvalConstRef sp
@@ -1784,7 +1784,7 @@ let vernac_set_opacity ~local (v,l) =
 
 let get_option_locality export local =
   if export then
-    if Option.is_empty local then OptExport
+    if COption.is_empty local then OptExport
     else user_err Pp.(str "Locality modifiers forbidden with Export")
   else match local with
   | Some true -> OptLocal
@@ -1897,7 +1897,7 @@ let vernac_check_may_eval ~pstate ~atts redexp glopt rc =
   pp ++ Printer.pr_universe_ctx_set sigma uctx
 
 let vernac_declare_reduction ~local s r =
-  let local = Option.default false local in
+  let local = COption.default false local in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   declare_red_expr local s (snd (Hook.get f_interp_redexp env sigma r))
@@ -2316,7 +2316,7 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacInductive (cum, priv, finite, l) ->
     VtDefault(fun () -> vernac_inductive ~atts cum priv finite l)
   | VernacFixpoint (discharge, l) ->
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    let opens = List.exists (fun { body_def } -> COption.is_empty body_def) l in
     if opens then
       VtOpenProof (fun () ->
         with_def_attributes ~atts vernac_fixpoint_interactive discharge l)
@@ -2324,7 +2324,7 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
       VtDefault (fun () ->
         with_def_attributes ~atts vernac_fixpoint discharge l)
   | VernacCoFixpoint (discharge, l) ->
-    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
+    let opens = List.exists (fun { body_def } -> COption.is_empty body_def) l in
     if opens then
       VtOpenProof(fun () -> with_def_attributes ~atts vernac_cofixpoint_interactive discharge l)
     else
@@ -2548,12 +2548,12 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacProof (tac, using) ->
     VtModifyProof(fun ~pstate ->
     unsupported_attributes atts;
-    let using = Option.append using (Proof_using.get_default_proof_using ()) in
-    let tacs = if Option.is_empty tac then "tac:no" else "tac:yes" in
-    let usings = if Option.is_empty using then "using:no" else "using:yes" in
+    let using = COption.append using (Proof_using.get_default_proof_using ()) in
+    let tacs = if COption.is_empty tac then "tac:no" else "tac:yes" in
+    let usings = if COption.is_empty using then "using:no" else "using:yes" in
     Aux_file.record_in_aux_at "VernacProof" (tacs^" "^usings);
-    let pstate = Option.cata (vernac_set_end_tac ~pstate) pstate tac in
-    Option.cata (vernac_set_used_variables ~pstate) pstate using)
+    let pstate = COption.cata (vernac_set_end_tac ~pstate) pstate tac in
+    COption.cata (vernac_set_used_variables ~pstate) pstate using)
   | VernacProofMode mn ->
     VtDefault(fun () -> unsupported_attributes atts)
 

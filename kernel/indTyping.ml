@@ -134,9 +134,9 @@ let check_univ_leq ?(is_real_arg=false) env u info =
   in
   (* Inductive types provide explicit lifting from SProp to other universes, so allow SProp <= any. *)
   if type_in_type env || Univ.Universe.is_sprop u || UGraph.check_leq (universes env) u ind_univ
-  then { info with ind_min_univ = Option.map (Universe.sup u) info.ind_min_univ }
+  then { info with ind_min_univ = COption.map (Universe.sup u) info.ind_min_univ }
   else if is_impredicative_univ env ind_univ
-  then if Option.is_empty info.ind_min_univ then { info with ind_squashed = true }
+  then if COption.is_empty info.ind_min_univ then { info with ind_squashed = true }
     else raise (InductiveError BadUnivs)
   else raise (InductiveError BadUnivs)
 
@@ -263,7 +263,7 @@ let template_polymorphic_univs ~template_check uctx paramsctxt concl =
   let univs = Univ.Universe.levels concl in
   let univs =
     if template_check then
-      Univ.LSet.filter (fun l -> Option.has_some (check_level l) || Univ.Level.is_prop l) univs
+      Univ.LSet.filter (fun l -> COption.has_some (check_level l) || Univ.Level.is_prop l) univs
     else univs (* Doesn't check the universes can be generalized *)
   in
   let fold acc = function
@@ -303,7 +303,7 @@ let abstract_packets ~template_check univs usubst params ((arity,lc),(indices,sp
             CErrors.anomaly ~label:"polymorphic_template_ind"
               Pp.(strbrk "Template polymorphism and full polymorphism are incompatible.") in
       let param_levels, concl_levels = template_polymorphic_univs ~template_check ctx params min_univ in
-      if template_check && List.for_all (fun x -> Option.is_empty x) param_levels
+      if template_check && List.for_all (fun x -> COption.is_empty x) param_levels
          && Univ.LSet.is_empty concl_levels then
         CErrors.anomaly ~label:"polymorphic_template_ind"
           Pp.(strbrk "Ill-formed template inductive declaration: not polymorphic on any universe.")

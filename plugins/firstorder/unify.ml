@@ -40,7 +40,7 @@ let unif evd t1 t2=
     match EConstr.kind evd t with
 	Meta i->
 	  (try
-	     head_reduce (Int.List.assoc i !sigma)
+             head_reduce (CInt.List.assoc i !sigma)
 	   with Not_found->t)
       | _->t in
     Queue.add (t1,t2) bige;
@@ -50,17 +50,17 @@ let unif evd t1 t2=
       and nt2=head_reduce (whd_betaiotazeta evd t2) in
 	match (EConstr.kind evd nt1),(EConstr.kind evd nt2) with
 	    Meta i,Meta j->
-	      if not (Int.equal i j) then
+              if not (CInt.equal i j) then
 		if i<j then bind j nt1
 		else bind i nt2
 	  | Meta i,_ ->
 	      let t=subst_meta !sigma nt2 in
-		if Int.Set.is_empty (free_rels evd t) &&
+                if CInt.Set.is_empty (free_rels evd t) &&
                   not (occur_metavariable evd i t) then
 		    bind i t else raise (UFAIL(nt1,nt2))
 	  | _,Meta i ->
 	      let t=subst_meta !sigma nt1 in
-		if Int.Set.is_empty (free_rels evd t) &&
+                if CInt.Set.is_empty (free_rels evd t) &&
                   not (occur_metavariable evd i t) then
 		    bind i t else raise (UFAIL(nt1,nt2))
 	  | Cast(_,_,_),_->Queue.add (strip_outer_cast evd nt1,nt2) bige
@@ -71,7 +71,7 @@ let unif evd t1 t2=
 	      Queue.add (pa,pb) bige;
 	      Queue.add (ca,cb) bige;
 	      let l=Array.length va in
-                if not (Int.equal l (Array.length vb)) then
+                if not (CInt.equal l (Array.length vb)) then
 		  raise (UFAIL (nt1,nt2))
 		else
 		  for i=0 to l-1 do
@@ -80,7 +80,7 @@ let unif evd t1 t2=
 	  | App(ha,va),App(hb,vb)->
 	      Queue.add (ha,hb) bige;
 	      let l=Array.length va in
-		if not (Int.equal l (Array.length vb)) then
+                if not (CInt.equal l (Array.length vb)) then
 		  raise (UFAIL (nt1,nt2))
 		else
 		  for i=0 to l-1 do
@@ -96,7 +96,7 @@ let value evd i t=
   let add x y=
     if x<0 then y else if y<0 then x else x+y in
   let rec vaux term=
-    if isMeta evd term && Int.equal (destMeta evd term) i then 0 else
+    if isMeta evd term && CInt.equal (destMeta evd term) i then 0 else
       let f v t=add v (vaux t) in
       let vr=EConstr.fold evd f (-1) term in
 	if vr<0 then -1 else vr+1 in
@@ -113,7 +113,7 @@ let mk_rel_inst evd t=
     match EConstr.kind evd t with
 	Meta n->
 	  (try
-	     mkRel (d+(Int.List.assoc n !rel_env))
+             mkRel (d+(CInt.List.assoc n !rel_env))
 	   with Not_found->
 	     let m= !new_rel in
 	       incr new_rel;
@@ -125,7 +125,7 @@ let mk_rel_inst evd t=
 
 let unif_atoms evd i dom t1 t2=
   try
-    let t=Int.List.assoc i (unif evd t1 t2) in
+    let t=CInt.List.assoc i (unif evd t1 t2) in
       if isMeta evd t then Some (Phantom dom)
       else Some (Real(mk_rel_inst evd t,value evd i t1))
   with

@@ -278,7 +278,7 @@ struct
 		 find_all t)) in
 	 OIdset.union (Some mset) all
       ) None p t in
-    Option.get (OIdset.inter mset lset)
+    COption.get (OIdset.inter mset lset)
 
   let fold_pattern f acc p dn = fold_pattern ~complete:true f acc p dn
 

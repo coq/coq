@@ -78,17 +78,17 @@ let pr_glbtype_gen pr lvl c =
 let pr_glbtype pr c = pr_glbtype_gen pr T5_r c
 
 let int_name () =
-  let vars = ref Int.Map.empty in
+  let vars = ref CInt.Map.empty in
   fun n ->
-    if Int.Map.mem n !vars then Int.Map.find n !vars
+    if CInt.Map.mem n !vars then CInt.Map.find n !vars
     else
-      let num = Int.Map.cardinal !vars in
+      let num = CInt.Map.cardinal !vars in
       let base = num mod 26 in
       let rem = num / 26 in
       let name = String.make 1 (Char.chr (97 + base)) in
-      let suff = if Int.equal rem 0 then "" else string_of_int rem in
+      let suff = if CInt.equal rem 0 then "" else string_of_int rem in
       let name = name ^ suff in
-      let () = vars := Int.Map.add n name !vars in
+      let () = vars := CInt.Map.add n name !vars in
       name
 
 (** Term printing *)
@@ -120,12 +120,12 @@ let find_constructor n empty def =
   | [] -> assert false
   | (id, []) as ans :: rem ->
     if empty then
-      if Int.equal n 0 then ans
+      if CInt.equal n 0 then ans
       else find (pred n) rem
     else find n rem
   | (id, _ :: _) as ans :: rem ->
     if not empty then
-      if Int.equal n 0 then ans
+      if CInt.equal n 0 then ans
       else find (pred n) rem
     else find n rem
   in
@@ -215,7 +215,7 @@ let pr_glbexpr_gen lvl c =
       in
       prlist pr_branch br
     | Tuple n ->
-      let (vars, p) = if Int.equal n 0 then ([||], cst_br.(0)) else ncst_br.(0) in
+      let (vars, p) = if CInt.equal n 0 then ([||], cst_br.(0)) else ncst_br.(0) in
       let p = pr_glbexpr E5 p in
       let vars = prvect_with_sep (fun () -> str "," ++ spc ()) pr_name vars in
       hov 4 (str "|" ++ spc () ++ hov 0 (paren vars ++ spc () ++ str "=>") ++ spc () ++ p)

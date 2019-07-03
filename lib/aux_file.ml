@@ -30,14 +30,14 @@ let mk_absolute vfile =
 let start_aux_file ~aux_file:output_file ~v_file =
   let vfile = mk_absolute v_file in
   oc := Some (open_out output_file);
-  Printf.fprintf (Option.get !oc) "COQAUX%d %s %s\n"
+  Printf.fprintf (COption.get !oc) "COQAUX%d %s %s\n"
     version (Digest.to_hex (Digest.file vfile)) vfile
 
 let stop_aux_file () =
-  close_out (Option.get !oc);
+  close_out (COption.get !oc);
   oc := None
 
-let recording () = not (Option.is_empty !oc)
+let recording () = not (COption.is_empty !oc)
 
 module H = Map.Make(struct type t = int * int let compare = compare end)
 module M = Map.Make(String)
@@ -48,10 +48,10 @@ let contents x = x
 
 let empty_aux_file = H.empty
 
-let get ?loc aux key = M.find key (H.find (Option.cata Loc.unloc (0,0) loc) aux)
+let get ?loc aux key = M.find key (H.find (COption.cata Loc.unloc (0,0) loc) aux)
 
 let record_in_aux_at ?loc key v =
-  Option.iter (fun oc ->
+  COption.iter (fun oc ->
       match loc with
       | Some loc -> let i, j = Loc.unloc loc in
                     Printf.fprintf oc "%d %d %s %S\n" i j key v
@@ -95,4 +95,4 @@ let load_aux_file_for vfile =
     Flags.if_verbose Feedback.msg_info Pp.(str"Loading file "++str aux_fname++str": "++str s);
      empty_aux_file
 
-let set ?loc h k v = set h (Option.cata Loc.unloc (0,0) loc) k v
+let set ?loc h k v = set h (COption.cata Loc.unloc (0,0) loc) k v

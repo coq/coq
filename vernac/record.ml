@@ -68,7 +68,7 @@ let interp_fields_evars env sigma impls_env nots l =
       let sigma, (t', impl) = interp_type_evars_impls ~program_mode:false env sigma ~impls t in
       let r = Retyping.relevance_of_type env sigma t' in
       let sigma, b' =
-        Option.cata (fun x -> on_snd (fun x -> Some (fst x)) @@
+        COption.cata (fun x -> on_snd (fun x -> Some (fst x)) @@
                       interp_casted_constr_evars_impls ~program_mode:false env sigma ~impls x t') (sigma,None) b in
       let impls =
 	match i with
@@ -112,7 +112,7 @@ let typecheck_params_and_fields finite def poly pl ps records =
      lower bound on introduced universes is Prop so that we do not miss
      any Set <= i constraint for universes that might actually be instantiated with Prop. *)
   let is_template =
-    List.exists (fun (_, arity, _, _) -> Option.cata check_anonymous_type true arity) records in
+    List.exists (fun (_, arity, _, _) -> COption.cata check_anonymous_type true arity) records in
   let env0 = if not poly && is_template then Environ.set_universes_lbound env0 Univ.Level.prop else env0 in
   let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env0 pl in
   let () =
@@ -183,7 +183,7 @@ let typecheck_params_and_fields finite def poly pl ps records =
       else
         let sigma = Evd.set_leq_sort env_ar sigma (Sorts.sort_of_univ univ) sort in
         if Univ.is_small_univ univ &&
-           Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma sort) then
+           COption.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma sort) then
 	   (* We can assume that the level in aritysort is not constrained
 	       and clear it, if it is flexible *)
    Evd.set_eq_sort env_ar sigma Sorts.set sort, (univ, EConstr.mkSort (Sorts.sort_of_univ univ))
@@ -535,7 +535,7 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params uni
         params template ~kind:Decls.Method ~name:[|binder_name|] record_data
       in
        let coers = List.map2 (fun coe pri ->
-                              Option.map (fun b ->
+                              COption.map (fun b ->
 			      if b then Backward, pri else Forward, pri) coe)
 	  coers priorities
        in
@@ -656,7 +656,7 @@ let check_unique_names records =
 let check_priorities kind records =
   let isnot_class = match kind with Class false -> false | _ -> true in
   let has_priority (_, _, _, cfs, _, _) =
-    List.exists (fun (_, { rf_priority }) -> not (Option.is_empty rf_priority)) cfs
+    List.exists (fun (_, { rf_priority }) -> not (COption.is_empty rf_priority)) cfs
   in
   if isnot_class && List.exists has_priority records then
     user_err Pp.(str "Priorities only allowed for type class substructures")
@@ -707,7 +707,7 @@ let definition_structure udecl kind ~template ~cumulative ~poly finite records =
     let data = List.map (fun (univ, arity, implfs, fields) -> (univ, arity, List.map map implfs, fields)) data in
     let map (univ, arity, implfs, fields) (is_coe, id, _, cfs, idbuild, _) =
       let coe = List.map (fun (_, { rf_subclass ; rf_canonical }) ->
-          { pf_subclass = not (Option.is_empty rf_subclass);
+          { pf_subclass = not (COption.is_empty rf_subclass);
             pf_canonical = rf_canonical })
           cfs
       in

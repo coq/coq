@@ -64,7 +64,7 @@ let value_of_evaluable_ref env evref u =
   | EvalConstRef con -> 
     let u = Unsafe.to_instance u in
     EConstr.of_constr (constant_value_in env (con, u))
-  | EvalVarRef id -> env |> lookup_named id |> NamedDecl.get_value |> Option.get
+  | EvalVarRef id -> env |> lookup_named id |> NamedDecl.get_value |> COption.get
 
 let evaluable_of_global_reference env = function
   | GlobRef.ConstRef cst when is_evaluable_const env cst -> EvalConstRef cst
@@ -84,7 +84,7 @@ type evaluable_reference =
 let evaluable_reference_eq sigma r1 r2 = match r1, r2 with
 | EvalConst c1, EvalConst c2 -> Constant.equal c1 c2
 | EvalVar id1, EvalVar id2 -> Id.equal id1 id2
-| EvalRel i1, EvalRel i2 -> Int.equal i1 i2
+| EvalRel i1, EvalRel i2 -> CInt.equal i1 i2
 | EvalEvar (e1, ctx1), EvalEvar (e2, ctx2) ->
   Evar.equal e1 e2 && Array.equal (EConstr.eq_constr sigma) ctx1 ctx2
 | _ -> false
@@ -118,7 +118,7 @@ let unsafe_reference_opt_value env sigma eval =
   | EvalVar id ->
       env |> lookup_named id |> NamedDecl.get_value
   | EvalRel n ->
-      env |> lookup_rel n |> RelDecl.get_value |> Option.map (lift n)
+      env |> lookup_rel n |> RelDecl.get_value |> COption.map (lift n)
   | EvalEvar ev ->
     match EConstr.kind sigma (mkEvar ev) with
     | Evar _ -> None
@@ -128,11 +128,11 @@ let reference_opt_value env sigma eval u =
   match eval with
   | EvalConst cst ->
     let u = EInstance.kind sigma u in
-    Option.map EConstr.of_constr (constant_opt_value_in env (cst,u))
+    COption.map EConstr.of_constr (constant_opt_value_in env (cst,u))
   | EvalVar id ->
       env |> lookup_named id |> NamedDecl.get_value
   | EvalRel n ->
-      env |> lookup_rel n |> RelDecl.get_value |> Option.map (lift n)
+      env |> lookup_rel n |> RelDecl.get_value |> COption.map (lift n)
   | EvalEvar ev ->
     match EConstr.kind sigma (mkEvar ev) with
     | Evar _ -> None
@@ -208,12 +208,12 @@ let check_fix_reversibility sigma labs args ((lv,i),(_,tys,bds)) =
 	     raise Elimconst) args
   in
   let reversible_rels = List.map fst li in
-  if not (List.distinct_f Int.compare reversible_rels) then
+  if not (List.distinct_f CInt.compare reversible_rels) then
     raise Elimconst;
   List.iteri (fun i t_i ->
-    if not (Int.List.mem_assoc (i+1) li) then
-      let fvs = List.map ((+) (i+1)) (Int.Set.elements (free_rels sigma t_i)) in
-      match List.intersect Int.equal fvs reversible_rels with
+    if not (CInt.List.mem_assoc (i+1) li) then
+      let fvs = List.map ((+) (i+1)) (CInt.Set.elements (free_rels sigma t_i)) in
+      match List.intersect CInt.equal fvs reversible_rels with
       | [] -> ()
       | _ -> raise Elimconst)
     labs;
@@ -320,7 +320,7 @@ let compute_consteval_mutual_fix env sigma ref =
 
 let compute_consteval env sigma ref =
   match compute_consteval_direct env sigma ref with
-    | EliminationFix (_,_,(nbfix,_,_)) when not (Int.equal nbfix 1) ->
+    | EliminationFix (_,_,(nbfix,_,_)) when not (CInt.equal nbfix 1) ->
 	compute_consteval_mutual_fix env sigma ref
     | elim -> elim
 
@@ -365,7 +365,7 @@ let make_elim_fun (names,(nbfix,lv,n)) u largs =
   let la =
     List.map_i (fun q aq ->
       (* k from the comment is q+1 *)
-      try mkRel (p+1-(List.index Int.equal (n-q) lyi))
+      try mkRel (p+1-(List.index CInt.equal (n-q) lyi))
       with Not_found -> aq)
       0 (List.map (Vars.lift p) lu)
   in
@@ -518,7 +518,7 @@ let reduce_mind_case_use_function func env sigma mia =
 	  if isConst sigma func then
             let minargs = List.length mia.mcargs in
 	    fun i ->
-	      if Int.equal i bodynum then Some (minargs,func)
+              if CInt.equal i bodynum then Some (minargs,func)
               else match names.(i).binder_name with
 		| Anonymous -> None
 		| Name id ->
@@ -570,7 +570,7 @@ let match_eval_ref_value env sigma constr stack =
   | Var id when is_evaluable env (EvalVarRef id) -> 
      env |> lookup_named id |> NamedDecl.get_value
   | Rel n ->
-     env |> lookup_rel n |> RelDecl.get_value |> Option.map (lift n)
+     env |> lookup_rel n |> RelDecl.get_value |> COption.map (lift n)
   | _ -> None
 
 let special_red_case env sigma whfun (ci, p, c, lf) =
@@ -1030,12 +1030,12 @@ let e_contextually byhead (occs,c) f = begin fun env sigma t ->
         if byhead then matches_head env sigma c t 
 	else Constr_matching.matches env sigma c t in
       let ok =
-	if nowhere_except_in then Int.List.mem !pos locs
-	else not (Int.List.mem !pos locs) in
+        if nowhere_except_in then CInt.List.mem !pos locs
+        else not (CInt.List.mem !pos locs) in
       incr pos;
       if ok then begin
-        if Option.has_some nested then
-          user_err  (str "The subterm at occurrence " ++ int (Option.get nested) ++ str " overlaps with the subterm at occurrence " ++ int (!pos-1) ++ str ".");
+        if COption.has_some nested then
+          user_err  (str "The subterm at occurrence " ++ int (COption.get nested) ++ str " overlaps with the subterm at occurrence " ++ int (!pos-1) ++ str ".");
         (* Skip inner occurrences for stable counting of occurrences *)
         if locs != [] then
           ignore (traverse_below (Some (!pos-1)) envc t);
@@ -1087,8 +1087,8 @@ let substlin env sigma evalref n (nowhere_except_in,locs) c =
       match match_constr_evaluable_ref sigma c evalref with
       | Some u ->
         let ok =
-	  if nowhere_except_in then Int.List.mem !pos locs
-	  else not (Int.List.mem !pos locs) in
+          if nowhere_except_in then CInt.List.mem !pos locs
+          else not (CInt.List.mem !pos locs) in
 	  incr pos;
 	  if ok then value u else c
       | None -> 
@@ -1127,7 +1127,7 @@ let unfold env sigma name c =
 let unfoldoccs env sigma (occs,name) c =
   let unfo nowhere_except_in locs =
     let (nbocc,uc) = substlin env sigma name 1 (nowhere_except_in,locs) c in
-    if Int.equal nbocc 1 then
+    if CInt.equal nbocc 1 then
       user_err Pp.(str ((string_of_evaluable_ref env name)^" does not occur."));
     let rest = List.filter (fun o -> o >= nbocc) locs in
     let () = match rest with

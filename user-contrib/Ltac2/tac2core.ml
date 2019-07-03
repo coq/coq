@@ -297,7 +297,7 @@ let binop n f = define2 n int int begin fun m n ->
   return (Value.of_int (f m n))
 end
 
-let () = binop "int_compare" Int.compare
+let () = binop "int_compare" CInt.compare
 let () = binop "int_add" (+)
 let () = binop "int_sub" (-)
 let () = binop "int_mul" ( * )
@@ -714,7 +714,7 @@ let () = define3 "pattern_matches_goal" bool (list (pair bool pattern)) (pair bo
   let mk_pattern (b, pat) = if b then Tac2match.MatchPattern pat else Tac2match.MatchContext pat in
   let r = (List.map mk_pattern hp, mk_pattern cp) in
   Tac2match.match_goal env sigma concl ~rev r >>= fun (hyps, ctx, subst) ->
-    let of_ctxopt ctx = Value.of_constr (Option.default empty_context ctx) in
+    let of_ctxopt ctx = Value.of_constr (COption.default empty_context ctx) in
     let hids = Value.of_array Value.of_ident (Array.map_of_list fst hyps) in
     let hctx = Value.of_array of_ctxopt (Array.map_of_list snd hyps) in
     let subs = Value.of_array Value.of_constr (Array.map_of_list snd (Id.Map.bindings subst)) in
@@ -874,7 +874,7 @@ let () = define2 "abstract" (option ident) closure begin fun id f ->
 end
 
 let () = define2 "time" (option string) closure begin fun s f ->
-  let s = Option.map Bytes.to_string s in
+  let s = COption.map Bytes.to_string s in
   Proofview.tclTIME s (thaw f)
 end
 
@@ -1192,7 +1192,7 @@ let () =
       return v_unit
     in
     let len = List.length ids in
-    if Int.equal len 0 then
+    if CInt.equal len 0 then
       clos []
     else
       return (Tac2ffi.of_closure (Tac2ffi.abstract len clos))
@@ -1241,7 +1241,7 @@ let () =
       return (Value.of_ext val_ltac1 (Tacinterp.Value.of_closure ist tac))
     in
     let len = List.length ids in
-    if Int.equal len 0 then
+    if CInt.equal len 0 then
       clos []
     else
       return (Tac2ffi.of_closure (Tac2ffi.abstract len clos))

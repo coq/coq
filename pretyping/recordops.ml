@@ -69,7 +69,7 @@ let register_structure env (id,kl,projs) =
     { s_CONST = id; s_EXPECTEDPARAM = n; s_PROJ = projs; s_PROJKIND = kl } in
   structure_table := Indmap.add ind struc !structure_table;
   projection_table :=
-    List.fold_right (Option.fold_right (fun proj -> Cmap.add proj struc))
+    List.fold_right (COption.fold_right (fun proj -> Cmap.add proj struc))
       projs !projection_table
 
 let subst_structure subst (id, kl, projs as obj) =
@@ -77,7 +77,7 @@ let subst_structure subst (id, kl, projs as obj) =
    (* invariant: struc.s_PROJ is an evaluable reference. Thus we can take *)
    (* the first component of subst_con.                                   *)
    List.Smart.map
-     (Option.Smart.map (subst_constant subst))
+     (COption.Smart.map (subst_constant subst))
     projs
   in
   let id' = subst_constructor subst id in
@@ -220,7 +220,7 @@ let compute_canonical_projections env ~warn (con,ind) =
   List.fold_left2 (fun acc (spopt, canonical) t ->
       if canonical
       then
-        Option.cata (fun proji_sp ->
+        COption.cata (fun proji_sp ->
             match cs_pattern_of_constr nenv t with
             | patt, o_INJ, o_TCOMPS ->
               ((GlobRef.ConstRef proji_sp, (patt, t)),

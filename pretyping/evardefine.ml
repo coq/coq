@@ -202,7 +202,7 @@ let split_tycon ?loc env evd tycon =
             evd', (n, mk_tycon dom, mk_tycon rng)
 
 let valcon_of_tycon x = x
-let lift_tycon n = Option.map (lift n)
+let lift_tycon n = COption.map (lift n)
 
 let pr_tycon env sigma = function
     None -> str "None"

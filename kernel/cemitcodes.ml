@@ -244,7 +244,7 @@ let emit_instr env = function
       then out env(opENVACC1 + n - 1)
       else (out env opENVACC; out_int env n)
   | Koffsetclosure ofs ->
-      if Int.equal ofs (-2) || Int.equal ofs 0 || Int.equal ofs 2
+      if CInt.equal ofs (-2) || CInt.equal ofs 0 || CInt.equal ofs 2
       then out env (opOFFSETCLOSURE0 + ofs / 2)
       else (out env opOFFSETCLOSURE; out_int env ofs)
   | Kpush ->
@@ -293,7 +293,7 @@ let emit_instr env = function
   | Kconst c ->
       out env opGETGLOBAL; slot_for_const env c
   | Kmakeblock(n, t) ->
-      if Int.equal n 0 then invalid_arg "emit_instr : block size = 0"
+      if CInt.equal n 0 then invalid_arg "emit_instr : block size = 0"
       else if n < 4 then (out env(opMAKEBLOCK1 + n - 1); out_int env t)
       else (out env opMAKEBLOCK; out_int env n; out_int env t)
   | Kmakeprod ->
@@ -355,7 +355,7 @@ let rec emit env insns remaining = match insns with
       else (out env opPUSHENVACC; out_int env n);
       emit env c remaining
   | Kpush :: Koffsetclosure ofs :: c ->
-      if Int.equal ofs (-2) || Int.equal ofs 0 || Int.equal ofs 2
+      if CInt.equal ofs (-2) || CInt.equal ofs 0 || CInt.equal ofs 2
       then out env(opPUSHOFFSETCLOSURE0 + ofs / 2)
       else (out env opPUSHOFFSETCLOSURE; out_int env ofs);
       emit env c remaining

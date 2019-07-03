@@ -178,8 +178,8 @@ let () =
     { optdepr  = false;
       optname  = "default value for Proof using";
       optkey   = proof_using_opt_name;
-      optread  = (fun () -> Option.map using_to_string !value);
-      optwrite = (fun b -> value := Option.map using_from_string b);
+      optread  = (fun () -> COption.map using_to_string !value);
+      optwrite = (fun b -> value := COption.map using_from_string b);
     })
 
 let get_default_proof_using () = !value

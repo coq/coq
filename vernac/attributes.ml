@@ -85,7 +85,7 @@ let error_twice ~name : 'a =
   user_err Pp.(str "Attribute for " ++ str name ++ str " specified twice.")
 
 let assert_once ~name prev =
-  if Option.has_some prev then
+  if COption.has_some prev then
     error_twice ~name
 
 let attribute_of_list (l:(string * 'a key_parser) list) : 'a option attribute =

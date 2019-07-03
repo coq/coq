@@ -268,7 +268,7 @@ let () = define_prim1 "tac_assert" assertion begin fun ast ->
 end
 
 let () = define_prim3 "tac_enough" constr (option (option (thunk unit))) (option intro_pattern) begin fun c tac ipat ->
-  let tac = Option.map (fun o -> Option.map (fun f -> thaw unit f) o) tac in
+  let tac = COption.map (fun o -> COption.map (fun f -> thaw unit f) o) tac in
   Tac2tactics.forward false tac ipat c
 end
 
@@ -283,7 +283,7 @@ let () = define_prim3 "tac_set" bool (thunk (pair name constr)) clause begin fun
 end
 
 let () = define_prim5 "tac_remember" bool name (thunk constr) (option intro_pattern) clause begin fun ev na c eqpat cl ->
-  let eqpat = Option.default (IntroNaming IntroAnonymous) eqpat in
+  let eqpat = COption.default (IntroNaming IntroAnonymous) eqpat in
   match eqpat with
   | IntroNaming eqpat ->
     Proofview.tclEVARMAP >>= fun sigma ->
@@ -426,7 +426,7 @@ let () = define_prim2 "tac_move" ident move_location begin fun id mv ->
 end
 
 let () = define_prim2 "tac_intro" (option ident) (option move_location) begin fun id mv ->
-  let mv = Option.default Logic.MoveLast mv in
+  let mv = COption.default Logic.MoveLast mv in
   Tactics.intro_move id mv
 end
 

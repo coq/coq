@@ -170,7 +170,7 @@ let scope_is_open sc = scope_is_open_in_scopes sc (!scope_stack)
 
 (* Exportation of scopes *)
 let open_scope i (_,(local,op,sc)) =
-  if Int.equal i 1 then
+  if CInt.equal i 1 then
     scope_stack :=
       if op then sc :: !scope_stack
       else List.except scope_eq sc !scope_stack
@@ -206,7 +206,7 @@ let push_scope sc scopes = Scope sc :: scopes
 let push_scopes = List.fold_right push_scope
 
 let make_current_scopes (tmp_scope,scopes) =
-  Option.fold_right push_scope tmp_scope (push_scopes scopes !scope_stack)
+  COption.fold_right push_scope tmp_scope (push_scopes scopes !scope_stack)
 
 (**********************************************************************)
 (* Delimiters *)
@@ -381,8 +381,8 @@ module InnerPrimToken = struct
     | Some s -> if Unicode.is_utf8 s then Some (String s) else None
 
   let do_uninterp uninterp g = match uninterp with
-    | RawNumUninterp u -> Option.map (fun (s,n) -> Numeral (s,n)) (u g)
-    | BigNumUninterp u -> Option.map mkNumeral (u g)
+    | RawNumUninterp u -> COption.map (fun (s,n) -> Numeral (s,n)) (u g)
+    | BigNumUninterp u -> COption.map mkNumeral (u g)
     | StringUninterp u -> mkString (u g)
 
 end
@@ -655,7 +655,7 @@ let rawnum_of_coquint c =
   in
   let buf = Buffer.create 64 in
   let () = of_uint_loop c buf in
-  if Int.equal (Buffer.length buf) 0 then
+  if CInt.equal (Buffer.length buf) 0 then
     (* To avoid ambiguities between Nil and (D0 Nil), we choose
        to not display Nil alone as "0" *)
     raise NotAValidPrimToken
@@ -851,9 +851,9 @@ let coqbyte_of_char_code byte c =
 
 let coqbyte_of_string ?loc byte s =
   let p =
-    if Int.equal (String.length s) 1 then int_of_char s.[0]
+    if CInt.equal (String.length s) 1 then int_of_char s.[0]
     else
-      if Int.equal (String.length s) 3 && is_digit s.[0] && is_digit s.[1] && is_digit s.[2]
+      if CInt.equal (String.length s) 3 && is_digit s.[0] && is_digit s.[1] && is_digit s.[2]
       then int_of_string s
       else
        user_err ?loc ~hdr:"coqbyte_of_string"
@@ -1003,7 +1003,7 @@ let classify_prim_token_interpretation infos =
 
 let inPrimTokenInterp : prim_token_infos -> obj =
   declare_object {(default_object "PRIM-TOKEN-INTERP") with
-     open_function  = (fun i o -> if Int.equal i 1 then cache_prim_token_interpretation o);
+     open_function  = (fun i o -> if CInt.equal i 1 then cache_prim_token_interpretation o);
      cache_function = cache_prim_token_interpretation;
      subst_function = subst_prim_token_interpretation;
      classify_function = classify_prim_token_interpretation}
@@ -1205,7 +1205,7 @@ let interp_notation ?loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in
   try
     let (n,sc) = find_interpretation ntn (find_notation ntn) scopes in
-    Option.iter (fun d -> warn_deprecated_notation ?loc (ntn,d)) n.not_deprecation;
+    COption.iter (fun d -> warn_deprecated_notation ?loc (ntn,d)) n.not_deprecation;
     n.not_interp, (n.not_location, sc)
   with Not_found ->
     user_err ?loc
@@ -1382,7 +1382,7 @@ let availability_of_prim_token n printer_scope local_scopes =
     with Not_found -> false
   in
   let scopes = make_current_scopes local_scopes in
-  Option.map snd (find_without_delimiters f (Some printer_scope,None) scopes)
+  COption.map snd (find_without_delimiters f (Some printer_scope,None) scopes)
 
 (* Miscellaneous *)
 
@@ -1403,7 +1403,7 @@ let ntpe_eq t1 t2 = match t1, t2 with
 
 let var_attributes_eq (_, ((entry1, sc1), tp1)) (_, ((entry2, sc2), tp2)) =
   notation_entry_level_eq entry1 entry2 &&
-  pair_eq (Option.equal String.equal) (List.equal String.equal) sc1 sc2 &&
+  pair_eq (COption.equal String.equal) (List.equal String.equal) sc1 sc2 &&
   ntpe_eq tp1 tp2
 
 let interpretation_eq (vars1, t1) (vars2, t2) =
@@ -1506,7 +1506,7 @@ type arguments_scope_discharge_request =
   | ArgsScopeNoDischarge
 
 let load_arguments_scope _ (_,(_,r,n,scl,cls)) =
-  List.iter (Option.iter check_scope) scl;
+  List.iter (COption.iter check_scope) scl;
   let initial_stamp = ScopeClassMap.empty in
   arguments_scope := GlobRef.Map.add r (scl,cls,initial_stamp) !arguments_scope
 
@@ -1619,7 +1619,7 @@ let rec symbol_eq s1 s2 = match s1, s2 with
 | NonTerminal id1, NonTerminal id2 -> Id.equal id1 id2
 | SProdList (id1, l1), SProdList (id2, l2) ->
   Id.equal id1 id2 && List.equal symbol_eq l1 l2
-| Break i1, Break i2 -> Int.equal i1 i2
+| Break i1, Break i2 -> CInt.equal i1 i2
 | _ -> false
 
 let rec string_of_symbol = function
@@ -1679,7 +1679,7 @@ let pr_named_scope prglob scope sc =
  (if String.equal scope default_scope then
    match NotationMap.cardinal sc.notations with
      | 0 -> str "No lonely notation"
-     | n -> str "Lonely notation" ++ (if Int.equal n 1 then mt() else str"s")
+     | n -> str "Lonely notation" ++ (if CInt.equal n 1 then mt() else str"s")
   else
     str "Scope " ++ str scope ++ fnl () ++ pr_delimiters_info sc.delimiters)
   ++ fnl ()
@@ -1720,12 +1720,12 @@ type symbol_token = WhiteSpace of int | String of string
 
 let split_notation_string str =
   let push_token beg i l =
-    if Int.equal beg i then l else
+    if CInt.equal beg i then l else
       let s = String.sub str beg (i - beg) in
       String s :: l
   in
   let push_whitespace beg i l =
-    if Int.equal beg i then l else WhiteSpace (i-beg) :: l
+    if CInt.equal beg i then l else WhiteSpace (i-beg) :: l
   in
   let rec loop beg i =
     if i < String.length str then
@@ -1812,7 +1812,7 @@ let interp_notation_as_global_reference ?loc test ntn sc =
   | None -> !scope_map in
   let ntns = browse_notation true ntn scopes in
   let refs = List.map (global_reference_of_notation test) ntns in
-  match Option.List.flatten refs with
+  match COption.List.flatten refs with
   | [_,_,ref] -> ref
   | [] -> error_notation_not_reference ?loc ntn
   | refs ->
@@ -1829,7 +1829,7 @@ let interp_notation_as_global_reference ?loc test ntn sc =
 
 let locate_notation prglob ntn scope =
   let ntns = factorize_entries (browse_notation false ntn !scope_map) in
-  let scopes = Option.fold_right push_scope scope !scope_stack in
+  let scopes = COption.fold_right push_scope scope !scope_stack in
   match ntns with
   | [] -> str "Unknown notation"
   | _ ->
@@ -1842,7 +1842,7 @@ let locate_notation prglob ntn scope =
 	    pr_notation_info prglob df r ++
 	    (if String.equal sc default_scope then mt ()
              else (spc () ++ str ": " ++ str sc)) ++
-	    (if Option.equal String.equal (Some sc) scope
+	    (if COption.equal String.equal (Some sc) scope
              then spc () ++ str "(default interpretation)" else mt ())))
 	l) ntns
 

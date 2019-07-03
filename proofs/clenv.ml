@@ -106,7 +106,7 @@ let clenv_environments evd bound t =
 	  let dep = not (noccurn evd 1 t2) in
           let na' = if dep then na.binder_name else Anonymous in
           let e' = meta_declare mv t1 ~name:na' e in
-	  clrec (e', (mkMeta mv)::metas) (Option.map ((+) (-1)) n)
+          clrec (e', (mkMeta mv)::metas) (COption.map ((+) (-1)) n)
 	    (if dep then (subst1 (mkMeta mv) t2) else t2)
       | (n, LetIn (na,b,_,t)) -> clrec (e,metas) n (subst1 b t)
       | (n, _) -> (e, List.rev metas, t)
@@ -138,7 +138,7 @@ let mk_clenv_type_of gls t = mk_clenv_from gls (t,Tacmach.New.pf_unsafe_type_of 
 
 let mentions clenv mv0 =
   let rec menrec mv1 =
-    Int.equal mv0 mv1 ||
+    CInt.equal mv0 mv1 ||
     let mlist =
       try match meta_opt_fvalue clenv.evd mv1 with
       | Some (b,_) -> b.freemetas
@@ -409,7 +409,7 @@ let clenv_independent clenv =
 
 let qhyp_eq h1 h2 = match h1, h2 with
 | NamedHyp n1, NamedHyp n2 -> Id.equal n1 n2
-| AnonHyp i1, AnonHyp i2 -> Int.equal i1 i2
+| AnonHyp i1, AnonHyp i2 -> CInt.equal i1 i2
 | _ -> false
 
 let check_bindings bl =
@@ -534,13 +534,13 @@ let clenv_constrain_dep_args hyps_only bl clenv =
     clenv
   else
     let occlist = clenv_dependent_gen hyps_only clenv in
-    if Int.equal (List.length occlist) (List.length bl) then
+    if CInt.equal (List.length occlist) (List.length bl) then
       List.fold_left2 clenv_assign_binding clenv occlist bl
     else
       if hyps_only then
 	(* Tolerance for compatibility <= 8.3 *)
 	let occlist' = clenv_dependent_gen hyps_only ~iter:false clenv in
-	if Int.equal (List.length occlist') (List.length bl) then
+        if CInt.equal (List.length occlist') (List.length bl) then
 	  List.fold_left2 clenv_assign_binding clenv occlist' bl
 	else
 	  error_not_right_number_missing_arguments (List.length occlist)
@@ -705,7 +705,7 @@ let solve_evar_clause env sigma hyp_only clause = function
   let map h = if h.hole_deps then Some h.hole_evar else None in
   let evs = List.map_filter map holes in
   let len = List.length evs in
-  if Int.equal len (List.length largs) then
+  if CInt.equal len (List.length largs) then
     let fold sigma ev arg = define_with_type sigma env ev arg in
     let sigma = List.fold_left2 fold sigma evs largs in
     sigma

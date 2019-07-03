@@ -24,8 +24,8 @@ let add exn ~valid id =
   Exninfo.add exn state_id_info (valid, id)
 let get exn = Exninfo.get exn state_id_info
 
-let equal = Int.equal
-let compare = Int.compare
+let equal = CInt.equal
+let compare = CInt.compare
 
 let print id = Pp.int id
 

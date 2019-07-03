@@ -115,7 +115,7 @@ end = struct
     Pp.str (Printf.sprintf "%s[%3d,%3s](%5d,%5d) %s [%s] %s"
       (if focused then "*" else " ")
       s.edit_id
-      (Stateid.to_string (Option.default Stateid.dummy id))
+      (Stateid.to_string (COption.default Stateid.dummy id))
       (b#get_iter_at_mark s.start)#offset
       (b#get_iter_at_mark s.stop)#offset
       (ellipsize
@@ -250,7 +250,7 @@ object(self)
     let md = segment_model document in
     segment#set_model md;
     let on_click id =
-      let find _ _ s = Int.equal s.index id in
+      let find _ _ s = CInt.equal s.index id in
       let sentence = Doc.find document find in
       let mark = sentence.start in
       let iter = script#buffer#get_iter_at_mark mark in
@@ -391,7 +391,7 @@ object(self)
 
   method private attach_tooltip ?loc sentence text =
     let start_sentence, stop_sentence, phrase = self#get_sentence sentence in
-    let pre_chars, post_chars = Option.cata Loc.unloc (0, String.length phrase) loc in
+    let pre_chars, post_chars = COption.cata Loc.unloc (0, String.length phrase) loc in
     let pre = b2c phrase pre_chars in
     let post = b2c phrase post_chars in
     let start = start_sentence#forward_chars pre in
@@ -634,7 +634,7 @@ object(self)
                   if Queue.is_empty queue then loop tip []
                   else loop tip (List.rev topstack)
               | Fail (id, loc, msg) ->
-                  let loc = Option.map Loc.make_loc loc in
+                  let loc = COption.map Loc.make_loc loc in
                   let sentence = Doc.pop document in
                   self#process_interp_error ?loc queue sentence msg tip id in
             Coq.bind coq_query handle_answer

@@ -51,7 +51,7 @@ let interprete code v env k =
 (* Apply a value to arguments contained in [vargs] *)
 let apply_arguments vf vargs =
   let n = nargs vargs in
-  if Int.equal n 0 then fun_val vf
+  if CInt.equal n 0 then fun_val vf
   else
    begin
      push_ra stop;
@@ -62,7 +62,7 @@ let apply_arguments vf vargs =
 (* Apply value [vf] to an array of argument values [varray] *)
 let apply_varray vf varray =
   let n = Array.length varray in
-  if Int.equal n 0 then fun_val vf
+  if CInt.equal n 0 then fun_val vf
   else
     begin
       push_ra stop;

@@ -76,7 +76,7 @@ let is_rec names =
     | GProd(na,_,t,b) | GLambda(na,_,t,b) ->
       lookup names t || lookup (Nameops.Name.fold_right Id.Set.remove na names) b
     | GLetIn(na,b,t,c) ->
-      lookup names b || Option.cata (lookup names) true t || lookup (Nameops.Name.fold_right Id.Set.remove na names) c
+      lookup names b || COption.cata (lookup names) true t || lookup (Nameops.Name.fold_right Id.Set.remove na names) c
     | GLetTuple(nal,_,t,b) -> lookup names t ||
                               lookup
                                 (List.fold_left
@@ -258,7 +258,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
   let names = ref [new_princ_name] in
   let hook =
     fun new_principle_type _  ->
-    if Option.is_empty sorts
+    if COption.is_empty sorts
     then
       (*     let id_of_f = Label.to_id (con_label f) in *)
       let register_with_sort fam_sort =
@@ -1034,8 +1034,8 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Tacmach.tacti
       if infos.is_general || Rtree.is_infinite Declareops.eq_recarg graph_def.Declarations.mind_recargs
       then
         let eq_lemma =
-          try Option.get (infos).equation_lemma
-          with Option.IsNone -> CErrors.anomaly (Pp.str "Cannot find equation lemma.")
+          try COption.get (infos).equation_lemma
+          with COption.IsNone -> CErrors.anomaly (Pp.str "Cannot find equation lemma.")
         in
         tclTHENLIST[
           tclMAP (fun id -> Proofview.V82.of_tactic (Simple.intro id)) ids;
@@ -1159,14 +1159,14 @@ let get_funs_constant mp =
           match Constr.kind body with
             | Fix((idxs,_),(na,ta,ca)) -> (idxs,na,ta,ca)
             | _ ->
-                if is_first && Int.equal (List.length l_bodies) 1
+                if is_first && CInt.equal (List.length l_bodies) 1
                 then raise Not_Rec
                 else CErrors.user_err Pp.(str "Not a mutal recursive block")
         in
         let first_infos = extract_info true (List.hd l_bodies) in
         let check body  = (* Hope this is correct *)
           let eq_infos (ia1, na1, ta1, ca1) (ia2, na2, ta2, ca2) =
-     Array.equal Int.equal ia1 ia2 && Array.equal (Context.eq_annot Name.equal) na1 na2 &&
+     Array.equal CInt.equal ia1 ia2 && Array.equal (Context.eq_annot Name.equal) na1 na2 &&
      Array.equal Constr.equal ta1 ta2 && Array.equal Constr.equal ca1 ca2
           in
           if not (eq_infos first_infos (extract_info false body))
@@ -1351,7 +1351,7 @@ let derive_correctness (funs: Constr.pconstant list) (graphs:inductive list) =
             if the block contains only one function we can safely reuse [f_rect]
          *)
          try
-           if not (Int.equal (Array.length funs_constr) 1) then raise Not_found;
+           if not (CInt.equal (Array.length funs_constr) 1) then raise Not_found;
            [| find_induction_principle evd funs_constr.(0) |]
          with Not_found ->
            (
@@ -1360,7 +1360,7 @@ let derive_correctness (funs: Constr.pconstant list) (graphs:inductive list) =
                (List.map
                   (fun entry ->
                      (EConstr.of_constr (fst (fst (Future.force entry.Declare.proof_entry_body))),
-                      EConstr.of_constr (Option.get entry.Declare.proof_entry_type ))
+                      EConstr.of_constr (COption.get entry.Declare.proof_entry_type ))
                   )
                   (make_scheme evd (Array.map_to_list (fun const -> const,Sorts.InType) funs))
                )
@@ -1675,7 +1675,7 @@ let do_generate_principle_aux pconstants on_error register_built interactive_pro
       in
       if register_built
       then register_mes interactive_proof fname.CAst.v rec_impls wf_mes wf_rel_opt
-          (Option.map (fun x -> x.CAst.v) wf_x) using_lemmas binders rtype body pre_hook, true
+          (COption.map (fun x -> x.CAst.v) wf_x) using_lemmas binders rtype body pre_hook, true
       else None, true
     | _ ->
       List.iter (function { Vernacexpr.rec_order } ->
@@ -1812,18 +1812,18 @@ let rec add_args id new_args =
         CErrors.anomaly ~label:"add_args " (Pp.str "todo.")
       | CProdN(nal,b1) ->
         CProdN(List.map (function  CLocalAssum (nal,k,b2) -> CLocalAssum (nal,k,add_args id new_args b2)
-                                 | CLocalDef (na,b1,t) -> CLocalDef (na,add_args id new_args b1,Option.map (add_args id new_args) t)
+                                 | CLocalDef (na,b1,t) -> CLocalDef (na,add_args id new_args b1,COption.map (add_args id new_args) t)
                                  | CLocalPattern _ ->
                                    CErrors.user_err (Pp.str "pattern with quote not allowed here.")) nal,
                add_args id new_args  b1)
       | CLambdaN(nal,b1) ->
         CLambdaN(List.map (function  CLocalAssum (nal,k,b2) -> CLocalAssum (nal,k,add_args id new_args b2)
-                                   | CLocalDef (na,b1,t) -> CLocalDef (na,add_args id new_args b1,Option.map (add_args id new_args) t)
+                                   | CLocalDef (na,b1,t) -> CLocalDef (na,add_args id new_args b1,COption.map (add_args id new_args) t)
                                    | CLocalPattern _ ->
                                      CErrors.user_err (Pp.str "pattern with quote not allowed here.")) nal,
                  add_args id new_args  b1)
       | CLetIn(na,b1,t,b2) ->
-        CLetIn(na,add_args id new_args b1,Option.map (add_args id new_args) t,add_args id new_args b2)
+        CLetIn(na,add_args id new_args b1,COption.map (add_args id new_args) t,add_args id new_args b2)
       | CAppExpl((pf,qid,us),exprl) ->
         if qualid_is_ident qid && Id.equal (qualid_basename qid) id then
           CAppExpl((pf,qid,us),new_args@(List.map (add_args id new_args) exprl))
@@ -1832,21 +1832,21 @@ let rec add_args id new_args =
         CApp((pf,add_args id new_args b),
              List.map (fun (e,o) -> add_args id new_args e,o) bl)
       | CCases(sty,b_option,cel,cal) ->
-        CCases(sty,Option.map (add_args id new_args) b_option,
+        CCases(sty,COption.map (add_args id new_args) b_option,
                List.map (fun (b,na,b_option) ->
                    add_args id new_args b,
                    na, b_option) cel,
                List.map CAst.(map (fun (cpl,e) -> (cpl,add_args id new_args e))) cal
               )
       | CLetTuple(nal,(na,b_option),b1,b2) ->
-        CLetTuple(nal,(na,Option.map (add_args id new_args) b_option),
+        CLetTuple(nal,(na,COption.map (add_args id new_args) b_option),
                   add_args id new_args b1,
                   add_args id new_args b2
                  )
 
       | CIf(b1,(na,b_option),b2,b3) ->
         CIf(add_args id new_args b1,
-            (na,Option.map (add_args id new_args) b_option),
+            (na,COption.map (add_args id new_args) b_option),
             add_args id new_args b2,
             add_args id new_args b3
            )
@@ -1916,10 +1916,10 @@ let make_graph (f_ref : GlobRef.t) =
          let l =
            List.map
              (fun (id,recexp,bl,t,b) ->
-                let { CAst.loc; v=rec_id } = match Option.get recexp with
+                let { CAst.loc; v=rec_id } = match COption.get recexp with
                   | { CAst.v = CStructRec id } -> id
                   | { CAst.v = CWfRec (id,_) } -> id
-                  | { CAst.v = CMeasureRec (oid,_,_) } -> Option.get oid
+                  | { CAst.v = CMeasureRec (oid,_,_) } -> COption.get oid
                 in
                 let new_args =
                   List.flatten
@@ -1950,7 +1950,7 @@ let make_graph (f_ref : GlobRef.t) =
      in
      let mp = Constant.modpath c in
      let pstate = do_generate_principle_aux [c,Univ.Instance.empty] error_error  false false expr_list in
-     assert (Option.is_empty pstate);
+     assert (COption.is_empty pstate);
      (* We register the infos *)
      List.iter
        (fun { Vernacexpr.fname= {CAst.v=id} } ->

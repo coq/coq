@@ -107,7 +107,7 @@ let judge_of_apply env sigma funj argjv =
   apply_rec sigma 1 funj.uj_type (Array.to_list argjv)
 
 let check_branch_types env sigma (ind,u) cj (lfj,explft) =
-  if not (Int.equal (Array.length lfj) (Array.length explft)) then
+  if not (CInt.equal (Array.length lfj) (Array.length explft)) then
     error_number_branches env sigma cj (Array.length explft);
   Array.fold_left2_i (fun i sigma lfj explft ->
       match Evarconv.unify_leq_delay env sigma lfj.uj_type explft with
@@ -151,7 +151,7 @@ let is_correct_arity env sigma c pj ind specif params =
 
 let lambda_applist_assum sigma n c l =
   let rec app n subst t l =
-    if Int.equal n 0 then
+    if CInt.equal n 0 then
       if l == [] then substl subst t
       else anomaly (Pp.str "Not enough arguments.")
     else match EConstr.kind sigma t, l with
@@ -186,7 +186,7 @@ let judge_of_case env sigma ci pj cj lfj =
 
 let check_type_fixpoint ?loc env sigma lna lar vdefj =
   let lt = Array.length vdefj in
-  assert (Int.equal (Array.length lar) lt);
+  assert (CInt.equal (Array.length lar) lt);
   Array.fold_left2_i (fun i sigma defj ar ->
       match Evarconv.unify_leq_delay env sigma defj.uj_type (lift lt ar) with
       | sigma -> sigma

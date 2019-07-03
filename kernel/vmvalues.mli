@@ -96,7 +96,7 @@ val cofix_upd_code : to_update -> tcode
 type id_key =
 | ConstKey of Constant.t
 | VarKey of Id.t
-| RelKey of Int.t
+| RelKey of CInt.t
 | EvarKey of Evar.t
 
 val eq_id_key : id_key -> id_key -> bool

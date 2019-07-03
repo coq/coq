@@ -14,7 +14,7 @@ let do_primitive id prim typopt =
   if Dumpglob.dump () then Dumpglob.dump_definition id false "ax";
   let env = Global.env () in
   let evd = Evd.from_env env in
-  let evd, typopt = Option.fold_left_map
+  let evd, typopt = COption.fold_left_map
       Constrintern.(interp_type_evars_impls ~impls:empty_internalization_env env)
       evd typopt
   in

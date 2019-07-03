@@ -416,7 +416,7 @@ let get_common_underlying_mutual_inductive env = function
       | (_,ind')::_ ->
           raise (RecursionSchemeError (env, NotMutualInScheme (ind,ind')))
       | [] ->
-	  if not (List.distinct_f Int.compare (List.map snd (List.map snd all)))
+          if not (List.distinct_f CInt.compare (List.map snd (List.map snd all)))
           then user_err Pp.(str "A type occurs twice");
 	  mind,
 	  List.map_filter
@@ -444,7 +444,7 @@ tried to declare different schemes at once *)
 
 let list_split_rev_at index l =
   let rec aux i acc = function
-      hd :: tl when Int.equal i index -> acc, tl
+      hd :: tl when CInt.equal i index -> acc, tl
     | hd :: tl -> aux (succ i) (hd :: acc) tl
     | [] -> failwith "List.split_when: Invalid argument"
   in aux 0 [] l

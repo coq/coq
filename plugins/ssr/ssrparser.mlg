@@ -1445,7 +1445,7 @@ ARGUMENT EXTEND ssrfixfwd TYPED AS (ident * ssrfwd) PRINTED BY { pr_ssrfixfwd }
       let lb = fix_binders bs in
       let has_struct, i =
         let rec loop = function
-          | {CAst.loc=l'; v=Name id'} :: _ when Option.equal Id.equal sid (Some id') ->
+          | {CAst.loc=l'; v=Name id'} :: _ when COption.equal Id.equal sid (Some id') ->
             true, CAst.make ?loc:l' id'
           | [{CAst.loc=l';v=Name id'}] when sid = None ->
             false, CAst.make ?loc:l' id'

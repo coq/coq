@@ -263,19 +263,19 @@ struct
 
 
  let rec positive n =
-  if Int.equal n 1 then XH
-  else if Int.equal (n land 1) 1 then XI (positive (n lsr 1))
+  if CInt.equal n 1 then XH
+  else if CInt.equal (n land 1) 1 then XI (positive (n lsr 1))
   else  XO (positive (n lsr 1))
 
  let n nt =
   if nt < 0
   then assert false
-  else if Int.equal nt 0 then N0
+  else if CInt.equal nt 0 then N0
   else Npos (positive nt)
 
  let rec index  n =
-  if Int.equal n 1 then XH
-  else if Int.equal (n land 1) 1 then XI (index (n lsr 1))
+  if CInt.equal n 1 then XH
+  else if CInt.equal (n land 1) 1 then XI (index (n lsr 1))
   else  XO (index (n lsr 1))
 
 
@@ -324,7 +324,7 @@ struct
    | [] -> 0 (* Equal *)
    | f::l ->
       let cmp = f () in
-       if Int.equal cmp 0 then compare_lexical l else cmp
+       if CInt.equal cmp 0 then compare_lexical l else cmp
 
  let rec compare_list cmp l1 l2 =
   match l1 , l2 with
@@ -333,7 +333,7 @@ struct
    | _   , [] -> 1
    | e1::l1 , e2::l2 ->
       let c = cmp e1 e2 in
-       if Int.equal c 0 then compare_list cmp l1 l2 else c
+       if CInt.equal c 0 then compare_list cmp l1 l2 else c
 
 end
 
@@ -366,7 +366,7 @@ struct
   let next i = i + 1
   let max : int -> int -> int = max
   let pp o i = output_string o (string_of_int i)
-  let compare : int -> int -> int = Int.compare
+  let compare : int -> int -> int = CInt.compare
   let to_int x = x
 
 end

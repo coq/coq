@@ -229,7 +229,7 @@ let fresh_key =
 
 let pri_order_int (id1, {pri=pri1}) (id2, {pri=pri2}) =
   let d = pri1 - pri2 in
-    if Int.equal d 0 then id2 - id1
+    if CInt.equal d 0 then id2 - id1
     else d
 
 let pri_order t1 t2 = pri_order_int t1 t2 <= 0
@@ -287,7 +287,7 @@ let add_tac pat t st se =
 let rebuild_dn st se =
   let dn' = 
     List.fold_left 
-      (fun dn (id, t) -> Bounded_net.add (Some st) dn (Option.get t.pat, (id, t)))
+      (fun dn (id, t) -> Bounded_net.add (Some st) dn (COption.get t.pat, (id, t)))
       Bounded_net.empty se.sentry_pat
   in
   { se with sentry_bnet = dn' }
@@ -839,7 +839,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) info ~poly ?(name=PathAny) (
     let pat = match info.hint_pattern with
       | Some p -> snd p | None -> pat
     in
-    if Int.equal nmiss 0 then
+    if CInt.equal nmiss 0 then
       (Some hd,
        { pri; poly; pat = Some pat; name;
          db = None;
@@ -941,7 +941,7 @@ let make_unfold eref =
      code = with_uid (Unfold_nth eref) })
 
 let make_extern pri pat tacast =
-  let hdconstr = Option.map try_head_pattern pat in
+  let hdconstr = COption.map try_head_pattern pat in
   (hdconstr,
    { pri = pri;
      poly = false;
@@ -1061,7 +1061,7 @@ let load_autohint _ (kn, h) =
   | AddMode (l, m) -> add_mode name l m
 
 let open_autohint i (kn, h) =
-  if Int.equal i 1 then match h.hint_action with
+  if CInt.equal i 1 then match h.hint_action with
   | AddHints hints ->
     let add (_, hint) = statustable := KNmap.add hint.code.uid true !statustable in
     List.iter add hints
@@ -1080,10 +1080,10 @@ let subst_autohint (subst, obj) =
        with Bound -> gr')
   in
   let subst_hint (k,data as hint) =
-    let k' = Option.Smart.map subst_key k in
+    let k' = COption.Smart.map subst_key k in
     let env = Global.env () in
     let sigma = Evd.from_env env in
-    let pat' = Option.Smart.map (subst_pattern env sigma subst) data.pat in
+    let pat' = COption.Smart.map (subst_pattern env sigma subst) data.pat in
     let subst_mps subst c = EConstr.of_constr (subst_mps subst (EConstr.Unsafe.to_constr c)) in
     let code' = match data.code.obj with
       | Res_pf (c,t,ctx) ->
@@ -1227,7 +1227,7 @@ let add_extern info tacast local dbname =
   | Some (_, pat) -> Some pat
   in
   let hint = make_hint ~local dbname
-		       (AddHints [make_extern (Option.get info.hint_priority) pat tacast]) in
+                       (AddHints [make_extern (COption.get info.hint_priority) pat tacast]) in
   Lib.add_anonymous_leaf (inAutoHint hint)
 
 let add_externs info tacast local dbnames =
@@ -1354,7 +1354,7 @@ let interp_hints ~poly =
   let fp = Constrintern.intern_constr_pattern env sigma in
   let fres (info, b, r) =
     let path, poly, gr = fi r in
-    let info = { info with hint_pattern = Option.map fp info.hint_pattern } in
+    let info = { info with hint_pattern = COption.map fp info.hint_pattern } in
       (info, poly, b, path, gr)
   in
   let ft = function
@@ -1384,7 +1384,7 @@ let interp_hints ~poly =
 			PathHints [gr], IsGlobRef gr)
       in HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
   | HintsExtern (pri, patcom, tacexp) ->
-      let pat =	Option.map (fp sigma) patcom in
+      let pat =	COption.map (fp sigma) patcom in
       let l = match pat with None -> [] | Some (l, _) -> l in
       let ltacvars = List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l in
       let env = Genintern.({ (empty_glob_sign env) with ltacvars }) in

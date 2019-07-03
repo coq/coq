@@ -65,10 +65,10 @@ struct
     let c = GlobRef.Ordered.compare id1 id2 in
     if c = 0 then
       let cmp (i1, c1) (i2, c2) =
-        let c = Int.compare i1 i2 in
+        let c = CInt.compare i1 i2 in
         if c = 0 then Constr.compare c1 c2 else c
       in
-      Option.compare cmp co1 co2
+      COption.compare cmp co1 co2
     else c
 end
 

@@ -94,7 +94,7 @@ module ReductionBehaviour = struct
   and when_flags = { recargs : int list ; nargs : int option }
 
   let more_args_when k { recargs; nargs } =
-    { nargs = Option.map ((+) k) nargs;
+    { nargs = COption.map ((+) k) nargs;
       recargs = List.map ((+) k) recargs;
     }
 
@@ -373,7 +373,7 @@ struct
 
   let append_app v s =
     let le = Array.length v in
-    if Int.equal le 0 then s else App (0,v,pred le) :: s
+    if CInt.equal le 0 then s else App (0,v,pred le) :: s
 
   let decomp_node (i,l,j) sk =
     if i < j then (l.(i), App (succ i,l,j) :: sk)
@@ -421,19 +421,19 @@ struct
   let compare_shape stk1 stk2 =
     let rec compare_rec bal stk1 stk2 =
       match (stk1,stk2) with
-	([],[]) -> Int.equal bal 0
+        ([],[]) -> CInt.equal bal 0
       | (App (i,_,j)::s1, _) -> compare_rec (bal + j + 1 - i) s1 stk2
       | (_, App (i,_,j)::s2) -> compare_rec (bal - j - 1 + i) stk1 s2
       | (Case(c1,_,_,_)::s1, Case(c2,_,_,_)::s2) ->
-        Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
+        CInt.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
       | (Proj (p,_)::s1, Proj(p2,_)::s2) ->
-	Int.equal bal 0 && compare_rec 0 s1 s2
+        CInt.equal bal 0 && compare_rec 0 s1 s2
       | (Fix(_,a1,_)::s1, Fix(_,a2,_)::s2) ->
-        Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
+        CInt.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
       | (Primitive(_,_,a1,_,_)::s1, Primitive(_,_,a2,_,_)::s2) ->
-        Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
+        CInt.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
       | (Cst (_,_,_,p1,_)::s1, Cst (_,_,_,p2,_)::s2) ->
-        Int.equal bal 0 && compare_rec 0 p1 p2 && compare_rec 0 s1 s2
+        CInt.equal bal 0 && compare_rec 0 p1 p2 && compare_rec 0 s1 s2
       | ((Case _|Proj _|Fix _|Cst _|Primitive _) :: _ | []) ,_ -> false in
     compare_rec 0 stk1 stk2
 
@@ -496,7 +496,7 @@ struct
 	 else
 	   let p = i+n in
 	   Some (CList.rev
-	      (if Int.equal n 0 then out else App (i,a,p-1) :: out),
+              (if CInt.equal n 0 then out else App (i,a,p-1) :: out),
 	    a.(p),
 	    if j > p then App(succ p,a,j)::s else s)
       | s -> None
@@ -520,7 +520,7 @@ struct
       | s -> ([],s) in
     let (out,s') = aux s in
     let init = match s' with [] -> true | _ -> false in
-    Option.init init out
+    COption.init init out
 
   let assign s p c =
     match strip_n_app p s with
@@ -529,7 +529,7 @@ struct
 
   let tail n0 s0 =
     let rec aux n s =
-      if Int.equal n 0 then s else
+      if CInt.equal n 0 then s else
 	match s with
       | App (i,a,j) :: s ->
 	 let nb = j  - i + 1 in
@@ -570,7 +570,7 @@ struct
   let rec zip = function
     | f, [] -> f
     | f, (App (i,a,j) :: s) ->
-       let a' = if Int.equal i 0 && Int.equal j (Array.length a - 1)
+       let a' = if CInt.equal i 0 && CInt.equal j (Array.length a - 1)
 		then a
 		else Array.sub a i (j - i + 1) in
        zip (mkApp (f, a'), s)
@@ -736,7 +736,7 @@ let magicaly_constant_of_fixbody env sigma reference bd = function
               let l, r = match cst with
                 | ULub (u, v) | UWeak (u, v) -> u, v
                 | UEq (u, v) | ULe (u, v) ->
-                  let get u = Option.get (Universe.level u) in
+                  let get u = COption.get (Universe.level u) in
                   get u, get v
               in
             Univ.LMap.add l r acc)
@@ -753,7 +753,7 @@ let contract_cofix ?env sigma ?reference (bodynum,(names,types,bodies as typedbo
   let nbodies = Array.length bodies in
   let make_Fi j =
     let ind = nbodies-j-1 in
-    if Int.equal bodynum ind then mkCoFix (ind,typedbodies)
+    if CInt.equal bodynum ind then mkCoFix (ind,typedbodies)
     else
       let bd = mkCoFix (ind,typedbodies) in
       match env with
@@ -795,7 +795,7 @@ let contract_fix ?env sigma ?reference ((recindices,bodynum),(names,types,bodies
     let nbodies = Array.length recindices in
     let make_Fi j =
       let ind = nbodies-j-1 in
-      if Int.equal bodynum ind then mkFix ((recindices,ind),typedbodies)
+      if CInt.equal bodynum ind then mkFix ((recindices,ind),typedbodies)
       else
 	let bd = mkFix ((recindices,ind),typedbodies) in
 	match env with
@@ -1000,7 +1000,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
           let kargs = CPrimitives.kind p in
           let (kargs,o) = Stack.get_next_primitive_args kargs stack in
           (* Should not fail thanks to [check_native_args] *)
-          let (before,a,after) = Option.get o in
+          let (before,a,after) = COption.get o in
           whrec Cst_stack.empty (a,Stack.Primitive(p,const,before,kargs,cst_l)::after)
        | exception NotEvaluableConst _ -> fold ()
       else fold ()
@@ -1068,7 +1068,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
             match EConstr.kind sigma x', l' with
             | Rel 1, [] ->
 	      let lc = Array.sub cl 0 (napp-1) in
-	      let u = if Int.equal napp 1 then f else mkApp (f,lc) in
+              let u = if CInt.equal napp 1 then f else mkApp (f,lc) in
 	      if noccurn sigma 1 u then (pop u,Stack.empty),Cst_stack.empty else fold ()
             | _ -> fold ()
 	  else fold ()
@@ -1142,7 +1142,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
          if more_to_reduce then
            let (kargs,o) = Stack.get_next_primitive_args kargs s in
            (* Should not fail because Primitive is put on the stack only if fully applied *)
-           let (before,a,after) = Option.get o in
+           let (before,a,after) = COption.get o in
            whrec Cst_stack.empty (a,Stack.Primitive(p,kn,rargs @ Stack.append_app [|x|] before,kargs,cst_l')::after)
          else
            let n = List.length kargs in
@@ -1151,7 +1151,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
              try List.chop n args
              with List.IndexOutOfRange -> (args,[]) (* FIXME probably useless *)
            in
-           let args = Array.of_list (Option.get (Stack.list_of_app_stack (rargs @ Stack.append_app [|x|] args))) in
+           let args = Array.of_list (COption.get (Stack.list_of_app_stack (rargs @ Stack.append_app [|x|] args))) in
              begin match CredNative.red_prim env sigma p args with
                | Some t -> whrec cst_l' (t,s)
                | None -> ((mkApp (mkConstU kn, args), s), cst_l)
@@ -1163,7 +1163,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
     | Sort _ | Ind _ | Prod _ -> fold ()
   in
   fun xs ->
-  let (s,cst_l as res) = whrec (Option.default Cst_stack.empty csts) xs in
+  let (s,cst_l as res) = whrec (COption.default Cst_stack.empty csts) xs in
   if tactic_mode then (Stack.best_state sigma s cst_l,Cst_stack.empty) else res
 
 (** reduction machine without global env and refold machinery *)
@@ -1189,7 +1189,7 @@ let local_whd_state_gen flags sigma =
             match EConstr.kind sigma x', l' with
             | Rel 1, [] ->
 	      let lc = Array.sub cl 0 (napp-1) in
-	      let u = if Int.equal napp 1 then f else mkApp (f,lc) in
+              let u = if CInt.equal napp 1 then f else mkApp (f,lc) in
 	      if noccurn sigma 1 u then (pop u,Stack.empty) else s
             | _ -> s
 	  else s
@@ -1643,7 +1643,7 @@ let splay_arity env sigma c =
 let sort_of_arity env sigma c = snd (splay_arity env sigma c)
 
 let splay_prod_n env sigma n =
-  let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
+  let rec decrec env m ln c = if CInt.equal m 0 then (ln,c) else
     match EConstr.kind sigma (whd_all env sigma c) with
       | Prod (n,a,c0) ->
           decrec (push_rel (LocalAssum (n,a)) env)
@@ -1653,7 +1653,7 @@ let splay_prod_n env sigma n =
   decrec env n Context.Rel.empty
 
 let splay_lam_n env sigma n =
-  let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
+  let rec decrec env m ln c = if CInt.equal m 0 then (ln,c) else
     match EConstr.kind sigma (whd_all env sigma c) with
       | Lambda (n,a,c0) ->
           decrec (push_rel (LocalAssum (n,a)) env)
@@ -1792,7 +1792,7 @@ let meta_reducible_instance evd b =
 
 let betazetaevar_applist sigma n c l =
   let rec stacklam n env t stack =
-    if Int.equal n 0 then applist (substl env t, stack) else
+    if CInt.equal n 0 then applist (substl env t, stack) else
     match EConstr.kind sigma t, stack with
     | Lambda(_,_,c), arg::stacktl -> stacklam (n-1) (arg::env) c stacktl
     | LetIn(_,b,_,c), _ -> stacklam (n-1) (substl env b::env) c stack

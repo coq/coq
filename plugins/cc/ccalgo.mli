@@ -84,11 +84,11 @@ type inductive_status =
 
 type representative=
     {mutable weight:int;
-     mutable lfathers:Int.Set.t;
-     mutable fathers:Int.Set.t;
+     mutable lfathers:CInt.Set.t;
+     mutable fathers:CInt.Set.t;
      mutable inductive_status: inductive_status;
      class_type : types;
-     mutable functions: Int.Set.t PafMap.t} (*pac -> term = app(constr,t) *)
+     mutable functions: CInt.Set.t PafMap.t} (*pac -> term = app(constr,t) *)
 
 type cl = Rep of representative| Eqto of int*equality
 
@@ -156,7 +156,7 @@ val subterms : forest -> int -> int * int
 val join_path : forest -> int -> int ->
   ((int * int) * equality) list * ((int * int) * equality) list
 
-val make_fun_table : state -> Int.Set.t PafMap.t
+val make_fun_table : state -> CInt.Set.t PafMap.t
 
 val do_match :  state ->
     (quant_eq * int array) list ref -> matching_problem Stack.t -> unit

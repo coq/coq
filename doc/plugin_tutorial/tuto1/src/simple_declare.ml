@@ -3,7 +3,7 @@ let edeclare ?hook ~name ~poly ~scope ~kind ~opaque sigma udecl body tyopt imps 
       ~opaque ~poly sigma udecl ~types:tyopt ~body in
   let uctx = Evd.evar_universe_context sigma in
   let ubinders = Evd.universe_binders sigma in
-  let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
+  let hook_data = COption.map (fun hook -> hook, uctx, []) hook in
   DeclareDef.declare_definition ~name ~scope ~kind ubinders ce imps ?hook_data
 
 let declare_definition ~poly name sigma body =

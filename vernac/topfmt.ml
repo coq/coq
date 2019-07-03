@@ -381,9 +381,9 @@ let pr_phase ?loc () =
      (* For when all errors go through feedback:
      str "While loading rcfile:" ++
      Option.cata (fun loc -> fnl () ++ pr_loc loc) (mt ()) loc *)
-     Option.map pr_loc loc
+     COption.map pr_loc loc
   | LoadingPrelude, loc ->
-     Some (str "While loading initial state:" ++ Option.cata (fun loc -> fnl () ++ pr_loc loc) (mt ()) loc)
+     Some (str "While loading initial state:" ++ COption.cata (fun loc -> fnl () ++ pr_loc loc) (mt ()) loc)
   | _, Some loc -> Some (pr_loc loc)
   | ParsingCommandLine, _
   | Initialization, _
@@ -435,7 +435,7 @@ let pr_cmd_header com =
         | x -> x
       ) s
   in
-  let (start,stop) = Option.cata Loc.unloc (0,0) com.CAst.loc in
+  let (start,stop) = COption.cata Loc.unloc (0,0) com.CAst.loc in
   let safe_pr_vernac x =
     try Ppvernac.pr_vernac x
     with e -> str (Printexc.to_string e) in

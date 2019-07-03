@@ -102,14 +102,14 @@ let find_position_gen current ensure assoc lev =
       let init = ref None in
       let rec add_level q = function
         | (p,_,_ as pa)::l when p > n -> pa :: add_level (Some p) l
-        | (p,a,reinit)::l when Int.equal p n ->
+        | (p,a,reinit)::l when CInt.equal p n ->
             if reinit then
 	      let a' = create_assoc assoc in
               (init := Some (a',create_pos q); (p,a',false)::l)
 	    else if admissible_assoc (a,assoc) then
 	      raise Exit
             else
-	      error_level_assoc p a (Option.get assoc)
+              error_level_assoc p a (COption.get assoc)
 	| l -> after := q; (n,create_assoc assoc,ensure)::l
       in
       try
@@ -131,7 +131,7 @@ let find_position_gen current ensure assoc lev =
 
 let rec list_mem_assoc_triple x = function
   | [] -> false
-  | (a,b,c) :: l -> Int.equal a x || list_mem_assoc_triple x l
+  | (a,b,c) :: l -> CInt.equal a x || list_mem_assoc_triple x l
 
 let register_empty_levels accu forpat levels =
   let rec filter accu = function
@@ -234,7 +234,7 @@ let adjust_level assoc from = let open Gramlib.Gramext in function
   | (NextLevel,_) -> Some None
 (* Compute production name elsewhere *)
   | (NumLevel n,InternalProd) ->
-    if from = n + 1 then Some None else Some (Some (n, Int.equal n from))
+    if from = n + 1 then Some None else Some (Some (n, CInt.equal n from))
 
 type _ target =
 | ForConstr : constr_expr target
@@ -309,7 +309,7 @@ let target_entry : type s. notation_entry -> s target -> s Entry.t = function
 
 let is_self from e = match e with
 | (NumLevel n, BorderProd (Right, _ (* Some(NonA|LeftA) *))) -> false
-| (NumLevel n, BorderProd (Left, _)) -> Int.equal from n
+| (NumLevel n, BorderProd (Left, _)) -> CInt.equal from n
 | _ -> false
 
 let is_binder_level from e = match e with

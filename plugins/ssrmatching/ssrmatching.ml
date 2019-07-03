@@ -996,13 +996,13 @@ let interp_pattern ?wit_ssrpatternarg gl red redty =
       let (x, c) = destGLambda c in
       f x (' ',(c,None),ist)
     | GVar id
-      when Option.has_some ist && let ist = Option.get ist in
+      when COption.has_some ist && let ist = COption.get ist in
            Id.Map.mem id ist.lfun &&
-           not(Option.is_empty reccall) &&
-           not(Option.is_empty wit_ssrpatternarg) ->
-        let v = Id.Map.find id (Option.get ist).lfun in
-        Option.get reccall
-          (Value.cast (topwit (Option.get wit_ssrpatternarg)) v)
+           not(COption.is_empty reccall) &&
+           not(COption.is_empty wit_ssrpatternarg) ->
+        let v = Id.Map.find id (COption.get ist).lfun in
+        COption.get reccall
+          (Value.cast (topwit (COption.get wit_ssrpatternarg)) v)
     | it -> g t with e when CErrors.noncritical e -> g t in
   let decodeG ist t f g = decode (mkG t ist) f g in
   let bad_enc id _ = CErrors.anomaly (str"bad encoding for pattern "++str id++str".") in
@@ -1031,8 +1031,8 @@ let interp_pattern ?wit_ssrpatternarg gl red redty =
     let sigma = 
       List.fold_left (fun sigma e ->
         if Evd.is_defined sigma e then sigma else (* clear may be recursive *)
-        if Option.is_empty !to_clean then sigma else
-        let name = Option.get !to_clean in
+        if COption.is_empty !to_clean then sigma else
+        let name = COption.get !to_clean in
         pp(lazy(pr_id name));
         thin name sigma e)
       sigma new_evars in

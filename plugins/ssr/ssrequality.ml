@@ -285,7 +285,7 @@ let unfoldintac occ rdx t (kt,_) gl =
   let concl = 
     let concl0 = EConstr.Unsafe.to_constr concl0 in
     try beta env0 (EConstr.of_constr (eval_pattern env0 sigma0 concl0 rdx occ unfold)) 
-    with Option.IsNone -> errorstrm Pp.(str"Failed to unfold " ++ pr_econstr_pat env0 sigma t) in
+    with COption.IsNone -> errorstrm Pp.(str"Failed to unfold " ++ pr_econstr_pat env0 sigma t) in
   let _ = conclude () in
   Proofview.V82.of_tactic (convert_concl ~check:true concl) gl
 ;;
@@ -438,7 +438,7 @@ let rwcltac ?under ?map_redex cl rdx dir sr gl =
   let cvtac' _ =
     try cvtac gl with
     | PRtype_error e ->
-      let error = Option.cata (fun (env, sigma, te) ->
+      let error = COption.cata (fun (env, sigma, te) ->
           Pp.(fnl () ++ str "Type error was: " ++ Himsg.explain_pretype_error env sigma te))
           (Pp.mt ()) e in
       if occur_existential (project gl) (Tacmach.pf_concl gl)
@@ -634,7 +634,7 @@ let rwargtac ?under ?map_redex ist ((dir, mult), (((oclr, occ), grx), (kind, gt)
     try interp_term ist gl gc
     with _ when snd mult = May -> fail := true; (project gl, EConstr.mkProp) in
   let rwtac gl = 
-    let rx = Option.map (interp_rpattern gl) grx in
+    let rx = COption.map (interp_rpattern gl) grx in
     let gl = match rx with
       | None -> gl
       | Some (s,_) -> pf_merge_uc_of s gl in

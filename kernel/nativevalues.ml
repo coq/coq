@@ -48,7 +48,7 @@ type sort_annot = string * int
 
 type rec_pos = int array
 
-let eq_rec_pos = Array.equal Int.equal
+let eq_rec_pos = Array.equal CInt.equal
 
 type atom = 
   | Arel of int
@@ -247,9 +247,9 @@ let kind_of_value (v:t) =
   if Obj.is_int o then Vconst (Obj.magic v)
   else
     let tag = Obj.tag o in
-    if Int.equal tag accumulate_tag then
+    if CInt.equal tag accumulate_tag then
       Vaccu (Obj.magic v)
-    else if Int.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
+    else if CInt.equal tag Obj.custom_tag then Vint64 (Obj.magic v)
     else if (tag < Obj.lazy_tag) then Vblock (Obj.magic v)
       else
         (* assert (tag = Obj.closure_tag || tag = Obj.infix_tag); 
@@ -260,7 +260,7 @@ let kind_of_value (v:t) =
 
 let is_int (x:t) =
   let o = Obj.repr x in
-  Obj.is_int o || Int.equal (Obj.tag o) Obj.custom_tag
+  Obj.is_int o || CInt.equal (Obj.tag o) Obj.custom_tag
 
 let val_to_int (x:t) = (Obj.magic x : int)
 [@@ocaml.inline always]

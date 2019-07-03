@@ -85,7 +85,7 @@ let dev_form n_spec  p =
        let p = dev_form p in
        let n = C2Ml.n n in
        let rec pow n =
-         if Int.equal n 0
+         if CInt.equal n 0
          then Poly.constant (n_spec.number_to_num n_spec.unit)
          else Poly.product p (pow (n-1)) in
        pow n in
@@ -333,7 +333,7 @@ let check_int_sat (cstr,prf) =
      if eq_num gcd (Int 1)
      then Normalise(cstr,prf)
      else
-       if Int.equal (sign_num (mod_num cst gcd)) 0
+       if CInt.equal (sign_num (mod_num cst gcd)) 0
        then (* We can really normalise *)
          begin
            assert (sign_num gcd >=1 ) ;
@@ -561,7 +561,7 @@ let rec scale_term t =
                   let s1' = div_big_int s1 g in
                   let s2' = div_big_int s2 g in
                   let e = mult_big_int g (mult_big_int s1' s2') in
-                  if Int.equal (compare_big_int e unit_big_int) 0
+                  if CInt.equal (compare_big_int e unit_big_int) 0
                   then (unit_big_int, Add (y1,y2))
                   else 	e, Add (Mul(Const (Big_int s2'), y1),
 		                Mul (Const (Big_int s1'), y2))
@@ -629,7 +629,7 @@ let  q_cert_of_pos  pos =
     | Axiom_lt i ->  Mc.PsatzIn (Ml2C.nat i)
     | Monoid l  -> product l
     | Rational_eq n | Rational_le n | Rational_lt n ->
-       if Int.equal (compare_num n (Int 0)) 0 then Mc.PsatzZ else
+       if CInt.equal (compare_num n (Int 0)) 0 then Mc.PsatzZ else
          Mc.PsatzC (Ml2C.q   n)
     | Square t -> Mc.PsatzSquare (term_to_q_pol  t)
     | Eqmul (t, y) -> Mc.PsatzMulC(term_to_q_pol t, _cert_of_pos y)
@@ -659,7 +659,7 @@ let  z_cert_of_pos  pos =
     | Axiom_lt i ->  Mc.PsatzIn (Ml2C.nat i)
     | Monoid l  -> product l
     | Rational_eq n | Rational_le n | Rational_lt n ->
-       if Int.equal (compare_num n (Int 0)) 0 then Mc.PsatzZ else
+       if CInt.equal (compare_num n (Int 0)) 0 then Mc.PsatzZ else
          Mc.PsatzC (Ml2C.bigint (big_int_of_num  n))
     | Square t -> Mc.PsatzSquare (term_to_z_pol  t)
     | Eqmul (t, y) ->
@@ -707,7 +707,7 @@ let pivot v (c1,p1) (c2,p2) =
   match Vect.get v v1 , Vect.get v v2 with
   | Int 0 , _ | _ , Int 0 -> None
   |  a   ,  b   ->
-      if Int.equal ((sign_num a) * (sign_num b)) (-1)
+      if CInt.equal ((sign_num a) * (sign_num b)) (-1)
       then
         let cv1 = abs_num b
         and cv2 = abs_num a  in
@@ -740,7 +740,7 @@ let simpl_sys sys =
     Source: http://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
  *)
 let rec ext_gcd a b = 
-  if Int.equal (sign_big_int b) 0
+  if CInt.equal (sign_big_int b) 0
   then (unit_big_int,zero_big_int)
   else
     let (q,r) = quomod_big_int a b in
@@ -750,7 +750,7 @@ let rec ext_gcd a b =
 let extract_coprime (c1,p1) (c2,p2) = 
   if c1.op == Eq && c2.op == Eq
   then Vect.exists2 (fun n1 n2 ->
-           Int.equal (compare_big_int (gcd_big_int (numerator n1) (numerator n2)) unit_big_int) 0)
+           CInt.equal (compare_big_int (gcd_big_int (numerator n1) (numerator n2)) unit_big_int) 0)
            c1.coeffs c2.coeffs
   else None
 

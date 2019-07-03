@@ -7,6 +7,9 @@
 - Functions and types deprecated in 8.10 have been removed in Coq
   8.11.
 
+- The `Int` and `Option` modules have been renamed to `CInt` and
+  `COption` to avoid clashes with the new modules introduced in 4.08.0
+
 - Type Decl_kinds.locality has been restructured, see commit
   message. Main change to do generally is to change the flag "Global"
   to "Global ImportDefaultBehavior".

@@ -117,7 +117,7 @@ let disc_subset sigma x =
        Ind (i,_) ->
 	 let len = Array.length l in
 	 let sigty = delayed_force sig_typ in
-	   if Int.equal len 2 && eq_ind i (Globnames.destIndRef sigty)
+           if CInt.equal len 2 && eq_ind i (Globnames.destIndRef sigty)
 	   then
 	     let (a, b) = pair_of_array l in
 	       Some (a, b)
@@ -245,7 +245,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 	     let sigT = delayed_force sigT_typ in
 	     let prod = delayed_force prod_typ in
 	       (* Sigma types *)
-	       if Int.equal len (Array.length l') && Int.equal len 2 && eq_ind i i'
+               if CInt.equal len (Array.length l') && CInt.equal len 2 && eq_ind i i'
 		 && (eq_ind i (destIndRef sigT) || eq_ind i (destIndRef prod))
 	       then
 		 if eq_ind i (destIndRef sigT)
@@ -310,7 +310,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 				  papp evdref prod_intro [| a'; b'; x ; y |])
 		   end
 	       else
-		 if eq_ind i i' && Int.equal len (Array.length l') then
+                 if eq_ind i i' && CInt.equal len (Array.length l') then
 		   let evm = !evdref in
 		     (try subco ()
 		      with NoSubtacCoercion ->
@@ -320,7 +320,7 @@ and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
 		 else
 		   subco ()
 	   | x, y when EConstr.eq_constr !evdref c c' ->
-	       if Int.equal (Array.length l) (Array.length l') then
+               if CInt.equal (Array.length l) (Array.length l') then
 		 let evm =  !evdref in
 		 let lam_type = Typing.unsafe_type_of env evm c in
 		 let lam_type' = Typing.unsafe_type_of env evm c' in
@@ -361,7 +361,7 @@ let app_coercion env evdref coercion v =
 let coerce_itf ?loc env evd v t c1 =
   let evdref = ref evd in
   let coercion = coerce ?loc env evdref t c1 in
-  let t = Option.map (app_coercion env evdref coercion) v in
+  let t = COption.map (app_coercion env evdref coercion) v in
     !evdref, t
 
 let saturate_evd env evd =
@@ -513,13 +513,13 @@ let rec inh_conv_coerce_to_fail ?loc env evd ?(flags=default_flags_of env) rigid
 	  let (evd', v1) =
 	    inh_conv_coerce_to_fail ?loc env1 evd rigidonly
               (Some (mkRel 1)) (lift 1 u1) (lift 1 t1) in
-          let v1 = Option.get v1 in
-	  let v2 = Option.map (fun v -> beta_applist evd' (lift 1 v,[v1])) v in
+          let v1 = COption.get v1 in
+          let v2 = COption.map (fun v -> beta_applist evd' (lift 1 v,[v1])) v in
 	  let t2 = match v2 with
 	    | None -> subst_term evd' v1 t2
 	    | Some v2 -> Retyping.get_type_of env1 evd' v2 in
 	  let (evd'',v2') = inh_conv_coerce_to_fail ?loc env1 evd' rigidonly v2 t2 u2 in
-            (evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2')
+            (evd'', COption.map (fun v2' -> mkLambda (name, u1, v2')) v2')
       | _ -> raise (NoCoercionNoUnifier (best_failed_evd,e))
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)

@@ -148,7 +148,7 @@ let max_constr = function () -> EConstr.of_constr (constr_of_monomorphic_global 
 let f_S t = mkApp(delayed_force coq_S, [|t|]);;
 
 let rec n_x_id ids n =
-  if Int.equal n 0 then []
+  if CInt.equal n 0 then []
   else let x = next_ident_away_in_goal x_id ids in
           x::n_x_id (x::ids) (n-1);;
 

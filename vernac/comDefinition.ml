@@ -47,7 +47,7 @@ let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
   (* Build the parameters *)
   let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars ~program_mode env evd bl in
   (* Build the type *)
-  let evd, tyopt = Option.fold_left_map
+  let evd, tyopt = COption.fold_left_map
       (interp_type_evars_impls ~program_mode ~impls env_bl)
       evd ctypopt
   in
@@ -67,7 +67,7 @@ let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
 
   (* Declare the definition *)
   let c = EConstr.it_mkLambda_or_LetIn c ctx in
-  let tyopt = Option.map (fun ty -> EConstr.it_mkProd_or_LetIn ty ctx) tyopt in
+  let tyopt = COption.map (fun ty -> EConstr.it_mkProd_or_LetIn ty ctx) tyopt in
 
   let evd, ce = DeclareDef.prepare_definition ~allow_evars:program_mode
       ~opaque:false ~poly evd udecl ~types:tyopt ~body:c in
@@ -103,6 +103,6 @@ let do_definition ~program_mode ?hook ~name ~scope ~poly ~kind univdecl bl red_o
   else
     let ce = check_definition ~program_mode def in
     let uctx = Evd.evar_universe_context evd in
-    let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
+    let hook_data = COption.map (fun hook -> hook, uctx, []) hook in
     let kind = Decls.IsDefinition kind in
     ignore(DeclareDef.declare_definition ~name ~scope ~kind ?hook_data (Evd.universe_binders evd) ce imps)

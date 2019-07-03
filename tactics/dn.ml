@@ -14,7 +14,7 @@ struct
 	  None,None -> 0
 	| Some (l,n),Some (l',n') ->
 	    let m = Y.compare l l' in
-	    if Int.equal m 0 then
+            if CInt.equal m 0 then
 	      n-n'
 	    else m
 	| Some(l,n),None -> 1
@@ -63,7 +63,7 @@ prefix ordering, [dna] is the function returning the main node of a pattern *)
     try [Trie.next tm lbl, true] with Not_found -> []
 
   let rec skip_arg n tm =
-    if Int.equal n 0 then [tm, true]
+    if CInt.equal n 0 then [tm, true]
     else
       let labels = Trie.labels tm in
       let map lbl = match lbl with

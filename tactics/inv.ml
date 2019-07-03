@@ -332,7 +332,7 @@ let get_names (allow_conj,issimple) ({CAst.loc;v=pat} as x) = match pat with
 let rec tclMAP_i allow_conj n tacfun = function
   | [] -> tclDO n (tacfun (None,[]))
   | a::l as l' ->
-      if Int.equal n 0 then error_too_many_names l'
+      if CInt.equal n 0 then error_too_many_names l'
       else
         tclTHEN
           (tacfun (get_names allow_conj a))

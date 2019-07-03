@@ -306,7 +306,7 @@ let drop_implicits_in_patt cst nb_expl args =
 	|None -> aux t
 	|x -> x
      in
-     if Int.equal nb_expl 0 then aux impl_data
+     if CInt.equal nb_expl 0 then aux impl_data
      else
        let imps = List.skipn_at_least nb_expl (select_stronger_impargs impl_st) in
        impls_fit [] (imps,args)
@@ -316,7 +316,7 @@ let destPatPrim = function { CAst.v = CPatPrim t } -> Some t | _ -> None
 
 let is_zero s =
   let rec aux i =
-    Int.equal (String.length s) i || (s.[i] == '0' && aux (i+1))
+    CInt.equal (String.length s) i || (s.[i] == '0' && aux (i+1))
   in aux 0
 let is_zero n = is_zero n.NumTok.int && is_zero n.NumTok.frac
 
@@ -450,7 +450,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
           | None -> raise No_match
           (* Uninterpretation is allowed in current context *)
           | Some (scopt,key) ->
-	    let scopes' = Option.List.cons scopt scopes in
+            let scopes' = COption.List.cons scopt scopes in
 	    let l =
               List.map (fun (c,(subentry,(scopt,scl))) ->
                 extern_cases_pattern_in_scope (subentry,(scopt,scl@scopes')) vars c)
@@ -834,7 +834,7 @@ let rec extern inctx scopes vars r =
 		 let projs = struc.Recordops.s_PROJ in
 		 let locals = struc.Recordops.s_PROJKIND in
 		 let rec cut args n =
-		   if Int.equal n 0 then args
+                   if CInt.equal n 0 then args
 		   else
 		     match args with
 		     | [] -> raise No_match
@@ -873,7 +873,7 @@ let rec extern inctx scopes vars r =
 
   | GLetIn (na,b,t,c) ->
       CLetIn (make ?loc na,sub_extern false scopes vars b,
-              Option.map (extern_typ scopes vars) t,
+              COption.map (extern_typ scopes vars) t,
               extern inctx scopes (add_vname vars na) c)
 
   | GProd (na,bk,t,c) ->
@@ -888,7 +888,7 @@ let rec extern inctx scopes vars r =
     let vars' =
       List.fold_right (Name.fold_right Id.Set.add)
 	(cases_predicate_names tml) vars in
-    let rtntypopt' = Option.map (extern_typ scopes vars') rtntypopt in
+    let rtntypopt' = COption.map (extern_typ scopes vars') rtntypopt in
     let tml = List.map (fun (tm,(na,x)) ->
                  let na' = match na, DAst.get tm with
                    | Anonymous, GVar id ->
@@ -904,7 +904,7 @@ let rec extern inctx scopes vars r =
                    | Name _, _ -> Some (CAst.make na) in
                  (sub_extern false scopes vars tm,
                   na',
-                  Option.map (fun {CAst.loc;v=(ind,nal)} ->
+                  COption.map (fun {CAst.loc;v=(ind,nal)} ->
                               let args = List.map (fun x -> DAst.make @@ PatVar x) nal in
                               let fullargs = add_cpatt_for_params ind args in
                               extern_ind_pattern_in_scope scopes vars ind fullargs
@@ -916,15 +916,15 @@ let rec extern inctx scopes vars r =
 
   | GLetTuple (nal,(na,typopt),tm,b) ->
     CLetTuple (List.map CAst.make nal,
-        (Option.map (fun _ -> (make na)) typopt,
-         Option.map (extern_typ scopes (add_vname vars na)) typopt),
+        (COption.map (fun _ -> (make na)) typopt,
+         COption.map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars tm,
         extern inctx scopes (List.fold_left add_vname vars nal) b)
 
   | GIf (c,(na,typopt),b1,b2) ->
       CIf (sub_extern false scopes vars c,
-        (Option.map (fun _ -> (CAst.make na)) typopt,
-         Option.map (extern_typ scopes (add_vname vars na)) typopt),
+        (COption.map (fun _ -> (CAst.make na)) typopt,
+         COption.map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern inctx scopes vars b1, sub_extern inctx scopes vars b2)
 
   | GRec (fk,idv,blv,tyv,bv) ->
@@ -1044,7 +1044,7 @@ and extern_local_binder scopes vars = function
         extern_local_binder scopes (Name.fold_right Id.Set.add na vars) l in
       (assums,na::ids,
        CLocalDef(CAst.make na, extern false scopes vars bd,
-                   Option.map (extern false scopes vars) ty) :: l)
+                   COption.map (extern false scopes vars) ty) :: l)
 
     | GLocalAssum (na,bk,ty) ->
       let ty = extern_typ scopes vars ty in
@@ -1095,7 +1095,7 @@ and extern_notation (custom,scopes as allscopes) vars t = function
                   subscopes,impls
                 | _ ->
                   [], [] in
-	      (if Int.equal n 0 then f else DAst.make @@ GApp (f,args1)),
+              (if CInt.equal n 0 then f else DAst.make @@ GApp (f,args1)),
 	      args2, subscopes, impls
 	  | GApp (f, args), None ->
             begin match DAst.get f with
@@ -1125,7 +1125,7 @@ and extern_notation (custom,scopes as allscopes) vars t = function
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
               | Some (scopt,key) ->
-                  let scopes' = Option.List.cons scopt (snd scopes) in
+                  let scopes' = COption.List.cons scopt (snd scopes) in
 	          let l =
                     List.map (fun (c,(subentry,(scopt,scl))) ->
 		      extern (* assuming no overloading: *) true
@@ -1250,7 +1250,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PLetIn (na,b,t,c) ->
       let na',avoid' = Namegen.compute_displayed_let_name_in sigma Namegen.RenamingForGoal avoid na c in
       let env' = Termops.add_name na' env in
-      GLetIn (na',glob_of_pat avoid env sigma b, Option.map (glob_of_pat avoid env sigma) t,
+      GLetIn (na',glob_of_pat avoid env sigma b, COption.map (glob_of_pat avoid env sigma) t,
               glob_of_pat avoid' env' sigma c)
   | PLambda (na,t,c) ->
       let na',avoid' = compute_displayed_name_in_pattern sigma avoid na c in

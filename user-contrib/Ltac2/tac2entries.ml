@@ -435,7 +435,7 @@ let register_primitive ?(local = false) {loc;v=id} t ml =
   | _ -> 0
   in
   let arrows = count_arrow (snd t) in
-  let () = if Int.equal arrows 0 then
+  let () = if CInt.equal arrows 0 then
     user_err ?loc (str "External tactic must have at least one argument") in
   let () =
     try let _ = Tac2env.interp_primitive ml in () with Not_found ->
@@ -468,7 +468,7 @@ let register_open ?(local = false) qid (params, def) =
     user_err ?loc:qid.CAst.loc (str "Type " ++ pr_qualid qid ++ str " is not an open type")
   in
   let () =
-    if not (Int.equal (List.length params) tparams) then
+    if not (CInt.equal (List.length params) tparams) then
       Tac2intern.error_nparams_mismatch ?loc:qid.CAst.loc (List.length params) tparams
   in
   match def with
@@ -611,7 +611,7 @@ let cache_synext (_, syn) =
   Pcoq.extend_grammar_command ltac2_notation syn
 
 let open_synext i (_, syn) =
-  if Int.equal i 1 then Pcoq.extend_grammar_command ltac2_notation syn
+  if CInt.equal i 1 then Pcoq.extend_grammar_command ltac2_notation syn
 
 let subst_synext (subst, syn) =
   let e = Tac2intern.subst_rawexpr subst syn.synext_exp in

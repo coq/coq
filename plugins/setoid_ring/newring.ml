@@ -39,7 +39,7 @@ let error msg = CErrors.user_err Pp.(str msg)
 
 type protect_flag = Eval|Prot|Rec
 
-type protection = Evd.evar_map -> EConstr.t -> GlobRef.t -> (Int.t -> protect_flag) option
+type protection = Evd.evar_map -> EConstr.t -> GlobRef.t -> (CInt.t -> protect_flag) option
 
 let global_head_of_constr sigma c = 
   let f, args = decompose_app sigma c in
@@ -107,8 +107,8 @@ let rec closed_under sigma cset t =
 
 let closed_term args _ = match args with
 | [t; l] ->
-  let t = Option.get (Value.to_constr t) in
-  let l = List.map (fun c -> Value.cast (Genarg.topwit Stdarg.wit_ref) c) (Option.get (Value.to_list l)) in
+  let t = COption.get (Value.to_constr t) in
+  let l = List.map (fun c -> Value.cast (Genarg.topwit Stdarg.wit_ref) c) (COption.get (Value.to_list l)) in
   Proofview.tclEVARMAP >>= fun sigma ->
   let cs = List.fold_right GlobRef.Set_env.add l GlobRef.Set_env.empty in
   if closed_under sigma cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
@@ -623,7 +623,7 @@ let ic_coeff_spec = function
 
 
 let set_once s r v =
-  if Option.is_empty !r then r := Some v else error (s^" cannot be set twice")
+  if COption.is_empty !r then r := Some v else error (s^" cannot be set twice")
 
 let process_ring_mods l =
   let kind = ref None in

@@ -136,7 +136,7 @@ let enforce_leq_alg u v g =
     | Inl _, Inr _ -> -1
     | Inr _, Inl _ -> 1
     | Inl (c,_), Inl (c',_) ->
-      Int.compare (Constraint.cardinal c) (Constraint.cardinal c')
+      CInt.compare (Constraint.cardinal c) (Constraint.cardinal c')
   in
   match List.min order c with
   | Inl x -> x
@@ -180,9 +180,9 @@ let check_eq_instances g t1 t2 =
   let t1 = Instance.to_array t1 in
   let t2 = Instance.to_array t2 in
   t1 == t2 ||
-    (Int.equal (Array.length t1) (Array.length t2) &&
+    (CInt.equal (Array.length t1) (Array.length t2) &&
         let rec aux i =
-          (Int.equal i (Array.length t1)) || (check_eq_level g t1.(i) t2.(i) && aux (i + 1))
+          (CInt.equal i (Array.length t1)) || (check_eq_level g t1.(i) t2.(i) && aux (i + 1))
         in aux 0)
 
 let domain g = LSet.add Level.sprop (G.domain g.graph)

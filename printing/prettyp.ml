@@ -63,7 +63,7 @@ let blankline = mt() (* add a blank sentence in the list of infos *)
 
 let add_colon prefix = if ismt prefix then mt () else prefix ++ str ": "
 
-let int_or_no n = if Int.equal n 0 then str "no" else int n
+let int_or_no n = if CInt.equal n 0 then str "no" else int n
 
 (*******************)
 (** Basic printing *)
@@ -129,8 +129,8 @@ let print_impargs_list prefix l =
        [v 2 (prlist_with_sep cut (fun x -> x)
 	 [(if ismt prefix then str "When" else prefix ++ str ", when") ++
 	   str " applied to " ++
-	   (if Int.equal n1 n2 then int_or_no n2 else
-	    if Int.equal n1 0 then str "no more than " ++ int n2
+	   (if CInt.equal n1 n2 then int_or_no n2 else
+	    if CInt.equal n1 0 then str "no more than " ++ int n2
 	    else int n1 ++ str " to " ++ int_or_no n2) ++
 	    str (String.plural n2 " argument") ++ str ":";
           v 0 (prlist_with_sep cut (fun x -> x)
@@ -168,7 +168,7 @@ let print_impargs ref =
 let print_argument_scopes prefix = function
   | [Some sc] ->
       [add_colon prefix ++ str"Argument scope is [" ++ str sc ++ str"]"]
-  | l when not (List.for_all Option.is_empty l) ->
+  | l when not (List.for_all COption.is_empty l) ->
      [add_colon prefix ++ hov 2 (str"Argument scopes are" ++ spc() ++
       str "[" ++
       pr_sequence (function Some sc -> str sc | None -> str "_") l ++
@@ -310,7 +310,7 @@ let print_inductive_renames =
 
 let print_inductive_argument_scopes =
   print_args_data_of_inductive_ids
-    Notation.find_arguments_scope (Option.has_some) print_argument_scopes
+    Notation.find_arguments_scope (COption.has_some) print_argument_scopes
 
 let print_bidi_hints gr =
   match Pretyping.get_bidirectionality_hint gr with
@@ -659,10 +659,10 @@ let gallina_print_library_entry ~mod_ops indirect_accessor env sigma with_values
 
 let gallina_print_context ~mod_ops indirect_accessor env sigma with_values =
   let rec prec n = function
-    | h::rest when Option.is_empty n || Option.get n > 0 ->
+    | h::rest when COption.is_empty n || COption.get n > 0 ->
       (match gallina_print_library_entry ~mod_ops indirect_accessor env sigma with_values h with
        | None -> prec n rest
-       | Some pp -> prec (Option.map ((+) (-1)) n) rest ++ pp ++ fnl ())
+       | Some pp -> prec (COption.map ((+) (-1)) n) rest ++ pp ++ fnl ())
     | _ -> mt ()
   in
   prec

@@ -768,7 +768,7 @@ let export_side_effects mb env (b_ctx, eff) =
         match seff with
         | [] -> List.rev acc, b_ctx
         | eff :: rest ->
-          if Int.equal sl 0 then
+          if CInt.equal sl 0 then
             let env, cb =
               let kn = eff.seff_constant in
               let ce = constant_entry_of_side_effect eff in
@@ -1076,11 +1076,11 @@ let functorize_module params mb =
   { mb with
     mod_expr = Modops.implem_smartmap f f mb.mod_expr;
     mod_type = f mb.mod_type;
-    mod_type_alg = Option.map f mb.mod_type_alg }
+    mod_type_alg = COption.map f mb.mod_type_alg }
 
 let build_module_body params restype senv =
   let struc = NoFunctor (List.rev senv.revstruct) in
-  let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) restype in
+  let restype' = COption.map (fun (ty,inl) -> (([],ty),inl)) restype in
   let mb =
     Mod_typing.finalize_module senv.env senv.modpath
       (struc,None,senv.modresolver,senv.univ) restype'
@@ -1332,15 +1332,15 @@ let check_register_ind ind r env =
   let check_if b msg =
     if not b then
       CErrors.user_err ~hdr:"check_register_ind" msg in
-  check_if (Int.equal (Array.length mb.mind_packets) 1) Pp.(str "A non mutual inductive is expected");
+  check_if (CInt.equal (Array.length mb.mind_packets) 1) Pp.(str "A non mutual inductive is expected");
   let is_monomorphic = function Monomorphic _ -> true | Polymorphic _ -> false in
   check_if (is_monomorphic mb.mind_universes) Pp.(str "A universe monomorphic inductive type is expected");
   check_if (not @@ Inductive.is_private spec) Pp.(str "A non-private inductive type is expected");
   let check_nparams n =
-    check_if (Int.equal mb.mind_nparams n) Pp.(str "An inductive type with " ++ int n ++ str " parameters is expected")
+    check_if (CInt.equal mb.mind_nparams n) Pp.(str "An inductive type with " ++ int n ++ str " parameters is expected")
   in
   let check_nconstr n =
-    check_if (Int.equal (Array.length ob.mind_consnames) n)
+    check_if (CInt.equal (Array.length ob.mind_consnames) n)
       Pp.(str "an inductive type with " ++ int n ++ str " constructors is expected")
   in
   let check_name pos s =

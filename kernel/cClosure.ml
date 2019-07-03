@@ -238,7 +238,7 @@ struct
   let hash = function
   | ConstKey (c, _) -> combinesmall 1 (Constant.UserOrd.hash c)
   | VarKey id -> combinesmall 2 (Id.hash id)
-  | RelKey i -> combinesmall 3 (Int.hash i)
+  | RelKey i -> combinesmall 3 (CInt.hash i)
 end
 
 module KeyTable = Hashtbl.Make(IdKeyHash)
@@ -403,7 +403,7 @@ and stack = stack_member list
 
 let empty_stack = []
 let append_stack v s =
-  if Int.equal (Array.length v) 0 then s else
+  if CInt.equal (Array.length v) 0 then s else
   match s with
   | Zapp l :: s -> Zapp (Array.append v l) :: s
   | (ZcaseT _ | Zproj _ | Zfix _ | Zshift _ | Zupdate _ | Zprimitive _) :: _ | [] ->
@@ -440,9 +440,9 @@ let rec lft_fconstr n ft =
     | FFlex (RelKey _) | FAtom _ | FApp _ | FProj _ | FCaseT _ | FProd _
       | FLetIn _ | FEvar _ | FCLOS _ -> {mark=ft.mark; term=FLIFT(n,ft)}
 let lift_fconstr k f =
-  if Int.equal k 0 then f else lft_fconstr k f
+  if CInt.equal k 0 then f else lft_fconstr k f
 let lift_fconstr_vect k v =
-  if Int.equal k 0 then v else Array.Fun1.map lft_fconstr k v
+  if CInt.equal k 0 then v else Array.Fun1.map lft_fconstr k v
 
 let clos_rel e i =
   match expand_rel i e with
@@ -715,7 +715,7 @@ let get_nth_arg head n stk =
           let bef = Array.sub args 0 n in
           let aft = Array.sub args (n+1) (q-n-1) in
           let stk' =
-            List.rev (if Int.equal n 0 then rstk else (Zapp bef :: rstk)) in
+            List.rev (if CInt.equal n 0 then rstk else (Zapp bef :: rstk)) in
           (Some (stk', args.(n)), append_stack aft s')
     | Zupdate(m)::s ->
         (** The stack contains [Zupdate] mark only if in sharing mode *)
@@ -804,23 +804,23 @@ let check_native_args op stk =
 let rec reloc_rargs_rec depth = function
   | Zapp args :: s ->
     Zapp (lift_fconstr_vect depth args) :: reloc_rargs_rec depth s
-  | Zshift(k)::s -> if Int.equal k depth then s else reloc_rargs_rec (depth-k) s
+  | Zshift(k)::s -> if CInt.equal k depth then s else reloc_rargs_rec (depth-k) s
   | ((ZcaseT _ | Zproj _ | Zfix _ | Zupdate _ | Zprimitive _) :: _ | []) as stk -> stk
 
 let reloc_rargs depth stk =
-  if Int.equal depth 0 then stk else reloc_rargs_rec depth stk
+  if CInt.equal depth 0 then stk else reloc_rargs_rec depth stk
 
 let rec try_drop_parameters depth n = function
     | Zapp args::s ->
         let q = Array.length args in
         if n > q then try_drop_parameters depth (n-q) s
-        else if Int.equal n q then reloc_rargs depth s
+        else if CInt.equal n q then reloc_rargs depth s
         else
           let aft = Array.sub args n (q-n) in
           reloc_rargs depth (append_stack aft s)
     | Zshift(k)::s -> try_drop_parameters (depth-k) n s
     | [] ->
-	if Int.equal n 0 then []
+        if CInt.equal n 0 then []
 	else raise Not_found
     | (ZcaseT _ | Zproj _ | Zfix _ | Zupdate _ | Zprimitive _) :: _ -> assert false
 	(* strip_update_shift_app only produces Zapp and Zshift items *)

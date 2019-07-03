@@ -176,7 +176,7 @@ val to_keep : GlobRef.t -> bool
 
 (*s Table for implicits arguments *)
 
-val implicits_of_global : GlobRef.t -> Int.Set.t
+val implicits_of_global : GlobRef.t -> CInt.Set.t
 
 (*s Table for user-given custom ML extractions. *)
 

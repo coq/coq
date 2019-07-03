@@ -36,7 +36,7 @@ let closed0 c = closedn 0 c
 
 let noccurn n term =
   let rec occur_rec n c = match Constr.kind c with
-    | Constr.Rel m -> if Int.equal m n then raise LocalOccur
+    | Constr.Rel m -> if CInt.equal m n then raise LocalOccur
     | _ -> Constr.iter_with_binders succ occur_rec n c
   in
   try occur_rec n term; true with LocalOccur -> false
@@ -113,7 +113,7 @@ let make_substituend c = { sinfo=Unknown; sit=c }
 
 let substn_many lamv n c =
   let lv = Array.length lamv in
-  if Int.equal lv 0 then c
+  if CInt.equal lv 0 then c
   else
     let rec substrec depth c = match Constr.kind c with
       | Constr.Rel k     ->
@@ -297,7 +297,7 @@ let subst_instance_constr subst c =
 
 let univ_instantiate_constr u c =
   let open Univ in
-  assert (Int.equal (Instance.length u) (AUContext.size c.univ_abstracted_binder));
+  assert (CInt.equal (Instance.length u) (AUContext.size c.univ_abstracted_binder));
   subst_instance_constr u c.univ_abstracted_value
 
 (* let substkey = CProfile.declare_profile "subst_instance_constr";; *)

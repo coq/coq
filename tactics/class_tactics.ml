@@ -251,7 +251,7 @@ let unify_resolve_refine poly flags gl clenv =
 *)
 let clenv_of_prods poly nprods (c, clenv) gl =
   let (c, _, _) = c in
-  if poly || Int.equal nprods 0 then Some (None, clenv)
+  if poly || CInt.equal nprods 0 then Some (None, clenv)
   else
     let sigma = Tacmach.New.project gl in
     let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma c in
@@ -272,7 +272,7 @@ let with_prods nprods poly (c, clenv) f =
         Tacticals.New.tclZEROMSG (CErrors.print e) end
   else Proofview.Goal.enter
          begin fun gl ->
-         if Int.equal nprods 0 then f gl (c, None, clenv)
+         if CInt.equal nprods 0 then f gl (c, None, clenv)
          else Tacticals.New.tclZEROMSG (str"Not enough premisses") end
 
 let matches_pattern concl pat =
@@ -722,12 +722,12 @@ module Search = struct
              (pr_depth (i :: info.search_depth) ++ str": " ++ Lazy.force pp
               ++ str" on" ++ spc () ++ pr_ev sigma (Proofview.Goal.goal gl)
               ++ str", " ++ int j ++ str" subgoal(s)" ++
-                (Option.cata (fun k -> str " in addition to the first " ++ int k)
+                (COption.cata (fun k -> str " in addition to the first " ++ int k)
                              (mt()) k)));
         let res =
           if j = 0 then tclUNIT ()
           else tclDISPATCH
-                 (List.init j (fun j' -> (tac_of gls i (Option.default 0 k + j'))))
+                 (List.init j (fun j' -> (tac_of gls i (COption.default 0 k + j'))))
         in
         let finish nestedshelf sigma =
           let filter ev =
@@ -765,7 +765,7 @@ module Search = struct
                else
                  let sigma' = make_unresolvables (fun x -> List.mem_f Evar.equal x goals) sigma in
                  with_shelf (Unsafe.tclEVARS sigma' <*> Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state goals)) >>=
-                      fun s -> result s i (Some (Option.default 0 k + j)))
+                      fun s -> result s i (Some (COption.default 0 k + j)))
           end
         in with_shelf res >>= fun (sh, ()) ->
            tclEVARMAP >>= finish sh
@@ -827,7 +827,7 @@ module Search = struct
       search_tac hints limit (succ depth) info
     in
     fun info ->
-    if Int.equal depth (succ limit) then Proofview.tclZERO ReachedLimitEx
+    if CInt.equal depth (succ limit) then Proofview.tclZERO ReachedLimitEx
     else
       Proofview.tclOR (hints_tac hints info kont)
                       (fun e -> Proofview.tclOR (intro info kont)
@@ -866,7 +866,7 @@ module Search = struct
   let fix_iterative_limit limit t =
     let open Proofview in
     let rec aux depth =
-      if Int.equal depth (succ limit) then tclZERO ReachedLimitEx
+      if CInt.equal depth (succ limit) then tclZERO ReachedLimitEx
       else tclOR (t depth) (function (ReachedLimitEx, _) -> aux (succ depth)
                                    | (e,ie) -> Proofview.tclZERO ~info:ie e)
     in aux 1
@@ -896,7 +896,7 @@ module Search = struct
          Tacticals.New.tclFAIL 0 (str"Proof search reached its limit")
       | NoApplicableEx ->
          Tacticals.New.tclFAIL 0 (str"Proof search failed" ++
-                                    (if Option.is_empty depth then mt()
+                                    (if COption.is_empty depth then mt()
                                      else str" without reaching its limit"))
       | Proofview.MoreThanOneSuccess ->
          Tacticals.New.tclFAIL 0 (str"Proof search failed: " ++
@@ -1059,7 +1059,7 @@ let error_unresolvable env comp evd =
   in
   let fold ev evi (found, accu) =
     let ev_class = class_of_constr env evd evi.evar_concl in
-    if not (Option.is_empty ev_class) && is_part ev then
+    if not (COption.is_empty ev_class) && is_part ev then
       (* focus on one instance if only one was searched for *)
       if not found then (true, Some ev)
       else (found, None)

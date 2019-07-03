@@ -55,8 +55,8 @@ module NodeSet = Set.Make(OT)
 module Property =
 struct
   type 'd t = { data : 'd; uid : int; having_it : NodeSet.t }
-  let equal { uid = i1 } { uid = i2 } = Int.equal i1 i2
-  let compare { uid = i1 } { uid = i2 } = Int.compare i1 i2
+  let equal { uid = i1 } { uid = i2 } = CInt.equal i1 i2
+  let compare { uid = i1 } { uid = i2 } = CInt.compare i1 i2
   let to_string { uid = i } = string_of_int i
   let data { data = d } = d
   let having_it { having_it } = having_it

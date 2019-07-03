@@ -57,7 +57,7 @@ let mk_fixb (id,bl,ann,body,(loc,tyc)) : fix_expr =
   (id,ann,bl,ty,body)
 
 let mk_cofixb (id,bl,ann,body,(loc,tyc)) : cofix_expr =
-  Option.iter (fun { CAst.loc = aloc } ->
+  COption.iter (fun { CAst.loc = aloc } ->
     CErrors.user_err ?loc:aloc
       ~hdr:"Constr:mk_cofixb"
       (Pp.str"Annotation forbidden in cofix expression.")) ann;
@@ -269,7 +269,7 @@ GRAMMAR EXTEND Gram
           | (_,None), { CAst.v = CCast(c, CastConv t) } -> (Loc.tag ?loc:(constr_loc t) @@ Some t), c (* Tolerance, see G_vernac.def_body *)
           | _, _ -> ty, c1 in
           CAst.make ~loc @@ CLetIn(id,mkLambdaCN ?loc:(constr_loc c1) bl c1,
-                 Option.map (mkProdCN ?loc:(fst ty) bl) (snd ty), c2) }
+                 COption.map (mkProdCN ?loc:(fst ty) bl) (snd ty), c2) }
       | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
           { let fixp = mk_single_fix fx in
           let { CAst.loc = li; v = id } = match fixp.CAst.v with

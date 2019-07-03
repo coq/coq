@@ -350,7 +350,7 @@ let intern_from_file ~intern_mode (dir, f) =
           (str "The file "++str f++str " contains unfinished tasks");
       if opaque_csts <> None then begin
        Flags.if_verbose chk_pp (str " (was a vio file) ");
-      Option.iter (fun (_,b) -> if not b then
+      COption.iter (fun (_,b) -> if not b then
         user_err ~hdr:"intern_from_file"
           (str "The file "++str f++str " is still a .vio"))
         opaque_csts;
@@ -367,10 +367,10 @@ let intern_from_file ~intern_mode (dir, f) =
       sd,md,table,opaque_csts,digest
     with e -> Flags.if_verbose chk_pp (str" failed!]" ++ fnl ()); raise e in
   depgraph := LibraryMap.add sd.md_name sd.md_deps !depgraph;
-  Option.iter (fun table -> opaque_tables := LibraryMap.add sd.md_name table !opaque_tables) table;
+  COption.iter (fun table -> opaque_tables := LibraryMap.add sd.md_name table !opaque_tables) table;
   let extra_cst =
-    Option.default Univ.ContextSet.empty
-      (Option.map (fun (cs,_) -> cs) opaque_csts) in
+    COption.default Univ.ContextSet.empty
+      (COption.map (fun (cs,_) -> cs) opaque_csts) in
   mk_library sd md f table digest extra_cst
 
 let get_deps (dir, f) =

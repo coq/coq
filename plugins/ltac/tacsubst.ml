@@ -131,14 +131,14 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       TacApply (a,ev,List.map (subst_glob_with_bindings_arg subst) cb,cl)
   | TacElim (ev,cb,cbo) ->
       TacElim (ev,subst_glob_with_bindings_arg subst cb,
-               Option.map (subst_glob_with_bindings subst) cbo)
+               COption.map (subst_glob_with_bindings subst) cbo)
   | TacCase (ev,cb) -> TacCase (ev,subst_glob_with_bindings_arg subst cb)
   | TacMutualFix (id,n,l) ->
       TacMutualFix(id,n,List.map (fun (id,n,c) -> (id,n,subst_glob_constr subst c)) l)
   | TacMutualCofix (id,l) ->
       TacMutualCofix (id, List.map (fun (id,c) -> (id,subst_glob_constr subst c)) l)
   | TacAssert (ev,b,otac,na,c) ->
-      TacAssert (ev,b,Option.map (Option.map (subst_tactic subst)) otac,na,
+      TacAssert (ev,b,COption.map (COption.map (subst_tactic subst)) otac,na,
                  subst_glob_constr subst c)
   | TacGeneralize cl ->
       TacGeneralize (List.map (on_fst (subst_constr_with_occurrences subst))cl)
@@ -149,13 +149,13 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacInductionDestruct (isrec,ev,(l,el)) ->
       let l' = List.map (fun (c,ids,cls) ->
         subst_destruction_arg subst c, ids, cls) l in
-      let el' = Option.map (subst_glob_with_bindings subst) el in
+      let el' = COption.map (subst_glob_with_bindings subst) el in
       TacInductionDestruct (isrec,ev,(l',el'))
 
   (* Conversion *)
   | TacReduce (r,cl) -> TacReduce (subst_redexp subst r, cl)
   | TacChange (check,op,c,cl) ->
-      TacChange (check,Option.map (subst_glob_constr_or_pattern subst) op,
+      TacChange (check,COption.map (subst_glob_constr_or_pattern subst) op,
         subst_glob_constr subst c, cl)
 
   (* Equality and inversion *)
@@ -163,9 +163,9 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
       TacRewrite (ev,
 		  List.map (fun (b,m,c) ->
 			      b,m,subst_glob_with_bindings_arg subst c) l,
-		 cl,Option.map (subst_tactic subst) by)
+                 cl,COption.map (subst_tactic subst) by)
   | TacInversion (DepInversion (k,c,l),hyp) ->
-     TacInversion (DepInversion (k,Option.map (subst_glob_constr subst) c,l),hyp)
+     TacInversion (DepInversion (k,COption.map (subst_glob_constr subst) c,l),hyp)
   | TacInversion (NonDepInversion _,_) as x -> x
   | TacInversion (InversionUsing (c,cl),hyp) ->
       TacInversion (InversionUsing (subst_glob_constr subst c,cl),hyp)

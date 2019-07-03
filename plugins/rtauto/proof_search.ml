@@ -70,7 +70,7 @@ module FOrd = struct
     | Bot, Bot -> 0
     | Bot, _ -> -1
     | Atom _, Bot -> 1
-    | Atom a1, Atom a2 -> Int.compare a1 a2
+    | Atom a1, Atom a2 -> CInt.compare a1 a2
     | Atom _, _ -> -1
     | Arrow _, (Bot | Atom _) -> 1
     | Arrow (f1, g1), Arrow (f2, g2) ->
@@ -90,8 +90,8 @@ end
 module Fmap = Map.Make(FOrd)
 
 type sequent =
-    {rev_hyps: form Int.Map.t;
-     norev_hyps: form Int.Map.t;
+    {rev_hyps: form CInt.Map.t;
+     norev_hyps: form CInt.Map.t;
      size:int;
      left:int Fmap.t;
      right:(int*form) list Fmap.t;
@@ -152,16 +152,16 @@ let add_step s sub =
 type 'a with_deps =
     {dep_it:'a;
      dep_goal:bool;
-     dep_hyps:Int.Set.t}
+     dep_hyps:CInt.Set.t}
 
 type slice=
     {proofs_done:proof list;
      proofs_todo:sequent with_deps list;
      step:rule;
      needs_goal:bool;
-     needs_hyps:Int.Set.t;
+     needs_hyps:CInt.Set.t;
      changes_goal:bool;
-     creates_hyps:Int.Set.t}
+     creates_hyps:CInt.Set.t}
 
 type state =
     Complete of proof
@@ -186,25 +186,25 @@ let rec fill stack proof =
 	  !pruning &&
 	  List.is_empty slice.proofs_done &&
 	  not (slice.changes_goal && proof.dep_goal) &&
-	  not (Int.Set.exists
-		 (fun i -> Int.Set.mem i proof.dep_hyps)
+          not (CInt.Set.exists
+                 (fun i -> CInt.Set.mem i proof.dep_hyps)
 		 slice.creates_hyps)
 	then
 	  begin
 	    s_info.pruned_steps<-s_info.pruned_steps+1;
 	    s_info.pruned_branches<- s_info.pruned_branches +
 	    List.length slice.proofs_todo;
-	    let created_here=Int.Set.cardinal slice.creates_hyps in
+            let created_here=CInt.Set.cardinal slice.creates_hyps in
 	      s_info.pruned_hyps<-s_info.pruned_hyps+
 	      List.fold_left
-		(fun sum dseq -> sum + Int.Set.cardinal dseq.dep_hyps)
+                (fun sum dseq -> sum + CInt.Set.cardinal dseq.dep_hyps)
 		created_here slice.proofs_todo;
-	    fill super (pop (Int.Set.cardinal slice.creates_hyps) proof)
+            fill super (pop (CInt.Set.cardinal slice.creates_hyps) proof)
 	  end
 	else
 	  let dep_hyps=
-	    Int.Set.union slice.needs_hyps
-	      (Int.Set.diff proof.dep_hyps slice.creates_hyps) in
+            CInt.Set.union slice.needs_hyps
+              (CInt.Set.diff proof.dep_hyps slice.creates_hyps) in
 	  let dep_goal=
 	    slice.needs_goal ||
 	    ((not slice.changes_goal) && proof.dep_goal) in
@@ -251,7 +251,7 @@ let append stack (step,subgoals) =
 let embed seq=
   {dep_it=seq;
    dep_goal=false;
-   dep_hyps=Int.Set.empty}
+   dep_hyps=CInt.Set.empty}
 
 let change_goal seq gl=
     {seq with
@@ -286,7 +286,7 @@ let add_hyp seqwd f=
 	     cnx=cnx}
       | Conjunct (_,_) | Disjunct (_,_) ->
 	  {seq with
-	     rev_hyps=Int.Map.add num f seq.rev_hyps;
+             rev_hyps=CInt.Map.add num f seq.rev_hyps;
 	     size=num;
 	     left=left;
 	     right=right;
@@ -301,14 +301,14 @@ let add_hyp seqwd f=
 	    match f1 with
 		Conjunct (_,_) | Disjunct (_,_) ->
 		  {seq with
-		     rev_hyps=Int.Map.add num f seq.rev_hyps;
+                     rev_hyps=CInt.Map.add num f seq.rev_hyps;
 		     size=num;
 		     left=left;
 		     right=nright;
 		     cnx=ncnx}
 	      | Arrow(_,_) ->
 		  {seq with
-		     norev_hyps=Int.Map.add num f seq.norev_hyps;
+                     norev_hyps=CInt.Map.add num f seq.norev_hyps;
 		     size=num;
 		     left=left;
 		     right=nright;
@@ -321,13 +321,13 @@ let add_hyp seqwd f=
 		     cnx=ncnx} in
     {seqwd with
        dep_it=nseq;
-       dep_hyps=Int.Set.add num seqwd.dep_hyps}
+       dep_hyps=CInt.Set.add num seqwd.dep_hyps}
 
 exception Here_is of (int*form)
 
 let choose m=
   try
-    Int.Map.iter (fun i f -> raise (Here_is (i,f))) m;
+    CInt.Map.iter (fun i f -> raise (Here_is (i,f))) m;
     raise Not_found
   with
       Here_is (i,f) -> (i,f)
@@ -338,11 +338,11 @@ let search_or seq=
       Disjunct (f1,f2) ->
 	[{dep_it = SI_Or_l;
 	  dep_goal = true;
-	  dep_hyps = Int.Set.empty},
+          dep_hyps = CInt.Set.empty},
 	 [change_goal (embed seq) f1];
 	 {dep_it = SI_Or_r;
 	  dep_goal = true;
-	  dep_hyps = Int.Set.empty},
+          dep_hyps = CInt.Set.empty},
 	 [change_goal (embed seq) f2]]
     | _ -> []
 
@@ -352,11 +352,11 @@ let search_norev seq=
     match f with
 	Arrow (Arrow (f1,f2),f3) ->
 	  let nseq =
-	    {seq with norev_hyps=Int.Map.remove i seq.norev_hyps} in
+            {seq with norev_hyps=CInt.Map.remove i seq.norev_hyps} in
 	    goals:=
 	      ({dep_it=SD_Arrow(i);
 		dep_goal=false;
-		dep_hyps=Int.Set.singleton i},
+                dep_hyps=CInt.Set.singleton i},
 	       [add_hyp
 		  (add_hyp
 		     (change_goal (embed nseq) f2)
@@ -364,7 +364,7 @@ let search_norev seq=
 		  f1;
 		add_hyp (embed nseq) f3]):: !goals
       | _ -> anomaly ~label:"search_no_rev" (Pp.str "can't happen.") in
-    Int.Map.iter add_one seq.norev_hyps;
+    CInt.Map.iter add_one seq.norev_hyps;
     List.rev !goals
 
 let search_in_rev_hyps seq=
@@ -373,8 +373,8 @@ let search_in_rev_hyps seq=
     let make_step step=
       {dep_it=step;
        dep_goal=false;
-       dep_hyps=Int.Set.singleton i} in
-    let nseq={seq with rev_hyps=Int.Map.remove i seq.rev_hyps} in
+       dep_hyps=CInt.Set.singleton i} in
+    let nseq={seq with rev_hyps=CInt.Map.remove i seq.rev_hyps} in
       match f with
 	  Conjunct (f1,f2) ->
 	    [make_step (SE_And(i)),
@@ -399,27 +399,27 @@ let search_rev seq=
 	  match f1 with
 	      Conjunct (_,_) | Disjunct (_,_) ->
 		{seq with cnx=next;
-		   rev_hyps=Int.Map.remove j seq.rev_hyps}
+                   rev_hyps=CInt.Map.remove j seq.rev_hyps}
 	    | Arrow (_,_) ->
 		{seq with cnx=next;
-		   norev_hyps=Int.Map.remove j seq.norev_hyps}
+                   norev_hyps=CInt.Map.remove j seq.norev_hyps}
 	    | _ ->
 		{seq with cnx=next} in
 	  [{dep_it=SE_Arrow(i,j);
 	    dep_goal=false;
-	    dep_hyps=Int.Set.add i (Int.Set.singleton j)},
+            dep_hyps=CInt.Set.add i (CInt.Set.singleton j)},
 	   [add_hyp (embed nseq) f2]]
     | [] ->
 	match seq.gl with
 	    Arrow (f1,f2) ->
 	      [{dep_it=SI_Arrow;
 		dep_goal=true;
-		dep_hyps=Int.Set.empty},
+                dep_hyps=CInt.Set.empty},
 	       [add_hyp (change_goal (embed seq) f2) f1]]
 	  | Conjunct (f1,f2) ->
 	      [{dep_it=SI_And;
 		dep_goal=true;
-		dep_hyps=Int.Set.empty},[change_goal (embed seq) f1;
+                dep_hyps=CInt.Set.empty},[change_goal (embed seq) f1;
 					change_goal (embed seq) f2]]
 	  | _ -> search_in_rev_hyps seq
 
@@ -428,18 +428,18 @@ let search_all seq=
       Some i ->
 	[{dep_it=SE_False (i);
 	  dep_goal=false;
-	  dep_hyps=Int.Set.singleton i},[]]
+          dep_hyps=CInt.Set.singleton i},[]]
     | None ->
 	try
 	  let ax = Fmap.find seq.gl seq.left in
 	    [{dep_it=SAx (ax);
 	      dep_goal=true;
-	      dep_hyps=Int.Set.singleton ax},[]]
+              dep_hyps=CInt.Set.singleton ax},[]]
 	with Not_found -> search_rev seq
 
 let bare_sequent = embed
-		     {rev_hyps=Int.Map.empty;
-		      norev_hyps=Int.Map.empty;
+                     {rev_hyps=CInt.Map.empty;
+                      norev_hyps=CInt.Map.empty;
 		      size=0;
 		      left=Fmap.empty;
 		      right=Fmap.empty;
@@ -491,7 +491,7 @@ let pr_form f = pp_form f
 
 let pp_intmap map =
   let pp=ref (str "") in
-   Int.Map.iter (fun i obj -> pp:= (!pp ++
+   CInt.Map.iter (fun i obj -> pp:= (!pp ++
 		pp_form obj ++ cut ())) map;
     str "{ " ++ v 0 (!pp) ++ str " }"
 

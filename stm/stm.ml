@@ -271,7 +271,7 @@ end = struct (* {{{ *)
 
   let find_proof_at_depth vcs pl =
     try List.find (function
-          | _, { Vcs_.kind = `Proof n } -> Int.equal n pl
+          | _, { Vcs_.kind = `Proof n } -> CInt.equal n pl
           | _, { Vcs_.kind = `Edit _ } -> anomaly(Pp.str "find_proof_at_depth")
           | _ -> false)
         (List.map (fun h -> h, Vcs_.get_branch vcs h) (Vcs_.branches vcs))
@@ -649,7 +649,7 @@ end = struct (* {{{ *)
       checkout b;
       let proof_mode = get_proof_mode @@ get_branch_pos b in
       let id = new_node proof_mode () in
-      let parsing = Option.get @@ get_parsing_state (get_branch_pos b) in
+      let parsing = COption.get @@ get_parsing_state (get_branch_pos b) in
       merge id ~ours:(Sideff CherryPickEnv) ~into:b Branch.master;
       set_parsing_state id parsing)
     (List.filter (fun b -> not (Branch.equal b Branch.master)) (branches ()))
@@ -777,7 +777,7 @@ end = struct (* {{{ *)
 
     let get_last_job () =
       Mutex.lock m;
-      while Option.is_empty !job do Condition.wait c m; done;
+      while COption.is_empty !job do Condition.wait c m; done;
       match !job with
       | None -> assert false
       | Some x -> job := None; Mutex.unlock m; x
@@ -790,7 +790,7 @@ end = struct (* {{{ *)
       if now then job ()
       else begin
         set_last_job job;
-        if Option.is_empty !worker then
+        if COption.is_empty !worker then
           worker := Some (CThread.create run_command ())
       end
 
@@ -1035,7 +1035,7 @@ end = struct (* {{{ *)
 
   let restore_root_state () =
     cur_id := Stateid.dummy;
-    Vernacstate.unfreeze_interp_state (Option.get !init_state)
+    Vernacstate.unfreeze_interp_state (COption.get !init_state)
 
   (* Protect against state changes *)
   let purify f x =
@@ -1160,11 +1160,11 @@ end = struct (* {{{ *)
 
   let back_tactic n (id,_,_,tactic,undo) =
     let value = (if tactic then 1 else 0) - undo in
-    if Int.equal n 0 then `Stop id else `Cont (n-value)
+    if CInt.equal n 0 then `Stop id else `Cont (n-value)
 
   let get_proof ~doc id =
     match state_of_id ~doc id with
-    | `Valid (Some vstate) -> Option.map (Vernacstate.LemmaStack.with_top_pstate ~f:Proof_global.get_proof) vstate.Vernacstate.lemmas
+    | `Valid (Some vstate) -> COption.map (Vernacstate.LemmaStack.with_top_pstate ~f:Proof_global.get_proof) vstate.Vernacstate.lemmas
     | _ -> None
 
   let undo_vernac_classifier v ~doc =
@@ -1187,7 +1187,7 @@ end = struct (* {{{ *)
       | VernacBack n ->
           let id = VCS.cur_tip () in
           let oid = fold_until (fun n (id,_,_,_,_) ->
-            if Int.equal n 0 then `Stop id else `Cont (n-1)) n id in
+            if CInt.equal n 0 then `Stop id else `Cont (n-1)) n id in
           oid
       | VernacUndo n ->
           let id = VCS.cur_tip () in
@@ -1208,7 +1208,7 @@ end = struct (* {{{ *)
             if List.mem cb (Vcs_.branches vcs) then `Cont (n+1) else `Stop n)
             0 id in
           let oid = fold_until (fun n (id,_,_,_,_) ->
-            if Int.equal n 0 then `Stop id else `Cont (n-1)) (n-m-1) id in
+            if CInt.equal n 0 then `Stop id else `Cont (n-1)) (n-m-1) id in
           oid
       | VernacAbortAll ->
           let id = VCS.cur_tip () in
@@ -1700,7 +1700,7 @@ end = struct (* {{{ *)
           | { step = `Qed ( { qast = cast }, _) }
           | { step = `Sideff (ReplayCommand cast, _) } ->
               let loc = cast.expr.CAst.loc in
-              let start, stop = Option.cata Loc.unloc (0,0) loc in
+              let start, stop = COption.cata Loc.unloc (0,0) loc in
               msg_warning Pp.(
                 str"File " ++ str name ++ str ": proof of " ++ str r_name ++
                 str ": chars " ++ int start ++ str "-" ++ int stop ++
@@ -1733,18 +1733,18 @@ end = struct (* {{{ *)
            the call to [check_task_aux] above. *)
         let uc = Opaqueproof.force_constraints Library.indirect_accessor (Global.opaque_tables ()) o in
         let uc = Univ.hcons_universe_context_set uc in
-        let (pr, priv, ctx) = Option.get (Global.body_of_constant_body Library.indirect_accessor c) in
+        let (pr, priv, ctx) = COption.get (Global.body_of_constant_body Library.indirect_accessor c) in
         (* We only manipulate monomorphic terms here. *)
         let () = assert (Univ.AUContext.is_empty ctx) in
         let () = match priv with
         | Opaqueproof.PrivateMonomorphic () -> ()
         | Opaqueproof.PrivatePolymorphic (univs, uctx) ->
-          let () = assert (Int.equal (Univ.AUContext.size ctx) univs) in
+          let () = assert (CInt.equal (Univ.AUContext.size ctx) univs) in
           assert (Univ.ContextSet.is_empty uctx)
         in
         let pr = Constr.hcons pr in
         let dummy = p.(bucket) in
-        let () = assert (Option.is_empty dummy) in
+        let () = assert (COption.is_empty dummy) in
         p.(bucket) <- Some (pr, priv);
         Univ.ContextSet.union cst uc, false
 
@@ -1765,7 +1765,7 @@ end = struct (* {{{ *)
 
   let set_perspective idl =
     ProofTask.set_perspective idl;
-    TaskQueue.broadcast (Option.get !queue);
+    TaskQueue.broadcast (COption.get !queue);
     let open ProofTask in
     let overlap s1 s2 =
       List.exists (fun x -> CList.mem_f Stateid.equal x s2) s1 in
@@ -1774,7 +1774,7 @@ end = struct (* {{{ *)
       | true, true | false, false -> 0
       | true, false -> -1
       | false, true -> 1 in
-    TaskQueue.set_order (Option.get !queue) (fun task1 task2 ->
+    TaskQueue.set_order (COption.get !queue) (fun task1 task2 ->
      match task1, task2 with
      | BuildProof { t_states = s1 },
        BuildProof { t_states = s2 } -> overlap_rel s1 s2
@@ -1783,7 +1783,7 @@ end = struct (* {{{ *)
   let build_proof ~doc ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name:pname =
     let id, valid as t_exn_info = exn_info in
     let cancel_switch = ref false in
-    if TaskQueue.n_workers (Option.get !queue) = 0 then
+    if TaskQueue.n_workers (COption.get !queue) = 0 then
       if VCS.is_vio_doc () then begin
         let f,assign =
          Future.create_delegate ~blocking:true ~name:pname (State.exn_on id ~valid) in
@@ -1792,7 +1792,7 @@ end = struct (* {{{ *)
           t_exn_info; t_start = block_start; t_stop = block_stop; t_drop = drop_pt;
           t_assign = assign; t_loc = loc; t_uuid; t_name = pname;
           t_states = VCS.nodes_in_slice ~block_start ~block_stop }) in
-        TaskQueue.enqueue_task (Option.get !queue) task ~cancel_switch;
+        TaskQueue.enqueue_task (COption.get !queue) task ~cancel_switch;
         f, cancel_switch
       end else
         ProofTask.build_proof_here ~doc ?loc ~drop_pt t_exn_info block_stop, cancel_switch
@@ -1804,17 +1804,17 @@ end = struct (* {{{ *)
         t_exn_info; t_start = block_start; t_stop = block_stop; t_assign; t_drop = drop_pt;
         t_loc = loc; t_uuid; t_name = pname;
         t_states = VCS.nodes_in_slice ~block_start ~block_stop }) in
-      TaskQueue.enqueue_task (Option.get !queue) task ~cancel_switch;
+      TaskQueue.enqueue_task (COption.get !queue) task ~cancel_switch;
       f, cancel_switch
 
-  let wait_all_done () = TaskQueue.join (Option.get !queue)
+  let wait_all_done () = TaskQueue.join (COption.get !queue)
 
-  let cancel_worker n = TaskQueue.cancel_worker (Option.get !queue) n
+  let cancel_worker n = TaskQueue.cancel_worker (COption.get !queue) n
 
   (* For external users this name is nicer than request *)
   type 'a tasks = (('a,VCS.vcs) Stateid.request * bool) list
   let dump_snapshot () =
-    let tasks = TaskQueue.snapshot (Option.get !queue) in
+    let tasks = TaskQueue.snapshot (COption.get !queue) in
     let reqs =
       CList.map_filter
         ProofTask.(fun x ->
@@ -1825,7 +1825,7 @@ end = struct (* {{{ *)
     stm_prerr_endline (fun () -> Printf.sprintf "dumping %d tasks\n" (List.length reqs));
     reqs
 
-  let reset_task_queue () = TaskQueue.clear (Option.get !queue)
+  let reset_task_queue () = TaskQueue.clear (COption.get !queue)
 
 end (* }}} *)
 
@@ -1916,7 +1916,7 @@ end = struct (* {{{ *)
   let focus_cond = Proof.no_cond command_focus
 
   let perform { r_state = id; r_state_fb; r_document = vcs; r_ast; r_goal } =
-    Option.iter VCS.restore vcs;
+    COption.iter VCS.restore vcs;
     try
       Reach.known_state ~doc:dummy_doc (* XXX should be vcs *) ~cache:false id;
       State.purify (fun () ->
@@ -2113,8 +2113,8 @@ end = struct (* {{{ *)
   let queue = ref None
 
   let vernac_interp ~cancel_switch prev id q =
-    assert(TaskQueue.n_workers (Option.get !queue) > 0);
-    TaskQueue.enqueue_task (Option.get !queue)
+    assert(TaskQueue.n_workers (COption.get !queue) > 0);
+    TaskQueue.enqueue_task (COption.get !queue)
       QueryTask.({ t_where = prev; t_for = id; t_what = q }) ~cancel_switch
 
   let init priority = queue := Some (TaskQueue.create 0 priority)
@@ -2305,7 +2305,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
               end in
            match (VCS.get_info base_state).state with
            | FullState { Vernacstate.lemmas } ->
-               Option.iter PG_compat.unfreeze lemmas;
+               COption.iter PG_compat.unfreeze lemmas;
                PG_compat.with_current_proof (fun _ p ->
                  feedback ~id:id Feedback.AddedAxiom;
                  fst (Pfedit.solve Goal_select.SelectAll None tac p), ());
@@ -2315,7 +2315,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                *)
                (* STATE: We use an updated state with proof *)
                let st = Vernacstate.freeze_interp_state ~marshallable:false in
-               Option.iter (fun expr -> ignore(stm_vernac_interp id st {
+               COption.iter (fun expr -> ignore(stm_vernac_interp id st {
                   verbose = true; expr; indentation = 0;
                   strlen = 0 } ))
                recovery_command
@@ -2619,7 +2619,7 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
 
   let require_file (dir, from, exp) =
     let mp = Libnames.qualid_of_string dir in
-    let mfrom = Option.map Libnames.qualid_of_string from in
+    let mfrom = COption.map Libnames.qualid_of_string from in
     Flags.silently (Vernacentries.vernac_require mfrom exp) [mp] in
 
   (* Set the options from the new documents *)
@@ -2774,7 +2774,7 @@ let merge_proof_branch ~valid ?id qast keep brname =
   | { VCS.kind = `Proof _ } ->
       VCS.checkout VCS.Branch.master;
       let id = VCS.new_node ?id None () in
-      let parsing = Option.get @@ VCS.get_parsing_state (VCS.cur_tip ()) in
+      let parsing = COption.get @@ VCS.get_parsing_state (VCS.cur_tip ()) in
       VCS.merge id ~ours:(Qed (qed None)) brname;
       VCS.set_parsing_state id parsing;
       VCS.delete_branch brname;
@@ -2817,7 +2817,7 @@ let reset_task_queue = Slaves.reset_task_queue
 (* We process a meta command found in the document *)
 let process_back_meta_command ~newtip ~head oid aast =
     let valid = VCS.get_branch_pos head in
-    let old_parsing = Option.get @@ VCS.get_parsing_state oid in
+    let old_parsing = COption.get @@ VCS.get_parsing_state oid in
 
     (* Merge in and discard all the branches currently open that were not open in `oid` *)
     let { mine; others } = Backtrack.branches_of oid in
@@ -2856,7 +2856,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
     let head = VCS.current_branch () in
     VCS.checkout head;
     let head_parsing =
-      Option.get @@ VCS.(get_parsing_state (get_branch_pos head)) in
+      COption.get @@ VCS.(get_parsing_state (get_branch_pos head)) in
     let proof_mode = VCS.(get_proof_mode (get_branch_pos head)) in
     let rc = begin
       stm_prerr_endline (fun () ->
@@ -2995,7 +2995,7 @@ let get_ast ~doc id =
 let stop_worker n = Slaves.cancel_worker n
 
 let parse_sentence ~doc sid ~entry pa =
-  let ps = Option.get @@ VCS.get_parsing_state sid in
+  let ps = COption.get @@ VCS.get_parsing_state sid in
   let proof_mode = VCS.get_proof_mode sid in
   Vernacstate.Parser.parse ps (entry proof_mode) pa
 
@@ -3018,7 +3018,7 @@ let ind_len_loc_of_id sid =
    Note, this could maybe improved by handling more cases in
    compute_indentation. *)
 
-let compute_indentation ?loc sid = Option.cata (fun loc ->
+let compute_indentation ?loc sid = COption.cata (fun loc ->
   let open Loc              in
   (* The effective length is the length on the last line *)
   let len = loc.ep - loc.bp in
@@ -3142,7 +3142,7 @@ let edit_at ~doc id =
       others;
     VCS.reset_branch VCS.Branch.master (master_for_br brinfo.VCS.root id);
     VCS.branch ~root:brinfo.VCS.root ~pos:brinfo.VCS.pos
-      (Option.default brname bn)
+      (COption.default brname bn)
       (no_edit brinfo.VCS.kind);
     VCS.delete_boxes_of id;
     VCS.gc ();

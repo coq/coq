@@ -38,7 +38,7 @@ let coincide s pat off =
   while !break && !i < len do
     let c = Char.code s.[off + !i] in
     let d = Char.code pat.[!i] in
-    break := Int.equal c d;
+    break := CInt.equal c d;
     incr i
   done;
   !break
@@ -53,9 +53,9 @@ type entry_name = EntryName :
 (** Quite ad-hoc *)
 let get_tacentry n m =
   let check_lvl n =
-    Int.equal m n
-    && not (Int.equal m 5) (* Because tactic5 is at binder_tactic *)
-    && not (Int.equal m 0) (* Because tactic0 is at simple_tactic *)
+    CInt.equal m n
+    && not (CInt.equal m 5) (* Because tactic5 is at binder_tactic *)
+    && not (CInt.equal m 0) (* Because tactic0 is at simple_tactic *)
   in
   if check_lvl n then EntryName (rawwit Tacarg.wit_tactic, Aself)
   else if check_lvl (n + 1) then EntryName (rawwit Tacarg.wit_tactic, Anext)
@@ -90,7 +90,7 @@ let rec parse_user_entry ?loc s sep =
     let entry = parse_user_entry ?loc (String.sub s 0 (l-4)) None in
     check_separator ?loc sep;
     Uopt entry
-  else if Int.equal l 7 && coincide s "tactic" 0 && '5' >= s.[6] && s.[6] >= '0' then
+  else if CInt.equal l 7 && coincide s "tactic" 0 && '5' >= s.[6] && s.[6] >= '0' then
     let n = Char.code s.[6] - 48 in
     check_separator ?loc sep;
     Uentryl ("tactic", n)
@@ -114,9 +114,9 @@ let interp_entry_name interp symb =
 (** Grammar declaration for Tactic Notation (Coq level)               *)
 
 let get_tactic_entry n =
-  if Int.equal n 0 then
+  if CInt.equal n 0 then
     Pltac.simple_tactic, None
-  else if Int.equal n 5 then
+  else if CInt.equal n 5 then
     Pltac.binder_tactic, None
   else if 1<=n && n<5 then
     Pltac.tactic_expr, Some (Gramlib.Gramext.Level (string_of_int n))
@@ -180,7 +180,7 @@ let add_tactic_entry (kn, ml, tg) state =
     (TacAlias (CAst.make ~loc (kn,l)):raw_tactic_expr)
   in
   let () =
-    if Int.equal tg.tacgram_level 0 && not (head_is_ident tg) then
+    if CInt.equal tg.tacgram_level 0 && not (head_is_ident tg) then
       user_err Pp.(str "Notation for simple tactic must start with an identifier.")
   in
   let map = function
@@ -275,7 +275,7 @@ let cache_tactic_notation (_, tobj) =
 
 let open_tactic_notation i (_, tobj) =
   let key = tobj.tacobj_key in
-  if Int.equal i 1 && not tobj.tacobj_local then
+  if CInt.equal i 1 && not tobj.tacobj_local then
     extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram
 
 let load_tactic_notation i (_, tobj) =
@@ -284,7 +284,7 @@ let load_tactic_notation i (_, tobj) =
   (* Only add the printing and interpretation rules. *)
   Tacenv.register_alias key tobj.tacobj_body;
   Pptactic.declare_notation_tactic_pprule key (pprule tobj.tacobj_tacgram);
-  if Int.equal i 1 && not tobj.tacobj_local then
+  if CInt.equal i 1 && not tobj.tacobj_local then
     extend_tactic_grammar key tobj.tacobj_forml tobj.tacobj_tacgram
 
 let subst_tactic_notation (subst, tobj) =
@@ -385,7 +385,7 @@ let add_ml_tactic_notation name ~level ?deprecation prods =
   List.iteri iter (List.rev prods);
   (* We call [extend_atomic_tactic] only for "basic tactics" (the ones
      at tactic_expr level 0) *)
-  if Int.equal level 0 then extend_atomic_tactic name prods
+  if CInt.equal level 0 then extend_atomic_tactic name prods
 
 (**********************************************************************)
 (** Ltac quotations                                                   *)
@@ -611,7 +611,7 @@ let eval : ty_ml -> Geninterp.Val.t list -> Geninterp.interp_sign -> unit Proofv
   | TyML (t,tac) -> eval_sign t tac
 
 let is_constr_entry = function
-| TUentry a -> Option.has_some @@ genarg_type_eq (ExtraArg a) Stdarg.wit_constr
+| TUentry a -> COption.has_some @@ genarg_type_eq (ExtraArg a) Stdarg.wit_constr
 | _ -> false
 
 let rec only_constr : type a. a ty_sig -> bool = function

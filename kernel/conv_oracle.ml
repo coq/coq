@@ -104,7 +104,7 @@ let oracle_order f o l2r k1 k2 =
   | Level _, Opaque -> true
   | Opaque, Level _ -> false
   | Level n1, Level n2 ->
-     if Int.equal n1 n2 then dep_order l2r k1 k2
+     if CInt.equal n1 n2 then dep_order l2r k1 k2
      else n1 < n2
 
 let get_strategy o = get_strategy o (fun x -> x)

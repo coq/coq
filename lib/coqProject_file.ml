@@ -187,7 +187,7 @@ let process_cmd_line ~warning_fn orig_dir proj args =
 
   | "-f" :: file :: r ->
     if !parsing_project_file then
-      raise (Parsing_error ("Invalid option -f in project file " ^ Option.get proj.project_file));
+      raise (Parsing_error ("Invalid option -f in project file " ^ COption.get proj.project_file));
     let file = CUnix.remove_path_dot (CUnix.correct_path file orig_dir) in
     let () = match proj.project_file with
       | None -> ()
@@ -200,7 +200,7 @@ let process_cmd_line ~warning_fn orig_dir proj args =
 
   | "-o" :: file :: r ->
     if !parsing_project_file then
-     raise (Parsing_error ("Invalid option -o in project file " ^ Option.get proj.project_file));
+     raise (Parsing_error ("Invalid option -o in project file " ^ COption.get proj.project_file));
     if String.contains file '/' then
       error "Output file must be in the current directory";
     if proj.makefile <> None then

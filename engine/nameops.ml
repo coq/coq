@@ -24,20 +24,20 @@ type t = {
 }
 
 let rec overflow n =
-  Int.equal (n mod 10) 9 && (Int.equal (n / 10) 0 || overflow (n / 10))
+  CInt.equal (n mod 10) 9 && (CInt.equal (n / 10) 0 || overflow (n / 10))
 
 let zero = { ss_subs = 0; ss_zero = 0 }
 
 let succ s =
-  if Int.equal s.ss_subs 0 then
-    if Int.equal s.ss_zero 0 then
+  if CInt.equal s.ss_subs 0 then
+    if CInt.equal s.ss_zero 0 then
       (* [] -> [0] *)
       { ss_zero = 1; ss_subs = 0 }
     else
       (* [0...00] -> [0..01] *)
       { ss_zero = s.ss_zero - 1; ss_subs = 1 }
   else if overflow s.ss_subs then
-    if Int.equal s.ss_zero 0 then
+    if CInt.equal s.ss_zero 0 then
       (* [9...9] -> [10...0] *)
       { ss_zero = 0; ss_subs = 1 + s.ss_subs }
     else
@@ -48,13 +48,13 @@ let succ s =
     { ss_zero = s.ss_zero; ss_subs = s.ss_subs + 1 }
 
 let equal s1 s2 =
-  Int.equal s1.ss_zero s2.ss_zero && Int.equal s1.ss_subs s2.ss_subs
+  CInt.equal s1.ss_zero s2.ss_zero && CInt.equal s1.ss_subs s2.ss_subs
 
 let compare s1 s2 =
   (* Lexicographic order is reversed in order to ensure that [succ] is strictly
       increasing. *)
-  let c = Int.compare s1.ss_subs s2.ss_subs in
-  if Int.equal c 0 then Int.compare s1.ss_zero s2.ss_zero else c
+  let c = CInt.compare s1.ss_subs s2.ss_subs in
+  if CInt.equal c 0 then CInt.compare s1.ss_zero s2.ss_zero else c
 
 end
 
@@ -66,16 +66,16 @@ let cut_ident skip_quote s =
   let slen = String.length s in
   (* [n'] is the position of the first non nullary digit *)
   let rec numpart n n' =
-    if Int.equal n 0 then
+    if CInt.equal n 0 then
       (* ident made of _ and digits only [and ' if skip_quote]: don't cut it *)
       slen
     else
       let c = Char.code (String.get s (n-1)) in
-      if Int.equal c code_of_0 && not (Int.equal n slen) then
+      if CInt.equal c code_of_0 && not (CInt.equal n slen) then
 	numpart (n-1) n'
       else if code_of_0 <= c && c <= code_of_9 then
 	numpart (n-1) (n-1)
-      else if skip_quote && (Int.equal c (Char.code '\'') || Int.equal c (Char.code '_')) then
+      else if skip_quote && (CInt.equal c (Char.code '\'') || CInt.equal c (Char.code '_')) then
 	numpart (n-1) (n-1)
       else
 	n'
@@ -86,7 +86,7 @@ let repr_ident s =
   let numstart = cut_ident false s in
   let s = Id.to_string s in
   let slen = String.length s in
-  if Int.equal numstart slen then
+  if CInt.equal numstart slen then
     (s, None)
   else
     (String.sub s 0 numstart,
@@ -125,7 +125,7 @@ let increment_subscript id =
   let rec add carrypos =
     let c = id.[carrypos] in
     if is_digit c then
-      if Int.equal (Char.code c) (Char.code '9') then begin
+      if CInt.equal (Char.code c) (Char.code '9') then begin
 	assert (carrypos>0);
 	add (carrypos-1)
       end
@@ -161,7 +161,7 @@ let get_subscript id =
       else (pos, accu)
   in
   let (pos, suf) = get_suf [] (len - 1) in
-  if Int.equal pos (len - 1) then (id0, Subscript.zero)
+  if CInt.equal pos (len - 1) then (id0, Subscript.zero)
   else
     let id = String.sub id 0 (pos + 1) in
     let rec compute_zeros accu = function
@@ -179,7 +179,7 @@ let get_subscript id =
 
 let add_subscript id ss =
   if Subscript.equal Subscript.zero ss then id
-  else if Int.equal ss.Subscript.ss_subs 0 then
+  else if CInt.equal ss.Subscript.ss_subs 0 then
     let id = Id.to_string id in
     let pad = String.make ss.Subscript.ss_zero '0' in
     Id.of_string (Printf.sprintf "%s%s" id pad)

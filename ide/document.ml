@@ -130,10 +130,10 @@ let is_empty = function
   
 let context d =
   let top, _, bot = to_lists d in
-  let pair _ x y = try Option.get x, y with Option.IsNone -> assert false in
+  let pair _ x y = try COption.get x, y with COption.IsNone -> assert false in
   List.map (flat pair true) top, List.map (flat pair true) bot
 
-let stateid_opt_equal = Option.equal Stateid.equal
+let stateid_opt_equal = COption.equal Stateid.equal
 
 let is_in_focus d id =
   let _, focused, _ = to_lists d in

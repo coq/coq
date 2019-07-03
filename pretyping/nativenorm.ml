@@ -83,7 +83,7 @@ let invert_tag cst tag reloc_tbl =
   try
     for j = 0 to Array.length reloc_tbl - 1 do
       let tagj,arity = reloc_tbl.(j) in
-      if Int.equal tag tagj && (cst && Int.equal arity 0 || not(cst || Int.equal arity 0)) then
+      if CInt.equal tag tagj && (cst && CInt.equal arity 0 || not(cst || CInt.equal arity 0)) then
 	raise (Find_at j)
       else ()
     done;raise Not_found
@@ -115,7 +115,7 @@ let type_constructor mind mib u (ctx, typ) params =
   let s = ind_subst mind mib u in
   let ctyp = substl s typ in
   let nparams = Array.length params in
-  if Int.equal nparams 0 then ctyp
+  if CInt.equal nparams 0 then ctyp
   else
     let _,ctyp = decompose_prod_n nparams ctyp in   
     substl (List.rev (Array.to_list params)) ctyp
@@ -179,7 +179,7 @@ let branch_of_switch lvl ans bs =
   let branch i = 
     let tag,arity = tbl.(i) in
     let ci = 
-      if Int.equal arity 0 then mk_const tag
+      if CInt.equal arity 0 then mk_const tag
       else mk_block tag (mk_rels_accu lvl arity) in
     bs ci in
   Array.init (Array.length tbl) branch
@@ -233,7 +233,7 @@ and nf_type_sort env sigma v =
 
 and nf_accu env sigma accu =
   let atom = atom_of_accu accu in
-  if Int.equal (accu_nargs accu) 0 then nf_atom env sigma atom
+  if CInt.equal (accu_nargs accu) 0 then nf_atom env sigma atom
   else
     let a,typ = nf_atom_type env sigma atom in
     let _, args = nf_args env sigma (args_of_accu accu) typ in
@@ -241,7 +241,7 @@ and nf_accu env sigma accu =
 
 and nf_accu_type env sigma accu =
   let atom = atom_of_accu accu in
-  if Int.equal (accu_nargs accu) 0 then nf_atom_type env sigma atom
+  if CInt.equal (accu_nargs accu) 0 then nf_atom_type env sigma atom
   else
     let a,typ = nf_atom_type env sigma atom in
     let t, args = nf_args env sigma (args_of_accu accu) typ in
@@ -404,7 +404,7 @@ and  nf_predicate env sigma ind mip params v pT =
       let name = Name (Id.of_string "c") in
       let n = mip.mind_nrealargs in
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
-      let params = if Int.equal n 0 then params else Array.map (lift n) params in
+      let params = if CInt.equal n 0 then params else Array.map (lift n) params in
       let dom = mkApp(mkIndU ind,Array.append params rargs) in
       let r = Inductive.relevance_of_inductive env (fst ind) in
       let name = make_annot name r in
@@ -417,7 +417,7 @@ and nf_evar env sigma evk args =
   let hyps = Environ.named_context_of_val (Evd.evar_filtered_hyps evi) in
   let ty = EConstr.to_constr ~abort_on_undefined_evars:false sigma @@ Evd.evar_concl evi in
   if List.is_empty hyps then begin
-    assert (Int.equal (Array.length args) 0);
+    assert (CInt.equal (Array.length args) 0);
     mkEvar (evk, [||]), ty
   end
   else

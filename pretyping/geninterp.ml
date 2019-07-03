@@ -43,7 +43,7 @@ struct
   let rec inject : type a. a tag -> a -> t = fun tag x -> match tag with
   | Base t -> Dyn (t, x)
   | List tag -> Dyn (typ_list, List.map (fun x -> inject tag x) x)
-  | Opt tag -> Dyn (typ_opt, Option.map (fun x -> inject tag x) x)
+  | Opt tag -> Dyn (typ_opt, COption.map (fun x -> inject tag x) x)
   | Pair (tag1, tag2) ->
     Dyn (typ_pair, (inject tag1 (fst x), inject tag2 (snd x)))
 

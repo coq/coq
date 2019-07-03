@@ -36,7 +36,7 @@ let rec contiguous tok n m =
   ||
     let (_, ep) = Loc.unloc (tok n) in
     let (bp, _) = Loc.unloc (tok (n + 1)) in
-    Int.equal ep bp && contiguous tok (succ n) m
+    CInt.equal ep bp && contiguous tok (succ n) m
 
 let rec lookahead_kwds strm n = function
   | [] -> ()

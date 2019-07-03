@@ -143,7 +143,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
       (* nf_arity later *)
       (* user_lc ignored *)
       (* user_arity ignored *)
-      check (fun p -> p.mind_nrealargs) Int.equal (NotConvertibleInductiveField p2.mind_typename); (* How can it fail since the type of inductive are checked below? [HH] *)
+      check (fun p -> p.mind_nrealargs) CInt.equal (NotConvertibleInductiveField p2.mind_typename); (* How can it fail since the type of inductive are checked below? [HH] *)
       (* kelim ignored *)
       (* listrec ignored *)
       (* finite done *)
@@ -167,7 +167,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   in
   let check f test why = if not (test (f mib1) (f mib2)) then error (why (f mib2)) in
   check (fun mib -> mib.mind_finite<>CoFinite) (==) (fun x -> FiniteInductiveFieldExpected x);
-  check (fun mib -> mib.mind_ntypes) Int.equal (fun x -> InductiveNumbersFieldExpected x);
+  check (fun mib -> mib.mind_ntypes) CInt.equal (fun x -> InductiveNumbersFieldExpected x);
   assert (List.is_empty mib1.mind_hyps && List.is_empty mib2.mind_hyps);
   assert (Array.length mib1.mind_packets >= 1
 	    && Array.length mib2.mind_packets >= 1);
@@ -177,7 +177,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   (* at the time of checking the inductive arities in check_packet. *)
   (* Notice that we don't expect the local definitions to match: only *)
   (* the inductive types and constructors types have to be convertible *)
-  check (fun mib -> mib.mind_nparams) Int.equal (fun x -> InductiveParamsNumberField x);
+  check (fun mib -> mib.mind_nparams) CInt.equal (fun x -> InductiveParamsNumberField x);
 
   begin
     let kn2' = kn_of_delta reso2 kn2 in
@@ -197,10 +197,10 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
       | Cast(t,_,_) -> names_prod_letin t
       | _ -> []
     in
-    assert (Int.equal (Array.length mib1.mind_packets) 1);
-    assert (Int.equal (Array.length mib2.mind_packets) 1);
-    assert (Int.equal (Array.length mib1.mind_packets.(0).mind_user_lc) 1);
-    assert (Int.equal (Array.length mib2.mind_packets.(0).mind_user_lc) 1);
+    assert (CInt.equal (Array.length mib1.mind_packets) 1);
+    assert (CInt.equal (Array.length mib2.mind_packets) 1);
+    assert (CInt.equal (Array.length mib1.mind_packets.(0).mind_user_lc) 1);
+    assert (CInt.equal (Array.length mib2.mind_packets.(0).mind_user_lc) 1);
     check (fun mib ->
       let nparamdecls = List.length mib.mind_params_ctxt in
       let names = names_prod_letin (mib.mind_packets.(0).mind_user_lc.(0)) in

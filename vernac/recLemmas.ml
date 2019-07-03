@@ -38,7 +38,7 @@ let find_mutually_recursive_statements sigma thms =
         match EConstr.kind sigma whnf_ccl with
         | Ind ((kn,_ as ind),u) when
               let mind = Global.lookup_mind kn in
-              Int.equal mind.mind_ntypes n && mind.mind_finite == Declarations.CoFinite ->
+              CInt.equal mind.mind_ntypes n && mind.mind_finite == Declarations.CoFinite ->
             [ind,x,0]
         | _ ->
             [] in
@@ -52,7 +52,7 @@ let find_mutually_recursive_statements sigma thms =
         if List.for_all (of_same_mutind hyp) oks
         then Some (hyp::oks) else None) [] ind_ccls in
     let ordered_same_indccl =
-      List.filter (List.for_all_i (fun i ((kn,j),_,_) -> Int.equal i j) 0) same_indccl in
+      List.filter (List.for_all_i (fun i ((kn,j),_,_) -> CInt.equal i j) 0) same_indccl in
     (* Check if some hypotheses are inductive in the same type *)
     let common_same_indhyp =
       List.cartesians_filter (fun hyp oks ->

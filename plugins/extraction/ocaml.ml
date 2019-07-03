@@ -293,7 +293,7 @@ let rec pp_expr par env args =
         (try pp_record_proj par env typ t pv args
 	 with Impossible ->
 	   (* Second, can this match be printed as a let-in ? *)
-	   if Int.equal (Array.length pv) 1 then
+           if CInt.equal (Array.length pv) 1 then
 	     let s1,s2 = pp_one_pat env pv.(0) in
 	     hv 0 (apply2 (pp_letin s1 head s2))
 	   else
@@ -313,7 +313,7 @@ and pp_record_proj par env typ t pv args =
   (* Can a match be printed as a mere record projection ? *)
   let fields = record_fields_of_type typ in
   if List.is_empty fields then raise Impossible;
-  if not (Int.equal (Array.length pv) 1) then raise Impossible;
+  if not (CInt.equal (Array.length pv) 1) then raise Impossible;
   if has_deep_pattern pv then raise Impossible;
   let (ids,pat,body) = pv.(0) in
   let n = List.length ids in
@@ -328,7 +328,7 @@ and pp_record_proj par env typ t pv args =
     match body with MLmagic _ | MLapp(MLmagic _, _) -> true | _ -> false
   in
   let rec lookup_rel i idx = function
-    | Prel j :: l -> if Int.equal i j then idx else lookup_rel i (idx+1) l
+    | Prel j :: l -> if CInt.equal i j then idx else lookup_rel i (idx+1) l
     | Pwild :: l -> lookup_rel i (idx+1) l
     | _ -> raise Impossible
   in
@@ -355,7 +355,7 @@ and pp_record_pat (fields, args) =
    str " }"
 
 and pp_cons_pat r ppl =
-  if is_infix r && Int.equal (List.length ppl) 2 then
+  if is_infix r && CInt.equal (List.length ppl) 2 then
     List.hd ppl ++ str (get_infix r) ++ List.hd (List.tl ppl)
   else
     let fields = get_record_fields r in
@@ -393,7 +393,7 @@ and pp_pat env pv =
     (fun i x ->
        let s1,s2 = pp_one_pat env x in
        hv 2 (hov 4 (str "| " ++ s1 ++ str " ->") ++ spc () ++ hov 2 s2) ++
-       if Int.equal i (Array.length pv - 1) then mt () else fnl ())
+       if CInt.equal i (Array.length pv - 1) then mt () else fnl ())
     pv
 
 and pp_function env t =
@@ -476,7 +476,7 @@ let pp_equiv param_list name = function
 let pp_one_ind prefix ip_equiv pl name cnames ctyps =
   let pl = rename_tvars keywords pl in
   let pp_constructor i typs =
-    (if Int.equal i 0 then mt () else fnl ()) ++
+    (if CInt.equal i 0 then mt () else fnl ()) ++
     hov 3 (str "| " ++ cnames.(i) ++
 	   (if List.is_empty typs then mt () else str " of ") ++
 	   prlist_with_sep
@@ -484,7 +484,7 @@ let pp_one_ind prefix ip_equiv pl name cnames ctyps =
   in
   pp_parameters pl ++ str prefix ++ name ++
   pp_equiv pl name ip_equiv ++ str " =" ++
-  if Int.equal (Array.length ctyps) 0 then str " unit (* empty inductive *)"
+  if CInt.equal (Array.length ctyps) 0 then str " unit (* empty inductive *)"
   else fnl () ++ v 0 (prvecti pp_constructor ctyps)
 
 let pp_logical_ind packet =

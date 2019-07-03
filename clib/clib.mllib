@@ -11,13 +11,13 @@ CList
 CString
 CStack
 
-Int
+CInt
 Range
 HMap
 Bigint
 
 CArray
-Option
+COption
 CUnix
 
 Segmenttree

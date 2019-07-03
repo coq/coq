@@ -358,7 +358,7 @@ let find_elim hdcncl lft2rgt dep cls ot =
   let is_global_exists gr c =
     Coqlib.has_ref gr && Termops.is_global sigma (Coqlib.lib_ref gr) c
   in
-  let inccl = Option.is_empty cls in
+  let inccl = COption.is_empty cls in
   let env = Proofview.Goal.env gl in
   let is_eq = is_global_exists "core.eq.type" hdcncl in
   let is_jmeq = is_global_exists "core.JMeq.type" hdcncl && jmeq_same_dom env sigma ot in
@@ -447,7 +447,7 @@ let adjust_rewriting_direction args lft2rgt =
     (* other equality *)
     Some lft2rgt
 
-let rewrite_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
+let rewrite_side_tac tac sidetac = side_tac tac (COption.map fst sidetac)
 
 (* Main function for dispatching which kind of rewriting it is about *)
 
@@ -613,7 +613,7 @@ let init_setoid () =
 
 let check_setoid cl =
   let concloccs = Locusops.occurrences_map (fun x -> x) cl.concl_occs in
-  Option.fold_left
+  COption.fold_left
     (List.fold_left
 	(fun b ((occ,_),_) -> 
           b||(not (Locusops.is_all_occurrences (Locusops.occurrences_map (fun x -> x) occ)))
@@ -758,7 +758,7 @@ let find_positions env sigma ~keep_proofs ~no_discr t1 t2 =
     let hd2,args2 = whd_all_stack env sigma t2 in
     match (EConstr.kind sigma hd1, EConstr.kind sigma hd2) with
       | Construct ((ind1,i1 as sp1),u1), Construct (sp2,_)
-          when Int.equal (List.length args1) (constructor_nallargs env sp1)
+          when CInt.equal (List.length args1) (constructor_nallargs env sp1)
             ->
 	  let sorts' =
             CList.intersect Sorts.family_equal sorts (sorts_below (top_allowed_sort env (fst sp1)))
@@ -896,7 +896,7 @@ let descend_then env sigma head dirn =
       let p =
 	it_mkLambda_or_LetIn (lift (mip.mind_nrealargs+1) resty) deparsign in
       let build_branch i =
-	let result = if Int.equal i dirn then dirnval else dfltval in
+        let result = if CInt.equal i dirn then dirnval else dfltval in
 	let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cstr.(i-1).cs_args in
 	let args = name_context env sigma cs_args in
 	it_mkLambda_or_LetIn result args in
@@ -944,7 +944,7 @@ let build_selector env sigma dirn c ind special default =
   let p = it_mkLambda_or_LetIn typ deparsign in
   let cstrs = get_constructors env indf in
   let build_branch i =
-    let endpt = if Int.equal i dirn then special else default in
+    let endpt = if CInt.equal i dirn then special else default in
     let args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cstrs.(i-1).cs_args in
     it_mkLambda_or_LetIn endpt args in
   let brl =
@@ -1154,7 +1154,7 @@ let minimal_free_rels env sigma (c,cty) =
   let cty_rels = free_rels sigma cty in
   let cty' = simpl env sigma cty in
   let rels' = free_rels sigma cty' in
-  if Int.Set.subset cty_rels rels' then
+  if CInt.Set.subset cty_rels rels' then
     (cty,cty_rels)
   else
     (cty',rels')
@@ -1164,10 +1164,10 @@ let minimal_free_rels env sigma (c,cty) =
 let minimal_free_rels_rec env sigma =
   let rec minimalrec_free_rels_rec prev_rels (c,cty) =
     let (cty,direct_rels) = minimal_free_rels env sigma (c,cty) in
-    let combined_rels = Int.Set.union prev_rels direct_rels in
+    let combined_rels = CInt.Set.union prev_rels direct_rels in
     let folder rels i = snd (minimalrec_free_rels_rec rels (c, unsafe_type_of env sigma (mkRel i)))
-    in (cty, List.fold_left folder combined_rels (Int.Set.elements (Int.Set.diff direct_rels prev_rels)))
-  in minimalrec_free_rels_rec Int.Set.empty
+    in (cty, List.fold_left folder combined_rels (CInt.Set.elements (CInt.Set.diff direct_rels prev_rels)))
+  in minimalrec_free_rels_rec CInt.Set.empty
 
 (* [sig_clausal_form siglen ty]
 
@@ -1208,7 +1208,7 @@ let minimal_free_rels_rec env sigma =
 let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
   let sigdata = find_sigma_data env sort_of_ty in
   let rec sigrec_clausal_form sigma siglen p_i =
-    if Int.equal siglen 0 then
+    if CInt.equal siglen 0 then
       (* is the default value typable with the expected type *)
       let dflt_typ = unsafe_type_of env sigma dflt in
       try
@@ -1309,7 +1309,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
 let make_iterated_tuple env sigma dflt (z,zty) =
   let (zty,rels) = minimal_free_rels_rec env sigma (z,zty) in
   let sort_of_zty = get_sort_of env sigma zty in
-  let sorted_rels = Int.Set.elements rels in
+  let sorted_rels = CInt.Set.elements rels in
   let sigma, (tuple,tuplety) =
     List.fold_left (fun (sigma, t) -> make_tuple env sigma t) (sigma, (z,zty)) sorted_rels
   in

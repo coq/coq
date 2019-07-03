@@ -19,7 +19,7 @@ type obligation =
   ; obl_location : Evar_kinds.t Loc.located
   ; obl_body : pconstant obligation_body option
   ; obl_status : bool * Evar_kinds.obligation_definition_status
-  ; obl_deps : Int.Set.t
+  ; obl_deps : CInt.Set.t
   ; obl_tac : unit Proofview.tactic option }
 
 type obligations = obligation array * int
@@ -72,7 +72,7 @@ type progress =
 type obligation_qed_info =
   { name : Id.t
   ; num : int
-  ; auto : Id.t option -> Int.Set.t -> unit Proofview.tactic option -> progress
+  ; auto : Id.t option -> CInt.Set.t -> unit Proofview.tactic option -> progress
   }
 
 val obligation_terminator
@@ -98,10 +98,10 @@ val program_tcc_summary_tag :
 val obl_substitution :
      bool
   -> obligation array
-  -> Int.Set.t
+  -> CInt.Set.t
   -> (ProgMap.key * (Constr.types * Constr.types)) list
 
-val dependencies : obligation array -> int -> Int.Set.t
+val dependencies : obligation array -> int -> CInt.Set.t
 
 val err_not_transp : unit -> unit
 val progmap_add : ProgMap.key -> program_info CEphemeron.key -> unit

@@ -73,7 +73,7 @@ let tag_var = tag Tag.variable
   let lsimplepatt = (1,E)
 
   let prec_less child (parent,assoc) =
-    if parent < 0 && Int.equal child lprod then true
+    if parent < 0 && CInt.equal child lprod then true
     else
       let parent = abs parent in
       match assoc with
@@ -149,7 +149,7 @@ let tag_var = tag Tag.variable
     str "`" ++ str hd ++ c ++ str tl
 
   let pr_com_at n =
-    if !Flags.beautify && not (Int.equal n 0) then comment (Pputils.extract_comments n)
+    if !Flags.beautify && not (CInt.equal n 0) then comment (Pputils.extract_comments n)
     else mt()
 
   let pr_with_comments ?loc pp = pr_located (fun x -> x) (loc, pp)
@@ -308,7 +308,7 @@ let tag_var = tag Tag.variable
             pr_sep_com spc (pr ltop) rhs))
 
   let begin_of_binder l_bi =
-    let b_loc l = fst (Option.cata Loc.unloc (0,0) l) in
+    let b_loc l = fst (COption.cata Loc.unloc (0,0) l) in
     match l_bi with
     | CLocalDef({loc},_,_) -> b_loc loc
     | CLocalAssum({loc}::_,_,_) -> b_loc loc
@@ -558,7 +558,7 @@ let tag_var = tag Tag.variable
       | CApp ((Some i,f),l) ->
         let l1,l2 = List.chop i l in
         let c,l1 = List.sep_last l1 in
-        assert (Option.is_empty (snd c));
+        assert (COption.is_empty (snd c));
         let p = pr_proj (pr mt) pr_app (fst c) f l1 in
         if not (List.is_empty l2) then
           return (

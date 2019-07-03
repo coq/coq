@@ -192,7 +192,7 @@ open Pputils
 
   let pr_hint_info pr_pat { Typeclasses.hint_priority = pri; hint_pattern = pat } =
     pr_opt (fun x -> str"|" ++ int x) pri ++
-    pr_opt (fun y -> (if Option.is_empty pri then str"| " else mt()) ++ pr_pat y) pat
+    pr_opt (fun y -> (if COption.is_empty pri then str"| " else mt()) ++ pr_pat y) pat
 
   let pr_hints db h pr_c pr_pat =
     let opth = pr_opt_hintbases db  in
@@ -338,7 +338,7 @@ open Pputils
 
   let begin_of_inductive = function
     | [] -> 0
-    | (_,({loc},_))::_ -> Option.cata (fun loc -> fst (Loc.unloc loc)) 0 loc
+    | (_,({loc},_))::_ -> COption.cata (fun loc -> fst (Loc.unloc loc)) 0 loc
 
   let pr_class_rawexpr = function
     | FunClass -> keyword "Funclass"
@@ -637,7 +637,7 @@ let string_of_definition_object_kind = let open Decls in function
         return (keyword "Abort" ++ pr_opt pr_lident id)
       | VernacUndo i ->
         return (
-          if Int.equal i 1 then keyword "Undo" else keyword "Undo" ++ pr_intarg i
+          if CInt.equal i 1 then keyword "Undo" else keyword "Undo" ++ pr_intarg i
         )
       | VernacUndoTo i ->
         return (keyword "Undo" ++ spc() ++ keyword "To" ++ pr_intarg i)
@@ -669,7 +669,7 @@ let string_of_definition_object_kind = let open Decls in function
         return (keyword "Reset Initial")
       | VernacBack i ->
         return (
-          if Int.equal i 1 then keyword "Back" else keyword "Back" ++ pr_intarg i
+          if CInt.equal i 1 then keyword "Back" else keyword "Back" ++ pr_intarg i
         )
 
     (* State management *)
@@ -1088,7 +1088,7 @@ let string_of_definition_object_kind = let open Decls in function
                          notation_scope = s;
                          implicit_status = imp } :: tl ->
                     spc() ++ pr_br imp (pr_if k (str"!") ++ Name.print id ++ pr_s s) ++
-                    print_arguments (Option.map pred n) (Option.map pred nbidi) tl
+                    print_arguments (COption.map pred n) (COption.map pred nbidi) tl
               in
               let rec print_implicits = function
                 | [] -> mt ()
@@ -1226,7 +1226,7 @@ let string_of_definition_object_kind = let open Decls in function
       | VernacPrimitive(id,r,typopt) ->
          hov 2
              (keyword "Primitive" ++ spc() ++ pr_lident id ++
-                (Option.cata (fun ty -> spc() ++ str":" ++ pr_spc_lconstr ty) (mt()) typopt) ++ spc() ++
+                (COption.cata (fun ty -> spc() ++ str":" ++ pr_spc_lconstr ty) (mt()) typopt) ++ spc() ++
                 str ":=" ++ spc() ++
                 str (CPrimitives.op_or_type_to_string r))
       | VernacComments l ->

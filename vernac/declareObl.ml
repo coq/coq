@@ -24,7 +24,7 @@ type obligation =
   ; obl_location : Evar_kinds.t Loc.located
   ; obl_body : pconstant obligation_body option
   ; obl_status : bool * Evar_kinds.obligation_definition_status
-  ; obl_deps : Int.Set.t
+  ; obl_deps : CInt.Set.t
   ; obl_tac : unit Proofview.tactic option }
 
 type obligations = obligation array * int
@@ -107,13 +107,13 @@ let shrink_body c ty =
   let b', ty', n, args =
     List.fold_left
       (fun (b, ty, i, args) decl ->
-        if noccurn 1 b && Option.cata (noccurn 1) true ty then
-          (subst1 mkProp b, Option.map (subst1 mkProp) ty, succ i, args)
+        if noccurn 1 b && COption.cata (noccurn 1) true ty then
+          (subst1 mkProp b, COption.map (subst1 mkProp) ty, succ i, args)
         else
           let open Context.Rel.Declaration in
           let args = if is_local_assum decl then mkRel i :: args else args in
           ( Term.mkLambda_or_LetIn decl b
-          , Option.map (Term.mkProd_or_LetIn decl) ty
+          , COption.map (Term.mkProd_or_LetIn decl) ty
           , succ i
           , args ) )
       (b, ty, 1, []) ctx
@@ -139,7 +139,7 @@ let get_hide_obligations =
 
 let declare_obligation prg obl body ty uctx =
   let body = prg.prg_reduce body in
-  let ty = Option.map prg.prg_reduce ty in
+  let ty = COption.map prg.prg_reduce ty in
   match obl.obl_status with
   | _, Evar_kinds.Expand -> (false, {obl with obl_body = Some (TermObl body)})
   | force, Evar_kinds.Define opaque ->
@@ -202,7 +202,7 @@ let close sec =
         str "Unsolved obligations when closing "
         ++ str sec ++ str ":" ++ spc ()
         ++ prlist_with_sep spc (fun x -> Id.print x) keys
-        ++ ( str (if Int.equal (List.length keys) 1 then " has " else " have ")
+        ++ ( str (if CInt.equal (List.length keys) 1 then " has " else " have ")
            ++ str "unsolved obligations" ))
 
 let input : program_info CEphemeron.key ProgMap.t -> Libobject.obj =
@@ -232,11 +232,11 @@ let progmap_add n prg =
 let progmap_replace prg' =
   Lib.add_anonymous_leaf (input (map_replace prg'.prg_name prg' !from_prg))
 
-let obligations_solved prg = Int.equal (snd prg.prg_obligations) 0
+let obligations_solved prg = CInt.equal (snd prg.prg_obligations) 0
 
 let obligations_message rem =
   if rem > 0 then
-    if Int.equal rem 1 then
+    if CInt.equal rem 1 then
       Flags.if_verbose Feedback.msg_info
         Pp.(int rem ++ str " obligation remaining")
     else
@@ -259,7 +259,7 @@ let get_obligation_body expand obl =
       match c with DefinedObl pc -> Some (mkConstU pc) | TermObl c -> Some c )
 
 let obl_substitution expand obls deps =
-  Int.Set.fold
+  CInt.Set.fold
     (fun x acc ->
       let xobl = obls.(x) in
       match get_obligation_body expand xobl with
@@ -268,8 +268,8 @@ let obl_substitution expand obls deps =
     deps []
 
 let rec intset_to = function
-  | -1 -> Int.Set.empty
-  | n -> Int.Set.add n (intset_to (pred n))
+  | -1 -> CInt.Set.empty
+  | n -> CInt.Set.add n (intset_to (pred n))
 
 let obligation_substitution expand prg =
   let obls, _ = prg.prg_obligations in
@@ -349,7 +349,7 @@ let declare_definition prg =
   let ce = Declare.definition_entry ~fix_exn ~opaque ~types:typ ~univs body in
   let () = progmap_remove prg in
   let ubinders = UState.universe_binders uctx in
-  let hook_data = Option.map (fun hook -> hook, uctx, obls) prg.prg_hook in
+  let hook_data = COption.map (fun hook -> hook, uctx, obls) prg.prg_hook in
   DeclareDef.declare_definition
     ~name:prg.prg_name ~scope:prg.prg_scope ubinders
     ~kind:Decls.(IsDefinition prg.prg_kind) ce
@@ -404,7 +404,7 @@ let declare_mutual_definition l =
   in
   (*   let fixdefs = List.map reduce_fix fixdefs in *)
   let fixdefs, fixrs,fixtypes, fiximps = List.split4 defs in
-  let fixkind = Option.get first.prg_fixkind in
+  let fixkind = COption.get first.prg_fixkind in
   let arrrec, recvec = (Array.of_list fixtypes, Array.of_list fixdefs) in
   let rvec = Array.of_list fixrs in
   let namevec = Array.of_list (List.map (fun x -> Name x.prg_name) l) in
@@ -471,18 +471,18 @@ let update_obls prg obls rem =
       else Dependent
 
 let dependencies obls n =
-  let res = ref Int.Set.empty in
+  let res = ref CInt.Set.empty in
   Array.iteri
     (fun i obl ->
-      if (not (Int.equal i n)) && Int.Set.mem n obl.obl_deps then
-        res := Int.Set.add i !res )
+      if (not (CInt.equal i n)) && CInt.Set.mem n obl.obl_deps then
+        res := CInt.Set.add i !res )
     obls;
   !res
 
 type obligation_qed_info =
   { name : Id.t
   ; num : int
-  ; auto : Id.t option -> Int.Set.t -> unit Proofview.tactic option -> progress
+  ; auto : Id.t option -> CInt.Set.t -> unit Proofview.tactic option -> progress
   }
 
 let obligation_terminator entries uctx { name; num; auto } =
@@ -497,7 +497,7 @@ let obligation_terminator entries uctx { name; num; auto } =
     let prg = CEphemeron.get (ProgMap.find name !from_prg) in
     (* Ensure universes are substituted properly in body and type *)
     let body = EConstr.to_constr sigma (EConstr.of_constr body) in
-    let ty = Option.map (fun x -> EConstr.to_constr sigma (EConstr.of_constr x)) ty in
+    let ty = COption.map (fun x -> EConstr.to_constr sigma (EConstr.of_constr x)) ty in
     let ctx = Evd.evar_universe_context sigma in
     let obls, rem = prg.prg_obligations in
     let obl = obls.(num) in
@@ -536,7 +536,7 @@ let obligation_terminator entries uctx { name; num; auto } =
     ignore (update_obls prg obls (pred rem));
     if pred rem > 0 then
       let deps = dependencies obls num in
-      if not (Int.Set.is_empty deps) then
+      if not (CInt.Set.is_empty deps) then
         ignore (auto (Some name) deps None)
   | _ ->
     CErrors.anomaly

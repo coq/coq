@@ -176,22 +176,22 @@ let utf8_char_size loc cs = function
 let njunk n = Util.repeat n Stream.junk
 
 let check_utf8_trailing_byte loc cs c =
-  if not (Int.equal (Char.code c land 0xC0) 0x80) then error_utf8 loc cs
+  if not (CInt.equal (Char.code c land 0xC0) 0x80) then error_utf8 loc cs
 
 (* Recognize utf8 blocks (of length less than 4 bytes) *)
 (* but don't certify full utf8 compliance (e.g. no emptyness check) *)
 let lookup_utf8_tail loc c cs =
   let c1 = Char.code c in
-  if Int.equal (c1 land 0x40) 0 || Int.equal (c1 land 0x38) 0x38 then error_utf8 loc cs
+  if CInt.equal (c1 land 0x40) 0 || CInt.equal (c1 land 0x38) 0x38 then error_utf8 loc cs
   else
     let n, unicode =
-      if Int.equal (c1 land 0x20) 0 then
+      if CInt.equal (c1 land 0x20) 0 then
       match Stream.npeek 2 cs with
       | [_;c2] ->
           check_utf8_trailing_byte loc cs c2;
           2, (c1 land 0x1F) lsl 6 + (Char.code c2 land 0x3F)
       | _ -> error_utf8 loc cs
-      else if Int.equal (c1 land 0x10) 0 then
+      else if CInt.equal (c1 land 0x10) 0 then
       match Stream.npeek 3 cs with
       | [_;c2;c3] ->
           check_utf8_trailing_byte loc cs c2;
@@ -342,7 +342,7 @@ let rec string loc ~comm_level bp len s = match Stream.peek s with
       (fun s -> match Stream.peek s with
       | Some '*' ->
         Stream.junk s;
-        let comm_level = Option.map succ comm_level in
+        let comm_level = COption.map succ comm_level in
             string loc ~comm_level
               bp (store (store len '(') '*')
               s
@@ -358,7 +358,7 @@ let rec string loc ~comm_level bp len s = match Stream.peek s with
               warn_comment_terminator_in_string ~loc ()
             | _ -> ()
             in
-            let comm_level = Option.map pred comm_level in
+            let comm_level = COption.map pred comm_level in
             string loc ~comm_level bp (store (store len '*') ')') s
          | _ ->
             string loc ~comm_level bp (store len '*') s) s
@@ -369,7 +369,7 @@ let rec string loc ~comm_level bp len s = match Stream.peek s with
      update the first line of the location. Otherwise, we update the last
      line. *)
      let loc =
-       if Option.has_some comm_level then bump_loc_line loc ep
+       if COption.has_some comm_level then bump_loc_line loc ep
        else bump_loc_line_last loc ep
      in
      string loc ~comm_level bp (store len c) s
@@ -416,7 +416,7 @@ let push_char c =
   if
     !between_commands || List.mem c ['\n';'\r'] ||
     (List.mem c [' ';'\t']&&
-     (Int.equal (Buffer.length current_comment) 0 ||
+     (CInt.equal (Buffer.length current_comment) 0 ||
       not (let s = Buffer.contents current_comment in
            List.mem s.[String.length s - 1] [' ';'\t';'\n';'\r'])))
   then
@@ -512,11 +512,11 @@ and update_longest_valid_token loc last nj tt cs =
 and progress_utf8 loc last nj n c tt cs =
   try
     let tt = CharMap.find c tt.branch in
-    if Int.equal n 1 then
+    if CInt.equal n 1 then
       update_longest_valid_token loc last (nj+n) tt cs
     else
       match Util.List.skipn (nj+1) (Stream.npeek (nj+n) cs) with
-      | l when Int.equal (List.length l) (n - 1) ->
+      | l when CInt.equal (List.length l) (n - 1) ->
          List.iter (check_utf8_trailing_byte loc cs) l;
          let tt = List.fold_left (fun tt c -> CharMap.find c tt.branch) tt l in
          update_longest_valid_token loc last (nj+n) tt cs
@@ -828,7 +828,7 @@ let token_text : type c. c Tok.p -> string = function
 
 let func next_token ?loc cs =
   let loct = loct_create () in
-  let cur_loc = ref (Option.default Loc.(initial ToplevelInput) loc) in
+  let cur_loc = ref (COption.default Loc.(initial ToplevelInput) loc) in
   let ts =
     Stream.from
       (fun i ->
@@ -865,7 +865,7 @@ let is_ident_not_keyword s =
 let strip s =
   let len =
     let rec loop i len =
-      if Int.equal i (String.length s) then len
+      if CInt.equal i (String.length s) then len
       else if s.[i] == ' ' then loop (i + 1) len
       else loop (i + 1) (len + 1)
     in

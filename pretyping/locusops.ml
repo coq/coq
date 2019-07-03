@@ -37,8 +37,8 @@ let convert_occs = function
 let is_selected occ = function
   | AtLeastOneOccurrence -> true
   | AllOccurrences -> true
-  | AllOccurrencesBut l -> not (Int.List.mem occ l)
-  | OnlyOccurrences l -> Int.List.mem occ l
+  | AllOccurrencesBut l -> not (CInt.List.mem occ l)
+  | OnlyOccurrences l -> CInt.List.mem occ l
   | NoOccurrences -> false
 
 (** Usual clauses *)
@@ -71,7 +71,7 @@ let simple_clause_of enum_hyps cl =
   let hyps =
     match cl.onhyps with
     | None ->
-	List.map Option.make (enum_hyps ())
+        List.map COption.make (enum_hyps ())
     | Some l ->
 	List.map (fun ((occs,id),w) ->
           if not (is_all_occurrences occs) then error_occurrences ();
@@ -115,7 +115,7 @@ let occurrences_of_hyp id cls =
 let occurrences_of_goal cls =
   occurrences_map (List.map out_arg) cls.concl_occs
 
-let in_every_hyp cls = Option.is_empty cls.onhyps
+let in_every_hyp cls = COption.is_empty cls.onhyps
 
 let clause_with_generic_occurrences cls =
   let hyps = match cls.onhyps with

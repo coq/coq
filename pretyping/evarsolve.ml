@@ -262,7 +262,7 @@ let restrict_instance evd evk filter argsv =
 
 open Context.Rel.Declaration
 let noccur_evar env evd evk c =
-  let cache = ref Int.Set.empty (* cache for let-ins *) in
+  let cache = ref CInt.Set.empty (* cache for let-ins *) in
   let rec occur_rec check_types (k, env as acc) c =
   match EConstr.kind evd c with
   | Evar (evk',args' as ev') ->
@@ -271,13 +271,13 @@ let noccur_evar env evd evk c =
             occur_rec false acc (existential_type evd ev');
           Array.iter (occur_rec check_types acc) args')
   | Rel i when i > k ->
-     if not (Int.Set.mem (i-k) !cache) then
+     if not (CInt.Set.mem (i-k) !cache) then
        let decl = Environ.lookup_rel i env in
        if check_types then
-         (cache := Int.Set.add (i-k) !cache; occur_rec false acc (lift i (EConstr.of_constr (get_type decl))));
+         (cache := CInt.Set.add (i-k) !cache; occur_rec false acc (lift i (EConstr.of_constr (get_type decl))));
        (match decl with
         | LocalAssum _ -> ()
-        | LocalDef (_,b,_) -> cache := Int.Set.add (i-k) !cache; occur_rec false acc (lift i (EConstr.of_constr b)))
+        | LocalDef (_,b,_) -> cache := CInt.Set.add (i-k) !cache; occur_rec false acc (lift i (EConstr.of_constr b)))
   | Proj (p,c) -> occur_rec true acc c
   | _ -> iter_with_full_binders evd (fun rd (k,env) -> (succ k, push_rel rd env))
     (occur_rec check_types) acc c
@@ -303,11 +303,11 @@ let to_alias sigma c = match EConstr.kind sigma c with
 
 let is_alias sigma c alias = match EConstr.kind sigma c, alias with
 | Var id, VarAlias id' -> Id.equal id id'
-| Rel n, RelAlias n' -> Int.equal n n'
+| Rel n, RelAlias n' -> CInt.equal n n'
 | _ -> false
 
 let eq_alias a b = match a, b with
-| RelAlias n, RelAlias m -> Int.equal m n
+| RelAlias n, RelAlias m -> CInt.equal m n
 | VarAlias id1, VarAlias id2 -> Id.equal id1 id2
 | _ -> false
 
@@ -321,10 +321,10 @@ let lift_aliasing n (alias, l) =
   | VarAlias _ -> a
   | RelAlias m -> RelAlias (m + n)
   in
-  (Option.map (fun c -> lift n c) alias, List.map map l)
+  (COption.map (fun c -> lift n c) alias, List.map map l)
 
 type aliases = {
-  rel_aliases : aliasing Int.Map.t;
+  rel_aliases : aliasing CInt.Map.t;
   var_aliases : aliasing Id.Map.t;
   (** Only contains [VarAlias] *)
 }
@@ -359,17 +359,17 @@ let compute_rel_aliases var_aliases rels sigma =
 	       | Var id' ->
 		  let aliases_of_n =
 		    try Id.Map.find id' var_aliases with Not_found -> empty_aliasing in
-		  Int.Map.add n (push_alias aliases_of_n (VarAlias id')) aliases
+                  CInt.Map.add n (push_alias aliases_of_n (VarAlias id')) aliases
 	       | Rel p ->
 		  let aliases_of_n =
-		    try Int.Map.find (p+n) aliases with Not_found -> empty_aliasing in
-		  Int.Map.add n (push_alias aliases_of_n (RelAlias (p+n))) aliases
+                    try CInt.Map.find (p+n) aliases with Not_found -> empty_aliasing in
+                  CInt.Map.add n (push_alias aliases_of_n (RelAlias (p+n))) aliases
 	       | _ ->
-		  Int.Map.add n (make_aliasing (lift n (mkCast(t,DEFAULTcast,u)))) aliases)
+                  CInt.Map.add n (make_aliasing (lift n (mkCast(t,DEFAULTcast,u)))) aliases)
 	   | LocalAssum _ -> aliases)
 	 )
 	 rels
-	 (List.length rels,Int.Map.empty))
+         (List.length rels,CInt.Map.empty))
 
 let make_alias_map env sigma =
   (* We compute the chain of aliases for each var and rel *)
@@ -378,15 +378,15 @@ let make_alias_map env sigma =
   { var_aliases; rel_aliases }
 
 let lift_aliases n aliases =
-  if Int.equal n 0 then aliases else
+  if CInt.equal n 0 then aliases else
   let rel_aliases =
-   Int.Map.fold (fun p l -> Int.Map.add (p+n) (lift_aliasing n l))
-     aliases.rel_aliases Int.Map.empty
+   CInt.Map.fold (fun p l -> CInt.Map.add (p+n) (lift_aliasing n l))
+     aliases.rel_aliases CInt.Map.empty
   in
   { aliases with rel_aliases }
 
 let get_alias_chain_of sigma aliases x = match x with
-  | RelAlias n -> (try Int.Map.find n aliases.rel_aliases with Not_found -> empty_aliasing)
+  | RelAlias n -> (try CInt.Map.find n aliases.rel_aliases with Not_found -> empty_aliasing)
   | VarAlias id -> (try Id.Map.find id aliases.var_aliases with Not_found -> empty_aliasing)
 
 let normalize_alias_opt_alias sigma aliases x =
@@ -404,15 +404,15 @@ let normalize_alias sigma aliases x =
   | None -> x
 
 let normalize_alias_var sigma var_aliases id =
-  let aliases = { var_aliases; rel_aliases = Int.Map.empty } in
+  let aliases = { var_aliases; rel_aliases = CInt.Map.empty } in
   match normalize_alias sigma aliases (VarAlias id) with
   | VarAlias id -> id
   | RelAlias _ -> assert false (** var only aliases to variables *)
 
 let extend_alias sigma decl { var_aliases; rel_aliases } =
   let rel_aliases =
-    Int.Map.fold (fun n l -> Int.Map.add (n+1) (lift_aliasing 1 l))
-      rel_aliases Int.Map.empty in
+    CInt.Map.fold (fun n l -> CInt.Map.add (n+1) (lift_aliasing 1 l))
+      rel_aliases CInt.Map.empty in
   let rel_aliases =
     match decl with
     | LocalDef(_,t,_) ->
@@ -420,13 +420,13 @@ let extend_alias sigma decl { var_aliases; rel_aliases } =
         | Var id' ->
             let aliases_of_binder =
               try Id.Map.find id' var_aliases with Not_found -> empty_aliasing in
-            Int.Map.add 1 (push_alias aliases_of_binder (VarAlias id')) rel_aliases
+            CInt.Map.add 1 (push_alias aliases_of_binder (VarAlias id')) rel_aliases
         | Rel p ->
             let aliases_of_binder =
-              try Int.Map.find (p+1) rel_aliases with Not_found -> empty_aliasing in
-            Int.Map.add 1 (push_alias aliases_of_binder (RelAlias (p+1))) rel_aliases
+              try CInt.Map.find (p+1) rel_aliases with Not_found -> empty_aliasing in
+            CInt.Map.add 1 (push_alias aliases_of_binder (RelAlias (p+1))) rel_aliases
         | _ ->
-            Int.Map.add 1 (make_aliasing (lift 1 t)) rel_aliases)
+            CInt.Map.add 1 (make_aliasing (lift 1 t)) rel_aliases)
     | LocalAssum _ -> rel_aliases in
   { var_aliases; rel_aliases }
 
@@ -456,15 +456,15 @@ let rec expand_vars_in_term_using sigma aliases t = match EConstr.kind sigma t w
 let expand_vars_in_term env sigma = expand_vars_in_term_using sigma (make_alias_map env sigma)
 
 let free_vars_and_rels_up_alias_expansion env sigma aliases c =
-  let acc1 = ref Int.Set.empty and acc2 = ref Id.Set.empty in
-  let acc3 = ref Int.Set.empty and acc4 = ref Id.Set.empty in
-  let cache_rel = ref Int.Set.empty and cache_var = ref Id.Set.empty in
+  let acc1 = ref CInt.Set.empty and acc2 = ref Id.Set.empty in
+  let acc3 = ref CInt.Set.empty and acc4 = ref Id.Set.empty in
+  let cache_rel = ref CInt.Set.empty and cache_var = ref Id.Set.empty in
   let is_in_cache depth = function
-    | RelAlias n -> Int.Set.mem (n-depth) !cache_rel
+    | RelAlias n -> CInt.Set.mem (n-depth) !cache_rel
     | VarAlias s -> Id.Set.mem s !cache_var
   in
   let put_in_cache depth = function
-    | RelAlias n -> cache_rel := Int.Set.add (n-depth) !cache_rel
+    | RelAlias n -> cache_rel := CInt.Set.add (n-depth) !cache_rel
     | VarAlias s -> cache_var := Id.Set.add s !cache_var
   in
   let rec frec (aliases,depth) c =
@@ -481,10 +481,10 @@ let free_vars_and_rels_up_alias_expansion env sigma aliases c =
       (if expanded then (* expansion, hence a let-in *)
         match ck with
         | VarAlias id -> acc4 := Id.Set.add id !acc4
-        | RelAlias n -> if n >= depth+1 then acc3 := Int.Set.add (n-depth) !acc3);
+        | RelAlias n -> if n >= depth+1 then acc3 := CInt.Set.add (n-depth) !acc3);
       match EConstr.kind sigma c' with
         | Var id -> acc2 := Id.Set.add id !acc2
-        | Rel n -> if n >= depth+1 then acc1 := Int.Set.add (n-depth) !acc1
+        | Rel n -> if n >= depth+1 then acc1 := CInt.Set.add (n-depth) !acc1
         | _ -> frec (aliases,depth) c end
     | Const _ | Ind _ | Construct _ ->
         acc2 := Id.Set.union (vars_of_global env (fst @@ EConstr.destRef sigma c)) !acc2
@@ -506,17 +506,17 @@ let expand_and_check_vars sigma aliases l =
   | None, a :: _ -> Some a
   | Some _, _ -> None
   in
-  Option.List.map map l
+  COption.List.map map l
 
 let alias_distinct l =
   let rec check (rels, vars) = function
   | [] -> true
   | RelAlias n :: l ->
-    not (Int.Set.mem n rels) && check (Int.Set.add n rels, vars) l
+    not (CInt.Set.mem n rels) && check (CInt.Set.add n rels, vars) l
   | VarAlias id :: l ->
     not (Id.Set.mem id vars) && check (rels, Id.Set.add id vars) l
   in
-  check (Int.Set.empty, Id.Set.empty) l
+  check (CInt.Set.empty, Id.Set.empty) l
 
 let get_actual_deps env evd aliases l t =
   if occur_meta_or_existential evd t then
@@ -527,7 +527,7 @@ let get_actual_deps env evd aliases l t =
     let (fv_rels,fv_ids,_,_) = free_vars_and_rels_up_alias_expansion env evd aliases t in
     List.filter (function
       | VarAlias id -> Id.Set.mem id fv_ids
-      | RelAlias n -> Int.Set.mem n fv_rels
+      | RelAlias n -> CInt.Set.mem n fv_rels
     ) l
 
 open Context.Named.Declaration
@@ -560,7 +560,7 @@ let is_unification_pattern_meta env evd nb m l t =
   | Rel n -> if n <= nb then Some (RelAlias n) else None
   | _ -> None
   in
-  match Option.List.map map l with
+  match COption.List.map map l with
   | Some l ->
     begin match find_unification_pattern_args env evd l t with
     | Some _ as x when not (occur_metavariable evd m t) -> x
@@ -570,10 +570,10 @@ let is_unification_pattern_meta env evd nb m l t =
     None
 
 let is_unification_pattern_evar env evd (evk,args) l t =
-  match Option.List.map (fun c -> to_alias evd c) l with
+  match COption.List.map (fun c -> to_alias evd c) l with
   | Some l when noccur_evar env evd evk t ->
     let args = remove_instance_local_defs evd evk args in
-    let args = Option.List.map (fun c -> to_alias evd c) args in
+    let args = COption.List.map (fun c -> to_alias evd c) args in
     begin match args with
     | None -> None
     | Some args ->
@@ -650,7 +650,7 @@ let make_projectable_subst aliases sigma evi args =
                   let l = try Constrmap.find (fst cstr) cstrs with Not_found -> [] in
                   Constrmap.add (fst cstr) ((args,id)::l) cstrs
               | _ -> cstrs in
-            let all = Int.Map.add i [a,normalize_alias_opt sigma aliases a,id] all in
+            let all = CInt.Map.add i [a,normalize_alias_opt sigma aliases a,id] all in
             (rest,all,cstrs,revmap)
         | LocalDef ({binder_name=id},c,_), a::rest ->
             let revmap = Id.Map.add id i revmap in
@@ -658,18 +658,18 @@ let make_projectable_subst aliases sigma evi args =
             | Var id' ->
                 let idc = normalize_alias_var sigma evar_aliases id' in
                 let ic, sub =
-                  try let ic = Id.Map.find idc revmap in ic, Int.Map.find ic all
+                  try let ic = Id.Map.find idc revmap in ic, CInt.Map.find ic all
                   with Not_found -> i, [] (* e.g. [idc] is a filtered variable: treat [id] as an assumption *) in
                 if List.exists (fun (c,_,_) -> EConstr.eq_constr sigma a c) sub then
                   (rest,all,cstrs,revmap)
                 else
-                  let all = Int.Map.add ic ((a,normalize_alias_opt sigma aliases a,id)::sub) all in
+                  let all = CInt.Map.add ic ((a,normalize_alias_opt sigma aliases a,id)::sub) all in
                   (rest,all,cstrs,revmap)
             | _ ->
-                let all = Int.Map.add i [a,normalize_alias_opt sigma aliases a,id] all in
+                let all = CInt.Map.add i [a,normalize_alias_opt sigma aliases a,id] all in
                 (rest,all,cstrs,revmap))
         | _ -> anomaly (Pp.str "Instance does not match its signature.")) 0
-      sign (Array.rev_to_list args,Int.Map.empty,Constrmap.empty,Id.Map.empty) in
+      sign (Array.rev_to_list args,CInt.Map.empty,Constrmap.empty,Id.Map.empty) in
   (full_subst,cstr_subst)
 
 (*------------------------------------*
@@ -875,7 +875,7 @@ let rec find_projectable_vars with_evars aliases sigma y subst =
         | _ -> anomaly (Pp.str "More than one non var in aliases class of evar instance.")
       else
         subst' in
-  let subst1,subst2 = Int.Map.fold is_projectable subst ([],[]) in
+  let subst1,subst2 = CInt.Map.fold is_projectable subst ([],[]) in
   (* We return the substitution with ProjectVar first (from most
      recent to oldest var), followed by ProjectEvar (from most recent
      to oldest var too) *)
@@ -1072,7 +1072,7 @@ let closure_of_filter evd evk = function
   in
   let newfilter = Filter.map_along test filter (evar_context evi) in
   (* Now ensure that restriction is at least what is was originally *)
-  let newfilter = Option.cata (Filter.map_along (&&) newfilter) newfilter (Filter.repr (evar_filter evi)) in
+  let newfilter = COption.cata (Filter.map_along (&&) newfilter) newfilter (Filter.repr (evar_filter evi)) in
   if Filter.equal newfilter (evar_filter evi) then None else Some newfilter
 
 (* The filter is assumed to be at least stronger than the original one *)
@@ -1184,7 +1184,7 @@ let restrict_candidates unify flags env evd filter1 (evk1,argsv1) (evk2,argsv2) 
         in
         let filtered = List.filter filter l2 in
         match filtered with [] -> false | _ -> true) l1 in
-      if Int.equal (List.length l1) (List.length l1') then NoUpdate
+      if CInt.equal (List.length l1) (List.length l1') then NoUpdate
       else UpdateWith l1'
 
 exception CannotProject of evar_map * EConstr.existential
@@ -1216,7 +1216,7 @@ let rec is_constrainable_in top env evd k (ev,(fv_rels,fv_ids) as g) t =
   | Prod (na,t1,t2) -> is_constrainable_in false env evd k g t1 && is_constrainable_in false env evd k g t2
   | Evar (ev',_) -> top || not (Evar.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
   | Var id -> Id.Set.mem id fv_ids
-  | Rel n -> n <= k || Int.Set.mem n fv_rels
+  | Rel n -> n <= k || CInt.Set.mem n fv_rels
   | Sort _ -> true
   | _ -> (* We don't try to be more clever *) true
 
@@ -1230,10 +1230,10 @@ let has_constrainable_free_vars env evd aliases force k ev (fv_rels,fv_ids,let_r
     (* which is the only reason to keep it when inverting arguments *)
       match t with
       | VarAlias id -> Id.Set.mem id let_ids
-      | RelAlias n -> Int.Set.mem n let_rels
+      | RelAlias n -> CInt.Set.mem n let_rels
     else begin match t with
     | VarAlias id -> Id.Set.mem id fv_ids
-    | RelAlias n -> n <= k || Int.Set.mem n fv_rels
+    | RelAlias n -> n <= k || CInt.Set.mem n fv_rels
     end
   | None ->
     (* t is an instance for a proper variable; we filter it along *)
@@ -1261,7 +1261,7 @@ let project_evar_on_evar force unify flags env evd aliases k2 pbty (evk1,argsv1 
       raise (EvarSolvedOnTheFly (evd,ev1)) in
   (* Only try pruning on variable substitutions, postpone otherwise. *)
   (* Rules out non-linear instances. *)
-  if Option.is_empty pbty && is_unification_pattern_pure_evar env evd ev2 (mkEvar ev1) then
+  if COption.is_empty pbty && is_unification_pattern_pure_evar env evd ev2 (mkEvar ev1) then
     try
       evd,mkEvar (evk1',invert_invertible_arg env evd aliases k2 ev2 args1)
     with NotEnoughInformationToInvert ->
@@ -1436,7 +1436,7 @@ let occur_evar_upto_types sigma n c =
          Array.iter occur_rec args
        else (
          seen := Evar.Set.add sp !seen;
-         Option.iter occur_rec (existential_opt_value0 sigma e);
+         COption.iter occur_rec (existential_opt_value0 sigma e);
          occur_rec (Evd.existential_type0 sigma e))
     | _ -> Constr.iter occur_rec c
   in

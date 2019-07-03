@@ -142,7 +142,7 @@ let get_target t ind =
   else
     match pi1 (find_class_type Evd.empty (EConstr.of_constr t)) with
     | CL_CONST p when Recordops.is_primitive_projection p ->
-      CL_PROJ (Option.get @@ Recordops.find_primitive_projection p)
+      CL_PROJ (COption.get @@ Recordops.find_primitive_projection p)
     | x -> x
       
 let strength_of_cl = function
@@ -234,7 +234,7 @@ let cache_coercion (_,c) =
   Classops.declare_coercion env sigma c
 
 let open_coercion i o =
-  if Int.equal i 1 then
+  if CInt.equal i 1 then
     cache_coercion o
 
 let discharge_coercion (_, c) =
@@ -248,7 +248,7 @@ let discharge_coercion (_, c) =
     in
     let nc = { c with
       coercion_params = n + c.coercion_params;
-      coercion_is_proj = Option.map Lib.discharge_proj_repr c.coercion_is_proj;
+      coercion_is_proj = COption.map Lib.discharge_proj_repr c.coercion_is_proj;
     } in
     Some nc
 
@@ -303,7 +303,7 @@ let add_new_coercion_core coef stre poly source target isid =
   if coercion_exists coef then raise (CoercionError AlreadyExists);
   let lp,tg = decompose_prod_assum t in
   let llp = List.length lp in
-  if Int.equal llp 0 then raise (CoercionError NotAFunction);
+  if CInt.equal llp 0 then raise (CoercionError NotAFunction);
   let (cls,ctx,lvs,ind) =
     try
       get_source lp source

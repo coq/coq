@@ -259,8 +259,8 @@ let tclDO n t =
   let rec dorec k =
     if k < 0 then user_err ~hdr:"Refiner.tclDO"
       (str"Wrong argument : Do needs a positive integer.");
-    if Int.equal k 0 then tclIDTAC
-    else if Int.equal k 1 then t else (tclTHEN t (dorec (k-1)))
+    if CInt.equal k 0 then tclIDTAC
+    else if CInt.equal k 1 then t else (tclTHEN t (dorec (k-1)))
   in
   dorec n
 

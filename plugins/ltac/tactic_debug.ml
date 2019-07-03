@@ -195,15 +195,15 @@ let debug_prompt lev tac f =
   (* What to print and to do next *)
   let newlevel =
     Proofview.tclLIFT !skip >= fun initial_skip ->
-    if Int.equal initial_skip 0 then
+    if CInt.equal initial_skip 0 then
       Proofview.tclLIFT !breakpoint >= fun breakpoint ->
-      if Option.is_empty breakpoint then Proofview.tclTHEN (goal_com tac) (Proofview.tclLIFT (prompt lev))
+      if COption.is_empty breakpoint then Proofview.tclTHEN (goal_com tac) (Proofview.tclLIFT (prompt lev))
       else Proofview.tclLIFT(runfalse >> return (DebugOn (lev+1)))
     else Proofview.tclLIFT begin
       (!skip >>= fun s -> skip:=s-1) >>
       runfalse >>
       !skip >>= fun new_skip ->
-      (if Int.equal new_skip 0 then skipped:=0 else return ()) >>
+      (if CInt.equal new_skip 0 then skipped:=0 else return ()) >>
       return (DebugOn (lev+1))
     end in
   newlevel >= fun newlevel ->
@@ -229,7 +229,7 @@ let is_debug db =
   | _, Some _ -> return false
   | _ ->
       !skip >>= fun skip ->
-      return (Int.equal skip 0)
+      return (CInt.equal skip 0)
 
 (* Prints a constr *)
 let db_constr debug env sigma c =
@@ -411,8 +411,8 @@ let extract_ltac_trace ?loc trace =
       (* trace is with innermost call coming first *)
       let rec aux best_loc = function
         | (loc,_)::tail ->
-           if Option.is_empty best_loc ||
-              not (Option.is_empty loc) && Loc.finer loc best_loc
+           if COption.is_empty best_loc ||
+              not (COption.is_empty loc) && Loc.finer loc best_loc
            then
              aux loc tail
            else

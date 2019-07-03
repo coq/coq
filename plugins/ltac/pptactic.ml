@@ -308,8 +308,8 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let get_opt : type l. l generic_argument -> l generic_argument option option =
   function (GenArg (wit, arg)) -> match wit with
-  | Rawwit (OptArg wit) -> Some (Option.map (in_gen (rawwit wit)) arg)
-  | Glbwit (OptArg wit) -> Some (Option.map (in_gen (glbwit wit)) arg)
+  | Rawwit (OptArg wit) -> Some (COption.map (in_gen (rawwit wit)) arg)
+  | Glbwit (OptArg wit) -> Some (COption.map (in_gen (glbwit wit)) arg)
   | _ -> None
 
   let rec pr_any_arg : type l. (_ -> l generic_argument -> Pp.t) -> _ -> l generic_argument -> Pp.t =
@@ -516,7 +516,7 @@ let string_of_genarg_arg (ArgumentType arg) =
     | FullInversionClear -> primitive "inversion_clear"
 
   let pr_range_selector (i, j) =
-    if Int.equal i j then int i
+    if CInt.equal i j then int i
     else int i ++ str "-" ++ int j
 
 let pr_goal_selector toplevel = let open Goal_select in function
@@ -719,7 +719,7 @@ let pr_goal_selector ~toplevel s =
             Id.Set.empty bll in
         let idarg,bll = set_nth_name names n bll in
         let annot =
-          if Int.equal (Id.Set.cardinal names) 1 then
+          if CInt.equal (Id.Set.cardinal names) 1 then
             mt ()
           else
             spc() ++ str"{"
@@ -1094,7 +1094,7 @@ let pr_goal_selector ~toplevel s =
 
   let strip_prod_binders_glob_constr n (ty,_) =
     let rec strip_ty acc n ty =
-      if Int.equal n 0 then (List.rev acc, (ty,None)) else
+      if CInt.equal n 0 then (List.rev acc, (ty,None)) else
         match DAst.get ty with
             Glob_term.GProd(na,Glob_term.Explicit,a,b) ->
               strip_ty (([CAst.make na],(a,None))::acc) (n-1) b
