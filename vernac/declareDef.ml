@@ -49,7 +49,7 @@ let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
   let gr = match scope with
   | Discharge ->
       let () =
-        declare_variable ~name ~kind:Decls.(IsDefinition kind) (Lib.cwd(), SectionLocalDef ce)
+        declare_variable ~name ~kind:Decls.(IsDefinition kind) (SectionLocalDef ce)
       in
       VarRef name
   | Global local ->

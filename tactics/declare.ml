@@ -308,11 +308,9 @@ let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind 
   kn, eff
 
 (** Declaration of section variables and local definitions *)
-type section_variable_entry =
+type variable_declaration =
   | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
   | SectionLocalAssum of { typ:Constr.types; univs:Univ.ContextSet.t; poly:bool; impl:bool }
-
-type variable_declaration = DirPath.t * section_variable_entry
 
 (* This object is only for things which iterate over objects to find
    variables (only Prettyp.print_context AFAICT) *)
@@ -320,7 +318,7 @@ let inVariable : unit -> obj =
   declare_object { (default_object "VARIABLE") with
     classify_function = (fun () -> Dispose)}
 
-let declare_variable ~name ~kind (path,d) =
+let declare_variable ~name ~kind d =
   (* Constr raisonne sur les noms courts *)
   if Decls.variable_exists name then
     raise (AlreadyDeclared (None, name));
@@ -359,7 +357,7 @@ let declare_variable ~name ~kind (path,d) =
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
   add_section_variable ~name ~kind:impl ~poly univs;
-  Decls.(add_variable_data name {path;opaque;kind});
+  Decls.(add_variable_data name {opaque;kind});
   add_anonymous_leaf (inVariable ());
   Impargs.declare_var_implicits name;
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)

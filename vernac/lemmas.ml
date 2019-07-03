@@ -266,7 +266,7 @@ let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i
           | Monomorphic_entry univs -> univs
         in
         let c = Declare.SectionLocalAssum {typ=t_i; univs; poly; impl} in
-        let () = Declare.declare_variable ~name ~kind (Lib.cwd(),c) in
+        let () = Declare.declare_variable ~name ~kind c in
         (VarRef name,impargs)
       | Global local ->
         let kind = Decls.(IsAssumption Conjectural) in
@@ -289,7 +289,7 @@ let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i
       | Discharge ->
         let const = Declare.definition_entry ~types:t_i ~opaque:opaq ~univs body_i in
         let c = Declare.SectionLocalDef const in
-        let () = Declare.declare_variable ~name ~kind (Lib.cwd(), c) in
+        let () = Declare.declare_variable ~name ~kind c in
         (VarRef name,impargs)
       | Global local ->
         let const = Declare.definition_entry ~types:t_i ~univs ~opaque:opaq body_i in
@@ -499,7 +499,7 @@ let finish_proved env sigma idopt po info =
       let r = match scope with
         | Discharge ->
           let c = Declare.SectionLocalDef const in
-          let () = Declare.declare_variable ~name ~kind (Lib.cwd(), c) in
+          let () = Declare.declare_variable ~name ~kind c in
           let () = if should_suggest
             then Proof_using.suggest_variable (Global.env ()) name
           in

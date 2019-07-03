@@ -60,11 +60,10 @@ type logical_kind =
 
 (** Registration and access to the table of variable *)
 
-type variable_data =
-  { path:DirPath.t
-  ; opaque:bool
-  ; kind:logical_kind
-  }
+type variable_data = {
+  opaque:bool;
+  kind:logical_kind;
+}
 
 val add_variable_data : variable -> variable_data -> unit
 

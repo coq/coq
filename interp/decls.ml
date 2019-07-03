@@ -59,20 +59,19 @@ type logical_kind =
 
 (** Data associated to section variables and local definitions *)
 
-type variable_data =
-  { path:DirPath.t
-  ; opaque:bool
-  ; kind:logical_kind
-  }
+type variable_data = {
+  opaque:bool;
+  kind:logical_kind;
+}
 
 let vartab =
-  Summary.ref (Id.Map.empty : variable_data Id.Map.t) ~name:"VARIABLE"
+  Summary.ref (Id.Map.empty : (variable_data*DirPath.t) Id.Map.t) ~name:"VARIABLE"
 
-let add_variable_data id o = vartab := Id.Map.add id o !vartab
+let add_variable_data id o = vartab := Id.Map.add id (o,Lib.cwd()) !vartab
 
-let variable_path id = let {path} = Id.Map.find id !vartab in path
-let variable_opacity id = let {opaque} = Id.Map.find id !vartab in opaque
-let variable_kind id = let {kind} = Id.Map.find id !vartab in kind
+let variable_path id = let _,path = Id.Map.find id !vartab in path
+let variable_opacity id = let {opaque},_ = Id.Map.find id !vartab in opaque
+let variable_kind id = let {kind},_ = Id.Map.find id !vartab in kind
 
 let variable_secpath id =
   let dir = drop_dirpath_prefix (Lib.library_dp()) (variable_path id) in
