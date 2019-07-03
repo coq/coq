@@ -148,7 +148,7 @@ module ConstrPriority = struct
     -(3*(num_symbols t) + size t)
 
   let compare (_,_,_,p1) (_,_,_,p2) =
-    Pervasives.compare p1 p2
+    pervasives_compare p1 p2
 end
 
 module PriorityQueue = Heap.Functional(ConstrPriority)

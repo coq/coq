@@ -26,7 +26,7 @@ module AdaptorDb = struct
 
   module AdaptorKind = struct
     type t = kind
-    let compare = Pervasives.compare
+    let compare = pervasives_compare
   end
   module AdaptorMap = Map.Make(AdaptorKind)
 

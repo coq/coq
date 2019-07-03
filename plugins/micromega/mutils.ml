@@ -21,7 +21,7 @@
 
 module Int = struct
   type t = int
-  let compare : int -> int -> int = Pervasives.compare
+  let compare : int -> int -> int = compare
   let equal  : int -> int -> bool = (=)
 end
 
@@ -354,7 +354,7 @@ struct
 
   let from i = i
   let next i = i + 1
-  let max : int -> int -> int = Pervasives.max
+  let max : int -> int -> int = max
   let pp o i = output_string o (string_of_int i)
   let compare : int -> int -> int = Int.compare
   let to_int x = x

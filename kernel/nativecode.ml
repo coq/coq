@@ -145,7 +145,7 @@ let dummy_symb = SymbValue (dummy_value ())
 
 let eq_symbol sy1 sy2 =
   match sy1, sy2 with
-  | SymbValue v1, SymbValue v2 -> Pervasives.(=) v1 v2 (** FIXME: how is this even valid? *)
+  | SymbValue v1, SymbValue v2 -> (=) v1 v2 (** FIXME: how is this even valid? *)
   | SymbSort s1, SymbSort s2 -> Sorts.equal s1 s2
   | SymbName n1, SymbName n2 -> Name.equal n1 n2
   | SymbConst kn1, SymbConst kn2 -> Constant.equal kn1 kn2

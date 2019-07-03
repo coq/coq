@@ -1,0 +1,5 @@
+- Coq now officially supports OCaml 4.08.
+
+  see INSTALL files for details
+  (`#10471 <https://github.com/coq/coq/pull/10471>`_,
+  by Emilio Jesús Gallego Arias).

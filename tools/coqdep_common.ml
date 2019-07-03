@@ -357,7 +357,7 @@ let canonize f =
 
 module VData = struct
   type t = string list option * string list
-  let compare = Pervasives.compare
+  let compare = compare
 end
 
 module VCache = Set.Make(VData)

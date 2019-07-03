@@ -500,7 +500,7 @@ let context sigma operation path (t : constr) =
       | (p, Fix ((_,n as ln),(tys,lna,v))) ->
 	  let l = Array.length v in
 	  let v' = Array.copy v in
-          v'.(n)<- loop (Pervasives.(+) i l) p v.(n); (mkFix (ln,(tys,lna,v')))
+          v'.(n)<- loop (Util.(+) i l) p v.(n); (mkFix (ln,(tys,lna,v')))
       | ((P_TYPE :: p), Prod (n,t,c)) ->
           (mkProd (n,loop i p t,c))
       | ((P_TYPE :: p), Lambda (n,t,c)) ->
@@ -684,7 +684,7 @@ let simpl_coeffs path_init path_k =
           | _ -> assert false)
       | _ -> assert false
   in
-  let n = Pervasives.(-) (List.length path_k) (List.length path_init) in
+  let n = Util.(-) (List.length path_k) (List.length path_init) in
   let newc = context sigma (fun _ t -> loop n t) (List.rev path_init) (pf_concl gl)
   in
   convert_concl ~check:false newc DEFAULTcast
@@ -1000,7 +1000,7 @@ let shrink_pair p f1 f2 =
     | t1,t2 ->
 	begin
 	  oprint t1; print_newline (); oprint t2; print_newline ();
-	  flush Pervasives.stdout; CErrors.user_err Pp.(str "shrink.1")
+          flush stdout; CErrors.user_err Pp.(str "shrink.1")
 	end
 
 let reduce_factor p = function

@@ -66,7 +66,7 @@ module LibraryOrdered =
   struct
     type t = DirPath.t
     let compare d1 d2 =
-      Pervasives.compare
+      compare
         (List.rev (DirPath.repr d1)) (List.rev (DirPath.repr d2))
   end
 
@@ -377,7 +377,7 @@ let intern_from_file ~intern_mode (dir, f) =
 let get_deps (dir, f) =
   try LibraryMap.find dir !depgraph
   with Not_found ->
-    let _ = intern_from_file (dir,f) in
+    let _ = intern_from_file ~intern_mode:Dep (dir,f) in
     LibraryMap.find dir !depgraph
 
 (* Read a compiled library and all dependencies, in reverse order.
