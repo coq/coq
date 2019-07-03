@@ -313,23 +313,22 @@ let instance_hook info global imps ?hook cst =
   declare_instance env sigma (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant info global imps ?hook id decl poly sigma term termtype =
+let declare_instance_constant info global imps ?hook name decl poly sigma term termtype =
   (* XXX: Duplication of the declare_constant path *)
-  let kind = IsDefinition Instance in
   let sigma =
     let levels = Univ.LSet.union (CVars.universes_of_constr termtype)
                                  (CVars.universes_of_constr term) in
     Evd.restrict_universe_context sigma levels
   in
   let uctx = Evd.check_univ_decl ~poly sigma decl in
+  let kind = Decls.(IsDefinition Instance) in
   let entry = Declare.definition_entry ~types:termtype ~univs:uctx term in
-  let cdecl = (Declare.DefinitionEntry entry, kind) in
-  let kn = Declare.declare_constant id cdecl in
-  Declare.definition_message id;
+  let kn = Declare.declare_constant ~name ~kind (Declare.DefinitionEntry entry) in
+  Declare.definition_message name;
   Declare.declare_univ_binders (ConstRef kn) (Evd.universe_binders sigma);
   instance_hook info global imps ?hook (ConstRef kn)
 
-let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst id =
+let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst name =
   let subst = List.fold_left2
       (fun subst' s decl -> if is_local_assum decl then s :: subst' else subst')
       [] subst (snd k.cl_context)
@@ -337,8 +336,8 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst id 
   let (_, ty_constr) = instance_constructor (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
   let sigma, entry = DeclareDef.prepare_parameter ~allow_evars:false ~poly sigma decl termtype in
-  let cst = Declare.declare_constant id
-      (Declare.ParameterEntry entry, Decl_kinds.IsAssumption Decl_kinds.Logical) in
+  let cst = Declare.declare_constant ~name
+      ~kind:Decls.(IsAssumption Logical) (Declare.ParameterEntry entry) in
   Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
   instance_hook pri global imps (ConstRef cst)
 
@@ -363,7 +362,7 @@ let declare_instance_program env sigma ~global ~poly id pri imps decl term termt
   let hook = DeclareDef.Hook.make hook in
   let ctx = Evd.evar_universe_context sigma in
   ignore(Obligations.add_definition ~name:id ?term:constr
-           ~univdecl:decl ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior) ~poly ~kind:Instance ~hook typ ctx obls)
+           ~univdecl:decl ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior) ~poly ~kind:Decls.Instance ~hook typ ctx obls)
 
 let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids term termtype =
   (* spiwack: it is hard to reorder the actions to do
@@ -373,7 +372,7 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids t
   let gls = List.rev (Evd.future_goals sigma) in
   let sigma = Evd.reset_future_goals sigma in
   let scope = DeclareDef.Global Declare.ImportDefaultBehavior in
-  let kind = Decl_kinds.DefinitionBody Decl_kinds.Instance in
+  let kind = Decls.(IsDefinition Instance) in
   let hook = DeclareDef.Hook.(make (fun { S.dref ; _ } -> instance_hook pri global imps ?hook dref)) in
   let info = Lemmas.Info.make ~hook ~scope ~kind () in
   let lemma = Lemmas.start_lemma ~name:id ~poly ~udecl ~info sigma (EConstr.of_constr termtype) in

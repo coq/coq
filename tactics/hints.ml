@@ -1315,12 +1315,16 @@ let project_hint ~poly pri l2r r =
   let c = Reductionops.whd_beta sigma (mkApp (c, Context.Rel.to_extended_vect mkRel 0 sign)) in
   let c = it_mkLambda_or_LetIn
     (mkApp (p,[|mkArrow a Sorts.Relevant (lift 1 b);mkArrow b Sorts.Relevant (lift 1 a);c|])) sign in
-  let id =
+  let name =
     Nameops.add_suffix (Nametab.basename_of_global gr) ("_proj_" ^ (if l2r then "l2r" else "r2l"))
   in
   let ctx = Evd.univ_entry ~poly sigma in
   let c = EConstr.to_constr sigma c in
-  let c = Declare.declare_definition id (c,ctx) in
+  let cb = Declare.(DefinitionEntry (definition_entry ~univs:ctx ~opaque:false c)) in
+  let c = Declare.declare_constant
+      ~local:Declare.ImportDefaultBehavior
+      ~name ~kind:Decls.(IsDefinition Definition) cb
+  in
   let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
     (info,false,true,PathAny, IsGlobRef (Globnames.ConstRef c))
 

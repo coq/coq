@@ -30,7 +30,6 @@ open Tacmach
 open Tactics
 open Nametab
 open Declare
-open Decl_kinds
 open Tacred
 open Goal
 open Glob_term
@@ -66,9 +65,9 @@ let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
   locate (make_qualid dp (Id.of_string s))
 
-let declare_fun f_id kind ?univs value =
+let declare_fun name kind ?univs value =
   let ce = definition_entry ?univs value (*FIXME *) in
-    ConstRef(declare_constant f_id (DefinitionEntry ce, kind));;
+  ConstRef(declare_constant ~name ~kind (DefinitionEntry ce))
 
 let defined lemma =
   Lemmas.save_lemma_proved ~lemma ~opaque:Proof_global.Transparent ~idopt:None
@@ -196,7 +195,7 @@ let (value_f: Constr.t list -> GlobRef.t -> Constr.t) =
     let body = EConstr.Unsafe.to_constr body in
     it_mkLambda_or_LetIn body context
 
-let (declare_f : Id.t -> logical_kind -> Constr.t list -> GlobRef.t -> GlobRef.t) =
+let (declare_f : Id.t -> Decls.logical_kind -> Constr.t list -> GlobRef.t -> GlobRef.t) =
   fun f_id kind input_type fterm_ref ->
     declare_fun f_id kind (value_f input_type fterm_ref);;
 
@@ -1368,7 +1367,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name (gls_type
     Lemmas.save_lemma_proved ~lemma ~opaque:opacity ~idopt:None
   in
   let info = Lemmas.Info.make ~hook:(DeclareDef.Hook.make hook)
-      ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior) ~kind:(Decl_kinds.Proof Decl_kinds.Lemma)
+      ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior) ~kind:(Decls.(IsProof Lemma))
       () in
   let lemma = Lemmas.start_lemma
       ~name:na
@@ -1411,7 +1410,7 @@ let com_terminate
     nb_args ctx
     hook =
   let start_proof env ctx (tac_start:tactic) (tac_end:tactic) =
-    let info = Lemmas.Info.make ~hook ~scope:(DeclareDef.Global ImportDefaultBehavior) ~kind:(Proof Lemma) () in
+    let info = Lemmas.Info.make ~hook ~scope:(DeclareDef.Global ImportDefaultBehavior) ~kind:Decls.(IsProof Lemma) () in
     let lemma = Lemmas.start_lemma ~name:thm_name
         ~poly:false (*FIXME*)
         ~sign:(Environ.named_context_val env)
@@ -1535,7 +1534,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls type
   let term_id = add_suffix function_name "_terminate" in
   let functional_ref =
     let univs = Evd.univ_entry ~poly:false evd in
-    declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~univs res
+    declare_fun functional_id Decls.(IsDefinition Definition) ~univs res
   in
   (* Refresh the global universes, now including those of _F *)
   let evd = Evd.from_env (Global.env ()) in
@@ -1549,7 +1548,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls type
   (* let _ = Pp.msgnl (fun _ _ -> str "relation := " ++ Printer.pr_lconstr_env env_with_pre_rec_args relation) in *)
   let hook { DeclareDef.Hook.S.uctx ; _ } =
     let term_ref = Nametab.locate (qualid_of_ident term_id) in
-    let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
+    let f_ref = declare_f function_name Decls.(IsProof Lemma) arg_types term_ref in
     let _ = Extraction_plugin.Table.extraction_inline true [qualid_of_ident term_id] in
     (*     message "start second proof"; *)
     let stop =

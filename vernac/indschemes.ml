@@ -24,7 +24,6 @@ open Declarations
 open Term
 open Constr
 open Inductive
-open Decl_kinds
 open Indrec
 open Declare
 open Libnames
@@ -100,11 +99,11 @@ let () =
 
 (* Util *)
 
-let define ~poly id sigma c t =
-  let f = declare_constant in
+let define ~poly name sigma c t =
+  let f = declare_constant ~kind:Decls.(IsDefinition Scheme) in
   let univs = Evd.univ_entry ~poly sigma in
   let open Proof_global in
-  let kn = f id
+  let kn = f ~name
     (DefinitionEntry
       { proof_entry_body = c;
         proof_entry_secctx = None;
@@ -113,9 +112,8 @@ let define ~poly id sigma c t =
         proof_entry_opaque = false;
         proof_entry_inline_code = false;
         proof_entry_feedback = None;
-      },
-      Decl_kinds.IsDefinition Scheme) in
-  definition_message id;
+      }) in
+  definition_message name;
   kn
 
 (* Boolean equality *)
@@ -161,8 +159,9 @@ let try_declare_scheme what f internal names kn =
     | UndefinedCst s ->
 	alarm what internal
 	  (strbrk "Required constant " ++ str s ++ str " undefined.")
-    | AlreadyDeclared msg ->
-        alarm what internal (msg ++ str ".")
+    | AlreadyDeclared (kind, id) as exn ->
+      let msg = CErrors.print exn in
+      alarm what internal msg
     | DecidabilityMutualNotSupported ->
         alarm what internal
           (str "Decidability lemma for mutual inductive types not supported.")

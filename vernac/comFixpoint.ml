@@ -20,7 +20,6 @@ open Names
 open Constrexpr
 open Constrexpr_ops
 open Constrintern
-open Decl_kinds
 open Pretyping
 open Evarutil
 open Evarconv
@@ -257,8 +256,8 @@ let interp_fixpoint ~cofix l ntns =
 
 let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs,fixdefs,fixtypes),udecl,ctx,fiximps) ntns =
   let fix_kind, cofix, indexes = match indexes with
-    | Some indexes -> Fixpoint, false, indexes
-    | None -> CoFixpoint, true, []
+    | Some indexes -> Decls.Fixpoint, false, indexes
+    | None -> Decls.CoFixpoint, true, []
   in
   let thms =
     List.map3 (fun name t (ctx,impargs,_) ->
@@ -269,7 +268,7 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs
     Some (List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC) fixdefs) in
   let evd = Evd.from_ctx ctx in
   let lemma =
-    Lemmas.start_lemma_with_initialization ~poly ~scope ~kind:(DefinitionBody fix_kind) ~udecl
+    Lemmas.start_lemma_with_initialization ~poly ~scope ~kind:(Decls.IsDefinition fix_kind) ~udecl
       evd (Some(cofix,indexes,init_tac)) thms None in
   (* Declare notations *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
@@ -278,8 +277,8 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs
 let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
   let indexes, cofix, fix_kind =
     match indexes with
-    | Some indexes -> indexes, false, Fixpoint
-    | None -> [], true, CoFixpoint
+    | Some indexes -> indexes, false, Decls.Fixpoint
+    | None -> [], true, Decls.CoFixpoint
   in
   (* We shortcut the proof process *)
   let fixdefs = List.map Option.get fixdefs in

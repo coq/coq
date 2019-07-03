@@ -22,7 +22,6 @@ open Declarations
 open Constr
 open CErrors
 open Util
-open Decl_kinds
 open Pp
 
 (**********************************************************************)
@@ -136,7 +135,7 @@ let define internal role id c poly univs =
     proof_entry_inline_code = false;
     proof_entry_feedback = None;
   } in
-  let kn, eff = Declare.declare_private_constant ~role id (Declare.DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
+  let kn, eff = Declare.declare_private_constant ~role ~kind:Decls.(IsDefinition Scheme) ~name:id (Declare.DefinitionEntry entry) in
   let () = match internal with
     | InternalTacticRequest -> ()
     | _-> Declare.definition_message id

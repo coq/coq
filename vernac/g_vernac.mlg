@@ -20,7 +20,7 @@ open Impargs
 open Constrexpr
 open Constrexpr_ops
 open Extend
-open Decl_kinds
+open Decls
 open Declaremods
 open Declarations
 open Namegen

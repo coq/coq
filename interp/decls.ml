@@ -12,18 +12,60 @@
      associated declarations *)
 
 open Names
-open Decl_kinds
 open Libnames
 
-(** Datas associated to section variables and local definitions *)
+type theorem_kind =
+  | Theorem
+  | Lemma
+  | Fact
+  | Remark
+  | Property
+  | Proposition
+  | Corollary
 
-type variable_data = {
-  path:DirPath.t;
-  opaque:bool;
-  univs:Univ.ContextSet.t;
-  poly:bool;
-  kind:logical_kind;
-}
+type definition_object_kind =
+  | Definition
+  | Coercion
+  | SubClass
+  | CanonicalStructure
+  | Example
+  | Fixpoint
+  | CoFixpoint
+  | Scheme
+  | StructureComponent
+  | IdentityCoercion
+  | Instance
+  | Method
+  | Let
+
+type assumption_object_kind = Definitional | Logical | Conjectural | Context
+
+(* [assumption_kind]
+
+                |  Local      | Global
+   ------------------------------------
+   Definitional |  Variable   | Parameter
+   Logical      |  Hypothesis | Axiom
+
+*)
+
+(** Kinds *)
+
+type logical_kind =
+  | IsPrimitive
+  | IsAssumption of assumption_object_kind
+  | IsDefinition of definition_object_kind
+  | IsProof of theorem_kind
+
+(** Data associated to section variables and local definitions *)
+
+type variable_data =
+  { path:DirPath.t
+  ; opaque:bool
+  ; univs:Univ.ContextSet.t
+  ; poly:bool
+  ; kind:logical_kind
+  }
 
 let vartab =
   Summary.ref (Id.Map.empty : variable_data Id.Map.t) ~name:"VARIABLE"
@@ -41,11 +83,3 @@ let variable_secpath id =
   make_qualid dir id
 
 let variable_exists id = Id.Map.mem id !vartab
-
-(** Datas associated to global parameters and constants *)
-
-let csttab = Summary.ref (Cmap.empty : logical_kind Cmap.t) ~name:"CONSTANT"
-
-let add_constant_kind kn k = csttab := Cmap.add kn k !csttab
-
-let constant_kind kn = Cmap.find kn !csttab

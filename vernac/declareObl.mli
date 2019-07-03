@@ -44,7 +44,7 @@ type program_info =
   ; prg_notations : notations
   ; prg_poly : bool
   ; prg_scope : DeclareDef.locality
-  ; prg_kind : Decl_kinds.definition_object_kind
+  ; prg_kind : Decls.definition_object_kind
   ; prg_reduce : constr -> constr
   ; prg_hook : DeclareDef.Hook.t option
   ; prg_opaque : bool

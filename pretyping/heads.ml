@@ -41,8 +41,7 @@ let rec compute_head env = function
      | Some c -> kind_of_head env c)
   | EvalVarRef id ->
     (match lookup_named id env with
-     | LocalDef (_,c,_) when not (Decls.variable_opacity id) ->
-       kind_of_head env c
+     | LocalDef (_,c,_) -> kind_of_head env c
      | _ -> RigidHead RigidOther)
 
 and kind_of_head env t =

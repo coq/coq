@@ -27,7 +27,6 @@ open Tacmach.New
 open Clenv
 open Tacticals.New
 open Tactics
-open Decl_kinds
 open Context.Named.Declaration
 
 module NamedDecl = Context.Named.Declaration
@@ -236,7 +235,7 @@ let add_inversion_lemma ~poly name env sigma t sort dep inv_op =
   let invProof, sigma = inversion_scheme ~name ~poly env sigma t sort dep inv_op in
   let univs = Evd.univ_entry ~poly sigma in
   let entry = Declare.definition_entry ~univs invProof in
-  let _ = Declare.declare_constant name (Declare.DefinitionEntry entry, IsProof Lemma) in
+  let _ : Names.Constant.t = Declare.declare_constant ~name ~kind:Decls.(IsProof Lemma) (Declare.DefinitionEntry entry) in
   ()
 
 (* inv_op = Inv (derives de complete inv. lemma)

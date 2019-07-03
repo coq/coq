@@ -22,7 +22,7 @@ type projection_flags = {
 val declare_projections :
   inductive ->
   Entries.universes_entry ->
-  ?kind:Decl_kinds.definition_object_kind ->
+  ?kind:Decls.definition_object_kind ->
   Id.t ->
   projection_flags list ->
   Impargs.manual_implicits list ->
@@ -35,7 +35,7 @@ val definition_structure
   :  universe_decl_expr option
   -> inductive_kind
   -> template:bool option
-  -> Decl_kinds.cumulative_inductive_flag
+  -> cumulative:bool
   -> poly:bool
   -> Declarations.recursivity_kind
   -> (coercion_flag *

@@ -10,6 +10,7 @@ Notation
 Syntax_def
 Smartlocate
 Constrexpr_ops
+Decls
 Dumpglob
 Reserve
 Impargs

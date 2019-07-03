@@ -11,7 +11,6 @@
 open Names
 open Vernacexpr
 open Constrexpr
-open Decl_kinds
 
 (** {6 Parameters/Assumptions} *)
 
@@ -19,7 +18,7 @@ val do_assumptions
   :  program_mode:bool
   -> poly:bool
   -> scope:DeclareDef.locality
-  -> kind:assumption_object_kind
+  -> kind:Decls.assumption_object_kind
   -> Declaremods.inline
   -> (ident_decl list * constr_expr) with_coercion list
   -> bool
@@ -30,7 +29,7 @@ val declare_assumption
   : coercion_flag
   -> poly:bool
   -> scope:DeclareDef.locality
-  -> kind:assumption_object_kind
+  -> kind:Decls.assumption_object_kind
   -> Constr.types
   -> Entries.universes_entry
   -> UnivNames.universe_binders

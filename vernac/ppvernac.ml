@@ -16,7 +16,6 @@ open Util
 open CAst
 
 open Extend
-open Decl_kinds
 open Constrexpr
 open Constrexpr_ops
 open Vernacexpr
@@ -348,18 +347,18 @@ open Pputils
 
   let pr_assumption_token many discharge kind =
     match discharge, kind with
-      | (NoDischarge,Logical) ->
+      | (NoDischarge,Decls.Logical) ->
         keyword (if many then "Axioms" else "Axiom")
-      | (NoDischarge,Definitional) ->
+      | (NoDischarge,Decls.Definitional) ->
         keyword (if many then "Parameters" else "Parameter")
-      | (NoDischarge,Conjectural) -> str"Conjecture"
-      | (DoDischarge,Logical) ->
+      | (NoDischarge,Decls.Conjectural) -> str"Conjecture"
+      | (DoDischarge,Decls.Logical) ->
         keyword (if many then "Hypotheses" else "Hypothesis")
-      | (DoDischarge,Definitional) ->
+      | (DoDischarge,Decls.Definitional) ->
         keyword (if many then "Variables" else "Variable")
-      | (DoDischarge,Conjectural) ->
+      | (DoDischarge,Decls.Conjectural) ->
         anomaly (Pp.str "Don't know how to beautify a local conjecture.")
-      | (_,Context) ->
+      | (_,Decls.Context) ->
         anomaly (Pp.str "Context is used only internally.")
 
   let pr_params pr_c (xl,(c,t)) =
@@ -388,7 +387,16 @@ open Pputils
   prlist_with_sep pr_semicolon (pr_params pr_c)
 *)
 
-  let pr_thm_token k = keyword (Kindops.string_of_theorem_kind k)
+let string_of_theorem_kind = let open Decls in function
+  | Theorem -> "Theorem"
+  | Lemma -> "Lemma"
+  | Fact -> "Fact"
+  | Remark -> "Remark"
+  | Property -> "Property"
+  | Proposition -> "Proposition"
+  | Corollary -> "Corollary"
+
+  let pr_thm_token k = keyword (string_of_theorem_kind k)
 
   let pr_syntax_modifier = let open Gramlib.Gramext in function
     | SetItemLevel (l,bko,n) ->
@@ -588,6 +596,18 @@ open Pputils
     with Not_found ->
       hov 1 (str "TODO(" ++ str (fst s) ++ spc () ++ prlist_with_sep sep pr_arg cl ++ str ")")
 
+
+let string_of_definition_object_kind = let open Decls in function
+  | Definition -> "Definition"
+  | Example -> "Example"
+  | Coercion -> "Coercion"
+  | SubClass -> "SubClass"
+  | CanonicalStructure -> "Canonical Structure"
+  | Instance -> "Instance"
+  | Let -> "Let"
+  | (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Method) ->
+    CErrors.anomaly (Pp.str "Internal definition kind.")
+
   let pr_vernac_expr v =
     let return = tag_vernac v in
     let env = Global.env () in
@@ -719,7 +739,7 @@ open Pputils
           keyword (
             if Name.is_anonymous (fst id).v
             then "Goal"
-            else Kindops.string_of_definition_object_kind dk)
+            else string_of_definition_object_kind dk)
         in
         let pr_reduce = function
           | None -> mt()
