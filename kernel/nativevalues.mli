@@ -56,6 +56,22 @@ type atom =
   | Aevar of Evar.t * t array (* arguments *)
   | Aproj of (inductive * int) * accumulator
 
+type symbol =
+  | SymbValue of t
+  | SymbSort of Sorts.t
+  | SymbName of Name.t
+  | SymbConst of Constant.t
+  | SymbMatch of annot_sw
+  | SymbInd of inductive
+  | SymbMeta of metavariable
+  | SymbEvar of Evar.t
+  | SymbLevel of Univ.Level.t
+  | SymbProj of (inductive * int)
+
+type symbols = symbol array
+
+val empty_symbols : symbols
+
 (* Constructors *)
 
 val mk_accu : atom -> t

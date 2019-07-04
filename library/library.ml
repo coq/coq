@@ -173,7 +173,7 @@ let register_loaded_library m =
     let f = prefix ^ "cmo" in
     let f = Dynlink.adapt_filename f in
     if Coq_config.native_compiler then
-      Nativelib.link_library ~prefix ~dirname ~basename:f
+      Nativelib.link_library (Global.env()) ~prefix ~dirname ~basename:f
   in
   let rec aux = function
     | [] -> link (); [libname]

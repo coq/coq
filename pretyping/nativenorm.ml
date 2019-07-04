@@ -499,7 +499,7 @@ let native_norm env sigma c ty =
     if !Flags.debug then Feedback.msg_debug (Pp.str "Running norm ...");
     let profiler_pid = if profile then start_profiler () else None in
     let t0 = Sys.time () in
-    Nativelib.call_linker ~fatal:true prefix fn (Some upd);
+    Nativelib.call_linker ~fatal:true env ~prefix fn (Some upd);
     let t1 = Sys.time () in
     if profile then stop_profiler profiler_pid;
     let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in

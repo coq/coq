@@ -113,8 +113,6 @@ type library_info = DirPath.t * vodigest
 (** Functor and funsig parameters, most recent first *)
 type module_parameters = (MBId.t * module_type_body) list
 
-module DPMap = Map.Make(DirPath)
-
 type safe_environment =
   { env : Environ.env;
     modpath : ModPath.t;
@@ -127,10 +125,10 @@ type safe_environment =
     univ : Univ.ContextSet.t;
     future_cst : Univ.ContextSet.t Future.computation list;
     engagement : engagement option;
-    required : vodigest DPMap.t;
+    required : vodigest DPmap.t;
     loads : (ModPath.t * module_body) list;
     local_retroknowledge : Retroknowledge.action list;
-    native_symbols : Nativecode.symbols DPMap.t }
+}
 
 and modvariant =
   | NONE
@@ -156,10 +154,10 @@ let empty_environment =
     future_cst = [];
     univ = Univ.ContextSet.empty;
     engagement = None;
-    required = DPMap.empty;
+    required = DPmap.empty;
     loads = [];
     local_retroknowledge = [];
-    native_symbols = DPMap.empty }
+}
 
 let is_initial senv =
   match senv.revstruct, senv.modvariant with
@@ -396,7 +394,7 @@ let check_initial senv = assert (is_initial senv)
 let check_required current_libs needed =
   let check (id,required) =
     try
-      let actual = DPMap.find id current_libs in
+      let actual = DPmap.find id current_libs in
       if not(digest_match ~actual ~required) then
         CErrors.user_err Pp.(pr_sequence str
           ["Inconsistent assumptions over module"; DirPath.to_string id; "."])
@@ -987,8 +985,8 @@ let propagate_senv newdef newenv newresolver senv oldsenv =
     required = senv.required;
     loads = senv.loads@oldsenv.loads;
     local_retroknowledge =
-            senv.local_retroknowledge@oldsenv.local_retroknowledge;
-    native_symbols = senv.native_symbols}
+      senv.local_retroknowledge@oldsenv.local_retroknowledge;
+  }
 
 let end_module l restype senv =
   let mp = senv.modpath in
@@ -998,6 +996,7 @@ let end_module l restype senv =
   let mbids = List.rev_map fst params in
   let mb = build_module_body params restype senv in
   let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
+  let newenv = Environ.set_native_symbols newenv senv.env.Environ.native_symbols in
   let newenv = set_engagement_opt newenv senv.engagement in
   let senv'=
     propagate_loads { senv with
@@ -1028,6 +1027,7 @@ let end_modtype l senv =
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
   let newenv = Environ.set_opaque_tables oldsenv.env (Environ.opaque_tables senv.env) in
+  let newenv = Environ.set_native_symbols newenv senv.env.Environ.native_symbols in
   let newenv = Environ.push_context_set ~strict:true senv.univ newenv in
   let newenv = set_engagement_opt newenv senv.engagement in
   let senv' = propagate_loads {senv with env=newenv} in
@@ -1091,18 +1091,12 @@ type compiled_library = {
   comp_mod : module_body;
   comp_deps : library_info array;
   comp_enga : engagement;
-  comp_natsymbs : Nativecode.symbols
+  comp_natsymbs : Nativevalues.symbols
 }
 
 let module_of_library lib = lib.comp_mod
 
 type native_library = Nativecode.global list
-
-let get_library_native_symbols senv dir =
-  try DPMap.find dir senv.native_symbols
-  with Not_found -> CErrors.user_err ~hdr:"get_library_native_symbols"
-                      Pp.((str "Linker error in the native compiler. Are you using Require inside a nested Module declaration?") ++ fnl () ++
-                          (str "This use case is not supported, but disabling the native compiler may help."))
 
 (** FIXME: MS: remove?*)
 let current_modpath senv = senv.modpath
@@ -1143,12 +1137,12 @@ let export ?except ~output_native_objects senv dir =
   let ast, symbols =
     if output_native_objects then
       Nativelibrary.dump_library mp dir senv.env str
-    else [], Nativecode.empty_symbols
+    else [], Nativevalues.empty_symbols
   in
   let lib = {
     comp_name = dir;
     comp_mod = mb;
-    comp_deps = Array.of_list (DPMap.bindings senv.required);
+    comp_deps = Array.of_list (DPmap.bindings senv.required);
     comp_enga = Environ.engagement senv.env;
     comp_natsymbs = symbols }
   in
@@ -1168,17 +1162,18 @@ let import lib cst vodigest senv =
 				     (Univ.ContextSet.union mb.mod_constraints cst)
 				     senv.env
   in
+  let env =
+    let linkinfo = Nativecode.link_info_of_dirpath lib.comp_name in
+    Modops.add_linked_module mb linkinfo env
+  in
+  let env = Environ.add_native_symbols lib.comp_name lib.comp_natsymbs env in
   mp,
   { senv with
-    env =
-      (let linkinfo =
-	 Nativecode.link_info_of_dirpath lib.comp_name
-       in
-       Modops.add_linked_module mb linkinfo env);
+    env;
     modresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.modresolver;
-    required = DPMap.add lib.comp_name vodigest senv.required;
+    required = DPmap.add lib.comp_name vodigest senv.required;
     loads = (mp,mb)::senv.loads;
-    native_symbols = DPMap.add lib.comp_name lib.comp_natsymbs senv.native_symbols }
+  }
 
 (** {6 Safe typing } *)
 

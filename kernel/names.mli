@@ -161,6 +161,9 @@ sig
   val print : t -> Pp.t
 end
 
+module DPset : Set.S with type elt = DirPath.t
+module DPmap : Map.ExtS with type key = DirPath.t and module Set := DPset
+
 (** {6 Names of structure elements } *)
 
 module Label :

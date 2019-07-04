@@ -30,10 +30,23 @@ val compile : string -> global list -> profile:bool -> string
    but will perform some extra tweaks to handle [code] as a Coq lib. *)
 val compile_library : Names.DirPath.t -> global list -> string -> unit
 
-val call_linker :
-  ?fatal:bool -> string -> string -> code_location_updates option -> unit
+val call_linker
+  : ?fatal:bool
+  -> Environ.env
+  -> prefix:string
+  -> string
+  -> code_location_updates option
+  -> unit
 
-val link_library : prefix:string -> dirname:string -> basename:string -> unit
+val link_library
+  : Environ.env
+  -> prefix:string
+  -> dirname:string
+  -> basename:string
+  -> unit
 
 val rt1 : Nativevalues.t ref
 val rt2 : Nativevalues.t ref
+
+val get_library_native_symbols : Names.DirPath.t -> Nativevalues.symbols
+(** Strictly for usage by code produced by native compute. *)
