@@ -2,6 +2,7 @@ type stage_name
 type stage = Infty | StageVar of stage_name * int
 type annot = Empty | Star | Stage of stage
 
+val infty : annot
 val succ_annot : annot -> annot
 val is_stage : annot -> bool
 val compare_annot : annot -> annot -> int

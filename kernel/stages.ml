@@ -10,6 +10,8 @@ type stage_name = int
 type stage = Infty | StageVar of stage_name * int
 type annot = Empty | Star | Stage of stage
 
+let infty = Stage Infty
+
 let succ_annot a =
   match a with
   | Stage (StageVar (name, size)) -> Stage (StageVar (name, succ size))

@@ -535,6 +535,10 @@ val erase : constr -> constr
 
 val annotate : Names.MutInd.t -> annot -> constr -> constr
 
+(** [annotate ind s c] annotates all inductive types [ind] in [c] with Infty *)
+
+val annotate_infty : constr -> constr
+
 (** [succ_annots vars c] calls [succ_annot] on all the stage annotations in [c]
    if the stage variables are in [vars] *)
 

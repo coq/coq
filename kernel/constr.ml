@@ -811,36 +811,49 @@ let map_with_binders g f l c0 = match kind c0 with
 (* Stage annotations *)
 (*********************)
 
-let rec erase c =
+let rec modify_annots f c =
   match c with
-  | Ind (iu, a) ->
-    begin
+  | Ind (iu, a) -> f iu a c
+  | _ -> map (modify_annots f) c
+
+let erase =
+  let f iu a c =
     match a with
     | Star | Empty -> c
-    | _ -> Ind (iu, Empty)
-    end
-  | _ -> map erase c
+    | _ -> mkIndUS iu Empty in
+  modify_annots f
 
-let rec annotate ind s c =
-  match c with
-  | Ind (((i, _), _) as iu, _)
-    when MutInd.equal ind i ->
-    Ind (iu, s)
-  | _ -> map (annotate ind s) c
+let annotate ind s =
+  let f (((i, _), _) as iu) _ c =
+    if MutInd.equal ind i then
+      mkIndUS iu s
+    else c in
+  modify_annots f
 
-let rec succ_annots vars c =
-  match c with
-  | Ind (iu, (Stage (StageVar (na, _i)) as s))
-    when mem_stage_vars na vars ->
-    Ind (iu, succ_annot s)
-  | _ -> map (succ_annots vars) c
+let annotate_infty =
+  let f iu a c =
+    match a with
+    | Star | Stage Infty -> c
+    | _ -> mkIndUS iu infty in
+  modify_annots f
 
-let rec pos_annots vars c =
-  match c with
-  | Ind (iu, (Stage (StageVar (na, _i))))
-    when mem_stage_vars na vars ->
-    Ind (iu, Star)
-  | _ -> map (pos_annots vars) c
+let succ_annots vars =
+  let f iu a c =
+    match a with
+    | Stage (StageVar (na, _))
+      when mem_stage_vars na vars ->
+      mkIndUS iu (succ_annot a)
+    | _ -> c in
+  modify_annots f
+
+let pos_annots vars =
+  let f iu a c =
+    match a with
+    | Stage (StageVar (na, _))
+      when mem_stage_vars na vars ->
+      mkIndUS iu Star
+    | _ -> c in
+  modify_annots f
 
 (*********************)
 (*      Lifting      *)

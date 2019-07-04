@@ -65,7 +65,7 @@ let instantiate_inductive_constraints mib u =
 (* inductives *)
 let ind_subst mind mib u =
   let ntypes = mib.mind_ntypes in
-  let make_Ik k = mkIndU ((mind,ntypes-k-1),u) in
+  let make_Ik k = mkIndUS ((mind,ntypes-k-1),u) infty in
   List.init ntypes make_Ik
 
 (* Instantiate inductives in constructor type *)
