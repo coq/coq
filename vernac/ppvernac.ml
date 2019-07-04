@@ -480,10 +480,6 @@ let string_of_theorem_kind = let open Decls in function
       hv 0 (prlist_with_sep pr_semicolon pr_record_field fs ++ str"}")
 
   let pr_printable = function
-    | PrintFullContext ->
-      keyword "Print All"
-    | PrintSectionContext s ->
-      keyword "Print Section" ++ spc() ++ Libnames.pr_qualid s
     | PrintGrammar ent ->
       keyword "Print Grammar" ++ spc() ++ str ent
     | PrintCustomGrammar ent ->
@@ -537,8 +533,6 @@ let string_of_theorem_kind = let open Decls in function
       keyword "Print Module Type" ++ spc() ++ pr_qualid qid
     | PrintModule qid ->
       keyword "Print Module" ++ spc() ++ pr_qualid qid
-    | PrintInspect n ->
-      keyword "Inspect" ++ spc() ++ int n
     | PrintScopes ->
       keyword "Print Scopes"
     | PrintScope s ->

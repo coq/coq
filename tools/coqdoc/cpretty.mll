@@ -365,7 +365,6 @@ let commands =
   | "Add"
   | "Remove" space+ "Loadpath"
   | "Print"
-  | "Inspect"
   | "About"
   | "SearchAbout"
   | "SearchRewrite"

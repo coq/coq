@@ -947,7 +947,6 @@ GRAMMAR EXTEND Gram
 	  { VernacPrint (PrintModule qid) }
       | IDENT "Print"; IDENT "Namespace" ; ns = dirpath ->
           { VernacPrint (PrintNamespace ns) }
-      | IDENT "Inspect"; n = natural -> { VernacPrint (PrintInspect n) }
 
       | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = ne_string ->
 	  { VernacAddMLPath (false, dir) }
@@ -1011,8 +1010,6 @@ GRAMMAR EXTEND Gram
   ;
   printable:
     [ [ IDENT "Term"; qid = smart_global; l = OPT univ_name_list -> { PrintName (qid,l) }
-      | IDENT "All" -> { PrintFullContext }
-      | IDENT "Section"; s = global -> { PrintSectionContext s }
       | IDENT "Grammar"; ent = IDENT ->
           (* This should be in "syntax" section but is here for factorization*)
 	  { PrintGrammar ent }

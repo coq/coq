@@ -55,24 +55,6 @@ Displaying
       An underscore means the usual name is printed.
 
 
-.. cmd:: Print All
-
-   This command displays information about the current state of the
-   environment, including sections and modules.
-
-   .. cmdv:: Inspect @num
-      :name: Inspect
-
-      This command displays the :n:`@num` last objects of the
-      current environment, including sections and modules.
-
-   .. cmdv:: Print Section @ident
-
-      The name :n:`@ident` should correspond to a currently open section,
-      this command displays the objects defined since the beginning of this
-      section.
-
-
 .. _flags-options-tables:
 
 Flags, Options and Tables

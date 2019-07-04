@@ -1933,9 +1933,6 @@ let vernac_print ~pstate ~atts =
   let sigma, env = get_current_or_global_context ~pstate in
   function
   | PrintTables -> print_tables ()
-  | PrintFullContext-> print_full_context_typ env sigma
-  | PrintSectionContext qid -> print_sec_context_typ env sigma qid
-  | PrintInspect n -> inspect env sigma n
   | PrintGrammar ent -> Metasyntax.pr_grammar ent
   | PrintCustomGrammar ent -> Metasyntax.pr_custom_grammar ent
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir

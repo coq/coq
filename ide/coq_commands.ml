@@ -166,12 +166,10 @@ let state_preserving = [
   "Extraction";
   "Extraction Library";
   "Extraction Module";
-  "Inspect";
   "Locate";
 
   "Obligations";
   "Print";
-  "Print All.";
   "Print Classes";
   "Print Coercion Paths";
   "Print Coercions";
@@ -193,7 +191,6 @@ let state_preserving = [
   "Print Setoids";
   "Print Scope";
   "Print Scopes.";
-  "Print Section";
 
   "Print Table Printing If.";
   "Print Table Printing Let.";
