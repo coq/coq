@@ -75,35 +75,32 @@ let iter_hypothesis ?pstate glnum (fn : GlobRef.t -> env -> constr -> unit) =
 (* General search over declarations *)
 let iter_declarations (fn : GlobRef.t -> env -> constr -> unit) =
   let env = Global.env () in
+  List.iter (fun d -> fn (VarRef (NamedDecl.get_id d)) env (NamedDecl.get_type d))
+    (Environ.named_context env);
   let iter_obj (sp, kn) lobj = match lobj with
-  | AtomicObject o ->
-    begin match object_tag o with
-    | "VARIABLE" ->
-      begin try
-        let decl = Global.lookup_named (basename sp) in
-        fn (VarRef (NamedDecl.get_id decl)) env (NamedDecl.get_type decl)
-      with Not_found -> (* we are in a section *) () end
-    | "CONSTANT" ->
-      let cst = Global.constant_of_delta_kn kn in
-      let gr = ConstRef cst in
-      let (typ, _) = Typeops.type_of_global_in_context (Global.env ()) gr in
-      fn gr env typ
-    | "INDUCTIVE" ->
-      let mind = Global.mind_of_delta_kn kn in
-      let mib = Global.lookup_mind mind in
-      let iter_packet i mip =
-        let ind = (mind, i) in
-        let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
-        let i = (ind, u) in
-        let typ = Inductiveops.type_of_inductive env i in
-        let () = fn (IndRef ind) env typ in
-        let len = Array.length mip.mind_user_lc in
-        iter_constructors ind u fn env len
-      in
-      Array.iteri iter_packet mib.mind_packets
+    | AtomicObject o ->
+      begin match object_tag o with
+        | "CONSTANT" ->
+          let cst = Global.constant_of_delta_kn kn in
+          let gr = ConstRef cst in
+          let (typ, _) = Typeops.type_of_global_in_context (Global.env ()) gr in
+          fn gr env typ
+        | "INDUCTIVE" ->
+          let mind = Global.mind_of_delta_kn kn in
+          let mib = Global.lookup_mind mind in
+          let iter_packet i mip =
+            let ind = (mind, i) in
+            let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
+            let i = (ind, u) in
+            let typ = Inductiveops.type_of_inductive env i in
+            let () = fn (IndRef ind) env typ in
+            let len = Array.length mip.mind_user_lc in
+            iter_constructors ind u fn env len
+          in
+          Array.iteri iter_packet mib.mind_packets
+        | _ -> ()
+      end
     | _ -> ()
-    end
-  | _ -> ()
   in
   try Declaremods.iter_all_segments iter_obj
   with Not_found -> ()

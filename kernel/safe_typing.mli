@@ -69,9 +69,7 @@ val is_joined_environment : safe_environment -> bool
 
 (** Insertion of local declarations (Local or Variables) *)
 
-val push_named_assum :
-  (Id.t * Constr.types * bool (* polymorphic *))
-    Univ.in_universe_context_set -> safe_transformer0
+val push_named_assum : (Id.t * Constr.types) -> safe_transformer0
 
 (** Returns the full universe context necessary to typecheck the definition
   (futures are forced) *)

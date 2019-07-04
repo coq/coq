@@ -90,7 +90,7 @@ val intern_gen : typing_constraint -> env -> evar_map ->
 val intern_pattern : env -> cases_pattern_expr ->
   lident list * (Id.t Id.Map.t * cases_pattern) list
 
-val intern_context : bool -> env -> internalization_env -> local_binder_expr list -> internalization_env * glob_decl list
+val intern_context : env -> internalization_env -> local_binder_expr list -> internalization_env * glob_decl list
 
 (** {6 Composing internalization with type inference (pretyping) } *)
 
@@ -158,7 +158,7 @@ val interp_binder_evars : env -> evar_map -> Name.t -> constr_expr -> evar_map *
 (** Interpret contexts: returns extended env and context *)
 
 val interp_context_evars :
-  ?program_mode:bool -> ?global_level:bool -> ?impl_env:internalization_env -> ?shift:int ->
+  ?program_mode:bool -> ?impl_env:internalization_env -> ?shift:int ->
   env -> evar_map -> local_binder_expr list ->
   evar_map * (internalization_env * ((env * rel_context) * Impargs.manual_implicits))
 

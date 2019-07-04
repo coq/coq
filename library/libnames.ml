@@ -128,11 +128,6 @@ let path_of_string s =
 
 let pr_path sp = str (string_of_path sp)
 
-let restrict_path n sp =
-  let dir, s = repr_path sp in
-  let dir' = List.firstn n (DirPath.repr dir) in
-  make_path (DirPath.make dir') s
-
 (*s qualified names *)
 type qualid_r = full_path
 type qualid = qualid_r CAst.t

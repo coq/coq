@@ -48,8 +48,9 @@ let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
   let fix_exn = Future.fix_exn_of ce.Proof_global.proof_entry_body in
   let gr = match scope with
   | Discharge ->
-      let _ : Libobject.object_name =
-        declare_variable ~name ~kind:Decls.(IsDefinition kind) (Lib.cwd(), SectionLocalDef ce) in
+      let () =
+        declare_variable ~name ~kind:Decls.(IsDefinition kind) (SectionLocalDef ce)
+      in
       VarRef name
   | Global local ->
       let kn = declare_constant ~name ~local ~kind:Decls.(IsDefinition kind) (DefinitionEntry ce) in

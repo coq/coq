@@ -166,6 +166,9 @@ let dump_reference ?loc modpath ident ty =
   let filepath = Names.DirPath.to_string (Lib.library_dp ()) in
   dump_ref ?loc filepath modpath ident ty
 
+let dump_secvar ?loc id =
+  dump_reference ?loc "<>" (Libnames.string_of_qualid (Decls.variable_secpath id)) "var"
+
 let dump_modref ?loc mp ty =
   let (dp, l) = Lib.split_modpath mp in
   let filepath = Names.DirPath.to_string dp in

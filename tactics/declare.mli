@@ -21,7 +21,7 @@ open Entries
 
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 
-type section_variable_entry =
+type variable_declaration =
   | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
   | SectionLocalAssum of { typ:types; univs:Univ.ContextSet.t; poly:bool; impl:bool }
 
@@ -30,13 +30,11 @@ type 'a constant_entry =
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
-type variable_declaration = DirPath.t * section_variable_entry
-
 val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
   -> variable_declaration
-  -> Libobject.object_name
+  -> unit
 
 (** Declaration of global constructions
    i.e. Definition/Theorem/Axiom/Parameter/... *)

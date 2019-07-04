@@ -33,6 +33,19 @@ module NamedDecl = Context.Named.Declaration
 
 type import_status = ImportDefaultBehavior | ImportNeedQualified
 
+(** Monomorphic universes need to survive sections. *)
+
+let input_universe_context : Univ.ContextSet.t -> Libobject.obj =
+  declare_object @@ local_object "Monomorphic section universes"
+    ~cache:(fun (na, uctx) -> Global.push_context_set false uctx)
+    ~discharge:(fun (_, x) -> Some x)
+
+let declare_universe_context ~poly ctx =
+  if poly then
+    (Global.push_context_set true ctx; Lib.add_section_context ctx)
+  else
+    Lib.add_anonymous_leaf (input_universe_context ctx)
+
 (** Declaration of constants and parameters *)
 
 type constant_obj = {
@@ -295,25 +308,27 @@ let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind 
   kn, eff
 
 (** Declaration of section variables and local definitions *)
-type section_variable_entry =
+type variable_declaration =
   | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
   | SectionLocalAssum of { typ:Constr.types; univs:Univ.ContextSet.t; poly:bool; impl:bool }
 
-type variable_declaration = DirPath.t * section_variable_entry
+(* This object is only for things which iterate over objects to find
+   variables (only Prettyp.print_context AFAICT) *)
+let inVariable : unit -> obj =
+  declare_object { (default_object "VARIABLE") with
+    classify_function = (fun () -> Dispose)}
 
-let cache_variable ((sp,_),o) =
-  match o with
-  | Inl ctx -> Global.push_context_set false ctx
-  | Inr (id,(path,d),kind) ->
+let declare_variable ~name ~kind d =
   (* Constr raisonne sur les noms courts *)
-  if Decls.variable_exists id then
-    raise (AlreadyDeclared (None, id));
+  if Decls.variable_exists name then
+    raise (AlreadyDeclared (None, name));
 
   let impl,opaque,poly,univs = match d with (* Fails if not well-typed *)
     | SectionLocalAssum {typ;univs;poly;impl} ->
-      let () = Global.push_named_assum ((id,typ,poly),univs) in
+      let () = declare_universe_context ~poly univs in
+      let () = Global.push_named_assum (name,typ) in
       let impl = if impl then Decl_kinds.Implicit else Decl_kinds.Explicit in
-        impl, true, poly, univs
+      impl, true, poly, univs
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
@@ -323,47 +338,29 @@ let cache_variable ((sp,_),o) =
       let eff = get_roles export eff in
       let () = List.iter register_side_effect eff in
       let poly, univs = match de.proof_entry_universes with
-      | Monomorphic_entry uctx -> false, uctx
-      | Polymorphic_entry (_, uctx) -> true, Univ.ContextSet.of_context uctx
+        | Monomorphic_entry uctx -> false, uctx
+        | Polymorphic_entry (_, uctx) -> true, Univ.ContextSet.of_context uctx
       in
       let univs = Univ.ContextSet.union uctx univs in
       (* We must declare the universe constraints before type-checking the
          term. *)
-      let () = Global.push_context_set (not poly) univs in
+      let () = declare_universe_context ~poly univs in
       let se = {
         secdef_body = body;
         secdef_secctx = de.proof_entry_secctx;
         secdef_feedback = de.proof_entry_feedback;
         secdef_type = de.proof_entry_type;
       } in
-      let () = Global.push_named_def (id, se) in
+      let () = Global.push_named_def (name, se) in
       Decl_kinds.Explicit, de.proof_entry_opaque,
-      poly, univs in
-  Nametab.push (Nametab.Until 1) (Libnames.restrict_path 0 sp) (GlobRef.VarRef id);
-  add_section_variable ~name:id ~kind:impl ~poly univs;
-  Decls.(add_variable_data id {path;opaque;univs;poly;kind})
-
-let discharge_variable (_,o) = match o with
-  | Inr (id,_,_) ->
-    if Decls.variable_polymorphic id then None
-    else Some (Inl (Decls.variable_context id))
-  | Inl _ -> Some o
-
-type variable_obj =
-    (Univ.ContextSet.t, Id.t * variable_declaration * Decls.logical_kind) union
-
-let inVariable : variable_obj -> obj =
-  declare_object { (default_object "VARIABLE") with
-    cache_function = cache_variable;
-    discharge_function = discharge_variable;
-    classify_function = (fun _ -> Dispose) }
-
-(* for initial declaration *)
-let declare_variable ~name ~kind obj =
-  let oname = add_leaf name (inVariable (Inr (name,obj,kind))) in
+      poly, univs
+  in
+  Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
+  add_section_variable ~name ~kind:impl ~poly univs;
+  Decls.(add_variable_data name {opaque;kind});
+  add_anonymous_leaf (inVariable ());
   Impargs.declare_var_implicits name;
-  Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name);
-  oname
+  Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)
 
 (** Declaration of inductive blocks *)
 let declare_inductive_argument_scopes kn mie =
@@ -551,19 +548,6 @@ let assumption_message id =
   the type of the object than to the name of the object (see
   discussion on coqdev: "Chapter 4 of the Reference Manual", 8/10/2015) *)
   Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is declared")
-
-(** Monomorphic universes need to survive sections. *)
-
-let input_universe_context : Univ.ContextSet.t -> Libobject.obj =
-  declare_object @@ local_object "Monomorphic section universes"
-    ~cache:(fun (na, uctx) -> Global.push_context_set false uctx)
-    ~discharge:(fun (_, x) -> Some x)
-
-let declare_universe_context ~poly ctx =
-  if poly then
-    (Global.push_context_set true ctx; Lib.add_section_context ctx)
-  else
-    Lib.add_anonymous_leaf (input_universe_context ctx)
 
 (** Global universes are not substitutive objects but global objects
    bound at the *library* or *module* level. The polymorphic flag is

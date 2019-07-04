@@ -128,7 +128,7 @@ let save name const ?hook uctx scope kind =
   let r = match scope with
     | Discharge ->
       let c = SectionLocalDef const in
-      let _ = declare_variable ~name ~kind (Lib.cwd(), c) in
+      let () = declare_variable ~name ~kind c in
       VarRef name
     | Global local ->
       let kn = declare_constant ~name ~kind ~local (DefinitionEntry const) in

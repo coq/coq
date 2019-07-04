@@ -57,8 +57,6 @@ val pr_path : full_path -> Pp.t
 
 module Spmap  : CSig.MapS with type key = full_path
 
-val restrict_path : int -> full_path -> full_path
-
 (** {6 ... } *)
 (** A [qualid] is a partially qualified ident; it includes fully
     qualified names (= absolute names) and all intermediate partial
