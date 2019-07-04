@@ -58,8 +58,8 @@ Section Geometry.
    https://docs.google.com/fileview?id=0ByhB3nPmbnjTYzFiZmIyNGMtYTkwNC00NWFiLWJiNzEtODM4NmVkYTc2NTVk&hl=fr
 *)
 
-Require Import List.
 Require Import Reals.
+Require Import List.
 
 Record point:Type:={
  X:R;

@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Libnames
 
 (** This module provides functions to load, open and save
   libraries. Libraries correspond to the subclass of modules that
@@ -37,10 +36,6 @@ type seg_univ = (* all_cst, finished? *)
   Univ.ContextSet.t * bool
 type seg_proofs = Opaqueproof.opaque_proofterm array
 
-(** Open a module (or a library); if the boolean is true then it's also
-   an export otherwise just a simple import *)
-val import_module : bool -> qualid list -> unit
-
 (** End the compilation of a library and save it to a ".vo" file.
     [output_native_objects]: when producing vo objects, also compile the native-code version. *)
 val save_library_to :
@@ -56,13 +51,11 @@ val save_library_raw : string -> seg_sum -> seg_lib -> seg_univ -> seg_proofs ->
 
 (** {6 Interrogate the status of libraries } *)
 
-  (** - Tell if a library is loaded or opened *)
+  (** - Tell if a library is loaded *)
 val library_is_loaded : DirPath.t -> bool
-val library_is_opened : DirPath.t -> bool
 
-  (** - Tell which libraries are loaded or imported *)
+  (** - Tell which libraries are loaded *)
 val loaded_libraries : unit -> DirPath.t list
-val opened_libraries : unit -> DirPath.t list
 
   (** - Return the full filename of a loaded library. *)
 val library_full_filename : DirPath.t -> string

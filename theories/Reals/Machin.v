@@ -8,6 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+Require Import Omega.
 Require Import Lra.
 Require Import Rbase.
 Require Import Rtrigo1.
@@ -18,7 +19,6 @@ Require Import Rseries.
 Require Import SeqProp.
 Require Import PartSum.
 Require Import Ratan.
-Require Import Omega.
 
 Local Open Scope R_scope.
 

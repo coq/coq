@@ -1,4 +1,4 @@
-Require Import Bool PArith DecidableClass Omega Lia.
+Require Import Bool PArith DecidableClass Ring Omega Lia.
 
 Ltac bool :=
 repeat match goal with
