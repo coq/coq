@@ -2,11 +2,12 @@
 
 ## Foreword ##
 
-As any piece of code or documentation, this guide can bitrot if people
-forget to update it when contributing processes, development tools, or
-the Coq ecosystem changes.  If you notice anything inaccurate or
-outdated, please signal it in a new issue, or fix it in a new pull
-request.
+As with any piece of code or documentation, this guide can bitrot if
+people forget to update it when contributing processes, development
+tools, or the Coq ecosystem changes.  If you notice anything
+inaccurate or outdated, please signal it in a new issue, or fix it in
+a new pull request.  If you find some parts are not sufficiently
+clear, you may open an issue as well.
 
 ## Table of contents ##
 
@@ -14,16 +15,17 @@ request.
 - [Contributing to the ecosystem](#contributing-to-the-ecosystem)
   - [Asking and answering questions](#asking-and-answering-questions)
   - [Writing tutorials and blog posts](#writing-tutorials-and-blog-posts)
+  - [Contributing to the wiki](#contributing-to-the-wiki)
   - [Creating and maintaining Coq packages](#creating-and-maintaining-coq-packages)
     - [Distribution](#distribution)
     - [Support](#support)
     - [Standard libraries](#standard-libraries)
-    - [Maintaining existing packages](#maintaining-existing-packages)
-  - [Contributing to the wiki](#contributing-to-the-wiki)
+    - [Maintaining existing packages in coq-community](#maintaining-existing-packages-in-coq-community)
   - [Contributing to the website or the package archive](#contributing-to-the-website-or-the-package-archive)
   - [Other ways of creating content](#other-ways-of-creating-content)
 - [Issues](#issues)
   - [Reporting a bug, requesting an enhancement](#reporting-a-bug-requesting-an-enhancement)
+  - [Beta testing](#beta-testing)
   - [Helping triage existing issues](#helping-triage-existing-issues)
 - [Code changes](#code-changes)
   - [Using GitHub pull requests](#using-github-pull-requests)
@@ -41,7 +43,7 @@ request.
   - [Merging pull requests](#merging-pull-requests)
   - [Core development team](#core-development-team)
 - [Release management](#release-management)
-  - [Packaging](#packaging)
+  - [Packaging Coq](#packaging-coq)
 - [Additional resources](#additional-resources)
   - [Developer documentation](#developer-documentation)
     - [Where to find the resources](#where-to-find-the-resources)
@@ -63,21 +65,23 @@ request.
 Thank you for your interest in contributing to Coq!  There are many
 ways to contribute, and we appreciate all of them.
 
-It is frequent to see a pattern where people start with small
-contributions, and contributions to the ecosystem, before working
-incrementally their way up to the core parts of the system, and start
-to propose larger changes, or take an active role in maintaining the
-system.  So this is the way this contributing guide is organized.
-However, it is by no means a way of saying that you should go through
-these steps in this order.  Feel free to use this guide as a reference
-and quickly jump to the part that is most relevant to you at the
-current time.
+People often begin by making small contributions, and contributions to
+the ecosystem, before working their way up incrementally to the core
+parts of the system, and start to propose larger changes, or take an
+active role in maintaining the system.  So this is the way this
+contributing guide is organized.  However, it is by no means necessary
+that you go through these steps in this order.  Feel free to use this
+guide as a reference and quickly jump to the part that is most
+relevant to you at the current time.
 
 We want to make sure that contributing to Coq is a fun and positive
 experience for everyone, so please make sure you read and abide by our
 [Code of Conduct][Code-of-conduct].
 
 ## Contributing to the ecosystem ##
+
+In this section, we present all the ways to contribute to Coq outside
+of the Coq repository itself.
 
 ### Asking and answering questions ###
 
@@ -93,7 +97,7 @@ There are two main platforms for this purpose:
 - Our [Discourse forum][Discourse].
 
 In particular, our Discourse forum has several non-English categories
-that have yet to find their public, so do not hesitate to advertize
+that have yet to find their public, so do not hesitate to advertise
 them to people you know who might not be at ease with English.
 
 Other active places to answer questions include the [Coq-Club][]
@@ -119,12 +123,33 @@ a single page (like [OCaml planet][OCaml-planet]), but this would
 probably be something useful to get, so do not hesitate if you want to
 create it.  Some people use [Reddit][] for this purpose.
 
+### Contributing to the wiki ###
+
+Coq's [wiki][] is an informal source of additional documentation which
+anyone with a GitHub account can edit directly.  In particular, it
+contains the Coq [FAQ][] which has not seen so many updates in the
+recent years.  You should feel free to fix it, expand it, and even
+refactor it (if you are not sure if some changes would be welcome, you
+can open an issue to discuss them before performing them).
+
+People who watch the Coq repository will see recent wiki edits in
+their GitHub feed.  It is recommended to review them *a posteriori* to
+check no mistake was introduced.  The wiki is also a standard git
+repository, so people can follow the changes using any standard git
+tool.
+
+Coq's wiki is formatted using GitHub's flavored Markdown, with some
+wiki-specific extensions.  See:
+
+- [GitHub's Markdown guide][GitHub-markdown]
+- [GitHub's wiki extensions][GitHub-wiki-extensions]
+
 ### Creating and maintaining Coq packages ###
 
-*Nota: this section is about packages extending Coq, such as plugins
-or libraries.  A different, but also very valuable, contribution is to
-package Coq for your preferred package manager (see
-[Packaging](#packaging)).*
+*Note: this sub-section is about packages extending Coq, such as
+plugins or libraries.  A different, but also very valuable,
+contribution is to package Coq for your preferred package manager (see
+[Packaging Coq](#packaging-coq)).*
 
 Sharing reusable assets in the form of new libraries, plugins, and
 tools is great so that others can start building new things on top.
@@ -162,16 +187,16 @@ they test underused / undertested features.
 
 #### Standard libraries ####
 
-There are many general purposes Coq libraries, so before you publish
+There are many general purpose Coq libraries, so before you publish
 yours, consider whether you could contribute to an existing one
 instead (either the official [standard
 library](#contributing-to-the-standard-library), or one of the many
 [alternative standard libraries][other-standard-libraries]).
 
-#### Maintaining existing packages ####
+#### Maintaining existing packages in coq-community ####
 
 Some Coq packages are not maintained by their initial authors anymore
-(for instance because they changed jobs, or lost interest) even if
+(for instance if they've moved on to new jobs or new projects) even if
 they were useful, or interesting.  The coq-community organization is a
 place for volunteers to take over the maintenance of such packages.
 
@@ -181,26 +206,17 @@ maintainer][coq-community-maintainer-wanted].  You can also propose a
 package that is not listed.  Find out more about coq-community in [the
 manifesto's README][coq-community-manifesto].
 
-### Contributing to the wiki ###
+### Contributing to the editor support packages ###
 
-Coq's [wiki][] is an informal source of additional documentation which
-anyone with a GitHub account can edit directly.  In particular, it
-contains the Coq [FAQ][] which has not seen so many updates in the
-recent years.  You should feel free to fix it, expand it, and even
-refactor it (if you are not sure if some changes would be welcome, you
-can open an issue to discuss them before performing them).
+Here are the URLs of the repositories of the various editor support
+packages:
 
-People who watch the Coq repository will see recent wiki edits in
-their GitHub feed.  It is recommended to review them *a posteriori* to
-check no mistake was introduced.  The wiki is also a standard git
-repository, so people can follow the changes using any standard git
-tool.
+- Proof-General (Emacs major mode) <https://github.com/ProofGeneral/PG>
+- Company-coq (Emacs minor mode) <https://github.com/cpitclaudel/company-coq>
+- Coqtail (Vim) <https://github.com/whonore/Coqtail>
+- VsCoq Reloaded (VsCode) <https://github.com/coq-community/vscoq>
 
-Coq's wiki is formatted using GitHub's flavored Markdown, with some
-wiki-specific extensions.  See:
-
-- [GitHub's Markdown guide][GitHub-markdown]
-- [GitHub's wiki extensions][GitHub-wiki-extensions]
+Each of them has their own contribution process.
 
 ### Contributing to the website or the package archive ###
 
@@ -216,7 +232,7 @@ guides, but they don't have any at the time of writing this.
 ### Other ways of creating content ###
 
 There are many other ways of creating content and making the Coq
-community strive, including many which we might not have thought
+community thrive, including many which we might not have thought
 about.  Feel free to add more references / ideas to this sub-section.
 
 You can tweet about Coq, you can give talks about Coq both in
@@ -240,9 +256,9 @@ GitHub account).  You can file a bug for any of the following:
 - An error you didn't expect. If you're not sure whether it's a bug or
   intentional, feel free to file a bug anyway. We may want to improve
   the documentation or error message.
-- Missing documentation. It's helpful to track where the documentation
-  should be improved, so please file a bug if you can't find or don't
-  understand some bit of documentation.
+- Missing or incorrect documentation.  It's helpful to track where the
+  documentation should be improved, so please file a bug if you can't
+  find or don't understand some bit of documentation.
 - An error message that wasn't as helpful as you'd like. Bonus points
   for suggesting what information would have helped you.
 - Bugs in CoqIDE should also be filed in the [Coq issue
@@ -257,6 +273,11 @@ mind duplicate bug reports.  If unsure, you are always very welcome to
 ask on our [Discourse forum][Discourse] or [Gitter chat][Gitter]
 before, after, or while writing a bug report.
 
+It is better if you can test that your bug is still present in the
+current testing or development version of Coq (see the [next
+sub-section](#beta-testing)) before reporting it, but if you can't, it
+should not discourage you from reporting it.
+
 When it applies, it's extremely helpful for bug reports to include sample
 code, and much better if the code is self-contained and complete. It's not
 necessary to minimize your bug or identify precisely where the issue is,
@@ -268,6 +289,27 @@ If you want to minimize your bug (or help minimize someone else's) for
 more extra credit, then you can use the [Coq bug
 minimizer][JasonGross-coq-tools] (specifically, the bug minimizer is
 the `find-bug.py` script in that repo).
+
+### Beta testing ###
+
+Coq gets a new major release about every six months.  Before a new
+major version is released, there is a beta-testing period, which
+usually lasts one month (see the [release plan][release-plan]).  You
+can help make the upcoming release better, by testing the beta
+version, and trying to port your projects to it.  You should report
+any bug you notice, but also any change of behavior that is not
+documented in the changelog.  Then Coq developers will be able to
+check if what you reported is a regression that needs to be fixed, or
+an expected change that needs to be mentioned in the changelog.
+
+You can go even further by using the development version (`master`
+branch) of Coq on a day by day basis, and report problems as soon as
+you notice them.  If you wish to do so, the easiest way to install Coq
+is through opam (using the `dev` version of the Coq package, available
+in the <https://coq.inria.fr/opam/core-dev> repository) or through
+[Nix][].  The documentation of the development version is [available
+online][master-doc], including the [unreleased
+changelog][unreleased-changelog].
 
 ### Helping triage existing issues ###
 
@@ -289,7 +331,7 @@ You can help a lot by:
   initial example using the bug minimizer mentioned above;
 - using `git bisect` to find the commit that introduced a regression;
 - fixing the bug if you have an idea of how to do so (see the
-  following section).
+  [following section](#code-changes)).
 
 Once you have some experience with the Coq issue tracker, you can
 request to join the **@coq/contributors** team (any member of the
@@ -328,18 +370,19 @@ Being in this team will grant you the following access:
 - **Hiding comments:** when the discussion has become too long, this
   can be done to hide irrelevant comments (off-topic, outdated or
   resolved sub-issues).
-- **Deleting things:** just don't do it.  FWIW, core developers have
-  access to an audit log where all delete actions are listed (among
-  other things).
-- **Pushing a branch or a tag to the main repository:** just don't do
-  it.  We like to reserve the branches on the main repository for the
-  development branch (`master`) and the stable branches (`v...`).  If
-  you push a branch nonetheless, expect it to be deleted promptly and
-  without notice.
+- **Deleting things:** please don't delete any comment or issue, our
+  policy doesn't allow for comments to be deleted, unless done by the
+  community moderators.  You should hide them instead.  An audit log
+  is available to track deleted items if needed (but does not allow
+  recovering them).
+- **Pushing a branch or a tag to the main repository:** please push
+  changes to your own fork rather than the main repository. (Branches
+  pushed to the main repository will be removed promptly and without
+  notice.)
 
-Yet to be documented: use of priority, difficulty, `help wanted`, and
-`good first issue` labels, of milestones, of assignments, and of
-GitHub projects.
+Yet to be fully specified: use of priority, difficulty, `help wanted`,
+and `good first issue` labels, milestones, assignments, and GitHub
+projects.
 
 ## Code changes ##
 
@@ -377,9 +420,10 @@ and merge when it is the case (you can ping them if the PR is ready
 from your side but nothing happens for a few days).
 
 After your PR is accepted and merged, it may get backported to a
-stable branch if relevant, and will eventually make it to a release.
-You do not have to worry about this, it is the role of the assignee
-and the release manager to do so.  The milestone should give you an
+stable branch if appropriate, and will eventually make it to a
+release.  You do not have to worry about this, it is the role of the
+assignee and the release manager to do so (see Section [Release
+management](#release-management)).  The milestone should give you an
 indication of when to expect your change to be released (this could be
 several months after your PR is merged).  That said, you can start
 using the latest Coq `master` branch to take advantage of all the new
@@ -428,19 +472,21 @@ We have a linter that checks a few different things:
   allow the use of `git bisect` in the future.  It should be possible
   to build every commit, and in principle even the test-suite should
   pass on every commit (but this isn't tested in CI because it would
-  take too long).  You can test and fix this locally with `git
-  rebase`.
-- **No tabs or end-of-line spaces on updated lines** (and all files
-  should end with a single newline).  We are trying to get rid of all
-  tabs (except in the `Makefile`s) and all end-of-line spaces from the
-  code base.  This checks not only that you didn't introduce new ones,
-  but also that updated lines are clean (even if they were there
-  before).  You can avoid worrying about this issue completely by
-  installing our [pre-commit git hook][git-hook], which will fix these
-  issues at commit time.  Running `./configure` once will install this
-  hook automatically unless you already have a pre-commit hook
-  installed.  If you are encountering this issue nonetheless, you can
-  fix it by rebasing your branch with `git rebase --whitespace=fix`.
+  take too long).  A good way to test this is to use `git rebase
+  master --exec "make -f Makefile.dune check`.
+- **No tabs or end-of-line spaces on updated lines**.  We are trying
+  to get rid of all tabs and all end-of-line spaces from the code base
+  (except in some very special files that need them).  This checks not
+  only that you didn't introduce new ones, but also that updated lines
+  are clean (even if they were there before).  You can avoid worrying
+  about tabs and end-of-line spaces by installing our [pre-commit git
+  hook][git-hook], which will fix these issues at commit time.
+  Running `./configure` once will install this hook automatically
+  unless you already have a pre-commit hook installed.  If you are
+  encountering these issues nonetheless, you can fix them by rebasing
+  your branch with `git rebase --whitespace=fix`.
+- **All files should end with a single newline**.  See the section
+  [Style guide](#style-guide) for additional style recommendations.
 
 You may run the linter yourself with `dev/lint-repository.sh`.
 
@@ -492,8 +538,8 @@ reviewers, with specific requests.
 - [needs: fixing][needs-fixing] indicates the PR needs a fix, as
   discussed in the comments.
 - [needs: documentation][needs-documentation] indicates the PR
-  introduce changes that should be documented before it can be merged.
-- [needs: changelog entry][needs-changelog] indicates the PR introduce
+  introduces changes that should be documented before it can be merged.
+- [needs: changelog entry][needs-changelog] indicates the PR introduces
   changes that should be documented in the [user
   changelog][user-changelog].
 - [needs: benchmarking][needs-benchmarking] and [needs: testing][needs-testing]
@@ -554,7 +600,7 @@ to learn about Coq's internals, and its implementation language.
 However, you should be aware that, because of the age of the library,
 and the compatibility constraints created by the many projects that
 depend on it, proposing breaking changes, such as changing a
-definition, might be frequently rejected, or at the very least might
+definition, may frequently be rejected, or at the very least might
 take a long time before getting approved and merged.  This does not
 mean that you cannot try.
 
@@ -562,7 +608,7 @@ There exists a [stdlib2][] project, that will be much more open to
 compatibility-breaking changes once it starts accepting external
 contributions.
 
-In the meantime, contributing new lemmas on exisiting definitions
+In the meantime, contributing new lemmas on existing definitions
 should be generally favorably accepted, cleaning up existing proofs as
 well.  Contributing new operations on existing types is also likely to
 be accepted in many cases.  In case of doubt, ask in an issue before
@@ -578,8 +624,8 @@ documentation][coqdoc-documentation] to learn more.
 ### Fixing bugs and performing small changes ###
 
 Just open a PR with your fix.  If it is not yet completed, do not
-hesitate to open a Work-in-Progress PR to get early feedback, and talk
-to developers on [Gitter][].
+hesitate to open a [*draft PR*][GitHub-draft-PR] to get early
+feedback, and talk to developers on [Gitter][].
 
 It is generally a good idea to add a regression test to the
 test-suite. See the test-suite [README][test-suite-README] for how to
@@ -604,9 +650,10 @@ You can do this informally by opening an issue, or more formally by
 producing a design document as a [Coq Enhancement Proposal][CEP].
 
 Another recommendation is that you do not put several unrelated
-changes (even if you produced them together) in the same PR.  Spliting
-out what can be to smaller-scale PRs is the best way to ensure that
-your changes are reviewed and merged promptly.
+changes (even if you produced them together) in the same PR.  In
+particular, make sure you split bug fixes into separate PRs when this
+is possible.  More generally, smaller-sized PRs, or PRs changing less
+components, are more likely to be reviewed and merged promptly.
 
 ### Collaborating on a pull request ###
 
@@ -637,9 +684,13 @@ line should contain the co-author name and committer e-mail address.
 
 ### Reviewing pull requests ###
 
-You can start reviewing PRs as soon as you feel comfortable doing so.
+You can start reviewing PRs as soon as you feel comfortable doing so
+(anyone can review anything, although some designated reviewers
+will have to give a final approval before a PR can be merged, as is
+explained in the next sub-section).
+
 Reviewers should ensure that the code that is changed or introduced is
-in good-shape and will not be a burden to maintain, is unlikely to
+in good shape and will not be a burden to maintain, is unlikely to
 break anything, or the compatibility-breakage has been identified and
 validated, includes documentation, changelog entries, and test files
 when necessary.  Reviewers can use labels, or change requests to
@@ -667,7 +718,7 @@ significant ways, at least a maintainer (other than the PR author)
 must approve the PR for each affected component before it can be
 merged, and one of them has to assign the PR, and merge it when it is
 time.  Before merging, the assignee must also select a milestone for
-the PR (see also Sec. [Release Management](#release-management)).
+the PR (see also Section [Release management](#release-management)).
 
 If you feel knowledgeable enough to maintain a component, and have a
 good track record of contributing to it, we would be happy to have you
@@ -678,7 +729,9 @@ document][MERGING].
 
 The people with merging powers (either because listed as a principal
 or secondary maintainer in [CODEOWNERS][], or because member of a
-maintainer team), are the members of the **@coq/pushers** team.
+maintainer team), are the members of the **@coq/pushers** team
+([member list][coq-pushers] only visible to the Coq organization
+members because of a limitation of GitHub).
 
 ### Core development team ###
 
@@ -690,14 +743,17 @@ designated as a development coordinator, and has to approve the
 changes in the core team membership (until we get a more formal
 joining and leaving process).
 
-The core developers are the members of the **@coq/core** team.
+The core developers are the members of the **@coq/core** team ([member
+list][coq-core] only visible to the Coq organization members because
+of a limitation of GitHub).
 
 ## Release management ##
 
 Coq's major release cycles generally span about six months, with about
 4-5 months of development, and 1-2 months of stabilization /
 beta-releases.  The release manager (RM) role is a rolling position
-among core developers.
+among core developers.  The [release plan][release-plan] is published
+on the wiki.
 
 Development of new features, refactorings, deprecations and clean-ups
 always happens on `master`.  Stabilization starts by branching
@@ -707,10 +763,10 @@ be merged into `master` but won't make it for the upcoming major
 release, but only for the next one).
 
 After branching, most changes are introduced in the stable branch by a
-backporting process.  PR authors and assignee can signal intent of
-having a PR backported or not by selecting an appropriate milestone.
-Most of the time, the choice of milestone is between two options: the
-next major version that has yet to branch from `master`, or the next
+backporting process.  PR authors and assignee can signal a desire to
+have a PR backported by selecting an appropriate milestone.  Most of
+the time, the choice of milestone is between two options: the next
+major version that has yet to branch from `master`, or the next
 version (beta, final, or patch-level release) of the active stable
 branch.  In the end, it is the RM who decides whether to follow or not
 the recommendation of the PR assignee, and who backports PRs to the
@@ -738,14 +794,24 @@ column to a "Shipped" column.
 More information about the RM tasks can be found in the [release
 process checklist][RM-checklist].
 
-### Packaging ###
+### Packaging Coq ###
 
-The RM role does not include the task of preparing packages: the
-Windows and macOS packages are auto-generated by our CI, while some
-other people take care of packaging Coq for opam, Nix, and a number of
-additional package managers.  We thank them for this.  If your
-preferred package manager does not include Coq, you can contribute by
-adding it in there.
+The RM role does not include the task of making Coq available through
+the various package managers out there: several contributors (most
+often external to the development team) take care of this, and we
+thank them for this.  If your preferred package manager does not
+include Coq, it is a very worthy contribution to make it available
+there.  But be careful not to let a package get outdated, as this
+could lead some users to install an outdated version of Coq without
+even being aware of it.
+
+This [Repology page][repology-coq] lists the versions of Coq which are
+packaged in many repositories, although it is missing information on
+some repositories, like opam.
+
+The Windows and macOS installers are auto-generated in our CI, and
+this infrastructure has dedicated maintainers within the development
+team.
 
 ## Additional resources ##
 
@@ -805,13 +871,15 @@ The main documentation resources on our CI are:
 - the [README for developers, and contributors][CI-README-developers];
 - the README of the [user-overlays][] directory.
 
-Preparing an overlay is a step that everyone goes through at some
-point.  All you need to know to prepare an overlay manually is in the
-README in the [user-overlays][] directory.  You might
-want to use some additional tooling such as the `make ci-*` targets of
-`Makefile.ci`, the Nix support for getting the dependencies of the
-external projects (see the README in [`dev/ci/nix`](dev-ci-nix), and
-the (undocumented so far) `dev/tools/create_overlays.sh` script.
+Preparing an overlay (i.e. a patch to an external project that we test
+in our CI, to make it compile with the modified version of Coq in your
+branch) is a step that everyone goes through at some point.  All you
+need to know to prepare an overlay manually is in the README in the
+[user-overlays][] directory.  You might want to use some additional
+tooling such as the `make ci-*` targets of `Makefile.ci`, the Nix
+support for getting the dependencies of the external projects (see the
+README in [`dev/ci/nix`](dev-ci-nix), and the (so far undocumented)
+`dev/tools/create_overlays.sh` script.
 
 More work is to be done on understanding how each developer proceeds
 to prepare overlays, and propose a simplified and documented
@@ -834,17 +902,24 @@ enhancement and feature requests.
 #### Style guide ####
 
 There exists an [old style guide][old-style-guide] whose content is
-still mostly relevant.  We don't use a code formatter at the current
-time, and we are reluctant to formatting-only commits, or commits
-formatting parts of code that are unchanged beyond formatting.
-However, it is still a good idea if you don't know how to format a
-block to use the formatting that [ocamlformat][] would give
+still mostly relevant.  Yet to be done: extract the parts that are
+most relevant, and put them in this section instead.
+
+We don't use a code formatter at the current time, and we are
+reluctant to merge changes to parts of the code that are unchanged
+aside from formatting.  However, it is still a good idea if you don't
+know how to format a block of code to use the formatting that
+[ocamlformat][] would give
 
 #### OCaml resources ####
 
-You may find lots of OCaml resources on <http://ocaml.org/>, including
+You can find lots of OCaml resources on <http://ocaml.org/>, including
 documentation, a Discourse forum, the package archive, etc.  You may
 also want to refer to the [Dune documentation][dune-doc].
+
+Another ressource is <https://ocamlverse.github.io/>, especially its
+[community page][ocamlverse-community], which lists the various OCaml
+discussion platforms.
 
 #### Git documentation, tips and tricks ####
 
@@ -866,8 +941,9 @@ cp dev/tools/pre-commit .git/hooks/ # Setup the pre-commit hook
 Then, if you want to prepare a fix:
 
 ``` shell
+# Make sure we start from an up-to-date master
 git checkout master
-git pull # Make sure we start from an up-to-date master
+git pull --ff-only # If this fails, then your master branch is messy
 git checkout -b my-topic-branch
 # Modify some files
 git add .
@@ -900,7 +976,7 @@ GitHub provides [a short introduction][GitHub-rebase] to `git rebase`.
 
 GitHub has [extensive documentation][GitHub-doc] about everything you
 can do on the platform, and tips about using `git` as well.  See in
-particular, [how to make configure your commit e-mail
+particular, [how to configure your commit e-mail
 address][GitHub-commit-email] and [how to open a PR from a
 fork][GitHub-PR-from-fork].
 
@@ -920,8 +996,8 @@ also manage your GitHub web notifications using a tool such as
 
 We use GitLab mostly for its CI service.  The [Coq organization on
 GitLab][GitLab-coq] hosts a number of CI/CD-only mirrors.  If you are
-a regular contributor, you can request access to this organization
-(from the organization page): this will grant you permission to
+a regular contributor, you can request access to it from [the
+organization page][GitLab-coq]: this will grant you permission to
 restart failing CI jobs.
 
 GitLab too has [extensive documentation][GitLab-doc], in particular on
@@ -977,10 +1053,12 @@ can be found [on the wiki][wiki-CUDW].
 [coq-community-maintainer-wanted]: https://github.com/coq-community/manifesto/issues?q=is%3Aissue+is%3Aopen+label%3Amaintainer-wanted
 [coq-community-manifesto]: https://github.com/coq-community/manifesto
 [coq-community-wiki]: https://github.com/coq-community/manifesto/wiki
+[coq-core]: https://github.com/orgs/coq/teams/core/members
 [coqdoc-documentation]: https://coq.inria.fr/refman/practical-tools/utilities.html#documenting-coq-files-with-coqdoc
 [Coq-documentation]: https://coq.inria.fr/documentation
 [Coq-issue-tracker]: https://github.com/coq/coq/issues
 [Coq-package-index]: https://coq.inria.fr/packages
+[coq-pushers]: https://github.com/orgs/coq/teams/pushers/members
 [coq-repository]: https://github.com/coq/coq
 [Coq-website-repository]: https://github.com/coq/www
 [debugging-doc]: dev/doc/debugging.md
@@ -998,6 +1076,7 @@ can be found [on the wiki][wiki-CUDW].
 [GitHub-co-authored-by]: https://github.blog/2018-01-29-commit-together-with-co-authors/
 [GitHub-commit-email]: https://help.github.com/en/articles/setting-your-commit-email-address-in-git
 [GitHub-doc]: https://help.github.com/
+[GitHub-draft-PR]: https://github.blog/2019-02-14-introducing-draft-pull-requests/
 [GitHub-markdown]: https://guides.github.com/features/mastering-markdown/
 [GitHub-notification-settings]: https://github.com/settings/notifications
 [GitHub-PR-from-fork]: https://help.github.com/en/articles/creating-a-pull-request-from-a-fork
@@ -1010,6 +1089,7 @@ can be found [on the wiki][wiki-CUDW].
 [JasonGross-coq-tools]: https://github.com/JasonGross/coq-tools
 [jenkins-doc]: https://github.com/coq/coq/wiki/Jenkins-(automated-benchmarking)
 [kind-documentation]: https://github.com/coq/coq/issues?q=is%3Aopen+is%3Aissue+label%3A%22kind%3A+documentation%22
+[master-doc]: https://coq.github.io/doc/master/refman/
 [MERGING]: dev/doc/MERGING.md
 [needs-benchmarking]: https://github.com/coq/coq/labels/needs%3A%20benchmarking
 [needs-changelog]: https://github.com/coq/coq/labels/needs%3A%20changelog%20entry
@@ -1017,9 +1097,11 @@ can be found [on the wiki][wiki-CUDW].
 [needs-fixing]: https://github.com/coq/coq/labels/needs%3A%20fixing
 [needs-rebase]: https://github.com/coq/coq/labels/needs%3A%20rebase
 [needs-testing]: https://github.com/coq/coq/labels/needs%3A%20testing
+[Nix]: https://github.com/coq/coq/wiki/Nix
 [notification-email]: https://blog.github.com/2017-07-18-managing-large-numbers-of-github-notifications/#prioritize-the-notifications-you-receive
 [OCaml-planet]: http://ocaml.org/community/planet/
 [ocamlformat]: https://github.com/ocaml-ppx/ocamlformat
+[ocamlverse-community]: https://ocamlverse.github.io/content/community.html
 [Octobox]: http://octobox.io/
 [old-style-guide]: dev/doc/style.txt
 [other-standard-libraries]: https://github.com/coq/stdlib2/wiki/Other-%22standard%22-libraries
@@ -1029,6 +1111,8 @@ can be found [on the wiki][wiki-CUDW].
 [refman]: https://coq.inria.fr/refman
 [refman-sources]: doc/sphinx
 [refman-README]: doc/sphinx/README.rst
+[release-plan]: https://github.com/coq/coq/wiki/Release-Plan
+[repology-coq]: https://repology.org/project/coq/versions
 [RM-checklist]: dev/doc/release-process.md
 [Stack-Exchange]: https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites
 [Stack-Overflow]: https://stackoverflow.com/questions/tagged/coq
@@ -1037,6 +1121,7 @@ can be found [on the wiki][wiki-CUDW].
 [test-suite-README]: test-suite/README.md
 [tools-website]: https://coq.inria.fr/related-tools.html
 [tools-wiki]: https://github.com/coq/coq/wiki/Tools
+[unreleased-changelog]: https://coq.github.io/doc/master/refman/changes.html#unreleased-changes
 [user-changelog]: doc/changelog
 [user-overlays]: dev/ci/user-overlays
 [wiki]: https://github.com/coq/coq/wiki
