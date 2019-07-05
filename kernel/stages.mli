@@ -96,6 +96,7 @@ sig
   val remove_pos_vars : SVars.t -> t -> t
   val next : ?s:Annot.t -> t -> Annot.t * t
   val pr : t -> Pp.t
+  val pr_vars : string -> vars -> Pp.t
 end
 
 module Constraints :
