@@ -3,7 +3,6 @@ sig
   type var
   type t = Infty | StageVar of var * int
   val compare : t -> t -> int
-  val show : t -> string
 end
 
 module Annot :
@@ -27,7 +26,6 @@ sig
   val get_vars : t -> vars
   val get_pos_vars : t -> vars
   val next : ?s:Annot.t -> t -> Annot.t * t
-  val show : t -> string
   val pr : t -> Pp.t
 end
 
@@ -40,8 +38,5 @@ sig
   val union : t -> t -> t
   val union_list : t list -> t
   val add : Annot.t -> Annot.t -> t -> t
-  val tos : Stage.t -> t -> Set.t
-  val froms : Stage.t -> t -> Set.t
-  val show : t -> string
   val pr : t -> Pp.t
 end
