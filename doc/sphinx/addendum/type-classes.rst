@@ -470,7 +470,7 @@ Settings
 
 .. flag:: Typeclasses Dependency Order
 
-   This flag (on by default since 8.6) respects the dependency order
+   This flag (off by default) respects the dependency order
    between subgoals, meaning that subgoals on which other subgoals depend
    come first, while the non-dependent subgoals were put before
    the dependent ones previously (Coq 8.5 and below). This can result in
