@@ -298,11 +298,6 @@ unit-tests/%.ml.log: unit-tests/%.ml unit-tests/src/$(UNIT_LINK)
 	$(HIDE)$(OCAMLBEST) -linkall -linkpkg -package coq.toplevel,oUnit \
 	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
 	$(HIDE)./$<.test
-unit-tests/ide/%.ml.log: unit-tests/ide/%.ml unit-tests/src/$(UNIT_LINK)
-	$(SHOW) 'TEST      $<'
-	$(HIDE)$(OCAMLBEST) -linkall -linkpkg -package coq.ide,oUnit \
-	     -I unit-tests/src $(UNIT_LINK) $< -o $<.test;
-	$(HIDE)./$<.test
 
 #######################################################################
 # Other generic tests
