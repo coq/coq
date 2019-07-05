@@ -3,7 +3,7 @@
  (synopsis "The Coq Kernel")
  (public_name coq.kernel)
  (wrapped false)
- (modules (:standard \ genOpcodeFiles uint63_i386_31 uint63_amd64_63 write_uint63))
+ (modules (:standard \ genOpcodeFiles uint63_31 uint63_63))
  (libraries lib byterun dynlink))
 
 (executable
@@ -16,7 +16,7 @@
 
 (rule
  (targets uint63.ml)
- (deps (:gen-file uint63_%{ocaml-config:architecture}_%{ocaml-config:int_size}.ml))
+ (deps (:gen-file uint63_%{ocaml-config:int_size}.ml))
  (action (copy# %{gen-file} %{targets})))
 
 (documentation

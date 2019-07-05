@@ -1141,6 +1141,7 @@ let write_makefile f =
   pr "# Your architecture\n";
   pr "# Can be obtain by UNIX command arch\n";
   pr "ARCH=%s\n" arch;
+  pr "OCAML_INT_SIZE:=%d\n" Sys.int_size;
   pr "HASNATDYNLINK=%s\n\n" natdynlinkflag;
   pr "# Supplementary libs for some systems, currently:\n";
   pr "#  . Sun Solaris: -cclib -lunix -cclib -lnsl -cclib -lsocket\n";

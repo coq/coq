@@ -396,9 +396,8 @@ doc_gram_rsts: doc/tools/docgram/orderedGrammar
 ###########################################################################
 # Specific rules for Uint63
 ###########################################################################
-kernel/uint63.ml: kernel/write_uint63.ml kernel/uint63_i386_31.ml kernel/uint63_amd64_63.ml
-	$(SHOW)'WRITE $@'
-	$(HIDE)(cd kernel && ocaml unix.cma $(shell basename $<))
+kernel/uint63.ml: kernel/uint63_$(OCAML_INT_SIZE).ml
+	rm -f $@ && cp $< $@ && chmod -w $@
 
 ###########################################################################
 # Main targets (coqtop.opt, coqtop.byte)
