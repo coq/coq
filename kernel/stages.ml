@@ -95,8 +95,12 @@ struct
   type t = var * vars * vars
 
   let mem = mem
+  let diff = diff
   let vars_empty = empty
   let vars_add = add
+  let vars_show init vars =
+    Int.Set.fold (fun i str -> string_of_int i ^ "," ^ str) vars init
+  let pr_vars init = mkPr (vars_show init)
 
   let init = (0, empty, empty)
   let get_vars (_, vs, _) = vs
@@ -110,10 +114,9 @@ struct
     | _ -> (s, stg)
 
   let show (stg, vars, stars) =
-    let f i str = string_of_int i ^ "," ^ str in
     let stg_str = string_of_int stg in
-    let vars_str = "{" ^ Int.Set.fold f vars "∞" ^ "}" in
-    let stars_str = "{" ^ Int.Set.fold f stars ": *" ^ "}" in
+    let vars_str = "{" ^ vars_show "∞" vars  ^ "}" in
+    let stars_str = "{" ^ vars_show ": *" stars ^ "}" in
     "<" ^ stg_str ^ "," ^ vars_str ^ "," ^ stars_str ^ ">"
   let pr = mkPr show
 end
@@ -205,6 +208,8 @@ end
 (** RecCheck *)
 open Int.Set
 
+exception RecCheckFailed of Constraints.t * State.vars * State.vars
+
 let closure get_adj cstrnts init =
   let rec closure_rec init fin =
     match choose_opt init with
@@ -250,5 +255,5 @@ let rec_check alpha vstar vneq cstrnts =
 
   (* Step 8: Check S∞ ∩ Si = ∅ *)
   let si_null = inter si_inf si in
-  if is_empty si_null then cstrnts4 else
-  cstrnts4 (* TODO: Throw error *)
+  if is_empty si_null then cstrnts4
+  else raise (RecCheckFailed (cstrnts4, si_inf, si))

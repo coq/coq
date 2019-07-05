@@ -112,6 +112,8 @@ val check_fix : env -> fixpoint -> unit
 val check_cofix : env -> cofixpoint -> unit
 
 val rec_stage_vars : env -> int array -> constr array -> Stage.var array
+val check_rec : env -> Stage.var array -> State.vars -> State.vars ->
+  Constraints.t -> Constraints.t
 
 (** {6 Support for sort-polymorphic inductive types } *)
 

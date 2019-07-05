@@ -22,11 +22,13 @@ sig
   type vars
   type t = Stage.var * vars * vars
   val mem : Stage.var -> vars -> bool
+  val diff : vars -> vars -> vars
   val init : t
   val get_vars : t -> vars
   val get_pos_vars : t -> vars
   val next : ?s:Annot.t -> t -> Annot.t * t
   val pr : t -> Pp.t
+  val pr_vars : string -> vars -> Pp.t
 end
 
 module Constraints :
@@ -40,3 +42,7 @@ sig
   val add : Annot.t -> Annot.t -> t -> t
   val pr : t -> Pp.t
 end
+
+exception RecCheckFailed of Constraints.t * State.vars * State.vars
+
+val rec_check : Stage.var -> State.vars -> State.vars -> Constraints.t -> Constraints.t

@@ -296,6 +296,7 @@ let explain_exn = function
       | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"
       | IllFormedRecBody _ -> str"IllFormedRecBody"
       | IllTypedRecBody _ -> str"IllTypedRecBody"
+      | UnsatisfiedStageConstraints _ -> str"UnsatisfiedStageConstraints"
       | UnsatisfiedConstraints _ -> str"UnsatisfiedConstraints"
       | DisallowedSProp -> str"DisallowedSProp"
       | BadRelevance -> str"BadRelevance"

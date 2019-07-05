@@ -70,6 +70,9 @@ type typing_flags = {
   (** If [false] then fixed points and co-fixed points are assumed to
       be total. *)
 
+  check_sized : bool;
+  (** If [false] then rec_check is not called on (co)fixpoints. *)
+
   check_positive : bool;
   (** If [false] then inductive types are assumed positive and co-inductive
       types are assumed productive. *)

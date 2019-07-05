@@ -597,15 +597,15 @@ let rec execute env stg cstr =
       in
       stg, cstrnt, cstr, t
 
-    | Fix ((_vn,i as vni),recdef as fix) ->
-      let stg, cstrnt, fix_ty,recdef' = execute_recdef env stg recdef i in
+    | Fix ((vn,i as vni),recdef as fix) ->
+      let stg, cstrnt, fix_ty,recdef' = execute_recdef env stg recdef vn i in
       let cstr, fix = if recdef == recdef' then cstr, fix else
           let fix = (vni,recdef') in mkFix fix, fix
       in
       check_fix env fix; stg, cstrnt, cstr, fix_ty
 
     | CoFix (i,recdef as cofix) ->
-      let stg, cstrnt, fix_ty,recdef' = execute_recdef env stg recdef i in
+      let stg, cstrnt, fix_ty,recdef' = execute_recdef env stg recdef [||] i in (* FIXME!! *)
       let cstr, cofix = if recdef == recdef' then cstr, cofix else
           let cofix = (i,recdef') in mkCoFix cofix, cofix
       in
@@ -626,18 +626,22 @@ and execute_is_type env stg constr =
   let stg, cstrnt, c, t = execute env stg constr in
     stg, cstrnt, c, check_type env constr t
 
-and execute_recdef env stg (names, lar, vdef as recdef) i =
+and execute_recdef env stg (names, lar, vdef as recdef) vn i =
   let stg_lar, cstrnt_lar, lar', lart = execute_array env stg lar in
   let names' = Array.Smart.map_i (fun i na -> check_assumption env na lar'.(i) lart.(i)) names in
   let env1 = push_rec_types (names', lar', vdef) env in (* vdef is ignored *)
   let stg_vdef, cstrnt_vdef, vdef', vdeft = execute_array env1 stg_lar vdef in
+  let alphas = rec_stage_vars env vn lar' in
   let star_vars = get_pos_vars stg_vdef in
+  let not_star_vars = diff (get_vars stg_vdef) star_vars in
   let lar_succ = Array.Smart.map (succ_annots star_vars) lar' in
   let lar_star = Array.Smart.map (pos_annots star_vars) lar' in
   let cstrnt_fix = check_fixpoint env1 names' lar_succ vdef' vdeft in
   let cstrnt_succ = conv_leq_vecti env lar' lar_succ in
+  let cstrnt_all = union_list [cstrnt_lar; cstrnt_vdef; cstrnt_fix; cstrnt_succ] in
+  let cstrnt = check_rec env alphas star_vars not_star_vars cstrnt_all in
   let recdef = if names == names' && lar == lar_star && vdef == vdef' then recdef else (names',lar_star,vdef') in
-    stg_vdef, union_list [cstrnt_lar; cstrnt_vdef; cstrnt_fix; cstrnt_succ], lar'.(i), recdef
+    stg_vdef, cstrnt, lar'.(i), recdef
 
 and execute_array env stg cs =
   let tys = Array.make (Array.length cs) mkProp in

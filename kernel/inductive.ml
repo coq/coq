@@ -1337,3 +1337,12 @@ let rec_stage_var env i ty_sized =
 
 let rec_stage_vars env is tys_sized =
   Array.map2 (rec_stage_var env) is tys_sized
+
+let check_rec env alphas vstar vneq cstrnts =
+  let flags = Environ.typing_flags env in
+  if flags.check_sized then
+    let rec_check_all cstrnts alpha = union cstrnts (rec_check alpha vstar vneq cstrnts) in
+    try Array.fold_left rec_check_all cstrnts alphas
+    with RecCheckFailed (_cstrnts', si_inf, si) ->
+      error_unsatisfied_stage_constraints env cstrnts si_inf si
+  else cstrnts

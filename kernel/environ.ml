@@ -441,6 +441,7 @@ let set_engagement c env =
 (* It's convenient to use [{flags with foo = bar}] so we're smart wrt to it. *)
 let same_flags {
      check_guarded;
+     check_sized;
      check_positive;
      check_universes;
      conv_oracle;
@@ -451,6 +452,7 @@ let same_flags {
      cumulative_sprop;
   } alt =
   check_guarded == alt.check_guarded &&
+  check_sized == alt.check_sized &&
   check_positive == alt.check_positive &&
   check_universes == alt.check_universes &&
   conv_oracle == alt.conv_oracle &&
