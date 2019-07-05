@@ -13,6 +13,7 @@ open Constr
 open Univ
 open Declarations
 open Environ
+open Stages
 
 (** {6 Extracting an inductive type from a construction } *)
 
@@ -22,7 +23,7 @@ open Environ
    only a coinductive type.
    They raise [Not_found] if not convertible to a recursive type. *)
 
-val find_rectype     : env -> types -> pinductive * constr list * Stages.annot
+val find_rectype     : env -> types -> pinductive * constr list * Annot.t
 val find_inductive   : env -> types -> pinductive * constr list
 val find_coinductive : env -> types -> pinductive * constr list
 
@@ -47,9 +48,9 @@ val make_param_univs : Environ.env -> constr array -> param_univs
 (** The constr array is the types of the arguments to a template
     polymorphic inductive. *)
 
-val constrained_type_of_inductive : mind_specif puniverses -> types constrained
+val constrained_type_of_inductive : mind_specif puniverses -> types Univ.constrained
 val constrained_type_of_inductive_knowing_parameters :
-  mind_specif puniverses -> param_univs -> types constrained
+  mind_specif puniverses -> param_univs -> types Univ.constrained
 
 val relevance_of_inductive : env -> inductive -> Sorts.relevance
 
@@ -65,8 +66,8 @@ val is_primitive_record : mind_specif -> bool
 
 (** Return type as quoted by the user *)
 
-val constrained_type_of_constructor : ?s:Stages.annot -> pconstructor -> mind_specif -> types constrained
-val type_of_constructor : ?s:Stages.annot -> pconstructor -> mind_specif -> types
+val constrained_type_of_constructor : ?s:Annot.t -> pconstructor -> mind_specif -> types Univ.constrained
+val type_of_constructor : ?s:Annot.t -> pconstructor -> mind_specif -> types
 
 (** Return constructor types in normal form *)
 val arities_of_constructors : pinductive -> mind_specif -> types array
@@ -87,12 +88,12 @@ val inductive_params : mind_specif -> int
    the universe constraints generated.
  *)
 val type_case_branches :
-  env -> pinductive * constr list -> unsafe_judgment -> constr -> Stages.annot
-    -> types array * types * Stages.constraints
+  env -> pinductive * constr list -> unsafe_judgment -> constr -> Annot.t
+    -> types array * types * Constraints.t
 
 val build_branches_type :
-  pinductive -> mutual_inductive_body * one_inductive_body ->
-    constr list -> constr -> Stages.annot -> types array
+  ?s:Annot.t -> pinductive -> mutual_inductive_body * one_inductive_body ->
+    constr list -> constr -> types array
 
 (** Return the arity of an inductive type *)
 val mind_arity : one_inductive_body -> Constr.rel_context * Sorts.family
@@ -110,7 +111,7 @@ val check_case_info : env -> pinductive -> Sorts.relevance -> case_info -> unit
 val check_fix : env -> fixpoint -> unit
 val check_cofix : env -> cofixpoint -> unit
 
-val rec_stage_vars : env -> int array -> constr array -> Stages.stage_name array
+val rec_stage_vars : env -> int array -> constr array -> Stage.var array
 
 (** {6 Support for sort-polymorphic inductive types } *)
 

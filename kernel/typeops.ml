@@ -16,6 +16,9 @@ open Sorts
 open Term
 open Constr
 open Stages
+open Annot
+open State
+open Constraints
 open Substaging
 open Context
 open Vars
@@ -35,9 +38,9 @@ let conv_leq l2r env x y = default_conv CUMUL ~l2r env x y
 let conv_leq_vecti env v1 v2 =
   Array.fold_left2_i
     (fun i cstrnts t1 t2 ->
-      try union_constraint cstrnts (conv_leq false env t1 t2)
+      try union cstrnts (conv_leq false env t1 t2)
       with NotConvertible -> raise (NotConvertibleVect i))
-    empty_constraint
+    empty
     v1
     v2
 
@@ -126,7 +129,7 @@ let check_hyps_inclusion env ?evars c sign =
       let id = NamedDecl.get_id d1 in
       try
         let d2 = lookup_named id env in
-        let cstrnts' = union_constraint cstrnts (conv env (get_type d2) (get_type d1)) in
+        let cstrnts' = union cstrnts (conv env (get_type d2) (get_type d1)) in
         (match d2,d1 with
         | LocalAssum _, LocalAssum _ -> cstrnts'
         | LocalAssum _, LocalDef _ ->
@@ -137,7 +140,7 @@ let check_hyps_inclusion env ?evars c sign =
       with Not_found | NotConvertible | Option.Heterogeneous ->
         error_reference_variables env id c)
     sign
-    ~init:empty_constraint
+    ~init:empty
 
 (* Instantiation of terms on real arguments. *)
 
@@ -189,7 +192,7 @@ let type_of_apply env func funt argsv argstv =
   let infos = create_clos_infos all env in
   let tab = create_tab () in
   let rec apply_rec i typ =
-    if Int.equal i len then term_of_fconstr typ, empty_constraint
+    if Int.equal i len then term_of_fconstr typ, empty
     else
       let typ, stk = whd_stack infos tab typ [] in
       (** The return stack is known to be empty *)
@@ -202,19 +205,19 @@ let type_of_apply env func funt argsv argstv =
         begin match conv_leq false env argt c1 with
         | cstrnts ->
           let ty, cstrnts' = apply_rec (i+1) (mk_clos (Esubst.subs_cons ([| inject arg |], e)) c2) in
-          ty, union_constraint cstrnts cstrnts'
+          ty, union cstrnts cstrnts'
         | exception NotConvertible ->
           error_cant_apply_bad_type env
             (i+1,c1,argt)
             (make_judge func funt)
             (make_judgev argsv argstv),
-          empty_constraint
+          empty
         end
       | _ ->
         error_cant_apply_not_functional env
           (make_judge func funt)
           (make_judgev argsv argstv),
-        empty_constraint
+        empty
   in
   apply_rec 0 (inject funt)
 
@@ -424,12 +427,12 @@ let type_of_case env stg ci p pt c ct _lf lft =
     else (warn_bad_relevance_ci (); {ci with ci_relevance=rp})
   in
   let () = check_case_info env pind rp ci in
-  let s, stg = next_stage_state stg in
+  let s, stg = next stg in
   let bty, rslty, cstrnts_rsl =
     type_case_branches env (pind, largs) (make_judge p pt) c s in
   let cstrnts_branch = check_branch_types env pind c ct lft bty in
-  let cstrnts = union_constraint cstrnts_rsl cstrnts_branch in
-  stg, ci, rslty, add_constraint_from_ind env cstrnts (fst pind) r (succ_annot s)
+  let cstrnts = union cstrnts_rsl cstrnts_branch in
+  stg, ci, rslty, add_constraint_from_ind env cstrnts (fst pind) r (hat s)
 
 let type_of_projection env p c ct =
   let pty = lookup_projection p env in
@@ -500,13 +503,13 @@ let rec execute env stg cstr =
       (match s with
        | SProp -> if not (Environ.sprop_allowed env) then error_disallowed_sprop env
        | _ -> ());
-      stg, empty_constraint, cstr, type_of_sort s
+      stg, empty, cstr, type_of_sort s
 
     | Rel n ->
-      stg, empty_constraint, cstr, type_of_relative env n
+      stg, empty, cstr, type_of_relative env n
 
     | Var id ->
-      stg, empty_constraint, cstr, type_of_variable env id
+      stg, empty, cstr, type_of_variable env id
 
     | Const c ->
       let t, cstrnt = type_of_constant env c in
@@ -522,14 +525,14 @@ let rec execute env stg cstr =
       let stga, cstrnta, args', argst = execute_array env stg args in
       let stgf, cstrntf, f', ft = match kind f with
       | Ind (ind, s) when Environ.template_polymorphic_pind ind env ->
-        let s', stg' = next_stage_state ~s stg in
+        let s', stg' = next ~s stg in
         let t, cstrnt = type_of_inductive_knowing_parameters env ind argst in
         stg', cstrnt, mkIndUS ind s', t
       | _ -> (* No template polymorphism *)
         execute env stga f
       in
       let t, cstrntapp = type_of_apply env f' ft args' argst in
-      let cstrnt = union_constraints [cstrnta; cstrntf; cstrntapp] in
+      let cstrnt = union_list [cstrnta; cstrntf; cstrntapp] in
       let cstr = if f == f' && args == args' then cstr else mkApp (f',args') in
       stgf, cstrnt, cstr, t
 
@@ -538,7 +541,7 @@ let rec execute env stg cstr =
       let name' = check_binder_annot s name in
       let env1 = push_rel (LocalAssum (name',c1')) env in
       let stg2, cstrnt2, c2', c2t = execute env1 stg1 c2 in
-      let cstrnt = union_constraint cstrnt1 cstrnt2 in
+      let cstrnt = union cstrnt1 cstrnt2 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkLambda(name', erase c1',c2') in
       stg2, cstrnt, cstr, type_of_abstraction env name' c1 c2t
 
@@ -547,7 +550,7 @@ let rec execute env stg cstr =
       let name' = check_binder_annot vars name in
       let env1 = push_rel (LocalAssum (name',c1')) env in
       let stg2, cstrnt2, c2', vars' = execute_is_type env1 stg1 c2 in
-      let cstrnt = union_constraint cstrnt1 cstrnt2 in
+      let cstrnt = union cstrnt1 cstrnt2 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkProd(name',c1',c2') in
       stg2, cstrnt, cstr, type_of_product env name' vars vars'
 
@@ -558,7 +561,7 @@ let rec execute env stg cstr =
       let cstrnt' = check_cast env c1' c1t DEFAULTcast c2' in
       let env1 = push_rel (LocalDef (name',c1',c2')) env in
       let stg3, cstrnt3, c3', c3t = execute env1 stg2 c3 in
-      let cstrnt = union_constraints [cstrnt1; cstrnt2; cstrnt3; cstrnt'] in
+      let cstrnt = union_list [cstrnt1; cstrnt2; cstrnt3; cstrnt'] in
       let cstr = if name == name' && c1 == c1' && c2 == c2' && c3 == c3' then cstr
         else mkLetIn(name',c1',erase c2',c3')
       in
@@ -568,18 +571,18 @@ let rec execute env stg cstr =
       let stgc, cstrntc, c', ct = execute env stg c in
       let stgt, cstrntt, t', _ts = execute_is_type env stgc t in
       let cstrnt' = check_cast env c' ct k t' in
-      let cstrnt = union_constraints [cstrntc; cstrntt; cstrnt'] in
+      let cstrnt = union_list [cstrntc; cstrntt; cstrnt'] in
       let cstr = if c == c' && t == t' then cstr else mkCast(c',k,t') in
       stgt, cstrnt, cstr, t'
 
     (* Inductive types *)
     | Ind (ind, s) ->
-      let s', stg' = next_stage_state ~s stg in
+      let s', stg' = next ~s stg in
       let t, cstrnt = type_of_inductive env ind in
       stg', cstrnt, mkIndUS ind s', t
 
     | Construct c ->
-      let s, stg = next_stage_state stg in
+      let s, stg = next stg in
       let t, cstrnt = type_of_constructor env ~s c in
       stg, cstrnt, cstr, t
 
@@ -588,7 +591,7 @@ let rec execute env stg cstr =
       let stgp, cstrntp, p', pt = execute env stgc p in
       let stglf, cstrntlf, lf', lft = execute_array env stgp lf in
       let stg, ci', t, cstrntci = type_of_case env stglf ci p' pt c' ct lf' lft in
-      let cstrnt = union_constraints [cstrntc; cstrntp; cstrntlf; cstrntci] in
+      let cstrnt = union_list [cstrntc; cstrntp; cstrntlf; cstrntci] in
       let cstr = if ci == ci' && c == c' && p == p' && lf == lf' then cstr
         else mkCase(ci',p',c',lf')
       in
@@ -609,8 +612,8 @@ let rec execute env stg cstr =
       check_cofix env cofix; stg, cstrnt, cstr, fix_ty
 
     (* Primitive types *)
-    | Int _ -> stg, empty_constraint, cstr, type_of_int env
-    | Float _ -> stg, empty_constraint, cstr, type_of_float env
+    | Int _ -> stg, empty, cstr, type_of_int env
+    | Float _ -> stg, empty, cstr, type_of_float env
 
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
@@ -628,13 +631,13 @@ and execute_recdef env stg (names, lar, vdef as recdef) i =
   let names' = Array.Smart.map_i (fun i na -> check_assumption env na lar'.(i) lart.(i)) names in
   let env1 = push_rec_types (names', lar', vdef) env in (* vdef is ignored *)
   let stg_vdef, cstrnt_vdef, vdef', vdeft = execute_array env1 stg_lar vdef in
-  let star_vars = get_pos_stage_vars stg_vdef in
+  let star_vars = get_pos_vars stg_vdef in
   let lar_succ = Array.Smart.map (succ_annots star_vars) lar' in
   let lar_star = Array.Smart.map (pos_annots star_vars) lar' in
   let cstrnt_fix = check_fixpoint env1 names' lar_succ vdef' vdeft in
   let cstrnt_succ = conv_leq_vecti env lar' lar_succ in
   let recdef = if names == names' && lar == lar_star && vdef == vdef' then recdef else (names',lar_star,vdef') in
-    stg_vdef, union_constraints [cstrnt_lar; cstrnt_vdef; cstrnt_fix; cstrnt_succ], lar'.(i), recdef
+    stg_vdef, union_list [cstrnt_lar; cstrnt_vdef; cstrnt_fix; cstrnt_succ], lar'.(i), recdef
 
 and execute_array env stg cs =
   let tys = Array.make (Array.length cs) mkProp in
@@ -642,8 +645,8 @@ and execute_array env stg cs =
     (fun i (stg, cstrnt1) c ->
       let stg', cstrnt2, c, ty = execute env stg c in
       tys.(i) <- ty;
-      (stg', union_constraint cstrnt1 cstrnt2), c)
-    (stg, empty_constraint) cs in
+      (stg', union cstrnt1 cstrnt2), c)
+    (stg, empty) cs in
   stg, cstrnt, cs, tys
 
 (* Derived functions *)
@@ -656,7 +659,7 @@ let check_wellformed_universes env c =
 
 let infer env constr =
   let () = check_wellformed_universes env constr in
-  let _, _, constr_sized, t_sized = execute env init_stage_state constr in
+  let _, _, constr_sized, t_sized = execute env init constr in
   let constr_bare, t = erase constr_sized, erase t_sized in
   let constr = if equal constr constr_bare then constr else constr_bare in
   make_judge constr t
@@ -676,7 +679,7 @@ let type_judgment env {uj_val=c; uj_type=t} =
 
 let infer_type env constr =
   let () = check_wellformed_universes env constr in
-  let _, _, constr_sized, t_sized = execute env init_stage_state constr in
+  let _, _, constr_sized, t_sized = execute env init constr in
   let constr_bare, t = erase constr_sized, erase t_sized in
   let constr = if equal constr constr_bare then constr else constr_bare in
   let s = check_type env constr t in
@@ -750,7 +753,7 @@ let judge_of_constructor env cu =
 
 let judge_of_case env ci pj cj lfj =
   let lf, lft = dest_judgev lfj in
-  let _, ci, t, _ = type_of_case env init_stage_state ci pj.uj_val pj.uj_type cj.uj_val cj.uj_type lf lft in
+  let _, ci, t, _ = type_of_case env init ci pj.uj_val pj.uj_type cj.uj_val cj.uj_type lf lft in
   make_judge (mkCase (ci, (*nf_betaiota*) pj.uj_val, cj.uj_val, lft)) t
 
 (* Building type of primitive operators and type *)

@@ -10,6 +10,7 @@
 
 open Constr
 open Environ
+open Stages
 
 (***********************************************************************
   s Reduction functions *)
@@ -28,11 +29,11 @@ val nf_betaiota      : env -> constr -> constr
 
 exception NotConvertible
 
-type 'a kernel_conversion_function = env -> 'a -> 'a -> Stages.constraints
+type 'a kernel_conversion_function = env -> 'a -> 'a -> Constraints.t
 type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
   ?evars:((existential->constr option) * UGraph.t) ->
-  'a -> 'a -> Stages.constraints
+  'a -> 'a -> Constraints.t
 
 type conv_pb = CONV | CUMUL
 
@@ -45,7 +46,7 @@ type 'a universe_compare =
 
 type 'a universe_state = 'a * 'a universe_compare
 
-type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b Stages.constrained
+type ('a,'b) generic_conversion_function = env -> 'b universe_state -> 'a -> 'a -> 'b Constraints.constrained
 
 type 'a infer_conversion_function = env -> UGraph.t -> 'a -> 'a -> Univ.Constraint.t
 

@@ -21,6 +21,9 @@ open Reduction
 open Type_errors
 open Context.Rel.Declaration
 open Stages
+open Stage
+open Annot
+open Constraints
 
 type mind_specif = mutual_inductive_body * one_inductive_body
 
@@ -77,7 +80,7 @@ let constructor_instantiate ?s:annot mind u mib c =
   | Some annot ->
     let l, c = Term.decompose_prod ty in
     let l' = List.Smart.map (fun (x, t) -> x, annotate mind annot t) l in
-    let c' = annotate mind (succ_annot annot) c in
+    let c' = annotate mind (hat annot) c in
     Term.compose_prod l' c'
 
 let instantiate_params full t u args sign =
@@ -103,8 +106,8 @@ let full_inductive_instantiate mib u params sign =
   let t = Term.mkArity (Vars.subst_instance_context u sign,dummy) in
     fst (Term.destArity (instantiate_params true t u params mib.mind_params_ctxt))
 
-let full_constructor_instantiate ((mind,_),u,(mib,_),params) t s =
-  let inst_ind = constructor_instantiate ~s mind u mib t in
+let full_constructor_instantiate ?s ((mind,_),u,(mib,_),params) t =
+  let inst_ind = constructor_instantiate ?s mind u mib t in
    instantiate_params true inst_ind u params mib.mind_params_ctxt
 
 (************************************************************************)
@@ -326,7 +329,7 @@ let is_primitive_record (mib,_) =
 let build_dependent_inductive ind (_,mip) params s =
   let realargs,_ = List.chop mip.mind_nrealdecls mip.mind_arity_ctxt in
   Term.applist
-    (mkIndUS ind (succ_annot s),
+    (mkIndUS ind (hat s),
        List.map (lift mip.mind_nrealdecls) params
        @ Context.Rel.to_extended_list mkRel 0 realargs)
 
@@ -348,7 +351,7 @@ let is_correct_arity env c pj ind specif params s =
           try conv env a1 a1'
           with NotConvertible -> raise (LocalArity None) in
         let cstrnts_srec = srec (push_rel (LocalAssum (na1,a1)) env) t ar' in
-        union_constraint cstrnts cstrnts_srec
+        union cstrnts cstrnts_srec
       (* The last Prod domain is the type of the scrutinee *)
       | Prod (na1,a1,a2), [] -> (* whnf of t was not needed here! *)
         let env' = push_rel (LocalAssum (na1,a1)) env in
@@ -375,10 +378,10 @@ let is_correct_arity env c pj ind specif params s =
 
 (* [p] is the predicate, [i] is the constructor number (starting from 0),
    and [cty] is the type of the constructor (params not instantiated) *)
-let build_branches_type (ind,u) (_,mip as specif) params p s =
+let build_branches_type ?s (ind,u) (_,mip as specif) params p =
   let build_one_branch i (ctx, c) =
     let cty = Term.it_mkProd_or_LetIn c ctx in
-    let typi = full_constructor_instantiate (ind,u,specif,params) cty s in
+    let typi = full_constructor_instantiate ?s (ind,u,specif,params) cty in
     let (cstrsign,ccl) = Term.decompose_prod_assum typi in
     let nargs = Context.Rel.length cstrsign in
     let (_,allargs) = decompose_app ccl in
@@ -402,7 +405,7 @@ let type_case_branches env (pind,largs) pj c s =
   let (params,realargs) = List.chop nparams largs in
   let p = pj.uj_val in
   let cstrnts = is_correct_arity env c pj pind specif params s in
-  let lc = build_branches_type pind specif params p s in
+  let lc = build_branches_type ~s pind specif params p in
   let ty = build_case_type env (snd specif).mind_nrealdecls p c realargs in
   lc, ty, cstrnts
 
@@ -1334,3 +1337,8 @@ let rec_stage_var env i ty_sized =
 
 let rec_stage_vars env is tys_sized =
   Array.map2 (rec_stage_var env) is tys_sized
+
+
+
+let rec_check alpha vstar vneq cstrnts =
+  cstrnts

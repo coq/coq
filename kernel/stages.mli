@@ -1,37 +1,47 @@
-type stage_name
-type stage = Infty | StageVar of stage_name * int
-type annot = Empty | Star | Stage of stage
-
-val infty : annot
-val succ_annot : annot -> annot
-val is_stage : annot -> bool
-val compare_annot : annot -> annot -> int
-val show_annot : annot -> string
-val pr_annot : annot -> Pp.t
-val hash_stage_annot : annot -> int
-
-
-type stage_vars
-type stage_state
-
-val mem_stage_vars : stage_name -> stage_vars -> bool
-val init_stage_state : stage_state
-val get_stage_vars : stage_state -> stage_vars
-val get_pos_stage_vars : stage_state -> stage_vars
-val next_stage_state : ?s:annot -> stage_state -> annot * stage_state
-val pr_stage_state : stage_state -> Pp.t
-
-
-module SConstraint : sig
-  include Set.S
+module Stage :
+sig
+  type var
+  type t = Infty | StageVar of var * int
+  val compare : t -> t -> int
+  val show : t -> string
 end
 
-type stage_constraint = SConstraint.elt
-type constraints = SConstraint.t
-type 'a constrained = 'a * constraints
+module Annot :
+sig
+  type t = Empty | Star | Stage of Stage.t
+  val infty : t
+  val hat : t -> t
+  val is_stage : t -> bool
+  val compare : t -> t -> int
+  val show : t -> string
+  val pr : t -> Pp.t
+  val hash : t -> int
+end
 
-val empty_constraint : constraints
-val union_constraint : constraints -> constraints -> constraints
-val union_constraints : constraints list -> constraints
-val add_constraint : annot -> annot -> constraints -> constraints
-val pr_constraints : constraints -> Pp.t
+module State :
+sig
+  type vars
+  type t = Stage.var * vars * vars
+  val mem : Stage.var -> vars -> bool
+  val init : t
+  val get_vars : t -> vars
+  val get_pos_vars : t -> vars
+  val next : ?s:Annot.t -> t -> Annot.t * t
+  val show : t -> string
+  val pr : t -> Pp.t
+end
+
+module Constraints :
+sig
+  module Set : CSig.SetS
+  type t
+  type 'a constrained = 'a * t
+  val empty : t
+  val union : t -> t -> t
+  val union_list : t list -> t
+  val add : Annot.t -> Annot.t -> t -> t
+  val tos : Stage.t -> t -> Set.t
+  val froms : Stage.t -> t -> Set.t
+  val show : t -> string
+  val pr : t -> Pp.t
+end

@@ -1,5 +1,7 @@
-val add_constraint_from_ind : Environ.env -> Stages.constraints ->
-    Names.inductive -> Stages.annot -> Stages.annot -> Stages.constraints
+open Stages
 
-val add_constraint_from_ind_ref : Environ.env -> Stages.constraints ref ->
-    Names.inductive -> Stages.annot -> Stages.annot -> unit
+val add_constraint_from_ind : Environ.env -> Constraints.t ->
+    Names.inductive -> Annot.t -> Annot.t -> Constraints.t
+
+val add_constraint_from_ind_ref : Environ.env -> Constraints.t ref ->
+    Names.inductive -> Annot.t -> Annot.t -> unit

@@ -104,7 +104,7 @@ type fterm =
   | FRel of int
   | FAtom of constr (** Metas and Sorts *)
   | FFlex of table_key
-  | FInd of inductive Univ.puniverses * annot
+  | FInd of inductive Univ.puniverses * Annot.t
   | FConstruct of constructor Univ.puniverses
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * fconstr

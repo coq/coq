@@ -130,7 +130,7 @@ val mkProj : (Projection.t * constr) -> constr
 (** Constructs the ith (co)inductive type of the block named kn *)
 val mkInd : inductive -> constr
 val mkIndU : pinductive -> constr
-val mkIndUS : pinductive -> annot -> constr
+val mkIndUS : pinductive -> Annot.t -> constr
 
 (** Constructs the jth constructor of the ith (co)inductive type of the
    block named kn. *)
@@ -232,7 +232,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Const     of (Constant.t * 'univs)                  (** Gallina-variable that was introduced by Vernacular-command that extends the global environment
                                                           (i.e. [Parameter], or [Axiom], or [Definition], or [Theorem] etc.) *)
 
-  | Ind       of (inductive * 'univs) * annot         (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
+  | Ind       of (inductive * 'univs) * Annot.t       (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
   | Construct of (constructor * 'univs)              (** A constructor of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
@@ -367,13 +367,13 @@ val equal : constr -> constr -> bool
 
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [u]. *)
-val eq_constr_univs : (constraints ref -> Names.inductive -> annot -> annot -> unit) ->
-   UGraph.t -> constr -> constr -> bool constrained
+val eq_constr_univs : (Constraints.t ref -> Names.inductive -> Annot.t -> Annot.t -> unit) ->
+   UGraph.t -> constr -> constr -> bool Constraints.constrained
 
 (** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo
     alpha, casts, application grouping and the universe inequalities in [u]. *)
-val leq_constr_univs : (constraints ref -> Names.inductive -> annot -> annot -> unit) ->
-   UGraph.t -> constr -> constr -> bool constrained
+val leq_constr_univs : (Constraints.t ref -> Names.inductive -> Annot.t -> Annot.t -> unit) ->
+   UGraph.t -> constr -> constr -> bool Constraints.constrained
 
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [u]. *)
@@ -533,7 +533,7 @@ val erase : constr -> constr
 
 (** [annotate ind s c] annotates all inductive types [ind] in [c] with annotation [s] *)
 
-val annotate : Names.MutInd.t -> annot -> constr -> constr
+val annotate : Names.MutInd.t -> Annot.t -> constr -> constr
 
 (** [annotate ind s c] annotates all inductive types [ind] in [c] with Infty *)
 
@@ -542,12 +542,12 @@ val annotate_infty : constr -> constr
 (** [succ_annots vars c] calls [succ_annot] on all the stage annotations in [c]
    if the stage variables are in [vars] *)
 
-val succ_annots : stage_vars -> constr -> constr
+val succ_annots : State.vars -> constr -> constr
 
 (** [pos_annots vars c] sets all stage annotations in [c]
    whose stage variables are in [vars] to star position annotations *)
 
-val pos_annots : stage_vars -> constr -> constr
+val pos_annots : State.vars -> constr -> constr
 
 (** [iter f c] iters [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is

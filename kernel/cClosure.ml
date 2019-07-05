@@ -337,7 +337,7 @@ and fterm =
   | FRel of int
   | FAtom of constr (* Metas and Sorts *)
   | FFlex of table_key
-  | FInd of pinductive * annot
+  | FInd of pinductive * Annot.t
   | FConstruct of pconstructor
   | FApp of fconstr * fconstr array
   | FProj of Projection.t * fconstr

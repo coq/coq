@@ -6,23 +6,14 @@ let mkPr show = (fun a -> show a |> Pp.str)
 
 (** Stage variables and stage annotations *)
 
-type stage_name = int
-type stage = Infty | StageVar of stage_name * int
-type annot = Empty | Star | Stage of stage
+module Stage =
+struct
+  type var = int
+  type t = Infty | StageVar of var * int
 
-let infty = Stage Infty
+  let var_equal = Int.equal
 
-let succ_annot a =
-  match a with
-  | Stage (StageVar (name, size)) -> Stage (StageVar (name, succ size))
-  | _ -> a
-
-let is_stage a =
-  match a with
-  | Empty | Star -> false
-  | _ -> true
-
-let compare_stage s1 s2 =
+  let compare s1 s2 =
     match s1, s2 with
     | Infty, Infty -> 0
     | Infty, _     -> 1
@@ -32,118 +23,145 @@ let compare_stage s1 s2 =
       if not (Int.equal nc 0) then nc
       else Int.compare size1 size2
 
-let compare_annot a1 a2 =
-  match a1, a2 with
-  | Empty, Empty -> 0
-  | Empty, _ -> -1 | _, Empty -> 1
-  | Star, Star   -> 0
-  | Star, _  -> -1 | _, Star  -> 1
-  | Stage s1, Stage s2 -> compare_stage s1 s2
+  let show s =
+    match s with
+    | Infty -> "∞"
+    | StageVar (s, n) ->
+      let str = "s" ^ string_of_int s in
+      if Int.equal n 0 then str else
+      str ^ "+" ^ string_of_int n
+end
 
-let show_stage s =
-  match s with
-  | Infty -> "∞"
-  | StageVar (s, n) ->
-    let str = "s" ^ string_of_int s in
-    if Int.equal n 0 then str else
-    str ^ "+" ^ string_of_int n
+module Annot =
+struct
+  open Stage
 
-let show_annot a =
-  match a with
-  | Empty -> ""
-  | Star  -> "*"
-  | Stage s -> show_stage s
+  type t = Empty | Star | Stage of Stage.t
 
-let pr_annot = mkPr show_annot
+  let infty = Stage Infty
 
-let hash_stage_annot a =
+  let hat a =
     match a with
-    | Empty -> combine 1 (show_annot a |> String.hash)
-    | Star  -> combine 2 (show_annot a |> String.hash)
-    | Stage Infty -> combine 3 (show_annot a |> String.hash)
+    | Stage (StageVar (name, size)) -> Stage (StageVar (name, succ size))
+    | _ -> a
+
+  let is_stage a =
+    match a with
+    | Empty | Star -> false
+    | _ -> true
+
+  let compare a1 a2 =
+    match a1, a2 with
+    | Empty, Empty -> 0
+    | Empty, _ -> -1 | _, Empty -> 1
+    | Star, Star   -> 0
+    | Star, _  -> -1 | _, Star  -> 1
+    | Stage s1, Stage s2 -> Stage.compare s1 s2
+
+  let show a =
+    match a with
+    | Empty -> ""
+    | Star  -> "*"
+    | Stage s -> Stage.show s
+
+  let pr = mkPr show
+
+  let hash a =
+    match a with
+    | Empty -> combine 1 (show a |> String.hash)
+    | Star  -> combine 2 (show a |> String.hash)
+    | Stage Infty -> combine 3 (show a |> String.hash)
     | Stage (StageVar (n, i)) -> combine3 4 (Int.hash n) (Int.hash i)
+end
 
-(** Stage sets *)
+(** Stage sets and state *)
 
-(* [stage_state] =
-  ( name of next stage variable
-  , all used stage variables
-  , stage variables used to replace star annotations
-  ) *)
-type stage_vars = Int.Set.t
-type stage_state = stage_name * stage_vars * stage_vars
+module State =
+struct
+  open Stage
+  open Annot
+  open Int.Set
 
-let empty_stage_vars = Int.Set.empty
-let add_stage_vars = Int.Set.add
-let mem_stage_vars = Int.Set.mem
-let diff_stage_vars = Int.Set.diff
+  (* state =
+      ( name of next stage variable
+      , all used stage variables
+      , stage variables used to replace star annotations
+      ) *)
+  type vars = Int.Set.t
+  type t = var * vars * vars
 
-let init_stage_state = (0, empty_stage_vars, empty_stage_vars)
-let get_stage_vars (_, vs, _) = vs
-let get_pos_stage_vars (_, _, stars) = stars
-let next_stage_state ?s:(s=Empty) ((next, vs, stars) as stg) =
-  match s with
-  | Empty | Stage Infty ->
-    Stage (StageVar (next, 0)),
-    (succ next, add_stage_vars next vs, stars)
-  | Star ->
-    Stage (StageVar (next, 0)),
-    (succ next, add_stage_vars next vs, add_stage_vars next stars)
-  | _ -> (s, stg)
+  let mem = mem
 
-let show_stage_state (stg, vars, stars) =
-  let f i str = string_of_int i ^ "," ^ str in
-  let stg_str = string_of_int stg in
-  let vars_str = "{" ^ Int.Set.fold f vars "∞" ^ "}" in
-  let stars_str = "{" ^ Int.Set.fold f stars ": *" ^ "}" in
-  "<" ^ stg_str ^ "," ^ vars_str ^ "," ^ stars_str ^ ">"
-let pr_stage_state = mkPr show_stage_state
+  let init = (0, empty, empty)
+  let get_vars (_, vs, _) = vs
+  let get_pos_vars (_, _, stars) = stars
+  let next ?s:(s=Empty) ((next, vs, stars) as stg) =
+    match s with
+    | Empty | Stage Infty ->
+      Stage (StageVar (next, 0)),
+      (succ next, add next vs, stars)
+    | Star ->
+      Stage (StageVar (next, 0)),
+      (succ next, add next vs, add next stars)
+    | _ -> (s, stg)
+
+  let show (stg, vars, stars) =
+    let f i str = string_of_int i ^ "," ^ str in
+    let stg_str = string_of_int stg in
+    let vars_str = "{" ^ Int.Set.fold f vars "∞" ^ "}" in
+    let stars_str = "{" ^ Int.Set.fold f stars ": *" ^ "}" in
+    "<" ^ stg_str ^ "," ^ vars_str ^ "," ^ stars_str ^ ">"
+  let pr = mkPr show
+end
 
 (** Stage constraints and sets of constraints *)
 
-module SConstraintOrd =
+module Constraints =
 struct
-  type t = stage * stage
-  (* (s, r) means s ⊑ r *)
+  open Stage
+  open Annot
 
-  let compare (s1, s2) (r1, r2) =
-    let sc = compare_stage s1 r1 in
-    if not (Int.equal sc 0) then sc
-    else compare_stage s2 r2
+  module Map = Map.Make(Stage)
+  module Set = Set.Make(Stage)
+
+  type t = Set.t Map.t * Set.t Map.t
+  type 'a constrained = 'a * t
+
+  let empty = Map.empty, Map.empty
+  let union (mto1, mfrom1) (mto2, mfrom2) =
+    let f _ so1 so2 = match so1, so2 with
+      | Some s1, Some s2 -> Some (Set.union s1 s2)
+      | Some _, _ -> so1
+      | _, Some _ -> so2
+      | _ -> None in
+    Map.merge f mto1 mto2, Map.merge f mfrom1 mfrom2
+  let union_list = List.fold_left union empty
+  let add a1 a2 ((mto, mfrom) as t) =
+    let add_to_map sfrom sto =
+      let f so = match so with
+        | Some s -> Some (Set.add sto s)
+        | None -> Some (Set.singleton sto) in
+      Map.update sfrom f in
+    let add_stages s1 s2 = match s1, s2 with
+      | Infty, Infty -> t
+      | StageVar (name1, size1), StageVar (name2, size2)
+        when var_equal name1 name2 && size1 <= size2 -> t
+      | StageVar (name1, size1), StageVar (name2, size2) ->
+        let diff = min size1 size2 in
+        let s1_new, s2_new = StageVar (name1, size1 - diff), StageVar (name2, size2 - diff) in
+        add_to_map s1_new s2_new mto, add_to_map s2_new s1_new mfrom
+      | _ -> add_to_map s1 s2 mto, add_to_map s2 s1 mfrom in
+    match a1, a2 with
+    | Stage s1, Stage s2 -> add_stages s1 s2
+    | _ -> t
+
+  let tos s (mto, _) = Map.get s mto
+  let froms s (_, mfrom) = Map.get s mfrom
+
+  let show (mto, _) =
+    let str_stage sfrom sto = "(" ^ Stage.show sfrom ^ "⊑" ^ Stage.show sto ^ ")" in
+    let str_set key set = Set.fold (fun value str -> str_stage key value ^ str) set "" in
+    let strs = Map.fold (fun key set str -> str_set key set ^ str) mto "" in
+    "{" ^ strs ^ "}"
+  let pr = mkPr show
 end
-
-module SConstraint =
-struct
-  module S = Set.Make(SConstraintOrd)
-  include S
-end
-
-type stage_constraint = SConstraint.elt
-type constraints = SConstraint.t
-type 'a constrained = 'a * constraints
-
-let empty_constraint = SConstraint.empty
-let union_constraint = SConstraint.union
-let union_constraints = List.fold_left union_constraint empty_constraint
-
-let add_stage_constraint s1 s2 csts =
-  match s1, s2 with
-  | Infty, Infty -> csts
-  | StageVar (name1, size1), StageVar (name2, size2)
-    when Int.equal name1 name2 && size1 <= size2 -> csts
-  | StageVar (name1, size1), StageVar (name2, size2) ->
-    let diff = min size1 size2 in
-    let new_cst = (StageVar (name1, size1 - diff), StageVar (name2, size2 - diff)) in
-    SConstraint.add new_cst csts
-  | _ -> SConstraint.add (s1, s2) csts
-
-let add_constraint a1 a2 cstrnts =
-  match a1, a2 with
-  | Stage s1, Stage s2 -> add_stage_constraint s1 s2 cstrnts
-  | _ -> cstrnts
-
-let show_constraints cstrnts =
-  let f (s1, s2) str = "(" ^ show_stage s1 ^ "⊑" ^ show_stage s2 ^ ")" ^ str in
-  let str = SConstraint.fold f cstrnts "" in
-  "{" ^ str ^ "}"
-let pr_constraints = mkPr show_constraints

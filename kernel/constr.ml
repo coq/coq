@@ -30,6 +30,10 @@ open Names
 open Univ
 open Context
 open Stages
+open Stage
+open Annot
+open State
+open Constraints
 
 type existential_key = Evar.t
 type metavariable = int
@@ -98,7 +102,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | LetIn     of Name.t binder_annot * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
   | Const     of (Constant.t * 'univs)
-  | Ind       of (inductive * 'univs) * annot
+  | Ind       of (inductive * 'univs) * Annot.t
   | Construct of (constructor * 'univs)
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
@@ -841,8 +845,8 @@ let succ_annots vars =
   let f iu a c =
     match a with
     | Stage (StageVar (na, _))
-      when mem_stage_vars na vars ->
-      mkIndUS iu (succ_annot a)
+      when mem na vars ->
+      mkIndUS iu (hat a)
     | _ -> c in
   modify_annots f
 
@@ -850,7 +854,7 @@ let pos_annots vars =
   let f iu a c =
     match a with
     | Stage (StageVar (na, _))
-      when mem_stage_vars na vars ->
+      when mem na vars ->
       mkIndUS iu Star
     | _ -> c in
   modify_annots f
@@ -999,9 +1003,9 @@ let rec eq_constr nargs m n =
 let equal n m = eq_constr 0 m n (* to avoid tracing a recursive fun *)
 
 let eq_constr_univs compare_annot univs m n =
-  if m == n then true, empty_constraint
+  if m == n then true, empty
   else
-    let cstrnts = ref empty_constraint in
+    let cstrnts = ref empty in
     let eq_universes _ _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' nargs m n =
@@ -1010,9 +1014,9 @@ let eq_constr_univs compare_annot univs m n =
     res, !cstrnts
 
 let leq_constr_univs compare_annot univs m n =
-  if m == n then true, empty_constraint
+  if m == n then true, empty
   else
-    let cstrnts = ref empty_constraint in
+    let cstrnts = ref empty in
     let eq_universes _ _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 ||
       UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
@@ -1122,7 +1126,7 @@ let constr_ord_int f t1 t2 =
     | App _, _ -> -1 | _, App _ -> 1
     | Const (c1,_u1), Const (c2,_u2) -> Constant.CanOrd.compare c1 c2
     | Const _, _ -> -1 | _, Const _ -> 1
-    | Ind ((ind1, _u1), stg1), Ind ((ind2, _u2), stg2) -> (ind_ord =? compare_annot) ind1 ind2 stg1 stg2
+    | Ind ((ind1, _u1), stg1), Ind ((ind2, _u2), stg2) -> (ind_ord =? Annot.compare) ind1 ind2 stg1 stg2
     | Ind _, _ -> -1 | _, Ind _ -> 1
     | Construct (ct1,_u1), Construct (ct2,_u2) -> constructor_ord ct1 ct2
     | Construct _, _ -> -1 | _, Construct _ -> 1
@@ -1297,7 +1301,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Ind ((ind,u), stg) ->
         let u', hu = sh_instance u in
         (Ind ((sh_ind ind, u'), stg),
-         combinesmall 10 (combine3 (ind_syntactic_hash ind) hu (hash_stage_annot stg)))
+         combinesmall 10 (combine3 (ind_syntactic_hash ind) hu (Annot.hash stg)))
       | Construct (c,u) ->
         let u', hu = sh_instance u in
         (Construct (sh_construct c, u'),
@@ -1395,7 +1399,7 @@ let rec hash t =
     | Const (c,u) ->
       combinesmall 9 (combine (Constant.hash c) (Instance.hash u))
     | Ind ((ind,u), stg) ->
-      combinesmall 10 (combine3 (ind_hash ind) (Instance.hash u) (hash_stage_annot stg))
+      combinesmall 10 (combine3 (ind_hash ind) (Instance.hash u) (Annot.hash stg))
     | Construct (c,u) ->
       combinesmall 11 (combine (constructor_hash c) (Instance.hash u))
     | Case (_ , p, c, bl) ->
@@ -1538,7 +1542,7 @@ let rec debug_print c =
       (str"Evar#" ++ int (Evar.repr e) ++ str"{" ++
        prlist_with_sep spc debug_print l ++str"}")
   | Const (c,u) -> str"Cst(" ++ pr_puniverses (Constant.debug_print c) u ++ str")"
-  | Ind (((sp,i),u), stg) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str"," ++ pr_annot stg ++ str")"
+  | Ind (((sp,i),u), stg) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str"," ++ Annot.pr stg ++ str")"
   | Construct (((sp,i),j),u) ->
       str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"
   | Proj (p,c) -> str"Proj(" ++ Constant.debug_print (Projection.constant p) ++ str"," ++ bool (Projection.unfolded p) ++ debug_print c ++ str")"
