@@ -1245,7 +1245,7 @@ module V82 = struct
 
   let top_evars initial { solution=sigma; } =
     let evars_of_initial (c,_) =
-      Evar.Set.elements (Evd.evars_of_term sigma c)
+      Evar.Set.elements (Evd.evars_of_term2 c)
     in
     CList.flatten (CList.map evars_of_initial initial)
 

@@ -509,6 +509,9 @@ val loc_of_conv_pb : evar_map -> evar_constraint -> Loc.t option
 val evars_of_term : evar_map -> econstr -> Evar.Set.t
   (** including evars in instances of evars *)
 
+val evars_of_term2 : econstr -> Evar.Set.t
+  (** including evars in instances of evars for use printing dependent evars *)
+
 val evars_of_named_context : evar_map -> (econstr, etypes) Context.Named.pt -> Evar.Set.t
 
 val evars_of_filtered_evar_info : evar_map -> evar_info -> Evar.Set.t

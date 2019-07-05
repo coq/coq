@@ -1409,6 +1409,14 @@ let evars_of_term evd c =
   in
   evrec Evar.Set.empty c
 
+let evars_of_term2 c =
+  let rec evrec acc c =
+    match kind c with
+    | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
+    | _ -> Constr.fold evrec acc c
+  in
+  evrec Evar.Set.empty c
+
 let evars_of_named_context evd nc =
   Context.Named.fold_outside
     (NamedDecl.fold_constr (fun constr s -> Evar.Set.union s (evars_of_term evd constr)))
