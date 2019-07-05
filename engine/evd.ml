@@ -1403,7 +1403,16 @@ end
 
 let evars_of_term evd c =
   let rec evrec acc c =
-    match MiniEConstr.kind evd c with
+    let c = MiniEConstr.whd_evar evd c in
+    match kind c with
+    | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
+    | _ -> Constr.fold evrec acc c
+  in
+  evrec Evar.Set.empty c
+
+let evar_nodes_of_term c =
+  let rec evrec acc c =
+    match kind c with
     | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
     | _ -> Constr.fold evrec acc c
   in
