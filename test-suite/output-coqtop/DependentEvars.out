@@ -1,0 +1,94 @@
+
+Coq < 
+Coq < Coq < 1 subgoal
+  
+  ============================
+  forall P Q R : Prop, (Q -> R) -> (P -> Q) -> (P -> Q) -> P -> R
+
+(dependent evars: ;
+mapping: ?X1 : ?Goal)
+
+strange_imp_trans < 
+strange_imp_trans < No more subgoals.(dependent evars: ;mapping: )
+
+strange_imp_trans < strange_imp_trans is defined
+
+Coq < Coq < 1 subgoal
+  
+  ============================
+  forall P Q : Prop, (P -> Q) /\ P -> Q
+
+(dependent evars: ;
+mapping: ?X2 : ?Goal)
+
+modpon < 
+modpon < No more subgoals.(dependent evars: ;mapping: )
+
+modpon < modpon is defined
+
+Coq < Coq < 
+Coq < P1 is declared
+P2 is declared
+P3 is declared
+P4 is declared
+
+Coq < p12 is declared
+
+Coq < p123 is declared
+
+Coq < p34 is declared
+
+Coq < Coq < 1 subgoal
+  
+  P1, P2, P3, P4 : Prop
+  p12 : P1 -> P2
+  p123 : (P1 -> P2) -> P3
+  p34 : P3 -> P4
+  ============================
+  P4
+
+(dependent evars: ;
+mapping: ?X3 : ?Goal)
+
+p14 < 
+p14 < 4 focused subgoals
+(shelved: 2)
+  
+  P1, P2, P3, P4 : Prop
+  p12 : P1 -> P2
+  p123 : (P1 -> P2) -> P3
+  p34 : P3 -> P4
+  ============================
+  ?Q -> P4
+
+subgoal 2 is:
+ ?P -> ?Q
+subgoal 3 is:
+ ?P -> ?Q
+subgoal 4 is:
+ ?P
+
+(dependent evars: ?X4 open, ?X5 open;
+mapping: ?X4 : ?P, ?X5 : ?Q, ?X6 : ?Goal, ?X7 : ?Goal0, ?X8 : ?Goal1, ?X9 : ?Goal2)
+
+p14 < 3 focused subgoals
+(shelved: 2)
+  
+  P1, P2, P3, P4 : Prop
+  p12 : P1 -> P2
+  p123 : (P1 -> P2) -> P3
+  p34 : P3 -> P4
+  ============================
+  ?P -> (?Goal2 -> P4) /\ ?Goal2
+
+subgoal 2 is:
+ ?P -> (?Goal2 -> P4) /\ ?Goal2
+subgoal 3 is:
+ ?P
+
+(dependent evars: ?X4 open, ?X5 using ?X10 ?X11, ?X10 using ?X11, ?X11 open;
+mapping: ?X4 : ?P, ?X7 : ?Goal, ?X8 : ?Goal0, ?X9 : ?Goal1, ?X11 : ?Goal2)
+
+p14 < 
+Coq < 
+Coq < 

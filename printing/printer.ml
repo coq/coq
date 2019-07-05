@@ -635,28 +635,39 @@ let () =
       optread  = (fun () -> !should_print_dependent_evars);
       optwrite = (fun v -> should_print_dependent_evars := v) }
 
+let rec pr_map sigma = function
+    | [] -> mt ()
+    | (evk, evi)::rest ->
+      let sep = if rest <> [] then ", " else "" in
+      (Evar.print evk) ++ str " : " ++ (Termops.pr_existential_key sigma evk) ++ str sep ++
+           (pr_map sigma rest)
+
 let print_dependent_evars gl sigma seeds =
   let constraints = print_evar_constraints gl sigma in
-  let evars () =
+  let dep_evars () =
     if !should_print_dependent_evars then
       let evars = Evarutil.gather_dependent_evars sigma seeds in
-      let evars =
-	Evar.Map.fold begin fun e i s ->
-	  let e' = pr_internal_existential_key e in
-	  match i with
-	  | None -> s ++ str" " ++ e' ++ str " open,"
-	  | Some i ->
-	    s ++ str " " ++ e' ++ str " using " ++
-	      Evar.Set.fold begin fun d s ->
-		pr_internal_existential_key d ++ str " " ++ s
-	      end i (str ",")
-	end evars (str "")
-    in
-    cut () ++ cut () ++
-    str "(dependent evars:" ++ evars ++ str ")"
+      let evars_pp = Evar.Map.fold (fun e i s ->
+          let e' = pr_internal_existential_key e in
+          let sep = if s = (str "") then "" else ", " in
+          s ++ str sep ++ e' ++
+            (match i with
+            | None -> str " open"
+            | Some i ->
+              let using = Evar.Set.fold (fun d s ->
+                  let sep = if s = (str "") then "" else " " in
+                  s ++ str sep ++ (pr_internal_existential_key d))
+                i (str "") in
+              str " using " ++ using))
+        evars (str "")
+      in
+      let map_evars = Evar.Map.bindings (Evd.undefined_map sigma) in
+      cut () ++ cut () ++
+      str "(dependent evars: " ++ evars_pp ++ str ";" ++ cut () ++
+      str "mapping: " ++ (pr_map sigma map_evars) ++ str ")"
     else mt ()
   in
-  constraints ++ evars ()
+  constraints ++ dep_evars ()
 
 module GoalMap = Evar.Map
 
@@ -730,7 +741,7 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
       pr_goal ~diffs ?og_s { it = g ; sigma = sigma }
       ++ (if l=[] then mt () else cut ())
       ++ pr_rec 2 l
-    else 
+    else
       pr_rec 1 (g::l)
   in
   (* Side effect! This has to be made more robust *)
@@ -802,7 +813,7 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
             in
             pr_subgoals ~pr_first:false cmd bsigma ~seeds ~shelf ~stack:[] ~unfocused:[] ~goals:bgoals
 	  end
-  | _ -> 
+  | _ ->
      let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
      let bgoals_focused, bgoals_unfocused = List.partition (fun x -> List.mem x goals) bgoals in
      let unfocused_if_needed = if should_unfoc() then bgoals_unfocused else [] in
@@ -955,7 +966,7 @@ let pr_assumptionset env sigma s =
         let tran = safe_pr_constant env kn ++ safe_pr_ltype env sigma typ in
         (v, a, o, tran :: tr)
     in
-    let (vars, axioms, opaque, trans) = 
+    let (vars, axioms, opaque, trans) =
       ContextObjectMap.fold fold s ([], [], [], [])
     in
     let theory =

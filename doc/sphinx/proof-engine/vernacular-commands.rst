@@ -1031,8 +1031,9 @@ Controlling display
 
 .. flag:: Printing Dependent Evars Line
 
-   This option controls the printing of the “(dependent evars: …)” line when
-   ``-emacs`` is passed.
+   This option controls the printing of the “(dependent evars: …)” information
+   after each tactic.  The information is used by the Prooftree tool in Proof
+   General. (https://askra.de/software/prooftree)
 
 
 .. _vernac-controlling-the-reduction-strategies:
