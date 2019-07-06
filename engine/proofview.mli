@@ -398,7 +398,18 @@ val give_up : unit tactic
 val tclPROGRESS : 'a tactic -> 'a tactic
 
 module Progress : sig
-  val goal_equal : Evd.evar_map -> Evar.t -> Evd.evar_map -> Evar.t -> bool
+(** [goal_equal ~evd ~extended_evd evar extended_evar] tests whether
+    the [evar_info] from [evd] corresponding to [evar] is equal to that
+    from [extended_evd] corresponding to [extended_evar], up to
+    existential variable instantiation and equalisable universes. The
+    universe constraints in [extended_evd] are assumed to be an
+    extension of the universe constraints in [evd]. *)
+  val goal_equal :
+    evd:Evd.evar_map ->
+    extended_evd:Evd.evar_map ->
+    Evar.t ->
+    Evar.t ->
+    bool
 end
 
 (** Checks for interrupts *)
