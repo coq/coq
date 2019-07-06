@@ -204,11 +204,11 @@ let cast_proof_entry e =
     const_entry_inline_code = e.proof_entry_inline_code;
   }
 
-type 'a effect_entry =
-| EffectEntry : private_constants effect_entry
-| PureEntry : unit effect_entry
+type ('a, 'b) effect_entry =
+| EffectEntry : (private_constants, private_constants Entries.const_entry_body) effect_entry
+| PureEntry : (unit, Constr.constr) effect_entry
 
-let cast_opaque_proof_entry (type a) (entry : a effect_entry) (e : a proof_entry) =
+let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proof_entry) : b opaque_entry =
   let typ = match e.proof_entry_type with
   | None -> assert false
   | Some typ -> typ
@@ -238,12 +238,24 @@ let cast_opaque_proof_entry (type a) (entry : a effect_entry) (e : a proof_entry
     Environ.really_needed env (Id.Set.union hyp_typ hyp_def)
   | Some hyps -> hyps
   in
+  let (body, univs : b * _) = match entry with
+  | PureEntry ->
+    let (body, uctx), () = Future.force e.proof_entry_body in
+    let univs = match e.proof_entry_universes with
+    | Monomorphic_entry uctx' -> Monomorphic_entry (Univ.ContextSet.union uctx uctx')
+    | Polymorphic_entry _ ->
+      assert (Univ.ContextSet.is_empty uctx);
+      e.proof_entry_universes
+    in
+    body, univs
+  | EffectEntry -> e.proof_entry_body, e.proof_entry_universes
+  in
   {
-    opaque_entry_body = e.proof_entry_body;
+    opaque_entry_body = body;
     opaque_entry_secctx = secctx;
     opaque_entry_feedback = e.proof_entry_feedback;
     opaque_entry_type = typ;
-    opaque_entry_universes = e.proof_entry_universes;
+    opaque_entry_universes = univs;
   }
 
 let get_roles export eff =

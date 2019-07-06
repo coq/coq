@@ -79,7 +79,7 @@ type global_declaration =
 
 type side_effect_declaration =
 | DefinitionEff : Entries.definition_entry -> side_effect_declaration
-| OpaqueEff : unit Entries.const_entry_body Entries.opaque_entry -> side_effect_declaration
+| OpaqueEff : Constr.constr Entries.opaque_entry -> side_effect_declaration
 
 type exported_private_constant = Constant.t
 
