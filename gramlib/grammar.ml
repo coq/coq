@@ -871,39 +871,33 @@ and print_rule : type s tr p. formatter -> (s, tr, p) ty_symbols -> unit =
 and print_level : type s. _ -> _ -> s ex_symbols list -> _ =
   fun ppf pp_print_space rules ->
   fprintf ppf "@[<hov 0>[ ";
-  let _ =
-    List.fold_left
-      (fun sep (ExS rule) ->
-         fprintf ppf "%t%a" sep print_rule rule;
-         fun ppf -> fprintf ppf "%a| " pp_print_space ())
-      (fun ppf -> ()) rules
+  let () =
+    Format.pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf "%a| " pp_print_space ())
+      (fun ppf (ExS rule) -> print_rule ppf rule)
+      ppf rules
   in
   fprintf ppf " ]@]"
 
 let print_levels ppf elev =
-  let _ =
-    List.fold_left
-      (fun sep (Level lev) ->
-         let rules =
-           List.map (fun (ExS t) -> ExS (TCns (MayRec2, Sself, t))) (flatten_tree lev.lsuffix) @
-           flatten_tree lev.lprefix
-         in
-         fprintf ppf "%t@[<hov 2>" sep;
-         begin match lev.lname with
+  Format.pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf "@,| ")
+    (fun ppf (Level lev) ->
+       let rules =
+         List.map (fun (ExS t) -> ExS (TCns (MayRec2, Sself, t))) (flatten_tree lev.lsuffix) @
+         flatten_tree lev.lprefix
+       in
+       fprintf ppf "@[<hov 2>";
+       begin match lev.lname with
            Some n -> fprintf ppf "%a@;<1 2>" print_str n
          | None -> ()
-         end;
-         begin match lev.assoc with
+       end;
+       begin match lev.assoc with
            LeftA -> fprintf ppf "LEFTA"
          | RightA -> fprintf ppf "RIGHTA"
          | NonA -> fprintf ppf "NONA"
-         end;
-         fprintf ppf "@]@;<1 2>";
-         print_level ppf pp_force_newline rules;
-         fun ppf -> fprintf ppf "@,| ")
-      (fun ppf -> ()) elev
-  in
-  ()
+       end;
+       fprintf ppf "@]@;<1 2>";
+       print_level ppf pp_force_newline rules)
+    ppf elev
 
 let print_entry ppf e =
   fprintf ppf "@[<v 0>[ ";
