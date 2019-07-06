@@ -857,7 +857,8 @@ let give_up =
 
 module Progress = struct
 
-  let eq_constr = Evarutil.eq_constr_univs_test
+  let eq_constr evd extended_evd =
+    Evarutil.eq_constr_univs_test ~evd ~extended_evd
 
   (** equality function on hypothesis contexts *)
   let eq_named_context_val sigma1 sigma2 ctx1 ctx2 =
@@ -887,10 +888,10 @@ module Progress = struct
     eq_evar_body sigma1 sigma2 ei1.evar_body ei2.evar_body
 
   (** Equality function on goals *)
-  let goal_equal evars1 gl1 evars2 gl2 =
-    let evi1 = Evd.find evars1 gl1 in
-    let evi2 = Evd.find evars2 gl2 in
-    eq_evar_info evars1 evars2 evi1 evi2
+  let goal_equal ~evd ~extended_evd evar extended_evar =
+    let evi = Evd.find evd evar in
+    let extended_evi = Evd.find extended_evd extended_evar in
+    eq_evar_info evd extended_evd evi extended_evi
 
 end
 
@@ -907,7 +908,8 @@ let tclPROGRESS t =
   let test =
     quick_test ||
     Util.List.for_all2eq begin fun i f ->
-      Progress.goal_equal initial.solution (drop_state i) final.solution (drop_state f)
+      Progress.goal_equal ~evd:initial.solution
+        ~extended_evd:final.solution (drop_state i) (drop_state f)
     end initial.comb final.comb
   in
   if not test then
