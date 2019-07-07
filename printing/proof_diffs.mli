@@ -16,6 +16,9 @@ val write_diffs_option : string -> unit
 (** Returns true if the diffs option is "on" or "removed" *)
 val show_diffs : unit -> bool
 
+(** Returns true if the diffs option is "removed" *)
+val show_removed : unit -> bool
+
 (** controls whether color output is enabled *)
 val write_color_enabled : bool -> unit
 
