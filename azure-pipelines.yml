@@ -19,7 +19,7 @@ jobs:
       powershell -Command "(New-Object Net.WebClient).DownloadFile('http://www.cygwin.com/setup-x86_64.exe', 'setup-x86_64.exe')"
       SET CYGROOT=C:\cygwin64
       SET CYGCACHE=%CYGROOT%\var\cache\setup
-      setup-x86_64.exe -qnNdO -R %CYGROOT% -l %CYGCACHE% -s %CYGMIRROR% -P rsync -P patch -P diffutils -P make -P unzip -P m4 -P findutils -P time -P wget -P curl -P git -P mingw64-x86_64-binutils,mingw64-x86_64-gcc-core,mingw64-x86_64-gcc-g++,mingw64-x86_64-pkg-config,mingw64-x86_64-windows_default_manifest -P mingw64-x86_64-headers,mingw64-x86_64-runtime,mingw64-x86_64-pthreads,mingw64-x86_64-zlib -P python
+      setup-x86_64.exe -qnNdO -R %CYGROOT% -l %CYGCACHE% -s %CYGMIRROR% -P rsync -P patch -P diffutils -P make -P unzip -P m4 -P findutils -P time -P wget -P curl -P git -P mingw64-x86_64-binutils,mingw64-x86_64-gcc-core,mingw64-x86_64-gcc-g++,mingw64-x86_64-pkg-config,mingw64-x86_64-windows_default_manifest -P mingw64-x86_64-headers,mingw64-x86_64-runtime,mingw64-x86_64-pthreads,mingw64-x86_64-zlib -P python2 -P python3
 
       SET TARGET_ARCH=x86_64-w64-mingw32
       SET CD_MFMT=%cd:\=/%
