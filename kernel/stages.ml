@@ -98,6 +98,7 @@ struct
   let diff = diff
   let vars_empty = empty
   let vars_add = add
+  let vars_union = union
   let vars_show init vars =
     Int.Set.fold (fun i str -> string_of_int i ^ "," ^ str) vars init
   let pr_vars init = mkPr (vars_show init)
@@ -194,10 +195,9 @@ struct
     let add_stages s1 s2 =
       match s1, s2 with
       | Infty, Infty -> t
-      | StageVar (var1, sz1), StageVar (var2, sz2)
-        when var_equal var1 var2 && sz1 <= sz2 -> t
       | StageVar (var1, sz1), StageVar (var2, sz2) ->
-        add_to_map var1 var2 (sz2 - sz1) mto, add_to_map var2 var1 (sz1 - sz2) mfrom
+        if var_equal var1 var2 && sz1 <= sz2 then t
+        else add_to_map var1 var2 (sz2 - sz1) mto, add_to_map var2 var1 (sz1 - sz2) mfrom
       | Infty, StageVar (var, _) ->
         add_to_map infty var 0 mto, add_to_map var infty 0 mfrom
       | StageVar _, Infty -> t in
@@ -208,11 +208,17 @@ struct
   let add_to_set (var, _) vars =
     if Stage.var_equal var infty then vars
     else State.vars_add var vars
-  let sup s (mto, _) = Set.fold add_to_set (Map.get s mto) State.vars_empty
-  let sub s (_, mfrom) = Set.fold add_to_set (Map.get s mfrom) State.vars_empty
+  let get_set_from_map key map =
+    match Map.find_opt key map with
+    | Some set -> set
+    | None -> Set.empty
+  let sup s (mto, _) = Set.fold add_to_set (get_set_from_map s mto) State.vars_empty
+  let sub s (_, mfrom) = Set.fold add_to_set (get_set_from_map s mfrom) State.vars_empty
 
-  let vertices (mto, _) =
-    Map.fold (fun key _ set -> State.vars_add key set) mto State.vars_empty
+  let vertices (mto, mfrom) =
+    let get_keys m =
+      (Map.fold (fun key _ set -> State.vars_add key set) m State.vars_empty) in
+    State.vars_union (get_keys mto) (get_keys mfrom)
   let edges (mto, _) =
     let add_edges vfrom vtos emap =
       Set.fold (fun (vto, wt) -> EdgeMap.add (vfrom, vto) wt) vtos emap in

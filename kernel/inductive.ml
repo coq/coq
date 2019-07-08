@@ -1335,8 +1335,8 @@ let rec_stage_var env i ty_sized =
       end
     | _ -> error_bad_relevance empty_env (* FIXME!!! *)
 
-let rec_stage_vars env is tys_sized =
-  Array.map2 (rec_stage_var env) is tys_sized
+let rec_stage_vars env is tys_sized = [||]
+  (* Array.map2 (rec_stage_var env) is tys_sized *)
 
 let check_rec env alphas vstar vneq cstrnts =
   let flags = Environ.typing_flags env in
