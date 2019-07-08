@@ -496,7 +496,10 @@ let msg_format = ref (fun () ->
 
 (* The loop ignores the command line arguments as the current model delegates
    its handing to the toplevel container. *)
-let loop ~opts:_ ~state =
+let loop run_mode ~opts:_ state =
+  match run_mode with
+  | Coqtop.Batch -> exit 0
+  | Coqtop.Interactive ->
   let open Vernac.State in
   set_doc state.doc;
   init_signal_handler ();
@@ -549,16 +552,42 @@ let rec parse = function
        x :: parse rest
   | [] -> []
 
-let () = Usage.add_to_usage "coqidetop"
-"  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\
+let coqidetop_specific_usage = Usage.{
+  executable_name = "coqidetop";
+  extra_args = "";
+  extra_options = "\n\
+coqidetop specific options:\n\
+\n  --xml_formatinclude dir           (idem)\
+\n  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\
 \n  --help-XML-protocol    print documentation of the Coq XML protocol\n"
+}
 
-let islave_init ~opts extra_args =
-  let args = parse extra_args in
-  CoqworkmgrApi.(init High);
-  opts, args
+let islave_parse ~opts extra_args =
+  let open Coqtop in
+  let run_mode, extra_args = coqtop_toplevel.parse_extra ~opts extra_args in
+  let extra_args = parse extra_args in
+  (* One of the role of coqidetop is to find the name of buffers to open *)
+  (* in the command line; Coqide is waiting these names on stdout *)
+  (* (see filter_coq_opts in coq.ml), so we send them now *)
+  print_string (String.concat "\n" extra_args);
+  run_mode, []
+
+let islave_init run_mode ~opts =
+  if run_mode = Coqtop.Batch then Flags.quiet := true;
+  Coqtop.init_toploop opts
+
+let islave_default_opts =
+  Coqargs.{ default with
+    config = { default.config with
+      stm_flags = { default.config.stm_flags with
+         Stm.AsyncOpts.async_proofs_worker_priority = CoqworkmgrApi.High }}}
 
 let () =
   let open Coqtop in
-  let custom = { init = islave_init; run = loop; opts = Coqargs.default } in
+  let custom = {
+      parse_extra = islave_parse ;
+      help = coqidetop_specific_usage;
+      init = islave_init;
+      run = loop;
+      opts = islave_default_opts } in
   start_coq custom

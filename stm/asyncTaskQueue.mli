@@ -68,10 +68,10 @@ module type Task = sig
   type request
   type response
 
-  (** UID of the task kind, for -toploop *)
+  (** UID of the task kind *)
   val name : string ref
 
-  (** Extra arguments of the task kind, for -toploop *)
+  (** Extra arguments of the task kind *)
   val extra_env : unit -> string array
 
   (** {5 Master API, it is run by the master, on a thread} *)
@@ -144,10 +144,10 @@ module MakeQueue(T : Task) () : sig
   (** [queue] is the abstract queue type. *)
   type queue
 
-  (** [create n] will initialize the queue with [n] workers. If [n] is
-      0, the queue won't spawn any process, working in a lazy local
-      manner. [not imposed by the this API] *)
-  val create : int -> queue
+  (** [create n pri] will initialize the queue with [n] workers having
+      priority [pri]. If [n] is 0, the queue won't spawn any process,
+      working in a lazy local manner. [not imposed by the this API] *)
+  val create : int -> CoqworkmgrApi.priority -> queue
 
   (** [destroy q] Deallocates [q], cancelling all pending tasks. *)
   val destroy : queue -> unit
@@ -203,9 +203,9 @@ module MakeQueue(T : Task) () : sig
   (** [clear q] Clears [q], only if the worker prool is empty *)
   val clear : queue -> unit
 
-  (** [with_n_workers n f] create a queue, run the function, destroy
+  (** [with_n_workers n pri f] creates a queue, runs the function, destroys
       the queue. The user should call join *)
-  val with_n_workers : int -> (queue -> 'a) -> 'a
+  val with_n_workers : int -> CoqworkmgrApi.priority -> (queue -> 'a) -> 'a
 
 end
 

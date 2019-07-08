@@ -8,15 +8,22 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** {6 Prints the version number on the standard output and exits (with 0). } *)
+(** {6 Prints the version number on the standard output. } *)
 
-val version : int -> 'a
-val machine_readable_version : int -> 'a
+val version : unit -> unit
+val machine_readable_version : unit -> unit
 
-(** {6 Enable toploop plugins to insert some text in the usage message. } *)
-val add_to_usage : string -> string -> unit
+(** {6 extra arguments or options to print when asking usage for a
+     given executable. } *)
 
-(** {6 Prints the usage on the error output. } *)
-val print_usage_coqtop : unit -> unit
-val print_usage_coqc : unit -> unit
+type specific_usage = {
+  executable_name : string;
+  extra_args : string;
+  extra_options : string;
+}
+
+(** {6 Prints the generic part and specific part of usage for a
+       given executable. } *)
+
+val print_usage : out_channel -> specific_usage -> unit
 

@@ -13,29 +13,33 @@
     [run] launches a custom toplevel.
 *)
 
-type init_fn = opts:Coqargs.t -> string list -> Coqargs.t * string list
+type 'a extra_args_fn = opts:Coqargs.t -> string list -> 'a * string list
 
-type custom_toplevel =
-  { init : init_fn
-  ; run : opts:Coqargs.t -> state:Vernac.State.t -> unit
+type ('a,'b) custom_toplevel =
+  { parse_extra : 'a extra_args_fn
+  ; help : Usage.specific_usage
+  ; init : 'a -> opts:Coqargs.t -> 'b
+  ; run : 'a -> opts:Coqargs.t -> 'b -> unit
   ; opts : Coqargs.t
   }
 
-(** [init_toplevel ~help ~init custom_init arg_list]
-    Common Coq initialization and argument parsing *)
-val init_toplevel
-  :  help:(unit -> unit)
-  -> init:Coqargs.t
-  -> init_fn
-  -> string list
-  -> Coqargs.t * string list
-
-val coqtop_toplevel : custom_toplevel
-
-(** The Coq main module. [start custom] will parse the command line,
+(** The generic Coq main module. [start custom] will parse the command line,
    print the banner, initialize the load path, load the input state,
    load the files given on the command line, load the resource file,
    produce the output state if any, and finally will launch
    [custom.run]. *)
+val start_coq : ('a,'b) custom_toplevel -> unit
 
-val start_coq : custom_toplevel -> unit
+(** Initializer color for output *)
+
+val init_color : Coqargs.coqargs_config -> unit
+
+(** Prepare state for interactive loop *)
+
+val init_toploop : Coqargs.t -> Vernac.State.t
+
+(** The specific characterization of the coqtop_toplevel *)
+
+type run_mode = Interactive | Batch
+
+val coqtop_toplevel : (run_mode,Vernac.State.t) custom_toplevel

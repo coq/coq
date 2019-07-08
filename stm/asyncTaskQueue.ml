@@ -115,7 +115,7 @@ module Make(T : Task) () = struct
   type process = Worker.process
   type extra = (T.task * cancel_switch) TQueue.t
 
-  let spawn id =
+  let spawn id priority =
     let name = Printf.sprintf "%s:%d" !T.name id in
     let proc, ic, oc =
       (* Filter arguments for slaves. *)
@@ -123,9 +123,9 @@ module Make(T : Task) () = struct
         | [] -> !async_proofs_flags_for_workers @
                 ["-worker-id"; name;
                  "-async-proofs-worker-priority";
-                 CoqworkmgrApi.(string_of_priority !async_proofs_worker_priority)]
+                 CoqworkmgrApi.(string_of_priority priority)]
         (* Options to discard: 0 arguments *)
-        | ("-emacs"|"-batch")::tl ->
+        | "-emacs"::tl ->
           set_slave_opt tl
         (* Options to discard: 1 argument *)
         | ( "-async-proofs" | "-vio2vo" | "-o"
@@ -155,8 +155,8 @@ module Make(T : Task) () = struct
       let args =
         Array.of_list (set_slave_opt (List.tl (Array.to_list Sys.argv))) in
       let env = Array.append (T.extra_env ()) (Unix.environment ()) in
-    let worker_name = System.get_toplevel_path ("coq" ^ !T.name) in
-    Worker.spawn ~env worker_name args in
+      let worker_name = System.get_toplevel_path ("coq" ^ !T.name) in
+      Worker.spawn ~env worker_name args in
     name, proc, CThread.prepare_in_channel_for_thread_friendly_io ic, oc
 
   let manager cpanel (id, proc, ic, oc) =
@@ -262,7 +262,7 @@ module Make(T : Task) () = struct
     cleaner : Thread.t option;
   }
 
-  let create size =
+  let create size priority =
     let cleaner queue =
       while true do
         try ignore(TQueue.pop ~picky:(fun (_,cancelled) -> !cancelled) queue)
@@ -270,7 +270,7 @@ module Make(T : Task) () = struct
       done in
     let queue = TQueue.create () in
     {
-      active = Pool.create queue ~size;
+      active = Pool.create queue ~size priority;
       queue;
       cleaner = if size > 0 then Some (CThread.create cleaner queue) else None;
     }
@@ -369,8 +369,8 @@ module Make(T : Task) () = struct
      (TQueue.wait_until_n_are_waiting_then_snapshot
        (Pool.n_workers active) queue)
 
-  let with_n_workers n f =
-    let q = create n in
+  let with_n_workers n priority f =
+    let q = create n priority in
     try let rc = f q in destroy q; rc
     with e -> let e = CErrors.push e in destroy q; iraise e
 

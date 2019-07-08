@@ -19,7 +19,8 @@ type 'a cpanel = {
 module type PoolModel = sig
   (* this shall come from a Spawn.* model *)
   type process
-  val spawn : int -> worker_id * process * CThread.thread_ic * out_channel
+  val spawn : int -> CoqworkmgrApi.priority ->
+    worker_id * process * CThread.thread_ic * out_channel
 
   (* this defines the main loop of the manager *)
   type extra
@@ -31,7 +32,7 @@ module Make(Model : PoolModel) : sig
 
   type pool
   
-  val create : Model.extra -> size:int -> pool
+  val create : Model.extra -> size:int -> CoqworkmgrApi.priority -> pool
 
   val is_empty : pool -> bool
   val n_workers : pool -> int

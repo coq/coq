@@ -20,6 +20,16 @@ let fatal_error msg =
 (******************************************************************************)
 (* Interactive Load File Simulation                                           *)
 (******************************************************************************)
+
+let load_init_file opts ~state =
+  if opts.pre.load_rcfile then
+    Topfmt.(in_phase ~phase:LoadingRcFile) (fun () ->
+        Coqinit.load_rcfile ~rcfile:opts.config.rcfile ~state) ()
+  else begin
+    Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
+    state
+  end
+
 let load_vernacular opts ~state =
   List.fold_left
     (fun state (f_in, echo) ->
@@ -29,19 +39,12 @@ let load_vernacular opts ~state =
       if !Flags.beautify
       then Flags.with_option Flags.beautify_file load_vernac f_in
       else load_vernac s
-    ) state (List.rev opts.load_vernacular_list)
+    ) state (List.rev opts.pre.load_vernacular_list)
 
 let load_init_vernaculars opts ~state =
-  let state =
-    if opts.load_rcfile then
-      Topfmt.(in_phase ~phase:LoadingRcFile) (fun () ->
-          Coqinit.load_rcfile ~rcfile:opts.rcfile ~state) ()
-    else begin
-      Flags.if_verbose Feedback.msg_info (str"Skipping rcfile loading.");
-      state
-    end in
-
-  load_vernacular opts ~state
+  let state = load_init_file opts ~state in
+  let state = load_vernacular opts ~state in
+  state
 
 (******************************************************************************)
 (* File Compilation                                                           *)
@@ -99,8 +102,8 @@ let compile opts copts ~echo ~f_in ~f_out =
   in
   let iload_path = build_load_path opts in
   let require_libs = require_libs opts in
-  let stm_options = opts.stm_flags in
-  let output_native_objects = match opts.native_compiler with
+  let stm_options = opts.config.stm_flags in
+  let output_native_objects = match opts.config.native_compiler with
     | NativeOff -> false | NativeOn {ondemand} -> not ondemand
   in
   match copts.compilation_mode with
@@ -115,7 +118,7 @@ let compile opts copts ~echo ~f_in ~f_out =
           Stm.{ doc_type = VoDoc long_f_dot_vo;
                 iload_path; require_libs; stm_options;
               } in
-      let state = { doc; sid; proof = None; time = opts.time } in
+      let state = { doc; sid; proof = None; time = opts.config.time } in
       let state = load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
       Aux_file.(start_aux_file
@@ -161,7 +164,7 @@ let compile opts copts ~echo ~f_in ~f_out =
                 iload_path; require_libs; stm_options;
               } in
 
-      let state = { doc; sid; proof = None; time = opts.time } in
+      let state = { doc; sid; proof = None; time = opts.config.time } in
       let state = load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
       let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_v in

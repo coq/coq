@@ -51,6 +51,8 @@ module AsyncOpts = struct
     async_proofs_tac_error_resilience : tac_error_filter;
     async_proofs_cmd_error_resilience : bool;
     async_proofs_delegation_threshold : float;
+
+    async_proofs_worker_priority : CoqworkmgrApi.priority;
   }
 
   let default_opts = {
@@ -67,6 +69,8 @@ module AsyncOpts = struct
     async_proofs_tac_error_resilience = `Only [ "curly" ];
     async_proofs_cmd_error_resilience = true;
     async_proofs_delegation_threshold = 0.03;
+
+    async_proofs_worker_priority = CoqworkmgrApi.Low;
   }
 
   let cur_opt = ref default_opts
@@ -1636,7 +1640,7 @@ and Slaves : sig
   val wait_all_done : unit -> unit
 
   (* initialize the whole machinery (optional) *)
-  val init : unit -> unit
+  val init : CoqworkmgrApi.priority -> unit
 
   type 'a tasks = (('a,VCS.vcs) Stateid.request * bool) list
   val dump_snapshot : unit -> Future.UUID.t tasks
@@ -1658,11 +1662,11 @@ end = struct (* {{{ *)
   module TaskQueue = AsyncTaskQueue.MakeQueue(ProofTask) ()
 
   let queue = ref None
-  let init () =
+  let init priority =
     if async_proofs_is_master !cur_opt then
-      queue := Some (TaskQueue.create !cur_opt.async_proofs_n_workers)
+      queue := Some (TaskQueue.create !cur_opt.async_proofs_n_workers priority)
     else
-      queue := Some (TaskQueue.create 0)
+      queue := Some (TaskQueue.create 0 priority)
 
   let check_task_aux extra name l i =
     let { Stateid.stop; document; loc; name = r_name }, drop = List.nth l i in
@@ -1978,7 +1982,7 @@ and Partac : sig
 
   val vernac_interp :
     solve:bool -> abstract:bool -> cancel_switch:AsyncTaskQueue.cancel_switch ->
-    int -> Stateid.t -> Stateid.t -> aast -> unit
+    int -> CoqworkmgrApi.priority -> Stateid.t -> Stateid.t -> aast -> unit
 
 end = struct (* {{{ *)
 
@@ -1990,7 +1994,7 @@ end = struct (* {{{ *)
     else
       f ()
 
-  let vernac_interp ~solve ~abstract ~cancel_switch nworkers safe_id id
+  let vernac_interp ~solve ~abstract ~cancel_switch nworkers priority safe_id id
     { indentation; verbose; expr = e; strlen } : unit
   =
     let e, time, batch, fail =
@@ -2003,7 +2007,7 @@ end = struct (* {{{ *)
     let st = Vernacstate.freeze_interp_state ~marshallable:false in
     stm_fail ~st fail (fun () ->
     (if time then System.with_time ~batch ~header:(Pp.mt ()) else (fun x -> x)) (fun () ->
-    TaskQueue.with_n_workers nworkers (fun queue ->
+    TaskQueue.with_n_workers nworkers priority (fun queue ->
     PG_compat.map_proof (fun p ->
       let Proof.{goals} = Proof.data p in
       let open TacTask in
@@ -2118,7 +2122,7 @@ end (* }}} *)
 
 and Query : sig
 
-  val init : unit -> unit
+  val init : CoqworkmgrApi.priority -> unit
   val vernac_interp : cancel_switch:AsyncTaskQueue.cancel_switch -> Stateid.t ->  Stateid.t -> aast -> unit
 
 end = struct (* {{{ *)
@@ -2132,7 +2136,7 @@ end = struct (* {{{ *)
     TaskQueue.enqueue_task (Option.get !queue)
       QueryTask.({ t_where = prev; t_for = id; t_what = q }) ~cancel_switch
 
-  let init () = queue := Some (TaskQueue.create 0)
+  let init priority = queue := Some (TaskQueue.create 0 priority)
 
 end (* }}} *)
 
@@ -2410,7 +2414,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
             resilient_tactic id cblock (fun () ->
               reach ~cache:true view.next;
               Partac.vernac_interp ~solve ~abstract ~cancel_switch
-                !cur_opt.async_proofs_n_tacworkers view.next id x)
+                !cur_opt.async_proofs_n_tacworkers
+                !cur_opt.async_proofs_worker_priority view.next id x)
           ), cache, true
       | `Cmd { cast = x; cqueue = `QueryQueue cancel_switch }
         when async_proofs_is_master !cur_opt -> (fun () ->
@@ -2679,10 +2684,10 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
   (* We record the state at this point! *)
   State.define ~doc ~cache:true ~redefine:true (fun () -> ()) Stateid.initial;
   Backtrack.record ();
-  Slaves.init ();
+  Slaves.init stm_options.async_proofs_worker_priority;
   if async_proofs_is_master !cur_opt then begin
     stm_prerr_endline (fun () -> "Initializing workers");
-    Query.init ();
+    Query.init stm_options.async_proofs_worker_priority;
     let opts = match !cur_opt.async_proofs_private_flags with
       | None -> []
       | Some s -> Str.split_delim (Str.regexp ",") s in

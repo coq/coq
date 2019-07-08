@@ -8,32 +8,37 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let set_noninteractive_mode () =
-  Flags.quiet := true;
-  System.trust_file_cache := true
-
 let outputstate opts =
   Option.iter (fun ostate_file ->
     let fname = CUnix.make_suffix ostate_file ".coq" in
     States.extern_state fname) opts.Coqcargs.outputstate
 
-let coqc_main () =
-  (* Careful because init_toplevel will call Summary.init_summaries,
-     thus options such as `quiet` have to be set after the main
-     initialisation is run. *)
-  let coqc_init ~opts args =
-    set_noninteractive_mode ();
-    let opts, args = Coqtop.(coqtop_toplevel.init) ~opts args in
-    opts, args
-  in
-  let opts, extras =
-    Topfmt.(in_phase ~phase:Initialization)
-      Coqtop.(init_toplevel ~help:Usage.print_usage_coqc ~init:Coqargs.default coqc_init) List.(tl (Array.to_list Sys.argv)) in
+let coqc_init _copts ~opts =
+  Flags.quiet := true;
+  System.trust_file_cache := true;
+  Coqtop.init_color opts.Coqargs.config;
+  if not opts.Coqargs.config.Coqargs.glob_opt then Dumpglob.dump_to_dotglob ()
 
-  let copts = Coqcargs.parse extras in
+let coqc_specific_usage = Usage.{
+  executable_name = "coqc";
+  extra_args = "file...";
+  extra_options = "\n\
+coqc specific options:\
+\n  -o f.vo                use f.vo as the output file name\
+\n  -verbose               compile and output the input file\
+\n  -quick                 quickly compile .v files to .vio files (skip proofs)\
+\n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
+\n                         into fi.vo\
+\n  -schedule-vio-checking j f1..fn   run up to j instances of Coq to check all\
+\n                         proofs in each fi.vio\
+\n\
+\nUndocumented:\
+\n  -vio2vo                [see manual]\
+\n  -check-vio-tasks       [see manual]\
+\n"
+}
 
-  if not opts.Coqargs.glob_opt then Dumpglob.dump_to_dotglob ();
-
+let coqc_main copts ~opts =
   Topfmt.(in_phase ~phase:CompilationPhase)
     Ccompile.compile_files opts copts;
 
@@ -47,16 +52,16 @@ let coqc_main () =
 
   flush_all();
 
-  if opts.Coqargs.output_context then begin
+  if opts.Coqargs.post.Coqargs.output_context then begin
     let sigma, env = let e = Global.env () in Evd.from_env e, e in
     Feedback.msg_notice Pp.(Flags.(with_option raw_print (Prettyp.print_full_pure_context env) sigma) ++ fnl ())
   end;
   CProfile.print_profile ()
 
-let main () =
+let coqc_run copts ~opts () =
   let _feeder = Feedback.add_feeder Coqloop.coqloop_feed in
   try
-    coqc_main ();
+    coqc_main ~opts copts;
     exit 0
   with exn ->
     flush_all();
@@ -64,3 +69,14 @@ let main () =
     flush_all();
     let exit_code = if (CErrors.is_anomaly exn) then 129 else 1 in
     exit exit_code
+
+let custom_coqc = Coqtop.{
+  parse_extra = (fun ~opts extras -> Coqcargs.parse extras, []);
+  help = coqc_specific_usage;
+  init = coqc_init;
+  run = coqc_run;
+  opts = Coqargs.default;
+}
+
+let main () =
+  Coqtop.start_coq custom_coqc

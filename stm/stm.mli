@@ -34,6 +34,8 @@ module AsyncOpts : sig
     async_proofs_tac_error_resilience : tac_error_filter;
     async_proofs_cmd_error_resilience : bool;
     async_proofs_delegation_threshold : float;
+
+    async_proofs_worker_priority : CoqworkmgrApi.priority;
   }
 
   val default_opts : stm_opt

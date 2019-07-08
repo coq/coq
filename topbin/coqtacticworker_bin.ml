@@ -10,4 +10,4 @@
 
 module W = AsyncTaskQueue.MakeWorker(Stm.TacTask) ()
 
-let () = WorkerLoop.start ~init:W.init_stdout ~loop:W.main_loop
+let () = WorkerLoop.start ~init:W.init_stdout ~loop:W.main_loop "coqtacticworker"

@@ -13,18 +13,28 @@ let rec parse = function
   | x :: rest -> x :: parse rest
   | [] -> []
 
-let arg_init init ~opts extra_args =
-  let extra_args = parse extra_args in
+let worker_parse_extra ~opts extra_args =
+  (), parse extra_args
+
+let worker_init init () ~opts =
   Flags.quiet := true;
   init ();
-  CoqworkmgrApi.(init !async_proofs_worker_priority);
-  opts, extra_args
+  Coqtop.init_toploop opts
 
-let start ~init ~loop =
+let worker_specific_usage name = Usage.{
+  executable_name = name;
+  extra_args = "";
+  extra_options = ("\n" ^ name ^ " specific options:\
+\n  --xml_format=Ppcmds    serialize pretty printing messages using the std_ppcmds format\n");
+}
+
+let start ~init ~loop name =
   let open Coqtop in
   let custom = {
+    parse_extra = worker_parse_extra;
+    help = worker_specific_usage name;
     opts = Coqargs.default;
-    init = arg_init init;
-    run = (fun ~opts:_ ~state:_ -> loop ());
+    init = worker_init init;
+    run = (fun () ~opts:_ _state (* why is state not used *) -> loop ());
   } in
   start_coq custom

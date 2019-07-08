@@ -8,20 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let version ret =
+let version () =
   Printf.printf "The Coq Proof Assistant, version %s (%s)\n"
     Coq_config.version Coq_config.date;
-  Printf.printf "compiled on %s with OCaml %s\n" Coq_config.compile_date Coq_config.caml_version;
-  exit ret
-let machine_readable_version ret =
+  Printf.printf "compiled on %s with OCaml %s\n" Coq_config.compile_date Coq_config.caml_version
+
+let machine_readable_version () =
   Printf.printf "%s %s\n"
-    Coq_config.version Coq_config.caml_version;
-  exit ret
+    Coq_config.version Coq_config.caml_version
 
 (* print the usage of coqtop (or coqc) on channel co *)
-
-let extra_usage = ref []
-let add_to_usage name text = extra_usage := (name,text) :: !extra_usage
 
 let print_usage_common co command =
   output_string co command;
@@ -99,42 +95,16 @@ let print_usage_common co command =
 \n  -bytecode-compiler (yes|no)        enable the vm_compute reduction machine\
 \n  -native-compiler (yes|no|ondemand) enable the native_compute reduction machine\
 \n  -h, -help, --help      print this list of options\
-\n";
-  List.iter (fun (name, text) ->
-    output_string co
-     ("\nWith the flag '-toploop "^name^
-        "' these extra option are also available:\n"^
-      text^"\n"))
-    !extra_usage
+\n"
 
-(* print the usage on standard error *)
+(* print the usage *)
 
-let print_usage_coqtop () =
-  print_usage_common stderr "Usage: coqtop <options>\n\n";
-  output_string stderr "\n\
-coqtop specific options:\
-\n\
-\n  -batch                 batch mode (exits just after argument parsing)\
-\n";
-  flush stderr ;
-  exit 1
+type specific_usage = {
+  executable_name : string;
+  extra_args : string;
+  extra_options : string;
+}
 
-let print_usage_coqc () =
-  print_usage_common stderr "Usage: coqc <options> <Coq options> file...\n\n";
-  output_string stderr "\n\
-coqc specific options:\
-\n\
-\n  -o f.vo                use f.vo as the output file name\
-\n  -verbose               compile and output the input file\
-\n  -quick                 quickly compile .v files to .vio files (skip proofs)\
-\n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
-\n                         into fi.vo\
-\n  -schedule-vio-checking j f1..fn   run up to j instances of Coq to check all\
-\n                         proofs in each fi.vio\
-\n\
-\nUndocumented:\
-\n  -vio2vo                [see manual]\
-\n  -check-vio-tasks       [see manual]\
-\n";
-  flush stderr ;
-  exit 1
+let print_usage co { executable_name; extra_args; extra_options } =
+  print_usage_common co ("Usage: " ^ executable_name ^ " <options> " ^ extra_args ^ "\n\n");
+  output_string co extra_options
