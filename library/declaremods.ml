@@ -110,9 +110,9 @@ and subst_objects subst seg =
     | IncludeObject aobjs ->
       let aobjs' = subst_aobjs subst aobjs in
       if aobjs' == aobjs then node else (id, IncludeObject aobjs')
-    | ImportObject { export; mp } ->
+    | ExportObject { mp } ->
       let mp' = subst_mp subst mp in
-      if mp'==mp then node else (id, ImportObject { export; mp = mp' })
+      if mp'==mp then node else (id, ExportObject { mp = mp' })
     | KeepObject _ -> assert false
   in
   List.Smart.map subst_one seg
@@ -249,7 +249,7 @@ let rec load_object i (name, obj) =
     let (sp,kn) = name in
     load_modtype i sp (mp_of_kn kn) sobjs
   | IncludeObject aobjs -> load_include i (name, aobjs)
-  | ImportObject _ -> ()
+  | ExportObject _ -> ()
   | KeepObject objs -> load_keep i (name, objs)
 
 and load_objects i prefix objs =
@@ -289,7 +289,7 @@ and open_object i (name, obj) =
   | ModuleObject sobjs -> do_module' true open_objects i (name, sobjs)
   | ModuleTypeObject sobjs -> open_modtype i (name, sobjs)
   | IncludeObject aobjs -> open_include i (name, aobjs)
-  | ImportObject { mp; _ } -> open_import i mp
+  | ExportObject { mp; _ } -> open_export i mp
   | KeepObject objs -> open_keep i (name, objs)
 
 and open_objects i prefix objs =
@@ -312,7 +312,7 @@ and open_include i ((sp,kn), aobjs) =
   let o = expand_aobjs aobjs in
   open_objects i prefix o
 
-and open_import i mp =
+and open_export i mp =
   if Int.equal i 1 then really_import_module mp
 
 and open_keep i ((sp,kn),kobjs) =
@@ -328,7 +328,7 @@ let rec cache_object (name, obj) =
     let (sp,kn) = name in
     load_modtype 0 sp (mp_of_kn kn) sobjs
   | IncludeObject aobjs -> cache_include (name, aobjs)
-  | ImportObject { mp } -> really_import_module mp
+  | ExportObject { mp } -> really_import_module mp
   | KeepObject objs -> cache_keep (name, objs)
 
 and cache_include ((sp,kn), aobjs) =
@@ -975,9 +975,9 @@ let end_library ?except ~output_native_objects dir =
   let substitute, keep, _ = Lib.classify_segment lib_stack in
   cenv,(substitute,keep),ast
 
-let import_module export mp =
+let import_module ~export mp =
   really_import_module mp;
-  Lib.add_anonymous_entry (Lib.Leaf (ImportObject { export; mp }))
+  if export then Lib.add_anonymous_entry (Lib.Leaf (ExportObject { mp }))
 
 (** {6 Iterators} *)
 

@@ -340,7 +340,7 @@ let load_require _ (_,(needed,modl,_)) =
   List.iter register_library needed
 
 let open_require i (_,(_,modl,export)) =
-  Option.iter (fun exp -> List.iter (fun m -> Declaremods.import_module exp (MPfile m)) modl)
+  Option.iter (fun export -> List.iter (fun m -> Declaremods.import_module ~export (MPfile m)) modl)
     export
 
   (* [needed] is the ordered list of libraries not already loaded *)
@@ -380,8 +380,8 @@ let require_library_from_dirpath ~lib_resolver modrefl export =
       begin
         warn_require_in_module ();
               add_anonymous_leaf (in_require (needed,modrefl,None));
-              Option.iter (fun exp ->
-          List.iter (fun m -> Declaremods.import_module exp (MPfile m)) modrefl)
+        Option.iter (fun export ->
+          List.iter (fun m -> Declaremods.import_module ~export (MPfile m)) modrefl)
                 export
       end
     else

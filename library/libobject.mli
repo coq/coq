@@ -112,7 +112,7 @@ and t =
   | ModuleTypeObject of substitutive_objects
   | IncludeObject of algebraic_objects
   | KeepObject of objects
-  | ImportObject of { export : bool; mp : Names.ModPath.t }
+  | ExportObject of { mp : Names.ModPath.t }
   | AtomicObject of obj
 
 and objects = (Names.Id.t * t) list

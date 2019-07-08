@@ -103,18 +103,13 @@ val end_library :
 (** append a function to be executed at end_library *)
 val append_end_library_hook : (unit -> unit) -> unit
 
-(** [really_import_module mp] opens the module [mp] (in a Caml sense).
+(** [import_module export mp] imports the module [mp].
    It modifies Nametab and performs the [open_object] function for
    every object of the module. Raises [Not_found] when [mp] is unknown
-   or when [mp] corresponds to a functor. *)
-
-val really_import_module : ModPath.t -> unit
-
-(** [import_module export mp] is a synchronous version of
-   [really_import_module]. If [export] is [true], the module is also
+   or when [mp] corresponds to a functor. If [export] is [true], the module is also
    opened every time the module containing it is. *)
 
-val import_module : bool -> ModPath.t -> unit
+val import_module : export:bool -> ModPath.t -> unit
 
 (** Include  *)
 
