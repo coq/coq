@@ -811,18 +811,18 @@ let () = register_handler begin function
 | _ -> raise Unhandled
 end
 
-let () = ExplainErr.register_additional_error_info begin fun (e, info) ->
+let () = CErrors.register_additional_error_info begin fun info ->
   if !Tac2interp.print_ltac2_backtrace then
     let bt = Exninfo.get info backtrace in
     let bt = match bt with
     | Some bt -> bt
-    | None -> raise Exit
+    | None -> []
     in
     let bt =
       str "Backtrace:" ++ fnl () ++ prlist_with_sep fnl pr_frame bt ++ fnl ()
     in
     Some (Loc.tag @@ Some bt)
-  else raise Exit
+  else None
 end
 
 (** Printing *)

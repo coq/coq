@@ -2233,7 +2233,7 @@ let with_fail f : (Pp.t, unit) result =
   (* Fail Timeout is a common pattern so we need to support it. *)
   | e when CErrors.noncritical e || e = Timeout ->
     (* The error has to be printed in the failing state *)
-    Ok CErrors.(iprint ExplainErr.(process_vernac_interp_error (push e)))
+    Ok CErrors.(iprint (push e))
 
 (* We restore the state always *)
 let with_fail ~st f =

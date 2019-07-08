@@ -548,16 +548,11 @@ let obligation_terminator entries uctx { name; num; auto } =
         else ctx
     in
     let prg = {prg with prg_ctx} in
-    begin try
-      ignore (update_obls prg obls (pred rem));
-      if pred rem > 0 then
-        let deps = dependencies obls num in
-        if not (Int.Set.is_empty deps) then
-          ignore (auto (Some name) deps None)
-    with e when CErrors.noncritical e ->
-      let e = CErrors.push e in
-      pperror (CErrors.iprint (ExplainErr.process_vernac_interp_error e))
-    end
+    ignore (update_obls prg obls (pred rem));
+    if pred rem > 0 then
+      let deps = dependencies obls num in
+      if not (Int.Set.is_empty deps) then
+        ignore (auto (Some name) deps None)
   | _ ->
     CErrors.anomaly
       Pp.(

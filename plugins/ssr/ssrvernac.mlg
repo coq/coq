@@ -412,11 +412,10 @@ let interp_search_arg arg =
       if is_ident_part s then Search.GlobSearchString s else
       interp_search_notation ~loc s key
   | RGlobSearchSubPattern p ->
-      try
-        let env = Global.env () in
-        let _, p = Constrintern.intern_constr_pattern env (Evd.from_env env) p in
-        Search.GlobSearchSubPattern p
-      with e -> let e = CErrors.push e in iraise (ExplainErr.process_vernac_interp_error e)) arg in
+    let env = Global.env () in
+    let _, p = Constrintern.intern_constr_pattern env (Evd.from_env env) p in
+    Search.GlobSearchSubPattern p) arg
+  in
   let hpat, a1 = match arg with
   | (_, Search.GlobSearchSubPattern (Pattern.PMeta _)) :: a' -> all_true, a'
   | (true, Search.GlobSearchSubPattern p) :: a' ->

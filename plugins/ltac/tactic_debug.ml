@@ -33,12 +33,8 @@ type debug_info =
   | DebugOff
 
 (* An exception handler *)
-let explain_logic_error e =
-  CErrors.print (fst (ExplainErr.process_vernac_interp_error (e, Exninfo.null)))
-
-let explain_logic_error_no_anomaly e =
-  CErrors.print_no_report
-    (fst (ExplainErr.process_vernac_interp_error (e, Exninfo.null)))
+let explain_logic_error e = CErrors.print e
+let explain_logic_error_no_anomaly e = CErrors.print_no_report e
 
 let msg_tac_debug s = Proofview.NonLogical.print_debug (s++fnl())
 let msg_tac_notice s = Proofview.NonLogical.print_notice (s++fnl())
@@ -370,8 +366,9 @@ let explain_ltac_call_trace last trace loc =
           strbrk " (with " ++
             prlist_with_sep pr_comma
             (fun (id,c) ->
-              (* XXX: This hooks into the ExplainErr extension API
-                 so it is tricky to provide the right env for now. *)
+              (* XXX: This hooks into the CErrors's additional error
+                 info API so it is tricky to provide the right env for
+                 now. *)
               let env = Global.env () in
               let sigma = Evd.from_env env in
               Id.print id ++ str ":=" ++ Printer.pr_lconstr_under_binders_env env sigma c)
@@ -424,11 +421,11 @@ let extract_ltac_trace ?loc trace =
         aux loc trace in
     best_loc, None
 
-let get_ltac_trace (_, info) =
+let get_ltac_trace info =
   let ltac_trace = Exninfo.get info ltac_trace_info in
   let loc = Loc.get_loc info in
   match ltac_trace with
   | None -> None
   | Some trace -> Some (extract_ltac_trace ?loc trace)
 
-let () = ExplainErr.register_additional_error_info get_ltac_trace
+let () = CErrors.register_additional_error_info get_ltac_trace
