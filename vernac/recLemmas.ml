@@ -26,7 +26,7 @@ let find_mutually_recursive_statements sigma thms =
         List.flatten (List.map_i (fun i decl ->
           let t = RelDecl.get_type decl in
           match EConstr.kind sigma t with
-          | Ind ((kn,_ as ind),u) when
+          | Ind (((kn,_ as ind),u), _) when
                 let mind = Global.lookup_mind kn in
                 mind.mind_finite <> Declarations.CoFinite ->
               [ind,x,i]
@@ -36,7 +36,7 @@ let find_mutually_recursive_statements sigma thms =
         let cclenv = EConstr.push_rel_context hyps (Global.env()) in
         let whnf_ccl,_ = Reductionops.whd_all_stack cclenv Evd.empty ccl in
         match EConstr.kind sigma whnf_ccl with
-        | Ind ((kn,_ as ind),u) when
+        | Ind (((kn,_ as ind),u), _) when
               let mind = Global.lookup_mind kn in
               Int.equal mind.mind_ntypes n && mind.mind_finite == Declarations.CoFinite ->
             [ind,x,0]
