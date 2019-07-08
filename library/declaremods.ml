@@ -233,7 +233,7 @@ let do_module' exists iter_objects i ((sp,kn),sobjs) =
 (** Nota: Interactive modules and module types cannot be recached!
     This used to be checked more properly here. *)
 
-let do_modtype i sp mp sobjs =
+let load_modtype i sp mp sobjs =
   if Nametab.exists_modtype sp then
     anomaly (pr_path sp ++ str " already exists.");
   Nametab.push_modtype (Nametab.Until i) sp mp;
@@ -247,7 +247,7 @@ let rec load_object i (name, obj) =
   | ModuleObject sobjs -> do_module' false load_objects i (name, sobjs)
   | ModuleTypeObject sobjs ->
     let (sp,kn) = name in
-    do_modtype i sp (mp_of_kn kn) sobjs
+    load_modtype i sp (mp_of_kn kn) sobjs
   | IncludeObject aobjs -> load_include i (name, aobjs)
   | ImportObject _ -> ()
   | KeepObject objs -> load_keep i (name, objs)
@@ -326,7 +326,7 @@ let rec cache_object (name, obj) =
   | ModuleObject sobjs -> do_module' false load_objects 1 (name, sobjs)
   | ModuleTypeObject sobjs ->
     let (sp,kn) = name in
-    do_modtype 1 sp (mp_of_kn kn) sobjs
+    load_modtype 0 sp (mp_of_kn kn) sobjs
   | IncludeObject aobjs -> cache_include (name, aobjs)
   | ImportObject { mp } -> really_import_module mp
   | KeepObject objs -> cache_keep (name, objs)
