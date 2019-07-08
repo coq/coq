@@ -277,6 +277,29 @@ and load_keep i ((sp,kn),kobjs) =
 
 (** {6 Implementation of Import and Export commands} *)
 
+let mark_object obj (exports,acc) =
+  (exports, obj::acc)
+
+let rec collect_module_objects mp acc =
+  (* May raise Not_found for unknown module and for functors *)
+  let prefix,sobjs,keepobjs = ModObjs.get mp in
+  let acc = collect_objects 1 prefix keepobjs acc in
+  collect_objects 1 prefix sobjs acc
+
+and collect_object i (name, obj as o) acc =
+  match obj with
+  | ExportObject { mp; _ } -> collect_export i mp acc
+  | AtomicObject _ | IncludeObject _ | KeepObject _
+  | ModuleObject _ | ModuleTypeObject _ -> mark_object o acc
+
+and collect_objects i prefix objs acc =
+  List.fold_right (fun (id, obj) acc -> collect_object i (Lib.make_oname prefix id, obj) acc) objs acc
+
+and collect_export i mp (exports,objs as acc) =
+  if Int.equal i 1 && not (MPset.mem mp exports) then
+    collect_module_objects mp (MPset.add mp exports, objs)
+  else acc
+
 let rec really_import_module mp =
   (* May raise Not_found for unknown module and for functors *)
   let prefix,sobjs,keepobjs = ModObjs.get mp in
@@ -342,7 +365,7 @@ let rec cache_object (name, obj) =
     let (sp,kn) = name in
     load_modtype 0 sp (mp_of_kn kn) sobjs
   | IncludeObject aobjs -> cache_include (name, aobjs)
-  | ExportObject { mp } -> really_import_module mp
+  | ExportObject { mp } -> anomaly Pp.(str "Export should not be cached")
   | KeepObject objs -> cache_keep (name, objs)
 
 and cache_include ((sp,kn), aobjs) =
@@ -990,7 +1013,8 @@ let end_library ?except ~output_native_objects dir =
   cenv,(substitute,keep),ast
 
 let import_module ~export mp =
-  really_import_module mp;
+  let _,objs = collect_module_objects mp (MPset.empty, []) in
+  List.iter (open_object 1) objs;
   if export then Lib.add_anonymous_entry (Lib.Leaf (ExportObject { mp }))
 
 (** {6 Iterators} *)
