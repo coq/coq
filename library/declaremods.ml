@@ -286,11 +286,25 @@ let rec really_import_module mp =
 and open_object i (name, obj) =
   match obj with
   | AtomicObject o -> Libobject.open_object i (name, o)
-  | ModuleObject sobjs -> do_module' true open_objects i (name, sobjs)
+  | ModuleObject sobjs ->
+    let dir = dir_of_sp (fst name) in
+    let mp = mp_of_kn (snd name) in
+    open_module i dir mp sobjs
   | ModuleTypeObject sobjs -> open_modtype i (name, sobjs)
   | IncludeObject aobjs -> open_include i (name, aobjs)
   | ExportObject { mp; _ } -> open_export i mp
   | KeepObject objs -> open_keep i (name, objs)
+
+and open_module i obj_dir obj_mp sobjs =
+  let prefix = Nametab.{ obj_dir ; obj_mp; obj_sec = DirPath.empty } in
+  let dirinfo = Nametab.GlobDirRef.DirModule prefix in
+  consistency_checks true obj_dir dirinfo;
+  Nametab.push_dir (Nametab.Exactly i) obj_dir dirinfo;
+  (* If we're not a functor, let's iter on the internal components *)
+  if sobjs_no_functor sobjs then begin
+    let (prefix,objs,kobjs) = ModObjs.get obj_mp in
+    open_objects (i+1) prefix objs
+  end
 
 and open_objects i prefix objs =
   List.iter (fun (id, obj) -> open_object i (Lib.make_oname prefix id, obj)) objs
