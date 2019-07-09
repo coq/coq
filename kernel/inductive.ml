@@ -1322,7 +1322,7 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
 (* [rec_stage_var i ty_sized] returns the stage variable of
   the [i]th parameter of [ty_sized], the recursive parameter of the fix *)
 
-let rec_stage_var env i ty_sized =
+let _rec_stage_var env i ty_sized =
   let open Context.Rel in
   let ctxt_sized = Term.prod_assum ty_sized in
   let assums_sized = List.filter is_local_assum ctxt_sized in
@@ -1335,7 +1335,7 @@ let rec_stage_var env i ty_sized =
       end
     | _ -> error_bad_relevance empty_env (* FIXME!!! *)
 
-let rec_stage_vars env is tys_sized = [||]
+let rec_stage_vars _env _is _tys_sized = [||]
   (* Array.map2 (rec_stage_var env) is tys_sized *)
 
 let check_rec env alphas vstar vneq cstrnts =

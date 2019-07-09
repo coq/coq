@@ -132,29 +132,13 @@ end
       We keep both mto and mfrom for easy access to both
       a stage variable's substages and superstages
       N.B. Infty stages are stored as (-1)
-    Constraints.edges: A collection of constraints given by
-      a map from its stage variables to its weight
-      i.e. edges are {(var, var) -> weight}
-      Given a constraint v1+s1 ⊑ v2+s2, we would have
-      edges {(v1, v2) -> s2 - s1}
-      N.B. Only the TO relations are in this collection,
-      so we construct it only from Constraints.t's mto
+    Generic functions: fold, filter
     Set-like functions: empty, union[_list], remove, add
-    Graph-like functions: sup, sub, vertices, edges *)
+    Graph-like functions: sup, sub, vertices *)
 module Constraints =
 struct
   open Stage
   open Annot
-
-  module Constraint = struct
-    type t = var * var
-    let compare (vfrom1, vto1) (vfrom2, vto2) =
-      let vc = Int.compare vfrom1 vfrom2 in
-      if not (Int.equal vc 0) then vc
-      else Int.compare vto1 vto2
-  end
-  module EdgeMap = Map.Make(Constraint)
-  type _edges = int EdgeMap.t
 
   module Map = Int.Map
   module Set = Set.Make(struct
@@ -168,6 +152,16 @@ struct
   type 'a constrained = 'a * t
 
   let infty = Stage.infty
+
+  let fold f (mto, _) =
+    Map.fold (fun vfrom -> Set.fold (fun (vto, wt) -> f vfrom vto wt)) mto
+  let filter f (mto, mfrom) =
+    let f_rev vfrom vto wt = f vto vfrom (-wt) in
+    let filter_from_set pred vfrom =
+      Set.filter (fun (vto, wt) -> pred vfrom vto wt) in
+    let filter_from_map pred =
+      Map.mapi (filter_from_set pred) in
+    filter_from_map f mto, filter_from_map f_rev mfrom
 
   let empty = Map.empty, Map.empty
   let union (mto1, mfrom1) (mto2, mfrom2) =
@@ -219,10 +213,6 @@ struct
     let get_keys m =
       (Map.fold (fun key _ set -> State.vars_add key set) m State.vars_empty) in
     State.vars_union (get_keys mto) (get_keys mfrom)
-  let edges (mto, _) =
-    let add_edges vfrom vtos emap =
-      Set.fold (fun (vto, wt) -> EdgeMap.add (vfrom, vto) wt) vtos emap in
-    Map.fold add_edges mto EdgeMap.empty
 
   let show (mto, _mfrom : t) =
     let str_stage key value wt =
@@ -246,21 +236,20 @@ exception RecCheckFailed of Constraints.t * State.vars * State.vars
 
 let bellman_ford cstrnts src =
   let vertices = Constraints.vertices cstrnts in
-  let edges = Constraints.edges cstrnts in
   let distances = fold (fun var -> Int.Map.add var None) vertices Int.Map.empty in
   let distances = Int.Map.set src (Some 0) distances in
-  let get_fromto (vfrom, vto) distances =
+  let get_fromto vfrom vto distances =
     Int.Map.get vfrom distances,
     Int.Map.get vto   distances in
   let relax =
-    Constraints.EdgeMap.fold (fun ((_, vto) as edge) wt distances ->
-      match get_fromto edge distances with
+    Constraints.fold (fun vfrom vto wt distances ->
+      match get_fromto vfrom vto distances with
       | Some ifrom, Some ito when ifrom + wt < ito ->
         Int.Map.set vto (Some (ifrom + wt)) distances
       | Some ifrom, None ->
         Int.Map.set vto (Some (ifrom + wt)) distances
       | _ -> distances)
-    edges in
+    cstrnts in
   let rec relax_all i distances =
     if Int.equal i 1 then distances
     else
@@ -268,13 +257,13 @@ let bellman_ford cstrnts src =
       if distances == distances' then distances
       else relax_all (i - 1) distances' in
   let distances = relax_all (Int.Set.cardinal vertices) distances in
-  let check_neg edge wt =
-    match get_fromto edge distances with
+  let check_neg vfrom vto wt =
+    match get_fromto vfrom vto distances with
     | Some ifrom, Some ito -> ifrom + wt < ito
     | Some _, None -> true
     | _ -> false in
-  let neg_edges = Constraints.EdgeMap.filter check_neg edges in
-  Constraints.EdgeMap.fold (fun (vfrom, _) _ -> add vfrom) neg_edges empty
+  let neg_edges = Constraints.filter check_neg cstrnts in
+  Constraints.fold (fun vfrom _ _ -> add vfrom) neg_edges empty
 
 let bellman_ford_all cstrnts =
   let vertices = Constraints.vertices cstrnts in
