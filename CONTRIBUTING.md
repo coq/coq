@@ -2,12 +2,12 @@
 
 ## Foreword ##
 
-As with any piece of code or documentation, this guide can bitrot if
-people forget to update it when contributing processes, development
-tools, or the Coq ecosystem changes.  If you notice anything
-inaccurate or outdated, please signal it in a new issue, or fix it in
-a new pull request.  If you find some parts are not sufficiently
-clear, you may open an issue as well.
+As with any documentation, this guide is most useful if it's promptly
+updated to reflect changes in processes, development tools, or the Coq
+ecosystem.  If you notice anything inaccurate or outdated, please
+signal it in a new issue, or fix it in a new pull request.  If you
+find some parts are not sufficiently clear, you may open an issue as
+well.
 
 ## Table of contents ##
 
