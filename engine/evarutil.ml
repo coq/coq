@@ -348,11 +348,16 @@ let push_rel_decl_to_named_context
   let map_decl f d =
     NamedDecl.map_constr f d
   in
-  let replace_var_named_declaration id0 id decl =
-    let id' = NamedDecl.get_id decl in
-    let id' = if Id.equal id0 id' then id else id' in
-    let vsubst = [id0 , mkVar id] in
-    decl |> NamedDecl.set_id id' |> map_decl (replace_vars vsubst)
+  let rec replace_var_named_declaration id0 id = function
+  | [] -> []
+  | decl :: nc ->
+    if Id.equal id0 (NamedDecl.get_id decl) then
+      (* Stop here, the variable cannot occur before its definition *)
+      (NamedDecl.set_id id decl) :: nc
+    else
+      let nc = replace_var_named_declaration id0 id nc in
+      let vsubst = [id0 , mkVar id] in
+      map_decl (fun c -> replace_vars vsubst c) decl :: nc
   in
   let extract_if_neq id = function
     | Anonymous -> None
@@ -383,7 +388,7 @@ let push_rel_decl_to_named_context
           context. Unless [id] is a section variable. *)
       let subst = update_var id0 id subst in
       let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> map_decl (csubst_subst subst) in
-      let nc = List.map (replace_var_named_declaration id0 id) nc in
+      let nc = replace_var_named_declaration id0 id nc in
       (push_var id0 subst, Id.Set.add id avoid, d :: nc)
   | Some id0 when hypnaming = FailIfConflict ->
        user_err Pp.(Id.print id0 ++ str " is already used.")
