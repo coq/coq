@@ -25,19 +25,12 @@ let _ =
   in
   Printexc.register_printer pr
 
-let make_anomaly ?label pp =
-  Anomaly (label, pp)
-
 let anomaly ?loc ?label pp =
   Loc.raise ?loc (Anomaly (label, pp))
 
 exception UserError of string option * Pp.t (* User errors *)
 
-let todo s = prerr_string ("TODO: "^s^"\n")
-
 let user_err ?loc ?hdr strm = Loc.raise ?loc (UserError (hdr, strm))
-
-let invalid_arg ?loc s   = Loc.raise ?loc (Invalid_argument s)
 
 exception Timeout
 
@@ -123,17 +116,17 @@ let print_gen ~anomaly (e, info) =
   print_gen ~anomaly ~extra_msg !handle_stack (e,info)
 
 (** The standard exception printer *)
-let print ?info e =
-  let info = Option.default Exninfo.(info e) info in
+let iprint (e, info) =
   print_gen ~anomaly:true (e,info) ++ print_backtrace info
 
-let iprint (e, info) = print ~info e
+let print e =
+  iprint (e, Exninfo.info e)
 
 (** Same as [print], except that the "Please report" part of an anomaly
     isn't printed (used in Ltac debugging). *)
-let print_no_report e = print_gen ~anomaly:false (e, Exninfo.info e)
 let iprint_no_report (e, info) =
   print_gen ~anomaly:false (e,info) ++ print_backtrace info
+let print_no_report e = iprint_no_report (e, Exninfo.info e)
 
 (** Predefined handlers **)
 
