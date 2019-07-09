@@ -257,7 +257,7 @@ let clenv_of_prods poly nprods (c, clenv) gl =
     let sigma = Tacmach.New.project gl in
     let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma c in
     let diff = nb_prod sigma ty - nprods in
-    if Pervasives.(>=) diff 0 then
+    if (>=) diff 0 then
       (* Was Some clenv... *)
       Some (Some diff,
             mk_clenv_from_n gl (Some diff) (c,ty))

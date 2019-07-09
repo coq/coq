@@ -148,7 +148,7 @@ let rec add (ve1:t) (ve2:t)  =
   match ve1 , ve2 with
   | [] , v | v , [] -> v
   | (v1,c1)::l1 , (v2,c2)::l2 ->
-     let cmp = Pervasives.compare v1 v2 in
+     let cmp = Util.pervasives_compare v1 v2 in
      if cmp == 0 then
        let s = add_num c1 c2 in
        if eq_num (Int 0) s
@@ -163,7 +163,7 @@ let rec xmul_add (n1:num) (ve1:t) (n2:num) (ve2:t) =
   | [] , _ -> mul n2 ve2
   | _ , [] -> mul n1 ve1
   | (v1,c1)::l1 , (v2,c2)::l2 ->
-     let cmp = Pervasives.compare v1 v2 in
+     let cmp = Util.pervasives_compare v1 v2 in
      if cmp == 0 then
        let s = ( n1 */ c1) +/ (n2 */ c2) in
        if eq_num (Int 0) s

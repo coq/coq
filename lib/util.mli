@@ -8,6 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+type 'a pervasives_ref = 'a ref
+val pervasives_ref : 'a -> 'a ref
+val pervasives_compare : 'a -> 'a -> int
+val (!) : 'a ref -> 'a
+val (+) : int -> int -> int
+val (-) : int -> int -> int
+
 (** This module contains numerous utility functions on strings, lists,
    arrays, etc. *)
 

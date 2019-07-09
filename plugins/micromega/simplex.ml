@@ -587,7 +587,7 @@ let cut env rmin sol vm (rst:Restricted.t)  tbl (x,v) =
              Printf.printf "This is a cutting plane for %a:" LinPoly.pp_var x;
              Printf.printf " %a\n"  WithProof.output (v,prf);
            end;
-         if Pervasives.(=) (snd v) Eq
+         if (=) (snd v) Eq
          then (* Unsat *) Some (x,(v,prf))
          else
            let vl = (Vect.dotproduct (fst v) (Vect.set 0 (Int 1) sol)) in
@@ -651,7 +651,7 @@ let integer_solver lp =
        match find_cut (!nb mod 2) env cr (*x*) sol vm rst tbl with
        | None -> None
        | Some(cr,((v,op),cut)) ->
-          if Pervasives.(=) op Eq
+          if (=) op Eq
           then (* This is a contradiction *)
             Some(Step(vr,CutPrf cut, Done))
           else

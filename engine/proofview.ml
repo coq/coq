@@ -542,7 +542,7 @@ let tclDISPATCHGEN join tacs =
   let tacs = CList.map branch tacs in
   InfoL.tag (Info.Dispatch) (tclDISPATCHGEN0 join tacs)
 
-let tclDISPATCH tacs = tclDISPATCHGEN Pervasives.ignore tacs
+let tclDISPATCH tacs = tclDISPATCHGEN ignore tacs
 
 let tclDISPATCHL tacs = tclDISPATCHGEN CList.rev tacs
 
@@ -910,7 +910,7 @@ let tclPROGRESS t =
 exception Timeout
 let _ = CErrors.register_handler begin function
   | Timeout -> CErrors.user_err ~hdr:"Proofview.tclTIMEOUT" (Pp.str"Tactic timeout!")
-  | _ -> Pervasives.raise CErrors.Unhandled
+  | _ -> raise CErrors.Unhandled
 end
 
 let tclTIMEOUT n t =

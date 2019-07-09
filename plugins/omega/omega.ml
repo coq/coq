@@ -242,7 +242,7 @@ let add_event, history, clear_history =
   (fun () -> !accu),
   (fun () -> accu := [])
 
-let nf_linear = List.sort (fun x y -> Pervasives.(-) y.v x.v)
+let nf_linear = List.sort (fun x y -> Util.(-) y.v x.v)
 
 let nf ((b : bool),(e,(x : int))) = (b,(nf_linear e,x))
 

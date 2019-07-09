@@ -35,7 +35,6 @@ rule mllib_list = parse
 
 {
 open Printf
-open Unix
 
 (* Makefile's escaping rules are awful: $ is escaped by doubling and
    other special characters are escaped by backslash prefixing while
@@ -99,6 +98,7 @@ let file_name s = function
 type dir = string option
 
 let add_directory add_file phys_dir =
+  let open Unix in
   Array.iter (fun f ->
     (* we avoid all files starting by '.' *)
     if f.[0] <> '.' then
@@ -152,7 +152,7 @@ let add_caml_known phys_dir f =
     | _ -> ()
 
 let add_caml_dir phys_dir =
-  handle_unix_error (add_directory add_caml_known) phys_dir
+  Unix.handle_unix_error (add_directory add_caml_known) phys_dir
 
 let traite_fichier_modules md ext =
   try
@@ -192,7 +192,7 @@ let mllib_dependencies () =
          efullname efullname;
        printf "%s.cmxa:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n"
          efullname efullname;
-       flush Pervasives.stdout)
+       flush stdout)
     (List.rev !mllibAccu)
 
 let mlpack_dependencies () =
@@ -209,7 +209,7 @@ let mlpack_dependencies () =
          efullname efullname;
        printf "%s.cmx:$(addsuffix .cmx,$(%s_MLPACK_DEPENDENCIES))\n"
          efullname efullname;
-       flush Pervasives.stdout)
+       flush stdout)
     (List.rev !mlpackAccu)
 
 let rec parse = function

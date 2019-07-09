@@ -13,7 +13,7 @@ open Num
 (* Comparisons that are reflexive on NaN and also short-circuiting.          *)
 (* ------------------------------------------------------------------------- *)
 
-let cmp = Pervasives.compare (** FIXME *)
+let cmp = compare (** FIXME *)
 
 let (=?) = fun x y -> cmp x y = 0;;
 let (<?) = fun x y -> cmp x y < 0;;
@@ -491,21 +491,21 @@ let temp_path = Filename.get_temp_dir_name ();;
 (* ------------------------------------------------------------------------- *)
 
 let strings_of_file filename =
-  let fd = try Pervasives.open_in filename
+  let fd = try open_in filename
            with Sys_error _ ->
              failwith("strings_of_file: can't open "^filename) in
   let rec suck_lines acc =
-    try let l = Pervasives.input_line fd in
+    try let l = input_line fd in
         suck_lines (l::acc)
     with End_of_file -> List.rev acc in
   let data = suck_lines [] in
-  (Pervasives.close_in fd; data);;
+  (close_in fd; data);;
 
 let string_of_file filename =
   String.concat "\n" (strings_of_file filename);;
 
 let file_of_string filename s =
-  let fd = Pervasives.open_out filename in
+  let fd = open_out filename in
   output_string fd s; close_out fd;;
 
 

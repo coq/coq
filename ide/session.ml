@@ -275,9 +275,9 @@ let make_table_widget ?sort cd cb =
   let make_sorting i (_, c) =
     let sort (store : GTree.model) it1 it2 = match c with
     | `IntC c ->
-      Pervasives.compare (store#get ~row:it1 ~column:c) (store#get ~row:it2 ~column:c)
+      compare (store#get ~row:it1 ~column:c) (store#get ~row:it2 ~column:c)
     | `StringC c ->
-      Pervasives.compare (store#get ~row:it1 ~column:c) (store#get ~row:it2 ~column:c)
+      compare (store#get ~row:it1 ~column:c) (store#get ~row:it2 ~column:c)
     in
     store#set_sort_func i sort
   in

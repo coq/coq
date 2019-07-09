@@ -329,8 +329,8 @@ let init_terminal_output ~color =
       Format.pp_set_print_tags !std_ft true;
       Format.pp_set_print_tags !err_ft true
     end;
-  Format.pp_set_formatter_tag_functions !std_ft (tag_handler !std_ft);
-  Format.pp_set_formatter_tag_functions !err_ft (tag_handler !err_ft)
+  Format.pp_set_formatter_tag_functions !std_ft (tag_handler !std_ft) [@warning "-3"];
+  Format.pp_set_formatter_tag_functions !err_ft (tag_handler !err_ft) [@warning "-3"]
 
 (* Rules for emacs:
    - Debug/info: emacs_quote_info

@@ -315,8 +315,8 @@ let coqloop_feed (fb : Feedback.feedback) = let open Feedback in
 (* Flush in a compatible order with 8.5 *)
 (* This mimics the semantics of the old Pp.flush_all *)
 let loop_flush_all () =
-  Pervasives.flush stderr;
-  Pervasives.flush stdout;
+  flush stderr;
+  flush stdout;
   Format.pp_print_flush !Topfmt.std_ft ();
   Format.pp_print_flush !Topfmt.err_ft ()
 

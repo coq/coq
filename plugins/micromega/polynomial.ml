@@ -278,7 +278,7 @@ and op = |Eq | Ge | Gt
 
 exception Strict
 
-let is_strict c = Pervasives.(=) c.op  Gt
+let is_strict c = (=) c.op  Gt
 
 let eval_op = function
   | Eq -> (=/)
@@ -422,7 +422,7 @@ module LinPoly = struct
   let min_list (l:int list) =
     match l with
     | [] -> None
-    | e::l -> Some (List.fold_left Pervasives.min e l)
+    | e::l -> Some (List.fold_left min e l)
 
   let search_linear p l =
     min_list (search_all_linear p l)
@@ -656,9 +656,9 @@ module ProofFormat =  struct
       let rec compare p1 p2 =
         match p1, p2 with
         | Annot(s1,p1) , Annot(s2,p2) -> if s1 = s2 then compare p1 p2
-                                         else Pervasives.compare s1 s2
-        | Hyp i       , Hyp j        -> Pervasives.compare i j
-        | Def i       , Def j        -> Pervasives.compare i j
+                                         else Util.pervasives_compare s1 s2
+        | Hyp i       , Hyp j        -> Util.pervasives_compare i j
+        | Def i       , Def j        -> Util.pervasives_compare i j
         | Cst n       , Cst m        -> Num.compare_num n m
         | Zero        , Zero         -> 0
         | Square v1   , Square v2    -> Vect.compare v1 v2
@@ -667,7 +667,7 @@ module ProofFormat =  struct
         | MulPrf(p1,q1) , MulPrf(p2,q2) -> cmp_pair compare compare (p1,q1) (p2,q2)
         | AddPrf(p1,q1) , MulPrf(p2,q2) -> cmp_pair compare compare (p1,q1) (p2,q2)
         | CutPrf p      , CutPrf p'     -> compare p p'
-        |   _          ,   _            -> Pervasives.compare (id_of_constr p1) (id_of_constr p2)
+        |   _          ,   _            -> Util.pervasives_compare (id_of_constr p1) (id_of_constr p2)
 
     end
 
@@ -785,7 +785,7 @@ module ProofFormat =  struct
       let rec xid_of_hyp i l' =
         match l' with
         | [] -> failwith (Printf.sprintf "id_of_hyp %i %s" hyp (string_of_int_list l))
-        | hyp'::l' -> if Pervasives.(=) hyp hyp' then i else xid_of_hyp (i+1) l' in
+        | hyp'::l' -> if (=) hyp hyp' then i else xid_of_hyp (i+1) l' in
       xid_of_hyp 0 l
 
   end
@@ -873,7 +873,7 @@ module ProofFormat =  struct
        let (p,o) = eval_prf_rule (fun i -> IMap.find i env) prf in
        if is_unsat (p,o) then true
        else
-         if Pervasives.(=) rst Done
+         if (=) rst Done
          then
            begin
              Printf.fprintf stdout "Last inference %a %s\n" LinPoly.pp p (string_of_op o);

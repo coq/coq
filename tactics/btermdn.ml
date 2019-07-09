@@ -29,7 +29,7 @@ type term_label =
 
 let compare_term_label t1 t2 = match t1, t2 with
 | GRLabel gr1, GRLabel gr2 -> GlobRef.Ordered.compare gr1 gr2
-| _ -> Pervasives.compare t1 t2 (** OK *)
+| _ -> pervasives_compare t1 t2 (** OK *)
 
 type 'res lookup_res = 'res Dn.lookup_res = Label of 'res | Nothing | Everything
 

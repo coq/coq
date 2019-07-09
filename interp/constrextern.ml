@@ -69,7 +69,7 @@ let print_no_symbol = ref false
 (* Turning notations and scopes on and off for printing *)
 module IRuleSet = Set.Make(struct
     type t = interp_rule
-    let compare x y = Pervasives.compare x y
+    let compare x y = compare x y
   end)
 
 let inactive_notations_table =

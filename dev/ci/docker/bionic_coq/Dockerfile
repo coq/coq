@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2019-07-05-V33"
+# CACHEKEY: "bionic_coq-V2019-07-06-V22"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -22,7 +22,7 @@ RUN pip3 install sphinx==1.7.8 sphinx_rtd_theme==0.2.5b2 \
                  antlr4-python3-runtime==4.7.1 sphinxcontrib-bibtex==0.4.0
 
 # We need to install OPAM 2.0 manually for now.
-RUN wget https://github.com/ocaml/opam/releases/download/2.0.3/opam-2.0.3-x86_64-linux -O /usr/bin/opam && chmod 755 /usr/bin/opam
+RUN wget https://github.com/ocaml/opam/releases/download/2.0.4/opam-2.0.4-x86_64-linux -O /usr/bin/opam && chmod 755 /usr/bin/opam
 
 # Basic OPAM setup
 ENV NJOBS="2" \
@@ -37,8 +37,9 @@ ENV COMPILER="4.05.0"
 # Common OPAM packages.
 # `num` does not have a version number as the right version to install varies
 # with the compiler version.
-ENV BASE_OPAM="num ocamlfind.1.8.0 dune.1.6.2 ounit.2.0.8 odoc.1.4.0" \
-    CI_OPAM="menhir.20190626 elpi.1.4.0 ocamlgraph.1.8.8"
+ENV BASE_OPAM="num ocamlfind.1.8.0 dune.1.10.0 ounit.2.0.8 odoc.1.4.0" \
+    CI_OPAM="menhir.20190626 ocamlgraph.1.8.8" \
+    BASE_ONLY_OPAM="elpi.1.4.0"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
 ENV COQIDE_OPAM="cairo2.0.6 lablgtk3-sourceview3.3.0.beta5"
@@ -48,16 +49,16 @@ ENV COQIDE_OPAM="cairo2.0.6 lablgtk3-sourceview3.3.0.beta5"
 
 # base switch
 RUN opam init -a --disable-sandboxing --compiler="$COMPILER" default https://opam.ocaml.org && eval $(opam env) && opam update && \
-    opam install $BASE_OPAM $COQIDE_OPAM $CI_OPAM
+    opam install $BASE_OPAM $COQIDE_OPAM $CI_OPAM $BASE_ONLY_OPAM
 
 # base+32bit switch
 RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
     opam install $BASE_OPAM
 
 # EDGE switch
-ENV COMPILER_EDGE="4.07.1" \
-    COQIDE_OPAM_EDGE="cairo2.0.6 lablgtk3-sourceview3.3.0.beta5" \
-    BASE_OPAM_EDGE="dune-release.1.1.0"
+ENV COMPILER_EDGE="4.08.0" \
+    COQIDE_OPAM_EDGE="cairo2.0.6 lablgtk3-sourceview3.3.0.beta6" \
+    BASE_OPAM_EDGE="dune-release.1.3.1"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
 # `ci-template-flambda` with everything.

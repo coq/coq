@@ -114,7 +114,7 @@ let print_impargs_by_name max = function
 let print_one_impargs_list l =
   let imps = List.filter is_status_implicit l in
   let maximps = List.filter Impargs.maximal_insertion_of imps in
-  let nonmaximps = List.subtract Pervasives.(=) imps maximps in (* FIXME *)
+  let nonmaximps = List.subtract (=) imps maximps in (* FIXME *)
   print_impargs_by_name false nonmaximps @
   print_impargs_by_name true maximps
 

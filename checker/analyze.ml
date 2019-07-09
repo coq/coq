@@ -395,8 +395,8 @@ end
 module IChannel =
 struct
   type t = in_channel
-  let input_byte = Pervasives.input_byte
-  let input_binary_int = Pervasives.input_binary_int
+  let input_byte = input_byte
+  let input_binary_int = input_binary_int
 end
 
 module IString =

@@ -57,7 +57,7 @@ let pr_notation (from,ntn) = qstring ntn ++ match from with InConstrEntrySomeLev
 module NotationOrd =
   struct
     type t = notation
-    let compare = Pervasives.compare
+    let compare = pervasives_compare
   end
 
 module NotationSet = Set.Make(NotationOrd)
@@ -593,7 +593,7 @@ let rec rawnum_compare s s' =
    try
      for i = 0 to d-1 do if s.[i] != '0' then raise (Comp 1) done;
      for i = d to l-1 do
-       let c = Pervasives.compare s.[i] s'.[i-d] in
+       let c = pervasives_compare s.[i] s'.[i-d] in
        if c != 0 then raise (Comp c)
      done;
      0
@@ -1242,7 +1242,7 @@ type entry_coercion = notation list
 module EntryCoercionOrd =
  struct
   type t = notation_entry * notation_entry
-   let compare = Pervasives.compare
+   let compare = pervasives_compare
  end
 
 module EntryCoercionMap = Map.Make(EntryCoercionOrd)
