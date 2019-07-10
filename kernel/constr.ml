@@ -995,6 +995,8 @@ let compare_head = compare_head_gen (fun _ _ -> Univ.Instance.equal) Sorts.equal
 (*  alpha conversion functions *)
 (*******************************)
 
+type compare_annot = Constraints.t ref -> Names.inductive -> Annot.t -> Annot.t -> unit
+
 (* alpha conversion : ignore print names and casts *)
 
 let rec eq_constr nargs m n =
@@ -1002,18 +1004,20 @@ let rec eq_constr nargs m n =
 
 let equal n m = eq_constr 0 m n (* to avoid tracing a recursive fun *)
 
-let eq_constr_univs compare_annot univs m n =
+let eq_constr_univs eq_annot leq_annot univs m n =
   if m == n then true, empty
   else
     let cstrnts = ref empty in
     let eq_universes _ _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' nargs m n =
-      m == n ||	compare_head_gen_cstrnts eq_universes eq_sorts (compare_annot cstrnts) eq_constr' nargs m n in
-    let res = compare_head_gen_cstrnts eq_universes eq_sorts (compare_annot cstrnts) eq_constr' 0 m n in
+      m == n ||	compare_head_gen_cstrnts eq_universes eq_sorts (eq_annot cstrnts) eq_constr' nargs m n in
+    let rec leq_constr' nargs m n =
+      m == n || compare_head_gen_leq_cstrnts eq_universes eq_sorts (leq_annot cstrnts) eq_constr' leq_constr' nargs m n in
+    let res = leq_constr' 0 m n in
     res, !cstrnts
 
-let leq_constr_univs compare_annot univs m n =
+let leq_constr_univs eq_annot leq_annot univs m n =
   if m == n then true, empty
   else
     let cstrnts = ref empty in
@@ -1023,10 +1027,10 @@ let leq_constr_univs compare_annot univs m n =
     let leq_sorts s1 s2 = s1 == s2 ||
       UGraph.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' nargs m n =
-      m == n || compare_head_gen_cstrnts eq_universes eq_sorts (compare_annot cstrnts) eq_constr' nargs m n
+      m == n || compare_head_gen_cstrnts eq_universes eq_sorts (leq_annot cstrnts) eq_constr' nargs m n
     in
     let rec compare_leq nargs m n =
-      compare_head_gen_leq_cstrnts eq_universes leq_sorts (compare_annot cstrnts) eq_constr' leq_constr' nargs m n
+      compare_head_gen_leq_cstrnts eq_universes leq_sorts (eq_annot cstrnts) eq_constr' leq_constr' nargs m n
     and leq_constr' nargs m n = m == n || compare_leq nargs m n in
     let res = compare_leq 0 m n in
     res, !cstrnts

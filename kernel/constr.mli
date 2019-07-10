@@ -365,14 +365,18 @@ val destRef : constr -> GlobRef.t Univ.puniverses
    and application grouping *)
 val equal : constr -> constr -> bool
 
+(** [compare_annot] is the type of Substaging.add_constraint_from_ind_ref applied to
+   Environ.env and Substaging.variance *)
+type compare_annot = Constraints.t ref -> Names.inductive -> Annot.t -> Annot.t -> unit
+
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [u]. *)
-val eq_constr_univs : (Constraints.t ref -> Names.inductive -> Annot.t -> Annot.t -> unit) ->
+val eq_constr_univs : compare_annot -> compare_annot ->
    UGraph.t -> constr -> constr -> bool Constraints.constrained
 
 (** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo
     alpha, casts, application grouping and the universe inequalities in [u]. *)
-val leq_constr_univs : (Constraints.t ref -> Names.inductive -> Annot.t -> Annot.t -> unit) ->
+val leq_constr_univs : compare_annot -> compare_annot ->
    UGraph.t -> constr -> constr -> bool Constraints.constrained
 
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
