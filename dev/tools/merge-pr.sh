@@ -209,7 +209,8 @@ has_state() {
     [ "$(jq -rc 'map(select(.user.login == "'"$1"'") | .state) | any(. == "'"$2"'")' <<< "$reviews")" = true ]
 }
 
-for reviewer in $(jq -rc 'map(.user.login) | unique | join(" ")' <<< "$reviews" ); do
+author=$(echo "$PRDATA" | jq -rc '.user.login')
+for reviewer in $(jq -rc 'map(.user.login | select(. != "'"$author"'")) | unique | join(" ")' <<< "$reviews" ); do
     if has_state "$reviewer" APPROVED; then
         msg=$(printf '%s\n' "$msg" | git interpret-trailers --trailer Reviewed-by="$reviewer")
     elif has_state "$reviewer" COMMENTED; then
