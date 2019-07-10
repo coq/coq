@@ -597,22 +597,15 @@ look in particular at the "Writing" and "Fixing" columns).
 Contributing to the standard library is also made easier by not having
 to learn about Coq's internals, and its implementation language.
 
-However, you should be aware that, because of the age of the library,
-and the compatibility constraints created by the many projects that
+Due to the compatibility constraints created by the many projects that
 depend on it, proposing breaking changes, such as changing a
 definition, may frequently be rejected, or at the very least might
-take a long time before getting approved and merged.  This does not
-mean that you cannot try.
-
-There exists a [stdlib2][] project, that will be much more open to
-compatibility-breaking changes once it starts accepting external
-contributions.
-
-In the meantime, contributing new lemmas on existing definitions
-should be generally favorably accepted, cleaning up existing proofs as
-well.  Contributing new operations on existing types is also likely to
-be accepted in many cases.  In case of doubt, ask in an issue before
-spending too much time preparing your PR.
+take a long time before getting approved and merged. This does not
+mean that you cannot try.  On the other hand, contributing new lemmas
+on existing definitions and cleaning up existing proofs are likely to
+be accepted.  Contributing new operations on existing types are also
+likely to be accepted in many cases.  In case of doubt, ask in an
+issue before spending too much time preparing your PR.
 
 If you create a new file, it needs to be listed in
 `doc/stdlib/index-list.html`.
@@ -1116,7 +1109,6 @@ can be found [on the wiki][wiki-CUDW].
 [RM-checklist]: dev/doc/release-process.md
 [Stack-Exchange]: https://stackexchange.com/filters/299857/questions-tagged-coq-on-stackexchange-sites
 [Stack-Overflow]: https://stackoverflow.com/questions/tagged/coq
-[stdlib2]: https://github.com/coq/stdlib2
 [stdlib-doc]: https://coq.inria.fr/stdlib/
 [test-suite-README]: test-suite/README.md
 [tools-website]: https://coq.inria.fr/related-tools.html
