@@ -52,9 +52,14 @@ jobs:
   - script: |
       set -e
       brew update
+      (cd $(brew --repository)/Library/Taps/homebrew/homebrew-core/ && git fetch --shallow-since=${HBCORE_DATE} && git checkout ${HBCORE_REF})
       brew install gnu-time opam pkg-config gtksourceview3 adwaita-icon-theme
       pip3 install macpack
     displayName: 'Install system dependencies'
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HBCORE_DATE: "2019-06-18"
+      HBCORE_REF: "944a5b7d83e4b81c749d93831b514607bdd2b6a1"
 
   - script: |
       set -e
