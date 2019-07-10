@@ -247,7 +247,10 @@ let retrieve_first_recthm uctx = function
   | _ -> assert false
 
 (* Helper for process_recthms *)
-let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i { Recthm.name; typ; impargs } =
+let save_remaining_recthms env sigma ~poly ~scope ~udecl uctx body opaq i { Recthm.name; typ; impargs } =
+  let norm c = EConstr.to_constr (Evd.from_ctx uctx) c in
+  let body = Option.map EConstr.of_constr body in
+  let univs = UState.check_univ_decl ~poly uctx udecl in
   let t_i = norm typ in
   let kind = Decls.(IsAssumption Conjectural) in
   match body with
@@ -300,10 +303,7 @@ let process_recthms ?fix_exn ?hook env sigma uctx ~udecl ~poly ~scope dref imps 
     if List.is_empty other_thms then [] else
       (* there are several theorems defined mutually *)
       let body,opaq = retrieve_first_recthm uctx dref in
-      let norm c = EConstr.to_constr (Evd.from_ctx uctx) c in
-      let body = Option.map EConstr.of_constr body in
-      let uctx = UState.check_univ_decl ~poly uctx udecl in
-      List.map_i (save_remaining_recthms env sigma ~poly ~scope norm uctx body opaq) 1 other_thms in
+      List.map_i (save_remaining_recthms env sigma ~poly ~scope ~udecl uctx body opaq) 1 other_thms in
   let thms_data = (dref,imps)::other_thms_data in
   List.iter (fun (dref,imps) ->
       maybe_declare_manual_implicits false dref imps;
