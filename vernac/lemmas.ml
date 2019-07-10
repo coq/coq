@@ -113,98 +113,12 @@ let by tac pf =
 (* Creating a lemma-like constant                                       *)
 (************************************************************************)
 
-(* Support for mutually proved theorems *)
-
-let retrieve_first_recthm uctx = function
-  | GlobRef.VarRef id ->
-    NamedDecl.get_value (Global.lookup_named id),
-    Decls.variable_opacity id
-  | GlobRef.ConstRef cst ->
-    let cb = Global.lookup_constant cst in
-    (* we get the right order somehow but surely it could be enforced in a better way *)
-    let uctx = UState.context uctx in
-    let inst = Univ.UContext.instance uctx in
-    let map (c, _, _) = Vars.subst_instance_constr inst c in
-    (Option.map map (Global.body_of_constant_body Library.indirect_accessor cb), is_opaque cb)
-  | _ -> assert false
-
-let adjust_guardness_conditions const = function
-  | [] -> const (* Not a recursive statement *)
-  | possible_indexes ->
-  (* Try all combinations... not optimal *)
-     let env = Global.env() in
-     let open Proof_global in
-     { const with proof_entry_body =
-        Future.chain const.proof_entry_body
-        (fun ((body, ctx), eff) ->
-          match Constr.kind body with
-          | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
-(*      let possible_indexes =
-        List.map2 (fun i c -> match i with Some i -> i | None ->
-          List.interval 0 (List.length ((lam_assum c))))
-          lemma_guard (Array.to_list fixdefs) in
-*)
-              let env = Safe_typing.push_private_constants env eff.Evd.seff_private in
-              let indexes =
-                search_guard env
-                  possible_indexes fixdecls in
-                (mkFix ((indexes,0),fixdecls), ctx), eff
-          | _ -> (body, ctx), eff) }
-
-let default_thm_id = Id.of_string "Unnamed_thm"
-
 let check_name_freshness locality {CAst.loc;v=id} : unit =
   (* We check existence here: it's a bit late at Qed time *)
   if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
      locality <> DeclareDef.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
   then
     user_err ?loc  (Id.print id ++ str " already exists.")
-
-let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i { Recthm.name; typ; impargs } =
-  let t_i = norm typ in
-  let kind = Decls.(IsAssumption Conjectural) in
-  match body with
-  | None ->
-    let open DeclareDef in
-      (match scope with
-      | Discharge ->
-        let impl = false in (* copy values from Vernacentries *)
-        let univs = match univs with
-          | Polymorphic_entry (_, univs) ->
-            (* What is going on here? *)
-            Univ.ContextSet.of_context univs
-          | Monomorphic_entry univs -> univs
-        in
-        let c = Declare.SectionLocalAssum {typ=t_i; univs; poly; impl} in
-        let () = Declare.declare_variable ~name ~kind c in
-        (GlobRef.VarRef name,impargs)
-      | Global local ->
-        let kind = Decls.(IsAssumption Conjectural) in
-        let decl = Declare.ParameterEntry (None,(t_i,univs),None) in
-        let kn = Declare.declare_constant ~name ~local ~kind decl in
-        (GlobRef.ConstRef kn,impargs))
-  | Some body ->
-      let body = norm body in
-      let rec body_i t = match Constr.kind t with
-        | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
-        | CoFix (0,decls) -> mkCoFix (i,decls)
-        | LetIn(na,t1,ty,t2) -> mkLetIn (na,t1,ty, body_i t2)
-        | Lambda(na,ty,t) -> mkLambda(na,ty,body_i t)
-        | App (t, args) -> mkApp (body_i t, args)
-        | _ ->
-          anomaly Pp.(str "Not a proof by induction: " ++ Printer.pr_constr_env env sigma body ++ str ".") in
-      let body_i = body_i body in
-      let open DeclareDef in
-      match scope with
-      | Discharge ->
-        let const = Declare.definition_entry ~types:t_i ~opaque:opaq ~univs body_i in
-        let c = Declare.SectionLocalDef const in
-        let () = Declare.declare_variable ~name ~kind c in
-        (GlobRef.VarRef name,impargs)
-      | Global local ->
-        let const = Declare.definition_entry ~types:t_i ~univs ~opaque:opaq body_i in
-        let kn = Declare.declare_constant ~name ~local ~kind (Declare.DefinitionEntry const) in
-        (GlobRef.ConstRef kn,impargs)
 
 let initialize_named_context_for_proof () =
   let sign = Global.named_context () in
@@ -315,8 +229,69 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?inference_hook ?hook thms 
   start_lemma_with_initialization ?hook ~poly ~scope ~kind evd ~udecl recguard thms snl
 
 (************************************************************************)
-(* Commom constant saving path                                          *)
+(* Commom constant saving path, for both Qed and Admitted               *)
 (************************************************************************)
+
+(* Helper for process_recthms *)
+let retrieve_first_recthm uctx = function
+  | GlobRef.VarRef id ->
+    NamedDecl.get_value (Global.lookup_named id),
+    Decls.variable_opacity id
+  | GlobRef.ConstRef cst ->
+    let cb = Global.lookup_constant cst in
+    (* we get the right order somehow but surely it could be enforced in a better way *)
+    let uctx = UState.context uctx in
+    let inst = Univ.UContext.instance uctx in
+    let map (c, _, _) = Vars.subst_instance_constr inst c in
+    (Option.map map (Global.body_of_constant_body Library.indirect_accessor cb), is_opaque cb)
+  | _ -> assert false
+
+(* Helper for process_recthms *)
+let save_remaining_recthms env sigma ~poly ~scope norm univs body opaq i { Recthm.name; typ; impargs } =
+  let t_i = norm typ in
+  let kind = Decls.(IsAssumption Conjectural) in
+  match body with
+  | None ->
+    let open DeclareDef in
+    (match scope with
+     | Discharge ->
+       let impl = false in (* copy values from Vernacentries *)
+       let univs = match univs with
+         | Polymorphic_entry (_, univs) ->
+           (* What is going on here? *)
+           Univ.ContextSet.of_context univs
+         | Monomorphic_entry univs -> univs
+       in
+       let c = Declare.SectionLocalAssum {typ=t_i; univs; poly; impl} in
+       let () = Declare.declare_variable ~name ~kind c in
+       GlobRef.VarRef name, impargs
+     | Global local ->
+       let kind = Decls.(IsAssumption Conjectural) in
+       let decl = Declare.ParameterEntry (None,(t_i,univs),None) in
+       let kn = Declare.declare_constant ~name ~local ~kind decl in
+       GlobRef.ConstRef kn, impargs)
+  | Some body ->
+    let body = norm body in
+    let rec body_i t = match Constr.kind t with
+      | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
+      | CoFix (0,decls) -> mkCoFix (i,decls)
+      | LetIn(na,t1,ty,t2) -> mkLetIn (na,t1,ty, body_i t2)
+      | Lambda(na,ty,t) -> mkLambda(na,ty,body_i t)
+      | App (t, args) -> mkApp (body_i t, args)
+      | _ ->
+        anomaly Pp.(str "Not a proof by induction: " ++ Printer.pr_constr_env env sigma body ++ str ".") in
+    let body_i = body_i body in
+    let open DeclareDef in
+    match scope with
+    | Discharge ->
+      let const = Declare.definition_entry ~types:t_i ~opaque:opaq ~univs body_i in
+      let c = Declare.SectionLocalDef const in
+      let () = Declare.declare_variable ~name ~kind c in
+      GlobRef.VarRef name, impargs
+    | Global local ->
+      let const = Declare.definition_entry ~types:t_i ~univs ~opaque:opaq body_i in
+      let kn = Declare.declare_constant ~name ~local ~kind (Declare.DefinitionEntry const) in
+      GlobRef.ConstRef kn, impargs
 
 (* This declares implicits and calls the hooks for all the theorems,
    including the main one *)
@@ -395,9 +370,32 @@ let save_lemma_admitted ~(lemma : t) : unit =
 (* Saving a lemma-like constant                                         *)
 (************************************************************************)
 
+let default_thm_id = Id.of_string "Unnamed_thm"
+
 let check_anonymity id save_ident =
   if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
     user_err Pp.(str "This command can only be used for unnamed theorem.")
+
+(* Support for mutually proved theorems *)
+
+(* Helper for finish_proved *)
+let adjust_guardness_conditions const = function
+  | [] -> const (* Not a recursive statement *)
+  | possible_indexes ->
+    (* Try all combinations... not optimal *)
+    let env = Global.env() in
+    let open Proof_global in
+    { const with
+      proof_entry_body =
+        Future.chain const.proof_entry_body
+          (fun ((body, ctx), eff) ->
+             match Constr.kind body with
+             | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
+               let env = Safe_typing.push_private_constants env eff.Evd.seff_private in
+               let indexes = search_guard env possible_indexes fixdecls in
+               (mkFix ((indexes,0),fixdecls), ctx), eff
+             | _ -> (body, ctx), eff)
+    }
 
 let finish_proved env sigma idopt po info =
   let open Proof_global in
