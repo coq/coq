@@ -1,6 +1,6 @@
 module Stage :
 sig
-  type var
+  type var = int
   type t = Infty | StageVar of var * int
   val compare : t -> t -> int
 end
@@ -19,7 +19,7 @@ end
 
 module State :
 sig
-  type vars
+  type vars = Int.Set.t
   type t = Stage.var * vars * vars
   val mem : Stage.var -> vars -> bool
   val diff : vars -> vars -> vars
@@ -33,16 +33,25 @@ end
 
 module Constraints :
 sig
-  module Set : CSig.SetS
   type t
   type 'a constrained = 'a * t
+  val fold : (Stage.var -> Stage.var -> int -> 'a -> 'a) -> t -> 'a -> 'a
+  val filter : (Stage.var -> Stage.var -> int -> bool) -> t -> t
   val empty : t
   val union : t -> t -> t
   val union_list : t list -> t
+  val contains : Stage.var * Stage.var -> t -> bool
   val add : Annot.t -> Annot.t -> t -> t
+  val sup : Stage.var -> t -> State.vars
+  val sub : Stage.var -> t -> State.vars
   val pr : t -> Pp.t
 end
 
 exception RecCheckFailed of Constraints.t * State.vars * State.vars
+
+val bellman_ford_all : Constraints.t -> State.vars
+
+val downward : Constraints.t -> State.vars -> State.vars
+val upward   : Constraints.t -> State.vars -> State.vars
 
 val rec_check : Stage.var -> State.vars -> State.vars -> Constraints.t -> Constraints.t

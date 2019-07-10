@@ -13,6 +13,8 @@ struct
 
   let infty = -1 (* For constraint representation only!!! *)
 
+  let mk var size = StageVar (var, size)
+
   let var_equal = Int.equal
 
   let compare s1 s2 =
@@ -42,7 +44,7 @@ struct
 
   let infty = Stage Infty
 
-  let mk var = Stage (StageVar (var, 0))
+  let mk var size = Stage (Stage.mk var size)
 
   let hat a =
     match a with
@@ -109,9 +111,9 @@ struct
   let next ?s:(s=Empty) ((next, vs, stars) as stg) =
     match s with
     | Empty | Stage Infty ->
-      mk next, (succ next, add next vs, stars)
+      mk next 0, (succ next, add next vs, stars)
     | Star ->
-      mk next, (succ next, add next vs, add next stars)
+      mk next 0, (succ next, add next vs, add next stars)
     | _ -> (s, stg)
 
   let show (stg, vars, stars) =
@@ -133,7 +135,7 @@ end
       a stage variable's substages and superstages
       N.B. Infty stages are stored as (-1)
     Generic functions: fold, filter
-    Set-like functions: empty, union[_list], remove, add
+    Set-like functions: empty, union[_list], remove, contains, add
     Graph-like functions: sup, sub, vertices *)
 module Constraints =
 struct
@@ -178,6 +180,11 @@ struct
       let has_base (v, _) = Stage.var_equal v var in
       Map.map (Set.filter has_base) (Map.remove var map) in
     remove_from_map var mto, remove_from_map var mfrom
+  let contains (vfrom, vto) (mto, _) =
+    match Map.find_opt vfrom mto with
+    | None -> false
+    | Some vtos ->
+      Set.exists (fun (vto', _) -> Stage.var_equal vto vto') vtos
 
   let add a1 a2 ((mto, mfrom) as t) =
     let add_to_map vfrom vto wt =
@@ -280,19 +287,19 @@ let closure get_adj cstrnts init =
       else
         let init_new = get_adj s cstrnts in
         closure_rec (union init_rest init_new) (add s fin) in
-  filter (Stage.var_equal Stage.infty) (closure_rec init empty)
+  filter (fun var -> var |> Stage.var_equal Stage.infty |> not) (closure_rec init empty)
 
 let downward = closure Constraints.sub
 let upward = closure Constraints.sup
 
 let rec_check alpha vstar vneq cstrnts =
-  let f annot_sub var_sup cstrnts = Constraints.add annot_sub (Annot.mk var_sup) cstrnts in
+  let f annot_sub var_sup cstrnts = Constraints.add annot_sub (Annot.mk var_sup 0) cstrnts in
 
   (* Step 1: Si = downward closure containing V* *)
   let si = downward cstrnts vstar in
 
   (* Step 2: Add α ⊑ Si *)
-  let cstrnts1 = fold (f (Annot.mk alpha)) si cstrnts in
+  let cstrnts1 = fold (f (Annot.mk alpha 0)) si cstrnts in
 
   (* Step 3: Remove negative cycles *)
   let v_neg = upward cstrnts1 (bellman_ford_all cstrnts1) in
