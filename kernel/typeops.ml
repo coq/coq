@@ -16,6 +16,7 @@ open Sorts
 open Term
 open Constr
 open Stages
+open SVars
 open Annot
 open State
 open Constraints

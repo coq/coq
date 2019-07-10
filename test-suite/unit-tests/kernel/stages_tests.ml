@@ -1,6 +1,7 @@
 open Utest
 open Util
 open Stages
+open SVars
 open Stage
 open Annot
 open Constraints
@@ -11,7 +12,7 @@ let log_out_ch = open_log_out_ch __FILE__
 
 let str_tuple (a, b, c) = "(" ^ string_of_int a ^ "," ^ string_of_int b ^ "," ^ string_of_int c ^ ")"
 let str_list_tuple lst = "[;" ^ List.fold_right (fun tup str -> str_tuple tup ^ ";" ^ str) lst "]"
-let str_int_set set = "{," ^ Int.Set.fold (fun i str -> string_of_int i ^ "," ^ str) set "}"
+let str_int_set set = "{," ^ SVars.fold (fun i str -> string_of_int i ^ "," ^ str) set "}"
 
 let debug = Printf.printf "%s\n"
 
@@ -109,7 +110,7 @@ let sup1 =
   mk_bool_test
     (test_prefix ^ "-sup1")
     "sup returns all superstages"
-    (Int.Set.mem 0 sups && Int.Set.mem 9 sups)
+    (mem 0 sups && mem 9 sups)
 let sup_tests = [sup1]
 
 let sub1 =
@@ -118,7 +119,7 @@ let sub1 =
   mk_bool_test
     (test_prefix ^ "-sub1")
     "sup returns all substages"
-    (Int.Set.mem 0 subs && Int.Set.mem 9 subs)
+    (mem 0 subs && mem 9 subs)
 let sub_tests = [sub1]
 
 (* RecCheck tests *)
@@ -129,42 +130,40 @@ let bf_name i = add_prefix ^ string_of_int i
 let bf1 = mk_eq_test
   (bf_name 1)
   "Bellman-Ford returns empty set for positive size 2 cycle"
-  Int.Set.empty
+  SVars.empty
   (bellman_ford_all pos_cycle)
 let bf2 = mk_eq_test
   (bf_name 2)
   "Bellman-Ford returns empty set for positive size 3 cycle"
-  Int.Set.empty
+  SVars.empty
   (bellman_ford_all pos_cycle_bigger)
 let bf3 = mk_bool_test
   (bf_name 3)
   "Bellman-Ford returns nonempty set for negative size 2 cycle"
-  (not (Int.Set.is_empty (bellman_ford_all neg_cycle)))
+  (not (is_empty (bellman_ford_all neg_cycle)))
 let bf4 = mk_bool_test
   (bf_name 4)
   "Bellman-Ford returns nonempty set for negative size 3 cycle"
-  (not (Int.Set.is_empty (bellman_ford_all neg_cycle_bigger)))
+  (not (is_empty (bellman_ford_all neg_cycle_bigger)))
 let bf5 = mk_bool_test
   (bf_name 5)
   "Bellman-Form returns nonempty set for size 3 cycle without vertices NOT in cycle"
   (let vs = bellman_ford_all neg_cycle_extra1 in
-  (not (Int.Set.is_empty vs) && not (Int.Set.mem 2 vs)))
+  (not (is_empty vs) && not (mem 2 vs)))
 let bellman_ford_tests = [bf1; bf2; bf3; bf4; bf5]
 
 let upward_closure =
-  let up = upward neg_cycle_extra1 (Int.Set.singleton 0) in
-  let expected = Int.Set.of_list [0; 5; 9] in
+  let up = upward neg_cycle_extra1 (SVars.add 0 SVars.empty) in
   mk_bool_test
     (test_prefix ^ "-upward_closure")
     "upward closure from s0"
-    (Int.Set.equal up expected)
+    (List.for_all (fun var -> mem var up) [0; 5; 9])
 let downward_closure =
-  let down = downward neg_cycle_extra2 (Int.Set.singleton 0) in
-  let expected = Int.Set.of_list [0; 5; 9] in
+  let down = downward neg_cycle_extra2 (SVars.add 0 SVars.empty) in
   mk_bool_test
     (test_prefix ^ "-downward_closure")
     "downward closure from s0"
-    (Int.Set.equal down expected)
+    (List.for_all (fun var -> mem var down) [0; 5; 9])
 let closure_tests = [upward_closure; downward_closure]
 
 (* Run tests *)

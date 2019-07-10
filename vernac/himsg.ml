@@ -722,9 +722,9 @@ let explain_unsatisfied_stage_constraints env cstrnts si_inf si =
   strbrk "Unsatisfied stage constraints: given constraints " ++
   Stages.Constraints.pr cstrnts ++
   str ", stage variables " ++
-  Stages.State.pr_vars "∞" si_inf ++
+  Stages.SVars.pr "∞" si_inf ++
   str " must be set to infinity, and " ++
-  Stages.State.pr_vars "≠∞" si ++
+  Stages.SVars.pr "≠∞" si ++
   str " must be set to finite stage variables, but their intersection is not empty."
 
 let explain_unsatisfied_constraints env sigma cst =

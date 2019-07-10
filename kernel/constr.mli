@@ -546,12 +546,12 @@ val annotate_infty : constr -> constr
 (** [succ_annots vars c] calls [succ_annot] on all the stage annotations in [c]
    if the stage variables are in [vars] *)
 
-val succ_annots : State.vars -> constr -> constr
+val succ_annots : SVars.t -> constr -> constr
 
 (** [pos_annots vars c] sets all stage annotations in [c]
    whose stage variables are in [vars] to star position annotations *)
 
-val pos_annots : State.vars -> constr -> constr
+val pos_annots : SVars.t -> constr -> constr
 
 (** [iter f c] iters [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is

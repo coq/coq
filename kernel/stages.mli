@@ -1,7 +1,19 @@
+module SVars :
+sig
+  type t
+  type var = int
+  val empty : t
+  val is_empty : t -> bool
+  val add : var -> t -> t
+  val mem : var -> t -> bool
+  val diff : t -> t -> t
+  val fold : (var -> 'a -> 'a) -> t -> 'a -> 'a
+  val pr : string -> t -> Pp.t
+end
+
 module Stage :
 sig
-  type var = int
-  type t = Infty | StageVar of var * int
+  type t = Infty | StageVar of SVars.var * int
   val compare : t -> t -> int
 end
 
@@ -19,39 +31,35 @@ end
 
 module State :
 sig
-  type vars = Int.Set.t
-  type t = Stage.var * vars * vars
-  val mem : Stage.var -> vars -> bool
-  val diff : vars -> vars -> vars
+  type t = SVars.var * SVars.t * SVars.t
   val init : t
-  val get_vars : t -> vars
-  val get_pos_vars : t -> vars
+  val get_vars : t -> SVars.t
+  val get_pos_vars : t -> SVars.t
   val next : ?s:Annot.t -> t -> Annot.t * t
   val pr : t -> Pp.t
-  val pr_vars : string -> vars -> Pp.t
 end
 
 module Constraints :
 sig
   type t
   type 'a constrained = 'a * t
-  val fold : (Stage.var -> Stage.var -> int -> 'a -> 'a) -> t -> 'a -> 'a
-  val filter : (Stage.var -> Stage.var -> int -> bool) -> t -> t
+  val fold : (SVars.var -> SVars.var -> int -> 'a -> 'a) -> t -> 'a -> 'a
+  val filter : (SVars.var -> SVars.var -> int -> bool) -> t -> t
   val empty : t
   val union : t -> t -> t
   val union_list : t list -> t
-  val contains : Stage.var * Stage.var -> t -> bool
+  val contains : SVars.var * SVars.var -> t -> bool
   val add : Annot.t -> Annot.t -> t -> t
-  val sup : Stage.var -> t -> State.vars
-  val sub : Stage.var -> t -> State.vars
+  val sup : SVars.var -> t -> SVars.t
+  val sub : SVars.var -> t -> SVars.t
   val pr : t -> Pp.t
 end
 
-exception RecCheckFailed of Constraints.t * State.vars * State.vars
+exception RecCheckFailed of Constraints.t * SVars.t * SVars.t
 
-val bellman_ford_all : Constraints.t -> State.vars
+val bellman_ford_all : Constraints.t -> SVars.t
 
-val downward : Constraints.t -> State.vars -> State.vars
-val upward   : Constraints.t -> State.vars -> State.vars
+val downward : Constraints.t -> SVars.t -> SVars.t
+val upward   : Constraints.t -> SVars.t -> SVars.t
 
-val rec_check : Stage.var -> State.vars -> State.vars -> Constraints.t -> Constraints.t
+val rec_check : SVars.var -> SVars.t -> SVars.t -> Constraints.t -> Constraints.t

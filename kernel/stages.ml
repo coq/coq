@@ -6,10 +6,20 @@ let mkPr show = (fun a -> show a |> Pp.str)
 
 (** Stage variables and stage annotations *)
 
+module SVars =
+struct
+  include Int.Set
+
+  type var = elt
+
+  let show init vars =
+    Int.Set.fold (fun i str -> string_of_int i ^ "," ^ str) vars init
+  let pr init = mkPr (show init)
+end
+
 module Stage =
 struct
-  type var = int
-  type t = Infty | StageVar of var * int
+  type t = Infty | StageVar of SVars.var * int
 
   let infty = -1 (* For constraint representation only!!! *)
 
@@ -84,26 +94,16 @@ end
 
 module State =
 struct
+  open SVars
   open Stage
   open Annot
-  open Int.Set
 
   (* state =
       ( name of next stage variable
       , all used stage variables
       , stage variables used to replace star annotations
       ) *)
-  type vars = Int.Set.t
-  type t = var * vars * vars
-
-  let mem = mem
-  let diff = diff
-  let vars_empty = empty
-  let vars_add = add
-  let vars_union = union
-  let vars_show init vars =
-    Int.Set.fold (fun i str -> string_of_int i ^ "," ^ str) vars init
-  let pr_vars init = mkPr (vars_show init)
+  type t = var * SVars.t * SVars.t
 
   let init = (0, empty, empty)
   let get_vars (_, vs, _) = vs
@@ -118,8 +118,8 @@ struct
 
   let show (stg, vars, stars) =
     let stg_str = string_of_int stg in
-    let vars_str = "{" ^ vars_show "∞" vars  ^ "}" in
-    let stars_str = "{" ^ vars_show ": *" stars ^ "}" in
+    let vars_str = "{" ^ SVars.show "∞" vars  ^ "}" in
+    let stars_str = "{" ^ SVars.show ": *" stars ^ "}" in
     "<" ^ stg_str ^ "," ^ vars_str ^ "," ^ stars_str ^ ">"
   let pr = mkPr show
 end
@@ -144,7 +144,7 @@ struct
 
   module Map = Int.Map
   module Set = Set.Make(struct
-    type t = var * int
+    type t = SVars.var * int
     let compare (v1, w1) (v2, w2) =
       let vc = Int.compare v1 v2 in
       if not (Int.equal vc 0) then vc
@@ -208,18 +208,18 @@ struct
 
   let add_to_set (var, _) vars =
     if Stage.var_equal var infty then vars
-    else State.vars_add var vars
+    else SVars.add var vars
   let get_set_from_map key map =
     match Map.find_opt key map with
     | Some set -> set
     | None -> Set.empty
-  let sup s (mto, _) = Set.fold add_to_set (get_set_from_map s mto) State.vars_empty
-  let sub s (_, mfrom) = Set.fold add_to_set (get_set_from_map s mfrom) State.vars_empty
+  let sup s (mto, _) = Set.fold add_to_set (get_set_from_map s mto) SVars.empty
+  let sub s (_, mfrom) = Set.fold add_to_set (get_set_from_map s mfrom) SVars.empty
 
   let vertices (mto, mfrom) =
     let get_keys m =
-      (Map.fold (fun key _ set -> State.vars_add key set) m State.vars_empty) in
-    State.vars_union (get_keys mto) (get_keys mfrom)
+      (Map.fold (fun key _ set -> SVars.add key set) m SVars.empty) in
+    SVars.union (get_keys mto) (get_keys mfrom)
 
   let show (mto, _mfrom : t) =
     let str_stage key value wt =
@@ -237,13 +237,13 @@ struct
 end
 
 (** RecCheck *)
-open Int.Set
+open SVars
 
-exception RecCheckFailed of Constraints.t * State.vars * State.vars
+exception RecCheckFailed of Constraints.t * SVars.t * SVars.t
 
 let bellman_ford cstrnts src =
   let vertices = Constraints.vertices cstrnts in
-  let distances = fold (fun var -> Int.Map.add var None) vertices Int.Map.empty in
+  let distances = SVars.fold (fun var -> Int.Map.add var None) vertices Int.Map.empty in
   let distances = Int.Map.set src (Some 0) distances in
   let get_fromto vfrom vto distances =
     Int.Map.get vfrom distances,
