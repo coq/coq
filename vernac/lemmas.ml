@@ -218,9 +218,11 @@ let initialize_named_context_for_proof () =
 (* Starting a goal *)
 let start_lemma ~name ~poly
     ?(udecl=UState.default_univ_decl)
-    ?(sign=initialize_named_context_for_proof())
     ?(info=Info.make ())
     sigma c =
+  (* We remove the bodies of variables in the named context marked
+     "opaque", this is a hack tho, see #10446 *)
+  let sign = initialize_named_context_for_proof () in
   let goals = [ Global.env_of_context sign , c ] in
   let proof = Proof_global.start_proof sigma ~name ~udecl ~poly goals in
   { proof ; info }

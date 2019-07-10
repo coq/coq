@@ -48,7 +48,7 @@ type program_info =
   ; prg_reduce : constr -> constr
   ; prg_hook : DeclareDef.Hook.t option
   ; prg_opaque : bool
-  ; prg_sign : Environ.named_context_val }
+  }
 
 val declare_obligation :
      program_info

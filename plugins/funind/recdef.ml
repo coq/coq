@@ -1413,7 +1413,6 @@ let com_terminate
     let info = Lemmas.Info.make ~hook ~scope:(DeclareDef.Global ImportDefaultBehavior) ~kind:Decls.(IsProof Lemma) () in
     let lemma = Lemmas.start_lemma ~name:thm_name
         ~poly:false (*FIXME*)
-        ~sign:(Environ.named_context_val env)
         ~info
         ctx
         (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref)) in
@@ -1451,7 +1450,7 @@ let start_equation (f:GlobRef.t) (term_f:GlobRef.t)
                              Array.of_list (List.map mkVar x)))));
     observe_tac (fun _ _ -> str "prove_eq") (cont_tactic x)]) g;;
 
-let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation_lemma_type =
+let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref equation_lemma_type =
     let open CVars in
     let opacity =
       match terminate_ref with
@@ -1461,7 +1460,7 @@ let com_eqn sign uctx nb_arg eq_name functional_ref f_ref terminate_ref equation
     let evd = Evd.from_ctx uctx in
     let f_constr = constr_of_monomorphic_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
-    let lemma = Lemmas.start_lemma ~name:eq_name ~poly:false ~sign evd
+    let lemma = Lemmas.start_lemma ~name:eq_name ~poly:false evd
        (EConstr.of_constr equation_lemma_type) in
     let lemma = fst @@ Lemmas.by
        (Proofview.V82.tactic (start_equation f_ref terminate_ref
@@ -1553,9 +1552,8 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls type
     (*     message "start second proof"; *)
     let stop =
       (* XXX: What is the correct way to get sign at hook time *)
-      let sign = Environ.named_context_val Global.(env ()) in
       try
-        com_eqn sign uctx (List.length res_vars) equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type);
+        com_eqn uctx (List.length res_vars) equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type);
         false
       with e when CErrors.noncritical e ->
         begin
