@@ -31,7 +31,7 @@ end
 
 module State :
 sig
-  type t = SVars.var * SVars.t * SVars.t
+  type t
   val init : t
   val get_vars : t -> SVars.t
   val get_pos_vars : t -> SVars.t
