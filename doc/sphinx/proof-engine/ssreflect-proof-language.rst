@@ -2929,7 +2929,7 @@ facts.
 
 If an :token:`ident` is prefixed with the ``@`` mark, then a let-in redex is
 created, which keeps track if its body (if any). The syntax
-``(ident := c_pattern)`` allows to generalize an arbitrary term using a
+:n:`(@ident := @c_pattern)` allows to generalize an arbitrary term using a
 given name. Note that its simplest form ``(x := y)`` is just a renaming of
 ``y`` into ``x``. In particular, this can be useful in order to simulate the
 generalization of a section variable, otherwise not allowed. Indeed
