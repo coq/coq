@@ -14,7 +14,6 @@ open Pp
 open CErrors
 open Util
 open Names
-open Globnames
 open Table
 open Miniml
 open Mlutil
@@ -110,7 +109,7 @@ let rec pp_type par vl t =
       (try Id.print (List.nth vl (pred i))
        with Failure _ -> (str "a" ++ int i))
     | Tglob (r,[]) -> pp_global Type r
-    | Tglob (IndRef(kn,0),l)
+    | Tglob (GlobRef.IndRef(kn,0),l)
 	when not (keep_singleton ()) && MutInd.equal kn (mk_ind "Coq.Init.Specif" "sig") ->
 	  pp_type true vl (List.hd l)
     | Tglob (r,l) ->
@@ -271,7 +270,7 @@ let pp_logical_ind packet =
 	      prvect_with_sep spc Id.print packet.ip_consnames)
 
 let pp_singleton kn packet =
-  let name = pp_global Type (IndRef (kn,0)) in
+  let name = pp_global Type (GlobRef.IndRef (kn,0)) in
   let l = rename_tvars keywords packet.ip_vars in
   hov 2 (str "type " ++ name ++ spc () ++
 	 prlist_with_sep spc Id.print l ++
@@ -291,14 +290,14 @@ let pp_one_ind ip pl cv =
 		  (fun () -> (str " ")) (pp_type true pl) l))
   in
   str (if Array.is_empty cv then "type " else "data ") ++
-  pp_global Type (IndRef ip) ++
+  pp_global Type (GlobRef.IndRef ip) ++
   prlist_strict (fun id -> str " " ++ pr_lower_id id) pl ++ str " =" ++
   if Array.is_empty cv then str " () -- empty inductive"
   else
     (fnl () ++ str " " ++
      v 0 (str "  " ++
 	  prvect_with_sep (fun () -> fnl () ++ str "| ") pp_constructor
-	    (Array.mapi (fun i c -> ConstructRef (ip,i+1),c) cv)))
+            (Array.mapi (fun i c -> GlobRef.ConstructRef (ip,i+1),c) cv)))
 
 let rec pp_ind first kn i ind =
   if i >= Array.length ind.ind_packets then
@@ -306,7 +305,7 @@ let rec pp_ind first kn i ind =
   else
     let ip = (kn,i) in
     let p = ind.ind_packets.(i) in
-    if is_custom (IndRef (kn,i)) then pp_ind first kn (i+1) ind
+    if is_custom (GlobRef.IndRef (kn,i)) then pp_ind first kn (i+1) ind
     else
       if p.ip_logical then
 	pp_logical_ind p ++ pp_ind first kn (i+1) ind

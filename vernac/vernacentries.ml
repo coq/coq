@@ -286,8 +286,8 @@ let print_strategy r =
   match r with
   | None ->
     let fold key lvl (vacc, cacc) = match key with
-    | VarKey id -> ((VarRef id, lvl) :: vacc, cacc)
-    | ConstKey cst -> (vacc, (ConstRef cst, lvl) :: cacc)
+    | VarKey id -> ((GlobRef.VarRef id, lvl) :: vacc, cacc)
+    | ConstKey cst -> (vacc, (GlobRef.ConstRef cst, lvl) :: cacc)
     | RelKey _ -> (vacc, cacc)
     in
     let var_lvl, cst_lvl = fold_strategy fold oracle ([], []) in
@@ -304,7 +304,7 @@ let print_strategy r =
     var_msg ++ cst_msg
   | Some r ->
     let r = Smartlocate.smart_global r in
-    let key = match r with
+    let key = let open GlobRef in match r with
     | VarRef id -> VarKey id
     | ConstRef cst -> ConstKey cst
     | IndRef _ | ConstructRef _ -> user_err Pp.(str "The reference is not unfoldable")
@@ -1459,7 +1459,7 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
 
   if red_modifiers_specified then begin
     match sr with
-    | ConstRef _ as c ->
+    | GlobRef.ConstRef _ as c ->
        Reductionops.ReductionBehaviour.set
          ~local:section_local c (Option.get red_behavior)
 
@@ -1731,8 +1731,8 @@ let vernac_set_strategy ~local l =
   let local = Option.default false local in
   let glob_ref r =
     match smart_global r with
-      | ConstRef sp -> EvalConstRef sp
-      | VarRef id -> EvalVarRef id
+      | GlobRef.ConstRef sp -> EvalConstRef sp
+      | GlobRef.VarRef id -> EvalVarRef id
       | _ -> user_err Pp.(str
           "cannot set an inductive type or a constructor as transparent") in
   let l = List.map (fun (lev,ql) -> (lev,List.map glob_ref ql)) l in
@@ -1742,8 +1742,8 @@ let vernac_set_opacity ~local (v,l) =
   let local = Option.default true local in
   let glob_ref r =
     match smart_global r with
-      | ConstRef sp -> EvalConstRef sp
-      | VarRef id -> EvalVarRef id
+      | GlobRef.ConstRef sp -> EvalConstRef sp
+      | GlobRef.VarRef id -> EvalVarRef id
       | _ -> user_err Pp.(str
           "cannot set an inductive type or a constructor as transparent") in
   let l = List.map glob_ref l in
@@ -2090,7 +2090,7 @@ let vernac_register qid r =
   match r with
   | RegisterInline ->
     begin match gr with
-    | ConstRef c -> Global.register_inline c
+    | GlobRef.ConstRef c -> Global.register_inline c
     | _ -> CErrors.user_err (Pp.str "Register Inline: expecting a constant")
     end
   | RegisterCoqlib n ->
@@ -2106,7 +2106,7 @@ let vernac_register qid r =
         | k -> CErrors.user_err Pp.(str "Register: unknown identifier “" ++ str k ++ str "” in the “kernel” namespace")
       in
       match gr with
-      | IndRef ind -> Global.register_inductive ind pind
+      | GlobRef.IndRef ind -> Global.register_inductive ind pind
       | _ -> CErrors.user_err (Pp.str "Register in kernel: expecting an inductive type")
     end
     else Coqlib.register_ref (Libnames.string_of_qualid n) gr

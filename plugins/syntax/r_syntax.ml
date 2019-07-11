@@ -10,7 +10,6 @@
 
 open Util
 open Names
-open Globnames
 open Glob_term
 open Bigint
 open Constrexpr
@@ -40,9 +39,9 @@ let positive_kn = MutInd.make2 positive_modpath (Label.make "positive")
 let path_of_xI = ((positive_kn,0),1)
 let path_of_xO = ((positive_kn,0),2)
 let path_of_xH = ((positive_kn,0),3)
-let glob_xI = ConstructRef path_of_xI
-let glob_xO = ConstructRef path_of_xO
-let glob_xH = ConstructRef path_of_xH
+let glob_xI = GlobRef.ConstructRef path_of_xI
+let glob_xO = GlobRef.ConstructRef path_of_xO
+let glob_xH = GlobRef.ConstructRef path_of_xH
 
 let pos_of_bignat ?loc x =
   let ref_xI = DAst.make @@ GRef (glob_xI, None) in
@@ -74,9 +73,9 @@ let z_kn = MutInd.make2 positive_modpath (Label.make "Z")
 let path_of_ZERO = ((z_kn,0),1)
 let path_of_POS = ((z_kn,0),2)
 let path_of_NEG = ((z_kn,0),3)
-let glob_ZERO = ConstructRef path_of_ZERO
-let glob_POS = ConstructRef path_of_POS
-let glob_NEG = ConstructRef path_of_NEG
+let glob_ZERO = GlobRef.ConstructRef path_of_ZERO
+let glob_POS = GlobRef.ConstructRef path_of_POS
+let glob_NEG = GlobRef.ConstructRef path_of_NEG
 
 let z_of_int ?loc n =
   if not (Bigint.equal n zero) then
@@ -104,14 +103,14 @@ let rdefinitions = ["Coq";"Reals";"Rdefinitions"]
 let r_modpath = MPfile (make_dir rdefinitions)
 let r_path = make_path rdefinitions "R"
 
-let glob_IZR = ConstRef (Constant.make2 r_modpath @@ Label.make "IZR")
-let glob_Rmult = ConstRef (Constant.make2 r_modpath @@ Label.make "Rmult")
-let glob_Rdiv = ConstRef (Constant.make2 r_modpath @@ Label.make "Rdiv")
+let glob_IZR = GlobRef.ConstRef (Constant.make2 r_modpath @@ Label.make "IZR")
+let glob_Rmult = GlobRef.ConstRef (Constant.make2 r_modpath @@ Label.make "Rmult")
+let glob_Rdiv = GlobRef.ConstRef (Constant.make2 r_modpath @@ Label.make "Rdiv")
 
 let binintdef = ["Coq";"ZArith";"BinIntDef"]
 let z_modpath = MPdot (MPfile (make_dir binintdef), Label.make "Z")
 
-let glob_pow_pos = ConstRef (Constant.make2 z_modpath @@ Label.make "pow_pos")
+let glob_pow_pos = GlobRef.ConstRef (Constant.make2 z_modpath @@ Label.make "pow_pos")
 
 let r_of_rawnum ?loc (sign,n) =
   let n, f, e = NumTok.(n.int, n.frac, n.exp) in

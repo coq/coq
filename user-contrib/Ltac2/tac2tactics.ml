@@ -11,7 +11,6 @@
 open Pp
 open Util
 open Names
-open Globnames
 open Tac2types
 open Tac2extffi
 open Genredexpr
@@ -209,13 +208,13 @@ let letin_pat_tac ev ipat na c cl =
     Instead, we parse indifferently any pattern and dispatch when the tactic is
     called. *)
 let map_pattern_with_occs (pat, occ) = match pat with
-| Pattern.PRef (ConstRef cst) -> (mk_occurrences_expr occ, Inl (EvalConstRef cst))
-| Pattern.PRef (VarRef id) -> (mk_occurrences_expr occ, Inl (EvalVarRef id))
+| Pattern.PRef (GlobRef.ConstRef cst) -> (mk_occurrences_expr occ, Inl (EvalConstRef cst))
+| Pattern.PRef (GlobRef.VarRef id) -> (mk_occurrences_expr occ, Inl (EvalVarRef id))
 | _ -> (mk_occurrences_expr occ, Inr pat)
 
 let get_evaluable_reference = function
-| VarRef id -> Proofview.tclUNIT (EvalVarRef id)
-| ConstRef cst -> Proofview.tclUNIT (EvalConstRef cst)
+| GlobRef.VarRef id -> Proofview.tclUNIT (EvalVarRef id)
+| GlobRef.ConstRef cst -> Proofview.tclUNIT (EvalConstRef cst)
 | r ->
   Tacticals.New.tclZEROMSG (str "Cannot coerce" ++ spc () ++
     Nametab.pr_global_env Id.Set.empty r ++ spc () ++

@@ -181,7 +181,6 @@ let option_assert_get o msg =
 
 (** Constructors for rawconstr *)
 open Glob_term
-open Globnames
 open Decl_kinds
 
 let mkRHole = DAst.make @@ GHole (Evar_kinds.InternalHole, Namegen.IntroAnonymous, None)
@@ -191,14 +190,14 @@ let rec isRHoles cl = match cl with
 | [] -> true
 | c :: l -> match DAst.get c with GHole _ -> isRHoles l | _ -> false
 let mkRApp f args = if args = [] then f else DAst.make @@ GApp (f, args)
-let mkRVar id = DAst.make @@ GRef (VarRef id,None)
+let mkRVar id = DAst.make @@ GRef (GlobRef.VarRef id,None)
 let mkRltacVar id = DAst.make @@ GVar (id)
 let mkRCast rc rt =  DAst.make @@ GCast (rc, CastConv rt)
 let mkRType =  DAst.make @@ GSort (UAnonymous {rigid=true})
 let mkRProp =  DAst.make @@ GSort (UNamed [GProp,0])
 let mkRArrow rt1 rt2 = DAst.make @@ GProd (Anonymous, Explicit, rt1, rt2)
-let mkRConstruct c = DAst.make @@ GRef (ConstructRef c,None)
-let mkRInd mind = DAst.make @@ GRef (IndRef mind,None)
+let mkRConstruct c = DAst.make @@ GRef (GlobRef.ConstructRef c,None)
+let mkRInd mind = DAst.make @@ GRef (GlobRef.IndRef mind,None)
 let mkRLambda n s t = DAst.make @@ GLambda (n, Explicit, s, t)
 
 let rec mkRnat n =
@@ -1543,9 +1542,9 @@ let get g =
 end
 
 let is_construct_ref sigma c r =
-  EConstr.isConstruct sigma c && GlobRef.equal (ConstructRef (fst(EConstr.destConstruct sigma c))) r
-let is_ind_ref sigma c r = EConstr.isInd sigma c && GlobRef.equal (IndRef (fst(EConstr.destInd sigma c))) r
+  EConstr.isConstruct sigma c && GlobRef.equal (GlobRef.ConstructRef (fst(EConstr.destConstruct sigma c))) r
+let is_ind_ref sigma c r = EConstr.isInd sigma c && GlobRef.equal (GlobRef.IndRef (fst(EConstr.destInd sigma c))) r
 let is_const_ref sigma c r =
-  EConstr.isConst sigma c && GlobRef.equal (ConstRef (fst(EConstr.destConst sigma c))) r
+  EConstr.isConst sigma c && GlobRef.equal (GlobRef.ConstRef (fst(EConstr.destConst sigma c))) r
 
 (* vim: set filetype=ocaml foldmethod=marker: *)

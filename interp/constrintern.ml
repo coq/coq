@@ -647,7 +647,7 @@ let terms_of_binders bl =
     | PatVar (Name id)   -> CRef (qualid_of_ident id, None)
     | PatVar (Anonymous) -> error_cannot_coerce_wildcard_term ?loc ()
     | PatCstr (c,l,_) ->
-       let qid = qualid_of_path ?loc (Nametab.path_of_global (ConstructRef c)) in
+       let qid = qualid_of_path ?loc (Nametab.path_of_global (GlobRef.ConstructRef c)) in
        let hole = CAst.make ?loc @@ CHole (None,IntroAnonymous,None) in
        let params = List.make (Inductiveops.inductive_nparams (Global.env()) (fst c)) hole in
        CAppExpl ((None,qid,None),params @ List.map term_of_pat l)) pt in
@@ -951,7 +951,7 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
       try
         (* [id] a section variable *)
         (* Redundant: could be done in intern_qualid *)
-        let ref = VarRef id in
+        let ref = GlobRef.VarRef id in
         let impls = implicits_of_global ref in
         let scopes = find_arguments_scope ref in
         Dumpglob.dump_secvar ?loc id; (* this raises Not_found when not a section variable *)
@@ -1014,7 +1014,7 @@ let glob_sort_of_level (level: glob_level) : glob_sort =
 let intern_qualid ?(no_secvar=false) qid intern env ntnvars us args =
   let loc = qid.loc in
   match intern_extended_global_of_qualid qid with
-  | TrueGlobal (VarRef _) when no_secvar ->
+  | TrueGlobal (GlobRef.VarRef _) when no_secvar ->
       (* Rule out section vars since these should have been found by intern_var *)
       raise Not_found
   | TrueGlobal ref -> (DAst.make ?loc @@ GRef (ref, us)), Some ref, args
@@ -1063,6 +1063,7 @@ let check_applied_projection isproj realref qid =
   match isproj with
   | None -> ()
   | Some projargs ->
+    let open GlobRef in
     let is_prim = match realref with
       | None | Some (IndRef _ | ConstructRef _ | VarRef _) -> false
       | Some (ConstRef c) ->
@@ -1219,7 +1220,9 @@ let insert_local_defs_in_pattern (ind,j) l =
       | _ -> assert false in
     aux decls l
 
-let add_local_defs_and_check_length loc env g pl args = match g with
+let add_local_defs_and_check_length loc env g pl args =
+  let open GlobRef in
+  match g with
   | ConstructRef cstr ->
      (* We consider that no variables corresponding to local binders
         have been given in the "explicit" arguments, which come from a
@@ -1259,14 +1262,14 @@ let add_implicits_check_length fail nargs nargs_with_letin impls_st len_pl1 pl2 
 let add_implicits_check_constructor_length env loc c len_pl1 pl2 =
   let nargs = Inductiveops.constructor_nallargs env c in
   let nargs' = Inductiveops.constructor_nalldecls env c in
-  let impls_st = implicits_of_global (ConstructRef c) in
+  let impls_st = implicits_of_global (GlobRef.ConstructRef c) in
   add_implicits_check_length (error_wrong_numarg_constructor ?loc env c)
     nargs nargs' impls_st len_pl1 pl2
 
 let add_implicits_check_ind_length env loc c len_pl1 pl2 =
   let nallargs = inductive_nallargs env c in
   let nalldecls = inductive_nalldecls env c in
-  let impls_st = implicits_of_global (IndRef c) in
+  let impls_st = implicits_of_global (GlobRef.IndRef c) in
   add_implicits_check_length (error_wrong_numarg_inductive ?loc env c)
     nallargs nalldecls impls_st len_pl1 pl2
 
@@ -1283,6 +1286,7 @@ let chop_params_pattern loc ind args with_letin =
   args
 
 let find_constructor loc add_params ref =
+  let open GlobRef in
   let (ind,_ as cstr) = match ref with
   | ConstructRef cstr -> cstr
   | IndRef _ ->
@@ -1317,7 +1321,7 @@ let check_duplicate ?loc fields =
       pr_qualid r ++ str ".")
 
 let inductive_of_record loc record =
-  let inductive = IndRef (inductive_of_constructor record.Recordops.s_CONST) in
+  let inductive = GlobRef.IndRef (inductive_of_constructor record.Recordops.s_CONST) in
   Nametab.shortest_qualid_of_global ?loc Id.Set.empty inductive
 
 (** [sort_fields ~complete loc fields completer] expects a list
@@ -1348,7 +1352,7 @@ let sort_fields ~complete loc fields completer =
         let nparams = record.Recordops.s_EXPECTEDPARAM in
         (* the reference constructor of the record *)
         let base_constructor =
-          let global_record_id = ConstructRef record.Recordops.s_CONST in
+          let global_record_id = GlobRef.ConstructRef record.Recordops.s_CONST in
           try Nametab.shortest_qualid_of_global ?loc Id.Set.empty global_record_id
           with Not_found ->
             anomaly (str "Environment corruption for records.") in
@@ -1363,7 +1367,7 @@ let sort_fields ~complete loc fields completer =
             match projs with
               | [] -> (idx, acc_first_idx, acc)
               | (Some field_glob_id) :: projs ->
-                 let field_glob_ref = ConstRef field_glob_id in
+                 let field_glob_ref = GlobRef.ConstRef field_glob_id in
                  let first_field = GlobRef.equal field_glob_ref first_field_glob_ref in
                  begin match proj_kinds with
                     | [] -> anomaly (Pp.str "Number of projections mismatch.")
@@ -1407,7 +1411,7 @@ let sort_fields ~complete loc fields completer =
                    raise (InternalizationError(loc, NotAProjectionOf (field_ref, inductive_ref)))
                in
                let remaining_projs, (field_index, _) =
-                 let the_proj (idx, glob_id) = GlobRef.equal field_glob_ref (ConstRef glob_id) in
+                 let the_proj (idx, glob_id) = GlobRef.equal field_glob_ref (GlobRef.ConstRef glob_id) in
                  try CList.extract_first the_proj remaining_projs
                  with Not_found ->
                    let ind1 = inductive_of_record loc record in
@@ -1518,12 +1522,12 @@ let drop_notations_pattern looked_for genv =
   let ensure_kind top loc g =
     try
       if top then looked_for g else
-      match g with ConstructRef _ -> () | _ -> raise Not_found
+      match g with GlobRef.ConstructRef _ -> () | _ -> raise Not_found
     with Not_found ->
       error_invalid_pattern_notation ?loc ()
   in
   let test_kind top =
-    if top then looked_for else function ConstructRef _ -> () | _ -> raise Not_found
+    if top then looked_for else function GlobRef.ConstructRef _ -> () | _ -> raise Not_found
   in
   (* [rcp_of_glob] : from [glob_constr] to [raw_cases_pattern_expr] *)
   let rec rcp_of_glob scopes x = DAst.(map (function
@@ -1736,7 +1740,7 @@ let rec intern_pat genv ntnvars aliases pat =
 
 let intern_cases_pattern genv ntnvars scopes aliases pat =
   intern_pat genv ntnvars aliases
-    (drop_notations_pattern (function ConstructRef _ -> () | _ -> raise Not_found) genv scopes pat)
+    (drop_notations_pattern (function GlobRef.ConstructRef _ -> () | _ -> raise Not_found) genv scopes pat)
 
 let _ =
   intern_cases_pattern_fwd :=
@@ -1745,13 +1749,13 @@ let _ =
 let intern_ind_pattern genv ntnvars scopes pat =
   let no_not =
     try
-      drop_notations_pattern (function (IndRef _ | ConstructRef _) -> () | _ -> raise Not_found) genv scopes pat
+      drop_notations_pattern (function (GlobRef.IndRef _ | GlobRef.ConstructRef _) -> () | _ -> raise Not_found) genv scopes pat
     with InternalizationError(loc,NotAConstructor _) -> error_bad_inductive_type ?loc
   in
   let loc = no_not.CAst.loc in
   match DAst.get no_not with
     | RCPatCstr (head, expl_pl, pl) ->
-      let c = (function IndRef ind -> ind | _ -> error_bad_inductive_type ?loc) head in
+      let c = (function GlobRef.IndRef ind -> ind | _ -> error_bad_inductive_type ?loc) head in
       let with_letin, pl2 = add_implicits_check_ind_length genv loc c
 	(List.length expl_pl) pl in
       let idslpl = List.map (intern_pat genv ntnvars empty_alias) (expl_pl@pl2) in
@@ -1790,7 +1794,7 @@ let set_hole_implicit i b c =
       Loc.tag ?loc (Evar_kinds.ImplicitArg (r,i,b),IntroAnonymous,None)
     | _ -> anomaly (Pp.str "Only refs have implicits.")
     end
-  | GVar id -> Loc.tag ?loc (Evar_kinds.ImplicitArg (VarRef id,i,b),IntroAnonymous,None)
+  | GVar id -> Loc.tag ?loc (Evar_kinds.ImplicitArg (GlobRef.VarRef id,i,b),IntroAnonymous,None)
   | _ -> anomaly (Pp.str "Only refs have implicits.")
 
 let exists_implicit_name id =
@@ -2161,7 +2165,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
       let loc = tm'.CAst.loc in
       match DAst.get tm', na with
       | GVar id, None when not (Id.Map.mem id (snd lvar)) -> Some id, CAst.make ?loc @@ Name id
-      | GRef (VarRef id, _), None -> Some id, CAst.make ?loc @@ Name id
+      | GRef (GlobRef.VarRef id, _), None -> Some id, CAst.make ?loc @@ Name id
       | _, None -> None, CAst.make Anonymous
       | _, Some ({ CAst.loc; v = na } as lna) -> None, lna in
     (* the "in" part *)

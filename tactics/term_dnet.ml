@@ -289,6 +289,7 @@ struct
   open TDnet
 
   let pat_of_constr c : term_pattern =
+    let open GlobRef in
     (* To each evar we associate a unique identifier. *)
     let metas = ref Evar.Map.empty in
     let rec pat_of_constr c = match Constr.kind c with

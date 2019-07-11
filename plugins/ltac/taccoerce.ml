@@ -203,11 +203,11 @@ let id_of_name = function
         end
        | Const (cst,_) -> Label.to_id (Constant.label cst)
        | Construct (cstr,_) ->
-	  let ref = Globnames.ConstructRef cstr in
+          let ref = GlobRef.ConstructRef cstr in
 	  let basename = Nametab.basename_of_global ref in
 	  basename
        | Ind (ind,_) ->
-	  let ref = Globnames.IndRef ind in
+          let ref = GlobRef.IndRef ind in
 	  let basename = Nametab.basename_of_global ref in
 	  basename
        | Sort s ->
@@ -290,7 +290,7 @@ let coerce_to_evaluable_ref env sigma v =
     if Id.List.mem id (Termops.ids_of_context env) then EvalVarRef id
     else fail ()
   else if has_type v (topwit wit_ref) then
-    let open Globnames in
+    let open GlobRef in
     let r = out_gen (topwit wit_ref) v in
     match r with
     | VarRef var -> EvalVarRef var

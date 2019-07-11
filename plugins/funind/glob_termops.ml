@@ -375,7 +375,7 @@ let rec pattern_to_term pt = DAst.with_val (function
       let patl_as_term =
 	List.map pattern_to_term patternl
       in
-      mkGApp(mkGRef(Globnames.ConstructRef constr),
+      mkGApp(mkGRef(GlobRef.ConstructRef constr),
 	     implicit_args@patl_as_term
 	    )
   ) pt

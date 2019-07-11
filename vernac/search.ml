@@ -17,7 +17,6 @@ open Libobject
 open Environ
 open Pattern
 open Libnames
-open Globnames
 
 module NamedDecl = Context.Named.Declaration
 
@@ -53,7 +52,7 @@ module SearchBlacklist =
 let iter_constructors indsp u fn env nconstr =
   for i = 1 to nconstr do
     let typ = Inductiveops.type_of_constructor env ((indsp, i), u) in
-    fn (ConstructRef (indsp, i)) env typ
+    fn (GlobRef.ConstructRef (indsp, i)) env typ
   done
 
 let iter_named_context_name_type f =
@@ -67,7 +66,7 @@ let get_current_or_goal_context ?pstate glnum =
 (* General search over hypothesis of a goal *)
 let iter_hypothesis ?pstate glnum (fn : GlobRef.t -> env -> constr -> unit) =
   let env = Global.env () in
-  let iter_hyp idh typ = fn (VarRef idh) env typ in
+  let iter_hyp idh typ = fn (GlobRef.VarRef idh) env typ in
   let evmap,e = get_current_or_goal_context ?pstate glnum in
   let pfctxt = named_context e in
   iter_named_context_name_type iter_hyp pfctxt
@@ -75,14 +74,14 @@ let iter_hypothesis ?pstate glnum (fn : GlobRef.t -> env -> constr -> unit) =
 (* General search over declarations *)
 let iter_declarations (fn : GlobRef.t -> env -> constr -> unit) =
   let env = Global.env () in
-  List.iter (fun d -> fn (VarRef (NamedDecl.get_id d)) env (NamedDecl.get_type d))
+  List.iter (fun d -> fn (GlobRef.VarRef (NamedDecl.get_id d)) env (NamedDecl.get_type d))
     (Environ.named_context env);
   let iter_obj (sp, kn) lobj = match lobj with
     | AtomicObject o ->
       begin match object_tag o with
         | "CONSTANT" ->
           let cst = Global.constant_of_delta_kn kn in
-          let gr = ConstRef cst in
+          let gr = GlobRef.ConstRef cst in
           let (typ, _) = Typeops.type_of_global_in_context (Global.env ()) gr in
           fn gr env typ
         | "INDUCTIVE" ->
@@ -93,7 +92,7 @@ let iter_declarations (fn : GlobRef.t -> env -> constr -> unit) =
             let u = Univ.make_abstract_instance (Declareops.inductive_polymorphic_context mib) in
             let i = (ind, u) in
             let typ = Inductiveops.type_of_inductive env i in
-            let () = fn (IndRef ind) env typ in
+            let () = fn (GlobRef.IndRef ind) env typ in
             let len = Array.length mip.mind_user_lc in
             iter_constructors ind u fn env len
           in

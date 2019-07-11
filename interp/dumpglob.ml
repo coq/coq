@@ -115,12 +115,13 @@ let type_of_global_ref gr =
   if Typeclasses.is_class gr then
     "class"
   else
+    let open Names.GlobRef in
     match gr with
-    | Globnames.ConstRef cst ->
-        type_of_logical_kind (constant_kind cst)
-    | Globnames.VarRef v ->
-	"var" ^ type_of_logical_kind (Decls.variable_kind v)
-    | Globnames.IndRef ind ->
+    | ConstRef cst ->
+      type_of_logical_kind (constant_kind cst)
+    | VarRef v ->
+      "var" ^ type_of_logical_kind (Decls.variable_kind v)
+    | IndRef ind ->
 	let (mib,oib) = Inductive.lookup_mind_specif (Global.env ()) ind in
           if mib.Declarations.mind_record <> Declarations.NotRecord then
             begin match mib.Declarations.mind_finite with
@@ -134,7 +135,7 @@ let type_of_global_ref gr =
             | BiFinite -> "variant"
 	    | CoFinite -> "coind"
             end
-    | Globnames.ConstructRef _ -> "constr"
+    | ConstructRef _ -> "constr"
 
 let remove_sections dir =
   let cwd = Lib.cwd_except_section () in

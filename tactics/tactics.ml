@@ -24,7 +24,6 @@ open Namegen
 open Declarations
 open Inductiveops
 open Reductionops
-open Globnames
 open Evd
 open Tacred
 open Genredexpr
@@ -921,14 +920,14 @@ let is_local_flag env flags =
   else
     let check = function
     | EvalVarRef _ -> false
-    | EvalConstRef c -> Id.Set.is_empty (Environ.vars_of_global env (ConstRef c))
+    | EvalConstRef c -> Id.Set.is_empty (Environ.vars_of_global env (GlobRef.ConstRef c))
     in
     List.for_all check flags.rConst
 
 let is_local_unfold env flags =
   let check (_, c) = match c with
   | EvalVarRef _ -> false
-  | EvalConstRef c -> Id.Set.is_empty (Environ.vars_of_global env (ConstRef c))
+  | EvalConstRef c -> Id.Set.is_empty (Environ.vars_of_global env (GlobRef.ConstRef c))
   in
   List.for_all check flags
 
@@ -975,8 +974,8 @@ let reduce redexp cl =
 (* Unfolding occurrences of a constant *)
 
 let unfold_constr = function
-  | ConstRef sp -> unfold_in_concl [AllOccurrences,EvalConstRef sp]
-  | VarRef id -> unfold_in_concl [AllOccurrences,EvalVarRef id]
+  | GlobRef.ConstRef sp -> unfold_in_concl [AllOccurrences,EvalConstRef sp]
+  | GlobRef.VarRef id -> unfold_in_concl [AllOccurrences,EvalVarRef id]
   | _ -> user_err ~hdr:"unfold_constr" (str "Cannot unfold a non-constant.")
 
 (*******************************************)

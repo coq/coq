@@ -13,7 +13,6 @@ open Util
 open Pp
 open Names
 open Libnames
-open Globnames
 
 let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 
@@ -46,7 +45,7 @@ let has_ref s = CString.Map.mem s !table
 
 let check_ind_ref s ind =
   match CString.Map.find s !table with
-  | IndRef r -> eq_ind r ind
+  | GlobRef.IndRef r -> eq_ind r ind
   | _ -> false
   | exception Not_found -> false
 
@@ -157,32 +156,32 @@ let type_of_id = Constant.make2 datatypes_module @@ Label.make "IDProp"
 let nat_kn = MutInd.make2 datatypes_module @@ Label.make "nat"
 let nat_path = Libnames.make_path (make_dir datatypes_module_name) (Id.of_string "nat")
 
-let glob_nat = IndRef (nat_kn,0)
+let glob_nat = GlobRef.IndRef (nat_kn,0)
 
 let path_of_O = ((nat_kn,0),1)
 let path_of_S = ((nat_kn,0),2)
-let glob_O = ConstructRef path_of_O
-let glob_S = ConstructRef path_of_S
+let glob_O = GlobRef.ConstructRef path_of_O
+let glob_S = GlobRef.ConstructRef path_of_S
 
 (** Booleans *)
 let bool_kn = MutInd.make2 datatypes_module @@ Label.make "bool"
 
-let glob_bool = IndRef (bool_kn,0)
+let glob_bool = GlobRef.IndRef (bool_kn,0)
 
 let path_of_true = ((bool_kn,0),1)
 let path_of_false = ((bool_kn,0),2)
-let glob_true  = ConstructRef path_of_true
-let glob_false  = ConstructRef path_of_false
+let glob_true  = GlobRef.ConstructRef path_of_true
+let glob_false  = GlobRef.ConstructRef path_of_false
 
 (** Equality *)
 let eq_kn = MutInd.make2 logic_module @@ Label.make "eq"
-let glob_eq = IndRef (eq_kn,0)
+let glob_eq = GlobRef.IndRef (eq_kn,0)
 
 let identity_kn = MutInd.make2 datatypes_module @@ Label.make "identity"
-let glob_identity = IndRef (identity_kn,0)
+let glob_identity = GlobRef.IndRef (identity_kn,0)
 
 let jmeq_kn = MutInd.make2 jmeq_module @@ Label.make "JMeq"
-let glob_jmeq = IndRef (jmeq_kn,0)
+let glob_jmeq = GlobRef.IndRef (jmeq_kn,0)
 
 (* Sigma data *)
 type coq_sigma_data = {

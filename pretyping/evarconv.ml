@@ -263,7 +263,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
 	lookup_canonical_conversion
 	  (proji, Sort_cs (Sorts.family s)),[]
       | Proj (p, c) ->
-        let c2 = Globnames.ConstRef (Projection.constant p) in
+        let c2 = GlobRef.ConstRef (Projection.constant p) in
         let c = Retyping.expand_projection env sigma p c [] in
         let _, args = destApp sigma c in
         let sk2 = Stack.append_app args sk2 in

@@ -48,6 +48,7 @@ let head_constr_bound sigma t =
   let t = strip_outer_cast sigma t in
   let _,ccl = decompose_prod_assum sigma t in
   let hd,args = decompose_app sigma ccl in
+  let open GlobRef in
   match EConstr.kind sigma hd with
   | Const (c, _) -> ConstRef c
   | Ind (i, _) -> IndRef i
@@ -65,6 +66,7 @@ let decompose_app_bound sigma t =
   let t = strip_outer_cast sigma t in
   let _,ccl = decompose_prod_assum sigma t in
   let hd,args = decompose_app_vect sigma ccl in
+  let open GlobRef in
   match EConstr.kind sigma hd with
     | Const (c,u) -> ConstRef c, args
     | Ind (i,u) -> IndRef i, args
@@ -295,7 +297,7 @@ let lookup_tacs sigma concl st se =
   let sl' = List.stable_sort pri_order_int l' in
   List.merge pri_order_int se.sentry_nopat sl'
 
-let is_transparent_gr ts = function
+let is_transparent_gr ts = let open GlobRef in function
   | VarRef id -> TransparentState.is_transparent_variable ts id
   | ConstRef cst -> TransparentState.is_transparent_constant ts cst
   | IndRef _ | ConstructRef _ -> false
@@ -919,7 +921,7 @@ let make_resolve_hyp env sigma decl =
   let c = mkVar hname in
   try
     [make_apply_entry env sigma (true, true, false) empty_hint_info ~poly:false
-       ~name:(PathHints [VarRef hname])
+       ~name:(PathHints [GlobRef.VarRef hname])
        (c, NamedDecl.get_type decl, Univ.ContextSet.empty)]
   with
     | Failure _ -> []
@@ -1326,7 +1328,7 @@ let project_hint ~poly pri l2r r =
       ~name ~kind:Decls.(IsDefinition Definition) cb
   in
   let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
-    (info,false,true,PathAny, IsGlobRef (Globnames.ConstRef c))
+    (info,false,true,PathAny, IsGlobRef (GlobRef.ConstRef c))
 
 let interp_hints ~poly =
   fun h ->
@@ -1376,7 +1378,7 @@ let interp_hints ~poly =
         Dumpglob.dump_reference ?loc:qid.CAst.loc "<>" (string_of_qualid qid) "ind";
           List.init (nconstructors env ind)
 	    (fun i -> let c = (ind,i+1) in
-		      let gr = ConstructRef c in
+                      let gr = GlobRef.ConstructRef c in
 			empty_hint_info, 
                         (Declareops.inductive_is_polymorphic mib), true,
 			PathHints [gr], IsGlobRef gr)

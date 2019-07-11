@@ -1,7 +1,6 @@
 open Pp
 open Util
 open Names
-open Globnames
 open Table
 open Miniml
 open Mlutil
@@ -200,10 +199,10 @@ and json_function env t =
 
 let json_ind ip pl cv = json_dict [
     ("what", json_str "decl:ind");
-    ("name", json_global Type (IndRef ip));
+    ("name", json_global Type (GlobRef.IndRef ip));
     ("argnames", json_list (List.map json_id pl));
     ("constructors", json_listarr (Array.mapi (fun idx c -> json_dict [
-        ("name", json_global Cons (ConstructRef (ip, idx+1)));
+        ("name", json_global Cons (GlobRef.ConstructRef (ip, idx+1)));
         ("argtypes", json_list (List.map (json_type pl) c))
       ]) cv))
   ]

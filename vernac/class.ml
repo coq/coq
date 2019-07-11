@@ -20,7 +20,6 @@ open Termops
 open Environ
 open Classops
 open Declare
-open Globnames
 open Libobject
 
 let strength_min l = if List.mem `LOCAL l then `LOCAL else `GLOBAL
@@ -71,10 +70,10 @@ let check_reference_arity ref =
 
 let check_arity = function
   | CL_FUN | CL_SORT -> ()
-  | CL_CONST cst -> check_reference_arity (ConstRef cst)
-  | CL_PROJ p -> check_reference_arity (ConstRef (Projection.Repr.constant p))
-  | CL_SECVAR id -> check_reference_arity (VarRef id)
-  | CL_IND kn -> check_reference_arity (IndRef kn)
+  | CL_CONST cst -> check_reference_arity (GlobRef.ConstRef cst)
+  | CL_PROJ p -> check_reference_arity (GlobRef.ConstRef (Projection.Repr.constant p))
+  | CL_SECVAR id -> check_reference_arity (GlobRef.VarRef id)
+  | CL_IND kn -> check_reference_arity (GlobRef.IndRef kn)
 
 (* Coercions *)
 
@@ -90,12 +89,12 @@ let uniform_cond sigma ctx lt =
     lt (Context.Rel.to_extended_list EConstr.mkRel 0 ctx)
 
 let class_of_global = function
-  | ConstRef sp -> 
+  | GlobRef.ConstRef sp ->
     (match Recordops.find_primitive_projection sp with
      | Some p -> CL_PROJ p | None -> CL_CONST sp)
-  | IndRef sp -> CL_IND sp
-  | VarRef id -> CL_SECVAR id
-  | ConstructRef _ as c ->
+  | GlobRef.IndRef sp -> CL_IND sp
+  | GlobRef.VarRef id -> CL_SECVAR id
+  | GlobRef.ConstructRef _ as c ->
       user_err ~hdr:"class_of_global"
 	(str "Constructors, such as " ++ Printer.pr_global c ++
 	   str ", cannot be used as a class.")
@@ -152,7 +151,7 @@ let strength_of_cl = function
   | _ -> `GLOBAL
 
 let strength_of_global = function
-  | VarRef _ -> `LOCAL
+  | GlobRef.VarRef _ -> `LOCAL
   | _ -> `GLOBAL
 
 let get_strength stre ref cls clt =
@@ -179,7 +178,7 @@ let build_id_coercion idf_opt source poly =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let sigma, vs = match source with
-    | CL_CONST sp -> Evd.fresh_global env sigma (ConstRef sp)
+    | CL_CONST sp -> Evd.fresh_global env sigma (GlobRef.ConstRef sp)
     | _ -> error_not_transparent source in
   let vs = EConstr.Unsafe.to_constr vs in
   let c = match constant_opt_value_in env (destConst vs) with
@@ -223,7 +222,7 @@ let build_id_coercion idf_opt source poly =
   in
   let kind = Decls.(IsDefinition IdentityCoercion) in
   let kn = declare_constant ~name ~kind constr_entry in
-  ConstRef kn
+  GlobRef.ConstRef kn
 
 let check_source = function
 | Some (CL_FUN as s) -> raise (CoercionError (ForbiddenSourceClass s))
@@ -267,7 +266,7 @@ let inCoercion : coercion -> obj =
 let declare_coercion coef ?(local = false) ~isid ~src:cls ~target:clt ~params:ps =
   let isproj =
     match coef with
-    | ConstRef c -> Recordops.find_primitive_projection c
+    | GlobRef.ConstRef c -> Recordops.find_primitive_projection c
     | _ -> None
   in
   let c = {

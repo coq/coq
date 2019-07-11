@@ -15,7 +15,6 @@ open Names
 open Constr
 open Context
 open Environ
-open Globnames
 open Evd
 open Refiner
 open Constrextern
@@ -155,7 +154,7 @@ let pr_in_comment x = str "(* " ++ x ++ str " *)"
     the [mutual_inductive_body] for the inductives and constructors
     (needs an environment for this). *)
 
-let id_of_global env = function
+let id_of_global env = let open GlobRef in function
   | ConstRef kn -> Label.to_id (Constant.label kn)
   | IndRef (kn,0) -> Label.to_id (MutInd.label kn)
   | IndRef (kn,i) ->
@@ -170,7 +169,7 @@ let rec dirpath_of_mp = function
   | MPdot (mp,l) ->
     Libnames.add_dirpath_suffix (dirpath_of_mp mp) (Label.to_id l)
 
-let dirpath_of_global = function
+let dirpath_of_global = let open GlobRef in function
   | ConstRef kn -> dirpath_of_mp (Constant.modpath kn)
   | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
     dirpath_of_mp (MutInd.modpath kn)
@@ -251,7 +250,7 @@ let pr_puniverses f env sigma (c,u) =
   then f env c ++ pr_universe_instance sigma u
   else f env c
 
-let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (ConstRef cst)
+let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (GlobRef.ConstRef cst)
 let pr_existential_key = Termops.pr_existential_key
 let pr_existential env sigma ev = pr_lconstr_env env sigma (mkEvar ev)
 let pr_inductive env ind = pr_lconstr_env env (Evd.from_env env) (mkInd ind)

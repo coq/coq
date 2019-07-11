@@ -225,14 +225,14 @@ let string_of_class = function
   | CL_FUN -> "Funclass"
   | CL_SORT -> "Sortclass"
   | CL_CONST sp ->
-    string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (ConstRef sp))
+    string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (GlobRef.ConstRef sp))
   | CL_PROJ sp ->
     let sp = Projection.Repr.constant sp in
-    string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (ConstRef sp))
+    string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (GlobRef.ConstRef sp))
   | CL_IND sp ->
-      string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (IndRef sp))
+      string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (GlobRef.IndRef sp))
   | CL_SECVAR sp ->
-      string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (VarRef sp))
+      string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (GlobRef.VarRef sp))
 
 let pr_class x = str (string_of_class x)
 
@@ -276,8 +276,8 @@ let lookup_path_to_fun_from env sigma s =
 let lookup_path_to_sort_from env sigma s =
   apply_on_class_of env sigma s lookup_path_to_sort_from_class
 
-let mkNamed = function
-  | GlobRef.ConstRef c -> EConstr.mkConst c
+let mkNamed = let open GlobRef in function
+  | ConstRef c -> EConstr.mkConst c
   | VarRef v -> EConstr.mkVar v
   | ConstructRef c -> EConstr.mkConstruct c
   | IndRef i -> EConstr.mkInd i
@@ -325,8 +325,8 @@ let different_class_params env i =
     if (snd ci).cl_param > 0 then true
     else 
       match fst ci with
-      | CL_IND i -> Environ.is_polymorphic env (IndRef i)
-      | CL_CONST c -> Environ.is_polymorphic env (ConstRef c)
+      | CL_IND i -> Environ.is_polymorphic env (GlobRef.IndRef i)
+      | CL_CONST c -> Environ.is_polymorphic env (GlobRef.ConstRef c)
       | _ -> false
 
 let add_coercion_in_graph env sigma (ic,source,target) =
@@ -393,15 +393,15 @@ let reference_arity_length env sigma ref =
   List.length (fst (Reductionops.splay_arity env sigma (EConstr.of_constr t)))
 
 let projection_arity_length env sigma p =
-  let len = reference_arity_length env sigma (ConstRef (Projection.Repr.constant p)) in
+  let len = reference_arity_length env sigma (GlobRef.ConstRef (Projection.Repr.constant p)) in
   len - Projection.Repr.npars p
 
 let class_params env sigma = function
   | CL_FUN | CL_SORT -> 0
-  | CL_CONST sp -> reference_arity_length env sigma (ConstRef sp)
+  | CL_CONST sp -> reference_arity_length env sigma (GlobRef.ConstRef sp)
   | CL_PROJ sp -> projection_arity_length env sigma sp
-  | CL_SECVAR sp -> reference_arity_length env sigma (VarRef sp)
-  | CL_IND sp  -> reference_arity_length env sigma (IndRef sp)
+  | CL_SECVAR sp -> reference_arity_length env sigma (GlobRef.VarRef sp)
+  | CL_IND sp  -> reference_arity_length env sigma (GlobRef.IndRef sp)
 
 (* add_class : cl_typ -> locality_flag option -> bool -> unit *)
 

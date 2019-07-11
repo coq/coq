@@ -380,7 +380,7 @@ let find_elim hdcncl lft2rgt dep cls ot =
 	     Logic.eq or Jmeq just before *)
 	assert false
     in
-        pf_constr_of_global (ConstRef c)
+        pf_constr_of_global (GlobRef.ConstRef c)
   else
   let scheme_name = match dep, lft2rgt, inccl with
     (* Non dependent case *)
@@ -399,7 +399,7 @@ let find_elim hdcncl lft2rgt dep cls ot =
       
       let c, eff = find_scheme scheme_name ind in 
       Proofview.tclEFFECTS eff <*>
-        pf_constr_of_global (ConstRef c) 
+        pf_constr_of_global (GlobRef.ConstRef c)
   | _ -> assert false
   end
 
@@ -989,7 +989,7 @@ let ind_scheme_of_eq lbeq to_kind =
   (* use ind rather than case by compatibility *)
   let kind = Elimschemes.nondep_elim_scheme from_kind to_kind in
   let c, eff = find_scheme kind (destIndRef lbeq.eq) in
-    ConstRef c, eff
+    GlobRef.ConstRef c, eff
 
 
 let discrimination_pf e (t,t1,t2) discriminator lbeq to_kind =

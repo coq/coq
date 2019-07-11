@@ -94,7 +94,7 @@ let subst_keys (subst,(k,k')) =
   (subst_key subst k, subst_key subst k')
 
 let discharge_key = function
-  | KGlob (VarRef _ as g) when Lib.is_in_section g -> None
+  | KGlob (GlobRef.VarRef _ as g) when Lib.is_in_section g -> None
   | x -> Some x
 
 let discharge_keys (_,(k,k')) =
@@ -114,16 +114,15 @@ let declare_equiv_keys ref ref' =
   Lib.add_anonymous_leaf (inKeys (ref,ref'))
 
 let constr_key kind c =
-  let open Globnames in 
-  try 
-    let rec aux k = 
+  try
+    let rec aux k =
       match kind k with
-      | Const (c, _) -> KGlob (ConstRef c)
-      | Ind (i, u) -> KGlob (IndRef i)
-      | Construct (c,u) -> KGlob (ConstructRef c)
-      | Var id -> KGlob (VarRef id)
+      | Const (c, _) -> KGlob (GlobRef.ConstRef c)
+      | Ind (i, u) -> KGlob (GlobRef.IndRef i)
+      | Construct (c,u) -> KGlob (GlobRef.ConstructRef c)
+      | Var id -> KGlob (GlobRef.VarRef id)
       | App (f, _) -> aux f
-      | Proj (p, _) -> KGlob (ConstRef (Projection.constant p))
+      | Proj (p, _) -> KGlob (GlobRef.ConstRef (Projection.constant p))
       | Cast (p, _, _) -> aux p
       | Lambda _ -> KLam 
       | Prod _ -> KProd

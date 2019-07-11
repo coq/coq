@@ -14,7 +14,6 @@ open Declarations
 open Names
 open ModPath
 open Libnames
-open Globnames
 open Pp
 open CErrors
 open Util
@@ -118,7 +117,7 @@ module Visit : VISIT = struct
     v.mp <- MPset.union (prefixes_mp mp) v.mp;
     v.mp_all <- MPset.add mp v.mp_all
   let add_kn kn = v.kn <- KNset.add kn v.kn; add_mp (KerName.modpath kn)
-  let add_ref = function
+  let add_ref = let open GlobRef in function
     | ConstRef c -> add_kn (Constant.user c)
     | IndRef (ind,_) | ConstructRef ((ind,_),_) -> add_kn (MutInd.user ind)
     | VarRef _ -> assert false
@@ -761,7 +760,7 @@ let show_extraction ~pstate =
     let ast, ty = extract_constr env sigma t in
     let mp = Lib.current_mp () in
     let l = Label.of_id (Proof_global.get_proof_name pstate) in
-    let fake_ref = ConstRef (Constant.make2 mp l) in
+    let fake_ref = GlobRef.ConstRef (Constant.make2 mp l) in
     let decl = Dterm (fake_ref, ast, ty) in
     print_one_decl [] mp decl
   in

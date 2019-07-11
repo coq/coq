@@ -8,7 +8,6 @@ open EConstr
 open Pp
 open Indfun_common
 open Libnames
-open Globnames
 open Glob_term
 open Declarations
 open Tactypes
@@ -59,7 +58,7 @@ let functional_induction with_clean c princl pat =
               let princ,g' =  (* then we get the principle *)
                 try
                   let g',princ =
-                    Tacmach.pf_eapply (Evd.fresh_global) g  (Globnames.ConstRef (Option.get princ_option )) in
+                    Tacmach.pf_eapply (Evd.fresh_global) g  (GlobRef.ConstRef (Option.get princ_option )) in
                   princ,g'
                 with Option.IsNone ->
                   (*i If there is not default lemma defined then,
@@ -836,7 +835,7 @@ let make_graph (f_ref : GlobRef.t) =
   let sigma = Evd.from_env env in
   let c,c_body =
     match f_ref with
-    | ConstRef c ->
+    | GlobRef.ConstRef c ->
       begin try c,Global.lookup_constant c
         with Not_found ->
           raise (UserError (None,str "Cannot find " ++ Printer.pr_leconstr_env env sigma (mkConst c)) )

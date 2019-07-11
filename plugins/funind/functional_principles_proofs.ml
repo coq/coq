@@ -14,7 +14,6 @@ open Tacticals
 open Tactics
 open Indfun_common
 open Libnames
-open Globnames
 open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
@@ -1027,7 +1026,7 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
               update_Function
                 {finfos with
                    equation_lemma = Some (match Nametab.locate (qualid_of_ident equation_lemma_id) with
-                                              ConstRef c -> c
+                                              GlobRef.ConstRef c -> c
                                             | _ -> CErrors.anomaly (Pp.str "Not a constant.")
                                          )
                 }

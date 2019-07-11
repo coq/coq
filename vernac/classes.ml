@@ -193,6 +193,7 @@ let discharge_class (_,cl) =
     ctx
   in
   let abs_context cl =
+    let open GlobRef in
     match cl.cl_impl with
       | VarRef _ | ConstructRef _ -> assert false
       | ConstRef cst -> Lib.section_segment_of_constant cst
@@ -255,7 +256,7 @@ let add_class env sigma cl =
       | Some (Backward, info) ->
         (match body with
          | None -> CErrors.user_err Pp.(str "Non-definable projection can not be declared as a subinstance")
-         | Some b -> declare_instance ~warn:true env sigma (Some info) false (ConstRef b))
+         | Some b -> declare_instance ~warn:true env sigma (Some info) false (GlobRef.ConstRef b))
       | _ -> ())
     cl.cl_projs
 
@@ -298,6 +299,7 @@ let type_ctx_instance ~program_mode env sigma ctx inst subst =
   in aux (sigma, subst, []) inst (List.rev ctx)
 
 let id_of_class cl =
+  let open GlobRef in
   match cl.cl_impl with
     | ConstRef kn -> Label.to_id @@ Constant.label kn
     | IndRef (kn,i) ->
@@ -325,8 +327,8 @@ let declare_instance_constant info global imps ?hook name decl poly sigma term t
   let entry = Declare.definition_entry ~types:termtype ~univs:uctx term in
   let kn = Declare.declare_constant ~name ~kind (Declare.DefinitionEntry entry) in
   Declare.definition_message name;
-  Declare.declare_univ_binders (ConstRef kn) (Evd.universe_binders sigma);
-  instance_hook info global imps ?hook (ConstRef kn)
+  Declare.declare_univ_binders (GlobRef.ConstRef kn) (Evd.universe_binders sigma);
+  instance_hook info global imps ?hook (GlobRef.ConstRef kn)
 
 let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst name =
   let subst = List.fold_left2
@@ -338,17 +340,17 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst nam
   let sigma, entry = DeclareDef.prepare_parameter ~allow_evars:false ~poly sigma decl termtype in
   let cst = Declare.declare_constant ~name
       ~kind:Decls.(IsAssumption Logical) (Declare.ParameterEntry entry) in
-  Declare.declare_univ_binders (ConstRef cst) (Evd.universe_binders sigma);
-  instance_hook pri global imps (ConstRef cst)
+  Declare.declare_univ_binders (GlobRef.ConstRef cst) (Evd.universe_binders sigma);
+  instance_hook pri global imps (GlobRef.ConstRef cst)
 
 let declare_instance_program env sigma ~global ~poly id pri imps decl term termtype =
   let hook { DeclareDef.Hook.S.scope; dref; _ } =
-    let cst = match dref with ConstRef kn -> kn | _ -> assert false in
+    let cst = match dref with GlobRef.ConstRef kn -> kn | _ -> assert false in
     Impargs.declare_manual_implicits false dref imps;
     let pri = intern_info pri in
     let env = Global.env () in
     let sigma = Evd.from_env env in
-    declare_instance env sigma (Some pri) (not global) (ConstRef cst)
+    declare_instance env sigma (Some pri) (not global) (GlobRef.ConstRef cst)
   in
   let obls, constr, typ =
     match term with
@@ -440,7 +442,7 @@ let do_instance_type_ctx_instance props k env' ctx' sigma ~program_mode subst =
              let {CAst.loc;v=mid} = get_id loc_mid in
              List.iter (fun (n, _, x) ->
                  if Name.equal n (Name mid) then
-                   Option.iter (fun x -> Dumpglob.add_glob ?loc (ConstRef x)) x) k.cl_projs;
+                   Option.iter (fun x -> Dumpglob.add_glob ?loc (GlobRef.ConstRef x)) x) k.cl_projs;
              c :: props, rest'
            with Not_found ->
              ((CAst.make @@ CHole (None(* Some Evar_kinds.GoalEvar *), Namegen.IntroAnonymous, None)) :: props), rest

@@ -19,7 +19,6 @@ open Context
 open EConstr
 open Vars
 open Pp
-open Globnames
 open Tacticals
 open Tactics
 open Indfun_common
@@ -93,7 +92,7 @@ let make_eq () =
 let generate_type evd g_to_f f graph i =
   (*i we deduce the number of arguments of the function and its returned type from the graph i*)
   let evd',graph =
-    Evd.fresh_global  (Global.env ()) !evd  (Globnames.IndRef (fst (destInd !evd graph)))
+    Evd.fresh_global  (Global.env ()) !evd  (GlobRef.IndRef (fst (destInd !evd graph)))
   in
   evd:=evd';
   let sigma, graph_arity = Typing.type_of (Global.env ()) !evd graph in
@@ -165,7 +164,7 @@ let find_induction_principle evd f =
   match infos.rect_lemma with
     | None -> raise Not_found
     | Some rect_lemma ->
-       let evd',rect_lemma = Evd.fresh_global  (Global.env ()) !evd  (Globnames.ConstRef rect_lemma) in
+       let evd',rect_lemma = Evd.fresh_global  (Global.env ()) !evd  (GlobRef.ConstRef rect_lemma) in
        let evd',typ = Typing.type_of ~refresh:true (Global.env ()) evd' rect_lemma in
        evd:=evd';
        rect_lemma,typ
@@ -978,7 +977,7 @@ let error msg = user_err Pp.(str msg)
 let invfun qhyp f  =
   let f =
     match f with
-      | ConstRef f -> f
+      | GlobRef.ConstRef f -> f
       | _ -> raise (CErrors.UserError(None,str "Not a function"))
   in
   try

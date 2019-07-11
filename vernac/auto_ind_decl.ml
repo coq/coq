@@ -21,7 +21,6 @@ open Vars
 open Termops
 open Declarations
 open Names
-open Globnames
 open Inductiveops
 open Tactics
 open Ind_tables
@@ -201,7 +200,7 @@ let build_beq_scheme mode kn =
           let eid = Id.of_string ("eq_"^(Id.to_string x)) in
           let () =
             try ignore (Environ.lookup_named eid env)
-            with Not_found -> raise (ParameterWithoutEquality (VarRef x))
+            with Not_found -> raise (ParameterWithoutEquality (GlobRef.VarRef x))
           in
           mkVar eid, Evd.empty_side_effects
         | Cast (x,_,_) -> aux (Term.applist (x,a))
@@ -240,7 +239,7 @@ let build_beq_scheme mode kn =
                  try let _ = Environ.constant_opt_value_in env (kneq, u) in
                    Term.applist (mkConst kneq,a),
                    Evd.empty_side_effects
-                 with Not_found -> raise (ParameterWithoutEquality (ConstRef kn)))
+                 with Not_found -> raise (ParameterWithoutEquality (GlobRef.ConstRef kn)))
         | Proj _ -> raise (EqUnknown "projection")
         | Construct _ -> raise (EqUnknown "constructor")
         | Case _ -> raise (EqUnknown "match")
@@ -655,7 +654,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                         | App (c,ca) -> (
                           match EConstr.kind sigma c with
                           | Ind (indeq, u) ->
-                              if GlobRef.equal (IndRef indeq) Coqlib.(lib_ref "core.eq.type")
+                              if GlobRef.equal (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
                               then
                                 Tacticals.New.tclTHEN
                                   (do_replace_bl mode bl_scheme_key ind

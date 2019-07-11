@@ -305,7 +305,7 @@ let glob_constr_keys c = match DAst.get c with
   | _ -> [Oth]
 
 let cases_pattern_key c = match DAst.get c with
-  | PatCstr (ref,_,_) -> RefKey (canonical_gr (ConstructRef ref))
+  | PatCstr (ref,_,_) -> RefKey (canonical_gr (GlobRef.ConstructRef ref))
   | _ -> Oth
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
@@ -492,10 +492,10 @@ exception NotAValidPrimToken
     considered for parsing. *)
 
 let rec constr_of_glob env sigma g = match DAst.get g with
-  | Glob_term.GRef (ConstructRef c, _) ->
+  | Glob_term.GRef (GlobRef.ConstructRef c, _) ->
       let sigma,c = Evd.fresh_constructor_instance env sigma c in
       sigma,mkConstructU c
-  | Glob_term.GRef (IndRef c, _) ->
+  | Glob_term.GRef (GlobRef.IndRef c, _) ->
       let sigma,c = Evd.fresh_inductive_instance env sigma c in
       sigma,mkIndU c
   | Glob_term.GApp (gc, gcl) ->
@@ -511,10 +511,10 @@ let rec glob_of_constr token_kind ?loc env sigma c = match Constr.kind c with
       let c = glob_of_constr token_kind ?loc env sigma c in
       let cel = List.map (glob_of_constr token_kind ?loc env sigma) (Array.to_list ca) in
       DAst.make ?loc (Glob_term.GApp (c, cel))
-  | Construct (c, _) -> DAst.make ?loc (Glob_term.GRef (ConstructRef c, None))
-  | Const (c, _) -> DAst.make ?loc (Glob_term.GRef (ConstRef c, None))
-  | Ind (ind, _) -> DAst.make ?loc (Glob_term.GRef (IndRef ind, None))
-  | Var id -> DAst.make ?loc (Glob_term.GRef (VarRef id, None))
+  | Construct (c, _) -> DAst.make ?loc (Glob_term.GRef (GlobRef.ConstructRef c, None))
+  | Const (c, _) -> DAst.make ?loc (Glob_term.GRef (GlobRef.ConstRef c, None))
+  | Ind (ind, _) -> DAst.make ?loc (Glob_term.GRef (GlobRef.IndRef ind, None))
+  | Var id -> DAst.make ?loc (Glob_term.GRef (GlobRef.VarRef id, None))
   | Int i -> DAst.make ?loc (Glob_term.GInt i)
   | _ -> Loc.raise ?loc (PrimTokenNotationError(token_kind,env,sigma,UnexpectedTerm c))
 
@@ -836,7 +836,7 @@ let q_byte () = qualid_of_ref "core.byte.type"
 
 let unsafe_locate_ind q =
   match Nametab.locate q with
-  | IndRef i -> i
+  | GlobRef.IndRef i -> i
   | _ -> raise Not_found
 
 let locate_list () = unsafe_locate_ind (q_list ())
@@ -1219,7 +1219,7 @@ let uninterp_cases_pattern_notations c =
   keymap_find (cases_pattern_key c) !notations_key_table
 
 let uninterp_ind_pattern_notations ind =
-  keymap_find (RefKey (canonical_gr (IndRef ind))) !notations_key_table
+  keymap_find (RefKey (canonical_gr (GlobRef.IndRef ind))) !notations_key_table
 
 let availability_of_notation (ntn_scope,ntn) scopes =
   let f scope =

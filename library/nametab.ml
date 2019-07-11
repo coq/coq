@@ -392,6 +392,7 @@ let push_xref visibility sp xref =
     | _ ->
 	begin
 	  if ExtRefTab.exists sp !the_ccitab then
+            let open GlobRef in
 	    match ExtRefTab.find sp !the_ccitab with
 	      | TrueGlobal( ConstRef _) | TrueGlobal( IndRef _) |
 		    TrueGlobal( ConstructRef _) as xref ->
@@ -483,6 +484,7 @@ let completion_canditates qualid =
 (* Derived functions *)
 
 let locate_constant qid =
+  let open GlobRef in
   match locate_extended qid with
     | TrueGlobal (ConstRef kn) -> kn
     | _ -> raise Not_found
@@ -517,6 +519,7 @@ let exists_universe kn = UnivTab.exists kn !the_univtab
 (* Reverse locate functions ***********************************************)
 
 let path_of_global ref =
+  let open GlobRef in
   match ref with
     | VarRef id -> make_path DirPath.empty id
     | _ -> Globrevtab.find (TrueGlobal ref) !the_globrevtab
@@ -542,6 +545,7 @@ let path_of_universe mp =
 (* Shortest qualid functions **********************************************)
 
 let shortest_qualid_of_global ?loc ctx ref =
+  let open GlobRef in
   match ref with
     | VarRef id -> make_qualid ?loc DirPath.empty id
     | _ ->
@@ -570,6 +574,7 @@ let pr_global_env env ref =
     if !Flags.debug then Feedback.msg_debug (Pp.str "pr_global_env not found"); raise e
 
 let global_inductive qid =
+  let open GlobRef in
   match global qid with
   | IndRef ind -> ind
   | ref ->

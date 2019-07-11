@@ -1058,7 +1058,7 @@ let is_section_variable id =
   with Not_found -> false
 
 let global_of_constr sigma c =
-  let open Globnames in
+  let open GlobRef in
   match EConstr.kind sigma c with
   | Const (c, u) -> ConstRef c, u
   | Ind (i, u) -> IndRef i, u
@@ -1067,7 +1067,7 @@ let global_of_constr sigma c =
   | _ -> raise Not_found
 
 let is_global sigma c t =
-  let open Globnames in
+  let open GlobRef in
   match c, EConstr.kind sigma t with
   | ConstRef c, Const (c', _) -> Constant.equal c c'
   | IndRef i, Ind (i', _) -> eq_ind i i'
@@ -1379,7 +1379,7 @@ let dependency_closure env sigma sign hyps =
     List.rev lh
 
 let global_app_of_constr sigma c =
-  let open Globnames in
+  let open GlobRef in
   match EConstr.kind sigma c with
   | Const (c, u) -> (ConstRef c, u), None
   | Ind (i, u) -> (IndRef i, u), None

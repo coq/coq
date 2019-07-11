@@ -130,7 +130,7 @@ module ReductionBehaviour = struct
     | _ -> None
 
   let rebuild = function
-    | req, (ConstRef c, _ as x) -> req, x
+    | req, (GlobRef.ConstRef c, _ as x) -> req, x
     | _ -> assert false
 
   let inRedBehaviour = declare_object {
@@ -958,7 +958,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
           then whrec (if refold then Cst_stack.add_cst (mkConstU const) cst_l else cst_l)
               (body, stack)
           else (* Looks for ReductionBehaviour *)
-            match ReductionBehaviour.get (Globnames.ConstRef c) with
+            match ReductionBehaviour.get (GlobRef.ConstRef c) with
             | None -> whrec (Cst_stack.add_cst (mkConstU const) cst_l) (body, stack)
             | Some behavior ->
               begin match behavior with
@@ -1009,7 +1009,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
        if not tactic_mode then
          let stack' = (c, Stack.Proj (p, Cst_stack.empty (*cst_l*)) :: stack) in
          whrec Cst_stack.empty stack'
-       else match ReductionBehaviour.get (Globnames.ConstRef (Projection.constant p)) with
+       else match ReductionBehaviour.get (GlobRef.ConstRef (Projection.constant p)) with
          | None ->
            let stack' = (c, Stack.Proj (p, cst_l) :: stack) in
            let stack'', csts = whrec Cst_stack.empty stack' in

@@ -22,7 +22,6 @@ open Util
 open Names
 open Nameops
 open Libnames
-open Globnames
 open Refiner
 open Tacmach.New
 open Tactic_debug
@@ -369,14 +368,14 @@ let interp_reference ist env sigma = function
     try try_interp_ltac_var (coerce_to_reference sigma) ist (Some (env,sigma)) (make ?loc id)
     with Not_found ->
       try
-        VarRef (get_id (Environ.lookup_named id env))
+        GlobRef.VarRef (get_id (Environ.lookup_named id env))
       with Not_found -> Nametab.error_global_not_found (qualid_of_ident ?loc id)
 
 let try_interp_evaluable env (loc, id) =
   let v = Environ.lookup_named id env in
   match v with
   | LocalDef _ -> EvalVarRef id
-  | _ -> error_not_evaluable (VarRef id)
+  | _ -> error_not_evaluable (GlobRef.VarRef id)
 
 let interp_evaluable ist env sigma = function
   | ArgArg (r,Some {loc;v=id}) ->

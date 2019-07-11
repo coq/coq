@@ -18,7 +18,6 @@ open Environ
 open Declare
 open Names
 open Libnames
-open Globnames
 open Nameops
 open Constrexpr
 open Constrexpr_ops
@@ -522,7 +521,7 @@ let is_recursive mie =
 let warn_non_primitive_record =
   CWarnings.create ~name:"non-primitive-record" ~category:"record"
          (fun indsp ->
-          (hov 0 (str "The record " ++ Nametab.pr_global_env Id.Set.empty (IndRef indsp) ++
+          (hov 0 (str "The record " ++ Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef indsp) ++
                     strbrk" could not be defined as a primitive record")))
 
 let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) mie pl impls =
@@ -540,15 +539,15 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) mie p
   let (_, kn), prim = declare_mind mie in
   let mind = Global.mind_of_delta_kn kn in
   if primitive_expected && not prim then warn_non_primitive_record (mind,0);
-  Declare.declare_univ_binders (IndRef (mind,0)) pl;
+  Declare.declare_univ_binders (GlobRef.IndRef (mind,0)) pl;
   List.iteri (fun i (indimpls, constrimpls) ->
               let ind = (mind,i) in
-              let gr = IndRef ind in
+              let gr = GlobRef.IndRef ind in
               maybe_declare_manual_implicits false gr indimpls;
               List.iteri
                 (fun j impls ->
                  maybe_declare_manual_implicits false
-                    (ConstructRef (ind, succ j)) impls)
+                    (GlobRef.ConstructRef (ind, succ j)) impls)
                 constrimpls)
       impls;
   Flags.if_verbose Feedback.msg_info (minductive_message names);
@@ -614,6 +613,6 @@ let make_cases ind =
            let n' = Namegen.next_name_away_with_default (Id.to_string Namegen.default_dependent_ident) n.Context.binder_name avoid in
            Id.to_string n' :: rename (Id.Set.add n' avoid) l in
        let al' = rename Id.Set.empty al in
-       let consref = ConstructRef (ith_constructor_of_inductive ind (i + 1)) in
+       let consref = GlobRef.ConstructRef (ith_constructor_of_inductive ind (i + 1)) in
        (Libnames.string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty consref) :: al') :: l)
     mip.mind_nf_lc []

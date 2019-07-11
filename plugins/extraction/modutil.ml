@@ -10,7 +10,6 @@
 
 open Names
 open ModPath
-open Globnames
 open CErrors
 open Util
 open Miniml
@@ -42,7 +41,7 @@ let se_iter do_decl do_spec do_mp =
 	let mp_w =
 	  List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl'
 	in
-	let r = ConstRef (Constant.make2 mp_w (Label.of_id l')) in
+        let r = GlobRef.ConstRef (Constant.make2 mp_w (Label.of_id l')) in
         mt_iter mt; do_spec (Stype(r,l,Some t))
     | MTwith (mt,ML_With_module(idl,mp))->
         let mp_mt = msid_of_mt mt in
@@ -113,12 +112,12 @@ let ast_iter_references do_term do_cons do_type a =
 
 let ind_iter_references do_term do_cons do_type kn ind =
   let type_iter = type_iter_references do_type in
-  let cons_iter cp l = do_cons (ConstructRef cp); List.iter type_iter l in
+  let cons_iter cp l = do_cons (GlobRef.ConstructRef cp); List.iter type_iter l in
   let packet_iter ip p =
-    do_type (IndRef ip);
+    do_type (GlobRef.IndRef ip);
     if lang () == Ocaml then
       (match ind.ind_equiv with
-	 | Miniml.Equiv kne -> do_type (IndRef (MutInd.make1 kne, snd ip));
+         | Miniml.Equiv kne -> do_type (GlobRef.IndRef (MutInd.make1 kne, snd ip));
 	 | _ -> ());
     Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types
   in
@@ -258,7 +257,7 @@ let dfix_to_mlfix rv av i =
   let s = make_subst (Array.length rv - 1) Refmap'.empty
   in
   let rec subst n t = match t with
-    | MLglob ((ConstRef kn) as refe) ->
+    | MLglob ((GlobRef.ConstRef kn) as refe) ->
 	(try MLrel (n + (Refmap'.find refe s)) with Not_found -> t)
     | _ -> ast_map_lift subst n t
   in
@@ -309,7 +308,7 @@ and optim_me to_appear s = function
    For non-library extraction, we recompute a minimal set of dependencies
    for first-level definitions (no module pruning yet). *)
 
-let base_r = function
+let base_r = let open GlobRef in function
   | ConstRef c as r -> r
   | IndRef (kn,_) -> IndRef (kn,0)
   | ConstructRef ((kn,_),_) -> IndRef (kn,0)
@@ -327,7 +326,7 @@ let reset_needed, add_needed, add_needed_mp, found_needed, is_needed =
      Refset'.mem r !needed || MPset.mem (modpath_of_r r) !needed_mps))
 
 let declared_refs = function
-  | Dind (kn,_) -> [IndRef (kn,0)]
+  | Dind (kn,_) -> [GlobRef.IndRef (kn,0)]
   | Dtype (r,_,_) -> [r]
   | Dterm (r,_,_) -> [r]
   | Dfix (rv,_,_) -> Array.to_list rv

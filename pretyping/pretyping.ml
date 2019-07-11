@@ -37,7 +37,6 @@ open Vars
 open Reductionops
 open Type_errors
 open Typing
-open Globnames
 open Evarutil
 open Evardefine
 open Pretype_errors
@@ -435,7 +434,7 @@ let pretype_global ?loc rigid env evd gr us =
 
 let pretype_ref ?loc sigma env ref us =
   match ref with
-  | VarRef id ->
+  | GlobRef.VarRef id ->
       (* Section variable *)
       (try sigma, make_judge (mkVar id) (NamedDecl.get_type (lookup_named id !!env))
        with Not_found ->

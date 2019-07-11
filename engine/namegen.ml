@@ -24,7 +24,6 @@ open EConstr
 open Vars
 open Nameops
 open Libnames
-open Globnames
 open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
@@ -72,7 +71,7 @@ let is_imported_modpath = function
     in find_prefix (Lib.current_mp ())
   | _ -> false
 
-let is_imported_ref = function
+let is_imported_ref = let open GlobRef in function
   | VarRef _ -> false
   | IndRef (kn,_)
   | ConstructRef ((kn,_),_) ->
@@ -90,7 +89,7 @@ let is_global id =
 let is_constructor id =
   try
     match Nametab.locate (qualid_of_ident id) with
-      | ConstructRef _ -> true
+      | GlobRef.ConstructRef _ -> true
       | _ -> false
   with Not_found ->
     false
@@ -102,7 +101,7 @@ let is_section_variable id =
 (**********************************************************************)
 (* Generating "intuitive" names from its type *)
 
-let global_of_constr = function
+let global_of_constr = let open GlobRef in function
 | Const (c, _) -> ConstRef c
 | Ind (i, _) -> IndRef i
 | Construct (c, _) -> ConstructRef c
@@ -149,8 +148,8 @@ let hdchar env sigma c =
     | Cast (c,_,_) | App (c,_) -> hdrec k c
     | Proj (kn,_) -> lowercase_first_char (Label.to_id (Constant.label (Projection.constant kn)))
     | Const (kn,_) -> lowercase_first_char (Label.to_id (Constant.label kn))
-    | Ind (x,_) -> (try lowercase_first_char (Nametab.basename_of_global (IndRef x)) with Not_found when !Flags.in_debugger -> "zz")
-    | Construct (x,_) -> (try lowercase_first_char (Nametab.basename_of_global (ConstructRef x)) with Not_found when !Flags.in_debugger -> "zz")
+    | Ind (x,_) -> (try lowercase_first_char (Nametab.basename_of_global (GlobRef.IndRef x)) with Not_found when !Flags.in_debugger -> "zz")
+    | Construct (x,_) -> (try lowercase_first_char (Nametab.basename_of_global (GlobRef.ConstructRef x)) with Not_found when !Flags.in_debugger -> "zz")
     | Var id  -> lowercase_first_char id
     | Sort s -> sort_hdchar (ESorts.kind sigma s)
     | Rel n ->
