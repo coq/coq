@@ -144,6 +144,8 @@ Many other commands support the ``Polymorphic`` flag, including:
 - ``Lemma``, ``Axiom``, and all the other “definition” keywords support
   polymorphism.
 
+- :cmd:`Section` will locally set the polymorphism flag inside the section.
+
 - ``Variables``, ``Context``, ``Universe`` and ``Constraint`` in a section support
   polymorphism. This means that the universe variables (and associated
   constraints) are discharged polymorphically over definitions that use
