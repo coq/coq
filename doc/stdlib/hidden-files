@@ -18,6 +18,7 @@ plugins/extraction/ExtrOcamlIntConv.v
 plugins/extraction/ExtrOcamlNatBigInt.v
 plugins/extraction/ExtrOcamlNatInt.v
 plugins/extraction/ExtrOcamlString.v
+plugins/extraction/ExtrOcamlStringPlus.v
 plugins/extraction/ExtrOcamlZBigInt.v
 plugins/extraction/ExtrOcamlZInt.v
 plugins/extraction/Extraction.v
