@@ -6,6 +6,7 @@ sig
   val is_empty : t -> bool
   val add : var -> t -> t
   val mem : var -> t -> bool
+  val union : t -> t -> t
   val diff : t -> t -> t
   val fold : (var -> 'a -> 'a) -> t -> 'a -> 'a
   val pr : string -> t -> Pp.t
@@ -50,6 +51,7 @@ sig
   val union_list : t list -> t
   val contains : SVars.var * SVars.var -> t -> bool
   val add : Annot.t -> Annot.t -> t -> t
+  val add_infty : SVars.t -> t -> t
   val sup : SVars.var -> t -> SVars.t
   val sub : SVars.var -> t -> SVars.t
   val pr : t -> Pp.t

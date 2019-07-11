@@ -531,6 +531,10 @@ val fold_map : ('a -> constr -> 'a * constr) -> 'a -> constr -> 'a * constr
 val map_with_binders :
   ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
 
+(** [collect_annots c] collects all the stage variables in [c] *)
+
+val collect_annots : constr -> SVars.t
+
 (** [erase c] erases all stage annotations in [c] to Empty *)
 
 val erase : constr -> constr

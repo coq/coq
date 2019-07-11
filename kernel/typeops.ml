@@ -49,6 +49,13 @@ let check_constraints cst env =
   if Environ.check_constraints cst env then ()
   else error_unsatisfied_constraints env cst
 
+(* [no_stage_variables cstrs cstrnts] collects the stage variables in [cstrs]
+  and adds the constraint ∞ ⊑ for each to [cstrnts]
+  Used in the body of Lambda, the argument of App, and the body and argument of LetIn
+  to enforce simple types (wrt sized types) *)
+let no_stage_variables =
+  Array.fold_right (fun cstr -> add_infty (collect_annots cstr))
+
 (* This should be a type (a priori without intention to be an assumption) *)
 let check_type env c t =
   match kind(whd_all env t) with
@@ -524,6 +531,7 @@ let rec execute env stg cstr =
     (* Lambda calculus operators *)
     | App (f,args) ->
       let stga, cstrnta, args', argst = execute_array env stg args in
+      let _ = no_stage_variables args' cstrnta in
       let stgf, cstrntf, f', ft = match kind f with
       | Ind (ind, s) when Environ.template_polymorphic_pind ind env ->
         let s', stg' = next ~s stg in
@@ -542,6 +550,7 @@ let rec execute env stg cstr =
       let name' = check_binder_annot s name in
       let env1 = push_rel (LocalAssum (name',c1')) env in
       let stg2, cstrnt2, c2', c2t = execute env1 stg1 c2 in
+      let _ = no_stage_variables [|c2'|] cstrnt2 in
       let cstrnt = union cstrnt1 cstrnt2 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkLambda(name', erase c1',c2') in
       stg2, cstrnt, cstr, type_of_abstraction env name' c1 c2t
@@ -562,6 +571,7 @@ let rec execute env stg cstr =
       let cstrnt' = check_cast env c1' c1t DEFAULTcast c2' in
       let env1 = push_rel (LocalDef (name',c1',c2')) env in
       let stg3, cstrnt3, c3', c3t = execute env1 stg2 c3 in
+      let _ = no_stage_variables [|c1'; c3'|] cstrnt3 in
       let cstrnt = union_list [cstrnt1; cstrnt2; cstrnt3; cstrnt'] in
       let cstr = if name == name' && c1 == c1' && c2 == c2' && c3 == c3' then cstr
         else mkLetIn(name',c1',erase c2',c3')

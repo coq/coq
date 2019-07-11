@@ -814,6 +814,11 @@ let map_with_binders g f l c0 = match kind c0 with
 (* Stage annotations *)
 (*********************)
 
+let rec collect_annots c =
+  match c with
+  | Ind (_, Stage (StageVar (na, _))) -> SVars.add na SVars.empty
+  | _ -> fold (fun vars c -> SVars.union vars (collect_annots c)) SVars.empty c
+
 let rec modify_annots f c =
   match c with
   | Ind (iu, a) -> f iu a c

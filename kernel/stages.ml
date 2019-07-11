@@ -206,6 +206,9 @@ struct
     | Stage s1, Stage s2 -> add_stages s1 s2
     | _ -> t
 
+  let add_infty =
+    SVars.fold (fun var -> add Annot.infty (Annot.mk var 0))
+
   let add_to_set (var, _) vars =
     if Stage.var_equal var infty then vars
     else SVars.add var vars
