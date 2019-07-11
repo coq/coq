@@ -436,7 +436,7 @@ let explain_ill_formed_rec_type env sigma i name ty sign =
   let prty = pr_econstr_env env sigma ty in
   str "Expected " ++ prname ++
   str " of " ++ prsign ++
-  str " to have a (co)inductive type, but found type " ++ prty ++
+  str " to contain a (co)inductive type, but found type " ++ prty ++
   str " instead."
 
 (* TODO: use the names *)

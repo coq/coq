@@ -1319,6 +1319,12 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
 
 (* Functions for sized (co)fixpoints *)
 
+let rec get_stage_var env c err =
+  match kind (whd_all env c) with
+  | Ind (_, Stage (StageVar (s, _))) -> s
+  | App (c, _) -> get_stage_var env c err
+  | c' -> err (of_kind c')
+
 (* [rec_stage_var_ind env i ty_sized] returns the stage variable of
   the [i]th parameter of [ty_sized], the recursive parameter of the fix *)
 
@@ -1328,11 +1334,8 @@ let rec_stage_var_ind env i ty_sized =
   let assums_sized = List.filter is_local_assum ctxt_sized in
   match lookup (length ctxt_sized - i) assums_sized with
     | LocalAssum (c, ty) ->
-      begin
-      match kind (whd_all env ty) with
-      | Ind (_, Stage (StageVar (s, _))) -> s
-      | _ -> error_ill_formed_rec_type env i c ty ty_sized
-      end
+      let err ty = error_ill_formed_rec_type env i c ty ty_sized in
+      get_stage_var env ty err
     (* something is wrong with [List.filter] or [is_local_assum] if we end up here... *)
     | _ -> assert false
 
@@ -1341,9 +1344,8 @@ let rec_stage_var_ind env i ty_sized =
 let rec_stage_var_coind env ty_sized =
   let open Context in
   let body_sized = Term.strip_prod_assum ty_sized in
-  match kind (whd_all env body_sized) with
-  | Ind (_, Stage (StageVar (s, _))) -> s
-  | _ -> error_ill_formed_rec_type env (-1) anonR body_sized ty_sized
+  let err ty = error_ill_formed_rec_type env (-1) anonR ty ty_sized in
+  get_stage_var env body_sized err
 
 (* [rec_stage_vars env iso tys_sized] returns the decreasing stage variables
   in each of [tys_sized].
