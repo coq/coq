@@ -425,6 +425,17 @@ let explain_not_product env sigma c =
   str "while it is expected to be" ++
   (if EConstr.isType sigma c then str " a sort" else (brk(1,1) ++ pr)) ++ str "."
 
+let explain_ill_formed_rec_type env sigma i name ty sign =
+  let prname = match name.binder_name with
+    | Name id -> str "parameter " ++ Id.print id
+    | Anonymous -> pr_nth i ++ str " parameter" in
+  let prsign = pr_econstr_env env sigma sign in
+  let prty = pr_econstr_env env sigma ty in
+  str "Expected " ++ prname ++
+  str " to have inductive type in " ++ prsign ++
+  str " but found type " ++ prty ++
+  str " instead."
+
 (* TODO: use the names *)
 (* (co)fixpoints *)
 let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
@@ -776,6 +787,8 @@ let explain_type_error env sigma err =
       explain_cant_apply_bad_type env sigma t rator randl
   | CantApplyNonFunctional (rator, randl) ->
       explain_cant_apply_not_functional env sigma rator randl
+  | IllFormedRecType (i, na, arg, ty) ->
+      explain_ill_formed_rec_type env sigma i na arg ty
   | IllFormedRecBody (err, lna, i, fixenv, vdefj) ->
       explain_ill_formed_rec_body env sigma err lna i fixenv vdefj
   | IllTypedRecBody (i, lna, vdefj, vargs) ->

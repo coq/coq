@@ -294,6 +294,7 @@ let explain_exn = function
                                 (ctx.Environ.env_stratification.Environ.env_universes)));
         str "CantApplyBadType at argument " ++ int n
       | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"
+      | IllFormedRecType _ -> str"IllFormedRecType"
       | IllFormedRecBody _ -> str"IllFormedRecBody"
       | IllTypedRecBody _ -> str"IllTypedRecBody"
       | UnsatisfiedStageConstraints _ -> str"UnsatisfiedStageConstraints"

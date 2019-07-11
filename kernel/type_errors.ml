@@ -61,6 +61,7 @@ type ('constr, 'types) ptype_error =
   | CantApplyBadType of
       (int * 'constr * 'constr) * ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
   | CantApplyNonFunctional of ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
+  | IllFormedRecType of int * Name.t Context.binder_annot * 'types * 'types
   | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
       int * Name.t Context.binder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
@@ -135,6 +136,9 @@ let error_cant_apply_not_functional env rator randl =
 let error_cant_apply_bad_type env t rator randl =
   raise (TypeError (env, CantApplyBadType (t,rator,randl)))
 
+let error_ill_formed_rec_type env i name ty sign =
+  raise (TypeError (env, IllFormedRecType (i, name, ty, sign)))
+
 let error_ill_formed_rec_body env why lna i fixenv vdefj =
   raise (TypeError (env, IllFormedRecBody (why,lna,i,fixenv,vdefj)))
 
@@ -198,6 +202,7 @@ let map_ptype_error f = function
 | CantApplyBadType ((n, c1, c2), j, vj) ->
   CantApplyBadType ((n, f c1, f c2), on_judgment f j, Array.map (on_judgment f) vj)
 | CantApplyNonFunctional (j, jv) -> CantApplyNonFunctional (on_judgment f j, Array.map (on_judgment f) jv)
+| IllFormedRecType (i, na, arg, ty) -> IllFormedRecType (i, na, f arg, f ty)
 | IllFormedRecBody (ge, na, n, env, jv) ->
   IllFormedRecBody (map_pguard_error f ge, na, n, env, Array.map (on_judgment f) jv)
 | IllTypedRecBody (n, na, jv, t) ->

@@ -62,6 +62,7 @@ type ('constr, 'types) ptype_error =
   | CantApplyBadType of
       (int * 'constr * 'constr) * ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
   | CantApplyNonFunctional of ('constr, 'types) punsafe_judgment * ('constr, 'types) punsafe_judgment array
+  | IllFormedRecType of int * Name.t Context.binder_annot * 'types * 'types
   | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
       int * Name.t Context.binder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
@@ -127,6 +128,9 @@ val error_cant_apply_not_functional :
 val error_cant_apply_bad_type :
   env -> int * constr * constr ->
       unsafe_judgment -> unsafe_judgment array -> 'a
+
+val error_ill_formed_rec_type :
+  env -> int -> Name.t Context.binder_annot -> types -> types -> 'a
 
 val error_ill_formed_rec_body :
   env -> guard_error -> Name.t Context.binder_annot array -> int -> env -> unsafe_judgment array -> 'a
