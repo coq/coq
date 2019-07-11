@@ -428,12 +428,15 @@ let explain_not_product env sigma c =
 let explain_ill_formed_rec_type env sigma i name ty sign =
   let prname = match name.binder_name with
     | Name id -> str "parameter " ++ Id.print id
-    | Anonymous -> pr_nth i ++ str " parameter" in
+    | Anonymous ->
+      match i with
+      | -1 -> str "return type"
+      | _ -> pr_nth i ++ str " parameter" in
   let prsign = pr_econstr_env env sigma sign in
   let prty = pr_econstr_env env sigma ty in
   str "Expected " ++ prname ++
-  str " to have inductive type in " ++ prsign ++
-  str " but found type " ++ prty ++
+  str " of " ++ prsign ++
+  str " to have a (co)inductive type, but found type " ++ prty ++
   str " instead."
 
 (* TODO: use the names *)

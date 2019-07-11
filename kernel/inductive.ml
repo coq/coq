@@ -1319,10 +1319,10 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
 
 (* Functions for sized (co)fixpoints *)
 
-(* [rec_stage_var i ty_sized] returns the stage variable of
+(* [rec_stage_var_ind env i ty_sized] returns the stage variable of
   the [i]th parameter of [ty_sized], the recursive parameter of the fix *)
 
-let rec_stage_var env i ty_sized =
+let rec_stage_var_ind env i ty_sized =
   let open Context.Rel in
   let ctxt_sized = Term.prod_assum ty_sized in
   let assums_sized = List.filter is_local_assum ctxt_sized in
@@ -1336,8 +1336,26 @@ let rec_stage_var env i ty_sized =
     (* something is wrong with [List.filter] or [is_local_assum] if we end up here... *)
     | _ -> assert false
 
-let rec_stage_vars env is tys_sized =
-  Array.map2 (rec_stage_var env) is tys_sized
+(* [rec_stage_var_coind env ty_sized] returns the stage variable of
+  the return type of the product type [ty_sized] *)
+let rec_stage_var_coind env ty_sized =
+  let open Context in
+  let body_sized = Term.strip_prod_assum ty_sized in
+  match kind (whd_all env body_sized) with
+  | Ind (_, Stage (StageVar (s, _))) -> s
+  | _ -> error_ill_formed_rec_type env (-1) anonR body_sized ty_sized
+
+(* [rec_stage_vars env iso tys_sized] returns the decreasing stage variables
+  in each of [tys_sized].
+  For fixpoints, where we destruct on some inductive construction,
+  [ty_sized] will be some product T ≡ ΠΔ.Πx:I^α(ps, as).U, where |Δ| = [i],
+  the 0-based index of the recursive argument (skipping LetIns), and we return α.
+  For cofixpoints, where we construct a coinductive construction,
+  [ty_sized] will be some product T ≡ ΠΔ.CoI^α(ps, as), and we return α.*)
+let rec_stage_vars env iso tys_sized =
+  match iso with
+  | Some is -> Array.map2 (rec_stage_var_ind env) is tys_sized
+  | None -> Array.map (rec_stage_var_coind env) tys_sized
 
 let check_rec env alphas vstar vneq cstrnts =
   let flags = Environ.typing_flags env in

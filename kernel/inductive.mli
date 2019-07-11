@@ -111,7 +111,7 @@ val check_case_info : env -> pinductive -> Sorts.relevance -> case_info -> unit
 val check_fix : env -> fixpoint -> unit
 val check_cofix : env -> cofixpoint -> unit
 
-val rec_stage_vars : env -> int array -> constr array -> SVars.var array
+val rec_stage_vars : env -> int array option -> constr array -> SVars.var array
 val check_rec : env -> SVars.var array -> SVars.t -> SVars.t ->
   Constraints.t -> Constraints.t
 

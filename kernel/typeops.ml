@@ -599,14 +599,14 @@ let rec execute env stg cstr =
       stg, cstrnt, cstr, t
 
     | Fix ((vn,i as vni),recdef as fix) ->
-      let stg, cstrnt, fix_ty,recdef' = execute_recdef env stg recdef vn i in
+      let stg, cstrnt, fix_ty,recdef' = execute_recdef env stg recdef (Some vn) i in
       let cstr, fix = if recdef == recdef' then cstr, fix else
           let fix = (vni,recdef') in mkFix fix, fix
       in
       check_fix env fix; stg, cstrnt, cstr, fix_ty
 
     | CoFix (i,recdef as cofix) ->
-      let stg, cstrnt, fix_ty,recdef' = execute_recdef env stg recdef [||] i in (* FIXME!! *)
+      let stg, cstrnt, fix_ty,recdef' = execute_recdef env stg recdef None i in
       let cstr, cofix = if recdef == recdef' then cstr, cofix else
           let cofix = (i,recdef') in mkCoFix cofix, cofix
       in
