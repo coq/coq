@@ -692,7 +692,7 @@ let is_native_string c =
 
 (* Extract the underlying string. *)
 
-let rec get_native_string c =
+let get_native_string c =
   let buf = Buffer.create 64 in
   let rec get = function
     (* "EmptyString" constructor *)
