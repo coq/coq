@@ -64,7 +64,14 @@ The signatures of most objects can be written using a succinct DSL for Coq notat
   an alternative, indicating than one of multiple constructs can be used
 
 ``%{``, ``%}``, ``%|``
-  an escaped character (rendered without the leading ``%``).  In most cases, escaping is not necessary.  In particular, the following expressions are all parsed as plain text, and do not need escaping: ``{ xyz }``, ``x |- y``.  But the following escapes *are* needed: ``{| a b %| c | d }``, ``all: %{``.  (We use ``%`` instead of the usual ``\`` because you'd have to type ``\`` twice in your reStructuredText file.)
+  an escaped character (rendered without the leading ``%``).  In most cases,
+  escaping is not necessary.  In particular, the following expressions are
+  all parsed as plain text, and do not need escaping: ``{ xyz }``, ``x |- y``.
+  But the following escapes *are* needed: ``{| a b %| c | d }``, ``all: %{``.
+  (We use ``%`` instead of the usual ``\`` because you'd have to type ``\``
+  twice in your reStructuredText file.)
+
+  For more details and corner cases, see `Advanced uses of notations`_ below.
 
 ..
    FIXME document the new subscript support
@@ -290,7 +297,24 @@ Emacs
 
 The ``dev/tools/coqdev.el`` folder contains a convenient Emacs function to quickly insert Sphinx roles and quotes.  It takes a single character (one of ``gntm:```), and inserts one of ``:g:``, ``:n:``, ``:t:``, or an arbitrary role, or double quotes.  You can also select a region of text, and wrap it in single or double backticks using that function.
 
-Use the following snippet to bind it to :kbd:`F12` in ``rst-mode``::
+Use the following snippet to bind it to `F12` in ``rst-mode``::
 
    (with-eval-after-load 'rst
      (define-key rst-mode-map (kbd "<f12>") #'coqdev-sphinx-rst-coq-action))
+
+
+Advanced uses of notations
+--------------------------
+
+
+  - Use `%` to escape grammar literal strings that are the same as metasyntax,
+    such as ``{``, ``|``, ``}`` and ``{|``.  (While this is optional for
+    ``|`` and ``{ ... }`` outside of ``{| ... }``, always using the escape
+    requires less thought.)
+
+  - Literals such as ``|-`` and ``||`` don't need to be escaped.
+
+  - The literal ``%`` shouldn't be escaped.
+
+  - Don't use the escape for a ``|`` separator in ``{*`` and ``{+``.  These
+    should appear as ``{*|`` and ``{+|``.
