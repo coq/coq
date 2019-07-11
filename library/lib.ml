@@ -427,7 +427,6 @@ type secentry =
   | Variable of {
       id:Names.Id.t;
       kind:Decl_kinds.binding_kind;
-      poly:bool;
       univs:Univ.ContextSet.t;
     }
   | Context of Univ.ContextSet.t
@@ -462,7 +461,7 @@ let add_section_variable ~name ~kind ~poly univs =
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | s :: sl ->
        List.iter (fun tab -> check_same_poly poly tab) !sectab;
-       let s = { s with sec_entry = Variable {id=name;kind;poly;univs} :: s.sec_entry } in
+       let s = { s with sec_entry = Variable {id=name;kind;univs} :: s.sec_entry } in
        sectab := s :: sl
 
 let add_section_context ctx =
@@ -480,8 +479,8 @@ let is_polymorphic_univ u =
     List.iter (fun s ->
       let vars = s.sec_entry in
         List.iter (function
-            | Variable {poly;univs=(univs,_)} ->
-              if LSet.mem u univs then raise (PolyFound poly)
+            | Variable {univs=(univs,_)} ->
+              if LSet.mem u univs then raise (PolyFound s.sec_poly)
             | Context (univs,_) ->
               if LSet.mem u univs then raise (PolyFound true)
           ) vars
@@ -489,12 +488,12 @@ let is_polymorphic_univ u =
     false
   with PolyFound b -> b
 
-let extract_hyps (secs,ohyps) =
+let extract_hyps poly (secs,ohyps) =
   let rec aux = function
-    | (Variable {id;kind;poly;univs}::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
+    | (Variable {id;kind;univs}::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
       let l, r = aux (idl,hyps) in 
       (decl,kind) :: l, if poly then Univ.ContextSet.union r univs else r
-    | (Variable {poly;univs}::idl,hyps) ->
+    | (Variable {univs}::idl,hyps) ->
         let l, r = aux (idl,hyps) in
           l, if poly then Univ.ContextSet.union r univs else r
     | (Context ctx :: idl, hyps) ->
@@ -528,7 +527,7 @@ let add_section_replacement f g poly hyps =
   | [] -> ()
   | s :: sl ->
     let () = check_same_poly poly s in
-    let sechyps,ctx = extract_hyps (s.sec_entry, hyps) in
+    let sechyps,ctx = extract_hyps s.sec_poly (s.sec_entry, hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
     let inst = Univ.UContext.instance ctx in
     let nas = name_instance inst in
