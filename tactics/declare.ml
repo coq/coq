@@ -205,7 +205,7 @@ let cast_proof_entry e =
     const_entry_inline_code = e.proof_entry_inline_code;
   }
 
-let cast_opaque_proof_entry (type a) (pure : a Safe_typing.effect_entry) (e : a Proof_global.proof_entry) =
+let cast_opaque_proof_entry e =
   let open Proof_global in
   let typ = match e.proof_entry_type with
   | None -> assert false
@@ -220,14 +220,8 @@ let cast_opaque_proof_entry (type a) (pure : a Safe_typing.effect_entry) (e : a 
         Id.Set.empty, Id.Set.empty
       else
         let ids_typ = global_vars_set env typ in
-        let pf, env = match pure with
-        | PureEntry ->
-          let (pf, _), () = Future.force e.proof_entry_body in
-          pf, env
-        | EffectEntry ->
-          let (pf, _), eff = Future.force e.proof_entry_body in
-          pf, Safe_typing.push_private_constants env eff
-        in
+        let (pf, _), eff = Future.force e.proof_entry_body in
+        let env = Safe_typing.push_private_constants env eff in
         let vars = global_vars_set env pf in
         ids_typ, vars
     in
@@ -253,37 +247,28 @@ let get_roles export eff =
 let define_constant ~side_effect ~name cd =
   let open Proof_global in
   (* Logically define the constant and its subproofs, no libobject tampering *)
-  let is_poly de = match de.proof_entry_universes with
-  | Monomorphic_entry _ -> false
-  | Polymorphic_entry _ -> true
-  in
   let in_section = Lib.sections_are_opened () in
-  let export, decl = (* We deal with side effects *)
-    match cd with
-    | DefinitionEntry de when
-        not de.proof_entry_opaque ||
-        is_poly de ->
+  let export, decl = match cd with
+  | DefinitionEntry de ->
+    (* We deal with side effects *)
+    if not de.proof_entry_opaque then
       (* This globally defines the side-effects in the environment. *)
       let body, eff = Future.force de.proof_entry_body in
       let body, export = Global.export_private_constants ~in_section (body, eff.Evd.seff_private) in
       let export = get_roles export eff in
       let de = { de with proof_entry_body = Future.from_val (body, ()) } in
-      let cd = match de.proof_entry_opaque with
-      | true -> Entries.OpaqueEntry (cast_opaque_proof_entry PureEntry de)
-      | false -> Entries.DefinitionEntry (cast_proof_entry de)
-      in
+      let cd = Entries.DefinitionEntry (cast_proof_entry de) in
       export, ConstantEntry (PureEntry, cd)
-    | DefinitionEntry de ->
-      let () = assert (de.proof_entry_opaque) in
+    else
       let map (body, eff) = body, eff.Evd.seff_private in
       let body = Future.chain de.proof_entry_body map in
       let de = { de with proof_entry_body = body } in
-      let de = cast_opaque_proof_entry EffectEntry de in
+      let de = cast_opaque_proof_entry de in
       [], ConstantEntry (EffectEntry, Entries.OpaqueEntry de)
-    | ParameterEntry e ->
-      [], ConstantEntry (PureEntry, Entries.ParameterEntry e)
-    | PrimitiveEntry e ->
-      [], ConstantEntry (PureEntry, Entries.PrimitiveEntry e)
+  | ParameterEntry e ->
+    [], ConstantEntry (PureEntry, Entries.ParameterEntry e)
+  | PrimitiveEntry e ->
+    [], ConstantEntry (PureEntry, Entries.PrimitiveEntry e)
   in
   let kn, eff = Global.add_constant ~side_effect ~in_section name decl in
   kn, eff, export
@@ -304,7 +289,7 @@ let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind 
   | None -> Cmap.empty
   | Some r -> Cmap.singleton kn r
   in
-  let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
+  let eff = { Evd.seff_private = eff.Entries.seff_wrap; Evd.seff_roles; } in
   kn, eff
 
 (** Declaration of section variables and local definitions *)

@@ -527,7 +527,7 @@ let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 
 (** Insertion of constants and parameters in environment *)
 type 'a effect_entry =
-| EffectEntry : private_constants effect_entry
+| EffectEntry : private_constants Entries.seff_wrap effect_entry
 | PureEntry : unit effect_entry
 
 type global_declaration =
@@ -669,6 +669,9 @@ let check_signatures curmb sl =
   | None -> 0
   | Some (n, _) -> n
 
+type side_effect_declaration =
+| DefinitionEff : Entries.definition_entry -> side_effect_declaration
+| OpaqueEff : unit Entries.const_entry_body Entries.opaque_entry -> side_effect_declaration
 
 let constant_entry_of_side_effect eff =
   let cb = eff.seff_body in
@@ -686,7 +689,7 @@ let constant_entry_of_side_effect eff =
     | Def b -> Mod_subst.force_constr b
     | _ -> assert false in
   if Declareops.is_opaque cb then
-  OpaqueEntry {
+  OpaqueEff {
     opaque_entry_body = Future.from_val ((p, Univ.ContextSet.empty), ());
     opaque_entry_secctx = cb.const_hyps;
     opaque_entry_feedback = None;
@@ -694,7 +697,7 @@ let constant_entry_of_side_effect eff =
     opaque_entry_universes = univs;
   }
   else
-  DefinitionEntry {
+  DefinitionEff {
     const_entry_body = p;
     const_entry_secctx = Some cb.const_hyps;
     const_entry_feedback = None;
@@ -730,7 +733,15 @@ let export_side_effects mb env (b_ctx, eff) =
             let env, cb =
               let kn = eff.seff_constant in
                let ce = constant_entry_of_side_effect eff in
-               let cb = Term_typing.translate_constant Term_typing.Pure env kn ce in
+               let open Entries in
+               let open Term_typing in
+               let cb = match ce with
+               | DefinitionEff ce ->
+                Term_typing.translate_constant Pure env kn (DefinitionEntry ce)
+               | OpaqueEff ce ->
+                let handle _env c () = (c, Univ.ContextSet.empty, 0) in
+                Term_typing.translate_constant (SideEffects handle) env kn (OpaqueEntry ce)
+               in
               let map cu =
                 let (c, u) = Future.force cu in
                 let () = match u with
@@ -822,7 +833,7 @@ let add_constant (type a) ~(side_effect : a effect_entry) ~in_section l decl sen
       seff_constant = kn;
       seff_body = cb;
     } in
-    SideEffects.add eff empty_private_constants
+    { Entries.seff_wrap = SideEffects.add eff empty_private_constants }
   in
   (kn, eff), senv
 
