@@ -1323,7 +1323,10 @@ let rec get_stage_var env c err =
   match kind (whd_all env c) with
   | Ind (_, Stage (StageVar (s, _))) -> s
   | App (c, _) -> get_stage_var env c err
-  | c' -> err (of_kind c')
+  | c' -> (-1) (* err (of_kind c') *)
+(* This currently fails because global declarations (i.e. Const) do not have annotations
+  so if a fixpoint signature uses a global variable the annotation will be missing
+  For now we return a placeholder. FIXME!!! *)
 
 (* [rec_stage_var_ind env i ty_sized] returns the stage variable of
   the [i]th parameter of [ty_sized], the recursive parameter of the fix *)
