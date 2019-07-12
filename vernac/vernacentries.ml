@@ -965,7 +965,8 @@ let vernac_include l =
 
 let vernac_begin_section ~poly ({v=id} as lid) =
   Dumpglob.dump_definition lid true "sec";
-  Lib.open_section ~poly id
+  Lib.open_section ~poly id;
+  set_bool_option_value_gen ~locality:OptLocal ["Universe"; "Polymorphism"] poly
 
 let vernac_end_section {CAst.loc} =
   Dumpglob.dump_reference ?loc
