@@ -122,7 +122,7 @@ let sub1 =
     (mem 0 subs && mem 9 subs)
 let sub_tests = [sub1]
 
-(* RecCheck tests *)
+(* RecCheck helper tests *)
 
 let bf_prefix = test_prefix ^ "-bf"
 let bf_name i = add_prefix ^ string_of_int i
@@ -166,6 +166,130 @@ let downward_closure =
     (List.for_all (fun var -> mem var down) [0; 5; 9])
 let closure_tests = [upward_closure; downward_closure]
 
+(* RecCheck tests
+  The constraints come from the Haskell cicminus implementation *)
+
+let mkStage nm sz = Stage (StageVar (nm, sz))
+
+let svars_of_list lst =
+  List.fold_right SVars.add lst SVars.empty
+
+let constraints_of_list lst =
+  List.fold_right (fun (vfrom, vto) -> add vfrom vto) lst empty
+
+let rec_check_lists_pass alpha vstarl vneql cstrntsl =
+  try
+    let _ = rec_check alpha (svars_of_list vstarl) (svars_of_list vneql) (constraints_of_list cstrntsl)
+    in true
+  with RecCheckFailed _ -> false
+
+let rec_check_lists_fail alpha vstarl vneql cstrnts =
+  not (rec_check_lists_pass alpha vstarl vneql cstrnts)
+
+let rc_prefix = test_prefix ^ "-rec_check-"
+let rc_name str = rc_prefix ^ str
+
+let rec_check_plus =
+  let cstrnts =
+    [ mkStage 1 0, mkStage 4 0
+    ; mkStage 2 0, mkStage 5 0
+    ; mkStage 3 0, mkStage 0 0
+    ; mkStage 4 0, mkStage 2 0
+    ; mkStage 5 1, mkStage 4 0
+    ] in
+  mk_bool_test
+    (rc_name "plus")
+    "constraints for plus are satisfiable"
+    (rec_check_lists_pass 0 [0] [1; 2] cstrnts)
+
+let rec_check_minus =
+  let cstrnts =
+    [ mkStage  6 1, mkStage 13 0
+    ; mkStage  8 0, mkStage 13 0
+    ; mkStage  9 0, mkStage 6  0
+    ; mkStage 10 0, mkStage 8  1
+    ; mkStage 11 1, mkStage 10 0
+    ; mkStage 12 0, mkStage 7  0
+    ; mkStage 12 1, mkStage 7  0
+    ; mkStage 13 0, mkStage 10 0
+    ] in
+  mk_bool_test
+    (rc_name "minus")
+    "constraints for minus are satisfiable"
+    (rec_check_lists_pass 6 [8; 6] [7] cstrnts)
+
+let rec_check_mult =
+  let cstrnts =
+    [ infty, mkStage 18 0
+    ; mkStage 15 0, mkStage 20 0
+    ; mkStage 17 0, mkStage 14 0
+    ; mkStage 18 0, mkStage 16 0
+    ; mkStage 19 1, mkStage 18 0
+    ] in
+  mk_bool_test
+    (rc_name "mult")
+    "constraints for mult are satisfiable"
+    (rec_check_lists_pass 14 [14] [15; 16] cstrnts)
+
+let rec_check_div =
+  let cstrnts =
+    [ mkStage 23 0, mkStage 27 0
+    ; mkStage 24 0, mkStage 21 0
+    ; mkStage 24 0, mkStage 28 0
+    ; mkStage 25 0, mkStage 23 1
+    ; mkStage 26 1, mkStage 25 0
+    ; mkStage 27 1, mkStage 25 0
+    ; mkStage 28 0, mkStage 21 0
+    ] in
+  mk_bool_test
+    (rc_name "div")
+    "constraints for div are satisfiable"
+    (rec_check_lists_pass 21 [23; 21] [22] cstrnts)
+
+let rec_check_fact =
+  let cstrnts =
+    [ infty, mkStage 32 0
+    ; mkStage 30 0, mkStage 35 0
+    ; mkStage 31 0, mkStage 29 0
+    ; mkStage 32 0, mkStage 30 0
+    ; mkStage 33 1, mkStage 32 0
+    ; mkStage 34 1, mkStage 33 0
+    ] in
+  mk_bool_test
+    (rc_name "fact")
+    "constraints for fact are satisfiable"
+    (rec_check_lists_pass 29 [29] [30] cstrnts)
+
+(*
+fixpoint loop (x:nat<*>) : nat<*> :=
+  <nat> case x of
+  | O => O
+  | S x' => loop (S x')
+  end.
+*)
+let rec_check_loop =
+  let cstrnts =
+    [ mkStage 1 0, mkStage 3 0
+    ; mkStage 2 0, mkStage 0 0
+    ; mkStage 2 0, mkStage 5 0
+    ; mkStage 3 0, mkStage 1 0
+    ; mkStage 4 1, mkStage 3 0
+    ; mkStage 5 1, mkStage 0 0
+    ] in
+  mk_bool_test
+    (rc_name "loop")
+    "constraints for loop are not satisfiable"
+    (rec_check_lists_fail 0 [1; 0] [] cstrnts)
+
+let rec_check_tests =
+  [ rec_check_plus
+  ; rec_check_minus
+  ; rec_check_mult
+  ; rec_check_div
+  ; rec_check_fact
+  ; rec_check_loop
+  ]
+
 (* Run tests *)
 
 let tests = add_tests
@@ -175,5 +299,6 @@ let tests = add_tests
   @ sub_tests
   @ bellman_ford_tests
   @ closure_tests
+  @ rec_check_tests
 
 let _ = run_tests __FILE__ log_out_ch tests
