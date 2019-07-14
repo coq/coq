@@ -176,8 +176,6 @@ val maximal_unfocus : 'a focus_kind -> t -> t
 
 (*** Commands ***)
 
-val in_proof : t -> (Evd.evar_map -> 'a) -> 'a
-
 (* Remove all the goals from the shelf and adds them at the end of the
    focused goals. *)
 val unshelve : t -> t

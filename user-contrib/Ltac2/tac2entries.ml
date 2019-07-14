@@ -763,7 +763,7 @@ let perform_eval ~pstate e =
   | Goal_select.SelectAlreadyFocused -> assert false (* TODO **)
   in
   let (proof, _, ans) = Proof.run_tactic (Global.env ()) v proof in
-  let sigma = Proof.in_proof proof (fun sigma -> sigma) in
+  let { Proof.sigma } = Proof.data proof in
   let name = int_name () in
   Feedback.msg_notice (str "- : " ++ pr_glbtype name (snd ty)
     ++ spc () ++  str "=" ++ spc () ++

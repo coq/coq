@@ -61,8 +61,8 @@ let get_current_context pf =
   with
   | NoSuchGoal ->
     (* No more focused goals *)
-    let evd = Proof.in_proof p (fun x -> x) in
-    evd, Global.env ()
+    let { Proof.sigma } = Proof.data p in
+    sigma, Global.env ()
 
 let solve ?with_end_tac gi info_lvl tac pr =
     let tac = match with_end_tac with
