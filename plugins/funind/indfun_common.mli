@@ -9,9 +9,6 @@ val mk_correct_id : Id.t -> Id.t
 val mk_complete_id : Id.t -> Id.t
 val mk_equation_id : Id.t -> Id.t
 
-
-val msgnl : Pp.t -> unit
-
 val fresh_id : Id.t list -> string -> Id.t
 val fresh_name : Id.t list -> string -> Name.t
 val get_name : Id.t list -> ?default:string -> Name.t -> Name.t
