@@ -33,7 +33,6 @@ open Stages
 open SVars
 open Stage
 open Annot
-open State
 open Constraints
 
 type existential_key = Evar.t
@@ -842,7 +841,7 @@ let erase =
   modify_annots f
 
 let erase_glob vars =
-  let f iu a c =
+  let f iu a _ =
     match a with
     | Stage (StageVar (na, _))
       when mem na vars ->
@@ -862,6 +861,13 @@ let annotate_infty =
     match a with
     | Stage Infty -> c
     | _ -> mkIndUS iu infty in
+  modify_annots f
+
+let annotate_glob s =
+  let f iu a c =
+    match a with
+    | Glob -> mkIndUS iu s
+    | _ -> c in
   modify_annots f
 
 let succ_annots vars =

@@ -553,6 +553,10 @@ val annotate : Names.MutInd.t -> Annot.t -> constr -> constr
 
 val annotate_infty : constr -> constr
 
+(** [annotate_glob s c] replaces all Glob annotations in [c] with [s] *)
+
+val annotate_glob : Annot.t -> constr -> constr
+
 (** [succ_annots vars c] calls [succ_annot] on all the stage annotations in [c]
    if the stage variables are in [vars] *)
 

@@ -521,6 +521,8 @@ let rec execute env stg cstr =
 
     | Const c ->
       let t, cstrnt = type_of_constant env c in
+      let s, stg = next stg in
+      let t = annotate_glob s t in
       stg, cstrnt, cstr, t
 
     | Proj (p, c) ->
