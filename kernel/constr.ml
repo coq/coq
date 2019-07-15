@@ -30,8 +30,10 @@ open Names
 open Univ
 open Context
 open Stages
+open SVars
 open Stage
 open Annot
+open State
 open Constraints
 
 type existential_key = Evar.t
@@ -822,13 +824,30 @@ let rec collect_annots c =
 let rec modify_annots f c =
   match c with
   | Ind (iu, a) -> f iu a c
+  | Lambda (n, t, c) ->
+    mkLambda (n, t, (modify_annots f c))
+  | LetIn (n, b, t, c) ->
+    mkLetIn (n, modify_annots f b, t, modify_annots f c)
+  | Fix (ln, (nl, tl, bl)) ->
+    mkFix (ln, (nl, tl, Array.Smart.map (modify_annots f) bl))
+  | CoFix (ln, (nl, tl, bl)) ->
+    mkCoFix (ln, (nl, tl, Array.Smart.map (modify_annots f) bl))
   | _ -> map (modify_annots f) c
 
 let erase =
   let f iu a c =
     match a with
-    | Star | Empty -> c
-    | _ -> mkIndUS iu Empty in
+    | Stage _ -> mkIndUS iu Empty
+    | _ -> c in
+  modify_annots f
+
+let erase_glob vars =
+  let f iu a c =
+    match a with
+    | Stage (StageVar (na, _))
+      when mem na vars ->
+      mkIndUS iu Glob
+    | _ -> mkIndUS iu infty in
   modify_annots f
 
 let annotate ind s =
@@ -841,7 +860,7 @@ let annotate ind s =
 let annotate_infty =
   let f iu a c =
     match a with
-    | Star | Stage Infty -> c
+    | Stage Infty -> c
     | _ -> mkIndUS iu infty in
   modify_annots f
 
@@ -849,7 +868,7 @@ let succ_annots vars =
   let f iu a c =
     match a with
     | Stage (StageVar (na, _))
-      when SVars.mem na vars ->
+      when mem na vars ->
       mkIndUS iu (hat a)
     | _ -> c in
   modify_annots f

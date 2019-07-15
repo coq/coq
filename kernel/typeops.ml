@@ -674,8 +674,9 @@ let check_wellformed_universes env c =
 
 let infer env constr =
   let () = check_wellformed_universes env constr in
-  let _, _, constr_sized, t_sized = execute env init constr in
-  let constr_bare, t = erase constr_sized, erase t_sized in
+  let stg, _, constr_sized, t_sized = execute env init constr in
+  let stars = get_pos_vars stg in
+  let constr_bare, t = erase_glob stars constr_sized, erase_glob stars t_sized in
   let constr = if equal constr constr_bare then constr else constr_bare in
   make_judge constr t
 
@@ -694,8 +695,9 @@ let type_judgment env {uj_val=c; uj_type=t} =
 
 let infer_type env constr =
   let () = check_wellformed_universes env constr in
-  let _, _, constr_sized, t_sized = execute env init constr in
-  let constr_bare, t = erase constr_sized, erase t_sized in
+  let stg, _, constr_sized, t_sized = execute env init constr in
+  let stars = get_pos_vars stg in
+  let constr_bare, t = erase_glob stars constr_sized, erase_glob stars t_sized in
   let constr = if equal constr constr_bare then constr else constr_bare in
   let s = check_type env constr t in
   {utj_val = constr; utj_type = s}

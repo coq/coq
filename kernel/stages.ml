@@ -50,7 +50,11 @@ module Annot =
 struct
   open Stage
 
-  type t = Empty | Star | Stage of Stage.t
+  type t =
+    | Empty (* Bare types with no annotations, input to inference *)
+    | Star (* Marks the positions of the (co)recursive types in (co)fixpoints *)
+    | Glob (* Marks the positions of the (co)recursive types in global definitions *)
+    | Stage (* Sized types *) of Stage.t
 
   let infty = Stage Infty
 
@@ -72,12 +76,15 @@ struct
     | Empty, _ -> -1 | _, Empty -> 1
     | Star, Star   -> 0
     | Star, _  -> -1 | _, Star  -> 1
+    | Glob, Glob   -> 0
+    | Glob, _  -> -1 | _, Glob  -> 1
     | Stage s1, Stage s2 -> Stage.compare s1 s2
 
   let show a =
     match a with
     | Empty -> ""
     | Star  -> "*"
+    | Glob  -> "ⁱ"
     | Stage s -> Stage.show s
 
   let pr = mkPr show
@@ -86,8 +93,9 @@ struct
     match a with
     | Empty -> combine 1 (show a |> String.hash)
     | Star  -> combine 2 (show a |> String.hash)
-    | Stage Infty -> combine 3 (show a |> String.hash)
-    | Stage (StageVar (n, i)) -> combine3 4 (Int.hash n) (Int.hash i)
+    | Glob  -> combine 3 (show a |> String.hash)
+    | Stage Infty -> combine 4 (show a |> String.hash)
+    | Stage (StageVar (n, i)) -> combine3 5 (Int.hash n) (Int.hash i)
 end
 
 (** Stage sets and state *)

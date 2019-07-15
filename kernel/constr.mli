@@ -539,6 +539,12 @@ val collect_annots : constr -> SVars.t
 
 val erase : constr -> constr
 
+(** [erase_glob vars c] erases all stage annotations in [c]
+   to Glob if they are in [vars], and
+   to Infty if they are not in [vars] *)
+
+val erase_glob : SVars.t -> constr -> constr
+
 (** [annotate ind s c] annotates all inductive types [ind] in [c] with annotation [s] *)
 
 val annotate : Names.MutInd.t -> Annot.t -> constr -> constr

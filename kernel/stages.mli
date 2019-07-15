@@ -20,7 +20,7 @@ end
 
 module Annot :
 sig
-  type t = Empty | Star | Stage of Stage.t
+  type t = Empty | Star | Glob | Stage of Stage.t
   val infty : t
   val hat : t -> t
   val is_stage : t -> bool
