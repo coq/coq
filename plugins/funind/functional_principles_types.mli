@@ -33,8 +33,10 @@ val generate_functional_principle :
 
 exception No_graph_found
 
-val make_scheme :   Evd.evar_map ref ->
- (pconstant*Sorts.family) list -> Evd.side_effects Proof_global.proof_entry list
+val make_scheme
+  :  Evd.evar_map ref
+  -> (pconstant*Sorts.family) list
+  -> Evd.side_effects Proof_global.proof_entry list
 
 val build_scheme : (Id.t*Libnames.qualid*Sorts.family) list ->  unit
 val build_case_scheme : (Id.t*Libnames.qualid*Sorts.family)  ->  unit

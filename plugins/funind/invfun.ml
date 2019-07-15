@@ -736,11 +736,9 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Tacmach.tacti
 
 (* [derive_correctness make_scheme funs graphs] create correctness and completeness
    lemmas for each function in [funs] w.r.t. [graphs]
-
-   [make_scheme] is Functional_principle_types.make_scheme (dependency pb) and
 *)
 
-let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list) =
+let derive_correctness (funs: pconstant list) (graphs:inductive list) =
   assert (funs <> []);
   assert (graphs <> []);
   let funs = Array.of_list funs and graphs = Array.of_list graphs in
@@ -786,7 +784,7 @@ let derive_correctness make_scheme (funs: pconstant list) (graphs:inductive list
                (fun entry ->
                   (EConstr.of_constr (fst (fst(Future.force entry.Proof_global.proof_entry_body))), EConstr.of_constr (Option.get entry.Proof_global.proof_entry_type ))
                )
-               (make_scheme evd (Array.map_to_list (fun const -> const,Sorts.InType) funs))
+               (Functional_principles_types.make_scheme evd (Array.map_to_list (fun const -> const,Sorts.InType) funs))
             )
         )
     in
