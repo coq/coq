@@ -81,6 +81,7 @@ jobs:
 
       eval $(opam env)
       ./configure -prefix '$(Build.BinariesDirectory)' -warn-error yes -native-compiler no -coqide opt
+      make -j "$NJOBS" byte
       make -j "$NJOBS"
     displayName: 'Build Coq'
 
