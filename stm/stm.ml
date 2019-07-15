@@ -118,15 +118,6 @@ include Hook
 (* enables:  Hooks.(call foo args) *)
 let call = get
 
-let call_process_error_once =
-  let processed : unit Exninfo.t = Exninfo.make () in
-  fun (e, info) ->
-    match Exninfo.get info processed with
-    | Some _ -> e, info
-    | None ->
-      let info = Exninfo.add info processed () in
-      e, info
-
 end
 
 let async_proofs_workers_extra_env = ref [||]
@@ -988,7 +979,6 @@ end = struct (* {{{ *)
     | Some _ -> (e, info)
     | None ->
         let loc = Loc.get_loc info in
-        let (e, info) = Hooks.(call_process_error_once (e, info)) in
         execution_error ?loc id (iprint (e, info));
         (e, Stateid.add info ~valid id)
 
@@ -1066,11 +1056,7 @@ end (* }}} *)
 (* Wrapper for the proof-closing special path for Qed *)
 let stm_qed_delay_proof ?route ~proof ~info ~id ~st ~loc pending : Vernacstate.t =
   set_id_for_feedback ?route dummy_doc id;
-  try
-    Vernacentries.interp_qed_delayed_proof ~proof ~info ~st ?loc:loc pending
-  with e ->
-    let e = CErrors.push e in
-    Exninfo.iraise Hooks.(call_process_error_once e)
+  Vernacentries.interp_qed_delayed_proof ~proof ~info ~st ?loc:loc pending
 
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 (* It is currently called 19 times, this number should be certainly
@@ -1097,10 +1083,7 @@ let stm_vernac_interp ?route id st { verbose; expr } : Vernacstate.t =
     (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
   else begin
     stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-    try Vernacentries.interp ?verbosely:(Some verbose) ~st expr
-    with e ->
-      let e = CErrors.push e in
-      Exninfo.iraise Hooks.(call_process_error_once e)
+    Vernacentries.interp ?verbosely:(Some verbose) ~st expr
   end
 
 (****************************** CRUFT *****************************************)
