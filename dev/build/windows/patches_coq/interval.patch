@@ -1,0 +1,38 @@
+diff/patch file created on Sat, Jun 29, 2019  6:44:56 PM with:
+difftar-folder.sh tarballs/interval-86d4a7138aaf2923dff9b6fe096ccec497bd7628.tar.gz interval-86d4a7138aaf2923dff9b6fe096ccec497bd7628 1
+TARFILE= tarballs/interval-86d4a7138aaf2923dff9b6fe096ccec497bd7628.tar.gz
+FOLDER= interval-86d4a7138aaf2923dff9b6fe096ccec497bd7628
+TARSTRIP= 1
+TARPREFIX= interval-86d4a7138aaf2923dff9b6fe096ccec497bd7628/
+ORIGFOLDER= interval-86d4a7138aaf2923dff9b6fe096ccec497bd7628.orig
+--- interval-86d4a7138aaf2923dff9b6fe096ccec497bd7628.orig/configure.in	2019-04-09 17:31:18.000000000 +0200
++++ interval-86d4a7138aaf2923dff9b6fe096ccec497bd7628/configure.in	2019-06-29 18:39:41.889749600 +0200
+@@ -10,7 +10,7 @@
+ 
+ m4_divert_push([HELP_ENABLE])
+ Fine tuning of the installation directory:
+-AS_HELP_STRING([--libdir=DIR], [library @<:@DIR=`$COQC -where`/user-contrib/Interval@:>@])
++AS_HELP_STRING([--libdir=DIR], [library @<:@DIR=`$COQC -where | tr -d '\r' | tr '\\' '/'`/user-contrib/Interval@:>@])
+ m4_divert_pop([HELP_ENABLE])
+ 
+ AC_PROG_CXX
+@@ -79,7 +79,7 @@
+ rm -f conftest.v conftest.vo conftest.err
+ 
+ if test "$libdir" = '${exec_prefix}/lib'; then
+-  libdir="`$COQC -where`/user-contrib/Interval"
++  libdir="`$COQC -where | tr -d '\r' | tr '\\' '/'`/user-contrib/Interval"
+ fi
+ 
+ AC_MSG_NOTICE([building remake...])
+--- interval-86d4a7138aaf2923dff9b6fe096ccec497bd7628.orig/src/Interval_missing.v	2019-04-09 17:31:18.000000000 +0200
++++ interval-86d4a7138aaf2923dff9b6fe096ccec497bd7628/src/Interval_missing.v	2019-06-29 18:40:57.572496200 +0200
+@@ -1259,7 +1259,7 @@
+ intros Heq Hb Hd.
+ apply (Rmult_eq_reg_r (b * d)).
+ field_simplify; trivial.
+-now rewrite Heq.
++try rewrite Heq.
+ now apply Rmult_neq0.
+ Qed.
+ 

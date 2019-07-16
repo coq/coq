@@ -1,0 +1,52 @@
+diff/patch file created on Sat, Jun 29, 2019  9:53:06 PM with:
+difftar-folder.sh tarballs/gappa_plugin-04d859ea9a496f84569c3f9b8cb66784cd82313e.tar.gz gappa_plugin-04d859ea9a496f84569c3f9b8cb66784cd82313e 1
+TARFILE= tarballs/gappa_plugin-04d859ea9a496f84569c3f9b8cb66784cd82313e.tar.gz
+FOLDER= gappa_plugin-04d859ea9a496f84569c3f9b8cb66784cd82313e
+TARSTRIP= 1
+TARPREFIX= coq-04d859ea9a496f84569c3f9b8cb66784cd82313e/
+ORIGFOLDER= gappa_plugin-04d859ea9a496f84569c3f9b8cb66784cd82313e.orig
+--- gappa_plugin-04d859ea9a496f84569c3f9b8cb66784cd82313e.orig/Remakefile.in	2019-04-09 16:57:15.000000000 +0200
++++ gappa_plugin-04d859ea9a496f84569c3f9b8cb66784cd82313e/Remakefile.in	2019-06-29 21:40:03.902985100 +0200
+@@ -43,7 +43,7 @@
+ 	@COQC@ -R src Gappa -I src $<
+ 
+ COQSUBTREES = clib engine kernel interp intf lib library ltac parsing pretyping printing proofs tactics toplevel vernac plugins/ltac
+-COQINCLUDES = $(addprefix -I @COQLIB@/, $(COQSUBTREES))
++COQINCLUDES = $(addprefix -I "@COQLIB@"/, $(COQSUBTREES))
+ 
+ src/gappatac.cmo: src/gappatac.ml
+ 	@OCAMLC@ -pp "@CAMLP4O@ pa_macro.cmo -D@COQDEFINE@" -rectypes $(COQINCLUDES) -c $< -o $@
+--- gappa_plugin-04d859ea9a496f84569c3f9b8cb66784cd82313e.orig/configure.in	2019-04-09 16:57:15.000000000 +0200
++++ gappa_plugin-04d859ea9a496f84569c3f9b8cb66784cd82313e/configure.in	2019-06-29 21:47:31.294322200 +0200
+@@ -53,7 +53,17 @@
+   if test ! "$CAMLP4O"; then
+     CAMLP4O=camlp5o
+   fi
+-  CAMLP4O=`which $CAMLP4O`
++  case `uname -s` in
++    CYGWIN*)
++      case "$CAMLP4O" in
++        *:*) CAMLP4O=`cygpath -m "$CAMLP4O"` ;;
++        *)   CAMLP4O=`cygpath -u "$CAMLP4O"` ;;
++      esac
++      ;;
++    *)
++      CAMLP4O=`which $CAMLP4O`
++      ;;
++  esac
+ fi
+ AC_MSG_RESULT([$CAMLP4O])
+ 
+@@ -81,10 +91,10 @@
+ rm -f conftest.v conftest.vo conftest.err
+ 
+ AC_SUBST(OCAMLLIB)
+-OCAMLLIB=`$OCAMLC -where`
++OCAMLLIB=`$OCAMLC -where | tr -d '\r' | tr '\\' '/'`
+ 
+ AC_SUBST(COQLIB)
+-COQLIB=`$COQC -where`
++COQLIB=`$COQC -where | tr -d '\r' | tr '\\' '/'`
+ 
+ if test "$libdir" = '${exec_prefix}/lib'; then
+   libdir="$COQLIB/user-contrib/Gappa"
