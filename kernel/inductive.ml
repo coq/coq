@@ -1321,16 +1321,15 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
 
 let rec get_stage_var env c err =
   match kind (whd_all env c) with
-  | Ind (_, Stage (StageVar (s, _))) -> s
+  | Ind (_, Stage (StageVar (s, _))) -> Some s
   | App (c, _) -> get_stage_var env c err
-  | _c' -> (-1) (* err (of_kind c') *)
+  | _c' -> None (* err (of_kind c') *)
 (* This currently fails because global declarations (i.e. Const) do not have annotations
   so if a fixpoint signature uses a global variable the annotation will be missing
-  For now we return a placeholder. FIXME!!! *)
+  For now we optionally return the stage. FIXME!!! *)
 
 (* [rec_stage_var_ind env i ty_sized] returns the stage variable of
   the [i]th parameter of [ty_sized], the recursive parameter of the fix *)
-
 let rec_stage_var_ind env i ty_sized =
   let open Context.Rel in
   let ctxt_sized = Term.prod_assum ty_sized in
@@ -1358,9 +1357,13 @@ let rec_stage_var_coind env ty_sized =
   For cofixpoints, where we construct a coinductive construction,
   [ty_sized] will be some product T ≡ ΠΔ.CoI^α(ps, as), and we return α.*)
 let rec_stage_vars env iso tys_sized =
-  match iso with
+  let varso = match iso with
   | Some is -> Array.map2 (rec_stage_var_ind env) is tys_sized
-  | None -> Array.map (rec_stage_var_coind env) tys_sized
+  | None -> Array.map (rec_stage_var_coind env) tys_sized in
+  let append_some opt arr = match opt with
+  | Some v -> v :: arr
+  | None -> arr in
+  Array.of_list (List.fold_right append_some (Array.to_list varso) [])
 
 let check_rec env alphas vstar vneq cstrnts =
   let flags = Environ.typing_flags env in
