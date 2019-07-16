@@ -1103,6 +1103,15 @@ let string_of_evaluable_ref env = function
       string_of_qualid
         (Nametab.shortest_qualid_of_global (vars_of_env env) (GlobRef.ConstRef kn))
 
+(* Removing fZETA for finer behaviour would break many developments *)
+let unfold_side_flags = RedFlags.[fBETA;fMATCH;fFIX;fCOFIX;fZETA]
+let unfold_side_red = RedFlags.(mkflags [fBETA;fMATCH;fFIX;fCOFIX;fZETA])
+let unfold_red kn =
+  let flag = match kn with
+    | EvalVarRef id -> RedFlags.fVAR id
+    | EvalConstRef kn -> RedFlags.fCONST kn in
+  RedFlags.mkflags (flag::unfold_side_flags)
+
 let unfold env sigma name c =
   if is_evaluable env name then
     clos_norm_flags (unfold_red name) env sigma c

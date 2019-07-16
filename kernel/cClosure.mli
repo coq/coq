@@ -84,10 +84,6 @@ val delta             : reds
 val zeta              : reds
 val nored             : reds
 
-
-val unfold_side_red : reds
-val unfold_red : evaluable_global_reference -> reds
-
 (***********************************************************************)
 type table_key = Constant.t Univ.puniverses tableKey
 
