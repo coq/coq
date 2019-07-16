@@ -610,7 +610,7 @@ let rec to_constr lfts v =
     | FLetIn (n,b,t,f,e) ->
       let subs = comp_subs (el_lift lfts) (subs_lift e) in
         mkLetIn (n, to_constr lfts b,
-                    to_constr lfts t,
+                    Constr.erase (to_constr lfts t),
                     subst_constr subs f)
     | FEvar ((ev,args),env) ->
       let subs = comp_subs lfts env in
