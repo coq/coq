@@ -1,0 +1,27 @@
+diff/patch file created on Sun, Jan 20, 2019 11:55:04 AM with:
+difftar-folder.sh tarballs/Flocq-c006474201a8e9ce084c126e3a69a82e14f7cc7e.tar.gz Flocq-c006474201a8e9ce084c126e3a69a82e14f7cc7e 1
+TARFILE= tarballs/Flocq-c006474201a8e9ce084c126e3a69a82e14f7cc7e.tar.gz
+FOLDER= Flocq-c006474201a8e9ce084c126e3a69a82e14f7cc7e
+TARSTRIP= 1
+TARPREFIX= flocq-c006474201a8e9ce084c126e3a69a82e14f7cc7e/
+ORIGFOLDER= Flocq-c006474201a8e9ce084c126e3a69a82e14f7cc7e.orig
+--- Flocq-c006474201a8e9ce084c126e3a69a82e14f7cc7e.orig/configure.in	2019-01-11 15:52:30.000000000 +0100
++++ Flocq-c006474201a8e9ce084c126e3a69a82e14f7cc7e/configure.in	2019-01-20 11:51:49.474668300 +0100
+@@ -10,7 +10,7 @@
+ 
+ m4_divert_push([HELP_ENABLE])
+ Fine tuning of the installation directory:
+-AS_HELP_STRING([--libdir=DIR], [library @<:@DIR=`$COQC -where`/user-contrib/Flocq@:>@])
++AS_HELP_STRING([--libdir=DIR], [library @<:@DIR=`$COQC -where | tr -d '\r' | tr '\\' '/'`/user-contrib/Flocq@:>@])
+ m4_divert_pop([HELP_ENABLE])
+ 
+ AC_PROG_CXX
+@@ -51,7 +51,7 @@
+ AC_MSG_RESULT([$COQDOC])
+ 
+ if test "$libdir" = '${exec_prefix}/lib'; then
+-  libdir="`$COQC -where`/user-contrib/Flocq"
++  libdir="`$COQC -where | tr -d '\r' | tr '\\' '/'`/user-contrib/Flocq"
+ fi
+ 
+ AC_MSG_NOTICE([building remake...])

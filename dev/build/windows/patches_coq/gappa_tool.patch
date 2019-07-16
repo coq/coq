@@ -1,0 +1,49 @@
+diff/patch file created on Sat, Jun 29, 2019  9:58:22 PM with:
+difftar-folder.sh tarballs/gappa_tool-f53e105cd73484fc76eb58ba24ead73be502c608.tar.gz gappa_tool-f53e105cd73484fc76eb58ba24ead73be502c608 1
+TARFILE= tarballs/gappa_tool-f53e105cd73484fc76eb58ba24ead73be502c608.tar.gz
+FOLDER= gappa_tool-f53e105cd73484fc76eb58ba24ead73be502c608
+TARSTRIP= 1
+TARPREFIX= gappa-f53e105cd73484fc76eb58ba24ead73be502c608/
+ORIGFOLDER= gappa_tool-f53e105cd73484fc76eb58ba24ead73be502c608.orig
+--- gappa_tool-f53e105cd73484fc76eb58ba24ead73be502c608.orig/src/proofs/property.cpp	2019-06-17 09:39:04.000000000 +0200
++++ gappa_tool-f53e105cd73484fc76eb58ba24ead73be502c608/src/proofs/property.cpp	2019-06-29 19:05:47.321916200 +0200
+@@ -48,7 +48,7 @@
+   new(&store) interval(i);
+ }
+ 
+-property::property(predicated_real const &r, long i): real(r)
++property::property(predicated_real const &r, intptr_t i): real(r)
+ {
+   assert(r.pred_cst());
+   store._int = i;
+--- gappa_tool-f53e105cd73484fc76eb58ba24ead73be502c608.orig/src/proofs/property.hpp	2019-06-17 09:39:04.000000000 +0200
++++ gappa_tool-f53e105cd73484fc76eb58ba24ead73be502c608/src/proofs/property.hpp	2019-06-29 19:05:47.305946500 +0200
+@@ -55,7 +55,7 @@
+ class property {
+   union store_t {
+     char _bnd[sizeof(interval)];
+-    long _int;
++    intptr_t _int;
+   };
+   store_t store;
+   interval       &_bnd()       { return *reinterpret_cast< interval       * >(&store); }
+@@ -66,16 +66,16 @@
+   { assert(real.pred_bnd()); return _bnd(); }
+   interval const &bnd() const
+   { assert(real.pred_bnd()); return _bnd(); }
+-  long &cst()
++  intptr_t &cst()
+   { assert(real.pred_cst()); return store._int; }
+-  long const &cst() const
++  intptr_t const &cst() const
+   { assert(real.pred_cst()); return store._int; }
+   property();
+   property(ast_real const *);
+   property(ast_real const *, interval const &);
+   property(predicated_real const &);
+   property(predicated_real const &, interval const &);
+-  property(predicated_real const &, long);
++  property(predicated_real const &, intptr_t);
+   property(property const &);
+   property &operator=(property const &);
+   ~property();

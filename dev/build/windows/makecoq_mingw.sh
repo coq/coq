@@ -1146,10 +1146,34 @@ function make_menhir {
   make_ocaml
   make_findlib
   make_ocamlbuild
-  if build_prep http://gallium.inria.fr/~fpottier/menhir menhir-20180530 tar.gz 1 ; then
+  # This is the version required by latest CompCert
+  if build_prep https://gitlab.inria.fr/fpottier/menhir/-/archive/20190626 menhir-20190626 tar.gz 1 ; then
     # Note: menhir doesn't support -j 8, so don't pass MAKE_OPT
     log2 make all PREFIX="$PREFIXOCAML"
     log2 make install PREFIX="$PREFIXOCAML"
+    build_post
+  fi
+}
+
+##### CAMLP5 Ocaml Preprocessor #####
+
+function make_camlp5 {
+  make_ocaml
+  make_findlib
+
+  if build_prep https://github.com/camlp5/camlp5/archive rel707 tar.gz 1 camlp5-rel707; then
+    logn configure ./configure
+    # Somehow my virus scanner has the boot.new/SAVED directory locked after the move for a second => repeat until success
+    sed -i 's/mv boot.new boot/until mv boot.new boot; do sleep 1; done/' Makefile
+    # shellcheck disable=SC2086
+    log1 make world.opt $MAKE_OPT
+    log2 make install
+    log2 make clean
+    # For some reason META is not built / copied, but it is required
+    log2 make -C etc META
+    mkdir -p "$PREFIXOCAML/libocaml/site-lib/camlp5/"
+    cp etc/META "$PREFIXOCAML/libocaml/site-lib/camlp5/"
+    log2 make clean
     build_post
   fi
 }
@@ -1818,8 +1842,9 @@ function make_addon_coquelicot {
   installer_addon_dependency_beg coquelicot
   make_addon_ssreflect
   installer_addon_dependency_end
-  if build_prep_overlay Coquelicot; then
+  if build_prep_overlay coquelicot; then
     installer_addon_section coquelicot "Coquelicot" "Coq library for real analysis" ""
+    logn autogen ./autogen.sh
     logn configure ./configure --libdir="$PREFIXCOQ/lib/coq/user-contrib/Coquelicot"
     logn remake ./remake
     logn remake-install ./remake install
@@ -1876,6 +1901,84 @@ function make_addon_quickchick {
     installer_addon_section quickchick "QuickChick" "Coq plugin for randomized testing and counter example search" ""
     log1 make $MAKE_OPT
     log2 make install
+    build_post
+  fi
+}
+
+# Flocq: Floating point library
+
+function make_addon_flocq {
+  if build_prep_overlay Flocq; then
+    installer_addon_section flocq "Flocq" "Coq library for floating point arithmetic" ""
+    logn autogen ./autogen.sh
+    logn configure ./configure
+    logn remake ./remake --jobs=$MAKE_THREADS
+    logn install ./remake install
+    build_post
+  fi
+}
+
+# Coq-Interval: interval arithmetic and inequality proofs
+
+function make_addon_interval {
+  installer_addon_dependency_beg interval
+  make_addon_mathcomp
+  make_addon_coquelicot
+  make_addon_bignums
+  make_addon_flocq
+  installer_addon_dependency_end
+  if build_prep_overlay interval; then
+    installer_addon_section interval "Interval" "Coq library and tactic for proving real inequalities" ""
+    logn autogen ./autogen.sh
+    logn configure ./configure
+    logn remake ./remake --jobs=$MAKE_THREADS
+    logn install ./remake install
+    build_post
+  fi
+}
+
+# Gappa: Automatic generation of arithmetic proofs (mostly on limited precision arithmetic)
+
+function install_boost {
+  # The extra tar parameter extracts only the boost headers, not the boost library source code (which is huge and takes a long time)
+  if build_prep https://dl.bintray.com/boostorg/release/1.69.0/source boost_1_69_0 tar.gz 1 boost_1_69_0 boost boost_1_69_0/boost; then
+    # Move extracted boost folder where mingw-gcc can find it
+    mv boost /usr/$TARGET_ARCH/sys-root/mingw/include
+    build_post
+  fi
+}
+
+function copy_gappa_dlls {
+  copy_coq_dll LIBGMP-10.DLL
+  copy_coq_dll LIBMPFR-6.DLL
+  copy_coq_dll LIBSTDC++-6.DLL
+}
+
+function make_addon_gappa_tool {
+  install_boost
+  if build_prep_overlay gappa_tool; then
+    installer_addon_section gappa_tool "Gappa tool" "Stand alone tool for automated generation of numerical arithmetic proofs" ""
+    logn autogen ./autogen.sh
+    logn configure ./configure --build="$HOST" --host="$HOST" --target="$TARGET" --prefix="$PREFIXCOQ"
+    logn remake ./remake --jobs=$MAKE_THREADS
+    logn install ./remake -d install
+    log1 copy_gappa_dlls
+    build_post
+  fi
+}
+
+function make_addon_gappa {
+  make_camlp5
+  installer_addon_dependency_beg gappa
+  make_addon_gappa_tool
+  make_addon_flocq
+  installer_addon_dependency_end
+  if build_prep_overlay gappa_plugin ; then
+    installer_addon_section gappa "Gappa plugin" "Coq plugin for the Gappa tool" ""
+    logn autogen ./autogen.sh
+    logn configure ./configure
+    logn remake ./remake
+    logn install ./remake install
     build_post
   fi
 }
