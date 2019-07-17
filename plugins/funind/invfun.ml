@@ -30,11 +30,6 @@ let thin ids gl = Proofview.V82.of_tactic (Tactics.clear ids) gl
 (*     raise (UserError ("",str "Cannot find " ++ Ppconstr.pr_id id)) *)
 
 
-let make_eq () =
-  try
-    EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref "core.eq.type"))
-  with _ -> assert false
-
 (***********************************************)
 
 (* [revert_graph kn post_tac hid] transforme an hypothesis [hid] having type Ind(kn,num) t1 ... tn res

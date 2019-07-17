@@ -41,6 +41,7 @@ val refl_equal : EConstr.constr Lazy.t
 val const_of_id: Id.t ->  GlobRef.t(* constantyes *)
 val jmeq : unit -> EConstr.constr
 val jmeq_refl : unit -> EConstr.constr
+val make_eq : unit -> EConstr.constr
 
 val save
   :  Id.t

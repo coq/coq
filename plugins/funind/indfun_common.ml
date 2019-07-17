@@ -429,6 +429,10 @@ let well_founded_ltof () = EConstr.of_constr @@ UnivGen.constr_of_monomorphic_gl
 
 let ltof_ref = function  () -> (find_reference ["Coq";"Arith";"Wf_nat"] "ltof")
 
+let make_eq () =
+  try EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref "core.eq.type"))
+  with _ -> assert false
+
 let evaluable_of_global_reference r = (* Tacred.evaluable_of_global_reference (Global.env ()) *)
   match r with
       GlobRef.ConstRef sp -> EvalConstRef sp

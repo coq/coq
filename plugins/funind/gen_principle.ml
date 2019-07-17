@@ -15,10 +15,6 @@ open Indfun_common
 
 module RelDecl = Context.Rel.Declaration
 
-let make_eq () =
-  try EConstr.of_constr (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref "core.eq.type"))
-  with _ -> assert false
-
 (* Move to common *)
 let observe strm =
   if do_observe ()
