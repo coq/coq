@@ -202,10 +202,10 @@ VERNAC COMMAND EXTEND Function STATE CUSTOM
     -> {
          if is_interactive recsl then
            Vernacextend.VtOpenProof (fun () ->
-             do_generate_principle_interactive (List.map snd recsl))
+             Gen_principle.do_generate_principle_interactive (List.map snd recsl))
          else
            Vernacextend.VtDefault (fun () ->
-             do_generate_principle (List.map snd recsl)) }
+             Gen_principle.do_generate_principle (List.map snd recsl)) }
 END
 
 {
@@ -226,15 +226,15 @@ END
 
 let warning_error names e =
   match e with
-    | Building_graph e ->
-       let names = pr_enum Libnames.pr_qualid names in
-       let error = if do_observe () then (spc () ++ CErrors.print e) else mt () in
-       warn_cannot_define_graph (names,error)
-    | Defining_principle e ->
-       let names = pr_enum Libnames.pr_qualid names in
-       let error = if do_observe () then CErrors.print e else mt () in
-       warn_cannot_define_principle (names,error)
-    | _ -> raise e
+  | Building_graph e ->
+    let names = pr_enum Libnames.pr_qualid names in
+    let error = if do_observe () then (spc () ++ CErrors.print e) else mt () in
+    Gen_principle.warn_cannot_define_graph (names,error)
+  | Defining_principle e ->
+    let names = pr_enum Libnames.pr_qualid names in
+    let error = if do_observe () then CErrors.print e else mt () in
+    Gen_principle.warn_cannot_define_principle (names,error)
+  | _ -> raise e
 
 }
 
@@ -251,7 +251,7 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
             match fas with
             | (_,fun_name,_)::_ ->
               begin
-                make_graph (Smartlocate.global_with_alias fun_name);
+                Gen_principle.make_graph (Smartlocate.global_with_alias fun_name);
                 try Functional_principles_types.build_scheme fas
                 with
                 | Functional_principles_types.No_graph_found ->
@@ -279,5 +279,5 @@ END
 (***** debug only ***)
 VERNAC COMMAND EXTEND GenerateGraph CLASSIFIED AS QUERY
 | ["Generate" "graph" "for" reference(c)] ->
-  { make_graph (Smartlocate.global_with_alias c) }
+  { Gen_principle.make_graph (Smartlocate.global_with_alias c) }
 END
