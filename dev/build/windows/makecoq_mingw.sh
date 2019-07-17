@@ -315,7 +315,7 @@ function get_expand_source_tar {
       find "$(ls)" -mindepth 1 -maxdepth 1 -exec mv -- "{}" . \;
     else
       echo "Unzip strip count not supported"
-      return 1
+      exit 1
     fi
   else
     logn untar tar xvaf "$TARBALLS/$name.$3" --strip $strip
@@ -323,10 +323,11 @@ function get_expand_source_tar {
 
   # Patch if patch file exists
   # First try specific patch file name then generic patch file name
+  # Note: set -o errexit does not work inside a function called in an if, so exit explicity.
   if [ -f "$PATCHES/$name.patch" ] ; then
-    log1 patch -p1 -i "$PATCHES/$name.patch"
+    log1 patch -p1 -i "$PATCHES/$name.patch" || exit 1
   elif  [ -f "$PATCHES/$basename.patch" ] ; then
-    log1 patch -p1 -i "$PATCHES/$basename.patch"
+    log1 patch -p1 -i "$PATCHES/$basename.patch" || exit 1
   fi
 
   # Go back to base folder
