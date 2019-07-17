@@ -12,8 +12,3 @@ val invfun :
   Tactypes.quantified_hypothesis ->
   Names.GlobRef.t option ->
   Evar.t Evd.sigma -> Evar.t list Evd.sigma
-
-val derive_correctness
-  :  Constr.pconstant list
-  -> Names.inductive list
-  -> unit
