@@ -1408,13 +1408,14 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
                          (observe_tac "finishing using"
                            (
                             tclCOMPLETE(
-                                    Eauto.eauto_with_bases
-                                      (true,5)
-                                      [(fun _ sigma -> (sigma, Lazy.force refl_equal))]
-                                      [Hints.Hint_db.empty TransparentState.empty false]
-                                  )
-                           )
-                        )
+                              Proofview.V82.of_tactic @@
+                              Eauto.eauto_with_bases
+                                (true,5)
+                                [(fun _ sigma -> (sigma, Lazy.force refl_equal))]
+                                [Hints.Hint_db.empty TransparentState.empty false]
+                            )
+                          )
+                         )
                        ]
                     )
                 ]
@@ -1470,7 +1471,9 @@ let prove_principle_for_gen
   let wf_tac =
     if is_mes
     then
-      (fun b -> Recdef.tclUSER_if_not_mes tclIDTAC b None)
+      (fun b ->
+         Proofview.V82.of_tactic @@
+         Recdef.tclUSER_if_not_mes Tacticals.New.tclIDTAC b None)
     else fun _ -> prove_with_tcc tcc_lemma_ref []
   in
   let real_rec_arg_num = rec_arg_num - princ_info.nparams in

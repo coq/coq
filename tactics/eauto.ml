@@ -408,7 +408,7 @@ let e_search_auto debug (in_depth,p) lems db_list gl =
 (* let e_search_auto = CProfile.profile5 e_search_auto_key e_search_auto *)
 
 let eauto_with_bases ?(debug=Off) np lems db_list =
-  Proofview.V82.of_tactic (Hints.wrap_hint_warning (Proofview.V82.tactic (tclTRY (e_search_auto debug np lems db_list))))
+  Hints.wrap_hint_warning (Proofview.V82.tactic (tclTRY (e_search_auto debug np lems db_list)))
 
 let eauto ?(debug=Off) np lems dbnames =
   let db_list = make_db_list dbnames in
