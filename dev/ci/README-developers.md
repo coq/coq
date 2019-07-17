@@ -130,20 +130,6 @@ Currently available artifacts are:
   + Coq's ML API Documentation [master branch]
     https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_build/default/_doc/_html/index.html?job=doc:ml-api:odoc
 
-### GitLab and Windows
-
-If your repository has access to runners tagged `windows`, setting the
-secret variable `WINDOWS` to `enabled` will add jobs building Windows
-versions of Coq (32bit and 64bit).
-
-If the secret variable `WINDOWS` is set to `enabled_all_addons`,
-an extended set of addons will be added to the Windows installer.
-This leads to a considerable runtime in CI so this is not enabled
-by default for pipelines for pull requests.
-
-The Windows jobs are enabled on Coq's repository, where pipelines for
-pull requests run.
-
 ### GitLab and Docker
 
 System and opam packages are installed in a Docker image. The image is

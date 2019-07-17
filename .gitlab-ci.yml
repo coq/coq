@@ -201,24 +201,6 @@ before_script:
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
 
-.windows-template:
-  stage: test
-  artifacts:
-    name: "%CI_JOB_NAME%"
-    paths:
-      - artifacts
-    when: always
-    expire_in: 1 week
-  dependencies: []
-  tags:
-    - windows
-  before_script: []
-  script:
-    - call dev/ci/gitlab.bat
-  only:
-    variables:
-      - $WINDOWS =~ /enabled/
-
 .deploy-template:
   stage: deploy
   before_script:
@@ -281,18 +263,6 @@ build:quick:
   only:
     variables:
       - $UNRELIABLE =~ /enabled/
-
-windows64:
-  extends: .windows-template
-  variables:
-    ARCH: "64"
-
-windows32:
-  extends: .windows-template
-  variables:
-    ARCH: "32"
-  except:
-    - /^pr-.*$/
 
 lint:
   stage: test
