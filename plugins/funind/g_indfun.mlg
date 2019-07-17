@@ -64,7 +64,7 @@ END
 TACTIC EXTEND newfuninv
 | [ "functional" "inversion"  quantified_hypothesis(hyp) reference_opt(fname) ] ->
      {
-       Proofview.V82.tactic (Invfun.invfun hyp fname)
+       Invfun.invfun hyp fname
      }
 END
 

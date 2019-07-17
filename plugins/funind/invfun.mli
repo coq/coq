@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val invfun :
-  Tactypes.quantified_hypothesis ->
-  Names.GlobRef.t option ->
-  Evar.t Evd.sigma -> Evar.t list Evd.sigma
+val invfun
+  :  Tactypes.quantified_hypothesis
+  -> Names.GlobRef.t option
+  -> unit Proofview.tactic
