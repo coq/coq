@@ -244,17 +244,17 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
    ->
     { begin
         try
-          Functional_principles_types.build_scheme fas
+          Gen_principle.build_scheme fas
         with
-        | Functional_principles_types.No_graph_found ->
+        | Gen_principle.No_graph_found ->
           begin
             match fas with
             | (_,fun_name,_)::_ ->
               begin
                 Gen_principle.make_graph (Smartlocate.global_with_alias fun_name);
-                try Functional_principles_types.build_scheme fas
+                try Gen_principle.build_scheme fas
                 with
-                | Functional_principles_types.No_graph_found ->
+                | Gen_principle.No_graph_found ->
                   CErrors.user_err Pp.(str "Cannot generate induction principle(s)")
                 | e when CErrors.noncritical e ->
                   let names = List.map (fun (_,na,_) -> na) fas in
@@ -273,7 +273,7 @@ END
 VERNAC COMMAND EXTEND NewFunctionalCase
 | ["Functional" "Case" fun_scheme_arg(fas) ]
   => { Vernacextend.(VtSideff([pi1 fas], VtLater)) }
-  -> { Functional_principles_types.build_case_scheme fas }
+  -> { Gen_principle.build_case_scheme fas }
 END
 
 (***** debug only ***)

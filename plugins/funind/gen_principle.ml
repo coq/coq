@@ -164,6 +164,136 @@ let prepare_body { Vernacexpr.binders } rt =
   let fun_args,rt' = chop_rlambda_n n rt in
   (fun_args,rt')
 
+let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_princ_type sorts funs i proof_tac hook =
+  (* First we get the type of the old graph principle *)
+  let mutr_nparams = (Tactics.compute_elim_sig !evd (EConstr.of_constr old_princ_type)).Tactics.nparams in
+  (*   let time1 = System.get_time ()  in *)
+  let new_principle_type =
+    Functional_principles_types.compute_new_princ_type_from_rel
+      (Array.map Constr.mkConstU funs)
+      sorts
+      old_princ_type
+  in
+  (*    let time2 = System.get_time ()  in *)
+  (*    Pp.msgnl (str "computing principle type := " ++ System.fmt_time_difference time1 time2); *)
+  let new_princ_name =
+    Namegen.next_ident_away_in_goal (Id.of_string "___________princ_________") Id.Set.empty
+  in
+  let sigma, _ = Typing.type_of ~refresh:true (Global.env ()) !evd (EConstr.of_constr new_principle_type) in
+  evd := sigma;
+  let hook = DeclareDef.Hook.make (hook new_principle_type) in
+  let lemma =
+    Lemmas.start_lemma
+      ~name:new_princ_name
+      ~poly:false
+      !evd
+      (EConstr.of_constr new_principle_type)
+  in
+  (*       let _tim1 = System.get_time ()  in *)
+  let map (c, u) = EConstr.mkConstU (c, EConstr.EInstance.make u) in
+  let lemma,_ = Lemmas.by (Proofview.V82.tactic (proof_tac (Array.map map funs) mutr_nparams)) lemma in
+  (*       let _tim2 =  System.get_time ()  in *)
+  (*    begin *)
+  (*      let dur1 = System.time_difference tim1 tim2 in *)
+  (*      Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1)); *)
+  (*    end; *)
+
+  let open Proof_global in
+  let { name; entries } = Lemmas.pf_fold (close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x)) lemma in
+  match entries with
+  | [entry] ->
+    name, entry, hook
+  | _ ->
+    CErrors.anomaly Pp.(str "[build_functional_principle] close_proof returned more than one proof term")
+
+let change_property_sort evd toSort princ princName =
+  let open Context.Rel.Declaration in
+  let princ = EConstr.of_constr princ in
+  let princ_info = Tactics.compute_elim_sig evd princ in
+  let change_sort_in_predicate decl =
+    LocalAssum
+    (get_annot decl,
+     let args,ty = Term.decompose_prod (EConstr.Unsafe.to_constr (get_type decl)) in
+     let s = Constr.destSort ty in
+       Global.add_constraints (Univ.enforce_leq (Sorts.univ_of_sort toSort) (Sorts.univ_of_sort s) Univ.Constraint.empty);
+       Term.compose_prod args (Constr.mkSort toSort)
+    )
+  in
+  let evd,princName_as_constr =
+    Evd.fresh_global
+      (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident princName)) in
+  let init =
+    let nargs =  (princ_info.Tactics.nparams + (List.length  princ_info.Tactics.predicates)) in
+    Constr.mkApp(EConstr.Unsafe.to_constr princName_as_constr,
+                 Array.init nargs
+                   (fun i -> Constr.mkRel (nargs - i )))
+  in
+  evd, Term.it_mkLambda_or_LetIn
+    (Term.it_mkLambda_or_LetIn init
+       (List.map change_sort_in_predicate princ_info.Tactics.predicates)
+    )
+    (List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) princ_info.Tactics.params)
+
+let generate_functional_principle (evd: Evd.evar_map ref)
+    interactive_proof
+    old_princ_type sorts new_princ_name funs i proof_tac
+    =
+  try
+
+  let f = funs.(i) in
+  let sigma, type_sort = Evd.fresh_sort_in_family !evd Sorts.InType in
+  evd := sigma;
+  let new_sorts =
+    match sorts with
+      | None -> Array.make (Array.length funs) (type_sort)
+      | Some a -> a
+  in
+  let base_new_princ_name,new_princ_name =
+    match new_princ_name with
+      | Some (id) -> id,id
+      | None ->
+          let id_of_f = Label.to_id (Constant.label (fst f)) in
+          id_of_f,Indrec.make_elimination_ident id_of_f (Sorts.family type_sort)
+  in
+  let names = ref [new_princ_name] in
+  let hook =
+    fun new_principle_type _  ->
+    if Option.is_empty sorts
+    then
+      (*     let id_of_f = Label.to_id (con_label f) in *)
+      let register_with_sort fam_sort =
+        let evd' = Evd.from_env (Global.env ()) in
+        let evd',s = Evd.fresh_sort_in_family evd' fam_sort in
+        let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
+        let evd',value = change_property_sort evd' s new_principle_type new_princ_name in
+        let evd' = fst (Typing.type_of ~refresh:true (Global.env ()) evd' (EConstr.of_constr value)) in
+        (* Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
+        let univs = Evd.univ_entry ~poly:false evd' in
+        let ce = Declare.definition_entry ~univs value in
+        ignore(
+          Declare.declare_constant
+            ~name
+            ~kind:Decls.(IsDefinition Scheme)
+            (Declare.DefinitionEntry ce)
+        );
+        Declare.definition_message name;
+        names := name :: !names
+      in
+      register_with_sort Sorts.InProp;
+      register_with_sort Sorts.InSet
+  in
+  let id,entry,hook =
+    build_functional_principle evd interactive_proof old_princ_type new_sorts funs i
+    proof_tac hook
+  in
+  (* Pr  1278 :
+     Don't forget to close the goal if an error is raised !!!!
+  *)
+  let uctx = Evd.evar_universe_context sigma in
+  save new_princ_name entry ~hook uctx (DeclareDef.Global Declare.ImportDefaultBehavior) Decls.(IsProof Theorem)
+  with e when CErrors.noncritical e ->
+    raise (Defining_principle e)
+
 let generate_principle (evd:Evd.evar_map ref) pconstants on_error
     is_general do_built fix_rec_l recdefs interactive_proof
     (continue_proof : int -> Names.Constant.t array -> EConstr.constr array -> int ->
@@ -207,7 +337,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
                let sigma, princ_type = Typing.type_of ~refresh:true env !evd uprinc in
                evd := sigma;
                let princ_type = EConstr.Unsafe.to_constr princ_type in
-               Functional_principles_types.generate_functional_principle
+               generate_functional_principle
                  evd
                  interactive_proof
                  princ_type
@@ -958,7 +1088,222 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Tacmach.tacti
       ]
       g
 
-(* [derive_correctness make_scheme funs graphs] create correctness and completeness
+exception No_graph_found
+
+let get_funs_constant mp =
+  let open Constr in
+  let exception Not_Rec in
+  let get_funs_constant const e : (Names.Constant.t*int) array =
+    match Constr.kind (Term.strip_lam e) with
+    | Fix((_,(na,_,_))) ->
+      Array.mapi
+        (fun i na ->
+           match na.Context.binder_name with
+           | Name id ->
+             let const = Constant.make2 mp (Label.of_id id) in
+             const,i
+           | Anonymous ->
+             CErrors.anomaly (Pp.str "Anonymous fix.")
+        )
+        na
+    | _ -> [|const,0|]
+  in
+  function const ->
+    let find_constant_body const =
+      match Global.body_of_constant Library.indirect_accessor const with
+        | Some (body, _, _) ->
+            let body = Tacred.cbv_norm_flags
+              (CClosure.RedFlags.mkflags [CClosure.RedFlags.fZETA])
+              (Global.env ())
+              (Evd.from_env (Global.env ()))
+              (EConstr.of_constr body)
+            in
+            let body = EConstr.Unsafe.to_constr body in
+            body
+        | None ->
+          CErrors.user_err Pp.(str ( "Cannot define a principle over an axiom "))
+    in
+    let f = find_constant_body const in
+    let l_const = get_funs_constant const f in
+    (*
+       We need to check that all the functions found are in the same block
+       to prevent Reset strange thing
+    *)
+    let l_bodies = List.map find_constant_body (Array.to_list (Array.map fst l_const)) in
+    let l_params,l_fixes = List.split (List.map Term.decompose_lam l_bodies) in
+    (* all the parameters must be equal*)
+    let _check_params =
+      let first_params = List.hd l_params  in
+      List.iter
+        (fun params ->
+   if not (List.equal (fun (n1, c1) (n2, c2) ->
+       Context.eq_annot Name.equal n1 n2 && Constr.equal c1 c2) first_params params)
+           then CErrors.user_err Pp.(str "Not a mutal recursive block")
+        )
+        l_params
+    in
+    (* The bodies has to be very similar *)
+    let _check_bodies =
+      try
+        let extract_info is_first body =
+          match Constr.kind body with
+            | Fix((idxs,_),(na,ta,ca)) -> (idxs,na,ta,ca)
+            | _ ->
+                if is_first && Int.equal (List.length l_bodies) 1
+                then raise Not_Rec
+                else CErrors.user_err Pp.(str "Not a mutal recursive block")
+        in
+        let first_infos = extract_info true (List.hd l_bodies) in
+        let check body  = (* Hope this is correct *)
+          let eq_infos (ia1, na1, ta1, ca1) (ia2, na2, ta2, ca2) =
+     Array.equal Int.equal ia1 ia2 && Array.equal (Context.eq_annot Name.equal) na1 na2 &&
+     Array.equal Constr.equal ta1 ta2 && Array.equal Constr.equal ca1 ca2
+          in
+          if not (eq_infos first_infos (extract_info false body))
+          then CErrors.user_err Pp.(str "Not a mutal recursive block")
+        in
+        List.iter check l_bodies
+      with Not_Rec -> ()
+    in
+    l_const
+
+let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_effects Proof_global.proof_entry list =
+  let exception Found_type of int in
+  let env = Global.env () in
+  let funs = List.map fst fas in
+  let first_fun = List.hd funs in
+  let funs_mp = KerName.modpath (Constant.canonical (fst first_fun)) in
+  let first_fun_kn =
+    try
+      fst (find_Function_infos  (fst first_fun)).graph_ind
+    with Not_found -> raise No_graph_found
+  in
+  let this_block_funs_indexes = get_funs_constant funs_mp (fst first_fun) in
+  let this_block_funs = Array.map (fun (c,_) -> (c,snd first_fun)) this_block_funs_indexes in
+  let prop_sort = Sorts.InProp in
+  let funs_indexes =
+    let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
+    List.map
+      (function cst -> List.assoc_f Constant.equal (fst cst) this_block_funs_indexes)
+      funs
+  in
+  let ind_list =
+    List.map
+      (fun (idx) ->
+         let ind = first_fun_kn,idx in
+           (ind,snd first_fun),true,prop_sort
+      )
+      funs_indexes
+  in
+  let sigma, schemes =
+    Indrec.build_mutual_induction_scheme env !evd ind_list
+  in
+  let _ = evd := sigma in
+  let l_schemes =
+    List.map (EConstr.of_constr %> Typing.unsafe_type_of env sigma %> EConstr.Unsafe.to_constr) schemes
+  in
+  let i = ref (-1) in
+  let sorts =
+    List.rev_map (fun (_,x) ->
+        let sigma, fs = Evd.fresh_sort_in_family !evd x in
+        evd := sigma; fs
+      )
+      fas
+  in
+  (* We create the first principle by tactic *)
+  let first_type,other_princ_types =
+    match l_schemes with
+        s::l_schemes -> s,l_schemes
+      | _ -> CErrors.anomaly (Pp.str "")
+  in
+  let _,const,_ =
+    try
+      build_functional_principle evd false
+        first_type
+        (Array.of_list sorts)
+        this_block_funs
+        0
+        (Functional_principles_proofs.prove_princ_for_struct evd false 0 (Array.of_list (List.map fst funs)))
+        (fun _ _ -> ())
+    with e when CErrors.noncritical e ->
+      raise (Defining_principle e)
+
+  in
+  incr i;
+  let opacity =
+    let finfos = find_Function_infos (fst first_fun) in
+    try
+      let equation =  Option.get finfos.equation_lemma in
+      Declareops.is_opaque (Global.lookup_constant equation)
+    with Option.IsNone -> (* non recursive definition *)
+      false
+  in
+  let const = {const with Proof_global.proof_entry_opaque = opacity } in
+  (* The others are just deduced *)
+  if List.is_empty other_princ_types
+  then
+    [const]
+  else
+    let other_fun_princ_types =
+      let funs = Array.map Constr.mkConstU this_block_funs in
+      let sorts = Array.of_list sorts in
+      List.map (Functional_principles_types.compute_new_princ_type_from_rel funs sorts) other_princ_types
+    in
+    let open Proof_global in
+    let first_princ_body,first_princ_type = const.proof_entry_body, const.proof_entry_type in
+    let ctxt,fix = Term.decompose_lam_assum (fst(fst(Future.force first_princ_body))) in (* the principle has for forall ...., fix .*)
+    let (idxs,_),(_,ta,_ as decl) = Constr.destFix fix in
+    let other_result =
+      List.map (* we can now compute the other principles *)
+        (fun scheme_type ->
+           incr i;
+           observe (Printer.pr_lconstr_env env sigma scheme_type);
+           let type_concl = (Term.strip_prod_assum scheme_type) in
+           let applied_f = List.hd (List.rev (snd (Constr.decompose_app type_concl))) in
+           let f = fst (Constr.decompose_app applied_f) in
+           try (* we search the number of the function in the fix block (name of the function) *)
+             Array.iteri
+             (fun j t ->
+                let t =  (Term.strip_prod_assum t) in
+                let applied_g = List.hd (List.rev (snd (Constr.decompose_app t))) in
+                let g = fst (Constr.decompose_app applied_g) in
+                if Constr.equal f g
+                then raise (Found_type j);
+                observe Pp.(Printer.pr_lconstr_env env sigma f ++ str " <> " ++
+                            Printer.pr_lconstr_env env sigma g)
+
+             )
+             ta;
+             (* If we reach this point, the two principle are not mutually recursive
+                We fall back to the previous method
+                *)
+             let _,const,_ =
+               build_functional_principle
+                 evd
+                 false
+                 (List.nth other_princ_types (!i - 1))
+                 (Array.of_list sorts)
+                 this_block_funs
+                 !i
+                 (Functional_principles_proofs.prove_princ_for_struct evd false !i (Array.of_list (List.map fst funs)))
+                 (fun _ _ -> ())
+             in
+             const
+         with Found_type i ->
+           let princ_body =
+             Termops.it_mkLambda_or_LetIn (Constr.mkFix((idxs,i),decl)) ctxt
+           in
+           {const with
+              proof_entry_body =
+                (Future.from_val ((princ_body, Univ.ContextSet.empty), Evd.empty_side_effects));
+              proof_entry_type = Some scheme_type
+           }
+      )
+      other_fun_princ_types
+    in
+    const::other_result
+
+(* [derive_correctness funs graphs] create correctness and completeness
    lemmas for each function in [funs] w.r.t. [graphs]
 *)
 
@@ -1009,7 +1354,7 @@ let derive_correctness (funs: Constr.pconstant list) (graphs:inductive list) =
                   (fun entry ->
                      (EConstr.of_constr (fst (fst(Future.force entry.Proof_global.proof_entry_body))), EConstr.of_constr (Option.get entry.Proof_global.proof_entry_type ))
                   )
-                  (Functional_principles_types.make_scheme evd (Array.map_to_list (fun const -> const,Sorts.InType) funs))
+                  (make_scheme evd (Array.map_to_list (fun const -> const,Sorts.InType) funs))
                )
            )
        in
@@ -1625,3 +1970,100 @@ let do_generate_principle fixl : unit =
     CErrors.anomaly
       (Pp.str"indfun: leaving a goal open in non-interactive mode")
   | None -> ()
+
+
+let build_scheme fas =
+  let evd = (ref (Evd.from_env (Global.env ()))) in
+  let pconstants = (List.map
+         (fun (_,f,sort) ->
+            let f_as_constant =
+              try
+                Smartlocate.global_with_alias f
+              with Not_found ->
+                CErrors.user_err ~hdr:"FunInd.build_scheme"
+                  Pp.(str "Cannot find " ++ Libnames.pr_qualid f)
+            in
+            let evd',f = Evd.fresh_global (Global.env ()) !evd f_as_constant in
+            let _ = evd := evd' in
+            let sigma, _ = Typing.type_of ~refresh:true (Global.env ()) !evd f in
+            evd := sigma;
+            let c, u =
+              try EConstr.destConst !evd f
+              with Constr.DestKO ->
+                CErrors.user_err Pp.(Printer.pr_econstr_env (Global.env ()) !evd f ++spc () ++ str "should be the named of a globally defined function")
+            in
+            (c, EConstr.EInstance.kind !evd u), sort
+         )
+         fas
+                   ) in
+  let bodies_types = make_scheme evd pconstants in
+
+  List.iter2
+    (fun (princ_id,_,_) def_entry ->
+       ignore
+         (Declare.declare_constant
+            ~name:princ_id
+            ~kind:Decls.(IsProof Theorem)
+            (Declare.DefinitionEntry def_entry));
+       Declare.definition_message princ_id
+    )
+    fas
+    bodies_types
+
+let build_case_scheme fa =
+  let env = Global.env ()
+  and sigma = (Evd.from_env (Global.env ())) in
+(*   let id_to_constr id =  *)
+(*     Constrintern.global_reference  id *)
+(*   in  *)
+  let funs =
+    let (_,f,_) = fa in
+    try (let open GlobRef in
+         match Smartlocate.global_with_alias f with
+         | ConstRef c -> c
+         | IndRef _ | ConstructRef _ | VarRef _ -> assert false)
+    with Not_found ->
+      CErrors.user_err ~hdr:"FunInd.build_case_scheme"
+        Pp.(str "Cannot find " ++ Libnames.pr_qualid f) in
+  let sigma, (_,u) = Evd.fresh_constant_instance env sigma funs in
+  let first_fun = funs in
+  let funs_mp = Constant.modpath first_fun in
+  let first_fun_kn = try fst (find_Function_infos  first_fun).graph_ind with Not_found -> raise No_graph_found in
+  let this_block_funs_indexes = get_funs_constant funs_mp first_fun in
+  let this_block_funs = Array.map (fun (c,_) -> (c,u)) this_block_funs_indexes in
+  let prop_sort = Sorts.InProp in
+  let funs_indexes =
+    let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
+    List.assoc_f Constant.equal funs this_block_funs_indexes
+  in
+  let (ind, sf) =
+         let ind = first_fun_kn,funs_indexes in
+           (ind,Univ.Instance.empty)(*FIXME*),prop_sort
+  in
+  let (sigma, scheme) =
+      Indrec.build_case_analysis_scheme_default env sigma ind sf
+  in
+  let scheme_type = EConstr.Unsafe.to_constr ((Typing.unsafe_type_of env sigma) (EConstr.of_constr scheme)) in
+  let sorts =
+    (fun (_,_,x) ->
+       fst @@ UnivGen.fresh_sort_in_family x
+    )
+      fa
+  in
+  let princ_name =  (fun (x,_,_) -> x) fa in
+  let _ : unit =
+  (*  Pp.msgnl (str "Generating " ++ Ppconstr.pr_id princ_name ++str " with " ++
+               pr_lconstr scheme_type ++ str " and " ++ (fun a -> prlist_with_sep spc (fun c -> pr_lconstr (mkConst c)) (Array.to_list a)) this_block_funs
+            );
+  *)
+    generate_functional_principle
+      (ref (Evd.from_env (Global.env ())))
+      false
+      scheme_type
+      (Some ([|sorts|]))
+      (Some princ_name)
+      this_block_funs
+      0
+      (Functional_principles_proofs.prove_princ_for_struct (ref (Evd.from_env (Global.env ()))) false 0 [|funs|])
+  in
+  ()

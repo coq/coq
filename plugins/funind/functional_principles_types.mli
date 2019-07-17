@@ -8,35 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Names
-open Constr
-
-val generate_functional_principle :
-  Evd.evar_map ref -> 
-  (* do we accept interactive proving *)
-  bool ->
-  (* induction principle on rel *)
-  types ->
-  (* *)
-  Sorts.t array option ->
-  (* Name of the new principle *)
-  (Id.t) option ->
-  (* the compute functions to use   *)
-  pconstant array ->
-  (* We prove the nth- principle *)
-  int  ->
-  (* The tactic to use to make the proof w.r
-     the number of params
-  *)
-  (EConstr.constr array -> int -> Tacmach.tactic) ->
-  unit
-
-exception No_graph_found
-
-val make_scheme
-  :  Evd.evar_map ref
-  -> (pconstant*Sorts.family) list
-  -> Evd.side_effects Proof_global.proof_entry list
-
-val build_scheme : (Id.t*Libnames.qualid*Sorts.family) list ->  unit
-val build_case_scheme : (Id.t*Libnames.qualid*Sorts.family)  ->  unit
+val compute_new_princ_type_from_rel
+  : Constr.constr array
+  -> Sorts.t array
+  -> Constr.t
+  -> Constr.types
