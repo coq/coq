@@ -1,12 +1,12 @@
-diff/patch file created on Mon, Aug 27, 2018  9:21:52 AM with:
-difftar-folder.sh tarballs/quickchick-v1.0.2.tar.gz quickchick-v1.0.2 1
-TARFILE= tarballs/quickchick-v1.0.2.tar.gz
-FOLDER= quickchick-v1.0.2
+diff/patch file created on Wed, Jul 17, 2019  8:06:45 PM with:
+difftar-folder.sh tarballs/quickchick-741fb98eb865129a70c4ef7a64db2739c4a5eab0.tar.gz quickchick-741fb98eb865129a70c4ef7a64db2739c4a5eab0 1
+TARFILE= tarballs/quickchick-741fb98eb865129a70c4ef7a64db2739c4a5eab0.tar.gz
+FOLDER= quickchick-741fb98eb865129a70c4ef7a64db2739c4a5eab0
 TARSTRIP= 1
-TARPREFIX= QuickChick-1.0.2/
-ORIGFOLDER= quickchick-v1.0.2.orig
---- quickchick-v1.0.2.orig/Makefile	2018-08-22 18:21:39.000000000 +0200
-+++ quickchick-v1.0.2/Makefile	2018-08-27 09:21:04.710461100 +0200
+TARPREFIX= QuickChick-741fb98eb865129a70c4ef7a64db2739c4a5eab0/
+ORIGFOLDER= quickchick-741fb98eb865129a70c4ef7a64db2739c4a5eab0.orig
+--- quickchick-741fb98eb865129a70c4ef7a64db2739c4a5eab0.orig/Makefile	2019-06-26 12:09:01.000000000 +0200
++++ quickchick-741fb98eb865129a70c4ef7a64db2739c4a5eab0/Makefile	2019-07-17 20:05:44.322251200 +0200
 @@ -2,7 +2,7 @@
  .PHONY: plugin install install-plugin clean quickChickTool
  
@@ -16,11 +16,32 @@ ORIGFOLDER= quickchick-v1.0.2.orig
  QCTOOL_SRC=$(QCTOOL_DIR)/quickChickTool.ml \
  		   $(QCTOOL_DIR)/quickChickToolTypes.ml \
  		   $(QCTOOL_DIR)/quickChickToolLexer.mll \
+@@ -20,8 +20,8 @@
+ 
+ all: quickChickTool plugin documentation-check
+ 
+-plugin: Makefile.coq 
+-	$(MAKE) -f Makefile.coq 
++plugin: Makefile.coq
++	$(MAKE) -f Makefile.coq
+ 
+ documentation-check: plugin
+ 	coqc -R src QuickChick -I src QuickChickInterface.v
 @@ -32,7 +32,7 @@
  install: all
  	$(V)$(MAKE) -f Makefile.coq install > $(TEMPFILE)
  # Manually copying the remaining files
--	$(V)cp $(QCTOOL_EXE) $(shell opam config var bin)/quickChick
-+	$(V)cp $(QCTOOL_EXE) "$(COQBIN)/quickChick"
+-	$(V)cp $(QCTOOL_DIR)/$(QCTOOL_EXE) $(shell opam config var bin)/quickChick
++	$(V)cp $(QCTOOL_DIR)/$(QCTOOL_EXE) "$(COQBIN)/quickChick"
  #	 $(V)cp src/quickChickLib.cmx $(COQLIB)/user-contrib/QuickChick
  #	 $(V)cp src/quickChickLib.o $(COQLIB)/user-contrib/QuickChick
+ 
+@@ -56,7 +56,7 @@
+ 	$(MAKE) -C examples/RedBlack test
+ #	cd examples/stlc; make clean && make
+ 	$(MAKE) -C examples/multifile-mutation test
+-# This takes too long. 
++# This takes too long.
+ #	$(MAKE) -C examples/c-mutation test
+ #	coqc examples/BSTTest.v
+ 	coqc examples/DependentTest.v
