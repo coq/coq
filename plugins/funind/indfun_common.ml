@@ -377,7 +377,73 @@ let () = declare_bool_option function_debug_sig
 
 let do_observe () = !function_debug
 
+let observe strm =
+  if do_observe ()
+  then Feedback.msg_debug strm
+  else ()
 
+let debug_queue = Stack.create ()
+
+let print_debug_queue b e =
+  if not (Stack.is_empty debug_queue)
+  then
+    let lmsg,goal = Stack.pop debug_queue in
+    (if b then
+       Feedback.msg_debug (hov 1 (lmsg ++ (str " raised exception " ++ CErrors.print e) ++ str " on goal" ++ fnl() ++ goal))
+     else
+       Feedback.msg_debug (hov 1 (str " from " ++ lmsg ++ str " on goal"++fnl() ++ goal))
+       (* print_debug_queue false e; *)
+    )
+
+let do_observe_tac s tac g =
+  let goal = Printer.pr_goal g in
+  let s = s (pf_env g) (project g) in
+  let lmsg = (str "observation : ") ++ s in
+  Stack.push (lmsg,goal) debug_queue;
+  try
+    let v = tac g in
+    ignore(Stack.pop debug_queue);
+    v
+  with reraise ->
+    let reraise = CErrors.push reraise in
+    if not (Stack.is_empty debug_queue)
+    then print_debug_queue true (fst reraise);
+    Util.iraise reraise
+
+let observe_tac s tac g =
+  if do_observe ()
+  then do_observe_tac s tac g
+  else tac g
+
+module New = struct
+
+let do_observe_tac ~header s tac =
+  let open Proofview.Notations in
+  let open Proofview in
+  Goal.enter begin fun gl ->
+    let goal = Printer.pr_goal (Goal.print gl) in
+    let env, sigma = Goal.env gl, Goal.sigma gl in
+    let s = s env sigma in
+    let lmsg = seq [header; str " : " ++ s] in
+    tclLIFT (NonLogical.make (fun () ->
+        Feedback.msg_debug (s++fnl()))) >>= fun () ->
+    tclOR (
+      Stack.push (lmsg, goal) debug_queue;
+      tac >>= fun v ->
+      ignore(Stack.pop debug_queue);
+      Proofview.tclUNIT v)
+      (fun (exn, info) ->
+         if not (Stack.is_empty debug_queue)
+         then print_debug_queue true exn;
+         tclZERO ~info exn)
+  end
+
+let observe_tac ~header s tac =
+  if do_observe ()
+  then do_observe_tac ~header s tac
+  else tac
+
+end
 
 let strict_tcc = ref false
 let is_strict_tcc () = !strict_tcc

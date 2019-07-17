@@ -15,30 +15,7 @@ open Indfun_common
 
 module RelDecl = Context.Rel.Declaration
 
-(* Move to common *)
-let observe strm =
-  if do_observe ()
-  then Feedback.msg_debug strm
-  else ()
-
-let do_observe_tac s tac g =
-  let goal =
-    try Printer.pr_goal g
-    with e when CErrors.noncritical e -> assert false
-  in
-  try
-    let v = tac g in
-    msgnl Pp.(goal ++ fnl () ++ s ++(str " ")++(str "finished")); v
-  with reraise ->
-    let reraise = CErrors.push reraise in
-    observe Pp.(hov 0 (str "observation "++ s++str " raised exception " ++
-                       CErrors.iprint reraise ++ str " on goal" ++ fnl() ++ goal ));
-    iraise reraise;;
-
-let observe_tac s tac g =
-  if do_observe ()
-  then do_observe_tac (Pp.str s) tac g
-  else tac g
+let observe_tac s = observe_tac (fun _ _ -> Pp.str s)
 
 (*
    Construct a fixpoint as a Glob_term

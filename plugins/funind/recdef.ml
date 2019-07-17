@@ -199,53 +199,6 @@ let (declare_f : Id.t -> Decls.logical_kind -> Constr.t list -> GlobRef.t -> Glo
   fun f_id kind input_type fterm_ref ->
     declare_fun f_id kind (value_f input_type fterm_ref);;
 
-
-
-(* Debugging mechanism *)
-let debug_queue = Stack.create ()
-
-let print_debug_queue b e =
-  if  not (Stack.is_empty debug_queue)
-  then
-    begin
-      let lmsg,goal = Stack.pop debug_queue in
-      if b then
-        Feedback.msg_debug (hov 1 (lmsg ++ (str " raised exception " ++ CErrors.iprint e) ++ str " on goal" ++ fnl() ++ goal))
-      else
-        begin
-          Feedback.msg_debug (hov 1 (str " from " ++ lmsg ++ str " on goal"++fnl() ++ goal));
-        end;
-      (* print_debug_queue false e; *)
-    end
-
-let observe strm =
-  if do_observe ()
-  then Feedback.msg_debug strm
-  else ()
-
-
-let do_observe_tac s tac g =
-  let goal = Printer.pr_goal g in
-  let s = s (pf_env g) (project g) in
-  let lmsg = (str "recdef : ") ++ s in
-  observe (s++fnl());
-  Stack.push (lmsg,goal) debug_queue;
-  try
-    let v = tac g in
-    ignore(Stack.pop debug_queue);
-    v
-  with reraise ->
-    let reraise = CErrors.push reraise in
-    if not (Stack.is_empty debug_queue)
-    then print_debug_queue true reraise;
-    iraise reraise
-
-let observe_tac s tac g =
-  if do_observe ()
-  then do_observe_tac s tac g
-  else tac g
-
-
 let observe_tclTHENLIST s tacl =
   if do_observe ()
   then
