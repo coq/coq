@@ -518,7 +518,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/Rdefinitions.v
     theories/Reals/ConstructiveCauchyReals.v
     theories/Reals/Raxioms.v
-    theories/Reals/RIneq_constr.v
+    theories/Reals/ConstructiveRIneq.v
     theories/Reals/RIneq.v
     theories/Reals/DiscrR.v
     theories/Reals/ROrderedType.v
@@ -563,7 +563,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/Ranalysis5.v
     theories/Reals/Ranalysis_reg.v
     theories/Reals/Rcomplete.v
-    theories/Reals/Rcomplete_constr.v
+    theories/Reals/ConstructiveRcomplete.v
     theories/Reals/RiemannInt.v
     theories/Reals/RiemannInt_SF.v
     theories/Reals/Rpow_def.v

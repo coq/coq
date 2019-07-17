@@ -12,7 +12,7 @@
 Require Import QArith_base.
 Require Import Qabs.
 Require Import ConstructiveCauchyReals.
-Require Import RIneq_constr.
+Require Import ConstructiveRIneq.
 
 Local Open Scope R_scope_constr.
 

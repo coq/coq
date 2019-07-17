@@ -13,7 +13,7 @@
 (** * Basic lemmas for the classical real numbers        *)
 (*********************************************************)
 
-Require Import RIneq_constr.
+Require Import ConstructiveRIneq.
 Require Export Raxioms.
 Require Import Rpow_def.
 Require Import Zpower.
