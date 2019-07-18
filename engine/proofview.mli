@@ -512,22 +512,23 @@ module Goal : sig
   val concl : t -> constr
   val hyps : t -> named_context
   val env : t -> Environ.env
-  val sigma : t -> Evd.evar_map
   val state : t -> Proofview_monad.StateStore.t
 
   (** [nf_enter t] applies the goal-dependent tactic [t] in each goal
-      independently, in the manner of {!tclINDEPENDENT} except that
-      the current goal is also given as an argument to [t]. The goal
-      is normalised with respect to evars. *)
-  val nf_enter : (t -> unit tactic) -> unit tactic
+     independently, in the manner of {!tclINDEPENDENT} except that the
+     current goal is also given as an argument to [t]. The goal is
+     normalised with respect to evars. Exceptions raised by applying
+     [f] become tactic failures unless critical or wrapped in
+     [Logic_monad.Exception]. *)
+  val nf_enter : (Evd.evar_map -> t -> unit tactic) -> unit tactic
   [@@ocaml.deprecated "Normalization is enforced by EConstr, please use [enter]"]
 
   (** Like {!nf_enter}, but does not normalize the goal beforehand. *)
-  val enter : (t -> unit tactic) -> unit tactic
+  val enter : (Evd.evar_map -> t -> unit tactic) -> unit tactic
 
   (** Like {!enter}, but assumes exactly one goal under focus, raising
       a fatal error otherwise. *)
-  val enter_one : ?__LOC__:string -> (t -> 'a tactic) -> 'a tactic
+  val enter_one : ?__LOC__:string -> (Evd.evar_map -> t -> 'a tactic) -> 'a tactic
 
   (** Recover the list of current goals under focus, without evar-normalization.
       FIXME: encapsulate the level in an existential type. *)
@@ -539,7 +540,6 @@ module Goal : sig
 
   (** Compatibility: avoid if possible *)
   val goal : t -> Evar.t
-  val print : t -> Evar.t Evd.sigma
 
 end
 

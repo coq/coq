@@ -45,10 +45,10 @@ let typecheck_evar ev env sigma =
   sigma
 
 let generic_refine ~typecheck f gl =
-  let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
   let state = Proofview.Goal.state gl in
+  Proofview.tclEVARMAP >>= fun sigma ->
   (* Save the [future_goals] state to restore them after the
      refinement. *)
   let prev_future_goals = Evd.save_future_goals sigma in
@@ -114,7 +114,7 @@ let lift c =
   Proofview.tclUNIT c
   end
 
-let make_refine_enter ~typecheck f gl = generic_refine ~typecheck (lift f) gl
+let make_refine_enter ~typecheck f _sigma gl = generic_refine ~typecheck (lift f) gl
 
 let refine ~typecheck f =
   let f evd =

@@ -83,8 +83,7 @@ let instantiate_tac_by_name id c =
 
 let let_evar name typ =
   let src = (Loc.tag Evar_kinds.GoalEvar) in
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+  Proofview.Goal.enter begin fun sigma gl ->
     let env = Proofview.Goal.env gl in
     let sigma, _ = Typing.sort_of env sigma typ in
     let id = match name with
@@ -100,8 +99,7 @@ let let_evar name typ =
   
 let hget_evar n =
   let open EConstr in
-  Proofview.Goal.enter begin fun gl ->
-  let sigma = Tacmach.New.project gl in
+  Proofview.Goal.enter begin fun sigma gl ->
   let concl = Proofview.Goal.concl gl in
   let evl = evar_list sigma concl in
   if List.length evl < n then

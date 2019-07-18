@@ -79,10 +79,9 @@ let tmphyp_name = Id.of_string "_TmpHyp"
 let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c =
-  Proofview.Goal.enter begin fun gl ->
-  let type_of = pf_unsafe_type_of gl in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let type_of = pf_unsafe_type_of sigma gl in
   let env = pf_env gl in
-  let sigma = project gl in
   let typc = type_of c in
   tclTHENS (cut typc)
     [ tclTHEN (intro_using tmphyp_name)
@@ -92,9 +91,8 @@ let general_decompose recognizer c =
        exact_no_check c ]
   end
 
-let head_in indl t gl =
+let head_in indl t sigma gl =
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
   try
     let ity,_ =
       if !up_to_delta
@@ -104,9 +102,9 @@ let head_in indl t gl =
   with Not_found -> false
 
 let decompose_these c l =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
   let indl = List.map (fun x -> x, Univ.Instance.empty) l in
-  general_decompose (fun env sigma (_,t) -> head_in indl t gl) c
+  general_decompose (fun env sigma (_,t) -> head_in indl t sigma gl) c
   end
 
 let decompose_and c =
@@ -135,9 +133,9 @@ let induction_trailer abs_i abs_j bargs =
     (tclDO (abs_j - abs_i) intro)
     (onLastHypId
        (fun id ->
-          Proofview.Goal.enter begin fun gl ->
-	  let idty = pf_unsafe_type_of gl (mkVar id) in
-	  let fvty = global_vars (pf_env gl) (project gl) idty in
+          Proofview.Goal.enter begin fun sigma gl ->
+          let idty = pf_unsafe_type_of sigma gl (mkVar id) in
+          let fvty = global_vars (pf_env gl) sigma idty in
 	  let possible_bring_hyps =
 	    (List.tl (nLastDecls gl (abs_j - abs_i))) @ bargs.Tacticals.assums
           in
@@ -157,9 +155,9 @@ let induction_trailer abs_i abs_j bargs =
           ))
 
 let double_ind h1 h2 =
-  Proofview.Goal.enter begin fun gl ->
-  let abs_i = depth_of_quantified_hypothesis true h1 gl in
-  let abs_j = depth_of_quantified_hypothesis true h2 gl in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let abs_i = depth_of_quantified_hypothesis true h1 sigma gl in
+  let abs_j = depth_of_quantified_hypothesis true h2 sigma gl in
   let abs =
     if abs_i < abs_j then Proofview.tclUNIT (abs_i,abs_j) else
     if abs_i > abs_j then  Proofview.tclUNIT (abs_j,abs_i) else

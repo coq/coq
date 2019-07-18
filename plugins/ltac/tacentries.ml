@@ -627,9 +627,8 @@ let rec mk_sign_vars : type a. int -> a ty_sig -> Name.t list = fun i tu -> matc
 let dummy_id = Id.of_string "_"
 
 let lift_constr_tac_to_ml_tac vars tac =
-  let tac _ ist = Proofview.Goal.enter begin fun gl ->
+  let tac _ ist = Proofview.Goal.enter begin fun sigma gl ->
     let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.New.project gl in
     let map = function
     | Anonymous -> None
     | Name id ->
@@ -734,8 +733,8 @@ match arg.arg_interp with
 | ArgInterpWit wit ->
   (fun ist x -> Tacinterp.interp_genarg ist (Genarg.in_gen (glbwit wit) x))
 | ArgInterpLegacy f ->
-  (fun ist v -> Ftactic.enter (fun gl ->
-    let (sigma, v) = Tacmach.New.of_old (fun gl -> f ist gl v) gl in
+  (fun ist v -> Ftactic.enter (fun sigma gl ->
+    let (sigma, v) = Tacmach.New.of_old (fun gl -> f ist gl v) sigma gl in
     let v = Geninterp.Val.inject tag v in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Ftactic.return v)
   ))

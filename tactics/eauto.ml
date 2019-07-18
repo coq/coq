@@ -31,10 +31,9 @@ open Proofview.Notations
 let eauto_unif_flags = auto_flags_of_state TransparentState.full
 
 let e_give_exact ?(flags=eauto_unif_flags) c =
-  Proofview.Goal.enter begin fun gl ->
-  let t1 = Tacmach.New.pf_unsafe_type_of gl c in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let t1 = Tacmach.New.pf_unsafe_type_of sigma gl c in
   let t2 = Tacmach.New.pf_concl gl in
-  let sigma = Tacmach.New.project gl in
   if occur_existential sigma t1 || occur_existential sigma t2 then
      Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c)
   else exact_check c
@@ -43,12 +42,12 @@ let e_give_exact ?(flags=eauto_unif_flags) c =
 let assumption id = e_give_exact (mkVar id)
 
 let e_assumption =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
     Tacticals.New.tclFIRST (List.map assumption (Tacmach.New.pf_ids_of_hyps gl))
   end
 
 let registered_e_assumption =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
   Tacticals.New.tclFIRST (List.map (fun id -> e_give_exact (mkVar id))
               (Tacmach.New.pf_ids_of_hyps gl))
   end
@@ -112,8 +111,8 @@ open Auto
 let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
 
 let unify_e_resolve poly flags (c,clenv) =
-  Proofview.Goal.enter begin fun gl ->
-      let clenv', c = connect_hint_clenv ~poly c clenv gl in
+  Proofview.Goal.enter begin fun sigma gl ->
+      let clenv', c = connect_hint_clenv ~poly c clenv sigma gl in
       let clenv' = clenv_unique_resolver ~flags clenv' gl in
       Proofview.tclTHEN
         (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
@@ -130,25 +129,25 @@ let hintmap_of sigma secvars hdc concl =
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
 let e_exact poly flags (c,clenv) =
-  Proofview.Goal.enter begin fun gl ->
-    let clenv', c = connect_hint_clenv ~poly c clenv gl in
+  Proofview.Goal.enter begin fun sigma gl ->
+    let clenv', c = connect_hint_clenv ~poly c clenv sigma gl in
     Tacticals.New.tclTHEN
     (Proofview.Unsafe.tclEVARUNIVCONTEXT (Evd.evar_universe_context clenv'.evd))
     (e_give_exact c)
   end
 
 let rec e_trivial_fail_db db_list local_db =
-  let next = Proofview.Goal.enter begin fun gl ->
+  let next = Proofview.Goal.enter begin fun sigma gl ->
     let d = Tacmach.New.pf_last_hyp gl in
-    let hintl = make_resolve_hyp (Tacmach.New.pf_env gl) (Tacmach.New.project gl) d in
-    e_trivial_fail_db db_list (Hint_db.add_list (Tacmach.New.pf_env gl) (Tacmach.New.project gl) hintl local_db)
+    let hintl = make_resolve_hyp (Tacmach.New.pf_env gl) sigma d in
+    e_trivial_fail_db db_list (Hint_db.add_list (Tacmach.New.pf_env gl) sigma hintl local_db)
   end in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
   let secvars = compute_secvars gl in
   let tacl =
     registered_e_assumption ::
     (Tacticals.New.tclTHEN Tactics.intro next) ::
-    (List.map fst (e_trivial_resolve (Tacmach.New.pf_env gl) (Tacmach.New.project gl) db_list local_db secvars (Tacmach.New.pf_concl gl)))
+    (List.map fst (e_trivial_resolve (Tacmach.New.pf_env gl) sigma db_list local_db secvars (Tacmach.New.pf_concl gl)))
   in
   Tacticals.New.tclSOLVE tacl
   end
@@ -497,9 +496,8 @@ let unfold_head env sigma (ids, csts) c =
   in aux c
 
 let autounfold_one db cl =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Tacmach.New.project gl in
   let concl = Proofview.Goal.concl gl in
   let st =
     List.fold_left (fun (i,c) dbname -> 
@@ -510,7 +508,7 @@ let autounfold_one db cl =
 	(Id.Set.union ids i, Cset.union csts c)) (Id.Set.empty, Cset.empty) db
   in
   let did, c' = unfold_head env sigma st 
-    (match cl with Some (id, _) -> Tacmach.New.pf_get_hyp_typ id gl | None -> concl) 
+    (match cl with Some (id, _) -> Tacmach.New.pf_get_hyp_typ id sigma gl | None -> concl)
   in
     if did then
       match cl with

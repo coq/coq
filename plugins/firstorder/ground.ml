@@ -13,7 +13,6 @@ open Formula
 open Sequent
 open Rules
 open Instances
-open Tacmach.New
 open Tacticals.New
 
 let update_flags ()=
@@ -29,21 +28,21 @@ let update_flags ()=
       flags
 
 let ground_tac solver startseq =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
   update_flags ();
   let rec toptac skipped seq =
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.enter begin fun sigma gl ->
     let () =
       if Tacinterp.get_debug()=Tactic_debug.DebugOn 0
       then
-        let gl = { Evd.it = Proofview.Goal.goal gl; sigma = project gl } in
+        let gl = { Evd.it = Proofview.Goal.goal gl; sigma } in
         Feedback.msg_debug (Printer.pr_goal gl)
     in
     tclORELSE (axiom_tac seq.gl seq)
       begin
 	try
-	  let (hd,seq1)=take_formula (project gl) seq
-	  and re_add s=re_add_formula_list (project gl) skipped s in
+          let (hd,seq1)=take_formula sigma seq
+          and re_add s=re_add_formula_list sigma skipped s in
 	  let continue=toptac []
 	  and backtrack =toptac (hd::skipped) seq1 in
 	    match hd.pat with
@@ -65,7 +64,7 @@ let ground_tac solver startseq =
 			  or_tac  backtrack continue (re_add seq1)
 		      | Rfalse->backtrack
 		      | Rexists(i,dom,triv)->
-			  let (lfp,seq2)=collect_quantified (project gl) seq in
+                          let (lfp,seq2)=collect_quantified sigma seq in
 			  let backtrack2=toptac (lfp@skipped) seq2 in
 			    if  !qflag && seq.depth>0 then
 			      quantified_tac lfp backtrack2
@@ -85,7 +84,7 @@ let ground_tac solver startseq =
 			  left_or_tac ind backtrack
 			  hd.id continue (re_add seq1)
 		      | Lforall (_,_,_)->
-			  let (lfp,seq2)=collect_quantified (project gl) seq in
+                          let (lfp,seq2)=collect_quantified sigma seq in
 			  let backtrack2=toptac (lfp@skipped) seq2 in
 			    if  !qflag && seq.depth>0 then
 			      quantified_tac lfp backtrack2

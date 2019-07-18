@@ -257,29 +257,28 @@ let add_inversion_lemma_exn ~poly na com comsort bool tac =
 (* ================================= *)
 
 let lemInv id c =
-  Proofview.Goal.enter begin fun gls ->
+  Proofview.Goal.enter begin fun sigma gls ->
   try
-    let clause = mk_clenv_from_env (pf_env gls) (project gls) None (c, pf_unsafe_type_of gls c) in
+    let clause = mk_clenv_from_env (pf_env gls) sigma None (c, pf_unsafe_type_of sigma gls c) in
     let clause = clenv_constrain_last_binding (EConstr.mkVar id) clause in
     Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false
   with
     | NoSuchBinding ->
 	user_err 
-	  (hov 0 (pr_econstr_env (pf_env gls) (project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
+          (hov 0 (pr_econstr_env (pf_env gls) sigma c ++ spc () ++ str "does not refer to an inversion lemma."))
     | UserError (a,b) ->
 	 user_err ~hdr:"LemInv"
 	   (str "Cannot refine current goal with the lemma " ++
-	      pr_leconstr_env (pf_env gls) (project gls) c)
+              pr_leconstr_env (pf_env gls) sigma c)
   end
 
 let lemInv_gen id c = try_intros_until (fun id -> lemInv id c) id
 
 let lemInvIn id c ids =
-  Proofview.Goal.enter begin fun gl ->
-    let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
+  Proofview.Goal.enter begin fun sigma gl ->
+    let hyps = List.map (fun id -> pf_get_hyp id sigma gl) ids in
     let intros_replace_ids =
       let concl = Proofview.Goal.concl gl in
-      let sigma = project gl in
       let nb_of_new_hyp = nb_prod sigma concl - List.length ids in
       if nb_of_new_hyp < 1  then
         intros_replacing ids

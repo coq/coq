@@ -93,8 +93,7 @@ type raw_rew_rule = (constr Univ.in_universe_context_set * bool * Genarg.raw_gen
 let one_base general_rewrite_maybe_in tac_main bas =
   let lrul = find_rewrites bas in
   let try_rewrite dir ctx c tc =
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Proofview.Goal.sigma gl in
+  Proofview.Goal.enter begin fun sigma gl ->
     let subst, ctx' = UnivGen.fresh_universe_context_set_instance ctx in
     let c' = Vars.subst_univs_level_constr subst c in
     let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx' in
@@ -131,9 +130,9 @@ let autorewrite ?(conds=Naive) tac_main lbas =
       (Proofview.tclUNIT()) lbas))
 
 let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
  (* let's check at once if id exists (to raise the appropriate error) *)
-  let _ = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) idl in
+  let _ = List.map (fun id -> Tacmach.New.pf_get_hyp id sigma gl) idl in
   let general_rewrite_in id dir cstr tac =
     let cstr = EConstr.of_constr cstr in
     general_rewrite_in dir AllOccurrences true ~tac:(tac, conds) false id cstr false
@@ -168,7 +167,7 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
 	   | None ->
 		 (* try to rewrite in all hypothesis
 		    (except maybe the rewritten one) *)
-               Proofview.Goal.enter begin fun gl ->
+               Proofview.Goal.enter begin fun _sigma gl ->
                  let ids = Tacmach.New.pf_ids_of_hyps gl in
 		 try_do_hyps (fun id -> id)  ids
                end)

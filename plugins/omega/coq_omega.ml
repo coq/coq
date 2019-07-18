@@ -149,7 +149,7 @@ let exists_tac c = constructor_tac false (Some 1) 1 (ImplicitBindings [c])
 
 let generalize_tac t = generalize t
 let unfold s = Tactics.unfold_in_concl [Locus.AllOccurrences, Lazy.force s]
-let pf_nf gl c = pf_apply Tacred.simpl gl c
+let pf_nf sigma gl c = pf_apply Tacred.simpl sigma gl c
 
 let rev_assoc k =
   let rec loop = function
@@ -532,8 +532,8 @@ let abstract_path sigma typ path t =
 
 let focused_simpl path =
   let open Tacmach.New in
-  Proofview.Goal.enter begin fun gl ->
-  let newc = context (project gl) (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let newc = context sigma (fun i t -> pf_nf sigma gl t) (List.rev path) (pf_concl gl) in
   convert_concl ~check:false newc DEFAULTcast
   end
 
@@ -596,10 +596,10 @@ let new_hole env sigma c =
 
 let clever_rewrite_base_poly typ p result theorem =
   let open Tacmach.New in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
   let full = pf_concl gl in
   let env = pf_env gl in
-  let (abstracted,occ) = abstract_path (project gl) typ (List.rev p) full in
+  let (abstracted,occ) = abstract_path sigma typ (List.rev p) full in
   Refine.refine ~typecheck:false begin fun sigma ->
   let t =
     applist
@@ -638,7 +638,7 @@ let refine_app gl t =
   let open Tacmach.New in
   Refine.refine ~typecheck:false begin fun sigma ->
   let env = pf_env gl in
-  let ht = match EConstr.kind sigma (pf_get_type_of gl t) with
+  let ht = match EConstr.kind sigma (pf_get_type_of sigma gl t) with
   | Prod (_, t, _) -> t
   | _ -> assert false
   in
@@ -648,10 +648,10 @@ let refine_app gl t =
 
 let clever_rewrite p vpath t =
   let open Tacmach.New in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
   let full = pf_concl gl in
-  let (abstracted,occ) = abstract_path (project gl) (Lazy.force coq_Z) (List.rev p) full in
-  let vargs = List.map (fun p -> occurrence (project gl) p occ) vpath in
+  let (abstracted,occ) = abstract_path sigma (Lazy.force coq_Z) (List.rev p) full in
+  let vargs = List.map (fun p -> occurrence sigma p occ) vpath in
   let t' = applist(t, (vargs @ [abstracted])) in
   refine_app gl t'
   end
@@ -667,17 +667,16 @@ let clever_rewrite p vpath t =
     (see #4132). *)
 
 let simpl_coeffs path_init path_k =
-  Proofview.Goal.enter begin fun gl ->
-  let sigma = project gl in
+  Proofview.Goal.enter begin fun sigma gl ->
   let rec loop n t =
-    if Int.equal n 0 then pf_nf gl t
+    if Int.equal n 0 then pf_nf sigma gl t
     else
       (* t should be of the form ((v * c) + ...) *)
       match EConstr.kind sigma t with
       | App(f,[|t1;t2|]) ->
          (match EConstr.kind sigma t1 with
           | App (g,[|v;c|]) ->
-             let c' = pf_nf gl c in
+             let c' = pf_nf sigma gl c in
              let t2' = loop (pred n) t2 in
              mkApp (f,[|mkApp (g,[|v;c'|]);t2'|])
           | _ -> assert false)
@@ -1435,10 +1434,10 @@ let reintroduce id =
 open Proofview.Notations
 
 let coq_omega =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
   clear_constr_tables ();
   let hyps_types = Tacmach.New.pf_hyps_types gl in
-  let destructure_omega = Tacmach.New.pf_apply destructure_omega gl in
+  let destructure_omega = Tacmach.New.pf_apply destructure_omega sigma gl in
   let tactic_normalisation, system =
     List.fold_left destructure_omega ([],[]) hyps_types in
   let prelude,sys =
@@ -1488,8 +1487,8 @@ let coq_omega =
 let coq_omega = coq_omega
 
 let nat_inject =
-  Proofview.Goal.enter begin fun gl ->
-  let is_conv = Tacmach.New.pf_apply Reductionops.is_conv gl in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let is_conv = Tacmach.New.pf_apply Reductionops.is_conv sigma gl in
   let rec explore p t : unit Proofview.tactic =
     Proofview.tclEVARMAP >>= fun sigma ->
     try match destructurate_term sigma t with
@@ -1697,7 +1696,7 @@ let onClearedName id tac =
   (* so renaming may be necessary *)
   tclTHEN
     (tclTRY (clear [id]))
-    (Proofview.Goal.enter begin fun gl ->
+    (Proofview.Goal.enter begin fun _ gl ->
      let id = fresh_id Id.Set.empty id gl in
      tclTHEN (introduction id) (tac id)
     end)
@@ -1705,17 +1704,16 @@ let onClearedName id tac =
 let onClearedName2 id tac =
   tclTHEN
     (tclTRY (clear [id]))
-    (Proofview.Goal.enter begin fun gl ->
+    (Proofview.Goal.enter begin fun _ gl ->
      let id1 = fresh_id Id.Set.empty (add_suffix id "_left") gl in
      let id2 = fresh_id Id.Set.empty (add_suffix id "_right") gl in
       tclTHENLIST [ introduction id1; introduction id2; tac id1 id2 ]
     end)
 
 let destructure_hyps =
-  Proofview.Goal.enter begin fun gl ->
-  let type_of = Tacmach.New.pf_unsafe_type_of gl in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let type_of = Tacmach.New.pf_unsafe_type_of sigma gl in
   let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
   let decidability = decidability env sigma in
   let rec loop = function
     | [] -> (tclTHEN nat_inject coq_omega)
@@ -1871,10 +1869,9 @@ let destructure_hyps =
   end
 
 let destructure_goal =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
     let decidability = decidability env sigma in
     let rec loop t =
       Proofview.tclEVARMAP >>= fun sigma ->
@@ -1892,9 +1889,9 @@ let destructure_goal =
 	    try
 	      let dec = decidability t in
 	      tclTHEN
-                (Proofview.Goal.enter begin fun gl ->
-		                         refine_app gl (mkApp (Lazy.force coq_dec_not_not, [| t; dec |]))
-		                         end)
+                (Proofview.Goal.enter begin fun sigma gl ->
+                    refine_app gl (mkApp (Lazy.force coq_dec_not_not, [| t; dec |]))
+                  end)
 	        intro
 	    with Undecidable -> Tactics.elim_type (Lazy.force coq_False)
 	    | e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e

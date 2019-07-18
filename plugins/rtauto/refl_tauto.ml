@@ -248,11 +248,10 @@ let () = declare_bool_option opt_check
 open Pp
 
 let rtauto_tac =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
     let hyps = Proofview.Goal.hyps gl in
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
     Coqlib.check_required_library ["Coq";"rtauto";"Rtauto"];
     let gamma={next=1;env=[]} in
     let () =

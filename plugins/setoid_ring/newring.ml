@@ -743,8 +743,7 @@ let ltac_ring_structure e =
    lemma1;lemma2;pretac;posttac]
 
 let ring_lookup (f : Value.t) lH rl t =
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+  Proofview.Goal.enter begin fun sigma gl ->
     let env = Proofview.Goal.env gl in
     try (* find_ring_strucure can raise an exception *)
       let rl = make_args_list sigma rl t in
@@ -1038,8 +1037,7 @@ let ltac_field_structure e =
    field_simpl_eq_in_ok;cond_ok;pretac;posttac]
 
 let field_lookup (f : Value.t) lH rl t =
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+  Proofview.Goal.enter begin fun sigma gl ->
     let env = Proofview.Goal.env gl in
     try
       let rl = make_args_list sigma rl t in

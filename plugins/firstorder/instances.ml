@@ -124,18 +124,17 @@ let mk_open_instance env evmap id idc m t =
 
 let left_instance_tac (inst,id) continue seq=
   let open EConstr in
-  Proofview.Goal.enter begin fun gl ->
-  let sigma = project gl in
+  Proofview.Goal.enter begin fun sigma gl ->
   match inst with
       Phantom dom->
-	if lookup sigma (id,None) seq then
+        if lookup sigma (id,None) seq then
 	  tclFAIL 0 (Pp.str "already done")
 	else
 	  tclTHENS (cut dom)
 	    [tclTHENLIST
 	       [introf;
                 (pf_constr_of_global id >>= fun idc ->
-                Proofview.Goal.enter begin fun gl ->
+                Proofview.Goal.enter begin fun sigma gl ->
                   let id0 = List.nth (pf_ids_of_hyps gl) 0 in
                   generalize [mkApp(idc, [|mkVar id0|])]
                 end);
@@ -145,22 +144,22 @@ let left_instance_tac (inst,id) continue seq=
 	    tclTRY assumption]
     | Real((m,t),_)->
         let c = (m, EConstr.to_constr sigma t) in
-	if lookup sigma (id,Some c) seq then
+        if lookup sigma (id,Some c) seq then
 	  tclFAIL 0 (Pp.str "already done")
 	else
 	  let special_generalize=
 	    if m>0 then
 	      (pf_constr_of_global id >>= fun idc ->
-		Proofview.Goal.enter begin fun gl->
-		  let (evmap, rc, ot) = mk_open_instance (pf_env gl) (project gl) id idc m t in
+                Proofview.Goal.enter begin fun sigma gl ->
+                  let (sigma, rc, ot) = mk_open_instance (pf_env gl) sigma id idc m t in
 		  let gt=
 		    it_mkLambda_or_LetIn
 		      (mkApp(idc,[|ot|])) rc in
-		  let evmap, _ =
-		    try Typing.type_of (pf_env gl) evmap gt
+                  let sigma, _ =
+                    try Typing.type_of (pf_env gl) sigma gt
 		    with e when CErrors.noncritical e ->
 		      user_err Pp.(str "Untypable instance, maybe higher-order non-prenex quantification") in
-                  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evmap)
+                  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
 		    (generalize [gt])
                 end)
 	    else
@@ -175,13 +174,13 @@ let left_instance_tac (inst,id) continue seq=
 
 let right_instance_tac inst continue seq=
   let open EConstr in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
   match inst with
-      Phantom dom ->
+    | Phantom dom ->
 	tclTHENS (cut dom)
 	[tclTHENLIST
 	   [introf;
-            Proofview.Goal.enter begin fun gl ->
+            Proofview.Goal.enter begin fun _ gl ->
               let id0 = List.nth (pf_ids_of_hyps gl) 0 in
               split (Tactypes.ImplicitBindings [mkVar id0])
             end;
@@ -201,8 +200,8 @@ let instance_tac inst=
     left_instance_tac inst
 
 let quantified_tac lf backtrack continue seq =
-  Proofview.Goal.enter begin fun gl ->
-  let insts=give_instances (project gl) lf seq in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let insts=give_instances sigma lf seq in
     tclORELSE
       (tclFIRST (List.map (fun inst->instance_tac inst continue seq) insts))
       backtrack

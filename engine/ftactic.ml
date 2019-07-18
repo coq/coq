@@ -58,7 +58,9 @@ let goals = Proofview.Goal.goals >>= fun l -> Proofview.tclUNIT (Depends l)
 
 let enter f =
   bind goals
-    (fun gl -> gl >>= fun gl -> Proofview.V82.wrap_exceptions (fun () -> f gl))
+    (fun gl -> gl >>= fun gl ->
+      Proofview.tclEVARMAP >>= fun sigma ->
+      Proofview.V82.wrap_exceptions (fun () -> f sigma gl))
 
 let with_env t =
   t >>= function

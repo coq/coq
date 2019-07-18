@@ -168,7 +168,8 @@ let pf_apply f =
     f env sigma
   | [gl] ->
     gl >>= fun gl ->
-    f (Proofview.Goal.env gl) (Tacmach.New.project gl)
+    Proofview.tclEVARMAP >>= fun sigma ->
+    f (Proofview.Goal.env gl) sigma
   | _ :: _ :: _ ->
     throw err_notfocussed
 
@@ -559,8 +560,8 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
   Proofview.Goal.goals >>= function
   | [gl] ->
     gl >>= fun gl ->
+    Proofview.tclEVARMAP >>= fun sigma ->
     let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
     let has_var =
       try
         let _ = Environ.lookup_named_val id env in
@@ -661,9 +662,8 @@ end
 
 let () = define3 "pattern_matches_goal" bool (list (pair bool pattern)) (pair bool pattern) begin fun rev hp cp ->
   assert_focussed >>= fun () ->
-  Proofview.Goal.enter_one begin fun gl ->
+  Proofview.Goal.enter_one begin fun sigma gl ->
   let env = Proofview.Goal.env gl in
-  let sigma = Proofview.Goal.sigma gl in
   let concl = Proofview.Goal.concl gl in
   let mk_pattern (b, pat) = if b then Tac2match.MatchPattern pat else Tac2match.MatchContext pat in
   let r = (List.map mk_pattern hp, mk_pattern cp) in
@@ -768,8 +768,8 @@ end
 (** unit -> constr *)
 let () = define0 "goal" begin
   assert_focussed >>= fun () ->
-  Proofview.Goal.enter_one begin fun gl ->
-    let concl = Tacmach.New.pf_nf_concl gl in
+  Proofview.Goal.enter_one begin fun sigma gl ->
+    let concl = Tacmach.New.pf_nf_concl sigma gl in
     return (Value.of_constr concl)
   end
 end
@@ -805,7 +805,7 @@ end
 (** (unit -> constr) -> unit *)
 let () = define1 "refine" closure begin fun c ->
   let c = thaw c >>= fun c -> Proofview.tclUNIT ((), Value.to_constr c) in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
     Refine.generic_refine ~typecheck:true c gl
   end >>= fun () -> return v_unit
 end

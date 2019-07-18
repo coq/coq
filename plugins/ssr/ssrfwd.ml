@@ -340,12 +340,11 @@ let intro_lock ipats =
   let hnf' = Proofview.numgoals >>= fun ng ->
              Proofview.tclDISPATCH
                (ncons (ng - 1) ssrsmovetac @ [Proofview.tclUNIT ()]) in
-  let rec lock_eq () : unit Proofview.tactic = Proofview.Goal.enter begin fun _ ->
+  let rec lock_eq () : unit Proofview.tactic = Proofview.Goal.enter begin fun _ _ ->
     Proofview.tclORELSE
       (Ssripats.tclIPAT [Ssripats.IOpTemporay; Ssripats.IOpEqGen (lock_eq ())])
-      (fun _exn -> Proofview.Goal.enter begin fun gl ->
+      (fun _exn -> Proofview.Goal.enter begin fun sigma gl ->
         let c = Proofview.Goal.concl gl in
-        let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         match EConstr.kind_of_type sigma c with
         | Term.AtomicType(hd, args) when

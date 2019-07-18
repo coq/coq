@@ -453,26 +453,26 @@ let find_eq_data sigma eqn = (* fails with PatternMatchingFailure *)
   let hd,u = destInd sigma (fst (destApp sigma eqn)) in
     d,u,k
 
-let extract_eq_args gl = function
+let extract_eq_args sigma gl = function
   | MonomorphicLeibnizEq (e1,e2) ->
-      let t = pf_unsafe_type_of gl e1 in (t,e1,e2)
+      let t = pf_unsafe_type_of sigma gl e1 in (t,e1,e2)
   | PolymorphicLeibnizEq (t,e1,e2) -> (t,e1,e2)
   | HeterogenousEq (t1,e1,t2,e2) ->
-      if pf_conv_x gl t1 t2 then (t1,e1,e2)
+      if pf_conv_x sigma gl t1 t2 then (t1,e1,e2)
       else raise PatternMatchingFailure
 
-let find_eq_data_decompose gl eqn =
-  let (lbeq,u,eq_args) = find_eq_data (project gl) eqn in
-  (lbeq,u,extract_eq_args gl eq_args)
+let find_eq_data_decompose sigma gl eqn =
+  let (lbeq,u,eq_args) = find_eq_data sigma eqn in
+  (lbeq,u,extract_eq_args sigma gl eq_args)
 
-let find_this_eq_data_decompose gl eqn =
+let find_this_eq_data_decompose sigma gl eqn =
   let (lbeq,u,eq_args) =
     try (*first_match (match_eq eqn) inversible_equalities*)
-      find_eq_data (project gl) eqn
+      find_eq_data sigma eqn
     with PatternMatchingFailure ->
       user_err  (str "No primitive equality found.") in
   let eq_args =
-    try extract_eq_args gl eq_args
+    try extract_eq_args sigma gl eq_args
     with PatternMatchingFailure ->
       user_err Pp.(str "Don't know what to do with JMeq on arguments not of same type.") in
   (lbeq,u,eq_args)

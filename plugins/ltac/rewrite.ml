@@ -1540,10 +1540,9 @@ let rec insert_dependent env sigma decl accu hyps = match hyps with
     insert_dependent env sigma decl (ndecl :: accu) rem
 
 let assert_replacing id newt tac = 
-  let prf = Proofview.Goal.enter begin fun gl ->
+  let prf = Proofview.Goal.enter begin fun sigma gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.New.project gl in
     let ctx = named_context env in
     let after, before = List.split_when (NamedDecl.get_id %> Id.equal id) ctx in
     let nc = match before with
@@ -1597,7 +1596,7 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             beta_hyp id
 	| None, Some p ->
             Proofview.Unsafe.tclEVARS undef <*>
-            Proofview.Goal.enter begin fun gl ->
+            Proofview.Goal.enter begin fun _ gl ->
             let env = Proofview.Goal.env gl in
             let make = begin fun sigma ->
               let (sigma, ev) = Evarutil.new_evar env sigma newt in
@@ -1609,10 +1608,9 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
             Proofview.Unsafe.tclEVARS undef <*>
             convert_concl ~check:false newt DEFAULTcast
   in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.New.project gl in
     let ty = match clause with
     | None -> concl
     | Some id -> EConstr.of_constr (Environ.named_type id env)
@@ -2085,12 +2083,11 @@ let unification_rewrite l2r c1 c2 sigma prf car rel but env =
   let res = (car, rel, prf, c1, c2) in
   abs, sigma, res, Sorts.is_prop sort
 
-let get_hyp gl (c,l) clause l2r =
-  let evars = Tacmach.New.project gl in
+let get_hyp evars gl (c,l) clause l2r =
   let env = Tacmach.New.pf_env gl in
   let sigma, hi = decompose_applied_relation env evars (c,l) in
   let but = match clause with
-    | Some id -> Tacmach.New.pf_get_hyp_typ id gl
+    | Some id -> Tacmach.New.pf_get_hyp_typ id evars gl
     | None -> Reductionops.nf_evar evars (Tacmach.New.pf_concl gl)
   in
   unification_rewrite l2r hi.c1 hi.c2 sigma hi.prf hi.car hi.rel but env
@@ -2102,18 +2099,17 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 
 (** Setoid rewriting when called with "rewrite" *)
 let general_s_rewrite cl l2r occs (c,l) ~new_goals =
-  Proofview.Goal.enter begin fun gl ->
-  let abs, evd, res, sort = get_hyp gl (c,l) cl l2r in
+  Proofview.Goal.enter begin fun origsigma gl ->
+  let abs, evd, res, sort = get_hyp origsigma gl (c,l) cl l2r in
   let unify env evars t = unify_abs res l2r sort env evars t in
   let app = apply_rule unify occs in
   let recstrat aux = Strategies.choice app (subterm true general_rewrite_flags aux) in
   let substrat = Strategies.fix recstrat in
   let strat = { strategy = fun ({ state = () } as input) ->
-    let _, res = substrat.strategy { input with state = 0 } in
-    (), res
-	      }
+      let _, res = substrat.strategy { input with state = 0 } in
+      (), res
+    }
   in
-  let origsigma = Tacmach.New.project gl in
   tactic_init_setoid () <*>
     Proofview.tclOR
       (tclPROGRESS
@@ -2136,9 +2132,8 @@ let not_declared env sigma ty rel =
      str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library")
 
 let setoid_proof ty fn fallback =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
     let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in
     Proofview.tclORELSE
       begin
@@ -2205,9 +2200,8 @@ let setoid_transitivity c =
     
 let setoid_symmetry_in id =
   let open Tacmach.New in
-  Proofview.Goal.enter begin fun gl ->
-  let sigma = project gl in
-  let ctype = pf_unsafe_type_of gl (mkVar id) in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let ctype = pf_unsafe_type_of sigma gl (mkVar id) in
   let binders,concl = decompose_prod_assum sigma ctype in
   let (equiv, args) = decompose_app sigma concl in
   let rec split_last_two = function

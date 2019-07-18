@@ -176,9 +176,7 @@ let auto_unif_flags freeze st =
 }
 
 let e_give_exact flags poly (c,clenv) =
-  let open Tacmach.New in
-  Proofview.Goal.enter begin fun gl ->
-  let sigma = project gl in
+  Proofview.Goal.enter begin fun sigma gl ->
   let (c, _, _) = c in
   let c, sigma =
     if poly then
@@ -188,13 +186,13 @@ let e_give_exact flags poly (c,clenv) =
         c, evd
     else c, sigma
   in
-  let (sigma, t1) = Typing.type_of (pf_env gl) sigma c in
+  let (sigma, t1) = Typing.type_of (Tacmach.New.pf_env gl) sigma c in
   Proofview.Unsafe.tclEVARS sigma <*>
   Clenvtac.unify ~flags t1 <*> exact_no_check c
   end
 
 let clenv_unique_resolver_tac with_evars ~flags clenv' =
-  Proofview.Goal.enter begin fun gls ->
+  Proofview.Goal.enter begin fun _ gls ->
     let resolve =
       try Proofview.tclUNIT (clenv_unique_resolver ~flags clenv' gls)
       with e -> Proofview.tclZERO e
@@ -202,12 +200,12 @@ let clenv_unique_resolver_tac with_evars ~flags clenv' =
        Clenvtac.clenv_refine ~with_evars ~with_classes:false clenv'
   end
 
-let unify_e_resolve poly flags = begin fun gls (c,_,clenv) ->
-  let clenv', c = connect_hint_clenv ~poly c clenv gls in
+let unify_e_resolve poly flags = begin fun sigma gls (c,_,clenv) ->
+  let clenv', c = connect_hint_clenv ~poly c clenv sigma gls in
   clenv_unique_resolver_tac true ~flags clenv' end
 
-let unify_resolve poly flags = begin fun gls (c,_,clenv) ->
-  let clenv', _ = connect_hint_clenv ~poly c clenv gls in
+let unify_resolve poly flags = begin fun sigma gls (c,_,clenv) ->
+  let clenv', _ = connect_hint_clenv ~poly c clenv sigma gls in
   clenv_unique_resolver_tac false ~flags clenv'
   end
 
@@ -249,30 +247,29 @@ let unify_resolve_refine poly flags gl clenv =
 (** Dealing with goals of the form A -> B and hints of the form
   C -> A -> B.
 *)
-let clenv_of_prods poly nprods (c, clenv) gl =
+let clenv_of_prods poly nprods (c, clenv) sigma gl =
   let (c, _, _) = c in
   if poly || Int.equal nprods 0 then Some (None, clenv)
   else
-    let sigma = Tacmach.New.project gl in
     let ty = Retyping.get_type_of (Proofview.Goal.env gl) sigma c in
     let diff = nb_prod sigma ty - nprods in
     if (>=) diff 0 then
       (* Was Some clenv... *)
       Some (Some diff,
-            mk_clenv_from_n gl (Some diff) (c,ty))
+            mk_clenv_from_n sigma gl (Some diff) (c,ty))
     else None
 
 let with_prods nprods poly (c, clenv) f =
   if get_typeclasses_limit_intros () then
-    Proofview.Goal.enter begin fun gl ->
-      try match clenv_of_prods poly nprods (c, clenv) gl with
+    Proofview.Goal.enter begin fun sigma gl ->
+      try match clenv_of_prods poly nprods (c, clenv) sigma gl with
           | None -> Tacticals.New.tclZEROMSG (str"Not enough premisses")
-          | Some (diff, clenv') -> f gl (c, diff, clenv')
+          | Some (diff, clenv') -> f sigma gl (c, diff, clenv')
       with e when CErrors.noncritical e ->
         Tacticals.New.tclZEROMSG (CErrors.print e) end
   else Proofview.Goal.enter
-         begin fun gl ->
-         if Int.equal nprods 0 then f gl (c, None, clenv)
+         begin fun sigma gl ->
+         if Int.equal nprods 0 then f sigma gl (c, None, clenv)
          else Tacticals.New.tclZEROMSG (str"Not enough premisses") end
 
 let matches_pattern concl pat =
@@ -285,10 +282,10 @@ let matches_pattern concl pat =
        else
          Tacticals.New.tclZEROMSG (str "pattern does not match")
   in
-   Proofview.Goal.enter begin fun gl ->
+   Proofview.Goal.enter begin fun sigma gl ->
      let env = Proofview.Goal.env gl in
-     let sigma = Proofview.Goal.sigma gl in
-       matches env sigma end
+     matches env sigma
+   end
 
 (** Semantics of type class resolution lemma application:
 
@@ -330,9 +327,8 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
   let open Tacmach.New in
   let trivial_fail =
     Proofview.Goal.enter
-    begin fun gl ->
+    begin fun sigma gl ->
     let env = Proofview.Goal.env gl in
-    let sigma = Tacmach.New.project gl in
     let d = pf_last_hyp gl in
     let hintl = make_resolve_hyp env sigma d in
     let hints = Hint_db.add_list env sigma hintl local_db in
@@ -340,10 +336,10 @@ let rec e_trivial_fail_db only_classes db_list local_db secvars =
       end
   in
   let trivial_resolve =
-    Proofview.Goal.enter
-    begin fun gl ->
-    let tacs = e_trivial_resolve db_list local_db secvars only_classes
-                                 (pf_env gl) (project gl) (pf_concl gl) in
+    Proofview.Goal.enter begin fun sigma gl ->
+      let tacs = e_trivial_resolve db_list local_db secvars only_classes
+          (pf_env gl) sigma (pf_concl gl)
+      in
       tclFIRST (List.map (fun (x,_,_,_,_) -> x) tacs)
     end
   in
@@ -384,7 +380,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
            if get_typeclasses_filtered_unification () then
              let tac =
                with_prods nprods poly (term,cl)
-                          (fun gl clenv ->
+                          (fun _sigma gl clenv ->
                              matches_pattern concl p <*>
                                unify_resolve_refine poly flags gl clenv)
              in Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
@@ -396,7 +392,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
         | ERes_pf (term,cl) ->
            if get_typeclasses_filtered_unification () then
              let tac = (with_prods nprods poly (term,cl)
-                  (fun gl clenv ->
+                  (fun _sigma gl clenv ->
                              matches_pattern concl p <*>
                              unify_resolve_refine poly flags gl clenv)) in
              Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
@@ -410,7 +406,7 @@ and e_my_find_search db_list local_db secvars hdc complete only_classes env sigm
              let tac =
                matches_pattern concl p <*>
                  Proofview.Goal.enter
-                   (fun gl -> unify_resolve_refine poly flags gl (c,None,clenv)) in
+                   (fun _ gl -> unify_resolve_refine poly flags gl (c,None,clenv)) in
              Tacticals.New.tclTHEN tac Proofview.shelve_unifiable
            else
              e_give_exact flags poly (c,clenv)
@@ -582,26 +578,23 @@ module Search = struct
       (DirPath.empty, true, Context.Named.empty, GlobRef.Map.empty,
        Hint_db.empty TransparentState.full true)
 
-  let make_autogoal_hints only_classes (modes,st as mst) g =
+  let make_autogoal_hints only_classes (modes,st as mst) sigma g =
     let open Proofview in
-    let open Tacmach.New in
     let sign = Goal.hyps g in
     let (dir, onlyc, sign', cached_modes, cached_hints) = !autogoal_cache in
     let cwd = Lib.cwd () in
-    let eq c1 c2 = EConstr.eq_constr (project g) c1 c2 in
+    let eq c1 c2 = EConstr.eq_constr sigma c1 c2 in
     if DirPath.equal cwd dir &&
          (onlyc == only_classes) &&
            Context.Named.equal eq sign sign' &&
              cached_modes == modes
     then cached_hints
     else
-      let hints = make_hints {it = Goal.goal g; sigma = project g}
-                             mst only_classes sign
-      in
+      let hints = make_hints {it = Goal.goal g; sigma} mst only_classes sign in
       autogoal_cache := (cwd, only_classes, sign, modes, hints); hints
 
-  let make_autogoal mst only_classes dep cut i g =
-    let hints = make_autogoal_hints only_classes mst g in
+  let make_autogoal mst only_classes dep cut i sigma g =
+    let hints = make_autogoal_hints only_classes mst sigma g in
     { search_hints = hints;
       search_depth = [i]; last_tac = lazy (str"none");
       search_dep = dep;
@@ -634,12 +627,11 @@ module Search = struct
       tac1 + tac2 .... The choice of OR or ORELSE is determined
       depending on the dependencies of the goal and the unique/Prop
       status *)
-  let hints_tac_gl hints info kont gl : unit Proofview.tactic =
+  let hints_tac_gl hints info kont sigma gl : unit Proofview.tactic =
     let open Proofview in
     let open Proofview.Notations in
     let env = Goal.env gl in
     let concl = Goal.concl gl in
-    let sigma = Goal.sigma gl in
     let unique = not info.search_dep || is_unique env sigma concl in
     let backtrack = needs_backtrack env sigma unique concl in
     if !typeclasses_debug > 0 then
@@ -684,8 +676,7 @@ module Search = struct
           Feedback.msg_debug (header ++ str " failed with: " ++ msg)
         else ()
       in
-      let tac_of gls i j = Goal.enter begin fun gl' ->
-        let sigma' = Goal.sigma gl' in
+      let tac_of gls i j = Goal.enter begin fun sigma' gl' ->
         let _concl = Goal.concl gl' in
         if !typeclasses_debug > 0 then
           Feedback.msg_debug
@@ -697,7 +688,7 @@ module Search = struct
           then
             let st = Hint_db.transparent_state info.search_hints in
             let modes = Hint_db.modes info.search_hints in
-            make_autogoal_hints info.search_only_classes (modes,st) gl'
+            make_autogoal_hints info.search_only_classes (modes,st) sigma' gl'
           else info.search_hints
         in
         let dep' = info.search_dep || Proofview.unifiable sigma' (Goal.goal gl') gls in
@@ -797,10 +788,9 @@ module Search = struct
     Proofview.Goal.enter
       (fun gl -> hints_tac_gl hints info kont gl)
 
-  let intro_tac info kont gl =
+  let intro_tac info kont sigma gl =
     let open Proofview in
     let env = Goal.env gl in
-    let sigma = Goal.sigma gl in
     let decl = Tacmach.New.pf_last_hyp gl in
     let hint =
       make_resolve_hyp env sigma (Hint_db.transparent_state info.search_hints)
@@ -832,19 +822,20 @@ module Search = struct
                       (fun e' -> let (e, info) = merge_exceptions e e' in
                               Proofview.tclZERO ~info e))
 
-  let search_tac_gl mst only_classes dep hints depth i sigma gls gl :
+  (* XXX not sure if we need both sigmas here *)
+  let search_tac_gl mst only_classes dep hints depth i sigma gls (gsigma,gl) :
         unit Proofview.tactic =
     let open Proofview in
     let dep = dep || Proofview.unifiable sigma (Goal.goal gl) gls in
-    let info = make_autogoal mst only_classes dep (cut_of_hints hints) i gl in
+    let info = make_autogoal mst only_classes dep (cut_of_hints hints) i gsigma gl in
     search_tac hints depth 1 info
 
   let search_tac mst only_classes dep hints depth =
     let open Proofview in
     let tac sigma gls i =
       Goal.enter
-        begin fun gl ->
-          search_tac_gl mst only_classes dep hints depth (succ i) sigma gls gl end
+        begin fun gsigma gl ->
+          search_tac_gl mst only_classes dep hints depth (succ i) sigma gls (gsigma,gl) end
     in
       Proofview.Unsafe.tclGETGOALS >>= fun gls ->
       let gls = CList.map Proofview.drop_state gls in
@@ -1194,15 +1185,15 @@ let is_ground c =
 let autoapply c i =
   let open Proofview.Notations in
   Hints.wrap_hint_warning @@
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
   let hintdb = try Hints.searchtable_map i with Not_found ->
     CErrors.user_err (Pp.str ("Unknown hint database " ^ i ^ "."))
   in
   let flags = auto_unif_flags Evar.Set.empty
     (Hints.Hint_db.transparent_state hintdb) in
-  let cty = Tacmach.New.pf_unsafe_type_of gl c in
-  let ce = mk_clenv_from gl (c,cty) in
-    unify_e_resolve false flags gl
+  let cty = Tacmach.New.pf_unsafe_type_of sigma gl c in
+  let ce = mk_clenv_from sigma gl (c,cty) in
+    unify_e_resolve false flags sigma gl
                                  ((c,cty,Univ.ContextSet.empty),0,ce) <*>
       Proofview.tclEVARMAP >>= (fun sigma ->
       let sigma = Typeclasses.make_unresolvables

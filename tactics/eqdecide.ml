@@ -71,15 +71,15 @@ let choose_noteq eqonleft =
 (* This prevents issues where c2 is also a subterm of c1 (see e.g. #5449) *)
 
 let generalize_right mk typ c1 c2 =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
     let env = Proofview.Goal.env gl in
-  Refine.refine ~typecheck:false begin fun sigma ->
-    let na = Name (next_name_away_with_default "x" Anonymous (Termops.vars_of_env env)) in
-    let r = Retyping.relevance_of_type env sigma typ in
-    let newconcl = mkProd (make_annot na r, typ, mk typ c1 (mkRel 1)) in
-    let (sigma, x) = Evarutil.new_evar env sigma ~principal:true newconcl in
-    (sigma, mkApp (x, [|c2|]))
-  end
+    Refine.refine ~typecheck:false begin fun sigma ->
+      let na = Name (next_name_away_with_default "x" Anonymous (Termops.vars_of_env env)) in
+      let r = Retyping.relevance_of_type env sigma typ in
+      let newconcl = mkProd (make_annot na r, typ, mk typ c1 (mkRel 1)) in
+      let (sigma, x) = Evarutil.new_evar env sigma ~principal:true newconcl in
+      (sigma, mkApp (x, [|c2|]))
+    end
   end
 
 let mkBranches (eqonleft,mk,c1,c2,typ) =
@@ -194,8 +194,8 @@ let rec solveArg hyps eqonleft mk largs rargs = match largs, rargs with
     intros_reflexivity;
   ]
 | a1 :: largs, a2 :: rargs ->
-  Proofview.Goal.enter begin fun gl ->
-  let rectype = pf_unsafe_type_of gl a1 in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let rectype = pf_unsafe_type_of sigma gl a1 in
   let decide = mk rectype a1 a2 in
   let tac hyp = solveArg (hyp :: hyps) eqonleft mk largs rargs in
   let subtacs =
@@ -208,10 +208,9 @@ let rec solveArg hyps eqonleft mk largs rargs = match largs, rargs with
 let solveEqBranch rectype =
   Proofview.tclORELSE
     begin
-      Proofview.Goal.enter begin fun gl ->
+      Proofview.Goal.enter begin fun sigma gl ->
         let concl = pf_concl gl in
         let env = Proofview.Goal.env gl in
-        let sigma = project gl in
         match_eqdec env sigma concl >>= fun (eqonleft,mk,lhs,rhs,_) ->
           let (mib,mip) = Global.lookup_inductive rectype in
           let nparams   = mib.mind_nparams in
@@ -236,12 +235,11 @@ let hd_app sigma c = match EConstr.kind sigma c with
 let decideGralEquality =
   Proofview.tclORELSE
     begin
-      Proofview.Goal.enter begin fun gl ->
+      Proofview.Goal.enter begin fun sigma gl ->
         let concl = pf_concl gl in
         let env = Proofview.Goal.env gl in
-        let sigma = project gl in
         match_eqdec env sigma concl >>= fun (eqonleft,mk,c1,c2,typ as data) ->
-        let headtyp = hd_app sigma (pf_compute gl typ) in
+        let headtyp = hd_app sigma (pf_compute sigma gl typ) in
         begin match EConstr.kind sigma headtyp with
         | Ind (mi,_) -> Proofview.tclUNIT mi
         | _ -> tclZEROMSG (Pp.str"This decision procedure only works for inductive objects.")
@@ -260,7 +258,7 @@ let decideGralEquality =
 let decideEqualityGoal = tclTHEN intros decideGralEquality
 
 let decideEquality rectype ops =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
   let decide = mkGenDecideEqGoal rectype ops gl in
   (tclTHENS (cut decide) [default_auto;decideEqualityGoal])
   end
@@ -273,8 +271,8 @@ let compare c1 c2 =
   pf_constr_of_global (lib_ref "core.sumbool.type") >>= fun opc ->
   pf_constr_of_global (lib_ref "core.eq.type") >>= fun eqc ->
   pf_constr_of_global (lib_ref "core.not.type") >>= fun notc ->
-  Proofview.Goal.enter begin fun gl ->
-  let rectype = pf_unsafe_type_of gl c1 in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let rectype = pf_unsafe_type_of sigma gl c1 in
   let ops = (opc,eqc,notc) in
   let decide = mkDecideEqGoal true ops rectype c1 c2 in
   (tclTHENS (cut decide)

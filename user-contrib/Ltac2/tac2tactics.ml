@@ -162,7 +162,7 @@ let specialize c pat =
 
 let change pat c cl =
   let open Tac2ffi in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
   let c subst env sigma =
     let subst = Array.map_of_list snd (Id.Map.bindings subst) in
     delayed_of_tactic (Tac2ffi.app_fun1 c (array constr) constr subst) env sigma
@@ -332,7 +332,7 @@ let eval_native where c =
   eval_fun (CbvNative where) c
 
 let on_destruction_arg tac ev arg =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
   match arg with
   | None -> tac ev None
   | Some (clear, arg) ->

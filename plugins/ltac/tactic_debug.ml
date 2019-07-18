@@ -41,18 +41,18 @@ let msg_tac_notice s = Proofview.NonLogical.print_notice (s++fnl())
 
 (* Prints the goal *)
 
-let db_pr_goal gl =
+let db_pr_goal sigma gl =
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
   let penv = Termops.Internal.print_named_context env in
-  let pc = Printer.pr_econstr_env env (Tacmach.New.project gl) concl in
+  let pc = Printer.pr_econstr_env env sigma concl in
     str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++
                    str" "  ++ pc) ++ fnl ()
 
 let db_pr_goal =
-  Proofview.Goal.enter begin fun gl ->
-  let pg = db_pr_goal gl in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let pg = db_pr_goal sigma gl in
   Proofview.tclLIFT (msg_tac_notice (str "Goal:" ++ fnl () ++ pg))
   end
 

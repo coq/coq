@@ -26,8 +26,7 @@ let mk_absurd_proof coq_not r t =
     mkLambda (make_annot (Names.Name id) r,t,mkApp (mkRel 2,[|mkRel 1|])))
 
 let absurd c =
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Proofview.Goal.sigma gl in
+  Proofview.Goal.enter begin fun sigma gl ->
     let env = Proofview.Goal.env gl in
     let j = Retyping.get_judgment_of env sigma c in
     let sigma, j = Coercion.inh_coerce_to_sort env sigma j in
@@ -52,14 +51,13 @@ let filter_hyp f tac =
     | [] -> Proofview.tclZERO Not_found
     | d::rest when f (NamedDecl.get_type d) -> tac (NamedDecl.get_id d)
     | _::rest -> seek rest in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
     let hyps = Proofview.Goal.hyps gl in
     seek hyps
   end
 
 let contradiction_context =
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+  Proofview.Goal.enter begin fun sigma gl ->
     let env = Proofview.Goal.env gl in
     let rec seek_neg l = match l with
       | [] ->  Tacticals.New.tclZEROMSG (Pp.str"No such contradiction")
@@ -85,8 +83,8 @@ let contradiction_context =
                | None ->
                  Tacticals.New.tclZEROMSG (Pp.str"Not a negated unit type."))
 	      (Proofview.tclORELSE
-                 (Proofview.Goal.enter begin fun gl ->
-                   let is_conv_leq = Tacmach.New.pf_apply is_conv_leq gl in
+                 (Proofview.Goal.enter begin fun sigma gl ->
+                   let is_conv_leq = Tacmach.New.pf_apply is_conv_leq sigma gl in
 	           filter_hyp (fun typ -> is_conv_leq typ t)
 		     (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
                  end)
@@ -107,10 +105,9 @@ let is_negation_of env sigma typ t =
     | _ -> false
 
 let contradiction_term (c,lbind as cl) =
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+  Proofview.Goal.enter begin fun sigma gl ->
     let env = Proofview.Goal.env gl in
-    let type_of = Tacmach.New.pf_unsafe_type_of gl in
+    let type_of = Tacmach.New.pf_unsafe_type_of sigma gl in
     let typ = type_of c in
     let _, ccl = splay_prod env sigma typ in
     if is_empty_type env sigma ccl then

@@ -32,9 +32,8 @@ open Proofview.Notations
 
 module NamedDecl = Context.Named.Declaration
 
-let var_occurs_in_pf gl id =
+let var_occurs_in_pf sigma gl id =
   let env = Proofview.Goal.env gl in
-  let sigma = project gl in
   occur_var env sigma id (Proofview.Goal.concl gl) ||
   List.exists (occur_var_in_decl env sigma id) (Proofview.Goal.hyps gl)
 
@@ -191,22 +190,22 @@ let make_inv_predicate env evd indf realargs id status concl =
    and introduces generalized hypotheis.
    Precondition: t=(mkVar id) *)
 
-let dependent_hyps env id idlist gl =
+let dependent_hyps env id idlist sigma gl =
   let rec dep_rec =function
     | [] -> []
     | d::l ->
 	(* Update the type of id1: it may have been subject to rewriting *)
-	let d = pf_get_hyp (NamedDecl.get_id d) gl in
-	if occur_var_in_decl env (project gl) id d
+        let d = pf_get_hyp (NamedDecl.get_id d) sigma gl in
+        if occur_var_in_decl env sigma id d
         then d :: dep_rec l
         else dep_rec l
   in
   dep_rec idlist
 
-let split_dep_and_nodep hyps gl =
+let split_dep_and_nodep hyps sigma gl =
   List.fold_right
     (fun d (l1,l2) ->
-       if var_occurs_in_pf gl (NamedDecl.get_id d) then (d::l1,l2) else (l1,d::l2))
+       if var_occurs_in_pf sigma gl (NamedDecl.get_id d) then (d::l1,l2) else (l1,d::l2))
     hyps ([],[])
 
 (* Computation of dids is late; must have been done in rewrite_equations*)
@@ -282,8 +281,8 @@ Nota: with Inversion_clear, only four useless hypotheses
 
 let generalizeRewriteIntros as_mode tac depids id =
   Proofview.tclENV >>= fun env ->
-  Proofview.Goal.enter begin fun gl ->
-  let dids = dependent_hyps env id depids gl in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let dids = dependent_hyps env id depids sigma gl in
   let reintros = if as_mode then intros_replacing else intros_possibly_replacing in
   (tclTHENLIST
     [bring_hyps dids; tac;
@@ -364,10 +363,9 @@ let projectAndApply as_mode thin avoid id eqname names depids =
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
   in
   let substHypIfVariable tac id =
-    Proofview.Goal.enter begin fun gl ->
-    let sigma = project gl in
+    Proofview.Goal.enter begin fun sigma gl ->
     (* We only look at the type of hypothesis "id" *)
-    let hyp = pf_nf_evar gl (pf_get_hyp_typ id gl) in
+    let hyp = Evarutil.nf_evar sigma (pf_get_hyp_typ id sigma gl) in
     let (t,t1,t2) = dest_nf_eq (pf_env gl) sigma hyp in
     match (EConstr.kind sigma t1, EConstr.kind sigma t2) with
     | Var id1, _ -> generalizeRewriteIntros as_mode (subst_hyp true id) depids id1
@@ -400,7 +398,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     id
 
 let nLastDecls i tac =
-  Proofview.Goal.enter begin fun gl -> tac (nLastDecls gl i) end
+  Proofview.Goal.enter begin fun _ gl -> tac (nLastDecls gl i) end
 
 (* Introduction of the equations on arguments
    othin: discriminates Simple Inversion, Inversion and Inversion_clear
@@ -408,8 +406,8 @@ let nLastDecls i tac =
      Some thin: the equations are rewritten, and cleared if thin is true *)
 
 let rewrite_equations as_mode othin neqns names ba =
-  Proofview.Goal.enter begin fun gl ->
-  let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums sigma gl in
   let first_eq = ref Logic.MoveLast in
   let avoid = if as_mode then Id.Set.of_list (List.map NamedDecl.get_id nodepids) else Id.Set.empty in
   match othin with
@@ -458,13 +456,12 @@ let rewrite_equations_tac as_mode othin id neqns names ba =
     tac
 
 let raw_inversion inv_kind id status names =
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Proofview.Goal.sigma gl in
+  Proofview.Goal.enter begin fun sigma gl ->
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
     let c = mkVar id in
     let (ind, t) =
-      try pf_apply Tacred.reduce_to_atomic_ind gl (pf_unsafe_type_of gl c)
+      try pf_apply Tacred.reduce_to_atomic_ind sigma gl (pf_unsafe_type_of sigma gl c)
       with UserError _ ->
         let msg = str "The type of " ++ Id.print id ++ str " is not inductive." in
         CErrors.user_err  msg
@@ -537,15 +534,13 @@ let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
  * back to their places in the hyp-list. *)
 
 let invIn k names ids id =
-  Proofview.Goal.enter begin fun gl ->
-    let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
+  Proofview.Goal.enter begin fun sigma gl ->
+    let hyps = List.map (fun id -> pf_get_hyp id sigma gl) ids in
     let concl = Proofview.Goal.concl gl in
-    let sigma = project gl in
     let nb_prod_init = nb_prod sigma concl in
     let intros_replace_ids =
-      Proofview.Goal.enter begin fun gl ->
+      Proofview.Goal.enter begin fun sigma gl ->
         let concl = pf_concl gl in
-        let sigma = project gl in
         let nb_of_new_hyp =
           nb_prod sigma concl - (List.length hyps + nb_prod_init)
         in

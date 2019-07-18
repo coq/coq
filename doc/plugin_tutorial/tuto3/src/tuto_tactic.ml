@@ -51,7 +51,7 @@ let c_U () =
 
    The main difficulty in defining this tactic is to understand how to
    construct the input expected by apply_in. *)
-let package i = Goal.enter begin fun gl ->
+let package i = Goal.enter begin fun _ gl ->
   Tactics.apply_in true false i
    [(* this means that the applied theorem is not to be cleared. *)
     None, (CAst.make (c_M (),
@@ -102,9 +102,8 @@ let get_type_of_hyp env id =
                              str (Names.Id.to_string id) ++
                              str " is not a plain hypothesis")
 
-let repackage i h_hyps_id = Goal.enter begin fun gl ->
+let repackage i h_hyps_id = Goal.enter begin fun sigma gl ->
     let env = Goal.env gl in
-    let sigma = Tacmach.New.project gl in
     let concl = Tacmach.New.pf_concl gl in
     let (ty1 : EConstr.t) = get_type_of_hyp env i in
     let (packed_ty2 : EConstr.t) = get_type_of_hyp env h_hyps_id in
@@ -126,7 +125,7 @@ let repackage i h_hyps_id = Goal.enter begin fun gl ->
 
 let pack_tactic i =
   let h_hyps_id = (Names.Id.of_string "packed_hyps") in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
     let hyps = Environ.named_context_val (Proofview.Goal.env gl) in
     if not (Termops.mem_named_context_val i hyps) then
       (CErrors.user_err

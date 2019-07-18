@@ -1054,24 +1054,19 @@ module Goal = struct
 
   type t = {
     env : Environ.env;
-    sigma : Evd.evar_map;
     concl : EConstr.constr ;
     state : StateStore.t;
     self : Evar.t ; (* for compatibility with old-style definitions *)
   }
 
-  let print { sigma; self } = { Evd.it = self; sigma }
-
   let state { state=state } = state
 
   let env {env} = env
-  let sigma {sigma} = sigma
   let hyps {env} = EConstr.named_context env
   let concl {concl} = concl
 
-  let gmake_with info env sigma goal state =
+  let gmake_with info env goal state =
     { env = Environ.reset_with_named_context (Evd.evar_filtered_hyps info) env ;
-      sigma = sigma ;
       concl = Evd.evar_concl info;
       state = state ;
       self = goal }
@@ -1081,7 +1076,7 @@ module Goal = struct
     let goal = drop_state goal in
     let info = Evarutil.nf_evar_info sigma (Evd.find sigma goal) in
     let sigma = Evd.add sigma goal info in
-    gmake_with info env sigma goal state , sigma
+    gmake_with info env goal state , sigma
 
   let nf_enter f =
     InfoL.tag (Info.Dispatch) begin
@@ -1090,7 +1085,7 @@ module Goal = struct
       tclEVARMAP >>= fun sigma ->
       try
         let (gl, sigma) = nf_gmake env sigma goal in
-        tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f gl))
+        tclTHEN (Unsafe.tclEVARS sigma) (InfoL.tag (Info.DBranch) (f sigma gl))
       with e when catchable_exception e ->
         let (e, info) = CErrors.push e in
         tclZERO ~info e
@@ -1100,15 +1095,15 @@ module Goal = struct
     let state = get_state goal in
     let goal = drop_state goal in
     let info = Evd.find sigma goal in
-    gmake_with info env sigma goal state
+    gmake_with info env goal state
 
   let enter f =
-    let f gl = InfoL.tag (Info.DBranch) (f gl) in
+    let f sigma gl = InfoL.tag (Info.DBranch) (f sigma gl) in
     InfoL.tag (Info.Dispatch) begin
     iter_goal begin fun goal ->
       Env.get >>= fun env ->
       tclEVARMAP >>= fun sigma ->
-      try f (gmake env sigma goal)
+      try f sigma (gmake env sigma goal)
       with e when catchable_exception e ->
         let (e, info) = CErrors.push e in
         tclZERO ~info e
@@ -1121,7 +1116,7 @@ module Goal = struct
     | [goal] -> begin
        Env.get >>= fun env ->
        tclEVARMAP >>= fun sigma ->
-       try f (gmake env sigma goal)
+       try f sigma (gmake env sigma goal)
        with e when catchable_exception e ->
          let (e, info) = CErrors.push e in
          tclZERO ~info e

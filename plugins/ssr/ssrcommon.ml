@@ -1026,9 +1026,9 @@ let () = CLexer.set_keyword_state frozen_lexer ;;
 
 (** Basic tactics *)
 
-let rec fst_prod red tac = Proofview.Goal.enter begin fun gl ->
+let rec fst_prod red tac = Proofview.Goal.enter begin fun sigma gl ->
   let concl = Proofview.Goal.concl gl in
-  match EConstr.kind (Proofview.Goal.sigma gl) concl with
+  match EConstr.kind sigma concl with
   | Prod (id,_,tgt) | LetIn(id,_,_,tgt) -> tac id.binder_name
   | _ -> if red then Tacticals.New.tclZEROMSG (str"No product even after head-reduction.")
          else Tacticals.New.tclTHEN Tactics.hnf_in_concl (fst_prod true tac)
@@ -1294,9 +1294,8 @@ let unfold cl =
 open Proofview
 open Notations
 
-let tacSIGMA = Goal.enter_one ~__LOC__ begin fun g ->
+let tacSIGMA = Goal.enter_one ~__LOC__ begin fun sigma g ->
   let k = Goal.goal g in
-  let sigma = Goal.sigma g in
   tclUNIT (Tacmach.re_sig k sigma)
 end
 
@@ -1316,8 +1315,8 @@ let tacREDUCE_TO_QUANTIFIED_IND ty =
   tacSIGMA >>= fun gl ->
   tclUNIT (Tacmach.pf_reduce_to_quantified_ind gl ty)
 
-let tacTYPEOF c = Goal.enter_one ~__LOC__ (fun g ->
-  let sigma, env = Goal.sigma g, Goal.env g in
+let tacTYPEOF c = Goal.enter_one ~__LOC__ (fun sigma g ->
+  let env = Goal.env g in
   let sigma, ty = Typing.type_of env sigma c in
   Unsafe.tclEVARS sigma <*> tclUNIT ty)
 
@@ -1360,7 +1359,7 @@ let rec decompose_assum env sigma orig_goal =
       | _ -> CErrors.user_err
           Pp.(str "No assumption in " ++ Printer.pr_econstr_env env sigma goal)
 
-let tclFULL_BETAIOTA = Goal.enter begin fun gl ->
+let tclFULL_BETAIOTA = Goal.enter begin fun _ gl ->
   let r, _ = Redexpr.reduction_of_red_expr (Goal.env gl)
     Genredexpr.(Lazy {
       rBeta=true; rMatch=true; rFix=true; rCofix=true;
@@ -1379,9 +1378,9 @@ type intro_id =
     not be user accessible. If the goal does not start with a product or a
 let-in even after reduction, it fails. In case of success, the original name
 and final id are passed to the continuation [k] which gets evaluated. *)
-let tclINTRO ~id ~conclusion:k = Goal.enter begin fun gl ->
+let tclINTRO ~id ~conclusion:k = Goal.enter begin fun sigma gl ->
   let open Context in
-  let env, sigma, g = Goal.(env gl, sigma gl, concl gl) in
+  let env, g = Goal.(env gl, concl gl) in
   let decl, t, no_red = decompose_assum env sigma g in
   let original_name = Rel.Declaration.get_name decl in
   let already_used = Tacmach.New.pf_ids_of_hyps gl in
@@ -1410,9 +1409,8 @@ let tclINTRO_ANON ?seed () =
   | None -> tclINTRO ~id:Anon ~conclusion:return
   | Some seed -> tclINTRO ~id:(Seed seed) ~conclusion:return
 
-let tclRENAME_HD_PROD name = Goal.enter begin fun gl ->
+let tclRENAME_HD_PROD name = Goal.enter begin fun sigma gl ->
   let concl = Goal.concl gl in
-  let sigma = Goal.sigma gl in
   match EConstr.kind sigma concl with
   | Prod(x,src,tgt) ->
       convert_concl_no_check EConstr.(mkProd ({x with binder_name = name},src,tgt))
@@ -1434,15 +1432,14 @@ let tacCONSTR_NAME ?name c =
   match name with
   | Some n -> tclUNIT n
   | None ->
-      Goal.enter_one ~__LOC__ (fun g ->
-        let sigma = Goal.sigma g in
+      Goal.enter_one ~__LOC__ (fun sigma g ->
         tclUNIT (constr_name sigma c))
 
 let tacMKPROD c ?name cl =
   tacTYPEOF c >>= fun t ->
   tacCONSTR_NAME ?name c >>= fun name ->
-  Goal.enter_one ~__LOC__ begin fun g ->
-    let sigma, env = Goal.sigma g, Goal.env g in
+  Goal.enter_one ~__LOC__ begin fun sigma g ->
+    let env = Goal.env g in
     let r = Retyping.relevance_of_term env sigma c in
     if name <> Names.Name.Anonymous || EConstr.Vars.noccurn sigma  1 cl
     then tclUNIT (EConstr.mkProd (make_annot name r, t, cl))
@@ -1473,7 +1470,7 @@ let tacIS_INJECTION_CASE ?ty t = begin
   tclUNIT (Coqlib.check_ind_ref "core.eq.type" mind)
 end
 
-let tclWITHTOP tac = Goal.enter begin fun gl ->
+let tclWITHTOP tac = Goal.enter begin fun _ gl ->
   let top =
     mk_anon_id "top_assumption" (Tacmach.New.pf_ids_of_hyps gl) in
   tclINTRO_ID top <*>
@@ -1481,8 +1478,8 @@ let tclWITHTOP tac = Goal.enter begin fun gl ->
   Tactics.clear [top]
 end
 
-let tacMK_SSR_CONST name = Goal.enter_one ~__LOC__ begin fun g ->
-  let sigma, env = Goal.(sigma g, env g) in
+let tacMK_SSR_CONST name = Goal.enter_one ~__LOC__ begin fun sigma g ->
+  let env = Goal.env g in
   let sigma, c = mkSsrConst name env sigma in
   Unsafe.tclEVARS sigma <*>
   tclUNIT c
@@ -1505,9 +1502,9 @@ let lift_upd_state upd s =
   upd old_state >>= fun new_state ->
   tclUNIT (set s state_field new_state)
 
-let tacUPDATE upd = Goal.enter begin fun gl ->
+let tacUPDATE upd = Goal.enter begin fun _ gl ->
   let s0 = Goal.state gl in
-  Goal.enter_one ~__LOC__ (fun _ -> lift_upd_state upd s0) >>= fun s ->
+  Goal.enter_one ~__LOC__ (fun _ _ -> lift_upd_state upd s0) >>= fun s ->
   Unsafe.tclGETGOALS >>= fun gls ->
   let gls = List.map (fun gs ->
     let g = Proofview_monad.drop_state gs in
@@ -1515,12 +1512,12 @@ let tacUPDATE upd = Goal.enter begin fun gl ->
   Unsafe.tclSETGOALS gls
 end
 
-let tclGET k = Goal.enter begin fun gl ->
+let tclGET k = Goal.enter begin fun _ gl ->
   let open Proofview_monad.StateStore in
   k (Option.default S.init (get (Goal.state gl) state_field))
 end
 
-let tclGET1 k = Goal.enter_one begin fun gl ->
+let tclGET1 k = Goal.enter_one begin fun _ gl ->
   let open Proofview_monad.StateStore in
   k (Option.default S.init (get (Goal.state gl) state_field))
 end

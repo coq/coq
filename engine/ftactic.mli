@@ -43,7 +43,7 @@ val run : 'a t -> ('a -> unit Proofview.tactic) -> unit Proofview.tactic
 
 (** Enter a goal. The resulting tactic is focused. *)
 
-val enter : (Proofview.Goal.t -> 'a t) -> 'a t
+val enter : (Evd.evar_map -> Proofview.Goal.t -> 'a t) -> 'a t
 (** Enter a goal, without evar normalization. The resulting tactic is
     focused. *)
 

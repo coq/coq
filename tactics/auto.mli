@@ -24,7 +24,7 @@ val default_search_depth : int ref
 val auto_flags_of_state : TransparentState.t -> Unification.unify_flags
 
 val connect_hint_clenv
-  : poly:bool -> raw_hint -> clausenv -> Proofview.Goal.t -> clausenv * constr
+  : poly:bool -> raw_hint -> clausenv -> Evd.evar_map -> Proofview.Goal.t -> clausenv * constr
 
 (** Try unification with the precompiled clause, then use registered Apply *)
 val unify_resolve : poly:bool -> Unification.unify_flags -> (raw_hint * clausenv) -> unit Proofview.tactic

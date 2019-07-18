@@ -1479,7 +1479,7 @@ let micromega_order_change spec cert cert_typ env ff  (*: unit Proofview.tactic*
  let ff  = dump_formula formula_typ (dump_cstr spec.coeff spec.dump_coeff) ff in
  let vm = dump_varmap (spec.typ) (vm_of_list env) in
  (* todo : directly generate the proof term - or generalize before conversion? *)
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
    Tacticals.New.tclTHENLIST
     [
      Tactics.change_concl
@@ -1758,8 +1758,7 @@ let micromega_gen
     pre_process
     cnf
     spec dumpexpr prover tac =
- Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+ Proofview.Goal.enter begin fun sigma gl ->
     let concl = Tacmach.New.pf_concl gl in
     let hyps  = Tacmach.New.pf_hyps_types gl in
     try
@@ -1834,7 +1833,7 @@ let micromega_order_changer cert env ff  =
   let formula_typ = (EConstr.mkApp (Lazy.force coq_Cstr,[| coeff|])) in
   let ff = dump_formula formula_typ (dump_cstr coeff dump_coeff) ff in
   let vm = dump_varmap (typ) (vm_of_list env) in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
     Tacticals.New.tclTHENLIST
      [
      (Tactics.change_concl
@@ -1860,8 +1859,7 @@ let micromega_genr prover tac =
     proof_typ = Lazy.force coq_QWitness ;
     dump_proof = dump_psatz coq_Q dump_q
   } in
-  Proofview.Goal.enter begin fun gl ->
-     let sigma = Tacmach.New.project gl in
+  Proofview.Goal.enter begin fun sigma gl ->
      let concl = Tacmach.New.pf_concl gl in
      let hyps  = Tacmach.New.pf_hyps_types gl in
 
@@ -2242,15 +2240,12 @@ let nqa  =
 (** Let expose  [is_ground_tac] *)
 
 let is_ground_tac t =
-  Proofview.Goal.enter begin fun gl ->
-                   let sigma = Tacmach.New.project gl in
-                   let env   = Tacmach.New.pf_env gl in
-                   if is_ground_term env sigma t
-                   then Tacticals.New.tclIDTAC
-                   else Tacticals.New.tclFAIL 0 (Pp.str "Not ground")
-                   end
-
-
+  Proofview.Goal.enter begin fun sigma gl ->
+    let env = Tacmach.New.pf_env gl in
+    if is_ground_term env sigma t
+    then Tacticals.New.tclIDTAC
+    else Tacticals.New.tclFAIL 0 (Pp.str "Not ground")
+  end
 
 (* Local Variables: *)
 (* coding: utf-8 *)

@@ -92,10 +92,10 @@ let vsINIT ~view ~subject_name ~to_clear =
 
 (** Initializes the state in which view data is accumulated when views are
 applied to the first assumption in the goal *)
-let vsBOOTSTRAP = Goal.enter_one ~__LOC__ begin fun gl ->
+let vsBOOTSTRAP = Goal.enter_one ~__LOC__ begin fun sigma gl ->
   let concl = Goal.concl gl in
   let id = (* We keep the orig name for checks in "in" tcl *)
-    match EConstr.kind_of_type (Goal.sigma gl) concl with
+    match EConstr.kind_of_type sigma concl with
     | Term.ProdType({binder_name=Name.Name id}, _, _)
       when Ssrcommon.is_discharged_id id -> id
     | _ -> mk_anon_id "view_subject" (Tacmach.New.pf_ids_of_hyps gl) in
@@ -144,9 +144,8 @@ let intern_constr_expr { Genintern.genv; ltacvars = vars } sigma ce =
    need to internalize t.
 *)
 let is_tac_in_term ?extra_scope { annotation; body; glob_env; interp_env } =
-  Goal.(enter_one ~__LOC__ begin fun goal ->
+  Goal.(enter_one ~__LOC__ begin fun sigma goal ->
     let genv = env goal in
-    let sigma = sigma goal in
     let ist = Ssrcommon.option_assert_get glob_env (Pp.str"not a term") in
     (* We use the env of the goal, not the global one *)
     let ist = { ist with Genintern.genv } in
@@ -182,9 +181,8 @@ let mkGApp f args =
   else DAst.make (Glob_term.GApp (f, args))
 
 (* From glob_constr to open_constr === (env,sigma,constr) *)
-let interp_glob ist glob = Goal.enter_one ~__LOC__ begin fun goal ->
+let interp_glob ist glob = Goal.enter_one ~__LOC__ begin fun sigma goal ->
   let env = Goal.env goal in
-  let sigma = Goal.sigma goal in
   Ssrprinters.ppdebug (lazy
     Pp.(str"interp-in: " ++ Printer.pr_glob_constr_env env glob));
   try
@@ -230,7 +228,7 @@ let guess_max_implicits ist glob =
      tclUNIT (List.length ctx + 6))
   (fun _ -> tclUNIT 5)
 
-let pad_to_inductive ist glob = Goal.enter_one ~__LOC__ begin fun goal ->
+let pad_to_inductive ist glob = Goal.enter_one ~__LOC__ begin fun _ goal ->
   interp_glob ist glob >>= fun (env, sigma, term as ot) ->
   let term_ty = Retyping.get_type_of env sigma term in
   let ctx, i = Reductionops.splay_prod env sigma term_ty in
@@ -287,9 +285,8 @@ let pile_up_view ~clear_if_id (annotation, ist, v) =
   State.vsPUSH (fun p -> interp_view ~clear_if_id ist v p)
 
 let finalize_view s0 ?(simple_types=true) p =
-Goal.enter_one ~__LOC__ begin fun g ->
+Goal.enter_one ~__LOC__ begin fun sigma g ->
   let env = Goal.env g in
-  let sigma = Goal.sigma g in
   let evars_of_p = Evd.evars_of_term sigma p in
   let filter x _ = Evar.Set.mem x evars_of_p in
   let sigma = Typeclasses.resolve_typeclasses ~fail:false ~filter env sigma in

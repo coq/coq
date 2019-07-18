@@ -32,11 +32,10 @@ type lseqtac= GlobRef.t -> seqtac
 type 'a with_backtracking = tactic -> 'a
 
 let wrap n b continue seq =
-  Proofview.Goal.enter begin fun gls ->
+  Proofview.Goal.enter begin fun sigma gls ->
   Control.check_for_interrupt ();
   let nc = Proofview.Goal.hyps gls in
   let env=pf_env gls in
-  let sigma = project gls in
   let rec aux i nc ctx=
     if i<=0 then seq else
       match nc with
@@ -61,9 +60,9 @@ let clear_global=function
 (* connection rules *)
 
 let axiom_tac t seq =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
   try
-    pf_constr_of_global (find_left (project gl) t seq) >>= fun c ->
+    pf_constr_of_global (find_left sigma t seq) >>= fun c ->
     exact_no_check c
   with Not_found -> tclFAIL 0 (Pp.str "No axiom link")
   end
@@ -103,7 +102,7 @@ let arrow_tac backtrack continue seq=
 (* left connectives rules *)
 
 let left_and_tac ind backtrack id continue seq =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
   let n=(construct_nhyps (pf_env gl) ind).(0) in
    tclIFTHENELSE
      (tclTHENLIST
@@ -115,7 +114,7 @@ let left_and_tac ind backtrack id continue seq =
   end
 
 let left_or_tac ind backtrack id continue seq =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
   let v=construct_nhyps (pf_env gl) ind in
   let f n=
     tclTHENLIST
@@ -136,8 +135,8 @@ let left_false_tac id=
 (* We use this function for false, and, or, exists *)
 
 let ll_ind_tac (ind,u as indu) largs backtrack id continue seq =
-  Proofview.Goal.enter begin fun gl ->
-     let rcs=ind_hyps (pf_env gl) (project gl) 0 indu largs in
+  Proofview.Goal.enter begin fun sigma gl ->
+     let rcs=ind_hyps (pf_env gl) sigma 0 indu largs in
      let vargs=Array.of_list largs in
              (* construire le terme  H->B, le generaliser etc *)
      let myterm idc i=
@@ -195,7 +194,7 @@ let forall_tac backtrack continue seq=
        backtrack)
 
 let left_exists_tac ind backtrack id continue seq =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
   let n=(construct_nhyps (pf_env gl) ind).(0) in
     tclIFTHENELSE
       (Tacticals.New.pf_constr_of_global id >>= simplest_elim)
@@ -211,7 +210,7 @@ let ll_forall_tac prod backtrack id continue seq=
        [tclTHENLIST
 	  [intro;
            (pf_constr_of_global id >>= fun idc ->
-	   Proofview.Goal.enter begin fun gls->
+           Proofview.Goal.enter begin fun _ gls ->
               let open EConstr in
 	      let id0 = List.nth (pf_ids_of_hyps gls) 0 in
               let term=mkApp(idc,[|mkVar(id0)|]) in

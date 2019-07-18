@@ -121,14 +121,14 @@ let mk_clenv_from_env env sigma n (c,cty) =
     evd = evd;
     env = env }
 
-let mk_clenv_from_n gls n (c,cty) =
+let mk_clenv_from_n sigma gls n (c,cty) =
   let env = Proofview.Goal.env gls in
-  let sigma = Tacmach.New.project gls in
   mk_clenv_from_env env sigma n (c, cty)
 
-let mk_clenv_from gls = mk_clenv_from_n gls None
+let mk_clenv_from sigma gls = mk_clenv_from_n sigma gls None
 
-let mk_clenv_type_of gls t = mk_clenv_from gls (t,Tacmach.New.pf_unsafe_type_of gls t)
+let mk_clenv_type_of sigma gls t =
+  mk_clenv_from sigma gls (t,Tacmach.New.pf_unsafe_type_of sigma gls t)
 
 (******************************************************************)
 

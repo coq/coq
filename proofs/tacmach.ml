@@ -105,25 +105,22 @@ let pr_gls gls =
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New = struct
 
-  let project gl =
-    Proofview.Goal.sigma gl
+  let pf_apply f sigma gl =
+    f (Proofview.Goal.env gl) sigma
 
-  let pf_apply f gl =
-    f (Proofview.Goal.env gl) (project gl)
-
-  let of_old f gl =
-    f { Evd.it = Proofview.Goal.goal gl ; sigma = project gl; }
+  let of_old f sigma gl =
+    f { Evd.it = Proofview.Goal.goal gl ; sigma = sigma; }
 
   let pf_env = Proofview.Goal.env
   let pf_concl = Proofview.Goal.concl
 
-  let pf_unsafe_type_of gl t =
-    pf_apply unsafe_type_of gl t
+  let pf_unsafe_type_of sigma gl t =
+    pf_apply unsafe_type_of sigma gl t
 
-  let pf_type_of gl t =
-    pf_apply type_of gl t
+  let pf_type_of sigma gl t =
+    pf_apply type_of sigma gl t
 
-  let pf_conv_x gl t1 t2 = pf_apply is_conv gl t1 t2
+  let pf_conv_x sigma gl t1 t2 = pf_apply is_conv sigma gl t1 t2
 
   let pf_ids_of_hyps gl =
     (* We only get the identifiers in [hyps] *)
@@ -139,17 +136,16 @@ module New = struct
     let ids = pf_ids_set_of_hyps gl in
     next_ident_away id ids
 
-  let pf_get_hyp id gl =
+  let pf_get_hyp id sigma gl =
     let hyps = Proofview.Goal.env gl in
-    let sigma = project gl in
     let sign =
       try EConstr.lookup_named id hyps
       with Not_found -> raise (RefinerError (hyps, sigma, NoSuchHyp id))
     in
     sign
 
-  let pf_get_hyp_typ id gl =
-    pf_get_hyp id gl |> NamedDecl.get_type
+  let pf_get_hyp_typ id sigma gl =
+    pf_get_hyp id sigma gl |> NamedDecl.get_type
 
   let pf_hyps_types gl =
     let env = Proofview.Goal.env gl in
@@ -162,24 +158,22 @@ module New = struct
     let hyps = Proofview.Goal.hyps gl in
     List.hd hyps
 
-  let pf_nf_concl (gl : Proofview.Goal.t) =
+  let pf_nf_concl sigma (gl : Proofview.Goal.t) =
     (* We normalize the conclusion just after *)
     let concl = Proofview.Goal.concl gl in
-    let sigma = project gl in
     nf_evar sigma concl
 
-  let pf_whd_all gl t = pf_apply whd_all gl t
+  let pf_whd_all sigma gl t = pf_apply whd_all sigma gl t
 
-  let pf_get_type_of gl t = pf_apply Retyping.get_type_of gl t
+  let pf_get_type_of sigma gl t = pf_apply Retyping.get_type_of sigma gl t
 
-  let pf_reduce_to_quantified_ind gl t =
-    pf_apply reduce_to_quantified_ind gl t
+  let pf_reduce_to_quantified_ind sigma gl t =
+    pf_apply reduce_to_quantified_ind sigma gl t
 
-  let pf_hnf_constr gl t = pf_apply hnf_constr gl t
-  let pf_hnf_type_of gl t =
-    pf_whd_all gl (pf_get_type_of gl t)
+  let pf_hnf_constr sigma gl t = pf_apply hnf_constr sigma gl t
+  let pf_hnf_type_of sigma gl t =
+    pf_whd_all sigma gl (pf_get_type_of sigma gl t)
 
-  let pf_compute gl t = pf_apply compute gl t
+  let pf_compute sigma gl t = pf_apply compute sigma gl t
 
-  let pf_nf_evar gl t = nf_evar (project gl) t
 end

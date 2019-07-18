@@ -98,9 +98,8 @@ let induction_arg_of_quantified_hyp = function
    ElimOnIdent and not as "constr" *)
 
 let mytclWithHoles tac with_evars c =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun sigma gl ->
     let env = Tacmach.New.pf_env gl in
-    let sigma = Tacmach.New.project gl in
     let sigma',c = Tactics.force_destruction_arg with_evars env sigma c in
     Tacticals.New.tclWITHHOLES with_evars (tac with_evars (Some c)) sigma'
   end
@@ -370,7 +369,7 @@ let constr_flags () = {
 }
 
 let refine_tac ist simple with_classes c =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
     let concl = Proofview.Goal.concl gl in
     let env = Proofview.Goal.env gl in
     let flags =
@@ -674,8 +673,7 @@ let subst_hole_with_term occ tc t =
 open Tacmach
 
 let hResolve id c occ t =
-  Proofview.Goal.enter begin fun gl ->
-  let sigma = Proofview.Goal.sigma gl in
+  Proofview.Goal.enter begin fun sigma gl ->
   let env = Termops.clear_named_body id (Proofview.Goal.env gl) in
   let concl = Proofview.Goal.concl gl in
   let env_ids = Termops.vars_of_env env in
@@ -737,7 +735,7 @@ END
 exception Found of unit Proofview.tactic
 
 let rewrite_except h =
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
   Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else 
       Tacticals.New.tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
@@ -751,12 +749,12 @@ let refl_equal () = Coqlib.lib_ref "core.eq.type"
   should be replaced by a call to the tactic but I don't know how to
   call it before it is defined. *)
 let  mkCaseEq a  : unit Proofview.tactic =
-  Proofview.Goal.enter begin fun gl ->
-    let type_of_a = Tacmach.New.pf_unsafe_type_of gl a in
+  Proofview.Goal.enter begin fun sigma gl ->
+    let type_of_a = Tacmach.New.pf_unsafe_type_of sigma gl a in
     Tacticals.New.pf_constr_of_global (delayed_force refl_equal) >>= fun req ->
     Tacticals.New.tclTHENLIST
          [Tactics.generalize [(mkApp(req, [| type_of_a; a|]))];
-          Proofview.Goal.enter begin fun gl ->
+          Proofview.Goal.enter begin fun _ gl ->
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in
             (* FIXME: this looks really wrong. Does anybody really use
@@ -769,15 +767,15 @@ let  mkCaseEq a  : unit Proofview.tactic =
 
 
 let case_eq_intros_rewrite x =
-  Proofview.Goal.enter begin fun gl ->
-  let n = nb_prod (Tacmach.New.project gl) (Proofview.Goal.concl gl) in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let n = nb_prod sigma (Proofview.Goal.concl gl) in
   (* Pp.msgnl (Printer.pr_lconstr x); *)
   Tacticals.New.tclTHENLIST [
       mkCaseEq x;
-    Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.enter begin fun sigma gl ->
       let concl = Proofview.Goal.concl gl in
       let hyps = Tacmach.New.pf_ids_set_of_hyps gl in
-      let n' = nb_prod (Tacmach.New.project gl) concl in
+      let n' = nb_prod sigma concl in
       let h = fresh_id_in_env hyps (Id.of_string "heq") (Proofview.Goal.env gl)  in
       Tacticals.New.tclTHENLIST [
                     Tacticals.New.tclDO (n'-n-1) intro;
@@ -809,8 +807,8 @@ let destauto t =
   with Found tac -> tac
 
 let destauto_in id = 
-  Proofview.Goal.enter begin fun gl ->
-  let ctype = Tacmach.New.pf_unsafe_type_of gl (mkVar id) in
+  Proofview.Goal.enter begin fun sigma gl ->
+  let ctype = Tacmach.New.pf_unsafe_type_of sigma gl (mkVar id) in
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
 (*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
   destauto ctype
@@ -819,7 +817,7 @@ let destauto_in id =
 }
 
 TACTIC EXTEND destauto
-| [ "destauto" ] -> { Proofview.Goal.enter begin fun gl -> destauto (Proofview.Goal.concl gl) end }
+| [ "destauto" ] -> { Proofview.Goal.enter begin fun _ gl -> destauto (Proofview.Goal.concl gl) end }
 | [ "destauto" "in" hyp(id) ] -> { destauto_in id }
 END
 
@@ -831,9 +829,9 @@ END
 (**********************************************************************)
 
 TACTIC EXTEND transparent_abstract
-| [ "transparent_abstract" tactic3(t) ] -> { Proofview.Goal.enter begin fun gl ->
+| [ "transparent_abstract" tactic3(t) ] -> { Proofview.Goal.enter begin fun _ _ ->
     Abstract.tclABSTRACT ~opaque:false None (Tacinterp.tactic_of_value ist t) end; }
-| [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> { Proofview.Goal.enter begin fun gl ->
+| [ "transparent_abstract" tactic3(t) "using" ident(id) ] -> { Proofview.Goal.enter begin fun _ _ ->
     Abstract.tclABSTRACT ~opaque:false (Some id) (Tacinterp.tactic_of_value ist t) end; }
 END
 
@@ -1077,8 +1075,7 @@ END
 {
 
 let decompose l c =
-  Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
+  Proofview.Goal.enter begin fun sigma gl ->
     let to_ind c =
       if isInd sigma c then fst (destInd sigma c)
       else user_err Pp.(str "not an inductive type")

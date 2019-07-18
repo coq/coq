@@ -92,17 +92,17 @@ END
 let gen_ground_tac flag taco ids bases =
   let backup= !qflag in
   Proofview.tclOR begin
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.enter begin fun _ gl ->
       qflag:=flag;
       let solver=
 	match taco with
 	    Some tac-> tac
 	  | None-> snd (default_solver ()) in
       let startseq k =
-        Proofview.Goal.enter begin fun gl ->
+        Proofview.Goal.enter begin fun sigma gl ->
 	let seq=empty_seq !ground_depth in
-        let seq, sigma = extend_with_ref_list (pf_env gl) (project gl) ids seq in
-        let seq, sigma = extend_with_auto_hints (pf_env gl) (project gl) bases seq in
+        let seq, sigma = extend_with_ref_list (pf_env gl) sigma ids seq in
+        let seq, sigma = extend_with_auto_hints (pf_env gl) sigma bases seq in
         tclTHEN (Proofview.Unsafe.tclEVARS sigma) (k seq)
         end
       in
