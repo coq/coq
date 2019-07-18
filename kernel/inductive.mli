@@ -111,9 +111,11 @@ val check_case_info : env -> pinductive -> Sorts.relevance -> case_info -> unit
 val check_fix : env -> fixpoint -> unit
 val check_cofix : env -> cofixpoint -> unit
 
-val rec_stage_vars : env -> int array option -> constr array -> SVars.var array
-val check_rec : env -> SVars.var array -> SVars.t -> SVars.t ->
-  Constraints.t -> Constraints.t
+val get_rec_inds : env -> int array -> types array -> inductive list
+val get_rec_vars : env -> int array -> types array -> SVars.t
+val get_corec_inds : env -> types array -> inductive list
+val get_corec_vars : env -> types array -> SVars.t
+val set_stars : env -> inductive list -> types array -> types array
 
 (** {6 Support for sort-polymorphic inductive types } *)
 

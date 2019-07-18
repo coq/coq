@@ -639,22 +639,71 @@ and execute_is_type env stg constr =
   let stg, cstrnt, c, t = execute env stg constr in
     stg, cstrnt, c, check_type env constr t
 
-and execute_recdef env stg (names, lar, vdef as recdef) vn i =
+and execute_recdef env stg (names, lar, vdef as recdef) vno i =
+  (* Save all old star variables *)
+  let stg = State.push stg in
+
+  (* Get the names of the (co)inductive types of the recursive arguments,
+    i.e. if lar[i] := ΠΔ.Πx:I(ps, as).U and |Δ| = vn[i] then inds[i] := I,
+    and  if lar[i] := ΠΔ.CoI(ps, as) then inds[i] := CoI *)
+  let inds = match vno with
+    | Some vn -> get_rec_inds env vn lar
+    | None -> get_corec_inds env lar in
+  (* Mark the argument types and return type of the same inductive type with Star
+    e.g. if lar[i] := Πx:I.ΠΔ.Πy:I.I then return Πx:I*.ΠΔ.Πy:I*.I* *)
+  let lar = set_stars env inds lar in
+
+  (* Usual inference: Γ ⊢ lar' : lart; Γ (names' : lar') ⊢ vdef : vdeft *)
   let stg_lar, cstrnt_lar, lar', lart = execute_array env stg lar in
   let names' = Array.Smart.map_i (fun i na -> check_assumption env na lar'.(i) lart.(i)) names in
   let env1 = push_rec_types (names', lar', vdef) env in (* vdef is ignored *)
   let stg_vdef, cstrnt_vdef, vdef', vdeft = execute_array env1 stg_lar vdef in
-  let alphas = rec_stage_vars env vn lar' in
-  let star_vars = get_pos_vars stg_vdef in
-  let not_star_vars = diff (get_vars stg_vdef) star_vars in
-  let lar_succ = Array.Smart.map (succ_annots star_vars) lar' in
-  let lar_star = Array.Smart.map (pos_annots star_vars) lar' in
-  let cstrnt_fix = check_fixpoint env1 names' lar_succ vdef' vdeft in
-  let cstrnt_succ = conv_leq_vecti env lar' lar_succ in
-  let cstrnt_all = union_list [cstrnt_lar; cstrnt_vdef; cstrnt_fix; cstrnt_succ] in
-  let cstrnt = check_rec env alphas star_vars not_star_vars cstrnt_all in
+
+  (* Get the stage variables of the (co)inductive types of the recursive arguments,
+    i.e. if lar'[i] := ΠΔ.Πx:I^α(ps, as).U and |Δ| = vn[i] then alphas[i] := α,
+    and  if lar'[i] := ΠΔ.CoI^α(ps, as) then alphas[i] := α *)
+  let alphas = match vno with
+    | Some vn -> get_rec_vars env vn lar'
+    | None -> get_corec_vars env lar' in
+  (* Get the stage variables associated with Star annotations and all others *)
+  let vstar = get_pos_vars stg_vdef in
+  let vneq =
+    let old_annots = get_vars stg in
+    let lar_annots = List.map collect_annots (Array.to_list lar') in
+    let vdef_annots = List.map collect_annots (Array.to_list vdef') in
+    let all_annots = SVars.union_list ([old_annots] @ lar_annots @ vdef_annots) in
+    diff all_annots vstar in
+
+  let rec check_rec vstar vneq stg =
+    (* Shift up stage variables in Star positions *)
+    let lar'' = Array.Smart.map (succ_annots vstar) lar' in
+    (* Check vdeft ≤ lar'' *)
+    let cstrnt_fix = check_fixpoint env1 names' lar'' vdef' vdeft in
+    (* Check lar' ≤ lar'' *)
+    let cstrnt_succ = conv_leq_vecti env lar' lar'' in
+    let cstrnt_all = union_list [cstrnt_lar; cstrnt_vdef; cstrnt_fix; cstrnt_succ] in
+
+    (* Try RecCheck; if failure, try removing some stage variables from vstar *)
+    let rec_check_all alpha cstrnts = union cstrnts (rec_check alpha vstar vneq cstrnts) in
+    let flags = Environ.typing_flags env in
+      if flags.check_sized then
+        try stg, SVars.fold rec_check_all alphas cstrnt_all
+        with RecCheckFailed (_cstrnt, si_inf, si) ->
+          let rm = inter (inter si_inf si) (diff vstar alphas) in
+          if is_empty rm then
+            error_unsatisfied_stage_constraints env cstrnt_all si_inf si
+          else
+            let vstar = diff vstar rm in
+            let vneq = SVars.union vneq rm in
+            let stg = remove_pos_vars rm stg in
+            check_rec vstar vneq stg
+      else stg, cstrnt_all in
+  let stg_check, cstrnt = check_rec vstar vneq stg_vdef in
+
+  (* Put position annotations back *)
+  let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg_check)) lar' in
   let recdef = if names == names' && lar == lar_star && vdef == vdef' then recdef else (names',lar_star,vdef') in
-    stg_vdef, cstrnt, lar'.(i), recdef
+  State.pop stg_check, cstrnt, lar.(i), recdef
 
 and execute_array env stg cs =
   let tys = Array.make (Array.length cs) mkProp in

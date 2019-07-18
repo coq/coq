@@ -7,6 +7,8 @@ sig
   val add : var -> t -> t
   val mem : var -> t -> bool
   val union : t -> t -> t
+  val union_list : t list -> t
+  val inter : t -> t -> t
   val diff : t -> t -> t
   val fold : (var -> 'a -> 'a) -> t -> 'a -> 'a
   val pr : string -> t -> Pp.t
@@ -34,8 +36,11 @@ module State :
 sig
   type t
   val init : t
+  val push : t -> t
+  val pop : t -> t
   val get_vars : t -> SVars.t
   val get_pos_vars : t -> SVars.t
+  val remove_pos_vars : SVars.t -> t -> t
   val next : ?s:Annot.t -> t -> Annot.t * t
   val pr : t -> Pp.t
 end

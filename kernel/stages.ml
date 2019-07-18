@@ -12,6 +12,8 @@ struct
 
   type var = elt
 
+  let union_list = List.fold_left union empty
+
   let show init vars =
     Int.Set.fold (fun i str -> string_of_int i ^ "," ^ str) vars init
   let pr init = mkPr (show init)
@@ -110,21 +112,25 @@ struct
       ( name of next stage variable
       , all used stage variables
       , stage variables used to replace star annotations
+      , old star variables
       ) *)
-  type t = var * SVars.t * SVars.t
+  type t = var * SVars.t * SVars.t * SVars.t
 
-  let init = (0, empty, empty)
-  let get_vars (_, vs, _) = vs
-  let get_pos_vars (_, _, stars) = stars
-  let next ?s:(s=Empty) ((next, vs, stars) as stg) =
+  let init = (0, empty, empty, empty)
+  let push (next, vs, stars, _) = (next, vs, empty, stars)
+  let pop (next, vs, _, old) = (next, vs, old, empty)
+  let get_vars (_, vs, _, _) = vs
+  let get_pos_vars (_, _, stars, _) = stars
+  let remove_pos_vars rem (next, vs, stars, old) = (next, vs, diff stars rem, old)
+  let next ?s:(s=Empty) ((next, vs, stars, old) as stg) =
     match s with
     | Empty | Stage Infty ->
-      mk next 0, (succ next, add next vs, stars)
+      mk next 0, (succ next, add next vs, stars, old)
     | Star ->
-      mk next 0, (succ next, add next vs, add next stars)
+      mk next 0, (succ next, add next vs, add next stars, old)
     | _ -> (s, stg)
 
-  let show (stg, vars, stars) =
+  let show (stg, vars, stars, _) =
     let stg_str = string_of_int stg in
     let vars_str = "{" ^ SVars.show "∞" vars  ^ "}" in
     let stars_str = "{" ^ SVars.show ": *" stars ^ "}" in

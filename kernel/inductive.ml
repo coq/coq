@@ -1319,57 +1319,73 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
 
 (* Functions for sized (co)fixpoints *)
 
-let rec get_stage_var env c err =
-  match kind (whd_all env c) with
-  | Ind (_, Stage (StageVar (s, _))) -> Some s
-  | App (c, _) -> get_stage_var env c err
-  | _c' -> None (* err (of_kind c') *)
-(* This currently fails because global declarations (i.e. Const) do not have annotations
-  so if a fixpoint signature uses a global variable the annotation will be missing
-  For now we optionally return the stage. FIXME!!! *)
+let fold_map2_fix_type env f err is tys init =
+  let rec app_ind err f ty acc =
+    match kind (whd_all env ty) with
+    | Ind (iu, s) ->
+      let s', acc = f iu s acc in
+      if s == s' then ty, acc else
+      mkIndUS iu s', acc
+    | App (c, args) ->
+      let c', acc = app_ind err f c acc in
+      if c == c' then ty, acc else
+      mkApp (c, args), acc
+    | c -> err (of_kind c), acc in
+  let app_arg err f decl (acc, j) =
+    match decl with
+    | LocalAssum (na, ty) ->
+      let ty, acc = app_ind (err j na) (f j) ty acc in
+      Context.Rel.Declaration.set_type ty decl, (acc, succ j)
+    | LocalDef _ -> decl, (acc, j) in
+  let app_ty i ty acc =
+    let ctxt, body = Term.decompose_prod_assum ty in
+    let ctxt_rev = List.rev ctxt in
+    let ctxt_rev, (acc, _) = List.fold_right_map (app_arg (err ty i) (f i)) ctxt_rev (acc, 0) in
+    let body, acc = app_ind (err ty i (-1) Context.anonR) (f i (-1)) body acc in
+    let ctxt = List.rev ctxt_rev in
+    Term.it_mkProd_or_LetIn body ctxt, acc in
+  List.fold_right2_map app_ty is tys init
 
-(* [rec_stage_var_ind env i ty_sized] returns the stage variable of
-  the [i]th parameter of [ty_sized], the recursive parameter of the fix *)
-let rec_stage_var_ind env i ty_sized =
-  let open Context.Rel in
-  let ctxt_sized = Term.prod_assum ty_sized in
-  let assums_sized = List.filter is_local_assum ctxt_sized in
-  match lookup (length ctxt_sized - i) assums_sized with
-    | LocalAssum (c, ty) ->
-      let err ty = error_ill_formed_rec_type env i c ty ty_sized in
-      get_stage_var env ty err
-    (* something is wrong with [List.filter] or [is_local_assum] if we end up here... *)
-    | _ -> assert false
+let get_rec_inds env is tys =
+  let f i j (ind, _) s acc =
+    if Int.equal i j then s, ind :: acc else s, acc in
+  let err ty i j na t =
+    if Int.equal i j then error_ill_formed_rec_type env j na t ty else t in
+  snd @@ fold_map2_fix_type env f err (Array.to_list is) (Array.to_list tys) []
 
-(* [rec_stage_var_coind env ty_sized] returns the stage variable of
-  the return type of the product type [ty_sized] *)
-let rec_stage_var_coind env ty_sized =
-  let open Context in
-  let body_sized = Term.strip_prod_assum ty_sized in
-  let err ty = error_ill_formed_rec_type env (-1) anonR ty ty_sized in
-  get_stage_var env body_sized err
+let get_rec_vars env is tys =
+  let f i j _ s acc =
+    if Int.equal i j then
+      match s with
+      | Stage (StageVar (var, _)) -> s, SVars.add var acc
+      | _ -> s, acc
+    else s, acc in
+  let err ty i j na t =
+    if Int.equal i j then error_ill_formed_rec_type env j na t ty else t in
+  snd @@ fold_map2_fix_type env f err (Array.to_list is) (Array.to_list tys) SVars.empty
 
-(* [rec_stage_vars env iso tys_sized] returns the decreasing stage variables
-  in each of [tys_sized].
-  For fixpoints, where we destruct on some inductive construction,
-  [ty_sized] will be some product T ≡ ΠΔ.Πx:I^α(ps, as).U, where |Δ| = [i],
-  the 0-based index of the recursive argument (skipping LetIns), and we return α.
-  For cofixpoints, where we construct a coinductive construction,
-  [ty_sized] will be some product T ≡ ΠΔ.CoI^α(ps, as), and we return α.*)
-let rec_stage_vars env iso tys_sized =
-  let varso = match iso with
-  | Some is -> Array.map2 (rec_stage_var_ind env) is tys_sized
-  | None -> Array.map (rec_stage_var_coind env) tys_sized in
-  let append_some opt arr = match opt with
-  | Some v -> v :: arr
-  | None -> arr in
-  Array.of_list (List.fold_right append_some (Array.to_list varso) [])
+let get_corec_inds env tys =
+  let f _ j (ind, _) s acc =
+    if Int.equal (-1) j then s, ind :: acc else s, acc in
+  let err ty _ j na t =
+    if Int.equal (-1) j then error_ill_formed_rec_type env j na t ty else t in
+  let len = Array.length tys in
+  snd @@ fold_map2_fix_type env f err (List.make len (-1)) (Array.to_list tys) []
 
-let check_rec env alphas vstar vneq cstrnts =
-  let flags = Environ.typing_flags env in
-  if flags.check_sized then
-    let rec_check_all cstrnts alpha = union cstrnts (rec_check alpha vstar vneq cstrnts) in
-    try Array.fold_left rec_check_all cstrnts alphas
-    with RecCheckFailed (_cstrnts', si_inf, si) ->
-      error_unsatisfied_stage_constraints env cstrnts si_inf si
-  else cstrnts
+let get_corec_vars env tys =
+  let f _ j _ s acc =
+    if Int.equal (-1) j then
+      match s with
+      | Stage (StageVar (var, _)) -> s, SVars.add var acc
+      | _ -> s, acc
+    else s, acc in
+  let err ty _ j na t =
+    if Int.equal (-1) j then error_ill_formed_rec_type env j na t ty else t in
+  let len = Array.length tys in
+  snd @@ fold_map2_fix_type env f err (List.make len (-1)) (Array.to_list tys) SVars.empty
+
+let set_stars env inds tys =
+  let f ind _ (ind', _) s acc =
+    if Names.eq_ind ind ind' then Star, acc else s, acc in
+  let err _ _ _ _ t = t in
+  Array.of_list @@ fst @@ fold_map2_fix_type env f err inds (Array.to_list tys) ()
