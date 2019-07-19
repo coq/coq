@@ -211,15 +211,6 @@ let delta = mkflags [fDELTA]
 let zeta = mkflags [fZETA]
 let nored = no_red
 
-(* Removing fZETA for finer behaviour would break many developments *)
-let unfold_side_flags = [fBETA;fMATCH;fFIX;fCOFIX;fZETA]
-let unfold_side_red = mkflags [fBETA;fMATCH;fFIX;fCOFIX;fZETA]
-let unfold_red kn =
-  let flag = match kn with
-    | EvalVarRef id -> fVAR id
-    | EvalConstRef kn -> fCONST kn in
-  mkflags (flag::unfold_side_flags)
-
 (* Flags of reduction and cache of constants: 'a is a type that may be
  * mapped to constr. 'a infos implements a cache for constants and
  * abstractions, storing a representation (of type 'a) of the body of
