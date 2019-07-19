@@ -679,9 +679,7 @@ and execute_recdef env stg (names, lar, vdef as recdef) vno i =
     let lar'' = Array.Smart.map (succ_annots vstar) lar' in
     (* Check vdeft ≤ lar'' *)
     let cstrnt_fix = check_fixpoint env1 names' lar'' vdef' vdeft in
-    (* Check lar' ≤ lar'' *)
-    let cstrnt_succ = conv_leq_vecti env lar' lar'' in
-    let cstrnt_all = union_list [cstrnt_lar; cstrnt_vdef; cstrnt_fix; cstrnt_succ] in
+    let cstrnt_all = union_list [cstrnt_lar; cstrnt_vdef; cstrnt_fix] in
 
     (* Try RecCheck; if failure, try removing some stage variables from vstar *)
     let rec_check_all alpha cstrnts = union cstrnts (rec_check alpha vstar vneq cstrnts) in

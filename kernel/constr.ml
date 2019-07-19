@@ -1056,10 +1056,10 @@ let leq_constr_univs eq_annot leq_annot univs m n =
     let leq_sorts s1 s2 = s1 == s2 ||
       UGraph.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' nargs m n =
-      m == n || compare_head_gen_cstrnts eq_universes eq_sorts (leq_annot cstrnts) eq_constr' nargs m n
+      m == n || compare_head_gen_cstrnts eq_universes eq_sorts (eq_annot cstrnts) eq_constr' nargs m n
     in
     let rec compare_leq nargs m n =
-      compare_head_gen_leq_cstrnts eq_universes leq_sorts (eq_annot cstrnts) eq_constr' leq_constr' nargs m n
+      compare_head_gen_leq_cstrnts eq_universes leq_sorts (leq_annot cstrnts) eq_constr' leq_constr' nargs m n
     and leq_constr' nargs m n = m == n || compare_leq nargs m n in
     let res = compare_leq 0 m n in
     res, !cstrnts
