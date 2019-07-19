@@ -92,13 +92,6 @@ let list_union_eq eq_fun l1 l2 =
 let list_add_set_eq eq_fun x l =
   if List.exists (eq_fun x) l then l else x::l
 
-let const_of_id id =
-  let princ_ref = qualid_of_ident id in
-  try Constrintern.locate_reference princ_ref
-  with Not_found ->
-    CErrors.user_err ~hdr:"IndFun.const_of_id"
-      (str "cannot find " ++ Id.print id)
-
 [@@@ocaml.warning "-3"]
 let coq_constant s =
   UnivGen.constr_of_monomorphic_global @@
