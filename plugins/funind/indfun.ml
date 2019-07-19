@@ -1,3 +1,13 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2019       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
 open CErrors
 open Sorts
 open Util
@@ -162,7 +172,7 @@ let build_newrecursive lnameargsardef =
   let sigma = Evd.from_env env0 in
   let (rec_sign,rec_impls) =
     List.fold_left
-      (fun (env,impls) { Vernacexpr.id_decl=({CAst.v=recname},_); binders; rtype } ->
+      (fun (env,impls) { Vernacexpr.fname={CAst.v=recname}; binders; rtype } ->
         let arityc = Constrexpr_ops.mkCProdN binders rtype in
         let arity,ctx = Constrintern.interp_type env0 sigma arityc in
         let evd = Evd.from_env env0 in
@@ -228,7 +238,7 @@ let rec local_binders_length = function
   | Constrexpr.CLocalAssum (idl,_,_)::bl -> List.length idl + local_binders_length bl
   | Constrexpr.CLocalPattern _::bl -> assert false
 
-let prepare_body { Vernacexpr.id_decl; binders; rtype } rt =
+let prepare_body { Vernacexpr.binders; rtype } rt =
   let n = local_binders_length binders in
 (*   Pp.msgnl (str "nb lambda to chop : " ++ str (string_of_int n) ++ fnl () ++Printer.pr_glob_constr rt); *)
   let fun_args,rt' = chop_rlambda_n n rt in
@@ -330,7 +340,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
     is_general do_built (fix_rec_l : Vernacexpr.fixpoint_expr list) recdefs interactive_proof
     (continue_proof : int -> Names.Constant.t array -> EConstr.constr array -> int ->
       Tacmach.tactic) : unit =
-  let names = List.map (function { Vernacexpr.id_decl = {CAst.v=name},_} -> name) fix_rec_l in
+  let names = List.map (function { Vernacexpr.fname = {CAst.v=name} } -> name) fix_rec_l in
   let fun_bodies = List.map2 prepare_body fix_rec_l recdefs in
   let funs_args = List.map fst fun_bodies in
   let funs_types =  List.map (function { Vernacexpr.rtype } -> rtype) fix_rec_l in
@@ -350,7 +360,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
                  locate_ind
                  f_R_mut)
         in
-        let fname_kn { Vernacexpr.id_decl=(fname,_) } =
+        let fname_kn { Vernacexpr.fname } =
    let f_ref = qualid_of_ident ?loc:fname.CAst.loc fname.CAst.v in
           locate_with_msg
             (pr_qualid f_ref++str ": Not an inductive type!")
@@ -391,23 +401,23 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
 
 let register_struct is_rec (fixpoint_exprl:  Vernacexpr.fixpoint_expr list) =
   match fixpoint_exprl with
-    | [ { Vernacexpr.id_decl=({ CAst.v=fname },pl); binders; rtype; body_def } ] when not is_rec ->
+    | [ { Vernacexpr.fname; univs; binders; rtype; body_def } ] when not is_rec ->
       let body = match body_def with
         | Some body -> body
         | None -> user_err ~hdr:"Function" (str "Body of Function must be given") in
       ComDefinition.do_definition
         ~program_mode:false
-        ~name:fname
+        ~name:fname.CAst.v
         ~poly:false
         ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
-        ~kind:Decls.Definition pl
+        ~kind:Decls.Definition univs
         binders None body (Some rtype);
        let evd,rev_pconstants =
          List.fold_left
-           (fun (evd,l) { Vernacexpr.id_decl=({CAst.v=fname},_) } ->
+           (fun (evd,l) { Vernacexpr.fname } ->
             let evd,c =
               Evd.fresh_global
-                (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
+                (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname.CAst.v)) in
             let (cst, u) = destConst evd c in
             let u = EInstance.kind evd u in
             evd,((cst, u) :: l)
@@ -420,10 +430,10 @@ let register_struct is_rec (fixpoint_exprl:  Vernacexpr.fixpoint_expr list) =
        ComFixpoint.do_fixpoint ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior) ~poly:false fixpoint_exprl;
        let evd,rev_pconstants =
          List.fold_left
-           (fun (evd,l) { Vernacexpr.id_decl=({CAst.v=fname},_) } ->
+           (fun (evd,l) { Vernacexpr.fname } ->
             let evd,c =
               Evd.fresh_global
-                (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname)) in
+                (Global.env ()) evd (Constrintern.locate_reference (Libnames.qualid_of_ident fname.CAst.v)) in
             let (cst, u) = destConst evd c in
             let u = EInstance.kind evd u in
             evd,((cst, u) :: l)
@@ -457,7 +467,7 @@ let register_wf interactive_proof ?(is_mes=false) fname rec_impls wf_rel_expr wf
   let unbounded_eq =
     let f_app_args =
       CAst.make @@ Constrexpr.CAppExpl(
-         (None,qualid_of_ident fname,None) ,
+         (None,qualid_of_ident fname.CAst.v,None) ,
          (List.map
             (function
                | {CAst.v=Anonymous} -> assert false
@@ -478,13 +488,13 @@ let register_wf interactive_proof ?(is_mes=false) fname rec_impls wf_rel_expr wf
         (generate_correction_proof_wf f_ref tcc_lemma_ref is_mes
            functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
         );
-      derive_inversion [fname]
+      derive_inversion [fname.CAst.v]
     with e when CErrors.noncritical e ->
       (* No proof done *)
       ()
   in
   Recdef.recursive_definition ~interactive_proof
-    ~is_mes fname rec_impls
+    ~is_mes fname.CAst.v rec_impls
     type_of_f
     wf_rel_expr
     rec_arg_num
@@ -601,7 +611,10 @@ and rebuild_nal aux bk bl' nal typ =
 let rebuild_bl aux bl typ = rebuild_bl aux bl typ
 
 let recompute_binder_list fixpoint_exprl =
-  let fixl = ComFixpoint.extract_fixpoint_components ~structonly:false fixpoint_exprl in
+  let fixl =
+    List.map (fun fix -> Vernacexpr.{
+        fix
+        with rec_order = ComFixpoint.adjust_rec_order ~structonly:false fix.binders fix.rec_order }) fixpoint_exprl in
   let ((_,_,_,typel),_,ctx,_) = ComFixpoint.interp_fixpoint ~cofix:false fixl in
   let constr_expr_typel =
     with_full_print (List.map (fun c -> Constrextern.extern_constr false (Global.env ()) (Evd.from_ctx ctx) (EConstr.of_constr c))) typel in
@@ -622,7 +635,7 @@ let do_generate_principle_aux pconstants on_error register_built interactive_pro
   let lemma, _is_struct =
     match fixpoint_exprl with
       | [{ Vernacexpr.rec_order = Some {CAst.v = Constrexpr.CWfRec (wf_x,wf_rel)} } as fixpoint_expr] ->
-        let { Vernacexpr.id_decl = ({CAst.v=name},pl); binders; rtype; body_def } as fixpoint_expr =
+        let { Vernacexpr.fname; univs; binders; rtype; body_def } as fixpoint_expr =
           match recompute_binder_list [fixpoint_expr] with
           | [e] -> e
           | _ -> assert false
@@ -645,10 +658,10 @@ let do_generate_principle_aux pconstants on_error register_built interactive_pro
             true
         in
         if register_built
-        then register_wf interactive_proof name rec_impls wf_rel wf_x.CAst.v using_lemmas binders rtype body pre_hook, false
+        then register_wf interactive_proof fname rec_impls wf_rel wf_x.CAst.v using_lemmas binders rtype body pre_hook, false
         else None, false
       |[{ Vernacexpr.rec_order=Some {CAst.v = Constrexpr.CMeasureRec(wf_x,wf_mes,wf_rel_opt)} } as fixpoint_expr] ->
-        let { Vernacexpr.id_decl = ({CAst.v=name},pl); binders; rtype; body_def} as fixpoint_expr =
+        let { Vernacexpr.fname; univs; binders; rtype; body_def} as fixpoint_expr =
           match recompute_binder_list [fixpoint_expr] with
           | [e] -> e
           | _ -> assert false
@@ -671,7 +684,7 @@ let do_generate_principle_aux pconstants on_error register_built interactive_pro
             true
         in
         if register_built
-        then register_mes interactive_proof name rec_impls wf_mes wf_rel_opt (map_option (fun x -> x.CAst.v) wf_x) using_lemmas binders rtype body pre_hook, true
+        then register_mes interactive_proof fname rec_impls wf_mes wf_rel_opt (map_option (fun x -> x.CAst.v) wf_x) using_lemmas binders rtype body pre_hook, true
         else None, true
       | _ ->
         List.iter (function { Vernacexpr.rec_order } ->
@@ -683,9 +696,7 @@ let do_generate_principle_aux pconstants on_error register_built interactive_pro
                     )
             fixpoint_exprl;
         let fixpoint_exprl = recompute_binder_list fixpoint_exprl in
-        let fix_names =
-          List.map (function { Vernacexpr.id_decl=({CAst.v=name},_) } -> name) fixpoint_exprl
-        in
+        let fix_names = List.map (function { Vernacexpr.fname } -> fname.CAst.v) fixpoint_exprl in
         (* ok all the expressions are structural *)
         let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
         let is_rec = List.exists (is_rec fix_names) recdefs in
@@ -878,21 +889,21 @@ let make_graph (f_ref : GlobRef.t) =
                       )
                   in
                   let b' = add_args id.CAst.v new_args b in
-                  { Vernacexpr.id_decl=(id,None)
+                  { Vernacexpr.fname=id; univs=None
                   ; rec_order = Some (CAst.make (CStructRec (CAst.make rec_id)))
                   ; binders = nal_tas@bl; rtype=t; body_def=Some b'; notations = []}
                ) fixexprl in
            l
          | _ ->
-           let id = Label.to_id (Constant.label c) in
-           [{ Vernacexpr.id_decl=(CAst.make id,None); rec_order = None; binders=nal_tas; rtype=t; body_def=Some b; notations=[]}]
+           let fname = CAst.make (Label.to_id (Constant.label c)) in
+           [{ Vernacexpr.fname; univs=None; rec_order = None; binders=nal_tas; rtype=t; body_def=Some b; notations=[]}]
        in
        let mp = Constant.modpath c in
        let pstate = do_generate_principle_aux [c,Univ.Instance.empty] error_error  false false expr_list in
        assert (Option.is_empty pstate);
        (* We register the infos *)
        List.iter
-         (fun { Vernacexpr.id_decl=({CAst.v=id},_) } ->
+         (fun { Vernacexpr.fname= {CAst.v=id} } ->
             add_Function false (Constant.make2 mp (Label.of_id id)))
          expr_list)
 

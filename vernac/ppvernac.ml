@@ -419,12 +419,12 @@ let string_of_theorem_kind = let open Decls in function
     | l -> spc() ++
       hov 1 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
 
-  let pr_rec_definition { id_decl; rec_order; binders; rtype; body_def; notations } =
+  let pr_rec_definition { fname; univs; rec_order; binders; rtype; body_def; notations } =
     let env = Global.env () in
     let sigma = Evd.from_env env in
     let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
     let annot = pr_guard_annot (pr_lconstr_expr env sigma) binders rec_order in
-    pr_ident_decl id_decl ++ pr_binders_arg binders ++ annot
+    pr_ident_decl (fname,univs) ++ pr_binders_arg binders ++ annot
     ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr env sigma c) rtype
     ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr env sigma def) body_def
     ++ prlist (pr_decl_notation @@ pr_constr env sigma) notations
@@ -858,8 +858,8 @@ let string_of_definition_object_kind = let open Decls in function
           | DoDischarge -> keyword "Let" ++ spc ()
           | NoDischarge -> str ""
         in
-        let pr_onecorec {id_decl; binders; rtype; body_def; notations } =
-          pr_ident_decl id_decl ++ spc() ++ pr_binders env sigma binders ++ spc() ++ str":" ++
+        let pr_onecorec {fname; univs; binders; rtype; body_def; notations } =
+          pr_ident_decl (fname,univs) ++ spc() ++ pr_binders env sigma binders ++ spc() ++ str":" ++
             spc() ++ pr_lconstr_expr env sigma rtype ++
             pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr env sigma def) body_def ++
             prlist (pr_decl_notation @@ pr_constr env sigma) notations

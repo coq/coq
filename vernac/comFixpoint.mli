@@ -10,7 +10,6 @@
 
 open Names
 open Constr
-open Constrexpr
 open Vernacexpr
 
 (** {6 Fixpoints and cofixpoints} *)
@@ -33,24 +32,20 @@ val do_cofixpoint :
 (** Internal API  *)
 (************************************************************************)
 
-type structured_fixpoint_expr =
-  { fix_name : Id.t
-  ; fix_univs : Constrexpr.universe_decl_expr option
-  ; fix_annot : lident option
-  ; fix_binders : local_binder_expr list
-  ; fix_body : constr_expr option
-  ; fix_type : constr_expr
-  ; fix_notations : decl_notation list
-  }
-
 (** Typing global fixpoints and cofixpoint_expr *)
+
+val adjust_rec_order
+  :  structonly:bool
+  -> Constrexpr.local_binder_expr list
+  -> Constrexpr.recursion_order_expr option
+  -> lident option
 
 (** Exported for Program *)
 val interp_recursive :
   (* Misc arguments *)
   program_mode:bool -> cofix:bool ->
   (* Notations of the fixpoint / should that be folded in the previous argument? *)
-  structured_fixpoint_expr list ->
+  lident option fix_expr_gen list ->
   (* env / signature / univs / evar_map *)
   (Environ.env * EConstr.named_context * UState.universe_decl * Evd.evar_map) *
   (* names / defs / types *)
@@ -60,20 +55,11 @@ val interp_recursive :
 
 (** Exported for Funind *)
 
-(** Extracting the semantical components out of the raw syntax of
-   (co)fixpoints declarations *)
-
-val extract_fixpoint_components
-  : structonly:bool -> fixpoint_expr list -> structured_fixpoint_expr list
-
-val extract_cofixpoint_components
-  : cofixpoint_expr list -> structured_fixpoint_expr list
-
 type recursive_preentry = Id.t list * Sorts.relevance list * constr option list * types list
 
 val interp_fixpoint
   :  cofix:bool
-  -> structured_fixpoint_expr list
+  -> lident option fix_expr_gen list
   -> recursive_preentry * UState.universe_decl * UState.t *
      (EConstr.rel_context * Impargs.manual_implicits * int option) list
 

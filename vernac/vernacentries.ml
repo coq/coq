@@ -772,7 +772,7 @@ let vernac_inductive ~atts cum lo finite indl =
 
 let vernac_fixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
-    List.iter (fun { id_decl = (lid,_) } -> Dumpglob.dump_definition lid false "def") l;
+    List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
   enforce_locality_exp atts.DefAttributes.locality discharge
 
 let vernac_fixpoint_interactive ~atts discharge l =
@@ -793,7 +793,7 @@ let vernac_fixpoint ~atts discharge l =
 
 let vernac_cofixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
-    List.iter (fun { id_decl = (lid,_) } -> Dumpglob.dump_definition lid false "def") l;
+    List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
   enforce_locality_exp atts.DefAttributes.locality discharge
 
 let vernac_cofixpoint_interactive ~atts discharge l =

@@ -131,7 +131,8 @@ type definition_expr =
 type decl_notation = lstring * constr_expr * scope_name option
 
 type 'a fix_expr_gen =
-  { id_decl : ident_decl
+  { fname : lident
+  ; univs : universe_decl_expr option
   ; rec_order : 'a
   ; binders : local_binder_expr list
   ; rtype : constr_expr

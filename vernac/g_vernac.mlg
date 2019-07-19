@@ -407,13 +407,14 @@ GRAMMAR EXTEND Gram
         rtype = type_cstr;
         body_def = OPT [":="; def = lconstr -> { def } ]; notations = decl_notation ->
           { let binders, rec_order = bl in
-            {id_decl; rec_order; binders; rtype; body_def; notations}
+            {fname = fst id_decl; univs = snd id_decl; rec_order; binders; rtype; body_def; notations}
           } ] ]
   ;
   corec_definition:
     [ [ id_decl = ident_decl; binders = binders; rtype = type_cstr;
         body_def = OPT [":="; def = lconstr -> { def }]; notations = decl_notation ->
-          { {id_decl; rec_order=(); binders; rtype; body_def; notations} } ] ]
+        { {fname = fst id_decl; univs = snd id_decl; rec_order = (); binders; rtype; body_def; notations}
+        } ]]
   ;
   type_cstr:
     [ [ ":"; c=lconstr -> { c }

@@ -289,19 +289,19 @@ let do_program_recursive ~scope ~poly fixkind fixl =
   | DeclareObl.IsFixpoint _ -> Decls.Fixpoint
   | DeclareObl.IsCoFixpoint -> Decls.CoFixpoint
   in
-  let ntns = List.map_append (fun { fix_notations } -> fix_notations ) fixl in
+  let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
   Obligations.add_mutual_definitions defs ~poly ~scope ~kind ~univdecl:pl ctx ntns fixkind
 
 let do_program_fixpoint ~scope ~poly l =
   let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in
     match g, l with
     | [Some { CAst.v = CWfRec (n,r) }],
-      [ Vernacexpr.{id_decl=({CAst.v=id},pl);binders;rtype;body_def;notations} ] ->
+      [ Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations} ] ->
         let recarg = mkIdentC n.CAst.v in
-        build_wellfounded (id, pl, binders, rtype, out_def body_def) poly r recarg notations
+        build_wellfounded (id, univs, binders, rtype, out_def body_def) poly r recarg notations
 
     | [Some { CAst.v = CMeasureRec (n, m, r) }],
-      [Vernacexpr.{id_decl=({CAst.v=id},pl); binders; rtype; body_def; notations }] ->
+      [Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations }] ->
       (* We resolve here a clash between the syntax of Program Fixpoint and the one of funind *)
       let r = match n, r with
         | Some id, None ->
@@ -311,13 +311,15 @@ let do_program_fixpoint ~scope ~poly l =
           user_err Pp.(str"Measure takes only two arguments in Program Fixpoint.")
         | _, _ -> r
       in
-        build_wellfounded (id, pl, binders, rtype, out_def body_def) poly
+        build_wellfounded (id, univs, binders, rtype, out_def body_def) poly
           (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m notations
 
     | _, _ when List.for_all (fun ro -> match ro with None | Some { CAst.v = CStructRec _} -> true | _ -> false) g ->
-      let fixl = extract_fixpoint_components ~structonly:true l in
-      let fixkind = DeclareObl.IsFixpoint (List.map (fun d -> d.fix_annot) fixl) in
-      do_program_recursive ~scope ~poly fixkind fixl
+      let annots = List.map (fun fix ->
+          Vernacexpr.(ComFixpoint.adjust_rec_order ~structonly:true fix.binders fix.rec_order)) l in
+      let fixkind = DeclareObl.IsFixpoint annots in
+      let l = List.map2 (fun fix rec_order -> { fix with Vernacexpr.rec_order }) l annots in
+      do_program_recursive ~scope ~poly fixkind l
 
     | _, _ ->
         user_err ~hdr:"do_program_fixpoint"
@@ -332,7 +334,7 @@ let do_fixpoint ~scope ~poly l =
   do_program_fixpoint ~scope ~poly l;
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
 
-let do_cofixpoint ~scope ~poly l =
-  let fixl = extract_cofixpoint_components l in
+let do_cofixpoint ~scope ~poly fixl =
+  let fixl = List.map (fun fix -> { fix with Vernacexpr.rec_order = None }) fixl in
   do_program_recursive ~scope ~poly DeclareObl.IsCoFixpoint fixl;
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
