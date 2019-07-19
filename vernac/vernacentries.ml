@@ -772,7 +772,7 @@ let vernac_inductive ~atts cum lo finite indl =
 
 let vernac_fixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
-    List.iter (fun (((lid,_), _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
+    List.iter (fun { id_decl = (lid,_) } -> Dumpglob.dump_definition lid false "def") l;
   enforce_locality_exp atts.DefAttributes.locality discharge
 
 let vernac_fixpoint_interactive ~atts discharge l =
@@ -793,7 +793,7 @@ let vernac_fixpoint ~atts discharge l =
 
 let vernac_cofixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
-    List.iter (fun (((lid,_), _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
+    List.iter (fun { id_decl = (lid,_) } -> Dumpglob.dump_definition lid false "def") l;
   enforce_locality_exp atts.DefAttributes.locality discharge
 
 let vernac_cofixpoint_interactive ~atts discharge l =
@@ -2358,7 +2358,7 @@ let rec translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacInductive (cum, priv, finite, l) ->
     VtDefault(fun () -> vernac_inductive ~atts cum priv finite l)
   | VernacFixpoint (discharge, l) ->
-    let opens = List.exists (fun ((_,_,_,_,p),_) -> Option.is_empty p) l in
+    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
     if opens then
       VtOpenProof (fun () ->
         with_def_attributes ~atts vernac_fixpoint_interactive discharge l)
@@ -2366,7 +2366,7 @@ let rec translate_vernac ~atts v = let open Vernacextend in match v with
       VtDefault (fun () ->
         with_def_attributes ~atts vernac_fixpoint discharge l)
   | VernacCoFixpoint (discharge, l) ->
-    let opens = List.exists (fun ((_,_,_,p),_) -> Option.is_empty p) l in
+    let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
     if opens then
       VtOpenProof(fun () -> with_def_attributes ~atts vernac_cofixpoint_interactive discharge l)
     else

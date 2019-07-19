@@ -29,9 +29,6 @@ type obligation =
 
 type obligations = obligation array * int
 
-type notations =
-  (lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
-
 type fixpoint_kind =
   | IsFixpoint of lident option list
   | IsCoFixpoint
@@ -46,7 +43,7 @@ type program_info =
   ; prg_deps : Id.t list
   ; prg_fixkind : fixpoint_kind option
   ; prg_implicits : Impargs.manual_implicits
-  ; prg_notations : notations
+  ; prg_notations : Vernacexpr.decl_notation list
   ; prg_poly : bool
   ; prg_scope : DeclareDef.locality
   ; prg_kind : Decls.definition_object_kind

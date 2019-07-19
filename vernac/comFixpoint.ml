@@ -107,14 +107,15 @@ let check_mutuality env evd isfix fixl =
        warn_non_full_mutual (x,xge,y,yge,isfix,rest)
     | _ -> ()
 
-type structured_fixpoint_expr = {
-  fix_name : Id.t;
-  fix_univs : universe_decl_expr option;
-  fix_annot : lident option;
-  fix_binders : local_binder_expr list;
-  fix_body : constr_expr option;
-  fix_type : constr_expr
-}
+type structured_fixpoint_expr =
+  { fix_name : Id.t
+  ; fix_univs : Constrexpr.universe_decl_expr option
+  ; fix_annot : lident option
+  ; fix_binders : local_binder_expr list
+  ; fix_body : constr_expr option
+  ; fix_type : constr_expr
+  ; fix_notations : Vernacexpr.decl_notation list
+  }
 
 let interp_fix_context ~program_mode ~cofix env sigma fix =
   let before, after = if not cofix then split_at_annot fix.fix_binders fix.fix_annot else [], fix.fix_binders in
@@ -167,7 +168,7 @@ type recursive_preentry =
 let fix_proto sigma =
   Evarutil.new_global sigma (Coqlib.lib_ref "program.tactic.fix_proto")
 
-let interp_recursive ~program_mode ~cofix fixl notations =
+let interp_recursive ~program_mode ~cofix fixl =
   let open Context.Named.Declaration in
   let open EConstr in
   let env = Global.env() in
@@ -222,6 +223,7 @@ let interp_recursive ~program_mode ~cofix fixl notations =
   (* Interp bodies with rollback because temp use of notations/implicit *)
   let sigma, fixdefs =
     Metasyntax.with_syntax_protection (fun () ->
+      let notations = List.map_append (fun { fix_notations } -> fix_notations) fixl in
       List.iter (Metasyntax.set_notation_for_interpretation env_rec impls) notations;
       List.fold_left4_map
         (fun sigma fixctximpenv -> interp_fix_body ~program_mode env_rec sigma (Id.Map.fold Id.Map.add fixctximpenv impls))
@@ -248,8 +250,8 @@ let ground_fixpoint env evd (fixnames,fixrs,fixdefs,fixtypes) =
   let fixtypes = List.map EConstr.(to_constr evd) fixtypes in
   Evd.evar_universe_context evd, (fixnames,fixrs,fixdefs,fixtypes)
 
-let interp_fixpoint ~cofix l ntns =
-  let (env,_,pl,evd),fix,info = interp_recursive ~program_mode:false ~cofix l ntns in
+let interp_fixpoint ~cofix l =
+  let (env,_,pl,evd),fix,info = interp_recursive ~program_mode:false ~cofix l in
   check_recursive true env evd fix;
   let uctx,fix = ground_fixpoint env evd fix in
   (fix,pl,uctx,info)
@@ -317,28 +319,25 @@ let extract_decreasing_argument ~structonly = function { CAst.v = v } -> match v
            "Well-founded induction requires Program Fixpoint or Function.")
 
 let extract_fixpoint_components ~structonly l =
-  let fixl, ntnl = List.split l in
-  let fixl = List.map (fun (({CAst.v=id},pl),ann,bl,typ,def) ->
+  let open Vernacexpr in
+  List.map (fun { id_decl=({CAst.v=id},pl); rec_order; binders; rtype; body_def; notations } ->
       (* This is a special case: if there's only one binder, we pick it as the
-      recursive argument if none is provided. *)
-      let ann = Option.map (fun ann -> match bl, ann with
-        | [CLocalAssum([{ CAst.v = Name x }],_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
-          CAst.make ?loc @@ CMeasureRec(Some (CAst.make x), mes, rel)
-        | [CLocalDef({ CAst.v = Name x },_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
-          CAst.make ?loc @@ CMeasureRec(Some (CAst.make x), mes, rel)
-        | _, x -> x) ann
+         recursive argument if none is provided. *)
+      let rec_order = Option.map (fun rec_order -> match binders, rec_order with
+          | [CLocalAssum([{ CAst.v = Name x }],_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
+            CAst.make ?loc @@ CMeasureRec(Some (CAst.make x), mes, rel)
+          | [CLocalDef({ CAst.v = Name x },_,_)], { CAst.v = CMeasureRec(None, mes, rel); CAst.loc } ->
+            CAst.make ?loc @@ CMeasureRec(Some (CAst.make x), mes, rel)
+          | _, x -> x) rec_order
       in
-      let ann = Option.map (extract_decreasing_argument ~structonly) ann in
-      {fix_name = id; fix_annot = ann; fix_univs = pl;
-       fix_binders = bl; fix_body = def; fix_type = typ}) fixl in
-  fixl, List.flatten ntnl
+      let rec_order = Option.map (extract_decreasing_argument ~structonly) rec_order in
+      { fix_name = id; fix_annot = rec_order; fix_univs = pl;
+        fix_binders = binders; fix_body = body_def; fix_type = rtype; fix_notations = notations }) l
 
 let extract_cofixpoint_components l =
-  let fixl, ntnl = List.split l in
-  List.map (fun (({CAst.v=id},pl),bl,typ,def) ->
-            {fix_name = id; fix_annot = None; fix_univs = pl;
-             fix_binders = bl; fix_body = def; fix_type = typ}) fixl,
-  List.flatten ntnl
+  List.map (fun { Vernacexpr.id_decl=({CAst.v=id},pl); binders; rtype; body_def; notations} ->
+      {fix_name = id; fix_annot = None; fix_univs = pl;
+       fix_binders = binders; fix_body = body_def; fix_type = rtype; fix_notations = notations}) l
 
 let check_safe () =
   let open Declarations in
@@ -346,8 +345,9 @@ let check_safe () =
   flags.check_universes && flags.check_guarded
 
 let do_fixpoint_common l =
-  let fixl, ntns = extract_fixpoint_components ~structonly:true l in
-  let (_, _, _, info as fix) = interp_fixpoint ~cofix:false fixl ntns in
+  let fixl = extract_fixpoint_components ~structonly:true l in
+  let ntns = List.map_append (fun { fix_notations } -> fix_notations ) fixl in
+  let (_, _, _, info as fix) = interp_fixpoint ~cofix:false fixl in
   fixl, ntns, fix, List.map compute_possible_guardness_evidences info
 
 let do_fixpoint_interactive ~scope ~poly l : Lemmas.t =
@@ -362,16 +362,17 @@ let do_fixpoint ~scope ~poly l =
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
 
 let do_cofixpoint_common l =
-  let fixl,ntns = extract_cofixpoint_components l in
-  ntns, interp_fixpoint ~cofix:true fixl ntns
+  let fixl = extract_cofixpoint_components l in
+  let ntns = List.map_append (fun { fix_notations } -> fix_notations ) fixl in
+  interp_fixpoint ~cofix:true fixl, ntns
 
 let do_cofixpoint_interactive ~scope ~poly l =
-  let ntns, cofix = do_cofixpoint_common l in
+  let cofix, ntns = do_cofixpoint_common l in
   let lemma = declare_fixpoint_interactive_generic ~scope ~poly cofix ntns in
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ();
   lemma
 
 let do_cofixpoint ~scope ~poly l =
-  let ntns, cofix = do_cofixpoint_common l in
+  let cofix, ntns = do_cofixpoint_common l in
   declare_fixpoint_generic ~scope ~poly cofix ntns;
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()

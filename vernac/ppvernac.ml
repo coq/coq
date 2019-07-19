@@ -419,15 +419,15 @@ let string_of_theorem_kind = let open Decls in function
     | l -> spc() ++
       hov 1 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
 
-  let pr_rec_definition ((iddecl,ro,bl,type_,def),ntn) =
+  let pr_rec_definition { id_decl; rec_order; binders; rtype; body_def; notations } =
     let env = Global.env () in
     let sigma = Evd.from_env env in
     let pr_pure_lconstr c = Flags.without_option Flags.beautify pr_lconstr c in
-    let annot = pr_guard_annot (pr_lconstr_expr env sigma) bl ro in
-    pr_ident_decl iddecl ++ pr_binders_arg bl ++ annot
-    ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr env sigma c) type_
-    ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr env sigma def) def
-    ++ prlist (pr_decl_notation @@ pr_constr env sigma) ntn
+    let annot = pr_guard_annot (pr_lconstr_expr env sigma) binders rec_order in
+    pr_ident_decl id_decl ++ pr_binders_arg binders ++ annot
+    ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr env sigma c) rtype
+    ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_pure_lconstr env sigma def) body_def
+    ++ prlist (pr_decl_notation @@ pr_constr env sigma) notations
 
   let pr_statement head (idpl,(bl,c)) =
     let env = Global.env () in
@@ -858,11 +858,11 @@ let string_of_definition_object_kind = let open Decls in function
           | DoDischarge -> keyword "Let" ++ spc ()
           | NoDischarge -> str ""
         in
-        let pr_onecorec ((iddecl,bl,c,def),ntn) =
-          pr_ident_decl iddecl ++ spc() ++ pr_binders env sigma bl ++ spc() ++ str":" ++
-            spc() ++ pr_lconstr_expr env sigma c ++
-            pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr env sigma def) def ++
-            prlist (pr_decl_notation @@ pr_constr env sigma) ntn
+        let pr_onecorec {id_decl; binders; rtype; body_def; notations } =
+          pr_ident_decl id_decl ++ spc() ++ pr_binders env sigma binders ++ spc() ++ str":" ++
+            spc() ++ pr_lconstr_expr env sigma rtype ++
+            pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr env sigma def) body_def ++
+            prlist (pr_decl_notation @@ pr_constr env sigma) notations
         in
         return (
           hov 0 (local ++ keyword "CoFixpoint" ++ spc() ++
