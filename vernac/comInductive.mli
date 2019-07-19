@@ -10,7 +10,6 @@
 
 open Names
 open Entries
-open Libnames
 open Vernacexpr
 open Constrexpr
 
@@ -33,11 +32,19 @@ val do_mutual_inductive
   -> Declarations.recursivity_kind
   -> unit
 
-(************************************************************************)
-(** Internal API  *)
-(************************************************************************)
+(** User-interface API *)
 
-(** Exported for Record and Funind *)
+(** Prepare a "match" template for a given inductive type.
+    For each branch of the match, we list the constructor name
+    followed by enough pattern variables.
+    [Not_found] is raised if the given string isn't the qualid of
+    a known inductive type. *)
+
+val make_cases : Names.inductive -> string list list
+
+(************************************************************************)
+(** Internal API, exported for Record                                   *)
+(************************************************************************)
 
 (** Registering a mutual inductive definition together with its
    associated schemes *)
@@ -55,41 +62,3 @@ val should_auto_template : Id.t -> bool -> bool
 (** [should_auto_template x b] is [true] when [b] is [true] and we
    automatically use template polymorphism. [x] is the name of the
    inductive under consideration. *)
-
-(** Exported for Funind *)
-
-(** Extracting the semantical components out of the raw syntax of mutual
-   inductive declarations *)
-
-type structured_one_inductive_expr = {
-  ind_name : Id.t;
-  ind_arity : constr_expr;
-  ind_lc : (Id.t * constr_expr) list
-}
-
-type structured_inductive_expr =
-  local_binder_expr list * structured_one_inductive_expr list
-
-val extract_mutual_inductive_declaration_components :
-  (one_inductive_expr * decl_notation list) list ->
-    structured_inductive_expr * (*coercions:*) qualid list * decl_notation list
-
-(** Typing mutual inductive definitions *)
-val interp_mutual_inductive
-  :  template:bool option
-  -> universe_decl_expr option
-  -> structured_inductive_expr
-  -> decl_notation list
-  -> cumulative:bool
-  -> poly:bool
-  -> private_ind:bool
-  -> Declarations.recursivity_kind
-  -> mutual_inductive_entry * UnivNames.universe_binders * one_inductive_impls list
-
-(** Prepare a "match" template for a given inductive type.
-    For each branch of the match, we list the constructor name
-    followed by enough pattern variables.
-    [Not_found] is raised if the given string isn't the qualid of
-    a known inductive type. *)
-
-val make_cases : Names.inductive -> string list list

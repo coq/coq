@@ -80,9 +80,6 @@ type structured_one_inductive_expr = {
   ind_lc : (Id.t * constr_expr) list
 }
 
-type structured_inductive_expr =
-  local_binder_expr list * structured_one_inductive_expr list
-
 let minductive_message = function
   | []  -> user_err Pp.(str "No inductive definition.")
   | [x] -> (Id.print x ++ str " is defined")
@@ -467,9 +464,6 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   (if poly && cumulative then
       InferCumulativity.infer_inductive env_ar mind_ent
    else mind_ent), Evd.universe_binders sigma, impls
-
-let interp_mutual_inductive ~template udecl (paramsl,indl) notations ~cumulative ~poly ~private_ind finite =
-  interp_mutual_inductive_gen (Global.env()) ~template udecl ([],paramsl,indl) notations ~cumulative ~poly ~private_ind finite
 
 (* Very syntactical equality *)
 let eq_local_binders bl1 bl2 =
