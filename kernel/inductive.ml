@@ -1320,72 +1320,71 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
 (* Functions for sized (co)fixpoints *)
 
 let fold_map2_fix_type env f err is tys init =
-  let rec app_ind err f ty acc =
+  let rec app_ind err f acc ty =
     match kind (whd_all env ty) with
     | Ind (iu, s) ->
-      let s', acc = f iu s acc in
-      if s == s' then ty, acc else
-      mkIndUS iu s', acc
+      let acc, s' = f iu acc s in
+      if s == s' then acc, ty else
+      acc, mkIndUS iu s'
     | App (c, args) ->
-      let c', acc = app_ind err f c acc in
-      if c == c' then ty, acc else
-      mkApp (c, args), acc
-    | c -> err (of_kind c), acc in
+      let acc, c' = app_ind err f acc c in
+      if c == c' then acc, ty else
+      acc, mkApp (c, args)
+    | c -> acc, err (of_kind c) in
   let app_arg err f decl (acc, j) =
     match decl with
     | LocalAssum (na, ty) ->
-      let ty, acc = app_ind (err j na) (f j) ty acc in
+      let acc, ty = app_ind (err j na) (f j) acc ty in
       Context.Rel.Declaration.set_type ty decl, (acc, succ j)
     | LocalDef _ -> decl, (acc, j) in
-  let app_ty i ty acc =
+  let app_ty acc i ty =
+    (* N.B. ctxt is backwards so we foldr backwards over it *)
     let ctxt, body = Term.decompose_prod_assum ty in
-    let ctxt_rev = List.rev ctxt in
-    let ctxt_rev, (acc, _) = List.fold_right_map (app_arg (err ty i) (f i)) ctxt_rev (acc, 0) in
-    let body, acc = app_ind (err ty i (-1) Context.anonR) (f i (-1)) body acc in
-    let ctxt = List.rev ctxt_rev in
-    Term.it_mkProd_or_LetIn body ctxt, acc in
-  List.fold_right2_map app_ty is tys init
+    let ctxt, (acc, _) = List.fold_right_map (app_arg (err ty i) (f i)) ctxt (acc, 0) in
+    let acc, body = app_ind (err ty i (-1) Context.anonR) (f i (-1)) acc body in
+    acc, Term.it_mkProd_or_LetIn body ctxt in
+  List.fold_left2_map app_ty init is tys
 
 let get_rec_inds env is tys =
-  let f i j (ind, _) s acc =
-    if Int.equal i j then s, ind :: acc else s, acc in
+  let f i j (ind, _) acc s =
+    if Int.equal i j then ind :: acc, s else acc, s in
   let err ty i j na t =
     if Int.equal i j then error_ill_formed_rec_type env j na t ty else t in
-  snd @@ fold_map2_fix_type env f err (Array.to_list is) (Array.to_list tys) []
+  fst @@ fold_map2_fix_type env f err (Array.to_list is) (Array.to_list tys) []
 
 let get_rec_vars env is tys =
-  let f i j _ s acc =
+  let f i j _ acc s =
     if Int.equal i j then
       match s with
-      | Stage (StageVar (var, _)) -> s, SVars.add var acc
-      | _ -> s, acc
-    else s, acc in
+      | Stage (StageVar (var, _)) -> SVars.add var acc, s
+      | _ -> acc, s
+    else acc, s in
   let err ty i j na t =
     if Int.equal i j then error_ill_formed_rec_type env j na t ty else t in
-  snd @@ fold_map2_fix_type env f err (Array.to_list is) (Array.to_list tys) SVars.empty
+  fst @@ fold_map2_fix_type env f err (Array.to_list is) (Array.to_list tys) SVars.empty
 
 let get_corec_inds env tys =
-  let f _ j (ind, _) s acc =
-    if Int.equal (-1) j then s, ind :: acc else s, acc in
+  let f _ j (ind, _) acc s =
+    if Int.equal (-1) j then ind :: acc, s else acc, s in
   let err ty _ j na t =
     if Int.equal (-1) j then error_ill_formed_rec_type env j na t ty else t in
   let len = Array.length tys in
-  snd @@ fold_map2_fix_type env f err (List.make len (-1)) (Array.to_list tys) []
+  fst @@ fold_map2_fix_type env f err (List.make len (-1)) (Array.to_list tys) []
 
 let get_corec_vars env tys =
-  let f _ j _ s acc =
+  let f _ j _ acc s =
     if Int.equal (-1) j then
       match s with
-      | Stage (StageVar (var, _)) -> s, SVars.add var acc
-      | _ -> s, acc
-    else s, acc in
+      | Stage (StageVar (var, _)) -> SVars.add var acc, s
+      | _ -> acc, s
+    else acc, s in
   let err ty _ j na t =
     if Int.equal (-1) j then error_ill_formed_rec_type env j na t ty else t in
   let len = Array.length tys in
-  snd @@ fold_map2_fix_type env f err (List.make len (-1)) (Array.to_list tys) SVars.empty
+  fst @@ fold_map2_fix_type env f err (List.make len (-1)) (Array.to_list tys) SVars.empty
 
 let set_stars env inds tys =
-  let f ind _ (ind', _) s acc =
-    if Names.eq_ind ind ind' then Star, acc else s, acc in
+  let f ind _ (ind', _) acc s =
+    if Names.eq_ind ind ind' then acc, Star else acc, s in
   let err _ _ _ _ t = t in
-  Array.of_list @@ fst @@ fold_map2_fix_type env f err inds (Array.to_list tys) ()
+  Array.of_list @@ snd @@ fold_map2_fix_type env f err inds (Array.to_list tys) ()
