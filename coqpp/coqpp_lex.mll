@@ -100,6 +100,7 @@ rule extend = parse
 | "COMMAND" { COMMAND }
 | "TACTIC" { TACTIC }
 | "EXTEND" { EXTEND }
+| "DOC_GRAMMAR" { DOC_GRAMMAR }
 | "END" { END }
 | "DECLARE" { DECLARE }
 | "PLUGIN" { PLUGIN }

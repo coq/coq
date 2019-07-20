@@ -1,0 +1,220 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2019       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
+(* Defines additional productions and edits for use in documentation.  Not compiled into Coq *)
+
+DOC_GRAMMAR
+
+(* additional nts to be spliced *)
+
+LEFTQMARK: [
+| "?"
+]
+
+SPLICE: [
+| LEFTQMARK
+]
+
+hyp: [
+| var
+]
+
+tactic_then_gen: [
+| EDIT ADD_OPT tactic_expr5 "|" tactic_then_gen
+| EDIT ADD_OPT tactic_expr5 ".." tactic_then_last
+]
+
+SPLICE: [
+| hyp
+| identref
+| pattern_ident (* depends on previous LEFTQMARK splice todo: improve *)
+| constr_eval  (* splices as multiple prods *)
+| tactic_then_last  (* todo: dependency on c.edit_mlg edit?? really useful? *)
+| Prim.name
+| ltac_selector
+| Constr.ident
+| tactic_then_locality  (* todo: cleanup *)
+| attribute_list
+]
+
+RENAME: [
+  (* map missing names for rhs *)
+| _binders binders
+| Constr.constr term
+| Constr.constr_pattern constr_pattern
+| Constr.global global
+| Constr.lconstr lconstr
+| Constr.lconstr_pattern lconstr_pattern
+| G_vernac.query_command query_command
+| G_vernac.section_subset_expr section_subset_expr
+| nonsimple_intropattern intropattern
+| Pltac.tactic tactic
+| Pltac.tactic_expr ltac_expr
+| Prim.ident ident
+| Prim.reference reference
+| Pvernac.Vernac_.main_entry vernac_control
+| Tactic.tactic tactic
+| tactic3 ltac_expr3  (* todo: can't figure out how this gets mapped by coqpp *)
+| tactic1 ltac_expr1  (* todo: can't figure out how this gets mapped by coqpp *)
+| tactic0 ltac_expr0  (* todo: can't figure out how this gets mapped by coqpp *)
+| tactic_expr5 ltac_expr
+| tactic_expr4 ltac_expr4
+| tactic_expr3 ltac_expr3
+| tactic_expr2 ltac_expr2
+| tactic_expr1 ltac_expr1
+| tactic_expr0 ltac_expr0
+
+  (* elementary renaming/OCaml-defined productions *)
+| clause clause_dft_concl
+| in_clause' in_clause
+| l_constr lconstr  (* todo: should delete the production *)
+
+  (* SSR *)
+| G_vernac.def_body def_body
+| Pcoq.Constr.constr term
+| Prim.by_notation by_notation
+| Prim.identref ident
+| Prim.natural natural
+| Vernac.rec_definition rec_definition
+
+  (* rename on lhs *)
+| intropatterns intropattern_list_opt
+| Constr.closed_binder closed_binder
+
+  (* historical name *)
+| constr term
+]
+
+DELETE: [
+| check_for_coloneq
+| impl_ident_head
+| local_test_lpar_id_colon
+| lookup_at_as_comma
+| only_starredidentrefs
+| test_bracket_ident
+| test_lpar_id_coloneq
+| test_lpar_id_rpar
+| test_lpar_idnum_coloneq
+| test_show_goal
+
+  (* SSR *)
+(* | ssr_null_entry *)
+| ssrtermkind  (* todo: rename as "test..." *)
+| term_annotation  (* todo: rename as "test..." *)
+| test_idcomma
+| test_nohidden
+| test_not_ssrslashnum
+| test_ssr_rw_syntax
+| test_ssreqid
+| test_ssrfwdid
+| test_ssrseqvar
+| test_ssrslashnum00
+| test_ssrslashnum01
+| test_ssrslashnum10
+| test_ssrslashnum11
+| test_ident_no_do
+| ssrdoarg  (* todo: this and the next one should be removed from the grammar? *)
+| ssrseqdir
+]
+
+ident: [
+| DELETE IDENT ssr_null_entry
+]
+
+natural: [
+| DELETE _natural
+]
+
+
+  (* added productions *)
+
+empty: [  (* todo: (bug) this is getting converted to empty -> empty *)
+|
+]
+
+lpar_id_coloneq: [
+| "(" IDENT; ":="
+]
+
+name_colon: [
+| IDENT; ":"
+| "_" ":"  (* todo: should "_" be a keyword or an identifier? *)
+]
+
+int: [ (* todo: probably should be NUMERAL *)
+| integer
+]
+
+command_entry: [
+| noedit_mode
+]
+
+binders: [
+| DELETE Pcoq.Constr.binders  (* todo: not sure why there are 2 "binders:" *)
+]
+
+(* edits to simplify *)
+
+ltac_expr1: [
+| EDIT match_key ADD_OPT "reverse" "goal" "with" match_context_list "end"
+]
+
+match_context_list: [
+| EDIT ADD_OPT "|" LIST1 match_context_rule SEP "|"
+]
+
+match_hyps: [
+| REPLACE name ":=" "[" match_pattern "]" ":" match_pattern
+| WITH name ":=" OPT ("[" match_pattern "]" ":") match_pattern
+| DELETE name ":=" match_pattern
+]
+
+match_list: [
+| EDIT ADD_OPT "|" LIST1 match_rule SEP "|"
+]
+
+
+selector_body: [
+| REPLACE range_selector_or_nth  (* depends on whether range_selector_or_nth is deleted first *)
+| WITH LIST1 range_selector SEP ","
+]
+
+range_selector_or_nth: [
+| DELETENT
+]
+
+simple_tactic: [
+| DELETE "intros"
+| REPLACE "intros" ne_intropatterns
+| WITH "intros" intropattern_list_opt
+| DELETE "eintros"
+| REPLACE "eintros" ne_intropatterns
+| WITH "eintros" intropattern_list_opt
+]
+
+intropattern_list_opt: [
+| DELETE LIST0 intropattern
+| intropattern_list_opt intropattern
+| empty
+]
+
+
+ne_intropatterns: [
+| DELETENT  (* todo: don't use DELETENT for this *)
+]
+
+
+or_and_intropattern: [
+| DELETE "()"
+| DELETE "(" simple_intropattern ")"
+| REPLACE "(" simple_intropattern "," LIST1 simple_intropattern SEP "," ")"
+|   WITH  "(" LIST0 simple_intropattern SEP "," ")"
+| EDIT "[" USE_NT intropattern_or LIST1 intropattern_list_opt SEP "|" "]"
+]

@@ -19,6 +19,7 @@
 *.dtd whitespace=blank-at-eol,tab-in-indent
 dune* whitespace=blank-at-eol,tab-in-indent
 *.dune whitespace=blank-at-eol,tab-in-indent
+*.edit_mlg whitespace=blank-at-eol,tab-in-indent
 *.el whitespace=blank-at-eol,tab-in-indent
 *.fake whitespace=blank-at-eol,tab-in-indent
 *.g whitespace=blank-at-eol,tab-in-indent
@@ -36,6 +37,7 @@ dune* whitespace=blank-at-eol,tab-in-indent
 *.mll whitespace=blank-at-eol,tab-in-indent
 *.mllib whitespace=blank-at-eol,tab-in-indent
 *.mlp whitespace=blank-at-eol,tab-in-indent
+*.mly whitespace=blank-at-eol,tab-in-indent
 *.mlpack whitespace=blank-at-eol,tab-in-indent
 *.nix whitespace=blank-at-eol,tab-in-indent
 *.nsh whitespace=blank-at-eol,tab-in-indent
