@@ -44,78 +44,91 @@ Lexical conventions
 ===================
 
 Blanks
-  Space, newline and horizontal tabulation are considered as blanks.
+  Space, newline and horizontal tab are considered blanks.
   Blanks are ignored but they separate tokens.
 
 Comments
-  Comments in Coq are enclosed between ``(*`` and ``*)``, and can be nested.
-  They can contain any character. However, :token:`string` literals must be
+  Comments are enclosed between ``(*`` and ``*)``.  They can be nested.
+  They can contain any character. However, embedded :token:`string` literals must be
   correctly closed. Comments are treated as blanks.
 
-Identifiers and access identifiers
+Identifiers and field identifiers
   Identifiers, written :token:`ident`, are sequences of letters, digits, ``_`` and
-  ``'``, that do not start with a digit or ``'``. That is, they are
-  recognized by the following lexical class:
+  ``'``, that do not start with a digit or ``'``.  That is, they are
+  recognized by the following grammar (except that the string ``_`` is reserved;
+  it is not a valid identifier):
 
   .. productionlist:: coq
-     first_letter      : a..z ∣ A..Z ∣ _ ∣ unicode-letter
-     subsequent_letter : a..z ∣ A..Z ∣ 0..9 ∣ _ ∣ ' ∣ unicode-letter ∣ unicode-id-part
      ident             : `first_letter`[`subsequent_letter`…`subsequent_letter`]
-     access_ident      : .`ident`
+     field             : .`ident`
+     first_letter      : a..z ∣ A..Z ∣ _ ∣ `unicode_letter`
+     subsequent_letter : `first_letter` ∣ 0..9 ∣ ' ∣ `unicode_id_part`
 
   All characters are meaningful. In particular, identifiers are case-sensitive.
-  The entry ``unicode-letter`` non-exhaustively includes Latin,
+  :production:`unicode_letter` non-exhaustively includes Latin,
   Greek, Gothic, Cyrillic, Arabic, Hebrew, Georgian, Hangul, Hiragana
   and Katakana characters, CJK ideographs, mathematical letter-like
-  symbols, hyphens, non-breaking space, … The entry ``unicode-id-part``
+  symbols and non-breaking space. :production:`unicode_id_part`
   non-exhaustively includes symbols for prime letters and subscripts.
 
-  Access identifiers, written :token:`access_ident`, are identifiers prefixed by
-  `.` (dot) without blank. They are used in the syntax of qualified
-  identifiers.
+  Field identifiers, written :token:`field`, are identifiers prefixed by
+  `.` (dot) with no blank between the dot and the identifier. They are used in
+  the syntax of qualified identifiers.
 
 Numerals
-  Numerals are sequences of digits with a potential fractional part
-  and exponent. Integers are numerals without fractional nor exponent
-  part and optionally preceded by a minus sign. Underscores ``_`` can
-  be used as comments in numerals.
+  Numerals are sequences of digits with an optional fractional part
+  and exponent, optionally preceded by a minus sign. :token:`int` is an integer;
+  a numeral without fractional or exponent parts. :token:`num` is a non-negative
+  integer.  Underscores embedded in the digits are ignored, for example
+  ``1_000_000`` is the same as ``1000000``.
 
   .. productionlist:: coq
-     digit   : 0..9
+     numeral : `num`[. `num`][`exp`[`sign`]`num`]
+     int     : [-]`num`
      num     : `digit`…`digit`
-     integer : [-]`num`
-     dot     : .
+     digit   : 0..9
      exp     : e | E
      sign    : + | -
-     numeral : `num`[`dot` `num`][`exp`[`sign`]`num`]
 
 Strings
-  Strings are delimited by ``"`` (double quote), and enclose a sequence of
-  any characters different from ``"`` or the sequence ``""`` to denote the
-  double quote character. In grammars, the entry for quoted strings is
-  :production:`string`.
+  Strings begin and end with ``"`` (double quote).  Use ``""`` to represent
+  a double quote character within a string.  In the grammar, strings are
+  identified with :production:`string`.
 
 Keywords
-  The following identifiers are reserved keywords, and cannot be
-  employed otherwise::
+  The following character sequences are reserved keywords that cannot be
+  used as identifiers::
 
-    _ as at cofix else end exists exists2 fix for
-    forall fun if IF in let match mod return
-    SProp Prop Set Type then using where with
+    _ Axiom CoFixpoint Definition Fixpoint Hypothesis IF Parameter Prop
+    SProp Set Theorem Type Variable as at by cofix discriminated else
+    end exists exists2 fix for forall fun if in lazymatch let match
+    multimatch return then using where with
 
-Special tokens
-  The following sequences of characters are special tokens::
+  Note that plugins may define additional keywords when they are loaded.
 
-    ! % & && ( () ) * + ++ , - -> . .( ..
-    / /\ : :: :< := :> ; < <- <-> <: <= <> =
-    => =_D > >-> >= ? ?= @ [ \/ ] ^ { | |-
-    || } ~ #[
+Other tokens
+  The set of
+  tokens defined at any given time can vary because the :cmd:`Notation`
+  command can define new tokens.  A :cmd:`Require` command may load more notation definitions,
+  while the end of a :cmd:`Section` may remove notations.  Some notations
+  are defined in the basic library (see :ref:`thecoqlibrary`) and are normallly
+  loaded automatically at startup time.
 
-  Lexical ambiguities are resolved according to the “longest match”
-  rule: when a sequence of non alphanumerical characters can be
-  decomposed into several different ways, then the first token is the
-  longest possible one (among all tokens defined at this moment), and so
-  on.
+  Here are the character sequences that Coq directly defines as tokens
+  without using :cmd:`Notation` (omitting 25 specialized tokens that begin with
+  ``#int63_``)::
+
+    ! #[ % & ' ( () (bfs) (dfs) ) * ** + , - ->
+    . .( .. ... / : ::= := :> :>> ; < <+ <- <:
+    <<: <= = => > >-> >= ? @ @{ [ [= ] _ _eqn
+    `( `{ { {| | |- || }
+
+  When multiple tokens match the beginning of a sequence of characters,
+  the longest matching token is used.
+  Occasionally you may need to insert spaces to separate tokens.  For example,
+  if ``~`` and ``~~`` are both defined as tokens, the inputs ``~ ~`` and
+  ``~~`` generate different tokens, whereas if `~~` is not defined, then the
+  two inputs are equivalent.
 
 .. _term:
 
@@ -164,7 +177,7 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
                     : ( `name` [: `term`] := `term` )
                     : ' `pattern`
    name             : `ident` | _
-   qualid           : `ident` | `qualid` `access_ident`
+   qualid           : `ident` | `qualid` `field`
    sort             : SProp | Prop | Set | Type
    fix_bodies       : `fix_body`
                     : `fix_body` with `fix_body` with … with `fix_body` for `ident`

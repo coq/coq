@@ -7,22 +7,20 @@ The |Coq| library
    single: Theories
 
 
-The |Coq| library is structured into two parts:
+The |Coq| library has two parts:
 
-  * **The initial library**: it contains elementary logical notions and
-    data-types. It constitutes the basic state of the system directly
-    available when running |Coq|;
+  * **The basic library**: definitions and theorems for
+    the most commonly used elementary logical notions and
+    data types. |Coq| normally loads these files automatically when it starts.
 
-  * **The standard library**: general-purpose libraries containing various
-    developments of |Coq| axiomatizations about sets, lists, sorting,
-    arithmetic, etc. This library comes with the system and its modules
-    are directly accessible through the ``Require`` command (see
-    Section :ref:`compiled-files`);
+  * **The standard library**: general-purpose libraries with
+    definitions and theorems for sets, lists, sorting,
+    arithmetic, etc. To use these files, users must load them explicitly
+    with the ``Require`` command (see :ref:`compiled-files`)
 
-In addition, user-provided libraries or developments are provided by
-|Coq| users' community. These libraries and developments are available
-for download at http://coq.inria.fr (see
-Section :ref:`userscontributions`).
+There are also many libraries provided by |Coq| users' community.
+These libraries and developments are available
+for download at http://coq.inria.fr (see :ref:`userscontributions`).
 
 This chapter briefly reviews the |Coq| libraries whose contents can
 also be browsed at http://coq.inria.fr/stdlib.
@@ -514,8 +512,8 @@ realizability interpretation.
    forall (A B:Prop) (P:Type), (A -> B -> P) -> A /\ B -> P.
 
 
-Basic Arithmetics
-~~~~~~~~~~~~~~~~~
+Basic Arithmetic
+~~~~~~~~~~~~~~~~
 
 The basic library includes a few elementary properties of natural
 numbers, together with the definitions of predecessor, addition and
@@ -804,8 +802,8 @@ Notation          Interpretation
 ===============   ===================
 
 
-Notations for integer arithmetics
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Notations for integer arithmetic
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index::
   single: Arithmetical notations
@@ -822,7 +820,7 @@ Notations for integer arithmetics
 
 
 The following table describes the syntax of expressions
-for integer arithmetics. It is provided by requiring and opening the module ``ZArith`` and opening scope ``Z_scope``.
+for integer arithmetic. It is provided by requiring and opening the module ``ZArith`` and opening scope ``Z_scope``.
 It specifies how notations are interpreted and, when not
 already reserved, the precedence and associativity.
 
@@ -866,7 +864,7 @@ Notations for real numbers
 
 This is provided by requiring and opening the module ``Reals`` and
 opening scope ``R_scope``. This set of notations is very similar to
-the notation for integer arithmetics. The inverse function was added.
+the notation for integer arithmetic. The inverse function was added.
 
 ===============   ===================
 Notation          Interpretation
