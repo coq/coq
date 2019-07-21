@@ -1,8 +1,9 @@
 (rule
  (targets all_stdlib.v)
  (deps
+   build_all_stdlib.sh
    (source_tree ../../../theories)
    (source_tree ../../../plugins))
  (action
-   (with-outputs-to all_stdlib.v
+   (with-stdout-to all_stdlib.v
     (bash "./build_all_stdlib.sh"))))
