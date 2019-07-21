@@ -17,7 +17,6 @@ open Genarg
 open Stdarg
 open Tacarg
 open Extraargs
-open Pcoq.Prim
 open Pltac
 open Mod_subst
 open Names
@@ -258,18 +257,7 @@ END
 
 open Autorewrite
 
-let pr_orient _prc _prlc _prt = function
-  | true -> Pp.mt ()
-  | false -> Pp.str " <-"
-
-let pr_orient_string _prc _prlc _prt (orient, s) =
-  pr_orient _prc _prlc _prt orient ++ Pp.spc () ++ Pp.str s
-
 }
-
-ARGUMENT EXTEND orient_string TYPED AS (bool * string) PRINTED BY { pr_orient_string }
-| [ orient(r) preident(i) ] -> { r, i }
-END
 
 TACTIC EXTEND autorewrite
 | [ "autorewrite" "with" ne_preident_list(l) clause(cl) ] ->
