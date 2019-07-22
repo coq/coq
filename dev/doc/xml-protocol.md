@@ -174,7 +174,7 @@ Moves current tip to `${stateId}`, such that commands may be added to the new st
   </union>
 </value>
 ```
-* Failure: If `stateId` is in an error-state and cannot be jumped to, `errorFreeStateId` is the parent state of ``stateId` that shopuld be edited instead. 
+* Failure: If `stateId` is in an error-state and cannot be jumped to, `errorFreeStateId` is the parent state of `stateId` that should be edited instead.
 ```html
 <value val="fail" loc_s="${startOffsetOfError}" loc_e="${endOffsetOfError}">
   <state_id val="${errorFreeStateId}"/>
