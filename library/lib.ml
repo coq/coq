@@ -427,46 +427,60 @@ type secentry =
   | Variable of {
       id:Names.Id.t;
       kind:Decl_kinds.binding_kind;
-      poly:bool;
       univs:Univ.ContextSet.t;
     }
   | Context of Univ.ContextSet.t
 
+type section_data = {
+  sec_entry : secentry list;
+  sec_workl : Opaqueproof.work_list;
+  sec_abstr : abstr_list;
+  sec_poly  : bool;
+}
+
+let empty_section_data ~poly = {
+  sec_entry = [];
+  sec_workl = (Names.Cmap.empty,Names.Mindmap.empty);
+  sec_abstr = (Names.Cmap.empty,Names.Mindmap.empty);
+  sec_poly  = poly;
+}
+
 let sectab =
-  Summary.ref ([] : (secentry list * Opaqueproof.work_list * abstr_list) list)
-    ~name:"section-context"
+  Summary.ref ([] : section_data list) ~name:"section-context"
 
-let add_section () =
-  sectab := ([],(Names.Cmap.empty,Names.Mindmap.empty),
-                (Names.Cmap.empty,Names.Mindmap.empty)) :: !sectab
-
-let check_same_poly p vars =
-  let pred = function Context _ -> p = false | Variable {poly} -> p != poly in
-  if List.exists pred vars then
+let check_same_poly p sec =
+  if p != sec.sec_poly then
     user_err Pp.(str  "Cannot mix universe polymorphic and monomorphic declarations in sections.")
+
+let add_section ~poly () =
+  List.iter (fun tab -> check_same_poly poly tab) !sectab;
+  sectab := empty_section_data ~poly :: !sectab
 
 let add_section_variable ~name ~kind ~poly univs =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
-    | (vars,repl,abs)::sl ->
-       List.iter (fun tab -> check_same_poly poly (pi1 tab)) !sectab;
-       sectab := (Variable {id=name;kind;poly;univs}::vars,repl,abs)::sl
+    | s :: sl ->
+       List.iter (fun tab -> check_same_poly poly tab) !sectab;
+       let s = { s with sec_entry = Variable {id=name;kind;univs} :: s.sec_entry } in
+       sectab := s :: sl
 
 let add_section_context ctx =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
-    | (vars,repl,abs)::sl ->
-       check_same_poly true vars;
-       sectab := (Context ctx :: vars,repl,abs)::sl
+    | s :: sl ->
+       check_same_poly true s;
+       let s = { s with sec_entry = Context ctx :: s.sec_entry } in
+       sectab := s :: sl
 
 exception PolyFound of bool (* make this a let exception once possible *)
 let is_polymorphic_univ u =
   try
     let open Univ in
-    List.iter (fun (vars,_,_) ->
+    List.iter (fun s ->
+      let vars = s.sec_entry in
         List.iter (function
-            | Variable {poly;univs=(univs,_)} ->
-              if LSet.mem u univs then raise (PolyFound poly)
+            | Variable {univs=(univs,_)} ->
+              if LSet.mem u univs then raise (PolyFound s.sec_poly)
             | Context (univs,_) ->
               if LSet.mem u univs then raise (PolyFound true)
           ) vars
@@ -474,12 +488,12 @@ let is_polymorphic_univ u =
     false
   with PolyFound b -> b
 
-let extract_hyps (secs,ohyps) =
+let extract_hyps poly (secs,ohyps) =
   let rec aux = function
-    | (Variable {id;kind;poly;univs}::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
+    | (Variable {id;kind;univs}::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
       let l, r = aux (idl,hyps) in 
       (decl,kind) :: l, if poly then Univ.ContextSet.union r univs else r
-    | (Variable {poly;univs}::idl,hyps) ->
+    | (Variable {univs}::idl,hyps) ->
         let l, r = aux (idl,hyps) in
           l, if poly then Univ.ContextSet.union r univs else r
     | (Context ctx :: idl, hyps) ->
@@ -511,9 +525,9 @@ let name_instance inst =
 let add_section_replacement f g poly hyps =
   match !sectab with
   | [] -> ()
-  | (vars,exps,abs)::sl ->
-    let () = check_same_poly poly vars in
-    let sechyps,ctx = extract_hyps (vars,hyps) in
+  | s :: sl ->
+    let () = check_same_poly poly s in
+    let sechyps,ctx = extract_hyps s.sec_poly (s.sec_entry, hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
     let inst = Univ.UContext.instance ctx in
     let nas = name_instance inst in
@@ -524,7 +538,11 @@ let add_section_replacement f g poly hyps =
       abstr_subst = subst;
       abstr_uctx = ctx;
     } in
-    sectab := (vars,f (inst,args) exps, g info abs) :: sl
+    let s = { s with
+      sec_workl = f (inst, args) s.sec_workl;
+      sec_abstr = g info s.sec_abstr;
+    } in
+    sectab := s :: sl
 
 let add_section_kn ~poly kn =
   let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
@@ -534,13 +552,13 @@ let add_section_constant ~poly kn =
   let f x (l1,l2) = (Names.Cmap.add kn x l1,l2) in
     add_section_replacement f f poly
 
-let replacement_context () = pi2 (List.hd !sectab)
+let replacement_context () = (List.hd !sectab).sec_workl
 
 let section_segment_of_constant con =
-  Names.Cmap.find con (fst (pi3 (List.hd !sectab)))
+  Names.Cmap.find con (fst (List.hd !sectab).sec_abstr)
 
 let section_segment_of_mutual_inductive kn =
-  Names.Mindmap.find kn (snd (pi3 (List.hd !sectab)))
+  Names.Mindmap.find kn (snd (List.hd !sectab).sec_abstr)
 
 let empty_segment = {
   abstr_ctx = [];
@@ -563,20 +581,20 @@ let section_instance = let open GlobRef in function
        | Variable {id=id'} -> Names.Id.equal id id'
        | Context _ -> false
      in
-     if List.exists eq (pi1 (List.hd !sectab))
+     if List.exists eq (List.hd !sectab).sec_entry
      then Univ.Instance.empty, [||]
      else raise Not_found
   | ConstRef con ->
-      Names.Cmap.find con (fst (pi2 (List.hd !sectab)))
+      Names.Cmap.find con (fst (List.hd !sectab).sec_workl)
   | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
-      Names.Mindmap.find kn (snd (pi2 (List.hd !sectab)))
+      Names.Mindmap.find kn (snd (List.hd !sectab).sec_workl)
 
 let is_in_section ref =
   try ignore (section_instance ref); true with Not_found -> false
 
 (*************)
 (* Sections. *)
-let open_section id =
+let open_section ~poly id =
   let opp = !lib_state.path_prefix in
   let obj_dir = add_dirpath_suffix opp.Nametab.obj_dir id in
   let prefix = Nametab.{ obj_dir; obj_mp = opp.obj_mp; obj_sec = add_dirpath_suffix opp.obj_sec id } in
@@ -587,7 +605,7 @@ let open_section id =
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection prefix));
   lib_state := { !lib_state with path_prefix = prefix };
-  add_section ()
+  add_section ~poly ()
 
 
 (* Restore lib_stk and summaries as before the section opening, and

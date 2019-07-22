@@ -24,10 +24,10 @@ Fail Eval compute in Lift nat : Prop.
 (*      = nat
      : Prop *)
 
-Section Hurkens.
+Monomorphic Definition Type2 := Type.
+Monomorphic Definition Type1 := Type : Type2.
 
-  Monomorphic Definition Type2 := Type.
-  Monomorphic Definition Type1 := Type : Type2.
+Section Hurkens.
 
   (** Assumption of a retract from Type into Prop *)
 

@@ -122,8 +122,6 @@ Fail Definition id1impred := ((forall A : Type1, A) : Type1).
 
 End Hierarchy.
 
-Section structures.
-
 Record hypo : Type := mkhypo {
    hypo_type : Type;
    hypo_proof : hypo_type
@@ -153,9 +151,6 @@ Definition projnested2 := dyn_type nested2.
 Polymorphic Definition nest (d : dyn) := {| dyn_proof := d |}.
 
 Polymorphic Definition twoprojs (d : dyn) := dyn_proof d = dyn_proof d.
-
-End structures.
-
 
 Module binders.
 
@@ -201,7 +196,8 @@ Module binders.
   Definition with_mono@{u|u < M} : Type@{M} := Type@{u}.
 
 End binders.
-    
+
+#[universes(polymorphic)]
 Section cats.
   Local Set Universe Polymorphism.
   Require Import Utf8.
@@ -307,6 +303,7 @@ Fail Check (let A := Set in fooS (id A)).
 Fail Check (let A := Prop in fooS (id A)).
 
 (* Some tests of sort-polymorphisme *)
+#[universes(polymorphic)]
 Section S.
 Polymorphic Variable A:Type.
 (*

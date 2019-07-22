@@ -21,6 +21,7 @@ Polymorphic Definition GraphIndexingCategory : @SpecializedCategory GraphIndex.
 Admitted.
 
 Module success.
+  #[universes(polymorphic)]
   Section SpecializedFunctor.
     Set Universe Polymorphism.
     Context `(C : @SpecializedCategory objC).
@@ -39,6 +40,7 @@ Module success.
 End success.
 
 Module success2.
+  #[universes(polymorphic)]
   Section SpecializedFunctor.
     Polymorphic Context `(C : @SpecializedCategory objC).
     Polymorphic Context `(D : @SpecializedCategory objD).

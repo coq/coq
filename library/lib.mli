@@ -147,7 +147,7 @@ val library_part :  GlobRef.t -> DirPath.t
 
 (** {6 Sections } *)
 
-val open_section : Id.t -> unit
+val open_section : poly:bool -> Id.t -> unit
 val close_section : unit -> unit
 
 (** {6 We can get and set the state of the operations (used in [States]). } *)

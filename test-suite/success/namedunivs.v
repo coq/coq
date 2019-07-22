@@ -6,6 +6,7 @@
 
 Unset Strict Universe Declaration.
 
+#[universes(polymorphic)]
 Section lift_strict.
 Polymorphic Definition liftlt := 
   let t := Type@{i} : Type@{k} in
