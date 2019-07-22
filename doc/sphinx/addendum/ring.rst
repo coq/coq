@@ -76,7 +76,7 @@ an arbitrary order:
 =====  ===============  =========================
 
 Then normalize the “abstract” polynomial
-:math:`((V_1 \otimes V_2 ) \oplus V_2) \oplus (V_0 \otimes 2)`
+:math:`((V_1 \oplus V_2 ) \otimes V_2) \oplus (V_0 \otimes 2)`
 In our example the normal form is:
 :math:`(2 \otimes V_0 ) \oplus (V_1 \otimes V_2) \oplus (V_2 \otimes V_2 )`.
 Then substitute the variables by their values in the variables map to
