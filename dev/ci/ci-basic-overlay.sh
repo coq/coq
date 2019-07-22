@@ -102,6 +102,27 @@
 : "${coquelicot_CI_ARCHIVEURL:=${coquelicot_CI_GITURL}/-/archive}"
 
 ########################################################################
+# Coq-interval
+########################################################################
+: "${interval_CI_REF:=master}"
+: "${interval_CI_GITURL:=https://gitlab.inria.fr/coqinterval/interval}"
+: "${interval_CI_ARCHIVEURL:=${interval_CI_GITURL}/-/archive}"
+
+########################################################################
+# Gappa stand alone tool
+########################################################################
+: "${gappa_tool_CI_REF:=master}"
+: "${gappa_tool_CI_GITURL:=https://gitlab.inria.fr/gappa/gappa}"
+: "${gappa_tool_CI_ARCHIVEURL:=${gappa_tool_CI_GITURL}/-/archive}"
+
+########################################################################
+# Gappa plugin
+########################################################################
+: "${gappa_plugin_CI_REF:=master}"
+: "${gappa_plugin_CI_GITURL:=https://gitlab.inria.fr/gappa/coq}"
+: "${gappa_plugin_CI_ARCHIVEURL:=${gappa_plugin_CI_GITURL}/-/archive}"
+
+########################################################################
 # CompCert
 ########################################################################
 : "${compcert_CI_REF:=master}"
