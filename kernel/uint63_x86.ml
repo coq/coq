@@ -83,6 +83,8 @@ let div x y =
 let rem x y =
   if y = 0L then 0L else Int64.rem x y
 
+let diveucl x y = (div x y, rem x y)
+
 let addmuldiv p x y =
   l_or (l_sl x p) (l_sr y Int64.(sub (of_int uint_size) p))
 
@@ -190,6 +192,27 @@ let tail0 x =
 let is_uint63 t =
   Obj.is_block t && Int.equal (Obj.tag t) Obj.custom_tag
   && le (Obj.magic t) maxuint63
+
+(* Arithmetic with explicit carries *)
+
+(* Analog of Numbers.Abstract.Cyclic.carry *)
+type 'a carry = C0 of 'a | C1 of 'a
+
+let addc x y =
+  let r = add x y in
+  if lt r x then C1 r else C0 r
+
+let addcarryc x y =
+  let r = addcarry x y in
+  if le r x then C1 r else C0 r
+
+let subc x y =
+  let r = sub x y in
+  if le y x then C0 r else C1 r
+
+let subcarryc x y =
+  let r = subcarry x y in
+  if lt y x then C0 r else C1 r
 
 (* Register all exported functions so that they can be called from C code *)
 

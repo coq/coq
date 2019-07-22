@@ -17,6 +17,7 @@ From Coq Require Int63 Extraction.
 Extract Inductive bool => bool [ true false ].
 Extract Inductive prod => "( * )" [ "" ].
 Extract Inductive comparison => int [ "0" "(-1)" "1" ].
+Extract Inductive DoubleType.carry => "Uint63.carry" [ "Uint63.C0" "Uint63.C1" ].
 
 (** Primitive types and operators. *)
 Extract Constant Int63.int => "Uint63.t".
@@ -40,9 +41,12 @@ Extract Constant Int63.eqb => "Uint63.equal".
 Extract Constant Int63.ltb => "Uint63.lt".
 Extract Constant Int63.leb => "Uint63.le".
 
-(* TODO: a few primitive operations have no implementation in the kernel module
-Uint63. Namely addc, addcarryc, subc, subcarryc, and diveucl. *)
+Extract Constant Int63.addc => "Uint63.addc".
+Extract Constant Int63.addcarryc => "Uint63.addcarryc".
+Extract Constant Int63.subc => "Uint63.subc".
+Extract Constant Int63.subcarryc => "Uint63.subcarryc".
 
+Extract Constant Int63.diveucl => "Uint63.diveucl".
 Extract Constant Int63.diveucl_21 => "Uint63.div21".
 Extract Constant Int63.addmuldiv => "Uint63.addmuldiv".
 

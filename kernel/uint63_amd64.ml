@@ -82,6 +82,8 @@ let div (x : int) (y : int) =
 let rem (x : int) (y : int) =
   if y = 0 then 0 else Int64.to_int (Int64.rem (to_uint64 x) (to_uint64 y))
 
+let diveucl x y = (div x y, rem x y)
+
 let addmuldiv p x y =
   l_or (l_sl x p) (l_sr y (uint_size - p))
 
@@ -225,3 +227,24 @@ let tail0 x =
 let is_uint63 t =
   Obj.is_int t
 [@@ocaml.inline always]
+
+(* Arithmetic with explicit carries *)
+
+(* Analog of Numbers.Abstract.Cyclic.carry *)
+type 'a carry = C0 of 'a | C1 of 'a
+
+let addc x y =
+  let r = x + y in
+  if lt r x then C1 r else C0 r
+
+let addcarryc x y =
+  let r = x + y + 1 in
+  if le r x then C1 r else C0 r
+
+let subc x y =
+  let r = x - y in
+  if le y x then C0 r else C1 r
+
+let subcarryc x y =
+  let r = x - y - 1 in
+  if lt y x then C0 r else C1 r
