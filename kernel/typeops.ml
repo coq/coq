@@ -536,7 +536,7 @@ let rec execute env stg cstr =
       let _ = no_stage_variables args' cstrnta in
       let stgf, cstrntf, f', ft = match kind f with
       | Ind (ind, s) when Environ.template_polymorphic_pind ind env ->
-        let s', stg' = next ~s stg in
+        let s', stg' = next ~s stga in
         let t, cstrnt = type_of_inductive_knowing_parameters env ind argst in
         stg', cstrnt, mkIndUS ind s', t
       | _ -> (* No template polymorphism *)
@@ -555,7 +555,7 @@ let rec execute env stg cstr =
       let _ = no_stage_variables [|c2'|] cstrnt2 in
       let cstrnt = union cstrnt1 cstrnt2 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkLambda(name', erase c1',c2') in
-      stg2, cstrnt, cstr, type_of_abstraction env name' c1 c2t
+      stg2, cstrnt, cstr, type_of_abstraction env name' c1' c2t
 
     | Prod (name,c1,c2) ->
       let stg1, cstrnt1, c1', vars = execute_is_type env stg c1 in
@@ -701,7 +701,7 @@ and execute_recdef env stg (names, lar, vdef as recdef) vno i =
   (* Put position annotations back *)
   let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg_check)) lar' in
   let recdef = if names == names' && lar == lar_star && vdef == vdef' then recdef else (names',lar_star,vdef') in
-  State.pop stg_check, cstrnt, lar.(i), recdef
+  State.pop stg_check, cstrnt, lar'.(i), recdef
 
 and execute_array env stg cs =
   let tys = Array.make (Array.length cs) mkProp in
