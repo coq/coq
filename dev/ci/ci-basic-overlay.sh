@@ -215,7 +215,7 @@
 ########################################################################
 # ext-lib
 ########################################################################
-: "${ext_lib_CI_REF:=master}"
+: "${ext_lib_CI_REF:=f53ffbfc0fd137e774f4a20457b12fca44cc58ca}"
 : "${ext_lib_CI_GITURL:=https://github.com/coq-ext-lib/coq-ext-lib}"
 : "${ext_lib_CI_ARCHIVEURL:=${ext_lib_CI_GITURL}/archive}"
 
