@@ -148,9 +148,7 @@ END
 module Vernac = Pvernac.Vernac_
 module Tactic = Pltac
 
-type function_rec_definition_loc_argtype = Vernacexpr.fixpoint_expr Loc.located
-
-let (wit_function_rec_definition_loc : function_rec_definition_loc_argtype Genarg.uniform_genarg_type) =
+let (wit_function_rec_definition_loc : Vernacexpr.fixpoint_expr Loc.located Genarg.uniform_genarg_type) =
   Genarg.create_arg "function_rec_definition_loc"
 
 let function_rec_definition_loc =
