@@ -54,7 +54,7 @@ let check_constraints cst env =
   Used in the body of Lambda, the argument of App, and the body and argument of LetIn
   to enforce simple types (wrt sized types) *)
 let no_stage_variables =
-  Array.fold_right (fun cstr -> add_infty (collect_annots cstr))
+  Array.fold_left (fun cstrnts cstr -> add_infty (collect_annots cstr) cstrnts) Constraints.empty
 
 (* This should be a type (a priori without intention to be an assumption) *)
 let check_type env c t =
@@ -533,7 +533,7 @@ let rec execute env stg cstr =
     (* Lambda calculus operators *)
     | App (f,args) ->
       let stga, cstrnta, args', argst = execute_array env stg args in
-      let _ = no_stage_variables args' cstrnta in
+      let cstrntno = no_stage_variables args' in
       let stgf, cstrntf, f', ft = match kind f with
       | Ind (ind, s) when Environ.template_polymorphic_pind ind env ->
         let s', stg' = next ~s stga in
@@ -543,7 +543,7 @@ let rec execute env stg cstr =
         execute env stga f
       in
       let t, cstrntapp = type_of_apply env f' ft args' argst in
-      let cstrnt = union_list [cstrnta; cstrntf; cstrntapp] in
+      let cstrnt = union_list [cstrnta; cstrntf; cstrntapp; cstrntno] in
       let cstr = if f == f' && args == args' then cstr else mkApp (f',args') in
       stgf, cstrnt, cstr, t
 
@@ -552,8 +552,8 @@ let rec execute env stg cstr =
       let name' = check_binder_annot s name in
       let env1 = push_rel (LocalAssum (name',c1')) env in
       let stg2, cstrnt2, c2', c2t = execute env1 stg1 c2 in
-      let _ = no_stage_variables [|c2'|] cstrnt2 in
-      let cstrnt = union cstrnt1 cstrnt2 in
+      let cstrntno = no_stage_variables [|c2'|] in
+      let cstrnt = union_list [cstrnt1; cstrnt2; cstrntno] in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkLambda(name', erase c1',c2') in
       stg2, cstrnt, cstr, type_of_abstraction env name' c1' c2t
 
@@ -573,8 +573,8 @@ let rec execute env stg cstr =
       let cstrnt' = check_cast env c1' c1t DEFAULTcast c2' in
       let env1 = push_rel (LocalDef (name',c1',c2')) env in
       let stg3, cstrnt3, c3', c3t = execute env1 stg2 c3 in
-      let _ = no_stage_variables [|c1'; c3'|] cstrnt3 in
-      let cstrnt = union_list [cstrnt1; cstrnt2; cstrnt3; cstrnt'] in
+      let cstrntno = no_stage_variables [|c1'; c3'|] in
+      let cstrnt = union_list [cstrnt1; cstrnt2; cstrnt3; cstrnt'; cstrntno] in
       let cstr = if name == name' && c1 == c1' && c2 == c2' && c3 == c3' then cstr
         else mkLetIn(name',c1',erase c2',c3')
       in
@@ -679,7 +679,20 @@ and execute_recdef env stg (names, lar, vdef as recdef) vno i =
     let lar'' = Array.Smart.map (succ_annots vstar) lar' in
     (* Check vdeft ≤ lar'' *)
     let cstrnt_fix = check_fixpoint env1 names' lar'' vdef' vdeft in
-    let cstrnt_all = union_list [cstrnt_lar; cstrnt_vdef; cstrnt_fix] in
+    (* Letting ΠΔ'.U' := lar', ΠΔ''.U'' := lar'', check Δ' ≤ Δ'', U' ≤ U'' *)
+    let cstrnt_succ =
+      let unzip arr =
+        Array.fold_left
+          (fun (fsts, snds) (fst, snd) -> (fst :: fsts, snd :: snds))
+          ([], []) arr in
+      let delta', u' = unzip @@ Array.map Term.decompose_prod_assum lar' in
+      let delta'', u'' = unzip @@ Array.map Term.decompose_prod_assum lar'' in
+      let delta' = List.concat @@ List.map (List.map Rel.Declaration.get_type) delta' in
+      let delta'' = List.concat @@ List.map (List.map Rel.Declaration.get_type) delta'' in
+      let cstrnt_delta = conv_leq_vecti env (Array.of_list delta') (Array.of_list delta'') in
+      let cstrnt_u = conv_leq_vecti env (Array.of_list u') (Array.of_list u'') in
+      union cstrnt_delta cstrnt_u in
+    let cstrnt_all = union_list [cstrnt_lar; cstrnt_vdef; cstrnt_fix; cstrnt_succ] in
 
     (* Try RecCheck; if failure, try removing some stage variables from vstar *)
     let rec_check_all alpha cstrnts = union cstrnts (rec_check alpha vstar vneq cstrnts) in

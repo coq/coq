@@ -118,7 +118,7 @@ struct
 
   let init = (0, empty, empty, empty)
   let push (next, vs, stars, _) = (next, vs, empty, stars)
-  let pop (next, vs, _, old) = (next, vs, old, empty)
+  let pop (next, vs, stars, old) = (next, vs, SVars.union stars old, empty)
   let get_vars (_, vs, _, _) = vs
   let get_pos_vars (_, _, stars, _) = stars
   let remove_pos_vars rem (next, vs, stars, old) = (next, vs, diff stars rem, old)
