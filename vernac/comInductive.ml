@@ -476,9 +476,11 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
         templatearity || template_polymorphism_candidate env0 uctx ctx_params concl in
       let template = match template with
         | Some template ->
-          if poly && template then user_err Pp.(strbrk "template and polymorphism not compatible");
+          if poly && template then user_err
+              Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.");
           if template && not (template_candidate ()) then
-            user_err Pp.(strbrk "inductive cannot be made template polymorphic on any universe");
+            user_err Pp.(strbrk "Inductive " ++ Id.print ind.ind_name ++
+                         str" cannot be made template polymorphic.");
           template
         | None ->
           should_auto_template ind.ind_name (template_candidate ())

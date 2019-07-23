@@ -70,7 +70,7 @@ and function types over these sorts.
 Formally, we call :math:`\Sort` the set of sorts which is defined by:
 
 .. math::
-   
+
    \Sort \equiv \{\SProp,\Prop,\Set,\Type(i)\;|\; i~∈ ℕ\}
 
 Their properties, such as: :math:`\Prop:\Type(1)`, :math:`\Set:\Type(1)`, and
@@ -436,7 +436,7 @@ instance the identity function over a given type :math:`T` can be written
 this a *reduction* (or a *conversion*) rule we call :math:`β`:
 
 .. math::
-   
+
         E[Γ] ⊢ ((λx:T.~t)~u)~\triangleright_β~\subst{t}{x}{u}
 
 We say that :math:`\subst{t}{x}{u}` is the *β-contraction* of
@@ -474,14 +474,14 @@ with its value, that is to expand (or unfold) it into its value. This
 reduction is called δ-reduction and shows as follows.
 
 .. inference:: Delta-Local
-   
+
    \WFE{\Gamma}
    (x:=t:T) ∈ Γ
    --------------
    E[Γ] ⊢ x~\triangleright_Δ~t
 
 .. inference:: Delta-Global
-   
+
    \WFE{\Gamma}
    (c:=t:T) ∈ E
    --------------
@@ -499,7 +499,7 @@ destroyed, this reduction differs from δ-reduction. It is called
 ζ-reduction and shows as follows.
 
 .. inference:: Zeta
-   
+
    \WFE{\Gamma}
    \WTEG{u}{U}
    \WTE{\Gamma::(x:=u:U)}{t}{T}
@@ -533,17 +533,17 @@ for :math:`x` an arbitrary variable name fresh in :math:`t`.
 
    .. math::
       f ~:~ ∀ x:\Type(2),~\Type(1)
-   
+
    then
 
    .. math::
       λ x:\Type(1).~(f~x) ~:~ ∀ x:\Type(1),~\Type(1)
-   
+
    We could not allow
 
    .. math::
       λ x:\Type(1).~(f~x) ~\triangleright_η~ f
-   
+
    because the type of the reduced term :math:`∀ x:\Type(2),~\Type(1)` would not be
    convertible to the type of the original term :math:`∀ x:\Type(1),~\Type(1)`.
 
@@ -665,7 +665,7 @@ a *subtyping* relation inductively defined by:
    .. math::
       [c_1 : ∀Γ_P' ,∀ T_{1,1}' … T_{1,n_1}' ,~t'~v_{1,1}' … v_{1,m}' ;~…;~
        c_k : ∀Γ_P' ,∀ T_{k,1}' … T_{k,n_k}' ,~t'~v_{k,1}' … v_{k,m}' ]
-   
+
    respectively then
 
    .. math::
@@ -695,7 +695,7 @@ a *subtyping* relation inductively defined by:
 The conversion rule up to subtyping is now exactly:
 
 .. inference:: Conv
-   
+
    E[Γ] ⊢ U : s
    E[Γ] ⊢ t : T
    E[Γ] ⊢ T ≤_{βδιζη} U
@@ -716,13 +716,13 @@ that :math:`t_0` is :math:`λ x:T.~u_0` then one step of β-head reduction of :m
 .. math::
    λ x_1 :T_1 .~… λ x_k :T_k .~(λ x:T.~u_0~t_1 … t_n ) ~\triangleright~
    λ (x_1 :T_1 )…(x_k :T_k ).~(\subst{u_0}{x}{t_1}~t_2 … t_n )
-   
+
 Iterating the process of head reduction until the head of the reduced
 term is no more an abstraction leads to the *β-head normal form* of :math:`t`:
 
 .. math::
    t \triangleright … \triangleright λ x_1 :T_1 .~…λ x_k :T_k .~(v~u_1 … u_m )
-   
+
 where :math:`v` is not an abstraction (nor an application). Note that the head
 normal form must not be confused with the normal form since some :math:`u_i`
 can be reducible. Similar notions of head-normal forms involving δ, ι
@@ -828,7 +828,7 @@ We have to give the type of constants in a global environment :math:`E` which
 contains an inductive definition.
 
 .. inference:: Ind
-	       
+
    \WFE{Γ}
    \ind{p}{Γ_I}{Γ_C} ∈ E
    (a:A)∈Γ_I
@@ -836,7 +836,7 @@ contains an inductive definition.
    E[Γ] ⊢ a : A
 
 .. inference:: Constr
-	       
+
    \WFE{Γ}
    \ind{p}{Γ_I}{Γ_C} ∈ E
    (c:C)∈Γ_C
@@ -917,7 +917,7 @@ condition* for a constant :math:`X` in the following cases:
 + :math:`T=(X~t_1 … t_n )` and :math:`X` does not occur free in any :math:`t_i`
 + :math:`T=∀ x:U,~V` and :math:`X` occurs only strictly positively in :math:`U` and the type :math:`V`
   satisfies the positivity condition for :math:`X`.
-  
+
 Strict positivity
 +++++++++++++++++
 
@@ -931,10 +931,10 @@ cases:
   strictly positively in type :math:`V`
 + :math:`T` converts to :math:`(I~a_1 … a_m~t_1 … t_p )` where :math:`I` is the name of an
   inductive definition of the form
-  
+
   .. math::
      \ind{m}{I:A}{c_1 :∀ p_1 :P_1 ,… ∀p_m :P_m ,~C_1 ;~…;~c_n :∀ p_1 :P_1 ,… ∀p_m :P_m ,~C_n}
-     
+
   (in particular, it is
   not mutually defined and it has :math:`m` parameters) and :math:`X` does not occur in
   any of the :math:`t_i`, and the (instantiated) types of constructor
@@ -998,7 +998,7 @@ such that :math:`Γ_I` is :math:`[I_1 :∀ Γ_P ,A_1 ;~…;~I_k :∀ Γ_P ,A_k]`
    (E[Γ_I ;Γ_P ] ⊢ C_i : s_{q_i} )_{i=1… n}
    ------------------------------------------
    \WF{E;~\ind{p}{Γ_I}{Γ_C}}{}
-   
+
 
 provided that the following side conditions hold:
 
@@ -1052,30 +1052,10 @@ between universes for inductive types in the Type hierarchy.
 Template polymorphism
 +++++++++++++++++++++
 
-Inductive types can be made polymorphic over their arguments
-in :math:`\Type`.
-
-.. flag:: Auto Template Polymorphism
-
-   This option, enabled by default, makes every inductive type declared
-   at level :math:`\Type` (without annotations or hiding it behind a
-   definition) template polymorphic.
-
-   This can be prevented using the ``notemplate`` attribute.
-
-   An inductive type can be forced to be template polymorphic using the
-   ``template`` attribute.
-
-   Template polymorphism and universe polymorphism (see Chapter
-   :ref:`polymorphicuniverses`) are incompatible, so if the later is
-   enabled it will prevail over automatic template polymorphism and
-   cause an error when using the ``template`` attribute.
-
-.. warn:: Automatically declaring @ident as template polymorphic.
-
-   Warning ``auto-template`` can be used to find which types are
-   implicitly declared template polymorphic by :flag:`Auto Template
-   Polymorphism`.
+Inductive types can be made polymorphic over the universes introduced by
+their parameters in :math:`\Type`, if the minimal inferred sort of the
+inductive declarations either mention some of those parameter universes
+or is computed to be :math:`\Prop` or :math:`\Set`.
 
 If :math:`A` is an arity of some sort and :math:`s` is a sort, we write :math:`A_{/s}`
 for the arity obtained from :math:`A` by replacing its sort with :math:`s`.
@@ -1117,10 +1097,11 @@ provided that the following side conditions hold:
     + there are sorts :math:`s_i`, for :math:`1 ≤ i ≤ k` such that, for
       :math:`Γ_{I'} = [I_1 :∀ Γ_{P'} ,(A_1)_{/s_1} ;~…;~I_k :∀ Γ_{P'} ,(A_k)_{/s_k}]`
       we have :math:`(E[Γ_{I′} ;Γ_{P′}] ⊢ C_i : s_{q_i})_{i=1… n}` ;
-    + the sorts :math:`s_i` are such that all eliminations, to
-      :math:`\Prop`, :math:`\Set` and :math:`\Type(j)`, are allowed
-      (see Section :ref:`Destructors`).
-
+    + the sorts :math:`s_i` are all introduced by the inductive
+      declaration and have no universe constraints beside being greater
+      than or equal to :math:`\Prop`, and such that all
+      eliminations, to :math:`\Prop`, :math:`\Set` and :math:`\Type(j)`,
+      are allowed (see Section :ref:`Destructors`).
 
 
 Notice that if :math:`I_j~q_1 … q_r` is typable using the rules **Ind-Const** and
@@ -1141,6 +1122,61 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
 :math:`C_i~q_1 … q_r` is mapped to the names chosen in the specific instance of
 :math:`\ind{p}{Γ_I}{Γ_C}`.
 
+.. warning::
+
+   The restriction that sorts are introduced by the inductive
+   declaration prevents inductive types declared in sections to be
+   template-polymorphic on universes introduced previously in the
+   section: they cannot parameterize over the universes introduced with
+   section variables that become parameters at section closing time, as
+   these may be shared with other definitions from the same section
+   which can impose constraints on them.
+
+.. flag:: Auto Template Polymorphism
+
+   This option, enabled by default, makes every inductive type declared
+   at level :math:`\Type` (without annotations or hiding it behind a
+   definition) template polymorphic if possible.
+
+   This can be prevented using the ``notemplate`` attribute.
+
+.. warn:: Automatically declaring @ident as template polymorphic.
+
+   Warning ``auto-template`` can be used to find which types are
+   implicitly declared template polymorphic by :flag:`Auto Template
+   Polymorphism`.
+
+   An inductive type can be forced to be template polymorphic using the
+   ``template`` attribute: it should then fullfill the criterion to
+   be template polymorphic or an error is raised.
+
+.. exn:: Inductive @ident cannot be made template polymorphic.
+
+   This error is raised when the `#[universes(template)]` attribute is
+   on but the inductive cannot be made polymorphic on any universe or be
+   inferred to live in :math:`\Prop` or :math:`\Set`.
+
+   Template polymorphism and universe polymorphism (see Chapter
+   :ref:`polymorphicuniverses`) are incompatible, so if the later is
+   enabled it will prevail over automatic template polymorphism and
+   cause an error when using the ``template`` attribute.
+
+.. flag:: Template Check
+
+   Unsetting option :flag:`Template Check` disables the check of
+   locality of the sorts when abstracting the inductive over its
+   parameters. This is a deprecated and *unsafe* flag that can introduce
+   inconsistencies, it is only meant to help users incrementally update
+   code from Coq versions < 8.10 which did not implement this check.
+   The `Coq89.v` compatibility file sets this flag globally. A global
+   ``-no-template-check`` command line option is also available. Use at
+   your own risk. Use of this flag is recorded in the typing flags
+   associated to a definition but is *not* supported by the |Coq|
+   checker (`coqchk`). It will appear in :g:`Print Assumptions` and
+   :g:`About @ident` output involving inductive declarations that were
+   (potentially unsoundly) assumed to be template polymorphic.
+
+
 In practice, the rule **Ind-Family** is used by |Coq| only when all the
 inductive types of the inductive definition are declared with an arity
 whose sort is in the Type hierarchy. Then, the polymorphism is over
@@ -1154,10 +1190,10 @@ inductive type is set in :math:`\Set` (even in case :math:`\Set` is impredicativ
 Section The-Calculus-of-Inductive-Construction-with-impredicative-Set_),
 and otherwise in the Type hierarchy.
 
-Note that the side-condition about allowed elimination sorts in the
-rule **Ind-Family** is just to avoid to recompute the allowed elimination
-sorts at each instance of a pattern matching (see Section :ref:`Destructors`). As
-an example, let us consider the following definition:
+Note that the side-condition about allowed elimination sorts in the rule
+**Ind-Family** avoids to recompute the allowed elimination sorts at each
+instance of a pattern matching (see Section :ref:`Destructors`). As an
+example, let us consider the following definition:
 
 .. example::
 
@@ -1320,7 +1356,7 @@ using the syntax:
    \Match~m~\as~x~\In~I~\_~a~\return~P~\with~
    (c_1~x_{11} ... x_{1p_1} ) ⇒ f_1 | …
    | (c_n~x_{n1} ... x_{np_n} ) ⇒ f_n~\kwend
-   
+
 The :math:`\as` part can be omitted if either the result type does not depend
 on :math:`m` (non-dependent elimination) or :math:`m` is a variable (in this case, :math:`m`
 can occur in :math:`P` where it is considered a bound variable). The :math:`\In` part
@@ -1360,7 +1396,7 @@ There is no restriction on the sort of the predicate to be eliminated.
    -----------------------
    [I:∀ x:A,~A′|∀ x:A,~B′]
 
-   
+
 .. inference:: Set & Type
 
    s_1 ∈ \{\Set,\Type(j)\}
@@ -1376,7 +1412,7 @@ is also of sort :math:`\Prop` or is of the morally smaller sort
 :math:`\SProp`.
 
 .. inference:: Prop
-	       
+
    s ∈ \{\SProp,\Prop\}
    --------------------
    [I:\Prop|I→s]
@@ -1404,7 +1440,7 @@ the proof of :g:`or A B` is not accepted:
 
       Fail Definition choice (A B: Prop) (x:or A B) :=
       match x with or_introl _ _ a => true | or_intror _ _ b => false end.
-   
+
 From the computational point of view, the structure of the proof of
 :g:`(or A B)` in this term is needed for computing the boolean value.
 
@@ -1441,7 +1477,7 @@ this type.
 :math:`\Prop` for which more eliminations are allowed.
 
 .. inference:: Prop-extended
-	       
+
    I~\kw{is an empty or singleton definition}
    s ∈ \Sort
    -------------------------------------
@@ -1589,7 +1625,7 @@ An ι-redex is a term of the following form:
 
 .. math::
    \case((c_{p_i}~q_1 … q_r~a_1 … a_m ),P,f_1 |… |f_l )
-   
+
 with :math:`c_{p_i}` the :math:`i`-th constructor of the inductive type :math:`I` with :math:`r`
 parameters.
 
@@ -1636,7 +1672,7 @@ Typing rule
 The typing rule is the expected one for a fixpoint.
 
 .. inference:: Fix
-	       
+
    (E[Γ] ⊢ A_i : s_i )_{i=1… n}
    (E[Γ;~f_1 :A_1 ;~…;~f_n :A_n ] ⊢ t_i : A_i )_{i=1… n}
    -------------------------------------------------------
@@ -1749,7 +1785,7 @@ The reduction for fixpoints is:
 
 .. math::
    (\Fix~f_i \{F\}~a_1 …a_{k_i}) ~\triangleright_ι~ \subst{t_i}{f_k}{\Fix~f_k \{F\}}_{k=1… n} ~a_1 … a_{k_i}
-   
+
 when :math:`a_{k_i}` starts with a constructor. This last restriction is needed
 in order to keep strong normalization and corresponds to the reduction
 for primitive recursive operators. The following reductions are now
@@ -1808,11 +1844,11 @@ and :math:`\subst{E}{|Γ|}{|Γ|c}` to mean the parallel substitution
         {\WF{E;~c:U;~E′;~c′:=λ x:U.~\subst{t}{c}{x}:∀x:U,~\subst{T}{c}{x};~\subst{E″}{c′}{(c′~c)}}
         {\subst{Γ}{c′}{(c′~c)}}}
 
-   
+
 .. math::
    \frac{\WF{E;~c:U;~E′;~c′:T;~E″}{Γ}}
         {\WF{E;~c:U;~E′;~c′:∀ x:U,~\subst{T}{c}{x};~\subst{E″}{c′}{(c′~c)}}{\subst{Γ}{c′}{(c′~c)}}}
-	
+
 .. math::
    \frac{\WF{E;~c:U;~E′;~\ind{p}{Γ_I}{Γ_C};~E″}{Γ}}
         {\WFTWOLINES{E;~c:U;~E′;~\ind{p+1}{∀ x:U,~\subst{Γ_I}{c}{x}}{∀ x:U,~\subst{Γ_C}{c}{x}};~
@@ -1853,7 +1889,7 @@ One can consequently derive the following property.
 .. _First-pruning-property:
 
 .. inference:: First pruning property:
-	       
+
    \WF{E;~c:U;~E′}{Γ}
    c~\kw{does not occur in}~E′~\kw{and}~Γ
    --------------------------------------
@@ -1933,5 +1969,3 @@ impredicative system for sort :math:`\Set` become:
    s ∈ \{\Type(i)\}
    ----------------
    [I:\Set|I→ s]
-
-
