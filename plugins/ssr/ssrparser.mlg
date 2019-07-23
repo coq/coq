@@ -68,6 +68,25 @@ DECLARE PLUGIN "ssreflect_plugin"
 
 {
 
+let ssrtac_name name = {
+  mltac_plugin = "ssreflect_plugin";
+  mltac_tactic = "ssr" ^ name;
+}
+
+let ssrtac_entry name = {
+  mltac_name = ssrtac_name name;
+  mltac_index = 0;
+}
+
+let register_ssrtac name f =
+  Tacenv.register_ml_tactic (ssrtac_name name) [|f|]
+
+let cast_arg wit v = Taccoerce.Value.cast (Genarg.topwit wit) v
+
+}
+
+{
+
 (* Defining grammar rules with "xx" in it automatically declares keywords too,
  * we thus save the lexer to restore it at the end of the file *)
 let frozen_lexer = CLexer.get_keyword_state () ;;
@@ -969,13 +988,16 @@ ARGUMENT EXTEND ssrintrosarg TYPED AS (tactic * ssrintros)
 | [ "YouShouldNotTypeThis" ssrtacarg(arg) ssrintros_ne(ipats) ] -> { arg, ipats }
 END
 
-TACTIC EXTEND ssrtclintros
-| [ "YouShouldNotTypeThis" ssrintrosarg(arg) ] ->
-  { let tac, intros = arg in
-    ssrevaltac ist tac <*> tclIPATssr intros }
-END
-
 {
+
+let () = register_ssrtac "tclintros" begin fun args ist -> match args with
+| [arg] ->
+  let arg = cast_arg wit_ssrintrosarg arg in
+  let tac, intros = arg in
+  ssrevaltac ist tac <*> tclIPATssr intros
+| _ -> assert false
+end
+
 
 (** Defined identifier *)
 let pr_ssrfwdid id = pr_spc () ++ pr_id id
@@ -1701,16 +1723,6 @@ let _ = add_internal_name (is_tagged perm_tag)
 
 type ssrargfmt = ArgSsr of string | ArgSep of string
 
-let ssrtac_name name = {
-  mltac_plugin = "ssreflect_plugin";
-  mltac_tactic = "ssr" ^ name;
-}
-
-let ssrtac_entry name n = {
-  mltac_name = ssrtac_name name; 
-  mltac_index = n;
-}
-
 let set_pr_ssrtac name prec afmt = (* FIXME *) () (*
   let fmt = List.map (function
     | ArgSep s -> Egramml.GramTerminal s
@@ -1718,8 +1730,7 @@ let set_pr_ssrtac name prec afmt = (* FIXME *) () (*
     | ArgCoq at -> Egramml.GramTerminal "COQ_ARG") afmt in
   let tacname = ssrtac_name name in () *)
 
-let ssrtac_atom ?loc name args = TacML (CAst.make ?loc (ssrtac_entry name 0, args))
-let ssrtac_expr ?loc name args = ssrtac_atom ?loc name args
+let ssrtac_expr ?loc name args = TacML (CAst.make ?loc (ssrtac_entry name, args))
 
 let tclintros_expr ?loc tac ipats =
   let args = [Tacexpr.TacGeneric (in_gen (rawwit wit_ssrintrosarg) (tac, ipats))] in
@@ -1802,14 +1813,14 @@ END
 
 (** The "do" tactical. ********************************************************)
 
-(*
-type ssrdoarg = ((ssrindex * ssrmmod) * ssrhint) * ssrclauses
-*)
-TACTIC EXTEND ssrtcldo
-| [ "YouShouldNotTypeThis" "do" ssrdoarg(arg) ] -> { V82.tactic (ssrdotac ist arg) }
-END
-
 {
+
+let () = register_ssrtac "tcldo" begin fun args ist -> match args with
+| [arg] ->
+  let arg = cast_arg wit_ssrdoarg arg in
+  V82.tactic (ssrdotac ist arg)
+| _ -> assert false
+end
 
 let _ = set_pr_ssrtac "tcldo" 3 [ArgSep "do "; ArgSsr "doarg"]
 
@@ -1849,12 +1860,16 @@ let pr_ssrseqdir _ _ _ = function
 ARGUMENT EXTEND ssrseqdir TYPED AS ssrdir PRINTED BY { pr_ssrseqdir }
 END
 
-TACTIC EXTEND ssrtclseq
-| [ "YouShouldNotTypeThis" ssrtclarg(tac) ssrseqdir(dir) ssrseqarg(arg) ] ->
-  { V82.tactic (tclSEQAT ist tac dir arg) }
-END
-
 {
+
+let () = register_ssrtac "tclseq" begin fun args ist -> match args with
+| [tac; dir; arg] ->
+  let tac = cast_arg wit_ssrtclarg tac in
+  let dir = cast_arg wit_ssrseqdir dir in
+  let arg = cast_arg wit_ssrseqarg arg in
+  V82.tactic (tclSEQAT ist tac dir arg)
+| _ -> assert false
+end
 
 let _ = set_pr_ssrtac "tclseq" 5 [ArgSsr "tclarg"; ArgSsr "seqdir"; ArgSsr "seqarg"]
 
