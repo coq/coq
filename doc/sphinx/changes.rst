@@ -102,10 +102,10 @@ reference manual. Here are the most important user-visible changes:
     extensionality lemma:
 
     - interactive mode: :n:`under @term`, associated terminator: :tacn:`over`
-    - one-liner mode: `under @term do [@tactic | ...]`
+    - one-liner mode: :n:`under @term do [@tactic | ...]`
 
     It can take occurrence switches, contextual patterns, and intro patterns:
-    :g:`under {2}[in RHS]eq_big => [i|i ?] do ...`
+    :g:`under {2}[in RHS]eq_big => [i|i ?]`
     (`#9651 <https://github.com/coq/coq/pull/9651>`_,
     by Erik Martin-Dorel and Enrico Tassi).
 
