@@ -448,6 +448,16 @@ let type_of_projection env p c ct =
 
 (* Fixpoints. *)
 
+(* Gets the stage variables that must be set to the recursive stage and infinity, respectively *)
+let get_vstar_vneq stg_old stg_new lar vdef =
+  let vstar = get_pos_vars stg_new in
+  let old_annots = get_vars stg_old in
+  let lar_annots = List.map collect_annots (Array.to_list lar) in
+  let vdef_annots = List.map collect_annots (Array.to_list vdef) in
+  let all_annots = SVars.union_list ([old_annots] @ lar_annots @ vdef_annots) in
+  let vneq = diff all_annots vstar in
+  vstar, vneq
+
 (* Checks the type of a general (co)fixpoint, i.e. without checking *)
 (* the specific guard condition. *)
 
@@ -600,19 +610,46 @@ let rec execute env stg cstr =
       in
       stg, cstrnt, cstr, t
 
-    | Fix ((vn,i as vni),recdef as fix) ->
-      let stg, cstrnt, fix_ty,recdef' = execute_recdef env stg recdef (Some vn) i in
-      let cstr, fix = if recdef == recdef' then cstr, fix else
-          let fix = (vni,recdef') in mkFix fix, fix
-      in
-      check_fix env fix; stg, cstrnt, cstr, fix_ty
+    | Fix ((vn, i as vni), (names, lar, vdef)) ->
+      (* Save all old star variables *)
+      let stg = State.push stg in
+      (* Annotate recursive argument and return types with Star *)
+      let lar_star =
+        let inds = get_rec_inds env vn lar in
+        let vninds = List.fold_left2 (fun acc n ind -> (n, ind) :: acc) [] (Array.to_list vn) inds in
+        set_rec_stars env vninds lar in
+      (* Infer fixpoint body type *)
+      let stg', cstrnt', (names', lar', vdef', _ as recdeft) = execute_recdef env stg (names, lar_star, vdef) in
+      (* Get stage variables of inductive types of recursive arguments,
+        i.e. if lar'[i] := ΠΔ.Πx:I^α(ps, as).U and |Δ| = vn[i] then alphas[i] := α *)
+      let alphas = get_rec_vars env vn lar' in
+      (* Get stage variables in Star positions and all others *)
+      let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
+      (* Do RecCheck*)
+      let stg_check, cstrnt_check = execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) Finite in
+      (* Put position annotations back *)
+      let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg)) lar' in
+      let fix = (vni, (names', lar_star, vdef')) in
+      check_fix env fix; State.pop stg_check, cstrnt_check, mkFix fix, lar'.(i)
 
-    | CoFix (i,recdef as cofix) ->
-      let stg, cstrnt, fix_ty,recdef' = execute_recdef env stg recdef None i in
-      let cstr, cofix = if recdef == recdef' then cstr, cofix else
-          let cofix = (i,recdef') in mkCoFix cofix, cofix
-      in
-      check_cofix env cofix; stg, cstrnt, cstr, fix_ty
+    | CoFix (i, (names, lar, vdef)) ->
+      (* Save all old star variables *)
+      let stg = State.push stg in
+      (* Annotate return type and arguments of same type with Star *)
+      let lar_star = set_corec_stars env (get_corec_inds env lar) lar in
+      (* Infer fixpoint body type *)
+      let stg', cstrnt', (names', lar', vdef', _ as recdeft) = execute_recdef env stg (names, lar_star, vdef) in
+      (* Get stage variables of coinductive types of recursive arguments,
+        i.e. if lar'[i] := ΠΔ.CoI^α(ps, as) then alphas[i] := α *)
+      let alphas = get_corec_vars env lar' in
+      (* Get stage variables in Star positions and all others *)
+      let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
+      (* Do RecCheck*)
+      let stg_check, cstrnt_check = execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) CoFinite in
+      (* Put position annotations back *)
+      let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg)) lar' in
+      let cofix = (i, (names', lar_star, vdef')) in
+      check_cofix env cofix; State.pop stg_check, cstrnt_check, mkCoFix cofix, lar'.(i)
 
     (* Primitive types *)
     | Int _ -> stg, empty, cstr, type_of_int env
@@ -629,83 +666,62 @@ and execute_is_type env stg constr =
   let stg, cstrnt, c, t = execute env stg constr in
     stg, cstrnt, c, check_type env constr t
 
-and execute_recdef env stg (names, lar, vdef as recdef) vno i =
-  (* Save all old star variables *)
-  let stg = State.push stg in
-
-  (* If inductive, annotate recursive argument and return types with ∞;
-    if coinductive, annotate return type and arguments of same type with ∞ *)
-  let lar = match vno with
-    | Some vn ->
-      let inds = get_rec_inds env vn lar in
-      let vninds = List.fold_left2 (fun acc n ind -> (n, ind) :: acc) [] (Array.to_list vn) inds in
-      set_rec_stars env vninds lar
-    | None ->
-      let inds = get_corec_inds env lar in
-      set_corec_stars env inds lar in
-
-  (* Usual inference: Γ ⊢ lar' : lart; Γ (names' : lar') ⊢ vdef : vdeft *)
+(* Usual inference: Γ ⊢ lar' : lart; Γ (names' : lar') ⊢ vdef : vdeft *)
+and execute_recdef env stg (names, lar, vdef as recdef) =
   let stg_lar, cstrnt_lar, lar', lart = execute_array env stg lar in
   let names' = Array.Smart.map_i (fun i na -> check_assumption env na lar'.(i) lart.(i)) names in
   let env1 = push_rec_types (names', lar', vdef) env in (* vdef is ignored *)
   let stg_vdef, cstrnt_vdef, vdef', vdeft = execute_array env1 stg_lar vdef in
+  stg_vdef, union cstrnt_lar cstrnt_vdef, (names', lar', vdef', vdeft)
 
-  (* Get the stage variables of the (co)inductive types of the recursive arguments,
-    i.e. if lar'[i] := ΠΔ.Πx:I^α(ps, as).U and |Δ| = vn[i] then alphas[i] := α,
-    and  if lar'[i] := ΠΔ.CoI^α(ps, as) then alphas[i] := α *)
-  let alphas = match vno with
-    | Some vn -> get_rec_vars env vn lar'
-    | None -> get_corec_vars env lar' in
-  (* Get the stage variables associated with Star annotations and all others *)
-  let vstar = get_pos_vars stg_vdef in
-  let vneq =
-    let old_annots = get_vars stg in
-    let lar_annots = List.map collect_annots (Array.to_list lar') in
-    let vdef_annots = List.map collect_annots (Array.to_list vdef') in
-    let all_annots = SVars.union_list ([old_annots] @ lar_annots @ vdef_annots) in
-    diff all_annots vstar in
+(* Letting lar'' := lar' with stage annotations at star positions shifted up,
+  check Γ (names' : lar') ⊢ vdeft ≤ lar''.
+  Letting ΠΔ'.U' := lar', ΠΔ''.U'' := lar'',
+  check Γ ⊢ Δ' ≤ Δ''; Γ ⊢ U' ≤ U'' for inductive, and
+  check Γ ⊢ Δ'' ≤ Δ'; Γ ⊢ U'' ≤ U' for coinductive *)
+and execute_recdef_succ env (names, lar', vdef, vdeft) vstar recursivity =
+  let lar'' = Array.Smart.map (succ_annots vstar) lar' in
+  let env1 = push_rec_types (names, lar', vdef) env in (* vdef is ignored *)
+  let cstrnt_fix = check_fixpoint env1 names lar'' vdef vdeft in
+  let cstrnt_succ =
+    let unzip arr =
+      Array.fold_left
+        (fun (fsts, snds) (fst, snd) -> (fst :: fsts, snd :: snds))
+        ([], []) arr in
+    let delta', u' = unzip @@ Array.map Term.decompose_prod_assum lar' in
+    let delta'', u'' = unzip @@ Array.map Term.decompose_prod_assum lar'' in
+    let delta' = List.concat @@ List.map (List.map Rel.Declaration.get_type) delta' in
+    let delta'' = List.concat @@ List.map (List.map Rel.Declaration.get_type) delta'' in
+    let cstrnt_delta = match recursivity with
+      | Finite -> conv_leq_vecti env (Array.of_list delta') (Array.of_list delta'')
+      | CoFinite -> conv_leq_vecti env (Array.of_list delta'') (Array.of_list delta')
+      | _ -> assert false in
+    let cstrnt_u = match recursivity with
+      | Finite -> conv_leq_vecti env (Array.of_list u') (Array.of_list u'')
+      | CoFinite -> conv_leq_vecti env (Array.of_list u'') (Array.of_list u')
+      | _ -> assert false in
+    union cstrnt_delta cstrnt_u in
+  union cstrnt_fix cstrnt_succ
 
-  let rec check_rec vstar vneq stg =
-    (* Shift up stage variables in Star positions *)
-    let lar'' = Array.Smart.map (succ_annots vstar) lar' in
-    (* Check Γ (names' : lar') ⊢ vdeft ≤ lar'' *)
-    let cstrnt_fix = check_fixpoint env1 names' lar'' vdef' vdeft in
-    (* Letting ΠΔ'.U' := lar', ΠΔ''.U'' := lar'', check Γ ⊢ Δ' ≤ Δ'', Γ ⊢ U' ≤ U'' *)
-    let cstrnt_succ =
-      let unzip arr =
-        Array.fold_left
-          (fun (fsts, snds) (fst, snd) -> (fst :: fsts, snd :: snds))
-          ([], []) arr in
-      let delta', u' = unzip @@ Array.map Term.decompose_prod_assum lar' in
-      let delta'', u'' = unzip @@ Array.map Term.decompose_prod_assum lar'' in
-      let delta' = List.concat @@ List.map (List.map Rel.Declaration.get_type) delta' in
-      let delta'' = List.concat @@ List.map (List.map Rel.Declaration.get_type) delta'' in
-      let cstrnt_delta = conv_leq_vecti env (Array.of_list delta') (Array.of_list delta'') in
-      let cstrnt_u = conv_leq_vecti env (Array.of_list u') (Array.of_list u'') in
-      union cstrnt_delta cstrnt_u in
-    let cstrnt_all = union_list [cstrnt_lar; cstrnt_vdef; cstrnt_fix; cstrnt_succ] in
-
-    (* Try RecCheck; if failure, try removing some stage variables from vstar *)
+(* Try RecCheck; if failure, try removing some stage variables from vstar *)
+and execute_rec_check env stg cstrnt recdeft vars recursivity =
+  let rec try_rec_check stg (alphas, vstar, vneq) =
+    let cstrnt' = union cstrnt (execute_recdef_succ env recdeft vstar recursivity) in
     let rec_check_all alpha cstrnts = union cstrnts (rec_check alpha vstar vneq cstrnts) in
     let flags = Environ.typing_flags env in
       if flags.check_sized then
-        try stg, SVars.fold rec_check_all alphas cstrnt_all
+        try stg, SVars.fold rec_check_all alphas cstrnt'
         with RecCheckFailed (_cstrnt, si_inf, si) ->
           let rm = inter (inter si_inf si) (diff vstar alphas) in
           if is_empty rm then
-            error_unsatisfied_stage_constraints env cstrnt_all si_inf si
+            error_unsatisfied_stage_constraints env cstrnt' si_inf si
           else
             let vstar = diff vstar rm in
             let vneq = SVars.union vneq rm in
             let stg = remove_pos_vars rm stg in
-            check_rec vstar vneq stg
-      else stg, cstrnt_all in
-  let stg_check, cstrnt = check_rec vstar vneq stg_vdef in
-
-  (* Put position annotations back *)
-  let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg_check)) lar' in
-  let recdef = if names == names' && lar == lar_star && vdef == vdef' then recdef else (names',lar_star,vdef') in
-  State.pop stg_check, cstrnt, lar'.(i), recdef
+            try_rec_check stg (alphas, vstar, vneq)
+      else stg, cstrnt' in
+  try_rec_check stg vars
 
 and execute_array env stg cs =
   let tys = Array.make (Array.length cs) mkProp in

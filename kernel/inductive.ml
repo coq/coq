@@ -1329,7 +1329,7 @@ let fold_map2_fix_type env f err is tys init =
     | App (c, args) ->
       let acc, c' = app_ind err f acc c in
       if c == c' then acc, ty else
-      acc, mkApp (c, args)
+      acc, mkApp (c', args)
     | c -> acc, err (of_kind c) in
   let app_arg err f decl (acc, j) =
     match decl with
