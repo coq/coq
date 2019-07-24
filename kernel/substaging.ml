@@ -4,7 +4,7 @@ open Stages
 open Constraints
 
 type variance =
-  | Variant   (* co-/contra-/bivariant for on Ind/CoInd/Record *)
+  | Variant   (* co-/contra-/bivariant for Ind/CoInd/Record *)
   | Bivariant (* always bivariant (add constraints in both directions *)
 
 let add_constraint_from_ind env variance cstrnts (ind, _) a1 a2 =

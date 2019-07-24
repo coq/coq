@@ -458,16 +458,46 @@ let get_vstar_vneq stg_old stg_new lar vdef =
   let vneq = diff all_annots vstar in
   vstar, vneq
 
-(* Checks the type of a general (co)fixpoint, i.e. without checking *)
-(* the specific guard condition. *)
-
-let check_fixpoint env lna lar vdef vdeft =
+(* Letting lar'' := lar' with stage annotations at star positions shifted up,
+  check Γ (names' : lar') ⊢ vdeft ≤ lar''. *)
+let check_fixpoint env (names, lar', vdef, vdeft) lar'' =
+  let env1 = push_rec_types (names, lar', vdef) env in (* vdef is ignored *)
   let lt = Array.length vdeft in
-  assert (Int.equal (Array.length lar) lt);
+  assert (Int.equal (Array.length lar'') lt);
   try
-    conv_leq_vecti env vdeft (Array.map (fun ty -> lift lt ty) lar)
+    conv_leq_vecti env1 vdeft (Array.map (fun ty -> lift lt ty) lar'')
   with NotConvertibleVect i ->
-    error_ill_typed_rec_body env i lna (make_judgev vdef vdeft) lar
+    error_ill_typed_rec_body env1 i names (make_judgev vdef vdeft) lar''
+
+(* Letting ΠΔ'.U' := lar', ΠΔ''.U'' := lar'',
+  check Γ ⊢ Δ' ≤ Δ''; Γ ⊢ U' ≤ U'' for inductive, and
+  check Γ ⊢ Δ'' ≤ Δ'; Γ ⊢ U'' ≤ U' for coinductive *)
+let check_fixpoint_type env lar' lar'' recursivity =
+  let unzip_prod_assums arr =
+    let len = Array.length arr in
+    Array.fold_left_i
+      (fun i (fsts, snds) (fst, snd) ->
+        fsts.(i) <- fst;
+        snds.(i) <- snd;
+        fsts, snds)
+      (Array.make len [], Array.make len mkProp) @@
+    Array.map Term.decompose_prod_assum arr in
+  let concat_delta_types delta = Array.of_list @@
+    Array.fold_left List.append [] @@
+    Array.map (List.map Rel.Declaration.get_type) delta in
+  let delta', u' = unzip_prod_assums lar' in
+  let delta'', u'' = unzip_prod_assums lar'' in
+  let delta' = concat_delta_types delta' in
+  let delta'' = concat_delta_types delta'' in
+  let cstrnt_delta = match recursivity with
+    | Finite -> conv_leq_vecti env delta' delta''
+    | CoFinite -> conv_leq_vecti env delta'' delta'
+    | _ -> assert false in
+  let cstrnt_u = match recursivity with
+    | Finite -> conv_leq_vecti env u' u''
+    | CoFinite -> conv_leq_vecti env u'' u'
+    | _ -> assert false in
+  union cstrnt_delta cstrnt_u
 
 (* Global references *)
 
@@ -662,44 +692,19 @@ and execute_recdef env stg (names, lar, vdef) =
   let stg_vdef, cstrnt_vdef, vdef', vdeft = execute_array env1 stg_lar vdef in
   stg_vdef, union cstrnt_lar cstrnt_vdef, (names', lar', vdef', vdeft)
 
-(* Letting lar'' := lar' with stage annotations at star positions shifted up,
-  check Γ (names' : lar') ⊢ vdeft ≤ lar''.
-  Letting ΠΔ'.U' := lar', ΠΔ''.U'' := lar'',
-  check Γ ⊢ Δ' ≤ Δ''; Γ ⊢ U' ≤ U'' for inductive, and
-  check Γ ⊢ Δ'' ≤ Δ'; Γ ⊢ U'' ≤ U' for coinductive *)
-and execute_recdef_succ env (names, lar', vdef, vdeft) vstar recursivity =
-  let lar'' = Array.Smart.map (succ_annots vstar) lar' in
-  let env1 = push_rec_types (names, lar', vdef) env in (* vdef is ignored *)
-  let cstrnt_fix = check_fixpoint env1 names lar'' vdef vdeft in
-  let cstrnt_succ =
-    let unzip arr =
-      Array.fold_left
-        (fun (fsts, snds) (fst, snd) -> (fst :: fsts, snd :: snds))
-        ([], []) arr in
-    let delta', u' = unzip @@ Array.map Term.decompose_prod_assum lar' in
-    let delta'', u'' = unzip @@ Array.map Term.decompose_prod_assum lar'' in
-    let delta' = List.concat @@ List.map (List.map Rel.Declaration.get_type) delta' in
-    let delta'' = List.concat @@ List.map (List.map Rel.Declaration.get_type) delta'' in
-    let cstrnt_delta = match recursivity with
-      | Finite -> conv_leq_vecti env (Array.of_list delta') (Array.of_list delta'')
-      | CoFinite -> conv_leq_vecti env (Array.of_list delta'') (Array.of_list delta')
-      | _ -> assert false in
-    let cstrnt_u = match recursivity with
-      | Finite -> conv_leq_vecti env (Array.of_list u') (Array.of_list u'')
-      | CoFinite -> conv_leq_vecti env (Array.of_list u'') (Array.of_list u')
-      | _ -> assert false in
-    union cstrnt_delta cstrnt_u in
-  union cstrnt_fix cstrnt_succ
-
 (* Try RecCheck; if failure, try removing some stage variables from vstar *)
-and execute_rec_check env stg cstrnt recdeft vars recursivity =
+and execute_rec_check env stg cstrnt (_, lar', _, _ as recdeft) vars recursivity =
   let rec try_rec_check stg (alphas, vstar, vneq) =
-    let cstrnt' = union cstrnt (execute_recdef_succ env recdeft vstar recursivity) in
+    let lar'' = Array.map (succ_annots vstar) lar' in
+    let cstrnt_fix = check_fixpoint env recdeft lar'' in
+    let cstrnt_fix_ty = check_fixpoint_type env lar' lar'' recursivity in
+    let cstrnt' = union_list [cstrnt; cstrnt_fix; cstrnt_fix_ty] in
+
     let rec_check_all alpha cstrnts = union cstrnts (rec_check alpha vstar vneq cstrnts) in
     let flags = Environ.typing_flags env in
       if flags.check_sized then
         try stg, SVars.fold rec_check_all alphas cstrnt'
-        with RecCheckFailed (_cstrnt, si_inf, si) ->
+        with RecCheckFailed (cstrnt', si_inf, si) ->
           let rm = inter (inter si_inf si) (diff vstar alphas) in
           if is_empty rm then
             error_unsatisfied_stage_constraints env cstrnt' si_inf si
