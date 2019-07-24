@@ -14,7 +14,7 @@
 val pr_set_entry_type : ('a -> Pp.t) -> 'a Extend.constr_entry_key_gen -> Pp.t
 
 (** Prints a fixpoint body *)
-val pr_rec_definition : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) -> Pp.t
+val pr_rec_definition : Vernacexpr.fixpoint_expr -> Pp.t
 
 (** Prints a vernac expression without dot *)
 val pr_vernac_expr : Vernacexpr.vernac_expr -> Pp.t

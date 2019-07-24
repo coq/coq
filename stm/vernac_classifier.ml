@@ -106,8 +106,8 @@ let classify_vernac e =
          else GuaranteesOpacity
        in
         let ids, open_proof =
-          List.fold_left (fun (l,b) ((({v=id},_),_,_,_,p),_) ->
-            id::l, b || p = None) ([],false) l in
+          List.fold_left (fun (l,b) {Vernacexpr.fname={CAst.v=id}; body_def} ->
+            id::l, b || body_def = None) ([],false) l in
         if open_proof
         then VtStartProof (guarantee,ids)
         else VtSideff (ids, VtLater)
@@ -118,8 +118,8 @@ let classify_vernac e =
          else GuaranteesOpacity
        in
         let ids, open_proof =
-          List.fold_left (fun (l,b) ((({v=id},_),_,_,p),_) ->
-            id::l, b || p = None) ([],false) l in
+          List.fold_left (fun (l,b) { Vernacexpr.fname={CAst.v=id}; body_def } ->
+            id::l, b || body_def = None) ([],false) l in
         if open_proof
         then VtStartProof (guarantee,ids)
         else VtSideff (ids, VtLater)

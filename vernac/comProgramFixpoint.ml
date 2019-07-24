@@ -244,10 +244,10 @@ let collect_evars_of_term evd c ty =
   Evar.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evd ev))
   evars (Evd.from_ctx (Evd.evar_universe_context evd))
 
-let do_program_recursive ~scope ~poly fixkind fixl ntns =
+let do_program_recursive ~scope ~poly fixkind fixl =
   let cofix = fixkind = DeclareObl.IsCoFixpoint in
   let (env, rec_sign, pl, evd), fix, info =
-    interp_recursive ~cofix ~program_mode:true fixl ntns
+    interp_recursive ~cofix ~program_mode:true fixl
   in
     (* Program-specific code *)
     (* Get the interesting evars, those that were not instantiated *)
@@ -289,16 +289,19 @@ let do_program_recursive ~scope ~poly fixkind fixl ntns =
   | DeclareObl.IsFixpoint _ -> Decls.Fixpoint
   | DeclareObl.IsCoFixpoint -> Decls.CoFixpoint
   in
+  let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
   Obligations.add_mutual_definitions defs ~poly ~scope ~kind ~univdecl:pl ctx ntns fixkind
 
 let do_program_fixpoint ~scope ~poly l =
-  let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in
+  let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in
     match g, l with
-    | [Some { CAst.v = CWfRec (n,r) }], [((({CAst.v=id},pl),_,bl,typ,def),ntn)] ->
+    | [Some { CAst.v = CWfRec (n,r) }],
+      [ Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations} ] ->
         let recarg = mkIdentC n.CAst.v in
-        build_wellfounded (id, pl, bl, typ, out_def def) poly r recarg ntn
+        build_wellfounded (id, univs, binders, rtype, out_def body_def) poly r recarg notations
 
-    | [Some { CAst.v = CMeasureRec (n, m, r) }], [((({CAst.v=id},pl),_,bl,typ,def),ntn)] ->
+    | [Some { CAst.v = CMeasureRec (n, m, r) }],
+      [Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations }] ->
       (* We resolve here a clash between the syntax of Program Fixpoint and the one of funind *)
       let r = match n, r with
         | Some id, None ->
@@ -308,24 +311,19 @@ let do_program_fixpoint ~scope ~poly l =
           user_err Pp.(str"Measure takes only two arguments in Program Fixpoint.")
         | _, _ -> r
       in
-        build_wellfounded (id, pl, bl, typ, out_def def) poly
-          (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m ntn
+        build_wellfounded (id, univs, binders, rtype, out_def body_def) poly
+          (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m notations
 
     | _, _ when List.for_all (fun ro -> match ro with None | Some { CAst.v = CStructRec _} -> true | _ -> false) g ->
-        let fixl,ntns = extract_fixpoint_components ~structonly:true l in
-        let fixkind = DeclareObl.IsFixpoint (List.map (fun d -> d.fix_annot) fixl) in
-          do_program_recursive ~scope ~poly fixkind fixl ntns
+      let annots = List.map (fun fix ->
+          Vernacexpr.(ComFixpoint.adjust_rec_order ~structonly:true fix.binders fix.rec_order)) l in
+      let fixkind = DeclareObl.IsFixpoint annots in
+      let l = List.map2 (fun fix rec_order -> { fix with Vernacexpr.rec_order }) l annots in
+      do_program_recursive ~scope ~poly fixkind l
 
     | _, _ ->
         user_err ~hdr:"do_program_fixpoint"
           (str "Well-founded fixpoints not allowed in mutually recursive blocks")
-
-let extract_cofixpoint_components l =
-  let fixl, ntnl = List.split l in
-  List.map (fun (({CAst.v=id},pl),bl,typ,def) ->
-            {fix_name = id; fix_annot = None; fix_univs = pl;
-             fix_binders = bl; fix_body = def; fix_type = typ}) fixl,
-  List.flatten ntnl
 
 let check_safe () =
   let open Declarations in
@@ -336,7 +334,7 @@ let do_fixpoint ~scope ~poly l =
   do_program_fixpoint ~scope ~poly l;
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
 
-let do_cofixpoint ~scope ~poly l =
-  let fixl,ntns = extract_cofixpoint_components l in
-  do_program_recursive ~scope ~poly DeclareObl.IsCoFixpoint fixl ntns;
+let do_cofixpoint ~scope ~poly fixl =
+  let fixl = List.map (fun fix -> { fix with Vernacexpr.rec_order = None }) fixl in
+  do_program_recursive ~scope ~poly DeclareObl.IsCoFixpoint fixl;
   if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()

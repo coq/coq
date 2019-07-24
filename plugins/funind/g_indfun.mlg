@@ -148,9 +148,7 @@ END
 module Vernac = Pvernac.Vernac_
 module Tactic = Pltac
 
-type function_rec_definition_loc_argtype = (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) Loc.located
-
-let (wit_function_rec_definition_loc : function_rec_definition_loc_argtype Genarg.uniform_genarg_type) =
+let (wit_function_rec_definition_loc : Vernacexpr.fixpoint_expr Loc.located Genarg.uniform_genarg_type) =
   Genarg.create_arg "function_rec_definition_loc"
 
 let function_rec_definition_loc =
@@ -175,10 +173,10 @@ let () =
 
 let is_proof_termination_interactively_checked recsl =
   List.exists (function
-  | _,((_,( Some { CAst.v = CMeasureRec _ }
-          | Some { CAst.v = CWfRec _}),_,_,_),_) -> true
-  | _,((_,Some { CAst.v = CStructRec _ },_,_,_),_)
-  | _,((_,None,_,_,_),_) -> false) recsl
+  | _,( Vernacexpr.{ rec_order = Some { CAst.v = CMeasureRec _ } }
+      | Vernacexpr.{ rec_order = Some { CAst.v = CWfRec _} }) -> true
+  | _, Vernacexpr.{ rec_order = Some { CAst.v = CStructRec _ } }
+  | _, Vernacexpr.{ rec_order = None } -> false) recsl
 
 let classify_as_Fixpoint recsl =
  Vernac_classifier.classify_vernac

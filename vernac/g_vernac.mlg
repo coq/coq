@@ -402,16 +402,19 @@ GRAMMAR EXTEND Gram
   ;
   (* (co)-fixpoints *)
   rec_definition:
-    [ [ id = ident_decl;
+    [ [ id_decl = ident_decl;
 	bl = binders_fixannot;
-        ty = type_cstr;
-	def = OPT [":="; def = lconstr -> { def } ]; ntn = decl_notation ->
-	  { let bl, annot = bl in ((id,annot,bl,ty,def),ntn) } ] ]
+        rtype = type_cstr;
+        body_def = OPT [":="; def = lconstr -> { def } ]; notations = decl_notation ->
+          { let binders, rec_order = bl in
+            {fname = fst id_decl; univs = snd id_decl; rec_order; binders; rtype; body_def; notations}
+          } ] ]
   ;
   corec_definition:
-    [ [ id = ident_decl; bl = binders; ty = type_cstr;
-        def = OPT [":="; def = lconstr -> { def }]; ntn = decl_notation ->
-          { ((id,bl,ty,def),ntn) } ] ]
+    [ [ id_decl = ident_decl; binders = binders; rtype = type_cstr;
+        body_def = OPT [":="; def = lconstr -> { def }]; notations = decl_notation ->
+        { {fname = fst id_decl; univs = snd id_decl; rec_order = (); binders; rtype; body_def; notations}
+        } ]]
   ;
   type_cstr:
     [ [ ":"; c=lconstr -> { c }

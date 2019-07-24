@@ -128,18 +128,26 @@ type definition_expr =
   | DefineBody of local_binder_expr list * Genredexpr.raw_red_expr option * constr_expr
       * constr_expr option
 
-type fixpoint_expr =
-    ident_decl * recursion_order_expr option * local_binder_expr list * constr_expr * constr_expr option
+type decl_notation = lstring * constr_expr * scope_name option
 
-type cofixpoint_expr =
-    ident_decl * local_binder_expr list * constr_expr * constr_expr option
+type 'a fix_expr_gen =
+  { fname : lident
+  ; univs : universe_decl_expr option
+  ; rec_order : 'a
+  ; binders : local_binder_expr list
+  ; rtype : constr_expr
+  ; body_def : constr_expr option
+  ; notations : decl_notation list
+  }
+
+type fixpoint_expr = recursion_order_expr option fix_expr_gen
+type cofixpoint_expr = unit fix_expr_gen
 
 type local_decl_expr =
   | AssumExpr of lname * constr_expr
   | DefExpr of lname * constr_expr * constr_expr option
 
 type inductive_kind = Inductive_kw | CoInductive | Variant | Record | Structure | Class of bool (* true = definitional, false = inductive *)
-type decl_notation = lstring * constr_expr * scope_name option
 type simple_binder = lident list  * constr_expr
 type class_binder = lident * constr_expr list
 type 'a with_coercion = coercion_flag * 'a
@@ -283,8 +291,8 @@ type nonrec vernac_expr =
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
   | VernacInductive of vernac_cumulative option * bool (* private *) * inductive_flag * (inductive_expr * decl_notation list) list
-  | VernacFixpoint of discharge * (fixpoint_expr * decl_notation list) list
-  | VernacCoFixpoint of discharge * (cofixpoint_expr * decl_notation list) list
+  | VernacFixpoint of discharge * fixpoint_expr list
+  | VernacCoFixpoint of discharge * cofixpoint_expr list
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
   | VernacUniverse of lident list

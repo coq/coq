@@ -69,7 +69,7 @@ val add_mutual_definitions
   -> ?kind:Decls.definition_object_kind
   -> ?reduce:(constr -> constr)
   -> ?hook:DeclareDef.Hook.t -> ?opaque:bool
-  -> DeclareObl.notations
+  -> Vernacexpr.decl_notation list
   -> DeclareObl.fixpoint_kind -> unit
 
 val obligation
