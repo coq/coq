@@ -4,7 +4,7 @@
   %{bin:coqtop}
   %{project_root}/theories/Init/Prelude.vo)
  (action
-  (with-outputs-to coqtop-prelude
+  (with-stdout-to coqtop-prelude
    (progn
     (echo "#!/usr/bin/env bash\n")
     (bash "echo \"$(pwd)/%{bin:coqtop} -coqlib $(pwd)/%{project_root}\" \\$@")
@@ -16,7 +16,7 @@
   %{bin:coqc}
   %{project_root}/theories/Init/Prelude.vo)
  (action
-  (with-outputs-to coqc-prelude
+  (with-stdout-to coqc-prelude
    (progn
     (echo "#!/usr/bin/env bash\n")
     (bash "echo \"$(pwd)/%{bin:coqc} -coqlib $(pwd)/%{project_root}\" \\$@")
@@ -29,7 +29,7 @@
   %{lib:coq.kernel:../../stublibs/dllbyterun_stubs.so}
   %{project_root}/theories/Init/Prelude.vo)
  (action
-  (with-outputs-to %{targets}
+  (with-stdout-to %{targets}
    (progn
     (echo "#!/usr/bin/env bash\n")
     (bash "echo \"$(pwd)/%{bin:coqtop.byte} -coqlib $(pwd)/%{project_root}\" \\$@")
@@ -45,7 +45,7 @@
   %{project_root}/coqide-server.install
   %{project_root}/coqide.install)
  (action
-  (with-outputs-to coqide-prelude
+  (with-stdout-to coqide-prelude
    (progn
     (echo "#!/usr/bin/env bash\n")
     (bash "echo \"$(pwd)/%{bin:coqide} -coqlib $(pwd)/%{project_root}\" \\$@")
