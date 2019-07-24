@@ -611,42 +611,30 @@ let rec execute env stg cstr =
       stg, cstrnt, cstr, t
 
     | Fix ((vn, i as vni), (names, lar, vdef)) ->
-      (* Save all old star variables *)
       let stg = State.push stg in
-      (* Annotate recursive argument and return types with Star *)
       let lar_star =
         let inds = get_rec_inds env vn lar in
         let vninds = List.fold_left2 (fun acc n ind -> (n, ind) :: acc) [] (Array.to_list vn) inds in
         set_rec_stars env vninds lar in
-      (* Infer fixpoint body type *)
       let stg', cstrnt', (names', lar', vdef', _ as recdeft) = execute_recdef env stg (names, lar_star, vdef) in
-      (* Get stage variables of inductive types of recursive arguments,
-        i.e. if lar'[i] := ΠΔ.Πx:I^α(ps, as).U and |Δ| = vn[i] then alphas[i] := α *)
+
       let alphas = get_rec_vars env vn lar' in
-      (* Get stage variables in Star positions and all others *)
       let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
-      (* Do RecCheck*)
       let stg_check, cstrnt_check = execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) Finite in
-      (* Put position annotations back *)
+
       let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg)) lar' in
       let fix = (vni, (names', lar_star, vdef')) in
       check_fix env fix; State.pop stg_check, cstrnt_check, mkFix fix, lar'.(i)
 
     | CoFix (i, (names, lar, vdef)) ->
-      (* Save all old star variables *)
       let stg = State.push stg in
-      (* Annotate return type and arguments of same type with Star *)
       let lar_star = set_corec_stars env (get_corec_inds env lar) lar in
-      (* Infer fixpoint body type *)
       let stg', cstrnt', (names', lar', vdef', _ as recdeft) = execute_recdef env stg (names, lar_star, vdef) in
-      (* Get stage variables of coinductive types of recursive arguments,
-        i.e. if lar'[i] := ΠΔ.CoI^α(ps, as) then alphas[i] := α *)
+
       let alphas = get_corec_vars env lar' in
-      (* Get stage variables in Star positions and all others *)
       let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
-      (* Do RecCheck*)
       let stg_check, cstrnt_check = execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) CoFinite in
-      (* Put position annotations back *)
+
       let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg)) lar' in
       let cofix = (i, (names', lar_star, vdef')) in
       check_cofix env cofix; State.pop stg_check, cstrnt_check, mkCoFix cofix, lar'.(i)
@@ -667,7 +655,7 @@ and execute_is_type env stg constr =
     stg, cstrnt, c, check_type env constr t
 
 (* Usual inference: Γ ⊢ lar' : lart; Γ (names' : lar') ⊢ vdef : vdeft *)
-and execute_recdef env stg (names, lar, vdef as recdef) =
+and execute_recdef env stg (names, lar, vdef) =
   let stg_lar, cstrnt_lar, lar', lart = execute_array env stg lar in
   let names' = Array.Smart.map_i (fun i na -> check_assumption env na lar'.(i) lart.(i)) names in
   let env1 = push_rec_types (names', lar', vdef) env in (* vdef is ignored *)
