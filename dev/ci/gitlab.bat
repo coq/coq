@@ -37,6 +37,9 @@ SET CI_PROJECT_DIR_CFMT=%CI_PROJECT_DIR_MFMT:C:/=/cygdrive/c/%
 SET COQREGTESTING=Y
 SET PATH=%PATH%;C:\Program Files\7-Zip\;C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin
 
+REM ENable all addons on release branch
+SET WINDOWS=enabled_all_addons
+
 IF "%WINDOWS%" == "enabled_all_addons" (
   SET EXTRA_ADDONS=^
     -addon=bignums ^
