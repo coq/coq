@@ -839,8 +839,9 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
 	       unify_app_pattern true curenvnb pb opt substn cM f1 l1 cN f2 l2
 	     | _ -> raise ex)
 
-	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
-            (try 
+        | Case (ci1,p1,c1,cl1), Case (ci2,p2,c2,cl2) ->
+            (try
+             if not (eq_ind ci1.ci_ind ci2.ci_ind) then error_cannot_unify curenv sigma (cM,cN);
 	     let opt' = {opt with at_top = true; with_types = false} in
 	       Array.fold_left2 (unirec_rec curenvnb CONV {opt with at_top = true})
 	       (unirec_rec curenvnb CONV opt'
