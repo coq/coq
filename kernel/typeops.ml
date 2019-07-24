@@ -49,13 +49,6 @@ let check_constraints cst env =
   if Environ.check_constraints cst env then ()
   else error_unsatisfied_constraints env cst
 
-(* [no_stage_variables cstrs cstrnts] collects the stage variables in [cstrs]
-  and adds the constraint ∞ ⊑ for each to [cstrnts]
-  Used in the body of Lambda, the argument of App, and the body and argument of LetIn
-  to enforce simple types (wrt sized types) *)
-let no_stage_variables =
-  Array.fold_left (fun cstrnts cstr -> add_infty (collect_annots cstr) cstrnts) Constraints.empty
-
 (* This should be a type (a priori without intention to be an assumption) *)
 let check_type env c t =
   match kind(whd_all env t) with
@@ -533,7 +526,6 @@ let rec execute env stg cstr =
     (* Lambda calculus operators *)
     | App (f,args) ->
       let stga, cstrnta, args', argst = execute_array env stg args in
-      let cstrntno = no_stage_variables args' in
       let stgf, cstrntf, f', ft = match kind f with
       | Ind (ind, s) when Environ.template_polymorphic_pind ind env ->
         let s', stg' = next ~s stga in
@@ -543,7 +535,7 @@ let rec execute env stg cstr =
         execute env stga f
       in
       let t, cstrntapp = type_of_apply env f' ft args' argst in
-      let cstrnt = union_list [cstrnta; cstrntf; cstrntapp; cstrntno] in
+      let cstrnt = union_list [cstrnta; cstrntf; cstrntapp] in
       let cstr = if f == f' && args == args' then cstr else mkApp (f',args') in
       stgf, cstrnt, cstr, t
 
@@ -552,8 +544,7 @@ let rec execute env stg cstr =
       let name' = check_binder_annot s name in
       let env1 = push_rel (LocalAssum (name',c1')) env in
       let stg2, cstrnt2, c2', c2t = execute env1 stg1 c2 in
-      let cstrntno = no_stage_variables [|c2'|] in
-      let cstrnt = union_list [cstrnt1; cstrnt2; cstrntno] in
+      let cstrnt = union_list [cstrnt1; cstrnt2] in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkLambda(name', erase c1',c2') in
       stg2, cstrnt, cstr, type_of_abstraction env name' c1' c2t
 
@@ -573,8 +564,7 @@ let rec execute env stg cstr =
       let cstrnt' = check_cast env c1' c1t DEFAULTcast c2' in
       let env1 = push_rel (LocalDef (name',c1',c2')) env in
       let stg3, cstrnt3, c3', c3t = execute env1 stg2 c3 in
-      let cstrntno = no_stage_variables [|c1'; c3'|] in
-      let cstrnt = union_list [cstrnt1; cstrnt2; cstrnt3; cstrnt'; cstrntno] in
+      let cstrnt = union_list [cstrnt1; cstrnt2; cstrnt3; cstrnt'] in
       let cstr = if name == name' && c1 == c1' && c2 == c2' && c3 == c3' then cstr
         else mkLetIn(name',c1',erase c2',c3')
       in
@@ -606,7 +596,7 @@ let rec execute env stg cstr =
       let stg, ci', t, cstrntci = type_of_case env stglf ci p' pt c' ct lf' lft in
       let cstrnt = union_list [cstrntc; cstrntp; cstrntlf; cstrntci] in
       let cstr = if ci == ci' && c == c' && p == p' && lf == lf' then cstr
-        else mkCase(ci',p',c',lf')
+        else mkCase (ci', erase p', c', lf')
       in
       stg, cstrnt, cstr, t
 
@@ -643,15 +633,16 @@ and execute_recdef env stg (names, lar, vdef as recdef) vno i =
   (* Save all old star variables *)
   let stg = State.push stg in
 
-  (* Get the names of the (co)inductive types of the recursive arguments,
-    i.e. if lar[i] := ΠΔ.Πx:I(ps, as).U and |Δ| = vn[i] then inds[i] := I,
-    and  if lar[i] := ΠΔ.CoI(ps, as) then inds[i] := CoI *)
-  let inds = match vno with
-    | Some vn -> get_rec_inds env vn lar
-    | None -> get_corec_inds env lar in
-  (* Mark the argument types and return type of the same inductive type with Star
-    e.g. if lar[i] := Πx:I.ΠΔ.Πy:I.I then return Πx:I*.ΠΔ.Πy:I*.I* *)
-  let lar = set_stars env inds lar in
+  (* If inductive, annotate recursive argument and return types with ∞;
+    if coinductive, annotate return type and arguments of same type with ∞ *)
+  let lar = match vno with
+    | Some vn ->
+      let inds = get_rec_inds env vn lar in
+      let vninds = List.fold_left2 (fun acc n ind -> (n, ind) :: acc) [] (Array.to_list vn) inds in
+      set_rec_stars env vninds lar
+    | None ->
+      let inds = get_corec_inds env lar in
+      set_corec_stars env inds lar in
 
   (* Usual inference: Γ ⊢ lar' : lart; Γ (names' : lar') ⊢ vdef : vdeft *)
   let stg_lar, cstrnt_lar, lar', lart = execute_array env stg lar in
@@ -677,9 +668,9 @@ and execute_recdef env stg (names, lar, vdef as recdef) vno i =
   let rec check_rec vstar vneq stg =
     (* Shift up stage variables in Star positions *)
     let lar'' = Array.Smart.map (succ_annots vstar) lar' in
-    (* Check vdeft ≤ lar'' *)
+    (* Check Γ (names' : lar') ⊢ vdeft ≤ lar'' *)
     let cstrnt_fix = check_fixpoint env1 names' lar'' vdef' vdeft in
-    (* Letting ΠΔ'.U' := lar', ΠΔ''.U'' := lar'', check Δ' ≤ Δ'', U' ≤ U'' *)
+    (* Letting ΠΔ'.U' := lar', ΠΔ''.U'' := lar'', check Γ ⊢ Δ' ≤ Δ'', Γ ⊢ U' ≤ U'' *)
     let cstrnt_succ =
       let unzip arr =
         Array.fold_left

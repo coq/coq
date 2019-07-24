@@ -339,4 +339,4 @@ let rec_check alpha vstar vneq cstrnts =
   (* Step 8: Check S∞ ∩ Si = ∅ *)
   let si_null = inter si_inf si in
   if is_empty si_null then cstrnts4
-  else raise (RecCheckFailed (cstrnts4, si_inf, si))
+  else raise (RecCheckFailed (cstrnts, si_inf, si))

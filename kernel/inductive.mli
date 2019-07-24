@@ -115,7 +115,8 @@ val get_rec_inds : env -> int array -> types array -> inductive list
 val get_rec_vars : env -> int array -> types array -> SVars.t
 val get_corec_inds : env -> types array -> inductive list
 val get_corec_vars : env -> types array -> SVars.t
-val set_stars : env -> inductive list -> types array -> types array
+val set_rec_stars : env -> (int * inductive) list -> types array -> types array
+val set_corec_stars : env -> inductive list -> types array -> types array
 
 (** {6 Support for sort-polymorphic inductive types } *)
 

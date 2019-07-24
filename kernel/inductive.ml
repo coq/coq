@@ -1383,7 +1383,13 @@ let get_corec_vars env tys =
   let len = Array.length tys in
   fst @@ fold_map2_fix_type env f err (List.make len (-1)) (Array.to_list tys) SVars.empty
 
-let set_stars env inds tys =
+let set_rec_stars env isinds tys =
+  let f (i, ind) j (ind', _) acc s =
+    if Int.equal i j || (Int.equal (-1) j && Names.eq_ind ind ind') then acc, Star else acc, s in
+  let err _ _ _ _ t = t in
+  Array.of_list @@ snd @@ fold_map2_fix_type env f err isinds (Array.to_list tys) ()
+
+let set_corec_stars env inds tys =
   let f ind _ (ind', _) acc s =
     if Names.eq_ind ind ind' then acc, Star else acc, s in
   let err _ _ _ _ t = t in
