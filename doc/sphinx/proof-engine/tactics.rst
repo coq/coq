@@ -4221,7 +4221,13 @@ some incompatibilities.
 
 .. tacv:: firstorder using {+ @qualid}
 
-  Adds lemmas :n:`{+ @qualid}` to the proof-search environment. If :n:`@qualid`
+   .. deprecated:: 8.3
+
+      Use the syntax below instead (with commas).
+
+.. tacv:: firstorder using {+, @qualid}
+
+  Adds lemmas :n:`{+, @qualid}` to the proof-search environment. If :n:`@qualid`
   refers to an inductive type, it is the collection of its constructors which are
   added to the proof-search environment.
 
@@ -4230,7 +4236,7 @@ some incompatibilities.
   Adds lemmas from :tacn:`auto` hint bases :n:`{+ @ident}` to the proof-search
   environment.
 
-.. tacv:: firstorder @tactic using {+ @qualid} with {+ @ident}
+.. tacv:: firstorder @tactic using {+, @qualid} with {+ @ident}
 
   This combines the effects of the different variants of :tacn:`firstorder`.
 
