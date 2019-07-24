@@ -178,7 +178,7 @@ Proof.
   change (cos (PI / 4) <> 0); rewrite cos_PI4; apply R1_sqrt2_neq_0.
 Qed.
 
-Lemma cos3PI4 : cos (3 * (PI / 4)) = -1 / sqrt 2.
+Lemma cos_3PI4 : cos (3 * (PI / 4)) = -1 / sqrt 2.
 Proof.
   replace (3 * (PI / 4)) with (PI / 2 - - (PI / 4)) by field.
   rewrite cos_shift; rewrite sin_neg; rewrite sin_PI4.
@@ -186,11 +186,15 @@ Proof.
   ring.
 Qed.
 
-Lemma sin3PI4 : sin (3 * (PI / 4)) = 1 / sqrt 2.
+#[deprecated(since="8.10",note="Use cos_3PI4 instead.")] Notation cos3PI4 := cos_3PI4.
+
+Lemma sin_3PI4 : sin (3 * (PI / 4)) = 1 / sqrt 2.
 Proof.
   replace (3 * (PI / 4)) with (PI / 2 - - (PI / 4)) by field.
   now rewrite sin_shift, cos_neg, cos_PI4.
 Qed.
+
+#[deprecated(since="8.10",note="Use sin_3PI4 instead.")] Notation sin3PI4 := sin_3PI4.
 
 Lemma cos_PI6 : cos (PI / 6) = sqrt 3 / 2.
 Proof with trivial.
