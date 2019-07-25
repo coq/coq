@@ -472,8 +472,8 @@ intros k i p H; induction H; simpl poly_mul_mon; case_decide; intuition.
   - match goal with [ H : null ?p |- _ ] => solve[inversion H] end.
 + apply (valid_le_compat k); auto; constructor; intuition.
   - assert (X := poly_mul_mon_null_compat); intuition eauto.
-  - cutrewrite <- (Pos.max (Pos.succ i) i0 = i0); intuition.
-  - cutrewrite <- (Pos.max (Pos.succ i) (Pos.succ i0) = Pos.succ i0); intuition.
+  - enough (Pos.max (Pos.succ i) i0 = i0) as <-; intuition.
+  - enough (Pos.max (Pos.succ i) (Pos.succ i0) = Pos.succ i0) as <-; intuition.
 Qed.
 
 Lemma poly_mul_valid_compat : forall kl kr pl pr, valid kl pl -> valid kr pr ->
