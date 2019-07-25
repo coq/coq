@@ -1075,7 +1075,7 @@ module FNativeEntries =
 
     let mkInt env i =
       check_int env;
-      { mark = mark Norm KnownR; term = FInt i }
+      { mark = mark Cstr KnownR; term = FInt i }
 
     let mkBool env b =
       check_bool env;
