@@ -669,8 +669,6 @@ let string_of_definition_object_kind = let open Decls in function
         return (
           if Int.equal i 1 then keyword "Back" else keyword "Back" ++ pr_intarg i
         )
-      | VernacBackTo i ->
-        return (keyword "BackTo" ++ pr_intarg i)
 
     (* State management *)
       | VernacWriteState s ->

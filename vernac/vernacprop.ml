@@ -32,7 +32,6 @@ let rec has_Fail v = v |> CAst.with_val (function
 let is_navigation_vernac_expr = function
   | VernacResetInitial
   | VernacResetName _
-  | VernacBackTo _
   | VernacBack _ -> true
   | _ -> false
 

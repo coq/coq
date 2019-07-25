@@ -2298,7 +2298,6 @@ let rec translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacResetName _
   | VernacResetInitial
   | VernacBack _
-  | VernacBackTo _
   | VernacAbort _ ->
     anomaly (str "type_vernac")
   (* Syntax *)
@@ -2630,7 +2629,6 @@ and interp_expr ?proof ~atts ~st c =
   | VernacResetName _  -> anomaly (str "VernacResetName not handled by Stm.")
   | VernacResetInitial -> anomaly (str "VernacResetInitial not handled by Stm.")
   | VernacBack _       -> anomaly (str "VernacBack not handled by Stm.")
-  | VernacBackTo _     -> anomaly (str "VernacBackTo not handled by Stm.")
 
   (* This one is possible to handle here *)
   | VernacAbort id    -> CErrors.user_err  (str "Abort cannot be used through the Load command")
