@@ -1,0 +1,27 @@
+{
+
+open Sized_typing
+
+}
+
+DECLARE PLUGIN "sized_typing_plugin"
+
+VERNAC COMMAND EXTEND SetSizedTyping CLASSIFIED AS SIDEFF
+| [ "Set" "Sized" "Typing" ] -> { set_check_sized true }
+END
+
+VERNAC COMMAND EXTEND UnsetSizedTyping CLASSIFIED AS SIDEFF
+| [ "Unset" "Sized" "Typing" ] -> { set_check_sized false }
+END
+
+VERNAC COMMAND EXTEND SetGuardChecking CLASSIFIED AS SIDEFF
+| [ "Set" "Guard" "Checking" ] -> { set_check_guarded true }
+END
+
+VERNAC COMMAND EXTEND UnsetGuardChecking CLASSIFIED AS SIDEFF
+| [ "Unset" "Guard" "Checking" ] -> { set_check_guarded false }
+END
+
+VERNAC COMMAND EXTEND PrintTypingFlags CLASSIFIED AS QUERY
+| [ "Print" "Typing" "Flags" ] -> { print_typing_flags () }
+END

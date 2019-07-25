@@ -106,7 +106,7 @@ PLUGINDIRS:=\
   setoid_ring 	extraction \
   cc 		funind 		firstorder 	derive \
   rtauto 	nsatz           syntax          btauto \
-  ssrmatching	ltac		ssr             ssrsearch
+  sized_typing   ssrmatching	ltac		ssr             ssrsearch
 
 USERCONTRIBDIRS:=\
 	Ltac2
@@ -156,6 +156,7 @@ SYNTAXCMO:=$(addprefix plugins/syntax/, \
 	string_notation_plugin.cmo)
 DERIVECMO:=plugins/derive/derive_plugin.cmo
 LTACCMO:=plugins/ltac/ltac_plugin.cmo plugins/ltac/tauto_plugin.cmo
+SIZEDTYPINGCMO:=plugins/sized_typing/sized_typing_plugin.cmo
 SSRMATCHINGCMO:=plugins/ssrmatching/ssrmatching_plugin.cmo
 SSRCMO:=plugins/ssr/ssreflect_plugin.cmo
 SSRSEARCHCMO=plugins/ssrsearch/ssrsearch_plugin.cmo
@@ -167,7 +168,7 @@ PLUGINSCMO:=$(LTACCMO) $(OMEGACMO) $(MICROMEGACMO) \
         $(EXTRACTIONCMO) \
         $(CCCMO)  $(FOCMO) $(RTAUTOCMO) $(BTAUTOCMO) \
         $(FUNINDCMO) $(NSATZCMO) $(SYNTAXCMO) \
-	$(DERIVECMO) $(SSRMATCHINGCMO) $(SSRCMO) $(SSRSEARCHCMO) $(LTAC2CMO) $(ZIFYCMO)
+	$(DERIVECMO) $(SIZEDTYPINGCMO) $(SSRMATCHINGCMO) $(SSRCMO) $(SSRSEARCHCMO) $(LTAC2CMO) $(ZIFYCMO)
 
 ifeq ($(HASNATDYNLINK)-$(BEST),false-opt)
  STATICPLUGINS:=$(PLUGINSCMO)

@@ -1,0 +1,5 @@
+(library
+  (name sized_typing_plugin)
+  (public_name coq.plugins.sized_typing)
+  (synopsis "Coq's sized typing plugin)
+  (libraries coq.stm))

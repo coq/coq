@@ -562,6 +562,18 @@ package "plugins" (
     plugin(native)  = "ssreflect_plugin.cmxs"
   )
 
+  package "sized_typing" {
+
+    description = "Coq sized typing plugin"
+    version     = "8.13"
+
+    requires    = ""
+    directory   = "sized_typing"
+
+    archive(byte)   = "sized_typing_plugin.cmo"
+    archive(native) = "sized_typing_plugin.cmx"
+  }
+
   package "ltac2" (
 
     description = "Coq Ltac2 Plugin"
