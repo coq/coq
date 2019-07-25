@@ -2824,11 +2824,15 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
    .. tacv:: cutrewrite <- (@term = @term’)
       :name: cutrewrite
 
-      This tactic is deprecated. It can be replaced by :n:`enough (@term = @term’) as <-`.
+      .. deprecated:: 8.5
+
+         This tactic can be replaced by :n:`enough (@term = @term’) as <-`.
 
    .. tacv:: cutrewrite -> (@term = @term’)
 
-      This tactic is deprecated. It can be replaced by :n:`enough (@term = @term’) as ->`.
+      .. deprecated:: 8.5
+
+         This tactic can be replaced by :n:`enough (@term = @term’) as ->`.
 
 
 .. tacn:: subst @ident
