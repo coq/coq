@@ -576,6 +576,14 @@ Settings
      their proof-term silently open the proof mode with the remaining
      obligations to prove.
 
+.. flag:: Typeclasses Axioms Are Instances
+
+   .. deprecated:: 8.10
+
+   This flag (off by default since 8.8) automatically declares axioms
+   whose type is a typeclass at declaration time as instances of that
+   class.
+
 Typeclasses eauto `:=`
 ~~~~~~~~~~~~~~~~~~~~~~
 
