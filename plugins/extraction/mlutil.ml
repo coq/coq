@@ -1547,6 +1547,7 @@ let inline r t =
   not (to_keep r) (* The user DOES want to keep it *)
   && not (is_inline_custom r)
   && (to_inline r (* The user DOES want to inline it *)
-     || (lang () != Haskell && not (is_projection r) &&
-         (is_recursor r || manual_inline r || inline_test r t)))
+     || (lang () != Haskell &&
+         (is_projection r || is_recursor r ||
+          manual_inline r || inline_test r t)))
 
