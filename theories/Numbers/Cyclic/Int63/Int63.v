@@ -812,14 +812,6 @@ Proof.
  eapply Z.lt_le_trans; [ | apply Zpower2_le_lin ]; auto with zarith.
 Qed.
 
-Lemma lsr_add_distr x y n: (x + y) << n = ((x << n) + (y << n))%int63.
-Proof.
- apply to_Z_inj.
- rewrite -> add_spec, !lsl_spec, add_spec.
- rewrite -> Zmult_mod_idemp_l, <-Zplus_mod.
- apply f_equal2 with (f := Zmod); auto with zarith.
-Qed.
-
 (* LSL *)
 Lemma lsl0 i: 0 << i = 0%int63.
 Proof.
@@ -1119,7 +1111,7 @@ Proof.
  generalize (add_le_r x y); rewrite Heq, lor_le; intro Hb.
  generalize Heq; rewrite (bit_split x) at 1; rewrite (bit_split y )at 1; clear Heq.
  rewrite (fun y => add_comm y (bit x 0)), <-!add_assoc, add_comm,
-         <-!add_assoc, (add_comm (bit y 0)), add_assoc, <-lsr_add_distr.
+         <-!add_assoc, (add_comm (bit y 0)), add_assoc, <-lsl_add_distr.
  rewrite (bit_split (x lor y)), lor_spec.
  intros Heq.
  assert (F: (bit x 0 + bit y 0)%int63 = (bit x 0 || bit y 0)).
