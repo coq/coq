@@ -31,7 +31,7 @@
 ########################################################################
 # Unicoq + Mtac2
 ########################################################################
-: "${unicoq_CI_REF:=da609d64a531cd8069478aa19c29ce88261e3fe5}"
+: "${unicoq_CI_REF:=v1.3-8.10}"
 : "${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq}"
 : "${unicoq_CI_ARCHIVEURL:=${unicoq_CI_GITURL}/archive}"
 
