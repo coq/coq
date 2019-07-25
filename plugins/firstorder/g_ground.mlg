@@ -47,20 +47,6 @@ let ()=
     declare_int_option gdopt
 
 
-let ()=
-  let congruence_depth=ref 100 in
-  let gdopt=
-    { optdepr=true; (* noop *)
-      optname="Congruence Depth";
-      optkey=["Congruence";"Depth"];
-      optread=(fun ()->Some !congruence_depth);
-      optwrite=
-   (function
-        None->congruence_depth:=0
-      |	Some i->congruence_depth:=(max i 0))}
-  in
-    declare_int_option gdopt
-
 let default_intuition_tac =
   let tac _ _ = Auto.h_auto None [] None in
   let name = { Tacexpr.mltac_plugin = "ground_plugin"; mltac_tactic = "auto_with"; } in
