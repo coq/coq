@@ -4895,6 +4895,8 @@ Performance-oriented tactic variants
    .. tacv:: convert_concl_no_check @term
       :name: convert_concl_no_check
 
+      .. deprecated:: 8.11
+
       Deprecated old name for :tacn:`change_no_check`. Does not support any of its
       variants.
 
