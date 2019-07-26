@@ -279,8 +279,6 @@ windows32:
   extends: .windows-template
   variables:
     ARCH: "32"
-  except:
-    - /^pr-.*$/
 
 lint:
   image: docker:git

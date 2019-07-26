@@ -1,7 +1,7 @@
 diff --git a/Makefile b/Makefile
 --- a/Makefile
 +++ b/Makefile
-@@ -82,8 +82,8 @@ endif
+@@ -76,8 +76,8 @@ endif
 
  COMPCERTDIRS=lib common $(ARCHDIRS) cfrontend flocq exportclight $(BACKEND)
 
@@ -9,6 +9,6 @@ diff --git a/Makefile b/Makefile
 -EXTFLAGS= $(foreach d, $(COMPCERTDIRS), -Q $(COMPCERT)/$(d) compcert.$(d))
 +COMPCERT_R_FLAGS= $(foreach d, $(COMPCERTDIRS), -R $(COMPCERT)/$(d) VST.compcert.$(d))
 +EXTFLAGS= $(foreach d, $(COMPCERTDIRS), -Q $(COMPCERT)/$(d) VST.compcert.$(d))
- # for ITrees
- ifeq ($(wildcard InteractionTrees/the?ries),"InteractionTrees/theories")
- EXTFLAGS:=$(EXTFLAGS) -Q InteractionTrees/theories ITree
+
+ # for SSReflect
+ ifdef MATHCOMP
