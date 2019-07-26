@@ -70,6 +70,7 @@ type searchable =
   | SearchRewrite of constr_pattern_expr
   | SearchHead of constr_pattern_expr
   | SearchAbout of (bool * search_about_item) list
+  | Search of (bool * search_about_item) list
 
 type locatable =
   | LocateAny of qualid or_by_notation
