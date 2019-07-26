@@ -88,8 +88,6 @@ There are other buttons on the |CoqIDE| toolbar: a button to save the running
 buffer; a button to close the current buffer (an "X"); buttons to switch among
 buffers (left and right arrows); an "information" button; and a "gears" button.
 
-The "information" button is described in Section :ref:`try-tactics-automatically`.
-
 The "gears" button submits proof terms to the |Coq| kernel for type checking.
 When |Coq| uses asynchronous processing (see Chapter :ref:`asynchronousandparallelproofprocessing`),
 proofs may have been completed without kernel-checking of generated proof terms.
@@ -99,27 +97,6 @@ processed color, though their preceding proofs have the processed color.
 
 Notice that for all these buttons, except for the "gears" button, their operations
 are also available in the menu, where their keyboard shortcuts are given.
-
-.. _try-tactics-automatically:
-
-Trying tactics automatically
-------------------------------
-
-The menu Try Tactics provides some features for automatically trying
-to solve the current goal using simple tactics. If such a tactic
-succeeds in solving the goal, then its text is automatically inserted
-into the script. There is finally a combination of these tactics,
-called the *proof wizard* which will try each of them in turn. This
-wizard is also available as a tool button (the "information" button). The set of
-tactics tried by the wizard is customizable in the preferences.
-
-These tactics are general ones, in particular they do not refer to
-particular hypotheses. You may also try specific tactics related to
-the goal or one of the hypotheses, by clicking with the right mouse
-button on the goal or the considered hypothesis. This is the
-“contextual menu on goals” feature, that may be disabled in the
-preferences if undesirable.
-
 
 Proof folding
 ------------------
@@ -201,13 +178,6 @@ The `Externals` section allows customizing the external commands for
 compilation, printing, web browsing. In the browser command, you may
 use `%s` to denote the URL to open, for example:
 `firefox -remote "OpenURL(%s)"`.
-
-The `Tactics Wizard` section allows defining the set of tactics that
-should be tried, in sequence, to solve the current goal.
-
-The last section is for miscellaneous boolean settings, such as the
-“contextual menu on goals” feature presented in the section
-:ref:`Try tactics automatically <try-tactics-automatically>`.
 
 Notice that these settings are saved in the file `.coqiderc` of your
 home directory.

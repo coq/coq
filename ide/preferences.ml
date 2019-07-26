@@ -938,16 +938,6 @@ let configure ?(apply=(fun () -> ())) parent =
                    else cmd_browse#get])
       cmd_browse#get
   in
-(*
-  let automatic_tactics =
-    strings
-      ~f:automatic_tactics#set
-      ~add:(fun () -> ["<edit me>"])
-      "Wizard tactics to try in order"
-      automatic_tactics#get
-
-  in
-*)
 
   let contextual_menus_on_goal = pbool "Contextual menus on goal" contextual_menus_on_goal in
 
@@ -1008,10 +998,6 @@ let configure ?(apply=(fun () -> ())) parent =
      Section("Externals", None,
 	     [cmd_coqtop;cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc;
               cmd_print;cmd_editor;cmd_browse]);
-(*
-     Section("Tactics Wizard", None,
-	     [automatic_tactics]);
-*)
      Section("Shortcuts", Some `PREFERENCES,
 	     [modifiers_valid; modifier_for_tactics;
         modifier_for_templates; modifier_for_display; modifier_for_navigation;

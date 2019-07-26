@@ -15,7 +15,6 @@ class type ops =
 object
   method go_to_insert : unit task
   method go_to_mark : GText.mark -> unit task
-  method tactic_wizard : string list -> unit task
   method process_next_phrase : unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
