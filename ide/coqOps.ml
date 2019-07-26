@@ -137,7 +137,6 @@ class type ops =
 object
   method go_to_insert : unit task
   method go_to_mark : GText.mark -> unit task
-  method tactic_wizard : string list -> unit task
   method process_next_phrase : unit task
   method process_until_end_or_error : unit task
   method handle_reset_initial : unit task
@@ -805,48 +804,6 @@ object(self)
           (Coq.lift (fun () -> Sentence.tag_on_insert buffer))
     else Coq.seq (self#backtrack_to_iter ~move_insert:false point)
           (Coq.lift (fun () -> Sentence.tag_on_insert buffer)))
-
-  method tactic_wizard l =
-    let insert_phrase phrase tag =
-      let stop = self#get_start_of_input in
-      let phrase' = if stop#starts_line then phrase else "\n"^phrase in
-      buffer#insert ~iter:stop phrase';
-      Sentence.tag_on_insert buffer;
-      let start = self#get_start_of_input in
-      buffer#move_mark ~where:stop (`NAME "start_of_input");
-      buffer#apply_tag tag ~start ~stop;
-      if self#get_insert#compare stop <= 0 then
-        buffer#place_cursor ~where:stop;
-      let sentence =
-        mk_sentence
-          ~start:(`MARK (buffer#create_mark start))
-          ~stop:(`MARK (buffer#create_mark stop))
-          [] in
-      Doc.push document sentence;
-      messages#default_route#clear;
-      self#show_goals
-    in
-    let display_error (loc, s) =
-      messages#default_route#add (Ideutils.validate s) in
-    let try_phrase phrase stop more =
-      let action = log "Sending to coq now" in
-      let route_id = 0 in
-      let query = Coq.query (route_id,(phrase,Stateid.dummy)) in
-      let next = function
-      | Fail (_, l, str) -> (* FIXME: check *)
-        display_error (l, str);
-        messages#default_route#add (Pp.str ("Unsuccessfully tried: "^phrase));
-        more
-      | Good () -> stop Tags.Script.processed
-      in
-      Coq.bind (Coq.seq action query) next
-    in
-    let rec loop l = match l with
-      | [] -> Coq.return ()
-      | p :: l' ->
-        try_phrase ("progress "^p^".") (insert_phrase (p^".")) (loop l')
-    in
-    loop l
 
   method handle_reset_initial =
     let action () =

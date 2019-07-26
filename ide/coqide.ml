@@ -603,9 +603,6 @@ module Nav = struct
   let join_document _ = send_to_coq (fun sn -> sn.coqops#join_document)
 end
 
-let tactic_wizard_callback l _ =
-  send_to_coq (fun sn -> sn.coqops#tactic_wizard l)
-
 let printopts_callback opts v =
   let b = v#get_active in
   let () = List.iter (fun o -> Coq.PrintOpt.set o b) opts in
@@ -1106,25 +1103,8 @@ let build_ui () =
     ("Force", "_Force", `EXECUTE, Nav.join_document, "Fully check the document", "f");
   ] end;
 
-  let tacitem s sc =
-    item s ~label:("_"^s)
-      ~accel:(modifier_for_tactics#get^sc)
-      ~callback:(tactic_wizard_callback [s])
-  in
   menu tactics_menu [
-    item "Try Tactics" ~label:"_Try Tactics";
-    item "Wizard" ~label:"<Proof Wizard>" ~stock:`DIALOG_INFO
-      ~tooltip:"Proof Wizard" ~accel:(modifier_for_tactics#get^"dollar")
-      ~callback:(tactic_wizard_callback automatic_tactics#get);
-    tacitem "auto" "a";
-    tacitem "auto with *" "asterisk";
-    tacitem "eauto" "e";
-    tacitem "eauto with *" "ampersand";
-    tacitem "intuition" "i";
-    tacitem "omega" "o";
-    tacitem "simpl" "s";
-    tacitem "tauto" "p";
-    tacitem "trivial" "v";
+    item "Tactics" ~label:"_Tactics";
   ];
   alpha_items tactics_menu "Tactic" Coq_commands.tactics;
 
