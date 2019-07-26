@@ -19,11 +19,11 @@ Open Scope Q.
 (* The constructive Cauchy real numbers, ie the Cauchy sequences
    of rational numbers. This file is not supposed to be imported,
    except in Rdefinitions.v, Raxioms.v, Rcomplete_constr.v
-   and RIneq_constr.v.
+   and ConstructiveRIneq.v.
 
    Constructive real numbers should be considered abstractly,
-   forgetting the fact that they are implemented are rational sequences.
-   All useful lemmas of this file are exposed in RIneq_constr.v,
+   forgetting the fact that they are implemented as rational sequences.
+   All useful lemmas of this file are exposed in ConstructiveRIneq.v,
    under more abstract names, like Rlt_asym instead of CRealLt_asym. *)
 
 
