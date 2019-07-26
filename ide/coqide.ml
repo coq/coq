@@ -881,10 +881,20 @@ let no_under = Util.String.map (fun x -> if x = '_' then '-' else x)
 let alpha_items menu_name item_name l =
   let mk_item text =
     let text' =
-      let last = String.length text - 1 in
-      if text.[last] = '.'
-      then text ^"\n"
-      else text ^" "
+      let len = String.length text in
+      let buf = Buffer.create (len + 1) in
+      let escaped = ref false in
+      String.iter (fun c ->
+          if !escaped then
+            let () = Buffer.add_char buf c in
+            escaped := false
+          else if c = '_' then escaped := true
+          else Buffer.add_char buf c
+        ) text;
+      if text.[len - 1] = '.'
+      then Buffer.add_char buf '\n'
+      else Buffer.add_char buf ' ';
+      Buffer.contents buf
     in
     let callback _ =
       on_current_term (fun sn -> sn.buffer#insert_interactive text')
