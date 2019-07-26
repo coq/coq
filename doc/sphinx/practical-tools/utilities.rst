@@ -472,6 +472,10 @@ Building a |Coq| project with Dune
    maintained upstream; please refer to the `Dune manual
    <https://dune.readthedocs.io/>`_ for up-to-date information.
 
+.. warning::
+
+   The status of this feature is experimental.
+
 Building a Coq project with Dune requires setting up a Dune project
 for your files. This involves adding a ``dune-project`` and
 ``pkg.opam`` file to the root (``pkg.opam`` can be empty), and then

@@ -198,14 +198,17 @@ Generation of induction principles with ``Functional`` ``Scheme``
 
 .. cmd:: Functional Scheme @ident__0 := Induction for @ident' Sort @sort {* with @ident__i := Induction for @ident__i' Sort @sort}
 
-   This command is a high-level experimental tool for
-   generating automatically induction principles corresponding to
-   (possibly mutually recursive) functions. First, it must be made
-   available via ``Require Import FunInd``.
-   Each :n:`@ident__i` is a different mutually defined function
-   name (the names must be in the same order as when they were defined). This
-   command generates the induction principle for each :n:`@ident__i`, following
-   the recursive structure and case analyses of the corresponding function
+   .. warning::
+
+      The status of this command is experimental.
+
+   This command is a high-level tool for generating automatically induction
+   principles corresponding to (possibly mutually recursive) functions.
+   First, it must be made available via ``Require Import FunInd``. Each
+   :n:`@ident__i` is a different mutually defined function name (the names
+   must be in the same order as when they were defined). This command
+   generates the induction principle for each :n:`@ident__i`, following the
+   recursive structure and case analyses of the corresponding function
    :n:`@ident__i'`.
 
 .. warning::

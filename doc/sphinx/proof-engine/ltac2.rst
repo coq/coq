@@ -25,11 +25,16 @@ that features at least the following:
 - a typing system
 - standard programming facilities (i.e. datatypes)
 
-This new language, called Ltac2, is described in this chapter. It is still
-experimental but we encourage nonetheless users to start testing it,
-especially wherever an advanced tactic language is needed. The previous
-implementation of Ltac, described in the previous chapter, will be referred to
-as Ltac1.
+This new language, called Ltac2, is described in this chapter.
+
+.. warning::
+
+   The status of Ltac2 is still experimental but we encourage nonetheless
+   users to start testing it, especially wherever an advanced tactic language
+   is needed.
+
+The previous implementation of Ltac, described in the previous chapter, will
+be referred to as Ltac1.
 
 .. _ltac2_design:
 

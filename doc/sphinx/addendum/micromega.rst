@@ -194,10 +194,11 @@ a proof.
 .. tacn:: nra
    :name: nra
 
-   This tactic is an *experimental* proof procedure for non-linear
-   arithmetic. The tactic performs a limited amount of non-linear
-   reasoning before running the linear prover of :tacn:`lra`. This pre-processing
-   does the following:
+   The status of this tactic is experimental.
+
+   This tactic is a proof procedure for non-linear arithmetic. The tactic
+   performs a limited amount of non-linear reasoning before running the
+   linear prover of :tacn:`lra`. This pre-processing does the following:
 
 
 + If the context contains an arithmetic expression of the form

@@ -986,13 +986,17 @@ Controlling display
 .. opt:: Warnings "{+, {? {| - | + } } @ident }"
    :name: Warnings
 
-   This option configures the display of warnings. It is experimental, and
-   expects, between quotes, a comma-separated list of warning names or
-   categories. Adding - in front of a warning or category disables it, adding +
-   makes it an error. It is possible to use the special categories all and
-   default, the latter containing the warnings enabled by default. The flags are
-   interpreted from left to right, so in case of an overlap, the flags on the
-   right have higher priority, meaning that `A,-A` is equivalent to `-A`.
+   .. warning::
+
+      The status of this option is experimental.
+
+   This option configures the display of warnings. It expects, between
+   quotes, a comma-separated list of warning names or categories. Adding - in
+   front of a warning or category disables it, adding + makes it an error. It
+   is possible to use the special categories all and default, the latter
+   containing the warnings enabled by default. The flags are interpreted from
+   left to right, so in case of an overlap, the flags on the right have
+   higher priority, meaning that `A,-A` is equivalent to `-A`.
 
 .. flag:: Search Output Name Only
 

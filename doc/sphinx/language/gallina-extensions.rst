@@ -592,9 +592,11 @@ This example emphasizes what the printing options offer.
 Advanced recursive functions
 ----------------------------
 
-The following experimental command is available when the ``FunInd`` library has been loaded via ``Require Import FunInd``:
+The following command is available when the ``FunInd`` library has been loaded via ``Require Import FunInd``:
 
 .. cmd:: Function @ident {* @binder} { @decrease_annot } : @type := @term
+
+   .. warning:: The status of this command is experimental.
 
    This command can be seen as a generalization of ``Fixpoint``. It is actually a wrapper
    for several ways of defining a function *and other useful related

@@ -1992,17 +1992,20 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
 .. tacn:: dependent induction @ident
    :name: dependent induction
 
-   The *experimental* tactic dependent induction performs induction-
-   inversion on an instantiated inductive predicate. One needs to first
-   require the Coq.Program.Equality module to use this tactic. The tactic
-   is based on the BasicElim tactic by Conor McBride
-   :cite:`DBLP:conf/types/McBride00` and the work of Cristina Cornes around
-   inversion :cite:`DBLP:conf/types/CornesT95`. From an instantiated
-   inductive predicate and a goal, it generates an equivalent goal where
-   the hypothesis has been generalized over its indexes which are then
-   constrained by equalities to be the right instances. This permits to
-   state lemmas without resorting to manually adding these equalities and
-   still get enough information in the proofs.
+   .. warning::
+
+      The status of this tactic is experimental.
+
+   This tactic performs induction-inversion on an instantiated inductive
+   predicate. One needs to first require the Coq.Program.Equality module to
+   use this tactic. The tactic is based on the BasicElim tactic by Conor
+   McBride :cite:`DBLP:conf/types/McBride00` and the work of Cristina Cornes
+   around inversion :cite:`DBLP:conf/types/CornesT95`. From an instantiated
+   inductive predicate and a goal, it generates an equivalent goal where the
+   hypothesis has been generalized over its indexes which are then
+   constrained by equalities to be the right instances. This permits to state
+   lemmas without resorting to manually adding these equalities and still get
+   enough information in the proofs.
 
 .. example::
 
@@ -4212,10 +4215,14 @@ some incompatibilities.
 .. tacn:: firstorder
    :name: firstorder
 
-   The tactic :tacn:`firstorder` is an experimental extension of :tacn:`tauto` to
-   first- order reasoning, written by Pierre Corbineau. It is not restricted to
-   usual logical connectives but instead may reason about any first-order class
-   inductive definition.
+   .. warning::
+
+      The status of this tactic is experimental.
+
+   The tactic :tacn:`firstorder` is an extension of :tacn:`tauto` to
+   first-order reasoning, written by Pierre Corbineau. It is not restricted
+   to usual logical connectives but instead may reason about any first-order
+   class inductive definition.
 
 .. opt:: Firstorder Solver @tactic
    :name: Firstorder Solver
@@ -4809,7 +4816,11 @@ Delaying solving unification constraints
 Proof maintenance
 -----------------
 
-*Experimental.*  Many tactics, such as :tacn:`intros`, can automatically generate names, such
+.. warning::
+
+   The status of this feature is experimental.
+
+Many tactics, such as :tacn:`intros`, can automatically generate names, such
 as "H0" or "H1" for a new hypothesis introduced from a goal.  Subsequent proof steps
 may explicitly refer to these names.  However, future versions of Coq may not assign
 names exactly the same way, which could cause the proof to fail because the

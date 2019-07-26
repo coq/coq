@@ -213,12 +213,16 @@ principles of extraction (logical parts and types).
 
 .. cmd:: Extraction Implicit @qualid [ {+ @ident } ]
 
-   This experimental command allows declaring some arguments of
-   :token:`qualid` as implicit, i.e. useless in extracted code and hence to
-   be removed by extraction. Here :token:`qualid` can be any function or
-   inductive constructor, and the given :token:`ident` are the names of
-   the concerned arguments. In fact, an argument can also be referred
-   by a number indicating its position, starting from 1.
+   .. warning::
+
+      The status of this command is experimental.
+
+   This command allows declaring some arguments of :token:`qualid` as
+   implicit, i.e. useless in extracted code and hence to be removed by
+   extraction. Here :token:`qualid` can be any function or inductive
+   constructor, and the given :token:`ident` are the names of the concerned
+   arguments. In fact, an argument can also be referred by a number
+   indicating its position, starting from 1.
 
 When an actual extraction takes place, an error is normally raised if the
 :cmd:`Extraction Implicit` declarations cannot be honored, that is

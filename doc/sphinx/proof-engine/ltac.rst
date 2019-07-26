@@ -685,8 +685,7 @@ A tactic execution can be timed:
 Timing a tactic that evaluates to a term
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Tactic expressions that produce terms can be timed with the experimental
-tactic
+Tactic expressions that produce terms can be timed with the tactic
 
 .. tacn:: time_constr @ltac_expr
    :name: time_constr
@@ -694,6 +693,10 @@ tactic
    which evaluates :n:`@ltac_expr ()` and displays the time the tactic expression
    evaluated, assuming successful evaluation. Time is in seconds and is
    machine-dependent.
+
+   .. warning::
+
+      The status of this tactic is experimental.
 
    This tactic currently does not support nesting, and will report times
    based on the innermost execution. This is due to the fact that it is

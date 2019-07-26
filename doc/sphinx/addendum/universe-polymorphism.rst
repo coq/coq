@@ -279,6 +279,8 @@ Cumulativity Weak Constraints
 
 .. flag:: Cumulativity Weak Constraints
 
+   .. warning:: The status of this flag is experimental
+
    When set, which is the default, causes "weak" constraints to be produced
    when comparing universes in an irrelevant position. Processing weak
    constraints is delayed until minimization time. A weak constraint
