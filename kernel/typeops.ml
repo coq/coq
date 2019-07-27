@@ -702,18 +702,19 @@ and execute_rec_check env stg cstrnt (_, lar', _, _ as recdeft) vars recursivity
 
     let rec_check_all alpha cstrnts = union cstrnts (rec_check alpha vstar vneq cstrnts) in
     let flags = Environ.typing_flags env in
-      if flags.check_sized then
-        try stg, SVars.fold rec_check_all alphas cstrnt'
-        with RecCheckFailed (cstrnt', si_inf, si) ->
-          let rm = inter (inter si_inf si) (diff vstar alphas) in
-          if is_empty rm then
-            error_unsatisfied_stage_constraints env cstrnt' si_inf si
-          else
-            let vstar = diff vstar rm in
-            let vneq = SVars.union vneq rm in
-            let stg = remove_pos_vars rm stg in
-            try_rec_check stg (alphas, vstar, vneq)
-      else stg, cstrnt' in
+    if flags.check_sized then
+      try stg, SVars.fold rec_check_all alphas cstrnt'
+      with RecCheckFailed (cstrnt'', si_inf, si) ->
+        let rm = inter (inter si_inf si) (diff vstar alphas) in
+        if is_empty rm then begin
+          if flags.check_guarded then stg, cstrnt else
+            error_unsatisfied_stage_constraints env cstrnt'' si_inf si
+        end else
+          let vstar = diff vstar rm in
+          let vneq = SVars.union vneq rm in
+          let stg = remove_pos_vars rm stg in
+          try_rec_check stg (alphas, vstar, vneq)
+    else stg, cstrnt' in
   try_rec_check stg vars
 
 and execute_array env stg cs =
