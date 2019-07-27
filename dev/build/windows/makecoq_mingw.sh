@@ -1984,6 +1984,37 @@ function make_addon_gappa {
   fi
 }
 
+# HoTT Homotopy Type Theory
+
+function make_addon_hott {
+  if build_prep_overlay HoTT ; then
+    installer_addon_section hott "HoTT" "Homotopy Type Theory" ""
+    logn autogen ./autogen.sh
+    # Note: --datadir is broken in HoTT master as of July 27th 2019 - PR requested
+    logn configure ./configure --bindir=$PREFIXCOQ/bin --datadir=$PREFIXCOQ/lib/coq/user-contrib
+    log1 make $MAKE_OPT
+    log2 make install
+
+    # Create a few batch files equivalent to the hoq___ shell scripts
+    # Files for console apps
+    for prog in c top dep chk ; do
+      cat << EOF > $PREFIXCOQ/bin/hoq${prog}.bat
+SET HERE=%~dp0/..
+"%HERE%/bin/coq${prog}" -indices-matter -coqlib "%HERE%/lib/coq/user-contrib/hott/coq" -R "%HERE%/lib/coq/user-contrib/hott/theories" HoTT -Q "%HERE%/lib/coq/user-contrib/hott/contrib" "" %*
+EOF
+    done
+
+    # Files for UI apps (use start so that console disappears)
+    for prog in ide ; do
+      cat << EOF > $PREFIXCOQ/bin/hoq${prog}.bat
+SET HERE=%~dp0/..
+start "hoq${prog}" "%HERE%/bin/coq${prog}" -indices-matter -coqlib "%HERE%/lib/coq/user-contrib/hott/coq" -R "%HERE%/lib/coq/user-contrib/hott/theories" HoTT -Q "%HERE%/lib/coq/user-contrib/hott/contrib" "" %*
+EOF
+    done
+    build_post
+  fi
+}
+
 # Main function for building addons
 
 function make_addons {

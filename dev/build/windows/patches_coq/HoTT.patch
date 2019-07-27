@@ -1,0 +1,29 @@
+diff/patch file created on Sat, Jul 27, 2019  5:23:04 PM with:
+difftar-folder.sh tarballs/HoTT-ed714382f980d54c055890f95bef0de4ff6bdc78.tar.gz HoTT-ed714382f980d54c055890f95bef0de4ff6bdc78 1
+TARFILE= tarballs/HoTT-ed714382f980d54c055890f95bef0de4ff6bdc78.tar.gz
+FOLDER= HoTT-ed714382f980d54c055890f95bef0de4ff6bdc78
+TARSTRIP= 1
+TARPREFIX= HoTT-ed714382f980d54c055890f95bef0de4ff6bdc78/
+ORIGFOLDER= HoTT-ed714382f980d54c055890f95bef0de4ff6bdc78.orig
+--- HoTT-ed714382f980d54c055890f95bef0de4ff6bdc78.orig/Makefile.am	2019-06-20 17:39:27.000000000 +0200
++++ HoTT-ed714382f980d54c055890f95bef0de4ff6bdc78/Makefile.am	2019-07-27 12:04:40.971964000 +0200
+@@ -11,7 +11,7 @@
+   bin_SCRIPTS += hoqchk
+ endif
+ 
+-hottdir=$(datarootdir)/hott
++hottdir=$(datadir)/hott
+ EXTRA_DIST = coq theories etc LICENSE.txt CREDITS.txt INSTALL.txt README.markdown
+ 
+ # The path to the Coq library in $(srcdir)
+--- HoTT-ed714382f980d54c055890f95bef0de4ff6bdc78.orig/configure.ac	2019-06-20 17:39:27.000000000 +0200
++++ HoTT-ed714382f980d54c055890f95bef0de4ff6bdc78/configure.ac	2019-07-27 12:01:14.742941400 +0200
+@@ -172,7 +172,7 @@
+       [AC_MSG_ERROR([Could not find coq_makefile])])
+ 
+ 
+-hottdir="$datarootdir/hott"
++hottdir="$datadir/hott"
+ AC_SUBST([hottdir])
+ 
+ AC_CHECK_PROGS(ETAGS,etags,[: skipping etags])
