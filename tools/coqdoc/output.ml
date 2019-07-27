@@ -929,9 +929,9 @@ module Html = struct
  		stop_item ();
 		let ms = match sub with | None -> m | Some s -> m ^ ": " ^ s in
               if ln = "" then
- 	          printf "<a href=\"%s.html\"><h2>%s</h2></a>\n" m ms
+                  printf "<h2><a href=\"%s.html\">%s</a></h2>\n" m ms
               else
- 	          printf "<a href=\"%s.html\"><h2>%s %s</h2></a>\n" m ln ms
+                  printf "<h2><a href=\"%s.html\">%s %s</a></h2>\n" m ln ms
         | Toc_section (n, f, r) ->
   		item n;
   		printf "<a href=\"%s\">" r; f (); printf "</a>\n"
