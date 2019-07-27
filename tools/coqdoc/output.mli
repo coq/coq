@@ -29,6 +29,9 @@ val start_module : unit -> unit
 val start_doc : unit -> unit
 val end_doc : unit -> unit
 
+val start_details : string option -> unit
+val stop_details : unit -> unit
+
 val start_emph : unit -> unit
 val stop_emph : unit -> unit
 

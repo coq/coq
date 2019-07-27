@@ -248,6 +248,27 @@ shown using such comments:
 The latter cannot be used around some inner parts of a proof, but can
 be used around a whole proof.
 
+Lastly, it is possible to adopt a middle-ground approach when the
+desired output is HTML, where a given snippet of Coq material is
+hidden by default, but can be made visible with user interaction.
+
+::
+
+
+    (* begin details *)
+     *some Coq material*
+    (* end details *)
+
+
+There is also an alternative syntax available.
+
+::
+
+
+    (* begin details : Some summary describing the snippet *)
+     *some Coq material*
+    (* end details *)
+
 
 Usage
 ~~~~~
