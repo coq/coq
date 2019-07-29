@@ -386,9 +386,9 @@ GRAMMAR EXTEND Gram
       | id = identref ; c = constructor_type; "|"; l = LIST0 constructor SEP "|" ->
 	  { Constructors ((c id)::l) }
       | id = identref ; c = constructor_type -> { Constructors [ c id ] }
-      | cstr = identref; "{"; fs = record_fields; "}" ->
+      | cstr = identref; "{"; fs = record_fields2; "}" ->
 	  { RecordDecl (Some cstr,fs) }
-      | "{";fs = record_fields; "}" -> { RecordDecl (None,fs) }
+      | "{";fs = record_fields2; "}" -> { RecordDecl (None,fs) }
       |  -> { Constructors [] } ] ]
   ;
 (*
@@ -404,19 +404,19 @@ GRAMMAR EXTEND Gram
   rec_definition:
     [ [ id_decl = ident_decl;
 	bl = binders_fixannot;
-        rtype = type_cstr;
+        rtype = type_cstr2;
         body_def = OPT [":="; def = lconstr -> { def } ]; notations = decl_notation ->
           { let binders, rec_order = bl in
             {fname = fst id_decl; univs = snd id_decl; rec_order; binders; rtype; body_def; notations}
           } ] ]
   ;
   corec_definition:
-    [ [ id_decl = ident_decl; binders = binders; rtype = type_cstr;
+    [ [ id_decl = ident_decl; binders = binders; rtype = type_cstr2;
         body_def = OPT [":="; def = lconstr -> { def }]; notations = decl_notation ->
         { {fname = fst id_decl; univs = snd id_decl; rec_order = (); binders; rtype; body_def; notations}
         } ]]
   ;
-  type_cstr:
+  type_cstr2:
     [ [ ":"; c=lconstr -> { c }
       | -> { CAst.make ~loc @@ CHole (None, IntroAnonymous, None) } ] ]
   ;
@@ -457,8 +457,8 @@ GRAMMAR EXTEND Gram
       let rf_subclass, rf_decl = bd in
       rf_decl, { rf_subclass ; rf_priority ; rf_notation ; rf_canonical } } ] ]
   ;
-  record_fields:
-    [ [ f = record_field; ";"; fs = record_fields -> { f :: fs }
+  record_fields2:
+    [ [ f = record_field; ";"; fs = record_fields2 -> { f :: fs }
       | f = record_field; ";" -> { [f] }
       | f = record_field -> { [f] }
       | -> { [] }
@@ -1103,11 +1103,11 @@ GRAMMAR EXTEND Gram
   positive_search_mark:
     [ [ "-" -> { false } | -> { true } ] ]
   ;
-  scope:
+  scope2:
     [ [ "%"; key = IDENT -> { key } ] ]
   ;
   searchabout_query:
-    [ [ b = positive_search_mark; s = ne_string; sc = OPT scope ->
+    [ [ b = positive_search_mark; s = ne_string; sc = OPT scope2 ->
             { (b, SearchString (s,sc)) }
       | b = positive_search_mark; p = constr_pattern ->
             { (b, SearchSubPattern p) }

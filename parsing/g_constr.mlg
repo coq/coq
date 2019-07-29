@@ -450,7 +450,7 @@ GRAMMAR EXTEND Gram
 	{ (fun na -> CLocalAssum ([na],Default Implicit,c)) }
     ] ]
   ;
-  fixannot:
+  fixannot2:
     [ [ "{"; IDENT "struct"; id=identref; "}" -> { CAst.make ~loc @@ CStructRec id }
     | "{"; IDENT "wf"; rel=constr; id=identref; "}" -> { CAst.make ~loc @@ CWfRec(id,rel) }
     | "{"; IDENT "measure"; m=constr; id=OPT identref;
@@ -463,7 +463,7 @@ GRAMMAR EXTEND Gram
   binders_fixannot:
     [ [ na = impl_name_head; assum = impl_ident_tail; bl = binders_fixannot ->
           { (assum na :: fst bl), snd bl }
-      | f = fixannot -> { [], Some f }
+      | f = fixannot2 -> { [], Some f }
       | b = binder; bl = binders_fixannot -> { b @ fst bl, snd bl }
       | -> { [], None }
     ] ]

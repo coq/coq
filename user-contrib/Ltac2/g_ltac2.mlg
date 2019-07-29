@@ -626,7 +626,7 @@ GRAMMAR EXTEND Gram
   q_conversion:
     [ [ c = conversion -> { c } ] ]
   ;
-  orient:
+  orient2:
     [ [ "->" -> { CAst.make ~loc (Some true) }
       | "<-" -> { CAst.make ~loc (Some false) }
       | -> { CAst.make ~loc None }
@@ -648,7 +648,7 @@ GRAMMAR EXTEND Gram
       ] ]
   ;
   oriented_rewriter:
-    [ [ b = orient; r = rewriter ->
+    [ [ b = orient2; r = rewriter ->
       { let (m, c) = r in
         CAst.make ~loc @@ {
         rew_orient = b;
