@@ -1020,6 +1020,37 @@ let apply_edit_file g edits =
   in
   List.rev (List.concat (List.map traverse prod))
 
+  (* get the special tokens in the grammar *)
+let print_special_tokens g =
+  let rec traverse set = function
+  | Sterm s ->
+    let c = s.[0] in
+    if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') then set
+    else StringSet.add s set
+  | Snterm s -> set
+  | Slist1 sym
+  | Slist0 sym
+  | Sopt sym
+    -> traverse set sym
+  | Slist1sep (sym, sep)
+  | Slist0sep (sym, sep)
+    -> traverse (traverse set sym) sep
+  | Sparen sym_list -> traverse_prod set sym_list
+  | Sprod sym_list_list -> traverse_prods set sym_list_list
+  | Sedit _
+  | Sedit2 _ -> set
+  and traverse_prod set prod = List.fold_left traverse set prod
+  and traverse_prods set prods = List.fold_left traverse_prod set prods
+  in
+  let spec_toks = List.fold_left (fun set b ->
+      let nt, prods = b in
+      traverse_prods set prods)
+    StringSet.empty (NTMap.bindings !g.map)
+  in
+  Printf.printf "Special tokens:";
+  StringSet.iter (fun t -> Printf.printf " %s" t) spec_toks;
+  Printf.printf "\n\n"
+
 (* get the transitive closure of a non-terminal excluding "stops" symbols.
    Preserve ordering to the extent possible *)
 (* todo: at the moment, the code doesn't use the ordering; consider switching to using
@@ -1099,8 +1130,9 @@ let print_chunks g out fmt () =
     (*seen := StringSet.diff !seen (StringSet.of_list ssr_tops);*)
     (*print_chunk out g seen fmt "vernac_toplevel" ["vernac_toplevel"] [];*)
 
-let start_symbols = ["vernac_toplevel"; "tactic_mode"]
-let tokens = [ "BULLET"; "FIELD"; "IDENT"; "NUMERAL"; "STRING" ] (* don't report as undefined *)
+let start_symbols = ["vernac_toplevel"]
+(* don't report tokens as undefined *)
+let tokens = [ "bullet"; "field"; "ident"; "int"; "num"; "numeral"; "string" ]
 
 let report_bad_nts g file =
   let rec get_nts refd defd bindings =
@@ -1468,6 +1500,8 @@ let process_grammar args =
   print_in_order out g `MLG !g.order StringSet.empty;
   close_out out;
   finish_with_file (dir "fullGrammar") args.verify;
+  if args.verbose then
+    print_special_tokens g;
 
   if not args.fullGrammar then begin
     (* do shared edits *)

@@ -179,7 +179,7 @@ constructions from ML.
                     : let `ltac2_var` := `ltac2_term` in `ltac2_term`
                     : let rec `ltac2_var` := `ltac2_term` in `ltac2_term`
                     : match `ltac2_term` with `ltac2_branch` ... `ltac2_branch` end
-                    : `integer`
+                    : `int`
                     : `string`
                     : `ltac2_term` ; `ltac2_term`
                     : [| `ltac2_term` ; ... ; `ltac2_term` |]
@@ -670,7 +670,7 @@ A scope is a name given to a grammar entry used to produce some Ltac2 expression
 at parsing time. Scopes are described using a form of S-expression.
 
 .. prodn::
-   ltac2_scope ::= {| @string | @integer | @lident ({+, @ltac2_scope}) }
+   ltac2_scope ::= {| @string | @int | @lident ({+, @ltac2_scope}) }
 
 A few scopes contain antiquotation features. For sake of uniformity, all
 antiquotations are introduced by the syntax :n:`$@lident`.
@@ -719,7 +719,7 @@ The following scopes are built-in.
 
   + parses a Ltac2 expression at the next level and return it as is.
 
-- :n:`tactic(n = @integer)`:
+- :n:`tactic(n = @int)`:
 
   + parses a Ltac2 expression at the provided level :n:`n` and return it as is.
 
@@ -760,7 +760,7 @@ Notations
 
 The Ltac2 parser can be extended by syntactic notations.
 
-.. cmd:: Ltac2 Notation {+ {| @lident (@ltac2_scope) | @string } } {? : @integer} := @ltac2_term
+.. cmd:: Ltac2 Notation {+ {| @lident (@ltac2_scope) | @string } } {? : @int} := @ltac2_term
    :name: Ltac2 Notation
 
    A Ltac2 notation adds a parsing rule to the Ltac2 grammar, which is expanded

@@ -31,10 +31,10 @@ Syntax
 The syntax of the tactic language is given below. See Chapter
 :ref:`gallinaspecificationlanguage` for a description of the BNF metasyntax used
 in these grammar rules. Various already defined entries will be used in this
-chapter: entries :token:`natural`, :token:`integer`, :token:`ident`,
+chapter: entries :token:`num`, :token:`int`, :token:`ident`
 :token:`qualid`, :token:`term`, :token:`cpattern` and :token:`tactic`
-represent respectively the natural and integer numbers, the authorized
-identificators and qualified names, Coq terms and patterns and all the atomic
+represent respectively natural and integer numbers,
+identifiers, qualified names, Coq terms, patterns and the atomic
 tactics described in Chapter :ref:`tactics`.
 
 The syntax of :production:`cpattern` is
@@ -141,10 +141,10 @@ mode but it can also be used in toplevel definitions as shown below.
                      : `atom`
    atom              : `qualid`
                      : ()
-                     : `integer`
+                     : `int`
                      : ( `ltac_expr` )
    component : `string` | `qualid`
-   message_token     : `string` | `ident` | `integer`
+   message_token     : `string` | `ident` | `int`
    tacarg            : `qualid`
                      : ()
                      : ltac : `atom`
@@ -159,11 +159,11 @@ mode but it can also be used in toplevel definitions as shown below.
    match_rule        : `cpattern` => `ltac_expr`
                      : context [`ident`] [ `cpattern` ] => `ltac_expr`
                      : _ => `ltac_expr`
-   test              : `integer` = `integer`
-                     : `integer` (< | <= | > | >=) `integer`
+   test              : `int` = `int`
+                     : `int` (< | <= | > | >=) `int`
    selector          : [`ident`]
-                     : `integer`
-                     : (`integer` | `integer` - `integer`), ..., (`integer` | `integer` - `integer`)
+                     : `int`
+                     : (`int` | `int` - `int`), ..., (`int` | `int` - `int`)
    toplevel_selector : `selector`
                      : all
                      : par
