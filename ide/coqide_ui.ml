@@ -100,18 +100,7 @@ let init () =
 \n    <menuitem action='Previous' />\
 \n    <menuitem action='Next' />\
 \n  </menu>\
-\n  <menu action='Try Tactics'>\
-\n    <menuitem action='auto' />\
-\n    <menuitem action='auto with *' />\
-\n    <menuitem action='eauto' />\
-\n    <menuitem action='eauto with *' />\
-\n    <menuitem action='intuition' />\
-\n    <menuitem action='omega' />\
-\n    <menuitem action='simpl' />\
-\n    <menuitem action='tauto' />\
-\n    <menuitem action='trivial' />\
-\n    <menuitem action='Wizard' />\
-\n    <separator />\
+\n  <menu action='Tactics'>\
 \n    %s\
 \n  </menu>\
 \n  <menu action='Templates'>\
@@ -173,7 +162,6 @@ let init () =
 \n  <toolitem action='Interrupt' />\
 \n  <toolitem action='Previous' />\
 \n  <toolitem action='Next' />\
-\n  <toolitem action='Wizard' />\
 \n</toolbar>\
 \n</ui>"
     (if Coq_config.gtk_platform <> `QUARTZ then "<menuitem action='Quit' />" else "")
