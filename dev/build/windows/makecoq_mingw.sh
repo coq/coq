@@ -2000,7 +2000,7 @@ function make_addon_hott {
     for prog in c top dep chk ; do
       cat << EOF > $PREFIXCOQ/bin/hoq${prog}.bat
 SET HERE=%~dp0/..
-"%HERE%/bin/coq${prog}" -indices-matter -coqlib "%HERE%/lib/coq/user-contrib/hott/coq" -R "%HERE%/lib/coq/user-contrib/hott/theories" HoTT -Q "%HERE%/lib/coq/user-contrib/hott/contrib" "" %*
+"%HERE%/bin/coq${prog}" -indices-matter -coqlib "%HERE%/lib/coq/user-contrib/hott/coq" -R "%HERE%/lib/coq/user-contrib/hott/theories" HoTT -Q "%HERE%/lib/coq/user-contrib/hott/contrib" "Contrib" %*
 EOF
     done
 
@@ -2008,7 +2008,7 @@ EOF
     for prog in ide ; do
       cat << EOF > $PREFIXCOQ/bin/hoq${prog}.bat
 SET HERE=%~dp0/..
-start "hoq${prog}" "%HERE%/bin/coq${prog}" -indices-matter -coqlib "%HERE%/lib/coq/user-contrib/hott/coq" -R "%HERE%/lib/coq/user-contrib/hott/theories" HoTT -Q "%HERE%/lib/coq/user-contrib/hott/contrib" "" %*
+start "hoq${prog}" "%HERE%/bin/coq${prog}" -indices-matter -coqlib "%HERE%/lib/coq/user-contrib/hott/coq" -R "%HERE%/lib/coq/user-contrib/hott/theories" HoTT -Q "%HERE%/lib/coq/user-contrib/hott/contrib" "Contrib" %*
 EOF
     done
     build_post
