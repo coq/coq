@@ -181,9 +181,9 @@
 ########################################################################
 # SF
 ########################################################################
-: "${sf_lf_CI_TARURL:=https://www.cis.upenn.edu/~bcpierce/sf/lf-current/lf.tgz}"
-: "${sf_plf_CI_TARURL:=https://www.cis.upenn.edu/~bcpierce/sf/plf-current/plf.tgz}"
-: "${sf_vfa_CI_TARURL:=https://www.cis.upenn.edu/~bcpierce/sf/vfa-current/vfa.tgz}"
+: "${sf_lf_CI_TARURL:=https://softwarefoundations.cis.upenn.edu/lf-current/lf.tgz}"
+: "${sf_plf_CI_TARURL:=https://softwarefoundations.cis.upenn.edu/plf-current/plf.tgz}"
+: "${sf_vfa_CI_TARURL:=https://softwarefoundations.cis.upenn.edu/vfa-current/vfa.tgz}"
 
 ########################################################################
 # TLC
