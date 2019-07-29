@@ -63,7 +63,7 @@ let declare_universe_context ~poly ctx =
     let univs = Univ.LSet.filter (fun u -> not (Lib.is_polymorphic_univ u)) univs in
     let uctx = Univ.ContextSet.to_context (univs, cstr) in
     let nas = name_instance (Univ.UContext.instance uctx) in
-    (Global.push_context_set true ctx; Lib.add_section_context (nas, uctx))
+    Global.push_section_context (nas, uctx)
   else
     Lib.add_anonymous_leaf (input_universe_context ctx)
 
@@ -139,8 +139,6 @@ let cache_constant ((sp,kn), obj) =
   in
   assert (Constant.equal kn' (Constant.make1 kn));
   Nametab.push (Nametab.Until 1) sp (GlobRef.ConstRef (Constant.make1 kn));
-  let cst = Global.lookup_constant kn' in
-  add_section_constant ~poly:(Declareops.constant_is_polymorphic cst) kn' cst.const_hyps;
   Dumpglob.add_constant_kind (Constant.make1 kn) obj.cst_kind
 
 let discharge_constant ((sp, kn), obj) =
@@ -373,7 +371,6 @@ let declare_variable ~name ~kind d =
       poly
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
-  add_section_variable ~name ~poly;
   Decls.(add_variable_data name {opaque;kind});
   add_anonymous_leaf (inVariable ());
   Impargs.declare_var_implicits ~impl name;
@@ -422,8 +419,6 @@ let cache_inductive ((sp,kn),mie) =
   let id = Libnames.basename sp in
   let kn' = Global.add_mind id mie in
   assert (MutInd.equal kn' (MutInd.make1 kn));
-  let mind = Global.lookup_mind kn' in
-  add_section_kn ~poly:(Declareops.inductive_is_polymorphic mind) kn' mind.mind_hyps;
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
 
 let discharge_inductive ((sp,kn),mie) =

@@ -163,7 +163,7 @@ val drop_objects : frozen -> frozen
 val init : unit -> unit
 
 (** {6 Section management for discharge } *)
-type abstr_info = private {
+type abstr_info = Section.abstr_info = private {
   abstr_ctx : Constr.named_context;
   (** Section variables of this prefix *)
   abstr_subst : Univ.Instance.t;
@@ -181,10 +181,6 @@ val variable_section_segment_of_reference : GlobRef.t -> Constr.named_context
 val section_instance : GlobRef.t -> Univ.Instance.t * Id.t array
 val is_in_section : GlobRef.t -> bool
 
-val add_section_variable : name:Id.t -> poly:bool -> unit
-val add_section_context : Name.t array * Univ.UContext.t -> unit
-val add_section_constant : poly:bool -> Constant.t -> Constr.named_context -> unit
-val add_section_kn : poly:bool -> MutInd.t -> Constr.named_context -> unit
 val replacement_context : unit -> Opaqueproof.work_list
 
 val is_polymorphic_univ : Univ.Level.t -> bool

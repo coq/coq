@@ -44,6 +44,7 @@ val sprop_allowed : unit -> bool
 
 val push_named_assum : (Id.t * Constr.types) -> unit
 val push_named_def   : (Id.t * Entries.section_def_entry) -> unit
+val push_section_context : (Name.t array * Univ.UContext.t) -> unit
 
 val export_private_constants : in_section:bool ->
   Safe_typing.private_constants Entries.proof_output ->
@@ -74,7 +75,11 @@ val add_include :
 (** Sections *)
 
 val open_section : poly:bool -> unit
+(** [poly] is true when the section should be universe polymorphic *)
+
 val close_section : Summary.frozen -> unit
+(** Close the section and reset the global state to the one at the time when
+    the section what opened. *)
 
 (** Interactive modules and module types *)
 

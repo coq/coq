@@ -83,6 +83,7 @@ let i2l = Label.of_id
 
 let push_named_assum a = globalize0 (Safe_typing.push_named_assum a)
 let push_named_def d = globalize0 (Safe_typing.push_named_def d)
+let push_section_context c = globalize0 (Safe_typing.push_section_context c)
 let add_constraints c = globalize0 (Safe_typing.add_constraints c)
 let push_context_set b c = globalize0 (Safe_typing.push_context_set b c)
 
