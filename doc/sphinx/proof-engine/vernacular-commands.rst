@@ -870,26 +870,6 @@ interactively, they cannot be part of a vernacular file loaded via
    have to undo some extra commands and end on a state :n:`@num′ ≤ @num` if
    necessary.
 
-   .. cmdv:: Backtrack @num @num @num
-      :name: Backtrack
-
-      .. deprecated:: 8.4
-
-      :cmd:`Backtrack` is a *deprecated* form of
-      :cmd:`BackTo` which allows explicitly manipulating the proof environment. The
-      three numbers represent the following:
-
-      + *first number* : State label to reach, as for :cmd:`BackTo`.
-      + *second number* : *Proof state number* to unbury once aborts have been done.
-        |Coq| will compute the number of :cmd:`Undo` to perform (see Chapter :ref:`proofhandling`).
-      + *third number* : Number of :cmd:`Abort` to perform, i.e. the number of currently
-        opened nested proofs that must be canceled (see Chapter :ref:`proofhandling`).
-
-   .. exn:: Invalid backtrack.
-
-      The destination state label is unknown.
-
-
 .. _quitting-and-debugging:
 
 Quitting and debugging

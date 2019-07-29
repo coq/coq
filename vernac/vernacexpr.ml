@@ -359,7 +359,6 @@ type nonrec vernac_expr =
   | VernacResetName of lident
   | VernacResetInitial
   | VernacBack of int
-  | VernacBackTo of int
 
   (* Commands *)
   | VernacCreateHintDb of string * bool

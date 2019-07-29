@@ -17,7 +17,7 @@ open Vernacexpr
 
 (* Vernaculars specific to the toplevel *)
 type vernac_toplevel =
-  | VernacBacktrack of int * int * int
+  | VernacBackTo of int
   | VernacDrop
   | VernacQuit
   | VernacControl of vernac_control
@@ -54,8 +54,8 @@ GRAMMAR EXTEND Gram
   vernac_toplevel: FIRST
     [ [ IDENT "Drop"; "." -> { Some VernacDrop }
       | IDENT "Quit"; "." -> { Some VernacQuit }
-      | IDENT "Backtrack"; n = natural ; m = natural ; p = natural; "." ->
-        { Some (VernacBacktrack (n,m,p)) }
+      | IDENT "BackTo"; n = natural; "." ->
+        { Some (VernacBackTo n) }
       (* show a goal for the specified proof state *)
       | test_show_goal; IDENT "Show"; IDENT "Goal"; gid = natural; IDENT "at"; sid = natural; "." ->
           { Some (VernacShowGoal {gid; sid}) }

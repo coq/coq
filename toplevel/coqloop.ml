@@ -383,7 +383,7 @@ let rec vernac_loop ~state =
   try
     let input = top_buffer.tokens in
     match read_sentence ~state input with
-    | Some (VernacBacktrack(bid,_,_)) ->
+    | Some (VernacBackTo bid) ->
       let bid = Stateid.of_int bid in
       let doc, res = Stm.edit_at ~doc:state.doc bid in
       assert (res = `NewTip);

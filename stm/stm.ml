@@ -1073,7 +1073,7 @@ let stm_vernac_interp ?route id st { verbose; expr } : Vernacstate.t =
   *)
   let is_filtered_command = function
     | VernacResetName _ | VernacResetInitial | VernacBack _
-    | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
+    | VernacRestart | VernacUndo _ | VernacUndoTo _
     | VernacAbortAll | VernacAbort _ -> true
     | _ -> false
   in
@@ -1216,8 +1216,6 @@ end = struct (* {{{ *)
             match Vcs_.branches vcs with [_] -> `Stop id | _ -> `Cont ())
             () id in
           oid
-      | VernacBackTo id ->
-          Stateid.of_int id
       | _ -> anomaly Pp.(str "incorrect VtMeta classification")
     with
     | Not_found ->
