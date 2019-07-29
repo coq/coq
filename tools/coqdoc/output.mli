@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Cdglobals
 open Index
 
 val initialize : unit -> unit
@@ -16,8 +15,7 @@ val initialize : unit -> unit
 val add_printing_token : string -> string option * string option -> unit
 val remove_printing_token : string -> unit
 
-val set_module : coq_module -> string option -> unit
-val get_module : bool -> string
+val current_module : string ref
 
 val header : unit -> unit
 val trailer : unit -> unit

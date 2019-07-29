@@ -63,7 +63,7 @@
 
   let strip_eol s =
     let eol = s.[String.length s - 1] = '\n' in
-    (eol, if eol then String.sub s 1 (String.length s - 1) else s)
+    (eol, if eol then String.sub s 0 (String.length s - 1) else s)
 
 
   let formatted = ref false
@@ -187,17 +187,6 @@
           List n_spaces
         else
           Neither
-
-   (* examine a string for subtitleness *)
-  let subtitle m s =
-    match Str.split_delim (Str.regexp ":") s with
-    | [] -> false
-    | (name::_) ->
-        if (cut_head_tail_spaces name) = m then
-          true
-        else
-          false
-
 
   (* tokens pretty-print *)
 
@@ -660,11 +649,11 @@ and doc_bol = parse
   | space* section space+ ([^'\n' '*'] | '*'+ [^'\n' ')' '*'])* ('*'+ '\n')?
       { let eol, lex = strip_eol (lexeme lexbuf) in
         let lev, s = sec_title lex in
-          if (!Cdglobals.lib_subtitles) &&
-             (subtitle (Output.get_module false) s) then
-            ()
-          else
-            Output.section lev (fun () -> ignore (doc None (from_string s)));
+        let has_title () = match !Cdglobals.page_title with None -> false | Some _ -> true in
+        if lexeme_start lexbuf = 4 && has_title () then
+          ()
+        else
+          Output.section lev (fun () -> ignore (doc None (from_string s)));
 	    if eol then doc_bol lexbuf else doc None lexbuf }
   | space_nl* '-'+
       { let buf' = lexeme lexbuf in
@@ -1279,32 +1268,30 @@ and inf_rules_conclusion indents assumptions middle conclusions = parse
       }
 
 (*s A small scanner to support the chapter subtitle feature *)
-and st_start m = parse
+and detect_title_ = parse
   | "(*" "*"+ space+ "*" space+
-      { st_modname m lexbuf }
+      { detect_title_body_ lexbuf }
   | _
       { None }
 
-and st_modname m = parse
-  | identifier space* ":" space*
-      { if subtitle m (lexeme lexbuf) then
-          st_subtitle lexbuf
-        else
-          None
+and detect_title_body_ = parse
+  | ([^ '\n' '*'] | '*'+ [^ '\n' '*' ')'])* (* Parse until '\n' or end of comment *)
+      { let s = lexeme lexbuf in
+        match String.index s ':' with
+        | i ->
+          let title = String.trim (String.sub s 0 i) in
+          let subtitle = String.trim (String.sub s (i + 1) (String.length s - i - 1)) in
+          detect_title_end_ (title, subtitle) lexbuf
+        | exception Not_found ->
+          let title = String.trim s in
+          detect_title_end_ (title, "") lexbuf
       }
   | _
       { None }
 
-and st_subtitle = parse
-  | [^ '\n']* '\n'
-      { let st = lexeme lexbuf in
-        let i = try Str.search_forward (Str.regexp "\\**)") st 0 with
-                   Not_found ->
-                     (eprintf "unterminated comment at beginning of file\n";
-                      exit 1)
-        in
-          Some (cut_head_tail_spaces (String.sub st 0 i))
-      }
+and detect_title_end_ t = parse
+  | '*'* ')'
+      { Some t }
   | _
       { None }
 (*s Applying the scanners to files *)
@@ -1320,10 +1307,9 @@ and st_subtitle = parse
        Output.start_coq (); coq_bol lb; Output.end_coq ();
        close_in c)
 
-  let detect_subtitle f m =
+  let detect_title f =
     let c = open_in f in
     let lb = from_channel c in
-    let sub = st_start m lb in
-      close_in c;
-      sub
+    Cdglobals.page_title := detect_title_ lb;
+    close_in c
 }

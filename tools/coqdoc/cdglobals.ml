@@ -104,7 +104,7 @@ let index = ref true
 let multi_index = ref false
 let index_name = ref "index"
 let toc = ref false
-let page_title = ref ""
+let page_title = ref None
 let title = ref ""
 let externals = ref true
 let coqlib = ref Coq_config.wwwstdlib
@@ -114,7 +114,7 @@ let parse_comments = ref false
 let plain_comments = ref false
 let toc_depth = (ref None : int option ref)
 let lib_name = ref "Library"
-let lib_subtitles = ref false
+let lib_titles = ref false
 let interpolate = ref false
 let inline_notmono = ref false
 

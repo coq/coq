@@ -26,7 +26,7 @@ val index : bool ref
 val multi_index : bool ref
 val index_name : string ref
 val toc : bool ref
-val page_title : string ref
+val page_title : (string * string) option ref
 val title : string ref
 val externals : bool ref
 val coqlib : string ref
@@ -36,7 +36,7 @@ val parse_comments : bool ref
 val plain_comments : bool ref
 val toc_depth : int option ref
 val lib_name : string ref
-val lib_subtitles : bool ref
+val lib_titles : bool ref
 val interpolate : bool ref
 val inline_notmono : bool ref
 val charset : string ref

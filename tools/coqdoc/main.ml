@@ -73,7 +73,8 @@ let usage () =
   prerr_endline "  --toc-depth <int>    don't include TOC entries for sections below level <int>";
   prerr_endline "  --no-lib-name        don't display \"Library\" before library names in the toc";
   prerr_endline "  --lib-name <string>  call top level toc entries <string> instead of \"Library\"";
-  prerr_endline "  --lib-subtitles      first line comments of the form (** * ModuleName : text *) will be interpreted as subtitles";
+  prerr_endline "  --lib-titles         first line comments of the form (** * title *) or (** * title: text *) will be interpreted as titles and subtitles";
+  prerr_endline "  --lib-subtitles      synonym of --lib-titles for backwards compatibility ";
   prerr_endline "  --inline-notmono     use a proportional width font for inline code (possibly with a different color)";
   prerr_endline "";
   exit 1
@@ -283,8 +284,11 @@ let parse () =
     | ("-lib-name" | "--lib-name") :: ds :: rem ->
       Cdglobals.lib_name := ds;
       parse_rec rem
+    | ("-lib-titles" | "--lib-titles") :: rem ->
+      Cdglobals.lib_titles := true;
+      parse_rec rem
     | ("-lib-subtitles" | "--lib-subtitles") :: rem ->
-      Cdglobals.lib_subtitles := true;
+      Cdglobals.lib_titles := true;
       parse_rec rem
     | ("-inline-notmono" | "--inline-notmono") :: rem ->
       Cdglobals.inline_notmono := true;
@@ -409,9 +413,9 @@ let copy src dst =
 let gen_one_file l =
   let file = function
     | Vernac_file (f,m) ->
-        let sub = if !lib_subtitles then Cpretty.detect_subtitle f m else None in
-          Output.set_module m sub;
-          Cpretty.coq_file f m
+      if !lib_titles then Cpretty.detect_title f;
+      Output.current_module := m;
+      Cpretty.coq_file f m
     | Latex_file _ -> ()
   in
     if (!header_trailer) then Output.header ();
@@ -423,21 +427,21 @@ let gen_one_file l =
 let gen_mult_files l =
   let file = function
     | Vernac_file (f,m) ->
-      let sub = if !lib_subtitles then Cpretty.detect_subtitle f m else None in
-	let hf = target_full_name m in
-        Output.set_module m sub;
-	  open_out_file hf;
-	  if (!header_trailer) then Output.header ();
-	  Cpretty.coq_file f m;
-	  if (!header_trailer) then Output.trailer ();
-	  close_out_file()
+      if !lib_titles then Cpretty.detect_title f;
+      let hf = target_full_name m in
+      Output.current_module := m;
+      open_out_file hf;
+      if (!header_trailer) then Output.header ();
+      Cpretty.coq_file f m;
+      if (!header_trailer) then Output.trailer ();
+      close_out_file()
     | Latex_file _ -> ()
   in
     List.iter file l;
     if (!index && !target_language=HTML) then begin
       if (!multi_index) then Output.make_multi_index ();
       open_out_file (!index_name^".html");
-      page_title := (if !title <> "" then !title else "Index");
+      page_title := Some ((if !title <> "" then !title else "Index"), "");
       if (!header_trailer) then Output.header ();
       Output.make_index ();
       if (!header_trailer) then Output.trailer ();
@@ -445,7 +449,7 @@ let gen_mult_files l =
     end;
     if (!toc && !target_language=HTML) then begin
       open_out_file "toc.html";
-      page_title := (if !title <> "" then !title else "Table of contents");
+      page_title := Some ((if !title <> "" then !title else "Table of contents"), "");
       if (!header_trailer) then Output.header ();
       if !title <> "" then printf "<h1>%s</h1>\n" !title;
       Output.make_toc ();
