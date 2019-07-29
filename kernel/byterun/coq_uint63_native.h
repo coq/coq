@@ -111,14 +111,12 @@ value uint63_mulc(value x, value y, value* h) {
 #define le128(xh,xl,yh,yl) (uint63_lt(xh,yh) || (uint63_eq(xh,yh) && uint63_leq(xl,yl)))
 
 #define maxuint63 ((uint64_t)0x7FFFFFFFFFFFFFFF)
-/* precondition: y <> 0 */
-/* outputs r and sets ql to q % 2^63 s.t. x = q * y + r, r < y */
+/* precondition: xh < y */
+/* outputs r and sets ql to q s.t. x = q * y + r, r < y */
 static value uint63_div21_aux(value xh, value xl, value y, value* ql) {
-  xh = uint63_of_value(xh);
-  xl = uint63_of_value(xl);
+  uint64_t nh = uint63_of_value(xh);
+  uint64_t nl = uint63_of_value(xl);
   y = uint63_of_value(y);
-  uint64_t nh = xh % y;
-  uint64_t nl = xl;
   uint64_t q = 0;
   for (int i = 0; i < 63; ++i) {
     // invariants: 0 <= nh < y, nl = (xl*2^i) % 2^64,
@@ -132,7 +130,7 @@ static value uint63_div21_aux(value xh, value xl, value y, value* ql) {
   return Val_int(nh);
 }
 value uint63_div21(value xh, value xl, value y, value* ql) {
-  if (uint63_of_value(y) == 0) {
+  if (uint63_leq(y, xh)) {
     *ql = Val_int(0);
     return Val_int(0);
   } else {

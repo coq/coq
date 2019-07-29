@@ -87,10 +87,10 @@ let addmuldiv p x y =
   l_or (l_sl x p) (l_sr y Int64.(sub (of_int uint_size) p))
 
     (* division of two numbers by one *)
-(* precondition: y <> 0 *)
-(* outputs: q % 2^63, r s.t. x = q * y + r, r < y *)
+(* precondition: xh < y *)
+(* outputs: q, r s.t. x = q * y + r, r < y *)
 let div21 xh xl y =
-  let nh = ref (Int64.rem xh y) in
+  let nh = ref xh in
   let nl = ref xl in
   let q = ref 0L in
   for _i = 0 to 62 do
@@ -106,7 +106,8 @@ let div21 xh xl y =
   done;
   !q, !nh
 
-let div21 xh xl y = if Int64.equal y zero then zero, zero else div21 xh xl y
+let div21 xh xl y =
+  if Int64.compare y xh <= 0 then zero, zero else div21 xh xl y
 
      (* exact multiplication *)
 let mulc x y =
