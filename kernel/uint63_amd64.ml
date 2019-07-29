@@ -97,13 +97,12 @@ let le (x : int) (y : int) =
 [@@ocaml.inline always]
 
     (* division of two numbers by one *)
-(* precondition: y <> 0 *)
-(* outputs: q % 2^63, r s.t. x = q * y + r, r < y *)
+(* precondition: xh < y *)
+(* outputs: q, r s.t. x = q * y + r, r < y *)
 let div21 xh xl y =
-  let y = to_uint64 y in
   (* nh might temporarily grow as large as 2*y - 1 in the loop body,
      so we store it as a 64-bit unsigned integer *)
-  let nh = ref (Int64.rem (to_uint64 xh) y) in
+  let nh = ref xh in
   let nl = ref xl in
   let q = ref 0 in
   for _i = 0 to 62 do
@@ -119,7 +118,10 @@ let div21 xh xl y =
   done;
   !q, Int64.to_int !nh
 
-let div21 xh xl y = if y = 0 then 0, 0 else div21 xh xl y
+let div21 xh xl y =
+  let xh = to_uint64 xh in
+  let y = to_uint64 y in
+  if Int64.compare y xh <= 0 then 0, 0 else div21 xh xl y
 
      (* exact multiplication *)
 (* TODO: check that none of these additions could be a logical or *)
