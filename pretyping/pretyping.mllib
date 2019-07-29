@@ -4,7 +4,6 @@ Locusops
 Pretype_errors
 Reductionops
 Inductiveops
-InferCumulativity
 Arguments_renaming
 Retyping
 Vnorm

@@ -77,7 +77,7 @@ let infer_sort cv_pb variances s =
   | CUMUL ->
     LSet.fold infer_level_leq (Universe.levels (Sorts.univ_of_sort s)) variances
 
-let infer_table_key infos variances c =
+let infer_table_key _infos variances c =
   let open Names in
   match c with
   | ConstKey (_, u) ->
@@ -152,7 +152,7 @@ and infer_stack infos variances (stk:CClosure.stack) =
       | Zfix (fx,a) ->
         let variances = infer_fterm CONV infos variances fx [] in
         infer_stack infos variances a
-      | ZcaseT (ci,p,br,e) ->
+      | ZcaseT (_, p, br, e) ->
         let variances = infer_fterm CONV infos variances (mk_clos e p) [] in
         infer_vect infos variances (Array.map (mk_clos e) br)
       | Zshift _ -> variances
@@ -195,7 +195,7 @@ let infer_inductive_core env params entries uctx =
     Array.fold_left (fun variances u -> LMap.add u IrrelevantI variances)
       LMap.empty uarray
   in
-  let env, params = Typeops.check_context env params in
+  let env, _ = Typeops.check_context env params in
   let variances = List.fold_left (fun variances entry ->
       let variances = infer_arity_constructor true
           env variances entry.mind_entry_arity
@@ -213,9 +213,8 @@ let infer_inductive_core env params entries uctx =
 
 let infer_inductive env mie =
   let open Entries in
-  let { mind_entry_params = params;
-        mind_entry_inds = entries; } = mie
-  in
+  let params = mie.mind_entry_params in
+  let entries = mie.mind_entry_inds in
   let variances =
     match mie.mind_entry_variance with
     | None -> None
