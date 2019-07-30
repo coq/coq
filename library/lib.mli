@@ -174,8 +174,6 @@ type abstr_info = private {
   (** Universe quantification, same length as the substitution *)
 }
 
-val instance_from_variable_context : variable_context -> Id.t array
-
 val section_segment_of_constant : Constant.t -> abstr_info
 val section_segment_of_mutual_inductive: MutInd.t -> abstr_info
 val section_segment_of_reference : GlobRef.t -> abstr_info
