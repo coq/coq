@@ -652,7 +652,7 @@ let rec execute env stg cstr =
       let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
       let stg_check, cstrnt_check = execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) Finite in
 
-      let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg)) lar' in
+      let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg_check)) lar' in
       let fix = (vni, (names', lar_star, vdef')) in
       check_fix env fix; State.pop stg_check, cstrnt_check, mkFix fix, lar'.(i)
 
@@ -665,7 +665,7 @@ let rec execute env stg cstr =
       let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
       let stg_check, cstrnt_check = execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) CoFinite in
 
-      let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg)) lar' in
+      let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg_check)) lar' in
       let cofix = (i, (names', lar_star, vdef')) in
       check_cofix env cofix; State.pop stg_check, cstrnt_check, mkCoFix cofix, lar'.(i)
 

@@ -1319,9 +1319,32 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
 
 (* Functions for sized (co)fixpoints *)
 
+(* Add [Glob] annotations to [ty_def] where they appear in [ty_glob] *)
+let globify env ty_glob ty_def =
+  let ctxt_glob, body_glob = Term.decompose_prod_assum ty_glob in
+  let ctxt_def, body_def = Term.decompose_prod_assum ty_def in
+  let rec globify_type type_glob type_def =
+    match kind (whd_betaiotazeta env type_glob), kind (whd_betaiotazeta env type_def) with
+    | Ind (_, Glob), Ind (iu, _) -> mkIndUS iu Glob
+    | App (c_glob, _), App (c_def, args) ->
+      let c_def' = globify_type c_glob c_def in
+      if c_def == c_def' then type_def
+      else mkApp (c_def', args)
+    | _, _ -> type_def in
+  let globify_decls decl_glob decl_def =
+    match decl_glob, decl_def with
+    | LocalAssum (_, ty_glob), LocalAssum (_, ty_def) ->
+      let ty_def' = globify_type ty_glob ty_def in
+      if ty_def == ty_def' then decl_def
+      else set_type ty_def' decl_def
+    | _, _ -> decl_def in
+  let ctxt_def = List.map2 globify_decls ctxt_glob ctxt_def in
+  let body_def = globify_type body_glob body_def in
+  Term.it_mkProd_or_LetIn body_def ctxt_def
+
 let fold_map2_fix_type env f err is tys init =
   let rec app_ind err f acc ty =
-    match kind (whd_all env ty) with
+    match kind (whd_betaiotazeta env ty) with
     | Ind (iu, s) ->
       let acc, s' = f iu acc s in
       if s == s' then acc, ty else
