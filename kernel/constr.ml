@@ -820,6 +820,11 @@ let rec collect_annots c =
   | Ind (_, Stage (StageVar (na, _))) -> SVars.add na SVars.empty
   | _ -> fold (fun vars c -> SVars.union vars (collect_annots c)) SVars.empty c
 
+let rec any_annot f c =
+  match c with
+  | Ind (_, a) -> f a
+  | _ -> fold (fun acc c -> acc || any_annot f c) false c
+
 let rec modify_annots f c =
   match c with
   | Ind (iu, a) -> f iu a c

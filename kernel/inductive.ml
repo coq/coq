@@ -1323,6 +1323,7 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
 let globify env ty_glob ty_def =
   let ctxt_glob, body_glob = Term.decompose_prod_assum ty_glob in
   let ctxt_def, body_def = Term.decompose_prod_assum ty_def in
+  let len_glob, len_def = List.length ctxt_glob, List.length ctxt_def in
   let rec globify_type type_glob type_def =
     match kind (whd_betaiotazeta env type_glob), kind (whd_betaiotazeta env type_def) with
     | Ind (_, Glob), Ind (iu, _) -> mkIndUS iu Glob
@@ -1338,9 +1339,11 @@ let globify env ty_glob ty_def =
       if ty_def == ty_def' then decl_def
       else set_type ty_def' decl_def
     | _, _ -> decl_def in
-  let ctxt_def = List.map2 globify_decls ctxt_glob ctxt_def in
-  let body_def = globify_type body_glob body_def in
-  Term.it_mkProd_or_LetIn body_def ctxt_def
+  if any_annot ((=) Glob) ty_glob && Int.equal len_glob len_def then
+    let ctxt_def = List.map2 globify_decls ctxt_glob ctxt_def in
+    let body_def = globify_type body_glob body_def in
+    Term.it_mkProd_or_LetIn body_def ctxt_def
+  else ty_def
 
 let fold_map2_fix_type env f err is tys init =
   let rec app_ind err f acc ty =

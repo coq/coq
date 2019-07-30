@@ -535,6 +535,11 @@ val map_with_binders :
 
 val collect_annots : constr -> SVars.t
 
+(** [any_annot f c] returns true iff the predicate [f] returns [true]
+   on any annotation in [c] *)
+
+val any_annot : (Annot.t -> bool) -> constr -> bool
+
 (** [erase c] erases all stage annotations in [c] to Empty *)
 
 val erase : constr -> constr
