@@ -2443,11 +2443,18 @@ The reduction machines (:tacn:`vm_compute`, :tacn:`native_compute`) implement
 dedicated, efficient, rules to reduce the applications of these primitive
 operations.
 
-These primitives, when extracted to OCaml (see :ref:`extraction`), are mapped to
-types and functions of a :g:`Uint63` module. Said module is not produced by
+The extraction of these primitives can be customized similarly to the extraction
+of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlInt63`
+module can be used when extracting to OCaml: it maps the Coq primitives to types
+and functions of a :g:`Uint63` module. Said OCaml module is not produced by
 extraction. Instead, it has to be provided by the user (if they want to compile
 or execute the extracted code). For instance, an implementation of this module
 can be taken from the kernel of Coq.
+
+Literal values (at type :g:`Int63.int`) are extracted to literal OCaml values
+wrapped into the :g:`Uint63.of_int` (resp. :g:`Uint63.of_int64`) constructor on
+64-bit (resp. 32-bit) platforms. Currently, this cannot be customized (see the
+function :g:`Uint63.compile` from the kernel).
 
 Bidirectionality hints
 ----------------------
