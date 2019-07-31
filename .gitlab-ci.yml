@@ -479,16 +479,14 @@ test-suite:edge+trunk+make:
   stage: test
   dependencies: []
   script:
-    - opam switch create 4.09.0 --empty
+    - opam switch create 4.10.0 --empty
     - eval $(opam env)
     - opam repo add ocaml-beta https://github.com/ocaml/ocaml-beta-repository.git
     - opam update
-    - opam install ocaml-variants=4.09.0+trunk
-    - opam pin add -n ocamlfind --dev
-    - opam install num
+    - opam install ocaml-variants=4.10.0+trunk
+    - opam install num ocamlfind.1.8.1
     - eval $(opam env)
-    # We avoid problems with warnings:
-    - ./configure -profile devel -warn-error no
+    - ./configure -profile devel
     - make -j "$NJOBS" world
     - make -j "$NJOBS" test-suite UNIT_TESTS=
   variables:
@@ -506,19 +504,17 @@ test-suite:edge+trunk+dune:
   stage: test
   dependencies: []
   script:
-    - opam switch create 4.09.0 --empty
+    - opam switch create 4.10.0 --empty
     - eval $(opam env)
     - opam repo add ocaml-beta https://github.com/ocaml/ocaml-beta-repository.git
     - opam update
-    - opam install ocaml-variants=4.09.0+trunk
-    - opam pin add -n ocamlfind --dev
-    - opam pin add dune --dev # ounit lablgtk conf-gtksourceview
-    - opam install dune num
+    - opam install ocaml-variants=4.10.0+trunk
+    - opam install dune num ocamlfind.1.8.1
     - eval $(opam env)
-    # We use the release profile to avoid problems with warnings
-    - make -f Makefile.dune trunk
     - export COQ_UNIT_TEST=noop
-    - dune runtest --profile=ocaml409
+    - make -f Makefile.dune coq
+    - make -f Makefile.dune coqide-server
+    - make -f Makefile.dune test-suite
   variables:
     OPAM_SWITCH: base
   artifacts:
