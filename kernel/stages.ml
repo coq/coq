@@ -14,9 +14,12 @@ struct
 
   let union_list = List.fold_left union empty
 
-  let show init vars =
-    Int.Set.fold (fun i str -> string_of_int i ^ "," ^ str) vars init
-  let pr init = mkPr (show init)
+  let show vars =
+    let init, rest = match choose_opt vars with
+    | Some var -> string_of_int var, diff vars (singleton var)
+    | None -> "", vars in
+    fold (fun i str -> str ^ "," ^ string_of_int i) rest init
+  let pr = mkPr show
 end
 
 module Stage =
@@ -156,8 +159,8 @@ struct
 
   let show state =
     let stg_str = string_of_int state.next in
-    let vars_str = "{" ^ SVars.show "∞" state.vars  ^ "}" in
-    let stars_str = "{" ^ SVars.show ": *" state.pos_vars ^ "}" in
+    let vars_str = "{" ^ SVars.show state.vars  ^ "}" in
+    let stars_str = "{" ^ SVars.show state.pos_vars ^ "}" in
     "<" ^ stg_str ^ "," ^ vars_str ^ "," ^ stars_str ^ ">"
   let pr = mkPr show
 end
@@ -328,7 +331,7 @@ let closure get_adj cstrnts init =
       else
         let init_new = get_adj s cstrnts in
         closure_rec (union init_rest init_new) (add s fin) in
-  filter (fun var -> var |> Stage.var_equal Stage.infty |> not) (closure_rec init empty)
+  filter (fun var -> not @@ Stage.var_equal Stage.infty var) (closure_rec init empty)
 
 let downward = closure Constraints.sub
 let upward = closure Constraints.sup
