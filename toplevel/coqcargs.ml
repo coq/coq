@@ -199,3 +199,11 @@ let parse arglist : t =
     check_compilation_output_name_consistency args;
     args
   with any -> fatal_error any
+
+let parse args =
+  let opts = parse args in
+  { opts with
+    compile_list = List.rev opts.compile_list
+  ; vio_tasks = List.rev opts.vio_tasks
+  ; vio_files = List.rev opts.vio_files
+  }

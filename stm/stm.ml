@@ -2614,13 +2614,10 @@ let dirpath_of_file f =
 
 let new_doc { doc_type ; iload_path; require_libs; stm_options } =
 
-  let load_objs libs =
-    let rq_file (dir, from, exp) =
-      let mp = Libnames.qualid_of_string dir in
-      let mfrom = Option.map Libnames.qualid_of_string from in
-      Flags.silently (Vernacentries.vernac_require mfrom exp) [mp] in
-    List.(iter rq_file (rev libs))
-  in
+  let require_file (dir, from, exp) =
+    let mp = Libnames.qualid_of_string dir in
+    let mfrom = Option.map Libnames.qualid_of_string from in
+    Flags.silently (Vernacentries.vernac_require mfrom exp) [mp] in
 
   (* Set the options from the new documents *)
   AsyncOpts.cur_opt := stm_options;
@@ -2659,7 +2656,7 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
   end;
 
   (* Import initial libraries. *)
-  load_objs require_libs;
+  List.iter require_file require_libs;
 
   (* We record the state at this point! *)
   State.define ~doc ~cache:true ~redefine:true (fun () -> ()) Stateid.initial;

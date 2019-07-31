@@ -39,7 +39,7 @@ let load_vernacular opts ~state =
       if !Flags.beautify
       then Flags.with_option Flags.beautify_file load_vernac f_in
       else load_vernac s
-    ) state (List.rev opts.pre.load_vernacular_list)
+    ) state opts.pre.load_vernacular_list
 
 let load_init_vernaculars opts ~state =
   let state = load_init_file opts ~state in
@@ -198,7 +198,7 @@ let compile_file opts copts (f_in, echo) =
     compile opts copts ~echo ~f_in ~f_out
 
 let compile_files opts copts =
-  let compile_list = List.rev copts.compile_list in
+  let compile_list = copts.compile_list in
   List.iter (compile_file opts copts) compile_list
 
 (******************************************************************************)
@@ -210,7 +210,7 @@ let check_vio_tasks copts =
         let f_in = ensure ".vio" f f in
         ensure_exists f_in;
         Vio_checking.check_vio (n,f_in) && acc)
-      true (List.rev copts.vio_tasks) in
+      true copts.vio_tasks in
   if not rc then fatal_error Pp.(str "VIO Task Check failed")
 
 (* vio files *)
