@@ -648,40 +648,15 @@ Section ZModulo.
  apply two_power_pos_correct.
  Qed.
 
- Definition head0 x := match [|x|] with
+ Definition head0 x :=
+   match [| x |] with
    | Z0 => zdigits
-   | Zpos p => zdigits - log_inf p - 1
-   | _ => 0
-  end.
+   | Zneg _ => 0
+   | (Zpos _) as p => zdigits - Z.log2 p - 1
+   end.
 
  Lemma spec_head00:  forall x, [|x|] = 0 -> [|head0 x|] = Zpos digits.
- Proof.
-  unfold head0; intros.
-  rewrite H; simpl.
-  apply spec_zdigits.
- Qed.
-
- Lemma log_inf_bounded : forall x p, Zpos x < 2^p -> log_inf x < p.
- Proof.
- induction x; simpl; intros.
-
- assert (0 < p) by (destruct p; compute; auto with zarith; discriminate).
- cut (log_inf x < p - 1); [omega| ].
- apply IHx.
- change (Zpos x~1) with (2*(Zpos x)+1) in H.
- replace p with (Z.succ (p-1)) in H; auto with zarith.
- rewrite Z.pow_succ_r in H; auto with zarith.
-
- assert (0 < p) by (destruct p; compute; auto with zarith; discriminate).
- cut (log_inf x < p - 1); [omega| ].
- apply IHx.
- change (Zpos x~0) with (2*(Zpos x)) in H.
- replace p with (Z.succ (p-1)) in H; auto with zarith.
- rewrite Z.pow_succ_r in H; auto with zarith.
-
- simpl; intros; destruct p; compute; auto with zarith.
- Qed.
-
+ Proof. unfold head0; intros x ->; apply spec_zdigits. Qed.
 
  Lemma spec_head0  : forall x,  0 < [|x|] ->
 	 wB/ 2 <= 2 ^ ([|head0 x|]) * [|x|] < wB.
@@ -689,36 +664,35 @@ Section ZModulo.
  intros; unfold head0.
  generalize (spec_to_Z x).
  destruct [|x|]; try discriminate.
+ pose proof (Z.log2_nonneg (Zpos p)).
+ destruct (Z.log2_spec (Zpos p)); auto.
  intros.
- destruct (log_inf_correct p).
- rewrite 2 two_p_power2 in H2; auto with zarith.
- assert (0 <= zdigits - log_inf p - 1 < wB).
+ assert (0 <= zdigits - Z.log2 (Zpos p) - 1 < wB) as Hrange.
   split.
-  cut (log_inf p < zdigits); try omega.
+  cut (Z.log2 (Zpos p) < zdigits). omega.
   unfold zdigits.
   unfold wB, base in *.
-  apply log_inf_bounded; auto with zarith.
+  apply Z.log2_lt_pow2; intuition.
   apply Z.lt_trans with zdigits.
   omega.
   unfold zdigits, wB, base; apply Zpower2_lt_lin; auto with zarith.
 
- unfold to_Z; rewrite (Zmod_small _ _ H3).
- destruct H2.
+ unfold to_Z; rewrite (Zmod_small _ _ Hrange).
  split.
- apply Z.le_trans with (2^(zdigits - log_inf p - 1)*(2^log_inf p)).
+ apply Z.le_trans with (2^(zdigits - Z.log2 (Zpos p) - 1)*(2^Z.log2 (Zpos p))).
  apply Zdiv_le_upper_bound; auto with zarith.
  rewrite <- Zpower_exp; auto with zarith.
  rewrite Z.mul_comm; rewrite <- Z.pow_succ_r; auto with zarith.
- replace (Z.succ (zdigits - log_inf p -1 +log_inf p)) with zdigits
+ replace (Z.succ (zdigits - Z.log2 (Zpos p) -1 + Z.log2 (Zpos p))) with zdigits
    by ring.
  unfold wB, base, zdigits; auto with zarith.
  apply Z.mul_le_mono_nonneg; auto with zarith.
 
  apply Z.lt_le_trans
-   with (2^(zdigits - log_inf p - 1)*(2^(Z.succ (log_inf p)))).
+   with (2^(zdigits - Z.log2 (Zpos p) - 1)*(2^(Z.succ (Z.log2 (Zpos p))))).
  apply Z.mul_lt_mono_pos_l; auto with zarith.
  rewrite <- Zpower_exp; auto with zarith.
- replace (zdigits - log_inf p -1 +Z.succ (log_inf p)) with zdigits
+ replace (zdigits - Z.log2 (Zpos p) -1 +Z.succ (Z.log2 (Zpos p))) with zdigits
    by ring.
  unfold wB, base, zdigits; auto with zarith.
  Qed.

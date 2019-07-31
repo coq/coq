@@ -181,14 +181,12 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Zhints.v
     (theories/ZArith/ZArith_base.v)
     theories/ZArith/Zcomplements.v
-    theories/ZArith/Zsqrt_compat.v
     theories/ZArith/Zpow_def.v
     theories/ZArith/Zpow_alt.v
     theories/ZArith/Zpower.v
     theories/ZArith/Zdiv.v
     theories/ZArith/Zquot.v
     theories/ZArith/Zeuclid.v
-    theories/ZArith/Zlogarithm.v
     (theories/ZArith/ZArith.v)
     theories/ZArith/Zgcd_alt.v
     theories/ZArith/Zwf.v
