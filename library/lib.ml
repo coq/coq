@@ -413,11 +413,8 @@ let find_opening_node id =
    - the list of substitution to do at section closing
 *)
 
-type variable_info = Constr.named_declaration * Decl_kinds.binding_kind
-
-type variable_context = variable_info list
 type abstr_info = {
-  abstr_ctx : variable_context;
+  abstr_ctx : Constr.named_context;
   abstr_subst : Univ.Instance.t;
   abstr_uctx : Univ.AUContext.t;
 }
@@ -426,7 +423,6 @@ type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 type secentry =
   | Variable of {
       id:Names.Id.t;
-      kind:Decl_kinds.binding_kind;
     }
   | Context of Univ.ContextSet.t
 
@@ -445,6 +441,9 @@ let empty_section_data ~poly = {
 let sectab =
   Summary.ref ([] : section_data list) ~name:"section-context"
 
+let sec_implicits =
+  Summary.ref Id.Map.empty ~name:"section-implicits"
+
 let check_same_poly p sec =
   if p != sec.sec_poly then
     user_err Pp.(str  "Cannot mix universe polymorphic and monomorphic declarations in sections.")
@@ -458,8 +457,9 @@ let add_section_variable ~name ~kind ~poly =
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | s :: sl ->
        List.iter (fun tab -> check_same_poly poly tab) !sectab;
-       let s = { s with sec_entry = Variable {id=name;kind} :: s.sec_entry } in
-       sectab := s :: sl
+       let s = { s with sec_entry = Variable {id=name} :: s.sec_entry } in
+       sectab := s :: sl;
+       sec_implicits := Id.Map.add name kind !sec_implicits
 
 let add_section_context ctx =
   match !sectab with
@@ -486,9 +486,9 @@ let is_polymorphic_univ u =
 
 let extract_hyps poly (secs,ohyps) =
   let rec aux = function
-    | (Variable {id;kind}::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
+    | (Variable {id}::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
       let l, r = aux (idl,hyps) in 
-      (decl,kind) :: l, r
+      decl :: l, r
     | (Variable _::idl,hyps) ->
         let l, r = aux (idl,hyps) in
           l, r
@@ -500,7 +500,7 @@ let extract_hyps poly (secs,ohyps) =
   in aux (secs,ohyps)
 
 let instance_from_variable_context =
-  List.rev_map fst %> List.filter is_local_assum %> List.map NamedDecl.get_id %> Array.of_list
+  List.rev %> List.filter is_local_assum %> List.map NamedDecl.get_id %> Array.of_list
 
 let extract_worklist info =
   let args = instance_from_variable_context info.abstr_ctx in
@@ -575,6 +575,8 @@ let section_segment_of_reference = let open GlobRef in function
 
 let variable_section_segment_of_reference gr =
   (section_segment_of_reference gr).abstr_ctx
+
+let variable_section_kind id = Id.Map.get id !sec_implicits
 
 let section_instance = let open GlobRef in function
   | VarRef id ->

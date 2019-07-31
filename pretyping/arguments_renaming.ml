@@ -47,7 +47,7 @@ let discharge_rename_args = function
   | _, (ReqGlobal (c, names), _ as req) when not (isVarRef c && Lib.is_in_section c) ->
      (try 
        let vars = Lib.variable_section_segment_of_reference c in
-       let var_names = List.map (fst %> NamedDecl.get_id %> Name.mk_name) vars in
+       let var_names = List.map (NamedDecl.get_id %> Name.mk_name) vars in
        let names' = var_names @ names in
        Some (ReqGlobal (c, names), (c, names'))
      with Not_found -> Some req)

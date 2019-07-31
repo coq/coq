@@ -163,10 +163,8 @@ val drop_objects : frozen -> frozen
 val init : unit -> unit
 
 (** {6 Section management for discharge } *)
-type variable_info = Constr.named_declaration * Decl_kinds.binding_kind
-type variable_context = variable_info list 
 type abstr_info = private {
-  abstr_ctx : variable_context;
+  abstr_ctx : Constr.named_context;
   (** Section variables of this prefix *)
   abstr_subst : Univ.Instance.t;
   (** Actual names of the abstracted variables *)
@@ -178,7 +176,8 @@ val section_segment_of_constant : Constant.t -> abstr_info
 val section_segment_of_mutual_inductive: MutInd.t -> abstr_info
 val section_segment_of_reference : GlobRef.t -> abstr_info
 
-val variable_section_segment_of_reference : GlobRef.t -> variable_context
+val variable_section_segment_of_reference : GlobRef.t -> Constr.named_context
+val variable_section_kind : Id.t -> Decl_kinds.binding_kind
 
 val section_instance : GlobRef.t -> Univ.Instance.t * Id.t array
 val is_in_section : GlobRef.t -> bool

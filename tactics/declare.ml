@@ -71,8 +71,7 @@ let load_constant i ((sp,kn), obj) =
 
 let cooking_info segment =
   let modlist = replacement_context () in
-  let { abstr_ctx = hyps; abstr_subst = subst; abstr_uctx = uctx } = segment in
-  let named_ctx = List.map fst hyps in
+  let { abstr_ctx = named_ctx; abstr_subst = subst; abstr_uctx = uctx } = segment in
   let abstract = (named_ctx, subst, uctx) in
   { Opaqueproof.modlist; abstract }
 
