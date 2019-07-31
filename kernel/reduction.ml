@@ -549,7 +549,7 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         let eq_annot, leq_annot = compare_annot in
         if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
           let cuniv = convert_instances ~flex:false u1 u2 cuniv in
-          leq_annot ind1 s1 s2;
+          let _ = leq_annot ind1 s1 s2 in
           convert_stacks (eq_annot, eq_annot) l2r infos lft1 lft2 v1 v2 cuniv
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos.cnv_inf) in
@@ -558,7 +558,7 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           then raise NotConvertible
           else
             let cuniv = convert_inductives cv_pb (mind, snd ind1) nargs u1 u2 cuniv in
-            leq_annot ind1 s1 s2;
+            let _ = leq_annot ind1 s1 s2 in
             convert_stacks (eq_annot, eq_annot) l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
 

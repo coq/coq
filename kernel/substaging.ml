@@ -17,4 +17,5 @@ let add_constraint_from_ind env variance cstrnts (ind, _) a1 a2 =
   | Variant, CoFinite -> add a2 a1 cstrnts
 
 let add_constraint_from_ind_ref env variance cstrnts_ref ind a1 a2 =
-  cstrnts_ref := add_constraint_from_ind env variance !cstrnts_ref ind a1 a2
+  cstrnts_ref := add_constraint_from_ind env variance !cstrnts_ref ind a1 a2;
+  true

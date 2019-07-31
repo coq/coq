@@ -367,7 +367,7 @@ val equal : constr -> constr -> bool
 
 (** [compare_annot] is the type of Substaging.add_constraint_from_ind_ref applied to
    Environ.env and Substaging.variance *)
-type compare_annot = Constraints.t ref -> Names.inductive -> Annot.t -> Annot.t -> unit
+type compare_annot = Constraints.t ref -> Names.inductive -> Annot.t -> Annot.t -> bool
 
 (** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
    application grouping and the universe equalities in [u]. *)

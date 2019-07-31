@@ -964,8 +964,7 @@ let compare_head_gen_leq_with_cstrnts kind1 kind2 leq_universes leq_sorts leq_an
     (* The args length currently isn't used but may as well pass it. *)
     Constant.equal c1 c2 && leq_universes (GlobRef.ConstRef c1) nargs u1 u2
   | Ind ((c1,u1), s1), Ind ((c2,u2), s2) ->
-    leq_annot c1 s1 s2;
-    eq_ind c1 c2 && leq_universes (GlobRef.IndRef c1) nargs u1 u2
+    eq_ind c1 c2 && leq_universes (GlobRef.IndRef c1) nargs u1 u2 && leq_annot c1 s1 s2
   | Construct (c1,u1), Construct (c2,u2) ->
     eq_constructor c1 c2 && leq_universes (GlobRef.ConstructRef c1) nargs u1 u2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
@@ -991,7 +990,7 @@ let compare_head_gen_leq_with_cstrnts kind1 kind2 leq_universes leq_sorts leq_an
    calls to {!Array.equal_norefl}). *)
 
 let compare_head_gen_leq_with kind1 kind2 leq_universes leq_sorts eq leq nargs t1 t2 =
-  compare_head_gen_leq_with_cstrnts kind1 kind2 leq_universes leq_sorts (fun _ _ _ -> ()) eq leq nargs t1 t2
+  compare_head_gen_leq_with_cstrnts kind1 kind2 leq_universes leq_sorts (fun _ _ _ -> true) eq leq nargs t1 t2
 
 (* [compare_head_gen_leq u s eq leq c1 c2] compare [c1] and [c2] using [eq] to compare
    the immediate subterms of [c1] of [c2] for conversion if needed, [leq] for cumulativity,
@@ -1029,7 +1028,7 @@ let compare_head = compare_head_gen (fun _ _ -> Univ.Instance.equal) Sorts.equal
 (*  alpha conversion functions *)
 (*******************************)
 
-type compare_annot = Constraints.t ref -> Names.inductive -> Annot.t -> Annot.t -> unit
+type compare_annot = Constraints.t ref -> Names.inductive -> Annot.t -> Annot.t -> bool
 
 (* alpha conversion : ignore print names and casts *)
 
