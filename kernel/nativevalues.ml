@@ -96,14 +96,14 @@ let mk_accu (a : atom) : t =
     else
       let data = { data with acc_arg = x :: data.acc_arg } in
       let ans = Obj.repr (accumulate data) in
-      let () = Obj.set_tag ans accumulate_tag in
+      let () = Obj.set_tag ans accumulate_tag [@ocaml.alert "--deprecated"] in
       ans
   in
   let acc = { acc_atm = a; acc_arg = [] } in
   let ans = Obj.repr (accumulate acc) in
   (** FIXME: use another representation for accumulators, this causes naked
       pointers. *)
-  let () = Obj.set_tag ans accumulate_tag in
+  let () = Obj.set_tag ans accumulate_tag [@ocaml.alert "--deprecated"] in
   (Obj.obj ans : t)
 
 let get_accu (k : accumulator) =
