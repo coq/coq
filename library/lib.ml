@@ -427,7 +427,6 @@ type secentry =
   | Variable of {
       id:Names.Id.t;
       kind:Decl_kinds.binding_kind;
-      univs:Univ.ContextSet.t;
     }
   | Context of Univ.ContextSet.t
 
@@ -454,12 +453,12 @@ let add_section ~poly () =
   List.iter (fun tab -> check_same_poly poly tab) !sectab;
   sectab := empty_section_data ~poly :: !sectab
 
-let add_section_variable ~name ~kind ~poly univs =
+let add_section_variable ~name ~kind ~poly =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | s :: sl ->
        List.iter (fun tab -> check_same_poly poly tab) !sectab;
-       let s = { s with sec_entry = Variable {id=name;kind;univs} :: s.sec_entry } in
+       let s = { s with sec_entry = Variable {id=name;kind} :: s.sec_entry } in
        sectab := s :: sl
 
 let add_section_context ctx =
@@ -470,31 +469,31 @@ let add_section_context ctx =
        let s = { s with sec_entry = Context ctx :: s.sec_entry } in
        sectab := s :: sl
 
-exception PolyFound of bool (* make this a let exception once possible *)
+exception PolyFound (* make this a let exception once possible *)
 let is_polymorphic_univ u =
   try
     let open Univ in
     List.iter (fun s ->
       let vars = s.sec_entry in
         List.iter (function
-            | Variable {univs=(univs,_)} ->
-              if LSet.mem u univs then raise (PolyFound s.sec_poly)
+            | Variable _ -> ()
             | Context (univs,_) ->
-              if LSet.mem u univs then raise (PolyFound true)
+              if LSet.mem u univs then raise PolyFound
           ) vars
       ) !sectab;
     false
-  with PolyFound b -> b
+  with PolyFound -> true
 
 let extract_hyps poly (secs,ohyps) =
   let rec aux = function
-    | (Variable {id;kind;univs}::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
+    | (Variable {id;kind}::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
       let l, r = aux (idl,hyps) in 
-      (decl,kind) :: l, if poly then Univ.ContextSet.union r univs else r
-    | (Variable {univs}::idl,hyps) ->
+      (decl,kind) :: l, r
+    | (Variable _::idl,hyps) ->
         let l, r = aux (idl,hyps) in
-          l, if poly then Univ.ContextSet.union r univs else r
+          l, r
     | (Context ctx :: idl, hyps) ->
+      let () = assert poly in
        let l, r = aux (idl, hyps) in
        l, Univ.ContextSet.union r ctx
     | [], _ -> [],Univ.ContextSet.empty

@@ -308,12 +308,12 @@ let declare_variable ~name ~kind d =
   if Decls.variable_exists name then
     raise (AlreadyDeclared (None, name));
 
-  let impl,opaque,poly,univs = match d with (* Fails if not well-typed *)
+  let impl,opaque,poly = match d with (* Fails if not well-typed *)
     | SectionLocalAssum {typ;univs;poly;impl} ->
       let () = declare_universe_context ~poly univs in
       let () = Global.push_named_assum (name,typ) in
       let impl = if impl then Decl_kinds.Implicit else Decl_kinds.Explicit in
-      impl, true, poly, univs
+      impl, true, poly
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
@@ -338,10 +338,10 @@ let declare_variable ~name ~kind d =
       } in
       let () = Global.push_named_def (name, se) in
       Decl_kinds.Explicit, de.proof_entry_opaque,
-      poly, univs
+      poly
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
-  add_section_variable ~name ~kind:impl ~poly univs;
+  add_section_variable ~name ~kind:impl ~poly;
   Decls.(add_variable_data name {opaque;kind});
   add_anonymous_leaf (inVariable ());
   Impargs.declare_var_implicits name;
