@@ -108,32 +108,56 @@ struct
   open Stage
   open Annot
 
-  (* state =
-      ( name of next stage variable
-      , all used stage variables
-      , stage variables used to replace star annotations
-      , old star variables
-      ) *)
-  type t = var * SVars.t * SVars.t * SVars.t
+  type t = {
+    next: var;
+    (* next stage variable to be used *)
+    vars: SVars.t;
+    (* all used stage variables *)
+    pos_vars: SVars.t;
+    (* stage variables used to replace star annotations *)
+    stack: SVars.t list;
+    (* stack of old pos_vars *)
+  }
 
-  let init = (0, empty, empty, empty)
-  let push (next, vs, stars, _) = (next, vs, empty, stars)
-  let pop (next, vs, stars, old) = (next, vs, SVars.union stars old, empty)
-  let get_vars (_, vs, _, _) = vs
-  let get_pos_vars (_, _, stars, _) = stars
-  let remove_pos_vars rem (next, vs, stars, old) = (next, vs, diff stars rem, old)
-  let next ?s:(s=Empty) ((next, vs, stars, old) as stg) =
+  let init = {
+    next = 0;
+    vars = empty;
+    pos_vars = empty;
+    stack = [];
+  }
+  let push state = { state with
+    pos_vars = empty;
+    stack = state.pos_vars :: state.stack }
+  let pop state =
+    let pos_vars, stack = match state.stack with
+    | [] -> empty, state.stack
+    | hd :: tl -> hd, tl in
+    { state with
+      pos_vars = SVars.union pos_vars state.pos_vars;
+      stack = stack }
+  let get_vars state = state.vars
+  let get_pos_vars state = state.pos_vars
+  let remove_pos_vars rem state =
+    { state with pos_vars = diff state.pos_vars rem }
+  let next ?s:(s=Empty) state =
     match s with
     | Empty | Stage Infty ->
-      mk next 0, (succ next, add next vs, stars, old)
+      mk state.next 0,
+      { state with
+        next = succ state.next;
+        vars = add state.next state.vars }
     | Star ->
-      mk next 0, (succ next, add next vs, add next stars, old)
-    | _ -> (s, stg)
+      mk state.next 0,
+      { state with
+        next = succ state.next;
+        vars = add state.next state.vars;
+        pos_vars = add state.next state.pos_vars }
+    | _ -> (s, state)
 
-  let show (stg, vars, stars, _) =
-    let stg_str = string_of_int stg in
-    let vars_str = "{" ^ SVars.show "∞" vars  ^ "}" in
-    let stars_str = "{" ^ SVars.show ": *" stars ^ "}" in
+  let show state =
+    let stg_str = string_of_int state.next in
+    let vars_str = "{" ^ SVars.show "∞" state.vars  ^ "}" in
+    let stars_str = "{" ^ SVars.show ": *" state.pos_vars ^ "}" in
     "<" ^ stg_str ^ "," ^ vars_str ^ "," ^ stars_str ^ ">"
   let pr = mkPr show
 end
