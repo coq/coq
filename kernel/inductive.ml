@@ -1345,78 +1345,178 @@ let globify env ty_glob ty_def =
     Term.it_mkProd_or_LetIn body_def ctxt_def
   else ty_def
 
-let fold_map2_fix_type env f err is tys init =
-  let rec app_ind err f acc ty =
-    match kind (whd_betaiotazeta env ty) with
+(* [fold_map2_fix_type env f is tys init] folds over the arguments
+  of each fixpoint type in [tys], along with the elements of [is]
+  for each fixpoint type, with initial element [init] and applying
+  [f] to each argument type, which should return the accumulator
+  and the argument type. Note that [is] and [tys] must have the same length.
+  [info] is passed to [f], containing the following:
+    [elt]: The current element of [is]
+    [fix_type]: The current element of [tys]
+    [arg_name]: The name of the current argument in [fix_type]
+    [arg_type]: The type of the current argument in [fix_type]
+    [arg_index]: The index of the current argument inf [fix_type]
+    [arg_head]: The irreducible head of [arg_type]
+    [arg_indus]: If [arg_head] is an inductive type,
+      this is its name and annotation.
+    [acc]: The accumulated value, starting with [init] *)
+
+type ('a, 'b) fold_fix_type_info = {
+  elt : 'a;
+  fix_type : types;
+  arg_name : Name.t Context.binder_annot;
+  arg_type : types;
+  arg_index : int;
+  arg_head : types;
+  arg_indus : (pinductive * Annot.t) option;
+  acc : 'b;
+}
+
+let fold_map2_fix_type env f is tys init =
+  let info = {
+    elt = List.hd is;
+    fix_type = List.hd tys;
+    arg_name = Context.anonR;
+    arg_type = mkSet;
+    arg_index = -1;
+    arg_head = mkSet;
+    arg_indus = None;
+    acc = init;
+  } in
+  let rec app_ind info ty =
+    let c = whd_betaiotazeta env ty in
+    let info = { info with arg_head = c } in
+    match kind c with
     | Ind (iu, s) ->
-      let acc, s' = f iu acc s in
-      if s == s' then acc, ty else
-      acc, mkIndUS iu s'
+      let info = { info with
+        arg_indus = Some (iu, s); } in
+      f info
     | App (c, args) ->
-      let acc, c' = app_ind err f acc c in
-      if c == c' then acc, ty else
-      acc, mkApp (c', args)
-    | c -> acc, err (of_kind c) in
-  let app_arg err f decl (acc, j) =
+      let info, c' = app_ind info c in
+      if c == c' then info, ty else
+      info, mkApp (c', args)
+    | _ ->
+      let info = { info with
+        arg_indus = None; } in
+      f info in
+  let app_arg decl info =
     match decl with
     | LocalAssum (na, ty) ->
-      let acc, ty = app_ind (err j na) (f j) acc ty in
-      Context.Rel.Declaration.set_type ty decl, (acc, succ j)
-    | LocalDef _ -> decl, (acc, j) in
-  let app_ty acc i ty =
+      let info = { info with
+        arg_name = na;
+        arg_type = ty; } in
+      let info, ty = app_ind info ty in
+      let info = { info with
+        arg_index = succ info.arg_index; } in
+      Context.Rel.Declaration.set_type ty decl, info
+    | LocalDef _ -> decl, info in
+  let app_ty info i ty =
     (* N.B. ctxt is backwards so we foldr backwards over it *)
     let ctxt, body = Term.decompose_prod_assum ty in
-    let ctxt, (acc, _) = List.fold_right_map (app_arg (err ty i) (f i)) ctxt (acc, 0) in
-    let acc, body = app_ind (err ty i (-1) Context.anonR) (f i (-1)) acc body in
-    acc, Term.it_mkProd_or_LetIn body ctxt in
-  List.fold_left2_map app_ty init is tys
+    let info = { info with
+      elt = i;
+      fix_type = ty;
+      arg_index = 0; } in
+    let ctxt, info = List.fold_right_map app_arg ctxt info in
+    let info = { info with
+      arg_name = Context.anonR;
+      arg_type = body;
+      arg_index = -1; } in
+    let info, body = app_ind info body in
+    info, Term.it_mkProd_or_LetIn body ctxt in
+  List.fold_left2_map app_ty info is tys
+
+(* Functions that use [fold_map2_fix_type]:
+    [get_rec_inds]: Collects the inductive types in recursive positions
+    [get_rec_vars]: Collects the annotations of the recursive inductive types
+    [get_corec_inds]: Collects the coinductive types in the corecursive position
+    [get_corec_vars]: Collects the annotations of the corecursive coinductive types
+    [set_rec_stars]: Sets the annotations in recursive positions to [Star]
+    [set_corec_stars]: Sets the annotations in corecursive positions to [Star]
+  As an example, if our fixpoint type is (n: nat^s0) (b: bool^s1) {struct n} : nat^s2,
+    [get_rec_inds] returns [[nat]]
+    [get_rec_vars] returns [[s0]]
+    [set_rec_stars] returns n: nat* -> b: bool^s1 -> nat* *)
+
+let err env info () =
+  error_ill_formed_rec_type env
+    info.arg_index
+    info.arg_name
+    info.arg_type
+    info.fix_type
 
 let get_rec_inds env is tys =
-  let f i j (ind, _) acc s =
-    if Int.equal i j then ind :: acc, s else acc, s in
-  let err ty i j na t =
-    if Int.equal i j then error_ill_formed_rec_type env j na t ty else t in
-  fst @@ fold_map2_fix_type env f err (Array.to_list is) (Array.to_list tys) []
+  let f info =
+    let err = err env info in
+    if Int.equal info.elt info.arg_index then
+      match info.arg_indus with
+      | Some ((ind, _), _) ->
+        { info with acc = ind :: info.acc }, info.arg_head
+      | None -> info, err ()
+    else info, info.arg_head in
+  let is = Array.to_list is in
+  let tys = Array.to_list tys in
+  let info = fst @@ fold_map2_fix_type env f is tys [] in
+  info.acc
 
 let get_rec_vars env is tys =
-  let f i j _ acc s =
-    if Int.equal i j then
-      match s with
-      | Stage (StageVar (var, _)) -> SVars.add var acc, s
-      | _ -> acc, s
-    else acc, s in
-  let err ty i j na t =
-    if Int.equal i j then error_ill_formed_rec_type env j na t ty else t in
-  fst @@ fold_map2_fix_type env f err (Array.to_list is) (Array.to_list tys) SVars.empty
+  let f info =
+    let err = err env info in
+    if Int.equal info.elt info.arg_index then
+      match info.arg_indus with
+      | Some (_, Stage (StageVar (var, _))) ->
+        { info with acc = SVars.add var info.acc }, info.arg_head
+      | None -> info, err ()
+      | _ -> info, info.arg_head
+    else info, info.arg_head in
+  let is = Array.to_list is in
+  let tys = Array.to_list tys in
+  let info, _ = fold_map2_fix_type env f is tys SVars.empty in
+  info.acc
 
 let get_corec_inds env tys =
-  let f _ j (ind, _) acc s =
-    if Int.equal (-1) j then ind :: acc, s else acc, s in
-  let err ty _ j na t =
-    if Int.equal (-1) j then error_ill_formed_rec_type env j na t ty else t in
-  let len = Array.length tys in
-  fst @@ fold_map2_fix_type env f err (List.make len (-1)) (Array.to_list tys) []
+  let f info =
+    let err = err env info in
+    match info.arg_index, info.arg_indus with
+    | -1, Some ((ind, _), _) ->
+      { info with acc = ind :: info.acc }, info.arg_head
+    | -1, None -> info, err ()
+    | _ -> info, info.arg_head in
+  let is = List.make (Array.length tys) (-1) in
+  let tys = Array.to_list tys in
+  let info, _ = fold_map2_fix_type env f is tys [] in
+  info.acc
 
 let get_corec_vars env tys =
-  let f _ j _ acc s =
-    if Int.equal (-1) j then
-      match s with
-      | Stage (StageVar (var, _)) -> SVars.add var acc, s
-      | _ -> acc, s
-    else acc, s in
-  let err ty _ j na t =
-    if Int.equal (-1) j then error_ill_formed_rec_type env j na t ty else t in
-  let len = Array.length tys in
-  fst @@ fold_map2_fix_type env f err (List.make len (-1)) (Array.to_list tys) SVars.empty
+  let f info =
+    let err = err env info in
+    match info.arg_index, info.arg_indus with
+    | -1, Some (_, Stage (StageVar (var, _))) ->
+      { info with acc = SVars.add var info.acc }, info.arg_head
+    | -1, None -> info, err ()
+    | _ -> info, info.arg_head in
+  let is = List.make (Array.length tys) (-1) in
+  let tys = Array.to_list tys in
+  let info, _ = fold_map2_fix_type env f is tys SVars.empty in
+  info.acc
 
 let set_rec_stars env isinds tys =
-  let f (i, ind) j (ind', _) acc s =
-    if Int.equal i j || (Int.equal (-1) j && Names.eq_ind ind ind') then acc, Star else acc, s in
-  let err _ _ _ _ t = t in
-  Array.of_list @@ snd @@ fold_map2_fix_type env f err isinds (Array.to_list tys) ()
+  let f info =
+    let (i, ind) = info.elt in
+    match info.arg_indus with
+    | Some ((ind', _ as iu), _)
+      when Int.equal i info.arg_index || (Int.equal (-1) info.arg_index && Names.eq_ind ind ind') ->
+      info, mkIndUS iu Star
+    | _ -> info, info.arg_head in
+  let tys = Array.to_list tys in
+  Array.of_list @@ snd @@ fold_map2_fix_type env f isinds tys ()
 
 let set_corec_stars env inds tys =
-  let f ind _ (ind', _) acc s =
-    if Names.eq_ind ind ind' then acc, Star else acc, s in
-  let err _ _ _ _ t = t in
-  Array.of_list @@ snd @@ fold_map2_fix_type env f err inds (Array.to_list tys) ()
+  let f info =
+    match info.arg_indus with
+    | Some ((ind, _ as iu), _)
+      when Names.eq_ind ind info.elt ->
+      info, mkIndUS iu Star
+    | _ -> info, info.arg_head in
+  let tys = Array.to_list tys in
+  Array.of_list @@ snd @@ fold_map2_fix_type env f inds tys ()
