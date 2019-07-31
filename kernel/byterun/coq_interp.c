@@ -16,7 +16,19 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stdint.h>
+
 #include <caml/memory.h>
+
+/* This is needed to get access to OCaml's signal stuff, beware that
+   if that's defined for "caml/memory.h" naming conflicts will
+   appear */
+#define CAML_INTERNALS
+#include <caml/signals.h>
+
+/* For signal handling, we hijack some code from the caml runtime */
+/* This is so internal that is not even exported in signals.h */
+extern void caml_process_pending_signals(void);
+
 #include "coq_gc.h"
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
@@ -204,12 +216,6 @@ if (sp - num_args < coq_stack_threshold) {                                     \
     accu = *sp;                                 \
     *sp = swap_accu_sp_tmp__;                   \
   }while(0)
-
-/* For signal handling, we hijack some code from the caml runtime */
-
-extern intnat caml_signals_are_pending;
-extern intnat caml_pending_signals[];
-extern void caml_process_pending_signals(void);
 
 /* The interpreter itself */
 
@@ -508,7 +514,7 @@ value coq_interprete
       print_instr("check_stack");
       CHECK_STACK(0);
       /* We also check for signals */
-      if (caml_signals_are_pending) {
+      if (caml_something_to_do) {
 	/* If there's a Ctrl-C, we reset the vm */
 	if (caml_pending_signals[SIGINT]) { coq_sp = coq_stack_high; }
 	caml_process_pending_signals();
