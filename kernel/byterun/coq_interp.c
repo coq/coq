@@ -207,7 +207,7 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 
 /* For signal handling, we hijack some code from the caml runtime */
 
-extern intnat caml_signals_are_pending;
+extern intnat caml_something_to_do;
 extern intnat caml_pending_signals[];
 extern void caml_process_pending_signals(void);
 
@@ -508,7 +508,7 @@ value coq_interprete
       print_instr("check_stack");
       CHECK_STACK(0);
       /* We also check for signals */
-      if (caml_signals_are_pending) {
+      if (caml_something_to_do) {
 	/* If there's a Ctrl-C, we reset the vm */
 	if (caml_pending_signals[SIGINT]) { coq_sp = coq_stack_high; }
 	caml_process_pending_signals();
