@@ -905,11 +905,10 @@ let tclPROGRESS t =
   if not test then
     tclUNIT res
   else
-    tclZERO (CErrors.UserError (Some "Proofview.tclPROGRESS" , Pp.str"Failed to progress."))
+    tclZERO (CErrors.UserError (Some "Proofview.tclPROGRESS", Pp.str "Failed to progress."))
 
-exception Timeout
 let _ = CErrors.register_handler begin function
-  | Timeout -> CErrors.user_err ~hdr:"Proofview.tclTIMEOUT" (Pp.str"Tactic timeout!")
+  | Logic_monad.Tac_Timeout -> CErrors.user_err ~hdr:"Proofview.tclTIMEOUT" (Pp.str"Tactic timeout!")
   | _ -> raise CErrors.Unhandled
 end
 
@@ -934,7 +933,8 @@ let tclTIMEOUT n t =
       end
       begin let open Logic_monad.NonLogical in function (e, info) ->
         match e with
-        | Logic_monad.Timeout -> return (Util.Inr (Timeout, info))
+        | Logic_monad.Tac_Timeout ->
+          return (Util.Inr (Logic_monad.Tac_Timeout, info))
         | Logic_monad.TacticFailure e ->
           return (Util.Inr (e, info))
         | e -> Logic_monad.NonLogical.raise ~info e

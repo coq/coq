@@ -30,7 +30,7 @@
 exception Exception of exn
 
 (** This exception is used to signal abortion in [timeout] functions. *)
-exception Timeout
+exception Tac_Timeout
 
 (** This exception is used by the tactics to signal failure by lack of
     successes, rather than some other exceptions (like system
@@ -38,7 +38,6 @@ exception Timeout
 exception TacticFailure of exn
 
 let _ = CErrors.register_handler begin function
-  | Timeout -> CErrors.user_err ~hdr:"Some timeout function" (Pp.str"Timeout!")
   | Exception e -> CErrors.print e
   | TacticFailure e -> CErrors.print e
   | _ -> raise CErrors.Unhandled
@@ -99,7 +98,7 @@ struct
   let print_char = fun c -> (); fun () -> print_char c
 
   let timeout = fun n t -> (); fun () ->
-    Control.timeout n t () (Exception Timeout)
+    Control.timeout n t () (Exception Tac_Timeout)
 
   let make f = (); fun () ->
     try f ()
