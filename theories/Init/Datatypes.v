@@ -20,11 +20,15 @@ Require Import Logic.
 
 Inductive Empty_set : Set :=.
 
+Register Empty_set as core.Empty_set.type.
+
 (** [unit] is a singleton datatype with sole inhabitant [tt] *)
 
 Inductive unit : Set :=
     tt : unit.
 
+Register unit as core.unit.type.
+Register tt as core.unit.tt.
 
 (********************************************************************)
 (** * The boolean datatype *)
@@ -138,6 +142,9 @@ Inductive BoolSpec (P Q : Prop) : bool -> Prop :=
   | BoolSpecF : Q -> BoolSpec P Q false.
 Hint Constructors BoolSpec : core.
 
+Register BoolSpec as core.BoolSpec.type.
+Register BoolSpecT as core.BoolSpec.BoolSpecT.
+Register BoolSpecF as core.BoolSpec.BoolSpecF.
 
 (********************************************************************)
 (** * Peano natural numbers *)
@@ -196,6 +203,10 @@ Notation "x + y" := (sum x y) : type_scope.
 
 Arguments inl {A B} _ , [A] B _.
 Arguments inr {A B} _ , A [B] _.
+
+Register sum as core.sum.type.
+Register inl as core.sum.inl.
+Register inr as core.sum.inr.
 
 (** [prod A B], written [A * B], is the product of [A] and [B];
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
@@ -363,6 +374,11 @@ Inductive CompareSpec (Peq Plt Pgt : Prop) : comparison -> Prop :=
  | CompGt : Pgt -> CompareSpec Peq Plt Pgt Gt.
 Hint Constructors CompareSpec : core.
 
+Register CompareSpec as core.CompareSpec.type.
+Register CompEq as core.CompareSpec.CompEq.
+Register CompLt as core.CompareSpec.CompLt.
+Register CompGt as core.CompareSpec.CompGt.
+
 (** For having clean interfaces after extraction, [CompareSpec] is declared
     in Prop. For some situations, it is nonetheless useful to have a
     version in Type. Interestingly, these two versions are equivalent. *)
@@ -372,6 +388,11 @@ Inductive CompareSpecT (Peq Plt Pgt : Prop) : comparison -> Type :=
  | CompLtT : Plt -> CompareSpecT Peq Plt Pgt Lt
  | CompGtT : Pgt -> CompareSpecT Peq Plt Pgt Gt.
 Hint Constructors CompareSpecT : core.
+
+Register CompareSpecT as core.CompareSpecT.type.
+Register CompEqT as core.CompareSpecT.CompEqT.
+Register CompLtT as core.CompareSpecT.CompLtT.
+Register CompGtT as core.CompareSpecT.CompGtT.
 
 Lemma CompareSpec2Type : forall Peq Plt Pgt c,
  CompareSpec Peq Plt Pgt c -> CompareSpecT Peq Plt Pgt c.
