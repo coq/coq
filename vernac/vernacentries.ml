@@ -2267,7 +2267,7 @@ let with_fail ~st f =
     user_err ~hdr:"Fail" (str "The command has not failed!")
   | Ok msg ->
     if not !Flags.quiet || !test_mode
-    then Feedback.msg_info (str "The command has indeed failed with message:" ++ fnl () ++ msg)
+    then Feedback.msg_notice (str "The command has indeed failed with message:" ++ fnl () ++ msg)
 
 let locate_if_not_already ?loc (e, info) =
   match Loc.get_loc info with
