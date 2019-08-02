@@ -385,7 +385,6 @@ open Pltac
 
 ARGUMENT EXTEND ssrindex PRINTED BY { pr_ssrindex }
   INTERPRETED BY { interp_index }
-| [ int_or_var(i) ] -> { mk_index ~loc i }
 END
 
 
@@ -523,7 +522,6 @@ ARGUMENT EXTEND ssrterm
      GLOBALIZED BY { glob_ssrterm } SUBSTITUTED BY { subst_ssrterm }
      RAW_PRINTED BY { pr_ssrterm }
      GLOB_PRINTED BY { pr_ssrterm }
-| [ "YouShouldNotTypeThis" constr(c) ] -> { mk_lterm c }
 END
 
 GRAMMAR EXTEND Gram
@@ -570,7 +568,6 @@ let pr_ssrbwdview _ _ _ = pr_view
 
 ARGUMENT EXTEND ssrbwdview TYPED AS ssrterm list
    PRINTED BY { pr_ssrbwdview }
-| [ "YouShouldNotTypeThis" ] -> { [] }
 END
 
 (* Pcoq *)
@@ -594,7 +591,6 @@ let pr_ssrfwdview _ _ _ = pr_view2
 
 ARGUMENT EXTEND ssrfwdview TYPED AS ast_closure_term list
    PRINTED BY { pr_ssrfwdview }
-| [ "YouShouldNotTypeThis" ] -> { [] }
 END
 
 (* Pcoq *)
@@ -762,7 +758,6 @@ let test_ident_no_do =
 }
 
 ARGUMENT EXTEND ident_no_do PRINTED BY { fun _ _ _ -> Names.Id.print }
-| [ "YouShouldNotTypeThis" ident(id) ] -> { id }
 END
 
 
@@ -857,7 +852,6 @@ let _test_nobinder = Pcoq.Entry.of_parser "test_nobinder" (reject_binder false 0
 }
 
 ARGUMENT EXTEND ssrcpat TYPED AS ssripatrep PRINTED BY { pr_ssripat }
-  | [ "YouShouldNotTypeThis" ssriorpat(x) ] -> { IPatCase(Regular x) }
 END
 
 (* Pcoq *)
@@ -985,7 +979,6 @@ let pr_ssrintrosarg env sigma _ _ prt (tac, ipats) =
 
 ARGUMENT EXTEND ssrintrosarg TYPED AS (tactic * ssrintros)
    PRINTED BY { pr_ssrintrosarg env sigma }
-| [ "YouShouldNotTypeThis" ssrtacarg(arg) ssrintros_ne(ipats) ] -> { arg, ipats }
 END
 
 {
@@ -1711,14 +1704,6 @@ let _ = add_internal_name (is_tagged perm_tag)
 
 (** Tactical extensions. *)
 
-(* The TACTIC EXTEND facility can't be used for defining new user   *)
-(* tacticals, because:                                              *)
-(*  - the concrete syntax must start with a fixed string            *)
-(*   We use the following workaround:                               *)
-(*  - We use the (unparsable) "YouShouldNotTypeThis"  token for tacticals that      *)
-(*    don't start with a token, then redefine the grammar and       *)
-(*    printer using GEXTEND and set_pr_ssrtac, respectively.        *)
-
 {
 
 type ssrargfmt = ArgSsr of string | ArgSep of string
@@ -2242,8 +2227,6 @@ TACTIC EXTEND ssrexact
 END
 
 (** The "congr" tactic *)
-
-(* type ssrcongrarg = open_constr * (int * constr) *)
 
 {
 
