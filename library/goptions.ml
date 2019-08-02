@@ -399,9 +399,9 @@ let print_option_value key =
   let s = read () in
   match s with
     | BoolValue b ->
-	Feedback.msg_info (str "The " ++ str name ++ str " mode is " ++ str (if b then "on" else "off"))
+        Feedback.msg_notice (str "The " ++ str name ++ str " mode is " ++ str (if b then "on" else "off"))
     | _ ->
-	Feedback.msg_info (str "Current value of " ++ str name ++ str " is " ++ msg_option_value (name, s))
+        Feedback.msg_notice (str "Current value of " ++ str name ++ str " is " ++ msg_option_value (name, s))
 
 let get_tables () =
   let tables = !value_tab in

@@ -437,30 +437,25 @@ let cc_tactic depth additionnal_terms =
 	    let cstr=(get_constructor_info uf ipac.cnode).ci_constr in
 	    discriminate_tac cstr p
 	| Incomplete ->
-            let open Glob_term in
-            let env = Proofview.Goal.env gl in
-            let terms_to_complete = List.map (build_term_to_complete uf) (epsilons uf) in
-            let hole = DAst.make @@ GHole (Evar_kinds.InternalHole, Namegen.IntroAnonymous, None) in
-            let pr_missing (c, missing) =
-              let c = Detyping.detype Detyping.Now ~lax:true false Id.Set.empty env sigma c in
-              let holes = List.init missing (fun _ -> hole) in
-              Printer.pr_glob_constr_env env (DAst.make @@ GApp (c, holes))
-            in
-	    Feedback.msg_info
-	      (Pp.str "Goal is solvable by congruence but some arguments are missing.");
-	    Feedback.msg_info
-	      (Pp.str "  Try " ++
-		 hov 8
-		 begin
-		   str "\"congruence with (" ++
-		     prlist_with_sep
-		     (fun () -> str ")" ++ spc () ++ str "(")
-		     pr_missing
-		     terms_to_complete ++
-		     str ")\","
-		 end ++
-		 Pp.str "  replacing metavariables by arbitrary terms.");
-	    Tacticals.New.tclFAIL 0 (str "Incomplete")
+      let open Glob_term in
+      let env = Proofview.Goal.env gl in
+      let terms_to_complete = List.map (build_term_to_complete uf) (epsilons uf) in
+      let hole = DAst.make @@ GHole (Evar_kinds.InternalHole, Namegen.IntroAnonymous, None) in
+      let pr_missing (c, missing) =
+        let c = Detyping.detype Detyping.Now ~lax:true false Id.Set.empty env sigma c in
+        let holes = List.init missing (fun _ -> hole) in
+        Printer.pr_glob_constr_env env (DAst.make @@ GApp (c, holes))
+      in
+            let msg = Pp.(str "Goal is solvable by congruence but some arguments are missing."
+                    ++ fnl () ++
+                    str "  Try " ++
+                    hov 8
+                    begin
+                      str "\"congruence with (" ++ prlist_with_sep (fun () -> str ")" ++ spc () ++ str "(")
+                      pr_missing terms_to_complete ++ str ")\","
+                    end ++
+                    str "  replacing metavariables by arbitrary terms.") in
+      Tacticals.New.tclFAIL 0 msg
 	| Contradiction dis ->
       let env = Proofview.Goal.env gl in
             let p=build_proof env sigma uf (`Prove (dis.lhs,dis.rhs)) in
