@@ -82,9 +82,7 @@ let test_lpar_id_rpar =
 
 let check_no_space tok m strm =
   let n = Stream.count strm in
-  let (_, ep) = Loc.unloc (tok n) in
-  let (bp, _) = Loc.unloc (tok (n + 1)) in
-  if Int.equal ep bp then Some m else None
+  if G_prim.contiguous tok n (n+m-1) then Some m else None
 
 let test_ampersand_ident =
   entry_of_lookahead "test_ampersand_ident" begin
