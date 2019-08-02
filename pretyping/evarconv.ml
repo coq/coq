@@ -773,7 +773,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
   (* Evar must be undefined since we have flushed evars *)
   let () = if !debug_unification then
 	     let open Pp in
-             Feedback.msg_notice (v 0 (pr_state env evd appr1 ++ cut () ++ pr_state env evd appr2 ++ cut ())) in
+             Feedback.msg_debug (v 0 (pr_state env evd appr1 ++ cut () ++ pr_state env evd appr2 ++ cut ())) in
   match (flex_kind_of_term flags env evd term1 sk1,
          flex_kind_of_term flags env evd term2 sk2) with
     | Flexible (sp1,al1), Flexible (sp2,al2) ->
@@ -1569,7 +1569,7 @@ let apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 =
   let (term2,l2 as appr2) = try destApp evd t2 with DestKO -> (t2, [||]) in
   let () = if !debug_unification then
 	     let open Pp in
-             Feedback.msg_notice (v 0 (str "Heuristic:" ++ spc () ++
+             Feedback.msg_debug (v 0 (str "Heuristic:" ++ spc () ++
                                 Termops.Internal.print_constr_env env evd t1 ++ cut () ++
                                 Termops.Internal.print_constr_env env evd t2 ++ cut ())) in
   let app_empty = Array.is_empty l1 && Array.is_empty l2 in

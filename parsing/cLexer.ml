@@ -436,7 +436,7 @@ let comment_stop ep =
     let bp = match !comment_begin with
         Some bp -> bp
       | None ->
-          Feedback.msg_notice
+          Feedback.msg_debug
             (str "No begin location for comment '"
              ++ str current_s ++str"' ending at  "
              ++ int ep);
