@@ -377,7 +377,7 @@ let build_beq_scheme mode kn =
         | CoFinite ->
           raise NoDecidabilityCoInductive;
         | Finite ->
-          mkFix (((Array.make nb_ind 0),i),(names,types,cores))
+          mkFixOpt (((Array.make nb_ind 0),i),(names,types,cores))
         | BiFinite ->
           (* If the inductive type is not recursive, the fixpoint is
              not used, so let's replace it with garbage *)

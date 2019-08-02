@@ -395,7 +395,7 @@ let ise_stack2 no_app env evd f sk1 sk2 =
        else fail (UnifFailure (i, NotSameHead))
     | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1)::q1,
       Stack.Fix (((li2, i2),(_,tys2,bds2)),a2)::q2 ->
-      if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
+      if Int.equal i1 i2 && Array.equal (Option.equal Int.equal) li1 li2 then
         match ise_and i [
           (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
           (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
@@ -424,7 +424,7 @@ let exact_ise_stack2 env evd f sk1 sk2 =
       (fun i -> f env i CONV t1 t2)]
     | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1)::q1,
       Stack.Fix (((li2, i2),(_,tys2,bds2)),a2)::q2 ->
-      if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
+      if Int.equal i1 i2 && Array.equal (Option.equal Int.equal) li1 li2 then
         ise_and i [
           (fun i -> ise_stack2 i q1 q2);
           (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
@@ -1038,7 +1038,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           eta_constructor flags env evd sk2 u sk1 term1
 
         | Fix ((li1, i1),(_,tys1,bds1 as recdef1)), Fix ((li2, i2),(_,tys2,bds2)) -> (* Partially applied fixs *)
-          if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
+          if Int.equal i1 i2 && Array.equal (Option.equal Int.equal) li1 li2 then
             ise_and evd [
               (fun i -> ise_array2 i (fun i' -> evar_conv_x flags env i' CONV) tys1 tys2);
               (fun i -> ise_array2 i (fun i' -> evar_conv_x flags (push_rec_types recdef1 env) i' CONV) bds1 bds2);

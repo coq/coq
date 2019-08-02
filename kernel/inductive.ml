@@ -1005,7 +1005,7 @@ let check_one_fix renv recpos trees def =
            then f is guarded with respect to S in (g a1 ... am).
            Eduardo 7/9/98 *)
         | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
-            let decrArg = recindxs.(i) in
+            let decrArg = Option.get recindxs.(i) in
             begin try
               List.iter (check_rec_call renv []) l;
               Array.iter (check_rec_call renv []) typarray;
@@ -1170,9 +1170,11 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
   (Array.map fst rv, Array.map snd rv)
 
 
-let check_fix env ((nvect,_),(names,_,bodies as recdef) as fix) =
+let check_fix env ((nvect,i),(names,types,bodies as recdef)) =
   let flags = Environ.typing_flags env in
   if flags.check_guarded then
+    let nvect = Array.map Option.get nvect in
+    let fix = (nvect, i), (names, types, bodies) in
     let (minds, rdef) = inductive_of_mutfix env fix in
     let get_tree (kn,i) =
       let mib = Environ.lookup_mind kn env in

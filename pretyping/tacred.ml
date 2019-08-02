@@ -217,7 +217,7 @@ let check_fix_reversibility sigma labs args ((lv,i),(_,tys,bds)) =
       | [] -> ()
       | _ -> raise Elimconst)
     labs;
-  let k = lv.(i) in
+  let k = Option.get lv.(i) in
   if k < nargs then
 (*  Such an optimisation would need eta-expansion
       let p = destRel (List.nth args k) in

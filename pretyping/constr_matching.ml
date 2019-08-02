@@ -390,7 +390,7 @@ let matches_core env sigma allow_bound_rels
           List.fold_left chk_branch chk_head br1
 
       |	PFix ((ln1,i1),(lna1,tl1,bl1)), Fix ((ln2,i2),(lna2,tl2,bl2))
-           when Array.equal Int.equal ln1 ln2 && i1 = i2 ->
+           when Array.equal (Option.equal Int.equal) ln1 ln2 && i1 = i2 ->
           let ctx' = Array.fold_left3 (fun ctx na1 na2 t2 -> push_binder na1 na2 t2 ctx) ctx lna1 lna2 tl2 in
           let env' = Array.fold_left2 (fun env na2 c2 -> EConstr.push_rel (LocalAssum (na2,c2)) env) env lna2 tl2 in
           let subst = Array.fold_left4 (match_under_common_fix_binders sorec sigma binding_vars ctx ctx' env env') subst tl1 tl2 bl1 bl2 in

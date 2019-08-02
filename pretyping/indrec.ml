@@ -429,7 +429,7 @@ let mis_make_indrec env sigma ?(force_mutual=false) listdepkind mib u =
               mrec (i+nctyi) (Context.Rel.nhyps arsign ::ln) (target_relevance::lrelevance) (typtyi::ltyp)
                 (deftyi::ldef) rest
         | [] ->
-            let fixn = Array.of_list (List.rev ln) in
+            let fixn = Array.of_list @@ List.rev @@ List.map (fun n -> Some n) ln in
             let fixtyi = Array.of_list (List.rev ltyp) in
             let fixdef = Array.of_list (List.rev ldef) in
             let lrelevance = CArray.rev_of_list lrelevance in

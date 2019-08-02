@@ -11,7 +11,7 @@ sig
   val inter : t -> t -> t
   val diff : t -> t -> t
   val fold : (var -> 'a -> 'a) -> t -> 'a -> 'a
-  val pr : string -> t -> Pp.t
+  val pr : t -> Pp.t
 end
 
 module Stage :

@@ -304,8 +304,10 @@ let constr_display csr =
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
       ^(array_display bl)^")"
   | Fix ((t,i),(lna,tl,bl)) ->
-      "Fix(([|"^(Array.fold_right (fun x i -> (string_of_int x)^(if not(i="")
-        then (";"^i) else "")) t "")^"|],"^(string_of_int i)^"),"
+      "Fix(([|"^(Array.fold_right (fun xo i ->
+        Option.default "" (Option.map string_of_int xo)
+        ^(if not(i="") then (";"^i) else "")) t "")
+      ^"|],"^(string_of_int i)^"),"
       ^(array_display tl)^",[|"
       ^(Array.fold_right (fun x i -> (name_display x)^(if not(i="")
         then (";"^i) else "")) lna "")^"|],"
@@ -432,7 +434,7 @@ let print_pure_constr csr =
         for k = 0 to (Array.length tl) - 1 do
           open_vbox 0;
           name_display lna.(k); print_string "/";
-          print_int t.(k); print_cut(); print_string ":";
+          Option.iter print_int t.(k); print_cut(); print_string ":";
           box_display tl.(k) ; print_cut(); print_string ":=";
           box_display bl.(k); close_box ();
           print_cut()

@@ -169,7 +169,7 @@ val mkCase : case_info * constr * constr * constr array -> constr
 type ('constr, 'types) prec_declaration =
     Name.t Context.binder_annot array * 'types array * 'constr array
 type ('constr, 'types) pfixpoint =
-    (int array * int) * ('constr, 'types) prec_declaration
+    (int option array * int) * ('constr, 'types) prec_declaration
   (* The array of [int]'s tells for each component of the array of
      mutual fixpoints the number of lambdas to skip before finding the
      recursive argument (e.g., value is 2 in "fix f (x:A) (y:=t) (z:B)
@@ -187,6 +187,11 @@ type rec_declaration = (constr, types) prec_declaration
 
 type fixpoint = (constr, types) pfixpoint
 val mkFix : fixpoint -> constr
+
+type ('constr, 'types) pfixpoint_nopt =
+   (int array * int) * ('constr, 'types) prec_declaration
+type fixpoint_nopt = (constr, types) pfixpoint_nopt
+val mkFixOpt : fixpoint_nopt -> constr
 
 (** If [funnames = [|f1,.....fn|]]
       [typarray = [|t1,...tn|]]

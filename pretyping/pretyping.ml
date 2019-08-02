@@ -84,7 +84,7 @@ let search_guard ?loc env possible_indexes fixdefs =
   let is_singleton = function [_] -> true | _ -> false in
   if List.for_all is_singleton possible_indexes then
     let indexes = Array.of_list (List.map List.hd possible_indexes) in
-    let fix = ((indexes, 0),fixdefs) in
+    let fix = ((Array.map (fun i -> Some i) indexes, 0),fixdefs) in
     (try check_fix env fix
      with reraise ->
        let (e, info) = Exninfo.capture reraise in
@@ -97,7 +97,7 @@ let search_guard ?loc env possible_indexes fixdefs =
        List.iter
          (fun l ->
             let indexes = Array.of_list l in
-            let fix = ((indexes, 0),fixdefs) in
+            let fix = ((Array.map (fun i -> Some i) indexes, 0),fixdefs) in
             (* spiwack: We search for a unspecified structural
                argument under the assumption that we need to check the
                guardedness condition (otherwise the first inductive argument
@@ -756,7 +756,7 @@ struct
           in
           let fixdecls = (names,ftys,fdefs) in
           let indexes = esearch_guard ?loc !!env sigma possible_indexes fixdecls in
-          make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
+          make_judge (mkFixOpt ((indexes,i),fixdecls)) ftys.(i)
         | GCoFix i ->
           let fixdecls = (names,ftys,fdefs) in
           let cofix = (i, fixdecls) in

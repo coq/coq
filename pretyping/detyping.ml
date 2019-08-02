@@ -619,9 +619,9 @@ let detype_fix detype flags avoid env sigma (vn,_ as nvn) (names,tys,bodies) =
       (avoid, env, []) names tys in
   let n = Array.length tys in
   let v = Array.map3
-    (fun c t i -> share_names detype flags (i+1) [] def_avoid def_env sigma c (lift n t))
+    (fun c t io -> share_names detype flags (Option.get io + 1) [] def_avoid def_env sigma c (lift n t))
     bodies tys vn in
-  GRec(GFix (Array.map (fun i -> Some i) (fst nvn), snd nvn),Array.of_list (List.rev lfi),
+  GRec(GFix ((fst nvn), snd nvn),Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)

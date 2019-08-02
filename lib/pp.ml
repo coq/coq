@@ -116,6 +116,7 @@ let align () = Ppcmd_print_break (0,0)
 let int   n  = str (string_of_int n)
 let real  r  = str (string_of_float r)
 let bool  b  = str (string_of_bool b)
+let option f o = Option.default (mt ()) (Option.map f o)
 
 (* XXX: To Remove *)
 let strbrk s =

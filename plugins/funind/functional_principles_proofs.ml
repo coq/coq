@@ -1027,7 +1027,7 @@ let prove_princ_for_struct (evd : Evd.evar_map ref) interactive_proof fun_num
               prod_applist (project g) types
                 (List.rev_map var_of_decl princ_params)
             in
-            { idx = idxs.(i) - fix_offset
+            { idx = Option.get idxs.(i) - fix_offset
             ; name = Nameops.Name.get_id (fresh_id names.(i).binder_name)
             ; types
             ; offset = fix_offset

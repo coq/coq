@@ -640,7 +640,8 @@ let rec execute env stg cstr =
       in
       stg, cstrnt, cstr, t
 
-    | Fix ((vn, i as vni), (names, lar, vdef)) ->
+    | Fix ((von, i as vni), (names, lar, vdef)) ->
+      let vn = Array.map Option.get von in
       let stg = State.push stg in
       let lar_star =
         let inds = get_rec_inds env vn lar in

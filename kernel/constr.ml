@@ -80,6 +80,8 @@ type 'constr pexistential = existential_key * 'constr list
 type ('constr, 'types) prec_declaration =
     Name.t binder_annot array * 'types array * 'constr array
 type ('constr, 'types) pfixpoint =
+    (int option array * int) * ('constr, 'types) prec_declaration
+type ('constr, 'types) pfixpoint_nopt =
     (int array * int) * ('constr, 'types) prec_declaration
 type ('constr, 'types) pcofixpoint =
     int * ('constr, 'types) prec_declaration
@@ -121,6 +123,7 @@ type types = constr
 
 type rec_declaration = (constr, types) prec_declaration
 type fixpoint = (constr, types) pfixpoint
+type fixpoint_nopt = (constr, types) pfixpoint_nopt
 type cofixpoint = (constr, types) pcofixpoint
 
 (*********************)
@@ -216,6 +219,8 @@ let mkCase (ci, p, c, ac) = Case (ci, p, c, ac)
 *)
 
 let mkFix fix = Fix fix
+let mkFixOpt ((vn, i), rec_decl) =
+  mkFix ((Array.map (fun i -> Some i) vn, i), rec_decl)
 
 (* If funnames = [|f1,...fn|]
       typarray = [|t1,...tn|]
@@ -969,8 +974,8 @@ let compare_head_gen_leq_with_cstrnts kind1 kind2 leq_universes leq_sorts leq_an
     eq_constructor c1 c2 && leq_universes (GlobRef.ConstructRef c1) nargs u1 u2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
     eq 0 p1 p2 && eq 0 c1 c2 && Array.equal (eq 0) bl1 bl2
-  | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
-    Int.equal i1 i2 && Array.equal Int.equal ln1 ln2
+  | Fix ((lon1, i1),(_,tl1,bl1)), Fix ((lon2, i2),(_,tl2,bl2)) ->
+    Int.equal i1 i2 && Array.equal (Option.equal Int.equal) lon1 lon2
     && Array.equal_norefl (eq 0) tl1 tl2 && Array.equal_norefl (eq 0) bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
     Int.equal ln1 ln2 && Array.equal_norefl (eq 0) tl1 tl2 && Array.equal_norefl (eq 0) bl1 bl2
@@ -1132,7 +1137,7 @@ let constr_ord_int f t1 t2 =
     let c=fg i1 i2 j1 j2 in
     if Int.equal c 0 then h k1 k2 else c in
   let fix_cmp (a1, i1) (a2, i2) =
-    ((Array.compare Int.compare) =? Int.compare) a1 a2 i1 i2
+    ((Array.compare (Option.compare Int.compare)) =? Int.compare) a1 a2 i1 i2
   in
   match kind t1, kind t2 with
     | Cast (c1,_,_), _ -> f c1 t2
@@ -1255,9 +1260,9 @@ let hasheq t1 t2 =
     | Construct (cstr1,u1), Construct (cstr2,u2) -> cstr1 == cstr2 && u1 == u2
     | Case (ci1,p1,c1,bl1), Case (ci2,p2,c2,bl2) ->
       ci1 == ci2 && p1 == p2 && c1 == c2 && array_eqeq bl1 bl2
-    | Fix ((ln1, i1),(lna1,tl1,bl1)), Fix ((ln2, i2),(lna2,tl2,bl2)) ->
+    | Fix ((lon1, i1),(lna1,tl1,bl1)), Fix ((lon2, i2),(lna2,tl2,bl2)) ->
       Int.equal i1 i2
-      && Array.equal Int.equal ln1 ln2
+      && Array.equal (Option.equal Int.equal) lon1 lon2
       && array_eqeq lna1 lna2
       && array_eqeq tl1 tl2
       && array_eqeq bl1 bl2
@@ -1540,8 +1545,8 @@ let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =
   let fixl = Array.mapi (fun i na -> (na.binder_name,t.(i),tl.(i),bl.(i))) lna in
   hov 1
       (str"fix " ++ int i ++ spc() ++  str"{" ++
-         v 0 (prlist_with_sep spc (fun (na,i,ty,bd) ->
-           Name.print na ++ str"/" ++ int i ++ str":" ++ pr_constr ty ++
+         v 0 (prlist_with_sep spc (fun (na,io,ty,bd) ->
+           Name.print na ++ str"/" ++ Pp.option int io ++ str":" ++ pr_constr ty ++
            cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
          str"}")
 

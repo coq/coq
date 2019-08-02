@@ -355,7 +355,7 @@ and nf_atom_type env sigma atom =
          in an environment where the fixpoints have been pushed *)
       let norm_body i v = nf_val env sigma (napply v fargs) (lift nbfix tt.(i)) in
       let ft = Array.mapi norm_body ft in
-      mkFix((rp,s),(names,tt,ft)), tt.(s)
+      mkFixOpt((rp,s),(names,tt,ft)), tt.(s)
   | Acofix(tt,ft,s,_) | Acofixe(tt,ft,s,_) ->
       let tt = Array.map (fun t -> nf_type_sort env sigma t) tt in
       let tt = Array.map fst tt and rt = Array.map snd tt in

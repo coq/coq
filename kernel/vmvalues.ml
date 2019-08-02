@@ -534,7 +534,7 @@ let unsafe_fb_code fb i =
   let off = (2 * i) * (Sys.word_size / 8) in
   Obj.obj (Obj.add_offset (Obj.repr fb) (Int32.of_int off))
 
-let unsafe_rec_arg fb i = int_tcode (unsafe_fb_code fb i) 1
+let unsafe_rec_arg fb i = Some (int_tcode (unsafe_fb_code fb i) 1)
 
 let rec_args vf =
   let fb = first (Obj.repr vf) in

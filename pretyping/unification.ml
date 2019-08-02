@@ -859,7 +859,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
                reduce curenvnb pb opt substn cM cN)
 
         | Fix ((ln1,i1),(lna1,tl1,bl1)), Fix ((ln2,i2),(_,tl2,bl2)) when
-               Int.equal i1 i2 && Array.equal Int.equal ln1 ln2 ->
+               Int.equal i1 i2 && Array.equal (Option.equal Int.equal) ln1 ln2 ->
             (try
              let opt' = {opt with at_top = true; with_types = false} in
              let curenvnb' = Array.fold_right2 (fun na t -> push (na,t)) lna1 tl1 curenvnb in
