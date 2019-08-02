@@ -111,51 +111,26 @@ value uint63_mulc(value x, value y, value* h) {
 #define le128(xh,xl,yh,yl) (uint63_lt(xh,yh) || (uint63_eq(xh,yh) && uint63_leq(xl,yl)))
 
 #define maxuint63 ((uint64_t)0x7FFFFFFFFFFFFFFF)
-/* precondition: y <> 0 */
-/* outputs r and sets ql to q % 2^63 s.t. x = q * y + r, r < y */
+/* precondition: xh < y */
+/* outputs r and sets ql to q s.t. x = q * y + r, r < y */
 static value uint63_div21_aux(value xh, value xl, value y, value* ql) {
-  xh = uint63_of_value(xh);
-  xl = uint63_of_value(xl);
+  uint64_t nh = uint63_of_value(xh);
+  uint64_t nl = uint63_of_value(xl);
   y = uint63_of_value(y);
-  uint64_t maskh = 0;
-  uint64_t maskl = 1;
-  uint64_t dh = 0;
-  uint64_t dl = y;
-  int cmp = 1;
-  /* int n = 0 */
-  /* loop invariant: mask = 2^n, d = mask * y, (2 * d <= x -> cmp), n >= 0, d < 2^(2*63) */
-  while (!(dh >> (63 - 1)) && cmp) {
-    dh = (dh << 1) | (dl >> (63 - 1));
-    dl = (dl << 1) & maxuint63;
-    maskh = (maskh << 1) | (maskl >> (63 - 1));
-    maskl = (maskl << 1) & maxuint63;
-    /* ++n */
-    cmp = lt128(dh,dl,xh,xl);
+  uint64_t q = 0;
+  for (int i = 0; i < 63; ++i) {
+    // invariants: 0 <= nh < y, nl = (xl*2^i) % 2^64,
+    // (q*y + nh) * 2^(63-i) + (xl % 2^(63-i)) = (xh%y) * 2^63 + xl
+    nl <<= 1;
+    nh = (nh << 1) | (nl >> 63);
+    q <<= 1;
+    if (nh >= y) { q |= 1; nh -= y; }
   }
-  uint64_t remh = xh;
-  uint64_t reml = xl;
-  /* uint64_t quotienth = 0; */
-  uint64_t quotientl = 0;
-  /* loop invariant: x = quotient * y + rem, y * 2^(n+1) > r,
-     mask = floor(2^n), d = mask * y, n >= -1 */
-  while (maskh | maskl) {
-    if (le128(dh,dl,remh,reml)) { /* if rem >= d, add one bit and subtract d */
-      /* quotienth = quotienth | maskh */
-      quotientl = quotientl | maskl;
-      remh = (uint63_lt(reml,dl)) ? (remh - dh - 1) : (remh - dh);
-      reml = reml - dl;
-    }
-    maskl = (maskl >> 1) | ((maskh << (63 - 1)) & maxuint63);
-    maskh = maskh >> 1;
-    dl = (dl >> 1) | ((dh << (63 - 1)) & maxuint63);
-    dh = dh >> 1;
-    /* decr n */
-  }
-  *ql = Val_int(quotientl);
-  return Val_int(reml);
+  *ql = Val_int(q);
+  return Val_int(nh);
 }
 value uint63_div21(value xh, value xl, value y, value* ql) {
-  if (uint63_of_value(y) == 0) {
+  if (uint63_leq(y, xh)) {
     *ql = Val_int(0);
     return Val_int(0);
   } else {
