@@ -532,6 +532,8 @@ let check_binder_annot s x =
   then x
   else (warn_bad_relevance x; {x with binder_relevance = r'})
 
+exception Found of State.t * Constraints.t * constr * types
+
 (* The typing machine. *)
     (* ATTENTION : faudra faire le typage du contexte des Const,
     Ind et Constructsi un jour cela devient des constructions
@@ -641,21 +643,46 @@ let rec execute env stg cstr =
       stg, cstrnt, cstr, t
 
     | Fix ((von, i as vni), (names, lar, vdef)) ->
-      let vn = Array.map Option.get von in
-      let stg = State.push stg in
-      let lar_star =
-        let inds = get_rec_inds env vn lar in
-        let vninds = List.fold_left2 (fun acc n ind -> (n, ind) :: acc) [] (Array.to_list vn) inds in
-        set_rec_stars env vninds lar in
-      let stg', cstrnt', (names', lar', vdef', _ as recdeft) = execute_recdef env stg (names, lar_star, vdef) in
+      let possible_indices =
+        List.map Array.of_list @@
+        List.combinations @@
+        Array.to_list @@
+        Array.map2
+        (fun on ar -> match on with
+          | Some n -> [n]
+          | None ->
+            List.map_i (fun i _ -> i) 0 @@
+            List.filter Context.Rel.Declaration.is_local_assum @@
+            Term.prod_assum ar)
+        von lar in
 
-      let alphas = get_rec_vars env vn lar' in
-      let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
-      let stg_check, cstrnt_check = execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) Finite in
+      let try_vn vn =
+        let stg = State.push stg in
+        let lar_star =
+          let inds = get_rec_inds env vn lar in
+          let vninds = List.fold_left2 (fun acc n ind -> (n, ind) :: acc) [] (Array.to_list vn) inds in
+          set_rec_stars env vninds lar in
+        let stg', cstrnt', (names', lar', vdef', _ as recdeft) = execute_recdef env stg (names, lar_star, vdef) in
 
-      let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg_check)) lar' in
-      let fix = (vni, (names', lar_star, vdef')) in
-      check_fix env fix; State.pop stg_check, cstrnt_check, mkFix fix, lar'.(i)
+        let alphas = get_rec_vars env vn lar' in
+        let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
+        let stg_check, cstrnt_check = execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) Finite in
+
+        let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg_check)) lar' in
+        let fix = (vni, (names', lar_star, vdef')) in
+        check_fix env fix;
+        raise (Found (State.pop stg_check, cstrnt_check, mkFix fix, lar'.(i))) in
+
+      begin try
+        if Int.equal 1 @@ List.length possible_indices then
+          try_vn @@ List.hd possible_indices
+        else
+          List.iter (fun vn -> try try_vn vn with TypeError _ -> ()) possible_indices;
+          user_err ~hdr:"search_guard"
+            (Pp.str "Cannot guess decreasing argument of fix.")
+      with Found (stg, cstrnt, c, ty) ->
+        stg, cstrnt, c, ty
+      end
 
     | CoFix (i, (names, lar, vdef)) ->
       let stg = State.push stg in
