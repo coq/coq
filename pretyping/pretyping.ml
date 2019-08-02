@@ -741,19 +741,17 @@ struct
       let fdefs = Array.map (fun x -> nf (j_val x)) vdefj in
       let fixj = match fixkind with
         | GFix (vn,i) ->
-              (* First, let's find the guard indexes. *)
-              (* If recursive argument was not given by user, we try all args.
-                 An earlier approach was to look only for inductive arguments,
-                 but doing it properly involves delta-reduction, and it finally
-                 doesn't seem worth the effort (except for huge mutual
-                 fixpoints ?) *)
+          (* First, let's find the guard indexes. *)
+          (* If recursive argument was not given by user, we try all args.
+            An earlier approach was to look only for inductive arguments,
+            but doing it properly involves delta-reduction, and it finally
+            doesn't seem worth the effort (except for huge mutual fixpoints ?) *)
           let possible_indexes =
             Array.to_list (Array.mapi
-                             (fun i annot -> match annot with
-                             | Some n -> [n]
-                             | None -> List.map_i (fun i _ -> i) 0 ctxtv.(i))
-           vn)
-          in
+              (fun i annot -> match annot with
+                | Some n -> [n]
+                | None -> List.map_i (fun i _ -> i) 0 ctxtv.(i))
+              vn) in
           let fixdecls = (names,ftys,fdefs) in
           let indexes = if (typing_flags !!env).Declarations.check_guarded then
             Array.map (fun i -> Some i) @@ esearch_guard ?loc !!env sigma possible_indexes fixdecls
