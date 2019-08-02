@@ -932,7 +932,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
     let () = if !debug_RAKAM then
 	let open Pp in
         let pr c = Termops.Internal.print_constr_env env sigma c in
-	Feedback.msg_notice
+        Feedback.msg_debug
              (h 0 (str "<<" ++ pr x ++
                    str "|" ++ cut () ++ Cst_stack.pr env sigma cst_l ++
 		   str "|" ++ cut () ++ Stack.pr pr stack ++
@@ -941,7 +941,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
     let c0 = EConstr.kind sigma x in
     let fold () =
       let () = if !debug_RAKAM then
-	  let open Pp in Feedback.msg_notice (str "<><><><><>") in
+          let open Pp in Feedback.msg_debug (str "<><><><><>") in
       ((EConstr.of_kind c0, stack),cst_l)
     in
     match c0 with
