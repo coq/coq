@@ -96,55 +96,32 @@ let le (x : int) (y : int) =
   (x lxor 0x4000000000000000) <= (y lxor 0x4000000000000000)
 [@@ocaml.inline always]
 
-(* A few helper functions on 128 bits *)
-let lt128 xh xl yh yl =
-  lt xh yh || (xh = yh && lt xl yl)
-
-let le128 xh xl yh yl =
-  lt xh yh || (xh = yh && le xl yl)
-
     (* division of two numbers by one *)
-(* precondition: y <> 0 *)
-(* outputs: q % 2^63, r s.t. x = q * y + r, r < y *)
+(* precondition: xh < y *)
+(* outputs: q, r s.t. x = q * y + r, r < y *)
 let div21 xh xl y =
-  let maskh = ref 0 in
-  let maskl = ref 1 in
-  let dh = ref 0 in
-  let dl = ref y in
-  let cmp = ref true in
-  (* n = ref 0 *)
-  (* loop invariant: mask = 2^n, d = mask * y, (2 * d <= x -> cmp), n >= 0 *)
-  while !dh >= 0 && !cmp do (* dh >= 0 tests that dh highest bit is zero *)
-    (* We don't use addmuldiv below to avoid checks on 1 *)
-    dh := (!dh lsl 1) lor (!dl lsr (uint_size - 1));
-    dl := !dl lsl 1;
-    maskh := (!maskh lsl 1) lor (!maskl lsr (uint_size - 1));
-    maskl := !maskl lsl 1;
-    (* incr n *)
-    cmp := lt128 !dh !dl xh xl;
-  done; (* mask = 2^n, d = 2^n * y, 2 * d > x *)
-  let remh = ref xh in
-  let reml = ref xl in
-  (* quotienth = ref 0 *)
-  let quotientl = ref 0 in
-  (* loop invariant: x = quotient * y + rem, y * 2^(n+1) > r,
-     mask = floor(2^n), d = mask * y, n >= -1 *)
-  while !maskh lor !maskl <> 0 do
-    if le128 !dh !dl !remh !reml then begin (* if rem >= d, add one bit and subtract d *)
-      (* quotienth := !quotienth lor !maskh *)
-      quotientl := !quotientl lor !maskl;
-      remh := if lt !reml !dl then !remh - !dh - 1 else !remh - !dh;
-      reml := !reml - !dl;
-    end;
-    maskl := (!maskl lsr 1) lor (!maskh lsl (uint_size - 1));
-    maskh := !maskh lsr 1;
-    dl := (!dl lsr 1) lor (!dh lsl (uint_size - 1));
-    dh := !dh lsr 1;
-    (* decr n *)
+  (* nh might temporarily grow as large as 2*y - 1 in the loop body,
+     so we store it as a 64-bit unsigned integer *)
+  let nh = ref xh in
+  let nl = ref xl in
+  let q = ref 0 in
+  for _i = 0 to 62 do
+    (* invariants: 0 <= nh < y, nl = (xl*2^i) % 2^63,
+       (q*y + nh) * 2^(63-i) + (xl % 2^(63-i)) = (xh%y) * 2^63 + xl *)
+    nh := Int64.logor (Int64.shift_left !nh 1) (Int64.of_int (!nl lsr 62));
+    nl := !nl lsl 1;
+    q := !q lsl 1;
+    (* TODO: use "Int64.unsigned_compare !nh y >= 0",
+       once OCaml 4.08 becomes the minimal required version *)
+    if Int64.compare !nh 0L < 0 || Int64.compare !nh y >= 0 then
+      begin q := !q lor 1; nh := Int64.sub !nh y; end
   done;
-  !quotientl, !reml
+  !q, Int64.to_int !nh
 
-let div21 xh xl y = if y = 0 then 0, 0 else div21 xh xl y
+let div21 xh xl y =
+  let xh = to_uint64 xh in
+  let y = to_uint64 y in
+  if Int64.compare y xh <= 0 then 0, 0 else div21 xh xl y
 
      (* exact multiplication *)
 (* TODO: check that none of these additions could be a logical or *)
