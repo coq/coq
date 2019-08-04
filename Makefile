@@ -108,7 +108,7 @@ GRAMMLFILES := $(addsuffix .ml, $(GRAMFILES)) $(addsuffix .mli, $(GRAMFILES))
 GENGRAMFILES := $(GRAMMLFILES) gramlib/.pack/gramlib.ml
 GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES)  ide/coqide_os_specific.ml kernel/copcodes.ml kernel/uint63.ml
 GENHFILES:=kernel/byterun/coq_instruct.h kernel/byterun/coq_jumptbl.h
-GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
+GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) kernel/genOpcodeFiles.exe
 COQ_EXPORTED += GRAMFILES GRAMMLFILES GENGRAMFILES GENMLFILES GENHFILES GENFILES
 
 ## More complex file lists
@@ -263,7 +263,7 @@ clean-ide:
 	rm -f ide/input_method_lexer.ml
 	rm -f ide/highlight.ml ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
 	rm -f ide/utf8_convert.ml
-	rm -f ide/default.bindings
+	rm -f ide/default.bindings ide/default_bindings_src.exe
 	rm -rf $(COQIDEAPP)
 
 mlgclean:
