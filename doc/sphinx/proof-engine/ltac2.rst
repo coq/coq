@@ -17,16 +17,16 @@ Coq, yet it is at the same time its Achilles' heel. Indeed, Ltac:
 - is error-prone and fragile
 - has an intricate implementation
 
-Following the need of users that start developing huge projects relying
+Following the need of users who are developing huge projects relying
 critically on Ltac, we believe that we should offer a proper modern language
 that features at least the following:
 
 - at least informal, predictable semantics
-- a typing system
-- standard programming facilities (i.e. datatypes)
+- a type system
+- standard programming facilities (e.g., datatypes)
 
 This new language, called Ltac2, is described in this chapter. It is still
-experimental but we encourage nonetheless users to start testing it,
+experimental but we nonetheless encourage users to start testing it,
 especially wherever an advanced tactic language is needed. The previous
 implementation of Ltac, described in the previous chapter, will be referred to
 as Ltac1.
@@ -36,9 +36,9 @@ as Ltac1.
 General design
 --------------
 
-There are various alternatives to Ltac1, such that Mtac or Rtac for instance.
-While those alternatives can be quite distinct from Ltac1, we designed
-Ltac2 to be closest as reasonably possible to Ltac1, while fixing the
+There are various alternatives to Ltac1, such as Mtac or Rtac for instance.
+While those alternatives can be quite different from Ltac1, we designed
+Ltac2 to be as close as reasonably possible to Ltac1, while fixing the
 aforementioned defects.
 
 In particular, Ltac2 is:
@@ -47,11 +47,11 @@ In particular, Ltac2 is:
 
   * a call-by-value functional language
   * with effects
-  * together with Hindley-Milner type system
+  * together with the Hindley-Milner type system
 
 - a language featuring meta-programming facilities for the manipulation of
   Coq-side terms
-- a language featuring notation facilities to help writing palatable scripts
+- a language featuring notation facilities to help write palatable scripts
 
 We describe more in details each point in the remainder of this document.
 
@@ -77,7 +77,7 @@ Sticking to a standard ML type system can be considered somewhat weak for a
 meta-language designed to manipulate Coq terms. In particular, there is no
 way to statically guarantee that a Coq term resulting from an Ltac2
 computation will be well-typed. This is actually a design choice, motivated
-by retro-compatibility with Ltac1. Instead, well-typedness is deferred to
+by backward compatibility with Ltac1. Instead, well-typedness is deferred to
 dynamic checks, allowing many primitive functions to fail whenever they are
 provided with an ill-typed term.
 
@@ -92,7 +92,7 @@ Type Syntax
 ~~~~~~~~~~~
 
 At the level of terms, we simply elaborate on Ltac1 syntax, which is quite
-close to e.g. the one of OCaml. Types follow the simply-typed syntax of OCaml.
+close to OCaml. Types follow the simply-typed syntax of OCaml.
 
 The non-terminal :production:`lident` designates identifiers starting with a
 lowercase.
@@ -122,7 +122,7 @@ Built-in types include:
 Type declarations
 ~~~~~~~~~~~~~~~~~
 
-One can define new types by the following commands.
+One can define new types with the following commands.
 
 .. cmd:: Ltac2 Type {? @ltac2_typeparams } @lident
    :name: Ltac2 Type
@@ -149,7 +149,7 @@ One can define new types by the following commands.
 
    Variants are sum types defined by constructors and eliminated by
    pattern-matching. They can be recursive, but the `rec` flag must be
-   explicitly set. Pattern-maching must be exhaustive.
+   explicitly set. Pattern matching must be exhaustive.
 
    Records are product types with named fields and eliminated by projection.
    Likewise they can be recursive if the `rec` flag is set.
@@ -158,15 +158,15 @@ One can define new types by the following commands.
 
       Open variants are a special kind of variant types whose constructors are not
       statically defined, but can instead be extended dynamically. A typical example
-      is the standard `exn` type. Pattern-matching must always include a catch-all
-      clause. They can be extended by this command.
+      is the standard `exn` type. Pattern matching on open variants must always include a catch-all
+      clause. They can be extended with this command.
 
 Term Syntax
 ~~~~~~~~~~~
 
 The syntax of the functional fragment is very close to the one of Ltac1, except
 that it adds a true pattern-matching feature, as well as a few standard
-constructions from ML.
+constructs from ML.
 
 .. productionlist:: coq
    ltac2_var        : `lident`
@@ -202,7 +202,7 @@ constructions from ML.
 In practice, there is some additional syntactic sugar that allows e.g. to
 bind a variable and match on it at the same time, in the usual ML style.
 
-There is a dedicated syntax for list and array literals.
+There is dedicated syntax for list and array literals.
 
 .. note::
 
@@ -217,7 +217,7 @@ Ltac Definitions
    This command defines a new global Ltac2 value.
 
    For semantic reasons, the body of the Ltac2 definition must be a syntactical
-   value, i.e. a function, a constant or a pure constructor recursively applied to
+   value, that is, a function, a constant or a pure constructor recursively applied to
    values.
 
    If ``rec`` is set, the tactic is expanded into a recursive binding.
@@ -247,7 +247,7 @@ if ever we implement native compilation. The expected equations are as follows::
   (t any term, V values, C constructor)
 
 Note that call-by-value reduction is already a departure from Ltac1 which uses
-heuristics to decide when evaluating an expression. For instance, the following
+heuristics to decide when to evaluate an expression. For instance, the following
 expressions do not evaluate the same way in Ltac1.
 
 :n:`foo (idtac; let x := 0 in bar)`
@@ -255,7 +255,7 @@ expressions do not evaluate the same way in Ltac1.
 :n:`foo (let x := 0 in bar)`
 
 Instead of relying on the :n:`idtac` idiom, we would now require an explicit thunk
-not to compute the argument, and :n:`foo` would have e.g. type
+to not compute the argument, and :n:`foo` would have e.g. type
 :n:`(unit -> unit) -> unit`.
 
 :n:`foo (fun () => let x := 0 in bar)`
@@ -263,19 +263,19 @@ not to compute the argument, and :n:`foo` would have e.g. type
 Typing
 ~~~~~~
 
-Typing is strict and follows Hindley-Milner system. Unlike Ltac1, there
+Typing is strict and follows the Hindley-Milner system. Unlike Ltac1, there
 are no type casts at runtime, and one has to resort to conversion
 functions. See notations though to make things more palatable.
 
-In this setting, all usual argument-free tactics have type :n:`unit -> unit`, but
-one can return as well a value of type :n:`t` thanks to terms of type :n:`unit -> t`,
+In this setting, all the usual argument-free tactics have type :n:`unit -> unit`, but
+one can return a value of type :n:`t` thanks to terms of type :n:`unit -> t`,
 or take additional arguments.
 
 Effects
 ~~~~~~~
 
 Effects in Ltac2 are straightforward, except that instead of using the
-standard IO monad as the ambient effectful world, Ltac2 is going to use the
+standard IO monad as the ambient effectful world, Ltac2 is has a
 tactic monad.
 
 Note that the order of evaluation of application is *not* specified and is
@@ -288,15 +288,15 @@ Intuitively a thunk of type :n:`unit -> 'a` can do the following:
 
 - It can perform non-backtracking IO like printing and setting mutable variables
 - It can fail in a non-recoverable way
-- It can use first-class backtrack. The proper way to figure that is that we
-  morally have the following isomorphism:
+- It can use first-class backtracking. One way to think about this is that
+  thunks are isomorphic to this type:
   :n:`(unit -> 'a) ~ (unit -> exn + ('a * (exn -> 'a)))`
   i.e. thunks can produce a lazy list of results where each
   tail is waiting for a continuation exception.
-- It can access a backtracking proof state, made out amongst other things of
+- It can access a backtracking proof state, consisting among other things of
   the current evar assignation and the list of goals under focus.
 
-We describe more thoroughly the various effects existing in Ltac2 hereafter.
+We now describe more thoroughly the various effects in Ltac2.
 
 Standard IO
 +++++++++++
@@ -315,28 +315,28 @@ Fatal errors
 ++++++++++++
 
 The Ltac2 language provides non-backtracking exceptions, also known as *panics*,
-through the following primitive in module `Control`.::
+through the following primitive in module `Control`::
 
   val throw : exn -> 'a
 
 Unlike backtracking exceptions from the next section, this kind of error
 is never caught by backtracking primitives, that is, throwing an exception
-destroys the stack. This is materialized by the following equation, where `E`
-is an evaluation context.::
+destroys the stack. This is codified by the following equation, where `E`
+is an evaluation context::
 
   E[throw e] ≡ throw e
 
   (e value)
 
-There is currently no way to catch such an exception and it is a design choice.
-There might be at some future point a way to catch it in a brutal way,
-destroying all backtrack and return values.
+There is currently no way to catch such an exception, which is a deliberate design choice.
+Eventually there might be a way to catch it and
+destroy all backtrack and return values.
 
-Backtrack
-+++++++++
+Backtracking
+++++++++++++
 
 In Ltac2, we have the following backtracking primitives, defined in the
-`Control` module.::
+`Control` module::
 
   Ltac2 Type 'a result := [ Val ('a) | Err (exn) ].
 
@@ -344,7 +344,7 @@ In Ltac2, we have the following backtracking primitives, defined in the
   val plus : (unit -> 'a) -> (exn -> 'a) -> 'a
   val case : (unit -> 'a) -> ('a * (exn -> 'a)) result
 
-If one sees thunks as lazy lists, then `zero` is the empty list and `plus` is
+If one views thunks as lazy lists, then `zero` is the empty list and `plus` is
 list concatenation, while `case` is pattern-matching.
 
 The backtracking is first-class, i.e. one can write
@@ -376,8 +376,8 @@ represent several goals, including none. Thus, there is no such thing as
 *the current goal*. Goals are naturally ordered, though.
 
 It is natural to do the same in Ltac2, but we must provide a way to get access
-to a given goal. This is the role of the `enter` primitive, that applies a
-tactic to each currently focused goal in turn.::
+to a given goal. This is the role of the `enter` primitive, which applies a
+tactic to each currently focused goal in turn::
 
   val enter : (unit -> unit) -> unit
 
@@ -452,9 +452,9 @@ The following syntactic sugar is provided for two common cases.
 Strict vs. non-strict mode
 ++++++++++++++++++++++++++
 
-Depending on the context, quotations producing terms (i.e. ``constr`` or
+Depending on the context, quotation-producing terms (i.e. ``constr`` or
 ``open_constr``) are not internalized in the same way. There are two possible
-modes, respectively called the *strict* and the *non-strict* mode.
+modes, the *strict* and the *non-strict* mode.
 
 - In strict mode, all simple identifiers appearing in a term quotation are
   required to be resolvable statically. That is, they must be the short name of
@@ -467,7 +467,7 @@ modes, respectively called the *strict* and the *non-strict* mode.
   of the term at runtime will fail if there is no such variable in the dynamic
   context.
 
-Strict mode is enforced by default, e.g. for all Ltac2 definitions. Non-strict
+Strict mode is enforced by default, such as for all Ltac2 definitions. Non-strict
 mode is only set when evaluating Ltac2 snippets in interactive proof mode. The
 rationale is that it is cumbersome to explicitly add ``&`` interactively, while it
 is expected that global tactics enforce more invariants on their code.
@@ -490,12 +490,12 @@ for their side-effects.
 Semantics
 +++++++++
 
-Interpretation of a quoted Coq term is done in two phases, internalization and
+A quoted Coq term is interpreted in two phases, internalization and
 evaluation.
 
-- Internalization is part of the static semantics, i.e. it is done at Ltac2
+- Internalization is part of the static semantics, that is, it is done at Ltac2
   typing time.
-- Evaluation is part of the dynamic semantics, i.e. it is done when
+- Evaluation is part of the dynamic semantics, that is, it is done when
   a term gets effectively computed by Ltac2.
 
 Note that typing of Coq terms is a *dynamic* process occurring at Ltac2
@@ -672,7 +672,7 @@ at parsing time. Scopes are described using a form of S-expression.
 .. prodn::
    ltac2_scope ::= {| @string | @int | @lident ({+, @ltac2_scope}) }
 
-A few scopes contain antiquotation features. For sake of uniformity, all
+A few scopes contain antiquotation features. For the sake of uniformity, all
 antiquotations are introduced by the syntax :n:`$@lident`.
 
 The following scopes are built-in.
@@ -713,15 +713,15 @@ The following scopes are built-in.
 
 - :n:`self`:
 
-  + parses a Ltac2 expression at the current level and return it as is.
+  + parses a Ltac2 expression at the current level and returns it as is.
 
 - :n:`next`:
 
-  + parses a Ltac2 expression at the next level and return it as is.
+  + parses a Ltac2 expression at the next level and returns it as is.
 
 - :n:`tactic(n = @int)`:
 
-  + parses a Ltac2 expression at the provided level :n:`n` and return it as is.
+  + parses a Ltac2 expression at the provided level :n:`n` and returns it as is.
 
 - :n:`thunk(@ltac2_scope)`:
 
@@ -747,7 +747,7 @@ The following scopes are built-in.
     out of the parsed values in the same order. As an optimization, all
     subscopes of the form :n:`STRING` are left out of the returned tuple, instead
     of returning a useless unit value. It is forbidden for the various
-    subscopes to refer to the global entry using self or next.
+    subscopes to refer to the global entry using :n:`self` or :n:`next`.
 
 A few other specific scopes exist to handle Ltac1-like syntax, but their use is
 discouraged and they are thus not documented.
@@ -758,7 +758,7 @@ planned.
 Notations
 ~~~~~~~~~
 
-The Ltac2 parser can be extended by syntactic notations.
+The Ltac2 parser can be extended with syntactic notations.
 
 .. cmd:: Ltac2 Notation {+ {| @lident (@ltac2_scope) | @string } } {? : @int} := @ltac2_term
    :name: Ltac2 Notation
@@ -793,10 +793,10 @@ Abbreviations
 
 .. cmdv:: Ltac2 Notation @lident := @ltac2_term
 
-  This command introduces a special kind of notations, called abbreviations,
+  This command introduces a special kind of notation, called an abbreviation,
   that is designed so that it does not add any parsing rules. It is similar in
   spirit to Coq abbreviations, insofar as its main purpose is to give an
-  absolute name to a piece of pure syntax, which can be transparently referred
+  absolute name to a piece of pure syntax, which can be transparently referred to
   by this name as if it were a proper definition.
 
   The abbreviation can then be manipulated just as a normal Ltac2 definition,
@@ -851,7 +851,7 @@ corresponding code for its side effects. In particular, it cannot return values,
 and the quotation has type :n:`unit`.
 
 Ltac1 **cannot** implicitly access variables from the Ltac2 scope, but this can
-be done via an explicit annotation to the :n:`ltac1` quotation.
+be done with an explicit annotation on the :n:`ltac1` quotation.
 
 .. productionlist:: coq
   ltac2_term : ltac1 : ( `ident` ... `ident` |- `ltac_expr` )
@@ -888,7 +888,7 @@ Same as above by switching Ltac1 by Ltac2 and using the `ltac2` quotation
 instead.
 
 Note that the tactic expression is evaluated eagerly, if one wants to use it as
-an argument to a Ltac1 function, she has to resort to the good old
+an argument to a Ltac1 function, one has to resort to the good old
 :n:`idtac; ltac2:(foo)` trick. For instance, the code below will fail immediately
 and won't print anything.
 
@@ -923,8 +923,8 @@ Due to conflicts, a few syntactic rules have changed.
 
 - The dispatch tactical :n:`tac; [foo|bar]` is now written :n:`tac > [foo|bar]`.
 - Levels of a few operators have been revised. Some tacticals now parse as if
-  they were a normal function, i.e. one has to put parentheses around the
-  argument when it is complex, e.g an abstraction. List of affected tacticals:
+  they were normal functions. Parentheses are now required around complex
+  arguments, such as abstractions. The tacticals affected are:
   :n:`try`, :n:`repeat`, :n:`do`, :n:`once`, :n:`progress`, :n:`time`, :n:`abstract`.
 - :n:`idtac` is no more. Either use :n:`()` if you expect nothing to happen,
   :n:`(fun () => ())` if you want a thunk (see next section), or use printing
@@ -1010,4 +1010,4 @@ Exception catching
 Ltac2 features a proper exception-catching mechanism. For this reason, the
 Ltac1 mechanism relying on `fail` taking integers, and tacticals decreasing it,
 has been removed. Now exceptions are preserved by all tacticals, and it is
-your duty to catch them and reraise them depending on your use.
+your duty to catch them and re-raise them as needed.
