@@ -12,41 +12,10 @@
 
 DOC_GRAMMAR
 
-(* additional nts to be spliced *)
-
-LEFTQMARK: [
-| "?"
-]
-
-SPLICE: [
-| LEFTQMARK
-]
-
-hyp: [
-| var
-]
-
-tactic_then_gen: [
-| EDIT ADD_OPT tactic_expr5 "|" tactic_then_gen
-| EDIT ADD_OPT tactic_expr5 ".." tactic_then_last
-]
-
-SPLICE: [
-| hyp
-| identref
-| pattern_ident (* depends on previous LEFTQMARK splice todo: improve *)
-| constr_eval  (* splices as multiple prods *)
-| tactic_then_last  (* todo: dependency on c.edit_mlg edit?? really useful? *)
-| Prim.name
-| ltac_selector
-| Constr.ident
-| tactic_then_locality  (* todo: cleanup *)
-| attribute_list
-]
-
+(* renames to eliminate qualified names
+   put other renames at the end *)
 RENAME: [
   (* map missing names for rhs *)
-| _binders binders
 | Constr.constr term
 | Constr.constr_pattern constr_pattern
 | Constr.global global
@@ -54,27 +23,12 @@ RENAME: [
 | Constr.lconstr_pattern lconstr_pattern
 | G_vernac.query_command query_command
 | G_vernac.section_subset_expr section_subset_expr
-| nonsimple_intropattern intropattern
 | Pltac.tactic tactic
-| Pltac.tactic_expr ltac_expr
+| Pltac.tactic_expr tactic_expr5
 | Prim.ident ident
 | Prim.reference reference
 | Pvernac.Vernac_.main_entry vernac_control
 | Tactic.tactic tactic
-| tactic3 ltac_expr3  (* todo: can't figure out how this gets mapped by coqpp *)
-| tactic1 ltac_expr1  (* todo: can't figure out how this gets mapped by coqpp *)
-| tactic0 ltac_expr0  (* todo: can't figure out how this gets mapped by coqpp *)
-| tactic_expr5 ltac_expr
-| tactic_expr4 ltac_expr4
-| tactic_expr3 ltac_expr3
-| tactic_expr2 ltac_expr2
-| tactic_expr1 ltac_expr1
-| tactic_expr0 ltac_expr0
-
-  (* elementary renaming/OCaml-defined productions *)
-| clause clause_dft_concl
-| in_clause' in_clause
-| l_constr lconstr  (* todo: should delete the production *)
 
   (* SSR *)
 | G_vernac.def_body def_body
@@ -84,22 +38,27 @@ RENAME: [
 | Prim.natural natural
 | Vernac.rec_definition rec_definition
 
-  (* rename on lhs *)
-| intropatterns intropattern_list_opt
 | Constr.closed_binder closed_binder
-
-  (* historical name *)
-| constr term
 ]
 
+(* written in OCaml *)
+impl_ident_head: [
+| "{" ident
+]
+
+lpar_id_coloneq: [
+| "(" ident; ":="
+]
+
+(* lookahead symbols *)
 DELETE: [
 | check_for_coloneq
-| impl_ident_head
 | local_test_lpar_id_colon
 | lookup_at_as_comma
 | only_starredidentrefs
 | test_bracket_ident
-| test_lpar_id_coloneq
+| test_lpar_id_colon
+| test_lpar_id_coloneq  (* todo: grammar seems incorrect, repeats the "(" IDENT ":=" *)
 | test_lpar_id_rpar
 | test_lpar_idnum_coloneq
 | test_show_goal
@@ -122,16 +81,146 @@ DELETE: [
 | test_ident_no_do
 | ssrdoarg  (* todo: this and the next one should be removed from the grammar? *)
 | ssrseqdir
+
+(* unused *)
+| constr_comma_sequence'
+| auto_using'
+| constr_may_eval
 ]
+
+ssrintrosarg: [ | DELETENT ]
+
+(* additional nts to be spliced *)
+
+hyp: [
+| var
+]
+
+tactic_then_gen: [
+| EDIT ADD_OPT tactic_expr5 "|" tactic_then_gen
+| EDIT ADD_OPT tactic_expr5 ".." tactic_then_last
+| REPLACE OPT tactic_expr5 ".." tactic_then_last
+| WITH ltac_expr_opt ".." or_opt ltac_expr_opt_list_or
+]
+
+ltac_expr_opt_list_or: [
+| ltac_expr_opt_list_or "|" OPT tactic_expr5
+| OPT tactic_expr5
+]
+
+reference: [ | DELETENT ]
+
+reference: [
+| qualid
+]
+
+fullyqualid: [ | DELETENT ]
+
+fullyqualid: [
+| qualid
+]
+
+basequalid: [
+| REPLACE ident fields
+| WITH qualid field
+]
+
+fields: [ | DELETENT ]
+
+dirpath: [
+| REPLACE ident LIST0 field
+| WITH ident
+| dirpath field
+]
+
+binders: [
+| DELETE Pcoq.Constr.binders  (* todo: not sure why there are 2 "binders:" *)
+]
+
+lconstr: [
+| DELETE l_constr
+]
+
+return_type: [
+| REPLACE OPT [ OPT [ "as" name ] case_type ]
+| WITH as_name_opt case_type
+| empty
+]
+
+as_name_opt: [
+| "as" name
+| empty
+]
+
+as_dirpath: [
+| "as" dirpath
+| empty
+]
+
+operconstr100: [
+| REPLACE operconstr99 "<:" binder_constr
+| WITH operconstr99 "<:" term
+| DELETE operconstr99 "<:" operconstr100
+| REPLACE operconstr99 "<<:" binder_constr
+| WITH operconstr99 "<<:" term
+| DELETE operconstr99 "<<:" operconstr100
+| REPLACE operconstr99 ":" binder_constr
+| WITH operconstr99 ":" term
+| DELETE operconstr99 ":" operconstr100
+]
+operconstr100: [
+| MOVETO term_cast operconstr99 "<:" term
+| MOVETO term_cast operconstr99 "<<:" term
+| MOVETO term_cast operconstr99 ":" term
+]
+
+(* todo: binders should be binders_opt *)
+
+
+(* lexer stuff *)
+bigint: [
+| DELETE NUMERAL
+| num
+]
+
+field: [ | DELETENT ]
 
 ident: [
-| DELETE IDENT ssr_null_entry
+| DELETENT
 ]
 
+IDENT: [
+| ident
+]
+
+integer: [ | DELETENT ]
+RENAME: [
+| integer int (* todo: review uses in .mlg files, some should be "natural" *)
+]
+
+LEFTQMARK: [
+| "?"
+]
+
+natural: [ | DELETENT ]
 natural: [
-| DELETE _natural
+| num  (* todo: or should it be "nat"? *)
 ]
 
+NUMERAL: [
+| numeral
+]
+
+(* todo: QUOTATION only used in a test suite .mlg files, is it documented/useful? *)
+
+string: [ | DELETENT ]
+STRING: [
+| string
+]
+
+
+(* todo: is "bigint" useful?? *)
+(* todo: "check_int" in g_prim.mlg should be "check_num" *)
 
   (* added productions *)
 
@@ -139,31 +228,29 @@ empty: [  (* todo: (bug) this is getting converted to empty -> empty *)
 |
 ]
 
-lpar_id_coloneq: [
-| "(" IDENT; ":="
-]
-
 name_colon: [
-| IDENT; ":"
-| "_" ":"  (* todo: should "_" be a keyword or an identifier? *)
-]
-
-int: [ (* todo: probably should be NUMERAL *)
-| integer
+| ident; ":"
+| "_" ":"
 ]
 
 command_entry: [
 | noedit_mode
 ]
 
-binders: [
-| DELETE Pcoq.Constr.binders  (* todo: not sure why there are 2 "binders:" *)
+tactic_expr1: [
+| EDIT match_key ADD_OPT "reverse" "goal" "with" match_context_list "end"
+| MOVETO ltac_match_goal match_key OPT "reverse" "goal" "with" match_context_list "end"
+| MOVETO ltac_match_term match_key tactic_expr5 "with" match_list "end"
 ]
 
-(* edits to simplify *)
+DELETE: [
+| tactic_then_locality
+]
 
-ltac_expr1: [
-| EDIT match_key ADD_OPT "reverse" "goal" "with" match_context_list "end"
+tactic_expr4: [
+| REPLACE tactic_expr3 ";" tactic_then_gen "]"
+| WITH tactic_expr3 ";" "[" tactic_then_gen "]"
+| tactic_expr3 ";" "[" ">" tactic_then_gen "]"
 ]
 
 match_context_list: [
@@ -180,35 +267,37 @@ match_list: [
 | EDIT ADD_OPT "|" LIST1 match_rule SEP "|"
 ]
 
+match_rule: [
+| REPLACE match_pattern "=>" tactic_expr5
+| WITH [ match_pattern | "_" ] "=>" tactic_expr5
+| DELETE "_" "=>" tactic_expr5
+]
+
 
 selector_body: [
 | REPLACE range_selector_or_nth  (* depends on whether range_selector_or_nth is deleted first *)
 | WITH LIST1 range_selector SEP ","
 ]
 
-range_selector_or_nth: [
-| DELETENT
-]
+range_selector_or_nth: [ | DELETENT ]
 
 simple_tactic: [
 | DELETE "intros"
 | REPLACE "intros" ne_intropatterns
-| WITH "intros" intropattern_list_opt
+| WITH "intros" intropatterns
 | DELETE "eintros"
 | REPLACE "eintros" ne_intropatterns
-| WITH "eintros" intropattern_list_opt
+| WITH "eintros" intropatterns
 ]
 
-intropattern_list_opt: [
+intropatterns: [
 | DELETE LIST0 intropattern
-| intropattern_list_opt intropattern
+| intropatterns intropattern
 | empty
 ]
 
-
-ne_intropatterns: [
-| DELETENT  (* todo: don't use DELETENT for this *)
-]
+(* todo: don't use DELETENT for this *)
+ne_intropatterns: [ | DELETENT ]
 
 
 or_and_intropattern: [
@@ -216,5 +305,158 @@ or_and_intropattern: [
 | DELETE "(" simple_intropattern ")"
 | REPLACE "(" simple_intropattern "," LIST1 simple_intropattern SEP "," ")"
 |   WITH  "(" LIST0 simple_intropattern SEP "," ")"
-| EDIT "[" USE_NT intropattern_or LIST1 intropattern_list_opt SEP "|" "]"
+| EDIT "[" USE_NT intropattern_or LIST1 intropatterns SEP "|" "]"
 ]
+
+(* todo: is this really correct? Search for "Pvernac.register_proof_mode" *)
+(* consider tactic_command vs tac2mode *)
+vernac_aux: [
+| tactic_mode "."
+]
+
+SPLICE: [
+| noedit_mode
+| command_entry
+| bigint
+| ident_no_do
+| ssrterm
+| fix_constr
+| match_list
+| match_context_list
+| IDENT
+| LEFTQMARK
+| natural
+| NUMERAL
+| STRING
+| hyp
+| var
+| identref
+| pattern_ident
+| constr_eval  (* splices as multiple prods *)
+| tactic_then_last  (* todo: dependency on c.edit_mlg edit?? really useful? *)
+| Prim.name
+| ltac_selector
+| Constr.ident
+| attribute_list
+| operconstr99
+| operconstr90
+| operconstr8
+| pattern200
+| pattern99
+| pattern90
+| ne_lstring
+| ne_string
+| lstring
+| basequalid
+| fullyqualid
+| global
+| reference
+| bar_cbrace
+| case_type
+| lconstr
+| impl_name_head
+| ssrtacarg
+| ssrtac3arg
+| ssrtclarg
+| ssrhyp
+| ssrhoi_hyp
+| ssrhoi_id
+| ssrindex
+| ast_closure_term
+| ast_closure_lterm
+| ssrhpats
+| ssrhpats_nobs
+| ssrfwdid
+| ssrmovearg
+| ssrcasearg
+| ssrrwargs
+| ssrviewposspc
+| ssrpatternarg
+| preident
+| lpar_id_coloneq
+| binders
+| casted_constr
+| check_module_types
+| constr_pattern
+| decl_sep
+| function_rec_definition_loc (* loses funind annotation *)
+| glob
+| glob_constr_with_bindings
+| id_or_meta
+| lconstr_pattern
+| lglob
+| ltac_tacdef_body
+| mode
+| mult_pattern
+| open_constr
+| option_table
+| record_declaration
+| register_type_token
+| ssr_elsepat
+| ssr_mpat
+| ssrunlockargs
+| tactic
+| uconstr
+| impl_ident_head
+| argument_spec
+| at_level
+| branches
+| check_module_type
+| decorated_vernac
+| ext_module_expr
+| ext_module_type
+| pattern_identref
+| ssrcofixfwd
+| ssrfixfwd
+| ssrhavefwdwbinders
+| ssripats_ne
+| ssrparentacarg
+| ssrposefwd
+| test
+]
+
+RENAME: [
+| clause clause_dft_concl
+| in_clause' in_clause
+
+| tactic3 ltac_expr3  (* todo: can't figure out how this gets mapped by coqpp *)
+| tactic1 ltac_expr1  (* todo: can't figure out how this gets mapped by coqpp *)
+| tactic0 ltac_expr0  (* todo: can't figure out how this gets mapped by coqpp *)
+| tactic_expr5 ltac_expr
+| tactic_expr4 ltac_expr4
+| tactic_expr3 ltac_expr3
+| tactic_expr2 ltac_expr2
+| tactic_expr1 ltac_expr1
+| tactic_expr0 ltac_expr0
+
+| nonsimple_intropattern intropattern
+| intropatterns intropattern_list_opt
+
+| operconstr200 term   (* historical name *)
+| operconstr100 term100
+| operconstr99 term99
+| operconstr90 term90
+| operconstr10 term10
+| operconstr9 term9
+| operconstr8 term8
+| operconstr1 term1
+| operconstr0 term0
+| pattern100 pattern
+| ssexpr35 ssexpr (* strange in mlg, ssexpr50 is after this *)
+
+| tactic_then_gen multi_goal_tactics
+| selector only_selector
+| selector_body selector
+| input_fun fun_var
+| match_hyps match_hyp
+
+| BULLET bullet
+| nat_or_var num_or_var
+| fix_decl fix_body
+| return_type return_type_opt
+| as_opt as_name_opt
+| _binders binders
+]
+
+
+(* todo: ssrreflect*.rst ref to fix_body is incorrect *)

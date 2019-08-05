@@ -473,7 +473,7 @@ bar_cbrace: [
 vernac_toplevel: [
 | "Drop" "."
 | "Quit" "."
-| "Backtrack" natural natural natural "."
+| "BackTo" natural "."
 | test_show_goal "Show" "Goal" natural "at" natural "."
 | Pvernac.Vernac_.main_entry
 ]
@@ -560,7 +560,6 @@ command: [
 | "Reset" identref
 | "Back"
 | "Back" natural
-| "BackTo" natural
 | "Debug" "On"
 | "Debug" "Off"
 | "Declare" "Reduction" IDENT; ":=" red_expr
@@ -1734,10 +1733,7 @@ simple_tactic: [
 | "protect_fv" string      (* setoid_ring plugin *)
 | "ring_lookup" tactic0 "[" LIST0 constr "]" LIST1 constr      (* setoid_ring plugin *)
 | "field_lookup" tactic "[" LIST0 constr "]" LIST1 constr      (* setoid_ring plugin *)
-| "YouShouldNotTypeThis" ssrintrosarg      (* ssr plugin *)
 | "by" ssrhintarg      (* ssr plugin *)
-| "YouShouldNotTypeThis" "do" ssrdoarg      (* ssr plugin *)
-| "YouShouldNotTypeThis" ssrtclarg ssrseqdir ssrseqarg      (* ssr plugin *)
 | "clear" natural      (* ssr plugin *)
 | "move" ssrmovearg ssrrpat      (* ssr plugin *)
 | "move" ssrmovearg ssrclauses      (* ssr plugin *)
@@ -1889,10 +1885,6 @@ in_clause: [
 
 test_lpar_id_colon: [
 | local_test_lpar_id_colon
-]
-
-orient_string: [
-| orient preident
 ]
 
 comparison: [
@@ -2610,7 +2602,6 @@ ssrclear: [
 ]
 
 ssrindex: [
-| int_or_var      (* ssr plugin *)
 ]
 
 ssrocc: [
@@ -2641,7 +2632,6 @@ ssrdocc: [
 ]
 
 ssrterm: [
-| "YouShouldNotTypeThis" constr      (* ssr plugin *)
 | ssrtermkind Pcoq.Constr.constr      (* ssr plugin *)
 ]
 
@@ -2654,19 +2644,16 @@ ast_closure_lterm: [
 ]
 
 ssrbwdview: [
-| "YouShouldNotTypeThis"      (* ssr plugin *)
 | test_not_ssrslashnum "/" Pcoq.Constr.constr      (* ssr plugin *)
 | test_not_ssrslashnum "/" Pcoq.Constr.constr ssrbwdview      (* ssr plugin *)
 ]
 
 ssrfwdview: [
-| "YouShouldNotTypeThis"      (* ssr plugin *)
 | test_not_ssrslashnum "/" ast_closure_term      (* ssr plugin *)
 | test_not_ssrslashnum "/" ast_closure_term ssrfwdview      (* ssr plugin *)
 ]
 
 ident_no_do: [
-| "YouShouldNotTypeThis" ident      (* ssr plugin *)
 | test_ident_no_do IDENT      (* ssr plugin *)
 ]
 
@@ -2718,7 +2705,6 @@ ssriorpat: [
 ]
 
 ssrcpat: [
-| "YouShouldNotTypeThis" ssriorpat      (* ssr plugin *)
 | test_nohidden "[" hat "]"      (* ssr plugin *)
 | test_nohidden "[" ssriorpat "]"      (* ssr plugin *)
 | test_nohidden "[=" ssriorpat "]"      (* ssr plugin *)
@@ -2764,7 +2750,6 @@ ssrintros: [
 ]
 
 ssrintrosarg: [
-| "YouShouldNotTypeThis" ssrtacarg ssrintros_ne      (* ssr plugin *)
 ]
 
 ssrfwdid: [
