@@ -1144,7 +1144,7 @@ Proof.
   - intro abs. apply (CReal_plus_lt_compat_l r) in abs. contradiction.
 Qed.
 
-Fixpoint BoundFromZero (qn : nat -> Q) (k : nat) (A : positive)
+Fixpoint BoundFromZero (qn : nat -> Q) (k : nat) (A : positive) {struct k}
   : (forall n:nat, le k n -> Qlt (Qabs (qn n)) (Z.pos A # 1))
     -> { B : positive | forall n:nat, Qlt (Qabs (qn n)) (Z.pos B # 1) }.
 Proof.
