@@ -940,7 +940,7 @@ and escaped_coq = parse
       { (* likely to be a syntax error: we escape *) backtrack lexbuf }
   | eof
       { Tokens.flush_sublexer () }
-  | (identifier '.')* identifier
+  | identifier
       { Tokens.flush_sublexer();
         Output.ident (lexeme lexbuf) None;
         escaped_coq lexbuf }
