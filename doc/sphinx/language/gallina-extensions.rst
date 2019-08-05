@@ -260,10 +260,7 @@ To eliminate the (co-)inductive type, one must use its defined primitive project
 For compatibility, the parameters still appear to the user when
 printing terms even though they are absent in the actual AST
 manipulated by the kernel. This can be changed by unsetting the
-:flag:`Printing Primitive Projection Parameters` flag. Further compatibility
-printing can be deactivated thanks to the ``Printing Primitive Projection
-Compatibility`` option which governs the printing of pattern matching
-over primitive records.
+:flag:`Printing Primitive Projection Parameters` flag.
 
 There are currently two ways to introduce primitive records types:
 
