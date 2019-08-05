@@ -132,13 +132,11 @@
 ########################################################################
 # CompCert
 ########################################################################
-# CompCert tag v3.5 fails with:
-# compcert-v3.5-make_err.txt: File ".\flocq/Core/Fcore_Zaux.v", line 28, characters 18-21:
-# compcert-v3.5-make_err.txt: Error: The reference Zle was not found in the current environment.
-# Hash 415c5a5a28ac7035cfa33e5753af841a450bfab0 = "Fix compatibility with Coq 8.10 (#303)".
-# Hash 98858317be25deed815c7a8b5d4e9d6b512f5de5 = "Make configure resistant to Windows EOL and paths"
-: "${compcert_CI_REF:=98858317be25deed815c7a8b5d4e9d6b512f5de5}"
-: "${compcert_CI_GITURL:=https://github.com/AbsInt/CompCert}"
+# This is v3.5 patched up for compatibility with Coq 8.10.
+# See https://github.com/AbsInt/CompCert/pull/305
+# See https://github.com/coq/coq/issues/10611
+: "${compcert_CI_REF:=v3.5_coq_8.10}"
+: "${compcert_CI_GITURL:=https://github.com/MSoegtropIMC/CompCert}"
 : "${compcert_CI_ARCHIVEURL:=${compcert_CI_GITURL}/archive}"
 
 ########################################################################

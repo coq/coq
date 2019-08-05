@@ -1147,8 +1147,8 @@ function make_menhir {
   make_ocaml
   make_findlib
   make_ocamlbuild
-  # This is the version required by latest CompCert
-  if build_prep https://gitlab.inria.fr/fpottier/menhir/-/archive/20190626 menhir-20190626 tar.gz 1 ; then
+  # This is the version required by CompCert
+  if build_prep https://gitlab.inria.fr/fpottier/menhir/-/archive/20181113 menhir-20181113 tar.gz 1 ; then
     # Note: menhir doesn't support -j 8, so don't pass MAKE_OPT
     log2 make all PREFIX="$PREFIXOCAML"
     log2 make install PREFIX="$PREFIXOCAML"
