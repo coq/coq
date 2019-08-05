@@ -1031,16 +1031,23 @@ let interp_constr flags ist c =
     | Some () -> throw ~info e
   end
 
+let prepend_let_bindings subst c =
+  List.fold_left (fun c (n, v) ->
+      DAst.make @@ Glob_term.GLetIn (n, v, None, c)
+    ) c subst
+
 let () =
   let intern = intern_constr in
   let interp ist c = interp_constr (constr_flags ()) ist c in
   let print env c = str "constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
   let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
+  let ntn_subst = prepend_let_bindings in
   let obj = {
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;
     ml_print = print;
+    ml_ntn_subst = ntn_subst
   } in
   define_ml_object Tac2quote.wit_constr obj
 
@@ -1049,22 +1056,26 @@ let () =
   let interp ist c = interp_constr (open_constr_no_classes_flags ()) ist c in
   let print env c = str "open_constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
   let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
+  let ntn_subst = prepend_let_bindings in
   let obj = {
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;
     ml_print = print;
+    ml_ntn_subst = ntn_subst
   } in
   define_ml_object Tac2quote.wit_open_constr obj
 
 let () =
   let interp _ id = return (Value.of_ident id) in
   let print _ id = str "ident:(" ++ Id.print id ++ str ")" in
+  let ntn_subst _ _ = assert false in
   let obj = {
     ml_intern = (fun _ _ id -> GlbVal id, gtypref t_ident);
     ml_interp = interp;
     ml_subst = (fun _ id -> id);
     ml_print = print;
+    ml_ntn_subst = ntn_subst
   } in
   define_ml_object Tac2quote.wit_ident obj
 
@@ -1083,11 +1094,13 @@ let () =
   in
   let print env pat = str "pattern:(" ++ Printer.pr_lconstr_pattern_env env Evd.empty pat ++ str ")" in
   let interp _ c = return (Value.of_pattern c) in
+  let ntn_subst _ _ = assert false in
   let obj = {
     ml_intern = intern;
     ml_interp = interp;
     ml_subst = subst;
     ml_print = print;
+    ml_ntn_subst = ntn_subst;
   } in
   define_ml_object Tac2quote.wit_pattern obj
 
@@ -1109,11 +1122,13 @@ let () =
   | GlobRef.VarRef id -> str "reference:(" ++ str "&" ++ Id.print id ++ str ")"
   | r -> str "reference:(" ++ Printer.pr_global r ++ str ")"
   in
+  let ntn_subst _ _ = assert false in
   let obj = {
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;
     ml_print = print;
+    ml_ntn_subst = ntn_subst;
   } in
   define_ml_object Tac2quote.wit_reference obj
 
@@ -1160,11 +1175,13 @@ let () =
     in
     str "ltac1:(" ++ ids ++ Ltac_plugin.Pptactic.pr_glob_tactic env tac ++ str ")"
   in
+  let ntn_subst _ _ = assert false in
   let obj = {
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;
     ml_print = print;
+    ml_ntn_subst = ntn_subst;
   } in
   define_ml_object Tac2quote.wit_ltac1 obj
 
@@ -1209,11 +1226,13 @@ let () =
     in
     str "ltac1val:(" ++ ids++ Ltac_plugin.Pptactic.pr_glob_tactic env tac ++ str ")"
   in
+  let ntn_subst _ _ = assert false in
   let obj = {
     ml_intern = intern;
     ml_subst = subst;
     ml_interp = interp;
     ml_print = print;
+    ml_ntn_subst = ntn_subst;
   } in
   define_ml_object Tac2quote.wit_ltac1val obj
 

@@ -1522,6 +1522,71 @@ let () =
   Genintern.register_intern0 wit_ltac2 intern
 let () = Genintern.register_subst0 wit_ltac2 subst_expr
 
+(* Used for tactic-in-term in notations *)
+let subst_tacexpr (bindings: Genintern.glob_constr_and_expr Id.Map.t) (e: glb_tacexpr) : glb_tacexpr =
+  let substitution = Lazy.from_fun (fun () ->
+      Id.Map.fold (fun id (c,  _) accu -> (Name.Name id, c) :: accu)
+        bindings [])
+  in
+  let rec subst e =
+  match e with
+  | GTacAtm _
+  | GTacVar _
+  | GTacRef _
+    -> e
+  | GTacFun (params, body) ->
+    let body' = subst body in
+    if body' == body then e else GTacFun (params, body')
+  | GTacApp (f, args) ->
+    let f' = subst f in
+    let args' = List.Smart.map subst args in
+    if f' == f && args' == args then e else GTacApp (f', args')
+  | GTacLet (rf, bnd, body) ->
+    let bnd' = List.Smart.map (fun (n, e as x) ->
+        let e' = subst e in
+        if e' == e then x else (n, e')
+      ) bnd in
+    let body' = subst body in
+    if bnd' == bnd && body' == body then e else GTacLet(rf, bnd', body')
+  | GTacCst (t, n, el) ->
+    let el' = List.Smart.map subst el in
+    if el' == el then e else GTacCst (t, n, el')
+  | GTacCse (e, ci, const, nonconst) ->
+    let e = subst e in
+    let const = Array.map subst const in
+    let nonconst = Array.map (fun (ns, e) -> ns, subst e) nonconst in
+    GTacCse (e, ci, const, nonconst)
+  | GTacPrj (tc, body, n) ->
+    let body' = subst body in
+    if body' == body then e else GTacPrj (tc, body', n)
+  | GTacSet (tc, a, n, b) ->
+    let a' = subst a in
+    let b' = subst b in
+    if a' == a && b' == b then e else GTacSet (tc, a', n, b')
+  | GTacOpn (op, el) ->
+    let el' = List.Smart.map subst el in
+    if el' == el then e else GTacOpn (op, el')
+  | GTacWth { opn_match = m; opn_branch = br ; opn_default = d } ->
+    let m' = subst m in
+    let d' = let (n, x) = d in let x' = subst x in if x' == x then d else (n, x') in
+    let br' = KNmap.Smart.map (fun (a, b, e as x) ->
+        let e' = subst e in
+        if e' == e then x else (a, b, e')
+      ) br in
+    if m' == m && d' == d && br' == br then e
+    else GTacWth { opn_match = m' ; opn_branch = br' ; opn_default = d' }
+  | GTacExt (tag, arg) ->
+    let tpe = interp_ml_object tag in
+    let arg' = tpe.ml_ntn_subst (Lazy.force substitution) arg in
+    if arg' == arg then e else GTacExt (tag, arg')
+  | GTacPrm (n, el) ->
+    let el' = List.Smart.map subst el in
+    if el' == el then e else GTacPrm (n, el')
+  in
+  subst e
+
+let () = Genintern.register_ntn_subst0 wit_ltac2 subst_tacexpr
+
 let () =
   let open Genintern in
   let intern ist (loc, id) =
