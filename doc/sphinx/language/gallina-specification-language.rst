@@ -52,7 +52,7 @@ Comments
   They can contain any character. However, embedded :token:`string` literals must be
   correctly closed. Comments are treated as blanks.
 
-Identifiers and field identifiers
+Identifiers
   Identifiers, written :token:`ident`, are sequences of letters, digits, ``_`` and
   ``'``, that do not start with a digit or ``'``.  That is, they are
   recognized by the following grammar (except that the string ``_`` is reserved;
@@ -60,7 +60,6 @@ Identifiers and field identifiers
 
   .. productionlist:: coq
      ident             : `first_letter`[`subsequent_letter`…`subsequent_letter`]
-     field             : .`ident`
      first_letter      : a..z ∣ A..Z ∣ _ ∣ `unicode_letter`
      subsequent_letter : `first_letter` ∣ 0..9 ∣ ' ∣ `unicode_id_part`
 
@@ -70,10 +69,6 @@ Identifiers and field identifiers
   and Katakana characters, CJK ideographs, mathematical letter-like
   symbols and non-breaking space. :production:`unicode_id_part`
   non-exhaustively includes symbols for prime letters and subscripts.
-
-  Field identifiers, written :token:`field`, are identifiers prefixed by
-  `.` (dot) with no blank between the dot and the identifier. They are used in
-  the syntax of qualified identifiers.
 
 Numerals
   Numerals are sequences of digits with an optional fractional part
@@ -144,62 +139,50 @@ presentation of Cic is given in Chapter :ref:`calculusofinductiveconstructions`.
 are given in Chapter :ref:`extensionsofgallina`. How to customize the syntax
 is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
 
-.. productionlist:: coq
-   term             : forall `binders` , `term`
-                    : fun `binders` => `term`
-                    : fix `fix_bodies`
-                    : cofix `cofix_bodies`
-                    : let `ident` [`binders`] [: `term`] := `term` in `term`
-                    : let fix `fix_body` in `term`
-                    : let cofix `cofix_body` in `term`
-                    : let ( [`name` , … , `name`] ) [`dep_ret_type`] := `term` in `term`
-                    : let ' `pattern` [in `term`] := `term` [`return_type`] in `term`
-                    : if `term` [`dep_ret_type`] then `term` else `term`
-                    : `term` : `term`
-                    : `term` <: `term`
-                    : `term` :>
-                    : `term` -> `term`
-                    : `term` `arg` … `arg`
-                    : @ `qualid` [`term` … `term`]
-                    : `term` % `ident`
-                    : match `match_item` , … , `match_item` [`return_type`] with
-                    :   [[|] `equation` | … | `equation`] end
-                    : `qualid`
-                    : `sort`
-                    : `num`
-                    : _
-                    : ( `term` )
-   arg              : `term`
-                    : ( `ident` := `term` )
-   binders          : `binder` … `binder`
-   binder           : `name`
-                    : ( `name` … `name` : `term` )
-                    : ( `name` [: `term`] := `term` )
-                    : ' `pattern`
-   name             : `ident` | _
-   qualid           : `ident` | `qualid` `field`
-   sort             : SProp | Prop | Set | Type
-   fix_bodies       : `fix_body`
-                    : `fix_body` with `fix_body` with … with `fix_body` for `ident`
-   cofix_bodies     : `cofix_body`
-                    : `cofix_body` with `cofix_body` with … with `cofix_body` for `ident`
-   fix_body         : `ident` `binders` [`annotation`] [: `term`] := `term`
-   cofix_body       : `ident` [`binders`] [: `term`] := `term`
-   annotation       : { struct `ident` }
-   match_item       : `term` [as `name`] [in `qualid` [`pattern` … `pattern`]]
-   dep_ret_type     : [as `name`] `return_type`
-   return_type      : return `term`
-   equation         : `mult_pattern` | … | `mult_pattern` => `term`
-   mult_pattern     : `pattern` , … , `pattern`
-   pattern          : `qualid` `pattern` … `pattern`
-                    : @ `qualid` `pattern` … `pattern`
-                    : `pattern` as `ident`
-                    : `pattern` % `ident`
-                    : `qualid`
-                    : _
-                    : `num`
-                    : ( `pattern` | … | `pattern` )
+.. insertgram term binders_opt
 
+.. productionlist:: coq
+   term : forall `open_binders` , `term`
+        : fun `open_binders` => `term`
+        : `term_let`
+        : if `term` `as_return_type_opt` then `term` else `term`
+        : `term_fix`
+        : `term100`
+   term100 : `term_cast`
+           : `term10`
+   term10 : `term1` `args`
+          : @ `qualid` `universe_annot_opt` `term1_list_opt`
+          : `term1`
+   args : `args` `arg`
+        : `arg`
+   arg : ( `ident` := `term` )
+       : `term1`
+   term1_list_opt : `term1_list_opt` `term1`
+                  : `empty`
+   empty :
+   term1 : `term_projection`
+         : `term0` % `ident`
+         : `term0`
+   args_opt : `args`
+            : `empty`
+   term0 : `qualid` `universe_annot_opt`
+         : `sort`
+         : `numeral`
+         : `string`
+         : _
+         : `term_evar`
+         : `term_match`
+         : ( `term` )
+         : {| `fields_def` |}
+         : `{ `term` }
+         : `( `term` )
+         : ltac : ( `ltac_expr` )
+   fields_def : `field_def` ; `fields_def`
+              : `field_def`
+              : `empty`
+   field_def : `qualid` `binders_opt` := `term`
+   binders_opt : `binders`
+               : `empty`
 
 Types
 -----
@@ -213,6 +196,13 @@ of types inside the syntactic class :token:`term`.
 Qualified identifiers and simple identifiers
 --------------------------------------------
 
+.. insertgram qualid field
+
+.. productionlist:: coq
+   qualid : `qualid` `field`
+          : `ident`
+   field : .`ident`
+
 *Qualified identifiers* (:token:`qualid`) denote *global constants*
 (definitions, lemmas, theorems, remarks or facts), *global variables*
 (parameters or axioms), *inductive types* or *constructors of inductive
@@ -220,11 +210,15 @@ types*. *Simple identifiers* (or shortly :token:`ident`) are a syntactic subset
 of qualified identifiers. Identifiers may also denote *local variables*,
 while qualified identifiers do not.
 
-Numerals
---------
+Field identifiers, written :token:`field`, are identifiers prefixed by
+`.` (dot) with no blank between the dot and the identifier.
 
-Numerals have no definite semantics in the calculus. They are mere
-notations that can be bound to objects through the notation mechanism
+
+Numerals and strings
+--------------------
+
+Numerals and strings have no predefined semantics in the calculus. They are
+merely notations that can be bound to objects through the notation mechanism
 (see Chapter :ref:`syntaxextensionsandinterpretationscopes` for details).
 Initially, numerals are bound to Peano’s representation of natural
 numbers (see :ref:`datatypes`).
@@ -242,6 +236,35 @@ numbers (see :ref:`datatypes`).
 
 Sorts
 -----
+
+.. insertgram sort universe_level
+
+.. productionlist:: coq
+   sort : Set
+        : Prop
+        : SProp
+        : Type
+        : Type @{ _ }
+        : Type @{ `universe` }
+   universe : max ( `universe_exprs_comma` )
+            : `universe_expr`
+   universe_exprs_comma : `universe_exprs_comma` , `universe_expr`
+                        : `universe_expr`
+   universe_expr : `universe_name` `universe_increment_opt`
+   universe_name : `qualid`
+                 : Set
+                 : Prop
+   universe_increment_opt : + `num`
+                          : `empty`
+   universe_annot_opt : @{ `universe_levels_opt` }
+                      : `empty`
+   universe_levels_opt : `universe_levels_opt` `universe_level`
+                       : `empty`
+   universe_level : Set
+                  : Prop
+                  : Type
+                  : _
+                  : `qualid`
 
 There are four sorts :g:`SProp`, :g:`Prop`, :g:`Set`  and :g:`Type`.
 
@@ -265,6 +288,35 @@ More on sorts can be found in Section :ref:`sorts`.
 
 Binders
 -------
+
+.. insertgram open_binders exclam_opt
+
+.. productionlist:: coq
+   open_binders : `names` : `term`
+                : `binders`
+   names : `names` `name`
+         : `name`
+   name : _
+        : `ident`
+   binders : `binders` `binder`
+           : `binder`
+   binder : `name`
+          : ( `names` : `term` )
+          : ( `name` `colon_term_opt` := `term` )
+          : { `name` }
+          : { `names` `colon_term_opt` }
+          : `( `typeclass_constraints_comma` )
+          : `{ `typeclass_constraints_comma` }
+          : ' `pattern0`
+          : ( `name` : `term` | `term` )
+   typeclass_constraints_comma : `typeclass_constraints_comma` , `typeclass_constraint`
+                               : `typeclass_constraint`
+   typeclass_constraint : `exclam_opt` `term`
+                        : { `name` } : `exclam_opt` `term`
+                        : `name` : `exclam_opt` `term`
+   exclam_opt : !
+              : `empty`
+
 
 Various constructions such as :g:`fun`, :g:`forall`, :g:`fix` and :g:`cofix`
 *bind* variables. A binding is represented by an identifier. If the binding
@@ -291,8 +343,8 @@ the case of a single sequence of bindings sharing the same type (e.g.:
 
 .. index:: fun ... => ...
 
-Abstractions
-------------
+Abstractions: fun
+-----------------
 
 The expression :n:`fun @ident : @type => @term` defines the
 *abstraction* of the variable :token:`ident`, of type :token:`type`, over the term
@@ -313,8 +365,8 @@ Section :ref:`let-in`).
 
 .. index:: forall
 
-Products
---------
+Products: forall
+----------------
 
 The expression :n:`forall @ident : @type, @term` denotes the
 *product* of the variable :token:`ident` of type :token:`type`, over the term :token:`term`.
@@ -359,6 +411,14 @@ Section :ref:`explicit-applications`).
 Type cast
 ---------
 
+.. insertgram term_cast term_cast
+
+.. productionlist:: coq
+   term_cast : `term10` <: `term`
+             : `term10` <<: `term`
+             : `term10` : `term`
+             : `term10` :>
+
 The expression :n:`@term : @type` is a type cast expression. It enforces
 the type of :token:`term` to be :token:`type`.
 
@@ -384,6 +444,22 @@ guess the missing piece of information.
 Let-in definitions
 ------------------
 
+.. insertgram term_let names_comma
+
+.. productionlist:: coq
+   term_let : let `name` `colon_term_opt` := `term` in `term`
+            : let `name` `binders` `colon_term_opt` := `term` in `term`
+            : let `single_fix` in `term`
+            : let `names_tuple` `as_return_type_opt` := `term` in `term`
+            : let ' `pattern` := `term` `return_type_opt` in `term`
+            : let ' `pattern` in `pattern` := `term` `return_type` in `term`
+   colon_term_opt : : `term`
+                  : `empty`
+   names_tuple : ( `names_comma` )
+               : ()
+   names_comma : `names_comma` , `name`
+               : `name`
+
 :n:`let @ident := @term in @term’`
 denotes the local binding of :token:`term` to the variable
 :token:`ident` in :token:`term`’. There is a syntactic sugar for let-in
@@ -392,8 +468,60 @@ stands for :n:`let @ident := fun {+ @binder} => @term in @term’`.
 
 .. index:: match ... with ...
 
-Definition by case analysis
----------------------------
+Definition by cases: match
+--------------------------
+
+.. insertgram term_match record_pattern
+
+.. productionlist:: coq
+   term_match : match `case_items_comma` `return_type_opt` with `or_opt` `eqns_or_opt` end
+   case_items_comma : `case_items_comma` , `case_item`
+                    : `case_item`
+   return_type_opt : `return_type`
+                   : `empty`
+   as_return_type_opt : `as_name_opt` `return_type`
+                      : `empty`
+   return_type : return `term100`
+   case_item : `term100` `as_name_opt` `in_opt`
+   as_name_opt : as `name`
+               : `empty`
+   in_opt : in `pattern`
+          : `empty`
+   or_opt : |
+          : `empty`
+   eqns_or_opt : `eqns_or`
+               : `empty`
+   eqns_or : `eqns_or` | `eqn`
+           : `eqn`
+   eqn : `patterns_comma_list_or` => `term`
+   patterns_comma_list_or : `patterns_comma_list_or` | `patterns_comma`
+                          : `patterns_comma`
+   patterns_comma : `patterns_comma` , `pattern`
+                  : `pattern`
+   pattern : `pattern10` : `term`
+           : `pattern10`
+   pattern10 : `pattern1` as `name`
+             : `pattern1_list`
+             : @ `qualid` `pattern1_list_opt`
+             : `pattern1`
+   pattern1_list : `pattern1_list` `pattern1`
+                 : `pattern1`
+   pattern1_list_opt : `pattern1_list`
+                     : `empty`
+   pattern1 : `pattern0` % `ident`
+            : `pattern0`
+   pattern0 : `qualid`
+            : {| `record_patterns_opt` |}
+            : _
+            : ( `patterns_or` )
+            : `numeral`
+            : `string`
+   patterns_or : `patterns_or` | `pattern`
+               : `pattern`
+   record_patterns_opt : `record_patterns_opt` ; `record_pattern`
+                       : `record_pattern`
+                       : `empty`
+   record_pattern : `qualid` := `pattern`
 
 Objects of inductive types can be destructured by a case-analysis
 construction called *pattern matching* expression. A pattern matching
@@ -403,11 +531,11 @@ to apply specific treatments accordingly.
 This paragraph describes the basic form of pattern matching. See
 Section :ref:`Mult-match` and Chapter :ref:`extendedpatternmatching` for the description
 of the general form. The basic form of pattern matching is characterized
-by a single :token:`match_item` expression, a :token:`mult_pattern` restricted to a
+by a single :token:`case_item` expression, a :token:`patterns_comma` restricted to a
 single :token:`pattern` and :token:`pattern` restricted to the form
 :n:`@qualid {* @ident}`.
 
-The expression match ":token:`term`:math:`_0` :token:`return_type` with
+The expression match ":token:`term`:math:`_0` :token:`return_type_opt` with
 :token:`pattern`:math:`_1` => :token:`term`:math:`_1` :math:`|` … :math:`|`
 :token:`pattern`:math:`_n` => :token:`term`:math:`_n` end" denotes a
 *pattern matching* over the term :token:`term`:math:`_0` (expected to be
@@ -417,10 +545,10 @@ expression. Each of :token:`pattern`:math:`_i` has a form :token:`qualid`
 :token:`ident` where :token:`qualid` must denote a constructor. There should be
 exactly one branch for every constructor of :math:`I`.
 
-The :token:`return_type` expresses the type returned by the whole match
+The :token:`return_type_opt` expresses the type returned by the whole match
 expression. There are several cases. In the *non dependent* case, all
-branches have the same type, and the :token:`return_type` is the common type of
-branches. In this case, :token:`return_type` can usually be omitted as it can be
+branches have the same type, and the :token:`return_type_opt` is the common type of
+branches. In this case, :token:`return_type_opt` can usually be omitted as it can be
 inferred from the type of the branches [2]_.
 
 In the *dependent* case, there are three subcases. In the first subcase,
@@ -520,8 +648,30 @@ Sections :ref:`if-then-else` and :ref:`irrefutable-patterns`).
    single: fix
    single: cofix
 
-Recursive functions
--------------------
+Recursive and co-recursive functions: fix and cofix
+---------------------------------------------------
+
+.. insertgram term_fix term1_extended_opt
+
+.. productionlist:: coq
+   term_fix : `single_fix`
+            : `single_fix` with `fix_bodies` for `ident`
+   single_fix : fix `fix_body`
+              : cofix `fix_body`
+   fix_bodies : `fix_bodies` with `fix_body`
+              : `fix_body`
+   fix_body : `ident` `binders_opt` `fixannot_opt` `colon_term_opt` := `term`
+   fixannot_opt : `fixannot`
+                : `empty`
+   fixannot : { struct `ident` }
+            : { wf `term1_extended` `ident` }
+            : { measure `term1_extended` `ident_opt` `term1_extended_opt` }
+   term1_extended : `term1`
+                  : @ `qualid` `universe_annot_opt`
+   ident_opt : `ident`
+             : `empty`
+   term1_extended_opt : `term1_extended`
+                      : `empty`
 
 The expression “``fix`` :token:`ident`:math:`_1` :token:`binder`:math:`_1` ``:``
 :token:`type`:math:`_1` ``:=`` :token:`term`:math:`_1` ``with … with``
@@ -547,6 +697,8 @@ syntax: :n:`let fix @ident @binders := @term in` stands for
 The Vernacular
 ==============
 
+.. insertgramXX vernac ident_opt2
+
 .. productionlist:: coq
    decorated-sentence : [ `decoration` … `decoration` ] `sentence`
    sentence           : `assumption`
@@ -568,7 +720,7 @@ The Vernacular
    ind_body           : `ident` [`binders`] : `term` :=
                       : [[|] `ident` [`binders`] [:`term`] | … | `ident` [`binders`] [:`term`]]
    fixpoint           : Fixpoint `fix_body` with … with `fix_body` .
-                      : CoFixpoint `cofix_body` with … with `cofix_body` .
+                      : CoFixpoint `fix_body` with … with `fix_body` .
    assertion          : `assertion_keyword` `ident` [`binders`] : `term` .
    assertion_keyword  : Theorem | Lemma
                       : Remark | Fact

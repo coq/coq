@@ -227,6 +227,45 @@ install-doc-sphinx:
 		$(INSTALLLIB) doc/sphinx/_build/$$d/$$f $(FULLDOCDIR)/sphinx/$$d/$$f;\
 	done; done)
 
+######################################################################
+# doc_grammar tool
+######################################################################
+
+DOC_GRAMCMO := $(addsuffix .cmo, $(addprefix coqpp/, coqpp_parse coqpp_lex))
+
+$(DOC_GRAM): $(DOC_GRAMCMO) coqpp/coqpp_parser.mli coqpp/coqpp_parser.ml doc/tools/docgram/doc_grammar.ml
+	$(SHOW)'OCAMLC -a $@'
+	$(HIDE)$(OCAMLC) -I coqpp $^ -package str -linkall -linkpkg -o $@
+
+# user-contrib/*/*.mlg omitted for now (e.g. ltac2)
+PLUGIN_MLGS := $(wildcard plugins/*/*.mlg)
+OMITTED_PLUGIN_MLGS := plugins/ssr/ssrparser.mlg plugins/ssr/ssrvernac.mlg plugins/ssrmatching/g_ssrmatching.mlg
+DOC_MLGS := */*.mlg $(sort $(filter-out $(OMITTED_PLUGIN_MLGS), $(PLUGIN_MLGS)))
+DOC_EDIT_MLGS := doc/tools/docgram/*.edit_mlg
+DOC_RSTS := doc/sphinx/*.rst doc/sphinx/*/*.rst
+
+doc/tools/docgram/fullGrammar: $(DOC_GRAM) $(DOC_MLGS)
+	$(SHOW)'DOC_GRAM'
+	$(HIDE)$(DOC_GRAM) -short -no-warn $(DOC_MLGS)
+
+#todo: add a dependency of sphinx on updated_rsts when we're ready
+doc/tools/docgram/orderedGrammar doc/tools/docgram/updated_rsts: $(DOC_GRAM) $(DOC_EDIT_MLGS)
+	$(SHOW)'DOC_GRAM_RSTS'
+	$(HIDE)$(DOC_GRAM) $(DOC_MLGS) $(DOC_RSTS)
+
+doc/tools/docgram/updated_rsts: doc/tools/docgram/orderedGrammar
+
+.PHONY: doc_gram doc_gram_verify doc_gram_rsts
+
+doc_gram: doc/tools/docgram/fullGrammar
+
+doc_gram_verify: doc/tools/docgram/fullGrammar
+	$(SHOW)'DOC_GRAM_VERIFY'
+	$(HIDE)$(DOC_GRAM) -short -no-warn -verify $(DOC_MLGS) $(DOC_RSTS)
+
+doc_gram_rsts: doc/tools/docgram/updated_rsts
+
+
 # For emacs:
 # Local Variables:
 # mode: makefile

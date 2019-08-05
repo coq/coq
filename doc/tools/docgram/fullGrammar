@@ -73,12 +73,9 @@ operconstr200: [
 ]
 
 operconstr100: [
-| operconstr99 "<:" binder_constr
-| operconstr99 "<:" operconstr100
-| operconstr99 "<<:" binder_constr
-| operconstr99 "<<:" operconstr100
-| operconstr99 ":" binder_constr
-| operconstr99 ":" operconstr100
+| operconstr99 "<:" operconstr200
+| operconstr99 "<<:" operconstr200
+| operconstr99 ":" operconstr200
 | operconstr99 ":>"
 | operconstr99
 ]
@@ -126,26 +123,23 @@ operconstr0: [
 ]
 
 record_declaration: [
-| record_fields
+| record_fields_instance
 ]
 
-record_fields: [
-| record_field_declaration ";" record_fields
-| record_field_declaration
+record_fields_instance: [
+| record_field_instance ";" record_fields_instance
+| record_field_instance
 |
-| record_field ";" record_fields
-| record_field ";"
-| record_field
 ]
 
-record_field_declaration: [
+record_field_instance: [
 | global binders ":=" lconstr
 ]
 
 binder_constr: [
 | "forall" open_binders "," operconstr200
 | "fun" open_binders "=>" operconstr200
-| "let" name binders type_cstr ":=" operconstr200 "in" operconstr200
+| "let" name binders let_type_cstr ":=" operconstr200 "in" operconstr200
 | "let" single_fix "in" operconstr200
 | "let" [ "(" LIST0 name SEP "," ")" | "()" ] return_type ":=" operconstr200 "in" operconstr200
 | "let" "'" pattern200 ":=" operconstr200 "in" operconstr200
@@ -153,11 +147,6 @@ binder_constr: [
 | "let" "'" pattern200 "in" pattern200 ":=" operconstr200 case_type "in" operconstr200
 | "if" operconstr200 return_type "then" operconstr200 "else" operconstr200
 | fix_constr
-| "if" operconstr200 "is" ssr_dthen ssr_else      (* ssr plugin *)
-| "if" operconstr200 "isn't" ssr_dthen ssr_else      (* ssr plugin *)
-| "let" ":" ssr_mpat ":=" lconstr "in" lconstr      (* ssr plugin *)
-| "let" ":" ssr_mpat ":=" lconstr ssr_rtype "in" lconstr      (* ssr plugin *)
-| "let" ":" ssr_mpat "in" pattern200 ":=" lconstr ssr_rtype "in" lconstr      (* ssr plugin *)
 ]
 
 appl_arg: [
@@ -213,7 +202,7 @@ fix_kw: [
 ]
 
 fix_decl: [
-| identref binders_fixannot type_cstr ":=" operconstr200
+| identref binders_fixannot let_type_cstr ":=" operconstr200
 ]
 
 match_constr: [
@@ -250,7 +239,6 @@ record_pattern: [
 
 record_patterns: [
 | record_pattern ";" record_patterns
-| record_pattern ";"
 | record_pattern
 |
 ]
@@ -260,8 +248,7 @@ pattern200: [
 ]
 
 pattern100: [
-| pattern99 ":" binder_constr
-| pattern99 ":" operconstr100
+| pattern99 ":" operconstr200
 | pattern99
 ]
 
@@ -306,8 +293,6 @@ fixannot: [
 | "{" "struct" identref "}"
 | "{" "wf" constr identref "}"
 | "{" "measure" constr OPT identref OPT constr "}"
-| "{" "struct" name "}"
-|
 ]
 
 impl_name_head: [
@@ -350,7 +335,6 @@ closed_binder: [
 | "`(" LIST1 typeclass_constraint SEP "," ")"
 | "`{" LIST1 typeclass_constraint SEP "," "}"
 | "'" pattern0
-| [ "of" | "&" ] operconstr99      (* ssr plugin *)
 ]
 
 typeclass_constraint: [
@@ -360,10 +344,8 @@ typeclass_constraint: [
 | operconstr200
 ]
 
-type_cstr: [
+let_type_cstr: [
 | OPT [ ":" lconstr ]
-| ":" lconstr
-|
 ]
 
 preident: [
@@ -467,14 +449,15 @@ bigint: [
 ]
 
 bar_cbrace: [
-| "|" "}"
+| test_nospace_pipe_closedcurly "|" "}"
 ]
 
 vernac_toplevel: [
 | "Drop" "."
 | "Quit" "."
-| "Backtrack" natural natural natural "."
+| "BackTo" natural "."
 | test_show_goal "Show" "Goal" natural "at" natural "."
+| "Show" "Proof" "Diffs" OPT "removed" "."
 | Pvernac.Vernac_.main_entry
 ]
 
@@ -560,7 +543,6 @@ command: [
 | "Reset" identref
 | "Back"
 | "Back" natural
-| "BackTo" natural
 | "Debug" "On"
 | "Debug" "Off"
 | "Declare" "Reduction" IDENT; ":=" red_expr
@@ -669,14 +651,27 @@ command: [
 | "Show" "Ltac" "Profile"
 | "Show" "Ltac" "Profile" "CutOff" int
 | "Show" "Ltac" "Profile" string
+| "Add" "InjTyp" constr      (* micromega plugin *)
+| "Add" "BinOp" constr      (* micromega plugin *)
+| "Add" "UnOp" constr      (* micromega plugin *)
+| "Add" "CstOp" constr      (* micromega plugin *)
+| "Add" "BinRel" constr      (* micromega plugin *)
+| "Add" "PropOp" constr      (* micromega plugin *)
+| "Add" "PropUOp" constr      (* micromega plugin *)
+| "Add" "Spec" constr      (* micromega plugin *)
+| "Add" "BinOpSpec" constr      (* micromega plugin *)
+| "Add" "UnOpSpec" constr      (* micromega plugin *)
+| "Add" "Saturate" constr      (* micromega plugin *)
+| "Show" "Zify" "InjTyp"      (* micromega plugin *)
+| "Show" "Zify" "BinOp"      (* micromega plugin *)
+| "Show" "Zify" "UnOp"      (* micromega plugin *)
+| "Show" "Zify" "CstOp"      (* micromega plugin *)
+| "Show" "Zify" "BinRel"      (* micromega plugin *)
+| "Show" "Zify" "Spec"      (* micromega plugin *)
 | "Add" "Ring" ident ":" constr OPT ring_mods      (* setoid_ring plugin *)
 | "Print" "Rings"      (* setoid_ring plugin *)
 | "Add" "Field" ident ":" constr OPT field_mods      (* setoid_ring plugin *)
 | "Print" "Fields"      (* setoid_ring plugin *)
-| "Prenex" "Implicits" LIST1 global      (* ssr plugin *)
-| "Search" ssr_search_arg ssr_modlocs      (* ssr plugin *)
-| "Print" "Hint" "View" ssrviewpos      (* ssr plugin *)
-| "Hint" "View" ssrviewposspc LIST1 ssrhintref      (* ssr plugin *)
 | "Numeral" "Notation" reference reference reference ":" ident numnotoption
 | "String" "Notation" reference reference reference ":" ident
 ]
@@ -803,6 +798,7 @@ register_token: [
 
 register_type_token: [
 | "#int63_type"
+| "#float64_type"
 ]
 
 register_prim_token: [
@@ -830,6 +826,24 @@ register_prim_token: [
 | "#int63_lt"
 | "#int63_le"
 | "#int63_compare"
+| "#float64_opp"
+| "#float64_abs"
+| "#float64_eq"
+| "#float64_lt"
+| "#float64_le"
+| "#float64_compare"
+| "#float64_classify"
+| "#float64_add"
+| "#float64_sub"
+| "#float64_mul"
+| "#float64_div"
+| "#float64_sqrt"
+| "#float64_of_int63"
+| "#float64_normfr_mantissa"
+| "#float64_frshiftexp"
+| "#float64_ldshiftexp"
+| "#float64_next_up"
+| "#float64_next_down"
 ]
 
 thm_token: [
@@ -949,11 +963,16 @@ opt_coercion: [
 ]
 
 rec_definition: [
-| ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notation
+| ident_decl binders_fixannot rec_type_cstr OPT [ ":=" lconstr ] decl_notation
 ]
 
 corec_definition: [
-| ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notation
+| ident_decl binders rec_type_cstr OPT [ ":=" lconstr ] decl_notation
+]
+
+rec_type_cstr: [
+| ":" lconstr
+|
 ]
 
 scheme: [
@@ -971,6 +990,13 @@ scheme_kind: [
 
 record_field: [
 | LIST0 quoted_attributes record_binder OPT [ "|" natural ] decl_notation
+]
+
+record_fields: [
+| record_field ";" record_fields
+| record_field ";"
+| record_field
+|
 ]
 
 record_binder_body: [
@@ -1048,7 +1074,6 @@ gallina_ext: [
 | "Generalizable" [ "All" "Variables" | "No" "Variables" | [ "Variable" | "Variables" ] LIST1 identref ]
 | "Export" "Set" option_table option_setting
 | "Export" "Unset" option_table
-| "Import" "Prenex" "Implicits"      (* ssr plugin *)
 ]
 
 export_token: [
@@ -1175,21 +1200,21 @@ arguments_modifier: [
 | "clear" "implicits" "and" "scopes"
 ]
 
-scope: [
+scope_delimiter: [
 | "%" IDENT
 ]
 
 argument_spec: [
-| OPT "!" name OPT scope
+| OPT "!" name OPT scope_delimiter
 ]
 
 argument_spec_block: [
 | argument_spec
 | "/"
 | "&"
-| "(" LIST1 argument_spec ")" OPT scope
-| "[" LIST1 argument_spec "]" OPT scope
-| "{" LIST1 argument_spec "}" OPT scope
+| "(" LIST1 argument_spec ")" OPT scope_delimiter
+| "[" LIST1 argument_spec "]" OPT scope_delimiter
+| "{" LIST1 argument_spec "}" OPT scope_delimiter
 ]
 
 more_implicits_block: [
@@ -1260,6 +1285,7 @@ printable: [
 | "Coercions"
 | "Coercion" "Paths" class_rawexpr class_rawexpr
 | "Canonical" "Projections"
+| "Typing" "Flags"
 | "Tables"
 | "Options"
 | "Hint"
@@ -1339,7 +1365,7 @@ positive_search_mark: [
 ]
 
 searchabout_query: [
-| positive_search_mark ne_string OPT scope
+| positive_search_mark ne_string OPT scope_delimiter
 | positive_search_mark constr_pattern
 ]
 
@@ -1725,6 +1751,9 @@ simple_tactic: [
 | "psatz_R" tactic      (* micromega plugin *)
 | "psatz_Q" int_or_var tactic      (* micromega plugin *)
 | "psatz_Q" tactic      (* micromega plugin *)
+| "iter_specs" tactic      (* micromega plugin *)
+| "zify_op"      (* micromega plugin *)
+| "saturate"      (* micromega plugin *)
 | "nsatz_compute" constr      (* nsatz plugin *)
 | "omega"      (* omega plugin *)
 | "omega" "with" LIST1 ident      (* omega plugin *)
@@ -1734,54 +1763,6 @@ simple_tactic: [
 | "protect_fv" string      (* setoid_ring plugin *)
 | "ring_lookup" tactic0 "[" LIST0 constr "]" LIST1 constr      (* setoid_ring plugin *)
 | "field_lookup" tactic "[" LIST0 constr "]" LIST1 constr      (* setoid_ring plugin *)
-| "YouShouldNotTypeThis" ssrintrosarg      (* ssr plugin *)
-| "by" ssrhintarg      (* ssr plugin *)
-| "YouShouldNotTypeThis" "do" ssrdoarg      (* ssr plugin *)
-| "YouShouldNotTypeThis" ssrtclarg ssrseqdir ssrseqarg      (* ssr plugin *)
-| "clear" natural      (* ssr plugin *)
-| "move" ssrmovearg ssrrpat      (* ssr plugin *)
-| "move" ssrmovearg ssrclauses      (* ssr plugin *)
-| "move" ssrrpat      (* ssr plugin *)
-| "move"      (* ssr plugin *)
-| "case" ssrcasearg ssrclauses      (* ssr plugin *)
-| "case"      (* ssr plugin *)
-| "elim" ssrarg ssrclauses      (* ssr plugin *)
-| "elim"      (* ssr plugin *)
-| "apply" ssrapplyarg      (* ssr plugin *)
-| "apply"      (* ssr plugin *)
-| "exact" ssrexactarg      (* ssr plugin *)
-| "exact"      (* ssr plugin *)
-| "exact" "<:" lconstr      (* ssr plugin *)
-| "congr" ssrcongrarg      (* ssr plugin *)
-| "ssrinstancesofruleL2R" ssrterm      (* ssr plugin *)
-| "ssrinstancesofruleR2L" ssrterm      (* ssr plugin *)
-| "rewrite" ssrrwargs ssrclauses      (* ssr plugin *)
-| "unlock" ssrunlockargs ssrclauses      (* ssr plugin *)
-| "pose" ssrfixfwd      (* ssr plugin *)
-| "pose" ssrcofixfwd      (* ssr plugin *)
-| "pose" ssrfwdid ssrposefwd      (* ssr plugin *)
-| "set" ssrfwdid ssrsetfwd ssrclauses      (* ssr plugin *)
-| "abstract" ssrdgens      (* ssr plugin *)
-| "have" ssrhavefwdwbinders      (* ssr plugin *)
-| "have" "suff" ssrhpats_nobs ssrhavefwd      (* ssr plugin *)
-| "have" "suffices" ssrhpats_nobs ssrhavefwd      (* ssr plugin *)
-| "suff" "have" ssrhpats_nobs ssrhavefwd      (* ssr plugin *)
-| "suffices" "have" ssrhpats_nobs ssrhavefwd      (* ssr plugin *)
-| "suff" ssrsufffwd      (* ssr plugin *)
-| "suffices" ssrsufffwd      (* ssr plugin *)
-| "wlog" ssrhpats_nobs ssrwlogfwd ssrhint      (* ssr plugin *)
-| "wlog" "suff" ssrhpats_nobs ssrwlogfwd ssrhint      (* ssr plugin *)
-| "wlog" "suffices" ssrhpats_nobs ssrwlogfwd ssrhint      (* ssr plugin *)
-| "without" "loss" ssrhpats_nobs ssrwlogfwd ssrhint      (* ssr plugin *)
-| "without" "loss" "suff" ssrhpats_nobs ssrwlogfwd ssrhint      (* ssr plugin *)
-| "without" "loss" "suffices" ssrhpats_nobs ssrwlogfwd ssrhint      (* ssr plugin *)
-| "gen" "have" ssrclear ssr_idcomma ssrhpats_nobs ssrwlogfwd ssrhint      (* ssr plugin *)
-| "generally" "have" ssrclear ssr_idcomma ssrhpats_nobs ssrwlogfwd ssrhint      (* ssr plugin *)
-| "under" ssrrwarg      (* ssr plugin *)
-| "under" ssrrwarg ssrintros_ne      (* ssr plugin *)
-| "under" ssrrwarg ssrintros_ne "do" ssrhint3arg      (* ssr plugin *)
-| "under" ssrrwarg "do" ssrhint3arg      (* ssr plugin *)
-| "ssrinstancesoftpat" cpattern      (* ssrmatching plugin *)
 ]
 
 mlname: [
@@ -1891,10 +1872,6 @@ test_lpar_id_colon: [
 | local_test_lpar_id_colon
 ]
 
-orient_string: [
-| orient preident
-]
-
 comparison: [
 | "="
 | "<"
@@ -1977,9 +1954,6 @@ tactic_expr4: [
 | tactic_expr3 ";" tactic_expr3
 | tactic_expr3 ";" tactic_then_locality tactic_then_gen "]"
 | tactic_expr3
-| tactic_expr5 ";" "first" ssr_first_else      (* ssr plugin *)
-| tactic_expr5 ";" "first" ssrseqarg      (* ssr plugin *)
-| tactic_expr5 ";" "last" ssrseqarg      (* ssr plugin *)
 ]
 
 tactic_expr3: [
@@ -1996,10 +1970,6 @@ tactic_expr3: [
 | "abstract" tactic_expr2 "using" ident
 | selector tactic_expr3
 | tactic_expr2
-| "do" ssrmmod ssrdotac ssrclauses      (* ssr plugin *)
-| "do" ssrortacarg ssrclauses      (* ssr plugin *)
-| "do" int_or_var ssrmmod ssrdotac ssrclauses      (* ssr plugin *)
-| "abstract" ssrdgens      (* ssr plugin *)
 ]
 
 tactic_expr2: [
@@ -2023,14 +1993,12 @@ tactic_expr1: [
 | tactic_arg
 | reference LIST0 tactic_arg_compat
 | tactic_expr0
-| tactic_expr5 ssrintros_ne      (* ssr plugin *)
 ]
 
 tactic_expr0: [
 | "(" tactic_expr5 ")"
 | "[" ">" tactic_then_gen "]"
 | tactic_atom
-| ssrparentacarg      (* ssr plugin *)
 ]
 
 failkw: [
@@ -2422,8 +2390,6 @@ hypident: [
 | id_or_meta
 | "(" "type" "of" id_or_meta ")"
 | "(" "value" "of" id_or_meta ")"
-| "(" "type" "of" Prim.identref ")"      (* ssr plugin *)
-| "(" "value" "of" Prim.identref ")"      (* ssr plugin *)
 ]
 
 hypident_occ: [
@@ -2462,13 +2428,24 @@ in_hyp_as: [
 |
 ]
 
+orient_rw: [
+| "->"
+| "<-"
+|
+]
+
 simple_binder: [
 | name
 | "(" LIST1 name ":" lconstr ")"
 ]
 
 fixdecl: [
-| "(" ident LIST0 simple_binder fixannot ":" lconstr ")"
+| "(" ident LIST0 simple_binder struct_annot ":" lconstr ")"
+]
+
+struct_annot: [
+| "{" "struct" name "}"
+|
 ]
 
 cofixdecl: [
@@ -2525,7 +2502,7 @@ rewriter: [
 ]
 
 oriented_rewriter: [
-| orient rewriter
+| orient_rw rewriter
 ]
 
 induction_clause: [
@@ -2562,608 +2539,6 @@ field_mod: [
 
 field_mods: [
 | "(" LIST1 field_mod SEP "," ")"      (* setoid_ring plugin *)
-]
-
-ssrtacarg: [
-| tactic_expr5      (* ssr plugin *)
-]
-
-ssrtac3arg: [
-| tactic_expr3      (* ssr plugin *)
-]
-
-ssrtclarg: [
-| ssrtacarg      (* ssr plugin *)
-]
-
-ssrhyp: [
-| ident      (* ssr plugin *)
-]
-
-ssrhoi_hyp: [
-| ident      (* ssr plugin *)
-]
-
-ssrhoi_id: [
-| ident      (* ssr plugin *)
-]
-
-ssrsimpl_ne: [
-| "//="      (* ssr plugin *)
-| "/="      (* ssr plugin *)
-| test_ssrslashnum11 "/" natural "/" natural "="      (* ssr plugin *)
-| test_ssrslashnum10 "/" natural "/"      (* ssr plugin *)
-| test_ssrslashnum10 "/" natural "="      (* ssr plugin *)
-| test_ssrslashnum10 "/" natural "/="      (* ssr plugin *)
-| test_ssrslashnum10 "/" natural "/" "="      (* ssr plugin *)
-| test_ssrslashnum01 "//" natural "="      (* ssr plugin *)
-| test_ssrslashnum00 "//"      (* ssr plugin *)
-]
-
-ssrclear_ne: [
-| "{" LIST1 ssrhyp "}"      (* ssr plugin *)
-]
-
-ssrclear: [
-| ssrclear_ne      (* ssr plugin *)
-|      (* ssr plugin *)
-]
-
-ssrindex: [
-| int_or_var      (* ssr plugin *)
-]
-
-ssrocc: [
-| natural LIST0 natural      (* ssr plugin *)
-| "-" LIST0 natural      (* ssr plugin *)
-| "+" LIST0 natural      (* ssr plugin *)
-]
-
-ssrmmod: [
-| "!"      (* ssr plugin *)
-| LEFTQMARK      (* ssr plugin *)
-| "?"      (* ssr plugin *)
-]
-
-ssrmult_ne: [
-| natural ssrmmod      (* ssr plugin *)
-| ssrmmod      (* ssr plugin *)
-]
-
-ssrmult: [
-| ssrmult_ne      (* ssr plugin *)
-|      (* ssr plugin *)
-]
-
-ssrdocc: [
-| "{" ssrocc "}"      (* ssr plugin *)
-| "{" LIST0 ssrhyp "}"      (* ssr plugin *)
-]
-
-ssrterm: [
-| "YouShouldNotTypeThis" constr      (* ssr plugin *)
-| ssrtermkind Pcoq.Constr.constr      (* ssr plugin *)
-]
-
-ast_closure_term: [
-| term_annotation constr      (* ssr plugin *)
-]
-
-ast_closure_lterm: [
-| term_annotation lconstr      (* ssr plugin *)
-]
-
-ssrbwdview: [
-| "YouShouldNotTypeThis"      (* ssr plugin *)
-| test_not_ssrslashnum "/" Pcoq.Constr.constr      (* ssr plugin *)
-| test_not_ssrslashnum "/" Pcoq.Constr.constr ssrbwdview      (* ssr plugin *)
-]
-
-ssrfwdview: [
-| "YouShouldNotTypeThis"      (* ssr plugin *)
-| test_not_ssrslashnum "/" ast_closure_term      (* ssr plugin *)
-| test_not_ssrslashnum "/" ast_closure_term ssrfwdview      (* ssr plugin *)
-]
-
-ident_no_do: [
-| "YouShouldNotTypeThis" ident      (* ssr plugin *)
-| test_ident_no_do IDENT      (* ssr plugin *)
-]
-
-ssripat: [
-| "_"      (* ssr plugin *)
-| "*"      (* ssr plugin *)
-| ">"      (* ssr plugin *)
-| ident_no_do      (* ssr plugin *)
-| "?"      (* ssr plugin *)
-| "+"      (* ssr plugin *)
-| "++"      (* ssr plugin *)
-| ssrsimpl_ne      (* ssr plugin *)
-| ssrdocc "->"      (* ssr plugin *)
-| ssrdocc "<-"      (* ssr plugin *)
-| ssrdocc      (* ssr plugin *)
-| "->"      (* ssr plugin *)
-| "<-"      (* ssr plugin *)
-| "-"      (* ssr plugin *)
-| "-/" "="      (* ssr plugin *)
-| "-/="      (* ssr plugin *)
-| "-/" "/"      (* ssr plugin *)
-| "-//"      (* ssr plugin *)
-| "-/" integer "/"      (* ssr plugin *)
-| "-/" "/="      (* ssr plugin *)
-| "-//" "="      (* ssr plugin *)
-| "-//="      (* ssr plugin *)
-| "-/" integer "/="      (* ssr plugin *)
-| "-/" integer "/" integer "="      (* ssr plugin *)
-| ssrfwdview      (* ssr plugin *)
-| "[" ":" LIST0 ident "]"      (* ssr plugin *)
-| "[:" LIST0 ident "]"      (* ssr plugin *)
-| ssrcpat      (* ssr plugin *)
-]
-
-ssripats: [
-| ssripat ssripats      (* ssr plugin *)
-|      (* ssr plugin *)
-]
-
-ssriorpat: [
-| ssripats "|" ssriorpat      (* ssr plugin *)
-| ssripats "|-" ">" ssriorpat      (* ssr plugin *)
-| ssripats "|-" ssriorpat      (* ssr plugin *)
-| ssripats "|->" ssriorpat      (* ssr plugin *)
-| ssripats "||" ssriorpat      (* ssr plugin *)
-| ssripats "|||" ssriorpat      (* ssr plugin *)
-| ssripats "||||" ssriorpat      (* ssr plugin *)
-| ssripats      (* ssr plugin *)
-]
-
-ssrcpat: [
-| "YouShouldNotTypeThis" ssriorpat      (* ssr plugin *)
-| test_nohidden "[" hat "]"      (* ssr plugin *)
-| test_nohidden "[" ssriorpat "]"      (* ssr plugin *)
-| test_nohidden "[=" ssriorpat "]"      (* ssr plugin *)
-]
-
-hat: [
-| "^" ident      (* ssr plugin *)
-| "^" "~" ident      (* ssr plugin *)
-| "^" "~" natural      (* ssr plugin *)
-| "^~" ident      (* ssr plugin *)
-| "^~" natural      (* ssr plugin *)
-]
-
-ssripats_ne: [
-| ssripat ssripats      (* ssr plugin *)
-]
-
-ssrhpats: [
-| ssripats      (* ssr plugin *)
-]
-
-ssrhpats_wtransp: [
-| ssripats      (* ssr plugin *)
-| ssripats "@" ssripats      (* ssr plugin *)
-]
-
-ssrhpats_nobs: [
-| ssripats      (* ssr plugin *)
-]
-
-ssrrpat: [
-| "->"      (* ssr plugin *)
-| "<-"      (* ssr plugin *)
-]
-
-ssrintros_ne: [
-| "=>" ssripats_ne      (* ssr plugin *)
-]
-
-ssrintros: [
-| ssrintros_ne      (* ssr plugin *)
-|      (* ssr plugin *)
-]
-
-ssrintrosarg: [
-| "YouShouldNotTypeThis" ssrtacarg ssrintros_ne      (* ssr plugin *)
-]
-
-ssrfwdid: [
-| test_ssrfwdid Prim.ident      (* ssr plugin *)
-]
-
-ssrortacs: [
-| ssrtacarg "|" ssrortacs      (* ssr plugin *)
-| ssrtacarg "|"      (* ssr plugin *)
-| ssrtacarg      (* ssr plugin *)
-| "|" ssrortacs      (* ssr plugin *)
-| "|"      (* ssr plugin *)
-]
-
-ssrhintarg: [
-| "[" "]"      (* ssr plugin *)
-| "[" ssrortacs "]"      (* ssr plugin *)
-| ssrtacarg      (* ssr plugin *)
-]
-
-ssrhint3arg: [
-| "[" "]"      (* ssr plugin *)
-| "[" ssrortacs "]"      (* ssr plugin *)
-| ssrtac3arg      (* ssr plugin *)
-]
-
-ssrortacarg: [
-| "[" ssrortacs "]"      (* ssr plugin *)
-]
-
-ssrhint: [
-|      (* ssr plugin *)
-| "by" ssrhintarg      (* ssr plugin *)
-]
-
-ssrwgen: [
-| ssrclear_ne      (* ssr plugin *)
-| ssrhoi_hyp      (* ssr plugin *)
-| "@" ssrhoi_hyp      (* ssr plugin *)
-| "(" ssrhoi_id ":=" lcpattern ")"      (* ssr plugin *)
-| "(" ssrhoi_id ")"      (* ssr plugin *)
-| "(@" ssrhoi_id ":=" lcpattern ")"      (* ssr plugin *)
-| "(" "@" ssrhoi_id ":=" lcpattern ")"      (* ssr plugin *)
-]
-
-ssrclausehyps: [
-| ssrwgen "," ssrclausehyps      (* ssr plugin *)
-| ssrwgen ssrclausehyps      (* ssr plugin *)
-| ssrwgen      (* ssr plugin *)
-]
-
-ssrclauses: [
-| "in" ssrclausehyps "|-" "*"      (* ssr plugin *)
-| "in" ssrclausehyps "|-"      (* ssr plugin *)
-| "in" ssrclausehyps "*"      (* ssr plugin *)
-| "in" ssrclausehyps      (* ssr plugin *)
-| "in" "|-" "*"      (* ssr plugin *)
-| "in" "*"      (* ssr plugin *)
-| "in" "*" "|-"      (* ssr plugin *)
-|      (* ssr plugin *)
-]
-
-ssrfwd: [
-| ":=" ast_closure_lterm      (* ssr plugin *)
-| ":" ast_closure_lterm ":=" ast_closure_lterm      (* ssr plugin *)
-]
-
-ssrbvar: [
-| ident      (* ssr plugin *)
-| "_"      (* ssr plugin *)
-]
-
-ssrbinder: [
-| ssrbvar      (* ssr plugin *)
-| "(" ssrbvar ")"      (* ssr plugin *)
-| "(" ssrbvar ":" lconstr ")"      (* ssr plugin *)
-| "(" ssrbvar LIST1 ssrbvar ":" lconstr ")"      (* ssr plugin *)
-| "(" ssrbvar ":" lconstr ":=" lconstr ")"      (* ssr plugin *)
-| "(" ssrbvar ":=" lconstr ")"      (* ssr plugin *)
-| [ "of" | "&" ] operconstr99      (* ssr plugin *)
-]
-
-ssrstruct: [
-| "{" "struct" ident "}"      (* ssr plugin *)
-|      (* ssr plugin *)
-]
-
-ssrposefwd: [
-| LIST0 ssrbinder ssrfwd      (* ssr plugin *)
-]
-
-ssrfixfwd: [
-| "fix" ssrbvar LIST0 ssrbinder ssrstruct ssrfwd      (* ssr plugin *)
-]
-
-ssrcofixfwd: [
-| "cofix" ssrbvar LIST0 ssrbinder ssrfwd      (* ssr plugin *)
-]
-
-ssrsetfwd: [
-| ":" ast_closure_lterm ":=" "{" ssrocc "}" cpattern      (* ssr plugin *)
-| ":" ast_closure_lterm ":=" lcpattern      (* ssr plugin *)
-| ":=" "{" ssrocc "}" cpattern      (* ssr plugin *)
-| ":=" lcpattern      (* ssr plugin *)
-]
-
-ssrhavefwd: [
-| ":" ast_closure_lterm ssrhint      (* ssr plugin *)
-| ":" ast_closure_lterm ":=" ast_closure_lterm      (* ssr plugin *)
-| ":" ast_closure_lterm ":="      (* ssr plugin *)
-| ":=" ast_closure_lterm      (* ssr plugin *)
-]
-
-ssrhavefwdwbinders: [
-| ssrhpats_wtransp LIST0 ssrbinder ssrhavefwd      (* ssr plugin *)
-]
-
-ssrdoarg: [
-]
-
-ssrseqarg: [
-| ssrswap      (* ssr plugin *)
-| ssrseqidx ssrortacarg OPT ssrorelse      (* ssr plugin *)
-| ssrseqidx ssrswap      (* ssr plugin *)
-| tactic_expr3      (* ssr plugin *)
-]
-
-ssrseqidx: [
-| test_ssrseqvar Prim.ident      (* ssr plugin *)
-| Prim.natural      (* ssr plugin *)
-]
-
-ssrswap: [
-| "first"      (* ssr plugin *)
-| "last"      (* ssr plugin *)
-]
-
-ssrorelse: [
-| "||" tactic_expr2      (* ssr plugin *)
-]
-
-Prim.ident: [
-| IDENT ssr_null_entry      (* ssr plugin *)
-]
-
-ssrparentacarg: [
-| "(" tactic_expr5 ")"      (* ssr plugin *)
-]
-
-ssrdotac: [
-| tactic_expr3      (* ssr plugin *)
-| ssrortacarg      (* ssr plugin *)
-]
-
-ssrseqdir: [
-]
-
-ssr_first: [
-| ssr_first ssrintros_ne      (* ssr plugin *)
-| "[" LIST0 tactic_expr5 SEP "|" "]"      (* ssr plugin *)
-]
-
-ssr_first_else: [
-| ssr_first ssrorelse      (* ssr plugin *)
-| ssr_first      (* ssr plugin *)
-]
-
-ssrgen: [
-| ssrdocc cpattern      (* ssr plugin *)
-| cpattern      (* ssr plugin *)
-]
-
-ssrdgens_tl: [
-| "{" LIST1 ssrhyp "}" cpattern ssrdgens_tl      (* ssr plugin *)
-| "{" LIST1 ssrhyp "}"      (* ssr plugin *)
-| "{" ssrocc "}" cpattern ssrdgens_tl      (* ssr plugin *)
-| "/" ssrdgens_tl      (* ssr plugin *)
-| cpattern ssrdgens_tl      (* ssr plugin *)
-|      (* ssr plugin *)
-]
-
-ssrdgens: [
-| ":" ssrgen ssrdgens_tl      (* ssr plugin *)
-]
-
-ssreqid: [
-| test_ssreqid ssreqpat      (* ssr plugin *)
-| test_ssreqid      (* ssr plugin *)
-]
-
-ssreqpat: [
-| Prim.ident      (* ssr plugin *)
-| "_"      (* ssr plugin *)
-| "?"      (* ssr plugin *)
-| "+"      (* ssr plugin *)
-| ssrdocc "->"      (* ssr plugin *)
-| ssrdocc "<-"      (* ssr plugin *)
-| "->"      (* ssr plugin *)
-| "<-"      (* ssr plugin *)
-]
-
-ssrarg: [
-| ssrfwdview ssreqid ssrdgens ssrintros      (* ssr plugin *)
-| ssrfwdview ssrclear ssrintros      (* ssr plugin *)
-| ssreqid ssrdgens ssrintros      (* ssr plugin *)
-| ssrclear_ne ssrintros      (* ssr plugin *)
-| ssrintros_ne      (* ssr plugin *)
-]
-
-ssrmovearg: [
-| ssrarg      (* ssr plugin *)
-]
-
-ssrcasearg: [
-| ssrarg      (* ssr plugin *)
-]
-
-ssragen: [
-| "{" LIST1 ssrhyp "}" ssrterm      (* ssr plugin *)
-| ssrterm      (* ssr plugin *)
-]
-
-ssragens: [
-| "{" LIST1 ssrhyp "}" ssrterm ssragens      (* ssr plugin *)
-| "{" LIST1 ssrhyp "}"      (* ssr plugin *)
-| ssrterm ssragens      (* ssr plugin *)
-|      (* ssr plugin *)
-]
-
-ssrapplyarg: [
-| ":" ssragen ssragens ssrintros      (* ssr plugin *)
-| ssrclear_ne ssrintros      (* ssr plugin *)
-| ssrintros_ne      (* ssr plugin *)
-| ssrbwdview ":" ssragen ssragens ssrintros      (* ssr plugin *)
-| ssrbwdview ssrclear ssrintros      (* ssr plugin *)
-]
-
-ssrexactarg: [
-| ":" ssragen ssragens      (* ssr plugin *)
-| ssrbwdview ssrclear      (* ssr plugin *)
-| ssrclear_ne      (* ssr plugin *)
-]
-
-ssrcongrarg: [
-| natural constr ssrdgens      (* ssr plugin *)
-| natural constr      (* ssr plugin *)
-| constr ssrdgens      (* ssr plugin *)
-| constr      (* ssr plugin *)
-]
-
-ssrrwocc: [
-| "{" LIST0 ssrhyp "}"      (* ssr plugin *)
-| "{" ssrocc "}"      (* ssr plugin *)
-|      (* ssr plugin *)
-]
-
-ssrrule_ne: [
-| test_not_ssrslashnum [ "/" ssrterm | ssrterm | ssrsimpl_ne ]      (* ssr plugin *)
-| ssrsimpl_ne      (* ssr plugin *)
-]
-
-ssrrule: [
-| ssrrule_ne      (* ssr plugin *)
-|      (* ssr plugin *)
-]
-
-ssrpattern_squarep: [
-| "[" rpattern "]"      (* ssr plugin *)
-|      (* ssr plugin *)
-]
-
-ssrpattern_ne_squarep: [
-| "[" rpattern "]"      (* ssr plugin *)
-]
-
-ssrrwarg: [
-| "-" ssrmult ssrrwocc ssrpattern_squarep ssrrule_ne      (* ssr plugin *)
-| "-/" ssrterm      (* ssr plugin *)
-| ssrmult_ne ssrrwocc ssrpattern_squarep ssrrule_ne      (* ssr plugin *)
-| "{" LIST1 ssrhyp "}" ssrpattern_ne_squarep ssrrule_ne      (* ssr plugin *)
-| "{" LIST1 ssrhyp "}" ssrrule      (* ssr plugin *)
-| "{" ssrocc "}" ssrpattern_squarep ssrrule_ne      (* ssr plugin *)
-| "{" "}" ssrpattern_squarep ssrrule_ne      (* ssr plugin *)
-| ssrpattern_ne_squarep ssrrule_ne      (* ssr plugin *)
-| ssrrule_ne      (* ssr plugin *)
-]
-
-ssrrwargs: [
-| test_ssr_rw_syntax LIST1 ssrrwarg      (* ssr plugin *)
-]
-
-ssrunlockarg: [
-| "{" ssrocc "}" ssrterm      (* ssr plugin *)
-| ssrterm      (* ssr plugin *)
-]
-
-ssrunlockargs: [
-| LIST0 ssrunlockarg      (* ssr plugin *)
-]
-
-ssrsufffwd: [
-| ssrhpats LIST0 ssrbinder ":" ast_closure_lterm ssrhint      (* ssr plugin *)
-]
-
-ssrwlogfwd: [
-| ":" LIST0 ssrwgen "/" ast_closure_lterm      (* ssr plugin *)
-]
-
-ssr_idcomma: [
-|      (* ssr plugin *)
-| test_idcomma [ IDENT | "_" ] ","      (* ssr plugin *)
-]
-
-ssr_rtype: [
-| "return" operconstr100      (* ssr plugin *)
-]
-
-ssr_mpat: [
-| pattern200      (* ssr plugin *)
-]
-
-ssr_dpat: [
-| ssr_mpat "in" pattern200 ssr_rtype      (* ssr plugin *)
-| ssr_mpat ssr_rtype      (* ssr plugin *)
-| ssr_mpat      (* ssr plugin *)
-]
-
-ssr_dthen: [
-| ssr_dpat "then" lconstr      (* ssr plugin *)
-]
-
-ssr_elsepat: [
-| "else"      (* ssr plugin *)
-]
-
-ssr_else: [
-| ssr_elsepat lconstr      (* ssr plugin *)
-]
-
-ssr_search_item: [
-| string      (* ssr plugin *)
-| string "%" preident      (* ssr plugin *)
-| constr_pattern      (* ssr plugin *)
-]
-
-ssr_search_arg: [
-| "-" ssr_search_item ssr_search_arg      (* ssr plugin *)
-| ssr_search_item ssr_search_arg      (* ssr plugin *)
-|      (* ssr plugin *)
-]
-
-ssr_modlocs: [
-|      (* ssr plugin *)
-| "in" LIST1 modloc      (* ssr plugin *)
-]
-
-modloc: [
-| "-" global      (* ssr plugin *)
-| global      (* ssr plugin *)
-]
-
-ssrhintref: [
-| constr      (* ssr plugin *)
-| constr "|" natural      (* ssr plugin *)
-]
-
-ssrviewpos: [
-| "for" "move" "/"      (* ssr plugin *)
-| "for" "apply" "/"      (* ssr plugin *)
-| "for" "apply" "/" "/"      (* ssr plugin *)
-| "for" "apply" "//"      (* ssr plugin *)
-|      (* ssr plugin *)
-]
-
-ssrviewposspc: [
-| ssrviewpos      (* ssr plugin *)
-]
-
-rpattern: [
-| lconstr      (* ssrmatching plugin *)
-| "in" lconstr      (* ssrmatching plugin *)
-| lconstr "in" lconstr      (* ssrmatching plugin *)
-| "in" lconstr "in" lconstr      (* ssrmatching plugin *)
-| lconstr "in" lconstr "in" lconstr      (* ssrmatching plugin *)
-| lconstr "as" lconstr "in" lconstr      (* ssrmatching plugin *)
-]
-
-cpattern: [
-| "Qed" constr      (* ssrmatching plugin *)
-| ssrtermkind constr      (* ssrmatching plugin *)
-]
-
-lcpattern: [
-| "Qed" lconstr      (* ssrmatching plugin *)
-| ssrtermkind lconstr      (* ssrmatching plugin *)
-]
-
-ssrpatternarg: [
-| rpattern      (* ssrmatching plugin *)
 ]
 
 numnotoption: [

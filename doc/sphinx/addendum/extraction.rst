@@ -283,7 +283,7 @@ Notice that in the case of type scheme axiom (i.e. whose type is an
 arity, that is a sequence of product finished by a sort), then some type
 variables have to be given (as quoted strings). The syntax is then:
 
-.. cmdv:: Extract Constant @qualid @string ... @string => @string
+.. cmdv:: Extract Constant @qualid {+ @string } => @string
    :undocumented:
 
 The number of type variables is checked by the system. For example:

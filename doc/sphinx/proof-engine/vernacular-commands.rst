@@ -195,7 +195,7 @@ Requests to the environment
       (see Section :ref:`invocation-of-tactics`).
 
 
-.. cmd:: Eval @redexpr in @term
+.. cmd:: Eval @red_expr in @term
 
    This command performs the specified reduction on :n:`@term`, and displays
    the resulting term with its type. The term to be reduced may depend on
@@ -1146,7 +1146,7 @@ described first.
       Print all the currently non-transparent strategies.
 
 
-.. cmd:: Declare Reduction @ident := @redexpr
+.. cmd:: Declare Reduction @ident := @red_expr
 
    This command allows giving a short name to a reduction expression, for
    instance ``lazy beta delta [foo bar]``. This short name can then be used
@@ -1158,7 +1158,7 @@ described first.
    functor applications will be rejected if these declarations are not
    local. The name :n:`@ident` cannot be used directly as an Ltac tactic, but
    nothing prevents the user from also performing a
-   :n:`Ltac @ident := @redexpr`.
+   :n:`Ltac @ident := @red_expr`.
 
    .. seealso:: :ref:`performingcomputations`
 
