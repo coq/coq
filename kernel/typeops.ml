@@ -20,7 +20,7 @@ open SVars
 open Annot
 open State
 open Constraints
-open Substaging
+open Staging
 open Context
 open Vars
 open Declarations

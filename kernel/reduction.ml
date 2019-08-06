@@ -28,7 +28,7 @@ open CClosure
 open Esubst
 open Context.Rel.Declaration
 open Stages
-open Substaging
+open Staging
 
 let rec is_empty_stack = function
   [] -> true

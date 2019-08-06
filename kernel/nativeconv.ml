@@ -15,7 +15,7 @@ open Util
 open Nativevalues
 open Nativecode
 open Environ
-open Substaging
+open Staging
 
 (** This module implements the conversion test by compiling to OCaml code *)
 

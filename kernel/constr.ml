@@ -820,6 +820,8 @@ let map_with_binders g f l c0 = match kind c0 with
 (* Stage annotations *)
 (*********************)
 
+(** fold-type functions on stage annotations of constrs *)
+
 let rec collect_annots c =
   match c with
   | Ind (_, Stage (StageVar (na, _))) -> SVars.add na SVars.empty
@@ -829,6 +831,8 @@ let rec any_annot f c =
   match c with
   | Ind (_, a) -> f a
   | _ -> fold (fun acc c -> acc || any_annot f c) false c
+
+(** map-type functions on stage annotations of constrs *)
 
 let rec modify_annots f c =
   match c with
