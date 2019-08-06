@@ -260,3 +260,46 @@ under [X in R _ _ X]ex_gen => a b.
 by move => _.
 Qed.
 End TestGeneric.
+
+Import Setoid.
+(* to expose [Coq.Relations.Relation_Definitions.reflexive],
+   [Coq.Classes.RelationClasses.RewriteRelation], and so on. *)
+
+Section TestGeneric2.
+(* Some toy abstract example with a parameterized setoid type *)
+Record Setoid (m n : nat) : Type :=
+  { car : Type
+  ; Rel : car -> car -> Prop
+  ; refl : reflexive _ Rel
+  ; sym : symmetric _ Rel
+  ; trans : transitive _ Rel
+  }.
+
+Context {m n : nat}.
+Add Parametric Relation (s : Setoid m n) : (car s) (@Rel _ _ s)
+  reflexivity proved by (@refl _ _ s)
+  symmetry proved by (@sym _ _ s)
+  transitivity proved by (@trans _ _ s)
+  as eq_rel.
+
+Context {A : Type} {s1 s2 : Setoid m n}.
+
+Let B := @car m n s1.
+Let C := @car m n s2.
+Variable (F : C -> (A -> A -> B) -> C).
+Hypothesis rel2_gen :
+  forall (c1 c2 : C) (P1 P2 : A -> A -> B),
+    Rel c1 c2 ->
+    (forall a b : A, Rel (P1 a b) (P2 a b)) ->
+    Rel (F c1 P1) (F c2 P2).
+Arguments rel2_gen [c1] c2 [P1] P2 relc12 relP12.
+Lemma test_rel2_gen (c : C) (P : A -> A -> B)
+  (toy_hyp : forall a b, P a b = P b a) :
+  Rel (F c P) (F c (fun a b => P b a)).
+Proof.
+under [here in Rel _ here]rel2_gen.
+- over.
+- by move=> a b; rewrite toy_hyp over.
+- reflexivity.
+Qed.
+End TestGeneric2.
