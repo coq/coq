@@ -642,7 +642,7 @@ let rec execute env stg cstr =
       in
       stg, cstrnt, cstr, t
 
-    | Fix ((von, i), (_, lar, _ as recdef) as fix) ->
+    | Fix ((von, i), (_, lar, _ as recdef)) ->
       let possible_indices =
         List.map Array.of_list @@
         List.combinations @@

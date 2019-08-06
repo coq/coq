@@ -837,6 +837,8 @@ let rec modify_annots f c =
     mkLambda (n, t, (modify_annots f c))
   | LetIn (n, b, t, c) ->
     mkLetIn (n, modify_annots f b, t, modify_annots f c)
+  | Case (ci, p, c, lf) ->
+    mkCase (ci, p, modify_annots f c, Array.Smart.map (modify_annots f) lf)
   | Fix (ln, (nl, tl, bl)) ->
     mkFix (ln, (nl, tl, Array.Smart.map (modify_annots f) bl))
   | CoFix (ln, (nl, tl, bl)) ->
