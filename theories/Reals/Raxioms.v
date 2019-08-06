@@ -14,6 +14,7 @@
 
 Require Export ZArith_base.
 Require Import ConstructiveCauchyReals.
+Require Import ConstructiveRcomplete.
 Require Export Rdefinitions.
 Declare Scope R_scope.
 Local Open Scope R_scope.
@@ -349,12 +350,27 @@ Definition is_lub (E:R -> Prop) (m:R) :=
   is_upper_bound E m /\ (forall b:R, is_upper_bound E b -> m <= b).
 
 (**********)
-(* This axiom can be proved by excluded middle in sort Set.
-   For this, define a sequence by dichotomy, using excluded middle
-   to know whether the current point majorates E or not.
-   Then conclude by the Cauchy-completeness of R, which is proved
-   constructively. *)
-Axiom
-  completeness :
+Lemma completeness :
     forall E:R -> Prop,
       bound E -> (exists x : R, E x) -> { m:R | is_lub E m }.
+Proof.
+  intros. pose (fun x:CReal => E (Rabst x)) as Er.
+  assert (exists x : CReal, Er x) as Einhab.
+  { destruct H0. exists (Rrepr x). unfold Er.
+    replace (Rabst (Rrepr x)) with x. exact H0.
+    apply Rquot1. rewrite Rquot2. reflexivity. }
+  assert (exists x : CReal, ConstructiveRcomplete.is_upper_bound Er x) as Ebound.
+  { destruct H. exists (Rrepr x). intros y Ey. rewrite <- (Rquot2 y).
+    apply Rrepr_le. apply H. exact Ey. }
+  pose proof (is_upper_bound_closed Er sig_forall_dec sig_not_dec
+                                    Einhab Ebound).
+  destruct (is_upper_bound_glb
+              Er sig_not_dec sig_forall_dec Einhab Ebound); simpl in H1.
+  exists (Rabst x). split.
+  intros y Ey. apply Rrepr_le. rewrite Rquot2. apply H1.
+  unfold Er. replace (Rabst (Rrepr y)) with y. exact Ey.
+  apply Rquot1. rewrite Rquot2. reflexivity.
+  intros. destruct H1. apply Rrepr_le. rewrite Rquot2.
+  apply H3. intros y Ey. rewrite <- Rquot2.
+  apply Rrepr_le, H2, Ey.
+Qed.

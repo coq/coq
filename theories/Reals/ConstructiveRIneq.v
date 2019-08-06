@@ -25,6 +25,8 @@ Local Open Scope R_scope_constr.
 
 (* Export all axioms *)
 
+Notation R := CReal (only parsing).
+Notation Req := CRealEq (only parsing).
 Notation Rplus_comm := CReal_plus_comm (only parsing).
 Notation Rplus_assoc := CReal_plus_assoc (only parsing).
 Notation Rplus_opp_r := CReal_plus_opp_r (only parsing).
@@ -40,11 +42,38 @@ Notation Rlt_trans := CRealLt_trans (only parsing).
 Notation Rplus_lt_compat_l := CReal_plus_lt_compat_l (only parsing).
 Notation Rmult_lt_compat_l := CReal_mult_lt_compat_l (only parsing).
 Notation Rmult_0_l := CReal_mult_0_l (only parsing).
+Notation INR := INR (only parsing).
+Notation IZR := IZR (only parsing).
+Notation IQR := IQR (only parsing).
 
 Hint Resolve Rplus_comm Rplus_assoc Rplus_opp_r Rplus_0_l
      Rmult_comm Rmult_assoc Rinv_l Rmult_1_l Rmult_plus_distr_l
      Rlt_0_1 Rlt_asym Rlt_trans Rplus_lt_compat_l Rmult_lt_compat_l
      Rmult_0_l : creal.
+
+Infix "==" := CRealEq : R_scope_constr.
+Infix "#" := CReal_appart : R_scope_constr.
+Infix "<" := CRealLt : R_scope_constr.
+Infix ">" := CRealGt : R_scope_constr.
+Infix "<=" := CRealLe : R_scope_constr.
+Infix ">=" := CRealGe : R_scope_constr.
+
+Notation "x <= y <= z" := (x <= y /\ y <= z) : R_scope_constr.
+Notation "x <= y < z"  := (x <= y /\ y <  z) : R_scope_constr.
+Notation "x < y < z"   := (x <  y /\ y <  z) : R_scope_constr.
+Notation "x < y <= z"  := (x <  y /\ y <= z) : R_scope_constr.
+
+Infix "+" := CReal_plus : R_scope_constr.
+Notation "- x" := (CReal_opp x) : R_scope_constr.
+Infix "-" := CReal_minus : R_scope_constr.
+Infix "*" := CReal_mult : R_scope_constr.
+Notation "/ x" := (CReal_inv x) (at level 35, right associativity) : R_scope_constr.
+
+Notation "0" := (inject_Q 0) : R_scope_constr.
+Notation "1" := (inject_Q 1) : R_scope_constr.
+Notation "2" := (IZR 2) : R_scope_constr.
+
+Add Ring CRealRing : CReal_isRing.
 
 
 (*********************************************************)
@@ -1926,167 +1955,6 @@ Proof.
   right. apply IPR_pos.
   right. apply (IZR_lt 0). apply Pos2Z.is_pos.
   right. apply IPR_pos.
-Qed.
-
-Definition Rup_nat (x : CReal)
-  : { n : nat | x < INR n }.
-Proof.
-  intros. destruct (Rarchimedean x) as [p [maj _]].
-  destruct p.
-  - exists O. apply maj.
-  - exists (Pos.to_nat p). rewrite INR_IPR. apply maj.
-  - exists O. apply (CRealLt_trans _ (IZR (Z.neg p)) _ maj).
-    apply (IZR_lt _ 0). reflexivity.
-Qed.
-
-(* Sharpen the archimedean property : constructive versions of
-   the usual floor and ceiling functions.
-
-   n is a temporary parameter used for the recursion,
-   look at Ffloor below. *)
-Fixpoint Rfloor_pos (a : CReal) (n : nat) { struct n }
-  : 0 < a
-    -> a < INR n
-    -> { p : nat | INR p < a < INR p + 2 }.
-Proof.
-  (* Decreasing loop on n, until it is the first integer above a. *)
-  intros H H0. destruct n.
-  - exfalso. apply (CRealLt_asym 0 a); assumption.
-  - destruct n as [|p] eqn:des.
-    + (* n = 1 *) exists O. split.
-      apply H. rewrite Rplus_0_l. apply (CRealLt_trans a (1+0)).
-      rewrite Rplus_0_r. apply H0. apply Rplus_le_lt_compat.
-      apply Rle_refl. apply Rlt_0_1.
-    + (* n > 1 *)
-      destruct (linear_order_T (INR p) a (INR (S p))).
-      * rewrite <- Rplus_0_r, S_INR. apply Rplus_lt_compat_l.
-        apply Rlt_0_1.
-      * exists p. split. exact c.
-        rewrite S_INR, S_INR, Rplus_assoc in H0. exact H0.
-      * apply (Rfloor_pos a n H). rewrite des. apply c.
-Qed.
-
-Definition Rfloor (a : CReal)
-  : { p : Z | IZR p < a < IZR p + 2 }.
-Proof.
-  assert (forall x:CReal, 0 < x -> { n : nat | x < INR n }).
-  { intros. pose proof (Rarchimedean x) as [n [maj _]].
-    destruct n.
-    + exfalso. apply (CRealLt_asym 0 x); assumption.
-    + exists (Pos.to_nat p). rewrite INR_IPR. apply maj.
-    + exfalso. apply (CRealLt_asym 0 x). apply H.
-      apply (CRealLt_trans x (IZR (Z.neg p))). apply maj.
-      apply (Rplus_lt_reg_r (-IZR (Z.neg p))).
-      rewrite Rplus_opp_r. rewrite <- opp_IZR.
-      rewrite Rplus_0_l. apply (IZR_lt 0). reflexivity. }
-  destruct (linear_order_T 0 a 1 Rlt_0_1).
-  - destruct (H a c). destruct (Rfloor_pos a x c c0).
-    exists (Z.of_nat x0). rewrite <- INR_IZR_INZ. apply a0.
-  - apply (Rplus_lt_compat_r (-a)) in c.
-    rewrite Rplus_opp_r in c. destruct (H (1-a) c).
-    destruct (Rfloor_pos (1-a) x c c0).
-    exists (-(Z.of_nat x0 + 1))%Z. rewrite opp_IZR.
-    rewrite plus_IZR. simpl. split.
-    + rewrite <- (Ropp_involutive a). apply Ropp_gt_lt_contravar.
-      destruct a0 as [_ a0]. apply (Rplus_lt_reg_r 1).
-      rewrite Rplus_comm, Rplus_assoc. rewrite <- INR_IZR_INZ. apply a0.
-    + destruct a0 as [a0 _]. apply (Rplus_lt_compat_l a) in a0.
-      ring_simplify in a0. rewrite <- INR_IZR_INZ.
-      apply (Rplus_lt_reg_r (INR x0)). unfold IZR, IPR, IPR_2.
-      ring_simplify. exact a0.
-Qed.
-
-Lemma Qplus_same_denom : forall a b c, ((a # c) + (b # c) == (a+b) # c)%Q.
-Proof.
-  intros. unfold Qeq. simpl. rewrite Pos2Z.inj_mul. ring.
-Qed.
-
-(* A point in an archimedean field is the limit of a
-   sequence of rational numbers (n maps to the q between
-   a and a+1/n). This will yield a maximum
-   archimedean field, which is the field of real numbers. *)
-Definition FQ_dense_pos (a b : CReal)
-  : 0 < b
-    -> a < b -> { q : Q | a < IQR q < b }.
-Proof.
-  intros H H0.
-  assert (0 < b - a) as epsPos.
-  { apply (Rplus_lt_compat_r (-a)) in H0.
-    rewrite Rplus_opp_r in H0. apply H0. }
-  pose proof (Rarchimedean ((/(b-a)) (or_intror epsPos)))
-    as [n [maj _]].
-  destruct n as [|n|n].
-  - exfalso.
-    apply (Rmult_lt_compat_l (b-a)) in maj. 2: apply epsPos.
-    rewrite Rmult_0_r in maj. rewrite Rinv_r in maj.
-    apply (CRealLt_asym 0 1). apply Rlt_0_1. apply maj.
-    right. exact epsPos.
-  - (* 0 < n *)
-    destruct (Rfloor (IZR (2 * Z.pos n) * b)) as [p maj2].
-    exists (p # (2*n))%Q. split.
-    + apply (CRealLt_trans a (b - IQR (1 # n))).
-      apply (Rplus_lt_reg_r (IQR (1#n))).
-      unfold CReal_minus. rewrite Rplus_assoc. rewrite Rplus_opp_l.
-      rewrite Rplus_0_r. apply (Rplus_lt_reg_l (-a)).
-      rewrite <- Rplus_assoc. rewrite Rplus_opp_l. rewrite Rplus_0_l.
-      rewrite Rplus_comm. unfold IQR.
-      rewrite Rmult_1_l. apply (Rmult_lt_reg_l (IZR (Z.pos n))).
-      apply (IZR_lt 0). reflexivity. rewrite Rinv_r.
-      apply (Rmult_lt_compat_r (b-a)) in maj. rewrite Rinv_l in maj.
-      apply maj. exact epsPos.
-      right. apply IPR_pos.
-      apply (Rplus_lt_reg_r (IQR (1 # n))).
-      unfold CReal_minus. rewrite Rplus_assoc. rewrite Rplus_opp_l.
-      rewrite Rplus_0_r. rewrite <- plus_IQR.
-      destruct maj2 as [_ maj2].
-      setoid_replace ((p # 2 * n) + (1 # n))%Q
-        with ((p + 2 # 2 * n))%Q. unfold IQR.
-      apply (Rmult_lt_reg_r (IZR (Z.pos (2 * n)))).
-      apply (IZR_lt 0). reflexivity. rewrite Rmult_assoc.
-      rewrite Rinv_l. rewrite Rmult_1_r. rewrite Rmult_comm.
-      rewrite plus_IZR. apply maj2.
-      setoid_replace (1#n)%Q with (2#2*n)%Q. 2: reflexivity.
-      apply Qplus_same_denom.
-    + destruct maj2 as [maj2 _]. unfold IQR.
-      apply (Rmult_lt_reg_r (IZR (Z.pos (2 * n)))).
-      apply (IZR_lt 0). apply Pos2Z.is_pos. rewrite Rmult_assoc. rewrite Rinv_l.
-      rewrite Rmult_1_r. rewrite Rmult_comm. apply maj2.
-  - exfalso.
-    apply (Rmult_lt_compat_l (b-a)) in maj. 2: apply epsPos.
-    rewrite Rinv_r in maj. apply (CRealLt_asym 0 1). apply Rlt_0_1.
-    apply (CRealLt_trans 1 ((b - a) * IZR (Z.neg n)) _ maj).
-    rewrite <- (Rmult_0_r (b-a)).
-    apply Rmult_lt_compat_l. apply epsPos. apply (IZR_lt _ 0). reflexivity.
-    right. apply epsPos.
-Qed.
-
-Definition FQ_dense (a b : CReal)
-  : a < b
-    -> { q : Q | a < IQR q < b }.
-Proof.
-  intros H. destruct (linear_order_T a 0 b). apply H.
-  - destruct (FQ_dense_pos (-b) (-a)) as [q maj].
-    apply (Rplus_lt_compat_l (-a)) in c. rewrite Rplus_opp_l in c.
-    rewrite Rplus_0_r in c. apply c.
-    apply (Rplus_lt_compat_r (-a)) in H.
-    rewrite Rplus_opp_r in H.
-    apply (Rplus_lt_compat_l (-b)) in H. rewrite <- Rplus_assoc in H.
-    rewrite Rplus_opp_l in H. rewrite Rplus_0_l in H.
-    rewrite Rplus_0_r in H. apply H.
-    exists (-q)%Q. split.
-    + destruct maj as [_ maj].
-      apply (Rplus_lt_compat_r (-IQR q)) in maj.
-      rewrite Rplus_opp_r in maj. rewrite <- opp_IQR in maj.
-      apply (Rplus_lt_compat_l a) in maj. rewrite <- Rplus_assoc in maj.
-      rewrite Rplus_opp_r in maj. rewrite Rplus_0_l in maj.
-      rewrite Rplus_0_r in maj. apply maj.
-    + destruct maj as [maj _].
-      apply (Rplus_lt_compat_r (-IQR q)) in maj.
-      rewrite Rplus_opp_r in maj. rewrite <- opp_IQR in maj.
-      apply (Rplus_lt_compat_l b) in maj. rewrite <- Rplus_assoc in maj.
-      rewrite Rplus_opp_r in maj. rewrite Rplus_0_l in maj.
-      rewrite Rplus_0_r in maj. apply maj.
-  - apply FQ_dense_pos. apply c. apply H.
 Qed.
 
 

@@ -726,6 +726,21 @@ Proof.
   exact (Z_lt_le_dec (Qnum x * QDen y) (Qnum y * QDen x)).
 Defined.
 
+Lemma Qarchimedean : forall q : Q, { p : positive | Qlt q (Z.pos p # 1) }.
+Proof.
+  intros. destruct q as [a b]. unfold Qlt. simpl.
+  rewrite Zmult_1_r. destruct a.
+  - exists xH. reflexivity.
+  - exists (p+1)%positive. apply (Z.lt_le_trans _ (Z.pos (p+1))).
+    apply Z.lt_succ_diag_r. rewrite Pos2Z.inj_mul.
+    rewrite <- (Zmult_1_r (Z.pos (p+1))). apply Z.mul_le_mono_nonneg.
+    discriminate. rewrite Zmult_1_r. apply Z.le_refl. discriminate.
+    apply Z2Nat.inj_le. discriminate. apply Pos2Z.is_nonneg.
+    apply Nat.le_succ_l. apply Nat2Z.inj_lt.
+    rewrite Z2Nat.id. apply Pos2Z.is_pos. apply Pos2Z.is_nonneg.
+  - exists xH. reflexivity.
+Qed.
+
 (** Compatibility of operations with respect to order. *)
 
 Lemma Qopp_le_compat : forall p q, p<=q -> -q <= -p.
@@ -979,6 +994,21 @@ setoid_replace (/b) with (1*/b) by (symmetry; apply Qmult_1_l).
 change (1/b < c).
 apply Qlt_shift_div_r; assumption.
 Qed.
+
+Lemma Qinv_lt_contravar : forall a b : Q,
+    Qlt 0 a -> Qlt 0 b -> (Qlt a b <-> Qlt (/b) (/a)).
+Proof.
+  intros. split.
+  - intro. rewrite <- Qmult_1_l. apply Qlt_shift_div_r. apply H0.
+    rewrite <- (Qmult_inv_r a). rewrite Qmult_comm.
+    apply Qmult_lt_l. apply Qinv_lt_0_compat.  apply H.
+    apply H1. intro abs. rewrite abs in H. apply (Qlt_irrefl 0 H).
+  - intro. rewrite <- (Qinv_involutive b). rewrite <- (Qmult_1_l (// b)).
+    apply Qlt_shift_div_l. apply Qinv_lt_0_compat. apply H0.
+    rewrite <- (Qmult_inv_r a). apply Qmult_lt_l. apply H.
+    apply H1. intro abs. rewrite abs in H. apply (Qlt_irrefl 0 H).
+Qed.
+
 
 (** * Rational to the n-th power *)
 

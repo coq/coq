@@ -33,6 +33,8 @@ Axiom sig_forall_dec
   : forall (P : nat -> Prop), (forall n, {P n} + {~P n})
                    -> {n | ~P n} + {forall n, P n}.
 
+Axiom sig_not_dec : forall P : Prop, {not (not P)} + {not P}.
+
 Axiom Rabst : CReal -> R.
 Axiom Rrepr : R -> CReal.
 Axiom Rquot1 : forall x y:R, CRealEq (Rrepr x) (Rrepr y) -> x = y.
@@ -151,30 +153,11 @@ Definition IZR (z:Z) : R :=
   end.
 Arguments IZR z%Z : simpl never.
 
-Lemma CRealLt_dec : forall x y : CReal, { CRealLt x y } + { ~CRealLt x y }.
-Proof.
-  intros.
-  destruct (sig_forall_dec
-              (fun n:nat => Qle (proj1_sig y (S n) - proj1_sig x (S n)) (2 # Pos.of_nat (S n)))).
-  - intro n. destruct (Qlt_le_dec (2 # Pos.of_nat (S n))
-                                  (proj1_sig y (S n) - proj1_sig x (S n))).
-    right. apply Qlt_not_le. exact q. left. exact q.
-  - left. destruct s as [n nmaj]. exists (Pos.of_nat (S n)).
-    rewrite Nat2Pos.id. apply Qnot_le_lt. exact nmaj. discriminate.
-  - right. intro abs. destruct abs as [n majn].
-    specialize (q (pred (Pos.to_nat n))).
-    replace (S (pred (Pos.to_nat n))) with (Pos.to_nat n) in q.
-    rewrite Pos2Nat.id in q.
-    pose proof (Qle_not_lt _ _ q). contradiction.
-    symmetry. apply Nat.succ_pred. intro abs.
-    pose proof (Pos2Nat.is_pos n). rewrite abs in H. inversion H.
-Qed.
-
 Lemma total_order_T : forall r1 r2:R, {Rlt r1 r2} + {r1 = r2} + {Rlt r2 r1}.
 Proof.
-  intros. destruct (CRealLt_dec (Rrepr r1) (Rrepr r2)).
+  intros. destruct (CRealLt_lpo_dec (Rrepr r1) (Rrepr r2) sig_forall_dec).
   - left. left. rewrite RbaseSymbolsImpl.Rlt_def. exact c.
-  - destruct (CRealLt_dec (Rrepr r2) (Rrepr r1)).
+  - destruct (CRealLt_lpo_dec (Rrepr r2) (Rrepr r1) sig_forall_dec).
     + right. rewrite RbaseSymbolsImpl.Rlt_def. exact c.
     + left. right. apply Rquot1. split; assumption.
 Qed.
