@@ -77,3 +77,4 @@ plugins/setoid_ring/Rings_Q.v
 plugins/setoid_ring/Rings_R.v
 plugins/setoid_ring/Rings_Z.v
 plugins/setoid_ring/ZArithRing.v
+plugins/ssr/ssrsetoid.v

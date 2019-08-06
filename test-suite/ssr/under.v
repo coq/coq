@@ -218,7 +218,6 @@ under Lub_Rbar_eqset => r.
 by rewrite over.
 Abort.
 
-
 Lemma ex_iff R (P1 P2 : R -> Prop) :
   (forall x : R, P1 x <-> P2 x) -> ((exists x, P1 x) <-> (exists x, P2 x)).
 Proof.
@@ -227,17 +226,26 @@ Qed.
 
 Arguments ex_iff [R P1] P2 iffP12.
 
-Require Import Setoid.
+(** Load the [setoid_rewrite] machinery *)
+Require Setoid.
+
+(** Replay the tactics from [test_Lub_Rbar] in this new environment *)
+Lemma test_Lub_Rbar_again (E : R -> Prop)  :
+  Rbar_le Rbar0 (Lub_Rbar (fun x => x = R0 \/ E x)).
+Proof.
+under Lub_Rbar_eqset => r.
+by rewrite over.
+Abort.
 
 Lemma test_ex_iff (P : nat -> Prop) : (exists x, P x) -> True.
-under ex_iff => n.
+under ex_iff => n. (* this requires [Setoid] *)
 by rewrite over.
 by move=> _.
 Qed.
 
-
 Section TestGeneric.
-Context {A B : Type} {R : nat -> relation B} `{!forall n : nat, Equivalence (R n)}.
+Context {A B : Type} {R : nat -> B -> B -> Prop}
+        `{!forall n : nat, RelationClasses.Equivalence (R n)}.
 Variables (F : (A -> A -> B) -> B).
 Hypothesis ex_gen : forall (n : nat) (P1 P2 : A -> A -> B),
   (forall x y : A, R n (P1 x y) (P2 x y)) -> (R n (F P1) (F P2)).

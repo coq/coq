@@ -579,54 +579,53 @@ End Under_eq.
 Register Under_eq.Under_eq as plugins.ssreflect.Under_eq.
 Register Under_eq.Under_eq_from_eq as plugins.ssreflect.Under_eq_from_eq.
 
-Require Import Coq.Relations.Relation_Definitions.
-Require Import RelationClasses.
+Require Import ssrclasses.
 
 Module Type UNDER_REL.
 Parameter Under_rel :
-  forall (A : Type) (eqA : relation A), Reflexive eqA -> relation A.
+  forall (A : Type) (eqA : A -> A -> Prop), Reflexive eqA -> A -> A -> Prop.
 Parameter Under_rel_from_rel :
-  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x y : A),
+  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A),
     @Under_rel A eqA EeqA x y -> eqA x y.
 
 (** [Over_rel, over_rel, over_rel_done]: for "by rewrite over_rel" *)
 Parameter Over_rel :
-  forall (A : Type) (eqA : relation A), Reflexive eqA -> relation A.
+  forall (A : Type) (eqA : A -> A -> Prop), Reflexive eqA -> A -> A -> Prop.
 Parameter over_rel :
-  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x y : A),
+  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A),
     @Under_rel A eqA EeqA x y = @Over_rel A eqA EeqA x y.
 Parameter over_rel_done :
-  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x : A),
+  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x : A),
     @Over_rel A eqA EeqA x x.
 Hint Extern 0 (@Over_rel _ _ _ _ _) => solve [ apply over_rel_done ] : core.
 Hint Resolve over_rel_done : core.
 
 (** [under_rel_done]: for Ltac-style over *)
 Parameter under_rel_done :
-  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x : A),
+  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x : A),
     @Under_rel A eqA EeqA x x.
 Notation "''Under[' x ]" := (@Under_rel _ _ _ x _)
   (at level 8, format "''Under['  x  ]", only printing).
 End UNDER_REL.
 
 Module Export Under_rel : UNDER_REL.
-Definition Under_rel (A : Type) (eqA : relation A) (_ : Reflexive eqA) :=
+Definition Under_rel (A : Type) (eqA : A -> A -> Prop) (_ : Reflexive eqA) :=
   eqA.
 Lemma Under_rel_from_rel :
-  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x y : A),
+  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A),
     @Under_rel A eqA EeqA x y -> eqA x y.
 Proof. by []. Qed.
 Definition Over_rel := Under_rel.
 Lemma over_rel :
-  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x y : A),
+  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A),
     @Under_rel A eqA EeqA x y = @Over_rel A eqA EeqA x y.
 Proof. by []. Qed.
 Lemma over_rel_done :
-  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x : A),
+  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x : A),
     @Over_rel A eqA EeqA x x.
 Proof. by []. Qed.
 Lemma under_rel_done :
-  forall (A : Type) (eqA : relation A) (EeqA : Reflexive eqA) (x : A),
+  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x : A),
     @Under_rel A eqA EeqA x x.
 Proof. by []. Qed.
 End Under_rel.
