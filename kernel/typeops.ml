@@ -642,7 +642,7 @@ let rec execute env stg cstr =
       in
       stg, cstrnt, cstr, t
 
-    | Fix ((von, i as vni), (names, lar, vdef)) ->
+    | Fix ((von, i), (_, lar, _ as recdef) as fix) ->
       let possible_indices =
         List.map Array.of_list @@
         List.combinations @@
@@ -657,23 +657,8 @@ let rec execute env stg cstr =
         von lar in
 
       let try_vn vn =
-        let stg = State.push stg in
-        let _ = execute_array env stg lar in (* check termination of lar so we can reduce *)
-
-        let lar_star =
-          let inds = get_rec_inds env vn lar in
-          let vninds = List.fold_left2 (fun acc n ind -> (n, ind) :: acc) [] (Array.to_list vn) inds in
-          set_rec_stars env vninds lar in
-        let stg', cstrnt', (names', lar', vdef', _ as recdeft) = execute_recdef env stg (names, lar_star, vdef) in
-
-        let alphas = get_rec_vars env vn lar' in
-        let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
-        let stg_check, cstrnt_check = execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) Finite in
-
-        let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg_check)) lar' in
-        let fix = (vni, (names', lar_star, vdef')) in
-        check_fix env fix;
-        raise (Found (State.pop stg_check, cstrnt_check, mkFix fix, lar'.(i))) in
+        let stg, cstnt, cstr, ty = execute_fix env stg ((vn, i), recdef) in
+        raise (Found (State.pop stg, cstnt, cstr, ty)) in
 
       begin try
         if Int.equal 1 @@ List.length possible_indices then
@@ -686,20 +671,7 @@ let rec execute env stg cstr =
         stg, cstrnt, c, ty
       end
 
-    | CoFix (i, (names, lar, vdef)) ->
-      let stg = State.push stg in
-      let _ = execute_array env stg lar in (* check termination of lar so we can reduce *)
-
-      let lar_star = set_corec_stars env (get_corec_inds env lar) lar in
-      let stg', cstrnt', (names', lar', vdef', _ as recdeft) = execute_recdef env stg (names, lar_star, vdef) in
-
-      let alphas = get_corec_vars env lar' in
-      let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
-      let stg_check, cstrnt_check = execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) CoFinite in
-
-      let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg_check)) lar' in
-      let cofix = (i, (names', lar_star, vdef')) in
-      check_cofix env cofix; State.pop stg_check, cstrnt_check, mkCoFix cofix, lar'.(i)
+    | CoFix cofix -> execute_cofix env stg cofix
 
     (* Primitive types *)
     | Int _ -> stg, empty, cstr, type_of_int env
@@ -748,6 +720,47 @@ and execute_rec_check env stg cstrnt (_, lar', _, _ as recdeft) vars recursivity
           try_rec_check stg (alphas, vstar, vneq)
     else stg, cstrnt' in
   try_rec_check stg vars
+
+and execute_fix env stg ((vn, i), (names, lar, vdef)) =
+  let stg = State.push stg in
+  let _ = execute_array env stg lar in (* check termination of lar so we can reduce *)
+
+  let stg', cstrnt', (names', lar', vdef', _ as recdeft) =
+    let inds = get_rec_inds env vn lar in
+    let vninds = List.fold_left2 (fun acc n ind -> (n, ind) :: acc) [] (Array.to_list vn) inds in
+    let lar_star = set_rec_stars env vninds lar in
+    execute_recdef env stg (names, lar_star, vdef) in
+
+  let stg_check, cstrnt_check =
+    let alphas = get_rec_vars env vn lar' in
+    let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
+    execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) Finite in
+
+  let fix =
+    let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg_check)) lar' in
+    let von = Array.map (fun n -> Some n) vn in
+    ((von, i), (names', lar_star, vdef')) in
+
+  check_fix env fix; State.pop stg_check, cstrnt_check, mkFix fix, lar'.(i)
+
+and execute_cofix env stg (i, (names, lar, vdef)) =
+  let stg = State.push stg in
+  let _ = execute_array env stg lar in (* check termination of lar so we can reduce *)
+
+  let stg', cstrnt', (names', lar', vdef', _ as recdeft) =
+    let lar_star = set_corec_stars env (get_corec_inds env lar) lar in
+    execute_recdef env stg (names, lar_star, vdef) in
+
+  let stg_check, cstrnt_check =
+    let alphas = get_corec_vars env lar' in
+    let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
+    execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) CoFinite in
+
+  let cofix =
+    let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg_check)) lar' in
+    (i, (names', lar_star, vdef')) in
+
+  check_cofix env cofix; State.pop stg_check, cstrnt_check, mkCoFix cofix, lar'.(i)
 
 and execute_array env stg cs =
   let tys = Array.make (Array.length cs) mkProp in
