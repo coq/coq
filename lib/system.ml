@@ -53,8 +53,14 @@ module StrSet = Set.Make(StrMod)
 let dirmap = ref StrMap.empty
 
 let make_dir_table dir =
+  let entries =
+    try
+      Sys.readdir dir
+    with Sys_error _ ->
+      warn_cannot_open_dir dir;
+      Array.of_list [] in
   let filter_dotfiles s f = if f.[0] = '.' then s else StrSet.add f s in
-  Array.fold_left filter_dotfiles StrSet.empty (Sys.readdir dir)
+  Array.fold_left filter_dotfiles StrSet.empty entries
 
 (** Don't trust in interactive mode (the default) *)
 let trust_file_cache = ref false
