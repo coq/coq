@@ -834,35 +834,69 @@ let rec any_annot f c =
 
 (** map-type functions on stage annotations of constrs *)
 
-let rec modify_annots f c =
-  match c with
-  | Ind (iu, a) -> f iu a c
+let rec modify_annots f cstr =
+  match cstr with
+  | Ind (iu, a) -> f iu a cstr
+  | Cast (c, k, t) ->
+    let c' = modify_annots f c in
+    if c == c' then cstr else
+    mkCast (c', k, t)
   | Lambda (n, t, c) ->
-    mkLambda (n, t, (modify_annots f c))
+    let c' = modify_annots f c in
+    if c == c' then cstr else
+    mkLambda (n, t, c')
   | LetIn (n, b, t, c) ->
-    mkLetIn (n, modify_annots f b, t, modify_annots f c)
+    let b' = modify_annots f b in
+    let c' = modify_annots f c in
+    if b == b' && c == c' then cstr else
+    mkLetIn (n, b', t, c')
   | Case (ci, p, c, lf) ->
-    mkCase (ci, p, modify_annots f c, Array.Smart.map (modify_annots f) lf)
+    let c' = modify_annots f c in
+    let lf' = Array.Smart.map (modify_annots f) lf in
+    if c == c' && lf == lf' then cstr else
+    mkCase (ci, p, c', lf')
   | Fix (ln, (nl, tl, bl)) ->
-    mkFix (ln, (nl, tl, Array.Smart.map (modify_annots f) bl))
+    let bl' = Array.Smart.map (modify_annots f) bl in
+    if bl == bl' then cstr else
+    mkFix (ln, (nl, tl, bl'))
   | CoFix (ln, (nl, tl, bl)) ->
-    mkCoFix (ln, (nl, tl, Array.Smart.map (modify_annots f) bl))
-  | _ -> map (modify_annots f) c
+    let bl' = Array.Smart.map (modify_annots f) bl in
+    if bl == bl' then cstr else
+    mkCoFix (ln, (nl, tl, bl'))
+  | _ -> map (modify_annots f) cstr
 
 let erase =
   let f iu a c =
     match a with
-    | Stage _ -> mkIndUS iu Empty
-    | _ -> c in
+    | Empty -> c
+    | _ -> mkIndUS iu Empty in
+  modify_annots f
+
+let erase_infty =
+  let f iu a c =
+    match a with
+    | Stage Infty -> c
+    | _ -> mkIndUS iu infty in
   modify_annots f
 
 let erase_glob vars =
-  let f iu a _ =
+  let f iu a c =
     match a with
     | Stage (StageVar (na, _))
       when mem na vars ->
       mkIndUS iu Glob
+    | Stage Infty -> c
     | _ -> mkIndUS iu infty in
+  modify_annots f
+
+let erase_star vars =
+  let f iu a c =
+    match a with
+    | Stage (StageVar (na, _))
+      when SVars.mem na vars ->
+      mkIndUS iu Star
+    | Empty -> c
+    | _ -> mkIndUS iu Empty in
   modify_annots f
 
 let annotate ind s =
@@ -872,13 +906,6 @@ let annotate ind s =
     else c in
   modify_annots f
 
-let annotate_infty =
-  let f iu a c =
-    match a with
-    | Stage Infty -> c
-    | _ -> mkIndUS iu infty in
-  modify_annots f
-
 let annotate_glob s =
   let f iu a c =
     match a with
@@ -886,21 +913,12 @@ let annotate_glob s =
     | _ -> c in
   modify_annots f
 
-let succ_annots vars =
+let annotate_succ vars =
   let f iu a c =
     match a with
     | Stage (StageVar (na, _))
       when mem na vars ->
       mkIndUS iu (hat a)
-    | _ -> c in
-  modify_annots f
-
-let pos_annots vars =
-  let f iu a c =
-    match a with
-    | Stage (StageVar (na, _))
-      when SVars.mem na vars ->
-      mkIndUS iu Star
     | _ -> c in
   modify_annots f
 

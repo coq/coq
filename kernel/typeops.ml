@@ -617,7 +617,7 @@ let rec execute env stg cstr =
       let stgt, cstrntt, t', _ts = execute_is_type env stgc t in
       let cstrnt' = check_cast env c' ct k t' in
       let cstrnt = union_list [cstrntc; cstrntt; cstrnt'] in
-      let cstr = if c == c' && t == t' then cstr else mkCast(c',k,t') in
+      let cstr = if c == c' && t == t' then cstr else mkCast(c',k,erase t') in
       stgt, cstrnt, cstr, t'
 
     (* Inductive types *)
@@ -699,7 +699,7 @@ and execute_recdef env stg (names, lar, vdef) =
 (* Try RecCheck; if failure, try removing some stage variables from vstar *)
 and execute_rec_check env stg cstrnt (_, lar', _, _ as recdeft) vars recursivity =
   let rec try_rec_check stg (alphas, vstar, vneq) =
-    let lar'' = Array.map (succ_annots vstar) lar' in
+    let lar'' = Array.map (annotate_succ vstar) lar' in
     let cstrnt_fix = check_fixpoint env recdeft lar'' in
     let cstrnt_fix_ty = check_fixpoint_type env lar' lar'' recursivity in
     let cstrnt' = union_list [cstrnt; cstrnt_fix; cstrnt_fix_ty] in
@@ -737,7 +737,7 @@ and execute_fix env stg ((vn, i), (names, lar, vdef)) =
     execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) Finite in
 
   let fix =
-    let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg_check)) lar' in
+    let lar_star = Array.Smart.map (erase_star (get_pos_vars stg_check)) lar' in
     let von = Array.map (fun n -> Some n) vn in
     ((von, i), (names', lar_star, vdef')) in
 
@@ -757,7 +757,7 @@ and execute_cofix env stg (i, (names, lar, vdef)) =
     execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) CoFinite in
 
   let cofix =
-    let lar_star = Array.Smart.map (pos_annots (get_pos_vars stg_check)) lar' in
+    let lar_star = Array.Smart.map (erase_star (get_pos_vars stg_check)) lar' in
     (i, (names', lar_star, vdef')) in
 
   check_cofix env cofix; State.pop stg_check, cstrnt_check, mkCoFix cofix, lar'.(i)
@@ -782,10 +782,9 @@ let check_wellformed_universes env c =
 
 let infer env constr =
   let () = check_wellformed_universes env constr in
-  let stg, _, constr_sized, t_sized = execute env init constr in
+  let stg, _, constr_sized, t_sized = execute env (get_stage_state env) constr in
   let stars = get_pos_vars stg in
-  let constr_bare, t = annotate_infty constr_sized, erase_glob stars t_sized in
-  let constr = if equal constr constr_bare then constr else constr_bare in
+  let constr, t = annotate_global env constr_sized, erase_glob stars t_sized in
   make_judge constr t
 
 let infer =
@@ -803,10 +802,9 @@ let type_judgment env {uj_val=c; uj_type=t} =
 
 let infer_type env constr =
   let () = check_wellformed_universes env constr in
-  let stg, _, constr_sized, t_sized = execute env init constr in
+  let stg, _, constr_sized, t_sized = execute env (get_stage_state env) constr in
   let stars = get_pos_vars stg in
-  let constr_bare, t = annotate_infty constr_sized, erase_glob stars t_sized in
-  let constr = if equal constr constr_bare then constr else constr_bare in
+  let constr, t = annotate_global env constr_sized, erase_glob stars t_sized in
   let s = check_type env constr t in
   {utj_val = constr; utj_type = s}
 

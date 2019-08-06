@@ -545,9 +545,17 @@ val collect_annots : constr -> SVars.t
 
 val any_annot : (Annot.t -> bool) -> constr -> bool
 
+(** [modify_annots f c] maps over [c], applying [f] to the contents of Inds. *)
+
+val modify_annots : (pinductive -> Annot.t -> constr -> constr) -> constr -> constr
+
 (** [erase c] erases all stage annotations in [c] to Empty *)
 
 val erase : constr -> constr
+
+(** [erase_infty ind s c] erases all inductive types [ind] in [c] to Infty *)
+
+val erase_infty : constr -> constr
 
 (** [erase_glob vars c] erases all stage annotations in [c]
    to Glob if they are in [vars], and
@@ -555,27 +563,24 @@ val erase : constr -> constr
 
 val erase_glob : SVars.t -> constr -> constr
 
+(** [erase_star vars c] erases all stage annotations in [c]
+   to Star if they are in [vars], and
+   to Empty if they are not in [vars] *)
+
+val erase_star : SVars.t -> constr -> constr
+
 (** [annotate ind s c] annotates all inductive types [ind] in [c] with annotation [s] *)
 
 val annotate : Names.MutInd.t -> Annot.t -> constr -> constr
-
-(** [annotate ind s c] annotates all inductive types [ind] in [c] with Infty *)
-
-val annotate_infty : constr -> constr
 
 (** [annotate_glob s c] replaces all Glob annotations in [c] with [s] *)
 
 val annotate_glob : Annot.t -> constr -> constr
 
-(** [succ_annots vars c] calls [succ_annot] on all the stage annotations in [c]
+(** [annotate_succ vars c] calls [succ_annot] on all the stage annotations in [c]
    if the stage variables are in [vars] *)
 
-val succ_annots : SVars.t -> constr -> constr
-
-(** [pos_annots vars c] sets all stage annotations in [c]
-   whose stage variables are in [vars] to star position annotations *)
-
-val pos_annots : SVars.t -> constr -> constr
+val annotate_succ : SVars.t -> constr -> constr
 
 (** [iter f c] iters [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is

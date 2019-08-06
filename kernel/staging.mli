@@ -15,4 +15,4 @@ val add_constraint_from_ind : env -> variance ->
 val add_constraint_from_ind_ref : env -> variance ->
   Constraints.t ref -> Names.inductive -> Annot.t -> Annot.t -> bool
 
-val annotate_body : env -> constr -> env * constr
+val annotate_global : env -> constr -> constr

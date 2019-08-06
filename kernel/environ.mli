@@ -290,7 +290,7 @@ val lookup_modtype : ModPath.t -> env -> module_type_body
 
 (** {5 Stage state } *)
 val get_stage_state : env -> Stages.State.t
-val next_stage_annot : env -> Stages.Annot.t * env
+val next_stage_annot : env -> Stages.Annot.t
 
 (** {5 Universe constraints } *)
 

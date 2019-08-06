@@ -257,7 +257,7 @@ let get_stage_state env =
 
 let next_stage_annot env =
   let s, stg = Stages.State.next (env.env_globals.env_stage_state) in
-  s, { env with env_globals = { env.env_globals with env_stage_state = stg } }
+  env.env_globals.env_stage_state <- stg; s
 
 let oracle env = env.env_typing_flags.conv_oracle
 let set_oracle env o =
