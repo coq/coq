@@ -1321,13 +1321,18 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
 
 (* Functions for sized (co)fixpoints *)
 
+(* Use [whd_betaiotazeta] for reducing everything except Consts *)
+(* Use [whd_all] for reducing everything including Consts *)
+(* For now, use betaiotazeta, not all, since Consts don't have stage annotations *)
+let whd = whd_betaiotazeta
+
 (* Add [Glob] annotations to [ty_def] where they appear in [ty_glob] *)
 let globify env ty_glob ty_def =
   let ctxt_glob, body_glob = Term.decompose_prod_assum ty_glob in
   let ctxt_def, body_def = Term.decompose_prod_assum ty_def in
   let len_glob, len_def = List.length ctxt_glob, List.length ctxt_def in
   let rec globify_type type_glob type_def =
-    match kind (whd_betaiotazeta env type_glob), kind (whd_betaiotazeta env type_def) with
+    match kind (whd env type_glob), kind (whd env type_def) with
     | Ind (_, Glob), Ind (iu, _) -> mkIndUS iu Glob
     | App (c_glob, _), App (c_def, args) ->
       let c_def' = globify_type c_glob c_def in
@@ -1386,7 +1391,7 @@ let fold_map2_fix_type env f is tys init =
     acc = init;
   } in
   let rec app_ind info ty =
-    let c = whd_betaiotazeta env ty in
+    let c = whd env ty in
     let info = { info with arg_head = c } in
     match kind c with
     | Ind (iu, s) ->

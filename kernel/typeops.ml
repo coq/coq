@@ -658,6 +658,8 @@ let rec execute env stg cstr =
 
       let try_vn vn =
         let stg = State.push stg in
+        let _ = execute_array env stg lar in (* check termination of lar so we can reduce *)
+
         let lar_star =
           let inds = get_rec_inds env vn lar in
           let vninds = List.fold_left2 (fun acc n ind -> (n, ind) :: acc) [] (Array.to_list vn) inds in
@@ -686,6 +688,8 @@ let rec execute env stg cstr =
 
     | CoFix (i, (names, lar, vdef)) ->
       let stg = State.push stg in
+      let _ = execute_array env stg lar in (* check termination of lar so we can reduce *)
+
       let lar_star = set_corec_stars env (get_corec_inds env lar) lar in
       let stg', cstrnt', (names', lar', vdef', _ as recdeft) = execute_recdef env stg (names, lar_star, vdef) in
 
