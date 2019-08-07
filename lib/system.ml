@@ -58,7 +58,7 @@ let make_dir_table dir =
       Sys.readdir dir
     with Sys_error _ ->
       warn_cannot_open_dir dir;
-      Array.of_list [] in
+      [||] in
   let filter_dotfiles s f = if f.[0] = '.' then s else StrSet.add f s in
   Array.fold_left filter_dotfiles StrSet.empty entries
 
