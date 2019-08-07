@@ -251,14 +251,6 @@ let mind_context env mind =
   let mib = lookup_mind mind env in
   Declareops.inductive_polymorphic_context mib
 
-(* Stage state *)
-let get_stage_state env =
-  env.env_globals.env_stage_state
-
-let next_stage_annot env =
-  let s, stg = Stages.State.next (env.env_globals.env_stage_state) in
-  env.env_globals.env_stage_state <- stg; s
-
 let oracle env = env.env_typing_flags.conv_oracle
 let set_oracle env o =
   let env_typing_flags = { env.env_typing_flags with conv_oracle = o } in

@@ -1,6 +1,5 @@
 open Util
 open Declarations
-open Constr
 open Stages
 open Constraints
 open Environ
@@ -21,11 +20,3 @@ let add_constraint_from_ind env variance cstrnts (ind, _) a1 a2 =
 let add_constraint_from_ind_ref env variance cstrnts_ref ind a1 a2 =
   cstrnts_ref := add_constraint_from_ind env variance !cstrnts_ref ind a1 a2;
   true
-
-(* [annotate_global] assigns fresh stage variables to inductive types
-  that might appear in non-type positions, i.e. in all places
-  relevant during reduction. *)
-let annotate_global env =
-  let f iu _ _ =
-    mkIndUS iu (next_stage_annot env) in
-  modify_annots f
