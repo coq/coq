@@ -413,11 +413,8 @@ let find_opening_node id =
    - the list of substitution to do at section closing
 *)
 
-type variable_info = Constr.named_declaration * Decl_kinds.binding_kind
-
-type variable_context = variable_info list
 type abstr_info = {
-  abstr_ctx : variable_context;
+  abstr_ctx : Constr.named_context;
   abstr_subst : Univ.Instance.t;
   abstr_uctx : Univ.AUContext.t;
 }
@@ -426,27 +423,26 @@ type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 type secentry =
   | Variable of {
       id:Names.Id.t;
-      kind:Decl_kinds.binding_kind;
-      univs:Univ.ContextSet.t;
     }
   | Context of Univ.ContextSet.t
 
 type section_data = {
   sec_entry : secentry list;
-  sec_workl : Opaqueproof.work_list;
   sec_abstr : abstr_list;
   sec_poly  : bool;
 }
 
 let empty_section_data ~poly = {
   sec_entry = [];
-  sec_workl = (Names.Cmap.empty,Names.Mindmap.empty);
   sec_abstr = (Names.Cmap.empty,Names.Mindmap.empty);
   sec_poly  = poly;
 }
 
 let sectab =
   Summary.ref ([] : section_data list) ~name:"section-context"
+
+let sec_implicits =
+  Summary.ref Id.Map.empty ~name:"section-implicits"
 
 let check_same_poly p sec =
   if p != sec.sec_poly then
@@ -456,13 +452,14 @@ let add_section ~poly () =
   List.iter (fun tab -> check_same_poly poly tab) !sectab;
   sectab := empty_section_data ~poly :: !sectab
 
-let add_section_variable ~name ~kind ~poly univs =
+let add_section_variable ~name ~kind ~poly =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | s :: sl ->
        List.iter (fun tab -> check_same_poly poly tab) !sectab;
-       let s = { s with sec_entry = Variable {id=name;kind;univs} :: s.sec_entry } in
-       sectab := s :: sl
+       let s = { s with sec_entry = Variable {id=name} :: s.sec_entry } in
+       sectab := s :: sl;
+       sec_implicits := Id.Map.add name kind !sec_implicits
 
 let add_section_context ctx =
   match !sectab with
@@ -472,38 +469,45 @@ let add_section_context ctx =
        let s = { s with sec_entry = Context ctx :: s.sec_entry } in
        sectab := s :: sl
 
-exception PolyFound of bool (* make this a let exception once possible *)
+exception PolyFound (* make this a let exception once possible *)
 let is_polymorphic_univ u =
   try
     let open Univ in
     List.iter (fun s ->
       let vars = s.sec_entry in
         List.iter (function
-            | Variable {univs=(univs,_)} ->
-              if LSet.mem u univs then raise (PolyFound s.sec_poly)
+            | Variable _ -> ()
             | Context (univs,_) ->
-              if LSet.mem u univs then raise (PolyFound true)
+              if LSet.mem u univs then raise PolyFound
           ) vars
       ) !sectab;
     false
-  with PolyFound b -> b
+  with PolyFound -> true
 
 let extract_hyps poly (secs,ohyps) =
   let rec aux = function
-    | (Variable {id;kind;univs}::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
+    | (Variable {id}::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
       let l, r = aux (idl,hyps) in 
-      (decl,kind) :: l, if poly then Univ.ContextSet.union r univs else r
-    | (Variable {univs}::idl,hyps) ->
+      decl :: l, r
+    | (Variable _::idl,hyps) ->
         let l, r = aux (idl,hyps) in
-          l, if poly then Univ.ContextSet.union r univs else r
+          l, r
     | (Context ctx :: idl, hyps) ->
+      let () = assert poly in
        let l, r = aux (idl, hyps) in
        l, Univ.ContextSet.union r ctx
     | [], _ -> [],Univ.ContextSet.empty
   in aux (secs,ohyps)
 
 let instance_from_variable_context =
-  List.map fst %> List.filter is_local_assum %> List.map NamedDecl.get_id %> Array.of_list
+  List.rev %> List.filter is_local_assum %> List.map NamedDecl.get_id %> Array.of_list
+
+let extract_worklist info =
+  let args = instance_from_variable_context info.abstr_ctx in
+  info.abstr_subst, args
+
+let make_worklist (cmap, mmap) =
+  Cmap.map extract_worklist cmap, Mindmap.map extract_worklist mmap
 
 let name_instance inst =
   (* FIXME: this should probably be done at an upper level, by storing the
@@ -522,37 +526,34 @@ let name_instance inst =
   in
   Array.map map (Univ.Instance.to_array inst)
 
-let add_section_replacement f g poly hyps =
+let add_section_replacement g poly hyps =
   match !sectab with
   | [] -> ()
   | s :: sl ->
     let () = check_same_poly poly s in
     let sechyps,ctx = extract_hyps s.sec_poly (s.sec_entry, hyps) in
     let ctx = Univ.ContextSet.to_context ctx in
-    let inst = Univ.UContext.instance ctx in
-    let nas = name_instance inst in
+    let nas = name_instance (Univ.UContext.instance ctx) in
     let subst, ctx = Univ.abstract_universes nas ctx in
-    let args = instance_from_variable_context (List.rev sechyps) in
     let info = {
       abstr_ctx = sechyps;
       abstr_subst = subst;
       abstr_uctx = ctx;
     } in
     let s = { s with
-      sec_workl = f (inst, args) s.sec_workl;
       sec_abstr = g info s.sec_abstr;
     } in
     sectab := s :: sl
 
 let add_section_kn ~poly kn =
   let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
-    add_section_replacement f f poly
+    add_section_replacement f poly
 
 let add_section_constant ~poly kn =
   let f x (l1,l2) = (Names.Cmap.add kn x l1,l2) in
-    add_section_replacement f f poly
+    add_section_replacement f poly
 
-let replacement_context () = (List.hd !sectab).sec_workl
+let replacement_context () = make_worklist (List.hd !sectab).sec_abstr
 
 let section_segment_of_constant con =
   Names.Cmap.find con (fst (List.hd !sectab).sec_abstr)
@@ -575,6 +576,8 @@ let section_segment_of_reference = let open GlobRef in function
 let variable_section_segment_of_reference gr =
   (section_segment_of_reference gr).abstr_ctx
 
+let variable_section_kind id = Id.Map.get id !sec_implicits
+
 let section_instance = let open GlobRef in function
   | VarRef id ->
      let eq = function
@@ -585,9 +588,11 @@ let section_instance = let open GlobRef in function
      then Univ.Instance.empty, [||]
      else raise Not_found
   | ConstRef con ->
-      Names.Cmap.find con (fst (List.hd !sectab).sec_workl)
+    let data = Names.Cmap.find con (fst (List.hd !sectab).sec_abstr) in
+    extract_worklist data
   | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
-      Names.Mindmap.find kn (snd (List.hd !sectab).sec_workl)
+    let data = Names.Mindmap.find kn (snd (List.hd !sectab).sec_abstr) in
+    extract_worklist data
 
 let is_in_section ref =
   try ignore (section_instance ref); true with Not_found -> false

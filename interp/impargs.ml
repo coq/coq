@@ -487,11 +487,13 @@ let subst_implicits (subst,(req,l)) =
   (ImplLocal,List.Smart.map (subst_implicits_decl subst) l)
 
 let impls_of_context ctx =
-  let map (decl, impl) = match impl with
-  | Implicit -> Some (NamedDecl.get_id decl, Manual, (true, true))
-  | _ -> None
+  let map decl =
+    let id = NamedDecl.get_id decl in
+    match Lib.variable_section_kind id with
+    | Implicit -> Some (id, Manual, (true, true))
+    | _ -> None
   in
-  List.rev_map map (List.filter (fst %> NamedDecl.is_local_assum) ctx)
+  List.rev_map map (List.filter (NamedDecl.is_local_assum) ctx)
 
 let adjust_side_condition p = function
   | LessArgsThan n -> LessArgsThan (n+p)

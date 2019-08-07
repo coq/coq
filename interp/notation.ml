@@ -1533,7 +1533,7 @@ let discharge_arguments_scope (_,(req,r,n,l,_)) =
     let n =
       try
         let vars = Lib.variable_section_segment_of_reference r in
-        vars |> List.map fst |> List.filter is_local_assum |> List.length
+        vars |> List.filter is_local_assum |> List.length
       with
         Not_found (* Not a ref defined in this section *) -> 0 in
     Some (req,r,n,l,[])
