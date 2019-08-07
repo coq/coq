@@ -41,6 +41,7 @@ val refl_equal : EConstr.constr Lazy.t
 val const_of_id: Id.t ->  GlobRef.t(* constantyes *)
 val jmeq : unit -> EConstr.constr
 val jmeq_refl : unit -> EConstr.constr
+val make_eq : unit -> EConstr.constr
 
 val save
   :  Id.t
@@ -84,7 +85,21 @@ val update_Function : function_info -> unit
 val pr_info : Environ.env -> Evd.evar_map -> function_info -> Pp.t
 val pr_table : Environ.env -> Evd.evar_map -> Pp.t
 
+val observe_tac
+  : (Environ.env -> Evd.evar_map -> Pp.t)
+  -> Tacmach.tactic -> Tacmach.tactic
+
+module New : sig
+
+  val observe_tac
+    : header:Pp.t
+    -> (Environ.env -> Evd.evar_map -> Pp.t)
+    -> unit Proofview.tactic -> unit Proofview.tactic
+
+end
+
 (* val function_debug : bool ref  *)
+val observe : Pp.t -> unit
 val do_observe : unit -> bool
 val do_rewrite_dependent : unit -> bool
 

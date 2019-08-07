@@ -64,7 +64,7 @@ END
 TACTIC EXTEND newfuninv
 | [ "functional" "inversion"  quantified_hypothesis(hyp) reference_opt(fname) ] ->
      {
-       Proofview.V82.tactic (Invfun.invfun hyp fname)
+       Invfun.invfun hyp fname
      }
 END
 
@@ -202,10 +202,10 @@ VERNAC COMMAND EXTEND Function STATE CUSTOM
     -> {
          if is_interactive recsl then
            Vernacextend.VtOpenProof (fun () ->
-             do_generate_principle_interactive (List.map snd recsl))
+             Gen_principle.do_generate_principle_interactive (List.map snd recsl))
          else
            Vernacextend.VtDefault (fun () ->
-             do_generate_principle (List.map snd recsl)) }
+             Gen_principle.do_generate_principle (List.map snd recsl)) }
 END
 
 {
@@ -226,15 +226,15 @@ END
 
 let warning_error names e =
   match e with
-    | Building_graph e ->
-       let names = pr_enum Libnames.pr_qualid names in
-       let error = if do_observe () then (spc () ++ CErrors.print e) else mt () in
-       warn_cannot_define_graph (names,error)
-    | Defining_principle e ->
-       let names = pr_enum Libnames.pr_qualid names in
-       let error = if do_observe () then CErrors.print e else mt () in
-       warn_cannot_define_principle (names,error)
-    | _ -> raise e
+  | Building_graph e ->
+    let names = pr_enum Libnames.pr_qualid names in
+    let error = if do_observe () then (spc () ++ CErrors.print e) else mt () in
+    Gen_principle.warn_cannot_define_graph (names,error)
+  | Defining_principle e ->
+    let names = pr_enum Libnames.pr_qualid names in
+    let error = if do_observe () then CErrors.print e else mt () in
+    Gen_principle.warn_cannot_define_principle (names,error)
+  | _ -> raise e
 
 }
 
@@ -244,17 +244,17 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
    ->
     { begin
         try
-          Functional_principles_types.build_scheme fas
+          Gen_principle.build_scheme fas
         with
-        | Functional_principles_types.No_graph_found ->
+        | Gen_principle.No_graph_found ->
           begin
             match fas with
             | (_,fun_name,_)::_ ->
               begin
-                make_graph (Smartlocate.global_with_alias fun_name);
-                try Functional_principles_types.build_scheme fas
+                Gen_principle.make_graph (Smartlocate.global_with_alias fun_name);
+                try Gen_principle.build_scheme fas
                 with
-                | Functional_principles_types.No_graph_found ->
+                | Gen_principle.No_graph_found ->
                   CErrors.user_err Pp.(str "Cannot generate induction principle(s)")
                 | e when CErrors.noncritical e ->
                   let names = List.map (fun (_,na,_) -> na) fas in
@@ -273,11 +273,11 @@ END
 VERNAC COMMAND EXTEND NewFunctionalCase
 | ["Functional" "Case" fun_scheme_arg(fas) ]
   => { Vernacextend.(VtSideff([pi1 fas], VtLater)) }
-  -> { Functional_principles_types.build_case_scheme fas }
+  -> { Gen_principle.build_case_scheme fas }
 END
 
 (***** debug only ***)
 VERNAC COMMAND EXTEND GenerateGraph CLASSIFIED AS QUERY
 | ["Generate" "graph" "for" reference(c)] ->
-  { make_graph (Smartlocate.global_with_alias c) }
+  { Gen_principle.make_graph (Smartlocate.global_with_alias c) }
 END

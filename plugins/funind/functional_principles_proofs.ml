@@ -18,77 +18,6 @@ open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
 
-(* let msgnl = Pp.msgnl *)
-
-(*
-let observe strm =
-  if do_observe ()
-  then Pp.msg_debug strm
-  else ()
-
-let do_observe_tac s tac g =
- try let v = tac g in (* msgnl (goal ++ fnl () ++ (str s)++(str " ")++(str "finished")); *) v
- with e ->
-   let e = ExplainErr.process_vernac_interp_error e in
-   let goal = begin try (Printer.pr_goal g) with _ -> assert false end in
-   msg_debug (str "observation "++ s++str " raised exception " ++
-            Errors.print e ++ str " on goal " ++ goal );
-   raise e;;
-
-let observe_tac_stream s tac g =
-  if do_observe ()
-  then do_observe_tac  s tac g
-  else tac g
-
-let observe_tac s tac g = observe_tac_stream (str s) tac g
-  *)
-
-
-let debug_queue = Stack.create ()
-
-let rec print_debug_queue e =
-  if  not (Stack.is_empty debug_queue)
-  then
-    begin
-      let lmsg,goal = Stack.pop debug_queue in
-      let _ =
-        match e with
-        | Some e ->
-           Feedback.msg_debug (hov 0 (lmsg ++ (str " raised exception " ++ CErrors.print e) ++ str " on goal" ++ fnl() ++ goal))
-        | None ->
-           begin
-             Feedback.msg_debug (str " from " ++ lmsg ++ str " on goal" ++ fnl() ++ goal);
-           end in
-      print_debug_queue None ;
-    end
-
-let observe strm =
-  if do_observe ()
-  then Feedback.msg_debug strm
-  else ()
-
-let do_observe_tac s tac g =
-  let goal = Printer.pr_goal g in
-  let lmsg = (str "observation : ") ++ s in
-  Stack.push (lmsg,goal) debug_queue;
-  try
-    let v = tac g in
-    ignore(Stack.pop debug_queue);
-    v
-  with reraise ->
-    let reraise = CErrors.push reraise in
-    if not (Stack.is_empty debug_queue)
-    then print_debug_queue (Some (fst reraise));
-    iraise reraise
-
-let observe_tac_stream s tac g =
-  if do_observe ()
-  then do_observe_tac s tac g
-  else tac g
-
-let observe_tac s = observe_tac_stream (str s)
-
-
 let list_chop ?(msg="") n l =
   try
     List.chop n l
@@ -120,6 +49,7 @@ type 'a dynamic_info =
 
 type body_info = constr dynamic_info
 
+let observe_tac s = observe_tac (fun _ _ -> Pp.str s)
 
 let finish_proof dynamic_infos g =
   observe_tac "finish"
@@ -171,7 +101,7 @@ let is_incompatible_eq env sigma t =
         | _ -> false
     with e when CErrors.noncritical e -> false
   in
-  if res then   observe (str "is_incompatible_eq " ++ pr_leconstr_env env sigma t);
+  if res then observe (str "is_incompatible_eq " ++ pr_leconstr_env env sigma t);
   res
 
 let change_hyp_with_using msg hyp_id t tac : tactic =
@@ -843,7 +773,8 @@ let build_proof
           | Rel _ -> anomaly (Pp.str "Free var in goal conclusion!")
   and build_proof do_finalize dyn_infos g =
 (*     observe (str "proving with "++Printer.pr_lconstr dyn_infos.info++ str " on goal " ++ pr_gls g); *)
-    observe_tac_stream (str "build_proof with " ++ pr_leconstr_env (pf_env g) (project g) dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
+    Indfun_common.observe_tac (fun env sigma ->
+        str "build_proof with " ++ pr_leconstr_env env sigma dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
   and build_proof_args env sigma do_finalize dyn_infos (* f_args'  args *) :tactic =
     fun g ->
       let (f_args',args) = dyn_infos.info in
@@ -1232,7 +1163,8 @@ let prove_princ_for_struct (evd:Evd.evar_map ref) interactive_proof fun_num fnam
               if this_fix_info.idx + 1 = 0
               then tclIDTAC (* Someone  tries to defined a principle on a fully parametric definition declared as a fixpoint (strange but ....) *)
               else
-                observe_tac_stream (str "h_fix " ++ int (this_fix_info.idx +1) ) (Proofview.V82.of_tactic (fix this_fix_info.name (this_fix_info.idx +1)))
+                Indfun_common.observe_tac (fun _ _ -> str "h_fix " ++ int (this_fix_info.idx +1))
+                  (Proofview.V82.of_tactic (fix this_fix_info.name (this_fix_info.idx +1)))
             else
               Proofview.V82.of_tactic (Tactics.mutual_fix this_fix_info.name (this_fix_info.idx + 1)
                 other_fix_infos 0)
@@ -1476,13 +1408,14 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
                          (observe_tac "finishing using"
                            (
                             tclCOMPLETE(
-                                    Eauto.eauto_with_bases
-                                      (true,5)
-                                      [(fun _ sigma -> (sigma, Lazy.force refl_equal))]
-                                      [Hints.Hint_db.empty TransparentState.empty false]
-                                  )
-                           )
-                        )
+                              Proofview.V82.of_tactic @@
+                              Eauto.eauto_with_bases
+                                (true,5)
+                                [(fun _ sigma -> (sigma, Lazy.force refl_equal))]
+                                [Hints.Hint_db.empty TransparentState.empty false]
+                            )
+                          )
+                         )
                        ]
                     )
                 ]
@@ -1538,7 +1471,9 @@ let prove_principle_for_gen
   let wf_tac =
     if is_mes
     then
-      (fun b -> Recdef.tclUSER_if_not_mes tclIDTAC b None)
+      (fun b ->
+         Proofview.V82.of_tactic @@
+         Recdef.tclUSER_if_not_mes Tacticals.New.tclIDTAC b None)
     else fun _ -> prove_with_tcc tcc_lemma_ref []
   in
   let real_rec_arg_num = rec_arg_num - princ_info.nparams in

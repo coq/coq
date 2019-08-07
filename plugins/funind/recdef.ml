@@ -199,53 +199,6 @@ let (declare_f : Id.t -> Decls.logical_kind -> Constr.t list -> GlobRef.t -> Glo
   fun f_id kind input_type fterm_ref ->
     declare_fun f_id kind (value_f input_type fterm_ref);;
 
-
-
-(* Debugging mechanism *)
-let debug_queue = Stack.create ()
-
-let print_debug_queue b e =
-  if  not (Stack.is_empty debug_queue)
-  then
-    begin
-      let lmsg,goal = Stack.pop debug_queue in
-      if b then
-        Feedback.msg_debug (hov 1 (lmsg ++ (str " raised exception " ++ CErrors.iprint e) ++ str " on goal" ++ fnl() ++ goal))
-      else
-        begin
-          Feedback.msg_debug (hov 1 (str " from " ++ lmsg ++ str " on goal"++fnl() ++ goal));
-        end;
-      (* print_debug_queue false e; *)
-    end
-
-let observe strm =
-  if do_observe ()
-  then Feedback.msg_debug strm
-  else ()
-
-
-let do_observe_tac s tac g =
-  let goal = Printer.pr_goal g in
-  let s = s (pf_env g) (project g) in
-  let lmsg = (str "recdef : ") ++ s in
-  observe (s++fnl());
-  Stack.push (lmsg,goal) debug_queue;
-  try
-    let v = tac g in
-    ignore(Stack.pop debug_queue);
-    v
-  with reraise ->
-    let reraise = CErrors.push reraise in
-    if not (Stack.is_empty debug_queue)
-    then print_debug_queue true reraise;
-    iraise reraise
-
-let observe_tac s tac g =
-  if do_observe ()
-  then do_observe_tac s tac g
-  else tac g
-
-
 let observe_tclTHENLIST s tacl =
   if do_observe ()
   then
@@ -257,38 +210,53 @@ let observe_tclTHENLIST s tacl =
     aux 0 tacl
   else tclTHENLIST tacl
 
+module New = struct
+
+  open Tacticals.New
+
+  let observe_tac = New.observe_tac ~header:(Pp.mt())
+
+  let observe_tclTHENLIST s tacl =
+  if do_observe ()
+  then
+    let rec aux n = function
+      | [] -> tclIDTAC
+      | [tac] -> observe_tac (fun env sigma -> s env sigma ++ spc () ++ int n) tac
+      | tac::tacl -> observe_tac (fun env sigma -> s env sigma ++ spc () ++ int n) (tclTHEN tac (aux (succ n) tacl))
+    in
+    aux 0 tacl
+  else tclTHENLIST tacl
+
+end
+
 (* Conclusion tactics *)
 
 (* The boolean value is_mes expresses that the termination is expressed
   using a measure function instead of a well-founded relation. *)
-let tclUSER tac is_mes l g =
+let tclUSER tac is_mes l =
+  let open Tacticals.New in
   let clear_tac =
     match l with
-      | None -> tclIDTAC
-      | Some l -> tclMAP (fun id -> tclTRY (Proofview.V82.of_tactic (clear [id]))) (List.rev l)
+    | None -> tclIDTAC
+    | Some l -> tclMAP (fun id -> tclTRY (clear [id])) (List.rev l)
   in
-  observe_tclTHENLIST (fun _ _ -> str "tclUSER1")
-    [
-      clear_tac;
+  New.observe_tclTHENLIST (fun _ _ -> str "tclUSER1")
+    [ clear_tac;
       if is_mes
-      then observe_tclTHENLIST (fun _ _ -> str "tclUSER2")
-        [
-          Proofview.V82.of_tactic (unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference
-            (delayed_force Indfun_common.ltof_ref))]);
-         tac
-         ]
+      then
+        New.observe_tclTHENLIST (fun _ _ -> str "tclUSER2")
+          [ unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference
+                                (delayed_force Indfun_common.ltof_ref))]
+          ; tac
+          ]
       else tac
     ]
-    g
 
 let tclUSER_if_not_mes concl_tac is_mes names_to_suppress =
   if is_mes
-  then tclCOMPLETE (fun gl -> Proofview.V82.of_tactic (Simple.apply (delayed_force well_founded_ltof)) gl)
-  else (* tclTHEN (Simple.apply (delayed_force acc_intro_generator_function) ) *) (tclUSER concl_tac is_mes names_to_suppress)
-
-
-
-
+  then Tacticals.New.tclCOMPLETE (Simple.apply (delayed_force well_founded_ltof))
+  else (* tclTHEN (Simple.apply (delayed_force acc_intro_generator_function) ) *)
+    (tclUSER concl_tac is_mes names_to_suppress)
 
 (* Traveling term.
    Both definitions of [f_terminate] and [f_equation] use the same generic
@@ -330,7 +298,7 @@ let check_not_nested env sigma forbidden e =
 (* ['a info] contains the local information for traveling *)
 type 'a infos =
     { nb_arg : int; (* function number of arguments *)
-      concl_tac : tactic; (* final tactic to finish proofs *)
+      concl_tac : unit Proofview.tactic; (* final tactic to finish proofs *)
       rec_arg_id : Id.t; (*name of the declared recursive argument *)
       is_mes : bool; (* type of recursion *)
       ih : Id.t; (* induction hypothesis name *)
@@ -803,6 +771,7 @@ let terminate_app_rec (f,args) expr_info continuation_tac _ g =
                                 expr_info.eqs
                              )
                     );
+                    Proofview.V82.of_tactic @@
                     tclUSER expr_info.concl_tac true
                       (Some (
                       expr_info.ih::expr_info.acc_id::
@@ -1153,7 +1122,7 @@ let rec instantiate_lambda sigma t l =
       let (_, _, body) = destLambda sigma t in
       instantiate_lambda sigma (subst1 a body) l
 
-let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_arg_num  : tactic =
+let whole_start concl_tac nb_args is_mes func input_type relation rec_arg_num  : tactic =
   begin
     fun g ->
       let sigma = project g in
@@ -1195,7 +1164,7 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
                is_final = true;      (* and on leaf (more or less) *)
                f_terminate = delayed_force coq_O;
                nb_arg = nb_args;
-               concl_tac = concl_tac;
+               concl_tac;
                rec_arg_id = rec_arg_id;
                is_mes = is_mes;
                ih = hrec;
@@ -1213,7 +1182,7 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
           )
              g
         )
-        (tclUSER_if_not_mes concl_tac)
+        (fun b ids -> Proofview.V82.of_tactic (tclUSER_if_not_mes concl_tac b ids))
         g
   end
 
@@ -1320,50 +1289,47 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name (gls_type
     let lid = ref [] in
     let h_num = ref (-1) in
     let env = Global.env () in
-    let lemma = build_proof env (Evd.from_env env)
-      (  fun gls ->
-           let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
-           observe_tclTHENLIST (fun _ _ -> str "")
-             [
-               Proofview.V82.of_tactic (generalize [lemma]);
-               Proofview.V82.of_tactic (Simple.intro hid);
-               (fun g ->
-                  let ids = pf_ids_of_hyps g in
+    let start_tac =
+      let open Tacmach.New in
+      let open Tacticals.New in
+      Proofview.Goal.enter (fun gl ->
+          let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gl) in
+          New.observe_tclTHENLIST (fun _ _ -> mt ())
+            [ generalize [lemma]
+            ; Simple.intro hid
+            ; Proofview.Goal.enter (fun gl ->
+                  let ids = pf_ids_of_hyps gl in
                   tclTHEN
-                    (Proofview.V82.of_tactic (Elim.h_decompose_and (mkVar hid)))
-                    (fun g ->
-                       let ids' = pf_ids_of_hyps g in
-                       lid := List.rev (List.subtract Id.equal ids' ids);
-                       if List.is_empty !lid then lid := [hid];
-                       tclIDTAC g
-                    )
-                    g
-               );
-             ] gls)
-      (fun g ->
-        let sigma = project g in
-         match EConstr.kind sigma (pf_concl g) with
-           | App(f,_) when EConstr.eq_constr sigma f (well_founded ()) ->
-               Proofview.V82.of_tactic (Auto.h_auto None [] (Some []))  g
-           | _ ->
-               incr h_num;
-               (observe_tac (fun _ _ -> str "finishing using")
-                  (
-                    tclCOMPLETE(
-                      tclFIRST[
-                        tclTHEN
-                          (Proofview.V82.of_tactic (eapply_with_bindings (mkVar (List.nth !lid !h_num), NoBindings)))
-                          (Proofview.V82.of_tactic e_assumption);
-                      Eauto.eauto_with_bases
-                        (true,5)
-                        [(fun _ sigma -> (sigma, (Lazy.force refl_equal)))]
-                        [Hints.Hint_db.empty TransparentState.empty false]
+                    (Elim.h_decompose_and (mkVar hid))
+                    (Proofview.Goal.enter (fun gl ->
+                         let ids' = pf_ids_of_hyps gl in
+                         lid := List.rev (List.subtract Id.equal ids' ids);
+                         if List.is_empty !lid then lid := [hid];
+                         tclIDTAC)))
+            ]) in
+    let end_tac =
+      let open Tacmach.New in
+      let open Tacticals.New in
+      Proofview.Goal.enter (fun gl ->
+          let sigma = project gl in
+          match EConstr.kind sigma (pf_concl gl) with
+          | App(f,_) when EConstr.eq_constr sigma f (well_founded ()) ->
+            Auto.h_auto None [] (Some [])
+          | _ ->
+            incr h_num;
+            tclCOMPLETE(
+              tclFIRST
+                [ tclTHEN
+                    (eapply_with_bindings (mkVar (List.nth !lid !h_num), NoBindings))
+                    e_assumption
+                ; Eauto.eauto_with_bases
+                      (true,5)
+                      [(fun _ sigma -> (sigma, (Lazy.force refl_equal)))]
+                      [Hints.Hint_db.empty TransparentState.empty false
                       ]
-                    )
-                  )
-               )
-                 g)
-    in
+                ]
+            )) in
+    let lemma = build_proof env (Evd.from_env env) start_tac end_tac in
     Lemmas.save_lemma_proved ~lemma ~opaque:opacity ~idopt:None
   in
   let info = Lemmas.Info.make ~hook:(DeclareDef.Hook.make hook)
@@ -1409,18 +1375,18 @@ let com_terminate
     thm_name using_lemmas
     nb_args ctx
     hook =
-  let start_proof env ctx (tac_start:tactic) (tac_end:tactic) =
+  let start_proof env ctx tac_start tac_end =
     let info = Lemmas.Info.make ~hook ~scope:(DeclareDef.Global ImportDefaultBehavior) ~kind:Decls.(IsProof Lemma) () in
     let lemma = Lemmas.start_lemma ~name:thm_name
         ~poly:false (*FIXME*)
         ~info
         ctx
         (EConstr.of_constr (compute_terminate_type nb_args fonctional_ref)) in
-    let lemma = fst @@ Lemmas.by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "starting_tac") tac_start)) lemma in
+    let lemma = fst @@ Lemmas.by (New.observe_tac (fun _ _ -> str "starting_tac") tac_start) lemma in
     fst @@ Lemmas.by (Proofview.V82.tactic (observe_tac (fun _ _ -> str "whole_start") (whole_start tac_end nb_args is_mes fonctional_ref
                                    input_type relation rec_arg_num ))) lemma
   in
-  let lemma = start_proof Global.(env ()) ctx tclIDTAC tclIDTAC in
+  let lemma = start_proof Global.(env ()) ctx Tacticals.New.tclIDTAC Tacticals.New.tclIDTAC in
   try
     let sigma, new_goal_type = build_new_goal_type lemma in
     let sigma = Evd.from_ctx (Evd.evar_universe_context sigma) in
@@ -1469,7 +1435,7 @@ let com_eqn uctx nb_arg eq_name functional_ref f_ref terminate_ref equation_lemm
                {nb_arg=nb_arg;
                 f_terminate = EConstr.of_constr (constr_of_monomorphic_global terminate_ref);
                 f_constr = EConstr.of_constr f_constr;
-                concl_tac = tclIDTAC;
+                concl_tac = Tacticals.New.tclIDTAC;
                 func=functional_ref;
                 info=(instantiate_lambda Evd.empty
                         (EConstr.of_constr (def_of_const (constr_of_monomorphic_global functional_ref)))

@@ -1554,5 +1554,3 @@ let build_inductive evd funconstants funsargs returned_types rtl =
     Detyping.print_universes := pu;
     Constrextern.print_universes := cu;
     raise (Building_graph e)
-
-
