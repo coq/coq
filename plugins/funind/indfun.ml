@@ -52,8 +52,9 @@ let functional_induction with_clean c princl pat =
         | Const (c',u) ->
           let princ_option =
             let finfo = (* we first try to find out a graph on f *)
-              try find_Function_infos c'
-              with Not_found ->
+              match find_Function_infos c' with
+              | Some finfo -> finfo
+              | None ->
                 user_err  (str "Cannot find induction information on "++
                            Printer.pr_leconstr_env (pf_env gl) sigma (mkConst c') )
             in

@@ -941,7 +941,11 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num 
 let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num all_funs g =
   let equation_lemma =
     try
-      let finfos = find_Function_infos (fst (destConst !evd f)) (*FIXME*) in
+      let finfos =
+        match find_Function_infos (fst (destConst !evd f)) (*FIXME*) with
+        | None -> raise Not_found
+        | Some finfos -> finfos
+      in
       mkConst (Option.get finfos.equation_lemma)
     with (Not_found | Option.IsNone as e) ->
       let f_id = Label.to_id (Constant.label (fst (destConst !evd f))) in
@@ -953,14 +957,18 @@ let do_replace (evd:Evd.evar_map ref) params rec_arg_num rev_args_id f fun_num a
       let _ =
         match e with
           | Option.IsNone ->
-              let finfos = find_Function_infos (fst (destConst !evd f)) in
-              update_Function
-                {finfos with
-                   equation_lemma = Some (match Nametab.locate (qualid_of_ident equation_lemma_id) with
-                                              GlobRef.ConstRef c -> c
-                                            | _ -> CErrors.anomaly (Pp.str "Not a constant.")
-                                         )
-                }
+            let finfos = match find_Function_infos (fst (destConst !evd f)) with
+              | None -> raise Not_found
+              | Some finfos -> finfos
+            in
+            update_Function
+              {finfos with
+               equation_lemma = Some (
+                   match Nametab.locate (qualid_of_ident equation_lemma_id) with
+                   | GlobRef.ConstRef c -> c
+                   | _ -> CErrors.anomaly (Pp.str "Not a constant.")
+                 )
+              }
           | _ -> ()
       in
       (* let res = Constrintern.construct_reference (pf_hyps g) equation_lemma_id in *)

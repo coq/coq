@@ -74,8 +74,8 @@ type function_info =
       is_general : bool;
     }
 
-val find_Function_infos : Constant.t -> function_info
-val find_Function_of_graph : inductive -> function_info
+val find_Function_infos : Constant.t -> function_info option
+val find_Function_of_graph : inductive -> function_info option
 (* WARNING: To be used just after the graph definition !!! *)
 val add_Function : bool -> Constant.t -> unit
 val update_Function : function_info -> unit
