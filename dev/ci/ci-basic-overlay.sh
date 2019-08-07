@@ -143,8 +143,9 @@
 # VST
 ########################################################################
 # Latest tag 2.4 does not compile with Coq 8.10 cause of changes in field
-# cb633f1e7b5fdf7b4893ea7bc016f9304edce8c1 is latest as of July 7th.
-: "${vst_CI_REF:=cb633f1e7b5fdf7b4893ea7bc016f9304edce8c1}"
+# and the fix of template-poly bug (PR#9918)
+# 220a3a7da09f8a523c01a6703c6db098cee8d8d2 is latest as of August 6th.
+: "${vst_CI_REF:=220a3a7da09f8a523c01a6703c6db098cee8d8d2}"
 : "${vst_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
 : "${vst_CI_ARCHIVEURL:=${vst_CI_GITURL}/archive}"
 
