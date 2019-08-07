@@ -726,7 +726,8 @@ let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
   } in
   let eq_annot = add_constraint_from_ind_ref env Bivariant cstrnts in
   let leq_annot = add_constraint_from_ind_ref env Variant cstrnts in
-  ccnv (eq_annot, leq_annot) cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs, !cstrnts
+  let ret = ccnv (eq_annot, leq_annot) cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs in
+  ret, !cstrnts
 
 
 let check_eq univs u u' =
