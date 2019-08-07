@@ -546,11 +546,12 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
     | (FInd ((ind1,u1), s1), FInd ((ind2,u2), s2)) ->
       if eq_ind ind1 ind2 then
-        let eq_annot, leq_annot = compare_annot in
+        let _ = match cv_pb with
+        | CUMUL -> compare_annot Variant ind1 s1 s2
+        | CONV -> compare_annot Bivariant ind1 s1 s2 in
         if Univ.Instance.length u1 = 0 || Univ.Instance.length u2 = 0 then
           let cuniv = convert_instances ~flex:false u1 u2 cuniv in
-          let _ = leq_annot ind1 s1 s2 in
-          convert_stacks (eq_annot, eq_annot) l2r infos lft1 lft2 v1 v2 cuniv
+          convert_stacks compare_annot l2r infos lft1 lft2 v1 v2 cuniv
         else
           let mind = Environ.lookup_mind (fst ind1) (info_env infos.cnv_inf) in
           let nargs = CClosure.stack_args_size v1 in
@@ -558,8 +559,7 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           then raise NotConvertible
           else
             let cuniv = convert_inductives cv_pb (mind, snd ind1) nargs u1 u2 cuniv in
-            let _ = leq_annot ind1 s1 s2 in
-            convert_stacks (eq_annot, eq_annot) l2r infos lft1 lft2 v1 v2 cuniv
+            convert_stacks compare_annot l2r infos lft1 lft2 v1 v2 cuniv
       else raise NotConvertible
 
     | (FConstruct ((ind1,j1),u1), FConstruct ((ind2,j2),u2)) ->
@@ -724,9 +724,8 @@ let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
     lft_tab = create_tab ();
     rgt_tab = create_tab ();
   } in
-  let eq_annot = add_constraint_from_ind_ref env Bivariant cstrnts in
-  let leq_annot = add_constraint_from_ind_ref env Variant cstrnts in
-  let ret = ccnv (eq_annot, leq_annot) cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs in
+  let compare_annot variance = add_constraint_from_ind_ref env variance cstrnts in
+  let ret = ccnv compare_annot cv_pb l2r infos el_id el_id (inject t1) (inject t2) univs in
   ret, !cstrnts
 
 
