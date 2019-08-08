@@ -74,8 +74,6 @@ type t = {
 
   filter_opts : bool;
 
-  glob_opt    : bool;
-
   memory_stat : bool;
   print_tags  : bool;
   print_where : bool;
@@ -127,8 +125,6 @@ let default = {
   time         = false;
 
   filter_opts  = false;
-
-  glob_opt     = false;
 
   memory_stat  = false;
   print_tags   = false;
@@ -376,13 +372,6 @@ let parse_args ~help ~init arglist : t * string list =
       Flags.compat_version := v;
       add_compat_require oval v
 
-    |"-dump-glob" ->
-      Dumpglob.dump_into_file (next ());
-      { oval with glob_opt = true }
-
-    |"-feedback-glob" ->
-      Dumpglob.feedback_glob (); oval
-
     |"-exclude-dir" ->
       System.exclude_directory (next ()); oval
 
@@ -512,7 +501,6 @@ let parse_args ~help ~init arglist : t * string list =
     |"-indices-matter" -> { oval with indices_matter = true }
     |"-m"|"--memory" -> { oval with memory_stat = true }
     |"-noinit"|"-nois" -> { oval with load_init = false }
-    |"-no-glob"|"-noglob" -> Dumpglob.noglob (); { oval with glob_opt = true }
     |"-output-context" -> { oval with output_context = true }
     |"-profile-ltac" -> Flags.profile_ltac := true; oval
     |"-q" -> { oval with load_rcfile = false; }

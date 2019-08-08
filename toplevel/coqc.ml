@@ -32,8 +32,6 @@ let coqc_main () =
 
   let copts = Coqcargs.parse extras in
 
-  if not opts.Coqargs.glob_opt then Dumpglob.dump_to_dotglob ();
-
   Topfmt.(in_phase ~phase:CompilationPhase)
     Ccompile.compile_files opts copts;
 

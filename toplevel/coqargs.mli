@@ -49,8 +49,6 @@ type t = {
 
   filter_opts : bool;
 
-  glob_opt    : bool;
-
   memory_stat : bool;
   print_tags  : bool;
   print_where : bool;
