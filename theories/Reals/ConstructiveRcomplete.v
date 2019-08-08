@@ -14,7 +14,7 @@ Require Import Qabs.
 Require Import ConstructiveCauchyReals.
 Require Import Logic.ConstructiveEpsilon.
 
-Local Open Scope R_scope_constr.
+Local Open Scope CReal_scope.
 
 Lemma CReal_absSmall : forall x y : CReal,
     (exists n : positive, Qlt (2 # n)

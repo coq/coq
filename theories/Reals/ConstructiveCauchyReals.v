@@ -204,15 +204,15 @@ Qed.
 Definition CReal : Set
   := { x : (nat -> Q) | QCauchySeq x Pos.to_nat }.
 
-Declare Scope R_scope_constr.
+Declare Scope CReal_scope.
 
 (* Declare Scope R_scope with Key R *)
-Delimit Scope R_scope_constr with CReal.
+Delimit Scope CReal_scope with CReal.
 
 (* Automatically open scope R_scope for arguments of type R *)
-Bind Scope R_scope_constr with CReal.
+Bind Scope CReal_scope with CReal.
 
-Open Scope R_scope_constr.
+Open Scope CReal_scope.
 
 
 (* So QSeqEquiv is the equivalence relation of this constructive pre-order *)
@@ -223,9 +223,9 @@ Definition CRealLt (x y : CReal) : Prop
 Definition CRealGt (x y : CReal) := CRealLt y x.
 Definition CReal_appart (x y : CReal) := CRealLt x y \/ CRealLt y x.
 
-Infix "<" := CRealLt : R_scope_constr.
-Infix ">" := CRealGt : R_scope_constr.
-Infix "#" := CReal_appart : R_scope_constr.
+Infix "<" := CRealLt : CReal_scope.
+Infix ">" := CRealGt : CReal_scope.
+Infix "#" := CReal_appart : CReal_scope.
 
 (* This Prop can be extracted as a sigma type *)
 Lemma CRealLtEpsilon : forall x y : CReal,
@@ -280,7 +280,7 @@ Qed.
 Definition CRealEq (x y : CReal) : Prop
   := ~CRealLt x y /\ ~CRealLt y x.
 
-Infix "==" := CRealEq : R_scope_constr.
+Infix "==" := CRealEq : CReal_scope.
 
 (* Alias the large order *)
 Definition CRealLe (x y : CReal) : Prop
@@ -288,13 +288,13 @@ Definition CRealLe (x y : CReal) : Prop
 
 Definition CRealGe (x y : CReal) := CRealLe y x.
 
-Infix "<=" := CRealLe : R_scope_constr.
-Infix ">=" := CRealGe : R_scope_constr.
+Infix "<=" := CRealLe : CReal_scope.
+Infix ">=" := CRealGe : CReal_scope.
 
-Notation "x <= y <= z" := (x <= y /\ y <= z) : R_scope_constr.
-Notation "x <= y < z"  := (x <= y /\ y <  z) : R_scope_constr.
-Notation "x < y < z"   := (x <  y /\ y <  z) : R_scope_constr.
-Notation "x < y <= z"  := (x <  y /\ y <= z) : R_scope_constr.
+Notation "x <= y <= z" := (x <= y /\ y <= z) : CReal_scope.
+Notation "x <= y < z"  := (x <= y /\ y <  z) : CReal_scope.
+Notation "x < y < z"   := (x <  y /\ y <  z) : CReal_scope.
+Notation "x < y <= z"  := (x <  y /\ y <= z) : CReal_scope.
 
 Lemma CRealLe_not_lt : forall x y : CReal,
     (forall n:positive, Qle (proj1_sig x (Pos.to_nat n) - proj1_sig y (Pos.to_nat n))
@@ -760,8 +760,8 @@ Proof.
   intro q. exists (fun n => q). apply ConstCauchy.
 Defined.
 
-Notation "0" := (inject_Q 0) : R_scope_constr.
-Notation "1" := (inject_Q 1) : R_scope_constr.
+Notation "0" := (inject_Q 0) : CReal_scope.
+Notation "1" := (inject_Q 1) : CReal_scope.
 
 Lemma CRealLt_0_1 : CRealLt (inject_Q 0) (inject_Q 1).
 Proof.
@@ -890,7 +890,7 @@ Proof.
     apply le_0_n. apply H1. apply le_refl.
 Defined.
 
-Infix "+" := CReal_plus : R_scope_constr.
+Infix "+" := CReal_plus : CReal_scope.
 
 Lemma CReal_plus_unfold : forall (x y : CReal),
     QSeqEquiv (proj1_sig (CReal_plus x y))
@@ -926,12 +926,12 @@ Proof.
   rewrite Qplus_comm. apply limx; assumption.
 Defined.
 
-Notation "- x" := (CReal_opp x) : R_scope_constr.
+Notation "- x" := (CReal_opp x) : CReal_scope.
 
 Definition CReal_minus (x y : CReal) : CReal
   := CReal_plus x (CReal_opp y).
 
-Infix "-" := CReal_minus : R_scope_constr.
+Infix "-" := CReal_minus : CReal_scope.
 
 Lemma belowMultiple : forall n p : nat, lt 0 p -> le n (p * n).
 Proof.
@@ -1264,7 +1264,7 @@ Proof.
   apply H; apply linear_max; assumption.
 Defined.
 
-Infix "*" := CReal_mult : R_scope_constr.
+Infix "*" := CReal_mult : CReal_scope.
 
 Lemma CReal_mult_unfold : forall x y : CReal,
     QSeqEquivEx (proj1_sig (CReal_mult x y))
@@ -1819,7 +1819,7 @@ Definition IZR (z:Z) : CReal :=
   end.
 Arguments IZR z%Z : simpl never.
 
-Notation "2" := (IZR 2) : R_scope_constr.
+Notation "2" := (IZR 2) : CReal_scope.
 
 (**********)
 Lemma S_INR : forall n:nat, INR (S n) == INR n + 1.
@@ -2421,7 +2421,7 @@ Proof.
     apply (CReal_inv_pos yn). apply cau. apply maj.
 Defined.
 
-Notation "/ x" := (CReal_inv x) (at level 35, right associativity) : R_scope_constr.
+Notation "/ x" := (CReal_inv x) (at level 35, right associativity) : CReal_scope.
 
 Lemma CReal_inv_0_lt_compat
   : forall (r : CReal) (rnz : r # 0),
@@ -2795,7 +2795,41 @@ Proof.
     discriminate.
 Qed.
 
+Lemma CReal_gen_inject : forall (n : nat),
+    gen_phiZ (inject_Q 0) (inject_Q 1) CReal_plus CReal_mult CReal_opp
+             (Z.of_nat n)
+    == inject_Q (Z.of_nat n # 1).
+Proof.
+  induction n.
+  - apply CRealEq_refl.
+  - replace (Z.of_nat (S n)) with (1 + Z.of_nat n)%Z.
+    rewrite (gen_phiZ_add CRealEq_rel CReal_isRingExt CReal_isRing).
+    rewrite IHn. clear IHn. apply CRealEq_diff. intro k. simpl.
+    rewrite Z.mul_1_r. rewrite Z.mul_1_r. rewrite Z.mul_1_r.
+    rewrite Z.add_opp_diag_r. discriminate.
+    replace (S n) with (1 + n)%nat. 2: reflexivity.
+    rewrite (Nat2Z.inj_add 1 n). reflexivity.
+Qed.
 
-Close Scope R_scope_constr.
+Lemma CRealArchimedean
+  : forall x:CReal, { n:Z | CRealLt x (gen_phiZ (inject_Q 0) (inject_Q 1) CReal_plus
+                                                CReal_mult CReal_opp n) }.
+Proof.
+  intros [xn limx]. destruct (Qarchimedean (xn 1%nat)) as [k kmaj].
+  exists (Z.pos (2 + k)). rewrite <- (positive_nat_Z (2 + k)).
+  rewrite CReal_gen_inject. rewrite (positive_nat_Z (2 + k)).
+  exists xH.
+  setoid_replace (2 # 1)%Q with
+      ((Z.pos (2 + k) # 1) - (Z.pos k # 1))%Q.
+  - apply Qplus_lt_r. apply Qlt_minus_iff. rewrite Qopp_involutive.
+    apply Qlt_minus_iff in kmaj. rewrite Qplus_comm. apply kmaj.
+  - unfold Qminus. setoid_replace (- (Z.pos k # 1))%Q with (-Z.pos k # 1)%Q.
+    2: reflexivity. rewrite Qinv_plus_distr.
+    rewrite Pos2Z.inj_add. rewrite <- Zplus_assoc.
+    rewrite Zplus_opp_r. reflexivity.
+Qed.
+
+
+Close Scope CReal_scope.
 
 Close Scope Q.

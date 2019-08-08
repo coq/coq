@@ -27,42 +27,10 @@ Require Import Omega.
 Require Import QArith_base.
 Require Import Qring.
 
+Declare Scope R_scope_constr.
+
 Local Open Scope Z_scope.
 Local Open Scope R_scope_constr.
-
-Lemma CReal_iterate_one : forall (n : nat),
-    gen_phiZ (inject_Q 0) (inject_Q 1) CReal_plus CReal_mult CReal_opp
-             (Z.of_nat n)
-    == inject_Q (Z.of_nat n # 1).
-Proof.
-  induction n.
-  - apply CRealEq_refl.
-  - replace (Z.of_nat (S n)) with (1 + Z.of_nat n)%Z.
-    rewrite (gen_phiZ_add CRealEq_rel CReal_isRingExt CReal_isRing).
-    rewrite IHn. clear IHn. apply CRealEq_diff. intro k. simpl.
-    rewrite Z.mul_1_r. rewrite Z.mul_1_r. rewrite Z.mul_1_r.
-    rewrite Z.add_opp_diag_r. discriminate.
-    replace (S n) with (1 + n)%nat. 2: reflexivity.
-    rewrite (Nat2Z.inj_add 1 n). reflexivity.
-Qed.
-
-Lemma CRealArchimedean
-  : forall x:CReal, { n:Z | CRealLt x (gen_phiZ (inject_Q 0) (inject_Q 1) CReal_plus
-                                                CReal_mult CReal_opp n) }.
-Proof.
-  intros [xn limx]. destruct (Qarchimedean (xn 1%nat)) as [k kmaj].
-  exists (Z.pos (2 + k)). rewrite <- (positive_nat_Z (2 + k)).
-  rewrite CReal_iterate_one. rewrite (positive_nat_Z (2 + k)).
-  exists xH.
-  setoid_replace (2 # 1)%Q with
-      ((Z.pos (2 + k) # 1) - (Z.pos k # 1))%Q.
-  - apply Qplus_lt_r. apply Qlt_minus_iff. rewrite Qopp_involutive.
-    apply Qlt_minus_iff in kmaj. rewrite Qplus_comm. apply kmaj.
-  - unfold Qminus. setoid_replace (- (Z.pos k # 1))%Q with (-Z.pos k # 1)%Q.
-    2: reflexivity. rewrite Qinv_plus_distr.
-    rewrite Pos2Z.inj_add. rewrite <- Zplus_assoc.
-    rewrite Zplus_opp_r. reflexivity.
-Qed.
 
 Definition CR : ConstructiveReals.
 Proof.
@@ -71,7 +39,8 @@ Proof.
     exact CRealLt_trans.
     intros. destruct (CRealLt_dec x z y H).
     left. exact c. right. exact c. }
-  assert (forall r r1 r2 : CReal, r1 < r2 <-> r + r1 < r + r2) as plusLtCompat.
+  assert (forall r r1 r2 : CReal, CRealLt r1 r2 <-> CRealLt (r + r1) (r + r2))
+    as plusLtCompat.
   { split. intros. apply CReal_plus_lt_compat_l. exact H.
     intros. apply CReal_plus_lt_reg_l in H. exact H. }
   apply (Build_ConstructiveReals

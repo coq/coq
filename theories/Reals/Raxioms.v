@@ -28,7 +28,7 @@ Local Open Scope R_scope.
 
 Open Scope R_scope_constr.
 
-Lemma Rrepr_0 : Rrepr 0 == CRzero CR.
+Lemma Rrepr_0 : Rrepr 0 == 0.
 Proof.
   intros. unfold IZR. rewrite RbaseSymbolsImpl.R0_def, (Rquot2 0). reflexivity.
 Qed.
