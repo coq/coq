@@ -59,7 +59,7 @@ match scope with
   let sigma = Evd.from_env env in
   let () = Classes.declare_instance env sigma None true r in
   let () = if is_coe then Class.try_add_new_coercion r ~local:true ~poly:false in
-  (r,Univ.Instance.empty,true)
+  (r,Univ.Instance.empty)
 
 | Global local ->
   let do_instance = should_axiom_into_instance kind in
@@ -84,7 +84,7 @@ match scope with
     | Polymorphic_entry (_, univs) -> Univ.UContext.instance univs
     | Monomorphic_entry _ -> Univ.Instance.empty
   in
-    (gr,inst,Lib.is_modtype_strict ())
+  (gr,inst)
 
 let interp_assumption ~program_mode sigma env impls c =
   let sigma, (ty, impls) = interp_type_evars_impls ~program_mode env sigma ~impls c in
@@ -98,14 +98,13 @@ let next_uctx =
   | Monomorphic_entry _ -> empty_uctx
 
 let declare_assumptions idl is_coe ~scope ~poly ~kind typ uctx pl imps nl =
-  let refs, status, _ =
-    List.fold_left (fun (refs,status,uctx) id ->
-      let ref',u',status' =
-        declare_assumption is_coe ~scope ~poly ~kind typ uctx pl imps false nl id in
-      (ref',u')::refs, status' && status, next_uctx uctx)
-      ([],true,uctx) idl
+  let refs, _ =
+    List.fold_left (fun (refs,uctx) id ->
+        let ref = declare_assumption is_coe ~scope ~poly ~kind typ uctx pl imps false nl id in
+        ref::refs, next_uctx uctx)
+      ([],uctx) idl
   in
-  List.rev refs, status
+  List.rev refs
 
 
 let maybe_error_many_udecls = function
@@ -178,15 +177,17 @@ let do_assumptions ~program_mode ~poly ~scope ~kind nl l =
   let sigma = Evd.restrict_universe_context sigma uvars in
   let uctx = Evd.check_univ_decl ~poly sigma udecl in
   let ubinders = Evd.universe_binders sigma in
-  pi2 (List.fold_left (fun (subst,status,uctx) ((is_coe,idl),typ,imps) ->
+  let _, _ = List.fold_left (fun (subst,uctx) ((is_coe,idl),typ,imps) ->
       let typ = replace_vars subst typ in
-      let refs, status' = declare_assumptions idl is_coe ~poly ~scope ~kind typ uctx ubinders imps nl in
+      let refs = declare_assumptions idl is_coe ~poly ~scope ~kind typ uctx ubinders imps nl in
       let subst' = List.map2
           (fun {CAst.v=id} (c,u) -> (id, Constr.mkRef (c,u)))
           idl refs
       in
-      subst'@subst, status' && status, next_uctx uctx)
-    ([], true, uctx) l)
+      subst'@subst, next_uctx uctx)
+      ([], uctx) l
+  in
+  ()
 
 let do_primitive id prim typopt =
   if Lib.sections_are_opened () then
@@ -270,41 +271,43 @@ let context ~poly l =
           Monomorphic_entry Univ.ContextSet.empty
         end
   in
-  let fn status (name, b, t) =
+  let fn (name, b, t) =
     let b, t = Option.map (EConstr.to_constr sigma) b, EConstr.to_constr sigma t in
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
       (* Declare the universe context once *)
       let kind = Decls.(IsAssumption Logical) in
       let decl = match b with
-      | None ->
-        Declare.ParameterEntry (None,(t,univs),None)
-      | Some b ->
-        let entry = Declare.definition_entry ~univs ~types:t b in
-        Declare.DefinitionEntry entry
+        | None ->
+          Declare.ParameterEntry (None,(t,univs),None)
+        | Some b ->
+          let entry = Declare.definition_entry ~univs ~types:t b in
+          Declare.DefinitionEntry entry
       in
       let cst = Declare.declare_constant ~name ~kind decl in
       let env = Global.env () in
       Classes.declare_instance env sigma (Some Hints.empty_hint_info) true (GlobRef.ConstRef cst);
-      status
+      ()
     else
       let test x = match x.CAst.v with
-      | Some (Name id',_) -> Id.equal name id'
-      | _ -> false
+        | Some (Name id',_) -> Id.equal name id'
+        | _ -> false
       in
       let impl = List.exists test impls in
       let scope =
         if Lib.sections_are_opened () then DeclareDef.Discharge else DeclareDef.Global ImportDefaultBehavior in
-      let nstatus = match b with
+      match b with
       | None ->
-        pi3 (declare_assumption false ~scope ~poly ~kind:Decls.Context t univs UnivNames.empty_binders [] impl
-               Declaremods.NoInline (CAst.make name))
+        let _, _ =
+          declare_assumption false ~scope ~poly ~kind:Decls.Context t
+            univs UnivNames.empty_binders [] impl
+            Declaremods.NoInline (CAst.make name)
+        in
+        ()
       | Some b ->
         let entry = Declare.definition_entry ~univs ~types:t b in
         let _gr = DeclareDef.declare_definition
             ~name ~scope:DeclareDef.Discharge
             ~kind:Decls.Definition UnivNames.empty_binders entry [] in
-        Lib.sections_are_opened () || Lib.is_modtype_strict ()
-      in
-        status && nstatus
+        ()
   in
-  List.fold_left fn true (List.rev ctx)
+  List.iter fn (List.rev ctx)

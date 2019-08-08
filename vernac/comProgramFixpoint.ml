@@ -292,7 +292,7 @@ let do_program_recursive ~scope ~poly fixkind fixl =
   let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
   Obligations.add_mutual_definitions defs ~poly ~scope ~kind ~univdecl:pl ctx ntns fixkind
 
-let do_program_fixpoint ~scope ~poly l =
+let do_fixpoint ~scope ~poly l =
   let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in
     match g, l with
     | [Some { CAst.v = CWfRec (n,r) }],
@@ -322,19 +322,9 @@ let do_program_fixpoint ~scope ~poly l =
       do_program_recursive ~scope ~poly fixkind l
 
     | _, _ ->
-        user_err ~hdr:"do_program_fixpoint"
+        user_err ~hdr:"do_fixpoint"
           (str "Well-founded fixpoints not allowed in mutually recursive blocks")
-
-let check_safe () =
-  let open Declarations in
-  let flags = Environ.typing_flags (Global.env ()) in
-  flags.check_universes && flags.check_guarded
-
-let do_fixpoint ~scope ~poly l =
-  do_program_fixpoint ~scope ~poly l;
-  if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
 
 let do_cofixpoint ~scope ~poly fixl =
   let fixl = List.map (fun fix -> { fix with Vernacexpr.rec_order = None }) fixl in
-  do_program_recursive ~scope ~poly DeclareObl.IsCoFixpoint fixl;
-  if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
+  do_program_recursive ~scope ~poly DeclareObl.IsCoFixpoint fixl

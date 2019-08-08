@@ -243,11 +243,16 @@ let get_roles export eff =
   in
   List.map map export
 
+let feedback_axiom () = Feedback.(feedback AddedAxiom)
+let is_unsafe_typing_flags () =
+  let flags = Environ.typing_flags (Global.env()) in
+  not (flags.check_universes && flags.check_guarded)
+
 let define_constant ~side_effect ~name cd =
   let open Proof_global in
   (* Logically define the constant and its subproofs, no libobject tampering *)
   let in_section = Lib.sections_are_opened () in
-  let export, decl = match cd with
+  let export, decl, unsafe = match cd with
   | DefinitionEntry de ->
     (* We deal with side effects *)
     if not de.proof_entry_opaque then
@@ -257,19 +262,20 @@ let define_constant ~side_effect ~name cd =
       let export = get_roles export eff in
       let de = { de with proof_entry_body = Future.from_val (body, ()) } in
       let cd = Entries.DefinitionEntry (cast_proof_entry de) in
-      export, ConstantEntry (PureEntry, cd)
+      export, ConstantEntry (PureEntry, cd), false
     else
       let map (body, eff) = body, eff.Evd.seff_private in
       let body = Future.chain de.proof_entry_body map in
       let de = { de with proof_entry_body = body } in
       let de = cast_opaque_proof_entry de in
-      [], ConstantEntry (EffectEntry, Entries.OpaqueEntry de)
+      [], ConstantEntry (EffectEntry, Entries.OpaqueEntry de), false
   | ParameterEntry e ->
-    [], ConstantEntry (PureEntry, Entries.ParameterEntry e)
+    [], ConstantEntry (PureEntry, Entries.ParameterEntry e), not (Lib.is_modtype_strict())
   | PrimitiveEntry e ->
-    [], ConstantEntry (PureEntry, Entries.PrimitiveEntry e)
+    [], ConstantEntry (PureEntry, Entries.PrimitiveEntry e), false
   in
   let kn, eff = Global.add_constant ~side_effect ~in_section name decl in
+  if unsafe || is_unsafe_typing_flags() then feedback_axiom();
   kn, eff, export
 
 let declare_constant ?(local = ImportDefaultBehavior) ~name ~kind cd =
@@ -489,6 +495,7 @@ let declare_mind mie =
     | ind::_ -> ind.mind_entry_typename
     | [] -> CErrors.anomaly (Pp.str "cannot declare an empty list of inductives.") in
   let (sp,kn as oname) = add_leaf id (inInductive mie) in
+  if is_unsafe_typing_flags() then feedback_axiom();
   let mind = Global.mind_of_delta_kn kn in
   let isprim = declare_projections mie.mind_entry_universes mind in
   Impargs.declare_mib_implicits mind;
