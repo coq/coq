@@ -421,7 +421,7 @@ type secentry =
   | Variable of {
       id:Names.Id.t;
     }
-  | Context of Univ.ContextSet.t
+  | Context of Name.t array * Univ.UContext.t
 
 type section_data = {
   sec_entry : secentry list;
@@ -454,12 +454,12 @@ let add_section_variable ~name ~poly =
        let s = { s with sec_entry = Variable {id=name} :: s.sec_entry } in
        sectab := s :: sl
 
-let add_section_context ctx =
+let add_section_context (nas, ctx) =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | s :: sl ->
        check_same_poly true s;
-       let s = { s with sec_entry = Context ctx :: s.sec_entry } in
+       let s = { s with sec_entry = Context (nas, ctx) :: s.sec_entry } in
        sectab := s :: sl
 
 exception PolyFound (* make this a let exception once possible *)
@@ -470,8 +470,8 @@ let is_polymorphic_univ u =
       let vars = s.sec_entry in
         List.iter (function
             | Variable _ -> ()
-            | Context (univs,_) ->
-              if LSet.mem u univs then raise PolyFound
+            | Context (_, univs) ->
+              if Array.mem u (Instance.to_array (UContext.instance univs)) then raise PolyFound
           ) vars
       ) !sectab;
     false
@@ -485,11 +485,11 @@ let extract_hyps poly (secs,ohyps) =
     | (Variable _::idl,hyps) ->
         let l, r = aux (idl,hyps) in
           l, r
-    | (Context ctx :: idl, hyps) ->
+    | (Context (nas, ctx) :: idl, hyps) ->
       let () = assert poly in
-       let l, r = aux (idl, hyps) in
-       l, Univ.ContextSet.union r ctx
-    | [], _ -> [],Univ.ContextSet.empty
+       let l, (snas, sctx) = aux (idl, hyps) in
+       l, (Array.append snas nas, Univ.UContext.union sctx ctx)
+    | [], _ -> [], ([||], Univ.UContext.empty)
   in aux (secs,ohyps)
 
 let instance_from_variable_context =
@@ -502,31 +502,12 @@ let extract_worklist info =
 let make_worklist (cmap, mmap) =
   Cmap.map extract_worklist cmap, Mindmap.map extract_worklist mmap
 
-let name_instance inst =
-  (* FIXME: this should probably be done at an upper level, by storing the
-     name information in the section data structure. *)
-  let map lvl = match Univ.Level.name lvl with
-    | None -> (* Having Prop/Set/Var as section universes makes no sense *)
-      assert false
-    | Some na ->
-      try
-        let qid = Nametab.shortest_qualid_of_universe na in
-        Name (Libnames.qualid_basename qid)
-      with Not_found ->
-        (* Best-effort naming from the string representation of the level.
-           See univNames.ml for a similar hack. *)
-        Name (Id.of_string_soft (Univ.Level.to_string lvl))
-  in
-  Array.map map (Univ.Instance.to_array inst)
-
 let add_section_replacement g poly hyps =
   match !sectab with
   | [] -> ()
   | s :: sl ->
     let () = check_same_poly poly s in
-    let sechyps,ctx = extract_hyps s.sec_poly (s.sec_entry, hyps) in
-    let ctx = Univ.ContextSet.to_context ctx in
-    let nas = name_instance (Univ.UContext.instance ctx) in
+    let sechyps, (nas, ctx) = extract_hyps s.sec_poly (s.sec_entry, hyps) in
     let subst, ctx = Univ.abstract_universes nas ctx in
     let info = {
       abstr_ctx = sechyps;

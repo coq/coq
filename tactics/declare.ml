@@ -40,9 +40,30 @@ let input_universe_context : Univ.ContextSet.t -> Libobject.obj =
     ~cache:(fun (na, uctx) -> Global.push_context_set false uctx)
     ~discharge:(fun (_, x) -> Some x)
 
+let name_instance inst =
+  let map lvl = match Univ.Level.name lvl with
+    | None -> (* Having Prop/Set/Var as section universes makes no sense *)
+      assert false
+    | Some na ->
+      try
+        let qid = Nametab.shortest_qualid_of_universe na in
+        Name (Libnames.qualid_basename qid)
+      with Not_found ->
+        (* Best-effort naming from the string representation of the level.
+           See univNames.ml for a similar hack. *)
+        Name (Id.of_string_soft (Univ.Level.to_string lvl))
+  in
+  Array.map map (Univ.Instance.to_array inst)
+
 let declare_universe_context ~poly ctx =
   if poly then
-    (Global.push_context_set true ctx; Lib.add_section_context ctx)
+    (* FIXME: some upper layers declare universes several times, we hack around
+      by checking whether the universes already exist. *)
+    let (univs, cstr) = ctx in
+    let univs = Univ.LSet.filter (fun u -> not (Lib.is_polymorphic_univ u)) univs in
+    let uctx = Univ.ContextSet.to_context (univs, cstr) in
+    let nas = name_instance (Univ.UContext.instance uctx) in
+    (Global.push_context_set true ctx; Lib.add_section_context (nas, uctx))
   else
     Lib.add_anonymous_leaf (input_universe_context ctx)
 
@@ -632,9 +653,9 @@ let do_universe ~poly l =
   let ctx = List.fold_left (fun ctx (_,qid) -> Univ.LSet.add (Univ.Level.make qid) ctx)
       Univ.LSet.empty l, Univ.Constraint.empty
   in
-  let () = declare_universe_context ~poly ctx in
   let src = if poly then BoundUniv else UnqualifiedUniv in
-  Lib.add_anonymous_leaf (input_univ_names (src, l))
+  let () = Lib.add_anonymous_leaf (input_univ_names (src, l)) in
+  declare_universe_context ~poly ctx
 
 let do_constraint ~poly l =
   let open Univ in
