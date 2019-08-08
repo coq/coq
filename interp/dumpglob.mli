@@ -8,19 +8,19 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val open_glob_file : string -> unit
-val close_glob_file : unit -> unit
-
 val start_dump_glob : vfile:string -> vofile:string -> unit
 val end_dump_glob : unit -> unit
 
 val dump : unit -> bool
 
-val noglob : unit -> unit
-val dump_into_file : string -> unit (** special handling of "stdout" *)
+type glob_output =
+  | NoGlob
+  | Feedback
+  | MultFiles                   (* one glob file per .v file *)
+  | File of string              (* Single file for all coqc arguments *)
 
-val dump_to_dotglob : unit -> unit
-val feedback_glob : unit -> unit
+(* Default "NoGlob" *)
+val set_glob_output : glob_output -> unit
 
 val pause : unit -> unit
 val continue : unit -> unit

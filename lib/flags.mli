@@ -31,10 +31,6 @@
 
 (** Command-line flags  *)
 
-(** Set by coqtop to tell the kernel to output to the aux file; will
-    be eventually removed by cleanups such as PR#1103 *)
-val record_aux_file : bool ref
-
 (** Async-related flags *)
 val async_proofs_worker_id : string ref
 val async_proofs_is_worker : unit -> bool

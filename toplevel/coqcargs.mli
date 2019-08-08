@@ -24,6 +24,7 @@ type t =
   ; echo : bool
 
   ; outputstate : string option
+  ; glob_out    : Dumpglob.glob_output
   }
 
 val default : t

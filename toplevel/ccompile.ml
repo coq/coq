@@ -108,8 +108,6 @@ let compile opts copts ~echo ~f_in ~f_out =
   in
   match copts.compilation_mode with
   | BuildVo ->
-      Flags.record_aux_file := true;
-
       let long_f_dot_v, long_f_dot_vo =
         ensure_exists_with_prefix f_in f_out ".v" ".vo" in
 
@@ -124,8 +122,11 @@ let compile opts copts ~echo ~f_in ~f_out =
       Aux_file.(start_aux_file
         ~aux_file:(aux_file_name_for long_f_dot_vo)
         ~v_file:long_f_dot_v);
+
+      Dumpglob.set_glob_output copts.glob_out;
       Dumpglob.start_dump_glob ~vfile:long_f_dot_v ~vofile:long_f_dot_vo;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
+
       let wall_clock1 = Unix.gettimeofday () in
       let check = Stm.AsyncOpts.(stm_options.async_proofs_mode = APoff) in
       let state = Vernac.load_vernac ~echo ~check ~interactive:false ~state long_f_dot_v in
@@ -139,9 +140,6 @@ let compile opts copts ~echo ~f_in ~f_out =
       Dumpglob.end_dump_glob ()
 
   | BuildVio ->
-      Flags.record_aux_file := false;
-      Dumpglob.noglob ();
-
       let long_f_dot_v, long_f_dot_vio =
         ensure_exists_with_prefix f_in f_out ".v" ".vio" in
 
@@ -174,9 +172,6 @@ let compile opts copts ~echo ~f_in ~f_out =
       Stm.reset_task_queue ()
 
   | Vio2Vo ->
-
-      Flags.record_aux_file := false;
-      Dumpglob.noglob ();
       let long_f_dot_vio, long_f_dot_vo =
         ensure_exists_with_prefix f_in f_out ".vio" ".vo" in
       let sum, lib, univs, tasks, proofs =

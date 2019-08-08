@@ -35,7 +35,6 @@ type coqargs_config = {
   debug       : bool;
   diffs_set   : bool;
   time        : bool;
-  glob_opt    : bool;
   print_emacs : bool;
   set_options : (Goptions.option_name * option_command) list;
 }
