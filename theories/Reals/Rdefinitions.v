@@ -12,7 +12,7 @@
 
 Require Export ZArith_base.
 Require Import QArith_base.
-Require Import ConstructiveCauchyReals.
+Require Import ConstructiveRIneq.
 
 Parameter R : Set.
 
@@ -30,15 +30,16 @@ Local Open Scope R_scope.
 
 (* The limited principle of omniscience *)
 Axiom sig_forall_dec
-  : forall (P : nat -> Prop), (forall n, {P n} + {~P n})
-                   -> {n | ~P n} + {forall n, P n}.
+  : forall (P : nat -> Prop),
+    (forall n, {P n} + {~P n})
+    -> {n | ~P n} + {forall n, P n}.
 
-Axiom sig_not_dec : forall P : Prop, {not (not P)} + {not P}.
+Axiom sig_not_dec : forall P : Prop, { ~~P } + { ~P }.
 
-Axiom Rabst : CReal -> R.
-Axiom Rrepr : R -> CReal.
-Axiom Rquot1 : forall x y:R, CRealEq (Rrepr x) (Rrepr y) -> x = y.
-Axiom Rquot2 : forall x:CReal, CRealEq (Rrepr (Rabst x)) x.
+Axiom Rabst : ConstructiveRIneq.R -> R.
+Axiom Rrepr : R -> ConstructiveRIneq.R.
+Axiom Rquot1 : forall x y:R, Req (Rrepr x) (Rrepr y) -> x = y.
+Axiom Rquot2 : forall x:ConstructiveRIneq.R, Req (Rrepr (Rabst x)) x.
 
 (* Those symbols must be kept opaque, for backward compatibility. *)
 Module Type RbaseSymbolsSig.
@@ -49,29 +50,29 @@ Module Type RbaseSymbolsSig.
   Parameter Ropp : R -> R.
   Parameter Rlt : R -> R -> Prop.
 
-  Parameter R0_def : R0 = Rabst 0%CReal.
-  Parameter R1_def : R1 = Rabst 1%CReal.
+  Parameter R0_def : R0 = Rabst (CRzero CR).
+  Parameter R1_def : R1 = Rabst (CRone CR).
   Parameter Rplus_def : forall x y : R,
-      Rplus x y = Rabst (CReal_plus (Rrepr x) (Rrepr y)).
+      Rplus x y = Rabst (ConstructiveRIneq.Rplus (Rrepr x) (Rrepr y)).
   Parameter Rmult_def : forall x y : R,
-      Rmult x y = Rabst (CReal_mult (Rrepr x) (Rrepr y)).
+      Rmult x y = Rabst (ConstructiveRIneq.Rmult (Rrepr x) (Rrepr y)).
   Parameter Ropp_def : forall x : R,
-      Ropp x = Rabst (CReal_opp (Rrepr x)).
+      Ropp x = Rabst (ConstructiveRIneq.Ropp (Rrepr x)).
   Parameter Rlt_def : forall x y : R,
-      Rlt x y = CRealLt (Rrepr x) (Rrepr y).
+      Rlt x y = ConstructiveRIneq.Rlt (Rrepr x) (Rrepr y).
 End RbaseSymbolsSig.
 
 Module RbaseSymbolsImpl : RbaseSymbolsSig.
-  Definition R0 : R := Rabst 0%CReal.
-  Definition R1 : R := Rabst 1%CReal.
+  Definition R0 : R := Rabst (CRzero CR).
+  Definition R1 : R := Rabst (CRone CR).
   Definition Rplus : R -> R -> R
-    := fun x y : R => Rabst (CReal_plus (Rrepr x) (Rrepr y)).
+    := fun x y : R => Rabst (ConstructiveRIneq.Rplus (Rrepr x) (Rrepr y)).
   Definition Rmult : R -> R -> R
-    := fun x y : R => Rabst (CReal_mult (Rrepr x) (Rrepr y)).
+    := fun x y : R => Rabst (ConstructiveRIneq.Rmult (Rrepr x) (Rrepr y)).
   Definition Ropp : R -> R
-    := fun x : R => Rabst (CReal_opp (Rrepr x)).
+    := fun x : R => Rabst (ConstructiveRIneq.Ropp (Rrepr x)).
   Definition Rlt : R -> R -> Prop
-    := fun x y : R => CRealLt (Rrepr x) (Rrepr y).
+    := fun x y : R => ConstructiveRIneq.Rlt (Rrepr x) (Rrepr y).
 
   Definition R0_def := eq_refl R0.
   Definition R1_def := eq_refl R1.
@@ -155,9 +156,9 @@ Arguments IZR z%Z : simpl never.
 
 Lemma total_order_T : forall r1 r2:R, {Rlt r1 r2} + {r1 = r2} + {Rlt r2 r1}.
 Proof.
-  intros. destruct (CRealLt_lpo_dec (Rrepr r1) (Rrepr r2) sig_forall_dec).
+  intros. destruct (CRlt_lpo_dec CR (Rrepr r1) (Rrepr r2) sig_forall_dec).
   - left. left. rewrite RbaseSymbolsImpl.Rlt_def. exact c.
-  - destruct (CRealLt_lpo_dec (Rrepr r2) (Rrepr r1) sig_forall_dec).
+  - destruct (CRlt_lpo_dec CR (Rrepr r2) (Rrepr r1) sig_forall_dec).
     + right. rewrite RbaseSymbolsImpl.Rlt_def. exact c.
     + left. right. apply Rquot1. split; assumption.
 Qed.
@@ -172,7 +173,7 @@ Proof.
 Qed.
 
 Lemma Rrepr_appart_0 : forall x:R,
-    (x < R0 \/ R0 < x) -> (Rrepr x # 0)%CReal.
+    (x < R0 \/ R0 < x) -> Rappart (Rrepr x) (CRzero CR).
 Proof.
   intros. destruct H. left. rewrite RbaseSymbolsImpl.Rlt_def, RbaseSymbolsImpl.R0_def, Rquot2 in H. exact H.
   right. rewrite RbaseSymbolsImpl.Rlt_def, RbaseSymbolsImpl.R0_def, Rquot2 in H. exact H.
@@ -183,7 +184,7 @@ Module Type RinvSig.
   Parameter Rinv_def : forall x : R,
       Rinv x = match Req_appart_dec x R0 with
                | left _ => R0 (* / 0 is undefined, we take 0 arbitrarily *)
-               | right r => Rabst ((CReal_inv (Rrepr x) (Rrepr_appart_0 x r)))
+               | right r => Rabst ((ConstructiveRIneq.Rinv (Rrepr x) (Rrepr_appart_0 x r)))
                end.
 End RinvSig.
 
@@ -191,7 +192,7 @@ Module RinvImpl : RinvSig.
   Definition Rinv : R -> R
     := fun x => match Req_appart_dec x R0 with
              | left _ => R0 (* / 0 is undefined, we take 0 arbitrarily *)
-             | right r => Rabst ((CReal_inv (Rrepr x) (Rrepr_appart_0 x r)))
+             | right r => Rabst ((ConstructiveRIneq.Rinv (Rrepr x) (Rrepr_appart_0 x r)))
              end.
   Definition Rinv_def := fun x => eq_refl (Rinv x).
 End RinvImpl.

@@ -1753,8 +1753,8 @@ Proof.
 Qed.
 
 Lemma Rrepr_pow : forall (x : R) (n : nat),
-    (ConstructiveCauchyReals.CRealEq (Rrepr (pow x n))
-                                     (ConstructiveCauchyReals.pow (Rrepr x) n)).
+    (ConstructiveRIneq.Req (Rrepr (pow x n))
+                           (ConstructiveRIneq.pow (Rrepr x) n)).
 Proof.
   intro x. induction n.
   - apply Rrepr_1.

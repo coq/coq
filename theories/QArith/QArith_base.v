@@ -726,7 +726,7 @@ Proof.
   exact (Z_lt_le_dec (Qnum x * QDen y) (Qnum y * QDen x)).
 Defined.
 
-Lemma Qarchimedean : forall q : Q, { p : positive | Qlt q (Z.pos p # 1) }.
+Lemma Qarchimedean : forall q : Q, { p : positive | q < Z.pos p # 1 }.
 Proof.
   intros. destruct q as [a b]. unfold Qlt. simpl.
   rewrite Zmult_1_r. destruct a.
@@ -996,7 +996,7 @@ apply Qlt_shift_div_r; assumption.
 Qed.
 
 Lemma Qinv_lt_contravar : forall a b : Q,
-    Qlt 0 a -> Qlt 0 b -> (Qlt a b <-> Qlt (/b) (/a)).
+    0 < a -> 0 < b -> (a < b <-> /b < /a).
 Proof.
   intros. split.
   - intro. rewrite <- Qmult_1_l. apply Qlt_shift_div_r. apply H0.
