@@ -68,7 +68,7 @@ jobs:
       opam switch set ocaml-base-compiler.$COMPILER
       eval $(opam env)
       opam update
-      opam install -j "$NJOBS" num ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3
+      opam install -j "$NJOBS" num ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3 dune
       opam list
     displayName: 'Install OCaml dependencies'
     env:
@@ -80,31 +80,10 @@ jobs:
       set -e
 
       eval $(opam env)
-      ./configure -prefix '$(Build.BinariesDirectory)' -warn-error yes -native-compiler no -coqide opt
-      make -j "$NJOBS" byte
-      make -j "$NJOBS"
+      make -f Makefile.dune coq coqide-server
     displayName: 'Build Coq'
 
   - script: |
       eval $(opam env)
-      make -j "$NJOBS" test-suite PRINT_LOGS=1
+      make -f Makefile.dune test-suite
     displayName: 'Run Coq Test Suite'
-
-  - script: |
-      make install
-    displayName: 'Install Coq'
-
-  - script: |
-      set -e
-      eval $(opam env)
-      export PKG_CONFIG_PATH=/usr/local/opt/libffi/lib/pkgconfig
-      ./dev/build/osx/make-macos-dmg.sh
-      mv _build/*.dmg "$(Build.ArtifactStagingDirectory)/"
-    displayName: 'Create the dmg bundle'
-    env:
-      OUTDIR: '$(Build.BinariesDirectory)'
-
-  - task: PublishBuildArtifacts@1
-    inputs:
-      pathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: coq-macOS-installer
