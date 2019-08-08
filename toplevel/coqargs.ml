@@ -184,7 +184,7 @@ let add_load_vernacular opts verb s =
 (** Options for proof general *)
 let set_emacs opts =
   Printer.enable_goal_tags_printing := true;
-  { opts with config = { opts.config with color = `OFF; print_emacs = true }}
+  { opts with config = { opts.config with color = `EMACS; print_emacs = true }}
 
 let set_logic f oval =
   { oval with config = { oval.config with logic = f oval.config.logic }}
