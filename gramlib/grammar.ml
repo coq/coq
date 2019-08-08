@@ -23,7 +23,7 @@ module type S =
         val create : string -> 'a e
         val parse : 'a e -> parsable -> 'a
         val name : 'a e -> string
-        val of_parser : string -> (te Stream.t -> 'a) -> 'a e
+        val of_parser : string -> (Plexing.location_function -> te Stream.t -> 'a) -> 'a e
         val parse_token_stream : 'a e -> te Stream.t -> 'a
         val print : Format.formatter -> 'a e -> unit
       end
@@ -112,7 +112,7 @@ type 'a ty_entry = {
 
 and 'a ty_desc =
 | Dlevels of 'a ty_level list
-| Dparser of 'a parser_t
+| Dparser of (Plexing.location_function -> 'a parser_t)
 
 and 'a ty_level = Level : (_, _, 'a) ty_rec_level -> 'a ty_level
 
@@ -1449,7 +1449,7 @@ let start_parser_of_entry entry =
   match entry.edesc with
     Dlevels [] -> empty_entry entry.ename
   | Dlevels elev -> start_parser_of_levels entry 0 elev
-  | Dparser p -> fun levn strm -> p strm
+  | Dparser p -> fun levn strm -> p !floc strm
 
 (* Extend syntax *)
 
@@ -1549,9 +1549,9 @@ let clear_entry e =
         let parse_token_stream (e : 'a e) ts : 'a =
           e.estart 0 ts
         let name e = e.ename
-        let of_parser n (p : te Stream.t -> 'a) : 'a e =
+        let of_parser n (p : Plexing.location_function -> te Stream.t -> 'a) : 'a e =
           { ename = n;
-           estart = (fun _ -> p);
+           estart = (fun _ -> p !floc);
            econtinue =
              (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
            edesc = Dparser p}

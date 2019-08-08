@@ -785,12 +785,14 @@ let next_token ~diff_mode loc s =
 (* Location table system for creating tables associating a token count
    to its location in a char stream (the source) *)
 
-let locerr () = invalid_arg "Lexer: location function"
+let locerr i =
+  let m = "Lexer: location function called on token "^string_of_int i in
+  invalid_arg m
 
 let loct_create () = Hashtbl.create 207
 
 let loct_func loct i =
-  try Hashtbl.find loct i with Not_found -> locerr ()
+  try Hashtbl.find loct i with Not_found -> locerr i
 
 let loct_add loct i loc = Hashtbl.add loct i loc
 

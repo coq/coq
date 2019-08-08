@@ -332,7 +332,7 @@ END
 let local_test_lpar_id_colon =
   let err () = raise Stream.Failure in
   Pcoq.Entry.of_parser "lpar_id_colon"
-    (fun strm ->
+    (fun _ strm ->
       match Util.stream_nth 0 strm with
         | Tok.KEYWORD "(" ->
             (match Util.stream_nth 1 strm with

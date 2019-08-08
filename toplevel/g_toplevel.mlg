@@ -36,7 +36,7 @@ let err () = raise Stream.Failure
 
 let test_show_goal =
   Pcoq.Entry.of_parser "test_show_goal"
-    (fun strm ->
+    (fun _ strm ->
       match stream_nth 0 strm with
       | IDENT "Show" ->
           (match stream_nth 1 strm with

@@ -40,7 +40,7 @@ let err () = raise Stream.Failure
 (* admissible notation "(x t)" *)
 let test_lpar_id_coloneq =
   Pcoq.Entry.of_parser "lpar_id_coloneq"
-    (fun strm ->
+    (fun _ strm ->
       match stream_nth 0 strm with
         | KEYWORD "(" ->
             (match stream_nth 1 strm with
@@ -54,7 +54,7 @@ let test_lpar_id_coloneq =
 (* Hack to recognize "(x)" *)
 let test_lpar_id_rpar =
   Pcoq.Entry.of_parser "lpar_id_coloneq"
-    (fun strm ->
+    (fun _ strm ->
       match stream_nth 0 strm with
         | KEYWORD "(" ->
             (match stream_nth 1 strm with
@@ -68,7 +68,7 @@ let test_lpar_id_rpar =
 (* idem for (x:=t) and (1:=t) *)
 let test_lpar_idnum_coloneq =
   Pcoq.Entry.of_parser "test_lpar_idnum_coloneq"
-    (fun strm ->
+    (fun _ strm ->
       match stream_nth 0 strm with
         | KEYWORD "(" ->
             (match stream_nth 1 strm with
@@ -85,7 +85,7 @@ open Extraargs
 (* idem for (x1..xn:t) [n^2 complexity but exceptional use] *)
 let check_for_coloneq =
   Pcoq.Entry.of_parser "lpar_id_colon"
-    (fun strm ->
+    (fun _ strm ->
       let rec skip_to_rpar p n =
 	match List.last (Stream.npeek n strm) with
         | KEYWORD "(" -> skip_to_rpar (p+1) (n+1)
@@ -109,7 +109,7 @@ let check_for_coloneq =
 
 let lookup_at_as_comma =
   Pcoq.Entry.of_parser "lookup_at_as_comma"
-    (fun strm ->
+    (fun _ strm ->
       match stream_nth 0 strm with
 	| KEYWORD (","|"at"|"as") -> ()
 	| _ -> err ())

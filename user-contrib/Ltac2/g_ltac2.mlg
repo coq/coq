@@ -23,31 +23,31 @@ open Ltac_plugin
 
 let err () = raise Stream.Failure
 
-type lookahead = int -> Tok.t Stream.t -> int option
+type lookahead = Gramlib.Plexing.location_function -> int -> Tok.t Stream.t -> int option
 
 let entry_of_lookahead s (lk : lookahead) =
-  let run strm = match lk 0 strm with None -> err () | Some _ -> () in
+  let run tok strm = match lk tok 0 strm with None -> err () | Some _ -> () in
   Pcoq.Entry.of_parser s run
 
-let (>>) (lk1 : lookahead) lk2 n strm = match lk1 n strm with
+let (>>) (lk1 : lookahead) lk2 tok n strm = match lk1 tok n strm with
 | None -> None
-| Some n -> lk2 n strm
+| Some n -> lk2 tok n strm
 
-let (<+>) (lk1 : lookahead) lk2 n strm = match lk1 n strm with
-| None -> lk2 n strm
+let (<+>) (lk1 : lookahead) lk2 tok n strm = match lk1 tok n strm with
+| None -> lk2 tok n strm
 | Some n -> Some n
 
-let lk_empty n strm = Some n
+let lk_empty tok n strm = Some n
 
-let lk_kw kw n strm = match stream_nth n strm with
+let lk_kw kw tok n strm = match stream_nth n strm with
 | KEYWORD kw' | IDENT kw' -> if String.equal kw kw' then Some (n + 1) else None
 | _ -> None
 
-let lk_ident n strm = match stream_nth n strm with
+let lk_ident tok n strm = match stream_nth n strm with
 | IDENT _ -> Some (n + 1)
 | _ -> None
 
-let lk_int n strm = match stream_nth n strm with
+let lk_int tok n strm = match stream_nth n strm with
 | NUMERAL { NumTok.int = _; frac = ""; exp = "" } -> Some (n + 1)
 | _ -> None
 
@@ -80,9 +80,13 @@ let test_lpar_id_rpar =
     lk_kw "(" >> lk_ident >> lk_kw ")"
   end
 
+let check_no_space tok m strm =
+  let n = Stream.count strm in
+  if G_prim.contiguous tok n (n+m-1) then Some m else None
+
 let test_ampersand_ident =
   entry_of_lookahead "test_ampersand_ident" begin
-    lk_kw "&" >> lk_ident
+    lk_kw "&" >> lk_ident >> check_no_space
   end
 
 let test_dollar_ident =

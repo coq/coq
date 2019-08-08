@@ -519,7 +519,7 @@ END
 
 let only_starredidentrefs =
   Pcoq.Entry.of_parser "test_only_starredidentrefs"
-    (fun strm ->
+    (fun _ strm ->
       let rec aux n =
       match Util.stream_nth n strm with
         | KEYWORD "." -> ()

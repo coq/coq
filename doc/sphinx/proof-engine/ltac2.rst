@@ -427,6 +427,8 @@ In general, quotations can be introduced in terms using the following syntax, wh
 .. prodn::
    ltac2_term += @ident : ( @quotentry )
 
+.. _ltac2_built-in-quotations:
+
 Built-in quotations
 +++++++++++++++++++
 
@@ -439,10 +441,11 @@ The current implementation recognizes the following built-in quotations:
   holes at runtime (type ``Init.constr`` as well).
 - ``pattern``, which parses Coq patterns and produces a pattern used for term
   matching (type ``Init.pattern``).
-- ``reference``, which parses either a :n:`@qualid` or :n:`& @ident`. Qualified names
+- ``reference``, which parses either a :n:`@qualid` or :n:`&@ident`. Qualified names
   are globalized at internalization into the corresponding global reference,
   while ``&id`` is turned into ``Std.VarRef id``. This produces at runtime a
-  ``Std.reference``.
+  ``Std.reference``. There shall be no white space between the ampersand
+  symbol (``&``) and the identifier (:n:`@ident`).
 
 The following syntactic sugar is provided for two common cases.
 
