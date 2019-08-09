@@ -1,0 +1,9 @@
+
+type unit0 =
+| Tt
+
+(** val f : unit0 -> unit0 **)
+
+let f _ =
+  assert false (* absurd case *)
+
