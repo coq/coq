@@ -543,7 +543,7 @@ Lemma Rmult_eq_reg_l : forall r r1 r2, r * r1 = r * r2 -> r <> 0 -> r1 = r2.
 Proof.
   intros. apply Rquot1. apply (Rmult_eq_reg_l (Rrepr r)).
   rewrite <- Rrepr_mult, <- Rrepr_mult, H. reflexivity.
-  rewrite Rrepr_appart, Rrepr_0 in H0. exact H0.
+  apply Rrepr_appart in H0. rewrite Rrepr_0 in H0. exact H0.
 Qed.
 
 Lemma Rmult_eq_reg_r : forall r r1 r2, r1 * r = r2 * r -> r <> 0 -> r1 = r2.
@@ -996,15 +996,16 @@ Qed.
 
 Lemma Rplus_lt_reg_l : forall r r1 r2, r + r1 < r + r2 -> r1 < r2.
 Proof.
-  intros. rewrite Rlt_def. apply (Rplus_lt_reg_l (Rrepr r)).
+  intros. rewrite Rlt_def. apply Rlt_forget. apply (Rplus_lt_reg_l (Rrepr r)).
   rewrite <- Rrepr_plus, <- Rrepr_plus.
-  rewrite Rlt_def in H. exact H.
+  rewrite Rlt_def in H. apply Rlt_epsilon. exact H.
 Qed.
 
 Lemma Rplus_lt_reg_r : forall r r1 r2, r1 + r < r2 + r -> r1 < r2.
 Proof.
-  intros. rewrite Rlt_def. apply (Rplus_lt_reg_r (Rrepr r)).
-  rewrite <- Rrepr_plus, <- Rrepr_plus. rewrite Rlt_def in H. exact H.
+  intros. rewrite Rlt_def. apply Rlt_forget. apply (Rplus_lt_reg_r (Rrepr r)).
+  rewrite <- Rrepr_plus, <- Rrepr_plus. rewrite Rlt_def in H.
+  apply Rlt_epsilon. exact H.
 Qed.
 
 Lemma Rplus_le_reg_l : forall r r1 r2, r + r1 <= r + r2 -> r1 <= r2.
@@ -1075,15 +1076,18 @@ Qed.
 Lemma Ropp_gt_lt_contravar : forall r1 r2, r1 > r2 -> - r1 < - r2.
 Proof.
   intros. rewrite Rlt_def. rewrite Rrepr_opp, Rrepr_opp.
+  apply Rlt_forget.
   apply Ropp_gt_lt_contravar. unfold Rgt in H.
-  rewrite Rlt_def in H. exact H.
+  rewrite Rlt_def in H. apply Rlt_epsilon. exact H.
 Qed.
 Hint Resolve Ropp_gt_lt_contravar : core.
 
 Lemma Ropp_lt_gt_contravar : forall r1 r2, r1 < r2 -> - r1 > - r2.
 Proof.
   intros. unfold Rgt. rewrite Rlt_def. rewrite Rrepr_opp, Rrepr_opp.
-  apply Ropp_lt_gt_contravar. rewrite Rlt_def in H. exact H.
+  apply Rlt_forget.
+  apply Ropp_lt_gt_contravar. rewrite Rlt_def in H.
+  apply Rlt_epsilon. exact H.
 Qed.
 Hint Resolve Ropp_lt_gt_contravar: real.
 
@@ -1303,18 +1307,18 @@ Qed.
 
 Lemma Rmult_lt_reg_l : forall r r1 r2, 0 < r -> r * r1 < r * r2 -> r1 < r2.
 Proof.
-  intros. rewrite Rlt_def in H,H0. rewrite Rlt_def.
+  intros. rewrite Rlt_def in H,H0. rewrite Rlt_def. apply Rlt_forget.
   apply (Rmult_lt_reg_l (Rrepr r)).
-  rewrite <- Rrepr_0. exact H.
-  rewrite <- Rrepr_mult, <- Rrepr_mult. exact H0.
+  rewrite <- Rrepr_0. apply Rlt_epsilon. exact H.
+  rewrite <- Rrepr_mult, <- Rrepr_mult. apply Rlt_epsilon. exact H0.
 Qed.
 
 Lemma Rmult_lt_reg_r : forall r r1 r2 : R, 0 < r -> r1 * r < r2 * r -> r1 < r2.
 Proof.
   intros. rewrite Rlt_def. rewrite Rlt_def in H, H0.
-  apply (Rmult_lt_reg_r (Rrepr r)).
-  rewrite <- Rrepr_0. exact H.
-  rewrite <- Rrepr_mult, <- Rrepr_mult. exact H0.
+  apply Rlt_forget. apply (Rmult_lt_reg_r (Rrepr r)).
+  rewrite <- Rrepr_0. apply Rlt_epsilon. exact H.
+  rewrite <- Rrepr_mult, <- Rrepr_mult. apply Rlt_epsilon. exact H0.
 Qed.
 
 Lemma Rmult_gt_reg_l : forall r r1 r2, 0 < r -> r * r1 < r * r2 -> r1 < r2.
@@ -1323,7 +1327,7 @@ Proof. eauto using Rmult_lt_reg_l with rorders. Qed.
 Lemma Rmult_le_reg_l : forall r r1 r2, 0 < r -> r * r1 <= r * r2 -> r1 <= r2.
 Proof.
   intros. rewrite Rrepr_le. rewrite Rlt_def in H. apply (Rmult_le_reg_l (Rrepr r)).
-  rewrite <- Rrepr_0. exact H.
+  rewrite <- Rrepr_0. apply Rlt_epsilon. exact H.
   rewrite <- Rrepr_mult, <- Rrepr_mult.
   rewrite <- Rrepr_le. exact H0.
 Qed.
@@ -1642,7 +1646,7 @@ Hint Resolve pos_INR: real.
 Lemma INR_lt : forall n m:nat, INR n < INR m -> (n < m)%nat.
 Proof.
   intros. apply INR_lt. rewrite Rlt_def in H.
-  rewrite Rrepr_INR, Rrepr_INR in H. exact H.
+  rewrite Rrepr_INR, Rrepr_INR in H. apply Rlt_epsilon. exact H.
 Qed.
 Hint Resolve INR_lt: real.
 
@@ -1676,7 +1680,7 @@ Hint Resolve not_0_INR: real.
 
 Lemma not_INR : forall n m:nat, n <> m -> INR n <> INR m.
 Proof.
-  intros. rewrite Rrepr_appart, Rrepr_INR, Rrepr_INR.
+  intros. apply Rappart_repr. rewrite Rrepr_INR, Rrepr_INR.
   apply not_INR. exact H.
 Qed.
 Hint Resolve not_INR: real.
@@ -1801,14 +1805,15 @@ Qed.
 Lemma lt_0_IZR : forall n:Z, 0 < IZR n -> (0 < n)%Z.
 Proof.
   intros. apply lt_0_IZR. rewrite <- Rrepr_0, <- Rrepr_IZR.
-  rewrite Rlt_def in H. exact H.
+  rewrite Rlt_def in H. apply Rlt_epsilon. exact H.
 Qed.
 
 (**********)
 Lemma lt_IZR : forall n m:Z, IZR n < IZR m -> (n < m)%Z.
 Proof.
   intros. apply lt_IZR.
-  rewrite <- Rrepr_IZR, <- Rrepr_IZR. rewrite Rlt_def in H. exact H.
+  rewrite <- Rrepr_IZR, <- Rrepr_IZR. rewrite Rlt_def in H.
+  apply Rlt_epsilon. exact H.
 Qed.
 
 (**********)
@@ -1892,17 +1897,18 @@ Hint Extern 0 (IZR _ <> IZR _) => apply IZR_neq, Zeq_bool_neq, eq_refl : real.
 Lemma one_IZR_lt1 : forall n:Z, -1 < IZR n < 1 -> n = 0%Z.
 Proof.
   intros. apply one_IZR_lt1. do 2 rewrite Rlt_def in H. split.
-  rewrite <- Rrepr_IZR, <- Rrepr_1, <- Rrepr_opp. apply H.
-  rewrite <- Rrepr_IZR, <- Rrepr_1. apply H.
+  rewrite <- Rrepr_IZR, <- Rrepr_1, <- Rrepr_opp.
+  apply Rlt_epsilon. apply H.
+  rewrite <- Rrepr_IZR, <- Rrepr_1. apply Rlt_epsilon. apply H.
 Qed.
 
 Lemma one_IZR_r_R1 :
   forall r (n m:Z), r < IZR n <= r + 1 -> r < IZR m <= r + 1 -> n = m.
 Proof.
   intros. rewrite Rlt_def in H, H0. apply (one_IZR_r_R1 (Rrepr r)); split.
-  rewrite <- Rrepr_IZR. apply H.
+  rewrite <- Rrepr_IZR. apply Rlt_epsilon. apply H.
   rewrite <- Rrepr_IZR, <- Rrepr_1, <- Rrepr_plus, <- Rrepr_le.
-  apply H. rewrite <- Rrepr_IZR. apply H0.
+  apply H. rewrite <- Rrepr_IZR. apply Rlt_epsilon. apply H0.
   rewrite <- Rrepr_IZR, <- Rrepr_1, <- Rrepr_plus, <- Rrepr_le.
   apply H0.
 Qed.
@@ -1939,8 +1945,10 @@ Lemma Rinv_le_contravar :
 Proof.
   intros. apply Rrepr_le. assert (y <> 0).
   intro abs. subst y. apply (Rlt_irrefl 0). exact (Rlt_le_trans 0 x 0 H H0).
-  rewrite Rrepr_appart, Rrepr_0 in H1. rewrite Rlt_def in H. rewrite Rrepr_0 in H.
-  rewrite (Rrepr_inv y H1), (Rrepr_inv x (or_intror H)).
+  apply Rrepr_appart in H1.
+  rewrite Rrepr_0 in H1. rewrite Rlt_def in H. rewrite Rrepr_0 in H.
+  apply Rlt_epsilon in H.
+  rewrite (Rrepr_inv y H1), (Rrepr_inv x (inr H)).
   apply Rinv_le_contravar. rewrite <- Rrepr_le. exact H0.
 Qed.
 
@@ -2008,7 +2016,7 @@ Proof.
   intros. rewrite Rrepr_le. apply le_epsilon.
   intros. rewrite <- (Rquot2 eps), <- Rrepr_plus.
   rewrite <- Rrepr_le. apply H. rewrite Rlt_def.
-  rewrite Rquot2, Rrepr_0. exact H0.
+  rewrite Rquot2, Rrepr_0. apply Rlt_forget. exact H0.
 Qed.
 
 (**********)

@@ -59,7 +59,7 @@ Module Type RbaseSymbolsSig.
   Parameter Ropp_def : forall x : R,
       Ropp x = Rabst (ConstructiveRIneq.Ropp (Rrepr x)).
   Parameter Rlt_def : forall x y : R,
-      Rlt x y = ConstructiveRIneq.Rlt (Rrepr x) (Rrepr y).
+      Rlt x y = ConstructiveRIneq.RltProp (Rrepr x) (Rrepr y).
 End RbaseSymbolsSig.
 
 Module RbaseSymbolsImpl : RbaseSymbolsSig.
@@ -72,7 +72,7 @@ Module RbaseSymbolsImpl : RbaseSymbolsSig.
   Definition Ropp : R -> R
     := fun x : R => Rabst (ConstructiveRIneq.Ropp (Rrepr x)).
   Definition Rlt : R -> R -> Prop
-    := fun x y : R => ConstructiveRIneq.Rlt (Rrepr x) (Rrepr y).
+    := fun x y : R => ConstructiveRIneq.RltProp (Rrepr x) (Rrepr y).
 
   Definition R0_def := eq_refl R0.
   Definition R1_def := eq_refl R1.
@@ -156,10 +156,11 @@ Arguments IZR z%Z : simpl never.
 
 Lemma total_order_T : forall r1 r2:R, {Rlt r1 r2} + {r1 = r2} + {Rlt r2 r1}.
 Proof.
-  intros. destruct (CRlt_lpo_dec CR (Rrepr r1) (Rrepr r2) sig_forall_dec).
-  - left. left. rewrite RbaseSymbolsImpl.Rlt_def. exact c.
-  - destruct (CRlt_lpo_dec CR (Rrepr r2) (Rrepr r1) sig_forall_dec).
-    + right. rewrite RbaseSymbolsImpl.Rlt_def. exact c.
+  intros. destruct (Rlt_lpo_dec (Rrepr r1) (Rrepr r2) sig_forall_dec).
+  - left. left. rewrite RbaseSymbolsImpl.Rlt_def.
+    apply Rlt_forget. exact r.
+  - destruct (Rlt_lpo_dec (Rrepr r2) (Rrepr r1) sig_forall_dec).
+    + right. rewrite RbaseSymbolsImpl.Rlt_def. apply Rlt_forget. exact r.
     + left. right. apply Rquot1. split; assumption.
 Qed.
 
@@ -175,8 +176,11 @@ Qed.
 Lemma Rrepr_appart_0 : forall x:R,
     (x < R0 \/ R0 < x) -> Rappart (Rrepr x) (CRzero CR).
 Proof.
-  intros. destruct H. left. rewrite RbaseSymbolsImpl.Rlt_def, RbaseSymbolsImpl.R0_def, Rquot2 in H. exact H.
-  right. rewrite RbaseSymbolsImpl.Rlt_def, RbaseSymbolsImpl.R0_def, Rquot2 in H. exact H.
+  intros. apply CRltDisjunctEpsilon. destruct H.
+  left. rewrite RbaseSymbolsImpl.Rlt_def, RbaseSymbolsImpl.R0_def, Rquot2 in H.
+  exact H.
+  right. rewrite RbaseSymbolsImpl.Rlt_def, RbaseSymbolsImpl.R0_def, Rquot2 in H.
+  exact H.
 Qed.
 
 Module Type RinvSig.

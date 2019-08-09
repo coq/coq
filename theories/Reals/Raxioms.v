@@ -64,8 +64,8 @@ Lemma Rrepr_inv : forall (x:R) (xnz : Rrepr x # 0),
 Proof.
   intros. rewrite RinvImpl.Rinv_def. destruct (Req_appart_dec x R0).
   - exfalso. subst x. destruct xnz.
-    rewrite Rrepr_0 in H. exact (Rlt_irrefl 0 H).
-    rewrite Rrepr_0 in H. exact (Rlt_irrefl 0 H).
+    rewrite Rrepr_0 in c. exact (Rlt_irrefl 0 c).
+    rewrite Rrepr_0 in c. exact (Rlt_irrefl 0 c).
   - rewrite Rquot2. apply (Rmult_eq_reg_l (Rrepr x)). 2: exact xnz.
     rewrite Rmult_comm, (Rmult_comm (Rrepr x)), Rinv_l, Rinv_l.
     reflexivity.
@@ -75,21 +75,30 @@ Lemma Rrepr_le : forall x y:R, (x <= y)%R <-> Rrepr x <= Rrepr y.
 Proof.
   split.
   - intros [H|H] abs. rewrite RbaseSymbolsImpl.Rlt_def in H.
+    apply Rlt_epsilon in H.
     exact (Rlt_asym (Rrepr x) (Rrepr y) H abs).
     destruct H. exact (Rlt_asym (Rrepr x) (Rrepr x) abs abs).
   - intros. destruct (total_order_T x y). destruct s.
-    left. exact r. right. exact e. rewrite RbaseSymbolsImpl.Rlt_def in r. contradiction.
+    left. exact r. right. exact e.
+    rewrite RbaseSymbolsImpl.Rlt_def in r. apply Rlt_epsilon in r. contradiction.
 Qed.
 
-Lemma Rrepr_appart : forall x y:R, (x <> y)%R <-> Rrepr x # Rrepr y.
+Lemma Rrepr_appart : forall x y:R,
+    (x <> y)%R -> Rrepr x # Rrepr y.
 Proof.
-  split.
-  - intros. destruct (total_order_T x y). destruct s.
-    left. rewrite RbaseSymbolsImpl.Rlt_def in r. exact r. contradiction.
-    right. rewrite RbaseSymbolsImpl.Rlt_def in r. exact r.
-  - intros [H|H] abs.
-    destruct abs. exact (Rlt_asym (Rrepr x) (Rrepr x) H H).
-    destruct abs. exact (Rlt_asym (Rrepr x) (Rrepr x) H H).
+  intros. destruct (total_order_T x y). destruct s.
+  left. rewrite RbaseSymbolsImpl.Rlt_def in r.
+  apply Rlt_epsilon. exact r. contradiction.
+  right. rewrite RbaseSymbolsImpl.Rlt_def in r.
+  apply Rlt_epsilon. exact r.
+Qed.
+
+Lemma Rappart_repr : forall x y:R,
+    Rrepr x # Rrepr y -> (x <> y)%R.
+Proof.
+  intros x y [H|H] abs.
+  destruct abs. exact (Rlt_asym (Rrepr x) (Rrepr x) H H).
+  destruct abs. exact (Rlt_asym (Rrepr x) (Rrepr x) H H).
 Qed.
 
 Close Scope R_scope_constr.
@@ -206,6 +215,7 @@ Hint Resolve Rmult_plus_distr_l: real.
 Lemma Rlt_asym : forall r1 r2:R, r1 < r2 -> ~ r2 < r1.
 Proof.
   intros. intro abs. rewrite RbaseSymbolsImpl.Rlt_def in H, abs.
+  apply Rlt_epsilon in H. apply Rlt_epsilon in abs.
   apply (Rlt_asym (Rrepr r1) (Rrepr r2)); assumption.
 Qed.
 
@@ -213,6 +223,8 @@ Qed.
 Lemma Rlt_trans : forall r1 r2 r3:R, r1 < r2 -> r2 < r3 -> r1 < r3.
 Proof.
   intros. rewrite RbaseSymbolsImpl.Rlt_def. rewrite RbaseSymbolsImpl.Rlt_def in H, H0.
+  apply Rlt_epsilon in H. apply Rlt_epsilon in H0.
+  apply Rlt_forget.
   apply (Rlt_trans (Rrepr r1) (Rrepr r2) (Rrepr r3)); assumption.
 Qed.
 
@@ -220,16 +232,18 @@ Qed.
 Lemma Rplus_lt_compat_l : forall r r1 r2:R, r1 < r2 -> r + r1 < r + r2.
 Proof.
   intros. rewrite RbaseSymbolsImpl.Rlt_def. rewrite RbaseSymbolsImpl.Rlt_def in H.
-  do 2 rewrite Rrepr_plus. apply Rplus_lt_compat_l. exact H.
+  do 2 rewrite Rrepr_plus. apply Rlt_forget.
+  apply Rplus_lt_compat_l. apply Rlt_epsilon. exact H.
 Qed.
 
 (**********)
 Lemma Rmult_lt_compat_l : forall r r1 r2:R, 0 < r -> r1 < r2 -> r * r1 < r * r2.
 Proof.
   intros. rewrite RbaseSymbolsImpl.Rlt_def. rewrite RbaseSymbolsImpl.Rlt_def in H.
-  do 2 rewrite Rrepr_mult. apply Rmult_lt_compat_l.
-  rewrite <- (Rquot2 (CRzero CR)). unfold IZR in H. rewrite RbaseSymbolsImpl.R0_def in H. exact H.
-  rewrite RbaseSymbolsImpl.Rlt_def in H0. exact H0.
+  do 2 rewrite Rrepr_mult. apply Rlt_forget. apply Rmult_lt_compat_l.
+  rewrite <- (Rquot2 (CRzero CR)). unfold IZR in H.
+  rewrite RbaseSymbolsImpl.R0_def in H. apply Rlt_epsilon. exact H.
+  rewrite RbaseSymbolsImpl.Rlt_def in H0. apply Rlt_epsilon. exact H0.
 Qed.
 
 Hint Resolve Rlt_asym Rplus_lt_compat_l Rmult_lt_compat_l: real.
@@ -305,24 +319,39 @@ Proof.
   intro r. unfold up.
   destruct (Rarchimedean (Rrepr r)) as [n nmaj], (total_order_T (IZR n - r) R1).
   destruct s.
-  - split. unfold Rgt. rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_IZR. apply nmaj.
+  - split. unfold Rgt. rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_IZR.
+    apply Rlt_forget. apply nmaj.
     unfold Rle. left. exact r0.
-  - split. unfold Rgt. rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_IZR. apply nmaj.
-    right. exact e.
+  - split. unfold Rgt. rewrite RbaseSymbolsImpl.Rlt_def.
+    rewrite Rrepr_IZR. apply Rlt_forget. apply nmaj. right. exact e.
   - split.
-    + unfold Rgt, Z.pred. rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_IZR, plus_IZR.
+    + unfold Rgt, Z.pred. rewrite RbaseSymbolsImpl.Rlt_def.
+      rewrite Rrepr_IZR, plus_IZR.
       rewrite RbaseSymbolsImpl.Rlt_def in r0. rewrite Rrepr_minus in r0.
       rewrite <- (Rrepr_IZR n).
       unfold ConstructiveRIneq.IZR, ConstructiveRIneq.IPR.
-      apply (ConstructiveRIneq.Rplus_lt_compat_l (ConstructiveRIneq.Rminus (Rrepr r) (Rrepr R1)))
+      apply Rlt_forget. apply Rlt_epsilon in r0.
+      unfold ConstructiveRIneq.Rminus in r0.
+      apply (ConstructiveRIneq.Rplus_lt_compat_l
+               (ConstructiveRIneq.Rplus (Rrepr r) (ConstructiveRIneq.Ropp (Rrepr R1))))
         in r0.
-      ring_simplify in r0. rewrite RbaseSymbolsImpl.R1_def in r0. rewrite Rquot2 in r0.
-      rewrite ConstructiveRIneq.Rplus_comm. exact r0.
+      rewrite ConstructiveRIneq.Rplus_assoc,
+      ConstructiveRIneq.Rplus_opp_l,
+      ConstructiveRIneq.Rplus_0_r,
+      RbaseSymbolsImpl.R1_def, Rquot2,
+      ConstructiveRIneq.Rplus_comm,
+      ConstructiveRIneq.Rplus_assoc,
+      <- (ConstructiveRIneq.Rplus_assoc (ConstructiveRIneq.Ropp (Rrepr r))),
+      ConstructiveRIneq.Rplus_opp_l,
+      ConstructiveRIneq.Rplus_0_l
+        in r0.
+      exact r0.
     + destruct (total_order_T (IZR (Z.pred n) - r) 1). destruct s.
       left. exact r1. right. exact e.
-      exfalso. rewrite <- Rrepr_IZR in nmaj.
+      exfalso. destruct nmaj as [_ nmaj]. rewrite <- Rrepr_IZR in nmaj.
       apply (Rlt_asym (IZR n) (r + 2)).
       rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_plus. rewrite (Rrepr_plus 1 1).
+      apply Rlt_forget.
       apply (ConstructiveRIneq.Rlt_le_trans
                _ (ConstructiveRIneq.Rplus (Rrepr r) (ConstructiveRIneq.IZR 2))).
       apply nmaj.
@@ -334,15 +363,22 @@ Proof.
         in r1.
       unfold ConstructiveRIneq.IZR, ConstructiveRIneq.IPR in r1.
       rewrite RbaseSymbolsImpl.Rlt_def, Rrepr_plus.
+      apply Rlt_epsilon in r1.
       apply (ConstructiveRIneq.Rplus_lt_compat_l
                (ConstructiveRIneq.Rplus (Rrepr r) (CRone CR))) in r1.
-      ring_simplify in r1.
+      apply Rlt_forget.
       apply (ConstructiveRIneq.Rle_lt_trans
                _ (ConstructiveRIneq.Rplus (ConstructiveRIneq.Rplus (Rrepr r) (Rrepr 1)) (CRone CR))).
-      2: apply r1.
       rewrite (Rrepr_plus 1 1). unfold IZR, IPR.
       rewrite RbaseSymbolsImpl.R1_def, (Rquot2 (CRone CR)), <- ConstructiveRIneq.Rplus_assoc.
       apply Rle_refl.
+      rewrite <- (ConstructiveRIneq.Rplus_comm (Rrepr 1)),
+      <- ConstructiveRIneq.Rplus_assoc,
+      (ConstructiveRIneq.Rplus_comm (Rrepr 1))
+        in r1.
+      apply (ConstructiveRIneq.Rlt_le_trans _ _ _ r1).
+      unfold ConstructiveRIneq.Rminus.
+      ring_simplify. apply ConstructiveRIneq.Rle_refl.
 Qed.
 
 (**********************************************************)
@@ -377,10 +413,13 @@ Proof.
   destruct (CR_sig_lub CR
               Er sig_forall_dec sig_not_dec Einhab Ebound).
   exists (Rabst x). split.
-  intros y Ey. apply Rrepr_le. rewrite Rquot2. apply a.
+  intros y Ey. apply Rrepr_le. rewrite Rquot2.
+  unfold ConstructiveRIneq.Rle. apply a.
   unfold Er. replace (Rabst (Rrepr y)) with y. exact Ey.
   apply Rquot1. rewrite Rquot2. reflexivity.
   intros. destruct a. apply Rrepr_le. rewrite Rquot2.
-  apply H3. intros y Ey. rewrite <- (Rquot2 y).
-  apply Rrepr_le, H1, Ey.
+  unfold ConstructiveRIneq.Rle. apply H3. intros y Ey.
+  intros. rewrite <- (Rquot2 y) in H4.
+  apply Rrepr_le in H4. exact H4.
+  apply H1, Ey.
 Qed.

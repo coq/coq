@@ -39,22 +39,20 @@ Proof.
     exact CRealLt_trans.
     intros. destruct (CRealLt_dec x z y H).
     left. exact c. right. exact c. }
-  assert (forall r r1 r2 : CReal, CRealLt r1 r2 <-> CRealLt (r + r1) (r + r2))
-    as plusLtCompat.
-  { split. intros. apply CReal_plus_lt_compat_l. exact H.
-    intros. apply CReal_plus_lt_reg_l in H. exact H. }
   apply (Build_ConstructiveReals
-           CReal CRealLt lin
+           CReal CRealLt lin CRealLtProp
+           CRealLtEpsilon CRealLtForget CRealLtDisjunctEpsilon
            (inject_Q 0) (inject_Q 1)
            CReal_plus CReal_opp CReal_mult
            CReal_isRing CReal_isRingExt CRealLt_0_1
-           plusLtCompat CReal_mult_lt_0_compat
+           CReal_plus_lt_compat_l CReal_plus_lt_reg_l
+           CReal_mult_lt_0_compat
            CReal_inv CReal_inv_l CReal_inv_0_lt_compat
            CRealArchimedean).
   - intros. destruct (Rcauchy_complete xn) as [l cv].
     intro n. apply (H (IQR (1#n))). apply IQR_pos. reflexivity.
     exists l. intros eps epsPos.
-    destruct (Rup_nat ((/eps) (or_intror epsPos))) as [n nmaj].
+    destruct (Rup_nat ((/eps) (inr epsPos))) as [n nmaj].
     specialize (cv (Pos.of_nat (S n))) as [p pmaj].
     exists p. intros. specialize (pmaj i H0). unfold absSmall in pmaj.
     apply (CReal_mult_lt_compat_l eps) in nmaj.
@@ -73,16 +71,16 @@ Proof.
       apply IPR_pos. rewrite CReal_inv_r, <- INR_IPR, Nat2Pos.id.
       2: discriminate. apply (CRealLt_trans _ (INR n * eps) _ nmaj).
       apply CReal_mult_lt_compat_r. exact epsPos. apply lt_INR, le_refl.
-  - exact CRealLt_lpo_dec.
   - exact sig_lub.
 Qed. (* Keep it opaque to possibly change the implementation later *)
 
 Definition R := CRcarrier CR.
 
 Definition Req := orderEq R (CRlt CR).
-Definition Rle (x y : R) := ~CRlt CR y x.
-Definition Rge (x y : R) := ~CRlt CR x y.
+Definition Rle (x y : R) := CRlt CR y x -> False.
+Definition Rge (x y : R) := CRlt CR x y -> False.
 Definition Rlt := CRlt CR.
+Definition RltProp := CRltProp CR.
 Definition Rgt (x y : R) := CRlt CR y x.
 Definition Rappart := orderAppart R (CRlt CR).
 
@@ -94,15 +92,25 @@ Infix "<=" := Rle : R_scope_constr.
 Infix ">=" := Rge : R_scope_constr.
 
 Notation "x <= y <= z" := (x <= y /\ y <= z) : R_scope_constr.
-Notation "x <= y < z"  := (x <= y /\ y <  z) : R_scope_constr.
-Notation "x < y < z"   := (x <  y /\ y <  z) : R_scope_constr.
-Notation "x < y <= z"  := (x <  y /\ y <= z) : R_scope_constr.
+Notation "x <= y < z"  := (prod (x <= y) (y < z)) : R_scope_constr.
+Notation "x < y < z"   := (prod (x < y) (y < z)) : R_scope_constr.
+Notation "x < y <= z"  := (prod (x < y) (y <= z)) : R_scope_constr.
+
+Lemma Rlt_epsilon : forall x y : R, RltProp x y -> x < y.
+Proof.
+  exact (CRltEpsilon CR).
+Qed.
+
+Lemma Rlt_forget : forall x y : R, x < y -> RltProp x y.
+Proof.
+  exact (CRltForget CR).
+Qed.
 
 Lemma Rle_refl : forall x : R, x <= x.
 Proof.
   intros. intro abs.
-  destruct (CRltLinear CR), a.
-  specialize (H x x abs). contradiction.
+  destruct (CRltLinear CR), p.
+  exact (f x x abs abs).
 Qed.
 Hint Immediate Rle_refl: rorders.
 
@@ -118,7 +126,7 @@ Qed.
 
 Lemma Req_trans : forall x y z : R, x == y -> y == z -> x == z.
 Proof.
-  intros. destruct H,H0. destruct (CRltLinear CR), a. split.
+  intros. destruct H,H0. destruct (CRltLinear CR), p. split.
   - intro abs. destruct (s _ y _ abs); contradiction.
   - intro abs. destruct (s _ y _ abs); contradiction.
 Qed.
@@ -129,17 +137,22 @@ Add Parametric Relation : R Req
     transitivity proved by Req_trans
       as Req_rel.
 
+Instance Req_relT : CRelationClasses.Equivalence Req.
+Proof.
+  split. exact Req_refl. exact Req_sym. exact Req_trans.
+Qed.
+
 Lemma linear_order_T : forall x y z : R,
-    x < z -> {x < y} + {y < z}.
+    x < z -> (x < y) + (y < z).
 Proof.
   intros. destruct (CRltLinear CR). apply s. exact H.
 Qed.
 
-Add Parametric Morphism : Rlt
-    with signature Req ==> Req ==> iff
-      as Rlt_morph.
+Instance Rlt_morph
+  : CMorphisms.Proper
+      (CMorphisms.respectful Req (CMorphisms.respectful Req CRelationClasses.iffT)) Rlt.
 Proof.
-  intros. destruct H, H0. split.
+  intros x y H x0 y0 H0. destruct H, H0. split.
   - intro. destruct (linear_order_T x y x0). assumption.
     contradiction. destruct (linear_order_T y y0 x0).
     assumption. assumption. contradiction.
@@ -148,22 +161,37 @@ Proof.
     assumption. assumption. contradiction.
 Qed.
 
-Add Parametric Morphism : Rgt
-    with signature Req ==> Req ==> iff
-      as Rgt_morph.
+Instance RltProp_morph
+  : Morphisms.Proper
+      (Morphisms.respectful Req (Morphisms.respectful Req iff)) RltProp.
 Proof.
-  intros. unfold Rgt. apply Rlt_morph; assumption.
+  intros x y H x0 y0 H0. destruct H, H0. split.
+  - intro. destruct (linear_order_T x y x0).
+    apply Rlt_epsilon. assumption.
+    contradiction. destruct (linear_order_T y y0 x0).
+    assumption. apply Rlt_forget. assumption. contradiction.
+  - intro. destruct (linear_order_T y x y0).
+    apply Rlt_epsilon. assumption.
+    contradiction. destruct (linear_order_T x x0 y0).
+    assumption. apply Rlt_forget. assumption. contradiction.
 Qed.
 
-Add Parametric Morphism : Rappart
-    with signature Req ==> Req ==> iff
-      as Rappart_morph.
+Instance Rgt_morph
+  : CMorphisms.Proper
+      (CMorphisms.respectful Req (CMorphisms.respectful Req CRelationClasses.iffT)) Rgt.
+Proof.
+  intros x y H x0 y0 H0. unfold Rgt. apply Rlt_morph; assumption.
+Qed.
+
+Instance Rappart_morph
+  : CMorphisms.Proper
+      (CMorphisms.respectful Req (CMorphisms.respectful Req CRelationClasses.iffT)) Rappart.
 Proof.
   split.
-  - intros. destruct H1. left. rewrite <- H0, <- H. exact H1.
-    right. rewrite <- H0, <- H. exact H1.
-  - intros. destruct H1. left. rewrite H0, H. exact H1.
-    right. rewrite H0, H. exact H1.
+  - intros. destruct H1. left. rewrite <- H0, <- H. exact c.
+    right. rewrite <- H0, <- H. exact c.
+  - intros. destruct H1. left. rewrite H0, H. exact c.
+    right. rewrite H0, H. exact c.
 Qed.
 
 Add Parametric Morphism : Rle
@@ -189,11 +217,17 @@ Definition Rplus := CRplus CR.
 Definition Rmult := CRmult CR.
 Definition Rinv := CRinv CR.
 Definition Ropp := CRopp CR.
-Definition Rminus := CRminus CR.
 
 Add Parametric Morphism : Rplus
     with signature Req ==> Req ==> Req
       as Rplus_morph.
+Proof.
+  apply CRisRingExt.
+Qed.
+
+Instance Rplus_morph_T
+  : CMorphisms.Proper
+      (CMorphisms.respectful Req (CMorphisms.respectful Req Req)) Rplus.
 Proof.
   apply CRisRingExt.
 Qed.
@@ -205,12 +239,36 @@ Proof.
   apply CRisRingExt.
 Qed.
 
+Instance Rmult_morph_T
+  : CMorphisms.Proper
+      (CMorphisms.respectful Req (CMorphisms.respectful Req Req)) Rmult.
+Proof.
+  apply CRisRingExt.
+Qed.
+
 Add Parametric Morphism : Ropp
     with signature Req ==> Req
       as Ropp_morph.
 Proof.
-  apply (Ropp_ext (CRisRingExt CR)).
+  apply CRisRingExt.
 Qed.
+
+Instance Ropp_morph_T
+  : CMorphisms.Proper
+      (CMorphisms.respectful Req Req) Ropp.
+Proof.
+  apply CRisRingExt.
+Qed.
+
+Infix "+" := Rplus : R_scope_constr.
+Notation "- x" := (Ropp x) : R_scope_constr.
+Definition Rminus (r1 r2:R) : R := r1 + - r2.
+Infix "-" := Rminus : R_scope_constr.
+Infix "*" := Rmult : R_scope_constr.
+Notation "/ x" := (CRinv CR x) (at level 35, right associativity) : R_scope_constr.
+
+Notation "0" := (CRzero CR) : R_scope_constr.
+Notation "1" := (CRone CR) : R_scope_constr.
 
 Add Parametric Morphism : Rminus
     with signature Req ==> Req ==> Req
@@ -219,14 +277,6 @@ Proof.
   intros. unfold Rminus, CRminus. rewrite H,H0. reflexivity.
 Qed.
 
-Infix "+" := Rplus : R_scope_constr.
-Notation "- x" := (Ropp x) : R_scope_constr.
-Infix "-" := Rminus : R_scope_constr.
-Infix "*" := Rmult : R_scope_constr.
-Notation "/ x" := (CRinv CR x) (at level 35, right associativity) : R_scope_constr.
-
-Notation "0" := (CRzero CR) : R_scope_constr.
-Notation "1" := (CRone CR) : R_scope_constr.
 
 (* Help Add Ring to find the correct equality *)
 Lemma RisRing : ring_theory 0 1
@@ -271,16 +321,16 @@ Proof. intros. ring. Qed.
 
 Definition Rlt_0_1 := CRzero_lt_one CR.
 
-Lemma Rlt_asym : forall x y :R, x < y -> ~(y < x).
+Lemma Rlt_asym : forall x y :R, x < y -> y < x -> False.
 Proof.
-  intros. intro abs. destruct (CRltLinear CR), a.
-  apply (H0 x y); assumption.
+  intros. destruct (CRltLinear CR), p.
+  apply (f x y); assumption.
 Qed.
 
 Lemma Rlt_trans : forall x y z : R, x < y -> y < z -> x < z.
 Proof.
-  intros. destruct (CRltLinear CR), a.
-  apply (H2 x y); assumption.
+  intros. destruct (CRltLinear CR), p.
+  apply (c x y); assumption.
 Qed.
 
 Lemma Rplus_lt_compat_l : forall x y z : R,
@@ -297,13 +347,13 @@ Qed.
 
 Lemma Rplus_lt_reg_l : forall r r1 r2, r + r1 < r + r2 -> r1 < r2.
 Proof.
-  intros. apply CRplus_lt_compat_l in H. exact H.
+  intros. apply CRplus_lt_reg_l in H. exact H.
 Qed.
 
 Lemma Rmult_lt_compat_l : forall x y z : R,
     0 < x -> y < z -> x * y < x * z.
 Proof.
-  intros. rewrite (CRplus_lt_compat_l CR (- (x * y))).
+  intros. apply (CRplus_lt_reg_l CR (- (x * y))).
   rewrite Rplus_comm. pose proof Rplus_opp_r.
   rewrite H1.
   rewrite Rmult_comm, Ropp_mult_distr_l, Rmult_comm.
@@ -365,13 +415,13 @@ Hint Immediate Rge_refl: rorders.
 
 (** Irreflexivity of the strict order *)
 
-Lemma Rlt_irrefl : forall r, ~ r < r.
+Lemma Rlt_irrefl : forall r, r < r -> False.
 Proof.
   intros r H; eapply Rlt_asym; eauto.
 Qed.
 Hint Resolve Rlt_irrefl: creal.
 
-Lemma Rgt_irrefl : forall r, ~ r > r.
+Lemma Rgt_irrefl : forall r, r > r -> False.
 Proof. exact Rlt_irrefl. Qed.
 
 Lemma Rlt_not_eq : forall r1 r2, r1 < r2 -> r1 <> r2.
@@ -385,11 +435,11 @@ Proof.
 Qed.
 
 (**********)
-Lemma Rlt_dichotomy_converse : forall r1 r2, r1 < r2 \/ r1 > r2 -> r1 <> r2.
+Lemma Rlt_dichotomy_converse : forall r1 r2, ((r1 < r2) + (r1 > r2)) -> r1 <> r2.
 Proof.
   intros. destruct H.
-  - intro abs. subst r2. exact (Rlt_irrefl r1 H).
-  - intro abs. subst r2. exact (Rlt_irrefl r1 H).
+  - intro abs. subst r2. exact (Rlt_irrefl r1 r).
+  - intro abs. subst r2. exact (Rlt_irrefl r1 r).
 Qed.
 Hint Resolve Rlt_dichotomy_converse: creal.
 
@@ -447,22 +497,22 @@ Hint Immediate Rgt_lt: rorders.
 
 (**********)
 
-Lemma Rnot_lt_le : forall r1 r2, ~ r1 < r2 -> r2 <= r1.
+Lemma Rnot_lt_le : forall r1 r2, (r1 < r2 -> False) -> r2 <= r1.
+Proof.
+  intros. exact H.
+Qed.
+
+Lemma Rnot_gt_le : forall r1 r2, (r1 > r2 -> False) -> r1 <= r2.
 Proof.
   intros. intro abs. contradiction.
 Qed.
 
-Lemma Rnot_gt_le : forall r1 r2, ~ r1 > r2 -> r1 <= r2.
+Lemma Rnot_gt_ge : forall r1 r2, (r1 > r2 -> False) -> r2 >= r1.
 Proof.
   intros. intro abs. contradiction.
 Qed.
 
-Lemma Rnot_gt_ge : forall r1 r2, ~ r1 > r2 -> r2 >= r1.
-Proof.
-  intros. intro abs. contradiction.
-Qed.
-
-Lemma Rnot_lt_ge : forall r1 r2, ~ r1 < r2 -> r1 >= r2.
+Lemma Rnot_lt_ge : forall r1 r2, (r1 < r2 -> False) -> r1 >= r2.
 Proof.
   intros. intro abs. contradiction.
 Qed.
@@ -485,19 +535,19 @@ Hint Immediate Rlt_not_ge: creal.
 Lemma Rgt_not_ge : forall r1 r2, r2 > r1 -> ~ r1 >= r2.
 Proof. exact Rlt_not_ge. Qed.
 
-Lemma Rle_not_lt : forall r1 r2, r2 <= r1 -> ~ r1 < r2.
+Lemma Rle_not_lt : forall r1 r2, r2 <= r1 -> r1 < r2 -> False.
 Proof.
   intros r1 r2. generalize (Rlt_asym r1 r2) (Rlt_dichotomy_converse r1 r2).
   unfold CRealLe; intuition.
 Qed.
 
-Lemma Rge_not_lt : forall r1 r2, r1 >= r2 -> ~ r1 < r2.
-Proof. intros; apply Rle_not_lt; auto with creal. Qed.
+Lemma Rge_not_lt : forall r1 r2, r1 >= r2 -> r1 < r2 -> False.
+Proof. intros; apply (Rle_not_lt r1 r2); auto with creal. Qed.
 
-Lemma Rle_not_gt : forall r1 r2, r1 <= r2 -> ~ r1 > r2.
+Lemma Rle_not_gt : forall r1 r2, r1 <= r2 -> r1 > r2 -> False.
 Proof. do 2 intro; apply Rle_not_lt. Qed.
 
-Lemma Rge_not_gt : forall r1 r2, r2 >= r1 -> ~ r1 > r2.
+Lemma Rge_not_gt : forall r1 r2, r2 >= r1 -> r1 > r2 -> False.
 Proof. do 2 intro; apply Rge_not_lt. Qed.
 
 (**********)
@@ -529,7 +579,7 @@ Hint Immediate Req_ge_sym: creal.
 
 (** Remark: [Rlt_asym] is an axiom *)
 
-Lemma Rgt_asym : forall r1 r2, r1 > r2 -> ~ r2 > r1.
+Lemma Rgt_asym : forall r1 r2, r1 > r2 -> r2 > r1 -> False.
 Proof. do 2 intro; apply Rlt_asym. Qed.
 
 
@@ -755,17 +805,17 @@ Qed.
 
 (**********)
 Lemma Rmult_integral_contrapositive :
-  forall r1 r2, r1 # 0 /\ r2 # 0 -> (r1 * r2) # 0.
+  forall r1 r2, (prod (r1 # 0) (r2 # 0)) -> (r1 * r2) # 0.
 Proof.
   assert (forall r, 0 > r -> 0 < - r).
   { intros. rewrite <- (Rplus_opp_l r), <- (Rplus_0_r (-r)), Rplus_assoc.
     apply Rplus_lt_compat_l. rewrite Rplus_0_l. apply H. }
-  intros. destruct H0, H0, H1.
+  intros. destruct H0, r, r0.
   - right. setoid_replace (r1*r2) with (-r1 * -r2). 2: ring.
     rewrite <- (Rmult_0_r (-r1)). apply Rmult_lt_compat_l; apply H; assumption.
   - left. rewrite <- (Rmult_0_r r2).
-    rewrite Rmult_comm. apply (Rmult_lt_compat_l). apply H1. apply H0.
-  - left. rewrite <- (Rmult_0_r r1). apply (Rmult_lt_compat_l). apply H0. apply H1.
+    rewrite Rmult_comm. apply (Rmult_lt_compat_l). apply c0. apply c.
+  - left. rewrite <- (Rmult_0_r r1). apply (Rmult_lt_compat_l). apply c. apply c0.
   - right. rewrite <- (Rmult_0_r r1). apply Rmult_lt_compat_l; assumption.
 Qed.
 Hint Resolve Rmult_integral_contrapositive: creal.
@@ -870,13 +920,13 @@ Qed.
 
 Lemma Rminus_0_r : forall r, r - 0 == r.
 Proof.
-  intro; ring.
+  intro r. unfold Rminus. ring.
 Qed.
 Hint Resolve Rminus_0_r: creal.
 
 Lemma Rminus_0_l : forall r, 0 - r == - r.
 Proof.
-  intro; ring.
+  intro r. unfold Rminus. ring.
 Qed.
 Hint Resolve Rminus_0_l: creal.
 
@@ -895,7 +945,7 @@ Qed.
 (**********)
 Lemma Rminus_diag_eq : forall r1 r2, r1 == r2 -> r1 - r2 == 0.
 Proof.
-  intros; rewrite H; ring.
+  intros; rewrite H; unfold Rminus; ring.
 Qed.
 Hint Resolve Rminus_diag_eq: creal.
 
@@ -909,8 +959,8 @@ Hint Immediate Rminus_diag_uniq: creal.
 
 Lemma Rminus_diag_uniq_sym : forall r1 r2, r2 - r1 == 0 -> r1 == r2.
 Proof.
-  intros; generalize (Rminus_diag_uniq r2 r1 H); clear H; intro H; rewrite H;
-    ring.
+  intros; generalize (Rminus_diag_uniq r2 r1 H); clear H;
+    intro H; rewrite H; reflexivity.
 Qed.
 Hint Immediate Rminus_diag_uniq_sym: creal.
 
@@ -1338,7 +1388,7 @@ Qed.
 
 (** *** Cancellation *)
 
-Lemma Rinv_0_lt_compat : forall r (rpos : 0 < r), 0 < (/ r) (or_intror rpos).
+Lemma Rinv_0_lt_compat : forall r (rpos : 0 < r), 0 < (/ r) (inr rpos).
 Proof.
   intros. apply CRinv_0_lt_compat. exact rpos.
 Qed.
@@ -1346,7 +1396,7 @@ Qed.
 Lemma Rmult_lt_reg_l : forall r r1 r2, 0 < r -> r * r1 < r * r2 -> r1 < r2.
 Proof.
   intros z x y H H0.
-  apply (Rmult_lt_compat_l ((/z) (or_intror H))) in H0.
+  apply (Rmult_lt_compat_l ((/z) (inr H))) in H0.
   repeat rewrite <- Rmult_assoc in H0. rewrite Rinv_l in H0.
   repeat rewrite Rmult_1_l in H0. apply H0.
   apply Rinv_0_lt_compat.
@@ -1407,13 +1457,17 @@ Qed.
 Lemma Rle_minus : forall r1 r2, r1 <= r2 -> r1 - r2 <= 0.
 Proof.
   intros. intro abs. apply (Rplus_lt_compat_l r2) in abs.
-  ring_simplify in abs. contradiction.
+  unfold Rminus in abs.
+  rewrite Rplus_0_r, Rplus_comm, Rplus_assoc, Rplus_opp_l, Rplus_0_r in abs.
+  contradiction.
 Qed.
 
 Lemma Rge_minus : forall r1 r2, r1 >= r2 -> r1 - r2 >= 0.
 Proof.
   intros. intro abs. apply (Rplus_lt_compat_l r2) in abs.
-  ring_simplify in abs. contradiction.
+  unfold Rminus in abs.
+  rewrite Rplus_0_r, Rplus_comm, Rplus_assoc, Rplus_opp_l, Rplus_0_r in abs.
+  contradiction.
 Qed.
 
 (**********)
@@ -1490,9 +1544,9 @@ Qed.
 Lemma Rinv_neq_0_compat : forall r (rnz : r # 0), ((/ r) rnz) # 0.
 Proof.
   intros. destruct rnz. left.
-  assert (0 < (/-r) (or_intror (Ropp_0_gt_lt_contravar _ c))).
+  assert (0 < (/-r) (inr (Ropp_0_gt_lt_contravar _ c))).
   { apply Rinv_0_lt_compat. }
-  rewrite <- (Ropp_inv_permute _ (or_introl c)) in H.
+  rewrite <- (Ropp_inv_permute _ (inl c)) in H.
   apply Ropp_lt_cancel. rewrite Ropp_0. exact H.
   right. apply Rinv_0_lt_compat.
 Qed.
@@ -1565,9 +1619,9 @@ Qed.
 (** ** Order and inverse                                 *)
 (*********************************************************)
 
-Lemma Rinv_lt_0_compat : forall r (rneg : r < 0), (/ r) (or_introl rneg) < 0.
+Lemma Rinv_lt_0_compat : forall r (rneg : r < 0), (/ r) (inl rneg) < 0.
 Proof.
-  intros. assert (0 < (/-r) (or_intror (Ropp_0_gt_lt_contravar r rneg))).
+  intros. assert (0 < (/-r) (inr (Ropp_0_gt_lt_contravar r rneg))).
   { apply Rinv_0_lt_compat. }
   rewrite <- Ropp_inv_permute in H. rewrite <- Ropp_0 in H.
   apply Ropp_lt_cancel in H. apply H.
@@ -1617,12 +1671,14 @@ Qed.
 Lemma lt_INR : forall n m:nat, (n < m)%nat -> INR n < INR m.
 Proof.
   induction m.
-  - intros. inversion H.
+  - intros. exfalso. inversion H.
   - intros. unfold lt in H. apply le_S_n in H. destruct m.
-    inversion H. apply Rlt_0_1. apply Nat.le_succ_r in H. destruct H.
+    assert (n = 0)%nat.
+    { inversion H. reflexivity. }
+    subst n. apply Rlt_0_1. apply le_succ_r_T in H. destruct H.
     rewrite S_INR. apply (Rlt_trans _ (INR (S m) + 0)).
     rewrite Rplus_comm, Rplus_0_l. apply IHm.
-    apply le_n_S. exact H.
+    apply le_n_S. exact l.
     apply Rplus_lt_compat_l. exact Rlt_0_1.
     subst n. rewrite (S_INR (S m)). rewrite <- (Rplus_0_l).
     rewrite (Rplus_comm 0), Rplus_assoc.
@@ -1655,7 +1711,7 @@ Proof.
   intros. rewrite <- minus_n_O. simpl.
   unfold Rminus, CRminus. rewrite Ropp_0, Rplus_0_r. reflexivity.
   intros; repeat rewrite S_INR; simpl.
-  unfold CReal_minus. rewrite H0. ring. exact le.
+  rewrite H0. unfold Rminus. ring. exact le.
 Qed.
 
 (*********)
@@ -1702,8 +1758,7 @@ Proof. now induction n as [|n IHn];[ | simpl; rewrite mult_INR, IHn]. Qed.
 (*********)
 Lemma lt_0_INR : forall n:nat, (0 < n)%nat -> 0 < INR n.
 Proof.
-  simple induction 1; intros. apply Rlt_0_1.
-  rewrite S_INR. apply (Rlt_trans _ (INR m)). apply H1. apply Rlt_plus_1.
+  intros. apply (lt_INR 0). exact H.
 Qed.
 Hint Resolve lt_0_INR: creal.
 
@@ -1777,9 +1832,10 @@ Hint Resolve not_0_INR: creal.
 
 Lemma not_INR : forall n m:nat, n <> m -> INR n # INR m.
 Proof.
-  intros n m H; case (le_or_lt n m); intros H1.
+  intros n m H; case (le_lt_dec n m); intros H1.
+  left. apply lt_INR.
   case (le_lt_or_eq _ _ H1); intros H2.
-  left. apply lt_INR. exact H2. contradiction.
+  exact H2. contradiction.
   right. apply lt_INR. exact H1.
 Qed.
 Hint Resolve not_INR: creal.
@@ -1853,7 +1909,7 @@ Proof.
   rewrite <- 3!INR_IPR, Pos2Nat.inj_sub.
   rewrite minus_INR.
   2: (now apply lt_le_weak, Pos2Nat.inj_lt).
-  ring. trivial.
+  unfold Rminus. ring. trivial.
 Qed.
 
 Lemma plus_IPR : forall n m:positive, IPR (n + m) == IPR n + IPR m.
@@ -1998,10 +2054,9 @@ Qed.
 (**********)
 Lemma not_0_IZR : forall n:Z, n <> 0%Z -> IZR n # 0.
 Proof.
-  intros. destruct (Z.lt_trichotomy n 0).
-  left. apply (IZR_lt n 0). exact H0.
-  destruct H0. contradiction.
-  right. apply (IZR_lt 0 n). exact H0.
+  intros. destruct n. exfalso. apply H. reflexivity.
+  right. apply (IZR_lt 0). reflexivity.
+  left. apply (IZR_lt _ 0). reflexivity.
 Qed.
 
 (*********)
@@ -2033,22 +2088,27 @@ Qed.
 (**********)
 Lemma IZR_ge : forall n m:Z, (n >= m)%Z -> IZR n >= IZR m.
 Proof.
-  intros m n H; apply Rnot_lt_ge; red; intro.
-  generalize (lt_IZR m n H0); intro; omega.
+  intros m n H; apply Rnot_lt_ge. intro abs.
+  apply lt_IZR in abs. omega.
 Qed.
 
 Lemma IZR_le : forall n m:Z, (n <= m)%Z -> IZR n <= IZR m.
 Proof.
-  intros m n H; apply Rnot_gt_le; red; intro.
-  unfold CRealGt in H0; generalize (lt_IZR n m H0); intro; omega.
+  intros m n H; apply Rnot_lt_ge. intro abs.
+  apply lt_IZR in abs. omega.
 Qed.
 
 Lemma IZR_neq : forall z1 z2:Z, z1 <> z2 -> IZR z1 # IZR z2.
 Proof.
-  intros. destruct (Z.lt_trichotomy z1 z2).
-  left. apply IZR_lt. exact H0.
-  destruct H0. contradiction.
-  right. apply IZR_lt. exact H0.
+  intros. destruct (not_0_IZR (z1-z2)).
+  intro abs. apply H. rewrite <- (Z.add_cancel_r _ _ (-z2)).
+  ring_simplify. exact abs.
+  left. apply IZR_lt. apply (lt_IZR _ 0) in c.
+  rewrite (Z.add_lt_mono_r _ _ (-z2)).
+  ring_simplify. exact c.
+  right. apply IZR_lt. apply (lt_IZR 0) in c.
+  rewrite (Z.add_lt_mono_l _ _ (-z2)).
+  ring_simplify. rewrite Z.add_comm. exact c.
 Qed.
 
 Hint Extern 0 (IZR _ <= IZR _) => apply IZR_le, Zle_bool_imp_le, eq_refl : creal.
@@ -2072,7 +2132,7 @@ Proof.
   intros r z x [H1 H2] [H3 H4].
   cut ((z - x)%Z = 0%Z); auto with zarith.
   apply one_IZR_lt1.
-  rewrite <- Z_R_minus; split.
+  split; rewrite <- Z_R_minus.
   setoid_replace (-(1)) with (r - (r + 1)).
   unfold CReal_minus; apply Rplus_lt_le_compat; auto with creal.
   ring.
@@ -2095,7 +2155,7 @@ Lemma tech_single_z_r_R1 :
   forall r (n:Z),
     r < IZR n ->
     IZR n <= r + 1 ->
-    (exists s : Z, s <> n /\ r < IZR s /\ IZR s <= r + 1) -> False.
+    { s : Z & prod (s <> n) (r < IZR s <= r + 1) } -> False.
 Proof.
   intros r z H1 H2 [s [H3 [H4 H5]]].
   apply H3; apply single_z_r_R1 with r; trivial.
@@ -2123,7 +2183,7 @@ Proof.
 Qed.
 
 Definition Rup_nat (x : R)
-  : { n : nat | x < INR n }.
+  : { n : nat & x < INR n }.
 Proof.
   intros. destruct (CRarchimedean CR x) as [p maj].
   destruct p.
@@ -2142,36 +2202,36 @@ Qed.
 
 Fixpoint Rarchimedean_ind (x:R) (n : Z) (p:nat) { struct p }
   : (x < IZR n < x + 2 + (INR p))
-    -> { n:Z | x < IZR n /\ IZR n < x+2 }.
+    -> { n:Z & x < IZR n < x+2 }.
 Proof.
   destruct p.
-  - exists n. rewrite Rplus_0_r in H. exact H.
+  - exists n. destruct H. split. exact r. rewrite Rplus_0_r in r0; exact r0.
   - intros. destruct (linear_order_T (x+1+INR p) (IZR n) (x+2+INR p)).
     do 2 rewrite Rplus_assoc. apply Rplus_lt_compat_l, Rplus_lt_compat_r.
     rewrite <- (Rplus_0_r 1). apply Rplus_lt_compat_l. apply Rlt_0_1.
     + apply (Rarchimedean_ind x (n-1)%Z p). unfold Zminus.
-      rewrite plus_IZR, opp_IZR.
+      split; rewrite plus_IZR, opp_IZR.
       setoid_replace (IZR 1) with 1. 2: reflexivity.
-      split.
       apply (Rplus_lt_reg_l 1). ring_simplify.
       apply (Rle_lt_trans _ (x + 1 + INR p)). 2: exact r.
       rewrite Rplus_assoc. apply Rplus_le_compat_l.
       rewrite <- (Rplus_0_r 1), Rplus_assoc. apply Rplus_le_compat_l.
       rewrite Rplus_0_l. apply (le_INR 0), le_0_n.
+      setoid_replace (IZR 1) with 1. 2: reflexivity.
       apply (Rplus_lt_reg_l 1). ring_simplify.
       setoid_replace (x + 2 + INR p + 1) with (x + 2 + INR (S p)).
       apply H. rewrite S_INR. ring.
     + apply (Rarchimedean_ind x n p). split. apply H. exact r.
 Qed.
 
-Lemma Rarchimedean (x:R) : { n : Z | x < IZR n < x + 2 }.
+Lemma Rarchimedean (x:R) : { n : Z & x < IZR n < x + 2 }.
 Proof.
   destruct (Rup_nat x) as [n nmaj].
   destruct (Rup_nat (INR n + - (x + 2))) as [p pmaj].
   apply (Rplus_lt_compat_r (x+2)) in pmaj.
   rewrite Rplus_assoc, Rplus_opp_l, Rplus_0_r in pmaj.
   apply (Rarchimedean_ind x (Z.of_nat n) p).
-  rewrite <- INR_IZR_INZ. split. exact nmaj.
+  split; rewrite <- INR_IZR_INZ. exact nmaj.
   rewrite Rplus_comm in pmaj. exact pmaj.
 Qed.
 
@@ -2182,7 +2242,7 @@ Proof.
   intros. intro abs.
   assert (0 < -(a*b)) as epsPos.
   { rewrite <- Ropp_0. apply Ropp_gt_lt_contravar. apply abs. }
-  pose proof (Rup_nat (b * (/ (-(a*b))) (or_intror (Ropp_0_gt_lt_contravar _ abs))))
+  pose proof (Rup_nat (b * (/ (-(a*b))) (inr (Ropp_0_gt_lt_contravar _ abs))))
     as [n maj].
   destruct n as [|n].
   - simpl in maj. apply (Rmult_lt_compat_r (-(a*b))) in maj.
@@ -2193,23 +2253,23 @@ Proof.
   - (* n > 0 *)
     assert (0 < INR (S n)) as nPos.
     { apply (lt_INR 0). apply le_n_S, le_0_n. }
-    assert (b * (/ (INR (S n))) (or_intror nPos) < -(a*b)).
+    assert (b * (/ (INR (S n))) (inr nPos) < -(a*b)).
     { apply (Rmult_lt_reg_r (INR (S n))). apply nPos.
       rewrite Rmult_assoc. rewrite Rinv_l.
       rewrite Rmult_1_r. apply (Rmult_lt_compat_r (-(a*b))) in maj.
       rewrite Rmult_assoc in maj. rewrite Rinv_l in maj.
       rewrite Rmult_1_r in maj. rewrite Rmult_comm.
       apply maj. exact epsPos. }
-    pose proof (Rmult_le_compat_l_half (a + (/ (INR (S n))) (or_intror nPos))
+    pose proof (Rmult_le_compat_l_half (a + (/ (INR (S n))) (inr nPos))
                                        0 b).
-    assert (a + (/ (INR (S n))) (or_intror nPos) > 0 + 0).
+    assert (a + (/ (INR (S n))) (inr nPos) > 0 + 0).
     apply Rplus_le_lt_compat. apply H. apply Rinv_0_lt_compat.
     rewrite Rplus_0_l in H3. specialize (H2 H3 H0).
     clear H3. rewrite Rmult_0_r in H2.
     apply H2. clear H2. rewrite Rmult_plus_distr_r.
     apply (Rplus_lt_compat_l (a*b)) in H1.
     rewrite Rplus_opp_r in H1.
-    rewrite (Rmult_comm ((/ (INR (S n))) (or_intror nPos))).
+    rewrite (Rmult_comm ((/ (INR (S n))) (inr nPos))).
     apply H1.
 Qed.
 
@@ -2237,8 +2297,8 @@ Lemma Rmult_le_0_lt_compat :
     0 <= r1 -> 0 <= r3 -> r1 < r2 -> r3 < r4 -> r1 * r3 < r2 * r4.
 Proof.
   intros. apply (Rle_lt_trans _ (r2 * r3)).
-  apply Rmult_le_compat_r. apply H0. apply Rlt_asym.
-  apply H1. apply Rmult_lt_compat_l. exact (Rle_lt_trans 0 r1 r2 H H1).
+  apply Rmult_le_compat_r. apply H0. intro abs. apply (Rlt_asym r1 r2 H1).
+  apply abs. apply Rmult_lt_compat_l. exact (Rle_lt_trans 0 r1 r2 H H1).
   exact H2.
 Qed.
 
@@ -2298,7 +2358,7 @@ Qed.
 
 Definition IQR (q:Q) : R :=
   match q with
-  | Qmake a b => IZR a * (/ (IPR b)) (or_intror (IPR_pos b))
+  | Qmake a b => IZR a * (/ (IPR b)) (inr (IPR_pos b))
   end.
 Arguments IQR q%Q : simpl never.
 
@@ -2306,19 +2366,19 @@ Lemma plus_IQR : forall n m:Q, IQR (n + m) == IQR n + IQR m.
 Proof.
   intros. destruct n,m; unfold Qplus,IQR; simpl.
   rewrite plus_IZR. repeat rewrite mult_IZR.
-  setoid_replace ((/ IPR (Qden * Qden0)) (or_intror (IPR_pos (Qden * Qden0))))
-    with ((/ IPR Qden) (or_intror (IPR_pos Qden))
-          * (/ IPR Qden0) (or_intror (IPR_pos Qden0))).
+  setoid_replace ((/ IPR (Qden * Qden0)) (inr (IPR_pos (Qden * Qden0))))
+    with ((/ IPR Qden) (inr (IPR_pos Qden))
+          * (/ IPR Qden0) (inr (IPR_pos Qden0))).
   rewrite Rmult_plus_distr_r.
   repeat rewrite Rmult_assoc. rewrite <- (Rmult_assoc (IZR (Z.pos Qden))).
   rewrite Rinv_r. rewrite Rmult_1_l.
-  rewrite (Rmult_comm ((/IPR Qden) (or_intror (IPR_pos Qden)))).
+  rewrite (Rmult_comm ((/IPR Qden) (inr (IPR_pos Qden)))).
   rewrite <- (Rmult_assoc (IZR (Z.pos Qden0))).
   rewrite Rinv_r. rewrite Rmult_1_l. reflexivity. unfold IZR.
   right. apply IPR_pos.
   right. apply IPR_pos.
   rewrite <- (Rinv_mult_distr
-                _ _ _ _ (or_intror (Rmult_lt_0_compat _ _ (IPR_pos _) (IPR_pos _)))).
+                _ _ _ _ (inr (Rmult_lt_0_compat _ _ (IPR_pos _) (IPR_pos _)))).
   apply Rinv_eq_compat. apply mult_IPR.
 Qed.
 
@@ -2371,7 +2431,7 @@ Proof.
   apply Rmult_le_compat_l.
   apply (IZR_le 0 a). unfold Qle in H; simpl in H.
   rewrite Z.mul_1_r in H. apply H.
-  apply Rlt_asym. apply Rinv_0_lt_compat.
+  unfold Rle. apply Rlt_asym. apply Rinv_0_lt_compat.
 Qed.
 
 Lemma IQR_le : forall n m:Q, Qle n m -> IQR n <= IQR m.
@@ -2401,10 +2461,29 @@ Proof.
   right. apply IPR_pos.
 Qed.
 
+Instance IQR_morph_T
+  : CMorphisms.Proper
+      (CMorphisms.respectful Qeq Req) IQR.
+Proof.
+  intros x y H. destruct x,y; unfold IQR.
+  unfold Qeq in H; simpl in H.
+  apply (Rmult_eq_reg_r (IZR (Z.pos Qden))).
+  2: right; apply IPR_pos.
+  rewrite Rmult_assoc, Rinv_l, Rmult_1_r.
+  rewrite (Rmult_comm (IZR Qnum0)).
+  apply (Rmult_eq_reg_l (IZR (Z.pos Qden0))).
+  2: right; apply IPR_pos.
+  rewrite <- Rmult_assoc, <- Rmult_assoc, Rinv_r.
+  rewrite Rmult_1_l.
+  repeat rewrite <- mult_IZR.
+  rewrite <- H. rewrite Zmult_comm. reflexivity.
+  right; apply IPR_pos.
+Qed.
+
 Fixpoint Rfloor_pos (a : R) (n : nat) { struct n }
   : 0 < a
     -> a < INR n
-    -> { p : nat | INR p < a < INR p + 2 }.
+    -> { p : nat & INR p < a < INR p + 2 }.
 Proof.
   (* Decreasing loop on n, until it is the first integer above a. *)
   intros H H0. destruct n.
@@ -2425,22 +2504,23 @@ Proof.
 Qed.
 
 Definition Rfloor (a : R)
-  : { p : Z | IZR p < a < IZR p + 2 }.
+  : { p : Z & IZR p < a < IZR p + 2 }.
 Proof.
   destruct (linear_order_T 0 a 1 Rlt_0_1).
   - destruct (Rup_nat a). destruct (Rfloor_pos a x r r0).
-    exists (Z.of_nat x0). rewrite <- INR_IZR_INZ. apply a0.
+    exists (Z.of_nat x0). split; rewrite <- INR_IZR_INZ; apply p.
   - apply (Rplus_lt_compat_l (-a)) in r.
     rewrite Rplus_comm, Rplus_opp_r, Rplus_comm in r.
     destruct (Rup_nat (1-a)).
     destruct (Rfloor_pos (1-a) x r r0).
-    exists (-(Z.of_nat x0 + 1))%Z. rewrite opp_IZR.
-    rewrite plus_IZR. simpl. split.
+    exists (-(Z.of_nat x0 + 1))%Z. split; rewrite opp_IZR, plus_IZR.
     + rewrite <- (Ropp_involutive a). apply Ropp_gt_lt_contravar.
-      destruct a0 as [_ a0]. apply (Rplus_lt_reg_r 1).
+      destruct p as [_ a0]. apply (Rplus_lt_reg_r 1).
       rewrite Rplus_comm, Rplus_assoc. rewrite <- INR_IZR_INZ. apply a0.
-    + destruct a0 as [a0 _]. apply (Rplus_lt_compat_l a) in a0.
-      ring_simplify in a0. rewrite <- INR_IZR_INZ.
+    + destruct p as [a0 _]. apply (Rplus_lt_compat_l a) in a0.
+      unfold Rminus in a0.
+      rewrite <- (Rplus_comm (1+-a)), Rplus_assoc, Rplus_opp_l, Rplus_0_r in a0.
+      rewrite <- INR_IZR_INZ.
       apply (Rplus_lt_reg_r (INR x0)). unfold IZR, IPR, IPR_2.
       ring_simplify. exact a0.
 Qed.
@@ -2451,13 +2531,13 @@ Qed.
    and they are measured by exact rational numbers. *)
 Definition RQ_dense_pos (a b : R)
   : 0 < b
-    -> a < b -> { q : Q | a < IQR q < b }.
+    -> a < b -> { q : Q & a < IQR q < b }.
 Proof.
   intros H H0.
   assert (0 < b - a) as epsPos.
   { apply (Rplus_lt_compat_r (-a)) in H0.
     rewrite Rplus_opp_r in H0. apply H0. }
-  pose proof (Rup_nat ((/(b-a)) (or_intror epsPos)))
+  pose proof (Rup_nat ((/(b-a)) (inr epsPos)))
     as [n maj].
   destruct n as [|k].
   - exfalso.
@@ -2502,7 +2582,7 @@ Qed.
 
 Definition RQ_dense (a b : R)
   : a < b
-    -> { q : Q | a < IQR q < b }.
+    -> { q : Q & a < IQR q < b }.
 Proof.
   intros H. destruct (linear_order_T a 0 b). apply H.
   - destruct (RQ_dense_pos (-b) (-a)) as [q maj].
@@ -2530,12 +2610,75 @@ Proof.
 Qed.
 
 Definition RQ_limit : forall (x : R) (n:nat),
-    { q:Q | x < IQR q < x + IQR (1 # Pos.of_nat n) }.
+    { q:Q & x < IQR q < x + IQR (1 # Pos.of_nat n) }.
 Proof.
   intros x n. apply (RQ_dense x (x + IQR (1 # Pos.of_nat n))).
   rewrite <- (Rplus_0_r x). rewrite Rplus_assoc.
   apply Rplus_lt_compat_l. rewrite Rplus_0_l. apply IQR_pos.
   reflexivity.
+Qed.
+
+(* Rlt is decided by the LPO in Type,
+   which is a non-constructive oracle. *)
+Lemma Rlt_lpo_dec : forall x y : R,
+    (forall (P : nat -> Prop), (forall n, {P n} + {~P n})
+                    -> {n | ~P n} + {forall n, P n})
+    -> (x < y) + (x < y -> False).
+Proof.
+  intros x y lpo.
+  pose (fun n => let (l,_) := RQ_limit x n in l) as xn.
+  pose (fun n => let (l,_) := RQ_limit y n in l) as yn.
+  destruct (lpo (fun n:nat => Qle (yn n - xn n) (1 # Pos.of_nat n))).
+  - intro n. destruct (Qlt_le_dec (1 # Pos.of_nat n) (yn n - xn n)).
+    right. apply Qlt_not_le. exact q. left. exact q.
+  - left. destruct s as [n nmaj]. unfold xn,yn in nmaj.
+    destruct (RQ_limit x n), (RQ_limit y n); unfold proj1_sig in nmaj.
+    apply Qnot_le_lt in nmaj.
+    apply (Rlt_le_trans x (IQR x0)). apply p.
+    apply (Rle_trans _ (IQR (x1 - (1# Pos.of_nat n)))).
+    apply IQR_le. apply (Qplus_le_l _ _ ((1#Pos.of_nat n) - x0)).
+    ring_simplify. ring_simplify in nmaj. rewrite Qplus_comm.
+    apply Qlt_le_weak. exact nmaj.
+    unfold Qminus. rewrite plus_IQR,opp_IQR.
+    apply (Rplus_le_reg_r (IQR (1#Pos.of_nat n))).
+    ring_simplify. unfold Rle. apply Rlt_asym. rewrite Rplus_comm. apply p0.
+  - right. intro abs.
+    pose ((y - x) * IQR (1#2)) as eps.
+    assert (0 < eps) as epsPos.
+    { apply Rmult_lt_0_compat. apply Rgt_minus. exact abs.
+      apply IQR_pos. reflexivity. }
+    destruct (Rup_nat ((/eps) (inr epsPos))) as [n nmaj].
+    specialize (q (S n)). unfold xn, yn in q.
+    destruct (RQ_limit x (S n)) as [a amaj], (RQ_limit y (S n)) as [b bmaj];
+      unfold proj1_sig in q.
+    assert (IQR (1 # Pos.of_nat (S n)) < eps).
+    { unfold IQR. rewrite Rmult_1_l.
+      apply (Rmult_lt_reg_l (IPR (Pos.of_nat (S n)))). apply IPR_pos.
+      rewrite Rinv_r, <- INR_IPR, Nat2Pos.id. 2: discriminate.
+      apply (Rlt_trans _ _ (INR (S n))) in nmaj.
+      apply (Rmult_lt_compat_l eps) in nmaj.
+      rewrite Rinv_r, Rmult_comm in nmaj. exact nmaj.
+      right. exact epsPos. exact epsPos. apply lt_INR. apply le_n_S, le_refl.
+      right. apply IPR_pos. }
+    unfold eps in H. apply (Rlt_asym y (IQR b)).
+    + apply bmaj.
+    + apply (Rlt_le_trans _ (IQR a + (y - x) * IQR (1 # 2))).
+      apply IQR_le in q.
+      apply (Rle_lt_trans _ _ _ q) in H.
+      apply (Rplus_lt_reg_l (-IQR a)).
+      rewrite <- Rplus_assoc, Rplus_opp_l, Rplus_0_l, Rplus_comm,
+      <- opp_IQR, <- plus_IQR. exact H.
+      apply (Rplus_lt_compat_l x) in H.
+      destruct amaj. apply (Rlt_trans _ _ _ r0) in H.
+      apply (Rplus_lt_compat_r ((y - x) * IQR (1 # 2))) in H.
+      unfold Rle. apply Rlt_asym.
+      setoid_replace (x + (y - x) * IQR (1 # 2) + (y - x) * IQR (1 # 2)) with y in H.
+      exact H.
+      rewrite Rplus_assoc, <- Rmult_plus_distr_r.
+      setoid_replace (y - x + (y - x)) with ((y-x)*2).
+      unfold IQR. rewrite Rmult_1_l, Rmult_assoc, Rinv_r. ring.
+      right. apply (IZR_lt 0). reflexivity.
+      unfold IZR, IPR, IPR_2. ring.
 Qed.
 
 
@@ -2548,7 +2691,7 @@ Qed.
 
 Lemma Rinv_le_contravar :
   forall x y (xpos : 0 < x) (ynz : y # 0),
-    x <= y -> (/ y) ynz <= (/ x) (or_intror xpos).
+    x <= y -> (/ y) ynz <= (/ x) (inr xpos).
 Proof.
   intros. intro abs. apply (Rmult_lt_compat_l x) in abs.
   2: apply xpos. rewrite Rinv_r in abs.
@@ -2560,7 +2703,7 @@ Proof.
 Qed.
 
 Lemma Rle_Rinv : forall x y (xpos : 0 < x) (ypos : 0 < y),
-    x <= y -> (/ y) (or_intror ypos) <= (/ x) (or_intror xpos).
+    x <= y -> (/ y) (inr ypos) <= (/ x) (inr xpos).
 Proof.
   intros.
   apply Rinv_le_contravar with (1 := H).
@@ -2583,8 +2726,8 @@ Proof.
   apply Rplus_lt_le_compat. exact Rlt_0_1. apply Rle_refl.
 Qed.
 
-Lemma double_var : forall r1, r1 == r1 * (/ 2) (or_intror Rlt_0_2)
-                                    + r1 * (/ 2) (or_intror Rlt_0_2).
+Lemma double_var : forall r1, r1 == r1 * (/ 2) (inr Rlt_0_2)
+                                    + r1 * (/ 2) (inr Rlt_0_2).
 Proof.
   intro; rewrite <- double; rewrite <- Rmult_assoc;
     symmetry ; apply Rinv_r_simpl_m.
@@ -2623,7 +2766,7 @@ Lemma Rmult_ge_0_gt_0_lt_compat :
     r3 >= 0 -> r2 > 0 -> r1 < r2 -> r3 < r4 -> r1 * r3 < r2 * r4.
 Proof.
   intros. apply (Rle_lt_trans _ (r2 * r3)).
-  apply Rmult_le_compat_r. apply H. apply Rlt_asym. apply H1.
+  apply Rmult_le_compat_r. apply H. unfold Rle. apply Rlt_asym. apply H1.
   apply Rmult_lt_compat_l. apply H0. apply H2.
 Qed.
 
@@ -2631,11 +2774,11 @@ Lemma le_epsilon :
   forall r1 r2, (forall eps, 0 < eps -> r1 <= r2 + eps) -> r1 <= r2.
 Proof.
   intros x y H. intro abs.
-  assert (0 < (x - y) * (/ 2) (or_intror Rlt_0_2)).
+  assert (0 < (x - y) * (/ 2) (inr Rlt_0_2)).
   { apply (Rplus_lt_compat_r (-y)) in abs. rewrite Rplus_opp_r in abs.
     apply Rmult_lt_0_compat. exact abs.
     apply Rinv_0_lt_compat. }
-  specialize (H ((x - y) * (/ 2) (or_intror Rlt_0_2)) H0).
+  specialize (H ((x - y) * (/ 2) (inr Rlt_0_2)) H0).
   apply (Rmult_le_compat_l 2) in H.
   rewrite Rmult_plus_distr_l in H.
   apply (Rplus_le_compat_l (-x)) in H.
@@ -2643,12 +2786,12 @@ Proof.
   (Rmult_plus_distr_r 1 1), (Rmult_plus_distr_r 1 1)
     in H.
   ring_simplify in H; contradiction.
-  right. apply Rlt_0_2. apply Rlt_asym. apply Rlt_0_2.
+  right. apply Rlt_0_2. unfold Rle. apply Rlt_asym. apply Rlt_0_2.
 Qed.
 
 (**********)
 Lemma Rdiv_lt_0_compat : forall a b (bpos : 0 < b),
-    0 < a -> 0 < a * (/b) (or_intror bpos).
+    0 < a -> 0 < a * (/b) (inr bpos).
 Proof.
 intros; apply Rmult_lt_0_compat;[|apply Rinv_0_lt_compat]; assumption.
 Qed.

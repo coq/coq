@@ -728,18 +728,18 @@ Defined.
 
 Lemma Qarchimedean : forall q : Q, { p : positive | q < Z.pos p # 1 }.
 Proof.
-  intros. destruct q as [a b]. unfold Qlt. simpl.
-  rewrite Zmult_1_r. destruct a.
+  intros. destruct q as [a b]. destruct a.
   - exists xH. reflexivity.
   - exists (p+1)%positive. apply (Z.lt_le_trans _ (Z.pos (p+1))).
-    apply Z.lt_succ_diag_r. rewrite Pos2Z.inj_mul.
+    simpl. rewrite Pos.mul_1_r.
+    apply Z.lt_succ_diag_r. simpl. rewrite Pos2Z.inj_mul.
     rewrite <- (Zmult_1_r (Z.pos (p+1))). apply Z.mul_le_mono_nonneg.
     discriminate. rewrite Zmult_1_r. apply Z.le_refl. discriminate.
     apply Z2Nat.inj_le. discriminate. apply Pos2Z.is_nonneg.
     apply Nat.le_succ_l. apply Nat2Z.inj_lt.
     rewrite Z2Nat.id. apply Pos2Z.is_pos. apply Pos2Z.is_nonneg.
   - exists xH. reflexivity.
-Qed.
+Defined.
 
 (** Compatibility of operations with respect to order. *)
 
