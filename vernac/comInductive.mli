@@ -49,6 +49,25 @@ val declare_mutual_inductive_with_eliminations
   -> Names.MutInd.t
   [@@ocaml.deprecated "Please use DeclareInd.declare_mutual_inductive_with_eliminations"]
 
+val interp_mutual_inductive_constr :
+  env0:Environ.env ->
+  sigma:Evd.evar_map ->
+  template:bool option ->
+  udecl:UState.universe_decl ->
+  env_ar:Environ.env ->
+  env_params:Environ.env ->
+  ctx_params:(EConstr.t, EConstr.t) Context.Rel.Declaration.pt list ->
+  indnames:Names.Id.t list ->
+  arities:EConstr.t list ->
+  arityconcl:(bool * EConstr.ESorts.t) option list ->
+  constructors:(Names.Id.t list * Constr.constr list * 'a list list) list ->
+  env_ar_params:Environ.env ->
+  cumulative:bool ->
+  poly:bool ->
+  private_ind:bool ->
+  finite:Declarations.recursivity_kind ->
+  Entries.mutual_inductive_entry * UnivNames.universe_binders
+
 (************************************************************************)
 (** Internal API, exported for Record                                   *)
 (************************************************************************)
