@@ -336,14 +336,14 @@ let closure get_adj cstrnts init =
 let downward = closure Constraints.sub
 let upward = closure Constraints.sup
 
-let rec_check _alpha vstar vneq cstrnts =
+let rec_check alpha vstar vneq cstrnts =
   let f annot_sub var_sup cstrnts = Constraints.add annot_sub (Annot.mk var_sup 0) cstrnts in
 
   (* Step 1: Si = downward closure containing V* *)
   let si = downward cstrnts vstar in
 
   (* Step 2: Add α ⊑ Si *)
-  let cstrnts1 = (* fold (f (Annot.mk alpha 0)) si *) cstrnts in
+  let cstrnts1 = fold (f (Annot.mk alpha 0)) si cstrnts in
 
   (* Step 3: Remove negative cycles *)
   let v_neg = upward cstrnts1 (bellman_ford_all cstrnts1) in
