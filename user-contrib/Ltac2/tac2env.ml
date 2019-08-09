@@ -249,6 +249,7 @@ type ('a, 'b) ml_object = {
   ml_subst : Mod_subst.substitution -> 'b -> 'b;
   ml_interp : environment -> 'b -> valexpr Proofview.tactic;
   ml_print : Environ.env -> 'b -> Pp.t;
+  ml_ntn_subst: (Name.t * Glob_term.glob_constr) list -> 'b -> 'b;
 }
 
 module MLTypeObj =

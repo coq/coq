@@ -1523,21 +1523,6 @@ let () =
 let () = Genintern.register_subst0 wit_ltac2 subst_expr
 
 (* Used for tactic-in-term in notations *)
-let prepend_let_bindings subst c =
-  List.fold_left (fun c (n, v) ->
-      DAst.make @@ Glob_term.GLetIn (n, v, None, c)
-    ) c subst
-
-let subst_tacext : type u a . ((Name.t * Glob_term.glob_constr) list lazy_t) -> (u, a) Tac2dyn.Arg.tag -> a -> a =
-  fun subst tag arg ->
-  match Tac2dyn.Arg.eq tag Tac2quote.wit_constr with
-  | Some Refl -> prepend_let_bindings (Lazy.force subst) arg
-  | None ->
-  match Tac2dyn.Arg.eq tag Tac2quote.wit_open_constr with
-  | Some Refl -> prepend_let_bindings (Lazy.force subst) arg
-  | None ->
-    arg
-
 let subst_tacexpr (bindings: Genintern.glob_constr_and_expr Id.Map.t) (e: glb_tacexpr) : glb_tacexpr =
   let substitution = lazy (
     Id.Map.fold (fun id (c,  _) accu -> (Name.Name id, c) :: accu)
@@ -1591,7 +1576,8 @@ let subst_tacexpr (bindings: Genintern.glob_constr_and_expr Id.Map.t) (e: glb_ta
     if m' == m && d' == d && br' == br then e
     else GTacWth { opn_match = m' ; opn_branch = br' ; opn_default = d' }
   | GTacExt (tag, arg) ->
-    let arg' = subst_tacext substitution tag arg in
+    let tpe = interp_ml_object tag in
+    let arg' = tpe.ml_ntn_subst (Lazy.force substitution) arg in
     if arg' == arg then e else GTacExt (tag, arg')
   | GTacPrm (n, el) ->
     let el' = List.Smart.map subst el in

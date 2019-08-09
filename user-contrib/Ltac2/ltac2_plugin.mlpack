@@ -2,10 +2,10 @@ Tac2dyn
 Tac2ffi
 Tac2env
 Tac2print
-Tac2quote
 Tac2intern
 Tac2interp
 Tac2entries
+Tac2quote
 Tac2match
 Tac2core
 Tac2extffi
