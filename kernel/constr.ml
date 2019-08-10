@@ -834,50 +834,50 @@ let rec any_annot f c =
 
 (** map-type functions on stage annotations of constrs *)
 
-let rec modify_annots f cstr =
+let rec map_annots f cstr =
   match cstr with
   | Ind (iu, a) -> f iu a cstr
   | Cast (c, k, t) ->
-    let c' = modify_annots f c in
+    let c' = map_annots f c in
     if c == c' then cstr else
     mkCast (c', k, t)
   | Lambda (n, t, c) ->
-    let c' = modify_annots f c in
+    let c' = map_annots f c in
     if c == c' then cstr else
     mkLambda (n, t, c')
   | LetIn (n, b, t, c) ->
-    let b' = modify_annots f b in
-    let c' = modify_annots f c in
+    let b' = map_annots f b in
+    let c' = map_annots f c in
     if b == b' && c == c' then cstr else
     mkLetIn (n, b', t, c')
   | Case (ci, p, c, lf) ->
-    let c' = modify_annots f c in
-    let lf' = Array.Smart.map (modify_annots f) lf in
+    let c' = map_annots f c in
+    let lf' = Array.Smart.map (map_annots f) lf in
     if c == c' && lf == lf' then cstr else
     mkCase (ci, p, c', lf')
   | Fix (ln, (nl, tl, bl)) ->
-    let bl' = Array.Smart.map (modify_annots f) bl in
+    let bl' = Array.Smart.map (map_annots f) bl in
     if bl == bl' then cstr else
     mkFix (ln, (nl, tl, bl'))
   | CoFix (ln, (nl, tl, bl)) ->
-    let bl' = Array.Smart.map (modify_annots f) bl in
+    let bl' = Array.Smart.map (map_annots f) bl in
     if bl == bl' then cstr else
     mkCoFix (ln, (nl, tl, bl'))
-  | _ -> map (modify_annots f) cstr
+  | _ -> map (map_annots f) cstr
 
 let erase =
   let f iu a c =
     match a with
     | Empty -> c
     | _ -> mkIndUS iu Empty in
-  modify_annots f
+  map_annots f
 
 let erase_infty =
   let f iu a c =
     match a with
     | Stage Infty -> c
     | _ -> mkIndUS iu infty in
-  modify_annots f
+  map_annots f
 
 let erase_glob vars =
   let f iu a c =
@@ -887,7 +887,7 @@ let erase_glob vars =
       mkIndUS iu Glob
     | Stage Infty -> c
     | _ -> mkIndUS iu infty in
-  modify_annots f
+  map_annots f
 
 let erase_star vars =
   let f iu a c =
@@ -897,21 +897,21 @@ let erase_star vars =
       mkIndUS iu Star
     | Empty -> c
     | _ -> mkIndUS iu Empty in
-  modify_annots f
+  map_annots f
 
 let annotate ind s =
   let f (((i, _), _) as iu) _ c =
     if MutInd.equal ind i then
       mkIndUS iu s
     else c in
-  modify_annots f
+  map_annots f
 
 let annotate_glob s =
   let f iu a c =
     match a with
     | Glob -> mkIndUS iu s
     | _ -> c in
-  modify_annots f
+  map_annots f
 
 let annotate_succ vars =
   let f iu a c =
@@ -920,7 +920,7 @@ let annotate_succ vars =
       when mem na vars ->
       mkIndUS iu (hat a)
     | _ -> c in
-  modify_annots f
+  map_annots f
 
 (*********************)
 (*      Lifting      *)
