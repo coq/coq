@@ -661,7 +661,7 @@ let get_recargs_approx env tree ind args =
     | Prod (na,b,d) ->
        assert (List.is_empty largs);
        build_recargs (ienv_push_var ienv (na, b, mk_norec)) tree d
-    | Rel k ->
+    | Rel (k, _) ->
        (* Free variables are allowed and assigned Norec *)
        (try snd (List.nth ra_env (k-1))
         with Failure _ | Invalid_argument _ -> mk_norec)
@@ -767,7 +767,7 @@ let rec subterm_specif renv stack t =
   (* maybe reduction is not always necessary! *)
   let f,l = decompose_app (whd_all renv.env t) in
     match kind f with
-    | Rel k -> subterm_var k renv
+    | Rel (k, _) -> subterm_var k renv
     | Case (ci,p,c,lbr) ->
        let stack' = push_stack_closures renv l stack in
        let cases_spec =
@@ -934,7 +934,7 @@ let check_one_fix renv recpos trees def =
     else
       let (f,l) = decompose_app (whd_betaiotazeta renv.env t) in
       match kind f with
-        | Rel p ->
+        | Rel (p, _) ->
             (* Test if [p] is a fixpoint (recursive call) *)
             if renv.rel_min <= p && p < renv.rel_min+nfi then
               begin
@@ -1220,7 +1220,7 @@ let check_one_cofix env nbfix def deftype =
     if not (noccur_with_meta n nbfix t) then
       let c,args = decompose_app (whd_all env t) in
       match kind c with
-        | Rel p when  n <= p && p < n+nbfix ->
+        | Rel (p, _) when  n <= p && p < n+nbfix ->
             (* recursive call: must be guarded and no nested recursive
                call allowed *)
             if not alreadygrd then
@@ -1324,7 +1324,7 @@ let check_cofix env (_bodynum,(names,types,bodies as recdef)) =
 (* Use [whd_betaiotazeta] for reducing everything except Consts *)
 (* Use [whd_all] for reducing everything including Consts *)
 (* For now, use betaiotazeta, not all, since Consts don't have stage annotations *)
-let whd = whd_betaiotazeta
+let whd = whd_all
 
 (* Add [Glob] annotations to [ty_def] where they appear in [ty_glob] *)
 let globify env ty_glob ty_def =

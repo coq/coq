@@ -113,7 +113,7 @@ let retype ?(polyprop=true) sigma =
     | Meta n ->
       (try strip_outer_cast sigma (Evd.meta_ftype sigma n).Evd.rebus
        with Not_found -> retype_error (BadMeta n))
-    | Rel n ->
+    | Rel (n, _) ->
         let ty = RelDecl.get_type (lookup_rel n env) in
         lift n ty
     | Var id -> type_of_var env id

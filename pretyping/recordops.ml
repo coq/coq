@@ -182,7 +182,7 @@ let rec cs_pattern_of_constr env t =
   | App (f,vargs) ->
     let patt, n, args = cs_pattern_of_constr env f in
     patt, n, args @ Array.to_list vargs
-  | Rel n -> Default_cs, Some n, []
+  | Rel (n, _) -> Default_cs, Some n, []
   | Prod (_,a,b) when Vars.noccurn 1 b -> Prod_cs, None, [a; Vars.lift (-1) b]
   | Proj (p, c) ->
     let { Environ.uj_type = ty } = Typeops.infer env c in

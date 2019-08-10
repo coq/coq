@@ -480,7 +480,7 @@ let rec lambda_of_constr cache env sigma c =
 
   | Cast (c, _, _) -> lambda_of_constr cache env sigma c
 
-  | Rel i -> Lrel (RelDecl.get_name (Environ.lookup_rel i env), i)
+  | Rel (i, _) -> Lrel (RelDecl.get_name (Environ.lookup_rel i env), i)
 
   | Var id -> Lvar id
 

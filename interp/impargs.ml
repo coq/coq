@@ -178,9 +178,9 @@ let update pos rig st =
 (* modified is_rigid_reference with a truncated env *)
 let is_flexible_reference env sigma bound depth f =
   match kind sigma f with
-    | Rel n when n >= bound+depth -> (* inductive type *) false
-    | Rel n when n >= depth -> (* previous argument *) true
-    | Rel n -> (* since local definitions have been expanded *) false
+    | Rel (n, _) when n >= bound+depth -> (* inductive type *) false
+    | Rel (n, _) when n >= depth -> (* previous argument *) true
+    | Rel (n, _) -> (* since local definitions have been expanded *) false
     | Const (kn,_) ->
         let cb = Environ.lookup_constant kn env in
         (match cb.const_body with Def _ -> true | _ -> false)
@@ -202,7 +202,7 @@ let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc 
     let hd = if strict then whd_all env sigma c else c in
     let c = if strongly_strict then hd else c in
     match kind sigma hd with
-    | Rel n when (n < bound+depth) && (n >= depth) ->
+    | Rel (n, _) when (n < bound+depth) && (n >= depth) ->
         let i = bound + depth - n - 1 in
         acc.(i) <- update pos rig acc.(i)
     | App (f,l) when revpat && is_reversible_pattern sigma bound depth f l ->

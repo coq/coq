@@ -343,7 +343,7 @@ let rec execute env sigma cstr =
         let sigma, jty = assumption_of_judgment env sigma jty in
         sigma, { uj_val = cstr; uj_type = jty }
 
-    | Rel n ->
+    | Rel (n, _) ->
         sigma, judge_of_relative env n
 
     | Var id ->

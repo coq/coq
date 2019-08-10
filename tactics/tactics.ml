@@ -3065,7 +3065,7 @@ let specialize (c,lbind) ipat =
          unsolved, unsolved things are requantified too *)
       let liftrel x =
         match kind sigma x with
-        | Rel n -> mkRel (n+1)
+        | Rel (n, _) -> mkRel (n+1)
         | _ -> x in
       (* We grab names used in product to remember them at re-abstracting phase *)
       let typ_of_c_hd = pf_get_type_of gl thd in
@@ -4073,7 +4073,7 @@ let decompose_paramspred_branch_args sigma elimt =
     let hyps,ccl = decompose_prod_assum sigma elimt in
     let hd_ccl_pred,_ = decompose_app sigma ccl in
     begin match EConstr.kind sigma hd_ccl_pred with
-      | Rel i  -> let acc3,acc1 = List.chop (i-1) hyps in acc1 , [] , acc3 , ccl
+      | Rel (i, _)  -> let acc3,acc1 = List.chop (i-1) hyps in acc1 , [] , acc3 , ccl
       | _ -> error_ind_scheme ""
     end
   | _ -> acc1, acc2 , acc3, ccl
@@ -4193,7 +4193,7 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
   let is_pred n c =
     let hd = fst (decompose_app evd c) in
     match EConstr.kind evd hd with
-      | Rel q when n < q && q <= n+scheme.npredicates -> IndArg
+      | Rel (q, _) when n < q && q <= n+scheme.npredicates -> IndArg
       | _ when cond hd -> RecArg
       | _ -> OtherArg
   in

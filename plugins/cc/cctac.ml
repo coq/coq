@@ -119,7 +119,7 @@ let rec pattern_of_constr env sigma c =
         let sort_a = sf_of env sigma a in
           PApp(Product (sort_a,sort_b),
                [pa;pb]),(Int.Set.union sa sb)
-    | Rel i -> PVar i,Int.Set.singleton i
+    | Rel (i, _) -> PVar i,Int.Set.singleton i
     | _ ->
         let pf = decompose_term env sigma c in
           PApp (pf,[]),Int.Set.empty

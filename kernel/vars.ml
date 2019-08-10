@@ -23,7 +23,7 @@ exception LocalOccur
 
 let closedn n c =
   let rec closed_rec n c = match Constr.kind c with
-    | Constr.Rel m -> if m>n then raise LocalOccur
+    | Constr.Rel (m, _) -> if m>n then raise LocalOccur
     | _ -> Constr.iter_with_binders succ closed_rec n c
   in
   try closed_rec n c; true with LocalOccur -> false
@@ -36,7 +36,7 @@ let closed0 c = closedn 0 c
 
 let noccurn n term =
   let rec occur_rec n c = match Constr.kind c with
-    | Constr.Rel m -> if Int.equal m n then raise LocalOccur
+    | Constr.Rel (m, _) -> if Int.equal m n then raise LocalOccur
     | _ -> Constr.iter_with_binders succ occur_rec n c
   in
   try occur_rec n term; true with LocalOccur -> false
@@ -46,7 +46,7 @@ let noccurn n term =
 
 let noccur_between n m term =
   let rec occur_rec n c = match Constr.kind c with
-    | Constr.Rel p -> if n<=p && p<n+m then raise LocalOccur
+    | Constr.Rel (p, _) -> if n<=p && p<n+m then raise LocalOccur
     | _        -> Constr.iter_with_binders succ occur_rec n c
   in
   try occur_rec n term; true with LocalOccur -> false
@@ -64,7 +64,7 @@ let isMeta c = match Constr.kind c with
 
 let noccur_with_meta n m term =
   let rec occur_rec n c = match Constr.kind c with
-    | Constr.Rel p -> if n<=p && p<n+m then raise LocalOccur
+    | Constr.Rel (p, _) -> if n<=p && p<n+m then raise LocalOccur
     | Constr.App(f,_cl) ->
         (match Constr.kind f with
            | Constr.Cast (c,_,_) when isMeta c -> ()
@@ -116,7 +116,7 @@ let substn_many lamv n c =
   if Int.equal lv 0 then c
   else
     let rec substrec depth c = match Constr.kind c with
-      | Constr.Rel k     ->
+      | Constr.Rel (k, _)  ->
           if k<=depth then c
           else if k-depth <= lv then lift_substituend depth (Array.unsafe_get lamv (k-depth-1))
           else Constr.mkRel (k-lv)

@@ -293,8 +293,8 @@ let conv_table_key infos k1 k2 cuniv =
 
 exception IrregularPatternShape
 
-let unfold_ref_with_args infos tab fl v =
-  match unfold_reference infos tab fl with
+let unfold_ref_with_args infos tab fl annots v =
+  match unfold_reference infos tab fl annots with
   | Def def -> Some (def, v)
   | Primitive op when check_native_args op v ->
     let c = match fl with ConstKey c -> c | _ -> assert false in
@@ -383,7 +383,7 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         else raise NotConvertible
 
     (* 2 constants, 2 local defined vars or 2 defined rels *)
-    | (FFlex fl1, FFlex fl2) ->
+    | (FFlex (fl1, as1), FFlex (fl2, as2)) ->
       (try
          let cuniv = conv_table_key infos.cnv_inf fl1 fl2 cuniv in
          convert_stacks compare_annot l2r infos lft1 lft2 v1 v2 cuniv
@@ -392,9 +392,9 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          let oracle = CClosure.oracle_of_infos infos.cnv_inf in
          let (app1,app2) =
            let aux appr1 lft1 fl1 tab1 v1 appr2 lft2 fl2 tab2 v2 =
-             match unfold_ref_with_args infos.cnv_inf tab1 fl1 v1 with
+             match unfold_ref_with_args infos.cnv_inf tab1 fl1 as1 v1 with
              | Some t1 -> ((lft1, t1), appr2)
-             | None -> match unfold_ref_with_args infos.cnv_inf tab2 fl2 v2 with
+             | None -> match unfold_ref_with_args infos.cnv_inf tab2 fl2 as2 v2 with
                | Some t2 -> (appr1, (lft2, t2))
                | None -> raise NotConvertible
            in
@@ -433,8 +433,8 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          eqappr compare_annot cv_pb l2r infos (lft1, (c1, (s1 :: v1))) appr2 cuniv
        | None ->
          begin match t2 with
-          | FFlex fl2 ->
-            begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 with
+          | FFlex (fl2, as1) ->
+            begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 as1 v2 with
              | Some t2 ->
                eqappr compare_annot cv_pb l2r infos appr1 (lft2, t2) cuniv
              | None -> raise NotConvertible
@@ -449,8 +449,8 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          eqappr compare_annot cv_pb l2r infos appr1 (lft2, (c2, (s2 :: v2))) cuniv
        | None ->
          begin match t1 with
-          | FFlex fl1 ->
-            begin match unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 with
+          | FFlex (fl1, as1) ->
+            begin match unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 as1 v1 with
              | Some t1 ->
                eqappr compare_annot cv_pb l2r infos (lft1, t1) appr2 cuniv
              | None -> raise NotConvertible
@@ -505,8 +505,8 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
           (el_lift lft1, (hd1, eta_expand_stack v1)) (el_lift lft2, (bd2, [])) cuniv
 
     (* only one constant, defined var or defined rel *)
-    | (FFlex fl1, c2)      ->
-      begin match unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 v1 with
+    | (FFlex (fl1, as1), c2)      ->
+      begin match unfold_ref_with_args infos.cnv_inf infos.lft_tab fl1 as1 v1 with
         | Some (def1,v1) ->
           (** By virtue of the previous case analyses, we know [c2] is rigid.
               Conversion check to rigid terms eventually implies full weak-head
@@ -526,8 +526,8 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
            | _ -> raise NotConvertible)
       end
 
-    | (c1, FFlex fl2)      ->
-       begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 v2 with
+    | (c1, FFlex (fl2, as2))      ->
+       begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 as2 v2 with
         | Some (def2, v2) ->
           (** Symmetrical case of above. *)
           let all = RedFlags.red_add_transparent all (RedFlags.red_transparent (info_flags infos.cnv_inf)) in

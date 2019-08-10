@@ -742,7 +742,7 @@ let rec whd_state_gen flags env sigma =
       ((EConstr.of_kind c0, stack))
     in
     match c0 with
-    | Rel n when CClosure.RedFlags.red_set flags CClosure.RedFlags.fDELTA ->
+    | Rel (n, _) when CClosure.RedFlags.red_set flags CClosure.RedFlags.fDELTA ->
       (match lookup_rel n env with
       | LocalDef (_,body,_) -> whrec (lift n body, stack)
       | _ -> fold ())
@@ -798,7 +798,7 @@ let rec whd_state_gen flags env sigma =
           if napp > 0 then
             let (x', l') = whrec' (Array.last cl, Stack.empty) in
             match EConstr.kind sigma x', l' with
-            | Rel 1, [] ->
+            | Rel (1, _), [] ->
               let lc = Array.sub cl 0 (napp-1) in
               let u = if Int.equal napp 1 then f else mkApp (f,lc) in
               if noccurn sigma 1 u then (pop u,Stack.empty) else fold ()
@@ -891,7 +891,7 @@ let local_whd_state_gen flags _env sigma =
           if napp > 0 then
             let x', l' = whrec (Array.last cl, Stack.empty) in
             match EConstr.kind sigma x', l' with
-            | Rel 1, [] ->
+            | Rel (1, _), [] ->
               let lc = Array.sub cl 0 (napp-1) in
               let u = if Int.equal napp 1 then f else mkApp (f,lc) in
               if noccurn sigma 1 u then (pop u,Stack.empty) else s

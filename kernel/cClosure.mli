@@ -103,7 +103,7 @@ type fconstr
 type fterm =
   | FRel of int
   | FAtom of constr (** Metas and Sorts *)
-  | FFlex of table_key
+  | FFlex of table_key * Annot.t list option
   | FInd of inductive Univ.puniverses * Annot.t
   | FConstruct of constructor Univ.puniverses
   | FApp of fconstr * fconstr array
@@ -213,7 +213,7 @@ val eta_expand_ind_stack : env -> inductive -> fconstr -> stack ->
 (** Conversion auxiliary functions to do step by step normalisation *)
 
 (** [unfold_reference] unfolds references in a [fconstr] *)
-val unfold_reference : clos_infos -> clos_tab -> table_key -> (fconstr, Util.Empty.t) constant_def
+val unfold_reference : clos_infos -> clos_tab -> table_key -> Annot.t list option -> (fconstr, Util.Empty.t) constant_def
 
 (***********************************************************************
   i This is for lazy debug *)

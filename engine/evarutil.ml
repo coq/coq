@@ -276,10 +276,10 @@ let csubst_subst { csubst_len = k; csubst_var = v; csubst_rel = s } c =
   (* Safe because this is a substitution *)
   let c = EConstr.Unsafe.to_constr c in
   let rec subst n c = match Constr.kind c with
-  | Rel m ->
+  | Rel (m, ans) ->
     if m <= n then c
     else if m - n <= k then Int.Map.find (k - m + n) s
-    else mkRel (m - k)
+    else mkRelAnnots (m - k) ans
   | Var id ->
     begin try Id.Map.find id v with Not_found -> c end
   | _ -> Constr.map_with_binders succ subst n c

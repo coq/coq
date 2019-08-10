@@ -366,7 +366,7 @@ let () = define1 "constr_kind" constr begin fun c ->
   let open Constr in
   Proofview.tclEVARMAP >>= fun sigma ->
   return begin match EConstr.kind sigma c with
-  | Rel n ->
+  | Rel (n, _) ->
     v_blk 0 [|Value.of_int n|]
   | Var id ->
     v_blk 1 [|Value.of_ident id|]

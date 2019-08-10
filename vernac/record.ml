@@ -264,7 +264,7 @@ let subst_projection fid l c =
   let lv = List.length l in
   let bad_projs = ref [] in
   let rec substrec depth c = match Constr.kind c with
-    | Rel k ->
+    | Rel (k, _) ->
         (* We are in context [[params;fields;x:ind;...depth...]] *)
         if k <= depth+1 then
           c

@@ -52,7 +52,7 @@ let mkSProp = of_kind (Sort (ESorts.make Sorts.sprop))
 let mkProp = of_kind (Sort (ESorts.make Sorts.prop))
 let mkSet = of_kind (Sort (ESorts.make Sorts.set))
 let mkType u = of_kind (Sort (ESorts.make (Sorts.sort_of_univ u)))
-let mkRel n = of_kind (Rel n)
+let mkRel n = of_kind (Rel (n, None))
 let mkVar id = of_kind (Var id)
 let mkMeta n = of_kind (Meta n)
 let mkEvar e = of_kind (Evar e)
@@ -118,7 +118,7 @@ let rec isType sigma c = match kind sigma c with
 let isVarId sigma id c =
   match kind sigma c with Var id' -> Id.equal id id' | _ -> false
 let isRelN sigma n c =
-  match kind sigma c with Rel n' -> Int.equal n n' | _ -> false
+  match kind sigma c with Rel (n', _) -> Int.equal n n' | _ -> false
 
 let isRef sigma c = match kind sigma c with
   | Const _ | Ind _ | Construct _ | Var _ -> true
@@ -135,7 +135,7 @@ let isRefX sigma x c =
 
 
 let destRel sigma c = match kind sigma c with
-| Rel p -> p
+| Rel (p, _) -> p
 | _ -> raise DestKO
 
 let destVar sigma c = match kind sigma c with
@@ -624,21 +624,21 @@ let subst_univs_level_constr subst c =
 (** Operations that dot NOT commute with evar-normalization *)
 let noccurn sigma n term =
   let rec occur_rec n c = match kind sigma c with
-    | Rel m -> if Int.equal m n then raise LocalOccur
+    | Rel (m, _) -> if Int.equal m n then raise LocalOccur
     | _ -> iter_with_binders sigma succ occur_rec n c
   in
   try occur_rec n term; true with LocalOccur -> false
 
 let noccur_between sigma n m term =
   let rec occur_rec n c = match kind sigma c with
-    | Rel p -> if n<=p && p<n+m then raise LocalOccur
+    | Rel (p, _) -> if n<=p && p<n+m then raise LocalOccur
     | _        -> iter_with_binders sigma succ occur_rec n c
   in
   try occur_rec n term; true with LocalOccur -> false
 
 let closedn sigma n c =
   let rec closed_rec n c = match kind sigma c with
-    | Rel m -> if m>n then raise LocalOccur
+    | Rel (m, _) -> if m>n then raise LocalOccur
     | _ -> iter_with_binders sigma succ closed_rec n c
   in
   try closed_rec n c; true with LocalOccur -> false

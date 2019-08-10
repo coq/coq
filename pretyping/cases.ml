@@ -107,9 +107,9 @@ let relocate_rel n1 n2 k j = if Int.equal j (n1 + k) then n2+k else j
 
 let rec relocate_index sigma n1 n2 k t =
   match EConstr.kind sigma t with
-  | Rel j when Int.equal j (n1 + k) -> mkRel (n2+k)
-  | Rel j when j < n1+k -> t
-  | Rel j when j > n1+k -> t
+  | Rel (j, _) when Int.equal j (n1 + k) -> mkRel (n2+k)
+  | Rel (j, _) when j < n1+k -> t
+  | Rel (j, _) when j > n1+k -> t
   | _ -> EConstr.map_with_binders sigma succ (relocate_index sigma n1 n2) k t
 
 (**********************************************************************)
@@ -591,7 +591,7 @@ let rec dep_in_tomatch sigma n = function
 
 let dependencies_in_rhs ~program_mode sigma nargs current tms eqns =
   match EConstr.kind sigma current with
-  | Rel n when dep_in_tomatch sigma n tms -> List.make nargs true
+  | Rel (n, _) when dep_in_tomatch sigma n tms -> List.make nargs true
   | _ -> dependencies_in_pure_rhs ~program_mode nargs eqns
 
 (* Computing the matrix of dependencies *)
@@ -611,7 +611,7 @@ let rec find_dependency_list sigma tmblock = function
       if used && List.exists (fun x -> dependent_decl sigma x d) tmblock
       then
         match EConstr.kind sigma tm with
-        | Rel n -> List.add_set Int.equal n (List.union Int.equal deps tdeps)
+        | Rel (n, _) -> List.add_set Int.equal n (List.union Int.equal deps tdeps)
         | _ -> List.union Int.equal deps tdeps
       else deps
 
@@ -975,7 +975,7 @@ let abstract_predicate env sigma indf cur realargs (names,na) tms ccl =
   (* build_branch                                                    *)
   let tms = List.fold_right2 (fun par arg tomatch ->
     match EConstr.kind sigma par with
-    | Rel i -> relocate_index_tomatch sigma (i+n) (destRel sigma arg) tomatch
+    | Rel (i, _) -> relocate_index_tomatch sigma (i+n) (destRel sigma arg) tomatch
     | _ -> tomatch) (realargs@[cur]) (Context.Rel.to_extended_list EConstr.mkRel 0 sign)
        (lift_tomatch_stack n tms) in
   (* Pred is already dependent in the current term to match (if      *)
@@ -1331,7 +1331,7 @@ let build_branch ~program_mode initial current realargs deps (realnames,curname)
   (* Do the specialization for terms to match *)
   let tomatch = List.fold_right2 (fun par arg tomatch ->
     match EConstr.kind sigma par with
-    | Rel i -> replace_tomatch sigma (i+const_info.cs_nargs) arg tomatch
+    | Rel (i, _) -> replace_tomatch sigma (i+const_info.cs_nargs) arg tomatch
     | _ -> tomatch) (current::realargs) (ci::cirealargs)
       (lift_tomatch_stack const_info.cs_nargs pb.tomatch) in
 
@@ -1702,7 +1702,7 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
        allow threading a state. *)
     let sigma = !evdref in
     match EConstr.kind sigma t with
-    | Rel n when is_local_def (lookup_rel n !!env) -> t
+    | Rel (n, _) when is_local_def (lookup_rel n !!env) -> t
     | Evar ev ->
         let ty = get_type_of !!env sigma t in
         let sigma, ty = refresh_universes (Some false) !!env sigma ty in
@@ -1740,7 +1740,7 @@ let abstract_tycon ?loc env sigma subst tycon extenv t =
           (fun i _ -> if Int.List.mem i vl then u else mkRel i) 1
           (rel_context !!extenv) in
       let map a = match EConstr.kind sigma a with
-      | Rel n -> not (noccurn sigma n u) || Int.Set.mem n depvl
+      | Rel (n, _) -> not (noccurn sigma n u) || Int.Set.mem n depvl
       | _ -> true
       in
       let rel_filter = List.map map inst in
@@ -1968,13 +1968,13 @@ let inh_conv_coerce_to_tycon ?loc ~program_mode env sigma j tycon =
 
 let add_subst sigma c len (rel_subst,var_subst) =
   match EConstr.kind sigma c with
-  | Rel n -> (n,len) :: rel_subst, var_subst
+  | Rel (n, _) -> (n,len) :: rel_subst, var_subst
   | Var id -> rel_subst, (id,len) :: var_subst
   | _ -> assert false
 
 let dependent_rel_or_var sigma tm c =
   match EConstr.kind sigma tm with
-  | Rel n -> not (noccurn sigma n c)
+  | Rel (n, _) -> not (noccurn sigma n c)
   | Var id -> Termops.local_occur_var sigma id c
   | _ -> assert false
 
@@ -2010,7 +2010,7 @@ let prepare_predicate_from_arsign_tycon ~program_mode env sigma loc tomatchs ars
   in
   let rec predicate lift c =
     match EConstr.kind sigma c with
-      | Rel n when n > lift ->
+      | Rel (n, _) when n > lift ->
           (try
               (* Make the predicate dependent on the matched variable *)
               let idx = Int.List.assoc (n - lift) rel_subst in
@@ -2228,7 +2228,7 @@ let eq_id avoid id =
 
 let is_topvar sigma t =
 match EConstr.kind sigma t with
-| Rel 0 -> true
+| Rel (0, _) -> true
 | _ -> false
 
 let rels_of_patsign sigma =
@@ -2416,7 +2416,7 @@ let abstract_tomatch env sigma tomatchs tycon =
       (fun (prev, ctx, names, tycon) (c, t) ->
          let lenctx =  List.length ctx in
          match EConstr.kind sigma c with
-             Rel n -> (lift lenctx c, lift_tomatch_type lenctx t) :: prev, ctx, names, tycon
+             Rel (n, _) -> (lift lenctx c, lift_tomatch_type lenctx t) :: prev, ctx, names, tycon
            | _ ->
                let tycon = Option.map
                  (fun t -> subst_term sigma (lift 1 c) (lift 1 t)) tycon in
@@ -2479,7 +2479,7 @@ let build_dependent_signature env sigma avoid tomatchs arsign =
                     let previd, id =
                       let name =
                         match EConstr.kind sigma arg with
-                        Rel n -> RelDecl.get_name (lookup_rel n env)
+                        Rel (n, _) -> RelDecl.get_name (lookup_rel n env)
                         | _ -> name
                       in
                         make_prime avoid name

@@ -152,7 +152,7 @@ let pattern_of_constr env sigma t =
   let rec pattern_of_constr env t =
   let open Context.Rel.Declaration in
   match kind t with
-    | Rel n  -> PRel n
+    | Rel (n, _)  -> PRel n
     | Meta n -> PMeta (Some (Id.of_string ("META" ^ string_of_int n)))
     | Var id -> PVar id
     | Sort s -> PSort (Sorts.family s)

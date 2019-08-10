@@ -278,7 +278,7 @@ let cast_kind_display k =
 
 let constr_display csr =
   let rec term_display c = match kind c with
-  | Rel n -> "Rel("^(string_of_int n)^")"
+  | Rel (n, _) -> "Rel("^(string_of_int n)^")"
   | Meta n -> "Meta("^(string_of_int n)^")"
   | Var id -> "Var("^(Id.to_string id)^")"
   | Sort s -> "Sort("^(sort_display s)^")"
@@ -359,7 +359,7 @@ open Format;;
 
 let print_pure_constr csr =
   let rec term_display c = match Constr.kind c with
-  | Rel n -> print_string "#"; print_int n
+  | Rel (n, _) -> print_string "#"; print_int n
   | Meta n -> print_string "Meta("; print_int n; print_string ")"
   | Var id -> print_string (Id.to_string id)
   | Sort s -> sort_display s

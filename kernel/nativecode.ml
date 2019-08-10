@@ -2099,7 +2099,7 @@ let compile_deps env sigma prefix ~interactive init t =
         aux env lvl init t
       | _ -> init
     end
-  | Rel n when n > lvl ->
+  | Rel (n, _) when n > lvl ->
     let open Context.Rel.Declaration in
     let decl = lookup_rel n env in
     let env = env_of_rel n env in

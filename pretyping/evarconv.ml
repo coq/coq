@@ -95,7 +95,7 @@ let eval_flexible_term ts env evd c =
       if TransparentState.is_transparent_constant ts c
       then Option.map EConstr.of_constr (constant_opt_value_in env (c, EInstance.kind evd u))
       else None
-  | Rel n ->
+  | Rel (n, _) ->
       (try match lookup_rel n env with
            | RelDecl.LocalAssum _ -> None
            | RelDecl.LocalDef (_,v,_) -> Some (lift n v)
@@ -1005,7 +1005,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                  let na = Nameops.Name.pick_annot n1 n2 in
                  evar_conv_x flags (push_rel (RelDecl.LocalAssum (na,c)) env) i pbty c'1 c'2)]
 
-        | Rel x1, Rel x2 ->
+        | Rel (x1, _), Rel (x2, _) ->
             if Int.equal x1 x2 then
               exact_ise_stack2 env evd (evar_conv_x flags) sk1 sk2
             else UnifFailure (evd,NotSameHead)

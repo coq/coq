@@ -709,10 +709,10 @@ let inline_side_effects env body side_eff =
       | Some (Inr n) ->
         mkRel (k + n - i)
       end
-    | Rel n ->
+    | Rel (n, ans) ->
       (** Lift free rel variables *)
       if n <= k then t
-      else mkRel (n + len - i - 1)
+      else mkRelAnnots (n + len - i - 1) ans
     | _ -> Constr.map_with_binders ((+) 1) (fun k t -> subst_const i k t) k t
     in
     let map_args i (na, b, ty, opaque) =

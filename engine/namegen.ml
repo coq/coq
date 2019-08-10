@@ -152,7 +152,7 @@ let hdchar env sigma c =
     | Construct (x,_) -> (try lowercase_first_char (Nametab.basename_of_global (GlobRef.ConstructRef x)) with Not_found when !Flags.in_debugger -> "zz")
     | Var id  -> lowercase_first_char id
     | Sort s -> sort_hdchar (ESorts.kind sigma s)
-    | Rel n ->
+    | Rel (n, _) ->
         (if n<=k then "p" (* the initial term is flexible product/function *)
          else
            try match let d = lookup_rel (n-k) env in get_name d, get_type d with
@@ -270,7 +270,7 @@ let visible_ids sigma (nenv, c) =
         ids
       in
       accu := (gseen, vseen, ids)
-  | Rel p ->
+  | Rel (p, _) ->
     let (gseen, vseen, ids) = !accu in
     if p > n && not (Int.Set.mem p vseen) then
       let vseen = Int.Set.add p vseen in

@@ -115,7 +115,7 @@ let check_correct_par ~chkpos (env,n,ntypes,_) paramdecls ind_index args =
       check param_index (paramdecl_index+1) paramdecls
     | _::paramdecls ->
         match kind (whd_all env params.(param_index)) with
-          | Rel w when Int.equal w paramdecl_index ->
+          | Rel (w, _) when Int.equal w paramdecl_index ->
             check (param_index-1) (paramdecl_index+1) paramdecls
           | _ ->
             let paramdecl_index_in_env = paramdecl_index-n+nparamdecls+1 in
@@ -142,7 +142,7 @@ if Int.equal nmr 0 then 0 else
         | (lp, LocalDef _ :: paramsctxt) -> find k (index-1) (lp,paramsctxt)
         | (p::lp,_::paramsctxt) ->
        ( match kind (whd_all env p) with
-          | Rel w when Int.equal w index -> find (k+1) (index-1) (lp,paramsctxt)
+          | Rel (w, _) when Int.equal w index -> find (k+1) (index-1) (lp,paramsctxt)
           | _ -> k)
   in find 0 (n-1) (lpar,List.rev paramsctxt)
 
@@ -218,7 +218,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
                   check_pos (ienv_push_var ienv (na, b, mk_norec)) nmr d
               | Some b ->
                   check_pos (ienv_push_var ienv (na, b, mk_norec)) nmr d)
-        | Rel k ->
+        | Rel (k, _) ->
             (try let (ra,rarg) = List.nth ra_env (k-1) in
             let largs = List.map (whd_all env) largs in
             let nmr1 =
@@ -324,7 +324,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
             let () =
               if check_head then
                 begin match hd with
-                | Rel j when Int.equal j (n + ntypes - i - 1) ->
+                | Rel (j, _) when Int.equal j (n + ntypes - i - 1) ->
                   check_correct_par ~chkpos ienv paramsctxt (ntypes - i) largs
                 | _ -> raise (IllFormedInd (LocalNotConstructor(paramsctxt,nnonrecargs)))
                 end

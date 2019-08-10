@@ -243,7 +243,7 @@ let parse_ind_args si args relmax =
     | Kill _ :: s -> parse (i+1) j s
     | Keep :: s ->
       (match Constr.kind args.(i-1) with
-         | Rel k -> Int.Map.add (relmax+1-k) j (parse (i+1) (j+1) s)
+         | Rel (k, _) -> Int.Map.add (relmax+1-k) j (parse (i+1) (j+1) s)
          | _ -> parse (i+1) (j+1) s)
   in parse 1 1 si
 
@@ -292,7 +292,7 @@ let rec extract_type env sg db j c args =
                       Tarr (Tdummy reason, mld)))
     | Sort _ -> Tdummy Ktype (* The two logical cases. *)
     | _ when sort_of env sg (applistc c args) == InProp -> Tdummy Kprop
-    | Rel n ->
+    | Rel (n, _) ->
         (match EConstr.lookup_rel n env with
            | LocalDef (_,t,_) ->
                extract_type env sg db j (EConstr.Vars.lift n t) args
@@ -667,7 +667,7 @@ let rec extract_term env sg mle mlt c args =
     | Proj (p, c) ->
         let term = Retyping.expand_projection env (Evd.from_env env) p c [] in
         extract_term env sg mle mlt term args
-    | Rel n ->
+    | Rel (n, _) ->
         (* As soon as the expected [mlt] for the head is known, *)
         (* we unify it with an fresh copy of the stored type of [Rel n]. *)
         let extract_rel mlt = put_magic (mlt, Mlenv.get mle n) (MLrel n)

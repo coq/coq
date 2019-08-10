@@ -841,7 +841,7 @@ let local_occur_var_in_decl sigma hyp decl =
 
 let free_rels sigma m =
   let rec frec depth acc c = match EConstr.kind sigma c with
-    | Rel n       -> if n >= depth then Int.Set.add (n-depth+1) acc else acc
+    | Rel (n, _)  -> if n >= depth then Int.Set.add (n-depth+1) acc else acc
     | _ -> fold_constr_with_binders sigma succ frec depth acc c
   in
   frec 1 Int.Set.empty m
@@ -1246,7 +1246,7 @@ let rec eta_reduce_head sigma c =
                if lastn < 0 then anomaly (Pp.str "application without arguments.")
                else
                  (match EConstr.kind sigma cl.(lastn) with
-                    | Rel 1 ->
+                    | Rel (1, _) ->
                         let c' =
                           if Int.equal lastn 0 then f
                           else mkApp (f, Array.sub cl 0 lastn)

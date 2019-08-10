@@ -554,7 +554,7 @@ let rwprocess_rule env dir rule =
         let ind_ct = Inductiveops.type_of_constructors env indu in
         let lhs0 = last_arg sigma (EConstr.of_constr (strip_prod_assum ind_ct.(0))) in
         let rdesc = match EConstr.kind sigma lhs0 with
-        | Rel i ->
+        | Rel (i, _) ->
           let lhs = a.(np - i) in
           let lhs, rhs = if d = L2R then lhs, rhs else rhs, lhs in
 (* msgnl (str "RW: " ++ pr_rwdir d ++ str " " ++ pr_constr_pat r ++ str " : "

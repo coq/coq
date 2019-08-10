@@ -696,7 +696,7 @@ let rec detype d flags avoid env sigma t =
 
 and detype_r d flags avoid env sigma t =
   match EConstr.kind sigma (collapse_appl sigma t) with
-    | Rel n ->
+    | Rel (n, _) ->
       (try match lookup_name_of_rel n (fst env) with
          | Name id   -> GVar id
          | Anonymous ->
@@ -780,7 +780,7 @@ and detype_r d flags avoid env sigma t =
           | Some id -> id
           in
           let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl in
-          let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> match EConstr.kind sigma c with Rel n -> (fvs,Int.Set.add n rels) | Var id -> (Id.Set.add id fvs,rels) | _ -> (fvs,rels)) (Id.Set.empty,Int.Set.empty) l in
+          let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> match EConstr.kind sigma c with Rel (n, _) -> (fvs,Int.Set.add n rels) | Var id -> (Id.Set.add id fvs,rels) | _ -> (fvs,rels)) (Id.Set.empty,Int.Set.empty) l in
           let l = Evd.evar_instance_array (fun d c -> not !print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel sigma c && Int.Set.mem (destRel sigma c) rels || isVar sigma c && (Id.Set.mem (destVar sigma c) fvs)))) (Evd.find sigma evk) cl in
           id,l
         with Not_found ->

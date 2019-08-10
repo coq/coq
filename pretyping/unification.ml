@@ -655,7 +655,7 @@ let rec is_neutral env sigma ts t =
       not (Environ.evaluable_named id env) ||
       not (is_transparent env (VarKey id)) ||
       not (TransparentState.is_transparent_variable ts id)
-    | Rel n -> true
+    | Rel (n, _) -> true
     | Evar _ | Meta _ -> true
     | Case (_, p, c, cl) -> is_neutral env sigma ts c
     | Proj (p, c) -> is_neutral env sigma ts c

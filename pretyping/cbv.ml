@@ -372,12 +372,12 @@ and reify_value = function (* reduction under binders *)
 
 and apply_env env t =
   match kind t with
-  | Rel i ->
+  | Rel (i, ans) ->
     begin match expand_rel i env with
       | Inl (k, v) ->
         reify_value (shift_value k v)
       | Inr (k,_) ->
-        mkRel k
+        mkRelAnnots k ans
     end
   | _ ->
     map_with_binders subs_lift apply_env env t
@@ -416,11 +416,11 @@ let rec norm_head info env t stack =
   (* constants, axioms
    * the first pattern is CRUCIAL, n=0 happens very often:
    * when reducing closed terms, n is always 0 *)
-  | Rel i ->
+  | Rel (i, ans) ->
       (match expand_rel i env with
         | Inl (0,v)      -> strip_appl v stack
         | Inl (n,v)      -> strip_appl (shift_value n v) stack
-        | Inr (n,None)   -> (VAL(0, mkRel n), stack)
+        | Inr (n,None)   -> (VAL(0, mkRelAnnots n ans), stack)
         | Inr (n,Some p) -> norm_head_ref (n-p) info env stack (RelKey p) t)
 
   | Var id -> norm_head_ref 0 info env stack (VarKey id) t

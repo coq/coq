@@ -675,7 +675,7 @@ let rec lambda_of_constr env c =
 
   | Cast (c, _, _) -> lambda_of_constr env c
 
-  | Rel i -> Renv.get env i
+  | Rel (i, _) -> Renv.get env i
 
   | Var id -> Lvar id
 

@@ -93,7 +93,7 @@ type pconstructor = constructor puniverses
 (* [Var] is used for named variables and [Rel] for variables as
    de Bruijn indices. *)
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
-  | Rel       of int
+  | Rel       of int * Annot.t list option
   | Var       of Id.t
   | Meta      of metavariable
   | Evar      of 'constr pexistential
@@ -132,10 +132,12 @@ type cofixpoint = (constr, types) pcofixpoint
 
 (* Constructs a de Bruijn index with number n *)
 let rels =
-  [|Rel  1;Rel  2;Rel  3;Rel  4;Rel  5;Rel  6;Rel  7; Rel  8;
-    Rel  9;Rel 10;Rel 11;Rel 12;Rel 13;Rel 14;Rel 15; Rel 16|]
+  let mkRel n = Rel (n, None) in
+  [|mkRel  1;mkRel  2;mkRel  3;mkRel  4;mkRel  5;mkRel  6;mkRel  7;mkRel  8;
+    mkRel  9;mkRel 10;mkRel 11;mkRel 12;mkRel 13;mkRel 14;mkRel 15;mkRel 16|]
 
-let mkRel n = if 0<n && n<=16 then rels.(n-1) else Rel n
+let mkRel n = if 0<n && n<=16 then rels.(n-1) else Rel (n, None)
+let mkRelAnnots n ans = Rel (n, ans)
 
 (* Construct a type *)
 let mkSProp  = Sort Sorts.sprop
@@ -332,7 +334,7 @@ let isCast c = match kind c with Cast _ -> true | _ -> false
 (* Tests if a de Bruijn index *)
 let isRel c = match kind c with Rel _ -> true | _ -> false
 let isRelN n c =
-  match kind c with Rel n' -> Int.equal n n' | _ -> false
+  match kind c with Rel (n', _) -> Int.equal n n' | _ -> false
 (* Tests if a variable *)
 let isVar c = match kind c with Var _ -> true | _ -> false
 let isVarId id c = match kind c with Var id' -> Id.equal id id' | _ -> false
@@ -364,7 +366,7 @@ let isRefX x c =
 
 (* Destructs a de Bruijn index *)
 let destRel c = match kind c with
-  | Rel n -> n
+  | Rel (n, _) -> n
   | _ -> raise DestKO
 
 (* Destructs an existential variable *)
@@ -906,6 +908,14 @@ let annotate ind s =
     else c in
   map_annots f
 
+let annotate_fresh annots =
+  let annots_ref = ref annots in
+  let f iu _ _ =
+    let annots = !annots_ref in
+    annots_ref := List.tl annots;
+    mkIndUS iu (List.hd annots) in
+  map_annots f
+
 let annotate_glob s =
   let f iu a c =
     match a with
@@ -930,7 +940,7 @@ let annotate_succ vars =
 let rec exliftn el c =
   let open Esubst in
   match kind c with
-  | Rel i -> mkRel(reloc_rel i el)
+  | Rel (i, ans) -> mkRelAnnots (reloc_rel i el) ans
   | _ -> map_with_binders el_lift exliftn el c
 
 (* Lifting the binding depth across k bindings *)
@@ -973,7 +983,7 @@ type 'constr constr_compare_fn = int -> 'constr -> 'constr -> bool
 let compare_head_gen_leq_with_cstrnts kind1 kind2 leq_universes leq_sorts leq_annot eq leq nargs t1 t2 =
   match kind_nocast_gen kind1 t1, kind_nocast_gen kind2 t2 with
   | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
-  | Rel n1, Rel n2 -> Int.equal n1 n2
+  | Rel (n1, _), Rel (n2, _) -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
   | Var id1, Var id2 -> Id.equal id1 id2
   | Int i1, Int i2 -> Uint63.equal i1 i2
@@ -1169,7 +1179,8 @@ let constr_ord_int f t1 t2 =
     (* Why this special case? *)
     | App (Cast(c1,_,_),l1), _ -> f (mkApp (c1,l1)) t2
     | _, App (Cast(c2, _,_),l2) -> f t1 (mkApp (c2,l2))
-    | Rel n1, Rel n2 -> Int.compare n1 n2
+    | Rel (n1, ans1), Rel (n2, ans2) ->
+      (Int.compare =? (Option.compare @@ List.compare @@ Annot.compare)) n1 n2 ans1 ans2
     | Rel _, _ -> -1 | _, Rel _ -> 1
     | Var id1, Var id2 -> Id.compare id1 id2
     | Var _, _ -> -1 | _, Var _ -> 1
@@ -1267,7 +1278,7 @@ let array_eqeq t1 t2 =
 
 let hasheq t1 t2 =
   match t1, t2 with
-    | Rel n1, Rel n2 -> n1 == n2
+    | Rel (n1, ans1), Rel (n2, ans2) -> n1 == n2 && ans1 == ans2
     | Meta m1, Meta m2 -> m1 == m2
     | Var id1, Var id2 -> id1 == id2
     | Sort s1, Sort s2 -> s1 == s2
@@ -1396,7 +1407,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
         (CoFix (ln,(lna,tl,bl)), combinesmall 14 h)
       | Meta n ->
         (t, combinesmall 15 n)
-      | Rel n ->
+      | Rel (n, _) ->
         (t, combinesmall 16 n)
       | Proj (p,c) ->
         let c, hc = sh_rec c in
@@ -1475,7 +1486,7 @@ let rec hash t =
     | CoFix(_ln, (_, tl, bl)) ->
        combinesmall 14 (combine (hash_term_array bl) (hash_term_array tl))
     | Meta n -> combinesmall 15 n
-    | Rel n -> combinesmall 16 n
+    | Rel (n, _) -> combinesmall 16 n
     | Proj (p,c) ->
       combinesmall 17 (combine (Projection.hash p) (hash c))
     | Int i -> combinesmall 18 (Uint63.hash i)
@@ -1581,7 +1592,10 @@ let pr_puniverses p u =
 let rec debug_print c =
   let open Pp in
   match kind c with
-  | Rel n -> str "#"++int n
+  | Rel (n, ans) -> str "#"++int n ++
+    str "[" ++
+    option (List.fold_left (fun s annot -> s ++ str ";" ++ Annot.pr annot) (str ";")) ans ++
+    str "]"
   | Meta n -> str "Meta(" ++ int n ++ str ")"
   | Var id -> Id.print id
   | Sort s -> Sorts.debug_print s

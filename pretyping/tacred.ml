@@ -105,7 +105,7 @@ let isEvalRef env sigma c = match EConstr.kind sigma c with
 let destEvalRefU sigma c = match EConstr.kind sigma c with
   | Const (cst,u) ->  EvalConst cst, u
   | Var id  -> (EvalVar id, EInstance.empty)
-  | Rel n -> (EvalRel n, EInstance.empty)
+  | Rel (n, _) -> (EvalRel n, EInstance.empty)
   | Evar ev -> (EvalEvar ev, EInstance.empty)
   | _ -> anomaly (Pp.str "Not an unfoldable reference.")
 
@@ -195,7 +195,7 @@ let check_fix_reversibility sigma labs args ((lv,i),(_,tys,bds)) =
   let li =
     List.map
       (function d -> match EConstr.kind sigma d with
-         | Rel k ->
+         | Rel (k, _) ->
              if
                Array.for_all (Vars.noccurn sigma k) tys
                && Array.for_all (Vars.noccurn sigma (k+nbfix)) bds
@@ -400,7 +400,7 @@ let substl_with_function subst sigma constr =
   let minargs = ref Evar.Map.empty in
   let v = Array.of_list subst in
   let rec subst_total k c = match EConstr.kind sigma c with
-  | Rel i when k < i ->
+  | Rel (i, _) when k < i ->
     if i <= k + Array.length v then
       match v.(i-k-1) with
       | (fx, Some (min, ref)) ->
@@ -549,7 +549,7 @@ let match_eval_ref env sigma constr stack =
         (lazy (EConstr.to_constr sigma (applist (constr,stack))));
      if is_evaluable env (EvalConstRef sp) then Some (EvalConst sp, u) else None
   | Var id when is_evaluable env (EvalVarRef id) -> Some (EvalVar id, EInstance.empty)
-  | Rel i -> Some (EvalRel i, EInstance.empty)
+  | Rel (i, _) -> Some (EvalRel i, EInstance.empty)
   | Evar ev -> Some (EvalEvar ev, EInstance.empty)
   | _ -> None
 
@@ -569,7 +569,7 @@ let match_eval_ref_value env sigma constr stack =
      else None
   | Var id when is_evaluable env (EvalVarRef id) ->
      env |> lookup_named id |> NamedDecl.get_value
-  | Rel n ->
+  | Rel (n, _) ->
      env |> lookup_rel n |> RelDecl.get_value |> Option.map (lift n)
   | _ -> None
 
@@ -630,7 +630,7 @@ let reduce_proj env sigma whfun whfun' c =
 let whd_nothing_for_iota env sigma s =
   let rec whrec (x, stack as s) =
     match EConstr.kind sigma x with
-      | Rel n ->
+      | Rel (n, _) ->
           let open Context.Rel.Declaration in
           (match lookup_rel n env with
              | LocalDef (_,body,_) -> whrec (lift n body, stack)

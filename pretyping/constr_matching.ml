@@ -276,7 +276,7 @@ let matches_core env sigma allow_bound_rels
 
       | PRef ref, _ when convref ref cT -> subst
 
-      | PRel n1, Rel n2 when Int.equal n1 n2 -> subst
+      | PRel n1, Rel (n2, _) when Int.equal n1 n2 -> subst
 
       | PSort ps, Sort s ->
         if Sorts.family_equal ps (Sorts.family (ESorts.kind sigma s))

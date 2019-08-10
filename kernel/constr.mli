@@ -70,6 +70,7 @@ type types = constr
 
 (** Constructs a de Bruijn index (DB indices begin at 1) *)
 val mkRel : int -> constr
+val mkRelAnnots : int -> Annot.t list option -> constr
 
 (** Constructs a Variable *)
 val mkVar : Id.t -> constr
@@ -215,7 +216,7 @@ val mkCoFix : cofixpoint -> constr
 type 'constr pexistential = Evar.t * 'constr list
 
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
-  | Rel       of int                                  (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
+  | Rel       of int * Annot.t list option            (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
 
   | Var       of Id.t                                 (** Gallina-variable that was introduced by Vernacular-command that extends
                                                           the local context of the currently open section
@@ -536,6 +537,11 @@ val fold_map : ('a -> constr -> 'a * constr) -> 'a -> constr -> 'a * constr
 val map_with_binders :
   ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
 
+(** [count_annots c] counts the number of slots available for annotations,
+  not just how many actual stage variables there are in [c] *)
+
+val count_annots : constr -> int
+
 (** [collect_annots c] collects all the stage variables in [c] *)
 
 val collect_annots : constr -> SVars.t
@@ -572,6 +578,11 @@ val erase_star : SVars.t -> constr -> constr
 (** [annotate ind s c] annotates all inductive types [ind] in [c] with annotation [s] *)
 
 val annotate : Names.MutInd.t -> Annot.t -> constr -> constr
+
+(** [annotate_fresh annots] puts the annotations in [annots] in every annotatable slot
+   as found by [count_annots] *)
+
+val annotate_fresh : Annot.t list -> constr -> constr
 
 (** [annotate_glob s c] replaces all Glob annotations in [c] with [s] *)
 
