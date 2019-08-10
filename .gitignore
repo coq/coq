@@ -48,6 +48,7 @@
 revision
 TAGS
 .DS_Store
+.vscode
 .pc
 bin/
 _build_ci
