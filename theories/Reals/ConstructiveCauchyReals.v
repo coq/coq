@@ -625,7 +625,7 @@ Proof.
       apply Qinv_lt_contravar. reflexivity. apply epsPos. apply kmaj.
       unfold Qeq. simpl. rewrite Pos.mul_1_r. reflexivity.
       field. assumption.
-Qed.
+Defined.
 
 Definition linear_order_T x y z := CRealLt_dec x z y.
 
@@ -905,6 +905,12 @@ Proof.
 Defined.
 
 Infix "+" := CReal_plus : CReal_scope.
+
+Lemma CReal_plus_nth : forall (x y : CReal) (n : nat),
+    proj1_sig (x + y) n = Qplus (proj1_sig x (2*n)%nat) (proj1_sig y (2*n)%nat).
+Proof.
+  intros. destruct x,y; reflexivity.
+Qed.
 
 Lemma CReal_plus_unfold : forall (x y : CReal),
     QSeqEquiv (proj1_sig (CReal_plus x y))
@@ -1844,8 +1850,8 @@ Arguments INR n%nat.
 Fixpoint IPR_2 (p:positive) : CReal :=
   match p with
   | xH => 1 + 1
-  | xO p => (1 + 1) * IPR_2 p
-  | xI p => (1 + 1) * (1 + IPR_2 p)
+  | xO p => IPR_2 p + IPR_2 p
+  | xI p => (1 + IPR_2 p) + (1 + IPR_2 p)
   end.
 
 Definition IPR (p:positive) : CReal :=
@@ -1943,28 +1949,66 @@ Qed.
 
 Lemma INR_IPR : forall p, INR (Pos.to_nat p) == IPR p.
 Proof.
-  assert (H: forall p, 2 * INR (Pos.to_nat p) == IPR_2 p).
+  assert (H: forall p, INR (Pos.to_nat p) + INR (Pos.to_nat p) == IPR_2 p).
   { induction p as [p|p|].
     - unfold IPR_2; rewrite Pos2Nat.inj_xI, S_INR, mult_INR, <- IHp.
-      rewrite CReal_plus_comm. reflexivity.
-    - unfold IPR_2; now rewrite Pos2Nat.inj_xO, mult_INR, <- IHp.
-    - apply CReal_mult_1_r. }
+      setoid_replace (INR 2) with (1 + 1). 2: reflexivity. ring.
+    - unfold IPR_2; rewrite Pos2Nat.inj_xO, mult_INR, <- IHp.
+      setoid_replace (INR 2) with (1 + 1). 2: reflexivity. ring.
+    - reflexivity. }
   intros [p|p|] ; unfold IPR.
   rewrite Pos2Nat.inj_xI, S_INR, mult_INR, <- H.
-  apply CReal_plus_comm.
-  now rewrite Pos2Nat.inj_xO, mult_INR, <- H.
+  setoid_replace (INR 2) with (1 + 1). 2: reflexivity. ring.
+  rewrite Pos2Nat.inj_xO, mult_INR, <- H.
+  setoid_replace (INR 2) with (1 + 1). 2: reflexivity. ring.
   easy.
 Qed.
 
+(* This is stronger than Req to injectQ, because it
+   concerns all the rational sequence, not only its limit. *)
+Lemma FinjectP2_CReal : forall (p:positive) (k:nat),
+    (proj1_sig (IPR_2 p) k == Z.pos p~0 # 1)%Q.
+Proof.
+  induction p.
+  - intros. replace (IPR_2 p~1) with (1 + IPR_2 p + (1+ IPR_2 p)).
+    2: reflexivity. do 2 rewrite CReal_plus_nth. rewrite IHp.
+    simpl. rewrite Pos2Z.inj_xO, (Pos2Z.inj_xO (p~1)), Pos2Z.inj_xI.
+    generalize (2*Z.pos p)%Z. intro z.
+    do 2 rewrite Qinv_plus_distr. apply f_equal2.
+    2: reflexivity. unfold Qnum. ring.
+  - intros. replace (IPR_2 p~0) with (IPR_2 p + IPR_2 p).
+    2: reflexivity. rewrite CReal_plus_nth, IHp.
+    rewrite Qinv_plus_distr. apply f_equal2. 2: reflexivity.
+    unfold Qnum. rewrite (Pos2Z.inj_xO (p~0)). ring.
+  - intros. reflexivity.
+Qed.
+
+Lemma FinjectP_CReal : forall (p:positive) (k:nat),
+    (proj1_sig (IPR p) k == Z.pos p # 1)%Q.
+Proof.
+  destruct p.
+  - intros. unfold IPR.
+    rewrite CReal_plus_nth, FinjectP2_CReal. unfold Qeq; simpl.
+    rewrite Pos.mul_1_r. reflexivity.
+  - intros. unfold IPR. rewrite FinjectP2_CReal. reflexivity.
+  - intros. reflexivity.
+Qed.
+
+(* Inside this Cauchy real implementation, we can give
+   an instantaneous witness of this inequality, because
+   we know a priori that it will work. *)
 Lemma IPR_pos : forall p:positive, 0 < IPR p.
 Proof.
-  intro p. rewrite <- INR_IPR. apply (lt_INR 0), Pos2Nat.is_pos.
-Qed.
+  intro p. exists 3%positive. simpl.
+  rewrite FinjectP_CReal. apply (Qlt_le_trans _ 1). reflexivity.
+  unfold Qle; simpl.
+  rewrite <- (Zpos_max_1 (p*1*1)). apply Z.le_max_l.
+Defined.
 
 Lemma IPR_double : forall p:positive, IPR (2*p) == 2 * IPR p.
 Proof.
-  intro p. destruct p; try reflexivity.
-  rewrite CReal_mult_1_r. reflexivity.
+  intro p.
+  destruct p; rewrite (CReal_mult_plus_distr_r _ 1 1), CReal_mult_1_l; reflexivity.
 Qed.
 
 (**********)
