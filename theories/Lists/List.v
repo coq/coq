@@ -1227,6 +1227,20 @@ End Fold_Right_Recursor.
       case_eq (f a); intros; simpl; intuition congruence.
     Qed.
 
+    Lemma filter_app (l l':list A) :
+      filter (l ++ l') = filter l ++ filter l'.
+    Proof.
+      induction l as [|x l IH]; simpl; trivial.
+      destruct (f x); simpl; now rewrite IH.
+    Qed.
+
+    Lemma concat_filter_map : forall (l : list (list A)) (f : A -> bool),
+      concat (map filter l) = filter (concat l).
+    Proof.
+      induction l as [| v l IHl]; [auto|].
+      simpl. rewrite (IHl f). rewrite filter_app. reflexivity.
+    Qed.
+
   (** [find] *)
 
     Fixpoint find (l:list A) : option A :=
@@ -1309,6 +1323,55 @@ End Fold_Right_Recursor.
   End Bool.
 
 
+  (*******************************)
+  (** ** Further filtering facts *)
+  (*******************************)
+
+  Section Filtering.
+    Variables (A : Type).
+
+    Lemma filter_map : forall (f g : A -> bool) (l : list A),
+      filter f l = filter g l <-> map f l = map g l.
+    Proof.
+      induction l as [| a l IHl]; [firstorder|].
+      simpl. destruct (f a) eqn:Hfa; destruct (g a) eqn:Hga; split; intros H.
+      - inversion H. apply IHl in H1. rewrite H1. reflexivity.
+      - inversion H. apply IHl in H1. rewrite H1. reflexivity.
+      - assert (Ha : In a (filter g l)). { rewrite <- H. apply in_eq. }
+        apply filter_In in Ha. destruct Ha as [_ Hga']. rewrite Hga in Hga'. inversion Hga'.
+      - inversion H.
+      - assert (Ha : In a (filter f l)). { rewrite H. apply in_eq. }
+        apply filter_In in Ha. destruct Ha as [_ Hfa']. rewrite Hfa in Hfa'. inversion Hfa'.
+      - inversion H.
+      - rewrite IHl in H. rewrite H. reflexivity.
+      - inversion H. apply IHl. assumption.
+    Qed.
+
+    Lemma filter_ext_in : forall (f g : A -> bool) (l : list A),
+      (forall a, In a l -> f a = g a) -> filter f l = filter g l.
+    Proof.
+      intros f g l H. rewrite filter_map. apply map_ext_in. auto.
+    Qed.
+
+    Lemma ext_in_filter : forall (f g : A -> bool) (l : list A),
+      filter f l = filter g l -> (forall a, In a l -> f a = g a).
+    Proof.
+      intros f g l H. rewrite filter_map in H. apply ext_in_map. assumption.
+    Qed.
+
+    Lemma filter_ext_in_iff : forall (f g : A -> bool) (l : list A),
+      filter f l = filter g l <-> (forall a, In a l -> f a = g a).
+    Proof.
+      split; [apply ext_in_filter | apply filter_ext_in].
+    Qed.
+
+    Lemma filter_ext : forall (f g : A -> bool),
+      (forall a, f a = g a) -> forall l, filter f l = filter g l.
+    Proof.
+      intros f g H l. rewrite filter_map. apply map_ext. assumption.
+    Qed.
+
+  End Filtering.
 
 
   (******************************************************)
@@ -1845,6 +1908,56 @@ Section Cutting.
 
 End Cutting.
 
+(**************************************************************)
+(** ** Combining pairs of lists of possibly-different lengths *)
+(**************************************************************)
+
+Section Combining.
+    Variables (A B : Type).
+
+    Lemma combine_nil : forall (l : list A),
+      combine l (@nil B) = @nil (A*B).
+    Proof.
+      intros l.
+      apply length_zero_iff_nil.
+      rewrite combine_length. simpl. rewrite Nat.min_0_r.
+      reflexivity.
+    Qed.
+
+    Lemma combine_firstn_l : forall (l : list A) (l' : list B),
+      combine l l' = combine l (firstn (length l) l').
+    Proof.
+      induction l as [| x l IHl]; intros l'; [reflexivity|].
+      destruct l' as [| x' l']; [reflexivity|].
+      simpl. specialize IHl with (l':=l'). rewrite <- IHl.
+      reflexivity.
+    Qed.
+
+    Lemma combine_firstn_r : forall (l : list A) (l' : list B),
+      combine l l' = combine (firstn (length l') l) l'.
+    Proof.
+      intros l l'. generalize dependent l.
+      induction l' as [| x' l' IHl']; intros l.
+      - simpl. apply combine_nil.
+      - destruct l as [| x l]; [reflexivity|].
+        simpl. specialize IHl' with (l:=l). rewrite <- IHl'.
+        reflexivity.
+    Qed.
+
+    Lemma combine_firstn : forall (l : list A) (l' : list B) (n : nat),
+      firstn n (combine l l') = combine (firstn n l) (firstn n l').
+    Proof.
+      induction l as [| x l IHl]; intros l' n.
+      - simpl. repeat (rewrite firstn_nil). reflexivity.
+      - destruct l' as [| x' l'].
+        + simpl. repeat (rewrite firstn_nil). rewrite combine_nil. reflexivity.
+        + simpl. destruct n as [| n]; [reflexivity|].
+          repeat (rewrite firstn_cons). simpl.
+          rewrite IHl. reflexivity.
+    Qed.
+
+End Combining.
+
 (**********************************************************************)
 (** ** Predicate for List addition/removal (no need for decidability) *)
 (**********************************************************************)
@@ -1958,6 +2071,15 @@ Section ReDun.
       | [] => []
       | x::xs => if in_dec decA x xs then nodup xs else x::(nodup xs)
     end.
+
+  Lemma nodup_fixed_point : forall (l : list A),
+    NoDup l -> nodup l = l.
+  Proof.
+    induction l as [| x l IHl]; [auto|]. intros H.
+    simpl. destruct (in_dec decA x l) as [Hx | Hx]; rewrite NoDup_cons_iff in H.
+    - destruct H as [H' _]. contradiction.
+    - destruct H as [_ H']. apply IHl in H'. rewrite -> H'. reflexivity.
+  Qed.
 
   Lemma nodup_In l x : In x (nodup l) <-> In x l.
   Proof.
