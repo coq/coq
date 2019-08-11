@@ -1049,12 +1049,8 @@ Qed.
 
 (** ** Filter *)
 
-Lemma filter_app A f (l l':list A) :
- List.filter f (l ++ l') = List.filter f l ++ List.filter f l'.
-Proof.
- induction l as [|x l IH]; simpl; trivial.
- destruct (f x); simpl; now rewrite IH.
-Qed.
+#[deprecated(since="8.11",note="Lemma filter_app has been moved to module List.")]
+Notation filter_app := List.filter_app.
 
 Lemma filter_aux_elements s f acc :
  filter_aux f s acc = List.filter f (elements s) ++ acc.
@@ -1062,7 +1058,7 @@ Proof.
  revert acc.
  induction s as [|c l IHl x r IHr]; trivial.
  intros acc.
- rewrite elements_node, filter_app. simpl.
+ rewrite elements_node, List.filter_app. simpl.
  destruct (f x); now rewrite IHl, IHr, app_ass.
 Qed.
 
