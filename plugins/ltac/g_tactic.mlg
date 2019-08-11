@@ -79,7 +79,8 @@ let check_for_coloneq =
         | KEYWORD ":=" -> ()
         | _ -> err () in
       match stream_nth 0 strm with
-      | KEYWORD "(" -> skip_binders 2
+      | KEYWORD "(" -> skip_binders 2;
+        Stats.lookahead "lpar_id_colon" __FILE__ __LINE__
       | _ -> err ())
 
 let lookup_at_as_comma =

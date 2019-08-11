@@ -34,6 +34,8 @@ module type S = sig
     val print : Format.formatter -> 'a t -> unit
   end
 
+  type prod_inf = (string * int * string * int) option
+
   module rec Symbol : sig
 
     type ('self, 'trec, 'a) t
@@ -68,13 +70,13 @@ module type S = sig
   end and Rules : sig
 
     type 'a t
-    val make : (_, norec, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
+    val make : ?inf:prod_inf -> (_, norec, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
 
   end
 
   module Production : sig
     type 'a t
-    val make : ('a, _, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
+    val make : ?inf:prod_inf -> ('a, _, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
   end
 
   type 'a single_extend_statement =
@@ -137,6 +139,8 @@ type ('a, 'b, 'c, 'd) ty_and_rec3 =
 | NoRec3 : (norec, norec, norec, norec) ty_and_rec3
 | MayRec3 : ('a, 'b, 'c, mayrec) ty_and_rec3
 
+type prod_inf = (string * int * string * int) option
+
 type 'a ty_entry = {
   ename : string;
   mutable estart : int -> 'a parser_t;
@@ -176,7 +180,7 @@ and ('self, _, _, 'r) ty_rule =
 
 and ('self, 'trec, 'a) ty_tree =
 | Node : ('trn, 'trs, 'trb, 'tr) ty_and_rec3 * ('self, 'trn, 'trs, 'trb, 'b, 'a) ty_node -> ('self, 'tr, 'a) ty_tree
-| LocAct : 'k * 'k list -> ('self, norec, 'k) ty_tree
+| LocAct : 'k * 'k list * prod_inf -> ('self, norec, 'k) ty_tree
 | DeadEnd : ('self, norec, 'k) ty_tree
 
 and ('self, 'trec, 'trecs, 'trecb, 'a, 'r) ty_node = {
@@ -186,10 +190,10 @@ and ('self, 'trec, 'trecs, 'trecb, 'a, 'r) ty_node = {
 }
 
 type 'a ty_rules =
-| TRules : (_, norec, 'act, Loc.t -> 'a) ty_rule * 'act -> 'a ty_rules
+| TRules : (_, norec, 'act, Loc.t -> 'a) ty_rule * prod_inf * 'act -> 'a ty_rules
 
 type 'a ty_production =
-| TProd : ('a, _, 'act, Loc.t -> 'a) ty_rule * 'act -> 'a ty_production
+| TProd : ('a, _, 'act, Loc.t -> 'a) ty_rule * 'act * prod_inf -> 'a ty_production
 
 let rec derive_eps : type s r a. (s, r, a) ty_symbol -> bool =
   function
@@ -205,7 +209,7 @@ let rec derive_eps : type s r a. (s, r, a) ty_symbol -> bool =
   | Stoken _ -> false
 and tree_derive_eps : type s tr a. (s, tr, a) ty_tree -> bool =
   function
-    LocAct (_, _) -> true
+    LocAct _ -> true
   | Node (_, {node = s; brother = bro; son = son}) ->
       derive_eps s && tree_derive_eps son || tree_derive_eps bro
   | DeadEnd -> false
@@ -342,7 +346,7 @@ let and_and_tree (type s tr' trt tr trn trs trb f) (ar : (tr', trt, tr) ty_and_r
   | MayRec2, _, MayRec -> MayRec2 | MayRec2, _, NoRec -> MayRec2
   | NoRec2, NoRec3, NoRec -> NoRec2
 
-let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and_ex) (gsymbols : (s, trs, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, trt, a) ty_tree) : (s, tr, a) ty_tree =
+let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and_ex) (gsymbols : (s, trs, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, trt, a) ty_tree) (inf : prod_inf) : (s, tr, a) ty_tree =
   let rec insert : type trs trt tr p f k. (trs, trt, tr) ty_and_ex -> (s, trs, p) ty_symbols -> (p, k, f) rel_prod -> (s, trt, f) ty_tree -> k -> (s, tr, f) ty_tree  =
     fun ar symbols pf tree action ->
     match symbols, pf with
@@ -355,7 +359,7 @@ let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and
         match ar, tree with
         | NR10, Node (_, n) -> Node (MayRec3, node n)
         | NR11, Node (NoRec3, n) -> Node (NoRec3, node n)
-        | NR11, LocAct (old_action, action_list) ->
+        | NR11, LocAct (old_action, action_list, inf) ->
           (* What to do about this warning? For now it is disabled *)
           if false then
             begin
@@ -365,8 +369,8 @@ let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and
                 "some rule has been masked" in
               Feedback.msg_warning (Pp.str msg)
             end;
-          LocAct (action, old_action :: action_list)
-        | NR11, DeadEnd -> LocAct (action, [])
+          LocAct (action, old_action :: action_list, inf)
+        | NR11, DeadEnd -> LocAct (action, [], inf)
   and insert_in_tree : type trs trs' trs'' trt tr a p f k. (trs'', trt, tr) ty_and_ex -> (trs, trs', trs'') ty_and_rec -> (s, trs, a) ty_symbol -> (s, trs', p) ty_symbols -> (p, k, a -> f) rel_prod -> (s, trt, f) ty_tree -> k -> (s, tr, f) ty_tree =
     fun ar ars s sl pf tree action ->
     let ar : (trs'', trt, tr) ty_and_rec = match ar with NR11 -> NoRec2
@@ -419,23 +423,23 @@ let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and
                 | NoRec2, NoRec3 -> Some (Node (NoRec3, node)) end
           | None -> None
         end
-    | LocAct (_, _) -> None | DeadEnd -> None
+    | LocAct _ -> None | DeadEnd -> None
   in
   insert ar gsymbols pf tree action
 
-let insert_tree_norec (type s p k a) entry_name (gsymbols : (s, norec, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, norec, a) ty_tree) : (s, norec, a) ty_tree =
-  insert_tree entry_name NR11 gsymbols pf action tree
+let insert_tree_norec (type s p k a) entry_name (gsymbols : (s, norec, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, norec, a) ty_tree) (inf : prod_inf): (s, norec, a) ty_tree =
+  insert_tree entry_name NR11 gsymbols pf action tree inf
 
-let insert_tree (type s trs trt p k a) entry_name (gsymbols : (s, trs, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, trt, a) ty_tree) : (s, a) ty_mayrec_tree =
+let insert_tree (type s trs trt p k a) entry_name (gsymbols : (s, trs, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, trt, a) ty_tree) (inf : prod_inf): (s, a) ty_mayrec_tree =
   let MayRecNR ar = and_symbols_tree gsymbols tree in
-  MayRecTree (insert_tree entry_name ar gsymbols pf action tree)
+  MayRecTree (insert_tree entry_name ar gsymbols pf action tree inf)
 
 let srules (type self a) (rl : a ty_rules list) : (self, norec, a) ty_symbol =
   let rec retype_tree : type s a. (s, norec, a) ty_tree -> (self, norec, a) ty_tree =
     function
     | Node (NoRec3, {node = s; son = son; brother = bro}) ->
       Node (NoRec3, {node = retype_symbol s; son = retype_tree son; brother = retype_tree bro})
-    | LocAct (k, kl) -> LocAct (k, kl)
+    | LocAct (k, kl, inf) -> LocAct (k, kl, inf)
     | DeadEnd -> DeadEnd
   and retype_symbol : type s a. (s, norec, a) ty_symbol -> (self, norec, a) ty_symbol =
     function
@@ -454,10 +458,10 @@ let srules (type self a) (rl : a ty_rules list) : (self, norec, a) ty_symbol =
     | TNext (NoRec2, r, s) -> TNext (NoRec2, retype_rule r, retype_symbol s) in
   let t =
     List.fold_left
-      (fun tree (TRules (symbols, action)) ->
+      (fun tree (TRules (symbols, inf, action)) ->
         let symbols = retype_rule symbols in
         let AnyS (symbols, pf) = get_symbols symbols in
-        insert_tree_norec "" symbols pf action tree)
+        insert_tree_norec "" symbols pf action tree inf)
       DeadEnd rl
   in
   Stree t
@@ -467,19 +471,19 @@ let is_level_labelled n (Level lev) =
     Some n1 -> n = n1
   | None -> false
 
-let insert_level (type s tr p k) entry_name (symbols : (s, tr, p) ty_symbols) (pf : (p, k, Loc.t -> s) rel_prod) (action : k) (slev : s ty_level) : s ty_level =
+let insert_level (type s tr p k) entry_name (symbols : (s, tr, p) ty_symbols) (pf : (p, k, Loc.t -> s) rel_prod) (action : k) (slev : s ty_level) (inf : prod_inf): s ty_level =
   match symbols with
   | TCns (_, Sself, symbols) ->
       let Level slev = slev in
       let RelS pf = pf in
-      let MayRecTree lsuffix = insert_tree entry_name symbols pf action slev.lsuffix in
+      let MayRecTree lsuffix = insert_tree entry_name symbols pf action slev.lsuffix inf in
       Level
       {assoc = slev.assoc; lname = slev.lname;
        lsuffix = lsuffix;
        lprefix = slev.lprefix}
   | _ ->
       let Level slev = slev in
-      let MayRecTree lprefix = insert_tree entry_name symbols pf action slev.lprefix in
+      let MayRecTree lprefix = insert_tree entry_name symbols pf action slev.lprefix inf in
       Level
       {assoc = slev.assoc; lname = slev.lname; lsuffix = slev.lsuffix;
        lprefix = lprefix}
@@ -604,7 +608,7 @@ let insert_tokens gram symbols =
     function
       Node (_, {node = s; brother = bro; son = son}) ->
         insert s; tinsert bro; tinsert son
-    | LocAct (_, _) -> () | DeadEnd -> ()
+    | LocAct _ -> () | DeadEnd -> ()
   and linsert : type s tr p. (s, tr, p) ty_symbols -> unit = function
   | TNil -> ()
   | TCns (_, s, r) -> insert s; linsert r
@@ -630,11 +634,11 @@ let levels_of_rules entry position rules =
            let lev = make_lev lname assoc in
            let lev =
              List.fold_left
-               (fun lev (TProd (symbols, action)) ->
+               (fun lev (TProd (symbols, action, inf)) ->
                   let MayRecRule symbols = change_to_self entry symbols in
                   let AnyS (symbols, pf) = get_symbols symbols in
                   insert_tokens egram symbols;
-                  insert_level entry.ename symbols pf action lev)
+                  insert_level entry.ename symbols pf action lev inf)
                lev level
            in
            lev :: levs, empty_lev)
@@ -706,8 +710,8 @@ let delete_rule_in_tree entry =
         | None -> None
         end
     | TNil, DeadEnd -> None
-    | TNil, LocAct (_, []) -> Some (Some (ExS TNil), MayRecTree DeadEnd)
-    | TNil, LocAct (_, action :: list) -> Some (None, MayRecTree (LocAct (action, list)))
+    | TNil, LocAct (_, [], _) -> Some (Some (ExS TNil), MayRecTree DeadEnd)
+    | TNil, LocAct (_, action :: list, inf) -> Some (None, MayRecTree (LocAct (action, list, inf)))
   and delete_son :
     type s p tr trn trs trb a r. (s, tr, p) ty_symbols -> (s, trn, trs, trb, a, r) ty_node -> (s ex_symbols option * (s, r) ty_mayrec_tree) option =
     fun sl n ->
@@ -745,7 +749,7 @@ let rec decr_keyw_use : type s tr a. _ -> (s, tr, a) ty_symbol -> unit = fun gra
   | Snterm _ -> () | Snterml (_, _) -> ()
 and decr_keyw_use_in_tree : type s tr a. _ -> (s, tr, a) ty_tree -> unit = fun gram ->
   function
-    DeadEnd -> () | LocAct (_, _) -> ()
+    DeadEnd -> () | LocAct _ -> ()
   | Node (_, n) ->
       decr_keyw_use gram n.node;
       decr_keyw_use_in_tree gram n.son;
@@ -817,7 +821,7 @@ let delete_rule_in_level_list (type s tr p) (entry : s ty_entry) (symbols : (s, 
 let rec flatten_tree : type s tr a. (s, tr, a) ty_tree -> s ex_symbols list =
   function
     DeadEnd -> []
-  | LocAct (_, _) -> [ExS TNil]
+  | LocAct _ -> [ExS TNil]
   | Node (_, {node = n; brother = b; son = s}) ->
       List.map (fun (ExS l) -> ExS (TCns (MayRec2, n, l))) (flatten_tree s) @ flatten_tree b
 
@@ -1004,7 +1008,7 @@ and name_of_tree_failed : type s tr a. s ty_entry -> (s, tr, a) ty_tree -> _ =
           in
           let txt =
             match bro with
-              DeadEnd -> txt | LocAct (_, _) -> txt
+              DeadEnd -> txt | LocAct _ -> txt
             | Node _ -> txt ^ " or " ^ name_of_tree_failed entry bro
           in
           txt
@@ -1015,7 +1019,7 @@ and name_of_tree_failed : type s tr a. s ty_entry -> (s, tr, a) ty_tree -> _ =
            | TokCns (tok, t) -> build_str (L.tok_text tok ^ " " ^ s) t in
          build_str (L.tok_text last_tok) rev_tokl
       end
-  | DeadEnd -> "???" | LocAct (_, _) -> "???"
+  | DeadEnd -> "???" | LocAct _ -> "???"
 
 let tree_failed (type s tr a) (entry : s ty_entry) (prev_symb_result : a) (prev_symb : (s, tr, a) ty_symbol) tree =
   let txt = name_of_tree_failed entry tree in
@@ -1091,11 +1095,14 @@ let top_tree : type s tr a. s ty_entry -> (s, tr, a) ty_tree -> (s, tr, a) ty_tr
       Node (MayRec3, {node = top_symb entry s; brother = bro; son = son})
   | Node (NoRec3, {node = s; brother = bro; son = son}) ->
       Node (NoRec3, {node = top_symb entry s; brother = bro; son = son})
-  | LocAct (_, _) -> raise Stream.Failure | DeadEnd -> raise Stream.Failure
+  | LocAct _ -> raise Stream.Failure | DeadEnd -> raise Stream.Failure
 
 let skip_if_empty bp p strm =
   if Stream.count strm == bp then fun a -> p strm
   else raise Stream.Failure
+
+let backup line entry = if !Stats.enable && !Stats.print && !Stats.cnt = 1 then
+  Printf.printf "backup at %d on %s\n%!" line entry.ename
 
 let continue entry bp a s son p1 (strm__ : _ Stream.t) =
   let a = (entry_of_symb entry s).econtinue 0 bp a strm__ in
@@ -1107,12 +1114,14 @@ let continue entry bp a s son p1 (strm__ : _ Stream.t) =
 
 let do_recover parser_of_tree entry nlevn alevn bp a s son
     (strm__ : _ Stream.t) =
+  let pstack = Stats.get_stack () in
   try parser_of_tree entry nlevn alevn (top_tree entry son) strm__ with
     Stream.Failure ->
+      Stats.set_stack pstack;
       try
         skip_if_empty bp (fun (strm__ : _ Stream.t) -> raise Stream.Failure)
           strm__
-      with Stream.Failure ->
+      with Stream.Failure -> backup __LINE__ entry;
         continue entry bp a s son (parser_of_tree entry nlevn alevn son)
           strm__
 
@@ -1143,22 +1152,46 @@ let token_ematch gram tok =
   let tematch = L.tok_match tok in
   fun tok -> tematch tok
 
+let of_sym : type s r a. (s, r, a) ty_symbol -> string = function
+  | Stoken tok -> L.tok_text tok
+  | Slist1 _ -> "Slist1"
+  | Slist1sep _ -> "Slist1sep"
+  | Slist0 _ -> "Slist0"
+  | Slist0sep _ -> "Slist0sep"
+  | Sopt _ -> "Sopt"
+  | Sself -> "Self"
+  | Snext -> "Next"
+  | Snterm ent -> ent.ename
+  | Snterml (ent, lev) -> Printf.sprintf "Snterml %s %s" ent.ename lev
+  | Stree _ -> "Stree"
+
+let parser_action oact inf =
+  let len = List.length oact in
+  if len = 0 then begin
+    let (prod_id, ntoks, fname, lnum) = Option.default ("??", 0, "??", 0) inf in
+    if !Stats.print then Printf.printf "LocAct %s %d %s %d\n%!" prod_id ntoks fname lnum;
+    if prod_id <> "??" then Stats.parser_action prod_id ntoks fname lnum;
+  end else if !Stats.print then
+    (* duplicate action, don't reduce *)
+    Printf.eprintf "oact len = %d\n%!" len
+
 let rec parser_of_tree : type s tr r. s ty_entry -> int -> int -> (s, tr, r) ty_tree -> r parser_t =
   fun entry nlevn alevn ->
   function
     DeadEnd -> (fun (strm__ : _ Stream.t) -> raise Stream.Failure)
-  | LocAct (act, _) -> (fun (strm__ : _ Stream.t) -> act)
-  | Node (_, {node = Sself; son = LocAct (act, _); brother = DeadEnd}) ->
+  | LocAct (act, oact, inf) -> (fun (strm__ : _ Stream.t) -> parser_action oact inf; act)
+  | Node (_, {node = Sself; son = LocAct (act, oact, inf); brother = DeadEnd}) ->
       (fun (strm__ : _ Stream.t) ->
-         let a = entry.estart alevn strm__ in act a)
-  | Node (_, {node = Sself; son = LocAct (act, _); brother = bro}) ->
+         let a = entry.estart alevn strm__ in parser_action oact inf; act a)
+  | Node (_, {node = Sself; son = LocAct (act, oact, inf); brother = bro}) ->
       let p2 = parser_of_tree entry nlevn alevn bro in
       (fun (strm__ : _ Stream.t) ->
+         let pstack = Stats.get_stack () in
          match
            try Some (entry.estart alevn strm__) with Stream.Failure -> None
          with
-           Some a -> act a
-         | _ -> p2 strm__)
+           Some a -> parser_action oact inf; act a
+         | _ -> Stats.set_stack pstack; p2 strm__)
   | Node (_, {node = s; son = son; brother = DeadEnd}) ->
       let tokl =
         match s with
@@ -1198,16 +1231,19 @@ let rec parser_of_tree : type s tr r. s ty_entry -> int -> int -> (s, tr, r) ty_
           let p1 = parser_cont p1 entry nlevn alevn s son in
           let p2 = parser_of_tree entry nlevn alevn bro in
           (fun (strm : _ Stream.t) ->
+            let pstack = Stats.get_stack () in
              let bp = Stream.count strm in
-             match try Some (ps strm) with Stream.Failure -> None with
+             match try Some (ps strm) with Stream.Failure ->
+               Stats.set_stack pstack; None with
                Some a ->
                  begin match
-                   (try Some (p1 bp a strm) with Stream.Failure -> None)
+                   (try Some (p1 bp a strm) with Stream.Failure ->
+                   backup __LINE__ entry; None)
                  with
                    Some act -> act a
                  | None -> raise (Stream.Error (tree_failed entry a s son))
                  end
-             | None -> p2 strm)
+             | None -> Stats.set_stack pstack; p2 strm)
       | Some (TokTree (last_tok, son, rev_tokl)) ->
           let lt = Stoken last_tok in
           let p2 = parser_of_tree entry nlevn alevn bro in
@@ -1217,12 +1253,15 @@ let rec parser_of_tree : type s tr r. s ty_entry -> int -> int -> (s, tr, r) ty_
             parser_of_token_list entry son p1 rev_tokl last_tok
           in
           fun (strm__ : _ Stream.t) ->
-            try p1 strm__ with Stream.Failure -> p2 strm__
+            let pstack = Stats.get_stack () in
+            try p1 strm__ with Stream.Failure ->
+              Stats.set_stack pstack; p2 strm__
 and parser_cont : type s tr tr' a r.
   (a -> r) parser_t -> s ty_entry -> int -> int -> (s, tr, a) ty_symbol -> (s, tr', a -> r) ty_tree -> int -> a -> (a -> r) parser_t =
   fun p1 entry nlevn alevn s son bp a (strm__ : _ Stream.t) ->
+  let pstack = Stats.get_stack () in
   try p1 strm__ with
-    Stream.Failure ->
+      Stream.Failure -> Stats.set_stack pstack;
       recover parser_of_tree entry nlevn alevn bp a s son strm__
 and parser_of_token_list : type s tr lt r f.
   s ty_entry -> (s, tr, lt -> r) ty_tree ->
@@ -1235,7 +1274,13 @@ and parser_of_token_list : type s tr lt r f.
       match peek_nth n strm with
         Some tok ->
           let r = tematch tok in
-          for _i = 1 to n do Stream.junk strm done; r
+          for _i = 1 to n do
+            (match Stream.peek strm with
+            | Some tok ->
+              Stats.got_token (L.extract_string true tok)
+            | None -> ());
+            Stream.junk strm
+          done; r
       | None -> raise Stream.Failure
     in
     fun (strm : _ Stream.t) ->
@@ -1266,16 +1311,18 @@ and parser_of_symbol : type s tr a.
   | Slist0 s ->
       let ps = call_and_push (parser_of_symbol entry nlevn s) in
       let rec loop al (strm__ : _ Stream.t) =
-        match try Some (ps al strm__) with Stream.Failure -> None with
+        let pstack = Stats.get_stack () in
+        match try Some (ps al strm__) with Stream.Failure -> Stats.set_stack pstack; None with
           Some al -> loop al strm__
-        | _ -> al
+        | _ -> Stats.got_list "Slist0" (List.length al) (of_sym s);
+               al
       in
       (fun (strm__ : _ Stream.t) ->
          let a = loop [] strm__ in List.rev a)
   | Slist0sep (symb, sep, false) ->
       let ps = call_and_push (parser_of_symbol entry nlevn symb) in
       let pt = parser_of_symbol entry nlevn sep in
-      let rec kont al (strm__ : _ Stream.t) =
+      let rec kont al (strm__ : _ Stream.t) =     (* todo: may need more got_list calls for other cases *)
         match try Some (pt strm__) with Stream.Failure -> None with
           Some v ->
             let al =
@@ -1284,12 +1331,13 @@ and parser_of_symbol : type s tr a.
                   raise (Stream.Error (symb_failed entry v sep symb))
             in
             kont al strm__
-        | _ -> al
+        | _ -> Stats.got_list "Slist0sep" (List.length al) (of_sym symb);
+               al
       in
       (fun (strm__ : _ Stream.t) ->
          match try Some (ps [] strm__) with Stream.Failure -> None with
            Some al -> let a = kont al strm__ in List.rev a
-         | _ -> [])
+         | _ -> Stats.got_list "Slist0sep" 0 (of_sym symb); [])
   | Slist0sep (symb, sep, true) ->
       let ps = call_and_push (parser_of_symbol entry nlevn symb) in
       let pt = parser_of_symbol entry nlevn sep in
@@ -1300,20 +1348,24 @@ and parser_of_symbol : type s tr a.
               (try Some (ps al strm__) with Stream.Failure -> None)
             with
               Some al -> kont al strm__
-            | _ -> al
+            | _ -> Stats.got_list "Slist0sep" (List.length al) (of_sym symb);
+                   al
             end
-        | _ -> al
+        | _ -> Stats.got_list "Slist0sep" (List.length al) (of_sym symb);
+               al
       in
       (fun (strm__ : _ Stream.t) ->
          match try Some (ps [] strm__) with Stream.Failure -> None with
            Some al -> let a = kont al strm__ in List.rev a
-         | _ -> [])
+         | _ -> Stats.got_list "Slist0sep" 0 (of_sym symb); [])
   | Slist1 s ->
       let ps = call_and_push (parser_of_symbol entry nlevn s) in
       let rec loop al (strm__ : _ Stream.t) =
-        match try Some (ps al strm__) with Stream.Failure -> None with
+        let pstack = Stats.get_stack () in
+        match try Some (ps al strm__) with Stream.Failure -> Stats.set_stack pstack; None with
           Some al -> loop al strm__
-        | _ -> al
+        | _ -> Stats.got_list "Slist1" (List.length al) (of_sym s);
+               al
       in
       (fun (strm__ : _ Stream.t) ->
          let al = ps [] strm__ in
@@ -1335,7 +1387,8 @@ and parser_of_symbol : type s tr a.
                   a :: al
             in
             kont al strm__
-        | _ -> al
+        | _ -> Stats.got_list "Slist1sep" (List.length al) (of_sym symb);
+               al
       in
       (fun (strm__ : _ Stream.t) ->
          let al = ps [] strm__ in
@@ -1358,7 +1411,8 @@ and parser_of_symbol : type s tr a.
                   Some a -> kont (a :: al) strm__
                 | _ -> al
             end
-        | _ -> al
+         | _ -> Stats.got_list "Slist1sep" (List.length al) (of_sym symb);
+                al
       in
       (fun (strm__ : _ Stream.t) ->
          let al = ps [] strm__ in
@@ -1366,9 +1420,10 @@ and parser_of_symbol : type s tr a.
   | Sopt s ->
       let ps = parser_of_symbol entry nlevn s in
       (fun (strm__ : _ Stream.t) ->
-         match try Some (ps strm__) with Stream.Failure -> None with
-           Some a -> Some a
-         | _ -> None)
+         let pstack = Stats.get_stack() in
+         match try Some (ps strm__) with Stream.Failure -> Stats.set_stack pstack; None with
+           Some a -> Stats.got_list "Sopt" 1 (of_sym s); Some a
+         | _ -> Stats.got_list "Sopt" 0 (of_sym s); None)
   | Stree t ->
       let pt = parser_of_tree entry 1 0 t in
       (fun (strm__ : _ Stream.t) ->
@@ -1388,7 +1443,9 @@ and parser_of_token : type s a.
   let f = L.tok_match tok in
   fun strm ->
     match Stream.peek strm with
-      Some tok -> let r = f tok in Stream.junk strm; r
+      Some tok -> let r = f tok in Stream.junk strm;
+        (* no loc here *)
+        Stats.got_token (L.extract_string true tok); r
     | None -> raise Stream.Failure
 and parse_top_symb : type s tr a. s ty_entry -> (s, tr, a) ty_symbol -> a parser_t =
   fun entry symb ->
@@ -1430,7 +1487,7 @@ let rec start_parser_of_levels entry clevn =
                 else
                   let (strm__ : _ Stream.t) = strm in
                   let bp = Stream.count strm__ in
-                  match try Some (p2 strm__) with Stream.Failure -> None with
+                  match try Some (p2 strm__) with Stream.Failure -> backup __LINE__ entry; None with
                     Some act ->
                       let ep = Stream.count strm__ in
                       let a = act (loc_of_token_interval bp ep) in
@@ -1457,6 +1514,7 @@ let rec continue_parser_of_levels entry clevn =
               let (strm__ : _ Stream.t) = strm in
               try p1 levn bp a strm__ with
                 Stream.Failure ->
+                  backup __LINE__ entry;  (* todo: save/restore state? *)
                   let act = p2 strm__ in
                   let ep = Stream.count strm__ in
                   let a = act a (loc_of_token_interval bp ep) in
@@ -1467,7 +1525,8 @@ let continue_parser_of_entry entry =
     Dlevels elev ->
       let p = continue_parser_of_levels entry 0 elev in
       (fun levn bp a (strm__ : _ Stream.t) ->
-         try p levn bp a strm__ with Stream.Failure -> a)
+         (* todo: save/restore state? *)
+         try p levn bp a strm__ with Stream.Failure -> backup __LINE__ entry; a)
   | Dparser p -> fun levn bp a (strm__ : _ Stream.t) -> raise Stream.Failure
 
 let empty_entry ename levn strm =
@@ -1586,6 +1645,7 @@ module Parsable = struct
 
 end
 
+external reraise : exn -> 'a = "%reraise"
 module Entry = struct
   type 'a t = 'a ty_entry
   let make n =
@@ -1595,7 +1655,22 @@ module Entry = struct
       edesc = Dlevels []}
   let create = make
   let parse (e : 'a t) p : 'a =
-    Parsable.parse_parsable e p
+    (incr Stats.cnt);
+    let print = !Stats.cnt > 1 && !Stats.print in
+    if print then
+      Printf.printf ">>> Entry.parse of %s %d\n%!" e.ename !Stats.cnt;
+    try
+    let x = Parsable.parse_parsable e p in
+    if print then
+      Printf.printf "<<< Exit Entry.parse of %s %d\n%!" e.ename !Stats.cnt;
+    (decr Stats.cnt);
+    x
+    with _ as ex ->
+      if print then
+        Printf.printf "<<< Exception Entry.parse of %s %d\n%!" e.ename !Stats.cnt;
+      (decr Stats.cnt);
+      reraise ex
+
   let parse_token_stream (e : 'a t) ts : 'a =
     e.estart 0 ts
   let name e = e.ename
@@ -1666,19 +1741,19 @@ end = struct
 end and Rules : sig
 
   type 'a t = 'a ty_rules
-  val make : (_, norec, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
+  val make : ?inf:prod_inf -> (_, norec, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
 
 end = struct
 
   type 'a t = 'a ty_rules
-  let make p act = TRules (p, act)
+  let make ?(inf=None) p act = TRules (p, inf, act)
 
 end
 
 module Production = struct
 
   type 'a t = 'a ty_production
-  let make p act = TProd (p, act)
+  let make ?(inf=None) p act = TProd (p, act, inf)
 
 end
 
@@ -1704,7 +1779,7 @@ type 'a extend_statement =
 let safe_extend (e : 'a Entry.t) { pos; data } =
   extend_entry e pos data
 
-let safe_delete_rule e (TProd (r,_act)) =
+let safe_delete_rule e (TProd (r,_act, _)) =
   let AnyS (symbols, _) = get_symbols r in
   delete_rule e symbols
 
@@ -1770,10 +1845,10 @@ let rec mk_rule tok =
   match tok with
   | [] ->
     let stop_e = Rule.stop in
-    TRules (stop_e, fun _ -> (* dropped anyway: *) "")
+    TRules (stop_e, None, fun _ -> (* dropped anyway: *) "") (* ?? *)
   | tkn :: rem ->
-    let TRules (r, f) = mk_rule rem in
+    let TRules (r, inf, f) = mk_rule rem in
     let r = Rule.next_norec r (Symbol.token tkn) in
-    TRules (r, fun _ -> f)
+    TRules (r, inf, fun _ -> f)
 
 end

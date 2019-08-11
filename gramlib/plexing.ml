@@ -14,6 +14,7 @@ module type S = sig
   val tok_using : 'c pattern -> unit
   val tok_removing : 'c pattern -> unit
   val tok_match : 'c pattern -> te -> 'c
+  val extract_string : bool -> te -> string
   val tok_text : 'c pattern -> string
 
   (* State for the comments, at some point we should make it functional *)

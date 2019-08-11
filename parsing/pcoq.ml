@@ -34,7 +34,8 @@ struct
     if contiguous tok n (n+m-1) then Some m else None
 
   let to_entry s (lk : t) =
-    let run tok strm = match lk tok 0 strm with None -> err () | Some _ -> () in
+    let run tok strm = match lk tok 0 strm with None -> err () | Some _ ->
+        Stats.lookahead s __FILE__ __LINE__ in
     Entry.of_parser s run
 
   let (>>) (lk1 : t) lk2 tok n strm = match lk1 tok n strm with

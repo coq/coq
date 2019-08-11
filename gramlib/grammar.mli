@@ -44,6 +44,8 @@ module type S = sig
     val print : Format.formatter -> 'a t -> unit
   end
 
+  type prod_inf = (string * int * string * int) option
+
   module rec Symbol : sig
 
     type ('self, 'trec, 'a) t
@@ -78,13 +80,13 @@ module type S = sig
   end and Rules : sig
 
     type 'a t
-    val make : (_, norec, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
+    val make : ?inf:prod_inf -> (_, norec, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
 
   end
 
   module Production : sig
     type 'a t
-    val make : ('a, _, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
+    val make : ?inf:prod_inf -> ('a, _, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
   end
 
   type 'a single_extend_statement =

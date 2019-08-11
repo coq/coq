@@ -52,7 +52,7 @@ module Vernac_ =
     let noedit_mode = Entry.create "noedit_command"
 
     let () =
-      let act_vernac v loc = Some v in
+      let act_vernac v loc = Stats.check_stack (); Some v in
       let act_eoi _ loc = None in
       let rule = [
         Pcoq.(Production.make (Rule.next Rule.stop (Symbol.token Tok.PEOI)) act_eoi);

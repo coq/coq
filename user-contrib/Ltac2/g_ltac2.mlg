@@ -842,6 +842,7 @@ let rules = [
     Production.make
       (Rule.stop ++ Symbol.nterm test_dollar_ident ++ Symbol.token (PKEYWORD "$") ++ Symbol.nterm Prim.ident)
     begin fun id _ _ loc ->
+      Stats.parser_action "Ltac2-$" 3 __FILE__ __LINE__;  (* todo: why not in mlg? *)
       let id = Loc.tag ~loc id in
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_quotation) id in
       CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
@@ -852,6 +853,7 @@ let rules = [
     Production.make
       (Rule.stop ++ Symbol.nterm test_ampersand_ident ++ Symbol.token (PKEYWORD "&") ++ Symbol.nterm Prim.ident)
     begin fun id _ _ loc ->
+      Stats.parser_action "Ltac2-&" 3 __FILE__ __LINE__;  (* todo: why not in mlg? *)
       let tac = Tac2quote.of_exact_hyp ~loc (CAst.make ~loc id) in
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
       CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
@@ -863,6 +865,7 @@ let rules = [
       (Rule.stop ++ Symbol.token (PIDENT (Some "ltac2")) ++ Symbol.token (PKEYWORD ":") ++
        Symbol.token (PKEYWORD "(") ++ Symbol.nterm ltac2_expr ++ Symbol.token (PKEYWORD ")"))
     begin fun _ tac _ _ _ loc ->
+      Stats.parser_action "Ltac2-:" 5 __FILE__ __LINE__;  (* todo: why not in mlg? *)
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
       CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
     end

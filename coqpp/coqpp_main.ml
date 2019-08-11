@@ -51,6 +51,14 @@ let print_list fmt pr l =
   in
   fprintf fmt "@[<hv>[%a]@]" prl l
 
+let print_list2 prod_id fmt pr l =
+  let rec prl n fmt = function
+  | [] -> ()
+  | [x] -> fprintf fmt "%a" (pr prod_id n) x
+  | x :: l -> fprintf fmt "%a;@ %a" (pr prod_id n) x (prl (n-1)) l
+  in
+  fprintf fmt "@[<hv>[%a]@]" (prl (List.length l)) l
+
 let rec print_binders fmt = function
 | [] -> ()
 | ExtTerminal _ :: rem -> print_binders fmt rem
@@ -85,7 +93,7 @@ let print_opt fmt pr = function
 module GramExt :
 sig
 
-val print_extrule : Format.formatter -> (symb list * string option list * code) -> unit
+val print_extrule : string -> Format.formatter -> (symb list * string option list * code) -> unit
 val print_ast : Format.formatter -> grammar_ext -> unit
 
 end =
@@ -210,14 +218,21 @@ function
 | "EOI", None -> fprintf fmt "Tok.PEOI"
 | _ -> failwith "Tok.of_pattern: not a constructor"
 
-let rec print_prod fmt p =
+let format_inf vars body prod_id =
+  let loc = body.loc.loc_start in
+  sprintf "~inf:(Some (\"%s\", %d, \"%s\", %d))" prod_id (List.length vars) loc.pos_fname loc.pos_lnum
+
+
+let rec print_prod prod_id n fmt p =
   let (vars, tkns) = List.split p.gprod_symbs in
   let tkn = List.map parse_tokens tkns in
-  print_extrule fmt (tkn, vars, p.gprod_body)
+  let prod_id = prod_id ^ "-" ^ (string_of_int n) in
+  print_extrule prod_id fmt (tkn, vars, p.gprod_body)
 
-and print_extrule fmt (tkn, vars, body) =
+and print_extrule prod_id fmt (tkn, vars, body) =
+  let prod_inf = format_inf vars body prod_id in
   let tkn = List.rev tkn in
-  fprintf fmt "@[Pcoq.Production.make@ @[(%a)@]@ @[(%a)@]@]" (print_symbols ~norec:false) tkn print_fun (vars, body)
+  fprintf fmt "@[Pcoq.Production.make@ %s@ @[(%a)@]@ @[(%a)@]@]" prod_inf (print_symbols ~norec:false) tkn print_fun (vars, body)
 
 and print_symbols ~norec fmt = function
 | [] -> fprintf fmt "Pcoq.Rule.stop"
@@ -249,23 +264,27 @@ and print_symbol fmt tkn = match tkn with
 | SymbRules rules ->
   let pr fmt (r, body) =
     let (vars, tkn) = List.split r in
+    let prod_inf = format_inf vars body "*" in
     let tkn = List.rev tkn in
-    fprintf fmt "Pcoq.Rules.make @[(%a)@ (%a)@]" (print_symbols ~norec:true) tkn print_fun (vars, body)
+    fprintf fmt "Pcoq.Rules.make %s@ @[(%a)@ (%a)@]" prod_inf (print_symbols ~norec:true) tkn print_fun (vars, body)
   in
   let pr fmt rules = print_list fmt pr rules in
   fprintf fmt "(Pcoq.Symbol.rules %a)" pr (List.rev rules)
 | SymbQuote c ->
   fprintf fmt "(%s)" c
 
-let print_rule fmt r =
+let print_rule ename fmt r =
   let pr_lvl fmt lvl = print_opt fmt print_string lvl in
   let pr_asc fmt asc = print_opt fmt print_assoc asc in
-  let pr_prd fmt prd = print_list fmt print_prod prd in
+  let prod_id = match r.grule_label with
+  | Some label -> ename ^ label
+  | None -> ename in
+  let pr_prd fmt prd = print_list2 prod_id fmt print_prod prd in
   fprintf fmt "@[(%a,@ %a,@ %a)@]" pr_lvl r.grule_label pr_asc r.grule_assoc pr_prd (List.rev r.grule_prods)
 
 let print_entry fmt e =
   let print_position_opt fmt pos = print_opt fmt print_position pos in
-  let print_rules fmt rules = print_list fmt print_rule rules in
+  let print_rules fmt rules = print_list fmt (print_rule e.gentry_name) rules in
   fprintf fmt "let () =@ @[Pcoq.grammar_extend@ %s@ @[{ Pcoq.pos=%a; data=%a}@]@]@ in@ "
     e.gentry_name print_position_opt e.gentry_pos print_rules e.gentry_rules
 
@@ -485,7 +504,7 @@ let print_rules fmt (name, rules) =
   (* Rules are reversed. *)
   let rules = List.rev rules in
   let rules = List.map (fun r -> parse_rule name r) rules in
-  let pr fmt l = print_list fmt (fun fmt r -> fprintf fmt "(%a)" GramExt.print_extrule r) l in
+  let pr fmt l = print_list fmt (fun fmt r -> fprintf fmt "(%a)" (GramExt.print_extrule name) r) l in
   match rules with
   | [([SymbEntry (e, None)], [Some s], { code = c } )] when String.trim c = s ->
     (* This is a horrible hack to work around limitations of camlp5 regarding

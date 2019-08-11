@@ -1637,10 +1637,11 @@ type _ converter =
 | CvNil : (Loc.t -> raw_tacexpr) converter
 | CvCns : 'act converter * ('a -> raw_tacexpr) option -> ('a -> 'act) converter
 
-let rec apply : type a. a converter -> raw_tacexpr list -> a = function
-| CvNil -> fun accu loc -> Tac2quote.of_tuple ~loc accu
-| CvCns (c, None) -> fun accu x -> apply c accu
-| CvCns (c, Some f) -> fun accu x -> apply c (f x :: accu)
+let rec apply : type a. int -> a converter -> raw_tacexpr list -> a =
+  fun len -> function
+| CvNil -> fun accu loc -> Stats.parser_action "Ltac2-tactic-*" len "??" 0; Tac2quote.of_tuple ~loc accu
+| CvCns (c, None) -> fun accu x -> apply len c accu  (* todo: understand this *)
+| CvCns (c, Some f) -> fun accu x -> apply len c (f x :: accu)
 
 type seqrule =
 | Seqrule : (Tac2expr.raw_tacexpr, Gramlib.Grammar.norec, 'act, Loc.t -> raw_tacexpr) Rule.t * 'act converter -> seqrule
@@ -1667,7 +1668,7 @@ let rec make_seq_rule = function
 let () = add_scope "seq" begin fun toks ->
   let scope =
     let Seqrule (r, c) = make_seq_rule (List.rev toks) in
-    Pcoq.(Symbol.rules [Rules.make r (apply c [])])
+    Pcoq.(Symbol.rules [Rules.make r (apply (List.length toks) c [])])
   in
   Tac2entries.ScopeRule (scope, (fun e -> e))
 end

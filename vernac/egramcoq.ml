@@ -445,8 +445,10 @@ type ('self, _, 'r) ty_rule =
 
 type 'r gen_eval = Loc.t -> 'r env -> 'r
 
+let outer_eval n a b c =
 let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> s env -> a = function
 | TyStop ->
+  Stats.parser_action "NOTATION" n "??" 999;
   fun f env loc -> f loc env
 | TyNext (rem, TyTerm _) ->
   fun f env _ -> ty_eval rem f env
@@ -472,6 +474,8 @@ let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> s env ->
         constrlist :: env.constrlists, tail @ constrs
     in
     ty_eval rem f { env with constrs; constrlists; }
+in
+ty_eval a b c
 
 type ('s, 'a, 'r) mayrec_rule =
 | MayRecRNo : ('s, Gramlib.Grammar.norec, 'a, 'r) Rule.t -> ('s, 'a, 'r) mayrec_rule
@@ -557,6 +561,13 @@ let make_act : type r. r target -> _ -> r gen_eval = function
   let env = (env.constrs, env.constrlists) in
   CAst.make ~loc @@ CPatNotation (None, notation, env, [])
 
+let rec nt_count pt cnt =
+  begin match pt with
+    | GramConstrListMark _ :: tl -> nt_count tl cnt
+    | _ :: tl -> nt_count tl (cnt+1)
+    | [] -> cnt
+  end
+
 let extend_constr state forpat ng =
   let custom,n,_ = ng.notgram_level in
   let assoc = ng.notgram_assoc in
@@ -569,7 +580,7 @@ let extend_constr state forpat ng =
     let (pos,p4assoc,name,reinit), state = find_position state custom isforpat assoc level in
     let empty_rules = List.map (prepare_empty_levels forpat) needed_levels in
     let empty = { constrs = []; constrlists = []; binders = []; binderlists = [] } in
-    let act = ty_eval r (make_act forpat ng.notgram_notation) empty in
+    let act = outer_eval (nt_count pt 0) r (make_act forpat ng.notgram_notation) empty in
     let rule =
       let r = match ty_erase r with
         | MayRecRNo symbs -> Pcoq.Production.make symbs act

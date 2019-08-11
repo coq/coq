@@ -615,22 +615,23 @@ type krule =
   (raw_tacexpr, _, 'act, Loc.t -> raw_tacexpr) Pcoq.Rule.t *
   ((Loc.t -> (Name.t * raw_tacexpr) list -> raw_tacexpr) -> 'act) -> krule
 
-let rec get_rule (tok : scope_rule token list) : krule = match tok with
-| [] -> KRule (Pcoq.Rule.stop, fun k loc -> k loc [])
+let rec get_rule len (tok : scope_rule token list) : krule = match tok with
+| [] -> KRule (Pcoq.Rule.stop, fun k loc ->
+    Stats.parser_action "Ltac2-tactic" len "??" 0; k loc [])
 | TacNonTerm (na, ScopeRule (scope, inj)) :: tok ->
-  let KRule (rule, act) = get_rule tok in
+  let KRule (rule, act) = get_rule len tok in
   let rule = Pcoq.Rule.next rule scope in
   let act k e = act (fun loc acc -> k loc ((na, inj e) :: acc)) in
   KRule (rule, act)
 | TacTerm t :: tok ->
-  let KRule (rule, act) = get_rule tok in
+  let KRule (rule, act) = get_rule len tok in
   let rule = Pcoq.(Rule.next rule (Symbol.token (CLexer.terminal t))) in
   let act k _ = act k in
   KRule (rule, act)
 
 let perform_notation syn st =
   let tok = List.rev_map ParseToken.parse_token syn.synext_tok in
-  let KRule (rule, act) = get_rule tok in
+  let KRule (rule, act) = get_rule (List.length tok) tok in
   let mk loc args =
     let map (na, e) =
       ((CAst.make ?loc:e.loc @@ CPatVar na), e)

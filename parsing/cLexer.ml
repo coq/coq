@@ -787,11 +787,10 @@ let rec next_token ~diff_mode loc s =
         | EmptyStream ->
             comment_stop bp; (EOI, set_loc_pos loc bp (bp+1))
 
-(* (* Debug: uncomment this for tracing tokens seen by coq...*)
 let next_token ~diff_mode loc s =
   let (t,loc as r) = next_token ~diff_mode loc s in
-  Printf.eprintf "(line %i, %i-%i)[%s]\n%!" (Ploc.line_nb loc) (Ploc.first_pos loc) (Ploc.last_pos loc) (Tok.to_string t);
-  r *)
+  Stats.got_loc loc (Tok.extract_string true t);
+  r
 
 (* Location table system for creating tables associating a token count
    to its location in a char stream (the source) *)
@@ -861,6 +860,7 @@ module MakeLexer (Diff : sig val mode : bool end) = struct
     | _ -> ()
   let tok_removing = (fun _ -> ())
   let tok_match = Tok.match_pattern
+  let extract_string = Tok.extract_string
   let tok_text = token_text
 
   (* The state of the lexer visible from outside *)
