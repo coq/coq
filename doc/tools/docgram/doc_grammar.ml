@@ -356,23 +356,95 @@ let cvt_ext prod =
  in
  List.map from_ext prod
 
+(*todo: couldn't get linker to see Stats*)
+(*open Stats*)
+type pid = {
+  file : string;
+  char : int;
+}
+
+let pid_compare pid1 pid2 =
+  let scmp = String.compare pid1.file pid2.file in
+  if scmp <> 0 then scmp else compare pid1.char pid2.char
+
+module PidOrd = struct type t = pid let compare = pid_compare end
+module ProdMap = Map.Make(PidOrd)
+
+let prod_map = ref ProdMap.empty
+
+let add_to_prod_map loc nt prod =
+  let open Lexing in
+  let loc = loc.loc_start in
+  let key = { file=loc.pos_fname; char=loc.pos_cnum } in
+  let value = Printf.sprintf "%s:  %s" nt (prod_to_str prod) in
+  prod_map := ProdMap.add key value !prod_map;
+  key
+
+type extid = {
+  plugin : string;
+  etype : string;  (* use defined const *)
+  ename : string;
+  num : int;
+}
+
+let extid_compare extid1 extid2 =
+  let scmp = String.compare extid1.plugin extid2.plugin in
+  if scmp <> 0 then scmp else begin
+    let scmp = String.compare extid1.etype extid2.etype in
+    if scmp <> 0 then scmp else begin
+      let scmp = String.compare extid1.ename extid2.ename in
+      if scmp <> 0 then scmp else compare extid1.num extid2.num
+    end
+  end
+
+module ExtOrd = struct type t = extid let compare = extid_compare end
+module ExtMap = Map.Make(ExtOrd)
+
+let ext_map = ref ExtMap.empty
+
+let add_to_ext_map plugin etype ename num loc prod_map_key = (* todo: remove loc? *)
+(*  let open Lexing in*)
+(*  Printf.printf "ext: '%s' %s %s %d line %d\n" !plugin etype ename num loc.loc_start.pos_lnum;*)
+  let (as_is, no_plugin_name) = match etype with
+  | "C" -> false, true
+  | "T" -> true, num = 0
+  | _ -> true, false
+  in
+  if as_is then
+    ext_map := ExtMap.add { plugin=(!plugin); etype; ename; num } prod_map_key !ext_map;
+  if no_plugin_name then
+    ext_map := ExtMap.add { plugin=""; etype; ename; num } prod_map_key !ext_map
+
+let dir s = "doc/tools/docgram/" ^ s
+
+let save_prod_maps () =
+  let outch = open_out_bin (dir "prodmap") in
+  Marshal.to_channel outch !prod_map [];
+  Marshal.to_channel outch !ext_map [];
+  close_out outch
+
 let keywords = ref StringSet.empty
 
-let rec cvt_gram_sym = function
+let rec cvt_gram_sym nt = function
   | GSymbString s -> Sterm s
   | GSymbQualid (s, level) ->
     Snterm (match level with
            | Some str -> s ^ str
            | None -> s)
-  | GSymbParen l -> Sparen (cvt_gram_sym_list l)
+  | GSymbParen l -> Sparen (cvt_gram_sym_list nt l)
   | GSymbProd ll ->
-    let cvt = List.map cvt_gram_prod ll in
+    let cvt = List.map (fun p ->
+        let loc = p.gprod_body.loc.loc_start in
+        let open Lexing in
+        let label = Printf.sprintf "(%s : %d)" nt loc.pos_lnum in
+        cvt_gram_prod label p)
+      ll in
     (match cvt with
     | (Snterm x :: []) :: [] -> Snterm x
     | (Sterm x :: []) :: []  -> Sterm x
     | _ -> Sprod cvt)
 
-and cvt_gram_sym_list l =
+and cvt_gram_sym_list nt l =
   let get_sym = function
     | GSymbQualid (s, level) -> s
     | _ -> ""
@@ -380,33 +452,35 @@ and cvt_gram_sym_list l =
 
   match l with
   | GSymbQualid ("LIST0", _) :: s :: GSymbQualid ("SEP", _) :: sep :: tl ->
-    Slist0sep (cvt_gram_sym s, cvt_gram_sym sep) :: cvt_gram_sym_list tl
+    Slist0sep (cvt_gram_sym nt s, cvt_gram_sym nt sep) :: cvt_gram_sym_list nt tl
   | GSymbQualid ("LIST1", _) :: s :: GSymbQualid ("SEP", _) :: sep :: tl ->
-    Slist1sep (cvt_gram_sym s, cvt_gram_sym sep) :: cvt_gram_sym_list tl
+    Slist1sep (cvt_gram_sym nt s, cvt_gram_sym nt sep) :: cvt_gram_sym_list nt tl
   | GSymbQualid ("LIST0", _) :: s :: tl ->
-    Slist0 (cvt_gram_sym s) :: cvt_gram_sym_list tl
+    Slist0 (cvt_gram_sym nt s) :: cvt_gram_sym_list nt tl
   | GSymbQualid ("LIST1", _) :: s :: tl ->
-    Slist1 (cvt_gram_sym s) :: cvt_gram_sym_list tl
+    Slist1 (cvt_gram_sym nt s) :: cvt_gram_sym_list nt tl
   | GSymbQualid ("OPT", _) :: s :: tl ->
-    Sopt (cvt_gram_sym s) :: cvt_gram_sym_list tl
+    Sopt (cvt_gram_sym nt s) :: cvt_gram_sym_list nt tl
   | GSymbQualid ("IDENT", _) :: s2 :: tl when get_sym s2 = "" ->
-    cvt_gram_sym s2 :: cvt_gram_sym_list tl
+    cvt_gram_sym nt s2 :: cvt_gram_sym_list nt tl
   | GSymbQualid ("ADD_OPT", _) :: tl ->
-    (Sedit "ADD_OPT") :: cvt_gram_sym_list tl
+    (Sedit "ADD_OPT") :: cvt_gram_sym_list nt tl
   | GSymbQualid ("NOTE", _) :: GSymbQualid (s2, l) :: tl ->
-    (Sedit2 ("NOTE", s2)) :: cvt_gram_sym_list tl
+    (Sedit2 ("NOTE", s2)) :: cvt_gram_sym_list nt tl
   | GSymbQualid ("USE_NT", _) :: GSymbQualid (s2, l) :: tl ->
-    (Sedit2 ("USE_NT", s2)) :: cvt_gram_sym_list tl
+    (Sedit2 ("USE_NT", s2)) :: cvt_gram_sym_list nt tl
   | GSymbString s :: tl ->
     (* todo: not seeing "(bfs)" here for some reason *)
     keywords := StringSet.add s !keywords;
-    cvt_gram_sym (GSymbString s) :: cvt_gram_sym_list tl
+    cvt_gram_sym nt (GSymbString s) :: cvt_gram_sym_list nt tl
   | hd :: tl ->
-    cvt_gram_sym hd :: cvt_gram_sym_list tl
+    cvt_gram_sym nt hd :: cvt_gram_sym_list nt tl
   | [] -> []
 
-and cvt_gram_prod p =
- List.concat (List.map (fun x -> let _, gs = x in cvt_gram_sym_list gs)  p.gprod_symbs)
+and cvt_gram_prod nt p =
+  let rv = List.concat (List.map (fun x -> let _, gs = x in cvt_gram_sym_list nt gs)  p.gprod_symbs) in
+  ignore @@ add_to_prod_map p.gprod_body.loc nt rv;
+  rv
 
 
 let add_symdef nt file symdef_map =
@@ -505,6 +579,7 @@ let plugin_regex = Str.regexp "^plugins/\\([a-zA-Z0-9_]+\\)/"
 let read_mlg is_edit ast file level_renames symdef_map =
   let res = ref [] in
   let locals = ref StringSet.empty in
+  let plugin_name = ref "" in
   let add_prods nt prods =
     if not is_edit then
       add_symdef nt file symdef_map;
@@ -549,7 +624,7 @@ let read_mlg is_edit ast file level_renames symdef_map =
               if i = 0 && cur_level <> nt && not (StringMap.mem nt !level_renames) then begin
                 level_renames := StringMap.add nt cur_level !level_renames;
               end;
-              let cvted = List.map cvt_gram_prod rule.grule_prods in
+              let cvted = List.map (fun p -> cvt_gram_prod cur_level p) rule.grule_prods in
               (* edit names for levels *)
               (* See https://camlp5.github.io/doc/html/grammars.html#b:Associativity *)
               let edited = List.map (edit_SELF nt cur_level next_level right_assoc) cvted in
@@ -562,29 +637,48 @@ let read_mlg is_edit ast file level_renames symdef_map =
             ent.gentry_rules
         ) grammar_ext.gramext_entries
 
+    | DeclarePlugin plugin ->
+      plugin_name := plugin
     | VernacExt vernac_ext ->
       let node = match vernac_ext.vernacext_entry with
       | None -> "command"
       | Some c -> String.trim c.code
       in
       add_prods node
-        (List.map (fun r -> cvt_ext r.vernac_toks) vernac_ext.vernacext_rules)
+        (List.mapi (fun n r ->
+            let rv = cvt_ext r.vernac_toks in
+            add_to_ext_map plugin_name "C" vernac_ext.vernacext_name n r.vernac_body.loc
+              (add_to_prod_map r.vernac_body.loc node rv);
+            rv)
+           vernac_ext.vernacext_rules)
     | VernacArgumentExt vernac_argument_ext ->
       add_prods vernac_argument_ext.vernacargext_name
-        (List.map (fun r -> cvt_ext r.tac_toks) vernac_argument_ext.vernacargext_rules)
+        (List.mapi (fun n r ->
+            let rv = cvt_ext r.tac_toks in
+            add_to_ext_map plugin_name "A" vernac_argument_ext.vernacargext_name n r.tac_body.loc
+              (add_to_prod_map r.tac_body.loc vernac_argument_ext.vernacargext_name rv);
+            rv)
+          vernac_argument_ext.vernacargext_rules)
     | TacticExt tactic_ext ->
       add_prods "simple_tactic"
-        (List.map (fun r -> cvt_ext r.tac_toks) tactic_ext.tacext_rules)
+        (List.mapi (fun n r ->
+            let rv = cvt_ext r.tac_toks in
+            add_to_ext_map plugin_name "T" tactic_ext.tacext_name n r.tac_body.loc
+              (add_to_prod_map r.tac_body.loc "simple_tactic" rv);
+            rv)
+          tactic_ext.tacext_rules)
     | ArgumentExt argument_ext ->
       add_prods argument_ext.argext_name
-        (List.map (fun r -> cvt_ext r.tac_toks) argument_ext.argext_rules)
+        (List.mapi (fun n r ->
+            let rv = cvt_ext r.tac_toks in
+            ignore @@ add_to_prod_map r.tac_body.loc argument_ext.argext_name rv;
+            rv)
+          argument_ext.argext_rules)
     | _ -> ()
   in
 
   List.iter prod_loop ast;
   List.rev !res, !locals
-
-let dir s = "doc/tools/docgram/" ^ s
 
 let read_mlg_edit file =
   let fdir = dir file in
@@ -1891,6 +1985,7 @@ let process_grammar args =
     StringSet.iter (fun kw -> Printf.printf "%s " kw) !keywords;
     Printf.printf "\n\n";
   end;
+  save_prod_maps ();
 
   (* rename nts with levels *)
   List.iter (fun b -> let (nt, prod) = b in

@@ -234,6 +234,7 @@ indepclean:
 	rm -f glob.dump
 	rm -f config/revision.ml revision
 	rm -f plugins/micromega/.micromega.ml.generated
+	rm -f $(DOCGRAM) $(PRINT_STATS)
 	$(MAKE) -C test-suite clean
 
 docclean:

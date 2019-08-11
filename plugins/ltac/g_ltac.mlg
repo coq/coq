@@ -151,8 +151,23 @@ GRAMMAR EXTEND Gram
           l = LIST0 message_token -> { TacFail (g,n,l) }
       | st = simple_tactic -> { st }
       | a = tactic_arg -> { TacArg(CAst.make ~loc a) }
-      | r = reference; la = LIST0 tactic_arg_compat ->
-        { TacArg(CAst.make ~loc @@ TacCall (CAst.make ~loc (r,la))) } ]
+      | r = reference; la = LIST0 tactic_arg_compat -> {
+        if Stats.get_stats_enabled () then begin
+          (* special case of TACTIC EXTEND *)
+          (* todo: completely ad-hoc.  assumes that the extension name (what I want to pass)
+            is the same as the first identifier in the tactic (e.g. "is_var" should be under
+            TACTIC EXTEND is_var, not under is_hyp *)
+          try let tac = Tacenv.locate_tactic r in
+            let pfx = "Coq.Init.Notations." in
+            let kername = KerName.to_string tac in
+            if CString.string_contains ~what:pfx ~where:kername then begin
+              let pfx_len = String.length pfx in
+              let tactic = (String.sub kername pfx_len ((String.length kername) - pfx_len)) in
+              Stats.parser_ext "" "T" tactic 0;  (* plugin name is unknown *)
+            end
+          with Not_found -> ()
+        end;
+        TacArg(CAst.make ~loc @@ TacCall (CAst.make ~loc (r,la))) } ]
     | "0"
       [ "("; a = tactic_expr; ")" -> { a }
       | "["; ">"; tg = tactic_then_gen; "]" -> {

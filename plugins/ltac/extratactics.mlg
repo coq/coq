@@ -855,7 +855,7 @@ TACTIC EXTEND has_evar
 }
 END
 
-TACTIC EXTEND is_hyp
+TACTIC EXTEND is_var
 | [ "is_var" constr(x) ] -> {
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma x with

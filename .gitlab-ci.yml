@@ -75,6 +75,7 @@ before_script:
       - config/coq_config.py
       - config/coq_config.ml
       - test-suite/misc/universes/all_stdlib.v
+      - "*.stats"
     expire_in: 1 week
   script:
     - set -e
@@ -88,6 +89,8 @@ before_script:
     - echo 'end:coq.config'
 
     - echo 'start:coq.build'
+    # uncomment next line to get statistics
+    # - export COQ_STATS_DIR=$PWD
     - make -j "$NJOBS" byte
     - make -j "$NJOBS" world $EXTRA_TARGET
     - make test-suite/misc/universes/all_stdlib.v
@@ -100,6 +103,8 @@ before_script:
     - echo 'end:coq.install'
 
     - set +e
+  after_script:
+    - if [ `ls *.stats|wc -l` = 1 ]; then mv *.stats $CI_JOB_NAME.stats; fi
 
 # Template for building Coq + stdlib, typical use: overload the switch
 .dune-template:
@@ -240,8 +245,15 @@ before_script:
     - set +e
   needs:
     - build:base
+  after_script:
+    - if [ `ls *.stats|wc -l` = 1 ]; then mv *.stats $CI_JOB_NAME.stats; fi
   dependencies:
     - build:base
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - "*.stats"
+    expire_in: 2 days
 
 .ci-template-flambda:
   extends: .ci-template

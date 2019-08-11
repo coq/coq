@@ -221,6 +221,7 @@ let parse arglist : t =
   in
   try
     let opts, extra = parse default in
+    Stats.set_infiles extra;
     let args = List.fold_left add_compile opts extra in
     check_compilation_output_name_consistency args;
     args

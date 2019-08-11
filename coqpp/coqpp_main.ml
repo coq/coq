@@ -20,12 +20,20 @@ let fatal msg =
 let dummy_loc = { loc_start = Lexing.dummy_pos; loc_end = Lexing.dummy_pos }
 let mk_code s = { code = s; loc = dummy_loc }
 
-let print_code fmt c =
+let print_code_base stats fmt c =
+  let with_stats padding =
+    let loc = c.loc.loc_start in
+    Printf.sprintf " Stats.parser_action \"%s\" %d;\n%s%s"
+      loc.pos_fname loc.pos_cnum padding c.code
+  in
   let loc = c.loc.loc_start in
   (* Print the line location as a source annotation *)
   let padding = String.make (loc.pos_cnum - loc.pos_bol + 1) ' ' in
-  let code_insert = asprintf "\n# %i \"%s\"\n%s%s" loc.pos_lnum loc.pos_fname padding c.code in
+  let code = if stats then with_stats padding else c.code in
+  let code_insert = asprintf "\n# %i \"%s\"\n%s%s" loc.pos_lnum loc.pos_fname padding code in
   fprintf fmt "@[@<0>%s@]@\n" code_insert
+
+let print_code fmt c = print_code_base false fmt c
 
 module StringSet = Set.Make(String)
 
@@ -189,7 +197,7 @@ let print_fun fmt (vars, body) =
   in
   let () = fprintf fmt "fun@ " in
   let () = List.iter iter vars in
-  let () = fprintf fmt "loc ->@ @[%a@]" print_code body in
+  let () = fprintf fmt "loc ->@ @[%a@]" (print_code_base true) body in
   ()
 
 (** Meta-program instead of calling Tok.of_pattern here because otherwise

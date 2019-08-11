@@ -23,6 +23,7 @@ COQTOPBYTE:=bin/coqtop.byte$(EXE)
 COQDEP:=bin/coqdep$(EXE)
 COQPP:=bin/coqpp$(EXE)
 DOC_GRAM:=bin/doc_grammar$(EXE)
+PRINT_STATS:=bin/print_stats$(EXE)
 COQDEPBYTE:=bin/coqdep.byte$(EXE)
 COQMAKEFILE:=bin/coq_makefile$(EXE)
 COQMAKEFILEBYTE:=bin/coq_makefile.byte$(EXE)
@@ -57,7 +58,7 @@ FAKEIDE:=bin/fake_ide$(EXE)
 FAKEIDEBYTE:=bin/fake_ide.byte$(EXE)
 
 # These don't get signed on OSX, and don't need to be separately listed for cleaning
-PRIVATEBINARIES:=$(FAKEIDE) $(OCAMLLIBDEP) $(COQDEPBOOT) $(DOC_GRAM)
+PRIVATEBINARIES:=$(FAKEIDE) $(OCAMLLIBDEP) $(COQDEPBOOT) $(DOC_GRAM) $(PRINT_STATS)
 
 CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 CSDPCERTBYTE:=plugins/micromega/csdpcert.byte$(EXE)

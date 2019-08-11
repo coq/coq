@@ -176,6 +176,14 @@ let add_tactic_entry (kn, ml, tg) state =
       else
         TacGeneric arg
     in
+    if Stats.get_stats_enabled () then begin
+      let open Tacenv in
+      (match (interp_alias kn).alias_body with
+      | TacML { CAst.v=( entry, _) } ->
+        let name = entry.mltac_name in
+        Stats.parser_ext name.mltac_plugin "T" name.mltac_tactic entry.mltac_index
+      | _ -> ())
+    end;
     let l = List.map map l in
     (TacAlias (CAst.make ~loc (kn,l)):raw_tactic_expr)
   in
