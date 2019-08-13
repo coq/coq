@@ -1192,7 +1192,7 @@ let constr_ord_int f t1 t2 =
     | App _, _ -> -1 | _, App _ -> 1
     | Const (c1,_u1), Const (c2,_u2) -> Constant.CanOrd.compare c1 c2
     | Const _, _ -> -1 | _, Const _ -> 1
-    | Ind ((ind1, _u1), stg1), Ind ((ind2, _u2), stg2) -> (ind_ord =? Annot.compare) ind1 ind2 stg1 stg2
+    | Ind ((ind1, _u1), _), Ind ((ind2, _u2), _) -> ind_ord ind1 ind2
     | Ind _, _ -> -1 | _, Ind _ -> 1
     | Construct (ct1,_u1), Construct (ct2,_u2) -> constructor_ord ct1 ct2
     | Construct _, _ -> -1 | _, Construct _ -> 1
