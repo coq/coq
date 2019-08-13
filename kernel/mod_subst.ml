@@ -352,7 +352,7 @@ let subst_evaluable_reference subst = function
 let rec map_kn f f' c =
   let func = map_kn f f' in
     match kind c with
-      | Const kn -> (try f' kn with No_subst -> c)
+      | Const (kn, _) -> (try f' kn with No_subst -> c)
       | Proj (p,t) ->
           let p' = Projection.map f p in
           let t' = func t in

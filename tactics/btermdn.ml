@@ -74,7 +74,7 @@ let constr_val_discr_st sigma ts t =
   let c, l = decomp sigma t in
   let open GlobRef in
     match EConstr.kind sigma c with
-    | Const (c,u) -> if TransparentState.is_transparent_constant ts c then Everything else Label(GRLabel (ConstRef c),l)
+    | Const ((c,u), _) -> if TransparentState.is_transparent_constant ts c then Everything else Label(GRLabel (ConstRef c),l)
     | Ind ((ind_sp,u), _) -> Label(GRLabel (IndRef ind_sp),l)
     | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
     | Var id -> if TransparentState.is_transparent_variable ts id then Everything else Label(GRLabel (VarRef id),l)

@@ -414,7 +414,7 @@ let mk_tpattern ?p_origin ?(hack=false) env sigma0 (ise, t) ok dir p =
     let f = EConstr.Unsafe.to_constr f in
     let a = List.map EConstr.Unsafe.to_constr a in
     match kind f with
-    | Const (p,_) ->
+    | Const ((p,_), _) ->
       let np = proj_nparams p in
       if np = 0 || np > List.length a then KpatConst, f, a else
       let a1, a2 = List.chop np a in KpatProj p, (applistc f a1), a2
@@ -461,7 +461,7 @@ let nb_cs_proj_args pc f u =
   try match kind f with
   | Prod _ -> na Prod_cs
   | Sort s -> na (Sort_cs (Sorts.family s))
-  | Const (c',_) when Constant.equal c' pc -> nargs_of_proj u.up_f
+  | Const ((c',_), _) when Constant.equal c' pc -> nargs_of_proj u.up_f
   | Proj (c',_) when Constant.equal (Projection.constant c') pc -> nargs_of_proj u.up_f
   | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (fst @@ destRef f))
   | _ -> -1

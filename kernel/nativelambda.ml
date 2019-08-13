@@ -592,7 +592,7 @@ let rec lambda_of_constr cache env sigma c =
 
 and lambda_of_app cache env sigma f args =
   match kind f with
-  | Const (_kn,_u as c) ->
+  | Const ((_kn,_u as c), _) ->
       let kn,u = get_alias env c in
       let cb = lookup_constant kn env in
       begin match cb.const_body with

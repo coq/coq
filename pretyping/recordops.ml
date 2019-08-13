@@ -330,7 +330,7 @@ let lookup_canonical_conversion (proj,pat) =
 
 let decompose_projection sigma c args =
   match EConstr.kind sigma c with
-  | Const (c, u) ->
+  | Const ((c, u), _) ->
      let n = find_projection_nparams (GlobRef.ConstRef c) in
      (* Check if there is some canonical projection attached to this structure *)
      let _ = GlobRef.Map.find (GlobRef.ConstRef c) !object_table in

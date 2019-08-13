@@ -340,7 +340,7 @@ let evaluable_ref_of_constr s c =
   let env = Global.env () in
   let evd = Evd.from_env env in
   match EConstr.kind evd (Lazy.force c) with
-  | Const (kn,u) when Tacred.is_evaluable env (EvalConstRef kn) ->
+  | Const ((kn,u), _) when Tacred.is_evaluable env (EvalConstRef kn) ->
       EvalConstRef kn
   | _ -> anomaly ~label:"Coq_omega" (Pp.str (s^" is not an evaluable constant."))
 
@@ -418,7 +418,7 @@ let destructurate_prop sigma t =
     | _, [_;_] when eq_constr c (Lazy.force coq_lt) -> Kapp (Lt,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_ge) -> Kapp (Ge,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_gt) -> Kapp (Gt,args)
-    | Const (sp,_), args ->
+    | Const ((sp,_), _), args ->
         Kapp (Other (string_of_path (path_of_global (GlobRef.ConstRef sp))),args)
     | Construct (csp,_) , args ->
         Kapp (Other (string_of_path (path_of_global (GlobRef.ConstructRef csp))), args)

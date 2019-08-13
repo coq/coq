@@ -888,7 +888,7 @@ let compile_constant_body ~fail_on_error env univs = function
       let body = Mod_subst.force_constr sb in
       let instance_size = Univ.AUContext.size (Declareops.universes_context univs) in
       match kind body with
-        | Const (kn',u) when is_univ_copy instance_size u ->
+        | Const ((kn',u), _) when is_univ_copy instance_size u ->
             (* we use the canonical name of the constant*)
             let con= Constant.make1 (Constant.canonical kn') in
               Some (BCalias (get_alias env con))

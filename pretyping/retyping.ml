@@ -117,7 +117,7 @@ let retype ?(polyprop=true) sigma =
         let ty = RelDecl.get_type (lookup_rel n env) in
         lift n ty
     | Var id -> type_of_var env id
-    | Const (cst, u) -> EConstr.of_constr (rename_type_of_constant env (cst, EInstance.kind sigma u))
+    | Const ((cst, u), _) -> EConstr.of_constr (rename_type_of_constant env (cst, EInstance.kind sigma u))
     | Evar ev -> existential_type sigma ev
     | Ind ((ind, u), _) -> EConstr.of_constr (rename_type_of_inductive env (ind, EInstance.kind sigma u))
     | Construct (cstr, u) -> EConstr.of_constr (rename_type_of_constructor env (cstr, EInstance.kind sigma u))
@@ -232,7 +232,7 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
     | Ind ((ind,u), _) ->
         let spec = Inductive.lookup_mind_specif env ind in
           type_of_inductive_knowing_conclusion env sigma (spec, EInstance.kind sigma u) conclty
-    | Const (cst, u) ->
+    | Const ((cst, u), _) ->
         let t = constant_type_in env (cst, EInstance.kind sigma u) in
           sigma, EConstr.of_constr t
     | Var id -> sigma, type_of_var env id
@@ -294,7 +294,7 @@ let relevance_of_term env sigma c =
       | LetIn ({binder_relevance=r}, _, _, bdy) ->
         aux (Range.cons r rels) bdy
       | App (c, _) -> aux rels c
-      | Const (c,_) -> Relevanceops.relevance_of_constant env c
+      | Const ((c,_), _) -> Relevanceops.relevance_of_constant env c
       | Ind _ -> Sorts.Relevant
       | Construct (c,_) -> Relevanceops.relevance_of_constructor env c
       | Case (ci, _, _, _) -> ci.ci_relevance

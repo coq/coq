@@ -241,7 +241,7 @@ let build_beq_scheme mode kn =
         let (c,a) = Reductionops.whd_betaiota_stack env Evd.empty EConstr.(of_constr c) in
         let (c,a) = EConstr.Unsafe.(to_constr c, List.map to_constr a) in
         match Constr.kind c with
-        | Rel (x, ans) -> mkRelAnnots (x-nlist+ndx) ans
+        | Rel (x, ans) -> mkRelA (x-nlist+ndx) ans
         | Var x ->
           (* Support for working in a context with "eq_x : x -> x -> bool" *)
           let eid = Id.of_string ("eq_"^(Id.to_string x)) in
@@ -272,7 +272,7 @@ let build_beq_scheme mode kn =
         | Prod _ -> raise InductiveWithProduct
         | Lambda _-> raise (EqUnknown "abstraction")
         | LetIn _ -> raise (EqUnknown "let-in")
-        | Const (kn, u) ->
+        | Const ((kn, u), _) ->
              (match Environ.constant_opt_value_in env (kn, u) with
               | Some c -> aux (Term.applist (c,a))
               | None ->
@@ -426,7 +426,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
                    (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
-    | Const (cst,_) ->
+    | Const ((cst,_), _) ->
       (* Works in specific situations where the args have to be already declared as a
          Parameter (see example "J" in test file SchemeEquality.v) *)
         let lbl = Label.to_string (Constant.label cst) in
@@ -472,7 +472,7 @@ let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
                    (str "Var " ++ Id.print s ++ str " seems unknown.")
       )
     in mkVar (find 1)
-    | Const (cst,_) ->
+    | Const ((cst,_), _) ->
       (* Works in specific situations where the args have to be already declared as a
          Parameter (see example "J" in test file SchemeEquality.v) *)
         let lbl = Label.to_string (Constant.label cst) in

@@ -97,13 +97,13 @@ let mkEvalRef ref u =
   | EvalEvar ev -> EConstr.mkEvar ev
 
 let isEvalRef env sigma c = match EConstr.kind sigma c with
-  | Const (sp,_) -> is_evaluable env (EvalConstRef sp)
+  | Const ((sp,_), _) -> is_evaluable env (EvalConstRef sp)
   | Var id -> is_evaluable env (EvalVarRef id)
   | Rel _ | Evar _ -> true
   | _ -> false
 
 let destEvalRefU sigma c = match EConstr.kind sigma c with
-  | Const (cst,u) ->  EvalConst cst, u
+  | Const ((cst,u), _) ->  EvalConst cst, u
   | Var id  -> (EvalVar id, EInstance.empty)
   | Rel (n, _) -> (EvalRel n, EInstance.empty)
   | Evar ev -> (EvalEvar ev, EInstance.empty)
@@ -544,7 +544,7 @@ let reduce_mind_case_use_function func env sigma mia =
 
 let match_eval_ref env sigma constr stack =
   match EConstr.kind sigma constr with
-  | Const (sp, u) ->
+  | Const ((sp, u), _) ->
      reduction_effect_hook env sigma sp
         (lazy (EConstr.to_constr sigma (applist (constr,stack))));
      if is_evaluable env (EvalConstRef sp) then Some (EvalConst sp, u) else None
@@ -555,7 +555,7 @@ let match_eval_ref env sigma constr stack =
 
 let match_eval_ref_value env sigma constr stack =
   match EConstr.kind sigma constr with
-  | Const (sp, u) ->
+  | Const ((sp, u), _) ->
      reduction_effect_hook env sigma sp
         (lazy (EConstr.to_constr sigma (applist (constr,stack))));
     if is_evaluable env (EvalConstRef sp) then
@@ -644,7 +644,7 @@ let whd_nothing_for_iota env sigma s =
       | Meta ev ->
         (try whrec (Evd.meta_value sigma ev, stack)
         with Not_found -> s)
-      | Const (const, u) ->
+      | Const ((const, u), _) ->
           let u = EInstance.kind sigma u in
           (match constant_opt_value_in env (const, u) with
              | Some  body -> whrec (EConstr.of_constr body, stack)
@@ -966,7 +966,7 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
       | CoFix _ | Fix _ -> s'
       | Proj (p,t) when
           (match EConstr.kind sigma constr with
-          | Const (c', _) -> Constant.equal (Projection.constant p) c'
+          | Const ((c', _), _) -> Constant.equal (Projection.constant p) c'
           | _ -> false) ->
         let npars = Projection.npars p in
           if List.length stack <= npars then
@@ -1072,7 +1072,7 @@ let contextually byhead occs f env sigma t =
 
 let match_constr_evaluable_ref sigma c evref =
   match EConstr.kind sigma c, evref with
-  | Const (c,u), EvalConstRef c' when Constant.equal c c' -> Some u
+  | Const ((c,u), _), EvalConstRef c' when Constant.equal c c' -> Some u
   | Var id, EvalVarRef id' when Id.equal id id' -> Some EInstance.empty
   | _, _ -> None
 

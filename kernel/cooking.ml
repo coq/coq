@@ -105,7 +105,7 @@ let expmod_constr cache modlist c =
            with
             | Not_found -> Constr.map substrec c)
 
-      | Const (cst,u) ->
+      | Const ((cst,u), _) ->
           (try
             share_univs (ConstRef cst) u modlist
            with

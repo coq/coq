@@ -756,7 +756,7 @@ let rec whd_state_gen flags env sigma =
       (match safe_meta_value sigma ev with
       | Some body -> whrec (body, stack)
       | None -> fold ())
-    | Const (c,u as const) ->
+    | Const ((c,u as const), _) ->
       reduction_effect_hook env sigma c
          (lazy (EConstr.to_constr sigma (Stack.zip sigma (x,stack))));
       if CClosure.RedFlags.red_set flags (CClosure.RedFlags.fCONST c) then

@@ -181,7 +181,7 @@ let is_flexible_reference env sigma bound depth f =
     | Rel (n, _) when n >= bound+depth -> (* inductive type *) false
     | Rel (n, _) when n >= depth -> (* previous argument *) true
     | Rel (n, _) -> (* since local definitions have been expanded *) false
-    | Const (kn,_) ->
+    | Const ((kn,_), _) ->
         let cb = Environ.lookup_constant kn env in
         (match cb.const_body with Def _ -> true | _ -> false)
     | Var id ->

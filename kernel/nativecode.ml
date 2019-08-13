@@ -2064,7 +2064,7 @@ let compile_deps env sigma prefix ~interactive init t =
   let rec aux env lvl init t =
   match kind t with
   | Ind (((mind,_),_u), _) -> compile_mind_deps env prefix ~interactive init mind
-  | Const c ->
+  | Const (c, _) ->
     let c,_u = get_alias env c in
     let cb,(nameref,_) = lookup_constant_key c env in
     let (_, (_, const_updates)) = init in

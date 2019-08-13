@@ -1038,7 +1038,7 @@ let check_one_fix renv recpos trees def =
               | _ -> Exninfo.iraise exn
             end
 
-        | Const (kn,_u as cu) ->
+        | Const ((kn,_u as cu), _) ->
             if evaluable_constant kn renv.env then
               try List.iter (check_rec_call renv []) l
               with (FixGuardError _ ) ->

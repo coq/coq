@@ -102,7 +102,7 @@ let is_section_variable id =
 (* Generating "intuitive" names from its type *)
 
 let global_of_constr = let open GlobRef in function
-| Const (c, _) -> ConstRef c
+| Const ((c, _), _) -> ConstRef c
 | Ind ((i, _), _) -> IndRef i
 | Construct (c, _) -> ConstructRef c
 | Var id -> VarRef id
@@ -147,7 +147,7 @@ let hdchar env sigma c =
     | Prod (_,_,c) | Lambda (_,_,c) | LetIn (_,_,_,c) -> hdrec (k+1) c
     | Cast (c,_,_) | App (c,_) -> hdrec k c
     | Proj (kn,_) -> lowercase_first_char (Label.to_id (Constant.label (Projection.constant kn)))
-    | Const (kn,_) -> lowercase_first_char (Label.to_id (Constant.label kn))
+    | Const ((kn,_), _) -> lowercase_first_char (Label.to_id (Constant.label kn))
     | Ind ((x,_), _) -> (try lowercase_first_char (Nametab.basename_of_global (GlobRef.IndRef x)) with Not_found when !Flags.in_debugger -> "zz")
     | Construct (x,_) -> (try lowercase_first_char (Nametab.basename_of_global (GlobRef.ConstructRef x)) with Not_found when !Flags.in_debugger -> "zz")
     | Var id  -> lowercase_first_char id

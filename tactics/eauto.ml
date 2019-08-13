@@ -439,7 +439,7 @@ let unfold_head env sigma (ids, csts) c =
         (match Environ.named_body id env with
         | Some b -> true, EConstr.of_constr b
         | None -> false, c)
-    | Const (cst, u) when Cset.mem cst csts ->
+    | Const ((cst, u), _) when Cset.mem cst csts ->
         let u = EInstance.kind sigma u in
         true, EConstr.of_constr (Environ.constant_value_in env (cst, u))
     | App (f, args) ->

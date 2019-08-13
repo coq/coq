@@ -171,7 +171,7 @@ let rec traverse current ctx accu t =
 | Var id ->
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
   traverse_object accu body (VarRef id)
-| Const (kn, _) ->
+| Const ((kn, _), _) ->
   let body () = Option.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in
   traverse_object accu body (ConstRef kn)
 | Ind (((mind, _) as ind, _), _) ->
@@ -182,7 +182,7 @@ let rec traverse current ctx accu t =
 | Case (_,oty,c,[||]) ->
     (* non dependent match on an inductive with no constructors *)
     begin match Constr.(kind oty, kind c) with
-    | Lambda(_,_,oty), Const (kn, _)
+    | Lambda(_,_,oty), Const ((kn, _), _)
       when Vars.noccurn 1 oty &&
       not (Declareops.constant_has_body (lookup_constant kn)) ->
         let body () = Option.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in

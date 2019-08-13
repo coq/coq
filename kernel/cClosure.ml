@@ -496,7 +496,7 @@ let mk_clos e t =
   match kind t with
     | Rel (i, ans) -> clos_rel e i ans
     | Var x -> {mark = mark Red Unknown; term = FFlex (VarKey x, None) }
-    | Const c -> {mark = mark Red Unknown; term = FFlex (ConstKey c, None) }
+    | Const (c, ans) -> {mark = mark Red Unknown; term = FFlex (ConstKey c, ans) }
     | Meta _ | Sort _ ->  {mark = mark Norm KnownR; term = FAtom t }
     | Ind (kn, stg) -> {mark = mark Norm KnownR; term = FInd (kn, stg)}
     | Construct kn -> {mark = mark Cstr Unknown; term = FConstruct kn }
@@ -556,10 +556,10 @@ let ref_value_cache ({ i_cache = cache; _ }) tab ref oannots =
 let rec to_constr lfts v =
   match v.term with
     | FRel i -> mkRel (reloc_rel i lfts)
-    | FFlex (RelKey p, ans) -> mkRelAnnots (reloc_rel p lfts) ans
+    | FFlex (RelKey p, ans) -> mkRelA (reloc_rel p lfts) ans
     | FFlex (VarKey x, _) -> mkVar x
     | FAtom c -> exliftn lfts c
-    | FFlex (ConstKey op, _) -> mkConstU op
+    | FFlex (ConstKey op, ans) -> mkConstUA op ans
     | FInd (op, stg) -> mkIndUS op stg
     | FConstruct op -> mkConstructU op
     | FCaseT (ci,p,c,ve,env) ->
@@ -636,7 +636,7 @@ and subst_constr subst c = match [@ocaml.warning "-4"] Constr.kind c with
 | Rel (i, ans) ->
   begin match expand_rel i subst with
   | Inl (k, lazy v) -> Vars.lift k v
-  | Inr (m, _) -> mkRelAnnots m ans
+  | Inr (m, _) -> mkRelA m ans
   end
 | _ ->
   Constr.map_with_binders Esubst.subs_lift subst_constr subst c

@@ -91,7 +91,7 @@ let unfold_projection env evd ts p c =
 
 let eval_flexible_term ts env evd c =
   match EConstr.kind evd c with
-  | Const (c, u) ->
+  | Const ((c, u), _) ->
       if TransparentState.is_transparent_constant ts c
       then Option.map EConstr.of_constr (constant_opt_value_in env (c, EInstance.kind evd u))
       else None
@@ -200,7 +200,7 @@ let occur_rigidly flags env evd (evk,_) t =
     | Cast (p, _, _) -> aux p
     | Lambda (na, t, b) -> aux b
     | LetIn (na, _, _, b) -> aux b
-    | Const (c,_) ->
+    | Const ((c,_), _) ->
       if TransparentState.is_transparent_constant flags.open_ts c then Reducible
       else Rigid false
     | Prod (_, b, t) ->
@@ -569,7 +569,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     in
     let compare_heads evd =
       match EConstr.kind evd term, EConstr.kind evd term' with
-      | Const (c, u), Const (c', u') when Constant.equal c c' ->
+      | Const ((c, u), _), Const ((c', u'), _) when Constant.equal c c' ->
         let u = EInstance.kind evd u and u' = EInstance.kind evd u' in
         check_strict evd u u'
       | Const _, Const _ -> UnifFailure (evd, NotSameHead)
@@ -847,7 +847,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
             ise_try evd [f1; f2]
 
         (* Catch the p.c ~= p c' cases *)
-        | Proj (p,c), Const (p',u) when Constant.equal (Projection.constant p) p' ->
+        | Proj (p,c), Const ((p',u), _) when Constant.equal (Projection.constant p) p' ->
           let res =
             try Some (destApp evd (Retyping.expand_projection env evd p c []))
             with Retyping.RetypeError _ -> None
@@ -858,7 +858,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
                 appr2
             | None -> UnifFailure (evd,NotSameHead))
 
-        | Const (p,u), Proj (p',c') when Constant.equal p (Projection.constant p') ->
+        | Const ((p,u), _), Proj (p',c') when Constant.equal p (Projection.constant p') ->
           let res =
             try Some (destApp evd (Retyping.expand_projection env evd p' c' []))
             with Retyping.RetypeError _ -> None

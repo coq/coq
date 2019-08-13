@@ -406,7 +406,7 @@ let () = define1 "constr_kind" constr begin fun c ->
       Value.of_constr c;
       Value.of_array Value.of_constr cl;
     |]
-  | Const (cst, u) ->
+  | Const ((cst, u), _) ->
     v_blk 10 [|
       Value.of_constant cst;
       of_instance u;

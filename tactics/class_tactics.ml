@@ -496,7 +496,7 @@ let make_resolve_hyp env sigma st only_classes pri decl =
   let rec iscl env ty =
     let ctx, ar = decompose_prod_assum sigma ty in
       match EConstr.kind sigma (fst (decompose_app sigma ar)) with
-      | Const (c,_) -> is_class (GlobRef.ConstRef c)
+      | Const ((c,_), _) -> is_class (GlobRef.ConstRef c)
       | Ind ((i,_), _) -> is_class (GlobRef.IndRef i)
       | _ ->
           let env' = push_rel_context ctx env in

@@ -168,7 +168,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
                 elimty) r) in
         match EConstr.kind (project gl) elim with
         | Constr.Var kn -> rename_elimty (GlobRef.VarRef kn)
-        | Constr.Const (kn,_) -> rename_elimty (GlobRef.ConstRef kn)
+        | Constr.Const ((kn,_), _) -> rename_elimty (GlobRef.ConstRef kn)
         | _ -> elimty
       in
       let pred_id, n_elim_args, is_rec, elim_is_dep, n_pred_args,ctx_concl =

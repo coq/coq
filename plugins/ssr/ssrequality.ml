@@ -224,7 +224,7 @@ let simplintac occ rdx sim =
 
 let rec get_evalref env sigma c = match EConstr.kind sigma c with
   | Var id -> EvalVarRef id
-  | Const (k,_) -> EvalConstRef k
+  | Const ((k,_), _) -> EvalConstRef k
   | App (c', _) -> get_evalref env sigma c'
   | Cast (c', _, _) -> get_evalref env sigma c'
   | Proj(c,_) -> EvalConstRef(Projection.constant c)
@@ -286,7 +286,7 @@ let unfoldintac occ rdx t (kt,_) =
             | Const _ when EConstr.eq_constr sigma0 c t -> body env t t
             | App (f,a) when EConstr.eq_constr sigma0 f t -> EConstr.mkApp (body env f f,a)
             | Proj _ when same_proj sigma0 c t -> body env t c
-            | Const f -> aux (body env c c)
+            | Const (f, _) -> aux (body env c c)
             | App (f, a) -> aux (EConstr.mkApp (body env f f, a))
             | _ -> errorstrm Pp.(str "The term "++ pr_constr_env env sigma orig_c++
                 str" contains no " ++ pr_econstr_env env sigma t ++ str" even after unfolding")

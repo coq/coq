@@ -377,7 +377,7 @@ and apply_env env t =
       | Inl (k, v) ->
         reify_value (shift_value k v)
       | Inr (k,_) ->
-        mkRelAnnots k ans
+        mkRelA k ans
     end
   | _ ->
     map_with_binders subs_lift apply_env env t
@@ -420,12 +420,12 @@ let rec norm_head info env t stack =
       (match expand_rel i env with
         | Inl (0,v)      -> strip_appl v stack
         | Inl (n,v)      -> strip_appl (shift_value n v) stack
-        | Inr (n,None)   -> (VAL(0, mkRelAnnots n ans), stack)
+        | Inr (n,None)   -> (VAL(0, mkRelA n ans), stack)
         | Inr (n,Some p) -> norm_head_ref (n-p) info env stack (RelKey p) t)
 
   | Var id -> norm_head_ref 0 info env stack (VarKey id) t
 
-  | Const sp ->
+  | Const (sp, _) ->
     Reductionops.reduction_effect_hook info.env info.sigma
       (fst sp) (lazy (reify_stack t stack));
     norm_head_ref 0 info env stack (ConstKey sp) t

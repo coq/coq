@@ -299,14 +299,14 @@ struct
     (* To each evar we associate a unique identifier. *)
     let metas = ref Evar.Map.empty in
     let rec pat_of_constr c = match Constr.kind c with
-    | Rel _          -> Term DRel
-    | Sort _         -> Term DSort
-    | Var i          -> Term (DRef (VarRef i))
-    | Const (c,u)    -> Term (DRef (ConstRef c))
-    | Ind ((i,u), _) -> Term (DRef (IndRef i))
-    | Construct (c,u)-> Term (DRef (ConstructRef c))
-    | Meta _         -> assert false
-    | Evar (i,_)     ->
+    | Rel _            -> Term DRel
+    | Sort _           -> Term DSort
+    | Var i            -> Term (DRef (VarRef i))
+    | Const ((c,u), _) -> Term (DRef (ConstRef c))
+    | Ind ((i,u), _)   -> Term (DRef (IndRef i))
+    | Construct (c,u)  -> Term (DRef (ConstructRef c))
+    | Meta _           -> assert false
+    | Evar (i,_)       ->
       let meta =
         try Evar.Map.find i !metas
         with Not_found ->

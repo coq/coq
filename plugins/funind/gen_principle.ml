@@ -542,7 +542,7 @@ let generate_type evd g_to_f f graph =
 let find_induction_principle evd f =
   let f_as_constant, _u =
     match EConstr.kind !evd f with
-    | Constr.Const c' -> c'
+    | Constr.Const (c', _) -> c'
     | _ -> CErrors.user_err Pp.(str "Must be used with a function")
   in
   match find_Function_infos f_as_constant with

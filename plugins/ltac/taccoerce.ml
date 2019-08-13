@@ -198,7 +198,7 @@ let id_of_name = function
         | None -> fail ()
         | Some id -> id
         end
-       | Const (cst,_) -> Label.to_id (Constant.label cst)
+       | Const ((cst,_), _) -> Label.to_id (Constant.label cst)
        | Construct (cstr,_) ->
           let ref = GlobRef.ConstructRef cstr in
           let basename = Nametab.basename_of_global ref in

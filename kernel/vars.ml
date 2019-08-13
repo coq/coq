@@ -230,12 +230,12 @@ let subst_univs_level_constr subst c =
     let changed = ref false in
     let rec aux t =
       match kind t with
-      | Const (c, u) ->
+      | Const ((c, u), ans) ->
         if Univ.Instance.is_empty u then t
         else
           let u' = f u in
             if u' == u then t
-            else (changed := true; mkConstU (c, u'))
+            else (changed := true; mkConstUA (c, u') ans)
       | Ind ((i, u), stg) ->
         if Univ.Instance.is_empty u then t
         else
@@ -266,12 +266,12 @@ let subst_instance_constr subst c =
     let f u = Univ.subst_instance_instance subst u in
     let rec aux t =
       match kind t with
-      | Const (c, u) ->
+      | Const ((c, u), ans) ->
        if Univ.Instance.is_empty u then t
        else
           let u' = f u in
            if u' == u then t
-           else (mkConstU (c, u'))
+           else (mkConstUA (c, u') ans)
       | Ind ((i, u), stg) ->
        if Univ.Instance.is_empty u then t
        else
@@ -308,7 +308,7 @@ let universes_of_constr c =
   let open Univ in
   let rec aux s c =
     match kind c with
-    | Const (_c, u) ->
+    | Const ((_c, u), _) ->
        LSet.fold LSet.add (Instance.levels u) s
     | Ind (((_mind,_), u), _) | Construct (((_mind,_),_), u) ->
        LSet.fold LSet.add (Instance.levels u) s

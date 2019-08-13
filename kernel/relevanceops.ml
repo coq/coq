@@ -95,7 +95,7 @@ and relevance_of_term_extra env extra lft subs c =
   | LetIn ({binder_relevance=r;_}, _, _, bdy) ->
     relevance_of_term_extra env (Range.cons r extra) (Esubst.el_lift lft) (Esubst.subs_lift subs) bdy
   | App (c, _) -> relevance_of_term_extra env extra lft subs c
-  | Const (c,_) -> relevance_of_constant env c
+  | Const ((c,_), _) -> relevance_of_constant env c
   | Construct (c,_) -> relevance_of_constructor env c
   | Case (ci, _, _, _) -> ci.ci_relevance
   | Fix ((_,i),(lna,_,_)) -> (lna.(i)).binder_relevance

@@ -349,7 +349,7 @@ let rec execute env sigma cstr =
     | Var id ->
         sigma, judge_of_variable env id
 
-    | Const c ->
+    | Const (c, _) ->
         let sigma, ty = type_of_constant env sigma c in
         sigma, make_judge cstr ty
 

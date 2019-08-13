@@ -550,12 +550,12 @@ let rec execute env stg cstr =
     | Rel (n, _) ->
       let numvars = stage_vars_in_relative env n in
       let annots, stg = next_annots numvars stg in
-      stg, empty (), mkRelAnnots n (Some annots), type_of_relative env n
+      stg, empty (), mkRelA n (Some annots), type_of_relative env n
 
     | Var id ->
       stg, empty (), cstr, type_of_variable env id
 
-    | Const c ->
+    | Const (c, _ans) ->
       let t, cstrnt = type_of_constant env c in
       let s, stg = next stg in
       let t = annotate_glob s t in

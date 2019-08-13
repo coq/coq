@@ -62,8 +62,8 @@ let mkProd (na, t, u) = of_kind (Prod (na, t, u))
 let mkLambda (na, t, c) = of_kind (Lambda (na, t, c))
 let mkLetIn (na, b, t, c) = of_kind (LetIn (na, b, t, c))
 let mkApp (f, arg) = of_kind (App (f, arg))
-let mkConstU pc = of_kind (Const pc)
-let mkConst c = of_kind (Const (in_punivs c))
+let mkConstU pc = of_kind (Const (pc, None))
+let mkConst c = of_kind (Const ((in_punivs c), None))
 let mkIndU pi = of_kind (Ind (pi, Stages.Annot.Empty))
 let mkInd i = of_kind (Ind ((in_punivs i), Stages.Annot.Empty))
 let mkConstructU pc = of_kind (Construct pc)
@@ -179,7 +179,7 @@ let destProd sigma c = match kind sigma c with
 | _ -> raise DestKO
 
 let destConst sigma c = match kind sigma c with
-| Const p -> p
+| Const (p, _) -> p
 | _ -> raise DestKO
 
 let destConstruct sigma c = match kind sigma c with
@@ -204,7 +204,7 @@ let destProj sigma c = match kind sigma c with
 
 let destRef sigma c = let open GlobRef in match kind sigma c with
   | Var x -> VarRef x, EInstance.empty
-  | Const (c,u) -> ConstRef c, u
+  | Const ((c,u), _) -> ConstRef c, u
   | Ind ((ind,u), _) -> IndRef ind, u
   | Construct (c,u) -> ConstructRef c, u
   | _ -> raise DestKO
@@ -513,7 +513,7 @@ let compare_head_gen_proj env sigma equ eqs (eqc' : constr Constr.constr_compare
   | Proj (p, c), App (f, args)
   | App (f, args), Proj (p, c) ->
       (match kind f with
-      | Const (p', u) when Constant.equal (Projection.constant p) p' ->
+      | Const ((p', u), _) when Constant.equal (Projection.constant p) p' ->
           let npars = Projection.npars p in
           if Array.length args == npars + 1 then
             eqc' 0 c args.(npars)
@@ -546,7 +546,7 @@ let universes_of_constr sigma c =
   let open Univ in
   let rec aux s c =
     match kind sigma c with
-    | Const (c, u) ->
+    | Const ((c, u), _) ->
           LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s
     | Ind (((mind,_), u), _) | Construct (((mind,_),_), u) ->
           LSet.fold LSet.add (Instance.levels (EInstance.kind sigma u)) s

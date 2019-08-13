@@ -301,7 +301,7 @@ let rec extract_type env sg db j c args =
                if n > List.length db then Tunknown
                else let n' = List.nth db (n-1) in
                if Int.equal n' 0 then Tunknown else Tvar n')
-    | Const (kn,u) ->
+    | Const ((kn,u), _) ->
         let r = GlobRef.ConstRef kn in
         let typ = type_of env sg (EConstr.mkConstU (kn,u)) in
         (match flag_of_type env sg typ with
@@ -660,7 +660,7 @@ let rec extract_term env sg mle mlt c args =
         with NotDefault d ->
           let mle' = Mlenv.push_std_type mle (Tdummy d) in
           ast_pop (extract_term env' sg mle' mlt c2 args'))
-    | Const (kn,_) ->
+    | Const ((kn,_), _) ->
         extract_cst_app env sg mle mlt kn args
     | Construct (cp,_) ->
         extract_cons_app env sg mle mlt cp args

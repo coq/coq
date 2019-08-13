@@ -845,7 +845,7 @@ module M = struct
     let sigma = gl.sigma in
     let rec rconstant term =
       match EConstr.kind sigma term with
-      | Const x ->
+      | Const (x, _) ->
         if EConstr.eq_constr sigma term (Lazy.force coq_R0) then Mc.C0
         else if EConstr.eq_constr sigma term (Lazy.force coq_R1) then Mc.C1
         else raise ParseError

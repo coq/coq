@@ -1069,7 +1069,7 @@ let is_section_variable id =
 let global_of_constr sigma c =
   let open GlobRef in
   match EConstr.kind sigma c with
-  | Const (c, u) -> ConstRef c, u
+  | Const ((c, u), _) -> ConstRef c, u
   | Ind ((i, u), _) -> IndRef i, u
   | Construct (c, u) -> ConstructRef c, u
   | Var id -> VarRef id, EConstr.EInstance.empty
@@ -1127,7 +1127,7 @@ let compare_constr_univ sigma f cv_pb t1 t2 =
       Sort s1, Sort s2 -> base_sort_cmp cv_pb (ESorts.kind sigma s1) (ESorts.kind sigma s2)
     | Prod (_,t1,c1), Prod (_,t2,c2) ->
         f Reduction.CONV t1 t2 && f cv_pb c1 c2
-    | Const (c, u), Const (c', u') -> Constant.equal c c'
+    | Const ((c, u), _), Const ((c', u'), _) -> Constant.equal c c'
     | Ind ((i, _), _), Ind ((i', _), _) -> eq_ind i i'
     | Construct (i, _), Construct (i', _) -> eq_constructor i i'
     | _ -> EConstr.compare_constr sigma (fun t1 t2 -> f Reduction.CONV t1 t2) t1 t2
@@ -1380,7 +1380,7 @@ let dependency_closure env sigma sign hyps =
 let global_app_of_constr sigma c =
   let open GlobRef in
   match EConstr.kind sigma c with
-  | Const (c, u) -> (ConstRef c, u), None
+  | Const ((c, u), _) -> (ConstRef c, u), None
   | Ind ((i, u), _) -> (IndRef i, u), None
   | Construct (c, u) -> (ConstructRef c, u), None
   | Var id -> (VarRef id, EConstr.EInstance.empty), None

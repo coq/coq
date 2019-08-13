@@ -103,7 +103,7 @@ type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Lambda    of Name.t binder_annot * 'types * 'constr
   | LetIn     of Name.t binder_annot * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
-  | Const     of (Constant.t * 'univs)
+  | Const     of (Constant.t * 'univs) * Annot.t list option
   | Ind       of (inductive * 'univs) * Annot.t
   | Construct of (constructor * 'univs)
   | Case      of case_info * 'constr * 'constr * 'constr array
@@ -137,7 +137,7 @@ let rels =
     mkRel  9;mkRel 10;mkRel 11;mkRel 12;mkRel 13;mkRel 14;mkRel 15;mkRel 16|]
 
 let mkRel n = if 0<n && n<=16 then rels.(n-1) else Rel (n, None)
-let mkRelAnnots n ans = Rel (n, ans)
+let mkRelA n ans = Rel (n, ans)
 
 (* Construct a type *)
 let mkSProp  = Sort Sorts.sprop
@@ -179,8 +179,9 @@ let map_puniverses f (x,u) = (f x, u)
 let in_punivs a = (a, Univ.Instance.empty)
 
 (* Constructs a constant *)
-let mkConst c = Const (in_punivs c)
-let mkConstU c = Const c
+let mkConst c = Const ((in_punivs c), None)
+let mkConstU c = Const (c, None)
+let mkConstUA c ans = Const (c, ans)
 
 (* Constructs an applied projection *)
 let mkProj (p,c) = Proj (p,c)
@@ -358,7 +359,7 @@ let isRef c = match kind c with
 let isRefX x c =
   let open GlobRef in
   match x, kind c with
-  | ConstRef c, Const (c', _) -> Constant.equal c c'
+  | ConstRef c, Const ((c', _), _) -> Constant.equal c c'
   | IndRef i, Ind ((i', _), _) -> eq_ind i i'
   | ConstructRef i, Construct (i', _) -> eq_constructor i i'
   | VarRef id, Var id' -> Id.equal id id'
@@ -410,7 +411,7 @@ let destApp c = match kind c with
 
 (* Destructs a constant *)
 let destConst c = match kind c with
-  | Const kn -> kn
+  | Const (kn, _) -> kn
   | _ -> raise DestKO
 
 (* Destructs an existential variable *)
@@ -447,7 +448,7 @@ let destCoFix c = match kind c with
 
 let destRef c = let open GlobRef in match kind c with
   | Var x -> VarRef x, Univ.Instance.empty
-  | Const (c,u) -> ConstRef c, u
+  | Const ((c,u), _) -> ConstRef c, u
   | Ind ((ind,u), _) -> IndRef ind, u
   | Construct (c,u) -> ConstructRef c, u
   | _ -> raise DestKO
@@ -889,7 +890,7 @@ let mkRelMap annot n la c =
   match la with
   | None -> c
   | Some la ->
-    mkRelAnnots n @@ Some (List.make (List.length la) annot)
+    mkRelA n @@ Some (List.make (List.length la) annot)
 let const2 _ _ = identity
 
 let erase =
@@ -946,7 +947,7 @@ let annotate_fresh annots =
       let annots = !annots_ref in
       let la, annots = List.chop (List.length la) annots in
       annots_ref := annots;
-      mkRelAnnots n (Some la) in
+      mkRelA n (Some la) in
   map_annots f g
 
 let annotate_glob s =
@@ -973,7 +974,7 @@ let annotate_succ vars =
 let rec exliftn el c =
   let open Esubst in
   match kind c with
-  | Rel (i, ans) -> mkRelAnnots (reloc_rel i el) ans
+  | Rel (i, ans) -> mkRelA (reloc_rel i el) ans
   | _ -> map_with_binders el_lift exliftn el c
 
 (* Lifting the binding depth across k bindings *)
@@ -1032,7 +1033,7 @@ let compare_head_gen_leq_with_cstrnts kind1 kind2 leq_universes leq_sorts leq_an
     leq (nargs+len) c1 c2 && Array.equal_norefl (eq 0) l1 l2
   | Proj (p1,c1), Proj (p2,c2) -> Projection.equal p1 p2 && eq 0 c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && List.equal (eq 0) l1 l2
-  | Const (c1,u1), Const (c2,u2) ->
+  | Const ((c1,u1), _), Const ((c2,u2), _) ->
     (* The args length currently isn't used but may as well pass it. *)
     Constant.equal c1 c2 && leq_universes (GlobRef.ConstRef c1) nargs u1 u2
   | Ind ((c1,u1), s1), Ind ((c2,u2), s2) ->
@@ -1212,8 +1213,7 @@ let constr_ord_int f t1 t2 =
     (* Why this special case? *)
     | App (Cast(c1,_,_),l1), _ -> f (mkApp (c1,l1)) t2
     | _, App (Cast(c2, _,_),l2) -> f t1 (mkApp (c2,l2))
-    | Rel (n1, ans1), Rel (n2, ans2) ->
-      (Int.compare =? (Option.compare @@ List.compare @@ Annot.compare)) n1 n2 ans1 ans2
+    | Rel (n1, _), Rel (n2, _) -> Int.compare n1 n2
     | Rel _, _ -> -1 | _, Rel _ -> 1
     | Var id1, Var id2 -> Id.compare id1 id2
     | Var _, _ -> -1 | _, Var _ -> 1
@@ -1234,7 +1234,7 @@ let constr_ord_int f t1 t2 =
     | LetIn _, _ -> -1 | _, LetIn _ -> 1
     | App (c1,l1), App (c2,l2) -> (f =? (Array.compare f)) c1 c2 l1 l2
     | App _, _ -> -1 | _, App _ -> 1
-    | Const (c1,_u1), Const (c2,_u2) -> Constant.CanOrd.compare c1 c2
+    | Const ((c1,_u1), _), Const ((c2,_u2), _) -> Constant.CanOrd.compare c1 c2
     | Const _, _ -> -1 | _, Const _ -> 1
     | Ind ((ind1, _u1), _), Ind ((ind2, _u2), _) -> ind_ord ind1 ind2
     | Ind _, _ -> -1 | _, Ind _ -> 1
@@ -1322,8 +1322,8 @@ let hasheq t1 t2 =
       n1 == n2 && b1 == b2 && t1 == t2 && c1 == c2
     | App (c1,l1), App (c2,l2) -> c1 == c2 && array_eqeq l1 l2
     | Proj (p1,c1), Proj(p2,c2) -> p1 == p2 && c1 == c2
-    | Evar (e1,l1), Evar (e2,l2) -> e1 == e2 && List.equal (==) l1 l2
-    | Const (c1,u1), Const (c2,u2) -> c1 == c2 && u1 == u2
+    | Evar (e1,l1), Evar (e2,l2) -> e1 == e2 && List.equal l1 l2
+    | Const ((c1,u1), ans1), Const ((c2,u2), ans2) -> c1 == c2 && u1 == u2 && ans1 == ans2
     | Ind ((ind1,u1), stg1), Ind ((ind2,u2), stg2) -> ind1 == ind2 && u1 == u2 && stg1 == stg2
     | Construct (cstr1,u1), Construct (cstr2,u2) -> cstr1 == cstr2 && u1 == u2
     | Case (ci1,p1,c1,bl1), Case (ci2,p2,c2,bl2) ->
@@ -1404,10 +1404,10 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Evar (e,l) ->
         let l, hl = hash_list_array l in
         (Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
-      | Const (c,u) ->
+      | Const ((c,u), ans) ->
         let c' = sh_con c in
         let u', hu = sh_instance u in
-        (Const (c', u'), combinesmall 9 (combine (Constant.SyntacticOrd.hash c) hu))
+        (Const ((c', u'), ans), combinesmall 9 (combine (Constant.SyntacticOrd.hash c) hu))
       | Ind ((ind,u), stg) ->
         let u', hu = sh_instance u in
         (Ind ((sh_ind ind, u'), stg),
@@ -1506,7 +1506,7 @@ let rec hash t =
       combinesmall 7 (combine (hash_term_array l) (hash c))
     | Evar (e,l) ->
       combinesmall 8 (combine (Evar.hash e) (hash_term_list l))
-    | Const (c,u) ->
+    | Const ((c,u), _) ->
       combinesmall 9 (combine (Constant.hash c) (Instance.hash u))
     | Ind ((ind,u), stg) ->
       combinesmall 10 (combine3 (ind_hash ind) (Instance.hash u) (Annot.hash stg))
@@ -1618,6 +1618,12 @@ let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =
            cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
          str"}")
 
+let debug_print_annots ans =
+  let open Pp in
+  str "[" ++
+  option (List.fold_left (fun s annot -> s ++ str ";" ++ Annot.pr annot) (str ";")) ans ++
+  str "]"
+
 let pr_puniverses p u =
   if Univ.Instance.is_empty u then p
   else Pp.(p ++ str"(*" ++ Univ.Instance.pr Univ.Level.pr u ++ str"*)")
@@ -1625,10 +1631,7 @@ let pr_puniverses p u =
 let rec debug_print c =
   let open Pp in
   match kind c with
-  | Rel (n, ans) -> str "#"++int n ++
-    str "[" ++
-    option (List.fold_left (fun s annot -> s ++ str ";" ++ Annot.pr annot) (str ";")) ans ++
-    str "]"
+  | Rel (n, ans) -> str "#"++int n ++debug_print_annots ans
   | Meta n -> str "Meta(" ++ int n ++ str ")"
   | Var id -> Id.print id
   | Sort s -> Sorts.debug_print s
@@ -1654,7 +1657,9 @@ let rec debug_print c =
   | Evar (e,l) -> hov 1
       (str"Evar#" ++ int (Evar.repr e) ++ str"{" ++
        prlist_with_sep spc debug_print l ++str"}")
-  | Const (c,u) -> str"Cst(" ++ pr_puniverses (Constant.debug_print c) u ++ str")"
+  | Const ((c,u), ans) -> str"Cst(" ++
+      pr_puniverses (Constant.debug_print c) u ++
+      debug_print_annots ans ++ str ")"
   | Ind (((sp,i),u), stg) -> str"Ind(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i) u ++ str"," ++ Annot.pr stg ++ str")"
   | Construct (((sp,i),j),u) ->
       str"Constr(" ++ pr_puniverses (MutInd.print sp ++ str"," ++ int i ++ str"," ++ int j) u ++ str")"

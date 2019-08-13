@@ -772,7 +772,7 @@ let rec lambda_of_constr env c =
 
 and lambda_of_app env f args =
   match Constr.kind f with
-  | Const (kn,u as c) ->
+  | Const ((kn,u as c), _) ->
       let kn = get_alias env.global_env kn in
       let cb = lookup_constant kn env.global_env in
       begin match cb.const_body with

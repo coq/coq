@@ -70,7 +70,7 @@ type types = constr
 
 (** Constructs a de Bruijn index (DB indices begin at 1) *)
 val mkRel : int -> constr
-val mkRelAnnots : int -> Annot.t list option -> constr
+val mkRelA : int -> Annot.t list option -> constr
 
 (** Constructs a Variable *)
 val mkVar : Id.t -> constr
@@ -122,6 +122,7 @@ val map_puniverses : ('a -> 'b) -> 'a Univ.puniverses -> 'b Univ.puniverses
 (** Constructs a Constant.t *)
 val mkConst : Constant.t -> constr
 val mkConstU : pconstant -> constr
+val mkConstUA : pconstant -> Annot.t list option -> constr
 
 (** Constructs a projection application *)
 val mkProj : (Projection.t * constr) -> constr
@@ -216,30 +217,25 @@ val mkCoFix : cofixpoint -> constr
 type 'constr pexistential = Evar.t * 'constr list
 
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
-  | Rel       of int * Annot.t list option            (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
-
-  | Var       of Id.t                                 (** Gallina-variable that was introduced by Vernacular-command that extends
-                                                          the local context of the currently open section
-                                                          (i.e. [Variable] or [Let]). *)
-
+  | Rel       of int * Annot.t list option                    (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
+  | Var       of Id.t                                         (** Gallina-variable that was introduced by Vernacular-command that extends
+                                                                  the local context of the currently open section
+                                                                  (i.e. [Variable] or [Let]). *)
   | Meta      of metavariable
   | Evar      of 'constr pexistential
   | Sort      of 'sort
   | Cast      of 'constr * cast_kind * 'types
-  | Prod      of Name.t Context.binder_annot * 'types * 'types             (** Concrete syntax ["forall A:B,C"] is represented as [Prod (A,B,C)]. *)
-  | Lambda    of Name.t Context.binder_annot * 'types * 'constr            (** Concrete syntax ["fun A:B => C"] is represented as [Lambda (A,B,C)].  *)
-  | LetIn     of Name.t Context.binder_annot * 'constr * 'types * 'constr  (** Concrete syntax ["let A:C := B in D"] is represented as [LetIn (A,B,C,D)]. *)
-  | App       of 'constr * 'constr array              (** Concrete syntax ["(F P1 P2 ...  Pn)"] is represented as [App (F, [|P1; P2; ...; Pn|])].
-
-                                                          The {!mkApp} constructor also enforces the following invariant:
-                                                          - [F] itself is not {!App}
-                                                          - and [[|P1;..;Pn|]] is not empty. *)
-
-  | Const     of (Constant.t * 'univs)                  (** Gallina-variable that was introduced by Vernacular-command that extends the global environment
-                                                          (i.e. [Parameter], or [Axiom], or [Definition], or [Theorem] etc.) *)
-
-  | Ind       of (inductive * 'univs) * Annot.t       (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
-  | Construct of (constructor * 'univs)              (** A constructor of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
+  | Prod      of Name.t Context.binder_annot * 'types * 'types              (** Concrete syntax ["forall A:B,C"] is represented as [Prod (A,B,C)]. *)
+  | Lambda    of Name.t Context.binder_annot * 'types * 'constr             (** Concrete syntax ["fun A:B => C"] is represented as [Lambda (A,B,C)].  *)
+  | LetIn     of Name.t Context.binder_annot * 'constr * 'types * 'constr   (** Concrete syntax ["let A:C := B in D"] is represented as [LetIn (A,B,C,D)]. *)
+  | App       of 'constr * 'constr array                                    (** Concrete syntax ["(F P1 P2 ...  Pn)"] is represented as [App (F, [|P1; P2; ...; Pn|])].
+                                                                                The {!mkApp} constructor also enforces the following invariant:
+                                                                                - [F] itself is not {!App}
+                                                                                - and [[|P1;..;Pn|]] is not empty. *)
+  | Const     of (Constant.t * 'univs) * Annot.t list option  (** Gallina-variable that was introduced by Vernacular-command that extends the global environment
+                                                                  (i.e. [Parameter], or [Axiom], or [Definition], or [Theorem] etc.) *)
+  | Ind       of (inductive * 'univs) * Annot.t               (** A name of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
+  | Construct of (constructor * 'univs)                       (** A constructor of an inductive type defined by [Variant], [Inductive] or [Record] Vernacular-commands. *)
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint

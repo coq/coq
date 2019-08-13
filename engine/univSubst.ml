@@ -56,10 +56,10 @@ let subst_univs_fn_constr f c =
       let u' = fu u in
         if u' == u then t else
           (changed := true; mkSort (Sorts.sort_of_univ u'))
-    | Const (c, u) ->
+    | Const ((c, u), ans) ->
       let u' = fi u in
         if u' == u then t
-        else (changed := true; mkConstU (c, u'))
+        else (changed := true; mkConstUA (c, u') ans)
     | Ind ((i, u), stg) ->
       let u' = fi u in
         if u' == u then t
@@ -135,9 +135,9 @@ let nf_evars_and_universes_opt_subst f subst =
       (match try f (evk, args') with Not_found -> None with
       | None -> if args == args' then c else mkEvar (evk, args')
       | Some c -> aux c)
-    | Const pu ->
+    | Const (pu, ans) ->
       let pu' = subst_univs_fn_puniverses lsubst pu in
-        if pu' == pu then c else mkConstU pu'
+        if pu' == pu then c else mkConstUA pu' ans
     | Ind (pu, stg) ->
       let pu' = subst_univs_fn_puniverses lsubst pu in
         if pu' == pu then c else mkIndUS pu' stg

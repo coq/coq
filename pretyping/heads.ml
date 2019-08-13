@@ -55,7 +55,7 @@ and kind_of_head env t =
         match lookup_named id env with
         | LocalDef (_,c,_) -> aux k l c b
         | LocalAssum _ -> NotImmediatelyComputableHead)
-  | Const (cst,_) ->
+  | Const ((cst,_), _) ->
       (try on_subterm k l b (compute_head env (EvalConstRef cst))
        with Not_found ->
          CErrors.anomaly

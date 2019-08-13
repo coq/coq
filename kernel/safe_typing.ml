@@ -699,7 +699,7 @@ let inline_side_effects env body side_eff =
     let (subst, len, ctx, args) = List.fold_left fold (Cmap_env.empty, 1, Univ.ContextSet.empty, []) side_eff in
     (** Third step: inline the definitions *)
     let rec subst_const i k t = match Constr.kind t with
-    | Const (c, u) ->
+    | Const ((c, u), ans) ->
       let data = try Some (Cmap_env.find c subst) with Not_found -> None in
       begin match data with
       | None -> t
@@ -707,12 +707,12 @@ let inline_side_effects env body side_eff =
         (** [b] is closed but may refer to other constants *)
         subst_const i k (Vars.subst_instance_constr u b)
       | Some (Inr n) ->
-        mkRel (k + n - i)
+        mkRelA (k + n - i) ans
       end
     | Rel (n, ans) ->
       (** Lift free rel variables *)
       if n <= k then t
-      else mkRelAnnots (n + len - i - 1) ans
+      else mkRelA (n + len - i - 1) ans
     | _ -> Constr.map_with_binders ((+) 1) (fun k t -> subst_const i k t) k t
     in
     let map_args i (na, b, ty, opaque) =

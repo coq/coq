@@ -65,7 +65,7 @@ let defined lemma =
 
 let def_of_const t =
   match Constr.kind t with
-  | Const sp -> (
+  | Const (sp, _) -> (
     try
       match constant_opt_value_in (Global.env ()) sp with
       | Some c -> c
@@ -79,7 +79,7 @@ let def_of_const t =
 
 let type_of_const sigma t =
   match EConstr.kind sigma t with
-  | Const (sp, u) ->
+  | Const ((sp, u), _) ->
     let u = EInstance.kind sigma u in
     (* FIXME discarding universe constraints *)
     Typeops.type_of_constant_in (Global.env ()) (sp, u)

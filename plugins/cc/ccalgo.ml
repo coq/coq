@@ -433,7 +433,7 @@ let rec canonize_name sigma c =
   let c = EConstr.Unsafe.to_constr c in
   let func c = canonize_name sigma (EConstr.of_constr c) in
     match Constr.kind c with
-      | Const (kn,u) ->
+      | Const ((kn,u), _) ->
           let canon_const = Constant.make1 (Constant.canonical kn) in
             (mkConstU (canon_const,u))
       | Ind (((kn,i),u), stg) ->

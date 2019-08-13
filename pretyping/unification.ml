@@ -515,7 +515,7 @@ let subterm_restriction opt flags =
 let key_of env sigma b flags f =
   if subterm_restriction b flags then None else
   match EConstr.kind sigma f with
-  | Const (cst, u) when is_transparent env (ConstKey cst) &&
+  | Const ((cst, u), _) when is_transparent env (ConstKey cst) &&
       (TransparentState.is_transparent_constant flags.modulo_delta cst
        || Recordops.is_primitive_projection cst) ->
       let u = EInstance.kind sigma u in
@@ -562,7 +562,7 @@ let oracle_order env cf1 cf2 =
 
 let is_rigid_head sigma flags t =
   match EConstr.kind sigma t with
-  | Const (cst,u) -> not (TransparentState.is_transparent_constant flags.modulo_delta cst)
+  | Const ((cst,u), _) -> not (TransparentState.is_transparent_constant flags.modulo_delta cst)
   | Ind (i,u) -> true
   | Construct _ | Int _ | Float _ -> true
   | Fix _ | CoFix _ -> true
@@ -647,7 +647,7 @@ let check_compatibility env pbty flags (sigma,metasubst,evarsubst : subst0) tyM 
 let rec is_neutral env sigma ts t =
   let (f, l) = decompose_app_vect sigma t in
     match EConstr.kind sigma f with
-    | Const (c, u) ->
+    | Const ((c, u), _) ->
       not (Environ.evaluable_constant c env) ||
       not (is_transparent env (ConstKey c)) ||
       not (TransparentState.is_transparent_constant ts c)
@@ -919,7 +919,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
         match EConstr.kind sigma c' with
         | Meta _ -> true
         | Evar _ -> true
-        | Const (c, u) -> Constant.equal c (Projection.constant p)
+        | Const ((c, u), _) -> Constant.equal c (Projection.constant p)
         | _ -> false
       in
       let expand_proj c c' l =
@@ -1282,7 +1282,7 @@ let applyHead env evd n c  =
 
 let is_mimick_head sigma ts f =
   match EConstr.kind sigma f with
-  | Const (c,u) -> not (TransparentState.is_transparent_constant ts c)
+  | Const ((c,u), _) -> not (TransparentState.is_transparent_constant ts c)
   | Var id -> not (TransparentState.is_transparent_variable ts id)
   | (Rel _|Construct _|Ind _) -> true
   | _ -> false

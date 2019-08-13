@@ -169,7 +169,7 @@ let find_class_type env sigma t =
   let t', args = Reductionops.whd_betaiotazeta_stack env sigma t in
   match EConstr.kind sigma t' with
     | Var id -> CL_SECVAR id, EInstance.empty, args
-    | Const (sp,u) -> CL_CONST sp, u, args
+    | Const ((sp,u), _) -> CL_CONST sp, u, args
     | Proj (p, c) when not (Projection.unfolded p) ->
       CL_PROJ (Projection.repr p), EInstance.empty, (c :: args)
     | Ind ((ind_sp,u), _) -> CL_IND ind_sp, u, args
