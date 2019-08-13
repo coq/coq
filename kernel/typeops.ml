@@ -474,21 +474,12 @@ let check_fixpoint env (names, lar', vdef, vdeft) lar'' =
   check Γ ⊢ Δ'' ≤ Δ'; Γ ⊢ U'' ≤ U' for coinductive *)
 let check_fixpoint_type env lar' lar'' recursivity =
   let unzip_prod_assums arr =
-    let len = Array.length arr in
-    Array.fold_left_i
-      (fun i (fsts, snds) (fst, snd) ->
-        fsts.(i) <- fst;
-        snds.(i) <- snd;
-        fsts, snds)
-      (Array.make len [], Array.make len mkProp) @@
-    Array.map Term.decompose_prod_assum arr in
-  let concat_delta_types delta = Array.of_list @@
-    Array.fold_left List.append [] @@
-    Array.map (List.map Rel.Declaration.get_type) delta in
+    let decls, body = List.split @@ Array.to_list @@
+      Array.map Term.decompose_prod_assum arr in
+    let tys = List.map Rel.Declaration.get_type @@ List.concat decls in
+    Array.of_list tys, Array.of_list body in
   let delta', u' = unzip_prod_assums lar' in
   let delta'', u'' = unzip_prod_assums lar'' in
-  let delta' = concat_delta_types delta' in
-  let delta'' = concat_delta_types delta'' in
   let cstrnt_delta = match recursivity with
     | Finite -> conv_leq_vecti env delta' delta''
     | CoFinite -> conv_leq_vecti env delta'' delta'
