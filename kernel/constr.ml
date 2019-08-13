@@ -824,6 +824,23 @@ let map_with_binders g f l c0 = match kind c0 with
 
 (** fold-type functions on stage annotations of constrs *)
 
+let rec count_annots cstr =
+  match cstr with
+  | Ind _ -> 1
+  | Rel (_, la) -> List.length @@ Option.default [] la
+  | Cast (c, _, _)
+  | Lambda (_, _, c) ->
+    count_annots c
+  | LetIn (_, b, _, c) ->
+    count_annots b + count_annots c
+  | Case (_, _, c, lf) ->
+    Array.fold_left (fun count c -> count + count_annots c) (count_annots c) lf
+  | Fix (_, (_, _, bl))
+  | CoFix (_, (_, _, bl)) ->
+    Array.fold_left (fun count c -> count + count_annots c) 0 bl
+  | _ ->
+    fold (fun count c -> count + count_annots c) 0 cstr
+
 let rec collect_annots c =
   match c with
   | Ind (_, Stage (StageVar (na, _))) -> SVars.add na SVars.empty
@@ -836,50 +853,58 @@ let rec any_annot f c =
 
 (** map-type functions on stage annotations of constrs *)
 
-let rec map_annots f cstr =
+let rec map_annots f g cstr =
   match cstr with
   | Ind (iu, a) -> f iu a cstr
+  | Rel (n, la) -> g n la cstr
   | Cast (c, k, t) ->
-    let c' = map_annots f c in
+    let c' = map_annots f g c in
     if c == c' then cstr else
     mkCast (c', k, t)
   | Lambda (n, t, c) ->
-    let c' = map_annots f c in
+    let c' = map_annots f g c in
     if c == c' then cstr else
     mkLambda (n, t, c')
   | LetIn (n, b, t, c) ->
-    let b' = map_annots f b in
-    let c' = map_annots f c in
+    let b' = map_annots f g b in
+    let c' = map_annots f g c in
     if b == b' && c == c' then cstr else
     mkLetIn (n, b', t, c')
   | Case (ci, p, c, lf) ->
-    let c' = map_annots f c in
-    let lf' = Array.Smart.map (map_annots f) lf in
+    let c' = map_annots f g c in
+    let lf' = Array.Smart.map (map_annots f g) lf in
     if c == c' && lf == lf' then cstr else
     mkCase (ci, p, c', lf')
   | Fix (ln, (nl, tl, bl)) ->
-    let bl' = Array.Smart.map (map_annots f) bl in
+    let bl' = Array.Smart.map (map_annots f g) bl in
     if bl == bl' then cstr else
     mkFix (ln, (nl, tl, bl'))
   | CoFix (ln, (nl, tl, bl)) ->
-    let bl' = Array.Smart.map (map_annots f) bl in
+    let bl' = Array.Smart.map (map_annots f g) bl in
     if bl == bl' then cstr else
     mkCoFix (ln, (nl, tl, bl'))
-  | _ -> map (map_annots f) cstr
+  | _ -> map (map_annots f g) cstr
+
+let mkRelMap annot n la c =
+  match la with
+  | None -> c
+  | Some la ->
+    mkRelAnnots n @@ Some (List.make (List.length la) annot)
+let const2 _ _ = identity
 
 let erase =
   let f iu a c =
     match a with
     | Empty -> c
     | _ -> mkIndUS iu Empty in
-  map_annots f
+  map_annots f @@ mkRelMap Empty
 
 let erase_infty =
   let f iu a c =
     match a with
     | Stage Infty -> c
     | _ -> mkIndUS iu infty in
-  map_annots f
+  map_annots f @@ mkRelMap infty
 
 let erase_glob vars =
   let f iu a c =
@@ -889,7 +914,7 @@ let erase_glob vars =
       mkIndUS iu Glob
     | Stage Infty -> c
     | _ -> mkIndUS iu infty in
-  map_annots f
+  map_annots f @@ mkRelMap infty
 
 let erase_star vars =
   let f iu a c =
@@ -899,14 +924,14 @@ let erase_star vars =
       mkIndUS iu Star
     | Empty -> c
     | _ -> mkIndUS iu Empty in
-  map_annots f
+  map_annots f @@ mkRelMap Empty
 
 let annotate ind s =
   let f (((i, _), _) as iu) _ c =
     if MutInd.equal ind i then
       mkIndUS iu s
     else c in
-  map_annots f
+  map_annots f const2
 
 let annotate_fresh annots =
   let annots_ref = ref annots in
@@ -914,14 +939,22 @@ let annotate_fresh annots =
     let annots = !annots_ref in
     annots_ref := List.tl annots;
     mkIndUS iu (List.hd annots) in
-  map_annots f
+  let g n la c =
+    match la with
+    | None -> c
+    | Some la ->
+      let annots = !annots_ref in
+      let la, annots = List.chop (List.length la) annots in
+      annots_ref := annots;
+      mkRelAnnots n (Some la) in
+  map_annots f g
 
 let annotate_glob s =
   let f iu a c =
     match a with
     | Glob -> mkIndUS iu s
     | _ -> c in
-  map_annots f
+  map_annots f const2
 
 let annotate_succ vars =
   let f iu a c =
@@ -930,7 +963,7 @@ let annotate_succ vars =
       when mem na vars ->
       mkIndUS iu (hat a)
     | _ -> c in
-  map_annots f
+  map_annots f const2
 
 (*********************)
 (*      Lifting      *)

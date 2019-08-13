@@ -551,10 +551,6 @@ val collect_annots : constr -> SVars.t
 
 val any_annot : (Annot.t -> bool) -> constr -> bool
 
-(** [map_annots f c] maps over [c], applying [f] to the contents of Inds. *)
-
-val map_annots : (pinductive -> Annot.t -> constr -> constr) -> constr -> constr
-
 (** [erase c] erases all stage annotations in [c] to Empty *)
 
 val erase : constr -> constr

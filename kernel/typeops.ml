@@ -111,6 +111,14 @@ let type_of_relative env n =
   with Not_found ->
     error_unbound_rel env n
 
+let stage_vars_in_relative env n =
+  try
+    match env |> lookup_rel n |> RelDecl.get_value with
+    | None -> 0
+    | Some c -> count_annots c
+  with Not_found ->
+    error_unbound_rel env n
+
 (* Type of variables *)
 let type_of_variable env id =
   try named_type id env
@@ -539,8 +547,10 @@ let rec execute env stg cstr =
        | _ -> ());
       stg, empty (), cstr, type_of_sort s
 
-    | Rel n ->
-      stg, empty (), cstr, type_of_relative env n
+    | Rel (n, _) ->
+      let numvars = stage_vars_in_relative env n in
+      let annots, stg = next_annots numvars stg in
+      stg, empty (), mkRelAnnots n (Some annots), type_of_relative env n
 
     | Var id ->
       stg, empty (), cstr, type_of_variable env id

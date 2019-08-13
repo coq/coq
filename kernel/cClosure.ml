@@ -518,7 +518,7 @@ let mk_clos_vect env v = match v with
   [|mk_clos env v0; mk_clos env v1; mk_clos env v2; mk_clos env v3|]
 | v -> Array.Fun1.map mk_clos env v
 
-let ref_value_cache ({ i_cache = cache; _ }) tab ref annotso =
+let ref_value_cache ({ i_cache = cache; _ }) tab ref oannots =
   try
     KeyTable.find tab ref
   with Not_found ->
@@ -540,7 +540,7 @@ let ref_value_cache ({ i_cache = cache; _ }) tab ref annotso =
           | VarKey id -> assoc_defined id cache.i_env
           | ConstKey cst -> constant_value_in cache.i_env cst
         in
-        let body = match annotso with
+        let body = match oannots with
         | Some annots -> annotate_fresh annots body
         | None -> body in
         Def (inject body)
