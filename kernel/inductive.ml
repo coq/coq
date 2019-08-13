@@ -1371,6 +1371,7 @@ let globify env ty_glob ty_def =
 type ('a, 'b) fold_fix_type_info = {
   elt : 'a;
   fix_type : types;
+  arg_env : env;
   arg_name : Name.t Context.binder_annot;
   arg_type : types;
   arg_index : int;
@@ -1383,6 +1384,7 @@ let fold_map2_fix_type env f is tys init =
   let info = {
     elt = List.hd is;
     fix_type = List.hd tys;
+    arg_env = Environ.empty_env;
     arg_name = Context.anonR;
     arg_type = mkSet;
     arg_index = -1;
@@ -1391,7 +1393,7 @@ let fold_map2_fix_type env f is tys init =
     acc = init;
   } in
   let rec app_ind info ty =
-    let c = whd env ty in
+    let c = whd info.arg_env ty in
     let info = { info with arg_head = c } in
     match kind c with
     | Ind (iu, s) ->
@@ -1414,16 +1416,19 @@ let fold_map2_fix_type env f is tys init =
         arg_type = ty; } in
       let info, ty = app_ind info ty in
       let info = { info with
+        arg_env = push_rel decl info.arg_env;
         arg_index = succ info.arg_index; } in
       Context.Rel.Declaration.set_type ty decl, info
-    | LocalDef _ -> decl, info in
+    | LocalDef _ ->
+      decl, { info with arg_env = push_rel decl info.arg_env } in
   let app_ty info i ty =
-    (* N.B. ctxt is backwards so we foldr backwards over it *)
     let ctxt, body = Term.decompose_prod_assum ty in
     let info = { info with
       elt = i;
       fix_type = ty;
+      arg_env = env;
       arg_index = 0; } in
+    (* N.B. ctxt is backwards so we foldr backwards over it *)
     let ctxt, info = List.fold_right_map app_arg ctxt info in
     let info = { info with
       arg_name = Context.anonR;
