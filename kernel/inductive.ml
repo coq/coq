@@ -1331,24 +1331,25 @@ let globify env ty_glob ty_def =
   let ctxt_glob, body_glob = Term.decompose_prod_assum ty_glob in
   let ctxt_def, body_def = Term.decompose_prod_assum ty_def in
   let len_glob, len_def = List.length ctxt_glob, List.length ctxt_def in
-  let rec globify_type type_glob type_def =
-    match kind (whd env type_glob), kind (whd env type_def) with
+  let rec globify_type (env_glob, env_def as env2) type_glob type_def =
+    match kind (whd env_glob type_glob), kind (whd env_def type_def) with
     | Ind (_, Glob), Ind (iu, _) -> mkIndUS iu Glob
     | App (c_glob, _), App (c_def, args) ->
-      let c_def' = globify_type c_glob c_def in
+      let c_def' = globify_type env2 c_glob c_def in
       if c_def == c_def' then type_def
       else mkApp (c_def', args)
     | _, _ -> type_def in
-  let globify_decls decl_glob decl_def =
+  let globify_decls (env_glob, env_def as env2) decl_glob decl_def =
+    let env2' = push_rel decl_glob env_glob, push_rel decl_def env_def in
     match decl_glob, decl_def with
     | LocalAssum (_, ty_glob), LocalAssum (_, ty_def) ->
-      let ty_def' = globify_type ty_glob ty_def in
-      if ty_def == ty_def' then decl_def
-      else set_type ty_def' decl_def
-    | _, _ -> decl_def in
+      let ty_def' = globify_type env2 ty_glob ty_def in
+      if ty_def == ty_def' then env2', decl_def
+      else env2', set_type ty_def' decl_def
+    | _, _ -> env2', decl_def in
   if any_annot ((=) Glob) ty_glob && Int.equal len_glob len_def then
-    let ctxt_def = List.map2 globify_decls ctxt_glob ctxt_def in
-    let body_def = globify_type body_glob body_def in
+    let env2, ctxt_def = List.fold_left2_map globify_decls (env, env) ctxt_glob ctxt_def in
+    let body_def = globify_type env2 body_glob body_def in
     Term.it_mkProd_or_LetIn body_def ctxt_def
   else ty_def
 
