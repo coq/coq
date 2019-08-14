@@ -828,13 +828,13 @@ let map_with_binders g f l c0 = match kind c0 with
 let rec count_annots cstr =
   match cstr with
   | Ind _ -> 1
-  | Rel (_, la) -> List.length @@ Option.default [] la
+  | Rel (_, la) -> List.length (Option.default [] la)
   | Cast (c, _, _)
   | Lambda (_, _, c) ->
     count_annots c
   | LetIn (_, b, _, c) ->
     count_annots b + count_annots c
-  | Const (_, la) -> List.length @@ Option.default [] la
+  | Const (_, la) -> List.length (Option.default [] la)
   | Case (_, _, c, lf) ->
     Array.fold_left (fun count c -> count + count_annots c) (count_annots c) lf
   | Fix (_, (_, _, bl))
@@ -855,22 +855,10 @@ let rec any_annot f c =
 
 (** map-type functions on stage annotations of constrs *)
 
-let map_annots_list g cstr =
-  match cstr with
-  | Rel (n, Some la) ->
-    let la' = g la in
-    if la == la' then cstr else
-    mkRelA n (Some la')
-  | Const (c, Some la) ->
-    let la' = g la in
-    if la == la' then cstr else
-    mkConstUA c (Some la')
-  | _ -> cstr
-
 let rec map_annots f g cstr =
   match cstr with
   | Ind (iu, a) -> f iu a cstr
-  | Rel _ -> map_annots_list g cstr
+  | Rel _ -> g cstr
   | Cast (c, k, t) ->
     let c' = map_annots f g c in
     if c == c' then cstr else
@@ -884,7 +872,7 @@ let rec map_annots f g cstr =
     let c' = map_annots f g c in
     if b == b' && c == c' then cstr else
     mkLetIn (n, b', t, c')
-  | Const _ -> map_annots_list g cstr
+  | Const _ -> g cstr
   | Case (ci, p, c, lf) ->
     let c' = map_annots f g c in
     let lf' = Array.Smart.map (map_annots f g) lf in
@@ -900,22 +888,32 @@ let rec map_annots f g cstr =
     mkCoFix (ln, (nl, tl, bl'))
   | _ -> map (map_annots f g) cstr
 
-let mkListAnnot annot la =
+let make_annots_list annot la =
   List.make (List.length la) annot
+
+let map_annots_list g cstr =
+  match cstr with
+  | Rel (n, Some la) ->
+    let la = g la in
+    mkRelA n (Some la)
+  | Const (c, Some la) ->
+    let la = g la in
+    mkConstUA c (Some la)
+  | _ -> cstr
 
 let erase =
   let f iu a c =
     match a with
     | Empty -> c
     | _ -> mkIndUS iu Empty in
-  map_annots f @@ mkListAnnot Empty
+  map_annots f (map_annots_list (make_annots_list Empty))
 
 let erase_infty =
   let f iu a c =
     match a with
     | Stage Infty -> c
     | _ -> mkIndUS iu infty in
-  map_annots f @@ mkListAnnot infty
+  map_annots f (map_annots_list (make_annots_list infty))
 
 let erase_glob vars =
   let f iu a c =
@@ -925,7 +923,7 @@ let erase_glob vars =
       mkIndUS iu Glob
     | Stage Infty -> c
     | _ -> mkIndUS iu infty in
-  map_annots f @@ mkListAnnot infty
+  map_annots f (map_annots_list (make_annots_list Empty))
 
 let erase_star vars =
   let f iu a c =
@@ -935,7 +933,7 @@ let erase_star vars =
       mkIndUS iu Star
     | Empty -> c
     | _ -> mkIndUS iu Empty in
-  map_annots f @@ mkListAnnot Empty
+  map_annots f (map_annots_list (make_annots_list Empty))
 
 let annotate ind s =
   let f (((i, _), _) as iu) _ c =
@@ -954,7 +952,7 @@ let annotate_fresh annots =
     let annots = !annots_ref in
     let la, annots = List.chop (List.length la) annots in
     annots_ref := annots; la in
-  map_annots f g
+  map_annots f (map_annots_list g)
 
 let annotate_glob s =
   let f iu a c =
