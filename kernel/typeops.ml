@@ -170,6 +170,12 @@ let type_of_constant_in env (kn,_u as cst) =
   let cstrnts = check_hyps_inclusion env (GlobRef.ConstRef kn) cb.const_hyps in
   constant_type_in env cst, cstrnts
 
+let stage_vars_in_constant env (kn, _) =
+  let cb = lookup_constant kn env in
+  match cb.const_body with
+  | Def c -> count_annots @@ Mod_subst.force_constr c
+  | _ -> 0
+
 (* Type of a lambda-abstraction. *)
 
 (* [judge_of_abstraction env name var j] implements the rule
@@ -556,10 +562,12 @@ let rec execute env stg cstr =
       stg, empty (), cstr, type_of_variable env id
 
     | Const (c, _ans) ->
+      let numvars = stage_vars_in_constant env c in
       let t, cstrnt = type_of_constant env c in
       let s, stg = next stg in
+      let annots, stg = next_annots numvars stg in
       let t = annotate_glob s t in
-      stg, cstrnt, cstr, t
+      stg, cstrnt, mkConstUA c (Some annots), t
 
     | Proj (p, c) ->
       let stg, cstrnt, c', ct = execute env stg c in
