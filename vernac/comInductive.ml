@@ -567,9 +567,7 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ~private_ind ~uni
   (* Declare the possible notations of inductive types *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env ())) ntns;
   (* Declare the coercions *)
-  List.iter (fun qid -> Class.try_add_new_coercion (Nametab.locate qid) ~local:false ~poly) coes;
-  (* If positivity is assumed declares itself as unsafe. *)
-  if Environ.deactivated_guard (Global.env ()) then Feedback.feedback Feedback.AddedAxiom else ()
+  List.iter (fun qid -> Class.try_add_new_coercion (Nametab.locate qid) ~local:false ~poly) coes
 
 (** Prepare a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name

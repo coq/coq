@@ -21,7 +21,7 @@ val do_assumptions
   -> kind:Decls.assumption_object_kind
   -> Declaremods.inline
   -> (ident_decl list * constr_expr) with_coercion list
-  -> bool
+  -> unit
 
 (** returns [false] if the assumption is neither local to a section,
     nor in a module type and meant to be instantiated. *)
@@ -37,7 +37,7 @@ val declare_assumption
   -> bool (** implicit *)
   -> Declaremods.inline
   -> variable CAst.t
-  -> GlobRef.t * Univ.Instance.t * bool
+  -> GlobRef.t * Univ.Instance.t
 
 (** Context command *)
 
@@ -46,6 +46,6 @@ val declare_assumption
 val context
   :  poly:bool
   -> local_binder_expr list
-  -> bool
+  -> unit
 
 val do_primitive : lident -> CPrimitives.op_or_type -> constr_expr option -> unit

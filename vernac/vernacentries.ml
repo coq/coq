@@ -604,8 +604,7 @@ let vernac_assumption ~atts discharge kind l nl =
           match scope with
             | DeclareDef.Global _ -> Dumpglob.dump_definition lid false "ax"
             | DeclareDef.Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
-  let status = ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind nl l in
-  if not status then Feedback.feedback Feedback.AddedAxiom
+  ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind nl l
 
 let is_polymorphic_inductive_cumulativity =
   declare_bool_option_and_ref ~depr:false ~value:false
@@ -1073,9 +1072,6 @@ let vernac_declare_instance ~atts id bl inst pri =
   in
   let global = not (make_section_locality locality) in
   Classes.declare_new_instance ~program_mode:program ~global ~poly id bl inst pri
-
-let vernac_context ~poly l =
-  if not (ComAssumption.context ~poly l) then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_existing_instance ~section_local insts =
   let glob = not section_local in
@@ -2439,7 +2435,7 @@ let rec translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacDeclareInstance (id, bl, inst, info) ->
     VtDefault(fun () -> vernac_declare_instance ~atts id bl inst info)
   | VernacContext sup ->
-    VtDefault(fun () -> vernac_context ~poly:(only_polymorphism atts) sup)
+    VtDefault(fun () -> ComAssumption.context ~poly:(only_polymorphism atts) sup)
   | VernacExistingInstance insts ->
     VtDefault(fun () -> with_section_locality ~atts vernac_existing_instance insts)
   | VernacExistingClass id ->

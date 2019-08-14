@@ -323,11 +323,6 @@ let adjust_rec_order ~structonly binders rec_order =
   in
   Option.map (extract_decreasing_argument ~structonly) rec_order
 
-let check_safe () =
-  let open Declarations in
-  let flags = Environ.typing_flags (Global.env ()) in
-  flags.check_universes && flags.check_guarded
-
 let do_fixpoint_common (fixl : Vernacexpr.fixpoint_expr list) =
   let fixl = List.map (fun fix ->
       Vernacexpr.{ fix
@@ -339,13 +334,11 @@ let do_fixpoint_common (fixl : Vernacexpr.fixpoint_expr list) =
 let do_fixpoint_interactive ~scope ~poly l : Lemmas.t =
   let fixl, ntns, fix, possible_indexes = do_fixpoint_common l in
   let lemma = declare_fixpoint_interactive_generic ~indexes:possible_indexes ~scope ~poly fix ntns in
-  if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ();
   lemma
 
 let do_fixpoint ~scope ~poly l =
   let fixl, ntns, fix, possible_indexes = do_fixpoint_common l in
-  declare_fixpoint_generic ~indexes:possible_indexes ~scope ~poly fix ntns;
-  if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
+  declare_fixpoint_generic ~indexes:possible_indexes ~scope ~poly fix ntns
 
 let do_cofixpoint_common (fixl : Vernacexpr.cofixpoint_expr list) =
   let fixl = List.map (fun fix -> {fix with Vernacexpr.rec_order = None}) fixl in
@@ -355,10 +348,8 @@ let do_cofixpoint_common (fixl : Vernacexpr.cofixpoint_expr list) =
 let do_cofixpoint_interactive ~scope ~poly l =
   let cofix, ntns = do_cofixpoint_common l in
   let lemma = declare_fixpoint_interactive_generic ~scope ~poly cofix ntns in
-  if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ();
   lemma
 
 let do_cofixpoint ~scope ~poly l =
   let cofix, ntns = do_cofixpoint_common l in
-  declare_fixpoint_generic ~scope ~poly cofix ntns;
-  if not (check_safe ()) then Feedback.feedback Feedback.AddedAxiom else ()
+  declare_fixpoint_generic ~scope ~poly cofix ntns
