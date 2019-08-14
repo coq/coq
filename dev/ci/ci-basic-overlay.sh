@@ -279,7 +279,7 @@
 ########################################################################
 # paramcoq
 ########################################################################
-: "${paramcoq_CI_REF:=f48072b8223f8ae9e190cf0e98ba1c30f733b07d}"
+: "${paramcoq_CI_REF:=ec21b1ccea9a31205b4764f9583167cb74304609}"
 : "${paramcoq_CI_GITURL:=https://github.com/coq-community/paramcoq}"
 : "${paramcoq_CI_ARCHIVEURL:=${paramcoq_CI_GITURL}/archive}"
 
