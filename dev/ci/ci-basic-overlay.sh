@@ -272,7 +272,7 @@
 ########################################################################
 # aac_tactics
 ########################################################################
-: "${aac_tactics_CI_REF:=86eef5cfefe32406e29d40fd81b130d985d6bccf}"
+: "${aac_tactics_CI_REF:=65cd6a23348b5c77f387f818a7952fed203cdd58}"
 : "${aac_tactics_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
 : "${aac_tactics_CI_ARCHIVEURL:=${aac_tactics_CI_GITURL}/archive}"
 
