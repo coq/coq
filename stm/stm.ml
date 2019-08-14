@@ -1056,7 +1056,7 @@ end (* }}} *)
 (* Wrapper for the proof-closing special path for Qed *)
 let stm_qed_delay_proof ?route ~proof ~info ~id ~st ~loc ~control pending : Vernacstate.t =
   set_id_for_feedback ?route dummy_doc id;
-  Vernacentries.interp_qed_delayed_proof ~proof ~info ~st ?loc:loc ~control pending
+  Vernacentries.interp_qed_delayed_proof ~proof ~info ~st ~control (CAst.make ?loc pending)
 
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 (* It is currently called 19 times, this number should be certainly

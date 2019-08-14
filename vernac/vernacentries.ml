@@ -2249,11 +2249,11 @@ let locate_if_not_already ?loc (e, info) =
   | None   -> (e, Option.cata (Loc.add_loc info) info loc)
   | Some l -> (e, info)
 
-let mk_time_header ~vernac =
+let mk_time_header =
+  (* Drop the time header to print the command, we should indeed use a
+     different mechanism to `-time` commands than the current hack of
+     adding a time control to the AST. *)
   let pr_time_header vernac =
-    (* Drop the time header to print the command, we should indeed use a
-       different mechanism to `-time` commands than the current hack of
-       adding a time control to the AST. *)
     let vernac = match vernac with
       | { v = { control = ControlTime _ :: control; attrs; expr }; loc } ->
         CAst.make ?loc { control; attrs; expr }
@@ -2261,7 +2261,7 @@ let mk_time_header ~vernac =
     in
     Topfmt.pr_cmd_header vernac
   in
-  Lazy.from_fun (fun () -> pr_time_header vernac)
+  fun vernac -> Lazy.from_fun (fun () -> pr_time_header vernac)
 
 let interp_control_flag ~time_header (f : control_flag) ~st
     (fn : st:Vernacstate.t -> Vernacstate.LemmaStack.t option) =
@@ -2702,7 +2702,7 @@ and vernac_load ~verbosely fname =
   ()
 
 and interp_control ~st ({ v = cmd } as vernac) =
-  let time_header = mk_time_header ~vernac in
+  let time_header = mk_time_header vernac in
   List.fold_right (fun flag fn -> interp_control_flag ~time_header flag fn)
     cmd.control
     (fun ~st ->
@@ -2711,29 +2711,6 @@ and interp_control ~st ({ v = cmd } as vernac) =
        if before_univs == Global.universes () then pstack
        else Option.map (Vernacstate.LemmaStack.map_top_pstate ~f:Proof_global.update_global_env) pstack)
     ~st
-
-let () =
-  declare_int_option
-    { optdepr  = false;
-      optname  = "the default timeout";
-      optkey   = ["Default";"Timeout"];
-      optread  = (fun () -> !default_timeout);
-      optwrite = ((:=) default_timeout) }
-
-(* Be careful with the cache here in case of an exception. *)
-let interp ?(verbosely=true) ~st cmd =
-  Vernacstate.unfreeze_interp_state st;
-  try vernac_timeout (fun st ->
-      let v_mod = if verbosely then Flags.verbosely else Flags.silently in
-      let ontop = v_mod (interp_control ~st) cmd in
-      Vernacstate.Proof_global.set ontop [@ocaml.warning "-3"];
-      Vernacstate.freeze_interp_state ~marshallable:false
-    ) st
-  with exn ->
-    let exn = CErrors.push exn in
-    let exn = locate_if_not_already ?loc:cmd.CAst.loc exn in
-    Vernacstate.invalidate_cache ();
-    iraise exn
 
 (* Interpreting a possibly delayed proof *)
 let interp_qed_delayed ~proof ~info ~st pe : Vernacstate.LemmaStack.t option =
@@ -2746,23 +2723,41 @@ let interp_qed_delayed ~proof ~info ~st pe : Vernacstate.LemmaStack.t option =
       save_lemma_proved_delayed ~proof ~info ~idopt in
   stack
 
-let interp_qed_delayed_control ~proof ~info ~st ?loc ~control pe : Vernacstate.t =
-  let vernac = CAst.make ?loc { control; attrs = []; expr = VernacEndProof pe } in
-  let time_header = mk_time_header ~vernac in
-  let stack =
-    List.fold_right (fun flag fn -> interp_control_flag ~time_header flag fn)
-      control
-      (fun ~st -> interp_qed_delayed ~proof ~info ~st pe)
-      ~st
-  in
-  Vernacstate.Proof_global.set stack [@ocaml.warning "-3"];
-  Vernacstate.freeze_interp_state ~marshallable:false
+let interp_qed_delayed_control ~proof ~info ~st ~control { loc; v=pe } =
+  let time_header = mk_time_header (CAst.make ?loc { control; attrs = []; expr = VernacEndProof pe }) in
+  List.fold_right (fun flag fn -> interp_control_flag ~time_header flag fn)
+    control
+    (fun ~st -> interp_qed_delayed ~proof ~info ~st pe)
+    ~st
 
-let interp_qed_delayed_proof ~proof ~info ~st ?loc ~control pe : Vernacstate.t =
-  try
-    interp_qed_delayed_control ~proof ~info ~st ?loc ~control pe
+(* General interp with management of state *)
+let () =
+  declare_int_option
+    { optdepr  = false;
+      optname  = "the default timeout";
+      optkey   = ["Default";"Timeout"];
+      optread  = (fun () -> !default_timeout);
+      optwrite = ((:=) default_timeout) }
+
+(* Be careful with the cache here in case of an exception. *)
+let interp_gen ~verbosely ~st ~interp_fn cmd =
+  Vernacstate.unfreeze_interp_state st;
+  try vernac_timeout (fun st ->
+      let v_mod = if verbosely then Flags.verbosely else Flags.silently in
+      let ontop = v_mod (interp_fn ~st) cmd in
+      Vernacstate.Proof_global.set ontop [@ocaml.warning "-3"];
+      Vernacstate.freeze_interp_state ~marshallable:false
+    ) st
   with exn ->
     let exn = CErrors.push exn in
-    let exn = locate_if_not_already ?loc exn in
+    let exn = locate_if_not_already ?loc:cmd.CAst.loc exn in
     Vernacstate.invalidate_cache ();
     iraise exn
+
+(* Regular interp *)
+let interp ?(verbosely=true) ~st cmd =
+  interp_gen ~verbosely ~st ~interp_fn:interp_control cmd
+
+let interp_qed_delayed_proof ~proof ~info ~st ~control pe : Vernacstate.t =
+  interp_gen ~verbosely:false ~st
+    ~interp_fn:(interp_qed_delayed_control ~proof ~info ~control) pe
