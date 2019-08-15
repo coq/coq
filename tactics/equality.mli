@@ -29,6 +29,8 @@ type conditions =
   | FirstSolved (* Use the first match whose side-conditions are solved *)
   | AllMatches (* Rewrite all matches whose side-conditions are solved *)
 
+val eq_elimination_ref : orientation -> Sorts.family -> GlobRef.t option
+
 val general_rewrite_bindings :
   orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
   ?tac:(unit Proofview.tactic * conditions) -> constr with_bindings -> evars_flag -> unit Proofview.tactic
