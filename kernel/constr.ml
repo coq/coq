@@ -1618,7 +1618,7 @@ let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =
   hov 1
       (str"fix " ++ int i ++ spc() ++  str"{" ++
          v 0 (prlist_with_sep spc (fun (na,io,ty,bd) ->
-           Name.print na ++ str"/" ++ Pp.option int io ++ str":" ++ pr_constr ty ++
+           Name.print na ++ str"/" ++ option int io ++ str":" ++ pr_constr ty ++
            cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
          str"}")
 

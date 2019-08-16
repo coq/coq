@@ -563,10 +563,10 @@ let rec execute env stg cstr =
 
     | Const (c, _ans) ->
       let numvars = stage_vars_in_constant env c in
-      let t, cstrnt = type_of_constant env c in
       let s, stg = next stg in
-      let annots, stg = next_annots numvars stg in
+      let t, cstrnt = type_of_constant env c in
       let t = annotate_glob s t in
+      let annots, stg = next_annots numvars stg in
       stg, cstrnt, mkConstUA c (Some annots), t
 
     | Proj (p, c) ->
