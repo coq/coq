@@ -114,8 +114,8 @@ let type_of_relative env n =
 let stage_vars_in_relative env n =
   try
     match env |> lookup_rel n |> RelDecl.get_value with
-    | None -> 0
-    | Some c -> count_annots c
+    | None -> None
+    | Some c -> Some (count_annots c)
   with Not_found ->
     error_unbound_rel env n
 
@@ -173,8 +173,8 @@ let type_of_constant_in env (kn,_u as cst) =
 let stage_vars_in_constant env (kn, _) =
   let cb = lookup_constant kn env in
   match cb.const_body with
-  | Def c -> count_annots @@ Mod_subst.force_constr c
-  | _ -> 0
+  | Def c -> Some (count_annots @@ Mod_subst.force_constr c)
+  | _ -> None
 
 (* Type of a lambda-abstraction. *)
 
@@ -556,7 +556,7 @@ let rec execute env stg cstr =
     | Rel (n, _) ->
       let numvars = stage_vars_in_relative env n in
       let annots, stg = next_annots numvars stg in
-      stg, empty (), mkRelA n (Some annots), type_of_relative env n
+      stg, empty (), mkRelA n annots, type_of_relative env n
 
     | Var id ->
       stg, empty (), cstr, type_of_variable env id
@@ -567,7 +567,7 @@ let rec execute env stg cstr =
       let t, cstrnt = type_of_constant env c in
       let t = annotate_glob s t in
       let annots, stg = next_annots numvars stg in
-      stg, cstrnt, mkConstUA c (Some annots), t
+      stg, cstrnt, mkConstUA c annots, t
 
     | Proj (p, c) ->
       let stg, cstrnt, c', ct = execute env stg c in

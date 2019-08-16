@@ -158,11 +158,17 @@ struct
         vars = add state.next state.vars;
         pos_vars = add state.next state.pos_vars }
     | _ -> (s, state)
-  let rec next_annots n state =
-    if Int.equal 0 n then [], state else
-    let annot,  state = next state in
-    let annots, state = next_annots (pred n) state in
-    annot :: annots, state
+  let next_annots on state =
+    match on with
+    | None -> None, state
+    | Some n ->
+      let rec next_annots n state =
+        if Int.equal 0 n then [], state else
+        let annot,  state = next state in
+        let annots, state = next_annots (pred n) state in
+        annot :: annots, state in
+      let annots, state = next_annots n state in
+      Some annots, state
 
   let pr state =
     let open Pp in
