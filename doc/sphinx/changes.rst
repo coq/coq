@@ -894,8 +894,8 @@ Standard Library
   and other packages.  They are still delimited by `%int` and `%uint`.
 
 - Syntax notations for `string`, `ascii`, `Z`, `positive`, `N`, `R`,
-  and `int31` are no longer available merely by `Require`ing the files
-  that define the inductives.  You must `Import` `Coq.Strings.String.StringSyntax`
+  and `int31` are no longer available merely by :cmd:`Require`\ing the files
+  that define the inductives.  You must :cmd:`Import` `Coq.Strings.String.StringSyntax`
   (after `Require` `Coq.Strings.String`), `Coq.Strings.Ascii.AsciiSyntax` (after
   `Require` `Coq.Strings.Ascii`), `Coq.ZArith.BinIntDef`, `Coq.PArith.BinPosDef`,
   `Coq.NArith.BinNatDef`, `Coq.Reals.Rdefinitions`, and
