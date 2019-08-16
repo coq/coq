@@ -157,7 +157,7 @@ let rec v_constr =
 
 and v_prec = Tuple ("prec_declaration",
                     [|Array (v_binder_annot v_name); Array v_constr; Array v_constr|])
-and v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array Int;Int|]);v_prec|])
+and v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array (Opt Int);Int|]);v_prec|])
 and v_cofix = Tuple ("pcofixpoint",[|Int;v_prec|])
 
 let v_rdecl = v_sum "rel_declaration" 0
