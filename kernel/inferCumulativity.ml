@@ -77,7 +77,7 @@ let infer_sort cv_pb variances s =
   | CUMUL ->
     LSet.fold infer_level_leq (Universe.levels (Sorts.univ_of_sort s)) variances
 
-let infer_table_key _infos variances c =
+let infer_table_key variances c =
   let open Names in
   match c with
   | ConstKey (_, u) ->
@@ -103,7 +103,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
   | FRel _ -> infer_stack infos variances stk
   | FInt _ -> infer_stack infos variances stk
   | FFlex fl ->
-    let variances = infer_table_key infos variances fl in
+    let variances = infer_table_key variances fl in
     infer_stack infos variances stk
   | FProj (_,c) ->
     let variances = infer_fterm CONV infos variances c [] in
