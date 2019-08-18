@@ -2,7 +2,6 @@ Deprecation
 NumTok
 Constrexpr
 Tactypes
-Stdarg
 Notation_term
 Genintern
 Notation_ops
@@ -18,3 +17,5 @@ Implicit_quantifiers
 Constrintern
 Modintern
 Constrextern
+Stdarg
+Geninterp

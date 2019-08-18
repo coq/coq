@@ -38,7 +38,7 @@ type 'a printer = 'a -> printer_result
 
 type 'a top_printer = 'a -> top_printer_result
 
-module ValMap = ValTMap (struct type 'a t = 'a -> top_printer_result end)
+module ValMap = Valinterp.ValTMap (struct type 'a t = 'a -> top_printer_result end)
 
 let print0_val_map = ref ValMap.empty
 
@@ -46,10 +46,10 @@ let find_print_val_fun tag =
   try ValMap.find tag !print0_val_map
   with Not_found ->
     let msg s = Pp.(str "print function not found for a value interpreted as " ++ str s ++ str ".") in
-    CErrors.anomaly (msg (Val.repr tag))
+    CErrors.anomaly (msg (Valinterp.Val.repr tag))
 
 let generic_val_print v =
-  let Val.Dyn (tag,v) = v in
+  let Valinterp.Val.Dyn (tag,v) = v in
   find_print_val_fun tag v
 
 let register_val_print0 s pr =
@@ -87,21 +87,21 @@ let combine pr_pair pr1 v2 =
 
 let _ =
   let pr_cons a b = Pp.(a ++ spc () ++ b) in
-  register_val_print0 Val.typ_list
+  register_val_print0 Valinterp.Val.typ_list
     (function
      | [] -> TopPrinterBasic mt
      | a::l ->
         List.fold_left (combine pr_cons) (generic_val_print a) l)
 
 let _ =
-  register_val_print0 Val.typ_opt
+  register_val_print0 Valinterp.Val.typ_opt
     (function
      | None -> TopPrinterBasic Pp.mt
      | Some v -> generic_val_print v)
 
 let _ =
   let pr_pair a b = Pp.(a ++ spc () ++ b) in
-  register_val_print0 Val.typ_pair
+  register_val_print0 Valinterp.Val.typ_pair
     (fun (v1,v2) -> combine pr_pair (generic_val_print v1) v2)
 
 (* Printing generic arguments *)
@@ -134,7 +134,7 @@ let register_print0 wit raw glb top =
   let printer = { raw; glb; top; } in
   Print.register0 wit printer;
   match val_tag (Topwit wit), wit with
-  | Val.Base t, ExtraArg t' when Geninterp.Val.repr t = ArgT.repr t' ->
+  | Valinterp.Val.Base t, ExtraArg t' when Valinterp.Val.repr t = ArgT.repr t' ->
      register_val_print0 t top
   | _ ->
      (* An alias, thus no primitive printer attached *)

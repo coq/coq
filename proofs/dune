@@ -3,4 +3,4 @@
  (synopsis "Coq's Higher-level Refinement Proof Engine and Top-level Proof Structure")
  (public_name coq.proofs)
  (wrapped false)
- (libraries pretyping))
+ (libraries interp))

@@ -175,7 +175,7 @@ val val_projection : Projection.t Val.tag
 val val_case : Constr.case_info Val.tag
 val val_univ : Univ.Level.t Val.tag
 val val_free : Id.Set.t Val.tag
-val val_ltac1 : Geninterp.Val.t Val.tag
+val val_ltac1 : Valinterp.Val.t Val.tag
 
 val val_exn : Exninfo.iexn Tac2dyn.Val.tag
 (** Toplevel representation of OCaml exceptions. Invariant: no [LtacError]

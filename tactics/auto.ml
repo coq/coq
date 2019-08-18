@@ -148,7 +148,7 @@ let conclPattern concl pat tac =
      let open Genarg in
      let open Geninterp in
      let inj c = match val_tag (topwit Stdarg.wit_constr) with
-     | Val.Base tag -> Val.Dyn (tag, c)
+     | Valinterp.Val.Base tag -> Valinterp.Val.Dyn (tag, c)
      | _ -> assert false
      in
      let fold id c accu = Id.Map.add id (inj c) accu in

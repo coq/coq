@@ -493,8 +493,8 @@ let pp_generic_argument arg =
   pp(str"<genarg:"++pr_argument_type(genarg_tag arg)++str">")
 
 let prgenarginfo arg =
-  let Geninterp.Val.Dyn (tag, _) = arg in
-  let tpe = Geninterp.Val.pr tag in
+  let Valinterp.Val.Dyn (tag, _) = arg in
+  let tpe = Valinterp.Val.pr tag in
   (* FIXME *)
 (*   try *)
 (*     let data = Pptactic.pr_top_generic (Global.env ()) arg in *)

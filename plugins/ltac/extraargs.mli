@@ -63,7 +63,7 @@ val by_arg_tac : Tacexpr.raw_tactic_expr option Pcoq.Entry.t
 val wit_by_arg_tac :
   (raw_tactic_expr option,
   glob_tactic_expr option,
-  Geninterp.Val.t option) Genarg.genarg_type
+  Valinterp.Val.t option) Genarg.genarg_type
 
 val pr_by_arg_tac :
   Environ.env -> Evd.evar_map ->

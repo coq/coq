@@ -29,6 +29,7 @@ open Constrexpr
 open Termops
 open Tacexpr
 open Genarg
+open Valinterp
 open Geninterp
 open Stdarg
 open Tacarg

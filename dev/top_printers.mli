@@ -167,8 +167,8 @@ val pploc : Loc.t -> unit
 val pp_argument_type : Genarg.argument_type -> unit
 val pp_generic_argument : 'a Genarg.generic_argument -> unit
 
-val prgenarginfo : Geninterp.Val.t -> Pp.t
-val ppgenarginfo : Geninterp.Val.t -> unit
+val prgenarginfo : Valinterp.Val.t -> Pp.t
+val ppgenarginfo : Valinterp.Val.t -> unit
 
 val ppgenargargt : ('a, 'b, 'c) Genarg.ArgT.tag -> unit
 

@@ -54,7 +54,7 @@ and closed_glob_constr = {
 (** Ltac variable maps *)
 type var_map = constr_under_binders Id.Map.t
 type uconstr_var_map = closed_glob_constr Id.Map.t
-type unbound_ltac_var_map = Geninterp.Val.t Id.Map.t
+type unbound_ltac_var_map = Valinterp.Val.t Id.Map.t
 
 type ltac_var_map = {
   ltac_constrs : var_map;

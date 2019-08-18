@@ -71,9 +71,8 @@ let map_fold_proof_endline f ps =
     match ps.endline_tactic with
     | None -> Proofview.tclUNIT ()
     | Some tac ->
-      let open Geninterp in
       let {Proof.poly} = Proof.data ps.proof in
-      let ist = { lfun = Id.Map.empty; poly; extra = TacStore.empty } in
+      let ist = { Geninterp.lfun = Id.Map.empty; poly; extra = Geninterp.TacStore.empty } in
       let Genarg.GenArg (Genarg.Glbwit tag, tac) = tac in
       let tac = Geninterp.interp tag ist tac in
       Ftactic.run tac (fun _ -> Proofview.tclUNIT ())

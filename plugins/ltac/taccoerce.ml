@@ -18,6 +18,7 @@ open Genarg
 open Stdarg
 open Tacarg
 open Geninterp
+open Valinterp
 open Pp
 
 exception CannotCoerceTo of string

@@ -589,7 +589,7 @@ let rec clause_of_sign : type a. int -> a ty_sig -> Genarg.ArgT.any Extend.user_
 let clause_of_ty_ml = function
   | TyML (t,_) -> clause_of_sign 1 t
 
-let rec eval_sign : type a. a ty_sig -> a -> Geninterp.Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic =
+let rec eval_sign : type a. a ty_sig -> a -> Valinterp.Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic =
   fun sign tac ->
     match sign with
     | TyNil ->
@@ -607,7 +607,7 @@ let rec eval_sign : type a. a ty_sig -> a -> Geninterp.Val.t list -> Geninterp.i
         f (tac v') vals ist
       end tac
 
-let eval : ty_ml -> Geninterp.Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic = function
+let eval : ty_ml -> Valinterp.Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic = function
   | TyML (t,tac) -> eval_sign t tac
 
 let is_constr_entry = function
@@ -697,14 +697,14 @@ type 'b argument_subst =
 
 type ('b, 'c) argument_interp =
 | ArgInterpRet : ('c, 'c) argument_interp
-| ArgInterpFun : ('b, Val.t) interp_fun -> ('b, 'c) argument_interp
+| ArgInterpFun : ('b, Valinterp.Val.t) interp_fun -> ('b, 'c) argument_interp
 | ArgInterpWit : ('a, 'b, 'r) Genarg.genarg_type -> ('b, 'c) argument_interp
 | ArgInterpLegacy :
   (Geninterp.interp_sign -> Goal.goal Evd.sigma -> 'b -> Evd.evar_map * 'c) -> ('b, 'c) argument_interp
 
 type ('a, 'b, 'c) tactic_argument = {
   arg_parsing : 'a Vernacextend.argument_rule;
-  arg_tag : 'c Val.tag option;
+  arg_tag : 'c Valinterp.Val.tag option;
   arg_intern : ('a, 'b) argument_intern;
   arg_subst : 'b argument_subst;
   arg_interp : ('b, 'c) argument_interp;
@@ -727,16 +727,16 @@ match arg.arg_subst with
     let ans = Genarg.out_gen (glbwit wit) (Tacsubst.subst_genarg s (Genarg.in_gen (glbwit wit) v)) in
     ans
 
-let interp_fun (type a b c) name (arg : (a, b, c) tactic_argument) (tag : c Val.tag) : (b, Val.t) interp_fun =
+let interp_fun (type a b c) name (arg : (a, b, c) tactic_argument) (tag : c Valinterp.Val.tag) : (b, Valinterp.Val.t) interp_fun =
 match arg.arg_interp with
-| ArgInterpRet -> (fun ist v -> Ftactic.return (Geninterp.Val.inject tag v))
+| ArgInterpRet -> (fun ist v -> Ftactic.return (Valinterp.Val.inject tag v))
 | ArgInterpFun f -> f
 | ArgInterpWit wit ->
   (fun ist x -> Tacinterp.interp_genarg ist (Genarg.in_gen (glbwit wit) x))
 | ArgInterpLegacy f ->
   (fun ist v -> Ftactic.enter (fun gl ->
     let (sigma, v) = Tacmach.New.of_old (fun gl -> f ist gl v) gl in
-    let v = Geninterp.Val.inject tag v in
+    let v = Valinterp.Val.inject tag v in
     Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma) (Ftactic.return v)
   ))
 

@@ -11,7 +11,6 @@
 open Names
 open Libnames
 open Tacexpr
-open Geninterp
 
 (** This module centralizes the various ways of registering tactics. *)
 
@@ -87,7 +86,7 @@ val ltac_entries : unit -> ltac_entry KNmap.t
 (** {5 ML tactic extensions} *)
 
 type ml_tactic =
-  Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic
+  Valinterp.Val.t list -> Geninterp.interp_sign -> unit Proofview.tactic
 (** Type of external tactics, used by [TacML]. *)
 
 val register_ml_tactic : ?overwrite:bool -> ml_tactic_name -> ml_tactic array -> unit

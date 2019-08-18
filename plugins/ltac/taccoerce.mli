@@ -12,7 +12,6 @@ open Util
 open Names
 open EConstr
 open Genarg
-open Geninterp
 open Tactypes
 
 (** Coercions from highest level generic arguments to actual data used by Ltac
@@ -31,7 +30,7 @@ exception CannotCoerceTo of string
 
 module Value :
 sig
-  type t = Val.t
+  type t = Valinterp.Val.t
 
   val of_constr : constr -> t
   val to_constr : t -> constr option
@@ -42,7 +41,7 @@ sig
   val to_list : t -> t list option
   val to_option : t -> t option option
   val to_pair : t -> (t * t) option
-  val cast : 'a typed_abstract_argument_type -> Geninterp.Val.t -> 'a
+  val cast : 'a typed_abstract_argument_type -> Valinterp.Val.t -> 'a
 end
 
 (** {5 Coercion functions} *)
@@ -100,14 +99,14 @@ val error_ltac_variable : ?loc:Loc.t -> Id.t ->
 (** Abstract application, to print ltac functions *)
 type appl =
   | UnnamedAppl (** For generic applications: nothing is printed *)
-  | GlbAppl of (Names.KerName.t * Val.t list) list
+  | GlbAppl of (Names.KerName.t * Valinterp.Val.t list) list
        (** For calls to global constants, some may alias other. *)
 
 type tacvalue =
-  | VFun of appl*Tacexpr.ltac_trace * Val.t Id.Map.t *
+  | VFun of appl*Tacexpr.ltac_trace * Valinterp.Val.t Id.Map.t *
       Name.t list * Tacexpr.glob_tactic_expr
-  | VRec of Val.t Id.Map.t ref * Tacexpr.glob_tactic_expr
+  | VRec of Valinterp.Val.t Id.Map.t ref * Tacexpr.glob_tactic_expr
 
 val wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type
 
-val pr_value : (Environ.env * Evd.evar_map) option -> Geninterp.Val.t -> Pp.t
+val pr_value : (Environ.env * Evd.evar_map) option -> Valinterp.Val.t -> Pp.t

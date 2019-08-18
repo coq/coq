@@ -965,7 +965,7 @@ let () = define1 "ltac1_to_constr" ltac1 begin fun v ->
 end
 
 let () = define1 "ltac1_of_list" (list ltac1) begin fun l ->
-  let open Geninterp.Val in
+  let open Valinterp.Val in
   return (Value.of_ext val_ltac1 (inject (Base typ_list) l))
 end
 

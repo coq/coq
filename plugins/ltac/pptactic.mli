@@ -12,7 +12,6 @@
     objects and their subcomponents. *)
 
 open Genarg
-open Geninterp
 open Names
 open Environ
 open Constrexpr
@@ -43,7 +42,7 @@ type 'a extra_genarg_printer =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> Val.t -> Pp.t) ->
+  (Environ.env -> Evd.evar_map -> tolerability -> Valinterp.Val.t -> Pp.t) ->
   'a -> Pp.t
 
 type 'a raw_extra_genarg_printer_with_level =
@@ -64,7 +63,7 @@ type 'a extra_genarg_printer_with_level =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> Val.t -> Pp.t) ->
+  (Environ.env -> Evd.evar_map -> tolerability -> Valinterp.Val.t -> Pp.t) ->
   tolerability -> 'a -> Pp.t
 
 val declare_extra_genarg_pprule :
@@ -129,12 +128,12 @@ val pr_glob_extend: env -> Evd.evar_map -> int ->
   ml_tactic_entry -> glob_tactic_arg list -> Pp.t
 
 val pr_extend :
-  (Val.t -> Pp.t) -> int -> ml_tactic_entry -> Val.t list -> Pp.t
+  (Valinterp.Val.t -> Pp.t) -> int -> ml_tactic_entry -> Valinterp.Val.t list -> Pp.t
 
 val pr_alias_key : Names.KerName.t -> Pp.t
 
-val pr_alias : (Val.t -> Pp.t) ->
-  int -> Names.KerName.t -> Val.t list -> Pp.t
+val pr_alias : (Valinterp.Val.t -> Pp.t) ->
+  int -> Names.KerName.t -> Valinterp.Val.t list -> Pp.t
 
 val pr_ltac_constant : ltac_constant -> Pp.t
 
@@ -155,7 +154,7 @@ val pr_match_pattern : ('a -> Pp.t) -> 'a match_pattern -> Pp.t
 val pr_match_rule : bool -> ('a -> Pp.t) -> ('b -> Pp.t) ->
   ('b, 'a) match_rule -> Pp.t
 
-val pr_value : tolerability -> Val.t -> Pp.t
+val pr_value : tolerability -> Valinterp.Val.t -> Pp.t
 
 
 val ltop : tolerability

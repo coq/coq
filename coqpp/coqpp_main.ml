@@ -521,11 +521,11 @@ let rec print_argtype fmt = function
 | ExtraArgType s ->
   fprintf fmt "Geninterp.val_tag (Genarg.topwit wit_%s)" s
 | PairArgType (arg1, arg2) ->
-  fprintf fmt "Geninterp.Val.Pair (@[(%a)@], @[(%a)@])" print_argtype arg1 print_argtype arg2
+  fprintf fmt "Valinterp.Val.Pair (@[(%a)@], @[(%a)@])" print_argtype arg1 print_argtype arg2
 | ListArgType arg ->
-  fprintf fmt "Geninterp.Val.List @[(%a)@]" print_argtype arg
+  fprintf fmt "Valinterp.Val.List @[(%a)@]" print_argtype arg
 | OptArgType arg ->
-  fprintf fmt "Geninterp.Val.Opt @[(%a)@]" print_argtype arg
+  fprintf fmt "Valinterp.Val.Opt @[(%a)@]" print_argtype arg
 
 let rec print_wit fmt = function
 | ExtraArgType s ->

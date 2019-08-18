@@ -20,14 +20,14 @@ val ltac_trace_info : ltac_trace Exninfo.t
 
 module Value :
 sig
-  type t = Geninterp.Val.t
+  type t = Valinterp.Val.t
   val of_constr : constr -> t
   val to_constr : t -> constr option
   val of_int : int -> t
   val to_int : t -> int option
   val to_list : t -> t list option
   val of_closure : Geninterp.interp_sign -> glob_tactic_expr -> t
-  val cast : 'a typed_abstract_argument_type -> Geninterp.Val.t -> 'a
+  val cast : 'a typed_abstract_argument_type -> Valinterp.Val.t -> 'a
   val apply : t -> t list -> unit Proofview.tactic
 end
 

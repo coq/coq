@@ -13,12 +13,12 @@
 open Ltac_plugin
 
 val ssrtacarg : Tacexpr.raw_tactic_expr Pcoq.Entry.t
-val wit_ssrtacarg : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Geninterp.Val.t) Genarg.genarg_type
+val wit_ssrtacarg : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Valinterp.Val.t) Genarg.genarg_type
 val pr_ssrtacarg : Environ.env -> Evd.evar_map -> 'a -> 'b ->
   (Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> 'c) -> 'c
 
 val ssrtclarg : Tacexpr.raw_tactic_expr Pcoq.Entry.t
-val wit_ssrtclarg : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Geninterp.Val.t) Genarg.genarg_type
+val wit_ssrtclarg : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Valinterp.Val.t) Genarg.genarg_type
 val pr_ssrtclarg : Environ.env -> Evd.evar_map -> 'a -> 'b ->
   (Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> 'c -> 'd) -> 'c -> 'd
 
@@ -35,17 +35,17 @@ type ssreqid = ssripat option
 type ssrarg = ssrfwdview * (ssreqid * (cpattern ssragens * ssripats))
 
 val wit_ssrseqdir : ssrdir Genarg.uniform_genarg_type
-val wit_ssrseqarg : (Tacexpr.raw_tactic_expr ssrseqarg, Tacexpr.glob_tactic_expr ssrseqarg, Geninterp.Val.t ssrseqarg) Genarg.genarg_type
+val wit_ssrseqarg : (Tacexpr.raw_tactic_expr ssrseqarg, Tacexpr.glob_tactic_expr ssrseqarg, Valinterp.Val.t ssrseqarg) Genarg.genarg_type
 
 val wit_ssrintrosarg :
   (Tacexpr.raw_tactic_expr * ssripats,
    Tacexpr.glob_tactic_expr * ssripats,
-   Geninterp.Val.t * ssripats) Genarg.genarg_type
+   Valinterp.Val.t * ssripats) Genarg.genarg_type
 
 val wit_ssrsufffwd :
   (Tacexpr.raw_tactic_expr ffwbinders,
    Tacexpr.glob_tactic_expr ffwbinders,
-   Geninterp.Val.t ffwbinders) Genarg.genarg_type
+   Valinterp.Val.t ffwbinders) Genarg.genarg_type
 
 val wit_ssripatrep : ssripat Genarg.uniform_genarg_type
 val wit_ssrarg : ssrarg Genarg.uniform_genarg_type

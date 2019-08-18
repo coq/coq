@@ -280,7 +280,7 @@ END
 
 {
 
-let rewrite_star ist clause orient occs c (tac : Geninterp.Val.t option) =
+let rewrite_star ist clause orient occs c (tac : Valinterp.Val.t option) =
   let tac' = Option.map (fun t -> Tacinterp.tactic_of_value ist t, FirstSolved) tac in
   with_delayed_uconstr ist c
     (fun c -> general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings) true)

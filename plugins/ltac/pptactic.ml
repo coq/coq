@@ -15,6 +15,7 @@ open CErrors
 open Util
 open Constrexpr
 open Genarg
+open Valinterp
 open Geninterp
 open Stdarg
 open Notation_gram

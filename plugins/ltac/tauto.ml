@@ -12,7 +12,6 @@ open Constr
 open EConstr
 open Hipattern
 open Names
-open Geninterp
 open Ltac_plugin
 open Tacexpr
 open Tacinterp
@@ -53,11 +52,11 @@ type tauto_flags = {
   strict_unit : bool;
 }
 
-let tag_tauto_flags : tauto_flags Val.typ = Val.create "tauto_flags"
+let tag_tauto_flags : tauto_flags Valinterp.Val.typ = Valinterp.Val.create "tauto_flags"
 
 let assoc_flags ist : tauto_flags =
-  let Val.Dyn (tag, v) = Id.Map.find (Names.Id.of_string "tauto_flags") ist.lfun in
-  match Val.eq tag tag_tauto_flags with
+  let Valinterp.Val.Dyn (tag, v) = Id.Map.find (Names.Id.of_string "tauto_flags") ist.lfun in
+  match Valinterp.Val.eq tag tag_tauto_flags with
   | None -> assert false
   | Some Refl -> v
 
@@ -248,7 +247,7 @@ let tauto_power_flags = {
 let with_flags flags _ ist =
   let f = CAst.make @@ Id.of_string "f" in
   let x = CAst.make @@ Id.of_string "x" in
-  let arg = Val.Dyn (tag_tauto_flags, flags) in
+  let arg = Valinterp.Val.Dyn (tag_tauto_flags, flags) in
   let ist = { ist with lfun = Id.Map.add x.CAst.v arg ist.lfun } in
   eval_tactic_ist ist (TacArg (CAst.make @@ TacCall (CAst.make (Locus.ArgVar f, [Reference (Locus.ArgVar x)]))))
 

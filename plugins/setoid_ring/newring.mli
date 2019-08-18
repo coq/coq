@@ -25,7 +25,7 @@ val add_theory :
 val print_rings : unit -> unit
 
 val ring_lookup :
-  Geninterp.Val.t ->
+  Valinterp.Val.t ->
   constr list ->
   constr list -> constr -> unit Proofview.tactic
 
@@ -37,6 +37,6 @@ val add_field_theory :
 val print_fields : unit -> unit
 
 val field_lookup :
-  Geninterp.Val.t ->
+  Valinterp.Val.t ->
   constr list ->
   constr list -> constr -> unit Proofview.tactic
