@@ -1193,7 +1193,7 @@ let path_convertible env sigma p q =
   let mkGRef ref          = DAst.make @@ Glob_term.GRef(ref,None) in
   let mkGVar id           = DAst.make @@ Glob_term.GVar(id) in
   let mkGApp(rt,rtl)      = DAst.make @@ Glob_term.GApp(rt,rtl) in
-  let mkGLambda(n,t,b)    = DAst.make @@ Glob_term.GLambda(n,Decl_kinds.Explicit,t,b) in
+  let mkGLambda(n,t,b)    = DAst.make @@ Glob_term.GLambda(n,Explicit,t,b) in
   let mkGHole ()          = DAst.make @@ Glob_term.GHole(Evar_kinds.BinderType Anonymous,Namegen.IntroAnonymous,None) in
   let path_to_gterm p =
     match p with

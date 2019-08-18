@@ -258,7 +258,6 @@ type equation_kind =
 exception NoEquationFound
 
 open Glob_term
-open Decl_kinds
 open Evar_kinds
 
 let mkPattern c = snd (Patternops.pattern_of_glob_constr c)

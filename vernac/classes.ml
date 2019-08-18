@@ -28,9 +28,7 @@ module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 (*i*)
 
-open Decl_kinds
-
-let set_typeclass_transparency c local b = 
+let set_typeclass_transparency c local b =
   Hints.add_hints ~local [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
 
@@ -527,7 +525,7 @@ let do_instance_program env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri 
 let interp_instance_context ~program_mode env ctx ~generalize pl tclass =
   let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
   let tclass =
-    if generalize then CAst.make @@ CGeneralization (Implicit, Some AbsPi, tclass)
+    if generalize then CAst.make @@ CGeneralization (Glob_term.Implicit, Some AbsPi, tclass)
     else tclass
   in
   let sigma, (impls, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma ctx in

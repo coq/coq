@@ -1600,7 +1600,7 @@ let register_mes interactive_proof fname rec_impls wf_mes_expr wf_rel_expr_opt w
         let b = Names.Id.of_string "___b" in
         Constrexpr_ops.mkLambdaC(
           [CAst.make @@ Name a; CAst.make @@ Name b],
-          Constrexpr.Default Decl_kinds.Explicit,
+          Constrexpr.Default Glob_term.Explicit,
           wf_arg_type,
           Constrexpr_ops.mkAppC(wf_rel_expr,
                                 [

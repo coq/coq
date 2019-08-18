@@ -4,7 +4,6 @@ open Glob_term
 open CErrors
 open Util
 open Names
-open Decl_kinds
 
 (*
    Some basic functions to rebuild glob_constr

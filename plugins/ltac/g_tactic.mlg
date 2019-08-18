@@ -24,7 +24,6 @@ open Tactypes
 open Tactics
 open Inv
 open Locus
-open Decl_kinds
 
 open Pcoq
 
@@ -450,9 +449,9 @@ GRAMMAR EXTEND Gram
       | -> { true } ] ]
   ;
   simple_binder:
-    [ [ na=name -> { ([na],Default Explicit, CAst.make ~loc @@
+    [ [ na=name -> { ([na],Default Glob_term.Explicit, CAst.make ~loc @@
                     CHole (Some (Evar_kinds.BinderType na.CAst.v), IntroAnonymous, None)) }
-      | "("; nal=LIST1 name; ":"; c=lconstr; ")" -> { (nal,Default Explicit,c) }
+      | "("; nal=LIST1 name; ":"; c=lconstr; ")" -> { (nal,Default Glob_term.Explicit,c) }
     ] ]
   ;
   fixdecl:

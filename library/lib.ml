@@ -441,9 +441,6 @@ let empty_section_data ~poly = {
 let sectab =
   Summary.ref ([] : section_data list) ~name:"section-context"
 
-let sec_implicits =
-  Summary.ref Id.Map.empty ~name:"section-implicits"
-
 let check_same_poly p sec =
   if p != sec.sec_poly then
     user_err Pp.(str  "Cannot mix universe polymorphic and monomorphic declarations in sections.")
@@ -452,14 +449,13 @@ let add_section ~poly () =
   List.iter (fun tab -> check_same_poly poly tab) !sectab;
   sectab := empty_section_data ~poly :: !sectab
 
-let add_section_variable ~name ~kind ~poly =
+let add_section_variable ~name ~poly =
   match !sectab with
     | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
     | s :: sl ->
        List.iter (fun tab -> check_same_poly poly tab) !sectab;
        let s = { s with sec_entry = Variable {id=name} :: s.sec_entry } in
-       sectab := s :: sl;
-       sec_implicits := Id.Map.add name kind !sec_implicits
+       sectab := s :: sl
 
 let add_section_context ctx =
   match !sectab with
@@ -575,8 +571,6 @@ let section_segment_of_reference = let open GlobRef in function
 
 let variable_section_segment_of_reference gr =
   (section_segment_of_reference gr).abstr_ctx
-
-let variable_section_kind id = Id.Map.get id !sec_implicits
 
 let section_instance = let open GlobRef in function
   | VarRef id ->

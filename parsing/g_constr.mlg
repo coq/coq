@@ -19,7 +19,6 @@ open Constrexpr_ops
 open Util
 open Tok
 open Namegen
-open Decl_kinds
 
 open Pcoq
 open Pcoq.Prim

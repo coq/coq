@@ -31,7 +31,6 @@ open Notation_term
 open Notation_ops
 open Notation
 open Inductiveops
-open Decl_kinds
 open Context.Rel.Declaration
 
 (** constr_expr -> glob_constr translation:
