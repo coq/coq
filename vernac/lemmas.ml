@@ -265,7 +265,8 @@ let save_remaining_recthms env sigma ~poly ~scope ~udecl uctx body opaq i { Rect
            Univ.ContextSet.of_context univs
          | Monomorphic_entry univs -> univs
        in
-       let c = Declare.SectionLocalAssum {typ=t_i; univs; poly; impl} in
+       let () = Declare.declare_universe_context ~poly univs in
+       let c = Declare.SectionLocalAssum {typ=t_i; impl} in
        let () = Declare.declare_variable ~name ~kind c in
        GlobRef.VarRef name, impargs
      | Global local ->

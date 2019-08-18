@@ -50,7 +50,8 @@ match scope with
     | Polymorphic_entry (_, univs) -> Univ.ContextSet.of_context univs
   in
   let kind = Decls.IsAssumption kind in
-  let decl = SectionLocalAssum {typ; univs; poly; impl} in
+  let () = Declare.declare_universe_context ~poly univs in
+  let decl = SectionLocalAssum {typ; impl} in
   let () = declare_variable ~name ~kind decl in
   let () = assumption_message name in
   let r = GlobRef.VarRef name in
