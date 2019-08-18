@@ -215,6 +215,18 @@ let fix_extend_statement (pos, st) =
 (** Type of reinitialization data *)
 type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
 
+type 'a single_extend_statement =
+  string option *
+  (* Level *)
+  Gramlib.Gramext.g_assoc option *
+  (* Associativity *)
+  'a production_rule list
+  (* Symbol list with the interpretation function *)
+
+type 'a extend_statement =
+  Gramlib.Gramext.position option *
+  'a single_extend_statement list
+
 type extend_rule =
 | ExtendRule : 'a G.Entry.e * gram_reinit option * 'a extend_statement -> extend_rule
 

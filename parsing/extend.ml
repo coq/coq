@@ -79,6 +79,8 @@ type ('a,'b,'c) ty_user_symbol =
 
 (** {5 Type-safe grammar extension} *)
 
+(* Should be merged with gramlib's implementation *)
+
 type norec = NoRec    (* just two *)
 type mayrec = MayRec  (* incompatible types *)
 
@@ -107,15 +109,3 @@ and 'a rules =
 
 type 'a production_rule =
 | Rule : ('a, _, 'act, Loc.t -> 'a) rule * 'act -> 'a production_rule
-
-type 'a single_extend_statement =
-  string option *
-  (* Level *)
-  Gramlib.Gramext.g_assoc option *
-  (* Associativity *)
-  'a production_rule list
-  (* Symbol list with the interpretation function *)
-
-type 'a extend_statement =
-  Gramlib.Gramext.position option *
-  'a single_extend_statement list
