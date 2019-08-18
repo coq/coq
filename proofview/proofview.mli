@@ -145,7 +145,7 @@ val unfocus : focus_context -> proofview -> proofview
 
 
 (** The abstract type of tactics *)
-type +'a tactic 
+type +'a tactic
 
 (** Applies a tactic to the current proofview. Returns a tuple
     [a,pv,(b,sh,gu)] where [a] is the return value of the tactic, [pv]
@@ -170,7 +170,7 @@ val apply
 
 (** Unit of the tactic monad. *)
 val tclUNIT : 'a -> 'a tactic
- 
+
 (** Bind operation of the tactic monad. *)
 val tclBIND : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
 
@@ -431,7 +431,7 @@ module Unsafe : sig
       goal. If goals have been solved in [sigma] they will still
       appear as unsolved goals. *)
   val tclEVARS : Evd.evar_map -> unit tactic
-    
+
   (** Like {!tclEVARS} but also checks whether goals have been solved. *)
   val tclEVARSADVANCE : Evd.evar_map -> unit tactic
 

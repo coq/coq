@@ -3,4 +3,4 @@
  (synopsis "Coq's Syntactic Interpretation for AST [notations, implicits]")
  (public_name coq.interp)
  (wrapped false)
- (libraries pretyping))
+ (libraries pretyping proofview))

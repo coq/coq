@@ -1055,7 +1055,7 @@ let write_configml f =
   pr_b "native_compiler" !prefs.nativecompiler;
 
   let core_src_dirs = [ "config"; "lib"; "clib"; "kernel"; "library";
-                        "engine"; "pretyping"; "interp"; "gramlib"; "gramlib/.pack"; "parsing"; "proofs";
+                        "engine"; "pretyping"; "proofview"; "interp"; "gramlib"; "gramlib/.pack"; "parsing"; "proofs";
                         "tactics"; "toplevel"; "printing"; "ide"; "stm"; "vernac" ] in
   let core_src_dirs = List.fold_left (fun acc core_src_subdir -> acc ^ "  \"" ^ core_src_subdir ^ "\";\n")
                                     ""

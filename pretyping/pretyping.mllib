@@ -31,6 +31,7 @@ Program
 Coercion
 Detyping
 Indrec
+Valinterp
 GlobEnv
 Cases
 Pretyping

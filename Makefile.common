@@ -93,10 +93,10 @@ INSTALLSH:=./install.sh
 MKDIR:=install -d
 
 CORESRCDIRS:=\
-  coqpp                                                                                 \
-  config 	clib 		lib		kernel		kernel/byterun	library \
-  engine 	pretyping	interp	proofs	gramlib/.pack 	parsing 	printing \
-  tactics 	vernac		stm		toplevel
+  coqpp                                                                                       \
+  config 	clib 		lib		kernel		kernel/byterun	library       \
+  engine 	pretyping	proofview 	interp		proofs		gramlib/.pack \
+  parsing 	printing  	tactics 	vernac		stm		toplevel
 
 PLUGINDIRS:=\
   omega		micromega \
@@ -126,7 +126,7 @@ BYTERUN:=$(addprefix kernel/byterun/, \
 # the libraries directly
 
 CORECMA:=config/config.cma clib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
-        engine/engine.cma pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
+        engine/engine.cma pretyping/pretyping.cma proofview/proofview.cma interp/interp.cma proofs/proofs.cma \
 	gramlib/.pack/gramlib.cma \
         parsing/parsing.cma printing/printing.cma tactics/tactics.cma vernac/vernac.cma \
         stm/stm.cma toplevel/toplevel.cma

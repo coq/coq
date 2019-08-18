@@ -1,0 +1,6 @@
+(library
+ (name proofview)
+ (synopsis "Coq's Tactic Engine and Monad")
+ (public_name coq.proofview)
+ (wrapped false)
+ (libraries engine))
