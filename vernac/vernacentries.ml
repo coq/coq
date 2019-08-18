@@ -2607,7 +2607,7 @@ let rec translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacPrimitive (id, prim, typopt) ->
     VtDefault(fun () ->
         unsupported_attributes atts;
-        ComAssumption.do_primitive id prim typopt)
+        ComPrimitive.do_primitive id prim typopt)
   | VernacComments l ->
     VtDefault(fun () ->
         unsupported_attributes atts;

@@ -47,5 +47,3 @@ val context
   :  poly:bool
   -> local_binder_expr list
   -> unit
-
-val do_primitive : lident -> CPrimitives.op_or_type -> constr_expr option -> unit

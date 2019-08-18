@@ -26,6 +26,7 @@ Indschemes
 Obligations
 ComDefinition
 Classes
+ComPrimitive
 ComAssumption
 ComInductive
 ComFixpoint

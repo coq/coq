@@ -190,33 +190,6 @@ let do_assumptions ~program_mode ~poly ~scope ~kind nl l =
   in
   ()
 
-let do_primitive id prim typopt =
-  if Lib.sections_are_opened () then
-    CErrors.user_err Pp.(str "Declaring a primitive is not allowed in sections.");
-  if Dumpglob.dump () then Dumpglob.dump_definition id false "ax";
-  let env = Global.env () in
-  let evd = Evd.from_env env in
-  let evd, typopt = Option.fold_left_map
-      (interp_type_evars_impls ~impls:empty_internalization_env env)
-      evd typopt
-  in
-  let evd = Evd.minimize_universes evd in
-  let uvars, impls, typopt = match typopt with
-    | None -> Univ.LSet.empty, [], None
-    | Some (ty,impls) ->
-      EConstr.universes_of_constr evd ty, impls, Some (EConstr.to_constr evd ty)
-  in
-  let evd = Evd.restrict_universe_context evd uvars in
-  let uctx = UState.check_mono_univ_decl (Evd.evar_universe_context evd) UState.default_univ_decl in
-  let entry = { prim_entry_type = typopt;
-                prim_entry_univs = uctx;
-                prim_entry_content = prim;
-              }
-  in
-  let _kn : Names.Constant.t =
-    declare_constant ~name:id.CAst.v ~kind:Decls.IsPrimitive (PrimitiveEntry entry) in
-  Flags.if_verbose Feedback.msg_info Pp.(Id.print id.CAst.v ++ str " is declared")
-
 let named_of_rel_context l =
   let open EConstr.Vars in
   let open RelDecl in
