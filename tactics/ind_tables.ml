@@ -125,7 +125,7 @@ let define internal role id c poly univs =
   let c = UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (UState.subst ctx) c in
   let univs = UState.univ_entry ~poly ctx in
   let entry = {
-    Proof_global.proof_entry_body =
+    Declare.proof_entry_body =
       Future.from_val ((c,Univ.ContextSet.empty),
                        Evd.empty_side_effects);
     proof_entry_secctx = None;

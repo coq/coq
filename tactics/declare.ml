@@ -55,8 +55,20 @@ type constant_obj = {
   cst_locl : import_status;
 }
 
+type 'a proof_entry = {
+  proof_entry_body   : 'a Entries.const_entry_body;
+  (* List of section variables *)
+  proof_entry_secctx : Constr.named_context option;
+  (* State id on which the completion of type checking is reported *)
+  proof_entry_feedback : Stateid.t option;
+  proof_entry_type        : Constr.types option;
+  proof_entry_universes   : Entries.universes_entry;
+  proof_entry_opaque      : bool;
+  proof_entry_inline_code : bool;
+}
+
 type 'a constant_entry =
-  | DefinitionEntry of 'a Proof_global.proof_entry
+  | DefinitionEntry of 'a proof_entry
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
@@ -174,7 +186,6 @@ let record_aux env s_ty s_bo =
 let default_univ_entry = Monomorphic_entry Univ.ContextSet.empty
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     ?(univs=default_univ_entry) ?(eff=Evd.empty_side_effects) body =
-  let open Proof_global in
   { proof_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), eff);
     proof_entry_secctx = None;
     proof_entry_type = types;
@@ -184,7 +195,6 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     proof_entry_inline_code = inline}
 
 let cast_proof_entry e =
-  let open Proof_global in
   let (body, ctx), () = Future.force e.proof_entry_body in
   let univs =
     if Univ.ContextSet.is_empty ctx then e.proof_entry_universes
@@ -205,7 +215,6 @@ let cast_proof_entry e =
   }
 
 let cast_opaque_proof_entry e =
-  let open Proof_global in
   let typ = match e.proof_entry_type with
   | None -> assert false
   | Some typ -> typ
@@ -249,7 +258,6 @@ let is_unsafe_typing_flags () =
   not (flags.check_universes && flags.check_guarded && flags.check_positive)
 
 let define_constant ~side_effect ~name cd =
-  let open Proof_global in
   (* Logically define the constant and its subproofs, no libobject tampering *)
   let in_section = Lib.sections_are_opened () in
   let export, decl, unsafe = match cd with
@@ -299,7 +307,7 @@ let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind 
 
 (** Declaration of section variables and local definitions *)
 type variable_declaration =
-  | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
+  | SectionLocalDef of Evd.side_effects proof_entry
   | SectionLocalAssum of { typ:Constr.types; univs:Univ.ContextSet.t; poly:bool; impl:Glob_term.binding_kind }
 
 (* This object is only for things which iterate over objects to find
@@ -321,7 +329,6 @@ let declare_variable ~name ~kind d =
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
-      let open Proof_global in
       let (body, eff) = Future.force de.proof_entry_body in
       let ((body, uctx), export) = Global.export_private_constants ~in_section:true (body, eff.Evd.seff_private) in
       let eff = get_roles export eff in

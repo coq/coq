@@ -124,7 +124,7 @@ let build_constant_by_tactic ~name ctx sign ~poly typ tac =
     let { entries; universes } = close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) pf in
     match entries with
     | [entry] ->
-      let univs = UState.demote_seff_univs entry.Proof_global.proof_entry_universes universes in
+      let univs = UState.demote_seff_univs entry.Declare.proof_entry_universes universes in
       entry, status, univs
     | _ ->
       CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
@@ -136,7 +136,7 @@ let build_by_tactic ?(side_eff=true) env sigma ~poly typ tac =
   let name = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = val_of_named_context (named_context env) in
   let ce, status, univs = build_constant_by_tactic ~name sigma sign ~poly typ tac in
-  let body, eff = Future.force ce.Proof_global.proof_entry_body in
+  let body, eff = Future.force ce.Declare.proof_entry_body in
   let (cb, ctx) =
     if side_eff then Safe_typing.inline_private_constants env (body, eff.Evd.seff_private)
     else body

@@ -24,21 +24,9 @@ module NamedDecl = Context.Named.Declaration
 
 (*** Proof Global Environment ***)
 
-type 'a proof_entry = {
-  proof_entry_body   : 'a Entries.const_entry_body;
-  (* List of section variables *)
-  proof_entry_secctx : Constr.named_context option;
-  (* State id on which the completion of type checking is reported *)
-  proof_entry_feedback : Stateid.t option;
-  proof_entry_type        : Constr.types option;
-  proof_entry_universes   : Entries.universes_entry;
-  proof_entry_opaque      : bool;
-  proof_entry_inline_code : bool;
-}
-
 type proof_object =
   { name : Names.Id.t
-  ; entries : Evd.side_effects proof_entry list
+  ; entries : Evd.side_effects Declare.proof_entry list
   ; poly : bool
   ; universes: UState.t
   ; udecl : UState.universe_decl
@@ -223,7 +211,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
           let ctx = UState.restrict universes used_univs in
           let univs = UState.check_univ_decl ~poly ctx udecl in
           (univs, typ), ((body, Univ.ContextSet.empty), eff)
-      in 
+      in
        fun t p -> Future.split2 (Future.chain p (make_body t))
     else
       fun t p ->
@@ -250,6 +238,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
     let t = EConstr.Unsafe.to_constr t in
     let univstyp, body = make_body t p in
     let univs, typ = Future.force univstyp in
+    let open Declare in
     {
       proof_entry_body = body;
       proof_entry_secctx = section_vars;

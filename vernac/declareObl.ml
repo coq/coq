@@ -153,7 +153,7 @@ let declare_obligation prg obl body ty uctx =
       ((body, Univ.ContextSet.empty), Evd.empty_side_effects)
     in
     let ce =
-      Proof_global.{ proof_entry_body = Future.from_val ~fix_exn:(fun x -> x) body
+      { Declare.proof_entry_body = Future.from_val ~fix_exn:(fun x -> x) body
       ; proof_entry_secctx = None
       ; proof_entry_type = ty
       ; proof_entry_universes = uctx
@@ -495,12 +495,11 @@ type obligation_qed_info =
   }
 
 let obligation_terminator entries uctx { name; num; auto } =
-  let open Proof_global in
   match entries with
   | [entry] ->
     let env = Global.env () in
-    let ty = entry.proof_entry_type in
-    let body, eff = Future.force entry.proof_entry_body in
+    let ty = entry.Declare.proof_entry_type in
+    let body, eff = Future.force entry.Declare.proof_entry_body in
     let (body, cstr) = Safe_typing.inline_private_constants env (body, eff.Evd.seff_private) in
     let sigma = Evd.from_ctx uctx in
     let sigma = Evd.merge_context_set ~sideff:true Evd.univ_rigid sigma cstr in
@@ -514,7 +513,7 @@ let obligation_terminator entries uctx { name; num; auto } =
     let obls, rem = prg.prg_obligations in
     let obl = obls.(num) in
     let status =
-      match obl.obl_status, entry.proof_entry_opaque with
+      match obl.obl_status, entry.Declare.proof_entry_opaque with
       | (_, Evar_kinds.Expand), true -> err_not_transp ()
       | (true, _), true -> err_not_transp ()
       | (false, _), true -> Evar_kinds.Define true

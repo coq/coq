@@ -64,7 +64,7 @@ val build_constant_by_tactic
   -> poly:bool
   -> EConstr.types
   -> unit Proofview.tactic
-  -> Evd.side_effects Proof_global.proof_entry * bool * UState.t
+  -> Evd.side_effects Declare.proof_entry * bool * UState.t
 
 val build_by_tactic
   :  ?side_eff:bool

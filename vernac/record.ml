@@ -340,7 +340,6 @@ let declare_projections indsp ctx ?(kind=Decls.StructureComponent) binder_name f
 		let projtyp =
                   it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
 	        try
-                  let open Proof_global in
 		  let entry = {
                     proof_entry_body =
                       Future.from_val ((proj, Univ.ContextSet.empty), Evd.empty_side_effects);

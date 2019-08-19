@@ -26,5 +26,5 @@ val tclABSTRACT : ?opaque:bool -> Id.t option -> unit Proofview.tactic -> unit P
    save path *)
 val shrink_entry
   :  ('a, 'b) Context.Named.Declaration.pt list
-  -> 'c Proof_global.proof_entry
-  -> 'c Proof_global.proof_entry * Constr.t list
+  -> 'c Declare.proof_entry
+  -> 'c Declare.proof_entry * Constr.t list

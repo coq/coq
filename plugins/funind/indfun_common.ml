@@ -115,7 +115,7 @@ open DeclareDef
 let definition_message = Declare.definition_message
 
 let save name const ?hook uctx scope kind =
-  let fix_exn = Future.fix_exn_of const.Proof_global.proof_entry_body in
+  let fix_exn = Future.fix_exn_of const.Declare.proof_entry_body in
   let r = match scope with
     | Discharge ->
       let c = SectionLocalDef const in

@@ -101,7 +101,6 @@ let () =
 let define ~poly name sigma c t =
   let f = declare_constant ~kind:Decls.(IsDefinition Scheme) in
   let univs = Evd.univ_entry ~poly sigma in
-  let open Proof_global in
   let kn = f ~name
     (DefinitionEntry
       { proof_entry_body = c;

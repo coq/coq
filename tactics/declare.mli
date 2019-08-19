@@ -19,14 +19,27 @@ open Entries
    reset works properly --- and will fill some global tables such as
    [Nametab] and [Impargs]. *)
 
+(** Proof entries *)
+type 'a proof_entry = {
+  proof_entry_body   : 'a Entries.const_entry_body;
+  (* List of section variables *)
+  proof_entry_secctx : Constr.named_context option;
+  (* State id on which the completion of type checking is reported *)
+  proof_entry_feedback : Stateid.t option;
+  proof_entry_type        : Constr.types option;
+  proof_entry_universes   : Entries.universes_entry;
+  proof_entry_opaque      : bool;
+  proof_entry_inline_code : bool;
+}
+
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 
 type variable_declaration =
-  | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
+  | SectionLocalDef of Evd.side_effects proof_entry
   | SectionLocalAssum of { typ:types; univs:Univ.ContextSet.t; poly:bool; impl:Glob_term.binding_kind }
 
 type 'a constant_entry =
-  | DefinitionEntry of 'a Proof_global.proof_entry
+  | DefinitionEntry of 'a proof_entry
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
@@ -43,7 +56,7 @@ val declare_variable
 val definition_entry : ?fix_exn:Future.fix_exn ->
   ?opaque:bool -> ?inline:bool -> ?types:types ->
   ?univs:Entries.universes_entry ->
-  ?eff:Evd.side_effects -> constr -> Evd.side_effects Proof_global.proof_entry
+  ?eff:Evd.side_effects -> constr -> Evd.side_effects proof_entry
 
 type import_status = ImportDefaultBehavior | ImportNeedQualified
 
