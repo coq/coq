@@ -166,15 +166,15 @@ let rec untype_command : type r s. (r, s) ty_sig -> r -> plugin_args -> vernac_c
     | Some Refl -> untype_command ty (f v) args
   end
 
-let rec untype_user_symbol : type s a b c. (a, b, c) Extend.ty_user_symbol -> (s, Extend.norec, a) Extend.symbol =
+let rec untype_user_symbol : type s a b c. (a, b, c) Extend.ty_user_symbol -> (s, Pcoq.norec, a) Pcoq.symbol =
   let open Extend in function
-| TUlist1 l -> Alist1 (untype_user_symbol l)
-| TUlist1sep (l, s) -> Alist1sep (untype_user_symbol l, Atoken (CLexer.terminal s))
-| TUlist0 l -> Alist0 (untype_user_symbol l)
-| TUlist0sep (l, s) -> Alist0sep (untype_user_symbol l, Atoken (CLexer.terminal s))
-| TUopt o -> Aopt (untype_user_symbol o)
-| TUentry a -> Aentry (Pcoq.genarg_grammar (Genarg.ExtraArg a))
-| TUentryl (a, i) -> Aentryl (Pcoq.genarg_grammar (Genarg.ExtraArg a), string_of_int i)
+| TUlist1 l -> Pcoq.G.Symbol.list1 (untype_user_symbol l)
+| TUlist1sep (l, s) -> Pcoq.G.Symbol.list1sep (untype_user_symbol l) (Pcoq.G.Symbol.token (CLexer.terminal s)) false
+| TUlist0 l -> Pcoq.G.Symbol.list0 (untype_user_symbol l)
+| TUlist0sep (l, s) -> Pcoq.G.Symbol.list0sep (untype_user_symbol l) (Pcoq.G.Symbol.token (CLexer.terminal s)) false
+| TUopt o -> Pcoq.G.Symbol.opt (untype_user_symbol o)
+| TUentry a -> Pcoq.G.Symbol.nterm (Pcoq.genarg_grammar (Genarg.ExtraArg a))
+| TUentryl (a, i) -> Pcoq.G.Symbol.nterml (Pcoq.genarg_grammar (Genarg.ExtraArg a)) (string_of_int i)
 
 let rec untype_grammar : type r s. (r, s) ty_sig -> 'a Egramml.grammar_prod_item list = function
 | TyNil -> []
@@ -229,7 +229,7 @@ let vernac_extend ~command ?classifier ?entry ext =
 
 type 'a argument_rule =
 | Arg_alias of 'a Pcoq.Entry.t
-| Arg_rules of 'a Extend.production_rule list
+| Arg_rules of 'a Pcoq.production_rule list
 
 type 'a vernac_argument = {
   arg_printer : Environ.env -> Evd.evar_map -> 'a -> Pp.t;

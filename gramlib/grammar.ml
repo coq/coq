@@ -77,8 +77,7 @@ module type S = sig
     val make : ('a, _, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
   end
 
-  module Unsafe :
-  sig
+  module Unsafe : sig
     val clear_entry : 'a Entry.t -> unit
   end
   val safe_extend : warning:(string -> unit) option ->
@@ -87,6 +86,10 @@ module type S = sig
       list ->
     unit
   val safe_delete_rule : 'a Entry.t -> ('a, _, 'f, 'r) Rule.t -> unit
+
+  (* Used in custom entries, should tweak? *)
+  val level_of_nonterm : ('a, norec, 'c) Symbol.t -> string option
+
 end
 
 (* Implementation *)
@@ -1665,5 +1668,9 @@ let safe_extend ~warning (e : 'a Entry.t) pos
 let safe_delete_rule e r =
   let AnyS (symbols, _) = get_symbols r in
   delete_rule e symbols
+
+let level_of_nonterm sym = match sym with
+  | Snterml (_,l) -> Some l
+  | _ -> None
 
 end

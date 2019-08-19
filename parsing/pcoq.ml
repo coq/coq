@@ -15,107 +15,254 @@ open Genarg
 open Gramlib
 
 (** The parser of Coq *)
+
+type norec = Gramlib.Grammar.norec
+type mayrec = Gramlib.Grammar.mayrec
+
+type ('self, 'trec, 'a) symbol =
+| Atoken : 'c Tok.p -> ('self, norec, 'c) symbol
+| Alist1 : ('self, 'trec, 'a) symbol -> ('self, 'trec, 'a list) symbol
+| Alist1sep : ('self, 'trec, 'a) symbol * ('self, norec, _) symbol
+              -> ('self, 'trec, 'a list) symbol
+| Alist0 : ('self, 'trec, 'a) symbol -> ('self, 'trec, 'a list) symbol
+| Alist0sep : ('self, 'trec, 'a) symbol * ('self, norec, _) symbol
+              -> ('self, 'trec, 'a list) symbol
+| Aopt : ('self, 'trec, 'a) symbol -> ('self, 'trec, 'a option) symbol
+| Aself : ('self, mayrec, 'self) symbol
+| Anext : ('self, mayrec, 'self) symbol
+| Aentry : 'a entry -> ('self, norec, 'a) symbol
+| Aentryl : 'a entry * string -> ('self, norec, 'a) symbol
+| Arules : 'a rules list -> ('self, norec, 'a) symbol
+
+and ('self, 'trec, _, 'r) rule =
+| Stop : ('self, norec, 'r, 'r) rule
+| Next : ('self, _, 'a, 'r) rule * ('self, _, 'b) symbol -> ('self, mayrec, 'b -> 'a, 'r) rule
+| NextNoRec : ('self, norec, 'a, 'r) rule * ('self, norec, 'b) symbol -> ('self, norec, 'b -> 'a, 'r) rule
+
+and 'a rules =
+| Rules : (_, norec, 'act, Loc.t -> 'a) rule * 'act -> 'a rules
+
+type 'a production_rule =
+| Rule : ('a, _, 'act, Loc.t -> 'a) rule * 'act -> 'a production_rule
+
 module G : sig
 
-  include Grammar.S with type te = Tok.t and type 'c pattern = 'c Tok.p
+  include Grammar.S
+    with type te = Tok.t
+     and type 'c pattern = 'c Tok.p
+     and type 'a pattern = 'a Tok.p
+     and type ('self, 'trec, 'a) Symbol.t = ('self, 'trec, 'a) symbol
+     and type ('self, 'trec, 'f, 'r) Rule.t = ('self, 'trec, 'f, 'r) rule
+     and type 'a Rules.t = 'a rules
+     and type 'a Production.t = 'a production_rule
 
-(* where Grammar.S
-
-module type S =
-  sig
-    type te = 'x;
-    type parsable = 'x;
-    value parsable : Stream.t char -> parsable;
-    value tokens : string -> list (string * int);
-    value glexer : Plexing.lexer te;
-    value set_algorithm : parse_algorithm -> unit;
-    module Entry :
-      sig
-        type e 'a = 'y;
-        value create : string -> e 'a;
-        value parse : e 'a -> parsable -> 'a;
-        value parse_token_stream : e 'a -> Stream.t te -> 'a;
-        value name : e 'a -> string;
-        value of_parser : string -> (Stream.t te -> 'a) -> e 'a;
-        value print : Format.formatter -> e 'a -> unit;
-        external obj : e 'a -> Gramext.g_entry te = "%identity";
-      end
-    ;
-    module Unsafe :
-      sig
-        value gram_reinit : Plexing.lexer te -> unit;
-        value clear_entry : Entry.e 'a -> unit;
-      end
-    ;
-    value extend :
-      Entry.e 'a -> option Gramext.position ->
-        list
-          (option string * option Gramext.g_assoc *
-           list (list (Gramext.g_symbol te) * Gramext.g_action)) ->
-        unit;
-    value delete_rule : Entry.e 'a -> list (Gramext.g_symbol te) -> unit;
-  end
-  *)
-
-  type coq_parsable
-
-  val coq_parsable : ?loc:Loc.t -> char Stream.t -> coq_parsable
-  val entry_create : string -> 'a entry
-  val entry_parse : 'a entry -> coq_parsable -> 'a
-
-  val comment_state : coq_parsable -> ((int * int) * string) list
+  val comment_state : Parsable.t -> ((int * int) * string) list
+  val level_of_nonterm : ('a,norec,'c) Symbol.t -> string option
+  val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) symbol option
 
 end with type 'a Entry.t = 'a Extend.entry = struct
 
-  include Grammar.GMake(CLexer.Lexer)
+  module G_ = Grammar.GMake(CLexer.Lexer)
 
-  type coq_parsable = Parsable.t * CLexer.lexer_state ref
+  type te = G_.te
+  type 'c pattern = 'c G_.pattern
+
+  type coq_parsable = G_.Parsable.t * CLexer.lexer_state ref
 
   let coq_parsable ?loc c =
     let state = ref (CLexer.init_lexer_state ()) in
     CLexer.set_lexer_state !state;
-    let a = Parsable.make ?loc c in
+    let a = G_.Parsable.make ?loc c in
     state := CLexer.get_lexer_state ();
     (a,state)
-
-  let entry_create = Entry.make
-
-  let entry_parse e (p,state) =
-    CLexer.set_lexer_state !state;
-    try
-      let c = Entry.parse e p in
-      state := CLexer.get_lexer_state ();
-      c
-    with Ploc.Exc (loc,e) ->
-      CLexer.drop_lexer_state ();
-      let loc' = Loc.get_loc (Exninfo.info e) in
-      let loc = match loc' with None -> loc | Some loc -> loc in
-      Loc.raise ~loc e
 
   let comment_state (p,state) =
     CLexer.get_comment_state !state
 
+  module Parsable = struct
+    type t = coq_parsable
+    let make = coq_parsable
+    (* let comment_state = comment_state *)
+  end
+
+  let tokens = G_.tokens
+
+  module Entry = struct
+    include G_.Entry
+
+    let parse e (p,state) =
+      CLexer.set_lexer_state !state;
+      try
+        let c = G_.Entry.parse e p in
+        state := CLexer.get_lexer_state ();
+        c
+      with Ploc.Exc (loc,e) ->
+        CLexer.drop_lexer_state ();
+        let loc' = Loc.get_loc (Exninfo.info e) in
+        let loc = match loc' with None -> loc | Some loc -> loc in
+        Loc.raise ~loc e
+
+  end
+
+  module Symbol = struct
+    type ('self, 'trec, 'a) t = ('self, 'trec, 'a) symbol
+    let token tok = Atoken tok
+    let list0 e = Alist0 e
+    let list0sep e s _ = Alist0sep (e,s)
+    let list1 e = Alist1 e
+    let list1sep e s _ = Alist1sep (e,s)
+    let opt e = Aopt e
+    let self = Aself
+    let next = Anext
+    let nterm e = Aentry e
+    let nterml e s = Aentryl (e,s)
+    let rules ~warning:_ r = Arules r
+  end
+
+  module Rule = struct
+    type ('self, 'trec, 'f, 'r) t = ('self, 'trec, 'f, 'r) rule
+    let stop = Stop
+    let next a b = Next (a,b)
+    let next_norec a b = NextNoRec (a,b)
+  end
+
+  module Rules = struct
+    type 'a t = 'a rules
+    let make a f = Rules(a,f)
+  end
+
+  module Production = struct
+    type 'a t = 'a production_rule
+    let make a f = Rule(a,f)
+  end
+
+  module Unsafe = struct
+    let clear_entry = G_.Unsafe.clear_entry
+  end
+
+  (** FIXME: This is a hack around a deficient camlp5 API *)
+  type 'a any_production = AnyProduction : ('a, 'tr, 'f, Loc.t -> 'a) G_.Rule.t * 'f -> 'a any_production
+
+  let rec symbol_of_prod_entry_key : type s tr a. (s, tr, a) symbol -> (s, tr, a) G_.Symbol.t =
+    function
+    | Atoken t -> G_.Symbol.token t
+    | Alist1 s ->
+      let s = symbol_of_prod_entry_key s in
+      G_.Symbol.list1 s
+    | Alist1sep (s,sep) ->
+      let s = symbol_of_prod_entry_key s in
+      let sep = symbol_of_prod_entry_key sep in
+      G_.Symbol.list1sep s sep false
+    | Alist0 s ->
+      let s = symbol_of_prod_entry_key s in
+      G_.Symbol.list0 s
+    | Alist0sep (s,sep) ->
+      let s = symbol_of_prod_entry_key s in
+      let sep = symbol_of_prod_entry_key sep in
+      G_.Symbol.list0sep s sep false
+    | Aopt s ->
+      let s = symbol_of_prod_entry_key s in
+      G_.Symbol.opt s
+    | Aself -> G_.Symbol.self
+    | Anext -> G_.Symbol.next
+    | Aentry e -> G_.Symbol.nterm e
+    | Aentryl (e, n) -> G_.Symbol.nterml e n
+    | Arules rs ->
+      let warning msg = Feedback.msg_warning Pp.(str msg) in
+      G_.Symbol.rules ~warning:(Some warning) (List.map symbol_of_rules rs)
+
+  and symbol_of_rule : type s tr a r. (s, tr, a, r) rule -> (s, tr, a, r) G_.Rule.t = function
+    | Stop ->
+      G_.Rule.stop
+    | Next (r, s) ->
+      let r = symbol_of_rule r in
+      let s = symbol_of_prod_entry_key s in
+      G_.Rule.next r s
+    | NextNoRec (r, s) ->
+      let r = symbol_of_rule r in
+      let s = symbol_of_prod_entry_key s in
+      G_.Rule.next_norec r s
+
+  and symbol_of_rules : type a. a rules -> a G_.Rules.t = function
+    | Rules (r, act) ->
+      let symb = symbol_of_rule r in
+      G_.Rules.make symb act
+
+  let of_coq_production_rule : type a. a production_rule -> a any_production = function
+    | Rule (toks, act) ->
+      AnyProduction (symbol_of_rule toks, act)
+
+  let of_coq_single_extend_statement (lvl, assoc, rule) =
+    (lvl, assoc, List.map of_coq_production_rule rule)
+
+  let of_coq_extend_statement (pos, st) =
+    (pos, List.map of_coq_single_extend_statement st)
+
+  let fix_extend_statement (pos, st) =
+    let fix_single_extend_statement (lvl, assoc, rules) =
+      let fix_production_rule (AnyProduction (s, act)) = G_.Production.make s act in
+      (lvl, assoc, List.map fix_production_rule rules)
+    in
+    (pos, List.map fix_single_extend_statement st)
+
+  let safe_extend ~warning e pos ext =
+    let pos, ext = of_coq_extend_statement (pos,ext) in
+    let pos, ext = fix_extend_statement (pos, ext) in
+    G_.safe_extend ~warning e pos ext
+
+  let safe_delete_rule e r =
+    let r = symbol_of_rule r in
+    G_.safe_delete_rule e r
+
+  let level_of_nonterm = function
+    | Aentryl (_,l) -> Some l
+    | _ -> None
+
+  exception SelfSymbol
+  let rec generalize_symbol :
+    type a tr s. (s, tr, a) symbol -> (s, norec, a) symbol =
+    function
+    | Atoken tok ->
+      Atoken tok
+    | Alist1 e ->
+      Alist1 (generalize_symbol e)
+    | Alist1sep (e, sep) ->
+      let e = generalize_symbol e in
+      let sep = generalize_symbol sep in
+      Alist1sep (e, sep)
+    | Alist0 e ->
+      Alist0 (generalize_symbol e)
+    | Alist0sep (e, sep) ->
+      let e = generalize_symbol e in
+      let sep = generalize_symbol sep in
+      Alist0sep (e, sep)
+    | Aopt e ->
+      Aopt (generalize_symbol e)
+    | Aself ->
+      raise SelfSymbol
+    | Anext ->
+      raise SelfSymbol
+    | Aentry e ->
+      Aentry e
+    | Aentryl (e, l) ->
+      Aentryl (e, l)
+    | Arules r ->
+      Arules r
+
+  let generalize_symbol s =
+    try Some (generalize_symbol s)
+    with SelfSymbol -> None
+
 end
 
-module Parsable =
-struct
-  type t = G.coq_parsable
-  let make = G.coq_parsable
+module Parsable = struct
+  include G.Parsable
   let comment_state = G.comment_state
 end
 
-module Entry =
-struct
-
-  type 'a t = 'a Grammar.GMake(CLexer.Lexer).Entry.t
-
-  let create = G.Entry.make
-  let parse = G.entry_parse
-  let print = G.Entry.print
-  let of_parser = G.Entry.of_parser
-  let name = G.Entry.name
-  let parse_token_stream = G.Entry.parse_token_stream
-
+module Entry = struct
+  include G.Entry
+  let create = make
 end
 
 module Lookahead =
@@ -189,71 +336,6 @@ end
 
 (** Binding general entry keys to symbol *)
 
-let rec symbol_of_prod_entry_key : type s tr a. (s, tr, a) symbol -> (s, tr, a) G.Symbol.t =
-function
-| Atoken t -> G.Symbol.token t
-| Alist1 s ->
-  let s = symbol_of_prod_entry_key s in
-  G.Symbol.list1 s
-| Alist1sep (s,sep) ->
-  let s = symbol_of_prod_entry_key s in
-  let sep = symbol_of_prod_entry_key sep in
-  G.Symbol.list1sep s sep false
-| Alist0 s ->
-  let s = symbol_of_prod_entry_key s in
-  G.Symbol.list0 s
-| Alist0sep (s,sep) ->
-  let s = symbol_of_prod_entry_key s in
-  let sep = symbol_of_prod_entry_key sep in
-  G.Symbol.list0sep s sep false
-| Aopt s ->
-  let s = symbol_of_prod_entry_key s in
-  G.Symbol.opt s
-| Aself -> G.Symbol.self
-| Anext -> G.Symbol.next
-| Aentry e -> G.Symbol.nterm e
-| Aentryl (e, n) -> G.Symbol.nterml e n
-| Arules rs ->
-  let warning msg = Feedback.msg_warning Pp.(str msg) in
-  G.Symbol.rules ~warning:(Some warning) (List.map symbol_of_rules rs)
-
-and symbol_of_rule : type s tr a r. (s, tr, a, Loc.t -> r) Extend.rule -> (s, tr, a, Loc.t -> r) G.Rule.t = function
-| Stop ->
-  G.Rule.stop
-| Next (r, s) ->
-  let r = symbol_of_rule r in
-  let s = symbol_of_prod_entry_key s in
-  G.Rule.next r s
-| NextNoRec (r, s) ->
-  let r = symbol_of_rule r in
-  let s = symbol_of_prod_entry_key s in
-  G.Rule.next_norec r s
-
-and symbol_of_rules : type a. a Extend.rules -> a G.Rules.t = function
-| Rules (r, act) ->
-  let symb = symbol_of_rule r in
-  G.Rules.make symb act
-
-(** FIXME: This is a hack around a deficient camlp5 API *)
-type 'a any_production = AnyProduction : ('a, 'tr, 'f, Loc.t -> 'a) G.Rule.t * 'f -> 'a any_production
-
-let of_coq_production_rule : type a. a Extend.production_rule -> a any_production = function
-| Rule (toks, act) ->
-  AnyProduction (symbol_of_rule toks, act)
-
-let of_coq_single_extend_statement (lvl, assoc, rule) =
-  (lvl, assoc, List.map of_coq_production_rule rule)
-
-let of_coq_extend_statement (pos, st) =
-  (pos, List.map of_coq_single_extend_statement st)
-
-let fix_extend_statement (pos, st) =
-  let fix_single_extend_statement (lvl, assoc, rules) =
-    let fix_production_rule (AnyProduction (s, act)) = G.Production.make s act in
-    (lvl, assoc, List.map fix_production_rule rules)
-  in
-  (pos, List.map fix_single_extend_statement st)
-
 (** Type of reinitialization data *)
 type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
 
@@ -293,7 +375,7 @@ let camlp5_entries = ref EntryDataMap.empty
 let grammar_delete e (pos,rls) =
   List.iter
     (fun (n,ass,lev) ->
-      List.iter (fun (AnyProduction (pil,_)) -> G.safe_delete_rule e pil) (List.rev lev))
+      List.iter (fun (Rule(pil,_)) -> G.safe_delete_rule e pil) (List.rev lev))
     (List.rev rls)
 
 let grammar_delete_reinit e reinit (pos, rls) =
@@ -308,22 +390,20 @@ let grammar_delete_reinit e reinit (pos, rls) =
 
 (** Extension *)
 
-let grammar_extend e ext =
-  let ext = of_coq_extend_statement ext in
-  let undo () = grammar_delete e ext in
-  let pos, ext = fix_extend_statement ext in
+let grammar_extend e (pos,ext) =
+  let undo () = grammar_delete e (pos,ext) in
   let redo () = G.safe_extend ~warning:None e pos ext in
   camlp5_state := ByEXTEND (undo, redo) :: !camlp5_state;
   redo ()
 
 let grammar_extend_sync e ext =
   camlp5_state := ByGrammar (ExtendRule (e, ext)) :: !camlp5_state;
-  let pos, ext = fix_extend_statement (of_coq_extend_statement ext) in
+  let pos, ext = ext in
   G.safe_extend ~warning:None e pos ext
 
 let grammar_extend_sync_reinit e reinit ext =
   camlp5_state := ByGrammar (ExtendRuleReinit (e, reinit, ext)) :: !camlp5_state;
-  let pos, ext = fix_extend_statement (of_coq_extend_statement ext) in
+  let pos, ext = ext in
   G.safe_extend ~warning:None e pos ext
 
 (** The apparent parser of Coq; encapsulate G to keep track
@@ -344,11 +424,11 @@ let rec remove_grammars n =
     match !camlp5_state with
        | [] -> anomaly ~label:"Pcoq.remove_grammars" (Pp.str "too many rules to remove.")
        | ByGrammar (ExtendRuleReinit (g, reinit, ext)) :: t ->
-           grammar_delete_reinit g reinit (of_coq_extend_statement ext);
+           grammar_delete_reinit g reinit ext;
            camlp5_state := t;
            remove_grammars (n-1)
        | ByGrammar (ExtendRule (g, ext)) :: t ->
-           grammar_delete g (of_coq_extend_statement ext);
+           grammar_delete g ext;
            camlp5_state := t;
            remove_grammars (n-1)
        | ByEXTEND (undo,redo)::t ->
@@ -393,7 +473,7 @@ let map_entry f en =
 
 let parse_string f ?loc x =
   let strm = Stream.of_string x in
-  Gram.entry_parse f (Gram.coq_parsable ?loc strm)
+  G.Entry.parse f (G.Parsable.make ?loc strm)
 
 type gram_universe = string
 
@@ -531,10 +611,9 @@ module Module =
   end
 
 let epsilon_value (type s tr a) f (e : (s, tr, a) symbol) =
-  let s = symbol_of_prod_entry_key e in
-  let r = G.Production.make (G.Rule.next G.Rule.stop s) (fun x _ -> f x) in
+  let r = G.Production.make (G.Rule.next G.Rule.stop e) (fun x _ -> f x) in
   let ext = [None, None, [r]] in
-  let entry = Gram.entry_create "epsilon" in
+  let entry = G.Entry.make "epsilon" in
   let warning msg = Feedback.msg_warning Pp.(str msg) in
   let () = G.safe_extend ~warning:(Some warning) entry None ext in
   try Some (parse_string entry "") with _ -> None
@@ -601,7 +680,7 @@ let extend_entry_command (type a) (type b) (tag : (a, b) entry_command) (g : a) 
   | (_, st) :: _ -> st
   in
   let (names, st) = modify g grammar_state in
-  let entries = List.map (fun name -> Gram.entry_create name) names in
+  let entries = List.map (fun name -> G.Entry.make name) names in
   let iter name e =
     camlp5_state := ByEntry (tag, name, e) :: !camlp5_state;
     let EntryData.Ex old =

@@ -826,12 +826,11 @@ END
 
 let () =
 
-let open Extend in
 let open Tok in
 let (++) r s = Next (r, s) in
 let rules = [
   Rule (
-    Stop ++ Aentry test_dollar_ident ++ Atoken (PKEYWORD "$") ++ Aentry Prim.ident,
+    Stop ++ Pcoq.G.Symbol.nterm test_dollar_ident ++ Pcoq.G.Symbol.token (PKEYWORD "$") ++ Pcoq.G.Symbol.nterm Prim.ident,
     begin fun id _ _ loc ->
       let id = Loc.tag ~loc id in
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_quotation) id in
@@ -840,7 +839,7 @@ let rules = [
   );
 
   Rule (
-    Stop ++ Aentry test_ampersand_ident ++ Atoken (PKEYWORD "&") ++ Aentry Prim.ident,
+    Stop ++ Pcoq.G.Symbol.nterm test_ampersand_ident ++ Pcoq.G.Symbol.token (PKEYWORD "&") ++ Pcoq.G.Symbol.nterm Prim.ident,
     begin fun id _ _ loc ->
       let tac = Tac2quote.of_exact_hyp ~loc (CAst.make ~loc id) in
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
@@ -849,8 +848,8 @@ let rules = [
   );
 
   Rule (
-    Stop ++ Atoken (PIDENT (Some "ltac2")) ++ Atoken (PKEYWORD ":") ++
-      Atoken (PKEYWORD "(") ++ Aentry tac2expr ++ Atoken (PKEYWORD ")"),
+    Stop ++ Pcoq.G.Symbol.token (PIDENT (Some "ltac2")) ++ Pcoq.G.Symbol.token (PKEYWORD ":") ++
+      Pcoq.G.Symbol.token (PKEYWORD "(") ++ Pcoq.G.Symbol.nterm tac2expr ++ Pcoq.G.Symbol.token (PKEYWORD ")"),
     begin fun _ tac _ _ _ loc ->
       let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
       CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))

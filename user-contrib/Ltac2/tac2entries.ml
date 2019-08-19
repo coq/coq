@@ -558,7 +558,7 @@ type 'a token =
 | TacNonTerm of Name.t * 'a
 
 type scope_rule =
-| ScopeRule : (raw_tacexpr, _, 'a) Extend.symbol * ('a -> raw_tacexpr) -> scope_rule
+| ScopeRule : (raw_tacexpr, _, 'a) Pcoq.symbol * ('a -> raw_tacexpr) -> scope_rule
 
 type scope_interpretation = sexpr list -> scope_rule
 
@@ -583,7 +583,7 @@ let parse_scope = function
     CErrors.user_err ?loc (str "Unknown scope" ++ spc () ++ Names.Id.print id)
 | SexprStr {v=str} ->
   let v_unit = CAst.make @@ CTacCst (AbsKn (Tuple 0)) in
-  ScopeRule (Extend.Atoken (Tok.PIDENT (Some str)), (fun _ -> v_unit))
+  ScopeRule (Pcoq.G.Symbol.token (Tok.PIDENT (Some str)), (fun _ -> v_unit))
 | tok ->
   let loc = loc_of_token tok in
   CErrors.user_err ?loc (str "Invalid parsing token")
@@ -611,19 +611,19 @@ type synext = {
 
 type krule =
 | KRule :
-  (raw_tacexpr, _, 'act, Loc.t -> raw_tacexpr) Extend.rule *
+  (raw_tacexpr, _, 'act, Loc.t -> raw_tacexpr) Pcoq.rule *
   ((Loc.t -> (Name.t * raw_tacexpr) list -> raw_tacexpr) -> 'act) -> krule
 
 let rec get_rule (tok : scope_rule token list) : krule = match tok with
-| [] -> KRule (Extend.Stop, fun k loc -> k loc [])
+| [] -> KRule (Pcoq.Stop, fun k loc -> k loc [])
 | TacNonTerm (na, ScopeRule (scope, inj)) :: tok ->
   let KRule (rule, act) = get_rule tok in
-  let rule = Extend.Next (rule, scope) in
+  let rule = Pcoq.Next (rule, scope) in
   let act k e = act (fun loc acc -> k loc ((na, inj e) :: acc)) in
   KRule (rule, act)
 | TacTerm t :: tok ->
   let KRule (rule, act) = get_rule tok in
-  let rule = Extend.Next (rule, Extend.Atoken (CLexer.terminal t)) in
+  let rule = Pcoq.Next (rule, Pcoq.G.Symbol.token (CLexer.terminal t)) in
   let act k _ = act k in
   KRule (rule, act)
 
@@ -637,7 +637,7 @@ let perform_notation syn st =
     let bnd = List.map map args in
     CAst.make ~loc @@ CTacLet (false, bnd, syn.synext_exp)
   in
-  let rule = Extend.Rule (rule, act mk) in
+  let rule = Pcoq.Rule (rule, act mk) in
   let lev = match syn.synext_lev with
   | None -> None
   | Some lev -> Some (string_of_int lev)

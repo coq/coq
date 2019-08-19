@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Extend
 open Genarg
 open Constrexpr
 open Libnames
@@ -222,7 +221,40 @@ module Module :
     val module_type : module_ast Entry.t
   end
 
-val epsilon_value : ('a -> 'self) -> ('self, _, 'a) Extend.symbol -> 'self option
+(** {5 Type-safe grammar extension} *)
+
+type ('self, 'trec, 'a) symbol
+
+type norec = Gramlib.Grammar.norec
+type mayrec = Gramlib.Grammar.mayrec
+
+type ('self, 'trec, _, 'r) rule =
+| Stop : ('self, norec, 'r, 'r) rule
+| Next : ('self, _, 'a, 'r) rule * ('self, _, 'b) symbol -> ('self, mayrec, 'b -> 'a, 'r) rule
+| NextNoRec : ('self, norec, 'a, 'r) rule * ('self, norec, 'b) symbol -> ('self, norec, 'b -> 'a, 'r) rule
+
+type 'a rules =
+  | Rules : (_, norec, 'act, Loc.t -> 'a) rule * 'act -> 'a rules
+
+type 'a production_rule =
+  | Rule : ('a, _, 'act, Loc.t -> 'a) rule * 'act -> 'a production_rule
+
+module G : sig
+
+  include Gramlib.Grammar.S
+
+  val level_of_nonterm : ('a,norec,'c) Symbol.t -> string option
+  val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) symbol option
+
+end with type 'a Entry.t = 'a Entry.t
+     and type te = Tok.t
+     and type 'a pattern = 'a Tok.p
+     and type ('self, 'trec, 'a) Symbol.t = ('self, 'trec, 'a) symbol
+     and type ('self, 'trec, 'f, 'r) Rule.t = ('self, 'trec, 'f, 'r) rule
+     and type 'a Rules.t = 'a rules
+     and type 'a Production.t = 'a production_rule
+
+val epsilon_value : ('a -> 'self) -> ('self, _, 'a) symbol -> 'self option
 
 (** {5 Extending the parser without synchronization} *)
 

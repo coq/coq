@@ -111,7 +111,7 @@ type 'a argument_rule =
 | Arg_alias of 'a Pcoq.Entry.t
   (** This is used because CAMLP5 parser can be dumb about rule factorization,
       which sometimes requires two entries to be the same. *)
-| Arg_rules of 'a Extend.production_rule list
+| Arg_rules of 'a Pcoq.production_rule list
   (** There is a discrepancy here as we use directly extension rules and thus
     entries instead of ty_user_symbol and thus arguments as roots. *)
 

@@ -36,7 +36,7 @@ val perform_eval : pstate:Proof_global.t option -> raw_tacexpr -> unit
 (** {5 Notations} *)
 
 type scope_rule =
-| ScopeRule : (raw_tacexpr, _, 'a) Extend.symbol * ('a -> raw_tacexpr) -> scope_rule
+| ScopeRule : (raw_tacexpr, _, 'a) Pcoq.symbol * ('a -> raw_tacexpr) -> scope_rule
 
 type scope_interpretation = sexpr list -> scope_rule
 
