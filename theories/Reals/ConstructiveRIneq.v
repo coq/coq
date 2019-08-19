@@ -16,10 +16,15 @@
 (* Implement interface ConstructiveReals opaquely with
    Cauchy reals and prove basic results.
    Those are therefore true for any implementation of
-   ConstructiveReals (for example with Dedekind reals). *)
+   ConstructiveReals (for example with Dedekind reals).
+
+   This file is the recommended import for working with
+   constructive reals, do not use ConstructiveCauchyReals
+   directly. *)
 
 Require Import ConstructiveCauchyReals.
 Require Import ConstructiveRcomplete.
+Require Import ConstructiveRealsLUB.
 Require Export ConstructiveReals.
 Require Import Zpower.
 Require Export ZArithRing.
@@ -2529,11 +2534,10 @@ Qed.
    sequence of rational numbers (n maps to the q between
    a and a+1/n). This is how real numbers compute,
    and they are measured by exact rational numbers. *)
-Definition RQ_dense_pos (a b : R)
-  : 0 < b
-    -> a < b -> { q : Q & a < IQR q < b }.
+Definition RQ_dense (a b : R)
+  : a < b -> { q : Q & a < IQR q < b }.
 Proof.
-  intros H H0.
+  intros H0.
   assert (0 < b - a) as epsPos.
   { apply (Rplus_lt_compat_r (-a)) in H0.
     rewrite Rplus_opp_r in H0. apply H0. }
@@ -2580,35 +2584,6 @@ Proof.
       rewrite Rmult_1_r, Rmult_comm. apply maj2.
 Qed.
 
-Definition RQ_dense (a b : R)
-  : a < b
-    -> { q : Q & a < IQR q < b }.
-Proof.
-  intros H. destruct (linear_order_T a 0 b). apply H.
-  - destruct (RQ_dense_pos (-b) (-a)) as [q maj].
-    apply (Rplus_lt_compat_l (-a)) in r. rewrite Rplus_opp_l in r.
-    rewrite Rplus_0_r in r. apply r.
-    apply (Rplus_lt_compat_l (-a)) in H.
-    rewrite Rplus_opp_l, Rplus_comm in H.
-    apply (Rplus_lt_compat_l (-b)) in H. rewrite <- Rplus_assoc in H.
-    rewrite Rplus_opp_l in H. rewrite Rplus_0_l in H.
-    rewrite Rplus_0_r in H. apply H.
-    exists (-q)%Q. split.
-    + destruct maj as [_ maj].
-      apply (Rplus_lt_compat_l (-IQR q)) in maj.
-      rewrite Rplus_opp_l, <- opp_IQR, Rplus_comm in maj.
-      apply (Rplus_lt_compat_l a) in maj. rewrite <- Rplus_assoc in maj.
-      rewrite Rplus_opp_r, Rplus_0_l in maj.
-      rewrite Rplus_0_r in maj. apply maj.
-    + destruct maj as [maj _].
-      apply (Rplus_lt_compat_l (-IQR q)) in maj.
-      rewrite Rplus_opp_l, <- opp_IQR, Rplus_comm in maj.
-      apply (Rplus_lt_compat_l b) in maj. rewrite <- Rplus_assoc in maj.
-      rewrite Rplus_opp_r in maj. rewrite Rplus_0_l in maj.
-      rewrite Rplus_0_r in maj. apply maj.
-  - apply RQ_dense_pos. apply r. apply H.
-Qed.
-
 Definition RQ_limit : forall (x : R) (n:nat),
     { q:Q & x < IQR q < x + IQR (1 # Pos.of_nat n) }.
 Proof.
@@ -2623,7 +2598,7 @@ Qed.
 Lemma Rlt_lpo_dec : forall x y : R,
     (forall (P : nat -> Prop), (forall n, {P n} + {~P n})
                     -> {n | ~P n} + {forall n, P n})
-    -> (x < y) + (x < y -> False).
+    -> (x < y) + (y <= x).
 Proof.
   intros x y lpo.
   pose (fun n => let (l,_) := RQ_limit x n in l) as xn.
@@ -2679,6 +2654,18 @@ Proof.
       unfold IQR. rewrite Rmult_1_l, Rmult_assoc, Rinv_r. ring.
       right. apply (IZR_lt 0). reflexivity.
       unfold IZR, IPR, IPR_2. ring.
+Qed.
+
+Lemma Rlt_lpo_floor : forall x : R,
+    (forall (P : nat -> Prop), (forall n, {P n} + {~P n})
+                    -> {n | ~P n} + {forall n, P n})
+    -> { p : Z & IZR p <= x < IZR p + 1 }.
+Proof.
+  intros x lpo. destruct (Rfloor x) as [n [H H0]].
+  destruct (Rlt_lpo_dec x (IZR n + 1) lpo).
+  - exists n. split. unfold Rle. apply Rlt_asym. exact H. exact r.
+  - exists (n+1)%Z. split. rewrite plus_IZR. exact r.
+    rewrite plus_IZR, Rplus_assoc. exact H0.
 Qed.
 
 

@@ -10,8 +10,38 @@
 (************************************************************************)
 
 (* An interface for constructive and computable real numbers.
-   All of its elements are isomorphic, for example it contains
-   the Cauchy reals and the Dedekind reals. *)
+   All of its instances are isomorphic, for example it contains
+   the Cauchy reals implemented in file ConstructivecauchyReals
+   and the sumbool-based Dedekind reals defined by
+
+Structure R := {
+  (* The cuts are represented as propositional functions, rather than subsets,
+     as there are no subsets in type theory. *)
+  lower : Q -> Prop;
+  upper : Q -> Prop;
+  (* The cuts respect equality on Q. *)
+  lower_proper : Proper (Qeq ==> iff) lower;
+  upper_proper : Proper (Qeq ==> iff) upper;
+  (* The cuts are inhabited. *)
+  lower_bound : { q : Q | lower q };
+  upper_bound : { r : Q | upper r };
+  (* The lower cut is a lower set. *)
+  lower_lower : forall q r, q < r -> lower r -> lower q;
+  (* The lower cut is open. *)
+  lower_open : forall q, lower q -> exists r, q < r /\ lower r;
+  (* The upper cut is an upper set. *)
+  upper_upper : forall q r, q < r -> upper q -> upper r;
+  (* The upper cut is open. *)
+  upper_open : forall r, upper r -> exists q,  q < r /\ upper q;
+  (* The cuts are disjoint. *)
+  disjoint : forall q, ~ (lower q /\ upper q);
+  (* There is no gap between the cuts. *)
+  located : forall q r, q < r -> { lower q } + { upper r }
+}.
+
+  see github.com/andrejbauer/dedekind-reals for the Prop-based
+  version of those Dedekind reals (although Prop fails to make
+  them an instance of ConstructiveReals). *)
 
 Require Import QArith.
 

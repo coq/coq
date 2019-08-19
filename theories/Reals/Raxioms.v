@@ -8,6 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* This file continues Rdefinitions, with more properties of the
+   classical reals, including the existence of least upper bounds
+   for non-empty and bounded subsets.
+   The name "Raxioms" and its contents are kept for backward compatibility,
+   when the classical reals were axiomatized. Otherwise we would
+   have merged this file into RIneq. *)
+
 (*********************************************************)
 (**    Lifts of basic operations for classical reals     *)
 (*********************************************************)

@@ -8,7 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Classical quotient of the constructive Cauchy real numbers. *)
+(* Classical quotient of the constructive Cauchy real numbers.
+   This file contains the definition of the classical real numbers
+   type R, its algebraic operations, its order and the proof that
+   it is total, and the proof that R is archimedean (up).
+   It also defines IZR, the ring morphism from Z to R. *)
 
 Require Export ZArith_base.
 Require Import QArith_base.
@@ -160,7 +164,7 @@ Proof.
   - left. left. rewrite RbaseSymbolsImpl.Rlt_def.
     apply Rlt_forget. exact r.
   - destruct (Rlt_lpo_dec (Rrepr r2) (Rrepr r1) sig_forall_dec).
-    + right. rewrite RbaseSymbolsImpl.Rlt_def. apply Rlt_forget. exact r.
+    + right. rewrite RbaseSymbolsImpl.Rlt_def. apply Rlt_forget. exact r0.
     + left. right. apply Rquot1. split; assumption.
 Qed.
 

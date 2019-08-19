@@ -518,6 +518,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/ConstructiveCauchyReals.v
     theories/Reals/Raxioms.v
     theories/Reals/ConstructiveRIneq.v
+    theories/Reals/ConstructiveRealsLUB.v
     theories/Reals/RIneq.v
     theories/Reals/DiscrR.v
     theories/Reals/ROrderedType.v
