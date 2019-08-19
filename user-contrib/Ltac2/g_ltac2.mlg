@@ -861,7 +861,7 @@ let rules = [
 ] in
 
 Hook.set Tac2entries.register_constr_quotations begin fun () ->
-  Pcoq.grammar_extend Pcoq.Constr.operconstr (Some (Gramlib.Gramext.Level "0"), [(None, None, rules)])
+  Pcoq.grammar_extend Pcoq.Constr.operconstr {G.pos=Some (Gramlib.Gramext.Level "0"); data=[(None, None, rules)]}
 end
 
 }

@@ -558,7 +558,7 @@ type 'a token =
 | TacNonTerm of Name.t * 'a
 
 type scope_rule =
-| ScopeRule : (raw_tacexpr, _, 'a) Pcoq.symbol * ('a -> raw_tacexpr) -> scope_rule
+| ScopeRule : (raw_tacexpr, _, 'a) Pcoq.G.Symbol.t * ('a -> raw_tacexpr) -> scope_rule
 
 type scope_interpretation = sexpr list -> scope_rule
 
@@ -611,7 +611,7 @@ type synext = {
 
 type krule =
 | KRule :
-  (raw_tacexpr, _, 'act, Loc.t -> raw_tacexpr) Pcoq.rule *
+  (raw_tacexpr, _, 'act, Loc.t -> raw_tacexpr) Pcoq.G.Rule.t *
   ((Loc.t -> (Name.t * raw_tacexpr) list -> raw_tacexpr) -> 'act) -> krule
 
 let rec get_rule (tok : scope_rule token list) : krule = match tok with
@@ -643,7 +643,7 @@ let perform_notation syn st =
   | Some lev -> Some (string_of_int lev)
   in
   let rule = (lev, None, [rule]) in
-  ([Pcoq.ExtendRule (Pltac.tac2expr, (None, [rule]))], st)
+  ([Pcoq.ExtendRule (Pltac.tac2expr, {Pcoq.G.pos=None; data=[rule]})], st)
 
 let ltac2_notation =
   Pcoq.create_grammar_command "ltac2-notation" perform_notation

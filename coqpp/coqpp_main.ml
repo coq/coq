@@ -266,7 +266,7 @@ let print_rule fmt r =
 let print_entry fmt e =
   let print_position_opt fmt pos = print_opt fmt print_position pos in
   let print_rules fmt rules = print_list fmt print_rule rules in
-  fprintf fmt "let () =@ @[Pcoq.grammar_extend@ %s@ @[(%a, %a)@]@]@ in@ "
+  fprintf fmt "let () =@ @[Pcoq.grammar_extend@ %s@ @[{ Pcoq.G.pos=%a; data=%a}@]@]@ in@ "
     e.gentry_name print_position_opt e.gentry_pos print_rules e.gentry_rules
 
 let print_ast fmt ext =

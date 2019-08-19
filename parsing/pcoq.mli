@@ -223,51 +223,26 @@ module Module :
 
 (** {5 Type-safe grammar extension} *)
 
-type ('self, 'trec, 'a) symbol
-type ('self, 'trec, _, 'r) rule
-
 type norec = Gramlib.Grammar.norec
 type mayrec = Gramlib.Grammar.mayrec
-
-type 'a rules
-type 'a production_rule
 
 module G : sig
 
   include Gramlib.Grammar.S
 
   val level_of_nonterm : ('a,norec,'c) Symbol.t -> string option
-  val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) symbol option
-  val mk_rule : 'a Tok.p list -> string rules
+  val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
+  val mk_rule : 'a Tok.p list -> string Rules.t
 
 end with type 'a Entry.t = 'a Entry.t
      and type te = Tok.t
      and type 'a pattern = 'a Tok.p
-     and type ('self, 'trec, 'a) Symbol.t = ('self, 'trec, 'a) symbol
-     and type ('self, 'trec, 'f, 'r) Rule.t = ('self, 'trec, 'f, 'r) rule
-     and type 'a Rules.t = 'a rules
-     and type 'a Production.t = 'a production_rule
 
-val epsilon_value : ('a -> 'self) -> ('self, _, 'a) symbol -> 'self option
+val epsilon_value : ('a -> 'self) -> ('self, _, 'a) G.Symbol.t -> 'self option
 
 (** {5 Extending the parser without synchronization} *)
 
-type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
-(** Type of reinitialization data *)
-
-type 'a single_extend_statement =
-  string option *
-  (* Level *)
-  Gramlib.Gramext.g_assoc option *
-  (* Associativity *)
-  'a production_rule list
-  (* Symbol list with the interpretation function *)
-
-type 'a extend_statement =
-  Gramlib.Gramext.position option *
-  'a single_extend_statement list
-
-val grammar_extend : 'a Entry.t -> 'a extend_statement -> unit
+val grammar_extend : 'a Entry.t -> 'a G.extend_statement -> unit
 (** Extend the grammar of Coq, without synchronizing it with the backtracking
     mechanism. This means that grammar extensions defined this way will survive
     an undo. *)
@@ -283,9 +258,12 @@ type 'a grammar_command
 (** Type of synchronized parsing extensions. The ['a] type should be
     marshallable. *)
 
+type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
+(** Type of reinitialization data *)
+
 type extend_rule =
-| ExtendRule : 'a Entry.t * 'a extend_statement -> extend_rule
-| ExtendRuleReinit : 'a Entry.t * gram_reinit * 'a extend_statement -> extend_rule
+| ExtendRule : 'a Entry.t * 'a G.extend_statement -> extend_rule
+| ExtendRuleReinit : 'a Entry.t * gram_reinit * 'a G.extend_statement -> extend_rule
 
 type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
 (** Grammar extension entry point. Given some ['a] and a current grammar state,

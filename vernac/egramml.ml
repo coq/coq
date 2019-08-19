@@ -19,13 +19,13 @@ open Vernacexpr
 type 's grammar_prod_item =
   | GramTerminal of string
   | GramNonTerminal :
-      ('a raw_abstract_argument_type * ('s, _, 'a) symbol) Loc.located -> 's grammar_prod_item
+      ('a raw_abstract_argument_type * ('s, _, 'a) G.Symbol.t) Loc.located -> 's grammar_prod_item
 
 type 'a ty_arg = ('a -> raw_generic_argument)
 
 type ('self, 'tr, _, 'r) ty_rule =
 | TyStop : ('self, Pcoq.norec, 'r, 'r) ty_rule
-| TyNext : ('self, _, 'a, 'r) ty_rule * ('self, _, 'b) Pcoq.symbol * 'b ty_arg option ->
+| TyNext : ('self, _, 'a, 'r) ty_rule * ('self, _, 'b) Pcoq.G.Symbol.t * 'b ty_arg option ->
   ('self, Pcoq.mayrec, 'b -> 'a, 'r) ty_rule
 
 type ('self, 'r) any_ty_rule =
@@ -44,7 +44,7 @@ let rec ty_rule_of_gram = function
   let r = TyNext (rem, tok, inj) in
   AnyTyRule r
 
-let rec ty_erase : type s tr a r. (s, tr, a, r) ty_rule -> (s, tr, a, r) Pcoq.rule = function
+let rec ty_erase : type s tr a r. (s, tr, a, r) ty_rule -> (s, tr, a, r) Pcoq.G.Rule.t = function
 | TyStop -> Pcoq.G.Rule.stop
 | TyNext (rem, tok, _) -> Pcoq.G.Rule.next (ty_erase rem) tok
 
@@ -90,4 +90,4 @@ let extend_vernac_command_grammar s nt gl =
   vernac_exts := (s,gl) :: !vernac_exts;
   let mkact loc l = VernacExtend (s, l) in
   let rules = [make_rule mkact gl] in
-  grammar_extend nt (None, [None, None, rules])
+  grammar_extend nt { G.pos=None; data=[None, None, rules]}

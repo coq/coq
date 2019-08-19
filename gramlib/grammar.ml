@@ -80,12 +80,21 @@ module type S = sig
   module Unsafe : sig
     val clear_entry : 'a Entry.t -> unit
   end
-  val safe_extend : warning:(string -> unit) option ->
-    'a Entry.t -> Gramext.position option ->
-    (string option * Gramext.g_assoc option * 'a Production.t list)
-      list ->
-    unit
-  val safe_delete_rule : 'a Entry.t -> ('a, _, 'f, 'r) Rule.t -> unit
+
+  type 'a single_extend_statement =
+    string option * Gramext.g_assoc option * 'a Production.t list
+
+  type 'a extend_statement =
+    { pos : Gramext.position option
+    ; data : 'a single_extend_statement list
+    }
+
+  val safe_extend : warning:(string -> unit) option -> 'a Entry.t -> 'a extend_statement -> unit
+  val safe_delete_rule : 'a Entry.t -> 'a Production.t -> unit
+
+  val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
+
+  val mk_rule : 'a pattern list -> string Rules.t
 
   (* Used in custom entries, should tweak? *)
   val level_of_nonterm : ('a, norec, 'c) Symbol.t -> string option
@@ -1659,18 +1668,87 @@ module Unsafe = struct
 
 end
 
-let safe_extend ~warning (e : 'a Entry.t) pos
-    (r :
-       (string option * Gramext.g_assoc option * 'a ty_production list)
-         list) =
-  extend_entry ~warning e pos r
+type 'a single_extend_statement =
+  string option * Gramext.g_assoc option * 'a ty_production list
 
-let safe_delete_rule e r =
+type 'a extend_statement =
+  { pos : Gramext.position option
+  ; data : 'a single_extend_statement list
+  }
+
+let safe_extend ~warning (e : 'a Entry.t) { pos; data } =
+  extend_entry ~warning e pos data
+
+let safe_delete_rule e (TProd (r,_act)) =
   let AnyS (symbols, _) = get_symbols r in
   delete_rule e symbols
 
 let level_of_nonterm sym = match sym with
   | Snterml (_,l) -> Some l
   | _ -> None
+
+exception SelfSymbol
+
+let rec generalize_symbol :
+  type a tr s. (s, tr, a) Symbol.t -> (s, norec, a) ty_symbol =
+  function
+  | Stoken tok ->
+    Stoken tok
+  | Slist1 e ->
+    Slist1 (generalize_symbol e)
+  | Slist1sep (e, sep, b) ->
+    let e = generalize_symbol e in
+    let sep = generalize_symbol sep in
+    Slist1sep (e, sep, b)
+  | Slist0 e ->
+    Slist0 (generalize_symbol e)
+  | Slist0sep (e, sep, b) ->
+    let e = generalize_symbol e in
+    let sep = generalize_symbol sep in
+    Slist0sep (e, sep, b)
+  | Sopt e ->
+    Sopt (generalize_symbol e)
+  | Sself ->
+    raise SelfSymbol
+  | Snext ->
+    raise SelfSymbol
+  | Snterm e ->
+    Snterm e
+  | Snterml (e, l) ->
+    Snterml (e, l)
+  | Stree r ->
+    Stree (generalize_tree r)
+and generalize_tree : type a tr s .
+  (s, tr, a) ty_tree -> (s, norec, a) ty_tree = fun r ->
+  match r with
+  | Node (fi, n) ->
+    let fi = match fi with
+      | NoRec3 -> NoRec3
+      | MayRec3 -> raise SelfSymbol
+    in
+    let n = match n with
+      | { node; son; brother } ->
+        let node = generalize_symbol node in
+        let son = generalize_tree son in
+        let brother = generalize_tree brother in
+        { node; son; brother }
+    in
+    Node (fi, n)
+  | LocAct _ as r -> r
+  | DeadEnd as r -> r
+
+let generalize_symbol s =
+  try Some (generalize_symbol s)
+  with SelfSymbol -> None
+
+let rec mk_rule tok =
+  match tok with
+  | [] ->
+    let stop_e = Rule.stop in
+    TRules (stop_e, fun _ -> (* dropped anyway: *) "")
+  | tkn :: rem ->
+    let TRules (r, f) = mk_rule rem in
+    let r = Rule.next_norec r (Symbol.token tkn) in
+    TRules (r, fun _ -> f)
 
 end

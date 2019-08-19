@@ -332,8 +332,8 @@ let make_sep_rules = function
     Pcoq.G.Symbol.rules ~warning:None [r]
 
 type ('s, 'a) mayrec_symbol =
-| MayRecNo : ('s, norec, 'a) symbol -> ('s, 'a) mayrec_symbol
-| MayRecMay : ('s, mayrec, 'a) symbol -> ('s, 'a) mayrec_symbol
+| MayRecNo : ('s, norec, 'a) G.Symbol.t -> ('s, 'a) mayrec_symbol
+| MayRecMay : ('s, mayrec, 'a) G.Symbol.t -> ('s, 'a) mayrec_symbol
 
 let symbol_of_target : type s. _ -> _ -> _ -> _ -> s target -> (s, s) mayrec_symbol = fun custom p assoc from forpat ->
   if is_binder_level custom from p
@@ -458,8 +458,8 @@ let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> s env ->
     ty_eval rem f { env with constrs; constrlists; }
 
 type ('s, 'a, 'r) mayrec_rule =
-| MayRecRNo : ('s, norec, 'a, 'r) rule -> ('s, 'a, 'r) mayrec_rule
-| MayRecRMay : ('s, mayrec, 'a, 'r) rule -> ('s, 'a, 'r) mayrec_rule
+| MayRecRNo : ('s, norec, 'a, 'r) G.Rule.t -> ('s, 'a, 'r) mayrec_rule
+| MayRecRMay : ('s, mayrec, 'a, 'r) G.Rule.t -> ('s, 'a, 'r) mayrec_rule
 
 let rec ty_erase : type s a r. (s, a, r) ty_rule -> (s, a, r) mayrec_rule = function
 | TyStop -> MayRecRNo G.Rule.stop
@@ -501,7 +501,7 @@ let target_to_bool : type r. r target -> bool = function
 | ForPattern -> true
 
 let prepare_empty_levels forpat (where,(pos,p4assoc,name,reinit)) =
-  let empty = (pos, [(name, p4assoc, [])]) in
+  let empty = { G.pos; data = [(name, p4assoc, [])] } in
   match reinit with
   | None ->
     ExtendRule (target_entry where forpat, empty)
@@ -562,9 +562,9 @@ let extend_constr state forpat ng =
       name, p4assoc, [r] in
     let r = match reinit with
       | None ->
-        ExtendRule (entry, (pos, [rule]))
+        ExtendRule (entry, { G.pos; data = [rule]})
       | Some reinit ->
-        ExtendRuleReinit (entry, reinit, (pos, [rule]))
+        ExtendRuleReinit (entry, reinit, { G.pos; data = [rule]})
     in
     (accu @ empty_rules @ [r], state)
   in

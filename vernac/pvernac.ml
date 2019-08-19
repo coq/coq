@@ -57,7 +57,7 @@ module Vernac_ =
         Pcoq.G.(Production.make (Rule.next Rule.stop (Symbol.token Tok.PEOI)) act_eoi);
         Pcoq.G.(Production.make (Rule.next Rule.stop (Symbol.nterm vernac_control)) act_vernac);
       ] in
-      Pcoq.grammar_extend main_entry (None, [None, None, rule])
+      Pcoq.(grammar_extend main_entry {G.pos=None; data=[None, None, rule]})
 
     let select_tactic_entry spec =
       match spec with

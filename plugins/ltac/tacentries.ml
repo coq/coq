@@ -48,7 +48,7 @@ let atactic n =
   else Pcoq.G.Symbol.nterml Pltac.tactic_expr (string_of_int n)
 
 type entry_name = EntryName :
-  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, _, 'a) Pcoq.symbol -> entry_name
+  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, _, 'a) Pcoq.G.Symbol.t -> entry_name
 
 (** Quite ad-hoc *)
 let get_tacentry n m =
@@ -191,7 +191,7 @@ let add_tactic_entry (kn, ml, tg) state =
   in
   let prods = List.map map tg.tacgram_prods in
   let rules = make_rule mkact prods in
-  let r = ExtendRule (entry, (pos, [(None, None, [rules])])) in
+  let r = ExtendRule (entry, { G.pos; data=[(None, None, [rules])]}) in
   ([r], state)
 
 let tactic_grammar =
@@ -421,7 +421,7 @@ let create_ltac_quotation name cast (e, l) =
   in
   let action _ v _ _ _ loc = cast (Some loc, v) in
   let gram = (level, assoc, [Pcoq.G.Production.make rule action]) in
-  Pcoq.grammar_extend Pltac.tactic_arg (None, [gram])
+  Pcoq.grammar_extend Pltac.tactic_arg {G.pos=None; data=[gram]}
 
 (** Command *)
 
@@ -765,7 +765,7 @@ let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
     e
   | Vernacextend.Arg_rules rules ->
     let e = Pcoq.create_generic_entry Pcoq.utactic name (Genarg.rawwit wit) in
-    let () = Pcoq.grammar_extend e (None, [(None, None, rules)]) in
+    let () = Pcoq.grammar_extend e {G.pos=None; data=[(None, None, rules)]} in
     e
   in
   let (rpr, gpr, tpr) = arg.arg_printer in
