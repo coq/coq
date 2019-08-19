@@ -615,15 +615,15 @@ type krule =
   ((Loc.t -> (Name.t * raw_tacexpr) list -> raw_tacexpr) -> 'act) -> krule
 
 let rec get_rule (tok : scope_rule token list) : krule = match tok with
-| [] -> KRule (Pcoq.Stop, fun k loc -> k loc [])
+| [] -> KRule (Pcoq.G.Rule.stop, fun k loc -> k loc [])
 | TacNonTerm (na, ScopeRule (scope, inj)) :: tok ->
   let KRule (rule, act) = get_rule tok in
-  let rule = Pcoq.Next (rule, scope) in
+  let rule = Pcoq.G.Rule.next rule scope in
   let act k e = act (fun loc acc -> k loc ((na, inj e) :: acc)) in
   KRule (rule, act)
 | TacTerm t :: tok ->
   let KRule (rule, act) = get_rule tok in
-  let rule = Pcoq.Next (rule, Pcoq.G.Symbol.token (CLexer.terminal t)) in
+  let rule = Pcoq.G.(Rule.next rule (Symbol.token (CLexer.terminal t))) in
   let act k _ = act k in
   KRule (rule, act)
 
@@ -637,7 +637,7 @@ let perform_notation syn st =
     let bnd = List.map map args in
     CAst.make ~loc @@ CTacLet (false, bnd, syn.synext_exp)
   in
-  let rule = Pcoq.Rule (rule, act mk) in
+  let rule = Pcoq.G.Production.make rule (act mk) in
   let lev = match syn.synext_lev with
   | None -> None
   | Some lev -> Some (string_of_int lev)

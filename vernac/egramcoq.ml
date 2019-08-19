@@ -328,15 +328,7 @@ let make_sep_rules = function
   | [tk] ->
     Pcoq.G.Symbol.token tk
   | tkl ->
-    let rec mkrule : 'a Tok.p list -> 'a rules = function
-      | [] ->
-        Rules (Stop, fun _ -> (* dropped anyway: *) "")
-      | tkn :: rem ->
-        let Rules (r, f) = mkrule rem in
-        let r = NextNoRec (r, Pcoq.G.Symbol.token tkn) in
-        Rules (r, fun _ -> f)
-    in
-    let r = mkrule (List.rev tkl) in
+    let r = Pcoq.G.mk_rule (List.rev tkl) in
     Pcoq.G.Symbol.rules ~warning:None [r]
 
 type ('s, 'a) mayrec_symbol =
@@ -470,18 +462,18 @@ type ('s, 'a, 'r) mayrec_rule =
 | MayRecRMay : ('s, mayrec, 'a, 'r) rule -> ('s, 'a, 'r) mayrec_rule
 
 let rec ty_erase : type s a r. (s, a, r) ty_rule -> (s, a, r) mayrec_rule = function
-| TyStop -> MayRecRNo Stop
+| TyStop -> MayRecRNo G.Rule.stop
 | TyMark (_, _, _, r) -> ty_erase r
 | TyNext (rem, TyTerm tok) ->
    begin match ty_erase rem with
-   | MayRecRNo rem -> MayRecRMay (Next (rem, Pcoq.G.Symbol.token tok))
-   | MayRecRMay rem -> MayRecRMay (Next (rem, Pcoq.G.Symbol.token tok)) end
+   | MayRecRNo rem -> MayRecRMay (G.Rule.next rem (G.Symbol.token tok))
+   | MayRecRMay rem -> MayRecRMay (G.Rule.next rem (G.Symbol.token tok)) end
 | TyNext (rem, TyNonTerm (_, _, s, _)) ->
    begin match ty_erase rem, s with
-   | MayRecRNo rem, MayRecNo s -> MayRecRMay (Next (rem, s))
-   | MayRecRNo rem, MayRecMay s -> MayRecRMay (Next (rem, s))
-   | MayRecRMay rem, MayRecNo s -> MayRecRMay (Next (rem, s))
-   | MayRecRMay rem, MayRecMay s -> MayRecRMay (Next (rem, s)) end
+   | MayRecRNo rem, MayRecNo s -> MayRecRMay (G.Rule.next rem s)
+   | MayRecRNo rem, MayRecMay s -> MayRecRMay (G.Rule.next rem s)
+   | MayRecRMay rem, MayRecNo s -> MayRecRMay (G.Rule.next rem s)
+   | MayRecRMay rem, MayRecMay s -> MayRecRMay (G.Rule.next rem s) end
 
 type ('self, 'r) any_ty_rule =
 | AnyTyRule : ('self, 'act, Loc.t -> 'r) ty_rule -> ('self, 'r) any_ty_rule
@@ -564,8 +556,9 @@ let extend_constr state forpat ng =
     let act = ty_eval r (make_act forpat ng.notgram_notation) empty in
     let rule =
       let r = match ty_erase r with
-        | MayRecRNo symbs -> Rule (symbs, act)
-        | MayRecRMay symbs -> Rule (symbs, act) in
+        | MayRecRNo symbs -> Pcoq.G.Production.make symbs act
+        | MayRecRMay symbs -> Pcoq.G.Production.make symbs act
+      in
       name, p4assoc, [r] in
     let r = match reinit with
       | None ->

@@ -217,13 +217,13 @@ let rec print_prod fmt p =
 
 and print_extrule fmt (tkn, vars, body) =
   let tkn = List.rev tkn in
-  fprintf fmt "@[Pcoq.Rule@ (@[%a@],@ @[(%a)@])@]" (print_symbols ~norec:false) tkn print_fun (vars, body)
+  fprintf fmt "@[Pcoq.G.Production.make@ @[(%a)@]@ @[(%a)@]@]" (print_symbols ~norec:false) tkn print_fun (vars, body)
 
 and print_symbols ~norec fmt = function
-| [] -> fprintf fmt "Pcoq.Stop"
+| [] -> fprintf fmt "Pcoq.G.Rule.stop"
 | tkn :: tkns ->
-  let c = if norec then "Pcoq.NextNoRec" else "Pcoq.Next" in
-  fprintf fmt "%s @[(%a,@ %a)@]" c (print_symbols ~norec) tkns print_symbol tkn
+  let c = if norec then "Pcoq.G.Rule.next_norec" else "Pcoq.G.Rule.next" in
+  fprintf fmt "%s @[(%a)@ (%a)@]" c (print_symbols ~norec) tkns print_symbol tkn
 
 and print_symbol fmt tkn = match tkn with
 | SymbToken (t, s) ->

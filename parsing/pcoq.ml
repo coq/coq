@@ -59,6 +59,7 @@ module G : sig
   val comment_state : Parsable.t -> ((int * int) * string) list
   val level_of_nonterm : ('a,norec,'c) Symbol.t -> string option
   val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) symbol option
+  val mk_rule : 'a Tok.p list -> string rules
 
 end with type 'a Entry.t = 'a Extend.entry = struct
 
@@ -253,6 +254,15 @@ end with type 'a Entry.t = 'a Extend.entry = struct
     try Some (generalize_symbol s)
     with SelfSymbol -> None
 
+  let rec mk_rule tok =
+    match tok with
+    | [] ->
+      let stop_e = Stop in
+      Rules (stop_e, fun _ -> (* dropped anyway: *) "")
+    | tkn :: rem ->
+      let Rules (r, f) = mk_rule rem in
+      let r = Rule.next_norec r (Symbol.token tkn) in
+      Rules (r, fun _ -> f)
 end
 
 module Parsable = struct

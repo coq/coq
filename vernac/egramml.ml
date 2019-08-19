@@ -45,8 +45,8 @@ let rec ty_rule_of_gram = function
   AnyTyRule r
 
 let rec ty_erase : type s tr a r. (s, tr, a, r) ty_rule -> (s, tr, a, r) Pcoq.rule = function
-| TyStop -> Pcoq.Stop
-| TyNext (rem, tok, _) -> Pcoq.Next (ty_erase rem, tok)
+| TyStop -> Pcoq.G.Rule.stop
+| TyNext (rem, tok, _) -> Pcoq.G.Rule.next (ty_erase rem) tok
 
 type 'r gen_eval = Loc.t -> raw_generic_argument list -> 'r
 
@@ -62,7 +62,7 @@ let make_rule f prod =
   let symb = ty_erase ty_rule in
   let f loc l = f loc (List.rev l) in
   let act = ty_eval ty_rule f in
-  Pcoq.Rule (symb, act)
+  Pcoq.G.Production.make symb act
 
 let rec proj_symbol : type a b c. (a, b, c) ty_user_symbol -> (a, b, c) genarg_type = function
 | TUentry a -> ExtraArg a

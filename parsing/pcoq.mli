@@ -224,20 +224,13 @@ module Module :
 (** {5 Type-safe grammar extension} *)
 
 type ('self, 'trec, 'a) symbol
+type ('self, 'trec, _, 'r) rule
 
 type norec = Gramlib.Grammar.norec
 type mayrec = Gramlib.Grammar.mayrec
 
-type ('self, 'trec, _, 'r) rule =
-| Stop : ('self, norec, 'r, 'r) rule
-| Next : ('self, _, 'a, 'r) rule * ('self, _, 'b) symbol -> ('self, mayrec, 'b -> 'a, 'r) rule
-| NextNoRec : ('self, norec, 'a, 'r) rule * ('self, norec, 'b) symbol -> ('self, norec, 'b -> 'a, 'r) rule
-
-type 'a rules =
-  | Rules : (_, norec, 'act, Loc.t -> 'a) rule * 'act -> 'a rules
-
-type 'a production_rule =
-  | Rule : ('a, _, 'act, Loc.t -> 'a) rule * 'act -> 'a production_rule
+type 'a rules
+type 'a production_rule
 
 module G : sig
 
@@ -245,6 +238,7 @@ module G : sig
 
   val level_of_nonterm : ('a,norec,'c) Symbol.t -> string option
   val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) symbol option
+  val mk_rule : 'a Tok.p list -> string rules
 
 end with type 'a Entry.t = 'a Entry.t
      and type te = Tok.t

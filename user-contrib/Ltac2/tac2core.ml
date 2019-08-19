@@ -1594,7 +1594,7 @@ type seqrule =
 
 let rec make_seq_rule = function
 | [] ->
-  Seqrule (Stop, CvNil)
+  Seqrule (Pcoq.G.Rule.stop, CvNil)
 | tok :: rem ->
   let Tac2entries.ScopeRule (scope, f) = Tac2entries.parse_scope tok in
   let scope =
@@ -1604,7 +1604,7 @@ let rec make_seq_rule = function
     | Some scope -> scope
   in
   let Seqrule (r, c) = make_seq_rule rem in
-  let r = NextNoRec (r, scope) in
+  let r = Pcoq.G.Rule.next_norec r scope in
   let f = match tok with
   | SexprStr _ -> None (* Leave out mere strings *)
   | _ -> Some f
@@ -1614,7 +1614,7 @@ let rec make_seq_rule = function
 let () = add_scope "seq" begin fun toks ->
   let scope =
     let Seqrule (r, c) = make_seq_rule (List.rev toks) in
-    Pcoq.G.Symbol.rules ~warning:None [Rules (r, apply c [])]
+    Pcoq.G.(Symbol.rules ~warning:None [Rules.make r (apply c [])])
   in
   Tac2entries.ScopeRule (scope, (fun e -> e))
 end
