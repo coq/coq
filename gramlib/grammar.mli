@@ -19,6 +19,9 @@ module type GLexerType = Plexing.Lexer
    (** The input signature for the functor [Grammar.GMake]: [te] is the
        type of the tokens. *)
 
+type ty_norec = TyNoRec
+type ty_mayrec = TyMayRec
+
 module type S =
   sig
     type te
@@ -36,8 +39,6 @@ module type S =
         val parse_token_stream : 'a e -> te Stream.t -> 'a
         val print : Format.formatter -> 'a e -> unit
       end
-    type ty_norec = TyNoRec
-    type ty_mayrec = TyMayRec
     type ('self, 'trec, 'a) ty_symbol
     type ('self, 'trec, 'f, 'r) ty_rule
     type 'a ty_rules

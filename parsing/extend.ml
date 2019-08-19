@@ -81,8 +81,8 @@ type ('a,'b,'c) ty_user_symbol =
 
 (* Should be merged with gramlib's implementation *)
 
-type norec = NoRec    (* just two *)
-type mayrec = MayRec  (* incompatible types *)
+type norec = Gramlib.Grammar.ty_norec
+type mayrec = Gramlib.Grammar.ty_mayrec
 
 type ('self, 'trec, 'a) symbol =
 | Atoken : 'c Tok.p -> ('self, norec, 'c) symbol
