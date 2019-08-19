@@ -120,15 +120,18 @@ Currently available artifacts are:
   Additionally, an experimental Dune build is provided:
   https://gitlab.com/coq/coq/-/jobs/artifacts/master/browse/_build/?job=build:edge:dune:dev
 
-- the Coq documentation, built in the `doc:*` jobs. When submitting
-  a documentation PR, this can help reviewers checking the rendered result:
+- the Coq documentation, built in the `doc:*` jobs. When submitting a
+  documentation PR, this can help reviewers checking the rendered
+  result.  **@coqbot** will automatically post links to these
+  artifacts in the PR checks section.  Furthemore, these artifacts are
+  automatically deployed at:
 
-  + Coq's Reference Manual [master branch]
-    https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/sphinx/html/index.html?job=doc:refman
-  + Coq's Standard Library Documentation [master branch]
-    https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_install_ci/share/doc/coq/html/stdlib/index.html?job=build:base
-  + Coq's ML API Documentation [master branch]
-    https://gitlab.com/coq/coq/-/jobs/artifacts/master/file/_build/default/_doc/_html/index.html?job=doc:ml-api:odoc
+  + Coq's Reference Manual [master branch]:
+    <https://coq.github.io/doc/master/refman/>
+  + Coq's Standard Library Documentation [master branch]:
+    <https://coq.github.io/doc/master/stdlib/>
+  + Coq's ML API Documentation [master branch]:
+    <https://coq.github.io/doc/master/api/>
 
 ### GitLab and Windows
 
