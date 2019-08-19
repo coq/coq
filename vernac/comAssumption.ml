@@ -53,6 +53,10 @@ let declare_variable is_coe ~kind typ imps impl {CAst.v=name} =
   let () = if is_coe then Class.try_add_new_coercion r ~local:true ~poly:false in
   ()
 
+let instance_of_univ_entry = function
+  | Polymorphic_entry (_, univs) -> Univ.UContext.instance univs
+  | Monomorphic_entry _ -> Univ.Instance.empty
+
 let declare_axiom is_coe ~poly ~local ~kind typ (univs, pl) imps nl {CAst.v=name} =
   let do_instance = should_axiom_into_instance kind in
   let inl = let open Declaremods in match nl with
@@ -75,10 +79,7 @@ let declare_axiom is_coe ~poly ~local ~kind typ (univs, pl) imps nl {CAst.v=name
     | Declare.ImportDefaultBehavior -> false
   in
   let () = if is_coe then Class.try_add_new_coercion gr ~local ~poly in
-  let inst = match univs with
-    | Polymorphic_entry (_, univs) -> Univ.UContext.instance univs
-    | Monomorphic_entry _ -> Univ.Instance.empty
-  in
+  let inst = instance_of_univ_entry univs in
   (gr,inst)
 
 let interp_assumption ~program_mode sigma env impls c =
@@ -197,40 +198,33 @@ let do_assumptions ~program_mode ~poly ~scope ~kind nl l =
   let ubinders = Evd.universe_binders sigma in
   declare_assumptions ~poly ~scope ~kind (univs,ubinders) nl l
 
-let named_of_rel_context l =
-  let acc, ctx =
-    List.fold_right
-      (fun decl (subst, ctx) ->
-         let d = RelDecl.(to_tuple (map_constr (EConstr.Vars.substl subst) decl)) in
-         let id, _, _ as d = on_pi1 (fun annot ->
-             match binder_name annot with
-             | Anonymous -> user_err Pp.(str "Anonymous variables not allowed in contexts.")
-             | Name id -> id)
-             d
-         in
-         (EConstr.mkVar id :: subst, d :: ctx))
-      l ([], [])
-  in ctx
+let context_subst subst (name,b,t,impl) =
+  name, Option.map (Vars.substl subst) b, Vars.substl subst t, impl
 
 let context_insection sigma ~poly ctx =
   let uctx = Evd.universe_context_set sigma in
   let () = Declare.declare_universe_context ~poly uctx in
-  let fn = function
-    | name, None, t, impl ->
-      let kind = Decls.Context in
-      declare_variable false ~kind t [] impl (CAst.make name)
-    | name, Some b, t, impl ->
-      (* We need to get poly right for check_same_poly *)
-      let univs = if poly then Polymorphic_entry ([| |], Univ.UContext.empty)
-        else Monomorphic_entry Univ.ContextSet.empty
-      in
-      let entry = Declare.definition_entry ~univs ~types:t b in
-      let _ : GlobRef.t = DeclareDef.declare_definition ~name ~scope:DeclareDef.Discharge
-          ~kind:Decls.Definition UnivNames.empty_binders entry []
-      in
-      ()
+  let fn subst (name,_,_,_ as d) =
+    let d = context_subst subst d in
+    let () = match d with
+      | name, None, t, impl ->
+        let kind = Decls.Context in
+        declare_variable false ~kind t [] impl (CAst.make name)
+      | name, Some b, t, impl ->
+        (* We need to get poly right for check_same_poly *)
+        let univs = if poly then Polymorphic_entry ([| |], Univ.UContext.empty)
+          else Monomorphic_entry Univ.ContextSet.empty
+        in
+        let entry = Declare.definition_entry ~univs ~types:t b in
+        let _ : GlobRef.t = DeclareDef.declare_definition ~name ~scope:DeclareDef.Discharge
+            ~kind:Decls.Definition UnivNames.empty_binders entry []
+        in
+        ()
+    in
+    Constr.mkVar name :: subst
   in
-  List.iter fn ctx
+  let _ : Vars.substl = List.fold_left fn [] ctx in
+  ()
 
 let context_nosection sigma ~poly ctx =
   let univs =
@@ -243,7 +237,8 @@ let context_nosection sigma ~poly ctx =
       let () = Declare.declare_universe_context ~poly uctx in
       Monomorphic_entry Univ.ContextSet.empty
   in
-  let fn (name,b,t,_impl) =
+  let fn subst d =
+    let (name,b,t,_impl) = context_subst subst d in
     let kind = Decls.(IsAssumption Logical) in
     let decl = match b with
       | None ->
@@ -260,9 +255,10 @@ let context_nosection sigma ~poly ctx =
     let () = if Lib.is_modtype() || Option.is_empty b then
         Classes.declare_instance env sigma None (Lib.is_modtype()) (GlobRef.ConstRef cst)
     in
-    ()
+    Constr.mkConstU (cst,instance_of_univ_entry univs) :: subst
   in
-  List.iter fn ctx
+  let _ : Vars.substl = List.fold_left fn [] ctx in
+  ()
 
 let context ~poly l =
   let env = Global.env() in
@@ -272,9 +268,13 @@ let context ~poly l =
   let sigma = Evd.minimize_universes sigma in
   let ce t = Pretyping.check_evars env (Evd.from_env env) sigma t in
   let () = List.iter (fun decl -> Context.Rel.Declaration.iter_constr ce decl) ctx in
-  let ctx = named_of_rel_context ctx in
   (* reorder, evar-normalize and add implicit status *)
-  let ctx = List.rev_map (fun (name,b,t) ->
+  let ctx = List.rev_map (fun d ->
+      let {binder_name=name}, b, t = RelDecl.to_tuple d in
+      let name = match name with
+        | Anonymous -> user_err Pp.(str "Anonymous variables not allowed in contexts.")
+        | Name id -> id
+      in
       let b = Option.map (EConstr.to_constr sigma) b in
       let t = EConstr.to_constr sigma t in
       let test x = match x.CAst.v with
