@@ -1266,6 +1266,16 @@ let string_of_definition_object_kind = let open Decls in function
       | VernacEndSubproof ->
         return (str "}")
 
+let pr_control_flag (p : control_flag) =
+  let w = match p with
+    | ControlTime _ -> keyword "Time"
+    | ControlRedirect s -> keyword "Redirect" ++ spc() ++ qs s
+    | ControlTimeout n -> keyword "Timeout " ++ int n
+    | ControlFail -> keyword "Fail" in
+  w ++ spc ()
+
+let pr_vernac_control flags = Pp.prlist pr_control_flag flags
+
 let rec pr_vernac_flag (k, v) =
   let k = keyword k in
   let open Attributes in
@@ -1281,19 +1291,11 @@ let pr_vernac_attributes =
   | [] -> mt ()
   | flags ->  str "#[" ++ pr_vernac_flags flags ++ str "]" ++ cut ()
 
-  let rec pr_vernac_control v =
-    let return = tag_vernac v in
-    match v.v with
-    | VernacExpr (f, v') -> pr_vernac_attributes f ++ pr_vernac_expr v' ++ sep_end v'
-    | VernacTime (_,v) ->
-      return (keyword "Time" ++ spc() ++ pr_vernac_control v)
-    | VernacRedirect (s, v) ->
-      return (keyword "Redirect" ++ spc() ++ qs s ++ spc() ++ pr_vernac_control v)
-    | VernacTimeout(n,v) ->
-      return (keyword "Timeout " ++ int n ++ spc() ++ pr_vernac_control v)
-    | VernacFail v->
-      return (keyword "Fail" ++ spc() ++ pr_vernac_control v)
-
-    let pr_vernac v =
-      try pr_vernac_control v
-      with e -> CErrors.print e
+let pr_vernac ({v = {control; attrs; expr}} as v) =
+  try
+    tag_vernac v
+      (pr_vernac_control control ++
+       pr_vernac_attributes attrs ++
+       pr_vernac_expr expr ++
+       sep_end expr)
+  with e -> CErrors.print e

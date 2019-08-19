@@ -414,12 +414,17 @@ type nonrec vernac_expr =
   (* For extension *)
   | VernacExtend of extend_name * Genarg.raw_generic_argument list
 
-type vernac_control_r =
-  | VernacExpr of Attributes.vernac_flags * vernac_expr
+type control_flag =
+  | ControlTime of bool
   (* boolean is true when the `-time` batch-mode command line flag was set.
      the flag is used to print differently in `-time` vs `Time foo` *)
-  | VernacTime of bool * vernac_control
-  | VernacRedirect of string * vernac_control
-  | VernacTimeout of int * vernac_control
-  | VernacFail of vernac_control
+  | ControlRedirect of string
+  | ControlTimeout of int
+  | ControlFail
+
+type vernac_control_r =
+  { control : control_flag list
+  ; attrs : Attributes.vernac_flags
+  ; expr : vernac_expr
+  }
 and vernac_control = vernac_control_r CAst.t

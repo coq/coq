@@ -17,8 +17,8 @@ val interp_qed_delayed_proof
   :  proof:Proof_global.proof_object
   -> info:Lemmas.Info.t
   -> st:Vernacstate.t
-  -> ?loc:Loc.t
-  -> Vernacexpr.proof_end
+  -> control:Vernacexpr.control_flag list
+  -> Vernacexpr.proof_end CAst.t
   -> Vernacstate.t
 
 (** [with_fail ~st f] runs [f ()] and expects it to fail, otherwise it fails. *)

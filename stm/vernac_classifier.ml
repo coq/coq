@@ -202,18 +202,17 @@ let classify_vernac e =
         try Vernacextend.get_vernac_classifier s l
         with Not_found -> anomaly(str"No classifier for"++spc()++str (fst s)++str".")
   in
-  let rec static_control_classifier v = v |> CAst.with_val (function
-      | VernacExpr (atts, e) ->
-        static_classifier ~atts e
-      | VernacTimeout (_,e) -> static_control_classifier e
-      | VernacTime (_,e) | VernacRedirect (_, e) ->
-        static_control_classifier e
-      | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
-        (* XXX why is Fail not always Query? *)
-        (match static_control_classifier e with
+  let static_control_classifier ({ CAst.v ; _ } as cmd) =
+    (* Fail Qed or Fail Lemma must not join/fork the DAG *)
+    (* XXX why is Fail not always Query? *)
+    if Vernacprop.has_Fail cmd then
+      (match static_classifier ~atts:v.attrs v.expr with
          | VtQuery | VtProofStep _ | VtSideff _
          | VtMeta as x -> x
          | VtQed _ -> VtProofStep { parallel = `No; proof_block_detection = None }
-         | VtStartProof _ | VtProofMode _ -> VtQuery))
+         | VtStartProof _ | VtProofMode _ -> VtQuery)
+    else
+      static_classifier ~atts:v.attrs v.expr
+
   in
   static_control_classifier e

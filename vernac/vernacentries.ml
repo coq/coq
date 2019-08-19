@@ -2249,7 +2249,33 @@ let locate_if_not_already ?loc (e, info) =
   | None   -> (e, Option.cata (Loc.add_loc info) info loc)
   | Some l -> (e, info)
 
-exception End_of_input
+let mk_time_header =
+  (* Drop the time header to print the command, we should indeed use a
+     different mechanism to `-time` commands than the current hack of
+     adding a time control to the AST. *)
+  let pr_time_header vernac =
+    let vernac = match vernac with
+      | { v = { control = ControlTime _ :: control; attrs; expr }; loc } ->
+        CAst.make ?loc { control; attrs; expr }
+      | _ -> vernac
+    in
+    Topfmt.pr_cmd_header vernac
+  in
+  fun vernac -> Lazy.from_fun (fun () -> pr_time_header vernac)
+
+let interp_control_flag ~time_header (f : control_flag) ~st
+    (fn : st:Vernacstate.t -> Vernacstate.LemmaStack.t option) =
+  match f with
+  | ControlFail ->
+    with_fail ~st (fun () -> fn ~st);
+    st.Vernacstate.lemmas
+  | ControlTimeout timeout ->
+    vernac_timeout ~timeout (fun () -> fn ~st) ()
+  | ControlTime batch ->
+    let header = if batch then Lazy.force time_header  else Pp.mt () in
+    System.with_time ~batch ~header (fun () -> fn ~st) ()
+  | ControlRedirect s ->
+    Topfmt.with_output_to_file s (fun () -> fn ~st) ()
 
 (* EJGA: We may remove this, only used twice below *)
 let vernac_require_open_lemma ~stack f =
@@ -2610,7 +2636,7 @@ let rec translate_vernac ~atts v = let open Vernacextend in match v with
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility.
  * loc is the Loc.t of the vernacular command being interpreted. *)
-and interp_expr ?proof ~atts ~st c =
+and interp_expr ~atts ~st c =
   let stack = st.Vernacstate.lemmas in
   vernac_pperr_endline (fun () -> str "interpreting: " ++ Ppvernac.pr_vernac_expr c);
   match c with
@@ -2640,6 +2666,8 @@ and interp_expr ?proof ~atts ~st c =
    without a considerable amount of refactoring.
 *)
 and vernac_load ~verbosely fname =
+  let exception End_of_input in
+
   (* Note that no proof should be open here, so the state here is just token for now *)
   let st = Vernacstate.freeze_interp_state ~marshallable:false in
   let fname =
@@ -2660,7 +2688,7 @@ and vernac_load ~verbosely fname =
     try
       let proof_mode = Option.map (fun _ -> get_default_proof_mode ()) stack in
       let stack =
-        v_mod (interp_control ?proof:None ~st:{ st with Vernacstate.lemmas = stack })
+        v_mod (interp_control ~st:{ st with Vernacstate.lemmas = stack })
           (parse_sentence proof_mode input) in
       load_loop ~stack
     with
@@ -2673,23 +2701,36 @@ and vernac_load ~verbosely fname =
     CErrors.user_err Pp.(str "Files processed by Load cannot leave open proofs.");
   ()
 
-and interp_control ?proof ~st v = match v with
-  | { v=VernacExpr (atts, cmd) } ->
-    let before_univs = Global.universes () in
-    let pstack = interp_expr ?proof ~atts ~st cmd in
-    if before_univs == Global.universes () then pstack
-    else Option.map (Vernacstate.LemmaStack.map_top_pstate ~f:Proof_global.update_global_env) pstack
-  | { v=VernacFail v } ->
-    with_fail ~st (fun () -> interp_control ?proof ~st v);
-    st.Vernacstate.lemmas
-  | { v=VernacTimeout (timeout,v) } ->
-    vernac_timeout ~timeout (interp_control ?proof ~st) v
-  | { v=VernacRedirect (s, v) } ->
-    Topfmt.with_output_to_file s (interp_control ?proof ~st) v
-  | { v=VernacTime (batch, cmd) }->
-    let header = if batch then Topfmt.pr_cmd_header cmd else Pp.mt () in
-    System.with_time ~batch ~header (interp_control ?proof ~st) cmd
+and interp_control ~st ({ v = cmd } as vernac) =
+  let time_header = mk_time_header vernac in
+  List.fold_right (fun flag fn -> interp_control_flag ~time_header flag fn)
+    cmd.control
+    (fun ~st ->
+       let before_univs = Global.universes () in
+       let pstack = interp_expr ~atts:cmd.attrs ~st cmd.expr in
+       if before_univs == Global.universes () then pstack
+       else Option.map (Vernacstate.LemmaStack.map_top_pstate ~f:Proof_global.update_global_env) pstack)
+    ~st
 
+(* Interpreting a possibly delayed proof *)
+let interp_qed_delayed ~proof ~info ~st pe : Vernacstate.LemmaStack.t option =
+  let stack = st.Vernacstate.lemmas in
+  let stack = Option.cata (fun stack -> snd @@ Vernacstate.LemmaStack.pop stack) None stack in
+  let () = match pe with
+    | Admitted ->
+      save_lemma_admitted_delayed ~proof ~info
+    | Proved (_,idopt) ->
+      save_lemma_proved_delayed ~proof ~info ~idopt in
+  stack
+
+let interp_qed_delayed_control ~proof ~info ~st ~control { loc; v=pe } =
+  let time_header = mk_time_header (CAst.make ?loc { control; attrs = []; expr = VernacEndProof pe }) in
+  List.fold_right (fun flag fn -> interp_control_flag ~time_header flag fn)
+    control
+    (fun ~st -> interp_qed_delayed ~proof ~info ~st pe)
+    ~st
+
+(* General interp with management of state *)
 let () =
   declare_int_option
     { optdepr  = false;
@@ -2699,11 +2740,11 @@ let () =
       optwrite = ((:=) default_timeout) }
 
 (* Be careful with the cache here in case of an exception. *)
-let interp ?(verbosely=true) ~st cmd =
+let interp_gen ~verbosely ~st ~interp_fn cmd =
   Vernacstate.unfreeze_interp_state st;
   try vernac_timeout (fun st ->
       let v_mod = if verbosely then Flags.verbosely else Flags.silently in
-      let ontop = v_mod (interp_control ~st) cmd in
+      let ontop = v_mod (interp_fn ~st) cmd in
       Vernacstate.Proof_global.set ontop [@ocaml.warning "-3"];
       Vernacstate.freeze_interp_state ~marshallable:false
     ) st
@@ -2713,18 +2754,10 @@ let interp ?(verbosely=true) ~st cmd =
     Vernacstate.invalidate_cache ();
     iraise exn
 
-let interp_qed_delayed_proof ~proof ~info ~st ?loc pe : Vernacstate.t =
-  let stack = st.Vernacstate.lemmas in
-  let stack = Option.cata (fun stack -> snd @@ Vernacstate.LemmaStack.pop stack) None stack in
-  try
-    let () = match pe with
-      | Admitted ->
-        save_lemma_admitted_delayed ~proof ~info
-      | Proved (_,idopt) ->
-        save_lemma_proved_delayed ~proof ~info ~idopt in
-    { st with Vernacstate.lemmas = stack }
-  with exn ->
-    let exn = CErrors.push exn in
-    let exn = locate_if_not_already ?loc exn in
-    Vernacstate.invalidate_cache ();
-    iraise exn
+(* Regular interp *)
+let interp ?(verbosely=true) ~st cmd =
+  interp_gen ~verbosely ~st ~interp_fn:interp_control cmd
+
+let interp_qed_delayed_proof ~proof ~info ~st ~control pe : Vernacstate.t =
+  interp_gen ~verbosely:false ~st
+    ~interp_fn:(interp_qed_delayed_control ~proof ~info ~control) pe

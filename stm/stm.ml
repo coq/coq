@@ -571,7 +571,7 @@ end = struct (* {{{ *)
     vcs := rewrite_merge !vcs id ~ours ~theirs:Noop ~at branch
   let reachable id = reachable !vcs id
   let mk_branch_name { expr = x } = Branch.make
-    (match Vernacprop.under_control x with
+    (match x.CAst.v.Vernacexpr.expr with
     | VernacDefinition (_,({CAst.v=Name i},_),_) -> Id.to_string i
     | VernacStartTheoremProof (_,[({CAst.v=i},_),_]) -> Id.to_string i
     | VernacInstance (({CAst.v=Name i},_),_,_,_,_) -> Id.to_string i
@@ -1054,9 +1054,9 @@ end = struct (* {{{ *)
 end (* }}} *)
 
 (* Wrapper for the proof-closing special path for Qed *)
-let stm_qed_delay_proof ?route ~proof ~info ~id ~st ~loc pending : Vernacstate.t =
+let stm_qed_delay_proof ?route ~proof ~info ~id ~st ~loc ~control pending : Vernacstate.t =
   set_id_for_feedback ?route dummy_doc id;
-  Vernacentries.interp_qed_delayed_proof ~proof ~info ~st ?loc:loc pending
+  Vernacentries.interp_qed_delayed_proof ~proof ~info ~st ~control (CAst.make ?loc pending)
 
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 (* It is currently called 19 times, this number should be certainly
@@ -1078,7 +1078,7 @@ let stm_vernac_interp ?route id st { verbose; expr } : Vernacstate.t =
     | _ -> false
   in
   (* XXX unsupported attributes *)
-  let cmd = Vernacprop.under_control expr in
+  let cmd = expr.CAst.v.expr in
   if is_filtered_command cmd then
     (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
   else begin
@@ -1141,7 +1141,7 @@ end = struct (* {{{ *)
           | { step = `Fork ((_,_,_,l),_) } -> l, false,0
           | { step = `Cmd { cids = l; ctac } } -> l, ctac,0
           | { step = `Alias (_,{ expr }) } when not (Vernacprop.has_Fail expr) ->
-          begin match Vernacprop.under_control expr with
+          begin match expr.CAst.v.expr with
                 | VernacUndo n -> [], false, n
                 | _ -> [],false,0
           end
@@ -1171,7 +1171,7 @@ end = struct (* {{{ *)
     if not (VCS.is_interactive ()) && !cur_opt.async_proofs_cache <> Some Force
     then undo_costly_in_batch_mode v;
     try
-      match Vernacprop.under_control v with
+      match v.CAst.v.expr with
       | VernacResetInitial ->
           Stateid.initial
       | VernacResetName {CAst.v=name} ->
@@ -1532,7 +1532,7 @@ end = struct (* {{{ *)
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
           stm_qed_delay_proof ~st ~id:stop
-            ~proof:pobject ~info:(Lemmas.Info.make ()) ~loc (Proved (opaque,None))) in
+            ~proof:pobject ~info:(Lemmas.Info.make ()) ~loc ~control:[] (Proved (opaque,None))) in
         ignore(Future.join checked_proof);
       end;
       (* STATE: Restore the state XXX: handle exn *)
@@ -1683,7 +1683,7 @@ end = struct (* {{{ *)
        *)
       (* STATE We use the state resulting from reaching start. *)
       let st = Vernacstate.freeze_interp_state ~marshallable:false in
-      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~info ~loc (Proved (opaque,None)));
+      ignore(stm_qed_delay_proof ~id:stop ~st ~proof ~info ~loc ~control:[] (Proved (opaque,None)));
       `OK proof
       end
     with e ->
@@ -1977,13 +1977,14 @@ end = struct (* {{{ *)
   let vernac_interp ~solve ~abstract ~cancel_switch nworkers priority safe_id id
     { indentation; verbose; expr = e; strlen } : unit
   =
-    let e, time, batch, fail =
-      let rec find ~time ~batch ~fail v = CAst.with_loc_val (fun ?loc -> function
-        | VernacTime (batch,e) -> find ~time:true ~batch ~fail e
-        | VernacRedirect (_,e) -> find ~time ~batch ~fail e
-        | VernacFail e -> find ~time ~batch ~fail:true e
-        | e -> CAst.make ?loc e, time, batch, fail) v in
-      find ~time:false ~batch:false ~fail:false e in
+    let cl, time, batch, fail =
+      let rec find ~time ~batch ~fail cl = match cl with
+        | ControlTime batch :: cl -> find ~time:true ~batch ~fail cl
+        | ControlRedirect _ :: cl -> find ~time ~batch ~fail cl
+        | ControlFail :: cl -> find ~time ~batch ~fail:true cl
+        | cl -> cl, time, batch, fail in
+      find ~time:false ~batch:false ~fail:false e.CAst.v.control in
+    let e = CAst.map (fun cmd -> { cmd with control = cl }) e in
     let st = Vernacstate.freeze_interp_state ~marshallable:false in
     stm_fail ~st fail (fun () ->
     (if time then System.with_time ~batch ~header:(Pp.mt ()) else (fun x -> x)) (fun () ->
@@ -2151,14 +2152,14 @@ let collect_proof keep cur hd brkind id =
    | VernacEndProof (Proved (Proof_global.Transparent,_)) -> true
    | _ -> false in
  let is_defined = function
-   | _, { expr = e } -> is_defined_expr (Vernacprop.under_control e)
+   | _, { expr = e } -> is_defined_expr e.CAst.v.expr
                         && (not (Vernacprop.has_Fail e)) in
  let proof_using_ast = function
    | VernacProof(_,Some _) -> true
    | _ -> false
  in
  let proof_using_ast = function
-   | Some (_, v) when proof_using_ast (Vernacprop.under_control v.expr)
+   | Some (_, v) when proof_using_ast v.expr.CAst.v.expr
                       && (not (Vernacprop.has_Fail v.expr)) -> Some v
    | _ -> None in
  let has_proof_using x = proof_using_ast x <> None in
@@ -2167,14 +2168,14 @@ let collect_proof keep cur hd brkind id =
    | _ -> assert false
  in
  let proof_no_using = function
-   | Some (_, v) -> proof_no_using (Vernacprop.under_control v.expr), v
+   | Some (_, v) -> proof_no_using v.expr.CAst.v.expr, v
    | _ -> assert false in
  let has_proof_no_using = function
    | VernacProof(_,None) -> true
    | _ -> false
  in
  let has_proof_no_using = function
-   | Some (_, v) -> has_proof_no_using (Vernacprop.under_control v.expr)
+   | Some (_, v) -> has_proof_no_using v.expr.CAst.v.expr
                     && (not (Vernacprop.has_Fail v.expr))
    | _ -> false in
  let too_complex_to_delegate = function
@@ -2191,7 +2192,7 @@ let collect_proof keep cur hd brkind id =
     let view = VCS.visit id in
     match view.step with
     | (`Sideff (ReplayCommand x,_) | `Cmd { cast = x })
-      when too_complex_to_delegate (Vernacprop.under_control x.expr) ->
+      when too_complex_to_delegate x.expr.CAst.v.expr ->
        `Sync(no_name,`Print)
     | `Cmd { cast = x } -> collect (Some (id,x)) (id::accn) view.next
     | `Sideff (ReplayCommand x,_) -> collect (Some (id,x)) (id::accn) view.next
@@ -2212,7 +2213,7 @@ let collect_proof keep cur hd brkind id =
         (try
           let name, hint = name ids, get_hint_ctx loc  in
           let t, v = proof_no_using last in
-          v.expr <- CAst.map (fun _ -> VernacExpr([], VernacProof(t, Some hint))) v.expr;
+          v.expr <- CAst.map (fun _ -> { control = []; attrs = []; expr = VernacProof(t, Some hint)}) v.expr;
           `ASync (parent last,accn,name,delegate name)
         with Not_found ->
           let name = name ids in
@@ -2235,7 +2236,7 @@ let collect_proof keep cur hd brkind id =
    | _ -> false
  in
  match cur, (VCS.visit id).step, brkind with
- | (parent, x), `Fork _, _ when is_vernac_exact (Vernacprop.under_control x.expr)
+ | (parent, x), `Fork _, _ when is_vernac_exact x.expr.CAst.v.expr
                                 && (not (Vernacprop.has_Fail x.expr)) ->
      `Sync (no_name,`Immediate)
  | _, _, { VCS.kind = `Edit _ }  -> check_policy (collect (Some cur) [] id)
@@ -2350,8 +2351,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
      term.` could also fail in this case, however that'd be a bug I do
      believe as proof injection shouldn't happen here. *)
   let extract_pe (x : aast) =
-    match Vernacprop.under_control x.expr with
-    | VernacEndProof pe -> pe
+    match x.expr.CAst.v.expr with
+    | VernacEndProof pe -> x.expr.CAst.v.control, pe
     | _ -> CErrors.anomaly Pp.(str "Non-qed command classified incorrectly") in
 
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
@@ -2486,7 +2487,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
                     let st = Vernacstate.freeze_interp_state ~marshallable:false in
-                    ignore(stm_qed_delay_proof ~id ~st ~proof ~info ~loc (extract_pe x));
+                    let control, pe = extract_pe x in
+                    ignore(stm_qed_delay_proof ~id ~st ~proof ~info ~loc ~control pe);
                     feedback ~id:id Incomplete
                 | { VCS.kind = `Master }, _ -> assert false
                 end;
@@ -2526,7 +2528,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                 let _st = match proof with
                   | None ->  stm_vernac_interp id st x
                   | Some (proof, info) ->
-                    stm_qed_delay_proof ~id ~st ~proof ~info ~loc (extract_pe x)
+                    let control, pe = extract_pe x in
+                    stm_qed_delay_proof ~id ~st ~proof ~info ~loc ~control pe
                 in
                 let wall_clock3 = Unix.gettimeofday () in
                 Aux_file.record_in_aux_at ?loc:x.expr.CAst.loc "proof_check_time"
@@ -2873,7 +2876,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
           let queue =
             if VCS.is_vio_doc () &&
                VCS.((get_branch head).kind = `Master) &&
-               may_pierce_opaque (Vernacprop.under_control x.expr)
+               may_pierce_opaque x.expr.CAst.v.expr
             then `SkipQueue
             else `MainQueue in
           VCS.commit id (mkTransCmd x [] false queue);
@@ -2939,7 +2942,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
               VCS.commit id (mkTransCmd x l true `MainQueue);
               (* We can't replay a Definition since universes may be differently
                * inferred.  This holds in Coq >= 8.5 *)
-              let action = match Vernacprop.under_control x.expr with
+              let action = match x.expr.CAst.v.expr with
                 | VernacDefinition(_, _, DefineBody _) -> CherryPickEnv
                 | _ -> ReplayCommand x in
               VCS.propagate_sideff ~action
