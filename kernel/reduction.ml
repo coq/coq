@@ -391,7 +391,7 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          (* else the oracle tells which constant is to be expanded *)
          let oracle = CClosure.oracle_of_infos infos.cnv_inf in
          let (app1,app2) =
-           let aux appr1 lft1 fl1 tab1 v1 appr2 lft2 fl2 tab2 v2 =
+           let aux appr1 lft1 fl1 as1 tab1 v1 appr2 lft2 fl2 as2 tab2 v2 =
              match unfold_ref_with_args infos.cnv_inf tab1 fl1 as1 v1 with
              | Some t1 -> ((lft1, t1), appr2)
              | None -> match unfold_ref_with_args infos.cnv_inf tab2 fl2 as2 v2 with
@@ -399,9 +399,9 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
                | None -> raise NotConvertible
            in
            if Conv_oracle.oracle_order Univ.out_punivs oracle l2r fl1 fl2 then
-             aux appr1 lft1 fl1 infos.lft_tab v1 appr2 lft2 fl2 infos.rgt_tab v2
+             aux appr1 lft1 fl1 as1 infos.lft_tab v1 appr2 lft2 fl2 as2 infos.rgt_tab v2
            else
-             let (app2,app1) = aux appr2 lft2 fl2 infos.rgt_tab v2 appr1 lft1 fl1 infos.lft_tab v1 in
+             let (app2,app1) = aux appr2 lft2 fl2 as2 infos.rgt_tab v2 appr1 lft1 fl1 as1 infos.lft_tab v1 in
              (app1,app2)
          in
          eqappr compare_annot cv_pb l2r infos app1 app2 cuniv)
@@ -433,8 +433,8 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
          eqappr compare_annot cv_pb l2r infos (lft1, (c1, (s1 :: v1))) appr2 cuniv
        | None ->
          begin match t2 with
-          | FFlex (fl2, as1) ->
-            begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 as1 v2 with
+          | FFlex (fl2, as2) ->
+            begin match unfold_ref_with_args infos.cnv_inf infos.rgt_tab fl2 as2 v2 with
              | Some t2 ->
                eqappr compare_annot cv_pb l2r infos appr1 (lft2, t2) cuniv
              | None -> raise NotConvertible

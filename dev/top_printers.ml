@@ -278,7 +278,7 @@ let cast_kind_display k =
 
 let constr_display csr =
   let rec term_display c = match kind c with
-  | Rel (n, _) -> "Rel("^(string_of_int n)^")"
+  | Rel (n, ans) -> "Rel("^(string_of_int n)^","^(annot_list_display ans)^")"
   | Meta n -> "Meta("^(string_of_int n)^")"
   | Var id -> "Var("^(Id.to_string id)^")"
   | Sort s -> "Sort("^(sort_display s)^")"
@@ -293,7 +293,7 @@ let constr_display csr =
       ^(term_display t)^","^(term_display c)^")"
   | App (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
   | Evar (e,l) -> "Evar("^(Pp.string_of_ppcmds (Evar.print e))^","^(array_display (Array.of_list l))^")"
-  | Const ((c,u), _) -> "Const("^(Constant.to_string c)^","^(universes_display u)^")"
+  | Const ((c,u), ans) -> "Const("^(Constant.to_string c)^","^(universes_display u)^","^(annot_list_display ans)^")"
   | Ind (((sp,i),u), stg) ->
       "MutInd("^(MutInd.to_string sp)^","^(string_of_int i)^","^(universes_display u)^","^(Stages.Annot.show stg)^")"
   | Construct (((sp,i),j),u) ->
@@ -346,6 +346,16 @@ let constr_display csr =
     Array.fold_right (fun x i -> level_display x; (string_of_int !cnt)^(if not(i="")
         then (" "^i) else "")) (Instance.to_array l) ""
 
+  and annot_list_display ans =
+    let open Stages.Annot in
+    match ans with
+    | None -> ""
+    | Some [] -> "[]"
+    | Some ans ->
+      "[" ^
+      List.fold_left (fun str a -> str ^ ", " ^ show a) (show @@ List.hd ans) (List.tl ans)
+      ^ "]"
+
   and name_display x = match x.binder_name with
     | Name id -> "Name("^(Id.to_string id)^")"
     | Anonymous -> "Anonymous"
@@ -359,7 +369,7 @@ open Format;;
 
 let print_pure_constr csr =
   let rec term_display c = match Constr.kind c with
-  | Rel (n, _) -> print_string "#"; print_int n
+  | Rel (n, ans) -> print_string "#"; print_int n; annot_list_display ans
   | Meta n -> print_string "Meta("; print_int n; print_string ")"
   | Var id -> print_string (Id.to_string id)
   | Sort s -> sort_display s
@@ -392,9 +402,10 @@ let print_pure_constr csr =
   | Evar (e,l) -> print_string "Evar#"; print_int (Evar.repr e); print_string "{";
       List.iter (fun x -> print_space (); box_display x) l;
       print_string"}"
-  | Const ((c,u), _) -> print_string "Cons(";
+  | Const ((c,u), ans) -> print_string "Cons(";
       sp_con_display c;
       print_string ","; universes_display u;
+      print_string ","; annot_list_display ans;
       print_string ")"
   | Proj (p,c') -> print_string "Proj(";
       sp_con_display (Projection.constant p);
@@ -464,6 +475,18 @@ let print_pure_constr csr =
     Array.iter (fun u -> print_space (); pp (Level.pr u)) (Instance.to_array u)
 
   and annot_display a = print_space (); pp (Stages.Annot.pr a)
+
+  and annot_list_display ans =
+    let open Stages.Annot in
+    print_space ();
+    match ans with
+    | None -> ()
+    | Some [] -> print_string "[]";
+    | Some ans ->
+      print_string "[";
+      pp (pr (List.hd ans));
+      List.iter (fun a -> print_string ";"; pp (pr a)) (List.tl ans);
+      print_string "]"
 
   and sort_display = function
     | SProp -> print_string "SProp"

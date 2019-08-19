@@ -845,6 +845,11 @@ let rec count_annots cstr =
 
 let rec collect_annots c =
   match c with
+  | Rel (_, la) | Const (_, la) ->
+    let collect vars = function
+      | Stage (StageVar (na, _)) -> SVars.add na vars
+      | _ -> vars in
+    List.fold_left collect SVars.empty (Option.default [] la)
   | Ind (_, Stage (StageVar (na, _))) -> SVars.add na SVars.empty
   | _ -> fold (fun vars c -> SVars.union vars (collect_annots c)) SVars.empty c
 
@@ -1621,9 +1626,14 @@ let debug_print_fix pr_constr ((t,i),(lna,tl,bl)) =
 
 let debug_print_annots ans =
   let open Pp in
-  str "[" ++
-  option (List.fold_left (fun s annot -> s ++ str ";" ++ Annot.pr annot) (str ";")) ans ++
-  str "]"
+  let open Annot in
+  match ans with
+  | None -> mt ()
+  | Some [] -> str "[]"
+  | Some ans ->
+    str "[" ++
+      List.fold_left (fun s annot -> s ++ str ";" ++ pr annot) (pr @@ List.hd ans) (List.tl ans) ++
+    str "]"
 
 let pr_puniverses p u =
   if Univ.Instance.is_empty u then p
