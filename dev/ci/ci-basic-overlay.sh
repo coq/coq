@@ -56,14 +56,14 @@
 
 # NB: stdpp and Iris refs are gotten from the opam files in the Iris
 # and lambdaRust repos respectively.
-: "${stdpp_CI_GITURL:=https://gitlab.mpi-sws.org/robbertkrebbers/coq-stdpp}"
+: "${stdpp_CI_GITURL:=https://gitlab.mpi-sws.org/iris/stdpp}"
 : "${stdpp_CI_ARCHIVEURL:=${stdpp_CI_GITURL}/-/archive}"
 
-: "${Iris_CI_GITURL:=https://gitlab.mpi-sws.org/FP/iris-coq}"
+: "${Iris_CI_GITURL:=https://gitlab.mpi-sws.org/iris/iris}"
 : "${Iris_CI_ARCHIVEURL:=${Iris_CI_GITURL}/-/archive}"
 
 : "${lambdaRust_CI_REF:=434ec937185e49b1c6ee514f12c0d121a00d3127}"
-: "${lambdaRust_CI_GITURL:=https://gitlab.mpi-sws.org/FP/LambdaRust-coq}"
+: "${lambdaRust_CI_GITURL:=https://gitlab.mpi-sws.org/iris/lambda-rust}"
 : "${lambdaRust_CI_ARCHIVEURL:=${lambdaRust_CI_GITURL}/-/archive}"
 
 ########################################################################
