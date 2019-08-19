@@ -100,7 +100,7 @@ let next_uctx =
 let declare_assumptions idl is_coe ~scope ~poly ~kind typ uctx pl imps nl =
   let refs, _ =
     List.fold_left (fun (refs,uctx) id ->
-        let ref = declare_assumption is_coe ~scope ~poly ~kind typ uctx pl imps false nl id in
+        let ref = declare_assumption is_coe ~scope ~poly ~kind typ uctx pl imps Glob_term.Explicit nl id in
         ref::refs, next_uctx uctx)
       ([],uctx) idl
   in
@@ -292,7 +292,7 @@ let context ~poly l =
         | Some (Name id',_) -> Id.equal name id'
         | _ -> false
       in
-      let impl = List.exists test impls in
+      let impl = if List.exists test impls then Glob_term.Implicit else Glob_term.Explicit in
       let scope =
         if Lib.sections_are_opened () then DeclareDef.Discharge else DeclareDef.Global ImportDefaultBehavior in
       match b with

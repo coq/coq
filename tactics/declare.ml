@@ -300,7 +300,7 @@ let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind 
 (** Declaration of section variables and local definitions *)
 type variable_declaration =
   | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
-  | SectionLocalAssum of { typ:Constr.types; univs:Univ.ContextSet.t; poly:bool; impl:bool }
+  | SectionLocalAssum of { typ:Constr.types; univs:Univ.ContextSet.t; poly:bool; impl:Glob_term.binding_kind }
 
 (* This object is only for things which iterate over objects to find
    variables (only Prettyp.print_context AFAICT) *)
@@ -317,7 +317,6 @@ let declare_variable ~name ~kind d =
     | SectionLocalAssum {typ;univs;poly;impl} ->
       let () = declare_universe_context ~poly univs in
       let () = Global.push_named_assum (name,typ) in
-      let impl = if impl then Glob_term.Implicit else Glob_term.Explicit in
       impl, true, poly
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
