@@ -340,15 +340,7 @@ let declare_projections indsp ctx ?(kind=Decls.StructureComponent) binder_name f
 		let projtyp =
                   it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
 	        try
-		  let entry = {
-                    proof_entry_body =
-                      Future.from_val ((proj, Univ.ContextSet.empty), Evd.empty_side_effects);
-                    proof_entry_secctx = None;
-                    proof_entry_type = Some projtyp;
-                    proof_entry_universes = ctx;
-                    proof_entry_opaque = false;
-                    proof_entry_inline_code = false;
-                    proof_entry_feedback = None } in
+                  let entry = Declare.definition_entry ~univs:ctx ~types:projtyp proj in
                   let kind = Decls.IsDefinition kind in
                   let kn = declare_constant ~name:fid ~kind (Declare.DefinitionEntry entry) in
 		  let constr_fip =

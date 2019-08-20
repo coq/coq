@@ -149,18 +149,8 @@ let declare_obligation prg obl body ty uctx =
       if get_shrink_obligations () && not poly then shrink_body body ty
       else ([], body, ty, [||])
     in
-    let body =
-      ((body, Univ.ContextSet.empty), Evd.empty_side_effects)
-    in
-    let ce =
-      { Declare.proof_entry_body = Future.from_val ~fix_exn:(fun x -> x) body
-      ; proof_entry_secctx = None
-      ; proof_entry_type = ty
-      ; proof_entry_universes = uctx
-      ; proof_entry_opaque = opaque
-      ; proof_entry_inline_code = false
-      ; proof_entry_feedback = None }
-    in
+    let ce = Declare.definition_entry ?types:ty ~opaque ~univs:uctx body in
+
     (* ppedrot: seems legit to have obligations as local *)
     let constant =
       Declare.declare_constant ~name:obl.obl_name
