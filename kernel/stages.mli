@@ -25,7 +25,6 @@ sig
   type t = Empty | Star | Glob | Stage of Stage.t
   val infty : t
   val hat : t -> t
-  val is_stage : t -> bool
   val compare : t -> t -> int
   val pr : t -> Pp.t
   val show : t -> string
@@ -56,7 +55,6 @@ sig
   val union_list : t list -> t
   val contains : SVars.var * SVars.var -> t -> bool
   val add : Annot.t -> Annot.t -> t -> t
-  val add_infty : SVars.t -> t -> t
   val sup : SVars.var -> t -> SVars.t
   val sub : SVars.var -> t -> SVars.t
   val pr : t -> Pp.t
@@ -70,3 +68,15 @@ val downward : Constraints.t -> SVars.t -> SVars.t
 val upward   : Constraints.t -> SVars.t -> SVars.t
 
 val rec_check : SVars.var -> SVars.t -> SVars.t -> Constraints.t -> Constraints.t
+
+(* N.B. We expose the following ONLY for testing in Stages_test:
+  * SVars.is_empty
+  * Constraints.fold
+  * constraints.filter
+  * Constraints.contains
+  * Constraints.sup
+  * Constraints.sub
+  * bellman_ford_all
+  * downward
+  * upward
+*)

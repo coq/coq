@@ -1,6 +1,9 @@
 open Hashset.Combine
 open Util
 
+(** Helpers *)
+let (<<) f g x = f @@ g x
+
 (** Stage variables and stage annotations *)
 
 module SVars =
@@ -65,11 +68,6 @@ struct
     match a with
     | Stage (StageVar (var, sz)) -> Stage (StageVar (var, succ sz))
     | _ -> a
-
-  let is_stage a =
-    match a with
-    | Empty | Star -> false
-    | _ -> true
 
   let compare a1 a2 =
     match a1, a2 with
@@ -244,18 +242,14 @@ struct
     | Stage s1, Stage s2 -> add_stages s1 s2
     | _ -> t
 
-  let add_infty =
-    SVars.fold (fun var -> add Annot.infty (Annot.mk var 0))
-
-  let add_to_set (var, _) vars =
-    if Stage.var_equal var infty then vars
-    else SVars.add var vars
-  let get_set_from_map key map =
-    match Map.find_opt key map with
-    | Some set -> set
-    | None -> Set.empty
-  let sup s (mto, _) = Set.fold add_to_set (get_set_from_map s mto) SVars.empty
-  let sub s (_, mfrom) = Set.fold add_to_set (get_set_from_map s mfrom) SVars.empty
+  let adjacent s m =
+    let map f set = Set.fold (SVars.add << f) set SVars.empty in
+    Map.find_opt s m
+      |> Option.default Set.empty
+      |> map fst
+      |> SVars.filter (not << Stage.var_equal infty)
+  let sup s (mto, _) = adjacent s mto
+  let sub s (_, mfrom) = adjacent s mfrom
 
   let vertices (mto, mfrom) =
     let get_keys m =
@@ -332,7 +326,7 @@ let closure get_adj cstrnts init =
       else
         let init_new = get_adj s cstrnts in
         closure_rec (union init_rest init_new) (add s fin) in
-  filter (fun var -> not @@ Stage.var_equal Stage.infty var) (closure_rec init empty)
+  filter (not << Stage.var_equal Stage.infty) (closure_rec init empty)
 
 let downward = closure Constraints.sub
 let upward = closure Constraints.sup

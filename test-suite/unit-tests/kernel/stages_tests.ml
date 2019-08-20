@@ -283,28 +283,6 @@ let rec_check_loop =
     "constraints for loop are not satisfiable"
     (rec_check_lists_fail 0 [1; 0] [] cstrnts)
 
-(*
-Fixpoint tozero (n : nat) : Type :=
-  match n with
-  | O => Set
-  | S n' => tozero O
-  end.
-*)
-let rec_check_tozero =
-  let cstrnts =
-    [ mkStage 5 0, mkStage 3 0
-    ; mkStage 3 0, mkStage 5 0
-    ; mkStage 4 1, mkStage 0 0
-    ; mkStage 2 0, mkStage 5 1
-    ; mkStage 1 0, mkStage 5 1
-    ; mkStage 1 0, mkStage 0 1
-    ; mkStage 0 1, mkStage 1 0
-    ] in
-  mk_bool_test
-    (rc_name "tozero")
-    "constraints for tozero are satisfiable"
-    (rec_check_lists_pass 0 [0] [] cstrnts)
-
 let rec_check_tests =
   [ rec_check_plus
   ; rec_check_minus
@@ -312,7 +290,6 @@ let rec_check_tests =
   ; rec_check_div
   ; rec_check_fact
   ; rec_check_loop
-  ; rec_check_tozero
   ]
 
 (* Run tests *)
