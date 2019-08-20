@@ -189,31 +189,32 @@ let flatten_contravariant_disj _ ist =
       tclTHEN (tclTHENLIST tacs) tac0
   | _ -> fail
 
-let make_unfold name =
-  let dir = DirPath.make (List.map Id.of_string ["Logic"; "Init"; "Coq"]) in
-  let const = Constant.make2 (ModPath.MPfile dir) (Label.make name) in
-  Locus.(AllOccurrences, ArgArg (EvalConstRef const, None))
+let evalglobref_of_globref =
+  function
+  | GlobRef.VarRef v -> EvalVarRef v
+  | GlobRef.ConstRef c -> EvalConstRef c
+  | GlobRef.IndRef _ | GlobRef.ConstructRef _ -> assert false
 
-let u_not = make_unfold "not"
+let make_unfold name =
+  let const = evalglobref_of_globref (Coqlib.lib_ref name) in
+  Locus.(AllOccurrences, ArgArg (const, None))
 
 let reduction_not_iff _ ist =
   let make_reduce c = TacAtom (CAst.make @@ TacReduce (Genredexpr.Unfold c, Locusops.allHypsAndConcl)) in
   let tac = match !negation_unfolding with
-    | true -> make_reduce [u_not]
+    | true -> make_reduce [make_unfold "core.not.type"]
     | false -> TacId []
   in
   eval_tactic_ist ist tac
 
-let coq_nnpp_path =
-  let dir = List.map Id.of_string ["Classical_Prop";"Logic";"Coq"] in
-  Libnames.make_path (DirPath.make dir) (Id.of_string "NNPP")
-
 let apply_nnpp _ ist =
+  let nnpp = "core.nnpp.type" in
   Proofview.tclBIND
     (Proofview.tclUNIT ())
-    begin fun () -> try
-      Tacticals.New.pf_constr_of_global (Nametab.global_of_path coq_nnpp_path) >>= apply
-    with Not_found -> tclFAIL 0 (Pp.mt ())
+    begin fun () ->
+      if Coqlib.has_ref nnpp
+      then Tacticals.New.pf_constr_of_global (Coqlib.lib_ref nnpp) >>= apply
+      else tclFAIL 0 (Pp.mt ())
     end
 
 (* This is the uniform mode dealing with ->, not, iff and types isomorphic to
