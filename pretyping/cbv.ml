@@ -423,7 +423,7 @@ let rec norm_head info env t stack =
         | Inr (n,None)   -> (VAL(0, mkRelA n ans), stack)
         | Inr (n,Some p) -> norm_head_ref (n-p) info env stack (RelKey p) t)
 
-  | Var id -> norm_head_ref 0 info env stack (VarKey id) t
+  | Var (id, _) -> norm_head_ref 0 info env stack (VarKey id) t
 
   | Const (sp, _) ->
     Reductionops.reduction_effect_hook info.env info.sigma

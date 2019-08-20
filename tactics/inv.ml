@@ -370,8 +370,8 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     let hyp = pf_nf_evar gl (pf_get_hyp_typ id gl) in
     let (t,t1,t2) = dest_nf_eq (pf_env gl) sigma hyp in
     match (EConstr.kind sigma t1, EConstr.kind sigma t2) with
-    | Var id1, _ -> generalizeRewriteIntros as_mode (subst_hyp true id) depids id1
-    | _, Var id2 -> generalizeRewriteIntros as_mode (subst_hyp false id) depids id2
+    | Var (id1, _), _ -> generalizeRewriteIntros as_mode (subst_hyp true id) depids id1
+    | _, Var (id2, _) -> generalizeRewriteIntros as_mode (subst_hyp false id) depids id2
     | _ -> tac id
     end
   in

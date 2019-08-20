@@ -85,7 +85,10 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let ptes_vars = List.map Context.Named.Declaration.get_id new_predicates in
   let is_pte =
     let set = List.fold_right Id.Set.add ptes_vars Id.Set.empty in
-    fun t -> match Constr.kind t with Var id -> Id.Set.mem id set | _ -> false
+    fun t ->
+      match Constr.kind t with
+        | Var (id, _) -> Id.Set.mem id set
+        | _ -> false
   in
   let pre_princ =
     let open EConstr in

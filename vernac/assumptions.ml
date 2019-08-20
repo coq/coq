@@ -168,7 +168,7 @@ let label_of = let open GlobRef in function
 let rec traverse current ctx accu t =
   let open GlobRef in
   match Constr.kind t with
-| Var id ->
+| Var (id, _) ->
   let body () = id |> Global.lookup_named |> NamedDecl.get_value in
   traverse_object accu body (VarRef id)
 | Const ((kn, _), _) ->

@@ -94,7 +94,7 @@ type pconstructor = constructor puniverses
    de Bruijn indices. *)
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Rel       of int * Annot.t list option
-  | Var       of Id.t
+  | Var       of Id.t * Annot.t list option
   | Meta      of metavariable
   | Evar      of 'constr pexistential
   | Sort      of 'sort
@@ -245,7 +245,8 @@ let mkCoFix cofix= CoFix cofix
 let mkMeta  n =  Meta n
 
 (* Constructs a Variable named id *)
-let mkVar id = Var id
+let mkVar id = Var (id, None)
+let mkVarA id ans = Var (id, ans)
 
 let mkRef (gr,u) = let open GlobRef in match gr with
   | ConstRef c -> mkConstU (c,u)
@@ -338,7 +339,7 @@ let isRelN n c =
   match kind c with Rel (n', _) -> Int.equal n n' | _ -> false
 (* Tests if a variable *)
 let isVar c = match kind c with Var _ -> true | _ -> false
-let isVarId id c = match kind c with Var id' -> Id.equal id id' | _ -> false
+let isVarId id c = match kind c with Var (id', _) -> Id.equal id id' | _ -> false
 (* Tests if an inductive *)
 let isInd c = match kind c with Ind _ -> true | _ -> false
 let isProd c = match kind c with | Prod _ -> true | _ -> false
@@ -362,7 +363,7 @@ let isRefX x c =
   | ConstRef c, Const ((c', _), _) -> Constant.equal c c'
   | IndRef i, Ind ((i', _), _) -> eq_ind i i'
   | ConstructRef i, Construct (i', _) -> eq_constructor i i'
-  | VarRef id, Var id' -> Id.equal id id'
+  | VarRef id, Var (id', _) -> Id.equal id id'
   | _ -> false
 
 (* Destructs a de Bruijn index *)
@@ -377,7 +378,7 @@ let destMeta c = match kind c with
 
 (* Destructs a variable *)
 let destVar c = match kind c with
-  | Var id -> id
+  | Var (id, _) -> id
   | _ -> raise DestKO
 
 let destSort c = match kind c with
@@ -447,7 +448,7 @@ let destCoFix c = match kind c with
   | _ -> raise DestKO
 
 let destRef c = let open GlobRef in match kind c with
-  | Var x -> VarRef x, Univ.Instance.empty
+  | Var (x, _) -> VarRef x, Univ.Instance.empty
   | Const ((c,u), _) -> ConstRef c, u
   | Ind ((ind,u), _) -> IndRef ind, u
   | Construct (c,u) -> ConstructRef c, u
@@ -1025,7 +1026,7 @@ let compare_head_gen_leq_with_cstrnts kind1 kind2 leq_universes leq_sorts leq_an
   | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
   | Rel (n1, _), Rel (n2, _) -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
-  | Var id1, Var id2 -> Id.equal id1 id2
+  | Var (id1, _), Var (id2, _) -> Id.equal id1 id2
   | Int i1, Int i2 -> Uint63.equal i1 i2
   | Float f1, Float f2 -> Float64.equal f1 f2
   | Sort s1, Sort s2 -> leq_sorts s1 s2
@@ -1221,7 +1222,7 @@ let constr_ord_int f t1 t2 =
     | _, App (Cast(c2, _,_),l2) -> f t1 (mkApp (c2,l2))
     | Rel (n1, _), Rel (n2, _) -> Int.compare n1 n2
     | Rel _, _ -> -1 | _, Rel _ -> 1
-    | Var id1, Var id2 -> Id.compare id1 id2
+    | Var (id1, _), Var (id2, _) -> Id.compare id1 id2
     | Var _, _ -> -1 | _, Var _ -> 1
     | Meta m1, Meta m2 -> Int.compare m1 m2
     | Meta _, _ -> -1 | _, Meta _ -> 1
@@ -1319,7 +1320,7 @@ let hasheq t1 t2 =
   match t1, t2 with
     | Rel (n1, ans1), Rel (n2, ans2) -> n1 == n2 && ans1 == ans2
     | Meta m1, Meta m2 -> m1 == m2
-    | Var id1, Var id2 -> id1 == id2
+    | Var (id1, ans1), Var (id2, ans2) -> id1 == id2 && ans1 == ans2
     | Sort s1, Sort s2 -> s1 == s2
     | Cast (c1,k1,t1), Cast (c2,k2,t2) -> c1 == c2 && k1 == k2 && t1 == t2
     | Prod (n1,t1,c1), Prod (n2,t2,c2) -> n1 == n2 && t1 == t2 && c1 == c2
@@ -1328,7 +1329,7 @@ let hasheq t1 t2 =
       n1 == n2 && b1 == b2 && t1 == t2 && c1 == c2
     | App (c1,l1), App (c2,l2) -> c1 == c2 && array_eqeq l1 l2
     | Proj (p1,c1), Proj(p2,c2) -> p1 == p2 && c1 == c2
-    | Evar (e1,l1), Evar (e2,l2) -> e1 == e2 && List.equal l1 l2
+    | Evar (e1,l1), Evar (e2,l2) -> e1 == e2 && List.equal (==) l1 l2
     | Const ((c1,u1), ans1), Const ((c2,u2), ans2) -> c1 == c2 && u1 == u2 && ans1 == ans2
     | Ind ((ind1,u1), stg1), Ind ((ind2,u2), stg2) -> ind1 == ind2 && u1 == u2 && stg1 == stg2
     | Construct (cstr1,u1), Construct (cstr2,u2) -> cstr1 == cstr2 && u1 == u2
@@ -1382,8 +1383,8 @@ let sh_instance = Univ.Instance.share
 let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
   let rec hash_term t =
     match t with
-      | Var i ->
-        (Var (sh_id i), combinesmall 1 (Id.hash i))
+      | Var (i, ans) ->
+        (Var ((sh_id i), ans), combinesmall 1 (Id.hash i))
       | Sort s ->
         (Sort (sh_sort s), combinesmall 2 (Sorts.hash s))
       | Cast (c, k, t) ->
@@ -1497,7 +1498,7 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
 
 let rec hash t =
   match kind t with
-    | Var i -> combinesmall 1 (Id.hash i)
+    | Var (i, _) -> combinesmall 1 (Id.hash i)
     | Sort s -> combinesmall 2 (Sorts.hash s)
     | Cast (c, k, t) ->
       let hc = hash c in
@@ -1644,7 +1645,7 @@ let rec debug_print c =
   match kind c with
   | Rel (n, ans) -> str "#"++int n ++debug_print_annots ans
   | Meta n -> str "Meta(" ++ int n ++ str ")"
-  | Var id -> Id.print id
+  | Var (id, ans) -> Id.print id ++ debug_print_annots ans
   | Sort s -> Sorts.debug_print s
   | Cast (c,_, t) -> hov 1
       (str"(" ++ debug_print c ++ cut() ++

@@ -2092,7 +2092,7 @@ let compile_deps env sigma prefix ~interactive init t =
       let mind = fst ci.ci_ind in
       let init = compile_mind_deps env prefix ~interactive init mind in
       fold_constr_with_binders succ (aux env) lvl init t
-  | Var id ->
+  | Var (id, _) ->
     let open Context.Named.Declaration in
     begin match lookup_named id env with
       | LocalDef (_,t,_) ->

@@ -107,7 +107,7 @@ let abstract_scheme env evd c l lname_typ =
     (fun (t,evd) (locc,a) decl ->
        let na = RelDecl.get_annot decl in
        let ta = RelDecl.get_type decl in
-       let na = match EConstr.kind evd a with Var id -> {na with binder_name=Name id} | _ -> na in
+       let na = match EConstr.kind evd a with Var (id, _) -> {na with binder_name=Name id} | _ -> na in
 (* [occur_meta ta] test removed for support of eelim/ecase but consequences
    are unclear...
        if occur_meta ta then error "cannot find a type for the generalisation"
@@ -520,7 +520,7 @@ let key_of env sigma b flags f =
        || Recordops.is_primitive_projection cst) ->
       let u = EInstance.kind sigma u in
       Some (IsKey (ConstKey (cst, u)))
-  | Var id when is_transparent env (VarKey id) &&
+  | Var (id, _) when is_transparent env (VarKey id) &&
       TransparentState.is_transparent_variable flags.modulo_delta id ->
     Some (IsKey (VarKey id))
   | Proj (p, c) when Projection.unfolded p
@@ -651,7 +651,7 @@ let rec is_neutral env sigma ts t =
       not (Environ.evaluable_constant c env) ||
       not (is_transparent env (ConstKey c)) ||
       not (TransparentState.is_transparent_constant ts c)
-    | Var id ->
+    | Var (id, _) ->
       not (Environ.evaluable_named id env) ||
       not (is_transparent env (VarKey id)) ||
       not (TransparentState.is_transparent_variable ts id)
@@ -1283,7 +1283,7 @@ let applyHead env evd n c  =
 let is_mimick_head sigma ts f =
   match EConstr.kind sigma f with
   | Const ((c,u), _) -> not (TransparentState.is_transparent_constant ts c)
-  | Var id -> not (TransparentState.is_transparent_variable ts id)
+  | Var (id, _) -> not (TransparentState.is_transparent_variable ts id)
   | (Rel _|Construct _|Ind _) -> true
   | _ -> false
 

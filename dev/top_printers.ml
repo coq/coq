@@ -280,7 +280,7 @@ let constr_display csr =
   let rec term_display c = match kind c with
   | Rel (n, ans) -> "Rel("^(string_of_int n)^","^(annot_list_display ans)^")"
   | Meta n -> "Meta("^(string_of_int n)^")"
-  | Var id -> "Var("^(Id.to_string id)^")"
+  | Var (id, ans) -> "Var("^(Id.to_string id)^","^(annot_list_display ans)^")"
   | Sort s -> "Sort("^(sort_display s)^")"
   | Cast (c,k, t) ->
       "Cast("^(term_display c)^","^(cast_kind_display k)^","^(term_display t)^")"
@@ -371,7 +371,7 @@ let print_pure_constr csr =
   let rec term_display c = match Constr.kind c with
   | Rel (n, ans) -> print_string "#"; print_int n; annot_list_display ans
   | Meta n -> print_string "Meta("; print_int n; print_string ")"
-  | Var id -> print_string (Id.to_string id)
+  | Var (id, ans) -> print_string (Id.to_string id); annot_list_display ans
   | Sort s -> sort_display s
   | Cast (c,_, t) -> open_hovbox 1;
       print_string "("; (term_display c); print_cut();

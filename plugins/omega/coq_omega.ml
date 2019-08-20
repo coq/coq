@@ -424,7 +424,7 @@ let destructurate_prop sigma t =
         Kapp (Other (string_of_path (path_of_global (GlobRef.ConstructRef csp))), args)
     | Ind ((isp,_), _), args ->
         Kapp (Other (string_of_path (path_of_global (GlobRef.IndRef isp))),args)
-    | Var id,[] -> Kvar id
+    | Var (id, _),[] -> Kvar id
     | Prod ({binder_name=Anonymous},typ,body), [] -> Kimp(typ,body)
     | Prod ({binder_name=Name _},_,_),[] -> CErrors.user_err Pp.(str "Omega: Not a quantifier-free goal")
     | _ -> Kufo
@@ -459,7 +459,7 @@ let destructurate_term sigma t =
     | _, [_] when eq_constr c (Lazy.force coq_Zneg) -> Kapp (Zpos,args)
     | _, [] when eq_constr c (Lazy.force coq_Z0) -> Kapp (Z0,args)
     | _, [_] when eq_constr c (Lazy.force coq_Z_of_nat) -> Kapp (Z_of_nat,args)
-    | Var id,[] -> Kvar id
+    | Var (id, _),[] -> Kvar id
     | _ -> Kufo
 
 let recognize_number sigma t =

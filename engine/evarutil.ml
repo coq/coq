@@ -280,7 +280,7 @@ let csubst_subst { csubst_len = k; csubst_var = v; csubst_rel = s } c =
     if m <= n then c
     else if m - n <= k then Int.Map.find (k - m + n) s
     else mkRelA (m - k) ans
-  | Var id ->
+  | Var (id, _) ->
     begin try Id.Map.find id v with Not_found -> c end
   | _ -> Constr.map_with_binders succ subst n c
   in
@@ -549,7 +549,7 @@ let rec check_and_clear_in_constr env evdref err ids global c =
      evars). [global] should be true iff there is some variable of [ids] which
      is a section variable *)
     match kind c with
-      | Var id' ->
+      | Var (id', _) ->
       if Id.Set.mem id' ids then raise (ClearDependencyError (id', err, None)) else c
 
       | ( Const _ | Ind _ | Construct _ ) ->

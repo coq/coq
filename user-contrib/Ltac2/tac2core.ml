@@ -368,7 +368,7 @@ let () = define1 "constr_kind" constr begin fun c ->
   return begin match EConstr.kind sigma c with
   | Rel (n, _) ->
     v_blk 0 [|Value.of_int n|]
-  | Var id ->
+  | Var (id, _) ->
     v_blk 1 [|Value.of_ident id|]
   | Meta n ->
     v_blk 2 [|Value.of_int n|]
@@ -916,7 +916,7 @@ end
 let () = define1 "fresh_free_of_constr" constr begin fun c ->
   Proofview.tclEVARMAP >>= fun sigma ->
   let rec fold accu c = match EConstr.kind sigma c with
-  | Constr.Var id -> Id.Set.add id accu
+  | Constr.Var (id, _) -> Id.Set.add id accu
   | _ -> EConstr.fold sigma fold accu c
   in
   let ans = fold Id.Set.empty c in

@@ -55,7 +55,7 @@ let constr_val_discr sigma t =
     match EConstr.kind sigma c with
     | Ind ((ind_sp,u), _) -> Label(GRLabel (IndRef ind_sp),l)
     | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
-    | Var id -> Label(GRLabel (VarRef id),l)
+    | Var (id, _) -> Label(GRLabel (VarRef id),l)
     | Const _ -> Everything
     | _ -> Nothing
 
@@ -77,7 +77,7 @@ let constr_val_discr_st sigma ts t =
     | Const ((c,u), _) -> if TransparentState.is_transparent_constant ts c then Everything else Label(GRLabel (ConstRef c),l)
     | Ind ((ind_sp,u), _) -> Label(GRLabel (IndRef ind_sp),l)
     | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
-    | Var id -> if TransparentState.is_transparent_variable ts id then Everything else Label(GRLabel (VarRef id),l)
+    | Var (id,_) -> if TransparentState.is_transparent_variable ts id then Everything else Label(GRLabel (VarRef id),l)
     | Prod (n, d, c) -> Label(ProdLabel, [d; c])
     | Lambda (n, d, c) ->
       if List.is_empty l then

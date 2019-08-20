@@ -98,13 +98,13 @@ let mkEvalRef ref u =
 
 let isEvalRef env sigma c = match EConstr.kind sigma c with
   | Const ((sp,_), _) -> is_evaluable env (EvalConstRef sp)
-  | Var id -> is_evaluable env (EvalVarRef id)
+  | Var (id, _) -> is_evaluable env (EvalVarRef id)
   | Rel _ | Evar _ -> true
   | _ -> false
 
 let destEvalRefU sigma c = match EConstr.kind sigma c with
   | Const ((cst,u), _) ->  EvalConst cst, u
-  | Var id  -> (EvalVar id, EInstance.empty)
+  | Var (id, _)  -> (EvalVar id, EInstance.empty)
   | Rel (n, _) -> (EvalRel n, EInstance.empty)
   | Evar ev -> (EvalEvar ev, EInstance.empty)
   | _ -> anomaly (Pp.str "Not an unfoldable reference.")
@@ -548,7 +548,7 @@ let match_eval_ref env sigma constr stack =
      reduction_effect_hook env sigma sp
         (lazy (EConstr.to_constr sigma (applist (constr,stack))));
      if is_evaluable env (EvalConstRef sp) then Some (EvalConst sp, u) else None
-  | Var id when is_evaluable env (EvalVarRef id) -> Some (EvalVar id, EInstance.empty)
+  | Var (id, _) when is_evaluable env (EvalVarRef id) -> Some (EvalVar id, EInstance.empty)
   | Rel (i, _) -> Some (EvalRel i, EInstance.empty)
   | Evar ev -> Some (EvalEvar ev, EInstance.empty)
   | _ -> None
@@ -567,7 +567,7 @@ let match_eval_ref_value env sigma constr stack =
      if is_evaluable env (EvalConstRef (Projection.constant p)) then
        Some (mkProj (Projection.unfold p, c))
      else None
-  | Var id when is_evaluable env (EvalVarRef id) ->
+  | Var (id, _) when is_evaluable env (EvalVarRef id) ->
      env |> lookup_named id |> NamedDecl.get_value
   | Rel (n, _) ->
      env |> lookup_rel n |> RelDecl.get_value |> Option.map (lift n)
@@ -635,7 +635,7 @@ let whd_nothing_for_iota env sigma s =
           (match lookup_rel n env with
              | LocalDef (_,body,_) -> whrec (lift n body, stack)
              | _ -> s)
-      | Var id ->
+      | Var (id, _) ->
           let open Context.Named.Declaration in
           (match lookup_named id env with
              | LocalDef (_,body,_) -> whrec (body, stack)
@@ -1073,7 +1073,7 @@ let contextually byhead occs f env sigma t =
 let match_constr_evaluable_ref sigma c evref =
   match EConstr.kind sigma c, evref with
   | Const ((c,u), _), EvalConstRef c' when Constant.equal c c' -> Some u
-  | Var id, EvalVarRef id' when Id.equal id id' -> Some EInstance.empty
+  | Var (id, _), EvalVarRef id' when Id.equal id id' -> Some EInstance.empty
   | _, _ -> None
 
 let substlin env sigma evalref n (nowhere_except_in,locs) c =

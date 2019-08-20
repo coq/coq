@@ -213,7 +213,7 @@ let tclADD_CLEAR_IF_ID (env, ist, t) x =
     Pp.(str"tclADD_CLEAR_IF_ID: " ++ Printer.pr_econstr_env env ist t));
   let hd, args = EConstr.decompose_app ist t in
   match EConstr.kind ist hd with
-  | Constr.Var id when Ssrcommon.not_section_id id -> tclUNIT (x, [id])
+  | Constr.Var (id, _) when Ssrcommon.not_section_id id -> tclUNIT (x, [id])
   | _ -> tclUNIT (x,[])
 
 let tclPAIR p x = tclUNIT (x, p)

@@ -829,7 +829,7 @@ let occur_var_in_decl env sigma hyp decl =
 
 let local_occur_var sigma id c =
   let rec occur c = match EConstr.kind sigma c with
-  | Var id' -> if Id.equal id id' then raise Occur
+  | Var (id', _) -> if Id.equal id id' then raise Occur
   | _ -> EConstr.iter sigma occur c
   in
   try occur c; false with Occur -> true
@@ -861,7 +861,7 @@ let collect_metas sigma c =
    all section variables; for the latter, use global_vars_set *)
 let collect_vars sigma c =
   let rec aux vars c = match EConstr.kind sigma c with
-  | Var id -> Id.Set.add id vars
+  | Var (id, _) -> Id.Set.add id vars
   | _ -> EConstr.fold sigma aux vars c in
   aux Id.Set.empty c
 
@@ -1072,7 +1072,7 @@ let global_of_constr sigma c =
   | Const ((c, u), _) -> ConstRef c, u
   | Ind ((i, u), _) -> IndRef i, u
   | Construct (c, u) -> ConstructRef c, u
-  | Var id -> VarRef id, EConstr.EInstance.empty
+  | Var (id, _) -> VarRef id, EConstr.EInstance.empty
   | _ -> raise Not_found
 
 let is_global = EConstr.isRefX
@@ -1383,7 +1383,7 @@ let global_app_of_constr sigma c =
   | Const ((c, u), _) -> (ConstRef c, u), None
   | Ind ((i, u), _) -> (IndRef i, u), None
   | Construct (c, u) -> (ConstructRef c, u), None
-  | Var id -> (VarRef id, EConstr.EInstance.empty), None
+  | Var (id, _) -> (VarRef id, EConstr.EInstance.empty), None
   | Proj (p, c) -> (ConstRef (Projection.constant p), EConstr.EInstance.empty), Some c
   | _ -> raise Not_found
 

@@ -677,7 +677,7 @@ let rec lambda_of_constr env c =
 
   | Rel (i, _) -> Renv.get env i
 
-  | Var id -> Lvar id
+  | Var (id, _) -> Lvar id
 
   | Sort s -> Lsort s
   | Ind (ind, _) -> Lind ind

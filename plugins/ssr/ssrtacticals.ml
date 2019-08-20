@@ -105,7 +105,7 @@ let endclausestac id_map clseq gl_id cl0 =
   | ids, dc' ->
     forced && ids = [] && (not hide_goal || dc' = [] && c_hidden) in
   let rec unmark c = match EConstr.kind (project gl) c with
-  | Var id when hidden_clseq clseq && id = gl_id -> cl0
+  | Var (id, _) when hidden_clseq clseq && id = gl_id -> cl0
   | Prod ({binder_name=Name id} as na, t, c') when List.mem_assoc id id_map ->
     EConstr.mkProd ({na with binder_name=Name (orig_id id)}, unmark t, unmark c')
   | LetIn ({binder_name=Name id} as na, v, t, c') when List.mem_assoc id id_map ->

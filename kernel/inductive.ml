@@ -1083,7 +1083,7 @@ let check_one_fix renv recpos trees def =
               | _ -> Exninfo.iraise exn
             end
 
-        | Var id ->
+        | Var (id, _) ->
             begin
               let open! Context.Named.Declaration in
               match lookup_named id renv.env with

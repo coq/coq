@@ -712,7 +712,7 @@ and detype_r d flags avoid env sigma t =
           GEvar (Id.of_string_soft "CONTEXT-HOLE", [])
         else
           GEvar (Id.of_string_soft ("M" ^ string_of_int n), [])
-    | Var id ->
+    | Var (id, _) ->
         (* Discriminate between section variable and non-section variable *)
         (try let _ = Global.lookup_named id in GRef (GlobRef.VarRef id, None)
          with Not_found -> GVar id)
@@ -780,7 +780,11 @@ and detype_r d flags avoid env sigma t =
           | Some id -> id
           in
           let l = Evd.evar_instance_array bound_to_itself_or_letin (Evd.find sigma evk) cl in
-          let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) -> match EConstr.kind sigma c with Rel (n, _) -> (fvs,Int.Set.add n rels) | Var id -> (Id.Set.add id fvs,rels) | _ -> (fvs,rels)) (Id.Set.empty,Int.Set.empty) l in
+          let fvs,rels = List.fold_left (fun (fvs,rels) (_,c) ->
+            match EConstr.kind sigma c with
+            | Rel (n, _) -> (fvs,Int.Set.add n rels)
+            | Var (id, _) -> (Id.Set.add id fvs,rels)
+            | _ -> (fvs,rels)) (Id.Set.empty,Int.Set.empty) l in
           let l = Evd.evar_instance_array (fun d c -> not !print_evar_arguments && (bound_to_itself_or_letin d c && not (isRel sigma c && Int.Set.mem (destRel sigma c) rels || isVar sigma c && (Id.Set.mem (destVar sigma c) fvs)))) (Evd.find sigma evk) cl in
           id,l
         with Not_found ->

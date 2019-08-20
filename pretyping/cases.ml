@@ -369,7 +369,7 @@ let make_return_predicate_ltac_lvar env sigma na tm c =
   match na, DAst.get tm with
   | Name id, (GVar id' | GRef (GlobRef.VarRef id', _)) when Id.equal id id' ->
      let expansion = match kind sigma c with
-       | Var id' -> Name id'
+       | Var (id', _) -> Name id'
        | _ -> Anonymous in
        GlobEnv.hide_variable env expansion id
   | _ -> env
@@ -1969,13 +1969,13 @@ let inh_conv_coerce_to_tycon ?loc ~program_mode env sigma j tycon =
 let add_subst sigma c len (rel_subst,var_subst) =
   match EConstr.kind sigma c with
   | Rel (n, _) -> (n,len) :: rel_subst, var_subst
-  | Var id -> rel_subst, (id,len) :: var_subst
+  | Var (id, _) -> rel_subst, (id,len) :: var_subst
   | _ -> assert false
 
 let dependent_rel_or_var sigma tm c =
   match EConstr.kind sigma tm with
   | Rel (n, _) -> not (noccurn sigma n c)
-  | Var id -> Termops.local_occur_var sigma id c
+  | Var (id, _) -> Termops.local_occur_var sigma id c
   | _ -> assert false
 
 let prepare_predicate_from_arsign_tycon ~program_mode env sigma loc tomatchs arsign c =
@@ -2018,7 +2018,7 @@ let prepare_predicate_from_arsign_tycon ~program_mode env sigma loc tomatchs ars
             with Not_found ->
               (* A variable that is not matched, lift over the arsign *)
               mkRel (n + nar))
-      | Var id ->
+      | Var (id, _) ->
           (try
               (* Make the predicate dependent on the matched variable *)
               let idx = Id.List.assoc id var_subst in

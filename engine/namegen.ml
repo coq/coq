@@ -105,7 +105,7 @@ let global_of_constr = let open GlobRef in function
 | Const ((c, _), _) -> ConstRef c
 | Ind ((i, _), _) -> IndRef i
 | Construct (c, _) -> ConstructRef c
-| Var id -> VarRef id
+| Var (id, _) -> VarRef id
 | _ -> assert false
 
 let head_name sigma c = (* Find the head constant of a constr if any *)
@@ -150,7 +150,7 @@ let hdchar env sigma c =
     | Const ((kn,_), _) -> lowercase_first_char (Label.to_id (Constant.label kn))
     | Ind ((x,_), _) -> (try lowercase_first_char (Nametab.basename_of_global (GlobRef.IndRef x)) with Not_found when !Flags.in_debugger -> "zz")
     | Construct (x,_) -> (try lowercase_first_char (Nametab.basename_of_global (GlobRef.ConstructRef x)) with Not_found when !Flags.in_debugger -> "zz")
-    | Var id  -> lowercase_first_char id
+    | Var (id, _)  -> lowercase_first_char id
     | Sort s -> sort_hdchar (ESorts.kind sigma s)
     | Rel (n, _) ->
         (if n<=k then "p" (* the initial term is flexible product/function *)

@@ -184,7 +184,7 @@ let rec thin_val = function
   | [] -> []
   | (id, c) :: tl ->
     match Constr.kind c with
-    | Constr.Var v ->
+    | Constr.Var (v, _) ->
       if Id.equal id v then thin_val tl
       else (id, make_substituend c) :: (thin_val tl)
     | _ -> (id, make_substituend c) :: (thin_val tl)
@@ -202,7 +202,7 @@ let replace_vars var_alist x =
   | [] -> x
   | _ ->
     let rec substrec n c = match Constr.kind c with
-    | Constr.Var x ->
+    | Constr.Var (x, _) ->
       (try lift_substituend n (find_var x var_alist)
       with Not_found -> c)
     | _ -> Constr.map_with_binders succ substrec n c

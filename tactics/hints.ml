@@ -51,7 +51,7 @@ let head_constr_bound sigma t =
   | Const ((c, _), _) -> ConstRef c
   | Ind ((i, _), _) -> IndRef i
   | Construct (c, _) -> ConstructRef c
-  | Var id -> VarRef id
+  | Var (id, _) -> VarRef id
   | Proj (p, _) -> ConstRef (Projection.constant p)
   | _ -> raise Bound
 
@@ -69,7 +69,7 @@ let decompose_app_bound sigma t =
     | Const ((c,u), _) -> ConstRef c, args
     | Ind ((i,u), _) -> IndRef i, args
     | Construct (c,u) -> ConstructRef c, args
-    | Var id -> VarRef id, args
+    | Var (id, _) -> VarRef id, args
     | Proj (p, c) -> ConstRef (Projection.constant p), Array.cons c args
     | _ -> raise Bound
 

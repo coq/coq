@@ -184,7 +184,7 @@ let is_flexible_reference env sigma bound depth f =
     | Const ((kn,_), _) ->
         let cb = Environ.lookup_constant kn env in
         (match cb.const_body with Def _ -> true | _ -> false)
-    | Var id ->
+    | Var (id, _) ->
         env |> Environ.lookup_named id |> NamedDecl.is_local_def
     | Ind _ | Construct _ -> false
     |  _ -> true

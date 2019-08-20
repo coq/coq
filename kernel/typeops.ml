@@ -558,7 +558,7 @@ let rec execute env stg cstr =
       let annots, stg = next_annots numvars stg in
       stg, empty (), mkRelA n annots, type_of_relative env n
 
-    | Var id ->
+    | Var (id, _) ->
       stg, empty (), cstr, type_of_variable env id
 
     | Const (c, _ans) ->

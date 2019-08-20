@@ -1095,7 +1095,7 @@ let interp_cpattern env sigma red redty = interp_pattern env sigma (T red) redty
 let interp_rpattern ~wit_ssrpatternarg env sigma red = interp_pattern ~wit_ssrpatternarg env sigma red None;;
 
 let id_of_pattern = function
-  | _, T t -> (match kind t with Var id -> Some id | _ -> None)
+  | _, T t -> (match kind t with Var (id, _) -> Some id | _ -> None)
   | _ -> None
 
 (* The full occurrence set *)

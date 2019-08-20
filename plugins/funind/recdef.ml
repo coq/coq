@@ -295,7 +295,7 @@ let check_not_nested env sigma forbidden e =
     match EConstr.kind sigma e with
     | Rel _ -> ()
     | Int _ | Float _ -> ()
-    | Var x ->
+    | Var (x, _) ->
       if Id.List.mem x forbidden then
         user_err ~hdr:"Recdef.check_not_nested"
           (str "check_not_nested: failure " ++ Id.print x)
@@ -383,7 +383,7 @@ type journey_info =
 let add_vars sigma forbidden e =
   let rec aux forbidden e =
     match EConstr.kind sigma e with
-    | Var x -> x :: forbidden
+    | Var (x, _) -> x :: forbidden
     | _ -> EConstr.fold sigma aux forbidden e
   in
   aux forbidden e

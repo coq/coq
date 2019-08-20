@@ -243,7 +243,7 @@ let matches_core env sigma allow_bound_rels
   let convref ref c =
     let open GlobRef in
     match ref, EConstr.kind sigma c with
-    | VarRef id, Var id' -> Names.Id.equal id id'
+    | VarRef id, Var (id', _) -> Names.Id.equal id id'
     | ConstRef c, Const ((c',_), _) -> Constant.equal c c'
     | IndRef i, Ind ((i', _), _) -> Names.eq_ind i i'
     | ConstructRef c, Construct (c',u) -> Names.eq_constructor c c'
@@ -270,9 +270,9 @@ let matches_core env sigma allow_bound_rels
 
       | PMeta None, m -> subst
 
-      | PRef (GlobRef.VarRef v1), Var v2 when Id.equal v1 v2 -> subst
+      | PRef (GlobRef.VarRef v1), Var (v2, _) when Id.equal v1 v2 -> subst
 
-      | PVar v1, Var v2 when Id.equal v1 v2 -> subst
+      | PVar v1, Var (v2, _) when Id.equal v1 v2 -> subst
 
       | PRef ref, _ when convref ref cT -> subst
 

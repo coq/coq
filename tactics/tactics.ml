@@ -1526,7 +1526,7 @@ let general_case_analysis_in_context with_evars clear_flag (c,lbindc) =
 let general_case_analysis with_evars clear_flag (c,lbindc as cx) =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma c with
-    | Var id when lbindc == NoBindings ->
+    | Var (id, _) when lbindc == NoBindings ->
         Tacticals.New.tclTHEN (try_intros_until_id_check id)
           (general_case_analysis_in_context with_evars clear_flag cx)
     | _ ->
@@ -1580,7 +1580,7 @@ let elim_in_context with_evars clear_flag c = function
 let elim with_evars clear_flag (c,lbindc as cx) elim =
   Proofview.tclEVARMAP >>= fun sigma ->
   match EConstr.kind sigma c with
-    | Var id when lbindc == NoBindings ->
+    | Var (id, _) when lbindc == NoBindings ->
         Tacticals.New.tclTHEN (try_intros_until_id_check id)
           (elim_in_context with_evars clear_flag cx elim)
     | _ ->
@@ -2867,7 +2867,7 @@ let generalized_name env sigma c t ids cl = function
       na
   | Anonymous ->
       match EConstr.kind sigma c with
-      | Var id ->
+      | Var (id, _) ->
          (* Keep the name even if not occurring: may be used by intros later *)
           Name id
       | _ ->
@@ -2922,13 +2922,13 @@ let generalize_dep ?(with_let=false) c =
   let tothin = List.filter (fun id -> not (Id.List.mem id init_ids)) qhyps in
   let tothin' =
     match EConstr.kind sigma c with
-      | Var id when mem_named_context_val id (val_of_named_context sign) && not (Id.List.mem id init_ids)
+      | Var (id, _) when mem_named_context_val id (val_of_named_context sign) && not (Id.List.mem id init_ids)
           -> id::tothin
       | _ -> tothin
   in
   let cl' = it_mkNamedProd_or_LetIn (pf_concl gl) to_quantify in
   let is_var, body = match EConstr.kind sigma c with
-  | Var id ->
+  | Var (id, _) ->
     let body = NamedDecl.get_value (pf_get_hyp id gl) in
     let is_var = Option.is_empty body && not (List.mem id init_ids) in
     if with_let then is_var, body else is_var, None
@@ -3118,7 +3118,7 @@ let specialize (c,lbind) ipat =
   in
   let tac =
     match EConstr.kind sigma (fst(EConstr.decompose_app sigma (snd(EConstr.decompose_lam_assum sigma c)))) with
-    | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
+    | Var (id, _) when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
       (* Like assert (id:=id args) but with the concept of specialization *)
       let naming,tac =
         prepare_intros_opt false (IntroIdentifier id) MoveLast ipat in
@@ -3400,7 +3400,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
     else
       let c = List.nth argl (i-1) in
       match EConstr.kind sigma c with
-        | Var id when not (List.exists (fun c -> occur_var env sigma id c) args') &&
+        | Var (id, _) when not (List.exists (fun c -> occur_var env sigma id c) args') &&
                       not (List.exists (fun c -> occur_var env sigma id c) params') ->
             (* Based on the knowledge given by the user, all
                constraints on the variable are generalizable in the
@@ -3423,7 +3423,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
                generalizable, ignoring the constraints coming from
                its structure *)
             let id = match EConstr.kind sigma c with
-            | Var id -> id
+            | Var (id, _) -> id
             | _ ->
               let type_of = Tacmach.New.pf_get_type_of gl in
               id_of_name_using_hdchar env sigma (type_of c) Anonymous
@@ -3716,7 +3716,7 @@ let lift_list l = List.map (lift 1) l
 let ids_of_constr sigma ?(all=false) vars c =
   let rec aux vars c =
     match EConstr.kind sigma c with
-    | Var id -> Id.Set.add id vars
+    | Var (id, _) -> Id.Set.add id vars
     | App (f, args) ->
         (match EConstr.kind sigma f with
         | Construct ((ind,_),_)
@@ -3858,7 +3858,7 @@ let abstract_args gl generalize_vars dep id defined f args =
     let liftargty = lift lenctx argty in
     let leq = constr_cmp !sigma Reduction.CUMUL liftargty ty in
       match EConstr.kind !sigma arg with
-      | Var id when not (is_defined_variable env id) && leq && not (Id.Set.mem id nongenvars) ->
+      | Var (id, _) when not (is_defined_variable env id) && leq && not (Id.Set.mem id nongenvars) ->
           (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls,
           Id.Set.add id nongenvars, Id.Set.remove id vars)
       | _ ->
@@ -4689,7 +4689,7 @@ let induction_gen_l isrec with_evars elim names lc =
       | c::l' ->
           Proofview.tclEVARMAP >>= fun sigma ->
           match EConstr.kind sigma c with
-            | Var id when not (mem_named_context_val id (Global.named_context_val ()))
+            | Var (id, _) when not (mem_named_context_val id (Global.named_context_val ()))
                 && not with_evars ->
                 let () = newlc:= id::!newlc in
                 atomize_list l'

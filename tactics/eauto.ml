@@ -435,7 +435,7 @@ let autounfold_tac db cls =
 let unfold_head env sigma (ids, csts) c =
   let rec aux c =
     match EConstr.kind sigma c with
-    | Var id when Id.Set.mem id ids ->
+    | Var (id, _) when Id.Set.mem id ids ->
         (match Environ.named_body id env with
         | Some b -> true, EConstr.of_constr b
         | None -> false, c)

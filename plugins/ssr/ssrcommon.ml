@@ -755,7 +755,7 @@ let pf_merge_uc_of sigma gl =
 
 
 let rec constr_name sigma c = match EConstr.kind sigma c with
-  | Var id -> Name id
+  | Var (id, _) -> Name id
   | Cast (c', _, _) -> constr_name sigma c'
   | Const ((cn,_), _) -> Name (Label.to_id (Constant.label cn))
   | App (c', _) -> constr_name sigma c'

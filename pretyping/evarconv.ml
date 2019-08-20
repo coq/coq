@@ -100,7 +100,7 @@ let eval_flexible_term ts env evd c =
            | RelDecl.LocalAssum _ -> None
            | RelDecl.LocalDef (_,v,_) -> Some (lift n v)
        with Not_found -> None)
-  | Var id ->
+  | Var (id, _) ->
       (try
          if TransparentState.is_transparent_variable ts id then
            env |> lookup_named id |> NamedDecl.get_value
@@ -1010,7 +1010,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
               exact_ise_stack2 env evd (evar_conv_x flags) sk1 sk2
             else UnifFailure (evd,NotSameHead)
 
-        | Var var1, Var var2 ->
+        | Var (var1, _), Var (var2, _) ->
             if Id.equal var1 var2 then
               exact_ise_stack2 env evd (evar_conv_x flags) sk1 sk2
             else UnifFailure (evd,NotSameHead)
@@ -1322,7 +1322,7 @@ let thin_evars env sigma sign c =
        let candidates = Option.map (List.map EConstr.of_constr) (evar_candidates evi) in
        let evd, ev = restrict_evar !sigma ev filter candidates in
        sigma := evd; whd_evar !sigma t
-    | Var id ->
+    | Var (id, _) ->
        if not (Id.Set.mem id ctx) then raise (TypingFailed !sigma)
        else t
     | _ ->

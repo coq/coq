@@ -48,7 +48,7 @@ and kind_of_head env t =
   let rec aux k l t b = match kind (Reduction.whd_betaiotazeta env t) with
   | Rel (n, _) when n > k -> NotImmediatelyComputableHead
   | Rel (n, _) -> FlexibleHead (k,k+1-n,List.length l,b)
-  | Var id ->
+  | Var (id, _) ->
       (try on_subterm k l b (compute_head env (EvalVarRef id))
        with Not_found ->
         (* a goal variable *)

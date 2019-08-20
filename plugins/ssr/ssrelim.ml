@@ -167,7 +167,7 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
               (EConstr.to_constr ~abort_on_undefined_evars:false (project gl)
                 elimty) r) in
         match EConstr.kind (project gl) elim with
-        | Constr.Var kn -> rename_elimty (GlobRef.VarRef kn)
+        | Constr.Var (kn, _) -> rename_elimty (GlobRef.VarRef kn)
         | Constr.Const ((kn,_), _) -> rename_elimty (GlobRef.ConstRef kn)
         | _ -> elimty
       in
@@ -507,7 +507,7 @@ let injectidl2rtac id c =
   end
 
 let injectl2rtac sigma c = match EConstr.kind sigma c with
-| Var id -> injectidl2rtac id (EConstr.mkVar id, NoBindings)
+| Var (id, _) -> injectidl2rtac id (EConstr.mkVar id, NoBindings)
 | _ ->
   let id = injecteq_id in
   let xhavetac id c = Tactics.pose_proof (Name id) c in

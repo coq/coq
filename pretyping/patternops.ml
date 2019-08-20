@@ -145,7 +145,7 @@ let head_of_constr_reference sigma c = match EConstr.kind sigma c with
   | Const ((sp,_), _) -> GlobRef.ConstRef sp
   | Construct (sp,_) -> GlobRef.ConstructRef sp
   | Ind ((sp,_), _) -> GlobRef.IndRef sp
-  | Var id -> GlobRef.VarRef id
+  | Var (id, _) -> GlobRef.VarRef id
   | _ -> anomaly (Pp.str "Not a rigid reference.")
 
 let pattern_of_constr env sigma t =
@@ -154,7 +154,7 @@ let pattern_of_constr env sigma t =
   match kind t with
     | Rel (n, _)  -> PRel n
     | Meta n -> PMeta (Some (Id.of_string ("META" ^ string_of_int n)))
-    | Var id -> PVar id
+    | Var (id, _) -> PVar id
     | Sort s -> PSort (Sorts.family s)
     | Cast (c,_,_)      -> pattern_of_constr env c
     | LetIn (na,c,t,b) -> PLetIn (na.binder_name,

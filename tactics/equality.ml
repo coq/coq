@@ -1458,7 +1458,7 @@ let injEq flags ?(old=false) with_evars clear_flag ipats =
       Proofview.Goal.enter begin fun gl ->
         let sigma = project gl in
         let destopt = match EConstr.kind sigma c with
-        | Var id -> get_previous_hyp_position id gl
+        | Var (id, _) -> get_previous_hyp_position id gl
         | _ -> MoveLast in
         let clear_tac =
           tclTRY (apply_clear_request clear_flag dft_clear_flag c) in
@@ -1704,7 +1704,7 @@ let is_eq_x gl x d =
   let id = NamedDecl.get_id d in
   try
     let is_var id c = match EConstr.kind (project gl) c with
-    | Var id' -> Id.equal id id'
+    | Var (id', _) -> Id.equal id id'
     | _ -> false
     in
     let c = pf_nf_evar gl (NamedDecl.get_type d) in
@@ -1845,13 +1845,13 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
         let eq = Constr.mkRef (lbeq.eq,u) in
         if flags.only_leibniz then restrict_to_eq_and_identity eq;
         match EConstr.kind sigma x, EConstr.kind sigma y with
-        | Var x, Var y when Id.equal x y ->
+        | Var (x, _), Var (y, _) when Id.equal x y ->
             Proofview.tclUNIT ()
-        | Var x', _ when not (Termops.local_occur_var sigma x' y) &&
+        | Var (x', _), _ when not (Termops.local_occur_var sigma x' y) &&
                         not (is_evaluable env (EvalVarRef x')) &&
                         is_non_indirectly_dependent_section_variable gl x' ->
             subst_one flags.rewrite_dependent_proof x' (hyp,y,true)
-        | _, Var y' when not (Termops.local_occur_var sigma y' x) &&
+        | _, Var (y', _) when not (Termops.local_occur_var sigma y' x) &&
                         not (is_evaluable env (EvalVarRef y')) &&
                         is_non_indirectly_dependent_section_variable gl y' ->
             subst_one flags.rewrite_dependent_proof y' (hyp,x,false)
@@ -1881,8 +1881,8 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
       if flags.only_leibniz then restrict_to_eq_and_identity eq;
       (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
       if EConstr.eq_constr sigma x y then failwith "caught";
-      match EConstr.kind sigma x with Var x -> x | _ ->
-      match EConstr.kind sigma y with Var y -> y | _ -> failwith "caught"
+      match EConstr.kind sigma x with Var (x, _) -> x | _ ->
+      match EConstr.kind sigma y with Var (y, _) -> y | _ -> failwith "caught"
     with Constr_matching.PatternMatchingFailure -> failwith "caught" in
   let test p = try Some (test p) with Failure _ -> None in
   let hyps = pf_hyps_types gl in

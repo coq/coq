@@ -338,7 +338,7 @@ let rec extract_type env sg db j c args =
          extract_type env sg db j (EConstr.mkProj (Projection.unfold p, t)) args
     | Case _ | Fix _ | CoFix _ -> Tunknown
     | Evar _ | Meta _ -> Taxiom (* only possible during Show Extraction *)
-    | Var v ->
+    | Var (v, _) ->
        (* For Show Extraction *)
        let open Context.Named.Declaration in
        (match EConstr.lookup_named v env with
@@ -680,7 +680,7 @@ let rec extract_term env sg mle mlt c args =
         extract_app env sg mle mlt (extract_fix env sg mle i recd) args
     | Cast (c,_,_) -> extract_term env sg mle mlt c args
     | Evar _ | Meta _ -> MLaxiom
-    | Var v ->
+    | Var (v, _) ->
        (* Only during Show Extraction *)
        let open Context.Named.Declaration in
        let ty = match EConstr.lookup_named v env with

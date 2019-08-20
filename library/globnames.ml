@@ -70,7 +70,7 @@ let global_of_constr c = match kind c with
   | Const ((sp,u), _) -> ConstRef sp
   | Ind ((ind_sp,u), _) -> IndRef ind_sp
   | Construct (cstr_cp,u) -> ConstructRef cstr_cp
-  | Var id -> VarRef id
+  | Var (id, _) -> VarRef id
   |  _ -> raise Not_found
 
 let is_global = Constr.isRefX

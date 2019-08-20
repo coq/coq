@@ -746,7 +746,7 @@ let rec whd_state_gen flags env sigma =
       (match lookup_rel n env with
       | LocalDef (_,body,_) -> whrec (lift n body, stack)
       | _ -> fold ())
-    | Var id when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
+    | Var (id, _) when CClosure.RedFlags.red_set flags (CClosure.RedFlags.fVAR id) ->
       (match lookup_named id env with
       | LocalDef (_,body,_) ->
         whrec (body, stack)

@@ -122,7 +122,7 @@ let constr_key kind c =
       | Const ((c, _), _) -> KGlob (GlobRef.ConstRef c)
       | Ind ((i, u), _) -> KGlob (GlobRef.IndRef i)
       | Construct (c,u) -> KGlob (GlobRef.ConstructRef c)
-      | Var id -> KGlob (GlobRef.VarRef id)
+      | Var (id, _) -> KGlob (GlobRef.VarRef id)
       | App (f, _) -> aux f
       | Proj (p, _) -> KGlob (GlobRef.ConstRef (Projection.constant p))
       | Cast (p, _, _) -> aux p

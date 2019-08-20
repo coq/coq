@@ -74,6 +74,7 @@ val mkRelA : int -> Annot.t list option -> constr
 
 (** Constructs a Variable *)
 val mkVar : Id.t -> constr
+val mkVarA : Id.t -> Annot.t list option -> constr
 
 (** Constructs a machine integer *)
 val mkInt : Uint63.t -> constr
@@ -218,7 +219,7 @@ type 'constr pexistential = Evar.t * 'constr list
 
 type ('constr, 'types, 'sort, 'univs) kind_of_term =
   | Rel       of int * Annot.t list option                    (** Gallina-variable introduced by [forall], [fun], [let-in], [fix], or [cofix]. *)
-  | Var       of Id.t                                         (** Gallina-variable that was introduced by Vernacular-command that extends
+  | Var       of Id.t * Annot.t list option                   (** Gallina-variable that was introduced by Vernacular-command that extends
                                                                   the local context of the currently open section
                                                                   (i.e. [Variable] or [Let]). *)
   | Meta      of metavariable
