@@ -8,14 +8,11 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module CVars = Vars
-
 open Util
 open Termops
 open EConstr
 open Evarutil
 
-module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 (* tactical to save as name a subproof such that the generalisation of
@@ -37,54 +34,6 @@ let interpretable_as_section_decl env evd d1 d2 =
     e_eq_constr_univs evd b1 b2 && e_eq_constr_univs evd t1 t2
   | LocalAssum (_,t1), d2 -> e_eq_constr_univs evd t1 (NamedDecl.get_type d2)
 
-let rec decompose len c t accu =
-  let open Constr in
-  let open Context.Rel.Declaration in
-  if len = 0 then (c, t, accu)
-  else match kind c, kind t with
-  | Lambda (na, u, c), Prod (_, _, t) ->
-    decompose (pred len) c t (LocalAssum (na, u) :: accu)
-  | LetIn (na, b, u, c), LetIn (_, _, _, t) ->
-    decompose (pred len) c t (LocalDef (na, b, u) :: accu)
-  | _ -> assert false
-
-let rec shrink ctx sign c t accu =
-  let open Constr in
-  let open CVars in
-  match ctx, sign with
-  | [], [] -> (c, t, accu)
-  | p :: ctx, decl :: sign ->
-      if noccurn 1 c && noccurn 1 t then
-        let c = subst1 mkProp c in
-        let t = subst1 mkProp t in
-        shrink ctx sign c t accu
-      else
-        let c = Term.mkLambda_or_LetIn p c in
-        let t = Term.mkProd_or_LetIn p t in
-        let accu = if RelDecl.is_local_assum p
-                   then mkVar (NamedDecl.get_id decl) :: accu
-                   else accu
-    in
-    shrink ctx sign c t accu
-| _ -> assert false
-
-let shrink_entry sign const =
-  let open Declare in
-  let typ = match const.proof_entry_type with
-  | None -> assert false
-  | Some t -> t
-  in
-  (* The body has been forced by the call to [build_constant_by_tactic] *)
-  let () = assert (Future.is_over const.proof_entry_body) in
-  let ((body, uctx), eff) = Future.force const.proof_entry_body in
-  let (body, typ, ctx) = decompose (List.length sign) body typ [] in
-  let (body, typ, args) = shrink ctx sign body typ [] in
-  let const = { const with
-    proof_entry_body = Future.from_val ((body, uctx), eff);
-    proof_entry_type = Some typ;
-  } in
-  (const, args)
-
 let name_op_to_name ~name_op ~name suffix =
   match name_op with
   | Some s -> s
@@ -101,9 +50,10 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
      redundancy on constant declaration. This opens up an interesting
      question, how does abstract behave when discharge is local for example?
   *)
-  let suffix = if opaque
-    then "_subproof"
-    else "_subterm" in
+  let suffix, kind = if opaque
+    then "_subproof", Decls.(IsProof Lemma)
+    else "_subterm", Decls.(IsDefinition Definition)
+  in
   let name = name_op_to_name ~name_op ~name suffix in
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -140,7 +90,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) Tactics.intro) tac) in
   let ectx = Evd.evar_universe_context evd in
   let (const, safe, ectx) =
-    try Pfedit.build_constant_by_tactic ~poly ~name ectx secsign concl solve_tac
+    try Pfedit.build_constant_by_tactic ~name ~opaque:Proof_global.Transparent ~poly ectx secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
@@ -151,16 +101,20 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   in
   let body, effs = Future.force const.Declare.proof_entry_body in
   (* We drop the side-effects from the entry, they already exist in the ambient environment *)
-  let const = { const with Declare.proof_entry_body = Future.from_val (body, ()) } in
-  let const, args = shrink_entry sign const in
+  let const = Declare.Internal.map_entry_body const ~f:(fun _ -> body, ()) in
+  (* EJGA: Hack related to the above call to
+     `build_constant_by_tactic` with `~opaque:Transparent`. Even if
+     the abstracted term is destined to be opaque, if we trigger the
+     `if poly && opaque && private_poly_univs ()` in `Proof_global`
+     kernel will boom. This deserves more investigation. *)
+  let const = Declare.Internal.set_opacity ~opaque const in
+  let const, args = Declare.Internal.shrink_entry sign const in
   let args = List.map EConstr.of_constr args in
-  let cd = { const with Declare.proof_entry_opaque = opaque } in
-  let kind = if opaque then Decls.(IsProof Lemma) else Decls.(IsDefinition Definition) in
   let cst () =
     (* do not compute the implicit arguments, it may be costly *)
     let () = Impargs.make_implicit_args false in
     (* ppedrot: seems legit to have abstracted subproofs as local*)
-    Declare.declare_private_constant ~local:Declare.ImportNeedQualified ~name ~kind cd
+    Declare.declare_private_constant ~local:Declare.ImportNeedQualified ~name ~kind const
   in
   let cst, eff = Impargs.with_implicit_protection cst () in
   let inst = match const.Declare.proof_entry_universes with

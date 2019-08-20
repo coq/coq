@@ -174,6 +174,7 @@ let record_aux env s_ty s_bo =
   Aux_file.record_in_aux "context_used" v
 
 let default_univ_entry = Monomorphic_entry Univ.ContextSet.empty
+
 let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     ?(univs=default_univ_entry) ?(eff=Evd.empty_side_effects) body =
   { proof_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), eff);
@@ -183,6 +184,26 @@ let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     proof_entry_opaque = opaque;
     proof_entry_feedback = None;
     proof_entry_inline_code = inline}
+
+let pure_definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
+    ?(univs=default_univ_entry) body =
+  { proof_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), ());
+    proof_entry_secctx = None;
+    proof_entry_type = types;
+    proof_entry_universes = univs;
+    proof_entry_opaque = opaque;
+    proof_entry_feedback = None;
+    proof_entry_inline_code = inline}
+
+let delayed_definition_entry ?(opaque=false) ?(inline=false) ?feedback_id ?section_vars ?(univs=default_univ_entry) ?types body =
+  { proof_entry_body = body
+  ; proof_entry_secctx = section_vars
+  ; proof_entry_type = types
+  ; proof_entry_universes = univs
+  ; proof_entry_opaque = opaque
+  ; proof_entry_feedback = feedback_id
+  ; proof_entry_inline_code = inline
+  }
 
 let cast_proof_entry e =
   let (body, ctx), () = Future.force e.proof_entry_body in
@@ -413,3 +434,62 @@ let assumption_message id =
   the type of the object than to the name of the object (see
   discussion on coqdev: "Chapter 4 of the Reference Manual", 8/10/2015) *)
   Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is declared")
+
+module Internal = struct
+
+  let map_entry_body ~f entry =
+    { entry with proof_entry_body = Future.chain entry.proof_entry_body f }
+
+  let map_entry_type ~f entry =
+    { entry with proof_entry_type = f entry.proof_entry_type }
+
+  let set_opacity ~opaque entry =
+    { entry with proof_entry_opaque = opaque }
+
+  let rec decompose len c t accu =
+    let open Constr in
+    let open Context.Rel.Declaration in
+    if len = 0 then (c, t, accu)
+    else match kind c, kind t with
+      | Lambda (na, u, c), Prod (_, _, t) ->
+        decompose (pred len) c t (LocalAssum (na, u) :: accu)
+      | LetIn (na, b, u, c), LetIn (_, _, _, t) ->
+        decompose (pred len) c t (LocalDef (na, b, u) :: accu)
+      | _ -> assert false
+
+  let rec shrink ctx sign c t accu =
+    let open Constr in
+    let open Vars in
+    match ctx, sign with
+    | [], [] -> (c, t, accu)
+    | p :: ctx, decl :: sign ->
+      if noccurn 1 c && noccurn 1 t then
+        let c = subst1 mkProp c in
+        let t = subst1 mkProp t in
+        shrink ctx sign c t accu
+      else
+        let c = Term.mkLambda_or_LetIn p c in
+        let t = Term.mkProd_or_LetIn p t in
+        let accu = if Context.Rel.Declaration.is_local_assum p
+          then mkVar (NamedDecl.get_id decl) :: accu
+          else accu
+        in
+        shrink ctx sign c t accu
+    | _ -> assert false
+
+  let shrink_entry sign const =
+    let typ = match const.proof_entry_type with
+      | None -> assert false
+      | Some t -> t
+    in
+    (* The body has been forced by the call to [build_constant_by_tactic] *)
+    let () = assert (Future.is_over const.proof_entry_body) in
+    let ((body, uctx), eff) = Future.force const.proof_entry_body in
+    let (body, typ, ctx) = decompose (List.length sign) body typ [] in
+    let (body, typ, args) = shrink ctx sign body typ [] in
+    { const with
+      proof_entry_body = Future.from_val ((body, uctx), eff)
+    ; proof_entry_type = Some typ
+    }, args
+
+end

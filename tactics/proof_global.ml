@@ -238,18 +238,10 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
     let t = EConstr.Unsafe.to_constr t in
     let univstyp, body = make_body t p in
     let univs, typ = Future.force univstyp in
-    let open Declare in
-    {
-      proof_entry_body = body;
-      proof_entry_secctx = section_vars;
-      proof_entry_feedback = feedback_id;
-      proof_entry_type  = Some typ;
-      proof_entry_inline_code = false;
-      proof_entry_opaque = opaque;
-      proof_entry_universes = univs; }
+    Declare.delayed_definition_entry ~opaque ?feedback_id ?section_vars ~univs ~types:typ body
   in
-  let entries = Future.map2 entry_fn fpl Proofview.(initial_goals entry) in
-  { name; entries = entries; poly; universes; udecl }
+  let entries = Future.map2 entry_fn fpl (Proofview.initial_goals entry) in
+  { name; entries; poly; universes; udecl }
 
 let return_proof ?(allow_partial=false) ps =
  let { proof } = ps in

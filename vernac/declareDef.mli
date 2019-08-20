@@ -62,11 +62,16 @@ val declare_fix
   -> Impargs.manual_implicits
   -> GlobRef.t
 
-val prepare_definition : allow_evars:bool ->
-  ?opaque:bool -> ?inline:bool -> poly:bool ->
-  Evd.evar_map -> UState.universe_decl ->
-  types:EConstr.t option -> body:EConstr.t ->
-  Evd.evar_map * Evd.side_effects Declare.proof_entry
+val prepare_definition
+  :  allow_evars:bool
+  -> ?opaque:bool
+  -> ?inline:bool
+  -> poly:bool
+  -> Evd.evar_map
+  -> UState.universe_decl
+  -> types:EConstr.t option
+  -> body:EConstr.t
+  -> Evd.evar_map * Evd.side_effects Declare.proof_entry
 
 val prepare_parameter : allow_evars:bool ->
   poly:bool -> Evd.evar_map -> UState.universe_decl -> EConstr.types ->

@@ -20,7 +20,7 @@ open Entries
    [Nametab] and [Impargs]. *)
 
 (** Proof entries *)
-type 'a proof_entry = {
+type 'a proof_entry = private {
   proof_entry_body   : 'a Entries.const_entry_body;
   (* List of section variables *)
   proof_entry_secctx : Id.Set.t option;
@@ -55,10 +55,35 @@ val declare_variable
    i.e. Definition/Theorem/Axiom/Parameter/... *)
 
 (* Default definition entries, transparent with no secctx or proj information *)
-val definition_entry : ?fix_exn:Future.fix_exn ->
-  ?opaque:bool -> ?inline:bool -> ?types:types ->
-  ?univs:Entries.universes_entry ->
-  ?eff:Evd.side_effects -> constr -> Evd.side_effects proof_entry
+val definition_entry
+  : ?fix_exn:Future.fix_exn
+  -> ?opaque:bool
+  -> ?inline:bool
+  -> ?types:types
+  -> ?univs:Entries.universes_entry
+  -> ?eff:Evd.side_effects
+  -> constr
+  -> Evd.side_effects proof_entry
+
+val pure_definition_entry
+  : ?fix_exn:Future.fix_exn
+  -> ?opaque:bool
+  -> ?inline:bool
+  -> ?types:types
+  -> ?univs:Entries.universes_entry
+  -> constr
+  -> unit proof_entry
+
+(* Delayed definition entries *)
+val delayed_definition_entry
+  :  ?opaque:bool
+  -> ?inline:bool
+  -> ?feedback_id:Stateid.t
+  -> ?section_vars:Id.Set.t
+  -> ?univs:Entries.universes_entry
+  -> ?types:types
+  -> 'a Entries.const_entry_body
+  -> 'a proof_entry
 
 type import_status = ImportDefaultBehavior | ImportNeedQualified
 
@@ -101,3 +126,15 @@ val check_exists : Id.t -> unit
 
 (* Used outside this module only in indschemes *)
 exception AlreadyDeclared of (string option * Id.t)
+
+(* For legacy support, do not use *)
+module Internal : sig
+
+  val map_entry_body : f:('a Entries.proof_output -> 'b Entries.proof_output) -> 'a proof_entry -> 'b proof_entry
+  val map_entry_type : f:(Constr.t option -> Constr.t option) -> 'a proof_entry -> 'a proof_entry
+  (* Overriding opacity is indeed really hacky *)
+  val set_opacity : opaque:bool -> 'a proof_entry -> 'a proof_entry
+
+  val shrink_entry : EConstr.named_context -> 'a proof_entry -> 'a proof_entry * Constr.constr list
+
+end
