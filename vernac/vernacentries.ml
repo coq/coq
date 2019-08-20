@@ -1724,6 +1724,30 @@ let () =
       optread  = Nativenorm.get_profiling_enabled;
       optwrite = Nativenorm.set_profiling_enabled }
 
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "guard checking";
+      optkey   = ["Guard"; "Checking"];
+      optread  = (fun () -> (Global.typing_flags ()).Declarations.check_guarded);
+      optwrite = (fun b -> Global.set_check_guarded b) }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "positivity/productivity checking";
+      optkey   = ["Positivity"; "Checking"];
+      optread  = (fun () -> (Global.typing_flags ()).Declarations.check_positive);
+      optwrite = (fun b -> Global.set_check_positive b) }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "universes checking";
+      optkey   = ["Universe"; "Checking"];
+      optread  = (fun () -> (Global.typing_flags ()).Declarations.check_universes);
+      optwrite = (fun b -> Global.set_check_universes b) }
+
 let vernac_set_strategy ~local l =
   let local = Option.default false local in
   let glob_ref r =
@@ -1928,6 +1952,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
 let vernac_print ~pstate ~atts =
   let sigma, env = get_current_or_global_context ~pstate in
   function
+  | PrintTypingFlags -> pr_typing_flags (Environ.typing_flags (Global.env ()))
   | PrintTables -> print_tables ()
   | PrintFullContext-> print_full_context_typ env sigma
   | PrintSectionContext qid -> print_sec_context_typ env sigma qid

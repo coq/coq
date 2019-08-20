@@ -176,6 +176,7 @@ val pop_rel_context : int -> env -> env
 
 (** Useful for printing *)
 val fold_constants : (Constant.t -> Opaqueproof.opaque constant_body -> 'a -> 'a) -> env -> 'a -> 'a
+val fold_inductives : (MutInd.t -> Declarations.mutual_inductive_body -> 'a -> 'a) -> env -> 'a -> 'a
 
 (** {5 Global constants }
   {6 Add entries to global environment } *)

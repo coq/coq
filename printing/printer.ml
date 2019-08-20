@@ -853,7 +853,8 @@ let pr_goal_emacs ~proof gid sid =
 type axiom =
   | Constant of Constant.t (* An axiom or a constant. *)
   | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
-  | Guarded of Constant.t (* a constant whose (co)fixpoints have been assumed to be guarded *)
+  | Guarded of GlobRef.t (* a constant whose (co)fixpoints have been assumed to be guarded *)
+  | TypeInType of GlobRef.t (* a constant which relies on type in type *)
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
@@ -873,7 +874,7 @@ struct
     | Positive m1 , Positive m2 ->
         MutInd.CanOrd.compare m1 m2
     | Guarded k1 , Guarded k2 ->
-        Constant.CanOrd.compare k1 k2
+        GlobRef.Ordered.compare k1 k2
     | _ , Constant _ -> 1
     | _ , Positive _ -> 1
     | _ -> -1
@@ -903,14 +904,20 @@ let pr_assumptionset env sigma s =
     let safe_pr_constant env kn =
       try pr_constant env kn
       with Not_found ->
-        (* FIXME? *)
-        let mp,lab = Constant.repr2 kn in
-        str (ModPath.to_string mp) ++ str "." ++ Label.print lab
+        Names.Constant.print kn
+    in
+    let safe_pr_global env gr =
+      try pr_global_env (Termops.vars_of_env env) gr
+      with Not_found ->
+        let open GlobRef in match gr with
+        | VarRef id -> Id.print id
+        | ConstRef con -> Constant.print con
+        | IndRef (mind,_) -> MutInd.print mind
+        | ConstructRef _ -> assert false
     in
     let safe_pr_inductive env kn =
       try pr_inductive env (kn,0)
       with Not_found ->
-        (* FIXME? *)
         MutInd.print kn
     in
     let safe_pr_ltype env sigma typ =
@@ -927,9 +934,11 @@ let pr_assumptionset env sigma s =
       | Constant kn ->
           safe_pr_constant env kn ++ safe_pr_ltype env sigma typ
       | Positive m ->
-          hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is positive.")
-      | Guarded kn ->
-          hov 2 (safe_pr_constant env kn ++ spc () ++ strbrk"is positive.")
+          hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is assumed to be positive.")
+      | Guarded gr ->
+          hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"is assumed to be guarded.")
+      | TypeInType gr ->
+         hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"relies on an unsafe hierarchy.")
     in
     let fold t typ accu =
       let (v, a, o, tr) = accu in
@@ -1003,3 +1012,8 @@ let print_and_diff oldp newp =
         pr_open_subgoals ~proof
     in
     Feedback.msg_notice output;;
+
+let pr_typing_flags flags =
+  str "check_guarded: " ++ bool flags.check_guarded ++ fnl ()
+  ++ str "check_positive: " ++ bool flags.check_positive ++ fnl ()
+  ++ str "check_universes: " ++ bool flags.check_universes

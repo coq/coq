@@ -216,6 +216,9 @@ let lookup_named_ctxt id ctxt =
 let fold_constants f env acc =
   Cmap_env.fold (fun c (body,_) acc -> f c body acc) env.env_globals.env_constants acc
 
+let fold_inductives f env acc =
+  Mindmap_env.fold (fun c (body,_) acc -> f c body acc) env.env_globals.env_inductives acc
+
 (* Global constants *)
 
 let lookup_constant_key kn env =
@@ -418,6 +421,7 @@ let set_engagement c env = (* Unsafe *)
 (* It's convenient to use [{flags with foo = bar}] so we're smart wrt to it. *)
 let same_flags {
      check_guarded;
+     check_positive;
      check_universes;
      conv_oracle;
      indices_matter;
@@ -426,6 +430,7 @@ let same_flags {
      enable_native_compiler;
   } alt =
   check_guarded == alt.check_guarded &&
+  check_positive == alt.check_positive &&
   check_universes == alt.check_universes &&
   conv_oracle == alt.conv_oracle &&
   indices_matter == alt.indices_matter &&

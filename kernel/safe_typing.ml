@@ -194,6 +194,18 @@ let set_typing_flags c senv =
   if env == senv.env then senv
   else { senv with env }
 
+let set_check_guarded b senv =
+  let flags = Environ.typing_flags senv.env in
+  set_typing_flags { flags with check_guarded = b } senv
+
+let set_check_positive b senv =
+  let flags = Environ.typing_flags senv.env in
+  set_typing_flags { flags with check_positive = b } senv
+
+let set_check_universes b senv =
+  let flags = Environ.typing_flags senv.env in
+  set_typing_flags { flags with check_universes = b } senv
+
 let set_indices_matter indices_matter senv =
   set_typing_flags { (Environ.typing_flags senv.env) with indices_matter } senv
 

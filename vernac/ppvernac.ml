@@ -514,6 +514,8 @@ let string_of_theorem_kind = let open Decls in function
       ++ pr_class_rawexpr t
     | PrintCanonicalConversions ->
       keyword "Print Canonical Structures"
+    | PrintTypingFlags ->
+      keyword "Print Typing Flags"
     | PrintTables ->
       keyword "Print Tables"
     | PrintHintGoal ->
