@@ -112,16 +112,18 @@ let type_of_relative env n =
     error_unbound_rel env n
 
 let stage_vars_in_relative env n =
-  try
-    match env |> lookup_rel n |> RelDecl.get_value with
-    | None -> None
-    | Some c -> Some (count_annots c)
+  try env |> lookup_rel n |> RelDecl.get_value |> Option.map count_annots
   with Not_found ->
     error_unbound_rel env n
 
 (* Type of variables *)
 let type_of_variable env id =
   try named_type id env
+  with Not_found ->
+    error_unbound_var env id
+
+let stage_vars_in_variable env id =
+  try env |> named_body id |> Option.map count_annots
   with Not_found ->
     error_unbound_var env id
 
@@ -559,7 +561,9 @@ let rec execute env stg cstr =
       stg, empty (), mkRelA n annots, type_of_relative env n
 
     | Var (id, _) ->
-      stg, empty (), cstr, type_of_variable env id
+      let numvars = stage_vars_in_variable env id in
+      let annots, stg = next_annots numvars stg in
+      stg, empty (), mkVarA id annots, type_of_variable env id
 
     | Const (c, _ans) ->
       let numvars = stage_vars_in_constant env c in
