@@ -27,8 +27,8 @@ sig
   val hat : t -> t
   val is_stage : t -> bool
   val compare : t -> t -> int
-  val show : t -> string
   val pr : t -> Pp.t
+  val show : t -> string
   val hash : t -> int
 end
 

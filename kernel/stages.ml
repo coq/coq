@@ -1,9 +1,6 @@
 open Hashset.Combine
 open Util
 
-(** Pretty-printing helper *)
-let mkPr show = (fun a -> show a |> Pp.str)
-
 (** Stage variables and stage annotations *)
 
 module SVars =
@@ -14,12 +11,10 @@ struct
 
   let union_list = List.fold_left union empty
 
-  let show vars =
-    let init, rest = match choose_opt vars with
-    | Some var -> string_of_int var, diff vars (singleton var)
-    | None -> "", vars in
-    fold (fun i str -> str ^ "," ^ string_of_int i) rest init
-  let pr = mkPr show
+  let pr vars =
+    let open Pp in
+    let pr_var v = str "s" ++ int v in
+    seq [str "{"; pr_enum pr_var (elements vars); str "}"]
 end
 
 module Stage =
@@ -42,13 +37,14 @@ struct
       if not (Int.equal nc 0) then nc
       else Int.compare sz1 sz2
 
-  let show s =
+  let pr s =
+    let open Pp in
     match s with
-    | Infty -> "∞"
+    | Infty -> str "∞"
     | StageVar (s, n) ->
-      let str = "s" ^ string_of_int s in
-      if Int.equal n 0 then str else
-      str ^ "+" ^ string_of_int n
+      let pp = str "s" ++ int s in
+      if Int.equal n 0 then pp else
+      seq [pp; str "+"; int n]
 end
 
 module Annot =
@@ -85,14 +81,15 @@ struct
     | Glob, _  -> -1 | _, Glob  -> 1
     | Stage s1, Stage s2 -> Stage.compare s1 s2
 
-  let show a =
+  let pr a =
+    let open Pp in
     match a with
-    | Empty -> ""
-    | Star  -> "*"
-    | Glob  -> "ⁱ"
-    | Stage s -> Stage.show s
+    | Empty -> mt ()
+    | Star  -> str "*"
+    | Glob  -> str "ⁱ"
+    | Stage s -> Stage.pr s
 
-  let pr = mkPr show
+  let show a = Pp.string_of_ppcmds (pr a)
 
   let hash a =
     match a with
@@ -157,12 +154,12 @@ struct
         pos_vars = add state.next state.pos_vars }
     | _ -> (s, state)
 
-  let show state =
-    let stg_str = string_of_int state.next in
-    let vars_str = "{" ^ SVars.show state.vars  ^ "}" in
-    let stars_str = "{" ^ SVars.show state.pos_vars ^ "}" in
-    "<" ^ stg_str ^ "," ^ vars_str ^ "," ^ stars_str ^ ">"
-  let pr = mkPr show
+  let pr state =
+    let open Pp in
+    let stg_pp = int state.next in
+    let vars_pp = SVars.pr state.vars in
+    let stars_pp = SVars.pr state.pos_vars in
+    seq [str"<"; stg_pp; pr_comma (); vars_pp; pr_comma (); stars_pp; str ">"]
 end
 
 (** Stage constraints and sets of constraints *)
@@ -265,19 +262,23 @@ struct
       (Map.fold (fun key _ set -> SVars.add key set) m SVars.empty) in
     SVars.union (get_keys mto) (get_keys mfrom)
 
-  let show (mto, _mfrom : t) =
-    let str_stage key value wt =
+  let pr (mto, _mfrom : t) =
+    let open Pp in
+    let pr_constraint key value wt =
       let sfrom, sto =
         if wt >= 0
         then StageVar (key, 0), StageVar (value, wt)
         else StageVar (key, -wt), StageVar (value, 0) in
       let sfrom = if Stage.var_equal key   infty then Infty else sfrom in
       let sto   = if Stage.var_equal value infty then Infty else sto   in
-      "(" ^ Stage.show sfrom ^ "⊑" ^ Stage.show sto ^ ")" in
-    let str_set key set = Set.fold (fun (value, wt) str -> str_stage key value wt ^ str) set "" in
-    let strs = Map.fold (fun key set str -> str_set key set ^ str) mto "" in
-    "{" ^ strs ^ "}"
-  let pr = mkPr show
+      seq [Stage.pr sfrom; str "⊑"; Stage.pr sto] in
+    let pr_set key set =
+      let lpr_set = Set.fold (fun (value, wt) lpr -> pr_constraint key value wt :: lpr) set [] in
+      prlist_with_sep pr_comma identity lpr_set in
+    let pr_map =
+      let lpr_map = Map.fold (fun key set lpr -> pr_set key set :: lpr) mto [] in
+      prlist_with_sep pr_comma identity lpr_map in
+    seq [str "{"; pr_map; str "}"]
 end
 
 (** RecCheck *)
