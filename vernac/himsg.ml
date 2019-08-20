@@ -732,14 +732,21 @@ let explain_non_linear_unification env sigma m t =
   strbrk " which would require to abstract twice on " ++
   pr_lconstr_env env sigma t ++ str "."
 
-let explain_unsatisfied_stage_constraints env cstrnts si_inf si =
-  strbrk "Unsatisfied stage constraints: given constraints " ++
+let explain_unsatisfied_stage_constraints env sigma cstrnts cstr si_inf si =
+  strbrk "The stage annotation of the recursive type in the (co)fixpoint " ++
+  pr_leconstr_env env sigma cstr ++
+  strbrk " could not be set to a finite stage variable."
+  (*
+  strbrk "Unsatisfied stage constraints: In the (co)fixpoint " ++
+  pr_lconstr_env env sigma cstr ++
+  strbrk ", given constraints " ++
   Stages.Constraints.pr cstrnts ++
   str ", stage variables " ++
   Stages.SVars.pr si_inf ++
   str " must be set to infinity, and " ++
   Stages.SVars.pr si ++
   str " must be set to finite stage variables, but their intersection is not empty."
+  *)
 
 let explain_unsatisfied_constraints env sigma cst =
   strbrk "Unsatisfied constraints: " ++
@@ -798,8 +805,8 @@ let explain_type_error env sigma err =
      explain_ill_typed_rec_body env sigma i lna vdefj vargs
   | WrongCaseInfo (ind,ci) ->
       explain_wrong_case_info env ind ci
-  | UnsatisfiedStageConstraints (cstrnts, si_inf, si) ->
-      explain_unsatisfied_stage_constraints env cstrnts si_inf si
+  | UnsatisfiedStageConstraints (cstrnts, cstr, si_inf, si) ->
+      explain_unsatisfied_stage_constraints env sigma cstrnts cstr si_inf si
   | UnsatisfiedConstraints cst ->
       explain_unsatisfied_constraints env sigma cst
   | UndeclaredUniverse l ->

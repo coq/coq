@@ -688,7 +688,7 @@ and execute_recdef env stg (names, lar, vdef) =
   stg_vdef, union cstrnt_lar cstrnt_vdef, (names', lar', vdef', vdeft)
 
 (* Try RecCheck; if failure, try removing some stage variables from vstar *)
-and execute_rec_check env stg cstrnt (_, lar', _, _ as recdeft) vars recursivity =
+and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) vars recursivity =
   let rec try_rec_check stg (alphas, vstar, vneq) =
     let lar'' = Array.map (annotate_succ vstar) lar' in
     let cstrnt_fix = check_fixpoint env recdeft lar'' in
@@ -703,7 +703,7 @@ and execute_rec_check env stg cstrnt (_, lar', _, _ as recdeft) vars recursivity
         let rm = inter (inter si_inf si) (diff vstar alphas) in
         if is_empty rm then begin
           if flags.check_guarded then stg, cstrnt else
-            error_unsatisfied_stage_constraints env cstrnt'' si_inf si
+            error_unsatisfied_stage_constraints env cstrnt'' cstr si_inf si
         end else
           let vstar = diff vstar rm in
           let vneq = SVars.union vneq rm in
@@ -725,7 +725,8 @@ and execute_fix env stg ((vn, i), (names, lar, vdef)) =
   let stg_check, cstrnt_check =
     let alphas = get_rec_vars env vn lar' in
     let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
-    execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) Finite in
+    let cstr = mkFixOpt ((vn, i), (names', lar', vdef')) in
+    execute_rec_check env stg' cstrnt' cstr recdeft (alphas, vstar, vneq) Finite in
 
   let fix =
     let lar_star = Array.Smart.map (erase_star (get_pos_vars stg_check)) lar' in
@@ -745,7 +746,8 @@ and execute_cofix env stg (i, (names, lar, vdef)) =
   let stg_check, cstrnt_check =
     let alphas = get_corec_vars env lar' in
     let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
-    execute_rec_check env stg' cstrnt' recdeft (alphas, vstar, vneq) CoFinite in
+    let cstr = mkCoFix (i, (names', lar', vdef')) in
+    execute_rec_check env stg' cstrnt' cstr recdeft (alphas, vstar, vneq) CoFinite in
 
   let cofix =
     let lar_star = Array.Smart.map (erase_star (get_pos_vars stg_check)) lar' in

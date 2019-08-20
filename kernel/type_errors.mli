@@ -66,7 +66,7 @@ type ('constr, 'types) ptype_error =
   | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
       int * Name.t Context.binder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
-  | UnsatisfiedStageConstraints of Stages.Constraints.t * Stages.SVars.t * Stages.SVars.t
+  | UnsatisfiedStageConstraints of Stages.Constraints.t * 'constr * Stages.SVars.t * Stages.SVars.t
   | UnsatisfiedConstraints of Univ.Constraint.t
   | UndeclaredUniverse of Level.t
   | DisallowedSProp
@@ -140,7 +140,7 @@ val error_ill_typed_rec_body  :
 
 val error_elim_explain : Sorts.family -> Sorts.family -> arity_error
 
-val error_unsatisfied_stage_constraints : env -> Stages.Constraints.t -> Stages.SVars.t -> Stages.SVars.t -> 'a
+val error_unsatisfied_stage_constraints : env -> Stages.Constraints.t -> constr -> Stages.SVars.t -> Stages.SVars.t -> 'a
 
 val error_unsatisfied_constraints : env -> Constraint.t -> 'a
 
