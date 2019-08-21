@@ -446,6 +446,8 @@ module Internal = struct
   let set_opacity ~opaque entry =
     { entry with proof_entry_opaque = opaque }
 
+  let get_fix_exn entry = Future.fix_exn_of entry.proof_entry_body
+
   let rec decompose len c t accu =
     let open Constr in
     let open Context.Rel.Declaration in

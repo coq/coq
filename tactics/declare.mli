@@ -135,6 +135,10 @@ module Internal : sig
   (* Overriding opacity is indeed really hacky *)
   val set_opacity : opaque:bool -> 'a proof_entry -> 'a proof_entry
 
+  (* TODO: This is only used in DeclareDef to forward the fix to
+     hooks, should eventually go away *)
+  val get_fix_exn : 'a proof_entry -> Future.fix_exn
+
   val shrink_entry : EConstr.named_context -> 'a proof_entry -> 'a proof_entry * Constr.constr list
 
 end

@@ -44,7 +44,7 @@ end
 
 (* Locality stuff *)
 let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
-  let fix_exn = Future.fix_exn_of ce.proof_entry_body in
+  let fix_exn = Declare.Internal.get_fix_exn ce in
   let gr = match scope with
   | Discharge ->
       let () =

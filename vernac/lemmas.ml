@@ -401,7 +401,7 @@ let finish_proved env sigma idopt po info =
     let name = match idopt with
       | None -> name
       | Some { CAst.v = save_id } -> check_anonymity name save_id; save_id in
-    let fix_exn = Future.fix_exn_of const.Declare.proof_entry_body in
+    let fix_exn = Declare.Internal.get_fix_exn const in
     let () = try
       let const = adjust_guardness_conditions const compute_guard in
       let should_suggest = const.Declare.proof_entry_opaque &&
