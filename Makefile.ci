@@ -18,7 +18,6 @@ CI_TARGETS= \
     ci-coq_dpdgraph \
     ci-coquelicot \
     ci-corn \
-    ci-cpdt \
     ci-cross-crypto \
     ci-elpi \
     ci-ext-lib \
@@ -41,7 +40,6 @@ CI_TARGETS= \
     ci-sf \
     ci-simple-io \
     ci-stdlib2 \
-    ci-tlc \
     ci-unimath \
     ci-verdi-raft \
     ci-vst
