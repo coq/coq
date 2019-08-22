@@ -733,19 +733,19 @@ let explain_non_linear_unification env sigma m t =
   pr_lconstr_env env sigma t ++ str "."
 
 let explain_unsatisfied_stage_constraints env sigma cstrnts cstr si_inf si =
-  strbrk "The stage annotation of the recursive type in the (co)fixpoint " ++
-  pr_leconstr_env env sigma cstr ++
-  strbrk " could not be set to a finite stage variable."
+  strbrk "The stage annotation of the recursive type in the (co)fixpoint" ++
+  fnl () ++ pr_leconstr_env env sigma cstr ++ fnl () ++
+  strbrk "could not be set to a finite stage variable."
   (*
-  strbrk "Unsatisfied stage constraints: In the (co)fixpoint " ++
-  pr_lconstr_env env sigma cstr ++
-  strbrk ", given constraints " ++
-  Stages.Constraints.pr cstrnts ++
-  str ", stage variables " ++
-  Stages.SVars.pr si_inf ++
-  str " must be set to infinity, and " ++
-  Stages.SVars.pr si ++
-  str " must be set to finite stage variables, but their intersection is not empty."
+  strbrk "Unsatisfied stage constraints: In the (co)fixpoint" ++
+  spc () ++ pr_lconstr_env env sigma cstr ++ pr_comma () ++
+  strbrk "given constraints" ++
+  spc () ++ Stages.Constraints.pr cstrnts ++ pr_comma () ++
+  str "stage variables" ++
+  spc () ++ Stages.SVars.pr si_inf ++ spc () ++
+  str "must be set to infinity, and" ++
+  spc () ++ Stages.SVars.pr si ++ spc () ++
+  str "must be set to finite stage variables, but their intersection is not empty."
   *)
 
 let explain_unsatisfied_constraints env sigma cst =
