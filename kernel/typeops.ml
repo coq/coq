@@ -41,7 +41,7 @@ let conv_leq_vecti env v1 v2 =
     (fun i cstrnts t1 t2 ->
       try union cstrnts (conv_leq false env t1 t2)
       with NotConvertible -> raise (NotConvertibleVect i))
-    empty
+    (empty ())
     v1
     v2
 
@@ -141,7 +141,7 @@ let check_hyps_inclusion env ?evars c sign =
       with Not_found | NotConvertible | Option.Heterogeneous ->
         error_reference_variables env id c)
     sign
-    ~init:empty
+    ~init:(empty ())
 
 (* Instantiation of terms on real arguments. *)
 
@@ -193,7 +193,7 @@ let type_of_apply env func funt argsv argstv =
   let infos = create_clos_infos all env in
   let tab = create_tab () in
   let rec apply_rec i typ =
-    if Int.equal i len then term_of_fconstr typ, empty
+    if Int.equal i len then term_of_fconstr typ, empty ()
     else
       let typ, stk = whd_stack infos tab typ [] in
       (** The return stack is known to be empty *)
@@ -212,13 +212,13 @@ let type_of_apply env func funt argsv argstv =
             (i+1,c1,argt)
             (make_judge func funt)
             (make_judgev argsv argstv),
-          empty
+          empty ()
         end
       | _ ->
         error_cant_apply_not_functional env
           (make_judge func funt)
           (make_judgev argsv argstv),
-        empty
+        empty ()
   in
   apply_rec 0 (inject funt)
 
@@ -537,13 +537,13 @@ let rec execute env stg cstr =
       (match s with
        | SProp -> if not (Environ.sprop_allowed env) then error_disallowed_sprop env
        | _ -> ());
-      stg, empty, cstr, type_of_sort s
+      stg, empty (), cstr, type_of_sort s
 
     | Rel n ->
-      stg, empty, cstr, type_of_relative env n
+      stg, empty (), cstr, type_of_relative env n
 
     | Var id ->
-      stg, empty, cstr, type_of_variable env id
+      stg, empty (), cstr, type_of_variable env id
 
     | Const c ->
       let t, cstrnt = type_of_constant env c in
@@ -665,8 +665,8 @@ let rec execute env stg cstr =
     | CoFix cofix -> execute_cofix env stg cofix
 
     (* Primitive types *)
-    | Int _ -> stg, empty, cstr, type_of_int env
-    | Float _ -> stg, empty, cstr, type_of_float env
+    | Int _ -> stg, empty (), cstr, type_of_int env
+    | Float _ -> stg, empty (), cstr, type_of_float env
 
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
@@ -762,7 +762,7 @@ and execute_array env stg cs =
       let stg', cstrnt2, c, ty = execute env stg c in
       tys.(i) <- ty;
       (stg', union cstrnt1 cstrnt2), c)
-    (stg, empty) cs in
+    (stg, empty ()) cs in
   stg, cstrnt, cs, tys
 
 (* Derived functions *)

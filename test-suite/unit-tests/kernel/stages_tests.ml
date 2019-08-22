@@ -29,19 +29,19 @@ let s5_0 = Stage (StageVar (5, 0))
 let s9_0 = Stage (StageVar (9, 0))
 let s9_1 = Stage (StageVar (9, 1))
 
-let s0_0_and_s9_1 = (add s0_0 s9_1 empty)
-let s9_0_and_s0_1 = (add s9_0 s0_1 empty)
-let s0_1_and_s9_0 = (add s0_1 s9_0 empty)
-let s9_1_and_s0_0 = (add s9_1 s0_0 empty)
+let s0_0_and_s9_1 = (add s0_0 s9_1 (empty ()))
+let s9_0_and_s0_1 = (add s9_0 s0_1 (empty ()))
+let s0_1_and_s9_0 = (add s0_1 s9_0 (empty ()))
+let s9_1_and_s0_0 = (add s9_1 s0_0 (empty ()))
 
 let pos_cycle = union s0_0_and_s9_1 s9_0_and_s0_1
 let pos_cycle_bigger =
-  let cstrnts1 = add s0_0 s2_0 empty in
+  let cstrnts1 = add s0_0 s2_0 (empty ()) in
   let cstrnts2 = add s2_0 s9_1 cstrnts1 in
   add s9_0 s0_1 cstrnts2
 let neg_cycle = union s0_1_and_s9_0 s9_1_and_s0_0
 let neg_cycle_bigger =
-  let cstrnts1 = add s0_1 s9_0 empty in
+  let cstrnts1 = add s0_1 s9_0 (empty ()) in
   let cstrnts2 = add s9_1 s5_0 cstrnts1 in
   add s5_0 s0_0 cstrnts2
 let neg_cycle_extra1 =
@@ -57,56 +57,38 @@ let add_name i = add_prefix ^ string_of_int i
 let add1 = mk_eq_test
   (add_name 1)
   "s0⊑s0+1 not added"
-  empty
-  (add s0_0 s0_1 empty)
+  (empty ())
+  (add s0_0 s0_1 (empty ()))
 let add2 = mk_eq_test
   (add_name 2)
   "s0⊑∞ not added"
-  empty
-  (add s0_0 infty empty)
+  (empty ())
+  (add s0_0 infty (empty ()))
 let add3 = mk_bool_test
   (add_name 3)
   "s0+1⊑s0 is added"
-  (contains (0, 0) (add s0_1 s0_0 empty))
+  (contains (add s0_1 s0_0 (empty ())) 0 0)
 let add4 = mk_bool_test
   (add_name 4)
   "∞⊑s0 is added"
-  (contains (inf, 0) (add infty s0_0 empty))
+  (contains (add infty s0_0 (empty ())) inf 0)
 let add5 = mk_bool_test
   (add_name 5)
   "s9⊑s0 is added"
-  (contains (9, 0) (add s9_0 s0_0 empty))
+  (contains (add s9_0 s0_0 (empty ())) 9 0)
 let add6 = mk_bool_test
   (add_name 6)
   "s9+1⊑s0+1 is added"
-  (contains (9, 0) (add s9_1 s0_1 empty))
+  (contains (add s9_1 s0_1 (empty ())) 9 0)
 let add7 = mk_bool_test
   (add_name 7)
   "adding s0⊑s9 does not add s9⊑s0"
-  (not (contains (9, 0) (add s0_0 s9_0 empty)))
+  (not (contains (add s0_0 s9_0 (empty ())) 9 0))
 let add_tests = [add1; add2; add3; add4; add5; add6]
 
-let fold1 =
-  let f vfrom vto wt lst = (vfrom, vto, wt) :: lst in
-  let cstrnts_list = fold f pos_cycle [] in
-  mk_bool_test
-    (test_prefix ^ "-fold1")
-    "folding constraints works"
-    (List.mem (0, 9, 1) cstrnts_list && List.mem (9, 0, 1) cstrnts_list)
-let fold_tests = [fold1]
-
-let filter1 =
-  let f vfrom vto wt = Int.equal 9 vto in
-  let cstrnts = filter f pos_cycle in
-  mk_bool_test
-    (test_prefix ^ "-filter1")
-    "filtering constraints works"
-    (contains (0, 9) cstrnts && not (contains (9, 0) cstrnts))
-let filter_tests = [filter1]
-
 let sup1 =
-  let cstrnts = add s5_0 s9_0 (add s5_0 s0_0 empty) in
-  let sups = sup 5 cstrnts in
+  let cstrnts = add s5_0 s9_0 (add s5_0 s0_0 (empty ())) in
+  let sups = sup cstrnts 5 in
   mk_bool_test
     (test_prefix ^ "-sup1")
     "sup returns all superstages"
@@ -114,8 +96,8 @@ let sup1 =
 let sup_tests = [sup1]
 
 let sub1 =
-  let cstrnts = add s9_0 s5_0 (add s0_0 s5_0 empty) in
-  let subs = sub 5 cstrnts in
+  let cstrnts = add s9_0 s5_0 (add s0_0 s5_0 (empty ())) in
+  let subs = sub cstrnts 5 in
   mk_bool_test
     (test_prefix ^ "-sub1")
     "sup returns all substages"
@@ -131,24 +113,24 @@ let bf1 = mk_eq_test
   (bf_name 1)
   "Bellman-Ford returns empty set for positive size 2 cycle"
   SVars.empty
-  (bellman_ford_all pos_cycle)
+  (bellman_ford pos_cycle)
 let bf2 = mk_eq_test
   (bf_name 2)
   "Bellman-Ford returns empty set for positive size 3 cycle"
   SVars.empty
-  (bellman_ford_all pos_cycle_bigger)
+  (bellman_ford pos_cycle_bigger)
 let bf3 = mk_bool_test
   (bf_name 3)
   "Bellman-Ford returns nonempty set for negative size 2 cycle"
-  (not (is_empty (bellman_ford_all neg_cycle)))
+  (not (is_empty (bellman_ford neg_cycle)))
 let bf4 = mk_bool_test
   (bf_name 4)
   "Bellman-Ford returns nonempty set for negative size 3 cycle"
-  (not (is_empty (bellman_ford_all neg_cycle_bigger)))
+  (not (is_empty (bellman_ford neg_cycle_bigger)))
 let bf5 = mk_bool_test
   (bf_name 5)
   "Bellman-Form returns nonempty set for size 3 cycle without vertices NOT in cycle"
-  (let vs = bellman_ford_all neg_cycle_extra1 in
+  (let vs = bellman_ford neg_cycle_extra1 in
   (not (is_empty vs) && not (mem 2 vs)))
 let bellman_ford_tests = [bf1; bf2; bf3; bf4; bf5]
 
@@ -175,7 +157,7 @@ let svars_of_list lst =
   List.fold_right SVars.add lst SVars.empty
 
 let constraints_of_list lst =
-  List.fold_right (fun (vfrom, vto) -> add vfrom vto) lst empty
+  List.fold_right (fun (vfrom, vto) -> add vfrom vto) lst (empty ())
 
 let rec_check_lists_pass alpha vstarl vneql cstrntsl =
   try
@@ -295,8 +277,6 @@ let rec_check_tests =
 (* Run tests *)
 
 let tests = add_tests
-  @ fold_tests
-  @ filter_tests
   @ sup_tests
   @ sub_tests
   @ bellman_ford_tests

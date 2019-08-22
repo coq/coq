@@ -1067,9 +1067,9 @@ let rec eq_constr nargs m n =
 let equal n m = eq_constr 0 m n (* to avoid tracing a recursive fun *)
 
 let eq_constr_univs eq_annot leq_annot univs m n =
-  if m == n then true, empty
+  if m == n then true, empty ()
   else
-    let cstrnts = ref empty in
+    let cstrnts = ref (empty ()) in
     let eq_universes _ _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' nargs m n =
@@ -1080,9 +1080,9 @@ let eq_constr_univs eq_annot leq_annot univs m n =
     res, !cstrnts
 
 let leq_constr_univs eq_annot leq_annot univs m n =
-  if m == n then true, empty
+  if m == n then true, empty ()
   else
-    let cstrnts = ref empty in
+    let cstrnts = ref (empty ()) in
     let eq_universes _ _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 ||
       UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in

@@ -715,7 +715,7 @@ and convert_list l2r infos lft1 lft2 v1 v2 cuniv = match v1, v2 with
 | _, _ -> raise NotConvertible
 
 let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
-  let cstrnts = ref Constraints.empty in
+  let cstrnts = ref (Constraints.empty ()) in
   let reds = CClosure.RedFlags.red_add_transparent betaiotazeta trans in
   let infos = create_clos_infos ~evars reds env in
   let infos = {

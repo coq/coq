@@ -4,7 +4,7 @@ open Util
 (** Helpers *)
 let (<<) f g x = f @@ g x
 
-(** Stage variables and stage annotations *)
+(** Collection of stage variables *)
 
 module SVars =
 struct
@@ -19,6 +19,8 @@ struct
     let pr_var v = str "s" ++ int v in
     seq [str "{"; pr_enum pr_var (elements vars); str "}"]
 end
+
+(** Stages, for sized annotations *)
 
 module Stage =
 struct
@@ -49,6 +51,8 @@ struct
       if Int.equal n 0 then pp else
       seq [pp; str "+"; int n]
 end
+
+(** Annotations, attached to (co)inductive types *)
 
 module Annot =
 struct
@@ -98,7 +102,7 @@ struct
     | Stage (StageVar (n, i)) -> combine3 5 (Int.hash n) (Int.hash i)
 end
 
-(** Stage sets and state *)
+(** Stage state, keeping track of used stage variables *)
 
 module State =
 struct
@@ -160,119 +164,85 @@ struct
     seq [str"<"; stg_pp; pr_comma (); vars_pp; pr_comma (); stars_pp; str ">"]
 end
 
-(** Stage constraints and sets of constraints *)
+(** Collections of stage constraints *)
 
-(** Constraints.t: A tuple of two maps mto and mfrom,
-      where mto, mfrom are {var -> set of (var, weight)}
-      Given a constraint v1+s1 ⊑ v2+s2, we update
-      mto   {v1 -> Sv1 ∪ {(v2, s2 - s1)}} and
-      mfrom {v2 -> Sv2 ∪ {(v1, s1 - s2)}}
-      We keep both mto and mfrom for easy access to both
-      a stage variable's substages and superstages
-      N.B. Infty stages are stored as (-1)
-    Generic functions: fold, filter
-    Set-like functions: empty, union[_list], remove, contains, add
-    Graph-like functions: sup, sub, vertices *)
+(* Constraints.t: A weighted, directed graph.
+  Given a constraint v1+s1 ⊑ v2+s2, we add an edge
+  from v1 to v2 with weight s2 - s1.
+  N.B. Infty stages are stored as (-1) *)
 module Constraints =
 struct
   open Stage
   open Annot
 
-  module Map = Int.Map
-  module Set = Set.Make(struct
-    type t = SVars.var * int
-    let compare (v1, w1) (v2, w2) =
-      let vc = Int.compare v1 v2 in
-      if not (Int.equal vc 0) then vc
-      else Int.compare w1 w2
-  end)
-  type t = Set.t Map.t * Set.t Map.t
+  module G = WeightedDigraph.Make(Int)
+  type t = G.t
   type 'a constrained = 'a * t
 
   let infty = Stage.infty
 
-  let fold f (mto, _) =
-    Map.fold (fun vfrom -> Set.fold (fun (vto, wt) -> f vfrom vto wt)) mto
-  let filter f (mto, mfrom) =
-    let f_rev vfrom vto wt = f vto vfrom (-wt) in
-    let filter_from_set pred vfrom =
-      Set.filter (fun (vto, wt) -> pred vfrom vto wt) in
-    let filter_from_map pred =
-      Map.mapi (filter_from_set pred) in
-    filter_from_map f mto, filter_from_map f_rev mfrom
-
-  let empty = Map.empty, Map.empty
-  let union (mto1, mfrom1) (mto2, mfrom2) =
-    let f _ so1 so2 =
-      match so1, so2 with
-      | Some s1, Some s2 -> Some (Set.union s1 s2)
-      | Some _, _ -> so1
-      | _, Some _ -> so2
-      | _ -> None in
-    Map.merge f mto1 mto2, Map.merge f mfrom1 mfrom2
-  let union_list = List.fold_left union empty
-  let remove var (mto, mfrom) =
-    let remove_from_map var map =
-      let has_base (v, _) = Stage.var_equal v var in
-      Map.map (Set.filter has_base) (Map.remove var map) in
-    remove_from_map var mto, remove_from_map var mfrom
-  let contains (vfrom, vto) (mto, _) =
-    match Map.find_opt vfrom mto with
-    | None -> false
-    | Some vtos ->
-      Set.exists (fun (vto', _) -> Stage.var_equal vto vto') vtos
-
-  let add a1 a2 ((mto, mfrom) as t) =
-    let add_to_map vfrom vto wt =
-      let f so =
-        match so with
-        | Some s -> Some (Set.add (vto, wt) s)
-        | None -> Some (Set.singleton (vto, wt)) in
-      Map.update vfrom f in
-    let add_stages s1 s2 =
-      match s1, s2 with
-      | Infty, Infty -> t
-      | StageVar (var1, sz1), StageVar (var2, sz2) ->
-        if var_equal var1 var2 && sz1 <= sz2 then t
-        else add_to_map var1 var2 (sz2 - sz1) mto, add_to_map var2 var1 (sz1 - sz2) mfrom
-      | Infty, StageVar (var, _) ->
-        add_to_map infty var 0 mto, add_to_map var infty 0 mfrom
-      | StageVar _, Infty -> t in
+  let empty () = G.create ()
+  let union_list gs =
+    let size = List.fold_left (+) 0 @@ List.map G.nb_vertex gs in
+    let g = G.create ~size () in
+    List.iter (G.iter_edges_e (G.add_edge_e g)) gs; g
+  let union g1 g2 = union_list [g1;g2]
+  let remove g s =
+    if G.mem_vertex g s
+    then
+      let g' = G.copy g in
+      G.remove_vertex g' s; g'
+    else g
+  let contains g vfrom vto =
+    not @@ List.is_empty @@ G.find_all_edges g vfrom vto
+  let add a1 a2 g =
+    begin
     match a1, a2 with
-    | Stage s1, Stage s2 -> add_stages s1 s2
-    | _ -> t
+    | Stage s1, Stage s2 ->
+      begin
+      match s1, s2 with
+      | Infty, Infty -> g
+      | StageVar (var1, sz1), StageVar (var2, sz2) ->
+        if var_equal var1 var2 && sz1 <= sz2 then g
+        else
+          let g' = G.copy g in
+          G.add_edge_e g' (var1, (sz2 - sz1), var2); g'
+      | Infty, StageVar (var, _) ->
+        let g' = G.copy g in
+        G.add_edge_e g' (infty, 0, var); g'
+      | StageVar _, Infty -> g
+      end
+    | _ -> g
+    end
 
-  let adjacent s m =
-    let map f set = Set.fold (SVars.add << f) set SVars.empty in
-    Map.find_opt s m
-      |> Option.default Set.empty
-      |> map fst
-      |> SVars.filter (not << Stage.var_equal infty)
-  let sup s (mto, _) = adjacent s mto
-  let sub s (_, mfrom) = adjacent s mfrom
+  let sup g s =
+    if G.mem_vertex g s
+    then SVars.of_list @@ G.succ g s
+    else SVars.empty
+  let sub g s =
+    if G.mem_vertex g s
+    then SVars.of_list @@ G.pred g s
+    else SVars.empty
 
-  let vertices (mto, mfrom) =
-    let get_keys m =
-      (Map.fold (fun key _ set -> SVars.add key set) m SVars.empty) in
-    SVars.union (get_keys mto) (get_keys mfrom)
+  let bellman_ford g =
+    let edges = G.bellman_ford g in
+    List.fold_left (fun vars (vfrom, _, vto) ->
+      SVars.add vfrom @@ SVars.add vto vars) SVars.empty edges
 
-  let pr (mto, _mfrom : t) =
+  let pr g =
     let open Pp in
-    let pr_constraint key value wt =
+    let pr_edge (vfrom, wt, vto) =
       let sfrom, sto =
         if wt >= 0
-        then StageVar (key, 0), StageVar (value, wt)
-        else StageVar (key, -wt), StageVar (value, 0) in
-      let sfrom = if Stage.var_equal key   infty then Infty else sfrom in
-      let sto   = if Stage.var_equal value infty then Infty else sto   in
+        then StageVar (vfrom,   0), StageVar (vto, wt)
+        else StageVar (vfrom, -wt), StageVar (vto,  0) in
+      let sfrom = if Stage.var_equal vfrom infty then Infty else sfrom in
+      let sto   = if Stage.var_equal vto   infty then Infty else sto   in
       seq [Stage.pr sfrom; str "⊑"; Stage.pr sto] in
-    let pr_set key set =
-      let lpr_set = Set.fold (fun (value, wt) lpr -> pr_constraint key value wt :: lpr) set [] in
-      prlist_with_sep pr_comma identity lpr_set in
-    let pr_map =
-      let lpr_map = Map.fold (fun key set lpr -> pr_set key set :: lpr) mto [] in
-      prlist_with_sep pr_comma identity lpr_map in
-    seq [str "{"; pr_map; str "}"]
+    let pr_graph =
+      prlist_with_sep pr_comma identity @@
+      G.fold_edges_e (fun edge prs -> pr_edge edge :: prs) g [] in
+    seq [str "{"; pr_graph; str "}"]
 end
 
 (** RecCheck *)
@@ -280,41 +250,8 @@ open SVars
 
 exception RecCheckFailed of Constraints.t * SVars.t * SVars.t
 
-let bellman_ford cstrnts src =
-  let vertices = Constraints.vertices cstrnts in
-  let distances = SVars.fold (fun var -> Int.Map.add var None) vertices Int.Map.empty in
-  let distances = Int.Map.set src (Some 0) distances in
-  let get_fromto vfrom vto distances =
-    Int.Map.get vfrom distances,
-    Int.Map.get vto   distances in
-  let relax =
-    Constraints.fold (fun vfrom vto wt distances ->
-      match get_fromto vfrom vto distances with
-      | Some ifrom, Some ito when ifrom + wt < ito ->
-        Int.Map.set vto (Some (ifrom + wt)) distances
-      | Some ifrom, None ->
-        Int.Map.set vto (Some (ifrom + wt)) distances
-      | _ -> distances)
-    cstrnts in
-  let rec relax_all i distances =
-    if Int.equal i 1 then distances
-    else
-      let distances' = relax distances in
-      if distances == distances' then distances
-      else relax_all (i - 1) distances' in
-  let distances = relax_all (Int.Set.cardinal vertices) distances in
-  let check_neg vfrom vto wt =
-    match get_fromto vfrom vto distances with
-    | Some ifrom, Some ito -> ifrom + wt < ito
-    | Some _, None -> true
-    | _ -> false in
-  let neg_edges = Constraints.filter check_neg cstrnts in
-  Constraints.fold (fun vfrom _ _ -> add vfrom) neg_edges empty
-
-let bellman_ford_all cstrnts =
-  let vertices = Constraints.vertices cstrnts in
-  fold (fun vertex -> union (bellman_ford cstrnts vertex)) vertices empty
-
+(* We could use ocamlgraph's Fixpoint module to compute closures
+  but their implementation is very wordy and this suffices *)
 let closure get_adj cstrnts init =
   let rec closure_rec init fin =
     match choose_opt init with
@@ -324,7 +261,7 @@ let closure get_adj cstrnts init =
       if mem s fin
       then closure_rec init_rest fin
       else
-        let init_new = get_adj s cstrnts in
+        let init_new = get_adj cstrnts s in
         closure_rec (union init_rest init_new) (add s fin) in
   filter (not << Stage.var_equal Stage.infty) (closure_rec init empty)
 
@@ -332,18 +269,26 @@ let downward = closure Constraints.sub
 let upward = closure Constraints.sup
 
 let rec_check alpha vstar vneq cstrnts =
-  let f annot_sub var_sup cstrnts = Constraints.add annot_sub (Annot.mk var_sup 0) cstrnts in
+  let add_from_set annot_sub =
+    fold (fun var_sup cstrnts ->
+      Constraints.add annot_sub (Annot.mk var_sup 0) cstrnts) in
+  let remove_from_set =
+    fold (fun var cstrnts ->
+      Constraints.remove cstrnts var) in
 
   (* Step 1: Si = downward closure containing V* *)
   let si = downward cstrnts vstar in
 
   (* Step 2: Add α ⊑ Si *)
-  let cstrnts1 = fold (f (Annot.mk alpha 0)) si cstrnts in
+  let cstrnts1 = add_from_set (Annot.mk alpha 0) si cstrnts in
 
   (* Step 3: Remove negative cycles *)
-  let v_neg = upward cstrnts1 (bellman_ford_all cstrnts1) in
-  let cstrnts2 = fold Constraints.remove v_neg cstrnts1 in
-  let cstrnts3 = fold (f Annot.infty) v_neg cstrnts2 in
+  let rec remove_neg cstrnts =
+    let v_neg = upward cstrnts (Constraints.bellman_ford cstrnts) in
+    let cstrnts_neg = remove_from_set v_neg cstrnts in
+    let cstrnts_inf = add_from_set Annot.infty v_neg cstrnts_neg in
+    if is_empty v_neg then cstrnts else remove_neg cstrnts_inf in
+  let cstrnts2 = remove_neg cstrnts1 in
 
   (* Step 4: Si⊑ = upward closure containing Si *)
   let si_up = upward cstrnts2 si in
@@ -353,12 +298,12 @@ let rec_check alpha vstar vneq cstrnts =
 
   (* Step 6: Add ∞ ⊑ S¬i ∩ Si⊑ *)
   let si_inter = inter si_neq si_up in
-  let cstrnts4 = fold (f Annot.infty) si_inter cstrnts3 in
+  let cstrnts3 = add_from_set Annot.infty si_inter cstrnts2 in
 
   (* Step 7: S∞ = upward closure containing {∞} *)
-  let si_inf = upward cstrnts4 (singleton Stage.infty) in
+  let si_inf = upward cstrnts3 (singleton Stage.infty) in
 
   (* Step 8: Check S∞ ∩ Si = ∅ *)
   let si_null = inter si_inf si in
-  if is_empty si_null then cstrnts4
+  if is_empty si_null then cstrnts3
   else raise (RecCheckFailed (cstrnts, si_inf, si))
