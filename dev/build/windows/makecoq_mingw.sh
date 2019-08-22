@@ -1132,7 +1132,7 @@ function make_findlib {
 function make_dune {
   make_ocaml
 
-  if build_prep https://github.com/ocaml/dune/archive/ 1.6.3 tar.gz 1 dune-1.6.3 ; then
+  if build_prep https://github.com/ocaml/dune/archive/ 1.10.0 tar.gz 1 dune-1.10.0 ; then
 
     log2 make release
     log2 make install

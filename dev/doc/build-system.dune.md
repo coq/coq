@@ -52,7 +52,7 @@ order to use them, do:
 
 ```
 $ make -f Makefile.dune voboot                # Only once per session
-$ dune exec dev/shim/coqtop-prelude
+$ dune exec -- dev/shim/coqtop-prelude
 ```
 
 or `quickide` / `dev/shim/coqide-prelude` for CoqIDE. These targets
@@ -108,14 +108,14 @@ automatically.
 You can use `ocamldebug` with Dune; after a build, do:
 
 ```
-dune exec dev/dune-dbg /path/to/foo.v
+dune exec -- dev/dune-dbg /path/to/foo.v
 (ocd) source dune_db
 ```
 
 or
 
 ```
-dune exec dev/dune-dbg checker Foo
+dune exec -- dev/dune-dbg checker Foo
 (ocd) source dune_db
 ```
 
@@ -130,7 +130,7 @@ For running in emacs, use `coqdev-ocamldebug` from `coqdev.el`.
 
 After doing `make -f Makefile.dune voboot`, the following commands should work:
 ```
-dune exec dev/shim/coqbyte-prelude
+dune exec -- dev/shim/coqbyte-prelude
 > Drop.
 # #directory "dev";;
 # #use "include_dune";;
