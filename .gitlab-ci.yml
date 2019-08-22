@@ -367,7 +367,8 @@ pkg:nix:deploy:channel:
   only:
     variables:
       - $CACHIX_DEPLOYMENT_KEY
-  dependencies:
+  dependencies: []
+  needs:
     - pkg:nix:deploy
   script:
     - echo "$CACHIX_DEPLOYMENT_KEY" | tr -d '\r' | ssh-add - > /dev/null
@@ -411,6 +412,10 @@ doc:refman:deploy:
     variables:
       - $DOCUMENTATION_DEPLOY_KEY
   dependencies:
+    - doc:ml-api:odoc
+    - doc:refman:dune
+    - doc:stdlib:dune
+  needs:
     - doc:ml-api:odoc
     - doc:refman:dune
     - doc:stdlib:dune
