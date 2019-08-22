@@ -110,6 +110,8 @@ before_script:
 
 .dune-ci-template:
   stage: test
+  needs:
+    - build:edge+flambda:dune:dev
   dependencies:
     - build:edge+flambda:dune:dev
   script:
@@ -192,11 +194,15 @@ before_script:
     - make -f Makefile.ci -j "$NJOBS" "${CI_JOB_NAME#*:}"
     - echo 'end:coq.test'
     - set +e
+  needs:
+    - build:base
   dependencies:
     - build:base
 
 .ci-template-flambda:
   extends: .ci-template
+  needs:
+    - build:edge+flambda
   dependencies:
     - build:edge+flambda
   variables:
