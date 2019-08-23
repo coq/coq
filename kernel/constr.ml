@@ -829,6 +829,7 @@ let map_with_binders g f l c0 = match kind c0 with
 let rec count_annots cstr =
   match cstr with
   | Rel (_, la) -> List.length (Option.default [] la)
+  | Var (_, la) -> List.length (Option.default [] la)
   | Cast (c, _, _)
   | Lambda (_, _, c) ->
     count_annots c
@@ -846,7 +847,7 @@ let rec count_annots cstr =
 
 let rec collect_annots c =
   match c with
-  | Rel (_, la) | Const (_, la) ->
+  | Rel (_, la) | Var (_, la) | Const (_, la) ->
     let collect vars = function
       | Stage (StageVar (na, _)) -> SVars.add na vars
       | _ -> vars in
@@ -869,6 +870,10 @@ let rec map_annots
     let la' = g la in
     if la == la' then cstr else
     mkRelA n (Some la')
+  | Var (n, Some la) ->
+    let la' = g la in
+    if la == la' then cstr else
+    mkVarA n (Some la')
   | Cast (c, k, t) ->
     let c' = map_annots f g c in
     if c == c' then cstr else
