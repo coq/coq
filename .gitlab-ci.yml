@@ -2,11 +2,14 @@ image: "$IMAGE"
 
 stages:
   - docker
-  - build
-  - test
-  - test-with-deps-1
-  - test-with-deps-2
+  - stage-1 # No dependencies
+  - stage-2 # Only dependencies in stage 1
+  - stage-3 # Only dependencies in stage 1 and 2
+  - stage-4 # Only dependencies in stage 1, 2 and 3
   - deploy
+
+# When a job has no dependencies, it goes to stage 1.
+# Otherwise, we set "needs" and "dependencies" to the same value.
 
 # some default values
 variables:
@@ -55,7 +58,7 @@ before_script:
 
 # TODO figure out how to build doc for installed Coq
 .build-template:
-  stage: build
+  stage: stage-1
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
@@ -93,7 +96,7 @@ before_script:
 
 # Template for building Coq + stdlib, typical use: overload the switch
 .dune-template:
-  stage: build
+  stage: stage-1
   dependencies: []
   script:
     - set -e
@@ -109,7 +112,7 @@ before_script:
     expire_in: 1 week
 
 .dune-ci-template:
-  stage: test
+  stage: stage-2
   needs:
     - build:edge+flambda:dune:dev
   dependencies:
@@ -133,7 +136,7 @@ before_script:
 # overridden otherwise the CI will fail.
 
 .doc-template:
-  stage: test
+  stage: stage-2
   dependencies:
     - not-a-real-job
   script:
@@ -148,7 +151,7 @@ before_script:
 
 # set dependencies when using
 .test-suite-template:
-  stage: test
+  stage: stage-2
   dependencies:
     - not-a-real-job
   script:
@@ -171,7 +174,7 @@ before_script:
 
 # set dependencies when using
 .validate-template:
-  stage: test
+  stage: stage-2
   dependencies:
     - not-a-real-job
   script:
@@ -187,7 +190,7 @@ before_script:
     expire_in: 2 months
 
 .ci-template:
-  stage: test
+  stage: stage-2
   script:
     - set -e
     - echo 'start:coq.test'
@@ -210,7 +213,7 @@ before_script:
     OPAM_VARIANT: "+flambda"
 
 .windows-template:
-  stage: test
+  stage: stage-1
   artifacts:
     name: "%CI_JOB_NAME%"
     paths:
@@ -269,7 +272,7 @@ build:edge+flambda:dune:dev:
 
 build:base+async:
   extends: .build-template
-  stage: test
+  stage: stage-1
   variables:
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
     COQUSERFLAGS: "-async-proofs on"
@@ -303,7 +306,7 @@ windows32:
     - /^pr-.*$/
 
 lint:
-  stage: test
+  stage: stage-1
   script: dev/lint-repository.sh
   dependencies: []
   variables:
@@ -311,7 +314,7 @@ lint:
     OPAM_SWITCH: base
 
 pkg:opam:
-  stage: test
+  stage: stage-1
   # OPAM will build out-of-tree so no point in importing artifacts
   dependencies: []
   script:
@@ -328,7 +331,7 @@ pkg:opam:
 
 .nix-template:
   image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git
-  stage: test
+  stage: stage-1
   variables:
     # By default we use coq.cachix.org as an extra substituter but this can be overridden
     EXTRA_SUBSTITUTERS: https://coq.cachix.org
@@ -394,6 +397,8 @@ doc:refman:
   extends: .doc-template
   dependencies:
     - build:base
+  needs:
+    - build:base
 
 doc:refman:dune:
   extends: .dune-ci-template
@@ -454,10 +459,14 @@ test-suite:base:
   extends: .test-suite-template
   dependencies:
     - build:base
+  needs:
+    - build:base
 
 test-suite:base+32bit:
   extends: .test-suite-template
   dependencies:
+    - build:base+32bit
+  needs:
     - build:base+32bit
   variables:
     OPAM_VARIANT: "+32bit"
@@ -467,14 +476,18 @@ test-suite:edge+flambda:
   extends: .test-suite-template
   dependencies:
     - build:edge+flambda
+  needs:
+    - build:edge+flambda
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
   only: *full-ci
 
 test-suite:egde:dune:dev:
-  stage: test
+  stage: stage-2
   dependencies:
+    - build:edge+flambda:dune:dev
+  needs:
     - build:edge+flambda:dune:dev
   script: make -f Makefile.dune test-suite
   variables:
@@ -489,7 +502,7 @@ test-suite:egde:dune:dev:
     # expire_in: never
 
 test-suite:edge+trunk+make:
-  stage: test
+  stage: stage-1
   dependencies: []
   script:
     - opam switch create 4.09.0 --empty
@@ -516,7 +529,7 @@ test-suite:edge+trunk+make:
   only: *full-ci
 
 test-suite:edge+trunk+dune:
-  stage: test
+  stage: stage-1
   dependencies: []
   script:
     - opam switch create 4.09.0 --empty
@@ -548,6 +561,8 @@ test-suite:base+async:
   extends: .test-suite-template
   dependencies:
     - build:base
+  needs:
+    - build:base
   variables:
     COQFLAGS: "-async-proofs on -async-proofs-cache force"
     timeout: "timeout 100m"
@@ -560,10 +575,14 @@ validate:base:
   extends: .validate-template
   dependencies:
     - build:base
+  needs:
+    - build:base
 
 validate:base+32bit:
   extends: .validate-template
   dependencies:
+    - build:base+32bit
+  needs:
     - build:base+32bit
   variables:
     OPAM_VARIANT: "+32bit"
@@ -573,6 +592,8 @@ validate:edge+flambda:
   extends: .validate-template
   dependencies:
     - build:edge+flambda
+  needs:
+    - build:edge+flambda
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
@@ -581,6 +602,8 @@ validate:edge+flambda:
 validate:quick:
   extends: .validate-template
   dependencies:
+    - build:quick
+  needs:
     - build:quick
   only:
     variables:
@@ -597,7 +620,7 @@ library:ci-bedrock2:
 
 library:ci-color:
   extends: .ci-template-flambda
-  stage: test-with-deps-1
+  stage: stage-3
   needs:
   - build:edge+flambda
   - plugin:ci-bignums
@@ -628,7 +651,7 @@ library:ci-flocq:
 
 library:ci-corn:
   extends: .ci-template-flambda
-  stage: test-with-deps-2
+  stage: stage-4
   needs:
   - build:edge+flambda
   - library:ci-math-classes
@@ -647,7 +670,7 @@ library:ci-iris-lambda-rust:
 
 library:ci-math-classes:
   extends: .ci-template-flambda
-  stage: test-with-deps-1
+  stage: stage-3
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
@@ -711,7 +734,7 @@ plugin:ci-paramcoq:
   extends: .ci-template
 
 plugin:plugin-tutorial:
-  stage: test
+  stage: stage-1
   dependencies: []
   script:
     - ./configure -local -warn-error yes
