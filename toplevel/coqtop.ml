@@ -293,6 +293,9 @@ let rec coqc_deprecated_check args acc extras =
   | ("-compile"|"-compile-verbose") :: file :: rem ->
     deprecated_coqc_warning "-compile";
     call_coqc args
+  | ("-schedule-vio2vo"|"-schedule-vio-checking") as opt :: _ ->
+    deprecated_coqc_warning opt;
+    call_coqc args
   | x :: rem ->
     coqc_deprecated_check args (x::acc) rem
 
