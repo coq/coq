@@ -94,25 +94,22 @@ let search_guard ?loc env possible_indexes fixdefs =
   else
     (* we now search recursively among all combinations *)
     (try
-       List.iter
-         (fun l ->
-            let indexes = Array.of_list l in
-            let fix = ((Array.map (fun i -> Some i) indexes, 0),fixdefs) in
-            (* spiwack: We search for a unspecified structural
-               argument under the assumption that we need to check the
-               guardedness condition (otherwise the first inductive argument
-               will be chosen). A more robust solution may be to raise an
-               error when totality is assumed but the strutural argument is
-               not specified. *)
-            try
-              let flags = { (typing_flags env) with Declarations.check_guarded = true } in
-              let env = Environ.set_typing_flags flags env in
-              check_fix env fix; raise (Found indexes)
-            with TypeError _ -> ())
-         (List.combinations possible_indexes);
-       let errmsg = "Cannot guess decreasing argument of fix." in
-         user_err ?loc ~hdr:"search_guard" (Pp.str errmsg)
-     with Found indexes -> indexes)
+      List.iter (fun l ->
+        let indexes = Array.of_list l in
+        let fix = ((Array.map (fun i -> Some i) indexes, 0),fixdefs) in
+        (* spiwack: We search for a unspecified structural
+           argument under the assumption that we need to check the
+           guardedness condition (otherwise the first inductive argument
+           will be chosen). A more robust solution may be to raise an
+           error when totality is assumed but the strutural argument is
+           not specified. *)
+        try
+          check_fix env fix; raise (Found indexes)
+        with TypeError _ -> ())
+      (List.combinations possible_indexes);
+      let errmsg = "Cannot guess decreasing argument of fix." in
+      user_err ?loc ~hdr:"search_guard" (Pp.str errmsg)
+    with Found indexes -> indexes)
 
 let esearch_guard ?loc env sigma indexes fix =
   let fix = nf_fix sigma fix in

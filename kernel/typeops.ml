@@ -656,7 +656,7 @@ let rec execute env stg cstr =
           try_vn @@ List.hd possible_indices
         else
           List.iter (fun vn -> try try_vn vn with TypeError _ -> ()) possible_indices;
-          user_err ~hdr:"search_guard"
+          user_err ~hdr:"execute"
             (Pp.str "Cannot guess decreasing argument of fix.")
       with Found (stg, cstrnt, c, ty) ->
         stg, cstrnt, c, ty
