@@ -738,7 +738,7 @@ let explain_unsatisfied_stage_constraints env sigma cstrnts cstr si_inf si =
   strbrk "could not be set to a finite stage variable."
   (*
   strbrk "Unsatisfied stage constraints: In the (co)fixpoint" ++
-  spc () ++ pr_lconstr_env env sigma cstr ++ pr_comma () ++
+  fnl () ++ pr_leconstr_env env sigma cstr ++ pr_comma () ++ fnl () ++
   strbrk "given constraints" ++
   spc () ++ Stages.Constraints.pr cstrnts ++ pr_comma () ++
   str "stage variables" ++
