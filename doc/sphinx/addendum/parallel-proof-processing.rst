@@ -162,7 +162,7 @@ need to process all the proofs of the ``.v`` file.
 The asynchronous processing of proofs can decouple the generation of a
 compiled file (like the ``.vo`` one) that can be loaded by ``Require`` from the
 generation and checking of the proof objects. The ``-quick`` flag can be
-passed to ``coqc`` or ``coqtop`` to produce, quickly, ``.vio`` files.
+passed to ``coqc`` to produce, quickly, ``.vio`` files.
 Alternatively, when using a Makefile produced by ``coq_makefile``,
 the ``quick`` target can be used to compile all files using the ``-quick`` flag.
 
@@ -182,7 +182,7 @@ running ``coqc`` as usual.
 
 Alternatively one can turn each ``.vio`` into the corresponding ``.vo``. All
 .vio files can be processed in parallel, hence this alternative might
-be faster. The command ``coqtop -schedule-vio2vo 2 a b c`` can be used to
+be faster. The command ``coqc -schedule-vio2vo 2 a b c`` can be used to
 obtain a good scheduling for two workers to produce ``a.vo``, ``b.vo``, and
 ``c.vo``. When using a Makefile produced by ``coq_makefile``, the ``vio2vo`` target
 can be used for that purpose. Variable ``J`` should be set to the number
@@ -197,7 +197,7 @@ There is an extra, possibly even faster, alternative: just check the
 proof tasks stored in ``.vio`` files without producing the ``.vo`` files. This
 is possibly faster because all the proof tasks are independent, hence
 one can further partition the job to be done between workers. The
-``coqtop -schedule-vio-checking 6 a b c`` command can be used to obtain a
+``coqc -schedule-vio-checking 6 a b c`` command can be used to obtain a
 good scheduling for 6 workers to check all the proof tasks of ``a.vio``,
 ``b.vio``, and ``c.vio``. Auxiliary files are used to predict how long a proof
 task will take, assuming it will take the same amount of time it took
