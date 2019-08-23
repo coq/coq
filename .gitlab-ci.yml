@@ -103,13 +103,16 @@ before_script:
     - set -e
     - make -f Makefile.dune world
     - set +e
+    - tar cfj _build.tar.bz2 _build
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
   artifacts:
     name: "$CI_JOB_NAME"
+    when: always
     paths:
-      - _build/
+      - _build/log
+      - _build.tar.bz2
     expire_in: 1 week
 
 .dune-ci-template:
@@ -119,6 +122,7 @@ before_script:
   dependencies:
     - build:edge+flambda:dune:dev
   script:
+    - tar xfj _build.tar.bz2
     - set -e
     - echo 'start:coq.test'
     - make -f Makefile.dune "$DUNE_TARGET"
@@ -128,6 +132,7 @@ before_script:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
   artifacts:
+    when: always
     name: "$CI_JOB_NAME"
     expire_in: 2 months
 
@@ -406,6 +411,7 @@ doc:refman:dune:
     DUNE_TARGET: refman-html
   artifacts:
     paths:
+      - _build/log
       - _build/default/doc/sphinx_build/html
 
 doc:stdlib:dune:
@@ -414,6 +420,7 @@ doc:stdlib:dune:
     DUNE_TARGET: stdlib-html
   artifacts:
     paths:
+      - _build/log
       - _build/default/doc/stdlib/html
 
 doc:refman:deploy:
@@ -453,6 +460,7 @@ doc:ml-api:odoc:
     DUNE_TARGET: apidoc
   artifacts:
     paths:
+      - _build/log
       - _build/default/_doc/
 
 test-suite:base:
@@ -483,13 +491,15 @@ test-suite:edge+flambda:
     OPAM_VARIANT: "+flambda"
   only: *full-ci
 
-test-suite:egde:dune:dev:
+test-suite:edge:dune:dev:
   stage: stage-2
   dependencies:
     - build:edge+flambda:dune:dev
   needs:
     - build:edge+flambda:dune:dev
-  script: make -f Makefile.dune test-suite
+  script:
+    - tar xfj _build.tar.bz2
+    - make -f Makefile.dune test-suite
   variables:
     OPAM_SWITCH: edge
     OPAM_VARIANT: "+flambda"
