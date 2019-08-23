@@ -25,7 +25,6 @@ open Namegen
 open Libnames
 open Globnames
 open Mod_subst
-open Decl_kinds
 open Context.Named.Declaration
 open Ltac_pretype
 

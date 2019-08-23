@@ -36,7 +36,6 @@ open Ppconstr
 open Printer
 open Globnames
 open Namegen
-open Decl_kinds
 open Evar_kinds
 open Constrexpr
 open Constrexpr_ops

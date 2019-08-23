@@ -17,7 +17,6 @@
    arguments and pattern-matching compilation are not. *)
 
 open Names
-open Decl_kinds
 
 type existential_name = Id.t
 
@@ -65,6 +64,8 @@ type 'a cases_pattern_r =
 and 'a cases_pattern_g = ('a cases_pattern_r, 'a) DAst.t
 
 type cases_pattern = [ `any ] cases_pattern_g
+
+type binding_kind = Explicit | Implicit
 
 (** Representation of an internalized (or in other words globalized) term. *)
 type 'a glob_constr_r =

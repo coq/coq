@@ -93,7 +93,7 @@ val compute_implicits_names : env -> Evd.evar_map -> types -> Name.t list
 
 (** {6 Computation of implicits (done using the global environment). } *)
 
-val declare_var_implicits : variable -> unit
+val declare_var_implicits : variable -> impl:Glob_term.binding_kind -> unit
 val declare_constant_implicits : Constant.t -> unit
 val declare_mib_implicits : MutInd.t -> unit
 

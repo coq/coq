@@ -11,7 +11,6 @@
 (*i*)
 open Names
 open Context
-open Decl_kinds
 open CErrors
 open Util
 open Glob_term

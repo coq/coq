@@ -15,7 +15,6 @@ open Names
 open Constr
 open Globnames
 open Declarations
-open Decl_kinds
 open Lib
 open Libobject
 open EConstr
@@ -486,12 +485,17 @@ let subst_implicits_decl subst (r,imps as o) =
 let subst_implicits (subst,(req,l)) =
   (ImplLocal,List.Smart.map (subst_implicits_decl subst) l)
 
+(* This was moved out of lib.ml, however it is not stored with regular
+   implicit data *)
+let sec_implicits =
+  Summary.ref Id.Map.empty ~name:"section-implicits"
+
 let impls_of_context ctx =
   let map decl =
     let id = NamedDecl.get_id decl in
-    match Lib.variable_section_kind id with
-    | Implicit -> Some (id, Manual, (true, true))
-    | _ -> None
+    match Id.Map.get id !sec_implicits with
+    | Glob_term.Implicit -> Some (id, Manual, (true, true))
+    | Glob_term.Explicit -> None
   in
   List.rev_map map (List.filter (NamedDecl.is_local_assum) ctx)
 
@@ -579,9 +583,10 @@ let declare_implicits local ref =
     if is_local local ref then ImplLocal else ImplInteractive(flags,ImplAuto) in
     declare_implicits_gen req flags ref
 
-let declare_var_implicits id =
+let declare_var_implicits id ~impl =
   let flags = !implicit_args in
-    declare_implicits_gen ImplLocal flags (GlobRef.VarRef id)
+  sec_implicits := Id.Map.add id impl !sec_implicits;
+  declare_implicits_gen ImplLocal flags (GlobRef.VarRef id)
 
 let declare_constant_implicits con =
   let flags = !implicit_args in

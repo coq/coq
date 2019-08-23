@@ -61,7 +61,7 @@ let vernac_string_notation local ty f g scope =
   let of_ty = Smartlocate.global_with_alias g in
   let cty = cref ty in
   let arrow x y =
-    mkProdC ([CAst.make Anonymous],Default Decl_kinds.Explicit, x, y)
+    mkProdC ([CAst.make Anonymous],Default Glob_term.Explicit, x, y)
   in
   let constructors = get_constructors tyc in
   (* Check the type of f *)

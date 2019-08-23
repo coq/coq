@@ -48,6 +48,9 @@ val mkGApp : ?loc:Loc.t -> 'a glob_constr_g -> 'a glob_constr_g -> 'a glob_const
 val map_glob_constr :
   (glob_constr -> glob_constr) -> glob_constr -> glob_constr
 
+(** Equality on [binding_kind] *)
+val binding_kind_eq : binding_kind -> binding_kind -> bool
+
 (** Ensure traversal from left to right *)
 val map_glob_constr_left_to_right :
   (glob_constr -> glob_constr) -> glob_constr -> glob_constr

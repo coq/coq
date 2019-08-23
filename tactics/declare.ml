@@ -300,7 +300,7 @@ let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind 
 (** Declaration of section variables and local definitions *)
 type variable_declaration =
   | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
-  | SectionLocalAssum of { typ:Constr.types; univs:Univ.ContextSet.t; poly:bool; impl:bool }
+  | SectionLocalAssum of { typ:Constr.types; univs:Univ.ContextSet.t; poly:bool; impl:Glob_term.binding_kind }
 
 (* This object is only for things which iterate over objects to find
    variables (only Prettyp.print_context AFAICT) *)
@@ -317,7 +317,6 @@ let declare_variable ~name ~kind d =
     | SectionLocalAssum {typ;univs;poly;impl} ->
       let () = declare_universe_context ~poly univs in
       let () = Global.push_named_assum (name,typ) in
-      let impl = if impl then Decl_kinds.Implicit else Decl_kinds.Explicit in
       impl, true, poly
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
@@ -342,14 +341,14 @@ let declare_variable ~name ~kind d =
         secdef_type = de.proof_entry_type;
       } in
       let () = Global.push_named_def (name, se) in
-      Decl_kinds.Explicit, de.proof_entry_opaque,
+      Glob_term.Explicit, de.proof_entry_opaque,
       poly
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
-  add_section_variable ~name ~kind:impl ~poly;
+  add_section_variable ~name ~poly;
   Decls.(add_variable_data name {opaque;kind});
   add_anonymous_leaf (inVariable ());
-  Impargs.declare_var_implicits name;
+  Impargs.declare_var_implicits ~impl name;
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)
 
 (** Declaration of inductive blocks *)

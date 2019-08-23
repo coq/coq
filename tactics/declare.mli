@@ -23,7 +23,7 @@ open Entries
 
 type variable_declaration =
   | SectionLocalDef of Evd.side_effects Proof_global.proof_entry
-  | SectionLocalAssum of { typ:types; univs:Univ.ContextSet.t; poly:bool; impl:bool }
+  | SectionLocalAssum of { typ:types; univs:Univ.ContextSet.t; poly:bool; impl:Glob_term.binding_kind }
 
 type 'a constant_entry =
   | DefinitionEntry of 'a Proof_global.proof_entry

@@ -170,7 +170,7 @@ type inductive_expr =
 type one_inductive_expr =
   lident * local_binder_expr list * constr_expr option * constructor_expr list
 
-type typeclass_constraint = name_decl * Decl_kinds.binding_kind * constr_expr
+type typeclass_constraint = name_decl * Glob_term.binding_kind * constr_expr
 and typeclass_context = typeclass_constraint list
 
 type proof_expr =

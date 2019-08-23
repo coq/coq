@@ -15,7 +15,6 @@ open Names
 open Nameops
 open Constr
 open Globnames
-open Decl_kinds
 open Namegen
 open Glob_term
 open Glob_ops

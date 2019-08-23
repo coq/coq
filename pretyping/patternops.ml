@@ -18,7 +18,6 @@ open Context
 open Glob_term
 open Pp
 open Mod_subst
-open Decl_kinds
 open Pattern
 open Environ
 

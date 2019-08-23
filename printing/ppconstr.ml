@@ -21,7 +21,6 @@ open Glob_term
 open Constrexpr
 open Constrexpr_ops
 open Notation_gram
-open Decl_kinds
 open Namegen
 (*i*)
 

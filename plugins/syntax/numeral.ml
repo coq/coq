@@ -112,7 +112,7 @@ let vernac_numeral_notation local ty f g scope opts =
   let cty = mkRefC ty in
   let app x y = mkAppC (x,[y]) in
   let arrow x y =
-    mkProdC ([CAst.make Anonymous],Default Decl_kinds.Explicit, x, y)
+    mkProdC ([CAst.make Anonymous],Default Glob_term.Explicit, x, y)
   in
   let opt r = app (mkRefC (q_option ())) r in
   let constructors = get_constructors tyc in

@@ -34,7 +34,7 @@ val declare_assumption
   -> Entries.universes_entry
   -> UnivNames.universe_binders
   -> Impargs.manual_implicits
-  -> bool (** implicit *)
+  -> Glob_term.binding_kind
   -> Declaremods.inline
   -> variable CAst.t
   -> GlobRef.t * Univ.Instance.t

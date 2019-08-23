@@ -27,7 +27,6 @@ open Glob_ops
 open Pattern
 open Notation
 open Detyping
-open Decl_kinds
 
 module NamedDecl = Context.Named.Declaration
 (*i*)

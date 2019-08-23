@@ -10,7 +10,6 @@
 
 open Names
 open Libnames
-open Decl_kinds
 
 (** {6 Concrete syntax for terms } *)
 
@@ -39,8 +38,8 @@ type explicitation =
   | ExplByName of Id.t
 
 type binder_kind =
-  | Default of binding_kind
-  | Generalized of binding_kind * bool
+  | Default of Glob_term.binding_kind
+  | Generalized of Glob_term.binding_kind * bool
       (** (Inner binding always Implicit) Outer bindings, typeclass-specific flag
 	 for implicit generalization of superclasses *)
 
@@ -121,7 +120,7 @@ and constr_expr_r =
   | CSort   of Glob_term.glob_sort
   | CCast   of constr_expr * constr_expr Glob_term.cast_type
   | CNotation of notation * constr_notation_substitution
-  | CGeneralization of binding_kind * abstraction_kind option * constr_expr
+  | CGeneralization of Glob_term.binding_kind * abstraction_kind option * constr_expr
   | CPrim of prim_token
   | CDelimiters of string * constr_expr
 and constr_expr = constr_expr_r CAst.t

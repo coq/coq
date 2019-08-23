@@ -258,7 +258,7 @@ let save_remaining_recthms env sigma ~poly ~scope ~udecl uctx body opaq i { Rect
     let open DeclareDef in
     (match scope with
      | Discharge ->
-       let impl = false in (* copy values from Vernacentries *)
+       let impl = Glob_term.Explicit in
        let univs = match univs with
          | Polymorphic_entry (_, univs) ->
            (* What is going on here? *)

@@ -20,7 +20,6 @@ open Stdarg
 open Notation_gram
 open Tactypes
 open Locus
-open Decl_kinds
 open Genredexpr
 open Ppconstr
 open Pputils
@@ -1097,7 +1096,7 @@ let pr_goal_selector ~toplevel s =
     let rec strip_ty acc n ty =
       if Int.equal n 0 then (List.rev acc, (ty,None)) else
         match DAst.get ty with
-            Glob_term.GProd(na,Explicit,a,b) ->
+            Glob_term.GProd(na,Glob_term.Explicit,a,b) ->
               strip_ty (([CAst.make na],(a,None))::acc) (n-1) b
           | _ -> user_err Pp.(str "Cannot translate fix tactic: not enough products") in
     strip_ty [] n ty

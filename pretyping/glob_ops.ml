@@ -67,9 +67,9 @@ let glob_sort_eq u1 u2 = match u1, u2 with
   | (UNamed _ | UAnonymous _), _ -> false
 
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with
-  | Decl_kinds.Explicit, Decl_kinds.Explicit -> true
-  | Decl_kinds.Implicit, Decl_kinds.Implicit -> true
-  | (Decl_kinds.Explicit | Decl_kinds.Implicit), _ -> false
+  | Explicit, Explicit -> true
+  | Implicit, Implicit -> true
+  | (Explicit | Implicit), _ -> false
 
 let case_style_eq s1 s2 = let open Constr in match s1, s2 with
   | LetStyle, LetStyle -> true
