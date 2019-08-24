@@ -3,7 +3,4 @@
  (public_name coq.plugins.tutorial.p2)
  (libraries coq.plugins.ltac))
 
-(rule
- (targets g_tuto2.ml)
- (deps (:pp-file g_tuto2.mlg) )
- (action (run coqpp %{pp-file})))
+(coq.pp (modules g_tuto2))

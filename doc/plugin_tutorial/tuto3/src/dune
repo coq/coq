@@ -4,7 +4,4 @@
  (flags :standard -warn-error -3)
  (libraries coq.plugins.ltac))
 
-(rule
- (targets g_tuto3.ml)
- (deps (:pp-file g_tuto3.mlg))
- (action (run coqpp %{pp-file})))
+(coq.pp (modules g_tuto3))

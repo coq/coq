@@ -4,12 +4,4 @@
  (wrapped false)
  (libraries coq.gramlib interp))
 
-(rule
- (targets g_prim.ml)
- (deps (:mlg-file g_prim.mlg))
- (action (run coqpp %{mlg-file})))
-
-(rule
- (targets g_constr.ml)
- (deps (:mlg-file g_constr.mlg))
- (action (run coqpp %{mlg-file})))
+(coq.pp (modules g_prim g_constr))

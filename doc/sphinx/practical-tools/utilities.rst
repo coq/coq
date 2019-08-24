@@ -522,10 +522,7 @@ of your project.
         (flags :standard -warn-error -3-9-27-32-33-50)
         (libraries coq.plugins.cc coq.plugins.extraction))
 
-       (rule
-        (targets g_equations.ml)
-        (deps (:pp-file g_equations.mlg))
-        (action (run coqpp %{pp-file})))
+       (coq.pp (modules g_equations))
 
    And a Coq-specific part that depends on it via the ``libraries`` field:
 
