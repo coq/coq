@@ -98,7 +98,6 @@ let peek_val kx = let _, _, _, x = get kx in match !x with
 let uuid kx = let _, id, _, _ = get kx in id
 
 let from_val ?(fix_exn=id) v = create fix_exn (Val v)
-let from_here ?(fix_exn=id) v = create fix_exn (Val v)
 
 let fix_exn_of ck = let _, _, fix_exn, _ = get ck in fix_exn
 
@@ -167,8 +166,6 @@ let join kx =
   let v = force kx in
   kx := Finished v;
   v
-
-let sink kx = if is_val kx then ignore(join kx)
 
 let split2 x =
   chain x (fun x -> fst x), chain x (fun x -> snd x)
