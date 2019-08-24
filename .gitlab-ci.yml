@@ -637,6 +637,13 @@ library:ci-coquelicot:
 library:ci-cross-crypto:
   extends: .ci-template
 
+library:ci-ext-lib:
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _build_ci
+  extends: .ci-template-flambda
+
 library:ci-fcsl-pcm:
   extends: .ci-template
 
@@ -687,6 +694,20 @@ library:ci-math-comp:
 
 library:ci-sf:
   extends: .ci-template
+
+library:ci-simple-io:
+  stage: stage-3
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _build_ci
+  dependencies:
+  - build:edge+flambda
+  - library:ci-ext-lib
+  needs:
+  - build:edge+flambda
+  - library:ci-ext-lib
+  extends: .ci-template-flambda
 
 library:ci-stdlib2:
   extends: .ci-template-flambda
@@ -741,6 +762,14 @@ plugin:plugin-tutorial:
     - make -j "$NJOBS" plugin-tutorial
 
 plugin:ci-quickchick:
+  stage: stage-4
+  dependencies:
+  - build:edge+flambda
+  - library:ci-simple-io
+  needs:
+  - build:edge+flambda
+  - library:ci-ext-lib
+  - library:ci-simple-io
   extends: .ci-template-flambda
 
 plugin:ci-relation_algebra:
