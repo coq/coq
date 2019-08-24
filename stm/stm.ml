@@ -1056,7 +1056,7 @@ end (* }}} *)
 (* Wrapper for the proof-closing special path for Qed *)
 let stm_qed_delay_proof ?route ~proof ~info ~id ~st ~loc ~control pending : Vernacstate.t =
   set_id_for_feedback ?route dummy_doc id;
-  Vernacentries.interp_qed_delayed_proof ~proof ~info ~st ~control (CAst.make ?loc pending)
+  Vernacinterp.interp_qed_delayed_proof ~proof ~info ~st ~control (CAst.make ?loc pending)
 
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 (* It is currently called 19 times, this number should be certainly
@@ -1083,7 +1083,7 @@ let stm_vernac_interp ?route id st { verbose; expr } : Vernacstate.t =
     (stm_pperr_endline Pp.(fun () -> str "ignoring " ++ Ppvernac.pr_vernac expr); st)
   else begin
     stm_pperr_endline Pp.(fun () -> str "interpreting " ++ Ppvernac.pr_vernac expr);
-    Vernacentries.interp ?verbosely:(Some verbose) ~st expr
+    Vernacinterp.interp ?verbosely:(Some verbose) ~st expr
   end
 
 (****************************** CRUFT *****************************************)
@@ -1970,7 +1970,7 @@ end = struct (* {{{ *)
 
   let stm_fail ~st fail f =
     if fail then
-      Vernacentries.with_fail ~st f
+      Vernacinterp.with_fail ~st f
     else
       f ()
 
@@ -2891,7 +2891,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
            |> Exninfo.iraise
          else
 
-          let proof_mode = Some (Vernacentries.get_default_proof_mode ()) in
+          let proof_mode = Some (Vernacinterp.get_default_proof_mode ()) in
           let id = VCS.new_node ~id:newtip proof_mode () in
           let bname = VCS.mk_branch_name x in
           VCS.checkout VCS.Branch.master;
