@@ -641,12 +641,6 @@ gramlib/.pack/gramlib__G%: gramlib/g% | gramlib/.pack
 # Specific rules for gramlib to pack it Dune / OCaml 4.08 style
 GRAMOBJS=$(addsuffix .cmo, $(GRAMFILES))
 
-gramlib/.pack/%: COND_BYTEFLAGS+=-no-alias-deps -w -49
-gramlib/.pack/%: COND_OPTFLAGS+=-no-alias-deps -w -49
-
-gramlib/.pack/gramlib.%: COND_OPENFLAGS=
-gramlib/.pack/gramlib__%: COND_OPENFLAGS=-open Gramlib
-
 gramlib/.pack/gramlib.cma: $(GRAMOBJS) gramlib/.pack/gramlib.cmo
 	$(SHOW)'OCAMLC -a -o $@'
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -a -o $@ $^
@@ -700,14 +694,15 @@ kernel/kernel.cmxa: kernel/kernel.mllib
 COND_IDEFLAGS=$(if $(filter ide/fake_ide% tools/coq_makefile%,$<), -I ide -I ide/protocol,)
 COND_PRINTERFLAGS=$(if $(filter dev/%,$<), -I dev,)
 
-# For module packing
-COND_OPENFLAGS=
+COND_GRAMFLAGS=$(if $(filter gramlib/.pack/%,$<),-no-alias-deps -w -49,) $(if $(filter gramlib/.pack/gramlib__%,$<),-open Gramlib,)
+
+COND_KERFLAGS=$(if $(filter kernel/%,$<),-w +a-4-44-50,)
 
 COND_BYTEFLAGS= \
- $(COND_IDEFLAGS) $(COND_PRINTERFLAGS) $(MLINCLUDES) $(BYTEFLAGS) $(COND_OPENFLAGS)
+ $(COND_IDEFLAGS) $(COND_PRINTERFLAGS) $(MLINCLUDES) $(BYTEFLAGS) $(COND_GRAMFLAGS) $(COND_KERFLAGS)
 
 COND_OPTFLAGS= \
- $(COND_IDEFLAGS) $(MLINCLUDES) $(OPTFLAGS) $(COND_OPENFLAGS)
+ $(COND_IDEFLAGS) $(MLINCLUDES) $(OPTFLAGS) $(COND_GRAMFLAGS) $(COND_KERFLAGS)
 
 plugins/micromega/%.cmi: plugins/micromega/%.mli
 	$(SHOW)'OCAMLC    $<'
@@ -716,8 +711,6 @@ plugins/micromega/%.cmi: plugins/micromega/%.mli
 plugins/nsatz/%.cmi: plugins/nsatz/%.mli
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -package unix,num -c $<
-
-kernel/%.cmi: COND_BYTEFLAGS+=-w +a-4-44-50
 
 %.cmi: %.mli
 	$(SHOW)'OCAMLC    $<'
@@ -730,8 +723,6 @@ plugins/micromega/%.cmo: plugins/micromega/%.ml
 plugins/nsatz/%.cmo: plugins/nsatz/%.ml
 	$(SHOW)'OCAMLC    $<'
 	$(HIDE)$(OCAMLC) $(COND_BYTEFLAGS) -package unix,num -c $<
-
-kernel/%.cmo: COND_BYTEFLAGS+=-w +a-4-44-50
 
 %.cmo: %.ml
 	$(SHOW)'OCAMLC    $<'
@@ -781,8 +772,6 @@ plugins/%.cmx: plugins/%.ml
 user-contrib/%.cmx: user-contrib/%.ml
 	$(SHOW)'OCAMLOPT  $<'
 	$(HIDE)$(OCAMLOPT) $(COND_OPTFLAGS) $(HACKMLI) $($(@:.cmx=_FORPACK)) -c $<
-
-kernel/%.cmx: COND_OPTFLAGS+=-w +a-4-44-50
 
 %.cmx: %.ml
 	$(SHOW)'OCAMLOPT  $<'
