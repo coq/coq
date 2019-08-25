@@ -262,7 +262,7 @@ endef
 CAMLP5DEPS:=grammar/grammar.cma
 CAMLP5USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
 
-PR_O := $(if $(READABLE_ML4),pr_o.cmo,pr_dump.cmo)
+PR_O := $(if $(READABLE_ML4),pr_o.cmo,)
 
 # Main packages linked by Coq.
 SYSMOD:=-package num,str,unix,dynlink,threads
