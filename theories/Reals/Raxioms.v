@@ -8,12 +8,19 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* This file continues Rdefinitions, with more properties of the
+   classical reals, including the existence of least upper bounds
+   for non-empty and bounded subsets.
+   The name "Raxioms" and its contents are kept for backward compatibility,
+   when the classical reals were axiomatized. Otherwise we would
+   have merged this file into RIneq. *)
+
 (*********************************************************)
 (**    Lifts of basic operations for classical reals     *)
 (*********************************************************)
 
 Require Export ZArith_base.
-Require Import ConstructiveCauchyReals.
+Require Import ConstructiveRIneq.
 Require Export Rdefinitions.
 Declare Scope R_scope.
 Local Open Scope R_scope.
@@ -26,75 +33,88 @@ Local Open Scope R_scope.
 (** **   Addition                                        *)
 (*********************************************************)
 
-Lemma Rrepr_0 : (Rrepr 0 == 0)%CReal.
+Open Scope R_scope_constr.
+
+Lemma Rrepr_0 : Rrepr 0 == 0.
 Proof.
   intros. unfold IZR. rewrite RbaseSymbolsImpl.R0_def, (Rquot2 0). reflexivity.
 Qed.
 
-Lemma Rrepr_1 : (Rrepr 1 == 1)%CReal.
+Lemma Rrepr_1 : Rrepr 1 == 1.
 Proof.
   intros. unfold IZR, IPR. rewrite RbaseSymbolsImpl.R1_def, (Rquot2 1). reflexivity.
 Qed.
 
-Lemma Rrepr_plus : forall x y:R, (Rrepr (x + y) == Rrepr x + Rrepr y)%CReal.
+Lemma Rrepr_plus : forall x y:R, Rrepr (x + y) == Rrepr x + Rrepr y.
 Proof.
   intros. rewrite RbaseSymbolsImpl.Rplus_def, Rquot2. reflexivity.
 Qed.
 
-Lemma Rrepr_opp : forall x:R, (Rrepr (- x) == - Rrepr x)%CReal.
+Lemma Rrepr_opp : forall x:R, Rrepr (- x) == - Rrepr x.
 Proof.
   intros. rewrite RbaseSymbolsImpl.Ropp_def, Rquot2. reflexivity.
 Qed.
 
-Lemma Rrepr_minus : forall x y:R, (Rrepr (x - y) == Rrepr x - Rrepr y)%CReal.
+Lemma Rrepr_minus : forall x y:R, Rrepr (x - y) == Rrepr x - Rrepr y.
 Proof.
-  intros. unfold Rminus, CReal_minus.
+  intros. unfold Rminus, CRminus.
   rewrite Rrepr_plus, Rrepr_opp. reflexivity.
 Qed.
 
-Lemma Rrepr_mult : forall x y:R, (Rrepr (x * y) == Rrepr x * Rrepr y)%CReal.
+Lemma Rrepr_mult : forall x y:R, Rrepr (x * y) == Rrepr x * Rrepr y.
 Proof.
   intros. rewrite RbaseSymbolsImpl.Rmult_def. rewrite Rquot2. reflexivity.
 Qed.
 
-Lemma Rrepr_inv : forall (x:R) (xnz : (Rrepr x # 0)%CReal),
-    (Rrepr (/ x) == (/ Rrepr x) xnz)%CReal.
+Lemma Rrepr_inv : forall (x:R) (xnz : Rrepr x # 0),
+    Rrepr (/ x) == (/ Rrepr x) xnz.
 Proof.
   intros. rewrite RinvImpl.Rinv_def. destruct (Req_appart_dec x R0).
   - exfalso. subst x. destruct xnz.
-    rewrite Rrepr_0 in H. exact (CRealLt_irrefl 0 H).
-    rewrite Rrepr_0 in H. exact (CRealLt_irrefl 0 H).
-  - rewrite Rquot2. apply (CReal_mult_eq_reg_l (Rrepr x) _ _ xnz).
-    rewrite CReal_mult_comm, (CReal_mult_comm (Rrepr x)), CReal_inv_l, CReal_inv_l.
+    rewrite Rrepr_0 in c. exact (Rlt_irrefl 0 c).
+    rewrite Rrepr_0 in c. exact (Rlt_irrefl 0 c).
+  - rewrite Rquot2. apply (Rmult_eq_reg_l (Rrepr x)). 2: exact xnz.
+    rewrite Rmult_comm, (Rmult_comm (Rrepr x)), Rinv_l, Rinv_l.
     reflexivity.
 Qed.
 
-Lemma Rrepr_le : forall x y:R, x <= y <-> (Rrepr x <= Rrepr y)%CReal.
+Lemma Rrepr_le : forall x y:R, (x <= y)%R <-> Rrepr x <= Rrepr y.
 Proof.
   split.
   - intros [H|H] abs. rewrite RbaseSymbolsImpl.Rlt_def in H.
-    exact (CRealLt_asym (Rrepr x) (Rrepr y) H abs).
-    destruct H. exact (CRealLt_asym (Rrepr x) (Rrepr x) abs abs).
+    apply Rlt_epsilon in H.
+    exact (Rlt_asym (Rrepr x) (Rrepr y) H abs).
+    destruct H. exact (Rlt_asym (Rrepr x) (Rrepr x) abs abs).
   - intros. destruct (total_order_T x y). destruct s.
-    left. exact r. right. exact e. rewrite RbaseSymbolsImpl.Rlt_def in r. contradiction.
+    left. exact r. right. exact e.
+    rewrite RbaseSymbolsImpl.Rlt_def in r. apply Rlt_epsilon in r. contradiction.
 Qed.
 
-Lemma Rrepr_appart : forall x y:R, x <> y <-> (Rrepr x # Rrepr y)%CReal.
+Lemma Rrepr_appart : forall x y:R,
+    (x <> y)%R -> Rrepr x # Rrepr y.
 Proof.
-  split.
-  - intros. destruct (total_order_T x y). destruct s.
-    left. rewrite RbaseSymbolsImpl.Rlt_def in r. exact r. contradiction.
-    right. rewrite RbaseSymbolsImpl.Rlt_def in r. exact r.
-  - intros [H|H] abs.
-    destruct abs. exact (CRealLt_asym (Rrepr x) (Rrepr x) H H).
-    destruct abs. exact (CRealLt_asym (Rrepr x) (Rrepr x) H H).
+  intros. destruct (total_order_T x y). destruct s.
+  left. rewrite RbaseSymbolsImpl.Rlt_def in r.
+  apply Rlt_epsilon. exact r. contradiction.
+  right. rewrite RbaseSymbolsImpl.Rlt_def in r.
+  apply Rlt_epsilon. exact r.
 Qed.
+
+Lemma Rappart_repr : forall x y:R,
+    Rrepr x # Rrepr y -> (x <> y)%R.
+Proof.
+  intros x y [H|H] abs.
+  destruct abs. exact (Rlt_asym (Rrepr x) (Rrepr x) H H).
+  destruct abs. exact (Rlt_asym (Rrepr x) (Rrepr x) H H).
+Qed.
+
+Close Scope R_scope_constr.
 
 
 (**********)
 Lemma Rplus_comm : forall r1 r2:R, r1 + r2 = r2 + r1.
 Proof.
-  intros. apply Rquot1. do 2 rewrite Rrepr_plus. apply CReal_plus_comm.
+  intros. apply Rquot1. do 2 rewrite Rrepr_plus. apply Rplus_comm.
 Qed.
 Hint Resolve Rplus_comm: real.
 
@@ -102,7 +122,7 @@ Hint Resolve Rplus_comm: real.
 Lemma Rplus_assoc : forall r1 r2 r3:R, r1 + r2 + r3 = r1 + (r2 + r3).
 Proof.
   intros. apply Rquot1. repeat rewrite Rrepr_plus.
-  apply CReal_plus_assoc.
+  apply Rplus_assoc.
 Qed.
 Hint Resolve Rplus_assoc: real.
 
@@ -110,7 +130,7 @@ Hint Resolve Rplus_assoc: real.
 Lemma Rplus_opp_r : forall r:R, r + - r = 0.
 Proof.
   intros. apply Rquot1. rewrite Rrepr_plus, Rrepr_opp, Rrepr_0.
-  apply CReal_plus_opp_r.
+  apply Rplus_opp_r.
 Qed.
 Hint Resolve Rplus_opp_r: real.
 
@@ -118,7 +138,7 @@ Hint Resolve Rplus_opp_r: real.
 Lemma Rplus_0_l : forall r:R, 0 + r = r.
 Proof.
   intros. apply Rquot1. rewrite Rrepr_plus, Rrepr_0.
-  apply CReal_plus_0_l.
+  apply Rplus_0_l.
 Qed.
 Hint Resolve Rplus_0_l: real.
 
@@ -129,7 +149,7 @@ Hint Resolve Rplus_0_l: real.
 (**********)
 Lemma Rmult_comm : forall r1 r2:R, r1 * r2 = r2 * r1.
 Proof.
-  intros. apply Rquot1. do 2 rewrite Rrepr_mult. apply CReal_mult_comm.
+  intros. apply Rquot1. do 2 rewrite Rrepr_mult. apply Rmult_comm.
 Qed.
 Hint Resolve Rmult_comm: real.
 
@@ -137,7 +157,7 @@ Hint Resolve Rmult_comm: real.
 Lemma Rmult_assoc : forall r1 r2 r3:R, r1 * r2 * r3 = r1 * (r2 * r3).
 Proof.
   intros. apply Rquot1. repeat rewrite Rrepr_mult.
-  apply CReal_mult_assoc.
+  apply Rmult_assoc.
 Qed.
 Hint Resolve Rmult_assoc: real.
 
@@ -146,7 +166,7 @@ Lemma Rinv_l : forall r:R, r <> 0 -> / r * r = 1.
 Proof.
   intros. rewrite RinvImpl.Rinv_def; destruct (Req_appart_dec r R0).
   - contradiction.
-  - apply Rquot1. rewrite Rrepr_mult, Rquot2, Rrepr_1. apply CReal_inv_l.
+  - apply Rquot1. rewrite Rrepr_mult, Rquot2, Rrepr_1. apply Rinv_l.
 Qed.
 Hint Resolve Rinv_l: real.
 
@@ -154,7 +174,7 @@ Hint Resolve Rinv_l: real.
 Lemma Rmult_1_l : forall r:R, 1 * r = r.
 Proof.
   intros. apply Rquot1. rewrite Rrepr_mult, Rrepr_1.
-  apply CReal_mult_1_l.
+  apply Rmult_1_l.
 Qed.
 Hint Resolve Rmult_1_l: real.
 
@@ -162,16 +182,17 @@ Hint Resolve Rmult_1_l: real.
 Lemma R1_neq_R0 : 1 <> 0.
 Proof.
   intro abs.
-  assert (1 == 0)%CReal.
+  assert (Req (CRone CR) (CRzero CR)).
   { transitivity (Rrepr 1). symmetry.
-    replace 1 with (Rabst 1). 2: unfold IZR,IPR; rewrite RbaseSymbolsImpl.R1_def; reflexivity.
+    replace 1%R with (Rabst (CRone CR)).
+    2: unfold IZR,IPR; rewrite RbaseSymbolsImpl.R1_def; reflexivity.
     rewrite Rquot2. reflexivity. transitivity (Rrepr 0).
     rewrite abs. reflexivity.
-    replace 0 with (Rabst 0).
+    replace 0%R with (Rabst (CRzero CR)).
     2: unfold IZR; rewrite RbaseSymbolsImpl.R0_def; reflexivity.
     rewrite Rquot2. reflexivity. }
-  pose proof (CRealLt_morph 0 0 (CRealEq_refl _) 1 0 H).
-  apply (CRealLt_irrefl 0). apply H0. apply CRealLt_0_1.
+  pose proof (Rlt_morph (CRzero CR) (CRzero CR) (Req_refl _) (CRone CR) (CRzero CR) H).
+  apply (Rlt_irrefl (CRzero CR)). apply H0. apply Rlt_0_1.
 Qed.
 Hint Resolve R1_neq_R0: real.
 
@@ -185,7 +206,7 @@ Lemma
 Proof.
   intros. apply Rquot1.
   rewrite Rrepr_mult, Rrepr_plus, Rrepr_plus, Rrepr_mult, Rrepr_mult.
-  apply CReal_mult_plus_distr_l.
+  apply Rmult_plus_distr_l.
 Qed.
 Hint Resolve Rmult_plus_distr_l: real.
 
@@ -201,30 +222,35 @@ Hint Resolve Rmult_plus_distr_l: real.
 Lemma Rlt_asym : forall r1 r2:R, r1 < r2 -> ~ r2 < r1.
 Proof.
   intros. intro abs. rewrite RbaseSymbolsImpl.Rlt_def in H, abs.
-  apply (CRealLt_asym (Rrepr r1) (Rrepr r2)); assumption.
+  apply Rlt_epsilon in H. apply Rlt_epsilon in abs.
+  apply (Rlt_asym (Rrepr r1) (Rrepr r2)); assumption.
 Qed.
 
 (**********)
 Lemma Rlt_trans : forall r1 r2 r3:R, r1 < r2 -> r2 < r3 -> r1 < r3.
 Proof.
   intros. rewrite RbaseSymbolsImpl.Rlt_def. rewrite RbaseSymbolsImpl.Rlt_def in H, H0.
-  apply (CRealLt_trans (Rrepr r1) (Rrepr r2) (Rrepr r3)); assumption.
+  apply Rlt_epsilon in H. apply Rlt_epsilon in H0.
+  apply Rlt_forget.
+  apply (Rlt_trans (Rrepr r1) (Rrepr r2) (Rrepr r3)); assumption.
 Qed.
 
 (**********)
 Lemma Rplus_lt_compat_l : forall r r1 r2:R, r1 < r2 -> r + r1 < r + r2.
 Proof.
   intros. rewrite RbaseSymbolsImpl.Rlt_def. rewrite RbaseSymbolsImpl.Rlt_def in H.
-  do 2 rewrite Rrepr_plus. apply CReal_plus_lt_compat_l. exact H.
+  do 2 rewrite Rrepr_plus. apply Rlt_forget.
+  apply Rplus_lt_compat_l. apply Rlt_epsilon. exact H.
 Qed.
 
 (**********)
 Lemma Rmult_lt_compat_l : forall r r1 r2:R, 0 < r -> r1 < r2 -> r * r1 < r * r2.
 Proof.
   intros. rewrite RbaseSymbolsImpl.Rlt_def. rewrite RbaseSymbolsImpl.Rlt_def in H.
-  do 2 rewrite Rrepr_mult. apply CReal_mult_lt_compat_l.
-  rewrite <- (Rquot2 0). unfold IZR in H. rewrite RbaseSymbolsImpl.R0_def in H. exact H.
-  rewrite RbaseSymbolsImpl.Rlt_def in H0. exact H0.
+  do 2 rewrite Rrepr_mult. apply Rlt_forget. apply Rmult_lt_compat_l.
+  rewrite <- (Rquot2 (CRzero CR)). unfold IZR in H.
+  rewrite RbaseSymbolsImpl.R0_def in H. apply Rlt_epsilon. exact H.
+  rewrite RbaseSymbolsImpl.Rlt_def in H0. apply Rlt_epsilon. exact H0.
 Qed.
 
 Hint Resolve Rlt_asym Rplus_lt_compat_l Rmult_lt_compat_l: real.
@@ -247,7 +273,7 @@ Arguments INR n%nat.
 (**********************************************************)
 
 Lemma Rrepr_INR : forall n : nat,
-    (Rrepr (INR n) == ConstructiveCauchyReals.INR n)%CReal.
+    Req (Rrepr (INR n)) (ConstructiveRIneq.INR n).
 Proof.
   induction n.
   - apply Rrepr_0.
@@ -256,41 +282,41 @@ Proof.
 Qed.
 
 Lemma Rrepr_IPR2 : forall n : positive,
-    (Rrepr (IPR_2 n) == ConstructiveCauchyReals.IPR_2 n)%CReal.
+    Req (Rrepr (IPR_2 n)) (ConstructiveRIneq.IPR_2 n).
 Proof.
   induction n.
-  - unfold IPR_2, ConstructiveCauchyReals.IPR_2.
+  - unfold IPR_2, ConstructiveRIneq.IPR_2.
     rewrite RbaseSymbolsImpl.R1_def, Rrepr_mult, Rrepr_plus, Rrepr_plus, <- IHn.
     unfold IPR_2.
     rewrite Rquot2. rewrite RbaseSymbolsImpl.R1_def. reflexivity.
-  - unfold IPR_2, ConstructiveCauchyReals.IPR_2.
+  - unfold IPR_2, ConstructiveRIneq.IPR_2.
     rewrite Rrepr_mult, Rrepr_plus, <- IHn.
     rewrite RbaseSymbolsImpl.R1_def. rewrite Rquot2.
     unfold IPR_2. rewrite RbaseSymbolsImpl.R1_def. reflexivity.
-  - unfold IPR_2, ConstructiveCauchyReals.IPR_2.
+  - unfold IPR_2, ConstructiveRIneq.IPR_2.
     rewrite RbaseSymbolsImpl.R1_def.
     rewrite Rrepr_plus, Rquot2. reflexivity.
 Qed.
 
 Lemma Rrepr_IPR : forall n : positive,
-    (Rrepr (IPR n) == ConstructiveCauchyReals.IPR n)%CReal.
+    Req (Rrepr (IPR n)) (ConstructiveRIneq.IPR n).
 Proof.
   intro n. destruct n.
-  - unfold IPR, ConstructiveCauchyReals.IPR.
+  - unfold IPR, ConstructiveRIneq.IPR.
     rewrite Rrepr_plus, <- Rrepr_IPR2.
     rewrite RbaseSymbolsImpl.R1_def. rewrite Rquot2. reflexivity.
-  - unfold IPR, ConstructiveCauchyReals.IPR.
+  - unfold IPR, ConstructiveRIneq.IPR.
     apply Rrepr_IPR2.
   - unfold IPR. rewrite RbaseSymbolsImpl.R1_def. apply Rquot2.
 Qed.
 
 Lemma Rrepr_IZR : forall n : Z,
-    (Rrepr (IZR n) == ConstructiveCauchyReals.IZR n)%CReal.
+    Req (Rrepr (IZR n)) (ConstructiveRIneq.IZR n).
 Proof.
   intros [|p|n].
   - unfold IZR. rewrite RbaseSymbolsImpl.R0_def. apply Rquot2.
   - apply Rrepr_IPR.
-  - unfold IZR, ConstructiveCauchyReals.IZR.
+  - unfold IZR, ConstructiveRIneq.IZR.
     rewrite <- Rrepr_IPR, Rrepr_opp. reflexivity.
 Qed.
 
@@ -300,38 +326,66 @@ Proof.
   intro r. unfold up.
   destruct (Rarchimedean (Rrepr r)) as [n nmaj], (total_order_T (IZR n - r) R1).
   destruct s.
-  - split. unfold Rgt. rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_IZR. apply nmaj.
+  - split. unfold Rgt. rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_IZR.
+    apply Rlt_forget. apply nmaj.
     unfold Rle. left. exact r0.
-  - split. unfold Rgt. rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_IZR. apply nmaj.
-    right. exact e.
+  - split. unfold Rgt. rewrite RbaseSymbolsImpl.Rlt_def.
+    rewrite Rrepr_IZR. apply Rlt_forget. apply nmaj. right. exact e.
   - split.
-    + unfold Rgt, Z.pred. rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_IZR, plus_IZR.
+    + unfold Rgt, Z.pred. rewrite RbaseSymbolsImpl.Rlt_def.
+      rewrite Rrepr_IZR, plus_IZR.
       rewrite RbaseSymbolsImpl.Rlt_def in r0. rewrite Rrepr_minus in r0.
       rewrite <- (Rrepr_IZR n).
-      unfold ConstructiveCauchyReals.IZR, ConstructiveCauchyReals.IPR.
-      apply (CReal_plus_lt_compat_l (Rrepr r - Rrepr R1)) in r0.
-      ring_simplify in r0. rewrite RbaseSymbolsImpl.R1_def in r0. rewrite Rquot2 in r0.
-      rewrite CReal_plus_comm. exact r0.
+      unfold ConstructiveRIneq.IZR, ConstructiveRIneq.IPR.
+      apply Rlt_forget. apply Rlt_epsilon in r0.
+      unfold ConstructiveRIneq.Rminus in r0.
+      apply (ConstructiveRIneq.Rplus_lt_compat_l
+               (ConstructiveRIneq.Rplus (Rrepr r) (ConstructiveRIneq.Ropp (Rrepr R1))))
+        in r0.
+      rewrite ConstructiveRIneq.Rplus_assoc,
+      ConstructiveRIneq.Rplus_opp_l,
+      ConstructiveRIneq.Rplus_0_r,
+      RbaseSymbolsImpl.R1_def, Rquot2,
+      ConstructiveRIneq.Rplus_comm,
+      ConstructiveRIneq.Rplus_assoc,
+      <- (ConstructiveRIneq.Rplus_assoc (ConstructiveRIneq.Ropp (Rrepr r))),
+      ConstructiveRIneq.Rplus_opp_l,
+      ConstructiveRIneq.Rplus_0_l
+        in r0.
+      exact r0.
     + destruct (total_order_T (IZR (Z.pred n) - r) 1). destruct s.
       left. exact r1. right. exact e.
-      exfalso. rewrite <- Rrepr_IZR in nmaj.
+      exfalso. destruct nmaj as [_ nmaj]. rewrite <- Rrepr_IZR in nmaj.
       apply (Rlt_asym (IZR n) (r + 2)).
       rewrite RbaseSymbolsImpl.Rlt_def. rewrite Rrepr_plus. rewrite (Rrepr_plus 1 1).
-      apply (CRealLt_Le_trans _ (Rrepr r + 2)). apply nmaj.
-      unfold IZR, IPR. rewrite RbaseSymbolsImpl.R1_def, Rquot2. apply CRealLe_refl.
+      apply Rlt_forget.
+      apply (ConstructiveRIneq.Rlt_le_trans
+               _ (ConstructiveRIneq.Rplus (Rrepr r) (ConstructiveRIneq.IZR 2))).
+      apply nmaj.
+      unfold IZR, IPR. rewrite RbaseSymbolsImpl.R1_def, Rquot2. apply Rle_refl.
       clear nmaj.
       unfold Z.pred in r1. rewrite RbaseSymbolsImpl.Rlt_def in r1.
       rewrite Rrepr_minus, (Rrepr_IZR (n + -1)), plus_IZR,
       <- (Rrepr_IZR n)
         in r1.
-      unfold ConstructiveCauchyReals.IZR, ConstructiveCauchyReals.IPR in r1.
+      unfold ConstructiveRIneq.IZR, ConstructiveRIneq.IPR in r1.
       rewrite RbaseSymbolsImpl.Rlt_def, Rrepr_plus.
-      apply (CReal_plus_lt_compat_l (Rrepr r + 1)) in r1.
-      ring_simplify in r1.
-      apply (CRealLe_Lt_trans _ (Rrepr r + Rrepr 1 + 1)). 2: apply r1.
+      apply Rlt_epsilon in r1.
+      apply (ConstructiveRIneq.Rplus_lt_compat_l
+               (ConstructiveRIneq.Rplus (Rrepr r) (CRone CR))) in r1.
+      apply Rlt_forget.
+      apply (ConstructiveRIneq.Rle_lt_trans
+               _ (ConstructiveRIneq.Rplus (ConstructiveRIneq.Rplus (Rrepr r) (Rrepr 1)) (CRone CR))).
       rewrite (Rrepr_plus 1 1). unfold IZR, IPR.
-      rewrite RbaseSymbolsImpl.R1_def, (Rquot2 1), <- CReal_plus_assoc.
-      apply CRealLe_refl.
+      rewrite RbaseSymbolsImpl.R1_def, (Rquot2 (CRone CR)), <- ConstructiveRIneq.Rplus_assoc.
+      apply Rle_refl.
+      rewrite <- (ConstructiveRIneq.Rplus_comm (Rrepr 1)),
+      <- ConstructiveRIneq.Rplus_assoc,
+      (ConstructiveRIneq.Rplus_comm (Rrepr 1))
+        in r1.
+      apply (ConstructiveRIneq.Rlt_le_trans _ _ _ r1).
+      unfold ConstructiveRIneq.Rminus.
+      ring_simplify. apply ConstructiveRIneq.Rle_refl.
 Qed.
 
 (**********************************************************)
@@ -349,12 +403,30 @@ Definition is_lub (E:R -> Prop) (m:R) :=
   is_upper_bound E m /\ (forall b:R, is_upper_bound E b -> m <= b).
 
 (**********)
-(* This axiom can be proved by excluded middle in sort Set.
-   For this, define a sequence by dichotomy, using excluded middle
-   to know whether the current point majorates E or not.
-   Then conclude by the Cauchy-completeness of R, which is proved
-   constructively. *)
-Axiom
-  completeness :
+Lemma completeness :
     forall E:R -> Prop,
       bound E -> (exists x : R, E x) -> { m:R | is_lub E m }.
+Proof.
+  intros. pose (fun x:ConstructiveRIneq.R => E (Rabst x)) as Er.
+  assert (exists x : ConstructiveRIneq.R, Er x) as Einhab.
+  { destruct H0. exists (Rrepr x). unfold Er.
+    replace (Rabst (Rrepr x)) with x. exact H0.
+    apply Rquot1. rewrite Rquot2. reflexivity. }
+  assert (exists x : ConstructiveRIneq.R,
+             (forall y:ConstructiveRIneq.R, Er y -> ConstructiveRIneq.Rle y x))
+    as Ebound.
+  { destruct H. exists (Rrepr x). intros y Ey. rewrite <- (Rquot2 y).
+    apply Rrepr_le. apply H. exact Ey. }
+  destruct (CR_sig_lub CR
+              Er sig_forall_dec sig_not_dec Einhab Ebound).
+  exists (Rabst x). split.
+  intros y Ey. apply Rrepr_le. rewrite Rquot2.
+  unfold ConstructiveRIneq.Rle. apply a.
+  unfold Er. replace (Rabst (Rrepr y)) with y. exact Ey.
+  apply Rquot1. rewrite Rquot2. reflexivity.
+  intros. destruct a. apply Rrepr_le. rewrite Rquot2.
+  unfold ConstructiveRIneq.Rle. apply H3. intros y Ey.
+  intros. rewrite <- (Rquot2 y) in H4.
+  apply Rrepr_le in H4. exact H4.
+  apply H1, Ey.
+Qed.

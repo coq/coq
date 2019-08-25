@@ -12,16 +12,16 @@
 Require Import QArith_base.
 Require Import Qabs.
 Require Import ConstructiveCauchyReals.
-Require Import ConstructiveRIneq.
+Require Import Logic.ConstructiveEpsilon.
 
-Local Open Scope R_scope_constr.
+Local Open Scope CReal_scope.
 
-Lemma CReal_absSmall : forall x y : CReal,
-    (exists n : positive, Qlt (2 # n)
-                             (proj1_sig x (Pos.to_nat n) - Qabs (proj1_sig y (Pos.to_nat n))))
-    -> (CRealLt (CReal_opp x) y /\ CRealLt y x).
+Lemma CReal_absSmall : forall (x y : CReal) (n : positive),
+    (Qlt (2 # n)
+         (proj1_sig x (Pos.to_nat n) - Qabs (proj1_sig y (Pos.to_nat n))))
+    -> (CRealLt (CReal_opp x) y * CRealLt y x).
 Proof.
-  intros. destruct H as [n maj]. split.
+  intros x y n maj. split.
   - exists n. destruct x as [xn caux], y as [yn cauy]; simpl.
     simpl in maj. unfold Qminus. rewrite Qopp_involutive.
     rewrite Qplus_comm.
@@ -35,120 +35,191 @@ Proof.
     apply maj. apply Qplus_le_r. apply Qopp_le_compat. apply Qle_Qabs.
 Qed.
 
+Definition absSmall (a b : CReal) : Set
+  := -b < a < b.
+
 Definition Un_cv_mod (un : nat -> CReal) (l : CReal) : Set
   := forall n : positive,
-    { p : nat | forall i:nat, le p i
-                     -> -IQR (1#n) < un i - l < IQR (1#n) }.
+    { p : nat & forall i:nat, le p i -> absSmall (un i - l) (IQR (1#n)) }.
 
 Lemma Un_cv_mod_eq : forall (v u : nat -> CReal) (s : CReal),
     (forall n:nat, u n == v n)
     -> Un_cv_mod u s -> Un_cv_mod v s.
 Proof.
   intros v u s seq H1 p. specialize (H1 p) as [N H0].
-  exists N. intros. rewrite <- seq. apply H0. apply H.
-Qed.
-
-Lemma IQR_double_inv : forall n : positive,
-    IQR (1 # 2*n) + IQR (1 # 2*n) == IQR (1 # n).
-Proof.
-  intros. apply (Rmult_eq_reg_l (IPR (2*n))).
-  unfold IQR. do 2 rewrite Rmult_1_l.
-  rewrite Rmult_plus_distr_l, Rinv_r, IPR_double, Rmult_assoc, Rinv_r.
-  rewrite (Rmult_plus_distr_r 1 1). ring.
-  right. apply IPR_pos.
-  right. apply IPR_pos.
-  right. apply IPR_pos.
-Qed.
-
-Lemma CV_mod_plus :
-  forall (An Bn:nat -> CReal) (l1 l2:CReal),
-    Un_cv_mod An l1 -> Un_cv_mod Bn l2
-    -> Un_cv_mod (fun i:nat => An i + Bn i) (l1 + l2).
-Proof.
-  assert (forall x:CReal, x + x == 2*x) as double.
-  { intro. rewrite (Rmult_plus_distr_r 1 1), Rmult_1_l. reflexivity. }
-  intros. intros n.
-  destruct (H (2*n)%positive).
-  destruct (H0 (2*n)%positive).
-  exists (Nat.max x x0). intros.
-  setoid_replace (An i + Bn i - (l1 + l2))
-    with (An i - l1 + (Bn i - l2)). 2: ring.
-  rewrite <- IQR_double_inv. split.
-  - rewrite Ropp_plus_distr.
-    apply Rplus_lt_compat. apply a. apply (le_trans _ (max x x0)).
-    apply Nat.le_max_l. apply H1.
-    apply a0. apply (le_trans _ (max x x0)).
-    apply Nat.le_max_r. apply H1.
-  - apply Rplus_lt_compat. apply a. apply (le_trans _ (max x x0)).
-    apply Nat.le_max_l. apply H1.
-    apply a0. apply (le_trans _ (max x x0)).
-    apply Nat.le_max_r. apply H1.
-Qed.
-
-Lemma Un_cv_mod_const : forall x : CReal,
-    Un_cv_mod (fun _ => x) x.
-Proof.
-  intros. intro p. exists O. intros.
-  unfold CReal_minus. rewrite Rplus_opp_r.
-  split. rewrite <- Ropp_0.
-  apply Ropp_gt_lt_contravar. unfold IQR. rewrite Rmult_1_l.
-  apply Rinv_0_lt_compat. unfold IQR. rewrite Rmult_1_l.
-  apply Rinv_0_lt_compat.
-Qed.
-
-(** Unicity of limit for convergent sequences *)
-Lemma UL_sequence_mod :
-  forall (Un:nat -> CReal) (l1 l2:CReal),
-    Un_cv_mod Un l1 -> Un_cv_mod Un l2 -> l1 == l2.
-Proof.
-  assert (forall (Un:nat -> CReal) (l1 l2:CReal),
-             Un_cv_mod Un l1 -> Un_cv_mod Un l2
-             -> l1 <= l2).
-  - intros Un l1 l2; unfold Un_cv_mod; intros. intro abs.
-    assert (0 < l1 - l2) as epsPos.
-    { apply Rgt_minus. apply abs. }
-    destruct (Rup_nat ((/(l1-l2)) (or_intror epsPos))) as [n nmaj].
-    assert (lt 0 n) as nPos.
-    { apply (INR_lt 0). apply (Rlt_trans _ ((/ (l1 - l2)) (or_intror epsPos))).
-      2: apply nmaj. apply Rinv_0_lt_compat. }
-    specialize (H (2*Pos.of_nat n)%positive) as [i imaj].
-    specialize (H0 (2*Pos.of_nat n))%positive as [j jmaj].
-    specialize (imaj (max i j) (Nat.le_max_l _ _)) as [imaj _].
-    specialize (jmaj (max i j) (Nat.le_max_r _ _)) as [_ jmaj].
-    apply Ropp_gt_lt_contravar in imaj. rewrite Ropp_involutive in imaj.
-    unfold CReal_minus in imaj. rewrite Ropp_plus_distr in imaj.
-    rewrite Ropp_involutive in imaj. rewrite Rplus_comm in imaj.
-    apply (Rplus_lt_compat _ _ _ _ imaj) in jmaj.
-    clear imaj.
-    rewrite Rplus_assoc in jmaj. unfold CReal_minus in jmaj.
-    rewrite <- (Rplus_assoc (- Un (Init.Nat.max i j))) in jmaj.
-    rewrite Rplus_opp_l in jmaj.
-    rewrite <- double in jmaj. rewrite Rplus_0_l in jmaj.
-    rewrite (Rmult_plus_distr_r 1 1), Rmult_1_l, IQR_double_inv in jmaj.
-    unfold IQR in jmaj. rewrite Rmult_1_l in jmaj.
-    apply (Rmult_lt_compat_l (IPR (Pos.of_nat n))) in jmaj.
-    rewrite Rinv_r, <- INR_IPR, Nat2Pos.id in jmaj.
-    apply (Rmult_lt_compat_l (l1-l2)) in nmaj.
-    rewrite Rinv_r in nmaj. rewrite Rmult_comm in jmaj.
-    apply (CRealLt_asym 1 ((l1-l2)*INR n)); assumption.
-    right. apply epsPos. apply epsPos.
-    intro abss. subst n. inversion nPos.
-    right. apply IPR_pos. apply IPR_pos.
-  - intros. split; apply (H Un); assumption.
+  exists N. intros. unfold absSmall. split.
+  rewrite <- seq. apply H0. apply H.
+  rewrite <- seq. apply H0. apply H.
 Qed.
 
 Definition Un_cauchy_mod (un : nat -> CReal) : Set
   := forall n : positive,
-    { p : nat | forall i j:nat, le p i
+    { p : nat & forall i j:nat, le p i
                        -> le p j
                        -> -IQR (1#n) < un i - un j < IQR (1#n) }.
 
+
+(* Sharpen the archimedean property : constructive versions of
+   the usual floor and ceiling functions.
+
+   n is a temporary parameter used for the recursion,
+   look at Ffloor below. *)
+Fixpoint Rfloor_pos (a : CReal) (n : nat) { struct n }
+  : 0 < a
+    -> a < INR n
+    -> { p : nat & INR p < a < INR p + 2 }.
+Proof.
+  (* Decreasing loop on n, until it is the first integer above a. *)
+  intros H H0. destruct n.
+  - exfalso. apply (CRealLt_asym 0 a); assumption.
+  - destruct n as [|p] eqn:des.
+    + (* n = 1 *) exists O. split.
+      apply H. rewrite CReal_plus_0_l. apply (CRealLt_trans a (1+0)).
+      rewrite CReal_plus_comm, CReal_plus_0_l. apply H0.
+      apply CReal_plus_le_lt_compat.
+      apply CRealLe_refl. apply CRealLt_0_1.
+    + (* n > 1 *)
+      destruct (linear_order_T (INR p) a (INR (S p))).
+      * rewrite <- CReal_plus_0_l, S_INR, CReal_plus_comm. apply CReal_plus_lt_compat_l.
+        apply CRealLt_0_1.
+      * exists p. split. exact c.
+        rewrite S_INR, S_INR, CReal_plus_assoc in H0. exact H0.
+      * apply (Rfloor_pos a n H). rewrite des. apply c.
+Qed.
+
+Definition Rfloor (a : CReal)
+  : { p : Z & IZR p < a < IZR p + 2 }.
+Proof.
+  assert (forall x:CReal, 0 < x -> { n : nat & x < INR n }).
+  { intros. pose proof (Rarchimedean x) as [n [maj _]].
+    destruct n.
+    + exfalso. apply (CRealLt_asym 0 x); assumption.
+    + exists (Pos.to_nat p). rewrite INR_IPR. apply maj.
+    + exfalso. apply (CRealLt_asym 0 x). apply H.
+      apply (CRealLt_trans x (IZR (Z.neg p))). apply maj.
+      apply (CReal_plus_lt_reg_l (-IZR (Z.neg p))).
+      rewrite CReal_plus_comm, CReal_plus_opp_r. rewrite <- opp_IZR.
+      rewrite CReal_plus_comm, CReal_plus_0_l.
+      apply (IZR_lt 0). reflexivity. }
+  destruct (linear_order_T 0 a 1 CRealLt_0_1).
+  - destruct (H a c). destruct (Rfloor_pos a x c c0).
+    exists (Z.of_nat x0). split; rewrite <- INR_IZR_INZ; apply p.
+  - apply (CReal_plus_lt_compat_l (-a)) in c.
+    rewrite CReal_plus_comm, CReal_plus_opp_r, CReal_plus_comm in c.
+    destruct (H (1-a) c).
+    destruct (Rfloor_pos (1-a) x c c0).
+    exists (-(Z.of_nat x0 + 1))%Z. split; rewrite opp_IZR, plus_IZR.
+    + rewrite <- (CReal_opp_involutive a). apply CReal_opp_gt_lt_contravar.
+      destruct p as [_ a0]. apply (CReal_plus_lt_reg_r 1).
+      rewrite CReal_plus_comm, CReal_plus_assoc. rewrite <- INR_IZR_INZ. apply a0.
+    + destruct p as [a0 _]. apply (CReal_plus_lt_compat_l a) in a0.
+      unfold CReal_minus in a0.
+      rewrite <- (CReal_plus_comm (1+-a)), CReal_plus_assoc, CReal_plus_opp_l, CReal_plus_0_r in a0.
+      rewrite <- INR_IZR_INZ.
+      apply (CReal_plus_lt_reg_r (INR x0)). unfold IZR, IPR, IPR_2.
+      ring_simplify. exact a0.
+Qed.
+
+Definition Rup_nat (x : CReal)
+  : { n : nat & x < INR n }.
+Proof.
+  intros. destruct (Rarchimedean x) as [p [maj _]].
+  destruct p.
+  - exists O. apply maj.
+  - exists (Pos.to_nat p). rewrite INR_IPR. apply maj.
+  - exists O. apply (CRealLt_trans _ (IZR (Z.neg p)) _ maj).
+    apply (IZR_lt _ 0). reflexivity.
+Qed.
+
+(* A point in an archimedean field is the limit of a
+   sequence of rational numbers (n maps to the q between
+   a and a+1/n). This will yield a maximum
+   archimedean field, which is the field of real numbers. *)
+Definition FQ_dense_pos (a b : CReal)
+  : 0 < b
+    -> a < b -> { q : Q & a < IQR q < b }.
+Proof.
+  intros H H0.
+  assert (0 < b - a) as epsPos.
+  { apply (CReal_plus_lt_compat_l (-a)) in H0.
+    rewrite CReal_plus_opp_l, CReal_plus_comm in H0.
+    apply H0. }
+  pose proof (Rup_nat ((/(b-a)) (inr epsPos)))
+    as [n maj].
+  destruct n as [|k].
+  - exfalso.
+    apply (CReal_mult_lt_compat_l (b-a)) in maj. 2: apply epsPos.
+    rewrite CReal_mult_0_r in maj. rewrite CReal_inv_r in maj.
+    apply (CRealLt_asym 0 1). apply CRealLt_0_1. apply maj.
+  - (* 0 < n *)
+    pose (Pos.of_nat (S k)) as n.
+    destruct (Rfloor (IZR (2 * Z.pos n) * b)) as [p maj2].
+    exists (p # (2*n))%Q. split.
+    + apply (CRealLt_trans a (b - IQR (1 # n))).
+      apply (CReal_plus_lt_reg_r (IQR (1#n))).
+      unfold CReal_minus. rewrite CReal_plus_assoc. rewrite CReal_plus_opp_l.
+      rewrite CReal_plus_0_r. apply (CReal_plus_lt_reg_l (-a)).
+      rewrite <- CReal_plus_assoc, CReal_plus_opp_l, CReal_plus_0_l.
+      rewrite CReal_plus_comm. unfold IQR.
+      rewrite CReal_mult_1_l. apply (CReal_mult_lt_reg_l (IPR n)).
+      apply IPR_pos. rewrite CReal_inv_r.
+      apply (CReal_mult_lt_compat_l (b-a)) in maj.
+      rewrite CReal_inv_r, CReal_mult_comm in maj.
+      rewrite <- INR_IPR. unfold n. rewrite Nat2Pos.id.
+      apply maj. discriminate. exact epsPos.
+      apply (CReal_plus_lt_reg_r (IQR (1 # n))).
+      unfold CReal_minus. rewrite CReal_plus_assoc, CReal_plus_opp_l.
+      rewrite CReal_plus_0_r. rewrite <- plus_IQR.
+      destruct maj2 as [_ maj2].
+      setoid_replace ((p # 2 * n) + (1 # n))%Q
+        with ((p + 2 # 2 * n))%Q. unfold IQR.
+      apply (CReal_mult_lt_reg_r (IZR (Z.pos (2 * n)))).
+      apply (IZR_lt 0). reflexivity. rewrite CReal_mult_assoc.
+      rewrite CReal_inv_l. rewrite CReal_mult_1_r. rewrite CReal_mult_comm.
+      rewrite plus_IZR. apply maj2.
+      setoid_replace (1#n)%Q with (2#2*n)%Q. 2: reflexivity.
+      apply Qinv_plus_distr.
+    + destruct maj2 as [maj2 _]. unfold IQR.
+      apply (CReal_mult_lt_reg_r (IZR (Z.pos (2 * n)))).
+      apply (IZR_lt 0). apply Pos2Z.is_pos. rewrite CReal_mult_assoc, CReal_inv_l.
+      rewrite CReal_mult_1_r, CReal_mult_comm. apply maj2.
+Qed.
+
+Definition FQ_dense (a b : CReal)
+  : a < b
+    -> { q : Q & a < IQR q < b }.
+Proof.
+  intros H. destruct (linear_order_T a 0 b). apply H.
+  - destruct (FQ_dense_pos (-b) (-a)) as [q maj].
+    apply (CReal_plus_lt_compat_l (-a)) in c. rewrite CReal_plus_opp_l in c.
+    rewrite CReal_plus_0_r in c. apply c.
+    apply (CReal_plus_lt_compat_l (-a)) in H.
+    rewrite CReal_plus_opp_l, CReal_plus_comm in H.
+    apply (CReal_plus_lt_compat_l (-b)) in H. rewrite <- CReal_plus_assoc in H.
+    rewrite CReal_plus_opp_l in H. rewrite CReal_plus_0_l in H.
+    rewrite CReal_plus_0_r in H. apply H.
+    exists (-q)%Q. split.
+    + destruct maj as [_ maj].
+      apply (CReal_plus_lt_compat_l (-IQR q)) in maj.
+      rewrite CReal_plus_opp_l, <- opp_IQR, CReal_plus_comm in maj.
+      apply (CReal_plus_lt_compat_l a) in maj. rewrite <- CReal_plus_assoc in maj.
+      rewrite CReal_plus_opp_r, CReal_plus_0_l in maj.
+      rewrite CReal_plus_0_r in maj. apply maj.
+    + destruct maj as [maj _].
+      apply (CReal_plus_lt_compat_l (-IQR q)) in maj.
+      rewrite CReal_plus_opp_l, <- opp_IQR, CReal_plus_comm in maj.
+      apply (CReal_plus_lt_compat_l b) in maj. rewrite <- CReal_plus_assoc in maj.
+      rewrite CReal_plus_opp_r in maj. rewrite CReal_plus_0_l in maj.
+      rewrite CReal_plus_0_r in maj. apply maj.
+  - apply FQ_dense_pos. apply c. apply H.
+Qed.
+
 Definition RQ_limit : forall (x : CReal) (n:nat),
-    { q:Q | x < IQR q < x + IQR (1 # Pos.of_nat n) }.
+    { q:Q & x < IQR q < x + IQR (1 # Pos.of_nat n) }.
 Proof.
   intros x n. apply (FQ_dense x (x + IQR (1 # Pos.of_nat n))).
-  rewrite <- (Rplus_0_r x). rewrite Rplus_assoc.
-  apply Rplus_lt_compat_l. rewrite Rplus_0_l. apply IQR_pos.
+  rewrite <- (CReal_plus_0_r x). rewrite CReal_plus_assoc.
+  apply CReal_plus_lt_compat_l. rewrite CReal_plus_0_l. apply IQR_pos.
   reflexivity.
 Qed.
 
@@ -160,7 +231,7 @@ Definition Un_cauchy_Q (xn : nat -> Q) : Set
 
 Lemma Rdiag_cauchy_sequence : forall (xn : nat -> CReal),
     Un_cauchy_mod xn
-    -> Un_cauchy_Q (fun n => proj1_sig (RQ_limit (xn n) n)).
+    -> Un_cauchy_Q (fun n => let (l,_) := RQ_limit (xn n) n in l).
 Proof.
   intros xn H p. specialize (H (2 * p)%positive) as [k cv].
   exists (max k (2 * Pos.to_nat p)). intros.
@@ -171,58 +242,69 @@ Proof.
   apply Nat.le_max_l. apply H0.
   split.
   - apply lt_IQR. unfold Qminus.
-    apply (Rlt_trans _ (xn p0 - (xn q + IQR (1 # 2 * p)))).
-    + unfold CReal_minus. rewrite Ropp_plus_distr. unfold CReal_minus.
-      rewrite <- Rplus_assoc.
-      apply (Rplus_lt_reg_r (IQR (1 # 2 * p))).
-      rewrite Rplus_assoc. rewrite Rplus_opp_l. rewrite Rplus_0_r.
+    apply (CRealLt_trans _ (xn p0 - (xn q + IQR (1 # 2 * p)))).
+    + unfold CReal_minus. rewrite CReal_opp_plus_distr. unfold CReal_minus.
+      rewrite <- CReal_plus_assoc.
+      apply (CReal_plus_lt_reg_r (IQR (1 # 2 * p))).
+      rewrite CReal_plus_assoc. rewrite CReal_plus_opp_l. rewrite CReal_plus_0_r.
       rewrite <- plus_IQR.
       setoid_replace (- (1 # p) + (1 # 2 * p))%Q with (- (1 # 2 * p))%Q.
-      rewrite opp_IQR. exact H1.
+      rewrite opp_IQR. exact c.
       rewrite Qplus_comm.
       setoid_replace (1#p)%Q with (2 # 2 *p)%Q. rewrite Qinv_minus_distr.
       reflexivity. reflexivity.
-    + rewrite plus_IQR. apply Rplus_lt_compat.
-      destruct (RQ_limit (xn p0) p0); simpl. apply a.
+    + rewrite plus_IQR. apply CReal_plus_le_lt_compat.
+      apply CRealLt_asym.
+      destruct (RQ_limit (xn p0) p0); simpl. apply p1.
       destruct (RQ_limit (xn q) q); unfold proj1_sig.
-      rewrite opp_IQR. apply Ropp_gt_lt_contravar.
-      apply (Rlt_le_trans _ (xn q + IQR (1 # Pos.of_nat q))).
-      apply a. apply Rplus_le_compat_l. apply IQR_le.
+      rewrite opp_IQR. apply CReal_opp_gt_lt_contravar.
+      apply (CRealLt_Le_trans _ (xn q + IQR (1 # Pos.of_nat q))).
+      apply p1. apply CReal_plus_le_compat_l. apply IQR_le.
       apply Z2Nat.inj_le. discriminate. discriminate.
       simpl. assert ((Pos.to_nat p~0 <= q)%nat).
       { apply (le_trans _ (Init.Nat.max k (2 * Pos.to_nat p))).
         2: apply H0. replace (p~0)%positive with (2*p)%positive.
         2: reflexivity. rewrite Pos2Nat.inj_mul.
         apply Nat.le_max_r. }
-      rewrite Nat2Pos.id. apply H3. intro abs. subst q.
-      inversion H3. pose proof (Pos2Nat.is_pos (p~0)).
-      rewrite H5 in H4. inversion H4.
+      rewrite Nat2Pos.id. apply H1. intro abs. subst q.
+      inversion H1. pose proof (Pos2Nat.is_pos (p~0)).
+      rewrite H3 in H2. inversion H2.
   - apply lt_IQR. unfold Qminus.
-    apply (Rlt_trans _ (xn p0 + IQR (1 # 2 * p) - xn q)).
-    + rewrite plus_IQR. apply Rplus_lt_compat.
+    apply (CRealLt_trans _ (xn p0 + IQR (1 # 2 * p) - xn q)).
+    + rewrite plus_IQR. apply CReal_plus_le_lt_compat.
+      apply CRealLt_asym.
       destruct (RQ_limit (xn p0) p0); unfold proj1_sig.
-      apply (Rlt_le_trans _ (xn p0 + IQR (1 # Pos.of_nat p0))).
-      apply a. apply Rplus_le_compat_l. apply IQR_le.
+      apply (CRealLt_Le_trans _ (xn p0 + IQR (1 # Pos.of_nat p0))).
+      apply p1. apply CReal_plus_le_compat_l. apply IQR_le.
       apply Z2Nat.inj_le. discriminate. discriminate.
       simpl. assert ((Pos.to_nat p~0 <= p0)%nat).
       { apply (le_trans _ (Init.Nat.max k (2 * Pos.to_nat p))).
         2: apply H. replace (p~0)%positive with (2*p)%positive.
         2: reflexivity. rewrite Pos2Nat.inj_mul.
         apply Nat.le_max_r. }
-      rewrite Nat2Pos.id. apply H3. intro abs. subst p0.
-      inversion H3. pose proof (Pos2Nat.is_pos (p~0)).
-      rewrite H5 in H4. inversion H4.
-      rewrite opp_IQR. apply Ropp_gt_lt_contravar.
-      destruct (RQ_limit (xn q) q); simpl. apply a.
-    + unfold CReal_minus. rewrite (Rplus_comm (xn p0)).
-      rewrite Rplus_assoc.
-      apply (Rplus_lt_reg_l (- IQR (1 # 2 * p))).
-      rewrite <- Rplus_assoc. rewrite Rplus_opp_l. rewrite Rplus_0_l.
+      rewrite Nat2Pos.id. apply H1. intro abs. subst p0.
+      inversion H1. pose proof (Pos2Nat.is_pos (p~0)).
+      rewrite H3 in H2. inversion H2.
+      rewrite opp_IQR. apply CReal_opp_gt_lt_contravar.
+      destruct (RQ_limit (xn q) q); simpl. apply p1.
+    + unfold CReal_minus. rewrite (CReal_plus_comm (xn p0)).
+      rewrite CReal_plus_assoc.
+      apply (CReal_plus_lt_reg_l (- IQR (1 # 2 * p))).
+      rewrite <- CReal_plus_assoc. rewrite CReal_plus_opp_l. rewrite CReal_plus_0_l.
       rewrite <- opp_IQR. rewrite <- plus_IQR.
       setoid_replace (- (1 # 2 * p) + (1 # p))%Q with (1 # 2 * p)%Q.
-      exact H2. rewrite Qplus_comm.
+      exact c0. rewrite Qplus_comm.
       setoid_replace (1#p)%Q with (2 # 2*p)%Q. rewrite Qinv_minus_distr.
       reflexivity. reflexivity.
+Qed.
+
+Lemma doubleLtCovariant : forall a b c d e f : CReal,
+    a == b -> c == d -> e == f
+    -> (a < c < e)
+    -> (b < d < f).
+Proof.
+  split. rewrite <- H. rewrite <- H0. apply H2.
+  rewrite <- H0. rewrite <- H1. apply H2.
 Qed.
 
 (* An element of CReal is a Cauchy sequence of rational numbers,
@@ -233,11 +315,12 @@ Lemma CReal_cv_self : forall (qn : nat -> Q) (x : CReal) (cvmod : positive -> na
 Proof.
   intros qn x cvmod H p.
   specialize (H (2*p)%positive). exists (cvmod (2*p)%positive).
-  intros p0 H0. unfold CReal_minus. rewrite FinjectQ_CReal.
-  setoid_replace (IQR (qn p0)) with (inject_Q (qn p0)).
-  2: apply FinjectQ_CReal.
-  apply CReal_absSmall.
-  exists (Pos.max (4 * p)%positive (Pos.of_nat (cvmod (2 * p)%positive))).
+  intros p0 H0. unfold absSmall, CReal_minus.
+  apply (doubleLtCovariant (-inject_Q (1#p)) _ (inject_Q (qn p0) - x) _ (inject_Q (1#p))).
+  rewrite FinjectQ_CReal. reflexivity.
+  rewrite FinjectQ_CReal. reflexivity.
+  rewrite FinjectQ_CReal. reflexivity.
+  apply (CReal_absSmall _ _ (Pos.max (4 * p)%positive (Pos.of_nat (cvmod (2 * p)%positive)))).
   setoid_replace (proj1_sig (inject_Q (1 # p)) (Pos.to_nat (Pos.max (4 * p) (Pos.of_nat (cvmod (2 * p)%positive)))))
     with (1 # p)%Q.
   2: reflexivity.
@@ -246,12 +329,15 @@ Proof.
   2: destruct x; reflexivity.
   apply (Qle_lt_trans _ (1 # 2 * p)).
   unfold Qle; simpl. rewrite Pos2Z.inj_max. apply Z.le_max_l.
-  rewrite <- (Qplus_lt_r _ _ (-(1#p))). unfold Qminus. rewrite Qplus_assoc.
-  rewrite (Qplus_comm _ (1#p)). rewrite Qplus_opp_r. rewrite Qplus_0_l.
-  setoid_replace (- (1 # p) + (1 # 2 * p))%Q with (-(1 # 2 * p))%Q.
-  apply Qopp_lt_compat. apply H. apply H0.
-
-  rewrite Pos2Nat.inj_max.
+  rewrite <- (Qplus_lt_r
+               _ _ (Qabs
+     (qn p0 -
+      proj1_sig x
+                (2 * Pos.to_nat (Pos.max (4 * p) (Pos.of_nat (cvmod (2 * p)%positive))))%nat)
+                    -(1#2*p))).
+  ring_simplify.
+  setoid_replace (-1 * (1 # 2 * p) + (1 # p))%Q with (1 # 2 * p)%Q.
+  apply H. apply H0. rewrite Pos2Nat.inj_max.
   apply (le_trans _ (1 * Nat.max (Pos.to_nat (4 * p)) (Pos.to_nat (Pos.of_nat (cvmod (2 * p)%positive))))).
   destruct (cvmod (2*p)%positive). apply le_0_n. rewrite mult_1_l.
   rewrite Nat2Pos.id. 2: discriminate. apply Nat.le_max_r.
@@ -267,7 +353,8 @@ Lemma Un_cv_extens : forall (xn yn : nat -> CReal) (l : CReal),
     -> Un_cv_mod yn l.
 Proof.
   intros. intro p. destruct (H p) as [n cv]. exists n.
-  intros. unfold CReal_minus. rewrite <- (H0 i). apply cv. apply H1.
+  intros. unfold absSmall, CReal_minus.
+  split; rewrite <- (H0 i); apply cv; apply H1.
 Qed.
 
 (* Q is dense in Archimedean fields, so all real numbers
@@ -284,8 +371,8 @@ Proof.
   - intros p n k H0 H1. destruct (H p); simpl in H0,H1.
     specialize (a n k H0 H1). apply Qabs_case.
     intros _. apply a. intros _.
-    rewrite <- (Qopp_involutive (1#p)). apply Qopp_lt_compat.
-    apply a.
+    apply (Qplus_lt_r _ _ (qn n -qn k-(1#p))). ring_simplify.
+    destruct a. ring_simplify in H2. exact H2.
   - exists (exist _ (fun n : nat =>
                        qn (increasing_modulus (fun p : positive => proj1_sig (H p)) n)) H0).
     apply (Un_cv_extens (fun n : nat => IQR (qn n))).
@@ -300,28 +387,29 @@ Lemma Rcauchy_complete : forall (xn : nat -> CReal),
     -> { l : CReal & Un_cv_mod xn l }.
 Proof.
   intros xn cau.
-  destruct (R_has_all_rational_limits (fun n => proj1_sig (RQ_limit (xn n) n))
+  destruct (R_has_all_rational_limits (fun n => let (l,_) := RQ_limit (xn n) n in l)
                                       (Rdiag_cauchy_sequence xn cau))
     as [l cv].
   exists l. intro p. specialize (cv (2*p)%positive) as [k cv].
   exists (max k (2 * Pos.to_nat p)). intros p0 H. specialize (cv p0).
-  destruct cv. apply (le_trans _ (max k (2 * Pos.to_nat p))).
+  destruct cv as [H0 H1]. apply (le_trans _ (max k (2 * Pos.to_nat p))).
   apply Nat.le_max_l. apply H.
   destruct (RQ_limit (xn p0) p0) as [q maj]; unfold proj1_sig in H0,H1.
   split.
-  - apply (Rlt_trans _ (IQR q - IQR (1 # 2 * p) - l)).
-    + unfold CReal_minus. rewrite (Rplus_comm (IQR q)).
-      apply (Rplus_lt_reg_l (IQR (1 # 2 * p))).
+  - apply (CRealLt_trans _ (IQR q - IQR (1 # 2 * p) - l)).
+    + unfold CReal_minus. rewrite (CReal_plus_comm (IQR q)).
+      apply (CReal_plus_lt_reg_l (IQR (1 # 2 * p))).
       ring_simplify. unfold CReal_minus. rewrite <- opp_IQR. rewrite <- plus_IQR.
       setoid_replace ((1 # 2 * p) + - (1 # p))%Q with (-(1#2*p))%Q.
       rewrite opp_IQR. apply H0.
       setoid_replace (1#p)%Q with (2 # 2*p)%Q.
       rewrite Qinv_minus_distr. reflexivity. reflexivity.
-    + unfold CReal_minus. apply Rplus_lt_compat_r.
-      apply (Rplus_lt_reg_r (IQR (1 # 2 * p))).
-      ring_simplify. rewrite Rplus_comm.
-      apply (Rlt_le_trans _ (xn p0 + IQR (1 # Pos.of_nat p0))).
-      apply maj. apply Rplus_le_compat_l.
+    + unfold CReal_minus.
+      do 2 rewrite <- (CReal_plus_comm (-l)). apply CReal_plus_lt_compat_l.
+      apply (CReal_plus_lt_reg_r (IQR (1 # 2 * p))).
+      ring_simplify. rewrite CReal_plus_comm.
+      apply (CRealLt_Le_trans _ (xn p0 + IQR (1 # Pos.of_nat p0))).
+      apply maj. apply CReal_plus_le_compat_l.
       apply IQR_le.
       apply Z2Nat.inj_le. discriminate. discriminate.
       simpl. assert ((Pos.to_nat p~0 <= p0)%nat).
@@ -332,12 +420,13 @@ Proof.
       rewrite Nat2Pos.id. apply H2. intro abs. subst p0.
       inversion H2. pose proof (Pos2Nat.is_pos (p~0)).
       rewrite H4 in H3. inversion H3.
-  - apply (Rlt_trans _ (IQR q - l)).
-    + apply Rplus_lt_compat_r. apply maj.
-    + apply (Rlt_trans _ (IQR (1 # 2 * p))).
+  - apply (CRealLt_trans _ (IQR q - l)).
+    + unfold CReal_minus. do 2 rewrite <- (CReal_plus_comm (-l)).
+      apply CReal_plus_lt_compat_l. apply maj.
+    + apply (CRealLt_trans _ (IQR (1 # 2 * p))).
       apply H1. apply IQR_lt.
       rewrite <- Qplus_0_r.
       setoid_replace (1#p)%Q with ((1#2*p)+(1#2*p))%Q.
       apply Qplus_lt_r. reflexivity.
-      rewrite Qplus_same_denom. reflexivity.
+      rewrite Qinv_plus_distr. reflexivity.
 Qed.
