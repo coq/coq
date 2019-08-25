@@ -397,7 +397,7 @@ doc_gram_rsts: doc/tools/docgram/orderedGrammar
 # Specific rules for Uint63
 ###########################################################################
 kernel/uint63.ml: kernel/uint63_$(OCAML_INT_SIZE).ml
-	rm -f $@ && cp $< $@ && chmod -w $@
+	rm -f $@ && cp $< $@ && chmod a-w $@
 
 ###########################################################################
 # Main targets (coqtop.opt, coqtop.byte)

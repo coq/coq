@@ -121,7 +121,7 @@ $(COQIDEBYTE): $(LINKIDE)
 ide/coqide_os_specific.ml: ide/coqide_$(IDEINT).ml.in config/Makefile
 	@rm -f $@
 	cp $< $@
-	@chmod -w $@
+	@chmod a-w $@
 
 ide/%.cmi: ide/%.mli
 	$(SHOW)'OCAMLC    $<'
