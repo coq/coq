@@ -127,6 +127,7 @@ struct
     pos_vars = empty;
     stack = [];
   }
+
   let push state = { state with
     pos_vars = empty;
     stack = state.pos_vars :: state.stack }
@@ -137,10 +138,12 @@ struct
     { state with
       pos_vars = SVars.union pos_vars state.pos_vars;
       stack = stack }
+
   let get_vars state = state.vars
   let get_pos_vars state = state.pos_vars
   let remove_pos_vars rem state =
     { state with pos_vars = diff state.pos_vars rem }
+
   let next ?s:(s=Empty) state =
     match s with
     | Empty | Stage Infty ->
