@@ -1027,11 +1027,25 @@ type 'univs instance_compare_fn = GlobRef.t -> int ->
 type 'constr constr_compare_fn = int -> 'constr -> 'constr -> bool
 
 let compare_head_gen_leq_with_cstrnts kind1 kind2 leq_universes leq_sorts leq_annot eq leq nargs t1 t2 =
+  (* If either const/var/rel has None, their body is opaque,
+    so there's no real way of creating stage annotation constraints.
+    If they both have the same annotations, we can proceed as usual.
+    Otherwise, we return false, so that we proceed to clos_gen_conv instead,
+    where their bodies will have the annotations substituted in,
+    and we properly create stage annotation constraints, which would be
+    covariant for inductive types and contravariant for coinductive. *)
+  let eq_annots ans1 ans2 = match ans1, ans2 with
+    | None, _ -> true
+    | _, None -> true
+    | Some ans1, Some ans2
+      when Int.equal (List.length ans1) (List.length ans2) ->
+      List.for_all (fun (a1, a2) -> Annot.equal a1 a2) @@ List.combine ans1 ans2
+    | _, _ -> false in
   match kind_nocast_gen kind1 t1, kind_nocast_gen kind2 t2 with
   | Cast _, _ | _, Cast _ -> assert false (* kind_nocast *)
-  | Rel (n1, _), Rel (n2, _) -> Int.equal n1 n2
+  | Rel (n1, ans1), Rel (n2, ans2) -> Int.equal n1 n2 && eq_annots ans1 ans2
   | Meta m1, Meta m2 -> Int.equal m1 m2
-  | Var (id1, _), Var (id2, _) -> Id.equal id1 id2
+  | Var (id1, ans1), Var (id2, ans2) -> Id.equal id1 id2 && eq_annots ans1 ans2
   | Int i1, Int i2 -> Uint63.equal i1 i2
   | Float f1, Float f2 -> Float64.equal f1 f2
   | Sort s1, Sort s2 -> leq_sorts s1 s2
@@ -1045,9 +1059,9 @@ let compare_head_gen_leq_with_cstrnts kind1 kind2 leq_universes leq_sorts leq_an
     leq (nargs+len) c1 c2 && Array.equal_norefl (eq 0) l1 l2
   | Proj (p1,c1), Proj (p2,c2) -> Projection.equal p1 p2 && eq 0 c1 c2
   | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && List.equal (eq 0) l1 l2
-  | Const ((c1,u1), _), Const ((c2,u2), _) ->
+  | Const ((c1,u1), ans1), Const ((c2,u2), ans2) ->
     (* The args length currently isn't used but may as well pass it. *)
-    Constant.equal c1 c2 && leq_universes (GlobRef.ConstRef c1) nargs u1 u2
+    Constant.equal c1 c2 && leq_universes (GlobRef.ConstRef c1) nargs u1 u2 && eq_annots ans1 ans2
   | Ind ((c1,u1), s1), Ind ((c2,u2), s2) ->
     eq_ind c1 c2 && leq_universes (GlobRef.IndRef c1) nargs u1 u2 && leq_annot c1 s1 s2
   | Construct (c1,u1), Construct (c2,u2) ->

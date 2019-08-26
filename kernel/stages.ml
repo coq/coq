@@ -83,6 +83,8 @@ struct
     | Glob, _  -> -1 | _, Glob  -> 1
     | Stage s1, Stage s2 -> Stage.compare s1 s2
 
+  let equal a1 a2 = Int.equal 0 @@ compare a1 a2
+
   let pr a =
     let open Pp in
     match a with

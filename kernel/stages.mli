@@ -80,6 +80,7 @@ sig
   val infty : t
   val hat : t -> t
   val compare : t -> t -> int
+  val equal : t -> t -> bool
   val pr : t -> Pp.t
   val show : t -> string
   val hash : t -> int

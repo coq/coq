@@ -562,8 +562,10 @@ let rec execute env stg cstr =
 
     | Var (id, _) ->
       let numvars = stage_vars_in_variable env id in
+      let s, stg = next stg in
+      let t = annotate_glob s (type_of_variable env id) in
       let annots, stg = next_annots numvars stg in
-      stg, empty (), mkVarA id annots, type_of_variable env id
+      stg, empty (), mkVarA id annots, t
 
     | Const (c, _ans) ->
       let numvars = stage_vars_in_constant env c in
