@@ -59,7 +59,7 @@ Module ExplicitTemplate.
   #[universes(template)]
   Inductive identity@{i} (A : Type@{i}) (a : A) : A -> Type@{i} := id_refl : identity A a a.
 
-  (* Weird intraction of template polymorphism and inductives
+  (* Weird interaction of template polymorphism and inductive types
      which naturally fall in Prop: this one is template polymorphic but not on i:
      it just lives in any universe *)
   Check (identity Type nat nat : Prop).
@@ -155,3 +155,20 @@ Module TestTemplateAttribute.
 
   End Foo.
 End TestTemplateAttribute.
+
+Module SharingWithoutSection.
+Inductive Foo A (S:= fun _ => Set : ltac:(let ty := type of A in exact ty))
+  := foo : S A -> Foo A.
+Fail Check Foo True : Prop.
+End SharingWithoutSection.
+
+Module OkNotCovered.
+(* Here it happens that box is safe but we don't see it *)
+Section S.
+Universe u.
+Variable A : Type@{u}.
+Inductive box (A:Type@{u}) := Box : A -> box A.
+Definition B := Set : Type@{u}.
+End S.
+Fail Check box True : Prop.
+End OkNotCovered.
