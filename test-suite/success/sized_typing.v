@@ -278,3 +278,19 @@ Fixpoint h (n: nat) :=
   | O => O
   | S n' => h (id3 n')
   end.
+
+(* Local definitions preserve size as well when expected. *)
+Section localSize.
+Let id1 (x: nat) := x.
+Let id2 := fix id' (x: nat) := x.
+Fail Fixpoint j (n: nat) :=
+  match n with
+  | O => O
+  | S n' => j (id1 n')
+  end.
+Fixpoint k (n: nat) :=
+  match n with
+  | O => O
+  | S n' => k (id2 n')
+  end.
+End localSize.
