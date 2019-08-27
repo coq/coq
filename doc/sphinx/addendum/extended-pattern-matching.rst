@@ -131,7 +131,7 @@ This is compiled into:
 .. coqtop:: all
 
    Unset Printing Matching.
-   Print even.
+   Print Term even.
 
 .. coqtop:: none
 

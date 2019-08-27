@@ -386,7 +386,7 @@ We give now an example using identity coercions.
 
   Definition D' (b:bool) := D 1 b.
   Identity Coercion IdD'D : D' >-> D.
-  Print IdD'D.
+  Print Term IdD'D.
   Parameter d' : D' true.
   Check (T d').
   Set Printing Coercions.

@@ -687,11 +687,12 @@ for |Coq|’s type checker. Let us see why:
 
   Require Import ZArith.
   Open Scope Z_scope.
-  Goal forall x y z : Z, 
+  Lemma foo (x y z : Z) :
          x + 3 + y + y * z = x + 3 + y + z * y.
-  intros; rewrite (Zmult_comm y z); reflexivity.
-  Save foo.
-  Print foo.
+  Proof.
+    rewrite (Zmult_comm y z); reflexivity.
+  Defined.
+  Print Term foo.
 
 At each step of rewriting, the whole context is duplicated in the
 proof term. Then, a tactic that does hundreds of rewriting generates

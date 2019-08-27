@@ -65,7 +65,7 @@ different. This can be seen when the :flag:`Printing Universes` flag is on:
 
 .. coqtop:: all
 
-   Print selfpid.
+   Print Term selfpid.
 
 Now :g:`pidentity` is used at two different levels: at the head of the
 application it is instantiated at ``Top.3`` while in the argument position
@@ -92,7 +92,7 @@ is given by monoids:
 
 .. coqtop:: in
 
-   Print Monoid.
+   Print Term Monoid.
 
 The Monoid's carrier universe is polymorphic, hence it is possible to
 instantiate it for example with :g:`Monoid` itself. First we build the
@@ -114,7 +114,7 @@ From this we can build a definition for the monoid of :g:`Set`\-monoids
 
 .. coqtop:: all
 
-   Print monoid_monoid.
+   Print Term monoid_monoid.
 
 As one can see from the constraints, this monoid is “large”, it lives
 in a universe strictly higher than :g:`Set`.
@@ -194,7 +194,7 @@ Consider the examples below.
 
 .. coqtop:: all
 
-   Print list.
+   Print Term list.
 
 When printing :g:`list`, the universe context indicates the subtyping
 constraints by prefixing the level names with symbols.
@@ -345,7 +345,7 @@ Consider the following example:
 
 .. coqtop:: all
 
-   Print id0.
+   Print Term id0.
 
 This definition is elaborated by minimizing the universe of :g:`id0` to
 level :g:`Set` while the more general definition would keep the fresh level
@@ -414,7 +414,7 @@ introduced by a definition uses the following syntax:
 
 .. coqtop:: all
 
-   Print le.
+   Print Term le.
 
 During refinement we find that :g:`j` must be larger or equal than :g:`i`, as we
 are using :g:`A : Type@{i} <= Type@{j}`, hence the generated constraint. At the
@@ -468,7 +468,7 @@ underscore or by omitting the annotation to a polymorphic definition.
 
       Lemma foo@{i} : Type@{i}.
       Proof. exact Type. Qed.
-      Print foo.
+      Print Term foo.
 
    The universe :g:`Top.xxx` for the :g:`Type` in the body cannot be accessed, we
    only care that one exists for any instantiation of the universes

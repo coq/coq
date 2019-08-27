@@ -953,7 +953,7 @@ GRAMMAR EXTEND Gram
 
       (* Printing (careful factorization of entries) *)
       | IDENT "Print"; p = printable -> { VernacPrint p }
-      | IDENT "Print"; qid = smart_global; l = OPT univ_name_list -> { VernacPrint (PrintName (qid,l)) }
+      | IDENT "Print"; qid = smart_global; l = OPT univ_name_list -> { VernacPrint (PrintName (true, qid, l)) }
       | IDENT "Print"; IDENT "Module"; "Type"; qid = global ->
 	  { VernacPrint (PrintModuleType qid) }
       | IDENT "Print"; IDENT "Module"; qid = global ->
@@ -1023,7 +1023,7 @@ GRAMMAR EXTEND Gram
       ] ]
   ;
   printable:
-    [ [ IDENT "Term"; qid = smart_global; l = OPT univ_name_list -> { PrintName (qid,l) }
+    [ [ IDENT "Term"; qid = smart_global; l = OPT univ_name_list -> { PrintName (false, qid, l) }
       | IDENT "All" -> { PrintFullContext }
       | IDENT "Section"; s = global -> { PrintSectionContext s }
       | IDENT "Grammar"; ent = IDENT ->

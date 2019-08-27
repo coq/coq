@@ -1949,6 +1949,12 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     let sigma, env = get_current_or_global_context ~pstate in
     print_about env sigma ref_or_by_not udecl
 
+let warn_unqualified_print =
+  let name = "unqualified-print" in
+  let category = "deprecated" in
+  CWarnings.create ~name ~category
+    (fun () -> strbrk "Use of “Print qualid” is deprecated: use “Print Term qualid” instead.")
+
 let vernac_print ~pstate ~atts =
   let sigma, env = get_current_or_global_context ~pstate in
   function
@@ -1967,7 +1973,8 @@ let vernac_print ~pstate ~atts =
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
   | PrintDebugGC -> Mltop.print_gc ()
-  | PrintName (qid,udecl) ->
+  | PrintName (d, qid,udecl) ->
+    if d then warn_unqualified_print ();
     dump_global qid;
     print_name env sigma qid udecl
   | PrintGraph -> Prettyp.print_graph ()

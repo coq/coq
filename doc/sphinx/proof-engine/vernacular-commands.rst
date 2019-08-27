@@ -11,8 +11,8 @@ Displaying
 
 .. _Print:
 
-.. cmd:: Print @qualid
-   :name: Print
+.. cmd:: Print Term @qualid
+   :name: Print Term
 
    This command displays on the screen information about the declared or
    defined object referred by :n:`@qualid`.
@@ -29,11 +29,14 @@ Displaying
       :undocumented:
 
 
-   .. cmdv:: Print Term @qualid
-      :name: Print Term
+   .. cmdv:: Print @qualid
+      :name: Print
 
-      This is a synonym of :cmd:`Print` :n:`@qualid` when :n:`@qualid`
-      denotes a global constant.
+      This is a deprecated synonym of :cmd:`Print Term` :n:`@qualid`.
+
+      .. deprecated:: 8.10
+
+         Use :cmd:`Print Term` :n:`@qualid` instead.
 
    .. cmdv:: Print {? Term } @qualid\@@name
 

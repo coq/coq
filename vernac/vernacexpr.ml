@@ -39,7 +39,7 @@ type printable =
   | PrintMLLoadPath
   | PrintMLModules
   | PrintDebugGC
-  | PrintName of qualid or_by_notation * UnivNames.univ_name_list option
+  | PrintName of bool (* use deprecated form *) * qualid or_by_notation * UnivNames.univ_name_list option
   | PrintGraph
   | PrintClasses
   | PrintTypeClasses

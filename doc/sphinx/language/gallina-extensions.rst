@@ -574,7 +574,7 @@ This example emphasizes what the printing options offer.
 
        Test Printing Let for prod.
 
-       Print snd.
+       Print Term snd.
 
        Remove Printing Let prod.
 
@@ -582,7 +582,7 @@ This example emphasizes what the printing options offer.
 
        Unset Printing Wildcard.
 
-       Print snd.
+       Print Term snd.
 
 .. _advanced-recursive-functions:
        
@@ -788,13 +788,13 @@ Sections create local contexts which can be shared across multiple definitions.
 
    .. coqtop:: all
 
-      Print x'.
-      Print x''.
+      Print Term x'.
+      Print Term x''.
 
       End s1.
 
-      Print x'.
-      Print x''.
+      Print Term x'.
+      Print Term x''.
 
    Notice the difference between the value of :g:`x'` and :g:`x''` inside section
    :g:`s1` and outside.
@@ -1075,7 +1075,7 @@ module can be accessed using the dot notation:
 
 .. coqtop:: all
 
-   Print M.x.
+   Print Term M.x.
 
 A simple module type:
 
@@ -1096,11 +1096,11 @@ specification: the y component is dropped as well as the body of x.
 
    Module N : SIG with Definition T := nat := M.
 
-   Print N.T.
+   Print Term N.T.
 
-   Print N.x.
+   Print Term N.x.
 
-   Fail Print N.y.
+   Fail Print Term N.y.
 
 .. reset to remove N (undo in last coqtop block doesn't seem to do that), invisibly redefine M, SIG
 .. coqtop:: none reset
@@ -1150,7 +1150,7 @@ transparent constraint
 
    Module P <: SIG := M.
 
-   Print P.y.
+   Print Term P.y.
 
 Now let us create a functor, i.e. a parametric module
 
@@ -1641,7 +1641,7 @@ inductive only, not the inductive type itself. For example:
    | nil : list
    | cons : A -> list -> list.
 
-   Print list.
+   Print Term list.
 
 One can always specify the parameter if it is not uniform using the
 usual implicit arguments disambiguation syntax.
@@ -1804,7 +1804,7 @@ appear strictly in the body of the type, they are implicit.
 
    Arguments p : default implicits.
 
-   Print p.
+   Print Term p.
 
    Print Implicit p.
 
@@ -2166,7 +2166,7 @@ equality argument are explicit.
 
    Definition sym `(x:A) : `(x = y -> y = x) := fun _ p => eq_sym p.
 
-   Print sym.
+   Print Term sym.
 
 Dually to normal binders, the name is optional but the type is required:
 

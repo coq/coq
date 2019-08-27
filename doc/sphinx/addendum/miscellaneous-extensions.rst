@@ -49,7 +49,7 @@ it provides the following command:
 
      End P.
 
-     Print p.
+     Print Term p.
      Check h.
 
 Any property can be used as `term`, not only an equation. In particular,

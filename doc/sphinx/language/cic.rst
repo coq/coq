@@ -1460,7 +1460,7 @@ type.
 
    .. coqtop:: all
 
-      Print eq_rec.
+      Print Term eq_rec.
       Require Extraction.
       Extraction eq_rec.
 
@@ -1723,20 +1723,20 @@ command and show the internal representation.
       | S p => S (plus p m)
       end.
 
-      Print plus.
+      Print Term plus.
       Fixpoint lgth (A:Set) (l:list A) {struct l} : nat :=
       match l with
       | nil _ => O
       | cons _ a l' => S (lgth A l')
       end.
-      Print lgth.
+      Print Term lgth.
       Fixpoint sizet (t:tree) : nat := let (f) := t in S (sizef f)
       with sizef (f:forest) : nat :=
       match f with
       | emptyf => O
       | consf t f => plus (sizet t) (sizef f)
       end.
-      Print sizet.
+      Print Term sizet.
 
 .. _Reduction-rule:
 
