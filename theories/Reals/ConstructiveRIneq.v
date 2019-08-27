@@ -22,9 +22,8 @@
    constructive reals, do not use ConstructiveCauchyReals
    directly. *)
 
-Require Import ConstructiveCauchyReals.
+Require Import ConstructiveCauchyRealsMult.
 Require Import ConstructiveRcomplete.
-Require Import ConstructiveRealsLUB.
 Require Export ConstructiveReals.
 Require Import Zpower.
 Require Export ZArithRing.
@@ -37,11 +36,11 @@ Declare Scope R_scope_constr.
 Local Open Scope Z_scope.
 Local Open Scope R_scope_constr.
 
-Definition CR : ConstructiveReals.
+Definition CRealImplem : ConstructiveReals.
 Proof.
   assert (isLinearOrder CReal CRealLt) as lin.
   { repeat split. exact CRealLt_asym.
-    exact CRealLt_trans.
+    exact CReal_lt_trans.
     intros. destruct (CRealLt_dec x z y H).
     left. exact c. right. exact c. }
   apply (Build_ConstructiveReals
@@ -53,30 +52,25 @@ Proof.
            CReal_plus_lt_compat_l CReal_plus_lt_reg_l
            CReal_mult_lt_0_compat
            CReal_inv CReal_inv_l CReal_inv_0_lt_compat
-           CRealArchimedean).
+           inject_Q inject_Q_plus inject_Q_mult
+           inject_Q_one inject_Q_lt lt_inject_Q
+           CRealQ_dense Rup_pos).
   - intros. destruct (Rcauchy_complete xn) as [l cv].
-    intro n. apply (H (IQR (1#n))). apply IQR_pos. reflexivity.
-    exists l. intros eps epsPos.
-    destruct (Rup_nat ((/eps) (inr epsPos))) as [n nmaj].
-    specialize (cv (Pos.of_nat (S n))) as [p pmaj].
-    exists p. intros. specialize (pmaj i H0). unfold absSmall in pmaj.
-    apply (CReal_mult_lt_compat_l eps) in nmaj.
-    rewrite CReal_inv_r, CReal_mult_comm in nmaj.
-    2: apply epsPos. split.
-    + apply (CRealLt_trans _ (-IQR (1 # Pos.of_nat (S n)))).
-      2: apply pmaj. clear pmaj.
-      apply CReal_opp_gt_lt_contravar. unfold CRealGt, IQR.
-      rewrite CReal_mult_1_l. apply (CReal_mult_lt_reg_l (IPR (Pos.of_nat (S n)))).
-      apply IPR_pos. rewrite CReal_inv_r, <- INR_IPR, Nat2Pos.id.
-      2: discriminate. apply (CRealLt_trans _ (INR n * eps) _ nmaj).
-      apply CReal_mult_lt_compat_r. exact epsPos. apply lt_INR, le_refl.
-    + apply (CRealLt_trans _ (IQR (1 # Pos.of_nat (S n)))).
-      apply pmaj. unfold IQR. rewrite CReal_mult_1_l.
-      apply (CReal_mult_lt_reg_l (IPR (Pos.of_nat (S n)))).
-      apply IPR_pos. rewrite CReal_inv_r, <- INR_IPR, Nat2Pos.id.
-      2: discriminate. apply (CRealLt_trans _ (INR n * eps) _ nmaj).
-      apply CReal_mult_lt_compat_r. exact epsPos. apply lt_INR, le_refl.
-  - exact sig_lub.
+    intro n. destruct (H n). exists x. intros.
+    specialize (a i j H0 H1) as [a b]. split. 2: exact b.
+    rewrite <- opp_inject_Q.
+    setoid_replace (-(1#n))%Q with (-1#n). exact a. reflexivity.
+    exists l. intros p. destruct (cv p).
+    exists x. intros. specialize (a i H0). split. 2: apply a.
+    unfold orderLe.
+    intro abs. setoid_replace (-1#p) with (-(1#p))%Q in abs.
+    rewrite opp_inject_Q in abs. destruct a. contradiction.
+    reflexivity.
+Defined.
+
+Definition CR : ConstructiveReals.
+Proof.
+  exact CRealImplem.
 Qed. (* Keep it opaque to possibly change the implementation later *)
 
 Definition R := CRcarrier CR.
@@ -1673,6 +1667,19 @@ Proof.
   intro; destruct n. rewrite Rplus_0_l. reflexivity. reflexivity.
 Qed.
 
+(**********)
+Lemma IZN : forall n:Z, (0 <= n)%Z -> { m : nat | n = Z.of_nat m }.
+Proof.
+  intros. exists (Z.to_nat n). rewrite Z2Nat.id. reflexivity. assumption.
+Qed.
+
+Lemma le_succ_r_T : forall n m : nat, (n <= S m)%nat -> {(n <= m)%nat} + {n = S m}.
+Proof.
+  intros. destruct (le_lt_dec n m). left. exact l.
+  right. apply Nat.le_succ_r in H. destruct H.
+  exfalso. apply (le_not_lt n m); assumption. exact H.
+Qed.
+
 Lemma lt_INR : forall n m:nat, (n < m)%nat -> INR n < INR m.
 Proof.
   induction m.
@@ -2174,35 +2181,29 @@ Proof.
   contradiction. apply H.
 Qed.
 
-Lemma INR_gen_phiZ : forall (n : nat),
-    gen_phiZ 0 1 Rplus Rmult Ropp (Z.of_nat n) == INR n.
+Lemma INR_CR_of_Q : forall (n : nat),
+    CR_of_Q CR (Z.of_nat n # 1) == INR n.
 Proof.
   induction n.
-  - apply Req_refl.
-  - replace (Z.of_nat (S n)) with (1 + Z.of_nat n)%Z.
-    rewrite (gen_phiZ_add Req_rel (CRisRingExt CR) RisRing).
-    rewrite IHn. clear IHn. simpl. rewrite (Rplus_comm 1).
-    destruct n. rewrite Rplus_0_l. reflexivity. reflexivity.
+  - apply CR_of_Q_zero.
+  - transitivity (CR_of_Q CR (1 + (Z.of_nat n # 1))).
     replace (S n) with (1 + n)%nat. 2: reflexivity.
-    rewrite (Nat2Z.inj_add 1 n). reflexivity.
+    rewrite (Nat2Z.inj_add 1 n).
+    apply CR_of_Q_proper.
+    rewrite <- (Qinv_plus_distr (Z.of_nat 1) (Z.of_nat n) 1). reflexivity.
+    rewrite CR_of_Q_plus. rewrite IHn. clear IHn.
+    setoid_replace (INR (S n)) with (1 + INR n).
+    rewrite CR_of_Q_one. reflexivity.
+    simpl. destruct n. rewrite Rplus_0_r. reflexivity.
+    rewrite Rplus_comm. reflexivity.
 Qed.
 
 Definition Rup_nat (x : R)
   : { n : nat & x < INR n }.
 Proof.
-  intros. destruct (CRarchimedean CR x) as [p maj].
-  destruct p.
-  - exists O. apply maj.
-  - exists (Pos.to_nat p).
-    rewrite <- positive_nat_Z, (INR_gen_phiZ (Pos.to_nat p)) in maj. exact maj.
-  - exists O. apply (Rlt_trans _ _ _ maj). simpl.
-    rewrite <- Ropp_0. apply Ropp_gt_lt_contravar.
-    fold (gen_phiZ 0 1 Rplus Rmult Ropp (Z.pos p)).
-    replace (gen_phiPOS 1 (CRplus CR) (CRmult CR) p)
-      with (gen_phiZ 0 1 Rplus Rmult Ropp (Z.pos p)).
-    2: reflexivity.
-    rewrite <- positive_nat_Z, (INR_gen_phiZ (Pos.to_nat p)).
-    apply (lt_INR 0). apply Pos2Nat.is_pos.
+  intros. destruct (CR_archimedean CR x) as [p maj].
+  exists (Pos.to_nat p).
+  rewrite <- INR_CR_of_Q, positive_nat_Z. exact maj.
 Qed.
 
 Fixpoint Rarchimedean_ind (x:R) (n : Z) (p:nat) { struct p }
