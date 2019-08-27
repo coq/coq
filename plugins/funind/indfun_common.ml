@@ -92,13 +92,6 @@ let list_union_eq eq_fun l1 l2 =
 let list_add_set_eq eq_fun x l =
   if List.exists (eq_fun x) l then l else x::l
 
-let const_of_id id =
-  let princ_ref = qualid_of_ident id in
-  try Constrintern.locate_reference princ_ref
-  with Not_found ->
-    CErrors.user_err ~hdr:"IndFun.const_of_id"
-      (str "cannot find " ++ Id.print id)
-
 [@@@ocaml.warning "-3"]
 let coq_constant s =
   UnivGen.constr_of_monomorphic_global @@
@@ -301,19 +294,15 @@ let find_or_none id =
     )
   with Not_found -> None
 
-
-
 let find_Function_infos f =
-  Cmap_env.find f !from_function
-
+  Cmap_env.find_opt f !from_function
 
 let find_Function_of_graph ind =
-  Indmap.find ind !from_graph
+  Indmap.find_opt ind !from_graph
 
 let update_Function finfo =
   (* Pp.msgnl (pr_info finfo); *)
   Lib.add_anonymous_leaf (in_Function finfo)
-
 
 let add_Function is_general f =
   let f_id = Label.to_id (Constant.label f) in

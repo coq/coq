@@ -34,9 +34,10 @@ let revert_graph kn post_tac hid = Proofview.Goal.enter (fun gl ->
     let ((kn',num) as ind'),u = destInd sigma i in
     if MutInd.equal kn kn'
     then (* We have generated a graph hypothesis so that we must change it if we can *)
-      let info =
-        try find_Function_of_graph ind'
-        with Not_found -> (* The graphs are mutually recursive but we cannot find one of them !*)
+      let info = match find_Function_of_graph ind' with
+        | Some info -> info
+        | None ->
+          (* The graphs are mutually recursive but we cannot find one of them !*)
           CErrors.anomaly (Pp.str "Cannot retrieve infos about a mutual block.")
       in
       (* if we can find a completeness lemma for this function
@@ -108,18 +109,20 @@ let invfun qhyp f  =
     | _ ->
       CErrors.user_err Pp.(str "Not a function")
   in
-  try
-    let finfos = find_Function_infos f in
-    let f_correct = mkConst(Option.get finfos.correctness_lemma)
-    and kn = fst finfos.graph_ind in
-    Tactics.try_intros_until (fun hid -> functional_inversion kn hid (mkConst f)  f_correct) qhyp
-  with
-  | Not_found -> CErrors.user_err (Pp.str "No graph found")
-  | Option.IsNone  -> CErrors.user_err (Pp.str "Cannot use equivalence with graph!")
-
-exception NoFunction
+  match find_Function_infos f with
+  | None ->
+    CErrors.user_err (Pp.str "No graph found")
+  | Some finfos ->
+    match finfos.correctness_lemma with
+    | None ->
+      CErrors.user_err (Pp.str "Cannot use equivalence with graph!")
+    | Some f_correct ->
+      let f_correct = mkConst f_correct
+      and kn = fst finfos.graph_ind in
+      Tactics.try_intros_until (fun hid -> functional_inversion kn hid (mkConst f)  f_correct) qhyp
 
 let invfun qhyp f =
+  let exception NoFunction in
   match f with
   | Some f -> invfun qhyp f
   | None ->
@@ -132,31 +135,33 @@ let invfun qhyp f =
           let f1,_ = decompose_app sigma args.(1) in
           try
             if not (isConst sigma f1) then raise NoFunction;
-            let finfos = find_Function_infos (fst (destConst sigma f1)) in
+            let finfos = Option.get (find_Function_infos (fst (destConst sigma f1))) in
             let f_correct = mkConst(Option.get finfos.correctness_lemma)
             and kn = fst finfos.graph_ind
             in
             functional_inversion kn hid f1 f_correct
-          with | NoFunction | Option.IsNone | Not_found ->
-          try
-            let f2,_ = decompose_app sigma args.(2) in
-            if not (isConst sigma f2) then raise NoFunction;
-            let finfos = find_Function_infos (fst (destConst sigma f2)) in
-            let f_correct = mkConst(Option.get finfos.correctness_lemma)
-            and kn = fst finfos.graph_ind
-            in
-            functional_inversion kn hid  f2 f_correct
           with
-          | NoFunction ->
-            CErrors.user_err Pp.(str "Hypothesis " ++ Ppconstr.pr_id hid ++ str " must contain at least one Function")
-          | Option.IsNone  ->
-            if do_observe ()
-            then CErrors.user_err (Pp.str "Cannot use equivalence with graph for any side of the equality")
-            else CErrors.user_err Pp.(str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
-          | Not_found ->
-            if do_observe ()
-            then CErrors.user_err (Pp.str "No graph found for any side of equality")
-            else CErrors.user_err Pp.(str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
+          | NoFunction | Option.IsNone ->
+            let f2,_ = decompose_app sigma args.(2) in
+            if isConst sigma f2 then
+              match find_Function_infos (fst (destConst sigma f2)) with
+              | None ->
+                if do_observe ()
+                then CErrors.user_err (Pp.str "No graph found for any side of equality")
+                else CErrors.user_err Pp.(str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
+              | Some finfos ->
+                match finfos.correctness_lemma with
+                | None ->
+                  if do_observe ()
+                  then CErrors.user_err (Pp.str "Cannot use equivalence with graph for any side of the equality")
+                  else CErrors.user_err Pp.(str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
+                | Some f_correct ->
+                  let f_correct = mkConst f_correct
+                  and kn = fst finfos.graph_ind
+                  in
+                  functional_inversion kn hid  f2 f_correct
+            else                (* NoFunction *)
+              CErrors.user_err Pp.(str "Hypothesis " ++ Ppconstr.pr_id hid ++ str " must contain at least one Function")
         end
       | _ -> CErrors.user_err Pp.(Ppconstr.pr_id hid ++ str " must be an equality ")
     in

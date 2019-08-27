@@ -38,7 +38,6 @@ val chop_rprod_n : int -> Glob_term.glob_constr ->
 
 val eq : EConstr.constr Lazy.t
 val refl_equal : EConstr.constr Lazy.t
-val const_of_id: Id.t ->  GlobRef.t(* constantyes *)
 val jmeq : unit -> EConstr.constr
 val jmeq_refl : unit -> EConstr.constr
 val make_eq : unit -> EConstr.constr
@@ -75,8 +74,8 @@ type function_info =
       is_general : bool;
     }
 
-val find_Function_infos : Constant.t -> function_info
-val find_Function_of_graph : inductive -> function_info
+val find_Function_infos : Constant.t -> function_info option
+val find_Function_of_graph : inductive -> function_info option
 (* WARNING: To be used just after the graph definition !!! *)
 val add_Function : bool -> Constant.t -> unit
 val update_Function : function_info -> unit

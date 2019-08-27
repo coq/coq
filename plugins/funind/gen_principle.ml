@@ -495,14 +495,17 @@ let find_induction_principle evd f =
     | Constr.Const c' -> c'
     | _ -> CErrors.user_err Pp.(str "Must be used with a function")
   in
-  let infos = find_Function_infos f_as_constant in
-  match infos.rect_lemma with
-  | None -> raise Not_found
-  | Some rect_lemma ->
-    let evd',rect_lemma = Evd.fresh_global  (Global.env ()) !evd  (GlobRef.ConstRef rect_lemma) in
-    let evd',typ = Typing.type_of ~refresh:true (Global.env ()) evd' rect_lemma in
-    evd:=evd';
-    rect_lemma,typ
+  match find_Function_infos f_as_constant with
+  | None ->
+    raise Not_found
+  | Some infos ->
+    match infos.rect_lemma with
+    | None -> raise Not_found
+    | Some rect_lemma ->
+      let evd',rect_lemma = Evd.fresh_global  (Global.env ()) !evd  (GlobRef.ConstRef rect_lemma) in
+      let evd',typ = Typing.type_of ~refresh:true (Global.env ()) evd' rect_lemma in
+      evd:=evd';
+      rect_lemma,typ
 
 (* [prove_fun_correct funs_constr graphs_constr schemes lemmas_types_infos i ]
    is the tactic used to prove correctness lemma.
@@ -1016,12 +1019,12 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Tacmach.tacti
     *)
     let rewrite_tac j ids : Tacmach.tactic =
       let graph_def = graphs.(j) in
-      let infos =
-        try find_Function_infos (fst (destConst (project g) funcs.(j)))
-        with Not_found -> CErrors.user_err Pp.(str "No graph found")
+      let infos = match find_Function_infos (fst (destConst (project g) funcs.(j))) with
+        | None ->
+          CErrors.user_err Pp.(str "No graph found")
+        | Some infos -> infos
       in
-      if infos.is_general
-      || Rtree.is_infinite Declareops.eq_recarg graph_def.Declarations.mind_recargs
+      if infos.is_general || Rtree.is_infinite Declareops.eq_recarg graph_def.Declarations.mind_recargs
       then
         let eq_lemma =
           try Option.get (infos).equation_lemma
@@ -1174,9 +1177,9 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_ef
   let first_fun = List.hd funs in
   let funs_mp = KerName.modpath (Constant.canonical (fst first_fun)) in
   let first_fun_kn =
-    try
-      fst (find_Function_infos  (fst first_fun)).graph_ind
-    with Not_found -> raise No_graph_found
+    match find_Function_infos (fst first_fun) with
+    | None -> raise No_graph_found
+    | Some finfos -> fst finfos.graph_ind
   in
   let this_block_funs_indexes = get_funs_constant funs_mp (fst first_fun) in
   let this_block_funs = Array.map (fun (c,_) -> (c,snd first_fun)) this_block_funs_indexes in
@@ -1231,12 +1234,15 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_ef
   in
   incr i;
   let opacity =
-    let finfos = find_Function_infos (fst first_fun) in
-    try
-      let equation =  Option.get finfos.equation_lemma in
+    let finfos =
+      match find_Function_infos (fst first_fun) with
+      | None -> raise Not_found
+      | Some finfos -> finfos
+    in
+    match finfos.equation_lemma with
+    | None -> false (* non recursive definition *)
+    | Some equation ->
       Declareops.is_opaque (Global.lookup_constant equation)
-    with Option.IsNone -> (* non recursive definition *)
-      false
   in
   let const = {const with Proof_global.proof_entry_opaque = opacity } in
   (* The others are just deduced *)
@@ -1381,7 +1387,11 @@ let derive_correctness (funs: Constr.pconstant list) (graphs:inductive list) =
             let lemma = fst @@ Lemmas.by
                 (Proofview.V82.tactic (proving_tac i)) lemma in
             let () = Lemmas.save_lemma_proved ~lemma ~opaque:Proof_global.Transparent ~idopt:None in
-            let finfo = find_Function_infos (fst f_as_constant) in
+            let finfo =
+              match find_Function_infos (fst f_as_constant) with
+              | None -> raise Not_found
+              | Some finfo -> finfo
+            in
             (* let lem_cst = fst (destConst (Constrintern.global_reference lem_id)) in *)
             let _,lem_cst_constr = Evd.fresh_global
                 (Global.env ()) !evd (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)) in
@@ -1443,7 +1453,11 @@ let derive_correctness (funs: Constr.pconstant list) (graphs:inductive list) =
                                (Proofview.V82.tactic (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")
                                                         (proving_tac i))) lemma) in
             let () = Lemmas.save_lemma_proved ~lemma ~opaque:Proof_global.Transparent ~idopt:None in
-            let finfo = find_Function_infos (fst f_as_constant) in
+            let finfo =
+              match find_Function_infos (fst f_as_constant) with
+              | None -> raise Not_found
+              | Some finfo -> finfo
+            in
             let _,lem_cst_constr = Evd.fresh_global
                 (Global.env ()) !evd (Constrintern.locate_reference (Libnames.qualid_of_ident lem_id)) in
             let (lem_cst,_) = destConst !evd lem_cst_constr in
@@ -2028,7 +2042,11 @@ let build_case_scheme fa =
   let sigma, (_,u) = Evd.fresh_constant_instance env sigma funs in
   let first_fun = funs in
   let funs_mp = Constant.modpath first_fun in
-  let first_fun_kn = try fst (find_Function_infos  first_fun).graph_ind with Not_found -> raise No_graph_found in
+  let first_fun_kn =
+    match find_Function_infos first_fun with
+    | None -> raise No_graph_found
+    | Some finfos -> fst finfos.graph_ind
+  in
   let this_block_funs_indexes = get_funs_constant funs_mp first_fun in
   let this_block_funs = Array.map (fun (c,_) -> (c,u)) this_block_funs_indexes in
   let prop_sort = Sorts.InProp in
