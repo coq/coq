@@ -78,15 +78,15 @@ End E.
 Polymorphic Fixpoint g@{i} (t : Type@{i}) (n : nat) : Type@{i} :=
   t.
 
-Print g.
+Print Term g.
 
 Polymorphic Fixpoint a@{i} (t : Type@{i}) (n : nat) : Type@{i} :=
   t
 with b@{i} (t : Type@{i}) (n : nat) : Type@{i} :=
   t.
 
-Print a.
-Print b.
+Print Term a.
+Print Term b.
 *)
 
 Polymorphic CoInductive foo@{i} (T : Type@{i}) : Type@{i} :=
@@ -95,12 +95,12 @@ Polymorphic CoInductive foo@{i} (T : Type@{i}) : Type@{i} :=
 Polymorphic CoFixpoint cg@{i} (t : Type@{i}) : foo@{i} t :=
   @A@{i} t (cg t).
 
-Print cg.
+Print Term cg.
 
 Polymorphic CoFixpoint ca@{i} (t : Type@{i}) : foo@{i} t :=
   @A@{i} t (cb t)
 with cb@{i} (t : Type@{i}) : foo@{i} t :=
   @A@{i} t (ca t).
 
-Print ca.
-Print cb.
+Print Term ca.
+Print Term cb.

@@ -4,7 +4,7 @@ idtac.
 exact I.
 Qed.
 
-Print a.
+Print Term a.
 
 Lemma b : False.
 Admitted.

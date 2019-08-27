@@ -5,7 +5,7 @@ Section foo.
   Definition qux@{i} (baz : Type@{i}) := foo -> bar.
 End foo.
 Set Printing Universes.
-Print qux. (* qux@{Top.42 Top.43} =
+Print Term qux. (* qux@{Top.42 Top.43} =
 fun foo bar _ : Type@{Top.42} => foo -> bar
      : Type@{Top.42} -> Type@{Top.42} -> Type@{Top.42} -> Type@{Top.42}
 (* Top.42 Top.43 |=  *)

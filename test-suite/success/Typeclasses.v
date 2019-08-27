@@ -127,7 +127,7 @@ Record Monad {m : Type -> Type} := {
   bind_unit_left : forall {α β} (a : α) (f : α -> m β), return a >>= f = f a }.
 
 Print Visibility.
-Print unit.
+Print Term unit.
 Arguments unit {m m0 α}.
 Arguments Monad : clear implicits.
 Notation "'return' t" := (unit t).

@@ -33,7 +33,7 @@ Proof.
   apply ALL.
   Show Universes.
 Qed.
-Print quote_mult_obligation_1.
+Print Term quote_mult_obligation_1.
 (* quote_mult_obligation_1@{} =
 let Top_internal_eq_rew_dep :=
   fun (A : Type@{Coq.Init.Logic.8}) (x : A) (P : forall a : A, x = a -> Type@{Top.5} (* <- XXX *))

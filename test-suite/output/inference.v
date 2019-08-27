@@ -11,7 +11,7 @@ Definition P (e:option L) :=
   | Some cl => Some cl
   end.
 
-Print P.
+Print Term P.
 
 (* Check that the heuristic to solve constraints is not artificially
    dependent on the presence of a let-in, and in particular that the

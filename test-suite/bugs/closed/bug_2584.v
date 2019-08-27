@@ -22,7 +22,7 @@ with area : Type :=
   | Stored : ftyp -> area
 .
 
-Print ftyp.
+Print Term ftyp.
 (* yields:
 Inductive ftyp : Type (* Top.27429 *) :=
     Funit : ftyp | Ffun : list ftyp -> ftyp | Fref : area -> ftyp
@@ -51,7 +51,7 @@ with tc_wf_area (ar:area): res unit :=
 
 End FOO.
 
-Print ftyp.
+Print Term ftyp.
 (* yields:
 Inductive ftyp : Type (* Top.27465 *) :=
     Funit : ftyp | Ffun : list ftyp -> ftyp | Fref : area -> ftyp

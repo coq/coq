@@ -16,7 +16,7 @@ Check (ex_intro (P:=fun _ => True) (x:=0) I).
 Definition d1 y x (h : x = y :>nat) := h.
 Definition d2 x := d1 (y:=x).
 
-Print d2.
+Print Term d2.
 
 Set Strict Implicit.
 Unset Implicit Arguments.

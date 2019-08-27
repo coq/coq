@@ -378,7 +378,7 @@ Definition foo (l : list nat) :=
   | a :: (b :: l) as l1 => l1
   | _ => l
 end.
-Print foo.
+Print Term foo.
 End Issue7110.
 
 Module LocateNotations.

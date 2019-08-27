@@ -6,7 +6,7 @@ Arguments eq_refl {B y}, [B] y : rename.
 
 Check @eq_refl.
 Check (eq_refl (B := nat)).
-Print eq_refl.
+Print Term eq_refl.
 About eq_refl.
 
 Goal 3 = 3.
@@ -25,7 +25,7 @@ Variable A : Type.
 Inductive myEq B (x : A) : A -> Prop := myrefl : B -> myEq B x x.
 
 Global Arguments myrefl {C} x _ : rename.
-Print myrefl.
+Print Term myrefl.
 About myrefl.
 
 Fixpoint myplus T (t : T) (n m : nat) {struct n} :=
@@ -33,16 +33,16 @@ Fixpoint myplus T (t : T) (n m : nat) {struct n} :=
 
 Global Arguments myplus {Z} !t !n m : rename.
 
-Print myplus.
+Print Term myplus.
 About myplus.
 Check @myplus.
 
 End Test1.
-Print myrefl.
+Print Term myrefl.
 About myrefl.
 Check myrefl.
 
-Print myplus.
+Print Term myplus.
 About myplus.
 Check @myplus.
 

@@ -7,5 +7,5 @@ Module Type Func (T:Test).
 End Func.
 
 Module Shortest_path (T : Test).
-Print Func.
+Print Term Func.
 End Shortest_path.

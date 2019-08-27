@@ -1,36 +1,36 @@
 (* coq-prog-args: ("-top" "PrintInfos") *)
 About existT.
-Print existT.
+Print Term existT.
 Print Implicit existT.
 
-Print eq_refl.
+Print Term eq_refl.
 About eq_refl.
 Print Implicit eq_refl.
 
-Print Nat.add.
+Print Term Nat.add.
 About Nat.add.
 Print Implicit Nat.add.
 
 About plus_n_O.
 
 Arguments le_S {n} [m] _.
-Print le_S.
+Print Term le_S.
 
 About comparison.
-Print comparison.
+Print Term comparison.
 
 Definition foo := forall x, x = 0.
 Parameter bar : foo.
 
 Arguments bar {x}.
 About bar.
-Print bar.
+Print Term bar.
 
 About Peano. (* Module *)
 About sym_eq. (* Notation *)
 
 Arguments eq_refl {A} {x}, {A} x.
-Print eq_refl.
+Print Term eq_refl.
 
 
 Definition newdef := fun x:nat => x.

@@ -10,7 +10,7 @@ Definition foo := @proj2_sig_map feBW' (fun  H  => True = f' _) (fun H =>
  g True = g (f' H))
                                  (fun (a : feBW') (p : (fun H : feBW' => True =
  f' H) a) => @f_equal Prop Prop g True (f' a) p).
-Print foo.
+Print Term foo.
 Goal True.
   lazymatch type of foo with
   | sig (fun a : ?A => ?P) -> _

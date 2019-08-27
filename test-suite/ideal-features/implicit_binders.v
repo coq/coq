@@ -95,7 +95,7 @@ Admitted.
    `{ }. *)
 
 Definition baz := `{x + y + z = x + (y + z)}.
-Print baz.
+Print Term baz.
 
 (** Proposition d'Arthur C.: déclarer les noms de variables généralisables à la [Implicit Types]
    pour plus de robustesse (cela vaudrait aussi pour les lieurs). Les typos du genre de l'exemple suivant

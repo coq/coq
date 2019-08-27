@@ -28,4 +28,4 @@ Module C.
   Notation "! x" := (c2 x) (at level 50).
 End C.
 
-Print C. (* Should print test_rect without failing *)
+Print Term C. (* Should print test_rect without failing *)

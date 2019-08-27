@@ -38,7 +38,7 @@ Module InclWorkaround.
 End InclWorkaround.
 
 Compute InclWorkaround.p.
-Print InclWorkaround.p.
+Print Term InclWorkaround.p.
 Print Assumptions InclWorkaround.p. (* Closed under the global context *)
 
 
@@ -72,7 +72,7 @@ Module InclSigOpaque.
 End InclSigOpaque.
 
 Compute InclSigOpaque.p.
-Print InclSigOpaque.p.
+Print Term InclSigOpaque.p.
 Print Assumptions InclSigOpaque.p. (* Closed *)
 
 
@@ -88,5 +88,5 @@ Module InclFunctOpa.
 End InclFunctOpa.
 
 Compute InclFunctOpa.p.
-Print InclFunctOpa.p.
+Print Term InclFunctOpa.p.
 Print Assumptions InclFunctOpa.p. (* Closed *)

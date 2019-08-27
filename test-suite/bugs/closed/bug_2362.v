@@ -19,12 +19,12 @@ Instance Pointed_FPair B neutral:
  { creturn := fun A (a:A) => (a,> neutral) }.
 Definition blah_fail (x:bool) : FPair bool nat O :=
   creturn x.
-Set Printing All. Print blah_fail.
+Set Printing All. Print Term blah_fail.
 
 Definition blah_explicit (x:bool) : FPair bool nat O :=
   @creturn _ (Pointed_FPair _ ) _ x.
 
-Print blah_explicit.
+Print Term blah_explicit.
 
 
 Instance Pointed_FPair_mono:

@@ -29,12 +29,12 @@ Defined.
 
 Definition reduced_thm := Eval compute in Unnamed_thm.
 
-(* Print reduced_thm. *)
+(* Print Term reduced_thm. *)
 
 Lemma foo [ Setoid a R ] : True. (* forall x y, R x y -> x -> y. *)
 Proof.
   intros.
-  Print respect2.
+  Print Term respect2.
   pose setoid_morphism.
   pose (respect2 (b0:=b)).
   simpl in b0.
@@ -52,7 +52,7 @@ Qed.
 Goal forall A B C (H : A <-> B) (H' : B <-> C), A /\ B <-> B /\ C.
   intros.
   Set Printing All.
-  Print iff_morphism.
+  Print Term iff_morphism.
   clrewrite H.
   clrewrite H'.
   reflexivity.
@@ -68,7 +68,5 @@ Defined.
 Require Import Setoid_tac.
 Require Import Setoid_Prop.
 
-(* Print Unnamed_thm0. *)
-(* Print Unnamed_thm1. *)
-
-
+(* Print Term Unnamed_thm0. *)
+(* Print Term Unnamed_thm1. *)

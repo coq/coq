@@ -9,10 +9,10 @@ Check S.
 
 End LocalNat.
 
-Print nat.
+Print Term nat.
 
 
-Print le.
+Print Term le.
 
 Theorem zero_leq_three: 0 <= 3.
 
@@ -24,7 +24,7 @@ Proof.
 
 Qed.
 
-Print zero_leq_three.
+Print Term zero_leq_three.
 
 
 Lemma zero_leq_three': 0 <= 3.
@@ -41,7 +41,7 @@ Qed.
 
 Require Import List.
 
-Print list.
+Print Term list.
 
 Check list.
 
@@ -58,7 +58,7 @@ Check (cons 3 (cons 2 nil)).
 
 Require Import Bvector.
 
-Print Vector.t.
+Print Term Vector.t.
 
 Check (Vector.nil nat).
 
@@ -82,13 +82,13 @@ Lemma eq_3_3 : 2 + 1 = 3.
 Proof.
  reflexivity.
 Qed.
-Print eq_3_3.
+Print Term eq_3_3.
 
 Lemma eq_proof_proof : refl_equal (2*6) = refl_equal (3*4).
 Proof.
  reflexivity.
 Qed.
-Print eq_proof_proof.
+Print Term eq_proof_proof.
 
 Lemma eq_lt_le : ( 2 < 4) = (3 <= 4).
 Proof.
@@ -121,14 +121,14 @@ reflexivity.
 Qed.
 
 
-Print or.
+Print Term or.
 
-Print and.
+Print Term and.
 
 
-Print sumbool.
+Print Term sumbool.
 
-Print ex.
+Print Term ex.
 
 Require Import ZArith.
 Require Import Compare_dec.
@@ -220,7 +220,7 @@ end.
   unfold pred_spec; intro n0;exists n0; auto.
  Defined.
 
-Print predecessor.
+Print Term predecessor.
 
 Extraction predecessor.
 
@@ -507,7 +507,7 @@ Elimination of an inductive object of sort "Prop"
 is not allowed on a predicate in sort "Type"
 because proofs can be eliminated only to build proofs
 *)
-Print prop_inject.
+Print Term prop_inject.
 
 (*
 prop_inject =
@@ -855,7 +855,7 @@ Definition eq_nat_dec' : forall n p:nat, {n=p}+{n <> p}.
  decide equality.
 Defined.
 
-Print Acc.
+Print Term Acc.
 
 
 Require Import Minus.
@@ -909,7 +909,7 @@ Proof.
  apply Hz; apply minus_smaller_positive; assumption.
 Defined.
 
-Print minus_decrease.
+Print Term minus_decrease.
 
 
 
@@ -923,7 +923,7 @@ Fixpoint div_aux (x y:nat)(H: Acc lt x):nat.
 Defined.
 
 
-Print div_aux.
+Print Term div_aux.
 (*
 div_aux =
 (fix div_aux (x y : nat) (H : Acc lt x) {struct H} : nat :=

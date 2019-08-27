@@ -30,7 +30,7 @@ Module Backtracking.
     Show Proof.  
   Qed.
 
-  Print find42.
+  Print Term find42.
   
   Hint Extern 0 (_ = _) => reflexivity : equality.
   

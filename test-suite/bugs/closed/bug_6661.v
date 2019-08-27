@@ -236,7 +236,7 @@ Section isweqcontrtounit.
 
      from this print statement: *)
 
-         Print isweqcontrtounit.
+         Print Term isweqcontrtounit.
 
   (*
 

@@ -16,7 +16,7 @@ Module OpaqueId (X: SIG) : SIG with Definition A := X.A := X.
 Module TrM := TranspId M.
 Module OpM := OpaqueId M.
 
-Print TrM.A.
-Print OpM.A.
-Print TrM.B.
-Print OpM.B.
+Print Term TrM.A.
+Print Term OpM.A.
+Print Term TrM.B.
+Print Term OpM.B.

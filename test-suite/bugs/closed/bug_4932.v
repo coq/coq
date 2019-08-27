@@ -29,16 +29,16 @@ Check fun '((y,z):nat*nat) => pack (fr (fun '((y,z):nat*nat) => fb tt))
 
 Example test := tele (t : Type) := tt.
 Example test' := test nat.
-Print test.
+Print Term test.
 
 Example test2 := tele (t : Type) (x:t) := tt.
 Example test2' := test2 nat 0.
-Print test2.
+Print Term test2.
 
 Example test3 := tele (t : Type) (y:=0) (x:t) := tt.
 Example test3' := test3 nat 0.
-Print test3.
+Print Term test3.
 
 Example test4 := tele (t : Type) '((y,z):nat*nat) (x:t) := tt.
 Example test4' := test4 nat (1,2) 3.
-Print test4.
+Print Term test4.

@@ -2,7 +2,7 @@ Unset Strict Universe Declaration.
 Set Printing Universes.
 Set Universe Polymorphism.
 Definition foo (a := Type) (b := Type) (c := Type) := Type.
-Print foo.
+Print Term foo.
 (* foo@{Top.2 Top.3 Top.5 Top.6 Top.8 Top.9 Top.10} =
 let a := Type@{Top.2} in let b := Type@{Top.5} in let c := Type@{Top.8} in Type@{Top.10}
      : Type@{Top.10+1}
@@ -34,7 +34,7 @@ Top.41}
                                   Top.40 < Top.38
                                   Top.41 < Top.40
                                    *) *)
-Print qux. (* qux@{Top.34 Top.35 Top.36 Top.37} =
+Print Term qux. (* qux@{Top.34 Top.35 Top.36 Top.37} =
 Type@{Top.34} -> Type@{Top.37}
      : Type@{max(Top.34+1, Top.37+1)}
 (* Top.34 Top.35 Top.36 Top.37 |= Top.34 < Top.35

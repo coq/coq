@@ -30,4 +30,4 @@ Definition foo :=
   (fun x3 =>
      (LetIn (Var x3) (fun x18 : var TZ
                       => (Pair (Var x18) (Var x18))))).
-Print foo.
+Print Term foo.

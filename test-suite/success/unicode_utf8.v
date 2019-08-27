@@ -99,7 +99,4 @@ intros _.
 exists x; auto.
 Defined.
 
-Print pred.
-
-
-
+Print Term pred.

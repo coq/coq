@@ -6,27 +6,27 @@ Require Coq.Unicode.Utf8.
 Parameters (A B : Type) (P:A->Prop).
 
 Definition swap '((x,y) : A*B) := (y,x).
-Print swap.
+Print Term swap.
 
 Check fun '((x,y) : A*B) => (y,x).
 
 Check forall '(x,y), swap (x,y) = (y,x).
 
 Definition proj_informative '(exist _ x _ : { x:A | P x }) : A := x.
-Print proj_informative.
+Print Term proj_informative.
 
 Inductive Foo := Bar : nat -> bool -> unit -> nat -> Foo.
 Definition foo '(Bar n b tt p) :=
   if b then n+p else n-p.
-Print foo.
+Print Term foo.
 
 Definition baz '(Bar n1 b1 tt p1) '(Bar n2 b2 tt p2) := n1+p1.
-Print baz.
+Print Term baz.
 
 Module WithParameters.
 
 Definition swap {A B} '((x,y) : A*B) := (y,x).
-Print swap.
+Print Term swap.
 
 Check fun (A B:Type) '((x,y) : A*B) => swap (x,y) = (y,x).
 Check forall (A B:Type) '((x,y) : A*B), swap (x,y) = (y,x).
@@ -56,7 +56,7 @@ Module Suboptimal.
 #[universes(template)] Inductive Fin (n:nat) := Z : Fin n.
 Definition F '(n,p) : Type := (Fin n * Fin p)%type.
 Definition both_z '(n,p) : F (n,p) := (Z _,Z _).
-Print both_z.
+Print Term both_z.
 
 (** Test factorization of binders *)
 
@@ -70,5 +70,5 @@ Check fun pat => fun '(x,y) => x+y = pat.
 
 (** Test name in degenerate case *)
 Definition f 'x := x+x.
-Print f.
+Print Term f.
 Check fun 'x => x+x.

@@ -2,16 +2,16 @@
 Variable A B : Type.
 
 Definition l1 (t : A * B * B) : A := let '(x, y, z) := t in x.
-Print l1.
+Print Term l1.
 Definition l2 (t : (A * B) * B) : A := let '((x, y), z) := t in x.
 Definition l3 (t : A * (B * B)) : A := let '(x, (y, z)) := t in x.
-Print l3.
+Print Term l3.
 
 Record someT (A : Type) := mkT { a : nat; b: A }.
 
 Definition l4 A (t : someT A) : nat := let 'mkT _ x y := t in x.
-Print l4.
-Print sigT.
+Print Term l4.
+Print Term sigT.
 
 Definition l5 A (B : A -> Type) (t : sigT B) : B (projT1 t) :=
   let 'existT _ x y := t return B (projT1 t) in y.

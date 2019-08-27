@@ -503,7 +503,7 @@ Proof.
 Qed.
 
 Require Export Coq.Logic.FunctionalExtensionality.
-Print PLanguage.
+Print Term PLanguage.
 
 Program Definition PTransfo l1 l2 (tr: Transformation l1 l2) (h: isSharedTransfo l1 l2 tr):
 Transformation (PLanguage l1) (PLanguage l2) :=

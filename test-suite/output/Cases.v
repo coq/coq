@@ -5,7 +5,7 @@ Unset Printing Allow Match Default Clause.
 Inductive t : Set :=
     k : let x := t in x -> x.
 
-Print t_rect.
+Print Term t_rect.
 
 Record TT : Type := CTT { f1 := 0 : nat; f2: nat; f3 : f1=f1 }.
 
@@ -26,7 +26,7 @@ Definition proj (x y:nat) (P:nat -> Type) (def:P x) (prf:P y) : P y :=
   | _ => prf
  end.
 
-Print proj.
+Print Term proj.
 
 (* Use notations even below aliases *)
 
@@ -39,7 +39,7 @@ Fixpoint foo (A:Type) (l:list A) : option A :=
   | x0 :: (x1 :: xs) as l0 => foo A l0
   end.
 
-Print foo.
+Print Term foo.
 
 (* Accept and use notation with binded parameters *)
 
@@ -52,7 +52,7 @@ match x with
  | x <: _ => x
 end.
 
-Print uncast.
+Print Term uncast.
 
 (* Do not duplicate the matched term *)
 
@@ -64,7 +64,7 @@ Definition foo' :=
     | x => x
   end.
 
-Print foo'.
+Print Term foo'.
 
 (* Was bug #3293 (eta-expansion at "match" printing time was failing because
    of let-in's interpreted as being part of the expansion)  *)
@@ -79,7 +79,7 @@ intros [x].
 destruct b as [|] ; exact Logic.I.
 Defined.
 
-Print f.
+Print Term f.
 
 (* Was enhancement request #5142 (error message reported on the most
    general return clause heuristic) *)
@@ -135,7 +135,7 @@ let z := fresh "cc" in
 let k := fresh "dd" in
 refine (fun k : nat * nat => match k as x return x = x with (y,z) => eq_refl end).
 Qed.
-Print lem1.
+Print Term lem1.
 
 Lemma lem2 : forall k, k=k :> bool.
 let x := fresh "aa" in
@@ -144,7 +144,7 @@ let z := fresh "cc" in
 let k := fresh "dd" in
 refine (fun k => if k as x return x = x then eq_refl else eq_refl).
 Qed.
-Print lem2.
+Print Term lem2.
 
 Lemma lem3 : forall k, k=k :>nat * nat.
 let x := fresh "aa" in
@@ -153,7 +153,7 @@ let z := fresh "cc" in
 let k := fresh "dd" in
 refine (fun k : nat * nat => let (y,z) as x return x = x := k in eq_refl).
 Qed.
-Print lem3.
+Print Term lem3.
 
 Lemma lem4 x : x+0=0.
 match goal with |- ?y = _ => pose (match y with 0 => 0 | S n => 0 end) end.

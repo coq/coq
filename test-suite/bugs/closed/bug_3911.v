@@ -23,4 +23,4 @@ Definition bcwa (C:cat) (B:setoid) :Type := nat.
 Record temp {C}{B} (e:bcwa C B) :=
   { fld : base (obj C) }.
 
-Print temp_rect.
+Print Term temp_rect.

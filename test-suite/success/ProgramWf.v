@@ -9,7 +9,7 @@ Require Import ZArith Zwf.
 
 Set Implicit Arguments.
 (* Set Printing All. *)
-Print sigT_rect.
+Print Term sigT_rect.
 Obligation Tactic := program_simplify ; auto with *.
 About MR.
 
@@ -19,11 +19,11 @@ Program Fixpoint merge (n m : nat) {measure (n + m) lt} : nat :=
     | S n' => merge n' m
   end.
 
-Print merge.
+Print Term merge.
 
 
-Print Z.lt.
-Print Zwf.
+Print Term Z.lt.
+Print Term Zwf.
 
 Local Open Scope Z_scope.
 
@@ -44,7 +44,7 @@ Program Fixpoint merge_wf (n m : nat) {wf lt m} : nat :=
     | S n' => merge n' m
   end.
 
-Print merge_wf.
+Print Term merge_wf.
 
 Program Fixpoint merge_one (n : nat) {measure n} : nat :=
   match n with
@@ -53,7 +53,7 @@ Program Fixpoint merge_one (n : nat) {measure n} : nat :=
   end.
 
 Print Hint well_founded.
-Print merge_one. Eval cbv delta [merge_one] beta zeta in merge_one.
+Print Term merge_one. Eval cbv delta [merge_one] beta zeta in merge_one.
 
 Import WfExtensionality.
 
@@ -67,7 +67,7 @@ Proof. intros. unfold merge at 1. unfold merge_func.
   simpl. destruct n ; reflexivity. 
 Qed.
 
-Print merge.
+Print Term merge.
 
 Require Import Arith.
 Unset Implicit Arguments.

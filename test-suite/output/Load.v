@@ -1,7 +1,7 @@
 Load "output/load/Load_noproof.v".
-Print f.
+Print Term f.
 
 Load "output/load/Load_proof.v".
-Print u.
+Print Term u.
 
 Fail Load "output/load/Load_openproof.v".

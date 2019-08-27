@@ -2,7 +2,7 @@
 Inductive type: Set
    := | int: type
       | pointer: type -> type.
-Print type.
+Print Term type.
 
 Parameter value_set
    : type -> Set.
@@ -19,7 +19,7 @@ Inductive lvalue (t: type): Set
 with rvalue (t: type): Set
    := | value_of: lvalue t -> rvalue t (* variable as value *)
       | mk_rvalue: value_set t -> rvalue t. (* literal value *)
-Print lvalue.
+Print Term lvalue.
 
 Inductive statement: Set
    := | void_stat: statement

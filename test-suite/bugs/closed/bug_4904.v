@@ -5,7 +5,7 @@ Notation nat := nat.
 End B.
 End A.
 
-Print A.B.nat. (* Notation A.B.nat := nat *)
+Print Term A.B.nat. (* Notation A.B.nat := nat *)
 Import A.
-Print B.mynat.
-Print B.nat.
+Print Term B.mynat.
+Print Term B.nat.

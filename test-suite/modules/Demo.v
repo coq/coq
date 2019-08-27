@@ -3,7 +3,7 @@ Module M.
   Definition x := 0.
 End M.
 
-Print M.t.
+Print Term M.t.
 
 
 Module Type SIG.
@@ -24,19 +24,19 @@ End F.
 
 Module N := F M.
 
-Print N.t.
+Print Term N.t.
 Eval compute in N.t.
 
 
 Module N' : SIG := N.
 
-Print N'.t.
+Print Term N'.t.
 Eval compute in N'.t.
 
 
 Module N'' <: SIG := F N.
 
-Print N''.t.
+Print Term N''.t.
 Eval compute in N''.t.
 
 Eval compute in N''.x.
@@ -44,12 +44,12 @@ Eval compute in N''.x.
 
 Module N''' : SIG with Definition t := nat -> nat := N.
 
-Print N'''.t.
+Print Term N'''.t.
 Eval compute in N'''.t.
 
-Print N'''.x.
+Print Term N'''.x.
 
 
 Import N'''.
 
-Print t.
+Print Term t.

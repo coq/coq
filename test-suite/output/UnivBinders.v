@@ -6,32 +6,32 @@ Set Printing Universes.
 
 (* universe binders on inductive types and record projections *)
 Inductive Empty@{u} : Type@{u} := .
-Print Empty.
+Print Term Empty.
 
 Set Primitive Projections.
 Record PWrap@{u} (A:Type@{u}) := pwrap { punwrap : A }.
-Print PWrap.
-Print punwrap.
+Print Term PWrap.
+Print Term punwrap.
 
 Unset Primitive Projections.
 Record RWrap@{u} (A:Type@{u}) := rwrap { runwrap : A }.
-Print RWrap.
-Print runwrap.
+Print Term RWrap.
+Print Term runwrap.
 
 (* universe binders also go on the constants for operational typeclasses. *)
 Class Wrap@{u} (A:Type@{u}) := wrap : A.
-Print Wrap.
-Print wrap.
+Print Term Wrap.
+Print Term wrap.
 
 (* Instance in lemma mode used to ignore the binders. *)
 Instance bar@{u} : Wrap@{u} Set. Proof. exact nat. Qed.
-Print bar.
+Print Term bar.
 
 Unset Strict Universe Declaration.
 (* The universes in the binder come first, then the extra universes in
    order of appearance. *)
 Definition foo@{u +} := Type -> Type@{v} -> Type@{u}.
-Print foo.
+Print Term foo.
 
 Check Type@{i} -> Type@{j}.
 
@@ -41,7 +41,7 @@ Set Strict Universe Declaration.
 
 (* Binders even work with monomorphic definitions! *)
 Monomorphic Definition mono@{u} := Type@{u}.
-Print mono.
+Print Term mono.
 Check mono.
 Check Type@{mono.u}.
 
@@ -77,30 +77,30 @@ Module SecLet.
     Let ff : Type@{u}. Proof. exact Type@{v}. Qed. (* names disappear into space *)
     Definition bobmorane := tt -> ff.
   End foo.
-  Print bobmorane.
+  Print Term bobmorane.
 End SecLet.
 
 (* fun x x => foo is nonsense with local binders *)
 Fail Definition fo@{u u} := Type@{u}.
 
 (* Using local binders for printing. *)
-Print foo@{E M N}.
+Print Term foo@{E M N}.
 (* Underscores discard the name if there's one. *)
-Print foo@{_ _ _}.
+Print Term foo@{_ _ _}.
 
 (* Also works for inductives and records. *)
-Print Empty@{E}.
-Print PWrap@{E}.
+Print Term Empty@{E}.
+Print Term PWrap@{E}.
 
 (* Also works for About. *)
 About punwrap@{K}.
 
 (* Instance length check. *)
-Fail Print foo@{E}.
-Fail Print mono@{E}.
+Fail Print Term foo@{E}.
+Fail Print Term mono@{E}.
 
 (* Not everything can be printed with custom universe names. *)
-Fail Print Coq.Init.Logic@{E}.
+Fail Print Term Coq.Init.Logic@{E}.
 
 (* Nice error when constraints are impossible. *)
 Monomorphic Universes gU gV. Monomorphic Constraint gU < gV.
@@ -108,40 +108,40 @@ Fail Lemma foo@{u v|u < gU, gV < v, v < u} : nat.
 
 (* Universe binders survive through compilation, sections and modules. *)
 Require TestSuite.bind_univs.
-Print bind_univs.mono.
-Print bind_univs.poly.
+Print Term bind_univs.mono.
+Print Term bind_univs.poly.
 
 Section SomeSec.
   Universe u.
   Definition insec@{v} := Type@{u} -> Type@{v}.
-  Print insec.
+  Print Term insec.
 
   Inductive insecind@{k} := inseccstr : Type@{k} -> insecind.
-  Print insecind.
+  Print Term insecind.
 End SomeSec.
-Print insec.
-Print insecind.
+Print Term insec.
+Print Term insecind.
 
 Section SomeSec2.
   Universe u.
   Definition insec2@{} := Prop.
 End SomeSec2.
-Print insec2.
+Print Term insec2.
 
 Module SomeMod.
   Definition inmod@{u} := Type@{u}.
-  Print inmod.
+  Print Term inmod.
 End SomeMod.
-Print SomeMod.inmod.
+Print Term SomeMod.inmod.
 Import SomeMod.
-Print inmod.
+Print Term inmod.
 
 Module Type SomeTyp. Definition inmod := Type. End SomeTyp.
 Module SomeFunct (In : SomeTyp).
   Definition infunct@{u v} := In.inmod@{u} -> Type@{v}.
 End SomeFunct.
 Module Applied := SomeFunct(SomeMod).
-Print Applied.infunct.
+Print Term Applied.infunct.
 
 (* Multi-axiom declaration
 

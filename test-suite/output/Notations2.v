@@ -77,7 +77,7 @@ Open Scope list_scope.
 Notation list1 := (1::nil)%list.
 Notation plus2 n := (S (S n)).
 (* plus2 was not correctly printed in the two following tests in 8.3pl1 *)
-Print plus2.
+Print Term plus2.
 Check fun n => match n with list1 => 0 | _ => 2 end.
 Unset Printing Allow Match Default Clause.
 Check fun n => match n with list1 => 0 | _ => 2 end.

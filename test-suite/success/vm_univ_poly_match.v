@@ -22,7 +22,7 @@ Global Instance Applicative_option : Applicative@{Uo Ua} option :=
 
 Definition foo := ap (ap (pure plus) (pure 1)) (pure 1).
 
-Print foo.
+Print Term foo.
 
 
 Eval vm_compute in foo.

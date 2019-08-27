@@ -153,7 +153,7 @@ Module TestPropAsSourceCoercion.
 
   Definition test := heap_single 4 5 \* (5 <> 4) \* heap_single 2 4 \* (True).
 
-  (* Print test. -- reveals [hpure] coercions *)
+  (* Print Term test. -- reveals [hpure] coercions *)
 
 End TestPropAsSourceCoercion.
 

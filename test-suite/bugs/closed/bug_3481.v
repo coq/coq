@@ -27,7 +27,7 @@ Local Set Primitive Projections.
 Record prod (A B : Type) : Type :=
   pair { fst : A; snd : B }.
 
-Print prod_rect.
+Print Term prod_rect.
 
 (* What I really want: *)
 Definition prod_rect' A B (P : prod A B -> Type) (u : forall (fst : A) (snd : B), P (pair fst snd))

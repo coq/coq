@@ -41,7 +41,7 @@ Section Equiv.
 
   Opaque complement.
 
-  Print iff_inverse_impl_binary_morphism.
+  Print Term iff_inverse_impl_binary_morphism.
 
   Goal eqA x y -> eqA x y -> eqA x y.
     intros H.
