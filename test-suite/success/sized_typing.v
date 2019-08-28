@@ -39,6 +39,15 @@ Fixpoint mult x y :=
   | S x' => plus y (mult x' y)
   end.
 
+Fixpoint leb n m :=
+  match n, m with
+    | 0, _ => true
+    | _, 0 => false
+    | S n', S m' => leb n' m'
+  end.
+
+Definition ltb n m := leb (S n) m.
+
 Fixpoint isEven n :=
   match n with
   | O => true
@@ -77,6 +86,24 @@ Fixpoint reverse T (l: list T) :=
   match l with
   | nil => nil
   | cons x l' => append (reverse T l') (cons x nil)
+  end.
+
+Fixpoint filter T (f: T -> bool) (l: list T) :=
+  match l with
+  | nil => nil
+  | cons x l' =>
+    if (f x) then
+      cons x (filter T f l')
+    else
+      filter T f l'
+  end.
+
+Fixpoint quicksort l :=
+  match l with
+  | nil => nil
+  | cons hd tl => append nat
+    (quicksort (filter nat (fun x => (ltb x hd)) tl))
+    (quicksort (filter nat (fun x => negb (ltb x hd)) tl))
   end.
 
 (** Recursive functions on coinductive streams. *)
