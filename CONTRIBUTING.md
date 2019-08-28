@@ -21,6 +21,7 @@ well.
     - [Support](#support)
     - [Standard libraries](#standard-libraries)
     - [Maintaining existing packages in coq-community](#maintaining-existing-packages-in-coq-community)
+  - [Contributing to the editor support packages](#contributing-to-the-editor-support-packages)
   - [Contributing to the website or the package archive](#contributing-to-the-website-or-the-package-archive)
   - [Other ways of creating content](#other-ways-of-creating-content)
 - [Issues](#issues)
@@ -208,6 +209,10 @@ manifesto's README][coq-community-manifesto].
 
 ### Contributing to the editor support packages ###
 
+Besides CoqIDE, whose sources are available in this repository, and to
+which you are welcome to contribute, there are a number of alternative
+user interfaces for Coq, more often as an editor support package.
+
 Here are the URLs of the repositories of the various editor support
 packages:
 
@@ -215,6 +220,11 @@ packages:
 - Company-coq (Emacs minor mode) <https://github.com/cpitclaudel/company-coq>
 - Coqtail (Vim) <https://github.com/whonore/Coqtail>
 - VsCoq Reloaded (VsCode) <https://github.com/coq-community/vscoq>
+
+And here are alternative user interfaces to be run in the web browser:
+
+- JsCoq (Coq executed in your browser) <https://github.com/ejgallego/jscoq>
+- Jupyter kernel for Coq <https://github.com/EugeneLoy/coq_jupyter/>
 
 Each of them has their own contribution process.
 
