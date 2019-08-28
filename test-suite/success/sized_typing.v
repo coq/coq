@@ -76,7 +76,7 @@ Fixpoint append T (l1 l2: list T) :=
 Fixpoint reverse T (l: list T) :=
   match l with
   | nil => nil
-  | cons x l' => append (reverse l') (cons x nil)
+  | cons x l' => append (reverse T l') (cons x nil)
   end.
 
 (** Recursive functions on coinductive streams. *)
