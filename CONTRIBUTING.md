@@ -626,8 +626,26 @@ documentation][coqdoc-documentation] to learn more.
 
 ### Fixing bugs and performing small changes ###
 
-Just open a PR with your fix.  If it is not yet completed, do not
-hesitate to open a [*draft PR*][GitHub-draft-PR] to get early
+Before fixing a bug, it is best to check that it was reported before:
+
+- If it was already reported and you intend to fix it, self-assign the
+  issue (if you have the permission), or leave a comment marking your
+  intention to work on it (and a contributor with write-access may
+  then assign the issue to you).
+
+- If the issue already has an assignee, you should check with them if
+  they still intend to work on it.  If the assignment is several
+  weeks, months, or even years (!) old, there are good chances that it
+  does not reflect their current priorities.
+
+- If the bug has not been reported before, it can be a good idea to
+  open an issue about it, while stating that you are preparing a fix.
+  The issue can be the place to discuss about the bug itself while the
+  PR will be the place to discuss your proposed fix.
+
+In any case, feel free to just ignore the recommendation above, and
+jump ahead and open a PR with your fix.  If it is not yet complete, do
+not hesitate to open a [*draft PR*][GitHub-draft-PR] to get early
 feedback, and talk to developers on [Gitter][].
 
 It is generally a good idea to add a regression test to the
@@ -648,12 +666,12 @@ merged.
 
 So it is recommended that before spending a lot of time coding, you
 seek feedback from maintainers to see if your change would be
-supported, and if they have recommendation about its implementation.
+supported, and if they have recommendations about its implementation.
 You can do this informally by opening an issue, or more formally by
 producing a design document as a [Coq Enhancement Proposal][CEP].
 
 Another recommendation is that you do not put several unrelated
-changes (even if you produced them together) in the same PR.  In
+changes in the same PR (even if you produced them together).  In
 particular, make sure you split bug fixes into separate PRs when this
 is possible.  More generally, smaller-sized PRs, or PRs changing less
 components, are more likely to be reviewed and merged promptly.
