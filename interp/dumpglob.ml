@@ -20,31 +20,21 @@ let open_glob_file f =
 let close_glob_file () =
   Pervasives.close_out !glob_file
 
-type glob_output_t =
-    | NoGlob
-    | StdOut
-    | MultFiles
-    | Feedback
-    | File of string
+type glob_output =
+  | NoGlob
+  | Feedback
+  | MultFiles
+  | File of string
 
 let glob_output = ref NoGlob
 
-let dump () = !glob_output != NoGlob
+let dump () = !glob_output <> NoGlob
 
-let noglob () = glob_output := NoGlob
-
-let dump_to_dotglob () = glob_output := MultFiles
-
-let dump_into_file f =
-  if String.equal f "stdout" then
-    (glob_output := StdOut; glob_file := Pervasives.stdout)
-  else
-    (glob_output := File f; open_glob_file f)
-
-let feedback_glob () = glob_output := Feedback
+let set_glob_output mode =
+  glob_output := mode
 
 let dump_string s =
-  if dump () && !glob_output != Feedback then 
+  if dump () && !glob_output != Feedback then
     Pervasives.output_string !glob_file s
 
 let start_dump_glob ~vfile ~vofile =
@@ -57,13 +47,13 @@ let start_dump_glob ~vfile ~vofile =
   | File f ->
       open_glob_file f;
       output_string !glob_file "DIGEST NO\n"
-  | NoGlob | Feedback | StdOut ->
+  | NoGlob | Feedback ->
       ()
 
 let end_dump_glob () =
   match !glob_output with
   | MultFiles | File _ -> close_glob_file ()
-  | NoGlob | Feedback | StdOut -> ()
+  | NoGlob | Feedback -> ()
 
 let previous_state = ref MultFiles
 let pause () = previous_state := !glob_output; glob_output := NoGlob

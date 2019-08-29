@@ -305,12 +305,12 @@ let build_constant_declaration _kn env result =
                 (Opaqueproof.force_proof (opaque_tables env) lc) in
             (* we force so that cst are added to the env immediately after *)
             ignore(Opaqueproof.force_constraints (opaque_tables env) lc);
-            if !Flags.record_aux_file then record_aux env ids_typ vars;
+            if Aux_file.recording () then record_aux env ids_typ vars;
             vars
         in
         keep_hyps env (Id.Set.union ids_typ ids_def), def
     | None ->
-        if !Flags.record_aux_file then
+        if Aux_file.recording () then
           record_aux env Id.Set.empty Id.Set.empty;
         [], def (* Empty section context: no need to check *)
     | Some declared ->
@@ -373,7 +373,7 @@ let translate_local_def env _id centry =
   } in
   let decl = infer_declaration ~trust:Pure env (DefinitionEntry centry) in
   let typ = decl.cook_type in
-  if Option.is_empty decl.cook_context && !Flags.record_aux_file then begin
+  if Option.is_empty decl.cook_context && Aux_file.recording () then begin
     match decl.cook_body with
     | Undef _ -> ()
     | Primitive _ -> ()

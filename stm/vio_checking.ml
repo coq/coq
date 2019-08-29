@@ -11,7 +11,6 @@
 open Util
 
 let check_vio (ts,f_in) =
-  Dumpglob.noglob ();
   let _, _, _, _, tasks, _ = Library.load_library_todo f_in in
   Stm.set_compilation_hints f_in;
   List.fold_left (fun acc ids -> Stm.check_task f_in tasks ids && acc) true ts
@@ -142,5 +141,3 @@ let schedule_vio_compilation j fs =
     List.iter (fun (f,_) -> Unix.utimes (Filename.chop_extension f^".vo") t t) all_jobs;
   end;
   exit !rc
-
-  
