@@ -546,7 +546,8 @@ module New = struct
     Proofview.tclOR
       (Proofview.tclTIMEOUT n t)
       begin function (e, info) -> match e with
-        | Proofview.Timeout as e -> Proofview.tclZERO (Refiner.FailError (0,lazy (CErrors.print e)))
+        | Logic_monad.Tac_Timeout as e ->
+          Proofview.tclZERO (Refiner.FailError (0,lazy (CErrors.print e)))
         | e -> Proofview.tclZERO ~info e
       end
 

@@ -404,8 +404,6 @@ end
 (** Checks for interrupts *)
 val tclCHECKINTERRUPT : unit tactic
 
-exception Timeout
-
 (** [tclTIMEOUT n t] can have only one success.
     In case of timeout if fails with [tclZERO Timeout]. *)
 val tclTIMEOUT : int -> 'a tactic -> 'a tactic

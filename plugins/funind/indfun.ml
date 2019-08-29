@@ -95,7 +95,8 @@ let functional_induction with_clean c princl pat =
           (* We need to refresh gl due to the updated evar_map in princ *)
           Proofview.Goal.enter_one (fun gl ->
           Proofview.tclUNIT (princ, Tactypes.NoBindings, pf_unsafe_type_of gl princ, args))
-        | _ -> raise (UserError(None,str "functional induction must be used with a function" ))
+        | _ ->
+          CErrors.user_err (str "functional induction must be used with a function" )
       end
     | Some ((princ,binding)) ->
       Proofview.tclUNIT (princ, binding, pf_unsafe_type_of gl princ, args)

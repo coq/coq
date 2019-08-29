@@ -30,7 +30,7 @@
 exception Exception of exn
 
 (** This exception is used to signal abortion in [timeout] functions. *)
-exception Timeout
+exception Tac_Timeout
 
 (** This exception is used by the tactics to signal failure by lack of
     successes, rather than some other exceptions (like system

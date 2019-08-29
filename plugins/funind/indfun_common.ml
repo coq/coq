@@ -40,7 +40,9 @@ let locate_constant ref =
 
 let locate_with_msg msg f x =
   try f x
-  with Not_found -> raise (CErrors.UserError(None, msg))
+  with
+  | Not_found ->
+    CErrors.user_err msg
 
 
 let filter_map filter f =
@@ -64,8 +66,7 @@ let chop_rlambda_n  =
           | Glob_term.GLambda(name,k,t,b) -> chop_lambda_n ((name,t,None)::acc) (n-1) b
           | Glob_term.GLetIn(name,v,t,b) -> chop_lambda_n ((name,v,t)::acc) (n-1) b
           | _ ->
-              raise (CErrors.UserError(Some "chop_rlambda_n",
-                                    str "chop_rlambda_n: Not enough Lambdas"))
+            CErrors.user_err ~hdr:"chop_rlambda_n" (str "chop_rlambda_n: Not enough Lambdas")
   in
   chop_lambda_n []
 
@@ -76,7 +77,8 @@ let chop_rprod_n  =
       else
         match DAst.get rt with
           | Glob_term.GProd(name,k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
-          | _ -> raise (CErrors.UserError(Some "chop_rprod_n",str "chop_rprod_n: Not enough products"))
+          | _ ->
+            CErrors.user_err ~hdr:"chop_rprod_n" (str "chop_rprod_n: Not enough products")
   in
   chop_prod_n []
 

@@ -1252,7 +1252,7 @@ let rec compute_cst_params relnames params gt = DAst.with_val (function
   | GSort _ -> params
   | GHole _ -> params
   | GIf _ | GRec _ | GCast _ ->
-      raise (UserError(Some "compute_cst_params", str "Not handled case"))
+    CErrors.user_err ~hdr:"compute_cst_params" (str "Not handled case")
   ) gt
 and compute_cst_params_from_app acc (params,rtl) =
   let is_gid id c = match DAst.get c with GVar id' -> Id.equal id id' | _ -> false in
