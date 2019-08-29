@@ -42,15 +42,6 @@ val jmeq : unit -> EConstr.constr
 val jmeq_refl : unit -> EConstr.constr
 val make_eq : unit -> EConstr.constr
 
-val save
-  :  Id.t
-  -> Evd.side_effects Declare.proof_entry
-  -> ?hook:DeclareDef.Hook.t
-  -> UState.t
-  -> DeclareDef.locality
-  -> Decls.logical_kind
-  -> unit
-
 (* [with_full_print f a] applies [f] to [a] in full printing environment.
 
    This function preserves the print settings
