@@ -21,7 +21,7 @@ val contents : aux_file -> string M.t H.t
 
 val aux_file_name_for : string -> string
 val start_aux_file : aux_file:string -> v_file:string -> unit
-val stop_aux_file : unit -> unit 
+val stop_aux_file : unit -> unit
 val recording : unit -> bool
 
 val record_in_aux_at : ?loc:Loc.t -> string -> string -> unit

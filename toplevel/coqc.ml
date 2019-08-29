@@ -16,8 +16,7 @@ let outputstate opts =
 let coqc_init _copts ~opts =
   Flags.quiet := true;
   System.trust_file_cache := true;
-  Coqtop.init_color opts.Coqargs.config;
-  if not opts.Coqargs.config.Coqargs.glob_opt then Dumpglob.dump_to_dotglob ()
+  Coqtop.init_color opts.Coqargs.config
 
 let coqc_specific_usage = Usage.{
   executable_name = "coqc";

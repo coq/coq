@@ -224,7 +224,7 @@ let cast_opaque_proof_entry e =
         let vars = global_vars_set env pf in
         ids_typ, vars
     in
-    let () = if !Flags.record_aux_file then record_aux env hyp_typ hyp_def in
+    let () = if Aux_file.recording () then record_aux env hyp_typ hyp_def in
     keep_hyps env (Id.Set.union hyp_typ hyp_def)
   | Some hyps -> hyps
   in

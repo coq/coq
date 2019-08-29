@@ -438,19 +438,15 @@ let rec loop ~state =
       loop ~state
 
 (* Default toplevel loop *)
-let warning s = Flags.(with_option warn Feedback.msg_warning (strbrk s))
 
 let drop_args = ref None
+
 let loop ~opts ~state =
   drop_args := Some opts;
   let open Coqargs in
   print_emacs := opts.config.print_emacs;
   (* We initialize the console only if we run the toploop_run *)
   let tl_feed = Feedback.add_feeder coqloop_feed in
-  if Dumpglob.dump () then begin
-    Flags.if_verbose warning "Dumpglob cannot be used in interactive mode.";
-    Dumpglob.noglob ()
-  end;
   let _ = loop ~state in
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();

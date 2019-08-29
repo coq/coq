@@ -59,7 +59,6 @@ type coqargs_config = {
   debug       : bool;
   diffs_set   : bool;
   time        : bool;
-  glob_opt    : bool;
   print_emacs : bool;
   set_options : (Goptions.option_name * option_command) list;
 }
@@ -125,7 +124,6 @@ let default_config = {
   debug        = false;
   diffs_set    = false;
   time         = false;
-  glob_opt     = false;
   print_emacs  = false;
   set_options  = [];
 
@@ -380,13 +378,6 @@ let parse_args ~help ~init arglist : t * string list =
       Flags.compat_version := v;
       add_compat_require oval v
 
-    |"-dump-glob" ->
-      Dumpglob.dump_into_file (next ());
-      { oval with config = { oval.config with glob_opt = true }}
-
-    |"-feedback-glob" ->
-      Dumpglob.feedback_glob (); oval
-
     |"-exclude-dir" ->
       System.exclude_directory (next ()); oval
 
@@ -524,7 +515,6 @@ let parse_args ~help ~init arglist : t * string list =
     |"-indices-matter" -> set_logic (fun o -> { o with indices_matter = true }) oval
     |"-m"|"--memory" -> { oval with post = { oval.post with memory_stat = true }}
     |"-noinit"|"-nois" -> { oval with pre = { oval.pre with load_init = false }}
-    |"-no-glob"|"-noglob" -> Dumpglob.noglob (); { oval with config = { oval.config with glob_opt = true }}
     |"-output-context" -> { oval with post = { oval.post with output_context = true }}
     |"-profile-ltac" -> Flags.profile_ltac := true; oval
     |"-q" -> { oval with pre = { oval.pre with load_rcfile = false; }}
