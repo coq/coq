@@ -124,17 +124,7 @@ let define internal role id c poly univs =
   let ctx = UState.minimize univs in
   let c = UnivSubst.nf_evars_and_universes_opt_subst (fun _ -> None) (UState.subst ctx) c in
   let univs = UState.univ_entry ~poly ctx in
-  let entry = {
-    Proof_global.proof_entry_body =
-      Future.from_val ((c,Univ.ContextSet.empty),
-                       Evd.empty_side_effects);
-    proof_entry_secctx = None;
-    proof_entry_type = None;
-    proof_entry_universes = univs;
-    proof_entry_opaque = false;
-    proof_entry_inline_code = false;
-    proof_entry_feedback = None;
-  } in
+  let entry = Declare.definition_entry ~univs c in
   let kn, eff = Declare.declare_private_constant ~role ~kind:Decls.(IsDefinition Scheme) ~name:id (Declare.DefinitionEntry entry) in
   let () = match internal with
     | InternalTacticRequest -> ()

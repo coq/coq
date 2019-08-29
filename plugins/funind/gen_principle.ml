@@ -164,7 +164,7 @@ let prepare_body { Vernacexpr.binders } rt =
   let fun_args,rt' = chop_rlambda_n n rt in
   (fun_args,rt')
 
-let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_princ_type sorts funs i proof_tac hook =
+let build_functional_principle ?(opaque=Proof_global.Transparent) (evd:Evd.evar_map ref) interactive_proof old_princ_type sorts funs i proof_tac hook =
   (* First we get the type of the old graph principle *)
   let mutr_nparams = (Tactics.compute_elim_sig !evd (EConstr.of_constr old_princ_type)).Tactics.nparams in
   (*   let time1 = System.get_time ()  in *)
@@ -199,10 +199,10 @@ let build_functional_principle (evd:Evd.evar_map ref) interactive_proof old_prin
   (*    end; *)
 
   let open Proof_global in
-  let { name; entries } = Lemmas.pf_fold (close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x)) lemma in
+  let { name; entries } = Lemmas.pf_fold (close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x)) lemma in
   match entries with
   | [entry] ->
-    name, entry, hook
+    entry, hook
   | _ ->
     CErrors.anomaly Pp.(str "[build_functional_principle] close_proof returned more than one proof term")
 
@@ -282,7 +282,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
       register_with_sort Sorts.InProp;
       register_with_sort Sorts.InSet
   in
-  let id,entry,hook =
+  let entry, hook =
     build_functional_principle evd interactive_proof old_princ_type new_sorts funs i
     proof_tac hook
   in
@@ -1170,7 +1170,7 @@ let get_funs_constant mp =
     in
     l_const
 
-let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_effects Proof_global.proof_entry list =
+let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_effects Declare.proof_entry list =
   let exception Found_type of int in
   let env = Global.env () in
   let funs = List.map fst fas in
@@ -1219,9 +1219,21 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_ef
         s::l_schemes -> s,l_schemes
       | _ -> CErrors.anomaly (Pp.str "")
   in
-  let _,const,_ =
+  let opaque =
+    let finfos =
+      match find_Function_infos (fst first_fun) with
+      | None -> raise Not_found
+      | Some finfos -> finfos
+    in
+    let open Proof_global in
+    match finfos.equation_lemma with
+    | None -> Transparent (* non recursive definition *)
+    | Some equation ->
+      if Declareops.is_opaque (Global.lookup_constant equation) then Opaque else Transparent
+  in
+  let entry, _hook =
     try
-      build_functional_principle evd false
+      build_functional_principle ~opaque evd false
         first_type
         (Array.of_list sorts)
         this_block_funs
@@ -1233,30 +1245,16 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_ef
 
   in
   incr i;
-  let opacity =
-    let finfos =
-      match find_Function_infos (fst first_fun) with
-      | None -> raise Not_found
-      | Some finfos -> finfos
-    in
-    match finfos.equation_lemma with
-    | None -> false (* non recursive definition *)
-    | Some equation ->
-      Declareops.is_opaque (Global.lookup_constant equation)
-  in
-  let const = {const with Proof_global.proof_entry_opaque = opacity } in
   (* The others are just deduced *)
   if List.is_empty other_princ_types
-  then
-    [const]
+  then [entry]
   else
     let other_fun_princ_types =
       let funs = Array.map Constr.mkConstU this_block_funs in
       let sorts = Array.of_list sorts in
       List.map (Functional_principles_types.compute_new_princ_type_from_rel funs sorts) other_princ_types
     in
-    let open Proof_global in
-    let first_princ_body,first_princ_type = const.proof_entry_body, const.proof_entry_type in
+    let first_princ_body,first_princ_type = Declare.(entry.proof_entry_body, entry.proof_entry_type) in
     let ctxt,fix = Term.decompose_lam_assum (fst(fst(Future.force first_princ_body))) in (* the principle has for forall ...., fix .*)
     let (idxs,_),(_,ta,_ as decl) = Constr.destFix fix in
     let other_result =
@@ -1283,7 +1281,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_ef
              (* If we reach this point, the two principle are not mutually recursive
                 We fall back to the previous method
                 *)
-             let _,const,_ =
+             let entry, _hook =
                build_functional_principle
                  evd
                  false
@@ -1294,20 +1292,16 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_ef
                  (Functional_principles_proofs.prove_princ_for_struct evd false !i (Array.of_list (List.map fst funs)))
                  (fun _ _ -> ())
              in
-             const
+             entry
          with Found_type i ->
            let princ_body =
              Termops.it_mkLambda_or_LetIn (Constr.mkFix((idxs,i),decl)) ctxt
            in
-           {const with
-              proof_entry_body =
-                (Future.from_val ((princ_body, Univ.ContextSet.empty), Evd.empty_side_effects));
-              proof_entry_type = Some scheme_type
-           }
+           Declare.definition_entry ~types:scheme_type princ_body
       )
       other_fun_princ_types
     in
-    const::other_result
+    entry::other_result
 
 (* [derive_correctness funs graphs] create correctness and completeness
    lemmas for each function in [funs] w.r.t. [graphs]
@@ -1358,7 +1352,8 @@ let derive_correctness (funs: Constr.pconstant list) (graphs:inductive list) =
              Array.of_list
                (List.map
                   (fun entry ->
-                     (EConstr.of_constr (fst (fst(Future.force entry.Proof_global.proof_entry_body))), EConstr.of_constr (Option.get entry.Proof_global.proof_entry_type ))
+                     (EConstr.of_constr (fst (fst (Future.force entry.Declare.proof_entry_body))),
+                      EConstr.of_constr (Option.get entry.Declare.proof_entry_type ))
                   )
                   (make_scheme evd (Array.map_to_list (fun const -> const,Sorts.InType) funs))
                )

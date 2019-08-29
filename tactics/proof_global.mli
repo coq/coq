@@ -27,29 +27,11 @@ val get_initial_euctx : t -> UState.t
 
 val compact_the_proof : t -> t
 
-(** When a proof is closed, it is reified into a [proof_object], where
-    [id] is the name of the proof, [entries] the list of the proof terms
-    (in a form suitable for definitions). Together with the [terminator]
-    function which takes a [proof_object] together with a [proof_end]
-    (i.e. an proof ending command) and registers the appropriate
-    values. *)
-type 'a proof_entry = {
-  proof_entry_body   : 'a Entries.const_entry_body;
-  (* List of section variables *)
-  proof_entry_secctx : Constr.named_context option;
-  (* State id on which the completion of type checking is reported *)
-  proof_entry_feedback : Stateid.t option;
-  proof_entry_type        : Constr.types option;
-  proof_entry_universes   : Entries.universes_entry;
-  proof_entry_opaque      : bool;
-  proof_entry_inline_code : bool;
-}
-
 (** When a proof is closed, it is reified into a [proof_object] *)
 type proof_object =
   { name : Names.Id.t
   (** name of the proof *)
-  ; entries : Evd.side_effects proof_entry list
+  ; entries : Evd.side_effects Declare.proof_entry list
   (** list of the proof terms (in a form suitable for definitions). *)
   ; poly : bool
   (** polymorphic status *)

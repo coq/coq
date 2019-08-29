@@ -76,7 +76,7 @@ type obligation_qed_info =
   }
 
 val obligation_terminator
-  : Evd.side_effects Proof_global.proof_entry list
+  : Evd.side_effects Declare.proof_entry list
   -> UState.t
   -> obligation_qed_info -> unit
 (** [obligation_terminator] part 2 of saving an obligation *)

@@ -85,12 +85,12 @@ let do_definition ~program_mode ?hook ~name ~scope ~poly ~kind univdecl bl red_o
   in
   if program_mode then
     let env = Global.env () in
-    let (c,ctx), sideff = Future.force ce.Proof_global.proof_entry_body in
+    let (c,ctx), sideff = Future.force ce.Declare.proof_entry_body in
     assert(Safe_typing.empty_private_constants = sideff.Evd.seff_private);
     assert(Univ.ContextSet.is_empty ctx);
     Obligations.check_evars env evd;
     let c = EConstr.of_constr c in
-    let typ = match ce.Proof_global.proof_entry_type with
+    let typ = match ce.Declare.proof_entry_type with
       | Some t -> EConstr.of_constr t
       | None -> Retyping.get_type_of env evd c
     in

@@ -6,9 +6,7 @@ Proof
 Logic
 Goal_select
 Proof_bullet
-Proof_global
 Refiner
 Tacmach
-Pfedit
 Clenv
 Clenvtac

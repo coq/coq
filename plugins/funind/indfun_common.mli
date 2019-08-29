@@ -44,7 +44,7 @@ val make_eq : unit -> EConstr.constr
 
 val save
   :  Id.t
-  -> Evd.side_effects Proof_global.proof_entry
+  -> Evd.side_effects Declare.proof_entry
   -> ?hook:DeclareDef.Hook.t
   -> UState.t
   -> DeclareDef.locality

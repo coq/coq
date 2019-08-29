@@ -383,10 +383,9 @@ let adjust_guardness_conditions const = function
   | possible_indexes ->
     (* Try all combinations... not optimal *)
     let env = Global.env() in
-    let open Proof_global in
     { const with
-      proof_entry_body =
-        Future.chain const.proof_entry_body
+      Declare.proof_entry_body =
+        Future.chain const.Declare.proof_entry_body
           (fun ((body, ctx), eff) ->
              match Constr.kind body with
              | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
@@ -404,10 +403,11 @@ let finish_proved env sigma idopt po info =
     let name = match idopt with
       | None -> name
       | Some { CAst.v = save_id } -> check_anonymity name save_id; save_id in
-    let fix_exn = Future.fix_exn_of const.proof_entry_body in
+    let fix_exn = Future.fix_exn_of const.Declare.proof_entry_body in
     let () = try
       let const = adjust_guardness_conditions const compute_guard in
-      let should_suggest = const.proof_entry_opaque && Option.is_empty const.proof_entry_secctx in
+      let should_suggest = const.Declare.proof_entry_opaque &&
+                           Option.is_empty const.Declare.proof_entry_secctx in
       let open DeclareDef in
       let r = match scope with
         | Discharge ->
@@ -451,7 +451,7 @@ let finish_derived ~f ~name ~idopt ~entries =
   in
   (* The opacity of [f_def] is adjusted to be [false], as it
      must. Then [f] is declared in the global environment. *)
-  let f_def = { f_def with Proof_global.proof_entry_opaque = false } in
+  let f_def = { f_def with Declare.proof_entry_opaque = false } in
   let f_kind = Decls.(IsDefinition Definition) in
   let f_def = Declare.DefinitionEntry f_def in
   let f_kn = Declare.declare_constant ~name:f ~kind:f_kind f_def in
@@ -463,17 +463,17 @@ let finish_derived ~f ~name ~idopt ~entries =
   let substf c = Vars.replace_vars [f,f_kn_term] c in
   (* Extracts the type of the proof of [suchthat]. *)
   let lemma_pretype =
-    match Proof_global.(lemma_def.proof_entry_type) with
+    match lemma_def.Declare.proof_entry_type with
     | Some t -> t
     | None -> assert false (* Proof_global always sets type here. *)
   in
   (* The references of [f] are subsituted appropriately. *)
   let lemma_type = substf lemma_pretype in
   (* The same is done in the body of the proof. *)
-  let lemma_body = Future.chain Proof_global.(lemma_def.proof_entry_body) (fun ((b,ctx),fx) -> (substf b, ctx), fx) in
-  let lemma_def = let open Proof_global in
+  let lemma_body = Future.chain lemma_def.Declare.proof_entry_body (fun ((b,ctx),fx) -> (substf b, ctx), fx) in
+  let lemma_def =
     { lemma_def with
-      proof_entry_body = lemma_body;
+      Declare.proof_entry_body = lemma_body;
       proof_entry_type = Some lemma_type }
   in
   let lemma_def = Declare.DefinitionEntry lemma_def in
@@ -530,7 +530,7 @@ let save_lemma_admitted_delayed ~proof ~info =
   let { Info.hook; scope; impargs; other_thms } = info in
   if List.length entries <> 1 then
     user_err Pp.(str "Admitted does not support multiple statements");
-  let { proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
+  let { Declare.proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
   let poly = match proof_entry_universes with
     | Entries.Monomorphic_entry _ -> false
     | Entries.Polymorphic_entry (_, _) -> true in
