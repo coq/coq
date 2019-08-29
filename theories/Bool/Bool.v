@@ -822,4 +822,4 @@ Defined.
 Lemma eqb_spec (b b' : bool) : reflect (b = b') (eqb b b').
 Proof.
  destruct b, b'; now constructor.
-Qed.
+Defined.
