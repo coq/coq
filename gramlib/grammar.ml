@@ -10,6 +10,9 @@ open Util
 
 module type GLexerType = Plexing.Lexer
 
+type ty_norec = TyNoRec
+type ty_mayrec = TyMayRec
+
 module type S =
   sig
     type te
@@ -27,8 +30,6 @@ module type S =
         val parse_token_stream : 'a e -> te Stream.t -> 'a
         val print : Format.formatter -> 'a e -> unit
       end
-    type ty_norec = TyNoRec
-    type ty_mayrec = TyMayRec
     type ('self, 'trec, 'a) ty_symbol
     type ('self, 'trec, 'f, 'r) ty_rule
     type 'a ty_rules
@@ -91,9 +92,6 @@ let tokens con =
     (fun (p_con, p_prm) c -> if p_con = con then list := (p_prm, !c) :: !list)
     egram.gtokens;
   !list
-
-type ty_norec = TyNoRec
-type ty_mayrec = TyMayRec
 
 type ('a, 'b, 'c) ty_and_rec =
 | NoRec2 : (ty_norec, ty_norec, ty_norec) ty_and_rec

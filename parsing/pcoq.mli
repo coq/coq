@@ -212,8 +212,19 @@ val epsilon_value : ('a -> 'self) -> ('self, _, 'a) Extend.symbol -> 'self optio
 type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
 (** Type of reinitialization data *)
 
-val grammar_extend : 'a Entry.t -> gram_reinit option ->
-  'a Extend.extend_statement -> unit
+type 'a single_extend_statement =
+  string option *
+  (* Level *)
+  Gramlib.Gramext.g_assoc option *
+  (* Associativity *)
+  'a production_rule list
+  (* Symbol list with the interpretation function *)
+
+type 'a extend_statement =
+  Gramlib.Gramext.position option *
+  'a single_extend_statement list
+
+val grammar_extend : 'a Entry.t -> gram_reinit option -> 'a extend_statement -> unit
 (** Extend the grammar of Coq, without synchronizing it with the backtracking
     mechanism. This means that grammar extensions defined this way will survive
     an undo. *)
