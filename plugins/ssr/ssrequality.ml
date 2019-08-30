@@ -109,6 +109,11 @@ let congrtac ((n, t), ty) ist gl =
       loop 1 in
   tclTHEN (refine_with cf) (tclTRY (Proofview.V82.of_tactic Tactics.reflexivity)) gl
 
+let pf_typecheck t gl =
+  let it = sig_it gl in
+  let sigma,_  = pf_type_of gl t in
+  re_sig [it] sigma
+
 let newssrcongrtac arg ist gl =
   ppdebug(lazy Pp.(str"===newcongr==="));
   ppdebug(lazy Pp.(str"concl=" ++ Printer.pr_econstr_env (pf_env gl) (project gl) (pf_concl gl)));
@@ -135,10 +140,17 @@ let newssrcongrtac arg ist gl =
   tclMATCH_GOAL (equality, gl') (fun gl' -> fs gl' (List.assoc 0 eq_args))
   (fun ty -> congrtac (arg, Detyping.detype Detyping.Now false Id.Set.empty (pf_env gl) (project gl) ty) ist)
   (fun () ->
-    let lhs, gl' = mk_evar gl EConstr.mkProp in let rhs, gl' = mk_evar gl' EConstr.mkProp in
+    let gl', t_lhs = pfe_new_type gl in
+    let gl', t_rhs = pfe_new_type gl' in
+    let lhs, gl' = mk_evar gl' t_lhs in
+    let rhs, gl' = mk_evar gl' t_rhs in
     let arrow = EConstr.mkArrow lhs Sorts.Relevant (EConstr.Vars.lift 1 rhs) in
     tclMATCH_GOAL (arrow, gl') (fun gl' -> [|fs gl' lhs;fs gl' rhs|])
-    (fun lr -> tclTHEN (Proofview.V82.of_tactic (Tactics.apply (ssr_congr lr))) (congrtac (arg, mkRType) ist))
+    (fun lr ->
+      let a = ssr_congr lr in
+      tclTHENLIST [ pf_typecheck a
+                  ; Proofview.V82.of_tactic (Tactics.apply a)
+                  ; congrtac (arg, mkRType) ist ])
     (fun _ _ -> errorstrm Pp.(str"Conclusion is not an equality nor an arrow")))
     gl
 

@@ -682,6 +682,10 @@ let pf_type_id gl t = Id.of_string (Namegen.hdchar (pf_env gl) (project gl) t)
 let pfe_type_of gl t =
   let sigma, ty = pf_type_of gl t in
   re_sig (sig_it gl) sigma, ty
+let pfe_new_type gl =
+  let sigma, env, it = project gl, pf_env gl, sig_it gl in
+  let sigma,t  = Evarutil.new_Type sigma in
+  re_sig it sigma, t
 let pfe_type_relevance_of gl t =
   let gl, ty = pfe_type_of gl t in
   gl, ty, pf_apply Retyping.relevance_of_term gl t
