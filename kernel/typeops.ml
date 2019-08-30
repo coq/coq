@@ -412,14 +412,14 @@ let type_of_inductive env (ind,u) =
 
 (* Constructors. *)
 
-let type_of_constructor env ?s (c,_u as cu) =
+let type_of_constructor env ?ans (c,_u as cu) =
   let cstrnts =
     let ((kn,_),_) = c in
     let mib = lookup_mind kn env in
     check_hyps_inclusion env (GlobRef.ConstructRef c) mib.mind_hyps
   in
   let specif = lookup_mind_specif env (inductive_of_constructor c) in
-  let t,cst = constrained_type_of_constructor ?s cu specif in
+  let t,cst = constrained_type_of_constructor ?ans cu specif in
   let () = check_constraints cst env in
   t, cstrnts
 
@@ -434,7 +434,7 @@ let check_branch_types env (ind,u) c ct lft explft =
         error_number_branches env (make_judge c ct) (Array.length explft)
 
 let type_of_case env stg ci p pt c ct _lf lft =
-  let pind, largs, r =
+  let ((kn, i), _ as pind), largs, r =
     try find_rectype env ct
     with Not_found -> error_case_not_inductive env (make_judge c ct) in
   let _, sp = try dest_arity env pt
@@ -444,9 +444,11 @@ let type_of_case env stg ci p pt c ct _lf lft =
     else (warn_bad_relevance_ci (); {ci with ci_relevance=rp})
   in
   let () = check_case_info env pind rp ci in
-  let s, stg = next stg in
+  let numvars = (lookup_mind kn env).mind_ntypes in
+  let ans, stg = next_annots (Some numvars) stg in
+  let s = List.nth (Option.get ans) i in (* indices need to correspond; see [Inductive.ind_subst] *)
   let bty, rslty, cstrnts_rsl =
-    type_case_branches env (pind, largs) (make_judge p pt) c s in
+    type_case_branches ?ans env (pind, largs) (make_judge p pt) c s in
   let cstrnts_branch = check_branch_types env pind c ct lft bty in
   let cstrnts = union cstrnts_rsl cstrnts_branch in
   stg, ci, rslty, add_constraint_from_ind env Variant cstrnts (fst pind) r (hat s)
@@ -641,9 +643,10 @@ let rec execute env stg cstr =
       let t, cstrnt = type_of_inductive env ind in
       stg', cstrnt, mkIndUS ind s', t
 
-    | Construct c ->
-      let s, stg = next stg in
-      let t, cstrnt = type_of_constructor env ~s c in
+    | Construct (((kn, _), _), _ as c) ->
+      let numvars = (lookup_mind kn env).mind_ntypes in
+      let ans, stg = next_annots (Some numvars) stg in
+      let t, cstrnt = type_of_constructor env ?ans c in
       stg, cstrnt, cstr, t
 
     | Case (ci,p,c,lf) ->

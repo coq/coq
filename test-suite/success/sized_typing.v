@@ -85,7 +85,7 @@ Fixpoint append T (l1 l2: list T) :=
 Fixpoint reverse T (l: list T) :=
   match l with
   | nil => nil
-  | cons x l' => append (reverse T l') (cons x nil)
+  | cons x l' => append T (reverse T l') (cons x nil)
   end.
 
 Fixpoint filter T (f: T -> bool) (l: list T) :=
@@ -321,3 +321,38 @@ Fixpoint k (n: nat) :=
   | S n' => k (id2 n')
   end.
 End localSize.
+
+(** Definitions that ensure that mutual inductive types have different annotations. *)
+
+Section mutual.
+
+Variables A B: Set.
+
+Inductive tree: Set := node: A -> forest -> tree
+with forest: Set :=
+  | leaf: B -> forest
+  | fcons: tree -> forest -> forest.
+
+(* This has type tree^∞ -> tree^∞. *)
+Definition id_tree (tr: tree) := tr.
+
+(* Let fcons: tree^s1 -> forest^s2 -> forest^s2+1.
+  Since (id_tree tr): tree^∞, ∞⊑s1, but this doesn't affect the type of useless1,
+  which would be forest^ι -> forest^ι, UNLESS s1 = s2, in which case
+  its type would end up being forest^ι -> forest^∞. *)
+Fixpoint useless1 (fr: forest) :=
+  match fr with
+  | fcons tr fr => fcons (id_tree tr) (useless1 fr)
+  | _ => fr
+  end.
+
+(* If useless1 preserves size as we expect it to, this would typecheck.
+  If not, then this would fail typechecking,
+  since (useless2 fr): forest^∞ and we try to pass it to useless2. *)
+Fixpoint useless2 (fr: forest) :=
+  match fr with
+  | fcons tr fr => fcons tr (useless2 (useless1 fr))
+  | _ => fr
+  end.
+
+End mutual.

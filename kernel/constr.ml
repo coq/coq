@@ -945,12 +945,6 @@ let erase_star vars =
     | _ -> Empty in
   map_annots f (make_annots_list Empty)
 
-let annotate ind s =
-  let f (((i, _), _)) a =
-    if MutInd.equal ind i
-    then s else a in
-  map_annots f identity
-
 let annotate_fresh annots =
   let annots_ref = ref annots in
   let f _ _ =

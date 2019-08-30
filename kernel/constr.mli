@@ -568,10 +568,6 @@ val erase_glob : SVars.t -> constr -> constr
 
 val erase_star : SVars.t -> constr -> constr
 
-(** [annotate ind s c] annotates all inductive types [ind] in [c] with annotation [s] *)
-
-val annotate : Names.MutInd.t -> Annot.t -> constr -> constr
-
 (** [annotate_fresh annots] puts the annotations in [annots] in every annotatable slot
    as found by [count_annots] *)
 

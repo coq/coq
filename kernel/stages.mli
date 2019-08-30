@@ -115,6 +115,8 @@ sig
   val pr : t -> Pp.t
 end
 
+val annots_to_svars : Annot.t list option -> SVars.t
+
 exception RecCheckFailed of Constraints.t * SVars.t * SVars.t
 
 val downward : Constraints.t -> SVars.t -> SVars.t
