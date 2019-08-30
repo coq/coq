@@ -878,12 +878,12 @@ let compare_constructor_instances evd u u' =
   in
   Evd.add_universe_constraints evd soft
 
-(** [eq_constr_univs_test sigma1 sigma2 t u] tests equality of [t] and
-    [u] up to existential variable instantiation and equalisable
-    universes. The term [t] is interpreted in [sigma1] while [u] is
-    interpreted in [sigma2]. The universe constraints in [sigma2] are
-    assumed to be an extension of those in [sigma1]. *)
-let eq_constr_univs_test sigma1 sigma2 t u =
+(** [eq_constr_univs_test ~evd ~extended_evd t u] tests equality of
+    [t] and [u] up to existential variable instantiation and
+    equalisable universes. The term [t] is interpreted in [evd] while
+    [u] is interpreted in [extended_evd]. The universe constraints in
+    [extended_evd] are assumed to be an extension of those in [evd]. *)
+let eq_constr_univs_test ~evd ~extended_evd t u =
   (* spiwack: mild code duplication with {!Evd.eq_constr_univs}. *)
   let open Evd in
   let t = EConstr.Unsafe.to_constr t
@@ -894,8 +894,8 @@ let eq_constr_univs_test sigma1 sigma2 t u =
   in
   let ans =
     UnivProblem.eq_constr_univs_infer_with
-      (fun t -> kind_of_term_upto sigma1 t)
-      (fun u -> kind_of_term_upto sigma2 u)
-      (universes sigma2) fold t u sigma2
+      (fun t -> kind_of_term_upto evd t)
+      (fun u -> kind_of_term_upto extended_evd u)
+      (universes extended_evd) fold t u extended_evd
   in
   match ans with None -> false | Some _ -> true

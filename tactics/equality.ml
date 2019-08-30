@@ -255,7 +255,9 @@ let tclNOTSAMEGOAL tac =
     Proofview.Goal.goals >>= fun gls ->
     let check accu gl' =
       gl' >>= fun gl' ->
-      let accu = accu || Proofview.Progress.goal_equal sigma ev (project gl') (goal gl') in
+      let accu = accu || Proofview.Progress.goal_equal
+                            ~evd:sigma ~extended_evd:(project gl') ev (goal gl')
+      in
       Proofview.tclUNIT accu
     in
     Proofview.Monad.List.fold_left check false gls >>= fun has_same ->
