@@ -190,12 +190,12 @@ Fixpoint append {A}{n}{p} (v:t A n) (w:t A p):t A (n+p) :=
 Infix "++" := append.
 
 (** Split a vector into two parts *)
-Fixpoint splitAt {A} (l : nat) {r : nat} :
+Fixpoint splitat {A} (l : nat) {r : nat} :
   t A (l + r) -> t A l * t A r :=
   match l with
   | 0 => fun v => ([], v)
   | S l' => fun v =>
-    let (v1, v2) := splitAt l' (tl v) in
+    let (v1, v2) := splitat l' (tl v) in
     (hd v::v1, v2)
   end.
 

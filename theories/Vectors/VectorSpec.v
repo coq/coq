@@ -153,18 +153,6 @@ Proof.
   - destruct v. inversion le. simpl. apply f_equal. apply IHp. 
 Qed.
 
-Lemma single_valued_uncons {A} : forall {n : nat} (a1 a2 : A) (v1 v2 : t A n),
-    a1::v1 = a2::v2 -> a1 = a2 /\ v1 = v2.
-Proof with auto.
-  split; intros.
-  - replace a1 with (hd (a1::v1));
-    replace a2 with (hd (a2::v2))...
-    rewrite H...
-  - replace v1 with (tl (a1::v1));
-    replace v2 with (tl (a2::v2))...
-    rewrite H...
-Qed.
-
 Lemma uncons_cons {A} : forall {n : nat} (a : A) (v : t A n),
     uncons (a::v) = (a,v).
 Proof. reflexivity. Qed.
@@ -173,8 +161,8 @@ Lemma append_comm_cons {A} : forall {n m : nat} (v : t A n) (w : t A m) (a : A),
     a :: (v ++ w) = (a :: v) ++ w.
 Proof. reflexivity. Qed.
 
-Lemma splitAt_append {A} : forall {n m : nat} (v : t A n) (w : t A m),
-    splitAt n (v ++ w) = (v, w).
+Lemma splitat_append {A} : forall {n m : nat} (v : t A n) (w : t A m),
+    splitat n (v ++ w) = (v, w).
 Proof with simpl; auto.
   intros n m v.
   generalize dependent m.
@@ -182,19 +170,19 @@ Proof with simpl; auto.
   rewrite IHv...
 Qed.
 
-Lemma append_splitAt {A} : forall {n m : nat} (v : t A n) (w : t A m) (vw : t A (n+m)),
-    splitAt n vw = (v, w) ->
+Lemma append_splitat {A} : forall {n m : nat} (v : t A n) (w : t A m) (vw : t A (n+m)),
+    splitat n vw = (v, w) ->
     vw = v ++ w.
 Proof with auto.
   intros n m v.
   generalize dependent m.
   induction v; intros; inversion H...
-  destruct (splitAt n (tl vw)) as [v' w'] eqn:Heq.
-  apply single_valued_projections in H1.
+  destruct (splitat n (tl vw)) as [v' w'] eqn:Heq.
+  apply pair_equal_spec in H1.
   destruct H1; subst.
   rewrite <- append_comm_cons.
   rewrite (eta vw).
-  apply single_valued_uncons in H0.
+  apply cons_inj in H0.
   destruct H0; subst.
   f_equal...
   apply IHv...
