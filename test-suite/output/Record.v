@@ -20,12 +20,12 @@ Check {| field := 5 |}.
 Check build_r 5.
 Check build_c 5.
 
-#[universes(template)] Record N := C { T : Type; _ : True }.
+Record N := C { T : Type; _ : True }.
 Check fun x:N => let 'C _ p := x in p.
 Check fun x:N => let 'C T _ := x in T.
 Check fun x:N => let 'C T p := x in (T,p).
 
-#[universes(template)] Record M := D { U : Type; a := 0; q : True }.
+Record M := D { U : Type; a := 0; q : True }.
 Check fun x:M => let 'D T _ p := x in p.
 Check fun x:M => let 'D T _ p := x in T.
 Check fun x:M => let 'D T p := x in (T,p).

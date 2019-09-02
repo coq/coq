@@ -12,13 +12,13 @@ Set Implicit Arguments.
 
 (** Streams *)
 
+CoInductive Stream (A : Type) :=
+  Cons : A -> Stream A -> Stream A.
+
 Section Streams.
+  Variable A : Type.
 
-Variable A : Type.
-
-#[universes(template)]
-CoInductive Stream : Type :=
-    Cons : A -> Stream -> Stream.
+  Notation Stream := (Stream A).
 
 
 Definition hd (x:Stream) := match x with

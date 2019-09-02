@@ -83,6 +83,11 @@ type typing_flags = {
 
   indices_matter: bool;
   (** The universe of an inductive type must be above that of its indices. *)
+
+  check_template : bool;
+  (* If [false] then we don't check that the universes template-polymorphic
+     inductive parameterize on are necessarily local and unbounded from below.
+     This potentially introduces inconsistencies. *)
 }
 
 (* some contraints are in constant_constraints, some other may be in

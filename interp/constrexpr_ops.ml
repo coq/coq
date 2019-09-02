@@ -631,7 +631,8 @@ let interp_univ_constraints env evd cstrs =
 let interp_univ_decl env decl =
   let open UState in
   let pl : lident list = decl.univdecl_instance in
-  let evd = Evd.from_ctx (UState.make_with_initial_binders (Environ.universes env) pl) in
+  let evd = Evd.from_ctx (UState.make_with_initial_binders ~lbound:(Environ.universes_lbound env)
+                            (Environ.universes env) pl) in
   let evd, cstrs = interp_univ_constraints env evd decl.univdecl_constraints in
   let decl = { univdecl_instance = pl;
     univdecl_extensible_instance = decl.univdecl_extensible_instance;

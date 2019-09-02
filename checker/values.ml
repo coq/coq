@@ -227,7 +227,7 @@ let v_cst_def =
     [|[|Opt Int|]; [|v_cstr_subst|]; [|v_lazy_constr|]; [|v_primitive|]|]
 
 let v_typing_flags =
-  v_tuple "typing_flags" [|v_bool; v_bool; v_oracle; v_bool; v_bool; v_bool; v_bool|]
+  v_tuple "typing_flags" [|v_bool; v_bool; v_oracle; v_bool; v_bool; v_bool; v_bool; v_bool|]
 
 let v_univs = v_sum "universes" 0 [|[|v_context_set|]; [|v_abs_context|]|]
 

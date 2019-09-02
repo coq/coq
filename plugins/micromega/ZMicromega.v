@@ -65,7 +65,7 @@ Qed.
 Fixpoint Zeval_expr (env : PolEnv Z) (e: PExpr Z) : Z :=
   match e with
     | PEc c => c
-    | PEX _ x => env x
+    | PEX x => env x
     | PEadd e1 e2 => Zeval_expr env e1 + Zeval_expr env e2
     | PEmul e1 e2 => Zeval_expr env e1 * Zeval_expr env e2
     | PEpow e1 n  => Z.pow (Zeval_expr env e1) (Z.of_N n)
@@ -78,7 +78,7 @@ Definition eval_expr := eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x => x) (fun x 
 Fixpoint Zeval_const  (e: PExpr Z) : option Z :=
   match e with
   | PEc c => Some c
-  | PEX _ x => None
+  | PEX x => None
   | PEadd e1 e2 => map_option2 (fun x y => Some (x + y))
                                (Zeval_const e1) (Zeval_const e2)
   | PEmul e1 e2 => map_option2 (fun x y => Some (x * y))
@@ -742,7 +742,7 @@ Module Vars.
 Fixpoint vars_of_pexpr (e : PExpr Z) : Vars.t :=
   match e with
   | PEc _ => Vars.empty
-  | PEX _ x => Vars.singleton x
+  | PEX x => Vars.singleton x
   | PEadd e1 e2 | PEsub e1 e2 | PEmul e1 e2 =>
     let v1 := vars_of_pexpr e1 in
     let v2 := vars_of_pexpr e2 in
@@ -774,10 +774,10 @@ Fixpoint vars_of_bformula {TX : Type} {TG : Type} {ID : Type}
   end.
 
 Definition bound_var (v : positive) : Formula Z :=
-  Build_Formula (PEX _ v) OpGe (PEc 0).
+  Build_Formula (PEX v) OpGe (PEc 0).
 
 Definition mk_eq_pos (x : positive) (y:positive) (t : positive) : Formula Z :=
-  Build_Formula (PEX _ x) OpEq (PEsub (PEX _ y) (PEX _ t)).
+  Build_Formula (PEX x) OpEq (PEsub (PEX y) (PEX t)).
 
 Section BOUND.
   Context {TX TG ID : Type}.

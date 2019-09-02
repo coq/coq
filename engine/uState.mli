@@ -25,9 +25,9 @@ type t
 
 val empty : t
 
-val make : UGraph.t -> t
+val make : lbound:Univ.Level.t -> UGraph.t -> t
 
-val make_with_initial_binders : UGraph.t -> lident list -> t
+val make_with_initial_binders : lbound:Univ.Level.t -> UGraph.t -> lident list -> t
 
 val is_empty : t -> bool
 
@@ -91,11 +91,11 @@ val universe_of_name : t -> Id.t -> Univ.Level.t
 
 (** {5 Unification} *)
 
-(** [restrict_universe_context (univs,csts) keep] restricts [univs] to
+(** [restrict_universe_context lbound (univs,csts) keep] restricts [univs] to
    the universes in [keep]. The constraints [csts] are adjusted so
    that transitive constraints between remaining universes (those in
    [keep] and those not in [univs]) are preserved. *)
-val restrict_universe_context : ContextSet.t -> LSet.t -> ContextSet.t
+val restrict_universe_context : lbound:Univ.Level.t -> ContextSet.t -> LSet.t -> ContextSet.t
 
 (** [restrict uctx ctx] restricts the local universes of [uctx] to
    [ctx] extended by local named universes and side effect universes

@@ -123,7 +123,7 @@ Check fun n => foo4 n (fun x y z => (fun _ => y=0) z).
 (**********************************************************************)
 (* Test printing of #4932                                             *)
 
-#[universes(template)] Inductive ftele : Type :=
+Inductive ftele : Type :=
 | fb {T:Type} : T -> ftele
 | fr {T} : (T -> ftele) -> ftele.
 

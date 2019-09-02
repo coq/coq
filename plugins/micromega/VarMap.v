@@ -25,16 +25,18 @@ Set Implicit Arguments.
  * As a side note, by dropping the polymorphism, one gets small, yet noticeable, speed-up.
  *)
 
+Inductive t {A} : Type :=
+| Empty : t
+| Elt : A -> t
+| Branch : t  -> A -> t  -> t .
+Arguments t : clear implicits.
+
 Section MakeVarMap.
   
   Variable A : Type.
   Variable default : A.
 
-  #[universes(template)]
-  Inductive t  : Type :=
-  | Empty : t
-  | Elt : A -> t
-  | Branch : t  -> A -> t  -> t .
+  Notation t := (t A).
 
   Fixpoint find (vm : t) (p:positive) {struct vm} : A :=
     match vm with
@@ -46,7 +48,6 @@ Section MakeVarMap.
                         | xI p => find r p
                       end
     end.
-
 
   Fixpoint singleton (x:positive) (v : A) : t :=
     match x with

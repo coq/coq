@@ -51,8 +51,9 @@ type globals
 
 type stratification = {
   env_universes : UGraph.t;
-  env_engagement : engagement;
   env_sprop_allowed : bool;
+  env_universes_lbound : Univ.Level.t;
+  env_engagement : engagement
 }
 
 type named_context_val = private {
@@ -84,6 +85,8 @@ val eq_named_context_val : named_context_val -> named_context_val -> bool
 val empty_env : env
 
 val universes     : env -> UGraph.t
+val universes_lbound : env -> Univ.Level.t
+val set_universes_lbound : env -> Univ.Level.t -> env
 val rel_context   : env -> Constr.rel_context
 val named_context : env -> Constr.named_context
 val named_context_val : env -> named_context_val
@@ -98,6 +101,7 @@ val is_impredicative_set : env -> bool
 val type_in_type : env -> bool
 val deactivated_guard : env -> bool
 val indices_matter : env -> bool
+val check_template : env -> bool
 
 val is_impredicative_sort : env -> Sorts.t -> bool
 val is_impredicative_univ : env -> Univ.Universe.t -> bool
@@ -258,7 +262,9 @@ val type_in_type_ind : inductive -> env -> bool
 
 (** Old-style polymorphism *)
 val template_polymorphic_ind : inductive -> env -> bool
+val template_polymorphic_variables : inductive -> env -> Univ.Level.t list
 val template_polymorphic_pind : pinductive -> env -> bool
+val template_checked_ind : inductive -> env -> bool
 
 (** {5 Modules } *)
 
@@ -350,6 +356,8 @@ val remove_hyps : Id.Set.t -> (Constr.named_declaration -> Constr.named_declarat
 
 val is_polymorphic : env -> Names.GlobRef.t -> bool
 val is_template_polymorphic : env -> GlobRef.t -> bool
+val get_template_polymorphic_variables : env -> GlobRef.t -> Univ.Level.t list
+val is_template_checked : env -> GlobRef.t -> bool
 val is_type_in_type : env -> GlobRef.t -> bool
 
 (** Native compiler *)

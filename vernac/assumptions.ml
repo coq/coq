@@ -327,10 +327,16 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       accu
   | IndRef (m,_) | ConstructRef ((m,_),_) ->
       let mind = lookup_mind m in
-      if mind.mind_typing_flags.check_guarded then
-        accu
-      else
+      let accu =
+        if mind.mind_typing_flags.check_guarded then
+          accu
+        else
+          let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
+          ContextObjectMap.add (Axiom (Positive m, l)) Constr.mkProp accu
+      in
+      if not mind.mind_typing_flags.check_template then
         let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
-        ContextObjectMap.add (Axiom (Positive m, l)) Constr.mkProp accu
+        ContextObjectMap.add (Axiom (TemplatePolymorphic m, l)) Constr.mkProp accu
+      else accu
   in
   GlobRef.Map_env.fold fold graph ContextObjectMap.empty

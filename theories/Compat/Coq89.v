@@ -15,3 +15,6 @@ Require Export Coq.Compat.Coq810.
 
 Unset Private Polymorphic Universes.
 Set Refine Instance Mode.
+
+(** Unsafe flag, can hide inconsistencies. *)
+Global Unset Template Check.

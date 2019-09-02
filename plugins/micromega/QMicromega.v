@@ -68,7 +68,7 @@ Require Import EnvRing.
 Fixpoint Qeval_expr (env: PolEnv Q) (e: PExpr Q) : Q :=
   match e with
     | PEc c =>  c
-    | PEX _ j =>  env j
+    | PEX j =>  env j
     | PEadd pe1 pe2 => (Qeval_expr env pe1) + (Qeval_expr env pe2)
     | PEsub pe1 pe2 => (Qeval_expr env pe1) - (Qeval_expr env pe2)
     | PEmul pe1 pe2 => (Qeval_expr env pe1) * (Qeval_expr env pe2)
@@ -80,7 +80,7 @@ Lemma Qeval_expr_simpl : forall env e,
   Qeval_expr env e =
   match e with
     | PEc c =>  c
-    | PEX _ j =>  env j
+    | PEX j =>  env j
     | PEadd pe1 pe2 => (Qeval_expr env pe1) + (Qeval_expr env pe2)
     | PEsub pe1 pe2 => (Qeval_expr env pe1) - (Qeval_expr env pe2)
     | PEmul pe1 pe2 => (Qeval_expr env pe1) * (Qeval_expr env pe2)
