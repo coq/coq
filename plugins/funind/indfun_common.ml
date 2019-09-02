@@ -107,29 +107,6 @@ let find_reference sl s =
 let eq = lazy(EConstr.of_constr (coq_constant "eq"))
 let refl_equal = lazy(EConstr.of_constr (coq_constant "eq_refl"))
 
-(*****************************************************************)
-(* Copy of the standard save mechanism but without the much too  *)
-(* slow reduction function                                       *)
-(*****************************************************************)
-open Declare
-open DeclareDef
-
-let definition_message = Declare.definition_message
-
-let save name const ?hook uctx scope kind =
-  let fix_exn = Future.fix_exn_of const.Declare.proof_entry_body in
-  let r = match scope with
-    | Discharge ->
-      let c = SectionLocalDef const in
-      let () = declare_variable ~name ~kind c in
-      GlobRef.VarRef name
-    | Global local ->
-      let kn = declare_constant ~name ~kind ~local (DefinitionEntry const) in
-      GlobRef.ConstRef kn
-  in
-  DeclareDef.Hook.(call ?hook ~fix_exn { S.uctx; obls = []; scope; dref = r });
-  definition_message name
-
 let with_full_print f a =
   let old_implicit_args = Impargs.is_implicit_args ()
   and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()
