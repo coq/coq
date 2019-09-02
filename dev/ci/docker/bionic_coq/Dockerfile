@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2019-07-06-V22"
+# CACHEKEY: "bionic_coq-V2019-08-08-V01"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -56,7 +56,7 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
     opam install $BASE_OPAM
 
 # EDGE switch
-ENV COMPILER_EDGE="4.08.0" \
+ENV COMPILER_EDGE="4.08.1" \
     COQIDE_OPAM_EDGE="cairo2.0.6 lablgtk3-sourceview3.3.0.beta6" \
     BASE_OPAM_EDGE="dune-release.1.3.1"
 

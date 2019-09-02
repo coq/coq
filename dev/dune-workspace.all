@@ -3,5 +3,5 @@
 ; Add custom flags here. Default developer profile is `dev`
 (context (opam (switch 4.05.0)))
 (context (opam (switch 4.05.0+32bit)))
-(context (opam (switch 4.08.0)))
-(context (opam (switch 4.08.0+flambda)))
+(context (opam (switch 4.08.1)))
+(context (opam (switch 4.08.1+flambda)))

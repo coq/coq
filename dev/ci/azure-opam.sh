@@ -2,7 +2,7 @@
 
 set -e -x
 
-OPAM_VARIANT=ocaml-variants.4.08.0+mingw64c
+OPAM_VARIANT=ocaml-variants.4.08.1+mingw64c
 
 wget https://github.com/fdopen/opam-repository-mingw/releases/download/0.0.0.2/opam64.tar.xz -O opam64.tar.xz
 tar -xf opam64.tar.xz
