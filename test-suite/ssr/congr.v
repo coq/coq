@@ -32,3 +32,11 @@ Coercion f : nat >-> Equality.sort.
 
 Lemma test4 : forall a b : nat, b = a -> @eq S (b + b) (a + a).
 Proof. move=> a b Eba; congr (_ + _); exact:  Eba. Qed.
+
+Open Scope type_scope.
+
+Lemma test5 : forall (P Q Q' : Type) (h : Q = Q'), P * Q = P * Q'.
+Proof. move=>*; by congr (_ * _). Qed.
+
+Lemma test6 : forall (P Q Q' : Type) (h : Q = Q'), P * Q -> P * Q'.
+Proof. move=> P Q Q' h; by congr (_ * _). Qed.
