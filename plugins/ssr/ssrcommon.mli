@@ -205,6 +205,7 @@ val pf_type_of :
 val pfe_type_of :
            Goal.goal Evd.sigma ->
            EConstr.t -> Goal.goal Evd.sigma * EConstr.types
+val pfe_new_type : Goal.goal Evd.sigma -> Goal.goal Evd.sigma * EConstr.types
 val pfe_type_relevance_of :
            Goal.goal Evd.sigma ->
            EConstr.t -> Goal.goal Evd.sigma * EConstr.types * Sorts.relevance
