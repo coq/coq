@@ -780,7 +780,7 @@ let eta_red e =
 	else e
     | _ -> e
 
-(* Performs an eta-reduction when the core is atomic,
+(* Performs an eta-reduction when the core is atomic and value,
    or otherwise returns None *)
 
 let atomic_eta_red e =
@@ -790,7 +790,7 @@ let atomic_eta_red e =
   | MLapp (f,a) when test_eta_args_lift 0 n a ->
      (match f with
       | MLrel k when k>n -> Some (MLrel (k-n))
-      | MLglob _ | MLexn _ | MLdummy _ -> Some f
+      | MLglob _ | MLdummy _ -> Some f
       | _ -> None)
   | _ -> None
 
