@@ -129,6 +129,18 @@ Universes
   GH issue number: #9294
   risk: moderate risk to be activated by chance
 
+  component: universe polymorphism, asynchronous proofs
+  summary: universe constraints erroneously discarded when forcing an asynchronous proof containing delayed monomorphic constraints inside a universe polymorphic section
+  introduced: between 8.4 and 8.5 by merging the asynchronous proofs feature branch and universe polymorphism one
+  impacted released: V8.5-V8.10
+  impacted development branches: none
+  impacted coqchk versions: immune
+  fixed in: PR#10664
+  found by: Pédrot
+  exploit: no test
+  GH issue number: none
+  risk: unlikely to be triggered in interactive mode, not present in batch mode (i.e. coqc)
+
 Primitive projections
 
   component: primitive projections, guard condition
