@@ -27,7 +27,6 @@ Section S.
   Context {AA  : Type}. (* type of annotations for atoms *)
   Context {AF  : Type}. (* type of formulae identifiers *)
 
-  #[universes(template)]
    Inductive GFormula  : Type :=
   | TT   : GFormula
   | FF   : GFormula

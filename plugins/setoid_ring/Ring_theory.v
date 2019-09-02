@@ -540,7 +540,6 @@ Section AddRing.
  Variable (rO rI : R) (radd rmul rsub: R->R->R) (ropp : R -> R).
  Variable req : R -> R -> Prop. *)
 
-#[universes(template)]
 Inductive ring_kind : Type :=
 | Abstract
 | Computational

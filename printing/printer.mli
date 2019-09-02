@@ -192,6 +192,8 @@ type axiom =
   | Constant of Constant.t (* An axiom or a constant. *)
   | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
   | Guarded of GlobRef.t (* a constant whose (co)fixpoints have been assumed to be guarded *)
+  | TemplatePolymorphic of MutInd.t (* A mutually inductive definition whose template polymorphism
+                                       on parameter universes has not been checked. *)
   | TypeInType of GlobRef.t (* a constant which relies on type in type *)
 
 type context_object =

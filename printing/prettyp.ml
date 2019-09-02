@@ -221,14 +221,22 @@ let print_if_is_coercion ref =
 (*******************)
 (* *)
 
+let pr_template_variables = function
+  | [] -> mt ()
+  | vars -> str "on " ++ prlist_with_sep spc UnivNames.pr_with_global_universes vars
+
 let print_polymorphism ref =
   let poly = Global.is_polymorphic ref in
   let template_poly = Global.is_template_polymorphic ref in
-  [ pr_global ref ++ str " is " ++ str
-      (if poly then "universe polymorphic"
+  let template_checked = Global.is_template_checked ref in
+  let template_variables = Global.get_template_polymorphic_variables ref in
+  [ pr_global ref ++ str " is " ++
+      (if poly then str "universe polymorphic"
        else if template_poly then
-	 "template universe polymorphic"
-       else "not universe polymorphic") ]
+         (if not template_checked then str "assumed " else mt()) ++
+         str "template universe polymorphic "
+         ++ h 0 (pr_template_variables template_variables)
+       else str "not universe polymorphic") ]
 
 let print_type_in_type ref =
   let unsafe = Global.is_type_in_type ref in

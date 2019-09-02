@@ -530,7 +530,7 @@ let obligation_terminator entries uctx { name; num; auto } =
            declares the univs of the constant,
            each subsequent obligation declares its own additional
            universes and constraints if any *)
-        if defined then UState.make (Global.universes ())
+        if defined then UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ())
         else ctx
     in
     let prg = {prg with prg_ctx} in

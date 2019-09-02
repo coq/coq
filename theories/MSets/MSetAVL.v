@@ -208,7 +208,6 @@ Definition concat s1 s2 :=
     - [present] is [true] if and only if [s] contains  [x].
 *)
 
-#[universes(template)]
 Record triple := mktriple { t_left:t; t_in:bool; t_right:t }.
 Notation "<< l , b , r >>" := (mktriple l b r) (at level 9).
 

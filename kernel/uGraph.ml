@@ -149,10 +149,10 @@ let enforce_leq_alg u v g =
   cg
 
 exception AlreadyDeclared = G.AlreadyDeclared
-let add_universe u strict g =
+let add_universe u ~lbound ~strict g =
   let graph = G.add u g.graph in
   let d = if strict then Lt else Le in
-  enforce_constraint (Level.set,d,u) {g with graph}
+  enforce_constraint (lbound,d,u) {g with graph}
 
 let add_universe_unconstrained u g = {g with graph=G.add u g.graph}
 
@@ -164,11 +164,11 @@ let constraints_for ~kept g = G.constraints_for ~kept:(LSet.remove Level.sprop k
 
 (** Subtyping of polymorphic contexts *)
 
-let check_subtype univs ctxT ctx =
+let check_subtype ~lbound univs ctxT ctx =
   if AUContext.size ctxT == AUContext.size ctx then
     let (inst, cst) = UContext.dest (AUContext.repr ctx) in
     let cstT = UContext.constraints (AUContext.repr ctxT) in
-    let push accu v = add_universe v false accu in
+    let push accu v = add_universe v ~lbound ~strict:false accu in
     let univs = Array.fold_left push univs (Instance.to_array inst) in
     let univs = merge_constraints cstT univs in
     check_constraints cst univs

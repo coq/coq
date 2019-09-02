@@ -777,7 +777,7 @@ let infer_cmp_universes env pb s0 s1 univs =
     | Prop, (Set | Type _) -> if not (is_cumul pb) then raise NotConvertible else univs
     | Set, Prop -> raise NotConvertible
     | Set, Type u -> infer_pb Univ.type0_univ u
-    | Type _u, Prop -> raise NotConvertible
+    | Type u, Prop -> infer_pb u Univ.type0m_univ
     | Type u, Set -> infer_pb u Univ.type0_univ
     | Type u0, Type u1 -> infer_pb u0 u1
 

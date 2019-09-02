@@ -68,9 +68,9 @@ mono
 The command has indeed failed with message:
 Universe u already exists.
 bobmorane = 
-let tt := Type@{UnivBinders.32} in
-let ff := Type@{UnivBinders.34} in tt -> ff
-     : Type@{max(UnivBinders.31,UnivBinders.33)}
+let tt := Type@{UnivBinders.33} in
+let ff := Type@{UnivBinders.35} in tt -> ff
+     : Type@{max(UnivBinders.32,UnivBinders.34)}
 The command has indeed failed with message:
 Universe u already bound.
 foo@{E M N} = 
@@ -143,16 +143,16 @@ Applied.infunct@{u v} =
 inmod@{u} -> Type@{v}
      : Type@{max(u+1,v+1)}
 (* u v |=  *)
-axfoo@{i UnivBinders.56 UnivBinders.57} :
-Type@{UnivBinders.56} -> Type@{i}
-(* i UnivBinders.56 UnivBinders.57 |=  *)
+axfoo@{i UnivBinders.57 UnivBinders.58} :
+Type@{UnivBinders.57} -> Type@{i}
+(* i UnivBinders.57 UnivBinders.58 |=  *)
 
 axfoo is universe polymorphic
 Argument scope is [type_scope]
 Expands to: Constant UnivBinders.axfoo
-axbar@{i UnivBinders.56 UnivBinders.57} :
-Type@{UnivBinders.57} -> Type@{i}
-(* i UnivBinders.56 UnivBinders.57 |=  *)
+axbar@{i UnivBinders.57 UnivBinders.58} :
+Type@{UnivBinders.58} -> Type@{i}
+(* i UnivBinders.57 UnivBinders.58 |=  *)
 
 axbar is universe polymorphic
 Argument scope is [type_scope]

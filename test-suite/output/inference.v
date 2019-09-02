@@ -21,6 +21,6 @@ Print P.
 
 (* Note: exact numbers of evars are not important... *)
 
-#[universes(template)] Inductive T (n:nat) : Type := A : T n.
+Inductive T (n:nat) : Type := A : T n.
 Check fun n (y:=A n:T n) => _ _ : T n.
 Check fun n => _ _ : T n.

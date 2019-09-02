@@ -454,7 +454,7 @@ let obligation_hook prg obl num auto { DeclareDef.Hook.S.uctx = ctx'; dref; _ } 
     if not prg.prg_poly (* Not polymorphic *) then
       (* The universe context was declared globally, we continue
          from the new global environment. *)
-      let ctx = UState.make (Global.universes ()) in
+      let ctx = UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ()) in
       let ctx' = UState.merge_subst ctx (UState.subst ctx') in
       Univ.Instance.empty, ctx'
     else

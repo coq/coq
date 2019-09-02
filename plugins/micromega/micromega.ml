@@ -556,6 +556,15 @@ let zeq_bool x y =
   | Eq -> true
   | _ -> false
 
+type 'c pExpr =
+| PEc of 'c
+| PEX of positive
+| PEadd of 'c pExpr * 'c pExpr
+| PEsub of 'c pExpr * 'c pExpr
+| PEmul of 'c pExpr * 'c pExpr
+| PEopp of 'c pExpr
+| PEpow of 'c pExpr * n
+
 type 'c pol =
 | Pc of 'c
 | Pinj of positive * 'c pol
@@ -867,15 +876,6 @@ let rec psquare cO cI cadd cmul ceqb = function
   let q2 = psquare cO cI cadd cmul ceqb q0 in
   let p3 = psquare cO cI cadd cmul ceqb p2 in
   mkPX cO ceqb (padd cO cadd ceqb (mkPX cO ceqb p3 i (p0 cO)) twoPQ) i q2
-
-type 'c pExpr =
-| PEc of 'c
-| PEX of positive
-| PEadd of 'c pExpr * 'c pExpr
-| PEsub of 'c pExpr * 'c pExpr
-| PEmul of 'c pExpr * 'c pExpr
-| PEopp of 'c pExpr
-| PEpow of 'c pExpr * n
 
 (** val mk_X : 'a1 -> 'a1 -> positive -> 'a1 pol **)
 

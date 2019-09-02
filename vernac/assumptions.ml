@@ -353,6 +353,8 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
           ContextObjectMap.add (Axiom (TypeInType obj, l)) Constr.mkProp accu
       in
-      accu
-
+      if not mind.mind_typing_flags.check_template then
+        let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
+        ContextObjectMap.add (Axiom (TemplatePolymorphic m, l)) Constr.mkProp accu
+      else accu
   in GlobRef.Map_env.fold fold graph ContextObjectMap.empty

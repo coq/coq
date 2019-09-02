@@ -32,6 +32,10 @@ let set_type_in_type () =
   let typing_flags = Environ.typing_flags (Global.env ()) in
   Global.set_typing_flags { typing_flags with Declarations.check_universes = false }
 
+let set_no_template_check () =
+  let typing_flags = Environ.typing_flags (Global.env ()) in
+  Global.set_typing_flags { typing_flags with Declarations.check_template = false }
+
 (******************************************************************************)
 
 type color = [`ON | `AUTO | `EMACS | `OFF]
@@ -525,6 +529,7 @@ let parse_args ~help ~init arglist : t * string list =
     |"-list-tags" -> set_query oval PrintTags
     |"-time" -> { oval with config = { oval.config with time = true }}
     |"-type-in-type" -> set_type_in_type (); oval
+    |"-no-template-check" -> set_no_template_check (); oval
     |"-unicode" -> add_vo_require oval "Utf8_core" None (Some false)
     |"-where" -> set_query oval PrintWhere
     |"-h"|"-H"|"-?"|"-help"|"--help" -> set_query oval (PrintHelp help)

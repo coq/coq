@@ -119,6 +119,16 @@ Universes
   GH issue number: #8341
   risk: unlikely to be activated by chance (requires a plugin)
 
+  component: template polymorphism
+  summary: template polymorphism not collecting side constrains on the universe level of a parameter; this is a general form of the previous issue about template polymorphism exploiting other ways to generate untracked constraints introduced: morally at the introduction of template polymorphism, 23 May 2006, 9c2d70b, r8845, Herbelin impacted released versions: at least V8.4-V8.4pl6, V8.5-V8.5pl3, V8.6-V8.6pl2, V8.7.0-V8.7.1, V8.8.0-V8.8.1, V8.9.0-V8.9.1, in theory also V8.1-V8.1pl4, V8.2-V8.2pl2, V8.3-V8.3pl2 but not exploit found there yet (an exploit using a plugin to force sharing of universe level is in principle possible though)
+  impacted development branches: all from 8.4 to 8.9 at the time of writing and suspectingly also all from 8.1 to 8.4 if a way to create untracked constraints can be found
+  impacted coqchk versions: a priori all (tested with V8.4 and V8.9 which accept the exploit)
+  fixed in: soon in master and V8.10.0 (PR #9918, Aug 2019, Dénès and Sozeau)
+  found by: Gilbert using explicit sharing of universes, exploit found for 8.5-8.9 by Pédrot, other variants generating sharing using sections, or using ltac tricks by Sozeau, exploit in 8.4 by Herbelin and Jason Gross by adding new tricks to Sozeau's variants
+  exploit: test-suite/failure/Template.v
+  GH issue number: #9294
+  risk: moderate risk to be activated by chance
+
 Primitive projections
 
   component: primitive projections, guard condition
