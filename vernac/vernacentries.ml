@@ -1179,11 +1179,11 @@ let vernac_chdir = function
 
 let vernac_write_state file =
   let file = CUnix.make_suffix file ".coq" in
-  States.extern_state file
+  Library.extern_state file
 
 let vernac_restore_state file =
   let file = Loadpath.locate_file (CUnix.make_suffix file ".coq") in
-  States.intern_state file
+  Library.intern_state file
 
 (************)
 (* Commands *)
@@ -1972,9 +1972,9 @@ let vernac_print ~pstate ~atts =
   function
   | PrintTypingFlags -> pr_typing_flags (Environ.typing_flags (Global.env ()))
   | PrintTables -> print_tables ()
-  | PrintFullContext-> print_full_context_typ env sigma
-  | PrintSectionContext qid -> print_sec_context_typ env sigma qid
-  | PrintInspect n -> inspect env sigma n
+  | PrintFullContext-> print_full_context_typ Library.indirect_accessor env sigma
+  | PrintSectionContext qid -> print_sec_context_typ Library.indirect_accessor env sigma qid
+  | PrintInspect n -> inspect Library.indirect_accessor env sigma n
   | PrintGrammar ent -> Metasyntax.pr_grammar ent
   | PrintCustomGrammar ent -> Metasyntax.pr_custom_grammar ent
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
@@ -1987,7 +1987,7 @@ let vernac_print ~pstate ~atts =
   | PrintDebugGC -> Mltop.print_gc ()
   | PrintName (qid,udecl) ->
     dump_global qid;
-    print_name env sigma qid udecl
+    print_name Library.indirect_accessor env sigma qid udecl
   | PrintGraph -> Prettyp.print_graph ()
   | PrintClasses -> Prettyp.print_classes()
   | PrintTypeClasses -> Prettyp.print_typeclasses()

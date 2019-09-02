@@ -104,8 +104,10 @@ let gen_reference_in_modules locstr dirs s =
 
 let check_required_library d =
   let dir = make_dir d in
-  if Library.library_is_loaded dir then ()
-  else
+  try
+    let _ : Declarations.module_body = Global.lookup_module (ModPath.MPfile dir) in
+    ()
+  with Not_found ->
     let in_current_dir = match Lib.current_mp () with
       | MPfile dp -> DirPath.equal dir dp
       | _ -> false

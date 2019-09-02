@@ -75,3 +75,7 @@ val native_name_from_filename : string -> string
 
 (** {6 Opaque accessors} *)
 val indirect_accessor : Opaqueproof.indirect_accessor
+
+(** Low-level state overwriting, not very safe *)
+val intern_state : string -> unit
+val extern_state : string -> unit

@@ -15,9 +15,6 @@
   freezing the states of both [Lib] and [Summary]. We provide functions
   to write and restore state to and from a given file. *)
 
-val intern_state : string -> unit
-val extern_state : string -> unit
-
 type state
 val freeze : marshallable:bool -> state
 val unfreeze : state -> unit
