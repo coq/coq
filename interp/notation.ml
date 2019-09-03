@@ -1205,7 +1205,7 @@ let interp_notation ?loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in
   try
     let (n,sc) = find_interpretation ntn (find_notation ntn) scopes in
-    Option.iter (fun d -> warn_deprecated_notation (ntn,d)) n.not_deprecation;
+    Option.iter (fun d -> warn_deprecated_notation ?loc (ntn,d)) n.not_deprecation;
     n.not_interp, (n.not_location, sc)
   with Not_found ->
     user_err ?loc
