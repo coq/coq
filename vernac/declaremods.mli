@@ -29,32 +29,24 @@ type inline =
 
 (** Kinds of modules *)
 
-type 'modast module_interpretor =
-  Environ.env -> Modintern.module_kind -> 'modast ->
-    Entries.module_struct_entry * Modintern.module_kind * Univ.ContextSet.t
+type module_params = (lident list * (Constrexpr.module_ast * inline)) list
 
-type 'modast module_params =
-  (lident list * ('modast * inline)) list
-
-(** [declare_module interp_modast id fargs typ exprs]
-   declares module [id], with structure constructed by [interp_modast]
-   from functor arguments [fargs], with final type [typ].
-   [exprs] is usually of length 1 (Module definition with a concrete
-   body), but it could also be empty ("Declare Module", with non-empty [typ]),
-   or multiple (body of the shape M <+ N <+ ...). *)
+(** [declare_module id fargs typ exprs] declares module [id], from
+   functor arguments [fargs], with final type [typ].  [exprs] is
+   usually of length 1 (Module definition with a concrete body), but
+   it could also be empty ("Declare Module", with non-empty [typ]), or
+   multiple (body of the shape M <+ N <+ ...). *)
 
 val declare_module :
-  'modast module_interpretor ->
   Id.t ->
-  'modast module_params ->
-  ('modast * inline) module_signature ->
-  ('modast * inline) list -> ModPath.t
+  module_params ->
+  (Constrexpr.module_ast * inline) module_signature ->
+  (Constrexpr.module_ast * inline) list -> ModPath.t
 
 val start_module :
-  'modast module_interpretor ->
   bool option -> Id.t ->
-  'modast module_params ->
-  ('modast * inline) module_signature -> ModPath.t
+  module_params ->
+  (Constrexpr.module_ast * inline) module_signature -> ModPath.t
 
 val end_module : unit -> ModPath.t
 
@@ -66,18 +58,16 @@ val end_module : unit -> ModPath.t
     Similar to [declare_module], except that the types could be multiple *)
 
 val declare_modtype :
-  'modast module_interpretor ->
   Id.t ->
-  'modast module_params ->
-  ('modast * inline) list ->
-  ('modast * inline) list ->
+  module_params ->
+  (Constrexpr.module_ast * inline) list ->
+  (Constrexpr.module_ast * inline) list ->
   ModPath.t
 
 val start_modtype :
-  'modast module_interpretor ->
   Id.t ->
-  'modast module_params ->
-  ('modast * inline) list -> ModPath.t
+  module_params ->
+  (Constrexpr.module_ast * inline) list -> ModPath.t
 
 val end_modtype : unit -> ModPath.t
 
@@ -115,8 +105,7 @@ val import_modules : export:bool -> ModPath.t list -> unit
 
 (** Include  *)
 
-val declare_include :
-  'modast module_interpretor -> ('modast * inline) list -> unit
+val declare_include : (Constrexpr.module_ast * inline) list -> unit
 
 (** {6 ... } *)
 (** [iter_all_segments] iterate over all segments, the modules'

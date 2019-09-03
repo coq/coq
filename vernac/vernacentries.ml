@@ -872,10 +872,7 @@ let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
      if not (Option.is_empty export) then
       user_err Pp.(str "Arguments of a functor declaration cannot be exported. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
      else (idl,ty)) binders_ast in
-  let mp =
-    Declaremods.declare_module Modintern.interp_module_ast
-      id binders_ast (Declaremods.Enforce mty_ast) []
-  in
+  let mp = Declaremods.declare_module id binders_ast (Declaremods.Enforce mty_ast) [] in
   Dumpglob.dump_moddef ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is declared");
   Option.iter (fun export -> vernac_import export [qualid_of_ident id]) export
@@ -892,10 +889,7 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
          (fun (export,idl,ty) (args,argsexport) ->
            (idl,ty)::args, (List.map (fun {v=i} -> export,i)idl)@argsexport) binders_ast
              ([],[]) in
-       let mp =
-         Declaremods.start_module Modintern.interp_module_ast
-           export id binders_ast mty_ast_o
-       in
+       let mp = Declaremods.start_module export id binders_ast mty_ast_o in
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
          (str "Interactive Module " ++ Id.print id ++ str " started");
@@ -911,7 +905,7 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
            user_err Pp.(str "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
           else (idl,ty)) binders_ast in
        let mp =
-         Declaremods.declare_module Modintern.interp_module_ast
+         Declaremods.declare_module
 	   id binders_ast mty_ast_o mexpr_ast_l
        in
        Dumpglob.dump_moddef ?loc mp "mod";
@@ -938,10 +932,7 @@ let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
            (idl,ty)::args, (List.map (fun {v=i} -> export,i)idl)@argsexport) binders_ast
              ([],[]) in
 
-       let mp =
-         Declaremods.start_modtype Modintern.interp_module_ast
-           id binders_ast mty_sign
-       in
+       let mp = Declaremods.start_modtype id binders_ast mty_sign in
        Dumpglob.dump_moddef ?loc mp "modtype";
        Flags.if_verbose Feedback.msg_info
 	 (str "Interactive Module Type " ++ Id.print id ++ str " started");
@@ -957,10 +948,7 @@ let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
             if not (Option.is_empty export) then
               user_err Pp.(str "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
             else (idl,ty)) binders_ast in
-	let mp =
-          Declaremods.declare_modtype Modintern.interp_module_ast
-	    id binders_ast mty_sign mty_ast_l
-        in
+        let mp = Declaremods.declare_modtype id binders_ast mty_sign mty_ast_l in
         Dumpglob.dump_moddef ?loc mp "modtype";
 	Flags.if_verbose Feedback.msg_info
 	  (str "Module Type " ++ Id.print id ++ str " is defined")
@@ -970,8 +958,7 @@ let vernac_end_modtype {loc;v=id} =
   Dumpglob.dump_modref ?loc mp "modtype";
   Flags.if_verbose Feedback.msg_info (str "Module Type " ++ Id.print id ++ str " is defined")
 
-let vernac_include l =
-  Declaremods.declare_include Modintern.interp_module_ast l
+let vernac_include l = Declaremods.declare_include l
 
 (**********************)
 (* Gallina extensions *)
