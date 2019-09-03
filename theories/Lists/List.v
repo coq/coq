@@ -1234,11 +1234,11 @@ End Fold_Right_Recursor.
       destruct (f x); simpl; now rewrite IH.
     Qed.
 
-    Lemma concat_filter_map : forall (l : list (list A)) (f : A -> bool),
+    Lemma concat_filter_map : forall (l : list (list A)),
       concat (map filter l) = filter (concat l).
     Proof.
       induction l as [| v l IHl]; [auto|].
-      simpl. rewrite (IHl f). rewrite filter_app. reflexivity.
+      simpl. rewrite IHl. rewrite filter_app. reflexivity.
     Qed.
 
   (** [find] *)
