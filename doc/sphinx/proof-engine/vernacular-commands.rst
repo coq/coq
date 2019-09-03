@@ -627,6 +627,7 @@ file is a particular case of module called *library file*.
       as ``Export``.
 
    .. cmdv:: From @dirpath Require @qualid
+      :name: From ... Require ...
 
       This command acts as :cmd:`Require`, but picks
       any library whose absolute name is of the form :n:`@dirpath.@dirpath’.@qualid`
