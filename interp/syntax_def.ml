@@ -100,7 +100,7 @@ let warn_deprecated_syntactic_definition =
 let search_syntactic_definition ?loc kn =
   let syndef = KNmap.find kn !syntax_table in
   let def = out_pat syndef.syndef_pattern in
-  Option.iter (fun d -> warn_deprecated_syntactic_definition (kn,d)) syndef.syndef_deprecation;
+  Option.iter (fun d -> warn_deprecated_syntactic_definition ?loc (kn,d)) syndef.syndef_deprecation;
   def
 
 let search_filtered_syntactic_definition ?loc filter kn =
@@ -108,5 +108,5 @@ let search_filtered_syntactic_definition ?loc filter kn =
   let def = out_pat syndef.syndef_pattern in
   let res = filter def in
   if Option.has_some res then
-    Option.iter (fun d -> warn_deprecated_syntactic_definition (kn,d)) syndef.syndef_deprecation;
+    Option.iter (fun d -> warn_deprecated_syntactic_definition ?loc (kn,d)) syndef.syndef_deprecation;
   res
