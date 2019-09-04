@@ -17,7 +17,7 @@ val protect_tac_in : string -> Id.t -> unit Proofview.tactic
 
 val protect_tac : string -> unit Proofview.tactic
 
-val add_theory :
+val add_ring_theory :
   Id.t ->
   constr_expr ->
   constr_expr ring_mod list -> unit

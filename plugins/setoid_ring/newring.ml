@@ -324,7 +324,7 @@ let _ = add_map "ring"
 
 module Cmap = Map.Make(Constr)
 
-let from_carrier = Summary.ref Cmap.empty ~name:"ring-tac-carrier-table"
+let ring_from_carrier = Summary.ref Cmap.empty ~name:"ring-tac-carrier-table"
 
 let print_rings () =
   Feedback.msg_notice (strbrk "The following ring structures have been declared:");
@@ -336,9 +336,9 @@ let print_rings () =
            (Ppconstr.pr_id ring.ring_name ++ spc() ++
             str"with carrier "++ pr_constr_env env sigma ring.ring_carrier++spc()++
             str"and equivalence relation "++ pr_constr_env env sigma ring.ring_req))
-    ) !from_carrier
+    ) !ring_from_carrier
 
-let ring_for_carrier r = Cmap.find r !from_carrier
+let ring_for_carrier r = Cmap.find r !ring_from_carrier
 
 let find_ring_structure env sigma l =
   match l with
@@ -358,10 +358,10 @@ let find_ring_structure env sigma l =
              spc() ++ str"\"" ++ pr_econstr_env env sigma ty ++ str"\""))
     | [] -> assert false
 
-let add_entry (sp,_kn) e =
-  from_carrier := Cmap.add e.ring_carrier e !from_carrier
+let add_ring_entry (sp,_kn) e =
+  ring_from_carrier := Cmap.add e.ring_carrier e !ring_from_carrier
 
-let subst_th (subst,th) =
+let subst_ring_theory (subst,th) =
   let c' = subst_mps subst th.ring_carrier in
   let eq' = subst_mps subst th.ring_req in
   let set' = subst_mps subst th.ring_setoid in
@@ -402,11 +402,11 @@ let subst_th (subst,th) =
       ring_post_tac = posttac' }
 
 
-let theory_to_obj : ring_info -> obj =
-  let cache_th (name,th) = add_entry name th in
+let ring_theory_to_obj : ring_info -> obj =
+  let cache_th (name,th) = add_ring_entry name th in
   declare_object @@ global_object_nodischarge "tactic-new-ring-theory"
     ~cache:cache_th
-    ~subst:(Some subst_th)
+    ~subst:(Some subst_ring_theory)
 
 let setoid_of_relation env evd a r =
   try
@@ -565,7 +565,7 @@ let interp_div env evdref div =
       plapp evdref coq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
-let add_theory0 name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div =
+let add_ring_theory0 name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div =
   check_required_library (cdir@["Ring_base"]);
   let env = Global.env() in
   let (kind,r,zero,one,add,mul,sub,opp,req) = dest_ring env sigma rth in
@@ -600,7 +600,7 @@ let add_theory0 name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div
   let sth = EConstr.to_constr sigma sth in
   let _ =
     Lib.add_leaf name
-      (theory_to_obj
+      (ring_theory_to_obj
         { ring_name = name;
           ring_carrier = r;
           ring_req = req;
@@ -646,10 +646,10 @@ let process_ring_mods l =
   let k = match !kind with Some k -> k | None -> Abstract in
   (k, !set, !cst_tac, !pre, !post, !power, !sign, !div)
 
-let add_theory id rth l =
+let add_ring_theory id rth l =
   let (sigma, rth) = ic rth in
   let (k,set,cst,pre,post,power,sign, div) = process_ring_mods l in
-  add_theory0 id (sigma, rth) set k cst (pre,post) power sign div
+  add_ring_theory0 id (sigma, rth) set k cst (pre,post) power sign div
 
 (*****************************************************************************)
 (* The tactics consist then only in a lookup in the ring database and
@@ -817,7 +817,7 @@ let find_field_structure env sigma l =
 let add_field_entry (sp,_kn) e =
   field_from_carrier := Cmap.add e.field_carrier e !field_from_carrier
 
-let subst_th (subst,th) =
+let subst_field_theory (subst,th) =
   let c' = subst_mps subst th.field_carrier in
   let eq' = subst_mps subst th.field_req in
   let thm1' = subst_mps subst th.field_ok in
@@ -858,7 +858,7 @@ let ftheory_to_obj : field_info -> obj =
   let cache_th (name,th) = add_field_entry name th in
   declare_object @@ global_object_nodischarge "tactic-new-field-theory"
     ~cache:cache_th
-    ~subst:(Some subst_th)
+    ~subst:(Some subst_field_theory)
 
 let field_equality evd r inv req =
   match EConstr.kind !evd req with
@@ -885,7 +885,7 @@ let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign od
     dest_field env evd fth in
   let (sth,ext) = build_setoid_params env evd r add mul opp req eqth in
   let eqth = Some(sth,ext) in
-  let _ = add_theory0 name (!evd,rth) eqth morphth cst_tac (None,None) power sign odiv in
+  let _ = add_ring_theory0 name (!evd,rth) eqth morphth cst_tac (None,None) power sign odiv in
   let (pow_tac, pspec) = interp_power env evd power in
   let sspec = interp_sign env evd sign in
   let dspec = interp_div env evd odiv in
