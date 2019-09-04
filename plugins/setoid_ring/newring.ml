@@ -885,7 +885,7 @@ let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign od
     dest_field env evd fth in
   let (sth,ext) = build_setoid_params env evd r add mul opp req eqth in
   let eqth = Some(sth,ext) in
-  let _ = add_ring_theory0 name (!evd,rth) eqth morphth cst_tac (None,None) power sign odiv in
+  let _ = add_ring_theory0 name (!evd,rth) eqth morphth cst_tac (pre,post) power sign odiv in
   let (pow_tac, pspec) = interp_power env evd power in
   let sspec = interp_sign env evd sign in
   let dspec = interp_div env evd odiv in
