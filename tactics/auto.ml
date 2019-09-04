@@ -220,13 +220,13 @@ let tclLOG (dbg,_,depth,trace) pp tac =
           tac >>= fun v ->
           tclENV >>= fun env ->
           tclEVARMAP >>= fun sigma ->
-          Feedback.msg_debug (str s ++ spc () ++ pp env sigma ++ str ". (*success*)");
+          Feedback.msg_notice (str s ++ spc () ++ pp env sigma ++ str ". (*success*)");
           tclUNIT v
         ) tclUNIT
           (fun (exn, info) ->
              tclENV >>= fun env ->
              tclEVARMAP >>= fun sigma ->
-             Feedback.msg_debug (str s ++ spc () ++ pp env sigma ++ str ". (*fail*)");
+             Feedback.msg_notice (str s ++ spc () ++ pp env sigma ++ str ". (*fail*)");
              tclZERO ~info exn))
     | Info ->
       (* For "info (trivial/auto)", we store a log trace *)
@@ -260,19 +260,19 @@ let pr_info_atom env sigma (d,pp) =
 
 let pr_info_trace env sigma = function
   | (Info,_,_,{contents=(d,Some pp)::l}) ->
-    Feedback.msg_info (prlist_with_sep fnl (pr_info_atom env sigma) (cleanup_info_trace d [(d,pp)] l))
+    Feedback.msg_notice (prlist_with_sep fnl (pr_info_atom env sigma) (cleanup_info_trace d [(d,pp)] l))
   | _ -> ()
 
 let pr_info_nop = function
-  | (Info,_,_,_) -> Feedback.msg_info (str "idtac.")
+  | (Info,_,_,_) -> Feedback.msg_notice (str "idtac.")
   | _ -> ()
 
 let pr_dbg_header = function
   | (Off,_,_,_) -> ()
-  | (Debug,ReportForTrivial,_,_) -> Feedback.msg_debug (str "(* debug trivial: *)")
-  | (Debug,ReportForAuto,_,_) -> Feedback.msg_debug (str "(* debug auto: *)")
-  | (Info,ReportForTrivial,_,_) -> Feedback.msg_info (str "(* info trivial: *)")
-  | (Info,ReportForAuto,_,_) -> Feedback.msg_info (str "(* info auto: *)")
+  | (Debug,ReportForTrivial,_,_) -> Feedback.msg_notice (str "(* debug trivial: *)")
+  | (Debug,ReportForAuto,_,_) -> Feedback.msg_notice (str "(* debug auto: *)")
+  | (Info,ReportForTrivial,_,_) -> Feedback.msg_notice (str "(* info trivial: *)")
+  | (Info,ReportForAuto,_,_) -> Feedback.msg_notice (str "(* info auto: *)")
 
 let tclTRY_dbg d tac =
   let delay f = Proofview.tclUNIT () >>= fun () -> f () in

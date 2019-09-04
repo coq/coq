@@ -300,13 +300,13 @@ let with_time ~batch ~header f x =
     let y = f x in
     let tend = get_time() in
     let msg2 = if batch then "" else " (successful)" in
-    Feedback.msg_info (header ++ str msg ++ fmt_time_difference tstart tend ++ str msg2);
+    Feedback.msg_notice (header ++ str msg ++ fmt_time_difference tstart tend ++ str msg2);
     y
   with e ->
     let tend = get_time() in
     let msg = if batch then "" else "Finished failing transaction in " in
     let msg2 = if batch then "" else " (failure)" in
-    Feedback.msg_info (header ++ str msg ++ fmt_time_difference tstart tend ++ str msg2);
+    Feedback.msg_notice (header ++ str msg ++ fmt_time_difference tstart tend ++ str msg2);
     raise e
 
 (* We use argv.[0] as we don't want to resolve symlinks *)

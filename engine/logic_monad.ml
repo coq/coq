@@ -107,7 +107,7 @@ struct
       Util.iraise (Exception e, info)
 
   (** Use the current logger. The buffer is also flushed. *)
-  let print_debug   s = make (fun _ -> Feedback.msg_info s)
+  let print_debug   s = make (fun _ -> Feedback.msg_debug s)
   let print_info    s = make (fun _ -> Feedback.msg_info s)
   let print_warning s = make (fun _ -> Feedback.msg_warning s)
   let print_notice  s = make (fun _ -> Feedback.msg_notice s)

@@ -30,7 +30,7 @@ let get_version_date () =
 
 let print_header () =
   let (ver,rev) = get_version_date () in
-  Feedback.msg_notice (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
+  Feedback.msg_info (str "Welcome to Coq " ++ str ver ++ str " (" ++ str rev ++ str ")");
   flush_all ()
 
 let print_memory_stat () =
