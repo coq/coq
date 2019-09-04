@@ -18,7 +18,6 @@ open EConstr
 open Vars
 open CClosure
 open Environ
-open Libnames
 open Globnames
 open Glob_term
 open Locus
@@ -326,19 +325,18 @@ let _ = add_map "ring"
 module Cmap = Map.Make(Constr)
 
 let from_carrier = Summary.ref Cmap.empty ~name:"ring-tac-carrier-table"
-let from_name = Summary.ref Spmap.empty ~name:"ring-tac-name-table"
 
 let print_rings () =
   Feedback.msg_notice (strbrk "The following ring structures have been declared:");
-  Spmap.iter (fun fn fi ->
+  Cmap.iter (fun _carrier ring ->
       let env = Global.env () in
       let sigma = Evd.from_env env in
       Feedback.msg_notice
         (hov 2
-           (Ppconstr.pr_id (Libnames.basename fn)++spc()++
-            str"with carrier "++ pr_constr_env env sigma fi.ring_carrier++spc()++
-            str"and equivalence relation "++ pr_constr_env env sigma fi.ring_req))
-    ) !from_name
+           (Ppconstr.pr_id ring.ring_name ++ spc() ++
+            str"with carrier "++ pr_constr_env env sigma ring.ring_carrier++spc()++
+            str"and equivalence relation "++ pr_constr_env env sigma ring.ring_req))
+    ) !from_carrier
 
 let ring_for_carrier r = Cmap.find r !from_carrier
 
@@ -361,9 +359,7 @@ let find_ring_structure env sigma l =
     | [] -> assert false
 
 let add_entry (sp,_kn) e =
-  from_carrier := Cmap.add e.ring_carrier e !from_carrier;
-  from_name := Spmap.add sp e !from_name
-
+  from_carrier := Cmap.add e.ring_carrier e !from_carrier
 
 let subst_th (subst,th) =
   let c' = subst_mps subst th.ring_carrier in
@@ -391,7 +387,8 @@ let subst_th (subst,th) =
      pretac' == th.ring_pre_tac &&
      posttac' == th.ring_post_tac then th
   else
-    { ring_carrier = c';
+    { ring_name = th.ring_name;
+      ring_carrier = c';
       ring_req = eq';
       ring_setoid = set';
       ring_ext = ext';
@@ -657,7 +654,8 @@ let add_theory0 name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div
   let _ =
     Lib.add_leaf name
       (theory_to_obj
-        { ring_carrier = r;
+        { ring_name = name;
+          ring_carrier = r;
           ring_req = req;
           ring_setoid = sth;
           ring_ext = params.(1);
@@ -835,19 +833,18 @@ let dest_field env evd th_spec =
     | _ -> error "bad field structure"
 
 let field_from_carrier = Summary.ref Cmap.empty ~name:"field-tac-carrier-table"
-let field_from_name = Summary.ref Spmap.empty ~name:"field-tac-name-table"
 
 let print_fields () =
   Feedback.msg_notice (strbrk "The following field structures have been declared:");
-  Spmap.iter (fun fn fi ->
+  Cmap.iter (fun _carrier fi ->
       let env = Global.env () in
       let sigma = Evd.from_env env in
       Feedback.msg_notice
         (hov 2
-           (Ppconstr.pr_id (Libnames.basename fn)++spc()++
+           (Id.print fi.field_name ++ spc() ++
             str"with carrier "++ pr_constr_env env sigma fi.field_carrier++spc()++
             str"and equivalence relation "++ pr_constr_env env sigma fi.field_req))
-    ) !field_from_name
+    ) !field_from_carrier
 
 let field_for_carrier r = Cmap.find r !field_from_carrier
 
@@ -871,8 +868,7 @@ let find_field_structure env sigma l =
     | [] -> assert false
 
 let add_field_entry (sp,_kn) e =
-  field_from_carrier := Cmap.add e.field_carrier e !field_from_carrier;
-  field_from_name := Spmap.add sp e !field_from_name
+  field_from_carrier := Cmap.add e.field_carrier e !field_from_carrier
 
 let subst_th (subst,th) =
   let c' = subst_mps subst th.field_carrier in
@@ -898,7 +894,8 @@ let subst_th (subst,th) =
      pretac' == th.field_pre_tac &&
      posttac' == th.field_post_tac then th
   else
-    { field_carrier = c';
+    { field_name = th.field_name;
+      field_carrier = c';
       field_req = eq';
       field_cst_tac = tac';
       field_pow_tac = pow_tac';
@@ -983,7 +980,8 @@ let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign od
   let _ =
     Lib.add_leaf name
       (ftheory_to_obj
-        { field_carrier = r;
+        { field_name = name;
+          field_carrier = r;
           field_req = req;
           field_cst_tac = cst_tac;
           field_pow_tac = pow_tac;
