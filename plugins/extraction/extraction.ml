@@ -754,18 +754,6 @@ and extract_cst_app env sg mle mlt kn args =
   let la = List.length args in
   (* The ml arguments, already expunged from known logical ones *)
   let mla = make_mlargs env sg mle s args metas in
-  let mla =
-    if magic1 || lang () != Ocaml then mla
-    else
-      try
-        (* for better optimisations later, we discard dependent args
-           of projections and replace them by fake args that will be
-           removed during final pretty-print. *)
-        let l,l' = List.chop (projection_arity (GlobRef.ConstRef kn)) mla in
-	if not (List.is_empty l') then (List.map (fun _ -> MLexn "Proj Args") l) @ l'
-	else mla
-      with e when CErrors.noncritical e -> mla
-  in
   (* For strict languages, purely logical signatures lead to a dummy lam
      (except when [Kill Ktype] everywhere). So a [MLdummy] is left
      accordingly. *)
