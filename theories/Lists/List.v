@@ -536,6 +536,26 @@ Section Elts.
     simpl in *. apply IHn. auto with arith.
   Qed.
 
+  (** Results directly relating [nth] and [nth_error] *)
+
+  Lemma nth_error_nth : forall (l : list A) (n : nat) (x d : A),
+    nth_error l n = Some x -> nth n l d = x.
+  Proof.
+    intros l n x d H.
+    apply nth_error_split in H. destruct H as [l1 [l2 [H H']]].
+    subst. rewrite app_nth2; [|auto].
+    rewrite Nat.sub_diag. reflexivity.
+  Qed.
+
+  Lemma nth_error_nth' : forall (l : list A) (n : nat) (d : A),
+    n < length l -> nth_error l n = Some (nth n l d).
+  Proof.
+    intros l n d H.
+    apply nth_split with (d:=d) in H. destruct H as [l1 [l2 [H H']]].
+    subst. rewrite H. rewrite nth_error_app2; [|auto].
+    rewrite app_nth2; [| auto]. repeat (rewrite Nat.sub_diag). reflexivity.
+  Qed.
+
   (*****************)
   (** ** Remove    *)
   (*****************)
@@ -1234,11 +1254,11 @@ End Fold_Right_Recursor.
       destruct (f x); simpl; now rewrite IH.
     Qed.
 
-    Lemma concat_filter_map : forall (l : list (list A)) (f : A -> bool),
+    Lemma concat_filter_map : forall (l : list (list A)),
       concat (map filter l) = filter (concat l).
     Proof.
       induction l as [| v l IHl]; [auto|].
-      simpl. rewrite (IHl f). rewrite filter_app. reflexivity.
+      simpl. rewrite IHl. rewrite filter_app. reflexivity.
     Qed.
 
   (** [find] *)
