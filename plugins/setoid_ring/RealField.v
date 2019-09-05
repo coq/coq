@@ -17,7 +17,7 @@ Require Import Raxioms.
 
 Local Open Scope R_scope.
 
-Lemma RTheory : ring_theory 0 1 Rplus Rmult Rminus Ropp (eq (A:=R)).
+Lemma Rring : ring_theory 0 1 Rplus Rmult Rminus Ropp (eq (A:=R)).
 Proof.
 constructor.
  intro; apply Rplus_0_l.
@@ -38,7 +38,7 @@ Qed.
 Lemma Rfield : field_theory 0 1 Rplus Rmult Rminus Ropp Rdiv Rinv (eq(A:=R)).
 Proof.
 constructor.
- exact RTheory.
+ exact Rring.
  exact R1_neq_R0.
  reflexivity.
  exact Rinv_l.
@@ -86,12 +86,12 @@ induction x; simpl; intros.
   rewrite Rplus_comm.
     apply Rlt_n_Sn.
   apply Rplus_lt_compat_l.
-    rewrite <- (Rmul_0_l Rset Rext RTheory 2).
+    rewrite <- (Rmul_0_l Rset Rext Rring 2).
     rewrite Rmult_comm.
     apply Rmult_lt_compat_l.
    apply Rlt_0_2.
    trivial.
- rewrite <- (Rmul_0_l Rset Rext RTheory 2).
+ rewrite <- (Rmul_0_l Rset Rext Rring 2).
    rewrite Rmult_comm.
    apply Rmult_lt_compat_l.
   apply Rlt_0_2.
@@ -153,6 +153,9 @@ Ltac IZR_tac t :=
     end
   | _ => constr:(InitialRing.NotConstant)
   end.
+
+Add Ring RRing : Rring
+   (constants [IZR_tac], power_tac R_power_theory [Rpow_tac]).
 
 Add Field RField : Rfield
    (completeness Zeq_bool_complete, constants [IZR_tac], power_tac R_power_theory [Rpow_tac]).

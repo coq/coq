@@ -533,6 +533,7 @@ Proof.
   exact Qcmult_inv_l.
 Qed.
 
+Add Ring Qcring : Qcrt.
 Add Field Qcfield : Qcft.
 
 (** A field tactic for rational numbers *)

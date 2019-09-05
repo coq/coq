@@ -2051,6 +2051,9 @@ apply Zeq_is_eq_bool.
 now apply eq_IZR.
 Qed.
 
+Add Ring Rring : Rring
+  (morphism R_rm, constants [IZR_tac], power_tac R_power_theory [Rpow_tac]).
+
 Add Field RField : Rfield
   (completeness Zeq_bool_IZR, morphism R_rm, constants [IZR_tac], power_tac R_power_theory [Rpow_tac]).
 
