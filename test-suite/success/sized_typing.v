@@ -354,3 +354,48 @@ Fixpoint useless2 (fr: forest) :=
   end.
 
 End mutual.
+
+(** A longer example modelling simply-typed lambda calculus with capture-avoiding substitution. *)
+
+Require Import Strings.String.
+
+Module stlc.
+
+Parameter names: list string.
+Parameter fresh: True -> string.
+
+Inductive STLCA: Type :=
+  | unit: STLCA
+  | arr (A b: STLCA): STLCA.
+
+Inductive STLCE: Type :=
+  | vare (v: string): STLCE
+  | lambdae (v: string) (A: STLCA) (body: STLCE): STLCE
+  | appe (e1: STLCE) (e2: STLCE): STLCE.
+
+Fixpoint size (e: STLCE): nat :=
+  match e with
+  | vare _ => 1
+  | lambdae _ _ body => 1 + (size body)
+  | appe e1 e2 => 1 + (size e1) + (size e2)
+  end.
+
+(* We assume [new] to be unbound in e. *)
+Fixpoint freshen (old: string) (new: string) (e: STLCE) :=
+  match e with
+  | vare n => if (n =? old)%string then vare new else e
+  | appe e1 e2 => appe (freshen old new e1) (freshen old new e2)
+  | lambdae n A body => lambdae n A (freshen old new body)
+  end.
+
+Fixpoint subst (name: string) (v: STLCE) (exp: STLCE) {struct exp} :=
+  match exp with
+  | vare n => if (n =? name)%string then v else exp
+  | appe e1 e2 => appe (subst name v e1) (subst name v e2)
+  | lambdae n A body =>
+    if (n =? name)%string then exp else
+    let n' := fresh I in
+    lambdae n' A (subst name v (freshen n n' body))
+  end.
+
+End stlc.

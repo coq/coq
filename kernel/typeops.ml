@@ -664,8 +664,7 @@ let rec execute env stg cstr =
       let possible_indices =
         List.map Array.of_list @@
         List.combinations @@
-        Array.to_list @@
-        Array.map2
+        Array.to_list @@ Array.map2
         (fun on ar -> match on with
           | Some n -> [n]
           | None ->
@@ -744,9 +743,7 @@ and execute_fix env stg ((vn, i), (names, lar, vdef)) =
   let _ = execute_array env stg lar in (* check termination of lar so we can reduce *)
 
   let stg', cstrnt', (names', lar', vdef', _ as recdeft) =
-    let inds = get_rec_inds env vn lar in
-    let vninds = List.fold_left2 (fun acc n ind -> (n, ind) :: acc) [] (Array.to_list vn) inds in
-    let lar_star = set_rec_stars env vninds lar in
+    let lar_star = set_stars env (get_rec_inds env vn lar) lar in
     execute_recdef env stg (names, lar_star, vdef) in
 
   let stg_check, cstrnt_check =
@@ -767,7 +764,7 @@ and execute_cofix env stg (i, (names, lar, vdef)) =
   let _ = execute_array env stg lar in (* check termination of lar so we can reduce *)
 
   let stg', cstrnt', (names', lar', vdef', _ as recdeft) =
-    let lar_star = set_corec_stars env (get_corec_inds env lar) lar in
+    let lar_star = set_stars env (get_corec_inds env lar) lar in
     execute_recdef env stg (names, lar_star, vdef) in
 
   let stg_check, cstrnt_check =

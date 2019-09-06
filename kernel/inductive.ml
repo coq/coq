@@ -1347,7 +1347,8 @@ let globify env ty_glob ty_def =
       if ty_def == ty_def' then env2', decl_def
       else env2', set_type ty_def' decl_def
     | _, _ -> env2', decl_def in
-  if any_annot ((=) Glob) ty_glob && Int.equal len_glob len_def then
+  let check_sized = (Environ.typing_flags env).check_sized in
+  if check_sized && any_annot ((=) Glob) ty_glob && Int.equal len_glob len_def then
     let env2, ctxt_def = List.fold_left2_map globify_decls (env, env) ctxt_glob ctxt_def in
     let body_def = globify_type env2 body_glob body_def in
     Term.it_mkProd_or_LetIn body_def ctxt_def
@@ -1437,7 +1438,11 @@ let fold_map2_fix_type env f is tys init =
       arg_index = -1; } in
     let info, body = app_ind info body in
     info, Term.it_mkProd_or_LetIn body ctxt in
-  List.fold_left2_map app_ty info is tys
+  let check_sized = (Environ.typing_flags env).check_sized in
+  if check_sized then
+    let info, tys = List.fold_left2_map app_ty info is tys in
+    info.acc, tys
+  else init, tys
 
 (* Functions that use [fold_map2_fix_type]:
     [get_rec_inds]: Collects the inductive types in recursive positions
@@ -1469,8 +1474,7 @@ let get_rec_inds env is tys =
     else info, info.arg_head in
   let is = Array.to_list is in
   let tys = Array.to_list tys in
-  let info = fst @@ fold_map2_fix_type env f is tys [] in
-  info.acc
+  fst @@ fold_map2_fix_type env f is tys []
 
 let get_rec_vars env is tys =
   let f info =
@@ -1484,8 +1488,7 @@ let get_rec_vars env is tys =
     else info, info.arg_head in
   let is = Array.to_list is in
   let tys = Array.to_list tys in
-  let info, _ = fold_map2_fix_type env f is tys SVars.empty in
-  info.acc
+  fst @@ fold_map2_fix_type env f is tys SVars.empty
 
 let get_corec_inds env tys =
   let f info =
@@ -1497,8 +1500,7 @@ let get_corec_inds env tys =
     | _ -> info, info.arg_head in
   let is = List.make (Array.length tys) (-1) in
   let tys = Array.to_list tys in
-  let info, _ = fold_map2_fix_type env f is tys [] in
-  info.acc
+  fst @@ fold_map2_fix_type env f is tys []
 
 let get_corec_vars env tys =
   let f info =
@@ -1510,21 +1512,9 @@ let get_corec_vars env tys =
     | _ -> info, info.arg_head in
   let is = List.make (Array.length tys) (-1) in
   let tys = Array.to_list tys in
-  let info, _ = fold_map2_fix_type env f is tys SVars.empty in
-  info.acc
+  fst @@ fold_map2_fix_type env f is tys SVars.empty
 
-let set_rec_stars env isinds tys =
-  let f info =
-    let (i, ind) = info.elt in
-    match info.arg_indus with
-    | Some ((ind', _ as iu), _)
-      when Int.equal i info.arg_index || (Int.equal (-1) info.arg_index && Names.eq_ind ind ind') ->
-      info, mkIndUS iu Star
-    | _ -> info, info.arg_head in
-  let tys = Array.to_list tys in
-  Array.of_list @@ snd @@ fold_map2_fix_type env f isinds tys ()
-
-let set_corec_stars env inds tys =
+let set_stars env inds tys =
   let f info =
     match info.arg_indus with
     | Some ((ind, _ as iu), _)
