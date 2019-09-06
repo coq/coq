@@ -151,7 +151,11 @@ let expand_sobjs (_,aobjs) = expand_aobjs aobjs
      Module M:SIG. ... End M. have the keep list empty.
 *)
 
-type module_objects = Nametab.object_prefix * Lib.lib_objects * Lib.lib_objects
+type module_objects =
+  { module_prefix : Nametab.object_prefix;
+    module_substituted_objects : Lib.lib_objects;
+    module_keep_objects : Lib.lib_objects;
+  }
 
 module ModObjs :
  sig
@@ -217,7 +221,13 @@ let do_module exists iter_objects i obj_dir obj_mp sobjs kobjs =
   (* If we're not a functor, let's iter on the internal components *)
   if sobjs_no_functor sobjs then begin
     let objs = expand_sobjs sobjs in
-    ModObjs.set obj_mp (prefix,objs,kobjs);
+    let module_objects =
+      { module_prefix = prefix;
+        module_substituted_objects = objs;
+        module_keep_objects = kobjs;
+      }
+    in
+    ModObjs.set obj_mp module_objects;
     iter_objects (i+1) prefix objs;
     iter_objects (i+1) prefix kobjs
   end
@@ -266,13 +276,13 @@ and load_keep i ((sp,kn),kobjs) =
   (* Invariant : seg isn't empty *)
   let obj_dir = dir_of_sp sp and obj_mp  = mp_of_kn kn in
   let prefix = Nametab.{ obj_dir ; obj_mp; obj_sec = DirPath.empty } in
-  let prefix',sobjs,kobjs0 =
+  let modobjs =
     try ModObjs.get obj_mp
     with Not_found -> assert false (* a substobjs should already be loaded *)
   in
-  assert Nametab.(eq_op prefix' prefix);
-  assert (List.is_empty kobjs0);
-  ModObjs.set obj_mp (prefix,sobjs,kobjs);
+  assert Nametab.(eq_op modobjs.module_prefix prefix);
+  assert (List.is_empty modobjs.module_keep_objects);
+  ModObjs.set obj_mp { modobjs with module_keep_objects = kobjs };
   load_objects i prefix kobjs
 
 (** {6 Implementation of Import and Export commands} *)
@@ -282,9 +292,10 @@ let mark_object obj (exports,acc) =
 
 let rec collect_module_objects mp acc =
   (* May raise Not_found for unknown module and for functors *)
-  let prefix,sobjs,keepobjs = ModObjs.get mp in
-  let acc = collect_objects 1 prefix keepobjs acc in
-  collect_objects 1 prefix sobjs acc
+  let modobjs = ModObjs.get mp in
+  let prefix = modobjs.module_prefix in
+  let acc = collect_objects 1 prefix modobjs.module_keep_objects acc in
+  collect_objects 1 prefix modobjs.module_substituted_objects acc
 
 and collect_object i (name, obj as o) acc =
   match obj with
@@ -302,9 +313,10 @@ and collect_export i mp (exports,objs as acc) =
 
 let rec really_import_module mp =
   (* May raise Not_found for unknown module and for functors *)
-  let prefix,sobjs,keepobjs = ModObjs.get mp in
-  open_objects 1 prefix sobjs;
-  open_objects 1 prefix keepobjs
+  let modobjs = ModObjs.get mp in
+  let prefix = modobjs.module_prefix in
+  open_objects 1 prefix modobjs.module_substituted_objects;
+  open_objects 1 prefix modobjs.module_keep_objects
 
 and open_object i (name, obj) =
   match obj with
@@ -325,8 +337,8 @@ and open_module i obj_dir obj_mp sobjs =
   Nametab.push_dir (Nametab.Exactly i) obj_dir dirinfo;
   (* If we're not a functor, let's iter on the internal components *)
   if sobjs_no_functor sobjs then begin
-    let (prefix,objs,kobjs) = ModObjs.get obj_mp in
-    open_objects (i+1) prefix objs
+    let modobjs = ModObjs.get obj_mp in
+    open_objects (i+1) modobjs.module_prefix modobjs.module_substituted_objects
   end
 
 and open_objects i prefix objs =
@@ -1026,9 +1038,10 @@ let iter_all_segments f =
       List.iter (apply_obj prefix) objs
     | _ -> f (Lib.make_oname prefix id) obj
   in
-  let apply_mod_obj _ (prefix,substobjs,keepobjs) =
-    List.iter (apply_obj prefix) substobjs;
-    List.iter (apply_obj prefix) keepobjs
+  let apply_mod_obj _ modobjs =
+    let prefix = modobjs.module_prefix in
+    List.iter (apply_obj prefix) modobjs.module_substituted_objects;
+    List.iter (apply_obj prefix) modobjs.module_keep_objects
   in
   let apply_node = function
     | sp, Lib.Leaf o -> f sp o
@@ -1054,9 +1067,10 @@ let debug_print_modtab _ =
     | [] -> str "[]"
     | l -> str "[." ++ int (List.length l) ++ str ".]"
   in
-  let pr_modinfo mp (prefix,substobjs,keepobjs) s =
+  let pr_modinfo mp modobjs s =
+    let objs = modobjs.module_substituted_objects @ modobjs.module_keep_objects in
     s ++ str (ModPath.to_string mp) ++ (spc ())
-    ++ (pr_seg (Lib.segment_of_objects prefix (substobjs@keepobjs)))
+    ++ (pr_seg (Lib.segment_of_objects modobjs.module_prefix objs))
   in
   let modules = MPmap.fold pr_modinfo (ModObjs.all ()) (mt ()) in
   hov 0 modules
