@@ -830,7 +830,7 @@ Hint Resolve Rinv_involutive: real.
 Lemma Rinv_mult_distr :
   forall r1 r2, r1 <> 0 -> r2 <> 0 -> / (r1 * r2) = / r1 * / r2.
 Proof.
-  intros; field; auto.  
+  intros; field; auto.
 Qed.
 
 (*********)
@@ -2024,6 +2024,12 @@ Lemma Ropp_div : forall x y, -x/y = - (x / y).
 intros x y; unfold Rdiv; ring.
 Qed.
 
+Lemma Ropp_div_den : forall x y : R, y<>0 -> x / - y = - (x / y).
+Proof.
+  intros.
+  field; assumption.
+Qed.
+
 Lemma double : forall r1, 2 * r1 = r1 + r1.
 Proof.
   intro; ring.
@@ -2137,6 +2143,15 @@ Record negreal : Type := mknegreal {neg :> R; cond_neg : neg < 0}.
 Record nonzeroreal : Type := mknonzeroreal
   {nonzero :> R; cond_nonzero : nonzero <> 0}.
 
+(** ** A few common instances *)
+
+Lemma pos_half_prf : 0 < /2.
+Proof.
+  apply Rinv_0_lt_compat, Rlt_0_2.
+Qed.
+
+Definition posreal_one := mkposreal (1) (Rlt_0_1).
+Definition posreal_half := mkposreal (/2) pos_half_prf.
 
 (** Compatibility *)
 

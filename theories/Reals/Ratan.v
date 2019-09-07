@@ -12,6 +12,7 @@ Require Import Lra.
 Require Import Rbase.
 Require Import PSeries_reg.
 Require Import Rtrigo1.
+Require Import Rtrigo_facts.
 Require Import Ranalysis_reg.
 Require Import Rfunctions.
 Require Import AltSeries.
@@ -24,26 +25,21 @@ Require Import Lia.
 
 Local Open Scope R_scope.
 
-(** Tools *)
+(*********************************************************)
+(** * Preliminaries                                      *)
+(*********************************************************)
 
-Lemma Ropp_div : forall x y, -x/y = -(x/y).
+(** ** Various generic lemmas which probably should go somewhere else *)
+
+Lemma Boule_half_to_interval : forall x,
+  Boule (/2) posreal_half x -> 0 <= x <= 1.
 Proof.
-intros x y; unfold Rdiv; rewrite <-Ropp_mult_distr_l_reverse; reflexivity.
-Qed.
-
-Definition pos_half_prf : 0 < /2.
-Proof. lra. Qed.
-
-Definition pos_half := mkposreal (/2) pos_half_prf.
-
-Lemma Boule_half_to_interval :
-  forall x , Boule (/2) pos_half x -> 0 <= x <= 1.
-Proof.
-unfold Boule, pos_half; simpl.
+unfold Boule, posreal_half; simpl.
 intros x b; apply Rabs_def2 in b; destruct b; split; lra.
 Qed.
 
-Lemma Boule_lt : forall c r x, Boule c r x -> Rabs x < Rabs c + r.
+Lemma Boule_lt : forall c r x,
+  Boule c r x -> Rabs x < Rabs c + r.
 Proof.
 unfold Boule; intros c r x h.
 apply Rabs_def2 in h; destruct h; apply Rabs_def1;
@@ -52,9 +48,10 @@ apply Rabs_def2 in h; destruct h; apply Rabs_def1;
 Qed.
 
 (* The following lemma does not belong here. *)
-Lemma Un_cv_ext :
-  forall un vn, (forall n, un n = vn n) ->
-  forall l, Un_cv un l -> Un_cv vn l.
+Lemma Un_cv_ext : forall un vn,
+  (forall n, un n = vn n) ->
+  forall l, Un_cv un l ->
+  Un_cv vn l.
 Proof.
 intros un vn quv l P eps ep; destruct (P eps ep) as [N Pn]; exists N.
 intro n; rewrite <- quv; apply Pn.
@@ -62,7 +59,7 @@ Qed.
 
 (* The following two lemmas are general purposes about alternated series.
   They do not belong here. *)
-Lemma Alt_first_term_bound :forall f l N n,
+Lemma Alt_first_term_bound : forall f l N n,
    Un_decreasing f -> Un_cv f 0 ->
    Un_cv (sum_f_R0 (tg_alt f)) l ->
    (N <= n)%nat ->
@@ -87,7 +84,7 @@ intros [ | N] Npos n decr to0 cv nN.
          (sum_f_R0 (tg_alt (fun i => ((-1) ^ S N * f(S N + i)%nat))))
              (l - sum_f_R0 (tg_alt f) N)).
   intros eps ep; destruct (cv eps ep) as [M PM]; exists M.
-  intros n' nM. 
+  intros n' nM.
   match goal with |- ?C => set (U := C) end.
   assert (nM' : (n' + S N >= M)%nat) by lia.
    generalize (PM _ nM'); unfold R_dist.
@@ -102,7 +99,7 @@ intros [ | N] Npos n decr to0 cv nN.
   lia.
   assert (cv'' : Un_cv (sum_f_R0 (tg_alt (fun i => f (S N + i)%nat)))
                    ((-1) ^ S N * (l - sum_f_R0 (tg_alt f) N))).
-  apply (Un_cv_ext (fun n => (-1) ^ S N * 
+  apply (Un_cv_ext (fun n => (-1) ^ S N *
             sum_f_R0 (tg_alt (fun i : nat => (-1) ^ S N * f (S N + i)%nat)) n)).
    intros n0; rewrite scal_sum; apply sum_eq; intros i _.
    unfold tg_alt; ring_simplify; replace (((-1) ^ S N) ^ 2) with 1.
@@ -122,7 +119,7 @@ intros [ | N] Npos n decr to0 cv nN.
    assert (t := decreasing_prop _ _ _ (CV_ALT_step1 f decr) dist).
    apply Rle_trans with (sum_f_R0 (tg_alt f) (2 * p) - l).
     unfold Rminus; apply Rplus_le_compat_r; exact t.
-   match goal with _ : ?a <= l, _ : l <= ?b |- _ => 
+   match goal with _ : ?a <= l, _ : l <= ?b |- _ =>
     replace (f (S (2 * p))) with (b - a) by
      (rewrite tech5; unfold tg_alt; rewrite pow_1_odd; ring); lra
    end.
@@ -171,15 +168,15 @@ solve[apply decr].
 Qed.
 
 Lemma Alt_CVU : forall (f : nat -> R -> R) g h c r,
-   (forall x, Boule c r x ->Un_decreasing (fun n => f n x)) -> 
+   (forall x, Boule c r x ->Un_decreasing (fun n => f n x)) ->
    (forall x, Boule c r x -> Un_cv (fun n => f n x) 0) ->
-   (forall x, Boule c r x -> 
+   (forall x, Boule c r x ->
        Un_cv (sum_f_R0 (tg_alt  (fun i => f i x))) (g x)) ->
    (forall x n, Boule c r x -> f n x <= h n) ->
    (Un_cv h 0) ->
    CVU (fun N x => sum_f_R0 (tg_alt (fun i => f i x)) N) g c r.
 Proof.
-intros f g h c r decr to0 to_g bound bound0 eps ep.  
+intros f g h c r decr to0 to_g bound bound0 eps ep.
 assert (ep' : 0 <eps/2) by lra.
 destruct (bound0 _ ep) as [N Pn]; exists N.
 intros n y nN dy.
@@ -192,10 +189,10 @@ generalize (Pn _ nN); unfold R_dist; rewrite Rminus_0_r; intros t.
 apply Rabs_def2 in t; tauto.
 Qed.
 
-(* The following lemmas are general purpose lemmas about squares. 
+(* The following lemmas are general purpose lemmas about squares.
   They do not belong here *)
 
-Lemma pow2_ge_0 : forall x, 0 <= x ^ 2.
+Lemma pow2_ge_0 : forall x, 0 <= x^2.
 Proof.
 intros x; destruct (Rle_lt_dec 0 x).
  replace (x ^ 2) with (x * x) by field.
@@ -204,26 +201,29 @@ intros x; destruct (Rle_lt_dec 0 x).
 apply Rmult_le_pos; lra.
 Qed.
 
-Lemma pow2_abs : forall x,  Rabs x ^ 2 = x ^ 2.
+Lemma pow2_abs : forall x, Rabs x^2 = x^2.
 Proof.
 intros x; destruct (Rle_lt_dec 0 x).
  rewrite Rabs_pos_eq;[field | assumption].
 rewrite <- Rabs_Ropp, Rabs_pos_eq;[field | lra].
 Qed.
 
-(** * Properties of tangent *)
+(** ** Properties of tangent *)
 
-Lemma derivable_pt_tan : forall x, -PI/2 < x < PI/2 -> derivable_pt tan x.
+(** *** Derivative of tangent *)
+
+Lemma derivable_pt_tan : forall x, -PI/2 < x < PI/2 ->
+  derivable_pt tan x.
 Proof.
 intros x xint.
- unfold derivable_pt, tan. 
+ unfold derivable_pt, tan.
  apply derivable_pt_div ; [reg | reg | ].
  apply Rgt_not_eq.
  unfold Rgt ; apply cos_gt_0;
   [unfold Rdiv; rewrite <- Ropp_mult_distr_l_reverse; fold (-PI/2) |];tauto.
 Qed.
 
-Lemma derive_pt_tan : forall (x:R),
+Lemma derive_pt_tan : forall x,
  forall (Pr1: -PI/2 < x < PI/2),
  derive_pt tan x (derivable_pt_tan x Pr1) = 1 + (tan x)^2.
 Proof.
@@ -233,15 +233,15 @@ assert (cos x <> 0).
 unfold tan; reg; unfold pow, Rsqr; field; assumption.
 Qed.
 
-(** Proof that tangent is a bijection *)
+(** *** Proof that tangent is a bijection *)
+
 (* to be removed? *)
 
-Lemma derive_increasing_interv :
-  forall (a b:R) (f:R -> R),
-    a < b ->
-    forall (pr:forall x, a < x < b -> derivable_pt f x),
-    (forall t:R, forall (t_encad : a < t < b), 0 < derive_pt f t (pr t t_encad)) ->
-    forall x y:R, a < x < b -> a < y < b -> x < y -> f x < f y.
+Lemma derive_increasing_interv : forall (a b : R) (f : R -> R),
+  a < b ->
+  forall (pr:forall x, a < x < b -> derivable_pt f x),
+  (forall t:R, forall (t_encad : a < t < b), 0 < derive_pt f t (pr t t_encad)) ->
+  forall x y:R, a < x < b -> a < y < b -> x < y -> f x < f y.
 Proof.
 intros a b f a_lt_b pr Df_gt_0 x y x_encad y_encad x_lt_y.
  assert (derivable_id_interv : forall c : R, x < c < y -> derivable_pt id c).
@@ -255,7 +255,7 @@ intros a b f a_lt_b pr Df_gt_0 x y x_encad y_encad x_lt_y.
   apply Rlt_le_trans with (r2:=x) ; [exact (proj1 x_encad) | exact (proj1 c_encad)].
   apply Rle_lt_trans with (r2:=y) ; [ exact (proj2 c_encad) | exact (proj2 y_encad)].
  assert (id_cont_interv : forall c : R, x <= c <= y -> continuity_pt id c).
-  intros ; apply derivable_continuous_pt ; apply derivable_pt_id. 
+  intros ; apply derivable_continuous_pt ; apply derivable_pt_id.
  elim (MVT f id x y derivable_f_interv derivable_id_interv x_lt_y f_cont_interv id_cont_interv).
   intros c Temp ; elim Temp ; clear Temp ; intros Pr eq.
    replace (id y - id x) with (y - x) in eq by intuition.
@@ -296,8 +296,7 @@ Qed.
 
 (* The following lemmas about PI should probably be in Rtrigo. *)
 
-Lemma PI2_lower_bound :
-  forall x, 0 < x < 2 -> 0 < cos x  -> x < PI/2.
+Lemma PI2_lower_bound : forall x, 0 < x < 2 -> 0 < cos x -> x < PI/2.
 Proof.
 intros x [xp xlt2] cx.
 destruct (Rtotal_order x (PI/2)) as [xltpi2 | [xeqpi2 | xgtpi2]].
@@ -305,7 +304,7 @@ destruct (Rtotal_order x (PI/2)) as [xltpi2 | [xeqpi2 | xgtpi2]].
  now case (Rgt_not_eq _ _ cx); rewrite xeqpi2, cos_PI2.
 destruct (MVT_cor1 cos (PI/2) x derivable_cos xgtpi2) as
    [c [Pc [cint1 cint2]]].
-revert Pc; rewrite cos_PI2, Rminus_0_r. 
+revert Pc; rewrite cos_PI2, Rminus_0_r.
 rewrite <- (pr_nu cos c (derivable_pt_cos c)), derive_pt_cos.
 assert (0 < c < 2) by (split; assert (t := PI2_RGT_0); lra).
 assert (0 < sin c) by now apply sin_pos_tech.
@@ -330,18 +329,16 @@ Qed.
 Lemma PI2_1 : 1 < PI/2.
 Proof. assert (t := PI2_3_2); lra. Qed.
 
-Lemma tan_increasing :
-  forall x y:R,
-    -PI/2 < x ->
-    x < y -> 
-    y < PI/2 -> tan x < tan y.
+Lemma tan_increasing : forall x y,
+  -PI/2 < x -> x < y -> y < PI/2 ->
+  tan x < tan y.
 Proof.
 intros x y Z_le_x x_lt_y y_le_1.
  assert (x_encad : -PI/2 < x < PI/2).
   split ; [assumption | apply Rlt_trans with (r2:=y) ; assumption].
  assert (y_encad : -PI/2 < y < PI/2).
   split ; [apply Rlt_trans with (r2:=x) ; intuition | intuition ].
- assert (local_derivable_pt_tan : forall x : R, -PI/2 < x < PI/2 ->
+ assert (local_derivable_pt_tan : forall x, -PI/2 < x < PI/2 ->
           derivable_pt tan x).
   intros ; apply derivable_pt_tan ; intuition.
  apply derive_increasing_interv with (a:=-PI/2) (b:=PI/2) (pr:=local_derivable_pt_tan) ; intuition.
@@ -353,8 +350,10 @@ intros x y Z_le_x x_lt_y y_le_1.
 Qed.
 
 
-Lemma tan_inj : forall x y, -PI/2 < x < PI/2 -> -PI/2 < y < PI/2 ->
-   tan x = tan y -> x = y.
+Lemma tan_inj : forall x y,
+  -PI/2 < x < PI/2 -> -PI/2 < y < PI/2 ->
+  tan x = tan y ->
+  x = y.
 Proof.
   intros a b a_encad b_encad fa_eq_fb.
   case(total_order_T a b).
@@ -369,9 +368,10 @@ Qed.
 
 Notation tan_is_inj := tan_inj (only parsing). (* compat *)
 
-Lemma exists_atan_in_frame :
- forall lb ub y, lb < ub -> -PI/2 < lb -> ub < PI/2 ->
- tan lb < y < tan ub -> {x | lb < x < ub /\ tan x = y}.
+Lemma exists_atan_in_frame : forall lb ub y,
+  lb < ub -> -PI/2 < lb -> ub < PI/2 ->
+  tan lb < y < tan ub ->
+  {x | lb < x < ub /\ tan x = y}.
 Proof.
 intros lb ub y lb_lt_ub lb_cond ub_cond y_encad.
  case y_encad ; intros y_encad1 y_encad2.
@@ -387,9 +387,9 @@ intros lb ub y lb_lt_ub lb_cond ub_cond y_encad.
       assumption. intros x  x_cond.
       replace (tan x - y - (tan a - y)) with (tan x - tan a) by field.
       exact (Temp x x_cond).
-     assert (H1 : (fun x : R => tan x - y) lb < 0).
+     assert (H1 : (fun x => tan x - y) lb < 0).
        apply Rlt_minus. assumption.
-      assert (H2 : 0 < (fun x : R => tan x - y) ub).
+      assert (H2 : 0 < (fun x => tan x - y) ub).
        apply Rgt_minus. assumption.
      destruct (IVT_interv (fun x => tan x - y) lb ub Cont lb_lt_ub H1 H2) as (x,Hx).
      exists x.
@@ -412,7 +412,12 @@ intros lb ub y lb_lt_ub lb_cond ub_cond y_encad.
       case H4 ; intuition.
 Qed.
 
-(** * Definition of arctangent as the reciprocal function of tangent and proof of this status *)
+(*********************************************************)
+(** * Definition of arctangent                           *)
+(*********************************************************)
+
+(** ** Definition of arctangent as the reciprocal function of tangent and proof of this status *)
+
 Lemma tan_1_gt_1 : tan 1 > 1.
 Proof.
 assert (0 < cos 1) by (apply cos_gt_0; assert (t:=PI2_1); lra).
@@ -519,7 +524,7 @@ split.
  apply Rgt_not_eq; assumption.
 unfold tan.
 set (u' := PI / 2); unfold Rdiv; apply Rmult_lt_compat_r; unfold u'.
- apply Rinv_0_lt_compat. 
+ apply Rinv_0_lt_compat.
  rewrite cos_shift; assumption.
 assert (vlt3 : u < /4).
  replace (/4) with (/2 * /2) by field.
@@ -568,19 +573,22 @@ Qed.
 
 Definition atan x := let (v, _) := pre_atan x in v.
 
-Lemma atan_bound : forall x, -PI/2 < atan x < PI/2.
+Lemma atan_bound : forall x,
+  -PI/2 < atan x < PI/2.
 Proof.
 intros x; unfold atan; destruct (pre_atan x) as [v [int _]]; exact int.
 Qed.
 
-Lemma tan_atan : forall x, tan (atan x) = x.
+Lemma tan_atan : forall x,
+  tan (atan x) = x.
 Proof.
 intros x; unfold atan; destruct (pre_atan x) as [v [_ q]]; exact q.
 Qed.
 
 Notation atan_right_inv := tan_atan (only parsing). (* compat *)
 
-Lemma atan_opp : forall x, atan (- x) = - atan x.
+Lemma atan_opp : forall x,
+  atan (- x) = - atan x.
 Proof.
 intros x; generalize (atan_bound (-x)); rewrite Ropp_div;intros [a b].
 generalize (atan_bound x); rewrite Ropp_div; intros [c d].
@@ -588,7 +596,8 @@ apply tan_inj; try rewrite Ropp_div; try split; try lra.
 rewrite tan_neg, !tan_atan; reflexivity.
 Qed.
 
-Lemma derivable_pt_atan : forall x, derivable_pt atan x.
+Lemma derivable_pt_atan : forall x,
+  derivable_pt atan x.
 Proof.
 intros x.
 destruct (frame_tan x) as [ub [[ub0 ubpi] P]].
@@ -596,7 +605,7 @@ assert (lb_lt_ub : -ub < ub) by apply pos_opp_lt, ub0.
 assert (xint : tan(-ub) < x < tan ub).
  assert (xint' : x < tan ub /\ -(tan ub) < x) by apply Rabs_def2, P.
   rewrite tan_neg; tauto.
-assert (inv_p : forall x, tan(-ub) <= x -> x <= tan ub -> 
+assert (inv_p : forall x, tan(-ub) <= x -> x <= tan ub ->
                      comp tan atan x = id x).
  intros; apply tan_atan.
 assert (int_tan : forall y, tan (- ub) <= y -> y <= tan ub ->
@@ -625,8 +634,8 @@ assert (der : forall a, -ub <= a <= ub -> derivable_pt tan a).
  intros a [la ua]; apply derivable_pt_tan.
  rewrite Ropp_div; split; lra.
 assert (df_neq : derive_pt tan (atan x)
-     (derivable_pt_recip_interv_prelim1 tan atan 
-        (- ub) ub x lb_lt_ub xint inv_p int_tan incr der) <> 0).
+     (derivable_pt_recip_interv_prelim1 tan atan
+        (- ub) ub x lb_lt_ub xint int_tan der) <> 0).
  rewrite <- (pr_nu tan (atan x)
               (derivable_pt_tan (atan x) (atan_bound x))).
  rewrite derive_pt_tan.
@@ -636,7 +645,8 @@ apply (derivable_pt_recip_interv tan atan (-ub) ub x
 exact df_neq.
 Qed.
 
-Lemma atan_increasing : forall x y, x < y -> atan x < atan y.
+Lemma atan_increasing : forall x y,
+  x < y -> atan x < atan y.
 Proof.
 intros x y d.
 assert (t1 := atan_bound x).
@@ -659,8 +669,10 @@ rewrite tan_atan, tan_0.
 reflexivity.
 Qed.
 
-Lemma atan_eq0 x : atan x = 0 -> x = 0.
+Lemma atan_eq0 : forall x,
+  atan x = 0 -> x = 0.
 Proof.
+intros x.
 generalize (atan_increasing 0 x) (atan_increasing x 0).
 rewrite atan_0.
 lra.
@@ -675,17 +687,18 @@ apply tan_inj; auto.
 rewrite tan_PI4, tan_atan; reflexivity.
 Qed.
 
-Lemma atan_tan x : - (PI / 2) < x < PI / 2 -> atan (tan x) = x.
+Lemma atan_tan : forall x, - (PI / 2) < x < PI / 2 ->
+  atan (tan x) = x.
 Proof.
-intros xB.
+intros x xB.
 apply tan_inj.
 - now apply atan_bound.
 - lra.
 - now apply tan_atan.
 Qed.
 
-Lemma atan_inv :
-  forall x, (0 < x)%R ->  atan (/ x) = (PI / 2 - atan x)%R.
+Lemma atan_inv : forall x, (0 < x)%R ->
+  atan (/ x) = (PI / 2 - atan x)%R.
 Proof.
 intros x Hx.
 apply tan_inj.
@@ -720,11 +733,10 @@ apply tan_inj.
     apply atan_bound.
 Qed.
 
-(** atan's derivative value is the function 1 / (1+x²) *)
+(** ** Derivative of arctangent *)
 
 Lemma derive_pt_atan : forall x,
-      derive_pt atan x (derivable_pt_atan x) =
-         1 / (1 + x²).
+  derive_pt atan x (derivable_pt_atan x) = 1 / (1 + x²).
 Proof.
 intros x.
 destruct (frame_tan x) as [ub [[ub0 ubpi] Pub]].
@@ -732,7 +744,7 @@ assert (lb_lt_ub : -ub < ub) by apply pos_opp_lt, ub0.
 assert (xint : tan(-ub) < x < tan ub).
  assert (xint' : x < tan ub /\ -(tan ub) < x) by apply Rabs_def2, Pub.
   rewrite tan_neg; tauto.
-assert (inv_p : forall x, tan(-ub) <= x -> x <= tan ub -> 
+assert (inv_p : forall x, tan(-ub) <= x -> x <= tan ub ->
                      comp tan atan x = id x).
  intros; apply tan_atan.
 assert (int_tan : forall y, tan (- ub) <= y -> y <= tan ub ->
@@ -761,8 +773,8 @@ assert (der : forall a, -ub <= a <= ub -> derivable_pt tan a).
  intros a [la ua]; apply derivable_pt_tan.
  rewrite Ropp_div; split; lra.
 assert (df_neq : derive_pt tan (atan x)
-     (derivable_pt_recip_interv_prelim1 tan atan 
-        (- ub) ub x lb_lt_ub xint inv_p int_tan incr der) <> 0).
+     (derivable_pt_recip_interv_prelim1 tan atan
+        (- ub) ub x lb_lt_ub xint int_tan der) <> 0).
  rewrite <- (pr_nu tan (atan x)
               (derivable_pt_tan (atan x) (atan_bound x))).
  rewrite derive_pt_tan.
@@ -773,14 +785,14 @@ rewrite <- (pr_nu atan x (derivable_pt_recip_interv tan atan (- ub) ub
       x lb_lt_ub xint inv_p int_tan incr der df_neq)).
 rewrite t.
 assert (t' := atan_bound x).
-rewrite <- (pr_nu tan (atan x) (derivable_pt_tan _ t')). 
+rewrite <- (pr_nu tan (atan x) (derivable_pt_tan _ t')).
 rewrite derive_pt_tan, tan_atan.
 replace (Rsqr x) with (x ^ 2) by (unfold Rsqr; ring).
 reflexivity.
 Qed.
 
-Lemma derivable_pt_lim_atan :
-  forall x, derivable_pt_lim atan x (/(1 + x^2)).
+Lemma derivable_pt_lim_atan : forall x,
+  derivable_pt_lim atan x (/ (1 + x^2)).
 Proof.
 intros x.
 apply derive_pt_eq_1 with (derivable_pt_atan x).
@@ -789,12 +801,14 @@ rewrite <- (Rmult_1_l (Rinv _)).
 apply derive_pt_atan.
 Qed.
 
-(** * Definition of the arctangent function as the sum of the arctan power series *)
+(** ** Definition of the arctangent function as the sum of the arctan power series *)
+
 (* Proof taken from Guillaume Melquiond's interval package for Coq *)
 
 Definition Ratan_seq x :=  fun n => (x ^ (2 * n + 1) / INR (2 * n + 1))%R.
 
-Lemma Ratan_seq_decreasing : forall x, (0 <= x <= 1)%R -> Un_decreasing (Ratan_seq x).
+Lemma Ratan_seq_decreasing : forall x, (0 <= x <= 1)%R ->
+  Un_decreasing (Ratan_seq x).
 Proof.
 intros x Hx n.
  unfold Ratan_seq, Rdiv.
@@ -837,7 +851,8 @@ intros x Hx n.
  lia.
 Qed.
 
-Lemma Ratan_seq_converging : forall x, (0 <= x <= 1)%R -> Un_cv (Ratan_seq x) 0.
+Lemma Ratan_seq_converging : forall x, (0 <= x <= 1)%R ->
+  Un_cv (Ratan_seq x) 0.
 Proof.
 intros x Hx eps Heps.
  destruct (archimed (/ eps)) as (HN,_).
@@ -915,18 +930,18 @@ exact (alternated_series (Ratan_seq x)
   (Ratan_seq_decreasing _ Hx) (Ratan_seq_converging _ Hx)).
 Defined.
 
-Lemma Ratan_seq_opp : forall x n, Ratan_seq (-x) n = -Ratan_seq x n.
+Lemma Ratan_seq_opp : forall x n,
+  Ratan_seq (-x) n = -Ratan_seq x n.
 Proof.
 intros x n; unfold Ratan_seq.
 rewrite !pow_add, !pow_mult, !pow_1.
 unfold Rdiv; replace ((-x) ^ 2) with (x ^ 2) by ring; ring.
 Qed.
 
-Lemma sum_Ratan_seq_opp : 
-  forall x n, sum_f_R0 (tg_alt (Ratan_seq (- x))) n =
-     - sum_f_R0 (tg_alt (Ratan_seq x)) n.
+Lemma sum_Ratan_seq_opp : forall x n,
+  sum_f_R0 (tg_alt (Ratan_seq (- x))) n = - sum_f_R0 (tg_alt (Ratan_seq x)) n.
 Proof.
-intros x n; replace (-sum_f_R0 (tg_alt (Ratan_seq x)) n) with 
+intros x n; replace (-sum_f_R0 (tg_alt (Ratan_seq x)) n) with
   (-1 * sum_f_R0 (tg_alt (Ratan_seq x)) n) by ring.
 rewrite scal_sum; apply sum_eq; intros i _; unfold tg_alt.
 rewrite Ratan_seq_opp; ring.
@@ -963,7 +978,7 @@ Definition ps_atan (x : R) : R :=
  | right h => atan x
  end.
 
-(** * Proof of the equivalence of the two definitions between -1 and 1 *)
+(** ** Proof of the equivalence of the two definitions between -1 and 1 *)
 
 Lemma ps_atan0_0 : ps_atan 0 = 0.
 Proof.
@@ -980,15 +995,14 @@ unfold ps_atan.
 case h2; split; lra.
 Qed.
 
-Lemma ps_atan_exists_1_opp :
-  forall x h h', proj1_sig (ps_atan_exists_1 (-x) h) = 
-     -(proj1_sig (ps_atan_exists_1 x h')).
+Lemma ps_atan_exists_1_opp : forall x h h',
+  proj1_sig (ps_atan_exists_1 (-x) h) = -(proj1_sig (ps_atan_exists_1 x h')).
 Proof.
 intros x h h'; destruct (ps_atan_exists_1 (-x) h) as [v Pv].
 destruct (ps_atan_exists_1 x h') as [u Pu]; simpl.
 assert (Pu' : Un_cv (fun N => (-1) * sum_f_R0 (tg_alt (Ratan_seq x)) N) (-1 * u)).
  apply CV_mult;[ | assumption].
- intros eps ep; exists 0%nat; intros; rewrite R_dist_eq; assumption.  
+ intros eps ep; exists 0%nat; intros; rewrite R_dist_eq; assumption.
 assert (Pv' : Un_cv
            (fun N : nat => -1 * sum_f_R0 (tg_alt (Ratan_seq x)) N) v).
  apply Un_cv_ext with (2 := Pv); intros n; rewrite sum_Ratan_seq_opp; ring.
@@ -996,7 +1010,8 @@ replace (-u) with (-1 * u) by ring.
 apply UL_sequence with (1:=Pv') (2:= Pu').
 Qed.
 
-Lemma ps_atan_opp : forall x, ps_atan (-x) = -ps_atan x.
+Lemma ps_atan_opp : forall x,
+  ps_atan (-x) = -ps_atan x.
 Proof.
 intros x; unfold ps_atan.
 destruct (in_int (- x)) as [inside | outside].
@@ -1011,10 +1026,9 @@ Qed.
 
 (** atan = ps_atan *)
 
-Lemma ps_atanSeq_continuity_pt_1 : forall (N:nat) (x:R),
-      0 <= x ->
-      x <= 1 ->
-      continuity_pt (fun x => sum_f_R0 (tg_alt (Ratan_seq x)) N) x.
+Lemma ps_atanSeq_continuity_pt_1 : forall (N : nat) (x : R),
+  0 <= x -> x <= 1 ->
+  continuity_pt (fun x => sum_f_R0 (tg_alt (Ratan_seq x)) N) x.
 Proof.
 assert (Sublemma : forall (x:R) (N:nat), sum_f_R0 (tg_alt (Ratan_seq x)) N = x * (comp (fun x => sum_f_R0 (fun n => (fun i : nat => (-1) ^ i / INR (2 * i + 1)) n * x ^ n) N) (fun x => x ^ 2) x)).
  intros x N.
@@ -1077,10 +1091,11 @@ Qed.
 
 (** Definition of ps_atan's derivative *)
 
-Definition Datan_seq := fun (x:R) (n:nat) => x ^ (2*n).
+Definition Datan_seq := fun (x : R) (n : nat) => x ^ (2*n).
 
-Lemma pow_lt_1_compat : forall x n, 0 <= x < 1 -> (0 < n)%nat ->
-   0 <= x ^ n < 1.
+Lemma pow_lt_1_compat : forall x n,
+  0 <= x < 1 -> (0 < n)%nat ->
+  0 <= x ^ n < 1.
 Proof.
 intros x n hx; induction 1; simpl.
  rewrite Rmult_1_r; tauto.
@@ -1089,12 +1104,14 @@ split.
 rewrite <- (Rmult_1_r 1); apply Rmult_le_0_lt_compat; intuition.
 Qed.
 
-Lemma Datan_seq_Rabs : forall x n, Datan_seq (Rabs x) n = Datan_seq x n.
+Lemma Datan_seq_Rabs : forall x n,
+  Datan_seq (Rabs x) n = Datan_seq x n.
 Proof.
 intros x n; unfold Datan_seq; rewrite !pow_mult, pow2_abs; reflexivity.
 Qed.
 
-Lemma Datan_seq_pos : forall x n, 0 < x -> 0 < Datan_seq x n.
+Lemma Datan_seq_pos : forall x n, 0 < x ->
+  0 < Datan_seq x n.
 Proof.
 intros x n x_lb ; unfold Datan_seq ; induction n.
  simpl ; intuition.
@@ -1120,7 +1137,9 @@ f_equal.
 ring.
 Qed.
 
-Lemma Datan_seq_increasing : forall x y n, (n > 0)%nat -> 0 <= x < y -> Datan_seq x n < Datan_seq y n.
+Lemma Datan_seq_increasing : forall x y n,
+  (n > 0)%nat -> 0 <= x < y ->
+  Datan_seq x n < Datan_seq y n.
 Proof.
 intros x y n n_lb x_encad ; assert (x_pos : x >= 0) by intuition.
  assert (y_pos : y > 0). apply Rle_lt_trans with (r2:=x) ; intuition.
@@ -1143,7 +1162,8 @@ intros x y n n_lb x_encad ; assert (x_pos : x >= 0) by intuition.
  rewrite pow_i. intuition. lia.
 Qed.
 
-Lemma Datan_seq_decreasing : forall x,  -1 < x -> x < 1 -> Un_decreasing (Datan_seq x).
+Lemma Datan_seq_decreasing : forall x, -1 < x -> x < 1 ->
+  Un_decreasing (Datan_seq x).
 Proof.
 intros x x_lb x_ub n.
 unfold Datan_seq.
@@ -1160,7 +1180,8 @@ apply (pow_lt_1_compat (Rabs x) 2) in intabs.
 lia.
 Qed.
 
-Lemma Datan_seq_CV_0 : forall x, -1 < x -> x < 1 -> Un_cv (Datan_seq x) 0.
+Lemma Datan_seq_CV_0 : forall x, -1 < x -> x < 1 ->
+  Un_cv (Datan_seq x) 0.
 Proof.
 intros x x_lb x_ub eps eps_pos.
 assert (x_ub2 : Rabs (x^2) < 1).
@@ -1176,7 +1197,7 @@ rewrite pow_mult ; field.
 Qed.
 
 Lemma Datan_lim : forall x, -1 < x -> x < 1 ->
-    Un_cv (fun N : nat => sum_f_R0 (tg_alt (Datan_seq x)) N) (/ (1 + x ^ 2)).
+  Un_cv (fun N : nat => sum_f_R0 (tg_alt (Datan_seq x)) N) (/ (1 + x ^ 2)).
 Proof.
 intros x x_lb x_ub eps eps_pos.
 assert (Tool0 : 0 <= x ^ 2) by apply pow2_ge_0.
@@ -1189,14 +1210,14 @@ assert (x_ub2' : 0<= Rabs (x^2) < 1).
  apply pow_lt_1_compat;[split;[apply Rabs_pos | ] | lia].
  apply Rabs_def1; assumption.
 assert (x_ub2 : Rabs (x^2) < 1) by tauto.
-assert (eps'_pos : ((1+x^2)*eps) > 0).
+assert (eps'_pos : ((1 + x^2)*eps) > 0).
   apply Rmult_gt_0_compat ; assumption.
 elim (pow_lt_1_zero _ x_ub2 _ eps'_pos) ; intros N HN ; exists N.
 intros n Hn.
 assert (H1 : - x^2 <> 1).
  apply Rlt_not_eq; apply Rle_lt_trans with (2 := Rlt_0_1).
 assert (t := pow2_ge_0 x); lra.
-rewrite Datan_sum_eq. 
+rewrite Datan_sum_eq.
 unfold R_dist.
 assert (tool : forall a b, a / b - /b = (-1 + a) /b).
  intros a b; rewrite <- (Rmult_1_l (/b)); unfold Rdiv, Rminus.
@@ -1215,7 +1236,7 @@ assert (tool : forall k, Rabs ((-x ^ 2) ^ k) = Rabs ((x ^ 2) ^ k)).
 rewrite tool, (Rabs_pos_eq (/ _)); clear tool;[ | apply Rlt_le; assumption].
 assert (tool : forall a b c, 0 < b -> a < b * c -> a * / b < c).
  intros a b c bp h; replace c with (b * c * /b).
-  apply Rmult_lt_compat_r.  
+  apply Rmult_lt_compat_r.
    apply Rinv_0_lt_compat; assumption.
   assumption.
  field; apply Rgt_not_eq; exact bp.
@@ -1224,11 +1245,11 @@ apply HN; lia.
 Qed.
 
 Lemma Datan_CVU_prelim : forall c (r : posreal), Rabs c + r < 1 ->
- CVU (fun N x => sum_f_R0 (tg_alt (Datan_seq x)) N)
-     (fun y : R => / (1 + y ^ 2)) c r.
+  CVU (fun N x => sum_f_R0 (tg_alt (Datan_seq x)) N)
+      (fun y : R => / (1 + y ^ 2)) c r.
 Proof.
 intros c r ub_ub eps eps_pos.
-apply (Alt_CVU (fun x n => Datan_seq n x) 
+apply (Alt_CVU (fun x n => Datan_seq n x)
          (fun x => /(1 + x ^ 2))
          (Datan_seq (Rabs c + r)) c r).
      intros x inb; apply Datan_seq_decreasing;
@@ -1255,10 +1276,9 @@ apply (Alt_CVU (fun x n => Datan_seq n x)
 assumption.
 Qed.
 
-Lemma Datan_is_datan : forall (N:nat) (x:R),
-      -1 <= x ->
-      x < 1 ->
-derivable_pt_lim (fun x => sum_f_R0 (tg_alt (Ratan_seq x)) N) x (sum_f_R0 (tg_alt (Datan_seq x)) N).
+Lemma Datan_is_datan : forall (N : nat) (x : R),
+  -1 <= x -> x < 1 ->
+  derivable_pt_lim (fun x => sum_f_R0 (tg_alt (Ratan_seq x)) N) x (sum_f_R0 (tg_alt (Datan_seq x)) N).
 Proof.
 assert (Tool : forall N, (-1) ^ (S (2 * N))  = - 1).
  intro n ; induction n.
@@ -1275,20 +1295,20 @@ intros N x x_lb x_ub.
   intros eps eps_pos.
    elim (derivable_pt_lim_id x eps eps_pos) ; intros delta Hdelta ; exists delta.
    intros h hneq h_b.
-    replace (1 * ((x + h) * 1 / 1) - 1 * (x * 1 / 1)) with (id (x + h) - id x). 
+    replace (1 * ((x + h) * 1 / 1) - 1 * (x * 1 / 1)) with (id (x + h) - id x).
     rewrite Rmult_1_r.
     apply Hdelta ; assumption.
     unfold id ; field ; assumption.
   intros eps eps_pos.
   assert (eps_3_pos : (eps/3) > 0) by lra.
   elim (IHN (eps/3) eps_3_pos) ; intros delta1 Hdelta1.
-  assert (Main : derivable_pt_lim (fun x : R =>tg_alt (Ratan_seq x) (S N)) x ((tg_alt (Datan_seq x)) (S N))).
+  assert (Main : derivable_pt_lim (fun x =>tg_alt (Ratan_seq x) (S N)) x ((tg_alt (Datan_seq x)) (S N))).
    clear -Tool ; intros eps' eps'_pos.
    elim (derivable_pt_lim_pow x (2 * (S N) + 1) eps' eps'_pos) ; intros delta Hdelta ; exists delta.
    intros h h_neq h_b ; unfold tg_alt, Ratan_seq, Datan_seq.
    replace (((-1) ^ S N * ((x + h) ^ (2 * S N + 1) / INR (2 * S N + 1)) -
     (-1) ^ S N * (x ^ (2 * S N + 1) / INR (2 * S N + 1))) / h -
-    (-1) ^ S N * x ^ (2 * S N)) 
+    (-1) ^ S N * x ^ (2 * S N))
     with (((-1)^(S N)) * ((((x + h) ^ (2 * S N + 1) / INR (2 * S N + 1)) -
     (x ^ (2 * S N + 1) / INR (2 * S N + 1))) / h - x ^ (2 * S N))).
    rewrite Rabs_mult ; rewrite pow_1_abs ; rewrite Rmult_1_l.
@@ -1356,9 +1376,9 @@ Qed.
 
 Lemma Ratan_CVU' :
   CVU (fun N x => sum_f_R0 (tg_alt (Ratan_seq x)) N)
-                     ps_atan (/2) (mkposreal (/2) pos_half_prf).
+      ps_atan (/2) posreal_half.
 Proof.
-apply (Alt_CVU (fun i r => Ratan_seq r i) ps_atan PI_tg (/2) pos_half);
+apply (Alt_CVU (fun i r => Ratan_seq r i) ps_atan PI_tg (/2) posreal_half);
   lazy beta.
     now intros; apply Ratan_seq_decreasing, Boule_half_to_interval.
    now intros; apply Ratan_seq_converging, Boule_half_to_interval.
@@ -1368,7 +1388,7 @@ apply (Alt_CVU (fun i r => Ratan_seq r i) ps_atan PI_tg (/2) pos_half);
   destruct (ps_atan_exists_1 x inside) as [v Pv].
   apply Un_cv_ext with (2 := Pv);[reflexivity].
  intros x n b; apply Boule_half_to_interval in b.
- rewrite <- (Rmult_1_l (PI_tg n)); unfold Ratan_seq, PI_tg. 
+ rewrite <- (Rmult_1_l (PI_tg n)); unfold Ratan_seq, PI_tg.
  apply Rmult_le_compat_r.
   apply Rlt_le, Rinv_0_lt_compat, (lt_INR 0); lia.
  rewrite <- (pow1 (2 * n + 1)); apply pow_incr; assumption.
@@ -1377,12 +1397,12 @@ Qed.
 
 Lemma Ratan_CVU :
   CVU (fun N x => sum_f_R0 (tg_alt (Ratan_seq x)) N)
-                     ps_atan 0  (mkposreal 1 Rlt_0_1).
+      ps_atan 0 (mkposreal 1 Rlt_0_1).
 Proof.
 intros eps ep; destruct (Ratan_CVU' eps ep) as [N Pn].
 exists N; intros n x nN b_y.
 case (Rtotal_order 0 x) as [xgt0 | [x0 | x0]].
-  assert (Boule (/2) {| pos := / 2; cond_pos := pos_half_prf|} x).
+  assert (Boule (/2) posreal_half x).
    revert b_y; unfold Boule; simpl; intros b_y; apply Rabs_def2 in b_y.
    destruct b_y; unfold Boule; simpl; apply Rabs_def1; lra.
   apply Pn; assumption.
@@ -1395,7 +1415,7 @@ case (Rtotal_order 0 x) as [xgt0 | [x0 | x0]].
 replace (ps_atan x - sum_f_R0 (tg_alt (Ratan_seq x)) n) with
   (-(ps_atan (-x) - sum_f_R0 (tg_alt (Ratan_seq (-x))) n)).
  rewrite Rabs_Ropp.
- assert (Boule (/2) {| pos := / 2; cond_pos := pos_half_prf|} (-x)).
+ assert (Boule (/2) posreal_half (-x)).
   revert b_y; unfold Boule; simpl; intros b_y; apply Rabs_def2 in b_y.
   destruct b_y; unfold Boule; simpl; apply Rabs_def1; lra.
  apply Pn; assumption.
@@ -1410,8 +1430,8 @@ reflexivity.
 Qed.
 
 Lemma Ratan_is_ps_atan : forall eps, eps > 0 ->
-       exists N, forall n, (n >= N)%nat -> forall x, -1 < x -> x < 1 ->
-       Rabs (sum_f_R0 (tg_alt (Ratan_seq x)) n - ps_atan x) < eps.
+  exists N, forall n, (n >= N)%nat -> forall x, -1 < x -> x < 1 ->
+  Rabs (sum_f_R0 (tg_alt (Ratan_seq x)) n - ps_atan x) < eps.
 Proof.
 intros eps ep.
 destruct (Ratan_CVU _ ep) as [N1 PN1].
@@ -1420,7 +1440,7 @@ apply PN1; [assumption | ].
 unfold Boule; simpl; rewrite Rminus_0_r; apply Rabs_def1; assumption.
 Qed.
 
-Lemma Datan_continuity : continuity (fun x => /(1+x ^ 2)).
+Lemma Datan_continuity : continuity (fun x => /(1 + x^2)).
 Proof.
 apply continuity_inv.
 apply continuity_plus.
@@ -1440,7 +1460,7 @@ intros x x_encad.
 destruct (boule_in_interval (-1) 1 x x_encad) as [c [r [Pcr1 [P1 P2]]]].
 change (/ (1 + x ^ 2)) with ((fun u => /(1 + u ^ 2)) x).
 assert (t := derivable_pt_lim_CVU).
-apply derivable_pt_lim_CVU with 
+apply derivable_pt_lim_CVU with
           (fn := (fun N x => sum_f_R0 (tg_alt (Ratan_seq x)) N))
           (fn' := (fun N x => sum_f_R0 (tg_alt (Datan_seq x)) N))
           (c := c) (r := r).
@@ -1465,19 +1485,17 @@ apply derivable_pt_lim_CVU with
 intros; apply Datan_continuity.
 Qed.
 
-Lemma derivable_pt_ps_atan :
-   forall x, -1 < x < 1 -> derivable_pt ps_atan x.
+Lemma derivable_pt_ps_atan : forall x, -1 < x < 1 ->
+  derivable_pt ps_atan x.
 Proof.
 intros x x_encad.
-exists (/(1+x^2)) ; apply derivable_pt_lim_ps_atan; assumption.
+exists (/(1 + x^2)) ; apply derivable_pt_lim_ps_atan; assumption.
 Qed.
 
 Lemma ps_atan_continuity_pt_1 : forall eps : R,
-       eps > 0 ->
-       exists alp : R,
-       alp > 0 /\
-       (forall x, x < 1 -> 0 < x -> R_dist x 1 < alp ->
-       dist R_met (ps_atan x) (Alt_PI/4) < eps).
+  eps > 0 ->
+  exists alp : R, alp > 0 /\ (forall x, x < 1 -> 0 < x -> R_dist x 1 < alp ->
+  dist R_met (ps_atan x) (Alt_PI/4) < eps).
 Proof.
 intros eps eps_pos.
 assert (eps_3_pos : eps / 3 > 0) by lra.
@@ -1525,8 +1543,8 @@ ring.
 Qed.
 
 Lemma Datan_eq_DatanSeq_interv : forall x, -1 < x < 1 ->
- forall (Pratan:derivable_pt ps_atan x) (Prmymeta:derivable_pt atan x),
-      derive_pt ps_atan x Pratan = derive_pt atan x Prmymeta.
+  forall (Pratan:derivable_pt ps_atan x) (Prmymeta:derivable_pt atan x),
+    derive_pt ps_atan x Pratan = derive_pt atan x Prmymeta.
 Proof.
 assert (freq : 0 < tan 1) by apply (Rlt_trans _ _ _ Rlt_0_1 tan_1_gt_1).
 intros x x_encad Pratan Prmymeta.
@@ -1534,7 +1552,7 @@ intros x x_encad Pratan Prmymeta.
    (pr2 := derivable_pt_ps_atan x x_encad).
  rewrite pr_nu_var2_interv with (f:=atan) (g:=atan) (lb:=-1) (ub:= 1) (pr2:=derivable_pt_atan x).
  assert (Temp := derivable_pt_lim_ps_atan x x_encad).
- assert (Hrew1 : derive_pt ps_atan x (derivable_pt_ps_atan x x_encad) = (/(1+x^2))).
+ assert (Hrew1 : derive_pt ps_atan x (derivable_pt_ps_atan x x_encad) = (/(1 + x^2))).
   apply derive_pt_eq_0 ; assumption.
   rewrite derive_pt_atan.
   rewrite Hrew1.
@@ -1548,8 +1566,8 @@ intros x x_encad Pratan Prmymeta.
 intros; reflexivity.
 Qed.
 
-Lemma atan_eq_ps_atan :
- forall x, 0 < x < 1 -> atan x = ps_atan x.
+Lemma atan_eq_ps_atan : forall x, 0 < x < 1 ->
+  atan x = ps_atan x.
 Proof.
 intros x x_encad.
 assert (pr1 : forall c : R, 0 < c < x -> derivable_pt (atan - ps_atan) c).
@@ -1563,7 +1581,7 @@ assert (pr2 : forall c : R, 0 < c < x -> derivable_pt id c).
 assert (delta_cont : forall c : R, 0 <= c <= x -> continuity_pt (atan - ps_atan) c).
  intros c [[c_encad1 | c_encad1 ] [c_encad2 | c_encad2]];
         apply continuity_pt_minus.
-        apply derivable_continuous_pt ; apply derivable_pt_atan. 
+        apply derivable_continuous_pt ; apply derivable_pt_atan.
        apply derivable_continuous_pt ; apply derivable_pt_ps_atan.
        split; destruct x_encad; lra.
       apply derivable_continuous_pt, derivable_pt_atan.
@@ -1589,7 +1607,7 @@ assert (Temp : forall (pr: derivable_pt (atan - ps_atan) d), derive_pt (atan - p
     unfold pr3. rewrite derive_pt_minus.
     rewrite Datan_eq_DatanSeq_interv with (Prmymeta := derivable_pt_atan d).
      intuition.
-    assumption. 
+    assumption.
    destruct d_encad; lra.
   assumption.
  reflexivity.
@@ -1602,14 +1620,13 @@ generalize Main; rewrite Temp, Rmult_0_r.
 replace ((atan - ps_atan)%F x) with (atan x - ps_atan x) by intuition.
 replace ((atan - ps_atan)%F 0) with (atan 0 - ps_atan 0) by intuition.
 rewrite iatan0, ps_atan0_0, !Rminus_0_r.
-replace (derive_pt id d (pr2 d d_encad)) with 1. 
+replace (derive_pt id d (pr2 d d_encad)) with 1.
  rewrite Rmult_1_r.
  solve[intros M; apply Rminus_diag_uniq; auto].
 rewrite pr_nu_var with (g:=id) (pr2:=derivable_pt_id d).
  symmetry ; apply derive_pt_id.
 tauto.
 Qed.
-
 
 Theorem Alt_PI_eq : Alt_PI = PI.
 Proof.
@@ -1642,7 +1659,7 @@ assert (Xa : exists a, 0 < a < 1 /\ R_dist a 1 < alpha /\
    by (apply Rmax_lub_lt; lra).
  split;[split;[ | apply Rmax_lub_lt]; lra | ].
  assert (0 <= 1 - Rmax (/ 2) (Rmax (1 - alpha / 2) (1 - beta / 2))).
-  assert (Rmax (/2) (Rmax (1 - alpha / 2) 
+  assert (Rmax (/2) (Rmax (1 - alpha / 2)
             (1 - beta /2)) <= 1) by (apply Rmax_lub; lra).
   lra.
  split; unfold R_dist; rewrite <-Rabs_Ropp, Ropp_minus_distr,
@@ -1659,193 +1676,80 @@ split;[exact I | apply Rgt_not_eq; assumption].
 split; assumption.
 Qed.
 
-Lemma PI_ineq :
-  forall N : nat,
-    sum_f_R0 (tg_alt PI_tg) (S (2 * N)) <= PI / 4 <=
-    sum_f_R0 (tg_alt PI_tg) (2 * N).
+Lemma PI_ineq : forall N : nat,
+  sum_f_R0 (tg_alt PI_tg) (S (2 * N)) <= PI/4 <= sum_f_R0 (tg_alt PI_tg) (2 * N).
 Proof.
 intros; rewrite <- Alt_PI_eq; apply Alt_PI_ineq.
 Qed.
 
-(* A definition of asin by cases in term of atan so it is defined for -1 and 1 *)
+(** ** Relation between arctangent and sine and cosine *)
+
+Lemma sin_atan: forall x,
+  sin (atan x) = x / sqrt (1 + x²).
+Proof.
+intros x.
+pose proof (atan_right_inv x) as Hatan.
+remember (atan(x)) as α.
+rewrite <- Hatan.
+apply sin_tan.
+apply cos_gt_0.
+  all: pose proof atan_bound x; lra.
+Qed.
+
+Lemma cos_atan: forall x,
+  cos (atan x) = 1 / sqrt(1 + x²).
+Proof.
+  intros x.
+  pose proof (atan_right_inv x) as Hatan.
+  remember (atan(x)) as α.
+  rewrite <- Hatan.
+  apply cos_tan.
+  apply cos_gt_0.
+  all: pose proof atan_bound x; lra.
+Qed.
+
+(*********************************************************)
+(** * Definition of arcsine based on arctangent          *)
+(*********************************************************)
+
+(** asin is defined by cases so that it is defined in the full range from -1 .. 1 *)
+
 Definition asin x :=
-  match total_order_T x 0 with
-  | inleft (left _) => - PI/2 - atan (sqrt (1 - x * x) / x)
-  | inleft (right _) => 0
-  | inright _  => PI/2 - atan (sqrt (1 - x * x) / x)
-  end.
+  if Rle_dec x (-1) then - (PI / 2) else
+  if Rle_dec 1 x then PI / 2 else
+  atan (x / sqrt (1 - x²)).
+
+(** ** Relation between arcsin and arctangent *)
+
+Lemma asin_atan : forall x, -1 < x < 1 ->
+  asin x = atan (x / sqrt (1 - x²)).
+Proof.
+intros x.
+unfold asin; repeat case Rle_dec; intros; lra.
+Qed.
+
+(** ** arcsine of specific values *)
 
 Lemma asin_0 : asin 0 = 0.
 Proof.
-unfold asin; destruct (total_order_T) as [[]|]; lra.
+unfold asin; repeat case Rle_dec; intros; try lra.
+replace (0/_) with 0.
+- apply atan_0.
+- field.
+  rewrite Rsqr_pow2; field_simplify (1 - 0^2).
+  rewrite sqrt_1; lra.
 Qed.
 
 Lemma asin_1 : asin 1 = PI / 2.
 Proof.
-unfold asin; destruct (total_order_T) as [[]|]; try lra.
-replace (1 - 1 * 1) with 0 by lra.
-unfold Rdiv.
-rewrite sqrt_0, Rmult_0_l, atan_0; lra.
-Qed.
-
-Lemma asin_m1 : asin (-1) = - PI / 2.
-Proof.
-unfold asin; destruct (total_order_T) as [[]|]; try lra.
-replace (1 - -1 * -1) with 0 by lra.
-unfold Rdiv.
-rewrite sqrt_0, Rmult_0_l, atan_0; lra.
-Qed.
-
-Lemma asin_opp x : asin (- x) = - asin x.
-Proof.
-assert (F : forall y, - y * - y = y * y) by (intro y; lra).
-assert (G : forall y z, z <> 0 -> y / - z = - (y / z)).
-  now intros y z yNZ; unfold Rdiv; rewrite <-Ropp_inv_permute; lra.
-unfold asin; do 2 destruct total_order_T as [[|]|];
-   try lra; rewrite F, G, ?atan_opp; try lra.
-Qed.
-
-(* We recover the "natural" definition *)
-Lemma asin_atan x : -1 < x < 1 ->
-     asin x = atan (x / sqrt (1 - x ^ 2)).
-Proof.
-intros xB.
-assert (F : forall x, 0 < x < 1 -> asin x = atan (x / sqrt (1 - x ^ 2))).
-- intros y yB.
-  unfold asin; destruct total_order_T as [[|]|_]; try lra.
-  rewrite <- (Rinv_Rdiv _ y); try lra.
-  + rewrite atan_inv.
-      now replace (y * y) with (y ^ 2); lra.
-    apply Rdiv_lt_0_compat; try lra.
-    apply sqrt_lt_R0.
-    now nra.
-  + intro Hsqr.
-    assert (Hs : 0 <= 1 - y ^ 2) by nra.
-    now generalize (sqrt_eq_0 _ Hs Hsqr); nra.
-- destruct (total_order_T x 0) as [[He|He] | He].
-  + rewrite <-(Ropp_involutive x) at 1.
-    rewrite asin_opp, F; try lra.
-    replace ((- x) ^ 2) with (x ^ 2) by lra.
-    now unfold Rdiv; rewrite <-Ropp_mult_distr_l, atan_opp; lra.
-  + now unfold Rdiv; rewrite He, asin_0, Rmult_0_l, atan_0.
-  + now apply F; lra.
-Qed.
-
-Lemma sin_asin x : -1 <= x <= 1 -> sin (asin x) = x.
-Proof.
-intros xB.
-assert (KI : forall k, IZR k <= -1 \/  IZR k = 0 \/ IZR k >= 1).
-  intro k.
-  assert (ZI : (k <= - 1 \/ k = 0 \/ k >= 1)%Z) by omega.
-  destruct ZI as [ZI1|[ZI1|ZI1]].
-    now left; apply (IZR_le _ (-1)%Z ).
-    now right; left; rewrite ZI1.
-  now right; right; apply (IZR_ge _ 1%Z).
-assert (HP : forall y, 0 < y <= 1 -> sin (asin y) = y).
-- intros y yB.
-  assert (yE1 : y = 1 \/ y < 1) by lra.
-  destruct yE1 as [yE1|yL1].
-    now rewrite yE1, asin_1, sin_PI2.
-  assert (SH : sqrt (1 - y ^ 2) <> 0).
-    intro H.
-    assert (H1 : 1 - y ^ 2 <> 0) by nra.
-    case H1.
-    now apply sqrt_eq_0; nra.
-  rewrite asin_atan; try lra.
-  set (A := atan _).
-  assert (AB : - PI / 2 < A < PI / 2) by apply atan_bound.
-  assert (ANZ : A <> 0).
-    intro AZ.
-    destruct (Rmult_integral _ _ (atan_eq0 _ AZ)); try lra.
-    now apply (Rinv_neq_0_compat _ SH).
-  assert (cosANZ : cos A <> 0).
-  intros H.
-  destruct (cos_eq_0_0 _ H) as [k Hk].
-  now destruct (KI k) as [|[]]; nra.
-  assert (sinANZ : sin A <> 0).
-  intros H.
-  destruct (sin_eq_0_0 _ H) as [k Hk].
-  now destruct (KI k) as [|[]]; nra.
-  assert (H3 := sin2_cos2 A).
-  unfold Rsqr in H3.
-  generalize (Logic.eq_refl ((tan A)^2)).
-  unfold A at 1.
-  rewrite tan_atan.
-  unfold tan, Rdiv; rewrite !Rpow_mult_distr, <-!Rinv_pow; try lra.
-  intro H4.
-  assert (sqrt (1 - y ^ 2) ^ 2 * sin A ^ 2 - y ^ 2 * cos A ^ 2 = 0).
-  assert (Fa : forall a b, b <> 0 -> a = (a */ b) * b) by (now intros; field).
-    rewrite (Fa (y^2) (sqrt (1 - y ^ 2)^2)) at 2; try nra.
-    rewrite H4.
-    now field_simplify; lra.
-  revert H.
-  replace ((sin A)^2) with (1 - (cos A)^2) by lra.
-  rewrite <-Rsqr_pow2; unfold Rsqr; rewrite sqrt_sqrt; try nra.
-  intros H5; ring_simplify in H5.
-  assert (H : (y - sin A) * (y + sin A) = 0) by nra.
-  destruct (Rmult_integral _ _ H).
-    now lra.
-  assert (sP : 0 < sqrt (1 - y ^ 2)) by (apply sqrt_lt_R0; nra).
-  assert (AP : 0 < A).
-    rewrite <-atan_0; apply atan_increasing.
-    assert (0 / sqrt (1 - y ^ 2) < y / sqrt (1 - y ^ 2)).
-      apply Rmult_lt_compat_r; try lra.
-      now apply Rinv_0_lt_compat; lra.
-    now lra.
-  assert (0 < sin A) by (apply sin_gt_0; lra).
-  now lra.
-- assert (H : x = 0 \/ -1 <= x < 0 \/ 0 < x <= 1) by lra.
-  destruct H as [H1|[H1|H1]].
-  + now rewrite H1, asin_0, sin_0.
-  + assert (H2 : sin (asin (- x)) = -x) by (apply HP; lra).
-    now revert H2; rewrite asin_opp, sin_neg; lra.
-  + now apply HP.
-Qed.
-
-Lemma asin_bound x : -1 <= x <= 1 -> - (PI/2) <= asin x <= PI/2.
-Proof.
-intro xB.
-assert (F : forall y, 0 <= y <= 1 -> -(PI/2) <= asin y <= PI/2).
-  intros y Hy.
-  assert (PIP := PI_RGT_0).
-  assert (H : y = 0 \/ 0 < y) by lra.
-  destruct H as [H1 | H1].
-    now rewrite H1, asin_0; lra.
-  unfold asin; destruct total_order_T as [[H2|H2]|H2]; try lra.
-  assert (H : y = 1 \/ y < 1) by lra.
-  destruct H as [H3 | H3].
-    rewrite H3; unfold Rdiv.
-    replace (1 - 1 * 1) with 0 by lra.
-    now rewrite sqrt_0, Rmult_0_l, atan_0; lra.
-  set (a := _ / y).
-  assert (Ha := atan_bound a).
-  assert (H: 0 < atan a).
-    rewrite <-atan_0; apply atan_increasing.
-    apply Rdiv_lt_0_compat; auto.
-    now apply sqrt_lt_R0; nra.
-  now lra.
-assert (H : 0 <= x \/ x <= 0) by lra.
-destruct H as [H1|H1].
-  now apply F; lra.
-assert (H : 0 <= -x <= 1) by lra.
-now generalize (F _ H); rewrite asin_opp; lra.
-Qed.
-
-Lemma asin_sin x : -(PI/2) <= x <= PI/2 -> asin (sin x) = x.
-Proof.
-intros HB.
-apply sin_inj; auto.
-  apply asin_bound.
-  now apply SIN_bound.
-apply sin_asin.
-apply SIN_bound.
+unfold asin; repeat case Rle_dec; lra.
 Qed.
 
 Lemma asin_inv_sqrt2 : asin (/sqrt 2) = PI/4.
 Proof.
 rewrite asin_atan.
-  assert (SH := sqrt2_neq_0).
-  rewrite <-Rinv_pow, <- Rsqr_pow2, Rsqr_sqrt; try lra.
+  pose proof sqrt2_neq_0 as SH.
+  rewrite Rsqr_pow2, <-Rinv_pow, <- Rsqr_pow2, Rsqr_sqrt; try lra.
   replace (1 - /2) with (/2) by lra.
   rewrite <- inv_sqrt; try lra.
   now rewrite <- atan_1; apply f_equal; field.
@@ -1859,103 +1763,417 @@ replace 1 with (/ sqrt 1).
 now rewrite sqrt_1; lra.
 Qed.
 
-(* A definition by cases of acos so it is defined for -1 and 1 *)
+Lemma asin_opp : forall x,
+  asin (- x) = - asin x.
+Proof.
+intros x.
+unfold asin; repeat case Rle_dec; intros; try lra.
+rewrite <- Rsqr_neg.
+rewrite Ropp_div.
+rewrite atan_opp.
+reflexivity.
+Qed.
+
+(** ** Bounds of arcsine *)
+
+Lemma asin_bound : forall x,
+  - (PI/2) <= asin x <= PI/2.
+Proof.
+intros x.
+pose proof PI_RGT_0.
+unfold asin; repeat case Rle_dec; try lra.
+intros Hx1 Hx2.
+pose proof atan_bound (x / sqrt (1 - x²)); lra.
+Qed.
+
+Lemma asin_bound_lt : forall x, -1 < x < 1 ->
+  - (PI/2) < asin x < PI/2.
+Proof.
+intros x HxB.
+pose proof PI_RGT_0.
+unfold asin; repeat case Rle_dec; try lra.
+intros Hx1 Hx2.
+pose proof atan_bound (x / sqrt (1 - x²)); lra.
+Qed.
+
+(** ** arcsine is the left and right inverse of sine *)
+
+Lemma sin_asin : forall x, -1 <= x <= 1 ->
+  sin (asin x) = x.
+Proof.
+  intros x.
+unfold asin; repeat case Rle_dec.
+  rewrite sin_antisym, sin_PI2; lra.
+  rewrite sin_PI2; lra.
+intros Hx1 Hx2 Hx3.
+rewrite sin_atan.
+assert (forall a b c:R, b<>0 -> c<> 0 -> a/b/c = a/(b*c)) as R_divdiv_divmul by (intros; field; lra).
+rewrite R_divdiv_divmul.
+  rewrite <- sqrt_mult_alt.
+  rewrite Rsqr_div, Rsqr_sqrt.
+  field_simplify((1 - x²) * (1 + x² / (1 - x²))).
+  rewrite sqrt_1.
+  field.
+(* Pose a few things useful for several subgoals *)
+all: pose proof Rsqr_bounds_lt 1 x ltac:(lra) as Hxsqr;
+     rewrite Rsqr_1 in Hxsqr.
+all: pose proof sqrt_lt_R0 (1 - x²) ltac:(lra).
+(* Do 6 first, because it produces more subgoals *)
+all: swap 1 6.
+rewrite Rsqr_div, Rsqr_sqrt.
+field_simplify(1 + x² / (1 - x²)).
+rewrite sqrt_div.
+rewrite sqrt_1.
+pose proof Rdiv_lt_0_compat 1 (sqrt (- x² + 1)) ltac:(lra) as Hrange.
+pose proof sqrt_lt_R0 (- x² + 1) ltac:(lra) as Hrangep.
+specialize (Hrange Hrangep).
+lra.
+(* The rest can all be done with lra *)
+all: try lra.
+Qed.
+
+Lemma asin_sin : forall x, -(PI/2) <= x <= PI/2 ->
+  asin (sin x) = x.
+Proof.
+intros x HB.
+apply sin_inj; auto.
+  apply asin_bound.
+apply sin_asin.
+apply SIN_bound.
+Qed.
+
+(** ** Relation between arcsin, cosine and tangent *)
+
+Lemma cos_asin : forall x, -1 <= x <= 1 ->
+  cos (asin x) = sqrt (1 - x²).
+Proof.
+  intros x Hxrange.
+  pose proof (sin_asin x) ltac:(lra) as Hasin.
+  remember (asin(x)) as α.
+  rewrite <- Hasin.
+  apply cos_sin.
+  pose proof cos_ge_0 α.
+  pose proof asin_bound x.
+  lra.
+Qed.
+
+Lemma tan_asin : forall x, -1 <= x <= 1 ->
+  tan (asin x) = x / sqrt (1 - x²).
+Proof.
+  intros x Hxrange.
+  pose proof (sin_asin x) Hxrange as Hasin.
+  remember (asin(x)) as α.
+  rewrite <- Hasin.
+  apply tan_sin.
+  pose proof cos_ge_0 α.
+  pose proof asin_bound x.
+  lra.
+Qed.
+
+(** ** Derivative of arcsine *)
+
+Lemma derivable_pt_asin : forall x, -1 < x < 1 ->
+  derivable_pt asin x.
+Proof.
+  intros x H.
+
+  eapply (derivable_pt_recip_interv sin asin (-PI/2) (PI/2)); [shelve ..|].
+
+  rewrite <- (pr_nu sin (asin x) (derivable_pt_sin (asin x))).
+  rewrite derive_pt_sin.
+  (* The asin bounds are needed later, so pose them before asin is unfolded *)
+  pose proof asin_bound_lt x ltac:(lra) as HxB3.
+  unfold asin in *.
+  destruct (Rle_dec x (-1)); destruct (Rle_dec 1 x); [lra .. |].
+  apply Rgt_not_eq; apply cos_gt_0; lra.
+
+  Unshelve.
+  - pose proof PI_RGT_0 as HPi; lra.
+  - rewrite Ropp_div,sin_antisym,sin_PI2; lra.
+  - clear x H; intros x Ha Hb.
+    rewrite Ropp_div; apply asin_bound.
+  - intros a Ha; reg.
+  - intros x0 Ha Hb.
+    unfold comp,id.
+    apply sin_asin.
+    rewrite Ropp_div,sin_antisym,sin_PI2 in Ha; rewrite sin_PI2 in Hb; lra.
+  - intros x1 x2 Ha Hb Hc.
+    apply sin_increasing_1; lra.
+Qed.
+
+Lemma derive_pt_asin : forall (x : R) (Hxrange : -1 < x < 1),
+   derive_pt asin x (derivable_pt_asin x Hxrange) = 1 / sqrt (1 - x²).
+Proof.
+  intros x Hxrange.
+
+  epose proof (derive_pt_recip_interv sin asin (-PI/2) (PI/2) x _ _ _ _ _ _ _) as Hd.
+
+  rewrite <- (pr_nu sin (asin x) (derivable_pt_sin (asin x))) in Hd.
+  rewrite <- (pr_nu asin x (derivable_pt_asin x Hxrange)) in Hd.
+  rewrite derive_pt_sin in Hd.
+  rewrite cos_asin in Hd by lra.
+  assumption.
+
+  Unshelve.
+  - pose proof PI_RGT_0. lra.
+  - rewrite Ropp_div,sin_antisym,sin_PI2; lra.
+  - intros x1 x2 Ha Hb Hc.
+    apply sin_increasing_1; lra.
+  - intros x0 Ha Hb.
+    pose proof asin_bound x0; lra.
+  - intros a Ha; reg.
+  - intros x0 Ha Hb.
+    unfold comp,id.
+    apply sin_asin.
+    rewrite Ropp_div,sin_antisym,sin_PI2 in Ha; rewrite sin_PI2 in Hb; lra.
+  - rewrite <- (pr_nu sin (asin x) (derivable_pt_sin (asin x))).
+    rewrite derive_pt_sin.
+    rewrite cos_asin by lra.
+    apply Rgt_not_eq.
+    apply sqrt_lt_R0.
+    pose proof Rsqr_bounds_lt 1 x ltac:(lra) as Hxsqrrange.
+    rewrite Rsqr_1 in Hxsqrrange; lra.
+Qed.
+
+(*********************************************************)
+(** * Definition of arccosine based on arctangent        *)
+(*********************************************************)
+
+(** acos is defined by cases so that it is defined in the full range from -1 .. 1 *)
+
 Definition acos x :=
-  match total_order_T x 0 with
-  | inleft (left _) => PI + atan (sqrt (1 - x * x) / x)
-  | inleft (right _) => PI / 2
-  | inright _  => atan (sqrt (1 - x * x) / x)
-  end.
+  if Rle_dec x (-1) then PI else
+  if Rle_dec 1 x then 0 else
+  PI/2 - atan (x/sqrt(1 - x²)).
+
+(** ** Relation between arccosine, arcsine and arctangent *)
+
+Lemma acos_atan : forall x, 0 < x ->
+  acos x = atan (sqrt (1 - x²) / x).
+Proof.
+  intros x.
+  unfold acos; repeat case Rle_dec; [lra | |].
+  - intros Hx1 Hx2 Hx3.
+    pose proof Rsqr_bounds_le x 1 ltac:(lra)as Hxsqr.
+    rewrite Rsqr_1 in Hxsqr.
+    rewrite sqrt_neg_0 by lra.
+    replace (0/x) with 0 by (field;lra).
+    rewrite atan_0; reflexivity.
+  - intros Hx1 Hx2 Hx3.
+    pose proof atan_inv (sqrt (1 - x²) / x) as Hatan.
+    pose proof Rsqr_bounds_lt 1 x ltac:(lra)as Hxsqr.
+    rewrite Rsqr_1 in Hxsqr.
+    replace (/ (sqrt (1 - x²) / x)) with (x/sqrt (1 - x²)) in Hatan.
+    + rewrite Hatan; [field|].
+      apply Rdiv_lt_0_compat; [|assumption].
+      apply sqrt_lt_R0; lra.
+    + field; split.
+      lra.
+      assert(sqrt (1 - x²) >0) by (apply sqrt_lt_R0; lra); lra.
+Qed.
+
+Lemma acos_asin : forall x, -1 <= x <= 1 ->
+  acos x = PI/2 - asin x.
+Proof.
+  intros x.
+  unfold acos, asin; repeat case Rle_dec; lra.
+Qed.
+
+Lemma asin_acos : forall x, -1 <= x <= 1 ->
+  asin x = PI/2 - acos x.
+Proof.
+  intros x.
+  unfold acos, asin; repeat case Rle_dec; lra.
+Qed.
+
+(** ** arccosine of specific values *)
 
 Lemma acos_0 : acos 0 = PI/2.
-Proof. unfold acos; destruct total_order_T as [[]|]; lra. Qed.
+Proof.
+  unfold acos; repeat case Rle_dec; [lra..|].
+  intros Hx1 Hx2.
+  replace (0/_) with 0.
+  rewrite atan_0; field.
+  field.
+  rewrite Rsqr_pow2; field_simplify (1 - 0^2).
+  rewrite sqrt_1; lra.
+Qed.
 
 Lemma acos_1 : acos 1 = 0.
 Proof.
-unfold acos; destruct total_order_T as [[]|]; try lra.
-unfold Rdiv.
-rewrite Rminus_diag_eq, sqrt_0, Rmult_0_l, atan_0; lra.
+  unfold acos; repeat case Rle_dec; lra.
 Qed.
 
-Lemma acos_opp x : acos (- x) = PI - acos x.
+Lemma acos_opp : forall x,
+  acos (- x) = PI - acos x.
 Proof.
-(unfold acos; do 2 destruct total_order_T as [[]|]; try lra);
-   rewrite Rmult_opp_opp; unfold Rdiv, Rminus.
-  now rewrite <-atan_opp, (Ropp_mult_distr_r _ (/x)), Ropp_inv_permute; lra.
-rewrite <-Ropp_inv_permute; try lra.
-now rewrite <-Ropp_mult_distr_r, atan_opp; lra.
+  intros x.
+  unfold acos; repeat case Rle_dec; try lra.
+  intros Hx1 Hx2 Hx3 Hx4.
+  rewrite <- Rsqr_neg, Ropp_div, atan_opp.
+  lra.
 Qed.
 
-Lemma acos_atan x : 0 < x -> acos x = atan (sqrt (1 - x * x) / x).
-Proof. unfold acos; destruct total_order_T as [[]|]; lra. Qed.
-
-(* We recover the "natural" definition *)
-Lemma acos_asin x : -1 < x < 1 -> acos x = PI/2 - asin x.
+Lemma acos_inv_sqrt2 : acos (/sqrt 2) = PI/4.
 Proof.
-intros xB.
-assert (F : forall x, 0 < x < 1 -> acos x = PI/2 - asin x).
-- intros y yB.
-  unfold acos; destruct total_order_T as [[|]|_]; try lra.
-  rewrite asin_atan; try lra.
-  rewrite <- (Rinv_Rdiv _ y); try lra.
-  + rewrite atan_inv.
-      now replace (y * y) with (y ^ 2); lra.
-    apply Rdiv_lt_0_compat; try lra.
-    apply sqrt_lt_R0.
-    now nra.
-  + intro Hsqr.
-    assert (Hs : 0 <= 1 - y ^ 2) by nra.
-    now generalize (sqrt_eq_0 _ Hs Hsqr); nra.
-- destruct (total_order_T x 0) as [[He|He] | He].
-  + rewrite <-(Ropp_involutive x) at 1.
-    now rewrite acos_opp, F, asin_opp; lra.
-  + now rewrite He, asin_0, acos_0; lra.
-  + now apply F; lra.
+  rewrite acos_asin.
+    rewrite asin_inv_sqrt2.
+    lra.
+  split.
+    apply Rlt_le.
+    apply (Rlt_trans (-1) 0 (/ sqrt 2)); try lra.
+    apply Rinv_0_lt_compat.
+    apply Rlt_sqrt2_0.
+  replace 1 with (/ sqrt 1).
+    apply Rlt_le.
+    apply Rinv_1_lt_contravar.
+      rewrite sqrt_1; lra.
+      apply sqrt_lt_1; lra.
+      rewrite sqrt_1; lra.
 Qed.
 
-Lemma acos_bound x : -1 <= x <= 1 -> 0 <= acos x <= PI.
+(** ** Bounds of arccosine *)
+
+Lemma acos_bound : forall x,
+  0 <= acos x <= PI.
 Proof.
-intro xB.
-assert (F : forall y, 0 <= y <= 1 -> 0 <= acos y <= PI).
-  intros y Hy.
-  assert (PIP := PI_RGT_0).
-  assert (H : y = 0 \/ 0 < y) by lra.
-  destruct H as [H1 | H1].
-    now rewrite H1, acos_0; lra.
-  assert (H : y = 1 \/ y < 1) by lra.
-  destruct H as [H3 | H3].
-    rewrite H3, acos_1; lra.
-  rewrite acos_asin; try lra.
-  assert (Ha : -1 <= y <= 1) by lra.
-  now generalize (asin_bound _ Ha); lra.
-assert (H : 0 <= x \/ x <= 0) by lra.
-destruct H as [H1|H1].
-  now apply F; lra.
-assert (H : 0 <= -x <= 1) by lra.
-now generalize (F _ H); rewrite acos_opp; lra.
+  intros x.
+  pose proof PI_RGT_0.
+  unfold acos; repeat case Rle_dec; try lra.
+  intros Hx1 Hx2.
+  pose proof atan_bound (x / sqrt (1 - x²)); lra.
 Qed.
 
-Lemma cos_acos x : -1 <= x <= 1 -> cos (acos x) = x.
+Lemma acos_bound_lt : forall x, -1 < x < 1 ->
+  0 < acos x < PI.
 Proof.
-intros xB.
-assert (H : x = -1 \/ -1 < x) by lra.
-destruct H as [He|Hl].
-  rewrite He.
-  change (IZR (-1)) with (-(IZR 1)).
-  now rewrite acos_opp, acos_1, Rminus_0_r, cos_PI.
-assert (H : x = 1 \/ x < 1) by lra.
-destruct H as [He1|Hl1].
-  now rewrite He1, acos_1, cos_0.
-rewrite acos_asin, cos_shift; try lra.
-rewrite sin_asin; lra.
+  intros x xB.
+  pose proof PI_RGT_0.
+  unfold acos; repeat case Rle_dec; try lra.
+  intros Hx1 Hx2.
+  pose proof atan_bound (x / sqrt (1 - x²)); lra.
 Qed.
 
-Lemma acos_cos x : 0 <= x <= PI -> acos (cos x) = x.
+(** ** arccosine is the left and right inverse of cosine *)
+
+Lemma cos_acos : forall x, -1 <= x <= 1 ->
+  cos (acos x) = x.
 Proof.
-intro HB.
-apply cos_inj; try lra.
-  apply acos_bound.
-  now apply COS_bound.
-apply cos_acos.
-apply COS_bound.
+  intros x xB.
+  assert (H : x = -1 \/ -1 < x) by lra.
+  destruct H as [He|Hl].
+    rewrite He.
+    change (IZR (-1)) with (-(IZR 1)).
+    now rewrite acos_opp, acos_1, Rminus_0_r, cos_PI.
+  assert (H : x = 1 \/ x < 1) by lra.
+  destruct H as [He1|Hl1].
+    now rewrite He1, acos_1, cos_0.
+  rewrite acos_asin, cos_shift; try lra.
+  rewrite sin_asin; lra.
+Qed.
+
+Lemma acos_cos : forall x, 0 <= x <= PI ->
+  acos (cos x) = x.
+Proof.
+  intros x HB.
+  apply cos_inj; try lra.
+    apply acos_bound.
+  apply cos_acos.
+  apply COS_bound.
+Qed.
+
+(** ** Relation between arccosine, sine and tangent *)
+
+Lemma sin_acos : forall x, -1 <= x <= 1 ->
+  sin (acos x) = sqrt (1 - x²).
+Proof.
+  intros x Hxrange.
+  pose proof (cos_acos x) ltac:(lra) as Hacos.
+  remember (acos(x)) as α.
+  rewrite <- Hacos.
+  apply sin_cos.
+  pose proof sin_ge_0 α.
+  pose proof acos_bound x.
+  lra.
+Qed.
+
+Lemma tan_acos : forall x, -1 <= x <= 1 ->
+  tan (acos x) = sqrt (1 - x²) / x.
+Proof.
+  intros x Hxrange.
+  pose proof (cos_acos x) Hxrange as Hacos.
+  remember (acos(x)) as α.
+  rewrite <- Hacos.
+  apply tan_cos.
+  pose proof sin_ge_0 α.
+  pose proof acos_bound x.
+  lra.
+Qed.
+
+(** ** Derivative of arccosine *)
+
+Lemma derivable_pt_acos : forall x, -1 < x < 1 ->
+  derivable_pt acos x.
+Proof.
+  intros x H.
+
+  eapply (derivable_pt_recip_interv_decr cos acos 0 PI); [shelve ..|].
+
+  rewrite <- (pr_nu cos (acos x) (derivable_pt_cos (acos x))).
+  rewrite derive_pt_cos.
+  (* The acos bounds are needed later, so pose them before acos is unfolded *)
+  pose proof acos_bound_lt x ltac:(lra) as Hbnd.
+  unfold acos in *.
+  destruct (Rle_dec x (-1)); destruct (Rle_dec 1 x); [lra..|].
+  apply Rlt_not_eq, Ropp_lt_gt_0_contravar, Rlt_gt.
+  apply sin_gt_0; lra.
+
+  Unshelve.
+  - pose proof PI_RGT_0 as HPi; lra.
+  - rewrite cos_0; rewrite cos_PI; lra.
+  - clear x H; intros x H1 H2.
+    apply acos_bound.
+  - intros a Ha; reg.
+  - intros x0 H1 H2.
+    unfold comp,id.
+    apply cos_acos.
+    rewrite cos_PI in H1; rewrite cos_0 in H2; lra.
+  - intros x1 x2 H1 H2 H3.
+    pose proof cos_decreasing_1 x1 x2; lra.
+Qed.
+
+Lemma derive_pt_acos : forall (x : R) (Hxrange : -1 < x < 1),
+   derive_pt acos x (derivable_pt_acos x Hxrange) = -1 / sqrt (1 - x²).
+Proof.
+  intros x Hxrange.
+
+  epose proof (derive_pt_recip_interv_decr cos acos 0 PI x _ _ _ _ _ _ _ ) as Hd.
+
+  rewrite <- (pr_nu cos (acos x) (derivable_pt_cos (acos x))) in Hd.
+  rewrite <- (pr_nu acos x (derivable_pt_acos x Hxrange)) in Hd.
+  rewrite derive_pt_cos in Hd.
+  rewrite sin_acos in Hd by lra.
+  rewrite Hd; field.
+  apply Rgt_not_eq, Rlt_gt; rewrite <- sqrt_0.
+  pose proof Rsqr_bounds_lt 1 x ltac:(lra) as Hxb; rewrite Rsqr_1 in Hxb.
+  apply sqrt_lt_1; lra.
+
+Unshelve.
+  - pose proof PI_RGT_0; lra.
+  - rewrite cos_PI,cos_0; lra.
+  - intros x1 x2 Ha Hb Hc.
+    apply cos_decreasing_1; lra.
+  - intros x0 Ha Hb.
+    pose proof acos_bound x0; lra.
+  - intros a Ha; reg.
+  - intros x0 Ha Hb.
+    unfold comp,id.
+    apply cos_acos.
+    rewrite cos_PI in Ha; rewrite cos_0 in Hb; lra.
+  - rewrite <- (pr_nu cos (acos x) (derivable_pt_cos (acos x))).
+    rewrite derive_pt_cos.
+    rewrite sin_acos by lra.
+    apply Rlt_not_eq; rewrite <- Ropp_0; apply Ropp_lt_contravar; rewrite <- sqrt_0.
+    pose proof Rsqr_bounds_lt 1 x ltac:(lra) as Hxb; rewrite Rsqr_1 in Hxb.
+    apply sqrt_lt_1; lra.
 Qed.

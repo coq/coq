@@ -1,2 +1,0 @@
-
-- Addition to the Reals theory (`#09803 <https://github.com/coq/coq/pull/09803>`_ by Laurent Théry):

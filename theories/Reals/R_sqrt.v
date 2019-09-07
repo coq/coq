@@ -293,6 +293,14 @@ Proof.
   now apply sqrt_le_1_alt.
 Qed.
 
+Lemma sqrt_neg_0 x : x <= 0 -> sqrt x = 0.
+Proof.
+  intros Hx.
+  apply Rle_le_eq; split.
+  - rewrite <- sqrt_0; apply sqrt_le_1_alt, Hx.
+  - apply sqrt_pos.
+Qed.
+
 Lemma sqrt_inj : forall x y:R, 0 <= x -> 0 <= y -> sqrt x = sqrt y -> x = y.
 Proof.
   intros; cut (Rsqr (sqrt x) = Rsqr (sqrt y)).
