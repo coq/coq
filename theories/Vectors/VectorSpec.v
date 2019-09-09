@@ -153,3 +153,37 @@ Proof.
   - destruct v. inversion le. simpl. apply f_equal. apply IHp. 
 Qed.
 
+Lemma uncons_cons {A} : forall {n : nat} (a : A) (v : t A n),
+    uncons (a::v) = (a,v).
+Proof. reflexivity. Qed.
+
+Lemma append_comm_cons {A} : forall {n m : nat} (v : t A n) (w : t A m) (a : A),
+    a :: (v ++ w) = (a :: v) ++ w.
+Proof. reflexivity. Qed.
+
+Lemma splitat_append {A} : forall {n m : nat} (v : t A n) (w : t A m),
+    splitat n (v ++ w) = (v, w).
+Proof with simpl; auto.
+  intros n m v.
+  generalize dependent m.
+  induction v; intros...
+  rewrite IHv...
+Qed.
+
+Lemma append_splitat {A} : forall {n m : nat} (v : t A n) (w : t A m) (vw : t A (n+m)),
+    splitat n vw = (v, w) ->
+    vw = v ++ w.
+Proof with auto.
+  intros n m v.
+  generalize dependent m.
+  induction v; intros; inversion H...
+  destruct (splitat n (tl vw)) as [v' w'] eqn:Heq.
+  apply pair_equal_spec in H1.
+  destruct H1; subst.
+  rewrite <- append_comm_cons.
+  rewrite (eta vw).
+  apply cons_inj in H0.
+  destruct H0; subst.
+  f_equal...
+  apply IHv...
+Qed.
