@@ -547,6 +547,23 @@ let parse_args ~help ~init arglist : t * string list =
     parse init
   with any -> fatal_error any
 
+(* We need to reverse a few lists *)
+let parse_args ~help ~init args =
+  let opts, extra = parse_args ~help ~init args in
+  let opts =
+    { opts with
+      pre = { opts.pre with
+              ml_includes = List.rev opts.pre.ml_includes
+            ; vo_includes = List.rev opts.pre.vo_includes
+            ; vo_requires = List.rev opts.pre.vo_requires
+            ; load_vernacular_list = List.rev opts.pre.load_vernacular_list
+            }
+    ; config = { opts.config with
+                 set_options = List.rev opts.config.set_options
+               } ;
+    } in
+  opts, extra
+
 (******************************************************************************)
 (* Startup LoadPath and Modules                                               *)
 (******************************************************************************)
@@ -557,7 +574,7 @@ let require_libs opts =
   if opts.pre.load_init then prelude_data :: opts.pre.vo_requires else opts.pre.vo_requires
 
 let cmdline_load_path opts =
-  List.rev opts.pre.vo_includes @ List.(rev opts.pre.ml_includes)
+  opts.pre.ml_includes @ opts.pre.vo_includes
 
 let build_load_path opts =
   Coqinit.libs_init_load_path ~load_init:opts.pre.load_init @

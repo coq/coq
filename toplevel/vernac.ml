@@ -169,6 +169,6 @@ let beautify_pass ~doc ~comments ~ids ~filename =
 let load_vernac ~echo ~check ~interactive ~state filename =
   let ostate, ids, comments = load_vernac_core ~echo ~check ~interactive ~state filename in
   (* Pass for beautify *)
-  if !Flags.beautify then beautify_pass ~doc:ostate.State.doc ~comments ~ids:List.(rev ids) ~filename;
+  if !Flags.beautify then beautify_pass ~doc:ostate.State.doc ~comments ~ids:(List.rev ids) ~filename;
   (* End pass *)
   ostate
