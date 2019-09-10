@@ -379,9 +379,6 @@ let text_font =
 let show_toolbar =
   new preference ~name:["show_toolbar"] ~init:true ~repr:Repr.(bool)
 
-let contextual_menus_on_goal =
-  new preference ~name:["contextual_menus_on_goal"] ~init:true ~repr:Repr.(bool)
-
 let window_width =
   new preference ~name:["window_width"] ~init:800 ~repr:Repr.(int)
 
@@ -982,9 +979,7 @@ let configure ?(apply=(fun () -> ())) parent =
       cmd_browse#get
   in
 
-  let contextual_menus_on_goal = pbool "Contextual menus on goal" contextual_menus_on_goal in
-
-  let misc = [contextual_menus_on_goal;stop_before;reset_on_tab_switch;
+  let misc = [stop_before;reset_on_tab_switch;
               vertical_tabs;opposite_tabs] in
 
 (*
