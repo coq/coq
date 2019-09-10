@@ -226,20 +226,20 @@ Section S.
     (*    Definition or_clause_cnf (t:clause) (f:cnf) : cnf :=
           List.map (fun x => (t++x)) f. *)
 
-    Definition or_clause_cnf (t:clause) (f:cnf) : cnf :=
+    Definition or_clause_cnf (t:clause) (f:cnf) (accu : cnf) : cnf :=
       List.fold_right (fun e acc =>
                          match or_clause t e with
                          | None => acc
                          | Some cl => cl :: acc
-                         end) nil f.
+                         end) accu f.
 
-
-    Fixpoint or_cnf (f : cnf) (f' : cnf) {struct f}: cnf :=
+    Fixpoint or_cnf_aux (f : cnf) (f' : cnf) accu {struct f} : cnf :=
       match f with
-      | nil => cnf_tt
-      | e :: rst => (or_cnf rst f') ++ (or_clause_cnf e f')
+      | nil => accu
+      | e :: rst => or_cnf_aux rst f' (or_clause_cnf e f' accu)
       end.
 
+    Definition or_cnf f f' := or_cnf_aux f f' nil.
 
     Definition and_cnf (f1 : cnf) (f2 : cnf) : cnf :=
       f1 ++ f2.
@@ -488,8 +488,15 @@ Section S.
       tauto.
   Qed.
 
+  Lemma or_clause_cnf_accu : forall t f accu, or_clause_cnf t f accu = or_clause_cnf t f nil ++ accu.
+  Proof.
+    unfold or_clause_cnf.
+    intros t f; revert t; induction f as [|a f IHf]; intros t accu; cbn.
+    + reflexivity.
+    + destruct (or_clause t a); cbn; f_equal; apply IHf.
+  Qed.
 
-  Lemma or_clause_cnf_correct : forall env t f, eval_cnf env (or_clause_cnf t f) -> (eval_clause env t) \/ (eval_cnf env f).
+  Lemma or_clause_cnf_correct : forall env t f, eval_cnf env (or_clause_cnf t f nil) -> (eval_clause env t) \/ (eval_cnf env f).
   Proof.
     unfold eval_cnf.
     unfold or_clause_cnf.
@@ -520,12 +527,19 @@ Section S.
       tauto.
   Qed.
 
-
   Lemma eval_cnf_cons : forall env a f,  (~ make_conj  (eval_tt env) a) -> eval_cnf env f -> eval_cnf env (a::f).
   Proof.
     intros.
     unfold eval_cnf in *.
     rewrite make_conj_cons ; eauto.
+  Qed.
+
+  Lemma or_cnf_aux_accu : forall f f' accu, or_cnf_aux f f' accu = or_cnf_aux f f' nil ++ accu.
+  Proof.
+  induction f as [|a f IHf]; intros f' accu; cbn.
+  + reflexivity.
+  + rewrite IHf; rewrite (IHf _ (or_clause_cnf a f' nil)).
+    rewrite or_clause_cnf_accu; rewrite app_assoc; reflexivity.
   Qed.
 
   Lemma or_cnf_correct : forall env f f', eval_cnf env (or_cnf f f') -> (eval_cnf env  f) \/ (eval_cnf  env f').
@@ -536,7 +550,8 @@ Section S.
     tauto.
     (**)
     intros.
-    simpl in H.
+    cbn in H.
+    rewrite or_cnf_aux_accu in H.
     destruct (eval_cnf_app _ _ _ H).
     clear H.
     destruct (IHf _ H0).

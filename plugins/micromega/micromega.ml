@@ -1063,23 +1063,30 @@ let rec or_clause unsat deduce cl1 cl2 =
 
 (** val or_clause_cnf :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) clause -> ('a1,
-    'a2) cnf -> ('a1, 'a2) cnf **)
+    'a2) cnf -> ('a1, 'a2) cnf -> ('a1, 'a2) cnf **)
 
-let or_clause_cnf unsat deduce t0 f =
+let or_clause_cnf unsat deduce t0 f accu =
   fold_right (fun e acc ->
     match or_clause unsat deduce t0 e with
     | Some cl -> cl::acc
-    | None -> acc) [] f
+    | None -> acc) accu f
+
+(** val or_cnf_aux :
+    ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) cnf -> ('a1,
+    'a2) cnf -> ('a1, 'a2) cnf -> ('a1, 'a2) cnf **)
+
+let rec or_cnf_aux unsat deduce f f' accu =
+  match f with
+  | [] -> accu
+  | e::rst ->
+    or_cnf_aux unsat deduce rst f' (or_clause_cnf unsat deduce e f' accu)
 
 (** val or_cnf :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1, 'a2) cnf -> ('a1,
     'a2) cnf -> ('a1, 'a2) cnf **)
 
-let rec or_cnf unsat deduce f f' =
-  match f with
-  | [] -> cnf_tt
-  | e::rst ->
-    app (or_cnf unsat deduce rst f') (or_clause_cnf unsat deduce e f')
+let or_cnf unsat deduce f f' =
+  or_cnf_aux unsat deduce f f' []
 
 (** val and_cnf : ('a1, 'a2) cnf -> ('a1, 'a2) cnf -> ('a1, 'a2) cnf **)
 
