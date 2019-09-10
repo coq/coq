@@ -366,7 +366,7 @@ let primitive_hash = function
 type mllambda =
   | MLlocal        of lname
   | MLglobal       of gname
-  | MLprimitive    of primitive
+  | MLprimitive    of primitive * mllambda array
   | MLlam          of lname array * mllambda
   | MLletrec       of (lname * lname array * mllambda) array * mllambda
   | MLlet          of lname * mllambda * mllambda
@@ -409,7 +409,9 @@ let rec eq_mllambda gn1 gn2 n env1 env2 t1 t2 =
   | MLglobal gn1', MLglobal gn2' ->
       eq_gname gn1' gn2' || (eq_gname gn1 gn1' && eq_gname gn2 gn2')
       || (eq_gname gn1 gn2' && eq_gname gn2 gn1')
-  | MLprimitive prim1, MLprimitive prim2 -> eq_primitive prim1 prim2
+  | MLprimitive (prim1, args1), MLprimitive (prim2, args2) ->
+      eq_primitive prim1 prim2 &&
+      Array.equal (eq_mllambda gn1 gn2 n env1 env2) args1 args2
   | MLlam (lns1, ml1), MLlam (lns2, ml2) ->
       Int.equal (Array.length lns1) (Array.length lns2) &&
       let env1 = push_lnames n env1 lns1 in
@@ -503,7 +505,9 @@ let rec hash_mllambda gn n env t =
   match t with
   | MLlocal ln -> combinesmall 1 (LNmap.find ln env)
   | MLglobal gn' -> combinesmall 2 (if eq_gname gn gn' then 0 else gname_hash gn')
-  | MLprimitive prim -> combinesmall 3 (primitive_hash prim)
+  | MLprimitive (prim, args) ->
+    let h = primitive_hash prim in
+    combinesmall 3 (hash_mllambda_array gn n env h args)
   | MLlam (lns, ml) ->
       let env = push_lnames n env lns in
       combinesmall 4 (combine (Array.length lns) (hash_mllambda gn (n+1) env ml))
@@ -586,7 +590,10 @@ let fv_lam l =
     match l with
     | MLlocal l ->
         if LNset.mem l bind then fv else LNset.add l fv
-    | MLglobal _ | MLprimitive _  | MLint _ | MLuint _ | MLfloat _ -> fv
+    | MLglobal _ | MLint _ | MLuint _ | MLfloat _ -> fv
+    | MLprimitive (_, args) ->
+        let fv_arg arg fv = aux arg bind fv in
+        Array.fold_right fv_arg args fv
     | MLlam (ln,body) ->
         let bind = Array.fold_right LNset.add ln bind in
         aux body bind fv
@@ -649,7 +656,7 @@ let mkForceCofix prefix ind arg =
   MLlet (name, arg,
     MLif (
       MLisaccu (prefix, ind, MLlocal name),
-      MLapp (MLprimitive Force_cofix, [|MLlocal name|]),
+      MLprimitive (Force_cofix, [|MLlocal name|]),
       MLlocal name))
 
 let empty_params = [||]
@@ -970,7 +977,7 @@ let merge_branches t =
   Array.iter (fun (pat,body) -> insert pat body newt) t;
   Array.of_list (to_list newt)
 
-let app_prim p args = MLapp(MLprimitive p, args)
+let app_prim p args = MLprimitive (p, args)
 
 type prim_aux =
   | PAprim of string * pconstant * CPrimitives.t * prim_aux array
@@ -979,8 +986,8 @@ type prim_aux =
 let add_check cond targs args =
   let aux cond t a =
     match t, a with
-    | CPrimitives.(PITT_type (PT_int63, _)), PAml(MLapp(MLprimitive Mk_uint, _)) -> cond
-    | CPrimitives.(PITT_type (PT_array, _)), PAml(MLapp(MLprimitive MLparray_of_array, _)) -> cond
+    | CPrimitives.(PITT_type (PT_int63, _)), PAml(MLprimitive (Mk_uint, _)) -> cond
+    | CPrimitives.(PITT_type (PT_array, _)), PAml(MLprimitive (MLparray_of_array, _)) -> cond
     | CPrimitives.(PITT_type (PT_array, _)), PAml(MLapp (MLglobal (Ginternal "get_value"),_)) -> cond
     | CPrimitives.(PITT_type (prim_ty, _)), PAml ml ->
        (* FIXME: use explicit equality function *)
@@ -1015,20 +1022,22 @@ let extract_prim ml_of l =
 let cast_to_int v =
   match v with
   | MLint _ -> v
-  | _ -> MLapp(MLprimitive Val_to_int, [|v|])
+  | _ -> MLprimitive (Val_to_int, [|v|])
 
 let ml_of_instance instance u =
   let ml_of_level l =
     match Univ.Level.var_index l with
     | Some i ->
-       let univ = MLapp(MLprimitive MLmagic, [|MLlocal (Option.get instance)|]) in
-       mkMLapp (MLprimitive MLarrayget) [|univ; MLint i|]
+      (* FIXME: use a proper cast function *)
+       let univ = MLprimitive (MLmagic, [|MLlocal (Option.get instance)|]) in
+       MLprimitive (MLarrayget, [|univ; MLint i|])
     | None -> let i = push_symbol (SymbLevel l) in get_level_code i
   in
   let u = Univ.Instance.to_array u in
   if Array.is_empty u then [||]
   else let u = Array.map ml_of_level u in
-       [|MLapp (MLprimitive MLmagic, [|MLarray u|])|]
+      (* FIXME: use a proper cast function *)
+       [|MLprimitive (MLmagic, [|MLarray u|])|]
 
 let compile_prim env decl cond paux =
 
@@ -1045,7 +1054,7 @@ let compile_prim env decl cond paux =
     | PAprim(prefix, (kn,u), op, args) ->
       let uarg = ml_of_instance env.env_univ u in
       let prim_const = mkMLapp (MLglobal (Gconstant(prefix,kn))) uarg in
-      let prim = mkMLapp (MLprimitive(Coq_primitive(op, true))) [|prim_const|] in
+      let prim = MLprimitive ((Coq_primitive(op, true)), [|prim_const|]) in
       mkMLapp prim (Array.map naive_prim_aux args)
     | PAml ml -> ml
   in
@@ -1104,18 +1113,18 @@ let compile_prim env decl cond paux =
   | Lmeta(mv,_ty) ->
      let tyn = fresh_lname Anonymous in
      let i = push_symbol (SymbMeta mv) in
-     MLapp(MLprimitive Mk_meta, [|get_meta_code i; MLlocal tyn|])
+     MLprimitive (Mk_meta, [|get_meta_code i; MLlocal tyn|])
   | Levar(evk, args) ->
      let i = push_symbol (SymbEvar evk) in
      (** Arguments are *not* reversed in evar instances in native compilation *)
      let args = MLarray(Array.map (ml_of_lam env l) args) in
-     MLapp(MLprimitive Mk_evar, [|get_evar_code i; args|])
+     MLprimitive (Mk_evar, [|get_evar_code i; args|])
   | Lprod(dom,codom) ->
       let dom = ml_of_lam env l dom in
       let codom = ml_of_lam env l codom in
       let n = get_prod_name codom in
       let i = push_symbol (SymbName n) in
-      MLapp(MLprimitive Mk_prod, [|get_name_code i;dom;codom|])
+      MLprimitive (Mk_prod, [|get_name_code i;dom;codom|])
   | Llam(ids,body) ->
     let lnames,env = push_rels env ids in
     MLlam(lnames, ml_of_lam env l body)
@@ -1178,8 +1187,8 @@ let compile_prim env decl cond paux =
          (* remark : the call to fv_args does not add free variables in env_c *)
       let i = push_symbol (SymbMatch annot) in
       let accu =
-        MLapp(MLprimitive Mk_sw,
-              [| get_match_code i; MLapp (MLprimitive Cast_accu, [|la_uid|]);
+        MLprimitive (Mk_sw,
+              [| get_match_code i; MLprimitive (Cast_accu, [|la_uid|]);
                  pred;
                  cn_fv |]) in
 (*      let body = MLlam([|a_uid|], MLmatch(annot, la_uid, accu, bs)) in
@@ -1268,7 +1277,7 @@ let compile_prim env decl cond paux =
         let body =
           MLif(MLisaccu (prefix, ind, reci),
                mkMLapp
-                 (MLapp(MLprimitive (Mk_fix(rec_pos,i)),
+                 (MLprimitive ((Mk_fix(rec_pos,i)),
                         [|mk_type; mk_norm|]))
                  pargsi,
                MLapp(MLglobal t_norm_f.(i),
@@ -1322,12 +1331,12 @@ let compile_prim env decl cond paux =
           MLlam(Array.append paramsi [|uniti|],
                 MLapp(MLglobal t_norm_f.(i),
                       Array.concat [fv_args;lf_args;pargsi])) in
-        MLsequence(MLapp(MLprimitive Upd_cofix, [|lf_args.(i);body|]),
+        MLsequence(MLprimitive (Upd_cofix, [|lf_args.(i);body|]),
                    cont) in
       let upd = Array.fold_right_i upd lf lf_args.(start) in
       let mk_let i lname cont =
         MLlet(lname,
-              MLapp(MLprimitive(Mk_cofix i),[| MLlocal ltype; MLlocal lnorm|]),
+              MLprimitive ((Mk_cofix i),[| MLlocal ltype; MLlocal lnorm|]),
               cont) in
       let init = Array.fold_right_i mk_let lf upd in
       MLlet(lnorm, mk_norm, MLlet(ltype, mk_type, init))
@@ -1345,16 +1354,16 @@ let compile_prim env decl cond paux =
         (lname, paramsi, body) in
       MLletrec(Array.mapi mkrec lf, lf_args.(start)) *)
 
-  | Lint tag -> MLapp(MLprimitive Mk_int, [|MLint tag|])
+  | Lint tag -> MLprimitive (Mk_int, [|MLint tag|])
 
   | Lmakeblock (prefix,cn,tag,args) ->
      let args = Array.map (ml_of_lam env l) args in
      MLconstruct(prefix,cn,tag,args)
-  | Luint i -> MLapp(MLprimitive Mk_uint, [|MLuint i|])
-  | Lfloat f -> MLapp(MLprimitive Mk_float, [|MLfloat f|])
+  | Luint i -> MLprimitive (Mk_uint, [|MLuint i|])
+  | Lfloat f -> MLprimitive (Mk_float, [|MLfloat f|])
   | Lparray (t,def) ->
     let def = ml_of_lam env l def in
-    MLapp(MLprimitive MLparray_of_array, [| MLarray (Array.map (ml_of_lam env l) t); def |])
+    MLprimitive (MLparray_of_array, [| MLarray (Array.map (ml_of_lam env l) t); def |])
   | Lval v ->
       let i = push_symbol (SymbValue v) in get_value_code i
   | Lsort s ->
@@ -1363,8 +1372,9 @@ let compile_prim env decl cond paux =
       | None -> MLarray [||]
       | Some u -> MLlocal u
     in
-    let uarg = MLapp(MLprimitive MLmagic, [|uarg|]) in
-    MLapp(MLprimitive Mk_sort, [|get_sort_code i; uarg|])
+    (* FIXME: use a dedicated cast function *)
+    let uarg = MLprimitive (MLmagic, [|uarg|]) in
+    MLprimitive (Mk_sort, [|get_sort_code i; uarg|])
   | Lind (prefix, (ind, u)) ->
      let uargs = ml_of_instance env.env_univ u in
      mkMLapp (MLglobal (Gind (prefix, ind))) uargs
@@ -1405,7 +1415,8 @@ let subst s l =
     let rec aux l =
       match l with
       | MLlocal id -> (try LNmap.find id s with Not_found -> l)
-      | MLglobal _ | MLprimitive _ | MLint _ | MLuint _ | MLfloat _ -> l
+      | MLglobal _ | MLint _ | MLuint _ | MLfloat _ -> l
+      | MLprimitive (p, args) -> MLprimitive (p, Array.map aux args)
       | MLlam(params,body) -> MLlam(params, aux body)
       | MLletrec(defs,body) ->
         let arec (f,params,body) = (f,params,aux body) in
@@ -1475,7 +1486,9 @@ let optimize gdef l =
   let rec optimize s l =
     match l with
     | MLlocal id -> (try LNmap.find id s with Not_found -> l)
-    | MLglobal _ | MLprimitive _ | MLint _ | MLuint _ | MLfloat _ -> l
+    | MLglobal _ | MLint _ | MLuint _ | MLfloat _ -> l
+    | MLprimitive (p, args) ->
+        MLprimitive (p, Array.map (optimize s) args)
     | MLlam(params,body) ->
         MLlam(params, optimize s body)
     | MLletrec(decls,body) ->
@@ -1653,7 +1666,8 @@ let pp_mllam fmt l =
     match l with
     | MLlocal ln -> Format.fprintf fmt "@[%a@]" pp_lname ln
     | MLglobal g -> Format.fprintf fmt "@[%a@]" pp_gname g
-    | MLprimitive p -> Format.fprintf fmt "@[%a@]" pp_primitive p
+    | MLprimitive (p, args) ->
+      Format.fprintf fmt "@[%a@ %a@]" pp_primitive p (pp_args true) args
     | MLlam(ids,body) ->
         Format.fprintf fmt "@[(fun%a@ ->@\n %a)@]"
           pp_ldecls ids pp_mllam body
@@ -1724,8 +1738,7 @@ let pp_mllam fmt l =
 
   and pp_blam fmt l =
     match l with
-    | MLprimitive (Mk_prod | Mk_sort) (* FIXME: why this special case? *)
-    | MLlam _ | MLletrec _ | MLlet _ | MLapp _ | MLif _ ->
+    | MLprimitive (_, _) | MLlam _ | MLletrec _ | MLlet _ | MLapp _ | MLif _ ->
         Format.fprintf fmt "(%a)" pp_mllam l
     | MLconstruct(_,_,_,args) when Array.length args > 0 ->
         Format.fprintf fmt "(%a)" pp_mllam l
@@ -1932,7 +1945,7 @@ and compile_rel env sigma univ auxdefs n =
       let auxdefs,code = compile_with_fv env sigma univ auxdefs None code in
       Glet(Grel n, code)::auxdefs
   | LocalAssum _ ->
-      Glet(Grel n, MLprimitive (Mk_rel n))::auxdefs
+      Glet(Grel n, MLprimitive (Mk_rel n, [||]))::auxdefs
 
 and compile_named env sigma univ auxdefs id =
   let open Context.Named.Declaration in
@@ -1942,7 +1955,7 @@ and compile_named env sigma univ auxdefs id =
       let auxdefs,code = compile_with_fv env sigma univ auxdefs None code in
       Glet(Gnamed id, code)::auxdefs
   | LocalAssum _ ->
-      Glet(Gnamed id, MLprimitive (Mk_var id))::auxdefs
+      Glet(Gnamed id, MLprimitive (Mk_var id, [||]))::auxdefs
 
 let compile_constant env sigma con cb =
     let no_univs = 0 = Univ.AbstractContext.size (Declareops.constant_polymorphic_context cb) in
@@ -1975,7 +1988,7 @@ let compile_constant env sigma con cb =
         (*
         let t = mkMLlam [|univ|] (mkMLapp (MLprimitive Mk_const)
          *)
-        [Glet(Gconstant ("", con), mkMLapp (MLprimitive Mk_const) args)]
+        [Glet(Gconstant ("", con), MLprimitive (Mk_const, args))]
     end
 
 module StringOrd = struct type t = string let compare = String.compare end
@@ -2009,7 +2022,8 @@ let compile_mind mb mind stack =
           [|get_ind_code j; MLarray [||]|]
         else [|get_ind_code j|]
       in
-      Glet(name, MLapp (MLprimitive Mk_ind, args))
+      (* FIXME: pass universes here *)
+      Glet(name, MLprimitive (Mk_ind, args))
     in
     let nparams = mb.mind_nparams in
     let add_proj proj_arg acc _pb =
@@ -2030,8 +2044,8 @@ let compile_mind mb mind stack =
         (fun i -> if Int.equal i proj_arg then Some ci_uid else None)
       in
       let i = push_symbol (SymbProj (ind, proj_arg)) in
-      let accu = MLapp (MLprimitive Cast_accu, [|MLlocal cf_uid|]) in
-      let accu_br = MLapp (MLprimitive Mk_proj, [|get_proj_code i;accu|]) in
+      let accu = MLprimitive (Cast_accu, [|MLlocal cf_uid|]) in
+      let accu_br = MLprimitive (Mk_proj, [|get_proj_code i;accu|]) in
       let code = MLmatch(asw,MLlocal cf_uid,accu_br,[|[NonConstPattern (tag,cargs)],MLlocal ci_uid|]) in
       let code = MLlet(cf_uid, mkForceCofix "" ind (MLlocal c_uid), code) in
       let gn = Gproj ("", ind, proj_arg) in
