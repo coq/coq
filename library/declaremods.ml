@@ -311,14 +311,7 @@ and collect_export i mp (exports,objs as acc) =
     collect_module_objects mp (MPset.add mp exports, objs)
   else acc
 
-let rec really_import_module mp =
-  (* May raise Not_found for unknown module and for functors *)
-  let modobjs = ModObjs.get mp in
-  let prefix = modobjs.module_prefix in
-  open_objects 1 prefix modobjs.module_substituted_objects;
-  open_objects 1 prefix modobjs.module_keep_objects
-
-and open_object i (name, obj) =
+let rec open_object i (name, obj) =
   match obj with
   | AtomicObject o -> Libobject.open_object i (name, o)
   | ModuleObject sobjs ->
@@ -362,7 +355,9 @@ and open_include i ((sp,kn), aobjs) =
   open_objects i prefix o
 
 and open_export i mp =
-  if Int.equal i 1 then really_import_module mp
+  if Int.equal i 1 then
+  let _,objs = collect_module_objects mp (MPset.empty, []) in
+  List.iter (open_object 1) objs
 
 and open_keep i ((sp,kn),kobjs) =
   let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
