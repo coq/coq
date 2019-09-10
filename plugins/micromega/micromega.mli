@@ -328,13 +328,21 @@ val ror_clause :
   ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1,
   'a2) clause -> (('a1, 'a2) clause, 'a2 list) sum
 
-val ror_clause_cnf :
+val ror_clause_cnf_aux :
   ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1,
-  'a2) clause list -> ('a1, 'a2) clause list * 'a2 list
+  'a2) clause list -> (('a1, 'a2) clause list * 'a2 list list) -> ('a1, 'a2)
+  clause list * 'a2 list list
+
+val rev_concat : 'a1 list list -> 'a1 list -> 'a1 list
+
+val ror_cnf_aux :
+  ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list list ->
+  ('a1, 'a2) clause list -> (('a1, 'a2) clause list * 'a2 list) -> ('a1, 'a2)
+  clause list * 'a2 list
 
 val ror_cnf :
   ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list list ->
-  ('a1, 'a2) clause list -> ('a1, 'a2) cnf * 'a2 list
+  ('a1, 'a2) clause list -> ('a1, 'a2) clause list * 'a2 list
 
 val rxcnf :
   ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> ('a1 -> 'a3 -> ('a2, 'a3)

@@ -1160,28 +1160,43 @@ let rec ror_clause unsat deduce cl1 cl2 =
      | Inl cl' -> ror_clause unsat deduce cl cl'
      | Inr l -> Inr l)
 
-(** val ror_clause_cnf :
+(** val ror_clause_cnf_aux :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list -> ('a1,
-    'a2) clause list -> ('a1, 'a2) clause list * 'a2 list **)
+    'a2) clause list -> (('a1, 'a2) clause list * 'a2 list list) -> ('a1,
+    'a2) clause list * 'a2 list list **)
 
-let ror_clause_cnf unsat deduce t0 f =
+let ror_clause_cnf_aux unsat deduce t0 f accu =
   fold_right (fun e pat ->
     let acc,tg = pat in
     (match ror_clause unsat deduce t0 e with
      | Inl cl -> (cl::acc),tg
-     | Inr l -> acc,(app tg l))) ([],[]) f
+     | Inr l -> acc,(l::tg))) accu f
+
+(** val rev_concat : 'a1 list list -> 'a1 list -> 'a1 list **)
+
+let rec rev_concat l accu =
+  match l with
+  | [] -> accu
+  | x::l0 -> rev_concat l0 (app x accu)
+
+(** val ror_cnf_aux :
+    ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list list ->
+    ('a1, 'a2) clause list -> (('a1, 'a2) clause list * 'a2 list) -> ('a1,
+    'a2) clause list * 'a2 list **)
+
+let rec ror_cnf_aux unsat deduce f f' accu =
+  match f with
+  | [] -> accu
+  | e::rst ->
+    let e_f',t' = ror_clause_cnf_aux unsat deduce e f' ((fst accu),[]) in
+    ror_cnf_aux unsat deduce rst f' (e_f',(rev_concat t' (snd accu)))
 
 (** val ror_cnf :
     ('a1 -> bool) -> ('a1 -> 'a1 -> 'a1 option) -> ('a1 * 'a2) list list ->
-    ('a1, 'a2) clause list -> ('a1, 'a2) cnf * 'a2 list **)
+    ('a1, 'a2) clause list -> ('a1, 'a2) clause list * 'a2 list **)
 
-let rec ror_cnf unsat deduce f f' =
-  match f with
-  | [] -> cnf_tt,[]
-  | e::rst ->
-    let rst_f',t0 = ror_cnf unsat deduce rst f' in
-    let e_f',t' = ror_clause_cnf unsat deduce e f' in
-    (app rst_f' e_f'),(app t0 t')
+let ror_cnf unsat deduce f f' =
+  ror_cnf_aux unsat deduce f f' ([],[])
 
 (** val rxcnf :
     ('a2 -> bool) -> ('a2 -> 'a2 -> 'a2 option) -> ('a1 -> 'a3 -> ('a2, 'a3)

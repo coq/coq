@@ -301,22 +301,28 @@ Section S.
                    end
         end.
 
-      Definition ror_clause_cnf t f :=
+      Definition ror_clause_cnf_aux t f accu :=
         List.fold_right (fun e '(acc,tg) =>
                            match ror_clause t e with
                            | inl cl => (cl :: acc,tg)
-                           | inr l => (acc,tg++l)
-                           end) (nil,nil) f .
+                           | inr l => (acc, l :: tg)
+                           end) accu f .
 
-
-      Fixpoint ror_cnf f f' :=
-        match f with
-        | nil => (cnf_tt,nil)
-        | e :: rst =>
-          let (rst_f',t) := ror_cnf rst f' in
-          let (e_f', t') := ror_clause_cnf e f' in
-          (rst_f' ++ e_f', t ++ t')
+      Fixpoint rev_concat {A} (l : list (list A)) accu :=
+        match l with
+        | nil => accu
+        | cons x l => rev_concat l (x ++ accu)
         end.
+
+      Fixpoint ror_cnf_aux f f' accu :=
+        match f with
+        | nil => accu
+        | e :: rst =>
+          let (e_f', t') := ror_clause_cnf_aux e f' (fst accu, nil) in
+          ror_cnf_aux rst f' (e_f', rev_concat t' (snd accu))
+        end.
+
+      Definition ror_cnf f f' := ror_cnf_aux f f' (nil, nil).
 
       Fixpoint rxcnf {TX AF: Type}(polarity : bool) (f : TFormula TX AF) :=
         match f with
