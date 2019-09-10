@@ -160,7 +160,15 @@ Lemma test_big_occs (F G : nat -> nat) (n : nat) :
   \sum_(0 <= i < n) (i * 0) = \sum_(0 <= i < n) (i * 0) + \sum_(0 <= i < n) (i * 0).
 Proof.
 under {2}[in RHS]eq_bigr => i Hi do rewrite muln0.
-by rewrite big_const_nat iter_addn_0.
+by rewrite big_const_nat iter_addn_0 mul0n addn0.
+Qed.
+
+Lemma test_big_occs_inH (F G : nat -> nat) (n : nat) :
+  \sum_(0 <= i < n) (i * 0) = \sum_(0 <= i < n) (i * 0) + \sum_(0 <= i < n) (i * 0) -> True.
+Proof.
+move=> H.
+do [under {2}[in RHS]eq_bigr => i Hi do rewrite muln0] in H.
+by rewrite big_const_nat iter_addn_0 mul0n addn0 in H.
 Qed.
 
 (* Solely used, one such renaming is useless in practice, but it works anyway *)
