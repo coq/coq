@@ -161,8 +161,7 @@ azure-pipelines.yml @coq/ci-maintainers
 /plugins/nsatz/         @thery
 # Secondary maintainer @ppedrot
 
-/plugins/setoid_ring/   @amahboubi
-# Secondary maintainer @bgregoir
+/plugins/setoid_ring/   @coq/ring-maintainers
 
 /plugins/ssrmatching/  @coq/ssreflect-maintainers
 /plugins/ssr/          @coq/ssreflect-maintainers
