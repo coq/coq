@@ -538,6 +538,8 @@ Parameter Under_eq :
   forall (R : Type), R -> R -> Prop.
 Parameter Under_eq_from_eq :
   forall (T : Type) (x y : T), @Under_eq T x y -> x = y.
+Parameter Under_eqE :
+  forall (T : Type) (x y : T), @Under_eq T x y = (x = y).
 
 (** [Over_eq, over_eq, over_eq_done]: for "by rewrite over_eq" *)
 Parameter Over_eq :
@@ -564,6 +566,9 @@ Definition Under_eq := @eq.
 Lemma Under_eq_from_eq (T : Type) (x y : T) :
   @Under_eq T x y -> x = y.
 Proof. by []. Qed.
+Lemma Under_eqE (T : Type) (x y : T) :
+  @Under_eq T x y = (x = y).
+Proof. by []. Qed.
 Definition Over_eq := Under_eq.
 Lemma over_eq :
   forall (T : Type) (x : T) (y : T), @Under_eq T x y = @Over_eq T x y.
@@ -587,6 +592,9 @@ Parameter Under_rel :
 Parameter Under_rel_from_rel :
   forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A),
     @Under_rel A eqA EeqA x y -> eqA x y.
+Parameter Under_relE :
+  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A),
+    @Under_rel A eqA EeqA x y = eqA x y.
 
 (** [Over_rel, over_rel, over_rel_done]: for "by rewrite over_rel" *)
 Parameter Over_rel :
@@ -615,6 +623,9 @@ Lemma Under_rel_from_rel :
   forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A),
     @Under_rel A eqA EeqA x y -> eqA x y.
 Proof. by []. Qed.
+Lemma Under_relE (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A) :
+  @Under_rel A eqA EeqA x y = eqA x y.
+Proof. by []. Qed.
 Definition Over_rel := Under_rel.
 Lemma over_rel :
   forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A),
@@ -633,13 +644,19 @@ End Under_rel.
 Register Under_rel.Under_rel as plugins.ssreflect.Under_rel.
 Register Under_rel.Under_rel_from_rel as plugins.ssreflect.Under_rel_from_rel.
 
+(** Closing rewrite rule *)
 Definition over := (over_eq, over_rel).
 
+(** Closing tactic *)
 Ltac over :=
   by [ apply: Under_eq.under_eq_done
      | apply: Under_rel.under_rel_done
      | rewrite over
      ].
+
+(** Convenience rewrite rule to unprotect evars, e.g., to instantiate
+    them in another way than with reflexivity. *)
+Definition UnderE := (Under_eqE, Under_relE).
 
 (** An interface for non-Prop types; used to avoid improper instantiation
     of polymorphic lemmas with on-demand implicits when they are used as views.
