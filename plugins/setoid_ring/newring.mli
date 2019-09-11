@@ -10,7 +10,6 @@
 
 open Names
 open EConstr
-open Libnames
 open Constrexpr
 open Newring_ast
 
@@ -23,7 +22,7 @@ val add_theory :
   constr_expr ->
   constr_expr ring_mod list -> unit
 
-val from_name : ring_info Spmap.t ref
+val print_rings : unit -> unit
 
 val ring_lookup :
   Geninterp.Val.t ->
@@ -35,7 +34,7 @@ val add_field_theory :
   constr_expr ->
   constr_expr field_mod list -> unit
 
-val field_from_name : field_info Spmap.t ref
+val print_fields : unit -> unit
 
 val field_lookup :
   Geninterp.Val.t ->
