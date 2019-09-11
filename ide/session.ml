@@ -502,19 +502,25 @@ let build_layout (sn:session) =
       ~callback:(fun () -> if sn.buffer#modified
         then img#set_stock `SAVE
         else img#set_stock `YES) in
-  let _ =
-    eval_paned#misc#connect#size_allocate
-      ~callback:
-      (let b = ref true in
-       fun {Gtk.width=paned_width;Gtk.height=paned_height} ->
-       if !b then begin
-           eval_paned#set_position
-             (paned_width / 2);
-           state_paned#set_position
-             (paned_height / 2);
-           b := false
-	 end)
-  in
+  (* There was an issue in the previous implementation for setting the
+     position of the handle. It was using the size_allocate event but
+     there is an issue with size_allocate. G. Melquiond analyzed that
+     at starting time, the size_allocate event is only issued in
+     Layout phase of the gtk loop so that it is actually processed
+     only in the next iteration of the event-update-layout-paint loop,
+     after the user does something and trigger an effective new event
+     (see #10578). So we preventively enforce an estimated position
+     for the handles to be used in the very first initializing
+     iteration of the loop *)
+  let () =
+    (* 14 is the estimated size for vertical borders *)
+    let estimated_vertical_handle_position = (window_width#get - 14) / 2 in
+    (* 169 is the estimated size for menus, command line, horizontal border *)
+    let estimated_horizontal_handle_position = (window_height#get - 169) / 2 in
+    if estimated_vertical_handle_position > 0 then
+      eval_paned#set_position estimated_vertical_handle_position;
+    if estimated_horizontal_handle_position > 0 then
+      state_paned#set_position estimated_horizontal_handle_position in
   session_box#pack sn.finder#coerce;
   session_box#pack sn.segment#coerce;
   sn.command#pack_in (session_paned#pack2 ~shrink:false ~resize:false);
@@ -538,8 +544,6 @@ let build_layout (sn:session) =
     else (label#set_text (red txt);label#set_use_markup true));
   session_tab#pack sn.tab_label#coerce;
   img#set_stock `YES;
-  eval_paned#set_position 1;
-  state_paned#set_position 1;
   let control =
     object
       method detach () = proof_detachable#detach ()
