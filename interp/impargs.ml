@@ -22,6 +22,8 @@ open EConstr
 open Reductionops
 open Constrexpr
 
+let whd_all_by_need = Reductionops.clos_whd_flags CClosure.all
+
 module NamedDecl = Context.Named.Declaration
 
 (*s Flags governing the computation of implicit arguments *)
@@ -198,7 +200,7 @@ let is_reversible_pattern sigma bound depth f l =
 (* Precondition: rels in env are for inductive types only *)
 let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc =
   let rec frec rig (env,depth as ed) c =
-    let hd = if strict then whd_all env sigma c else c in
+    let hd = if strict then whd_all_by_need env sigma c else c in
     let c = if strongly_strict then hd else c in
     match kind sigma hd with
     | Rel n when (n < bound+depth) && (n >= depth) ->
@@ -239,7 +241,7 @@ let rec is_rigid_head sigma t = match kind sigma t with
 
 let is_rigid env sigma t =
   let open Context.Rel.Declaration in
-  let t = whd_all env sigma t in
+  let t = whd_all_by_need env sigma t in
   match kind sigma t with
   | Prod (na,a,b) ->
      let (_,t) = splay_prod (push_rel (LocalAssum (na,a)) env) sigma b in
@@ -249,7 +251,7 @@ let is_rigid env sigma t =
 let compute_implicits_names env sigma t =
   let open Context.Rel.Declaration in
   let rec aux env names t =
-    let t = whd_all env sigma t in
+    let t = whd_all_by_need env sigma t in
     match kind sigma t with
     | Prod (na,a,b) ->
        aux (push_rel (LocalAssum (na,a)) env) (na.Context.binder_name::names) b
@@ -259,7 +261,7 @@ let compute_implicits_names env sigma t =
 let compute_implicits_explanation_gen strict strongly_strict revpat contextual env sigma t =
   let open Context.Rel.Declaration in
   let rec aux env n t =
-    let t = whd_all env sigma t in
+    let t = whd_all_by_need env sigma t in
     match kind sigma t with
     | Prod (na,a,b) ->
        add_free_rels_until strict strongly_strict revpat n env sigma a (Hyp (n+1))
@@ -270,7 +272,7 @@ let compute_implicits_explanation_gen strict strongly_strict revpat contextual e
          add_free_rels_until strict strongly_strict revpat n env sigma t Conclusion v
        else v
   in
-  match kind sigma (whd_all env sigma t) with
+  match kind sigma (whd_all_by_need env sigma t) with
   | Prod (na,a,b) ->
      let v = aux (push_rel (LocalAssum (na,a)) env) 1 b in
      Array.to_list v
