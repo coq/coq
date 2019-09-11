@@ -73,6 +73,7 @@ type ('constr, 'types) ptype_error =
   | BadCaseRelevance of Sorts.relevance * 'constr
   | BadInvert
   | BadVariance of { lev : Level.t; expected : Variance.t; actual : Variance.t }
+  | LaxCoInductivePredicate of ('constr, 'types) punsafe_judgment
 
 type type_error = (constr, types) ptype_error
 
@@ -140,6 +141,9 @@ let error_ill_formed_rec_body env why lna i fixenv vdefj =
 
 let error_ill_typed_rec_body env i lna vdefj vargs =
   raise (TypeError (env, IllTypedRecBody (i,lna,vdefj,vargs)))
+
+let error_lax_coinductive_predicate env j =
+  raise (TypeError (env, LaxCoInductivePredicate j))
 
 let error_unsatisfied_constraints env c =
   raise (TypeError (env, UnsatisfiedConstraints c))
@@ -215,3 +219,4 @@ let map_ptype_error f = function
 | BadCaseRelevance (rlv, case) -> BadCaseRelevance (rlv, f case)
 | BadInvert -> BadInvert
 | BadVariance u -> BadVariance u
+| LaxCoInductivePredicate j -> LaxCoInductivePredicate (on_judgment f j)

@@ -60,6 +60,7 @@ type case_info =
                                        NOTE: "lets" are therefore excluded from the count
                                        NOTE: parameters of the inductive type are also excluded from the count *)
     ci_relevance : Sorts.relevance;
+    ci_lax_coind  : bool;           (* if coinductive match, allows non-strict return type *)
     ci_pp_info    : case_printing   (* not interpreted by the kernel *)
   }
 
@@ -1273,6 +1274,7 @@ struct
   let eq ci ci' =
     ci.ci_ind == ci'.ci_ind &&
     ci.ci_relevance == ci'.ci_relevance &&
+    ci.ci_lax_coind == ci'.ci_lax_coind &&
     Int.equal ci.ci_npar ci'.ci_npar &&
     Array.equal Int.equal ci.ci_cstr_ndecls ci'.ci_cstr_ndecls && (* we use [Array.equal] on purpose *)
     Array.equal Int.equal ci.ci_cstr_nargs ci'.ci_cstr_nargs && (* we use [Array.equal] on purpose *)
@@ -1296,7 +1298,7 @@ struct
     let h3 = Array.fold_left combine 0 ci.ci_cstr_ndecls in
     let h4 = Array.fold_left combine 0 ci.ci_cstr_nargs in
     let h5 = hash_pp_info ci.ci_pp_info in
-    combinesmall (Sorts.relevance_hash ci.ci_relevance) (combine5 h1 h2 h3 h4 h5)
+    combine3 (Sorts.relevance_hash ci.ci_relevance) (hash_bool ci.ci_lax_coind) (combine5 h1 h2 h3 h4 h5)
 end
 
 module Hcaseinfo = Hashcons.Make(CaseinfoHash)

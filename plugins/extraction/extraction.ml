@@ -1048,6 +1048,7 @@ let fake_match_projection env p =
     ci_cstr_ndecls = mip.mind_consnrealdecls;
     ci_cstr_nargs = mip.mind_consnrealargs;
     ci_relevance = Declareops.relevance_of_projection_repr mib p;
+    ci_lax_coind = false;
     ci_pp_info;
   }
   in

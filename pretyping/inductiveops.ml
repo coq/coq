@@ -273,6 +273,13 @@ let has_dependent_elim (mib,mip) =
   | PrimRecord _ -> mib.mind_finite == BiFinite || mip.mind_relevance == Irrelevant
   | NotRecord | FakeRecord -> true
 
+let allow_lax_coinductive_match =
+  Goptions.declare_bool_option_and_ref
+    ~stage:Summary.Stage.Interp
+    ~depr:false
+    ~key:["Lax";"CoInductive";"Match"]
+    ~value:true
+
 (* Annotation for cases *)
 let make_case_info env ind r style =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
@@ -282,12 +289,19 @@ let make_case_info env ind r style =
     Array.map2 (fun (d, _) n ->
       Context.Rel.to_tags (List.firstn n d))
       mip.mind_nf_lc mip.mind_consnrealdecls in
+  let ci_lax_coind =
+    mib.mind_finite == CoFinite &&
+    (* Extraction generates bogus matchings over primitive records *)
+    (not @@ Inductive.is_primitive_record (mib, mip)) &&
+    allow_lax_coinductive_match ()
+  in
   let print_info = { ind_tags; cstr_tags; style } in
   { ci_ind     = ind;
     ci_npar    = mib.mind_nparams;
     ci_cstr_ndecls = mip.mind_consnrealdecls;
     ci_cstr_nargs = mip.mind_consnrealargs;
     ci_relevance = r;
+    ci_lax_coind;
     ci_pp_info = print_info }
 
 (*s Useful functions *)

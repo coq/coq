@@ -441,7 +441,8 @@ let check_case_info env (indsp,u) r ci =
     not (Array.equal Int.equal mip.mind_consnrealdecls ci.ci_cstr_ndecls) ||
     not (Array.equal Int.equal mip.mind_consnrealargs ci.ci_cstr_nargs) ||
     not (ci.ci_relevance == r) ||
-    is_primitive_record spec
+    is_primitive_record spec ||
+    (ci.ci_lax_coind && mib.mind_finite != CoFinite)
   then raise (TypeError(env,WrongCaseInfo((indsp,u),ci)))
 
 

@@ -2088,6 +2088,7 @@ let compile_mind mb mind stack =
       let ci = { ci_ind = ind; ci_npar = nparams;
                  ci_cstr_nargs = [|0|]; ci_relevance = ob.mind_relevance;
                  ci_cstr_ndecls = [||] (*FIXME*);
+                 ci_lax_coind = false;
                  ci_pp_info = { ind_tags = []; cstr_tags = [||] (*FIXME*); style = RegularStyle } } in
       let asw = { asw_ind = ind; asw_prefix = ""; asw_ci = ci;
                   asw_reloc = tbl; asw_finite = true } in

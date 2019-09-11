@@ -293,6 +293,7 @@ let explain_exn = function
       | BadInvert -> str"BadInvert"
       | UndeclaredUniverse _ -> str"UndeclaredUniverse"
       | BadVariance _ -> str "BadVariance"
+      | LaxCoInductivePredicate _ -> str "LaxCoInductivePredicate"
       ))
 
   | InductiveError e ->

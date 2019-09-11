@@ -154,6 +154,9 @@ val top_allowed_sort : env -> inductive -> Sorts.family
     hence no dependent elimination. *)
 val has_dependent_elim : mind_specif -> bool
 
+(** Whether non-strict pattern-matchings on coinductive types are allowed. *)
+val allow_lax_coinductive_match : unit -> bool
+
 (** Primitive projections *)
 val type_of_projection_knowing_arg : env -> evar_map -> Projection.t ->
                                      EConstr.t -> EConstr.types -> types

@@ -493,6 +493,25 @@ let should_invert_case env ci =
   Array.length mip.mind_nf_lc = 1 &&
   List.length (fst mip.mind_nf_lc.(0)) = List.length mib.mind_params_ctxt
 
+(* Given a coinductive pattern-matching, check that its return clause depends
+   only strictly on its "self" argument, i.e. all occurences of the variable of
+   the coinductive type being eliminated are wrapped inside a pattern-matching.
+   For this, we construct a dummy cofixpoint whose body is exactly the "self"
+   variable, and we check that the predicate is stable by this expansion. *)
+let check_strict_predicate env (pctx, p, pt) =
+  let nenv = push_rel_context pctx env in
+  let na, self = match pctx with
+  | RelDecl.LocalAssum (na, self) :: _ -> (na, self)
+  | [] | RelDecl.LocalDef _ :: _ -> assert false
+  in
+  let cofix = mkCoFix (0, ([|na|], [|self|], [|mkRel 2|])) in
+  let q = Vars.subst1 cofix (Vars.exliftn (Esubst.el_lift @@ Esubst.el_shft 1 Esubst.el_id) p) in
+  (* Check that [i, x : Ind p i |- P i x = P i (cofix _ := x)] *)
+  try conv nenv p q
+  with NotConvertible ->
+    let pj = make_judge (it_mkLambda_or_LetIn p pctx) (it_mkProd_or_LetIn pt pctx) in
+    error_lax_coinductive_predicate env pj
+
 let type_case_scrutinee env (mib, _mip) (u', largs) u pms (pctx, p) c =
   let (params, realargs) = List.chop mib.mind_nparams largs in
   (* Check that the type of the scrutinee is <= the expected argument type *)
@@ -547,6 +566,10 @@ let type_of_case env (mib, mip) ci u pms (pctx, pnas, p, pt) iv c ct lf lft =
   in
   (* Check that the scrutinee has the right type *)
   let rslty = type_case_scrutinee env (mib, mip) (u', largs) u pms (pctx, p) c in
+  (* Check that positive coinductive types have a strict return clause *)
+  let () = if not ci.ci_lax_coind && mib.mind_finite == CoFinite then
+    check_strict_predicate env (pctx, p, pt)
+  in
   (* We return the "higher" inductive universe instance from the predicate,
      the branches must be typeable using these universes. *)
   let () = check_branch_types env (mib, mip) ci u pms c ct lft (pctx, p) in
