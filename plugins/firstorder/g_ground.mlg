@@ -83,7 +83,7 @@ END
 
 VERNAC COMMAND EXTEND Firstorder_Print_Solver CLASSIFIED AS QUERY
 | [ "Print" "Firstorder" "Solver" ] -> {
-    Feedback.msg_info
+    Feedback.msg_notice
       (Pp.(++) (Pp.str"Firstorder solver tactic is ") (print_default_solver ())) }
 END
 

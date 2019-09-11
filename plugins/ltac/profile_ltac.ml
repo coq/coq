@@ -417,7 +417,7 @@ let get_timer name =
 let finish_timing ~prefix name =
   let tend = System.get_time () in
   let tstart = get_timer name in
-  Feedback.msg_info(str prefix ++ pr_opt str name ++ str " ran for " ++
+  Feedback.msg_notice(str prefix ++ pr_opt str name ++ str " ran for " ++
                     System.fmt_time_difference tstart tend)
 
 (* ******************** *)
@@ -431,7 +431,7 @@ let print_results_filter ~cutoff ~filter =
   let results =
     SM.fold (fun _ -> merge_roots ~disjoint:true) !data (empty_treenode root) in
   let results = merge_roots results Local.(CList.last !stack) in
-  Feedback.msg_info (to_string ~cutoff ~filter results)
+  Feedback.msg_notice (to_string ~cutoff ~filter results)
 ;;
 
 let print_results ~cutoff =

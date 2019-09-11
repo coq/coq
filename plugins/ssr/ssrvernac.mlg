@@ -280,7 +280,7 @@ let interp_search_notation ?loc tag okey =
       Feedback.msg_warning (hov 4 (qtag "In" ++ str "also occurs in " ++ pr_ntns'))
     end; ntn
   | [ntn] ->
-    Feedback.msg_info (hov 4 (qtag "In" ++ str "is part of notation " ++ pr_ntn ntn)); ntn
+    Feedback.msg_notice (hov 4 (qtag "In" ++ str "is part of notation " ++ pr_ntn ntn)); ntn
   | ntns' ->
     let e = str "occurs in" ++ spc() ++ pr_and_list pr_ntn ntns' in
     err (hov 4 (str "ambiguous: " ++ qtag "in" ++ e)) in
@@ -298,7 +298,7 @@ let interp_search_notation ?loc tag okey =
     let rbody = glob_constr_of_notation_constr ?loc body in
     let m_body = hov 0 (Constrextern.without_symbols prl_glob_constr rbody) in
     let m = m_sc ++ pr_ntn ntn_pat ++ spc () ++ str "denotes " ++ m_body in
-    Feedback.msg_info (hov 0 m) in
+    Feedback.msg_notice (hov 0 m) in
   if List.length !scs > 1 then
     let scs' = List.remove (=) sc !scs in
     let w = pr_ntn ntn ++ str " is also defined " ++ pr_scs scs' in
@@ -466,7 +466,7 @@ let interp_modloc mr =
 
 let ssrdisplaysearch gr env t =
   let pr_res = pr_global gr ++ str ":" ++ spc () ++ pr_lconstr_env env Evd.empty t in
-  Feedback.msg_info (hov 2 pr_res ++ fnl ())
+  Feedback.msg_notice (hov 2 pr_res ++ fnl ())
 
 }
 
@@ -561,7 +561,7 @@ END
 let print_view_hints env sigma kind l =
   let pp_viewname = str "Hint View" ++ pr_viewpos (Some kind) ++ str " " in
   let pp_hints = pr_list spc (pr_rawhintref env sigma) l in
-  Feedback.msg_info  (pp_viewname ++ hov 0 pp_hints ++ Pp.cut ())
+  Feedback.msg_notice  (pp_viewname ++ hov 0 pp_hints ++ Pp.cut ())
 
 }
 
