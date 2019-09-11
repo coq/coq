@@ -10,8 +10,6 @@
 
 open Configwin
 
-let pref_file = Filename.concat (Minilib.coqide_config_home ()) "coqiderc"
-let accel_file = Filename.concat (Minilib.coqide_config_home ()) "coqide.keys"
 let lang_manager = GSourceView3.source_language_manager ~default:true
 let () = lang_manager#set_search_path
   ((Minilib.coqide_data_dirs ())@lang_manager#search_path)
@@ -235,22 +233,13 @@ end
 
 end
 
-let get_config_file name =
+let get_config_file dirs name =
   let find_config dir = Sys.file_exists (Filename.concat dir name) in
-  let config_dir = List.find find_config (Minilib.coqide_config_dirs ()) in
+  let config_dir = List.find find_config dirs in
   Filename.concat config_dir name
 
-(* Small hack to handle v8.3 to v8.4 change in configuration file *)
-let loaded_pref_file =
-  try get_config_file "coqiderc"
-  with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqiderc"
-
-let loaded_accel_file =
-  try get_config_file "coqide.keys"
-  with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqide.keys"
-
 let get_unicode_bindings_local_file () =
-  try Some (get_config_file "coqide.bindings")
+  try Some (get_config_file [Minilib.coqide_config_home ()] "coqide.bindings")
   with Not_found -> None
 
 let get_unicode_bindings_default_file () =
@@ -332,26 +321,36 @@ let attach_modifiers (pref : string preference) prefix =
   in
   pref#connect#changed ~callback:cb
 
+let select_arch m m_osx =
+  if Coq_config.arch = "Darwin" then m_osx else m
+
 let modifier_for_navigation =
-  new preference ~name:["modifier_for_navigation"] ~init:"<Control>" ~repr:Repr.(string)
+  new preference ~name:["modifier_for_navigation"]
+    ~init:(select_arch "<Control>" "<Control><Primary>") ~repr:Repr.(string)
 
 let modifier_for_templates =
   new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)
 
 let modifier_for_tactics =
-  new preference ~name:["modifier_for_tactics"] ~init:"<Control><Alt>" ~repr:Repr.(string)
+  new preference ~name:["modifier_for_tactics"]
+    ~init:(select_arch "<Control><Alt>" "<Control><Primary>") ~repr:Repr.(string)
 
 let modifier_for_display =
-  new preference ~name:["modifier_for_display"] ~init:"<Alt><Shift>" ~repr:Repr.(string)
+  new preference ~name:["modifier_for_display"]
+    ~init:(select_arch "<Alt><Shift>" "<Primary><Shift>")~repr:Repr.(string)
 
 let modifier_for_queries =
   new preference ~name:["modifier_for_queries"] ~init:"<Control><Shift>" ~repr:Repr.(string)
 
-let _ = attach_modifiers modifier_for_navigation "<Actions>/Navigation/"
-let _ = attach_modifiers modifier_for_templates "<Actions>/Templates/"
-let _ = attach_modifiers modifier_for_tactics "<Actions>/Tactics/"
-let _ = attach_modifiers modifier_for_display "<Actions>/View/"
-let _ = attach_modifiers modifier_for_queries "<Actions>/Queries/"
+let attach_modifiers_callback () =
+  (* Tell to propagate changes done in preference menu to accel map *)
+  (* To be done after the preferences are loaded *)
+  let _ = attach_modifiers modifier_for_navigation "<Actions>/Navigation/" in
+  let _ = attach_modifiers modifier_for_templates "<Actions>/Templates/" in
+  let _ = attach_modifiers modifier_for_tactics "<Actions>/Tactics/" in
+  let _ = attach_modifiers modifier_for_display "<Actions>/View/" in
+  let _ = attach_modifiers modifier_for_queries "<Actions>/Queries/" in
+  ()
 
 let modifiers_valid =
   new preference ~name:["modifiers_valid"] ~init:"<Alt><Control><Shift>" ~repr:Repr.(string)
@@ -379,9 +378,6 @@ let text_font =
 
 let show_toolbar =
   new preference ~name:["show_toolbar"] ~init:true ~repr:Repr.(bool)
-
-let contextual_menus_on_goal =
-  new preference ~name:["contextual_menus_on_goal"] ~init:true ~repr:Repr.(bool)
 
 let window_width =
   new preference ~name:["window_width"] ~init:800 ~repr:Repr.(int)
@@ -644,29 +640,73 @@ let tag_button () =
   let box = GPack.hbox () in
   new tag_button (Gobject.unsafe_cast box#as_widget)
 
-let save_pref () =
+(** Loading/saving preferences *)
+
+let pref_file = Filename.concat (Minilib.coqide_config_home ()) "coqiderc"
+let accel_file = Filename.concat (Minilib.coqide_config_home ()) "coqide.keys"
+
+let save_accel_pref () =
   if not (Sys.file_exists (Minilib.coqide_config_home ()))
   then Unix.mkdir (Minilib.coqide_config_home ()) 0o700;
-  let () = try GtkData.AccelMap.save accel_file with _ -> () in
+  GtkData.AccelMap.save accel_file
+
+let save_rc_pref () =
+  if not (Sys.file_exists (Minilib.coqide_config_home ()))
+  then Unix.mkdir (Minilib.coqide_config_home ()) 0o700;
   let add = Util.String.Map.add in
   let fold key obj accu = add key (obj.get ()) accu in
   let prefs = Util.String.Map.fold fold !preferences Util.String.Map.empty in
   let prefs = Util.String.Map.fold Util.String.Map.add !unknown_preferences prefs in
   Config_lexer.print_file pref_file prefs
 
-let load_pref () =
-  (* Load main preference file *)
-  let () =
-    let m = Config_lexer.load_file loaded_pref_file in
+let save_pref () =
+  save_accel_pref ();
+  save_rc_pref ()
+
+let try_load_pref_file loader warn file =
+  try
+    loader file
+  with
+    e -> warn ~delay:5000 ("Could not load " ^ file ^ " ("^Printexc.to_string e^")")
+
+let load_pref_file loader warn name =
+  try
+    let user_file = get_config_file [Minilib.coqide_config_home ()] name in
+    warn ~delay:2000 ("Loading " ^ user_file);
+    try_load_pref_file loader warn user_file
+  with Not_found ->
+  try
+    let system_wide_file = get_config_file (Minilib.coqide_system_config_dirs ()) name in
+    warn ~delay:5000 ("No user " ^ name ^ ", using system wide configuration");
+    try_load_pref_file loader warn system_wide_file
+  with Not_found ->
+  (* Compatibility with oldest versions of CoqIDE (<= 8.4) *)
+  try
+    let old_user_file = get_config_file [Option.default "" (Glib.get_home_dir ())] ("."^name) in
+    warn ~delay:5000 ("No " ^ name ^ ", trying to recover from an older version of CoqIDE");
+    try_load_pref_file loader warn old_user_file
+  with Not_found ->
+  (* Built-in configuration *)
+    warn ~delay:5000 ("No " ^ name ^ ", using default internal configuration")
+
+let load_accel_pref ~warn =
+  load_pref_file GtkData.AccelMap.load warn "coqide.keys"
+
+let load_rc_pref ~warn =
+  let loader file =
+    let m = Config_lexer.load_file file in
     let iter name v =
       if Util.String.Map.mem name !preferences then
         try (Util.String.Map.find name !preferences).set v with _ -> ()
       else unknown_preferences := Util.String.Map.add name v !unknown_preferences
     in
     Util.String.Map.iter iter m in
-  (* Load file for bindings *)
-  let () = try GtkData.AccelMap.load loaded_accel_file with _ -> () in
-  ()
+  load_pref_file loader warn "coqiderc";
+  attach_modifiers_callback ()
+
+let load_pref ~warn =
+  load_rc_pref ~warn;
+  load_accel_pref ~warn
 
 let pstring name p = string ~f:p#set name p#get
 let pbool name p = bool ~f:p#set name p#get
@@ -893,19 +933,19 @@ let configure ?(apply=(fun () -> ())) parent =
   in
   let project_file_name = pstring "Default name for project file" project_file_name in
   let modifier_for_tactics =
-    pmodifiers "Modifiers for Tactics Menu" modifier_for_tactics
+    pmodifiers "Global change of modifiers for Tactics Menu" modifier_for_tactics
   in
   let modifier_for_templates =
-    pmodifiers "Modifiers for Templates Menu" modifier_for_templates
+    pmodifiers "Global change of modifiers for Templates Menu" modifier_for_templates
   in
   let modifier_for_navigation =
-    pmodifiers "Modifiers for Navigation Menu" modifier_for_navigation
+    pmodifiers "Global change of modifiers for Navigation Menu" modifier_for_navigation
   in
   let modifier_for_display =
-    pmodifiers "Modifiers for View Menu" modifier_for_display
+    pmodifiers "Global change of modifiers for View Menu" modifier_for_display
   in
   let modifier_for_queries =
-    pmodifiers "Modifiers for Queries Menu" modifier_for_queries
+    pmodifiers "Global change of modifiers for Queries Menu" modifier_for_queries
   in
   let modifiers_valid =
     pmodifiers ~all:true "Allowed modifiers" modifiers_valid
@@ -939,9 +979,7 @@ let configure ?(apply=(fun () -> ())) parent =
       cmd_browse#get
   in
 
-  let contextual_menus_on_goal = pbool "Contextual menus on goal" contextual_menus_on_goal in
-
-  let misc = [contextual_menus_on_goal;stop_before;reset_on_tab_switch;
+  let misc = [stop_before;reset_on_tab_switch;
               vertical_tabs;opposite_tabs] in
 
 (*

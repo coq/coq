@@ -1200,8 +1200,8 @@ let write_macos_metadata exec =
   let () = close_out o in
   Unix.chmod f 0o444
 
-let () = if arch = "Darwin" then
-List.iter write_macos_metadata distributed_exec
+let () =
+  if arch = "Darwin" then List.iter write_macos_metadata distributed_exec
 
 let write_configpy f =
   safe_remove f;

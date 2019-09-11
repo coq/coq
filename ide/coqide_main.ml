@@ -49,11 +49,10 @@ let catch_gtk_messages () =
 let () = catch_gtk_messages ()
 
 let load_prefs () =
-  try Preferences.load_pref ()
-  with e -> Ideutils.flash_info
-    ("Could not load preferences ("^Printexc.to_string e^").")
+  Preferences.load_pref ~warn:(fun ~delay -> Ideutils.flash_info ~delay)
 
 let () =
+  Ideutils.push_info ("Ready"^ if Preferences.microPG#get then ", [μPG]" else "");
   load_prefs ();
   let argl = List.tl (Array.to_list Sys.argv) in
   let argl = Coqide.read_coqide_args argl in

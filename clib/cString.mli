@@ -51,6 +51,9 @@ sig
   val is_sub : string -> string -> int -> bool
   (** [is_sub p s off] tests whether [s] contains [p] at offset [off]. *)
 
+  val is_prefix : string -> string -> bool
+  (** [is_prefix p s] tests whether [p] is a prefix of [s]. *)
+
   (** {6 Generic operations} **)
 
   module Set : Set.S with type elt = t

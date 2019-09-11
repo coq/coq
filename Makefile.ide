@@ -59,7 +59,7 @@ IDEBINDINGS:=ide/default.bindings
 IDEBINDINGSSRC:=ide/default_bindings_src.ml
 IDEBINDINGSEXE:=ide/default_bindings_src.exe
 
-IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png ide/MacOS/default_accel_map $(IDEBINDINGS)
+IDEFILES=$(wildcard ide/*.lang) ide/coq_style.xml ide/coq.png $(IDEBINDINGS)
 
 ## GTK for Coqide MacOS bundle
 
@@ -175,7 +175,6 @@ $(IDEBINDINGSEXE): $(IDEBINDINGSSRC)
 $(IDEBINDINGS): $(IDEBINDINGSEXE)
 	$< $@
 
-
 ####################
 ## Install targets
 ####################
@@ -224,7 +223,6 @@ install-ide-files: #Please update $(COQIDEAPP)/Contents/Resources/ at the same t
 	$(MKDIR) $(FULLDATADIR)
 	$(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(IDEBINDINGS) $(FULLDATADIR)
 	$(MKDIR) $(FULLCONFIGDIR)
-	if [ $(IDEINT) = QUARTZ ] ; then $(INSTALLLIB) ide/mac_default_accel_map $(FULLCONFIGDIR)/coqide.keys ; fi
 
 install-ide-info:
 	$(MKDIR) $(FULLDOCDIR)
@@ -271,7 +269,6 @@ $(COQIDEAPP)/Contents/Resources/immodules: $(COQIDEAPP)/Contents
 
 $(COQIDEAPP)/Contents/Resources/etc: $(COQIDEAPP)/Contents/Resources/lib
 	$(MKDIR) $@/xdg/coq
-	$(INSTALLLIB) ide/MacOS/default_accel_map $@/xdg/coq/coqide.keys
 	$(MKDIR) $@/gtk-3.0
 	{ "$(PIXBUFBIN)/gdk-pixbuf-query-loaders" $@/../loaders/*.so |\
 	 sed -e "s!/.*\(/loaders/.*.so\)!@executable_path/../Resources/\1!"; } \

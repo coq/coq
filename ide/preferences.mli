@@ -79,7 +79,6 @@ val cmd_browse : string preference
 val cmd_editor : string preference
 val text_font : string preference
 val show_toolbar : bool preference
-val contextual_menus_on_goal : bool preference
 val window_width : int preference
 val window_height : int preference
 val auto_complete : bool preference
@@ -107,7 +106,7 @@ val user_queries : (string * string) list preference
 val diffs : string preference
 
 val save_pref : unit -> unit
-val load_pref : unit -> unit
+val load_pref : warn:(delay:int -> string -> unit) -> unit
 
 val configure : ?apply:(unit -> unit) -> GWindow.window -> unit
 

@@ -179,10 +179,13 @@ compilation, printing, web browsing. In the browser command, you may
 use `%s` to denote the URL to open, for example:
 `firefox -remote "OpenURL(%s)"`.
 
-Notice that these settings are saved in the file `.coqiderc` of your
-home directory.
+Notice that these settings are saved in the file ``coqiderc`` in the
+``coq`` subdirectory of the user configuration directory which
+is the value of ``$XDG_CONFIG_HOME`` if this environment variable is
+set and which otherwise is ``$HOME/.config/``.
 
-A Gtk2 accelerator keymap is saved under the name `.coqide.keys`. It
+A GTK+ accelerator keymap is saved under the name ``coqide.keys`` in
+the same ``coq`` subdirectory of the user configuration directory. It
 is not recommended to edit this file manually: to modify a given menu
 shortcut, go to the corresponding menu item without releasing the
 mouse button, press the key you want for the new shortcut, and release
@@ -259,8 +262,9 @@ Adding custom bindings
 ~~~~~~~~~~~~~~~~~~~~~~
 
 To extend the default set of bindings, create a file named ``coqide.bindings``
-and place it in the same folder as ``coqide.keys``. On Linux, this would be
-the folder ``~/.config/coq``. The file `coqide.bindings` should contain one
+and place it in the same folder as ``coqide.keys``. This would be
+the folder ``$XDG_CONFIG_HOME/coq``, defaulting to ``~/.config/coq``
+if ``XDG_CONFIG_HOME`` is unset. The file `coqide.bindings` should contain one
 binding per line, in the form ``\key value``, followed by an optional priority
 integer. (The key and value should not contain any space character.)
 
