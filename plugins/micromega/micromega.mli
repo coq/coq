@@ -446,10 +446,6 @@ module PositiveSet :
 
 type q = { qnum : z; qden : positive }
 
-val qnum : q -> z
-
-val qden : q -> positive
-
 val qeq_bool : q -> q -> bool
 
 val qle_bool : q -> q -> bool

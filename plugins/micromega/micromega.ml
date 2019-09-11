@@ -1568,14 +1568,6 @@ module PositiveSet =
 
 type q = { qnum : z; qden : positive }
 
-(** val qnum : q -> z **)
-
-let qnum x = x.qnum
-
-(** val qden : q -> positive **)
-
-let qden x = x.qden
-
 (** val qeq_bool : q -> q -> bool **)
 
 let qeq_bool x y =

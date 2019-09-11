@@ -1,0 +1,45 @@
+Extracted code successfully compiled
+
+type __ = Obj.t
+
+type unit0 =
+| Tt
+
+type bool =
+| True
+| False
+
+module Case1 =
+ struct
+  type coq_rec = { f : bool }
+
+  (** val f : bool -> coq_rec -> bool **)
+
+  let f _ r =
+    r.f
+
+  (** val silly : bool -> coq_rec -> __ **)
+
+  let silly x b =
+    match x with
+    | True -> Obj.magic b.f
+    | False -> Obj.magic Tt
+ end
+
+module Case2 =
+ struct
+  type coq_rec = { f : (bool -> bool) }
+
+  (** val f : bool -> coq_rec -> bool -> bool **)
+
+  let f _ r =
+    r.f
+
+  (** val silly : bool -> coq_rec -> __ **)
+
+  let silly x b =
+    match x with
+    | True -> Obj.magic b.f False
+    | False -> Obj.magic Tt
+ end
+
