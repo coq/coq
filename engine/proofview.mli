@@ -481,8 +481,13 @@ module Unsafe : sig
       and makes them unresolvable for type classes. *)
   val mark_as_goals : Evd.evar_map -> Evar.t list -> Evd.evar_map
 
-  (** Make an evar unresolvable for type classes. *)
-  val mark_as_unresolvable : proofview -> Evar.t -> proofview
+  (** Make some evars unresolvable for type classes.
+      We need two functions as some functions use the proofview and others
+      directly manipulate the undelying evar_map.
+  *)
+  val mark_unresolvables : Evd.evar_map -> Evar.t list -> Evd.evar_map
+
+  val mark_as_unresolvables : proofview -> Evar.t list -> proofview
 
   (** [advance sigma g] returns [Some g'] if [g'] is undefined and is
       the current avatar of [g] (for instance [g] was changed by [clear]
