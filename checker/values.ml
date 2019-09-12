@@ -357,7 +357,7 @@ and v_libobjt = Sum("Libobject.t",0,
      [| v_substobjs |];
      [| v_aobjs |];
      [| v_libobjs |];
-     [| v_mp |];
+     [| List v_mp |];
      [| v_obj |]
   |])
 

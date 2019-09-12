@@ -75,7 +75,7 @@ and t =
   | ModuleTypeObject of substitutive_objects
   | IncludeObject of algebraic_objects
   | KeepObject of objects
-  | ExportObject of { mp : ModPath.t }
+  | ExportObject of { mpl : ModPath.t list }
   | AtomicObject of obj
 
 and objects = (Names.Id.t * t) list

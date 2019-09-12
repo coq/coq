@@ -111,6 +111,10 @@ val append_end_library_hook : (unit -> unit) -> unit
 
 val import_module : export:bool -> ModPath.t -> unit
 
+(** Same as [import_module] but for multiple modules, and more optimized than
+    iterating [import_module]. *)
+val import_modules : export:bool -> ModPath.t list -> unit
+
 (** Include  *)
 
 val declare_include :

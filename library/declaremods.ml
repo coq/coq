@@ -110,9 +110,9 @@ and subst_objects subst seg =
     | IncludeObject aobjs ->
       let aobjs' = subst_aobjs subst aobjs in
       if aobjs' == aobjs then node else (id, IncludeObject aobjs')
-    | ExportObject { mp } ->
-      let mp' = subst_mp subst mp in
-      if mp'==mp then node else (id, ExportObject { mp = mp' })
+    | ExportObject { mpl } ->
+      let mpl' = List.map (subst_mp subst) mpl in
+      if mpl'==mpl then node else (id, ExportObject { mpl = mpl' })
     | KeepObject _ -> assert false
   in
   List.Smart.map subst_one seg
@@ -299,16 +299,21 @@ let rec collect_module_objects mp acc =
 
 and collect_object i (name, obj as o) acc =
   match obj with
-  | ExportObject { mp; _ } -> collect_export i mp acc
+  | ExportObject { mpl; _ } -> collect_export i mpl acc
   | AtomicObject _ | IncludeObject _ | KeepObject _
   | ModuleObject _ | ModuleTypeObject _ -> mark_object o acc
 
 and collect_objects i prefix objs acc =
   List.fold_right (fun (id, obj) acc -> collect_object i (Lib.make_oname prefix id, obj) acc) objs acc
 
-and collect_export i mp (exports,objs as acc) =
-  if Int.equal i 1 && not (MPset.mem mp exports) then
+and collect_one_export mp (exports,objs as acc) =
+  if not (MPset.mem mp exports) then
     collect_module_objects mp (MPset.add mp exports, objs)
+  else acc
+
+and collect_export i mpl acc =
+  if Int.equal i 1 then
+    List.fold_right collect_one_export mpl acc
   else acc
 
 let rec open_object i (name, obj) =
@@ -320,7 +325,7 @@ let rec open_object i (name, obj) =
     open_module i dir mp sobjs
   | ModuleTypeObject sobjs -> open_modtype i (name, sobjs)
   | IncludeObject aobjs -> open_include i (name, aobjs)
-  | ExportObject { mp; _ } -> open_export i mp
+  | ExportObject { mpl; _ } -> open_export i mpl
   | KeepObject objs -> open_keep i (name, objs)
 
 and open_module i obj_dir obj_mp sobjs =
@@ -354,9 +359,8 @@ and open_include i ((sp,kn), aobjs) =
   let o = expand_aobjs aobjs in
   open_objects i prefix o
 
-and open_export i mp =
-  if Int.equal i 1 then
-  let _,objs = collect_module_objects mp (MPset.empty, []) in
+and open_export i mpl =
+  let _,objs = collect_export i mpl (MPset.empty, []) in
   List.iter (open_object 1) objs
 
 and open_keep i ((sp,kn),kobjs) =
@@ -372,7 +376,7 @@ let rec cache_object (name, obj) =
     let (sp,kn) = name in
     load_modtype 0 sp (mp_of_kn kn) sobjs
   | IncludeObject aobjs -> cache_include (name, aobjs)
-  | ExportObject { mp } -> anomaly Pp.(str "Export should not be cached")
+  | ExportObject { mpl } -> anomaly Pp.(str "Export should not be cached")
   | KeepObject objs -> cache_keep (name, objs)
 
 and cache_include ((sp,kn), aobjs) =
@@ -1019,10 +1023,13 @@ let end_library ?except ~output_native_objects dir =
   let substitute, keep, _ = Lib.classify_segment lib_stack in
   cenv,(substitute,keep),ast
 
-let import_module ~export mp =
-  let _,objs = collect_module_objects mp (MPset.empty, []) in
+let import_modules ~export mpl =
+  let _,objs = List.fold_right collect_module_objects mpl (MPset.empty, []) in
   List.iter (open_object 1) objs;
-  if export then Lib.add_anonymous_entry (Lib.Leaf (ExportObject { mp }))
+  if export then Lib.add_anonymous_entry (Lib.Leaf (ExportObject { mpl }))
+
+let import_module ~export mp =
+  import_modules ~export [mp]
 
 (** {6 Iterators} *)
 

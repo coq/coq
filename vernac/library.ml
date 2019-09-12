@@ -340,8 +340,7 @@ let load_require _ (_,(needed,modl,_)) =
   List.iter register_library needed
 
 let open_require i (_,(_,modl,export)) =
-  Option.iter (fun export -> List.iter (fun m -> Declaremods.import_module ~export (MPfile m)) modl)
-    export
+  Option.iter (fun export -> Declaremods.import_modules ~export @@ List.map (fun m -> MPfile m) modl) export
 
   (* [needed] is the ordered list of libraries not already loaded *)
 let cache_require o =
