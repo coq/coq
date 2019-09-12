@@ -386,12 +386,7 @@ let run_tactic env tac pr =
   let sigma = Proofview.return proofview in
   let to_shelve = undef sigma to_shelve in
   let shelf = (undef sigma pr.shelf)@retrieved@to_shelve in
-  let proofview =
-    List.fold_left
-      Proofview.Unsafe.mark_as_unresolvable
-      proofview
-      to_shelve
-  in
+  let proofview = Proofview.Unsafe.mark_as_unresolvables proofview to_shelve in
   let given_up = pr.given_up@give_up in
   let proofview = Proofview.Unsafe.reset_future_goals proofview in
   { pr with proofview ; shelf ; given_up },(status,info_trace),result

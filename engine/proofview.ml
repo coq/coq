@@ -1025,8 +1025,11 @@ module Unsafe = struct
 
   let undefined = undefined
 
-  let mark_as_unresolvable p gl =
-    { p with solution = mark_in_evm ~goal:false p.solution [gl] }
+  let mark_unresolvables evm evs =
+    mark_in_evm ~goal:false evm evs
+
+  let mark_as_unresolvables p evs =
+    { p with solution = mark_in_evm ~goal:false p.solution evs }
 
 end
 

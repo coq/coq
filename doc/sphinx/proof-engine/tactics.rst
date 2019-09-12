@@ -555,12 +555,14 @@ Applying theorems
    This tactic applies to any goal. It behaves like :tacn:`exact` with a big
    difference: the user can leave some holes (denoted by ``_``
    or :n:`(_ : @type)`) in the term. :tacn:`refine` will generate as many
-   subgoals as there are holes in the term. The type of holes must be either
-   synthesized by the system or declared by an explicit cast
+   subgoals as there are remaining holes in the elaborated term. The type
+   of holes must be either synthesized by the system or declared by an explicit cast
    like ``(_ : nat -> Prop)``. Any subgoal that
    occurs in other subgoals is automatically shelved, as if calling
-   :tacn:`shelve_unifiable`. This low-level tactic can be
-   useful to advanced users.
+   :tacn:`shelve_unifiable`. The produced subgoals (shelved or not)
+   are *not* candidates for typeclass resolution, even if they have a type-class
+   type as conclusion, letting the user control when and how typeclass resolution
+   is launched on them. This low-level tactic can be useful to advanced users.
 
    .. example::
 
@@ -611,8 +613,9 @@ Applying theorems
    .. tacv:: simple notypeclasses refine @term
       :name: simple notypeclasses refine
 
-      This tactic behaves like :tacn:`simple refine` except it performs type checking
-      without resolution of typeclasses.
+      This tactic behaves like the combination of :tacn:`simple refine` and
+      :tacn:`notypeclasses refine`: it performs type checking without resolution of
+      typeclasses, does not perform beta reductions or shelve the subgoals.
 
    .. flag:: Debug Unification
 
