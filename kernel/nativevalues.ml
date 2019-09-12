@@ -517,10 +517,8 @@ let print x =
 
 (** Support for machine floating point values *)
 
-let is_float (x:t) =
-  let o = Obj.repr x in
-  Int.equal (Obj.tag o) Obj.double_tag
-[@@ocaml.inline always]
+external is_float : t -> bool = "coq_is_double"
+[@@noalloc]
 
 let to_float (x:t) = (Obj.magic x : Float64.t)
 [@@ocaml.inline always]

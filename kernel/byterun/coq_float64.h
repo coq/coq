@@ -29,4 +29,8 @@ DECLARE_FUNOP(fsqrt, sqrt(x))
 DECLARE_FUNOP(next_up, nextafter(x, INFINITY))
 DECLARE_FUNOP(next_down, nextafter(x, -INFINITY))
 
+value coq_is_double(value x) {
+  return Val_long(Is_double(x));
+}
+
 #endif /* _COQ_FLOAT64_ */
