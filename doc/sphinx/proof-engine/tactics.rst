@@ -685,6 +685,22 @@ Applying theorems
       instantiate (see :ref:`Existential-Variables`). The instantiation is
       intended to be found later in the proof.
 
+   .. tacv:: rapply @term
+      :name: rapply
+
+      The tactic :tacn:`rapply` behaves like :tacn:`eapply` but it
+      uses the proof engine of :tacn:`refine` for dealing with
+      existential variables, holes, and conversion problems.  This may
+      result in slightly different behavior regarding which conversion
+      problems are solvable.  Note that :tacn:`rapply` prefers to
+      instantiate as many hypotheses of :n:`@term` as possible.  As a
+      result, if it is possible to apply :n:`@term` to arbitrarily
+      many arguments without getting a type error, :tacn:`rapply` will
+      loop.
+
+      Note that you need to :n:`Require Import Coq.Program.Tactics` to
+      make use of :tacn:`rapply`.
+
    .. tacv:: simple apply @term.
 
       This behaves like :tacn:`apply` but it reasons modulo conversion only on subterms

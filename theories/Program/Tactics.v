@@ -173,22 +173,13 @@ Ltac on_application f tac T :=
 (** A variant of [apply] using [refine], doing as much conversion as necessary. *)
 
 Ltac rapply p :=
-  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _) ||
-  refine (p _ _ _ _) ||
-  refine (p _ _ _) ||
-  refine (p _ _) ||
-  refine (p _) ||
-  refine p.
+  (** before we try to add more underscores, first ensure that adding such underscores is valid *)
+  (assert_succeeds (idtac; let __ := open_constr:(p _) in idtac);
+   rapply uconstr:(p _))
+  || refine p.
+
+(** The tactic [rapply] is a tactic notation so that it takes in uconstrs by default *)
+Tactic Notation "rapply" uconstr(p) := rapply p.
 
 (** Tactical [on_call f tac] applies [tac] on any application of [f] in the hypothesis or goal. *)
 
