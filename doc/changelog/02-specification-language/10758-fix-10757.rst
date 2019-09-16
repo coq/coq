@@ -1,0 +1,5 @@
+- ``Program Fixpoint`` now uses ``ex`` and ``sig`` to make telescopes
+  involving ``Prop`` types (`#10758
+  <https://github.com/coq/coq/pull/10758>`_, by Gaëtan Gilbert, fixing
+  `#10757 <https://github.com/coq/coq/issues/10757>`_ reported by
+  Xavier Leroy).
