@@ -67,13 +67,45 @@ end
 module CoqToCaml : sig
 
   val z_big_int : Micromega.z -> Big_int.big_int
-  val q_to_num : Micromega.q -> Num.num
-  val positive : Micromega.positive -> int
-  val n : Micromega.n -> int
-  val nat : Micromega.nat -> int
-  val index : Micromega.positive -> int
+  val z         : Micromega.z -> int
+  val q_to_num  : Micromega.q -> Num.num
+  val positive  : Micromega.positive -> int
+  val n         : Micromega.n -> int
+  val nat       : Micromega.nat -> int
+  val index     : Micromega.positive -> int
 
 end
+
+module Hash : sig
+
+  val eq_op1      : Micromega.op1 -> Micromega.op1 -> bool
+
+  val eq_positive : Micromega.positive -> Micromega.positive -> bool
+
+  val eq_z : Micromega.z -> Micromega.z -> bool
+
+  val eq_q : Micromega.q -> Micromega.q -> bool
+
+  val eq_pol  : ('a -> 'a -> bool) -> 'a Micromega.pol -> 'a Micromega.pol -> bool
+
+  val eq_pair : ('a -> 'a -> bool) -> ('b -> 'b -> bool) -> 'a * 'b -> 'a * 'b -> bool
+
+  val hash_op1 : int -> Micromega.op1 -> int
+
+  val hash_pol  : (int -> 'a -> int) -> int -> 'a Micromega.pol -> int
+
+  val hash_pair : (int -> 'a -> int) -> (int -> 'b -> int) -> int -> 'a * 'b -> int
+
+  val hash_z   : int -> Micromega.z -> int
+
+  val hash_q   : int -> Micromega.q -> int
+
+  val hash_string : int -> string -> int
+
+  val hash_elt : ('a -> int) -> int -> 'a -> int
+
+end
+
 
 val ppcm : Big_int.big_int -> Big_int.big_int -> Big_int.big_int
 

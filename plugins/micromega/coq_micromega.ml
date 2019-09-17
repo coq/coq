@@ -50,6 +50,13 @@ let get_lia_option () =
 let get_lra_option () =
  !lra_proof_depth
 
+(* Enable/disable caches *)
+
+let use_lia_cache = ref true
+let use_nia_cache = ref true
+let use_nra_cache = ref true
+let use_csdp_cache = ref true
+
 let () =
 
  let int_opt l vref =
@@ -88,8 +95,38 @@ let () =
      optwrite = (fun x -> Certificate.dump_file := x)
    } in
 
+ let lia_cache_opt =
+   {
+     optdepr = false;
+     optname = "cache of lia (.lia.cache)";
+     optkey  = ["Lia" ; "Cache"];
+     optread = (fun () -> !use_lia_cache);
+     optwrite = (fun x -> use_lia_cache := x)
+   } in
+
+ let nia_cache_opt =
+   {
+     optdepr = false;
+     optname = "cache of nia (.nia.cache)";
+     optkey  = ["Nia" ; "Cache"];
+     optread = (fun () -> !use_nia_cache);
+     optwrite = (fun x -> use_nia_cache := x)
+   } in
+
+ let nra_cache_opt =
+   {
+     optdepr = false;
+     optname = "cache of nra (.nra.cache)";
+     optkey  = ["Nra" ; "Cache"];
+     optread = (fun () -> !use_nra_cache);
+     optwrite = (fun x -> use_nra_cache := x)
+   } in
+
 
  let () = declare_bool_option solver_opt in
+ let () = declare_bool_option lia_cache_opt in
+ let () = declare_bool_option nia_cache_opt in
+ let () = declare_bool_option nra_cache_opt in
  let () = declare_stringopt_option dump_file_opt in
  let () = declare_int_option (int_opt ["Lra"; "Depth"] lra_proof_depth) in
  let () = declare_int_option (int_opt ["Lia"; "Depth"] lia_proof_depth) in
@@ -1978,13 +2015,47 @@ type provername = string * int option
 
 open Persistent_cache
 
-module Cache = PHashtable(struct
-  type t = (provername * micromega_polys)
-  let equal = (=)
-  let hash  = Hashtbl.hash
-end)
 
-let csdp_cache = ".csdp.cache"
+module MakeCache(T : sig type prover_option
+                         type coeff
+                         val  hash_prover_option : int -> prover_option -> int
+                         val  hash_coeff : int -> coeff -> int
+                         val  eq_prover_option : prover_option -> prover_option -> bool
+                         val  eq_coeff   : coeff -> coeff -> bool
+
+                     end) =
+  struct
+    module E =
+      struct
+        type t = T.prover_option * (T.coeff Mc.pol * Mc.op1) list
+
+        let equal = Hash.(eq_pair T.eq_prover_option (CList.equal (eq_pair (eq_pol T.eq_coeff) Hash.eq_op1)))
+
+        let hash  =
+          let hash_cstr  = Hash.(hash_pair (hash_pol T.hash_coeff) hash_op1) in
+          Hash.( (hash_pair T.hash_prover_option (List.fold_left hash_cstr)) 0)
+      end
+
+      include PHashtable(E)
+
+      let memo_opt use_cache cache_file f =
+        let memof = memo cache_file f in
+        fun x -> if !use_cache then memof x else f x
+
+  end
+
+
+
+module CacheCsdp = MakeCache(struct
+                   type prover_option = provername
+                   type coeff = Mc.q
+                   let hash_prover_option = Hash.(hash_pair hash_string
+                                                    (hash_elt (Option.hash (fun x -> x))))
+                   let eq_prover_option = Hash.(eq_pair String.equal
+                                                  (Option.equal Int.equal))
+                   let hash_coeff = Hash.hash_q
+                   let eq_coeff   = Hash.eq_q
+                     end)
 
 (**
   * Build the command to call csdpcert, and launch it. This in turn will call
@@ -2017,7 +2088,7 @@ let really_call_csdpcert : provername -> micromega_polys -> Sos_types.positivste
   *)
 
 let xcall_csdpcert =
-  Cache.memo csdp_cache (fun (prover,pb) -> really_call_csdpcert prover pb)
+  CacheCsdp.memo_opt use_csdp_cache ".csdp.cache" (fun (prover,pb) -> really_call_csdpcert prover pb)
 
 (**
   * Prover callback functions.
@@ -2112,23 +2183,31 @@ let compact_pt pt f =
 
 let lift_pexpr_prover p l =  p (List.map (fun (e,o) -> Mc.denorm e , o) l)
 
-module CacheZ = PHashtable(struct
- type prover_option = bool * bool* int
 
- type t = prover_option * ((Mc.z Mc.pol * Mc.op1) list)
-  let equal = (=)
-  let hash  = Hashtbl.hash
-end)
+module CacheZ = MakeCache(struct
+                    type prover_option = bool * bool* int
+                    type coeff = Mc.z
+                    let hash_prover_option : int -> prover_option -> int = Hash.hash_elt Hashtbl.hash
+                    let eq_prover_option   : prover_option -> prover_option -> bool = (=)
+                    let  eq_coeff   = Hash.eq_z
+                    let  hash_coeff = Hash.hash_z
+                  end)
 
-module CacheQ = PHashtable(struct
-  type t = int * ((Mc.q Mc.pol * Mc.op1) list)
-  let equal = (=)
-  let hash  = Hashtbl.hash
-end)
+module CacheQ = MakeCache(struct
+                    type prover_option = int
+                    type coeff = Mc.q
+                    let hash_prover_option : int -> int -> int = Hash.hash_elt Hashtbl.hash
+                    let eq_prover_option  = Int.equal
+                    let eq_coeff    = Hash.eq_q
+                    let hash_coeff  = Hash.hash_q
+                  end)
 
-let memo_zlinear_prover = CacheZ.memo ".lia.cache"  (fun ((_,ce,b),s) -> lift_pexpr_prover (Certificate.lia ce b) s)
-let memo_nlia = CacheZ.memo ".nia.cache" (fun ((_,ce,b),s) -> lift_pexpr_prover (Certificate.nlia ce b) s)
-let memo_nra = CacheQ.memo ".nra.cache" (fun (o,s) -> lift_pexpr_prover (Certificate.nlinear_prover o) s)
+let memo_lia   = CacheZ.memo_opt use_lia_cache ".lia.cache"
+                   (fun ((_,ce,b),s) -> lift_pexpr_prover (Certificate.lia ce b) s)
+let memo_nlia  = CacheZ.memo_opt use_nia_cache ".nia.cache"
+                            (fun ((_,ce,b),s) -> lift_pexpr_prover (Certificate.nlia ce b) s)
+let memo_nra   = CacheQ.memo_opt use_nra_cache ".nra.cache"
+                   (fun (o,s) -> lift_pexpr_prover (Certificate.nlinear_prover o) s)
 
 
 
@@ -2154,63 +2233,63 @@ let linear_prover_R = {
 }
 
 let nlinear_prover_R = {
-  name    = "nra";
- get_option = get_lra_option;
- prover  = memo_nra ;
-  hyps    = hyps_of_cone ;
-  compact = compact_cone ;
-  pp_prf  = pp_psatz pp_q ;
-  pp_f    =  fun o x -> pp_pol pp_q o (fst x)
+  name       = "nra";
+  get_option = get_lra_option;
+  prover     = memo_nra ;
+  hyps       = hyps_of_cone ;
+  compact    = compact_cone ;
+  pp_prf     = pp_psatz pp_q ;
+  pp_f       =  fun o x -> pp_pol pp_q o (fst x)
 }
 
 let non_linear_prover_Q str o = {
-  name    = "real nonlinear prover";
+  name      = "real nonlinear prover";
  get_option = (fun () -> (str,o));
- prover  = (fun (o,l) -> call_csdpcert_q o l);
-  hyps    = hyps_of_cone;
-  compact = compact_cone ;
-  pp_prf  = pp_psatz pp_q ;
-  pp_f    = fun o x -> pp_pol pp_q o  (fst x)
+ prover     = (fun (o,l) -> call_csdpcert_q o l);
+  hyps      = hyps_of_cone;
+  compact   = compact_cone ;
+  pp_prf    = pp_psatz pp_q ;
+  pp_f      = fun o x -> pp_pol pp_q o  (fst x)
 }
 
 let non_linear_prover_R str o = {
-  name    = "real nonlinear prover";
- get_option = (fun () -> (str,o));
- prover  = (fun (o,l) -> call_csdpcert_q o l);
-  hyps    = hyps_of_cone;
-  compact = compact_cone;
-  pp_prf  = pp_psatz pp_q;
-  pp_f    = fun o x -> pp_pol pp_q o  (fst x)
+  name       = "real nonlinear prover";
+  get_option = (fun () -> (str,o));
+  prover     = (fun (o,l) -> call_csdpcert_q o l);
+  hyps       = hyps_of_cone;
+  compact    = compact_cone;
+  pp_prf     = pp_psatz pp_q;
+  pp_f       = fun o x -> pp_pol pp_q o  (fst x)
 }
 
 let non_linear_prover_Z str o  = {
-  name    = "real nonlinear prover";
+  name       = "real nonlinear prover";
   get_option = (fun () -> (str,o));
-  prover  = (fun (o,l) -> lift_ratproof (call_csdpcert_z o) l);
-  hyps    = hyps_of_pt;
-  compact = compact_pt;
-  pp_prf  = pp_proof_term;
-  pp_f    =  fun o x -> pp_pol pp_z o (fst x)
+  prover     = (fun (o,l) -> lift_ratproof (call_csdpcert_z o) l);
+  hyps       = hyps_of_pt;
+  compact    = compact_pt;
+  pp_prf     = pp_proof_term;
+  pp_f       = fun o x -> pp_pol pp_z o (fst x)
 }
 
 let linear_Z =   {
-  name    = "lia";
- get_option = get_lia_option;
- prover  = memo_zlinear_prover ;
-  hyps    = hyps_of_pt;
-  compact = compact_pt;
-  pp_prf  = pp_proof_term;
-  pp_f    = fun o x -> pp_pol pp_z o (fst x)
+    name       = "lia";
+    get_option = get_lia_option;
+    prover     = memo_lia ;
+    hyps       = hyps_of_pt;
+    compact    = compact_pt;
+    pp_prf     = pp_proof_term;
+    pp_f       = fun o x -> pp_pol pp_z o (fst x)
 }
 
 let nlinear_Z =   {
-  name    = "nlia";
- get_option = get_lia_option;
- prover  = memo_nlia ;
-  hyps    = hyps_of_pt;
-  compact = compact_pt;
-  pp_prf  = pp_proof_term;
-  pp_f    = fun o x -> pp_pol pp_z o (fst x)
+  name       = "nlia";
+  get_option = get_lia_option;
+  prover     = memo_nlia ;
+  hyps       = hyps_of_pt;
+  compact    = compact_pt;
+  pp_prf     = pp_proof_term;
+  pp_f       = fun o x -> pp_pol pp_z o (fst x)
 }
 
 (**

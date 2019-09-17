@@ -127,7 +127,7 @@ let open_in f =
     match read_key_elem inch with
       | None -> ()
       | Some (key,elem) ->
-          Table.replace htbl key elem ;
+          Table.add htbl key elem ;
 	  xload () in
     try
       (* Locking of the (whole) file while reading *)
@@ -164,7 +164,7 @@ let add t k e =
     else
       let fd = descr_of_out_channel outch in
       begin
-       Table.replace tbl k e ;
+       Table.add tbl k e ;
        do_under_lock Write fd 
         (fun _ -> 
          Marshal.to_channel outch (k,e) [Marshal.No_sharing] ;

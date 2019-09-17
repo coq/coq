@@ -233,6 +233,13 @@ struct
    | Zpos p -> (positive_big_int p)
    | Zneg p -> minus_big_int (positive_big_int p)
 
+ let z x =
+  match x with
+   | Z0 -> 0
+   | Zpos p -> index p
+   | Zneg p -> - (index p)
+
+
  let q_to_num {qnum = x ; qden = y} =
   Big_int (z_big_int x) // (Big_int (z_big_int (Zpos y)))
 
@@ -419,6 +426,80 @@ let command exe_path args vl =
             [stdin_read; stdin_write;
              stdout_read; stdout_write;
              stderr_read; stderr_write])
+
+(** Hashing utilities *)
+
+module Hash =
+  struct
+
+    module Mc = Micromega
+
+    open Hashset.Combine
+
+    let int_of_eq_op1 = Mc.(function
+      | Equal -> 0
+      | NonEqual -> 1
+      | Strict   -> 2
+      | NonStrict -> 3)
+
+    let eq_op1 o1 o2 = int_of_eq_op1 o1 = int_of_eq_op1 o2
+
+    let hash_op1 h o = combine h (int_of_eq_op1 o)
+
+
+    let rec eq_positive p1 p2 =
+      match p1 , p2 with
+      | Mc.XH , Mc.XH -> true
+      | Mc.XI p1 , Mc.XI p2 -> eq_positive p1 p2
+      | Mc.XO p1 , Mc.XO p2 -> eq_positive p1 p2
+      |   _      , _        -> false
+
+    let eq_z z1 z2 =
+      match z1 , z2 with
+      | Mc.Z0 , Mc.Z0 -> true
+      | Mc.Zpos p1, Mc.Zpos p2
+        | Mc.Zneg p1, Mc.Zneg p2 -> eq_positive p1 p2
+      | _ , _ -> false
+
+    let eq_q {Mc.qnum = qn1 ; Mc.qden = qd1} {Mc.qnum = qn2 ; Mc.qden = qd2} =
+      eq_z qn1 qn2 && eq_positive qd1 qd2
+
+    let rec eq_pol  eq p1 p2 =
+      match p1 , p2 with
+      | Mc.Pc c1 , Mc.Pc c2 -> eq c1 c2
+      | Mc.Pinj(i1,p1) , Mc.Pinj(i2,p2) -> eq_positive i1 i2 && eq_pol eq p1 p2
+      | Mc.PX(p1,i1,p1') , Mc.PX(p2,i2,p2') ->
+         eq_pol eq p1 p2 && eq_positive i1 i2 && eq_pol eq p1' p2'
+      |  _ , _ -> false
+
+
+    let eq_pair eq1 eq2 (x1,y1) (x2,y2) =
+      eq1 x1 x2 && eq2 y1 y2
+
+
+    let hash_pol helt =
+      let rec hash acc = function
+        | Mc.Pc c -> helt (combine acc 1) c
+        | Mc.Pinj(p,c) -> hash (combine  (combine acc 1) (CoqToCaml.index p)) c
+        | Mc.PX(p1,i,p2) -> hash (hash (combine (combine acc 2) (CoqToCaml.index i)) p1) p2 in
+      hash
+
+
+    let hash_pair h1 h2 h (e1,e2) =
+      h2 (h1 h e1) e2
+
+    let hash_elt f h e = combine h (f e)
+
+    let hash_string h (e:string) = hash_elt Hashtbl.hash h e
+
+    let hash_z  = hash_elt CoqToCaml.z
+
+    let hash_q  = hash_elt (fun q -> Hashtbl.hash (CoqToCaml.q_to_num q))
+
+  end
+
+
+
 
 (* Local Variables: *)
 (* coding: utf-8 *)

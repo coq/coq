@@ -35,6 +35,18 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
    use the Simplex method for solving linear goals. If it is not set,
    the decision procedures are using Fourier elimination.
 
+.. flag:: Lia Cache
+
+   This option (set by default) instructs :tacn:`lia` to cache its results in the file `.lia.cache`
+
+.. flag:: Nia Cache
+
+   This option (set by default) instructs :tacn:`nia` to cache its results in the file `.nia.cache`
+
+.. flag:: Nra Cache
+
+   This option (set by default) instructs :tacn:`nra` to cache its results in the file `.nra.cache`
+
 
 The tactics solve propositional formulas parameterized by atomic
 arithmetic expressions interpreted over a domain :math:`D \in \{\mathbb{Z},\mathbb{Q},\mathbb{R}\}`.
