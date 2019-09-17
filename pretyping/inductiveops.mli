@@ -205,6 +205,9 @@ val instantiate_constructor_params : pconstructor -> mind_specif -> constr list 
 val arity_of_case_predicate :
   env -> inductive_family -> bool -> Sorts.t -> types
 
+val check_strict_predicate :
+  env -> evar_map -> pinductive * EConstr.constr list -> EConstr.unsafe_judgment -> unit
+
 (** Annotation for cases *)
 val make_case_info : env -> inductive -> Sorts.relevance -> case_style -> case_info
 

@@ -180,7 +180,7 @@ let lambda_applist_decls sigma n c l =
     | _ -> anomaly (Pp.str "Not enough lambda/let's.") in
   app n [] c l
 
-let type_case_branches env sigma (ind,largs) pj c =
+let type_case_branches env sigma ci (ind,largs) pj c =
   let specif = lookup_mind_specif env (fst ind) in
   let nparams = inductive_params specif in
   let (params,realargs) = List.chop nparams largs in
@@ -188,6 +188,11 @@ let type_case_branches env sigma (ind,largs) pj c =
   let params = List.map EConstr.Unsafe.to_constr params in
   let sigma, ps = is_correct_arity env sigma c pj ind specif params in
   let lc = build_branches_type ind specif params (EConstr.to_constr ~abort_on_undefined_evars:false sigma p) in
+  let () =
+    let open Declarations in
+    if not ci.ci_lax_coind && (fst specif).mind_finite == CoFinite then
+      check_strict_predicate env sigma (ind, largs) pj
+  in
   let lc = Array.map EConstr.of_constr lc in
   let n = (snd specif).Declarations.mind_nrealdecls in
   let ty = whd_betaiota env sigma (lambda_applist_decls sigma (n+1) p (realargs@[c])) in
@@ -198,7 +203,7 @@ let judge_of_case env sigma case ci pj iv cj lfj =
     try find_mrectype env sigma cj.uj_type
     with Not_found -> error_case_not_inductive env sigma cj in
   let indspec = ((ind, EInstance.kind sigma u), spec) in
-  let sigma, (bty,rslty,rci) = type_case_branches env sigma indspec pj cj.uj_val in
+  let sigma, (bty,rslty,rci) = type_case_branches env sigma ci indspec pj cj.uj_val in
   let () = check_case_info env (fst indspec) rci ci in
   let sigma = check_branch_types env sigma (fst indspec) cj (lfj,bty) in
   let () = if (match iv with | NoInvert -> false | CaseInvert _ -> true) != should_invert_case env ci

@@ -636,6 +636,23 @@ let arity_of_case_predicate env (ind,params) dep k =
   let concl = if dep then mkArrow mind r (mkSort k) else mkSort k in
   Term.it_mkProd_or_LetIn concl arsign
 
+let check_strict_predicate env sigma (ind, largs) pj =
+  let open EConstr in
+  let (mib, mip as specif) = Inductive.lookup_mind_specif env (fst ind) in
+  let (params, _) = List.chop mib.mind_nparams largs in
+  let params = List.map EConstr.Unsafe.to_constr params in
+  let narity = make_arity_signature env sigma true (make_ind_family (ind, params)) in
+  let nenv = push_rel_context narity env in
+  let na = Context.Rel.Declaration.get_annot (List.hd narity) in
+  let self = Context.Rel.Declaration.get_type (List.hd narity) in
+  let cofix = mkCoFix (0, ([|na|], [|self|], [|mkRel 2|])) in
+  let p = Vars.lift (mip.mind_nrealdecls + 1) pj.uj_val in
+  let p1 = mkApp (p, Context.Rel.instance mkRel 0 narity) in
+  let p2 = mkApp (mkApp (p, Context.Rel.instance mkRel 1 (List.tl narity)), [|cofix|]) in
+  (* Check that [i, x : Ind p i |- P i x = P i (cofix _ := x)] *)
+  if not @@ is_conv nenv sigma p1 p2 then
+    Pretype_errors.error_lax_coinductive_predicate env sigma pj
+
 (***********************************************)
 (* Inferring the sort of parameters of a polymorphic inductive type
    knowing the sort of the conclusion *)

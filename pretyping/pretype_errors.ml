@@ -122,6 +122,9 @@ let error_not_a_type ?loc env sigma j =
 let error_assumption ?loc env sigma j =
   raise_type_error ?loc (env, sigma, BadAssumption j)
 
+let error_lax_coinductive_predicate ?loc env sigma j =
+  raise_type_error ?loc (env, sigma, LaxCoInductivePredicate j)
+
 (*s Implicit arguments synthesis errors. It is hard to find
     a precise location. *)
 

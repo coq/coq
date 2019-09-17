@@ -119,6 +119,9 @@ val error_assumption :
 
 val error_cannot_coerce : env -> Evd.evar_map -> constr * constr -> 'b
 
+val error_lax_coinductive_predicate :
+  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'a
+
 (** {6 Implicit arguments synthesis errors } *)
 
 val error_occur_check : env -> Evd.evar_map -> Evar.t -> constr -> 'b
