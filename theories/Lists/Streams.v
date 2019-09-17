@@ -38,16 +38,10 @@ Fixpoint Str_nth_tl (n:nat) (s:Stream) : Stream :=
 
 Definition Str_nth (n:nat) (s:Stream) : A := hd (Str_nth_tl n s).
 
-
-Lemma unfold_Stream :
+Axiom unfold_Stream :
  forall x:Stream, x = match x with
                       | Cons a s => Cons a s
                       end.
-Proof.
-  intro x.
-  case x.
-  trivial.
-Qed.
 
 Lemma tl_nth_tl :
  forall (n:nat) (s:Stream), tl (Str_nth_tl n s) = Str_nth_tl n (tl s).

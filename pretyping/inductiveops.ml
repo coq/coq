@@ -276,9 +276,9 @@ let has_dependent_elim (mib,mip) =
 let allow_lax_coinductive_match =
   Goptions.declare_bool_option_and_ref
     ~stage:Summary.Stage.Interp
-    ~depr:false
+    ~depr:true
     ~key:["Lax";"CoInductive";"Match"]
-    ~value:true
+    ~value:false
 
 (* Annotation for cases *)
 let make_case_info env ind r style =

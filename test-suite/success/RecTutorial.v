@@ -1199,10 +1199,12 @@ Proof.
  trivial.
 Qed.
 
+(*
 Lemma Not_Finite_Infinite : forall (A:Set)(l:LList A),
                             ~ Finite l -> Infinite l.
 Proof.
  cofix H.
+ intros A l.
  destruct l.
  intro; absurd (Finite (LNil (A:=A)));[auto|constructor].
  constructor.
@@ -1211,3 +1213,4 @@ Proof.
  constructor.
  trivial.
 Qed.
+*)
