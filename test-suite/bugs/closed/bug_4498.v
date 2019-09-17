@@ -1,6 +1,7 @@
 Require Export Coq.Unicode.Utf8.
 Require Export Coq.Classes.Morphisms.
 Require Export Coq.Relations.Relation_Definitions.
+Require Export Coq.Setoids.Setoid.
 
 Set Universe Polymorphism.
 
@@ -16,8 +17,6 @@ Class Category := {
   comp_respects : ∀ {A B C},
       Proper (@equiv B C ==> @equiv A B ==> @equiv A C) (@compose A B C);
 }.
-
-Require Export Coq.Setoids.Setoid.
 
 Add Parametric Morphism `{Category} {A B C} : (@compose _ A B C) with
   signature equiv ==> equiv ==> equiv as compose_mor.

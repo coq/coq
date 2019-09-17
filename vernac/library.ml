@@ -13,7 +13,6 @@ open CErrors
 open Util
 
 open Names
-open Libnames
 open Lib
 open Libobject
 
@@ -85,7 +84,6 @@ type library_disk = {
 
 type summary_disk = {
   md_name : compilation_unit_name;
-  md_imports : compilation_unit_name array;
   md_deps : (compilation_unit_name * Safe_typing.vodigest) array;
 }
 
@@ -96,7 +94,6 @@ type library_t = {
   library_name : compilation_unit_name;
   library_data : library_disk delayed;
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
-  library_imports : compilation_unit_name array;
   library_digests : Safe_typing.vodigest;
   library_extra_univs : Univ.ContextSet.t;
 }
@@ -104,7 +101,6 @@ type library_t = {
 type library_summary = {
   libsum_name : compilation_unit_name;
   libsum_digests : Safe_typing.vodigest;
-  libsum_imports : compilation_unit_name array;
 }
 
 module LibraryOrdered = DirPath
@@ -121,8 +117,6 @@ let libraries_filename_table = ref LibraryFilenameMap.empty
 
 (* These are the _ordered_ sets of loaded, imported and exported libraries *)
 let libraries_loaded_list = Summary.ref [] ~name:"LIBRARY-LOAD"
-let libraries_imports_list = Summary.ref [] ~name:"LIBRARY-IMPORT"
-let libraries_exports_list = Summary.ref [] ~name:"LIBRARY-EXPORT"
 
 (* various requests to the tables *)
 
@@ -155,13 +149,6 @@ let library_is_loaded dir =
   try let _ = find_library dir in true
   with Not_found -> false
 
-let library_is_opened dir =
-  List.exists (fun name -> DirPath.equal name dir) !libraries_imports_list
-
-let loaded_libraries () = !libraries_loaded_list
-
-let opened_libraries () = !libraries_imports_list
-
   (* If a library is loaded several time, then the first occurrence must
      be performed first, thus the libraries_loaded_list ... *)
 
@@ -182,87 +169,7 @@ let register_loaded_library m =
   libraries_loaded_list := aux !libraries_loaded_list;
   libraries_table := LibraryMap.add libname m !libraries_table
 
-  (* ... while if a library is imported/exported several time, then
-     only the last occurrence is really needed - though the imported
-     list may differ from the exported list (consider the sequence
-     Export A; Export B; Import A which results in A;B for exports but
-     in B;A for imports) *)
-
-let rec remember_last_of_each l m =
-  match l with
-  | [] -> [m]
-  | m'::l' when DirPath.equal m' m -> remember_last_of_each l' m
-  | m'::l' -> m' :: remember_last_of_each l' m
-
-let register_open_library export m =
-  libraries_imports_list := remember_last_of_each !libraries_imports_list m;
-  if export then
-    libraries_exports_list := remember_last_of_each !libraries_exports_list m
-
-(************************************************************************)
-(*s Opening libraries *)
-
-(* [open_library export explicit m] opens library [m] if not already
-   opened _or_ if explicitly asked to be (re)opened *)
-
-let open_library export explicit_libs m =
-  if
-    (* Only libraries indirectly to open are not reopen *)
-    (* Libraries explicitly mentioned by the user are always reopen *)
-    List.exists (fun m' -> DirPath.equal m m') explicit_libs
-    || not (library_is_opened m)
-  then begin
-    register_open_library export m;
-    Declaremods.really_import_module (MPfile m)
-  end
-  else
-    if export then
-      libraries_exports_list := remember_last_of_each !libraries_exports_list m
-
-(* open_libraries recursively open a list of libraries but opens only once
-   a library that is re-exported many times *)
-
-let open_libraries export modl =
-  let to_open_list =
-    List.fold_left
-      (fun l m ->
-         let subimport =
-           Array.fold_left
-             (fun l m -> remember_last_of_each l m)
-             l m.libsum_imports
-         in remember_last_of_each subimport m.libsum_name)
-      [] modl in
-  let explicit = List.map (fun m -> m.libsum_name) modl in
-  List.iter (open_library export explicit) to_open_list
-
-
-(**********************************************************************)
-(* import and export of libraries - synchronous operations            *)
-(* at the end similar to import and export of modules except that it  *)
-(* is optimized: when importing several libraries at the same time    *)
-(* which themselves indirectly imports the very same modules, these   *)
-(* ones are imported only ones *)
-
-let open_import_library i (_,(modl,export)) =
-  if Int.equal i 1 then
-    (* even if the library is already imported, we re-import it *)
-    (* if not (library_is_opened dir) then *)
-      open_libraries export (List.map try_find_library modl)
-
-let cache_import_library obj =
-  open_import_library 1 obj
-
-let subst_import_library (_,o) = o
-
-let classify_import_library (_,export as obj) =
-  if export then Substitute obj else Dispose
-
-let in_import_library : DirPath.t list * bool -> obj =
-  declare_object {(default_object "IMPORT LIBRARY") with
-       cache_function = cache_import_library;
-       open_function = open_import_library;
-       subst_function = subst_import_library;
-       classify_function = classify_import_library }
+  let loaded_libraries () = !libraries_loaded_list
 
 (************************************************************************)
 (** {6 Tables of opaque proof terms} *)
@@ -327,14 +234,12 @@ let mk_library sd md digests univs =
     library_name     = sd.md_name;
     library_data     = md;
     library_deps     = sd.md_deps;
-    library_imports  = sd.md_imports;
     library_digests  = digests;
     library_extra_univs = univs;
   }
 
 let mk_summary m = {
   libsum_name = m.library_name;
-  libsum_imports = m.library_imports;
   libsum_digests = m.library_digests;
 }
 
@@ -435,8 +340,7 @@ let load_require _ (_,(needed,modl,_)) =
   List.iter register_library needed
 
 let open_require i (_,(_,modl,export)) =
-  Option.iter (fun exp -> open_libraries exp (List.map find_library modl))
-    export
+  Option.iter (fun export -> Declaremods.import_modules ~export @@ List.map (fun m -> MPfile m) modl) export
 
   (* [needed] is the ordered list of libraries not already loaded *)
 let cache_require o =
@@ -474,49 +378,14 @@ let require_library_from_dirpath ~lib_resolver modrefl export =
     if Lib.is_module_or_modtype () then
       begin
         warn_require_in_module ();
-        add_anonymous_leaf (in_require (needed,modrefl,None));
-        Option.iter (fun exp ->
-          add_anonymous_leaf (in_import_library (modrefl,exp)))
-          export
+              add_anonymous_leaf (in_require (needed,modrefl,None));
+        Option.iter (fun export ->
+          List.iter (fun m -> Declaremods.import_module ~export (MPfile m)) modrefl)
+                export
       end
     else
       add_anonymous_leaf (in_require (needed,modrefl,export));
   ()
-
-(* the function called by Vernacentries.vernac_import *)
-
-let safe_locate_module qid =
-  try Nametab.locate_module qid
-  with Not_found ->
-    user_err ?loc:qid.CAst.loc ~hdr:"safe_locate_module"
-      (pr_qualid qid ++ str " is not a module")
-
-let import_module export modl =
-  (* Optimization: libraries in a raw in the list are imported
-     "globally".  If there is non-library in the list; it breaks the
-     optimization For instance: "Import Arith MyModule Zarith" will
-     not be optimized (possibly resulting in redefinitions, but
-     "Import MyModule Arith Zarith" and "Import Arith Zarith MyModule"
-     will have the submodules imported by both Arith and ZArith
-     imported only once *)
-  let flush = function
-    | [] -> ()
-    | modl -> add_anonymous_leaf (in_import_library (List.rev modl, export)) in
-  let rec aux acc = function
-    | qid :: l ->
-        let m,acc =
-          try Nametab.locate_module qid, acc
-          with Not_found-> flush acc; safe_locate_module qid, [] in
-        (match m with
-        | MPfile dir -> aux (dir::acc) l
-        | mp ->
-            flush acc;
-            try Declaremods.import_module export mp; aux [] l
-            with Not_found ->
-              user_err ?loc:qid.CAst.loc ~hdr:"import_module"
-                (pr_qualid qid ++ str " is not a module"))
-    | [] -> flush acc
-  in aux [] modl
 
 (************************************************************************)
 (*s Initializing the compilation of a library. *)
@@ -543,8 +412,6 @@ let current_deps () =
     (name, m.libsum_digests)
   in
   List.map map !libraries_loaded_list
-
-let current_reexports () = !libraries_exports_list
 
 let error_recursively_dependent_library dir =
   user_err
@@ -591,7 +458,6 @@ let save_library_to ?todo ~output_native_objects dir f otab =
   let sd = {
     md_name = dir;
     md_deps = Array.of_list (current_deps ());
-    md_imports = Array.of_list (current_reexports ());
   } in
   let md = {
     md_compiled = cenv;

@@ -262,7 +262,6 @@ let raw_intern_library f =
 
 type summary_disk = {
   md_name : compilation_unit_name;
-  md_imports : compilation_unit_name array;
   md_deps : (compilation_unit_name * Safe_typing.vodigest) array;
 }
 

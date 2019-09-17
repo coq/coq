@@ -1,7 +1,6 @@
 
 Set Implicit Arguments.
 
-Require Import Logic.
 Module NonPrim.
 Local Set Nonrecursive Elimination Schemes.
 Record prodwithlet (A B : Type) : Type :=

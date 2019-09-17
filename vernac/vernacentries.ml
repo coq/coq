@@ -171,16 +171,9 @@ let print_loadpath dir =
     prlist_with_sep fnl Loadpath.pp l
 
 let print_modules () =
-  let opened = Library.opened_libraries ()
-  and loaded = Library.loaded_libraries () in
-  (* we intersect over opened to preserve the order of opened since *)
-  (* non-commutative operations (e.g. visibility) are done at import time *)
-  let loaded_opened = List.intersect DirPath.equal opened loaded
-  and only_loaded = List.subtract DirPath.equal loaded opened in
-  str"Loaded and imported library files: " ++
-  pr_vertical_list DirPath.print loaded_opened ++ fnl () ++
-  str"Loaded and not imported library files: " ++
-  pr_vertical_list DirPath.print only_loaded
+  let loaded = Library.loaded_libraries () in
+  str"Loaded library files: " ++
+  pr_vertical_list DirPath.print loaded
 
 
 let print_module qid =
@@ -862,7 +855,12 @@ let vernac_constraint ~poly l =
 (* Modules            *)
 
 let vernac_import export refl =
-  Library.import_module export refl
+  let import_mod qid =
+    try Declaremods.import_module ~export @@ Nametab.locate_module qid
+    with Not_found ->
+      CErrors.user_err Pp.(str "Cannot find module " ++ pr_qualid qid)
+   in
+  List.iter import_mod refl
 
 let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
   (* We check the state of the system (in section, in module type)

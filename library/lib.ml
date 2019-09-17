@@ -73,11 +73,8 @@ let classify_segment seg =
       clean ((id,o)::substl, keepl, anticipl) stk
     | KeepObject _ ->
       clean (substl, (id,o)::keepl, anticipl) stk
-    | ImportObject { export } ->
-      if export then
-        clean ((id,o)::substl, keepl, anticipl) stk
-      else
-        clean acc stk
+    | ExportObject _ ->
+      clean ((id,o)::substl, keepl, anticipl) stk
     | AtomicObject obj ->
       begin match classify_object obj with
         | Dispose -> clean acc stk
@@ -615,7 +612,7 @@ let discharge_item ((sp,_ as oname),e) =
   | Leaf lobj ->
     begin match lobj with
     | ModuleObject _ | ModuleTypeObject _ | IncludeObject _ | KeepObject _
-    | ImportObject _ -> None
+    | ExportObject _ -> None
     | AtomicObject obj ->
       Option.map (fun o -> (basename sp,o)) (discharge_object (oname,obj))
     end
