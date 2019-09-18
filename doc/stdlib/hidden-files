@@ -42,6 +42,10 @@ plugins/micromega/Tauto.v
 plugins/micromega/VarMap.v
 plugins/micromega/ZCoeff.v
 plugins/micromega/ZMicromega.v
+plugins/micromega/ZifyInst.v
+plugins/micromega/ZifyBool.v
+plugins/micromega/ZifyClasses.v
+plugins/micromega/Zify.v
 plugins/nsatz/Nsatz.v
 plugins/omega/Omega.v
 plugins/omega/OmegaLemmas.v

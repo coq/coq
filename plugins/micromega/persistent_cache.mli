@@ -32,6 +32,10 @@ module type PHashtable =
       (** [memo cache f] returns a memo function for [f] using file [cache] as persistent table.
           Note that the cache will only be loaded when the function is used for the first time *)
 
+    val memo_cond : string -> (key -> bool) -> (key -> 'a) -> (key -> 'a)
+      (** [memo cache cond f] only use the cache if [cond k] holds for the key [k].  *)
+
+
   end
 
 module PHashtable(Key:HashedType) : PHashtable with type key = Key.t

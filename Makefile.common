@@ -155,13 +155,14 @@ LTACCMO:=plugins/ltac/ltac_plugin.cmo plugins/ltac/tauto_plugin.cmo
 SSRMATCHINGCMO:=plugins/ssrmatching/ssrmatching_plugin.cmo
 SSRCMO:=plugins/ssr/ssreflect_plugin.cmo
 LTAC2CMO:=user-contrib/Ltac2/ltac2_plugin.cmo
+ZIFYCMO:=plugins/micromega/zify_plugin.cmo
 
 PLUGINSCMO:=$(LTACCMO) $(OMEGACMO) $(MICROMEGACMO) \
         $(RINGCMO) \
         $(EXTRACTIONCMO) \
         $(CCCMO)  $(FOCMO) $(RTAUTOCMO) $(BTAUTOCMO) \
         $(FUNINDCMO) $(NSATZCMO) $(SYNTAXCMO) \
-	$(DERIVECMO) $(SSRMATCHINGCMO) $(SSRCMO) $(LTAC2CMO)
+	$(DERIVECMO) $(SSRMATCHINGCMO) $(SSRCMO) $(LTAC2CMO) $(ZIFYCMO)
 
 ifeq ($(HASNATDYNLINK)-$(BEST),false-opt)
  STATICPLUGINS:=$(PLUGINSCMO)

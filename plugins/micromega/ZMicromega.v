@@ -23,6 +23,7 @@ Require Import ZCoeff.
 Require Import Refl.
 Require Import ZArith.
 (*Declare ML Module "micromega_plugin".*)
+Open Scope Z_scope.
 
 Ltac flatten_bool :=
   repeat match goal with
@@ -32,10 +33,70 @@ Ltac flatten_bool :=
 
 Ltac inv H := inversion H ; try subst ; clear H.
 
+Lemma eq_le_iff : forall x, 0 = x  <-> (0 <= x /\ x <= 0).
+Proof.
+  intros.
+  split ; intros.
+  - subst.
+    compute. intuition congruence.
+  - destruct H.
+    apply Z.le_antisymm; auto.
+Qed.
+
+Lemma lt_le_iff : forall x,
+    0 < x <-> 0 <= x - 1.
+Proof.
+  split ; intros.
+  - apply Zlt_succ_le.
+    ring_simplify.
+    auto.
+  - apply Zle_lt_succ in H.
+    ring_simplify in H.
+    auto.
+Qed.
+
+Lemma le_0_iff : forall x y,
+    x <= y <-> 0 <= y - x.
+Proof.
+  split ; intros.
+  - apply Zle_minus_le_0; auto.
+  - apply Zle_0_minus_le; auto.
+Qed.
+
+Lemma le_neg : forall x,
+    ((0 <= x) -> False) <-> 0 < -x.
+Proof.
+  intro.
+  rewrite lt_le_iff.
+  split ; intros.
+  - apply Znot_le_gt in H.
+    apply Zgt_le_succ in H.
+    rewrite le_0_iff in H.
+    ring_simplify in H; auto.
+  - assert (C := (Z.add_le_mono _ _ _ _ H H0)).
+    ring_simplify in C.
+    compute in C.
+    apply C ; reflexivity.
+Qed.
+
+Lemma eq_cnf : forall x,
+    (0 <= x - 1 -> False) /\ (0 <= -1 - x -> False) <-> x = 0.
+Proof.
+  intros.
+  rewrite Z.eq_sym_iff.
+  rewrite eq_le_iff.
+  rewrite (le_0_iff x 0).
+  rewrite !le_neg.
+  rewrite !lt_le_iff.
+  replace (- (x - 1) -1) with (-x) by ring.
+  replace (- (-1 - x) -1) with x by ring.
+  split ; intros (H1 &  H2); auto.
+Qed.
+
+
+
 
 Require Import EnvRing.
-
-Open Scope Z_scope.
 
 Lemma Zsor : SOR 0 1 Z.add Z.mul Z.sub Z.opp (@eq Z) Z.le Z.lt.
 Proof.
@@ -211,83 +272,213 @@ Proof.
   apply (eval_pol_norm Zsor ZSORaddon).
 Qed.
 
-Definition xnormalise (t:Formula Z) : list (NFormula Z)  :=
-  let (lhs,o,rhs) := t in
-    let lhs := normZ lhs in
-      let rhs := normZ rhs in
-    match o with
-      | OpEq =>
-        ((psub lhs (padd  rhs (Pc 1))),NonStrict)::((psub rhs (padd lhs (Pc 1))),NonStrict)::nil
-      | OpNEq => (psub lhs rhs,Equal) :: nil
-      | OpGt   => (psub rhs lhs,NonStrict) :: nil
-      | OpLt => (psub lhs rhs,NonStrict) :: nil
-      | OpGe => (psub rhs (padd lhs (Pc 1)),NonStrict) :: nil
-      | OpLe => (psub lhs (padd rhs (Pc 1)),NonStrict) :: nil
-    end.
-
-Require Import Coq.micromega.Tauto BinNums.
-
-Definition normalise {T : Type} (t:Formula Z) (tg:T) : cnf (NFormula Z) T :=
-  List.map  (fun x => (x,tg)::nil) (xnormalise t).
-
-
-Lemma normalise_correct : forall (T: Type) env t (tg:T), eval_cnf eval_nformula env (normalise t tg) <-> Zeval_formula env t.
-Proof.
-  unfold normalise, xnormalise; cbn -[padd]; intros T env t tg.
-  rewrite Zeval_formula_compat.
-  unfold eval_cnf, eval_clause.
-  destruct t as [lhs o rhs]; case_eq o; cbn -[padd];
-    repeat rewrite eval_pol_sub;
-      repeat rewrite eval_pol_add;
-      repeat rewrite <- eval_pol_norm ; simpl in *;
-  unfold eval_expr;
-  generalize (   eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
-    (fun x : N => x) (pow_N 1 Z.mul) env lhs);
-  generalize (eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
-    (fun x : N => x) (pow_N 1 Z.mul) env rhs) ; intros z1 z2 ; intros ; subst;
-    intuition (auto with zarith).
-Qed.
-
-Definition xnegate (t:RingMicromega.Formula Z) : list (NFormula Z)  :=
-  let (lhs,o,rhs) := t in
-    let lhs := normZ lhs in
-      let rhs := normZ rhs in
-    match o with
-      | OpEq  => (psub lhs rhs,Equal) :: nil
-      | OpNEq => ((psub lhs (padd rhs (Pc 1))),NonStrict)::((psub rhs (padd lhs (Pc 1))),NonStrict)::nil
-      | OpGt  => (psub lhs (padd rhs (Pc 1)),NonStrict) :: nil
-      | OpLt  => (psub rhs (padd lhs (Pc 1)),NonStrict) :: nil
-      | OpGe  => (psub lhs rhs,NonStrict) :: nil
-      | OpLe  => (psub rhs lhs,NonStrict) :: nil
-    end.
-
-Definition negate {T : Type} (t:Formula Z) (tg:T) : cnf (NFormula Z) T :=
-  List.map  (fun x => (x,tg)::nil) (xnegate t).
-
-Lemma negate_correct : forall T env t (tg:T), eval_cnf eval_nformula env (negate t tg) <-> ~ Zeval_formula env t.
-Proof.
-Proof.
-  Opaque padd.
-  intros T env t tg.
-  rewrite Zeval_formula_compat.
-  unfold negate, xnegate  ; simpl.
-  unfold eval_cnf,eval_clause.
-  destruct t as [lhs o rhs]; case_eq o; unfold eval_tt ; simpl;
-    repeat rewrite eval_pol_sub;
-      repeat rewrite eval_pol_add;
-      repeat rewrite <- eval_pol_norm ; simpl in *;
-  unfold eval_expr;
-  generalize (   eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
-    (fun x : N => x) (pow_N 1 Z.mul) env lhs);
-  generalize (eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
-    (fun x : N => x) (pow_N 1 Z.mul) env rhs) ; intros z1 z2 ; intros ; subst;
-    intuition (auto with zarith).
-  Transparent padd.
-Qed.
-
 Definition Zunsat := check_inconsistent 0  Zeq_bool Z.leb.
 
 Definition Zdeduce := nformula_plus_nformula 0 Z.add Zeq_bool.
+
+Lemma Zunsat_sound : forall f,
+    Zunsat f = true -> forall env, eval_nformula env f -> False.
+Proof.
+  unfold Zunsat.
+  intros.
+  destruct f.
+  eapply check_inconsistent_sound with (1 := Zsor) (2 := ZSORaddon) in H; eauto.
+Qed.
+
+Definition xnnormalise (t : Formula Z) : NFormula Z :=
+  let (lhs,o,rhs) := t in
+  let lhs := normZ lhs in
+  let rhs := normZ rhs in
+  match o with
+  | OpEq  => (psub rhs lhs,  Equal)
+  | OpNEq => (psub rhs lhs,  NonEqual)
+  | OpGt  => (psub lhs rhs,  Strict)
+  | OpLt  => (psub rhs lhs,  Strict)
+  | OpGe  => (psub lhs rhs,  NonStrict)
+  | OpLe =>  (psub rhs lhs,  NonStrict)
+  end.
+
+Lemma xnnormalise_correct :
+  forall env f,
+    eval_nformula env (xnnormalise f) <-> Zeval_formula env f.
+Proof.
+  intros.
+  rewrite Zeval_formula_compat.
+  unfold xnnormalise.
+  destruct f as [lhs o rhs].
+  destruct o eqn:O ; cbn ; rewrite ?eval_pol_sub;
+    rewrite <- !eval_pol_norm ; simpl in *;
+      unfold eval_expr;
+      generalize (   eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
+                                 (fun x : N => x) (pow_N 1 Z.mul) env lhs);
+      generalize (eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
+                              (fun x : N => x) (pow_N 1 Z.mul) env rhs); intros.
+  - split ; intros.
+    + assert (z0 + (z - z0) = z0 + 0) by congruence.
+      rewrite Z.add_0_r in H0.
+      rewrite <- H0.
+      ring.
+    + subst.
+      ring.
+  - split ; repeat intro.
+    subst. apply H. ring.
+    apply H.
+    assert (z0 + (z - z0) = z0 + 0) by congruence.
+    rewrite Z.add_0_r in H1.
+    rewrite <- H1.
+    ring.
+  - split ; intros.
+    + apply Zle_0_minus_le; auto.
+    + apply Zle_minus_le_0; auto.
+  - split ; intros.
+    + apply Zle_0_minus_le; auto.
+    + apply Zle_minus_le_0; auto.
+  - split ; intros.
+    + apply Zlt_0_minus_lt; auto.
+    + apply Zlt_left_lt in H.
+      apply H.
+  - split ; intros.
+    + apply Zlt_0_minus_lt ; auto.
+    + apply Zlt_left_lt in H.
+      apply H.
+Qed.
+
+Definition xnormalise (f: NFormula Z) : list (NFormula Z) :=
+  let (e,o) := f in
+  match o with
+  | Equal     => (psub e (Pc 1),NonStrict) :: (psub (Pc (-1)) e, NonStrict) :: nil
+  | NonStrict =>  ((psub (Pc (-1)) e,NonStrict)::nil)
+  | Strict    =>  ((psub (Pc 0)) e, NonStrict)::nil
+  | NonEqual  =>  (e, Equal)::nil
+  end.
+
+Lemma eval_pol_Pc : forall env z,
+    eval_pol env (Pc z) = z.
+Proof.
+  reflexivity.
+Qed.
+
+Ltac iff_ring :=
+  match goal with
+  | |- ?F 0  ?X <-> ?F 0  ?Y => replace X with Y by ring ; tauto
+  end.
+
+
+Lemma xnormalise_correct : forall env f,
+    (make_conj (fun x => eval_nformula env x -> False) (xnormalise f)) <-> eval_nformula env f.
+Proof.
+  intros.
+  destruct f as [e o]; destruct o eqn:Op; cbn - [psub];
+    repeat rewrite eval_pol_sub; fold eval_pol; repeat rewrite eval_pol_Pc;
+      generalize (eval_pol env e) as x; intro.
+  - apply eq_cnf.
+  - unfold not. tauto.
+  - rewrite le_neg.
+    iff_ring.
+  - rewrite le_neg.
+    rewrite lt_le_iff.
+    iff_ring.
+Qed.
+
+
+Require Import Coq.micromega.Tauto BinNums.
+
+Definition cnf_of_list {T: Type} (tg : T) (l : list (NFormula Z)) :=
+  List.fold_right (fun x acc =>
+                     if Zunsat x then acc else ((x,tg)::nil)::acc)
+                  (cnf_tt _ _)  l.
+
+Lemma cnf_of_list_correct :
+  forall {T : Type} (tg:T)  (f : list (NFormula Z)) env,
+  eval_cnf eval_nformula env (cnf_of_list tg f) <->
+  make_conj (fun x : NFormula Z => eval_nformula env x -> False) f.
+Proof.
+  unfold cnf_of_list.
+  intros.
+  set (F := (fun (x : NFormula Z) (acc : list (list (NFormula Z * T))) =>
+        if Zunsat x then acc else ((x, tg) :: nil) :: acc)).
+  set (E := ((fun x : NFormula Z => eval_nformula env x -> False))).
+  induction f.
+  - compute.
+    tauto.
+  - rewrite make_conj_cons.
+    simpl.
+    unfold F at 1.
+    destruct (Zunsat a) eqn:EQ.
+    + rewrite IHf.
+      unfold E at 1.
+      specialize (Zunsat_sound _ EQ env).
+      tauto.
+    +
+      rewrite <- eval_cnf_cons_iff with (1:= fun env (term:Formula Z) => True) .
+      rewrite IHf.
+      simpl.
+      unfold E at 2.
+      unfold eval_tt. simpl.
+      tauto.
+Qed.
+
+Definition normalise {T : Type} (t:Formula Z) (tg:T) : cnf (NFormula Z) T :=
+  let f := xnnormalise t in
+  if Zunsat f then cnf_ff _ _
+  else cnf_of_list tg (xnormalise f).
+
+Lemma normalise_correct : forall (T: Type) env t (tg:T), eval_cnf eval_nformula env (normalise t tg) <-> Zeval_formula env t.
+Proof.
+  intros.
+  rewrite <- xnnormalise_correct.
+  unfold normalise.
+  generalize (xnnormalise t) as f;intro.
+  destruct (Zunsat f) eqn:U.
+  - assert (US := Zunsat_sound _  U env).
+    rewrite eval_cnf_ff with (1:= eval_nformula).
+    tauto.
+  - rewrite cnf_of_list_correct.
+    apply xnormalise_correct.
+Qed.
+
+Definition xnegate (f:NFormula Z) : list (NFormula Z)  :=
+  let (e,o) := f in
+    match o with
+      | Equal  => (e,Equal) :: nil
+      | NonEqual => (psub e (Pc 1),NonStrict) :: (psub (Pc (-1)) e, NonStrict) :: nil
+      | NonStrict => (e,NonStrict)::nil
+      | Strict    => (psub e (Pc 1),NonStrict)::nil
+    end.
+
+Definition negate {T : Type} (t:Formula Z) (tg:T) : cnf (NFormula Z) T :=
+  let f := xnnormalise t in
+  if Zunsat f then cnf_tt _ _
+  else cnf_of_list tg (xnegate f).
+
+Lemma xnegate_correct : forall env f,
+    (make_conj (fun x => eval_nformula env x -> False) (xnegate f)) <-> ~ eval_nformula env f.
+Proof.
+  intros.
+  destruct f as [e o]; destruct o eqn:Op; cbn - [psub];
+    repeat rewrite eval_pol_sub; fold eval_pol; repeat rewrite eval_pol_Pc;
+      generalize (eval_pol env e) as x; intro.
+  - tauto.
+  - rewrite eq_cnf.
+    destruct (Z.eq_decidable x 0);tauto.
+  - rewrite lt_le_iff.
+    tauto.
+  - tauto.
+Qed.
+
+Lemma negate_correct : forall T env t (tg:T), eval_cnf eval_nformula env (negate t tg) <-> ~ Zeval_formula env t.
+Proof.
+  intros.
+  rewrite <- xnnormalise_correct.
+  unfold negate.
+  generalize (xnnormalise t) as f;intro.
+  destruct (Zunsat f) eqn:U.
+  - assert (US := Zunsat_sound _  U env).
+    rewrite eval_cnf_tt with (1:= eval_nformula).
+    tauto.
+  - rewrite cnf_of_list_correct.
+    apply xnegate_correct.
+Qed.
 
 Definition cnfZ (Annot TX AF : Type) (f : TFormula (Formula Z) Annot TX AF) :=
   rxcnf Zunsat Zdeduce normalise negate true f.
@@ -1221,7 +1412,8 @@ Proof.
   unfold eval_nformula. unfold RingMicromega.eval_nformula.
   destruct t.
   apply (check_inconsistent_sound Zsor ZSORaddon) ; auto.
-  - unfold Zdeduce. apply (nformula_plus_nformula_correct Zsor ZSORaddon).
+  - unfold Zdeduce. intros. revert H.
+     apply (nformula_plus_nformula_correct Zsor ZSORaddon); auto.
   -
     intros env t tg.
     rewrite normalise_correct ; auto.
@@ -1513,9 +1705,7 @@ Fixpoint xhyps_of_pt (base:nat) (acc : list nat) (pt:ZArithProof)  : list nat :=
 
 Definition hyps_of_pt (pt : ZArithProof) : list nat := xhyps_of_pt 0 nil pt.
 
-
 Open Scope Z_scope.
-
 
 (** To ease bindings from ml code **)
 Definition make_impl := Refl.make_impl.

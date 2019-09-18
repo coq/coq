@@ -127,6 +127,8 @@ Module Z.
   Ltac to_euclidean_division_equations := div_mod_to_equations'; quot_rem_to_equations'; euclidean_division_equations_cleanup.
 End Z.
 
+Set Warnings "-deprecated-tactic".
+
 (** * zify: the Z-ification tactic *)
 
 (* This tactic searches for nat and N and positive elements in the goal and
@@ -150,12 +152,14 @@ End Z.
 
 (** I) translation of Z.max, Z.min, Z.abs, Z.sgn into recognized equations *)
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_unop_core t thm a :=
  (* Let's introduce the specification theorem for t *)
  pose proof (thm a);
  (* Then we replace (t a) everywhere with a fresh variable *)
  let z := fresh "z" in set (z:=t a) in *; clearbody z.
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_unop_var_or_term t thm a :=
  (* If a is a variable, no need for aliasing *)
  let za := fresh "z" in
@@ -163,6 +167,7 @@ Ltac zify_unop_var_or_term t thm a :=
  (* Otherwise, a is a complex term: we alias it. *)
  (remember a as za; zify_unop_core t thm za).
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_unop t thm a :=
  (* If a is a scalar, we can simply reduce the unop. *)
  (* Note that simpl wasn't enough to reduce [Z.max 0 0] (#5439) *)
@@ -174,6 +179,7 @@ Ltac zify_unop t thm a :=
   | _ => zify_unop_var_or_term t thm a
  end.
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_unop_nored t thm a :=
  (* in this version, we don't try to reduce the unop (that can be (Z.add x)) *)
  let isz := isZcst a in
@@ -182,6 +188,7 @@ Ltac zify_unop_nored t thm a :=
   | _ => zify_unop_var_or_term t thm a
  end.
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_binop t thm a b:=
  (* works as zify_unop, except that we should be careful when
     dealing with b, since it can be equal to a *)
@@ -197,6 +204,7 @@ Ltac zify_binop t thm a b:=
         end)
  end.
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_op_1 :=
   match goal with
    | x := ?t : Z |- _ => let h := fresh "heq_" x in pose proof (eq_refl : x = t) as h; clearbody x
@@ -213,9 +221,6 @@ Ltac zify_op_1 :=
 Ltac zify_op := repeat zify_op_1.
 
 
-
-
-
 (** II) Conversion from nat to Z *)
 
 
@@ -226,6 +231,7 @@ Ltac hide_Z_of_nat t :=
   change Z.of_nat with Z_of_nat' in z;
   unfold z in *; clear z.
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_nat_rel :=
  match goal with
   (* I: equalities *)
@@ -321,10 +327,8 @@ Ltac zify_nat_op :=
     pose proof (Nat2Z.is_nonneg a); hide_Z_of_nat a
  end.
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_nat := repeat zify_nat_rel; repeat zify_nat_op; unfold Z_of_nat' in *.
-
-
-
 
 (* III) conversion from positive to Z *)
 
@@ -336,6 +340,7 @@ Ltac hide_Zpos t :=
   change Zpos with Zpos' in z;
   unfold z in *; clear z.
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_positive_rel :=
  match goal with
   (* I: equalities *)
@@ -357,6 +362,7 @@ Ltac zify_positive_rel :=
   | |- context [ (?a >= ?b)%positive ] => change (a>=b)%positive with (Zpos a>=Zpos b)
  end.
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_positive_op :=
  match goal with
  (* Z.pow_pos -> Z.pow *)
@@ -453,6 +459,7 @@ Ltac zify_positive_op :=
   | |- context [ Zpos ?a ] => pose proof (Pos2Z.is_pos a); hide_Zpos a
  end.
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_positive :=
  repeat zify_positive_rel; repeat zify_positive_op; unfold Zpos',Zneg' in *.
 
@@ -469,6 +476,7 @@ Ltac hide_Z_of_N t :=
   change Z.of_N with Z_of_N' in z;
   unfold z in *; clear z.
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_N_rel :=
  match goal with
   (* I: equalities *)
@@ -490,6 +498,7 @@ Ltac zify_N_rel :=
   | |- context [ (?a >= ?b)%N ] =>       rewrite (N2Z.inj_ge a b)
  end.
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_N_op :=
  match goal with
   (* misc type conversions: nat to positive *)
@@ -556,10 +565,35 @@ Ltac zify_N_op :=
   | |- context [ Z.of_N ?a ] => pose proof (N2Z.is_nonneg a); hide_Z_of_N a
  end.
 
+#[deprecated( note = "Use 'zify' instead")]
 Ltac zify_N := repeat zify_N_rel; repeat zify_N_op; unfold Z_of_N' in *.
-
-
 
 (** The complete Z-ification tactic *)
 
-Ltac zify := repeat (zify_nat; zify_positive; zify_N); zify_op.
+Require  Import ZifyClasses ZifyInst.
+Require  Zify.
+
+
+(** [is_inj T] returns true iff the type T has an injection *)
+Ltac is_inj T :=
+  match T with
+  | _  => let x := constr:(_ : InjTyp T _ ) in true
+  | _  => false
+  end.
+
+(* [elim_let] replaces a let binding (x := e : t)
+   by an equation (x = e) if t is an injected type *)
+Ltac elim_let :=
+  repeat
+  match goal with
+  | x := ?t : ?ty |- _ =>
+         let b := is_inj ty in
+         match b with
+         | true => let h := fresh "heq_" x in pose proof (eq_refl : x = t) as h; clearbody x
+         end
+  end.
+
+
+Ltac zify :=
+  intros ; elim_let ;
+  Zify.zify  ; ZifyInst.saturate.

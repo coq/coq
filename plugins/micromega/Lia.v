@@ -23,9 +23,6 @@ Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
 
-Ltac preprocess :=
-  zify ; unfold Z.succ in * ; unfold Z.pred in *.
-
 Ltac zchange checker :=
   intros __wit __varmap __ff ;
   change (@Tauto.eval_bf _ (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
@@ -39,11 +36,17 @@ Ltac zchecker_abstract checker :=
 
 Ltac zchecker := zchecker_no_abstract ZTautoChecker_sound.
 
-Ltac zchecker_ext := zchecker_no_abstract ZTautoCheckerExt_sound.
+(*Ltac zchecker_ext := zchecker_no_abstract ZTautoCheckerExt_sound.*)
 
-Ltac lia := preprocess; xlia zchecker_ext.
+Ltac zchecker_ext :=
+  intros __wit __varmap __ff ;
+  exact (ZTautoCheckerExt_sound __ff __wit
+                                (@eq_refl bool true <: @eq bool (ZTautoCheckerExt __ff __wit) true)
+                                (@find Z Z0 __varmap)).
+
+Ltac lia := zify; xlia zchecker_ext.
                
-Ltac nia := preprocess; xnlia zchecker.
+Ltac nia := zify; xnlia zchecker.
 
 
 (* Local Variables: *)

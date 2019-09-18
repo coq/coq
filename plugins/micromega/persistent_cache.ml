@@ -16,25 +16,19 @@
 
 module type PHashtable =
   sig
+    (* see documentation in [persistent_cache.mli] *)
     type 'a t
     type key
 
     val open_in : string -> 'a t
-    (** [open_in f] rebuilds a table from the records stored in file [f].
-        As marshaling is not type-safe, it might segfault.
-    *)
 
     val find : 'a t -> key -> 'a
-    (** find has the specification of Hashtable.find *)
 
     val add  : 'a t -> key -> 'a -> unit
-    (** [add tbl key elem] adds the binding [key] [elem] to the table [tbl].
-	(and writes the binding to the file associated with [tbl].)
-	If [key] is already bound, raises KeyAlreadyBound *)
 
     val memo : string -> (key -> 'a) -> (key -> 'a)
-      (** [memo cache f] returns a memo function for [f] using file [cache] as persistent table.
-	  Note that the cache will only be loaded when the function is used for the first time *)
+
+    val memo_cond : string -> (key -> bool) -> (key -> 'a) -> (key -> 'a)
 
   end
 
@@ -199,6 +193,24 @@ let memo cache f =
 	      let res = f x in
 		add tbl x res ;
 		res
+
+let memo_cond cache cond f =
+  let tbl = lazy (try Some (open_in cache) with _ -> None) in
+  fun x ->
+  match Lazy.force tbl with
+  | None -> f x
+  | Some tbl ->
+     if cond x
+     then
+       begin
+       try find tbl x
+       with  Not_found ->
+         let res = f x in
+         add tbl x res ;
+         res
+       end
+     else f x
+
 
 end
 

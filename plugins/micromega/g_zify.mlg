@@ -1,0 +1,52 @@
+(************************************************************************)
+(*         *   The Coq Proof Assistant / The Coq Development Team       *)
+(*  v      *   INRIA, CNRS and contributors - Copyright 1999-2019       *)
+(* <O___,, *       (see CREDITS file for the list of authors)           *)
+(*   \VV/  **************************************************************)
+(*    //   *    This file is distributed under the terms of the         *)
+(*         *     GNU Lesser General Public License Version 2.1          *)
+(*         *     (see LICENSE file for the text of the license)         *)
+(************************************************************************)
+
+{
+
+open Ltac_plugin
+open Stdarg
+open Tacarg
+
+
+}
+
+DECLARE PLUGIN "zify_plugin"
+
+VERNAC COMMAND EXTEND DECLAREINJECTION CLASSIFIED AS SIDEFF
+| ["Add" "InjTyp"    constr(t) ] -> { Zify.InjTable.register t }
+| ["Add" "BinOp"     constr(t) ] -> { Zify.BinOp.register t }
+| ["Add" "UnOp"      constr(t) ] -> { Zify.UnOp.register t }
+| ["Add" "CstOp"     constr(t) ] -> { Zify.CstOp.register t }
+| ["Add" "BinRel"    constr(t) ] -> { Zify.BinRel.register t }
+| ["Add" "PropOp"    constr(t) ] -> { Zify.PropOp.register t }
+| ["Add" "PropUOp"   constr(t) ] -> { Zify.PropOp.register t }
+| ["Add" "Spec"      constr(t) ] -> { Zify.Spec.register t }
+| ["Add" "BinOpSpec" constr(t) ] -> { Zify.Spec.register t }
+| ["Add" "UnOpSpec"  constr(t) ] -> { Zify.Spec.register t }
+| ["Add" "Saturate"  constr(t) ] -> { Zify.Saturate.register t }
+END
+
+TACTIC EXTEND ITER
+| [ "iter_specs" tactic(t)] -> { Zify.iter_specs t }
+END
+
+TACTIC EXTEND TRANS
+| [ "zify_tac"  ] -> { Zify.zify_tac }
+| [ "saturate"  ] -> { Zify.saturate }
+END
+
+VERNAC COMMAND EXTEND ZifyPrint CLASSIFIED AS SIDEFF
+|[ "Show" "Zify" "InjTyp" ] -> { Zify.InjTable.print () }
+|[ "Show" "Zify" "BinOp" ]  -> { Zify.BinOp.print () }
+|[ "Show" "Zify" "UnOp" ]   -> { Zify.UnOp.print () }
+|[ "Show" "Zify" "CstOp"]   -> { Zify.CstOp.print () }
+|[ "Show" "Zify" "BinRel"]  -> { Zify.BinRel.print () }
+|[ "Show" "Zify" "Spec"]    -> { Zify.Spec.print () }
+END

@@ -1,0 +1,7 @@
+- Reimplementation of the :tacn:`zify` tactic. The tactic is more efficient and copes with dependent hypotheses.
+  It can also be extended by redefining the tactic ``zify_post_hook``.
+  (`#9856 <https://github.com/coq/coq/pull/9856>`_ fixes
+  `#8898 <https://github.com/coq/coq/issues/8898>`_,
+  `#7886 <https://github.com/coq/coq/issues/7886>`_,
+  `#9848 <https://github.com/coq/coq/issues/9848>`_ and
+  `#5155 <https://github.com/coq/coq/issues/5155>`_, by Frédéric Besson).

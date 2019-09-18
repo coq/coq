@@ -22,6 +22,8 @@ open Ltac_plugin
 open Stdarg
 open Tacarg
 
+
+
 }
 
 DECLARE PLUGIN "micromega_plugin"
@@ -29,11 +31,6 @@ DECLARE PLUGIN "micromega_plugin"
 TACTIC EXTEND RED
 | [ "myred"  ] -> { Tactics.red_in_concl }
 END
-
-TACTIC EXTEND ISGROUND
-| [ "is_ground" constr(t) ] -> { Coq_micromega.is_ground_tac t }
-END
-
 
 TACTIC EXTEND PsatzZ
 | [ "psatz_Z" int_or_var(i) tactic(t) ] -> {  (Coq_micromega.psatz_Z i

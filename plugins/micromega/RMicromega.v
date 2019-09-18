@@ -432,8 +432,8 @@ Qed.
 
 Require Import Coq.micromega.Tauto.
 
-Definition Rnormalise := @cnf_normalise Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq_bool.
-Definition Rnegate := @cnf_negate Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq_bool.
+Definition Rnormalise := @cnf_normalise Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq_bool Qle_bool.
+Definition Rnegate := @cnf_negate Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq_bool Qle_bool.
 
 Definition runsat := check_inconsistent 0%Q Qeq_bool Qle_bool.
 
@@ -467,7 +467,9 @@ Proof.
   apply Reval_nformula_dec.
   - destruct t.
   apply (check_inconsistent_sound Rsor QSORaddon) ; auto.
-  - unfold rdeduce. apply (nformula_plus_nformula_correct Rsor QSORaddon).
+  - unfold rdeduce.
+    intros. revert H.
+    eapply (nformula_plus_nformula_correct Rsor QSORaddon); eauto.
   - now apply (cnf_normalise_correct Rsor QSORaddon).
   - intros. now eapply (cnf_negate_correct Rsor QSORaddon); eauto.
   - intros t w0.

@@ -2,7 +2,7 @@
  (name micromega_plugin)
  (public_name coq.plugins.micromega)
  ; be careful not to link the executable to the plugin!
- (modules (:standard \ csdpcert))
+ (modules (:standard \ csdpcert g_zify zify))
  (synopsis "Coq's micromega plugin")
  (libraries num coq.plugins.ltac))
 
@@ -13,3 +13,10 @@
  (modules csdpcert)
  (flags :standard -open Micromega_plugin)
  (libraries coq.plugins.micromega))
+
+(library
+ (name zify_plugin)
+ (public_name coq.plugins.zify)
+ (modules g_zify zify)
+ (synopsis "Coq's zify plugin")
+ (libraries coq.plugins.ltac))
