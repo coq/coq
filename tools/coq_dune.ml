@@ -171,7 +171,8 @@ let pp_rule fmt targets deps action =
 let gen_coqc_targets vo =
   [ vo.target
   ; replace_ext ~file:vo.target ~newext:".glob"
-  ; "." ^ replace_ext ~file:vo.target ~newext:".aux"]
+  ; replace_ext ~file:vo.target ~newext:".aux"
+  ]
 
 (* Generate the dune rule: *)
 let pp_vo_dep dir fmt vo =

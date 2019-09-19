@@ -20,7 +20,7 @@ let version = 1
 let oc = ref None
 
 let aux_file_name_for vfile =
-  dirname vfile ^ "/." ^ chop_extension(basename vfile) ^ ".aux"
+  dirname vfile ^ "/" ^ chop_extension(basename vfile) ^ ".aux"
 
 let mk_absolute vfile =
   let vfile = CUnix.remove_path_dot vfile in
