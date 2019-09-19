@@ -311,3 +311,10 @@
 : "${argosy_CI_REF:=master}"
 : "${argosy_CI_GITURL:=https://github.com/mit-pdos/argosy}"
 : "${argosy_CI_ARCHIVEURL:=${argosy_CI_GITURL}/archive}"
+
+########################################################################
+# perennial
+########################################################################
+: "${perennial_CI_REF:=master}"
+: "${perennial_CI_GITURL:=https://github.com/mit-pdos/perennial}"
+: "${perennial_CI_ARCHIVEURL:=${perennial_CI_GITURL}/archive}"

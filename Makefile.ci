@@ -35,6 +35,7 @@ CI_TARGETS= \
     ci-math-comp \
     ci-mtac2 \
     ci-paramcoq \
+    ci-perennial \
     ci-quickchick \
     ci-relation_algebra \
     ci-sf \
