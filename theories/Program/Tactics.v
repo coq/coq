@@ -178,9 +178,6 @@ Ltac rapply p :=
    rapply uconstr:(p _))
   || refine p.
 
-(** The tactic [rapply] is a tactic notation so that it takes in uconstrs by default *)
-Tactic Notation "rapply" uconstr(p) := rapply p.
-
 (** Tactical [on_call f tac] applies [tac] on any application of [f] in the hypothesis or goal. *)
 
 Ltac on_call f tac :=

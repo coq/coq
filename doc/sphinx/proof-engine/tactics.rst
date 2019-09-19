@@ -692,11 +692,17 @@ Applying theorems
       uses the proof engine of :tacn:`refine` for dealing with
       existential variables, holes, and conversion problems.  This may
       result in slightly different behavior regarding which conversion
-      problems are solvable.  Note that :tacn:`rapply` prefers to
-      instantiate as many hypotheses of :n:`@term` as possible.  As a
-      result, if it is possible to apply :n:`@term` to arbitrarily
-      many arguments without getting a type error, :tacn:`rapply` will
-      loop.
+      problems are solvable.  However, like :tacn:`apply` but unlike
+      :tacn:`eapply`, :tacn:`rapply` will fail if there are any holes
+      which remain in :n:`@term` itself after typechecking and
+      typeclass resolution but before unification with the goal.  More
+      technically, :n:`@term` is first parsed as a
+      :production:`constr` rather than as a :production:`uconstr` or
+      :production:`open_constr` before being applied to the goal. Note
+      that :tacn:`rapply` prefers to instantiate as many hypotheses of
+      :n:`@term` as possible.  As a result, if it is possible to apply
+      :n:`@term` to arbitrarily many arguments without getting a type
+      error, :tacn:`rapply` will loop.
 
       Note that you need to :n:`Require Import Coq.Program.Tactics` to
       make use of :tacn:`rapply`.
