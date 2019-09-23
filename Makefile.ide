@@ -266,7 +266,7 @@ $(COQIDEAPP)/Contents/Resources/loaders: $(COQIDEAPP)/Contents
 
 $(COQIDEAPP)/Contents/Resources/immodules: $(COQIDEAPP)/Contents
 	$(MKDIR) $@
-	$(INSTALLLIB) "$(GTKLIBS)/gtk-3.0/3.0.0/immodules/"*.so $@
+	$(INSTALLLIB) "$(GTKLIBS)/gtk-3.0/3.0.0/immodules/"*.dylib $@
 
 
 $(COQIDEAPP)/Contents/Resources/etc: $(COQIDEAPP)/Contents/Resources/lib
@@ -276,8 +276,8 @@ $(COQIDEAPP)/Contents/Resources/etc: $(COQIDEAPP)/Contents/Resources/lib
 	{ "$(PIXBUFBIN)/gdk-pixbuf-query-loaders" $@/../loaders/*.so |\
 	 sed -e "s!/.*\(/loaders/.*.so\)!@executable_path/../Resources/\1!"; } \
 	> $@/gtk-3.0/gdk-pixbuf.loaders
-	{ "$(GTKBIN)/gtk-query-immodules-3.0" $@/../immodules/*.so |\
-	 sed -e "s!/.*\(/immodules/.*.so\)!@executable_path/../Resources/\1!" |\
+	{ "$(GTKBIN)/gtk-query-immodules-3.0" $@/../immodules/*.dylib |\
+	 sed -e "s!/.*\(/immodules/.*.dylib\)!@executable_path/../Resources/\1!" |\
 	 sed -e "s!/.*\(/share/locale\)!@executable_path/../Resources/\1!"; } \
 	> $@/gtk-3.0/gtk-immodules.loaders
 	$(MKDIR) $@/pango
@@ -286,7 +286,7 @@ $(COQIDEAPP)/Contents/Resources/etc: $(COQIDEAPP)/Contents/Resources/lib
 $(COQIDEAPP)/Contents/Resources/lib: $(COQIDEAPP)/Contents/Resources/immodules $(COQIDEAPP)/Contents/Resources/loaders $(COQIDEAPP)/Contents $(COQIDEINAPP)
 	$(MKDIR) $@
 	macpack -d ../Resources/lib $(COQIDEINAPP)
-	for i in $@/../loaders/*.so $@/../immodules/*.so; \
+	for i in $@/../loaders/*.so $@/../immodules/*.dylib; \
 	do \
 	  macpack -d ../lib $$i; \
 	done
