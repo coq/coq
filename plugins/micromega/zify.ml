@@ -24,27 +24,13 @@ let unsafe_to_constr = EConstr.Unsafe.to_constr
 
 let pr_constr env evd e = Printer.pr_econstr_env env evd e
 
-(** [get_arrow_typ evd t] returns [t1;.tn] such that t = t1 -> .. -> tn.ci_npar
-    (only syntactic matching)
- *)
-let rec get_arrow_typ evd t =
-  match EConstr.kind evd t with
-  | Prod (a, p1, p2) (*when a.Context.binder_name = Names.Anonymous*) ->
-      p1 :: get_arrow_typ evd p2
-  | _ -> [t]
-
-(** [get_binary_arrow t] return t' such that t = t' -> t' -> t' *)
-let get_binary_arrow evd t =
-  let l = get_arrow_typ evd t in
+let rec find_option pred l =
   match l with
-  | [] -> assert false
-  | [t1; t2; t3] -> Some (t1, t2, t3)
-  | _ -> None
+  | [] -> raise Not_found
+  | e::l -> match pred e with
+            | Some r -> r
+            | None   -> find_option pred l
 
-(** [get_unary_arrow t] return t' such that t = t' -> t' *)
-let get_unary_arrow evd t =
-  let l = get_arrow_typ evd t in
-  match l with [] -> assert false | [t1; t2] -> Some (t1, t2) | _ -> None
 
 (** [HConstr] is a map indexed by EConstr.t.
     It should only be used using closed terms.
@@ -56,6 +42,8 @@ module HConstr = struct
     let compare c c' =
       Constr.compare (unsafe_to_constr c) (unsafe_to_constr c')
   end)
+
+  type 'a t = 'a list M.t
 
   let lfind h m = try M.find h m with Not_found -> []
 
@@ -72,26 +60,22 @@ module HConstr = struct
   let fold f m acc =
     M.fold (fun k l acc -> List.fold_left (fun acc e -> f k e acc) acc l) m acc
 
-  let iter = M.iter
-
 end
+
 
 (** [get_projections_from_constant (evd,c) ]
     returns an array of constr [| a1,.. an|] such that [c] is defined as
     Definition c := mk a1 .. an with mk a constructor.
     ai is therefore either a type parameter or a projection.
  *)
-let get_projections_from_constant (evd, i) =
-  match Constr.kind  (unsafe_to_constr i) with
-  | Constr.Const (c, u) ->
-     (match Environ.constant_opt_value_in (Global.env ()) (c,u) with
-      | None -> failwith "Add Injection requires a constant (with a body)"
-      | Some c -> (
-        match EConstr.kind evd (EConstr.of_constr c) with
-        | App (c, a) -> Some a
-        | _ -> None ))
-  | _ -> None
 
+
+let get_projections_from_constant (evd, i) =
+  match EConstr.kind evd (Reductionops.clos_whd_flags CClosure.all (Global.env ()) evd i) with
+  | App (c, a) -> Some a
+  | _ ->
+     raise (CErrors.user_err Pp.(str "The hnf of term " ++ pr_constr (Global.env ()) evd i
+                          ++ str " should be an application i.e. (c a1 ... an)"))
 
 (**  An instance of type, say T, is registered into a hashtable, say TableT. *)
 
@@ -101,34 +85,111 @@ type 'a decl =
     deriv: 'a
   (* Projections of insterest *) }
 
+
+module EInjT = struct
+  type t =
+    { isid: bool
+    ; (* S = T ->  inj = fun x -> x*)
+      source: EConstr.t
+    ; (* S *)
+      target: EConstr.t
+    ; (* T *)
+      (* projections *)
+      inj: EConstr.t
+    ; (* S -> T *)
+      pred: EConstr.t
+    ; (* T -> Prop *)
+      cstr: EConstr.t option
+    (* forall x, pred (inj x) *) }
+end
+
+module EBinOpT = struct
+  type t =
+    { (* Op : source1 -> source2 -> source3 *)
+      source1: EConstr.t
+    ; source2: EConstr.t
+    ; source3: EConstr.t
+    ; target: EConstr.t
+    ; inj1: EConstr.t
+    ; (* InjTyp source1 target *)
+      inj2: EConstr.t
+    ; (* InjTyp source2 target *)
+      inj3: EConstr.t
+    ; (* InjTyp source3 target *)
+      tbop: EConstr.t
+    (* TBOpInj *) }
+end
+
+module ECstOpT = struct
+  type t = {source: EConstr.t; target: EConstr.t; inj: EConstr.t}
+end
+
+module EUnOpT = struct
+  type t =
+    { source1: EConstr.t
+    ; source2: EConstr.t
+    ; target: EConstr.t
+    ; inj1_t: EConstr.t
+    ; inj2_t: EConstr.t
+    ; unop: EConstr.t }
+end
+
+module EBinRelT = struct
+  type t =
+    {source: EConstr.t; target: EConstr.t; inj: EConstr.t; brel: EConstr.t}
+end
+
+module EPropBinOpT = struct
+  type t = EConstr.t
+end
+
+module EPropUnOpT = struct
+  type t = EConstr.t
+end
+
+
+module ESatT = struct
+  type t =  {parg1: EConstr.t; parg2: EConstr.t; satOK: EConstr.t}
+end
+
 (* Different type of declarations *)
 type decl_kind =
-  | PropOp
-  | InjTyp
-  | BinRel
-  | BinOp
-  | UnOp
-  | CstOp
-  | Saturate
-
-let string_of_decl = function
-  | PropOp -> "PropOp"
-  | InjTyp -> "InjTyp"
-  | BinRel -> "BinRel"
-  | BinOp  -> "BinOp"
-  | UnOp   -> "UnOp"
-  | CstOp  -> "CstOp"
-  | Saturate -> "Saturate"
+  | PropOp of EPropBinOpT.t decl
+  | PropUnOp  of EPropUnOpT.t decl
+  | InjTyp of EInjT.t  decl
+  | BinRel of EBinRelT.t  decl
+  | BinOp  of EBinOpT.t  decl
+  | UnOp   of EUnOpT.t  decl
+  | CstOp  of ECstOpT.t  decl
+  | Saturate of ESatT.t  decl
 
 
+let get_decl  = function
+  | PropOp d -> d.decl
+  | PropUnOp  d -> d.decl
+  | InjTyp d    -> d.decl
+  | BinRel d    -> d.decl
+  | BinOp  d    -> d.decl
+  | UnOp   d    -> d.decl
+  | CstOp  d    -> d.decl
+  | Saturate d  -> d.decl
 
+type term_kind =
+  | Application of EConstr.constr
+  | OtherTerm of EConstr.constr
 
 
 module type Elt = sig
   type elt
 
-  val name : decl_kind
-  (** [name]  of the table *)
+  val name : string
+  (** name *)
+
+  val table : (term_kind * decl_kind)  HConstr.t ref
+
+  val cast : elt decl -> decl_kind
+
+  val dest : decl_kind -> (elt decl) option
 
   val get_key : int
   (** [get_key] is the type-index used as key for the instance *)
@@ -138,10 +199,199 @@ module type Elt = sig
         built from the type-instance i and the arguments (type indexes and projections)
         of the type-class constructor. *)
 
-  val reduce_term : Evd.evar_map -> EConstr.t -> EConstr.t
-  (** [reduce_term evd t] normalises [t] in a table dependent way. *)
+                                                                 (*  val arity : int*)
 
 end
+
+
+let table =  Summary.ref  ~name:("zify_table") HConstr.empty
+
+let saturate = Summary.ref ~name:("zify_saturate") HConstr.empty
+
+let table_cache = ref HConstr.empty
+let saturate_cache = ref HConstr.empty
+
+
+(** Each type-class gives rise to a different table.
+    They only differ on how projections are extracted.  *)
+module EInj = struct
+  open EInjT
+
+  type elt = EInjT.t
+
+  let name = "EInj"
+
+  let table = table
+
+  let cast x = InjTyp x
+
+  let dest = function
+    | InjTyp x -> Some x
+    | _        -> None
+
+
+  let mk_elt evd i (a : EConstr.t array) =
+    let isid = EConstr.eq_constr evd a.(0) a.(1) in
+    { isid
+    ; source= a.(0)
+    ; target= a.(1)
+    ; inj= a.(2)
+    ; pred= a.(3)
+    ; cstr= (if isid then None else Some a.(4)) }
+
+  let get_key = 0
+
+end
+
+module EBinOp = struct
+  type elt = EBinOpT.t
+  open EBinOpT
+
+  let name = "BinOp"
+
+  let table = table
+
+  let mk_elt evd i a =
+    { source1= a.(0)
+    ; source2= a.(1)
+    ; source3= a.(2)
+    ; target= a.(3)
+    ; inj1= a.(5)
+    ; inj2= a.(6)
+    ; inj3= a.(7)
+    ; tbop= a.(9) }
+
+  let get_key = 4
+
+
+  let cast x = BinOp x
+
+  let dest = function
+    | BinOp  x -> Some x
+    | _  -> None
+
+end
+
+module ECstOp = struct
+  type elt = ECstOpT.t
+  open ECstOpT
+
+  let name = "CstOp"
+
+  let table = table
+
+  let cast x = CstOp x
+
+  let dest = function
+    | CstOp  x -> Some x
+    | _  -> None
+
+
+  let mk_elt evd i a = {source= a.(0); target= a.(1); inj= a.(3)}
+
+  let get_key = 2
+
+end
+
+module EUnOp = struct
+  type elt = EUnOpT.t
+  open EUnOpT
+
+  let name = "UnOp"
+
+  let table = table
+
+  let cast x = UnOp x
+
+  let dest = function
+    | UnOp  x -> Some x
+    | _  -> None
+
+
+  let mk_elt evd i a =
+    { source1= a.(0)
+    ; source2= a.(1)
+    ; target= a.(2)
+    ; inj1_t= a.(4)
+    ; inj2_t= a.(5)
+    ; unop= a.(6) }
+
+  let get_key = 3
+
+end
+
+module EBinRel = struct
+  type elt = EBinRelT.t
+  open EBinRelT
+
+  let name = "BinRel"
+
+  let table = table
+
+  let cast x = BinRel x
+
+  let dest = function
+    | BinRel  x -> Some x
+    | _  -> None
+
+  let mk_elt evd i a = {source= a.(0); target= a.(1); inj= a.(3); brel= a.(4)}
+
+  let get_key = 2
+
+end
+
+module EPropOp = struct
+  type elt = EConstr.t
+
+  let name = "PropBinOp"
+
+  let table = table
+
+  let cast x = PropOp x
+
+  let dest = function
+    | PropOp  x -> Some x
+    | _  -> None
+
+  let mk_elt evd i a = i
+
+  let get_key = 0
+
+end
+
+module EPropUnOp = struct
+  type elt = EConstr.t
+
+  let name = "PropUnOp"
+
+  let table = table
+
+  let cast x = PropUnOp x
+
+  let dest = function
+    | PropUnOp  x -> Some x
+    | _  -> None
+
+  let mk_elt evd i a = i
+
+  let get_key = 0
+
+end
+
+
+
+let constr_of_term_kind = function
+  | Application c -> c
+  | OtherTerm   c -> c
+
+
+
+let fold_declared_const f evd acc =
+  HConstr.fold
+    (fun _ (_,e) acc -> f (fst (EConstr.destConst evd (get_decl e))) acc)
+    (!table_cache) acc
+
+
 
 module type S = sig
   val register : Constrexpr.constr_expr -> unit
@@ -149,7 +399,6 @@ module type S = sig
   val print : unit -> unit
 end
 
-let not_registered = Summary.ref ~name:"zify_to_register" []
 
 module MakeTable (E : Elt) = struct
   (** Given a term [c] and its arguments ai,
@@ -166,64 +415,39 @@ module MakeTable (E : Elt) = struct
         failwith ("Cannot register term " ^ t)
     | Some a -> E.mk_elt evd i a
 
-  let table = Summary.ref ~name:("zify_" ^ string_of_decl E.name) HConstr.empty
+  let register_hint  evd t elt =
+    match EConstr.kind evd t with
+    | App(c,_) ->
+       E.table := HConstr.add c (Application t, E.cast elt) !E.table
+    |  _       -> E.table := HConstr.add t (OtherTerm t, E.cast elt) !E.table
+
+
+
 
   let register_constr env evd c =
     let c = EConstr.of_constr c in
     let t = get_type_of env evd c in
     match EConstr.kind evd t with
     | App (intyp, args) ->
-        let styp = E.reduce_term evd args.(E.get_key) in
-        let elt = {decl= c; deriv= make_elt (evd, c)} in
-        table := HConstr.add styp elt !table
-    | _ -> failwith "Can only register terms of type [F X1 .. Xn]"
-
-  let get evd c =
-    let c' = E.reduce_term evd c in
-    HConstr.find c' !table
-
-  let get_all evd c =
-    let c' = E.reduce_term evd c in
-    HConstr.find_all c' !table
-
-  let fold_declared_const f evd acc =
-    HConstr.fold
-      (fun _ e acc -> f (fst (EConstr.destConst evd e.decl)) acc)
-      !table acc
-
-  exception FoundNorm of EConstr.t
-
-  let can_unify evd k t =
-    try
-      let _ = Unification.w_unify (Global.env ()) evd Reduction.CONV k t in
-      true ;
-    with _ -> false
-
-  let unify_with_key evd t =
-    try
-      HConstr.iter
-        (fun k _  ->
-          if can_unify evd k t
-          then raise (FoundNorm k)
-          else ()) !table ; t
-    with FoundNorm k -> k
-
-
-  let pp_keys () =
-    let env = Global.env () in
-    let evd = Evd.from_env env in
-    HConstr.fold
-      (fun k _ acc -> Pp.(pr_constr env evd k ++ str " " ++ acc))
-      !table (Pp.str "")
+        let styp = args.(E.get_key) in
+        let elt = {decl= c; deriv=  (make_elt (evd, c))} in
+        register_hint evd styp elt
+    | _ ->
+       let env = Global.env () in
+       raise (CErrors.user_err Pp.
+              (str ": Cannot register term "++pr_constr env evd c++
+                 str ". It has type "++pr_constr env evd t++str " which should be of the form  [F X1 .. Xn]"))
 
   let register_obj : Constr.constr -> Libobject.obj =
     let cache_constr (_, c) =
-      not_registered := (E.name,c)::!not_registered
+      let env = Global.env () in
+      let evd = Evd.from_env env in
+      register_constr env evd c
     in
     let subst_constr (subst, c) = Mod_subst.subst_mps subst c in
     Libobject.declare_object
     @@ Libobject.superglobal_object_nodischarge
-         ("register-zify-" ^ string_of_decl E.name)
+         ("register-zify-" ^  E.name)
          ~cache:cache_constr ~subst:(Some subst_constr)
 
   (** [register c] is called from the VERNACULAR ADD [name] constr(t).
@@ -231,199 +455,65 @@ module MakeTable (E : Elt) = struct
        registered as a [superglobal_object_nodischarge].
        TODO: pre-compute [get_type_of] - [cache_constr] is using another environment.
      *)
-  let register c =
+  let register = fun c ->
     let env = Global.env () in
     let evd = Evd.from_env env in
     let evd, c = Constrintern.interp_open_constr env evd c in
     let _ = Lib.add_anonymous_leaf (register_obj (EConstr.to_constr evd c)) in
     ()
 
-  let print () = Feedback.msg_notice (pp_keys ())
-end
 
-(** Each type-class gives rise to a different table.
-    They only differ on how projections are extracted.  *)
-module InjElt = struct
-  type elt =
-    { isid: bool
-    ; (* S = T ->  inj = fun x -> x*)
-      source: EConstr.t
-    ; (* S *)
-      target: EConstr.t
-    ; (* T *)
-      (* projections *)
-      inj: EConstr.t
-    ; (* S -> T *)
-      pred: EConstr.t
-    ; (* T -> Prop *)
-      cstr: EConstr.t option
-    (* forall x, pred (inj x) *) }
-
-  let name = InjTyp
-
-  let mk_elt evd i (a : EConstr.t array) =
-    let isid = EConstr.eq_constr evd a.(0) a.(1) in
-    { isid
-    ; source= a.(0)
-    ; target= a.(1)
-    ; inj= a.(2)
-    ; pred= a.(3)
-    ; cstr= (if isid then None else Some a.(4)) }
-
-  let get_key = 0
-
-  let reduce_term evd t = t
-
-end
-
-module InjTable = MakeTable (InjElt)
+  let pp_keys () =
+    let env = Global.env () in
+    let evd = Evd.from_env env in
+    HConstr.fold
+      (fun _ (k,d) acc ->
+        match E.dest d with
+        | None -> acc
+        | Some _ ->
+           Pp.(pr_constr env evd (constr_of_term_kind k) ++ str " " ++ acc))
+      (!E.table) (Pp.str "")
 
 
-let coq_eq = lazy (  EConstr.of_constr
-                         (UnivGen.constr_of_monomorphic_global
-                            (Coqlib.lib_ref ("core.eq.type"))))
-
-let reduce_type evd ty =
-  try ignore (InjTable.get evd ty) ; ty
-  with Not_found ->
-    (* Maybe it unifies *)
-    InjTable.unify_with_key evd ty
-
-module EBinOp = struct
-  type elt =
-    { (* Op : source1 -> source2 -> source3 *)
-      source1: EConstr.t
-    ; source2: EConstr.t
-    ; source3: EConstr.t
-    ; target: EConstr.t
-    ; inj1: EConstr.t
-    ; (* InjTyp source1 target *)
-      inj2: EConstr.t
-    ; (* InjTyp source2 target *)
-      inj3: EConstr.t
-    ; (* InjTyp source3 target *)
-      tbop: EConstr.t
-    (* TBOpInj *) }
-
-  let name = BinOp
-
-  let mk_elt evd i a =
-    { source1= a.(0)
-    ; source2= a.(1)
-    ; source3= a.(2)
-    ; target= a.(3)
-    ; inj1= a.(5)
-    ; inj2= a.(6)
-    ; inj3= a.(7)
-    ; tbop= a.(9) }
-
-  let get_key = 4
-
-  let reduce_term evd t = t
-
-end
-
-module ECstOp = struct
-  type elt = {source: EConstr.t; target: EConstr.t; inj: EConstr.t}
-
-  let name = CstOp
-
-  let mk_elt evd i a = {source= a.(0); target= a.(1); inj= a.(3)}
-
-  let get_key = 2
-
-  let reduce_term evd t = t
+  let print () =  Feedback.msg_info (pp_keys ())
 
 end
 
 
-module EUnOp = struct
-  type elt =
-    { source1: EConstr.t
-    ; source2: EConstr.t
-    ; target: EConstr.t
-    ; inj1_t: EConstr.t
-    ; inj2_t: EConstr.t
-    ; unop: EConstr.t }
+module InjTable = MakeTable (EInj)
 
-  let name = UnOp
-
-  let mk_elt evd i a =
-    { source1= a.(0)
-    ; source2= a.(1)
-    ; target= a.(2)
-    ; inj1_t= a.(4)
-    ; inj2_t= a.(5)
-    ; unop= a.(6) }
-
-  let get_key = 3
-
-  let reduce_term evd t = t
-
-end
-
-open EUnOp
-
-module EBinRel = struct
-  type elt =
-    {source: EConstr.t; target: EConstr.t; inj: EConstr.t; brel: EConstr.t}
-
-  let name = BinRel
-
-  let mk_elt evd i a = {source= a.(0); target= a.(1); inj= a.(3); brel= a.(4)}
-
-  let get_key = 2
-
-
-  (** [reduce_term evd t] if t = @eq ty normalises ty to a declared type e.g Z if it exists. *)
-  let reduce_term evd t =
-  match EConstr.kind evd t with
-  | App(c,a) -> if EConstr.eq_constr evd (Lazy.force coq_eq)  c
-                then
-                  match a with
-                  | [| ty |] -> EConstr.mkApp(c,[| reduce_type evd ty|])
-                  | _   -> t
-                else t
-  |    _     -> t
-
-end
-
-module EPropOp = struct
-  type elt = EConstr.t
-
-  let name = PropOp
-
-  let mk_elt evd i a = i
-
-  let get_key = 0
-
-  let reduce_term evd t = t
-
-end
 
 module ESat = struct
-  type elt = {parg1: EConstr.t; parg2: EConstr.t; satOK: EConstr.t}
+  type elt = ESatT.t
+  open ESatT
 
-  let name = Saturate
+  let name = "Saturate"
+
+  let table = saturate
+
+  let cast x = Saturate x
+
+  let dest = function
+    | Saturate  x -> Some x
+    | _  -> None
 
   let mk_elt evd i a = {parg1= a.(2); parg2= a.(3); satOK= a.(5)}
 
   let get_key = 1
 
-  let reduce_term evd t = t
-
 end
-
-
 
 module BinOp = MakeTable (EBinOp)
 module UnOp = MakeTable (EUnOp)
 module CstOp = MakeTable (ECstOp)
 module BinRel = MakeTable (EBinRel)
 module PropOp = MakeTable (EPropOp)
+module PropUnOp = MakeTable (EPropUnOp)
 module Saturate = MakeTable (ESat)
 
-
+let init_cache () =
+  table_cache :=  !table;
+  saturate_cache := !saturate
 
 
 (** The module [Spec] is used to register
@@ -467,37 +557,11 @@ module Spec = struct
 end
 
 
-let register_decl = function
-  | PropOp -> PropOp.register_constr
-  | InjTyp -> InjTable.register_constr
-  | BinRel -> BinRel.register_constr
-  | BinOp  -> BinOp.register_constr
-  | UnOp   -> UnOp.register_constr
-  | CstOp  -> CstOp.register_constr
-  | Saturate -> Saturate.register_constr
-
-
-let process_decl (d,c) =
-  let env = Global.env () in
-  let evd = Evd.from_env env in
-  register_decl d env evd c
-
-let process_all_decl () =
-  List.iter process_decl !not_registered ;
-  not_registered := []
-
-
 let unfold_decl evd =
   let f cst acc = cst :: acc in
-  let acc = InjTable.fold_declared_const f evd [] in
-  let acc = BinOp.fold_declared_const f evd acc in
-  let acc = UnOp.fold_declared_const f evd acc in
-  let acc = CstOp.fold_declared_const f evd acc in
-  let acc = BinRel.fold_declared_const f evd acc in
-  let acc = PropOp.fold_declared_const f evd acc in
-  acc
+  fold_declared_const f evd []
 
-open InjElt
+open EInjT
 
 (** Get constr of lemma and projections in ZifyClasses. *)
 
@@ -545,7 +609,7 @@ let iff = lazy (zify "iff")
 
 let to_unfold =
   lazy
-    (List.map locate_const
+    (List.rev_map locate_const
        [ "source_prop"
        ; "target_prop"
        ; "uop_iff"
@@ -567,6 +631,7 @@ let to_unfold =
        ; "mkapp0"
        ; "mkprop_op" ])
 
+
 (** Module [CstrTable] records terms  [x] injected into [inj x]
     together with the corresponding type constraint.
     The terms are stored by side-effect during the traversal
@@ -585,7 +650,7 @@ module CstrTable = struct
 
   let table : EConstr.t HConstr.t = HConstr.create 10
 
-  let register evd t (i : EConstr.t) = HConstr.replace table t i
+  let register evd t (i : EConstr.t) = HConstr.add table t i
 
   let get () =
     let l = HConstr.fold (fun k i acc -> (k, i) :: acc) table [] in
@@ -601,7 +666,7 @@ module CstrTable = struct
         let has_hyp =
           let hyps_table = HConstr.create 20 in
           List.iter
-            (fun (_, (t : EConstr.types)) -> HConstr.replace hyps_table t ())
+            (fun (_, (t : EConstr.types)) -> HConstr.add hyps_table t ())
             (Tacmach.New.pf_hyps_types gl) ;
           fun c -> HConstr.mem hyps_table c
         in
@@ -641,9 +706,9 @@ let mkvar red evd inj v =
        ; EConstr.mkApp (force eq_refl, [|inj.target; iv|]) |] )
 
 type texpr =
-  | Var of InjElt.elt * EConstr.t
+  | Var of EInj.elt * EConstr.t
       (** Var is a term that cannot be injected further *)
-  | Constant of InjElt.elt * EConstr.t
+  | Constant of EInj.elt * EConstr.t
       (** Constant is a term that is solely built from constructors *)
   | Injterm of EConstr.t
       (** Injected is an injected term represented by a  term of type [injterm] *)
@@ -667,7 +732,7 @@ let mkapp2_id evd i (* InjTyp S3 T *)
   let default () =
     let e1' = inj_term_of_texpr evd e1 in
     let e2' = inj_term_of_texpr evd e2 in
-    EBinOp.(
+    EBinOpT.(
       Injterm
         (EConstr.mkApp
            ( force mkapp2
@@ -694,7 +759,7 @@ let mkapp2_id evd i (* InjTyp S3 T *)
     | _, _ -> default ()
 
 let mkapp_id evd i inj (unop, u) f e1 =
-  if EConstr.eq_constr evd u.unop f then
+  EUnOpT.(if EConstr.eq_constr evd u.unop f then
     (* Injection does nothing *)
     match e1 with
     | Constant (_, e) | Var (_, e) -> Var (inj, EConstr.mkApp (f, [|e|]))
@@ -716,61 +781,109 @@ let mkapp_id evd i inj (unop, u) f e1 =
       (EConstr.mkApp
          ( force mkapp
          , [|u.source1; u.source2; u.target; f; u.inj1_t; u.inj2_t; unop; e1|]
-         ))
+         )))
 
 type typed_constr = {constr: EConstr.t; typ: EConstr.t}
 
-type op =
-  | Unop of
-      { unop: EConstr.t
-      ; (* unop : typ unop_arg -> unop_typ *)
-        unop_typ: EConstr.t
-      ; unop_arg: typed_constr }
-  | Binop of
-      { binop: EConstr.t
-      ; (* binop : typ binop_arg1 -> typ binop_arg2 -> binop_typ *)
-        binop_typ: EConstr.t
-      ; binop_arg1: typed_constr
-      ; binop_arg2: typed_constr }
 
 
-let rec trans_expr env evd e =
+let get_injection env evd t =
+  match snd (HConstr.find t !table_cache) with
+  | InjTyp i -> i
+  | _        -> raise Not_found
+
+
+ (* [arrow] is the term (fun (x:Prop) (y : Prop) => x -> y) *)
+ let arrow =
+   let name x =
+     Context.make_annot (Name.mk_name (Names.Id.of_string x)) Sorts.Relevant  in
+   EConstr.mkLambda
+     ( name "x"
+     , EConstr.mkProp
+     , EConstr.mkLambda
+         ( name "y"
+         , EConstr.mkProp
+         , EConstr.mkProd
+             ( Context.make_annot Names.Anonymous Sorts.Relevant
+             , EConstr.mkRel 2
+             , EConstr.mkRel 2 ) ) )
+
+
+ let is_prop env sigma term =
+  let sort  = Retyping.get_sort_of env sigma term in
+  Sorts.is_prop sort
+
+ (** [get_application env evd e] expresses [e] as an application (c a)
+     where c is the head symbol and [a] is the array of arguments.
+     The function also transforms (x -> y) as (arrow x y) *)
+ let get_operator env evd e =
+   let is_arrow a p1 p2 =
+     is_prop env evd p1 && is_prop (EConstr.push_rel (Context.Rel.Declaration.LocalAssum(a,p1)) env) evd p2
+     && (a.Context.binder_name = Names.Anonymous || EConstr.Vars.noccurn evd 1 p2) in
+   match EConstr.kind evd e with
+   | Prod (a, p1, p2) when is_arrow a p1 p2 ->
+      (arrow,[|p1 ;p2|])
+   | App(c,a) -> (c,a)
+   |  _       -> (e,[||])
+
+
+ let is_convertible env evd k t =
+   Reductionops.check_conv env evd k t
+
+ (** [match_operator env evd hd arg (t,d)]
+     - hd is head operator of t
+     - If t = OtherTerm _, then t = hd
+     - If t = Application _, then
+       we extract the relevant number of arguments from arg
+       and check for convertibility *)
+ let match_operator env evd hd args (t, d) =
+   let decomp t i =
+     let n = Array.length args in
+     let t' = EConstr.mkApp(hd,Array.sub args 0 (n-i)) in
+          if is_convertible env evd t' t
+          then Some (d,t)
+          else None in
+
+   match t with
+   | OtherTerm t -> Some(d,t)
+   | Application t ->
+      match d with
+      | CstOp _    -> decomp t 0
+      | UnOp _     -> decomp t 1
+      | BinOp _    -> decomp t 2
+      | BinRel _   -> decomp t 2
+      | PropOp _   -> decomp t 2
+      | PropUnOp _ -> decomp t 1
+      |  _  -> None
+
+
+ let rec trans_expr env evd e =
   (* Get the injection *)
-  let {decl= i; deriv= inj} = InjTable.get evd e.typ in
+  let {decl= i; deriv= inj} = get_injection  env evd e.typ in
   let e = e.constr in
   if EConstr.isConstruct evd e then Constant (inj, e) (* Evaluate later *)
   else
+    let (c,a) = get_operator env evd e in
     try
-      (* The term [e] might be a registered constant *)
-      let {decl= c} = CstOp.get evd e in
-      Injterm
-        (EConstr.mkApp (force mkapp0, [|inj.source; inj.target; e; i; c|]))
-    with Not_found -> (
-      (* Let decompose the term *)
-      match EConstr.kind evd e with
-      | App (t, a) -> (
-        try
-          match Array.length a with
-          | 1 ->
-              let {decl= unop; deriv= u} = UnOp.get evd t in
-              let a' = trans_expr env evd {constr= a.(0); typ= u.source1} in
-              if is_constant a' && EConstr.isConstruct evd t then
-                Constant (inj, e)
-              else mkapp_id evd i inj (unop, u) t a'
-          | 2 ->
-              let {decl= bop; deriv= b} = BinOp.get evd t in
-              let a0 =
-                trans_expr env evd {constr= a.(0); typ= b.EBinOp.source1}
-              in
-              let a1 =
-                trans_expr env evd {constr= a.(1); typ= b.EBinOp.source2}
-              in
-              if is_constant a0 && is_constant a1 && EConstr.isConstruct evd t
-              then Constant (inj, e)
-              else mkapp2_id evd i inj t bop b a0 a1
-          | _ -> Var (inj, e)
-        with Not_found -> Var (inj, e) )
-      | _ -> Var (inj, e) )
+      let (k,t) = find_option (match_operator env evd c a) (HConstr.find_all c !table_cache) in
+      let n = Array.length a in
+       match k with
+       | CstOp {decl = c'} ->
+          Injterm (EConstr.mkApp (force mkapp0, [|inj.source; inj.target; e; i; c'|]))
+       | UnOp {decl = unop ; deriv = u} ->
+          let a' = trans_expr env evd {constr= a.(n-1); typ= u.EUnOpT.source1} in
+            if is_constant a' && EConstr.isConstruct evd t then
+              Constant (inj, e)
+            else mkapp_id evd i inj (unop, u) t a'
+       | BinOp {decl = binop ; deriv = b} ->
+          let a0 = trans_expr env evd {constr= a.(n-2); typ= b.EBinOpT.source1} in
+          let a1 = trans_expr env evd {constr= a.(n-1); typ= b.EBinOpT.source2} in
+          if is_constant a0 && is_constant a1 && EConstr.isConstruct evd t
+          then Constant (inj, e)
+          else mkapp2_id evd i inj t binop b a0 a1
+       |  d  ->
+           Var (inj,e)
+    with Not_found -> Var (inj,e)
 
 let trans_expr env evd e =
   try trans_expr env evd e with Not_found ->
@@ -779,68 +892,6 @@ let trans_expr env evd e =
          ( Pp.str "Missing injection for type "
          ++ Printer.pr_leconstr_env env evd e.typ ))
 
-let is_prop env sigma term =
-  let sort  = Retyping.get_sort_of env sigma term in
-  Sorts.is_prop sort
-
-let get_rel env evd e =
-  let is_arrow a p1 p2 =
-    is_prop env evd p1 && is_prop (EConstr.push_rel (Context.Rel.Declaration.LocalAssum(a,p1)) env) evd p2
-    && (a.Context.binder_name = Names.Anonymous || EConstr.Vars.noccurn evd 1 p2)
-  in
-  match EConstr.kind evd e with
-  | Prod (a, p1, p2) when is_arrow a p1 p2 ->
-      (* X -> Y becomes (fun x y => x -> y) x y *)
-      let name x =
-        Context.make_annot (Name.mk_name (Names.Id.of_string x)) Sorts.Relevant
-      in
-      let arrow =
-        EConstr.mkLambda
-          ( name "x"
-          , EConstr.mkProp
-          , EConstr.mkLambda
-              ( name "y"
-              , EConstr.mkProp
-              , EConstr.mkProd
-                  ( Context.make_annot Names.Anonymous Sorts.Relevant
-                  , EConstr.mkRel 2
-                  , EConstr.mkRel 2 ) ) )
-      in
-      Binop
-        { binop= arrow
-        ; binop_typ= EConstr.mkProp
-        ; binop_arg1= {constr= p1; typ= EConstr.mkProp}
-        ; binop_arg2= {constr= p2; typ= EConstr.mkProp} }
-  | App (c, a) ->
-      let len = Array.length a in
-      if len >= 2 then
-        let c, a1, a2 =
-          if len = 2 then (c, a.(0), a.(1))
-          else if len > 2 then
-            ( EConstr.mkApp (c, Array.sub a 0 (len - 2))
-            , a.(len - 2)
-            , a.(len - 1) )
-          else raise Not_found
-        in
-        let typ = get_type_of env evd c in
-        match get_binary_arrow evd typ with
-        | None -> raise Not_found
-        | Some (t1, t2, t3) ->
-            Binop
-              { binop= c
-              ; binop_typ= t3
-              ; binop_arg1= {constr= a1; typ= t1}
-              ; binop_arg2= {constr= a2; typ= t2} }
-      else if len = 1 then
-        let typ = get_type_of env evd c in
-        match get_unary_arrow evd typ with
-        | None -> raise Not_found
-        | Some (t1, t2) ->
-            Unop {unop= c; unop_typ= t2; unop_arg= {constr= a.(0); typ= t1}}
-      else raise Not_found
-  | _ -> raise Not_found
-
-let get_rel env evd e = try Some (get_rel env evd e) with Not_found -> None
 
 type tprop =
   | TProp of EConstr.t  (** Transformed proposition *)
@@ -852,47 +903,42 @@ let mk_iprop e =
 let inj_prop_of_tprop = function TProp p -> p | IProp e -> mk_iprop e
 
 let rec trans_prop env evd e =
-  match get_rel env evd e with
-  | None -> IProp e
-  | Some (Binop {binop= r; binop_typ= t1; binop_arg1= a1; binop_arg2= a2}) ->
-      assert (EConstr.eq_constr evd EConstr.mkProp t1) ;
-      if EConstr.eq_constr evd a1.typ a2.typ then
-        (* Arguments have the same type *)
-        if
-          EConstr.eq_constr evd EConstr.mkProp t1
-          && EConstr.eq_constr evd EConstr.mkProp a1.typ
-        then
-          (* Prop -> Prop -> Prop *)
-          try
-            let {decl= rop} = PropOp.get evd r in
-            let t1 = trans_prop env evd a1.constr in
-            let t2 = trans_prop env evd a2.constr in
-            match (t1, t2) with
+  let (c,a) = get_operator env evd e in
+  try
+    let (k,t) = find_option (match_operator env evd c a) (HConstr.find_all c !table_cache) in
+    let n = Array.length a in
+    match k with
+    | PropOp {decl= rop} ->
+       begin
+         try
+           let t1 = trans_prop env evd a.(n-2) in
+           let t2 = trans_prop env evd a.(n-1) in
+           match (t1, t2) with
             | IProp _, IProp _ -> IProp e
             | _, _ ->
-                let t1 = inj_prop_of_tprop t1 in
+               let t1 = inj_prop_of_tprop t1 in
                 let t2 = inj_prop_of_tprop t2 in
-                TProp (EConstr.mkApp (force mkprop_op, [|r; rop; t1; t2|]))
-          with Not_found -> IProp e
-        else
-          (* A -> A -> Prop *)
-          try
-            let {decl= br; deriv= rop} = BinRel.get evd r in
-            let a1 = trans_expr env evd {a1 with typ = rop.EBinRel.source} in
-            let a2 = trans_expr env evd {a2 with typ = rop.EBinRel.source} in
-            if EConstr.eq_constr evd r rop.EBinRel.brel then
+                TProp (EConstr.mkApp (force mkprop_op, [|t; rop; t1; t2|]))
+         with Not_found -> IProp e
+       end
+    | BinRel {decl = br ; deriv = rop} ->
+       begin
+       try
+            let a1 = trans_expr env evd {constr = a.(n-2) ; typ = rop.EBinRelT.source} in
+            let a2 = trans_expr env evd {constr = a.(n-1) ; typ = rop.EBinRelT.source} in
+            if EConstr.eq_constr evd t rop.EBinRelT.brel then
               match (constr_of_texpr a1, constr_of_texpr a2) with
-              | Some e1, Some e2 -> IProp (EConstr.mkApp (r, [|e1; e2|]))
+              | Some e1, Some e2 -> IProp (EConstr.mkApp (t, [|e1; e2|]))
               | _, _ ->
                   let a1 = inj_term_of_texpr evd a1 in
                   let a2 = inj_term_of_texpr evd a2 in
                   TProp
                     (EConstr.mkApp
                        ( force mkrel
-                       , [| rop.EBinRel.source
-                          ; rop.EBinRel.target
-                          ; r
-                          ; rop.EBinRel.inj
+                       , [| rop.EBinRelT.source
+                          ; rop.EBinRelT.target
+                          ; t
+                          ; rop.EBinRelT.inj
                           ; br
                           ; a1
                           ; a2 |] ))
@@ -902,37 +948,35 @@ let rec trans_prop env evd e =
               TProp
                 (EConstr.mkApp
                    ( force mkrel
-                   , [| rop.EBinRel.source
-                      ; rop.EBinRel.target
-                      ; r
-                      ; rop.EBinRel.inj
+                   , [| rop.EBinRelT.source
+                      ; rop.EBinRelT.target
+                      ; t
+                      ; rop.EBinRelT.inj
                       ; br
                       ; a1
                       ; a2 |] ))
           with Not_found -> IProp e
-      else IProp e
-  | Some (Unop {unop; unop_typ; unop_arg}) ->
-      if
-        EConstr.eq_constr evd EConstr.mkProp unop_typ
-        && EConstr.eq_constr evd EConstr.mkProp unop_arg.typ
-      then
-        try
-          let {decl= rop} = PropOp.get evd unop in
-          let t1 = trans_prop env evd unop_arg.constr in
-          match t1 with
-          | IProp _ -> IProp e
-          | _ ->
-              let t1 = inj_prop_of_tprop t1 in
-              TProp (EConstr.mkApp (force mkuprop_op, [|unop; rop; t1|]))
-        with Not_found -> IProp e
-      else IProp e
+       end
+    | PropUnOp {decl = rop} ->
+     begin
+       try
+         let t1 = trans_prop env evd a.(n-1) in
+         match t1 with
+         | IProp _ -> IProp e
+         | _ ->
+            let t1 = inj_prop_of_tprop t1 in
+              TProp (EConstr.mkApp (force mkuprop_op, [|t; rop; t1|]))
+       with Not_found -> IProp e
+     end
+  | _ ->  IProp e
+  with Not_found -> IProp e
 
 let unfold n env evd c =
   let cbv l =
     CClosure.RedFlags.(
       Tacred.cbv_norm_flags
         (mkflags
-           (fBETA :: fMATCH :: fFIX :: fCOFIX :: fZETA :: List.map fCONST l)))
+           (fBETA :: fMATCH :: fFIX :: fCOFIX :: fZETA :: List.rev_map fCONST l)))
   in
   let unfold_decl = unfold_decl evd in
   (* Unfold the let binding *)
@@ -943,7 +987,7 @@ let unfold n env evd c =
         Tacred.unfoldn [(Locus.AllOccurrences, Names.EvalVarRef n)] env evd c
   in
   (* Reduce the term *)
-  let c = cbv (force to_unfold @ unfold_decl) env evd c in
+  let c = cbv (List.rev_append (force to_unfold)  unfold_decl) env evd c in
   c
 
 let trans_check_prop env evd t =
@@ -1029,7 +1073,7 @@ let zify_tac =
   Proofview.Goal.enter (fun gl ->
       Coqlib.check_required_library ["Coq"; "micromega"; "ZifyClasses"] ;
       Coqlib.check_required_library ["Coq"; "micromega"; "ZifyInst"] ;
-      process_all_decl ();
+      init_cache ();
       let evd = Tacmach.New.project gl in
       let env = Tacmach.New.pf_env gl in
       let concl = trans_check_prop env evd (Tacmach.New.pf_concl gl) in
@@ -1038,12 +1082,12 @@ let zify_tac =
       tclTHENOpt concl trans_concl
         (Tacticals.New.tclTHEN
            (Tacticals.New.tclTHENLIST
-              (List.map (fun (h, p, t) -> trans_hyp h p t) hyps))
+              (List.rev_map (fun (h, p, t) -> trans_hyp h p t) hyps))
            (CstrTable.gen_cstr l)) )
 
 let iter_specs tac =
   Tacticals.New.tclTHENLIST
-    (List.fold_right (fun d acc -> tac d :: acc) (Spec.get ()) [])
+    (List.fold_left (fun acc d  -> tac d :: acc) [] (Spec.get ()))
 
 
 let iter_specs (tac: Ltac_plugin.Tacinterp.Value.t) =
@@ -1063,11 +1107,11 @@ let sat_constr c d =
           if Array.length args = 2 then (
             let h1 =
               Tacred.cbv_beta env evd
-                (EConstr.mkApp (d.ESat.parg1, [|args.(0)|]))
+                (EConstr.mkApp (d.ESatT.parg1, [|args.(0)|]))
             in
             let h2 =
               Tacred.cbv_beta env evd
-                (EConstr.mkApp (d.ESat.parg2, [|args.(1)|]))
+                (EConstr.mkApp (d.ESatT.parg2, [|args.(1)|]))
             in
             match (find_hyp evd h1 hyps, find_hyp evd h2 hyps) with
             | Some h1, Some h2 ->
@@ -1078,7 +1122,7 @@ let sat_constr c d =
                 in
                 let trm =
                   EConstr.mkApp
-                    ( d.ESat.satOK
+                    ( d.ESatT.satOK
                     , [|args.(0); args.(1); EConstr.mkVar h1; EConstr.mkVar h2|]
                     )
                 in
@@ -1087,20 +1131,28 @@ let sat_constr c d =
           else Tacticals.New.tclIDTAC
       | _ -> Tacticals.New.tclIDTAC )
 
+
+let get_all_sat env evd c =
+  List.fold_left (fun acc e ->
+      match e with
+      | (_,Saturate s) -> s::acc
+      |  _   -> acc) [] (HConstr.find_all c !saturate_cache )
+
 let saturate =
   Proofview.Goal.enter (fun gl ->
+      init_cache ();
       let table = CstrTable.HConstr.create 20 in
       let concl = Tacmach.New.pf_concl gl in
       let hyps = Tacmach.New.pf_hyps_types gl in
       let evd = Tacmach.New.project gl in
-      process_all_decl ();
+      let env = Tacmach.New.pf_env gl in
       let rec sat t =
         match EConstr.kind evd t with
         | App (c, args) ->
             sat c ;
             Array.iter sat args ;
             if Array.length args = 2 then
-              let ds = Saturate.get_all evd c in
+              let ds = get_all_sat env evd c in
               if ds = [] then ()
               else (
                 List.iter (fun x -> CstrTable.HConstr.add table t x.deriv) ds )

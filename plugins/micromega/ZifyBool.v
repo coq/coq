@@ -9,7 +9,7 @@
 (************************************************************************)
 Require Import Bool ZArith.
 Require Import ZifyClasses.
-Open Scope Z_scope.
+Local Open Scope Z_scope.
 (* Instances of [ZifyClasses] for dealing with boolean operators.
    Various encodings of boolean are possible.  One objective is to
    have an encoding that is terse but also lia friendly.
@@ -52,10 +52,11 @@ Add BinRel Op_eq_bool.
 
 Instance Op_true : CstOp true :=
   { TCst := 1 ; TCstInj := eq_refl }.
+Add CstOp Op_true.
 
 Instance Op_false : CstOp false :=
   { TCst := 0 ; TCstInj := eq_refl }.
-
+Add CstOp Op_false.
 
 (** Comparisons are encoded using the predicates [isZero] and [isLeZero].*)
 
@@ -222,19 +223,23 @@ Add BinOp Op_nat_ltb.
 
 (** Injected boolean operators *)
 
-Lemma Z_eqb_ZSpec_ok : forall x,  x <> isZero x.
+Lemma Z_eqb_ZSpec_ok : forall x,  0 <= isZero x <= 1 /\
+                                  (x = 0 <-> isZero x = 1).
 Proof.
   intros.
   unfold isZero.
   destruct (x =? 0) eqn:EQ.
   -  apply Z.eqb_eq in EQ.
-     simpl. congruence.
+     simpl. intuition try congruence;
+     compute ; congruence.
   - apply Z.eqb_neq in EQ.
-    simpl. auto.
+    simpl. intuition try congruence;
+             compute ; congruence.
 Qed.
 
+
 Instance Z_eqb_ZSpec : UnOpSpec isZero :=
-  {| UPred := fun n r => n <> r ; USpec := Z_eqb_ZSpec_ok |}.
+  {| UPred := fun n r => 0 <= r <= 1 /\ (n = 0 <-> isZero n = 1) ; USpec := Z_eqb_ZSpec_ok |}.
 Add Spec Z_eqb_ZSpec.
 
 Lemma leZeroSpec_ok : forall x,  x <= 0 /\ isLeZero x = 1 \/ x > 0 /\ isLeZero x = 0.

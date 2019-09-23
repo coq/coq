@@ -44,6 +44,7 @@ plugins/micromega/ZCoeff.v
 plugins/micromega/ZMicromega.v
 plugins/micromega/ZifyInst.v
 plugins/micromega/ZifyBool.v
+plugins/micromega/ZifyComparison.v
 plugins/micromega/ZifyClasses.v
 plugins/micromega/Zify.v
 plugins/nsatz/Nsatz.v
