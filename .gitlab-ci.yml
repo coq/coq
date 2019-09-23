@@ -352,6 +352,9 @@ pkg:nix:deploy:channel:
     name: cachix
     url: https://coq.cachix.org
   only:
+    refs: # Repeat conditions from pkg:nix:deploy
+      - master
+      - /^v.*\..*$/
     variables:
       - $CACHIX_DEPLOYMENT_KEY
   dependencies:
