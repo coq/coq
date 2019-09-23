@@ -20,7 +20,7 @@ let make0 ?dyn name =
   wit
 
 let wit_intropattern = make0 "intropattern" (* To keep after deprecation phase but it will get a different parsing semantics (Tactic Notation and TACTIC EXTEND) in pltac.ml *)
-let wit_simple_intropattern = make0 "simple_intropattern"
+let wit_simple_intropattern = make0 ~dyn:(val_tag (topwit wit_intropattern)) "simple_intropattern"
 let wit_quant_hyp = make0 "quant_hyp"
 let wit_constr_with_bindings = make0 "constr_with_bindings"
 let wit_open_constr_with_bindings = make0 "open_constr_with_bindings"
