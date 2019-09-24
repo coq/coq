@@ -2040,7 +2040,7 @@ let prepare_predicate_from_arsign_tycon ~program_mode env sigma loc tomatchs ars
  * Each matched term is independently considered dependent or not.
  *)
 
-let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign tycon pred =
+let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign tycon (pred:glob_constr option) =
   let refresh_tycon sigma t =
     (* If we put the typing constraint in the term, it has to be
        refreshed to preserve the invariant that no algebraic universe
@@ -2082,9 +2082,9 @@ let prepare_predicate ?loc ~program_mode typing_fun env sigma tomatchs arsign ty
     | Some rtntyp ->
       (* We extract the signature of the arity *)
       let building_arsign,envar = List.fold_right_map (push_rel_context ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma) arsign env in
-      let sigma, newt = new_sort_variable univ_flexible sigma in
-      let sigma, predcclj = typing_fun (mk_tycon (mkSort newt)) envar sigma rtntyp in
-      let predccl = nf_evar sigma predcclj.uj_val in
+      let sigma, predcclj = typing_fun None envar sigma rtntyp in
+      let sigma, predcclj = Coercion.inh_coerce_to_sort !!envar sigma predcclj in
+      let predccl = nf_evar sigma predcclj.utj_val in
       [sigma, predccl, building_arsign]
   in
   List.map
