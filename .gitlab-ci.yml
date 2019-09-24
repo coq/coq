@@ -8,8 +8,11 @@ stages:
   - stage-4 # Only dependencies in stage 1, 2 and 3
   - deploy
 
-# When a job has no dependencies, it goes to stage 1.
-# Otherwise, we set "needs" and "dependencies" to the same value.
+# When a job has no dependencies, it goes to stage 1.  Otherwise, we
+# set both "needs" and "dependencies". "needs" is a superset of
+# "dependencies" that should include all the transitive dependencies.
+# "dependencies" only list the previous jobs whose artifact we need to
+# keep.
 
 # some default values
 variables:
@@ -657,6 +660,7 @@ library:ci-corn:
   stage: stage-4
   needs:
   - build:edge+flambda
+  - plugin:ci-bignums
   - library:ci-math-classes
   dependencies:
   - build:edge+flambda
