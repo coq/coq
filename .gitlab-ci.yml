@@ -640,6 +640,9 @@ library:ci-compcert:
 library:ci-coquelicot:
   extends: .ci-template
 
+library:ci-coqutil:
+  extends: .ci-template
+
 library:ci-cross-crypto:
   extends: .ci-template
 

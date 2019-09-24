@@ -199,6 +199,13 @@
 : "${bignums_CI_ARCHIVEURL:=${bignums_CI_GITURL}/archive}"
 
 ########################################################################
+# coqutil
+########################################################################
+: "${coqutil_CI_REF:=master}"
+: "${coqutil_CI_GITURL:=https://github.com/mit-plv/coqutil}"
+: "${coqutil_CI_ARCHIVEURL:=${coqutil_CI_GITURL}/archive}"
+
+########################################################################
 # bedrock2
 ########################################################################
 : "${bedrock2_CI_REF:=master}"

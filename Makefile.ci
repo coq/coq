@@ -17,6 +17,7 @@ CI_TARGETS= \
     ci-compcert \
     ci-coq_dpdgraph \
     ci-coquelicot \
+    ci-coqutil \
     ci-corn \
     ci-cross-crypto \
     ci-elpi \
