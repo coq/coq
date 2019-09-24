@@ -39,6 +39,8 @@ let g_map f g =
 
 let set_sprop_cumulative b g = {g with sprop_cumulative=b}
 
+let is_sprop_cumulative g = g.sprop_cumulative
+
 let check_smaller_expr g (u,n) (v,m) =
   let diff = n - m in
     match diff with

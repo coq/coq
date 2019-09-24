@@ -88,6 +88,10 @@ val universe_of_name : t -> Id.t -> Univ.Level.t
 
 (** {5 Unification} *)
 
+val set_sprop_cumulative : bool -> t -> t
+
+val is_sprop_cumulative : t -> bool
+
 (** [restrict_universe_context lbound (univs,csts) keep] restricts [univs] to
    the universes in [keep]. The constraints [csts] are adjusted so
    that transitive constraints between remaining universes (those in

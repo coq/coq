@@ -440,6 +440,13 @@ let check_univ_decl ~poly uctx decl =
       (ContextSet.constraints uctx.uctx_local);
   ctx
 
+let set_sprop_cumulative b univs =
+  { univs with
+    uctx_universes = UGraph.set_sprop_cumulative b univs.uctx_universes;
+    uctx_initial_universes = UGraph.set_sprop_cumulative b univs.uctx_initial_universes; }
+
+let is_sprop_cumulative univs = UGraph.is_sprop_cumulative univs.uctx_universes
+
 let restrict_universe_context ~lbound (univs, csts) keep =
   let removed = LSet.diff univs keep in
   if LSet.is_empty removed then univs, csts

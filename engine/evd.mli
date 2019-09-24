@@ -598,6 +598,9 @@ val is_sort_variable : evar_map -> Sorts.t -> Univ.Level.t option
 
 val is_flexible_level : evar_map -> Univ.Level.t -> bool
 
+val set_sprop_cumulative : bool -> evar_map -> evar_map
+val is_sprop_cumulative : evar_map -> bool
+
 (* val normalize_universe_level : evar_map -> Univ.Level.t -> Univ.Level.t *)
 val normalize_universe : evar_map -> Univ.Universe.t -> Univ.Universe.t
 val normalize_universe_instance : evar_map -> Univ.Instance.t -> Univ.Instance.t

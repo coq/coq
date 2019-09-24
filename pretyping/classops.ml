@@ -24,6 +24,7 @@ open Mod_subst
 
 type cl_typ =
   | CL_SORT
+  | CL_SPROP
   | CL_FUN
   | CL_SECVAR of variable
   | CL_CONST of Constant.t
@@ -111,7 +112,8 @@ type cl_index = Bijint.Index.t
 
 let init_class_tab =
   let open Bijint in
-  add CL_FUN { cl_param = 0 } (add CL_SORT { cl_param = 0 } empty)
+  let add x cl = add cl { cl_param = 0 } x in
+  List.fold_left add empty [CL_FUN;CL_SPROP;CL_SORT]
 
 let class_tab =
   Summary.ref ~name:"class_tab" (init_class_tab : cl_info_typ Bijint.t)
@@ -158,6 +160,8 @@ let cl_fun_index = fst(class_info CL_FUN)
 
 let cl_sort_index = fst(class_info CL_SORT)
 
+let cl_sprop_index = fst(class_info CL_SPROP)
+
 (* coercion_info : coe_typ -> coe_info_typ *)
 
 let coercion_info coe = CoeTypMap.find coe !coercion_tab
@@ -176,12 +180,13 @@ let find_class_type sigma t =
       CL_PROJ (Projection.repr p), EInstance.empty, (c :: args)
     | Ind (ind_sp,u) -> CL_IND ind_sp, u, args
     | Prod _ -> CL_FUN, EInstance.empty, []
+    | Sort s when EConstr.ESorts.is_sprop sigma s -> CL_SPROP, EInstance.empty, []
     | Sort _ -> CL_SORT, EInstance.empty, []
     |  _ -> raise Not_found
 
 
 let subst_cl_typ subst ct = match ct with
-    CL_SORT
+  | CL_SORT | CL_SPROP
   | CL_FUN
   | CL_SECVAR _ -> ct
   | CL_PROJ c ->
@@ -224,6 +229,7 @@ let class_args_of env sigma c = pi3 (find_class_type sigma c)
 let string_of_class = function
   | CL_FUN -> "Funclass"
   | CL_SORT -> "Sortclass"
+  | CL_SPROP -> "SProp"
   | CL_CONST sp ->
     string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty (GlobRef.ConstRef sp))
   | CL_PROJ sp ->
@@ -246,6 +252,9 @@ let lookup_path_to_fun_from_class s =
 
 let lookup_path_to_sort_from_class s =
   lookup_path_between_class (s,cl_sort_index)
+
+let lookup_path_to_sprop_from_class s =
+  lookup_path_between_class (s,cl_sprop_index)
 
 (* advanced path lookup *)
 
@@ -275,6 +284,9 @@ let lookup_path_to_fun_from env sigma s =
 
 let lookup_path_to_sort_from env sigma s =
   apply_on_class_of env sigma s lookup_path_to_sort_from_class
+
+let lookup_path_to_sprop_from env sigma s =
+  apply_on_class_of env sigma s lookup_path_to_sprop_from_class
 
 let mkNamed = let open GlobRef in function
   | ConstRef c -> EConstr.mkConst c
@@ -397,7 +409,7 @@ let projection_arity_length env sigma p =
   len - Projection.Repr.npars p
 
 let class_params env sigma = function
-  | CL_FUN | CL_SORT -> 0
+  | CL_FUN | CL_SORT | CL_SPROP -> 0
   | CL_CONST sp -> reference_arity_length env sigma (GlobRef.ConstRef sp)
   | CL_PROJ sp -> projection_arity_length env sigma sp
   | CL_SECVAR sp -> reference_arity_length env sigma (GlobRef.VarRef sp)

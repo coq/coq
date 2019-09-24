@@ -17,6 +17,7 @@ open Mod_subst
 (** {6 This is the type of class kinds } *)
 type cl_typ =
   | CL_SORT
+  | CL_SPROP
   | CL_FUN
   | CL_SECVAR of variable
   | CL_CONST of Constant.t
@@ -102,6 +103,8 @@ val lookup_path_between : env -> evar_map -> types * types ->
 val lookup_path_to_fun_from : env -> evar_map -> types ->
       types * inheritance_path
 val lookup_path_to_sort_from : env -> evar_map -> types ->
+      types * inheritance_path
+val lookup_path_to_sprop_from : env -> evar_map -> types ->
       types * inheritance_path
 val lookup_pattern_path_between :
   env -> inductive * inductive -> (constructor * int) list

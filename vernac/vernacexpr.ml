@@ -13,7 +13,7 @@ open Constrexpr
 open Libnames
 
 (** Vernac expressions, produced by the parser *)
-type class_rawexpr = FunClass | SortClass | RefClass of qualid or_by_notation
+type class_rawexpr = SortClass | SPropClass | FunClass | RefClass of qualid or_by_notation
 
 type goal_identifier = string
 type scope_name = string

@@ -16,6 +16,8 @@ type t
 val set_sprop_cumulative : bool -> t -> t
 (** Don't use this with [true] in the kernel, it makes the system incomplete. *)
 
+val is_sprop_cumulative : t -> bool
+
 type 'a check_function = t -> 'a -> 'a -> bool
 
 val check_leq : Universe.t check_function

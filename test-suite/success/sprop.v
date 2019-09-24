@@ -170,14 +170,6 @@ End sFix.
 
 Fail Definition fix_relevance : _ -> nat := fun _ : iUnit => 0.
 
-Require Import ssreflect.
-
-Goal forall T : SProp, T -> True.
-Proof.
-  move=> T +.
-  intros X;exact I.
-Qed.
-
 Set Warnings "-bad-relevance".
 Definition fix_relevance : _ -> nat := fun _ : iUnit => 0.
 

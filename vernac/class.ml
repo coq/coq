@@ -69,7 +69,7 @@ let check_reference_arity ref =
     raise (CoercionError (NotAClass ref))
 
 let check_arity = function
-  | CL_FUN | CL_SORT -> ()
+  | CL_FUN | CL_SPROP | CL_SORT -> ()
   | CL_CONST cst -> check_reference_arity (GlobRef.ConstRef cst)
   | CL_PROJ p -> check_reference_arity (GlobRef.ConstRef (Projection.Repr.constant p))
   | CL_SECVAR id -> check_reference_arity (GlobRef.VarRef id)
@@ -162,6 +162,7 @@ let get_strength stre ref cls clt =
 
 let ident_key_of_class = function
   | CL_FUN -> "Funclass"
+  | CL_SPROP -> "SProp"
   | CL_SORT -> "Sortclass"
   | CL_CONST sp -> Label.to_string (Constant.label sp)
   | CL_PROJ sp -> Label.to_string (Projection.Repr.label sp)

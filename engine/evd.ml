@@ -934,6 +934,11 @@ let universe_rigidity evd l =
     UnivFlexible (Univ.LSet.mem l (UState.algebraics uctx))
   else UnivRigid
 
+let set_sprop_cumulative b sigma =
+  {sigma with universes=UState.set_sprop_cumulative b sigma.universes}
+
+let is_sprop_cumulative sigma = UState.is_sprop_cumulative sigma.universes
+
 let normalize_universe evd =
   let vars = UState.subst evd.universes in
   let normalize = UnivSubst.normalize_universe_opt_subst vars in

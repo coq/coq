@@ -1078,6 +1078,7 @@ GRAMMAR EXTEND Gram
   class_rawexpr:
     [ [ IDENT "Funclass" -> { FunClass }
       | IDENT "Sortclass" -> { SortClass }
+      | "SProp" -> { SPropClass }
       | qid = smart_global -> { RefClass qid } ] ]
   ;
   locatable:

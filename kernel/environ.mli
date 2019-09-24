@@ -293,6 +293,7 @@ val push_subgraph : Univ.ContextSet.t -> env -> env
 
 val set_engagement : engagement -> env -> env
 val set_typing_flags : typing_flags -> env -> env
+val is_sprop_cumulative : env -> bool
 val set_sprop_cumulative : bool -> env -> env
 val set_allow_sprop : bool -> env -> env
 val sprop_allowed : env -> bool

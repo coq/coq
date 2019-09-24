@@ -58,6 +58,7 @@ let get_goal_or_global_context ~pstate glnum =
 let cl_of_qualid = function
   | FunClass -> Classops.CL_FUN
   | SortClass -> Classops.CL_SORT
+  | SPropClass -> Classops.CL_SPROP
   | RefClass r -> Class.class_of_global (Smartlocate.smart_global ~head:true r)
 
 let scope_class_of_qualid qid =

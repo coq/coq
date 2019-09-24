@@ -44,6 +44,8 @@ sig
   (** Returns the view into the current sort. Note that the kind of a variable
       may change if the unification state of the evar map changes. *)
 
+  val is_sprop : Evd.evar_map -> t -> bool
+
 end
 
 module EInstance :

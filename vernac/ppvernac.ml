@@ -343,6 +343,7 @@ open Pputils
   let pr_class_rawexpr = function
     | FunClass -> keyword "Funclass"
     | SortClass -> keyword "Sortclass"
+    | SPropClass -> keyword "SProp"
     | RefClass qid -> pr_smart_global qid
 
   let pr_assumption_token many discharge kind =

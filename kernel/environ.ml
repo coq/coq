@@ -456,6 +456,8 @@ let set_typing_flags c env = (* Unsafe *)
 
 let set_sprop_cumulative b = map_universes (UGraph.set_sprop_cumulative b)
 
+let is_sprop_cumulative env = UGraph.is_sprop_cumulative env.env_stratification.env_universes
+
 let set_allow_sprop b env =
   { env with env_stratification =
     { env.env_stratification with env_sprop_allowed = b } }
