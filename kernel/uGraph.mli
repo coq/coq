@@ -13,8 +13,8 @@ open Univ
 (** {6 Graphs of universes. } *)
 type t
 
-val make_sprop_cumulative : t -> t
-(** Don't use this in the kernel, it makes the system incomplete. *)
+val set_sprop_cumulative : bool -> t -> t
+(** Don't use this with [true] in the kernel, it makes the system incomplete. *)
 
 type 'a check_function = t -> 'a -> 'a -> bool
 

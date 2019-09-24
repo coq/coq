@@ -37,7 +37,7 @@ let g_map f g =
   if g.graph == g' then g
   else {g with graph=g'}
 
-let make_sprop_cumulative g = {g with sprop_cumulative=true}
+let set_sprop_cumulative b g = {g with sprop_cumulative=b}
 
 let check_smaller_expr g (u,n) (v,m) =
   let diff = n - m in

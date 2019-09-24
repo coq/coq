@@ -39,7 +39,7 @@ type t =
    uctx_weak_constraints : UPairSet.t
  }
 
-let initial_sprop_cumulative = UGraph.make_sprop_cumulative UGraph.initial_universes
+let initial_sprop_cumulative = UGraph.set_sprop_cumulative true UGraph.initial_universes
 
 let empty =
   { uctx_names = UNameMap.empty, LMap.empty;
@@ -57,7 +57,7 @@ let elaboration_sprop_cumul =
     ~key:["Elaboration";"StrictProp";"Cumulativity"] ~value:true
 
 let make ~lbound u =
-  let u = if elaboration_sprop_cumul () then UGraph.make_sprop_cumulative u else u in
+  let u = if elaboration_sprop_cumul () then UGraph.set_sprop_cumulative true u else u in
     { empty with
       uctx_universes = u;
       uctx_universes_lbound = lbound;
@@ -731,7 +731,7 @@ let universe_of_name uctx s =
   UNameMap.find s (fst uctx.uctx_names)
 
 let update_sigma_env uctx env =
-  let univs = UGraph.make_sprop_cumulative (Environ.universes env) in
+  let univs = UGraph.set_sprop_cumulative true (Environ.universes env) in
   let eunivs =
     { uctx with uctx_initial_universes = univs;
                          uctx_universes = univs }

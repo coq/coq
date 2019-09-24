@@ -36,7 +36,7 @@ val set_check_guarded : bool -> unit
 val set_check_positive : bool -> unit
 val set_check_universes : bool -> unit
 val typing_flags : unit -> Declarations.typing_flags
-val make_sprop_cumulative : unit -> unit
+val set_sprop_cumulative : bool -> unit
 val set_allow_sprop : bool -> unit
 val sprop_allowed : unit -> bool
 

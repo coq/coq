@@ -230,7 +230,7 @@ let set_native_compiler b senv =
   let flags = Environ.typing_flags senv.env in
   set_typing_flags { flags with enable_native_compiler = b } senv
 
-let make_sprop_cumulative senv = { senv with env = Environ.make_sprop_cumulative senv.env }
+let set_sprop_cumulative b senv = { senv with env = Environ.set_sprop_cumulative b senv.env }
 
 let set_allow_sprop b senv = { senv with env = Environ.set_allow_sprop b senv.env }
 
