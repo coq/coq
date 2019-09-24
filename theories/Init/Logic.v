@@ -274,6 +274,22 @@ Inductive ex (A:Type) (P:A -> Prop) : Prop :=
   ex_intro : forall x:A, P x -> ex (A:=A) P.
 
 Register ex as core.ex.type.
+Register ex_intro as core.ex.intro.
+
+Section Projections.
+
+  Variables (A:Prop) (P:A->Prop).
+
+  Definition ex_proj1 (x:ex P) : A :=
+    match x with ex_intro _ a _ => a end.
+
+  Definition ex_proj2 (x:ex P) : P (ex_proj1 x) :=
+    match x with ex_intro _ _ b => b end.
+
+  Register ex_proj1 as core.ex.proj1.
+  Register ex_proj2 as core.ex.proj2.
+
+End Projections.
 
 Inductive ex2 (A:Type) (P Q:A -> Prop) : Prop :=
   ex_intro2 : forall x:A, P x -> Q x -> ex2 (A:=A) P Q.

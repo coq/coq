@@ -44,40 +44,67 @@ let mkSubset sigma name typ prop =
 let make_qref s = qualid_of_string s
 let lt_ref = make_qref "Init.Peano.lt"
 
+type family = SPropF | PropF | TypeF
+let family_of_sort_family = let open Sorts in function
+    | InSProp -> SPropF
+    | InProp -> PropF
+    | InSet | InType -> TypeF
+
+let get_sigmatypes sigma ~sort ~predsort =
+  let open EConstr in
+  let which, sigsort = match predsort, sort with
+    | SPropF, _ | _, SPropF ->
+      user_err Pp.(str "SProp arguments not supported by Program Fixpoint yet.")
+    | PropF, PropF -> "ex", PropF
+    | PropF, TypeF -> "sig", TypeF
+    | TypeF, (PropF|TypeF) -> "sigT", TypeF
+  in
+  let sigma, ty = Evarutil.new_global sigma (lib_ref ("core."^which^".type")) in
+  let uinstance = snd (destRef sigma ty) in
+  let intro = mkRef (lib_ref ("core."^which^".intro"), uinstance) in
+  let p1 = mkRef (lib_ref ("core."^which^".proj1"), uinstance) in
+  let p2 = mkRef (lib_ref ("core."^which^".proj2"), uinstance) in
+  sigma, ty, intro, p1, p2, sigsort
+
 let rec telescope sigma l =
   let open EConstr in
   let open Vars in
   match l with
   | [] -> assert false
-  | [LocalAssum (n, t)] ->
+  | [LocalAssum (n, t), _] ->
     sigma, t, [LocalDef (n, mkRel 1, t)], mkRel 1
-  | LocalAssum (n, t) :: tl ->
-      let sigma, ty, tys, (k, constr) =
+  | (LocalAssum (n, t), tsort) :: tl ->
+      let sigma, ty, _tysort, tys, (k, constr) =
         List.fold_left
-          (fun (sigma, ty, tys, (k, constr)) decl ->
+          (fun (sigma, ty, tysort, tys, (k, constr)) (decl,sort) ->
             let t = RelDecl.get_type decl in
             let pred = mkLambda (RelDecl.get_annot decl, t, ty) in
-            let sigma, ty = Evarutil.new_global sigma (lib_ref "core.sigT.type") in
-            let sigma, intro = Evarutil.new_global sigma (lib_ref "core.sigT.intro") in
+            let sigma, ty, intro, p1, p2, sigsort = get_sigmatypes sigma ~predsort:tysort ~sort in
             let sigty = mkApp (ty, [|t; pred|]) in
             let intro = mkApp (intro, [|lift k t; lift k pred; mkRel k; constr|]) in
-              (sigma, sigty, pred :: tys, (succ k, intro)))
-          (sigma, t, [], (2, mkRel 1)) tl
+              (sigma, sigty, sigsort, (pred, p1, p2) :: tys, (succ k, intro)))
+          (sigma, t, tsort, [], (2, mkRel 1)) tl
       in
       let sigma, last, subst = List.fold_right2
-        (fun pred decl (sigma, prev, subst) ->
+        (fun (pred,p1,p2) (decl,_) (sigma, prev, subst) ->
           let t = RelDecl.get_type decl in
-          let sigma, p1 = Evarutil.new_global sigma (lib_ref "core.sigT.proj1") in
-          let sigma, p2 = Evarutil.new_global sigma (lib_ref "core.sigT.proj2") in
           let proj1 = applist (p1, [t; pred; prev]) in
           let proj2 = applist (p2, [t; pred; prev]) in
             (sigma, lift 1 proj2, LocalDef (get_annot decl, proj1, t) :: subst))
         (List.rev tys) tl (sigma, mkRel 1, [])
       in sigma, ty, (LocalDef (n, last, t) :: subst), constr
 
-  | LocalDef (n, b, t) :: tl ->
+  | (LocalDef (n, b, t), _) :: tl ->
     let sigma, ty, subst, term = telescope sigma tl in
     sigma, ty, (LocalDef (n, b, t) :: subst), lift 1 term
+
+let telescope env sigma l =
+  let l, _ = List.fold_right_map (fun d env ->
+      let s = Retyping.get_sort_family_of env sigma (RelDecl.get_type d) in
+      let env = EConstr.push_rel d env in
+      (d, family_of_sort_family s), env) l env
+  in
+  telescope sigma l
 
 let nf_evar_context sigma ctx =
   List.map (map_constr (fun c -> Evarutil.nf_evar sigma c)) ctx
@@ -94,7 +121,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   let top_env = push_rel_context binders_rel env in
   let sigma, top_arity = interp_type_evars ~program_mode:true top_env sigma arityc in
   let full_arity = it_mkProd_or_LetIn top_arity binders_rel in
-  let sigma, argtyp, letbinders, make = telescope sigma binders_rel in
+  let sigma, argtyp, letbinders, make = telescope env sigma binders_rel in
   let argname = Id.of_string "recarg" in
   let arg = LocalAssum (make_annot (Name argname) Sorts.Relevant, argtyp) in
   let binders = letbinders @ [arg] in
