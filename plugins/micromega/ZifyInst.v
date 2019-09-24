@@ -172,6 +172,10 @@ Program Instance Op_Z_of_N : UnOp Z.of_N :=
   { TUOp := (fun x => x) ; TUOpInj := fun x => eq_refl (Z.of_N x) }.
 Add UnOp Op_Z_of_N.
 
+Instance Op_Z_to_N : UnOp Z.to_N :=
+  { TUOp := fun x => Z.max 0 x ; TUOpInj := ltac:(now intro x; destruct x) }.
+Add UnOp Op_Z_to_N.
+
 Instance Op_Z_neg : UnOp Z.neg :=
   { TUOp :=  Z.opp ; TUOpInj := (fun x => eq_refl (Zneg x))}.
 Add UnOp Op_Z_neg.
