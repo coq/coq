@@ -16,6 +16,10 @@ Ltac2 @ external type : constr -> constr := "ltac2" "constr_type".
 Ltac2 @ external equal : constr -> constr -> bool := "ltac2" "constr_equal".
 (** Strict syntactic equality: only up to α-conversion and evar expansion *)
 
+Ltac2 Type relevance := [ Relevant | Irrelevant ].
+
+Ltac2 Type 'a binder_annot := { binder_name : 'a; binder_relevance : relevance }.
+
 Module Unsafe.
 
 (** Low-level access to kernel terms. Use with care! *)
@@ -29,16 +33,16 @@ Ltac2 Type kind := [
 | Evar (evar, constr array)
 | Sort (sort)
 | Cast (constr, cast, constr)
-| Prod (ident option, constr, constr)
-| Lambda (ident option, constr, constr)
-| LetIn (ident option, constr, constr, constr)
+| Prod (ident option binder_annot, constr, constr)
+| Lambda (ident option binder_annot, constr, constr)
+| LetIn (ident option binder_annot, constr, constr, constr)
 | App (constr, constr array)
 | Constant (constant, instance)
 | Ind (inductive, instance)
 | Constructor (constructor, instance)
 | Case (case, constr, constr, constr array)
-| Fix (int array, int, ident option array, constr array, constr array)
-| CoFix (int, ident option array, constr array, constr array)
+| Fix (int array, int, ident option binder_annot array, constr array, constr array)
+| CoFix (int, ident option binder_annot array, constr array, constr array)
 | Proj (projection, constr)
 | Uint63 (uint63)
 ].
