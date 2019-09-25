@@ -221,6 +221,10 @@ let set_check_guarded b senv =
   let flags = Environ.typing_flags senv.env in
   set_typing_flags { flags with check_guarded = b } senv
 
+let set_check_sized b senv =
+  let flags = Environ.typing_flags senv.env in
+  set_typing_flags { flags with check_sized = b } senv
+
 let set_check_positive b senv =
   let flags = Environ.typing_flags senv.env in
   set_typing_flags { flags with check_positive = b } senv

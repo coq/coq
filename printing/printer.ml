@@ -858,6 +858,7 @@ type axiom =
   | Constant of Constant.t (* An axiom or a constant. *)
   | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
   | Guarded of GlobRef.t (* a constant whose (co)fixpoints have been assumed to be guarded *)
+  | Sized of GlobRef.t (* a constant whose (co)fixpoints have been assumed to satisfy sized typing *)
   | TypeInType of GlobRef.t (* a constant which relies on type in type *)
 
 type context_object =
@@ -878,6 +879,8 @@ struct
     | Positive m1 , Positive m2 ->
         MutInd.CanOrd.compare m1 m2
     | Guarded k1 , Guarded k2 ->
+        GlobRef.Ordered.compare k1 k2
+    | Sized k1 , Sized k2 ->
         GlobRef.Ordered.compare k1 k2
     | _ , Constant _ -> 1
     | _ , Positive _ -> 1
@@ -941,6 +944,8 @@ let pr_assumptionset env sigma s =
           hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is assumed to be positive.")
       | Guarded gr ->
           hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"is assumed to be guarded.")
+      | Sized gr ->
+          hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"is assumed to satisfy sized typing.")
       | TypeInType gr ->
          hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"relies on an unsafe hierarchy.")
     in
@@ -1019,6 +1024,7 @@ let print_and_diff oldp newp =
 
 let pr_typing_flags flags =
   str "check_guarded: " ++ bool flags.check_guarded ++ fnl ()
+  ++ str "check_sized: " ++ bool flags.check_sized ++ fnl ()
   ++ str "check_positive: " ++ bool flags.check_positive ++ fnl ()
   ++ str "check_universes: " ++ bool flags.check_universes ++ fnl ()
   ++ str "cumulative sprop: " ++ bool flags.cumulative_sprop

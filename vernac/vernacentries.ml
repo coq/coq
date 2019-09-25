@@ -1542,6 +1542,13 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
+      optkey   = ["Sized"; "Typing"];
+      optread  = (fun () -> (Global.typing_flags ()).Declarations.check_sized);
+      optwrite = (fun b -> Global.set_check_sized b) }
+
+let _ =
+  declare_bool_option
+    { optdepr  = false;
       optkey   = ["Positivity"; "Checking"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.check_positive);
       optwrite = (fun b -> Global.set_check_positive b) }

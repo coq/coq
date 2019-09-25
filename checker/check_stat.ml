@@ -58,6 +58,11 @@ let pr_unguarded env =
   let csts = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_guarded then MutInd.to_string c :: acc else acc) env csts in
   pr_assumptions "Constants/Inductives relying on unsafe (co)fixpoints" csts
 
+let pr_unsized env =
+  let csts = fold_constants (fun c cb acc -> if not cb.const_typing_flags.check_sized then Constant.to_string c :: acc else acc) env [] in
+  let csts = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_sized then MutInd.to_string c :: acc else acc) env csts in
+  pr_assumptions "Constants/Inductives relying on unsafe (co)fixpoints with respect to sized typing" csts
+
 let pr_nonpositive env =
   let inds = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_positive then MutInd.to_string c :: acc else acc) env [] in
   pr_assumptions "Inductives whose positivity is assumed" inds
@@ -72,6 +77,7 @@ let print_context env opac =
       str "* " ++ hov 0 (pr_axioms env opac ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_type_in_type env ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_unguarded env ++ fnl()) ++ fnl() ++
+      str "* " ++ hov 0 (pr_unsized env ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_nonpositive env ++ fnl()))
       )
   end

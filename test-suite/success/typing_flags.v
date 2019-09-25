@@ -41,3 +41,40 @@ Inductive Box :=
 | box : forall n, f n = n -> g 2 -> Box.
 
 Print Assumptions Box.
+
+Unset Guard Checking.
+Set Sized Typing.
+
+(* Fails with guard checking but not with sized typing *)
+Fixpoint div x y :=
+  match x with
+  | O => O
+  | S x' => S (div (minus x' y) y)
+  end.
+
+(* The below are lifted from theories/Init/Nat.v *)
+
+Fixpoint divmod x y q u :=
+  match x with
+  | 0 => (q,u)
+  | S x' =>
+    match u with
+    | 0 => divmod x' y (S q) y
+    | S u' => divmod x' y q u'
+    end
+  end.
+
+Definition modulo x y :=
+  match y with
+  | 0 => y
+  | S y' => y' - snd (divmod x y' 0 y')
+  end.
+
+Infix "mod" := modulo (at level 40, no associativity) : nat_scope.
+
+(* Fails with sized typing but not with guard checking *)
+Fail Fixpoint gcd a b :=
+  match a with
+  | O => b
+  | S a' => gcd (b mod (S a')) (S a')
+  end.
