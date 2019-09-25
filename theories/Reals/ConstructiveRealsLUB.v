@@ -15,7 +15,9 @@
 
 Require Import QArith_base.
 Require Import Qabs.
-Require Import ConstructiveCauchyReals.
+Require Import ConstructiveReals.
+Require Import ConstructiveCauchyRealsMult.
+Require Import ConstructiveRealsMorphisms.
 Require Import ConstructiveRcomplete.
 Require Import Logic.ConstructiveEpsilon.
 
@@ -54,14 +56,15 @@ Lemma is_upper_bound_epsilon :
     sig_forall_dec_T
     -> sig_not_dec_T
     -> (exists x:CReal, is_upper_bound E x)
-    -> { n:nat | is_upper_bound E (INR n) }.
+    -> { n:nat | is_upper_bound E (inject_Q (Z.of_nat n # 1)) }.
 Proof.
   intros E lpo sig_not_dec Ebound.
   apply constructive_indefinite_ground_description_nat.
   - intro n. apply is_upper_bound_dec. exact lpo. exact sig_not_dec.
-  - destruct Ebound as [x H]. destruct (Rup_nat x). exists x0.
+  - destruct Ebound as [x H]. destruct (Rup_pos x). exists (Pos.to_nat x0).
     intros y ey. specialize (H y ey).
-    apply CRealLt_asym. apply (CRealLe_Lt_trans _ x); assumption.
+    apply CRealLt_asym. apply (CReal_le_lt_trans _ x).
+    exact H. rewrite positive_nat_Z. exact c.
 Qed.
 
 Lemma is_upper_bound_not_epsilon :
@@ -69,15 +72,16 @@ Lemma is_upper_bound_not_epsilon :
     sig_forall_dec_T
     -> sig_not_dec_T
     -> (exists x : CReal, E x)
-    -> { m:nat | ~is_upper_bound E (-INR m) }.
+    -> { m:nat | ~is_upper_bound E (-inject_Q (Z.of_nat m # 1)) }.
 Proof.
   intros E lpo sig_not_dec H.
   apply constructive_indefinite_ground_description_nat.
-  - intro n. destruct (is_upper_bound_dec E (-INR n) lpo sig_not_dec).
+  - intro n. destruct (is_upper_bound_dec E (-inject_Q (Z.of_nat n # 1)) lpo sig_not_dec).
     right. intro abs. contradiction. left. exact n0.
-  - destruct H as [x H]. destruct (Rup_nat (-x)) as [n H0].
-    exists n. intro abs. specialize (abs x H).
-    apply abs. apply (CReal_plus_lt_reg_l (INR n-x)).
+  - destruct H as [x H]. destruct (Rup_pos (-x)) as [n H0].
+    exists (Pos.to_nat n). intro abs. specialize (abs x H).
+    apply abs. rewrite positive_nat_Z.
+    apply (CReal_plus_lt_reg_l (inject_Q (Z.pos n # 1)-x)).
     ring_simplify. exact H0.
 Qed.
 
@@ -140,8 +144,8 @@ Proof.
 Qed.
 
 Lemma glb_dec_Q : forall upcut : DedekindDecCut,
-    { x : CReal | forall r:Q, (x < IQR r -> DDupcut upcut r)
-                         /\ (IQR r < x -> ~DDupcut upcut r) }.
+    { x : CReal | forall r:Q, (x < inject_Q r -> DDupcut upcut r)
+                         /\ (inject_Q r < x -> ~DDupcut upcut r) }.
 Proof.
   intros.
   assert (forall a b : Q, Qle a b -> Qle (-b) (-a)).
@@ -175,7 +179,7 @@ Proof.
   pose (exist (fun qn => QSeqEquiv qn qn Pos.to_nat) _ H0) as l.
   exists l. split.
   - intros. (* find an upper point between the limit and r *)
-    rewrite FinjectQ_CReal in H1. destruct H1 as [p pmaj].
+    destruct H1 as [p pmaj].
     unfold l,proj1_sig in pmaj.
     destruct (DDcut_limit upcut (1 # Pos.of_nat (Pos.to_nat p)) eq_refl) as [q qmaj]
     ; simpl in pmaj.
@@ -184,8 +188,7 @@ Proof.
     apply (Qle_trans _ ((2#p) + q)).
     apply (Qplus_le_l _ _ (-q)). ring_simplify. discriminate.
     apply Qlt_le_weak. exact pmaj.
-  - intros H1 abs.
-    rewrite FinjectQ_CReal in H1. destruct H1 as [p pmaj].
+  - intros [p pmaj] abs.
     unfold l,proj1_sig in pmaj.
     destruct (DDcut_limit upcut (1 # Pos.of_nat (Pos.to_nat p)) eq_refl) as [q qmaj]
     ; simpl in pmaj.
@@ -205,26 +208,24 @@ Lemma is_upper_bound_glb :
     -> sig_forall_dec_T
     -> (exists x : CReal, E x)
     -> (exists x : CReal, is_upper_bound E x)
-    -> { x : CReal | forall r:Q, (x < IQR r -> is_upper_bound E (IQR r))
-                           /\ (IQR r < x -> ~is_upper_bound E (IQR r)) }.
+    -> { x : CReal | forall r:Q, (x < inject_Q r -> is_upper_bound E (inject_Q r))
+                           /\ (inject_Q r < x -> ~is_upper_bound E (inject_Q r)) }.
 Proof.
   intros E sig_not_dec lpo Einhab Ebound.
   destruct (is_upper_bound_epsilon E lpo sig_not_dec Ebound) as [a luba].
   destruct (is_upper_bound_not_epsilon E lpo sig_not_dec Einhab) as [b glbb].
-  pose (fun q => is_upper_bound E (IQR q)) as upcut.
+  pose (fun q => is_upper_bound E (inject_Q q)) as upcut.
   assert (forall q:Q, { upcut q } + { ~upcut q } ).
   { intro q. apply is_upper_bound_dec. exact lpo. exact sig_not_dec. }
   assert (forall q r : Q, (q <= r)%Q -> upcut q -> upcut r).
   { intros. intros x Ex. specialize (H1 x Ex). intro abs.
-    apply H1. apply (CRealLe_Lt_trans _ (IQR r)). 2: exact abs.
-    apply IQR_le. exact H0. }
+    apply H1. apply (CReal_le_lt_trans _ (inject_Q r)). 2: exact abs.
+    apply inject_Q_le. exact H0. }
   assert (upcut (Z.of_nat a # 1)%Q).
-  { intros x Ex. unfold IQR. rewrite CReal_inv_1, CReal_mult_1_r.
-    specialize (luba x Ex). rewrite <- INR_IZR_INZ. exact luba. }
+  { intros x Ex. exact (luba x Ex). }
   assert (~upcut (- Z.of_nat b # 1)%Q).
   { intros abs. apply glbb. intros x Ex.
-    specialize (abs x Ex). unfold IQR in abs.
-    rewrite CReal_inv_1, CReal_mult_1_r, opp_IZR, <- INR_IZR_INZ in abs.
+    specialize (abs x Ex). rewrite <- opp_inject_Q.
     exact abs. }
   assert (forall q r : Q, (q == r)%Q -> upcut q -> upcut r).
   { intros. intros x Ex. specialize (H4 x Ex). rewrite <- H3. exact H4. }
@@ -257,7 +258,7 @@ Proof.
     intro abs. destruct (FQ_dense b x abs) as [q [qmaj H0]].
     specialize (a q) as [_ a]. apply a. exact H0.
     intros y Ey. specialize (H y Ey). intro abs2.
-    apply H. exact (CRealLt_trans _ (IQR q) _ qmaj abs2).
+    apply H. exact (CReal_lt_trans _ (inject_Q q) _ qmaj abs2).
 Qed.
 
 Lemma sig_lub :
@@ -273,4 +274,45 @@ Proof.
   destruct (is_upper_bound_glb
               E sig_not_dec sig_forall_dec Einhab Ebound); simpl in H.
   exists x. exact H.
+Qed.
+
+Definition CRis_upper_bound (R : ConstructiveReals) (E:CRcarrier R -> Prop) (m:CRcarrier R)
+  := forall x:CRcarrier R, E x -> CRlt R m x -> False.
+
+Lemma CR_sig_lub :
+  forall (R : ConstructiveReals) (E:CRcarrier R -> Prop),
+    (forall x y : CRcarrier R, orderEq _ (CRlt R) x y -> (E x <-> E y))
+    -> sig_forall_dec_T
+    -> sig_not_dec_T
+    -> (exists x : CRcarrier R, E x)
+    -> (exists x : CRcarrier R, CRis_upper_bound R E x)
+    -> { u : CRcarrier R | CRis_upper_bound R E u /\
+                           forall y:CRcarrier R, CRis_upper_bound R E y -> CRlt R y u -> False }.
+Proof.
+  intros. destruct (sig_lub (fun x:CReal => E (CauchyMorph R x)) X X0) as [u ulub].
+  - destruct H0. exists (CauchyMorph_inv R x).
+    specialize (H (CauchyMorph R (CauchyMorph_inv R x)) x
+                  (CauchyMorph_surject R x)) as [_ H].
+    exact (H H0).
+  - destruct H1. exists (CauchyMorph_inv R x).
+    intros y Ey. specialize (H1 (CauchyMorph R y) Ey).
+    intros abs. apply H1.
+    apply (CauchyMorph_increasing R) in abs.
+    apply (CRle_lt_trans R _ (CauchyMorph R (CauchyMorph_inv R x))).
+    2: exact abs. apply (CauchyMorph_surject R x).
+  - exists (CauchyMorph R u). destruct ulub. split.
+    + intros y Ey abs. specialize (H2 (CauchyMorph_inv R y)).
+      simpl in H2.
+      specialize (H (CauchyMorph R (CauchyMorph_inv R y)) y
+                    (CauchyMorph_surject R y)) as [_ H].
+      specialize (H2 (H Ey)). apply H2.
+      apply CauchyMorph_inv_increasing in abs.
+      rewrite CauchyMorph_inject in abs. exact abs.
+    + intros. apply (H3 (CauchyMorph_inv R y)).
+      intros z Ez abs. specialize (H4 (CauchyMorph R z)).
+      apply (H4 Ez). apply (CauchyMorph_increasing R) in abs.
+      apply (CRle_lt_trans R _ (CauchyMorph R (CauchyMorph_inv R y))).
+      2: exact abs. apply (CauchyMorph_surject R y).
+      apply CauchyMorph_inv_increasing in H5.
+      rewrite CauchyMorph_inject in H5. exact H5.
 Qed.

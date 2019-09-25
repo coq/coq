@@ -21,6 +21,7 @@
 
 Require Export ZArith_base.
 Require Import ConstructiveRIneq.
+Require Import ConstructiveRealsLUB.
 Require Export Rdefinitions.
 Declare Scope R_scope.
 Local Open Scope R_scope.
@@ -408,6 +409,10 @@ Lemma completeness :
       bound E -> (exists x : R, E x) -> { m:R | is_lub E m }.
 Proof.
   intros. pose (fun x:ConstructiveRIneq.R => E (Rabst x)) as Er.
+  assert (forall x y : CRcarrier CR, orderEq (CRcarrier CR) (CRlt CR) x y -> Er x <-> Er y)
+    as Erproper.
+  { intros. unfold Er. replace (Rabst x) with (Rabst y). reflexivity.
+    apply Rquot1. do 2 rewrite Rquot2. split; apply H1. }
   assert (exists x : ConstructiveRIneq.R, Er x) as Einhab.
   { destruct H0. exists (Rrepr x). unfold Er.
     replace (Rabst (Rrepr x)) with x. exact H0.
@@ -418,7 +423,7 @@ Proof.
   { destruct H. exists (Rrepr x). intros y Ey. rewrite <- (Rquot2 y).
     apply Rrepr_le. apply H. exact Ey. }
   destruct (CR_sig_lub CR
-              Er sig_forall_dec sig_not_dec Einhab Ebound).
+              Er Erproper sig_forall_dec sig_not_dec Einhab Ebound).
   exists (Rabst x). split.
   intros y Ey. apply Rrepr_le. rewrite Rquot2.
   unfold ConstructiveRIneq.Rle. apply a.

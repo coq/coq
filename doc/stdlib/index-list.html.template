@@ -515,7 +515,9 @@ through the <tt>Require Import</tt> command.</p>
   <dd>
     theories/Reals/Rdefinitions.v
     theories/Reals/ConstructiveReals.v
+    theories/Reals/ConstructiveRealsMorphisms.v
     theories/Reals/ConstructiveCauchyReals.v
+    theories/Reals/ConstructiveCauchyRealsMult.v
     theories/Reals/Raxioms.v
     theories/Reals/ConstructiveRIneq.v
     theories/Reals/ConstructiveRealsLUB.v
