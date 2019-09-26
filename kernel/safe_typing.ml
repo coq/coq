@@ -115,6 +115,7 @@ type module_parameters = (MBId.t * module_type_body) list
 
 type safe_environment =
   { env : Environ.env;
+    sections : Section.t;
     modpath : ModPath.t;
     modvariant : modvariant;
     modresolver : Mod_subst.delta_resolver;
@@ -151,6 +152,7 @@ let empty_environment =
     revstruct = [];
     modlabels = Label.Set.empty;
     objlabels = Label.Set.empty;
+    sections = Section.empty;
     future_cst = [];
     univ = Univ.ContextSet.empty;
     engagement = None;
@@ -317,11 +319,16 @@ let universes_of_private eff =
 let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
 
+let sections_of_safe_env senv = senv.sections
+
 type constraints_addition =
   | Now of Univ.ContextSet.t
   | Later of Univ.ContextSet.t Future.computation
 
 let push_context_set poly cst senv =
+  let () = if Section.is_polymorphic senv.sections && not (Univ.ContextSet.is_empty cst) then
+    CErrors.user_err (Pp.str "Cannot add global universe constraints inside a polymorphic section.")
+  in
   { senv with
     env = Environ.push_context_set ~strict:(not poly) cst senv.env;
     univ = Univ.ContextSet.union cst senv.univ }
@@ -386,7 +393,7 @@ let check_current_library dir senv = match senv.modvariant with
 (** When operating on modules, we're normally outside sections *)
 
 let check_empty_context senv =
-  assert (Environ.empty_context senv.env)
+  assert (Environ.empty_context senv.env && Section.is_empty senv.sections)
 
 (** When adding a parameter to the current module/modtype,
     it must have been freshly started *)
@@ -433,19 +440,30 @@ let safe_push_named d env =
     with Not_found -> () in
   Environ.push_named d env
 
-
 let push_named_def (id,de) senv =
+  let sections = Section.push_local senv.sections in
   let c, r, typ = Term_typing.translate_local_def senv.env id de in
   let x = Context.make_annot id r in
   let env'' = safe_push_named (LocalDef (x, c, typ)) senv.env in
-  { senv with env = env'' }
+  { senv with sections; env = env'' }
 
 let push_named_assum (x,t) senv =
+  let sections = Section.push_local senv.sections in
   let t, r = Term_typing.translate_local_assum senv.env t in
   let x = Context.make_annot x r in
   let env'' = safe_push_named (LocalAssum (x,t)) senv.env in
-    {senv with env=env''}
+  { senv with sections; env = env'' }
 
+let push_section_context (nas, ctx) senv =
+  let sections = Section.push_context (nas, ctx) senv.sections in
+  let senv = { senv with sections } in
+  let ctx = Univ.ContextSet.of_context ctx in
+  (* We check that the universes are fresh. FIXME: This should be done
+     implicitly, but we have to work around the API. *)
+  let () = assert (Univ.LSet.for_all (fun u -> not (Univ.LSet.mem u (fst senv.univ))) (fst ctx)) in
+  { senv with
+    env = Environ.push_context_set ~strict:false ctx senv.env;
+    univ = Univ.ContextSet.union ctx senv.univ }
 
 (** {6 Insertion of new declarations to current environment } *)
 
@@ -527,8 +545,19 @@ let add_field ?(is_include=false) ((l,sfb) as field) gn senv =
     | SFBmodule mb, M -> Modops.add_module mb senv.env
     | _ -> assert false
   in
+  let sections = match sfb, gn with
+  | SFBconst cb, C con ->
+    let poly = Declareops.constant_is_polymorphic cb in
+    Section.push_constant ~poly con senv.sections
+  | SFBmind mib, I mind ->
+    let poly = Declareops.inductive_is_polymorphic mib in
+    Section.push_inductive ~poly mind senv.sections
+  | _, (M | MT) -> senv.sections
+  | _ -> assert false
+  in
   { senv with
     env = env';
+    sections;
     revstruct = field :: senv.revstruct;
     modlabels = Label.Set.union mlabs senv.modlabels;
     objlabels = Label.Set.union olabs senv.objlabels }
@@ -902,6 +931,16 @@ let add_module l me inl senv =
   in
   (mp,mb.mod_delta),senv''
 
+(** {6 Interactive sections *)
+
+let open_section ~poly senv =
+  let sections = Section.open_section ~poly senv.sections in
+  { senv with sections }
+
+let close_section senv =
+  (* TODO: implement me when discharging in kernel *)
+  let sections = Section.close_section senv.sections in
+  { senv with sections }
 
 (** {6 Starting / ending interactive modules and module types } *)
 

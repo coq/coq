@@ -83,6 +83,7 @@ let i2l = Label.of_id
 
 let push_named_assum a = globalize0 (Safe_typing.push_named_assum a)
 let push_named_def d = globalize0 (Safe_typing.push_named_def d)
+let push_section_context c = globalize0 (Safe_typing.push_section_context c)
 let add_constraints c = globalize0 (Safe_typing.add_constraints c)
 let push_context_set b c = globalize0 (Safe_typing.push_context_set b c)
 
@@ -103,6 +104,13 @@ let add_mind id mie = globalize (Safe_typing.add_mind (i2l id) mie)
 let add_modtype id me inl = globalize (Safe_typing.add_modtype (i2l id) me inl)
 let add_module id me inl = globalize (Safe_typing.add_module (i2l id) me inl)
 let add_include me ismod inl = globalize (Safe_typing.add_include me ismod inl)
+
+let open_section ~poly = globalize0 (Safe_typing.open_section ~poly)
+let close_section fs =
+  (* TODO: use globalize0_with_summary *)
+  Summary.unfreeze_summaries fs;
+  let env = Safe_typing.close_section (safe_env ()) in
+  GlobalSafeEnv.set_safe_env env
 
 let start_module id = globalize (Safe_typing.start_module (i2l id))
 let start_modtype id = globalize (Safe_typing.start_modtype (i2l id))

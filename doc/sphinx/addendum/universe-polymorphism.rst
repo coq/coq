@@ -147,14 +147,7 @@ Many other commands support the ``Polymorphic`` flag, including:
 - :cmd:`Section` will locally set the polymorphism flag inside the section.
 
 - ``Variables``, ``Context``, ``Universe`` and ``Constraint`` in a section support
-  polymorphism. This means that the universe variables (and associated
-  constraints) are discharged polymorphically over definitions that use
-  them. In other words, two definitions in the section sharing a common
-  variable will both get parameterized by the universes produced by the
-  variable declaration. This is in contrast to a “mononorphic” variable
-  which introduces global universes and constraints, making the two
-  definitions depend on the *same* global universes associated to the
-  variable.
+  polymorphism. See :ref:`universe-polymorphism-in-sections` for more details.
 
 - :cmd:`Hint Resolve` and :cmd:`Hint Rewrite` will use the auto/rewrite hint
   polymorphically, not at a single instance.
@@ -375,9 +368,7 @@ to universes and explicitly instantiate polymorphic definitions.
    as well. Global universe names live in a separate namespace. The
    command supports the ``Polymorphic`` flag only in sections, meaning the
    universe quantification will be discharged on each section definition
-   independently. One cannot mix polymorphic and monomorphic
-   declarations in the same section.
-
+   independently.
 
 .. cmd:: Constraint @universe_constraint
          Polymorphic Constraint @universe_constraint
@@ -510,3 +501,23 @@ underscore or by omitting the annotation to a polymorphic definition.
 
       Lemma baz : Type@{outer}. Proof. exact Type@{inner}. Qed.
       About baz.
+
+.. _universe-polymorphism-in-sections:
+
+Universe polymorphism and sections
+----------------------------------
+
+The universe polymorphic or monomorphic status is
+attached to each individual section, and all term or universe declarations
+contained inside must respect it, as described below. It is possible to nest a
+polymorphic section inside a monomorphic one, but the converse is not allowed.
+
+:cmd:`Variables`, :cmd:`Context`, :cmd:`Universe` and :cmd:`Constraint` in a section support
+polymorphism. This means that the universe variables and their associated
+constraints are discharged polymorphically over definitions that use
+them. In other words, two definitions in the section sharing a common
+variable will both get parameterized by the universes produced by the
+variable declaration. This is in contrast to a “mononorphic” variable
+which introduces global universes and constraints, making the two
+definitions depend on the *same* global universes associated to the
+variable.

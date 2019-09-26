@@ -43,9 +43,11 @@ Inductive
 Typeops
 IndTyping
 Indtypes
+InferCumulativity
 Cooking
 Term_typing
 Subtyping
 Mod_typing
 Nativelibrary
+Section
 Safe_typing

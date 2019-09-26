@@ -33,6 +33,8 @@ val is_initial : safe_environment -> bool
 
 val env_of_safe_env : safe_environment -> Environ.env
 
+val sections_of_safe_env : safe_environment -> Section.t
+
 (** The safe_environment state monad *)
 
 type safe_transformer0 = safe_environment -> safe_environment
@@ -66,15 +68,6 @@ val join_safe_environment :
 
 val is_joined_environment : safe_environment -> bool
 (** {6 Enriching a safe environment } *)
-
-(** Insertion of local declarations (Local or Variables) *)
-
-val push_named_assum : (Id.t * Constr.types) -> safe_transformer0
-
-(** Returns the full universe context necessary to typecheck the definition
-  (futures are forced) *)
-val push_named_def :
-  Id.t * Entries.section_def_entry -> safe_transformer0
 
 (** Insertion of global axioms or definitions *)
 
@@ -139,6 +132,22 @@ val make_sprop_cumulative : safe_transformer0
 val set_allow_sprop : bool -> safe_transformer0
 
 val check_engagement : Environ.env -> Declarations.set_predicativity -> unit
+
+(** {6 Interactive section functions } *)
+
+val open_section : poly:bool -> safe_transformer0
+
+val close_section : safe_transformer0
+
+(** Insertion of local declarations (Local or Variables) *)
+
+val push_named_assum : (Id.t * Constr.types) -> safe_transformer0
+
+val push_named_def :
+  Id.t * Entries.section_def_entry -> safe_transformer0
+
+(** Add local universes to a polymorphic section *)
+val push_section_context : (Name.t array * Univ.UContext.t) -> safe_transformer0
 
 (** {6 Interactive module functions } *)
 

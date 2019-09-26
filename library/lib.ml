@@ -410,87 +410,11 @@ let find_opening_node id =
    - the list of substitution to do at section closing
 *)
 
-type abstr_info = {
+type abstr_info = Section.abstr_info = private {
   abstr_ctx : Constr.named_context;
   abstr_subst : Univ.Instance.t;
   abstr_uctx : Univ.AUContext.t;
 }
-type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
-
-type secentry =
-  | Variable of {
-      id:Names.Id.t;
-    }
-  | Context of Univ.ContextSet.t
-
-type section_data = {
-  sec_entry : secentry list;
-  sec_abstr : abstr_list;
-  sec_poly  : bool;
-}
-
-let empty_section_data ~poly = {
-  sec_entry = [];
-  sec_abstr = (Names.Cmap.empty,Names.Mindmap.empty);
-  sec_poly  = poly;
-}
-
-let sectab =
-  Summary.ref ([] : section_data list) ~name:"section-context"
-
-let check_same_poly p sec =
-  if p != sec.sec_poly then
-    user_err Pp.(str  "Cannot mix universe polymorphic and monomorphic declarations in sections.")
-
-let add_section ~poly () =
-  List.iter (fun tab -> check_same_poly poly tab) !sectab;
-  sectab := empty_section_data ~poly :: !sectab
-
-let add_section_variable ~name ~poly =
-  match !sectab with
-    | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
-    | s :: sl ->
-       List.iter (fun tab -> check_same_poly poly tab) !sectab;
-       let s = { s with sec_entry = Variable {id=name} :: s.sec_entry } in
-       sectab := s :: sl
-
-let add_section_context ctx =
-  match !sectab with
-    | [] -> () (* because (Co-)Fixpoint temporarily uses local vars *)
-    | s :: sl ->
-       check_same_poly true s;
-       let s = { s with sec_entry = Context ctx :: s.sec_entry } in
-       sectab := s :: sl
-
-exception PolyFound (* make this a let exception once possible *)
-let is_polymorphic_univ u =
-  try
-    let open Univ in
-    List.iter (fun s ->
-      let vars = s.sec_entry in
-        List.iter (function
-            | Variable _ -> ()
-            | Context (univs,_) ->
-              if LSet.mem u univs then raise PolyFound
-          ) vars
-      ) !sectab;
-    false
-  with PolyFound -> true
-
-let extract_hyps poly (secs,ohyps) =
-  let rec aux = function
-    | (Variable {id}::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
-      let l, r = aux (idl,hyps) in 
-      decl :: l, r
-    | (Variable _::idl,hyps) ->
-        let l, r = aux (idl,hyps) in
-          l, r
-    | (Context ctx :: idl, hyps) ->
-      let () = assert poly in
-       let l, r = aux (idl, hyps) in
-       l, Univ.ContextSet.union r ctx
-    | [], _ -> [],Univ.ContextSet.empty
-  in aux (secs,ohyps)
 
 let instance_from_variable_context =
   List.rev %> List.filter is_local_assum %> List.map NamedDecl.get_id %> Array.of_list
@@ -499,66 +423,21 @@ let extract_worklist info =
   let args = instance_from_variable_context info.abstr_ctx in
   info.abstr_subst, args
 
-let make_worklist (cmap, mmap) =
-  Cmap.map extract_worklist cmap, Mindmap.map extract_worklist mmap
+let sections () = Safe_typing.sections_of_safe_env @@ Global.safe_env ()
 
-let name_instance inst =
-  (* FIXME: this should probably be done at an upper level, by storing the
-     name information in the section data structure. *)
-  let map lvl = match Univ.Level.name lvl with
-    | None -> (* Having Prop/Set/Var as section universes makes no sense *)
-      assert false
-    | Some na ->
-      try
-        let qid = Nametab.shortest_qualid_of_universe na in
-        Name (Libnames.qualid_basename qid)
-      with Not_found ->
-        (* Best-effort naming from the string representation of the level.
-           See univNames.ml for a similar hack. *)
-        Name (Id.of_string_soft (Univ.Level.to_string lvl))
-  in
-  Array.map map (Univ.Instance.to_array inst)
+let is_polymorphic_univ u =
+  Section.is_polymorphic_univ u (sections ())
 
-let add_section_replacement g poly hyps =
-  match !sectab with
-  | [] -> ()
-  | s :: sl ->
-    let () = check_same_poly poly s in
-    let sechyps,ctx = extract_hyps s.sec_poly (s.sec_entry, hyps) in
-    let ctx = Univ.ContextSet.to_context ctx in
-    let nas = name_instance (Univ.UContext.instance ctx) in
-    let subst, ctx = Univ.abstract_universes nas ctx in
-    let info = {
-      abstr_ctx = sechyps;
-      abstr_subst = subst;
-      abstr_uctx = ctx;
-    } in
-    let s = { s with
-      sec_abstr = g info s.sec_abstr;
-    } in
-    sectab := s :: sl
-
-let add_section_kn ~poly kn =
-  let f x (l1,l2) = (l1,Names.Mindmap.add kn x l2) in
-    add_section_replacement f poly
-
-let add_section_constant ~poly kn =
-  let f x (l1,l2) = (Names.Cmap.add kn x l1,l2) in
-    add_section_replacement f poly
-
-let replacement_context () = make_worklist (List.hd !sectab).sec_abstr
+let replacement_context () =
+  Section.replacement_context (Global.env ()) (sections ())
 
 let section_segment_of_constant con =
-  Names.Cmap.find con (fst (List.hd !sectab).sec_abstr)
+  Section.segment_of_constant (Global.env ()) con (sections ())
 
 let section_segment_of_mutual_inductive kn =
-  Names.Mindmap.find kn (snd (List.hd !sectab).sec_abstr)
+  Section.segment_of_inductive (Global.env ()) kn (sections ())
 
-let empty_segment = {
-  abstr_ctx = [];
-  abstr_subst = Univ.Instance.empty;
-  abstr_uctx = Univ.AUContext.empty;
-}
+let empty_segment = Section.empty_segment
 
 let section_segment_of_reference = let open GlobRef in function
 | ConstRef c -> section_segment_of_constant c
@@ -569,28 +448,24 @@ let section_segment_of_reference = let open GlobRef in function
 let variable_section_segment_of_reference gr =
   (section_segment_of_reference gr).abstr_ctx
 
+let is_in_section ref =
+  Section.is_in_section (Global.env ()) ref (sections ())
+
 let section_instance = let open GlobRef in function
   | VarRef id ->
-     let eq = function
-       | Variable {id=id'} -> Names.Id.equal id id'
-       | Context _ -> false
-     in
-     if List.exists eq (List.hd !sectab).sec_entry
-     then Univ.Instance.empty, [||]
-     else raise Not_found
+    if is_in_section (VarRef id) then (Univ.Instance.empty, [||])
+    else raise Not_found
   | ConstRef con ->
-    let data = Names.Cmap.find con (fst (List.hd !sectab).sec_abstr) in
+    let data = section_segment_of_constant con in
     extract_worklist data
   | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
-    let data = Names.Mindmap.find kn (snd (List.hd !sectab).sec_abstr) in
+    let data = section_segment_of_mutual_inductive kn in
     extract_worklist data
-
-let is_in_section ref =
-  try ignore (section_instance ref); true with Not_found -> false
 
 (*************)
 (* Sections. *)
 let open_section ~poly id =
+  let () = Global.open_section ~poly in
   let opp = !lib_state.path_prefix in
   let obj_dir = add_dirpath_suffix opp.Nametab.obj_dir id in
   let prefix = Nametab.{ obj_dir; obj_mp = opp.obj_mp; obj_sec = add_dirpath_suffix opp.obj_sec id } in
@@ -600,9 +475,7 @@ let open_section ~poly id =
   add_entry (make_foname id) (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.(push_dir (Until 1) obj_dir (GlobDirRef.DirOpenSection prefix));
-  lib_state := { !lib_state with path_prefix = prefix };
-  add_section ~poly ()
-
+  lib_state := { !lib_state with path_prefix = prefix }
 
 (* Restore lib_stk and summaries as before the section opening, and
    add a ClosedSection object. *)
@@ -631,7 +504,7 @@ let close_section () =
   lib_state := { !lib_state with lib_stk = before };
   pop_path_prefix ();
   let newdecls = List.map discharge_item secdecls in
-  Summary.unfreeze_summaries fs;
+  let () = Global.close_section fs in
   List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls
 
 (* State and initialization. *)
