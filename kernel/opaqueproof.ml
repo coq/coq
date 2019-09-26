@@ -142,11 +142,6 @@ let force_constraints _access { opaque_val = prfs; opaque_dir = odp; _ } = funct
         get_mono (Future.force cu)
       else Univ.ContextSet.empty
 
-let get_direct_constraints = function
-| Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
-| Direct (_, cu) ->
-  Future.chain cu get_mono
-
 module FMap = Future.UUIDMap
 
 let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _ } =

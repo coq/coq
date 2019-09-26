@@ -591,15 +591,6 @@ type exported_private_constant = Constant.t
 
 let add_constant_aux ~in_section senv (kn, cb) =
   let l = Constant.label kn in
-  let delayed_cst = match cb.const_body with
-  | OpaqueDef o when not (Declareops.constant_is_polymorphic cb) ->
-    let fc = Opaqueproof.get_direct_constraints o in
-    begin match Future.peek_val fc with
-    | None -> [Later fc]
-    | Some c -> [Now c]
-    end
-  | Undef _ | Def _ | Primitive _ | OpaqueDef _ -> []
-  in
   (* This is the only place where we hashcons the contents of a constant body *)
   let cb = if in_section then cb else Declareops.hcons_const_body cb in
   let cb, otab = match cb.const_body with
@@ -614,7 +605,6 @@ let add_constant_aux ~in_section senv (kn, cb) =
   in
   let senv = { senv with env = Environ.set_opaque_tables senv.env otab } in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
-  let senv' = add_constraints_list delayed_cst senv' in
   let senv'' = match cb.const_body with
     | Undef (Some lev) ->
       update_resolver
@@ -829,13 +819,9 @@ let export_private_constants ~in_section ce senv =
   let map (kn, cb) = (kn, map_constant (fun c -> map cb.const_universes c) cb) in
   let bodies = List.map map exported in
   let exported = List.map (fun (kn, _) -> kn) exported in
+  (* No delayed constants to declare *)
   let senv = List.fold_left (add_constant_aux ~in_section) senv bodies in
   (ce, exported), senv
-
-let add_recipe ~in_section kn r senv =
-  let cb = Term_typing.translate_recipe senv.env kn r in
-  let senv = add_constant_aux ~in_section senv (kn, cb) in
-  senv
 
 let add_constant (type a) ~(side_effect : a effect_entry) ~in_section l decl senv : (Constant.t * a) * safe_environment =
   let kn = Constant.make2 senv.modpath l in
@@ -852,8 +838,24 @@ let add_constant (type a) ~(side_effect : a effect_entry) ~in_section l decl sen
         Term_typing.translate_constant Term_typing.Pure senv.env kn ce
     in
   let senv =
+    let delayed_cst = match cb.const_body with
+    | OpaqueDef fc when not (Declareops.constant_is_polymorphic cb) ->
+      let map (_, u) = match u with
+      | Opaqueproof.PrivateMonomorphic ctx -> ctx
+      | Opaqueproof.PrivatePolymorphic _ -> assert false
+      in
+      let fc = Future.chain fc map in
+      begin match Future.peek_val fc with
+      | None -> [Later fc]
+      | Some c -> [Now c]
+      end
+    | Undef _ | Def _ | Primitive _ | OpaqueDef _ -> []
+    in
     let cb = map_constant (fun c -> Opaqueproof.create c) cb in
-    add_constant_aux ~in_section senv (kn, cb) in
+    let senv = add_constant_aux ~in_section senv (kn, cb) in
+    add_constraints_list delayed_cst senv
+  in
+
   let senv =
     match decl with
     | ConstantEntry (_,(Entries.PrimitiveEntry { Entries.prim_entry_content = CPrimitives.OT_type t; _ })) ->
@@ -983,7 +985,8 @@ let close_section senv =
   let redo, revstruct = pop_revstruct [] entries senv.revstruct in
   (* Don't revert the delayed constraints. If some delayed constraints were
      forced inside the section, they have been turned into global monomorphic
-     that are going to be replayed. FIXME: the other ones are added twice. *)
+     that are going to be replayed. Those that are not forced are not readded
+     by {!add_constant_aux}. *)
   let { rev_env = env; rev_univ = univ; rev_objlabels = objlabels } = revert in
   let senv = { senv with env; revstruct; sections; univ; objlabels; } in
   (* Second phase: replay the discharged section contents *)
@@ -999,7 +1002,9 @@ let close_section senv =
     let in_section = not (Section.is_empty senv.sections) in
     let info = cooking_info (Section.segment_of_constant env0 kn sections0) in
     let r = { Cooking.from = cb; info } in
-    add_recipe ~in_section kn r senv
+    let cb = Term_typing.translate_recipe senv.env kn r in
+    (* Delayed constants are already in the global environment *)
+    add_constant_aux ~in_section senv (kn, cb)
   | `Inductive (ind, mib) ->
     let info = cooking_info (Section.segment_of_inductive env0 ind sections0) in
     let mie = Cooking.cook_inductive info mib in
