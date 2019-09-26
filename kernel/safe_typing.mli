@@ -27,13 +27,15 @@ val digest_match : actual:vodigest -> required:vodigest -> bool
 
 type safe_environment
 
+type section_data
+
 val empty_environment : safe_environment
 
 val is_initial : safe_environment -> bool
 
 val env_of_safe_env : safe_environment -> Environ.env
 
-val sections_of_safe_env : safe_environment -> Section.t
+val sections_of_safe_env : safe_environment -> section_data Section.t
 
 (** The safe_environment state monad *)
 
@@ -88,9 +90,6 @@ val export_private_constants : in_section:bool ->
 val add_constant :
   side_effect:'a effect_entry -> in_section:bool -> Label.t -> global_declaration ->
     (Constant.t * 'a) safe_transformer
-
-val add_recipe :
-  in_section:bool -> Label.t -> Cooking.recipe -> Constant.t safe_transformer
 
 (** Adding an inductive type *)
 

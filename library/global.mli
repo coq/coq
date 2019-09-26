@@ -52,7 +52,6 @@ val export_private_constants : in_section:bool ->
 
 val add_constant :
   side_effect:'a Safe_typing.effect_entry -> in_section:bool -> Id.t -> Safe_typing.global_declaration -> Constant.t * 'a
-val add_recipe : in_section:bool -> Id.t -> Cooking.recipe -> Constant.t
 val add_mind :
   Id.t -> Entries.mutual_inductive_entry -> MutInd.t
 

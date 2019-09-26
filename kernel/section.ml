@@ -18,9 +18,9 @@ type _ section_kind =
 | SecMono : [ `mono ] section_kind
 | SecPoly : [ `poly ] section_kind
 
-type _ section_universes =
-| SecMonoUniv : [ `mono ] section_universes
-| SecPolyUniv : Name.t array * UContext.t -> [ `poly ] section_universes
+type (_, 'a) section_universes =
+| SecMonoUniv : 'a -> ([ `mono ], 'a) section_universes
+| SecPolyUniv : Name.t array * UContext.t -> ([ `poly ], 'a) section_universes
 
 type section_entry =
 | SecDefinition of Constant.t
@@ -28,21 +28,23 @@ type section_entry =
 
 type 'a entry_map = 'a Cmap.t * 'a Mindmap.t
 
-type 'a section = {
+type ('a, 'b) section = {
   sec_context : int;
   (** Length of the named context suffix that has been introduced locally *)
-  sec_universes : 'a section_universes;
+  sec_universes : ('a, ContextSet.t) section_universes;
   (** Universes local to the section *)
   sec_entries : section_entry list;
   (** Definitions introduced in the section *)
-  sec_data : 'a section_universes entry_map;
+  sec_data : ('a, unit) section_universes entry_map;
+  (** Additional data synchronized with the section *)
+  sec_custom : 'b;
 }
 
 (** Sections can be nested with the proviso that no monomorphic section can be
     opened inside a polymorphic one. The reverse is allowed. *)
-type t = {
-  sec_poly : [ `poly ] section list;
-  sec_mono : [ `mono ] section list;
+type 'a t = {
+  sec_poly : ([ `poly ], 'a) section list;
+  sec_mono : ([ `mono ], 'a) section list;
 }
 
 let empty = {
@@ -64,7 +66,7 @@ let add_emap e v (cmap, imap) = match e with
 | SecDefinition con -> (Cmap.add con v cmap, imap)
 | SecInductive ind -> (cmap, Mindmap.add ind v imap)
 
-type on_sec = { on_sec : 'a. 'a section_kind -> 'a section -> 'a section }
+type 'b on_sec = { on_sec : 'a. 'a section_kind -> ('a, 'b) section -> ('a, 'b) section }
 
 let on_last_section f { sec_poly; sec_mono } = match sec_poly, sec_mono with
 | [], [] -> CErrors.user_err (Pp.str "No opened section")
@@ -75,7 +77,7 @@ let on_last_section f { sec_poly; sec_mono } = match sec_poly, sec_mono with
   let sec_mono = f.on_sec SecMono sec :: rem in
   { sec_mono; sec_poly }
 
-type 'r with_sec = { with_sec : 'a. ('a section_kind * 'a section) option -> 'r }
+type ('r, 'b) with_sec = { with_sec : 'a. ('a section_kind * ('a, 'b) section) option -> 'r }
 
 let with_last_section f { sec_poly; sec_mono } = match sec_poly, sec_mono with
 | [], [] -> f.with_sec None
@@ -87,7 +89,7 @@ let push_local s =
   on_last_section { on_sec } s
 
 let push_context (nas, ctx) s =
-  let on_sec (type a) (kind : a section_kind) (sec : a section) : a section = match kind with
+  let on_sec (type a) (kind : a section_kind) (sec : (a, _) section) : (a, _) section = match kind with
   | SecMono ->
     CErrors.anomaly (Pp.str "Adding polymorphic constraints to monomorphic section")
   | SecPoly ->
@@ -97,35 +99,48 @@ let push_context (nas, ctx) s =
   in
   on_last_section { on_sec } s
 
-let open_section ~poly sections =
+let push_constraints uctx s =
+  let on_sec (type a) (kind : a section_kind) (sec : (a, _) section) : (a, _) section = match kind with
+  | SecMono ->
+    let SecMonoUniv uctx' = sec.sec_universes in
+    let sec_universes = SecMonoUniv (ContextSet.union uctx uctx') in
+    { sec with sec_universes }
+  | SecPoly ->
+    CErrors.anomaly (Pp.str "Adding monomorphic constraints to polymorphic section")
+  in
+  on_last_section { on_sec } s
+
+let open_section ~poly ~custom sections =
   if poly then
     let sec = {
       sec_context = 0;
       sec_universes = SecPolyUniv ([||], Univ.UContext.empty);
       sec_entries = [];
       sec_data = (Cmap.empty, Mindmap.empty);
+      sec_custom = custom;
     } in
     { sections with sec_poly = sec :: sections.sec_poly }
   else if List.is_empty sections.sec_poly then
     let sec = {
       sec_context = 0;
-      sec_universes = SecMonoUniv;
+      sec_universes = SecMonoUniv Univ.ContextSet.empty;
       sec_entries = [];
       sec_data = (Cmap.empty, Mindmap.empty);
+      sec_custom = custom;
     } in
     { sections with sec_mono = sec :: sections.sec_mono }
   else
     CErrors.user_err (Pp.str "Cannot open a monomorphic section inside a polymorphic one")
 
 let close_section sections =
-  (* TODO: implement me correctly when discharging in kernel *)
   match sections.sec_poly, sections.sec_mono with
-  | _sec :: psecs, _ ->
+  | sec :: psecs, _ ->
     let sections = { sections with sec_poly = psecs } in
-    sections
-  | [], _sec :: msecs ->
+    sections, sec.sec_entries, Univ.ContextSet.empty, sec.sec_custom
+  | [], sec :: msecs ->
     let sections = { sections with sec_mono = msecs } in
-    sections
+    let SecMonoUniv cstrs = sec.sec_universes in
+    sections, sec.sec_entries, cstrs, sec.sec_custom
   | [], [] ->
     CErrors.user_err (Pp.str "No opened section.")
 
@@ -133,13 +148,17 @@ let same_poly (type a) ~poly (knd : a section_kind) = match knd with
 | SecPoly -> poly
 | SecMono -> not poly
 
+let drop_global (type a) : (a, _) section_universes -> (a, unit) section_universes = function
+| SecMonoUniv _ -> SecMonoUniv ()
+| SecPolyUniv _ as u -> u
+
 let push_global ~poly e s =
   if is_empty s then s
   else
     let on_sec knd sec =
       if same_poly ~poly knd then { sec with
         sec_entries = e :: sec.sec_entries;
-        sec_data = add_emap e sec.sec_universes sec.sec_data;
+        sec_data = add_emap e (drop_global sec.sec_universes) sec.sec_data;
       } else
         CErrors.user_err (Pp.str "Cannot mix universe polymorphic and \
           monomorphic declarations in sections.")
@@ -179,13 +198,13 @@ let extract_hyps sec vars hyps =
 let section_segment_of_entry vars e hyps sections =
   (* [vars] are the named hypotheses, [hyps] the subset that is declared by the
     global *)
-  let with_sec (type a) (s : (a section_kind * a section) option) = match s with
+  let with_sec (type a) (s : (a section_kind * (a, _) section) option) = match s with
   | None ->
     CErrors.user_err (Pp.str "No opened section.")
   | Some (knd, sec) ->
     let hyps = extract_hyps sec vars hyps in
     let inst, auctx = match knd, find_emap e sec.sec_data with
-    | SecMono, SecMonoUniv ->
+    | SecMono, SecMonoUniv () ->
       Instance.empty, AUContext.empty
     | SecPoly, SecPolyUniv (nas, ctx) ->
       Univ.abstract_universes nas ctx

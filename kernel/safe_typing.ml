@@ -113,9 +113,16 @@ type library_info = DirPath.t * vodigest
 (** Functor and funsig parameters, most recent first *)
 type module_parameters = (MBId.t * module_type_body) list
 
+(** Part of the safe_env at a section opening time to be backtracked *)
+type section_data = {
+  rev_env : Environ.env;
+  rev_univ : Univ.ContextSet.t;
+  rev_objlabels : Label.Set.t;
+}
+
 type safe_environment =
   { env : Environ.env;
-    sections : Section.t;
+    sections : section_data Section.t;
     modpath : ModPath.t;
     modvariant : modvariant;
     modresolver : Mod_subst.delta_resolver;
@@ -326,12 +333,18 @@ type constraints_addition =
   | Later of Univ.ContextSet.t Future.computation
 
 let push_context_set poly cst senv =
-  let () = if Section.is_polymorphic senv.sections && not (Univ.ContextSet.is_empty cst) then
+  if Univ.ContextSet.is_empty cst then senv
+  else if Section.is_polymorphic senv.sections then
     CErrors.user_err (Pp.str "Cannot add global universe constraints inside a polymorphic section.")
-  in
-  { senv with
-    env = Environ.push_context_set ~strict:(not poly) cst senv.env;
-    univ = Univ.ContextSet.union cst senv.univ }
+  else
+    let sections =
+      if Section.is_empty senv.sections then senv.sections
+      else Section.push_constraints cst senv.sections
+    in
+    { senv with
+      env = Environ.push_context_set ~strict:(not poly) cst senv.env;
+      univ = Univ.ContextSet.union cst senv.univ;
+      sections }
 
 let add_constraints cst senv =
   match cst with
@@ -819,11 +832,10 @@ let export_private_constants ~in_section ce senv =
   let senv = List.fold_left (add_constant_aux ~in_section) senv bodies in
   (ce, exported), senv
 
-let add_recipe ~in_section l r senv =
-  let kn = Constant.make2 senv.modpath l in
+let add_recipe ~in_section kn r senv =
   let cb = Term_typing.translate_recipe senv.env kn r in
   let senv = add_constant_aux ~in_section senv (kn, cb) in
-  kn, senv
+  senv
 
 let add_constant (type a) ~(side_effect : a effect_entry) ~in_section l decl senv : (Constant.t * a) * safe_environment =
   let kn = Constant.make2 senv.modpath l in
@@ -934,13 +946,68 @@ let add_module l me inl senv =
 (** {6 Interactive sections *)
 
 let open_section ~poly senv =
-  let sections = Section.open_section ~poly senv.sections in
+  let custom = {
+    rev_env = senv.env;
+    rev_univ = senv.univ;
+    rev_objlabels = senv.objlabels;
+  } in
+  let sections = Section.open_section ~poly ~custom senv.sections in
   { senv with sections }
 
 let close_section senv =
-  (* TODO: implement me when discharging in kernel *)
-  let sections = Section.close_section senv.sections in
-  { senv with sections }
+  let open Section in
+  let sections0 = senv.sections in
+  let env0 = senv.env in
+  (* First phase: revert the declarations added in the section *)
+  let sections, entries, cstrs, revert = Section.close_section sections0 in
+  let () = assert (not (Section.is_polymorphic sections0) || Univ.ContextSet.is_empty cstrs) in
+  let rec pop_revstruct accu entries revstruct = match entries, revstruct with
+  | [], revstruct -> accu, revstruct
+  | _ :: _, [] ->
+    CErrors.anomaly (Pp.str "Unmatched section data")
+  | entry :: entries, (lbl, leaf) :: revstruct ->
+    let data = match entry, leaf with
+    | SecDefinition kn, SFBconst cb ->
+      let () = assert (Label.equal lbl (Constant.label kn)) in
+      `Definition (kn, cb)
+    | SecInductive ind, SFBmind mib ->
+      let () = assert (Label.equal lbl (MutInd.label ind)) in
+      `Inductive (ind, mib)
+    | (SecDefinition _ | SecInductive _), (SFBconst _ | SFBmind _) ->
+      CErrors.anomaly (Pp.str "Section content mismatch")
+    | (SecDefinition _ | SecInductive _), (SFBmodule _ | SFBmodtype _) ->
+      CErrors.anomaly (Pp.str "Module inside a section")
+    in
+    pop_revstruct (data :: accu) entries revstruct
+  in
+  let redo, revstruct = pop_revstruct [] entries senv.revstruct in
+  (* Don't revert the delayed constraints. If some delayed constraints were
+     forced inside the section, they have been turned into global monomorphic
+     that are going to be replayed. FIXME: the other ones are added twice. *)
+  let { rev_env = env; rev_univ = univ; rev_objlabels = objlabels } = revert in
+  let senv = { senv with env; revstruct; sections; univ; objlabels; } in
+  (* Second phase: replay the discharged section contents *)
+  let senv = add_constraints (Now cstrs) senv in
+  let modlist = Section.replacement_context env0 sections0 in
+  let cooking_info seg =
+    let { abstr_ctx; abstr_subst; abstr_uctx } = seg in
+    let abstract = (abstr_ctx, abstr_subst, abstr_uctx) in
+    { Opaqueproof.modlist; abstract }
+  in
+  let fold senv = function
+  | `Definition (kn, cb) ->
+    let in_section = not (Section.is_empty senv.sections) in
+    let info = cooking_info (Section.segment_of_constant env0 kn sections0) in
+    let r = { Cooking.from = cb; info } in
+    add_recipe ~in_section kn r senv
+  | `Inductive (ind, mib) ->
+    let info = cooking_info (Section.segment_of_inductive env0 ind sections0) in
+    let mie = Cooking.cook_inductive info mib in
+    let mie = InferCumulativity.infer_inductive senv.env mie in
+    let _, senv = add_mind (MutInd.label ind) mie senv in
+    senv
+  in
+  List.fold_left fold senv redo
 
 (** {6 Starting / ending interactive modules and module types } *)
 

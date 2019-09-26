@@ -70,8 +70,6 @@ let declare_universe_context ~poly ctx =
 (** Declaration of constants and parameters *)
 
 type constant_obj = {
-  cst_decl : Cooking.recipe option;
-  (** Non-empty only when rebuilding a constant after a section *)
   cst_kind : Decls.logical_kind;
   cst_locl : import_status;
 }
@@ -102,12 +100,6 @@ let load_constant i ((sp,kn), obj) =
   Nametab.push (Nametab.Until i) sp (GlobRef.ConstRef con);
   Dumpglob.add_constant_kind con obj.cst_kind
 
-let cooking_info segment =
-  let modlist = replacement_context () in
-  let { abstr_ctx = named_ctx; abstr_subst = subst; abstr_uctx = uctx } = segment in
-  let abstract = (named_ctx, subst, uctx) in
-  { Opaqueproof.modlist; abstract }
-
 (* Opening means making the name without its module qualification available *)
 let open_constant i ((sp,kn), obj) =
   (* Never open a local definition *)
@@ -127,31 +119,20 @@ let check_exists id =
 let cache_constant ((sp,kn), obj) =
   (* Invariant: the constant must exist in the logical environment, except when
      redefining it when exiting a section. See [discharge_constant]. *)
-  let id = Libnames.basename sp in
   let kn' =
-    match obj.cst_decl with
-    | None ->
-      if Global.exists_objlabel (Label.of_id (Libnames.basename sp))
-      then Constant.make1 kn
-      else CErrors.anomaly Pp.(str"Missing constant " ++ Id.print(Libnames.basename sp) ++ str".")
-    | Some r ->
-      Global.add_recipe ~in_section:(Lib.sections_are_opened ()) id r
+    if Global.exists_objlabel (Label.of_id (Libnames.basename sp))
+    then Constant.make1 kn
+    else CErrors.anomaly Pp.(str"Missing constant " ++ Id.print(Libnames.basename sp) ++ str".")
   in
   assert (Constant.equal kn' (Constant.make1 kn));
   Nametab.push (Nametab.Until 1) sp (GlobRef.ConstRef (Constant.make1 kn));
   Dumpglob.add_constant_kind (Constant.make1 kn) obj.cst_kind
 
 let discharge_constant ((sp, kn), obj) =
-  let con = Constant.make1 kn in
-  let from = Global.lookup_constant con in
-  let info = cooking_info (section_segment_of_constant con) in
-  (* This is a hack: when leaving a section, we lose the constant definition, so
-     we have to store it in the libobject to be able to retrieve it after. *)
-  Some { obj with cst_decl = Some { Cooking.from; info } }
+  Some obj
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant cst = {
-  cst_decl = None;
   cst_kind = cst.cst_kind;
   cst_locl = cst.cst_locl;
 }
@@ -176,7 +157,6 @@ let update_tables c =
 
 let register_constant kn kind local =
   let o = inConstant {
-    cst_decl = None;
     cst_kind = kind;
     cst_locl = local;
   } in
@@ -384,12 +364,17 @@ let declare_inductive_argument_scopes kn mie =
       Notation.declare_ref_arguments_scope Evd.empty (GlobRef.ConstructRef ((kn,i),j));
     done) mie.mind_entry_inds
 
-let inductive_names sp kn mie =
+type inductive_obj = {
+  ind_names : (Id.t * Id.t list) list
+  (* For each block, name of the type + name of constructors *)
+}
+
+let inductive_names sp kn obj =
   let (dp,_) = Libnames.repr_path sp in
   let kn = Global.mind_of_delta_kn kn in
   let names, _ =
     List.fold_left
-      (fun (names, n) ind ->
+      (fun (names, n) (typename, consnames) ->
          let ind_p = (kn,n) in
          let names, _ =
            List.fold_left
@@ -398,68 +383,37 @@ let inductive_names sp kn mie =
                   Libnames.make_path dp l
                 in
                   ((sp, GlobRef.ConstructRef (ind_p,p)) :: names, p+1))
-             (names, 1) ind.mind_entry_consnames in
-         let sp = Libnames.make_path dp ind.mind_entry_typename
+             (names, 1) consnames in
+         let sp = Libnames.make_path dp typename
          in
            ((sp, GlobRef.IndRef ind_p) :: names, n+1))
-      ([], 0) mie.mind_entry_inds
+      ([], 0) obj.ind_names
   in names
 
-let load_inductive i ((sp,kn),mie) =
-  let names = inductive_names sp kn mie in
+let load_inductive i ((sp, kn), names) =
+  let names = inductive_names sp kn names in
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until i) sp ref ) names
 
-let open_inductive i ((sp,kn),mie) =
-  let names = inductive_names sp kn mie in
+let open_inductive i ((sp, kn), names) =
+  let names = inductive_names sp kn names in
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Exactly i) sp ref) names
 
-let cache_inductive ((sp,kn),mie) =
-  let names = inductive_names sp kn mie in
-  List.iter check_exists (List.map (fun p -> Libnames.basename (fst p)) names);
-  let id = Libnames.basename sp in
-  let kn' = Global.add_mind id mie in
-  assert (MutInd.equal kn' (MutInd.make1 kn));
+let cache_inductive ((sp, kn), names) =
+  let names = inductive_names sp kn names in
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
 
-let discharge_inductive ((sp,kn),mie) =
-  let mind = Global.mind_of_delta_kn kn in
-  let mie = Global.lookup_mind mind in
-  let info = cooking_info (section_segment_of_mutual_inductive mind) in
-  Some (Cooking.cook_inductive info mie)
+let discharge_inductive ((sp, kn), names) =
+  Some names
 
-let dummy_one_inductive_entry mie = {
-  mind_entry_typename = mie.mind_entry_typename;
-  mind_entry_arity = Constr.mkProp;
-  mind_entry_template = false;
-  mind_entry_consnames = mie.mind_entry_consnames;
-  mind_entry_lc = []
-}
-
-(* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_inductive_entry m = {
-  mind_entry_params = [];
-  mind_entry_record = None;
-  mind_entry_finite = Declarations.BiFinite;
-  mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds;
-  mind_entry_universes = default_univ_entry;
-  mind_entry_variance = None;
-  mind_entry_private = None;
-}
-
-(* reinfer subtyping constraints for inductive after section is dischared. *)
-let rebuild_inductive mind_ent =
-  let env = Global.env () in
-  InferCumulativity.infer_inductive env mind_ent
-
-let inInductive : mutual_inductive_entry -> obj =
+let inInductive : inductive_obj -> obj =
   declare_object {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
     load_function = load_inductive;
     open_function = open_inductive;
-    classify_function = (fun a -> Substitute (dummy_inductive_entry a));
+    classify_function = (fun a -> Substitute a);
     subst_function = ident_subst_function;
     discharge_function = discharge_inductive;
-    rebuild_function = rebuild_inductive }
+  }
 
 let cache_prim (_,(p,c)) = Recordops.register_primitive_projection p c
 
@@ -516,7 +470,11 @@ let declare_mind mie =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
     | [] -> CErrors.anomaly (Pp.str "cannot declare an empty list of inductives.") in
-  let (sp,kn as oname) = add_leaf id (inInductive mie) in
+  let map_names mip = (mip.mind_entry_typename, mip.mind_entry_consnames) in
+  let names = List.map map_names mie.mind_entry_inds in
+  List.iter (fun (typ, cons) -> check_exists typ; List.iter check_exists cons) names;
+  let _kn' = Global.add_mind id mie in
+  let (sp,kn as oname) = add_leaf id (inInductive { ind_names = names }) in
   if is_unsafe_typing_flags() then feedback_axiom();
   let mind = Global.mind_of_delta_kn kn in
   let isprim = declare_projections mie.mind_entry_universes mind in

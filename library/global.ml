@@ -71,6 +71,11 @@ let globalize0 f = GlobalSafeEnv.set_safe_env (f (safe_env ()))
 let globalize f =
   let res,env = f (safe_env ()) in GlobalSafeEnv.set_safe_env env; res
 
+let globalize0_with_summary fs f =
+  let env = f (safe_env ()) in
+  Summary.unfreeze_summaries fs;
+  GlobalSafeEnv.set_safe_env env
+
 let globalize_with_summary fs f =
   let res,env = f (safe_env ()) in
   Summary.unfreeze_summaries fs;
@@ -99,18 +104,13 @@ let set_allow_sprop b = globalize0 (Safe_typing.set_allow_sprop b)
 let sprop_allowed () = Environ.sprop_allowed (env())
 let export_private_constants ~in_section cd = globalize (Safe_typing.export_private_constants ~in_section cd)
 let add_constant ~side_effect ~in_section id d = globalize (Safe_typing.add_constant ~side_effect ~in_section (i2l id) d)
-let add_recipe ~in_section id d = globalize (Safe_typing.add_recipe ~in_section (i2l id) d)
 let add_mind id mie = globalize (Safe_typing.add_mind (i2l id) mie)
 let add_modtype id me inl = globalize (Safe_typing.add_modtype (i2l id) me inl)
 let add_module id me inl = globalize (Safe_typing.add_module (i2l id) me inl)
 let add_include me ismod inl = globalize (Safe_typing.add_include me ismod inl)
 
 let open_section ~poly = globalize0 (Safe_typing.open_section ~poly)
-let close_section fs =
-  (* TODO: use globalize0_with_summary *)
-  Summary.unfreeze_summaries fs;
-  let env = Safe_typing.close_section (safe_env ()) in
-  GlobalSafeEnv.set_safe_env env
+let close_section fs = globalize0_with_summary fs Safe_typing.close_section
 
 let start_module id = globalize (Safe_typing.start_module (i2l id))
 let start_modtype id = globalize (Safe_typing.start_modtype (i2l id))
