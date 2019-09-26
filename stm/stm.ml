@@ -1743,9 +1743,9 @@ end = struct (* {{{ *)
           assert (Univ.ContextSet.is_empty uctx)
         in
         let pr = Constr.hcons pr in
-        let (ci, dummy) = p.(bucket) in
+        let dummy = p.(bucket) in
         let () = assert (Option.is_empty dummy) in
-        p.(bucket) <- ci, Some (pr, priv);
+        p.(bucket) <- Some (pr, priv);
         Univ.ContextSet.union cst uc, false
 
   let check_task name l i =

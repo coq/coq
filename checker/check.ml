@@ -359,7 +359,7 @@ let intern_from_file ~intern_mode (dir, f) =
       (* Verification of the unmarshalled values *)
       validate !Flags.debug Values.v_libsum sd;
       validate !Flags.debug Values.v_lib md;
-      validate !Flags.debug Values.(Opt v_opaques) table;
+      validate !Flags.debug Values.(Opt v_opaquetable) table;
       Flags.if_verbose chk_pp (str" done]" ++ fnl ());
       let digest =
         if opaque_csts <> None then Safe_typing.Dvivo (digest,udg)

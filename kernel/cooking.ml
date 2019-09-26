@@ -239,7 +239,7 @@ let cook_constant { from = cb; info } =
   | Undef _ as x -> x
   | Def cs -> Def (Mod_subst.from_val (map (Mod_subst.force_constr cs)))
   | OpaqueDef o ->
-    OpaqueDef (Opaqueproof.discharge_direct_opaque info o)
+    OpaqueDef (Opaqueproof.discharge_opaque info o)
   | Primitive _ -> CErrors.anomaly (Pp.str "Primitives cannot be cooked")
   in
   let const_hyps =

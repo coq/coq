@@ -591,17 +591,6 @@ let add_constant_aux ~in_section senv (kn, cb) =
   let l = Constant.label kn in
   (* This is the only place where we hashcons the contents of a constant body *)
   let cb = if in_section then cb else Declareops.hcons_const_body cb in
-  let cb, otab = match cb.const_body with
-    | OpaqueDef lc when not in_section ->
-      (* In coqc, opaque constants outside sections will be stored
-         indirectly in a specific table *)
-      let od, otab =
-        Opaqueproof.turn_indirect
-          (library_dp_of_senv senv) lc (Environ.opaque_tables senv.env) in
-      { cb with const_body = OpaqueDef od }, otab
-    | _ -> cb, (Environ.opaque_tables senv.env)
-  in
-  let senv = { senv with env = Environ.set_opaque_tables senv.env otab } in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
   let senv'' = match cb.const_body with
     | Undef (Some lev) ->
@@ -805,17 +794,25 @@ let export_side_effects mb env (b_ctx, eff) =
      in
        translate_seff trusted seff [] env
 
+let push_opaque_proof pf senv =
+  let o, otab = Opaqueproof.create (library_dp_of_senv senv) pf (Environ.opaque_tables senv.env) in
+  let senv = { senv with env = Environ.set_opaque_tables senv.env otab } in
+  senv, o
+
 let export_private_constants ~in_section ce senv =
   let exported, ce = export_side_effects senv.revstruct senv.env ce in
-  let map univs p =
-    let local = match univs with
+  let map senv (kn, c) = match c.const_body with
+  | OpaqueDef p ->
+    let local = match c.const_universes with
     | Monomorphic _ -> Opaqueproof.PrivateMonomorphic Univ.ContextSet.empty
     | Polymorphic auctx -> Opaqueproof.PrivatePolymorphic (Univ.AUContext.size auctx, Univ.ContextSet.empty)
     in
-    Opaqueproof.create (Future.from_val (p, local))
+    let senv, o = push_opaque_proof (Future.from_val (p, local)) senv in
+    senv, (kn, { c with const_body = OpaqueDef o })
+  | Def _ | Undef _ | Primitive _ as body ->
+    senv, (kn, { c with const_body = body })
   in
-  let map (kn, cb) = (kn, map_constant (fun c -> map cb.const_universes c) cb) in
-  let bodies = List.map map exported in
+  let senv, bodies = List.fold_left_map map senv exported in
   let exported = List.map (fun (kn, _) -> kn) exported in
   (* No delayed constants to declare *)
   let senv = List.fold_left (add_constant_aux ~in_section) senv bodies in
@@ -836,20 +833,25 @@ let add_constant (type a) ~(side_effect : a effect_entry) ~in_section l decl sen
         Term_typing.translate_constant Term_typing.Pure senv.env kn ce
     in
   let senv =
-    let delayed_cst = match cb.const_body with
-    | OpaqueDef fc when not (Declareops.constant_is_polymorphic cb) ->
-      let map (_, u) = match u with
-      | Opaqueproof.PrivateMonomorphic ctx -> ctx
-      | Opaqueproof.PrivatePolymorphic _ -> assert false
+    let senv, cb, delayed_cst = match cb.const_body with
+    | OpaqueDef fc ->
+      let senv, o = push_opaque_proof fc senv in
+      let delayed_cst =
+        if not (Declareops.constant_is_polymorphic cb) then
+          let map (_, u) = match u with
+          | Opaqueproof.PrivateMonomorphic ctx -> ctx
+          | Opaqueproof.PrivatePolymorphic _ -> assert false
+          in
+          let fc = Future.chain fc map in
+          match Future.peek_val fc with
+          | None -> [Later fc]
+          | Some c -> [Now c]
+        else []
       in
-      let fc = Future.chain fc map in
-      begin match Future.peek_val fc with
-      | None -> [Later fc]
-      | Some c -> [Now c]
-      end
-    | Undef _ | Def _ | Primitive _ | OpaqueDef _ -> []
+      senv, { cb with const_body = OpaqueDef o }, delayed_cst
+    | Undef _ | Def _ | Primitive _ as body ->
+      senv, { cb with const_body = body }, []
     in
-    let cb = map_constant (fun c -> Opaqueproof.create c) cb in
     let senv = add_constant_aux ~in_section senv (kn, cb) in
     add_constraints_list delayed_cst senv
   in
@@ -985,6 +987,9 @@ let close_section senv =
      that are going to be replayed. Those that are not forced are not readded
      by {!add_constant_aux}. *)
   let { rev_env = env; rev_univ = univ; rev_objlabels = objlabels } = revert in
+  (* Do not revert the opaque table, the discharged opaque constants are
+     referring to it. *)
+  let env = Environ.set_opaque_tables env (Environ.opaque_tables senv.env) in
   let senv = { senv with env; revstruct; sections; univ; objlabels; } in
   (* Second phase: replay the discharged section contents *)
   let senv = add_constraints (Now cstrs) senv in
