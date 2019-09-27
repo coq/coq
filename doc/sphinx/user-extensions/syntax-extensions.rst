@@ -267,31 +267,30 @@ The second, more powerful control on printing is by using the format
 A *format* is an extension of the string denoting the notation with
 the possible following elements delimited by single quotes:
 
-- extra spaces are translated into simple spaces
+- tokens of the form ``'/ '`` are translated into breaking points.  If
+  there is a line break, indents the number of spaces appearing after the
+  “``/``” (no indentation in the example)
 
-- tokens of the form ``'/ '`` are translated into breaking point, in
-  case a line break occurs, an indentation of the number of spaces after
-  the “ ``/``” is applied (2 spaces in the given example)
-
-- token of the form ``'//'`` force writing on a new line
+- tokens of the form ``'//'`` force writing on a new line
 
 - well-bracketed pairs of tokens of the form ``'[ '`` and ``']'`` are
-  translated into printing boxes; in case a line break occurs, an extra
-  indentation of the number of spaces given after the “ ``[``” is applied
-  (4 spaces in the example)
+  translated into printing boxes; if there is a line break, an extra
+  indentation of the number of spaces after the “``[``” is applied
 
 - well-bracketed pairs of tokens of the form ``'[hv '`` and ``']'`` are
   translated into horizontal-or-else-vertical printing boxes; if the
   content of the box does not fit on a single line, then every breaking
-  point forces a newline and an extra indentation of the number of
-  spaces given after the “ ``[``” is applied at the beginning of each
-  newline (3 spaces in the example)
+  point forces a new line and an extra indentation of the number of
+  spaces after the “``[hv``” is applied at the beginning of each new line
 
 - well-bracketed pairs of tokens of the form ``'[v '`` and ``']'`` are
   translated into vertical printing boxes; every breaking point forces a
-  newline, even if the line is large enough to display the whole content
-  of the box, and an extra indentation of the number of spaces given
-  after the “``[``” is applied at the beginning of each newline
+  new line, even if the line is large enough to display the whole content
+  of the box, and an extra indentation of the number of spaces
+  after the “``[v``” is applied at the beginning of each new line (3 spaces
+  in the example)
+
+- extra spaces in other tokens are preserved in the output
 
 Notations disappear when a section is closed. No typing of the denoted
 expression is performed at definition time. Type checking is done only
@@ -592,7 +591,7 @@ placeholder being the nesting point. In the innermost occurrence of the
 nested iterating pattern, the second placeholder is finally filled with the
 terminating expression.
 
-In the example above, the iterator :math:`φ([~]_E , [~]_I)` is :math:`cons [~]_E [~]_I`
+In the example above, the iterator :math:`φ([~]_E , [~]_I)` is :math:`cons [~]_E\, [~]_I`
 and the terminating expression is ``nil``. Here are other examples:
 
 .. coqtop:: in

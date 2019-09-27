@@ -368,7 +368,7 @@ We can check if a tactic made progress with:
    :name: progress
 
    :n:`@ltac_expr` is evaluated to v which must be a tactic value. The tactic value ``v``
-   is applied to each focued subgoal independently. If the application of ``v``
+   is applied to each focused subgoal independently. If the application of ``v``
    to one of the focused subgoal produced subgoals equal to the initial
    goals (up to syntactical equality), then an error of level 0 is raised.
 

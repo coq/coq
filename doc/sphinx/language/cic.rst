@@ -1147,7 +1147,7 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
    Polymorphism`.
 
    An inductive type can be forced to be template polymorphic using the
-   ``template`` attribute: it should then fullfill the criterion to
+   ``template`` attribute: it should then fulfill the criterion to
    be template polymorphic or an error is raised.
 
 .. exn:: Inductive @ident cannot be made template polymorphic.
