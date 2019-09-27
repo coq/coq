@@ -507,17 +507,45 @@ underscore or by omitting the annotation to a polymorphic definition.
 Universe polymorphism and sections
 ----------------------------------
 
-The universe polymorphic or monomorphic status is
-attached to each individual section, and all term or universe declarations
-contained inside must respect it, as described below. It is possible to nest a
-polymorphic section inside a monomorphic one, but the converse is not allowed.
+:cmd:`Variables`, :cmd:`Context`, :cmd:`Universe` and
+:cmd:`Constraint` in a section support polymorphism. This means that
+the universe variables and their associated constraints are discharged
+polymorphically over definitions that use them. In other words, two
+definitions in the section sharing a common variable will both get
+parameterized by the universes produced by the variable declaration.
+This is in contrast to a “mononorphic” variable which introduces
+global universes and constraints, making the two definitions depend on
+the *same* global universes associated to the variable.
 
-:cmd:`Variables`, :cmd:`Context`, :cmd:`Universe` and :cmd:`Constraint` in a section support
-polymorphism. This means that the universe variables and their associated
-constraints are discharged polymorphically over definitions that use
-them. In other words, two definitions in the section sharing a common
-variable will both get parameterized by the universes produced by the
-variable declaration. This is in contrast to a “mononorphic” variable
-which introduces global universes and constraints, making the two
-definitions depend on the *same* global universes associated to the
-variable.
+It is possible to mix universe polymorphism and monomorphism in
+sections, except in the following ways:
+
+- no monomorphic constraint may refer to a polymorphic universe:
+
+  .. coqtop:: all reset
+
+     Section Foo.
+
+       Polymorphic Universe i.
+       Fail Constraint i = i.
+
+  This includes constraints implictly declared by commands such as
+  :cmd:`Variable`, which may as a such need to be used with universe
+  polymorphism activated (locally by attribute or globally by option):
+
+  .. coqtop:: all
+
+     Fail Variable A : (Type@{i} : Type).
+     Polymorphic Variable A : (Type@{i} : Type).
+
+  (in the above example the anonymous :g:`Type` constrains polymorphic
+  universe :g:`i` to be strictly smaller.)
+
+- no monomorphic constant or inductive may be declared if polymorphic
+  universes or universe constraints are present.
+
+These restrictions are required in order to produce a sensible result
+when closing the section (the requirement on constants and inductives
+is stricter than the one on constraints, because constants and
+inductives are abstracted by *all* the section's polymorphic universes
+and constraints).

@@ -109,7 +109,7 @@ let add_modtype id me inl = globalize (Safe_typing.add_modtype (i2l id) me inl)
 let add_module id me inl = globalize (Safe_typing.add_module (i2l id) me inl)
 let add_include me ismod inl = globalize (Safe_typing.add_include me ismod inl)
 
-let open_section ~poly = globalize0 (Safe_typing.open_section ~poly)
+let open_section () = globalize0 Safe_typing.open_section
 let close_section fs = globalize0_with_summary fs Safe_typing.close_section
 
 let start_module id = globalize (Safe_typing.start_module (i2l id))

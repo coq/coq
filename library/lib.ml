@@ -464,8 +464,8 @@ let section_instance = let open GlobRef in function
 
 (*************)
 (* Sections. *)
-let open_section ~poly id =
-  let () = Global.open_section ~poly in
+let open_section id =
+  let () = Global.open_section () in
   let opp = !lib_state.path_prefix in
   let obj_dir = add_dirpath_suffix opp.Nametab.obj_dir id in
   let prefix = Nametab.{ obj_dir; obj_mp = opp.obj_mp; obj_sec = add_dirpath_suffix opp.obj_sec id } in

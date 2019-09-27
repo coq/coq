@@ -134,7 +134,7 @@ val check_engagement : Environ.env -> Declarations.set_predicativity -> unit
 
 (** {6 Interactive section functions } *)
 
-val open_section : poly:bool -> safe_transformer0
+val open_section : safe_transformer0
 
 val close_section : safe_transformer0
 

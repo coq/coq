@@ -21,16 +21,13 @@ val empty : 'a t
 val is_empty : 'a t -> bool
 (** Checks whether there is no opened section *)
 
-val is_polymorphic : 'a t -> bool
-(** Checks whether last opened section is polymorphic *)
-
 (** {6 Manipulating sections} *)
 
 type section_entry =
 | SecDefinition of Constant.t
 | SecInductive of MutInd.t
 
-val open_section : poly:bool -> custom:'a -> 'a t -> 'a t
+val open_section : custom:'a -> 'a t -> 'a t
 (** Open a new section with the provided universe polymorphic status. Sections
     can be nested, with the proviso that polymorphic sections cannot appear
     inside a monomorphic one. A custom data can be attached to this section,

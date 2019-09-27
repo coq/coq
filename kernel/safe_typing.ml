@@ -334,8 +334,6 @@ type constraints_addition =
 
 let push_context_set poly cst senv =
   if Univ.ContextSet.is_empty cst then senv
-  else if Section.is_polymorphic senv.sections then
-    CErrors.user_err (Pp.str "Cannot add global universe constraints inside a polymorphic section.")
   else
     let sections =
       if Section.is_empty senv.sections then senv.sections
@@ -947,13 +945,13 @@ let add_module l me inl senv =
 
 (** {6 Interactive sections *)
 
-let open_section ~poly senv =
+let open_section senv =
   let custom = {
     rev_env = senv.env;
     rev_univ = senv.univ;
     rev_objlabels = senv.objlabels;
   } in
-  let sections = Section.open_section ~poly ~custom senv.sections in
+  let sections = Section.open_section ~custom senv.sections in
   { senv with sections }
 
 let close_section senv =
@@ -962,7 +960,6 @@ let close_section senv =
   let env0 = senv.env in
   (* First phase: revert the declarations added in the section *)
   let sections, entries, cstrs, revert = Section.close_section sections0 in
-  let () = assert (not (Section.is_polymorphic sections0) || Univ.ContextSet.is_empty cstrs) in
   let rec pop_revstruct accu entries revstruct = match entries, revstruct with
   | [], revstruct -> accu, revstruct
   | _ :: _, [] ->
