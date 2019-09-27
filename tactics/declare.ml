@@ -35,11 +35,6 @@ type import_status = ImportDefaultBehavior | ImportNeedQualified
 
 (** Monomorphic universes need to survive sections. *)
 
-let input_universe_context : Univ.ContextSet.t -> Libobject.obj =
-  declare_object @@ local_object "Monomorphic section universes"
-    ~cache:(fun (na, uctx) -> Global.push_context_set false uctx)
-    ~discharge:(fun (_, x) -> Some x)
-
 let name_instance inst =
   let map lvl = match Univ.Level.name lvl with
     | None -> (* Having Prop/Set/Var as section universes makes no sense *)
@@ -65,7 +60,7 @@ let declare_universe_context ~poly ctx =
     let nas = name_instance (Univ.UContext.instance uctx) in
     Global.push_section_context (nas, uctx)
   else
-    Lib.add_anonymous_leaf (input_universe_context ctx)
+    Global.push_context_set false ctx
 
 (** Declaration of constants and parameters *)
 
