@@ -145,11 +145,8 @@ let coerce_to_constr_context v =
   else raise (CannotCoerceTo "a term context")
 
 let is_intro_pattern v =
-  if has_type v (topwit wit_intropattern [@warning "-3"]) then
-    Some (out_gen (topwit wit_intropattern [@warning "-3"]) v).CAst.v
-  else
-  if has_type v (topwit wit_simple_intropattern) then
-    Some (out_gen (topwit wit_simple_intropattern) v).CAst.v
+  if has_type v (topwit wit_intro_pattern) then
+    Some (out_gen (topwit wit_intro_pattern) v).CAst.v
   else
     None
 
