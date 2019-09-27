@@ -111,7 +111,7 @@ Other tokens
   tokens defined at any given time can vary because the :cmd:`Notation`
   command can define new tokens.  A :cmd:`Require` command may load more notation definitions,
   while the end of a :cmd:`Section` may remove notations.  Some notations
-  are defined in the basic library (see :ref:`thecoqlibrary`) and are normallly
+  are defined in the basic library (see :ref:`thecoqlibrary`) and are normally
   loaded automatically at startup time.
 
   Here are the character sequences that Coq directly defines as tokens
@@ -395,7 +395,7 @@ stands for :n:`let @ident := fun {+ @binder} => @term in @term’`.
 Definition by case analysis
 ---------------------------
 
-Objects of inductive types can be destructurated by a case-analysis
+Objects of inductive types can be destructured by a case-analysis
 construction called *pattern matching* expression. A pattern matching
 expression is used to analyze the structure of an inductive object and
 to apply specific treatments accordingly.
@@ -572,7 +572,7 @@ The Vernacular
    assertion          : `assertion_keyword` `ident` [`binders`] : `term` .
    assertion_keyword  : Theorem | Lemma
                       : Remark | Fact
-                      : Corollary | Proposition
+                      : Corollary | Property | Proposition
                       : Definition | Example
    proof              : Proof . … Qed .
                       : Proof . … Defined .
