@@ -705,9 +705,6 @@ library:ci-unimath:
 library:ci-verdi-raft:
   extends: .ci-template-flambda
 
-library:ci-vst:
-  extends: .ci-template-flambda
-
 # Plugins are by definition the projects that depend on Coq's ML API
 
 plugin:ci-aac_tactics:
