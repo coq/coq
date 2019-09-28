@@ -19,10 +19,16 @@ type universe_decl_expr = (lident list, Glob_term.glob_constraint list) UState.g
 type ident_decl = lident * universe_decl_expr option
 type name_decl = lname * universe_decl_expr option
 
+type notation_with_optional_scope = LastLonelyNotation | NotationInScope of string
 type notation_entry = InConstrEntry | InCustomEntry of string
 type notation_entry_level = InConstrEntrySomeLevel | InCustomEntryLevel of string * int
 type notation_key = string
+
+(* A notation associated to a given parsing rule *)
 type notation = notation_entry_level * notation_key
+
+(* A notation associated to a given interpretation *)
+type specific_notation = notation_with_optional_scope * notation
 
 type 'a or_by_notation_r =
   | AN of 'a
@@ -78,7 +84,7 @@ type cases_pattern_expr_r =
   (** [CPatCstr (_, c, Some l1, l2)] represents [(@ c l1) l2] *)
   | CPatAtom of qualid option
   | CPatOr   of cases_pattern_expr list
-  | CPatNotation of notation * cases_pattern_notation_substitution
+  | CPatNotation of notation_with_optional_scope option * notation * cases_pattern_notation_substitution
     * cases_pattern_expr list (** CPatNotation (_, n, l1 ,l2) represents
                                   (notation n applied with substitution l1)
                                   applied to arguments l2 *)
@@ -119,7 +125,7 @@ and constr_expr_r =
   | CEvar   of Glob_term.existential_name * (Id.t * constr_expr) list
   | CSort   of Glob_term.glob_sort
   | CCast   of constr_expr * constr_expr Glob_term.cast_type
-  | CNotation of notation * constr_notation_substitution
+  | CNotation of notation_with_optional_scope option * notation * constr_notation_substitution
   | CGeneralization of Glob_term.binding_kind * abstraction_kind option * constr_expr
   | CPrim of prim_token
   | CDelimiters of string * constr_expr

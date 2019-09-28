@@ -226,7 +226,7 @@ let contract_curly_brackets ntn (l,ll,bl,bll) =
   let ntn' = ref ntn in
   let rec contract_squash n = function
     | [] -> []
-    | { CAst.v = CNotation ((InConstrEntrySomeLevel,"{ _ }"),([a],[],[],[])) } :: l ->
+    | { CAst.v = CNotation (None,(InConstrEntrySomeLevel,"{ _ }"),([a],[],[],[])) } :: l ->
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (a::l)
     | a :: l ->
@@ -242,7 +242,7 @@ let contract_curly_brackets_pat ntn (l,ll) =
   let ntn' = ref ntn in
   let rec contract_squash n = function
     | [] -> []
-    | { CAst.v = CPatNotation ((InConstrEntrySomeLevel,"{ _ }"),([a],[]),[]) } :: l ->
+    | { CAst.v = CPatNotation (None,(InConstrEntrySomeLevel,"{ _ }"),([a],[]),[]) } :: l ->
         ntn' := expand_notation_string !ntn' n;
         contract_squash n (a::l)
     | a :: l ->
@@ -1719,13 +1719,13 @@ let drop_notations_pattern looked_for genv =
         (* but not scopes in expl_pl *)
         let (argscs1,_) = find_remaining_scopes expl_pl pl g in
         DAst.make ?loc @@ RCPatCstr (g, List.map2 (in_pat_sc scopes) argscs1 expl_pl @ List.map (in_pat false scopes) pl, [])
-    | CPatNotation ((InConstrEntrySomeLevel,"- _"),([a],[]),[]) when is_non_zero_pat a ->
+    | CPatNotation (_,(InConstrEntrySomeLevel,"- _"),([a],[]),[]) when is_non_zero_pat a ->
       let p = match a.CAst.v with CPatPrim (Numeral (_, p)) -> p | _ -> assert false in
       let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc (ensure_kind false loc) (Numeral (SMinus,p)) scopes in
       rcp_of_glob scopes pat
-    | CPatNotation ((InConstrEntrySomeLevel,"( _ )"),([a],[]),[]) ->
+    | CPatNotation (_,(InConstrEntrySomeLevel,"( _ )"),([a],[]),[]) ->
       in_pat top scopes a
-    | CPatNotation (ntn,fullargs,extrargs) ->
+    | CPatNotation (_,ntn,fullargs,extrargs) ->
       let ntn,(terms,termlists) = contract_curly_brackets_pat ntn fullargs in
       let ((ids',c),df) = Notation.interp_notation ?loc ntn scopes in
       let (terms,termlists) = split_by_type_pat ?loc ids' (terms,termlists) in
@@ -2035,11 +2035,11 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         DAst.make ?loc @@
         GLetIn (na.CAst.v, inc1, int,
           intern_restart_binders (push_name_env ntnvars (impls_term_list 1 inc1) env na) c2)
-    | CNotation ((InConstrEntrySomeLevel,"- _"), ([a],[],[],[])) when is_non_zero a ->
+    | CNotation (_,(InConstrEntrySomeLevel,"- _"), ([a],[],[],[])) when is_non_zero a ->
       let p = match a.CAst.v with CPrim (Numeral (_, p)) -> p | _ -> assert false in
        intern env (CAst.make ?loc @@ CPrim (Numeral (SMinus,p)))
-    | CNotation ((InConstrEntrySomeLevel,"( _ )"),([a],[],[],[])) -> intern env a
-    | CNotation (ntn,args) ->
+    | CNotation (_,(InConstrEntrySomeLevel,"( _ )"),([a],[],[],[])) -> intern env a
+    | CNotation (_,ntn,args) ->
         intern_notation intern env ntnvars loc ntn args
     | CGeneralization (b,a,c) ->
         intern_generalization intern env ntnvars loc b a c
@@ -2070,7 +2070,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
             | CRef (ref,us) ->
                intern_applied_reference ~isproj intern env
                  (Environ.named_context_val globalenv) lvar us args ref
-            | CNotation (ntn,([],[],[],[])) ->
+            | CNotation (_,ntn,([],[],[],[])) ->
                 assert (Option.is_empty isproj);
                 let c = intern_notation intern env ntnvars loc ntn ([],[],[],[]) in
                 let x, impl, scopes, l = find_appl_head_data c in

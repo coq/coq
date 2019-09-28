@@ -163,6 +163,10 @@ Grammar constr` is at level 100. To avoid ``x : A`` being parsed as a type cast,
 it is necessary to put ``x`` at a level below 100, typically 99. Hence, a correct
 definition is the following:
 
+.. coqtop:: none
+
+   Reset Initial.
+
 .. coqtop:: all
 
    Notation "{ x : A | P }" := (sig A (fun x => P)) (x at level 99).

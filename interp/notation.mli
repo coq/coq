@@ -25,11 +25,15 @@ val notation_entry_eq : notation_entry -> notation_entry -> bool
 val notation_entry_level_eq : notation_entry_level -> notation_entry_level -> bool
 (** Equality on [notation_entry_level]. *)
 
+val notation_with_optional_scope_eq : notation_with_optional_scope -> notation_with_optional_scope -> bool
+
 val notation_eq : notation -> notation -> bool
 (** Equality on [notation]. *)
 
 module NotationSet : Set.S with type elt = notation
 module NotationMap : CMap.ExtS with type key = notation and module Set := NotationSet
+module SpecificNotationSet : Set.S with type elt = specific_notation
+module SpecificNotationMap : CMap.ExtS with type key = specific_notation and module Set := SpecificNotationSet
 
 (** {6 Scopes } *)
 (** A scope is a set of interpreters for symbols + optional
@@ -213,7 +217,7 @@ val availability_of_prim_token :
 
 (** Binds a notation in a given scope to an interpretation *)
 type interp_rule =
-  | NotationRule of scope_name option * notation
+  | NotationRule of specific_notation
   | SynDefRule of KerName.t
 
 val declare_notation_interpretation : notation -> scope_name option ->
@@ -236,7 +240,7 @@ val uninterp_ind_pattern_notations : inductive -> notation_rule list
 (** Test if a notation is available in the scopes
    context [scopes]; if available, the result is not None; the first
    argument is itself not None if a delimiters is needed *)
-val availability_of_notation : scope_name option * notation -> subscopes ->
+val availability_of_notation : specific_notation -> subscopes ->
   (scope_name option * delimiters option) option
 
 (** {6 Miscellaneous} *)
@@ -299,8 +303,8 @@ val locate_notation : (glob_constr -> Pp.t) -> notation_key ->
 
 val pr_visibility: (glob_constr -> Pp.t) -> scope_name option -> Pp.t
 
-type entry_coercion = notation list
-val declare_entry_coercion : notation -> notation_entry_level -> unit
+type entry_coercion = (notation_with_optional_scope * notation) list
+val declare_entry_coercion : specific_notation -> notation_entry_level -> unit
 val availability_of_entry_coercion : notation_entry_level -> notation_entry_level -> entry_coercion option
 
 val declare_custom_entry_has_global : string -> int -> unit

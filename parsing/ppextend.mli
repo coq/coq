@@ -41,11 +41,14 @@ type unparsing =
 
 type unparsing_rule = unparsing list * precedence
 type extra_unparsing_rules = (string * string) list
-val declare_notation_rule : notation -> extra:extra_unparsing_rules -> unparsing_rule -> notation_grammar -> unit
-val find_notation_printing_rule : notation -> unparsing_rule
-val find_notation_extra_printing_rules : notation -> extra_unparsing_rules
-val find_notation_parsing_rules : notation -> notation_grammar
-val add_notation_extra_printing_rule : notation -> string -> string -> unit
 
-(** Returns notations with defined parsing/printing rules *)
-val get_defined_notations : unit -> notation list
+val unparsing_eq : unparsing -> unparsing -> bool
+
+val declare_generic_notation_printing_rules : notation -> reserved:bool -> extra:extra_unparsing_rules -> unparsing_rule -> unit
+val declare_specific_notation_printing_rules : specific_notation -> extra:extra_unparsing_rules -> unparsing_rule -> unit
+val has_generic_notation_printing_rule : notation -> bool
+val find_generic_notation_printing_rule : notation -> unparsing_rule * bool * extra_unparsing_rules
+val find_specific_notation_printing_rule : specific_notation -> unparsing_rule * extra_unparsing_rules
+val find_notation_printing_rule : notation_with_optional_scope option -> notation -> unparsing_rule
+val find_notation_extra_printing_rules : notation_with_optional_scope option -> notation -> extra_unparsing_rules
+val add_notation_extra_printing_rule : notation -> string -> string -> unit

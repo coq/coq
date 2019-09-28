@@ -133,8 +133,8 @@ let tag_var = tag Tag.variable
     in
     aux unps
 
-  let pr_notation pr pr_patt pr_binders s env =
-    let unpl, level = find_notation_printing_rule s in
+  let pr_notation pr pr_patt pr_binders which s env =
+    let unpl, level = find_notation_printing_rule which s in
     print_hunks level pr pr_patt pr_binders env unpl, level
 
   let pr_delimiters key strm =
@@ -279,11 +279,11 @@ let tag_var = tag Tag.variable
         let pp p = hov 0 (pr_patt mt (lpator,Any) p) in
         surround (hov 0 (prlist_with_sep pr_spcbar pp pl)), lpator
 
-      | CPatNotation ((_,"( _ )"),([p],[]),[]) ->
+      | CPatNotation (_,(_,"( _ )"),([p],[]),[]) ->
         pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom
 
-      | CPatNotation (s,(l,ll),args) ->
-        let strm_not, l_not = pr_notation (pr_patt mt) (fun _ _ -> mt ()) (fun _ _ _ -> mt()) s (l,ll,[],[]) in
+      | CPatNotation (which,s,(l,ll),args) ->
+        let strm_not, l_not = pr_notation (pr_patt mt) (fun _ _ -> mt ()) (fun _ _ _ -> mt()) which s (l,ll,[],[]) in
         (if List.is_empty args||prec_less l_not (lapp,L) then strm_not else surround strm_not)
         ++ prlist (pr_patt spc (lapp,L)) args, if not (List.is_empty args) then lapp else l_not
 
@@ -650,10 +650,10 @@ let tag_var = tag Tag.variable
                     | CastCoerce -> str ":>"),
           lcast
         )
-      | CNotation ((_,"( _ )"),([t],[],[],[])) ->
+      | CNotation (_,(_,"( _ )"),([t],[],[],[])) ->
         return (pr (fun()->str"(") (max_int,L) t ++ str")", latom)
-      | CNotation (s,env) ->
-        pr_notation (pr mt) pr_patt (pr_binders_gen (pr mt ltop)) s env
+      | CNotation (which,s,env) ->
+        pr_notation (pr mt) pr_patt (pr_binders_gen (pr mt ltop)) which s env
       | CGeneralization (bk,ak,c) ->
         return (pr_generalization bk ak (pr mt ltop c), latom)
       | CPrim p ->
