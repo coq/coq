@@ -1332,9 +1332,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name (gls_type
     let lemma = build_proof env (Evd.from_env env) start_tac end_tac in
     Lemmas.save_lemma_proved ~lemma ~opaque:opacity ~idopt:None
   in
-  let info = Lemmas.Info.make ~hook:(DeclareDef.Hook.make hook)
-      ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior) ~kind:(Decls.(IsProof Lemma))
-      () in
+  let info = Lemmas.Info.make ~hook:(DeclareDef.Hook.make hook) () in
   let lemma = Lemmas.start_lemma
       ~name:na
       ~poly:false (* FIXME *) ~info
@@ -1376,7 +1374,7 @@ let com_terminate
     nb_args ctx
     hook =
   let start_proof env ctx tac_start tac_end =
-    let info = Lemmas.Info.make ~hook ~scope:(DeclareDef.Global ImportDefaultBehavior) ~kind:Decls.(IsProof Lemma) () in
+    let info = Lemmas.Info.make ~hook () in
     let lemma = Lemmas.start_lemma ~name:thm_name
         ~poly:false (*FIXME*)
         ~info

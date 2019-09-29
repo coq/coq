@@ -397,8 +397,8 @@ let deps_remaining obls deps =
     deps []
 
 
-let goal_kind = DeclareDef.(Global Declare.ImportNeedQualified, Decls.(IsDefinition Definition))
-let goal_proof_kind = DeclareDef.(Global Declare.ImportNeedQualified, Decls.(IsProof Lemma))
+let goal_kind = Decls.(IsDefinition Definition)
+let goal_proof_kind = Decls.(IsProof Lemma)
 
 let kind_of_obligation o =
   match o with
@@ -487,7 +487,8 @@ let rec solve_obligation prg num tac =
         ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) remaining));
   in
   let obl = subst_deps_obl obls obl in
-  let scope, kind = kind_of_obligation (snd obl.obl_status) in
+  let scope = DeclareDef.(Global Declare.ImportNeedQualified) in
+  let kind = kind_of_obligation (snd obl.obl_status) in
   let evd = Evd.from_ctx prg.prg_ctx in
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n oblset tac = auto_solve_obligations n ~oblset tac in
