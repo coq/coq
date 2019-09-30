@@ -178,6 +178,7 @@ exception UniversesDiffer
 
 let drop_weak_constraints = ref false
 
+
 let process_universe_constraints ctx cstrs =
   let open UnivSubst in
   let open UnivProblem in
@@ -236,22 +237,23 @@ let process_universe_constraints ctx cstrs =
       else 
           match cst with
           | ULe (l, r) ->
-            if UGraph.check_leq univs l r then
-              (* Keep Prop/Set <= var around if var might be instantiated by prop or set
-                 later. *)
-              match Universe.level l, Universe.level r with
-              | Some l, Some r ->
-                Constraint.add (l, Le, r) local
-              | _ -> local
-            else
-              begin match Universe.level r with
-              | None -> user_err Pp.(str "Algebraic universe on the right")
-              | Some r' ->
-                if Level.is_small r' then
+            begin match Univ.Universe.level r with
+            | None ->
+              if UGraph.check_leq univs l r then local
+              else user_err Pp.(str "Algebraic universe on the right")
+            | Some r' ->
+              if Level.is_small r' then
                   if not (Universe.is_levels l)
                   then
+                    if UGraph.check_leq univs l r then local
+                    else
                     raise (UniverseInconsistency (Le, l, r, None))
                   else
+                    if UGraph.check_leq univs l r then match Univ.Universe.level l with
+                    | Some l ->
+                      Univ.Constraint.add (l, Le, r') local
+                    | None -> local
+                    else
                     let levels = Universe.levels l in
                     let fold l' local =
                       let l = Universe.make l' in
@@ -260,8 +262,12 @@ let process_universe_constraints ctx cstrs =
                       else raise (UniverseInconsistency (Le, l, r, None))
                     in
                     LSet.fold fold levels local
-                else
-                  enforce_leq l r local
+              else
+                match Univ.Universe.level l with
+                | Some l ->
+                  Univ.Constraint.add (l, Le, r') local
+                | None ->
+                  if UGraph.check_leq univs l r then local else enforce_leq l r local
               end
           | ULub (l, r) ->
               equalize_variables true (Universe.make l) l (Universe.make r) r local
