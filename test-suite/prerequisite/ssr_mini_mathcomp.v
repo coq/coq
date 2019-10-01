@@ -196,7 +196,7 @@ Definition clone_subType U v :=
 
 Variable sT : subType.
 
-CoInductive Sub_spec : sT -> Type := SubSpec x Px : Sub_spec (Sub x Px).
+Variant Sub_spec : sT -> Type := SubSpec x Px : Sub_spec (Sub x Px).
 
 Lemma SubP u : Sub_spec u.
 Proof. by case: sT Sub_spec SubSpec u => T' _ C rec /= _. Qed.
@@ -209,7 +209,7 @@ Definition insub x :=
 
 Definition insubd u0 x := odflt u0 (insub x).
 
-CoInductive insub_spec x : option sT -> Type :=
+Variant insub_spec x : option sT -> Type :=
   | InsubSome u of P x & val u = x : insub_spec x (Some u)
   | InsubNone   of ~~ P x          : insub_spec x None.
 
@@ -568,7 +568,7 @@ Fixpoint nth s n {struct n} :=
 
 Fixpoint rcons s z := if s is x :: s' then x :: rcons s' z else [:: z].
 
-CoInductive last_spec : seq T -> Type :=
+Variant last_spec : seq T -> Type :=
   | LastNil        : last_spec [::]
   | LastRcons s x  : last_spec (rcons s x).
 
@@ -1292,7 +1292,7 @@ Open Scope big_scope.
 (* packages both in in a term in which i occurs; it also depends on the       *)
 (* iterated <op>, as this can give more information on the expected type of   *)
 (* the <general_term>, thus allowing for the insertion of coercions.          *)
-CoInductive bigbody R I := BigBody of I & (R -> R -> R) & bool & R.
+Variant bigbody R I := BigBody of I & (R -> R -> R) & bool & R.
 
 Definition applybig {R I} (body : bigbody R I) x :=
   let: BigBody _ op b v := body in if b then op v x else x.
