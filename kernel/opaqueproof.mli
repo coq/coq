@@ -63,7 +63,6 @@ type indirect_accessor = {
     indirect opaque accessor given as an argument. *)
 val force_proof : indirect_accessor -> opaquetab -> opaque -> constr * unit delayed_universes
 val force_constraints : indirect_accessor -> opaquetab -> opaque -> Univ.ContextSet.t
-val get_direct_constraints : opaque -> Univ.ContextSet.t Future.computation
 
 val subst_opaque : substitution -> opaque -> opaque
 
