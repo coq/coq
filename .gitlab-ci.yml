@@ -18,7 +18,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
-  CACHEKEY: "bionic_coq-V2019-07-09-V01"
+  CACHEKEY: "bionic_coq-V2019-09-20-V01"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -506,62 +506,6 @@ test-suite:egde:dune:dev:
       - _build/default/test-suite/logs
     # Gitlab doesn't support yet "expire_in: never" so we use the instance default
     # expire_in: never
-
-test-suite:edge+trunk+make:
-  stage: stage-1
-  dependencies: []
-  script:
-    - opam switch create 4.09.0 --empty
-    - eval $(opam env)
-    - opam repo add ocaml-beta https://github.com/ocaml/ocaml-beta-repository.git
-    - opam update
-    - opam install ocaml-variants=4.09.0+trunk
-    - opam pin add -n ocamlfind --dev
-    - opam install num
-    - eval $(opam env)
-    # We avoid problems with warnings:
-    - ./configure -profile devel -warn-error no
-    - make -j "$NJOBS" world
-    - make -j "$NJOBS" test-suite UNIT_TESTS=
-  variables:
-    OPAM_SWITCH: base
-  artifacts:
-    name: "$CI_JOB_NAME.logs"
-    when: always
-    paths:
-      - test-suite/logs
-    expire_in: 1 week
-  allow_failure: true
-  only: *full-ci
-
-test-suite:edge+trunk+dune:
-  stage: stage-1
-  dependencies: []
-  script:
-    - opam switch create 4.09.0 --empty
-    - eval $(opam env)
-    - opam repo add ocaml-beta https://github.com/ocaml/ocaml-beta-repository.git
-    - opam update
-    - opam install ocaml-variants=4.09.0+trunk
-    - opam pin add -n ocamlfind --dev
-    - opam pin add dune --dev # ounit lablgtk conf-gtksourceview
-    - opam install dune num
-    - eval $(opam env)
-    # We use the release profile to avoid problems with warnings
-    - make -f Makefile.dune trunk
-    - export COQ_UNIT_TEST=noop
-    - dune runtest --profile=ocaml409
-  variables:
-    OPAM_SWITCH: base
-  artifacts:
-    name: "$CI_JOB_NAME.logs"
-    when: always
-    paths:
-      - _build/log
-      - _build/default/test-suite/logs
-    expire_in: 1 week
-  allow_failure: true
-  only: *full-ci
 
 test-suite:base+async:
   extends: .test-suite-template
