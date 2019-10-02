@@ -244,9 +244,7 @@ let process_universe_constraints ctx cstrs =
             | Some r' ->
               if Level.is_small r' then
                   if not (Universe.is_levels l)
-                  then
-                    if UGraph.check_leq univs l r then local
-                    else
+                  then (* l contains a +1 and r=r' small so l <= r impossible *)
                     raise (UniverseInconsistency (Le, l, r, None))
                   else
                     if UGraph.check_leq univs l r then match Univ.Universe.level l with
