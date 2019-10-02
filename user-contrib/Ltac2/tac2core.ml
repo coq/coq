@@ -17,6 +17,28 @@ open Tac2expr
 open Tac2entries.Pltac
 open Proofview.Notations
 
+let constr_flags =
+  let open Pretyping in
+  {
+    use_typeclasses = true;
+    solve_unification_constraints = true;
+    fail_evar = true;
+    expand_evars = true;
+    program_mode = false;
+    polymorphic = false;
+  }
+
+let open_constr_no_classes_flags =
+  let open Pretyping in
+  {
+  use_typeclasses = false;
+  solve_unification_constraints = true;
+  fail_evar = false;
+  expand_evars = true;
+  program_mode = false;
+  polymorphic = false;
+  }
+
 (** Standard values *)
 
 module Value = Tac2ffi
@@ -587,6 +609,30 @@ let () = define3 "constr_in_context" ident constr closure begin fun id t c ->
     throw err_notfocussed
 end
 
+(** preterm -> constr *)
+let () = define1 "constr_pretype" (repr_ext val_preterm) begin fun c ->
+  let open Pretyping in
+  let open Ltac_pretype in
+  let pretype env sigma =
+  Proofview.V82.wrap_exceptions begin fun () ->
+    (* For now there are no primitives to create preterms with a non-empty
+       closure. I do not know whether [closed_glob_constr] is really the type
+       we want but it does not hurt in the meantime. *)
+    let { closure; term } = c in
+    let vars = {
+      ltac_constrs = closure.typed;
+      ltac_uconstrs = closure.untyped;
+      ltac_idents = closure.idents;
+      ltac_genargs = Id.Map.empty;
+    } in
+    let flags = constr_flags in
+    let sigma, t = understand_ltac flags env sigma vars WithoutTypeConstraint term in
+    let t = Value.of_constr t in
+    Proofview.Unsafe.tclEVARS sigma <*> Proofview.tclUNIT t
+  end in
+  pf_apply pretype
+end
+
 (** Patterns *)
 
 let empty_context = EConstr.mkMeta Constr_matching.special_meta
@@ -976,28 +1022,6 @@ end
 
 (** ML types *)
 
-let constr_flags () =
-  let open Pretyping in
-  {
-    use_typeclasses = true;
-    solve_unification_constraints = true;
-    fail_evar = true;
-    expand_evars = true;
-    program_mode = false;
-    polymorphic = false;
-  }
-
-let open_constr_no_classes_flags () =
-  let open Pretyping in
-  {
-  use_typeclasses = false;
-  solve_unification_constraints = true;
-  fail_evar = false;
-  expand_evars = true;
-  program_mode = false;
-  polymorphic = false;
-  }
-
 (** Embed all Ltac2 data into Values *)
 let to_lvar ist =
   let open Glob_ops in
@@ -1033,7 +1057,7 @@ let interp_constr flags ist c =
 
 let () =
   let intern = intern_constr in
-  let interp ist c = interp_constr (constr_flags ()) ist c in
+  let interp ist c = interp_constr constr_flags ist c in
   let print env c = str "constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
   let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
   let obj = {
@@ -1046,7 +1070,7 @@ let () =
 
 let () =
   let intern = intern_constr in
-  let interp ist c = interp_constr (open_constr_no_classes_flags ()) ist c in
+  let interp ist c = interp_constr open_constr_no_classes_flags ist c in
   let print env c = str "open_constr:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
   let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
   let obj = {
@@ -1090,6 +1114,27 @@ let () =
     ml_print = print;
   } in
   define_ml_object Tac2quote.wit_pattern obj
+
+let () =
+  let interp _ c =
+    let open Ltac_pretype in
+    let closure = {
+      idents = Id.Map.empty;
+      typed = Id.Map.empty;
+      untyped = Id.Map.empty;
+    } in
+    let c = { closure; term = c } in
+    return (Value.of_ext val_preterm c)
+  in
+  let subst subst c = Detyping.subst_glob_constr (Global.env()) subst c in
+  let print env c = str "preterm:(" ++ Printer.pr_lglob_constr_env env c ++ str ")" in
+  let obj = {
+    ml_intern = (fun _ _ e -> Empty.abort e);
+    ml_interp = interp;
+    ml_subst = subst;
+    ml_print = print;
+  } in
+  define_ml_object Tac2quote.wit_preterm obj
 
 let () =
   let intern self ist ref = match ref.CAst.v with
@@ -1221,15 +1266,15 @@ let () =
 
 let () =
   let interp ist poly env sigma concl (ids, tac) =
-    (* Syntax prevents bound variables in constr quotations *)
-    let () = assert (List.is_empty ids) in
+    (* Syntax prevents bound notation variables in constr quotations *)
+    let () = assert (Id.Set.is_empty ids) in
     let ist = Tac2interp.get_env ist in
     let tac = Proofview.tclIGNORE (Tac2interp.interp ist tac) in
     let name, poly = Id.of_string "ltac2", poly in
     let c, sigma = Pfedit.refine_by_tactic ~name ~poly env sigma concl tac in
     (EConstr.of_constr c, sigma)
   in
-  GlobEnv.register_constr_interp0 wit_ltac2 interp
+  GlobEnv.register_constr_interp0 wit_ltac2_constr interp
 
 let () =
   let interp ist poly env sigma concl id =
@@ -1246,6 +1291,29 @@ let () =
   let pr_glb id = Genprint.PrinterBasic (fun _env _sigma -> str "$" ++ Id.print id) in
   let pr_top _ = Genprint.TopPrinterBasic mt in
   Genprint.register_print0 wit_ltac2_quotation pr_raw pr_glb pr_top
+
+let () =
+  let subs globs (ids, tac) =
+    (* Let-bind the notation terms inside the tactic *)
+    let fold id (c, _) (rem, accu) =
+      let c = GTacExt (Tac2quote.wit_preterm, c) in
+      let rem = Id.Set.remove id rem in
+      rem, (Name id, c) :: accu
+    in
+    let rem, bnd = Id.Map.fold fold globs (ids, []) in
+    let () = if not @@ Id.Set.is_empty rem then
+      (* FIXME: provide a reasonable middle-ground with the behaviour
+          introduced by 8d9b66b. We should be able to pass mere syntax to
+          term notation without facing the wrath of the internalization. *)
+      let plural = if Id.Set.cardinal rem <= 1 then " " else "s " in
+      CErrors.user_err (str "Missing notation term for variable" ++ str plural ++
+        pr_sequence Id.print (Id.Set.elements rem) ++
+          str ", probably an ill-typed expression")
+    in
+    let tac = if List.is_empty bnd then tac else GTacLet (false, bnd, tac) in
+    (Id.Set.empty, tac)
+  in
+  Genintern.register_ntn_subst0 wit_ltac2_constr subs
 
 (** Ltac2 in Ltac1 *)
 

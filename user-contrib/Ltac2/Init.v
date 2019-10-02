@@ -30,6 +30,7 @@ Ltac2 Type constructor.
 Ltac2 Type projection.
 Ltac2 Type pattern.
 Ltac2 Type constr.
+Ltac2 Type preterm.
 
 Ltac2 Type message.
 Ltac2 Type exn := [ .. ].

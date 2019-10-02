@@ -28,6 +28,7 @@ let t_int = coq_type "int"
 let t_string = coq_type "string"
 let t_constr = coq_type "constr"
 let t_ltac1 = ltac1_type "t"
+let t_preterm = coq_type "preterm"
 
 (** Union find *)
 
@@ -1511,7 +1512,7 @@ let () =
     let ids = List.map (fun { CAst.v = id } -> id) ids in
     let env = match Genintern.Store.get ist.extra ltac2_env with
     | None ->
-      (* Only happens when Ltac2 is called from a constr or ltac1 quotation *)
+      (* Only happens when Ltac2 is called from a toplevel ltac1 quotation *)
       let env = empty_env () in
       if !Ltac_plugin.Tacintern.strict_check then env
       else { env with env_str = false }
@@ -1527,7 +1528,36 @@ let () =
     (ist, (ids, tac))
   in
   Genintern.register_intern0 wit_ltac2 intern
+
+let () =
+  let open Genintern in
+  let intern ist tac =
+    let env = match Genintern.Store.get ist.extra ltac2_env with
+    | None ->
+      (* Only happens when Ltac2 is called from a constr quotation *)
+      let env = empty_env () in
+      if !Ltac_plugin.Tacintern.strict_check then env
+      else { env with env_str = false }
+    | Some env -> env
+    in
+    (* Special handling of notation variables *)
+    let fold id _ (ids, env) =
+      let () = assert (not @@ Id.Map.mem id env.env_var) in
+      let t = monomorphic (GTypRef (Other t_preterm, [])) in
+      let env = push_name (Name id) t env in
+      (Id.Set.add id ids, env)
+    in
+    let ntn_vars = ist.intern_sign.notation_variable_status in
+    let ids, env = Id.Map.fold fold ntn_vars (Id.Set.empty, env) in
+    let loc = tac.loc in
+    let (tac, t) = intern_rec env tac in
+    let () = check_elt_unit loc env t in
+    (ist, (ids, tac))
+  in
+  Genintern.register_intern0 wit_ltac2_constr intern
+
 let () = Genintern.register_subst0 wit_ltac2 (fun s (ids, e) -> ids, subst_expr s e)
+let () = Genintern.register_subst0 wit_ltac2_constr (fun s (ids, e) -> ids, subst_expr s e)
 
 let () =
   let open Genintern in
@@ -1539,6 +1569,12 @@ let () =
       if !Ltac_plugin.Tacintern.strict_check then env
       else { env with env_str = false }
     | Some env -> env
+    in
+    (* Special handling of notation variables *)
+    let () =
+      if Id.Map.mem id ist.intern_sign.notation_variable_status then
+        (* Always fail *)
+        unify ?loc env (GTypRef (Other t_preterm, [])) (GTypRef (Other t_constr, []))
     in
     let t =
       try Id.Map.find id env.env_var
