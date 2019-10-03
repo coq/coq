@@ -1079,9 +1079,7 @@ let explain_incorrect_with_in_module () =
 let explain_incorrect_module_application () =
   str "Illegal application to a module type."
 
-open Modintern
-
-let explain_module_internalization_error = function
+let explain_module_internalization_error = let open Modintern in function
   | NotAModuleNorModtype s -> explain_not_module_nor_modtype s
   | IncorrectWithInModule -> explain_incorrect_with_in_module ()
   | IncorrectModuleApplication -> explain_incorrect_module_application ()

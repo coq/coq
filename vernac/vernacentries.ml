@@ -872,10 +872,7 @@ let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
      if not (Option.is_empty export) then
       user_err Pp.(str "Arguments of a functor declaration cannot be exported. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
      else (idl,ty)) binders_ast in
-  let mp =
-    Declaremods.declare_module Modintern.interp_module_ast
-      id binders_ast (Declaremods.Enforce mty_ast) []
-  in
+  let mp = Declaremods.declare_module id binders_ast (Declaremods.Enforce mty_ast) [] in
   Dumpglob.dump_moddef ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is declared");
   Option.iter (fun export -> vernac_import export [qualid_of_ident id]) export
@@ -892,10 +889,7 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
          (fun (export,idl,ty) (args,argsexport) ->
            (idl,ty)::args, (List.map (fun {v=i} -> export,i)idl)@argsexport) binders_ast
              ([],[]) in
-       let mp =
-         Declaremods.start_module Modintern.interp_module_ast
-           export id binders_ast mty_ast_o
-       in
+       let mp = Declaremods.start_module export id binders_ast mty_ast_o in
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
          (str "Interactive Module " ++ Id.print id ++ str " started");
@@ -911,7 +905,7 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
            user_err Pp.(str "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
           else (idl,ty)) binders_ast in
        let mp =
-         Declaremods.declare_module Modintern.interp_module_ast
+         Declaremods.declare_module
 	   id binders_ast mty_ast_o mexpr_ast_l
        in
        Dumpglob.dump_moddef ?loc mp "mod";
@@ -938,10 +932,7 @@ let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
            (idl,ty)::args, (List.map (fun {v=i} -> export,i)idl)@argsexport) binders_ast
              ([],[]) in
 
-       let mp =
-         Declaremods.start_modtype Modintern.interp_module_ast
-           id binders_ast mty_sign
-       in
+       let mp = Declaremods.start_modtype id binders_ast mty_sign in
        Dumpglob.dump_moddef ?loc mp "modtype";
        Flags.if_verbose Feedback.msg_info
 	 (str "Interactive Module Type " ++ Id.print id ++ str " started");
@@ -957,10 +948,7 @@ let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
             if not (Option.is_empty export) then
               user_err Pp.(str "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
             else (idl,ty)) binders_ast in
-	let mp =
-          Declaremods.declare_modtype Modintern.interp_module_ast
-	    id binders_ast mty_sign mty_ast_l
-        in
+        let mp = Declaremods.declare_modtype id binders_ast mty_sign mty_ast_l in
         Dumpglob.dump_moddef ?loc mp "modtype";
 	Flags.if_verbose Feedback.msg_info
 	  (str "Module Type " ++ Id.print id ++ str " is defined")
@@ -970,8 +958,7 @@ let vernac_end_modtype {loc;v=id} =
   Dumpglob.dump_modref ?loc mp "modtype";
   Flags.if_verbose Feedback.msg_info (str "Module Type " ++ Id.print id ++ str " is defined")
 
-let vernac_include l =
-  Declaremods.declare_include Modintern.interp_module_ast l
+let vernac_include l = Declaremods.declare_include l
 
 (**********************)
 (* Gallina extensions *)
@@ -1966,26 +1953,29 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     print_about env sigma ref_or_by_not udecl
 
 let vernac_print ~pstate ~atts =
+  let mod_ops = { Printmod.import_module = Declaremods.import_module
+                ; process_module_binding = Declaremods.process_module_binding
+                } in
   let sigma, env = get_current_or_global_context ~pstate in
   function
   | PrintTypingFlags -> pr_typing_flags (Environ.typing_flags (Global.env ()))
   | PrintTables -> print_tables ()
-  | PrintFullContext-> print_full_context_typ Library.indirect_accessor env sigma
-  | PrintSectionContext qid -> print_sec_context_typ Library.indirect_accessor env sigma qid
-  | PrintInspect n -> inspect Library.indirect_accessor env sigma n
+  | PrintFullContext-> print_full_context_typ ~mod_ops Library.indirect_accessor env sigma
+  | PrintSectionContext qid -> print_sec_context_typ ~mod_ops Library.indirect_accessor env sigma qid
+  | PrintInspect n -> inspect ~mod_ops Library.indirect_accessor env sigma n
   | PrintGrammar ent -> Metasyntax.pr_grammar ent
   | PrintCustomGrammar ent -> Metasyntax.pr_custom_grammar ent
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
   | PrintModules -> print_modules ()
-  | PrintModule qid -> print_module qid
-  | PrintModuleType qid -> print_modtype qid
+  | PrintModule qid -> print_module ~mod_ops qid
+  | PrintModuleType qid -> print_modtype ~mod_ops qid
   | PrintNamespace ns -> print_namespace ~pstate ns
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
   | PrintDebugGC -> Mltop.print_gc ()
   | PrintName (qid,udecl) ->
     dump_global qid;
-    print_name Library.indirect_accessor env sigma qid udecl
+    print_name ~mod_ops Library.indirect_accessor env sigma qid udecl
   | PrintGraph -> Prettyp.print_graph ()
   | PrintClasses -> Prettyp.print_classes()
   | PrintTypeClasses -> Prettyp.print_typeclasses()

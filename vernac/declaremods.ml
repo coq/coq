@@ -35,8 +35,6 @@ type inline =
   | DefaultInline
   | InlineAt of int
 
-type module_kind = Module | ModType | ModAny
-
 let default_inline () = Some (Flags.get_inline_level ())
 
 let inl2intopt = function
@@ -457,15 +455,15 @@ let rec compute_subst env mbids sign mp_l inl =
     | _,[] -> mbids,empty_subst
     | [],r -> user_err Pp.(str "Application of a functor with too few arguments.")
     | mbid::mbids,mp::mp_l ->
-	let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
-	let mb = Environ.lookup_module mp env in
-	let mbid_left,subst = compute_subst env mbids fbody_b mp_l inl in
-	let resolver =
+        let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
+        let mb = Environ.lookup_module mp env in
+        let mbid_left,subst = compute_subst env mbids fbody_b mp_l inl in
+        let resolver =
           if Modops.is_functor mb.mod_type then empty_delta_resolver
           else
             Modops.inline_delta_resolver env inl mp farg_id farg_b mb.mod_delta
-	in
-	mbid_left,join (map_mbid mbid mp resolver) subst
+        in
+        mbid_left,join (map_mbid mbid mp resolver) subst
 
 (** Create the objects of a "with Module" structure. *)
 
@@ -547,11 +545,11 @@ let process_module_binding mbid me =
     Objects in these parameters are also loaded.
     Output is accumulated on top of [acc] (in reverse order). *)
 
-let intern_arg interp_modast (acc, cst) (idl,(typ,ann)) =
+let intern_arg (acc, cst) (idl,(typ,ann)) =
   let inl = inl2intopt ann in
   let lib_dir = Lib.library_dp() in
   let env = Global.env() in
-  let (mty, _, cst') = interp_modast env ModType typ in
+  let (mty, _, cst') = Modintern.interp_module_ast env Modintern.ModType typ in
   let () = Global.push_context_set true cst' in
   let env = Global.env () in
   let sobjs = get_module_sobjs false env inl mty in
@@ -579,8 +577,8 @@ let intern_arg interp_modast (acc, cst) (idl,(typ,ann)) =
     be more efficient and independent of [List.map] eval order.
 *)
 
-let intern_args interp_modast params =
-  List.fold_left (intern_arg interp_modast) ([], Univ.ContextSet.empty) params
+let intern_args params =
+  List.fold_left intern_arg ([], Univ.ContextSet.empty) params
 
 
 (** {6 Auxiliary functions concerning subtyping checks} *)
@@ -588,10 +586,10 @@ let intern_args interp_modast params =
 let check_sub mtb sub_mtb_l =
   (* The constraints are checked and forgot immediately : *)
   ignore (List.fold_right
-	    (fun sub_mtb env ->
-	       Environ.add_constraints
-		 (Subtyping.check_subtypes env mtb sub_mtb) env)
-	    sub_mtb_l (Global.env()))
+            (fun sub_mtb env ->
+               Environ.add_constraints
+                 (Subtyping.check_subtypes env mtb sub_mtb) env)
+            sub_mtb_l (Global.env()))
 
 (** This function checks if the type calculated for the module [mp] is
     a subtype of all signatures in [sub_mtb_l]. Uses only the global
@@ -631,11 +629,11 @@ let mk_funct_type env args seb0 =
 
 (** Prepare the module type list for check of subtypes *)
 
-let build_subtypes interp_modast env mp args mtys =
+let build_subtypes env mp args mtys =
   let (cst, ans) = List.fold_left_map
     (fun cst (m,ann) ->
        let inl = inl2intopt ann in
-       let mte, _, cst' = interp_modast env ModType m in
+       let mte, _, cst' = Modintern.interp_module_ast env Modintern.ModType m in
        let env = Environ.push_context_set ~strict:true cst' env in
        let cst = Univ.ContextSet.union cst cst' in
        let mtb = Mod_typing.translate_modtype env mp inl ([],mte) in
@@ -673,22 +671,22 @@ let openmodtype_info =
 
 module RawModOps = struct
 
-let start_module interp_modast export id args res fs =
+let start_module export id args res fs =
   let mp = Global.start_module id in
-  let arg_entries_r, cst = intern_args interp_modast args in
+  let arg_entries_r, cst = intern_args args in
   let () = Global.push_context_set true cst in
   let env = Global.env () in
   let res_entry_o, subtyps, cst = match res with
     | Enforce (res,ann) ->
         let inl = inl2intopt ann in
-        let (mte, _, cst) = interp_modast env ModType res in
+        let (mte, _, cst) = Modintern.interp_module_ast env Modintern.ModType res in
         let env = Environ.push_context_set ~strict:true cst env in
         (* We check immediately that mte is well-formed *)
         let _, _, _, cst' = Mod_typing.translate_mse env None inl mte in
         let cst = Univ.ContextSet.union cst cst' in
         Some (mte, inl), [], cst
     | Check resl ->
-      let typs, cst = build_subtypes interp_modast env mp arg_entries_r resl in
+      let typs, cst = build_subtypes env mp arg_entries_r resl in
       None, typs, cst
   in
   let () = Global.push_context_set true cst in
@@ -735,25 +733,25 @@ let end_module () =
 
   mp
 
-let declare_module interp_modast id args res mexpr_o fs =
+let declare_module id args res mexpr_o fs =
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
   let mp = Global.start_module id in
-  let arg_entries_r, cst = intern_args interp_modast args in
+  let arg_entries_r, cst = intern_args args in
   let params = mk_params_entry arg_entries_r in
   let env = Global.env () in
   let env = Environ.push_context_set ~strict:true cst env in
   let mty_entry_o, subs, inl_res, cst' = match res with
     | Enforce (mty,ann) ->
         let inl = inl2intopt ann in
-        let (mte, _, cst) = interp_modast env ModType mty in
+        let (mte, _, cst) = Modintern.interp_module_ast env Modintern.ModType mty in
         let env = Environ.push_context_set ~strict:true cst env in
         (* We check immediately that mte is well-formed *)
         let _, _, _, cst' = Mod_typing.translate_mse env None inl mte in
         let cst = Univ.ContextSet.union cst cst' in
         Some mte, [], inl, cst
     | Check mtys ->
-      let typs, cst = build_subtypes interp_modast env mp arg_entries_r mtys in
+      let typs, cst = build_subtypes env mp arg_entries_r mtys in
       None, typs, default_inline (), cst
   in
   let env = Environ.push_context_set ~strict:true cst' env in
@@ -761,7 +759,7 @@ let declare_module interp_modast id args res mexpr_o fs =
   let mexpr_entry_o, inl_expr, cst' = match mexpr_o with
     | None -> None, default_inline (), Univ.ContextSet.empty
     | Some (mexpr,ann) ->
-      let (mte, _, cst) = interp_modast env Module mexpr in
+      let (mte, _, cst) = Modintern.interp_module_ast env Modintern.Module mexpr in
       Some mte, inl2intopt ann, cst
   in
   let env = Environ.push_context_set ~strict:true cst' env in
@@ -803,12 +801,12 @@ end
 
 module RawModTypeOps = struct
 
-let start_modtype interp_modast id args mtys fs =
+let start_modtype id args mtys fs =
   let mp = Global.start_modtype id in
-  let arg_entries_r, cst = intern_args interp_modast args in
+  let arg_entries_r, cst = intern_args args in
   let () = Global.push_context_set true cst in
   let env = Global.env () in
-  let sub_mty_l, cst = build_subtypes interp_modast env mp arg_entries_r mtys in
+  let sub_mty_l, cst = build_subtypes env mp arg_entries_r mtys in
   let () = Global.push_context_set true cst in
   openmodtype_info := sub_mty_l;
   let prefix = Lib.start_modtype id mp fs in
@@ -831,16 +829,16 @@ let end_modtype () =
 
   mp
 
-let declare_modtype interp_modast id args mtys (mty,ann) fs =
+let declare_modtype id args mtys (mty,ann) fs =
   let inl = inl2intopt ann in
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
   let mp = Global.start_modtype id in
-  let arg_entries_r, cst = intern_args interp_modast args in
+  let arg_entries_r, cst = intern_args args in
   let () = Global.push_context_set true cst in
   let params = mk_params_entry arg_entries_r in
   let env = Global.env () in
-  let mte, _, cst = interp_modast env ModType mty in
+  let mte, _, cst = Modintern.interp_module_ast env Modintern.ModType mty in
   let () = Global.push_context_set true cst in
   let env = Global.env () in
   (* We check immediately that mte is well-formed *)
@@ -848,7 +846,7 @@ let declare_modtype interp_modast id args mtys (mty,ann) fs =
   let () = Global.push_context_set true cst in
   let env = Global.env () in
   let entry = params, mte in
-  let sub_mty_l, cst = build_subtypes interp_modast env mp arg_entries_r mtys in
+  let sub_mty_l, cst = build_subtypes env mp arg_entries_r mtys in
   let () = Global.push_context_set true cst in
   let env = Global.env () in
   let sobjs = get_functor_sobjs false env inl entry in
@@ -902,12 +900,12 @@ let type_of_incl env is_mod = function
     decompose_functor mp_l (type_of_mod mp0 env is_mod)
   |MEwith _ -> raise NoIncludeSelf
 
-let declare_one_include interp_modast (me_ast,annot) =
+let declare_one_include (me_ast,annot) =
   let env = Global.env() in
-  let me, kind, cst = interp_modast env ModAny me_ast in
+  let me, kind, cst = Modintern.interp_module_ast env Modintern.ModAny me_ast in
   let () = Global.push_context_set true cst in
   let env = Global.env () in
-  let is_mod = (kind == Module) in
+  let is_mod = (kind == Modintern.Module) in
   let cur_mp = Lib.current_mp () in
   let inl = inl2intopt annot in
   let mbids,aobjs = get_module_sobjs is_mod env inl me in
@@ -925,8 +923,7 @@ let declare_one_include interp_modast (me_ast,annot) =
   let aobjs = subst_aobjs subst aobjs in
   ignore (add_leaf (Lib.current_mod_id ()) (IncludeObject aobjs))
 
-let declare_include interp me_asts =
-  List.iter (declare_one_include interp) me_asts
+let declare_include me_asts = List.iter declare_one_include me_asts
 
 end
 
@@ -942,40 +939,40 @@ let protect_summaries f =
     let () = Summary.unfreeze_summaries fs in
     iraise reraise
 
-let start_module interp export id args res =
-  protect_summaries (RawModOps.start_module interp export id args res)
+let start_module export id args res =
+  protect_summaries (RawModOps.start_module export id args res)
 
 let end_module = RawModOps.end_module
 
-let declare_module interp id args mtys me_l =
+let declare_module id args mtys me_l =
   let declare_me fs = match me_l with
-    | [] -> RawModOps.declare_module interp id args mtys None fs
-    | [me] -> RawModOps.declare_module interp id args mtys (Some me) fs
+    | [] -> RawModOps.declare_module id args mtys None fs
+    | [me] -> RawModOps.declare_module id args mtys (Some me) fs
     | me_l ->
-	ignore (RawModOps.start_module interp None id args mtys fs);
-	RawIncludeOps.declare_include interp me_l;
-	RawModOps.end_module ()
+        ignore (RawModOps.start_module None id args mtys fs);
+        RawIncludeOps.declare_include me_l;
+        RawModOps.end_module ()
   in
   protect_summaries declare_me
 
-let start_modtype interp id args mtys =
-  protect_summaries (RawModTypeOps.start_modtype interp id args mtys)
+let start_modtype id args mtys =
+  protect_summaries (RawModTypeOps.start_modtype id args mtys)
 
 let end_modtype = RawModTypeOps.end_modtype
 
-let declare_modtype interp id args mtys mty_l =
+let declare_modtype id args mtys mty_l =
   let declare_mt fs = match mty_l with
     | [] -> assert false
-    | [mty] -> RawModTypeOps.declare_modtype interp id args mtys mty fs
+    | [mty] -> RawModTypeOps.declare_modtype id args mtys mty fs
     | mty_l ->
-	ignore (RawModTypeOps.start_modtype interp id args mtys fs);
-	RawIncludeOps.declare_include interp mty_l;
-	RawModTypeOps.end_modtype ()
+        ignore (RawModTypeOps.start_modtype id args mtys fs);
+        RawIncludeOps.declare_include mty_l;
+        RawModTypeOps.end_modtype ()
   in
   protect_summaries declare_mt
 
-let declare_include interp me_asts =
-  protect_summaries (fun _ -> RawIncludeOps.declare_include interp me_asts)
+let declare_include me_asts =
+  protect_summaries (fun _ -> RawIncludeOps.declare_include me_asts)
 
 
 (** {6 Libraries} *)
@@ -1055,12 +1052,7 @@ let iter_all_segments f =
 
 (** {6 Some types used to shorten declaremods.mli} *)
 
-type 'modast module_interpretor =
-  Environ.env -> module_kind -> 'modast ->
-    Entries.module_struct_entry * module_kind * Univ.ContextSet.t
-
-type 'modast module_params =
-  (lident list * ('modast * inline)) list
+type module_params = (lident list * (Constrexpr.module_ast * inline)) list
 
 (** {6 Debug} *)
 

@@ -28,5 +28,7 @@ exception ModuleInternalizationError of module_internalization_error
    kind is never ModAny, and it is equal to the input kind when this one
    isn't ModAny. *)
 
+type module_kind = Module | ModType | ModAny
+
 val interp_module_ast :
-  env -> Declaremods.module_kind -> module_ast -> module_struct_entry * Declaremods.module_kind * Univ.ContextSet.t
+  env -> module_kind -> module_ast -> module_struct_entry * module_kind * Univ.ContextSet.t

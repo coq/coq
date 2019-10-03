@@ -12,7 +12,6 @@ open Declarations
 open Libnames
 open Constrexpr
 open Constrintern
-open Declaremods
 
 type module_internalization_error =
   | NotAModuleNorModtype of string
@@ -21,9 +20,11 @@ type module_internalization_error =
 
 exception ModuleInternalizationError of module_internalization_error
 
+type module_kind = Module | ModType | ModAny
+
 let error_not_a_module_loc kind loc qid =
   let s = string_of_qualid qid in
-  let e = let open Declaremods in match kind with
+  let e = match kind with
     | Module -> Modops.ModuleTypingError (Modops.NotAModule s)
     | ModType -> Modops.ModuleTypingError (Modops.NotAModuleType s)
     | ModAny -> ModuleInternalizationError (NotAModuleNorModtype s)
@@ -46,7 +47,6 @@ let error_application_to_module_type loc =
     it is equal to the input kind when this one isn't ModAny. *)
 
 let lookup_module_or_modtype kind qid =
-  let open Declaremods in
   let loc = qid.CAst.loc in
   try
     if kind == ModType then raise Not_found;
