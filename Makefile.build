@@ -581,7 +581,7 @@ bin/votour.byte: $(VOTOURCMO)
 ###########################################################################
 
 CSDPCERTCMO:=clib/clib.cma $(addprefix plugins/micromega/, \
-  mutils.cmo 	micromega.cmo \
+  micromega.cmo mutils.cmo 	 \
   sos_types.cmo sos_lib.cmo sos.cmo 	csdpcert.cmo )
 
 $(CSDPCERT): $(call bestobj, $(CSDPCERTCMO))
