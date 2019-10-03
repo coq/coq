@@ -359,7 +359,7 @@ let save_lemma_admitted ~(lemma : t) : unit =
         let env = Global.env () in
         let ids_typ = Environ.global_vars_set env typ in
         let ids_def = Environ.global_vars_set env pproof in
-        Some (Environ.keep_hyps env (Id.Set.union ids_typ ids_def))
+        Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
       | _ -> None in
   let universes = Proof_global.get_initial_euctx lemma.proof in
   let ctx = UState.check_univ_decl ~poly universes udecl in

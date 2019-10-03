@@ -61,7 +61,7 @@ type mutual_inductive_entry = {
 type definition_entry = {
   const_entry_body : constr;
   (* List of section variables *)
-  const_entry_secctx : Constr.named_context option;
+  const_entry_secctx : Id.Set.t option;
   (* State id on which the completion of type checking is reported *)
   const_entry_feedback : Stateid.t option;
   const_entry_type : types option;
@@ -70,7 +70,7 @@ type definition_entry = {
 
 type section_def_entry = {
   secdef_body : constr;
-  secdef_secctx : Constr.named_context option;
+  secdef_secctx : Id.Set.t option;
   secdef_feedback : Stateid.t option;
   secdef_type : types option;
 }
@@ -78,7 +78,7 @@ type section_def_entry = {
 type 'a opaque_entry = {
   opaque_entry_body   : 'a;
   (* List of section variables *)
-  opaque_entry_secctx : Constr.named_context;
+  opaque_entry_secctx : Id.Set.t;
   (* State id on which the completion of type checking is reported *)
   opaque_entry_feedback : Stateid.t option;
   opaque_entry_type        : types;
@@ -88,7 +88,7 @@ type 'a opaque_entry = {
 type inline = int option (* inlining level, None for no inlining *)
 
 type parameter_entry = 
-    Constr.named_context option * types in_universes_entry * inline
+    Id.Set.t option * types in_universes_entry * inline
 
 type primitive_entry = {
   prim_entry_type : types option;

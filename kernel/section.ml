@@ -146,19 +146,11 @@ let empty_segment = {
   abstr_uctx = AUContext.empty;
 }
 
-let extract_hyps sec vars hyps =
-  (* FIXME: this code is fishy. It is supposed to check that declared section
-     variables are an ordered subset of the ambient ones, but it doesn't check
-     e.g. uniqueness of naming nor convertibility of the section data. *)
-  let rec aux ids hyps = match ids, hyps with
-  | id :: ids, decl :: hyps when Names.Id.equal id (NamedDecl.get_id decl) ->
-    decl :: aux ids hyps
-  | _ :: ids, hyps ->
-    aux ids hyps
-  | [], _ -> []
-  in
-  let ids = List.map NamedDecl.get_id @@ List.firstn sec.sec_context vars in
-  aux ids hyps
+let extract_hyps sec vars used =
+  (* Keep the section-local segment of variables *)
+  let vars = List.firstn sec.sec_context vars in
+  (* Only keep the part that is used by the declaration *)
+  List.filter (fun d -> Id.Set.mem (NamedDecl.get_id d) used) vars
 
 let section_segment_of_entry vars e hyps sections =
   (* [vars] are the named hypotheses, [hyps] the subset that is declared by the
@@ -180,12 +172,14 @@ let section_segment_of_entry vars e hyps sections =
 let segment_of_constant env con s =
   let body = Environ.lookup_constant con env in
   let vars = Environ.named_context env in
-  section_segment_of_entry vars (SecDefinition con) body.Declarations.const_hyps s
+  let used = Context.Named.to_vars body.Declarations.const_hyps in
+  section_segment_of_entry vars (SecDefinition con) used s
 
 let segment_of_inductive env mind s =
   let mib = Environ.lookup_mind mind env in
   let vars = Environ.named_context env in
-  section_segment_of_entry vars (SecInductive mind) mib.Declarations.mind_hyps s
+  let used = Context.Named.to_vars mib.Declarations.mind_hyps in
+  section_segment_of_entry vars (SecInductive mind) used s
 
 let instance_from_variable_context =
   List.rev %> List.filter NamedDecl.is_local_assum %> List.map NamedDecl.get_id %> Array.of_list

@@ -23,7 +23,7 @@ type 'opaque result = {
   cook_universes : universes;
   cook_relevance : Sorts.relevance;
   cook_inline : inline;
-  cook_context : Constr.named_context option;
+  cook_context : Names.Id.Set.t option;
 }
 
 val cook_constant : recipe -> Opaqueproof.opaque result
