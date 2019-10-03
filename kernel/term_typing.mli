@@ -47,4 +47,4 @@ val infer_declaration : env ->
   constant_entry -> typing_context Cooking.result
 
 val build_constant_declaration :
-  env -> Opaqueproof.proofterm Cooking.result -> Opaqueproof.proofterm pconstant_body
+  env -> 'a Cooking.result -> 'a pconstant_body

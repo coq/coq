@@ -34,7 +34,7 @@ type seg_sum
 type seg_lib
 type seg_univ = (* all_cst, finished? *)
   Univ.ContextSet.t * bool
-type seg_proofs = Opaqueproof.opaque_disk
+type seg_proofs = Opaques.opaque_disk
 
 (** End the compilation of a library and save it to a ".vo" file,
     a ".vio" file, or a ".vos" file, depending on the todo_proofs
@@ -49,7 +49,7 @@ type 'document todo_proofs =
 val save_library_to :
   'document todo_proofs ->
   output_native_objects:bool ->
-  DirPath.t -> string -> Opaqueproof.opaquetab -> unit
+  DirPath.t -> string -> unit
 
 val load_library_todo
   :  CUnix.physical_path
@@ -75,4 +75,4 @@ val overwrite_library_filenames : string -> unit
 val native_name_from_filename : string -> string
 
 (** {6 Opaque accessors} *)
-val indirect_accessor : Declarations.cooking_info Opaqueproof.indirect_accessor
+val indirect_accessor : Global.indirect_accessor

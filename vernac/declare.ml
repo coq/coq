@@ -234,16 +234,21 @@ let register_constant kn kind local =
   let _ = Lib.add_leaf id o in
   update_tables kn
 
-let register_side_effect (c, role) =
+let register_side_effect (c, body, role) =
+  (* Register the body in the opaque table *)
+  let () = match body with
+  | None -> ()
+  | Some opaque -> Opaques.declare_private_opaque opaque
+  in
   let () = register_constant c Decls.(IsProof Theorem) Locality.ImportDefaultBehavior in
   match role with
   | None -> ()
   | Some (Evd.Schema (ind, kind)) -> DeclareScheme.declare_scheme kind [|ind,c|]
 
 let get_roles export eff =
-  let map c =
+  let map (c, body) =
     let role = try Some (Cmap.find c eff.Evd.seff_roles) with Not_found -> None in
-    (c, role)
+    (c, body, role)
   in
   List.map map export
 
@@ -310,7 +315,7 @@ let cast_proof_entry e =
   ctx
 
 type ('a, 'b) effect_entry =
-| EffectEntry : (private_constants, private_constants Entries.const_entry_body) effect_entry
+| EffectEntry : (private_constants, unit) effect_entry
 | PureEntry : (unit, Constr.constr) effect_entry
 
 let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proof_entry) : b Entries.opaque_entry * _ =
@@ -354,7 +359,7 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proo
       Entries.Polymorphic_entry uctx', Univ.ContextSet.empty
     in
     body, univ_entry
-  | EffectEntry -> e.proof_entry_body, extract_monomorphic (fst (e.proof_entry_universes))
+  | EffectEntry -> (), extract_monomorphic (fst (e.proof_entry_universes))
   in
   { Entries.opaque_entry_body = body;
     opaque_entry_secctx = secctx;
@@ -377,7 +382,7 @@ let make_ubinders uctx (univs, ubinders as u) = match univs with
 
 let declare_constant_core ~name ~typing_flags cd =
   (* Logically define the constant and its subproofs, no libobject tampering *)
-  let decl, unsafe, ubinders = match cd with
+  let decl, unsafe, ubinders, delayed = match cd with
     | DefinitionEntry de ->
       (* We deal with side effects *)
       if not de.proof_entry_opaque then
@@ -392,7 +397,7 @@ let declare_constant_core ~name ~typing_flags cd =
            the latter depend on the former. *)
         let () = DeclareUctx.declare_universe_context ~poly:false ctx in
         let cd = Entries.DefinitionEntry e in
-        ConstantEntry cd, false, ubinders
+        ConstantEntry cd, false, ubinders, None
       else
         let map (body, eff) = body, eff.Evd.seff_private in
         let body = Future.chain de.proof_entry_body map in
@@ -400,7 +405,7 @@ let declare_constant_core ~name ~typing_flags cd =
         let cd, ctx = cast_opaque_proof_entry EffectEntry de in
         let ubinders = make_ubinders ctx de.proof_entry_universes in
         let () = DeclareUctx.declare_universe_context ~poly:false ctx in
-        OpaqueEntry cd, false, ubinders
+        OpaqueEntry cd, false, ubinders, Some body
     | ParameterEntry e ->
       let univ_entry, ctx = extract_monomorphic (fst e.parameter_entry_universes) in
       let ubinders = make_ubinders ctx e.parameter_entry_universes in
@@ -411,7 +416,7 @@ let declare_constant_core ~name ~typing_flags cd =
         Entries.parameter_entry_universes = univ_entry;
         Entries.parameter_entry_inline_code = e.parameter_entry_inline_code;
       } in
-      ConstantEntry (Entries.ParameterEntry e), not (Lib.is_modtype_strict()), ubinders
+      ConstantEntry (Entries.ParameterEntry e), not (Lib.is_modtype_strict()), ubinders, None
     | PrimitiveEntry e ->
       let typ, ubinders, ctx = match e.prim_entry_type with
       | None -> None, UnivNames.empty_binders, Univ.ContextSet.empty
@@ -425,32 +430,40 @@ let declare_constant_core ~name ~typing_flags cd =
         Entries.prim_entry_content = e.prim_entry_content;
       } in
       let ubinders = (UState.Monomorphic_entry ctx, ubinders) in
-      ConstantEntry (Entries.PrimitiveEntry e), false, ubinders
+      ConstantEntry (Entries.PrimitiveEntry e), false, ubinders, None
   in
   let kn = Global.add_constant ?typing_flags name decl in
   let () = DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) ubinders in
   if unsafe || is_unsafe_typing_flags typing_flags then feedback_axiom();
-  kn
+  kn, delayed
 
 let declare_constant ?(local = Locality.ImportDefaultBehavior) ~name ~kind ~typing_flags cd =
   let () = check_exists name in
-  let kn = declare_constant_core ~typing_flags ~name cd in
+  let kn, delayed = declare_constant_core ~typing_flags ~name cd in
   (* Register the libobjects attached to the constants *)
+  let () = match delayed with
+  | None -> ()
+  | Some body ->
+    let open Declarations in
+    match (Global.lookup_constant kn).const_body with
+    | OpaqueDef o ->
+      let (_, _, _, i) = Opaqueproof.repr o in
+      Opaques.declare_defined_opaque i body
+    | Def _ | Undef _ | Primitive _ -> assert false
+  in
   let () = register_constant kn kind local in
   kn
 
 let declare_private_constant ?role ?(local = Locality.ImportDefaultBehavior) ~name ~kind de =
-  let kn, eff =
-    let de, ctx =
-      if not de.proof_entry_opaque then
-        let de, ctx = cast_proof_entry de in
-        DefinitionEff de, ctx
-      else
-        let de, ctx = cast_opaque_proof_entry PureEntry de in
-        OpaqueEff de, ctx
-    in
-    Global.add_private_constant name ctx de
+  let de, ctx =
+    if not de.proof_entry_opaque then
+      let de, ctx = cast_proof_entry de in
+      DefinitionEff de, ctx
+    else
+      let de, ctx = cast_opaque_proof_entry PureEntry de in
+      OpaqueEff de, ctx
   in
+  let kn, eff = Global.add_private_constant name ctx de in
   let () = register_constant kn kind local in
   let seff_roles = match role with
   | None -> Cmap.empty

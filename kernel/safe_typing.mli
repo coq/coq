@@ -66,11 +66,6 @@ val universes_of_private : private_constants -> Univ.ContextSet.t
 
 val is_curmod_library : safe_environment -> bool
 
-(* safe_environment has functional data affected by lazy computations,
- * thus this function returns a new safe_environment *)
-val join_safe_environment :
-  ?except:Future.UUIDSet.t -> safe_environment -> safe_environment
-
 val is_joined_environment : safe_environment -> bool
 (** {6 Enriching a safe environment } *)
 
@@ -78,13 +73,16 @@ val is_joined_environment : safe_environment -> bool
 
 type global_declaration =
 | ConstantEntry : Entries.constant_entry -> global_declaration
-| OpaqueEntry : private_constants Entries.const_entry_body Entries.opaque_entry -> global_declaration
+| OpaqueEntry : unit Entries.opaque_entry -> global_declaration
 
 type side_effect_declaration =
 | DefinitionEff : Entries.definition_entry -> side_effect_declaration
 | OpaqueEff : Constr.constr Entries.opaque_entry -> side_effect_declaration
 
-type exported_private_constant = Constant.t
+type exported_opaque
+type exported_private_constant = Constant.t * exported_opaque option
+
+val repr_exported_opaque : exported_opaque -> Opaqueproof.opaque_handle * Opaqueproof.opaque_proofterm
 
 val export_private_constants :
   private_constants ->
@@ -98,6 +96,10 @@ val add_constant :
 (** Similar to add_constant but also returns a certificate *)
 val add_private_constant :
   Label.t -> Univ.ContextSet.t -> side_effect_declaration -> (Constant.t * private_constants) safe_transformer
+
+(** Fill an opaque body with its contents and check it *)
+val join_opaque : Opaqueproof.opaque_handle -> private_constants Entries.proof_output ->
+  (Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes) safe_transformer
 
 (** Adding an inductive type *)
 
@@ -196,7 +198,7 @@ val univs_of_library : compiled_library -> Univ.ContextSet.t
 val start_library : DirPath.t -> ModPath.t safe_transformer
 
 val export :
-  ?except:Future.UUIDSet.t -> output_native_objects:bool ->
+  output_native_objects:bool ->
   safe_environment -> DirPath.t ->
     ModPath.t * compiled_library * Nativelib.native_library
 

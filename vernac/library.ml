@@ -119,6 +119,8 @@ let libraries_filename_table = ref DPmap.empty
 (* These are the _ordered_ sets of loaded, imported and exported libraries *)
 let libraries_loaded_list = Summary.ref [] ~name:"LIBRARY-LOAD"
 
+(* Opaque proof tables *)
+
 (* various requests to the tables *)
 
 let find_library dir =
@@ -169,20 +171,11 @@ let register_loaded_library m =
 
   let loaded_libraries () = !libraries_loaded_list
 
-(************************************************************************)
-(** {6 Tables of opaque proof terms} *)
-
-(** We now store opaque proof terms apart from the rest of the environment.
-    See the [Indirect] constructor in [Lazyconstr.lazy_constr]. This way,
-    we can quickly load a first half of a .vo file without these opaque
-    terms, and access them only when a specific command (e.g. Print or
-    Print Assumptions) needs it. *)
-
 (** Delayed / available tables of opaque terms *)
 
 type table_status =
-  | ToFetch of Opaqueproof.opaque_disk delayed
-  | Fetched of Opaqueproof.opaque_disk
+  | ToFetch of Opaques.opaque_disk delayed
+  | Fetched of Opaques.opaque_disk
 
 let opaque_tables =
   ref (DPmap.empty : table_status DPmap.t)
@@ -207,15 +200,26 @@ let access_table what tables dp i =
       tables := DPmap.add dp (Fetched t) !tables;
       t
   in
-  Opaqueproof.get_opaque_disk i t
+  Opaques.get_opaque_disk i t
 
-let access_opaque_table dp i =
-  let what = "opaque proofs" in
-  access_table what opaque_tables dp i
+let access_opaque_table o =
+  let (sub, ci, dp, i) = Opaqueproof.repr o in
+  let ans =
+    if DirPath.equal dp (Global.current_dirpath ()) then
+      Opaques.get_current_opaque i
+    else
+      let what = "opaque proofs" in
+      access_table what opaque_tables dp i
+  in
+  match ans with
+  | None -> None
+  | Some (c, ctx) ->
+    let (c, ctx) = Cooking.cook_constr ci (c, ctx) in
+    let c = Mod_subst.(List.fold_right subst_mps sub c) in
+    Some (c, ctx)
 
 let indirect_accessor = {
-  Opaqueproof.access_proof = access_opaque_table;
-  Opaqueproof.access_discharge = Cooking.cook_constr;
+  Global.access_proof = access_opaque_table;
 }
 
 (************************************************************************)
@@ -225,7 +229,7 @@ type seg_sum = summary_disk
 type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
   Univ.ContextSet.t * bool
-type seg_proofs = Opaqueproof.opaque_disk
+type seg_proofs = Opaques.opaque_disk
 
 let mk_library sd md digests univs =
   {
@@ -451,7 +455,7 @@ type 'document todo_proofs =
  | ProofsTodoSomeEmpty of Future.UUIDSet.t (* for .vos *)
  | ProofsTodoSome of Future.UUIDSet.t * ((Future.UUID.t,'document) Stateid.request * bool) list (* for .vio *)
 
-let save_library_to todo_proofs ~output_native_objects dir f otab =
+let save_library_to todo_proofs ~output_native_objects dir f =
   assert(
     let expected_extension = match todo_proofs with
       | ProofsTodoNone -> ".vo"
@@ -464,8 +468,10 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
     | ProofsTodoSomeEmpty except -> except
     | ProofsTodoSome (except,l) -> except
     in
-  let cenv, seg, ast = Declaremods.end_library ~output_native_objects ~except dir in
-  let opaque_table, f2t_map = Opaqueproof.dump ~except otab in
+  (* Ensure that the call below is performed with all opaques joined *)
+  let () = Opaques.Summary.join ~except () in
+  let opaque_table, f2t_map = Opaques.dump ~except () in
+  let cenv, seg, ast = Declaremods.end_library ~output_native_objects dir in
   let tasks, utab =
     match todo_proofs with
     | ProofsTodoNone -> None, None

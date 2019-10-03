@@ -802,8 +802,7 @@ let print_full_pure_context env sigma =
                 str "Theorem " ++ print_basename con ++ cut () ++
                 str " : " ++ pr_ltype_env env sigma typ ++ str "." ++ fnl () ++
                 str "Proof " ++ pr_lconstr_env env sigma
-                  (fst (Opaqueproof.force_proof Library.indirect_accessor
-                          (Global.opaque_tables ()) lc))
+                  (fst (Global.force_proof Library.indirect_accessor lc))
               | Def c ->
                 str "Definition " ++ print_basename con ++ cut () ++
                 str "  : " ++ pr_ltype_env env sigma typ ++ cut () ++ str " := " ++

@@ -88,7 +88,8 @@ module NamedDecl = Context.Named.Declaration
       either for modules/modtypes or for constants/inductives.
       These fields could be deduced from [revstruct], but they allow faster
       name freshness checks.
- - [univ] and [future_cst] : current and future universe constraints
+ - [univ] : current universe constraints
+ - [future_cst] : delayed opaque constants yet to be checked
  - [required] : names and digests of Require'd libraries since big-bang.
       This field will only grow
  - [loads] : list of libraries Require'd inside the current module.
@@ -131,6 +132,8 @@ type section_data = {
   rev_reimport : reimport list;
 }
 
+module HandleMap = Opaqueproof.HandleMap
+
 type safe_environment =
   { env : Environ.env;
     sections : section_data Section.t option;
@@ -142,7 +145,7 @@ type safe_environment =
     modlabels : Label.Set.t;
     objlabels : Label.Set.t;
     univ : Univ.ContextSet.t;
-    future_cst : Univ.ContextSet.t Future.computation list;
+    future_cst : (Term_typing.typing_context * safe_environment) HandleMap.t;
     required : vodigest DPmap.t;
     loads : (ModPath.t * module_body) list;
     local_retroknowledge : Retroknowledge.action list;
@@ -170,7 +173,7 @@ let empty_environment =
     modlabels = Label.Set.empty;
     objlabels = Label.Set.empty;
     sections = None;
-    future_cst = [];
+    future_cst = HandleMap.empty;
     univ = Univ.ContextSet.empty;
     required = DPmap.empty;
     loads = [];
@@ -382,10 +385,6 @@ let get_section = function
   | None -> CErrors.user_err Pp.(str "No open section.")
   | Some s -> s
 
-type constraints_addition =
-  | Now of Univ.ContextSet.t
-  | Later of Univ.ContextSet.t Future.computation
-
 let push_context_set ~strict cst senv =
   if Univ.ContextSet.is_empty cst then senv
   else
@@ -397,27 +396,12 @@ let push_context_set ~strict cst senv =
       sections }
 
 let add_constraints cst senv =
-  match cst with
-  | Later fc ->
-    {senv with future_cst = fc :: senv.future_cst}
-  | Now cst ->
-    push_context_set ~strict:true cst senv
-
-let add_constraints_list cst senv =
-  List.fold_left (fun acc c -> add_constraints c acc) senv cst
+  push_context_set ~strict:true cst senv
 
 let is_curmod_library senv =
   match senv.modvariant with LIBRARY -> true | _ -> false
 
-let join_safe_environment ?(except=Future.UUIDSet.empty) e =
-  Modops.join_structure except (Environ.opaque_tables e.env) e.revstruct;
-  List.fold_left
-    (fun e fc ->
-       if Future.UUIDSet.mem (Future.uuid fc) except then e
-       else add_constraints (Now (Future.join fc)) e)
-    {e with future_cst = []} e.future_cst
-
-let is_joined_environment e = List.is_empty e.future_cst
+let is_joined_environment e = HandleMap.is_empty e.future_cst
 
 (** {6 Various checks } *)
 
@@ -603,9 +587,23 @@ let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 
 type global_declaration =
 | ConstantEntry : Entries.constant_entry -> global_declaration
-| OpaqueEntry : private_constants Entries.const_entry_body Entries.opaque_entry -> global_declaration
+| OpaqueEntry : unit Entries.opaque_entry -> global_declaration
 
-type exported_private_constant = Constant.t
+type exported_opaque = {
+  exp_handle : Opaqueproof.opaque_handle;
+  exp_body : Constr.t;
+  exp_univs : int option;
+  (* Minimal amount of data needed to rebuild the private universes. We enforce
+     in the API that private constants have no internal constraints. *)
+}
+type exported_private_constant = Constant.t * exported_opaque option
+
+let repr_exported_opaque o =
+  let priv = match o .exp_univs with
+  | None -> Opaqueproof.PrivateMonomorphic ()
+  | Some n -> Opaqueproof.PrivatePolymorphic (n, Univ.ContextSet.empty)
+  in
+  (o.exp_handle, (o.exp_body, priv))
 
 let add_constant_aux senv (kn, cb) =
   let l = Constant.label kn in
@@ -758,10 +756,6 @@ let is_empty_private = function
 | Opaqueproof.PrivateMonomorphic ctx -> Univ.ContextSet.is_empty ctx
 | Opaqueproof.PrivatePolymorphic (_, ctx) -> Univ.ContextSet.is_empty ctx
 
-let empty_private univs = match univs with
-| Monomorphic -> Opaqueproof.PrivateMonomorphic Univ.ContextSet.empty
-| Polymorphic auctx -> Opaqueproof.PrivatePolymorphic (Univ.AbstractContext.size auctx, Univ.ContextSet.empty)
-
 (* Special function to call when the body of an opaque definition is provided.
   It performs the type-checking of the body immediately. *)
 let translate_direct_opaque env kn ce =
@@ -813,8 +807,8 @@ let export_side_effects senv eff =
       in
       recheck_seff seff Univ.ContextSet.empty [] env
 
-let push_opaque_proof pf senv =
-  let o, otab = Opaqueproof.create (library_dp_of_senv senv) pf (Environ.opaque_tables senv.env) in
+let push_opaque_proof senv =
+  let o, otab = Opaqueproof.create (library_dp_of_senv senv) (Environ.opaque_tables senv.env) in
   let senv = { senv with env = Environ.set_opaque_tables senv.env otab } in
   senv, o
 
@@ -822,63 +816,42 @@ let export_private_constants eff senv =
   let uctx, exported = export_side_effects senv eff in
   let senv = push_context_set ~strict:true uctx senv in
   let map senv (kn, c) = match c.const_body with
-  | OpaqueDef p ->
-    let local = empty_private c.const_universes in
-    let senv, o = push_opaque_proof (Future.from_val (p, local)) senv in
-    senv, (kn, { c with const_body = OpaqueDef o })
+  | OpaqueDef body ->
+    (* Don't care about the body, it has been checked by {!translate_direct_opaque} *)
+    let senv, o = push_opaque_proof senv in
+    let (_, _, _, h) = Opaqueproof.repr o in
+    let univs = match c.const_universes with
+    | Monomorphic -> None
+    | Polymorphic auctx -> Some (Univ.AbstractContext.size auctx)
+    in
+    let opaque = { exp_body = body; exp_handle = h; exp_univs = univs } in
+    senv, (kn, { c with const_body = OpaqueDef o }, Some opaque)
   | Def _ | Undef _ | Primitive _ as body ->
-    senv, (kn, { c with const_body = body })
+    senv, (kn, { c with const_body = body }, None)
   in
   let senv, bodies = List.fold_left_map map senv exported in
-  let exported = List.map (fun (kn, _) -> kn) exported in
+  let exported = List.map (fun (kn, _, opaque) -> kn, opaque) bodies in
   (* No delayed constants to declare *)
-  let senv = List.fold_left add_constant_aux senv bodies in
+  let fold senv (kn, cb, _) = add_constant_aux senv (kn, cb) in
+  let senv = List.fold_left fold senv bodies in
   exported, senv
 
 let add_constant l decl senv =
   let kn = Constant.make2 senv.modpath l in
-    let cb =
+  let senv, cb =
       match decl with
       | OpaqueEntry ce ->
-        let handle env body eff =
-          let body, uctx, signatures, skip = inline_side_effects env body eff in
-          let trusted = check_signatures senv signatures in
-          let trusted, uctx = match trusted with
-          | None -> 0, uctx
-          | Some univs -> skip, Univ.ContextSet.union univs uctx
-          in
-          body, uctx, trusted
-        in
+        let senv, o = push_opaque_proof senv in
         let cb, ctx = Term_typing.translate_opaque senv.env kn ce in
-        let map pf = Term_typing.check_delayed handle ctx pf in
-        let pf = Future.chain ce.Entries.opaque_entry_body map in
-        { cb with const_body = OpaqueDef pf }
+        (* Push the delayed data in the environment *)
+        let (_, _, _, i) = Opaqueproof.repr o in
+        let future_cst = HandleMap.add i (ctx, senv) senv.future_cst in
+        let senv = { senv with future_cst } in
+        senv, { cb with const_body = OpaqueDef o }
       | ConstantEntry ce ->
-        Term_typing.translate_constant senv.env kn ce
-    in
-  let senv =
-    let senv, cb, delayed_cst = match cb.const_body with
-    | OpaqueDef fc ->
-      let senv, o = push_opaque_proof fc senv in
-      let delayed_cst =
-        if not (Declareops.constant_is_polymorphic cb) then
-          let map (_, u) = match u with
-          | Opaqueproof.PrivateMonomorphic ctx -> ctx
-          | Opaqueproof.PrivatePolymorphic _ -> assert false
-          in
-          let fc = Future.chain fc map in
-          match Future.peek_val fc with
-          | None -> [Later fc]
-          | Some c -> [Now c]
-        else []
-      in
-      senv, { cb with const_body = OpaqueDef o }, delayed_cst
-    | Undef _ | Def _ | Primitive _ as body ->
-      senv, { cb with const_body = body }, []
-    in
-    let senv = add_constant_aux senv (kn, cb) in
-    add_constraints_list delayed_cst senv
+        senv, Term_typing.translate_constant senv.env kn ce
   in
+  let senv = add_constant_aux senv (kn, cb) in
 
   let senv =
     match decl with
@@ -891,6 +864,33 @@ let add_constant l decl senv =
 
 let add_constant ?typing_flags l decl senv =
   with_typing_flags ?typing_flags senv ~f:(add_constant l decl)
+
+let join_opaque (i : Opaqueproof.opaque_handle) pf senv =
+  let ty_ctx, trust =
+    try HandleMap.find i senv.future_cst
+    with Not_found ->
+      CErrors.anomaly Pp.(str "Missing opaque with identifier " ++ int (Opaqueproof.repr_handle i))
+  in
+  let handle env body eff =
+    let body, uctx, signatures, skip = inline_side_effects env body eff in
+    let trusted = check_signatures trust signatures in
+    let trusted, uctx = match trusted with
+    | None -> 0, uctx
+    | Some univs -> skip, Univ.ContextSet.union univs uctx
+    in
+    body, uctx, trusted
+  in
+  let (c, ctx) = Term_typing.check_delayed handle ty_ctx pf in
+  (* TODO: Drop the the monomorphic constraints, they should really be internal
+     but the higher levels use them haphazardly. *)
+  let senv, ctx = match ctx with
+  | Opaqueproof.PrivateMonomorphic ctx ->
+    let senv = add_constraints ctx senv in
+    senv, Opaqueproof.PrivateMonomorphic ctx
+  | Opaqueproof.PrivatePolymorphic _ as ctx -> senv, ctx
+  in
+  (* Mark the constant as having been checked *)
+  (c, ctx), { senv with future_cst = HandleMap.remove i senv.future_cst }
 
 let check_constraints uctx = function
 | Entries.Polymorphic_entry _ -> Univ.ContextSet.is_empty uctx
@@ -1086,23 +1086,22 @@ let build_module_body params restype senv =
 let allow_delayed_constants = ref false
 
 let propagate_senv newdef newenv newresolver senv oldsenv =
+(** FIXME ??? *)
+(*
   let now_cst, later_cst = List.partition Future.is_val senv.future_cst in
   (* This asserts that after Paral-ITP, standard vo compilation is behaving
    * exctly as before: the same universe constraints are added to modules *)
   if not !allow_delayed_constants && later_cst <> [] then
     CErrors.anomaly ~label:"safe_typing"
       Pp.(str "True Future.t were created for opaque constants even if -async-proofs is off");
+*)
   { oldsenv with
     env = newenv;
     modresolver = newresolver;
     revstruct = newdef::oldsenv.revstruct;
     modlabels = Label.Set.add (fst newdef) oldsenv.modlabels;
-    univ =
-      List.fold_left (fun acc cst ->
-        Univ.ContextSet.union acc (Future.force cst))
-      (Univ.ContextSet.union senv.univ oldsenv.univ)
-      now_cst;
-    future_cst = later_cst @ oldsenv.future_cst;
+    univ = (Univ.ContextSet.union senv.univ oldsenv.univ);
+    future_cst = HandleMap.fold HandleMap.add senv.future_cst oldsenv.future_cst;
     required = senv.required;
     loads = senv.loads@oldsenv.loads;
     local_retroknowledge =
@@ -1168,7 +1167,7 @@ let add_include me is_module inl senv =
       let cst_sub = Subtyping.check_subtypes senv.env mb mtb in
       let senv =
         add_constraints
-          (Now (Univ.ContextSet.add_constraints cst_sub Univ.ContextSet.empty))
+          (Univ.ContextSet.add_constraints cst_sub Univ.ContextSet.empty)
           senv in
       let mpsup_delta =
         Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb mb.mod_delta
@@ -1219,9 +1218,9 @@ let start_library dir senv =
     modvariant = LIBRARY;
     required = senv.required }
 
-let export ?except ~output_native_objects senv dir =
-  let senv = join_safe_environment ?except senv in
-  assert(senv.future_cst = []);
+let export ~output_native_objects senv dir =
+  (* FIXME: this is not true for vio mode but we should still do something *)
+  (* assert(HandleMap.is_empty senv.future_cst); *)
   let () = check_current_library dir senv in
   let mp = senv.modpath in
   let str = NoFunctor (List.rev senv.revstruct) in
@@ -1483,7 +1482,7 @@ let register_inductive ind prim senv =
 
 let add_constraints c =
   add_constraints
-    (Now (Univ.ContextSet.add_constraints c Univ.ContextSet.empty))
+    (Univ.ContextSet.add_constraints c Univ.ContextSet.empty)
 
 
 (* NB: The next old comment probably refers to [propagate_loads] above.

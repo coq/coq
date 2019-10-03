@@ -191,14 +191,12 @@ let fold_with_full_binders g f n acc c =
 
 let get_constant_body kn =
   let cb = lookup_constant kn in
-  let env = Global.env () in
   let access = Library.indirect_accessor in
-  let otab = Environ.opaque_tables env in
   match cb.const_body with
   | Undef _ | Primitive _ -> None
   | Def c -> Some c
   | OpaqueDef o ->
-    match Opaqueproof.force_proof access otab o with
+    match Global.force_proof access o with
     | c, _ -> Some c
     | exception _ -> None (* missing delayed body, e.g. in vok mode *)
 

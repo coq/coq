@@ -56,6 +56,8 @@ val export_private_constants :
 val add_constant :
   ?typing_flags:typing_flags ->
   Id.t -> Safe_typing.global_declaration -> Constant.t
+val join_opaque : Opaqueproof.opaque_handle -> Safe_typing.private_constants Entries.proof_output ->
+  (Constr.t * Univ.ContextSet.t Opaqueproof.delayed_universes)
 val add_private_constant :
   Id.t -> Univ.ContextSet.t -> Safe_typing.side_effect_declaration -> Constant.t * Safe_typing.private_constants
 val add_mind :
@@ -120,16 +122,20 @@ val exists_objlabel  : Label.t -> bool
 val constant_of_delta_kn : KerName.t -> Constant.t
 val mind_of_delta_kn : KerName.t -> MutInd.t
 
-val opaque_tables : unit -> Opaqueproof.opaquetab
+type indirect_accessor = {
+  access_proof : cooking_info Opaqueproof.opaque -> (Constr.t * unit Opaqueproof.delayed_universes) option;
+}
 
-val body_of_constant : cooking_info Opaqueproof.indirect_accessor -> Constant.t ->
+val force_proof : indirect_accessor -> cooking_info Opaqueproof.opaque -> Constr.t * unit Opaqueproof.delayed_universes
+
+val body_of_constant : indirect_accessor -> Constant.t ->
   (Constr.constr * unit Opaqueproof.delayed_universes * Univ.AbstractContext.t) option
 (** Returns the body of the constant if it has any, and the polymorphic context
     it lives in. For monomorphic constant, the latter is empty, and for
     polymorphic constants, the term contains De Bruijn universe variables that
     need to be instantiated. *)
 
-val body_of_constant_body : cooking_info Opaqueproof.indirect_accessor ->
+val body_of_constant_body : indirect_accessor ->
   constant_body ->
     (Constr.constr * unit Opaqueproof.delayed_universes * Univ.AbstractContext.t) option
 (** Same as {!body_of_constant} but on {!constant_body}. *)
@@ -137,7 +143,7 @@ val body_of_constant_body : cooking_info Opaqueproof.indirect_accessor ->
 (** {6 Compiled libraries } *)
 
 val start_library : DirPath.t -> ModPath.t
-val export : ?except:Future.UUIDSet.t -> output_native_objects:bool -> DirPath.t ->
+val export : output_native_objects:bool -> DirPath.t ->
   ModPath.t * Safe_typing.compiled_library * Nativelib.native_library
 val import :
   Safe_typing.compiled_library -> Univ.ContextSet.t -> Safe_typing.vodigest ->
@@ -150,7 +156,6 @@ val import :
 
 val env_of_context : Environ.named_context_val -> Environ.env
 
-val join_safe_environment : ?except:Future.UUIDSet.t -> unit -> unit
 val is_joined_environment : unit -> bool
 
 val is_polymorphic : GlobRef.t -> bool

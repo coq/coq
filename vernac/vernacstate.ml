@@ -94,6 +94,7 @@ type t = {
   system  : System.t;              (* summary + libstack *)
   lemmas  : LemmaStack.t option;   (* proofs of lemmas currently opened *)
   program : Declare.OblState.t NeList.t;    (* obligations table *)
+  opaques : Opaques.Summary.t;     (* opaque proof terms *)
   shallow : bool                   (* is the state trimmed down (libstack) *)
 }
 
@@ -122,14 +123,16 @@ let freeze_interp_state ~marshallable =
   { system = update_cache s_cache (System.freeze ~marshallable);
     lemmas = !s_lemmas;
     program = !s_program;
+    opaques = Opaques.Summary.freeze ~marshallable;
     shallow = false;
     parsing = Parser.cur_state ();
   }
 
-let unfreeze_interp_state { system; lemmas; program; parsing } =
+let unfreeze_interp_state { system; lemmas; program; parsing; opaques } =
   do_if_not_cached s_cache System.unfreeze system;
   s_lemmas := lemmas;
   s_program := program;
+  Opaques.Summary.unfreeze opaques;
   Pcoq.unfreeze parsing
 
 (* Compatibility module *)

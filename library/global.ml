@@ -20,27 +20,16 @@ module GlobalSafeEnv : sig
 
   val safe_env : unit -> Safe_typing.safe_environment
   val set_safe_env : Safe_typing.safe_environment -> unit
-  val join_safe_environment : ?except:Future.UUIDSet.t -> unit -> unit
   val is_joined_environment : unit -> bool
   val global_env_summary_tag : Safe_typing.safe_environment Summary.Dyn.tag
 
 end = struct
 
-let global_env = ref Safe_typing.empty_environment
-
-let join_safe_environment ?except () =
-  global_env := Safe_typing.join_safe_environment ?except !global_env
+let global_env, global_env_summary_tag =
+  Summary.ref_tag ~name:global_env_summary_name Safe_typing.empty_environment
 
 let is_joined_environment () =
   Safe_typing.is_joined_environment !global_env
-
-let global_env_summary_tag =
-  Summary.declare_summary_tag global_env_summary_name
-    { Summary.freeze_function = (fun ~marshallable -> if marshallable then
-        (join_safe_environment (); !global_env)
-        else !global_env);
-      unfreeze_function = (fun fr -> global_env := fr);
-      init_function = (fun () -> global_env := Safe_typing.empty_environment) }
 
 let assert_not_parsing () =
   if !Flags.we_are_parsing then
@@ -56,8 +45,6 @@ end
 let global_env_summary_tag = GlobalSafeEnv.global_env_summary_tag
 
 let safe_env = GlobalSafeEnv.safe_env
-let join_safe_environment ?except () =
-  GlobalSafeEnv.join_safe_environment ?except ()
 let is_joined_environment = GlobalSafeEnv.is_joined_environment
 
 let env () = Safe_typing.env_of_safe_env (safe_env ())
@@ -107,6 +94,7 @@ let sprop_allowed () = Environ.sprop_allowed (env())
 let export_private_constants cd = globalize (Safe_typing.export_private_constants cd)
 let add_constant ?typing_flags id d = globalize (Safe_typing.add_constant ?typing_flags (i2l id) d)
 let add_private_constant id u d = globalize (Safe_typing.add_private_constant (i2l id) u d)
+let join_opaque uid pf = globalize (Safe_typing.join_opaque uid pf)
 let add_mind ?typing_flags id mie = globalize (Safe_typing.add_mind ?typing_flags (i2l id) mie)
 let add_modtype id me inl = globalize (Safe_typing.add_modtype (i2l id) me inl)
 let add_module id me inl = globalize (Safe_typing.add_module (i2l id) me inl)
@@ -146,11 +134,16 @@ let lookup_modtype kn = lookup_modtype kn (env())
 
 let exists_objlabel id = Safe_typing.exists_objlabel id (safe_env ())
 
-let opaque_tables () = Environ.opaque_tables (env ())
+type indirect_accessor = {
+  access_proof : Declarations.cooking_info Opaqueproof.opaque -> (Constr.t * unit Opaqueproof.delayed_universes) option;
+}
+
+let force_proof access o = match access.access_proof o with
+| None -> CErrors.user_err Pp.(str "Cannot access opaque delayed proof")
+| Some (c, u) -> (c, u)
 
 let body_of_constant_body access env cb =
   let open Declarations in
-  let otab = Environ.opaque_tables env in
   match cb.const_body with
   | Undef _ | Primitive _ ->
      None
@@ -161,7 +154,7 @@ let body_of_constant_body access env cb =
     in
     Some (c, u, Declareops.constant_polymorphic_context cb)
   | OpaqueDef o ->
-    let c, u = Opaqueproof.force_proof access otab o in
+    let c, u = force_proof access o in
     Some (c, u, Declareops.constant_polymorphic_context cb)
 
 let body_of_constant_body access ce = body_of_constant_body access (env ()) ce
@@ -179,8 +172,8 @@ let mind_of_delta_kn kn =
 (** Operations on libraries *)
 
 let start_library dir = globalize (Safe_typing.start_library dir)
-let export ?except ~output_native_objects s =
-  Safe_typing.export ?except ~output_native_objects (safe_env ()) s
+let export ~output_native_objects s =
+  Safe_typing.export ~output_native_objects (safe_env ()) s
 let import c u d = globalize (Safe_typing.import c u d)
 
 

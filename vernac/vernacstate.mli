@@ -52,6 +52,8 @@ type t =
   (** proofs of lemmas currently opened *)
   ; program : Declare.OblState.t NeList.t
   (** program mode table. One per open module/section including the toplevel module. *)
+  ; opaques : Opaques.Summary.t
+  (** qed-terminated proofs *)
   ; shallow : bool
   (** is the state trimmed down (libstack) *)
   }

@@ -51,7 +51,7 @@ let pr_path sp =
 type compilation_unit_name = DirPath.t
 
 type seg_univ = Univ.ContextSet.t * bool
-type seg_proofs = Opaqueproof.opaque_disk
+type seg_proofs = Opaqueproof.opaque_proofterm option array
 
 type library_t = {
   library_name : compilation_unit_name;
@@ -97,14 +97,21 @@ let access_opaque_table dp i =
     try LibraryMap.find dp !opaque_tables
     with Not_found -> assert false
   in
-  Opaqueproof.get_opaque_disk i t
+  let i = Opaqueproof.repr_handle i in
+  let () = assert (0 <= i) in
+  if i < Array.length t then t.(i)
+  else None (* FIXME: we have to work around #13324 *)
 
-let access_discharge = Cooking.cook_constr
-
-let indirect_accessor = {
-  Opaqueproof.access_proof = access_opaque_table;
-  Opaqueproof.access_discharge = access_discharge;
-}
+let indirect_accessor o =
+  let (sub, ci, dp, i) = Opaqueproof.repr o in
+  let c = access_opaque_table dp i in
+  let c = match c with
+  | None ->  CErrors.user_err Pp.(str "Cannot access opaque delayed proof.")
+  | Some c -> c
+  in
+  let (c, prv) = Cooking.cook_constr ci c in
+  let c = Mod_subst.(List.fold_right subst_mps sub c) in
+  (c, prv)
 
 let () = Mod_checking.set_indirect_accessor indirect_accessor
 

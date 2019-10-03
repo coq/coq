@@ -1683,12 +1683,12 @@ end = struct (* {{{ *)
     | `OK name ->
         let con = Nametab.locate_constant (Libnames.qualid_of_ident name) in
         let c = Global.lookup_constant con in
-        let o = match c.Declarations.const_body with
-          | Declarations.OpaqueDef o -> o
+        let () = match c.Declarations.const_body with
+          | Declarations.OpaqueDef _ -> ()
           | _ -> assert false in
         (* No need to delay the computation, the future has been forced by
            the call to [check_task_aux] above. *)
-        let uc = Opaqueproof.force_constraints Library.indirect_accessor (Global.opaque_tables ()) o in
+        let uc = Option.get @@ Opaques.get_current_constraints (Option.get bucket) in
         let uc = Univ.hcons_universe_context_set uc in
         let (pr, priv, ctx) = Option.get (Global.body_of_constant_body Library.indirect_accessor c) in
         (* We only manipulate monomorphic terms here. *)
@@ -1699,7 +1699,7 @@ end = struct (* {{{ *)
           let () = assert (Int.equal (Univ.AbstractContext.size ctx) univs) in
           assert (Univ.ContextSet.is_empty uctx)
         in
-        let () = Opaqueproof.set_opaque_disk (Option.get bucket) (pr, priv) p in
+        let () = Opaques.set_opaque_disk (Option.get bucket) (pr, priv) p in
         Univ.ContextSet.union cst uc, false
 
   let check_task name l i =
@@ -2440,7 +2440,7 @@ let rec check_no_err_states ~doc visited id =
 let join ~doc =
   let doc = wait ~doc in
   stm_prerr_endline (fun () -> "Joining the environment");
-  Global.join_safe_environment ();
+  let () = Opaques.Summary.join () in
   stm_prerr_endline (fun () -> "Joining Admitted proofs");
   join_admitted_proofs (VCS.get_branch_pos VCS.Branch.master);
   stm_prerr_endline (fun () -> "Checking no error states");
@@ -2522,7 +2522,7 @@ let snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_vo =
       then Library.ProofsTodoSomeEmpty except
       else Library.ProofsTodoSome (except,tasks)
     in
-  Library.save_library_to todo_proofs ~output_native_objects ldir long_f_dot_vo (Global.opaque_tables ());
+  Library.save_library_to todo_proofs ~output_native_objects ldir long_f_dot_vo;
   doc
 
 let reset_task_queue = Slaves.reset_task_queue
