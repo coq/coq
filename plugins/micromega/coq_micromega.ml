@@ -782,7 +782,7 @@ struct
     (** [eq_constr gl x y] returns an updated [gl] if x and y can be unified *)
     let eq_constr gl x y =
       let evd = gl.sigma in
-      match EConstr.eq_constr_universes gl.env evd x y with
+      match EConstr.eq_constr_universes_proj gl.env evd x y with
       | Some csts ->
          let csts = UnivProblem.to_constraints ~force_weak:false (Evd.universes evd) csts in
          begin
@@ -806,15 +806,16 @@ struct
     ({vars=vars';gl=gl'}, CamlToCoq.positive n)
 
    let get_rank env v =
-     let evd = env.gl.sigma in
+     let gl = env.gl in
 
      let rec _get_rank env n =
        match env with
        | [] -> raise (Invalid_argument "get_rank")
       | e::l ->
-         if EConstr.eq_constr evd e v
-         then n
-         else  _get_rank l (n+1)  in
+        match eq_constr gl e v with
+        | Some _ -> n
+        | None -> _get_rank l (n+1)
+     in
      _get_rank env.vars 1
 
    let elements env = env.vars
