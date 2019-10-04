@@ -3058,7 +3058,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
    This tactic evaluates the goal using the optimized call-by-value evaluation
    bytecode-based virtual machine described in :cite:`CompiledStrongReduction`.
    This algorithm is dramatically more efficient than the algorithm used for the
-   :tacn:`cbv` tactic, but it cannot be fine-tuned. It is specially interesting for
+   :tacn:`cbv` tactic, but it cannot be fine-tuned. It is especially interesting for
    full evaluation of algebraic objects. This includes the case of
    reflection-based tactics.
 
