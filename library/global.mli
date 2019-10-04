@@ -73,7 +73,7 @@ val add_include :
 
 (** Sections *)
 
-val open_section : poly:bool -> unit
+val open_section : unit -> unit
 (** [poly] is true when the section should be universe polymorphic *)
 
 val close_section : Summary.frozen -> unit

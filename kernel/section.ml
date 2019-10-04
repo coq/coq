@@ -14,49 +14,38 @@ open Univ
 
 module NamedDecl = Context.Named.Declaration
 
-type _ section_kind =
-| SecMono : [ `mono ] section_kind
-| SecPoly : [ `poly ] section_kind
-
-type (_, 'a) section_universes =
-| SecMonoUniv : 'a -> ([ `mono ], 'a) section_universes
-| SecPolyUniv : Name.t array * UContext.t -> ([ `poly ], 'a) section_universes
-
 type section_entry =
 | SecDefinition of Constant.t
 | SecInductive of MutInd.t
 
 type 'a entry_map = 'a Cmap.t * 'a Mindmap.t
 
-type ('a, 'b) section = {
+type 'a section = {
   sec_context : int;
   (** Length of the named context suffix that has been introduced locally *)
-  sec_universes : ('a, ContextSet.t) section_universes;
+  sec_mono_universes : ContextSet.t;
+  sec_poly_universes : Name.t array * UContext.t;
   (** Universes local to the section *)
+  has_poly_univs : bool;
+  (** Are there polymorphic universes or constraints, including in previous sections. *)
   sec_entries : section_entry list;
   (** Definitions introduced in the section *)
-  sec_data : ('a, unit) section_universes entry_map;
+  sec_data : (Instance.t * AUContext.t) entry_map;
   (** Additional data synchronized with the section *)
-  sec_custom : 'b;
+  sec_custom : 'a;
 }
 
 (** Sections can be nested with the proviso that no monomorphic section can be
     opened inside a polymorphic one. The reverse is allowed. *)
-type 'a t = {
-  sec_poly : ([ `poly ], 'a) section list;
-  sec_mono : ([ `mono ], 'a) section list;
-}
+type 'a t = 'a section list
 
-let empty = {
-  sec_poly = [];
-  sec_mono = [];
-}
+let empty = []
 
-let is_empty s =
-  List.is_empty s.sec_poly && List.is_empty s.sec_mono
+let is_empty = List.is_empty
 
-let is_polymorphic s =
-  not (List.is_empty s.sec_poly)
+let has_poly_univs = function
+  | [] -> false
+  | sec :: _ -> sec.has_poly_univs
 
 let find_emap e (cmap, imap) = match e with
 | SecDefinition con -> Cmap.find con cmap
@@ -66,104 +55,80 @@ let add_emap e v (cmap, imap) = match e with
 | SecDefinition con -> (Cmap.add con v cmap, imap)
 | SecInductive ind -> (cmap, Mindmap.add ind v imap)
 
-type 'b on_sec = { on_sec : 'a. 'a section_kind -> ('a, 'b) section -> ('a, 'b) section }
+let on_last_section f sections = match sections with
+| [] -> CErrors.user_err (Pp.str "No opened section")
+| sec :: rem -> f sec :: rem
 
-let on_last_section f { sec_poly; sec_mono } = match sec_poly, sec_mono with
-| [], [] -> CErrors.user_err (Pp.str "No opened section")
-| sec :: rem, _ ->
-  let sec_poly = f.on_sec SecPoly sec :: rem in
-  { sec_mono; sec_poly }
-| [], sec :: rem ->
-  let sec_mono = f.on_sec SecMono sec :: rem in
-  { sec_mono; sec_poly }
-
-type ('r, 'b) with_sec = { with_sec : 'a. ('a section_kind * ('a, 'b) section) option -> 'r }
-
-let with_last_section f { sec_poly; sec_mono } = match sec_poly, sec_mono with
-| [], [] -> f.with_sec None
-| sec :: _, _ -> f.with_sec (Some (SecPoly, sec))
-| [], sec :: _ -> f.with_sec (Some (SecMono, sec))
+let with_last_section f sections = match sections with
+| [] -> f None
+| sec :: _ -> f (Some sec)
 
 let push_local s =
-  let on_sec _ sec = { sec with sec_context = sec.sec_context + 1 } in
-  on_last_section { on_sec } s
+  let on_sec sec = { sec with sec_context = sec.sec_context + 1 } in
+  on_last_section on_sec s
 
 let push_context (nas, ctx) s =
-  let on_sec (type a) (kind : a section_kind) (sec : (a, _) section) : (a, _) section = match kind with
-  | SecMono ->
-    CErrors.anomaly (Pp.str "Adding polymorphic constraints to monomorphic section")
-  | SecPoly ->
-    let SecPolyUniv (snas, sctx) = sec.sec_universes in
-    let sec_universes = SecPolyUniv (Array.append snas nas, UContext.union sctx ctx) in
-    { sec with sec_universes }
+    let on_sec sec =
+      if UContext.is_empty ctx then sec
+      else
+        let (snas, sctx) = sec.sec_poly_universes in
+        let sec_poly_universes = (Array.append snas nas, UContext.union sctx ctx) in
+        { sec with sec_poly_universes; has_poly_univs = true }
+    in
+    on_last_section on_sec s
+
+let is_polymorphic_univ u s =
+  let check sec =
+    let (_, uctx) = sec.sec_poly_universes in
+    Array.exists (fun u' -> Level.equal u u') (Instance.to_array (UContext.instance uctx))
   in
-  on_last_section { on_sec } s
+  List.exists check s
 
 let push_constraints uctx s =
-  let on_sec (type a) (kind : a section_kind) (sec : (a, _) section) : (a, _) section = match kind with
-  | SecMono ->
-    let SecMonoUniv uctx' = sec.sec_universes in
-    let sec_universes = SecMonoUniv (ContextSet.union uctx uctx') in
-    { sec with sec_universes }
-  | SecPoly ->
-    CErrors.anomaly (Pp.str "Adding monomorphic constraints to polymorphic section")
+  let on_sec sec =
+    if sec.has_poly_univs && Constraint.exists (fun (l,_,r) -> is_polymorphic_univ l s || is_polymorphic_univ r s) (snd uctx)
+    then CErrors.user_err Pp.(str "Cannot add monomorphic constraints which refer to section polymorphic universes.");
+    let uctx' = sec.sec_mono_universes in
+    let sec_mono_universes =  (ContextSet.union uctx uctx') in
+    { sec with sec_mono_universes }
   in
-  on_last_section { on_sec } s
+  on_last_section on_sec s
 
-let open_section ~poly ~custom sections =
-  if poly then
-    let sec = {
-      sec_context = 0;
-      sec_universes = SecPolyUniv ([||], Univ.UContext.empty);
-      sec_entries = [];
-      sec_data = (Cmap.empty, Mindmap.empty);
-      sec_custom = custom;
-    } in
-    { sections with sec_poly = sec :: sections.sec_poly }
-  else if List.is_empty sections.sec_poly then
-    let sec = {
-      sec_context = 0;
-      sec_universes = SecMonoUniv Univ.ContextSet.empty;
-      sec_entries = [];
-      sec_data = (Cmap.empty, Mindmap.empty);
-      sec_custom = custom;
-    } in
-    { sections with sec_mono = sec :: sections.sec_mono }
-  else
-    CErrors.user_err (Pp.str "Cannot open a monomorphic section inside a polymorphic one")
+let open_section ~custom sections =
+  let sec = {
+    sec_context = 0;
+    sec_mono_universes = ContextSet.empty;
+    sec_poly_universes = ([||], UContext.empty);
+    has_poly_univs = has_poly_univs sections;
+    sec_entries = [];
+    sec_data = (Cmap.empty, Mindmap.empty);
+    sec_custom = custom;
+  } in
+  sec :: sections
 
 let close_section sections =
-  match sections.sec_poly, sections.sec_mono with
-  | sec :: psecs, _ ->
-    let sections = { sections with sec_poly = psecs } in
-    sections, sec.sec_entries, Univ.ContextSet.empty, sec.sec_custom
-  | [], sec :: msecs ->
-    let sections = { sections with sec_mono = msecs } in
-    let SecMonoUniv cstrs = sec.sec_universes in
-    sections, sec.sec_entries, cstrs, sec.sec_custom
-  | [], [] ->
+  match sections with
+  | sec :: sections ->
+    sections, sec.sec_entries, sec.sec_mono_universes, sec.sec_custom
+  | [] ->
     CErrors.user_err (Pp.str "No opened section.")
 
-let same_poly (type a) ~poly (knd : a section_kind) = match knd with
-| SecPoly -> poly
-| SecMono -> not poly
-
-let drop_global (type a) : (a, _) section_universes -> (a, unit) section_universes = function
-| SecMonoUniv _ -> SecMonoUniv ()
-| SecPolyUniv _ as u -> u
+let make_decl_univs (nas,uctx) = abstract_universes nas uctx
 
 let push_global ~poly e s =
   if is_empty s then s
+  else if has_poly_univs s && not poly
+  then CErrors.user_err
+      Pp.(str "Cannot add a universe monomorphic declaration when \
+               section polymorphic universes are present.")
   else
-    let on_sec knd sec =
-      if same_poly ~poly knd then { sec with
+    let on_sec sec =
+      { sec with
         sec_entries = e :: sec.sec_entries;
-        sec_data = add_emap e (drop_global sec.sec_universes) sec.sec_data;
-      } else
-        CErrors.user_err (Pp.str "Cannot mix universe polymorphic and \
-          monomorphic declarations in sections.")
+        sec_data = add_emap e (make_decl_univs sec.sec_poly_universes) sec.sec_data;
+      }
     in
-    on_last_section { on_sec } s
+    on_last_section on_sec s
 
 let push_constant ~poly con s = push_global ~poly (SecDefinition con) s
 
@@ -171,8 +136,8 @@ let push_inductive ~poly ind s = push_global ~poly (SecInductive ind) s
 
 type abstr_info = {
   abstr_ctx : Constr.named_context;
-  abstr_subst : Univ.Instance.t;
-  abstr_uctx : Univ.AUContext.t;
+  abstr_subst : Instance.t;
+  abstr_uctx : AUContext.t;
 }
 
 let empty_segment = {
@@ -198,24 +163,19 @@ let extract_hyps sec vars hyps =
 let section_segment_of_entry vars e hyps sections =
   (* [vars] are the named hypotheses, [hyps] the subset that is declared by the
     global *)
-  let with_sec (type a) (s : (a section_kind * (a, _) section) option) = match s with
+  let with_sec s = match s with
   | None ->
     CErrors.user_err (Pp.str "No opened section.")
-  | Some (knd, sec) ->
+  | Some sec ->
     let hyps = extract_hyps sec vars hyps in
-    let inst, auctx = match knd, find_emap e sec.sec_data with
-    | SecMono, SecMonoUniv () ->
-      Instance.empty, AUContext.empty
-    | SecPoly, SecPolyUniv (nas, ctx) ->
-      Univ.abstract_universes nas ctx
-    in
+    let inst, auctx = find_emap e sec.sec_data in
     {
       abstr_ctx = hyps;
       abstr_subst = inst;
       abstr_uctx = auctx;
     }
   in
-  with_last_section { with_sec } sections
+  with_last_section with_sec sections
 
 let segment_of_constant env con s =
   let body = Environ.lookup_constant con env in
@@ -237,18 +197,18 @@ let extract_worklist info =
 let replacement_context env s =
   let with_sec sec = match sec with
   | None -> CErrors.user_err (Pp.str "No opened section.")
-  | Some (_, sec) ->
+  | Some sec ->
     let cmap, imap = sec.sec_data in
     let cmap = Cmap.mapi (fun con _ -> extract_worklist @@ segment_of_constant env con s) cmap in
     let imap = Mindmap.mapi (fun ind _ -> extract_worklist @@ segment_of_inductive env ind s) imap in
     (cmap, imap)
   in
-  with_last_section { with_sec } s
+  with_last_section with_sec s
 
 let is_in_section env gr s =
   let with_sec sec = match sec with
   | None -> false
-  | Some (_, sec) ->
+  | Some sec ->
     let open GlobRef in
     match gr with
     | VarRef id ->
@@ -259,11 +219,4 @@ let is_in_section env gr s =
     | IndRef (ind, _) | ConstructRef ((ind, _), _) ->
       Mindmap.mem ind (snd sec.sec_data)
   in
-  with_last_section { with_sec } s
-
-let is_polymorphic_univ u s =
-  let check sec =
-    let SecPolyUniv (_, uctx) = sec.sec_universes in
-    Array.mem u (Instance.to_array (UContext.instance uctx))
-  in
-  List.exists check s.sec_poly
+  with_last_section with_sec s
