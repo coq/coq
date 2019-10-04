@@ -16,15 +16,7 @@ Require Import Logic.ConstructiveEpsilon.
 Require CMorphisms.
 
 (** The constructive Cauchy real numbers, ie the Cauchy sequences
-    of rational numbers. This file is not supposed to be imported,
-    except in Rdefinitions.v, Raxioms.v, Rcomplete_constr.v
-    and ConstructiveRIneq.v.
-
-    Constructive real numbers should be considered abstractly,
-    forgetting the fact that they are implemented as rational sequences.
-    All useful lemmas of this file are exposed in ConstructiveRIneq.v,
-    under more abstract names, like Rlt_asym instead of CRealLt_asym.
-
+    of rational numbers.
 
     Cauchy reals are Cauchy sequences of rational numbers,
     equipped with explicit moduli of convergence and
@@ -705,6 +697,17 @@ Proof.
     right. rewrite H0, H. exact c.
 Qed.
 
+Add Parametric Morphism : CRealLtProp
+    with signature CRealEq ==> CRealEq ==> iff
+      as CRealLtProp_morph.
+Proof.
+  intros x y H x0 y0 H0. split.
+  - intro. apply CRealLtForget. apply CRealLtEpsilon in H1.
+    rewrite <- H, <- H0. exact H1.
+  - intro. apply CRealLtForget. apply CRealLtEpsilon in H1.
+    rewrite H, H0. exact H1.
+Qed.
+
 Add Parametric Morphism : CRealLe
     with signature CRealEq ==> CRealEq ==> iff
       as CRealLe_morph.
@@ -771,6 +774,9 @@ Definition inject_Q : Q -> CReal.
 Proof.
   intro q. exists (fun n => q). apply ConstCauchy.
 Defined.
+
+Definition inject_Z : Z -> CReal
+  := fun n => inject_Q (n # 1).
 
 Notation "0" := (inject_Q 0) : CReal_scope.
 Notation "1" := (inject_Q 1) : CReal_scope.
@@ -1323,4 +1329,20 @@ Proof.
   intros. intros [n maj]. simpl in maj.
   apply (Qlt_not_le _ _ maj). apply (Qle_trans _ 0).
   apply (Qplus_le_l _ _ r). ring_simplify. exact H. discriminate.
+Qed.
+
+Lemma inject_Z_plus : forall q r : Z,
+    inject_Z (q + r) == inject_Z q + inject_Z r.
+Proof.
+  intros. unfold inject_Z.
+  setoid_replace (q + r # 1)%Q with ((q#1) + (r#1))%Q.
+  apply inject_Q_plus. rewrite Qinv_plus_distr. reflexivity.
+Qed.
+
+Lemma opp_inject_Z : forall n : Z,
+    inject_Z (-n) == - inject_Z n.
+Proof.
+  intros. unfold inject_Z.
+  setoid_replace (-n # 1)%Q with (-(n#1))%Q.
+  rewrite opp_inject_Q. reflexivity. reflexivity.
 Qed.

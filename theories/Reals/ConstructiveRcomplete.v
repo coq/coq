@@ -11,6 +11,7 @@
 
 Require Import QArith_base.
 Require Import Qabs.
+Require Import ConstructiveReals.
 Require Import ConstructiveCauchyRealsMult.
 Require Import Logic.ConstructiveEpsilon.
 
@@ -347,3 +348,35 @@ Proof.
       apply Qplus_le_r. discriminate.
       rewrite Qinv_plus_distr. reflexivity.
 Qed.
+
+Definition CRealImplem : ConstructiveReals.
+Proof.
+  assert (isLinearOrder CReal CRealLt) as lin.
+  { repeat split. exact CRealLt_asym.
+    exact CReal_lt_trans.
+    intros. destruct (CRealLt_dec x z y H).
+    left. exact c. right. exact c. }
+  apply (Build_ConstructiveReals
+           CReal CRealLt lin CRealLtProp
+           CRealLtEpsilon CRealLtForget CRealLtDisjunctEpsilon
+           (inject_Q 0) (inject_Q 1)
+           CReal_plus CReal_opp CReal_mult
+           CReal_isRing CReal_isRingExt CRealLt_0_1
+           CReal_plus_lt_compat_l CReal_plus_lt_reg_l
+           CReal_mult_lt_0_compat
+           CReal_inv CReal_inv_l CReal_inv_0_lt_compat
+           inject_Q inject_Q_plus inject_Q_mult
+           inject_Q_one inject_Q_lt lt_inject_Q
+           CRealQ_dense Rup_pos).
+  - intros. destruct (Rcauchy_complete xn) as [l cv].
+    intro n. destruct (H n). exists x. intros.
+    specialize (a i j H0 H1) as [a b]. split. 2: exact b.
+    rewrite <- opp_inject_Q.
+    setoid_replace (-(1#n))%Q with (-1#n)%Q. exact a. reflexivity.
+    exists l. intros p. destruct (cv p).
+    exists x. intros. specialize (a i H0). split. 2: apply a.
+    unfold orderLe.
+    intro abs. setoid_replace (-1#p)%Q with (-(1#p))%Q in abs.
+    rewrite opp_inject_Q in abs. destruct a. contradiction.
+    reflexivity.
+Defined.

@@ -68,6 +68,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/WKL.v
     theories/Logic/FinFun.v
     theories/Logic/PropFacts.v
+    theories/Logic/HLevels.v
   </dd>
 
   <dt> <b>Structures</b>:
@@ -518,8 +519,8 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/ConstructiveRealsMorphisms.v
     theories/Reals/ConstructiveCauchyReals.v
     theories/Reals/ConstructiveCauchyRealsMult.v
+    theories/Reals/ClassicalDedekindReals.v
     theories/Reals/Raxioms.v
-    theories/Reals/ConstructiveRIneq.v
     theories/Reals/ConstructiveRealsLUB.v
     theories/Reals/RIneq.v
     theories/Reals/DiscrR.v
