@@ -178,7 +178,7 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
 
  Lemma eq_refl : forall x : t, eq x x.
  Proof.
- intros (x1,x2); red; simpl; auto.
+ intros (x1,x2); red; simpl; auto with ordered_type.
  Qed.
 
  Lemma eq_sym : forall x y : t, eq x y -> eq y x.
@@ -188,16 +188,16 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
 
  Lemma eq_trans : forall x y z : t, eq x y -> eq y z -> eq x z.
  Proof.
- intros (x1,x2) (y1,y2) (z1,z2); unfold eq; simpl; intuition eauto.
+ intros (x1,x2) (y1,y2) (z1,z2); unfold eq; simpl; intuition eauto with ordered_type.
  Qed.
 
  Lemma lt_trans : forall x y z : t, lt x y -> lt y z -> lt x z.
  Proof.
  intros (x1,x2) (y1,y2) (z1,z2); unfold eq, lt; simpl; intuition.
- left; eauto.
+ left; eauto with ordered_type.
  left; eapply MO1.lt_eq; eauto.
  left; eapply MO1.eq_lt; eauto.
- right; split; eauto.
+ right; split; eauto with ordered_type.
  Qed.
 
  Lemma lt_not_eq : forall x y : t, lt x y -> ~ eq x y.
@@ -214,7 +214,7 @@ Module PairOrderedType(O1 O2:OrderedType) <: OrderedType.
  destruct (O2.compare x2 y2).
  apply LT; unfold lt; auto.
  apply EQ; unfold eq; auto.
- apply GT; unfold lt; auto.
+ apply GT; unfold lt; auto with ordered_type.
  apply GT; unfold lt; auto.
  Defined.
 

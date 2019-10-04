@@ -593,14 +593,14 @@ Qed.
 Lemma MapsTo_1 :
  forall m x y e, X.eq x y -> MapsTo x e m -> MapsTo y e m.
 Proof.
- induction m; simpl; intuition_in; eauto.
+ induction m; simpl; intuition_in; eauto with ordered_type.
 Qed.
 Hint Immediate MapsTo_1 : core.
 
 Lemma In_1 :
  forall m x y, X.eq x y -> In x m -> In y m.
 Proof.
- intros m x y; induction m; simpl; intuition_in; eauto.
+ intros m x y; induction m; simpl; intuition_in; eauto with ordered_type.
 Qed.
 
 Lemma In_node_iff :
@@ -671,7 +671,7 @@ Qed.
 Lemma lt_tree_trans :
  forall x y, X.lt x y -> forall m, lt_tree x m -> lt_tree y m.
 Proof.
- eauto.
+ eauto with ordered_type.
 Qed.
 
 Lemma gt_tree_not_in :
@@ -683,7 +683,7 @@ Qed.
 Lemma gt_tree_trans :
  forall x y, X.lt y x -> forall m, gt_tree x m -> gt_tree y m.
 Proof.
- eauto.
+ eauto with ordered_type.
 Qed.
 
 Hint Resolve lt_tree_not_in lt_tree_trans gt_tree_not_in gt_tree_trans : core.
@@ -707,7 +707,7 @@ Qed.
 Lemma is_empty_1 : forall m, Empty m -> is_empty m = true.
 Proof.
  destruct m as [|r x e l h]; simpl; auto.
- intro H; elim (H x e); auto.
+ intro H; elim (H x e); auto with ordered_type.
 Qed.
 
 Lemma is_empty_2 : forall m, is_empty m = true -> Empty m.
@@ -732,7 +732,7 @@ Lemma find_1 : forall m x e, bst m -> MapsTo x e m -> find x m = Some e.
 Proof.
  intros m x; functional induction (find x m); auto; intros; clearf;
   inv bst; intuition_in; simpl; auto;
- try solve [order | absurd (X.lt x y); eauto | absurd (X.lt y x); eauto].
+ try solve [order | absurd (X.lt x y); eauto with ordered_type | absurd (X.lt y x); eauto with ordered_type].
 Qed.
 
 Lemma find_2 : forall m x e, find x m = Some e -> MapsTo x e m.
@@ -832,8 +832,8 @@ Lemma bal_bst : forall l x e r, bst l -> bst r ->
 Proof.
  intros l x e r; functional induction (bal l x e r); intros; clearf;
  inv bst; repeat apply create_bst; auto; unfold create; try constructor;
- (apply lt_tree_node || apply gt_tree_node); auto;
- (eapply lt_tree_trans || eapply gt_tree_trans); eauto. 
+ (apply lt_tree_node || apply gt_tree_node); auto with ordered_type;
+ (eapply lt_tree_trans || eapply gt_tree_trans); eauto with ordered_type.
 Qed.
 Hint Resolve bal_bst : core.
 
@@ -865,7 +865,7 @@ Lemma add_in : forall m x y e,
 Proof.
  intros m x y e; functional induction (add x e m); auto; intros;
  try (rewrite bal_in, IHt); intuition_in.
- apply In_1 with x; auto.
+ apply In_1 with x; auto with ordered_type.
 Qed.
 
 Lemma add_bst : forall m x e, bst m -> bst (add x e m).
@@ -874,14 +874,14 @@ Proof.
   inv bst; try apply bal_bst; auto;
   intro z; rewrite add_in; intuition.
  apply MX.eq_lt with x; auto.
- apply MX.lt_eq with x; auto.
+ apply MX.lt_eq with x; auto with ordered_type.
 Qed.
 Hint Resolve add_bst : core.
 
 Lemma add_1 : forall m x y e, X.eq x y -> MapsTo y e (add x e m).
 Proof.
  intros m x y e; functional induction (add x e m);
-   intros; inv bst; try rewrite bal_mapsto; unfold create; eauto.
+   intros; inv bst; try rewrite bal_mapsto; unfold create; eauto with ordered_type.
 Qed.
 
 Lemma add_2 : forall m x y e e', ~X.eq x y ->
@@ -912,7 +912,7 @@ Proof.
   intros; rewrite find_mapsto_equiv; auto.
   split; eauto using add_2, add_3.
  destruct X.compare; try (apply H0; order).
- auto using find_1, add_1.
+ auto using find_1, add_1 with ordered_type.
 Qed.
 
 (** * Extraction of minimum binding *)
@@ -971,7 +971,7 @@ Proof.
  generalize (remove_min_in ll lx ld lr _x m#1).
  rewrite e0; simpl; intros.
  rewrite (bal_in l' x d r y) in H.
- assert (In m#1 (Node ll lx ld lr _x)) by (rewrite H4; auto); clear H4.
+ assert (In m#1 (Node ll lx ld lr _x)) by (rewrite H4; auto with ordered_type); clear H4.
  assert (X.lt m#1 x) by order.
  decompose [or] H; order.
 Qed.
@@ -1050,7 +1050,7 @@ Proof.
  (* EQ *)
  inv bst; clear e0.
  rewrite merge_in; intuition; [ order | order | intuition_in ].
- elim H4; eauto.
+ elim H4; eauto with ordered_type.
  (* GT *)
  inv bst; clear e0.
  rewrite bal_in; auto.
@@ -1069,7 +1069,7 @@ Proof.
  destruct H; eauto.
  (* EQ *)
  inv bst.
- apply merge_bst; eauto.
+ apply merge_bst; eauto with ordered_type.
  (* GT *)
  inv bst.
  apply bal_bst; auto.
@@ -1124,8 +1124,8 @@ Lemma join_bst : forall l x d r, bst l -> bst r ->
 Proof.
  join_tac; auto; try (simpl; auto; fail); inv bst; apply bal_bst; auto;
  clear Hrl Hlr; intro; intros; rewrite join_in in *.
- intuition; [ apply MX.lt_eq with x | ]; eauto.
- intuition; [ apply MX.eq_lt with x | ]; eauto.
+ intuition; [ apply MX.lt_eq with x | ]; eauto with ordered_type.
+ intuition; [ apply MX.eq_lt with x | ]; eauto with ordered_type.
 Qed.
 Hint Resolve join_bst : core.
 
@@ -1135,8 +1135,8 @@ Lemma join_find : forall l x d r y,
 Proof.
  join_tac; auto; inv bst;
   simpl (join (Leaf elt));
-  try (assert (X.lt lx x) by auto);
-  try (assert (X.lt x rx) by auto);
+  try (assert (X.lt lx x) by auto with ordered_type);
+  try (assert (X.lt x rx) by auto with ordered_type);
   rewrite ?add_find, ?bal_find; auto.
 
  simpl; destruct X.compare; auto.
@@ -1260,7 +1260,7 @@ Proof.
  change (bst (m2',xd)#1). rewrite <-e1; eauto.
  intros y Hy.
  apply H1; auto.
- rewrite remove_min_in, e1; simpl; auto.
+ rewrite remove_min_in, e1; simpl; auto with ordered_type.
  change (gt_tree (m2',xd)#2#1 (m2',xd)#1). rewrite <-e1; eauto.
 Qed.
 Hint Resolve concat_bst : core.
@@ -1283,9 +1283,9 @@ Proof.
  simpl; destruct X.compare as [Hlt| |Hlt]; simpl; auto.
  destruct (find y m2'); auto.
  symmetry; rewrite not_find_iff; auto; intro.
- apply (MX.lt_not_gt Hlt); apply H1; auto; rewrite H3; auto.
+ apply (MX.lt_not_gt Hlt); apply H1; auto; rewrite H3; auto with ordered_type.
 
- intros z Hz; apply H1; auto; rewrite H3; auto.
+ intros z Hz; apply H1; auto; rewrite H3; auto with ordered_type.
 Qed.
 
 
@@ -1338,12 +1338,12 @@ Proof.
  apply InA_InfA with (eqA:=eqke); auto with *. intros (y',e') H6.
  destruct (elements_aux_mapsto r acc y' e'); intuition.
  red; simpl; eauto.
- red; simpl; eauto.
- intros.
+ red; simpl; eauto with ordered_type.
+ intros x e0 y0 H H6.
  inversion_clear H.
  destruct H7; simpl in *.
  order.
- destruct (elements_aux_mapsto r acc x e0); intuition eauto. 
+ destruct (elements_aux_mapsto r acc x e0); intuition eauto with ordered_type.
 Qed.
 
 Lemma elements_sort : forall s : t elt, bst s -> sort ltk (elements s).
@@ -1567,7 +1567,7 @@ Lemma mapi_1 : forall (m: tree elt)(x:key)(e:elt),
     MapsTo x e m -> exists y, X.eq y x /\ MapsTo x (f y e) (mapi f m).
 Proof.
 induction m; simpl; inversion_clear 1; auto.
-exists k; auto.
+exists k; auto with ordered_type.
 destruct (IHm1 _ _ H0).
 exists x0; intuition.
 destruct (IHm2 _ _ H0).
@@ -2072,7 +2072,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
    X.eq x1 x2 -> D.eq d1 d2 ->
    Cmp c l1 l2 -> Cmp c ((x1,d1)::l1) ((x2,d2)::l2).
   Proof.
-   destruct c; simpl; intros; P.MX.elim_comp; auto.
+   destruct c; simpl; intros; P.MX.elim_comp; auto with ordered_type.
   Qed.
   Hint Resolve cons_Cmp : core.
 

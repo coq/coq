@@ -3960,6 +3960,9 @@ At Coq startup, only the core database is nonempty and can be used.
 
 :fset: internal database for the implementation of the ``FSets`` library.
 
+:ordered_type: lemmas about ordered types (as defined in the legacy ``OrderedType`` module),
+               mainly used in the ``FSets`` and ``FMaps`` libraries.
+
 You are advised not to put your own hints in the core database, but
 use one or several databases specific to your development.
 

@@ -63,11 +63,11 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
     {s' : t | forall y : elt, In y s' <-> ~ E.eq x y /\ In y s}.
   Proof.
     intros; exists (remove x s); intuition.
-    absurd (In x (remove x s)); auto with set.
-    apply In_1 with y; auto.
+    absurd (In x (remove x s)); auto with set ordered_type.
+    apply In_1 with y; auto with ordered_type.
     elim (E.eq_dec x y); intros; auto.
-    absurd (In x (remove x s)); auto with set.
-    apply In_1 with y; auto.
+    absurd (In x (remove x s)); auto with set ordered_type.
+    apply In_1 with y; auto with ordered_type.
     eauto with set.
   Qed.
 
@@ -470,7 +470,7 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
   Hint Resolve elements_3 : core.
 
   Lemma elements_3w : forall s : t, NoDupA E.eq (elements s).
-  Proof. auto. Qed.
+  Proof. auto with ordered_type. Qed.
 
   Definition min_elt (s : t) : option elt :=
     match min_elt s with

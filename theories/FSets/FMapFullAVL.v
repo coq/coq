@@ -712,7 +712,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
    X.eq x1 x2 -> D.eq d1 d2 ->
    Cmp c l1 l2 -> Cmp c ((x1,d1)::l1) ((x2,d2)::l2).
   Proof.
-   destruct c; simpl; intros; MX.elim_comp; auto.
+   destruct c; simpl; intros; MX.elim_comp; auto with ordered_type.
   Qed.
   Hint Resolve cons_Cmp : core.
 

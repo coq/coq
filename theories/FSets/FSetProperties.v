@@ -939,7 +939,7 @@ Module OrdProperties (M:S).
    generalize (gtb_1 x a)(gtb_1 x b); destruct (gtb x a); destruct (gtb x b); auto.
    intros.
    symmetry; rewrite H1.
-   apply ME.eq_lt with a; auto.
+   apply ME.eq_lt with a; auto with ordered_type.
    rewrite <- H0; auto.
    intros.
    rewrite H0.
@@ -1013,7 +1013,7 @@ Module OrdProperties (M:S).
   intros.
   inversion_clear H2.
   rewrite <- elements_iff in H1.
-  apply ME.lt_eq with x; auto.
+  apply ME.lt_eq with x; auto with ordered_type.
   inversion H3.
   red; intros a.
   rewrite InA_app_iff, InA_cons, InA_nil by auto with *.
@@ -1052,7 +1052,7 @@ Module OrdProperties (M:S).
   apply X0 with (remove e s) e; auto with set.
   apply IHn.
   assert (S n = S (cardinal (remove e s))).
-   rewrite Heqn; apply cardinal_2 with e; auto with set.
+   rewrite Heqn; apply cardinal_2 with e; auto with set ordered_type.
   inversion H0; auto.
   red; intros.
   rewrite remove_iff in H0; destruct H0.
@@ -1073,7 +1073,7 @@ Module OrdProperties (M:S).
   apply X0 with (remove e s) e; auto with set.
   apply IHn.
   assert (S n = S (cardinal (remove e s))).
-   rewrite Heqn; apply cardinal_2 with e; auto with set.
+   rewrite Heqn; apply cardinal_2 with e; auto with set ordered_type.
   inversion H0; auto.
   red; intros.
   rewrite remove_iff in H0; destruct H0.
