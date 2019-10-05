@@ -788,7 +788,7 @@ let warn_incompatible_format =
 type syntax_parsing_extension = {
   synext_level : Notation_gram.level;
   synext_notation : notation;
-  synext_notgram : notation_grammar;
+  synext_notgram : notation_grammar option;
 }
 
 type syntax_printing_extension = {
@@ -833,29 +833,30 @@ let check_and_extend_constr_grammar ntn rule =
     let ntn_for_grammar = rule.notgram_notation in
     if notation_eq ntn ntn_for_grammar then raise Not_found;
     let prec = rule.notgram_level in
-    let oldonlyprint,_,oldprec = Notgram_ops.level_of_notation ntn_for_grammar in
-    if not (Notgram_ops.level_eq prec oldprec) && not oldonlyprint then error_parsing_incompatible_level ntn ntn_for_grammar oldprec prec;
-    if oldonlyprint then raise Not_found
+    let oldparsing,oldprec = Notgram_ops.level_of_notation ntn_for_grammar in
+    if not (Notgram_ops.level_eq prec oldprec) && oldparsing <> None then error_parsing_incompatible_level ntn ntn_for_grammar oldprec prec;
+    if oldparsing = None then raise Not_found
   with Not_found ->
     Egramcoq.extend_constr_grammar rule
 
 let cache_one_syntax_extension (pa_se,pp_se) =
   let ntn = pa_se.synext_notation in
   let prec = pa_se.synext_level in
-  let onlyprint = pa_se.synext_notgram.notgram_onlyprinting in
   (* Check and ensure that the level and the precomputed parsing rule is declared *)
-  let parsing_to_activate =
+  let oldparsing =
     try
-      let oldonlyprint,_,oldprec = Notgram_ops.level_of_notation ntn in
-      if not (Notgram_ops.level_eq prec oldprec) && (not oldonlyprint || onlyprint) then error_incompatible_level ntn oldprec prec;
-      oldonlyprint && not onlyprint
+      let oldparsing,oldprec = Notgram_ops.level_of_notation ntn in
+      if not (Notgram_ops.level_eq prec oldprec) && (oldparsing <> None || pa_se.synext_notgram = None) then error_incompatible_level ntn oldprec prec;
+      oldparsing
     with Not_found ->
       (* Declare the level and the precomputed parsing rule *)
-      let _ = Notgram_ops.declare_notation_level ntn ~onlyprint pa_se.synext_notgram prec in
-      not onlyprint in
+      let _ = Notgram_ops.declare_notation_level ntn pa_se.synext_notgram prec in
+      None in
   (* Declare the parsing rule *)
-  if parsing_to_activate then
-    List.iter (check_and_extend_constr_grammar ntn) pa_se.synext_notgram.notgram_rules;
+  begin match oldparsing, pa_se.synext_notgram with
+  | None, Some grams -> List.iter (check_and_extend_constr_grammar ntn) grams
+  | _ -> (* The grammars rules are canonically derived from the string and the precedence*) ()
+  end;
   (* Printing *)
   match pp_se with
   | None -> ()
@@ -875,7 +876,7 @@ let subst_printing_rule subst x = x
 
 let subst_syntax_extension (subst, (local, (pa_sy,pp_sy))) =
   (local, ({ pa_sy with
-    synext_notgram = { pa_sy.synext_notgram with notgram_rules = List.map (subst_parsing_rule subst) pa_sy.synext_notgram.notgram_rules }},
+    synext_notgram = Option.map (List.map (subst_parsing_rule subst)) pa_sy.synext_notgram },
     Option.map (fun pp_sy -> {pp_sy with synext_unparsing = subst_printing_rule subst pp_sy.synext_unparsing}) pp_sy)
   )
 
@@ -1486,7 +1487,7 @@ exception NoSyntaxRule
 let recover_notation_syntax ntn =
   let pa =
     try
-      let _,pa_rule,prec = Notgram_ops.level_of_notation ntn in
+      let pa_rule,prec = Notgram_ops.level_of_notation ntn in
       { synext_level = prec;
         synext_notation = ntn;
         synext_notgram = pa_rule }
@@ -1505,7 +1506,9 @@ let recover_notation_syntax ntn =
 
 let recover_squash_syntax sy =
   let sq,_ = recover_notation_syntax (InConstrEntrySomeLevel,"{ _ }") in
-  sy :: sq.synext_notgram.notgram_rules
+  match sq.synext_notgram with
+  | Some gram -> sy :: gram
+  | None -> raise NoSyntaxRule
 
 (**********************************************************************)
 (* Main entry point for building parsing and printing rules           *)
@@ -1538,10 +1541,13 @@ let make_pp_rule level (typs,symbols) fmt =
 
 let make_parsing_rules (sd : SynData.syn_data) = let open SynData in
   let ntn_for_grammar, prec_for_grammar, need_squash = sd.not_data in
-  let pa_rule = make_pa_rule prec_for_grammar sd.pa_syntax_data ntn_for_grammar need_squash in {
+  let pa_rule =
+    if sd.only_printing then None
+    else Some (make_pa_rule prec_for_grammar sd.pa_syntax_data ntn_for_grammar need_squash)
+  in {
     synext_level    = sd.level;
     synext_notation = fst sd.info;
-    synext_notgram  = { notgram_onlyprinting = sd.only_printing; notgram_rules = pa_rule };
+    synext_notgram  = pa_rule;
   }
 
 let warn_irrelevant_format =
@@ -1610,7 +1616,7 @@ let add_notation_interpretation_core ~local df env ?(impls=empty_internalization
     let (pa_sy,pp_sy as sy) = recover_notation_syntax (make_notation_key InConstrEntrySomeLevel symbs) in
     let () = Lib.add_anonymous_leaf (inSyntaxExtension (local,sy)) in
     (* If the only printing flag has been explicitly requested, put it back *)
-    let onlyprint = onlyprint || pa_sy.synext_notgram.notgram_onlyprinting in
+    let onlyprint = onlyprint || pa_sy.synext_notgram = None in
     let _,_,_,typs = pa_sy.synext_level in
     Some pa_sy.synext_level, typs, onlyprint, pp_sy
   end else None, [], false, None in

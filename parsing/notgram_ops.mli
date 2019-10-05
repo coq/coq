@@ -16,8 +16,8 @@ val level_eq : level -> level -> bool
 
 (** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 
-val declare_notation_level : notation -> onlyprint:bool -> notation_grammar -> level -> unit
-val level_of_notation : notation -> bool (* = onlyprint *) * notation_grammar * level
+val declare_notation_level : notation -> notation_grammar option -> level -> unit
+val level_of_notation : notation -> notation_grammar option * level
   (** raise [Not_found] if not declared *)
 
 (** Returns notations with defined parsing/printing rules *)
