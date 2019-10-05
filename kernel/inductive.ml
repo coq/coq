@@ -1440,6 +1440,8 @@ let fold_map2_fix_type env f is tys init =
     info, Term.it_mkProd_or_LetIn body ctxt in
   let check_sized = (Environ.typing_flags env).check_sized in
   if check_sized then
+    (* N.B. Since left fold folds ltr, accumulation in f for lists
+      can be done using cons, which builds the list rtl. *)
     let info, tys = List.fold_left2_map app_ty info is tys in
     info.acc, tys
   else init, tys
@@ -1482,13 +1484,13 @@ let get_rec_vars env is tys =
     if Int.equal info.elt info.arg_index then
       match info.arg_indus with
       | Some (_, Stage (StageVar (var, _))) ->
-        { info with acc = SVars.add var info.acc }, info.arg_head
+        { info with acc = var :: info.acc }, info.arg_head
       | None -> info, err ()
       | _ -> info, info.arg_head
     else info, info.arg_head in
   let is = Array.to_list is in
   let tys = Array.to_list tys in
-  fst @@ fold_map2_fix_type env f is tys SVars.empty
+  fst @@ fold_map2_fix_type env f is tys []
 
 let get_corec_inds env tys =
   let f info =
@@ -1507,12 +1509,12 @@ let get_corec_vars env tys =
     let err = err env info in
     match info.arg_index, info.arg_indus with
     | -1, Some (_, Stage (StageVar (var, _))) ->
-      { info with acc = SVars.add var info.acc }, info.arg_head
+      { info with acc = var :: info.acc }, info.arg_head
     | -1, None -> info, err ()
     | _ -> info, info.arg_head in
   let is = List.make (Array.length tys) (-1) in
   let tys = Array.to_list tys in
-  fst @@ fold_map2_fix_type env f is tys SVars.empty
+  fst @@ fold_map2_fix_type env f is tys []
 
 let set_stars env inds tys =
   let f info =

@@ -60,6 +60,7 @@ sig
   val is_empty : t -> bool
   val add : var -> t -> t
   val mem : var -> t -> bool
+  val of_list : var list -> t
   val union : t -> t -> t
   val union_list : t list -> t
   val inter : t -> t -> t

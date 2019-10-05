@@ -355,6 +355,18 @@ Fixpoint useless2 (fr: forest) :=
 
 End mutual.
 
+(** A simple mutual fixpoint. *)
+Fixpoint even_mutual n :=
+  match n with
+  | O => true
+  | S n' => odd_mutual n'
+  end
+  with odd_mutual n :=
+  match n with
+  | O => false
+  | S n' => even_mutual n'
+  end.
+
 (** A longer example modelling simply-typed lambda calculus with capture-avoiding substitution. *)
 
 Require Import Strings.String.

@@ -468,13 +468,14 @@ let type_of_projection env p c ct =
 
 (* Gets the stage variables that must be set to the recursive stage and infinity, respectively *)
 let get_vstar_vneq stg_old stg_new lar vdef =
-  let vstar = get_pos_vars stg_new in
   let old_annots = get_vars stg_old in
   let lar_annots = List.map collect_annots (Array.to_list lar) in
   let vdef_annots = List.map collect_annots (Array.to_list vdef) in
   let all_annots = SVars.union_list ([old_annots] @ lar_annots @ vdef_annots) in
+  let vstar = get_pos_vars stg_new in
+  let vstars = List.map (inter vstar) lar_annots in
   let vneq = diff all_annots vstar in
-  vstar, vneq
+  vstars, vneq
 
 (* Letting lar'' := lar' with stage annotations at star positions shifted up,
   check Γ (names' : lar') ⊢ vdeft ≤ lar''. *)
@@ -715,26 +716,27 @@ and execute_recdef env stg (names, lar, vdef) =
 
 (* Try RecCheck; if failure, try removing some stage variables from vstar *)
 and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) vars recursivity =
-  let rec try_rec_check stg (alphas, vstar, vneq) =
+  let rec try_rec_check stg (alphas, vstars, vneq) =
+    let vstar = SVars.union_list vstars in
     let lar'' = Array.map (annotate_succ vstar) lar' in
     let cstrnt_fix = check_fixpoint env recdeft lar'' in
     let cstrnt_fix_ty = check_fixpoint_type env lar' lar'' recursivity in
     let cstrnt' = union_list [cstrnt; cstrnt_fix; cstrnt_fix_ty] in
 
-    let rec_check_all alpha cstrnts = union cstrnts (rec_check alpha vstar vneq cstrnts) in
+    let rec_check_all cstrnts (alpha, vstar) = union cstrnts (rec_check alpha vstar vneq cstrnts) in
     let flags = Environ.typing_flags env in
     if flags.check_sized then
-      try stg, SVars.fold rec_check_all alphas cstrnt'
+      try stg, List.fold_left rec_check_all cstrnt' (List.combine alphas vstars)
       with RecCheckFailed (cstrnt'', si_inf, si) ->
-        let rm = inter (inter si_inf si) (diff vstar alphas) in
+        let rm = inter (inter si_inf si) (diff vstar (SVars.of_list alphas)) in
         if is_empty rm then begin
           if flags.check_guarded then stg, cstrnt else
             error_unsatisfied_stage_constraints env cstrnt'' cstr si_inf si
         end else
-          let vstar = diff vstar rm in
+          let vstars = List.map (fun vstar -> diff vstar rm) vstars in
           let vneq = SVars.union vneq rm in
           let stg = remove_pos_vars rm stg in
-          try_rec_check stg (alphas, vstar, vneq)
+          try_rec_check stg (alphas, vstars, vneq)
     else stg, cstrnt' in
   try_rec_check stg vars
 
@@ -748,9 +750,9 @@ and execute_fix env stg ((vn, i), (names, lar, vdef)) =
 
   let stg_check, cstrnt_check =
     let alphas = get_rec_vars env vn lar' in
-    let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
+    let vstars, vneq = get_vstar_vneq stg stg' lar' vdef' in
     let cstr = mkFixOpt ((vn, i), (names', lar', vdef')) in
-    execute_rec_check env stg' cstrnt' cstr recdeft (alphas, vstar, vneq) Finite in
+    execute_rec_check env stg' cstrnt' cstr recdeft (alphas, vstars, vneq) Finite in
 
   let fix =
     let lar_star = Array.Smart.map (erase_star (get_pos_vars stg_check)) lar' in
@@ -769,9 +771,9 @@ and execute_cofix env stg (i, (names, lar, vdef)) =
 
   let stg_check, cstrnt_check =
     let alphas = get_corec_vars env lar' in
-    let vstar, vneq = get_vstar_vneq stg stg' lar' vdef' in
+    let vstars, vneq = get_vstar_vneq stg stg' lar' vdef' in
     let cstr = mkCoFix (i, (names', lar', vdef')) in
-    execute_rec_check env stg' cstrnt' cstr recdeft (alphas, vstar, vneq) CoFinite in
+    execute_rec_check env stg' cstrnt' cstr recdeft (alphas, vstars, vneq) CoFinite in
 
   let cofix =
     let lar_star = Array.Smart.map (erase_star (get_pos_vars stg_check)) lar' in
