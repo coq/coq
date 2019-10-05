@@ -425,9 +425,6 @@ let extract_worklist info =
 
 let sections () = Safe_typing.sections_of_safe_env @@ Global.safe_env ()
 
-let is_polymorphic_univ u =
-  Section.is_polymorphic_univ u (sections ())
-
 let replacement_context () =
   Section.replacement_context (Global.env ()) (sections ())
 

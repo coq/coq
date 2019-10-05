@@ -83,5 +83,3 @@ val replacement_context : Environ.env -> 'a t -> Opaqueproof.work_list
 (** Section segments of all declarations from this section. *)
 
 val is_in_section : Environ.env -> GlobRef.t -> 'a t -> bool
-
-val is_polymorphic_univ : Level.t -> 'a t -> bool
