@@ -828,7 +828,7 @@ let check_and_extend_constr_grammar ntn rule =
     if notation_eq ntn ntn_for_grammar then raise Not_found;
     let prec = rule.notgram_level in
     let oldparsing,oldprec = Notgram_ops.level_of_notation ntn_for_grammar in
-    if not (Notgram_ops.level_eq prec oldprec) && oldparsing <> None then error_parsing_incompatible_level ntn ntn_for_grammar oldprec prec;
+    if not (Notgram_ops.level_eq prec oldprec) then error_parsing_incompatible_level ntn ntn_for_grammar oldprec prec;
     if oldparsing = None then raise Not_found
   with Not_found ->
     Egramcoq.extend_constr_grammar rule
@@ -840,7 +840,7 @@ let cache_one_syntax_extension (pa_se,pp_se) =
   let oldparsing =
     try
       let oldparsing,oldprec = Notgram_ops.level_of_notation ntn in
-      if not (Notgram_ops.level_eq prec oldprec) && (oldparsing <> None || pa_se.synext_notgram = None) then error_incompatible_level ntn oldprec prec;
+      if not (Notgram_ops.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec;
       oldparsing
     with Not_found ->
       (* Declare the level and the precomputed parsing rule *)

@@ -1,2 +1,6 @@
 0:-) 0
      : nat
+The command has indeed failed with message:
+Notation "_ :-) _" is already defined at level 50 with arguments constr
+at next level, constr at next level while it is now required to be
+at level 45 with arguments constr at next level, constr at next level.
