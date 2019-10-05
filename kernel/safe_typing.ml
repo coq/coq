@@ -122,7 +122,7 @@ type section_data = {
 
 type safe_environment =
   { env : Environ.env;
-    sections : section_data Section.t;
+    sections : section_data Section.t option;
     modpath : ModPath.t;
     modvariant : modvariant;
     modresolver : Mod_subst.delta_resolver;
@@ -159,7 +159,7 @@ let empty_environment =
     revstruct = [];
     modlabels = Label.Set.empty;
     objlabels = Label.Set.empty;
-    sections = Section.empty;
+    sections = None;
     future_cst = [];
     univ = Univ.ContextSet.empty;
     engagement = None;
@@ -173,7 +173,7 @@ let is_initial senv =
   | [], NONE -> ModPath.equal senv.modpath ModPath.initial
   | _ -> false
 
-let sections_are_opened senv = not (Section.is_empty senv.sections)
+let sections_are_opened senv = not (Option.is_empty senv.sections)
 
 let delta_of_senv senv = senv.modresolver,senv.paramresolver
 
@@ -323,6 +323,10 @@ let env_of_senv = env_of_safe_env
 
 let sections_of_safe_env senv = senv.sections
 
+let get_section = function
+  | None -> CErrors.user_err Pp.(str "No open section.")
+  | Some s -> s
+
 type constraints_addition =
   | Now of Univ.ContextSet.t
   | Later of Univ.ContextSet.t Future.computation
@@ -330,9 +334,7 @@ type constraints_addition =
 let push_context_set poly cst senv =
   if Univ.ContextSet.is_empty cst then senv
   else
-    let sections =
-      if Section.is_empty senv.sections then senv.sections
-      else Section.push_constraints cst senv.sections
+    let sections = Option.map (Section.push_constraints cst) senv.sections
     in
     { senv with
       env = Environ.push_context_set ~strict:(not poly) cst senv.env;
@@ -399,7 +401,7 @@ let check_current_library dir senv = match senv.modvariant with
 (** When operating on modules, we're normally outside sections *)
 
 let check_empty_context senv =
-  assert (Environ.empty_context senv.env && Section.is_empty senv.sections)
+  assert (Environ.empty_context senv.env && Option.is_empty senv.sections)
 
 (** When adding a parameter to the current module/modtype,
     it must have been freshly started *)
@@ -447,22 +449,25 @@ let safe_push_named d env =
   Environ.push_named d env
 
 let push_named_def (id,de) senv =
-  let sections = Section.push_local senv.sections in
+  let sections = get_section senv.sections in
+  let sections = Section.push_local sections in
   let c, r, typ = Term_typing.translate_local_def senv.env id de in
   let x = Context.make_annot id r in
   let env'' = safe_push_named (LocalDef (x, c, typ)) senv.env in
-  { senv with sections; env = env'' }
+  { senv with sections=Some sections; env = env'' }
 
 let push_named_assum (x,t) senv =
-  let sections = Section.push_local senv.sections in
+  let sections = get_section senv.sections in
+  let sections = Section.push_local sections in
   let t, r = Term_typing.translate_local_assum senv.env t in
   let x = Context.make_annot x r in
   let env'' = safe_push_named (LocalAssum (x,t)) senv.env in
-  { senv with sections; env = env'' }
+  { senv with sections=Some sections; env = env'' }
 
 let push_section_context (nas, ctx) senv =
-  let sections = Section.push_context (nas, ctx) senv.sections in
-  let senv = { senv with sections } in
+  let sections = get_section senv.sections in
+  let sections = Section.push_context (nas, ctx) sections in
+  let senv = { senv with sections=Some sections } in
   let ctx = Univ.ContextSet.of_context ctx in
   (* We check that the universes are fresh. FIXME: This should be done
      implicitly, but we have to work around the API. *)
@@ -551,15 +556,18 @@ let add_field ?(is_include=false) ((l,sfb) as field) gn senv =
     | SFBmodule mb, M -> Modops.add_module mb senv.env
     | _ -> assert false
   in
-  let sections = match sfb, gn with
-  | SFBconst cb, C con ->
-    let poly = Declareops.constant_is_polymorphic cb in
-    Section.push_constant ~poly con senv.sections
-  | SFBmind mib, I mind ->
-    let poly = Declareops.inductive_is_polymorphic mib in
-    Section.push_inductive ~poly mind senv.sections
-  | _, (M | MT) -> senv.sections
-  | _ -> assert false
+  let sections = match senv.sections with
+    | None -> None
+    | Some sections ->
+      match sfb, gn with
+      | SFBconst cb, C con ->
+        let poly = Declareops.constant_is_polymorphic cb in
+        Some (Section.push_constant ~poly con sections)
+      | SFBmind mib, I mind ->
+        let poly = Declareops.inductive_is_polymorphic mib in
+        Some (Section.push_inductive ~poly mind sections)
+      | _, (M | MT) -> Some sections
+      | _ -> assert false
   in
   { senv with
     env = env';
@@ -952,11 +960,11 @@ let open_section senv =
     rev_objlabels = senv.objlabels;
   } in
   let sections = Section.open_section ~custom senv.sections in
-  { senv with sections }
+  { senv with sections=Some sections }
 
 let close_section senv =
   let open Section in
-  let sections0 = senv.sections in
+  let sections0 = get_section senv.sections in
   let env0 = senv.env in
   (* First phase: revert the declarations added in the section *)
   let sections, entries, cstrs, revert = Section.close_section sections0 in
@@ -990,7 +998,7 @@ let close_section senv =
   let env = Environ.set_opaque_tables env (Environ.opaque_tables senv.env) in
   let senv = { senv with env; revstruct; sections; univ; objlabels; } in
   (* Second phase: replay the discharged section contents *)
-  let senv = add_constraints (Now cstrs) senv in
+  let senv = push_context_set false cstrs senv in
   let modlist = Section.replacement_context env0 sections0 in
   let cooking_info seg =
     let { abstr_ctx; abstr_subst; abstr_uctx } = seg in

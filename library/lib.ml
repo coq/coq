@@ -133,7 +133,10 @@ let cwd () = !lib_state.path_prefix.Nametab.obj_dir
 let current_mp () = !lib_state.path_prefix.Nametab.obj_mp
 let current_sections () = Safe_typing.sections_of_safe_env (Global.safe_env())
 
-let sections_depth () = Section.depth (current_sections())
+let sections_depth () = match current_sections() with
+  | None -> 0
+  | Some sec -> Section.depth sec
+
 let sections_are_opened = Global.sections_are_opened
 
 let cwd_except_section () =
@@ -417,14 +420,18 @@ let extract_worklist info =
 
 let sections () = Safe_typing.sections_of_safe_env @@ Global.safe_env ()
 
+let force_sections () = match Safe_typing.sections_of_safe_env (Global.safe_env()) with
+  | Some s -> s
+  | None -> CErrors.user_err Pp.(str "No open section.")
+
 let replacement_context () =
-  Section.replacement_context (Global.env ()) (sections ())
+  Section.replacement_context (Global.env ()) (force_sections ())
 
 let section_segment_of_constant con =
-  Section.segment_of_constant (Global.env ()) con (sections ())
+  Section.segment_of_constant (Global.env ()) con (force_sections ())
 
 let section_segment_of_mutual_inductive kn =
-  Section.segment_of_inductive (Global.env ()) kn (sections ())
+  Section.segment_of_inductive (Global.env ()) kn (force_sections ())
 
 let empty_segment = Section.empty_segment
 
@@ -437,8 +444,10 @@ let section_segment_of_reference = let open GlobRef in function
 let variable_section_segment_of_reference gr =
   (section_segment_of_reference gr).Section.abstr_ctx
 
-let is_in_section ref =
-  Section.is_in_section (Global.env ()) ref (sections ())
+let is_in_section ref = match sections () with
+  | None -> false
+  | Some sec ->
+    Section.is_in_section (Global.env ()) ref sec
 
 let section_instance = let open GlobRef in function
   | VarRef id ->
