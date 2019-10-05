@@ -333,6 +333,9 @@ azure-pipelines.yml @coq/ci-maintainers
 
 /dev/tools/github-check-prs.py @SkySkimmer
 
+/dev/tools/make-changelog.sh @SkySkimmer
+# Secondary maintainer @Zimmi48
+
 /dev/tools/merge-pr.sh @maximedenes
 # Secondary maintainer @gares
 
