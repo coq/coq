@@ -2992,7 +2992,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
    flags are either ``beta``, ``delta``, ``match``, ``fix``, ``cofix``,
    ``iota`` or ``zeta``. The ``iota`` flag is a shorthand for ``match``, ``fix``
    and ``cofix``. The ``delta`` flag itself can be refined into
-   :n:`delta {+ @qualid}` or :n:`delta -{+ @qualid}`, restricting in the first
+   :n:`delta [ {+ @qualid} ]` or :n:`delta - [ {+ @qualid} ]`, restricting in the first
    case the constants to unfold to the constants listed, and restricting in the
    second case the constant to unfold to all but the ones explicitly mentioned.
    Notice that the ``delta`` flag does not apply to variables bound by a let-in
@@ -3036,18 +3036,18 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
    This is a synonym for ``lazy beta delta iota zeta``.
 
-.. tacv:: compute {+ @qualid}
-          cbv {+ @qualid}
+.. tacv:: compute [ {+ @qualid} ]
+          cbv [ {+ @qualid} ]
 
    These are synonyms of :n:`cbv beta delta {+ @qualid} iota zeta`.
 
-.. tacv:: compute -{+ @qualid}
-          cbv -{+ @qualid}
+.. tacv:: compute - [ {+ @qualid} ]
+          cbv - [ {+ @qualid} ]
 
    These are synonyms of :n:`cbv beta delta -{+ @qualid} iota zeta`.
 
-.. tacv:: lazy {+ @qualid}
-          lazy -{+ @qualid}
+.. tacv:: lazy [ {+ @qualid} ]
+          lazy - [ {+ @qualid} ]
 
    These are respectively synonyms of :n:`lazy beta delta {+ @qualid} iota zeta`
    and :n:`lazy beta delta -{+ @qualid} iota zeta`.
@@ -3058,7 +3058,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
    This tactic evaluates the goal using the optimized call-by-value evaluation
    bytecode-based virtual machine described in :cite:`CompiledStrongReduction`.
    This algorithm is dramatically more efficient than the algorithm used for the
-   ``cbv`` tactic, but it cannot be fine-tuned. It is specially interesting for
+   :tacn:`cbv` tactic, but it cannot be fine-tuned. It is especially interesting for
    full evaluation of algebraic objects. This includes the case of
    reflection-based tactics.
 
@@ -3067,14 +3067,14 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
    This tactic evaluates the goal by compilation to OCaml as described
    in :cite:`FullReduction`. If Coq is running in native code, it can be
-   typically two to five times faster than ``vm_compute``. Note however that the
+   typically two to five times faster than :tacn:`vm_compute`. Note however that the
    compilation cost is higher, so it is worth using only for intensive
    computations.
 
    .. flag:: NativeCompute Profiling
 
       On Linux, if you have the ``perf`` profiler installed, this option makes
-      it possible to profile ``native_compute`` evaluations.
+      it possible to profile :tacn:`native_compute` evaluations.
 
    .. opt:: NativeCompute Profile Filename @string
       :name: NativeCompute Profile Filename
@@ -3084,7 +3084,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
       will contain extra characters to avoid overwriting an existing file; that
       filename is reported to the user.
       That means you can individually profile multiple uses of
-      ``native_compute`` in a script. From the Linux command line, run ``perf report``
+      :tacn:`native_compute` in a script. From the Linux command line, run ``perf report``
       on the profile file to see the results. Consult the ``perf`` documentation
       for more details.
 
@@ -3140,14 +3140,15 @@ the conversion in hypotheses :n:`{+ @ident}`.
      use the name of the constant the (co)fixpoint comes from instead of
      the (co)fixpoint definition in recursive calls.
 
-   The ``cbn`` tactic is claimed to be a more principled, faster and more
-   predictable replacement for ``simpl``.
+   The :tacn:`cbn` tactic is claimed to be a more principled, faster and more
+   predictable replacement for :tacn:`simpl`.
 
-   The ``cbn`` tactic accepts the same flags as ``cbv`` and ``lazy``. The
-   behavior of both ``simpl`` and ``cbn`` can be tuned using the
-   Arguments vernacular command as follows:
+   The :tacn:`cbn` tactic accepts the same flags as :tacn:`cbv` and
+   :tacn:`lazy`. The behavior of both :tacn:`simpl` and :tacn:`cbn`
+   can be tuned using the Arguments vernacular command as follows:
 
-   + A constant can be marked to be never unfolded by ``cbn`` or ``simpl``:
+   + A constant can be marked to be never unfolded by :tacn:`cbn` or
+     :tacn:`simpl`:
 
      .. example::
 
@@ -3156,7 +3157,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
            Arguments minus n m : simpl never.
 
      After that command an expression like :g:`(minus (S x) y)` is left
-     untouched by the tactics ``cbn`` and ``simpl``.
+     untouched by the tactics :tacn:`cbn` and :tacn:`simpl`.
 
    + A constant can be marked to be unfolded only if applied to enough
      arguments. The number of arguments required can be specified using the
@@ -3171,7 +3172,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
            Notation "f \o g" := (fcomp f g) (at level 50).
 
      After that command the expression :g:`(f \o g)` is left untouched by
-     ``simpl`` while :g:`((f \o g) t)` is reduced to :g:`(f (g t))`.
+     :tacn:`simpl` while :g:`((f \o g) t)` is reduced to :g:`(f (g t))`.
      The same mechanism can be used to make a constant volatile, i.e.
      always unfolded.
 
@@ -3193,7 +3194,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
            Arguments minus !n !m.
 
      After that command, the expression :g:`(minus (S x) y)` is left untouched
-     by ``simpl``, while :g:`(minus (S x) (S y))` is reduced to :g:`(minus x y)`.
+     by :tacn:`simpl`, while :g:`(minus (S x) (S y))` is reduced to :g:`(minus x y)`.
 
    + A special heuristic to determine if a constant has to be unfolded
      can be activated with the following command:
@@ -3209,25 +3210,25 @@ the conversion in hypotheses :n:`{+ @ident}`.
      :g:`(minus (S (S x)) (S y))` is simplified to :g:`(minus (S x) y)`
      even if an extra simplification is possible.
 
-   In detail, the tactic ``simpl`` first applies :math:`\beta`:math:`\iota`-reduction. Then, it
+   In detail, the tactic :tacn:`simpl` first applies :math:`\beta`:math:`\iota`-reduction. Then, it
    expands transparent constants and tries to reduce further using :math:`\beta`:math:`\iota`-
    reduction. But, when no :math:`\iota` rule is applied after unfolding then
-   :math:`\delta`-reductions are not applied. For instance trying to use ``simpl`` on
+   :math:`\delta`-reductions are not applied. For instance trying to use :tacn:`simpl` on
    :g:`(plus n O) = n` changes nothing.
 
    Notice that only transparent constants whose name can be reused in the
-   recursive calls are possibly unfolded by ``simpl``. For instance a
+   recursive calls are possibly unfolded by :tacn:`simpl`. For instance a
    constant defined by :g:`plus' := plus` is possibly unfolded and reused in
    the recursive calls, but a constant such as :g:`succ := plus (S O)` is
-   never unfolded. This is the main difference between ``simpl`` and ``cbn``.
-   The tactic ``cbn`` reduces whenever it will be able to reuse it or not:
+   never unfolded. This is the main difference between :tacn:`simpl` and :tacn:`cbn`.
+   The tactic :tacn:`cbn` reduces whenever it will be able to reuse it or not:
    :g:`succ t` is reduced to :g:`S t`.
 
-.. tacv:: cbn {+ @qualid}
-          cbn -{+ @qualid}
+.. tacv:: cbn [ {+ @qualid} ]
+          cbn - [ {+ @qualid} ]
 
-   These are respectively synonyms of :n:`cbn beta delta {+ @qualid} iota zeta`
-   and :n:`cbn beta delta -{+ @qualid} iota zeta` (see :tacn:`cbn`).
+   These are respectively synonyms of :n:`cbn beta delta [ {+ @qualid} ] iota zeta`
+   and :n:`cbn beta delta - [ {+ @qualid} ] iota zeta` (see :tacn:`cbn`).
 
 .. tacv:: simpl @pattern
 
@@ -3236,7 +3237,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
 .. tacv:: simpl @pattern at {+ @num}
 
-   This applies ``simpl`` only to the :n:`{+ @num}` occurrences of the subterms
+   This applies :tacn:`simpl` only to the :n:`{+ @num}` occurrences of the subterms
    matching :n:`@pattern` in the current goal.
 
    .. exn:: Too few occurrences.
@@ -3252,7 +3253,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
 .. tacv:: simpl @qualid at {+ @num}
           simpl @string at {+ @num}
 
-   This applies ``simpl`` only to the :n:`{+ @num}` applicative subterms whose
+   This applies :tacn:`simpl` only to the :n:`{+ @num}` applicative subterms whose
    head occurrence is :n:`@qualid` (or :n:`@string`).
 
 .. flag:: Debug RAKAM
