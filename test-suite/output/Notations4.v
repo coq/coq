@@ -158,3 +158,29 @@ Check b = a.
 End Test.
 
 End L.
+
+Module M.
+
+(* Accept boxes around the end variables of a recursive notation (if equal boxes) *)
+
+Notation " {@ T1 ; T2 ; .. ; Tn } " :=
+  (and T1 (and T2 .. (and Tn True)..))
+  (format "'[v' {@  '[' T1 ']'  ;  '//' '['  T2  ']'  ;  '//' ..  ;   '//' '['  Tn  ']'  } ']'").
+
+Fail Notation " {@ T1 ; T2 ; .. ; Tn } " :=
+  (and T1 (and T2 .. (and Tn True)..))
+  (format "'[v' {@  '[' T1 ']'  ;  '//' '['  T2  ']'  ;  '//' ..  ;   '//' '['  Tn   ']'  } ']'").
+
+Fail Notation " {@ T1 ; T2 ; .. ; Tn } " :=
+  (and T1 (and T2 .. (and Tn True)..))
+  (format "'[v' {@  '[' T1 ']'  ;  '//' '['  T2  ']'  ;  '//' ..  ;   '//' '[v'  Tn  ']'  } ']'").
+
+Fail Notation " {@ T1 ; T2 ; .. ; Tn } " :=
+  (and T1 (and T2 .. (and Tn True)..))
+  (format "'[v' {@  '[' T1 ']'  ;  '//' '['  T2  ']'  ;  '//' ..  ;   '//' '['   Tn  ']'  } ']'").
+
+Fail Notation " {@ T1 ; T2 ; .. ; Tn } " :=
+  (and T1 (and T2 .. (and Tn True)..))
+  (format "'[v' {@  '[' T1 ']'  ;  '//' '['  T2  ']'   ;  '//' ..  ;   '//' '['  Tn  ']'  } ']'").
+
+End M.

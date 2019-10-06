@@ -63,3 +63,11 @@ fun '{| |} => true
      : R -> bool
 b = a
      : Prop
+The command has indeed failed with message:
+The format is not the same on the right- and left-hand sides of the special token "..".
+The command has indeed failed with message:
+The format is not the same on the right- and left-hand sides of the special token "..".
+The command has indeed failed with message:
+The format is not the same on the right- and left-hand sides of the special token "..".
+The command has indeed failed with message:
+The format is not the same on the right- and left-hand sides of the special token "..".
