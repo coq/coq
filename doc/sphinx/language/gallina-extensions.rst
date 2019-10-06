@@ -638,7 +638,11 @@ the induction principle to easily reason about the function.
 
    than like this:
 
-   .. coqtop:: reset all
+   .. coqtop:: reset none
+
+      Require Import FunInd.
+
+   .. coqtop:: all
 
       Function plus (n m : nat) {struct n} : nat :=
       match n with
@@ -649,17 +653,22 @@ the induction principle to easily reason about the function.
 
 *Limitations*
 
-|term_0| must be built as a *pure pattern matching tree* (:g:`match … with`)
+:token:`term` must be built as a *pure pattern matching tree* (:g:`match … with`)
 with applications only *at the end* of each branch.
 
 Function does not support partial application of the function being
 defined. Thus, the following example cannot be accepted due to the
 presence of partial application of :g:`wrong` in the body of :g:`wrong`:
 
-.. coqtop:: all
+.. coqtop:: none
 
-   Fail Function wrong (C:nat) : nat :=
-   List.hd 0 (List.map wrong (C::nil)).
+   Require List.
+   Import List.ListNotations.
+
+.. coqtop:: all fail
+
+   Function wrong (C:nat) : nat :=
+     List.hd 0 (List.map wrong (C::nil)).
 
 For now, dependent cases are not treated for non structurally
 terminating functions.
