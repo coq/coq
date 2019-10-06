@@ -126,7 +126,7 @@ let parse_format ({CAst.loc;v=str} : lstring) =
   let rec parse_non_format i =
     let n = nonspaces false 0 i in
     push_token (make_loc i (i+n-1)) (UnpTerminal (String.sub str i n)) (parse_token 1 (i+n))
-  and parse_quoted n i =
+  and parse_quoted n k i =
     if i < len then match str.[i] with
       (* Parse " // " *)
       | '/' when i+1 < len && str.[i+1] == '/' ->
@@ -140,7 +140,7 @@ let parse_format ({CAst.loc;v=str} : lstring) =
             (parse_token 1 (close_quotation i (i+p+1)))
       | c ->
       (* The spaces are real spaces *)
-      push_white i n (match c with
+      push_white (i-n-1-k) n (match c with
       | '[' ->
           if i+1 < len then match str.[i+1] with
             (* Parse " [h .. ",  *)
@@ -177,7 +177,7 @@ let parse_format ({CAst.loc;v=str} : lstring) =
           push_white (i-n) (n-k) (push_token (make_loc i (i+1)) (UnpTerminal "'") (parse_token 1 (i+1)))
       (* Parse the beginning of a quoted expression *)
       |	'\'' ->
-          parse_quoted (n-k) (i+1)
+          parse_quoted (n-k) k (i+1)
       (* Otherwise *)
       | _ ->
           push_white (i-n) (n-k) (parse_non_format i)
