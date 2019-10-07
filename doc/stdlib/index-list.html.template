@@ -627,5 +627,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Compat/Coq88.v
     theories/Compat/Coq89.v
     theories/Compat/Coq810.v
+    theories/Compat/Coq811.v
   </dd>
 </dl>
