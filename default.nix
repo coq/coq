@@ -29,7 +29,7 @@
 , shell ? false
   # We don't use lib.inNixShell because that would also apply
   # when in a nix-shell of some package depending on this one.
-, coq-version ? "8.10-git"
+, coq-version ? "8.11-git"
 }:
 
 with pkgs;
