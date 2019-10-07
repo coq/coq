@@ -2,6 +2,11 @@
 
 ## As soon as the previous version branched off master ##
 
+In principle, these steps should be undertaken by the RM of the next
+release. Unfortunately, we have not yet been able to nominate RMs
+early enough in the process for this person to be known at that point
+in time.
+
 - [ ] Create a new issue to track the release process where you can copy-paste
   the present checklist.
 - [ ] Change the version name to the next major version and the magic
@@ -54,25 +59,39 @@
 - [ ] Ping the development coordinator (**@mattam82**) to get him started on
   the update to the Credits chapter of the reference manual.
   See also [#7058](https://github.com/coq/coq/issues/7058).
-  The command to get the list of contributors for this version is
-  `git shortlog -s -n VX.X+alpha..master | cut -f2 | sort -k 2`
-  (the ordering is approximative as it will misplace people with middle names).
+
+  The command that was used in the previous versions to get the list
+  of contributors for this version is `git shortlog -s -n
+  VX.X+alpha..master | cut -f2 | sort -k 2`. Note that the ordering is
+  approximative as it will misplace people with middle names. It is
+  also probably not correctly handling `Co-authored-by` info that we
+  have been using more lately, so should probably be updated to
+  account for this.
 
 ## On the date of the feature freeze ##
 
 - [ ] Create the new version branch `vX.X` (using this name will ensure that
   the branch will be automatically protected).
+- [ ] Pin the versions of libraries and plugins in
+  `dev/ci/ci-basic-overlays.sh` to use commit hashes or tag (or, if it
+  exists, a branch dedicated to compatibility with the corresponding
+  Coq branch).
 - [ ] Remove all remaining unmerged feature PRs from the beta milestone.
-- [ ] Start a new project to track PR backporting. The proposed model is to
-  have a "X.X-only PRs" column for the rare PRs on the stable branch, a
-  "Request X.X inclusion" column for the PRs that were merged in `master` that
-  are to be considered for backporting, a "Waiting for CI" column to put the
-  PRs in the process of being backported, and "Shipped in ..." columns to put
-  what was backported. (The release manager is the person responsible for
-  merging PRs that target the version branch and backporting appropriate PRs
-  that are merged into `master`).
-  A message to **@coqbot** in the milestone description tells it to
-  automatically add merged PRs to the "Request X.X inclusion" column.
+- [ ] Start a new project to track PR backporting. The project should
+  have a "Request X.X+beta1 inclusion" column for the PRs that were
+  merged in `master` that are to be considered for backporting, and a
+  "Shipped in X.X+beta1" columns to put what was backported. A message
+  to **@coqbot** in the milestone description tells it to
+  automatically add merged PRs to the "Request ... inclusion" column
+  and backported PRs to the "Shipped in ..." column. See previous
+  milestones for examples. When moving to the next milestone
+  (e.g. X.X.0), you can clear and remove the "Request X.X+beta1
+  inclusion" column and create new "Request X.X.0 inclusion" and
+  "Shipped in X.X.0" columns.
+
+  The release manager is the person responsible for merging PRs that
+  target the version branch and backporting appropriate PRs that are
+  merged into `master`.
 - [ ] Delay non-blocking issues to the appropriate milestone and ensure
   blocking issues are solved. If required to solve some blocking issues,
   it is possible to revert some feature PRs in the version branch only.
