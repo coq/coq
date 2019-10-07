@@ -99,6 +99,11 @@ in time.
 ## Before the beta release date ##
 
 - [ ] Ensure the Credits chapter has been updated.
+- [ ] Prepare the release notes (see e.g.,
+  [#10833](https://github.com/coq/coq/pull/10833)): in a PR against the `master`
+  branch, move the contents from all files of `doc/changelog/` that appear in
+  the release branch into the manual `doc/sphinx/changes.rst`. Merge that PR
+  into the `master` branch and backport it to the version branch.
 - [ ] Ensure that an appropriate version of the plugins we will distribute with
   Coq has been tagged.
 - [ ] Have some people test the recently auto-generated Windows and MacOS
@@ -139,6 +144,7 @@ in time.
 
 ## At the final release time ##
 
+- [ ] Prepare the release notes (see above)
 - [ ] In a PR:
   - Change the version name from X.X.0 and the magic numbers (see
   [#7271](https://github.com/coq/coq/pull/7271/files)).
