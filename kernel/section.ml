@@ -14,16 +14,19 @@ open Univ
 
 module NamedDecl = Context.Named.Declaration
 
-type section_entry =
+type section_global_entry =
 | SecDefinition of Constant.t
 | SecInductive of MutInd.t
+
+type section_entry =
+| SecGlobal of section_global_entry
+| SecUnivs of ContextSet.t
 
 type 'a entry_map = 'a Cmap.t * 'a Mindmap.t
 
 type 'a section = {
   sec_context : int;
   (** Length of the named context suffix that has been introduced locally *)
-  sec_mono_universes : ContextSet.t;
   sec_poly_universes : Name.t array * UContext.t;
   (** Universes local to the section *)
   has_poly_univs : bool;
@@ -90,16 +93,13 @@ let push_constraints uctx s =
   let on_sec sec =
     if sec.has_poly_univs && Constraint.exists (fun (l,_,r) -> is_polymorphic_univ l s || is_polymorphic_univ r s) (snd uctx)
     then CErrors.user_err Pp.(str "Cannot add monomorphic constraints which refer to section polymorphic universes.");
-    let uctx' = sec.sec_mono_universes in
-    let sec_mono_universes =  (ContextSet.union uctx uctx') in
-    { sec with sec_mono_universes }
+    { sec with sec_entries = SecUnivs uctx :: sec.sec_entries }
   in
   on_last_section on_sec s
 
 let open_section ~custom sections =
   let sec = {
     sec_context = 0;
-    sec_mono_universes = ContextSet.empty;
     sec_poly_universes = ([||], UContext.empty);
     has_poly_univs = has_poly_univs sections;
     sec_entries = [];
@@ -111,7 +111,7 @@ let open_section ~custom sections =
 let close_section sections =
   match sections with
   | sec :: sections ->
-    sections, sec.sec_entries, sec.sec_mono_universes, sec.sec_custom
+    sections, sec.sec_entries, sec.sec_custom
   | [] ->
     CErrors.user_err (Pp.str "No opened section.")
 
@@ -126,7 +126,7 @@ let push_global ~poly e s =
   else
     let on_sec sec =
       { sec with
-        sec_entries = e :: sec.sec_entries;
+        sec_entries = SecGlobal e :: sec.sec_entries;
         sec_data = add_emap e (make_decl_univs sec.sec_poly_universes) sec.sec_data;
       }
     in

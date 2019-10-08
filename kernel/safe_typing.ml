@@ -327,27 +327,17 @@ type constraints_addition =
   | Now of Univ.ContextSet.t
   | Later of Univ.ContextSet.t Future.computation
 
-let push_context_set poly cst senv =
-  if Univ.ContextSet.is_empty cst then senv
-  else
-    let sections =
-      if Section.is_empty senv.sections then senv.sections
-      else Section.push_constraints cst senv.sections
-    in
-    { senv with
-      env = Environ.push_context_set ~strict:(not poly) cst senv.env;
-      univ = Univ.ContextSet.union cst senv.univ;
-      sections }
-
 let add_constraints cst senv =
   match cst with
   | Later fc -> 
     {senv with future_cst = fc :: senv.future_cst}
   | Now cst ->
-    push_context_set false cst senv
-
-let add_constraints_list cst senv =
-  List.fold_left (fun acc c -> add_constraints c acc) senv cst
+    if Univ.ContextSet.is_empty cst then senv
+    else
+      { senv with
+        env = Environ.push_context_set ~strict:true cst senv.env;
+        univ = Univ.ContextSet.union cst senv.univ;
+      }
 
 let is_curmod_library senv =
   match senv.modvariant with LIBRARY -> true | _ -> false
@@ -542,7 +532,7 @@ let add_field ?(is_include=false) ((l,sfb) as field) gn senv =
     else
       (* Delayed constraints from opaque body are added by [add_constant_aux] *)
       let cst = constraints_of_sfb sfb in
-      List.fold_left (fun senv cst -> push_context_set false cst senv) senv cst
+      List.fold_left (fun senv cst -> add_constraints (Now cst) senv) senv cst
   in
   let env' = match sfb, gn with
     | SFBconst cb, C con -> Environ.add_constant con cb senv.env
@@ -815,21 +805,22 @@ let export_private_constants ce senv =
 
 let add_constant l decl senv =
   let kn = Constant.make2 senv.modpath l in
-    let cb =
-      match decl with
-      | OpaqueEntry ce ->
-        let handle env body eff =
-          let body, uctx, signatures = inline_side_effects env body eff in
-          let trusted = check_signatures senv.revstruct signatures in
-          body, uctx, trusted
-        in
-        let cb, ctx = Term_typing.translate_opaque senv.env kn ce in
-        let map pf = Term_typing.check_delayed handle ctx pf in
-        let pf = Future.chain ce.Entries.opaque_entry_body map in
-        { cb with const_body = OpaqueDef pf }
-      | ConstantEntry ce ->
-        Term_typing.translate_constant senv.env kn ce
-    in
+  let cb =
+    match decl with
+    | OpaqueEntry ce ->
+      let handle env body eff =
+        let body, uctx, signatures = inline_side_effects env body eff in
+        let trusted = check_signatures senv.revstruct signatures in
+        body, uctx, trusted
+      in
+      let cb, ctx = Term_typing.translate_opaque senv.env kn ce in
+      let map pf = Term_typing.check_delayed handle ctx pf in
+      let pf = Future.chain ce.Entries.opaque_entry_body map in
+      { cb with const_body = OpaqueDef pf }
+    | ConstantEntry ce ->
+      Term_typing.translate_constant senv.env kn ce
+  in
+
   let senv =
     let senv, cb, delayed_cst = match cb.const_body with
     | OpaqueDef fc ->
@@ -842,16 +833,26 @@ let add_constant l decl senv =
           in
           let fc = Future.chain fc map in
           match Future.peek_val fc with
-          | None -> [Later fc]
-          | Some c -> [Now c]
-        else []
+          | None -> Some (Later fc)
+          | Some c -> Some (Now c)
+        else None
       in
       senv, { cb with const_body = OpaqueDef o }, delayed_cst
     | Undef _ | Def _ | Primitive _ as body ->
-      senv, { cb with const_body = body }, []
+      senv, { cb with const_body = body }, None
     in
     let senv = add_constant_aux senv (kn, cb) in
-    add_constraints_list delayed_cst senv
+    match delayed_cst with
+    | None -> senv
+    | Some (Later _ as c) -> add_constraints c senv
+    | Some (Now c) ->
+      (* "Now" constraints get reverted by section closing so need
+         special handling. We could also add them to the constant body
+         but that seems a bit hacky. *)
+      let senv = if Section.is_empty senv.sections then senv
+        else { senv with sections = Section.push_constraints c senv.sections }
+      in
+      add_constraints (Now c) senv
   in
 
   let senv =
@@ -961,12 +962,13 @@ let close_section senv =
   let sections0 = senv.sections in
   let env0 = senv.env in
   (* First phase: revert the declarations added in the section *)
-  let sections, entries, cstrs, revert = Section.close_section sections0 in
+  let sections, entries, revert = Section.close_section sections0 in
   let rec pop_revstruct accu entries revstruct = match entries, revstruct with
   | [], revstruct -> accu, revstruct
+  | SecUnivs uctx :: entries, revstruct -> pop_revstruct (`Univs uctx :: accu) entries revstruct
   | _ :: _, [] ->
     CErrors.anomaly (Pp.str "Unmatched section data")
-  | entry :: entries, (lbl, leaf) :: revstruct ->
+  | SecGlobal entry :: entries, (lbl, leaf) :: revstruct ->
     let data = match entry, leaf with
     | SecDefinition kn, SFBconst cb ->
       let () = assert (Label.equal lbl (Constant.label kn)) in
@@ -992,7 +994,6 @@ let close_section senv =
   let env = Environ.set_opaque_tables env (Environ.opaque_tables senv.env) in
   let senv = { senv with env; revstruct; sections; univ; objlabels; } in
   (* Second phase: replay the discharged section contents *)
-  let senv = add_constraints (Now cstrs) senv in
   let modlist = Section.replacement_context env0 sections0 in
   let cooking_info seg =
     let { abstr_ctx; abstr_subst; abstr_uctx } = seg in
@@ -1000,6 +1001,11 @@ let close_section senv =
     { Opaqueproof.modlist; abstract }
   in
   let fold senv = function
+  | `Univs uctx ->
+    let senv = if Section.is_empty senv.sections then senv
+      else {senv with sections = Section.push_constraints uctx senv.sections}
+    in
+    add_constraints (Now uctx) senv
   | `Definition (kn, cb) ->
     let info = cooking_info (Section.segment_of_constant env0 kn sections0) in
     let r = { Cooking.from = cb; info } in
@@ -1411,9 +1417,19 @@ let register_inductive ind prim senv =
   let action = Retroknowledge.Register_ind(prim,ind) in
   add_retroknowledge action senv
 
-let add_constraints c =
-  add_constraints
-    (Now (Univ.ContextSet.add_constraints c Univ.ContextSet.empty))
+let push_context_set poly cst senv =
+  if Univ.ContextSet.is_empty cst then senv
+  else
+    let sections =
+      if Section.is_empty senv.sections then senv.sections
+      else Section.push_constraints cst senv.sections
+    in
+    { senv with
+      env = Environ.push_context_set ~strict:(not poly) cst senv.env;
+      univ = Univ.ContextSet.union cst senv.univ;
+      sections }
+
+let add_constraints c senv = push_context_set false (Univ.LSet.empty,c) senv
 
 
 (* NB: The next old comment probably refers to [propagate_loads] above.

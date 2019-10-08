@@ -26,9 +26,13 @@ val depth : 'a t -> int
 
 (** {6 Manipulating sections} *)
 
-type section_entry =
+type section_global_entry =
 | SecDefinition of Constant.t
 | SecInductive of MutInd.t
+
+type section_entry =
+| SecGlobal of section_global_entry
+| SecUnivs of ContextSet.t
 
 val open_section : custom:'a -> 'a t -> 'a t
 (** Open a new section with the provided universe polymorphic status. Sections
@@ -36,10 +40,9 @@ val open_section : custom:'a -> 'a t -> 'a t
     inside a monomorphic one. A custom data can be attached to this section,
     that will be returned by {!close_section}. *)
 
-val close_section : 'a t -> 'a t * section_entry list * ContextSet.t * 'a
-(** Close the current section and returns the entries defined inside, the set
-    of global monomorphic constraints added in this section, and the custom data
-    provided at the opening of the section. *)
+val close_section : 'a t -> 'a t * section_entry list * 'a
+(** Close the current section and returns the entries defined inside
+    and the custom data provided at the opening of the section. *)
 
 (** {6 Extending sections} *)
 
