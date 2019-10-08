@@ -773,8 +773,7 @@ of a limitation of GitHub).
 Coq's major release cycles generally span about six months, with about
 4-5 months of development, and 1-2 months of stabilization /
 beta-releases.  The release manager (RM) role is a rolling position
-among core developers.  The [release plan][release-plan] is published
-on the wiki.
+among core developers.
 
 Development of new features, refactorings, deprecations and clean-ups
 always happens on `master`.  Stabilization starts by branching

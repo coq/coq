@@ -103,8 +103,6 @@ used, and include a complete source example leading to the bug.
 
 Guidelines for contributing to Coq in various ways are listed in the [contributor's guide](CONTRIBUTING.md).
 
-Information about the next release is at https://github.com/coq/coq/wiki/Release-Plan
-
 ## Supporting Coq
 
 Help the Coq community grow and prosper by becoming a sponsor! The [Coq
