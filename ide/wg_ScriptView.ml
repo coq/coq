@@ -408,10 +408,8 @@ object (self)
     | _ -> ()
 
   method apply_unicode_binding () =
-    (* Auxiliary method to reach the beginning of line or the
-        nearest space before the iterator. *)
     let rec get_line_start iter =
-      if iter#starts_line || Glib.Unichar.isspace iter#char then iter
+      if iter#starts_line then iter
       else get_line_start iter#backward_char
       in
     (* Main action *)
