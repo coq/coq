@@ -685,6 +685,9 @@ plugin:ci-mtac2:
 plugin:ci-paramcoq:
   extends: .ci-template
 
+plugin:ci-perennial:
+  extends: .ci-template-flambda
+
 plugin:plugin-tutorial:
   stage: stage-1
   dependencies: []
