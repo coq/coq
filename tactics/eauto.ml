@@ -124,7 +124,10 @@ let hintmap_of sigma secvars hdc concl =
   | None -> fun db -> Hint_db.map_none ~secvars db
   | Some hdc ->
      if occur_existential sigma concl then
-       (fun db -> Hint_db.map_existential sigma ~secvars hdc concl db)
+       (fun db ->
+          match Hint_db.map_existential sigma ~secvars hdc concl db with
+          | ModeMatch l -> l
+          | ModeMismatch -> [])
      else (fun db -> Hint_db.map_auto sigma ~secvars hdc concl db)
    (* FIXME: should be (Hint_db.map_eauto hdc concl db) *)
 
