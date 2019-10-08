@@ -18,6 +18,7 @@ Require Export Cos_rel.
 Require Export Cos_plus.
 Require Import ZArith_base.
 Require Import Zcomplements.
+Import Omega.
 Require Import Lra.
 Require Import Ranalysis1.
 Require Import Rsqrt_def. 

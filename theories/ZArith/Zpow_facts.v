@@ -9,6 +9,7 @@
 (************************************************************************)
 
 Require Import ZArith_base ZArithRing Zcomplements Zdiv Znumtheory.
+Import Omega.
 Require Export Zpower.
 Local Open Scope Z_scope.
 

@@ -18,6 +18,7 @@ Require Export Zpow_def.
 
 (** Extra modules using [Omega] or [Ring]. *)
 
+Require Export Omega.
 Require Export Zcomplements.
 Require Export Zpower.
 Require Export Zdiv.

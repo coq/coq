@@ -10,7 +10,6 @@
 
 Require Import ZArithRing.
 Require Import ZArith_base.
-Require Export Omega.
 Require Import Wf_nat.
 Local Open Scope Z_scope.
 
@@ -40,10 +39,19 @@ Proof. reflexivity. Qed.
 
 Lemma floor_ok : forall p:positive, floor p <= Zpos p < 2 * floor p.
 Proof.
- unfold floor. induction p; simpl.
- - rewrite !Pos2Z.inj_xI, (Pos2Z.inj_xO (xO _)), Pos2Z.inj_xO. omega.
- - rewrite (Pos2Z.inj_xO (xO _)), (Pos2Z.inj_xO p), Pos2Z.inj_xO. omega.
- - omega.
+ unfold floor. induction p as [p [IH1p IH2p]|p [IH1p IH2]|]; simpl.
+ - rewrite !Pos2Z.inj_xI, (Pos2Z.inj_xO (xO _)), Pos2Z.inj_xO.
+   split.
+   + apply Z.le_trans with (2 * Z.pos p); auto with zarith.
+     rewrite <- (Z.add_0_r (2 * Z.pos p)) at 1; auto with zarith.
+   + apply Z.lt_le_trans with (2 * (Z.pos p + 1)).
+     * rewrite Z.mul_add_distr_l, Z.mul_1_r.
+       apply Zplus_lt_compat_l; red; auto with zarith.
+     * apply Z.mul_le_mono_nonneg_l; auto with zarith.
+       rewrite Z.add_1_r; apply Zlt_le_succ; auto.
+ - rewrite (Pos2Z.inj_xO (xO _)), (Pos2Z.inj_xO p), Pos2Z.inj_xO.
+   split; auto with zarith.
+ - split; auto with zarith; red; auto.
 Qed.
 
 (**********************************************************************)
@@ -64,9 +72,10 @@ Proof.
   - rewrite Z.abs_eq; auto; intros.
     destruct (H (Z.abs m)); auto with zarith.
     destruct (Zabs_dec m) as [-> | ->]; trivial.
-  - rewrite Z.abs_neq, Z.opp_involutive; auto with zarith; intros.
-    destruct (H (Z.abs m)); auto with zarith.
-    destruct (Zabs_dec m) as [-> | ->]; trivial.
+  - rewrite Z.abs_neq, Z.opp_involutive; intros.
+    + destruct (H (Z.abs m)); auto with zarith.
+      destruct (Zabs_dec m) as [-> | ->]; trivial.
+    + apply Z.opp_le_mono; rewrite Z.opp_involutive; auto.
 Qed.
 
 Theorem Z_lt_abs_induction :
@@ -84,9 +93,10 @@ Proof.
   - rewrite Z.abs_eq; auto; intros.
     elim (H (Z.abs m)); intros; auto with zarith.
     elim (Zabs_dec m); intro eq; rewrite eq; trivial.
-  - rewrite Z.abs_neq, Z.opp_involutive; auto with zarith; intros.
-    destruct (H (Z.abs m)); auto with zarith.
-    destruct (Zabs_dec m) as [-> | ->]; trivial.
+  - rewrite Z.abs_neq, Z.opp_involutive; intros.
+    + destruct (H (Z.abs m)); auto with zarith.
+      destruct (Zabs_dec m) as [-> | ->]; trivial.
+    + apply Z.opp_le_mono; rewrite Z.opp_involutive; auto.
 Qed.
 
 (** To do case analysis over the sign of [z] *)
@@ -129,7 +139,7 @@ Section Zlength_properties.
     clear l. induction l.
     auto with zarith.
     intros. simpl length; simpl Zlength_aux.
-     rewrite IHl, Nat2Z.inj_succ; auto with zarith.
+     rewrite IHl, Nat2Z.inj_succ, Z.add_succ_comm; auto.
     unfold Zlength. now rewrite H.
   Qed.
 
