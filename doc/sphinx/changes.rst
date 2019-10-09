@@ -198,21 +198,21 @@ Melquiond, Matthieu Sozeau, Enrico Tassi (who migrated it to opam 2)
 with contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
 
-The 61 contributors to this version are David A. Dalrymple, Tanaka
-Akira, Benjamin Barenblat, Yves Bertot, Frédéric Besson, Lasse
-Blaauwbroek, Martin Bodin, Joachim Breitner, Tej Chajed, Frédéric
-Chapoton, Arthur Charguéraud, Cyril Cohen, Lukasz Czajka, Christian
-Doczkal, Maxime Dénès, Andres Erbsen, Jim Fehrle, Gaëtan Gilbert, Matěj
-Grabovský, Simon Gregersen, Jason Gross, Samuel Gruetter, Hugo Herbelin,
-Jasper Hugunin, Mirai Ikebuchi, Emilio Jesus Gallego Arias, Chantal
-Keller, Matej Košík, Vincent Laporte, Olivier Laurent, Larry Darryl Lee
-Jr, Pierre Letouzey, Nick Lewycky, Yao Li, Yishuai Li, Xia Li-yao, Assia
-Mahboubi, Simon Marechal, Erik Martin-Dorel, Thierry Martinez, Guillaume
-Melquiond, Kayla Ngan, Sam Pablo Kuper, Karl Palmskog, Clément
-Pit-Claudel, Pierre-Marie Pédrot, Pierre Roux, Kazuhiko Sakaguchi, Ryan
-Scott, Vincent Semeria, Gan Shen, Michael Soegtrop, Matthieu Sozeau,
-Enrico Tassi, Laurent Théry, Kamil Trzciński, whitequark, Théo
-Winterhalter, Beta Ziliani and Théo Zimmermann.
+The 61 contributors to this version are Tanaka Akira, Benjamin
+Barenblat, Yves Bertot, Frédéric Besson, Lasse Blaauwbroek, Martin
+Bodin, Joachim Breitner, Tej Chajed, Frédéric Chapoton, Arthur
+Charguéraud, Cyril Cohen, Lukasz Czajka, David A. Dalrymple, Christian
+Doczkal, Maxime Dénès, Andres Erbsen, Jim Fehrle, Emilio Jesus Gallego
+Arias, Gaëtan Gilbert, Matěj Grabovský, Simon Gregersen, Jason Gross,
+Samuel Gruetter, Hugo Herbelin, Jasper Hugunin, Mirai Ikebuchi,
+Chantal Keller, Matej Košík, Sam Pablo Kuper, Vincent Laporte, Olivier
+Laurent, Larry Darryl Lee Jr, Nick Lewycky, Yao Li, Yishuai Li, Assia
+Mahboubi, Simon Marechal, Erik Martin-Dorel, Thierry Martinez,
+Guillaume Melquiond, Kayla Ngan, Karl Palmskog, Pierre-Marie Pédrot,
+Clément Pit-Claudel, Pierre Roux, Kazuhiko Sakaguchi, Ryan Scott,
+Vincent Semeria, Gan Shen, Michael Soegtrop, Matthieu Sozeau, Enrico
+Tassi, Laurent Théry, Kamil Trzciński, whitequark, Théo Winterhalter,
+Xia Li-yao, Beta Ziliani and Théo Zimmermann.
 
 Many power users helped to improve the design of the new features via
 the issue and pull request system, the |Coq| development mailing list,
