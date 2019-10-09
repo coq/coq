@@ -20,7 +20,7 @@ let state_magic = 581091
 let is_a_released_version = false
 let distributed_exec =
   ["coqtop.opt"; "coqidetop.opt"; "coqqueryworker.opt"; "coqproofworker.opt"; "coqtacticworker.opt";
-   "coqc.opt";"coqchk";"coqdoc";"coqworkmgr";"coq_makefile";"coq-tex";"coqwc";"csdpcert";"coqdep"]
+   "coqc.opt";"coqchk";"coqdoc";"coqworkmgr";"coq_makefile";"coq-tex";"coqwc";"csdpcert";"coqdep";"votour"]
 
 let verbose = ref false (* for debugging this script *)
 
