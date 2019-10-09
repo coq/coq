@@ -140,7 +140,7 @@ let build_by_tactic ?(side_eff=true) env sigma ~poly typ tac =
     if side_eff then Safe_typing.inline_private_constants env (body, eff.Evd.seff_private)
     else body
   in
-  let univs = UState.merge ~sideff:side_eff ~extend:true Evd.univ_rigid univs ctx in
+  let univs = UState.merge ~sideff:side_eff Evd.univ_rigid univs ctx in
   cb, status, univs
 
 let refine_by_tactic ~name ~poly env sigma ty tac =
