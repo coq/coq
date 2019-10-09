@@ -463,14 +463,6 @@ let restrict ctx vars =
   let uctx' = restrict_universe_context ~lbound:ctx.uctx_universes_lbound ctx.uctx_local vars in
   { ctx with uctx_local = uctx' }
 
-let demote_seff_univs universes uctx =
-  let open Entries in
-  match universes with
-  | Polymorphic_entry _ -> uctx
-  | Monomorphic_entry (univs, _) ->
-    let seff = LSet.union uctx.uctx_seff_univs univs in
-    { uctx with uctx_seff_univs = seff }
-
 type rigid = 
   | UnivRigid
   | UnivFlexible of bool (** Is substitution by an algebraic ok? *)
@@ -531,9 +523,16 @@ let merge ?loc ~sideff ~extend rigid uctx ctx' =
 let merge_subst uctx s =
   { uctx with uctx_univ_variables = LMap.subst_union uctx.uctx_univ_variables s }
 
+let demote_seff_univs (univs,_) uctx =
+  let seff = LSet.union uctx.uctx_seff_univs univs in
+  { uctx with uctx_seff_univs = seff }
+
 let emit_side_effects eff u =
   let uctxs = Safe_typing.universes_of_private eff in
-  List.fold_left (merge ~sideff:true ~extend:false univ_rigid) u uctxs
+  List.fold_left (fun u uctx ->
+      let u = demote_seff_univs uctx u in
+      merge ~sideff:true ~extend:false univ_rigid u uctx)
+    u uctxs
 
 let new_univ_variable ?loc rigid name
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =

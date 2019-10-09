@@ -100,8 +100,6 @@ val restrict_universe_context : lbound:Univ.Level.t -> ContextSet.t -> LSet.t ->
    universes are preserved. *)
 val restrict : t -> Univ.LSet.t -> t
 
-val demote_seff_univs : Entries.universes_entry -> t -> t
-
 type rigid = 
   | UnivRigid
   | UnivFlexible of bool (** Is substitution by an algebraic ok? *)
