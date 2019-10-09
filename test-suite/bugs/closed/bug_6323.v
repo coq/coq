@@ -6,4 +6,5 @@ Goal True.
       simple refine (let id' : { x : X' | True } -> X' := _ in _);
       [ abstract refine (@proj1_sig _ _) | ]
     ].
-Abort.
+  exact I.
+Defined.
