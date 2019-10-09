@@ -320,10 +320,10 @@ let concat_private = SideEffects.concat
 let universes_of_private eff =
   let fold acc eff =
     match eff.seff_body.const_universes with
-    | Monomorphic ctx -> ctx :: acc
+    | Monomorphic ctx -> Univ.ContextSet.union ctx acc
     | Polymorphic _ -> acc
   in
-  List.fold_left fold [] (side_effects_of_private_constants eff)
+  List.fold_left fold Univ.ContextSet.empty (side_effects_of_private_constants eff)
 
 let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
