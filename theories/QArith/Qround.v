@@ -13,7 +13,8 @@ Require Import QArith.
 Lemma Qopp_lt_compat: forall p q : Q, p < q -> - q < - p.
 Proof.
 intros (a1,a2) (b1,b2); unfold Qle, Qlt; simpl.
-rewrite !Z.mul_opp_l; omega.
+rewrite !Z.mul_opp_l.
+apply Z.opp_lt_mono.
 Qed.
 
 Hint Resolve Qopp_lt_compat : qarith.
@@ -38,7 +39,7 @@ intros z.
 unfold Qceiling.
 simpl.
 rewrite Zdiv_1_r.
-auto with *.
+apply Z.opp_involutive.
 Qed.
 
 Lemma Qfloor_le : forall x, Qfloor x <= x.
@@ -119,7 +120,7 @@ Lemma Qceiling_resp_le : forall x y, x <= y -> (Qceiling x <= Qceiling y)%Z.
 Proof.
 intros x y Hxy.
 unfold Qceiling.
-cut (Qfloor (-y) <= Qfloor (-x))%Z; auto with *.
+rewrite <- Z.opp_le_mono; auto with qarith.
 Qed.
 
 Hint Resolve Qceiling_resp_le : qarith.
