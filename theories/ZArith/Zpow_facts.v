@@ -8,8 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import ZArith_base ZArithRing Zcomplements Zdiv Znumtheory.
-Import Omega.
+Require Import ZArith_base ZArithRing Omega Zcomplements Zdiv Znumtheory.
 Require Export Zpower.
 Local Open Scope Z_scope.
 
