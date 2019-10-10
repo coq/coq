@@ -79,7 +79,7 @@ Notation "x <= y <= z" := (x<=y/\y<=z) : Q_scope.
 
 Lemma inject_Z_injective (a b: Z): inject_Z a == inject_Z b <-> a = b.
 Proof.
- unfold Qeq. simpl. omega.
+ unfold Qeq; simpl; rewrite !Z.mul_1_r; reflexivity.
 Qed.
 
 (** Another approach : using Qcompare for defining order relations. *)
@@ -599,9 +599,7 @@ Proof.
 Qed.
 
 Lemma Qle_antisym x y : x<=y -> y<=x -> x==y.
-Proof.
-  unfold Qle, Qeq; auto with zarith.
-Qed.
+Proof. apply Z.le_antisymm. Qed.
 
 Lemma Qle_trans : forall x y z, x<=y -> y<=z -> x<=z.
 Proof.
@@ -618,14 +616,10 @@ Qed.
 Hint Resolve Qle_trans : qarith.
 
 Lemma Qlt_irrefl x : ~x<x.
-Proof.
- unfold Qlt. auto with zarith.
-Qed.
+Proof. apply Z.lt_irrefl. Qed.
 
 Lemma Qlt_not_eq x y : x<y -> ~ x==y.
-Proof.
-  unfold Qlt, Qeq; auto with zarith.
-Qed.
+Proof. apply Z.lt_neq. Qed.
 
 Lemma Zle_Qle (x y: Z): (x <= y)%Z = (inject_Z x <= inject_Z y).
 Proof.
@@ -647,9 +641,7 @@ Proof.
 Qed.
 
 Lemma Qlt_le_weak x y : x<y -> x<=y.
-Proof.
-  unfold Qle, Qlt; auto with zarith.
-Qed.
+Proof. apply Z.lt_le_incl. Qed.
 
 Lemma Qle_lt_trans : forall x y z, x<=y -> y<z -> x<z.
 Proof.
@@ -684,25 +676,17 @@ Qed.
 
 (** [x<y] iff [~(y<=x)] *)
 
-Lemma Qnot_lt_le : forall x y, ~ x<y -> y<=x.
-Proof.
-  unfold Qle, Qlt; auto with zarith.
-Qed.
+Lemma Qnot_lt_le x y : ~ x < y -> y <= x.
+Proof. apply Z.nlt_ge. Qed.
 
-Lemma Qnot_le_lt : forall x y, ~ x<=y -> y<x.
-Proof.
-  unfold Qle, Qlt; auto with zarith.
-Qed.
+Lemma Qnot_le_lt x y : ~ x <= y -> y < x.
+Proof. apply Z.nle_gt. Qed.
 
-Lemma Qlt_not_le : forall x y, x<y -> ~ y<=x.
-Proof.
-  unfold Qle, Qlt; auto with zarith.
-Qed.
+Lemma Qlt_not_le x y : x < y -> ~ y <= x.
+Proof. apply Z.lt_nge. Qed.
 
-Lemma Qle_not_lt : forall x y, x<=y -> ~ y<x.
-Proof.
-  unfold Qle, Qlt; auto with zarith.
-Qed.
+Lemma Qle_not_lt x y : x <= y -> ~ y < x.
+Proof. apply Z.le_ngt. Qed.
 
 Lemma Qle_lt_or_eq : forall x y, x<=y -> x<y \/ x==y.
 Proof.
@@ -746,21 +730,24 @@ Defined.
 Lemma Qopp_le_compat : forall p q, p<=q -> -q <= -p.
 Proof.
   intros (a1,a2) (b1,b2); unfold Qle, Qlt; simpl.
-  rewrite !Z.mul_opp_l. omega.
+  now rewrite !Z.mul_opp_l, <- Z.opp_le_mono.
 Qed.
+
 
 Hint Resolve Qopp_le_compat : qarith.
 
 Lemma Qle_minus_iff : forall p q, p <= q <-> 0 <= q+-p.
 Proof.
   intros (x1,x2) (y1,y2); unfold Qle; simpl.
-  rewrite Z.mul_opp_l. omega.
+  rewrite Z.mul_1_r, Z.mul_opp_l, <- Z.le_sub_le_add_r, Z.opp_involutive.
+  reflexivity.
 Qed.
 
 Lemma Qlt_minus_iff : forall p q, p < q <-> 0 < q+-p.
 Proof.
   intros (x1,x2) (y1,y2); unfold Qlt; simpl.
-  rewrite Z.mul_opp_l. omega.
+  rewrite Z.mul_1_r, Z.mul_opp_l, <- Z.lt_sub_lt_add_r, Z.opp_involutive.
+  reflexivity.
 Qed.
 
 Lemma Qplus_le_compat :
@@ -831,9 +818,11 @@ Lemma Qmult_le_compat_r : forall x y z, x <= y -> 0 <= z -> x*z <= y*z.
 Proof.
   intros (a1,a2) (b1,b2) (c1,c2); unfold Qle, Qlt; simpl.
   Open Scope Z_scope.
+  rewrite Z.mul_1_r.
   intros; simpl_mult.
   rewrite Z.mul_shuffle1, (Z.mul_shuffle1 b1).
-  apply Z.mul_le_mono_nonneg_r; auto with zarith.
+  apply Z.mul_le_mono_nonneg_r; auto.
+  now apply Z.mul_nonneg_nonneg.
   Close Scope Z_scope.
 Qed.
 
@@ -843,9 +832,10 @@ Proof.
   Open Scope Z_scope.
   simpl_mult.
   rewrite Z.mul_shuffle1, (Z.mul_shuffle1 b1).
+  rewrite Z.mul_1_r.
   intros LT LE.
   apply Z.mul_le_mono_pos_r in LE; trivial.
-  apply Z.mul_pos_pos; [omega|easy].
+  apply Z.mul_pos_pos; easy.
   Close Scope Z_scope.
 Qed.
 
@@ -866,10 +856,11 @@ Lemma Qmult_lt_compat_r : forall x y z, 0 < z  -> x < y -> x*z < y*z.
 Proof.
   intros (a1,a2) (b1,b2) (c1,c2); unfold Qle, Qlt; simpl.
   Open Scope Z_scope.
+  rewrite Z.mul_1_r.
   intros; simpl_mult.
   rewrite Z.mul_shuffle1, (Z.mul_shuffle1 b1).
   apply Z.mul_lt_mono_pos_r; auto with zarith.
-  apply Z.mul_pos_pos; [omega|reflexivity].
+  apply Z.mul_pos_pos; easy.
   Close Scope Z_scope.
 Qed.
 
@@ -880,8 +871,9 @@ Proof.
  unfold Qle, Qlt; simpl.
  simpl_mult.
  rewrite Z.mul_shuffle1, (Z.mul_shuffle1 b1).
+ rewrite Z.mul_1_r.
  intro LT. rewrite <- Z.mul_lt_mono_pos_r. reflexivity.
- apply Z.mul_pos_pos; [omega|reflexivity].
+ now apply Z.mul_pos_pos.
  Close Scope Z_scope.
 Qed.
 
@@ -896,6 +888,7 @@ Proof.
 intros a b Ha Hb.
 unfold Qle in *.
 simpl in *.
+rewrite Z.mul_1_r in *.
 auto with *.
 Qed.
 
