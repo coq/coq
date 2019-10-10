@@ -108,7 +108,7 @@ GRAMMLFILES := $(addsuffix .ml, $(GRAMFILES)) $(addsuffix .mli, $(GRAMFILES))
 GENGRAMFILES := $(GRAMMLFILES) gramlib/.pack/gramlib.ml
 GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) $(GENMLGFILES)  ide/coqide_os_specific.ml kernel/copcodes.ml kernel/uint63.ml
 GENHFILES:=kernel/byterun/coq_instruct.h kernel/byterun/coq_jumptbl.h
-GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES)
+GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) $(GENGRAMFILES)
 COQ_EXPORTED += GRAMFILES GRAMMLFILES GENGRAMFILES GENMLFILES GENHFILES GENFILES
 
 ## More complex file lists
