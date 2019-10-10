@@ -72,7 +72,7 @@ type constant_obj = {
 type 'a proof_entry = {
   proof_entry_body   : 'a Entries.const_entry_body;
   (* List of section variables *)
-  proof_entry_secctx : Constr.named_context option;
+  proof_entry_secctx : Id.Set.t option;
   (* State id on which the completion of type checking is reported *)
   proof_entry_feedback : Stateid.t option;
   proof_entry_type        : Constr.types option;
@@ -228,7 +228,7 @@ let cast_opaque_proof_entry e =
         ids_typ, vars
     in
     let () = if Aux_file.recording () then record_aux env hyp_typ hyp_def in
-    keep_hyps env (Id.Set.union hyp_typ hyp_def)
+    Environ.really_needed env (Id.Set.union hyp_typ hyp_def)
   | Some hyps -> hyps
   in
   {

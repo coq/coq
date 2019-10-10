@@ -17,7 +17,7 @@ type t
 (* Should be moved into a proper view *)
 val get_proof : t -> Proof.t
 val get_proof_name : t -> Names.Id.t
-val get_used_variables : t -> Constr.named_context option
+val get_used_variables : t -> Names.Id.Set.t option
 
 (** Get the universe declaration associated to the current proof. *)
 val get_universe_decl : t -> UState.universe_decl

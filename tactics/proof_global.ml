@@ -36,7 +36,7 @@ type opacity_flag = Opaque | Transparent
 
 type t =
   { endline_tactic : Genarg.glob_generic_argument option
-  ; section_vars : Constr.named_context option
+  ; section_vars : Id.Set.t option
   ; proof : Proof.t
   ; udecl: UState.universe_decl
   (** Initial universe declarations *)
@@ -128,7 +128,7 @@ let set_used_variables ps l =
   if not (Option.is_empty ps.section_vars) then
     CErrors.user_err Pp.(str "Used section variables can be declared only once");
   (* EJGA: This is always empty thus we should modify the type *)
-  (ctx, []), { ps with section_vars = Some ctx}
+  (ctx, []), { ps with section_vars = Some (Context.Named.to_vars ctx) }
 
 let get_open_goals ps =
   let Proof.{ goals; stack; shelf } = Proof.data ps.proof in

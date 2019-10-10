@@ -161,7 +161,7 @@ type 'opaque result = {
   cook_universes : universes;
   cook_relevance : Sorts.relevance;
   cook_inline : inline;
-  cook_context : Constr.named_context option;
+  cook_context : Id.Set.t option;
 }
 
 let expmod_constr_subst cache modlist subst c =
@@ -242,11 +242,7 @@ let cook_constant { from = cb; info } =
     OpaqueDef (Opaqueproof.discharge_direct_opaque info o)
   | Primitive _ -> CErrors.anomaly (Pp.str "Primitives cannot be cooked")
   in
-  let const_hyps =
-    Context.Named.fold_outside (fun decl hyps ->
-      List.filter (fun decl' -> not (Id.equal (NamedDecl.get_id decl) (NamedDecl.get_id decl')))
-		  hyps)
-      hyps0 ~init:cb.const_hyps in
+  let const_hyps = Id.Set.diff (Context.Named.to_vars cb.const_hyps) (Context.Named.to_vars hyps0) in
   let typ = abstract_constant_type (expmod cb.const_type) hyps in
   {
     cook_body = body;
