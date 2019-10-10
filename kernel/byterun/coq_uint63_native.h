@@ -155,10 +155,9 @@ value coq_uint63_to_float_byte(value x) {
 
 #define Uint63_of_int(x) (accu = (x))
 
-#define Int_of_uint63(x) do{ \
-  uint64_t int_of_uint63__ = uint63_of_value(x); \
-  if ((int_of_uint63__ & 0xFFFFFFFF80000000L) == 0) \
-    accu = (int)int_of_uint63__; \
+#define Uint63_to_int_min(n, m) do { \
+  if (uint63_lt((n),(m))) \
+    accu = (n); \
   else \
-    accu = 0x7FFFFFFF; \
+    accu = (m); \
   }while(0)

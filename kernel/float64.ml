@@ -117,7 +117,7 @@ let frshiftexp f =
     m, Uint63.of_int (e + eshift)
 [@@ocaml.inline always]
 
-let ldshiftexp f e = ldexp f (snd (Uint63.to_int2 e) - eshift)
+let ldshiftexp f e = ldexp f (Uint63.to_int_min e (2 * eshift) - eshift)
 [@@ocaml.inline always]
 
 external next_up : float -> float = "coq_next_up_byte" "coq_next_up"

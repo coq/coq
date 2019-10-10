@@ -19,8 +19,10 @@ val to_int2 : t -> int * int (* msb, lsb *)
 val of_int64 : Int64.t -> t
 (*
 val of_uint : int -> t
-*)
-val to_int_saturate : t -> int (* maxuint31 in case of overflow *)
+ *)
+(** [int_min n m] returns the minimum of [n] and [m],
+    [m] must be in [0, 2^30-1]. *)
+val to_int_min : t -> int -> int
 
       (* conversion to float *)
 val of_float : float -> t

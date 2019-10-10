@@ -3,7 +3,7 @@ Require Import Psatz.
 
 (** * Support results involving frexp and ldexp *)
 
-Lemma shift_value : [|shift|]%int63 = (2*emax + prec)%Z.
+Lemma shift_value : shift = (2*emax + prec)%Z.
   reflexivity.
 Qed.
 
@@ -24,23 +24,15 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
   destruct (Prim2SF f); auto.
   unfold SFldexp.
   unfold binary_round.
-  assert (Hmod_elim :  forall e, ([| of_Z (Z.max (Z.min e (emax - emin)) (emin - emax - 1)) + shift |]%int63 - [|shift|]%int63 = Z.max (Z.min e (emax - emin)) (emin - emax - 1))%Z).
+  assert (Hmod_elim :  forall e, ([| of_Z (Z.max (Z.min e (emax - emin)) (emin - emax - 1) + shift)|]%int63 - shift = Z.max (Z.min e (emax - emin)) (emin - emax - 1))%Z).
   {
-    intro.
-    rewrite Int63.add_spec.
-    rewrite of_Z_spec.
-    rewrite shift_value.
-    simpl.
-    unfold wB.
-    unfold size.
-    simpl.
-    unfold Z.pow_pos.
-    simpl.
+    intro e1.
+    rewrite of_Z_spec, shift_value.
+    unfold wB, size; simpl.
+    unfold Z.pow_pos; simpl.
     set (n := Z.max (Z.min _ _) _).
-    set (wB := 9223372036854775808%Z).
+    set (wB := 9223372036854775808%Z). (* Z.pow_pos 2 63 *)
     assert (-2099 <= n <= 2098)%Z by (unfold n; lia).
-    rewrite Z.add_mod_idemp_l by (unfold wB; lia).
-    destruct H as (H1, H2).
     rewrite Z.mod_small by (unfold wB; lia).
     now rewrite Z.add_simpl_r.
   }
@@ -79,17 +71,17 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
         assert (H' : forall p p', digits2_pos (shift_pos p p') = (digits2_pos p' + p)%positive).
         {
           induction p0.
-          intro.
+          intro p'.
           simpl.
           rewrite IHp0.
           rewrite IHp0.
           lia.
-          intro.
+          intro p'.
           simpl.
           rewrite IHp0.
           rewrite IHp0.
           lia.
-          intro.
+          intro p'.
           simpl.
           lia.
         }
@@ -161,7 +153,7 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
     {
       assert (Hshr1 : forall s, Zdigits2 (shr_m (shr_1 s)) = Z.max 0 (Zdigits2 (shr_m s) - 1)%Z).
       {
-        intro.
+        intro s0.
         destruct s0.
         unfold shr_1.
         destruct shr_m; try (simpl; lia).
@@ -170,7 +162,7 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
       }
       induction p.
       simpl.
-      intro.
+      intro s0.
       do 2 rewrite IHp.
       rewrite Hshr1.
       lia.
@@ -183,7 +175,7 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
 
     assert (Hd0 : forall z, Zdigits2 z = 0%Z -> z = 0%Z).
     {
-      intro.
+      intro z.
       unfold Zdigits2.
       now destruct z.
     }

@@ -169,5 +169,5 @@ DECLARE_UNOP(of_float)
 DECLARE_UNOP(of_int)
 #define Uint63_of_int(x) CALL_UNOP(of_int, x)
 
-DECLARE_UNOP(to_int_saturate)
-#define Int_of_uint63(x) CALL_PREDICATE(accu, to_int_saturate, x)
+DECLARE_BINOP(to_int_min)
+#define Uint63_to_int_min(n, m) CALL_BINOP(to_int_min, n, m)

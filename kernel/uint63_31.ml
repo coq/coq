@@ -27,9 +27,8 @@ let of_int i = Int64.of_int i
 let to_int2 i = (Int64.to_int (Int64.shift_right_logical i 31), Int64.to_int i)
 let of_int64 i = i
 
-let to_int_saturate i =
-  let r = if Int64.(equal (logand i maxuint31) i) then i else maxuint31 in
-  Int64.to_int r
+let to_int_min n m =
+  if Int64.(compare n (of_int m)) < 0 then Int64.to_int n else m
 
 let of_float f = mask63 (Int64.of_float f)
 let to_float = Int64.to_float
@@ -225,4 +224,4 @@ let () =
   Callback.register "uint63 of_float" of_float;
   Callback.register "uint63 to_float" to_float;
   Callback.register "uint63 of_int" of_int;
-  Callback.register "uint63 to_int_saturate" to_int_saturate
+  Callback.register "uint63 to_int_min" to_int_min

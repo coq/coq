@@ -6,13 +6,15 @@ Definition prec := 53%Z.
 Definition emax := 1024%Z.
 Notation emin := (emin prec emax).
 
+Definition shift := 2101%Z. (** [= 2*emax + prec] *)
+
 Definition frexp f :=
   let (m, se) := frshiftexp f in
-  (m, ([| se |] - [| shift |])%Z%int63).
+  (m, ([| se |] - shift)%Z%int63).
 
 Definition ldexp f e :=
   let e' := Z.max (Z.min e (emax - emin)) (emin - emax - 1) in
-  ldshiftexp f (of_Z e' + shift).
+  ldshiftexp f (of_Z (e' + shift)).
 
 Definition ulp f := ldexp one (fexp prec emax (snd (frexp f))).
 

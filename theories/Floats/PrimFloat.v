@@ -73,8 +73,6 @@ The sign bit is always ignored. *)
 Primitive normfr_mantissa := #float64_normfr_mantissa.
 
 (** ** Exponent manipulation functions *)
-Definition shift := 2101%int63. (** [= 2*emax + prec] *)
-
 (** [frshiftexp]: convert a float to fractional part in $[0.5, 1.)$#[0.5, 1.)#
 and integer part. *)
 Primitive frshiftexp := #float64_frshiftexp.

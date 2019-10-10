@@ -1711,7 +1711,8 @@ value coq_interprete
         print_instr("CHECKLDSHIFTEXP");
         CheckPrimArgs(Is_double(accu) && Is_uint63(sp[0]), apply2);
         Swap_accu_sp;
-        Int_of_uint63(accu);
+        Uint63_to_int_min(accu, Val_int(2 * FLOAT_EXP_SHIFT));
+        accu = Int_val(accu);
         Coq_copy_double(ldexp(Double_val(*sp++), accu - FLOAT_EXP_SHIFT));
         Next;
       }

@@ -51,8 +51,8 @@ Axiom sqrt_spec : forall x, Prim2SF (sqrt x) = SF64sqrt (Prim2SF x).
 Axiom of_int63_spec : forall n, Prim2SF (of_int63 n) = binary_normalize prec emax (to_Z n) 0%Z false.
 Axiom normfr_mantissa_spec : forall f, to_Z (normfr_mantissa f) = Z.of_N (SFnormfr_mantissa prec (Prim2SF f)).
 
-Axiom frshiftexp_spec : forall f, let (m,e) := frshiftexp f in (Prim2SF m, ((to_Z e) - (to_Z shift))%Z) = SFfrexp prec emax (Prim2SF f).
-Axiom ldshiftexp_spec : forall f e, Prim2SF (ldshiftexp f e) = SFldexp prec emax (Prim2SF f) ((to_Z e) - (to_Z shift)).
+Axiom frshiftexp_spec : forall f, let (m,e) := frshiftexp f in (Prim2SF m, ((to_Z e) - shift)%Z) = SFfrexp prec emax (Prim2SF f).
+Axiom ldshiftexp_spec : forall f e, Prim2SF (ldshiftexp f e) = SFldexp prec emax (Prim2SF f) ((to_Z e) - shift).
 
 Axiom next_up_spec : forall x, Prim2SF (next_up x) = SF64succ (Prim2SF x).
 Axiom next_down_spec : forall x, Prim2SF (next_down x) = SF64pred (Prim2SF x).
