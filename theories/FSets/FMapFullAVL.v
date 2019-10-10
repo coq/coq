@@ -68,7 +68,7 @@ Hint Constructors avl : core.
 Lemma height_non_negative : forall (s : t elt), avl s ->
  height s >= 0.
 Proof.
- induction s; simpl; intros; auto with zarith.
+ induction s; simpl; intros. now apply Z.le_ge.
  inv avl; intuition; omega_max.
 Qed.
 
