@@ -109,6 +109,7 @@ let tac2def_mut = Entry.create "tactic:tac2def_mut"
 let tac2mode = Entry.create "vernac:ltac2_command"
 
 let ltac1_expr = Pltac.tactic_expr
+let tac2expr_in_env = Tac2entries.Pltac.tac2expr_in_env
 
 let inj_wit wit loc x = CAst.make ~loc @@ CTacExt (wit, x)
 let inj_open_constr loc c = inj_wit Tac2quote.wit_open_constr loc c
@@ -129,7 +130,7 @@ let pattern_of_qualid qid =
 
 GRAMMAR EXTEND Gram
   GLOBAL: tac2expr tac2type tac2def_val tac2def_typ tac2def_ext tac2def_syn
-          tac2def_mut;
+          tac2def_mut tac2expr_in_env;
   tac2pat:
     [ "1" LEFTA
       [ qid = Prim.qualid; pl = LIST1 tac2pat LEVEL "0" -> {
@@ -246,6 +247,18 @@ GRAMMAR EXTEND Gram
   ltac1_expr_in_env:
     [ [ test_ltac1_env; ids = LIST0 locident; "|-"; e = ltac1_expr -> { ids, e }
       | e = ltac1_expr -> { [], e }
+    ] ]
+  ;
+  tac2expr_in_env :
+    [ [ test_ltac1_env; ids = LIST0 locident; "|-"; e = tac2expr ->
+      { let check { CAst.v = id; CAst.loc = loc } =
+          if Tac2env.is_constructor (Libnames.qualid_of_ident ?loc id) then
+            CErrors.user_err ?loc Pp.(str "Invalid bound Ltac2 identifier " ++ Id.print id)
+        in
+        let () = List.iter check ids in
+        (ids, e)
+      }
+      | tac = tac2expr -> { [], tac }
     ] ]
   ;
   let_clause:
@@ -860,7 +873,7 @@ let rules = [
     Stop ++ Aentry test_ampersand_ident ++ Atoken (PKEYWORD "&") ++ Aentry Prim.ident,
     begin fun id _ _ loc ->
       let tac = Tac2quote.of_exact_hyp ~loc (CAst.make ~loc id) in
-      let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
+      let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) ([], tac) in
       CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
     end
   );
@@ -869,7 +882,7 @@ let rules = [
     Stop ++ Atoken (PIDENT (Some "ltac2")) ++ Atoken (PKEYWORD ":") ++
       Atoken (PKEYWORD "(") ++ Aentry tac2expr ++ Atoken (PKEYWORD ")"),
     begin fun _ tac _ _ _ loc ->
-      let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
+      let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) ([], tac) in
       CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
     end
   )

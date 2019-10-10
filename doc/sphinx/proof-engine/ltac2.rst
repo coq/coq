@@ -853,6 +853,9 @@ a Ltac1 expression, and semantics of this quotation is the evaluation of the
 corresponding code for its side effects. In particular, it cannot return values,
 and the quotation has type :n:`unit`.
 
+.. productionlist:: coq
+  ltac2_term : ltac1 : ( `ltac_expr` )
+
 Ltac1 **cannot** implicitly access variables from the Ltac2 scope, but this can
 be done with an explicit annotation on the :n:`ltac1` quotation.
 
@@ -890,10 +893,19 @@ Ltac2 from Ltac1
 Same as above by switching Ltac1 by Ltac2 and using the `ltac2` quotation
 instead.
 
-Note that the tactic expression is evaluated eagerly, if one wants to use it as
-an argument to a Ltac1 function, one has to resort to the good old
-:n:`idtac; ltac2:(foo)` trick. For instance, the code below will fail immediately
-and won't print anything.
+.. productionlist:: coq
+  ltac_expr : ltac2 : ( `ltac2_term` )
+            : ltac2 : ( `ident` ... `ident` |- `ltac2_term` )
+
+The typing rules are dual, that is, the optional identifiers are bound
+with type `Ltac2.Ltac1.t` in the Ltac2 expression, which is expected to have
+type unit. The value returned by this quotation is an Ltac1 function with the
+same arity as the number of bound variables.
+
+Note that when no variables are bound, the inner tactic expression is evaluated
+eagerly, if one wants to use it as an argument to a Ltac1 function, one has to
+resort to the good old :n:`idtac; ltac2:(foo)` trick. For instance, the code
+below will fail immediately and won't print anything.
 
 .. coqtop:: in
 
@@ -902,11 +914,17 @@ and won't print anything.
 
 .. coqtop:: all
 
-   Ltac mytac tac := idtac "wow"; tac.
+   Ltac mytac tac := idtac "I am being evaluated"; tac.
 
    Goal True.
    Proof.
+   (* Doesn't print anything *)
    Fail mytac ltac2:(fail).
+   (* Prints and fails *)
+   Fail mytac ltac:(idtac; ltac2:(fail)).
+
+In any case, the value returned by the fully applied quotation is an
+unspecified dummy Ltac1 closure and should not be further used.
 
 Transition from Ltac1
 ---------------------
