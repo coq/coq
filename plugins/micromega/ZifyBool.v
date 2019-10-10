@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 Require Import Bool ZArith.
-Require Import ZifyClasses.
+Require Import Zify ZifyClasses.
 Local Open Scope Z_scope.
 (* Instances of [ZifyClasses] for dealing with boolean operators.
    Various encodings of boolean are possible.  One objective is to
