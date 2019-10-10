@@ -17,7 +17,7 @@
     [mem x s=true] instead of [In x s],
     [equal s s'=true] instead of [Equal s s'], etc. *)
 
-Require Import FSetProperties Zerob Sumbool Omega DecidableTypeEx.
+Require Import FSetProperties Zerob Sumbool DecidableTypeEx.
 
 Module WEqProperties_fun (Import E:DecidableType)(M:WSfun E).
 Module Import MP := WProperties_fun E M.
@@ -847,11 +847,16 @@ Proof.
 unfold sum.
 intros f g Hf Hg.
 assert (fc : compat_opL (fun x:elt =>plus (f x))).  red; auto with fset.
-assert (ft : transposeL (fun x:elt =>plus (f x))). red; intros; omega.
+assert (ft : transposeL (fun x:elt =>plus (f x))). red; intros x y z.
+  rewrite !PeanoNat.Nat.add_assoc, (PeanoNat.Nat.add_comm (f x) (f y)); reflexivity.
 assert (gc : compat_opL (fun x:elt => plus (g x))). red; auto with fset.
-assert (gt : transposeL (fun x:elt =>plus (g x))). red; intros; omega.
+assert (gt : transposeL (fun x:elt =>plus (g x))). red; intros x y z.
+  rewrite !PeanoNat.Nat.add_assoc, (PeanoNat.Nat.add_comm (g x) (g y)); reflexivity.
 assert (fgc : compat_opL (fun x:elt =>plus ((f x)+(g x)))). repeat red; auto.
-assert (fgt : transposeL (fun x:elt=>plus ((f x)+(g x)))). red; intros; omega.
+assert (fgt : transposeL (fun x:elt=>plus ((f x)+(g x)))). red; intros x y z.
+  set (u := (f x + g x)); set (v := (f y + g y)).
+  rewrite !PeanoNat.Nat.add_assoc, (PeanoNat.Nat.add_comm u).
+  reflexivity.
 assert (st : Equivalence (@Logic.eq nat)) by (split; congruence).
 intros s;pattern s; apply set_rec.
 intros.
@@ -859,7 +864,10 @@ rewrite <- (fold_equal _ _ st _ fc ft 0 _ _ H).
 rewrite <- (fold_equal _ _ st _ gc gt 0 _ _ H).
 rewrite <- (fold_equal _ _ st _ fgc fgt 0 _ _ H); auto.
 intros; do 3 (rewrite (fold_add _ _ st);auto).
-rewrite H0;simpl;omega.
+rewrite H0;simpl.
+rewrite <- !(PeanoNat.Nat.add_assoc (f x)); f_equal.
+rewrite !PeanoNat.Nat.add_assoc. f_equal.
+apply PeanoNat.Nat.add_comm.
 do 3 rewrite fold_empty;auto.
 Qed.
 
@@ -872,7 +880,11 @@ assert (cc : compat_opL (fun x => plus (if f x then 1 else 0))).
  repeat red; intros.
  rewrite (Hf _ _ H); auto.
 assert (ct : transposeL (fun x => plus (if f x then 1 else 0))).
- red; intros; omega.
+ red; intros.
+ set (a := if f x then _ else _).
+ rewrite PeanoNat.Nat.add_comm.
+ rewrite <- !PeanoNat.Nat.add_assoc. f_equal.
+ apply PeanoNat.Nat.add_comm.
 intros s;pattern s; apply set_rec.
 intros.
 change elt with E.t.
@@ -921,9 +933,11 @@ Lemma sum_compat :
   forall f g, Proper (E.eq==>Logic.eq) f -> Proper (E.eq==>Logic.eq) g ->
   forall s, (forall x, In x s -> f x=g x) -> sum f s=sum g s.
 intros.
-unfold sum; apply (fold_compat _ (@Logic.eq nat)); auto with *.
+unfold sum; apply (fold_compat _ (@Logic.eq nat)); auto with fset.
 intros x x' Hx y y' Hy. rewrite Hx, Hy; auto.
+intros x y z; rewrite !PeanoNat.Nat.add_assoc; f_equal; apply PeanoNat.Nat.add_comm.
 intros x x' Hx y y' Hy. rewrite Hx, Hy; auto.
+intros x y z; rewrite !PeanoNat.Nat.add_assoc; f_equal; apply PeanoNat.Nat.add_comm.
 Qed.
 
 End Sum.
