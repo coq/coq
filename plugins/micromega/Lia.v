@@ -44,9 +44,9 @@ Ltac zchecker_ext :=
                                 (@eq_refl bool true <: @eq bool (ZTautoCheckerExt __ff __wit) true)
                                 (@find Z Z0 __varmap)).
 
-Ltac lia := zify; xlia zchecker_ext.
+Ltac lia := PreOmega.zify; xlia zchecker_ext.
                
-Ltac nia := zify; xnlia zchecker.
+Ltac nia := PreOmega.zify; xnlia zchecker.
 
 
 (* Local Variables: *)
