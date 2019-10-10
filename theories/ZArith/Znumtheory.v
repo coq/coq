@@ -12,7 +12,7 @@ Require Import ZArith_base.
 Require Import ZArithRing.
 Require Import Zcomplements.
 Require Import Zdiv.
-Import Omega.
+Require Import Omega.
 Require Import Wf_nat.
 
 (** For compatibility reasons, this Open Scope isn't local as it should *)
