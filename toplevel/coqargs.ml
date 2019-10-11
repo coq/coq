@@ -498,7 +498,7 @@ let parse_args ~help ~init arglist : t * string list =
       { oval with config = { oval.config with stm_flags = { oval.config.stm_flags with
         Stm.AsyncOpts.async_proofs_never_reopen_branch = true
       }}}
-    |"-test-mode" -> Vernacentries.test_mode := true; oval
+    |"-test-mode" -> Vernacinterp.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
     |"-bt" -> Backtrace.record_backtrace true; oval
     |"-color" -> set_color oval (next ())

@@ -54,7 +54,6 @@ and proof_block_name = string (** open type of delimiters *)
 
 type typed_vernac =
   | VtDefault of (unit -> unit)
-
   | VtNoProof of (unit -> unit)
   | VtCloseProof of (lemma:Lemmas.t -> unit)
   | VtOpenProof of (unit -> Lemmas.t)
