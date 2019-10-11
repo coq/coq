@@ -828,31 +828,31 @@ Ltac ring_elements set ext rspec pspec sspec dspec rk :=
     end in
   ring_elements set ext rspec pspec sspec dspec rk
     ltac:(fun arth ext_r morph p_spec s_spec d_spec =>
-       match type of morph with
+       lazymatch type of morph with
        | @ring_morph ?R ?r0 ?rI ?radd ?rmul ?rsub ?ropp ?req
                ?C ?c0 ?c1 ?cadd ?cmul ?csub ?copp ?ceq_b ?phi =>
           let gen_lemma2_0 :=
               constr:(gen_lemma2 R  r0 rI  radd rmul rsub ropp req set ext_r arth
                                 C  c0 c1 cadd cmul csub copp ceq_b phi morph) in
-          match p_spec with
+          lazymatch p_spec with
           | @mkhypo (power_theory _ _ _ ?Cp_phi ?rpow) ?pp_spec =>
              let gen_lemma2_1 := constr:(gen_lemma2_0 _ Cp_phi rpow pp_spec) in
-             match d_spec with
+             lazymatch d_spec with
              | @mkhypo (div_theory _ _ _ _  ?cdiv) ?dd_spec =>
                 let gen_lemma2_2 := constr:(gen_lemma2_1 cdiv dd_spec) in
-                match s_spec with
+                lazymatch s_spec with
                 | @mkhypo (sign_theory _ _ ?get_sign) ?ss_spec =>
                   let lemma2 := constr:(gen_lemma2_2 get_sign ss_spec) in
                   let lemma1 :=
                     constr:(ring_correct set ext_r arth morph pp_spec dd_spec) in
                   fun f => f arth ext_r morph lemma1 lemma2
-                | _ => fail 4 "ring: bad sign specification"
+                | _ => fail "ring: bad sign specification"
                 end
-             | _ => fail 3 "ring: bad coefficient division specification"
+             | _ => fail "ring: bad coefficient division specification"
              end
-          | _ => fail 2 "ring: bad power specification"
+          | _ => fail "ring: bad power specification"
           end
-       | _ => fail 1 "ring internal error: ring_lemmas, please report"
+       | _ => fail "ring internal error: ring_lemmas, please report"
        end).
 
 (* Tactic for constant *)
