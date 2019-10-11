@@ -82,14 +82,6 @@ let fresh_global_or_constr_instance env = function
   | IsConstr c -> c, ContextSet.empty
   | IsGlobal gr -> fresh_global_instance env gr
 
-let global_of_constr c =
-  match kind c with
-  | Const (c, u) -> GlobRef.ConstRef c, u
-  | Ind (i, u) -> GlobRef.IndRef i, u
-  | Construct (c, u) -> GlobRef.ConstructRef c, u
-  | Var id -> GlobRef.VarRef id, Instance.empty
-  | _ -> raise Not_found
-
 let fresh_sort_in_family = function
   | InSProp -> Sorts.sprop, ContextSet.empty
   | InProp -> Sorts.prop, ContextSet.empty

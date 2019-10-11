@@ -2,6 +2,8 @@
 
 ### ML API
 
+- Function UnivGen.global_of_constr has been removed.
+
 - Functions and types deprecated in 8.10 have been removed in Coq
   8.11.
 
