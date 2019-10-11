@@ -178,7 +178,8 @@ let add_compat_require opts v =
   match v with
   | Flags.V8_8 -> add_vo_require opts "Coq.Compat.Coq88" None (Some false)
   | Flags.V8_9 -> add_vo_require opts "Coq.Compat.Coq89" None (Some false)
-  | Flags.Current -> add_vo_require opts "Coq.Compat.Coq810" None (Some false)
+  | Flags.V8_10 -> add_vo_require opts "Coq.Compat.Coq810" None (Some false)
+  | Flags.Current -> add_vo_require opts "Coq.Compat.Coq811" None (Some false)
 
 let add_load_vernacular opts verb s =
   { opts with pre = { opts.pre with load_vernacular_list = (CUnix.make_suffix s ".v",verb) :: opts.pre.load_vernacular_list }}

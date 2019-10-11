@@ -8,6 +8,4 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Compatibility file for making Coq act similar to Coq v8.10 *)
-
-Require Export Coq.Compat.Coq811.
+(** Compatibility file for making Coq act similar to Coq v8.11 *)
