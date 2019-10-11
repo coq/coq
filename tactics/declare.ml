@@ -347,7 +347,7 @@ let declare_variable ~name ~kind d =
   in
   Nametab.push (Nametab.Until 1) (Libnames.make_path DirPath.empty name) (GlobRef.VarRef name);
   Decls.(add_variable_data name {opaque;kind});
-  add_anonymous_leaf (inVariable ());
+  ignore(add_leaf name (inVariable ()) : Libobject.object_name);
   Impargs.declare_var_implicits ~impl name;
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.VarRef name)
 
