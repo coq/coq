@@ -24,7 +24,7 @@ type 'a delayed_universes =
 | PrivateMonomorphic of 'a
 | PrivatePolymorphic of int * Univ.ContextSet.t
 
-type opaque_proofterm = cooking_info list * (Constr.t * unit delayed_universes) option
+type opaque_proofterm = (Constr.t * unit delayed_universes) option
 
 type indirect_accessor = {
   access_proof : DirPath.t -> int -> opaque_proofterm;
@@ -38,10 +38,10 @@ let drop_mono = function
 type proofterm = (constr * Univ.ContextSet.t delayed_universes) Future.computation
 
 type opaque =
-  | Indirect of substitution list * DirPath.t * int (* subst, lib, index *)
-  | Direct of cooking_info list * proofterm
+| Indirect of substitution list * cooking_info list * DirPath.t * int (* subst, discharge, lib, index *)
+
 type opaquetab = {
-  opaque_val : (cooking_info list * proofterm) Int.Map.t;
+  opaque_val : proofterm Int.Map.t;
   (** Actual proof terms *)
   opaque_len : int;
   (** Size of the above map *)
@@ -56,44 +56,33 @@ let empty_opaquetab = {
 let not_here () =
   CErrors.user_err Pp.(str "Cannot access opaque delayed proof")
 
-let create cu = Direct ([],cu)
-
-let turn_indirect dp o tab = match o with
-  | Indirect (_,_,i) ->
-      if not (Int.Map.mem i tab.opaque_val)
-      then CErrors.anomaly (Pp.str "Indirect in a different table.")
-      else CErrors.anomaly (Pp.str "Already an indirect opaque.")
-  | Direct (d, cu) ->
-    (* Invariant: direct opaques only exist inside sections, we turn them
-      indirect as soon as we are at toplevel. At this moment, we perform
-      hashconsing of their contents, potentially as a future. *)
-      let hcons (c, u) =
-        let c = Constr.hcons c in
-        let u = match u with
-        | PrivateMonomorphic u -> PrivateMonomorphic (Univ.hcons_universe_context_set u)
-        | PrivatePolymorphic (n, u) -> PrivatePolymorphic (n, Univ.hcons_universe_context_set u)
-        in
-        (c, u)
-      in
-      let cu = Future.chain cu hcons in
-      let id = tab.opaque_len in
-      let opaque_val = Int.Map.add id (d,cu) tab.opaque_val in
-      let opaque_dir =
-        if DirPath.equal dp tab.opaque_dir then tab.opaque_dir
-        else if DirPath.equal tab.opaque_dir DirPath.initial then dp
-        else CErrors.anomaly
-          (Pp.str "Using the same opaque table for multiple dirpaths.") in
-      let ntab = { opaque_val; opaque_dir; opaque_len = id + 1 } in
-      Indirect ([],dp,id), ntab
+let create dp cu tab =
+  let hcons (c, u) =
+    let c = Constr.hcons c in
+    let u = match u with
+    | PrivateMonomorphic u -> PrivateMonomorphic (Univ.hcons_universe_context_set u)
+    | PrivatePolymorphic (n, u) -> PrivatePolymorphic (n, Univ.hcons_universe_context_set u)
+    in
+    (c, u)
+  in
+  let cu = Future.chain cu hcons in
+  let id = tab.opaque_len in
+  let opaque_val = Int.Map.add id cu tab.opaque_val in
+  let opaque_dir =
+    if DirPath.equal dp tab.opaque_dir then tab.opaque_dir
+    else if DirPath.equal tab.opaque_dir DirPath.initial then dp
+    else CErrors.anomaly
+      (Pp.str "Using the same opaque table for multiple dirpaths.") in
+  let ntab = { opaque_val; opaque_dir; opaque_len = id + 1 } in
+  Indirect ([], [], dp, id), ntab
 
 let subst_opaque sub = function
-  | Indirect (s,dp,i) -> Indirect (sub::s,dp,i)
-  | Direct _ -> CErrors.anomaly (Pp.str "Substituting a Direct opaque.")
+| Indirect (s, ci, dp, i) -> Indirect (sub :: s, ci, dp, i)
 
-let discharge_direct_opaque ci = function
-  | Indirect _ -> CErrors.anomaly (Pp.str "Not a direct opaque.")
-  | Direct (d, cu) ->
-      Direct (ci :: d, cu)
+let discharge_opaque info = function
+| Indirect (s, ci, dp, i) ->
+  assert (CList.is_empty s);
+  Indirect ([], info :: ci, dp, i)
 
 let join except cu = match except with
 | None -> ignore (Future.join cu)
@@ -102,25 +91,21 @@ let join except cu = match except with
   else ignore (Future.join cu)
 
 let join_opaque ?except { opaque_val = prfs; opaque_dir = odp; _ } = function
-  | Direct (_,cu) -> join except cu
-  | Indirect (_,dp,i) ->
-      if DirPath.equal dp odp then
-        let (_, fp) = Int.Map.find i prfs in
-        join except fp
+| Indirect (_,_,dp,i) ->
+    if DirPath.equal dp odp then
+      let fp = Int.Map.find i prfs in
+      join except fp
 
 let force_proof access { opaque_val = prfs; opaque_dir = odp; _ } = function
-  | Direct (d, cu) ->
-    let (c, u) = Future.force cu in
-    access.access_discharge d (c, drop_mono u)
-  | Indirect (l,dp,i) ->
+  | Indirect (l,d,dp,i) ->
       let c, u =
         if DirPath.equal dp odp
         then
-          let (d, cu) = Int.Map.find i prfs in
+          let cu = Int.Map.find i prfs in
           let (c, u) = Future.force cu in
           access.access_discharge d (c, drop_mono u)
         else
-          let (d, cu) = access.access_proof dp i in
+          let cu = access.access_proof dp i in
           match cu with
           | None -> not_here ()
           | Some (c, u) -> access.access_discharge d (c, u)
@@ -133,21 +118,19 @@ let get_mono (_, u) = match u with
 | PrivatePolymorphic _ -> Univ.ContextSet.empty
 
 let force_constraints _access { opaque_val = prfs; opaque_dir = odp; _ } = function
-  | Direct (_,cu) ->
-    get_mono (Future.force cu)
-  | Indirect (_,dp,i) ->
+| Indirect (_,_,dp,i) ->
       if DirPath.equal dp odp
       then
-        let ( _, cu) = Int.Map.find i prfs in
+        let cu = Int.Map.find i prfs in
         get_mono (Future.force cu)
       else Univ.ContextSet.empty
 
 module FMap = Future.UUIDMap
 
 let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _ } =
-  let opaque_table = Array.make n ([], None) in
+  let opaque_table = Array.make n None in
   let f2t_map = ref FMap.empty in
-  let iter n (d, cu) =
+  let iter n cu =
     let uid = Future.uuid cu in
     let () = f2t_map := FMap.add (Future.uuid cu) n !f2t_map in
     let c =
@@ -160,7 +143,7 @@ let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _
         CErrors.anomaly
           Pp.(str"Proof object "++int n++str" is not checked nor to be checked")
     in
-    opaque_table.(n) <- (d, c)
+    opaque_table.(n) <- c
   in
   let () = Int.Map.iter iter otab in
   opaque_table, !f2t_map

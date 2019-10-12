@@ -16,10 +16,7 @@ open Mod_subst
     Opaque proof terms are special since:
     - they can be lazily computed and substituted
     - they are stored in an optionally loaded segment of .vo files
-    An [opaque] proof terms holds the real data until fully discharged.
-    In this case it is called [direct].
-    When it is [turn_indirect] the data is relocated to an opaque table
-    and the [opaque] is turned into an index. *)
+    An [opaque] proof terms holds an index into an opaque table. *)
 
 type 'a delayed_universes =
 | PrivateMonomorphic of 'a
@@ -33,12 +30,7 @@ type opaque
 val empty_opaquetab : opaquetab
 
 (** From a [proofterm] to some [opaque]. *)
-val create : proofterm -> opaque
-
-(** Turn a direct [opaque] into an indirect one. It is your responsibility to
-  hashcons the inner term beforehand. The integer is an hint of the maximum id
-  used so far *)
-val turn_indirect : DirPath.t -> opaque -> opaquetab -> opaque * opaquetab
+val create : DirPath.t -> proofterm -> opaquetab -> opaque * opaquetab
 
 type work_list = (Univ.Instance.t * Id.t array) Cmap.t *
   (Univ.Instance.t * Id.t array) Mindmap.t
@@ -47,14 +39,14 @@ type cooking_info = {
   modlist : work_list;
   abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
 
-type opaque_proofterm = cooking_info list * (Constr.t * unit delayed_universes) option
+type opaque_proofterm = (Constr.t * unit delayed_universes) option
 
 type indirect_accessor = {
   access_proof : DirPath.t -> int -> opaque_proofterm;
   access_discharge : cooking_info list ->
     (Constr.t * unit delayed_universes) -> (Constr.t * unit delayed_universes);
 }
-(** When stored indirectly, opaque terms are indexed by their library
+(** Opaque terms are indexed by their library
     dirpath and an integer index. The two functions above activate
     this indirect storage, by telling how to retrieve terms.
 *)
@@ -66,7 +58,7 @@ val force_constraints : indirect_accessor -> opaquetab -> opaque -> Univ.Context
 
 val subst_opaque : substitution -> opaque -> opaque
 
-val discharge_direct_opaque :
+val discharge_opaque :
   cooking_info -> opaque -> opaque
 
 val join_opaque : ?except:Future.UUIDSet.t -> opaquetab -> opaque -> unit

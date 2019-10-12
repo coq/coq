@@ -187,10 +187,24 @@ let v_substituted v_a =
 
 let v_cstr_subst = v_substituted v_constr
 
-(** NB: Second constructor [Direct] isn't supposed to appear in a .vo *)
-let v_lazy_constr =
-  v_sum "lazy_constr" 0 [|[|List v_subst;v_dp;Int|]|]
+let v_ndecl = v_sum "named_declaration" 0
+    [| [|v_binder_annot v_id; v_constr|];               (* LocalAssum *)
+       [|v_binder_annot v_id; v_constr; v_constr|] |]   (* LocalDef *)
 
+let v_nctxt = List v_ndecl
+
+let v_work_list =
+  let v_abstr = v_pair v_instance (Array v_id) in
+  Tuple ("work_list", [|v_hmap v_cst v_abstr; v_hmap v_cst v_abstr|])
+
+let v_abstract =
+  Tuple ("abstract", [| v_nctxt; v_instance; v_abs_context |])
+
+let v_cooking_info =
+  Tuple ("cooking_info", [|v_work_list; v_abstract|])
+
+let v_opaque =
+  v_sum "opaque" 0 [|[|List v_subst; List v_cooking_info; v_dp; Int|]|]
 
 (** kernel/declarations *)
 
@@ -216,7 +230,7 @@ let v_primitive =
 
 let v_cst_def =
   v_sum "constant_def" 0
-    [|[|Opt Int|]; [|v_cstr_subst|]; [|v_lazy_constr|]; [|v_primitive|]|]
+    [|[|Opt Int|]; [|v_cstr_subst|]; [|v_opaque|]; [|v_primitive|]|]
 
 let v_typing_flags =
   v_tuple "typing_flags" [|v_bool; v_bool; v_bool; v_oracle; v_bool; v_bool; v_bool; v_bool; v_bool|]
@@ -400,25 +414,9 @@ let v_libsum =
 let v_lib =
   Tuple ("library",[|v_compiled_lib;v_libraryobjs|])
 
-let v_ndecl = v_sum "named_declaration" 0
-    [| [|v_binder_annot v_id; v_constr|];               (* LocalAssum *)
-       [|v_binder_annot v_id; v_constr; v_constr|] |]   (* LocalDef *)
-
-let v_nctxt = List v_ndecl
-
-let v_work_list =
-  let v_abstr = v_pair v_instance (Array v_id) in
-  Tuple ("work_list", [|v_hmap v_cst v_abstr; v_hmap v_cst v_abstr|])
-
-let v_abstract =
-  Tuple ("abstract", [| v_nctxt; v_instance; v_abs_context |])
-
-let v_cooking_info =
-  Tuple ("cooking_info", [|v_work_list; v_abstract|])
-
 let v_delayed_universes =
   Sum ("delayed_universes", 0, [| [| v_unit |]; [| Int; v_context_set |] |])
 
-let v_opaques = Array (Tuple ("opaque", [| List v_cooking_info; Opt (v_pair v_constr v_delayed_universes) |]))
+let v_opaquetable = Array (Opt (v_pair v_constr v_delayed_universes))
 let v_univopaques =
   Opt (Tuple ("univopaques",[|v_context_set;v_bool|]))

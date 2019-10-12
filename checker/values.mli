@@ -46,5 +46,5 @@ type value =
 val v_univopaques : value
 val v_libsum : value
 val v_lib : value
-val v_opaques : value
+val v_opaquetable : value
 val v_stm_seg : value
