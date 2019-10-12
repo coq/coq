@@ -9,7 +9,7 @@ Files :
 
 - ccalgo.ml : congruence closure algorithm
 - ccproof.ml : proof generation code
-- cctac.ml4 : the tactic itself
+- cctac.mlg : the tactic itself
 - CCSolve.v : a small Ltac tactic based on congruence 
 
 Known Bugs : the congruence tactic can fail due to type dependencies.

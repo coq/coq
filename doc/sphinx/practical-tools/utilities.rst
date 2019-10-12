@@ -62,7 +62,7 @@ A simple example of a ``_CoqProject`` file follows:
     theories/foo.v
     theories/bar.v
     -I src/
-    src/baz.ml4
+    src/baz.mlg
     src/bazaux.ml
     src/qux_plugin.mlpack
 
@@ -111,7 +111,7 @@ decide how to build them. In particular:
 + |Coq| files must use the ``.v`` extension
 + |OCaml| files must use the ``.ml`` or ``.mli`` extension
 + |OCaml| files that require pre processing for syntax
-  extensions (like ``VERNAC EXTEND``) must use the ``.ml4`` extension
+  extensions (like ``VERNAC EXTEND``) must use the ``.mlg`` extension
 + In order to generate a plugin one has to list all |OCaml|
   modules (i.e. ``Baz`` for ``baz.ml``) in a ``.mlpack`` file (or ``.mllib``
   file).

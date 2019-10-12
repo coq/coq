@@ -135,7 +135,7 @@ ide/protocol/xml_lexer.ml
 coqpp/coqpp_parse.ml
 coqpp/coqpp_parse.mli
 
-# .ml4 / .mlp files
+# .mlg / .mlp files
 
 g_*.ml
 

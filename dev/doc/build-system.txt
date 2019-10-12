@@ -89,7 +89,7 @@ enables partial recalculation of dependencies (only the dependencies
 of changed files are recomputed).
 
 If you add a dependency to a Coq camlp5 extension (grammar.cma or
-q_constr.cmo), then see sections ".ml4 files" and "new files".
+q_constr.cmo), then see sections ".mlg files" and "new files".
 
 Cleaning Targets
 ----------------
@@ -113,13 +113,13 @@ Targets for cleaning various parts:
 
  - docclean: clean documentation
 
-.ml4/.mlp files
+.mlg/.mlp files
 ---------------
 
 There is now two kinds of preprocessed files : 
  - a .mlp do not need grammar.cma (they are in grammar/)
- - a .ml4 is now always preprocessed with grammar.cma (and q_constr.cmo),
-   except coqide_main.ml4 and its specific rule
+ - a .mlg is now always preprocessed with grammar.cma (and q_constr.cmo),
+   except coqide_main.mlg and its specific rule
 
 This classification replaces the old mechanism of declaring the use
 of a grammar extension via a line of the form:

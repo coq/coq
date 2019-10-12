@@ -266,7 +266,7 @@ CMIFILES = \
 	$(CMOFILES:.cmo=.cmi) \
 	$(MLIFILES:.mli=.cmi)
 # the /if/ is because old _CoqProject did not list a .ml(pack|lib) but just
-# a .ml4 file
+# a .mlg file
 CMXSFILES = \
 	$(MLPACKFILES:.mlpack=.cmxs) \
 	$(CMXAFILES:.cmxa=.cmxs) \
