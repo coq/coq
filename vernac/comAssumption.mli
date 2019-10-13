@@ -23,8 +23,35 @@ val do_assumptions
   -> (ident_decl list * constr_expr) with_coercion list
   -> unit
 
-(** returns [false] if the assumption is neither local to a section,
-    nor in a module type and meant to be instantiated. *)
+val declare_variable
+  : coercion_flag
+  -> kind:Decls.assumption_object_kind
+  -> Constr.types
+  -> Impargs.manual_implicits
+  -> Glob_term.binding_kind
+  -> variable CAst.t
+  -> unit
+
+val declare_axiom
+  : coercion_flag
+  -> poly:bool
+  -> local:Declare.import_status
+  -> kind:Decls.assumption_object_kind
+  -> Constr.types
+  -> Entries.universes_entry * UnivNames.universe_binders
+  -> Impargs.manual_implicits
+  -> Declaremods.inline
+  -> variable CAst.t
+  -> GlobRef.t * Univ.Instance.t
+
+(** Context command *)
+
+val context
+  :  poly:bool
+  -> local_binder_expr list
+  -> unit
+
+(** Deprecated *)
 val declare_assumption
   : coercion_flag
   -> poly:bool
@@ -38,14 +65,4 @@ val declare_assumption
   -> Declaremods.inline
   -> variable CAst.t
   -> GlobRef.t * Univ.Instance.t
-
-(** Context command *)
-
-(** returns [false] if, for lack of section, it declares an assumption
-    (unless in a module type). *)
-val context
-  :  poly:bool
-  -> local_binder_expr list
-  -> unit
-
-val do_primitive : lident -> CPrimitives.op_or_type -> constr_expr option -> unit
+[@@ocaml.deprecated "Use declare_variable or declare_axiom instead."]

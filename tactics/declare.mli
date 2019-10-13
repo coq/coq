@@ -36,7 +36,7 @@ type 'a proof_entry = {
 
 type variable_declaration =
   | SectionLocalDef of Evd.side_effects proof_entry
-  | SectionLocalAssum of { typ:types; univs:Univ.ContextSet.t; poly:bool; impl:Glob_term.binding_kind }
+  | SectionLocalAssum of { typ:types; impl:Glob_term.binding_kind; }
 
 type 'a constant_entry =
   | DefinitionEntry of 'a proof_entry

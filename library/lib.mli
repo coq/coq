@@ -183,8 +183,6 @@ val is_in_section : GlobRef.t -> bool
 
 val replacement_context : unit -> Opaqueproof.work_list
 
-val is_polymorphic_univ : Univ.Level.t -> bool
-
 (** {6 Discharge: decrease the section level if in the current section } *)
 
 (* XXX Why can't we use the kernel functions ? *)
