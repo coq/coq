@@ -95,6 +95,7 @@ val make_kn : Id.t -> KerName.t
 
 (** Are we inside an opened section *)
 val sections_are_opened : unit -> bool
+[@@ocaml.deprecated "Use Global.sections_are_opened"]
 val sections_depth : unit -> int
 
 (** Are we inside an opened module type *)

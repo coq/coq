@@ -43,6 +43,8 @@ let empty = []
 
 let is_empty = List.is_empty
 
+let depth = List.length
+
 let has_poly_univs = function
   | [] -> false
   | sec :: _ -> sec.has_poly_univs

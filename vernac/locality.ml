@@ -39,7 +39,7 @@ let enforce_locality_exp locality_flag discharge =
   match locality_flag, discharge with
   | Some b, NoDischarge -> Global (importability_of_bool b)
   | None, NoDischarge -> Global Declare.ImportDefaultBehavior
-  | None, DoDischarge when not (Lib.sections_are_opened ()) ->
+  | None, DoDischarge when not (Global.sections_are_opened ()) ->
      (* If a Let/Variable is defined outside a section, then we consider it as a local definition *)
      warn_local_declaration ();
      Global Declare.ImportNeedQualified
@@ -55,7 +55,7 @@ let enforce_locality locality_flag =
    Local in sections is the default, Local not in section forces non-export *)
 
 let make_section_locality =
-  function Some b -> b | None -> Lib.sections_are_opened ()
+  function Some b -> b | None -> Global.sections_are_opened ()
 
 let enforce_section_locality locality_flag =
   make_section_locality locality_flag
@@ -68,7 +68,7 @@ let enforce_section_locality locality_flag =
 
 let make_module_locality = function
   | Some false ->
-      if Lib.sections_are_opened () then
+      if Global.sections_are_opened () then
 	CErrors.user_err Pp.(str
 	  "This command does not support the Global option in sections.");
       false

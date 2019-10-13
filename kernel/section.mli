@@ -21,6 +21,9 @@ val empty : 'a t
 val is_empty : 'a t -> bool
 (** Checks whether there is no opened section *)
 
+val depth : 'a t -> int
+(** Number of nested sections (0 if no sections are open) *)
+
 (** {6 Manipulating sections} *)
 
 type section_entry =

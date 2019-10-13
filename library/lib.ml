@@ -132,10 +132,10 @@ let library_dp () =
 
 let cwd () = !lib_state.path_prefix.Nametab.obj_dir
 let current_mp () = !lib_state.path_prefix.Nametab.obj_mp
-let current_sections () = !lib_state.path_prefix.Nametab.obj_sec
+let current_sections () = Safe_typing.sections_of_safe_env (Global.safe_env())
 
-let sections_depth () = List.length (Names.DirPath.repr (current_sections ()))
-let sections_are_opened () = not (Names.DirPath.is_empty (current_sections ()))
+let sections_depth () = Section.depth (current_sections())
+let sections_are_opened = Global.sections_are_opened
 
 let cwd_except_section () =
   Libnames.pop_dirpath_n (sections_depth ()) (cwd ())
