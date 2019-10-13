@@ -249,14 +249,13 @@ let is_unsafe_typing_flags () =
 
 let define_constant ~side_effect ~name cd =
   (* Logically define the constant and its subproofs, no libobject tampering *)
-  let in_section = Lib.sections_are_opened () in
   let export, decl, unsafe = match cd with
   | DefinitionEntry de ->
     (* We deal with side effects *)
     if not de.proof_entry_opaque then
       (* This globally defines the side-effects in the environment. *)
       let body, eff = Future.force de.proof_entry_body in
-      let body, export = Global.export_private_constants ~in_section (body, eff.Evd.seff_private) in
+      let body, export = Global.export_private_constants (body, eff.Evd.seff_private) in
       let export = get_roles export eff in
       let de = { de with proof_entry_body = Future.from_val (body, ()) } in
       let cd = Entries.DefinitionEntry (cast_proof_entry de) in
@@ -272,7 +271,7 @@ let define_constant ~side_effect ~name cd =
   | PrimitiveEntry e ->
     [], ConstantEntry (PureEntry, Entries.PrimitiveEntry e), false
   in
-  let kn, eff = Global.add_constant ~side_effect ~in_section name decl in
+  let kn, eff = Global.add_constant ~side_effect name decl in
   if unsafe || is_unsafe_typing_flags() then feedback_axiom();
   kn, eff, export
 
@@ -319,7 +318,7 @@ let declare_variable ~name ~kind d =
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
       let (body, eff) = Future.force de.proof_entry_body in
-      let ((body, uctx), export) = Global.export_private_constants ~in_section:true (body, eff.Evd.seff_private) in
+      let ((body, uctx), export) = Global.export_private_constants (body, eff.Evd.seff_private) in
       let eff = get_roles export eff in
       let () = List.iter register_side_effect eff in
       let poly, univs = match de.proof_entry_universes with

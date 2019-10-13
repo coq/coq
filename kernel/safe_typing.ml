@@ -173,6 +173,8 @@ let is_initial senv =
   | [], NONE -> ModPath.equal senv.modpath ModPath.initial
   | _ -> false
 
+let sections_are_opened senv = not (Section.is_empty senv.sections)
+
 let delta_of_senv senv = senv.modresolver,senv.paramresolver
 
 let constant_of_delta_kn_senv senv kn =
@@ -587,10 +589,10 @@ type global_declaration =
 
 type exported_private_constant = Constant.t
 
-let add_constant_aux ~in_section senv (kn, cb) =
+let add_constant_aux senv (kn, cb) =
   let l = Constant.label kn in
   (* This is the only place where we hashcons the contents of a constant body *)
-  let cb = if in_section then cb else Declareops.hcons_const_body cb in
+  let cb = if sections_are_opened senv then cb else Declareops.hcons_const_body cb in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
   let senv'' = match cb.const_body with
     | Undef (Some lev) ->
@@ -799,7 +801,7 @@ let push_opaque_proof pf senv =
   let senv = { senv with env = Environ.set_opaque_tables senv.env otab } in
   senv, o
 
-let export_private_constants ~in_section ce senv =
+let export_private_constants ce senv =
   let exported, ce = export_side_effects senv.revstruct senv.env ce in
   let map senv (kn, c) = match c.const_body with
   | OpaqueDef p ->
@@ -815,10 +817,10 @@ let export_private_constants ~in_section ce senv =
   let senv, bodies = List.fold_left_map map senv exported in
   let exported = List.map (fun (kn, _) -> kn) exported in
   (* No delayed constants to declare *)
-  let senv = List.fold_left (add_constant_aux ~in_section) senv bodies in
+  let senv = List.fold_left add_constant_aux senv bodies in
   (ce, exported), senv
 
-let add_constant (type a) ~(side_effect : a effect_entry) ~in_section l decl senv : (Constant.t * a) * safe_environment =
+let add_constant (type a) ~(side_effect : a effect_entry) l decl senv : (Constant.t * a) * safe_environment =
   let kn = Constant.make2 senv.modpath l in
     let cb = 
       match decl with
@@ -852,14 +854,14 @@ let add_constant (type a) ~(side_effect : a effect_entry) ~in_section l decl sen
     | Undef _ | Def _ | Primitive _ as body ->
       senv, { cb with const_body = body }, []
     in
-    let senv = add_constant_aux ~in_section senv (kn, cb) in
+    let senv = add_constant_aux senv (kn, cb) in
     add_constraints_list delayed_cst senv
   in
 
   let senv =
     match decl with
     | ConstantEntry (_,(Entries.PrimitiveEntry { Entries.prim_entry_content = CPrimitives.OT_type t; _ })) ->
-      if in_section then CErrors.anomaly (Pp.str "Primitive type not allowed in sections");
+      if sections_are_opened senv then CErrors.anomaly (Pp.str "Primitive type not allowed in sections");
       add_retroknowledge (Retroknowledge.Register_type(t,kn)) senv
     | _ -> senv
   in
@@ -1001,12 +1003,11 @@ let close_section senv =
   in
   let fold senv = function
   | `Definition (kn, cb) ->
-    let in_section = not (Section.is_empty senv.sections) in
     let info = cooking_info (Section.segment_of_constant env0 kn sections0) in
     let r = { Cooking.from = cb; info } in
     let cb = Term_typing.translate_recipe senv.env kn r in
     (* Delayed constants are already in the global environment *)
-    add_constant_aux ~in_section senv (kn, cb)
+    add_constant_aux senv (kn, cb)
   | `Inductive (ind, mib) ->
     let info = cooking_info (Section.segment_of_inductive env0 ind sections0) in
     let mie = Cooking.cook_inductive info mib in

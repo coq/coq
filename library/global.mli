@@ -46,12 +46,12 @@ val push_named_assum : (Id.t * Constr.types) -> unit
 val push_named_def   : (Id.t * Entries.section_def_entry) -> unit
 val push_section_context : (Name.t array * Univ.UContext.t) -> unit
 
-val export_private_constants : in_section:bool ->
+val export_private_constants :
   Safe_typing.private_constants Entries.proof_output ->
   Constr.constr Univ.in_universe_context_set * Safe_typing.exported_private_constant list
 
 val add_constant :
-  side_effect:'a Safe_typing.effect_entry -> in_section:bool -> Id.t -> Safe_typing.global_declaration -> Constant.t * 'a
+  side_effect:'a Safe_typing.effect_entry -> Id.t -> Safe_typing.global_declaration -> Constant.t * 'a
 val add_mind :
   Id.t -> Entries.mutual_inductive_entry -> MutInd.t
 
@@ -79,6 +79,8 @@ val open_section : unit -> unit
 val close_section : Summary.frozen -> unit
 (** Close the section and reset the global state to the one at the time when
     the section what opened. *)
+
+val sections_are_opened : unit -> bool
 
 (** Interactive modules and module types *)
 
