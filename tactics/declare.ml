@@ -310,8 +310,6 @@ let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind 
   let kn, eff =
     let de =
       if not de.proof_entry_opaque then
-        let body, () = Future.force de.proof_entry_body in
-        let de = { de with proof_entry_body = Future.from_val (body, ()) } in
         DefinitionEff (cast_proof_entry de)
       else
         let de = cast_opaque_proof_entry PureEntry de in
