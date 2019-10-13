@@ -463,14 +463,6 @@ let restrict ctx vars =
   let uctx' = restrict_universe_context ~lbound:ctx.uctx_universes_lbound ctx.uctx_local vars in
   { ctx with uctx_local = uctx' }
 
-let demote_seff_univs universes uctx =
-  let open Entries in
-  match universes with
-  | Polymorphic_entry _ -> uctx
-  | Monomorphic_entry (univs, _) ->
-    let seff = LSet.union uctx.uctx_seff_univs univs in
-    { uctx with uctx_seff_univs = seff }
-
 type rigid = 
   | UnivRigid
   | UnivFlexible of bool (** Is substitution by an algebraic ok? *)
@@ -485,10 +477,9 @@ let univ_flexible_alg = UnivFlexible true
     context we merge comes from a side effect that is already inlined
     or defined separately. In the later case, there is no extension,
     see [emit_side_effects] for example. *)
-let merge ?loc ~sideff ~extend rigid uctx ctx' =
+let merge ?loc ~sideff rigid uctx ctx' =
   let levels = ContextSet.levels ctx' in
   let uctx =
-    if not extend then uctx else
     match rigid with
     | UnivRigid -> uctx
     | UnivFlexible b ->
@@ -497,25 +488,23 @@ let merge ?loc ~sideff ~extend rigid uctx ctx' =
         else LMap.add u None accu
       in
       let uvars' = LSet.fold fold levels uctx.uctx_univ_variables in
-        if b then
-          { uctx with uctx_univ_variables = uvars';
-          uctx_univ_algebraic = LSet.union uctx.uctx_univ_algebraic levels }
-        else { uctx with uctx_univ_variables = uvars' }
+      if b then
+        { uctx with uctx_univ_variables = uvars';
+                    uctx_univ_algebraic = LSet.union uctx.uctx_univ_algebraic levels }
+      else { uctx with uctx_univ_variables = uvars' }
   in
-  let uctx_local =
-    if not extend then uctx.uctx_local
-    else ContextSet.append ctx' uctx.uctx_local in
+  let uctx_local = ContextSet.append ctx' uctx.uctx_local in
   let declare g =
     LSet.fold (fun u g ->
-               try UGraph.add_universe ~lbound:uctx.uctx_universes_lbound ~strict:false u g
-               with UGraph.AlreadyDeclared when sideff -> g)
-              levels g
+        try UGraph.add_universe ~lbound:uctx.uctx_universes_lbound ~strict:false u g
+        with UGraph.AlreadyDeclared when sideff -> g)
+      levels g
   in
   let uctx_names =
     let fold u accu =
       let modify _ info = match info.uloc with
-      | None -> { info with uloc = loc }
-      | Some _ -> info
+        | None -> { info with uloc = loc }
+        | Some _ -> info
       in
       try LMap.modify u modify accu
       with Not_found -> LMap.add u { uname = None; uloc = loc } accu
@@ -531,9 +520,38 @@ let merge ?loc ~sideff ~extend rigid uctx ctx' =
 let merge_subst uctx s =
   { uctx with uctx_univ_variables = LMap.subst_union uctx.uctx_univ_variables s }
 
+let demote_seff_univs (univs,_) uctx =
+  let seff = LSet.union uctx.uctx_seff_univs univs in
+  { uctx with uctx_seff_univs = seff }
+
+let merge_seff uctx ctx' =
+  let levels = ContextSet.levels ctx' in
+  let declare g =
+    LSet.fold (fun u g ->
+        try UGraph.add_universe ~lbound:uctx.uctx_universes_lbound ~strict:false u g
+        with UGraph.AlreadyDeclared -> g)
+      levels g
+  in
+  let initial = declare uctx.uctx_initial_universes in
+  let univs = declare uctx.uctx_universes in
+  let uctx_universes = UGraph.merge_constraints (ContextSet.constraints ctx') univs in
+  { uctx with uctx_universes;
+              uctx_initial_universes = initial }
+
 let emit_side_effects eff u =
   let uctxs = Safe_typing.universes_of_private eff in
-  List.fold_left (merge ~sideff:true ~extend:false univ_rigid) u uctxs
+  List.fold_left (fun u uctx ->
+      let u = demote_seff_univs uctx u in
+      merge_seff u uctx)
+    u uctxs
+
+let update_sigma_env uctx env =
+  let univs = UGraph.make_sprop_cumulative (Environ.universes env) in
+  let eunivs =
+    { uctx with uctx_initial_universes = univs;
+                uctx_universes = univs }
+  in
+  merge_seff eunivs eunivs.uctx_local
 
 let new_univ_variable ?loc rigid name
   ({ uctx_local = ctx; uctx_univ_variables = uvars; uctx_univ_algebraic = avars} as uctx) =
@@ -729,14 +747,6 @@ let minimize uctx =
 
 let universe_of_name uctx s = 
   UNameMap.find s (fst uctx.uctx_names)
-
-let update_sigma_env uctx env =
-  let univs = UGraph.make_sprop_cumulative (Environ.universes env) in
-  let eunivs =
-    { uctx with uctx_initial_universes = univs;
-                         uctx_universes = univs }
-  in
-  merge ~sideff:true ~extend:false univ_rigid eunivs eunivs.uctx_local
 
 let pr_weak prl {uctx_weak_constraints=weak} =
   let open Pp in
