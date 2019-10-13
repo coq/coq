@@ -74,7 +74,6 @@ open Globnames
 type object_prefix = {
   obj_dir : DirPath.t;
   obj_mp  : ModPath.t;
-  obj_sec : DirPath.t;
 }
 
 val eq_op : object_prefix -> object_prefix -> bool
