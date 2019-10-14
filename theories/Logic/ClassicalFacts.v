@@ -553,11 +553,11 @@ Definition classical_de_morgan_law :=
 (** [(A->B) \/ (B->A)] is studied in [[Dummett59]] and is based on [[Gödel33]].
 
     [[Dummett59]] Michael A. E. Dummett. "A Propositional Calculus
-    with a Denumerable Matrix", In the Journal of Symbolic Logic, Vol
-    24 No. 2(1959), pp 97-103.
+    with a Denumerable Matrix", In the Journal of Symbolic Logic, vol
+    24(2), pp 97-103, 1959.
 
     [[Gödel33]] Kurt Gödel. "Zum intuitionistischen Aussagenkalkül",
-    Ergeb. Math. Koll. 4 (1933), pp. 34-38.
+    Ergeb. Math. Koll. 4, pp. 34-38, 1933.
  *)
 
 Definition GodelDummett := forall A B:Prop, (A -> B) \/ (B -> A).
