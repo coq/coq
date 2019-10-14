@@ -29,7 +29,7 @@ Table of contents:
 
 3. Weak classical axioms
 
-3.1. Weak excluded middle
+3.1. Weak excluded middle and classical de Morgan law
 
 3.2. Gödel-Dummett axiom and right distributivity of implication over
      disjunction
@@ -514,7 +514,7 @@ End Weak_proof_irrelevance_CCI.
 (** * Weak classical axioms *)
 
 (** We show the following increasing in the strength of axioms:
- - weak excluded-middle
+ - weak excluded-middle and classical De Morgan's law
  - right distributivity of implication over disjunction and Gödel-Dummett axiom
  - independence of general premises and drinker's paradox
  - excluded-middle
@@ -538,6 +538,11 @@ Definition weak_excluded_middle :=
 
 Definition weak_generalized_excluded_middle :=
   forall A B:Prop, ((A -> B) -> B) \/ (A -> B).
+
+(** Classical De Morgan's law *)
+
+Definition classical_de_morgan_law :=
+  forall A B:Prop, ~(A /\ B) -> ~A \/ ~B.
 
 (** ** Gödel-Dummett axiom *)
 
@@ -588,6 +593,16 @@ Proof.
   intros GD A. destruct (GD (~A) A) as [HnotAA|HAnotA].
     left; intro HnotA; apply (HnotA (HnotAA HnotA)).
     right; intro HA; apply (HAnotA HA HA).
+Qed.
+
+(** The weak excluded middle is equivalent to the classical De Morgan's law *)
+
+Lemma weak_excluded_middle_iff_classical_de_morgan_law :
+  weak_excluded_middle <-> classical_de_morgan_law.
+Proof.
+  split; [intro WEM|intro CDML]; intros A *.
+  - destruct (WEM A); tauto.
+  - destruct (CDML A (~A)); tauto.
 Qed.
 
 (** ** Independence of general premises and drinker's paradox *)
