@@ -779,9 +779,9 @@ OCAMLDEP = $(OCAMLFIND) ocamldep -slash -ml-synonym .mlpack
 MAINMLFILES := $(filter-out gramlib/.pack/% checker/% plugins/%, $(MLFILES) $(MLIFILES))
 MAINMLLIBFILES := $(filter-out gramlib/.pack/% checker/% plugins/%, $(MLLIBFILES) $(MLPACKFILES))
 
-$(MLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(MAINMLFILES) $(D_DEPEND_AFTER_SRC) $(GENFILES) $(GENGRAMFILES)
+$(MLDFILE).d: $(D_DEPEND_BEFORE_SRC) $(MAINMLFILES) $(D_DEPEND_AFTER_SRC) $(GENFILES)
 	$(SHOW)'OCAMLDEP  MLFILES MLIFILES'
-	$(HIDE)$(OCAMLDEP) $(DEPFLAGS)  -passrest $(MAINMLFILES) -open Gramlib $(GRAMMLFILES) $(TOTARGET)
+	$(HIDE)$(OCAMLDEP) $(DEPFLAGS)  -passrest $(MAINMLFILES) -open Gramlib $(GRAMMLFILES) $(GRAMMLIFILES) $(TOTARGET)
 #NB: -passrest is needed to avoid ocamlfind reordering the -open Gramlib
 
 $(MLLIBDFILE).d: $(D_DEPEND_BEFORE_SRC) $(MAINMLLIBFILES) $(D_DEPEND_AFTER_SRC) $(OCAMLLIBDEP) $(GENFILES)
