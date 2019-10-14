@@ -523,11 +523,15 @@ End Weak_proof_irrelevance_CCI.
 (** ** Weak excluded-middle *)
 
 (** The weak classical logic based on [~~A \/ ~A] is referred to with
-    name KC in [[ChagrovZakharyaschev97]]
+    name KC in [[ChagrovZakharyaschev97]]. See [[SorbiTerwijn11]] for
+    a short survey.
 
    [[ChagrovZakharyaschev97]] Alexander Chagrov and Michael
    Zakharyaschev, "Modal Logic", Clarendon Press, 1997.
-*)
+
+   [[SorbiTerwijn11]] Andrea Sorbi and Sebastiaan A. Terwijn,
+   "Generalizations of the weak law of the excluded-middle", Notre
+   Dame J. Formal Logic, vol 56(2), pp 321-331, 2015. *)
 
 Definition weak_excluded_middle :=
   forall A:Prop, ~~A \/ ~A.
