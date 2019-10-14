@@ -108,7 +108,7 @@ end
 
     - "f" constr(x) (developer gives an EXTEND rule)
         |
-        | macro-generation in tacextend.ml4/vernacextend.ml4/argextend.ml4
+        | macro-generation in tacextend.mlg/vernacextend.mlg/argextend.mlg
         V
       [GramTerminal "f";
        GramNonTerminal (ConstrArgType, Aentry ("constr","constr"), Some "x")]

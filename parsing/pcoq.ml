@@ -597,7 +597,7 @@ let unfreeze (grams, lex) =
 (** No need to provide an init function : the grammar state is
     statically available, and already empty initially, while
     the lexer state should not be reset, since it contains
-    keywords declared in g_*.ml4 *)
+    keywords declared in g_*.mlg *)
 
 let parser_summary_tag =
   Summary.declare_summary_tag "GRAMMAR_LEXER"

@@ -9,7 +9,7 @@
 (************************************************************************)
 
 (* This file uses the (non-compressed) union-find structure to generate *)
-(* proof-trees that will be transformed into proof-terms in cctac.ml4   *)
+(* proof-trees that will be transformed into proof-terms in cctac.mlg   *)
 
 open CErrors
 open Constr
