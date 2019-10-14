@@ -320,6 +320,8 @@ azure-pipelines.yml @coq/ci-maintainers
 /test-suite/unit-tests/src/ @jfehrle
 # Secondary maintainer      @SkySkimmer
 
+/test-suite/success/Compat*.v @JasonGross
+
 ########## Developer tools ##########
 
 /dev/tools/backport-pr.sh     @Zimmi48
