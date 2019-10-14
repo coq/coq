@@ -127,7 +127,6 @@ module Options = struct
   let all_opts =
   [ { enabled = false; cmd = "-debug"; }
   ; { enabled = false; cmd = "-native_compiler"; }
-  ; { enabled = true; cmd = "-allow-sprop"; }
   ; { enabled = true; cmd = "-w +default"; }
   ]
 

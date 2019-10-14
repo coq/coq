@@ -9,15 +9,16 @@ SProp (proof irrelevant propositions)
 
 This section describes the extension of |Coq| with definitionally
 proof irrelevant propositions (types in the sort :math:`\SProp`, also
-known as strict propositions). To use :math:`\SProp` you must pass
-``-allow-sprop`` to the |Coq| program or use :flag:`Allow StrictProp`.
+known as strict propositions). Using :math:`\SProp` may be prevented
+by passing ``-disallow-sprop`` to the |Coq| program or using
+:flag:`Allow StrictProp`.
 
 .. flag:: Allow StrictProp
    :name: Allow StrictProp
 
    Allows using :math:`\SProp` when set and forbids it when unset. The
    initial value depends on whether you used the command line
-   ``-allow-sprop``.
+   ``-disallow-sprop`` and ``-allow-sprop``.
 
 .. exn:: SProp not allowed, you need to Set Allow StrictProp or to use the -allow-sprop command-line-flag.
    :undocumented:

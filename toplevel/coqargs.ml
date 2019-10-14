@@ -113,7 +113,7 @@ let default_logic_config = {
   impredicative_set = Declarations.PredicativeSet;
   indices_matter = false;
   toplevel_name = Stm.TopLogical default_toplevel;
-  allow_sprop = false;
+  allow_sprop = true;
   cumulative_sprop = false;
 }
 
