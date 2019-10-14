@@ -247,8 +247,10 @@ let context_nosection sigma ~poly ctx =
         let entry = Declare.definition_entry ~univs ~types:t b in
         Declare.DefinitionEntry entry
     in
-    (* let local = Declare.ImportNeedQualified in *)
-    let cst = Declare.declare_constant ~name ~kind ~local:Declare.ImportNeedQualified decl in
+    let local = if Lib.is_modtype () then Declare.ImportDefaultBehavior
+      else Declare.ImportNeedQualified
+    in
+    let cst = Declare.declare_constant ~name ~kind ~local decl in
     let () = Declare.assumption_message name in
     let env = Global.env () in
     (* why local when is_modtype? *)
