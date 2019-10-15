@@ -69,6 +69,7 @@ let rec relevance_of_fterm env extra lft f =
       | FLambda (len, tys, bdy, e) ->
         let extra = List.rev_append (List.map (fun (x,_) -> binder_relevance x) tys) extra in
         let lft = Esubst.el_liftn len lft in
+        let e = Esubst.subs_liftn len e in
         relevance_of_term_extra env extra lft e bdy
       | FLetIn (x, _, _, bdy, e) ->
         relevance_of_term_extra env (x.binder_relevance :: extra)
