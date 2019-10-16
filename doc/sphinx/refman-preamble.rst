@@ -70,7 +70,11 @@
 .. |p_i| replace:: `p`\ :math:`_{i}`
 .. |p_n| replace:: `p`\ :math:`_{n}`
 .. |Program| replace:: :strong:`Program`
+.. |Prop| replace:: :math:`\Prop`
+.. |SProp| replace:: :math:`\SProp`
+.. |Set| replace:: :math:`\Set`
 .. |SSR| replace:: :smallcaps:`SSReflect`
+.. |Type| replace:: :math:`\Type`
 .. |t_1| replace:: `t`\ :math:`_{1}`
 .. |t_i| replace:: `t`\ :math:`_{i}`
 .. |t_m| replace:: `t`\ :math:`_{m}`
