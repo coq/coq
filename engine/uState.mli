@@ -112,6 +112,11 @@ val merge : ?loc:Loc.t -> sideff:bool -> rigid -> t -> Univ.ContextSet.t -> t
 val merge_subst : t -> UnivSubst.universe_opt_subst -> t
 val emit_side_effects : Safe_typing.private_constants -> t -> t
 
+val demote_seff_univs : Univ.LSet.t -> t -> t
+(** Mark the universes as not local any more, because they have been
+   globally declared by some side effect. You should be using
+   emit_side_effects instead. *)
+
 val new_univ_variable : ?loc:Loc.t -> rigid -> Id.t option -> t -> t * Univ.Level.t
 val add_global_univ : t -> Univ.Level.t -> t
 

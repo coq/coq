@@ -520,7 +520,7 @@ let merge ?loc ~sideff rigid uctx ctx' =
 let merge_subst uctx s =
   { uctx with uctx_univ_variables = LMap.subst_union uctx.uctx_univ_variables s }
 
-let demote_seff_univs (univs,_) uctx =
+let demote_seff_univs univs uctx =
   let seff = LSet.union uctx.uctx_seff_univs univs in
   { uctx with uctx_seff_univs = seff }
 
@@ -541,7 +541,7 @@ let merge_seff uctx ctx' =
 let emit_side_effects eff u =
   let uctxs = Safe_typing.universes_of_private eff in
   List.fold_left (fun u uctx ->
-      let u = demote_seff_univs uctx u in
+      let u = demote_seff_univs (fst uctx) u in
       merge_seff u uctx)
     u uctxs
 
