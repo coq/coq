@@ -380,7 +380,7 @@ let check_inside_module () =
     warn_extraction_inside_module ()
 
 let check_inside_section () =
-  if Lib.sections_are_opened () then
+  if Global.sections_are_opened () then
     err (str "You can't do that within a section." ++ fnl () ++
 	 str "Close it and try again.")
 

@@ -810,14 +810,14 @@ let vernac_combined_scheme lid l =
  Indschemes.do_combined_scheme lid l
 
 let vernac_universe ~poly l =
-  if poly && not (Lib.sections_are_opened ()) then
+  if poly && not (Global.sections_are_opened ()) then
     user_err ~hdr:"vernac_universe"
 		 (str"Polymorphic universes can only be declared inside sections, " ++
 		  str "use Monomorphic Universe instead");
   Declare.do_universe ~poly l
 
 let vernac_constraint ~poly l =
-  if poly && not (Lib.sections_are_opened ()) then
+  if poly && not (Global.sections_are_opened ()) then
     user_err ~hdr:"vernac_constraint"
 		 (str"Polymorphic universe constraints can only be declared"
 		  ++ str " inside sections, use Monomorphic Constraint instead");
@@ -837,7 +837,7 @@ let vernac_import export refl =
 let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
-  if Lib.sections_are_opened () then
+  if Global.sections_are_opened () then
     user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
   let binders_ast = List.map
    (fun (export,idl,ty) ->
@@ -852,7 +852,7 @@ let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
 let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
      and what module information is supplied *)
-  if Lib.sections_are_opened () then
+  if Global.sections_are_opened () then
     user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
   match mexpr_ast_l with
     | [] ->
@@ -893,7 +893,7 @@ let vernac_end_module export {loc;v=id} =
   Option.iter (fun export -> vernac_import export [qualid_of_ident ?loc id]) export
 
 let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
-  if Lib.sections_are_opened () then
+  if Global.sections_are_opened () then
     user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
 
   match mty_ast_l with
@@ -969,7 +969,7 @@ let warn_require_in_section =
     (fun () -> strbrk "Use of “Require” inside a section is deprecated.")
 
 let vernac_require from import qidl =
-  if Lib.sections_are_opened () then warn_require_in_section ();
+  if Global.sections_are_opened () then warn_require_in_section ();
   let root = match from with
   | None -> None
   | Some from ->
@@ -2098,7 +2098,7 @@ let vernac_register qid r =
   | RegisterCoqlib n ->
     let ns, id = Libnames.repr_qualid n in
     if DirPath.equal (dirpath_of_string "kernel") ns then begin
-      if Lib.sections_are_opened () then
+      if Global.sections_are_opened () then
         user_err Pp.(str "Registering a kernel type is not allowed in sections");
       let pind = match Id.to_string id with
         | "ind_bool" -> CPrimitives.PIT_bool

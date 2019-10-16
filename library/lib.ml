@@ -107,7 +107,6 @@ let segment_of_objects prefix =
 let initial_prefix = Nametab.{
   obj_dir = default_library;
   obj_mp  = ModPath.initial;
-  obj_sec = DirPath.empty;
 }
 
 type lib_state = {
@@ -132,10 +131,10 @@ let library_dp () =
 
 let cwd () = !lib_state.path_prefix.Nametab.obj_dir
 let current_mp () = !lib_state.path_prefix.Nametab.obj_mp
-let current_sections () = !lib_state.path_prefix.Nametab.obj_sec
+let current_sections () = Safe_typing.sections_of_safe_env (Global.safe_env())
 
-let sections_depth () = List.length (Names.DirPath.repr (current_sections ()))
-let sections_are_opened () = not (Names.DirPath.is_empty (current_sections ()))
+let sections_depth () = Section.depth (current_sections())
+let sections_are_opened = Global.sections_are_opened
 
 let cwd_except_section () =
   Libnames.pop_dirpath_n (sections_depth ()) (cwd ())
@@ -169,7 +168,6 @@ let pop_path_prefix () =
   let op = !lib_state.path_prefix in
   lib_state := { !lib_state
                  with path_prefix = Nametab.{ op with obj_dir = pop_dirpath op.obj_dir;
-                                                      obj_sec = pop_dirpath op.obj_sec;
                                             } }
 
 let find_entry_p p =
@@ -282,7 +280,7 @@ let current_mod_id () =
 
 let start_mod is_type export id mp fs =
   let dir = add_dirpath_suffix (!lib_state.path_prefix.Nametab.obj_dir) id in
-  let prefix = Nametab.{ obj_dir = dir; obj_mp = mp; obj_sec = Names.DirPath.empty } in
+  let prefix = Nametab.{ obj_dir = dir; obj_mp = mp; } in
   let exists =
     if is_type then Nametab.exists_cci (make_path id)
     else Nametab.exists_dir dir
@@ -330,9 +328,9 @@ let contents_after sp = let (after,_,_) = split_lib sp in after
 let start_compilation s mp =
   if !lib_state.comp_name != None then
     user_err Pp.(str "compilation unit is already started");
-  if not (Names.DirPath.is_empty (!lib_state.path_prefix.Nametab.obj_sec)) then
+  if Global.sections_are_opened () then (* XXX not sure if we need this check *)
     user_err Pp.(str "some sections are already opened");
-  let prefix = Nametab.{ obj_dir = s; obj_mp = mp; obj_sec = DirPath.empty } in
+  let prefix = Nametab.{ obj_dir = s; obj_mp = mp } in
   add_anonymous_entry (CompilingLibrary prefix);
   lib_state := { !lib_state with comp_name = Some s;
                                  path_prefix = prefix }
@@ -465,7 +463,7 @@ let open_section id =
   let () = Global.open_section () in
   let opp = !lib_state.path_prefix in
   let obj_dir = add_dirpath_suffix opp.Nametab.obj_dir id in
-  let prefix = Nametab.{ obj_dir; obj_mp = opp.obj_mp; obj_sec = add_dirpath_suffix opp.obj_sec id } in
+  let prefix = Nametab.{ obj_dir; obj_mp = opp.obj_mp; } in
   if Nametab.exists_dir obj_dir then
     user_err ~hdr:"open_section" (Id.print id ++ str " already exists.");
   let fs = Summary.freeze_summaries ~marshallable:false in

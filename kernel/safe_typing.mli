@@ -82,13 +82,13 @@ type global_declaration =
 
 type exported_private_constant = Constant.t
 
-val export_private_constants : in_section:bool ->
+val export_private_constants :
   private_constants Entries.proof_output ->
   (Constr.constr Univ.in_universe_context_set * exported_private_constant list) safe_transformer
 
 (** returns the main constant plus a certificate of its validity *)
 val add_constant :
-  side_effect:'a effect_entry -> in_section:bool -> Label.t -> global_declaration ->
+  side_effect:'a effect_entry -> Label.t -> global_declaration ->
     (Constant.t * 'a) safe_transformer
 
 (** Adding an inductive type *)
@@ -137,6 +137,8 @@ val check_engagement : Environ.env -> Declarations.set_predicativity -> unit
 val open_section : safe_transformer0
 
 val close_section : safe_transformer0
+
+val sections_are_opened : safe_environment -> bool
 
 (** Insertion of local declarations (Local or Variables) *)
 

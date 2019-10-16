@@ -287,7 +287,7 @@ let context ~poly l =
       name,b,t,impl)
       ctx
   in
-  if Lib.sections_are_opened ()
+  if Global.sections_are_opened ()
   then context_insection sigma ~poly ctx
   else context_nosection sigma ~poly ctx
 
