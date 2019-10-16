@@ -696,3 +696,6 @@ plugin:ci-quickchick:
 
 plugin:ci-relation_algebra:
   extends: .ci-template
+
+plugin:ci-rewriter:
+  extends: .ci-template

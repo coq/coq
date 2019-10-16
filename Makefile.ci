@@ -38,6 +38,7 @@ CI_TARGETS= \
     ci-perennial \
     ci-quickchick \
     ci-relation_algebra \
+    ci-rewriter \
     ci-sf \
     ci-simple-io \
     ci-stdlib2 \

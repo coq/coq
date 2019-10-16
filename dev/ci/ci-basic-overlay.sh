@@ -276,6 +276,13 @@
 : "${relation_algebra_CI_ARCHIVEURL:=${relation_algebra_CI_GITURL}/archive}"
 
 ########################################################################
+# rewriter
+########################################################################
+: "${rewriter_CI_REF:=master}"
+: "${rewriter_CI_GITURL:=https://github.com/mit-plv/rewriter}"
+: "${rewriter_CI_ARCHIVEURL:=${rewriter_CI_GITURL}/archive}"
+
+########################################################################
 # StructTact + InfSeqExt + Cheerios + Verdi + Verdi Raft
 ########################################################################
 : "${struct_tact_CI_REF:=master}"
