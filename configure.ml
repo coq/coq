@@ -456,8 +456,6 @@ let coq_bin_annot_flag = if !prefs.bin_annot then "-bin-annot" else ""
 let coq_safe_string = "-safe-string"
 let coq_strict_sequence = "-strict-sequence"
 
-let cflags = "-Wall -Wno-unused -g -O2 -fexcess-precision=standard -msse2 -mfpmath=sse"
-
 (** * Architecture *)
 
 let arch_progs =
@@ -916,6 +914,39 @@ let docdir,docdirsuffix = let (_,_,d,s) = select "DOCDIR" in d,s
 let configdir,configdirsuffix = let (_,_,d,s) = select "CONFIGDIR" in d,s
 
 let datadir,datadirsuffix = let (_,_,d,s) = select "DATADIR" in d,s
+
+(** * CC runtime flags *)
+
+let cflags_dflt = "-Wall -Wno-unused -g -O2 -fexcess-precision=standard"
+
+let cflags_sse2 = ["-msse2"; "-mfpmath=sse"]
+
+let cflags, sse2_math =
+  let _, slurp =
+    (* Test SSE2_MATH support <https://stackoverflow.com/a/45667927> *)
+    tryrun "cc" (["-march=native"; "-dM"; "-E"]
+                 @ cflags_sse2
+                 @ [coqtop/"kernel/byterun/coq_interp.h"] (* any file *)) in
+  if List.exists (fun line -> starts_with line "#define __SSE2_MATH__ 1") slurp
+  then (cflags_dflt ^ " " ^ String.concat " " cflags_sse2, true)
+  else (cflags_dflt, false)
+
+(** Test at configure time that no harmful double rounding seems to
+    be performed with an intermediate 80-bit representation (x87).
+
+    If this test fails but SSE2_MATH is available, the build can go
+    further as Coq's primitive floats will use it through a dedicated
+    external C implementation (instead of relying on OCaml operations)
+
+    If this test fails and SSE2_MATH is not available, abort.
+ *)
+let () =
+  let add = (+.) in
+  let b = ldexp 1. 53 in
+  let s = add 1. (ldexp 1. (-52)) in
+  if (add b s <= b || add b 1. <> b) && not sse2_math then
+    die "Detected double-rounding due to the use of intermediate \
+         80-bit floating-point representation, and SSE2_MATH is not available."
 
 (** * OCaml runtime flags *)
 

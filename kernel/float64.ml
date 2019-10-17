@@ -155,6 +155,6 @@ let () =
   let b = ldexp 1. 53 in
   let s = add 1. (ldexp 1. (-52)) in
   if add b s <= b || add b 1. <> b then
-    failwith "Detected double rounding due to the use of intermediate \
-              80 bits floating-point representation. Use of Float is \
+    failwith "Detected double-rounding due to the use of intermediate \
+              80-bit floating-point representation. Use of Float is \
               thus unsafe."
