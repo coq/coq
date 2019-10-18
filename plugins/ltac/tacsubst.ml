@@ -76,25 +76,21 @@ let subst_and_short_name f (c,n) =
 (*  assert (n=None); *)(* since tacdef are strictly globalized *)
   (f c,None)
 
-let subst_or_var f =  let open Locus in function
-  | ArgVar _ as x -> x
-  | ArgArg x -> ArgArg (f x)
-
 let subst_located f = Loc.map f
 
 let subst_reference subst =
-  subst_or_var (subst_located (subst_kn subst))
+  Locusops.or_var_map (subst_located (subst_kn subst))
 
 (*CSC: subst_global_reference is used "only" for RefArgType, that propagates
   to the syntactic non-terminals "global", used in commands such as
   Print. It is also used for non-evaluable references. *)
 
 let subst_global_reference subst =
-  subst_or_var (subst_located (subst_global_reference subst))
+  Locusops.or_var_map (subst_located (subst_global_reference subst))
 
 let subst_evaluable subst =
   let subst_eval_ref = subst_evaluable_reference subst in
-    subst_or_var (subst_and_short_name subst_eval_ref)
+    Locusops.or_var_map (subst_and_short_name subst_eval_ref)
 
 let subst_constr_with_occurrences subst (l,c) = (l,subst_glob_constr subst c)
 
