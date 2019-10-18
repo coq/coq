@@ -62,14 +62,16 @@ let default_generated_non_letter_string = "x"
 (**********************************************************************)
 (* Globality of identifiers *)
 
-let is_imported_modpath = function
-  | MPfile dp ->
-    let rec find_prefix = function
-      |MPfile dp1 -> not (DirPath.equal dp1 dp)
-      |MPdot(mp,_) -> find_prefix mp
-      |MPbound(_) -> false
-    in find_prefix (Lib.current_mp ())
-  | _ -> false
+let rec find_prefix = function
+  | MPfile dp -> Some dp
+  | MPdot (mp,_) -> find_prefix mp
+  | MPbound _ -> None
+
+let is_imported_modpath mp =
+  match find_prefix mp, find_prefix (Lib.current_mp ()) with
+  | _, None -> assert false
+  | None, _ -> false
+  | Some dp, Some dp1 -> not (DirPath.equal dp1 dp)
 
 let is_imported_ref = let open GlobRef in function
   | VarRef _ -> false
