@@ -10,6 +10,12 @@
 
 open Locus
 
+(** Utilities on or_var *)
+
+let or_var_map f = function
+  | ArgArg x -> ArgArg (f x)
+  | ArgVar _ as y -> y
+
 (** Utilities on occurrences *)
 
 let occurrences_map f = function

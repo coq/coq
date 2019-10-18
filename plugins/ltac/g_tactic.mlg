@@ -182,10 +182,6 @@ let mkCLambdaN_simple bl c = match bl with
 
 let loc_of_ne_list l = Loc.merge_opt (List.hd l).CAst.loc (List.last l).CAst.loc
 
-let map_int_or_var f = function
-  | ArgArg x -> ArgArg (f x)
-  | ArgVar _ as y -> y
-
 let all_concl_occs_clause = { onhyps=Some[]; concl_occs=AllOccurrences }
 
 let merge_occurrences loc cl = function
@@ -269,7 +265,7 @@ GRAMMAR EXTEND Gram
     [ [ nl = LIST1 nat_or_var -> { OnlyOccurrences nl }
       | "-"; n = nat_or_var; nl = LIST0 int_or_var ->
 	  (* have used int_or_var instead of nat_or_var for compatibility *)
-	   { AllOccurrencesBut (List.map (map_int_or_var abs) (n::nl)) } ] ]
+         { AllOccurrencesBut (List.map (Locusops.or_var_map abs) (n::nl)) } ] ]
   ;
   occs:
     [ [ "at"; occs = occs_nums -> { occs } | -> { AllOccurrences } ] ]

@@ -11,6 +11,10 @@
 open Names
 open Locus
 
+(** Utilities on or_var *)
+
+val or_var_map : ('a -> 'b) -> 'a or_var -> 'b or_var
+
 (** Utilities on occurrences *)
 
 val occurrences_map :
