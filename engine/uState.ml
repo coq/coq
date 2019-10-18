@@ -261,11 +261,13 @@ let process_universe_constraints ctx cstrs =
                     in
                     LSet.fold fold levels local
               else
-                match Univ.Universe.level l with
-                | Some l ->
-                  Univ.Constraint.add (l, Le, r') local
-                | None ->
-                  if UGraph.check_leq univs l r then local else enforce_leq l r local
+                let fold accu (l', n) = match n with
+                | 0 -> Univ.Constraint.add (l', Le, r') accu
+                | 1 -> Univ.Constraint.add (l', Lt, r') accu
+                | n -> raise (UniverseInconsistency (Le, l, r, None))
+                in
+                let l = Univ.Universe.map (fun p -> p) l in
+                List.fold_left fold local l
               end
           | ULub (l, r) ->
               equalize_variables true (Universe.make l) l (Universe.make r) r local
