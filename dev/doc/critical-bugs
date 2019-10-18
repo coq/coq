@@ -250,6 +250,17 @@ Conversion machines
   exploit: test-suite/bugs/closed/bug_9684.v
   GH issue number: #9684
 
+  component: lazy machine
+  summary: incorrect De Bruijn handling when inferring the relevance mark for a lambda
+  introduced: 2019-03-15, 23f84f37c674a07e925925b7e0d50d7ee8414093 and 71b9ad8526155020c8451dd326a52e391a9a8585, SkySkimmer
+  impacted released versions: 8.10.0
+  impacted coqchk versions: 8.10.0
+  found by: ppedrot investigating unexpected conversion failures with SProp
+  exploit: test-suite/bugs/closed/bug_10904.v
+  GH issue number: #10904
+  risk: none without using -allow-sprop (off by default in 8.10.0),
+        otherwise could be exploited by mistake
+
 Conflicts with axioms in library
 
   component: library of real numbers
