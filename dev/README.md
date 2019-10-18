@@ -28,7 +28,7 @@
 | [`dev/doc/econstr.md`](doc/econstr.md) | Describes `Econstr`, implementation of treatment of `evar` in the engine |
 | [`dev/doc/primproj.md`](doc/primproj.md) | Describes primitive projections |
 | [`dev/doc/proof-engine.md`](doc/proof-engine.md) | Tutorial on new proof engine |
-| [`dev/doc/xml-protocol.md`](doc/proof-engine.md) | XML protocol that coqtop and IDEs use to communicate |
+| [`dev/doc/xml-protocol.md`](doc/xml-protocol.md) | XML protocol that coqtop and IDEs use to communicate |
 | [`dev/doc/MERGING.md`](doc/MERGING.md) |  How pull requests should be merged into `master` |
 | [`dev/doc/release-process.md`](doc/release-process.md) | Process of creating a new Coq release |
 
