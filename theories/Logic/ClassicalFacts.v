@@ -29,7 +29,7 @@ Table of contents:
 
 3. Weak classical axioms
 
-3.1. Weak excluded middle
+3.1. Weak excluded middle and classical de Morgan law
 
 3.2. Gödel-Dummett axiom and right distributivity of implication over
      disjunction
@@ -514,7 +514,7 @@ End Weak_proof_irrelevance_CCI.
 (** * Weak classical axioms *)
 
 (** We show the following increasing in the strength of axioms:
- - weak excluded-middle
+ - weak excluded-middle and classical De Morgan's law
  - right distributivity of implication over disjunction and Gödel-Dummett axiom
  - independence of general premises and drinker's paradox
  - excluded-middle
@@ -523,11 +523,15 @@ End Weak_proof_irrelevance_CCI.
 (** ** Weak excluded-middle *)
 
 (** The weak classical logic based on [~~A \/ ~A] is referred to with
-    name KC in [[ChagrovZakharyaschev97]]
+    name KC in [[ChagrovZakharyaschev97]]. See [[SorbiTerwijn11]] for
+    a short survey.
 
    [[ChagrovZakharyaschev97]] Alexander Chagrov and Michael
    Zakharyaschev, "Modal Logic", Clarendon Press, 1997.
-*)
+
+   [[SorbiTerwijn11]] Andrea Sorbi and Sebastiaan A. Terwijn,
+   "Generalizations of the weak law of the excluded-middle", Notre
+   Dame J. Formal Logic, vol 56(2), pp 321-331, 2015. *)
 
 Definition weak_excluded_middle :=
   forall A:Prop, ~~A \/ ~A.
@@ -539,16 +543,21 @@ Definition weak_excluded_middle :=
 Definition weak_generalized_excluded_middle :=
   forall A B:Prop, ((A -> B) -> B) \/ (A -> B).
 
+(** Classical De Morgan's law *)
+
+Definition classical_de_morgan_law :=
+  forall A B:Prop, ~(A /\ B) -> ~A \/ ~B.
+
 (** ** Gödel-Dummett axiom *)
 
 (** [(A->B) \/ (B->A)] is studied in [[Dummett59]] and is based on [[Gödel33]].
 
     [[Dummett59]] Michael A. E. Dummett. "A Propositional Calculus
-    with a Denumerable Matrix", In the Journal of Symbolic Logic, Vol
-    24 No. 2(1959), pp 97-103.
+    with a Denumerable Matrix", In the Journal of Symbolic Logic, vol
+    24(2), pp 97-103, 1959.
 
     [[Gödel33]] Kurt Gödel. "Zum intuitionistischen Aussagenkalkül",
-    Ergeb. Math. Koll. 4 (1933), pp. 34-38.
+    Ergeb. Math. Koll. 4, pp. 34-38, 1933.
  *)
 
 Definition GodelDummett := forall A B:Prop, (A -> B) \/ (B -> A).
@@ -588,6 +597,16 @@ Proof.
   intros GD A. destruct (GD (~A) A) as [HnotAA|HAnotA].
     left; intro HnotA; apply (HnotA (HnotAA HnotA)).
     right; intro HA; apply (HAnotA HA HA).
+Qed.
+
+(** The weak excluded middle is equivalent to the classical De Morgan's law *)
+
+Lemma weak_excluded_middle_iff_classical_de_morgan_law :
+  weak_excluded_middle <-> classical_de_morgan_law.
+Proof.
+  split; [intro WEM|intro CDML]; intros A *.
+  - destruct (WEM A); tauto.
+  - destruct (CDML A (~A)); tauto.
 Qed.
 
 (** ** Independence of general premises and drinker's paradox *)
