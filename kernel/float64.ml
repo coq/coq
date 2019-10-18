@@ -154,7 +154,6 @@ let is_float64 t =
 let () =
   let b = ldexp 1. 53 in
   let s = add 1. (ldexp 1. (-52)) in
-  if add b s <= b || add b 1. <> b then
-    failwith "Detected double-rounding due to the use of intermediate \
-              80-bit floating-point representation. Use of Float is \
-              thus unsafe."
+  if add b s <= b || add b 1. <> b || ldexp 1. (-1074) <= 0. then
+    failwith "Detected non IEEE-754 compliant architecture (or wrong \
+              rounding mode). Use of Float is thus unsafe."
