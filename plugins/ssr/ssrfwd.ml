@@ -365,9 +365,16 @@ let intro_lock ipats =
                 let rel = EConstr.mkApp (hd, Array.sub args 0 lm2) in
                 let rel_args = Array.sub args lm2 2 in
                 let sigma, refl =
-                  (* this could raise Not_found, but this should never occur in
-                     practice given ssrclasses.v, so we put no try/with block *)
-                  Ssrclasses.get_reflexive_proof_ssr env sigma carrier rel in
+                  try
+                    Ssrclasses.get_reflexive_proof_ssr env sigma carrier rel
+                  (* could raise Not_found--this can't occur actually:
+                     at that point, either [Ssrequality.ssr_is_setoid]
+                     holds or the relation is [Coq.Init.Logic.iff],
+                     and [Coq.ssr.ssrclasses] was necessarily required
+                     so we know that in the environment, the relation
+                     has an instance of [Coq.ssr.ssrclasses.Reflexive]
+                   *)
+                  with Not_found -> assert false in
                 let sigma, under_rel =
                   Ssrcommon.mkSsrConst "Under_rel" env sigma in
                 let sigma, under_from_rel =
