@@ -257,7 +257,7 @@ let apply_on_class_of env sigma t cont =
     t, cont i
   with Not_found ->
     (* Is it worth to be more incremental on the delta steps? *)
-    let t = Tacred.hnf_constr env sigma t in
+    let t = Reductionops.whd_all env sigma t in
     let (cl, u, args) = find_class_type sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
     if not (Int.equal (List.length args) n1) then raise Not_found;
