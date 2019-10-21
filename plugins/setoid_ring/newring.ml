@@ -139,8 +139,8 @@ let _ = add_tacdef false ((Loc.ghost,Id.of_string"ring_closed_term"
 let ic c =
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let sigma, c = Constrintern.interp_open_constr env sigma c in
-  (sigma, c)
+  let c, uctx = Constrintern.interp_constr env sigma c in
+  (Evd.from_ctx uctx, c)
 
 let ic_unsafe c = (*FIXME remove *)
   let env = Global.env() in
