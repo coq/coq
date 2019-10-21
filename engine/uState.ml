@@ -539,11 +539,9 @@ let merge_seff uctx ctx' =
               uctx_initial_universes = initial }
 
 let emit_side_effects eff u =
-  let uctxs = Safe_typing.universes_of_private eff in
-  List.fold_left (fun u uctx ->
-      let u = demote_seff_univs (fst uctx) u in
-      merge_seff u uctx)
-    u uctxs
+  let uctx = Safe_typing.universes_of_private eff in
+  let u = demote_seff_univs (fst uctx) u in
+  merge_seff u uctx
 
 let update_sigma_env uctx env =
   let univs = UGraph.make_sprop_cumulative (Environ.universes env) in

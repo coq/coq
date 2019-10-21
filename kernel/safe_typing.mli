@@ -59,7 +59,7 @@ val inline_private_constants :
 val push_private_constants : Environ.env -> private_constants -> Environ.env
 (** Push the constants in the environment if not already there. *)
 
-val universes_of_private : private_constants -> Univ.ContextSet.t list
+val universes_of_private : private_constants -> Univ.ContextSet.t
 
 val is_curmod_library : safe_environment -> bool
 
