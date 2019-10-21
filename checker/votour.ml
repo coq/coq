@@ -364,7 +364,6 @@ let visit_vo f =
     make_seg "summary" Values.v_libsum;
     make_seg "library" Values.v_lib;
     make_seg "univ constraints of opaque proofs" Values.v_univopaques;
-    make_seg "discharging info" (Opt Any);
     make_seg "STM tasks" (Opt Values.v_stm_seg);
     make_seg "opaque proofs" Values.v_opaquetable;
   |] in

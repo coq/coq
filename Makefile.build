@@ -81,7 +81,7 @@ coq.timing.diff: coqlib.timing.diff
 # shouldn't be done in a same make -j... run, otherwise both ocamlc and
 # ocamlopt might race for access to the same .cmi files.
 
-byte: coqbyte coqide-byte pluginsbyte printers
+byte: coqbyte coqide-byte pluginsbyte printers bin/votour.byte
 
 .PHONY: world coq byte world.timing.diff coq.timing.diff
 
