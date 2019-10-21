@@ -1,0 +1,1 @@
+- Fixed bug #10894: Ltac1 regression in binding free names in uconstr (`#10899 <https://github.com/coq/coq/pull/10899>`_, by Hugo Herbelin).
