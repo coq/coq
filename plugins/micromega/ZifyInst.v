@@ -15,7 +15,7 @@
 Require Import Arith Max Min BinInt BinNat Znat Nnat.
 Require Import ZifyClasses.
 Declare ML Module "zify_plugin".
-Open Scope Z_scope.
+Local Open Scope Z_scope.
 
 (** Propositional logic *)
 Instance PropAnd : PropOp and.
@@ -119,6 +119,7 @@ Add UnOp Op_S.
 
 Instance Op_O : CstOp O :=
   {| TCst := Z0 ; TCstInj := eq_refl (Z.of_nat 0) |}.
+Add CstOp Op_O.
 
 Instance Op_Z_abs_nat : UnOp  Z.abs_nat :=
   { TUOp := Z.abs ; TUOpInj := Zabs2Nat.id_abs }.
@@ -409,13 +410,34 @@ Add UnOp Op_Z_to_nat.
 
 (** Specification of derived operators over Z *)
 
+Lemma z_max_spec : forall n m,
+    n <= Z.max n m /\ m <= Z.max n m /\ (Z.max n m = n \/ Z.max n m = m).
+Proof.
+  intros.
+  generalize (Z.le_max_l n m).
+  generalize (Z.le_max_r n m).
+  generalize (Z.max_spec_le n m).
+  intuition idtac.
+Qed.
+
 Instance ZmaxSpec : BinOpSpec Z.max :=
   {| BPred := fun n m r => n < m /\ r = m \/ m <= n /\ r = n ; BSpec := Z.max_spec|}.
 Add Spec ZmaxSpec.
 
-Instance ZminSpec : BinOpSpec Z.min :=
-  {| BPred := fun n m r : Z => n < m /\ r = n \/ m <= n /\ r = m ;
-     BSpec := Z.min_spec|}.
+Lemma z_min_spec : forall n m,
+    Z.min n m <= n /\ Z.min n m <= m /\ (Z.min n m = n \/ Z.min n m = m).
+Proof.
+  intros.
+  generalize (Z.le_min_l n m).
+  generalize (Z.le_min_r n m).
+  generalize (Z.min_spec_le n m).
+  intuition idtac.
+Qed.
+
+
+Program Instance ZminSpec : BinOpSpec Z.min :=
+  {| BPred := fun n m r => n < m /\ r = n \/ m <= n /\ r = m ;
+     BSpec := Z.min_spec |}.
 Add Spec ZminSpec.
 
 Instance ZsgnSpec : UnOpSpec Z.sgn :=

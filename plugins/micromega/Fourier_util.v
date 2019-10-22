@@ -1,7 +1,7 @@
 Require Export Rbase.
 Require Import Lra.
 
-Open Scope R_scope.
+Local Open Scope R_scope.
 
 Lemma Rlt_mult_inv_pos : forall x y:R, 0 < x -> 0 < y -> 0 < x * / y.
 intros x y H H0; try assumption.

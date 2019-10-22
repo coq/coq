@@ -23,7 +23,7 @@ Require Import ZCoeff.
 Require Import Refl.
 Require Import ZArith.
 (*Declare ML Module "micromega_plugin".*)
-Open Scope Z_scope.
+Local Open Scope Z_scope.
 
 Ltac flatten_bool :=
   repeat match goal with
@@ -489,7 +489,7 @@ Definition ZweakTautoChecker (w: list ZWitness) (f : BFormula (Formula Z)) : boo
 (* To get a complete checker, the proof format has to be enriched *)
 
 Require Import Zdiv.
-Open Scope Z_scope.
+Local Open Scope Z_scope.
 
 Definition ceiling (a b:Z) : Z :=
   let (q,r) := Z.div_eucl a b in

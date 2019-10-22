@@ -87,4 +87,4 @@ Ltac applySpec S :=
 (** [zify_post_hook] is there to be redefined. *)
 Ltac zify_post_hook := idtac.
 
-Ltac zify := zify_tac ; (iter_specs applySpec) ; zify_post_hook.
+Ltac zify := zify_op ; (iter_specs applySpec) ; zify_post_hook.

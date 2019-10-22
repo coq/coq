@@ -17,6 +17,7 @@ module BinOp    : S
 module CstOp    : S
 module BinRel   : S
 module PropOp   : S
+module PropUnOp : S
 module Spec     : S
 module Saturate : S
 

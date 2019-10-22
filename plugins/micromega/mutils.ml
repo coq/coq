@@ -106,12 +106,15 @@ let extract_best red lt l =
   | Some(c,e), rst -> extractb c e [] rst
 
 
-let rec find_some pred l =
+let rec find_option pred l =
   match l with
-  | [] -> None
+  | [] -> raise Not_found
   | e::l -> match pred e with
-            | Some r -> Some r
-            | None   -> find_some pred l
+            | Some r -> r
+            | None   -> find_option pred l
+
+let find_some pred l =
+  try Some (find_option pred l) with Not_found -> None
 
 
 let extract_all pred l  =
