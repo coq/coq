@@ -64,6 +64,7 @@ val backtrace : backtrace Exninfo.t
 module Pltac :
 sig
 val tac2expr : raw_tacexpr Pcoq.Entry.t
+val tac2expr_in_env : (Id.t CAst.t list * raw_tacexpr) Pcoq.Entry.t
 
 (** Quoted entries. To be used for complex notations. *)
 

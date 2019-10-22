@@ -22,10 +22,12 @@ open Tac2expr
 (** Hardwired types and constants *)
 
 let coq_type n = KerName.make Tac2env.coq_prefix (Label.make n)
+let ltac1_type n = KerName.make Tac2env.ltac1_prefix (Label.make n)
 
 let t_int = coq_type "int"
 let t_string = coq_type "string"
 let t_constr = coq_type "constr"
+let t_ltac1 = ltac1_type "t"
 
 (** Union find *)
 
@@ -1505,7 +1507,8 @@ let rec subst_rawexpr subst ({loc;v=tr} as t) = match tr with
 
 let () =
   let open Genintern in
-  let intern ist tac =
+  let intern ist (ids, tac) =
+    let ids = List.map (fun { CAst.v = id } -> id) ids in
     let env = match Genintern.Store.get ist.extra ltac2_env with
     | None ->
       (* Only happens when Ltac2 is called from a constr or ltac1 quotation *)
@@ -1514,13 +1517,17 @@ let () =
       else { env with env_str = false }
     | Some env -> env
     in
+    let fold env id =
+      push_name (Name id) (monomorphic (GTypRef (Other t_ltac1, []))) env
+    in
+    let env = List.fold_left fold env ids in
     let loc = tac.loc in
     let (tac, t) = intern_rec env tac in
     let () = check_elt_unit loc env t in
-    (ist, tac)
+    (ist, (ids, tac))
   in
   Genintern.register_intern0 wit_ltac2 intern
-let () = Genintern.register_subst0 wit_ltac2 subst_expr
+let () = Genintern.register_subst0 wit_ltac2 (fun s (ids, e) -> ids, subst_expr s e)
 
 let () =
   let open Genintern in

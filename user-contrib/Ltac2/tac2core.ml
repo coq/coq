@@ -1220,7 +1220,9 @@ let () =
 (** Ltac2 in terms *)
 
 let () =
-  let interp ist poly env sigma concl tac =
+  let interp ist poly env sigma concl (ids, tac) =
+    (* Syntax prevents bound variables in constr quotations *)
+    let () = assert (List.is_empty ids) in
     let ist = Tac2interp.get_env ist in
     let tac = Proofview.tclIGNORE (Tac2interp.interp ist tac) in
     let name, poly = Id.of_string "ltac2", poly in
@@ -1248,25 +1250,73 @@ let () =
 (** Ltac2 in Ltac1 *)
 
 let () =
-  let e = Tac2entries.Pltac.tac2expr in
+  let e = Tac2entries.Pltac.tac2expr_in_env in
   let inject (loc, v) = Ltac_plugin.Tacexpr.TacGeneric (in_gen (rawwit wit_ltac2) v) in
   Ltac_plugin.Tacentries.create_ltac_quotation "ltac2" inject (e, None)
+
+(* Ltac1 runtime representation of Ltac2 closure quotations *)
+let typ_ltac2 : (Id.t list * glb_tacexpr) Geninterp.Val.typ =
+  Geninterp.Val.create "ltac2:ltac2_eval"
+
+let ltac2_eval =
+  let open Ltac_plugin in
+  let ml_name = {
+    Tacexpr.mltac_plugin = "ltac2";
+    mltac_tactic = "ltac2_eval";
+  } in
+  let eval_fun args ist = match args with
+  | [] -> assert false
+  | tac :: args ->
+    (* By convention the first argument is the tactic being applied, the rest
+      being the arguments it should be fed with *)
+    let Geninterp.Val.Dyn (tag, tac) = tac in
+    let (ids, tac) : Id.t list * glb_tacexpr = match Geninterp.Val.eq tag typ_ltac2 with
+    | None -> assert false
+    | Some Refl -> tac
+    in
+    let fold accu id = match Id.Map.find id ist.Geninterp.lfun with
+    | v -> Id.Map.add id (Tac2ffi.of_ext val_ltac1 v) accu
+    | exception Not_found -> assert false
+    in
+    let env_ist = List.fold_left fold Id.Map.empty ids in
+    Proofview.tclIGNORE (Tac2interp.interp { env_ist } tac)
+  in
+  let () = Tacenv.register_ml_tactic ml_name [|eval_fun|] in
+  { Tacexpr.mltac_name = ml_name; mltac_index = 0 }
 
 let () =
   let open Ltac_plugin in
   let open Tacinterp in
-  let idtac = Value.of_closure (default_ist ()) (Tacexpr.TacId []) in
-  let interp ist tac =
-(*     let ist = Tac2interp.get_env ist.Geninterp.lfun in *)
+  let interp ist (ids, tac as self) = match ids with
+  | [] ->
+    (* Evaluate the Ltac2 quotation eagerly *)
+    let idtac = Value.of_closure { ist with lfun = Id.Map.empty } (Tacexpr.TacId []) in
     let ist = { env_ist = Id.Map.empty } in
     Tac2interp.interp ist tac >>= fun _ ->
     Ftactic.return idtac
+  | _ :: _ ->
+    (* Return a closure [@f := {blob} |- fun ids => ltac2_eval(f, ids) ] *)
+    (* This name cannot clash with Ltac2 variables which are all lowercase *)
+    let self_id = Id.of_string "F" in
+    let nas = List.map (fun id -> Name id) ids in
+    let mk_arg id = Tacexpr.Reference (Locus.ArgVar (CAst.make id)) in
+    let args = List.map mk_arg ids in
+    let clos = Tacexpr.TacFun (nas, Tacexpr.TacML (CAst.make (ltac2_eval, mk_arg self_id :: args))) in
+    let self = Geninterp.Val.inject (Geninterp.Val.Base typ_ltac2) self in
+    let ist = { ist with lfun = Id.Map.singleton self_id self } in
+    Ftactic.return (Value.of_closure ist clos)
   in
   Geninterp.register_interp0 wit_ltac2 interp
 
 let () =
   let pr_raw _ = Genprint.PrinterBasic (fun _env _sigma -> mt ()) in
-  let pr_glb e = Genprint.PrinterBasic (fun _env _sigma -> Tac2print.pr_glbexpr e) in
+  let pr_glb (ids, e) =
+    let ids =
+      if List.is_empty ids then mt ()
+      else pr_sequence Id.print ids ++ str " |- "
+    in
+    Genprint.PrinterBasic Pp.(fun _env _sigma -> ids ++ Tac2print.pr_glbexpr e)
+  in
   let pr_top _ = Genprint.TopPrinterBasic mt in
   Genprint.register_print0 wit_ltac2 pr_raw pr_glb pr_top
 
