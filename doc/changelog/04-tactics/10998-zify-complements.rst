@@ -1,4 +1,5 @@
-- The :tacn:`zify` tactic is now aware of `Pos.pred_double`, `Pos.pred_N`,
+- **Added:**
+  The :tacn:`zify` tactic is now aware of `Pos.pred_double`, `Pos.pred_N`,
   `Pos.of_nat`, `Pos.add_carry`, `Pos.pow`, `Pos.square`, `Z.pow`, `Z.double`,
   `Z.pred_double`, `Z.succ_double`, `Z.square`, `Z.div2`, and `Z.quot2`.
   Injections for internal definitions in module `ZifyBool` (`isZero` and `isLeZero`)
