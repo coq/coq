@@ -35,7 +35,7 @@ Proof.
   rewrite <- Hg in LE; clear Hg.
   assert (0 <> g) by (intro; subst; discriminate).
   rewrite Z2Pos.id. ring.
-  rewrite <- (Z.mul_pos_cancel_l g); [now rewrite <- Hd | omega].
+  now rewrite <- (Z.mul_pos_cancel_l g); [ rewrite <- Hd | apply Z.le_neq ].
   Close Scope Z_scope.
 Qed.
 
@@ -60,8 +60,8 @@ Proof.
   - congruence.
   - (*rel_prime*)
     constructor.
-    * exists aa; auto with zarith.
-    * exists bb; auto with zarith.
+    * exists aa; auto using Z.mul_1_r.
+    * exists bb; auto using Z.mul_1_r.
     * intros x Ha Hb.
       destruct Hg1 as (Hg11,Hg12,Hg13).
       destruct (Hg13 (g*x)) as (x',Hx).
@@ -73,8 +73,8 @@ Proof.
       apply Z.mul_reg_l with g; auto. rewrite Hx at 1; ring.
   - (* rel_prime *)
     constructor.
-    * exists cc; auto with zarith.
-    * exists dd; auto with zarith.
+    * exists cc; auto using Z.mul_1_r.
+    * exists dd; auto using Z.mul_1_r.
     * intros x Hc Hd.
       inversion Hg'1 as (Hg'11,Hg'12,Hg'13).
       destruct (Hg'13 (g'*x)) as (x',Hx).
@@ -85,9 +85,9 @@ Proof.
       exists x'.
       apply Z.mul_reg_l with g'; auto. rewrite Hx at 1; ring.
   - apply Z.lt_gt.
-    rewrite <- (Z.mul_pos_cancel_l g); [now rewrite <- Hg4 | omega].
+    rewrite <- (Z.mul_pos_cancel_l g); [ now rewrite <- Hg4 |  apply Z.le_neq; intuition ].
   - apply Z.lt_gt.
-    rewrite <- (Z.mul_pos_cancel_l g'); [now rewrite <- Hg'4 | omega].
+    rewrite <- (Z.mul_pos_cancel_l g'); [now rewrite <- Hg'4 | apply Z.le_neq; intuition ].
   - apply Z.mul_reg_l with (g*g').
     * rewrite Z.mul_eq_0. now destruct 1.
     * rewrite Z.mul_shuffle1, <- Hg3, <- Hg'4.

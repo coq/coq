@@ -22,6 +22,7 @@ Require  FSetPositive FSetEqProperties.
 Require Import ZCoeff.
 Require Import Refl.
 Require Import ZArith.
+Require PreOmega.
 (*Declare ML Module "micromega_plugin".*)
 Local Open Scope Z_scope.
 
@@ -100,11 +101,16 @@ Require Import EnvRing.
 
 Lemma Zsor : SOR 0 1 Z.add Z.mul Z.sub Z.opp (@eq Z) Z.le Z.lt.
 Proof.
-  constructor ; intros ; subst ; try (intuition (auto  with zarith)).
+  constructor ; intros ; subst; try reflexivity.
   apply Zsth.
   apply Zth.
+  auto using Z.le_antisymm.
+  eauto using Z.le_trans.
+  apply Z.le_neq.
   destruct (Z.lt_trichotomy n m) ; intuition.
+  apply Z.add_le_mono_l; assumption.
   apply Z.mul_pos_pos ; auto.
+  discriminate.
 Qed.
 
 Lemma ZSORaddon :
@@ -195,7 +201,8 @@ Proof.
         (fun x : N => x) (pow_N 1 Z.mul) env Flhs).
   generalize ((eval_pexpr Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
         (fun x : N => x) (pow_N 1 Z.mul) env Frhs)).
-  destruct Fop ; simpl; intros ; intuition (auto with zarith).
+  destruct Fop ; simpl; intros;
+    intuition auto using Z.le_ge, Z.ge_le, Z.lt_gt, Z.gt_lt.
 Qed.
 
 
@@ -531,7 +538,10 @@ Proof.
     apply Z.mul_le_mono_pos_l in H; auto with zarith.
   - assert (0 < Z.pos r) by easy.
     rewrite Z.add_1_r, Z.le_succ_l.
-    apply Z.mul_lt_mono_pos_l with a; auto with zarith.
+    apply Z.mul_lt_mono_pos_l with a.
+    auto using Z.gt_lt.
+    eapply Z.lt_le_trans. 2: eassumption.
+    now apply Z.lt_add_pos_r.
   - now elim H1.
 Qed.
 
@@ -627,20 +637,15 @@ Qed.
 
 Lemma Zgcd_pol_ge : forall p, fst (Zgcd_pol p) >= 0.
 Proof.
-  induction p.
-  simpl. auto with zarith.
-  simpl. auto.
+  induction p. 1-2: easy.
   simpl.
   case_eq (Zgcd_pol p1).
   case_eq (Zgcd_pol p3).
   intros.
   simpl.
   unfold ZgcdM.
-  generalize (Z.gcd_nonneg z1 z2).
-  generalize (Zmax_spec (Z.gcd z1 z2) 1).
-  generalize (Z.gcd_nonneg (Z.max (Z.gcd z1 z2) 1) z).
-  generalize (Zmax_spec (Z.gcd (Z.max (Z.gcd z1 z2) 1) z) 1).
-  auto with zarith.
+  apply Z.le_ge; transitivity 1. easy.
+  apply Z.le_max_r.
 Qed.
 
 Lemma Zdivide_pol_Zdivide : forall p x y, Zdivide_pol x p -> (y | x) ->  Zdivide_pol y p.
@@ -698,7 +703,7 @@ Proof.
   induction p.
   simpl.
   intros. inversion H.
-  constructor.  replace (c - 0) with c in H1 ; auto with zarith.
+  constructor. rewrite Z.sub_0_r in *. assumption.
   intros.
   constructor.
   simpl in H. inversion H ; subst; clear H.
@@ -735,7 +740,7 @@ Proof.
   destruct HH2.
   rewrite H2.
   apply Zdivide_pol_sub ; auto.
-  auto with zarith.
+  apply Z.lt_le_trans with 1. reflexivity. now apply Z.ge_le.
   destruct HH2. rewrite H2.
   apply Zdivide_pol_one.
   unfold ZgcdM in HH1. unfold ZgcdM.
@@ -1050,7 +1055,7 @@ Fixpoint bdepth (pf : ZArithProof) : nat :=
     | DoneProof  => O
     | RatProof _ p =>  S (bdepth p)
     | CutProof _  p =>   S  (bdepth p)
-    | EnumProof _ _ l => S (List.fold_right (fun pf x => Max.max (bdepth pf) x)   O l)
+    | EnumProof _ _ l => S (List.fold_right (fun pf x => Nat.max (bdepth pf) x)   O l)
   end.
 
 Require Import Wf_nat.
@@ -1069,19 +1074,19 @@ Proof.
   unfold ltof.
   simpl.
   generalize (         (fold_right
-            (fun (pf : ZArithProof) (x : nat) => Max.max (bdepth pf) x) 0%nat l)).
+            (fun (pf : ZArithProof) (x : nat) => Nat.max (bdepth pf) x) 0%nat l)).
   intros.
   generalize (bdepth y) ; intros.
-  generalize (Max.max_l n0 n) (Max.max_r n0 n).
-  auto with zarith.
+  rewrite Nat.lt_succ_r. apply Nat.le_max_l.
   generalize (IHl a0 b  y  H).
   unfold ltof.
   simpl.
-  generalize (      (fold_right (fun (pf : ZArithProof) (x : nat) => Max.max (bdepth pf) x) 0%nat
+  generalize (      (fold_right (fun (pf : ZArithProof) (x : nat) => Nat.max (bdepth pf) x) 0%nat
          l)).
   intros.
-  generalize (Max.max_l (bdepth a) n) (Max.max_r (bdepth a) n).
-  auto with zarith.
+  eapply lt_le_trans. eassumption.
+  rewrite <- Nat.succ_le_mono.
+  apply Nat.le_max_r.
 Qed.
 
 
@@ -1113,10 +1118,14 @@ Proof.
   intros.
   inv H2.
   change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in *.
-  apply Zgcd_pol_correct_lt with (env:=env) in H1.
-  generalize (narrow_interval_lower_bound g (- c0) (eval_pol env (Zdiv_pol (PsubC Z.sub e c0) g)) H0).
-  auto with zarith.
-  auto with zarith.
+  apply Zgcd_pol_correct_lt with (env:=env) in H1. 2: auto using Z.gt_lt.
+  apply Z.le_add_le_sub_l, Z.ge_le; rewrite Z.add_0_r.
+  apply (narrow_interval_lower_bound g (- c0) (eval_pol env (Zdiv_pol (PsubC Z.sub e c0) g)) H0).
+  apply Z.le_ge.
+  rewrite <- Z.sub_0_l.
+  apply Z.le_sub_le_add_r.
+  rewrite <- H1.
+  assumption.
   (* g <= 0 *)
   intros. inv H2. auto with zarith.
 Qed.
@@ -1143,7 +1152,7 @@ Proof.
   case_eq (Z.gtb g 0).
   intros.
   rewrite <- Zgt_is_gt_bool in H.  
-  rewrite Zgcd_pol_correct_lt with (1:= H1)  in H2; auto with zarith.
+  rewrite Zgcd_pol_correct_lt with (1:= H1)  in H2. 2: auto using Z.gt_lt.
   unfold nformula_of_cutting_plane.  
   change (eval_pol env (padd e' (Pc z)) = 0).
   inv H3.
@@ -1159,7 +1168,7 @@ Proof.
   apply Zeq_bool_eq in H0.
   subst. simpl.
   rewrite Z.add_0_r, Z.mul_eq_0 in H2.
-  intuition auto with zarith.
+  intuition subst; easy.
   rewrite negb_false_iff in H0.
   apply Zeq_bool_eq in H0.
   assert (HH := Zgcd_is_gcd g c).
@@ -1168,14 +1177,15 @@ Proof.
   apply Zdivide_opp_r in H4.
   rewrite Zdivide_ceiling ; auto.
   apply Z.sub_move_0_r.
-  apply Z.div_unique_exact ; auto with zarith.
+  apply Z.div_unique_exact. now intros ->.
+  now rewrite Z.add_move_0_r in H2.
   intros.
   unfold nformula_of_cutting_plane.
   inv H3.
   change (eval_pol env (padd e' (Pc 0)) = 0).
   rewrite eval_pol_add.
   simpl.
-  auto with zarith.
+  now rewrite Z.add_0_r.
   (* NonEqual *)
   intros.
   inv H0.
@@ -1184,7 +1194,7 @@ Proof.
   unfold nformula_of_cutting_plane.
   unfold eval_op1 in *.
   rewrite (RingMicromega.eval_pol_add Zsor ZSORaddon).
-  simpl. auto with zarith.
+  simpl. now rewrite Z.add_0_r.
   (* Strict *)
   destruct p as [[e' z] op].
   case_eq (makeCuttingPlane (PsubC Z.sub e 1)).
@@ -1193,7 +1203,7 @@ Proof.
   apply makeCuttingPlane_ns_sound with (env:=env) (2:= H).
   simpl in *.
   rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
-  auto with zarith.
+  now apply Z.lt_le_pred.
   (* NonStrict *)
   destruct p as [[e' z] op].
   case_eq (makeCuttingPlane e).
@@ -1220,13 +1230,14 @@ Proof.
   rewrite negb_true_iff in H.
   apply Zeq_bool_neq in H.
   change (eval_pol env p = 0) in H2.
-  rewrite Zgcd_pol_correct_lt with (1:= H0) in H2; auto with zarith.
+  rewrite Zgcd_pol_correct_lt with (1:= H0) in H2. 2: auto using Z.gt_lt.
   set (x:=eval_pol env (Zdiv_pol (PsubC Z.sub p c) g)) in *; clearbody x.
   contradict H5.
-  apply Zis_gcd_gcd; auto with zarith.
+  apply Zis_gcd_gcd. apply Z.lt_le_incl, Z.gt_lt; assumption.
   constructor; auto with zarith.
   exists (-x).
-  rewrite Z.mul_opp_l, Z.mul_comm; auto with zarith.
+  rewrite Z.mul_opp_l, Z.mul_comm.
+  now apply Z.add_move_0_l.
   (**)
   destruct (makeCuttingPlane p);  discriminate.
   discriminate.
@@ -1321,11 +1332,13 @@ Proof.
    change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in HCutR.
    unfold eval_op1 in HCutR.
    destruct op1 ; simpl in Hop1 ; try discriminate;
-     rewrite eval_pol_add in HCutR; simpl in HCutR; auto with zarith.
+     rewrite eval_pol_add in HCutR; simpl in HCutR.
+     rewrite Z.add_move_0_l in HCutR; rewrite HCutR, Z.opp_involutive; reflexivity.
+     now apply Z.le_sub_le_add_r in HCutR.
    (**)
    apply is_pol_Z0_eval_pol with (env := env) in HZ0.
-   rewrite eval_pol_add in HZ0.
-   replace (eval_pol env p1) with (- eval_pol env p2) by omega.
+   rewrite eval_pol_add, Z.add_move_r, Z.sub_0_l in HZ0.
+   rewrite HZ0.
    apply  eval_Psatz_sound with (env:=env) in Hf1 ; auto.
    apply cutting_plane_sound with (1:= Hf1) in HCutL.
    unfold nformula_of_cutting_plane in HCutL.
@@ -1334,7 +1347,10 @@ Proof.
    change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in HCutL.
    unfold eval_op1 in HCutL.
    rewrite eval_pol_add in HCutL. simpl in HCutL.
-   destruct op2 ; simpl in Hop2 ; try discriminate ;  omega.
+   destruct op2 ; simpl in Hop2 ; try discriminate.
+   rewrite Z.add_move_r, Z.sub_0_l in HCutL.
+   now rewrite HCutL, Z.opp_involutive.
+   now rewrite <- Z.le_sub_le_add_l in HCutL.
   revert Hfix.
   match goal with
     | |- context[?F pf (-z1) z2 = true] => set (FF := F)
@@ -1348,26 +1364,24 @@ Proof.
   generalize (-z1). clear z1. intro z1.
   revert z1 z2.
   induction pf;simpl ;intros.
-  generalize (Zgt_cases z1 z2).
-  destruct (Z.gtb z1 z2).
-  intros.
-  apply False_ind ; omega.
-  discriminate.
+  revert Hfix.
+  now case (Z.gtb_spec); [ | easy ]; intros LT; elim (Zlt_not_le _ _ LT); transitivity x.
   flatten_bool.
-  assert (HH:(x = z1 \/ z1 +1 <=x)%Z) by omega.
-  destruct HH.
-  subst.
-  exists a ; auto.
-  assert (z1 + 1 <= x <= z2)%Z by omega.
-  elim IHpf with (2:=H2) (3:= H4).
-  destruct H4.
+  destruct (Z_le_lt_eq_dec _ _ (proj1 H0)) as [ LT | -> ].
+  2: exists a; auto.
+  rewrite <- Z.le_succ_l in LT.
+  assert (LE: (Z.succ z1 <= x <= z2)%Z) by intuition.
+  elim IHpf with (2:=H2) (3:= LE).
   intros.
   exists x0 ; split;tauto.
   intros until 1. 
   apply H ; auto. 
   unfold ltof in *.
   simpl in *.
-  zify. omega.
+  PreOmega.zify.
+  intuition subst. assumption.
+  eapply Z.lt_le_trans. eassumption.
+  apply Z.add_le_mono_r. assumption.
   (*/asser *)
   destruct (HH _ H1) as [pr [Hin Hcheker]].
   assert (make_impl (eval_nformula env) ((PsubC Z.sub p1 (eval_pol env p1),Equal) :: l) False).

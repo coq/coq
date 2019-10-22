@@ -1363,7 +1363,8 @@ Lemma elements_aux_cardinal :
 Proof.
  simple induction m; simpl; intuition.
  rewrite <- H; simpl.
- rewrite <- H0; omega.
+ rewrite <- H0, Nat.add_succ_r, (Nat.add_comm (cardinal t)), Nat.add_assoc.
+ reflexivity.
 Qed.
 
 Lemma elements_cardinal : forall (m:t elt), cardinal m = length (elements m).
