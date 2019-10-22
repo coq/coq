@@ -690,7 +690,7 @@ let rec extract_term env sg mle mlt c args =
        let extract_var mlt = put_magic (mlt,vty) (MLglob (GlobRef.VarRef v)) in
        extract_app env sg mle mlt extract_var args
     | Int i -> assert (args = []); MLuint i
-    | Float _ -> assert false (* TODO: Implement primitive float for extraction *)
+    | Float f -> assert (args = []); MLfloat f
     | Ind _ | Prod _ | Sort _ -> assert false
 
 (*s [extract_maybe_term] is [extract_term] for usual terms, else [MLdummy] *)

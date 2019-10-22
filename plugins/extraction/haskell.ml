@@ -215,6 +215,8 @@ let rec pp_expr par env args =
     | MLaxiom -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED\"")
     | MLuint _ ->
       pp_par par (str "Prelude.error \"EXTRACTION OF UINT NOT IMPLEMENTED\"")
+    | MLfloat _ ->
+      pp_par par (str "Prelude.error \"EXTRACTION OF FLOAT NOT IMPLEMENTED\"")
 
 and pp_cons_pat par r ppl =
   pp_par par
