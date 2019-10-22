@@ -166,7 +166,7 @@ let interp_ltac_variable ?loc typing_fun env sigma id : Evd.evar_map * unsafe_ju
        here, as the call to the main pretyping function is caught
        inside the try but I want to avoid refactoring this function
        too much for now. *)
-    typing_fun {env with lvar} term
+    typing_fun {env with lvar; static_env = env.renamed_env} term
   with Not_found ->
   (* Check if [id] is a ltac variable not bound to a term *)
   (* and build a nice error message *)
