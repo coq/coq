@@ -1,4 +1,5 @@
-- Ltac2, a new version of the tactic language Ltac, that doesn't
+- **Added:**
+  Ltac2, a new version of the tactic language Ltac, that doesn't
   preserve backward compatibility, has been integrated in the main Coq
   distribution.  It is still experimental, but we already recommend
   users of advanced Ltac to start using it and report bugs or request

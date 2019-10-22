@@ -1,4 +1,5 @@
-- Add command line options `-require-import`, `-require-export`,
+- **Added:**
+  Command-line options `-require-import`, `-require-export`,
   `-require-import-from` and `-require-export-from`, as well as their
   shorthand, `-ri`, `-re`, `-refrom` and -`rifrom`. Deprecate
   confusing command line option `-require`

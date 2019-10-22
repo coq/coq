@@ -1,4 +1,4 @@
-- Fixed bugs sometimes preventing to define valid (co)fixpoints with implicit arguments
+- **Fixed:** Bugs sometimes preventing to define valid (co)fixpoints with implicit arguments
   in the presence of local definitions, see `#3282 <https://github.com/coq/coq/issues/3282>`_
   (`#11132 <https://github.com/coq/coq/pull/11132>`_, by Hugo Herbelin).
 

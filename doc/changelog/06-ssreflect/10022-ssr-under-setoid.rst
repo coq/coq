@@ -1,4 +1,5 @@
-- Generalize tactics :tacn:`under` and :tacn:`over` for any registered
+- **Added:**
+  Generalize tactics :tacn:`under` and :tacn:`over` for any registered
   relation. More precisely, assume the given context lemma has type
   `forall f1 f2, .. -> (forall i, R1 (f1 i) (f2 i)) -> R2 f1 f2`.  The
   first step performed by :tacn:`under` (since Coq 8.10) amounts to
