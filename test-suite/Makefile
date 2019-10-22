@@ -32,17 +32,20 @@ include ../Makefile.common
 # Variables
 #######################################################################
 
-# Default value when called from a freshly compiled Coq, but can be
-# easily overridden
-
+ifneq ($(wildcard ../_build),)
+BIN:=$(shell cd ..; pwd)/_build/install/default/bin/
+COQLIB:=$(shell cd ..; pwd)/_build/install/default/lib/coq
+else
 BIN := $(shell cd ..; pwd)/bin/
-COQFLAGS?=
 
 COQLIB?=
 ifeq ($(COQLIB),)
   COQLIB := $(shell ocaml ocaml_pwd.ml ..)
 endif
+endif # exists ../_build
 export COQLIB
+
+COQFLAGS?=
 
 coqc := $(BIN)coqc -q -R prerequisite TestSuite $(COQFLAGS)
 coqchk := $(BIN)coqchk -R prerequisite TestSuite
