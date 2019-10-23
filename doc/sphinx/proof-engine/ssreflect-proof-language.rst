@@ -2670,7 +2670,7 @@ context entry name.
      Lemma test n m (H : m + 1 < n) : True.
      have @i : 'I_n by apply: (Sub m); omega.
 
-Note that the sub-term produced by :tacn:`omega` is in general huge and
+Note that the subterm produced by :tacn:`omega` is in general huge and
 uninteresting, and hence one may want to hide it.
 For this purpose the ``[: name ]`` intro pattern and the tactic
 ``abstract`` (see :ref:`abstract_ssr`) are provided.
@@ -4583,7 +4583,7 @@ The ``elim/`` tactic distinguishes two cases:
   passed to the eliminator as the last argument (``x`` in ``foo_ind``) and
   ``en−1 … e1`` are used as patterns to select in the goal the occurrences that
   will be bound by the predicate ``P``, thus it must be possible to unify
-  the sub-term of the goal matched by ``en−1`` with ``pm`` , the one matched
+  the subterm of the goal matched by ``en−1`` with ``pm`` , the one matched
   by ``en−2`` with ``pm−1`` and so on.
 :regular eliminator: in all the other cases. Here it must be possible
   to unify the term matched by ``en`` with ``pm`` , the one matched by
