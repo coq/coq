@@ -17,7 +17,7 @@
     [mem x s=true] instead of [In x s],
     [equal s s'=true] instead of [Equal s s'], etc. *)
 
-Require Import MSetProperties Zerob Sumbool Omega DecidableTypeEx.
+Require Import MSetProperties Zerob Sumbool Lia DecidableTypeEx.
 
 Module WEqPropertiesOn (Import E:DecidableType)(M:WSetsOn E).
 Module Import MP := WPropertiesOn E M.
@@ -845,19 +845,19 @@ unfold sum.
 intros f g Hf Hg.
 assert (fc : compat_opL (fun x:elt =>plus (f x))) by
  (repeat red; intros; rewrite Hf; auto).
-assert (ft : transposeL (fun x:elt =>plus (f x))) by (red; intros; omega).
+assert (ft : transposeL (fun x:elt =>plus (f x))) by (red; intros; lia).
 assert (gc : compat_opL (fun x:elt => plus (g x))) by
  (repeat red; intros; rewrite Hg; auto).
-assert (gt : transposeL (fun x:elt =>plus (g x))) by (red; intros; omega).
+assert (gt : transposeL (fun x:elt =>plus (g x))) by (red; intros; lia).
 assert (fgc : compat_opL (fun x:elt =>plus ((f x)+(g x)))) by
   (repeat red; intros; rewrite Hf,Hg; auto).
-assert (fgt : transposeL (fun x:elt=>plus ((f x)+(g x)))) by (red; intros; omega).
+assert (fgt : transposeL (fun x:elt=>plus ((f x)+(g x)))) by (red; intros; lia).
 intros s;pattern s; apply set_rec.
 intros.
 rewrite <- (fold_equal _ _ _ _ fc ft 0 _ _ H).
 rewrite <- (fold_equal _ _ _ _ gc gt 0 _ _ H).
 rewrite <- (fold_equal _ _ _ _ fgc fgt 0 _ _ H); auto.
-intros. do 3 (rewrite fold_add; auto with *).
+intros. do 3 (rewrite fold_add; auto with fset). lia.
 do 3 rewrite fold_empty;auto.
 Qed.
 
@@ -869,7 +869,7 @@ assert (st : Equivalence (@Logic.eq nat)) by (split; congruence).
 assert (cc : compat_opL (fun x => plus (if f x then 1 else 0))) by
  (repeat red; intros; rewrite Hf; auto).
 assert (ct : transposeL (fun x => plus (if f x then 1 else 0))) by
- (red; intros; omega).
+ (red; intros; lia).
 intros s;pattern s; apply set_rec.
 intros.
 change elt with E.t.
@@ -919,7 +919,7 @@ Lemma sum_compat :
   forall s, (forall x, In x s -> f x=g x) -> sum f s=sum g s.
 intros.
 unfold sum; apply (@fold_compat _ (@Logic.eq nat));
- repeat red; auto with *.
+ repeat red; auto with *; lia.
 Qed.
 
 End Sum.
