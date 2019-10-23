@@ -10,7 +10,7 @@
 
 Require Import ZArith_base.
 Require Export Wf_nat.
-Require Import Omega.
+Require Import Lia.
 Local Open Scope Z_scope.
 
 (** Well-founded relations on Z. *)
@@ -39,20 +39,19 @@ Section wf_proof.
     clear a; simple induction n; intros.
   (** n= 0 *)
     case H; intros.
-    case (lt_n_O (f a)); auto.
+    lia.
     apply Acc_intro; unfold Zwf; intros.
-    assert False; omega || contradiction.
+    lia.
   (** inductive case *)
     case H0; clear H0; intro; auto.
     apply Acc_intro; intros.
     apply H.
     unfold Zwf in H1.
-    case (Z.le_gt_cases c y); intro; auto with zarith.
+    case (Z.le_gt_cases c y); intro. 2: lia.
     left.
-    red in H0.
     apply lt_le_trans with (f a); auto with arith.
     unfold f.
-    apply Zabs2Nat.inj_lt; omega.
+    lia.
     apply (H (S (f a))); auto.
   Qed.
 
@@ -83,9 +82,7 @@ Section wf_proof_up.
   Proof.
     apply well_founded_lt_compat with (f := f).
     unfold Zwf_up, f.
-    intros.
-    apply Zabs2Nat.inj_lt; try (apply Z.le_0_sub; intuition).
-    now apply Z.sub_lt_mono_l.
+    lia.
   Qed.
 
 End wf_proof_up.
