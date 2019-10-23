@@ -353,7 +353,7 @@ the optional tactic of the ``Hint Rewrite`` command.
 
    .. coqtop:: in reset
 
-      Require Import Omega.
+      Require Import Lia.
 
    .. coqtop:: in
 
@@ -367,7 +367,7 @@ the optional tactic of the ``Hint Rewrite`` command.
 
    .. coqtop:: in
 
-      Hint Rewrite g0 g1 g2 using omega : base1.
+      Hint Rewrite g0 g1 g2 using lia : base1.
 
    .. coqtop:: in
 

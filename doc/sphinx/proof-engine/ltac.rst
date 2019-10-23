@@ -1715,6 +1715,7 @@ performance issue.
 
 .. coqtop:: reset in
 
+   Set Warnings "-omega-is-deprecated".
    Require Import Coq.omega.Omega.
 
    Ltac mytauto := tauto.

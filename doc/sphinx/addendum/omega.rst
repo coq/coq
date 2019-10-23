@@ -7,20 +7,18 @@ Omega: a solver for quantifier-free problems in Presburger Arithmetic
 
 .. warning::
 
-   The :tacn:`omega` tactic is about to be deprecated in favor of the
-   :tacn:`lia` tactic.  The goal is to consolidate the arithmetic
-   solving capabilities of Coq into a single engine; moreover,
-   :tacn:`lia` is in general more powerful than :tacn:`omega` (it is a
-   complete Presburger arithmetic solver while :tacn:`omega` was known
-   to be incomplete).
+   The :tacn:`omega` tactic is deprecated in favor of the :tacn:`lia`
+   tactic.  The goal is to consolidate the arithmetic solving
+   capabilities of Coq into a single engine; moreover, :tacn:`lia` is
+   in general more powerful than :tacn:`omega` (it is a complete
+   Presburger arithmetic solver while :tacn:`omega` was known to be
+   incomplete).
 
-   Work is in progress to make sure that there are no regressions
-   (including no performance regression) when switching from
-   :tacn:`omega` to :tacn:`lia` in existing projects.  However, we
-   already recommend using :tacn:`lia` in new or refactored proof
-   scripts.  We also ask that you report (in our `bug tracker
-   <https://github.com/coq/coq/issues>`_) any issue you encounter,
-   especially if the issue was not present in :tacn:`omega`.
+   It is recommended to switch from :tacn:`omega` to :tacn:`lia` in existing
+   projects.  We also ask that you report (in our `bug tracker
+   <https://github.com/coq/coq/issues>`_) any issue you encounter, especially
+   if the issue was not present in :tacn:`omega`.  If no new issues are
+   reported, :tacn:`omega` will be removed soon.
 
    Note that replacing :tacn:`omega` with :tacn:`lia` can break
    non-robust proof scripts which rely on incompleteness bugs of
@@ -30,6 +28,10 @@ Description of ``omega``
 ------------------------
 
 .. tacn:: omega
+
+   .. deprecated:: 8.12
+
+      Use :tacn:`lia` instead.
 
    :tacn:`omega` is a tactic for solving goals in Presburger arithmetic,
    i.e. for proving formulas made of equations and inequalities over the
@@ -118,7 +120,7 @@ loaded by
 
 .. example::
 
-  .. coqtop:: all
+  .. coqtop:: all warn
 
      Require Import Omega.
 

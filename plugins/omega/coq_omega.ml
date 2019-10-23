@@ -1899,8 +1899,15 @@ let destructure_goal =
 
 let destructure_goal = destructure_goal
 
+let warn_omega_is_deprecated =
+  let name = "omega-is-deprecated" in
+  let category = "deprecated" in
+  CWarnings.create ~name ~category (fun () ->
+    Pp.str "omega is deprecated since 8.12; use “lia” instead.")
+
 let omega_solver =
   Proofview.tclUNIT () >>= fun () -> (* delay for [check_required_library] *)
+  warn_omega_is_deprecated ();
   Coqlib.check_required_library ["Coq";"omega";"Omega"];
   reset_all ();
   destructure_goal

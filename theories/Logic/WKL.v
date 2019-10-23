@@ -25,7 +25,7 @@
 Require Import WeakFan List.
 Import ListNotations.
 
-Require Import Omega.
+Require Import Arith.
 
 (** [is_path_from P n l] means that there exists a path of length [n]
     from [l] on which [P] does not hold *)

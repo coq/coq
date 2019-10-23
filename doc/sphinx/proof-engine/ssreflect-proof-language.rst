@@ -2607,7 +2607,7 @@ After the :token:`i_pattern`, a list of binders is allowed.
   .. coqtop:: reset none
 
      From Coq Require Import ssreflect.
-     From Coq Require Import Omega.
+     From Coq Require Import ZArith Lia.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
@@ -2615,7 +2615,7 @@ After the :token:`i_pattern`, a list of binders is allowed.
   .. coqtop:: all
 
      Lemma test : True.
-     have H x (y : nat) : 2 * x + y = x + x + y by omega.
+     have H x (y : nat) : 2 * x + y = x + x + y by lia.
 
 A proof term provided after ``:=`` can mention these bound variables
 (that are automatically introduced with the given names).
@@ -2625,7 +2625,7 @@ with parentheses even if no type is specified:
 
 .. coqtop:: all restart
 
-   have (x) : 2 * x = x + x by omega.
+   have (x) : 2 * x = x + x by lia.
 
 The :token:`i_item` and :token:`s_item` can be used to interpret the asserted
 hypothesis with views (see section :ref:`views_and_reflection_ssr`) or simplify the resulting
@@ -2668,9 +2668,9 @@ context entry name.
      Arguments Sub {_} _ _.
 
      Lemma test n m (H : m + 1 < n) : True.
-     have @i : 'I_n by apply: (Sub m); omega.
+     have @i : 'I_n by apply: (Sub m); lia.
 
-Note that the subterm produced by :tacn:`omega` is in general huge and
+Note that the subterm produced by :tacn:`lia` is in general huge and
 uninteresting, and hence one may want to hide it.
 For this purpose the ``[: name ]`` intro pattern and the tactic
 ``abstract`` (see :ref:`abstract_ssr`) are provided.
@@ -2680,7 +2680,7 @@ For this purpose the ``[: name ]`` intro pattern and the tactic
   .. coqtop:: all abort
 
      Lemma test n m (H : m + 1 < n) : True.
-     have [:pm] @i : 'I_n by apply: (Sub m); abstract: pm; omega.
+     have [:pm] @i : 'I_n by apply: (Sub m); abstract: pm; lia.
 
   The type of ``pm`` can be cleaned up by its annotation ``(*1*)`` by just
   simplifying it. The annotations are there for technical reasons only.
@@ -2694,7 +2694,7 @@ with have and an explicit term, they must be used as follows:
 
      Lemma test n m (H : m + 1 < n) : True.
      have [:pm] @i : 'I_n := Sub m pm.
-       by omega.
+       by lia.
 
 In this case the abstract constant ``pm`` is assigned by using it in
 the term that follows ``:=`` and its corresponding goal is left to be
@@ -2712,7 +2712,7 @@ makes use of it).
   .. coqtop:: all abort
 
      Lemma test n m (H : m + 1 < n) : True.
-     have [:pm] @i k : 'I_(n+k) by apply: (Sub m); abstract: pm k; omega.
+     have [:pm] @i k : 'I_(n+k) by apply: (Sub m); abstract: pm k; lia.
 
 Last, notice that the use of intro patterns for abstract constants is
 orthogonal to the transparent flag ``@`` for have.
@@ -2963,7 +2963,7 @@ illustrated in the following example.
 
   .. coqtop:: reset none
 
-     From Coq Require Import ssreflect Omega.
+     From Coq Require Import ssreflect Lia.
      Set Implicit Arguments.
      Unset Strict Implicit.
      Unset Printing Implicit Defensive.
