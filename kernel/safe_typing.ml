@@ -299,13 +299,6 @@ let lift_constant c =
   in
   { c with const_body = body }
 
-let map_constant f c =
-  let body = match c.const_body with
-  | OpaqueDef o -> OpaqueDef (f o)
-  | Def _ | Undef _ | Primitive _ as body -> body
-  in
-  { c with const_body = body }
-
 let push_private_constants env eff =
   let eff = side_effects_of_private_constants eff in
   let add_if_undefined env eff =
@@ -579,13 +572,9 @@ let add_field ?(is_include=false) ((l,sfb) as field) gn senv =
 
 let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 
-(** Insertion of constants and parameters in environment *)
-type 'a effect_entry =
-| EffectEntry : private_constants Entries.seff_wrap effect_entry
-| PureEntry : unit effect_entry
-
 type global_declaration =
-  | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
+| ConstantEntry : Entries.constant_entry -> global_declaration
+| OpaqueEntry : private_constants Entries.const_entry_body Entries.opaque_entry -> global_declaration
 
 type exported_private_constant = Constant.t
 
@@ -704,7 +693,7 @@ let check_signatures curmb sl =
 
 type side_effect_declaration =
 | DefinitionEff : Entries.definition_entry -> side_effect_declaration
-| OpaqueEff : unit Entries.const_entry_body Entries.opaque_entry -> side_effect_declaration
+| OpaqueEff : Constr.constr Entries.opaque_entry -> side_effect_declaration
 
 let constant_entry_of_side_effect eff =
   let cb = eff.seff_body in
@@ -723,7 +712,7 @@ let constant_entry_of_side_effect eff =
     | _ -> assert false in
   if Declareops.is_opaque cb then
   OpaqueEff {
-    opaque_entry_body = Future.from_val ((p, Univ.ContextSet.empty), ());
+    opaque_entry_body = p;
     opaque_entry_secctx = Context.Named.to_vars cb.const_hyps;
     opaque_entry_feedback = None;
     opaque_entry_type = cb.const_type;
@@ -740,6 +729,25 @@ let constant_entry_of_side_effect eff =
 
 let export_eff eff =
   (eff.seff_constant, eff.seff_body)
+
+let is_empty_private = function
+| Opaqueproof.PrivateMonomorphic ctx -> Univ.ContextSet.is_empty ctx
+| Opaqueproof.PrivatePolymorphic (_, ctx) -> Univ.ContextSet.is_empty ctx
+
+let empty_private univs = match univs with
+| Monomorphic _ -> Opaqueproof.PrivateMonomorphic Univ.ContextSet.empty
+| Polymorphic auctx -> Opaqueproof.PrivatePolymorphic (Univ.AUContext.size auctx, Univ.ContextSet.empty)
+
+(* Special function to call when the body of an opaque definition is provided.
+  It performs the type-checking of the body immediately. *)
+let translate_direct_opaque env kn ce =
+  let cb, ctx = Term_typing.translate_opaque env kn ce in
+  let body = ce.Entries.opaque_entry_body, Univ.ContextSet.empty in
+  let handle _env c () = (c, Univ.ContextSet.empty, 0) in
+  let (c, u) = Term_typing.check_delayed handle ctx (body, ()) in
+  (* No constraints can be generated, we set it empty everywhere *)
+  let () = assert (is_empty_private u) in
+  { cb with const_body = OpaqueDef c }
 
 let export_side_effects mb env (b_ctx, eff) =
       let not_exists e =
@@ -765,26 +773,14 @@ let export_side_effects mb env (b_ctx, eff) =
           if Int.equal sl 0 then
             let env, cb =
               let kn = eff.seff_constant in
-               let ce = constant_entry_of_side_effect eff in
-               let open Entries in
-               let open Term_typing in
-               let cb = match ce with
-               | DefinitionEff ce ->
-                Term_typing.translate_constant Pure env kn (DefinitionEntry ce)
-               | OpaqueEff ce ->
-                let handle _env c () = (c, Univ.ContextSet.empty, 0) in
-                Term_typing.translate_constant (SideEffects handle) env kn (OpaqueEntry ce)
-               in
-              let map cu =
-                let (c, u) = Future.force cu in
-                let () = match u with
-                | Opaqueproof.PrivateMonomorphic ctx
-                | Opaqueproof.PrivatePolymorphic (_, ctx) ->
-                  assert (Univ.ContextSet.is_empty ctx)
-                in
-                c
+              let ce = constant_entry_of_side_effect eff in
+              let open Entries in
+              let cb = match ce with
+              | DefinitionEff ce ->
+                Term_typing.translate_constant env kn (DefinitionEntry ce)
+              | OpaqueEff ce ->
+                translate_direct_opaque env kn ce
               in
-               let cb = map_constant map cb in
                let eff = { eff with seff_body = cb } in
                (push_seff env eff, export_eff eff)
             in
@@ -805,10 +801,7 @@ let export_private_constants ce senv =
   let exported, ce = export_side_effects senv.revstruct senv.env ce in
   let map senv (kn, c) = match c.const_body with
   | OpaqueDef p ->
-    let local = match c.const_universes with
-    | Monomorphic _ -> Opaqueproof.PrivateMonomorphic Univ.ContextSet.empty
-    | Polymorphic auctx -> Opaqueproof.PrivatePolymorphic (Univ.AUContext.size auctx, Univ.ContextSet.empty)
-    in
+    let local = empty_private c.const_universes in
     let senv, o = push_opaque_proof (Future.from_val (p, local)) senv in
     senv, (kn, { c with const_body = OpaqueDef o })
   | Def _ | Undef _ | Primitive _ as body ->
@@ -820,19 +813,22 @@ let export_private_constants ce senv =
   let senv = List.fold_left add_constant_aux senv bodies in
   (ce, exported), senv
 
-let add_constant (type a) ~(side_effect : a effect_entry) l decl senv : (Constant.t * a) * safe_environment =
+let add_constant l decl senv =
   let kn = Constant.make2 senv.modpath l in
-    let cb = 
+    let cb =
       match decl with
-      | ConstantEntry (EffectEntry, ce) ->
+      | OpaqueEntry ce ->
         let handle env body eff =
           let body, uctx, signatures = inline_side_effects env body eff in
           let trusted = check_signatures senv.revstruct signatures in
           body, uctx, trusted
         in
-        Term_typing.translate_constant (Term_typing.SideEffects handle) senv.env kn ce
-      | ConstantEntry (PureEntry, ce) ->
-        Term_typing.translate_constant Term_typing.Pure senv.env kn ce
+        let cb, ctx = Term_typing.translate_opaque senv.env kn ce in
+        let map pf = Term_typing.check_delayed handle ctx pf in
+        let pf = Future.chain ce.Entries.opaque_entry_body map in
+        { cb with const_body = OpaqueDef pf }
+      | ConstantEntry ce ->
+        Term_typing.translate_constant senv.env kn ce
     in
   let senv =
     let senv, cb, delayed_cst = match cb.const_body with
@@ -860,37 +856,39 @@ let add_constant (type a) ~(side_effect : a effect_entry) l decl senv : (Constan
 
   let senv =
     match decl with
-    | ConstantEntry (_,(Entries.PrimitiveEntry { Entries.prim_entry_content = CPrimitives.OT_type t; _ })) ->
+    | ConstantEntry (Entries.PrimitiveEntry { Entries.prim_entry_content = CPrimitives.OT_type t; _ }) ->
       if sections_are_opened senv then CErrors.anomaly (Pp.str "Primitive type not allowed in sections");
       add_retroknowledge (Retroknowledge.Register_type(t,kn)) senv
     | _ -> senv
   in
-  let eff : a = match side_effect with
-  | PureEntry -> ()
-  | EffectEntry ->
-    let body, univs = match cb.const_body with
-    | (Primitive _ | Undef _) -> assert false
-    | Def c -> (Def c, cb.const_universes)
-    | OpaqueDef o ->
-      let (b, delayed) = Future.force o in
-      match cb.const_universes, delayed with
-      | Monomorphic ctx', Opaqueproof.PrivateMonomorphic ctx ->
-        OpaqueDef b, Monomorphic (Univ.ContextSet.union ctx ctx')
-      | Polymorphic auctx, Opaqueproof.PrivatePolymorphic (_, ctx) ->
-        (* Upper layers enforce that there are no internal constraints *)
-        let () = assert (Univ.ContextSet.is_empty ctx) in
-        OpaqueDef b, Polymorphic auctx
-      | (Monomorphic _ | Polymorphic _), (Opaqueproof.PrivateMonomorphic _ | Opaqueproof.PrivatePolymorphic _) ->
-        assert false
+  kn, senv
+
+let add_private_constant l decl senv : (Constant.t * private_constants) * safe_environment =
+  let kn = Constant.make2 senv.modpath l in
+    let cb =
+      match decl with
+      | OpaqueEff ce ->
+        translate_direct_opaque senv.env kn ce
+      | DefinitionEff ce ->
+        Term_typing.translate_constant senv.env kn (Entries.DefinitionEntry ce)
     in
-    let cb = { cb with const_body = body; const_universes = univs } in
+  let senv, dcb = match cb.const_body with
+  | Def _ as const_body -> senv, { cb with const_body }
+  | OpaqueDef c ->
+    let local = empty_private cb.const_universes in
+    let senv, o = push_opaque_proof (Future.from_val (c, local)) senv in
+    senv, { cb with const_body = OpaqueDef o }
+  | Undef _ | Primitive _ -> assert false
+  in
+  let senv = add_constant_aux senv (kn, dcb) in
+  let eff =
     let from_env = CEphemeron.create senv.revstruct in
     let eff = {
       from_env = from_env;
       seff_constant = kn;
       seff_body = cb;
     } in
-    { Entries.seff_wrap = SideEffects.add eff empty_private_constants }
+    SideEffects.add eff empty_private_constants
   in
   (kn, eff), senv
 

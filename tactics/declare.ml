@@ -204,7 +204,11 @@ let cast_proof_entry e =
     const_entry_inline_code = e.proof_entry_inline_code;
   }
 
-let cast_opaque_proof_entry e =
+type ('a, 'b) effect_entry =
+| EffectEntry : (private_constants, private_constants Entries.const_entry_body) effect_entry
+| PureEntry : (unit, Constr.constr) effect_entry
+
+let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proof_entry) : b opaque_entry =
   let typ = match e.proof_entry_type with
   | None -> assert false
   | Some typ -> typ
@@ -218,8 +222,15 @@ let cast_opaque_proof_entry e =
         Id.Set.empty, Id.Set.empty
       else
         let ids_typ = global_vars_set env typ in
-        let (pf, _), eff = Future.force e.proof_entry_body in
-        let env = Safe_typing.push_private_constants env eff in
+        let pf, env = match entry with
+        | PureEntry ->
+          let (pf, _), () = Future.force e.proof_entry_body in
+          pf, env
+        | EffectEntry ->
+          let (pf, _), eff = Future.force e.proof_entry_body in
+          let env = Safe_typing.push_private_constants env eff in
+          pf, env
+        in
         let vars = global_vars_set env pf in
         ids_typ, vars
     in
@@ -227,12 +238,24 @@ let cast_opaque_proof_entry e =
     Environ.really_needed env (Id.Set.union hyp_typ hyp_def)
   | Some hyps -> hyps
   in
+  let (body, univs : b * _) = match entry with
+  | PureEntry ->
+    let (body, uctx), () = Future.force e.proof_entry_body in
+    let univs = match e.proof_entry_universes with
+    | Monomorphic_entry uctx' -> Monomorphic_entry (Univ.ContextSet.union uctx uctx')
+    | Polymorphic_entry _ ->
+      assert (Univ.ContextSet.is_empty uctx);
+      e.proof_entry_universes
+    in
+    body, univs
+  | EffectEntry -> e.proof_entry_body, e.proof_entry_universes
+  in
   {
-    opaque_entry_body = e.proof_entry_body;
+    opaque_entry_body = body;
     opaque_entry_secctx = secctx;
     opaque_entry_feedback = e.proof_entry_feedback;
     opaque_entry_type = typ;
-    opaque_entry_universes = e.proof_entry_universes;
+    opaque_entry_universes = univs;
   }
 
 let get_roles export eff =
@@ -247,7 +270,7 @@ let is_unsafe_typing_flags () =
   let flags = Environ.typing_flags (Global.env()) in
   not (flags.check_universes && flags.check_guarded && flags.check_positive)
 
-let define_constant ~side_effect ~name cd =
+let define_constant ~name cd =
   (* Logically define the constant and its subproofs, no libobject tampering *)
   let export, decl, unsafe = match cd with
   | DefinitionEntry de ->
@@ -259,39 +282,47 @@ let define_constant ~side_effect ~name cd =
       let export = get_roles export eff in
       let de = { de with proof_entry_body = Future.from_val (body, ()) } in
       let cd = Entries.DefinitionEntry (cast_proof_entry de) in
-      export, ConstantEntry (PureEntry, cd), false
+      export, ConstantEntry cd, false
     else
       let map (body, eff) = body, eff.Evd.seff_private in
       let body = Future.chain de.proof_entry_body map in
       let de = { de with proof_entry_body = body } in
-      let de = cast_opaque_proof_entry de in
-      [], ConstantEntry (EffectEntry, Entries.OpaqueEntry de), false
+      let de = cast_opaque_proof_entry EffectEntry de in
+      [], OpaqueEntry de, false
   | ParameterEntry e ->
-    [], ConstantEntry (PureEntry, Entries.ParameterEntry e), not (Lib.is_modtype_strict())
+    [], ConstantEntry (Entries.ParameterEntry e), not (Lib.is_modtype_strict())
   | PrimitiveEntry e ->
-    [], ConstantEntry (PureEntry, Entries.PrimitiveEntry e), false
+    [], ConstantEntry (Entries.PrimitiveEntry e), false
   in
-  let kn, eff = Global.add_constant ~side_effect name decl in
+  let kn = Global.add_constant name decl in
   if unsafe || is_unsafe_typing_flags() then feedback_axiom();
-  kn, eff, export
+  kn, export
 
 let declare_constant ?(local = ImportDefaultBehavior) ~name ~kind cd =
   let () = check_exists name in
-  let kn, (), export = define_constant ~side_effect:PureEntry ~name cd in
+  let kn, export = define_constant ~name cd in
   (* Register the libobjects attached to the constants and its subproofs *)
   let () = List.iter register_side_effect export in
   let () = register_constant kn kind local in
   kn
 
-let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind cd =
-  let kn, eff, export = define_constant ~side_effect:EffectEntry ~name cd in
-  let () = assert (CList.is_empty export) in
+let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind de =
+  let kn, eff =
+    let de =
+      if not de.proof_entry_opaque then
+        DefinitionEff (cast_proof_entry de)
+      else
+        let de = cast_opaque_proof_entry PureEntry de in
+        OpaqueEff de
+    in
+    Global.add_private_constant name de
+  in
   let () = register_constant kn kind local in
   let seff_roles = match role with
   | None -> Cmap.empty
   | Some r -> Cmap.singleton kn r
   in
-  let eff = { Evd.seff_private = eff.Entries.seff_wrap; Evd.seff_roles; } in
+  let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
   kn, eff
 
 (** Declaration of section variables and local definitions *)
