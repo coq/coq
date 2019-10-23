@@ -12,7 +12,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rseries.
 Require Import Max.
-Require Import Omega.
+Require Import Lia.
 Local Open Scope R_scope.
 
 (*****************************************************************)
@@ -1155,7 +1155,7 @@ Proof.
   rewrite Rmult_1_r; apply Rle_trans with (INR M_nat).
   left; rewrite INR_IZR_INZ.
   rewrite <- H4; assert (H8 := archimed (Rabs x)); elim H8; intros; assumption.
-  apply le_INR; omega.
+  apply le_INR; lia.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   ring.

@@ -14,7 +14,7 @@ Require Import SeqSeries.
 Require Import Rtrigo_def.
 Require Import Cos_rel.
 Require Import Max.
-Require Import Omega.
+Require Import Lia.
 Local Open Scope nat_scope.
 Local Open Scope R_scope.
 
@@ -213,7 +213,7 @@ Proof.
   apply le_n_S.
   apply plus_le_compat_l; assumption.
   rewrite pred_of_minus.
-  omega.
+  lia.
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
@@ -236,7 +236,7 @@ Proof.
   apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
   apply C_maj.
-  omega.
+  lia.
   right.
   unfold Rdiv; rewrite Rmult_comm.
   unfold Binomial.C.
@@ -248,7 +248,7 @@ Proof.
   unfold Rsqr; reflexivity.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
-  omega.
+  lia.
   apply INR_fact_neq_0.
   unfold Rdiv; rewrite Rmult_comm.
   unfold Binomial.C.
@@ -258,7 +258,7 @@ Proof.
   replace (2 * S (N + n) - 2 * S (n0 + n))%nat with (2 * (N - n0))%nat.
   rewrite mult_INR.
   reflexivity.
-  omega.
+  lia.
   apply INR_fact_neq_0.
   apply Rle_trans with
     (sum_f_R0 (fun k:nat => INR N / INR (fact (S N)) * C ^ (4 * N)) (pred N)).
@@ -279,7 +279,7 @@ Proof.
   apply Rmult_le_compat_l.
   apply Rle_0_sqr.
   apply le_INR.
-  omega.
+  lia.
   rewrite Rmult_comm; unfold Rdiv; apply Rmult_le_compat_l.
   apply pos_INR.
   apply Rle_trans with (/ INR (fact (S (N + n)))).
@@ -458,7 +458,7 @@ Proof.
     (2 * (N - n0) + 1 + (2 * S (n0 + n) + 1))%nat.
   repeat rewrite pow_add.
   ring.
-  omega.
+  lia.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   apply Rle_ge; left; apply Rinv_0_lt_compat.
@@ -517,7 +517,7 @@ Proof.
   replace (2 * S (S (n0 + n)))%nat with (S (2 * S (n0 + n) + 1)).
   apply le_n_Sn.
   ring.
-  omega.
+  lia.
   right.
   unfold Rdiv; rewrite Rmult_comm.
   unfold Binomial.C.
@@ -529,7 +529,7 @@ Proof.
   unfold Rsqr; reflexivity.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
-  omega.
+  lia.
   apply INR_fact_neq_0.
   unfold Rdiv; rewrite Rmult_comm.
   unfold Binomial.C.
@@ -540,7 +540,7 @@ Proof.
     (2 * (N - n0) + 1)%nat.
   rewrite mult_INR.
   reflexivity.
-  omega.
+  lia.
   apply INR_fact_neq_0.
   apply Rle_trans with
     (sum_f_R0 (fun k:nat => INR N / INR (fact (S (S N))) * C ^ (4 * S N))
@@ -563,8 +563,8 @@ Proof.
   apply Rle_0_sqr.
   replace (S (pred (N - n))) with (N - n)%nat.
   apply le_INR.
-  omega.
-  omega.
+  lia.
+  lia.
   rewrite Rmult_comm; unfold Rdiv; apply Rmult_le_compat_l.
   apply pos_INR.
   apply Rle_trans with (/ INR (fact (S (S (N + n))))).
@@ -592,7 +592,7 @@ Proof.
   rewrite Rmult_1_r.
   apply le_INR.
   apply fact_le.
-  omega.
+  lia.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   rewrite sum_cte.

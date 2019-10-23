@@ -17,7 +17,7 @@ Require Import PSeries_reg.
 Require Import Div2.
 Require Import Even.
 Require Import Max.
-Require Import Omega.
+Require Import Lia.
 Local Open Scope nat_scope.
 Local Open Scope R_scope.
 
@@ -488,8 +488,8 @@ Proof.
   rewrite div2_S_double.
   apply S_pred with 0%nat; apply H3.
   reflexivity.
-  omega.
-  omega.
+  lia.
+  lia.
   rewrite H2.
   replace (pred (S (2 * N0))) with (2 * N0)%nat; [ idtac | reflexivity ].
   replace (S (S (2 * N0))) with (2 * S N0)%nat.
@@ -549,15 +549,15 @@ Proof.
   rewrite H6.
   replace (pred (2 * N1)) with (S (2 * pred N1)).
   rewrite div2_S_double.
-  omega.
-  omega.
+  lia.
+  lia.
   assert (0 < n)%nat.
   apply lt_le_trans with 2%nat.
   apply lt_O_Sn.
   apply le_trans with (max (2 * S N0) 2).
   apply le_max_r.
   apply H3.
-  omega.
+  lia.
   rewrite H6.
   replace (pred (S (2 * N1))) with (2 * N1)%nat.
   rewrite div2_double.

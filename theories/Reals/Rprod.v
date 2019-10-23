@@ -14,7 +14,7 @@ Require Import Rfunctions.
 Require Import Rseries.
 Require Import PartSum.
 Require Import Binomial.
-Require Import Omega.
+Require Import Lia.
 Local Open Scope R_scope.
 
 (** TT Ak; 0<=k<=N *)
@@ -34,16 +34,16 @@ Lemma prod_SO_split :
     prod_f_R0 An k * prod_f_R0 (fun l:nat => An (k +1+l)%nat) (n - k -1).
 Proof.
   intros; induction  n as [| n Hrecn].
-  absurd (k < 0)%nat; omega.
-  cut (k = n \/ (k < n)%nat);[intro; elim H0; intro|omega].
-  replace (S n - k - 1)%nat with O; [rewrite H1; simpl|omega].
+  absurd (k < 0)%nat; lia.
+  cut (k = n \/ (k < n)%nat);[intro; elim H0; intro|lia].
+  replace (S n - k - 1)%nat with O; [rewrite H1; simpl|lia].
   replace (n+1+0)%nat with (S n); ring.
-  replace (S n - k-1)%nat with (S (n - k-1));[idtac|omega].
+  replace (S n - k-1)%nat with (S (n - k-1));[idtac|lia].
   simpl; replace (k + S (n - k))%nat with (S n).
   replace (k + 1 + S (n - k - 1))%nat with (S n).
   rewrite Hrecn; [ ring | assumption ].
-  omega.
-  omega.
+  lia.
+  lia.
 Qed.
 
 (**********)
@@ -116,11 +116,11 @@ Proof.
   assert (forall (n:nat), (0 < n)%nat ->
      (if eq_nat_dec n 0 then 1 else INR n) = INR n).
   intros n; case (eq_nat_dec n 0); auto with real.
-  intros; absurd (0 < n)%nat; omega.
+  intros; absurd (0 < n)%nat; lia.
   intros; unfold Rsqr; repeat rewrite fact_prodSO.
   cut ((k=N)%nat \/ (k < N)%nat \/ (N < k)%nat).
   intro H2; elim H2; intro H3.
-  rewrite H3; replace (2*N-N)%nat with N;[right; ring|omega].
+  rewrite H3; replace (2*N-N)%nat with N;[right; ring|lia].
   case H3; intro; clear H2 H3.
   rewrite (prod_SO_split (fun l:nat => if eq_nat_dec l 0 then 1 else INR l) (2 * N - k) N).
   rewrite Rmult_assoc; apply Rmult_le_compat_l.
@@ -133,12 +133,12 @@ Proof.
   apply prod_SO_Rle; intros; split; auto.
   rewrite H0.
   rewrite H0.
-  apply le_INR; omega.
-  omega.
-  omega.
+  apply le_INR; lia.
+  lia.
+  lia.
   assumption.
-  omega.
-  omega.
+  lia.
+  lia.
   rewrite <- (Rmult_comm (prod_f_R0 (fun l:nat =>
           if eq_nat_dec l 0 then 1 else INR l) k));
     rewrite (prod_SO_split (fun l:nat =>
@@ -154,13 +154,13 @@ Proof.
   apply prod_SO_Rle; intros; split; auto.
   rewrite H0.
   rewrite H0.
-  apply le_INR; omega.
-  omega.
-  omega.
-  omega.
-  omega.
+  apply le_INR; lia.
+  lia.
+  lia.
+  lia.
+  lia.
   assumption.
-  omega.
+  lia.
 Qed.
 
 
@@ -192,5 +192,5 @@ Proof.
   reflexivity.
   rewrite mult_INR; apply prod_neq_R0; apply INR_fact_neq_0.
   apply prod_neq_R0; apply INR_fact_neq_0.
-  omega.
+  lia.
 Qed.

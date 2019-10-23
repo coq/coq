@@ -11,7 +11,6 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import Ranalysis1.
-Require Import Omega.
 Local Open Scope R_scope.
 
 (**********)
