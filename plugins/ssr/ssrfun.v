@@ -56,6 +56,10 @@ Require Import ssreflect.
                     Structure inference, as in the implementation of
                     the mxdirect predicate in matrix.v.
 
+ - The empty type:
+            void == a notation for the Empty_set type of the standard library.
+       of_void T == the canonical injection void -> T.
+
  - Sigma types:
            tag w == the i of w : {i : I & T i}.
         tagged w == the T i component of w : {i : I & T i}.
@@ -483,6 +487,12 @@ Arguments idfun {T} x /.
 
 Definition phant_id T1 T2 v1 v2 := phantom T1 v1 -> phantom T2 v2.
 
+(** The empty type. **)
+
+Notation void := Empty_set.
+
+Definition of_void T (x : void) : T := match x with end.
+
 (**  Strong sigma types.  **)
 
 Section Tag.
@@ -641,6 +651,9 @@ End Injections.
 
 Lemma Some_inj {T : nonPropType} : injective (@Some T).
 Proof. by move=> x y []. Qed.
+
+Lemma of_voidK T : pcancel (of_void T) [fun _ => None].
+Proof. by case. Qed.
 
 (**  cancellation lemmas for dependent type casts. **)
 Lemma esymK T x y : cancel (@esym T x y) (@esym T y x).
