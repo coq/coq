@@ -16,7 +16,10 @@ let json_bool b =
   if b then str "true" else str "false"
 
 let json_global typ ref =
-  json_str (Common.pp_global typ ref)
+  if is_custom ref then
+    json_str (find_custom ref)
+  else
+    json_str (Common.pp_global typ ref)
 
 let json_id id =
   json_str (Id.to_string id)
