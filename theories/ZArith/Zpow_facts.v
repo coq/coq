@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import ZArith_base ZArithRing Omega Zcomplements Zdiv Znumtheory.
+Require Import ZArith_base ZArithRing Lia Zcomplements Zdiv Znumtheory.
 Require Export Zpower.
 Local Open Scope Z_scope.
 
@@ -49,7 +49,7 @@ Proof. intros. now apply Z.pow_le_mono_r. Qed.
 
 Theorem Zpower_lt_monotone a b c :
  1 < a -> 0 <= b < c -> a^b < a^c.
-Proof. intros. apply Z.pow_lt_mono_r; auto with zarith. Qed.
+Proof. intros. apply Z.pow_lt_mono_r; lia. Qed.
 
 Theorem Zpower_gt_1 x y : 1 < x -> 0 < y -> 1 < x^y.
 Proof. apply Z.pow_gt_1. Qed.
@@ -87,10 +87,10 @@ Proof.
   assert (Hn := Nat2Z.is_nonneg n).
   destruct p; simpl Pos.size_nat.
   - specialize IHn with p.
-    rewrite Pos2Z.inj_xI, Nat2Z.inj_succ, Z.pow_succ_r; omega.
+    rewrite Nat2Z.inj_succ, Z.pow_succ_r; lia.
   - specialize IHn with p.
-    rewrite Pos2Z.inj_xO, Nat2Z.inj_succ, Z.pow_succ_r; omega.
-  - split; auto with zarith.
+    rewrite Nat2Z.inj_succ, Z.pow_succ_r; lia.
+  - split. lia.
     intros _. apply Z.pow_gt_1. easy.
     now rewrite Nat2Z.inj_succ, Z.lt_succ_r.
 Qed.
@@ -103,8 +103,8 @@ Proof.
   intros Hn; destruct (Z.le_gt_cases 0 q) as [H1|H1].
   - pattern q; apply natlike_ind; trivial.
     clear q H1. intros q Hq Rec. rewrite !Z.pow_succ_r; trivial.
-    rewrite Z.mul_mod_idemp_l; auto with zarith.
-    rewrite Z.mul_mod, Rec, <- Z.mul_mod; auto with zarith.
+    rewrite Z.mul_mod_idemp_l by lia.
+    rewrite Z.mul_mod, Rec, <- Z.mul_mod by lia. reflexivity.
   - rewrite !Z.pow_neg_r; auto with zarith.
 Qed.
 
@@ -163,7 +163,7 @@ Qed.
 Lemma Zpower_divide p q : 0 < q -> (p | p ^ q).
 Proof.
   exists (p^(q - 1)).
-  rewrite Z.mul_comm, <- Z.pow_succ_r; f_equal; auto with zarith.
+  rewrite Z.mul_comm, <- Z.pow_succ_r by lia; f_equal; lia.
 Qed.
 
 Theorem rel_prime_Zpower_r i p q :
@@ -190,7 +190,7 @@ Proof.
   - simpl; intros.
     assert (2<=p) by (apply prime_ge_2; auto).
     assert (p<=1) by (apply Z.divide_pos_le; auto with zarith).
-    omega.
+    lia.
   - intros n Hn Rec.
     rewrite Z.pow_succ_r by trivial. intros.
     assert (2<=p) by (apply prime_ge_2; auto).
@@ -213,11 +213,11 @@ Proof.
   exists 1; rewrite Z.pow_1_r; apply prime_power_prime with n; auto.
   case not_prime_divide with (2 := Hpr); auto.
   intros p1 ((Hp1, Hpq1),(q1,->)).
-  assert (Hq1 : 0 < q1) by (apply Z.mul_lt_mono_pos_r with p1; auto with zarith).
-  destruct (IH p1) with p n as (r1,Hr1); auto with zarith.
+  assert (Hq1 : 0 < q1) by (apply Z.mul_lt_mono_pos_r with p1; lia).
+  destruct (IH p1) with p n as (r1,Hr1). 3-4: assumption. 1-2: lia.
   transitivity (q1 * p1); trivial. exists q1; auto with zarith.
-  destruct (IH q1) with p n as (r2,Hr2); auto with zarith.
-  split; auto with zarith.
+  destruct (IH q1) with p n as (r2,Hr2). 3-4: assumption. 2: lia.
+  split. lia.
   rewrite <- (Z.mul_1_r q1) at 1.
   apply Z.mul_lt_mono_pos_l; auto with zarith.
   transitivity (q1 * p1); trivial. exists p1; auto with zarith.
