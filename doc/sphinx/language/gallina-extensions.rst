@@ -182,7 +182,7 @@ other arguments are the parameters of the inductive type.
    recursive (references to the record's name in the type of its field
    raises an  error). To define recursive records, one can use the ``Inductive``
    and ``CoInductive`` keywords, resulting in an inductive or co-inductive record.
-   Definition of mutal inductive or co-inductive records are also allowed, as long
+   Definition of mutually inductive or co-inductive records are also allowed, as long
    as all of the types in the block are records.
 
 .. note:: Induction schemes are automatically generated for inductive records.
@@ -1415,7 +1415,7 @@ is needed. In this translation, names in the file system are called
 *physical* paths while |Coq| names are contrastingly called *logical*
 names.
 
-A logical prefix Lib can be associated to a physical pathpath using
+A logical prefix Lib can be associated with a physical path using
 the command line option ``-Q`` `path` ``Lib``. All subfolders of path are
 recursively associated to the logical path ``Lib`` extended with the
 corresponding suffix coming from the physical path. For instance, the

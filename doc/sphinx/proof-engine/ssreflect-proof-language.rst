@@ -514,7 +514,7 @@ is a valid tactic expression.
 The pose tactic is also improved for the local definition of higher
 order terms. Local definitions of functions can use the same syntax as
 global ones.
-For example, the tactic :tacn:`pose <pose (ssreflect)>` supoprts parameters:
+For example, the tactic :tacn:`pose <pose (ssreflect)>` supports parameters:
 
 .. example::
 
@@ -684,7 +684,7 @@ conditions:
 + If this head is a projection of a canonical structure, then
   canonical structure equations are used for the matching.
 + If the head of term is *not* a constant, the subterm should have the
-  same structure (λ abstraction,let…in structure …).
+  same structure (λ abstraction, let…in structure …).
 + If the head of :token:`term` is a hole, the subterm should have at least as
   many arguments as :token:`term`.
 
@@ -1151,7 +1151,7 @@ is basically equivalent to
    move: a H1 H2; tactic => a H1 H2.
 
 
-with two differences: the in tactical will preserve the body of a ifa
+with two differences: the in tactical will preserve the body of an if a
 is a defined constant, and if the ``*`` is omitted it will use a
 temporary abbreviation to hide the statement of the goal from
 ``tactic``.
@@ -1706,7 +1706,7 @@ Intro patterns
   execution of tactic should thus generate exactly m subgoals, unless the
   ``[…]`` :token:`i_pattern` comes after an initial ``//`` or ``//=``
   :token:`s_item` that closes some of the goals produced by ``tactic``, in
-  which case exactly m subgoals should remain after thes- item, or we have
+  which case exactly m subgoals should remain after the :token:`s_item`, or we have
   the trivial branching :token:`i_pattern` [], which always does nothing,
   regardless of the number of remaining subgoals.
 ``[`` :token:`i_item` * ``| … |`` :token:`i_item` * ``]``
@@ -2240,8 +2240,8 @@ then the tactic
 
    tactic ; last k [ tactic1 |…| tacticm ] || tacticn.
 
-where natural denotes the integer k as above, applies tactic1 to the n
-−k + 1-th goal, … tacticm to the n −k + 2 − m-th goal and tactic n
+where natural denotes the integer :math:`k` as above, applies tactic1 to the
+:math:`n−k+1`\-th goal, … tacticm to the :math:`n−k+2`\-th goal and tacticn
 to the others.
 
 .. example::
@@ -2631,7 +2631,7 @@ The :token:`i_item` and :token:`s_item` can be used to interpret the asserted
 hypothesis with views (see section :ref:`views_and_reflection_ssr`) or simplify the resulting
 goals.
 
-The ``have`` tactic also supports a ``suff`` modifier which allows for
+The :tacn:`have` tactic also supports a ``suff`` modifier which allows for
 asserting that a given statement implies the current goal without
 copying the goal itself.
 
@@ -2651,7 +2651,7 @@ compatible with the presence of a list of binders.
 Generating let in context entries with have
 ```````````````````````````````````````````
 
-Since |SSR| 1.5 the ``have`` tactic supports a “transparent” modifier
+Since |SSR| 1.5 the :tacn:`have` tactic supports a “transparent” modifier
 to generate let in context entries: the ``@`` symbol in front of the
 context entry name.
 
@@ -2670,7 +2670,7 @@ context entry name.
      Lemma test n m (H : m + 1 < n) : True.
      have @i : 'I_n by apply: (Sub m); omega.
 
-Note that the sub-term produced by ``omega`` is in general huge and
+Note that the sub-term produced by :tacn:`omega` is in general huge and
 uninteresting, and hence one may want to hide it.
 For this purpose the ``[: name ]`` intro pattern and the tactic
 ``abstract`` (see :ref:`abstract_ssr`) are provided.
@@ -2782,7 +2782,7 @@ The
 ``have`` and ``suff`` tactics are equivalent and have the same syntax but:
 
 
-+ the order of the generated subgoals is inversed
++ the order of the generated subgoals is inverted
 + the optional clear item is still performed in the *second*
   branch. This means that the tactic:
 
@@ -5451,7 +5451,7 @@ equivalences are indeed taken into account, otherwise only single
    name of an open module. This command returns the list of lemmas:
 
    + whose *conclusion* contains a subterm matching the optional first
-     pattern. A - reverses the test, producing the list of lemmas whose
+     pattern. A ``-`` reverses the test, producing the list of lemmas whose
      conclusion does not contain any subterm matching the pattern;
    + whose name contains the given string. A ``-`` prefix reverses the test,
      producing the list of lemmas whose name does not contain the string. A

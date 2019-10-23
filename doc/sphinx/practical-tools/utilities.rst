@@ -359,7 +359,7 @@ line timing data:
     pass  ``TIMING=before`` or ``TIMING=after`` rather than ``TIMING=1``.
 
     .. note::
-       The sorting used here is the same as in the ``print-pretty-timed -diff`` target.
+       The sorting used here is the same as in the ``print-pretty-timed-diff`` target.
 
     .. note::
        This target requires python to build the table.
