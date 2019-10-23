@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Omega Relations Multiset SetoidList.
+Require Import Lia Relations Multiset SetoidList.
 
 (** This file is deprecated, use [Permutation.v] instead.
 
@@ -189,7 +189,7 @@ Lemma permut_conv_inv :
   forall e l1 l2, permutation (e :: l1) (e :: l2) -> permutation l1 l2.
 Proof.
   intros e l1 l2; unfold permutation, meq; simpl; intros H a;
-    generalize (H a); apply plus_reg_l.
+    generalize (H a); lia.
 Qed.
 
 Lemma permut_app_inv1 :
@@ -199,9 +199,7 @@ Proof.
     intros H a; generalize (H a); clear H.
   do 2 rewrite list_contents_app.
   simpl.
-  intros; apply plus_reg_l with (multiplicity (list_contents l) a).
-  rewrite plus_comm; rewrite H; rewrite plus_comm.
-  trivial.
+  lia.
 Qed.
 
 (** we can use [multiplicity] to define [InA] and [NoDupA]. *)
@@ -220,8 +218,7 @@ Proof.
     intros H a; generalize (H a); clear H.
   do 2 rewrite list_contents_app.
   simpl.
-  intros; apply plus_reg_l with (multiplicity (list_contents l) a).
-  trivial.
+  lia.
 Qed.
 
 Lemma permut_remove_hd_eq :
@@ -230,13 +227,9 @@ Lemma permut_remove_hd_eq :
 Proof.
   unfold permutation, meq; simpl; intros l l1 l2 a b Heq H a0.
   specialize H with a0.
-  rewrite list_contents_app in *; simpl in *.
-  apply plus_reg_l with (if eqA_dec a a0 then 1 else 0).
-  rewrite H; clear H.
-  symmetry; rewrite plus_comm, <- ! plus_assoc; f_equal.
-  rewrite plus_comm.
-  destruct (eqA_dec a a0) as [Ha|Ha]; rewrite Heq in Ha;
-    decide (eqA_dec b a0) with Ha; reflexivity.
+  rewrite list_contents_app in *. simpl in *.
+  destruct (eqA_dec a _) as [Ha|Ha]; rewrite Heq in Ha; revert H;
+    decide (eqA_dec b a0) with Ha; lia.
 Qed.
 
 Lemma permut_remove_hd :
@@ -342,9 +335,9 @@ Proof.
   rewrite multiplicity_InA.
   specialize (H a).
   rewrite if_eqA_refl in H.
-  clear IHl; omega.
+  clear IHl; lia.
   rewrite IHl; intros.
-  specialize (H a0). omega.
+  specialize (H a0). lia.
 Qed.
 
 (** Permutation is compatible with InA. *)
@@ -395,14 +388,14 @@ Proof.
   apply permut_length_1.
   red; red; intros.
   specialize (P a). simpl in *.
-  rewrite (@if_eqA_rewrite_l a1 a2 a) in P by auto. omega.
+  rewrite (@if_eqA_rewrite_l a1 a2 a) in P by auto. lia.
   right.
   inversion_clear H0; [|inversion H].
   split; auto.
   apply permut_length_1.
   red; red; intros.
   specialize (P a); simpl in *.
-  rewrite (@if_eqA_rewrite_l a1 b2 a) in P by auto. omega.
+  rewrite (@if_eqA_rewrite_l a1 b2 a) in P by auto. lia.
 Qed.
 
 (** Permutation is compatible with length. *)
@@ -434,7 +427,7 @@ Proof.
   rewrite multiplicity_NoDupA in H, H0.
   generalize (H a) (H0 a) (H1 a); clear H H0 H1.
   do 2 rewrite multiplicity_InA.
-  destruct 3; omega.
+  destruct 3; lia.
 Qed.
 
 End Permut.
