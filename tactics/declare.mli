@@ -83,6 +83,15 @@ val declare_private_constant
   -> unit proof_entry
   -> Constant.t * Evd.side_effects
 
+(** [inline_private_constants ~sideff ~univs env ce] will inline the
+   constants in [ce]'s body and return the body plus the updated
+   [UState.t]. *)
+val inline_private_constants
+  :  univs:UState.t
+  -> Environ.env
+  -> Evd.side_effects proof_entry
+  -> Constr.t * UState.t
+
 (** Since transparent constants' side effects are globally declared, we
  *  need that *)
 val set_declare_scheme :

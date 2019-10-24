@@ -326,6 +326,12 @@ let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind 
   let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
   kn, eff
 
+let inline_private_constants ~univs env ce =
+  let body, eff = Future.force ce.proof_entry_body in
+  let cb, ctx = Safe_typing.inline_private_constants env (body, eff.Evd.seff_private) in
+  let univs = UState.merge ~sideff:true Evd.univ_rigid univs ctx in
+  cb, univs
+
 (** Declaration of section variables and local definitions *)
 type variable_declaration =
   | SectionLocalDef of Evd.side_effects proof_entry
