@@ -234,23 +234,6 @@ let change_property_sort evd toSort princ princName =
     )
     (List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) princ_info.Tactics.params)
 
-(* XXX: To be cleaned up soon in favor of common save path. *)
-let save name const ?hook uctx scope kind =
-  let open Declare in
-  let open DeclareDef in
-  let fix_exn = Future.fix_exn_of const.Declare.proof_entry_body in
-  let r = match scope with
-    | Discharge ->
-      let c = SectionLocalDef const in
-      let () = declare_variable ~name ~kind c in
-      GlobRef.VarRef name
-    | Global local ->
-      let kn = declare_constant ~name ~kind ~local (DefinitionEntry const) in
-      GlobRef.ConstRef kn
-  in
-  DeclareDef.Hook.(call ?hook ~fix_exn { S.uctx; obls = []; scope; dref = r });
-  definition_message name
-
 let generate_functional_principle (evd: Evd.evar_map ref)
     interactive_proof
     old_princ_type sorts new_princ_name funs i proof_tac
@@ -307,7 +290,14 @@ let generate_functional_principle (evd: Evd.evar_map ref)
      Don't forget to close the goal if an error is raised !!!!
   *)
   let uctx = Evd.evar_universe_context sigma in
-  save new_princ_name entry ~hook uctx (DeclareDef.Global Declare.ImportDefaultBehavior) Decls.(IsProof Theorem)
+  let hook_data = hook, uctx, [] in
+  let _ : Names.GlobRef.t = DeclareDef.declare_definition
+      ~name:new_princ_name ~hook_data
+      ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
+      ~kind:Decls.(IsProof Theorem)
+      UnivNames.empty_binders
+      entry [] in
+  ()
   with e when CErrors.noncritical e ->
     raise (Defining_principle e)
 
