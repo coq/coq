@@ -67,7 +67,3 @@ val template_polymorphism_candidate :
    can be made parametric in its conclusion sort, if one is given.
    If the [Template Check] flag is false we just check that the conclusion sort
    is not small. *)
-
-val sign_level : Environ.env -> Evd.evar_map -> Constr.rel_declaration list -> Univ.Universe.t
-(** [sign_level env sigma ctx] computes the universe level of the context [ctx]
-    as the [sup] of its individual assumptions, which should be well-typed in [env] and [sigma] *)
