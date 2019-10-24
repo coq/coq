@@ -12,12 +12,12 @@
 #load "str.cma"
 open Printf
 
-let coq_version = "8.10.0"
-let coq_macos_version = "8.10.0" (** "[...] should be a string comprised of
+let coq_version = "8.10.1"
+let coq_macos_version = "8.10.1" (** "[...] should be a string comprised of
 three non-negative, period-separated integers [...]" *)
 let vo_magic = 81000
 let state_magic = 581000
-let is_a_released_version = false
+let is_a_released_version = true
 let distributed_exec =
   ["coqtop.opt"; "coqidetop.opt"; "coqqueryworker.opt"; "coqproofworker.opt"; "coqtacticworker.opt";
    "coqc.opt";"coqchk";"coqdoc";"coqworkmgr";"coq_makefile";"coq-tex";"coqwc";"csdpcert";"coqdep"]
