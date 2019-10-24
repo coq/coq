@@ -15,7 +15,6 @@ open Util
 open Constr
 open Context
 open Environ
-open Declare
 open Names
 open Libnames
 open Nameops
@@ -574,7 +573,7 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) mie p
   | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let (_, kn), prim = declare_mind mie in
+  let (_, kn), prim = DeclareInd.declare_mind mie in
   let mind = Global.mind_of_delta_kn kn in
   if primitive_expected && not prim then warn_non_primitive_record (mind,0);
   DeclareUniv.declare_univ_binders (GlobRef.IndRef (mind,0)) pl;

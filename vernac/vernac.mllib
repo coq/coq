@@ -29,6 +29,7 @@ ComDefinition
 Classes
 ComPrimitive
 ComAssumption
+DeclareInd
 ComInductive
 ComFixpoint
 ComProgramFixpoint

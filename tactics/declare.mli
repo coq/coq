@@ -88,11 +88,6 @@ val declare_private_constant
 val set_declare_scheme :
   (string -> (inductive * Constant.t) array -> unit) -> unit
 
-(** [declare_mind me] declares a block of inductive types with
-   their constructors in the current section; it returns the path of
-   the whole block and a boolean indicating if it is a primitive record. *)
-val declare_mind : mutual_inductive_entry -> Libobject.object_name * bool
-
 (** Declaration messages *)
 
 val definition_message : Id.t -> unit
@@ -102,7 +97,7 @@ val cofixpoint_message : Id.t list -> unit
 val recursive_message : bool (** true = fixpoint *) ->
   int array option -> Id.t list -> unit
 
-val exists_name : Id.t -> bool
+val check_exists : Id.t -> unit
 
 (* Used outside this module only in indschemes *)
 exception AlreadyDeclared of (string option * Id.t)
