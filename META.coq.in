@@ -326,6 +326,21 @@ package "plugins" (
     archive(native)  = "micromega_plugin.cmx"
   )
 
+  package "zify" (
+
+    description = "Coq Zify plugin"
+    version     = "8.11"
+
+    requires    = "coq.plugins.ltac"
+    directory   = "micromega"
+
+    archive(byte)    = "zify_plugin.cmo"
+    archive(native)  = "zify_plugin.cmx"
+
+    plugin(byte)    = "zify_plugin.cmo"
+    plugin(native)  = "zify_plugin.cmxs"
+  )
+
   package "setoid_ring" (
 
     description = "Coq newring plugin"
