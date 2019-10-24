@@ -45,6 +45,7 @@ Changes to the XML protocol are documented as part of [`dev/doc/changes.md`](/de
   - [File Loaded](#feedback-fileloaded)
   - [Message](#feedback-message)
   - [Custom](#feedback-custom)
+* [Highlighting Text](#highlighting)
 
 Sentences: each command sent to Coqtop is a "sentence"; they are typically terminated by ".\s" (followed by whitespace or EOF).
 Examples: "Lemma a: True.", "(* asdf *) Qed.", "auto; reflexivity."
@@ -753,3 +754,43 @@ Ex: `status = "Idle"` or `status = "proof: myLemmaName"` or `status = "Dead"`
 </feedback>
 ```
 
+## <a name="highlighting">Highlighting Text</a>
+
+[Proof diffs](https://coq.inria.fr/distrib/current/refman/proof-engine/proof-handling.html#showing-differences-between-proof-steps)
+highlight differences between the current and previous proof states in the displayed output.
+These are represented by tags embedded in output fields of the XML document.
+
+There are 4 tags that indicate how the enclosed text should be highlighted:
+- diff.added - added text
+- diff.removed - removed text
+- diff.added.bg - unchanged text in a line that has additions ("bg" for "background")
+- diff.removed.bg - unchanged text in a line that has removals
+
+CoqIDE, Proof General and coqtop currently use 2 shades of green and 2 shades of red
+as the background color for highlights.  Coqtop and CoqIDE also apply underlining and/or
+strikeout highlighting for the sake of the color blind.
+
+For example, `<diff.added>ABC</diff.added>` indicates that "ABC" should be highlighted
+as added text.  Tags can be nested, such as:
+`<diff.added.bg>A <diff.added> + 1</diff.added> + B</diff.added.bg>`.  IDE code
+displaying highlighted strings should maintain a stack for nested tags and the associated
+highlight.  Currently the diff code only nests at most 2 tags deep.
+If an IDE uses other highlights such as text foreground color or italic text, it may
+need to merge the background color with those other highlights to give the desired
+(IDE dependent) behavior.
+
+The current implementations avoid highlighting white space at the beginning or the
+end of a line.  This gives a better appearance.
+
+There may be additional text that is marked with other tags in the output text.  IDEs probably
+should ignore and not display tags they don't recognize.
+
+Some internal details about generating tags within Coq (e.g. if you want to add
+additional tags):
+
+Tagged output strings are generated from Pp.t's.  Use Pp.tag to highlight a Pp.t using
+one of the tags listed above.  A span of tokens can be marked by using "start.<tag>" on
+the first token and "end.<tag>" on the last token.  (Span markers are needed because a span of
+tokens in the output may not match nesting of layout boxes in the Pp.t.)
+The conversion from the Pp.t to the XML-tagged string replaces the "start.\*" and "end.\*"
+tags with the basic tags.
