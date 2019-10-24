@@ -277,6 +277,8 @@ package "plugins" (
     archive(byte)    = "ltac_plugin.cmo"
     archive(native)  = "ltac_plugin.cmx"
 
+    plugin(byte)    = "ltac_plugin.cmo"
+    plugin(native)  = "ltac_plugin.cmxs"
   )
 
   package "tauto" (
@@ -289,6 +291,9 @@ package "plugins" (
 
     archive(byte)    = "tauto_plugin.cmo"
     archive(native)  = "tauto_plugin.cmx"
+
+    plugin(byte)    = "tauto_plugin.cmo"
+    plugin(native)  = "tauto_plugin.cmxs"
   )
 
   package "omega" (
@@ -301,6 +306,9 @@ package "plugins" (
 
     archive(byte)    = "omega_plugin.cmo"
     archive(native)  = "omega_plugin.cmx"
+
+    plugin(byte)    = "omega_plugin.cmo"
+    plugin(native)  = "omega_plugin.cmxs"
   )
 
   package "micromega" (
@@ -313,6 +321,9 @@ package "plugins" (
 
     archive(byte)    = "micromega_plugin.cmo"
     archive(native)  = "micromega_plugin.cmx"
+
+    plugin(byte)    = "micromega_plugin.cmo"
+    plugin(native)  = "micromega_plugin.cmxs"
   )
 
   package "setoid_ring" (
@@ -325,6 +336,9 @@ package "plugins" (
 
     archive(byte)    = "newring_plugin.cmo"
     archive(native)  = "newring_plugin.cmx"
+
+    plugin(byte)    = "newring_plugin.cmo"
+    plugin(native)  = "newring_plugin.cmxs"
   )
 
   package "extraction" (
@@ -337,6 +351,9 @@ package "plugins" (
 
     archive(byte)    = "extraction_plugin.cmo"
     archive(native)  = "extraction_plugin.cmx"
+
+    plugin(byte)    = "extraction_plugin.cmo"
+    plugin(native)  = "extraction_plugin.cmxs"
   )
 
   package "cc" (
@@ -349,6 +366,9 @@ package "plugins" (
 
     archive(byte)    = "cc_plugin.cmo"
     archive(native)  = "cc_plugin.cmx"
+
+    plugin(byte)    = "cc_plugin.cmo"
+    plugin(native)  = "cc_plugin.cmxs"
   )
 
   package "firstorder" (
@@ -361,6 +381,9 @@ package "plugins" (
 
     archive(byte)    = "ground_plugin.cmo"
     archive(native)  = "ground_plugin.cmx"
+
+    plugin(byte)    = "ground_plugin.cmo"
+    plugin(native)  = "ground_plugin.cmxs"
   )
 
   package "rtauto" (
@@ -373,6 +396,9 @@ package "plugins" (
 
     archive(byte)    = "rtauto_plugin.cmo"
     archive(native)  = "rtauto_plugin.cmx"
+
+    plugin(byte)    = "rtauto_plugin.cmo"
+    plugin(native)  = "rtauto_plugin.cmxs"
   )
 
   package "btauto" (
@@ -385,6 +411,9 @@ package "plugins" (
 
     archive(byte)    = "btauto_plugin.cmo"
     archive(native)  = "btauto_plugin.cmx"
+
+    plugin(byte)    = "btauto_plugin.cmo"
+    plugin(native)  = "btauto_plugin.cmxs"
   )
 
   package "funind" (
@@ -397,6 +426,9 @@ package "plugins" (
 
     archive(byte)    = "recdef_plugin.cmo"
     archive(native)  = "recdef_plugin.cmx"
+
+    plugin(byte)    = "recdef_plugin.cmo"
+    plugin(native)  = "recdef_plugin.cmxs"
   )
 
   package "nsatz" (
@@ -409,6 +441,9 @@ package "plugins" (
 
     archive(byte)    = "nsatz_plugin.cmo"
     archive(native)  = "nsatz_plugin.cmx"
+
+    plugin(byte)    = "nsatz_plugin.cmo"
+    plugin(native)  = "nsatz_plugin.cmxs"
   )
 
   package "rsyntax" (
@@ -421,6 +456,9 @@ package "plugins" (
 
     archive(byte)    = "r_syntax_plugin.cmo"
     archive(native)  = "r_syntax_plugin.cmx"
+
+    plugin(byte)    = "r_syntax_plugin.cmo"
+    plugin(native)  = "r_syntax_plugin.cmxs"
   )
 
   package "int63syntax" (
@@ -433,6 +471,9 @@ package "plugins" (
 
     archive(byte)    = "int63_syntax_plugin.cmo"
     archive(native)  = "int63_syntax_plugin.cmx"
+
+    plugin(byte)    = "int63_syntax_plugin.cmo"
+    plugin(native)  = "int63_syntax_plugin.cmxs"
   )
 
   package "string_notation" (
@@ -445,6 +486,9 @@ package "plugins" (
 
     archive(byte)    = "string_notation_plugin.cmo"
     archive(native)  = "string_notation_plugin.cmx"
+
+    plugin(byte)    = "string_notation_plugin.cmo"
+    plugin(native)  = "string_notation_plugin.cmxs"
   )
 
   package "derive" (
@@ -457,6 +501,9 @@ package "plugins" (
 
     archive(byte)    = "derive_plugin.cmo"
     archive(native)  = "derive_plugin.cmx"
+
+    plugin(byte)    = "derive_plugin.cmo"
+    plugin(native)  = "derive_plugin.cmxs"
   )
 
   package "ssrmatching" (
@@ -469,6 +516,9 @@ package "plugins" (
 
     archive(byte)    = "ssrmatching_plugin.cmo"
     archive(native)  = "ssrmatching_plugin.cmx"
+
+    plugin(byte)    = "ssrmatching_plugin.cmo"
+    plugin(native)  = "ssrmatching_plugin.cmxs"
   )
 
   package "ssreflect" (
@@ -481,5 +531,8 @@ package "plugins" (
 
     archive(byte)    = "ssreflect_plugin.cmo"
     archive(native)  = "ssreflect_plugin.cmx"
+
+    plugin(byte)    = "ssreflect_plugin.cmo"
+    plugin(native)  = "ssreflect_plugin.cmxs"
   )
 )
