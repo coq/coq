@@ -32,9 +32,6 @@ open Hints
 
 module NamedDecl = Context.Named.Declaration
 
-(** Hint database named "typeclass_instances", created in prelude *)
-let typeclasses_db = "typeclass_instances"
-
 (** Options handling *)
 
 let typeclasses_debug = ref 0
@@ -986,7 +983,7 @@ module Search = struct
       evars in evd are independent of the rest of the evars *)
 
   let typeclasses_resolve env evd debug depth unique p =
-    let db = searchtable_map typeclasses_db in
+    let db = searchtable_map Classes.typeclasses_db in
     let st = Hint_db.transparent_state db in
     let modes = Hint_db.modes db in
     typeclasses_eauto env evd ?depth unique (modes,st) [db] p
@@ -1144,7 +1141,7 @@ let resolve_one_typeclass env ?(sigma=Evd.from_env env) gl unique =
   let (gl,t,sigma) = Goal.V82.mk_goal sigma nc gl in
   let (ev, _) = destEvar sigma t in
   let gls = { it = gl ; sigma = sigma; } in
-  let hints = searchtable_map typeclasses_db in
+  let hints = searchtable_map Classes.typeclasses_db in
   let st = Hint_db.transparent_state hints in
   let modes = Hint_db.modes hints in
   let depth = get_typeclasses_depth () in

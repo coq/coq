@@ -181,16 +181,16 @@ let to_debug v = match Value.to_int v with
 let debug = make_to_repr to_debug
 
 let to_strategy v = match Value.to_int v with
-| 0 -> Class_tactics.Bfs
-| 1 -> Class_tactics.Dfs
+| 0 -> Ltac_plugin.Class_tactics.Bfs
+| 1 -> Ltac_plugin.Class_tactics.Dfs
 | _ -> assert false
 
 let strategy = make_to_repr to_strategy
 
 let to_inversion_kind v = match Value.to_int v with
-| 0 -> Inv.SimpleInversion
-| 1 -> Inv.FullInversion
-| 2 -> Inv.FullInversionClear
+| 0 -> Ltac_plugin.Inv.SimpleInversion
+| 1 -> Ltac_plugin.Inv.FullInversion
+| 2 -> Ltac_plugin.Inv.FullInversionClear
 | _ -> assert false
 
 let inversion_kind = make_to_repr to_inversion_kind
@@ -534,7 +534,7 @@ let () = define_prim3 "tac_injection" bool (option intro_patterns) (option destr
 end
 
 let () = define_prim1 "tac_absurd" constr begin fun c ->
-  Contradiction.absurd c
+  Ltac_plugin.Contradiction.absurd c
 end
 
 let () = define_prim1 "tac_contradiction" (option constr_with_bindings) begin fun c ->

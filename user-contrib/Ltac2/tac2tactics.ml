@@ -372,10 +372,10 @@ let autorewrite ~all by ids cl =
   let ids = List.map Id.to_string ids in
   let cl = mk_clause cl in
   match by with
-  | None -> Autorewrite.auto_multi_rewrite ?conds ids cl
+  | None -> Ltac_plugin.Autorewrite.auto_multi_rewrite ?conds ids cl
   | Some by ->
     let by = thaw Tac2ffi.unit by in
-    Autorewrite.auto_multi_rewrite_with ?conds by ids cl
+    Ltac_plugin.Autorewrite.auto_multi_rewrite_with ?conds by ids cl
 
 (** Auto *)
 
@@ -390,7 +390,7 @@ let auto debug n lems dbs =
   Auto.h_auto ~debug n lems dbs
 
 let new_auto debug n lems dbs =
-  let make_depth n = snd (Eauto.make_dimension n None) in
+  let make_depth n = snd (Ltac_plugin.Eauto.make_dimension n None) in
   let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
   match dbs with
   | None -> Auto.new_full_auto ~debug (make_depth n) lems
@@ -401,17 +401,17 @@ let new_auto debug n lems dbs =
 let eauto debug n p lems dbs =
   let lems = List.map (fun c -> delayed_of_thunk Tac2ffi.constr c) lems in
   let dbs = Option.map (fun l -> List.map Id.to_string l) dbs in
-  Eauto.gen_eauto (Eauto.make_dimension n p) lems dbs
+  Ltac_plugin.Eauto.gen_eauto (Ltac_plugin.Eauto.make_dimension n p) lems dbs
 
 let typeclasses_eauto strategy depth dbs =
   let only_classes, dbs = match dbs with
   | None ->
-    true, [Class_tactics.typeclasses_db]
+    true, [Classes.typeclasses_db]
   | Some dbs ->
     let dbs = List.map Id.to_string dbs in
     false, dbs
   in
-  Class_tactics.typeclasses_eauto ~only_classes ?strategy ~depth dbs
+  Ltac_plugin.Class_tactics.typeclasses_eauto ~only_classes ?strategy ~depth dbs
 
 (** Inversion *)
 
@@ -431,18 +431,18 @@ let inversion knd arg pat ids =
     begin match arg with
     | None -> assert false
     | Some (_, Tactics.ElimOnAnonHyp n) ->
-      Inv.inv_clause knd pat ids (AnonHyp n)
+      Ltac_plugin.Inv.inv_clause knd pat ids (AnonHyp n)
     | Some (_, Tactics.ElimOnIdent {CAst.v=id}) ->
-      Inv.inv_clause knd pat ids (NamedHyp id)
+      Ltac_plugin.Inv.inv_clause knd pat ids (NamedHyp id)
     | Some (_, Tactics.ElimOnConstr c) ->
       let open Tactypes in
       let anon = CAst.make @@ IntroNaming Namegen.IntroAnonymous in
       Tactics.specialize c (Some anon) >>= fun () ->
-      Tacticals.New.onLastHypId (fun id -> Inv.inv_clause knd pat ids (NamedHyp id))
+      Tacticals.New.onLastHypId (fun id -> Ltac_plugin.Inv.inv_clause knd pat ids (NamedHyp id))
     end
   in
   on_destruction_arg inversion true (Some (None, arg))
 
 let contradiction c =
   let c = Option.map mk_with_bindings c in
-  Contradiction.contradiction c
+  Ltac_plugin.Contradiction.contradiction c

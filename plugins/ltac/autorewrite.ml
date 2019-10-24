@@ -288,4 +288,3 @@ let add_rew_rules base lrul =
         in incr counter;
           HintDN.add pat (!counter, rul) dn) HintDN.empty lrul
   in Lib.add_anonymous_leaf (inHintRewrite (base,lrul))
-

@@ -28,7 +28,7 @@ open Tactics
 open Logic
 open Libnames
 open Nametab
-open Contradiction
+open Ltac_plugin.Contradiction
 open Tactypes
 open Context.Named.Declaration
 

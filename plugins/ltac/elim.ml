@@ -173,5 +173,3 @@ let double_ind h1 h2 =
   end
 
 let h_double_induction = double_ind
-
-

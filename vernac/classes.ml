@@ -21,12 +21,13 @@ open Globnames
 open Constrintern
 open Constrexpr
 open Context.Rel.Declaration
-open Class_tactics
 open Libobject
 
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 (*i*)
+
+let typeclasses_db = "typeclass_instances"
 
 let set_typeclass_transparency c local b =
   Hints.add_hints ~local [typeclasses_db]

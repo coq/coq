@@ -41,7 +41,7 @@ open Genredexpr
 
 open Equality
 open Auto
-open Eauto
+open Ltac_plugin.Eauto
 
 open Indfun_common
 open Context.Rel.Declaration
@@ -1300,7 +1300,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name (gls_type
             ; Proofview.Goal.enter (fun gl ->
                   let ids = pf_ids_of_hyps gl in
                   tclTHEN
-                    (Elim.h_decompose_and (mkVar hid))
+                    (Ltac_plugin.Elim.h_decompose_and (mkVar hid))
                     (Proofview.Goal.enter (fun gl ->
                          let ids' = pf_ids_of_hyps gl in
                          lid := List.rev (List.subtract Id.equal ids' ids);
@@ -1322,7 +1322,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name (gls_type
                 [ tclTHEN
                     (eapply_with_bindings (mkVar (List.nth !lid !h_num), NoBindings))
                     e_assumption
-                ; Eauto.eauto_with_bases
+                ; Ltac_plugin.Eauto.eauto_with_bases
                       (true,5)
                       [(fun _ sigma -> (sigma, (Lazy.force refl_equal)))]
                       [Hints.Hint_db.empty TransparentState.empty false

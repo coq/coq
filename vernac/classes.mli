@@ -14,6 +14,9 @@ open Constrexpr
 open Typeclasses
 open Libnames
 
+(** Hint database named "typeclass_instances", created in prelude *)
+val typeclasses_db : string
+
 (** Instance declaration *)
 
 val declare_instance : ?warn:bool -> env -> Evd.evar_map ->

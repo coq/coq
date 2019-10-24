@@ -16,15 +16,6 @@ Redexpr
 Ppred
 Tactics
 Abstract
-Elim
 Equality
-Contradiction
-Inv
-Leminv
 Hints
 Auto
-Eauto
-Class_tactics
-Term_dnet
-Eqdecide
-Autorewrite

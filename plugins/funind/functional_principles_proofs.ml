@@ -1340,7 +1340,7 @@ let prove_with_tcc tcc_lemma_constr eqs : tactic =
 (*               let ids = List.filter (fun id -> not (List.mem id ids)) ids' in  *)
 (*               rewrite *)
 (*            ) *)
-              Proofview.V82.of_tactic (Eauto.gen_eauto (false,5) [] (Some []))
+              Proofview.V82.of_tactic (Ltac_plugin.Eauto.gen_eauto (false,5) [] (Some []))
             ]
             gls
   | Not_needed -> tclIDTAC
@@ -1408,7 +1408,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
                            (
                             tclCOMPLETE(
                               Proofview.V82.of_tactic @@
-                              Eauto.eauto_with_bases
+                              Ltac_plugin.Eauto.eauto_with_bases
                                 (true,5)
                                 [(fun _ sigma -> (sigma, Lazy.force refl_equal))]
                                 [Hints.Hint_db.empty TransparentState.empty false]
@@ -1551,7 +1551,7 @@ let prove_principle_for_gen
         [
           Proofview.V82.of_tactic (generalize [lemma]);
           Proofview.V82.of_tactic (Simple.intro hid);
-          Proofview.V82.of_tactic (Elim.h_decompose_and (mkVar hid));
+          Proofview.V82.of_tactic (Ltac_plugin.Elim.h_decompose_and (mkVar hid));
           (fun g ->
              let new_hyps = pf_ids_of_hyps g in
              tcc_list := List.rev (List.subtract Id.equal new_hyps (hid::hyps));
