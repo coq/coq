@@ -43,6 +43,8 @@ type 'a constant_entry =
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
+val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
+
 val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
@@ -101,14 +103,6 @@ val recursive_message : bool (** true = fixpoint *) ->
   int array option -> Id.t list -> unit
 
 val exists_name : Id.t -> bool
-
-(** Global universe contexts, names and constraints *)
-val declare_univ_binders : GlobRef.t -> UnivNames.universe_binders -> unit
-
-val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
-
-val do_universe : poly:bool -> lident list -> unit
-val do_constraint : poly:bool -> Glob_term.glob_constraint list -> unit
 
 (* Used outside this module only in indschemes *)
 exception AlreadyDeclared of (string option * Id.t)

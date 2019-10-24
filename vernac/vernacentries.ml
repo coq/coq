@@ -814,14 +814,14 @@ let vernac_universe ~poly l =
     user_err ~hdr:"vernac_universe"
 		 (str"Polymorphic universes can only be declared inside sections, " ++
 		  str "use Monomorphic Universe instead");
-  Declare.do_universe ~poly l
+  DeclareUniv.do_universe ~poly l
 
 let vernac_constraint ~poly l =
   if poly && not (Global.sections_are_opened ()) then
     user_err ~hdr:"vernac_constraint"
 		 (str"Polymorphic universe constraints can only be declared"
 		  ++ str " inside sections, use Monomorphic Constraint instead");
-  Declare.do_constraint ~poly l
+  DeclareUniv.do_constraint ~poly l
 
 (**********************)
 (* Modules            *)

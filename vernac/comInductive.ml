@@ -577,7 +577,7 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) mie p
   let (_, kn), prim = declare_mind mie in
   let mind = Global.mind_of_delta_kn kn in
   if primitive_expected && not prim then warn_non_primitive_record (mind,0);
-  Declare.declare_univ_binders (GlobRef.IndRef (mind,0)) pl;
+  DeclareUniv.declare_univ_binders (GlobRef.IndRef (mind,0)) pl;
   List.iteri (fun i (indimpls, constrimpls) ->
               let ind = (mind,i) in
               let gr = GlobRef.IndRef ind in

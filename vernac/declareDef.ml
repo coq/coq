@@ -54,7 +54,7 @@ let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
   | Global local ->
       let kn = declare_constant ~name ~local ~kind:Decls.(IsDefinition kind) (DefinitionEntry ce) in
       let gr = Names.GlobRef.ConstRef kn in
-      let () = Declare.declare_univ_binders gr udecl in
+      let () = DeclareUniv.declare_univ_binders gr udecl in
       gr
   in
   let () = maybe_declare_manual_implicits false gr imps in

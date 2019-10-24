@@ -335,7 +335,7 @@ let finish_admitted env sigma ~name ~poly ~scope pe ctx hook ~udecl impargs othe
   in
   let kn = Declare.declare_constant ~name ~local ~kind:Decls.(IsAssumption Conjectural) (Declare.ParameterEntry pe) in
   let () = Declare.assumption_message name in
-  Declare.declare_univ_binders (GlobRef.ConstRef kn) (UState.universe_binders ctx);
+  DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) (UState.universe_binders ctx);
   (* This takes care of the implicits and hook for the current constant*)
   process_recthms ?fix_exn:None ?hook env sigma ctx ~udecl ~poly ~scope:(Global local) (GlobRef.ConstRef kn) impargs other_thms
 
@@ -425,7 +425,7 @@ let finish_proved env sigma idopt po info =
             then Proof_using.suggest_constant (Global.env ()) kn
           in
           let gr = GlobRef.ConstRef kn in
-          Declare.declare_univ_binders gr (UState.universe_binders universes);
+          DeclareUniv.declare_univ_binders gr (UState.universe_binders universes);
           gr
       in
       Declare.definition_message name;

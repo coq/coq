@@ -325,7 +325,7 @@ let declare_instance_constant info global imps ?hook name decl poly sigma term t
   let entry = Declare.definition_entry ~types:termtype ~univs:uctx term in
   let kn = Declare.declare_constant ~name ~kind (Declare.DefinitionEntry entry) in
   Declare.definition_message name;
-  Declare.declare_univ_binders (GlobRef.ConstRef kn) (Evd.universe_binders sigma);
+  DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) (Evd.universe_binders sigma);
   instance_hook info global imps ?hook (GlobRef.ConstRef kn)
 
 let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst name =
@@ -338,7 +338,7 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst nam
   let sigma, entry = DeclareDef.prepare_parameter ~allow_evars:false ~poly sigma decl termtype in
   let cst = Declare.declare_constant ~name
       ~kind:Decls.(IsAssumption Logical) (Declare.ParameterEntry entry) in
-  Declare.declare_univ_binders (GlobRef.ConstRef cst) (Evd.universe_binders sigma);
+  DeclareUniv.declare_univ_binders (GlobRef.ConstRef cst) (Evd.universe_binders sigma);
   instance_hook pri global imps (GlobRef.ConstRef cst)
 
 let declare_instance_program env sigma ~global ~poly id pri imps decl term termtype =

@@ -13,6 +13,7 @@ Ppvernac
 Proof_using
 Egramcoq
 Metasyntax
+DeclareUniv
 DeclareDef
 DeclareObl
 Canonical
