@@ -149,3 +149,66 @@ let declare_mind mie =
   Impargs.declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
   oname, isprim
+
+let is_recursive mie =
+  let open Constr in
+  let rec is_recursive_constructor lift typ =
+    match Constr.kind typ with
+    | Prod (_,arg,rest) ->
+        not (EConstr.Vars.noccurn Evd.empty (* FIXME *) lift (EConstr.of_constr arg)) ||
+        is_recursive_constructor (lift+1) rest
+    | LetIn (na,b,t,rest) -> is_recursive_constructor (lift+1) rest
+    | _ -> false
+  in
+  match mie.mind_entry_inds with
+  | [ind] ->
+      let nparams = List.length mie.mind_entry_params in
+      List.exists (fun t -> is_recursive_constructor (nparams+1) t) ind.mind_entry_lc
+  | _ -> false
+
+let warn_non_primitive_record =
+  CWarnings.create ~name:"non-primitive-record" ~category:"record"
+    (fun indsp ->
+       Pp.(hov 0 (str "The record " ++ Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef indsp) ++
+                  strbrk" could not be defined as a primitive record")))
+
+let minductive_message = function
+  | []  -> CErrors.user_err Pp.(str "No inductive definition.")
+  | [x] -> Pp.(Id.print x ++ str " is defined")
+  | l   -> Pp.(hov 0 (prlist_with_sep pr_comma Id.print l ++
+                      spc () ++ str "are defined"))
+
+type one_inductive_impls =
+  Impargs.manual_implicits (* for inds *) *
+  Impargs.manual_implicits list (* for constrs *)
+
+let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) mie pl impls =
+  (* spiwack: raises an error if the structure is supposed to be non-recursive,
+        but isn't *)
+  begin match mie.mind_entry_finite with
+    | Declarations.BiFinite when is_recursive mie ->
+      if Option.has_some mie.mind_entry_record then
+        CErrors.user_err Pp.(str "Records declared with the keywords Record or Structure cannot be recursive. You can, however, define recursive records using the Inductive or CoInductive command.")
+      else
+        CErrors.user_err Pp.(str ("Types declared with the keyword Variant cannot be recursive. Recursive types are defined with the Inductive and CoInductive command."))
+    | _ -> ()
+  end;
+  let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
+  let (_, kn), prim = declare_mind mie in
+  let mind = Global.mind_of_delta_kn kn in
+  if primitive_expected && not prim then warn_non_primitive_record (mind,0);
+  DeclareUniv.declare_univ_binders (GlobRef.IndRef (mind,0)) pl;
+  List.iteri (fun i (indimpls, constrimpls) ->
+      let ind = (mind,i) in
+      let gr = GlobRef.IndRef ind in
+      Impargs.maybe_declare_manual_implicits false gr indimpls;
+      List.iteri
+        (fun j impls ->
+           Impargs.maybe_declare_manual_implicits false
+             (GlobRef.ConstructRef (ind, succ j)) impls)
+        constrimpls)
+    impls;
+  Flags.if_verbose Feedback.msg_info (minductive_message names);
+  if mie.mind_entry_private == None
+  then Indschemes.declare_default_schemes mind;
+  mind
