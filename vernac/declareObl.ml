@@ -351,7 +351,8 @@ let declare_definition prg =
   let ubinders = UState.universe_binders uctx in
   let hook_data = Option.map (fun hook -> hook, uctx, obls) prg.prg_hook in
   DeclareDef.declare_definition
-    ~name:prg.prg_name ~scope:prg.prg_scope ubinders ~kind:prg.prg_kind ce
+    ~name:prg.prg_name ~scope:prg.prg_scope ubinders
+    ~kind:Decls.(IsDefinition prg.prg_kind) ce
     prg.prg_implicits ?hook_data
 
 let rec lam_index n t acc =
