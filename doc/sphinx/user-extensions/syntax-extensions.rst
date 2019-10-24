@@ -750,12 +750,12 @@ level is otherwise given explicitly by using the syntax
 
 Levels are cumulative: a notation at level ``n`` of which the left end
 is a term shall use rules at level less than ``n`` to parse this
-sub-term. More precisely, it shall use rules at level strictly less
+subterm. More precisely, it shall use rules at level strictly less
 than ``n`` if the rule is declared with ``right associativity`` and
 rules at level less or equal than ``n`` if the rule is declared with
 ``left associativity``. Similarly, a notation at level ``n`` of which
 the right end is a term shall use by default rules at level strictly
-less than ``n`` to parse this sub-term if the rule is declared left
+less than ``n`` to parse this subterm if the rule is declared left
 associative and rules at level less or equal than ``n`` if the rule is
 declared right associative. This is what happens for instance in the
 rule
