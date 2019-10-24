@@ -726,6 +726,45 @@ Changes in 8.10.0
   fixes `#9512 <https://github.com/coq/coq/issues/9512>`_
   by Vincent Laporte).
 
+Changes in 8.10.1
+~~~~~~~~~~~~~~~~~
+
+A few bug fixes and documentation improvements, in particular:
+
+**Kernel**
+
+- Fix proof of False when using |SProp| (incorrect De Bruijn handling
+  when inferring the relevance mark of a function) (`#10904
+  <https://github.com/coq/coq/pull/10904>`_, by Pierre-Marie Pédrot).
+
+**Tactics**
+
+- Fix an anomaly when unsolved evar in :cmd:`Add Ring`
+  (`#10891 <https://github.com/coq/coq/pull/10891>`_,
+  fixes `#9851 <https://github.com/coq/coq/issues/9851>`_,
+  by Gaëtan Gilbert).
+
+**Tactic language**
+
+- Fix Ltac regression in binding free names in uconstr
+  (`#10899 <https://github.com/coq/coq/pull/10899>`_,
+  fixes `#10894 <https://github.com/coq/coq/issues/10894>`_,
+  by Hugo Herbelin).
+
+**CoqIDE**
+
+- Fix handling of unicode input before space
+  (`#10852 <https://github.com/coq/coq/pull/10852>`_,
+  fixes `#10842 <https://github.com/coq/coq/issues/10842>`_,
+  by Arthur Charguéraud).
+
+**Extraction**
+
+- Fix custom extraction of inductives to JSON
+  (`#10897 <https://github.com/coq/coq/pull/10897>`_,
+  fixes `#4741 <https://github.com/coq/coq/issues/4741>`_,
+  by Helge Bahmann).
+
 Version 8.9
 -----------
 
