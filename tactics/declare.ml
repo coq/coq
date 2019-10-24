@@ -139,9 +139,6 @@ let (inConstant : constant_obj -> obj) =
     subst_function = ident_subst_function;
     discharge_function = discharge_constant }
 
-let declare_scheme = ref (fun _ _ -> assert false)
-let set_declare_scheme f = declare_scheme := f
-
 let update_tables c =
   Impargs.declare_constant_implicits c;
   Notation.declare_ref_arguments_scope Evd.empty (GlobRef.ConstRef c)
@@ -159,7 +156,7 @@ let register_side_effect (c, role) =
   let () = register_constant c Decls.(IsProof Theorem) ImportDefaultBehavior in
   match role with
   | None -> ()
-  | Some (Evd.Schema (ind, kind)) -> !declare_scheme kind [|ind,c|]
+  | Some (Evd.Schema (ind, kind)) -> DeclareScheme.declare_scheme kind [|ind,c|]
 
 let record_aux env s_ty s_bo =
   let open Environ in

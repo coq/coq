@@ -117,11 +117,6 @@ val inline_private_constants
   -> Evd.side_effects proof_entry
   -> Constr.t * UState.t
 
-(** Since transparent constants' side effects are globally declared, we
- *  need that *)
-val set_declare_scheme :
-  (string -> (inductive * Constant.t) array -> unit) -> unit
-
 (** Declaration messages *)
 
 val definition_message : Id.t -> unit
