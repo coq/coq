@@ -246,8 +246,10 @@ strip_dotslash = $(patsubst ./%,%,$(1))
 with_undef = $(if $(filter-out undefined, $(origin $(1))),$($(1)))
 
 VO = vo
+VOS = vos
 
 VOFILES = $(VFILES:.v=.$(VO))
+VOSFILES = $(VFILES:.v=.$(VOS))
 GLOBFILES = $(VFILES:.v=.glob)
 HTMLFILES = $(VFILES:.v=.html)
 GHTMLFILES = $(VFILES:.v=.g.html)
@@ -298,6 +300,7 @@ ALLNATIVEFILES = \
 NATIVEFILES = $(wildcard $(ALLNATIVEFILES))
 FILESTOINSTALL = \
 	$(VOFILES) \
+	$(VOSFILES) \
 	$(VFILES) \
 	$(GLOBFILES) \
 	$(NATIVEFILES) \
