@@ -196,17 +196,11 @@ GRAMMAR EXTEND Gram
     [ "200" RIGHTA
       [ c = binder_constr -> { c } ]
     | "100" RIGHTA
-      [ c1 = operconstr; "<:"; c2 = binder_constr ->
+      [ c1 = operconstr; "<:"; c2 = operconstr LEVEL "200" ->
                  { CAst.make ~loc @@ CCast(c1, CastVM c2) }
-      | c1 = operconstr; "<:"; c2 = SELF ->
-                 { CAst.make ~loc @@ CCast(c1, CastVM c2) }
-      | c1 = operconstr; "<<:"; c2 = binder_constr ->
+      | c1 = operconstr; "<<:"; c2 = operconstr LEVEL "200" ->
                  { CAst.make ~loc @@ CCast(c1, CastNative c2) }
-      | c1 = operconstr; "<<:"; c2 = SELF ->
-                 { CAst.make ~loc @@ CCast(c1, CastNative c2) }
-      | c1 = operconstr; ":";c2 = binder_constr ->
-                 { CAst.make ~loc @@ CCast(c1, CastConv c2) }
-      | c1 = operconstr; ":"; c2 = SELF ->
+      | c1 = operconstr; ":"; c2 = operconstr LEVEL "200" ->
                  { CAst.make ~loc @@ CCast(c1, CastConv c2) }
       | c1 = operconstr; ":>" ->
                  { CAst.make ~loc @@ CCast(c1, CastCoerce) } ]
@@ -407,9 +401,7 @@ GRAMMAR EXTEND Gram
   pattern:
     [ "200" RIGHTA [ ]
     | "100" RIGHTA
-      [ p = pattern; ":"; ty = binder_constr ->
-        {CAst.make ~loc @@ CPatCast (p, ty) }
-      | p = pattern; ":"; ty = operconstr LEVEL "100" ->
+      [ p = pattern; ":"; ty = operconstr LEVEL "200" ->
         {CAst.make ~loc @@ CPatCast (p, ty) } ]
     | "99" RIGHTA [ ]
     | "90" RIGHTA [ ]
