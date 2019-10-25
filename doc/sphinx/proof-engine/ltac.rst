@@ -516,7 +516,7 @@ Coq provides a derived tactic to check that a tactic *fails*:
 .. tacn:: assert_fails @ltac_expr
    :name: assert_fails
 
-   This behaves like :n:`tryif @ltac_expr then fail 0 tac "succeeds" else idtac`.
+   This behaves like :n:`tryif once @ltac_expr then fail 0 tac "succeeds" else idtac`.
 
 Checking the success
 ~~~~~~~~~~~~~~~~~~~~
