@@ -20,12 +20,8 @@ open Declareops
 open Entries
 open Nameops
 open Pretyping
-open Termops
-open Reductionops
-open Constrintern
 open Impargs
 
-module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 (* Support for terminators and proofs with an associated constant
@@ -113,13 +109,6 @@ let by tac pf =
 (* Creating a lemma-like constant                                       *)
 (************************************************************************)
 
-let check_name_freshness locality {CAst.loc;v=id} : unit =
-  (* We check existence here: it's a bit late at Qed time *)
-  if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
-     locality <> DeclareDef.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
-  then
-    user_err ?loc  (Id.print id ++ str " already exists.")
-
 let initialize_named_context_for_proof () =
   let sign = Global.named_context () in
   List.fold_right
@@ -192,41 +181,6 @@ let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recgua
         match init_tac with
         | None -> p
         | Some tac -> pi1 @@ Proof.run_tactic Global.(env ()) tac p)) lemma
-
-let start_lemma_com ~program_mode ~poly ~scope ~kind ?inference_hook ?hook thms =
-  let env0 = Global.env () in
-  let decl = fst (List.hd thms) in
-  let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env0 (snd decl) in
-  let evd, thms = List.fold_left_map (fun evd ((id, _), (bl, t)) ->
-    let evd, (impls, ((env, ctx), imps)) = interp_context_evars ~program_mode env0 evd bl in
-    let evd, (t', imps') = interp_type_evars_impls ~program_mode ~impls env evd t in
-    let flags = { all_and_fail_flags with program_mode } in
-    let hook = inference_hook in
-    let evd = solve_remaining_evars ?hook flags env evd in
-    let ids = List.map RelDecl.get_name ctx in
-    check_name_freshness scope id;
-    (* XXX: The nf_evar is critical !! *)
-    evd, (id.CAst.v,
-          (Evarutil.nf_evar evd (EConstr.it_mkProd_or_LetIn t' ctx),
-           (ids, imps @ imps'))))
-      evd thms in
-  let recguard,thms,snl = RecLemmas.look_for_possibly_mutual_statements evd thms in
-  let evd = Evd.minimize_universes evd in
-  (* XXX: This nf_evar is critical too!! We are normalizing twice if
-     you look at the previous lines... *)
-  let thms = List.map (fun (name, (typ, (args, impargs))) ->
-      { Recthm.name; typ = nf_evar evd typ; args; impargs} ) thms in
-  let () =
-    let open UState in
-    if not (udecl.univdecl_extensible_instance && udecl.univdecl_extensible_constraints) then
-       ignore (Evd.check_univ_decl ~poly evd udecl)
-  in
-  let evd =
-    if poly then evd
-    else (* We fix the variables to ensure they won't be lowered to Set *)
-      Evd.fix_undefined_variables evd
-  in
-  start_lemma_with_initialization ?hook ~poly ~scope ~kind evd ~udecl recguard thms snl
 
 (************************************************************************)
 (* Commom constant saving path, for both Qed and Admitted               *)
