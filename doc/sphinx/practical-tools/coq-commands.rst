@@ -309,7 +309,7 @@ working state for editing interactively the file ``foo.v``.
 **Typical compilation of a set of file using a build system.**
 
 Assume a file ``foo.v`` that depends on two files ``f1.v`` and ``f2.v``. The
-command ``make foo.requires_vos`` will compile ``f1.v`` and ``f2.v`` using
+command ``make foo.required_vos`` will compile ``f1.v`` and ``f2.v`` using
 the option ``-vos`` to skip the proofs, producing ``f1.vos`` and ``f2.vos``.
 At this point, one is ready to work interactively on the file ``foo.v``, even
 though it was never needed to compile the proofs involved in the files ``f1.v``
