@@ -563,6 +563,20 @@ for it.
 - `&x` as a Coq constr expression expands to
   `ltac2:(Control.refine (fun () => hyp @x))`.
 
+In the special case where Ltac2 antiquotations appear inside a Coq term
+notation, the notation variables are systematically bound in the body
+of the tactic expression with type `Ltac2.Init.preterm`. Such a type represents
+untyped syntactic Coq expressions, which can by typed in the
+current context using the `Ltac2.Constr.pretype` function.
+
+.. example::
+
+   The following notation is essentially the identity.
+
+   .. coqtop:: in
+
+      Notation "[ x ]" := ltac2:(let x := Ltac2.Constr.pretype x in exact $x) (only parsing).
+
 Dynamic semantics
 *****************
 
