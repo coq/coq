@@ -44,6 +44,7 @@ val declare_definition
   -> scope:locality
   -> kind:Decls.logical_kind
   -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
+  -> ?should_suggest:bool
   -> UnivNames.universe_binders
   -> Evd.side_effects Declare.proof_entry
   -> Impargs.manual_implicits
@@ -60,6 +61,16 @@ val declare_fix
   -> Evd.side_effects Entries.proof_output
   -> Constr.types
   -> Impargs.manual_implicits
+  -> GlobRef.t
+
+val declare_assumption
+  :  ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
+  -> name:Id.t
+  -> scope:locality
+  -> hook:Hook.t option
+  -> impargs:Impargs.manual_implicits
+  -> uctx:UState.t
+  -> Entries.parameter_entry
   -> GlobRef.t
 
 val prepare_definition

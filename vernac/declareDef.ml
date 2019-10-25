@@ -43,34 +43,54 @@ module Hook = struct
 end
 
 (* Locality stuff *)
-let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
+let declare_definition ~name ~scope ~kind ?hook_data ?(should_suggest=false) udecl ce imps =
   let fix_exn = Declare.Internal.get_fix_exn ce in
-  let gr = match scope with
+  let dref = match scope with
   | Discharge ->
-      let () =
-        declare_variable ~name ~kind (SectionLocalDef ce)
-      in
-      Names.GlobRef.VarRef name
+    let () = declare_variable ~name ~kind (SectionLocalDef ce) in
+    if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
+    Names.GlobRef.VarRef name
   | Global local ->
-      let kn = declare_constant ~name ~local ~kind (DefinitionEntry ce) in
-      let gr = Names.GlobRef.ConstRef kn in
-      let () = DeclareUniv.declare_univ_binders gr udecl in
-      gr
+    let kn = declare_constant ~name ~local ~kind (DefinitionEntry ce) in
+    let gr = Names.GlobRef.ConstRef kn in
+    if should_suggest then Proof_using.suggest_constant (Global.env ()) kn;
+    let () = DeclareUniv.declare_univ_binders gr udecl in
+    gr
   in
-  let () = maybe_declare_manual_implicits false gr imps in
+  let () = maybe_declare_manual_implicits false dref imps in
   let () = definition_message name in
   begin
     match hook_data with
     | None -> ()
     | Some (hook, uctx, obls) ->
-      Hook.call ~fix_exn ~hook { Hook.S.uctx; obls; scope; dref = gr }
+      Hook.call ~fix_exn ~hook { Hook.S.uctx; obls; scope; dref }
   end;
-  gr
+  dref
 
 let declare_fix ?(opaque = false) ?hook_data ~name ~scope ~kind udecl univs ((def,_),eff) t imps =
   let ce = definition_entry ~opaque ~types:t ~univs ~eff def in
   let kind = Decls.IsDefinition kind in
   declare_definition ~name ~scope ~kind ?hook_data udecl ce imps
+
+let warn_let_as_axiom =
+  CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"
+    Pp.(fun id -> strbrk "Let definition" ++ spc () ++ Names.Id.print id ++
+                  spc () ++ strbrk "declared as an axiom.")
+
+let declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe =
+  let local = match scope with
+    | Discharge -> warn_let_as_axiom name; Declare.ImportNeedQualified
+    | Global local -> local
+  in
+  let kind = Decls.(IsAssumption Conjectural) in
+  let decl = Declare.ParameterEntry pe in
+  let kn = Declare.declare_constant ~name ~local ~kind decl in
+  let dref = Names.GlobRef.ConstRef kn in
+  let () = Impargs.maybe_declare_manual_implicits false dref impargs in
+  let () = Hook.(call ?fix_exn ?hook { S.uctx; obls = []; scope; dref}) in
+  dref
+
+(* Preparing proof entries *)
 
 let check_definition_evars ~allow_evars sigma =
   let env = Global.env () in
