@@ -42,7 +42,7 @@ end
 val declare_definition
   :  name:Id.t
   -> scope:locality
-  -> kind:Decls.definition_object_kind
+  -> kind:Decls.logical_kind
   -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
   -> UnivNames.universe_binders
   -> Evd.side_effects Declare.proof_entry

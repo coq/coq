@@ -104,4 +104,5 @@ let do_definition ~program_mode ?hook ~name ~scope ~poly ~kind univdecl bl red_o
     let ce = check_definition ~program_mode def in
     let uctx = Evd.evar_universe_context evd in
     let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
+    let kind = Decls.IsDefinition kind in
     ignore(DeclareDef.declare_definition ~name ~scope ~kind ?hook_data (Evd.universe_binders evd) ce imps)

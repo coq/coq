@@ -48,11 +48,11 @@ let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
   let gr = match scope with
   | Discharge ->
       let () =
-        declare_variable ~name ~kind:Decls.(IsDefinition kind) (SectionLocalDef ce)
+        declare_variable ~name ~kind (SectionLocalDef ce)
       in
       Names.GlobRef.VarRef name
   | Global local ->
-      let kn = declare_constant ~name ~local ~kind:Decls.(IsDefinition kind) (DefinitionEntry ce) in
+      let kn = declare_constant ~name ~local ~kind (DefinitionEntry ce) in
       let gr = Names.GlobRef.ConstRef kn in
       let () = Declare.declare_univ_binders gr udecl in
       gr
@@ -69,6 +69,7 @@ let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
 
 let declare_fix ?(opaque = false) ?hook_data ~name ~scope ~kind udecl univs ((def,_),eff) t imps =
   let ce = definition_entry ~opaque ~types:t ~univs ~eff def in
+  let kind = Decls.IsDefinition kind in
   declare_definition ~name ~scope ~kind ?hook_data udecl ce imps
 
 let check_definition_evars ~allow_evars sigma =

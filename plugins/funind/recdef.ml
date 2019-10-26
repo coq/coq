@@ -1539,13 +1539,7 @@ let recursive_definition ~interactive_proof ~is_mes function_name rec_impls type
       generate_induction_principle f_ref tcc_lemma_constr
         functional_ref eq_ref rec_arg_num
         (EConstr.of_constr rec_arg_type)
-        (nb_prod evd (EConstr.of_constr res)) relation;
-      Flags.if_verbose
-        msgnl (h 1 (Ppconstr.pr_id function_name ++
-                         spc () ++ str"is defined" )++ fnl () ++
-                    h 1 (Ppconstr.pr_id equation_id ++
-                           spc () ++ str"is defined" )
-      )
+        (nb_prod evd (EConstr.of_constr res)) relation
   in
   (* XXX STATE Why do we need this... why is the toplevel protection not enough *)
   funind_purify (fun () ->
