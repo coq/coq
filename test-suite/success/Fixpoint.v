@@ -96,10 +96,14 @@ Section visibility.
 
   Let Fixpoint by_proof (n:nat) : True.
   Proof. exact I. Defined.
+
+  Let Fixpoint bla (n:nat) : Type with bli (n:nat) : bool.
+  Admitted.
 End visibility.
 
 Fail Check imm.
 Fail Check by_proof.
+Check bla. Check bli.
 
 Module Import mod_local.
   Fixpoint imm_importable (n:nat) : True := I.

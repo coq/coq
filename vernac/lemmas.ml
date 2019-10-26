@@ -17,7 +17,6 @@ open Pp
 open Names
 open Constr
 open Declareops
-open Entries
 open Nameops
 open Pretyping
 open Termops
@@ -258,17 +257,9 @@ let save_remaining_recthms env sigma ~poly ~scope ~udecl uctx body opaq i { Rect
     let open DeclareDef in
     (match scope with
      | Discharge ->
-       let impl = Glob_term.Explicit in
-       let univs = match univs with
-         | Polymorphic_entry (_, univs) ->
-           (* What is going on here? *)
-           Univ.ContextSet.of_context univs
-         | Monomorphic_entry univs -> univs
-       in
-       let () = Declare.declare_universe_context ~poly univs in
-       let c = Declare.SectionLocalAssum {typ=t_i; impl} in
-       let () = Declare.declare_variable ~name ~kind c in
-       GlobRef.VarRef name, impargs
+       (* Let Fixpoint + Admitted gets turned into axiom so scope is Global,
+          see finish_admitted *)
+       assert false
      | Global local ->
        let kind = Decls.(IsAssumption Conjectural) in
        let decl = Declare.ParameterEntry (None,(t_i,univs),None) in
