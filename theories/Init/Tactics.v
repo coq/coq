@@ -325,7 +325,7 @@ Ltac time_constr tac :=
 (** Useful combinators *)
 
 Ltac assert_fails tac :=
-  tryif once tac then fail 0 tac "succeeds" else idtac.
+  tryif (enough True as _; [ once tac | ]) then fail 0 tac "succeeds" else idtac.
 Ltac assert_succeeds tac :=
   tryif (assert_fails tac) then fail 0 tac "fails" else idtac.
 Tactic Notation "assert_succeeds" tactic3(tac) :=
