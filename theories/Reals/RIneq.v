@@ -13,7 +13,8 @@
 (** * Basic lemmas for the classical real numbers        *)
 (*********************************************************)
 
-Require Import ConstructiveRIneq.
+Require Import ConstructiveCauchyReals.
+Require Import ConstructiveCauchyRealsMult.
 Require Export Raxioms.
 Require Import Rpow_def.
 Require Import Zpower.
@@ -457,11 +458,13 @@ Qed.
 Lemma Rplus_eq_0_l :
   forall r1 r2, 0 <= r1 -> 0 <= r2 -> r1 + r2 = 0 -> r1 = 0.
 Proof.
-  intros. apply Rquot1. rewrite Rrepr_0.
-  apply (Rplus_eq_0_l (Rrepr r1) (Rrepr r2)).
-  rewrite Rrepr_le, Rrepr_0 in H. exact H.
-  rewrite Rrepr_le, Rrepr_0 in H0. exact H0.
-  rewrite <- Rrepr_plus, H1, Rrepr_0. reflexivity.
+  intros a b H [H0| H0] H1; auto with real.
+    absurd (0 < a + b).
+      rewrite H1; auto with real.
+      apply Rle_lt_trans with (a + 0).
+        rewrite Rplus_0_r; assumption.
+        auto using Rplus_lt_compat_l with real.
+    rewrite <- H0, Rplus_0_r in H1; assumption.
 Qed.
 
 Lemma Rplus_eq_R0 :
@@ -541,9 +544,10 @@ Qed.
 (**********)
 Lemma Rmult_eq_reg_l : forall r r1 r2, r * r1 = r * r2 -> r <> 0 -> r1 = r2.
 Proof.
-  intros. apply Rquot1. apply (Rmult_eq_reg_l (Rrepr r)).
-  rewrite <- Rrepr_mult, <- Rrepr_mult, H. reflexivity.
+  intros. apply Rquot1. apply (CReal_mult_eq_reg_l (Rrepr r)).
   apply Rrepr_appart in H0. rewrite Rrepr_0 in H0. exact H0.
+  apply Rrepr_appart in H0.
+  rewrite <- Rrepr_mult, <- Rrepr_mult, H. reflexivity.
 Qed.
 
 Lemma Rmult_eq_reg_r : forall r r1 r2, r1 * r = r2 * r -> r <> 0 -> r1 = r2.
@@ -996,16 +1000,16 @@ Qed.
 
 Lemma Rplus_lt_reg_l : forall r r1 r2, r + r1 < r + r2 -> r1 < r2.
 Proof.
-  intros. rewrite Rlt_def. apply Rlt_forget. apply (Rplus_lt_reg_l (Rrepr r)).
+  intros. rewrite Rlt_def. apply CRealLtForget. apply (CReal_plus_lt_reg_l (Rrepr r)).
   rewrite <- Rrepr_plus, <- Rrepr_plus.
-  rewrite Rlt_def in H. apply Rlt_epsilon. exact H.
+  rewrite Rlt_def in H. apply CRealLtEpsilon. exact H.
 Qed.
 
 Lemma Rplus_lt_reg_r : forall r r1 r2, r1 + r < r2 + r -> r1 < r2.
 Proof.
-  intros. rewrite Rlt_def. apply Rlt_forget. apply (Rplus_lt_reg_r (Rrepr r)).
+  intros. rewrite Rlt_def. apply CRealLtForget. apply (CReal_plus_lt_reg_r (Rrepr r)).
   rewrite <- Rrepr_plus, <- Rrepr_plus. rewrite Rlt_def in H.
-  apply Rlt_epsilon. exact H.
+  apply CRealLtEpsilon. exact H.
 Qed.
 
 Lemma Rplus_le_reg_l : forall r r1 r2, r + r1 <= r + r2 -> r1 <= r2.
@@ -1076,18 +1080,18 @@ Qed.
 Lemma Ropp_gt_lt_contravar : forall r1 r2, r1 > r2 -> - r1 < - r2.
 Proof.
   intros. rewrite Rlt_def. rewrite Rrepr_opp, Rrepr_opp.
-  apply Rlt_forget.
-  apply Ropp_gt_lt_contravar. unfold Rgt in H.
-  rewrite Rlt_def in H. apply Rlt_epsilon. exact H.
+  apply CRealLtForget.
+  apply CReal_opp_gt_lt_contravar. unfold Rgt in H.
+  rewrite Rlt_def in H. apply CRealLtEpsilon. exact H.
 Qed.
 Hint Resolve Ropp_gt_lt_contravar : core.
 
 Lemma Ropp_lt_gt_contravar : forall r1 r2, r1 < r2 -> - r1 > - r2.
 Proof.
   intros. unfold Rgt. rewrite Rlt_def. rewrite Rrepr_opp, Rrepr_opp.
-  apply Rlt_forget.
-  apply Ropp_lt_gt_contravar. rewrite Rlt_def in H.
-  apply Rlt_epsilon. exact H.
+  apply CRealLtForget.
+  apply CReal_opp_gt_lt_contravar. rewrite Rlt_def in H.
+  apply CRealLtEpsilon. exact H.
 Qed.
 Hint Resolve Ropp_lt_gt_contravar: real.
 
@@ -1239,10 +1243,11 @@ Lemma Rmult_le_compat :
   forall r1 r2 r3 r4,
     0 <= r1 -> 0 <= r3 -> r1 <= r2 -> r3 <= r4 -> r1 * r3 <= r2 * r4.
 Proof.
-  intros. rewrite Rrepr_le, Rrepr_mult, Rrepr_mult.
-  apply Rmult_le_compat. rewrite <- Rrepr_0, <- Rrepr_le. exact H.
-  rewrite <- Rrepr_0, <- Rrepr_le. exact H0.
-  rewrite <- Rrepr_le. exact H1. rewrite <- Rrepr_le. exact H2.
+  intros x y z t H' H'0 H'1 H'2.
+  apply Rle_trans with (r2 := x * t); auto with real.
+  repeat rewrite (fun x => Rmult_comm x t).
+  apply Rmult_le_compat_l; auto.
+  apply Rle_trans with z; auto.
 Qed.
 Hint Resolve Rmult_le_compat: real.
 
@@ -1307,18 +1312,20 @@ Qed.
 
 Lemma Rmult_lt_reg_l : forall r r1 r2, 0 < r -> r * r1 < r * r2 -> r1 < r2.
 Proof.
-  intros. rewrite Rlt_def in H,H0. rewrite Rlt_def. apply Rlt_forget.
-  apply (Rmult_lt_reg_l (Rrepr r)).
-  rewrite <- Rrepr_0. apply Rlt_epsilon. exact H.
-  rewrite <- Rrepr_mult, <- Rrepr_mult. apply Rlt_epsilon. exact H0.
+  intros z x y H H0.
+  case (Rtotal_order x y); intros Eq0; auto; elim Eq0; clear Eq0; intros Eq0.
+  rewrite Eq0 in H0; exfalso; apply (Rlt_irrefl (z * y)); auto.
+  generalize (Rmult_lt_compat_l z y x H Eq0); intro; exfalso;
+    generalize (Rlt_trans (z * x) (z * y) (z * x) H0 H1);
+      intro; apply (Rlt_irrefl (z * x)); auto.
 Qed.
 
 Lemma Rmult_lt_reg_r : forall r r1 r2 : R, 0 < r -> r1 * r < r2 * r -> r1 < r2.
 Proof.
-  intros. rewrite Rlt_def. rewrite Rlt_def in H, H0.
-  apply Rlt_forget. apply (Rmult_lt_reg_r (Rrepr r)).
-  rewrite <- Rrepr_0. apply Rlt_epsilon. exact H.
-  rewrite <- Rrepr_mult, <- Rrepr_mult. apply Rlt_epsilon. exact H0.
+  intros.
+  apply Rmult_lt_reg_l with r.
+  exact H.
+  now rewrite 2!(Rmult_comm r).
 Qed.
 
 Lemma Rmult_gt_reg_l : forall r r1 r2, 0 < r -> r * r1 < r * r2 -> r1 < r2.
@@ -1326,10 +1333,14 @@ Proof. eauto using Rmult_lt_reg_l with rorders. Qed.
 
 Lemma Rmult_le_reg_l : forall r r1 r2, 0 < r -> r * r1 <= r * r2 -> r1 <= r2.
 Proof.
-  intros. rewrite Rrepr_le. rewrite Rlt_def in H. apply (Rmult_le_reg_l (Rrepr r)).
-  rewrite <- Rrepr_0. apply Rlt_epsilon. exact H.
-  rewrite <- Rrepr_mult, <- Rrepr_mult.
-  rewrite <- Rrepr_le. exact H0.
+  intros z x y H H0; case H0; auto with real.
+  intros H1; apply Rlt_le.
+  apply Rmult_lt_reg_l with (r := z); auto.
+  intros H1; replace x with (/ z * (z * x)); auto with real.
+  replace y with (/ z * (z * y)).
+  rewrite H1; auto with real.
+  rewrite <- Rmult_assoc; rewrite Rinv_l; auto with real.
+  rewrite <- Rmult_assoc; rewrite Rinv_l; auto with real.
 Qed.
 
 Lemma Rmult_le_reg_r : forall r r1 r2, 0 < r -> r1 * r <= r2 * r -> r1 <= r2.
@@ -1574,9 +1585,11 @@ Qed.
 (**********)
 Lemma plus_INR : forall n m:nat, INR (n + m) = INR n + INR m.
 Proof.
-  intros. apply Rquot1.
-  rewrite Rrepr_INR, Rrepr_plus, plus_INR,
-  <- Rrepr_INR, <- Rrepr_INR. reflexivity.
+  intros n m; induction  n as [| n Hrecn].
+  simpl; auto with real.
+  replace (S n + m)%nat with (S (n + m)); auto with arith.
+  repeat rewrite S_INR.
+  rewrite Hrecn; ring.
 Qed.
 Hint Resolve plus_INR: real.
 
@@ -1645,8 +1658,16 @@ Hint Resolve pos_INR: real.
 
 Lemma INR_lt : forall n m:nat, INR n < INR m -> (n < m)%nat.
 Proof.
-  intros. apply INR_lt. rewrite Rlt_def in H.
-  rewrite Rrepr_INR, Rrepr_INR in H. apply Rlt_epsilon. exact H.
+  intros n m. revert n.
+  induction m ; intros n H.
+  - elim (Rlt_irrefl 0).
+    apply Rle_lt_trans with (2 := H).
+    apply pos_INR.
+  - destruct n as [|n].
+    apply Nat.lt_0_succ.
+    apply lt_n_S, IHm.
+    rewrite 2!S_INR in H.
+    apply Rplus_lt_reg_r with (1 := H).
 Qed.
 Hint Resolve INR_lt: real.
 
@@ -1680,8 +1701,11 @@ Hint Resolve not_0_INR: real.
 
 Lemma not_INR : forall n m:nat, n <> m -> INR n <> INR m.
 Proof.
-  intros. apply Rappart_repr. rewrite Rrepr_INR, Rrepr_INR.
-  apply not_INR. exact H.
+  intros n m H; case (le_or_lt n m); intros H1.
+  case (le_lt_or_eq _ _ H1); intros H2.
+  apply Rlt_dichotomy_converse; auto with real.
+  exfalso; auto.
+  apply not_eq_sym; apply Rlt_dichotomy_converse; auto with real.
 Qed.
 Hint Resolve not_INR: real.
 
@@ -1721,8 +1745,17 @@ Qed.
 
 Lemma INR_IPR : forall p, INR (Pos.to_nat p) = IPR p.
 Proof.
-  intros. apply Rquot1. rewrite Rrepr_INR, Rrepr_IPR.
-  apply INR_IPR.
+  assert (H: forall p, 2 * INR (Pos.to_nat p) = IPR_2 p).
+    induction p as [p|p|] ; simpl IPR_2.
+    rewrite Pos2Nat.inj_xI, S_INR, mult_INR, <- IHp.
+    now rewrite (Rplus_comm (2 * _)).
+    now rewrite Pos2Nat.inj_xO, mult_INR, <- IHp.
+    apply Rmult_1_r.
+  intros [p|p|] ; unfold IPR.
+  rewrite Pos2Nat.inj_xI, S_INR, mult_INR, <- H.
+  apply Rplus_comm.
+  now rewrite Pos2Nat.inj_xO, mult_INR, <- H.
+  easy.
 Qed.
 
 (**********)
@@ -1737,15 +1770,26 @@ Qed.
 Lemma plus_IZR_NEG_POS :
   forall p q:positive, IZR (Zpos p + Zneg q) = IZR (Zpos p) + IZR (Zneg q).
 Proof.
-  intros. apply Rquot1. rewrite Rrepr_plus.
-  do 3 rewrite Rrepr_IZR. apply plus_IZR_NEG_POS.
+  intros p q; simpl. rewrite Z.pos_sub_spec.
+  case Pos.compare_spec; intros H; unfold IZR.
+  subst. ring.
+  rewrite <- 3!INR_IPR, Pos2Nat.inj_sub by trivial.
+  rewrite minus_INR by (now apply lt_le_weak, Pos2Nat.inj_lt).
+  ring.
+  rewrite <- 3!INR_IPR, Pos2Nat.inj_sub by trivial.
+  rewrite minus_INR by (now apply lt_le_weak, Pos2Nat.inj_lt).
+  ring.
 Qed.
 
 (**********)
 Lemma plus_IZR : forall n m:Z, IZR (n + m) = IZR n + IZR m.
 Proof.
-  intros. apply Rquot1.
-  rewrite Rrepr_plus. do 3 rewrite Rrepr_IZR. apply plus_IZR.
+  intro z; destruct z; intro t; destruct t; intros; auto with real.
+  simpl. unfold IZR. rewrite <- 3!INR_IPR, Pos2Nat.inj_add. apply plus_INR.
+  apply plus_IZR_NEG_POS.
+  rewrite Z.add_comm; rewrite Rplus_comm; apply plus_IZR_NEG_POS.
+  simpl. unfold IZR. rewrite <- 3!INR_IPR, Pos2Nat.inj_add, plus_INR.
+  apply Ropp_plus_distr.
 Qed.
 
 (**********)
@@ -1755,21 +1799,14 @@ Proof.
     unfold IZR; intros m n; rewrite <- 3!INR_IPR, Pos2Nat.inj_mul, mult_INR; ring.
 Qed.
 
-Lemma Rrepr_pow : forall (x : R) (n : nat),
-    (ConstructiveRIneq.Req (Rrepr (pow x n))
-                           (ConstructiveRIneq.pow (Rrepr x) n)).
-Proof.
-  intro x. induction n.
-  - apply Rrepr_1.
-  - simpl. rewrite Rrepr_mult, <- IHn. reflexivity.
-Qed.
-
 Lemma pow_IZR : forall z n, pow (IZR z) n = IZR (Z.pow z (Z.of_nat n)).
 Proof.
-  intros. apply Rquot1.
-  rewrite Rrepr_IZR, Rrepr_pow.
-  rewrite (Rpow_eq_compat _ _ n (Rrepr_IZR z)).
-  apply pow_IZR.
+ intros z [|n];simpl;trivial.
+ rewrite Zpower_pos_nat.
+ rewrite SuccNat2Pos.id_succ. unfold Zpower_nat;simpl.
+ rewrite mult_IZR.
+ induction n;simpl;trivial.
+ rewrite mult_IZR;ring[IHn].
 Qed.
 
 (**********)
@@ -1803,23 +1840,34 @@ Qed.
 (**********)
 Lemma lt_0_IZR : forall n:Z, 0 < IZR n -> (0 < n)%Z.
 Proof.
-  intros. apply lt_0_IZR. rewrite <- Rrepr_0, <- Rrepr_IZR.
-  rewrite Rlt_def in H. apply Rlt_epsilon. exact H.
+  intro z; case z; simpl; intros.
+  elim (Rlt_irrefl _ H).
+  easy.
+  elim (Rlt_not_le _ _ H).
+  unfold IZR.
+  rewrite <- INR_IPR.
+  auto with real.
 Qed.
 
 (**********)
 Lemma lt_IZR : forall n m:Z, IZR n < IZR m -> (n < m)%Z.
 Proof.
-  intros. apply lt_IZR.
-  rewrite <- Rrepr_IZR, <- Rrepr_IZR. rewrite Rlt_def in H.
-  apply Rlt_epsilon. exact H.
+  intros z1 z2 H; apply Z.lt_0_sub.
+  apply lt_0_IZR.
+  rewrite <- Z_R_minus.
+  exact (Rgt_minus (IZR z2) (IZR z1) H).
 Qed.
 
 (**********)
 Lemma eq_IZR_R0 : forall n:Z, IZR n = 0 -> n = 0%Z.
 Proof.
-  intros. apply eq_IZR_R0.
-  rewrite <- Rrepr_0, <- Rrepr_IZR, H. reflexivity.
+  intro z; destruct z; simpl; intros; auto with zarith.
+  elim Rgt_not_eq with (2 := H).
+  unfold IZR. rewrite <- INR_IPR.
+  apply lt_0_INR, Pos2Nat.is_pos.
+  elim Rlt_not_eq with (2 := H).
+  unfold IZR. rewrite <- INR_IPR.
+  apply Ropp_lt_gt_0_contravar, lt_0_INR, Pos2Nat.is_pos.
 Qed.
 
 (**********)
@@ -1895,21 +1943,26 @@ Hint Extern 0 (IZR _ <> IZR _) => apply IZR_neq, Zeq_bool_neq, eq_refl : real.
 
 Lemma one_IZR_lt1 : forall n:Z, -1 < IZR n < 1 -> n = 0%Z.
 Proof.
-  intros. apply one_IZR_lt1. do 2 rewrite Rlt_def in H. split.
-  rewrite <- Rrepr_IZR, <- Rrepr_1, <- Rrepr_opp.
-  apply Rlt_epsilon. apply H.
-  rewrite <- Rrepr_IZR, <- Rrepr_1. apply Rlt_epsilon. apply H.
+  intros z [H1 H2].
+  apply Z.le_antisymm.
+  apply Z.lt_succ_r; apply lt_IZR; trivial.
+  change 0%Z with (Z.succ (-1)).
+  apply Z.le_succ_l; apply lt_IZR; trivial.
 Qed.
 
 Lemma one_IZR_r_R1 :
   forall r (n m:Z), r < IZR n <= r + 1 -> r < IZR m <= r + 1 -> n = m.
 Proof.
-  intros. rewrite Rlt_def in H, H0. apply (one_IZR_r_R1 (Rrepr r)); split.
-  rewrite <- Rrepr_IZR. apply Rlt_epsilon. apply H.
-  rewrite <- Rrepr_IZR, <- Rrepr_1, <- Rrepr_plus, <- Rrepr_le.
-  apply H. rewrite <- Rrepr_IZR. apply Rlt_epsilon. apply H0.
-  rewrite <- Rrepr_IZR, <- Rrepr_1, <- Rrepr_plus, <- Rrepr_le.
-  apply H0.
+  intros r z x [H1 H2] [H3 H4].
+  cut ((z - x)%Z = 0%Z); auto with zarith.
+  apply one_IZR_lt1.
+  rewrite <- Z_R_minus; split.
+  replace (-1) with (r - (r + 1)).
+  unfold Rminus; apply Rplus_lt_le_compat; auto with real.
+  ring.
+  replace 1 with (r + 1 - r).
+  unfold Rminus; apply Rplus_le_lt_compat; auto with real.
+  ring.
 Qed.
 
 
@@ -1942,13 +1995,13 @@ Qed.
 Lemma Rinv_le_contravar :
   forall x y, 0 < x -> x <= y -> / y <= / x.
 Proof.
-  intros. apply Rrepr_le. assert (y <> 0).
-  intro abs. subst y. apply (Rlt_irrefl 0). exact (Rlt_le_trans 0 x 0 H H0).
-  apply Rrepr_appart in H1.
-  rewrite Rrepr_0 in H1. rewrite Rlt_def in H. rewrite Rrepr_0 in H.
-  apply Rlt_epsilon in H.
-  rewrite (Rrepr_inv y H1), (Rrepr_inv x (inr H)).
-  apply Rinv_le_contravar. rewrite <- Rrepr_le. exact H0.
+  intros x y H1 [H2|H2].
+  apply Rlt_le.
+  apply Rinv_lt_contravar with (2 := H2).
+  apply Rmult_lt_0_compat with (1 := H1).
+  now apply Rlt_trans with x.
+  rewrite H2.
+  apply Rle_refl.
 Qed.
 
 Lemma Rle_Rinv : forall x y:R, 0 < x -> 0 < y -> x <= y -> / y <= / x.
@@ -2012,10 +2065,18 @@ Qed.
 Lemma le_epsilon :
   forall r1 r2, (forall eps:R, 0 < eps -> r1 <= r2 + eps) -> r1 <= r2.
 Proof.
-  intros. rewrite Rrepr_le. apply le_epsilon.
-  intros. rewrite <- (Rquot2 eps), <- Rrepr_plus.
-  rewrite <- Rrepr_le. apply H. rewrite Rlt_def.
-  rewrite Rquot2, Rrepr_0. apply Rlt_forget. exact H0.
+  intros x y H.
+  destruct (Rle_or_lt x y) as [H1|H1].
+  exact H1.
+  apply Rplus_le_reg_r with x.
+  replace (y + x) with (2 * (y + (x - y) * / 2)) by field.
+  replace (x + x) with (2 * x) by ring.
+  apply Rmult_le_compat_l.
+  now apply (IZR_le 0 2).
+  apply H.
+  apply Rmult_lt_0_compat.
+  now apply Rgt_minus.
+  apply Rinv_0_lt_compat, Rlt_0_2.
 Qed.
 
 (**********)

@@ -419,13 +419,13 @@ Qed.
 
 
 
-Lemma Desargues: forall A B C A1 B1 C1 P Q R S:point,
+Lemma Desargues: forall A B C A1 B1 C1 P Q T S:point,
   X S = 0 -> Y S = 0 -> Y A = 0 ->
   collinear A S A1 -> collinear B S B1 -> collinear C S C1 ->
   collinear B1 C1 P -> collinear B C P ->
   collinear A1 C1 Q -> collinear A C Q -> 
-  collinear A1 B1 R -> collinear A B R ->
-  collinear P Q R
+  collinear A1 B1 T -> collinear A B T ->
+  collinear P Q T
   \/ X A = X B \/ X A = X C \/ X B = X C  \/ X A = 0 \/ Y B = 0 \/ Y C = 0
   \/ collinear S B C \/ parallel A C A1 C1 \/ parallel A B A1 B1.
 Proof.
@@ -440,8 +440,8 @@ let lv := rev (X A
              :: Y A1 :: X A1
                 :: Y B1
                    :: Y C1
-                      :: X R
-                         :: Y R
+                      :: X T
+                         :: Y T
                             :: X Q
                                :: Y Q :: X P :: Y P :: X C1 :: X B1 :: nil) in
 nsatz with radicalmax :=1%N strategy:=0%Z

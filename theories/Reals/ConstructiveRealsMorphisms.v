@@ -29,7 +29,7 @@ Require Import QArith.
 Require Import Qabs.
 Require Import ConstructiveReals.
 Require Import ConstructiveCauchyRealsMult.
-Require Import ConstructiveRIneq.
+Require Import ConstructiveRcomplete.
 
 
 Record ConstructiveRealsMorphism (R1 R2 : ConstructiveReals) : Set :=
