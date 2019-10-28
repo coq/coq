@@ -1082,7 +1082,7 @@ let string_of_definition_object_kind = let open Decls in function
               let rec print_arguments n nbidi l =
                 match n, nbidi, l with
                   | Some 0, _, l -> spc () ++ str"/" ++ print_arguments None nbidi l
-                  | _, Some 0, l -> spc () ++ str"|" ++ print_arguments n None l
+                  | _, Some 0, l -> spc () ++ str"&" ++ print_arguments n None l
                   | None, None, [] -> mt()
                   | _, _, [] ->
                     let dummy = {name=Anonymous; recarg_like=false;
