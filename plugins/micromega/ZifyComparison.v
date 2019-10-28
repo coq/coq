@@ -9,7 +9,8 @@
 (************************************************************************)
 
 Require Import Bool ZArith.
-Require Import ZifyClasses.
+Require Import Zify ZifyClasses.
+Require Import Lia.
 Local Open Scope Z_scope.
 
 (** [Z_of_comparison] is the injection function for comparison *)
@@ -64,11 +65,11 @@ Proof.
   intros.
   destruct (x ?= y) eqn:C; simpl.
   - rewrite Z.compare_eq_iff in C.
-    intuition.
+    lia.
   - rewrite Z.compare_lt_iff in C.
-    intuition.
+    lia.
   - rewrite Z.compare_gt_iff in C.
-    intuition.
+    lia.
 Qed.
 
 Instance ZcompareSpec : BinOpSpec ZcompareZ :=
