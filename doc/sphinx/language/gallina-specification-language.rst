@@ -1503,19 +1503,20 @@ Each attribute has a name (an identifier) and may have a value.
 A value is either a :token:`string` (in which case it is specified with an equal ``=`` sign),
 or a list of attributes, enclosed within brackets.
 
-Currently,
-the following attributes names are recognized:
+Some attributes are specific to a command, and so are described with
+that command. Currently, the following attributes are recognized by a
+variety of commands:
 
-``monomorphic``, ``polymorphic``
-    Take no value, analogous to the ``Monomorphic`` and ``Polymorphic`` flags
-    (see :ref:`polymorphicuniverses`).
+``universes(monomorphic)``, ``universes(polymorphic)``
+    Equivalent to the ``Monomorphic`` and
+    ``Polymorphic`` flags (see :ref:`polymorphicuniverses`).
 
 ``program``
-    Takes no value, analogous to the ``Program`` flag
+    Takes no value, equivalent to the ``Program`` flag
     (see :ref:`programs`).
 
 ``global``, ``local``
-    Take no value, analogous to the ``Global`` and ``Local`` flags
+    Take no value, equivalent to the ``Global`` and ``Local`` flags
     (see :ref:`controlling-locality-of-commands`).
 
 ``deprecated``
