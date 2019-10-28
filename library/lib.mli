@@ -164,18 +164,9 @@ val drop_objects : frozen -> frozen
 val init : unit -> unit
 
 (** {6 Section management for discharge } *)
-type abstr_info = Section.abstr_info = private {
-  abstr_ctx : Constr.named_context;
-  (** Section variables of this prefix *)
-  abstr_subst : Univ.Instance.t;
-  (** Actual names of the abstracted variables *)
-  abstr_uctx : Univ.AUContext.t;
-  (** Universe quantification, same length as the substitution *)
-}
-
-val section_segment_of_constant : Constant.t -> abstr_info
-val section_segment_of_mutual_inductive: MutInd.t -> abstr_info
-val section_segment_of_reference : GlobRef.t -> abstr_info
+val section_segment_of_constant : Constant.t -> Section.abstr_info
+val section_segment_of_mutual_inductive: MutInd.t -> Section.abstr_info
+val section_segment_of_reference : GlobRef.t -> Section.abstr_info
 
 val variable_section_segment_of_reference : GlobRef.t -> Constr.named_context
 
@@ -190,4 +181,4 @@ val replacement_context : unit -> Opaqueproof.work_list
 
 val discharge_proj_repr : Projection.Repr.t -> Projection.Repr.t
 val discharge_abstract_universe_context :
-  abstr_info -> Univ.AUContext.t -> Univ.universe_level_subst * Univ.AUContext.t
+  Section.abstr_info -> Univ.AUContext.t -> Univ.universe_level_subst * Univ.AUContext.t
