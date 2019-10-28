@@ -13,36 +13,21 @@ where
 ?y : [ |- nat]
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
-For eq_refl: Arguments are renamed to B, y
-For eq: Argument A is implicit and maximally inserted
-For eq_refl, when applied to no arguments:
-  Arguments B, y are implicit and maximally inserted
-For eq_refl, when applied to 1 argument:
-  Argument B is implicit
-For eq: Argument scopes are [type_scope _ _]
-For eq_refl: Argument scopes are [type_scope _]
+Arguments eq {A%type_scope}
+Arguments eq_refl {B%type_scope} {y}, [B] _
 eq_refl : forall (A : Type) (x : A), x = x
 
 eq_refl is not universe polymorphic
-Arguments are renamed to B, y
-When applied to no arguments:
-  Arguments B, y are implicit and maximally inserted
-When applied to 1 argument:
-  Argument B is implicit
-Argument scopes are [type_scope _]
+Arguments eq_refl {B%type_scope} {y}, [B] _
 Expands to: Constructor Coq.Init.Logic.eq_refl
 Inductive myEq (B : Type) (x : A) : A -> Prop :=  myrefl : B -> myEq B x x
 
-For myrefl: Arguments are renamed to C, x, _
-For myrefl: Argument C is implicit and maximally inserted
-For myEq: Argument scopes are [type_scope _ _]
-For myrefl: Argument scopes are [type_scope _ _]
+Arguments myEq _%type_scope
+Arguments myrefl {C%type_scope} x : rename
 myrefl : forall (B : Type) (x : A), B -> myEq B x x
 
 myrefl is not universe polymorphic
-Arguments are renamed to C, x, _
-Argument C is implicit and maximally inserted
-Argument scopes are [type_scope _ _]
+Arguments myrefl {C%type_scope} x : rename
 Expands to: Constructor Arguments_renaming.Test1.myrefl
 myplus = 
 fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
@@ -52,17 +37,11 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   end
      : forall T : Type, T -> nat -> nat -> nat
 
-Arguments are renamed to Z, t, n, m
-Argument Z is implicit and maximally inserted
-Argument scopes are [type_scope _ nat_scope nat_scope]
+Arguments myplus {Z%type_scope} !t !n%nat_scope m%nat_scope : rename
 myplus : forall T : Type, T -> nat -> nat -> nat
 
 myplus is not universe polymorphic
-Arguments are renamed to Z, t, n, m
-Argument Z is implicit and maximally inserted
-Argument scopes are [type_scope _ nat_scope nat_scope]
-The reduction tactics unfold myplus when the 2nd and
-  3rd arguments evaluate to a constructor
+Arguments myplus {Z%type_scope} !t !n%nat_scope m%nat_scope : rename
 myplus is transparent
 Expands to: Constant Arguments_renaming.Test1.myplus
 @myplus
@@ -70,16 +49,12 @@ Expands to: Constant Arguments_renaming.Test1.myplus
 Inductive myEq (A B : Type) (x : A) : A -> Prop :=
     myrefl : B -> myEq A B x x
 
-For myrefl: Arguments are renamed to A, C, x, _
-For myrefl: Argument C is implicit and maximally inserted
-For myEq: Argument scopes are [type_scope type_scope _ _]
-For myrefl: Argument scopes are [type_scope type_scope _ _]
+Arguments myEq _%type_scope _%type_scope
+Arguments myrefl A%type_scope {C%type_scope} x : rename
 myrefl : forall (A B : Type) (x : A), B -> myEq A B x x
 
 myrefl is not universe polymorphic
-Arguments are renamed to A, C, x, _
-Argument C is implicit and maximally inserted
-Argument scopes are [type_scope type_scope _ _]
+Arguments myrefl A%type_scope {C%type_scope} x : rename
 Expands to: Constructor Arguments_renaming.myrefl
 myrefl
      : forall (A C : Type) (x : A), C -> myEq A C x x
@@ -91,17 +66,11 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   end
      : forall T : Type, T -> nat -> nat -> nat
 
-Arguments are renamed to Z, t, n, m
-Argument Z is implicit and maximally inserted
-Argument scopes are [type_scope _ nat_scope nat_scope]
+Arguments myplus {Z%type_scope} !t !n%nat_scope m%nat_scope : rename
 myplus : forall T : Type, T -> nat -> nat -> nat
 
 myplus is not universe polymorphic
-Arguments are renamed to Z, t, n, m
-Argument Z is implicit and maximally inserted
-Argument scopes are [type_scope _ nat_scope nat_scope]
-The reduction tactics unfold myplus when the 2nd and
-  3rd arguments evaluate to a constructor
+Arguments myplus {Z%type_scope} !t !n%nat_scope m%nat_scope : rename
 myplus is transparent
 Expands to: Constant Arguments_renaming.myplus
 @myplus

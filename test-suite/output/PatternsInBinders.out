@@ -15,8 +15,7 @@ swap =
 fun (A B : Type) '(x, y) => (y, x)
      : forall A B : Type, A * B -> B * A
 
-Arguments A, B are implicit and maximally inserted
-Argument scopes are [type_scope type_scope _]
+Arguments swap {A%type_scope} {B%type_scope}
 fun (A B : Type) '(x, y) => swap (x, y) = (y, x)
      : forall A B : Type, A * B -> Prop
 forall (A B : Type) '(x, y), swap (x, y) = (y, x)
@@ -42,6 +41,6 @@ fun (pat : nat) '(x, y) => x + y = pat
 f = fun x : nat => x + x
      : nat -> nat
 
-Argument scope is [nat_scope]
+Arguments f _%nat_scope
 fun x : nat => x + x
      : nat -> nat

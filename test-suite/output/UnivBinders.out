@@ -4,37 +4,36 @@ Record PWrap (A : Type@{u}) : Type@{u} := pwrap { punwrap : A }
 (* u |=  *)
 
 PWrap has primitive projections with eta conversion.
-For PWrap: Argument scope is [type_scope]
-For pwrap: Argument scopes are [type_scope _]
+Arguments PWrap _%type_scope
+Arguments pwrap _%type_scope
 punwrap@{u} = 
 fun (A : Type@{u}) (p : PWrap@{u} A) => punwrap _ p
      : forall A : Type@{u}, PWrap@{u} A -> A
 (* u |=  *)
 
-Argument scopes are [type_scope _]
+Arguments punwrap _%type_scope
 Record RWrap (A : Type@{u}) : Type@{u} := rwrap { runwrap : A }
 (* u |=  *)
 
-For RWrap: Argument scope is [type_scope]
-For rwrap: Argument scopes are [type_scope _]
+Arguments RWrap _%type_scope
+Arguments rwrap _%type_scope
 runwrap@{u} = 
 fun (A : Type@{u}) (r : RWrap@{u} A) => let (runwrap) := r in runwrap
      : forall A : Type@{u}, RWrap@{u} A -> A
 (* u |=  *)
 
-Argument scopes are [type_scope _]
+Arguments runwrap _%type_scope
 Wrap@{u} = fun A : Type@{u} => A
      : Type@{u} -> Type@{u}
 (* u |=  *)
 
-Argument scope is [type_scope]
+Arguments Wrap _%type_scope
 wrap@{u} = 
 fun (A : Type@{u}) (Wrap : Wrap@{u} A) => Wrap
      : forall A : Type@{u}, Wrap@{u} A -> A
 (* u |=  *)
 
-Arguments A, Wrap are implicit and maximally inserted
-Argument scopes are [type_scope _]
+Arguments wrap {A%type_scope} {Wrap}
 bar@{u} = nat
      : Wrap@{u} Set
 (* u |= Set < u *)
@@ -87,13 +86,13 @@ Record PWrap (A : Type@{E}) : Type@{E} := pwrap { punwrap : A }
 (* E |=  *)
 
 PWrap has primitive projections with eta conversion.
-For PWrap: Argument scope is [type_scope]
-For pwrap: Argument scopes are [type_scope _]
+Arguments PWrap _%type_scope
+Arguments pwrap _%type_scope
 punwrap@{K} : forall A : Type@{K}, PWrap@{K} A -> A
 (* K |=  *)
 
 punwrap is universe polymorphic
-Argument scopes are [type_scope _]
+Arguments punwrap _%type_scope
 punwrap is transparent
 Expands to: Constant UnivBinders.punwrap
 The command has indeed failed with message:
@@ -118,7 +117,7 @@ Inductive insecind@{k} : Type@{k+1} :=
     inseccstr : Type@{k} -> insecind@{k}
 (* k |=  *)
 
-For inseccstr: Argument scope is [type_scope]
+Arguments inseccstr _%type_scope
 insec@{u v} = Type@{u} -> Type@{v}
      : Type@{max(u+1,v+1)}
 (* u v |=  *)
@@ -126,7 +125,7 @@ Inductive insecind@{u k} : Type@{k+1} :=
     inseccstr : Type@{k} -> insecind@{u k}
 (* u k |=  *)
 
-For inseccstr: Argument scope is [type_scope]
+Arguments inseccstr _%type_scope
 insec2@{u} = Prop
      : Type@{Set+1}
 (* u |=  *)
@@ -148,24 +147,24 @@ Type@{UnivBinders.59} -> Type@{i}
 (* i UnivBinders.59 UnivBinders.60 |=  *)
 
 axfoo is universe polymorphic
-Argument scope is [type_scope]
+Arguments axfoo _%type_scope
 Expands to: Constant UnivBinders.axfoo
 axbar@{i UnivBinders.59 UnivBinders.60} :
 Type@{UnivBinders.60} -> Type@{i}
 (* i UnivBinders.59 UnivBinders.60 |=  *)
 
 axbar is universe polymorphic
-Argument scope is [type_scope]
+Arguments axbar _%type_scope
 Expands to: Constant UnivBinders.axbar
 axfoo' : Type@{axfoo'.u0} -> Type@{axfoo'.i}
 
 axfoo' is not universe polymorphic
-Argument scope is [type_scope]
+Arguments axfoo' _%type_scope
 Expands to: Constant UnivBinders.axfoo'
 axbar' : Type@{axfoo'.u0} -> Type@{axfoo'.i}
 
 axbar' is not universe polymorphic
-Argument scope is [type_scope]
+Arguments axbar' _%type_scope
 Expands to: Constant UnivBinders.axbar'
 The command has indeed failed with message:
 When declaring multiple axioms in one command, only the first is allowed a universe binder (which will be shared by the whole block).

@@ -1,41 +1,31 @@
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
-Argument scopes are [nat_scope nat_scope]
-The reduction tactics unfold Nat.sub but avoid exposing match constructs
+Arguments Nat.sub _%nat_scope _%nat_scope : simpl nomatch
 Nat.sub is transparent
 Expands to: Constant Coq.Init.Nat.sub
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
-Argument scopes are [nat_scope nat_scope]
-The reduction tactics unfold Nat.sub when applied to 1 argument
-  but avoid exposing match constructs
+Arguments Nat.sub _%nat_scope / _%nat_scope : simpl nomatch
 Nat.sub is transparent
 Expands to: Constant Coq.Init.Nat.sub
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
-Argument scopes are [nat_scope nat_scope]
-The reduction tactics unfold Nat.sub
-  when the 1st argument evaluates to a constructor and
-  when applied to 1 argument but avoid exposing match constructs
+Arguments Nat.sub !_%nat_scope / _%nat_scope : simpl nomatch
 Nat.sub is transparent
 Expands to: Constant Coq.Init.Nat.sub
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
-Argument scopes are [nat_scope nat_scope]
-The reduction tactics unfold Nat.sub when the 1st and
-  2nd arguments evaluate to a constructor and when applied to 2 arguments
+Arguments Nat.sub !_%nat_scope !_%nat_scope /
 Nat.sub is transparent
 Expands to: Constant Coq.Init.Nat.sub
 Nat.sub : nat -> nat -> nat
 
 Nat.sub is not universe polymorphic
-Argument scopes are [nat_scope nat_scope]
-The reduction tactics unfold Nat.sub when the 1st and
-  2nd arguments evaluate to a constructor
+Arguments Nat.sub !_%nat_scope !_%nat_scope
 Nat.sub is transparent
 Expands to: Constant Coq.Init.Nat.sub
 pf :
@@ -43,57 +33,43 @@ forall D1 C1 : Type,
 (D1 -> C1) -> forall D2 C2 : Type, (D2 -> C2) -> D1 * D2 -> C1 * C2
 
 pf is not universe polymorphic
-Arguments D2, C2 are implicit
-Arguments D1, C1 are implicit and maximally inserted
-Argument scopes are [foo_scope type_scope _ _ _ _ _]
-The reduction tactics never unfold pf
+Arguments pf {D1%foo_scope} {C1%type_scope} _ [D2] [C2] : simpl never
 pf is transparent
 Expands to: Constant Arguments.pf
 fcomp : forall A B C : Type, (B -> C) -> (A -> B) -> A -> C
 
 fcomp is not universe polymorphic
-Arguments A, B, C are implicit and maximally inserted
-Argument scopes are [type_scope type_scope type_scope _ _ _]
-The reduction tactics unfold fcomp when applied to 6 arguments
+Arguments fcomp {A%type_scope} {B%type_scope} {C%type_scope} _ _ _ /
 fcomp is transparent
 Expands to: Constant Arguments.fcomp
 volatile : nat -> nat
 
 volatile is not universe polymorphic
-Argument scope is [nat_scope]
-The reduction tactics always unfold volatile
+Arguments volatile / _%nat_scope
 volatile is transparent
 Expands to: Constant Arguments.volatile
 f : T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
-Argument scopes are [_ _ nat_scope _ nat_scope]
+Arguments f _ _ _%nat_scope _ _%nat_scope
 f is transparent
 Expands to: Constant Arguments.S1.S2.f
 f : T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
-Argument scopes are [_ _ nat_scope _ nat_scope]
-The reduction tactics unfold f when the 3rd, 4th and
-  5th arguments evaluate to a constructor
+Arguments f _ _ !_%nat_scope !_ !_%nat_scope
 f is transparent
 Expands to: Constant Arguments.S1.S2.f
 f : forall T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
-Argument T2 is implicit
-Argument scopes are [type_scope _ _ nat_scope _ nat_scope]
-The reduction tactics unfold f when the 4th, 5th and
-  6th arguments evaluate to a constructor
+Arguments f [T2%type_scope] _ _ !_%nat_scope !_ !_%nat_scope
 f is transparent
 Expands to: Constant Arguments.S1.f
 f : forall T1 T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
-Arguments T1, T2 are implicit
-Argument scopes are [type_scope type_scope _ _ nat_scope _ nat_scope]
-The reduction tactics unfold f when the 5th, 6th and
-  7th arguments evaluate to a constructor
+Arguments f [T1%type_scope] [T2%type_scope] _ _ !_%nat_scope !_ !_%nat_scope
 f is transparent
 Expands to: Constant Arguments.f
      = forall v : unit, f 0 0 5 v 3 = 2
@@ -103,8 +79,7 @@ Expands to: Constant Arguments.f
 f : forall T1 T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
 
 f is not universe polymorphic
-The reduction tactics unfold f when the 5th, 6th and
-  7th arguments evaluate to a constructor
+Arguments f _ _ _ _ !_ !_ !_
 f is transparent
 Expands to: Constant Arguments.f
 forall w : r, w 3 true = tt
@@ -118,9 +93,7 @@ Extra arguments: _, _.
 volatilematch : nat -> nat
 
 volatilematch is not universe polymorphic
-Argument scope is [nat_scope]
-The reduction tactics always unfold volatilematch
-  but avoid exposing match constructs
+Arguments volatilematch / _%nat_scope : simpl nomatch
 volatilematch is transparent
 Expands to: Constant Arguments.volatilematch
      = fun n : nat => volatilematch n
