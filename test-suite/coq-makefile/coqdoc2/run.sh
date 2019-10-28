@@ -26,10 +26,12 @@ sort -u > desired <<EOT
 ./test/test.glob
 ./test/test.v
 ./test/test.vo
+./test/test.vos
 ./test/sub
 ./test/sub/testsub.glob
 ./test/sub/testsub.v
 ./test/sub/testsub.vo
+./test/sub/testsub.vos
 ./test/mlihtml
 ./test/mlihtml/index_exceptions.html
 ./test/mlihtml/index.html
