@@ -31,9 +31,9 @@ ALLMODS:=$(call vo_to_mod,$(ALLVO:.$(VO)=.vo))
 
 # Converting a stdlib filename into native compiler filenames
 # Used for install targets
-vo_to_cm = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst user-contrib/%, N%, $(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.$(VO)=.cm*))))))
+vo_to_cm = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst user-contrib/%,N%, $(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.$(VO)=.cm*))))))
 
-vo_to_obj = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst user-contrib/%, N%, $(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.$(VO)=.o))))))
+vo_to_obj = $(foreach vo,$(1),$(dir $(vo)).coq-native/$(subst /,_,$(patsubst user-contrib/%,N%, $(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.$(VO)=.o))))))
 
 ifdef QUICK
 GLOBFILES:=
