@@ -1927,9 +1927,11 @@ Renaming implicit arguments
 
    This command is used to redefine the names of implicit arguments.
 
-With the assert flag, ``Arguments`` can be used to assert that a given
-object has the expected number of arguments and that these arguments
-are named as expected.
+.. cmd:: Arguments @qualid {* @name} : assert
+   :name: Arguments (assert)
+
+   This command is used to assert that a given object has the expected
+   number of arguments and that these arguments are named as expected.
 
 .. example:: (continued)
 
