@@ -45,9 +45,14 @@ plugins/micromega/ZCoeff.v
 plugins/micromega/ZMicromega.v
 plugins/micromega/ZifyInst.v
 plugins/micromega/ZifyBool.v
+plugins/micromega/ZifyProp.v
 plugins/micromega/ZifyComparison.v
 plugins/micromega/ZifyClasses.v
 plugins/micromega/Zify.v
+plugins/micromega/Rify_base.v
+plugins/micromega/Rify_power.v
+plugins/micromega/Rify.v
+plugins/micromega/Tify.v
 plugins/nsatz/Nsatz.v
 plugins/omega/Omega.v
 plugins/omega/OmegaLemmas.v

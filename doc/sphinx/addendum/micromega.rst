@@ -252,13 +252,13 @@ cone expression :math:`2 \times (x-1) + (\mathbf{x-1}) \times (\mathbf{x−1}) +
 belongs to :math:`\mathit{Cone}({−x^2,x -1})`. Moreover, by running :tacn:`ring` we
 obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
 
-`zify`: pre-processing of arithmetic goals
+Pre-processing of arithmetic goals
 ------------------------------------------
 
 .. tacn:: zify
    :name: zify
 
-   This tactic is internally called by :tacn:`lia` to support additional types e.g., :g:`nat`, :g:`positive` and :g:`N`.
+   This tactic is internally called by :tacn:`lia` and :tacn:`nia` to support additional types e.g., :g:`nat`, :g:`positive` and :g:`N`.
    By requiring the module ``ZifyBool``, the boolean type :g:`bool` and some comparison operators are also supported.
    :tacn:`zify` can also be extended by rebinding the tactic `Zify.zify_post_hook` that is run immediately after :tacn:`zify`.
 
@@ -266,37 +266,45 @@ obtain :math:`-1`. By Theorem :ref:`Psatz <psatz_thm>`, the goal is valid.
    + To support :g:`Z.quot` and :g:`Z.rem`: ``Ltac Zify.zify_post_hook ::= Z.quot_rem_to_equations``.
    + To support :g:`Z.div`, :g:`Z.modulo`, :g:`Z.quot`, and :g:`Z.rem`: ``Ltac Zify.zify_post_hook ::= Z.to_euclidean_division_equations``.
 
+.. tacn:: rify
+   :name: rify
 
-.. cmd:: Show Zify InjTyp
-   :name: Show Zify InjTyp
+    Similarly to :tacn:`zify`, this tactic is internally called by :tacn:`lra` and :tacn:`nra` to support additional types and operations.
+    :tacn:`rify` is enabled by requiring the module ``Rify_base``. Requiring the module ``Rify_power`` provides support for several power operators.
 
-   This command shows the list of types that can be injected into :g:`Z`.
+The following commands return information about the types and operators supported by the tactics :tacn:`zify` and :tacn:`rify`.
+Currently, the only relevant values for :n:`@ident` are ``Z`` or ``R``.
 
-.. cmd:: Show Zify BinOp
-   :name: Show Zify BinOp
+.. cmd:: Show Tify InjTyp @ident
+   :name: Show Tify InjTyp
 
-   This command shows the list of binary operators processed by :tacn:`zify`.
+   This command shows the list of types that can be injected into :n:`@ident`
 
-.. cmd:: Show Zify BinRel
-   :name: Show Zify BinRel
+.. cmd:: Show Tify BinOp @ident
+   :name: Show Tify BinOp
 
-   This command shows the list of binary relations processed by :tacn:`zify`.
+   This command shows the list of binary operators that can be injected into :n:`@ident`
+
+.. cmd:: Show Tify BinRel @ident
+   :name: Show Tify BinRel
+
+   This command shows the list of binary relations that can be injected into :n:`@ident`
 
 
-.. cmd:: Show Zify UnOp
-   :name: Show Zify UnOp
+.. cmd:: Show Tify UnOp @ident
+   :name: Show Tify UnOp
 
-   This command shows the list of unary operators processed by :tacn:`zify`.
+   This command shows the list of unary operators that can be injected into :n:`@ident`
 
-.. cmd:: Show Zify CstOp
-   :name: Show Zify CstOp
+.. cmd:: Show Tify CstOp @ident
+   :name: Show Tify CstOp
 
-   This command shows the list of constants processed by :tacn:`zify`.
+   This command shows the list of constants that can be injected into :n:`@ident`
 
-.. cmd:: Show Zify Spec
-   :name: Show Zify Spec
+.. cmd:: Show Tify Spec @ident
+   :name: Show Tify Spec
 
-   This command shows the list of operators over :g:`Z` that are compiled using their specification e.g., :g:`Z.min`.
+   This command shows the list of operators over :n:`@ident` that are compiled using their specification e.g., :g:`Z.min`.
 
 .. [#csdp] Sources and binaries can be found at https://projects.coin-or.org/Csdp
 .. [#fnpsatz] Variants deal with equalities and strict inequalities.

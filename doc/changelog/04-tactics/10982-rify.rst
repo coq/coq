@@ -1,0 +1,3 @@
+- The :tacn:`rify` tactic injects operators towards ``R`` and is used
+  as a pre-processing step by :tacn:`lra` and :tacn:`nra`
+  (`#10982 <https://github.com/coq/coq/pull/10982>`_  by Frédéric Besson).
