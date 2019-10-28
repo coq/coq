@@ -86,8 +86,7 @@ Class PropUOp (Op : Prop -> Prop) :=
 
 
 (** Once the term is injected, terms can be replaced by their specification.
-    NB1: The Ltac code is currently limited to (Op: Z -> Z -> Z)
-    NB2: This is not sufficient to cope with [Z.div] or [Z.mod]
+    NB: This is not sufficient to cope with [Z.div] or [Z.mod]
  *)
 Class BinOpSpec {S T: Type} (Op : T -> T -> T) {I : InjTyp S T} :=
   mkbspec {

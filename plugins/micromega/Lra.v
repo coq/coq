@@ -20,7 +20,11 @@ Require Import Rdefinitions.
 Require Import RingMicromega.
 Require Import VarMap.
 Require Coq.micromega.Tauto.
+Require Import Tify.
 Declare ML Module "micromega_plugin".
+Declare ML Module "zify_plugin".
+
+Ltac rify := tify_op R ; (iter_specs applySpec).
 
 Ltac rchange := 
   intros __wit __varmap __ff ;
@@ -33,15 +37,15 @@ Ltac rchecker_abstract   := rchange ; vm_cast_no_check (eq_refl true).
 Ltac rchecker := rchecker_no_abstract.
 
 (** Here, lra stands for linear real arithmetic *)
-Ltac lra := unfold Rdiv in * ;   lra_R  rchecker.
+Ltac lra := unfold Rdiv in * ; rify ; lra_R  rchecker.
 
 (** Here, nra stands for non-linear real arithmetic *)
-Ltac nra := unfold Rdiv in * ; xnra  rchecker.
+Ltac nra := unfold Rdiv in * ; rify ; xnra  rchecker.
 
 Ltac xpsatz dom d :=
   let tac := lazymatch dom with
   | R =>
-    (sos_R rchecker) || (psatz_R d rchecker)
+    rify ; (sos_R rchecker) || (psatz_R d rchecker)
   | _ => fail "Unsupported domain"
  end in tac.
 
