@@ -21,7 +21,8 @@ Require Import RingMicromega.
 Require  FSetPositive FSetEqProperties.
 Require Import ZCoeff.
 Require Import Refl.
-Require Import ZArith.
+Require Import ZArith_base.
+Require Import ZArithRing.
 Require PreOmega.
 (*Declare ML Module "micromega_plugin".*)
 Local Open Scope Z_scope.

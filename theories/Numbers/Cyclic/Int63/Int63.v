@@ -15,6 +15,7 @@ Require Export DoubleType.
 Require Import Lia.
 Require Import Zpow_facts.
 Require Import Zgcd_alt.
+Require ZArith.
 Import Znumtheory.
 
 Register bool as kernel.ind_bool.

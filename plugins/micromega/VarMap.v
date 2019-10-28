@@ -15,7 +15,7 @@
 (*                                                                      *)
 (************************************************************************)
 
-Require Import ZArith.
+Require Import ZArith_base.
 Require Import Coq.Arith.Max.
 Require Import List.
 Set Implicit Arguments.

@@ -51,7 +51,7 @@ Instance GT_APP2 {T1 T2 T3: Type} (F : T1 -> T2 -> T3)
          GT A1 -> GT A2 -> GT (F A1 A2).
 Defined.
 
-Require Import ZArith.
+Require Import QArith_base.
 
 Instance DO : DeclaredConstant O := {}.
 Instance DS : DeclaredConstant S := {}.
@@ -63,7 +63,5 @@ Instance DZpos: DeclaredConstant Zpos := {}.
 Instance DZneg: DeclaredConstant Zneg := {}.
 Instance DZpow_pos : DeclaredConstant Z.pow_pos := {}.
 Instance DZpow     : DeclaredConstant Z.pow     := {}.
-
-Require Import QArith.
 
 Instance DQ : DeclaredConstant Qmake := {}.
