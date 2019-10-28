@@ -28,7 +28,7 @@ VERNAC COMMAND EXTEND DECLAREINJECTION CLASSIFIED AS SIDEFF
 | ["Add" "PropOp"    constr(t) ] -> { Zify.PropOp.register t }
 | ["Add" "PropUOp"   constr(t) ] -> { Zify.PropUnOp.register t }
 | ["Add" "Spec"      constr(t) ] -> { Zify.Spec.register t }
-| ["Add" "BinOpSpec" constr(t) ] -> { Zify.Spec.register t }
+| ["Add" "BinOpSpec" constr(t) ] -> {  Zify.Spec.register t }
 | ["Add" "UnOpSpec"  constr(t) ] -> { Zify.Spec.register t }
 | ["Add" "Saturate"  constr(t) ] -> { Zify.Saturate.register t }
 END
@@ -38,15 +38,15 @@ TACTIC EXTEND ITER
 END
 
 TACTIC EXTEND TRANS
-| [ "zify_op"  ] -> { Zify.zify_tac }
+| [ "tify_op" constr(t) ] -> { Zify.tify_tac t }
 | [ "saturate"  ] -> { Zify.saturate }
 END
 
 VERNAC COMMAND EXTEND ZifyPrint CLASSIFIED AS SIDEFF
-|[ "Show" "Zify" "InjTyp" ] -> { Zify.InjTable.print () }
-|[ "Show" "Zify" "BinOp" ]  -> { Zify.BinOp.print () }
-|[ "Show" "Zify" "UnOp" ]   -> { Zify.UnOp.print () }
-|[ "Show" "Zify" "CstOp"]   -> { Zify.CstOp.print () }
-|[ "Show" "Zify" "BinRel"]  -> { Zify.BinRel.print () }
-|[ "Show" "Zify" "Spec"]    -> { Zify.Spec.print () }
+|[ "Show" "Tify" "InjTyp" constr(t)] -> { Zify.InjTable.print t }
+|[ "Show" "Tify" "BinOp"  constr(t)]  -> { Zify.BinOp.print t }
+|[ "Show" "Tify" "UnOp" constr(t)]   -> { Zify.UnOp.print t }
+|[ "Show" "Tify" "CstOp" constr(t)]   -> { Zify.CstOp.print t }
+|[ "Show" "Tify" "BinRel" constr(t)]  -> { Zify.BinRel.print t }
+|[ "Show" "Tify" "Spec" constr(t)]    -> { Zify.Spec.print t }
 END

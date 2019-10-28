@@ -14,47 +14,8 @@
 
 Require Import Arith Max Min BinInt BinNat Znat Nnat.
 Require Import ZifyClasses.
-Declare ML Module "zify_plugin".
+Require Import ZifyProp.
 Local Open Scope Z_scope.
-
-(** Propositional logic *)
-Instance PropAnd : PropOp and.
-Proof.
-  constructor.
-  tauto.
-Defined.
-Add PropOp PropAnd.
-
-Instance PropOr : PropOp or.
-Proof.
-  constructor.
-  tauto.
-Defined.
-Add PropOp PropOr.
-
-Instance PropArrow : PropOp (fun x y => x -> y).
-Proof.
-  constructor.
-  intros.
-  tauto.
-Defined.
-Add PropOp PropArrow.
-
-Instance PropIff : PropOp iff.
-Proof.
-  constructor.
-  intros.
-  tauto.
-Defined.
-Add PropOp PropIff.
-
-Instance PropNot : PropUOp not.
-Proof.
-  constructor.
-  intros.
-  tauto.
-Defined.
-Add PropUOp PropNot.
 
 
 Instance Inj_Z_Z : InjTyp Z Z :=

@@ -596,4 +596,4 @@ Ltac elim_let :=
 
 Ltac zify :=
   intros ; elim_let ;
-  Zify.zify  ; ZifyInst.saturate.
+  Zify.zify  ; Zify.saturate.

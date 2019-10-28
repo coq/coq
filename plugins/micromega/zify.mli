@@ -9,7 +9,7 @@
 (************************************************************************)
 open Constrexpr
 
-module type S = sig val register : constr_expr -> unit val print : unit -> unit end
+module type S = sig val register : constr_expr -> unit val print : constr_expr -> unit end
 
 module InjTable : S
 module UnOp     : S
@@ -21,6 +21,6 @@ module PropUnOp : S
 module Spec     : S
 module Saturate : S
 
-val zify_tac : unit Proofview.tactic
+val tify_tac : EConstr.constr -> unit Proofview.tactic
 val saturate : unit Proofview.tactic
 val iter_specs : Ltac_plugin.Tacinterp.Value.t -> unit Proofview.tactic

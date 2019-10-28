@@ -8,13 +8,45 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(** Propositional operators known to [tify] tactics. *)
 Require Import ZifyClasses.
-Require Export ZifyInst.
-Require Import InitialRing.
-Require Import Tify.
 Declare ML Module "zify_plugin".
 
-(** [zify_post_hook] is there to be redefined. *)
-Ltac zify_post_hook := idtac.
+(** Propositional logic *)
+Instance PropAnd : PropOp and.
+Proof.
+  constructor.
+  tauto.
+Defined.
+Add PropOp PropAnd.
 
-Ltac zify := tify_op BinInt.Z; (iter_specs applySpec) ; zify_post_hook.
+Instance PropOr : PropOp or.
+Proof.
+  constructor.
+  tauto.
+Defined.
+Add PropOp PropOr.
+
+Instance PropArrow : PropOp (fun x y => x -> y).
+Proof.
+  constructor.
+  intros.
+  tauto.
+Defined.
+Add PropOp PropArrow.
+
+Instance PropIff : PropOp iff.
+Proof.
+  constructor.
+  intros.
+  tauto.
+Defined.
+Add PropOp PropIff.
+
+Instance PropNot : PropUOp not.
+Proof.
+  constructor.
+  intros.
+  tauto.
+Defined.
+Add PropUOp PropNot.
