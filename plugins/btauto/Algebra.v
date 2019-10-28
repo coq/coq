@@ -1,4 +1,4 @@
-Require Import Bool PArith DecidableClass Ring Omega Lia.
+Require Import Bool PArith DecidableClass Ring Lia.
 
 Ltac bool :=
 repeat match goal with
@@ -359,8 +359,8 @@ intros k p var1 var2 Hvar Hv; revert var1 var2 Hvar.
 induction Hv; intros var1 var2 Hvar; simpl; [now auto|].
 rewrite Hvar; [|now auto]; erewrite (IHHv1 var1 var2).
   + erewrite (IHHv2 var1 var2); [ring|].
-    intros; apply Hvar; zify; omega.
-  + intros; apply Hvar; zify; omega.
+    intros; apply Hvar; lia.
+  + intros; apply Hvar; lia.
 Qed.
 
 End Evaluation.
@@ -424,7 +424,7 @@ match goal with
   apply Pos.max_case_strong; intros; lia
 | [ |- (?z < Pos.max ?x ?y)%positive ] =>
   apply Pos.max_case_strong; intros; lia
-| _ => zify; omega
+| _ => lia
 end : core.
 Hint Resolve Pos.le_max_r Pos.le_max_l : core.
 
@@ -488,7 +488,7 @@ induction Hl; intros kr pr Hr; simpl.
     { apply (valid_le_compat (Pos.max i kr)); auto. }
     { apply poly_add_valid_compat; auto.
       now apply poly_mul_mon_valid_compat; intuition. }
-  - repeat apply Pos.max_case_strong; zify; omega.
+  - repeat apply Pos.max_case_strong; lia.
 Qed.
 
 (* Compatibility of linearity wrt to linear operations *)
@@ -497,7 +497,7 @@ Lemma poly_add_linear_compat : forall kl kr pl pr, linear kl pl -> linear kr pr 
   linear (Pos.max kl kr) (poly_add pl pr).
 Proof.
 intros kl kr pl pr Hl; revert kr pr; induction Hl; intros kr pr Hr; simpl.
-+ apply (linear_le_compat kr); [|apply Pos.max_case_strong; zify; omega].
++ apply (linear_le_compat kr); [|apply Pos.max_case_strong; lia].
   now induction Hr; constructor; auto.
 + apply (linear_le_compat (Pos.max kr (Pos.succ i))); [|now auto].
   induction Hr; simpl.
@@ -527,17 +527,17 @@ inversion Hv; case_decide; subst.
   destruct (list_nth k var false); ring_simplify; [|now auto].
   rewrite <- (andb_true_l (eval var p1)), <- (andb_true_l (eval var p3)).
   rewrite <- IHp2; auto; rewrite <- IHp1; [ring|].
-  apply (valid_le_compat k); [now auto|zify; omega].
+  apply (valid_le_compat k); [now auto|lia].
 + remember (list_nth k var false) as b; destruct b; ring_simplify; [|now auto].
   case_decide; simpl.
   - rewrite <- (IHp2 p2); [inversion H|now auto]; simpl.
     replace (eval var p1) with (list_nth k var false && eval var p1) by (rewrite <- Heqb; ring); rewrite <- (IHp1 k).
     { rewrite <- Heqb; ring. }
-    { apply (valid_le_compat p2); [auto|zify; omega]. }
+    { apply (valid_le_compat p2); [auto|lia]. }
   - rewrite (IHp2 p2); [|now auto].
     replace (eval var p1) with (list_nth k var false && eval var p1) by (rewrite <- Heqb; ring).
     rewrite <- (IHp1 k); [rewrite <- Heqb; ring|].
-    apply (valid_le_compat p2); [auto|zify; omega].
+    apply (valid_le_compat p2); [auto|lia].
 Qed.
 
 (* Reduction preserves evaluation by boolean assignations *)
@@ -555,10 +555,10 @@ Lemma reduce_aux_le_compat : forall k l p, valid k p -> (k <= l)%positive ->
   reduce_aux l p = reduce_aux k p.
 Proof.
 intros k l p; revert k l; induction p; intros k l H Hle; simpl; auto.
-inversion H; subst; repeat case_decide; subst; try (exfalso; zify; omega).
-+ apply IHp1; [|now auto]; eapply valid_le_compat; [eauto|zify; omega].
+inversion H; subst; repeat case_decide; subst; try lia.
++ apply IHp1; [|now auto]; eapply valid_le_compat; [eauto|lia].
 + f_equal; apply IHp1; auto.
-  now eapply valid_le_compat; [eauto|zify; omega].
+  now eapply valid_le_compat; [eauto|lia].
 Qed.
 
 (* Reduce projects valid polynomials into linear ones *)
@@ -569,13 +569,13 @@ intros i p; revert i; induction p; intros i Hp; simpl.
 + constructor.
 + inversion Hp; subst; case_decide; subst.
   - rewrite <- (Pos.max_id i) at 1; apply poly_add_linear_compat.
-    { apply IHp1; eapply valid_le_compat; [eassumption|zify; omega]. }
+    { apply IHp1; eapply valid_le_compat; [eassumption|lia]. }
     { intuition. }
   - case_decide.
-  { apply IHp1; eapply valid_le_compat; [eauto|zify; omega]. }
-  { constructor; try (zify; omega); auto.
-    erewrite (reduce_aux_le_compat p2); [|assumption|zify; omega].
-    apply IHp1; eapply valid_le_compat; [eauto|]; zify; omega. }
+  { apply IHp1; eapply valid_le_compat; [eauto|lia]. }
+  { constructor; try lia; auto.
+    erewrite (reduce_aux_le_compat p2); [|assumption|lia].
+    apply IHp1; eapply valid_le_compat; [eauto|]; lia. }
 Qed.
 
 Lemma linear_reduce : forall k p, valid k p -> linear k (reduce p).
@@ -583,7 +583,7 @@ Proof.
 intros k p H; induction H; simpl.
 + now constructor.
 + case_decide.
-  - eapply linear_le_compat; [eauto|zify; omega].
+  - eapply linear_le_compat; [eauto|lia].
   - constructor; auto.
     apply linear_reduce_aux; auto.
 Qed.
