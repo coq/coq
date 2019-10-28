@@ -15,18 +15,15 @@ open Util
 open Constr
 open Context
 open Environ
-open Declare
 open Names
 open Libnames
 open Nameops
 open Constrexpr
 open Constrexpr_ops
 open Constrintern
-open Impargs
 open Reductionops
 open Type_errors
 open Pretyping
-open Indschemes
 open Context.Rel.Declaration
 open Entries
 
@@ -79,12 +76,6 @@ type structured_one_inductive_expr = {
   ind_arity : constr_expr;
   ind_lc : (Id.t * constr_expr) list
 }
-
-let minductive_message = function
-  | []  -> user_err Pp.(str "No inductive definition.")
-  | [x] -> (Id.print x ++ str " is defined")
-  | l   -> hov 0  (prlist_with_sep pr_comma Id.print l ++
-                     spc () ++ str "are defined")
 
 let check_all_names_different indl =
   let ind_names = List.map (fun ind -> ind.ind_name) indl in
@@ -541,62 +532,6 @@ let extract_mutual_inductive_declaration_components indl =
   let indl = extract_inductive indl in
   (params,indl), coes, List.flatten ntnl
 
-let is_recursive mie =
-  let rec is_recursive_constructor lift typ =
-    match Constr.kind typ with
-    | Prod (_,arg,rest) ->
-        not (EConstr.Vars.noccurn Evd.empty (* FIXME *) lift (EConstr.of_constr arg)) ||
-        is_recursive_constructor (lift+1) rest
-    | LetIn (na,b,t,rest) -> is_recursive_constructor (lift+1) rest
-    | _ -> false
-  in
-  match mie.mind_entry_inds with
-  | [ind] ->
-      let nparams = List.length mie.mind_entry_params in
-      List.exists (fun t -> is_recursive_constructor (nparams+1) t) ind.mind_entry_lc
-  | _ -> false
-
-let warn_non_primitive_record =
-  CWarnings.create ~name:"non-primitive-record" ~category:"record"
-         (fun indsp ->
-          (hov 0 (str "The record " ++ Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef indsp) ++
-                    strbrk" could not be defined as a primitive record")))
-
-let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) mie pl impls =
-  (* spiwack: raises an error if the structure is supposed to be non-recursive,
-        but isn't *)
-  begin match mie.mind_entry_finite with
-  | Declarations.BiFinite when is_recursive mie ->
-      if Option.has_some mie.mind_entry_record then
-        user_err Pp.(str "Records declared with the keywords Record or Structure cannot be recursive. You can, however, define recursive records using the Inductive or CoInductive command.")
-      else
-        user_err Pp.(str ("Types declared with the keyword Variant cannot be recursive. Recursive types are defined with the Inductive and CoInductive command."))
-  | _ -> ()
-  end;
-  let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let (_, kn), prim = declare_mind mie in
-  let mind = Global.mind_of_delta_kn kn in
-  if primitive_expected && not prim then warn_non_primitive_record (mind,0);
-  Declare.declare_univ_binders (GlobRef.IndRef (mind,0)) pl;
-  List.iteri (fun i (indimpls, constrimpls) ->
-              let ind = (mind,i) in
-              let gr = GlobRef.IndRef ind in
-              maybe_declare_manual_implicits false gr indimpls;
-              List.iteri
-                (fun j impls ->
-                 maybe_declare_manual_implicits false
-                    (GlobRef.ConstructRef (ind, succ j)) impls)
-                constrimpls)
-      impls;
-  Flags.if_verbose Feedback.msg_info (minductive_message names);
-  if mie.mind_entry_private == None
-  then declare_default_schemes mind;
-  mind
-
-type one_inductive_impls =
-  Impargs.manual_implicits (* for inds *) *
-  Impargs.manual_implicits list (* for constrs *)
-
 type uniform_inductive_flag =
   | UniformParameters
   | NonUniformParameters
@@ -607,7 +542,7 @@ let do_mutual_inductive ~template udecl indl ~cumulative ~poly ~private_ind ~uni
   let indl = match uniform with UniformParameters -> (params, [], indl) | NonUniformParameters -> ([], params, indl) in
   let mie,pl,impls = interp_mutual_inductive_gen (Global.env()) ~template udecl indl ntns ~cumulative ~poly ~private_ind finite in
   (* Declare the mutual inductive block with its associated schemes *)
-  ignore (declare_mutual_inductive_with_eliminations mie pl impls);
+  ignore (DeclareInd.declare_mutual_inductive_with_eliminations mie pl impls);
   (* Declare the possible notations of inductive types *)
   List.iter (Metasyntax.add_notation_interpretation (Global.env ())) ntns;
   (* Declare the coercions *)
@@ -652,3 +587,5 @@ let make_cases ind =
        let consref = GlobRef.ConstructRef (ith_constructor_of_inductive ind (i + 1)) in
        (Libnames.string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty consref) :: al') :: l)
     mip.mind_nf_lc []
+
+let declare_mutual_inductive_with_eliminations = DeclareInd.declare_mutual_inductive_with_eliminations

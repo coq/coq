@@ -43,6 +43,8 @@ type 'a constant_entry =
   | ParameterEntry of parameter_entry
   | PrimitiveEntry of primitive_entry
 
+val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
+
 val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
@@ -86,11 +88,6 @@ val declare_private_constant
 val set_declare_scheme :
   (string -> (inductive * Constant.t) array -> unit) -> unit
 
-(** [declare_mind me] declares a block of inductive types with
-   their constructors in the current section; it returns the path of
-   the whole block and a boolean indicating if it is a primitive record. *)
-val declare_mind : mutual_inductive_entry -> Libobject.object_name * bool
-
 (** Declaration messages *)
 
 val definition_message : Id.t -> unit
@@ -100,15 +97,7 @@ val cofixpoint_message : Id.t list -> unit
 val recursive_message : bool (** true = fixpoint *) ->
   int array option -> Id.t list -> unit
 
-val exists_name : Id.t -> bool
-
-(** Global universe contexts, names and constraints *)
-val declare_univ_binders : GlobRef.t -> UnivNames.universe_binders -> unit
-
-val declare_universe_context : poly:bool -> Univ.ContextSet.t -> unit
-
-val do_universe : poly:bool -> lident list -> unit
-val do_constraint : poly:bool -> Glob_term.glob_constraint list -> unit
+val check_exists : Id.t -> unit
 
 (* Used outside this module only in indschemes *)
 exception AlreadyDeclared of (string option * Id.t)

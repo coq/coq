@@ -466,7 +466,7 @@ let declare_structure ~cumulative finite ubinders univs paramimpls params templa
   in
   let mie = InferCumulativity.infer_inductive (Global.env ()) mie in
   let impls = List.map (fun _ -> paramimpls, []) record_data in
-  let kn = ComInductive.declare_mutual_inductive_with_eliminations mie ubinders impls
+  let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie ubinders impls
       ~primitive_expected:!primitive_flag
   in
   let map i (_, _, _, _, fieldimpls, fields, is_coe, coers) =
