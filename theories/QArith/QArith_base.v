@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Export ZArith.
+Require Export ZArith_base.
 Require Export ZArithRing.
 Require Export Morphisms Setoid Bool.
 
