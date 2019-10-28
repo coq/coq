@@ -17,7 +17,6 @@ open CErrors
 open Util
 open CAst
 open Names
-open Nameops
 open Termops
 open Declarations
 open Environ
@@ -30,7 +29,7 @@ open Printer
 open Printmod
 open Context.Rel.Declaration
 
-(* module RelDecl = Context.Rel.Declaration *)
+module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 type object_pr = {
@@ -138,11 +137,6 @@ let print_impargs_list prefix l =
             then print_one_impargs_list imps
             else [str "No implicit arguments"]))])]) l)
 
-let print_renames_list prefix l =
-  if List.is_empty l then [] else
-  [add_colon prefix ++ str "Arguments are renamed to " ++
-    hv 2 (prlist_with_sep pr_comma (fun x -> x) (List.map Name.print l))]
-
 let need_expansion impl ref =
   let typ, _ = Typeops.type_of_global_in_context (Global.env ()) ref in
   let ctx = Term.prod_assum typ in
@@ -161,19 +155,6 @@ let print_impargs ref =
        blankline ] @
     (if has_impl then print_impargs_list (mt()) impl
      else [str "No implicit arguments"]))
-
-(*********************)
-(** Printing Scopes  *)
-
-let print_argument_scopes prefix = function
-  | [Some sc] ->
-      [add_colon prefix ++ str"Argument scope is [" ++ str sc ++ str"]"]
-  | l when not (List.for_all Option.is_empty l) ->
-     [add_colon prefix ++ hov 2 (str"Argument scopes are" ++ spc() ++
-      str "[" ++
-      pr_sequence (function Some sc -> str sc | None -> str "_") l ++
-      str "]")]
-  | _  -> []
 
 (*********************)
 (** Printing Opacity *)
@@ -260,13 +241,85 @@ let print_primitive ref =
       print_primitive_record mib.mind_finite mib.mind_packets mib.mind_record
   | _ -> []
 
-let print_name_infos ref =
-  let impls = implicits_of_global ref in
+let needs_extra_scopes ref scopes =
+  let open Constr in
+  let rec aux env t = function
+    | [] -> false
+    | _::scopes -> match kind (Reduction.whd_all env t) with
+      | Prod (na,dom,codom) -> aux (push_rel (RelDecl.LocalAssum (na,dom)) env) codom scopes
+      | _ -> true
+  in
+  let env = Global.env() in
+  let ty, _ctx = Typeops.type_of_global_in_context env ref in
+  aux env ty scopes
+
+let implicit_kind_of_status = function
+  | None -> Anonymous, NotImplicit
+  | Some (id,_,(maximal,_)) -> Name id, if maximal then MaximallyImplicit else Implicit
+
+let is_dummy {Vernacexpr.implicit_status; name; recarg_like; notation_scope} =
+  name = Anonymous && not recarg_like && notation_scope = None && implicit_status = NotImplicit
+
+let rec main_implicits i renames recargs scopes impls =
+  if renames = [] && recargs = [] && scopes = [] && impls = [] then []
+  else
+    let recarg_like, recargs = match recargs with
+      | j :: recargs when i = j -> true, recargs
+      | _ -> false, recargs
+    in
+    let (name, implicit_status) =
+      match renames, impls with
+      | _, (Some _ as i) :: _ -> implicit_kind_of_status i
+      | name::_, _ -> (name,NotImplicit)
+      | [], (None::_ | []) -> (Anonymous, NotImplicit)
+    in
+    let notation_scope = match scopes with
+      | scope :: _ -> Option.map CAst.make scope
+      | [] -> None
+    in
+    let status = {Vernacexpr.implicit_status; name; recarg_like; notation_scope} in
+    let tl = function [] -> [] | _::tl -> tl in
+    (* recargs is special -> tl handled above *)
+    let rest = main_implicits (i+1) (tl renames) recargs (tl scopes) (tl impls) in
+    if is_dummy status && rest = []
+    then [] (* we may have a trail of dummies due to eg "clear scopes" *)
+    else status :: rest
+
+let print_arguments ref =
+  let qid = Nametab.shortest_qualid_of_global Id.Set.empty ref in
+  let flags, recargs, nargs_for_red =
+    let open Reductionops.ReductionBehaviour in
+    match get ref with
+    | None -> [], [], None
+    | Some NeverUnfold -> [`ReductionNeverUnfold], [], None
+    | Some (UnfoldWhen { nargs; recargs }) -> [], recargs, nargs
+    | Some (UnfoldWhenNoMatch { nargs; recargs }) -> [`ReductionDontExposeCase], recargs, nargs
+  in
+  let flags, renames = match Arguments_renaming.arguments_names ref with
+    | exception Not_found -> flags, []
+    | [] -> flags, []
+    | renames -> `Rename::flags, renames
+  in
   let scopes = Notation.find_arguments_scope ref in
-  let renames =
-    try Arguments_renaming.arguments_names ref with Not_found -> [] in
+  let flags = if needs_extra_scopes ref scopes then `ExtraScopes::flags else flags in
+  let impls = Impargs.extract_impargs_data (Impargs.implicits_of_global ref) in
+  let impls, moreimpls = match impls with
+    | (_, impls) :: rest -> impls, rest
+    | [] -> assert false
+  in
+  let impls = main_implicits 0 renames recargs scopes impls in
+  let moreimpls = List.map (fun (_,i) -> List.map implicit_kind_of_status i) moreimpls in
+  let bidi = Pretyping.get_bidirectionality_hint ref in
+  if impls = [] && moreimpls = [] && nargs_for_red = None && bidi = None && flags = [] then []
+  else
+    let open Constrexpr in
+    let open Vernacexpr in
+    [Ppvernac.pr_vernac_expr
+       (VernacArguments (CAst.make (AN qid), impls, moreimpls, nargs_for_red, bidi, flags))]
+
+let print_name_infos ref =
   let type_info_for_implicit =
-    if need_expansion (select_impargs_size 0 impls) ref then
+    if need_expansion (select_impargs_size 0 (implicits_of_global ref)) ref then
       (* Need to reduce since implicits are computed with products flattened *)
       [str "Expanded type for implicit arguments";
        print_ref true ref None; blankline]
@@ -275,42 +328,15 @@ let print_name_infos ref =
   print_type_in_type ref @
   print_primitive ref @
   type_info_for_implicit @
-  print_renames_list (mt()) renames @
-  print_impargs_list (mt()) impls @
-  print_argument_scopes (mt()) scopes @
+  print_arguments ref @
   print_if_is_coercion ref
 
-let print_id_args_data test pr id l =
-  if List.exists test l then
-    pr (str "For " ++ Id.print id) l
-  else
-    []
-
-let print_args_data_of_inductive_ids get test pr sp mipv =
-  List.flatten (Array.to_list (Array.mapi
-    (fun i mip ->
-      print_id_args_data test pr mip.mind_typename (get (GlobRef.IndRef (sp,i))) @
-      List.flatten (Array.to_list (Array.mapi
-        (fun j idc ->
-          print_id_args_data test pr idc (get (GlobRef.ConstructRef ((sp,i),j+1))))
-        mip.mind_consnames)))
-    mipv))
-
-let print_inductive_implicit_args =
-  print_args_data_of_inductive_ids
-    implicits_of_global (fun l -> not (List.is_empty (positions_of_implicits l)))
-    print_impargs_list
-
-let print_inductive_renames =
-  print_args_data_of_inductive_ids
-    (fun r ->
-      try Arguments_renaming.arguments_names r with Not_found -> [])
-    ((!=) Anonymous)
-    print_renames_list
-
-let print_inductive_argument_scopes =
-  print_args_data_of_inductive_ids
-    Notation.find_arguments_scope (Option.has_some) print_argument_scopes
+let print_inductive_args sp mipv =
+  let flatmapi f v = List.flatten (Array.to_list (Array.mapi f v)) in
+  flatmapi
+    (fun i mip -> print_arguments (GlobRef.IndRef (sp,i)) @
+                  flatmapi (fun j _ -> print_arguments (GlobRef.ConstructRef ((sp,i),j+1)))
+                    mip.mind_consnames) mipv
 
 let print_bidi_hints gr =
   match Pretyping.get_bidirectionality_hint gr with
@@ -536,9 +562,7 @@ let gallina_print_inductive sp udecl =
   pr_mutual_inductive_body env sp mib udecl ++
   with_line_skip
     (print_primitive_record mib.mind_finite mipv mib.mind_record @
-     print_inductive_renames sp mipv @
-     print_inductive_implicit_args sp mipv @
-     print_inductive_argument_scopes sp mipv)
+     print_inductive_args sp mipv)
 
 let print_named_decl env sigma id =
   gallina_print_named_decl env sigma (Global.lookup_named id) ++ fnl ()
@@ -860,13 +884,11 @@ let print_about_any ?loc env sigma k udecl =
   maybe_error_reject_univ_decl k udecl;
   match k with
   | Term ref ->
-    let rb = Reductionops.ReductionBehaviour.print ref in
     Dumpglob.add_glob ?loc ref;
       pr_infos_list
        (print_ref false ref udecl :: blankline ::
         print_polymorphism ref @
         print_name_infos ref @
-        (if Pp.ismt rb then [] else [rb]) @
         print_opacity ref @
   print_bidi_hints ref @
   [hov 0 (str "Expands to: " ++ pr_located_qualid k)])

@@ -1083,7 +1083,12 @@ let string_of_definition_object_kind = let open Decls in function
                 match n, nbidi, l with
                   | Some 0, _, l -> spc () ++ str"/" ++ print_arguments None nbidi l
                   | _, Some 0, l -> spc () ++ str"|" ++ print_arguments n None l
-                  | _, _, [] -> mt()
+                  | None, None, [] -> mt()
+                  | _, _, [] ->
+                    let dummy = {name=Anonymous; recarg_like=false;
+                                 notation_scope=None; implicit_status=Impargs.NotImplicit}
+                    in
+                    print_arguments n nbidi [dummy]
                   | n, nbidi, { name = id; recarg_like = k;
                          notation_scope = s;
                          implicit_status = imp } :: tl ->
