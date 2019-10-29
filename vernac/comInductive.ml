@@ -358,16 +358,16 @@ let interp_mutual_inductive_constr ~env0 ~sigma ~template ~udecl ~env_ar ~env_pa
   (* Compute renewed arities *)
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
-  let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf cl,impsl)) constructors in
+  let constructors = List.map (on_pi2 (List.map nf)) constructors in
   let arities = List.map EConstr.(to_constr sigma) arities in
   let sigma = List.fold_left make_anonymous_conclusion_flexible sigma arityconcl in
   let sigma, arities = inductive_levels env_ar_params sigma arities constructors in
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
-  let arities = List.map (fun (template, arity) -> template, nf arity) arities in
-  let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map nf cl,impsl)) constructors in
+  let arities = List.map (on_snd nf) arities in
+  let constructors = List.map (on_pi2 (List.map nf)) constructors in
   let ctx_params = List.map Termops.(map_rel_decl (EConstr.to_constr sigma)) ctx_params in
-  let arityconcl = List.map (Option.map (fun (anon, s) -> EConstr.ESorts.kind sigma s)) arityconcl in
+  let arityconcl = List.map (Option.map (fun (_anon, s) -> EConstr.ESorts.kind sigma s)) arityconcl in
   let sigma = restrict_inductive_universes sigma ctx_params (List.map snd arities) constructors in
   let uctx = Evd.check_univ_decl ~poly sigma udecl in
   List.iter (fun c -> check_evars env_params (Evd.from_env env_params) sigma (EConstr.of_constr (snd c))) arities;
