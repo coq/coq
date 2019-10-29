@@ -95,4 +95,9 @@ val is_open_canonical_projection :
 val canonical_projections : unit ->
   ((GlobRef.t * cs_pattern) * obj_typ) list
 
-val check_and_decompose_canonical_structure : Environ.env -> Evd.evar_map -> GlobRef.t -> Constant.t * inductive
+type canonical_declaration =
+  | SingleNamedCanonicalInstance of Constant.t * inductive
+  | MultipleAnonymousCanonicalInstances of Id.t * Evd.evar_map * (EConstr.t * inductive) list
+
+val check_and_decompose_canonical_structure :
+  Environ.env -> Evd.evar_map -> GlobRef.t -> canonical_declaration

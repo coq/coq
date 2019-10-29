@@ -9,4 +9,5 @@
 (************************************************************************)
 open Names
 
-val declare_canonical_structure : GlobRef.t -> unit
+val declare_canonical_structure :
+  poly:bool -> scope:DeclareDef.locality -> GlobRef.t -> unit

@@ -522,11 +522,11 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   in
   start_lemma_with_initialization ?hook ~poly ~scope ~kind evd ~udecl recguard thms snl
 
-let vernac_definition_hook ~poly = let open Decls in function
+let vernac_definition_hook ~poly ~scope = let open Decls in function
 | Coercion ->
   Some (Class.add_coercion_hook ~poly)
 | CanonicalStructure ->
-  Some (DeclareDef.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure dref)))
+  Some (DeclareDef.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure ~poly ~scope dref)))
 | SubClass ->
   Some (Class.add_subclass_hook ~poly)
 | _ -> None
@@ -551,7 +551,7 @@ let vernac_definition_name lid local =
 let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook ~poly:atts.polymorphic kind in
+  let hook = vernac_definition_hook ~poly:atts.polymorphic ~scope:local kind in
   let program_mode = atts.program in
   let poly = atts.polymorphic in
   let name = vernac_definition_name lid local in
@@ -560,7 +560,7 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
 let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook ~poly:atts.polymorphic kind in
+  let hook = vernac_definition_hook ~poly:atts.polymorphic ~scope kind in
   let program_mode = atts.program in
   let name = vernac_definition_name lid scope in
   let red_option = match red_option with
@@ -1025,8 +1025,8 @@ let vernac_require from import qidl =
 
 (* Coercions and canonical structures *)
 
-let vernac_canonical r =
-  Canonical.declare_canonical_structure (smart_global r)
+let vernac_canonical ~poly ~scope r =
+  Canonical.declare_canonical_structure ~poly ~scope (smart_global r)
 
 let vernac_coercion ~atts ref qids qidt =
   let local, poly = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
@@ -2085,8 +2085,10 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
         vernac_import export qidl)
   | VernacCanonical qid ->
     VtDefault(fun () ->
-        unsupported_attributes atts;
-        vernac_canonical qid)
+        vernac_canonical
+          ~poly:(only_polymorphism atts)
+          ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
+          qid)
   | VernacCoercion (r,s,t) ->
     VtDefault(fun () -> vernac_coercion ~atts r s t)
   | VernacIdentityCoercion ({v=id},s,t) ->

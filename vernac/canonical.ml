@@ -33,7 +33,25 @@ let inCanonStruc : Constant.t * inductive -> obj =
 
 let add_canonical_structure x = Lib.add_anonymous_leaf (inCanonStruc x)
 
-let declare_canonical_structure ref =
+let declare_definition ~poly ~scope seed ind env sigma body =
+  let name = Namegen.next_global_ident_away seed (Termops.vars_of_env env) in
+  let sigma, ce =
+    DeclareDef.prepare_definition
+      ~allow_evars:false ~opaque:false ~poly ~types:None ~body sigma UState.default_univ_decl in
+  let scope = DeclareDef.(Global Declare.ImportNeedQualified) in
+  let kind = Decls.IsDefinition Decls.Definition in
+  let ub = Evd.universe_binders sigma in
+  match DeclareDef.declare_definition ~name ~scope ~kind ub ce [] with
+  | GlobRef.ConstRef c -> c
+  | _ -> assert false
+
+let declare_canonical_structure ~poly ~scope ref =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  add_canonical_structure (check_and_decompose_canonical_structure env sigma ref)
+  match check_and_decompose_canonical_structure env sigma ref with
+  | SingleNamedCanonicalInstance (c,i) ->
+      add_canonical_structure (c,i)
+  | MultipleAnonymousCanonicalInstances (label,sigma,cslist) ->
+      cslist |> List.iter (fun (body,ind) ->
+        let name = declare_definition ~poly ~scope label ind env sigma body in
+        add_canonical_structure (name,ind))

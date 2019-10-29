@@ -216,6 +216,8 @@ Register prod as core.prod.type.
 Register pair as core.prod.intro.
 Register prod_rect as core.prod.rect.
 
+Register pair as core.CS.prod.intro. (* Canonical Structure pairing *)
+
 Section projections.
   Context {A : Type} {B : Type}.
 

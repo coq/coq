@@ -278,34 +278,56 @@ let error_not_structure ref description =
        (Id.print (Nametab.basename_of_global ref) ++ str"." ++ spc() ++
           description))
 
-let check_and_decompose_canonical_structure env sigma ref =
-  let sp =
-    match ref with
-      GlobRef.ConstRef sp -> sp
-    |  _ -> error_not_structure ref (str "Expected an instance of a record or structure.")
-  in
-  let u = Univ.make_abstract_instance (Environ.constant_context env sp) in
-  let vc = match Environ.constant_opt_value_in env (sp, u) with
-    | Some vc -> vc
-    | None -> error_not_structure ref (str "Could not find its value in the global environment.") in
-  let body = snd (splay_lam env sigma (EConstr.of_constr vc)) in
-  let body = EConstr.Unsafe.to_constr body in
-  let f,args = match kind body with
+type canonical_declaration =
+  | SingleNamedCanonicalInstance of Constant.t * inductive
+  | MultipleAnonymousCanonicalInstances of Id.t * Evd.evar_map * (EConstr.t * inductive) list
+
+let rec check_canonical_structure_value env sigma ref vc =
+  let ctx, body = splay_lam env sigma vc in
+  let f,args = match EConstr.kind sigma body with
     | App (f,args) -> f,args
     | _ ->
        error_not_structure ref (str "Expected a record or structure constructor applied to arguments.") in
-  let indsp = match kind f with
-    | Construct ((indsp,1),u) -> indsp
-    | _ -> error_not_structure ref (str "Expected an instance of a record or structure.") in
-  let s =
-    try lookup_structure indsp
-    with Not_found ->
-      error_not_structure ref
-        (str "Could not find the record or structure " ++ Termops.Internal.print_constr_env env sigma (EConstr.mkInd indsp)) in
-  let ntrue_projs = List.count (fun { pk_true_proj } -> pk_true_proj) s.s_PROJKIND in
-  if s.s_EXPECTEDPARAM + ntrue_projs > Array.length args then
-    error_not_structure ref (str "Got too few arguments to the record or structure constructor.");
-  (sp,indsp)
+  match EConstr.kind sigma f with
+  | Construct (k,_)
+    when Coqlib.has_ref "core.CS.prod.intro" &&
+         Names.GlobRef.(equal (ConstructRef k) (Coqlib.lib_ref "core.CS.prod.intro")) -> begin
+      match args with
+      | [| _ ; _ ; c1 ; c2 |] ->
+         let c1 = check_canonical_structure_value env sigma ref c1 in
+         let c2 = check_canonical_structure_value env sigma ref c2 in
+         let cs = c1 @ c2  in
+         let ctx = ctx |> List.map (fun (name,ty) -> Context.Rel.Declaration.LocalAssum(name,ty)) in
+         cs |> List.map (fun (bo,i) -> EConstr.it_mkLambda_or_LetIn bo ctx, i)
+      | _ ->
+        error_not_structure ref (str "Got too few arguments to the record or structure constructor.")
+    end
+  | Construct ((indsp,1),u) ->
+      let s =
+        try lookup_structure indsp
+        with Not_found ->
+          error_not_structure ref
+            (str "Could not find the record or structure " ++ Termops.Internal.print_constr_env env sigma (EConstr.mkInd indsp)) in
+      let ntrue_projs = List.count (fun { pk_true_proj } -> pk_true_proj) s.s_PROJKIND in
+      if s.s_EXPECTEDPARAM + ntrue_projs > Array.length args then
+        error_not_structure ref (str "Got too few arguments to the record or structure constructor.");
+      [vc,indsp]
+  | _ -> error_not_structure ref (str "Expected an instance of a record or structure.")
+
+let check_and_decompose_canonical_structure env sigma ref =
+  let err_not_def () = error_not_structure ref (str "Expected a transparent definition.") in
+  let con =
+    match ref with
+    | GlobRef.ConstRef con ->
+      if not (Environ.evaluable_constant con env) then err_not_def ();
+      con
+    |  _ -> err_not_def ()
+  in
+  let sigma, c = Evd.fresh_global env sigma ref in
+  match check_canonical_structure_value env sigma ref c with
+  | [_,indsp] -> SingleNamedCanonicalInstance (con,indsp)
+  | l -> MultipleAnonymousCanonicalInstances (Label.to_id @@ Constant.label con,sigma,l)
+
 
 let lookup_canonical_conversion (proj,pat) =
   assoc_pat pat (GlobRef.Map.find proj !object_table)
