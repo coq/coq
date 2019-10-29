@@ -411,7 +411,6 @@ let declare_structure ~cumulative finite ubinders univs paramimpls params templa
     | Polymorphic_entry (nas, ctx) ->
       true, Polymorphic_entry (nas, ctx)
   in
-  let variance = if poly && cumulative then Some (InferCumulativity.dummy_variance ctx) else None in
   let binder_name =
     match name with
     | None ->
@@ -478,10 +477,9 @@ let declare_structure ~cumulative finite ubinders univs paramimpls params templa
       mind_entry_inds = blocks;
       mind_entry_private = None;
       mind_entry_universes = univs;
-      mind_entry_variance = variance;
+      mind_entry_cumulative = poly && cumulative;
     }
   in
-  let mie = InferCumulativity.infer_inductive (Global.env ()) mie in
   let impls = List.map (fun _ -> paramimpls, []) record_data in
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie ubinders impls
       ~primitive_expected:!primitive_flag

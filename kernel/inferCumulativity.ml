@@ -216,19 +216,11 @@ let infer_inductive env mie =
   let open Entries in
   let params = mie.mind_entry_params in
   let entries = mie.mind_entry_inds in
-  let variances =
-    match mie.mind_entry_variance with
-    | None -> None
-    | Some _ ->
-      let uctx = match mie.mind_entry_universes with
-        | Monomorphic_entry _ -> assert false
-        | Polymorphic_entry (_,uctx) -> uctx
-      in
-      try Some (infer_inductive_core env params entries uctx)
-      with TrivialVariance -> Some (Array.make (UContext.size uctx) Invariant)
-  in
-  { mie with mind_entry_variance = variances }
-
-let dummy_variance = let open Entries in function
-  | Monomorphic_entry _ -> assert false
-  | Polymorphic_entry (_,uctx) -> Array.make (UContext.size uctx) Irrelevant
+  if not mie.mind_entry_cumulative then None
+  else
+    let uctx = match mie.mind_entry_universes with
+      | Monomorphic_entry _ -> assert false
+      | Polymorphic_entry (_,uctx) -> uctx
+    in
+    try Some (infer_inductive_core env params entries uctx)
+    with TrivialVariance -> Some (Array.make (UContext.size uctx) Invariant)

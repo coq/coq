@@ -61,64 +61,6 @@ let mind_check_names mie =
 
 
 (************************************************************************)
-(************************** Cumulativity checking************************)
-(************************************************************************)
-
-(* Check arities and constructors *)
-let check_subtyping_arity_constructor env subst arcn numparams is_arity =
-  let numchecked = ref 0 in
-  let basic_check ev tp =
-    if !numchecked < numparams then () else Reduction.conv_leq ev tp (subst tp);
-    numchecked := !numchecked + 1
-  in
-  let check_typ typ typ_env =
-    match typ with
-    | LocalAssum (_, typ') ->
-      begin
-       try
-          basic_check typ_env typ'; Environ.push_rel typ typ_env
-        with Reduction.NotConvertible ->
-          CErrors.anomaly ~label:"bad inductive subtyping relation"
-            Pp.(str "Invalid subtyping relation")
-      end
-    | _ -> CErrors.anomaly Pp.(str "")
-  in
-  let typs, codom = Reduction.dest_prod env arcn in
-  let last_env = Context.Rel.fold_outside check_typ typs ~init:env in
-  if not is_arity then basic_check last_env codom else ()
-
-let check_cumulativity univs variances env_ar params data =
-  let uctx = match univs with
-    | Monomorphic_entry _ -> raise (InductiveError BadUnivs)
-    | Polymorphic_entry (_,uctx) -> uctx
-  in
-  let instance = UContext.instance uctx in
-  if Instance.length instance != Array.length variances then raise (InductiveError BadUnivs);
-  let numparams = Context.Rel.nhyps params in
-  let new_levels = Array.init (Instance.length instance)
-      (fun i -> Level.(make (UGlobal.make DirPath.empty i)))
-  in
-  let lmap = Array.fold_left2 (fun lmap u u' -> LMap.add u u' lmap)
-      LMap.empty (Instance.to_array instance) new_levels
-  in
-  let dosubst = Vars.subst_univs_level_constr lmap in
-  let instance_other = Instance.of_array new_levels in
-  let constraints_other = Univ.subst_univs_level_constraints lmap (UContext.constraints uctx) in
-  let uctx_other = Univ.UContext.make (instance_other, constraints_other) in
-  let env = Environ.push_context uctx_other env_ar in
-  let subtyp_constraints =
-    Univ.enforce_leq_variance_instances variances
-      instance instance_other
-      Constraint.empty
-  in
-  let env = Environ.add_constraints subtyp_constraints env in
-  (* process individual inductive types: *)
-  List.iter (fun (arity,lc) ->
-        check_subtyping_arity_constructor env dosubst arity numparams true;
-        Array.iter (fun cnt -> check_subtyping_arity_constructor env dosubst cnt numparams false) lc)
-    data
-
-(************************************************************************)
 (************************** Type checking *******************************)
 (************************************************************************)
 
@@ -389,11 +331,8 @@ let typecheck_inductive env (mie:mutual_inductive_entry) =
         data, Some None
   in
 
-  let () = match mie.mind_entry_variance with
-    | None -> ()
-    | Some variances ->
-      check_cumulativity mie.mind_entry_universes variances env_ar params (List.map pi1 data)
-  in
+  (* TODO pass only the needed bits *)
+  let variance = InferCumulativity.infer_inductive env mie in
 
   (* Abstract universes *)
   let usubst, univs = Declareops.abstract_universes mie.mind_entry_universes in
@@ -408,4 +347,4 @@ let typecheck_inductive env (mie:mutual_inductive_entry) =
     Environ.push_rel_context ctx env
   in
 
-  env_ar_par, univs, mie.mind_entry_variance, record, params, Array.of_list data
+  env_ar_par, univs, variance, record, params, Array.of_list data

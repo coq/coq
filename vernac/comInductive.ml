@@ -353,7 +353,7 @@ let restrict_inductive_universes sigma ctx_params arities constructors =
   let uvars = List.fold_right (fun (_,ctypes,_) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
   Evd.restrict_universe_context sigma uvars
 
-let interp_mutual_inductive_constr ~sigma ~template ~udecl ~env_ar ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
+let interp_mutual_inductive_constr ~sigma ~template ~udecl ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
   (* Compute renewed arities *)
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
@@ -403,7 +403,6 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~env_ar ~ctx_params ~
       })
       indnames arities arityconcl constructors
   in
-  let variance = if poly && cumulative then Some (InferCumulativity.dummy_variance uctx) else None in
   (* Build the mutual inductive entry *)
   let mind_ent =
     { mind_entry_params = ctx_params;
@@ -412,12 +411,10 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~env_ar ~ctx_params ~
       mind_entry_inds = entries;
       mind_entry_private = if private_ind then Some false else None;
       mind_entry_universes = uctx;
-      mind_entry_variance = variance;
+      mind_entry_cumulative = poly && cumulative;
     }
   in
-  (if poly && cumulative then
-      InferCumulativity.infer_inductive env_ar mind_ent
-   else mind_ent), Evd.universe_binders sigma
+  mind_ent, Evd.universe_binders sigma
 
 let interp_params env udecl uparamsl paramsl =
   let sigma, udecl = interp_univ_decl_opt env udecl in
@@ -504,7 +501,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
         indimpls, List.map (fun impls ->
             userimpls @ impls) cimpls) indimpls constructors
   in
-  let mie, pl = interp_mutual_inductive_constr ~template ~sigma ~env_ar ~ctx_params ~udecl ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
+  let mie, pl = interp_mutual_inductive_constr ~template ~sigma ~ctx_params ~udecl ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
   (mie, pl, impls)
 
 

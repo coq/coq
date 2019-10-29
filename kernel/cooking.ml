@@ -315,10 +315,6 @@ let refresh_polymorphic_type_of_inductive (_,mip) =
     let ctx = List.rev mip.mind_arity_ctxt in
       mkArity (List.rev ctx, Sorts.sort_of_univ ar.template_level), true
 
-let dummy_variance = let open Entries in function
-  | Monomorphic_entry _ -> assert false
-  | Polymorphic_entry (_,uctx) -> Array.make (Univ.UContext.size uctx) Univ.Variance.Irrelevant
-
 let cook_inductive { Opaqueproof.modlist; abstract } mib =
   let open Entries in
   let (section_decls, subst, abs_uctx) = abstract in
@@ -332,10 +328,6 @@ let cook_inductive { Opaqueproof.modlist; abstract } mib =
       let nas = Univ.AUContext.names auctx in
       let auctx = Univ.AUContext.repr auctx in
       subst, Polymorphic_entry (nas, auctx)
-  in
-  let variance = match mib.mind_variance with
-    | None -> None
-    | Some _ -> Some (dummy_variance ind_univs)
   in
   let cache = RefTable.create 13 in
   let discharge c = Vars.subst_univs_level_constr subst (expmod_constr cache modlist c) in
@@ -363,7 +355,7 @@ let cook_inductive { Opaqueproof.modlist; abstract } mib =
     mind_entry_params = params';
     mind_entry_inds = inds';
     mind_entry_private = mib.mind_private;
-    mind_entry_variance = variance;
+    mind_entry_cumulative = Option.has_some mib.mind_variance;
     mind_entry_universes = ind_univs
   }
 
