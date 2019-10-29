@@ -54,9 +54,6 @@ val fresh_global_or_constr_instance : env -> Globnames.global_reference_or_const
 val fresh_universe_context_set_instance : ContextSet.t ->
   universe_level_subst * ContextSet.t
 
-(** Raises [Not_found] if not a global reference. *)
-val global_of_constr : constr -> GlobRef.t puniverses
-
 (** Create a fresh global in the global environment, without side effects.
     BEWARE: this raises an error on polymorphic constants/inductives:
     the constraints should be properly added to an evd.
