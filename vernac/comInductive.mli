@@ -55,7 +55,6 @@ val interp_mutual_inductive_constr :
   template:bool option ->
   udecl:UState.universe_decl ->
   env_ar:Environ.env ->
-  env_params:Environ.env ->
   ctx_params:(EConstr.t, EConstr.t) Context.Rel.Declaration.pt list ->
   indnames:Names.Id.t list ->
   arities:EConstr.t list ->

@@ -353,7 +353,7 @@ let restrict_inductive_universes sigma ctx_params arities constructors =
   let uvars = List.fold_right (fun (_,ctypes,_) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
   Evd.restrict_universe_context sigma uvars
 
-let interp_mutual_inductive_constr ~env0 ~sigma ~template ~udecl ~env_ar ~env_params ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
+let interp_mutual_inductive_constr ~env0 ~sigma ~template ~udecl ~env_ar ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
   (* Compute renewed arities *)
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
@@ -369,11 +369,6 @@ let interp_mutual_inductive_constr ~env0 ~sigma ~template ~udecl ~env_ar ~env_pa
   let arityconcl = List.map (Option.map (fun (_anon, s) -> EConstr.ESorts.kind sigma s)) arityconcl in
   let sigma = restrict_inductive_universes sigma ctx_params (List.map snd arities) constructors in
   let uctx = Evd.check_univ_decl ~poly sigma udecl in
-  List.iter (fun c -> check_evars env_params sigma (EConstr.of_constr (snd c))) arities;
-  Context.Rel.iter (fun c -> check_evars env0 sigma (EConstr.of_constr c)) ctx_params;
-  List.iter (fun (_,ctyps,_) ->
-    List.iter (fun c -> check_evars env_ar_params sigma (EConstr.of_constr c)) ctyps)
-    constructors;
 
   (* Build the inductive entries *)
   let entries = List.map4 (fun indname (templatearity, arity) concl (cnames,ctypes,cimpls) ->
@@ -509,7 +504,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
         indimpls, List.map (fun impls ->
             userimpls @ impls) cimpls) indimpls constructors
   in
-  let mie, pl = interp_mutual_inductive_constr ~env0 ~template ~sigma ~env_params ~env_ar ~ctx_params ~udecl ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
+  let mie, pl = interp_mutual_inductive_constr ~env0 ~template ~sigma ~env_ar ~ctx_params ~udecl ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
   (mie, pl, impls)
 
 
