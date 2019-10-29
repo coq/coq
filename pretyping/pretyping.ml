@@ -288,16 +288,18 @@ let check_extra_evars_are_solved env current_sigma frozen = match frozen with
 
 (* [check_evars] fails if some unresolved evar remains *)
 
-let check_evars env initial_sigma sigma c =
+let check_evars env ?initial sigma c =
   let rec proc_rec c =
     match EConstr.kind sigma c with
     | Evar (evk, _) ->
-      if not (Evd.mem initial_sigma evk) then
-        let (loc,k) = evar_source evk sigma in
-        begin match k with
-          | Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
-          | _ -> Pretype_errors.error_unsolvable_implicit ?loc env sigma evk None
-        end
+      (match initial with
+       | Some initial when Evd.mem initial evk -> ()
+       | _ ->
+         let (loc,k) = evar_source evk sigma in
+         begin match k with
+           | Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
+           | _ -> Pretype_errors.error_unsolvable_implicit ?loc env sigma evk None
+         end)
     | _ -> EConstr.iter sigma proc_rec c
   in proc_rec c
 

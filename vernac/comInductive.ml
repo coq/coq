@@ -369,10 +369,10 @@ let interp_mutual_inductive_constr ~env0 ~sigma ~template ~udecl ~env_ar ~env_pa
   let arityconcl = List.map (Option.map (fun (_anon, s) -> EConstr.ESorts.kind sigma s)) arityconcl in
   let sigma = restrict_inductive_universes sigma ctx_params (List.map snd arities) constructors in
   let uctx = Evd.check_univ_decl ~poly sigma udecl in
-  List.iter (fun c -> check_evars env_params (Evd.from_env env_params) sigma (EConstr.of_constr (snd c))) arities;
-  Context.Rel.iter (fun c -> check_evars env0 (Evd.from_env env0) sigma (EConstr.of_constr c)) ctx_params;
+  List.iter (fun c -> check_evars env_params sigma (EConstr.of_constr (snd c))) arities;
+  Context.Rel.iter (fun c -> check_evars env0 sigma (EConstr.of_constr c)) ctx_params;
   List.iter (fun (_,ctyps,_) ->
-    List.iter (fun c -> check_evars env_ar_params (Evd.from_env env_ar_params) sigma (EConstr.of_constr c)) ctyps)
+    List.iter (fun c -> check_evars env_ar_params sigma (EConstr.of_constr c)) ctyps)
     constructors;
 
   (* Build the inductive entries *)

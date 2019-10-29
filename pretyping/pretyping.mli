@@ -115,9 +115,10 @@ val solve_remaining_evars : ?hook:inference_hook -> inference_flags ->
 val check_evars_are_solved :
   program_mode:bool -> env -> ?initial:evar_map -> (* current map: *) evar_map -> unit
 
-(** [check_evars env initial_sigma extended_sigma c] fails if some
-   new unresolved evar remains in [c] *)
-val check_evars : env -> evar_map -> evar_map -> constr -> unit
+(** [check_evars env ?initial sigma c] fails if some unresolved evar
+   remains in [c] which isn't in [initial] (any unresolved evar if
+   [initial] not provided) *)
+val check_evars : env -> ?initial:evar_map -> evar_map -> constr -> unit
 
 (**/**)
 (** Internal of Pretyping... *)
