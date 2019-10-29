@@ -323,18 +323,18 @@ let check_named {CAst.loc;v=na} = match na with
   let msg = str "Parameters must be named." in
   user_err ?loc  msg
 
-let template_polymorphism_candidate env ~ctor_levels uctx params concl =
+let template_polymorphism_candidate ~template_check ~ctor_levels uctx params concl =
   match uctx with
   | Entries.Monomorphic_entry uctx ->
     let concltemplate = Option.cata (fun s -> not (Sorts.is_small s)) false concl in
     if not concltemplate then false
+    else if not template_check then true
     else
-      let template_check = Environ.check_template env in
       let conclu = Option.cata Sorts.univ_of_sort Univ.type0m_univ concl in
       let params, conclunivs =
         IndTyping.template_polymorphic_univs ~template_check ~ctor_levels uctx params conclu
       in
-      not (template_check && Univ.LSet.is_empty conclunivs)
+      not (Univ.LSet.is_empty conclunivs)
   | Entries.Polymorphic_entry _ -> false
 
 let check_param = function
@@ -353,7 +353,7 @@ let restrict_inductive_universes sigma ctx_params arities constructors =
   let uvars = List.fold_right (fun (_,ctypes,_) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
   Evd.restrict_universe_context sigma uvars
 
-let interp_mutual_inductive_constr ~env0 ~sigma ~template ~udecl ~env_ar ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
+let interp_mutual_inductive_constr ~sigma ~template ~udecl ~env_ar ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
   (* Compute renewed arities *)
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
@@ -385,7 +385,7 @@ let interp_mutual_inductive_constr ~env0 ~sigma ~template ~udecl ~env_ar ~ctx_pa
           List.fold_left (fun levels c -> add_levels c levels)
             param_levels ctypes
         in
-        template_polymorphism_candidate env0 ~ctor_levels uctx ctx_params concl
+        template_polymorphism_candidate ~template_check:(Environ.check_template env_ar_params) ~ctor_levels uctx ctx_params concl
       in
       let template = match template with
         | Some template ->
@@ -504,7 +504,7 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
         indimpls, List.map (fun impls ->
             userimpls @ impls) cimpls) indimpls constructors
   in
-  let mie, pl = interp_mutual_inductive_constr ~env0 ~template ~sigma ~env_ar ~ctx_params ~udecl ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
+  let mie, pl = interp_mutual_inductive_constr ~template ~sigma ~env_ar ~ctx_params ~udecl ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
   (mie, pl, impls)
 
 
