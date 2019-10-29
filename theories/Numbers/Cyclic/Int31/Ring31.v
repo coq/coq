@@ -13,7 +13,7 @@
 (** * Int31 numbers defines Z/(2^31)Z, and can hence be equipped
       with a ring structure and a ring tactic *)
 
-Require Import Int31 Cyclic31 CyclicAxioms.
+Require Import Lia Int31 Cyclic31 CyclicAxioms.
 
 Local Open Scope int31_scope.
 
@@ -85,10 +85,11 @@ Qed.
 Lemma eqb31_eq : forall x y, eqb31 x y = true <-> x=y.
 Proof.
 unfold eqb31. intros x y.
-rewrite Cyclic31.spec_compare. case Z.compare_spec.
-intuition. apply Int31_canonic; auto.
-intuition; subst; auto with zarith; try discriminate.
-intuition; subst; auto with zarith; try discriminate.
+rewrite Cyclic31.spec_compare.
+split.
+case Z.compare_spec.
+intuition. apply Int31_canonic; auto. 1-2: easy.
+now intros ->; rewrite Z.compare_refl.
 Qed.
 
 Lemma eqb31_correct : forall x y, eqb31 x y = true -> x=y.

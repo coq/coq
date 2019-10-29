@@ -18,6 +18,7 @@
 Set Implicit Arguments.
 
 Require Import ZArith.
+Require Import Lia.
 Require Import Znumtheory.
 Require Import Zpow_facts.
 Require Import DoubleType.
@@ -298,8 +299,7 @@ Module ZnZ.
  replace (base digits) with (1 * base digits + 0) by ring.
  rewrite Hp1.
  apply Z.add_le_mono.
- apply Z.mul_le_mono_nonneg; auto with zarith.
- case p1; simpl; intros; red; simpl; intros; discriminate.
+ apply Z.mul_le_mono_nonneg. 1-2, 4: lia.
  unfold base; auto with zarith.
  case (spec_to_Z w1); auto with zarith.
  Qed.
@@ -314,7 +314,7 @@ Module ZnZ.
    forall p, 0 <= p < base digits -> [|of_Z p|] = p.
  Proof.
  intros p; case p; simpl; try rewrite spec_0; auto.
- intros; rewrite of_pos_correct; auto with zarith.
+ intros; rewrite of_pos_correct; lia.
  intros p1 (H1, _); contradict H1; apply Z.lt_nge; red; simpl; auto.
  Qed.
 
@@ -423,7 +423,7 @@ Lemma eqb_eq : forall x y, eqb x y = true <-> x == y.
 Proof.
  intros. unfold eqb, eq.
  rewrite ZnZ.spec_compare.
- case Z.compare_spec; intuition; try discriminate.
+ case Z.compare_spec; split; (easy || lia).
 Qed.
 
 Lemma eqb_correct : forall x y, eqb x y = true -> x==y.

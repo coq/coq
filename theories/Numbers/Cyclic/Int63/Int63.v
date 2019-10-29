@@ -1354,8 +1354,8 @@ Lemma sqrt_spec : forall x,
 Proof.
  intros i; unfold sqrt.
  rewrite compare_spec. case Z.compare_spec; rewrite to_Z_1;
-   intros Hi; auto with zarith.
- repeat rewrite Z.pow_2_r; auto with zarith.
+   intros Hi.
+ lia.
  apply iter_sqrt_correct; auto with zarith;
   rewrite lsr_spec, to_Z_1; change (2^1) with 2;  auto with zarith.
   replace [|i|] with (1 * 2 + ([|i|] - 2))%Z; try ring.
@@ -1571,12 +1571,11 @@ Lemma sqrt2_spec : forall x y,
  case (to_Z_bounded il); intros Hpil _.
  assert (Hl1l: [|il1|] <= [|il|]).
   case (to_Z_bounded il2); rewrite Hil2; auto with zarith.
- assert ([|ih1|] * wB + 2 * [|s|] + 1 <= [|ih|] * wB); auto with zarith.
+ enough ([|ih1|] * wB + 2 * [|s|] + 1 <= [|ih|] * wB) by lia.
  case (to_Z_bounded s); intros _ Hps.
- case (to_Z_bounded ih1); intros Hpih1 _; auto with zarith.
- apply Z.le_trans with (([|ih1|] + 2) * wB); auto with zarith.
- rewrite Zmult_plus_distr_l.
- assert (2 * [|s|] + 1 <= 2 * wB); auto with zarith.
+ case (to_Z_bounded ih1); intros Hpih1 _.
+ apply Z.le_trans with (([|ih1|] + 2) * wB). lia.
+ auto with zarith.
  unfold zn2z_to_Z; rewrite <-Hihl1, Hbin; auto.
  intros H2; split.
  unfold zn2z_to_Z; rewrite <- H2; ring.
@@ -1621,8 +1620,8 @@ Lemma sqrt2_spec : forall x y,
  case (to_Z_bounded s);  intros _ Hps.
  assert (2 * [|s|] + 1 <= 2 * wB); auto with zarith.
  apply Z.le_trans with ([|ih1|] * wB + 2 * wB); auto with zarith.
- assert (Hi: ([|ih1|] + 3) * wB <= [|ih|] * wB); auto with zarith.
- rewrite Zmult_plus_distr_l in Hi; auto with zarith.
+ assert (Hi: ([|ih1|] + 3) * wB <= [|ih|] * wB) by auto with zarith.
+ lia.
  unfold zn2z_to_Z; rewrite <-Hihl1, Hbin; auto.
  intros H2; unfold zn2z_to_Z; rewrite <-H2.
  split.
