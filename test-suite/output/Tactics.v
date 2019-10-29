@@ -22,3 +22,11 @@ intros H.
 Fail intros [H%myid ?].
 Fail destruct 1 as [H%myid ?].
 Abort.
+
+
+(* Test that assert_succeeds only runs a tactic once *)
+Ltac should_not_loop := idtac + should_not_loop.
+Goal True.
+  assert_succeeds should_not_loop.
+  assert_succeeds (idtac "a" + idtac "b"). (* should only output "a" *)
+Abort.
