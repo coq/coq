@@ -418,19 +418,19 @@ GRAMMAR EXTEND Gram
   rec_definition:
     [ [ id_decl = ident_decl;
 	bl = binders_fixannot;
-        rtype = type_cstr;
+        rtype = rec_type_cstr;
         body_def = OPT [":="; def = lconstr -> { def } ]; notations = decl_notation ->
           { let binders, rec_order = bl in
             {fname = fst id_decl; univs = snd id_decl; rec_order; binders; rtype; body_def; notations}
           } ] ]
   ;
   corec_definition:
-    [ [ id_decl = ident_decl; binders = binders; rtype = type_cstr;
+    [ [ id_decl = ident_decl; binders = binders; rtype = rec_type_cstr;
         body_def = OPT [":="; def = lconstr -> { def }]; notations = decl_notation ->
         { {fname = fst id_decl; univs = snd id_decl; rec_order = (); binders; rtype; body_def; notations}
         } ]]
   ;
-  type_cstr:
+  rec_type_cstr:
     [ [ ":"; c=lconstr -> { c }
       | -> { CAst.make ~loc @@ CHole (None, IntroAnonymous, None) } ] ]
   ;

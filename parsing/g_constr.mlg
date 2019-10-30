@@ -263,7 +263,7 @@ GRAMMAR EXTEND Gram
           { mkProdCN ~loc bl c }
       | "fun"; bl = open_binders; "=>"; c = operconstr LEVEL "200" ->
           { mkLambdaCN ~loc bl c }
-      | "let"; id=name; bl = binders; ty = type_cstr; ":=";
+      | "let"; id=name; bl = binders; ty = let_type_cstr; ":=";
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
         { let ty,c1 = match ty, c1 with
           | (_,None), { CAst.v = CCast(c, CastConv t) } -> (Loc.tag ?loc:(constr_loc t) @@ Some t), c (* Tolerance, see G_vernac.def_body *)
@@ -353,7 +353,7 @@ GRAMMAR EXTEND Gram
       | "cofix" -> { false } ] ]
   ;
   fix_decl:
-    [ [ id=identref; bl=binders_fixannot; ty=type_cstr; ":=";
+    [ [ id=identref; bl=binders_fixannot; ty=let_type_cstr; ":=";
         c=operconstr LEVEL "200" ->
           { (id,fst bl,snd bl,c,ty) } ] ]
   ;
@@ -525,7 +525,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
 
-  type_cstr:
+  let_type_cstr:
     [ [ c=OPT [":"; c=lconstr -> { c } ] -> { Loc.tag ~loc c } ] ]
   ;
   END
