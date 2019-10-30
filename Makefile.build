@@ -570,11 +570,11 @@ VOTOURCMO:=clib/cObj.cmo kernel/uint63.cmo kernel/float64.cmo checker/analyze.cm
 
 bin/votour: $(call bestobj, $(VOTOURCMO)) $(LIBCOQRUN)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml, -I checker -cclib -lcoqrun) $(VMBYTEFLAGS)
+	$(HIDE)$(call bestocaml, -I checker)
 
 bin/votour.byte: $(VOTOURCMO) $(LIBCOQRUN)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(call ocamlbyte, -I checker -cclib -lcoqrun) $(VMBYTEFLAGS)
+	$(HIDE)$(call ocamlbyte, -I checker $(VMBYTEFLAGS))
 
 ###########################################################################
 # Csdp to micromega special targets
