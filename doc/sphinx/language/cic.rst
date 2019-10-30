@@ -1046,6 +1046,38 @@ between universes for inductive types in the Type hierarchy.
       exT_intro : forall X:Type, P X -> exType P.
 
 
+.. example:: Negative occurrence
+
+   The following inductive definition is rejected because it does not
+   satisfy the positivity condition:
+
+   .. coqtop:: all
+
+      Fail Inductive I : Prop := not_I_I (not_I : I -> False) : I.
+
+   If we were to accept such definition, we could derive a
+   contradiction from it (we can test this by disabling the
+   :flag:`Positivity Checking` flag):
+
+   .. coqtop:: none
+
+      Unset Positivity Checking.
+      Inductive I : Prop := not_I_I (not_I : I -> False) : I.
+      Set Positivity Checking.
+
+   .. coqtop:: all
+
+      Definition I_not_I '(not_I_I not_I : I) : ~ I := not_I.
+
+   .. coqtop:: in
+
+      Lemma contradiction : False.
+      Proof.
+      enough (I /\ ~ I) as [] by contradiction.
+      split.
+      apply not_I_I; intro; now apply I_not_I.
+      intro; now apply I_not_I.
+      Qed.
 
 .. _Template-polymorphism:
 
