@@ -43,7 +43,7 @@ checker/check.cmxa $(LIBCOQRUN) checker/coqchk.mli checker/coqchk.ml
 	$(CODESIGN_HIDE) $@
 else
 $(CHICKEN): $(CHICKENBYTE)
-	cp $< $@
+	rm -f $@ && cp $< $@
 endif
 
 $(CHICKENBYTE): config/config.cma clib/clib.cma lib/lib.cma kernel/kernel.cma \
