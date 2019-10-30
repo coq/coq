@@ -335,7 +335,7 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst nam
   DeclareUniv.declare_univ_binders (GlobRef.ConstRef cst) (Evd.universe_binders sigma);
   instance_hook pri global imps (GlobRef.ConstRef cst)
 
-let declare_instance_program env sigma ~global ~poly id pri imps decl term termtype =
+let declare_instance_program env sigma ~global ~poly name pri imps univdecl term termtype =
   let hook { DeclareDef.Hook.S.scope; dref; _ } =
     let cst = match dref with GlobRef.ConstRef kn -> kn | _ -> assert false in
     Impargs.declare_manual_implicits false dref imps;
@@ -344,20 +344,13 @@ let declare_instance_program env sigma ~global ~poly id pri imps decl term termt
     let sigma = Evd.from_env env in
     declare_instance env sigma (Some pri) (not global) (GlobRef.ConstRef cst)
   in
-  let obls, constr, typ =
-    match term with
-    | Some t ->
-      let obls, _, constr, typ =
-        Obligations.eterm_obligations env id sigma 0 t termtype
-      in obls, Some constr, typ
-    | None ->
-      let termtype = EConstr.to_constr sigma termtype in
-      [||], None, termtype
-  in
+  let obls, _, term, typ = Obligations.eterm_obligations env name sigma 0 term termtype in
   let hook = DeclareDef.Hook.make hook in
   let ctx = Evd.evar_universe_context sigma in
-  ignore(Obligations.add_definition ~name:id ?term:constr
-           ~univdecl:decl ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior) ~poly ~kind:Decls.Instance ~hook typ ctx obls)
+  let scope, kind = DeclareDef.Global Declare.ImportDefaultBehavior, Decls.Instance in
+  let _ : DeclareObl.progress =
+    Obligations.add_definition ~name ~term ~univdecl ~scope ~poly ~kind ~hook typ ctx obls
+  in ()
 
 let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids term termtype =
   (* spiwack: it is hard to reorder the actions to do
@@ -375,17 +368,18 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids t
   let lemma = Lemmas.start_lemma ~name:id ~poly ~udecl ~info sigma termtype in
   (* spiwack: I don't know what to do with the status here. *)
   let lemma =
-    if not (Option.is_empty term) then
+    match term with
+    | Some term ->
       let init_refine =
         Tacticals.New.tclTHENLIST [
-          Refine.refine ~typecheck:false (fun sigma -> (sigma, Option.get term));
+          Refine.refine ~typecheck:false (fun sigma -> sigma, term);
           Proofview.Unsafe.tclNEWGOALS (CList.map Proofview.with_empty_state gls);
           Tactics.New.reduce_after_refine;
         ]
       in
       let lemma, _ = Lemmas.by init_refine lemma in
       lemma
-    else
+    | None ->
       let lemma, _ = Lemmas.by (Tactics.auto_intros_tac ids) lemma in
       lemma
   in
@@ -456,9 +450,9 @@ let do_instance_type_ctx_instance props k env' ctx' sigma ~program_mode subst =
 let do_instance_interactive env sigma ?hook ~tac ~global ~poly cty k u ctx ctx' pri decl imps subst id =
   let term, termtype =
     if List.is_empty k.cl_props then
-     let term, termtype =
-       do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
-     Some term, termtype
+      let term, termtype =
+        do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
+      Some term, termtype
     else
       None, it_mkProd_or_LetIn cty ctx in
   let termtype, sigma = do_instance_resolve_TC term termtype sigma env in
@@ -497,22 +491,21 @@ let do_instance_program env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri 
         do_instance_type_ctx_instance fs k env' ctx' sigma ~program_mode:true subst in
       let term, termtype =
         do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
-      Some term, termtype, sigma
+      term, termtype, sigma
     | Some (_, term) ->
       let sigma, def =
         interp_casted_constr_evars ~program_mode:true env' sigma term cty in
       let termtype = it_mkProd_or_LetIn cty ctx in
       let term = it_mkLambda_or_LetIn def ctx in
-      Some term, termtype, sigma
+      term, termtype, sigma
     | None ->
       let subst, sigma =
         do_instance_type_ctx_instance [] k env' ctx' sigma ~program_mode:true subst in
       let term, termtype =
         do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
-      Some term, termtype, sigma in
+      term, termtype, sigma in
   let termtype, sigma = do_instance_resolve_TC term termtype sigma env in
   if not (Evd.has_undefined sigma) && not (Option.is_empty opt_props) then
-    let term = Option.get term in
     declare_instance_constant pri global imps ?hook id decl poly sigma term termtype
   else
     declare_instance_program  env sigma ~global ~poly id pri imps decl term termtype
