@@ -401,7 +401,7 @@ let do_instance_subst_constructor_and_ty subst k u ctx =
   let term = it_mkLambda_or_LetIn (Option.get app) ctx in
   term, termtype
 
-let do_instance_resolve_TC term termtype sigma env =
+let do_instance_resolve_TC termtype sigma env =
   let sigma = Evarutil.nf_evar_map sigma in
   let sigma = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals_or_obligations ~fail:true env sigma in
   (* Try resolving fields that are typeclasses automatically. *)
@@ -475,7 +475,7 @@ let do_instance_interactive env env' sigma ?hook ~tac ~global ~poly cty k u ctx 
         else
           None, it_mkProd_or_LetIn cty ctx
       in
-      let termtype, sigma = do_instance_resolve_TC term termtype sigma env in
+      let termtype, sigma = do_instance_resolve_TC termtype sigma env in
       term, termtype, sigma
   in
   Flags.silently (fun () ->
@@ -487,7 +487,7 @@ let do_instance env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri decl imp
   let term, termtype, sigma =
     interp_props ~program_mode:false env' cty k u ctx ctx' subst sigma props
   in
-  let termtype, sigma = do_instance_resolve_TC (Some term) termtype sigma env in
+  let termtype, sigma = do_instance_resolve_TC termtype sigma env in
   if Evd.has_undefined sigma then
     CErrors.user_err Pp.(str "Unsolved obligations remaining.")
   else
@@ -504,7 +504,7 @@ let do_instance_program env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri 
       let term, termtype =
         do_instance_subst_constructor_and_ty subst k u (ctx' @ ctx) in
       term, termtype, sigma in
-  let termtype, sigma = do_instance_resolve_TC term termtype sigma env in
+  let termtype, sigma = do_instance_resolve_TC termtype sigma env in
   if not (Evd.has_undefined sigma) && not (Option.is_empty opt_props) then
     declare_instance_constant pri global imps ?hook id decl poly sigma term termtype
   else
