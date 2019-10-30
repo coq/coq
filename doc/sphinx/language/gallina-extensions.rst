@@ -2101,7 +2101,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
          Canonical nat_multi.
 
    .. note::
-      The :n:`Canonical` command considers as a pairing construct any polymorphic
+      The :cmd:`Canonical` command considers as a pairing construct any polymorphic
       inductive with two parameters whose constructor is registered as
       "core.CS.prod.intro".
 
