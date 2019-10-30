@@ -112,7 +112,7 @@ let check_required_library d =
       | _ -> false
     in
     if not in_current_dir then
-      CErrors.user_err ~hdr:"Coqlib.check_required_library"
+      CErrors.anomaly ~label:"Coqlib.check_required_library"
         (str "Library " ++ DirPath.print dir ++ str " has to be required first.")
 
 (************************************************************************)

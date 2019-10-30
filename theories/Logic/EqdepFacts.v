@@ -52,6 +52,8 @@ Table of contents:
 (************************************************************************)
 (** * Definition of dependent equality and equivalence with equality of dependent pairs *)
 
+Require Import Coq.Setoids.Setoid.
+
 Import EqNotations.
 
 (* Set Universe Polymorphism. *)

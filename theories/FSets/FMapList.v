@@ -14,6 +14,7 @@
  [FMapInterface.S] using lists of pairs ordered (increasing) with respect to
  left projection. *)
 
+Require Import Coq.Logic.JMeq.
 Require Import FunInd FMapInterface.
 
 Set Implicit Arguments.
