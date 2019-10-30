@@ -1046,7 +1046,7 @@ between universes for inductive types in the Type hierarchy.
       exT_intro : forall X:Type, P X -> exType P.
 
 
-.. example:: Negative occurrence
+.. example:: Negative occurrence (first example)
 
    The following inductive definition is rejected because it does not
    satisfy the positivity condition:
@@ -1078,6 +1078,31 @@ between universes for inductive types in the Type hierarchy.
       apply not_I_I; intro; now apply I_not_I.
       intro; now apply I_not_I.
       Qed.
+
+.. example:: Negative occurrence (second example)
+
+   Here is another example of an inductive definition which is
+   rejected because it does not satify the positivity condition:
+
+   .. coqtop:: all
+
+      Fail Inductive Lam := lam (_ : Lam -> Lam).
+
+   Again, if we were to accept it, we could derive a contradiction
+   (this time through a non-terminating recursive function):
+
+   .. coqtop:: none
+
+      Unset Positivity Checking.
+      Inductive Lam := lam (_ : Lam -> Lam).
+      Set Positivity Checking.
+
+   .. coqtop:: all
+
+      Fixpoint infinite_loop l : False :=
+        match l with lam x => infinite_loop (x l) end.
+
+      Check infinite_loop (lam (@id Lam)) : False.
 
 .. _Template-polymorphism:
 
