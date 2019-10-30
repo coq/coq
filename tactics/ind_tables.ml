@@ -15,8 +15,6 @@
    declaring schemes and generating schemes on demand *)
 
 open Names
-open Mod_subst
-open Libobject
 open Nameops
 open Declarations
 open Constr
@@ -40,32 +38,7 @@ type individual_scheme_object_function =
 
 type 'a scheme_kind = string
 
-let scheme_map = Summary.ref Indmap.empty ~name:"Schemes"
-
 let pr_scheme_kind = Pp.str
-
-let cache_one_scheme kind (ind,const) =
-  let map = try Indmap.find ind !scheme_map with Not_found -> String.Map.empty in
-  scheme_map := Indmap.add ind (String.Map.add kind const map) !scheme_map
-
-let cache_scheme (_,(kind,l)) =
-  Array.iter (cache_one_scheme kind) l
-
-let subst_one_scheme subst (ind,const) =
-  (* Remark: const is a def: the result of substitution is a constant *)
-  (subst_ind subst ind,subst_constant subst const)
-
-let subst_scheme (subst,(kind,l)) =
-  (kind,Array.Smart.map (subst_one_scheme subst) l)
-
-let discharge_scheme (_,(kind,l)) =
-  Some (kind, l)
-
-let inScheme : string * (inductive * Constant.t) array -> obj =
-  declare_object @@ superglobal_object "SCHEME"
-    ~cache:cache_scheme
-    ~subst:(Some subst_scheme)
-    ~discharge:discharge_scheme
 
 (**********************************************************************)
 (* The table of scheme building functions *)
@@ -104,11 +77,6 @@ let declare_individual_scheme_object s ?(aux="") f =
 (**********************************************************************)
 (* Defining/retrieving schemes *)
 
-let declare_scheme kind indcl =
-  Lib.add_anonymous_leaf (inScheme (kind,indcl))
-
-let () = Declare.set_declare_scheme declare_scheme
-
 let is_visible_name id =
   try ignore (Nametab.locate (Libnames.qualid_of_ident id)); true
   with Not_found -> false
@@ -140,7 +108,7 @@ let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
   let role = Evd.Schema (ind, kind) in
   let const, neff = define mode role id c (Declareops.inductive_is_polymorphic mib) ctx in
-  declare_scheme kind [|ind,const|];
+  DeclareScheme.declare_scheme kind [|ind,const|];
   const, Evd.concat_side_effects neff eff
 
 let define_individual_scheme kind mode names (mind,i as ind) =
@@ -162,7 +130,7 @@ let define_mutual_scheme_base kind suff f mode names mind =
   in
   let (eff, consts) = Array.fold_left2_map_i fold eff ids cl in
   let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in
-  declare_scheme kind schemes;
+  DeclareScheme.declare_scheme kind schemes;
   consts, eff
 
 let define_mutual_scheme kind mode names mind =
@@ -172,7 +140,7 @@ let define_mutual_scheme kind mode names mind =
       define_mutual_scheme_base kind s f mode names mind
 
 let find_scheme_on_env_too kind ind =
-  let s = String.Map.find kind (Indmap.find ind !scheme_map) in
+  let s = DeclareScheme.lookup_scheme kind ind in
   s, Evd.empty_side_effects
 
 let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =

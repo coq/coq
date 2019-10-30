@@ -30,7 +30,9 @@ type mutual_scheme_object_function =
 type individual_scheme_object_function =
   internal_flag -> inductive -> constr Evd.in_evar_universe_context * Evd.side_effects
 
-(** Main functions to register a scheme builder *)
+(** Main functions to register a scheme builder. Note these functions
+   are not safe to be used by plugins as their effects won't be undone
+   on backtracking *)
 
 val declare_mutual_scheme_object : string -> ?aux:string ->
   mutual_scheme_object_function -> mutual scheme_kind
