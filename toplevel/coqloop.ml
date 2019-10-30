@@ -418,6 +418,50 @@ let rec vernac_loop ~state =
       Feedback.msg_notice (v 0 (goal ++ evars));
       vernac_loop ~state
 
+    | Some VernacShowProofDiffs removed ->
+      (* extension of Vernacentries.show_proof *)
+      let to_pp pstate =
+        let p = Option.get pstate in
+        let sigma, env = Pfedit.get_proof_context p in
+        let pprf = Proof.partial_proof p in
+        Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
+        (* We print nothing if there are no goals left *)
+      in
+
+      if not (Proof_diffs.color_enabled ()) then
+        CErrors.user_err Pp.(str "Show Proof Diffs requires setting the \"-color\" command line argument to \"on\" or \"auto\".")
+      else begin
+        let out =
+          try
+            let n_pp = to_pp state.proof in
+            if true (*Proof_diffs.show_diffs ()*) then
+              let doc = state.doc in
+              let oproof = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
+              try
+                let o_pp = to_pp oproof in
+                let tokenize_string = Proof_diffs.tokenize_string in
+                let show_removed = Some removed in
+                Pp_diff.diff_pp_combined ~tokenize_string ?show_removed o_pp n_pp
+              with
+              | Pfedit.NoSuchGoal
+              | Option.IsNone -> n_pp
+              | Pp_diff.Diff_Failure msg -> begin
+                (* todo: print the unparsable string (if we know it) *)
+                Feedback.msg_warning Pp.(str ("Diff failure: " ^ msg) ++ cut()
+                    ++ str "Showing results without diff highlighting" );
+                n_pp
+                end
+            else
+              n_pp
+          with
+          | Pfedit.NoSuchGoal
+          | Option.IsNone ->
+            CErrors.user_err (str "No goals to show.")
+        in
+        Feedback.msg_notice out;
+      end;
+      vernac_loop ~state
+
     | None ->
       top_stderr (fnl ()); exit 0
 

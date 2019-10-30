@@ -55,14 +55,17 @@ let get_current_goal_context pf =
     let env = Global.env () in
     Evd.from_env env, env
 
-let get_current_context pf =
-  let p = Proof_global.get_proof pf in
+let get_proof_context p =
   try get_goal_context_gen p 1
   with
   | NoSuchGoal ->
     (* No more focused goals *)
     let { Proof.sigma } = Proof.data p in
     sigma, Global.env ()
+
+let get_current_context pf =
+  let p = Proof_global.get_proof pf in
+  get_proof_context p
 
 let solve ?with_end_tac gi info_lvl tac pr =
     let tac = match with_end_tac with
