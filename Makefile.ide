@@ -110,7 +110,7 @@ $(COQIDE): $(LINKIDEOPT)
 	$(STRIP_HIDE) $@
 else
 $(COQIDE): $(COQIDEBYTE)
-	cp $< $@
+	rm -f $@ && cp $< $@
 endif
 
 $(COQIDEBYTE): $(LINKIDE)
@@ -119,9 +119,7 @@ $(COQIDEBYTE): $(LINKIDE)
 	       -linkpkg -package str,unix,dynlink,threads,lablgtk3-sourceview3 $(IDEFLAGS) $(IDECDEPSFLAGS) $^
 
 ide/coqide_os_specific.ml: ide/coqide_$(IDEINT).ml.in config/Makefile
-	@rm -f $@
-	cp $< $@
-	@chmod a-w $@
+	rm -f $@ && cp $< $@ && chmod a-w $@
 
 ide/%.cmi: ide/%.mli
 	$(SHOW)'OCAMLC    $<'
@@ -150,7 +148,7 @@ IDETOPCMX:=$(IDETOPCMA:.cma=.cmxa)
 
 # Special rule for coqidetop
 $(IDETOPEXE): $(IDETOP:.opt=.$(BEST))
-	cp $< $@
+	rm -f $@ && cp $< $@
 
 $(IDETOP): ide/idetop.ml $(LINKCMX) $(LIBCOQRUN) $(IDETOPCMX)
 	$(SHOW)'COQMKTOP -o $@'
