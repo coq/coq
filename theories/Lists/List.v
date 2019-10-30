@@ -1825,8 +1825,10 @@ Section Cutting.
   Lemma skipn_cons n a l: skipn (S n) (a::l) = skipn n l.
   Proof. reflexivity. Qed.
 
-  Lemma skipn_none : forall l, skipn (length l) l = [].
+  Lemma skipn_all : forall l, skipn (length l) l = nil.
   Proof. now induction l. Qed.
+
+#[deprecated(since="8.11",note="Use skipn_all instead.")] Notation skipn_none := skipn_all.
 
   Lemma skipn_all2 n: forall l, length l <= n -> skipn n l = [].
   Proof.
@@ -1855,9 +1857,6 @@ Section Cutting.
     - destruct l; simpl; auto.
   Qed.
 
-  Lemma skipn_all l: skipn (length l) l = nil.
-  Proof. now induction l. Qed.
-
   Lemma skipn_app n : forall l1 l2,
     skipn n (l1 ++ l2) = (skipn n l1) ++ (skipn (n - length l1) l2).
   Proof. induction n; auto; intros [|]; simpl; auto. Qed.
@@ -1884,7 +1883,7 @@ Section Cutting.
     intros x l; rewrite firstn_skipn_rev, rev_involutive, <-rev_length.
     destruct (Nat.le_ge_cases (length (rev l)) x) as [L | L].
     - rewrite skipn_all2; [apply Nat.sub_0_le in L | trivial].
-      now rewrite L, Nat.sub_0_r, skipn_none.
+      now rewrite L, Nat.sub_0_r, skipn_all.
     - replace (length (rev l) - (length (rev l) - x))
          with (length (rev l) + x - length (rev l)).
       rewrite minus_plus. reflexivity.
