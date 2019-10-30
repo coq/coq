@@ -94,7 +94,7 @@ VERNAC COMMAND EXTEND Obligations CLASSIFIED BY { classify_obbl } STATE declare_
     { obligation (num, Some name.CAst.v, None) tac }
 | [ "Obligation" natural(num) ":" lglob(t) withtac(tac) ] ->
     { obligation (num, None, Some t) tac }
-| [ "Obligation" natural(num) withtac(tac) ] ->
+| [ "Obligation" int(num) withtac(tac) ] ->
     { obligation (num, None, None) tac }
 | [ "Next" "Obligation" "of" identref(name) withtac(tac) ] ->
     { next_obligation (Some name.CAst.v) tac }

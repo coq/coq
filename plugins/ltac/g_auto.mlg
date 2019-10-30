@@ -165,7 +165,7 @@ TACTIC EXTEND bfs_eauto
 END
 
 TACTIC EXTEND autounfold
-| [ "autounfold" hintbases(db) clause_dft_concl(cl) ] -> { Eauto.autounfold_tac db cl }
+| [ "autounfold" hintbases(db) clause(cl) ] -> { Eauto.autounfold_tac db cl }
 END
 
 TACTIC EXTEND autounfold_one

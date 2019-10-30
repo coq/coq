@@ -5,7 +5,7 @@ Goal True.
 myidtac "foo".
 Abort.
 
-Tactic Notation "myidtac2" ref(c) := idtac c.
+Tactic Notation "myidtac2" reference(c) := idtac c.
 Goal True.
 myidtac2 True.
 Abort.

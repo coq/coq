@@ -106,7 +106,7 @@ let rec closed_under sigma cset t =
 let closed_term args _ = match args with
 | [t; l] ->
   let t = Option.get (Value.to_constr t) in
-  let l = List.map (fun c -> Value.cast (Genarg.topwit Stdarg.wit_ref) c) (Option.get (Value.to_list l)) in
+  let l = List.map (fun c -> Value.cast (Genarg.topwit Stdarg.wit_reference) c) (Option.get (Value.to_list l)) in
   Proofview.tclEVARMAP >>= fun sigma ->
   let cs = List.fold_right GlobRef.Set_env.add l GlobRef.Set_env.empty in
   if closed_under sigma cs t then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (mt())
@@ -128,7 +128,7 @@ let closed_term_ast =
     ([Name(Id.of_string"t")],
     CAst.make (TacML (tacname,
     [TacGeneric (None, Genarg.in_gen (Genarg.glbwit Stdarg.wit_constr) (DAst.make @@ GVar(Id.of_string"t"),None));
-     TacGeneric (None, Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_ref)) l)]))))
+     TacGeneric (None, Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Stdarg.wit_reference)) l)]))))
 (*
 let _ = add_tacdef false ((Loc.ghost,Id.of_string"ring_closed_term"
 *)

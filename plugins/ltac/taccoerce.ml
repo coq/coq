@@ -294,9 +294,9 @@ let coerce_to_evaluable_ref env sigma v =
     let id = out_gen (topwit wit_hyp) v in
     if Id.List.mem id (Termops.ids_of_context env) then EvalVarRef id
     else fail ()
-  else if has_type v (topwit wit_ref) then
+  else if has_type v (topwit wit_reference) then
     let open GlobRef in
-    let r = out_gen (topwit wit_ref) v in
+    let r = out_gen (topwit wit_reference) v in
     match r with
     | VarRef var -> EvalVarRef var
     | ConstRef c -> EvalConstRef c

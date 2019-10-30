@@ -57,13 +57,13 @@ let () =
   register_grammar wit_intro_pattern (simple_intropattern); (* To remove at end of deprecation phase *)
 (* register_grammar wit_intropattern (intropattern); *) (* To be added at end of deprecation phase *)
   register_grammar wit_simple_intropattern (simple_intropattern);
-  register_grammar wit_quant_hyp (quantified_hypothesis);
+  register_grammar wit_quantified_hypothesis (quantified_hypothesis);
   register_grammar wit_uconstr (uconstr);
   register_grammar wit_open_constr (open_constr);
   register_grammar wit_constr_with_bindings (constr_with_bindings);
   register_grammar wit_bindings (bindings);
   register_grammar wit_tactic (tactic);
   register_grammar wit_ltac (tactic);
-  register_grammar wit_clause_dft_concl (clause_dft_concl);
+  register_grammar wit_clause (clause_dft_concl);
   register_grammar wit_destruction_arg (destruction_arg);
   ()

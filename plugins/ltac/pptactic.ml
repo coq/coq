@@ -1319,7 +1319,7 @@ let () =
   let open Genprint in
   register_basic_print0 wit_int_or_var (pr_or_var int) (pr_or_var int) int;
   register_basic_print0 wit_nat_or_var (pr_or_var int) (pr_or_var int) int;
-  register_basic_print0 wit_ref
+  register_basic_print0 wit_reference
     pr_qualid (pr_or_var (pr_located pr_global)) pr_global;
   register_basic_print0 wit_smart_global
     (pr_or_by_notation pr_qualid) (pr_or_var (pr_located pr_global)) pr_global;
@@ -1328,7 +1328,7 @@ let () =
   register_print0 wit_intropattern pr_raw_intro_pattern pr_glob_intro_pattern pr_intro_pattern_env [@warning "-3"];
   register_print0 wit_simple_intropattern pr_raw_intro_pattern pr_glob_intro_pattern pr_intro_pattern_env;
   Genprint.register_print0
-    wit_clause_dft_concl
+    wit_clause
     (lift (pr_clauses (Some true) pr_lident))
     (lift (pr_clauses (Some true) pr_lident))
     (fun c -> Genprint.TopPrinterBasic (fun () -> pr_clauses (Some true) (fun id -> pr_lident (CAst.make id)) c))
@@ -1361,7 +1361,7 @@ let () =
                    (fun env sigma -> pr_pat_and_constr_expr @@ pr_glob_constr_pptac env sigma))))
     pr_red_expr_env
   ;
-  register_basic_print0 wit_quant_hyp pr_quantified_hypothesis pr_quantified_hypothesis pr_quantified_hypothesis;
+  register_basic_print0 wit_quantified_hypothesis pr_quantified_hypothesis pr_quantified_hypothesis pr_quantified_hypothesis;
   register_print0 wit_bindings
     (lift_env (fun env sigma -> Miscprint.pr_bindings_no_with (pr_constr_expr env sigma)
                   (pr_lconstr_expr env sigma)))
@@ -1389,7 +1389,7 @@ let () =
   register_basic_print0 Stdarg.wit_int int int int;
   register_basic_print0 Stdarg.wit_bool pr_bool pr_bool pr_bool;
   register_basic_print0 Stdarg.wit_unit pr_unit pr_unit pr_unit;
-  register_basic_print0 Stdarg.wit_pre_ident str str str;
+  register_basic_print0 Stdarg.wit_preident str str str;
   register_basic_print0 Stdarg.wit_string qstring qstring qstring
 
 let () =

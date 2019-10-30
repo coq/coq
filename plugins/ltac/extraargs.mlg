@@ -34,7 +34,7 @@ let () = create_generic_quotation "string" Pcoq.Prim.string Stdarg.wit_string
 let () = create_generic_quotation "smart_global" Pcoq.Prim.smart_global Stdarg.wit_smart_global
 
 let () = create_generic_quotation "ident" Pcoq.Prim.ident Stdarg.wit_ident
-let () = create_generic_quotation "reference" Pcoq.Prim.reference Stdarg.wit_ref
+let () = create_generic_quotation "reference" Pcoq.Prim.reference Stdarg.wit_reference
 let () = create_generic_quotation "uconstr" Pcoq.Constr.lconstr Stdarg.wit_uconstr
 let () = create_generic_quotation "constr" Pcoq.Constr.lconstr Stdarg.wit_constr
 let () = create_generic_quotation "ipattern" Pltac.simple_intropattern wit_simple_intropattern
@@ -49,8 +49,8 @@ let () =
   let register name entry = Tacentries.register_tactic_notation_entry name entry in
   register "hyp" wit_hyp;
   register "simple_intropattern" wit_simple_intropattern;
-  register "integer" wit_integer;
-  register "reference" wit_ref;
+  register "integer" wit_int;
+  register "reference" wit_reference;
   ()
 
 (* Rewriting orientation *)
@@ -322,7 +322,7 @@ let in_clause' = Pltac.in_clause
 }
 
 ARGUMENT EXTEND in_clause
-  TYPED AS clause_dft_concl
+  TYPED AS clause
   PRINTED BY { pr_in_top_clause }
   RAW_PRINTED BY { pr_in_clause }
   GLOB_PRINTED BY { pr_in_clause }

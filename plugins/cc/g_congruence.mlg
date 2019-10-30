@@ -21,13 +21,13 @@ DECLARE PLUGIN "cc_plugin"
 (* Tactic registration *)
 
 TACTIC EXTEND cc
-| [ "congruence" natural_opt(n) ] ->
+| [ "congruence" int_opt(n) ] ->
    { congruence_tac (Option.default 1000 n) [] }
-| [ "congruence" natural_opt(n) "with" ne_constr_list(l) ] ->
+| [ "congruence" int_opt(n) "with" ne_constr_list(l) ] ->
    { congruence_tac (Option.default 1000 n) l }
-| [ "simple" "congruence" natural_opt(n) ] ->
+| [ "simple" "congruence" int_opt(n) ] ->
    { simple_congruence_tac (Option.default 1000 n) [] }
-| [ "simple" "congruence" natural_opt(n) "with" ne_constr_list(l) ] ->
+| [ "simple" "congruence" int_opt(n) "with" ne_constr_list(l) ] ->
    { simple_congruence_tac (Option.default 1000 n) l }
 END
 

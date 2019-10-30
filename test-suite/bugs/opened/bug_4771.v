@@ -6,7 +6,7 @@ End Foo.
 
 Module F(X : Foo).
 
-Tactic Notation "foo" ref(x) := idtac.
+Tactic Notation "foo" reference(x) := idtac.
 
 Ltac g := foo X.t.
 

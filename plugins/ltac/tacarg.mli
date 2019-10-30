@@ -24,7 +24,7 @@ val wit_simple_intropattern : (constr_expr intro_pattern_expr CAst.t, glob_const
 
 val wit_intro_pattern : (constr_expr intro_pattern_expr CAst.t, glob_constr_and_expr intro_pattern_expr CAst.t, intro_pattern) genarg_type
 
-val wit_quant_hyp : quantified_hypothesis uniform_genarg_type
+val wit_quantified_hypothesis : quantified_hypothesis uniform_genarg_type
 
 val wit_constr_with_bindings :
   (constr_expr with_bindings,
@@ -40,8 +40,6 @@ val wit_bindings :
   (constr_expr bindings,
   glob_constr_and_expr bindings,
   constr bindings delayed_open) genarg_type
-
-val wit_quantified_hypothesis : quantified_hypothesis uniform_genarg_type
 
 (** Generic arguments based on Ltac. *)
 

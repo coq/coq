@@ -31,14 +31,14 @@ let wit_nat : int uniform_genarg_type =
 let wit_string : string uniform_genarg_type =
   make0 "string"
 
-let wit_pre_ident : string uniform_genarg_type =
+let wit_preident : string uniform_genarg_type =
   make0 "preident"
 
 let wit_int_or_var =
   make0 ~dyn:(val_tag (topwit wit_int)) "int_or_var"
 
 let wit_nat_or_var =
-  make0 ~dyn:(val_tag (topwit wit_nat)) "nat_or_var"
+  make0 ~dyn:(val_tag (topwit wit_int)) "nat_or_var"
 
 let wit_ident =
   make0 "ident"
@@ -51,9 +51,9 @@ let wit_hyp =
 
 let wit_var = wit_hyp
 
-let wit_ref = make0 "ref"
+let wit_reference = make0 "reference"
 
-let wit_smart_global = make0 ~dyn:(val_tag (topwit wit_ref)) "smart_global"
+let wit_smart_global = make0 ~dyn:(val_tag (topwit wit_reference)) "smart_global"
 
 let wit_sort_family = make0 "sort_family"
 
@@ -64,14 +64,4 @@ let wit_uconstr = make0 "uconstr"
 
 let wit_open_constr = make0 ~dyn:(val_tag (topwit wit_constr)) "open_constr"
 
-let wit_clause_dft_concl  =
-  make0 "clause_dft_concl"
-
-(** Aliases for compatibility *)
-
-let wit_integer = wit_int
-let wit_natural = wit_nat
-let wit_preident = wit_pre_ident
-let wit_reference = wit_ref
-let wit_global = wit_ref
-let wit_clause = wit_clause_dft_concl
+let wit_clause = make0 "clause"

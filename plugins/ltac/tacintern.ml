@@ -789,7 +789,7 @@ let () =
     let ans = clause_app (intern_hyp_location ist) cl in
     (ist, ans)
   in
-  Genintern.register_intern0 wit_clause_dft_concl intern_clause
+  Genintern.register_intern0 wit_clause intern_clause
 
 let intern_ident' ist id =
   let lf = ref Id.Set.empty in
@@ -802,13 +802,13 @@ let () =
   Genintern.register_intern0 wit_int_or_var (lift intern_int_or_var);
   Genintern.register_intern0 wit_nat_or_var (lift intern_int_or_var);
   Genintern.register_intern0 wit_smart_global (lift intern_smart_global);
-  Genintern.register_intern0 wit_ref (lift intern_global_reference);
-  Genintern.register_intern0 wit_pre_ident (fun ist c -> (ist,c));
+  Genintern.register_intern0 wit_reference (lift intern_global_reference);
+  Genintern.register_intern0 wit_preident (fun ist c -> (ist,c));
   Genintern.register_intern0 wit_ident intern_ident';
   Genintern.register_intern0 wit_hyp (lift intern_hyp);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_ltac (lift intern_ltac);
-  Genintern.register_intern0 wit_quant_hyp (lift intern_quantified_hypothesis);
+  Genintern.register_intern0 wit_quantified_hypothesis (lift intern_quantified_hypothesis);
   Genintern.register_intern0 wit_constr (fun ist c -> (ist,intern_constr ist c));
   Genintern.register_intern0 wit_uconstr (fun ist c -> (ist,intern_constr ist c));
   Genintern.register_intern0 wit_open_constr (fun ist c -> (ist,intern_constr ist c));
