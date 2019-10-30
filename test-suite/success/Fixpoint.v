@@ -97,8 +97,19 @@ Section visibility.
   Let Fixpoint by_proof (n:nat) : True.
   Proof. exact I. Defined.
 
+  Let Fixpoint foo (n:nat) : bool with bar (n:nat) : bool.
+  Proof.
+    - destruct n as [|n].
+      + exact true.
+      + exact (bar n).
+    - destruct n as [|n].
+      + exact false.
+      + exact (foo n).
+  Qed.
+
   Let Fixpoint bla (n:nat) : Type with bli (n:nat) : bool.
   Admitted.
+
 End visibility.
 
 Fail Check imm.
