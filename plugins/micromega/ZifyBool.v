@@ -74,6 +74,14 @@ Definition isZero (z : Z) := Z_of_bool (Z.eqb z 0).
 
 Definition isLeZero (x : Z) := Z_of_bool (Z.leb x 0).
 
+Instance Op_isZero : UnOp isZero :=
+  { TUOp := isZero; TUOpInj := ltac: (reflexivity) }.
+Add UnOp Op_isZero.
+
+Instance Op_isLeZero : UnOp isLeZero :=
+  { TUOp := isLeZero; TUOpInj := ltac: (reflexivity) }.
+Add UnOp Op_isLeZero.
+
 (* Some intermediate lemma *)
 
 Lemma Z_eqb_isZero : forall n m,
