@@ -2006,6 +2006,8 @@ Deactivation of implicit arguments for parsing
    to be given as if no arguments were implicit. By symmetry, this also
    affects printing.
 
+.. _canonical_instance_declaration:
+
 Canonical structures
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -2080,6 +2082,30 @@ in :ref:`canonicalstructures`; here only a simple example is given.
             #[canonical(false)] Prf_equiv : equivalence Carrier Equal
 
       See :ref:`canonicalstructures` for a more realistic example.
+
+   When :token:`qualid` denotes an iterated pair of :g:`struct` instances
+   each of them is given a name, by suffixing :token:`qualid` with a number,
+   and declared canonical.
+
+      .. example::
+
+      .. coqtop:: all
+
+         Structure Ordered := { Carrier :> Set; Leq : relation Carrier;
+                                     Prf_ord : order Carrier Leq}.
+
+         Axiom leq_nat_order : order nat leq_nat.
+
+         Definition nat_multi := (Build_Setoid eq_nat_equiv, Build_Ordered leq_nat_order).
+
+         Canonical nat_multi.
+
+   .. note::
+      The :n:`Canonical` command considers as a pairing construct any polymorphic
+      inductive with two parameters whose constructor is registered as
+      "core.CS.prod.intro".
+
+      .. seealso:: :ref:`exposing-constants-to-ocaml-libraries`.
 
    .. cmdv:: Canonical {? Structure } @ident {? : @type } := @term
 
