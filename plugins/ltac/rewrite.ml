@@ -2023,7 +2023,8 @@ let add_morphism atts binders m s n =
   let _id, lemma = Classes.new_instance_interactive
       ~global:atts.global ~poly:atts.polymorphic
       instance_name binders instance_t
-      ~generalize:false ~tac ~hook:(declare_projection n instance_id) Hints.empty_hint_info
+      ~generalize:false ~tac ~hook:(declare_projection n instance_id)
+      Hints.empty_hint_info None
   in
   lemma (* no instance body -> always open proof *)
 

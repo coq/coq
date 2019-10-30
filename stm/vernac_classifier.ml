@@ -183,12 +183,16 @@ let classify_vernac e =
     | VernacDeclareMLModule _
     | VernacContext _ (* TASSI: unsure *) -> VtSideff ([], VtNow)
     | VernacProofMode pm -> VtProofMode pm
-    | VernacInstance ((name,_),_,_,None,_) when not (Attributes.parse_drop_extra Attributes.program atts) ->
-      let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
-      let guarantee = if polymorphic then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
-      VtStartProof (guarantee, idents_of_name name.CAst.v)
-    | VernacInstance ((name,_),_,_,_,_) ->
-      VtSideff (idents_of_name name.CAst.v, VtLater)
+    | VernacInstance ((name,_),_,_,props,_) ->
+      let program, refine =
+        Attributes.(parse_drop_extra Notations.(program ++ Classes.refine_att) atts)
+      in
+      if program || (props <> None && not refine) then
+        VtSideff (idents_of_name name.CAst.v, VtLater)
+      else
+        let polymorphic = Attributes.(parse_drop_extra polymorphic atts) in
+        let guarantee = if polymorphic then Doesn'tGuaranteeOpacity else GuaranteesOpacity in
+        VtStartProof (guarantee, idents_of_name name.CAst.v)
     (* Stm will install a new classifier to handle these *)
     | VernacBack _ | VernacAbortAll
     | VernacUndoTo _ | VernacUndo _
