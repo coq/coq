@@ -18,13 +18,17 @@ and vernac_flag_value =
   | VernacFlagLeaf of string
   | VernacFlagList of vernac_flags
 
+let warn_unsupported_attributes =
+  CWarnings.create ~name:"unsupported-attributes" ~category:"parsing" ~default:CWarnings.AsError
+    (fun atts ->
+       let keys = List.map fst atts in
+       let keys = List.sort_uniq String.compare keys in
+       let conj = match keys with [_] -> "this attribute: " | _ -> "these attributes: " in
+       Pp.(str "This command does not support " ++ str conj ++ prlist str keys ++ str"."))
+
 let unsupported_attributes = function
   | [] -> ()
-  | atts ->
-    let keys = List.map fst atts in
-    let keys = List.sort_uniq String.compare keys in
-    let conj = match keys with [_] -> "this attribute: " | _ -> "these attributes: " in
-    user_err Pp.(str "This command does not support " ++ str conj ++ prlist str keys ++ str".")
+  | atts -> warn_unsupported_attributes atts
 
 type 'a key_parser = 'a option -> vernac_flag_value -> 'a
 

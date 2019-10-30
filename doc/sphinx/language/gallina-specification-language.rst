@@ -1556,6 +1556,11 @@ the following attributes names are recognized:
           now foo.
         Abort.
 
+.. warn:: Unsupported attribute
+
+   This warning is an error by default. It is caused by using a
+   command with some attribute it does not understand.
+
 .. [1]
    This is similar to the expression “*entry* :math:`\{` sep *entry*
    :math:`\}`” in standard BNF, or “*entry* :math:`(` sep *entry*
