@@ -281,6 +281,12 @@ Section Facts.
     induction l; simpl; auto.
   Qed.
 
+  Lemma last_length : forall (l : list A) a, length (l ++ a :: nil) = S (length l).
+  Proof.
+    intros ; rewrite app_length ; simpl.
+    rewrite <- plus_n_Sm, plus_n_O; reflexivity.
+  Qed.
+
   Lemma in_app_or : forall (l m:list A) (a:A), In a (l ++ m) -> In a l \/ In a m.
   Proof.
     intros l m a.
@@ -556,31 +562,9 @@ Section Elts.
     rewrite app_nth2; [| auto]. repeat (rewrite Nat.sub_diag). reflexivity.
   Qed.
 
-  (*****************)
-  (** ** Remove    *)
-  (*****************)
-
-  Hypothesis eq_dec : forall x y : A, {x = y}+{x <> y}.
-
-  Fixpoint remove (x : A) (l : list A) : list A :=
-    match l with
-      | [] => []
-      | y::tl => if (eq_dec x y) then remove x tl else y::(remove x tl)
-    end.
-
-  Theorem remove_In : forall (l : list A) (x : A), ~ In x (remove x l).
-  Proof.
-    induction l as [|x l]; auto.
-    intro y; simpl; destruct (eq_dec y x) as [yeqx | yneqx].
-    apply IHl.
-    unfold not; intro HF; simpl in HF; destruct HF; auto.
-    apply (IHl y); assumption.
-  Qed.
-
-
-(******************************)
-(** ** Last element of a list *)
-(******************************)
+  (******************************)
+  (** ** Last element of a list *)
+  (******************************)
 
   (** [last l d] returns the last element of the list [l],
     or the default value [d] if [l] is empty. *)
@@ -591,6 +575,13 @@ Section Elts.
     | [a] => a
     | a :: l => last l d
   end.
+
+  Lemma last_last : forall l a d, last (l ++ [a]) d = a.
+  Proof.
+    induction l; intros; [ reflexivity | ].
+    simpl; rewrite IHl.
+    destruct l; reflexivity.
+  Qed.
 
   (** [removelast l] remove the last element of [l] *)
 
@@ -636,6 +627,36 @@ Section Elts.
     simpl; discriminate.
     specialize (IHl l' H).
     destruct (l++l'); [elim H0; auto|f_equal; auto].
+  Qed.
+
+  Lemma removelast_last : forall l a, removelast (l ++ [a]) = l.
+  Proof.
+    intros.
+    rewrite removelast_app.
+    - apply app_nil_r.
+    - intros Heq; inversion Heq.
+  Qed.
+
+
+  (*****************)
+  (** ** Remove    *)
+  (*****************)
+
+  Hypothesis eq_dec : forall x y : A, {x = y}+{x <> y}.
+
+  Fixpoint remove (x : A) (l : list A) : list A :=
+    match l with
+      | [] => []
+      | y::tl => if (eq_dec x y) then remove x tl else y::(remove x tl)
+    end.
+
+  Theorem remove_In : forall (l : list A) (x : A), ~ In x (remove x l).
+  Proof.
+    induction l as [|x l]; auto.
+    intro y; simpl; destruct (eq_dec y x) as [yeqx | yneqx].
+    apply IHl.
+    unfold not; intro HF; simpl in HF; destruct HF; auto.
+    apply (IHl y); assumption.
   Qed.
 
 
@@ -942,6 +963,13 @@ Section Map.
   Proof.
     induction l; simpl; auto.
     intros; rewrite IHl; auto.
+  Qed.
+
+  Lemma map_last : forall l a,
+    map (l ++ [a]) = (map l) ++ [f a].
+  Proof.
+    induction l; intros; [ reflexivity | ].
+    simpl; rewrite IHl; reflexivity.
   Qed.
 
   Lemma map_rev : forall l, map (rev l) = rev (map l).
@@ -1908,6 +1936,13 @@ Section Cutting.
      clear IHn; destruct l; simpl in *; try discriminate.
      inversion_clear H.
      inversion_clear H0.
+   Qed.
+
+   Lemma removelast_firstn_len : forall l,
+     removelast l = firstn (pred (length l)) l.
+   Proof.
+     induction l; [ reflexivity | simpl ].
+     destruct l; [ | rewrite IHl ]; reflexivity.
    Qed.
 
    Lemma firstn_removelast : forall n l, n < length l ->
