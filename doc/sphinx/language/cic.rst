@@ -1067,7 +1067,8 @@ between universes for inductive types in the Type hierarchy.
 
    .. coqtop:: all
 
-      Definition I_not_I '(not_I_I not_I : I) : ~ I := not_I.
+      Definition I_not_I : I -> ~ I := fun i =>
+        match i with not_I_I not_I => not_I end.
 
    .. coqtop:: in
 
