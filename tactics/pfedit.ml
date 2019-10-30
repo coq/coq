@@ -138,12 +138,13 @@ let build_by_tactic ?(side_eff=true) env sigma ~poly typ tac =
   let name = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = val_of_named_context (named_context env) in
   let ce, status, univs = build_constant_by_tactic ~name sigma sign ~poly typ tac in
-  let body, eff = Future.force ce.Declare.proof_entry_body in
-  let (cb, ctx) =
-    if side_eff then Safe_typing.inline_private_constants env (body, eff.Evd.seff_private)
-    else body
+  let cb, univs =
+    if side_eff then Declare.inline_private_constants ~univs env ce
+    else
+      (* GG: side effects won't get reset: no need to treat their universes specially *)
+      let (cb, ctx), _eff = Future.force ce.Declare.proof_entry_body in
+      cb, UState.merge ~sideff:false Evd.univ_rigid univs ctx
   in
-  let univs = UState.merge ~sideff:side_eff Evd.univ_rigid univs ctx in
   cb, status, univs
 
 let refine_by_tactic ~name ~poly env sigma ty tac =

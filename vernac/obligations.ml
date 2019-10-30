@@ -423,11 +423,9 @@ let solve_by_tac ?loc name evi t poly ctx =
       Pfedit.build_constant_by_tactic
         ~name ~poly ctx evi.evar_hyps evi.evar_concl t in
     let env = Global.env () in
-    let (body, eff) = Future.force entry.Declare.proof_entry_body in
-    let body = Safe_typing.inline_private_constants env (body, eff.Evd.seff_private) in
-    let ctx' = Evd.merge_context_set ~sideff:true Evd.univ_rigid (Evd.from_ctx ctx') (snd body) in
-    Inductiveops.control_only_guard env ctx' (EConstr.of_constr (fst body));
-    Some (fst body, entry.Declare.proof_entry_type, Evd.evar_universe_context ctx')
+    let body, ctx' = Declare.inline_private_constants ~univs:ctx' env entry in
+    Inductiveops.control_only_guard env (Evd.from_ctx ctx') (EConstr.of_constr body);
+    Some (body, entry.Declare.proof_entry_type, ctx')
   with
   | Refiner.FailError (_, s) as exn ->
     let _ = CErrors.push exn in
