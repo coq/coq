@@ -884,11 +884,13 @@ let print_about_any ?loc env sigma k udecl =
   maybe_error_reject_univ_decl k udecl;
   match k with
   | Term ref ->
+    let rb = Reductionops.ReductionBehaviour.print ref in
     Dumpglob.add_glob ?loc ref;
       pr_infos_list
        (print_ref false ref udecl :: blankline ::
         print_polymorphism ref @
         print_name_infos ref @
+        (if Pp.ismt rb then [] else [rb]) @
         print_opacity ref @
   print_bidi_hints ref @
   [hov 0 (str "Expands to: " ++ pr_located_qualid k)])

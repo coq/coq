@@ -42,6 +42,8 @@ myplus : forall T : Type, T -> nat -> nat -> nat
 
 myplus is not universe polymorphic
 Arguments myplus {Z%type_scope} !t !n%nat_scope m%nat_scope : rename
+The reduction tactics unfold myplus when the 2nd and
+  3rd arguments evaluate to a constructor
 myplus is transparent
 Expands to: Constant Arguments_renaming.Test1.myplus
 @myplus
@@ -71,6 +73,8 @@ myplus : forall T : Type, T -> nat -> nat -> nat
 
 myplus is not universe polymorphic
 Arguments myplus {Z%type_scope} !t !n%nat_scope m%nat_scope : rename
+The reduction tactics unfold myplus when the 2nd and
+  3rd arguments evaluate to a constructor
 myplus is transparent
 Expands to: Constant Arguments_renaming.myplus
 @myplus
