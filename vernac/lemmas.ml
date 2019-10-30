@@ -384,17 +384,14 @@ let adjust_guardness_conditions const = function
   | possible_indexes ->
     (* Try all combinations... not optimal *)
     let env = Global.env() in
-    { const with
-      Declare.proof_entry_body =
-        Future.chain const.Declare.proof_entry_body
-          (fun ((body, ctx), eff) ->
-             match Constr.kind body with
-             | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
-               let env = Safe_typing.push_private_constants env eff.Evd.seff_private in
-               let indexes = search_guard env possible_indexes fixdecls in
-               (mkFix ((indexes,0),fixdecls), ctx), eff
-             | _ -> (body, ctx), eff)
-    }
+    Declare.Internal.map_entry_body const
+      ~f:(fun ((body, ctx), eff) ->
+          match Constr.kind body with
+          | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
+            let env = Safe_typing.push_private_constants env eff.Evd.seff_private in
+            let indexes = search_guard env possible_indexes fixdecls in
+            (mkFix ((indexes,0),fixdecls), ctx), eff
+          | _ -> (body, ctx), eff)
 
 let finish_proved env sigma idopt po info =
   let open Proof_global in
@@ -404,7 +401,7 @@ let finish_proved env sigma idopt po info =
     let name = match idopt with
       | None -> name
       | Some { CAst.v = save_id } -> check_anonymity name save_id; save_id in
-    let fix_exn = Future.fix_exn_of const.Declare.proof_entry_body in
+    let fix_exn = Declare.Internal.get_fix_exn const in
     let () = try
       let const = adjust_guardness_conditions const compute_guard in
       let should_suggest = const.Declare.proof_entry_opaque &&
@@ -452,7 +449,7 @@ let finish_derived ~f ~name ~idopt ~entries =
   in
   (* The opacity of [f_def] is adjusted to be [false], as it
      must. Then [f] is declared in the global environment. *)
-  let f_def = { f_def with Declare.proof_entry_opaque = false } in
+  let f_def = Declare.Internal.set_opacity ~opaque:false f_def in
   let f_kind = Decls.(IsDefinition Definition) in
   let f_def = Declare.DefinitionEntry f_def in
   let f_kn = Declare.declare_constant ~name:f ~kind:f_kind f_def in
@@ -463,20 +460,15 @@ let finish_derived ~f ~name ~idopt ~entries =
      performs this precise action. *)
   let substf c = Vars.replace_vars [f,f_kn_term] c in
   (* Extracts the type of the proof of [suchthat]. *)
-  let lemma_pretype =
-    match lemma_def.Declare.proof_entry_type with
-    | Some t -> t
+  let lemma_pretype typ =
+    match typ with
+    | Some t -> Some (substf t)
     | None -> assert false (* Proof_global always sets type here. *)
   in
   (* The references of [f] are subsituted appropriately. *)
-  let lemma_type = substf lemma_pretype in
+  let lemma_def = Declare.Internal.map_entry_type lemma_def ~f:lemma_pretype in
   (* The same is done in the body of the proof. *)
-  let lemma_body = Future.chain lemma_def.Declare.proof_entry_body (fun ((b,ctx),fx) -> (substf b, ctx), fx) in
-  let lemma_def =
-    { lemma_def with
-      Declare.proof_entry_body = lemma_body;
-      proof_entry_type = Some lemma_type }
-  in
+  let lemma_def = Declare.Internal.map_entry_body lemma_def ~f:(fun ((b,ctx),fx) -> (substf b, ctx), fx) in
   let lemma_def = Declare.DefinitionEntry lemma_def in
   let _ : Names.Constant.t = Declare.declare_constant ~name ~kind:Decls.(IsProof Proposition) lemma_def in
   ()
@@ -491,7 +483,7 @@ let finish_proved_equations lid kind proof_obj hook i types wits sigma0 =
           | Some id -> id
           | None -> let n = !obls in incr obls; add_suffix i ("_obligation_" ^ string_of_int n)
         in
-        let entry, args = Abstract.shrink_entry local_context entry in
+        let entry, args = Declare.Internal.shrink_entry local_context entry in
         let cst = Declare.declare_constant ~name:id ~kind (Declare.DefinitionEntry entry) in
         let sigma, app = Evarutil.new_global sigma (GlobRef.ConstRef cst) in
         let sigma = Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma in

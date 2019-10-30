@@ -63,6 +63,7 @@ val use_unification_heuristics : unit -> bool
 
 val build_constant_by_tactic
   :  name:Id.t
+  -> ?opaque:Proof_global.opacity_flag
   -> UState.t
   -> named_context_val
   -> poly:bool

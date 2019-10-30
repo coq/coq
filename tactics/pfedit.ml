@@ -117,14 +117,14 @@ let by tac = Proof_global.map_fold_proof (solve (Goal_select.SelectNth 1) None t
 
 let next = let n = ref 0 in fun () -> incr n; !n
 
-let build_constant_by_tactic ~name ctx sign ~poly typ tac =
+let build_constant_by_tactic ~name ?(opaque=Proof_global.Transparent) ctx sign ~poly typ tac =
   let evd = Evd.from_ctx ctx in
   let goals = [ (Global.env_of_context sign , typ) ] in
   let pf = Proof_global.start_proof ~name ~poly ~udecl:UState.default_univ_decl evd goals in
   try
     let pf, status = by tac pf in
     let open Proof_global in
-    let { entries; universes } = close_proof ~opaque:Transparent ~keep_body_ucst_separate:false (fun x -> x) pf in
+    let { entries; universes } = close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) pf in
     match entries with
     | [entry] ->
       entry, status, universes
