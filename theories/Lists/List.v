@@ -896,6 +896,7 @@ Section ListOps.
   + rewrite IH; apply app_assoc.
   Qed.
 
+
   (***********************************)
   (** ** Decidable equality on lists *)
   (***********************************)
@@ -1012,6 +1013,14 @@ Section Map.
       | cons x t => (f x)++(flat_map t)
     end.
 
+  Lemma flat_map_app : forall f l1 l2,
+    flat_map f (l1 ++ l2) = flat_map f l1 ++ flat_map f l2.
+  Proof.
+    intros F l1 l2.
+    induction l1; [ reflexivity | simpl ].
+    rewrite IHl1, app_assoc; reflexivity.
+  Qed.
+
   Lemma in_flat_map : forall (f:A->list B)(l:list A)(y:B),
     In y (flat_map f l) <-> exists x, In x l /\ In y (f x).
   Proof using A B.
@@ -1083,6 +1092,14 @@ Lemma map_ext :
   forall (A B : Type)(f g:A->B), (forall a, f a = g a) -> forall l, map f l = map g l.
 Proof.
   intros; apply map_ext_in; auto.
+Qed.
+
+Lemma flat_map_ext : forall (A B : Type)(f g : A -> list B),
+  (forall a, f a = g a) -> forall l, flat_map f l = flat_map g l.
+Proof.
+  intros A B f g Hext l.
+  rewrite 2 flat_map_concat_map.
+  now rewrite map_ext with (g := g).
 Qed.
 
 
@@ -2540,6 +2557,16 @@ End Exists_Forall.
 
 Hint Constructors Exists : core.
 Hint Constructors Forall : core.
+
+Lemma concat_nil_Forall {A:Type} : forall (l : list (list A)),
+  concat l = nil <-> Forall (fun x => x = nil) l.
+Proof.
+  induction l; simpl; split; intros Hc; auto.
+  - apply app_eq_nil in Hc.
+    constructor; firstorder.
+  - inversion Hc; subst; simpl.
+    now apply IHl.
+Qed.
 
 Section Forall2.
 
