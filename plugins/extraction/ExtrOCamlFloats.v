@@ -8,7 +8,18 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** Extraction to OCaml of native binary64 floating-point numbers. *)
+(** Extraction to OCaml of native binary64 floating-point numbers.
+
+Note: the extraction of primitive floats relies on Coq's internal file
+kernel/float64.ml, so make sure the corresponding binary is available
+when linking the extracted OCaml code.
+
+For example, if you build a (_CoqProject + coq_makefile)-based project
+and if you created an empty subfolder "extracted" and a file "test.v"
+containing [Cd "extracted". Separate Extraction function_to_extract.],
+you will just need to add in the _CoqProject: [test.v], [-I extracted]
+and the list of [extracted/*.ml] and [extracted/*.mli] files, then add
+[CAMLFLAGS += -w -33] in the Makefile.local file.  *)
 
 From Coq Require Floats Extraction.
 
