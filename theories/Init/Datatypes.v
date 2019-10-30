@@ -197,6 +197,25 @@ Notation "x + y" := (sum x y) : type_scope.
 Arguments inl {A B} _ , [A] B _.
 Arguments inr {A B} _ , A [B] _.
 
+(** [identity A a] is the family of datatypes on [A] whose sole non-empty
+    member is the singleton datatype [identity A a a] whose
+    sole inhabitant is denoted [identity_refl A a] *)
+(** Beware: this inductive actually falls into [Prop], as the sole
+    constructor has no arguments and [-indices-matter] is not
+    activated in the standard library. *)
+
+Inductive identity (A:Type) (a:A) : A -> Type :=
+  identity_refl : identity a a.
+Hint Resolve identity_refl: core.
+
+Arguments identity_ind [A] a P f y i.
+Arguments identity_rec [A] a P f y i.
+Arguments identity_rect [A] a P f y i.
+
+Register identity as core.identity.type.
+Register identity_refl as core.identity.refl.
+Register identity_ind as core.identity.ind.
+
 (** [prod A B], written [A * B], is the product of [A] and [B];
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
 
@@ -396,25 +415,6 @@ Proof. intros. apply CompareSpec2Type; assumption. Defined.
 
 (******************************************************************)
 (** * Misc Other Datatypes *)
-
-(** [identity A a] is the family of datatypes on [A] whose sole non-empty
-    member is the singleton datatype [identity A a a] whose
-    sole inhabitant is denoted [identity_refl A a] *)
-(** Beware: this inductive actually falls into [Prop], as the sole
-    constructor has no arguments and [-indices-matter] is not
-    activated in the standard library. *)
-
-Inductive identity (A:Type) (a:A) : A -> Type :=
-  identity_refl : identity a a.
-Hint Resolve identity_refl: core.
-
-Arguments identity_ind [A] a P f y i.
-Arguments identity_rec [A] a P f y i.
-Arguments identity_rect [A] a P f y i.
-
-Register identity as core.identity.type.
-Register identity_refl as core.identity.refl.
-Register identity_ind as core.identity.ind.
 
 (** Identity type *)
 
