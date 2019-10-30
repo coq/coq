@@ -2286,6 +2286,11 @@ Section NatSeq.
       | S len => start :: seq (S start) len
     end.
 
+  Lemma cons_seq : forall len start, start :: seq (S start) len = seq start (S len).
+  Proof.
+    reflexivity.
+  Qed.
+
   Lemma seq_length : forall len start, length (seq start len) = len.
   Proof.
     induction len; simpl; auto.
@@ -2334,6 +2339,14 @@ Section NatSeq.
     induction len1 as [|len1' IHlen]; intros; simpl in *.
     - now rewrite Nat.add_0_r.
     - now rewrite Nat.add_succ_r, IHlen.
+  Qed.
+
+  Lemma seq_S : forall len start, seq start (S len) = seq start len ++ [start + len].
+  Proof.
+   intros len start.
+   change [start + len] with (seq (start + len) 1).
+   rewrite <- seq_app.
+   rewrite <- plus_n_Sm, <- plus_n_O; reflexivity.
   Qed.
 
 End NatSeq.
