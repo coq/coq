@@ -110,17 +110,6 @@ val start_lemma_with_initialization
 
 val default_thm_id : Names.Id.t
 
-(** Main [Lemma foo args : type.] command *)
-val start_lemma_com
-  :  program_mode:bool
-  -> poly:bool
-  -> scope:DeclareDef.locality
-  -> kind:Decls.logical_kind
-  -> ?inference_hook:Pretyping.inference_hook
-  -> ?hook:DeclareDef.Hook.t
-  -> Vernacexpr.proof_expr list
-  -> t
-
 (** {4 Saving proofs} *)
 
 val save_lemma_admitted : lemma:t -> unit

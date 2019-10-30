@@ -465,29 +465,64 @@ let vernac_custom_entry ~module_local s =
 (***********)
 (* Gallina *)
 
-let start_proof_and_print ~program_mode ~poly ?hook ~scope ~kind l =
-  let inference_hook =
-    if program_mode then
-      let hook env sigma ev =
-        let tac = !Obligations.default_tactic in
-        let evi = Evd.find sigma ev in
-        let evi = Evarutil.nf_evar_info sigma evi in
-        let env = Evd.evar_filtered_env evi in
-        try
-          let concl = evi.Evd.evar_concl in
-          if not (Evarutil.is_ground_env sigma env &&
-                  Evarutil.is_ground_term sigma concl)
-          then raise Exit;
-          let c, _, ctx =
-            Pfedit.build_by_tactic ~poly:false env (Evd.evar_universe_context sigma) concl tac
-          in Evd.set_universe_context sigma ctx, EConstr.of_constr c
-        with Logic_monad.TacticFailure e when Logic.catchable_exception e ->
-          user_err Pp.(str "The statement obligations could not be resolved \
-                 automatically, write a statement definition first.")
-      in Some hook
-    else None
+let check_name_freshness locality {CAst.loc;v=id} : unit =
+  (* We check existence here: it's a bit late at Qed time *)
+  if Nametab.exists_cci (Lib.make_path id) || Termops.is_section_variable id ||
+     locality <> DeclareDef.Discharge && Nametab.exists_cci (Lib.make_path_except_section id)
+  then
+    user_err ?loc  (Id.print id ++ str " already exists.")
+
+let program_inference_hook env sigma ev =
+  let tac = !Obligations.default_tactic in
+  let evi = Evd.find sigma ev in
+  let evi = Evarutil.nf_evar_info sigma evi in
+  let env = Evd.evar_filtered_env evi in
+  try
+    let concl = evi.Evd.evar_concl in
+    if not (Evarutil.is_ground_env sigma env &&
+            Evarutil.is_ground_term sigma concl)
+    then raise Exit;
+    let c, _, ctx =
+      Pfedit.build_by_tactic ~poly:false env (Evd.evar_universe_context sigma) concl tac
+    in Evd.set_universe_context sigma ctx, EConstr.of_constr c
+  with Logic_monad.TacticFailure e when Logic.catchable_exception e ->
+    user_err Pp.(str "The statement obligations could not be resolved \
+                      automatically, write a statement definition first.")
+
+let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
+  let env0 = Global.env () in
+  let decl = fst (List.hd thms) in
+  let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env0 (snd decl) in
+  let evd, thms = List.fold_left_map (fun evd ((id, _), (bl, t)) ->
+    let evd, (impls, ((env, ctx), imps)) = interp_context_evars ~program_mode env0 evd bl in
+    let evd, (t', imps') = interp_type_evars_impls ~program_mode ~impls env evd t in
+    let flags = Pretyping.{ all_and_fail_flags with program_mode } in
+    let inference_hook = if program_mode then Some program_inference_hook else None in
+    let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
+    let ids = List.map Context.Rel.Declaration.get_name ctx in
+    check_name_freshness scope id;
+    (* XXX: The nf_evar is critical !! *)
+    evd, (id.CAst.v,
+          (Evarutil.nf_evar evd (EConstr.it_mkProd_or_LetIn t' ctx),
+           (ids, imps @ imps'))))
+      evd thms in
+  let recguard,thms,snl = RecLemmas.look_for_possibly_mutual_statements evd thms in
+  let evd = Evd.minimize_universes evd in
+  (* XXX: This nf_evar is critical too!! We are normalizing twice if
+     you look at the previous lines... *)
+  let thms = List.map (fun (name, (typ, (args, impargs))) ->
+      { Recthm.name; typ = Evarutil.nf_evar evd typ; args; impargs} ) thms in
+  let () =
+    let open UState in
+    if not (udecl.univdecl_extensible_instance && udecl.univdecl_extensible_constraints) then
+       ignore (Evd.check_univ_decl ~poly evd udecl)
   in
-  start_lemma_com ~program_mode ?inference_hook ?hook ~poly ~scope ~kind l
+  let evd =
+    if poly then evd
+    else (* We fix the variables to ensure they won't be lowered to Set *)
+      Evd.fix_undefined_variables evd
+  in
+  start_lemma_with_initialization ?hook ~poly ~scope ~kind evd ~udecl recguard thms snl
 
 let vernac_definition_hook ~poly = let open Decls in function
 | Coercion ->
@@ -522,7 +557,7 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let program_mode = atts.program in
   let poly = atts.polymorphic in
   let name = vernac_definition_name lid local in
-  start_proof_and_print ~program_mode ~poly ~scope:local ~kind:(Decls.IsDefinition kind) ?hook [(name, pl), (bl, t)]
+  start_lemma_com ~program_mode ~poly ~scope:local ~kind:(Decls.IsDefinition kind) ?hook [(name, pl), (bl, t)]
 
 let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
@@ -545,7 +580,7 @@ let vernac_start_proof ~atts kind l =
   let scope = enforce_locality_exp atts.locality NoDischarge in
   if Dumpglob.dump () then
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
-  start_proof_and_print ~program_mode:atts.program ~poly:atts.polymorphic ~scope ~kind:(Decls.IsProof kind) l
+  start_lemma_com ~program_mode:atts.program ~poly:atts.polymorphic ~scope ~kind:(Decls.IsProof kind) l
 
 let vernac_end_proof ~lemma = let open Vernacexpr in function
   | Admitted ->
