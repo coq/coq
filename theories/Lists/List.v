@@ -764,6 +764,12 @@ Section ListOps.
     rewrite IHl; auto.
   Qed.
 
+  Lemma rev_eq_app : forall l l1 l2, rev l = l1 ++ l2 -> l = rev l2 ++ rev l1.
+  Proof.
+    intros l l1 l2 Heq.
+    rewrite <- (rev_involutive l), Heq.
+    apply rev_app_distr.
+  Qed.
 
   (** Compatibility with other operations *)
 
