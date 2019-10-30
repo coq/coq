@@ -620,18 +620,16 @@ let lookup_eliminator env ind_sp s =
   let knc = KerName.make mpc l in
   (* Try first to get an eliminator defined in the same section as the *)
   (* inductive type *)
-  try
-    let cst = Constant.make knu knc in
-    let _ = lookup_constant cst env in
-      GlobRef.ConstRef cst
-  with Not_found ->
-  (* Then try to get a user-defined eliminator in some other places *)
-  (* using short name (e.g. for "eq_rec") *)
-  try Nametab.locate (qualid_of_ident id)
-  with Not_found ->
-    user_err ~hdr:"default_elim"
-      (strbrk "Cannot find the elimination combinator " ++
-       Id.print id ++ strbrk ", the elimination of the inductive definition " ++
-       Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef ind_sp) ++
-       strbrk " on sort " ++ Sorts.pr_sort_family s ++
-       strbrk " is probably not allowed.")
+  let cst = Constant.make knu knc in
+  if mem_constant cst env then GlobRef.ConstRef cst
+  else
+    (* Then try to get a user-defined eliminator in some other places *)
+    (* using short name (e.g. for "eq_rec") *)
+    try Nametab.locate (qualid_of_ident id)
+    with Not_found ->
+      user_err ~hdr:"default_elim"
+        (strbrk "Cannot find the elimination combinator " ++
+         Id.print id ++ strbrk ", the elimination of the inductive definition " ++
+         Nametab.pr_global_env Id.Set.empty (GlobRef.IndRef ind_sp) ++
+         strbrk " on sort " ++ Sorts.pr_sort_family s ++
+         strbrk " is probably not allowed.")

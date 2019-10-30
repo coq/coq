@@ -241,8 +241,10 @@ let invert_name labs l {binder_name=na0} env sigma ref na =
 	let refi = match ref with
 	  | EvalRel _ | EvalEvar _ -> None
 	  | EvalVar id' -> Some (EvalVar id)
-	  | EvalConst kn ->
-	      Some (EvalConst (Constant.change_label kn (Label.of_id id))) in
+          | EvalConst kn ->
+            let kn = Constant.change_label kn (Label.of_id id) in
+            if Environ.mem_constant kn env then Some (EvalConst kn) else None
+        in
 	match refi with
 	  | None -> None
 	  | Some ref ->

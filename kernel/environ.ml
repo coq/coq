@@ -231,21 +231,25 @@ let fold_inductives f env acc =
 (* Global constants *)
 
 let lookup_constant_key kn env =
-  Cmap_env.find kn env.env_globals.Globals.constants
+  Cmap_env.get kn env.env_globals.Globals.constants
 
 let lookup_constant kn env =
-  fst (Cmap_env.find kn env.env_globals.Globals.constants)
+  fst (lookup_constant_key kn env)
+
+let mem_constant kn env = Cmap_env.mem kn env.env_globals.Globals.constants
 
 (* Mutual Inductives *)
+let lookup_mind_key kn env =
+  Mindmap_env.get kn env.env_globals.Globals.inductives
+
 let lookup_mind kn env =
-  fst (Mindmap_env.find kn env.env_globals.Globals.inductives)
+  fst (lookup_mind_key kn env)
+
+let mem_mind kn env = Mindmap_env.mem kn env.env_globals.Globals.inductives
 
 let mind_context env mind =
   let mib = lookup_mind mind env in
   Declareops.inductive_polymorphic_context mib
-
-let lookup_mind_key kn env =
-  Mindmap_env.find kn env.env_globals.Globals.inductives
 
 let oracle env = env.env_typing_flags.conv_oracle
 let set_oracle env o =

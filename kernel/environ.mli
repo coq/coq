@@ -201,9 +201,11 @@ val add_constant_key : Constant.t -> Opaqueproof.opaque constant_body -> link_in
 val lookup_constant_key :  Constant.t -> env -> constant_key
 
 (** Looks up in the context of global constant names 
-   raises [Not_found] if the required path is not found *)
+   raises an anomaly if the required path is not found *)
 val lookup_constant    : Constant.t -> env -> Opaqueproof.opaque constant_body
 val evaluable_constant : Constant.t -> env -> bool
+
+val mem_constant : Constant.t -> env -> bool
 
 (** New-style polymorphism *)
 val polymorphic_constant  : Constant.t -> env -> bool
@@ -215,7 +217,7 @@ val type_in_type_constant : Constant.t -> env -> bool
    [c] is opaque, [NotEvaluableConst NoBody] if it has no
    body, [NotEvaluableConst IsProj] if [c] is a projection,
    [NotEvaluableConst (IsPrimitive p)] if [c] is primitive [p]
-   and [Not_found] if it does not exist in [env] *)
+   and an anomaly if it does not exist in [env] *)
 
 type const_evaluation_result =
   | NoBody
@@ -254,8 +256,10 @@ val add_mind_key : MutInd.t -> mind_key -> env -> env
 val add_mind : MutInd.t -> mutual_inductive_body -> env -> env
 
 (** Looks up in the context of global inductive names 
-   raises [Not_found] if the required path is not found *)
+   raises an anomaly if the required path is not found *)
 val lookup_mind : MutInd.t -> env -> mutual_inductive_body
+
+val mem_mind : MutInd.t -> env -> bool
 
 (** The universe context associated to the inductive, empty if not
     polymorphic *)

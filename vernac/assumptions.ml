@@ -135,11 +135,13 @@ let lookup_constant_in_impl cst fallback =
       | None -> anomaly (str "Print Assumption: unknown constant " ++ Constant.print cst ++ str ".")
 
 let lookup_constant cst =
-  try
-    let cb = Global.lookup_constant cst in
+  let env = Global.env() in
+  if not (Environ.mem_constant cst env)
+  then lookup_constant_in_impl cst None
+  else
+    let cb = Environ.lookup_constant cst env in
     if Declareops.constant_has_body cb then cb
     else lookup_constant_in_impl cst (Some cb)
-  with Not_found -> lookup_constant_in_impl cst None
 
 let lookup_mind_in_impl mind =
   try
@@ -150,8 +152,9 @@ let lookup_mind_in_impl mind =
     anomaly (str "Print Assumption: unknown inductive " ++ MutInd.print mind ++ str ".")
 
 let lookup_mind mind =
-  try Global.lookup_mind mind
-  with Not_found -> lookup_mind_in_impl mind
+  let env = Global.env() in
+  if Environ.mem_mind mind env then Environ.lookup_mind mind env
+  else lookup_mind_in_impl mind
 
 (** Graph traversal of an object, collecting on the way the dependencies of
     traversed objects *)

@@ -675,6 +675,7 @@ module InductiveOrdered_env = struct
 end
 
 module Indset = Set.Make(InductiveOrdered)
+module Indset_env = Set.Make(InductiveOrdered_env)
 module Indmap = Map.Make(InductiveOrdered)
 module Indmap_env = Map.Make(InductiveOrdered_env)
 
@@ -688,6 +689,8 @@ module ConstructorOrdered_env = struct
   let compare = constructor_user_ord
 end
 
+module Constrset = Set.Make(ConstructorOrdered)
+module Constrset_env = Set.Make(ConstructorOrdered_env)
 module Constrmap = Map.Make(ConstructorOrdered)
 module Constrmap_env = Map.Make(ConstructorOrdered_env)
 
