@@ -1701,6 +1701,18 @@ Section SetIncl.
   Definition incl (l m:list A) := forall a:A, In a l -> In a m.
   Hint Unfold incl : core.
 
+  Lemma incl_nil_l : forall l, incl nil l.
+  Proof.
+    intros l a Hin; inversion Hin.
+  Qed.
+
+  Lemma incl_l_nil : forall l, incl l nil -> l = nil.
+  Proof.
+    destruct l; intros Hincl.
+    - reflexivity.
+    - exfalso; apply Hincl with a; simpl; auto.
+  Qed.
+
   Lemma incl_refl : forall l:list A, incl l l.
   Proof.
     auto.
@@ -1745,6 +1757,13 @@ Section SetIncl.
   Qed.
   Hint Resolve incl_cons : core.
 
+  Lemma incl_cons_inv : forall (a:A) (l m:list A),
+    incl (a :: l) m -> In a m /\ incl l m.
+  Proof.
+    intros a l m Hi.
+    split; [ | intros ? ? ]; apply Hi; simpl; auto.
+  Qed.
+
   Lemma incl_app : forall l m n:list A, incl l n -> incl m n -> incl (l ++ m) n.
   Proof.
     unfold incl; simpl; intros l m n H H0 a H1.
@@ -1752,6 +1771,13 @@ Section SetIncl.
     elim (in_app_or _ _ _ H1); auto.
   Qed.
   Hint Resolve incl_app : core.
+
+  Lemma incl_app_app : forall l1 l2 m1 m2:list A,
+    incl l1 m1 -> incl l2 m2 -> incl (l1 ++ l2) (m1 ++ m2).
+  Proof.
+    intros.
+    apply incl_app; [ apply incl_appl | apply incl_appr]; assumption.
+  Qed.
 
 End SetIncl.
 
