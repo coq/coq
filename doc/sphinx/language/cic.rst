@@ -1074,10 +1074,13 @@ between universes for inductive types in the Type hierarchy.
 
       Lemma contradiction : False.
       Proof.
-      enough (I /\ ~ I) as [] by contradiction.
-      split.
-      apply not_I_I; intro; now apply I_not_I.
-      intro; now apply I_not_I.
+        enough (I /\ ~ I) as [] by contradiction.
+        split.
+        - apply not_I_I.
+          intro.
+          now apply I_not_I.
+        - intro.
+          now apply I_not_I.
       Qed.
 
 .. example:: Negative occurrence (second example)
