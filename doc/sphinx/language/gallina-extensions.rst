@@ -2089,16 +2089,18 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
       .. example::
 
-      .. coqtop:: all
+        .. coqtop:: all
 
-         Structure Ordered := { Carrier :> Set; Leq : relation Carrier;
-                                     Prf_ord : order Carrier Leq}.
+           Require Import ZArith.
+           Structure Ordered := { OrdCarrier :> Set; Leq : relation OrdCarrier;
+                                       Prf_ord : order OrdCarrier Leq}.
 
-         Axiom leq_nat_order : order nat leq_nat.
+           Axiom eq_Z_equiv : equivalence Z Z.eq.
+           Axiom leq_Z_order : order Z Z.le.
 
-         Definition nat_multi := (Build_Setoid eq_nat_equiv, Build_Ordered leq_nat_order).
+           Definition Z_multi := (Build_Setoid eq_Z_equiv, Build_Ordered leq_Z_order).
 
-         Canonical nat_multi.
+           Canonical Z_multi.
 
    .. note::
       The :cmd:`Canonical` command considers as a pairing construct any polymorphic
