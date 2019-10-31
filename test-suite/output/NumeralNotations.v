@@ -391,3 +391,68 @@ Module Test19.
   Check {| summands := (cons 1 (cons 2 (cons (-1) nil)))%Z |}.
   Check {| summands := nil |}.
 End Test19.
+
+Module Test20.
+  (** Test Sorts *)
+  Local Set Universe Polymorphism.
+  Inductive known_type : Type -> Type :=
+  | prop : known_type Prop
+  | set : known_type Set
+  | type : known_type Type
+  | zero : known_type Empty_set
+  | one : known_type unit
+  | two : known_type bool.
+
+  Existing Class known_type.
+  Existing Instances zero one two prop.
+  Existing Instance set | 2.
+  Existing Instance type | 4.
+
+  Record > ty := { t : Type ; kt : known_type t }.
+
+  Definition ty_of_uint (x : Decimal.uint) : option ty
+    := match Nat.of_uint x with
+       | 0 => @Some ty zero
+       | 1 => @Some ty one
+       | 2 => @Some ty two
+       | 3 => @Some ty prop
+       | 4 => @Some ty set
+       | 5 => @Some ty type
+       | _ => None
+       end.
+  Definition uint_of_ty (x : ty) : Decimal.uint
+    := Nat.to_uint match kt x with
+                   | prop => 3
+                   | set => 4
+                   | type => 5
+                   | zero => 0
+                   | one => 1
+                   | two => 2
+                   end.
+
+  Declare Scope kt_scope.
+  Delimit Scope kt_scope with kt.
+
+  Numeral Notation ty ty_of_uint uint_of_ty : kt_scope.
+
+  Check let v := 0%kt in v : ty.
+  Check let v := 1%kt in v : ty.
+  Check let v := 2%kt in v : ty.
+  Check let v := 3%kt in v : ty.
+  Check let v := 4%kt in v : ty.
+  Check let v := 5%kt in v : ty.
+  Fail Check let v := 6%kt in v : ty.
+  Eval cbv in (_ : known_type Empty_set) : ty.
+  Eval cbv in (_ : known_type unit) : ty.
+  Eval cbv in (_ : known_type bool) : ty.
+  Eval cbv in (_ : known_type Prop) : ty.
+  Eval cbv in (_ : known_type Set) : ty.
+  Eval cbv in (_ : known_type Type) : ty.
+  Local Set Printing All.
+  Check let v := 0%kt in v : ty.
+  Check let v := 1%kt in v : ty.
+  Check let v := 2%kt in v : ty.
+  Check let v := 3%kt in v : ty.
+  Check let v := 4%kt in v : ty.
+  Check let v := 5%kt in v : ty.
+End Test20.

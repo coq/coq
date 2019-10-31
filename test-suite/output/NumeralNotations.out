@@ -180,3 +180,41 @@ let v := 4%Zlike in v : Zlike
      : Zlike
 0%Zlike
      : Zlike
+let v := 0%kt in v : ty
+     : ty
+let v := 1%kt in v : ty
+     : ty
+let v := 2%kt in v : ty
+     : ty
+let v := 3%kt in v : ty
+     : ty
+let v := 4%kt in v : ty
+     : ty
+let v := 5%kt in v : ty
+     : ty
+The command has indeed failed with message:
+Cannot interpret this number as a value of type ty
+     = 0%kt
+     : ty
+     = 1%kt
+     : ty
+     = 2%kt
+     : ty
+     = 3%kt
+     : ty
+     = 4%kt
+     : ty
+     = 5%kt
+     : ty
+let v : ty := Build_ty Empty_set zero in v : ty
+     : ty
+let v : ty := Build_ty unit one in v : ty
+     : ty
+let v : ty := Build_ty bool two in v : ty
+     : ty
+let v : ty := Build_ty Prop prop in v : ty
+     : ty
+let v : ty := Build_ty Set set in v : ty
+     : ty
+let v : ty := Build_ty Type type in v : ty
+     : ty
