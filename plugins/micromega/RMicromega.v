@@ -22,6 +22,7 @@ Require Import QArith.
 Require Import Qfield.
 Require Import Qreals.
 Require Import DeclConstant.
+Require Import Lia.
 
 Require Setoid.
 (*Declare ML Module "micromega_plugin".*)
@@ -192,7 +193,7 @@ Proof.
   destruct z ; try congruence.
   compute. congruence.
   compute. congruence.
-  generalize (Zle_0_nat n). auto with zarith.
+  generalize (Zle_0_nat n). auto using Z.le_ge.
 Qed.
 
 Definition CInvR0 (r : Rcst) := Qeq_bool (Q_of_Rcst r) (0 # 1).
@@ -333,7 +334,7 @@ Proof.
       apply Qeq_bool_eq in C2.
       rewrite C2.
       simpl.
-      rewrite Qpower0 by auto with zarith.
+      rewrite Qpower0 by lia.
       apply Q2R_0.
     + rewrite Q2RpowerRZ.
       rewrite IHc.
@@ -341,7 +342,7 @@ Proof.
       rewrite andb_false_iff in C.
       destruct C.
       simpl. apply Z.ltb_ge in H.
-      auto with zarith.
+      lia.
       left ; apply Qeq_bool_neq; auto.
     + simpl.
       rewrite <- IHc.
