@@ -7,7 +7,8 @@ echo "Where? (type a prefix)"
 (cd doc/changelog && ls -d */)
 read -r where
 
-where=$(echo doc/changelog/"$where"*)
+where="doc/changelog/$where"
+if ! [ -d "$where" ]; then where=$(echo "$where"*); fi
 where="$where/$PR-$(git rev-parse --abbrev-ref HEAD).rst"
 
 # shellcheck disable=SC2016
