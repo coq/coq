@@ -1208,6 +1208,16 @@ let write_makefile f =
 
 let _ = write_makefile "config/Makefile"
 
+let write_dune_c_flags f =
+  safe_remove f;
+  let o = open_out f in
+  let pr s = fprintf o s in
+  pr "(%s)\n" cflags;
+  close_out o;
+  Unix.chmod f 0o444
+
+let _ = try write_dune_c_flags "kernel/byterun/dune.c_flags" with _ -> ()
+
 let write_macos_metadata exec =
   let f = "config/Info-"^exec^".plist" in
   let () = safe_remove f in
