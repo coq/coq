@@ -295,16 +295,18 @@ let save_lemma_admitted ~(lemma : t) : unit =
     | _ -> CErrors.anomaly ~label:"Lemmas.save_proof" (Pp.str "more than one statement.")
   in
   let typ = EConstr.Unsafe.to_constr typ in
-  (* This will warn if the proof is complete *)
-  let pproofs, _univs = Proof_global.return_proof ~allow_partial:true lemma.proof in
+  let proof = Proof_global.get_proof lemma.proof in
+  let pproofs = Proof.partial_proof proof in
   let sec_vars =
     if not (get_keep_admitted_vars ()) then None
     else match Proof_global.get_used_variables lemma.proof, pproofs with
       | Some _ as x, _ -> x
-      | None, (pproof, _) :: _ ->
+      | None, pproof :: _ ->
         let env = Global.env () in
         let ids_typ = Environ.global_vars_set env typ in
-        let ids_def = Environ.global_vars_set env pproof in
+        (* [pproof] is evar-normalized by [partial_proof]. We don't
+           count variables appearing only in the type of evars. *)
+        let ids_def = Environ.global_vars_set env (EConstr.Unsafe.to_constr pproof) in
         Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
       | _ -> None in
   let universes = Proof_global.get_initial_euctx lemma.proof in

@@ -170,7 +170,7 @@ type fork_t = aast * Vcs_.Branch.t * opacity_guarantee * Names.Id.t list
 type qed_t = {
   qast : aast;
   keep : vernac_qed_type;
-  mutable fproof : (future_proof * AsyncTaskQueue.cancel_switch) option;
+  mutable fproof : (future_proof option * AsyncTaskQueue.cancel_switch) option;
   brname : Vcs_.Branch.t;
   brinfo : branch_type Vcs_.branch_info
 }
@@ -2460,8 +2460,8 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                     let fp, cancel =
                       Slaves.build_proof ~doc
                         ?loc ~drop_pt ~exn_info ~block_start ~block_stop ~name in
-                    Future.replace ofp fp;
-                    qed.fproof <- Some (fp, cancel);
+                    Future.replace (Option.get ofp) fp;
+                    qed.fproof <- Some (Some fp, cancel);
                     (* We don't generate a new state, but we still need
                      * to install the right one *)
                     State.install_cached id
@@ -2476,7 +2476,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                         ProofTask.build_proof_here ~doc ?loc
                           ~drop_pt exn_info block_stop, ref false
                     in
-                    qed.fproof <- Some (fp, cancel);
+                    qed.fproof <- Some (Some fp, cancel);
                     let opaque = match keep' with
                       | VtKeepAxiom | VtKeepOpaque ->
                         Proof_global.Opaque (* Admitted -> Opaque should be OK. *)
@@ -2510,9 +2510,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                   match keep with
                   | VtDrop -> None
                   | VtKeep VtKeepAxiom ->
-                      let ctx = UState.empty in
-                      let fp = Future.from_val ([],ctx) in
-                      qed.fproof <- Some (fp, ref false); None
+                      qed.fproof <- Some (None, ref false); None
                   | VtKeep opaque ->
                     let opaque = let open Proof_global in  match opaque with
                       | VtKeepOpaque -> Opaque | VtKeepDefined -> Transparent
@@ -2709,7 +2707,7 @@ let rec join_admitted_proofs id =
   let view = VCS.visit id in
   match view.step with
   | `Qed ({ keep = VtKeep VtKeepAxiom; fproof = Some (fp,_) },_) ->
-       ignore(Future.force fp);
+       Option.iter (fun fp -> ignore(Future.force fp)) fp;
        join_admitted_proofs view.next
   | _ -> join_admitted_proofs view.next
 
@@ -3114,7 +3112,7 @@ let edit_at ~doc id =
       (VCS.reachable (VCS.get_branch_pos (VCS.current_branch ()))) in
   let has_failed qed_id =
     match VCS.visit qed_id with
-    | { step = `Qed ({ fproof = Some (fp,_) }, _) } -> Future.is_exn fp
+    | { step = `Qed ({ fproof = Some (Some fp,_) }, _) } -> Future.is_exn fp
     | _ -> false in
   let rec master_for_br root tip =
       if Stateid.equal tip Stateid.initial then tip else
