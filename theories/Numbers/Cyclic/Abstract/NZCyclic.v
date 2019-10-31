@@ -15,6 +15,7 @@ Require Import ZArith.
 Require Import Zpow_facts.
 Require Import DoubleType.
 Require Import CyclicAxioms.
+Require Import Lia.
 
 (** * From [CyclicType] to [NZAxiomsSig] *)
 
@@ -59,7 +60,8 @@ Ltac zcongruence := repeat red; intros; zify; congruence.
 
 Instance eq_equiv : Equivalence eq.
 Proof.
-unfold eq. firstorder.
+  split. 1-2: firstorder.
+  intros x y z; apply eq_trans.
 Qed.
 
 Local Obligation Tactic := zcongruence.
@@ -77,7 +79,7 @@ Qed.
 
 Theorem gt_wB_0 : 0 < wB.
 Proof.
-pose proof gt_wB_1; auto with zarith.
+pose proof gt_wB_1; lia.
 Qed.
 
 Lemma one_mod_wB : 1 mod wB = 1.
@@ -138,8 +140,8 @@ intros n H1 H2 H3.
 unfold B in *. apply AS in H3.
 setoid_replace (ZnZ.of_Z (n + 1)) with (S (ZnZ.of_Z n)). assumption.
 zify.
-rewrite 2 ZnZ.of_Z_correct; auto with zarith.
-symmetry; apply Zmod_small; auto with zarith.
+rewrite 2 ZnZ.of_Z_correct. 2-3: lia.
+symmetry; apply Zmod_small; lia.
 Qed.
 
 Theorem Zbounded_induction :
@@ -155,8 +157,8 @@ apply natlike_rec2; unfold Q'.
 destruct (Z.le_gt_cases b 0) as [H | H]. now right. left; now split.
 intros n H IH. destruct IH as [[IH1 IH2] | IH].
 destruct (Z.le_gt_cases (b - 1) n) as [H1 | H1].
-right; auto with zarith.
-left. split; [auto with zarith | now apply (QS n)].
+right; lia.
+left. split; [ lia | now apply (QS n)].
 right; auto with zarith.
 unfold Q' in *; intros n H1 H2. destruct (H n H1) as [[H3 H4] | H3].
 assumption. now apply Z.le_ngt in H3.
