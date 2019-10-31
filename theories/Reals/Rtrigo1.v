@@ -18,7 +18,7 @@ Require Export Cos_rel.
 Require Export Cos_plus.
 Require Import ZArith_base.
 Require Import Zcomplements.
-Import Omega.
+Require Import Lia.
 Require Import Lra.
 Require Import Ranalysis1.
 Require Import Rsqrt_def. 
@@ -1741,7 +1741,7 @@ Proof.
       replace (3*(PI/2)) with (PI/2 + PI) in GT by field.
       rewrite Rplus_comm in GT.
       now apply Rplus_lt_reg_l in GT. }
-    omega.
+    lia.
 Qed.
 
 Lemma cos_eq_0_2PI_1 (x:R) :

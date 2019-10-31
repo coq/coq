@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import RIneq.
-Require Import Omega.
+Require Import Lia.
 Local Open Scope R_scope.
 
 Lemma Rlt_R0_R2 : 0 < 2.
@@ -49,7 +49,7 @@ Ltac omega_sup :=
   repeat
     rewrite <- plus_IZR ||
       rewrite <- mult_IZR || rewrite <- Ropp_Ropp_IZR || rewrite Z_R_minus;
-  apply IZR_lt; omega.
+  apply IZR_lt; lia.
 
 Ltac prove_sup :=
   match goal with

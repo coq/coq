@@ -12,7 +12,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rseries.
 Require Import PartSum.
-Require Import Omega.
+Require Import Lia.
 Local Open Scope R_scope.
 
 Set Implicit Arguments.
@@ -57,12 +57,12 @@ Section Sigma.
     ring.
     replace (high - S (S k))%nat with (high - S k - 1)%nat.
     apply pred_of_minus.
-    omega.
+    lia.
     unfold sigma; replace (S k - low)%nat with (S (k - low)).
     pattern (S k) at 1; replace (S k) with (low + S (k - low))%nat.
     symmetry ; apply (tech5 (fun i:nat => f (low + i))).
-    omega.
-    omega.
+    lia.
+    lia.
     rewrite <- H2; unfold sigma; rewrite <- minus_n_n; simpl;
       replace (high - S low)%nat with (pred (high - low)).
     replace (sum_f_R0 (fun k0:nat => f (S (low + k0))) (pred (high - low))) with
@@ -73,7 +73,7 @@ Section Sigma.
     apply sum_eq; intros; replace (S (low + i)) with (low + S i)%nat.
     reflexivity.
     ring.
-    omega.
+    lia.
     inversion H; [ right; reflexivity | left; assumption ].
   Qed.
 
