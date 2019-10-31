@@ -838,11 +838,11 @@ END
 GRAMMAR EXTEND Gram
   Pcoq.Constr.operconstr: LEVEL "0"
     [ [ IDENT "ltac2"; ":"; "("; tac = tac2expr; ")" ->
-      { let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
+      { let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
         CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg)) }
       | test_ampersand_ident; "&"; id = Prim.ident ->
       { let tac = Tac2quote.of_exact_hyp ~loc (CAst.make ~loc id) in
-        let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) tac in
+        let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
         CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg)) }
       | test_dollar_ident; "$"; id = Prim.ident ->
       { let id = Loc.tag ~loc id in
@@ -873,7 +873,7 @@ let rules = [
     Stop ++ Aentry test_ampersand_ident ++ Atoken (PKEYWORD "&") ++ Aentry Prim.ident,
     begin fun id _ _ loc ->
       let tac = Tac2quote.of_exact_hyp ~loc (CAst.make ~loc id) in
-      let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) ([], tac) in
+      let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
       CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
     end
   );
@@ -882,7 +882,7 @@ let rules = [
     Stop ++ Atoken (PIDENT (Some "ltac2")) ++ Atoken (PKEYWORD ":") ++
       Atoken (PKEYWORD "(") ++ Aentry tac2expr ++ Atoken (PKEYWORD ")"),
     begin fun _ tac _ _ _ loc ->
-      let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2) ([], tac) in
+      let arg = Genarg.in_gen (Genarg.rawwit Tac2env.wit_ltac2_constr) tac in
       CAst.make ~loc (CHole (None, Namegen.IntroAnonymous, Some arg))
     end
   )

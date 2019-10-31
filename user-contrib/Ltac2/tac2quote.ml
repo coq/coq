@@ -23,6 +23,7 @@ let wit_reference = Arg.create "reference"
 let wit_ident = Arg.create "ident"
 let wit_constr = Arg.create "constr"
 let wit_open_constr = Arg.create "open_constr"
+let wit_preterm = Arg.create "preterm"
 let wit_ltac1 = Arg.create "ltac1"
 let wit_ltac1val = Arg.create "ltac1val"
 

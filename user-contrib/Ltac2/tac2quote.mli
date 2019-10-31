@@ -97,6 +97,8 @@ val wit_constr : (Constrexpr.constr_expr, Glob_term.glob_constr) Arg.tag
 
 val wit_open_constr : (Constrexpr.constr_expr, Glob_term.glob_constr) Arg.tag
 
+val wit_preterm : (Util.Empty.t, Glob_term.glob_constr) Arg.tag
+
 val wit_ltac1 : (Id.t CAst.t list * Ltac_plugin.Tacexpr.raw_tactic_expr, Id.t list * Ltac_plugin.Tacexpr.glob_tactic_expr) Arg.tag
 (** Ltac1 AST quotation, seen as a 'tactic'. Its type is unit in Ltac2. *)
 

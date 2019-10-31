@@ -77,3 +77,6 @@ Ltac2 @ external in_context : ident -> constr -> (unit -> unit) -> constr := "lt
 (** On a focused goal [Γ ⊢ A], [in_context id c tac] evaluates [tac] in a
     focused goal [Γ, id : c ⊢ ?X] and returns [fun (id : c) => t] where [t] is
     the proof built by the tactic. *)
+
+Ltac2 @ external pretype : preterm -> constr := "ltac2" "constr_pretype".
+(** Pretype the provided preterm. Assumes the goal to be focussed. *)
