@@ -589,8 +589,8 @@ library:ci-fcsl-pcm:
 library:ci-fiat-crypto:
   extends: .ci-template-flambda
 
-library:ci-fiat-crypto-legacy:
-  extends: .ci-template-flambda
+# library:ci-fiat-crypto-legacy:
+#   extends: .ci-template-flambda
 
 library:ci-flocq:
   extends: .ci-template
