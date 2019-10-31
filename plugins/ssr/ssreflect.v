@@ -531,65 +531,13 @@ Lemma abstract_context T (P : T -> Type) x :
 Proof. by move=> /(_ P); apply. Qed.
 
 (*****************************************************************************)
-(* Constants for under/over, to rewrite under binders using "context lemmas" *)
+(* Material for under/over (to rewrite under binders using "context lemmas") *)
 
-Require Import ssrclasses.
+Require Export ssrunder.
 
-Module Type UNDER_REL.
-Parameter Under_rel :
-  forall (A : Type) (eqA : A -> A -> Prop), A -> A -> Prop.
-Parameter Under_rel_from_rel :
-  forall (A : Type) (eqA : A -> A -> Prop) (x y : A),
-    @Under_rel A eqA x y -> eqA x y.
-Parameter Under_relE :
-  forall (A : Type) (eqA : A -> A -> Prop) (x y : A),
-    @Under_rel A eqA x y = eqA x y.
-
-(** [Over_rel, over_rel, over_rel_done]: for "by rewrite over_rel" *)
-Parameter Over_rel :
-  forall (A : Type) (eqA : A -> A -> Prop), A -> A -> Prop.
-Parameter over_rel :
-  forall (A : Type) (eqA : A -> A -> Prop) (x y : A),
-    @Under_rel A eqA x y = @Over_rel A eqA x y.
-Parameter over_rel_done :
-  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x : A),
-    @Over_rel A eqA x x.
-Hint Extern 0 (@Over_rel _ _ _ _) =>
-  solve [ apply: over_rel_done ] : core.
-Hint Resolve over_rel_done : core.
-
-(** [under_rel_done]: for Ltac-style over *)
-Parameter under_rel_done :
-  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x : A),
-    @Under_rel A eqA x x.
-Notation "''Under[' x ]" := (@Under_rel _ _ x _)
-  (at level 8, format "''Under['  x  ]", only printing).
-End UNDER_REL.
-
-Module Export Under_rel : UNDER_REL.
-Definition Under_rel (A : Type) (eqA : A -> A -> Prop) :=
-  eqA.
-Lemma Under_rel_from_rel :
-  forall (A : Type) (eqA : A -> A -> Prop) (x y : A),
-    @Under_rel A eqA x y -> eqA x y.
-Proof. by []. Qed.
-Lemma Under_relE (A : Type) (eqA : A -> A -> Prop) (x y : A) :
-  @Under_rel A eqA x y = eqA x y.
-Proof. by []. Qed.
-Definition Over_rel := Under_rel.
-Lemma over_rel :
-  forall (A : Type) (eqA : A -> A -> Prop) (x y : A),
-    @Under_rel A eqA x y = @Over_rel A eqA x y.
-Proof. by []. Qed.
-Lemma over_rel_done :
-  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x : A),
-    @Over_rel A eqA x x.
-Proof. by rewrite /Over_rel. Qed.
-Lemma under_rel_done :
-  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x : A),
-    @Under_rel A eqA x x.
-Proof. by []. Qed.
-End Under_rel.
+Hint Extern 0 (@Under_rel.Over_rel _ _ _ _) =>
+  solve [ apply: Under_rel.over_rel_done ] : core.
+Hint Resolve Under_rel.over_rel_done : core.
 
 Register Under_rel.Under_rel as plugins.ssreflect.Under_rel.
 Register Under_rel.Under_rel_from_rel as plugins.ssreflect.Under_rel_from_rel.
@@ -606,6 +554,8 @@ Ltac over :=
 (** Convenience rewrite rule to unprotect evars, e.g., to instantiate
     them in another way than with reflexivity. *)
 Definition UnderE := Under_relE.
+
+(*****************************************************************************)
 
 (** An interface for non-Prop types; used to avoid improper instantiation
     of polymorphic lemmas with on-demand implicits when they are used as views.

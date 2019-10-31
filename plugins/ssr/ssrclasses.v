@@ -12,6 +12,9 @@
 
 (** Compatibility layer for [under] and [setoid_rewrite].
 
+ Note: this file does not require [ssreflect]; it is both required by
+ [ssrsetoid] and required by [ssrunder].
+
  Redefine [Coq.Classes.RelationClasses.Reflexive] here, so that doing
  [Require Import ssreflect] does not [Require Import RelationClasses],
  and conversely. **)

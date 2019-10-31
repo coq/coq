@@ -311,3 +311,72 @@ under [here in Rel _ here]rel2_gen.
 - reflexivity.
 Qed.
 End TestGeneric2.
+
+Section TestPreOrder.
+(* inspired by https://github.com/coq/coq/pull/10022#issuecomment-530101950
+   but without needing to do [rewrite UnderE] manually. *)
+
+Require Import Morphisms.
+
+(** Tip to tell rewrite that the LHS of [leq' x y (:= leq x y = true)]
+    is x, not [leq x y] *)
+Definition rel_true {T} (R : rel T) x y := is_true (R x y).
+Definition leq' : nat -> nat -> Prop := rel_true leq.
+
+Parameter leq_add :
+  forall m1 m2 n1 n2 : nat, m1 <= n1 -> m2 <= n2 -> m1 + m2 <= n1 + n2.
+Parameter leq_mul :
+ forall m1 m2 n1 n2 : nat, m1 <= n1 -> m2 <= n2 -> m1 * m2 <= n1 * n2.
+
+Local Notation "+%N" := addn (at level 0, only parsing).
+
+(** Context lemma (could *)
+Lemma leq'_big : forall I (F G : I -> nat) (r : seq I),
+    (forall i : I, leq' (F i) (G i)) ->
+    (leq' (\big[+%N/0%N]_(i <- r) F i) (\big[+%N/0%N]_(i <- r) G i)).
+Proof.
+red=> F G m n HFG.
+apply: (big_ind2 leq _ _ (P := xpredT) (op1 := addn) (op2 := addn)) =>//.
+move=> *; exact: leq_add.
+move=> *; exact: HFG.
+Qed.
+
+(** Instances for [setoid_rewrite] *)
+Instance leq'_rr : RewriteRelation leq' := {}.
+
+Instance leq'_proper_addn : Proper (leq' ==> leq' ==> leq') addn.
+Proof. move=> a1 b1 le1 a2 b2 le2; exact/leq_add. Qed.
+
+Instance leq'_proper_muln : Proper (leq' ==> leq' ==> leq') muln.
+Proof. move=> a1 b1 le1 a2 b2 le2; exact/leq_mul. Qed.
+
+
+Instance leq'_preorder : PreOrder leq'.
+(** encompasses [Reflexive] *)
+Proof. rewrite /leq' /rel_true; split =>// ??? A B; exact: leq_trans A B. Qed.
+
+Instance leq'_reflexive : Reflexive leq'.
+Proof. by rewrite /leq' /rel_true. Qed.
+
+Parameter leq_add2l :
+  forall p m n : nat, (p + m <= p + n) = (m <= n).
+
+Lemma test : forall n : nat,
+  (1 + 2 * (\big[+%N/0]_(i < n) (3 + i)) * 4 + 5 <= 6 + 24 * n + 8 * n * n)%N.
+Proof.
+move=> n; rewrite -[is_true _]/(rel_true _ _ _) -/leq'.
+have lem : forall (i : nat), i < n -> leq' (3 + i) (3 + n).
+{ by move=> i Hi; rewrite /leq' /rel_true leq_add2l; apply/ltnW. }
+
+under leq'_big => i.
+{
+  (* The "magic" is here: instantiate the evar with the bound "3 + n" *)
+  rewrite lem ?ltn_ord //. over.
+}
+cbv beta.
+
+now_show (leq' (1 + 2 * \big[+%N/0]_(i < n) (3 + n) * 4 + 5) (6 + 24 * n + 8 * n * n)).
+(* uninteresting end of proof, omitted *)
+Abort.
+
+End TestPreOrder.
