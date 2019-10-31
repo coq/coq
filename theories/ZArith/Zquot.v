@@ -63,6 +63,7 @@ Hint Resolve Zrem_0_l Zrem_0_r Zquot_0_l Zquot_0_r Z.quot_1_r Z.rem_1_r
 Ltac zero_or_not a :=
   destruct (Z.eq_decidable a 0) as [->|?];
   [rewrite ?Zquot_0_l, ?Zrem_0_l, ?Zquot_0_r, ?Zrem_0_r;
+   try lia;
    auto with zarith|].
 
 Lemma Z_rem_same a : Z.rem a a = 0.
@@ -100,7 +101,6 @@ Proof. zero_or_not b. now apply Z.rem_opp_opp. Qed.
 Theorem Zrem_sgn a b : 0 <= Z.sgn (Z.rem a b) * Z.sgn a.
 Proof.
   zero_or_not b.
-  - apply Z.square_nonneg.
   - zero_or_not (Z.rem a b).
     rewrite Z.rem_sign_nz; trivial. apply Z.square_nonneg.
 Qed.
@@ -203,18 +203,18 @@ Qed.
 (* Division of positive numbers is positive. *)
 
 Lemma Z_quot_pos a b : 0 <= a -> 0 <= b -> 0 <= a÷b.
-Proof. intros. zero_or_not b. apply Z.quot_pos; auto with zarith. Qed.
+Proof. intros. zero_or_not b. apply Z.quot_pos; lia. Qed.
 
 (** As soon as the divisor is greater or equal than 2,
     the division is strictly decreasing. *)
 
 Lemma Z_quot_lt a b : 0 < a -> 2 <= b -> a÷b < a.
-Proof. intros. apply Z.quot_lt; auto with zarith. Qed.
+Proof. intros. apply Z.quot_lt; lia. Qed.
 
 (** [<=] is compatible with a positive division. *)
 
 Lemma Z_quot_monotone a b c : 0<=c -> a<=b -> a÷c <= b÷c.
-Proof. intros. zero_or_not c. apply Z.quot_le_mono; auto with zarith. Qed.
+Proof. intros. zero_or_not c. apply Z.quot_le_mono; lia. Qed.
 
 (** With our choice of division, rounding of (a÷b) is always done toward 0: *)
 
@@ -228,12 +228,12 @@ Proof. intros. zero_or_not b. apply Z.mul_quot_ge; auto with zarith. Qed.
     iff the modulo is zero. *)
 
 Lemma Z_quot_exact_full a b : a = b*(a÷b) <-> Z.rem a b = 0.
-Proof. intros. zero_or_not b. intuition. apply Z.quot_exact; auto. Qed.
+Proof. intros. zero_or_not b. apply Z.quot_exact; auto. Qed.
 
 (** A modulo cannot grow beyond its starting point. *)
 
 Theorem Zrem_le a b : 0 <= a -> 0 <= b -> Z.rem a b <= a.
-Proof. intros. zero_or_not b. apply Z.rem_le; auto with zarith. Qed.
+Proof. intros. zero_or_not b. apply Z.rem_le; lia. Qed.
 
 (** Some additional inequalities about Zdiv. *)
 
@@ -357,7 +357,7 @@ Qed.
 
 Theorem Zquot_mult_le:
  forall a b c, 0<=a -> 0<=b -> 0<=c -> c*(a÷b) <= (c*a)÷b.
-Proof. intros. zero_or_not b. apply Z.quot_mul_le; auto with zarith. Qed.
+Proof. intros. zero_or_not b. apply Z.quot_mul_le; lia. Qed.
 
 (** Z.rem is related to divisibility (see more in Znumtheory) *)
 
@@ -376,7 +376,7 @@ Lemma Zquot2_odd_remainder : forall a,
 Proof.
  intros [ |p|p]. simpl.
  left. simpl. auto with zarith.
- left. destruct p; simpl; auto with zarith.
+ left. destruct p; simpl; lia.
  right. destruct p; simpl; split; now auto with zarith.
 Qed.
 
@@ -414,10 +414,10 @@ Theorem Zquotrem_Zdiv_eucl_pos : forall a b:Z, 0 <= a -> 0 < b ->
 Proof.
   intros.
   apply Zdiv_mod_unique with b.
-  apply Zrem_lt_pos; auto with zarith.
-  rewrite Z.abs_eq; auto with *; apply Z_mod_lt; auto with *.
-  rewrite <- Z_div_mod_eq; auto with *.
-  symmetry; apply Z.quot_rem; auto with *.
+  apply Zrem_lt_pos; lia.
+  rewrite Z.abs_eq by lia. apply Z_mod_lt; lia.
+  rewrite <- Z_div_mod_eq by lia.
+  symmetry; apply Z.quot_rem; lia.
 Qed.
 
 Theorem Zquot_Zdiv_pos : forall a b, 0 <= a -> 0 <= b ->

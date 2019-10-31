@@ -15,7 +15,7 @@
 (************************************************************************)
 
 Require Import ZMicromega.
-Require Import ZArith.
+Require Import ZArith_base.
 Require Import RingMicromega.
 Require Import VarMap.
 Require Import DeclConstant.

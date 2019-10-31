@@ -9,6 +9,7 @@
 (************************************************************************)
 
 Require Import QArith.
+Import Zdiv.
 
 Lemma Qopp_lt_compat: forall p q : Q, p < q -> - q < - p.
 Proof.
@@ -38,7 +39,7 @@ Proof.
 intros z.
 unfold Qceiling.
 simpl.
-rewrite Zdiv_1_r.
+rewrite Z.div_1_r.
 apply Z.opp_involutive.
 Qed.
 
@@ -50,8 +51,7 @@ unfold Qle.
 simpl.
 replace (n*1)%Z with n by ring.
 rewrite Z.mul_comm.
-apply Z_mult_div_ge.
-auto with *.
+now apply Z.mul_div_le.
 Qed.
 
 Hint Resolve Qfloor_le : qarith.
