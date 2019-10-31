@@ -289,8 +289,7 @@ let wit_ltac2_quotation = Genarg.make0 "ltac2:quotation"
 let () = Geninterp.register_val0 wit_ltac2 None
 let () = Geninterp.register_val0 wit_ltac2_quotation None
 
-let is_constructor qid =
-  let (_, id) = repr_qualid qid in
+let is_constructor_id id =
   let id = Id.to_string id in
   assert (String.length id > 0);
   match id with
@@ -299,3 +298,7 @@ let is_constructor qid =
     match id.[0] with
     | 'A'..'Z' -> true
     | _ -> false
+
+let is_constructor qid =
+  let (_, id) = repr_qualid qid in
+  is_constructor_id id

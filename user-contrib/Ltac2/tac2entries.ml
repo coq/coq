@@ -394,6 +394,13 @@ let register_typedef ?(local = false) isrec types =
       | (id, _) :: _ ->
         user_err (str "Multiple definitions of the constructor " ++ Id.print id)
       in
+      let () =
+        let check_uppercase_ident (id,_) =
+          if not (Tac2env.is_constructor_id id)
+          then user_err (str "Constructor name should start with an uppercase letter " ++ Id.print id)
+        in
+        List.iter check_uppercase_ident cs
+      in
       ()
     | CTydRec ps ->
       let same_name (id1, _, _) (id2, _, _) = Id.equal id1 id2 in
