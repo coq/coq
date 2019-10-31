@@ -257,6 +257,17 @@ type vernac_argument_status = {
   implicit_status : Impargs.implicit_kind;
 }
 
+type arguments_modifier =
+  [  `Assert
+  | `ClearBidiHint
+  | `ClearImplicits
+  | `ClearScopes
+  | `DefaultImplicits
+  | `ExtraScopes
+  | `ReductionDontExposeCase
+  | `ReductionNeverUnfold
+  | `Rename ]
+
 type extend_name =
   (* Name of the vernac entry where the tactic is defined, typically found
      after the VERNAC EXTEND statement in the source. *)
@@ -365,16 +376,16 @@ type nonrec vernac_expr =
   | VernacCreateHintDb of string * bool
   | VernacRemoveHints of string list * qualid list
   | VernacHints of string list * Hints.hints_expr
-  | VernacSyntacticDefinition of lident * (Id.t list * constr_expr) *
+  | VernacSyntacticDefinition of
+      lident * (Id.t list * constr_expr) *
       onlyparsing_flag
-  | VernacArguments of qualid or_by_notation *
+  | VernacArguments of
+      qualid or_by_notation *
       vernac_argument_status list (* Main arguments status list *) *
-        (Name.t * Impargs.implicit_kind) list list (* Extra implicit status lists *) *
+      (Name.t * Impargs.implicit_kind) list list (* Extra implicit status lists *) *
       int option (* Number of args to trigger reduction *) *
       int option (* Number of args before bidirectional typing *) *
-        [ `ReductionDontExposeCase | `ReductionNeverUnfold | `Rename |
-          `ExtraScopes | `Assert | `ClearImplicits | `ClearScopes | `ClearBidiHint |
-          `DefaultImplicits ] list
+      arguments_modifier list
   | VernacReserve of simple_binder list
   | VernacGeneralizable of (lident list) option
   | VernacSetOpacity of (Conv_oracle.level * qualid or_by_notation list)

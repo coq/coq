@@ -19,6 +19,7 @@ DeclareObl
 Canonical
 RecLemmas
 Library
+Prettyp
 Lemmas
 Class
 Auto_ind_decl
@@ -38,6 +39,7 @@ Assumptions
 Mltop
 Topfmt
 Loadpath
+ComArguments
 Vernacentries
 Vernacstate
 Vernacinterp
