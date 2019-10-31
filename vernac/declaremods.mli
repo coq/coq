@@ -126,3 +126,5 @@ val debug_print_modtab : unit -> Pp.t
 
 val process_module_binding :
   MBId.t -> Declarations.module_alg_expr -> unit
+
+val mod_ops : Printmod.mod_ops

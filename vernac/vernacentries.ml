@@ -175,7 +175,7 @@ let print_module qid =
     let globdir = Nametab.locate_dir qid in
       match globdir with
           DirModule Nametab.{ obj_dir; obj_mp; _ } ->
-          Printmod.print_module (Printmod.printable_body obj_dir) obj_mp
+          Printmod.print_module ~mod_ops:Declaremods.mod_ops (Printmod.printable_body obj_dir) obj_mp
 	| _ -> raise Not_found
   with
     Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid)
@@ -183,12 +183,12 @@ let print_module qid =
 let print_modtype qid =
   try
     let kn = Nametab.locate_modtype qid in
-    Printmod.print_modtype kn
+    Printmod.print_modtype ~mod_ops:Declaremods.mod_ops kn
   with Not_found ->
     (* Is there a module of this name ? If yes we display its type *)
     try
       let mp = Nametab.locate_module qid in
-      Printmod.print_module false mp
+      Printmod.print_module ~mod_ops:Declaremods.mod_ops false mp
     with Not_found ->
       user_err (str"Unknown Module Type or Module " ++ pr_qualid qid)
 
@@ -1672,29 +1672,26 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     print_about env sigma ref_or_by_not udecl
 
 let vernac_print ~pstate ~atts =
-  let mod_ops = { Printmod.import_module = Declaremods.import_module
-                ; process_module_binding = Declaremods.process_module_binding
-                } in
   let sigma, env = get_current_or_global_context ~pstate in
   function
   | PrintTypingFlags -> pr_typing_flags (Environ.typing_flags (Global.env ()))
   | PrintTables -> print_tables ()
-  | PrintFullContext-> print_full_context_typ ~mod_ops Library.indirect_accessor env sigma
-  | PrintSectionContext qid -> print_sec_context_typ ~mod_ops Library.indirect_accessor env sigma qid
-  | PrintInspect n -> inspect ~mod_ops Library.indirect_accessor env sigma n
+  | PrintFullContext-> print_full_context_typ env sigma
+  | PrintSectionContext qid -> print_sec_context_typ env sigma qid
+  | PrintInspect n -> inspect env sigma n
   | PrintGrammar ent -> Metasyntax.pr_grammar ent
   | PrintCustomGrammar ent -> Metasyntax.pr_custom_grammar ent
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
   | PrintModules -> print_modules ()
-  | PrintModule qid -> print_module ~mod_ops qid
-  | PrintModuleType qid -> print_modtype ~mod_ops qid
+  | PrintModule qid -> print_module qid
+  | PrintModuleType qid -> print_modtype qid
   | PrintNamespace ns -> print_namespace ~pstate ns
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
   | PrintDebugGC -> Mltop.print_gc ()
   | PrintName (qid,udecl) ->
     dump_global qid;
-    print_name ~mod_ops Library.indirect_accessor env sigma qid udecl
+    print_name env sigma qid udecl
   | PrintGraph -> Prettyp.print_graph ()
   | PrintClasses -> Prettyp.print_classes()
   | PrintTypeClasses -> Prettyp.print_typeclasses()

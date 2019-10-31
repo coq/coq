@@ -53,11 +53,7 @@ let coqc_main copts ~opts =
 
   if opts.Coqargs.post.Coqargs.output_context then begin
     let sigma, env = let e = Global.env () in Evd.from_env e, e in
-    let library_accessor = Library.indirect_accessor in
-    let mod_ops = { Printmod.import_module = Declaremods.import_module
-                  ; process_module_binding = Declaremods.process_module_binding
-                  } in
-    Feedback.msg_notice Pp.(Flags.(with_option raw_print (Prettyp.print_full_pure_context ~mod_ops ~library_accessor env) sigma) ++ fnl ())
+    Feedback.msg_notice Pp.(Flags.(with_option raw_print (Prettyp.print_full_pure_context env) sigma) ++ fnl ())
   end;
   CProfile.print_profile ()
 

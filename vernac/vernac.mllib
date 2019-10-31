@@ -10,7 +10,6 @@ Locality
 Egramml
 Vernacextend
 Ppvernac
-Prettyp
 Proof_using
 Egramcoq
 Metasyntax
@@ -20,6 +19,7 @@ DeclareObl
 Canonical
 RecLemmas
 Library
+Prettyp
 Lemmas
 Class
 Auto_ind_decl
