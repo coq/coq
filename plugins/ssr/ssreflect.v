@@ -533,111 +533,61 @@ Proof. by move=> /(_ P); apply. Qed.
 (*****************************************************************************)
 (* Constants for under/over, to rewrite under binders using "context lemmas" *)
 
-Module Type UNDER_EQ.
-Parameter Under_eq :
-  forall (R : Type), R -> R -> Prop.
-Parameter Under_eq_from_eq :
-  forall (T : Type) (x y : T), @Under_eq T x y -> x = y.
-Parameter Under_eqE :
-  forall (T : Type) (x y : T), @Under_eq T x y = (x = y).
-
-(** [Over_eq, over_eq, over_eq_done]: for "by rewrite over_eq" *)
-Parameter Over_eq :
-  forall (R : Type), R -> R -> Prop.
-Parameter over_eq :
-  forall (T : Type) (x : T) (y : T), @Under_eq T x y = @Over_eq T x y.
-Parameter over_eq_done :
-  forall (T : Type) (x : T), @Over_eq T x x.
-(* We need both hints below, otherwise the test-suite does not pass *)
-Hint Extern 0 (@Over_eq _ _ _) => solve [ apply over_eq_done ] : core.
-(* => for [test-suite/ssr/under.v:test_big_patt1] *)
-Hint Resolve over_eq_done : core.
-(* => for [test-suite/ssr/over.v:test_over_1_1] *)
-
-(** [under_eq_done]: for Ltac-style over *)
-Parameter under_eq_done :
-  forall (T : Type) (x : T), @Under_eq T x x.
-Notation "''Under[' x ]" := (@Under_eq _ x _)
-  (at level 8, format "''Under['  x  ]", only printing).
-End UNDER_EQ.
-
-Module Export Under_eq : UNDER_EQ.
-Definition Under_eq := @eq.
-Lemma Under_eq_from_eq (T : Type) (x y : T) :
-  @Under_eq T x y -> x = y.
-Proof. by []. Qed.
-Lemma Under_eqE (T : Type) (x y : T) :
-  @Under_eq T x y = (x = y).
-Proof. by []. Qed.
-Definition Over_eq := Under_eq.
-Lemma over_eq :
-  forall (T : Type) (x : T) (y : T), @Under_eq T x y = @Over_eq T x y.
-Proof. by []. Qed.
-Lemma over_eq_done :
-  forall (T : Type) (x : T), @Over_eq T x x.
-Proof. by []. Qed.
-Lemma under_eq_done :
-  forall (T : Type) (x : T), @Under_eq T x x.
-Proof. by []. Qed.
-End Under_eq.
-
-Register Under_eq.Under_eq as plugins.ssreflect.Under_eq.
-Register Under_eq.Under_eq_from_eq as plugins.ssreflect.Under_eq_from_eq.
-
 Require Import ssrclasses.
 
 Module Type UNDER_REL.
 Parameter Under_rel :
-  forall (A : Type) (eqA : A -> A -> Prop), Reflexive eqA -> A -> A -> Prop.
+  forall (A : Type) (eqA : A -> A -> Prop), A -> A -> Prop.
 Parameter Under_rel_from_rel :
-  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A),
-    @Under_rel A eqA EeqA x y -> eqA x y.
+  forall (A : Type) (eqA : A -> A -> Prop) (x y : A),
+    @Under_rel A eqA x y -> eqA x y.
 Parameter Under_relE :
-  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A),
-    @Under_rel A eqA EeqA x y = eqA x y.
+  forall (A : Type) (eqA : A -> A -> Prop) (x y : A),
+    @Under_rel A eqA x y = eqA x y.
 
 (** [Over_rel, over_rel, over_rel_done]: for "by rewrite over_rel" *)
 Parameter Over_rel :
-  forall (A : Type) (eqA : A -> A -> Prop), Reflexive eqA -> A -> A -> Prop.
+  forall (A : Type) (eqA : A -> A -> Prop), A -> A -> Prop.
 Parameter over_rel :
-  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A),
-    @Under_rel A eqA EeqA x y = @Over_rel A eqA EeqA x y.
+  forall (A : Type) (eqA : A -> A -> Prop) (x y : A),
+    @Under_rel A eqA x y = @Over_rel A eqA x y.
 Parameter over_rel_done :
   forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x : A),
-    @Over_rel A eqA EeqA x x.
-Hint Extern 0 (@Over_rel _ _ _ _ _) => solve [ apply over_rel_done ] : core.
+    @Over_rel A eqA x x.
+Hint Extern 0 (@Over_rel _ _ _ _) =>
+  solve [ apply: over_rel_done ] : core.
 Hint Resolve over_rel_done : core.
 
 (** [under_rel_done]: for Ltac-style over *)
 Parameter under_rel_done :
   forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x : A),
-    @Under_rel A eqA EeqA x x.
-Notation "''Under[' x ]" := (@Under_rel _ _ _ x _)
+    @Under_rel A eqA x x.
+Notation "''Under[' x ]" := (@Under_rel _ _ x _)
   (at level 8, format "''Under['  x  ]", only printing).
 End UNDER_REL.
 
 Module Export Under_rel : UNDER_REL.
-Definition Under_rel (A : Type) (eqA : A -> A -> Prop) (_ : Reflexive eqA) :=
+Definition Under_rel (A : Type) (eqA : A -> A -> Prop) :=
   eqA.
 Lemma Under_rel_from_rel :
-  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A),
-    @Under_rel A eqA EeqA x y -> eqA x y.
+  forall (A : Type) (eqA : A -> A -> Prop) (x y : A),
+    @Under_rel A eqA x y -> eqA x y.
 Proof. by []. Qed.
-Lemma Under_relE (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A) :
-  @Under_rel A eqA EeqA x y = eqA x y.
+Lemma Under_relE (A : Type) (eqA : A -> A -> Prop) (x y : A) :
+  @Under_rel A eqA x y = eqA x y.
 Proof. by []. Qed.
 Definition Over_rel := Under_rel.
 Lemma over_rel :
-  forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x y : A),
-    @Under_rel A eqA EeqA x y = @Over_rel A eqA EeqA x y.
+  forall (A : Type) (eqA : A -> A -> Prop) (x y : A),
+    @Under_rel A eqA x y = @Over_rel A eqA x y.
 Proof. by []. Qed.
 Lemma over_rel_done :
   forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x : A),
-    @Over_rel A eqA EeqA x x.
-Proof. by []. Qed.
+    @Over_rel A eqA x x.
+Proof. by rewrite /Over_rel. Qed.
 Lemma under_rel_done :
   forall (A : Type) (eqA : A -> A -> Prop) (EeqA : Reflexive eqA) (x : A),
-    @Under_rel A eqA EeqA x x.
+    @Under_rel A eqA x x.
 Proof. by []. Qed.
 End Under_rel.
 
@@ -645,18 +595,17 @@ Register Under_rel.Under_rel as plugins.ssreflect.Under_rel.
 Register Under_rel.Under_rel_from_rel as plugins.ssreflect.Under_rel_from_rel.
 
 (** Closing rewrite rule *)
-Definition over := (over_eq, over_rel).
+Definition over := over_rel.
 
 (** Closing tactic *)
 Ltac over :=
-  by [ apply: Under_eq.under_eq_done
-     | apply: Under_rel.under_rel_done
+  by [ apply: Under_rel.under_rel_done
      | rewrite over
      ].
 
 (** Convenience rewrite rule to unprotect evars, e.g., to instantiate
     them in another way than with reflexivity. *)
-Definition UnderE := (Under_eqE, Under_relE).
+Definition UnderE := Under_relE.
 
 (** An interface for non-Prop types; used to avoid improper instantiation
     of polymorphic lemmas with on-demand implicits when they are used as views.
