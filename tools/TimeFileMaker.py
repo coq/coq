@@ -14,18 +14,29 @@ STRIP_REG = re.compile('^(coq/|contrib/|)(?:theories/|src/)?')
 STRIP_REP = r'\1'
 INFINITY  = '\u221e'
 
-def parse_args(argv, USAGE, HELP_STRING):
-    sort_by = 'auto'
-    if any(arg.startswith('--sort-by=') for arg in argv[1:]):
-        sort_by = [arg for arg in argv[1:] if arg.startswith('--sort-by=')][-1][len('--sort-by='):]
-    args = [arg for arg in argv if not arg.startswith('--sort-by=')]
-    if len(args) < 3 or '--help' in args[1:] or '-h' in args[1:] or sort_by not in ('auto', 'absolute', 'diff'):
+def parse_args(argv, USAGE, HELP_STRING, allow_sort_by=True, allow_real=True, min_arg_count=3):
+    ret = []
+    invalid_args = False
+    args = argv
+    if allow_sort_by:
+        sort_by = 'auto'
+        if any(arg.startswith('--sort-by=') for arg in args[1:]):
+            sort_by = [arg for arg in args[1:] if arg.startswith('--sort-by=')][-1][len('--sort-by='):]
+        args = [arg for arg in args if not arg.startswith('--sort-by=')]
+        invalid_args = (invalid_args or sort_by not in ('auto', 'absolute', 'diff'))
+        ret.append(sort_by)
+    if allow_real:
+        use_real = ('--real' in args[1:])
+        args = [arg for arg in args if arg != '--real']
+        ret.append(use_real)
+    ret.append(args)
+    if len(args) < min_arg_count or '--help' in args[1:] or '-h' in args[1:] or invalid_args:
         print(USAGE)
         if '--help' in args[1:] or '-h' in args[1:]:
             print(HELP_STRING)
             if len(args) == 2: sys.exit(0)
         sys.exit(1)
-    return sort_by, args
+    return tuple(ret)
 
 
 def reformat_time_string(time):
@@ -52,7 +63,7 @@ def get_file_lines(file_name):
 def get_file(file_name):
     return ''.join(get_file_lines(file_name))
 
-def get_times(file_name):
+def get_times(file_name, use_real=False):
     '''
     Reads the contents of file_name, which should be the output of
     'make TIMED=1', and parses it to construct a dict mapping file
@@ -60,10 +71,12 @@ def get_times(file_name):
     using STRIP_REG and STRIP_REP.
     '''
     lines = get_file(file_name)
-    reg = re.compile(r'^([^\s]+) \([^\)]*?user: ([0-9\.]+)[^\)]*?\)\s*$', re.MULTILINE)
+    reg_user = re.compile(r'^([^\s]+) \([^\)]*?user: ([0-9\.]+)[^\)]*?\)\s*$', re.MULTILINE)
+    reg_real = re.compile(r'^([^\s]+) \([^\)]*?real: ([0-9\.]+)[^\)]*?\)\s*$', re.MULTILINE)
+    reg = reg_real if use_real else reg_user
     times = reg.findall(lines)
     if all(time in ('0.00', '0.01') for name, time in times):
-        reg = re.compile(r'^([^\s]*) \([^\)]*?real: ([0-9\.]+)[^\)]*?\)\s*$', re.MULTILINE)
+        reg = reg_real
         times = reg.findall(lines)
     if all(STRIP_REG.search(name.strip()) for name, time in times):
         times = tuple((STRIP_REG.sub(STRIP_REP, name.strip()), time) for name, time in times)
