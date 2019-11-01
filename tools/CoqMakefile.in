@@ -312,7 +312,7 @@ else
 DO_NATDYNLINK =
 endif
 
-ALLDFILES = $(addsuffix .d,$(ALLSRCFILES)) $(VDFILE)
+ALLDFILES = $(addsuffix .d,$(ALLSRCFILES) $(VDFILE))
 
 # Compilation targets #########################################################
 
@@ -732,7 +732,7 @@ $(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack
 # projects. Note that extra options might be on the command line.
 VDFILE_FLAGS:=$(if @PROJECT_FILE@,-f @PROJECT_FILE@,) $(CMDLINE_COQLIBS) $(CMDLINE_VFILES)
 
-$(VDFILE): $(VFILES)
+$(VDFILE).d: $(VFILES)
 	$(SHOW)'COQDEP VFILES'
 	$(HIDE)$(COQDEP) -dyndep var $(VDFILE_FLAGS) $(redir_if_ok)
 

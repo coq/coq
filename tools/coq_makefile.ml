@@ -413,7 +413,7 @@ let _ =
 
   let conf_file = Option.default "CoqMakefile" project.makefile ^ ".conf" in
   let local_file = Option.default "CoqMakefile" project.makefile ^ ".local" in
-  let dep_file = "." ^ Option.default "CoqMakefile" project.makefile ^ ".d" in
+  let dep_file = "." ^ Option.default "CoqMakefile" project.makefile in
 
   if project.extra_targets <> [] then begin
     eprintf "Warning: -extra and -extra-phony are deprecated.\n";
@@ -442,4 +442,3 @@ let _ =
   generate_conf occ project (prog :: args);
   close_out occ;
   exit 0
-
