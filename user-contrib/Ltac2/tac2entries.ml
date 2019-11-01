@@ -489,6 +489,8 @@ let register_open ?(local = false) qid (params, def) =
       | _ -> assert false
     in
     let map (id, tpe) =
+      if not (Tac2env.is_constructor_id id)
+      then user_err (str "Constructor name should start with an uppercase letter " ++ Id.print id) ;
       let tpe = List.map intern_type tpe in
       { edata_name = id; edata_args = tpe }
     in
