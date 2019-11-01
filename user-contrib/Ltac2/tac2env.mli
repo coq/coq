@@ -151,4 +151,5 @@ val wit_ltac2_quotation : (Id.t Loc.located, Id.t, Util.Empty.t) genarg_type
 
 (** {5 Helper functions} *)
 
+val is_constructor_id : Id.t -> bool
 val is_constructor : qualid -> bool
