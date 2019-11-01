@@ -340,6 +340,21 @@ let intro_lock ipats =
   let hnf' = Proofview.numgoals >>= fun ng ->
              Proofview.tclDISPATCH
                (ncons (ng - 1) ssrsmovetac @ [Proofview.tclUNIT ()]) in
+  let protect_subgoal env sigma hd args =
+    Tactics.New.refine ~typecheck:true (fun sigma ->
+        let lm2 = Array.length args - 2 in
+        let sigma, carrier =
+          Typing.type_of env sigma args.(lm2) in
+        let rel = EConstr.mkApp (hd, Array.sub args 0 lm2) in
+        let rel_args = Array.sub args lm2 2 in
+        let sigma, under_rel =
+          Ssrcommon.mkSsrConst "Under_rel" env sigma in
+        let sigma, under_from_rel =
+          Ssrcommon.mkSsrConst "Under_rel_from_rel" env sigma in
+        let under_rel_args = Array.append [|carrier; rel|] rel_args in
+        let ty = EConstr.mkApp (under_rel, under_rel_args) in
+        let sigma, t = Evarutil.new_evar env sigma ty in
+        sigma, EConstr.mkApp(under_from_rel,Array.append under_rel_args [|t|])) in
   let rec lock_eq () : unit Proofview.tactic = Proofview.Goal.enter begin fun _ ->
     Proofview.tclORELSE
       (Ssripats.tclIPAT [Ssripats.IOpTemporay; Ssripats.IOpEqGen (lock_eq ())])
@@ -349,30 +364,23 @@ let intro_lock ipats =
         let env = Proofview.Goal.env gl in
         match EConstr.kind_of_type sigma c with
         | Term.AtomicType(hd, args) when
+            Array.length args >= 2 && is_app_evar sigma (Array.last args) &&
+            Ssrequality.ssr_is_setoid env sigma hd args
+            (* if the last condition above [ssr_is_setoid ...] holds
+            then [Coq.Classes.RelationClasses] has been required *)
+            ||
+            (* if this is not the case, the tactic can still succeed
+            when the considered relation is [Coq.Init.Logic.iff] *)
             Ssrcommon.is_const_ref sigma hd (Coqlib.lib_ref "core.iff.type") &&
-           Array.length args = 2 && is_app_evar sigma args.(1) ->
-           Tactics.New.refine ~typecheck:true (fun sigma ->
-               let sigma, under_iff =
-                 Ssrcommon.mkSsrConst "Under_iff" env sigma in
-               let sigma, under_from_iff =
-                 Ssrcommon.mkSsrConst "Under_iff_from_iff" env sigma in
-               let ty = EConstr.mkApp (under_iff,args) in
-               let sigma, t = Evarutil.new_evar env sigma ty in
-               sigma, EConstr.mkApp(under_from_iff,Array.append args [|t|]))
+            Array.length args = 2 && is_app_evar sigma args.(1) ->
+          protect_subgoal env sigma hd args
         | _ ->
         let t = Reductionops.whd_all env sigma c in
         match EConstr.kind_of_type sigma t with
         | Term.AtomicType(hd, args) when
             Ssrcommon.is_ind_ref sigma hd (Coqlib.lib_ref "core.eq.type") &&
             Array.length args = 3 && is_app_evar sigma args.(2) ->
-              Tactics.New.refine ~typecheck:true (fun sigma ->
-                let sigma, under =
-                  Ssrcommon.mkSsrConst "Under_eq" env sigma in
-                let sigma, under_from_eq =
-                  Ssrcommon.mkSsrConst "Under_eq_from_eq" env sigma in
-                let ty = EConstr.mkApp (under,args) in
-                let sigma, t = Evarutil.new_evar env sigma ty in
-                sigma, EConstr.mkApp(under_from_eq,Array.append args [|t|]))
+          protect_subgoal env sigma hd args
         | _ ->
     ppdebug(lazy Pp.(str"under: stop:" ++ pr_econstr_env env sigma t));
 

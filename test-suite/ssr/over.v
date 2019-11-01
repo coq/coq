@@ -12,7 +12,7 @@ assert (H : forall i : nat, i + 2 * i - i = x2 i).
   unfold x2 in *; clear x2;
   unfold R in *; clear R;
   unfold I in *; clear I.
-  apply Under_eq_from_eq.
+  apply Under_rel_from_rel.
   Fail done.
 
   over.
@@ -27,7 +27,7 @@ assert (H : forall i : nat, i + 2 * i - i = x2 i).
   unfold x2 in *; clear x2;
   unfold R in *; clear R;
   unfold I in *; clear I.
-  apply Under_eq_from_eq.
+  apply Under_rel_from_rel.
   Fail done.
 
   by rewrite over.
@@ -45,7 +45,7 @@ assert (H : forall i j, i + 2 * j - i = x2 i j).
   unfold R in *; clear R;
   unfold J in *; clear J;
   unfold I in *; clear I.
-  apply Under_eq_from_eq.
+  apply Under_rel_from_rel.
   Fail done.
 
   over.
@@ -61,7 +61,7 @@ assert (H : forall i j : nat, i + 2 * j - i = x2 i j).
   unfold R in *; clear R;
   unfold J in *; clear J;
   unfold I in *; clear I.
-  apply Under_eq_from_eq.
+  apply Under_rel_from_rel.
   Fail done.
 
   rewrite over.

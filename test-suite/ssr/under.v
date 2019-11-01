@@ -160,7 +160,15 @@ Lemma test_big_occs (F G : nat -> nat) (n : nat) :
   \sum_(0 <= i < n) (i * 0) = \sum_(0 <= i < n) (i * 0) + \sum_(0 <= i < n) (i * 0).
 Proof.
 under {2}[in RHS]eq_bigr => i Hi do rewrite muln0.
-by rewrite big_const_nat iter_addn_0.
+by rewrite big_const_nat iter_addn_0 mul0n addn0.
+Qed.
+
+Lemma test_big_occs_inH (F G : nat -> nat) (n : nat) :
+  \sum_(0 <= i < n) (i * 0) = \sum_(0 <= i < n) (i * 0) + \sum_(0 <= i < n) (i * 0) -> True.
+Proof.
+move=> H.
+do [under {2}[in RHS]eq_bigr => i Hi do rewrite muln0] in H.
+by rewrite big_const_nat iter_addn_0 mul0n addn0 in H.
 Qed.
 
 (* Solely used, one such renaming is useless in practice, but it works anyway *)
@@ -218,7 +226,6 @@ under Lub_Rbar_eqset => r.
 by rewrite over.
 Abort.
 
-
 Lemma ex_iff R (P1 P2 : R -> Prop) :
   (forall x : R, P1 x <-> P2 x) -> ((exists x, P1 x) <-> (exists x, P2 x)).
 Proof.
@@ -227,8 +234,149 @@ Qed.
 
 Arguments ex_iff [R P1] P2 iffP12.
 
-Require Import Setoid.
-Lemma test_ex_iff (P : nat -> Prop) : (exists x, P x) -> True.
-under ex_iff => n.
+(** Load the [setoid_rewrite] machinery *)
+Require Setoid.
+
+(** Replay the tactics from [test_Lub_Rbar] in this new environment *)
+Lemma test_Lub_Rbar_again (E : R -> Prop)  :
+  Rbar_le Rbar0 (Lub_Rbar (fun x => x = R0 \/ E x)).
+Proof.
+under Lub_Rbar_eqset => r.
 by rewrite over.
 Abort.
+
+Lemma test_ex_iff (P : nat -> Prop) : (exists x, P x) -> True.
+under ex_iff => n. (* this requires [Setoid] *)
+by rewrite over.
+by move=> _.
+Qed.
+
+Section TestGeneric.
+Context {A B : Type} {R : nat -> B -> B -> Prop}
+        `{!forall n : nat, RelationClasses.Equivalence (R n)}.
+Variables (F : (A -> A -> B) -> B).
+Hypothesis ex_gen : forall (n : nat) (P1 P2 : A -> A -> B),
+  (forall x y : A, R n (P1 x y) (P2 x y)) -> (R n (F P1) (F P2)).
+Arguments ex_gen [n P1] P2 relP12.
+Lemma test_ex_gen (P1 P2 : A -> A -> B) (n : nat) :
+  (forall x y : A, P2 x y = P2 y x) ->
+  R n (F P1) (F P2) /\ True -> True.
+Proof.
+move=> P2C.
+under [X in R _ _ X]ex_gen => a b.
+  by rewrite P2C over.
+by move => _.
+Qed.
+End TestGeneric.
+
+Import Setoid.
+(* to expose [Coq.Relations.Relation_Definitions.reflexive],
+   [Coq.Classes.RelationClasses.RewriteRelation], and so on. *)
+
+Section TestGeneric2.
+(* Some toy abstract example with a parameterized setoid type *)
+Record Setoid (m n : nat) : Type :=
+  { car : Type
+  ; Rel : car -> car -> Prop
+  ; refl : reflexive _ Rel
+  ; sym : symmetric _ Rel
+  ; trans : transitive _ Rel
+  }.
+
+Context {m n : nat}.
+Add Parametric Relation (s : Setoid m n) : (car s) (@Rel _ _ s)
+  reflexivity proved by (@refl _ _ s)
+  symmetry proved by (@sym _ _ s)
+  transitivity proved by (@trans _ _ s)
+  as eq_rel.
+
+Context {A : Type} {s1 s2 : Setoid m n}.
+
+Let B := @car m n s1.
+Let C := @car m n s2.
+Variable (F : C -> (A -> A -> B) -> C).
+Hypothesis rel2_gen :
+  forall (c1 c2 : C) (P1 P2 : A -> A -> B),
+    Rel c1 c2 ->
+    (forall a b : A, Rel (P1 a b) (P2 a b)) ->
+    Rel (F c1 P1) (F c2 P2).
+Arguments rel2_gen [c1] c2 [P1] P2 relc12 relP12.
+Lemma test_rel2_gen (c : C) (P : A -> A -> B)
+  (toy_hyp : forall a b, P a b = P b a) :
+  Rel (F c P) (F c (fun a b => P b a)).
+Proof.
+under [here in Rel _ here]rel2_gen.
+- over.
+- by move=> a b; rewrite toy_hyp over.
+- reflexivity.
+Qed.
+End TestGeneric2.
+
+Section TestPreOrder.
+(* inspired by https://github.com/coq/coq/pull/10022#issuecomment-530101950
+   but without needing to do [rewrite UnderE] manually. *)
+
+Require Import Morphisms.
+
+(** Tip to tell rewrite that the LHS of [leq' x y (:= leq x y = true)]
+    is x, not [leq x y] *)
+Definition rel_true {T} (R : rel T) x y := is_true (R x y).
+Definition leq' : nat -> nat -> Prop := rel_true leq.
+
+Parameter leq_add :
+  forall m1 m2 n1 n2 : nat, m1 <= n1 -> m2 <= n2 -> m1 + m2 <= n1 + n2.
+Parameter leq_mul :
+ forall m1 m2 n1 n2 : nat, m1 <= n1 -> m2 <= n2 -> m1 * m2 <= n1 * n2.
+
+Local Notation "+%N" := addn (at level 0, only parsing).
+
+(** Context lemma (could *)
+Lemma leq'_big : forall I (F G : I -> nat) (r : seq I),
+    (forall i : I, leq' (F i) (G i)) ->
+    (leq' (\big[+%N/0%N]_(i <- r) F i) (\big[+%N/0%N]_(i <- r) G i)).
+Proof.
+red=> F G m n HFG.
+apply: (big_ind2 leq _ _ (P := xpredT) (op1 := addn) (op2 := addn)) =>//.
+move=> *; exact: leq_add.
+move=> *; exact: HFG.
+Qed.
+
+(** Instances for [setoid_rewrite] *)
+Instance leq'_rr : RewriteRelation leq' := {}.
+
+Instance leq'_proper_addn : Proper (leq' ==> leq' ==> leq') addn.
+Proof. move=> a1 b1 le1 a2 b2 le2; exact/leq_add. Qed.
+
+Instance leq'_proper_muln : Proper (leq' ==> leq' ==> leq') muln.
+Proof. move=> a1 b1 le1 a2 b2 le2; exact/leq_mul. Qed.
+
+
+Instance leq'_preorder : PreOrder leq'.
+(** encompasses [Reflexive] *)
+Proof. rewrite /leq' /rel_true; split =>// ??? A B; exact: leq_trans A B. Qed.
+
+Instance leq'_reflexive : Reflexive leq'.
+Proof. by rewrite /leq' /rel_true. Qed.
+
+Parameter leq_add2l :
+  forall p m n : nat, (p + m <= p + n) = (m <= n).
+
+Lemma test : forall n : nat,
+  (1 + 2 * (\big[+%N/0]_(i < n) (3 + i)) * 4 + 5 <= 6 + 24 * n + 8 * n * n)%N.
+Proof.
+move=> n; rewrite -[is_true _]/(rel_true _ _ _) -/leq'.
+have lem : forall (i : nat), i < n -> leq' (3 + i) (3 + n).
+{ by move=> i Hi; rewrite /leq' /rel_true leq_add2l; apply/ltnW. }
+
+under leq'_big => i.
+{
+  (* The "magic" is here: instantiate the evar with the bound "3 + n" *)
+  rewrite lem ?ltn_ord //. over.
+}
+cbv beta.
+
+now_show (leq' (1 + 2 * \big[+%N/0]_(i < n) (3 + n) * 4 + 5) (6 + 24 * n + 8 * n * n)).
+(* uninteresting end of proof, omitted *)
+Abort.
+
+End TestPreOrder.

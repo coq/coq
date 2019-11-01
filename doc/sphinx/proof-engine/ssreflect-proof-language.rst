@@ -3756,8 +3756,11 @@ involves the following steps:
    the corresponding intro pattern :n:`@i_pattern__i` in each goal.
 
 4. Then :tacn:`under` checks that the first n subgoals
-   are (quantified) equalities or double implications between a
-   term and an evar (e.g. ``m - m = ?F2 m`` in the running example).
+   are (quantified) Leibniz equalities, double implications or
+   registered relations (w.r.t. Class ``RewriteRelation``) between a
+   term and an evar, e.g. ``m - m = ?F2 m`` in the running example.
+   (This support for setoid-like relations is enabled as soon as we do
+   both ``Require Import ssreflect.`` and ``Require Setoid.``)
 
 5. If so :tacn:`under` protects these n goals against an
    accidental instantiation of the evar.
@@ -3769,7 +3772,10 @@ involves the following steps:
    by using a regular :tacn:`rewrite` tactic.
 
 7. Interactive editing of the first n goals has to be signalled by
-   using the :tacn:`over` tactic or rewrite rule (see below).
+   using the :tacn:`over` tactic or rewrite rule (see below), which
+   requires that the underlying relation is reflexive. (The running
+   example deals with Leibniz equality, but ``PreOrder`` relations are
+   also supported, for example.)
 
 8. Finally, a post-processing step is performed in the main goal
    to keep the name(s) for the bound variables chosen by the user in
@@ -3794,6 +3800,10 @@ displayed as ``'Under[ … ]``):
 
    This is a variant of :tacn:`over` in order to close ``'Under[ … ]``
    goals, relying on the ``over`` rewrite rule.
+
+Note that a rewrite rule ``UnderE`` is available as well, if one wants
+to "unprotect" the evar, without closing the goal automatically (e.g.,
+to instantiate it manually with another rule than reflexivity).
 
 .. _under_one_liner:
 

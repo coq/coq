@@ -620,6 +620,7 @@ through the <tt>Require Import</tt> command.</p>
   </dt>
   <dd>
     plugins/ssrmatching/ssrmatching.v
+    plugins/ssr/ssrclasses.v
     plugins/ssr/ssreflect.v
     plugins/ssr/ssrbool.v
     plugins/ssr/ssrfun.v
