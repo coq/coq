@@ -341,7 +341,7 @@ optional tactic is replaced by the default one if not specified.
 
 .. flag:: Shrink Obligations
 
-   *Deprecated since 8.7*
+   .. deprecated:: 8.7
 
    This flag (on by default) controls whether obligations should have
    their context minimized to the set of variables used in the proof of
