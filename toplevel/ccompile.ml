@@ -88,6 +88,10 @@ let ensure_exists_with_prefix f_in f_out src_suffix tgt_suffix =
     | Some f -> ensure tgt_suffix long_f_dot_src f in
   long_f_dot_src, long_f_dot_tgt
 
+let create_empty_file filename =
+  let f = open_out filename in
+  close_out f
+
 (* Compile a vernac file *)
 let compile opts copts ~echo ~f_in ~f_out =
   let open Vernac.State in
@@ -106,43 +110,53 @@ let compile opts copts ~echo ~f_in ~f_out =
   let output_native_objects = match opts.config.native_compiler with
     | NativeOff -> false | NativeOn {ondemand} -> not ondemand
   in
-  match copts.compilation_mode with
-  | BuildVo ->
-      let long_f_dot_v, long_f_dot_vo =
-        ensure_exists_with_prefix f_in f_out ".v" ".vo" in
-
+  let mode = copts.compilation_mode in
+  let ext_in, ext_out =
+     match mode with
+     | BuildVo -> ".v", ".vo"
+     | BuildVio -> ".v", ".vio"
+     | Vio2Vo -> ".vio", ".vo"
+     | BuildVos -> ".v", ".vos"
+     | BuildVok -> ".v", ".vok"
+  in
+  let long_f_dot_in, long_f_dot_out =
+    ensure_exists_with_prefix f_in f_out ext_in ext_out in
+  match mode with
+  | BuildVo | BuildVok ->
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
-          Stm.{ doc_type = VoDoc long_f_dot_vo;
+          Stm.{ doc_type = VoDoc long_f_dot_out;
                 iload_path; require_libs; stm_options;
               } in
       let state = { doc; sid; proof = None; time = opts.config.time } in
       let state = load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
       Aux_file.(start_aux_file
-        ~aux_file:(aux_file_name_for long_f_dot_vo)
-        ~v_file:long_f_dot_v);
+        ~aux_file:(aux_file_name_for long_f_dot_out)
+        ~v_file:long_f_dot_in);
 
       Dumpglob.set_glob_output copts.glob_out;
-      Dumpglob.start_dump_glob ~vfile:long_f_dot_v ~vofile:long_f_dot_vo;
+      Dumpglob.start_dump_glob ~vfile:long_f_dot_in ~vofile:long_f_dot_out;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
 
       let wall_clock1 = Unix.gettimeofday () in
       let check = Stm.AsyncOpts.(stm_options.async_proofs_mode = APoff) in
-      let state = Vernac.load_vernac ~echo ~check ~interactive:false ~state long_f_dot_v in
+      let state = Vernac.load_vernac ~echo ~check ~interactive:false ~state long_f_dot_in in
       let _doc = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
-      Library.save_library_to ~output_native_objects ldir long_f_dot_vo (Global.opaque_tables ());
+      if mode <> BuildVok  (* Don't output proofs in -vok mode *)
+        then Library.save_library_to ~output_native_objects Library.ProofsTodoNone ldir long_f_dot_out (Global.opaque_tables ());
       Aux_file.record_in_aux_at "vo_compile_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
+      (* Produce an empty .vos file when producing a .vo in standard mode *)
+      if mode = BuildVo then create_empty_file (long_f_dot_out ^ "s");
+      (* Produce an empty .vok file when in -vok mode *)
+      if mode = BuildVok then create_empty_file (long_f_dot_out);
       Dumpglob.end_dump_glob ()
 
-  | BuildVio ->
-      let long_f_dot_v, long_f_dot_vio =
-        ensure_exists_with_prefix f_in f_out ".v" ".vio" in
-
+  | BuildVio | BuildVos ->
       (* We need to disable error resiliency, otherwise some errors
          will be ignored in batch mode. c.f. #6707
 
@@ -158,26 +172,26 @@ let compile opts copts ~echo ~f_in ~f_out =
 
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
-          Stm.{ doc_type = VioDoc long_f_dot_vio;
+          Stm.{ doc_type = VioDoc long_f_dot_out;
                 iload_path; require_libs; stm_options;
               } in
 
       let state = { doc; sid; proof = None; time = opts.config.time } in
       let state = load_init_vernaculars opts ~state in
       let ldir = Stm.get_ldir ~doc:state.doc in
-      let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_v in
+      let state = Vernac.load_vernac ~echo ~check:false ~interactive:false ~state long_f_dot_in in
       let doc = Stm.finish ~doc:state.doc in
       check_pending_proofs ();
-      let () = ignore (Stm.snapshot_vio ~doc ~output_native_objects ldir long_f_dot_vio) in
+      let create_vos = (mode = BuildVos) in
+      let () = ignore (Stm.snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_out) in
       Stm.reset_task_queue ()
 
   | Vio2Vo ->
-      let long_f_dot_vio, long_f_dot_vo =
-        ensure_exists_with_prefix f_in f_out ".vio" ".vo" in
+
       let sum, lib, univs, tasks, proofs =
-        Library.load_library_todo long_f_dot_vio in
-      let univs, proofs = Stm.finish_tasks long_f_dot_vo univs proofs tasks in
-      Library.save_library_raw long_f_dot_vo sum lib univs proofs
+        Library.load_library_todo long_f_dot_in in
+      let univs, proofs = Stm.finish_tasks long_f_dot_out univs proofs tasks in
+      Library.save_library_raw long_f_dot_out sum lib univs proofs
 
 let compile opts copts ~echo ~f_in ~f_out =
   ignore(CoqworkmgrApi.get 1);

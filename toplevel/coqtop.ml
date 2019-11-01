@@ -271,6 +271,8 @@ let init_document opts =
      state before we take the first snapshot. This was not
      guaranteed in the past, but now is thanks to the STM API.
   *)
+  (* Next line allows loading .vos files when in interactive mode *)
+  Flags.load_vos_libraries := true;
   let iload_path = build_load_path opts in
   let require_libs = require_libs opts in
   let stm_options = opts.config.stm_flags in

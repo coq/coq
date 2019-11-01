@@ -430,23 +430,33 @@ let error_recursively_dependent_library dir =
 (* Security weakness: file might have been changed on disk between
    writing the content and computing the checksum... *)
 
-let save_library_to ?todo ~output_native_objects dir f otab =
-  let except = match todo with
-    | None ->
-        (* XXX *)
-        (* assert(!Flags.compilation_mode = Flags.BuildVo); *)
-        assert(Filename.check_suffix f ".vo");
-        Future.UUIDSet.empty
-    | Some (l,_) ->
-        assert(Filename.check_suffix f ".vio");
-        List.fold_left (fun e (r,_) -> Future.UUIDSet.add r.Stateid.uuid e)
-          Future.UUIDSet.empty l in
+type ('document,'counters) todo_proofs =
+ | ProofsTodoNone (* for .vo *)
+ | ProofsTodoSomeEmpty of Future.UUIDSet.t (* for .vos *)
+ | ProofsTodoSome of Future.UUIDSet.t * ((Future.UUID.t,'document) Stateid.request * bool) list * 'counters (* for .vio *)
+
+let save_library_to todo_proofs ~output_native_objects dir f otab =
+  assert(
+    let expected_extension = match todo_proofs with
+      | ProofsTodoNone -> ".vo"
+      | ProofsTodoSomeEmpty _ -> ".vos"
+      | ProofsTodoSome _ -> ".vio"
+      in
+    Filename.check_suffix f expected_extension);
+  let except = match todo_proofs with
+    | ProofsTodoNone -> Future.UUIDSet.empty
+    | ProofsTodoSomeEmpty except -> except
+    | ProofsTodoSome (except,l,_) -> except
+    in
   let cenv, seg, ast = Declaremods.end_library ~output_native_objects ~except dir in
   let opaque_table, f2t_map = Opaqueproof.dump ~except otab in
   let tasks, utab =
-    match todo with
-    | None -> None, None
-    | Some (tasks, rcbackup) ->
+    match todo_proofs with
+    | ProofsTodoNone -> None, None
+    | ProofsTodoSomeEmpty _except ->
+        None,
+        Some (Univ.ContextSet.empty,false)
+    | ProofsTodoSome (_except, tasks, rcbackup) ->
         let tasks =
           List.map Stateid.(fun (r,b) ->
             try { r with uuid = Future.UUIDMap.find r.uuid f2t_map }, b

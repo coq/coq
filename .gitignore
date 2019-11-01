@@ -2,6 +2,8 @@
 *.d
 *.d.raw
 *.vio
+*.vos
+*.vok
 *.vo
 *.cm*
 *.annot
