@@ -27,6 +27,12 @@ let to_int2 i = (0,i)
 
 let of_int64 _i = assert false
 
+let of_float = int_of_float
+
+external to_float : int -> (float [@unboxed])
+  = "coq_uint63_to_float_byte" "coq_uint63_to_float"
+[@@noalloc]
+
 let hash i = i
 [@@ocaml.inline always]
 
@@ -94,6 +100,10 @@ let lt (x : int) (y : int) =
 
 let le (x : int) (y : int) =
   (x lxor 0x4000000000000000) <= (y lxor 0x4000000000000000)
+[@@ocaml.inline always]
+
+let to_int_min n m =
+  if lt n m then n else m
 [@@ocaml.inline always]
 
     (* division of two numbers by one *)

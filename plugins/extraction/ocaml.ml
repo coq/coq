@@ -307,6 +307,9 @@ let rec pp_expr par env args =
     | MLuint i ->
         assert (args=[]);
         str "(" ++ str (Uint63.compile i) ++ str ")"
+    | MLfloat f ->
+        assert (args=[]);
+        str "(" ++ str (Float64.compile f) ++ str ")"
 
 
 and pp_record_proj par env typ t pv args =

@@ -21,8 +21,18 @@ WHAT DO YOU NEED ?
 
    - a C compiler
 
+   - an IEEE-754 compliant architecture with rounding to nearest
+     ties to even as default rounding mode (most architectures
+     should work nowadays)
+
    - for CoqIDE, the lablgtk development files (version >= 3.0.0),
      and the GTK 3.x libraries including gtksourceview3.
+
+   The IEEE-754 compliance is required by primitive floating-point
+   numbers (Require Import Floats). Common sources of incompatibility
+   are checked at configure time, preventing compilation. In the,
+   unlikely, event an incompatibility remains undetected, using Floats
+   would enable to prove False on this architecture.
 
    Note that num and lablgtk should be properly registered with
    findlib/ocamlfind as Coq's makefile will use it to locate the

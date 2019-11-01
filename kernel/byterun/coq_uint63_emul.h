@@ -156,3 +156,18 @@ DECLARE_BINOP(mulc_ml)
     *(h) = Field(uint63_return_value__, 0); \
     accu = Field(uint63_return_value__, 1); \
   }while(0)
+
+DECLARE_UNOP(to_float)
+#define Uint63_to_double(x) CALL_UNOP(to_float, x)
+
+DECLARE_UNOP(of_float)
+#define Uint63_of_double(f) do{ \
+  Coq_copy_double(f); \
+  CALL_UNOP(of_float, accu); \
+  }while(0)
+
+DECLARE_UNOP(of_int)
+#define Uint63_of_int(x) CALL_UNOP(of_int, x)
+
+DECLARE_BINOP(to_int_min)
+#define Uint63_to_int_min(n, m) CALL_BINOP(to_int_min, n, m)

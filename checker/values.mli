@@ -39,6 +39,7 @@ type value =
   (** Same as the inner value, used to define recursive types *)
 
   | Uint63
+  | Float64
 
 (** NB: List and Opt have their own constructors to make it easy to
    define eg [let rec foo = List foo]. *)

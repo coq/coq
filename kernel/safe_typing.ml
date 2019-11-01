@@ -1327,7 +1327,7 @@ let register_inline kn senv =
   let cb = {cb with const_inline_code = true} in
   let env = add_constant kn cb env in { senv with env}
 
-let check_register_ind ind r env =
+let check_register_ind (type t) ind (r : t CPrimitives.prim_ind) env =
   let (mb,ob as spec) = Inductive.lookup_mind_specif env ind in
   let check_if b msg =
     if not b then
@@ -1403,6 +1403,36 @@ let check_register_ind ind r env =
     check_type_cte 1;
     check_name 2 "Gt";
     check_type_cte 2
+  | CPrimitives.PIT_f_cmp ->
+    check_nconstr 4;
+    check_name 0 "FEq";
+    check_type_cte 0;
+    check_name 1 "FLt";
+    check_type_cte 1;
+    check_name 2 "FGt";
+    check_type_cte 2;
+    check_name 3 "FNotComparable";
+    check_type_cte 3
+  | CPrimitives.PIT_f_class ->
+    check_nconstr 9;
+    check_name 0 "PNormal";
+    check_type_cte 0;
+    check_name 1 "NNormal";
+    check_type_cte 1;
+    check_name 2 "PSubn";
+    check_type_cte 2;
+    check_name 3 "NSubn";
+    check_type_cte 3;
+    check_name 4 "PZero";
+    check_type_cte 4;
+    check_name 5 "NZero";
+    check_type_cte 5;
+    check_name 6 "PInf";
+    check_type_cte 6;
+    check_name 7 "NInf";
+    check_type_cte 7;
+    check_name 8 "NaN";
+    check_type_cte 8
 
 let register_inductive ind prim senv =
   check_register_ind ind prim senv.env;

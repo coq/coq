@@ -107,6 +107,7 @@ end
 type repr =
 | RInt of int
 | RInt63 of Uint63.t
+| RFloat64 of Float64.t
 | RBlock of (int * int) (* tag × len *)
 | RString of string
 | RPointer of int
@@ -121,6 +122,7 @@ type data =
 type obj =
 | Struct of int * data array (* tag × data *)
 | Int63 of Uint63.t (* Primitive integer *)
+| Float64 of Float64.t (* Primitive float *)
 | String of string
 
 module type Input =
@@ -279,6 +281,25 @@ let input_intL chan : int64 =
   (i lsl 56) lor (j lsl 48) lor (k lsl 40) lor (l lsl 32) lor
   (m lsl 24) lor (n lsl 16) lor (o lsl 8) lor (Int64.of_int p)
 
+let input_double_big chan : float =
+  Int64.float_of_bits (input_intL chan)
+
+let input_double_little chan : float =
+  let i = input_byte chan in
+  let j = input_byte chan in
+  let k = input_byte chan in
+  let l = input_byte chan in
+  let m = input_byte chan in
+  let n = input_byte chan in
+  let o = input_byte chan in
+  let p = input_byte chan in
+  let ( lsl ) x y = Int64.(shift_left (of_int x) y) in
+  let ( lor ) = Int64.logor in
+  let bits =
+    (p lsl 56) lor (o lsl 48) lor (n lsl 40) lor (m lsl 32) lor
+    (l lsl 24) lor (k lsl 16) lor (j lsl 8) lor (Int64.of_int i) in
+  Int64.float_of_bits bits
+
 let parse_object chan =
   let data = input_byte chan in
   if prefix_small_block <= data then
@@ -326,9 +347,11 @@ let parse_object chan =
     | "_j" -> RInt63 (Uint63.of_int64 (input_intL chan))
     | s -> Printf.eprintf "Unhandled custom code: %s" s; assert false
     end
+  | CODE_DOUBLE_BIG ->
+    RFloat64 (Float64.of_float (input_double_big chan))
+  | CODE_DOUBLE_LITTLE ->
+    RFloat64 (Float64.of_float (input_double_little chan))
   | CODE_DOUBLE_ARRAY32_LITTLE
-  | CODE_DOUBLE_BIG
-  | CODE_DOUBLE_LITTLE
   | CODE_DOUBLE_ARRAY8_BIG
   | CODE_DOUBLE_ARRAY8_LITTLE
   | CODE_DOUBLE_ARRAY32_BIG
@@ -368,6 +391,11 @@ let parse chan =
   | RInt63 i ->
     let data = Ptr !current_object in
     let () = LargeArray.set memory !current_object (Int63 i) in
+    let () = incr current_object in
+    data, None
+  | RFloat64 f ->
+    let data = Ptr !current_object in
+    let () = LargeArray.set memory !current_object (Float64 f) in
     let () = incr current_object in
     data, None
   in
@@ -434,6 +462,7 @@ let instantiate (p, mem) =
     let obj = match LargeArray.get mem i with
     | Struct (tag, blk) -> Obj.new_block tag (Array.length blk)
     | Int63 i -> Obj.repr i
+    | Float64 f -> Obj.repr f
     | String str -> Obj.repr str
     in
     LargeArray.set ans i obj
@@ -453,6 +482,7 @@ let instantiate (p, mem) =
         Obj.set_field obj k (get_data blk.(k))
       done
     | Int63 _
+    | Float64 _
     | String _ -> ()
   done;
   get_data p

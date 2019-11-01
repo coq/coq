@@ -25,3 +25,10 @@
  (synopsis "Coq syntax plugin: int63")
  (modules int63_syntax)
  (libraries coq.vernac))
+
+(library
+ (name float_syntax_plugin)
+ (public_name coq.plugins.float_syntax)
+ (synopsis "Coq syntax plugin: float")
+ (modules float_syntax)
+ (libraries coq.vernac))

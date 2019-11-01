@@ -45,6 +45,7 @@ struct
     | DFix    of int array * int * 't array * 't array
     | DCoFix  of int * 't array * 't array
     | DInt    of Uint63.t
+    | DFloat  of Float64.t
 
     (* special constructors only inside the left-hand side of DCtx or
        DApp. Used to encode lists of foralls/letins/apps as contexts *)
@@ -63,6 +64,7 @@ struct
     | DFix _ -> str "fix"
     | DCoFix _ -> str "cofix"
     | DInt _ -> str "INT"
+    | DFloat _ -> str "FLOAT"
     | DCons ((t,dopt),tl) -> f t ++ (match dopt with
 	  Some t' -> str ":=" ++ f t'
 	| None -> str "") ++ spc() ++ str "::" ++ spc() ++ f tl
@@ -74,7 +76,7 @@ struct
    *)
 
   let map f = function
-    | (DRel | DSort | DNil | DRef _ | DInt _) as c -> c
+    | (DRel | DSort | DNil | DRef _ | DInt _ | DFloat _) as c -> c
     | DCtx (ctx,c) -> DCtx (f ctx, f c)
     | DLambda (t,c) -> DLambda (f t, f c)
     | DApp (t,u) -> DApp (f t,f u)
@@ -151,6 +153,10 @@ struct
 
   | DInt _, _ -> -1 | _, DInt _ -> 1
 
+  | DFloat f1, DFloat f2 -> Float64.total_compare f1 f2
+
+  | DFloat _, _ -> -1 | _, DFloat _ -> 1
+
   | DCons ((t1, ot1), u1), DCons ((t2, ot2), u2) ->
      let c = cmp t1 t2 in
      if Int.equal c 0 then
@@ -163,7 +169,7 @@ struct
   | DNil, DNil -> 0
 
   let fold f acc = function
-    | (DRel | DNil | DSort | DRef _ | DInt _) -> acc
+    | (DRel | DNil | DSort | DRef _ | DInt _ | DFloat _) -> acc
     | DCtx (ctx,c) -> f (f acc ctx) c
     | DLambda (t,c) -> f (f acc t) c
     | DApp (t,u) -> f (f acc t) u
@@ -175,7 +181,7 @@ struct
     | DCons ((t,topt),u) -> f (Option.fold_left f (f acc t) topt) u
 
   let choose f = function
-    | (DRel | DSort | DNil | DRef _ | DInt _) -> invalid_arg "choose"
+    | (DRel | DSort | DNil | DRef _ | DInt _ | DFloat _) -> invalid_arg "choose"
     | DCtx (ctx,c) -> f ctx
     | DLambda (t,c) -> f t
     | DApp (t,u) -> f u
@@ -192,7 +198,7 @@ struct
     then invalid_arg "fold2:compare" else
       match c1,c2 with
         | (DRel, DRel | DNil, DNil | DSort, DSort | DRef _, DRef _
-           | DInt _, DInt _) -> acc
+           | DInt _, DInt _ | DFloat _, DFloat _) -> acc
 	| (DCtx (c1,t1), DCtx (c2,t2)
 	  | DApp (c1,t1), DApp (c2,t2)
 	  | DLambda (c1,t1), DLambda (c2,t2)) -> f (f acc c1 c2) t1 t2
@@ -205,7 +211,7 @@ struct
 	| DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
 	    f (Option.fold_left2 f (f acc t1 t2) topt1 topt2) u1 u2
         | (DRel | DNil | DSort | DRef _ | DCtx _ | DApp _ | DLambda _ | DCase _
-           | DFix _ | DCoFix _ | DCons _ | DInt _), _ -> assert false
+           | DFix _ | DCoFix _ | DCons _ | DInt _ | DFloat _), _ -> assert false
 
   let map2 (f:'a -> 'b -> 'c) (c1:'a t) (c2:'b t) : 'c t =
     let head w = map (fun _ -> ()) w in
@@ -213,7 +219,7 @@ struct
     then invalid_arg "map2_t:compare" else
       match c1,c2 with
         | (DRel, DRel | DSort, DSort | DNil, DNil | DRef _, DRef _
-           | DInt _, DInt _) as cc ->
+           | DInt _, DInt _ | DFloat _, DFloat _) as cc ->
 	    let (c,_) = cc in c
 	| DCtx (c1,t1), DCtx (c2,t2) -> DCtx (f c1 c2, f t1 t2)
 	| DLambda (t1,c1), DLambda (t2,c2) -> DLambda (f t1 t2, f c1 c2)
@@ -227,10 +233,10 @@ struct
 	| DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
 	    DCons ((f t1 t2,Option.lift2 f topt1 topt2), f u1 u2)
         | (DRel | DNil | DSort | DRef _ | DCtx _ | DApp _ | DLambda _ | DCase _
-           | DFix _ | DCoFix _ | DCons _ | DInt _), _ -> assert false
+           | DFix _ | DCoFix _ | DCons _ | DInt _ | DFloat _), _ -> assert false
 
   let terminal = function
-    | (DRel | DSort | DNil | DRef _ | DInt _) -> true
+    | (DRel | DSort | DNil | DRef _ | DInt _ | DFloat _) -> true
     | DLambda _ | DApp _ | DCase _ | DFix _ | DCoFix _ | DCtx _ | DCons _ ->
       false
 
@@ -325,6 +331,7 @@ struct
     | Proj (p,c) -> 
         Term (DApp (Term (DRef (ConstRef (Projection.constant p))), pat_of_constr c))
     | Int i -> Term (DInt i)
+    | Float f -> Term (DFloat f)
 
     and ctx_of_constr ctx c = match Constr.kind c with
     | Prod (_,t,c)   -> ctx_of_constr (Term(DCons((pat_of_constr t,None),ctx))) c

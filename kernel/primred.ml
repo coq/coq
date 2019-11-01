@@ -14,6 +14,13 @@ let add_retroknowledge env action =
       | None -> { retro with retro_int63 = Some c }
       | Some c' -> assert (Constant.equal c c'); retro in
     set_retroknowledge env retro
+  | Register_type(PT_float64,c) ->
+    let retro = env.retroknowledge in
+    let retro =
+      match retro.retro_float64 with
+      | None -> { retro with retro_float64 = Some c }
+      | Some c' -> assert (Constant.equal c c'); retro in
+    set_retroknowledge env retro
   | Register_ind(pit,ind) ->
     let retro = env.retroknowledge in
     let retro =
@@ -42,6 +49,21 @@ let add_retroknowledge env action =
           | None -> ((ind,1), (ind,2), (ind,3))
           | Some (((ind',_),_,_) as t) -> assert (eq_ind ind ind'); t in
         { retro with retro_cmp = Some r }
+      | PIT_f_cmp ->
+        let r =
+          match retro.retro_f_cmp with
+          | None -> ((ind,1), (ind,2), (ind,3), (ind,4))
+          | Some (((ind',_),_,_,_) as t) -> assert (eq_ind ind ind'); t in
+        { retro with retro_f_cmp = Some r }
+      | PIT_f_class ->
+        let r =
+          match retro.retro_f_class with
+          | None -> ((ind,1), (ind,2), (ind,3), (ind,4),
+                     (ind,5), (ind,6), (ind,7), (ind,8),
+                     (ind,9))
+          | Some (((ind',_),_,_,_,_,_,_,_,_) as t) ->
+             assert (eq_ind ind ind'); t in
+        { retro with retro_f_class = Some r }
     in
     set_retroknowledge env retro
 
@@ -49,6 +71,17 @@ let get_int_type env =
   match env.retroknowledge.retro_int63 with
   | Some c -> c
   | None -> anomaly Pp.(str"Reduction of primitive: int63 not registered")
+
+let get_float_type env =
+  match env.retroknowledge.retro_float64 with
+  | Some c -> c
+  | None -> anomaly Pp.(str"Reduction of primitive: float64 not registered")
+
+let get_cmp_type env =
+  match env.retroknowledge.retro_cmp with
+  | Some (((mindcmp,_),_),_,_) ->
+     Constant.make (MutInd.user mindcmp) (MutInd.canonical mindcmp)
+  | None -> anomaly Pp.(str"Reduction of primitive: comparison not registered")
 
 let get_bool_constructors env =
   match env.retroknowledge.retro_bool with
@@ -70,6 +103,16 @@ let get_cmp_constructors env =
   | Some r -> r
   | None -> anomaly Pp.(str"Reduction of primitive: cmp not registered")
 
+let get_f_cmp_constructors env =
+  match env.retroknowledge.retro_f_cmp with
+  | Some r -> r
+  | None -> anomaly Pp.(str"Reduction of primitive: fcmp not registered")
+
+let get_f_class_constructors env =
+  match env.retroknowledge.retro_f_class with
+  | Some r -> r
+  | None -> anomaly Pp.(str"Reduction of primitive: fclass not registered")
+
 exception NativeDestKO
 
 module type RedNativeEntries =
@@ -80,14 +123,29 @@ module type RedNativeEntries =
 
     val get : args -> int -> elem
     val get_int : evd -> elem -> Uint63.t
+    val get_float : evd -> elem -> Float64.t
     val mkInt : env -> Uint63.t -> elem
+    val mkFloat : env -> Float64.t -> elem
     val mkBool : env -> bool -> elem
     val mkCarry : env -> bool -> elem -> elem (* true if carry *)
     val mkIntPair : env -> elem -> elem -> elem
+    val mkFloatIntPair : env -> elem -> elem -> elem
     val mkLt : env -> elem
     val mkEq : env -> elem
     val mkGt : env -> elem
-
+    val mkFLt : env -> elem
+    val mkFEq : env -> elem
+    val mkFGt : env -> elem
+    val mkFNotComparable : env -> elem
+    val mkPNormal : env -> elem
+    val mkNNormal : env -> elem
+    val mkPSubn : env -> elem
+    val mkNSubn : env -> elem
+    val mkPZero : env -> elem
+    val mkNZero : env -> elem
+    val mkPInf : env -> elem
+    val mkNInf : env -> elem
+    val mkNaN : env -> elem
   end
 
 module type RedNative =
@@ -115,6 +173,12 @@ struct
 
   let get_int3 evd args =
     get_int evd args 0, get_int evd args 1, get_int evd args 2
+
+  let get_float evd args i = E.get_float evd (E.get args i)
+
+  let get_float1 evd args = get_float evd args 0
+
+  let get_float2 evd args = get_float evd args 0, get_float evd args 1
 
   let red_prim_aux env evd op args =
     let open CPrimitives in
@@ -193,6 +257,64 @@ struct
         | 0 -> E.mkEq env
         | _ -> E.mkGt env
       end
+    | Float64opp ->
+      let f = get_float1 evd args in E.mkFloat env (Float64.opp f)
+    | Float64abs ->
+      let f = get_float1 evd args in E.mkFloat env (Float64.abs f)
+    | Float64eq ->
+      let i1, i2 = get_float2 evd args in
+      E.mkBool env (Float64.eq i1 i2)
+    | Float64lt ->
+      let i1, i2 = get_float2 evd args in
+      E.mkBool env (Float64.lt i1 i2)
+    | Float64le ->
+      let i1, i2 = get_float2 evd args in
+      E.mkBool env (Float64.le i1 i2)
+    | Float64compare ->
+      let f1, f2 = get_float2 evd args in
+      (match Float64.compare f1 f2 with
+      | Float64.FEq -> E.mkFEq env
+      | Float64.FLt -> E.mkFLt env
+      | Float64.FGt -> E.mkFGt env
+      | Float64.FNotComparable -> E.mkFNotComparable env)
+    | Float64classify ->
+      let f = get_float1 evd args in
+      (match Float64.classify f with
+      | Float64.PNormal -> E.mkPNormal env
+      | Float64.NNormal -> E.mkNNormal env
+      | Float64.PSubn -> E.mkPSubn env
+      | Float64.NSubn -> E.mkNSubn env
+      | Float64.PZero -> E.mkPZero env
+      | Float64.NZero -> E.mkNZero env
+      | Float64.PInf -> E.mkPInf env
+      | Float64.NInf -> E.mkNInf env
+      | Float64.NaN -> E.mkNaN env)
+    | Float64add ->
+      let f1, f2 = get_float2 evd args in E.mkFloat env (Float64.add f1 f2)
+    | Float64sub ->
+      let f1, f2 = get_float2 evd args in E.mkFloat env (Float64.sub f1 f2)
+    | Float64mul ->
+      let f1, f2 = get_float2 evd args in E.mkFloat env (Float64.mul f1 f2)
+    | Float64div ->
+      let f1, f2 = get_float2 evd args in E.mkFloat env (Float64.div f1 f2)
+    | Float64sqrt ->
+      let f = get_float1 evd args in E.mkFloat env (Float64.sqrt f)
+    | Float64ofInt63 ->
+      let i = get_int1 evd args in E.mkFloat env (Float64.of_int63 i)
+    | Float64normfr_mantissa ->
+      let f = get_float1 evd args in E.mkInt env (Float64.normfr_mantissa f)
+    | Float64frshiftexp ->
+      let f = get_float1 evd args in
+      let (m,e) = Float64.frshiftexp f in
+      E.mkFloatIntPair env (E.mkFloat env m) (E.mkInt env e)
+    | Float64ldshiftexp ->
+      let f = get_float evd args 0 in
+      let e = get_int evd args 1 in
+      E.mkFloat env (Float64.ldshiftexp f e)
+    | Float64next_up ->
+      let f = get_float1 evd args in E.mkFloat env (Float64.next_up f)
+    | Float64next_down ->
+      let f = get_float1 evd args in E.mkFloat env (Float64.next_down f)
 
   let red_prim env evd p args =
     try

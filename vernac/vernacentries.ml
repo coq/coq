@@ -1844,11 +1844,13 @@ let vernac_register qid r =
     if DirPath.equal (dirpath_of_string "kernel") ns then begin
       if Global.sections_are_opened () then
         user_err Pp.(str "Registering a kernel type is not allowed in sections");
-      let pind = match Id.to_string id with
-        | "ind_bool" -> CPrimitives.PIT_bool
-        | "ind_carry" -> CPrimitives.PIT_carry
-        | "ind_pair" -> CPrimitives.PIT_pair
-        | "ind_cmp" -> CPrimitives.PIT_cmp
+      let CPrimitives.PIE pind = match Id.to_string id with
+        | "ind_bool" -> CPrimitives.(PIE PIT_bool)
+        | "ind_carry" -> CPrimitives.(PIE PIT_carry)
+        | "ind_pair" -> CPrimitives.(PIE PIT_pair)
+        | "ind_cmp" -> CPrimitives.(PIE PIT_cmp)
+        | "ind_f_cmp" -> CPrimitives.(PIE PIT_f_cmp)
+        | "ind_f_class" -> CPrimitives.(PIE PIT_f_class)
         | k -> CErrors.user_err Pp.(str "Register: unknown identifier “" ++ str k ++ str "” in the “kernel” namespace")
       in
       match gr with

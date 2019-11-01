@@ -149,6 +149,7 @@ RTAUTOCMO:=plugins/rtauto/rtauto_plugin.cmo
 SYNTAXCMO:=$(addprefix plugins/syntax/, \
         r_syntax_plugin.cmo \
 	int63_syntax_plugin.cmo \
+	float_syntax_plugin.cmo \
 	numeral_notation_plugin.cmo \
 	string_notation_plugin.cmo)
 DERIVECMO:=plugins/derive/derive_plugin.cmo

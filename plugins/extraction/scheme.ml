@@ -131,6 +131,8 @@ let rec pp_expr env args =
     | MLaxiom -> paren (str "error \"AXIOM TO BE REALIZED\"")
     | MLuint _ ->
       paren (str "Prelude.error \"EXTRACTION OF UINT NOT IMPLEMENTED\"")
+    | MLfloat _ ->
+      paren (str "Prelude.error \"EXTRACTION OF FLOAT NOT IMPLEMENTED\"")
 
 and pp_cons_args env = function
   | MLcons (_,r,args) when is_coinductive r ->

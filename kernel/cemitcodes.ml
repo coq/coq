@@ -234,6 +234,24 @@ let check_prim_op = function
   | Int63lt        -> opCHECKLTINT63
   | Int63le        -> opCHECKLEINT63
   | Int63compare   -> opCHECKCOMPAREINT63
+  | Float64opp     -> opCHECKOPPFLOAT
+  | Float64abs     -> opCHECKABSFLOAT
+  | Float64eq      -> opCHECKEQFLOAT
+  | Float64lt      -> opCHECKLTFLOAT
+  | Float64le      -> opCHECKLEFLOAT
+  | Float64compare -> opCHECKCOMPAREFLOAT
+  | Float64classify -> opCHECKCLASSIFYFLOAT
+  | Float64add     -> opCHECKADDFLOAT
+  | Float64sub     -> opCHECKSUBFLOAT
+  | Float64mul     -> opCHECKMULFLOAT
+  | Float64div     -> opCHECKDIVFLOAT
+  | Float64sqrt    -> opCHECKSQRTFLOAT
+  | Float64ofInt63 -> opCHECKFLOATOFINT63
+  | Float64normfr_mantissa -> opCHECKFLOATNORMFRMANTISSA
+  | Float64frshiftexp -> opCHECKFRSHIFTEXP
+  | Float64ldshiftexp -> opCHECKLDSHIFTEXP
+  | Float64next_up    -> opCHECKNEXTUPFLOAT
+  | Float64next_down  -> opCHECKNEXTDOWNFLOAT
 
 let emit_instr env = function
   | Klabel lbl -> define_label env lbl
@@ -384,7 +402,8 @@ type to_patch = emitcodes * patches * fv
 (* Substitution *)
 let subst_strcst s sc =
   match sc with
-  | Const_sort _ | Const_b0 _ | Const_univ_level _ | Const_val _ | Const_uint _ -> sc
+  | Const_sort _ | Const_b0 _ | Const_univ_level _ | Const_val _ | Const_uint _
+  | Const_float _ -> sc
   | Const_ind ind -> let kn,i = ind in Const_ind (subst_mind s kn, i)
 
 let subst_reloc s ri =

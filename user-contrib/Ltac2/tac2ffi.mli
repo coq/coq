@@ -32,6 +32,8 @@ type valexpr =
   (** Arbitrary data *)
 | ValUint63 of Uint63.t
   (** Primitive integers *)
+| ValFloat of Float64.t
+  (** Primitive floats *)
 
 type 'a arity
 
@@ -150,6 +152,10 @@ val open_ : (KerName.t * valexpr array) repr
 val of_uint63 : Uint63.t -> valexpr
 val to_uint63 : valexpr -> Uint63.t
 val uint63 : Uint63.t repr
+
+val of_float : Float64.t -> valexpr
+val to_float : valexpr -> Float64.t
+val float : Float64.t repr
 
 type ('a, 'b) fun1
 

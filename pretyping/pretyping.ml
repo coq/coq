@@ -1026,6 +1026,13 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
             user_err ?loc ~hdr:"pretype" (str "Type of int63 should be registered first.")
         in
         inh_conv_coerce_to_tycon ?loc env sigma resj tycon
+  | GFloat f ->
+      let resj =
+        try Typing.judge_of_float !!env f
+        with Invalid_argument _ ->
+          user_err ?loc ~hdr:"pretype" (str "Type of float should be registered first.")
+        in
+        inh_conv_coerce_to_tycon ?loc env sigma resj tycon
 
 and pretype_instance ~program_mode ~poly resolve_tc env sigma loc hyps evk update =
   let f decl (subst,update,sigma) =

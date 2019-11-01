@@ -33,6 +33,24 @@ type t =
   | Int63lt
   | Int63le
   | Int63compare
+  | Float64opp
+  | Float64abs
+  | Float64eq
+  | Float64lt
+  | Float64le
+  | Float64compare
+  | Float64classify
+  | Float64add
+  | Float64sub
+  | Float64mul
+  | Float64div
+  | Float64sqrt
+  | Float64ofInt63
+  | Float64normfr_mantissa
+  | Float64frshiftexp
+  | Float64ldshiftexp
+  | Float64next_up
+  | Float64next_down
 
 val equal : t -> t -> bool
 
@@ -53,18 +71,29 @@ val kind : t -> args_red
 
 (** Special Entries for Register **)
 
-type prim_ind =
-  | PIT_bool
-  | PIT_carry
-  | PIT_pair
-  | PIT_cmp
-
 type prim_type =
   | PT_int63
+  | PT_float64
+
+type 'a prim_ind =
+  | PIT_bool : unit prim_ind
+  | PIT_carry : prim_type prim_ind
+  | PIT_pair : (prim_type * prim_type) prim_ind
+  | PIT_cmp : unit prim_ind
+  | PIT_f_cmp : unit prim_ind
+  | PIT_f_class : unit prim_ind
+
+type prim_ind_ex = PIE : 'a prim_ind -> prim_ind_ex
 
 type op_or_type =
   | OT_op of t
   | OT_type of prim_type
 
-val prim_ind_to_string : prim_ind -> string
+val prim_ind_to_string : 'a prim_ind -> string
 val op_or_type_to_string : op_or_type -> string
+
+type ind_or_type =
+  | PITT_ind : 'a prim_ind * 'a -> ind_or_type
+  | PITT_type : prim_type -> ind_or_type
+
+val types : t -> ind_or_type list

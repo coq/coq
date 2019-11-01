@@ -220,13 +220,25 @@ module VNativeEntries =
           | _ -> raise Primred.NativeDestKO)
       | _ -> raise Primred.NativeDestKO
 
+    let get_float () e =
+      match e with
+      | VAL(_, cf) ->
+        (match kind cf with
+        | Float f -> f
+        | _ -> raise Primred.NativeDestKO)
+      | _ -> raise Primred.NativeDestKO
+
     let mkInt env i = VAL(0, mkInt i)
+
+    let mkFloat env f = VAL(0, mkFloat f)
 
     let mkBool env b =
       let (ct,cf) = get_bool_constructors env in
       CONSTR(Univ.in_punivs (if b then ct else cf), [||])
 
     let int_ty env = VAL(0, mkConst @@ get_int_type env)
+
+    let float_ty env = VAL(0, mkConst @@ get_float_type env)
 
     let mkCarry env b e =
       let (c0,c1) = get_carry_constructors env in
@@ -236,6 +248,12 @@ module VNativeEntries =
       let int_ty = int_ty env in
       let c = get_pair_constructor env in
       CONSTR(Univ.in_punivs c, [|int_ty;int_ty;e1;e2|])
+
+    let mkFloatIntPair env f i =
+      let float_ty = float_ty env in
+      let int_ty = int_ty env in
+      let c = get_pair_constructor env in
+      CONSTR(Univ.in_punivs c, [|float_ty;int_ty;f;i|])
 
     let mkLt env =
       let (_eq,lt,_gt) = get_cmp_constructors env in
@@ -249,6 +267,66 @@ module VNativeEntries =
       let (_eq,_lt,gt) = get_cmp_constructors env in
       CONSTR(Univ.in_punivs gt, [||])
 
+    let mkFLt env =
+      let (_eq,lt,_gt,_nc) = get_f_cmp_constructors env in
+      CONSTR(Univ.in_punivs lt, [||])
+
+    let mkFEq env =
+      let (eq,_lt,_gt,_nc) = get_f_cmp_constructors env in
+      CONSTR(Univ.in_punivs eq, [||])
+
+    let mkFGt env =
+      let (_eq,_lt,gt,_nc) = get_f_cmp_constructors env in
+      CONSTR(Univ.in_punivs gt, [||])
+
+    let mkFNotComparable env =
+      let (_eq,_lt,_gt,nc) = get_f_cmp_constructors env in
+      CONSTR(Univ.in_punivs nc, [||])
+
+    let mkPNormal env =
+      let (pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs pNormal, [||])
+
+    let mkNNormal env =
+      let (_pNormal,nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs nNormal, [||])
+
+    let mkPSubn env =
+      let (_pNormal,_nNormal,pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs pSubn, [||])
+
+    let mkNSubn env =
+      let (_pNormal,_nNormal,_pSubn,nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs nSubn, [||])
+
+    let mkPZero env =
+      let (_pNormal,_nNormal,_pSubn,_nSubn,pZero,_nZero,_pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs pZero, [||])
+
+    let mkNZero env =
+      let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,nZero,_pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs nZero, [||])
+
+    let mkPInf env =
+      let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,pInf,_nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs pInf, [||])
+
+    let mkNInf env =
+      let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,nInf,_nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs nInf, [||])
+
+    let mkNaN env =
+      let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,nan) =
+        get_f_class_constructors env in
+      CONSTR(Univ.in_punivs nan, [||])
   end
 
 module VredNative = RedNative(VNativeEntries)
@@ -381,7 +459,7 @@ let rec norm_head info env t stack =
   | Construct c -> (CONSTR(c, [||]), stack)
 
   (* neutral cases *)
-  | (Sort _ | Meta _ | Ind _ | Int _) -> (VAL(0, t), stack)
+  | (Sort _ | Meta _ | Ind _ | Int _ | Float _) -> (VAL(0, t), stack)
   | Prod _ -> (CBN(t,env), stack)
 
 and norm_head_ref k info env stack normt t =

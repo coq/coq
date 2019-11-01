@@ -215,14 +215,22 @@ let type_of_apply env func funt argsv argstv =
 (* Type of primitive constructs *)
 let type_of_prim_type _env = function
   | CPrimitives.PT_int63 -> Constr.mkSet
+  | CPrimitives.PT_float64 -> Constr.mkSet
 
 let type_of_int env =
   match env.retroknowledge.Retroknowledge.retro_int63 with
   | Some c -> mkConst c
   | None -> CErrors.user_err Pp.(str"The type int must be registered before this construction can be typechecked.")
 
+let type_of_float env =
+  match env.retroknowledge.Retroknowledge.retro_float64 with
+  | Some c -> mkConst c
+  | None -> raise
+        (Invalid_argument "Typeops.type_of_float: float64 not_defined")
+
 let type_of_prim env t =
-  let int_ty = type_of_int env in
+  let int_ty () = type_of_int env in
+  let float_ty () = type_of_float env in
   let bool_ty () =
     match env.retroknowledge.Retroknowledge.retro_bool with
     | Some ((ind,_),_) -> Constr.mkInd ind
@@ -232,6 +240,16 @@ let type_of_prim env t =
     match env.retroknowledge.Retroknowledge.retro_cmp with
     | Some ((ind,_),_,_) -> Constr.mkInd ind
     | None -> CErrors.user_err Pp.(str"The type compare must be registered before this primitive.")
+  in
+  let f_compare_ty () =
+    match env.retroknowledge.Retroknowledge.retro_f_cmp with
+    | Some ((ind,_),_,_,_) -> Constr.mkInd ind
+    | None -> CErrors.user_err Pp.(str"The type float_comparison must be registered before this primitive.")
+  in
+  let f_class_ty () =
+    match env.retroknowledge.Retroknowledge.retro_f_class with
+    | Some ((ind,_),_,_,_,_,_,_,_,_) -> Constr.mkInd ind
+    | None -> CErrors.user_err Pp.(str"The type float_class must be registered before this primitive.")
   in
   let pair_ty fst_ty snd_ty =
     match env.retroknowledge.Retroknowledge.retro_pair with
@@ -243,39 +261,27 @@ let type_of_prim env t =
     | Some ((ind,_),_) -> Constr.mkApp(Constr.mkInd ind, [|int_ty|])
     | None -> CErrors.user_err Pp.(str"The type carry must be registered before this primitive.")
   in
-  let rec nary_int63_op arity ty =
-    if Int.equal arity 0 then ty
-      else Constr.mkProd(Context.nameR (Id.of_string "x"), int_ty, nary_int63_op (arity-1) ty)
-  in
-  let return_ty =
-    let open CPrimitives in
-    match t with
-    | Int63head0
-    | Int63tail0
-    | Int63add
-    | Int63sub
-    | Int63mul
-    | Int63div
-    | Int63mod
-    | Int63lsr
-    | Int63lsl
-    | Int63land
-    | Int63lor
-    | Int63lxor
-    | Int63addMulDiv -> int_ty
-    | Int63eq
-    | Int63lt
-    | Int63le -> bool_ty ()
-    | Int63mulc
-    | Int63div21
-    | Int63diveucl -> pair_ty int_ty int_ty
-    | Int63addc
-    | Int63subc
-    | Int63addCarryC
-    | Int63subCarryC -> carry_ty int_ty
-    | Int63compare -> compare_ty ()
-  in
-  nary_int63_op (CPrimitives.arity t) return_ty
+  let open CPrimitives in
+  let tr_prim_type = function
+    | PT_int63 -> int_ty ()
+    | PT_float64 -> float_ty () in
+  let tr_ind (type t) (i : t prim_ind) (a : t) = match i, a with
+    | PIT_bool, () -> bool_ty ()
+    | PIT_carry, t -> carry_ty (tr_prim_type t)
+    | PIT_pair, (t1, t2) -> pair_ty (tr_prim_type t1) (tr_prim_type t2)
+    | PIT_cmp, () -> compare_ty ()
+    | PIT_f_cmp, () -> f_compare_ty ()
+    | PIT_f_class, () -> f_class_ty () in
+  let tr_type = function
+    | PITT_ind (i, a) -> tr_ind i a
+    | PITT_type t -> tr_prim_type t in
+  let rec nary_op = function
+    | [] -> assert false
+    | [ret_ty] -> tr_type ret_ty
+    | arg_ty :: r ->
+       let arg_ty = tr_type arg_ty in
+       Constr.mkProd(Context.nameR (Id.of_string "x"), arg_ty, nary_op r) in
+  nary_op (types t)
 
 let type_of_prim_or_type env = let open CPrimitives in
   function
@@ -284,6 +290,9 @@ let type_of_prim_or_type env = let open CPrimitives in
 
 let judge_of_int env i =
   make_judge (Constr.mkInt i) (type_of_int env)
+
+let judge_of_float env f =
+  make_judge (Constr.mkFloat f) (type_of_float env)
 
 (* Type of product *)
 
@@ -583,6 +592,7 @@ let rec execute env cstr =
 
     (* Primitive types *)
     | Int _ -> cstr, type_of_int env
+    | Float _ -> cstr, type_of_float env
 
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->

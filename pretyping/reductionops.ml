@@ -848,8 +848,16 @@ struct
     | Int i -> i
     | _ -> raise Primred.NativeDestKO
 
+  let get_float evd e =
+    match EConstr.kind evd e with
+    | Float f -> f
+    | _ -> raise Primred.NativeDestKO
+
   let mkInt env i =
     mkInt i
+
+  let mkFloat env f =
+    mkFloat f
 
   let mkBool env b =
     let (ct,cf) = get_bool_constructors env in
@@ -865,6 +873,12 @@ struct
     let c = get_pair_constructor env in
     mkApp(mkConstruct c, [|int_ty;int_ty;e1;e2|])
 
+  let mkFloatIntPair env f i =
+    let float_ty = mkConst @@ get_float_type env in
+    let int_ty = mkConst @@ get_int_type env in
+    let c = get_pair_constructor env in
+    mkApp(mkConstruct c, [|float_ty;int_ty;f;i|])
+
   let mkLt env =
     let (_eq, lt, _gt) = get_cmp_constructors env in
     mkConstruct lt
@@ -877,6 +891,66 @@ struct
     let (_eq, _lt, gt) = get_cmp_constructors env in
     mkConstruct gt
 
+  let mkFLt env =
+    let (_eq, lt, _gt, _nc) = get_f_cmp_constructors env in
+    mkConstruct lt
+
+  let mkFEq env =
+    let (eq, _lt, _gt, _nc) = get_f_cmp_constructors env in
+    mkConstruct eq
+
+  let mkFGt env =
+    let (_eq, _lt, gt, _nc) = get_f_cmp_constructors env in
+    mkConstruct gt
+
+  let mkFNotComparable env =
+    let (_eq, _lt, _gt, nc) = get_f_cmp_constructors env in
+    mkConstruct nc
+
+  let mkPNormal env =
+    let (pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct pNormal
+
+  let mkNNormal env =
+    let (_pNormal,nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct nNormal
+
+  let mkPSubn env =
+    let (_pNormal,_nNormal,pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct pSubn
+
+  let mkNSubn env =
+    let (_pNormal,_nNormal,_pSubn,nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct nSubn
+
+  let mkPZero env =
+    let (_pNormal,_nNormal,_pSubn,_nSubn,pZero,_nZero,_pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct pZero
+
+  let mkNZero env =
+    let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,nZero,_pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct nZero
+
+  let mkPInf env =
+    let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,pInf,_nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct pInf
+
+  let mkNInf env =
+    let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,nInf,_nan) =
+      get_f_class_constructors env in
+    mkConstruct nInf
+
+  let mkNaN env =
+    let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,nan) =
+      get_f_class_constructors env in
+    mkConstruct nan
 end
 
 module CredNative = RedNative(CNativeEntries)
@@ -1135,7 +1209,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
 	|_ -> fold ()
       else fold ()
 
-    | Int i ->
+    | Int _ | Float _ ->
       begin match Stack.strip_app stack with
        | (_, Stack.Primitive(p,kn,rargs,kargs,cst_l')::s) ->
          let more_to_reduce = List.exists (fun k -> CPrimitives.Kwhnf = k) kargs in
@@ -1238,7 +1312,7 @@ let local_whd_state_gen flags sigma =
       else s
 
     | Rel _ | Var _ | Sort _ | Prod _ | LetIn _ | Const _  | Ind _ | Proj _
-      | Int _ -> s
+      | Int _ | Float _ -> s
 
   in
   whrec

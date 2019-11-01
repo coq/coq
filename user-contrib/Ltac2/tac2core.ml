@@ -450,6 +450,8 @@ let () = define1 "constr_kind" constr begin fun c ->
     |]
   | Int n ->
     v_blk 17 [|Value.of_uint63 n|]
+  | Float f ->
+    v_blk 18 [|Value.of_float f|]
   end
 end
 
@@ -530,6 +532,9 @@ let () = define1 "constr_make" valexpr begin fun knd ->
   | (17, [|n|]) ->
     let n = Value.to_uint63 n in
     EConstr.mkInt n
+  | (18, [|f|]) ->
+    let f = Value.to_float f in
+    EConstr.mkFloat f
   | _ -> assert false
   in
   return (Value.of_constr c)

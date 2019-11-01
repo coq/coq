@@ -146,6 +146,7 @@ let retype ?(polyprop=true) sigma =
     | Cast (c,_, t) -> t
     | Sort _ | Prod _ -> mkSort (sort_of env cstr)
     | Int _ -> EConstr.of_constr (Typeops.type_of_int env)
+    | Float _ -> EConstr.of_constr (Typeops.type_of_float env)
 
   and sort_of env t =
     match EConstr.kind sigma t with
@@ -281,7 +282,7 @@ let relevance_of_term env sigma c =
       | Fix ((_,i),(lna,_,_)) -> (lna.(i)).binder_relevance
       | CoFix (i,(lna,_,_)) -> (lna.(i)).binder_relevance
       | Proj (p, _) -> Retypeops.relevance_of_projection env p
-      | Int _ -> Sorts.Relevant
+      | Int _ | Float _ -> Sorts.Relevant
 
       | Meta _ | Evar _ -> Sorts.Relevant
 

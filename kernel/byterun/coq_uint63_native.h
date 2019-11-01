@@ -138,3 +138,26 @@ value uint63_div21(value xh, value xl, value y, value* ql) {
   }
 }
 #define Uint63_div21(xh, xl, y, q) (accu = uint63_div21(xh, xl, y, q))
+
+#define Uint63_to_double(x) Coq_copy_double((double) uint63_of_value(x))
+
+double coq_uint63_to_float(value x) {
+  return (double) uint63_of_value(x);
+}
+
+value coq_uint63_to_float_byte(value x) {
+  return caml_copy_double(coq_uint63_to_float(x));
+}
+
+#define Uint63_of_double(f) do{ \
+  accu = Val_long((uint64_t)(f)); \
+  }while(0)
+
+#define Uint63_of_int(x) (accu = (x))
+
+#define Uint63_to_int_min(n, m) do { \
+  if (uint63_lt((n),(m))) \
+    accu = (n); \
+  else \
+    accu = (m); \
+  }while(0)

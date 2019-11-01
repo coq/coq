@@ -84,6 +84,7 @@ and ppwhd whd =
   | Vconstr_const i -> print_string "C(";print_int i;print_string")"
   | Vconstr_block b -> ppvblock b
   | Vint64 i -> printf "int64(%LiL)" i
+  | Vfloat64 f -> printf "float64(%.17g)" f
   | Vatom_stk(a,s) ->
       open_hbox();ppatom a;close_box();
       print_string"@";ppstack s

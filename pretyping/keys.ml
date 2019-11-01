@@ -26,6 +26,7 @@ type key =
   | KCoFix
   | KRel
   | KInt
+  | KFloat
 
 module KeyOrdered = struct
   type t = key
@@ -42,6 +43,7 @@ module KeyOrdered = struct
     | KCoFix -> 6
     | KRel -> 7
     | KInt -> 8
+    | KFloat -> 9
 
   let compare gr1 gr2 =
     match gr1, gr2 with
@@ -135,6 +137,7 @@ let constr_key kind c =
       | Sort _ -> KSort
       | LetIn _ -> KLet
       | Int _ -> KInt
+      | Float _ -> KFloat
     in Some (aux c)
   with Not_found -> None
 
@@ -151,6 +154,7 @@ let pr_key pr_global = function
   | KCoFix -> str"CoFix"
   | KRel -> str"Rel"
   | KInt -> str"Int"
+  | KFloat -> str"Float"
 
 let pr_keyset pr_global v =
   prlist_with_sep spc (pr_key pr_global) (Keyset.elements v)

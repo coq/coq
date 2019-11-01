@@ -45,6 +45,7 @@ type structured_constant =
   | Const_univ_level of Univ.Level.t
   | Const_val of structured_values
   | Const_uint of Uint63.t
+  | Const_float of Float64.t
 
 val pp_struct_const : structured_constant -> Pp.t
 
@@ -127,6 +128,7 @@ type whd =
   | Vconstr_const of int
   | Vconstr_block of vblock
   | Vint64 of int64
+  | Vfloat64 of float
   | Vatom_stk of atom * stack
   | Vuniv_level of Univ.Level.t
 

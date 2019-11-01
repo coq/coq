@@ -87,6 +87,7 @@ let rec val_gen v ctx o = match v with
   | Dyn -> val_dyn ctx o
   | Proxy { contents = v } -> val_gen v ctx o
   | Uint63 -> val_uint63 ctx o
+  | Float64 -> val_float64 ctx o
 
 (* Check that an object is a tuple (or a record). vs is an array of
    value representation for each field. Its size corresponds to the
@@ -137,6 +138,10 @@ and val_array v ctx o =
 and val_uint63 ctx o =
   if not (Uint63.is_uint63 o) then
     fail ctx o "not a 63-bit unsigned integer"
+
+and val_float64 ctx o =
+  if not (Float64.is_float64 o) then
+    fail ctx o "not a 64-bit float"
 
 let print_frame = function
 | CtxType t -> t

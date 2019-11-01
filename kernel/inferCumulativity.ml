@@ -102,6 +102,7 @@ let rec infer_fterm cv_pb infos variances hd stk =
     infer_vect infos variances (Array.map (mk_clos e) args)
   | FRel _ -> infer_stack infos variances stk
   | FInt _ -> infer_stack infos variances stk
+  | FFloat _ -> infer_stack infos variances stk
   | FFlex fl ->
     let variances = infer_table_key variances fl in
     infer_stack infos variances stk

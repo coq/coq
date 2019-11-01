@@ -44,6 +44,7 @@ void init_arity () {
     arity[PUSHCONST0]=arity[PUSHCONST1]=arity[PUSHCONST2]=arity[PUSHCONST3]=
     arity[ACCUMULATE]=arity[STOP]=arity[MAKEPROD]= 
     arity[ADDINT63]=arity[SUBINT63]=arity[LTINT63]=arity[LEINT63]=
+    arity[LTFLOAT]=arity[LEFLOAT]=
     arity[ISINT]=arity[AREINT2]=0;
   /* instruction with one operand */
   arity[ACC]=arity[PUSHACC]=arity[POP]=arity[ENVACC]=arity[PUSHENVACC]=
@@ -63,7 +64,15 @@ void init_arity () {
     arity[CHECKLSLINT63]=arity[CHECKLSRINT63]=arity[CHECKADDMULDIVINT63]=
     arity[CHECKLSLINT63CONST1]=arity[CHECKLSRINT63CONST1]=
     arity[CHECKEQINT63]=arity[CHECKLTINT63]=arity[CHECKLEINT63]=
-    arity[CHECKCOMPAREINT63]=arity[CHECKHEAD0INT63]=arity[CHECKTAIL0INT63]=1;
+    arity[CHECKCOMPAREINT63]=arity[CHECKHEAD0INT63]=arity[CHECKTAIL0INT63]=
+    arity[CHECKEQFLOAT]=arity[CHECKLTFLOAT]=arity[CHECKLEFLOAT]=
+    arity[CHECKOPPFLOAT]=arity[CHECKABSFLOAT]=arity[CHECKCOMPAREFLOAT]=
+    arity[CHECKCLASSIFYFLOAT]=
+    arity[CHECKADDFLOAT]=arity[CHECKSUBFLOAT]=arity[CHECKMULFLOAT]=
+    arity[CHECKDIVFLOAT]=arity[CHECKSQRTFLOAT]=
+    arity[CHECKFLOATOFINT63]=arity[CHECKFLOATNORMFRMANTISSA]=
+    arity[CHECKFRSHIFTEXP]=arity[CHECKLDSHIFTEXP]=
+    arity[CHECKNEXTUPFLOAT]=arity[CHECKNEXTDOWNFLOAT]=1;
   /* instruction with two operands */
   arity[APPTERM]=arity[MAKEBLOCK]=arity[CLOSURE]=
   arity[PROJ]=2;

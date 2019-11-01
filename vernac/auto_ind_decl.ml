@@ -248,6 +248,7 @@ let build_beq_scheme mode kn =
         | Meta _  -> raise (EqUnknown "meta-variable")
         | Evar _  -> raise (EqUnknown "existential variable")
         | Int _ -> raise (EqUnknown "int")
+        | Float _ -> raise (EqUnknown "float")
     in
       aux t
   in

@@ -152,6 +152,7 @@ plugins/ssr/ssrvernac.ml
 
 # other auto-generated files
 
+kernel/byterun/dune.c_flags
 kernel/byterun/coq_instruct.h
 kernel/byterun/coq_jumptbl.h
 kernel/genOpcodeFiles.exe
