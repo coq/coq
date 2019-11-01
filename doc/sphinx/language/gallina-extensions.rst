@@ -2500,11 +2500,18 @@ dedicated, efficient rules to reduce the applications of these primitive
 operations, using the floating-point processor operators that are assumed
 to comply with the IEEE 754 standard for floating-point arithmetic.
 
-These primitives, when extracted to OCaml (see :ref:`extraction`), are mapped to
-types and functions of a :g:`Float64` module. Said module is not produced by
+The extraction of these primitives can be customized similarly to the extraction
+of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlFloats`
+module can be used when extracting to OCaml: it maps the Coq primitives to types
+and functions of a :g:`Float64` module. Said OCaml module is not produced by
 extraction. Instead, it has to be provided by the user (if they want to compile
 or execute the extracted code). For instance, an implementation of this module
 can be taken from the kernel of Coq.
+
+Literal values (of type :g:`Float64.t`) are extracted to literal OCaml
+values (of type :g:`float`) written in hexadecimal notation and
+wrapped into the :g:`Float64.of_float` constructor, e.g.:
+:g:`Float64.of_float (0x1p+0)`.
 
 Bidirectionality hints
 ----------------------
