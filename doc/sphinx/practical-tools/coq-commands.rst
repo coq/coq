@@ -267,6 +267,8 @@ the proofs that it contains.
       At the end of the day, one still needs to proof check all files
       by producing standard ``.vo`` files. (Technically, when using ``-vos``,
       fewer universe constraints are collected.)
+      Moreover, this feature is still experimental, it may be subject to
+      change without prior notice.
 
 **Principle.**
 
