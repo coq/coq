@@ -18,6 +18,8 @@ bug-reports: "https://github.com/coq/coq/issues"
 dev-repo: "git+https://github.com/coq/coq.git"
 license: "LGPL-2.1"
 
+version: "dev"
+
 depends: [
   "dune"      { build & >= "1.10.0" }
   "coq"       {          = version }
