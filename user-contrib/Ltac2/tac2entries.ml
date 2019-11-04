@@ -374,6 +374,15 @@ let register_typedef ?(local = false) isrec types =
   | ({loc;v=id}, _) :: _ ->
     user_err ?loc (str "Multiple definition of the type name " ++ Id.print id)
   in
+  let () =
+    let check_existing_type ({v=id},_) =
+      let qid = Libnames.make_qualid (Lib.current_dirpath false) id in
+      try let _ = Tac2env.locate_type qid in
+        user_err (str "Multiple definition of the type name " ++ pr_qualid qid)
+      with Not_found -> ()
+    in
+    List.iter check_existing_type types
+  in
   let check ({loc;v=id}, (params, def)) =
     let same_name {v=id1} {v=id2} = Id.equal id1 id2 in
     let () = match List.duplicates same_name params with
