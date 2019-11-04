@@ -972,6 +972,8 @@ let declare_modtype id args mtys mty_l =
   protect_summaries declare_mt
 
 let declare_include me_asts =
+  if Global.sections_are_opened () then
+    user_err Pp.(str "Include is not allowed inside sections.");
   protect_summaries (fun _ -> RawIncludeOps.declare_include me_asts)
 
 
