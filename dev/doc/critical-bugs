@@ -112,8 +112,8 @@ Universes
   component: universe polymorphism
   summary: universe polymorphism can capture global universes
   impacted released versions: V8.5 to V8.8
-  impacted coqchk versions: V8.5 to current (NOT FIXED)
-  fixed in: 2385b5c1ef
+  impacted coqchk versions: V8.5 to V8.9
+  fixed in: ec4aa4971f (58e1d0f200 for the checker)
   found by: Gaëtan Gilbert
   exploit: test-suite/misc/poly-capture-global-univs
   GH issue number: #8341
