@@ -49,7 +49,8 @@ The sort :math:`\SProp` is like :math:`\Prop` but the propositions in
 equal). Objects of type :math:`\SProp` are called strict propositions.
 :math:`\SProp` is rejected except when using the compiler option
 ``-allow-sprop``. See :ref:`sprop` for information about using
-:math:`\SProp`.
+:math:`\SProp`, and :cite:`Gilbert:POPL2019` for meta theoretical
+considerations.
 
 The sort :math:`\Set` intends to be the type of small sets. This includes data
 types such as booleans and naturals, but also products, subsets, and
