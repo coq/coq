@@ -83,6 +83,7 @@ val locate_extended_all_ltac : qualid -> tacref list
 val shortest_qualid_of_ltac : tacref -> qualid
 
 val push_constructor : visibility -> full_path -> ltac_constructor -> unit
+val mem_constructor : qualid -> bool
 val locate_constructor : qualid -> ltac_constructor
 val locate_extended_all_constructor : qualid -> ltac_constructor list
 val shortest_qualid_of_constructor : ltac_constructor -> qualid

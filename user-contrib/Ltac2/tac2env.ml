@@ -196,6 +196,11 @@ let shortest_qualid_of_constructor kn =
   let sp = KNmap.find kn tab.tab_cstr_rev in
   KnTab.shortest_qualid Id.Set.empty sp tab.tab_cstr
 
+let mem_constructor qid =
+  let tab = !nametab in
+  try ignore (KnTab.locate qid tab.tab_cstr) ; true
+  with Not_found -> false
+
 let push_type vis sp kn =
   let tab = !nametab in
   let tab_type = KnTab.push vis sp kn tab.tab_type in
