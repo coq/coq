@@ -410,6 +410,14 @@ let register_typedef ?(local = false) isrec types =
         in
         List.iter check_uppercase_ident cs
       in
+      let () =
+        let check_existing_ctor (id, _) =
+          let qid = Libnames.make_qualid (Lib.current_dirpath false) id in
+          if Tac2env.mem_constructor qid
+          then user_err (str "Constructor already defined in this module " ++ pr_qualid qid)
+        in
+        List.iter check_existing_ctor cs
+      in
       ()
     | CTydRec ps ->
       let same_name (id1, _, _) (id2, _, _) = Id.equal id1 id2 in
@@ -490,6 +498,21 @@ let register_open ?(local = false) qid (params, def) =
   match def with
   | CTydOpn -> ()
   | CTydAlg def ->
+    let () =
+      let same_name (id1, _) (id2, _) = Id.equal id1 id2 in
+      let () = match List.duplicates same_name def with
+        | [] -> ()
+        | (id, _) :: _ ->
+          user_err (str "Multiple definitions of the constructor " ++ Id.print id)
+      in
+      let check_existing_ctor (id, _) =
+        let qid = Libnames.make_qualid (Lib.current_dirpath false) id in
+        if Tac2env.mem_constructor qid
+        then user_err (str "Constructor already defined in this module " ++ pr_qualid qid)
+      in
+      let () = List.iter check_existing_ctor def in
+      ()
+    in
     let intern_type t =
       let tpe = CTydDef (Some t) in
       let (_, ans) = intern_typedef Id.Map.empty (params, tpe) in
