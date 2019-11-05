@@ -804,7 +804,7 @@ Controlling the effect of proof editing commands
 
 .. flag:: Nested Proofs Allowed
 
-   When turned on (it is off by default), this option enables support for nested
+   When turned on (it is off by default), this flag enables support for nested
    proofs: a new assertion command can be inserted before the current proof is
    finished, in which case Coq will temporarily switch to the proof of this
    *nested lemma*. When the proof of the nested lemma is finished (with :cmd:`Qed`

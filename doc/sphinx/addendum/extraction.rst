@@ -127,20 +127,21 @@ Concerning Haskell, type-preserving optimizations are less useful
 because of laziness. We still make some optimizations, for example in
 order to produce more readable code.
 
-The type-preserving optimizations are controlled by the following |Coq| options:
+The type-preserving optimizations are controlled by the following |Coq| flags
+and commands:
 
 .. flag:: Extraction Optimize
 
    Default is on. This controls all type-preserving optimizations made on
    the ML terms (mostly reduction of dummy beta/iota redexes, but also
-   simplifications on Cases, etc). Turn this option off if you want a
+   simplifications on Cases, etc). Turn this flag off if you want a
    ML term as close as possible to the Coq term.
 
 .. flag:: Extraction Conservative Types
 
    Default is off. This controls the non type-preserving optimizations
    made on ML terms (which try to avoid function abstraction of dummy
-   types). Turn this option on to make sure that ``e:t``
+   types). Turn this flag on to make sure that ``e:t``
    implies that ``e':t'`` where ``e'`` and ``t'`` are the extracted
    code of ``e`` and ``t`` respectively.
 
@@ -150,7 +151,7 @@ The type-preserving optimizations are controlled by the following |Coq| options:
    produces a singleton type (i.e. a type with only one constructor, and
    only one argument to this constructor), the inductive structure is
    removed and this type is seen as an alias to the inner type.
-   The typical example is ``sig``. This option allows disabling this
+   The typical example is ``sig``. This flag allows disabling this
    optimization when one wishes to preserve the inductive structure of types.
 
 .. flag:: Extraction AutoInline
@@ -159,7 +160,7 @@ The type-preserving optimizations are controlled by the following |Coq| options:
    some defined constants, according to some heuristics
    like size of bodies, uselessness of some arguments, etc.
    Those heuristics are not always perfect; if you want to disable
-   this feature, turn this option off.
+   this feature, turn this flag off.
 
 .. cmd:: Extraction Inline {+ @qualid }
 
@@ -223,11 +224,11 @@ principles of extraction (logical parts and types).
 When an actual extraction takes place, an error is normally raised if the
 :cmd:`Extraction Implicit` declarations cannot be honored, that is
 if any of the implicit arguments still occurs in the final code.
-This behavior can be relaxed via the following option:
+This behavior can be relaxed via the following flag:
 
 .. flag:: Extraction SafeImplicits
 
-   Default is on. When this option is off, a warning is emitted
+   Default is on. When this flag is off, a warning is emitted
    instead of an error if some implicit arguments still occur in the
    final code of an extraction. This way, the extracted code may be
    obtained nonetheless and reviewed manually to locate the source of the issue

@@ -274,7 +274,7 @@ Activating the Printing of Coercions
 
 .. flag:: Printing Coercions
 
-   When on, this option forces all the coercions to be printed.
+   When on, this flag forces all the coercions to be printed.
    By default, coercions are not printed.
 
 .. table:: Printing Coercion @qualid
