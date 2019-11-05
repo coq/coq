@@ -72,30 +72,6 @@ Check [1 + 1].
 
 End C.
 
-(* An example of interaction between coercion and notations from
-   Robbert Krebbers. *)
-
-Require Import String.
-
-Module D.
-
-Inductive expr :=
-  | Var : string -> expr
-  | Lam : string -> expr -> expr
-  | App : expr -> expr -> expr.
-
-Notation Let x e1 e2 := (App (Lam x e2) e1).
-
-Parameter e1 e2 : expr.
-
-Check (Let "x" e1 e2).
-
-Coercion App : expr >-> Funclass.
-
-Check (Let "x" e1 e2).
-
-End D.
-
 (* Fixing bugs reported by G. Gonthier in #9207 *)
 
 Module I.

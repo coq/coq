@@ -27,10 +27,6 @@ end
      : Expr -> Expr
 [(1 + 1)]
      : Expr
-Let "x" e1 e2
-     : expr
-Let "x" e1 e2
-     : expr
 myAnd1 True True
      : Prop
 r 2 3
