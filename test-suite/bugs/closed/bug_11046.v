@@ -15,5 +15,5 @@ Module Other.
   Ltac2 Type t ::= [A(bool)].
 End Other.
 Module YetAnother.
-  Ltac2 Type t' := [A].
+  Ltac2 Type t := [A].
 End YetAnother.

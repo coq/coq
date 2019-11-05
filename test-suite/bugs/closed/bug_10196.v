@@ -17,10 +17,10 @@ Fail Ltac2 Eval notUppercased2.
 
 (* And the same for open types*)
 Ltac2 Type open_type := [ .. ].
-Fail Ltac2 Type open_type ::= [ notUppercased ].
-Ltac2 Type open_type ::= [ Uppercased ].
+Fail Ltac2 Type open_type ::= [ notUppercased3 ].
+Ltac2 Type open_type ::= [ Uppercased3 ].
 
-Fail Ltac2 Eval notUppercased.
-Ltac2 Eval Uppercased.
+Fail Ltac2 Eval notUppercased3.
+Ltac2 Eval Uppercased3.
 
 Fail Ltac2 Type foo ::= [ | bar1 | bar2 ].
