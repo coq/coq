@@ -1195,7 +1195,7 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
 
 .. flag:: Auto Template Polymorphism
 
-   This option, enabled by default, makes every inductive type declared
+   This flag, enabled by default, makes every inductive type declared
    at level :math:`\Type` (without annotations or hiding it behind a
    definition) template polymorphic if possible.
 
@@ -1224,7 +1224,7 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
 
 .. flag:: Template Check
 
-   Unsetting option :flag:`Template Check` disables the check of
+   This flag is on by default. Turning it off disables the check of
    locality of the sorts when abstracting the inductive over its
    parameters. This is a deprecated and *unsafe* flag that can introduce
    inconsistencies, it is only meant to help users incrementally update

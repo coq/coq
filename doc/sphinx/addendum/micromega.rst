@@ -31,21 +31,21 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
 
 .. flag:: Simplex
 
-   This option (set by default) instructs the decision procedures to
+   This flag (set by default) instructs the decision procedures to
    use the Simplex method for solving linear goals. If it is not set,
    the decision procedures are using Fourier elimination.
 
 .. flag:: Lia Cache
 
-   This option (set by default) instructs :tacn:`lia` to cache its results in the file `.lia.cache`
+   This flag (set by default) instructs :tacn:`lia` to cache its results in the file `.lia.cache`
 
 .. flag:: Nia Cache
 
-   This option (set by default) instructs :tacn:`nia` to cache its results in the file `.nia.cache`
+   This flag (set by default) instructs :tacn:`nia` to cache its results in the file `.nia.cache`
 
 .. flag:: Nra Cache
 
-   This option (set by default) instructs :tacn:`nra` to cache its results in the file `.nra.cache`
+   This flag (set by default) instructs :tacn:`nra` to cache its results in the file `.nra.cache`
 
 
 The tactics solve propositional formulas parameterized by atomic

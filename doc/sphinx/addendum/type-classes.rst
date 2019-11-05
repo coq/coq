@@ -560,8 +560,8 @@ Settings
 
    Determines how much information is shown for typeclass resolution steps during search.
    1 is the default level.  2 shows additional information such as tried tactics and shelving
-   of goals.  Setting this option to 1 or 2 turns on :flag:`Typeclasses Debug`; setting this
-   option to 0 turns that option off.
+   of goals.  Setting this option to 1 or 2 turns on the :flag:`Typeclasses Debug` flag; setting this
+   option to 0 turns that flag off.
 
 Typeclasses eauto `:=`
 ~~~~~~~~~~~~~~~~~~~~~~

@@ -78,7 +78,7 @@ operation (see :ref:`extendedpatternmatching`).
   also works with the previous mechanism.
 
 
-There are options to control the generation of equalities and
+There are flags to control the generation of equalities and
 coercions.
 
 .. flag:: Program Cases
@@ -86,13 +86,13 @@ coercions.
    This controls the special treatment of pattern matching generating equalities
    and disequalities when using |Program| (it is on by default). All
    pattern-matches and let-patterns are handled using the standard algorithm
-   of |Coq| (see :ref:`extendedpatternmatching`) when this option is
+   of |Coq| (see :ref:`extendedpatternmatching`) when this flag is
    deactivated.
 
 .. flag:: Program Generalized Coercion
 
    This controls the coercion of general inductive types when using |Program|
-   (the option is on by default). Coercion of subset types and pairs is still
+   (the flag is on by default). Coercion of subset types and pairs is still
    active in this case.
 
 .. flag:: Program Mode
@@ -343,7 +343,7 @@ optional tactic is replaced by the default one if not specified.
 
    .. deprecated:: 8.7
 
-   This option (on by default) controls whether obligations should have
+   This flag (on by default) controls whether obligations should have
    their context minimized to the set of variables used in the proof of
    the obligation, to avoid unnecessary dependencies.
 

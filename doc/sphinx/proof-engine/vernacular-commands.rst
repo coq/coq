@@ -962,7 +962,7 @@ Controlling display
 
 .. flag:: Silent
 
-   This option controls the normal displaying.
+   This flag controls the normal displaying.
 
 .. opt:: Warnings "{+, {? {| - | + } } @ident }"
    :name: Warnings
@@ -977,7 +977,7 @@ Controlling display
 
 .. flag:: Search Output Name Only
 
-   This option restricts the output of search commands to identifier names;
+   This flag restricts the output of search commands to identifier names;
    turning it on causes invocations of :cmd:`Search`, :cmd:`SearchHead`,
    :cmd:`SearchPattern`, :cmd:`SearchRewrite` etc. to omit types from their
    output, printing only identifiers.
@@ -998,7 +998,7 @@ Controlling display
 
 .. flag:: Printing Compact Contexts
 
-   This option controls the compact display mode for goals contexts. When on,
+   This flag controls the compact display mode for goals contexts. When on,
    the printer tries to reduce the vertical size of goals contexts by putting
    several variables (even if of different types) on the same line provided it
    does not exceed the printing width (see :opt:`Printing Width`). At the time
@@ -1006,13 +1006,13 @@ Controlling display
 
 .. flag:: Printing Unfocused
 
-   This option controls whether unfocused goals are displayed. Such goals are
+   This flag controls whether unfocused goals are displayed. Such goals are
    created by focusing other goals with bullets (see :ref:`bullets` or
    :ref:`curly braces <curly-braces>`). It is off by default.
 
 .. flag:: Printing Dependent Evars Line
 
-   This option controls the printing of the “(dependent evars: …)” information
+   This flag controls the printing of the “(dependent evars: …)” information
    after each tactic.  The information is used by the Prooftree tool in Proof
    General. (https://askra.de/software/prooftree)
 
@@ -1213,7 +1213,7 @@ Controlling Typing Flags
 
 .. flag:: Guard Checking
 
-   This option can be used to enable/disable the guard checking of
+   This flag can be used to enable/disable the guard checking of
    fixpoints. Warning: this can break the consistency of the system, use at your
    own risk. Decreasing argument can still be specified: the decrease is not checked
    anymore but it still affects the reduction of the term. Unchecked fixpoints are
@@ -1221,14 +1221,14 @@ Controlling Typing Flags
 
 .. flag:: Positivity Checking
 
-   This option can be used to enable/disable the positivity checking of inductive
+   This flag can be used to enable/disable the positivity checking of inductive
    types and the productivity checking of coinductive types. Warning: this can
    break the consistency of the system, use at your own risk. Unchecked
    (co)inductive types are printed by :cmd:`Print Assumptions`.
 
 .. flag:: Universe Checking
 
-   This option can be used to enable/disable the checking of universes, providing a
+   This flag can be used to enable/disable the checking of universes, providing a
    form of "type in type".  Warning: this breaks the consistency of the system, use
    at your own risk.  Constants relying on "type in type" are printed by
    :cmd:`Print Assumptions`. It has the same effect as `-type-in-type` command line

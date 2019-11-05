@@ -128,7 +128,7 @@ Automatic declaration of schemes
 
 .. warning::
 
-   You have to be careful with this option since Coq may now reject well-defined
+   You have to be careful with these flags since Coq may now reject well-defined
    inductive types because it cannot compute a Boolean equality for them.
 
 .. flag:: Rewriting Schemes

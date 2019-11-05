@@ -860,8 +860,8 @@ We can carry out pattern matching on terms with:
       If the evaluation of the right-hand-side of a valid match fails, the next
       matching subterm is tried. If no further subterm matches, the next clause
       is tried. Matching subterms are considered top-bottom and from left to
-      right (with respect to the raw printing obtained by setting option
-      :flag:`Printing All`).
+      right (with respect to the raw printing obtained by setting the
+      :flag:`Printing All` flag).
 
    .. example::
 
@@ -1642,7 +1642,7 @@ Interactive debugger
 
 .. flag:: Ltac Debug
 
-   This option governs the step-by-step debugger that comes with the |Ltac| interpreter.
+   This flag governs the step-by-step debugger that comes with the |Ltac| interpreter.
 
 When the debugger is activated, it stops at every step of the evaluation of
 the current |Ltac| expression and prints information on what it is doing.
@@ -1666,13 +1666,13 @@ following:
 .. exn:: Debug mode not available in the IDE
    :undocumented:
 
-A non-interactive mode for the debugger is available via the option:
+A non-interactive mode for the debugger is available via the flag:
 
 .. flag:: Ltac Batch Debug
 
-   This option has the effect of presenting a newline at every prompt, when
+   This flag has the effect of presenting a newline at every prompt, when
    the debugger is on. The debug log thus created, which does not require
-   user input to generate when this option is set, can then be run through
+   user input to generate when this flag is set, can then be run through
    external tools such as diff.
 
 Profiling |Ltac| tactics
@@ -1691,7 +1691,7 @@ performance issue.
 
 .. flag:: Ltac Profiling
 
-   This option enables and disables the profiler.
+   This flag enables and disables the profiler.
 
 .. cmd:: Show Ltac Profile
 
@@ -1775,7 +1775,7 @@ performance issue.
    benchmarking purposes.
 
 You can also pass the ``-profile-ltac`` command line option to ``coqc``, which
-turns the :flag:`Ltac Profiling` option on at the beginning of each document,
+turns the :flag:`Ltac Profiling` flag on at the beginning of each document,
 and performs a :cmd:`Show Ltac Profile` at the end.
 
 .. warning::
