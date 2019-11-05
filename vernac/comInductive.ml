@@ -177,9 +177,7 @@ let sign_level env evd sign =
       match d with
       | LocalDef _ -> lev, push_rel d env
       | LocalAssum _ ->
-        let s = destSort (Reduction.whd_all env
-                            (EConstr.to_constr evd (Retyping.get_type_of env evd (EConstr.of_constr (RelDecl.get_type d)))))
-        in
+        let s = Retyping.get_sort_of env evd (EConstr.of_constr (RelDecl.get_type d)) in
         let u = univ_of_sort s in
           (Univ.sup u lev, push_rel d env))
     sign (Univ.Universe.sprop,env))
