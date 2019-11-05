@@ -218,11 +218,11 @@ GRAMMAR EXTEND Gram
           { CAst.make ~loc @@ CAppExpl ((None, (qualid_of_ident ~loc ldots_var), None),[c]) } ]
     | "8" [ ]
     | "1" LEFTA
-      [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
-	{ CAst.make ~loc @@ CApp((Some (List.length args+1), CAst.make @@ CRef (f,None)),args@[c,None]) }
-      | c=operconstr; ".("; "@"; f=global;
+      [ c=operconstr; ".("; f=global; i=instance; args=LIST0 appl_arg; ")" ->
+        { CAst.make ~loc @@ CApp((Some (List.length args+1), CAst.make @@ CRef (f,i)),args@[c,None]) }
+      | c=operconstr; ".("; "@"; f=global; i=instance;
         args=LIST0 (operconstr LEVEL "9"); ")" ->
-        { CAst.make ~loc @@ CAppExpl((Some (List.length args+1),f,None),args@[c]) }
+        { CAst.make ~loc @@ CAppExpl((Some (List.length args+1),f,i),args@[c]) }
       | c=operconstr; "%"; key=IDENT -> { CAst.make ~loc @@ CDelimiters (key,c) } ]
     | "0"
       [ c=atomic_constr -> { c }
