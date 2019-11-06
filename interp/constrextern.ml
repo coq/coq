@@ -634,6 +634,48 @@ let is_start_implicit = function
   | imp :: _ -> is_status_implicit imp && maximal_insertion_of imp
   | [] -> false
 
+let extern_record ?loc extern vars ref args =
+  try
+    if !Flags.raw_print then raise Exit;
+    let cstrsp = match ref with GlobRef.ConstructRef c -> c | _ -> raise Not_found in
+    let struc = Recordops.lookup_structure (fst cstrsp) in
+    if PrintingRecord.active (fst cstrsp) then
+      ()
+    else if PrintingConstructor.active (fst cstrsp) then
+      raise Exit
+    else if not (get_record_print ()) then
+      raise Exit;
+    let projs = struc.Recordops.s_PROJ in
+    let locals = struc.Recordops.s_PROJKIND in
+    let rec cut args n =
+      if Int.equal n 0 then args
+      else
+        match args with
+        | [] -> raise No_match
+        | _ :: t -> cut t (n - 1) in
+    let args = cut args struc.Recordops.s_EXPECTEDPARAM in
+    let rec ip projs locs args acc =
+      match projs with
+      | [] -> acc
+      | None :: q -> raise No_match
+      | Some c :: q ->
+         match locs with
+         | [] -> anomaly (Pp.str "projections corruption [Constrextern.extern].")
+         | { Recordops.pk_true_proj = false } :: locs' ->
+            (* we don't want to print locals *)
+            ip q locs' args acc
+         | { Recordops.pk_true_proj = true } :: locs' ->
+            match args with
+            | [] -> raise No_match
+            (* we give up since the constructor is not complete *)
+            | (arg, scopes) :: tail ->
+               let head = extern true scopes vars arg in
+               ip q locs' tail ((extern_reference ?loc Id.Set.empty (GlobRef.ConstRef c), head) :: acc)
+    in
+    Some (List.rev (ip projs locals args []))
+  with
+    | Not_found | No_match | Exit -> None
+
 let extern_global impl f us =
   if not !Constrintern.parsing_explicit && is_start_implicit impl
   then
@@ -839,52 +881,14 @@ let rec extern inctx scopes vars r =
              let subscopes = find_arguments_scope ref in
              let args = fill_arg_scopes args subscopes scopes in
              begin
-               try
-                 if !Flags.raw_print then raise Exit;
-                 let cstrsp = match ref with GlobRef.ConstructRef c -> c | _ -> raise Not_found in
-                 let struc = Recordops.lookup_structure (fst cstrsp) in
-                 if PrintingRecord.active (fst cstrsp) then
-                   ()
-                 else if PrintingConstructor.active (fst cstrsp) then
-                   raise Exit
-                 else if not (get_record_print ()) then
-                   raise Exit;
-                 let projs = struc.Recordops.s_PROJ in
-                 let locals = struc.Recordops.s_PROJKIND in
-                 let rec cut args n =
-                   if Int.equal n 0 then args
-                   else
-                     match args with
-                     | [] -> raise No_match
-                     | _ :: t -> cut t (n - 1) in
-                 let args = cut args struc.Recordops.s_EXPECTEDPARAM in
-                 let rec ip projs locs args acc =
-                   match projs with
-                     | [] -> acc
-                     | None :: q -> raise No_match
-                     | Some c :: q ->
-                         match locs with
-                           | [] -> anomaly (Pp.str "projections corruption [Constrextern.extern].")
-                           | { Recordops.pk_true_proj = false } :: locs' ->
-                               (* we don't want to print locals *)
-                               ip q locs' args acc
-                           | { Recordops.pk_true_proj = true } :: locs' ->
-                               match args with
-                                 | [] -> raise No_match
-                                     (* we give up since the constructor is not complete *)
-                                 | (arg, scopes) :: tail ->
-                                     let head = extern true scopes vars arg in
-                                     ip q locs' tail ((extern_reference ?loc Id.Set.empty (GlobRef.ConstRef c), head) :: acc)
-                   in
-                 CRecord (List.rev (ip projs locals args []))
-               with
-                 | Not_found | No_match | Exit ->
-                    let args = extern_args (extern true) vars args in
-                     extern_app inctx
-                       (select_stronger_impargs (implicits_of_global ref))
-                       (Some ref,extern_reference ?loc vars ref) (extern_universes us) args
+               match extern_record ?loc extern vars ref args with
+               | Some l -> CRecord l
+               | None ->
+                 let args = extern_args (extern true) vars args in
+                 extern_app inctx
+                   (select_stronger_impargs (implicits_of_global ref))
+                   (Some ref,extern_reference ?loc vars ref) (extern_universes us) args
              end
-
          | _       ->
            explicitize inctx [] (None,sub_extern false scopes vars f)
              (List.map (fun c -> lazy (sub_extern true scopes vars c)) args))
