@@ -15,6 +15,8 @@ bug-reports: "https://github.com/coq/coq/issues"
 dev-repo: "https://github.com/coq/coq.git"
 license: "Open Publication License"
 
+version: "dev"
+
 depends: [
   "dune"      { build }
   "coq"       { build & = version }
