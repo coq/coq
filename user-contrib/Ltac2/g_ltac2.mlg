@@ -175,13 +175,13 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ CTacCse (e, bl) }
       ]
     | "4" LEFTA [ ]
+    | [ e0 = SELF; ","; el = LIST1 NEXT SEP "," ->
+        { let el = e0 :: el in
+          CAst.make ~loc @@ CTacApp (CAst.make ~loc @@ CTacCst (AbsKn (Tuple (List.length el))), el) } ]
     | "::" RIGHTA
       [ e1 = tac2expr; "::"; e2 = tac2expr ->
         { CAst.make ~loc @@ CTacApp (CAst.make ~loc @@ CTacCst (AbsKn (Other Tac2core.Core.c_cons)), [e1; e2]) }
       ]
-    | [ e0 = SELF; ","; el = LIST1 NEXT SEP "," ->
-        { let el = e0 :: el in
-          CAst.make ~loc @@ CTacApp (CAst.make ~loc @@ CTacCst (AbsKn (Tuple (List.length el))), el) } ]
     | "1" LEFTA
       [ e = tac2expr; el = LIST1 tac2expr LEVEL "0" ->
         { CAst.make ~loc @@ CTacApp (e, el) }
