@@ -432,6 +432,8 @@ let kill (sn:session) =
   sn.script#destroy ();
   Coq.close_coqtop sn.coqtop
 
+let window_size = ref (window_width#get, window_height#get)
+
 let build_layout (sn:session) =
   let session_paned = GPack.paned `VERTICAL () in
   let session_box =
@@ -514,9 +516,9 @@ let build_layout (sn:session) =
      iteration of the loop *)
   let () =
     (* 14 is the estimated size for vertical borders *)
-    let estimated_vertical_handle_position = (window_width#get - 14) / 2 in
+    let estimated_vertical_handle_position = (fst !window_size - 14) / 2 in
     (* 169 is the estimated size for menus, command line, horizontal border *)
-    let estimated_horizontal_handle_position = (window_height#get - 169) / 2 in
+    let estimated_horizontal_handle_position = (snd !window_size - 169) / 2 in
     if estimated_vertical_handle_position > 0 then
       eval_paned#set_position estimated_vertical_handle_position;
     if estimated_horizontal_handle_position > 0 then
