@@ -175,7 +175,7 @@ object (self)
     let log = Printf.sprintf "Completion at offset: %i" insert_offset in
     let () = Minilib.log log in
     let prefix =
-      if Gtk_parsing.ends_word iter#backward_char then
+      if Gtk_parsing.ends_word iter then
         let start = Gtk_parsing.find_word_start iter in
         let w = buffer#get_text ~start ~stop:iter () in
         if String.length w >= auto_complete_length then Some (w, start)
