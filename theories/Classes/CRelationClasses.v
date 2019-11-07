@@ -296,48 +296,19 @@ Local Open Scope list_scope.
 (** A compact representation of non-dependent arities, with the codomain singled-out. *)
 
 (** We define the various operations which define the algebra on binary crelations *)
-Section Binary.
-  Context {A : Type}.
 
-  Definition relation_equivalence : crelation (crelation A) :=
-    fun R R' => forall x y, iffT (R x y) (R' x y).
+  Definition relation_equivalence {A : Type} : crelation (crelation A) := fun R R' => unit.
 
-  Global Instance: RewriteRelation relation_equivalence.
-  Defined.
+  Set Printing Universes.
 
-  Definition relation_conjunction (R : crelation A) (R' : crelation A) : crelation A :=
-    fun x y => prod (R x y) (R' x y).
-
-  Definition relation_disjunction (R : crelation A) (R' : crelation A) : crelation A :=
-    fun x y => sum (R x y) (R' x y).
-  
-  (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
-
-  Global Instance relation_equivalence_equivalence :
-    Equivalence relation_equivalence.
-  Proof.
-    split; red; unfold relation_equivalence, iffT.
-    - firstorder.
-    - firstorder.
-    - intros. specialize (X x0 y0). specialize (X0 x0 y0). firstorder.
-  Qed.
-    
-  Global Instance relation_implication_preorder : PreOrder (@subrelation A).
-  Proof. firstorder. Qed.
-
-  (** *** Partial Order.
-   A partial order is a preorder which is additionally antisymmetric.
-   We give an equivalent definition, up-to an equivalence crelation
-   on the carrier. *)
-
-  Class PartialOrder eqA `{equ : Equivalence A eqA} R `{preo : PreOrder A R} :=
-    partial_order_equivalence : relation_equivalence eqA (relation_conjunction R (flip R)).
+  Definition PartialOrder@{i j k} {A : Type@{i}} (R : crelation@{j i} A)
+    := relation_equivalence@{k _ i} R R.
   
   (** The equivalence proof is sufficient for proving that [R] must be a
    morphism for equivalence (see Morphisms).  It is also sufficient to
    show that [R] is antisymmetric w.r.t. [eqA] *)
 
-  Global Instance partial_order_antisym `(PartialOrder eqA R) : Antisymmetric eqA R.
+  Global Instance partial_order_antisym {A : Type} `(PartialOrder eqA R) : Antisymmetric eqA R.
   Proof with auto.
     reduce_goal.
     apply H. firstorder.
@@ -349,7 +320,6 @@ Section Binary.
     - intros. apply H. apply symmetry. apply X.
     - unfold relation_conjunction. intros [H1 H2]. apply H. constructor; assumption.
   Qed.
-End Binary.
 
 Hint Extern 3 (PartialOrder (flip _)) => class_apply PartialOrder_inverse : typeclass_instances.
 

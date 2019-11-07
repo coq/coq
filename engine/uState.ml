@@ -178,6 +178,12 @@ exception UniversesDiffer
 
 let drop_weak_constraints = ref false
 
+let get_set_eager_universe_unification =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~name:"TODO"
+    ~key:["Eager";"Universe";"Unification"]
+    ~value:true
 
 let process_universe_constraints ctx cstrs =
   let open UnivSubst in
@@ -262,8 +268,10 @@ let process_universe_constraints ctx cstrs =
                     LSet.fold fold levels local
               else
                 match Univ.Universe.level l with
-                | Some l ->
-                  Univ.Constraint.add (l, Le, r') local
+                | Some l' ->
+                  if get_set_eager_universe_unification () && not (UGraph.check_leq univs l r) && (is_local l' || is_local r')
+                  then equalize_variables false r r' l l' local
+                  else Univ.Constraint.add (l', Le, r') local
                 | None ->
                   if UGraph.check_leq univs l r then local else enforce_leq l r local
               end
@@ -276,6 +284,7 @@ let process_universe_constraints ctx cstrs =
   let local = 
     UnivProblem.Set.fold unify_universes cstrs Constraint.empty
   in
+    Feedback.msg_debug (Pp.str "Constraints:" ++ Univ.pr_constraints Level.pr local);
     !vars, !weak, local
 
 let add_constraints ctx cstrs =
