@@ -178,12 +178,61 @@ exception UniversesDiffer
 
 let drop_weak_constraints = ref false
 
-let get_set_eager_universe_unification =
+let get_eager_universe_unification =
   Goptions.declare_bool_option_and_ref
     ~depr:false
     ~name:"TODO"
     ~key:["Eager";"Universe";"Unification"]
     ~value:true
+
+let get_eager_universe_unification_debug =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~name:"TODO"
+    ~key:["Eager";"Universe";"Unification";"Debug"]
+    ~value:false
+
+
+let qualid_of_level uctx =
+  let map, map_rev = uctx.uctx_names in
+    fun l ->
+      try Some (Libnames.qualid_of_ident (Option.get (LMap.find l map_rev).uname))
+      with Not_found | Option.IsNone ->
+        UnivNames.qualid_of_level l
+
+let pr_uctx_level uctx l =
+  match qualid_of_level uctx l with
+  | Some qid -> Libnames.pr_qualid qid
+  | None -> Level.pr l
+
+let pr_universe_constraint ctx c =
+  let pru = Universe.pr_with (pr_uctx_level ctx) in
+  let open UnivProblem in
+  let comp, u, v =
+    match c with
+    | ULub (u, v) -> "\\/", Universe.make u, Universe.make v
+    | UWeak (u, v) -> "~=", Universe.make u, Universe.make v
+    | UEq (u, v) -> "=", u, v
+    | ULe (u, v) -> "<=", u, v
+  in
+  pru u ++ Pp.str comp ++ pru v
+
+let pr_weak prl {uctx_weak_constraints=weak} =
+  let open Pp in
+  prlist_with_sep fnl (fun (u,v) -> prl u ++ str " ~ " ++ prl v) (UPairSet.elements weak)
+
+let pr_uctx ctx =
+  let prl = pr_uctx_level ctx in
+  if is_empty ctx then mt ()
+  else
+    (str"UNIVERSES:"++brk(0,1)++
+       h 0 (Univ.pr_universe_context_set prl (context_set ctx)) ++ fnl () ++
+     str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
+     h 0 (Univ.LSet.pr prl (algebraics ctx)) ++ fnl() ++
+     str"UNDEFINED UNIVERSES:"++brk(0,1)++
+     h 0 (UnivSubst.pr_universe_opt_subst (subst ctx)) ++ fnl() ++
+     str "WEAK CONSTRAINTS:"++brk(0,1)++
+     h 0 (pr_weak prl ctx) ++ fnl ())
 
 let process_universe_constraints ctx cstrs =
   let open UnivSubst in
@@ -239,6 +288,7 @@ let process_universe_constraints ctx cstrs =
   in
   let unify_universes cst local =
     let cst = nf_constraint cst in
+      if get_eager_universe_unification_debug () then (Feedback.msg_debug (Pp.str "Considering Constraint:" ++ pr_universe_constraint ctx cst));
       if UnivProblem.is_trivial cst then local
       else 
           match cst with
@@ -269,7 +319,7 @@ let process_universe_constraints ctx cstrs =
               else
                 match Univ.Universe.level l with
                 | Some l' ->
-                  if get_set_eager_universe_unification () && not (UGraph.check_leq univs l r) && (is_local l' || is_local r')
+                  if get_eager_universe_unification () && not (UGraph.check_leq univs l r) && (is_local l' || is_local r')
                   then equalize_variables false r r' l l' local
                   else Univ.Constraint.add (l', Le, r') local
                 | None ->
@@ -281,10 +331,15 @@ let process_universe_constraints ctx cstrs =
             if not !drop_weak_constraints then weak := UPairSet.add (l,r) !weak; local
           | UEq (l, r) -> equalize_universes l r local
   in
+  let () =
+    if get_eager_universe_unification_debug () then
+       Feedback.msg_debug Pp.(str"Evar map" ++ pr_uctx ctx)
+  in
   let local = 
     UnivProblem.Set.fold unify_universes cstrs Constraint.empty
   in
-    Feedback.msg_debug (Pp.str "Constraints:" ++ Univ.pr_constraints Level.pr local);
+    if get_eager_universe_unification_debug () then
+      Feedback.msg_debug (Pp.str "Constraints:" ++ Univ.pr_constraints Level.pr local);
     !vars, !weak, local
 
 let add_constraints ctx cstrs =
@@ -335,18 +390,6 @@ let constrain_variables diff ctx =
       diff (univs, ctx.uctx_univ_variables, local)
   in
   { ctx with uctx_local = (univs, local); uctx_univ_variables = vars }
-  
-let qualid_of_level uctx =
-  let map, map_rev = uctx.uctx_names in 
-    fun l ->
-      try Some (Libnames.qualid_of_ident (Option.get (LMap.find l map_rev).uname))
-      with Not_found | Option.IsNone ->
-        UnivNames.qualid_of_level l
-
-let pr_uctx_level uctx l =
-  match qualid_of_level uctx l with
-  | Some qid -> Libnames.pr_qualid qid
-  | None -> Level.pr l
 
 type ('a, 'b) gen_universe_decl = {
   univdecl_instance : 'a; (* Declared universes *)
@@ -754,7 +797,3 @@ let minimize uctx =
 
 let universe_of_name uctx s = 
   UNameMap.find s (fst uctx.uctx_names)
-
-let pr_weak prl {uctx_weak_constraints=weak} =
-  let open Pp in
-  prlist_with_sep fnl (fun (u,v) -> prl u ++ str " ~ " ++ prl v) (UPairSet.elements weak)
