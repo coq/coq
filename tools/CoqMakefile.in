@@ -78,6 +78,11 @@ else
 STDTIME?=command time -f $(TIMEFMT)
 endif
 
+ifneq (,$(COQBIN))
+# add an ending /
+COQBIN:=$(COQBIN)/
+endif
+
 # Coq binaries
 COQC     ?= "$(COQBIN)coqc"
 COQTOP   ?= "$(COQBIN)coqtop"
