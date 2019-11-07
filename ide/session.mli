@@ -51,3 +51,5 @@ val kill : session -> unit
 
 val build_layout : session ->
   GObj.widget option * GObj.widget option * GObj.widget
+
+val window_size : (int * int) ref
