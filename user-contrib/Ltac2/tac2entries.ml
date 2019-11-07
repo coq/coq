@@ -374,6 +374,15 @@ let register_typedef ?(local = false) isrec types =
   | ({loc;v=id}, _) :: _ ->
     user_err ?loc (str "Multiple definition of the type name " ++ Id.print id)
   in
+  let () =
+    let check_existing_type ({v=id},_) =
+      let qid = Libnames.make_qualid (Lib.current_dirpath false) id in
+      try let _ = Tac2env.locate_type qid in
+        user_err (str "Multiple definition of the type name " ++ pr_qualid qid)
+      with Not_found -> ()
+    in
+    List.iter check_existing_type types
+  in
   let check ({loc;v=id}, (params, def)) =
     let same_name {v=id1} {v=id2} = Id.equal id1 id2 in
     let () = match List.duplicates same_name params with
@@ -400,6 +409,14 @@ let register_typedef ?(local = false) isrec types =
           then user_err (str "Constructor name should start with an uppercase letter " ++ Id.print id)
         in
         List.iter check_uppercase_ident cs
+      in
+      let () =
+        let check_existing_ctor (id, _) =
+          let qid = Libnames.make_qualid (Lib.current_dirpath false) id in
+          if Tac2env.mem_constructor qid
+          then user_err (str "Constructor already defined in this module " ++ pr_qualid qid)
+        in
+        List.iter check_existing_ctor cs
       in
       ()
     | CTydRec ps ->
@@ -481,6 +498,21 @@ let register_open ?(local = false) qid (params, def) =
   match def with
   | CTydOpn -> ()
   | CTydAlg def ->
+    let () =
+      let same_name (id1, _) (id2, _) = Id.equal id1 id2 in
+      let () = match List.duplicates same_name def with
+        | [] -> ()
+        | (id, _) :: _ ->
+          user_err (str "Multiple definitions of the constructor " ++ Id.print id)
+      in
+      let check_existing_ctor (id, _) =
+        let qid = Libnames.make_qualid (Lib.current_dirpath false) id in
+        if Tac2env.mem_constructor qid
+        then user_err (str "Constructor already defined in this module " ++ pr_qualid qid)
+      in
+      let () = List.iter check_existing_ctor def in
+      ()
+    in
     let intern_type t =
       let tpe = CTydDef (Some t) in
       let (_, ans) = intern_typedef Id.Map.empty (params, tpe) in
