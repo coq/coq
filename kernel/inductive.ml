@@ -885,6 +885,9 @@ let filter_stack_domain env p stack =
   in
   filter_stack env ar stack
 
+let judgment_of_fixpoint (_, types, bodies) =
+  Array.map2 (fun typ body -> { uj_val = body ; uj_type = typ }) types bodies
+
 (* Check if [def] is a guarded fixpoint body with decreasing arg.
    given [recpos], the decreasing arguments of each mutually defined
    fixpoint. *)
@@ -982,7 +985,12 @@ let check_one_fix renv recpos trees def =
                 if Int.equal i j && (List.length stack' > decrArg) then
                   let recArg = List.nth stack' decrArg in
                   let arg_sp = stack_element_specif recArg in
-                  check_nested_fix_body renv' (decrArg+1) arg_sp body
+                  let illformed () =
+                    error_ill_formed_rec_body renv.env NotEnoughAbstractionInFixBody
+                      (pi1 recdef) i (push_rec_types recdef renv.env)
+                      (judgment_of_fixpoint recdef)
+                  in
+                  check_nested_fix_body illformed renv' (decrArg+1) arg_sp body
                 else check_rec_call renv' [] body)
             with (FixGuardError _ as exn) ->
               let exn = CErrors.push exn in
@@ -1065,22 +1073,19 @@ let check_one_fix renv recpos trees def =
 
         | (App _ | LetIn _ | Cast _) -> assert false (* beta zeta reduction *)
 
-  and check_nested_fix_body renv decr recArgsDecrArg body =
+  and check_nested_fix_body illformed renv decr recArgsDecrArg body =
     if Int.equal decr 0 then
       check_rec_call (assign_var_spec renv (1,recArgsDecrArg)) [] body
     else
-      match kind body with
+      match kind (whd_all renv.env body) with
         | Lambda (x,a,b) ->
 	    check_rec_call renv [] a;
             let renv' = push_var_renv renv (x,a) in
-	      check_nested_fix_body renv' (decr-1) recArgsDecrArg b
-	| _ -> anomaly (Pp.str "Not enough abstractions in fix body.")
+              check_nested_fix_body illformed renv' (decr-1) recArgsDecrArg b
+        | _ -> illformed ()
 	    
   in
   check_rec_call renv [] def
-
-let judgment_of_fixpoint (_, types, bodies) =
-  Array.map2 (fun typ body -> { uj_val = body ; uj_type = typ }) types bodies
 
 let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
   let nbfix = Array.length bodies in
