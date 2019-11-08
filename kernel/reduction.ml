@@ -635,7 +635,7 @@ and eqappr compare_annot cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
        else raise NotConvertible
 
     | FFloat f1, FFloat f2 ->
-        if Float64.equal f1 f2 then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+        if Float64.equal f1 f2 then convert_stacks compare_annot l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
      (* Should not happen because both (hd1,v1) and (hd2,v2) are in whnf *)

@@ -1383,6 +1383,8 @@ type ('a, 'b) fold_fix_type_info = {
 }
 
 let fold_map2_fix_type env f is tys init =
+  let check_sized = (Environ.typing_flags env).check_sized in
+  if not check_sized || List.is_empty tys then init, tys else
   let info = {
     elt = List.hd is;
     fix_type = List.hd tys;
@@ -1438,13 +1440,10 @@ let fold_map2_fix_type env f is tys init =
       arg_index = -1; } in
     let info, body = app_ind info body in
     info, Term.it_mkProd_or_LetIn body ctxt in
-  let check_sized = (Environ.typing_flags env).check_sized in
-  if check_sized then
-    (* N.B. Since left fold folds ltr, accumulation in f for lists
-      can be done using cons, which builds the list rtl. *)
-    let info, tys = List.fold_left2_map app_ty info is tys in
-    info.acc, tys
-  else init, tys
+  (* N.B. Since left fold folds ltr, accumulation in f for lists
+    can be done using cons, which builds the list rtl. *)
+  let info, tys = List.fold_left2_map app_ty info is tys in
+  info.acc, tys
 
 (* Functions that use [fold_map2_fix_type]:
     [get_rec_inds]: Collects the inductive types in recursive positions

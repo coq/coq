@@ -1004,7 +1004,7 @@ module FNativeEntries =
       match retro.Retroknowledge.retro_float64 with
       | Some c ->
         defined_float := true;
-        ffloat := { mark = mark Norm KnownR; term = FFlex (ConstKey (Univ.in_punivs c)) }
+        ffloat := { mark = mark Norm KnownR; term = FFlex (ConstKey (Univ.in_punivs c), None) }
       | None -> defined_float := false
 
     let defined_bool = ref false
@@ -1055,7 +1055,7 @@ module FNativeEntries =
         fLt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cLt) };
         fGt := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs cGt) };
         let (icmp, _) = cEq in
-        fcmp := { mark = mark Norm KnownR; term = FInd (Univ.in_punivs icmp) }
+        fcmp := { mark = mark Norm KnownR; term = FInd ((Univ.in_punivs icmp), Annot.Empty) }
       | None -> defined_cmp := false
 
     let defined_f_cmp = ref false
