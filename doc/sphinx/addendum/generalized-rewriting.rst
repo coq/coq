@@ -714,8 +714,10 @@ Definitions
 
 The generalized rewriting tactic is based on a set of strategies that can be
 combined to obtain custom rewriting procedures. Its set of strategies is based
-on Elan’s rewriting strategies :cite:`Luttik97specificationof`. Rewriting
-strategies are applied using the tactic :n:`rewrite_strat @strategy` where :token:`strategy` is a
+on the programmable rewriting strategies with generic traversals by Visser et al.
+:cite:`Luttik97specificationof` :cite:`Visser98`, which formed the core of
+the Stratego transformation language :cite:`Visser01`. Rewriting strategies
+are applied using the tactic :n:`rewrite_strat @strategy` where :token:`strategy` is a
 strategy expression. Strategies are defined inductively as described by the
 following grammar:
 
