@@ -58,7 +58,7 @@ variables used.
 Automatic suggestion of proof annotations
 `````````````````````````````````````````
 
-The flag :flag:`Suggest Proof Using` makes |Coq| suggest, when a ``Qed``
+The :flag:`Suggest Proof Using` flag makes |Coq| suggest, when a ``Qed``
 command is processed, a correct proof annotation. It is up to the user
 to modify the proof script accordingly.
 
