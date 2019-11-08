@@ -140,3 +140,20 @@ let same_file f1 =
           Unix.Unix_error _ -> false)
   with
       Unix.Unix_error _ -> (fun _ -> false)
+
+(* Copied from ocaml filename.ml *)
+let prng = lazy(Random.State.make_self_init ())
+
+let temp_file_name temp_dir prefix suffix =
+  let rnd = (Random.State.bits (Lazy.force prng)) land 0xFFFFFF in
+  Filename.concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
+
+let mktemp_dir ?(temp_dir=Filename.get_temp_dir_name()) prefix suffix =
+  let rec try_name counter =
+    let name = temp_file_name temp_dir prefix suffix in
+    match Unix.mkdir name 0o700 with
+    | () -> name
+    | exception (Sys_error _ as e) ->
+      if counter >= 1000 then raise e else try_name (counter + 1)
+  in
+  try_name 0
