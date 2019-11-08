@@ -467,12 +467,11 @@ let type_of_projection env p c ct =
 (* Fixpoints. *)
 
 (* Gets the stage variables that must be set to the recursive stage and infinity, respectively *)
-let get_vstar_vneq stg_old stg_new lar vdef =
-  let old_annots = get_vars stg_old in
+let get_vstar_vneq stg lar vdef =
   let lar_annots = List.map collect_annots (Array.to_list lar) in
   let vdef_annots = List.map collect_annots (Array.to_list vdef) in
-  let all_annots = SVars.union_list ([old_annots] @ lar_annots @ vdef_annots) in
-  let vstar = get_pos_vars stg_new in
+  let all_annots = SVars.union_list (lar_annots @ vdef_annots) in
+  let vstar = get_pos_vars stg in
   let vstars = List.map (inter vstar) lar_annots in
   let vneq = diff all_annots vstar in
   vstars, vneq
@@ -548,7 +547,7 @@ exception Found of State.t * Constraints.t * constr * types
     (* ATTENTION : faudra faire le typage du contexte des Const,
     Ind et Constructsi un jour cela devient des constructions
     arbitraires et non plus des variables *)
-let rec execute env stg cstr =
+let rec execute env stg cstrnt cstr =
   let open Context.Rel.Declaration in
   match kind cstr with
     (* Atomic terms *)
@@ -556,110 +555,105 @@ let rec execute env stg cstr =
       (match s with
        | SProp -> if not (Environ.sprop_allowed env) then error_disallowed_sprop env
        | _ -> ());
-      stg, empty (), cstr, type_of_sort s
+      stg, cstrnt, cstr, type_of_sort s
 
     | Rel (n, _) ->
       let numvars = stage_vars_in_relative env n in
       let annots, stg = next_annots numvars stg in
-      stg, empty (), mkRelA n annots, type_of_relative env n
+      stg, cstrnt, mkRelA n annots, type_of_relative env n
 
     | Var (id, _) ->
       let numvars = stage_vars_in_variable env id in
       let s, stg = next stg in
       let t = annotate_glob s (type_of_variable env id) in
       let annots, stg = next_annots numvars stg in
-      stg, empty (), mkVarA id annots, t
+      stg, cstrnt, mkVarA id annots, t
 
     | Const (c, _ans) ->
       let numvars = stage_vars_in_constant env c in
       let s, stg = next stg in
-      let t, cstrnt = type_of_constant env c in
+      let t, cstrnt' = type_of_constant env c in
       let t = annotate_glob s t in
       let annots, stg = next_annots numvars stg in
-      stg, cstrnt, mkConstUA c annots, t
+      stg, union cstrnt cstrnt', mkConstUA c annots, t
 
     | Proj (p, c) ->
-      let stg, cstrnt, c', ct = execute env stg c in
+      let stg, cstrnt, c', ct = execute env stg cstrnt c in
       let cstr = if c == c' then cstr else mkProj (p,c') in
       stg, cstrnt, cstr, type_of_projection env p c' ct
 
     (* Lambda calculus operators *)
     | App (f,args) ->
-      let stga, cstrnta, args', argst = execute_array env stg args in
+      let stga, cstrnta, args', argst = execute_array env stg cstrnt args in
       let stgf, cstrntf, f', ft = match kind f with
       | Ind (ind, s) when Environ.template_polymorphic_pind ind env ->
         let s', stg' = next ~s stga in
-        let t, cstrnt = type_of_inductive_knowing_parameters env ind argst in
-        stg', cstrnt, mkIndUS ind s', t
+        let t, cstrntf = type_of_inductive_knowing_parameters env ind argst in
+        stg', union cstrnta cstrntf, mkIndUS ind s', t
       | _ -> (* No template polymorphism *)
-        execute env stga f
+        execute env stga cstrnta f
       in
       let t, cstrntapp = type_of_apply env f' ft args' argst in
-      let cstrnt = union_list [cstrnta; cstrntf; cstrntapp] in
+      let cstrnt = union cstrntf cstrntapp in
       let cstr = if f == f' && args == args' then cstr else mkApp (f',args') in
       stgf, cstrnt, cstr, t
 
     | Lambda (name,c1,c2) ->
-      let stg1, cstrnt1, c1', s = execute_is_type env stg c1 in
+      let stg1, cstrnt1, c1', s = execute_is_type env stg cstrnt c1 in
       let name' = check_binder_annot s name in
       let env1 = push_rel (LocalAssum (name',c1')) env in
-      let stg2, cstrnt2, c2', c2t = execute env1 stg1 c2 in
-      let cstrnt = union_list [cstrnt1; cstrnt2] in
+      let stg2, cstrnt2, c2', c2t = execute env1 stg1 cstrnt1 c2 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkLambda(name', erase c1',c2') in
-      stg2, cstrnt, cstr, type_of_abstraction env name' c1' c2t
+      stg2, cstrnt2, cstr, type_of_abstraction env name' c1' c2t
 
     | Prod (name,c1,c2) ->
-      let stg1, cstrnt1, c1', vars = execute_is_type env stg c1 in
+      let stg1, cstrnt1, c1', vars = execute_is_type env stg cstrnt c1 in
       let name' = check_binder_annot vars name in
       let env1 = push_rel (LocalAssum (name',c1')) env in
-      let stg2, cstrnt2, c2', vars' = execute_is_type env1 stg1 c2 in
-      let cstrnt = union cstrnt1 cstrnt2 in
+      let stg2, cstrnt2, c2', vars' = execute_is_type env1 stg1 cstrnt1 c2 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' then cstr else mkProd(name',c1',c2') in
-      stg2, cstrnt, cstr, type_of_product env name' vars vars'
+      stg2, cstrnt2, cstr, type_of_product env name' vars vars'
 
     | LetIn (name,c1,c2,c3) ->
-      let stg1, cstrnt1, c1', c1t = execute env stg c1 in
-      let stg2, cstrnt2, c2', c2s = execute_is_type env stg1 c2 in
+      let stg1, cstrnt1, c1', c1t = execute env stg cstrnt c1 in
+      let stg2, cstrnt2, c2', c2s = execute_is_type env stg1 cstrnt1 c2 in
       let name' = check_binder_annot c2s name in
       let cstrnt' = check_cast env c1' c1t DEFAULTcast c2' in
       let env1 = push_rel (LocalDef (name',c1',c2')) env in
-      let stg3, cstrnt3, c3', c3t = execute env1 stg2 c3 in
-      let cstrnt = union_list [cstrnt1; cstrnt2; cstrnt3; cstrnt'] in
+      let stg3, cstrnt3, c3', c3t = execute env1 stg2 (union cstrnt2 cstrnt') c3 in
       let cstr = if name == name' && c1 == c1' && c2 == c2' && c3 == c3' then cstr
         else mkLetIn(name',c1',erase c2',c3')
       in
-      stg3, cstrnt, cstr, subst1 c1 c3t
+      stg3, cstrnt3, cstr, subst1 c1 c3t
 
     | Cast (c,k,t) ->
-      let stgc, cstrntc, c', ct = execute env stg c in
-      let stgt, cstrntt, t', _ts = execute_is_type env stgc t in
+      let stgc, cstrntc, c', ct = execute env stg cstrnt c in
+      let stgt, cstrntt, t', _ts = execute_is_type env stgc cstrntc t in
       let cstrnt' = check_cast env c' ct k t' in
-      let cstrnt = union_list [cstrntc; cstrntt; cstrnt'] in
       let cstr = if c == c' && t == t' then cstr else mkCast(c',k,erase t') in
-      stgt, cstrnt, cstr, t'
+      stgt, union cstrntt cstrnt', cstr, t'
 
     (* Inductive types *)
     | Ind (ind, s) ->
       let s', stg' = next ~s stg in
-      let t, cstrnt = type_of_inductive env ind in
-      stg', cstrnt, mkIndUS ind s', t
+      let t, cstrnt' = type_of_inductive env ind in
+      stg', union cstrnt cstrnt', mkIndUS ind s', t
 
     | Construct (((kn, _), _), _ as c) ->
       let numvars = (lookup_mind kn env).mind_ntypes in
       let ans, stg = next_annots (Some numvars) stg in
-      let t, cstrnt = type_of_constructor env ?ans c in
-      stg, cstrnt, cstr, t
+      let t, cstrnt' = type_of_constructor env ?ans c in
+      stg, union cstrnt cstrnt', cstr, t
 
     | Case (ci,p,c,lf) ->
-      let stgc, cstrntc, c', ct = execute env stg c in
-      let stgp, cstrntp, p', pt = execute env stgc p in
-      let stglf, cstrntlf, lf', lft = execute_array env stgp lf in
+      let stgc, cstrntc, c', ct = execute env stg cstrnt c in
+      let stgp, cstrntp, p', pt = execute env stgc cstrntc p in
+      let stglf, cstrntlf, lf', lft = execute_array env stgp cstrntp lf in
       let stg, ci', t, cstrntci = type_of_case env stglf ci p' pt c' ct lf' lft in
-      let cstrnt = union_list [cstrntc; cstrntp; cstrntlf; cstrntci] in
       let cstr = if ci == ci' && c == c' && p == p' && lf == lf' then cstr
         else mkCase (ci', erase p', c', lf')
       in
-      stg, cstrnt, cstr, t
+      stg, union cstrntlf cstrntci, cstr, t
 
     | Fix ((von, i), (_, lar, _ as recdef)) ->
       let possible_indices =
@@ -675,8 +669,8 @@ let rec execute env stg cstr =
         von lar in
 
       let try_vn vn =
-        let stg, cstnt, cstr, ty = execute_fix env stg ((vn, i), recdef) in
-        raise (Found (State.pop stg, cstnt, cstr, ty)) in
+        let stg, cstrnt, cstr, ty = execute_fix env stg cstrnt ((vn, i), recdef) in
+        raise (Found (State.pop stg, cstrnt, cstr, ty)) in
 
       begin try
         if Int.equal 1 @@ List.length possible_indices then
@@ -689,7 +683,7 @@ let rec execute env stg cstr =
         stg, cstrnt, c, ty
       end
 
-    | CoFix cofix -> execute_cofix env stg cofix
+    | CoFix cofix -> execute_cofix env stg cstrnt cofix
 
     (* Primitive types *)
     | Int _ -> stg, empty (), cstr, type_of_int env
@@ -702,17 +696,17 @@ let rec execute env stg cstr =
     | Evar _ ->
         anomaly (Pp.str "the kernel does not support existential variables.")
 
-and execute_is_type env stg constr =
-  let stg, cstrnt, c, t = execute env stg constr in
+and execute_is_type env stg cstrnt constr =
+  let stg, cstrnt, c, t = execute env stg cstrnt constr in
     stg, cstrnt, c, check_type env constr t
 
 (* Usual inference: Γ ⊢ lar' : lart; Γ (names' : lar') ⊢ vdef : vdeft *)
-and execute_recdef env stg (names, lar, vdef) =
-  let stg_lar, cstrnt_lar, lar', lart = execute_array env stg lar in
+and execute_recdef env stg cstrnt (names, lar, vdef) =
+  let stg_lar, cstrnt_lar, lar', lart = execute_array env stg cstrnt lar in
   let names' = Array.Smart.map_i (fun i na -> check_assumption env na lar'.(i) lart.(i)) names in
   let env1 = push_rec_types (names', lar', vdef) env in (* vdef is ignored *)
-  let stg_vdef, cstrnt_vdef, vdef', vdeft = execute_array env1 stg_lar vdef in
-  stg_vdef, union cstrnt_lar cstrnt_vdef, (names', lar', vdef', vdeft)
+  let stg_vdef, cstrnt_vdef, vdef', vdeft = execute_array env1 stg_lar cstrnt_lar vdef in
+  stg_vdef, cstrnt_vdef, (names', lar', vdef', vdeft)
 
 (* Try RecCheck; if failure, try removing some stage variables from vstar *)
 and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) vars recursivity =
@@ -740,17 +734,17 @@ and execute_rec_check env stg cstrnt cstr (_, lar', _, _ as recdeft) vars recurs
     else stg, cstrnt' in
   try_rec_check stg vars
 
-and execute_fix env stg ((vn, i), (names, lar, vdef)) =
+and execute_fix env stg cstrnt ((vn, i), (names, lar, vdef)) =
   let stg = State.push stg in
-  let _ = execute_array env stg lar in (* check termination of lar so we can reduce *)
+  let _ = execute_array env stg cstrnt lar in (* check termination of lar so we can reduce *)
 
   let stg', cstrnt', (names', lar', vdef', _ as recdeft) =
     let lar_star = set_stars env (get_rec_inds env vn lar) lar in
-    execute_recdef env stg (names, lar_star, vdef) in
+    execute_recdef env stg cstrnt (names, lar_star, vdef) in
 
   let stg_check, cstrnt_check =
     let alphas = get_rec_vars env vn lar' in
-    let vstars, vneq = get_vstar_vneq stg stg' lar' vdef' in
+    let vstars, vneq = get_vstar_vneq stg' lar' vdef' in
     let cstr = mkFixOpt ((vn, i), (names', lar', vdef')) in
     execute_rec_check env stg' cstrnt' cstr recdeft (alphas, vstars, vneq) Finite in
 
@@ -761,17 +755,17 @@ and execute_fix env stg ((vn, i), (names, lar, vdef)) =
 
   check_fix env fix; State.pop stg_check, cstrnt_check, mkFix fix, lar'.(i)
 
-and execute_cofix env stg (i, (names, lar, vdef)) =
+and execute_cofix env stg cstrnt (i, (names, lar, vdef)) =
   let stg = State.push stg in
-  let _ = execute_array env stg lar in (* check termination of lar so we can reduce *)
+  let _ = execute_array env stg cstrnt lar in (* check termination of lar so we can reduce *)
 
   let stg', cstrnt', (names', lar', vdef', _ as recdeft) =
     let lar_star = set_stars env (get_corec_inds env lar) lar in
-    execute_recdef env stg (names, lar_star, vdef) in
+    execute_recdef env stg cstrnt (names, lar_star, vdef) in
 
   let stg_check, cstrnt_check =
     let alphas = get_corec_vars env lar' in
-    let vstars, vneq = get_vstar_vneq stg stg' lar' vdef' in
+    let vstars, vneq = get_vstar_vneq stg' lar' vdef' in
     let cstr = mkCoFix (i, (names', lar', vdef')) in
     execute_rec_check env stg' cstrnt' cstr recdeft (alphas, vstars, vneq) CoFinite in
 
@@ -781,11 +775,11 @@ and execute_cofix env stg (i, (names, lar, vdef)) =
 
   check_cofix env cofix; State.pop stg_check, cstrnt_check, mkCoFix cofix, lar'.(i)
 
-and execute_array env stg cs =
+and execute_array env stg cstrnt cs =
   let tys = Array.make (Array.length cs) mkProp in
   let ((stg, cstrnt), cs) = Array.Smart.fold_left_map_i
     (fun i (stg, cstrnt1) c ->
-      let stg', cstrnt2, c, ty = execute env stg c in
+      let stg', cstrnt2, c, ty = execute env stg cstrnt c in
       tys.(i) <- ty;
       (stg', union cstrnt1 cstrnt2), c)
     (stg, empty ()) cs in
@@ -801,7 +795,7 @@ let check_wellformed_universes env c =
 
 let infer env constr =
   let () = check_wellformed_universes env constr in
-  let stg, _, constr_sized, t_sized = execute env State.init constr in
+  let stg, _, constr_sized, t_sized = execute env State.init (empty ()) constr in
   let constr = erase_infty constr_sized in
   let t = erase_glob (get_pos_vars stg) t_sized in
   make_judge constr t
@@ -821,7 +815,7 @@ let type_judgment env {uj_val=c; uj_type=t} =
 
 let infer_type env constr =
   let () = check_wellformed_universes env constr in
-  let stg, _, constr_sized, t = execute env State.init constr in
+  let stg, _, constr_sized, t = execute env State.init (empty ()) constr in
   let constr = erase_glob (get_pos_vars stg) constr_sized in
   let s = check_type env constr t in
   {utj_val = constr; utj_type = s}

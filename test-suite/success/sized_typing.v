@@ -150,12 +150,10 @@ Fail Fixpoint decr n :=
   | S (S n') => decr (S n')
   end.
 
-(** These illustrate the differences in scoping. *)
+(** Constraint scoping. *)
+(** `outer` used to fail since constraints weren't passed around, but not anymore *)
 
-(* This fails because stage variables outside of a fixpoint
-  are all set to infinity when typechecking the fixpoint
-  and so the type of [id] is [nat^∞ -> nat^∞]. *)
-Fail Definition outer :=
+Definition outer :=
   let id x := x in
   fix f n :=
     match n with
@@ -163,8 +161,6 @@ Fail Definition outer :=
     | S n' => f (id n')
     end.
 
-(* If we don't set the outer stage variables to infinity,
-  this nonterminating definition would typecheck. *)
 Fail Definition outerSucc :=
   let succ x := S x in
   fix f n :=
@@ -173,7 +169,6 @@ Fail Definition outerSucc :=
     | S n' => f (succ n')
     end.
 
-(* This succeeds because [id] is defined inside of the fixpoint. *)
 Definition inner :=
   fix f n :=
     let id x := x in
@@ -182,7 +177,6 @@ Definition inner :=
     | S n' => f (id n')
     end.
 
-(* As a consequence, this nonterminating definition does not typecheck. *)
 Fail Definition innerSucc :=
   fix f n :=
     let succ x := S x in
