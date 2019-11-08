@@ -65,3 +65,5 @@ val waitpid_non_intr : int -> Unix.process_status
 (** Check if two file names refer to the same (existing) file *)
 val same_file : string -> string -> bool
 
+(** Like [Stdlib.Filename.temp_file] but producing a directory. *)
+val mktemp_dir : ?temp_dir:string -> string -> string -> string
