@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2019-11-05-V01"
+# CACHEKEY: "bionic_coq-v8.11-V2019-11-08-V01"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
