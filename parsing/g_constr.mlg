@@ -244,17 +244,17 @@ GRAMMAR EXTEND Gram
       ] ]
   ;
   record_declaration:
-    [ [ fs = record_fields -> { CAst.make ~loc @@ CRecord fs } ] ]
+    [ [ fs = record_fields_instance -> { CAst.make ~loc @@ CRecord fs } ] ]
   ;
 
-  record_fields:
-    [ [ f = record_field_declaration; ";"; fs = record_fields -> { f :: fs }
-      | f = record_field_declaration -> { [f] }
+  record_fields_instance:
+    [ [ f = record_field_instance; ";"; fs = record_fields_instance -> { f :: fs }
+      | f = record_field_instance -> { [f] }
       | -> { [] }
     ] ]
   ;
 
-  record_field_declaration:
+  record_field_instance:
     [ [ id = global; bl = binders; ":="; c = lconstr ->
       { (id, mkLambdaCN ~loc bl c) } ] ]
   ;
