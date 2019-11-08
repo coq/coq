@@ -2764,7 +2764,7 @@ typeclass inference.
 
 .. flag:: SsrHave NoTCResolution
 
-   This option restores the behavior of |SSR| 1.4 and below (never resolve typeclasses).
+   This flag restores the behavior of |SSR| 1.4 and below (never resolve typeclasses).
 
 Variants: the suff and wlog tactics
 ```````````````````````````````````

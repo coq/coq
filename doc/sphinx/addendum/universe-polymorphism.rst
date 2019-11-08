@@ -129,12 +129,12 @@ Polymorphic, Monomorphic
 
 .. flag:: Universe Polymorphism
 
-   Once enabled, this option will implicitly prepend ``Polymorphic`` to any
+   Once enabled, this flag will implicitly prepend ``Polymorphic`` to any
    definition of the user.
 
 .. cmd:: Monomorphic @definition
 
-   When the :flag:`Universe Polymorphism` option is set, to make a definition
+   When the :flag:`Universe Polymorphism` flag is set, to make a definition
    producing global universe constraints, one can use the ``Monomorphic`` prefix.
 
 Many other commands support the ``Polymorphic`` flag, including:
@@ -162,8 +162,8 @@ declared cumulative using the :g:`Cumulative` prefix.
 
    Declares the inductive as cumulative
 
-Alternatively, there is a flag :flag:`Polymorphic Inductive
-Cumulativity` which when set, makes all subsequent *polymorphic*
+Alternatively, there is a :flag:`Polymorphic Inductive
+Cumulativity` flag which when set, makes all subsequent *polymorphic*
 inductive definitions cumulative.  When set, inductive types and the
 like can be enforced to be non-cumulative using the :g:`NonCumulative`
 prefix.
@@ -174,7 +174,7 @@ prefix.
 
 .. flag:: Polymorphic Inductive Cumulativity
 
-   When this option is on, it sets all following polymorphic inductive
+   When this flag is on, it sets all following polymorphic inductive
    types as cumulative (it is off by default).
 
 Consider the examples below.
@@ -222,8 +222,8 @@ Cumulative inductive types, coinductive types, variants and records
 only make sense when they are universe polymorphic. Therefore, an
 error is issued whenever the user uses the :g:`Cumulative` or
 :g:`NonCumulative` prefix in a monomorphic context.
-Notice that this is not the case for the option :flag:`Polymorphic Inductive Cumulativity`.
-That is, this option, when set, makes all subsequent *polymorphic*
+Notice that this is not the case for the :flag:`Polymorphic Inductive Cumulativity` flag.
+That is, this flag, when set, makes all subsequent *polymorphic*
 inductive declarations cumulative (unless, of course the :g:`NonCumulative` prefix is used)
 but has no effect on *monomorphic* inductive declarations.
 
@@ -439,7 +439,7 @@ underscore or by omitting the annotation to a polymorphic definition.
 
 .. flag:: Strict Universe Declaration
 
-   Turning this option off allows one to freely use
+   Turning this flag off allows one to freely use
    identifiers for universes without declaring them first, with the
    semantics that the first use declares it. In this mode, the universe
    names are not associated with the definition or proof once it has been
@@ -447,7 +447,7 @@ underscore or by omitting the annotation to a polymorphic definition.
 
 .. flag:: Private Polymorphic Universes
 
-   This option, on by default, removes universes which appear only in
+   This flag, on by default, removes universes which appear only in
    the body of an opaque polymorphic definition from the definition's
    universe arguments. As such, no value needs to be provided for
    these universes when instantiating the definition. Universe
@@ -480,7 +480,7 @@ underscore or by omitting the annotation to a polymorphic definition.
       About foo.
 
    To recover the same behaviour with regard to universes as
-   :g:`Defined`, the option :flag:`Private Polymorphic Universes` may
+   :g:`Defined`, the :flag:`Private Polymorphic Universes` flag may
    be unset:
 
    .. coqtop:: all

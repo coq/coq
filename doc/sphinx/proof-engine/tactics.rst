@@ -261,7 +261,7 @@ These patterns can be used when the hypothesis is an equality:
    conjunctive pattern that doesn't give enough simple patterns to match
    all the arguments in the constructor.  If set (the default), |Coq| generates
    additional names to match the number of arguments.
-   Unsetting the option will put the additional hypotheses in the goal instead, behavior that is more
+   Unsetting the flag will put the additional hypotheses in the goal instead, behavior that is more
    similar to |SSR|'s intro patterns.
 
    .. deprecated:: 8.10
@@ -477,7 +477,7 @@ that occurrences have to be selected in the hypotheses named :token:`ident`.
 If no numbers are given for hypothesis :token:`ident`, then all the
 occurrences of :token:`term` in the hypothesis are selected. If numbers are
 given, they refer to occurrences of :token:`term` when the term is printed
-using option :flag:`Printing All`, counting from left to right. In particular,
+using the :flag:`Printing All` flag, counting from left to right. In particular,
 occurrences of :token:`term` in implicit arguments
 (see :ref:`ImplicitArguments`) or coercions (see :ref:`Coercions`) are
 counted.
@@ -804,11 +804,11 @@ Applying theorems
    component of the tuple matches the goal, it excludes components whose
    statement would result in applying an universal lemma of the form
    ``forall A, ... -> A``. Excluding this kind of lemma can be avoided by
-   setting the following option:
+   setting the following flag:
 
 .. flag:: Universal Lemma Under Conjunction
 
-   This option, which preserves compatibility with versions of Coq prior to
+   This flag, which preserves compatibility with versions of Coq prior to
    8.4 is also available for :n:`apply @term in @ident` (see :tacn:`apply ... in`).
 
 .. tacn:: apply @term in @ident
@@ -1527,7 +1527,7 @@ name of the variable (here :g:`n`) is chosen based on :g:`T`.
 
    This is equivalent to :n:`generalize @term` but it generalizes only over the
    specified occurrences of :n:`@term` (counting from left to right on the
-   expression printed using option :flag:`Printing All`).
+   expression printed using the :flag:`Printing All` flag).
 
 .. tacv:: generalize @term as @ident
 
@@ -2300,16 +2300,16 @@ and an explanation of the underlying technique.
 
    .. flag:: Structural Injection
 
-      This option ensure that :n:`injection @term` erases the original hypothesis
+      This flag ensures that :n:`injection @term` erases the original hypothesis
       and leaves the generated equalities in the context rather than putting them
       as antecedents of the current goal, as if giving :n:`injection @term as`
-      (with an empty list of names). This option is off by default.
+      (with an empty list of names). This flag is off by default.
 
    .. flag:: Keep Proof Equalities
 
       By default, :tacn:`injection` only creates new equalities between :n:`@term`\s
       whose type is in sort :g:`Type` or :g:`Set`, thus implementing a special
-      behavior for objects that are proofs of a statement in :g:`Prop`. This option
+      behavior for objects that are proofs of a statement in :g:`Prop`. This flag
       controls this behavior.
 
 .. tacn:: inversion @ident
@@ -2862,26 +2862,26 @@ simply :g:`t=u` dropping the implicit type of :g:`t` and :g:`u`.
 
    .. flag:: Regular Subst Tactic
 
-      This option controls the behavior of :tacn:`subst`. When it is
+      This flag controls the behavior of :tacn:`subst`. When it is
       activated (it is by default), :tacn:`subst` also deals with the following corner cases:
 
       + A context with ordered hypotheses :n:`@ident`:sub:`1` :n:`= @ident`:sub:`2`
         and :n:`@ident`:sub:`1` :n:`= t`, or :n:`t′ = @ident`:sub:`1`` with `t′` not
         a variable, and no other hypotheses of the form :n:`@ident`:sub:`2` :n:`= u`
-        or :n:`u = @ident`:sub:`2`; without the option, a second call to
+        or :n:`u = @ident`:sub:`2`; without the flag, a second call to
         subst would be necessary to replace :n:`@ident`:sub:`2` by `t` or
         `t′` respectively.
-      + The presence of a recursive equation which without the option would
+      + The presence of a recursive equation which without the flag would
         be a cause of failure of :tacn:`subst`.
       + A context with cyclic dependencies as with hypotheses :n:`@ident`:sub:`1` :n:`= f @ident`:sub:`2`
         and :n:`@ident`:sub:`2` :n:`= g @ident`:sub:`1` which without the
-        option would be a cause of failure of :tacn:`subst`.
+        flag would be a cause of failure of :tacn:`subst`.
 
       Additionally, it prevents a local definition such as :n:`@ident := t` to be
       unfolded which otherwise it would exceptionally unfold in configurations
       containing hypotheses of the form :n:`@ident = u`, or :n:`u′ = @ident`
       with `u′` not a variable. Finally, it preserves the initial order of
-      hypotheses, which without the option it may break.
+      hypotheses, which without the flag it may break.
       default.
 
 
@@ -3086,7 +3086,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
    .. flag:: NativeCompute Profiling
 
-      On Linux, if you have the ``perf`` profiler installed, this option makes
+      On Linux, if you have the ``perf`` profiler installed, this flag makes
       it possible to profile :tacn:`native_compute` evaluations.
 
    .. opt:: NativeCompute Profile Filename @string
@@ -3103,7 +3103,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
 .. flag:: Debug Cbv
 
-   This option makes :tacn:`cbv` (and its derivative :tacn:`compute`) print
+   This flag makes :tacn:`cbv` (and its derivative :tacn:`compute`) print
    information about the constants it encounters and the unfolding decisions it
    makes.
 
@@ -3271,7 +3271,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
 .. flag:: Debug RAKAM
 
-   This option makes :tacn:`cbn` print various debugging information.
+   This flag makes :tacn:`cbn` print various debugging information.
    ``RAKAM`` is the Refolding Algebraic Krivine Abstract Machine.
 
 .. tacn:: unfold @qualid
@@ -3548,7 +3548,7 @@ Automation
           Info Trivial
           Debug Trivial
 
-   These options enable printing of informative or debug information for
+   These flags enable printing of informative or debug information for
    the :tacn:`auto` and :tacn:`trivial` tactics.
 
 .. tacn:: eauto
@@ -3576,7 +3576,7 @@ Automation
 
       The various options for :tacn:`eauto` are the same as for :tacn:`auto`.
 
-   :tacn:`eauto` also obeys the following options:
+   :tacn:`eauto` also obeys the following flags:
 
    .. flag:: Info Eauto
              Debug Eauto
@@ -3720,7 +3720,7 @@ automatically created.
    .. cmdv:: Local Hint @hint_definition : {+ @ident}
 
       This is used to declare hints that must not be exported to the other modules
-      that require and import the current module. Inside a section, the option
+      that require and import the current module. Inside a section, the flag
       Local is useless since hints do not survive anyway to the closure of
       sections.
 
@@ -4196,7 +4196,7 @@ some incompatibilities.
 .. flag:: Intuition Negation Unfolding
 
    Controls whether :tacn:`intuition` unfolds inner negations which do not need
-   to be unfolded. This option is on by default.
+   to be unfolded. This flag is on by default.
 
 .. tacn:: rtauto
    :name: rtauto
@@ -4316,7 +4316,7 @@ some incompatibilities.
 
 .. flag:: Congruence Verbose
 
-  This option makes :tacn:`congruence` print debug information.
+  This flag makes :tacn:`congruence` print debug information.
 
 
 Checking properties of terms

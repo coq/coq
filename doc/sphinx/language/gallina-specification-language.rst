@@ -779,7 +779,7 @@ Simple inductive types
       The types of the constructors have to satisfy a *positivity condition*
       (see Section :ref:`positivity`). This condition ensures the soundness of
       the inductive definition. The positivity checking can be disabled using
-      the option :flag:`Positivity Checking` (see :ref:`controlling-typing-flags`).
+      the :flag:`Positivity Checking` flag (see :ref:`controlling-typing-flags`).
 
    .. exn:: The conclusion of @type is not valid; it must be built from @ident.
 
@@ -956,7 +956,7 @@ Parameterized inductive types
 
 .. flag:: Uniform Inductive Parameters
 
-     When this option is set (it is off by default),
+     When this flag is set (it is off by default),
      inductive definitions are abstracted over their parameters
      before type checking constructors, allowing to write:
 
@@ -991,7 +991,7 @@ Variants
    The :cmd:`Variant` command is identical to the :cmd:`Inductive` command, except
    that it disallows recursive definition of types (for instance, lists cannot
    be defined using :cmd:`Variant`). No induction scheme is generated for
-   this variant, unless option :flag:`Nonrecursive Elimination Schemes` is on.
+   this variant, unless the :flag:`Nonrecursive Elimination Schemes` flag is on.
 
    .. exn:: The @num th argument of @ident must be @ident in @type.
       :undocumented:
@@ -1393,11 +1393,11 @@ Chapter :ref:`Tactics`. The basic assertion command is:
       The name you provided is already defined. You have then to choose
       another name.
 
-   .. exn:: Nested proofs are not allowed unless you turn option Nested Proofs Allowed on.
+   .. exn:: Nested proofs are not allowed unless you turn the :flag:`Nested Proofs Allowed` flag on.
 
       You are asserting a new statement while already being in proof editing mode.
       This feature, called nested proofs, is disabled by default.
-      To activate it, turn option :flag:`Nested Proofs Allowed` on.
+      To activate it, turn the :flag:`Nested Proofs Allowed` flag on.
 
    .. cmdv:: Lemma @ident {? @binders } : @type
              Remark @ident {? @binders } : @type
@@ -1470,8 +1470,8 @@ using the keyword :cmd:`Qed`.
 
 .. note::
 
-   #. Several statements can be simultaneously asserted provided option
-      :flag:`Nested Proofs Allowed` was turned on.
+   #. Several statements can be simultaneously asserted provided the
+      :flag:`Nested Proofs Allowed` flag was turned on.
 
    #. Not only other assertions but any vernacular command can be given
       while in the process of proving a given assertion. In this case, the
