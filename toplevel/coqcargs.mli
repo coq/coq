@@ -10,7 +10,7 @@
 
 (** Compilation modes:
   - BuildVo      : process statements and proofs (standard compilation),
-                   and also output an empty .vos file
+                   and also output an empty .vos file and .vok file
   - BuildVio     : process statements, delay proofs in futures
   - Vio2Vo       : load delayed proofs and process them
   - BuildVos     : process statements, and discard proofs,

@@ -22,6 +22,5 @@ sort > desired <<EOT
 ./test/test_plugin.cmxs
 ./test/test.v
 ./test/test.vo
-./test/test.vos
 EOT
 exec diff -u desired actual
