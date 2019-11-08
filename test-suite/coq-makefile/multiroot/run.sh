@@ -29,12 +29,10 @@ sort > desired <<EOT
 ./test/test_plugin.cmxs
 ./test/test.v
 ./test/test.vo
-./test/test.vos
 ./test2
 ./test2/test.glob
 ./test2/test.v
 ./test2/test.vo
-./test2/test.vos
 ./orphan_test_test2_test
 ./orphan_test_test2_test/html
 ./orphan_test_test2_test/html/coqdoc.css

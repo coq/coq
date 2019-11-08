@@ -140,12 +140,10 @@ let select_vo_file ~warn loadpath base =
     with Not_found -> None in
   if !Flags.load_vos_libraries then begin
     (* If the .vos file exists and is not empty, it describes the library.
-       If the .vos file exists and is empty, then load the .vo file.
-       If the .vos file is missing, then fail. *)
+       Otherwise, load the .vo file, or fail if is missing. *)
     match find ".vos" with
-    | None -> Error LibNotFound
-    | Some (_, vos as resvos) ->
-        if (Unix.stat vos).Unix.st_size > 0 then Ok resvos else
+    | Some (_, vos as resvos) when (Unix.stat vos).Unix.st_size > 0 -> Ok resvos
+    | _ ->
         match find ".vo" with
         | None -> Error LibNotFound
         | Some resvo -> Ok resvo

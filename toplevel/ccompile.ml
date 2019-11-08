@@ -150,8 +150,11 @@ let compile opts copts ~echo ~f_in ~f_out =
       Aux_file.record_in_aux_at "vo_compile_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
-      (* Produce an empty .vos file when producing a .vo in standard mode *)
-      if mode = BuildVo then create_empty_file (long_f_dot_out ^ "s");
+      (* Produce an empty .vos file and an empty .vok file when producing a .vo in standard mode *)
+      if mode = BuildVo then begin
+        create_empty_file (long_f_dot_out ^ "s");
+        create_empty_file (long_f_dot_out ^ "k");
+      end;
       (* Produce an empty .vok file when in -vok mode *)
       if mode = BuildVok then create_empty_file (long_f_dot_out);
       Dumpglob.end_dump_glob ()
