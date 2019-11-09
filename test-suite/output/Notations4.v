@@ -140,3 +140,17 @@ Record R := { n : nat }.
 Check fun '{|n:=x|} => true.
 
 End EmptyRecordSyntax.
+
+Module L.
+
+(* Testing regression #11053 *)
+
+Section Test.
+Variables (A B : Type) (a : A) (b : B).
+Variable c : A -> B.
+Coercion c : A >-> B.
+Notation COERCION := (c).
+Check b = a.
+End Test.
+
+End L.

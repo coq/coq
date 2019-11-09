@@ -1,0 +1,1 @@
+- Fixed #11033: regression in not printing coercions to which is also associated a notation (`#11090 <https://github.com/coq/coq/pull/11090>`_, by Hugo Herbelin).
