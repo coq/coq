@@ -79,7 +79,7 @@ val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Future.
  * Both access the current proof state. The former is supposed to be
  * chained with a computation that completed the proof *)
 
-type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
+type closed_proof_output
 
 (* If allow_partial is set (default no) then an incomplete proof
  * is allowed (no error), and a warn is given if the proof is complete. *)
