@@ -550,14 +550,14 @@ let is_gvar id c = match DAst.get c with
 | GVar id' -> Id.equal id id'
 | _ -> false
 
-let is_projection nargs = function
-  | Some r when not !Flags.in_debugger && not !Flags.raw_print && !print_projections ->
-    (try
-       let n = Recordops.find_projection_nparams r + 1 in
-         if n <= nargs then Some n
-         else None
-     with Not_found -> None)
-  | _ -> None
+let is_projection nargs r =
+  if not !Flags.in_debugger && not !Flags.raw_print && !print_projections then
+    try
+      let n = Recordops.find_projection_nparams r + 1 in
+      if n <= nargs then Some n
+      else None
+    with Not_found -> None
+  else None
 
 let is_hole = function CHole _ | CEvar _ -> true | _ -> false
 
@@ -569,11 +569,12 @@ let is_needed_for_correct_partial_application tail imp =
 
 exception Expl
 
-(* Implicit args indexes are in ascending order *)
-(* inctx is useful only if there is a last argument to be deduced from ctxt *)
-let explicitize inctx impl (cf,f) args =
-  let impl = if !Constrintern.parsing_explicit then [] else impl in
-  let n = List.length args in
+(* Take a list of arguments starting at position [q] and their implicit status *)
+(* Decide for each implicit argument if it skipped or made explicit *)
+(* If the removal of implicit arguments is not possible, raise [Expl] *)
+(* [inctx] tells if the term is in a context which will enforce the external type *)
+(* [n] is the total number of arguments block to which the [args] belong *)
+let adjust_implicit_arguments inctx n q args impl =
   let rec exprec q = function
     | a::args, imp::impl when is_status_implicit imp ->
         let tail = exprec (q+1) (args,impl) in
@@ -595,10 +596,11 @@ let explicitize inctx impl (cf,f) args =
       (* The non-explicit application cannot be parsed back with the same type *)
       raise Expl
     | [], _ -> []
-  in
+  in exprec q (args,impl)
+
+let extern_projection (cf,f) args impl =
   let ip = is_projection (List.length args) cf in
-  let expl () =
-    match ip with
+  match ip with
     | Some i ->
       (* Careful: It is possible to have declared implicits ending
          before the principal argument *)
@@ -607,34 +609,18 @@ let explicitize inctx impl (cf,f) args =
         with Failure _ -> false
       in
       if is_impl
-      then raise Expl
+      then None
       else
         let (args1,args2) = List.chop i args in
         let (impl1,impl2) = try List.chop i impl with Failure _ -> impl, [] in
-        let args1 = exprec 1 (args1,impl1) in
-        let args2 = exprec (i+1) (args2,impl2) in
-        let ip = Some (List.length args1) in
-          CApp ((ip,f),args1@args2)
-    | None ->
-      let args = exprec 1 (args,impl) in
-        if List.is_empty args then f.CAst.v else
-          match f.CAst.v with
-          | CApp (g,args') ->
-              (* may happen with notations for a prefix of an n-ary
-                 application *)
-              CApp (g,args'@args)
-          | _ -> CApp ((None, f), args) in
-    try expl ()
-    with Expl ->
-      let f',us = match f with { CAst.v = CRef (f,us) } -> f,us | _ -> assert false in
-      let ip = if !print_projections then ip else None in
-        CAppExpl ((ip, f', us), List.map Lazy.force args)
+        Some (i,(args1,impl1),(args2,impl2))
+    | None -> None
 
 let is_start_implicit = function
   | imp :: _ -> is_status_implicit imp && maximal_insertion_of imp
   | [] -> false
 
-let extern_record ?loc extern vars ref args =
+let extern_record ref args =
   try
     if !Flags.raw_print then raise Exit;
     let cstrsp = match ref with GlobRef.ConstructRef c -> c | _ -> raise Not_found in
@@ -668,9 +654,11 @@ let extern_record ?loc extern vars ref args =
             match args with
             | [] -> raise No_match
             (* we give up since the constructor is not complete *)
-            | (arg, scopes) :: tail ->
-               let head = extern true scopes vars arg in
-               ip q locs' tail ((extern_reference ?loc Id.Set.empty (GlobRef.ConstRef c), head) :: acc)
+            | arg :: tail ->
+               let arg = Lazy.force arg in
+               let loc = arg.CAst.loc in
+               let ref = extern_reference ?loc Id.Set.empty (GlobRef.ConstRef c) in
+               ip q locs' tail ((ref, arg) :: acc)
     in
     Some (List.rev (ip projs locals args []))
   with
@@ -683,19 +671,63 @@ let extern_global impl f us =
   else
     CRef (f,us)
 
-let extern_app inctx impl (cf,f) us args =
-  if List.is_empty args then
-    (* If coming from a notation "Notation a := @b" *)
-    CAppExpl ((None, f, us), [])
-  else if not !Constrintern.parsing_explicit &&
-    ((!Flags.raw_print ||
-      (!print_implicits && not !print_implicits_explicit_args)) &&
-     List.exists is_status_implicit impl)
-  then
+(* Implicit args indexes are in ascending order *)
+(* inctx is useful only if there is a last argument to be deduced from ctxt *)
+let extern_applied_ref inctx impl (cf,f) us args =
+  let isproj = is_projection (List.length args) cf in
+  try
+    if not !Constrintern.parsing_explicit &&
+       ((!Flags.raw_print ||
+         (!print_implicits && not !print_implicits_explicit_args)) &&
+        List.exists is_status_implicit impl)
+    then raise Expl;
+    let impl = if !Constrintern.parsing_explicit then [] else impl in
+    let n = List.length args in
+    let ref = CRef (f,us) in
+    let f = CAst.make ref in
+    match extern_projection (cf,f) args impl with
+    (* Try a [t.(f args1) args2] projection-style notation *)
+    | Some (i,(args1,impl1),(args2,impl2)) ->
+      let args1 = adjust_implicit_arguments inctx n 1 args1 impl1 in
+      let args2 = adjust_implicit_arguments inctx n (i+1) args2 impl2 in
+      let ip = Some (List.length args1) in
+      CApp ((ip,f),args1@args2)
+      (* A normal application node with each individual implicit
+         arguments either dropped or made explicit *)
+    | None ->
+      let args = adjust_implicit_arguments inctx n 1 args impl in
+      if args = [] then ref else CApp ((None, f), args)
+  with Expl ->
+  (* A [@f args] node *)
     let args = List.map Lazy.force args in
-    CAppExpl ((is_projection (List.length args) cf,f,us), args)
+    let isproj = if !print_projections then isproj else None in
+    CAppExpl ((isproj,f,us), args)
+
+let extern_applied_syntactic_definition n extraimpl (cf,f) syndefargs extraargs =
+  try
+    let syndefargs = List.map (fun a -> (a,None)) syndefargs in
+    let extraargs = adjust_implicit_arguments false (List.length extraargs) 1 extraargs extraimpl in
+    let args = syndefargs @ extraargs in
+    if args = [] then cf else CApp ((None, CAst.make cf), args)
+  with Expl ->
+    let args = syndefargs @ List.map Lazy.force extraargs in
+    CAppExpl ((None,f,None), args)
+
+let mkFlattenedCApp (head,args) =
+  match head.CAst.v with
+  | CApp (g,args') ->
+    (* may happen with notations for a prefix of an n-ary application *)
+    (* or after removal of a coercion to funclass *)
+    CApp (g,args'@args)
+  | _ ->
+    CApp ((None, head), args)
+
+let extern_applied_notation n impl f args =
+  if List.is_empty args then
+    f.CAst.v
   else
-    explicitize inctx impl (cf, CAst.make @@ CRef (f,us)) args
+    let args = adjust_implicit_arguments false (List.length args) 1 args impl in
+    mkFlattenedCApp (f,args)
 
 let rec fill_arg_scopes args subscopes (entry,(_,scopes) as all) = match args, subscopes with
 | [], _ -> []
@@ -880,18 +912,19 @@ let rec extern inctx scopes vars r =
          | GRef (ref,us) ->
              let subscopes = find_arguments_scope ref in
              let args = fill_arg_scopes args subscopes scopes in
-             begin
-               match extern_record ?loc extern vars ref args with
-               | Some l -> CRecord l
-               | None ->
-                 let args = extern_args (extern true) vars args in
-                 extern_app inctx
-                   (select_stronger_impargs (implicits_of_global ref))
-                   (Some ref,extern_reference ?loc vars ref) (extern_universes us) args
-             end
-         | _       ->
-           explicitize inctx [] (None,sub_extern false scopes vars f)
-             (List.map (fun c -> lazy (sub_extern true scopes vars c)) args))
+             let args = extern_args (extern true) vars args in
+             (* Try a "{|...|}" record notation *)
+             (match extern_record ref args with
+             | Some l -> CRecord l
+             | None ->
+             (* Otherwise... *)
+               extern_applied_ref inctx
+                 (select_stronger_impargs (implicits_of_global ref))
+                 (ref,extern_reference ?loc vars ref) (extern_universes us) args)
+         | _ ->
+             let args = List.map (fun c -> (sub_extern true scopes vars c,None)) args in
+             let head = sub_extern false scopes vars f in
+             mkFlattenedCApp (head,args))
 
   | GLetIn (na,b,t,c) ->
       CLetIn (make ?loc na,sub_extern false scopes vars b,
@@ -1109,7 +1142,7 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
       try
         if is_inactive_rule keyrule then raise No_match;
         (* Adjusts to the number of arguments expected by the notation *)
-        let (t,args,argsscopes,argsimpls) = match DAst.get t ,n with
+        let (t,args,nallargs,argsscopes,argsimpls) = match DAst.get t ,n with
           | GApp (f,args), Some n
               when List.length args >= n ->
               let args1, args2 = List.chop n args in
@@ -1128,7 +1161,7 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
                 | _ ->
                   [], [] in
               (if Int.equal n 0 then f else DAst.make @@ GApp (f,args1)),
-              args2, subscopes, impls
+              args2, List.length args, subscopes, impls
           | GApp (f, args), None ->
             begin match DAst.get f with
             | GRef (ref,us) ->
@@ -1136,18 +1169,17 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
               let impls =
                   select_impargs_size
                     (List.length args) (implicits_of_global ref) in
-              f, args, subscopes, impls
-            | _ -> t, [], [], []
+              f, args, List.length args, subscopes, impls
+            | _ -> t, [], 0, [], []
             end
-          | GRef (ref,us), Some 0 -> DAst.make @@ GApp (t,[]), [], [], []
-          | _, None -> t, [], [], []
+          | GRef (ref,us), Some 0 -> DAst.make @@ GApp (t,[]), [], 0, [], []
+          | _, None -> t, [], 0, [], []
           | _ -> raise No_match in
         (* Try matching ... *)
         let terms,termlists,binders,binderlists =
           match_notation_constr !print_universes t pat in
         (* Try availability of interpretation ... *)
-        let e =
-          match keyrule with
+        match keyrule with
           | NotationRule (sc,ntn) ->
              (match availability_of_entry_coercion custom (fst ntn) with
              | None -> raise No_match
@@ -1175,22 +1207,25 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
                     List.map (fun (bl,(subentry,(scopt,scl))) ->
                       pi3 (extern_local_binder (subentry,(scopt,scl@scopes')) vars bl))
                       binderlists in
-                  insert_coercion coercion (insert_delimiters (make_notation loc ntn (l,ll,bl,bll)) key))
+                  let c = make_notation loc ntn (l,ll,bl,bll) in
+                  let c = insert_coercion coercion (insert_delimiters c key) in
+                  let args = fill_arg_scopes args argsscopes allscopes in
+                  let args = extern_args (extern true) vars args in
+                  CAst.make ?loc @@ extern_applied_notation nallargs argsimpls c args)
           | SynDefRule kn ->
              match availability_of_entry_coercion custom InConstrEntrySomeLevel with
              | None -> raise No_match
              | Some coercion ->
               let l =
                 List.map (fun (c,(subentry,(scopt,scl))) ->
-                  extern true (subentry,(scopt,scl@snd scopes)) vars c, None)
+                  extern true (subentry,(scopt,scl@snd scopes)) vars c)
                   terms in
-              let a = CRef (Nametab.shortest_qualid_of_syndef ?loc vars kn,None) in
-              insert_coercion coercion (CAst.make ?loc @@ if List.is_empty l then a else CApp ((None, CAst.make a),l)) in
-        if List.is_empty args then e
-        else
-          let args = fill_arg_scopes args argsscopes allscopes in
-          let args = extern_args (extern true) vars args in
-          CAst.make ?loc @@ explicitize false argsimpls (None,e) args
+              let cf = Nametab.shortest_qualid_of_syndef ?loc vars kn in
+              let a = CRef (cf,None) in
+              let args = fill_arg_scopes args argsscopes allscopes in
+              let args = extern_args (extern true) vars args in
+              let c = CAst.make ?loc @@ extern_applied_syntactic_definition nallargs argsimpls (a,cf) l args in
+              insert_coercion coercion c
       with
           No_match -> extern_notation allscopes vars t rules
 
