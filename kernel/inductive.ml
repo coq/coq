@@ -1124,9 +1124,10 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
         | _ -> raise_err env i NotEnoughAbstractionInFixBody
     in
     let ((ind, _), _) as res = check_occur fixenv 1 def in
-    let _, ind = lookup_mind_specif env ind in
+    let _, mip = lookup_mind_specif env ind in
     (* recursive sprop means non record with projections -> squashed *)
-    if Sorts.Irrelevant == ind.mind_relevance
+    if mip.mind_relevance == Sorts.Irrelevant &&
+       not (Environ.is_type_in_type env (GlobRef.IndRef ind))
     then
       begin
         if names.(i).Context.binder_relevance == Sorts.Relevant
