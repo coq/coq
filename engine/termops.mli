@@ -99,6 +99,10 @@ val local_occur_var_in_decl : Evd.evar_map -> Id.t -> named_declaration -> bool
 
 val free_rels : Evd.evar_map -> constr -> Int.Set.t
 
+(* Return the list of unbound rels and unqualified reference (same
+   strategy as in Namegen) *)
+val free_rels_and_unqualified_refs : Evd.evar_map -> constr -> Int.Set.t * Id.Set.t
+
 (** [dependent m t] tests whether [m] is a subterm of [t] *)
 val dependent : Evd.evar_map -> constr -> constr -> bool
 val dependent_no_evar : Evd.evar_map -> constr -> constr -> bool
