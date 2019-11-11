@@ -677,7 +677,7 @@ let adjust_implicit_arguments inctx n args impl =
            is_significant_implicit (Lazy.force a))
         in
         if visible then
-          (Lazy.force a,Some (make @@ ExplByName (name_of_implicit imp))) :: tail
+          (Lazy.force a,Some (make @@ explicitation imp)) :: tail
         else
           tail
     | a::args, _::impl -> (Lazy.force a,None) :: exprec (args,impl)

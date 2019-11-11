@@ -214,10 +214,11 @@ let tag_var = tag Tag.variable
   let pr_expl_args pr (a,expl) =
     match expl with
       | None -> pr (LevelLt lapp) a
-      | Some {v=ExplByPos (n,_id)} ->
-        anomaly (Pp.str "Explicitation by position not implemented.")
-      | Some {v=ExplByName id} ->
-        str "(" ++ pr_id id ++ str ":=" ++ pr ltop a ++ str ")"
+      | Some {v=pos} ->
+        let pr_pos = function
+          | ExplByName id -> pr_id id
+          | ExplByPos p -> int p in
+        str "(" ++ pr_pos pos ++ str ":=" ++ pr ltop a ++ str ")"
 
   let pr_opt_type_spc pr = function
     | { CAst.v = CHole (_,IntroAnonymous,_) } -> mt ()

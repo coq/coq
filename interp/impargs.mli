@@ -68,7 +68,9 @@ type maximal_insertion = bool (** true = maximal contextual insertion *)
 
 type force_inference = bool (** true = always infer, never turn into evar/subgoal *)
 
-type implicit_status = (Constrexpr.explicitation * implicit_explanation *
+type implicit_position = Name.t * int * int option
+
+type implicit_status = (implicit_position * implicit_explanation *
                           (maximal_insertion * force_inference)) option
     (** [None] = Not implicit *)
 
@@ -80,8 +82,11 @@ val is_status_implicit : implicit_status -> bool
 val binding_kind_of_status : implicit_status -> Glob_term.binding_kind
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
 val name_of_implicit : implicit_status -> Id.t
+val match_implicit : implicit_status -> Constrexpr.explicitation -> bool
 val maximal_insertion_of : implicit_status -> bool
 val force_inference_of : implicit_status -> bool
+val is_nondep_implicit : int -> implicit_status list -> bool
+val explicitation : implicit_status -> Constrexpr.explicitation
 
 val positions_of_implicits : implicits_list -> int list
 
@@ -90,7 +95,7 @@ type manual_implicits = (Name.t * bool) option CAst.t list
 val compute_implicits_with_manual : env -> Evd.evar_map -> types -> bool ->
   manual_implicits -> implicit_status list
 
-val compute_implicits_names : env -> Evd.evar_map -> types -> Name.t list
+val compute_implicits_names : env -> Evd.evar_map -> types -> implicit_position list
 
 (** {6 Computation of implicits (done using the global environment). } *)
 
