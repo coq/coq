@@ -38,6 +38,9 @@ sig
   val for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   (** Same as [List.for_all2] but returning [false] when of different length *)
 
+  val exists_i : (int -> 'a -> bool) -> int -> 'a list -> bool
+  (** Same as [List.exists] but with an index *)
+
   val prefix_of : 'a eq -> 'a list eq
   (** [prefix_of eq l1 l2] returns [true] if [l1] is a prefix of [l2], [false]
       otherwise. It uses [eq] to compare elements *)
