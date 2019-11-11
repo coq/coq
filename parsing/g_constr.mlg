@@ -393,7 +393,6 @@ GRAMMAR EXTEND Gram
   ;
   record_patterns:
     [ [ p = record_pattern; ";"; ps = record_patterns -> { p :: ps }
-      | p = record_pattern; ";" -> { [p] }
       | p = record_pattern-> { [p] }
       | -> { [] }
     ] ]

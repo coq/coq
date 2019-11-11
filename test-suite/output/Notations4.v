@@ -133,3 +133,10 @@ Check fun y : nat => # (x,z) |-> y & y.
 Check fun y : nat => # (x,z) |-> (x + y) & (y + z).
 
 End K.
+
+Module EmptyRecordSyntax.
+
+Record R := { n : nat }.
+Check fun '{|n:=x|} => true.
+
+End EmptyRecordSyntax.

@@ -249,7 +249,8 @@ let tag_var = tag Tag.variable
         let pp (c, p) =
           pr_reference c ++ spc() ++ str ":=" ++ pr_patt spc (lpatrec, Any) p
         in
-        str "{| " ++ prlist_with_sep pr_semicolon pp l ++ str " |}", lpatrec
+        (if l = [] then str "{| |}"
+         else str "{| " ++ prlist_with_sep pr_semicolon pp l ++ str " |}"), lpatrec
 
       | CPatAlias (p, na) ->
         pr_patt mt (las,E) p ++ str " as " ++ pr_lname na, las
