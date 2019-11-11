@@ -682,7 +682,7 @@ let compute_implicit_statuses autoimps l =
          (strbrk ("Argument number " ^ string_of_int i ^ " (anonymous in original definition) cannot be declared implicit."))
     | autoimps, [] -> List.map (fun _ -> None) autoimps
     | [], _::_ -> assert false
-  in aux 0 (autoimps, l)
+  in aux 1 (autoimps, l)
 
 let set_implicits local ref l =
   let flags = !implicit_args in
