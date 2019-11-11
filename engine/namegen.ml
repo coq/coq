@@ -273,8 +273,8 @@ let visible_ids sigma (nenv, c) =
       accu := (gseen, vseen, ids)
   | Rel p ->
     let (gseen, vseen, ids) = !accu in
-    if p > n && not (Int.Set.mem p vseen) then
-      let vseen = Int.Set.add p vseen in
+    if p > n && not (Int.Set.mem (p - n) vseen) then
+      let vseen = Int.Set.add (p - n) vseen in
       let name =
         try Some (List.nth nenv (p - n - 1))
         with Invalid_argument _ | Failure _ ->
@@ -290,7 +290,7 @@ let visible_ids sigma (nenv, c) =
       accu := (gseen, vseen, ids)
   | _ -> EConstr.iter_with_binders sigma succ visible_ids n c
   in
-  let () = visible_ids 1 c in
+  let () = visible_ids 1 c in (* n = 1 to count the binder to rename *)
   let (_, _, ids) = !accu in
   ids
 
@@ -416,6 +416,8 @@ let next_name_away_for_default_printing sigma env_t na avoid =
 *)
 
 type renaming_flags =
+  (* The term is the body of a binder and the environment excludes this binder *)
+  (* so, there is a missing binder in the environment *)
   | RenamingForCasesPattern of (Name.t list * constr)
   | RenamingForGoal
   | RenamingElsewhereFor of (Name.t list * constr)
