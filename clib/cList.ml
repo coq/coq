@@ -22,6 +22,7 @@ sig
   val mem_f : 'a eq -> 'a -> 'a list -> bool
   val for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
   val for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+  val exists_i : (int -> 'a -> bool) -> int -> 'a list -> bool
   val prefix_of : 'a eq -> 'a list -> 'a list -> bool
   val same_length : 'a list -> 'b list -> bool
   val interval : int -> int -> int list
@@ -195,6 +196,13 @@ let for_all_i p =
 
 let for_all2eq f l1 l2 =
   try List.for_all2 f l1 l2 with Invalid_argument _ -> false
+
+let exists_i p =
+  let rec exists_p i = function
+    | [] -> false
+    | a::l -> p i a || exists_p (i+1) l
+  in
+  exists_p
 
 let prefix_of cmp prefl l =
   let rec prefrec = function
