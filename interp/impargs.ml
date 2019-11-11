@@ -146,9 +146,9 @@ type argument_position =
   | Hyp of int (* Hyp n = dependence on the n-th following argument *)
 
 let argument_position_eq p1 p2 = match p1, p2 with
-| Conclusion, Conclusion -> true
-| Hyp h1, Hyp h2 -> Int.equal h1 h2
-| _ -> false
+  | Conclusion, Conclusion -> true
+  | Hyp h1, Hyp h2 -> Int.equal h1 h2
+  | _ -> false
 
 (** We remember various information about why an argument is
    inferable as implicit *)
