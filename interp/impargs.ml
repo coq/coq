@@ -150,6 +150,11 @@ let argument_position_eq p1 p2 = match p1, p2 with
   | Hyp h1, Hyp h2 -> Int.equal h1 h2
   | _ -> false
 
+let argument_less = function
+  | Hyp n, Hyp n' -> n<n'
+  | Hyp _, Conclusion -> true
+  | Conclusion, _ -> false
+
 (** We remember various information about why an argument is
    inferable as implicit *)
 type dependency_explanation =
@@ -170,11 +175,6 @@ type dependency_explanation =
   | NonDependent
 
 type implicit_origin = Auto | Manual
-
-let argument_less = function
-  | Hyp n, Hyp n' -> n<n'
-  | Hyp _, Conclusion -> true
-  | Conclusion, _ -> false
 
 let update pos rig st =
   if rig then
