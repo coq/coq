@@ -141,7 +141,7 @@ let combine_params avoid applied needed =
           (t, Some {CAst.loc;v=ExplByName id}) ->
             let is_id decl = Name.equal (Name id) (RelDecl.get_name decl) in
             if not (List.exists is_id needed) then
-              user_err ?loc  (str "Wrong argument name: " ++ Id.print id);
+              user_err ?loc  (str "Wrong argument name: " ++ Id.print id ++ str ".");
             true
         | _ -> false) applied
   in
