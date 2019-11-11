@@ -1258,7 +1258,7 @@ let default_prepare_hint_ident = Id.of_string "H"
 
 exception Found of constr * types
 
-let prepare_hint check (poly,local) env init (sigma,c) =
+let prepare_hint check env init (sigma,c) =
   let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
   (* We re-abstract over uninstantiated evars and universes.
      It is actually a bit stupid to generalize over evars since the first
@@ -1292,10 +1292,7 @@ let prepare_hint check (poly,local) env init (sigma,c) =
     let empty_sigma = Evd.from_env env in
     if check then Pretyping.check_evars env empty_sigma sigma c';
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
-    if poly then IsConstr (c', diff)
-    else if local then IsConstr (c', diff)
-    else (Declare.declare_universe_context ~poly:false diff;
-	  IsConstr (c', Univ.ContextSet.empty))
+    (c', diff)
 
 let project_hint ~poly pri l2r r =
   let open EConstr in
@@ -1338,7 +1335,12 @@ let interp_hints ~poly =
     let evd,c = Constrintern.interp_open_constr env sigma c in
     let env = Global.env () in
     let sigma = Evd.from_env env in
-      prepare_hint true (poly,false) env sigma (evd,c) in
+    let (c, diff) = prepare_hint true env sigma (evd,c) in
+    if poly then IsConstr (c, diff)
+    else
+      let () = Declare.declare_universe_context ~poly:false diff in
+      IsConstr (c, Univ.ContextSet.empty)
+  in
   let fref r =
     let gr = global_with_alias r in
     Dumpglob.add_glob ?loc:r.CAst.loc gr;
@@ -1419,10 +1421,8 @@ let expand_constructor_hints env sigma lems =
 		   not (Univ.ContextSet.is_empty ctx),
 		   IsConstr (mkConstructU ((ind,i+1),u),ctx))
     | _ ->
-       [match prepare_hint false (false,true) env sigma (evd,lem) with
-	| IsConstr (c, ctx) ->
-	   not (Univ.ContextSet.is_empty ctx), IsConstr (c, ctx)
-	| IsGlobRef _ -> assert false (* Impossible return value *) ]) lems
+      let (c, ctx) = prepare_hint false env sigma (evd,lem) in
+      [not (Univ.ContextSet.is_empty ctx), IsConstr (c, ctx)]) lems
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
 
