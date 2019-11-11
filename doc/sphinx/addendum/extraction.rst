@@ -529,7 +529,7 @@ A detailed example: Euclidean division
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The file ``Euclid`` contains the proof of Euclidean division.
-The natural numbers used here are unary, represented by the type``nat``,
+The natural numbers used here are unary, represented by the type ``nat``,
 which is defined by two constructors ``O`` and ``S``.
 This module contains a theorem ``eucl_dev``, whose type is::
 
