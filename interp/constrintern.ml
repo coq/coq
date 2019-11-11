@@ -349,7 +349,7 @@ let warn_shadowed_implicit_name =
 
 let exists_name na l =
   match na with
-  | Name id -> List.exists (function Some (ExplByName id',_,_) -> Id.equal id id' | _ -> false) l
+  | Name id -> List.exists (function Some ((Name id',_,_),_,_) -> Id.equal id id' | _ -> false) l
   | _ -> false
 
 let build_impls ?loc n bk na acc =
@@ -357,10 +357,7 @@ let build_impls ?loc n bk na acc =
     let na =
       if exists_name na acc then begin warn_shadowed_implicit_name ?loc na; Anonymous end
       else na in
-    let impl = match na with
-      | Name id -> Some (ExplByName id,Manual,(max,true))
-      | Anonymous -> Some (ExplByPos (n,None),Manual,(max,true)) in
-    impl
+    Some ((na,n,(*TODO, enhancement: compute dependency*)None),Manual,(max,true))
   in
   match bk with
   | NonMaxImplicit -> impl_status false :: acc
@@ -1967,38 +1964,50 @@ let set_hole_implicit i b c =
 let exists_implicit_name id =
   List.exists (fun imp -> is_status_implicit imp && Id.equal id (name_of_implicit imp))
 
+let print_allowed_named_implicit imps =
+  let l = List.map_filter (function Some ((Name id,_,_),_,_) -> Some id | _ -> None) imps in
+  match l with
+  | [] -> mt ()
+  | l ->
+    let n = List.length l in
+    str " (possible " ++ str (String.plural n "name") ++ str ":" ++ spc () ++
+    pr_sequence Id.print l ++ str ")"
+
+let print_allowed_nondep_implicit imps =
+  let l = List.map_filter (function Some ((_,_,Some n),_,_) -> Some n | _ -> None) imps in
+  match l with
+  | [] -> mt ()
+  | l ->
+    let n = List.length l in
+    str " (possible " ++ str (String.plural n "position") ++ str ":" ++ spc () ++
+    pr_sequence Pp.int l ++ str ")"
+
 let extract_explicit_arg imps args =
   let rec aux = function
-  | [] -> Id.Map.empty, []
+  | [] -> [], []
   | (a,e)::l ->
       let (eargs,rargs) = aux l in
       match e with
       | None -> (eargs,a::rargs)
       | Some {loc;v=pos} ->
-          let id = match pos with
+          let () = match pos with
           | ExplByName id ->
               if not (exists_implicit_name id imps) then
                 user_err ?loc
-                  (str "Wrong argument name: " ++ Id.print id ++ str ".");
-              if Id.Map.mem id eargs then
+                  (str "Wrong argument name " ++ Id.print id ++
+                   print_allowed_named_implicit imps ++ str ".");
+              if List.mem_assoc pos eargs then
                 user_err ?loc  (str "Argument name " ++ Id.print id
-                ++ str " occurs more than once.");
-              id
-          | ExplByPos (p,_id) ->
-              let id =
-                try
-                  let imp = List.nth imps (p-1) in
-                  if not (is_status_implicit imp) then failwith "imp";
-                  name_of_implicit imp
-                with Failure _ (* "nth" | "imp" *) ->
-                  user_err ?loc
-                    (str"Wrong argument position: " ++ int p ++ str ".")
-              in
-              if Id.Map.mem id eargs then
-                user_err ?loc  (str"Argument at position " ++ int p ++
-                  str " is mentioned more than once.");
-              id in
-          (Id.Map.add id (loc, a) eargs, rargs)
+                ++ str " occurs more than once.")
+          | ExplByPos p ->
+              if not (is_nondep_implicit p imps) then
+                user_err ?loc
+                  (str"Wrong argument position " ++ int p ++
+                   print_allowed_nondep_implicit imps ++ str ".");
+              if List.mem_assoc pos eargs then
+                user_err ?loc (str"Argument at position " ++ int p ++
+                  str " is mentioned more than once.") in
+          ((pos,(loc,a))::eargs, rargs)
   in aux args
 
 let extract_regular_arguments args =
@@ -2446,7 +2455,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
   and intern_impargs c env l subscopes args =
     let eargs, rargs = extract_explicit_arg l args in
     if !parsing_explicit then
-      if Id.Map.is_empty eargs then intern_args env subscopes rargs
+      if List.is_empty eargs then intern_args env subscopes rargs
       else user_err Pp.(str "Arguments given by name or position not supported in explicit mode.")
     else
     let rec aux n impl subscopes eargs rargs =
@@ -2454,12 +2463,10 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
       match (impl,rargs) with
       | (imp::impl', rargs) when is_status_implicit imp ->
           begin try
-            let id = name_of_implicit imp in
-            let (_,a) = Id.Map.find id eargs in
-            let eargs' = Id.Map.remove id eargs in
+            let eargs',(_,(_,a)) = List.extract_first (fun (pos,a) -> match_implicit imp pos) eargs in
             intern_no_implicit enva a :: aux (n+1) impl' subscopes' eargs' rargs
           with Not_found ->
-          if List.is_empty rargs && Id.Map.is_empty eargs && not (maximal_insertion_of imp) then
+          if List.is_empty rargs && List.is_empty eargs && not (maximal_insertion_of imp) then
             (* Less regular arguments than expected: complete *)
             (* with implicit arguments if maximal insertion is set *)
             []
@@ -2471,14 +2478,15 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
       | (imp::impl', a::rargs') ->
           intern_no_implicit enva a :: aux (n+1) impl' subscopes' eargs rargs'
       | (imp::impl', []) ->
-          if not (Id.Map.is_empty eargs) then
-            (let (id,(loc,_)) = Id.Map.choose eargs in
+          if not (List.is_empty eargs) then
+            (let pr_position = function ExplByName id -> Id.print id | ExplByPos n -> str "position " ++ int n in
+            let (pos,(loc,_)) = List.hd eargs in
                user_err ?loc (str "Not enough non implicit \
             arguments to accept the argument bound to " ++
-                 Id.print id ++ str"."));
+                 pr_position pos ++ str"."));
           []
       | ([], rargs) ->
-          assert (Id.Map.is_empty eargs);
+          assert (List.is_empty eargs);
           intern_args env subscopes rargs
     in aux 1 l subscopes eargs rargs
 

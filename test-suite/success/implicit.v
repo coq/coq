@@ -176,9 +176,14 @@ Axiom foo : forall A, A -> A.
 
 Arguments foo {A} {_}.
 Check foo (arg_2:=true) : bool.
+Check foo (1:=true) : bool.
 Check foo : bool.
 
 Arguments foo {A} {x}.
 Check foo (x:=true) : bool.
+
+Axiom bar : forall A, A -> nat -> forall B, B -> A * B.
+Arguments bar {A} {x} _ {B} {y}.
+Check bar (1:=true) 0 (3:=false).
 
 End TestUnnamedImplicit.

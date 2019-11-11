@@ -66,12 +66,10 @@ let prim_token_eq t1 t2 = match t1, t2 with
 | String s1, String s2 -> String.equal s1 s2
 | (Number _ | String _), _ -> false
 
-let explicitation_eq ex1 ex2 = match ex1, ex2 with
-| ExplByPos (i1, id1), ExplByPos (i2, id2) ->
-  Int.equal i1 i2 && Option.equal Id.equal id1 id2
-| ExplByName id1, ExplByName id2 ->
-  Id.equal id1 id2
-| _ -> false
+let explicitation_eq pos1 pos2 = match pos1, pos2 with
+| ExplByName id1, ExplByName id2 -> Id.equal id1 id2
+| ExplByPos n1, ExplByPos n2 -> Int.equal n1 n2
+| (ExplByName _ | ExplByPos _), _ -> false
 
 let rec cases_pattern_expr_eq p1 p2 =
   if CAst.(p1.v == p2.v) then true
