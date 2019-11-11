@@ -885,6 +885,39 @@ let free_rels sigma m =
   in
   frec 1 Int.Set.empty m
 
+let global_of_constr = let open GlobRef in function
+  | Const (c, _) -> ConstRef c
+  | Ind (i, _) -> IndRef i
+  | Construct (c, _) -> ConstructRef c
+  | Var id -> VarRef id
+  | _ -> assert false
+
+let free_rels_and_unqualified_refs sigma t =
+  let accu = ref (GlobRef.Set_env.empty, Int.Set.empty, Id.Set.empty) in
+  let rec aux k t = match EConstr.kind sigma t with
+  | Const _ | Ind _ | Construct _ | Var _ as c ->
+    let (gseen, vseen, ids) = !accu in
+    let g = global_of_constr c in
+    if not (GlobRef.Set_env.mem g gseen) then
+      begin
+      try
+      let gseen = GlobRef.Set_env.add g gseen in
+      let short = Nametab.shortest_qualid_of_global Id.Set.empty g in
+      let dir, id = Libnames.repr_qualid short in
+      let ids = if DirPath.is_empty dir then Id.Set.add id ids else ids in
+      accu := (gseen, vseen, ids)
+      with Not_found when !Flags.in_debugger || !Flags.in_toplevel -> ()
+      end
+  | Rel p ->
+    let (gseen, vseen, ids) = !accu in
+    if p > k && not (Int.Set.mem (p - k) vseen) then
+      let vseen = Int.Set.add (p - k) vseen in
+      accu := (gseen, vseen, ids)
+  | _ -> EConstr.iter_with_binders sigma succ aux k t in
+  let () = aux 0 t in
+  let (_, rels, ids) = !accu in
+  rels, ids
+
 (* collects all metavar occurrences, in left-to-right order, preserving
  * repetitions and all. *)
 
