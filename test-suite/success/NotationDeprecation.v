@@ -1,13 +1,13 @@
 Module Syndefs.
 
-#[deprecated(since = "8.8", note = "Do not use.")]
+#[deprecated(since = "8.9", note = "Do not use.")]
 Notation foo := Prop.
 
-Notation bar := Prop (compat "8.8").
+Notation bar := Prop (compat "8.9").
 
 Fail
-#[deprecated(since = "8.8", note = "Do not use.")]
-Notation zar := Prop (compat "8.8").
+#[deprecated(since = "8.9", note = "Do not use.")]
+Notation zar := Prop (compat "8.9").
 
 Check foo.
 Check bar.
@@ -21,14 +21,14 @@ End Syndefs.
 
 Module Notations.
 
-#[deprecated(since = "8.8", note = "Do not use.")]
+#[deprecated(since = "8.9", note = "Do not use.")]
 Notation "!!" := Prop.
 
-Notation "##" := Prop (compat "8.8").
+Notation "##" := Prop (compat "8.9").
 
 Fail
-#[deprecated(since = "8.8", note = "Do not use.")]
-Notation "**" := Prop (compat "8.8").
+#[deprecated(since = "8.9", note = "Do not use.")]
+Notation "**" := Prop (compat "8.9").
 
 Check !!.
 Check ##.
@@ -42,14 +42,14 @@ End Notations.
 
 Module Infix.
 
-#[deprecated(since = "8.8", note = "Do not use.")]
+#[deprecated(since = "8.9", note = "Do not use.")]
 Infix "!!" := plus (at level 1).
 
-Infix "##" := plus (at level 1, compat "8.8").
+Infix "##" := plus (at level 1, compat "8.9").
 
 Fail
-#[deprecated(since = "8.8", note = "Do not use.")]
-Infix "**" := plus (at level 1, compat "8.8").
+#[deprecated(since = "8.9", note = "Do not use.")]
+Infix "**" := plus (at level 1, compat "8.9").
 
 Check (_ !! _).
 Check (_ ## _).
