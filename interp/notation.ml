@@ -77,7 +77,7 @@ type notation_data = {
 
 type scope = {
   notations: notation_data NotationMap.t;
-  delimiters: delimiters option
+  delimiters: delimiters list
 }
 
 (* Scopes table: scope_name -> symbol_interpretation *)
@@ -88,7 +88,7 @@ let delimiters_map = ref String.Map.empty
 
 let empty_scope = {
   notations = NotationMap.empty;
-  delimiters = None
+  delimiters = []
 }
 
 let default_scope = "" (* empty name, not available from outside *)
@@ -217,47 +217,38 @@ let warn_delimiter_overriden =
       strbrk "Overriding previous binding of delimiter " ++ str key ++
       strbrk " to scope " ++ str oldscope ++ strbrk ".")
 
-let warn_delimiter_change =
-  CWarnings.create ~name:"delimiter-change" ~category:"parsing"
-    (fun (oldkey,scope) ->
-      strbrk "Overriding previous delimiter key " ++ str oldkey ++
-      strbrk " in scope " ++ str scope ++ strbrk ".")
-
 let declare_delimiters scope key =
   let sc = find_scope scope in
-  let newsc = { sc with delimiters = Some key } in
-  let todeclare = match sc.delimiters with
-    | Some oldkey when String.equal oldkey key -> false
-    | None -> true
-    | Some oldkey ->
-        (* FIXME: implement multikey scopes? *)
-        warn_delimiter_change (oldkey,scope); true in
-  if todeclare then begin
-    let _ =
-      try
-        let oldscope = String.Map.find key !delimiters_map in
-        if not (String.equal oldscope scope) then begin
-          warn_delimiter_overriden (key,oldscope);
-          let update _ oldsc = { oldsc with delimiters = None } in
-          scope_map := String.Map.modify oldscope update !scope_map
-        end
-      with Not_found -> () in
+  if not (List.mem key sc.delimiters) then begin
+    let newsc = { sc with delimiters = key :: sc.delimiters } in
+    begin try
+      let oldscope = String.Map.find key !delimiters_map in
+      if not (String.equal oldscope scope) then begin
+        warn_delimiter_overriden (key,oldscope);
+          let update _ oldsc = { oldsc with delimiters = List.remove (=) key oldsc.delimiters } in
+        scope_map := String.Map.modify oldscope update !scope_map;
+      end
+      with Not_found -> ()
+    end;
     scope_map := String.Map.add scope newsc !scope_map;
     delimiters_map := String.Map.add key scope !delimiters_map
   end
 
-let remove_delimiters scope =
+let remove_delimiters scope keyopt =
   let sc = find_scope scope in
-  let newsc = { sc with delimiters = None } in
-  match sc.delimiters with
-    | None -> CErrors.user_err  (str "No bound key for scope " ++ str scope ++ str ".")
-    | Some key ->
-       scope_map := String.Map.add scope newsc !scope_map;
-       try
-         let _ = ignore (String.Map.find key !delimiters_map) in
-         delimiters_map := String.Map.remove key !delimiters_map
-       with Not_found ->
-         assert false (* A delimiter for scope [scope] should exist *)
+  let keys =
+    match sc.delimiters, keyopt with
+    | [], _ -> CErrors.user_err (str "No delimiting key for scope " ++ str scope ++ str ".")
+    | [key], None -> [key]
+    | keys, None -> keys
+    | keys, Some key ->
+       if List.mem key keys then [key]
+       else CErrors.user_err
+          (str "Delimiting " ++ str key ++ str " not registered for scope " ++
+           str scope ++ str ".") in
+  let newsc = { sc with delimiters = List.subtractq keys sc.delimiters } in
+  scope_map := String.Map.add scope newsc !scope_map;
+  List.iter (fun key -> delimiters_map := String.Map.remove key !delimiters_map) keys
 
 let find_delimiters_scope ?loc key =
   try String.Map.find key !delimiters_map
@@ -1081,8 +1072,8 @@ let find_with_delimiters = function
   | None -> None
   | Some scope ->
       match (String.Map.find scope !scope_map).delimiters with
-        | Some key -> Some (Some scope, Some key)
-        | None -> None
+        | key::_ -> Some (Some scope, Some key)
+        | [] -> None
 
 let rec find_without_delimiters find (ntn_scope,ntn) = function
   | Scope scope :: scopes ->
@@ -1675,8 +1666,9 @@ let decompose_notation_key (from,s) =
 (* Printing *)
 
 let pr_delimiters_info = function
-  | None -> str "No delimiting key"
-  | Some key -> str "Delimiting key is " ++ str key
+  | [] -> str "No delimiting key"
+  | [key] -> str "Delimiting key is " ++ str key
+  | keys -> str "Delimiting keys are " ++ pr_enum str keys
 
 let classes_of_scope sc =
   ScopeClassMap.fold (fun cl sc' l -> if String.equal sc sc' then cl::l else l) !scope_class_map []

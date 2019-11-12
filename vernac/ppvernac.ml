@@ -688,14 +688,18 @@ let string_of_definition_object_kind = let open Decls in function
         return (
           keyword "Declare Scope" ++ spc () ++ str sc
         )
-      | VernacDelimiters (sc,Some key) ->
+      | VernacDelimiters (AddDelimiter (sc,key)) ->
         return (
           keyword "Delimit Scope" ++ spc () ++ str sc ++
             spc() ++ keyword "with" ++ spc () ++ str key
         )
-      | VernacDelimiters (sc, None) ->
+      | VernacDelimiters (UndelimitScope sc) ->
         return (
           keyword "Undelimit Scope" ++ spc () ++ str sc
+        )
+      | VernacDelimiters (RemoveDelimiter (sc,key)) ->
+        return (
+          keyword "Remove Delimiter" ++ spc () ++ str key ++ spc () ++ str "from" ++ str sc
         )
       | VernacBindScope (sc,cll) ->
         return (

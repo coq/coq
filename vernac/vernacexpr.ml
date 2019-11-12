@@ -187,6 +187,11 @@ type syntax_modifier =
   | SetCompatVersion of Flags.compat_version
   | SetFormat of string * lstring
 
+type delimiters_action =
+  | AddDelimiter of scope_name * Notation.delimiters
+  | UndelimitScope of scope_name
+  | RemoveDelimiter of scope_name * Notation.delimiters
+
 type proof_end =
   | Admitted
   (*                         name in `Save ident` when closing goal *)
@@ -285,7 +290,7 @@ type nonrec vernac_expr =
   | VernacSyntaxExtension of bool * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of bool * scope_name
   | VernacDeclareScope of scope_name
-  | VernacDelimiters of scope_name * string option
+  | VernacDelimiters of delimiters_action
   | VernacBindScope of scope_name * class_rawexpr list
   | VernacInfix of (lstring * syntax_modifier list) *
       constr_expr * scope_name option

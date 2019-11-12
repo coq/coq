@@ -1590,8 +1590,8 @@ let add_infix ~local deprecation env ({CAst.loc;v=inf},modifiers) pr sc =
 
 type scope_command =
   | ScopeDeclare
-  | ScopeDelimAdd of string
-  | ScopeDelimRemove
+  | ScopeDelimAdd of delimiters
+  | ScopeDelimRemove of delimiters option
   | ScopeClasses of scope_class list
 
 let load_scope_command_common silently_define_scope_if_undefined _ (_,(local,scope,o)) =
@@ -1603,7 +1603,7 @@ let load_scope_command_common silently_define_scope_if_undefined _ (_,(local,sco
   (* When the default shall be to require that a scope already exists *)
   (* the call to declare_scope_if_needed will have to be removed below *)
   | ScopeDelimAdd dlm -> declare_scope_if_needed scope
-  | ScopeDelimRemove -> declare_scope_if_needed scope
+  | ScopeDelimRemove _ -> declare_scope_if_needed scope
   | ScopeClasses cl -> declare_scope_if_needed scope
 
 let load_scope_command =
@@ -1614,7 +1614,7 @@ let open_scope_command i (_,(local,scope,o)) =
     match o with
     | ScopeDeclare -> ()
     | ScopeDelimAdd dlm -> Notation.declare_delimiters scope dlm
-    | ScopeDelimRemove -> Notation.remove_delimiters scope
+    | ScopeDelimRemove keyopt -> Notation.remove_delimiters scope keyopt
     | ScopeClasses cl -> List.iter (Notation.declare_scope_class scope) cl
 
 let cache_scope_command o =
@@ -1647,8 +1647,8 @@ let declare_scope local scope =
 let add_delimiters local scope key =
   Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeDelimAdd key))
 
-let remove_delimiters local scope =
-  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeDelimRemove))
+let remove_delimiters local scope keyopt =
+  Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeDelimRemove keyopt))
 
 let add_class_scope local scope cl =
   Lib.add_anonymous_leaf (inScopeCommand(local,scope,ScopeClasses cl))

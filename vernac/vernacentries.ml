@@ -438,10 +438,11 @@ let vernac_syntax_extension ~module_local infix l =
 let vernac_declare_scope ~module_local sc =
   Metasyntax.declare_scope module_local sc
 
-let vernac_delimiters ~module_local sc action =
+let vernac_delimiters ~module_local action =
   match action with
-  | Some lr -> Metasyntax.add_delimiters module_local sc lr
-  | None -> Metasyntax.remove_delimiters module_local sc
+  | AddDelimiter (sc,lr) -> Metasyntax.add_delimiters module_local sc lr
+  | UndelimitScope sc -> Metasyntax.remove_delimiters module_local sc None
+  | RemoveDelimiter (sc,lr) -> Metasyntax.remove_delimiters module_local sc (Some lr)
 
 let vernac_bind_scope ~module_local sc cll =
   Metasyntax.add_class_scope module_local sc (List.map scope_class_of_qualid cll)
@@ -1975,8 +1976,8 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
     VtDefault(fun () -> with_module_locality ~atts vernac_syntax_extension infix sl)
   | VernacDeclareScope sc ->
     VtDefault(fun () -> with_module_locality ~atts vernac_declare_scope sc)
-  | VernacDelimiters (sc,lr) ->
-    VtDefault(fun () -> with_module_locality ~atts vernac_delimiters sc lr)
+  | VernacDelimiters action ->
+    VtDefault(fun () -> with_module_locality ~atts vernac_delimiters action)
   | VernacBindScope (sc,rl) ->
     VtDefault(fun () -> with_module_locality ~atts vernac_bind_scope sc rl)
   | VernacOpenCloseScope (b, s) ->

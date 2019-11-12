@@ -1209,9 +1209,11 @@ GRAMMAR EXTEND Gram
          { VernacOpenCloseScope (false,sc) }
 
      | IDENT "Delimit"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
-	 { VernacDelimiters (sc, Some key) }
+         { VernacDelimiters (AddDelimiter (sc,key)) }
      | IDENT "Undelimit"; IDENT "Scope"; sc = IDENT ->
-	 { VernacDelimiters (sc, None) }
+         { VernacDelimiters (UndelimitScope sc) }
+     | IDENT "Remove"; IDENT "Delimiter"; key = IDENT; IDENT "from"; sc = IDENT ->
+         { VernacDelimiters (RemoveDelimiter (sc,key)) }
 
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with";
        refl = LIST1 class_rawexpr -> { VernacBindScope (sc,refl) }

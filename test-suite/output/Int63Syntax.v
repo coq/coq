@@ -17,7 +17,7 @@ Check 2%int63.
 Delimit Scope int63_scope with i63.
 Definition t := 2%int63.
 Print t.
-Set Warnings "-delimiter-change".
+Set Warnings "-delimiter-overriden".
 Delimit Scope nat_scope with int63.
 Print t.
 Check 2.
