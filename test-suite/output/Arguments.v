@@ -46,6 +46,7 @@ About f.
 Record r := { pi :> nat -> bool -> unit }.
 Notation "$" := 3 (only parsing) : foo_scope.
 Notation "$" := true (only parsing) : bar_scope.
+Set Warnings "-delimiter-overriden".
 Delimit Scope bar_scope with B.
 Arguments pi _ _%F _%B.
 Check (forall w : r, pi w $ $ = tt).

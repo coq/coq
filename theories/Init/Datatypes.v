@@ -38,7 +38,8 @@ Inductive bool : Set :=
 Add Printing If bool.
 
 Declare Scope bool_scope.
-Delimit Scope bool_scope with bool.
+Delimit Scope bool_scope with B. (* shorter delimiter *)
+Delimit Scope bool_scope with bool. (* more explicit delimiter *)
 Bind Scope bool_scope with bool.
 
 Register bool as core.bool.type.
