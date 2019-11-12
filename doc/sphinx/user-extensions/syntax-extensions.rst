@@ -354,6 +354,11 @@ Reserving notations
       This command declares an infix parsing rule without giving its
       interpretation.
 
+   When a format is attached to a reserved notation, it is used by
+   default by all subsequent interpretations of the corresponding
+   notation. A specific interpretation can provide its own format
+   overriding the default format though.
+
 Simultaneous definition of terms and notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
