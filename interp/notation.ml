@@ -211,26 +211,40 @@ let make_current_scopes (tmp_scope,scopes) =
 (**********************************************************************)
 (* Delimiters *)
 
+let warn_delimiter_overriden =
+  CWarnings.create ~name:"delimiter-overriden" ~category:"parsing"
+    (fun (key,oldscope) ->
+      strbrk "Overriding previous binding of delimiter " ++ str key ++
+      strbrk " to scope " ++ str oldscope ++ strbrk ".")
+
+let warn_delimiter_change =
+  CWarnings.create ~name:"delimiter-change" ~category:"parsing"
+    (fun (oldkey,scope) ->
+      strbrk "Overriding previous delimiter key " ++ str oldkey ++
+      strbrk " in scope " ++ str scope ++ strbrk ".")
+
 let declare_delimiters scope key =
   let sc = find_scope scope in
   let newsc = { sc with delimiters = Some key } in
-  begin match sc.delimiters with
-    | None -> scope_map := String.Map.add scope newsc !scope_map
-    | Some oldkey when String.equal oldkey key -> ()
+  let todeclare = match sc.delimiters with
+    | Some oldkey when String.equal oldkey key -> false
+    | None -> true
     | Some oldkey ->
         (* FIXME: implement multikey scopes? *)
-	Flags.if_verbose Feedback.msg_info
-	  (str "Overwriting previous delimiting key " ++ str oldkey ++ str " in scope " ++ str scope);
-	scope_map := String.Map.add scope newsc !scope_map
-  end;
-  try
-    let oldscope = String.Map.find key !delimiters_map in
-    if String.equal oldscope scope then ()
-    else begin
-      Flags.if_verbose Feedback.msg_info (str "Hiding binding of key " ++ str key ++ str " to " ++ str oldscope);
-      delimiters_map := String.Map.add key scope !delimiters_map
-    end
-  with Not_found -> delimiters_map := String.Map.add key scope !delimiters_map
+        warn_delimiter_change (oldkey,scope); true in
+  if todeclare then begin
+    let _ =
+      try
+        let oldscope = String.Map.find key !delimiters_map in
+        if not (String.equal oldscope scope) then begin
+          warn_delimiter_overriden (key,oldscope);
+          let update _ oldsc = { oldsc with delimiters = None } in
+          scope_map := String.Map.modify oldscope update !scope_map
+        end
+      with Not_found -> () in
+    scope_map := String.Map.add scope newsc !scope_map;
+    delimiters_map := String.Map.add key scope !delimiters_map
+  end
 
 let remove_delimiters scope =
   let sc = find_scope scope in

@@ -59,3 +59,11 @@ where
       |- Type] (pat, p0, p cannot be used)
 fun '{| |} => true
      : R -> bool
+The command has indeed failed with message:
+Overriding previous binding of delimiter sc to scope sc1_scope.
+[delimiter-overriden,parsing]
+File "stdin", line 152, characters 0-32:
+Warning: Overriding previous binding of delimiter sc to scope sc1_scope.
+[delimiter-overriden,parsing]
+n
+     : nat

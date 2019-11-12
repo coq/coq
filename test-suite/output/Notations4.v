@@ -140,3 +140,19 @@ Record R := { n : nat }.
 Check fun '{|n:=x|} => true.
 
 End EmptyRecordSyntax.
+
+Module OverrideDelimiter.
+
+Declare Scope sc1_scope.
+Delimit Scope sc1_scope with sc.
+Declare Scope sc2_scope.
+Set Warnings "+delimiter-overriden".
+Fail Delimit Scope sc2_scope with sc.
+Set Warnings "delimiter-overriden".
+Delimit Scope sc2_scope with sc.
+
+Axiom n : nat.
+Notation "#" := n : sc1_scope.
+Check n.
+
+End OverrideDelimiter.
