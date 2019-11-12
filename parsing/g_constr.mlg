@@ -50,27 +50,6 @@ let binder_of_name expl { CAst.loc = loc; v = na } =
 let binders_of_names l =
   List.map (binder_of_name Explicit) l
 
-let mk_fixb (id,ann,bl,ty,body) : fix_expr =
-  (id,ann,bl,ty,body)
-
-let mk_cofixb (id,ann,bl,ty,body) : cofix_expr =
-  Option.iter (fun { CAst.loc = aloc } ->
-    CErrors.user_err ?loc:aloc
-      ~hdr:"Constr:mk_cofixb"
-      (Pp.str"Annotation forbidden in cofix expression.")) ann;
-  (id,bl,ty,body)
-
-let mk_fix(loc,kw,id,dcls) =
-  if kw then
-    let fb : fix_expr list = List.map mk_fixb dcls in
-    CAst.make ~loc @@ CFix(id,fb)
-  else
-    let fb : cofix_expr list = List.map mk_cofixb dcls in
-    CAst.make ~loc @@ CCoFix(id,fb)
-
-let mk_single_fix (loc,kw,dcl) =
-  let (id,_,_,_,_) = dcl in mk_fix(loc,kw,id,[dcl])
-
 let err () = raise Stream.Failure
 
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
@@ -261,13 +240,14 @@ GRAMMAR EXTEND Gram
           | _, _ -> ty, c1 in
           CAst.make ~loc @@ CLetIn(id,mkLambdaCN ?loc:(constr_loc c1) bl c1,
                  Option.map (mkProdCN ?loc:(fst ty) bl) (snd ty), c2) }
-      | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
-          { let fixp = mk_single_fix fx in
-          let { CAst.loc = li; v = id } = match fixp.CAst.v with
-              CFix(id,_) -> id
-            | CCoFix(id,_) -> id
-            | _ -> assert false in
-          CAst.make ~loc @@ CLetIn( CAst.make ?loc:li @@ Name id,fixp,None,c) }
+      | "let"; "fix"; fx = fix_decl; "in"; c = operconstr LEVEL "200" ->
+          { let {CAst.loc=locf;CAst.v=({CAst.loc=li;CAst.v=id} as lid,_,_,_,_ as dcl)} = fx in
+            let fix = CAst.make ?loc:locf @@ CFix (lid,[dcl]) in
+            CAst.make ~loc @@ CLetIn( CAst.make ?loc:li @@ Name id,fix,None,c) }
+      | "let"; "cofix"; fx = cofix_decl; "in"; c = operconstr LEVEL "200" ->
+          { let {CAst.loc=locf;CAst.v=({CAst.loc=li;CAst.v=id} as lid,_,_,_ as dcl)} = fx in
+            let cofix = CAst.make ?loc:locf @@ CCoFix (lid,[dcl]) in
+            CAst.make ~loc @@ CLetIn( CAst.make ?loc:li @@ Name id,cofix,None,c) }
       | "let"; lb = ["("; l=LIST0 name SEP ","; ")" -> { l } | "()" -> { [] } ];
 	  po = return_type;
 	  ":="; c1 = operconstr LEVEL "200"; "in";
@@ -291,7 +271,8 @@ GRAMMAR EXTEND Gram
 	"then"; b1=operconstr LEVEL "200";
         "else"; b2=operconstr LEVEL "200" ->
           { CAst.make ~loc @@ CIf (c, po, b1, b2) }
-      | c=fix_constr -> { c } ] ]
+      | "fix"; c=fix_decls -> { let (id,dcls) = c in CAst.make ~loc @@ CFix (id,dcls) }
+      | "cofix"; c=cofix_decls -> { let (id,dcls) = c in CAst.make ~loc @@ CCoFix (id,dcls) } ] ]
   ;
   appl_arg:
     [ [ id = lpar_id_coloneq; c=lconstr; ")" ->
@@ -328,25 +309,27 @@ GRAMMAR EXTEND Gram
       | id = global -> { UNamed (GType id) }
       ] ]
   ;
-  fix_constr:
-    [ [ fx1=single_fix -> { mk_single_fix fx1 }
-      | f=single_fix; "with"; dcls=LIST1 fix_decl SEP "with";
-        "for"; id=identref ->
-          { let (_,kw,dcl1) = f in
-          mk_fix(loc,kw,id,dcl1::dcls) }
+  fix_decls:
+    [ [ dcl=fix_decl -> { let (id,_,_,_,_) = dcl.CAst.v in (id,[dcl.CAst.v]) }
+      | dcl=fix_decl; "with"; dcls=LIST1 fix_decl SEP "with"; "for"; id=identref ->
+          { (id,List.map (fun x -> x.CAst.v) (dcl::dcls)) }
     ] ]
   ;
-  single_fix:
-    [ [ kw=fix_kw; dcl=fix_decl -> { (loc,kw,dcl) } ] ]
-  ;
-  fix_kw:
-    [ [ "fix" -> { true }
-      | "cofix" -> { false } ] ]
+  cofix_decls:
+    [ [ dcl=cofix_decl -> { let (id,_,_,_) = dcl.CAst.v in (id,[dcl.CAst.v]) }
+      | dcl=cofix_decl; "with"; dcls=LIST1 cofix_decl SEP "with"; "for"; id=identref ->
+          { (id,List.map (fun x -> x.CAst.v) (dcl::dcls)) }
+    ] ]
   ;
   fix_decl:
     [ [ id=identref; bl=binders_fixannot; ty=type_cstr; ":=";
         c=operconstr LEVEL "200" ->
-          { (id,snd bl,fst bl,ty,c) } ] ]
+          { CAst.make ~loc (id,snd bl,fst bl,ty,c) } ] ]
+  ;
+  cofix_decl:
+    [ [ id=identref; bl=binders; ty=type_cstr; ":=";
+        c=operconstr LEVEL "200" ->
+          { CAst.make ~loc (id,bl,ty,c) } ] ]
   ;
   match_constr:
     [ [ "match"; ci=LIST1 case_item SEP ","; ty=OPT case_type; "with";
