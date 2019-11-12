@@ -90,16 +90,13 @@ let lpar_id_coloneq =
               | _ -> err ())
         | _ -> err ())
 
-let impl_ident_head =
-  Pcoq.Entry.of_parser "impl_ident_head"
+let ensure_fixannot =
+  Pcoq.Entry.of_parser "check_fixannot"
     (fun _ strm ->
       match stream_nth 0 strm with
 	| KEYWORD "{" ->
 	    (match stream_nth 1 strm with
-	      | IDENT ("wf"|"struct"|"measure") -> err ()
-	      | IDENT s ->
-		  stream_njunk 2 strm;
-		  Names.Id.of_string s
+              | IDENT ("wf"|"struct"|"measure") -> ()
 	      | _ -> err ())
 	| _ -> err ())
 
@@ -422,18 +419,6 @@ GRAMMAR EXTEND Gram
       | n = NUMERAL-> { CAst.make ~loc @@ CPatPrim (Numeral (SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPatPrim (String s) } ] ]
   ;
-  impl_ident_tail:
-    [ [ "}" -> { binder_of_name Implicit }
-    | nal=LIST1 name; ":"; c=lconstr; "}" ->
-        { (fun na -> CLocalAssum (na::nal,Default Implicit,c)) }
-    | nal=LIST1 name; "}" ->
-        { (fun na -> CLocalAssum (na::nal,Default Implicit,
-                                CAst.make ?loc:(Loc.merge_opt na.CAst.loc (Some loc)) @@
-                                CHole (Some (Evar_kinds.BinderType na.CAst.v), IntroAnonymous, None))) }
-    | ":"; c=lconstr; "}" ->
-	{ (fun na -> CLocalAssum ([na],Default Implicit,c)) }
-    ] ]
-  ;
   fixannot:
     [ [ "{"; IDENT "struct"; id=identref; "}" -> { CAst.make ~loc @@ CStructRec id }
     | "{"; IDENT "wf"; rel=constr; id=identref; "}" -> { CAst.make ~loc @@ CWfRec(id,rel) }
@@ -441,13 +426,8 @@ GRAMMAR EXTEND Gram
         rel=OPT constr; "}" -> { CAst.make ~loc @@ CMeasureRec (id,m,rel) }
     ] ]
   ;
-  impl_name_head:
-    [ [ id = impl_ident_head -> { CAst.make ~loc @@ Name id } ] ]
-  ;
   binders_fixannot:
-    [ [ na = impl_name_head; assum = impl_ident_tail; bl = binders_fixannot ->
-          { (assum na :: fst bl), snd bl }
-      | f = fixannot -> { [], Some f }
+    [ [ ensure_fixannot; f = fixannot -> { [], Some f }
       | b = binder; bl = binders_fixannot -> { b @ fst bl, snd bl }
       | -> { [], None }
     ] ]
