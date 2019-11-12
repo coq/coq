@@ -1,0 +1,1 @@
+- Different interpretations in different scopes of the same notation string can now be associated to different printing formats; this fixes bug #6092 and #7766 (`#10832 <https://github.com/coq/coq/pull/10832>`_, by Hugo Herbelin).
