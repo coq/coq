@@ -50,20 +50,14 @@ let binder_of_name expl { CAst.loc = loc; v = na } =
 let binders_of_names l =
   List.map (binder_of_name Explicit) l
 
-let mk_fixb (id,bl,ann,body,(loc,tyc)) : fix_expr =
-  let ty = match tyc with
-      Some ty -> ty
-    | None    -> CAst.make @@ CHole (None, IntroAnonymous, None) in
+let mk_fixb (id,ann,bl,ty,body) : fix_expr =
   (id,ann,bl,ty,body)
 
-let mk_cofixb (id,bl,ann,body,(loc,tyc)) : cofix_expr =
+let mk_cofixb (id,ann,bl,ty,body) : cofix_expr =
   Option.iter (fun { CAst.loc = aloc } ->
     CErrors.user_err ?loc:aloc
       ~hdr:"Constr:mk_cofixb"
       (Pp.str"Annotation forbidden in cofix expression.")) ann;
-  let ty = match tyc with
-      Some ty -> ty
-    | None -> CAst.make @@ CHole (None, IntroAnonymous, None) in
   (id,bl,ty,body)
 
 let mk_fix(loc,kw,id,dcls) =
@@ -353,9 +347,9 @@ GRAMMAR EXTEND Gram
       | "cofix" -> { false } ] ]
   ;
   fix_decl:
-    [ [ id=identref; bl=binders_fixannot; ty=let_type_cstr; ":=";
+    [ [ id=identref; bl=binders_fixannot; ty=type_cstr; ":=";
         c=operconstr LEVEL "200" ->
-          { (id,fst bl,snd bl,c,ty) } ] ]
+          { (id,snd bl,fst bl,ty,c) } ] ]
   ;
   match_constr:
     [ [ "match"; ci=LIST1 case_item SEP ","; ty=OPT case_type; "with";
@@ -524,6 +518,10 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
 
+  type_cstr:
+    [ [ ":"; c=lconstr -> { c }
+      | -> { CAst.make ~loc @@ CHole (None, IntroAnonymous, None) } ] ]
+  ;
   let_type_cstr:
     [ [ c=OPT [":"; c=lconstr -> { c } ] -> { Loc.tag ~loc c } ] ]
   ;
