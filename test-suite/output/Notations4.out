@@ -67,3 +67,7 @@ Warning: Overriding previous binding of delimiter sc to scope sc1_scope.
 [delimiter-overriden,parsing]
 n
      : nat
+(true || true)%bool
+     : bool
+(true || true)%B
+     : bool

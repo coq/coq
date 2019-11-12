@@ -15,8 +15,10 @@ Open Scope nat_scope.
 Check 2. (* : nat *)
 Check 2%int63.
 Delimit Scope int63_scope with i63.
-Definition t := 2%int63.
+Definition t := 2%i63.
 Print t.
+Definition u := 2%int63.
+Print u.
 Set Warnings "-delimiter-overriden".
 Delimit Scope nat_scope with int63.
 Print t.

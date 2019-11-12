@@ -156,3 +156,10 @@ Notation "#" := n : sc1_scope.
 Check n.
 
 End OverrideDelimiter.
+
+Module LastUsedDelimiter.
+
+Check (true || true)%bool.
+Check (true || true)%B.
+
+End LastUsedDelimiter.

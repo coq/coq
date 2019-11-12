@@ -250,8 +250,23 @@ let remove_delimiters scope keyopt =
   scope_map := String.Map.add scope newsc !scope_map;
   List.iter (fun key -> delimiters_map := String.Map.remove key !delimiters_map) keys
 
+let set_preferred_delimiter scope key =
+  let sc = find_scope scope in
+  match sc.delimiters with
+  | key'::_ ->
+    if not (String.equal key key') then
+      (* Note: the first key is the one used for printing *)
+      let newsc = { sc with delimiters = key :: List.remove String.equal key sc.delimiters } in
+      scope_map := String.Map.add scope newsc !scope_map
+  | _ -> assert false
+
 let find_delimiters_scope ?loc key =
-  try String.Map.find key !delimiters_map
+  try
+    let scope = String.Map.find key !delimiters_map in
+    (* If the corresponding scope has several delimiters, make last
+       visited delimiter the preferred delimiter for printing in this scope *)
+    set_preferred_delimiter scope key;
+    scope
   with Not_found ->
     user_err ?loc ~hdr:"find_delimiters"
       (str "Unknown scope delimiting key " ++ str key ++ str ".")

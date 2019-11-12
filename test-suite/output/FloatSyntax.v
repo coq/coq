@@ -27,8 +27,10 @@ Check 2.
 Check 2%float.
 
 Delimit Scope float_scope with flt.
-Definition t := 2%float.
+Definition t := 2%flt.
 Print t.
+Definition u := 2%float.
+Print u.
 Set Warnings "-delimiter-overriden".
 Delimit Scope nat_scope with float.
 Print t.

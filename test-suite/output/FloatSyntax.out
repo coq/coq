@@ -32,6 +32,8 @@
      : float
 t = 2%flt
      : float
+u = 2%float
+     : float
 t = 2%flt
      : float
 2
