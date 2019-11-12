@@ -1,0 +1,1 @@
+- Warn if a delimiter in a scope overrides another delimiter in the scope or the same delimiter in another scope (`#11105 <https://github.com/coq/coq/pull/11105>`_, by Hugo Herbelin).

@@ -32,7 +32,7 @@
      : float
 t = 2%flt
      : float
-t = 2%flt
+t = 2%float
      : float
 2
      : nat

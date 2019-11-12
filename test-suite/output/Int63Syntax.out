@@ -24,7 +24,7 @@ overflow in int63 literal: 9223372036854775808
      : int
 t = 2%i63
      : int
-t = 2%i63
+t = 2%int63
      : int
 2
      : nat

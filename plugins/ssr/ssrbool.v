@@ -464,6 +464,7 @@ Reserved Notation "[ ==> b1 , b2 , .. , bn => c ]" (at level 0, format
   "'[hv' [ ==> '['  b1 , '/'  b2 , '/'  .. , '/'  bn ']' '/'  =>  c ] ']'").
 
 (**  Shorter delimiter  **)
+Set Warnings "-delimiter-change".
 Delimit Scope bool_scope with B.
 Open Scope bool_scope.
 

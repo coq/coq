@@ -1,4 +1,7 @@
 File "stdin", line 12, characters 0-61:
+Warning: Overriding previous delimiter key bool in scope bool_scope.
+[delimiter-change,parsing]
+File "stdin", line 12, characters 0-61:
 Warning: Notation "_ - _" was already used in scope nat_scope.
 [notation-overridden,parsing]
 File "stdin", line 12, characters 0-61:

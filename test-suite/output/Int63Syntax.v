@@ -14,9 +14,11 @@ Fail Check 9223372036854775808.
 Open Scope nat_scope.
 Check 2. (* : nat *)
 Check 2%int63.
+Set Warnings "-delimiter-change".
 Delimit Scope int63_scope with i63.
 Definition t := 2%int63.
 Print t.
+Set Warnings "-delimiter-overriden".
 Delimit Scope nat_scope with int63.
 Print t.
 Check 2.
