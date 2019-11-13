@@ -101,7 +101,18 @@ Keywords
     end exists exists2 fix for forall fun if in lazymatch let match
     multimatch return then using where with
 
-  Note that plugins may define additional keywords when they are loaded.
+  Note that plugins and libraries may reserve additional keywords when they
+  are loaded.
+
+  The following identifiers are not reserved keywords but are
+  part of the definition of Gallina::
+
+    Admitted Axioms Class CoInductive Conjecture Conjectures
+    Constraints Corollary Cumulative Defined Example Fact Global
+    Hypotheses Inductive Lemma Let Local Monomorphic NonCumulative
+    Parameters Polymorphic Private Proof Property Proposition Qed
+    Record Register Remark Structure SubClass Universe Universes
+    Variables Variant
 
 Other tokens
   The set of
