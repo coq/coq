@@ -1141,39 +1141,39 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
       let loc = Glob_ops.loc_of_glob_constr t in
       try
         if is_inactive_rule keyrule then raise No_match;
-        (* Adjusts to the number of arguments expected by the notation *)
-        let (t,args,nallargs,argsscopes,argsimpls) = match DAst.get t ,n with
-          | GApp (f,args), Some n
-              when List.length args >= n ->
+        let f,args =
+          match DAst.get t with
+          | GApp (f,args) -> f,args
+          | _ -> t,[] in
+        let nallargs = List.length args in
+        let argsscopes,argsimpls =
+          match DAst.get f with
+          | GRef (ref,_) ->
+            let subscopes = find_arguments_scope ref in
+            let impls = select_impargs_size nallargs (implicits_of_global ref) in
+            subscopes, impls
+          | _ ->
+            [], [] in
+        (* Adjust to the number of arguments expected by the notation *)
+        let (t,args,argsscopes,argsimpls) = match n with
+          | Some n when nallargs >= n && nallargs > 0 ->
               let args1, args2 = List.chop n args in
-              let subscopes, impls =
-                match DAst.get f with
-                | GRef (ref,us) ->
-                  let subscopes =
-                    try List.skipn n (find_arguments_scope ref)
-                    with Failure _ -> [] in
-                  let impls =
-                    let impls =
-                      select_impargs_size
-                        (List.length args) (implicits_of_global ref) in
-                    try List.skipn n impls with Failure _ -> [] in
-                  subscopes,impls
-                | _ ->
-                  [], [] in
+              let args2scopes = try List.skipn n argsscopes with Failure _ -> [] in
+              let args2impls = try List.skipn n argsimpls with Failure _ -> [] in
+              (* Note: NApp(NRef f,[]), hence n=0, encodes @f *)
               (if Int.equal n 0 then f else DAst.make @@ GApp (f,args1)),
-              args2, List.length args, subscopes, impls
-          | GApp (f, args), None ->
+              args2, args2scopes, args2impls
+          | None when nallargs > 0 ->
             begin match DAst.get f with
-            | GRef (ref,us) ->
-              let subscopes = find_arguments_scope ref in
-              let impls =
-                  select_impargs_size
-                    (List.length args) (implicits_of_global ref) in
-              f, args, List.length args, subscopes, impls
-            | _ -> t, [], 0, [], []
+            | GRef (ref,us) -> f, args, argsscopes, argsimpls
+            | _ -> t, [], [], []
             end
-          | GRef (ref,us), Some 0 -> DAst.make @@ GApp (t,[]), [], 0, [], []
-          | _, None -> t, [], 0, [], []
+          | Some 0 when nallargs = 0 ->
+            begin match DAst.get f with
+            | GRef (ref,us) -> DAst.make @@ GApp (t,[]), [], [], []
+            | _ -> t, [], [], []
+            end
+          | None -> t, [], [], []
           | _ -> raise No_match in
         (* Try matching ... *)
         let terms,termlists,binders,binderlists =
