@@ -1216,7 +1216,7 @@ let write_dune_c_flags f =
   close_out o;
   Unix.chmod f 0o444
 
-let _ = try write_dune_c_flags "kernel/byterun/dune.c_flags" with _ -> ()
+let _ = write_dune_c_flags "config/dune.c_flags"
 
 let write_macos_metadata exec =
   let f = "config/Info-"^exec^".plist" in
