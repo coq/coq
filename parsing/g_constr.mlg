@@ -157,7 +157,7 @@ GRAMMAR EXTEND Gram
   ;
   constr:
     [ [ c = operconstr LEVEL "8" -> { c }
-      | "@"; f=global; i = instance -> { CAst.make ~loc @@ CAppExpl((None,f,i),[]) } ] ]
+      | "@"; f=global; i = univ_instance -> { CAst.make ~loc @@ CAppExpl((None,f,i),[]) } ] ]
   ;
   operconstr:
     [ "200" RIGHTA
@@ -175,7 +175,7 @@ GRAMMAR EXTEND Gram
     | "90" RIGHTA [ ]
     | "10" LEFTA
       [ f = operconstr; args = LIST1 appl_arg -> { CAst.make ~loc @@ CApp((None,f),args) }
-      | "@"; f = global; i = instance; args = LIST0 NEXT -> { CAst.make ~loc @@ CAppExpl((None,f,i),args) }
+      | "@"; f = global; i = univ_instance; args = LIST0 NEXT -> { CAst.make ~loc @@ CAppExpl((None,f,i),args) }
       | "@"; lid = pattern_identref; args = LIST1 identref ->
         { let { CAst.loc = locid; v = id } = lid in
           let args = List.map (fun x -> CAst.make @@ CRef (qualid_of_ident ?loc:x.CAst.loc x.CAst.v, None), None) args in
@@ -270,7 +270,7 @@ GRAMMAR EXTEND Gram
       | c=operconstr LEVEL "9" -> { (c,None) } ] ]
   ;
   atomic_constr:
-    [ [ g = global; i = instance -> { CAst.make ~loc @@ CRef (g,i) }
+    [ [ g = global; i = univ_instance -> { CAst.make ~loc @@ CRef (g,i) }
       | s = sort   -> { CAst.make ~loc @@  CSort s }
       | n = NUMERAL-> { CAst.make ~loc @@ CPrim (Numeral (SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPrim (String s) }
@@ -286,7 +286,7 @@ GRAMMAR EXTEND Gram
     [ [ "@{"; l = LIST1 inst SEP ";"; "}" -> { l }
       | -> { [] } ] ]
   ;
-  instance:
+  univ_instance:
     [ [ "@{"; l = LIST0 universe_level; "}" -> { Some l }
       | -> { None } ] ]
   ;
