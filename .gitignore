@@ -196,3 +196,4 @@ theories/*/*/*/dune
 !Makefile.install
 
 ide/coqide.keys
+_opam

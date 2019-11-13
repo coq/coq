@@ -80,7 +80,7 @@ Proof.
 Qed.
 
 (** * [mem] *)
-
+Set Eager Universe Unification Debug.
 Function mem (k : key) (s : t elt) {struct s} : bool :=
  match s with
   | nil => false
