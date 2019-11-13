@@ -966,6 +966,8 @@ let build_ui () =
     with _ -> ()
   in
   let _ = w#event#connect#delete ~callback:(fun _ -> File.quit ~parent:w (); true) in
+  let _ = w#misc#connect#size_allocate
+            ~callback:(fun rect -> window_size := (rect.Gtk.width, rect.Gtk.height)) in
   let _ = set_drag w#drag in
 
   let vbox = GPack.vbox ~homogeneous:false ~packing:w#add () in
