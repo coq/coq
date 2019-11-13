@@ -54,16 +54,23 @@ END
 
 {
 
+let pr_search_strategy_name _prc _prlc _prt = function
+  | Dfs -> Pp.str "dfs"
+  | Bfs -> Pp.str "bfs"
+
 let pr_search_strategy _prc _prlc _prt = function
-  | Some Dfs -> Pp.str "dfs"
-  | Some Bfs -> Pp.str "bfs"
+  | Some s -> pr_search_strategy_name _prc _prlc _prt s
   | None -> Pp.mt ()
 
 }
 
+ARGUMENT EXTEND eauto_search_strategy_name PRINTED BY { pr_search_strategy_name }
+| [ "bfs" ] -> { Bfs }
+| [ "dfs" ] -> { Dfs }
+END
+
 ARGUMENT EXTEND eauto_search_strategy PRINTED BY { pr_search_strategy }
-| [ "(bfs)" ] -> { Some Bfs }
-| [ "(dfs)" ] -> { Some Dfs }
+| [ "(" eauto_search_strategy_name(s) ")" ] -> { Some s }
 | [ ] -> { None }
 END
 

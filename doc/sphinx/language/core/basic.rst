@@ -134,7 +134,7 @@ Keywords
   used as identifiers::
 
     _ Axiom CoFixpoint Definition Fixpoint Hypothesis Parameter Prop
-    SProp Set Theorem Type Variable as at cofix discriminated else end
+    SProp Set Theorem Type Variable as at cofix else end
     fix for forall fun if in let match return then where with
 
   Note that notations and plugins may define additional keywords.
@@ -150,10 +150,10 @@ Other tokens
   Here are the character sequences that |Coq| directly defines as tokens
   without using :cmd:`Notation`::
 
-    ! #[ % & ' ( () (bfs) (dfs) ) * ** + , - ->
+    ! #[ % & ' ( () ) * + , - ->
     . .( .. ... / : ::= := :> :>> ; < <+ <- <:
-    <<: <= = => > >-> >= ? @ @{ [ [= ] _
-    `( `{ { {| | |- || }
+    <<: <= = => > >-> >= ? @ @{ [ ] _
+    `( `{ { {| | }
 
   When multiple tokens match the beginning of a sequence of characters,
   the longest matching token is used.
