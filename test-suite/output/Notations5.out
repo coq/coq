@@ -1,0 +1,248 @@
+p 0 0 true
+     : 0 = 0 /\ true = true
+p 0 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
+p 0
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+p 0 0 (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+p 0 0 (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+p (A:=nat)
+     : forall (a1 a2 : nat) (B : Type) (b : B), a1 = a2 /\ b = b
+p (A:=nat)
+     : forall (a1 a2 : nat) (B : Type) (b : B), a1 = a2 /\ b = b
+@p nat 0 0
+     : forall (B : Type) (b : B), 0 = 0 /\ b = b
+@p
+     : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
+p 0 0
+     : forall b : bool, 0 = 0 /\ b = b
+p
+     : forall (a1 a2 : nat) (B : Type) (b : B), a1 = a2 /\ b = b
+p 0 0 true
+     : 0 = 0 /\ true = true
+p 0 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
+p 0
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+p 0 0
+     : forall b : bool, 0 = 0 /\ b = b
+p 0 0
+     : forall b : bool, 0 = 0 /\ b = b
+p
+     : forall (a1 a2 : nat) (B : Type) (b : B), a1 = a2 /\ b = b
+p
+     : forall (a1 a2 : nat) (B : Type) (b : B), a1 = a2 /\ b = b
+@p nat 0 0
+     : forall (B : Type) (b : B), 0 = 0 /\ b = b
+@p
+     : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
+f x true
+     : 0 = 0 /\ true = true
+f x (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+f x (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+@f nat
+     : forall a1 a2 : nat,
+       T a1 a2 -> forall (B : Type) (b : B), a1 = a2 /\ b = b
+f (a1:=0) (a2:=0)
+     : T 0 0 -> forall (B : Type) (b : B), 0 = 0 /\ b = b
+f (a1:=0) (a2:=0)
+     : T 0 0 -> forall (B : Type) (b : B), 0 = 0 /\ b = b
+@f
+     : forall (A : Type) (a1 a2 : A),
+       T a1 a2 -> forall (B : Type) (b : B), a1 = a2 /\ b = b
+f
+     : T 0 0 -> forall (B : Type) (b : B), 0 = 0 /\ b = b
+x.(f) true
+     : 0 = 0 /\ true = true
+x.(f) (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+x.(f) (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+@f nat
+     : forall a1 a2 : nat,
+       T a1 a2 -> forall (B : Type) (b : B), a1 = a2 /\ b = b
+f (a1:=0) (a2:=0)
+     : T 0 0 -> forall (B : Type) (b : B), 0 = 0 /\ b = b
+f (a1:=0) (a2:=0)
+     : T 0 0 -> forall (B : Type) (b : B), 0 = 0 /\ b = b
+@f
+     : forall (A : Type) (a1 a2 : A),
+       T a1 a2 -> forall (B : Type) (b : B), a1 = a2 /\ b = b
+f
+     : T 0 0 -> forall (B : Type) (b : B), 0 = 0 /\ b = b
+p
+     : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
+where
+?A : [ |- Type]
+p
+     : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
+where
+?A : [ |- Type]
+u
+     : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
+u
+     : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
+p 0 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
+p 0 0
+     : forall b : bool, 0 = 0 /\ b = b
+@p nat 0 0
+     : forall (B : Type) (b : B), 0 = 0 /\ b = b
+@p nat 0 0
+     : forall (B : Type) (b : B), 0 = 0 /\ b = b
+u
+     : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
+where
+?A : [ |- Type]
+u
+     : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
+u
+     : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
+u
+     : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
+where
+?A : [ |- Type]
+u 0 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
+u 0 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
+@u nat 0 0
+     : forall (B : Type) (b : B), 0 = 0 /\ b = b
+@u nat 0 0
+     : forall (B : Type) (b : B), 0 = 0 /\ b = b
+u 0 0 true
+     : 0 = 0 /\ true = true
+u 0 0 true
+     : 0 = 0 /\ true = true
+v
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+v 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
+v 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
+v 0 (B:=bool) true
+     : 0 = 0 /\ true = true
+v
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+@v 0
+     : forall (B : Type) (b : B), 0 = 0 /\ b = b
+@v 0
+     : forall (B : Type) (b : B), 0 = 0 /\ b = b
+v 0 (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+v
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+v 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
+v 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
+v 0 (B:=bool) true
+     : 0 = 0 /\ true = true
+v
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+@v 0
+     : forall (B : Type) (b : B), 0 = 0 /\ b = b
+@v 0
+     : forall (B : Type) (b : B), 0 = 0 /\ b = b
+v 0 (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+##
+     : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
+where
+?A : [ |- Type]
+##
+     : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
+where
+?A : [ |- Type]
+## 0
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+## 0
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+## 0 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
+## 0 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
+## 0 0 (B:=bool) true
+     : 0 = 0 /\ true = true
+## 0 0 (B:=bool) true
+     : 0 = 0 /\ true = true
+## 0 0 (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+## 0 0 (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+p
+     : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
+where
+?A : [ |- Type]
+##
+     : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
+##
+     : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
+p 0
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+p 0
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+@p nat 0 0
+     : forall (B : Type) (b : B), 0 = 0 /\ b = b
+p 0 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
+p 0 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
+p 0 0 (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+p 0 0 true
+     : 0 = 0 /\ true = true
+## 0
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+## 0
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+## 0 0 (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+## 0 0 (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+## 0 0 (B:=bool) true
+     : 0 = 0 /\ true = true
+## 0 0 (B:=bool) true
+     : 0 = 0 /\ true = true
+## 0
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+## 0
+     : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
+## 0 0 (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+## 0 0 (B:=bool)
+     : forall b : bool, 0 = 0 /\ b = b
+## 0 0 (B:=bool) true
+     : 0 = 0 /\ true = true
+## 0 0 (B:=bool) true
+     : 0 = 0 /\ true = true
