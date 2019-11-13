@@ -57,6 +57,9 @@ mode but it can also be used in toplevel definitions as shown below.
 
 .. note::
 
+   - The grammar reserves the keywords ``lazymatch`` and
+     ``multimatch`` as well as the token ``||``.
+
    - The infix tacticals  ``… || …`` ,  ``… + …`` , and  ``… ; …``  are associative.
 
      .. example::
