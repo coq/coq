@@ -57,36 +57,6 @@ let raw_print = ref false
 
 let we_are_parsing = ref false
 
-(* Compatibility mode *)
-
-(* Current means no particular compatibility consideration.
-   For correct comparisons, this constructor should remain the last one. *)
-
-type compat_version = V8_9 | V8_10 | V8_11 | Current
-
-let compat_version = ref Current
-
-let version_compare v1 v2 = match v1, v2 with
-  | V8_9, V8_9 -> 0
-  | V8_9, _ -> -1
-  | _, V8_9 -> 1
-  | V8_10, V8_10 -> 0
-  | V8_10, _ -> -1
-  | _, V8_10 -> 1
-  | V8_11, V8_11 -> 0
-  | V8_11, _ -> -1
-  | _, V8_11 -> 1
-  | Current, Current -> 0
-
-let version_strictly_greater v = version_compare !compat_version v > 0
-let version_less_or_equal v = not (version_strictly_greater v)
-
-let pr_version = function
-  | V8_9 -> "8.9"
-  | V8_10 -> "8.10"
-  | V8_11 -> "8.11"
-  | Current -> "current"
-
 (* Translate *)
 let beautify = ref false
 let beautify_file = ref false

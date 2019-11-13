@@ -1206,10 +1206,10 @@ let vernac_hints ~atts dbnames h =
   let local = enforce_module_locality local in
   Hints.add_hints ~local dbnames (Hints.interp_hints ~poly h)
 
-let vernac_syntactic_definition ~atts lid x compat =
+let vernac_syntactic_definition ~atts lid x only_parsing =
   let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in
   Dumpglob.dump_definition lid false "syndef";
-  Metasyntax.add_syntactic_definition ~local:module_local deprecation (Global.env()) lid.v x compat
+  Metasyntax.add_syntactic_definition ~local:module_local deprecation (Global.env()) lid.v x only_parsing
 
 let default_env () = {
   Notation_term.ninterp_var_type = Id.Map.empty;

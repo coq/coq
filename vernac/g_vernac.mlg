@@ -62,18 +62,6 @@ let make_bullet s =
   | '*' -> Star n
   | _ -> assert false
 
-let parse_compat_version = let open Flags in function
-  | "8.12" -> Current
-  | "8.11" -> V8_11
-  | "8.10" -> V8_10
-  | "8.9" -> V8_9
-  | ("8.8" | "8.7" | "8.6" | "8.5" | "8.4" | "8.3" | "8.2" | "8.1" | "8.0") as s ->
-    CErrors.user_err ~hdr:"get_compat_version"
-      Pp.(str "Compatibility with version " ++ str s ++ str " not supported.")
-  | s ->
-    CErrors.user_err ~hdr:"get_compat_version"
-      Pp.(str "Unknown compatibility version \"" ++ str s ++ str "\".")
-
 (* For now we just keep the top-level location of the whole
    vernacular, that is to say, including attributes and control flags;
    this is not very convenient for advanced clients tho, so in the
@@ -1192,7 +1180,7 @@ GRAMMAR EXTEND Gram
      | IDENT "Notation"; id = identref;
          idl = LIST0 ident; ":="; c = constr; b = only_parsing ->
            { VernacSyntacticDefinition
-             (id,(idl,c),b) }
+             (id,(idl,c),{ onlyparsing = b }) }
      | IDENT "Notation"; s = lstring; ":=";
          c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> { l } | -> { [] } ];
@@ -1216,11 +1204,8 @@ GRAMMAR EXTEND Gram
   ] ]
   ;
   only_parsing:
-    [ [ "("; IDENT "only"; IDENT "parsing"; ")" ->
-         { Some Flags.Current }
-      | "("; IDENT "compat"; s = STRING; ")" ->
-         { Some (parse_compat_version s) }
-      | -> { None } ] ]
+    [ [ "("; IDENT "only"; IDENT "parsing"; ")" -> { true }
+      | -> { false } ] ]
   ;
   level:
     [ [ IDENT "level"; n = natural -> { NumLevel n }
@@ -1236,8 +1221,6 @@ GRAMMAR EXTEND Gram
       | IDENT "no"; IDENT "associativity" -> { SetAssoc Gramlib.Gramext.NonA }
       | IDENT "only"; IDENT "printing" -> { SetOnlyPrinting }
       | IDENT "only"; IDENT "parsing" -> { SetOnlyParsing }
-      | IDENT "compat"; s = STRING ->
-        { SetCompatVersion (parse_compat_version s) }
       | IDENT "format"; s1 = [s = STRING -> { CAst.make ~loc s } ];
                         s2 = OPT [s = STRING -> { CAst.make ~loc s } ] ->
           { begin match s1, s2 with

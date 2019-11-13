@@ -15,10 +15,8 @@ from io import open
 #   [`doc/stdlib/index-list.html.template`](/doc/stdlib/index-list.html.template)
 #   with the deleted file.
 # - Remove any notations in the standard library which have `compat "U.U"`.
-# - Update the type `compat_version` in [`lib/flags.ml`](/lib/flags.ml) by
-#   bumping all the version numbers by one, and update the interpretations
-#   of those flags in [`toplevel/coqargs.ml`](/toplevel/coqargs.ml) and
-#   [`vernac/g_vernac.mlg`](/vernac/g_vernac.mlg).
+# - Update the function `get_compat_file` in [`toplevel/coqargs.ml`](/toplevel/coqargs.ml)
+#   by bumping all the version numbers by one.
 #
 # - Remove the file
 #   [`test-suite/success/CompatOldOldFlag.v`](/test-suite/success/CompatOldOldFlag.v).
@@ -38,10 +36,8 @@ from io import open
 # - Update
 #   [`doc/stdlib/index-list.html.template`](/doc/stdlib/index-list.html.template)
 #   with the added file.
-# - Update the type `compat_version` in [`lib/flags.ml`](/lib/flags.ml) by
-#   bumping all the version numbers by one, and update the interpretations
-#   of those flags in [`toplevel/coqargs.ml`](/toplevel/coqargs.ml) and
-#   [`vernac/g_vernac.mlg`](/vernac/g_vernac.mlg).
+# - Update the function `get_compat_file` in [`toplevel/coqargs.ml`](/toplevel/coqargs.ml)
+#   by bumping all the version numbers by one.
 # - Update the files
 #   [`test-suite/success/CompatCurrentFlag.v`](/test-suite/success/CompatCurrentFlag.v),
 #   [`test-suite/success/CompatPreviousFlag.v`](/test-suite/success/CompatPreviousFlag.v),
@@ -70,10 +66,7 @@ DEFAULT_NUMBER_OF_OLD_VERSIONS = 2
 RELEASE_NUMBER_OF_OLD_VERSIONS = 2
 MASTER_NUMBER_OF_OLD_VERSIONS = 3
 EXTRA_HEADER = '\n(** Compatibility file for making Coq act similar to Coq v%s *)\n'
-FLAGS_MLI_PATH = os.path.join(ROOT_PATH, 'lib', 'flags.mli')
-FLAGS_ML_PATH = os.path.join(ROOT_PATH, 'lib', 'flags.ml')
 COQARGS_ML_PATH = os.path.join(ROOT_PATH, 'toplevel', 'coqargs.ml')
-G_VERNAC_PATH = os.path.join(ROOT_PATH, 'vernac', 'g_vernac.mlg')
 DOC_INDEX_PATH = os.path.join(ROOT_PATH, 'doc', 'stdlib', 'index-list.html.template')
 TEST_SUITE_RUN_PATH = os.path.join(ROOT_PATH, 'test-suite', 'tools', 'update-compat', 'run.sh')
 TEST_SUITE_PATHS = tuple(os.path.join(ROOT_PATH, 'test-suite', 'success', i)
@@ -248,118 +241,38 @@ def update_compat_files(old_versions, new_versions, assert_unchanged=False, **ar
                     contents = contents.replace(header, '%s\n%s' % (header, line))
                     update_file(contents, compat_path, exn_string=('Compat file %%s is missing line %s' % line), assert_unchanged=assert_unchanged, **args)
 
-def update_compat_versions_type_line(new_versions, contents, relpath):
-    compat_version_string = ' | '.join(['V%s_%s' % tuple(v.split('.')) for v in new_versions[:-1]] + ['Current'])
-    new_compat_line = 'type compat_version = %s' % compat_version_string
-    new_contents = re.sub(r'^type compat_version = .*$', new_compat_line, contents, flags=re.MULTILINE)
-    if new_compat_line not in new_contents:
-        raise Exception("Could not find 'type compat_version =' in %s" % relpath)
-    return new_contents
-
-def update_version_compare(new_versions, contents, relpath):
-    first_line = 'let version_compare v1 v2 = match v1, v2 with'
-    new_lines = [first_line]
-    for v in new_versions[:-1]:
-        V = 'V%s_%s' % tuple(v.split('.'))
-        new_lines.append('  | %s, %s -> 0' % (V, V))
-        new_lines.append('  | %s, _ -> -1' % V)
-        new_lines.append('  | _, %s -> 1' % V)
-    new_lines.append('  | Current, Current -> 0')
-    new_lines = '\n'.join(new_lines)
-    new_contents = re.sub(first_line + '.*' + 'Current, Current -> 0', new_lines, contents, flags=re.DOTALL|re.MULTILINE)
-    if new_lines not in new_contents:
-        raise Exception('Could not find version_compare in %s' % relpath)
-    return new_contents
-
-def update_pr_version(new_versions, contents, relpath):
-    first_line = 'let pr_version = function'
-    new_lines = [first_line]
-    for v in new_versions[:-1]:
-        V = 'V%s_%s' % tuple(v.split('.'))
-        new_lines.append('  | %s -> "%s"' % (V, v))
-    new_lines.append('  | Current -> "current"')
-    new_lines = '\n'.join(new_lines)
-    new_contents = re.sub(first_line + '.*' + 'Current -> "current"', new_lines, contents, flags=re.DOTALL|re.MULTILINE)
-    if new_lines not in new_contents:
-        raise Exception('Could not find pr_version in %s' % relpath)
-    return new_contents
-
-def update_add_compat_require(new_versions, contents, relpath):
-    first_line = 'let add_compat_require opts v ='
-    new_lines = [first_line, '  match v with']
-    for v in new_versions[:-1]:
-        V = 'V%s_%s' % tuple(v.split('.'))
-        new_lines.append('  | Flags.%s -> add_vo_require opts "Coq.Compat.%s" None (Some false)' % (V, version_name_to_compat_name(v, ext='')))
-    new_lines.append('  | Flags.Current -> add_vo_require opts "Coq.Compat.%s" None (Some false)' % version_name_to_compat_name(new_versions[-1], ext=''))
-    new_lines = '\n'.join(new_lines)
-    new_contents = re.sub(first_line + '.*' + 'Flags.Current -> add_vo_require opts "Coq.Compat.[^"]+" None .Some false.', new_lines, contents, flags=re.DOTALL|re.MULTILINE)
-    if new_lines not in new_contents:
-        raise Exception('Could not find add_compat_require in %s' % relpath)
-    return new_contents
-
-def update_parse_compat_version(new_versions, contents, relpath, **args):
+def update_get_compat_file(new_versions, contents, relpath):
     line_count = 3 # 1 for the first line, 1 for the invalid flags, and 1 for Current
-    first_line = 'let parse_compat_version = let open Flags in function'
+    first_line = 'let get_compat_file = function'
     split_contents = contents[contents.index(first_line):].split('\n')
     while True:
         cur_line = split_contents[:line_count][-1]
         if re.match(r'^  \| \([0-9 "\.\|]*\) as s ->$', cur_line) is not None:
             break
-        elif re.match(r'^  \| "[0-9\.]*" -> V[0-9_]*$', cur_line) is not None:
+        elif re.match(r'^  \| "[0-9\.]*" -> "Coq.Compat.Coq[0-9]*"$', cur_line) is not None:
             line_count += 1
         else:
-            raise Exception('Could not recognize line %d of parse_compat_version in %s as a list of invalid versions (line was %s)' % (line_count, relpath, repr(cur_line)))
+            raise Exception('Could not recognize line %d of get_compat_file in %s as a list of invalid versions (line was %s)' % (line_count, relpath, repr(cur_line)))
     old_function_lines = split_contents[:line_count]
     all_versions = re.findall(r'"([0-9\.]+)"', ''.join(old_function_lines))
     invalid_versions = tuple(i for i in all_versions if i not in new_versions)
     new_function_lines = [first_line]
-    for v, V in reversed(list(zip(new_versions, ['V%s_%s' % tuple(v.split('.')) for v in new_versions[:-1]] + ['Current']))):
+    for v, V in reversed(list(zip(new_versions, ['"Coq.Compat.Coq%s%s"' % tuple(v.split('.')) for v in new_versions]))):
         new_function_lines.append('  | "%s" -> %s' % (v, V))
     new_function_lines.append('  | (%s) as s ->' % ' | '.join('"%s"' % v for v in invalid_versions))
     new_lines = '\n'.join(new_function_lines)
     new_contents = contents.replace('\n'.join(old_function_lines), new_lines)
     if new_lines not in new_contents:
-        raise Exception('Could not find parse_compat_version in %s' % relpath)
+        raise Exception('Could not find get_compat_file in %s' % relpath)
     return new_contents
-
-def check_no_old_versions(old_versions, new_versions, contents, relpath):
-    for v in old_versions:
-        if v not in new_versions:
-            V = 'V%s_%s' % tuple(v.split('.'))
-            if V in contents:
-                raise Exception('Unreplaced usage of %s remaining in %s' % (V, relpath))
-
-def update_flags_mli(old_versions, new_versions, **args):
-    contents = get_file(FLAGS_MLI_PATH)
-    new_contents = update_compat_versions_type_line(new_versions, contents, os.path.relpath(FLAGS_MLI_PATH, ROOT_PATH))
-    check_no_old_versions(old_versions, new_versions, new_contents, os.path.relpath(FLAGS_MLI_PATH, ROOT_PATH))
-    update_if_changed(contents, new_contents, FLAGS_MLI_PATH, **args)
-
-def update_flags_ml(old_versions, new_versions, **args):
-    contents = get_file(FLAGS_ML_PATH)
-    new_contents = update_compat_versions_type_line(new_versions, contents, os.path.relpath(FLAGS_ML_PATH, ROOT_PATH))
-    new_contents = update_version_compare(new_versions, new_contents, os.path.relpath(FLAGS_ML_PATH, ROOT_PATH))
-    new_contents = update_pr_version(new_versions, new_contents, os.path.relpath(FLAGS_ML_PATH, ROOT_PATH))
-    check_no_old_versions(old_versions, new_versions, new_contents, os.path.relpath(FLAGS_ML_PATH, ROOT_PATH))
-    update_if_changed(contents, new_contents, FLAGS_ML_PATH, **args)
 
 def update_coqargs_ml(old_versions, new_versions, **args):
     contents = get_file(COQARGS_ML_PATH)
-    new_contents = update_add_compat_require(new_versions, contents, os.path.relpath(COQARGS_ML_PATH, ROOT_PATH))
-    check_no_old_versions(old_versions, new_versions, new_contents, os.path.relpath(COQARGS_ML_PATH, ROOT_PATH))
+    new_contents = update_get_compat_file(new_versions, contents, os.path.relpath(COQARGS_ML_PATH, ROOT_PATH))
     update_if_changed(contents, new_contents, COQARGS_ML_PATH, **args)
 
-def update_g_vernac(old_versions, new_versions, **args):
-    contents = get_file(G_VERNAC_PATH)
-    new_contents = update_parse_compat_version(new_versions, contents, os.path.relpath(G_VERNAC_PATH, ROOT_PATH), **args)
-    check_no_old_versions(old_versions, new_versions, new_contents, os.path.relpath(G_VERNAC_PATH, ROOT_PATH))
-    update_if_changed(contents, new_contents, G_VERNAC_PATH, **args)
-
 def update_flags(old_versions, new_versions, **args):
-    update_flags_mli(old_versions, new_versions, **args)
-    update_flags_ml(old_versions, new_versions, **args)
     update_coqargs_ml(old_versions, new_versions, **args)
-    update_g_vernac(old_versions, new_versions, **args)
 
 def update_test_suite(new_versions, assert_unchanged=False, test_suite_paths=TEST_SUITE_PATHS, test_suite_descriptions=TEST_SUITE_DESCRIPTIONS, test_suite_outdated_paths=tuple(), **args):
     assert(len(new_versions) == len(test_suite_paths))

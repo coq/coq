@@ -412,7 +412,6 @@ let string_of_theorem_kind = let open Decls in function
     | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_simple_entry_type typ
     | SetOnlyPrinting -> keyword "only printing"
     | SetOnlyParsing -> keyword "only parsing"
-    | SetCompatVersion v -> keyword("compat \"" ^ Flags.pr_version v ^ "\"")
     | SetFormat("text",s) -> keyword "format " ++ pr_ast qs s
     | SetFormat(k,s) -> keyword "format " ++ qs k ++ spc() ++ pr_ast qs s
 
@@ -1059,16 +1058,12 @@ let string_of_definition_object_kind = let open Decls in function
         )
       | VernacHints (dbnames,h) ->
         return (pr_hints dbnames h (pr_constr env sigma) (pr_constr_pattern_expr env sigma))
-      | VernacSyntacticDefinition (id,(ids,c),compat) ->
+      | VernacSyntacticDefinition (id,(ids,c),{onlyparsing}) ->
         return (
           hov 2
             (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++
                prlist_with_sep spc pr_id ids ++ str":=" ++ pr_constrarg c ++
-               pr_syntax_modifiers
-               (match compat with
-                | None -> []
-                | Some Flags.Current -> [SetOnlyParsing]
-                | Some v -> [SetCompatVersion v]))
+               pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
         )
       | VernacArguments (q, args, more_implicits, mods) ->
         return (

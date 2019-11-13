@@ -174,13 +174,6 @@ let add_vo_include opts unix_path coq_path implicit =
 let add_vo_require opts d p export =
   { opts with pre = { opts.pre with vo_requires = (d, p, export) :: opts.pre.vo_requires }}
 
-let add_compat_require opts v =
-  match v with
-  | Flags.V8_9 -> add_vo_require opts "Coq.Compat.Coq89" None (Some false)
-  | Flags.V8_10 -> add_vo_require opts "Coq.Compat.Coq810" None (Some false)
-  | Flags.V8_11 -> add_vo_require opts "Coq.Compat.Coq811" None (Some false)
-  | Flags.Current -> add_vo_require opts "Coq.Compat.Coq812" None (Some false)
-
 let add_load_vernacular opts verb s =
   { opts with pre = { opts.pre with load_vernacular_list = (CUnix.make_suffix s ".v",verb) :: opts.pre.load_vernacular_list }}
 
@@ -273,6 +266,18 @@ let get_native_name s =
     String.concat "/" [Filename.dirname s;
       Nativelib.output_dir; Library.native_name_from_filename s]
   with _ -> ""
+
+let get_compat_file = function
+  | "8.12" -> "Coq.Compat.Coq812"
+  | "8.11" -> "Coq.Compat.Coq811"
+  | "8.10" -> "Coq.Compat.Coq810"
+  | "8.9" -> "Coq.Compat.Coq89"
+  | ("8.8" | "8.7" | "8.6" | "8.5" | "8.4" | "8.3" | "8.2" | "8.1" | "8.0") as s ->
+    CErrors.user_err ~hdr:"get_compat_file"
+      Pp.(str "Compatibility with version " ++ str s ++ str " not supported.")
+  | s ->
+    CErrors.user_err ~hdr:"get_compat_file"
+      Pp.(str "Unknown compatibility version \"" ++ str s ++ str "\".")
 
 let to_opt_key = Str.(split (regexp " +"))
 
@@ -379,9 +384,7 @@ let parse_args ~help ~init arglist : t * string list =
     |"-worker-id" -> set_worker_id opt (next ()); oval
 
     |"-compat" ->
-      let v = G_vernac.parse_compat_version (next ()) in
-      Flags.compat_version := v;
-      add_compat_require oval v
+      add_vo_require oval (get_compat_file (next ())) None (Some false)
 
     |"-exclude-dir" ->
       System.exclude_directory (next ()); oval

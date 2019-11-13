@@ -52,7 +52,7 @@ val add_syntax_extension :
 (** Add a syntactic definition (as in "Notation f := ...") *)
 
 val add_syntactic_definition : local:bool -> Deprecation.t option -> env ->
-  Id.t -> Id.t list * constr_expr -> Flags.compat_version option -> unit
+  Id.t -> Id.t list * constr_expr -> onlyparsing_flag -> unit
 
 (** Print the Camlp5 state of a grammar *)
 
