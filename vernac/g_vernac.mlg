@@ -204,11 +204,11 @@ GRAMMAR EXTEND Gram
       (* Gallina inductive declarations *)
       | f = finite_token; indl = LIST1 inductive_definition SEP "with" ->
           { VernacInductive (f, indl) }
-      | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+      | IDENT "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           { VernacFixpoint (NoDischarge, recs) }
       | IDENT "Let"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           { VernacFixpoint (DoDischarge, recs) }
-      | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
+      | IDENT "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
           { VernacCoFixpoint (NoDischarge, corecs) }
       | IDENT "Let"; "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
           { VernacCoFixpoint (DoDischarge, corecs) }
@@ -284,7 +284,7 @@ GRAMMAR EXTEND Gram
     ;
 
   thm_token:
-    [ [ "Theorem" -> { Theorem }
+    [ [ IDENT "Theorem" -> { Theorem }
       | IDENT "Lemma" -> { Lemma }
       | IDENT "Fact" -> { Fact }
       | IDENT "Remark" -> { Remark }
@@ -293,15 +293,15 @@ GRAMMAR EXTEND Gram
       | IDENT "Property" -> { Property } ] ]
   ;
   def_token:
-    [ [ "Definition" -> { (NoDischarge,Definition) }
+    [ [ IDENT "Definition" -> { (NoDischarge,Definition) }
       | IDENT "Example" -> { (NoDischarge,Example) }
       | IDENT "SubClass" -> { (NoDischarge,SubClass) } ] ]
   ;
   assumption_token:
-    [ [ "Hypothesis" -> { (DoDischarge, Logical) }
-      | "Variable" -> { (DoDischarge, Definitional) }
-      | "Axiom" -> { (NoDischarge, Logical) }
-      | "Parameter" -> { (NoDischarge, Definitional) }
+    [ [ IDENT "Hypothesis" -> { (DoDischarge, Logical) }
+      | IDENT "Variable" -> { (DoDischarge, Definitional) }
+      | IDENT "Axiom" -> { (NoDischarge, Logical) }
+      | IDENT "Parameter" -> { (NoDischarge, Definitional) }
       | IDENT "Conjecture" -> { (NoDischarge, Conjectural) } ] ]
   ;
   assumptions_token:

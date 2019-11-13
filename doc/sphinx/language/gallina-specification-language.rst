@@ -96,10 +96,8 @@ Keywords
   The following character sequences are reserved keywords that cannot be
   used as identifiers::
 
-    _ Axiom CoFixpoint Definition Fixpoint Hypothesis IF Parameter Prop
-    SProp Set Theorem Type Variable as at by cofix discriminated else
-    end exists exists2 fix for forall fun if in lazymatch let match
-    multimatch return then using where with
+    _ Prop SProp Set Type as at cofix else end fix for forall fun if
+    in let match return then where with
 
   Note that plugins and libraries may reserve additional keywords when they
   are loaded.
@@ -107,11 +105,12 @@ Keywords
   The following identifiers are not reserved keywords but are
   part of the definition of Gallina::
 
-    Admitted Axioms Class CoInductive Conjecture Conjectures
-    Constraints Corollary Cumulative Defined Example Fact Global
-    Hypotheses Inductive Lemma Let Local Monomorphic NonCumulative
-    Parameters Polymorphic Private Proof Property Proposition Qed
-    Record Register Remark Structure SubClass Universe Universes
+    Admitted Axiom Axioms Class CoFixpoint CoInductive Conjecture
+    Conjectures Constraints Corollary Cumulative Defined Definition
+    Example Fact Fixpoint Global Hypotheses Hypothesis Inductive Lemma
+    Let Local Monomorphic NonCumulative Parameter Parameters
+    Polymorphic Private Proof Property Proposition Record Register Qed
+    Remark Structure SubClass Theorem Universe Universes Variable
     Variables Variant
 
 Other tokens
