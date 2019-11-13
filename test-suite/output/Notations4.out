@@ -57,3 +57,5 @@ where
      |- Type] (pat, p0, p cannot be used)
 ?T0 : [y : nat  pat : ?T0 * nat  p0 : ?T0 * nat  p := p0 : ?T0 * nat
       |- Type] (pat, p0, p cannot be used)
+fun '{| |} => true
+     : R -> bool
