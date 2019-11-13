@@ -742,7 +742,7 @@ let extern_applied_ref inctx impl (cf,f) us args =
 let extern_applied_syntactic_definition n extraimpl (cf,f) syndefargs extraargs =
   try
     let syndefargs = List.map (fun a -> (a,None)) syndefargs in
-    let extraargs = adjust_implicit_arguments false (List.length extraargs) 1 extraargs extraimpl in
+    let extraargs = adjust_implicit_arguments false n (n-List.length extraargs+1) extraargs extraimpl in
     let args = syndefargs @ extraargs in
     if args = [] then cf else CApp ((None, CAst.make cf), args)
   with Expl ->
@@ -762,8 +762,10 @@ let extern_applied_notation n impl f args =
   if List.is_empty args then
     f.CAst.v
   else
-    let args = adjust_implicit_arguments false (List.length args) 1 args impl in
+  try
+    let args = adjust_implicit_arguments false n (n-List.length args+1) args impl in
     mkFlattenedCApp (f,args)
+  with Expl -> raise No_match
 
 let extern_args extern env args =
   let map (arg, argscopes) = lazy (extern argscopes env arg) in

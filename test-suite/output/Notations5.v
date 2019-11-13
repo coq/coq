@@ -181,7 +181,7 @@ Module AppliedTermsPrinting.
   Check v 0.
   (* v 0 *)
   Check v 0 true.
-  (* v 0 (B:=bool) true -- BUG *)
+  (* v 0 true *)
   Check @p nat 0.
   (* v *)
   Check @p nat 0 0.
@@ -209,7 +209,7 @@ Module AppliedTermsPrinting.
   Check v 0.
   (* v 0 *)
   Check v 0 true.
-  (* v 0 (B:=bool) true -- BUG *)
+  (* v 0 true *)
   Check @p nat 0.
   (* v *)
   Check @p nat 0 0.
@@ -243,9 +243,9 @@ Module AppliedTermsPrinting.
   Check ## 0 0.
   (* ## 0 0 *)
   Check p 0 0 true.
-  (* ## 0 0 (B:=bool) true -- BUG B should not be displayed *)
+  (* ## 0 0 true *)
   Check ## 0 0 true.
-  (* ## 0 0 (B:=bool) true -- BUG B should not be displayed *)
+  (* ## 0 0 true *)
   Check p 0 0 (B:=bool).
   (* ## 0 0 (B:=bool) *)
   Check ## 0 0 (B:=bool).
@@ -298,16 +298,16 @@ Module AppliedTermsPrinting.
   (* ## 0 *)
   Check ## 0.
   (* ## 0 *)
-  (* Check ## 0 0. *)
-  (* Anomaly *)
+  Check ## 0 0.
+  (* @p nat 0 0 *)
   Check p 0 0 (B:=bool).
   (* ## 0 0 (B:=bool) *)
   Check ## 0 0 bool.
   (* ## 0 0 (B:=bool) -- INCONSISTENT parsing/printing *)
   Check p 0 0 true.
-  (* ## 0 0 (B:=bool) true -- BUG B should not be displayed *)
+  (* ## 0 0 true *)
   Check ## 0 0 bool true.
-  (* ## 0 0 (B:=bool) true -- INCONSISTENT parsing/printing + BUG B should not be displayed *)
+  (* ## 0 0 true -- INCONSISTENT parsing/printing *)
 
   End NotationForPartialApplication.
 
@@ -324,16 +324,16 @@ Module AppliedTermsPrinting.
   (* ## 0 *)
   Check ## 0.
   (* ## 0 *)
-  (* Check ## 0 0. *)
-  (* Anomaly *)
+  Check ## 0 0.
+  (* @p nat 0 0 *)
   Check p 0 0 (B:=bool).
   (* ## 0 0 (B:=bool) *)
   Check ## 0 0 bool.
   (* ## 0 0 (B:=bool) -- INCONSISTENT parsing/printing *)
   Check p 0 0 true.
-  (* ## 0 0 (B:=bool) true -- BUG B should not be displayed *)
+  (* ## 0 0 true *)
   Check ## 0 0 bool true.
-  (* ## 0 0 (B:=bool) true -- INCONSISTENCY parsing/printing + BUG B should not be displayed *)
+  (* ## 0 0 true -- INCONSISTENCY parsing/printing *)
 
   End AtNotationForPartialApplication.
 
