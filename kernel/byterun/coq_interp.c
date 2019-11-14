@@ -17,6 +17,8 @@
 #include <signal.h>
 #include <stdint.h>
 #include <caml/memory.h>
+#include <caml/signals.h>
+#include <caml/version.h>
 #include <math.h>
 #include "coq_gc.h"
 #include "coq_instruct.h"
@@ -203,11 +205,13 @@ if (sp - num_args < coq_stack_threshold) {                                     \
     *sp = swap_accu_sp_tmp__;                   \
   }while(0)
 
+#if OCAML_VERSION < 41000
 /* For signal handling, we hijack some code from the caml runtime */
 
 extern intnat volatile caml_signals_are_pending;
 extern intnat volatile caml_pending_signals[];
 extern void caml_process_pending_signals(void);
+#endif
 
 /* The interpreter itself */
 
@@ -506,11 +510,22 @@ value coq_interprete
       print_instr("check_stack");
       CHECK_STACK(0);
       /* We also check for signals */
+#if OCAML_VERSION >= 41000
+      {
+        value res = caml_process_pending_actions_exn();
+        if (Is_exception_result(res)) {
+          /* If there is an asynchronous exception, we reset the vm */
+          coq_sp = coq_stack_high;
+          caml_raise(Extract_exception(res));
+        }
+      }
+#else
       if (caml_signals_are_pending) {
         /* If there's a Ctrl-C, we reset the vm */
         if (caml_pending_signals[SIGINT]) { coq_sp = coq_stack_high; }
         caml_process_pending_signals();
       }
+#endif
       Next;
 
       Instruct(ENSURESTACKCAPACITY) {
