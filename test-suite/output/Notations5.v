@@ -338,3 +338,61 @@ Module AppliedTermsPrinting.
   End AtNotationForPartialApplication.
 
 End AppliedTermsPrinting.
+
+Module AppliedPatternsPrinting.
+
+  (* Other tests testing inheritance of scope and implicit in
+     term and pattern for parsing and printing *)
+
+  Inductive T := p (a:nat) (b:bool) {B} (b:B) : T.
+  Notation "0" := true : bool_scope.
+
+  Module A.
+  Notation "#" := @p (at level 0).
+  Check # 0 0 _ true.
+  Check fun a => match a with # 0 0 _ _ => 1 | _ => 2 end. (* !! *)
+  End A.
+
+  Module B.
+  Notation "#'" := p (at level 0).
+  Check #' 0 0 true.
+  Check fun a => match a with #' 0 0 _ => 1 | _ => 2 end.
+  End B.
+
+  Module C.
+  Notation "## q" := (@p q) (at level 0, q at level 0).
+  Check ## 0 0 true.
+  Check fun a => match a with ## 0 0 _ => 1 | _ => 2 end.
+  End C.
+
+  Module D.
+  Notation "##' q" := (p q) (at level 0, q at level 0).
+  Check ##' 0 0 true.
+  Check fun a => match a with ##' 0 0 _ => 1 | _ => 2 end.
+  End D.
+
+  Module E.
+  Notation P := @ p.
+  Check P 0 0 _ true.
+  Check fun a => match a with P 0 0 _ _ => 1 | _ => 2 end.
+  End E.
+
+  Module F.
+  Notation P' := p.
+  Check P' 0 0 true.
+  Check fun a => match a with P' 0 0 _ => 1 | _ => 2 end.
+  End F.
+
+  Module G.
+  Notation Q q := (@p q).
+  Check Q 0 0 true.
+  Check fun a => match a with Q 0 0 _ => 1 | _ => 2 end.
+  End G.
+
+  Module H.
+  Notation Q' q := (p q).
+  Check Q' 0 0 true.
+  Check fun a => match a with Q' 0 0 _ => 1 | _ => 2 end.
+  End H.
+
+End AppliedPatternsPrinting.

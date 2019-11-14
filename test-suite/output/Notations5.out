@@ -254,3 +254,59 @@ where
      : 0 = 0 /\ true = true
 ## 0 0 true
      : 0 = 0 /\ true = true
+# 0 0 bool 0%bool
+     : T
+fun a : T => match a with
+             | # 0 0 _ _ => 1
+             | _ => 2
+             end
+     : T -> nat
+#' 0 0 0%bool
+     : T
+fun a : T => match a with
+             | #' 0 0 _ => 1
+             | _ => 2
+             end
+     : T -> nat
+## 0 0 0%bool
+     : T
+fun a : T => match a with
+             | ## 0 0 _ => 1
+             | _ => 2
+             end
+     : T -> nat
+##' 0 0 0%bool
+     : T
+fun a : T => match a with
+             | ##' 0 0 _ => 1
+             | _ => 2
+             end
+     : T -> nat
+P 0 0 bool 0%bool
+     : T
+fun a : T => match a with
+             | P 0 0 _ _ => 1
+             | _ => 2
+             end
+     : T -> nat
+P' 0 0 0%bool
+     : T
+fun a : T => match a with
+             | P' 0 0 _ => 1
+             | _ => 2
+             end
+     : T -> nat
+Q 0 0 0%bool
+     : T
+fun a : T => match a with
+             | Q 0 0 _ => 1
+             | _ => 2
+             end
+     : T -> nat
+Q' 0 0 0%bool
+     : T
+fun a : T => match a with
+             | Q' 0 0 _ => 1
+             | _ => 2
+             end
+     : T -> nat
