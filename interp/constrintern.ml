@@ -1680,7 +1680,7 @@ let drop_notations_pattern looked_for genv =
           test_kind top g;
           Dumpglob.add_glob ?loc:qid.loc g;
           let (_,argscs) = find_remaining_scopes [] pats g in
-          Some (g,[],List.map2 (fun x -> in_pat false (x,snd scopes)) argscs pats)
+          Some (g,[],List.map2 (in_pat_sc scopes) argscs pats)
     with Not_found -> None
   and in_pat top scopes pt =
     let open CAst in
@@ -1780,7 +1780,15 @@ let drop_notations_pattern looked_for genv =
       let (argscs1,argscs2) = find_remaining_scopes pl args g in
       let pl = List.map2 (fun x -> in_not false loc (x,snd scopes) fullsubst []) argscs1 pl in
       let pl = add_local_defs_and_check_length loc genv g pl args in
-      DAst.make ?loc @@ RCPatCstr (g, pl @ List.map (in_pat false scopes) args, [])
+      let args = List.map2 (fun x -> in_pat false (x,snd scopes)) argscs2 args in
+      let pat =
+        if List.length pl = 0 then
+          (* Convention: if notation is @f, encoded as NApp(Nref g,[]), then
+             implicit arguments are not inherited *)
+          RCPatCstr (g, pl @ args, [])
+        else
+          RCPatCstr (g, pl, args) in
+      DAst.make ?loc @@ pat
     | NList (x,y,iter,terminator,revert) ->
       if not (List.is_empty args) then user_err ?loc
         (strbrk "Application of arguments to a recursive notation not supported in patterns.");
