@@ -1139,7 +1139,8 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
    at level :math:`\Type` (without annotations or hiding it behind a
    definition) template polymorphic if possible.
 
-   This can be prevented using the ``notemplate`` attribute.
+   This can be prevented using the ``universes(notemplate)``
+   attribute.
 
 .. warn:: Automatically declaring @ident as template polymorphic.
 
@@ -1147,9 +1148,9 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
    implicitly declared template polymorphic by :flag:`Auto Template
    Polymorphism`.
 
-   An inductive type can be forced to be template polymorphic using the
-   ``template`` attribute: it should then fulfill the criterion to
-   be template polymorphic or an error is raised.
+   An inductive type can be forced to be template polymorphic using
+   the ``universes(template)`` attribute: it should then fulfill the
+   criterion to be template polymorphic or an error is raised.
 
 .. exn:: Inductive @ident cannot be made template polymorphic.
 
@@ -1160,7 +1161,7 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
    Template polymorphism and universe polymorphism (see Chapter
    :ref:`polymorphicuniverses`) are incompatible, so if the later is
    enabled it will prevail over automatic template polymorphism and
-   cause an error when using the ``template`` attribute.
+   cause an error when using the ``universes(template)`` attribute.
 
 .. flag:: Template Check
 
