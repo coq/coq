@@ -20,6 +20,8 @@ Check {| field := 5 |}.
 Check build_r 5.
 Check build_c 5.
 
+Set Printing Records.
+
 Record N := C { T : Type; _ : True }.
 Check fun x:N => let 'C _ p := x in p.
 Check fun x:N => let 'C T _ := x in T.

@@ -403,6 +403,36 @@ let pattern_printable_in_both_syntax (ind,_ as c) =
       (List.for_all is_status_implicit params)&&(List.for_all (fun x -> not (is_status_implicit x)) args)
   ) impl_st
 
+let extern_record_pattern cstrsp args =
+  try
+    if !Flags.raw_print then raise Exit;
+    let projs = Recordops.lookup_projections (fst cstrsp) in
+    if PrintingRecord.active (fst cstrsp) then
+      ()
+    else if PrintingConstructor.active (fst cstrsp) then
+      raise Exit
+    else if not (get_record_print ()) then
+      raise Exit;
+    let rec ip projs args acc =
+      match projs, args with
+      | [], [] -> acc
+      | proj :: q, pat :: tail ->
+        let acc =
+          match proj, pat with
+          | _, { CAst.v = CPatAtom None } ->
+            (* we don't want to have 'x := _' in our patterns *)
+            acc
+          | Some c, _ ->
+            let loc = pat.CAst.loc in
+            (extern_reference ?loc Id.Set.empty (GlobRef.ConstRef c), pat) :: acc
+          | _ -> raise No_match in
+        ip q tail acc
+      | _ -> assert false
+    in
+    Some (List.rev (ip projs args []))
+  with
+    Not_found | No_match | Exit -> None
+
  (* Better to use extern_glob_constr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
   try
@@ -437,27 +467,9 @@ let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
         | PatCstr(cstrsp,args,na) ->
           let args = List.map (extern_cases_pattern_in_scope allscopes vars) args in
           let p =
-            try
-              if !Flags.raw_print then raise Exit;
-              let projs = Recordops.lookup_projections (fst cstrsp) in
-              let rec ip projs args acc =
-                match projs, args with
-                  | [], [] -> acc
-                  | proj :: q, pat :: tail ->
-                     let acc =
-                       match proj, pat with
-                       | _, { CAst.v = CPatAtom None } ->
-                          (* we don't want to have 'x := _' in our patterns *)
-                          acc
-                       | Some c, _ ->
-                          ((extern_reference ?loc Id.Set.empty (GlobRef.ConstRef c), pat) :: acc)
-                       | _ -> raise No_match in
-                     ip q tail acc
-                  | _ -> assert false
-              in
-              CPatRecord(List.rev (ip projs args []))
-            with
-                Not_found | No_match | Exit ->
+            match extern_record_pattern cstrsp args with
+            | Some l -> CPatRecord l
+            | None ->
                   let c = extern_reference Id.Set.empty (GlobRef.ConstructRef cstrsp) in
                   if Constrintern.get_asymmetric_patterns () then
                     if pattern_printable_in_both_syntax cstrsp
