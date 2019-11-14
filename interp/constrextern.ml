@@ -537,7 +537,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
       let l2 = List.map (fun (c,allscopes) -> extern_cases_pattern_in_scope allscopes vars c) more_args in
       let l2' = if Constrintern.get_asymmetric_patterns () then l2
         else
-          match drop_implicits_in_patt gr (nb_to_drop + List.length l1) l2 with
+          match drop_implicits_in_patt gr nb_to_drop l2 with
             |Some true_args -> true_args
             |None -> raise No_match
       in
