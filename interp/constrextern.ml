@@ -508,7 +508,10 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
                 let subscope = (subentry,(scopt,scl@scopes')) in
                 List.map (extern_cases_pattern_in_scope subscope vars) c)
                 substlist in
-            let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
+            let subscopes = find_arguments_scope gr in
+            let more_args_scopes = try List.skipn nb_to_drop subscopes with Failure _ -> [] in
+            let more_args = fill_arg_scopes more_args more_args_scopes allscopes in
+            let l2 = List.map (fun (c,allscopes) -> extern_cases_pattern_in_scope allscopes vars c) more_args in
             let l2' = if Constrintern.get_asymmetric_patterns () || not (List.is_empty ll) then l2
               else
                 match drop_implicits_in_patt gr nb_to_drop l2 with
@@ -528,7 +531,10 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
         List.rev_map (fun (c,(subentry,(scopt,scl))) ->
           extern_cases_pattern_in_scope (subentry,(scopt,scl@scopes)) vars c)
           subst in
-      let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
+      let subscopes = find_arguments_scope gr in
+      let more_args_scopes = try List.skipn nb_to_drop subscopes with Failure _ -> [] in
+      let more_args = fill_arg_scopes more_args more_args_scopes allscopes in
+      let l2 = List.map (fun (c,allscopes) -> extern_cases_pattern_in_scope allscopes vars c) more_args in
       let l2' = if Constrintern.get_asymmetric_patterns () then l2
         else
           match drop_implicits_in_patt gr (nb_to_drop + List.length l1) l2 with
