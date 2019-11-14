@@ -281,6 +281,17 @@ let get_extern_reference () = !my_extern_reference
 let extern_reference ?loc vars l = !my_extern_reference vars l
 
 (**********************************************************************)
+(* utilities                                                          *)
+
+let rec fill_arg_scopes args subscopes (entry,(_,scopes) as all) =
+  match args, subscopes with
+  | [], _ -> []
+  | a :: args, scopt :: subscopes ->
+    (a, (entry, (scopt, scopes))) :: fill_arg_scopes args subscopes all
+  | a :: args, [] ->
+    (a, (entry, (None, scopes))) :: fill_arg_scopes args [] all
+
+(**********************************************************************)
 (* mapping patterns to cases_pattern_expr                                *)
 
 let add_patt_for_params ind l =
@@ -728,13 +739,6 @@ let extern_applied_notation n impl f args =
   else
     let args = adjust_implicit_arguments false (List.length args) 1 args impl in
     mkFlattenedCApp (f,args)
-
-let rec fill_arg_scopes args subscopes (entry,(_,scopes) as all) = match args, subscopes with
-| [], _ -> []
-| a :: args, scopt :: subscopes ->
-  (a, (entry, (scopt, scopes))) :: fill_arg_scopes args subscopes all
-| a :: args, [] ->
-  (a, (entry, (None, scopes))) :: fill_arg_scopes args [] all
 
 let extern_args extern env args =
   let map (arg, argscopes) = lazy (extern argscopes env arg) in
