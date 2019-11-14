@@ -226,8 +226,10 @@ where
      : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
 ## 0
      : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
-@p nat 0 0
-     : forall (B : Type) (b : B), 0 = 0 /\ b = b
+## 0 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
 ## 0 0 (B:=bool)
      : forall b : bool, 0 = 0 /\ b = b
 ## 0 0 (B:=bool)
@@ -240,8 +242,10 @@ where
      : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
 ## 0
      : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
-@p nat 0 0
-     : forall (B : Type) (b : B), 0 = 0 /\ b = b
+## 0 0
+     : forall b : ?B, 0 = 0 /\ b = b
+where
+?B : [ |- Type]
 ## 0 0 (B:=bool)
      : forall b : bool, 0 = 0 /\ b = b
 ## 0 0 (B:=bool)

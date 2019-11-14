@@ -2070,9 +2070,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
             | CRef (ref,us) ->
                intern_applied_reference ~isproj intern env
                  (Environ.named_context_val globalenv) lvar us args ref
-            | CNotation (_,ntn,([],[],[],[])) ->
+            | CNotation (_,ntn,ntnargs) ->
                 assert (Option.is_empty isproj);
-                let c = intern_notation intern env ntnvars loc ntn ([],[],[],[]) in
+                let c = intern_notation intern env ntnvars loc ntn ntnargs in
                 let x, impl, scopes, l = find_appl_head_data c in
                   (x,impl,scopes,l), args
             | _ -> assert (Option.is_empty isproj); (intern_no_implicit env f,[],[],[]), args in

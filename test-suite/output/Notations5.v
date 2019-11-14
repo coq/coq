@@ -299,15 +299,15 @@ Module AppliedTermsPrinting.
   Check ## 0.
   (* ## 0 *)
   Check ## 0 0.
-  (* @p nat 0 0 *)
+  (* ## 0 0 *)
   Check p 0 0 (B:=bool).
   (* ## 0 0 (B:=bool) *)
-  Check ## 0 0 bool.
-  (* ## 0 0 (B:=bool) -- INCONSISTENT parsing/printing *)
+  Check ## 0 0 (B:=bool).
+  (* ## 0 0 (B:=bool) *)
   Check p 0 0 true.
   (* ## 0 0 true *)
-  Check ## 0 0 bool true.
-  (* ## 0 0 true -- INCONSISTENT parsing/printing *)
+  Check ## 0 0 true.
+  (* ## 0 0 true *)
 
   End NotationForPartialApplication.
 
@@ -325,15 +325,15 @@ Module AppliedTermsPrinting.
   Check ## 0.
   (* ## 0 *)
   Check ## 0 0.
-  (* @p nat 0 0 *)
+  (* ## 0 0 *)
   Check p 0 0 (B:=bool).
   (* ## 0 0 (B:=bool) *)
-  Check ## 0 0 bool.
-  (* ## 0 0 (B:=bool) -- INCONSISTENT parsing/printing *)
+  Check ## 0 0 (B:=bool).
+  (* ## 0 0 (B:=bool) *)
   Check p 0 0 true.
   (* ## 0 0 true *)
-  Check ## 0 0 bool true.
-  (* ## 0 0 true -- INCONSISTENCY parsing/printing *)
+  Check ## 0 0 true.
+  (* ## 0 0 true *)
 
   End AtNotationForPartialApplication.
 
