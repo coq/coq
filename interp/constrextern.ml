@@ -485,7 +485,7 @@ let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
       in
       insert_pat_coercion coercion pat
 
-and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
+and apply_notation_to_pattern ?loc gr ((subst,substlist),(no_implicit,nb_to_drop,more_args))
     (custom, (tmp_scope, scopes) as allscopes) vars =
   function
     | NotationRule (_,ntn as specific_ntn) ->
@@ -514,7 +514,8 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
             let l2 = List.map (fun (c,allscopes) -> extern_cases_pattern_in_scope allscopes vars c) more_args in
             let l2' = if Constrintern.get_asymmetric_patterns () || not (List.is_empty ll) then l2
               else
-                match drop_implicits_in_patt gr nb_to_drop l2 with
+                if no_implicit then l2 else
+                  match drop_implicits_in_patt gr nb_to_drop l2 with
                   |Some true_args -> true_args
                   |None -> raise No_match
             in
@@ -537,7 +538,8 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
       let l2 = List.map (fun (c,allscopes) -> extern_cases_pattern_in_scope allscopes vars c) more_args in
       let l2' = if Constrintern.get_asymmetric_patterns () then l2
         else
-          match drop_implicits_in_patt gr nb_to_drop l2 with
+          if no_implicit then l2 else
+            match drop_implicits_in_patt gr nb_to_drop l2 with
             |Some true_args -> true_args
             |None -> raise No_match
       in
