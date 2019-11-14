@@ -1071,11 +1071,11 @@ let find_appl_head_data c =
       c, impls, scopes, []
   | GApp (r, l) ->
     begin match DAst.get r with
-    | GRef (ref,_) when l != [] ->
+    | GRef (ref,_) ->
       let n = List.length l in
       let impls = implicits_of_global ref in
       let scopes = find_arguments_scope ref in
-        c, List.map (drop_first_implicits n) impls,
+        c, (if n = 0 then [] else List.map (drop_first_implicits n) impls),
         List.skipn_at_least n scopes,[]
     | _ -> c,[],[],[]
     end

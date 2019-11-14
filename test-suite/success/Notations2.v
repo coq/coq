@@ -185,3 +185,12 @@ Import A.
 Infix "+++" := Nat.add (at level 80).
 
 End M18.
+
+Module InheritanceArgumentScopes.
+
+Axiom p : forall (A:Type) (b:nat), A = A /\ b = b.
+Check fun A n => p (A * A) (n * n). (* safety check *)
+Notation q := @p.
+Check fun A n => q (A * A) (n * n). (* check that argument scopes are propagated *)
+
+End InheritanceArgumentScopes.
