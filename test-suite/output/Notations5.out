@@ -78,27 +78,27 @@ f
        T a1 a2 -> forall (B : Type) (b : B), a1 = a2 /\ b = b
 f
      : T 0 0 -> forall (B : Type) (b : B), 0 = 0 /\ b = b
-u
+u ?A
+     : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
+where
+?A : [ |- Type]
+u ?A
      : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
 where
 ?A : [ |- Type]
 u
-     : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
-where
-?A : [ |- Type]
-@u
      : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
-@u
+u
      : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
-u 0 0
+u nat 0 0 ?B
      : forall b : ?B, 0 = 0 /\ b = b
 where
 ?B : [ |- Type]
-u 0 0
+u nat 0 0 bool
      : forall b : bool, 0 = 0 /\ b = b
-@u nat 0 0
+u nat 0 0
      : forall (B : Type) (b : B), 0 = 0 /\ b = b
-@u nat 0 0
+u nat 0 0
      : forall (B : Type) (b : B), 0 = 0 /\ b = b
 u
      : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
@@ -196,7 +196,7 @@ where
      : forall b : bool, 0 = 0 /\ b = b
 ## 0 0 (B:=bool)
      : forall b : bool, 0 = 0 /\ b = b
-##
+## ?A
      : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
 where
 ?A : [ |- Type]
@@ -204,23 +204,23 @@ where
      : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
 ##
      : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
-## 0
+## nat 0
      : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
-## 0
+## nat 0
      : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
-@p nat 0 0
+## nat 0 0
      : forall (B : Type) (b : B), 0 = 0 /\ b = b
-## 0 0
+## nat 0 0 ?B
      : forall b : ?B, 0 = 0 /\ b = b
 where
 ?B : [ |- Type]
-## 0 0
+## nat 0 0 ?B
      : forall b : ?B, 0 = 0 /\ b = b
 where
 ?B : [ |- Type]
-## 0 0
+## nat 0 0 bool
      : forall b : bool, 0 = 0 /\ b = b
-## 0 0 true
+## nat 0 0 bool true
      : 0 = 0 /\ true = true
 ## 0
      : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
