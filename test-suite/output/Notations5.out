@@ -104,9 +104,9 @@ u
      : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b
 where
 ?A : [ |- Type]
-u
+@u
      : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
-u
+@u
      : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
 u
      : forall (a1 a2 : ?A) (B : Type) (b : B), a1 = a2 /\ b = b

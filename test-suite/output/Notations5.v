@@ -145,9 +145,9 @@ Module AppliedTermsPrinting.
   Check p.
   (* u *)
   Check @p.
-  (* u -- BUG *)
+  (* @u *)
   Check @u.
-  (* u -- BUG *)
+  (* @u *)
   Check u.
   (* u *)
   Check p 0 0.

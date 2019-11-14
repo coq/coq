@@ -1216,7 +1216,7 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
               (* Note: NApp(NRef f,[]), hence n=0, encodes @f *)
               (if Int.equal n 0 then f else DAst.make @@ GApp (f,args1)),
               args2, args2scopes, args2impls
-          | None when nallargs > 0 ->
+          | None ->
             begin match DAst.get f with
             | GRef (ref,us) -> f, args, argsscopes, argsimpls
             | _ -> t, [], [], []
@@ -1226,7 +1226,6 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
             | GRef (ref,us) -> DAst.make @@ GApp (t,[]), [], [], []
             | _ -> t, [], [], []
             end
-          | None -> t, [], [], []
           | _ -> raise No_match in
         (* Try matching ... *)
         let terms,termlists,binders,binderlists =
