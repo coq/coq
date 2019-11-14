@@ -1209,21 +1209,15 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
             [], [] in
         (* Adjust to the number of arguments expected by the notation *)
         let (t,args,argsscopes,argsimpls) = match n with
-          | Some n when nallargs >= n && nallargs > 0 ->
+          | Some n when nallargs >= n ->
               let args1, args2 = List.chop n args in
               let args2scopes = try List.skipn n argsscopes with Failure _ -> [] in
               let args2impls = try List.skipn n argsimpls with Failure _ -> [] in
               (* Note: NApp(NRef f,[]), hence n=0, encodes @f *)
-              (if Int.equal n 0 then f else DAst.make @@ GApp (f,args1)),
-              args2, args2scopes, args2impls
+              DAst.make @@ GApp (f,args1), args2, args2scopes, args2impls
           | None ->
             begin match DAst.get f with
             | GRef (ref,us) -> f, args, argsscopes, argsimpls
-            | _ -> t, [], [], []
-            end
-          | Some 0 when nallargs = 0 ->
-            begin match DAst.get f with
-            | GRef (ref,us) -> DAst.make @@ GApp (t,[]), [], [], []
             | _ -> t, [], [], []
             end
           | _ -> raise No_match in

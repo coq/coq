@@ -115,21 +115,21 @@ Module AppliedTermsPrinting.
   Notation u := @p.
 
   Check u _.
-  (* p *)
+  (* u -- INCONSISTENT parsing/printing *)
   Check p.
-  (* p *)
+  (* u *)
   Check @p.
-  (* u *)
+  (* @u -- INCONSISTENT parsing/printing *)
   Check u.
-  (* u *)
+  (* @u -- INCONSISTENT parsing/printing *)
   Check p 0 0.
-  (* p 0 0 *)
+  (* u 0 0 *)
   Check u nat 0 0 bool.
-  (* p 0 0 -- WEAKNESS should ideally be (B:=bool) *)
+  (* u 0 0 -- INCONSISTENT parsing/printing *)
   Check u nat 0 0.
-  (* @p nat 0 0 *)
+  (* @u nat 0 0 *)
   Check @p nat 0 0.
-  (* @p nat 0 0 *)
+  (* @u nat 0 0 *)
 
   End AtAbbreviationForApplicationHead.
 
@@ -263,25 +263,25 @@ Module AppliedTermsPrinting.
   Notation "##" := @p (at level 0).
 
   Check p.
-  (* p *)
+  (* ## -- INCONSISTENT parsing/printing *)
   Check @p.
   (* ## *)
   Check ##.
   (* ## *)
   Check p 0.
-  (* p 0 -- why not "## nat 0" *)
+  (* ## 0 *)
   Check ## nat 0.
-  (* p 0 *)
+  (* ## 0 -- INCONSISTENT parsing/printing *)
   Check ## nat 0 0.
   (* @p nat 0 0 *)
   Check p 0 0.
-  (* p 0 0 *)
+  (* ## 0 0 *)
   Check ## nat 0 0 _.
-  (* p 0 0 *)
+  (* ## 0 0 -- INCONSISTENT parsing/printing *)
   Check ## nat 0 0 bool.
-  (* p 0 0 (B:=bool) *)
+  (* ## 0 0 (B:=bool) -- INCONSISTENT parsing/printing *)
   Check ## nat 0 0 bool true.
-  (* p 0 0 true *)
+  (* ## 0 0 true -- INCONSISTENT parsing/printing *)
 
   End AtNotationForHeadApplication.
 
