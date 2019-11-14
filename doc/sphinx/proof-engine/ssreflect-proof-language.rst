@@ -1513,7 +1513,7 @@ In a goal like the following::
   =============
   m < 5 + n
 
-The tactic ``abstract: abs n`` first generalizes the goal with respect ton
+The tactic :g:`abstract: abs n` first generalizes the goal with respect to :g:`n`
 (that is not visible to the abstract constant abs) and then assigns
 abs. The resulting goal is::
 
@@ -4061,6 +4061,7 @@ which the function is supplied:
    :name: congr
 
    This tactic:
+
    + checks that the goal is a Leibniz equality;
    + matches both sides of this equality with “term applied to some arguments”, inferring the right number of arguments from the goal and the type of term. This may expand some definitions or fixpoints;
    + generates the subgoals corresponding to pairwise equalities of the arguments present in the goal.
@@ -4208,7 +4209,7 @@ in the second column.
        ``ident`` in all the occurrences of ``term2``
    * - ``term1 as ident in term2``
      - ``term 1``
-     - in all the subterms identified by ``ident`
+     - in all the subterms identified by ``ident``
        in all the occurrences of ``term2[term 1 /ident]``
 
 The rewrite tactic supports two more patterns obtained prefixing the
@@ -5013,7 +5014,7 @@ mechanism:
    Coercion is_true (b : bool) := b = true.
 
 This allows any boolean formula ``b`` to be used in a context where |Coq|
-would expect a proposition, e.g., after ``Lemma … : ``. It is then
+would expect a proposition, e.g., after ``Lemma … :``. It is then
 interpreted as ``(is_true b)``, i.e., the proposition ``b = true``. Coercions
 are elided by the pretty-printer, so they are essentially transparent
 to the user.
