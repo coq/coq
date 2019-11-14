@@ -278,7 +278,7 @@ type time = float * float * float
 
 let get_time () =
   let t = Unix.times ()  in
-  (Unix.gettimeofday(), t.Unix.tms_utime, t.Unix.tms_stime)
+  (Unix.gettimeofday(), t.Unix.tms_utime +. t.Unix.tms_cutime, t.Unix.tms_stime +. t.Unix.tms_cstime)
 
 (* Keep only 3 significant digits *)
 let round f = (floor (f *. 1e3)) *. 1e-3
