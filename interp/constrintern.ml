@@ -1659,10 +1659,11 @@ let drop_notations_pattern looked_for genv =
           let () = assert (List.is_empty vars) in
           let (_,argscs) = find_remaining_scopes [] pats g in
           Some (g, [], List.map2 (in_pat_sc scopes) argscs pats)
-        | NApp (NRef g,[]) -> (* special case: Syndef for @Cstr, this deactivates *)
+        | NApp (NRef g,[]) -> (* special case: Syndef for @Cstr deactivates implicit arguments *)
               test_kind top g;
               let () = assert (List.is_empty vars) in
-              Some (g, List.map (in_pat false scopes) pats, [])
+              let (_,argscs) = find_remaining_scopes [] pats g in
+              Some (g, List.map2 (in_pat_sc scopes) argscs pats, [])
         | NApp (NRef g,args) ->
               (* Convention: do not deactivate implicit arguments and scopes for further arguments *)
               test_kind top g;
