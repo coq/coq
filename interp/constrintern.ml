@@ -637,6 +637,14 @@ let rec expand_binders ?loc mk bl c =
 (**********************************************************************)
 (* Syntax extensions                                                  *)
 
+let check_not_notation_variable f ntnvars =
+  (* Check bug #4690 *)
+  match DAst.get f with
+  | GVar id when Id.Map.mem id ntnvars ->
+    user_err (str "Prefix @ is not applicable to notation variables.")
+  | _ ->
+     ()
+
 let option_mem_assoc id = function
   | Some (id',c) -> Id.equal id id'
   | None -> false
@@ -2063,6 +2071,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           intern_applied_reference ~isproj intern env (Environ.named_context_val globalenv)
             lvar us args ref
         in
+        check_not_notation_variable f ntnvars;
         (* Rem: GApp(_,f,[]) stands for @f *)
         if args = [] then DAst.make ?loc @@ GApp (f,[]) else
           smart_gapp f loc (intern_args env args_scopes (List.map fst args))
