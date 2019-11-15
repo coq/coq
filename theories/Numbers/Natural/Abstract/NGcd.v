@@ -151,6 +151,94 @@ Proof.
  left. now apply gcd_bezout_pos.
 Qed.
 
+(** Bezout on natural numbers commutes *)
+
+Theorem bezout_comm : forall a b g,
+  b ~= 0 -> Bezout a b g -> Bezout b a g.
+Proof.
+ intros * Hbz (u & v & Huv).
+ destruct (eq_0_gt_0_cases a) as [Haz| Haz].
+ -rewrite Haz in Huv |-*.
+  rewrite mul_0_r in Huv; symmetry in Huv.
+  apply eq_add_0 in Huv.
+  rewrite (proj1 Huv).
+  now exists 0, 0; nzsimpl.
+ -apply neq_0_lt_0 in Haz.
+  destruct (lt_trichotomy (u / b) (v / a)) as [Hm| Hm].
+  +apply lt_le_incl in Hm.
+   remember (v / a + 1) as k eqn:Hk.
+   exists (k * a - v), (k * b - u).
+   do 2 rewrite mul_sub_distr_r.
+   rewrite Huv.
+   rewrite (add_comm _ (v * b)).
+   rewrite sub_add_distr.
+   rewrite add_sub_assoc.
+   *rewrite add_comm, add_sub.
+    now rewrite mul_shuffle0.
+   *apply (add_le_mono_r _ _ (v * b)).
+    rewrite <- Huv.
+    rewrite sub_add.
+    --apply mul_le_mono_r.
+      rewrite Hk.
+      specialize (div_mod u b Hbz) as H1.
+      rewrite mul_add_distr_r, mul_1_l, mul_comm.
+      rewrite H1 at 1.
+      apply add_le_mono.
+      ++now apply mul_le_mono_l.
+      ++apply lt_le_incl.
+        apply mod_bound_pos.
+        **apply le_0_l.
+        **now apply neq_0_lt_0.
+    --rewrite mul_shuffle0.
+      apply mul_le_mono_r.
+      rewrite Hk.
+      specialize (div_mod v a Haz) as H1.
+      rewrite mul_add_distr_r, mul_1_l, mul_comm.
+      rewrite H1 at 1.
+      apply add_le_mono_l.
+      apply lt_le_incl.
+      apply mod_bound_pos.
+      ++apply le_0_l.
+      ++now apply neq_0_lt_0.
+  +remember (u / b + 1) as k eqn:Hk.
+   exists (k * a - v), (k * b - u).
+   do 2 rewrite mul_sub_distr_r.
+   rewrite Huv.
+   rewrite (add_comm _ (v * b)).
+   rewrite sub_add_distr.
+   rewrite add_sub_assoc.
+   *rewrite add_comm, add_sub.
+    now rewrite mul_shuffle0.
+   *apply (add_le_mono_r _ _ (v * b)).
+    rewrite sub_add.
+    --rewrite <- Huv.
+      apply mul_le_mono_r.
+      rewrite Hk.
+      specialize (div_mod u b Hbz) as H1.
+      rewrite mul_add_distr_r, mul_1_l, mul_comm.
+      rewrite H1 at 1.
+      apply add_le_mono_l.
+      apply lt_le_incl.
+      apply mod_bound_pos.
+      ++apply le_0_l.
+      ++now apply neq_0_lt_0.
+    --rewrite mul_shuffle0.
+      apply mul_le_mono_r.
+      rewrite Hk.
+      specialize (div_mod v a Haz) as H1.
+      rewrite mul_add_distr_r, mul_1_l, mul_comm.
+      rewrite H1 at 1.
+      apply add_le_mono.
+      ++apply mul_le_mono_l.
+        destruct Hm as [Hm| Hm].
+        **now rewrite Hm.
+        **now apply lt_le_incl.
+      ++apply lt_le_incl.
+        apply mod_bound_pos.
+        **apply le_0_l.
+        **now apply neq_0_lt_0.
+Qed.
+
 Lemma gcd_mul_mono_l :
   forall n m p, gcd (p * n) (p * m) == p * gcd n m.
 Proof.
