@@ -323,7 +323,7 @@ let check_named {CAst.loc;v=na} = match na with
   let msg = str "Parameters must be named." in
   user_err ?loc  msg
 
-let template_polymorphism_candidate env uctx params concl =
+let template_polymorphism_candidate env ~ctor_levels uctx params concl =
   match uctx with
   | Entries.Monomorphic_entry uctx ->
     let concltemplate = Option.cata (fun s -> not (Sorts.is_small s)) false concl in
@@ -331,7 +331,9 @@ let template_polymorphism_candidate env uctx params concl =
     else
       let template_check = Environ.check_template env in
       let conclu = Option.cata Sorts.univ_of_sort Univ.type0m_univ concl in
-      let params, conclunivs = IndTyping.template_polymorphic_univs ~template_check uctx params conclu in
+      let params, conclunivs =
+        IndTyping.template_polymorphic_univs ~template_check ~ctor_levels uctx params conclu
+      in
       not (template_check && Univ.LSet.is_empty conclunivs)
   | Entries.Polymorphic_entry _ -> false
 
@@ -376,7 +378,20 @@ let interp_mutual_inductive_constr ~env0 ~sigma ~template ~udecl ~env_ar ~env_pa
   (* Build the inductive entries *)
   let entries = List.map4 (fun indname (templatearity, arity) concl (cnames,ctypes,cimpls) ->
       let template_candidate () =
-        templatearity || template_polymorphism_candidate env0 uctx ctx_params concl in
+        templatearity ||
+        let ctor_levels =
+          let add_levels c levels = Univ.LSet.union levels (Vars.universes_of_constr c) in
+          let param_levels =
+            List.fold_left (fun levels d -> match d with
+                | LocalAssum _ -> levels
+                | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
+              Univ.LSet.empty ctx_params
+          in
+          List.fold_left (fun levels c -> add_levels c levels)
+            param_levels ctypes
+        in
+        template_polymorphism_candidate env0 ~ctor_levels uctx ctx_params concl
+      in
       let template = match template with
         | Some template ->
           if poly && template then user_err
