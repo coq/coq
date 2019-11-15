@@ -412,7 +412,25 @@ let declare_structure ~cum finite ubinders univs paramimpls params template ?(ki
     let type_constructor = it_mkProd_or_LetIn ind fields in
     let template =
       let template_candidate () =
-        ComInductive.template_polymorphism_candidate (Global.env ()) univs params
+        (* we use some dummy values for the arities in the rel_context
+           as univs_of_constr doesn't care about localassums and
+           getting the real values is too annoying *)
+        let add_levels c levels = Univ.LSet.union levels (Vars.universes_of_constr c) in
+        let param_levels =
+          List.fold_left (fun levels d -> match d with
+              | LocalAssum _ -> levels
+              | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
+            Univ.LSet.empty params
+        in
+        let ctor_levels = List.fold_left
+            (fun univs d ->
+               let univs =
+                 RelDecl.fold_constr (fun c univs -> add_levels c univs) d univs
+               in
+               univs)
+            param_levels fields
+        in
+        ComInductive.template_polymorphism_candidate (Global.env ()) ~ctor_levels univs params
           (Some (Sorts.sort_of_univ min_univ))
       in
       match template with

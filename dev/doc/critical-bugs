@@ -120,7 +120,17 @@ Universes
   risk: unlikely to be activated by chance (requires a plugin)
 
   component: template polymorphism
-  summary: template polymorphism not collecting side constrains on the universe level of a parameter; this is a general form of the previous issue about template polymorphism exploiting other ways to generate untracked constraints introduced: morally at the introduction of template polymorphism, 23 May 2006, 9c2d70b, r8845, Herbelin impacted released versions: at least V8.4-V8.4pl6, V8.5-V8.5pl3, V8.6-V8.6pl2, V8.7.0-V8.7.1, V8.8.0-V8.8.1, V8.9.0-V8.9.1, in theory also V8.1-V8.1pl4, V8.2-V8.2pl2, V8.3-V8.3pl2 but not exploit found there yet (an exploit using a plugin to force sharing of universe level is in principle possible though)
+  summary: template polymorphism not collecting side constrains on the
+  universe level of a parameter; this is a general form of the
+  previous issue about template polymorphism exploiting other ways to
+  generate untracked constraints
+  introduced: morally at the introduction of template polymorphism, 23
+  May 2006, 9c2d70b, r8845, Herbelin
+  impacted released versions: at least V8.4-V8.4pl6, V8.5-V8.5pl3,
+  V8.6-V8.6pl2, V8.7.0-V8.7.1, V8.8.0-V8.8.1, V8.9.0-V8.9.1, in theory
+  also V8.1-V8.1pl4, V8.2-V8.2pl2, V8.3-V8.3pl2 but not exploit found
+  there yet (an exploit using a plugin to force sharing of universe
+  level is in principle possible though)
   impacted development branches: all from 8.4 to 8.9 at the time of writing and suspectingly also all from 8.1 to 8.4 if a way to create untracked constraints can be found
   impacted coqchk versions: a priori all (tested with V8.4 and V8.9 which accept the exploit)
   fixed in: soon in master and V8.10.0 (PR #9918, Aug 2019, Dénès and Sozeau)
@@ -128,6 +138,22 @@ Universes
   exploit: test-suite/failure/Template.v
   GH issue number: #9294
   risk: moderate risk to be activated by chance
+
+  component: template polymorphism
+  summary: using the same universe in the parameters and the
+  constructor arguments of a template polymorphic inductive (using
+  named universes in modern Coq, or unification tricks in older Coq)
+  produces implicit equality constraints not caught by the previous
+  template polymorphism fix.
+  introduced: same as the previous template polymorphism bug, morally
+  from V8.1, first verified impacted version V8.5 (the universe
+  unification is sufficiently different in V8.4 to prevent our trick
+  from working)
+  fixed in: expected in 8.10.2, 8.11+beta, master (#11128, Nov 2019, Gilbert)
+  found by: Gilbert
+  exploit: test-suite/bugs/closed/bug_11039.v
+  GH issue number: #11039
+  risk: moderate risk (found by investigating #10504)
 
 Primitive projections
 

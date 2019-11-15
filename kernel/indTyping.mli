@@ -38,6 +38,7 @@ val typecheck_inductive : env -> mutual_inductive_entry ->
    of a template polymorphic inductive *)
 val template_polymorphic_univs :
   template_check:bool ->
+  ctor_levels:Univ.LSet.t ->
   Univ.ContextSet.t ->
   Constr.rel_context ->
   Univ.Universe.t ->

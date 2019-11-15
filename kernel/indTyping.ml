@@ -262,10 +262,11 @@ let unbounded_from_below u cstrs =
    (starting from the most recent and ignoring let-definitions) is not
    contributing to the inductive type's sort or is Some u_k if its level
    is u_k and is contributing. *)
-let template_polymorphic_univs ~template_check uctx paramsctxt concl =
+let template_polymorphic_univs ~template_check ~ctor_levels uctx paramsctxt concl =
   let check_level l =
     if Univ.LSet.mem l (Univ.ContextSet.levels uctx) &&
-       unbounded_from_below l (Univ.ContextSet.constraints uctx) then
+       unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
+       not (Univ.LSet.mem l ctor_levels) then
       Some l
     else None
   in
@@ -311,7 +312,28 @@ let abstract_packets ~template_check univs usubst params ((arity,lc),(indices,sp
           | Polymorphic _ ->
             CErrors.anomaly ~label:"polymorphic_template_ind"
               Pp.(strbrk "Template polymorphism and full polymorphism are incompatible.") in
-      let param_levels, concl_levels = template_polymorphic_univs ~template_check ctx params min_univ in
+      let ctor_levels =
+        let add_levels c levels = Univ.LSet.union levels (Vars.universes_of_constr c) in
+        let param_levels =
+          List.fold_left (fun levels d -> match d with
+              | LocalAssum _ -> levels
+              | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
+            Univ.LSet.empty params
+        in
+        Array.fold_left
+          (fun levels (d,c) ->
+             let levels =
+               List.fold_left (fun levels d ->
+                   Context.Rel.Declaration.fold_constr add_levels d levels)
+                 levels d
+             in
+             add_levels c levels)
+          param_levels
+          splayed_lc
+      in
+      let param_levels, concl_levels =
+        template_polymorphic_univs ~template_check ~ctor_levels ctx params min_univ
+      in
       if template_check && List.for_all (fun x -> Option.is_empty x) param_levels
          && Univ.LSet.is_empty concl_levels then
         CErrors.anomaly ~label:"polymorphic_template_ind"
