@@ -439,7 +439,7 @@ GRAMMAR EXTEND Gram
     [ [ "in"; id = id_or_meta; ipat = as_ipat -> { Some (id,ipat) }
       | -> { None } ] ]
   ;
-  orient:
+  orient_rw:
     [ [ "->" -> { true }
       | "<-" -> { false }
       | -> { true } ] ]
@@ -451,10 +451,10 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   fixdecl:
-    [ [ "("; id = ident; bl=LIST0 simple_binder; ann=fixannot;
+    [ [ "("; id = ident; bl=LIST0 simple_binder; ann=struct_annot;
         ":"; ty=lconstr; ")" -> { (loc, id, bl, ann, ty) } ] ]
   ;
-  fixannot:
+  struct_annot:
     [ [ "{"; IDENT "struct"; id=name; "}" -> { Some id }
       | -> { None } ] ]
   ;
@@ -506,7 +506,7 @@ GRAMMAR EXTEND Gram
       ] ]
   ;
   oriented_rewriter :
-    [ [ b = orient; p = rewriter -> { let (m,c) = p in (b,m,c) } ] ]
+    [ [ b = orient_rw; p = rewriter -> { let (m,c) = p in (b,m,c) } ] ]
   ;
   induction_clause:
     [ [ c = destruction_arg; pat = as_or_and_ipat; eq = eqn_ipat;

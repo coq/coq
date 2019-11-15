@@ -51,6 +51,7 @@ let decl_notation = Entry.create "vernac:decl_notation"
 let record_field = Entry.create "vernac:record_field"
 let of_type_with_opt_coercion = Entry.create "vernac:of_type_with_opt_coercion"
 let section_subset_expr = Entry.create "vernac:section_subset_expr"
+let scope_delimiter = Entry.create "vernac:scope_delimiter"
 
 let make_bullet s =
   let open Proof_bullet in
@@ -717,7 +718,7 @@ END
 
 (* Extensions: implicits, coercions, etc. *)
 GRAMMAR EXTEND Gram
-  GLOBAL: gallina_ext hint_info;
+  GLOBAL: gallina_ext hint_info scope_delimiter;
 
   gallina_ext:
     [ [ (* Transparent and Opaque *)
@@ -835,11 +836,11 @@ GRAMMAR EXTEND Gram
           { [`ClearImplicits; `ClearScopes] }
       ] ]
   ;
-  scope:
+  scope_delimiter:
     [ [ "%"; key = IDENT -> { key } ] ]
   ;
   argument_spec: [
-       [ b = OPT "!"; id = name ; s = OPT scope ->
+       [ b = OPT "!"; id = name ; s = OPT scope_delimiter ->
        { id.CAst.v, not (Option.is_empty b), Option.map (fun x -> CAst.make ~loc x) s }
     ]
   ];
@@ -852,7 +853,7 @@ GRAMMAR EXTEND Gram
              implicit_status = NotImplicit}] }
     | "/" -> { [`Slash] }
     | "&" -> { [`Ampersand] }
-    | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
+    | "("; items = LIST1 argument_spec; ")"; sc = OPT scope_delimiter ->
        { let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
          | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
@@ -860,7 +861,7 @@ GRAMMAR EXTEND Gram
            `Id { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
                  implicit_status = NotImplicit}) items }
-    | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
+    | "["; items = LIST1 argument_spec; "]"; sc = OPT scope_delimiter ->
        { let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
          | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
@@ -868,7 +869,7 @@ GRAMMAR EXTEND Gram
            `Id { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
                  implicit_status = Implicit}) items }
-    | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
+    | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope_delimiter ->
        { let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
          | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
@@ -1136,11 +1137,8 @@ GRAMMAR EXTEND Gram
   positive_search_mark:
     [ [ "-" -> { false } | -> { true } ] ]
   ;
-  scope:
-    [ [ "%"; key = IDENT -> { key } ] ]
-  ;
   searchabout_query:
-    [ [ b = positive_search_mark; s = ne_string; sc = OPT scope ->
+    [ [ b = positive_search_mark; s = ne_string; sc = OPT scope_delimiter ->
             { (b, SearchString (s,sc)) }
       | b = positive_search_mark; p = constr_pattern ->
             { (b, SearchSubPattern p) }
