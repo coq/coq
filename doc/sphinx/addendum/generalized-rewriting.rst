@@ -117,7 +117,7 @@ parameters is any term :math:`f \, t_1 \ldots t_n`.
 .. example:: Morphisms
 
    Continuing the previous example, let ``union: forall (A : Type), list A -> list A -> list A``
-   perform the union of two sets by appending one list to the other. ``union` is a binary
+   perform the union of two sets by appending one list to the other. ``union`` is a binary
    morphism parametric over ``A`` that respects the relation instance
    ``(set_eq A)``. The latter condition is proved by showing:
 
