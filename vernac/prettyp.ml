@@ -100,14 +100,13 @@ let print_ref reduce ref udecl =
 (********************************)
 (** Printing implicit arguments *)
 
-let pr_impl_name imp = Id.print (name_of_argument imp)
-
 let print_impargs_by_name max = function
   | []  -> []
   | impls ->
      let n = List.length impls in
+     let names = List.map_i name_of_argument 1 impls in
      [hov 0 (str (String.plural n "Argument") ++ spc() ++
-      prlist_with_sep pr_comma pr_impl_name impls ++ spc() ++
+      prlist_with_sep pr_comma Id.print names ++ spc() ++
       str (String.conjugate_verb_to_be n) ++ str" implicit" ++
       (if max then strbrk " and maximally inserted" else mt()))]
 

@@ -86,8 +86,8 @@ type implicits_list = implicit_side_condition * implicit_status list
 val is_status_implicit : implicit_status -> bool
 val binding_kind_of_status : implicit_status -> Glob_term.binding_kind
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
-val name_of_argument : implicit_status -> Id.t
-val match_argument : implicit_status -> Constrexpr.explicitation -> bool
+val name_of_argument : int -> implicit_status -> Id.t
+val match_argument : int -> implicit_status -> Constrexpr.explicitation -> bool
 val maximal_insertion_of : implicit_status -> bool
 val force_inference_of : implicit_status -> bool
 val is_named_argument : Id.t -> implicit_status list -> bool
