@@ -86,16 +86,13 @@ let rec prolog l n gl =
   let prol = (prolog l (n-1)) in
   (tclFIRST (List.map (fun t -> (tclTHEN t prol)) (one_step l gl))) gl
 
-let out_term env = function
-  | IsConstr (c, _) -> c
-  | IsGlobRef gr -> EConstr.of_constr (fst (UnivGen.fresh_global_instance env gr))
-
 let prolog_tac l n =
   Proofview.V82.tactic begin fun gl ->
   let map c =
     let (sigma, c) = c (pf_env gl) (project gl) in
-    let c = pf_apply (prepare_hint false (false,true)) gl (sigma, c) in
-    out_term (pf_env gl) c
+    (* Dropping the universe context is probably wrong *)
+    let (c, _) = pf_apply (prepare_hint false) gl (sigma, c) in
+    c
   in
   let l = List.map map l in
   try (prolog l n gl)

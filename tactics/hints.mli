@@ -212,8 +212,7 @@ val interp_hints : poly:bool -> hints_expr -> hints_entry
 val add_hints : local:bool -> hint_db_name list -> hints_entry -> unit
 
 val prepare_hint : bool (* Check no remaining evars *) ->
-  (bool * bool) (* polymorphic or monomorphic, local or global *) ->
-  env -> evar_map -> evar_map * constr -> hint_term
+  env -> evar_map -> evar_map * constr -> (constr * Univ.ContextSet.t)
 
 (** [make_exact_entry info (c, ctyp, ctx)].
    [c] is the term given as an exact proof to solve the goal;
