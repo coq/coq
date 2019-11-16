@@ -142,7 +142,7 @@ let set_maximality fail na i imps b =
 
 type argument_position =
   | Conclusion
-  | Hyp of int
+  | Hyp of int (* Hyp n = dependence on the n-th following argument *)
 
 let argument_position_eq p1 p2 = match p1, p2 with
 | Conclusion, Conclusion -> true
@@ -202,6 +202,10 @@ let is_flexible_reference env sigma bound depth f =
 
 let push_lift d (e,n) = (push_rel d e,n+1)
 
+let unlift i = function
+  | Hyp n -> Hyp (n - i)
+  | Conclusion -> Conclusion
+
 let is_reversible_pattern sigma bound depth f l =
   isRel sigma f && let n = destRel sigma f in (n < bound+depth) && (n >= depth) &&
   Array.for_all (fun c -> isRel sigma c && destRel sigma c < depth) l &&
@@ -215,10 +219,10 @@ let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc 
     match kind sigma hd with
     | Rel n when (n < bound+depth) && (n >= depth) ->
         let i = bound + depth - n - 1 in
-        acc.(i) <- update pos rig acc.(i)
+        acc.(i) <- update (unlift i pos) rig acc.(i)
     | App (f,l) when revpat && is_reversible_pattern sigma bound depth f l ->
         let i = bound + depth - EConstr.destRel sigma f - 1 in
-        acc.(i) <- update pos rig acc.(i)
+        acc.(i) <- update (unlift i pos) rig acc.(i)
     | App (f,_) when rig && is_flexible_reference env sigma bound depth f ->
         if strict then () else
           iter_with_full_binders env sigma push_lift (frec false) ed c
@@ -282,7 +286,7 @@ let compute_implicits_explanation_gen auto strict strongly_strict revpat context
   | Some (na, a, b) ->
     let v = aux (push_rel (LocalAssum (na,a)) env) (n+1) b in
     if auto then
-      add_free_rels_until strict strongly_strict revpat n env sigma a (Hyp (n+1)) v
+      add_free_rels_until strict strongly_strict revpat n env sigma a (Hyp n) v
     else v
   | _ ->
     let v = Array.make n None in
@@ -363,7 +367,7 @@ let force_inference_of = function
 let is_nondep_argument p imps =
   List.exists (function ((_,_,Some p'),Some _) -> Int.equal p p' | _ -> false) imps
 
-(* [in_ctx] means we know the expected type, [n] is the index of the argument *)
+(* [in_ctx] means we know the expected type, [n] is the number of extra arguments *)
 let is_inferable_implicit in_ctx n (pos,x) =
   match x with
   | None -> false
@@ -557,18 +561,8 @@ let adjust_side_condition p = function
   | LessArgsThan n -> LessArgsThan (n+p)
   | DefaultImpArgs -> DefaultImpArgs
 
-let lift_argument_position p = function
-  | Conclusion -> Conclusion
-  | Hyp q -> Hyp (p+q)
-
-let lift_explanation p = function
-  | DepRigid e -> DepRigid (lift_argument_position p e)
-  | DepFlex e -> DepFlex (lift_argument_position p e)
-  | DepFlexAndRigid (e1,e2) -> DepFlexAndRigid (lift_argument_position p e1,lift_argument_position p e2)
-  | Manual -> Manual
-
 let lift_implicits p ((na,n1,o),e) =
-  ((na,n1+p,o),Option.map (fun (e,x,y) -> (lift_explanation p e,x,y)) e)
+  ((na,n1+p,o),e)
 
 let add_section_impls vars extra_impls (cond,impls) =
   let p = List.length vars - List.length extra_impls in

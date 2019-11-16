@@ -1429,7 +1429,7 @@ let rec adjust_to_down l l' default =
   match l, l' with
   | [], l -> []
   | true::l, l' -> adjust_to_down l l' default
-  | false::l, [] -> default :: adjust_to_down l [] default
+  | false::l, [] -> default :: adjust_to_down l l' default
   | false::l, y::l' -> y :: adjust_to_down l l' default
 
 (* @return the first variable that occurs twice in a pattern

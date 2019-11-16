@@ -674,7 +674,7 @@ let adjust_implicit_arguments inctx n args impl =
           (!print_implicits && !print_implicits_explicit_args) ||
           (is_needed_for_correct_partial_application tail imp) ||
           (!print_implicits_defensive &&
-           (not (is_inferable_implicit inctx n imp) || !Flags.beautify) &&
+           (not (is_inferable_implicit inctx (List.length args) imp) || !Flags.beautify) &&
            is_significant_implicit (Lazy.force a))
         in
         if visible then
