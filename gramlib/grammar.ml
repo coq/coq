@@ -14,6 +14,7 @@ type mayrec
 module type S = sig
   type te
   type 'c pattern
+  type abstract_pattern = AbstractPattern : 'a pattern -> abstract_pattern
 
   module Parsable : sig
     type t
@@ -32,6 +33,8 @@ module type S = sig
     val of_parser : string -> (Plexing.location_function -> te Stream.t -> 'a) -> 'a t
     val parse_token_stream : 'a t -> te Stream.t -> 'a
     val print : Format.formatter -> 'a t -> unit
+    val parse_empty : 'a t -> bool option (* None = Unknown *)
+    val starting_tokens : 'a t -> abstract_pattern list option (* None = Unknown *)
   end
 
   module rec Symbol : sig
@@ -113,6 +116,7 @@ module GMake (L : Plexing.S) = struct
 
 type te = L.te
 type 'c pattern = 'c L.pattern
+type abstract_pattern = AbstractPattern : 'a pattern -> abstract_pattern
 
 type 'a parser_t = L.te Stream.t -> 'a
 
@@ -935,6 +939,92 @@ let print_entry ppf e =
   end;
   fprintf ppf " ]@]"
 
+let rec tokens_of_symbol : type s tr a. (s, tr, a) ty_symbol -> bool * abstract_pattern list = function
+  | Slist0 s ->
+      let (_,toks) = tokens_of_symbol s in
+      (true,toks)
+  | Sopt s ->
+      let (_,toks) = tokens_of_symbol s in
+      (true,toks)
+  | Slist0sep (s, sep, _) ->
+      let (maybe_empty,toks) = tokens_of_symbol s in
+      if maybe_empty then
+        (* Not a useful situation anyway... *)
+        let (maybe_empty,toks') = tokens_of_symbol sep in
+        (true,toks@toks')
+      else
+        (true,toks)
+  | Stree t -> tokens_of_tree t
+  | Snterm e -> (try tokens_of_entry e with Not_found -> (false,[])) (* Approximation *)
+  | Snterml (e, _) -> (try tokens_of_entry e with Not_found -> (false,[])) (* Approximation *)
+  | Slist1 s -> tokens_of_symbol s
+  | Slist1sep (s, sep, _) ->
+      let (maybe_empty,toks) = tokens_of_symbol s in
+      if maybe_empty then
+        (* Not a useful situation anyway... *)
+        let (maybe_empty,toks') = tokens_of_symbol sep in
+        (maybe_empty,toks@toks')
+      else
+        (true,toks)
+  | Sself -> (false,[])
+  | Snext -> (false,[])
+  | Stoken tok -> (false,[AbstractPattern tok])
+
+and tokens_of_tree : type s tr a. (s, tr, a) ty_tree -> bool * abstract_pattern list = function
+    DeadEnd -> (false,[])
+  | LocAct (_, _) -> (true,[])
+  | Node (_, {node = n; brother = b; son = s}) ->
+    let (maybe_empty,toks) = tokens_of_symbol n in
+    let (maybe_empty,toks) =
+      if maybe_empty then
+        let (maybe_empty,toks') = tokens_of_tree s in
+        (maybe_empty,toks@toks')
+      else (maybe_empty,toks) in
+    let (maybe_empty',toks') = tokens_of_tree b in
+    (maybe_empty || maybe_empty',toks@toks')
+
+and tokens_of_levels : type a. a ty_level list -> bool * abstract_pattern list = function
+    [] -> (false,[])
+  | Level lev :: levs ->
+      let (maybe_empty,toks) = tokens_of_tree lev.lprefix in
+      let (maybe_empty',toks') = tokens_of_levels levs in
+      (maybe_empty || maybe_empty', toks@toks')
+
+and tokens_of_entry : type a. a ty_entry -> bool * abstract_pattern list = function e ->
+  match e.edesc with
+    Dlevels elev -> tokens_of_levels elev
+  | Dparser _ -> (false,[])
+
+(* Optimization to compute only emptyness *)
+(* Note: derive_eps is an approximation which did not recursively go through entries *)
+
+let rec derive_eps_full_symbol : type s tr a. (s, tr, a) ty_symbol -> bool = function
+  | Slist0 _ -> true
+  | Slist0sep _ -> true
+  | Sopt s -> true
+  | Stree t -> derive_eps_full_tree t
+  | Snterm e -> derive_eps_full_entry e
+  | Snterml (e, _) -> derive_eps_full_entry e
+  | Slist1 s -> false
+  | Slist1sep _ -> false
+  | Sself -> false
+  | Snext -> false
+  | Stoken tok -> false
+
+and derive_eps_full_tree : type s tr a. (s, tr, a) ty_tree -> bool = function
+    DeadEnd -> false
+  | LocAct (_, _) -> true
+  | Node (_, {node = n; brother = b; son = s}) ->
+    derive_eps_full_symbol n && derive_eps_full_tree s || derive_eps_full_tree b
+
+and derive_eps_full_level : type a. a ty_level -> bool = function (Level lev) ->
+  derive_eps_full_tree lev.lprefix
+
+and derive_eps_full_entry : type a. a ty_entry -> bool = function e ->
+  match e.edesc with
+    Dlevels elev -> List.exists derive_eps_full_level elev
+  | Dparser _ -> raise Not_found
+
 let floc = ref (fun _ -> failwith "internal error when computing location")
 
 let loc_of_token_interval bp ep =
@@ -1598,6 +1688,8 @@ module Entry = struct
         (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
       edesc = Dparser p}
   let print ppf e = fprintf ppf "%a@." print_entry e
+  let parse_empty e = try Some (derive_eps_full_entry e) with Not_found -> None
+  let starting_tokens e = try Some (snd (tokens_of_entry e)) with Not_found -> None
 end
 
 module rec Symbol : sig

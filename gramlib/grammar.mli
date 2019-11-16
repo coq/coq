@@ -24,6 +24,7 @@ type mayrec
 module type S = sig
   type te
   type 'c pattern
+  type abstract_pattern = AbstractPattern : 'a pattern -> abstract_pattern
 
   module Parsable : sig
     type t
@@ -42,6 +43,8 @@ module type S = sig
     val of_parser : string -> (Plexing.location_function -> te Stream.t -> 'a) -> 'a t
     val parse_token_stream : 'a t -> te Stream.t -> 'a
     val print : Format.formatter -> 'a t -> unit
+    val parse_empty : 'a t -> bool option (* None = Unknown *)
+    val starting_tokens : 'a t -> abstract_pattern list option (* None = Unknown *)
   end
 
   module rec Symbol : sig
