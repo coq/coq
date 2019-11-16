@@ -1798,20 +1798,22 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       let imps =
         if no_impl then [] else
           let impls_st = implicits_of_global gr in
-          if Int.equal n 0 then select_impargs_size npats impls_st
-          else List.skipn_at_least n (select_stronger_impargs impls_st) in
-      adjust_to_down tags imps (((*wrong but unused*)Anonymous,0,None),None) in
+          let impls =
+            if Int.equal n 0 then select_impargs_size npats impls_st
+            else List.skipn_at_least n (select_stronger_impargs impls_st) in
+          List.map is_status_implicit impls in
+      adjust_to_down tags imps false in
     let subscopes = adjust_to_down tags (List.skipn_at_least n (find_arguments_scope gr)) None in
-    let has_letin = check_has_letin ?loc gr expanded npats (List.count is_status_implicit imps) tags in
+    let has_letin = check_has_letin ?loc gr expanded npats (List.count ((=) true) imps) tags in
     let rec aux imps subscopes tags pats =
     match imps, subscopes, tags, pats with
     | _, _, true::tags, p::pats when has_letin ->
       in_pat_sc scopes None p :: aux imps subscopes tags pats
     | _, _, true::tags, _ ->
       default :: aux imps subscopes tags pats
-    | imp::imps, sc::subscopes, false::tags, _ when is_status_implicit imp ->
+    | isimp::imps, sc::subscopes, false::tags, _ when isimp ->
       default :: aux imps subscopes tags pats
-    | imp::imps, sc::subscopes, false::tags, p::pats ->
+    | isimp::imps, sc::subscopes, false::tags, p::pats ->
       in_pat_sc scopes sc p :: aux imps subscopes tags pats
     | _, _, [], [] -> []
     | _ -> assert false in
