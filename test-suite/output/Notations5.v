@@ -189,7 +189,9 @@ Module AppliedTermsPrinting.
   Check @v 0.
   (* @v 0 *)
   Check @p nat 0 0 bool.
-  (* v 0 (B:=bool) *)
+  (* v 0 *)
+  Eval simpl in (fun x => _:nat) (@p nat 0 0 bool).
+  (* ?n@{x:=v 0 (B:=bool)} *)
 
   End AtAbbreviationForPartialApplication.
 
@@ -217,7 +219,9 @@ Module AppliedTermsPrinting.
   Check @v 0.
   (* @v 0 *)
   Check @p nat 0 0 bool.
-  (* v 0 (B:=bool) *)
+  (* v 0 *)
+  Eval simpl in (fun x => _:nat) (@p nat 0 0 bool).
+  (* ?n@{x:=v 0 (B:=bool)} *)
 
   End AbbreviationForPartialApplication.
 
@@ -247,9 +251,11 @@ Module AppliedTermsPrinting.
   Check ## 0 0 true.
   (* ## 0 0 true *)
   Check p 0 0 (B:=bool).
-  (* ## 0 0 (B:=bool) *)
+  (* ## 0 0 *)
   Check ## 0 0 (B:=bool).
-  (* ## 0 0 (B:=bool) *)
+  (* ## 0 0 *)
+  Eval simpl in (fun x => _:nat) (@p nat 0 0 bool).
+  (* ?n@{x:=## 0 0 (B:=bool)} *)
 
   End NotationForHeadApplication.
 
@@ -301,9 +307,11 @@ Module AppliedTermsPrinting.
   Check ## 0 0.
   (* ## 0 0 *)
   Check p 0 0 (B:=bool).
-  (* ## 0 0 (B:=bool) *)
+  (* ## 0 0 *)
   Check ## 0 0 (B:=bool).
-  (* ## 0 0 (B:=bool) *)
+  (* ## 0 0 *)
+  Eval simpl in (fun x => _:nat) (## 0 0 (B:=bool)).
+  (* ?n@{## 0 0 (B:=bool)} *)
   Check p 0 0 true.
   (* ## 0 0 true *)
   Check ## 0 0 true.
@@ -327,9 +335,11 @@ Module AppliedTermsPrinting.
   Check ## 0 0.
   (* ## 0 0 *)
   Check p 0 0 (B:=bool).
-  (* ## 0 0 (B:=bool) *)
+  (* ## 0 0 *)
   Check ## 0 0 (B:=bool).
-  (* ## 0 0 (B:=bool) *)
+  (* ## 0 0 *)
+  Eval simpl in (fun x => _:nat) (## 0 0 (B:=bool)).
+  (* ?n@{## 0 0 (B:=bool)} *)
   Check p 0 0 true.
   (* ## 0 0 true *)
   Check ## 0 0 true.
