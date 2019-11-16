@@ -100,7 +100,7 @@ let print_ref reduce ref udecl =
 (********************************)
 (** Printing implicit arguments *)
 
-let pr_impl_name imp = Id.print (name_of_implicit imp)
+let pr_impl_name imp = Id.print (name_of_argument imp)
 
 let print_impargs_by_name max = function
   | []  -> []
@@ -253,8 +253,8 @@ let needs_extra_scopes ref scopes =
   aux env ty scopes
 
 let implicit_kind_of_status = function
-  | None -> Anonymous, Glob_term.Explicit
-  | Some ((na,_,_),_,(maximal,_)) -> na, if maximal then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
+  | ((na,_,_),None) -> Anonymous, Glob_term.Explicit
+  | ((na,_,_),_ as imp) -> na, if maximal_insertion_of imp then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
 
 let extra_implicit_kind_of_status imp =
   let _,imp = implicit_kind_of_status imp in
@@ -281,9 +281,9 @@ let rec main_implicits i renames recargs scopes impls =
     in
     let (name, implicit_status) =
       match renames, impls with
-      | _, (Some _ as i) :: _ -> implicit_kind_of_status i
+      | _, (_,Some _ as i) :: _ -> implicit_kind_of_status i
       | name::_, _ -> (name,Glob_term.Explicit)
-      | [], (None::_ | []) -> (Anonymous, Glob_term.Explicit)
+      | [], ((_,None)::_ | []) -> (Anonymous, Glob_term.Explicit)
     in
     let notation_scope = match scopes with
       | scope :: _ -> Option.map CAst.make scope
