@@ -187,3 +187,18 @@ Arguments bar {A} {x} _ {B} {y}.
 Check bar (1:=true) 0 (3:=false).
 
 End TestUnnamedImplicit.
+
+Module AnyArgumentsInAnyOrder.
+
+Unset Implicit Arguments.
+
+Definition p {A} (x:A) (y:A) := (x,y).
+Check p (y:=0) (x:=1).
+Fail Check p (y:=0).
+
+Definition p2 {A} B (x:A) (y:B) := (x,y).
+About p2.
+Check p2 (y:=1) (1:=0) nat.
+Fail Check p2 (y:=1) (1:=0).
+
+End AnyArgumentsInAnyOrder.

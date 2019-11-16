@@ -1953,8 +1953,8 @@ let intern_ind_pattern genv ntnvars env pat =
 (**********************************************************************)
 (* Utilities for application                                          *)
 
-let get_implicit_name n imps =
-  Some (name_of_argument (List.nth imps (n-1)))
+let get_implicit_name n imp =
+  Some (name_of_argument n imp)
 
 let set_hole_implicit i b c =
   let loc = c.CAst.loc in
@@ -2450,32 +2450,34 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     else
     let rec aux n impl subscopes eargs rargs =
       let (enva,subscopes') = apply_scope_env env subscopes in
-      match (impl,rargs) with
-      | (imp::impl', rargs) when is_status_implicit imp ->
+      match impl with
+      | imp::impl' ->
           begin try
-            let eargs',(_,(_,a)) = List.extract_first (fun (pos,a) -> match_argument imp pos) eargs in
+            let eargs',(_,(_,a)) = List.extract_first (fun (pos,a) -> match_argument n imp pos) eargs in
             intern_no_implicit enva a :: aux (n+1) impl' subscopes' eargs' rargs
           with Not_found ->
-          if List.is_empty rargs && List.is_empty eargs && not (maximal_insertion_of imp) then
-            (* Less regular arguments than expected: complete *)
-            (* with implicit arguments if maximal insertion is set *)
-            []
-          else
+          if is_status_implicit imp then
+            if List.is_empty rargs && List.is_empty eargs && not (maximal_insertion_of imp) then
+              (* Less regular arguments than expected: complete *)
+              (* with implicit arguments if maximal insertion is set *)
+              []
+            else
               (DAst.map_from_loc (fun ?loc (a,b,c) -> GHole(a,b,c))
-                (set_hole_implicit (n,get_implicit_name n l) (force_inference_of imp) c)
+                (set_hole_implicit (n,get_implicit_name n imp) (force_inference_of imp) c)
               ) :: aux (n+1) impl' subscopes' eargs rargs
-          end
-      | (imp::impl', a::rargs') ->
-          intern_no_implicit enva a :: aux (n+1) impl' subscopes' eargs rargs'
-      | (imp::impl', []) ->
-          if not (List.is_empty eargs) then
-            (let pr_position = function ExplByName id -> Id.print id | ExplByPos n -> str "position " ++ int n in
-            let (pos,(loc,_)) = List.hd eargs in
-               user_err ?loc (str "Not enough non implicit \
-            arguments to accept the argument bound to " ++
-                 pr_position pos ++ str"."));
-          []
-      | ([], rargs) ->
+          else
+            match rargs with
+              | a::rargs' -> intern_no_implicit enva a :: aux (n+1) impl' subscopes' eargs rargs'
+              | [] ->
+                 if not (List.is_empty eargs) then
+                   (let pr_position = function ExplByName id -> Id.print id | ExplByPos n -> str "position " ++ int n in
+                    let (pos,(loc,_)) = List.hd eargs in
+                    user_err ?loc (str "Not enough non implicit \
+                                        arguments to accept the argument bound to " ++
+                                     pr_position pos ++ str"."));
+                 []
+            end
+      | [] ->
           assert (List.is_empty eargs);
           intern_args env subscopes rargs
     in aux 1 l subscopes eargs rargs

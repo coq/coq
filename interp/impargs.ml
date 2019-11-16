@@ -346,14 +346,14 @@ let binding_kind_of_status = function
   | _, Some (_, true, _) -> MaxImplicit
   | _, None -> Explicit
 
-let name_of_argument = function
+let name_of_argument i = function
   | ((Name id,_,_),_) -> id
-  | ((Anonymous,k,_),_) -> name_of_pos k
+  | ((Anonymous,_,_),_) -> name_of_pos i
 
-let match_argument imp pos = match imp, pos with
+let match_argument i imp pos = match imp, pos with
   | ((Name id,_,_),_), ExplByName id' -> Id.equal id id'
   | ((_,_,Some n),_), ExplByPos n' -> Int.equal n n'
-  | ((_,n,_),_), ExplByName id -> Id.equal id (name_of_pos n)
+  | ((_,_,_),_), ExplByName id -> Id.equal id (name_of_pos i)
   | _ -> false
 
 let maximal_insertion_of = function
@@ -364,14 +364,14 @@ let force_inference_of = function
   | _, Some (_, _, b) -> b
   | _, None -> anomaly (Pp.str "Not an implicit argument.")
 
-let is_named_argument id =
-  List.exists (fun imp -> is_status_implicit imp && Id.equal id (name_of_argument imp))
+let is_named_argument id imps =
+  List.exists_i (fun i imp -> Id.equal id (name_of_argument i imp)) 1 imps
 
 let is_nondep_argument p imps =
-  List.exists (function ((_,_,Some p'),Some _) -> Int.equal p p' | _ -> false) imps
+  List.exists (function ((_,_,Some p'),_) -> Int.equal p p' | _ -> false) imps
 
 let print_allowed_named_implicit imps =
-  let l = List.map_filter (function ((Name id,_,_),Some _) -> Some id | _ -> None) imps in
+  let l = List.map_filter (function ((Name id,_,_),_) -> Some id | _ -> None) imps in
   match l with
   | [] -> mt ()
   | l ->
@@ -380,7 +380,7 @@ let print_allowed_named_implicit imps =
     pr_sequence Id.print l ++ str ")"
 
 let print_allowed_nondep_implicit imps =
-  let l = List.map_filter (function ((_,_,Some n),Some _) -> Some n | _ -> None) imps in
+  let l = List.map_filter (function ((_,_,Some n),_) -> Some n | _ -> None) imps in
   match l with
   | [] -> mt ()
   | l ->
