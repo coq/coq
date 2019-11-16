@@ -521,9 +521,14 @@ value coq_interprete
       }
 #else
       if (caml_signals_are_pending) {
-	/* If there's a Ctrl-C, we reset the vm */
-	if (caml_pending_signals[SIGINT]) { coq_sp = coq_stack_high; }
-	caml_process_pending_signals();
+        /* If there's a Ctrl-C, we reset the vm */
+        intnat sigint = caml_pending_signals[SIGINT];
+        if (sigint) { coq_sp = coq_stack_high; }
+        caml_process_pending_signals();
+        if (sigint) {
+          caml_failwith("Coq VM: Fatal error: SIGINT signal detected "
+                        "but no exception was raised");
+        }
       }
 #endif
       Next;
