@@ -1972,27 +1972,6 @@ let set_hole_implicit i b c =
   | _ -> anomaly (Pp.str "Only refs have implicits.") in
   Loc.tag ?loc (Evar_kinds.ImplicitArg (r,i,b),IntroAnonymous,None)
 
-let is_named_argument id =
-  List.exists (fun imp -> is_status_implicit imp && Id.equal id (name_of_argument imp))
-
-let print_allowed_named_implicit imps =
-  let l = List.map_filter (function ((Name id,_,_),Some _) -> Some id | _ -> None) imps in
-  match l with
-  | [] -> mt ()
-  | l ->
-    let n = List.length l in
-    str " (possible " ++ str (String.plural n "name") ++ str ":" ++ spc () ++
-    pr_sequence Id.print l ++ str ")"
-
-let print_allowed_nondep_implicit imps =
-  let l = List.map_filter (function ((_,_,Some n),Some _) -> Some n | _ -> None) imps in
-  match l with
-  | [] -> mt ()
-  | l ->
-    let n = List.length l in
-    str " (possible " ++ str (String.plural n "position") ++ str ":" ++ spc () ++
-    pr_sequence Pp.int l ++ str ")"
-
 let extract_explicit_arg imps args =
   let rec aux = function
   | [] -> [], []
