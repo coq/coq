@@ -90,8 +90,12 @@ val name_of_argument : implicit_status -> Id.t
 val match_argument : implicit_status -> Constrexpr.explicitation -> bool
 val maximal_insertion_of : implicit_status -> bool
 val force_inference_of : implicit_status -> bool
+val is_named_argument : Id.t -> implicit_status list -> bool
 val is_nondep_argument : int -> implicit_status list -> bool
 val explicitation : implicit_status -> Constrexpr.explicitation
+
+val print_allowed_named_implicit : implicit_status list -> Pp.t
+val print_allowed_nondep_implicit : implicit_status list -> Pp.t
 
 val positions_of_implicits : implicits_list -> int list
 
