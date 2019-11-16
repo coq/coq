@@ -74,6 +74,9 @@ struct
 
 end
 
+let starting_tokens e =
+  Option.map (List.map (function AbstractPattern p -> Tok.pattern_strings p)) (Entry.starting_tokens e)
+
 (** Grammar extensions *)
 
 (** NB: [extend_statement =
