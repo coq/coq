@@ -1763,7 +1763,7 @@ value coq_interprete
 #ifndef THREADED_CODE
     default:
       /*fprintf(stderr, "%d\n", *pc);*/
-      failwith("Coq VM: Fatal error: bad opcode");
+      caml_failwith("Coq VM: Fatal error: bad opcode");
     }
   }
 #endif
