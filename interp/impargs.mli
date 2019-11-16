@@ -70,9 +70,14 @@ type force_inference = bool (** true = always infer, never turn into evar/subgoa
 
 type implicit_position = Name.t * int * int option
 
-type implicit_status = (implicit_position * implicit_explanation *
-                          (maximal_insertion * force_inference)) option
+type implicit_proper_status
+
+type implicit_status = implicit_position * implicit_proper_status option
+
     (** [None] = Not implicit *)
+val default_implicit : maximal:bool -> force:bool -> implicit_proper_status
+  (** maximal:true = maximal contextual insertion
+      force:true = always infer, never turn into evar/subgoal *)
 
 type implicit_side_condition
 
@@ -81,11 +86,11 @@ type implicits_list = implicit_side_condition * implicit_status list
 val is_status_implicit : implicit_status -> bool
 val binding_kind_of_status : implicit_status -> Glob_term.binding_kind
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
-val name_of_implicit : implicit_status -> Id.t
-val match_implicit : implicit_status -> Constrexpr.explicitation -> bool
+val name_of_argument : implicit_status -> Id.t
+val match_argument : implicit_status -> Constrexpr.explicitation -> bool
 val maximal_insertion_of : implicit_status -> bool
 val force_inference_of : implicit_status -> bool
-val is_nondep_implicit : int -> implicit_status list -> bool
+val is_nondep_argument : int -> implicit_status list -> bool
 val explicitation : implicit_status -> Constrexpr.explicitation
 
 val positions_of_implicits : implicits_list -> int list

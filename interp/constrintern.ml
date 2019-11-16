@@ -349,20 +349,20 @@ let warn_shadowed_implicit_name =
 
 let exists_name na l =
   match na with
-  | Name id -> List.exists (function Some ((Name id',_,_),_,_) -> Id.equal id id' | _ -> false) l
+  | Name id -> List.exists (function ((Name id',_,_),_) -> Id.equal id id' | _ -> false) l
   | _ -> false
 
 let build_impls ?loc n bk na acc =
-  let impl_status max =
+  let impl_status maximal =
     let na =
       if exists_name na acc then begin warn_shadowed_implicit_name ?loc na; Anonymous end
       else na in
-    Some ((na,n,(*TODO, enhancement: compute dependency*)None),Manual,(max,true))
+    ((na,n,(*TODO, enhancement: compute dependency*)None),Some (default_implicit ~maximal ~force:true))
   in
   match bk with
   | NonMaxImplicit -> impl_status false :: acc
   | MaxImplicit -> impl_status true :: acc
-  | Explicit -> None :: acc
+  | Explicit -> ((na,n,None),None) :: acc
 
 let impls_binder_list =
   let rec aux acc n = function
@@ -1807,20 +1807,22 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       let imps =
         if no_impl then [] else
           let impls_st = implicits_of_global gr in
-          if Int.equal n 0 then select_impargs_size npats impls_st
-          else List.skipn_at_least n (select_stronger_impargs impls_st) in
-      adjust_to_down tags imps None in
+          let impls =
+            if Int.equal n 0 then select_impargs_size npats impls_st
+            else List.skipn_at_least n (select_stronger_impargs impls_st) in
+          List.map is_status_implicit impls in
+      adjust_to_down tags imps false in
     let subscopes = adjust_to_down tags (List.skipn_at_least n (find_arguments_scope gr)) None in
-    let has_letin = check_has_letin ?loc gr expanded npats (List.count is_status_implicit imps) tags in
+    let has_letin = check_has_letin ?loc gr expanded npats (List.count ((=) true) imps) tags in
     let rec aux imps subscopes tags pats =
     match imps, subscopes, tags, pats with
     | _, _, true::tags, p::pats when has_letin ->
       in_pat_sc scopes None p :: aux imps subscopes tags pats
     | _, _, true::tags, _ ->
       default :: aux imps subscopes tags pats
-    | imp::imps, sc::subscopes, false::tags, _ when is_status_implicit imp ->
+    | is_imp::imps, sc::subscopes, false::tags, _ when is_imp ->
       default :: aux imps subscopes tags pats
-    | imp::imps, sc::subscopes, false::tags, p::pats ->
+    | is_imp::imps, sc::subscopes, false::tags, p::pats ->
       in_pat_sc scopes sc p :: aux imps subscopes tags pats
     | _, _, [], [] -> []
     | _ -> assert false in
@@ -1952,7 +1954,7 @@ let intern_ind_pattern genv ntnvars env pat =
 (* Utilities for application                                          *)
 
 let get_implicit_name n imps =
-  Some (Impargs.name_of_implicit (List.nth imps (n-1)))
+  Some (name_of_argument (List.nth imps (n-1)))
 
 let set_hole_implicit i b c =
   let loc = c.CAst.loc in
@@ -1970,11 +1972,11 @@ let set_hole_implicit i b c =
   | _ -> anomaly (Pp.str "Only refs have implicits.") in
   Loc.tag ?loc (Evar_kinds.ImplicitArg (r,i,b),IntroAnonymous,None)
 
-let exists_implicit_name id =
-  List.exists (fun imp -> is_status_implicit imp && Id.equal id (name_of_implicit imp))
+let is_named_argument id =
+  List.exists (fun imp -> is_status_implicit imp && Id.equal id (name_of_argument imp))
 
 let print_allowed_named_implicit imps =
-  let l = List.map_filter (function Some ((Name id,_,_),_,_) -> Some id | _ -> None) imps in
+  let l = List.map_filter (function ((Name id,_,_),Some _) -> Some id | _ -> None) imps in
   match l with
   | [] -> mt ()
   | l ->
@@ -1983,7 +1985,7 @@ let print_allowed_named_implicit imps =
     pr_sequence Id.print l ++ str ")"
 
 let print_allowed_nondep_implicit imps =
-  let l = List.map_filter (function Some ((_,_,Some n),_,_) -> Some n | _ -> None) imps in
+  let l = List.map_filter (function ((_,_,Some n),Some _) -> Some n | _ -> None) imps in
   match l with
   | [] -> mt ()
   | l ->
@@ -2001,7 +2003,7 @@ let extract_explicit_arg imps args =
       | Some {loc;v=pos} ->
           let () = match pos with
           | ExplByName id ->
-              if not (exists_implicit_name id imps) then
+              if not (is_named_argument id imps) then
                 user_err ?loc
                   (str "Wrong argument name " ++ Id.print id ++
                    print_allowed_named_implicit imps ++ str ".");
@@ -2009,7 +2011,7 @@ let extract_explicit_arg imps args =
                 user_err ?loc  (str "Argument name " ++ Id.print id
                 ++ str " occurs more than once.")
           | ExplByPos p ->
-              if not (is_nondep_implicit p imps) then
+              if not (is_nondep_argument p imps) then
                 user_err ?loc
                   (str"Wrong argument position " ++ int p ++
                    print_allowed_nondep_implicit imps ++ str ".");
@@ -2472,7 +2474,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
       match (impl,rargs) with
       | (imp::impl', rargs) when is_status_implicit imp ->
           begin try
-            let eargs',(_,(_,a)) = List.extract_first (fun (pos,a) -> match_implicit imp pos) eargs in
+            let eargs',(_,(_,a)) = List.extract_first (fun (pos,a) -> match_argument imp pos) eargs in
             intern_no_implicit enva a :: aux (n+1) impl' subscopes' eargs' rargs
           with Not_found ->
           if List.is_empty rargs && List.is_empty eargs && not (maximal_insertion_of imp) then
@@ -2774,7 +2776,7 @@ let interp_named_context_evars ?(program_mode=false) ?(impl_env=empty_internaliz
             let t' = locate_if_hole ?loc:(loc_of_glob_constr t) na t in (* useful? *)
             let sigma, t = understand_tcc ~flags env sigma ~expected_type:IsType t' in
             let (ty,imps,sc,uid) = Id.Map.find id int_env.impls in
-            let imps = List.map (function None -> CAst.make None | Some (_,_,(max,_)) -> CAst.make @@ Some (na,max)) imps in
+            let imps = List.map (fun imp -> CAst.make (if Impargs.is_status_implicit imp then Some (na,Impargs.maximal_insertion_of imp) else None)) imps in
             let imps = compute_internalization_data env sigma id ty t imps in
             let int_env = { int_env with impls = Id.Map.add id imps int_env.impls } in
             let r = Retyping.relevance_of_type env sigma t in
