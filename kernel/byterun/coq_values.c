@@ -39,8 +39,8 @@ value coq_closure_arity(value clos) {
   if (Is_instruction(c,RESTART)) {
     c++;
     if (Is_instruction(c,GRAB)) return Val_int(3 + c[1] - Wosize_val(clos));
-    else { 
-      if (Wosize_val(clos) != 2) failwith("Coq Values : coq_closure_arity");
+    else {
+      if (Wosize_val(clos) != 2) caml_failwith("Coq Values : coq_closure_arity");
       return Val_int(1);
     }
   }
