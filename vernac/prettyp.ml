@@ -323,7 +323,7 @@ let print_arguments ref =
     with Not_found ->
       let env = Global.env () in
       let ty, _ = Typeops.type_of_global_in_context env ref in
-      List.map pi1 (Impargs.compute_implicits_names env (Evd.from_env env) (EConstr.of_constr ty)), true in
+      Impargs.compute_argument_names env (Evd.from_env env) (EConstr.of_constr ty), true in
   let scopes = Notation.find_arguments_scope ref in
   let flags = if needs_extra_scopes ref scopes then `ExtraScopes::flags else flags in
   let impls = Impargs.extract_impargs_data (Impargs.implicits_of_global ref) in

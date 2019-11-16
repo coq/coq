@@ -197,9 +197,10 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r
       Constrintern.compute_internalization_data env sigma recname
         Constrintern.Recursive full_arity impls
     in
+    let pos = (Name (Id.of_string "recproof"),None,Impargs.default_dependency_explanation) in
     let newimpls = Id.Map.singleton recname
         (Constrintern.extend_internalization_data interning_data
-           ((Name (Id.of_string "recproof"),1,None), Some (Impargs.default_implicit ~maximal:true ~force:false))
+           (pos, Some (Impargs.default_implicit ~maximal:true ~force:false))
            None) in
     interp_casted_constr_evars ~program_mode:true (push_rel_context ctx env) sigma
       ~impls:newimpls body (lift 1 top_arity)

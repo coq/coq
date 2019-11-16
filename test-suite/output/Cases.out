@@ -117,11 +117,11 @@ Arguments lem3 k
   
   p : nat
   a,
-  a0 := match eq_refl as y in (_ = e) return (y = y /\ e = e) with
+  a0 := match eq_refl (x:=p) as y in (_ = e) return (y = y /\ e = e) with
         | eq_refl => conj eq_refl eq_refl
         end : eq_refl = eq_refl /\ p = p
   a1,
-  a2 := match eq_refl in (_ = e) return (p = p /\ e = e) with
+  a2 := match eq_refl (x:=p) in (_ = e) return (p = p /\ e = e) with
         | eq_refl => conj eq_refl eq_refl
         end : p = p /\ p = p
   ============================

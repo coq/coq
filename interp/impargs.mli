@@ -41,25 +41,7 @@ type argument_position =
   | Conclusion
   | Hyp of int
 
-(** We remember various information about why an argument is
-   inferable as implicit *)
-type implicit_explanation =
-  | DepRigid of argument_position
-      (** means that the implicit argument can be found by
-          unification along a rigid path (we do not print the arguments of
-          this kind if there is enough arguments to infer them) *)
-  | DepFlex of argument_position
-      (** means that the implicit argument can be found by unification
-          along a collapsible path only (e.g. as x in (P x) where P is another
-          argument) (we do (defensively) print the arguments of this kind) *)
-  | DepFlexAndRigid of (*flex*) argument_position * (*rig*) argument_position
-      (** means that the least argument from which the
-          implicit argument can be inferred is following a collapsible path
-          but there is a greater argument from where the implicit argument is
-          inferable following a rigid path (useful to know how to print a
-          partial application) *)
-  | Manual
-      (** means the argument has been explicitly set as implicit. *)
+type dependency_explanation
 
 (**  We also consider arguments inferable from the conclusion but it is
      operational only if [conclusion_matters] is true. *)
@@ -68,11 +50,11 @@ type maximal_insertion = bool (** true = maximal contextual insertion *)
 
 type force_inference = bool (** true = always infer, never turn into evar/subgoal *)
 
-type implicit_position = Name.t * int * int option
+type argument_status = Name.t * int option * dependency_explanation
 
 type implicit_proper_status
 
-type implicit_status = implicit_position * implicit_proper_status option
+type implicit_status = argument_status * implicit_proper_status option
 
     (** [None] = Not implicit *)
 val default_implicit : maximal:bool -> force:bool -> implicit_proper_status
@@ -83,6 +65,7 @@ type implicit_side_condition
 
 type implicits_list = implicit_side_condition * implicit_status list
 
+val default_dependency_explanation : dependency_explanation
 val is_status_implicit : implicit_status -> bool
 val binding_kind_of_status : implicit_status -> Glob_term.binding_kind
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
@@ -101,10 +84,10 @@ val positions_of_implicits : implicits_list -> int list
 
 type manual_implicits = (Name.t * bool) option CAst.t list
 
-val compute_implicits_with_manual : env -> Evd.evar_map -> types -> bool ->
+val compute_implicits_with_manual : env -> Evd.evar_map -> types ->
   manual_implicits -> implicit_status list
 
-val compute_implicits_names : env -> Evd.evar_map -> types -> implicit_position list
+val compute_argument_names : env -> Evd.evar_map -> types -> Name.t list
 
 (** {6 Computation of implicits (done using the global environment). } *)
 
@@ -120,12 +103,12 @@ val declare_implicits : bool -> GlobRef.t -> unit
    implicits depending on the current state.
    Unsets implicits if [l] is empty. *)
 
-val declare_manual_implicits : bool -> GlobRef.t -> ?enriching:bool ->
+val declare_manual_implicits : bool -> GlobRef.t ->
   manual_implicits -> unit
 
 (** If the list is empty, do nothing, otherwise declare the implicits. *)
 
-val maybe_declare_manual_implicits : bool -> GlobRef.t -> ?enriching:bool ->
+val maybe_declare_manual_implicits : bool -> GlobRef.t ->
   manual_implicits -> unit
 
 (** [set_implicits local ref l]

@@ -1,5 +1,5 @@
-fun S : store => S.(store_funcs)
-     : store -> host_func
+fun S : store (H:=nat) => S.(store_funcs)
+     : store (H:=nat) -> host_func
 a = 
 fun A : Type =>
 let B := A in fun (C : Type) (u : U A C) => (A, B, C, c _ _ u)

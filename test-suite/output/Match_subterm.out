@@ -1,6 +1,6 @@
 (0 = 1)
 (eq 0)
-eq
+(eq (A:=nat))
 @eq
 nat
 0

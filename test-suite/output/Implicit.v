@@ -71,3 +71,13 @@ Check fun x:False => let y:= False_rect (A:=bool) x in y. (* will not be in cont
 Check fun x:False => let y:= False_rect (A:=True) x in y. (* will be in context: no explicitation *)
 
 End LetInContext.
+
+Module InsertMaximalManualImplicit.
+
+Unset Implicit Arguments.
+
+Definition id''' {A} (x:A) := x.
+
+Check id''' (A:=nat).
+
+End InsertMaximalManualImplicit.

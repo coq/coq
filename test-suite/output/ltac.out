@@ -34,7 +34,7 @@ nat
 Ltac foo :=
   let x := intros in
   let y := intros -> in
-  let v := constr:(nil) in
+  let v := constr:(nil (A:=True)) in
   let w := () in
   let z := 1 in
   pose v

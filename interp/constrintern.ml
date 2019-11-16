@@ -180,8 +180,8 @@ let parsing_explicit = ref false
 
 let empty_internalization_env = Id.Map.empty
 
-let compute_internalization_data env sigma id ty typ impl =
-  let impl = compute_implicits_with_manual env sigma typ (is_implicit_args()) impl in
+let compute_internalization_data env sigma id ty typ manual_impl =
+  let impl = compute_implicits_with_manual env sigma typ manual_impl in
   (ty, impl, compute_arguments_scope env sigma typ, var_uid id)
 
 let compute_internalization_env env sigma ?(impls=empty_internalization_env) ty =
@@ -353,16 +353,15 @@ let exists_name na l =
   | _ -> false
 
 let build_impls ?loc n bk na acc =
-  let impl_status maximal =
-    let na =
-      if exists_name na acc then begin warn_shadowed_implicit_name ?loc na; Anonymous end
-      else na in
-    ((na,n,(*TODO:compute dependency*)None),Some (default_implicit ~maximal ~force:true))
-  in
+  let na =
+    if exists_name na acc then begin warn_shadowed_implicit_name ?loc na; Anonymous end
+    else na in
+  let pos = (na,(*TODO:compute dependency*)None,default_dependency_explanation) in
+  let impl_status maximal = Some (default_implicit ~maximal ~force:true) in
   match bk with
-  | NonMaxImplicit -> impl_status false :: acc
-  | MaxImplicit -> impl_status true :: acc
-  | Explicit -> ((na,n,None),None) :: acc
+  | NonMaxImplicit -> (pos, impl_status false) :: acc
+  | MaxImplicit -> (pos, impl_status true) :: acc
+  | Explicit -> (pos,None) :: acc
 
 let impls_binder_list =
   let rec aux acc n = function
@@ -2433,8 +2432,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
       if expl then intern env (CAst.make ?loc (CAppExpl ((qid,us), List.map fst args1@c::List.map fst args2)))
       else intern env (CAst.make ?loc (CApp ((CAst.make ?loc:qid.CAst.loc (CRef (qid,us))), args1@(c,None)::args2)))
 
-  and intern_impargs c env l subscopes args =
-    let eargs, rargs = extract_explicit_arg l args in
+  and intern_impargs c env impl subscopes args =
+    let eargs, rargs = extract_explicit_arg impl args in
     if !parsing_explicit then
       if List.is_empty eargs then intern_args env subscopes rargs
       else user_err Pp.(str "Arguments given by name or position not supported in explicit mode.")
@@ -2471,7 +2470,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
       | [] ->
           assert (List.is_empty eargs);
           intern_args env subscopes rargs
-    in aux 1 l subscopes eargs rargs
+    in aux 1 impl subscopes eargs rargs
 
   and apply_impargs env loc c args =
     let impl, subscopes = find_appl_head_data env lvar c in

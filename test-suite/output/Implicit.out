@@ -21,3 +21,5 @@ fun x : False => let y := False_rect (A:=bool) x in y
      : False -> bool
 fun x : False => let y : True := False_rect x in y
      : False -> True
+id''' (A:=nat)
+     : nat -> nat

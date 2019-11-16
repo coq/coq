@@ -103,7 +103,7 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   let sr = smart_global reference in
   let inf_names =
     let ty, _ = Typeops.type_of_global_in_context env sr in
-    List.map pi1 (Impargs.compute_implicits_names env sigma (EConstr.of_constr ty))
+    Impargs.compute_argument_names env sigma (EConstr.of_constr ty)
   in
   let prev_names =
     try Arguments_renaming.arguments_names sr with Not_found -> inf_names
