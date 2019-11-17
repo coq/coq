@@ -93,38 +93,6 @@ let inPrim : (Projection.Repr.t * Constant.t) -> Libobject.obj =
 
 let declare_primitive_projection p c = Lib.add_anonymous_leaf (inPrim (p,c))
 
-let declare_one_projection univs (mind,_ as ind) ~proj_npars proj_arg label (term,types) =
-  let name = Label.to_id label in
-  let univs, u = match univs with
-    | Monomorphic_entry _ ->
-      (* Global constraints already defined through the inductive *)
-      Monomorphic_entry Univ.ContextSet.empty, Univ.Instance.empty
-    | Polymorphic_entry (nas, ctx) ->
-      Polymorphic_entry (nas, ctx), Univ.UContext.instance ctx
-  in
-  let term = Vars.subst_instance_constr u term in
-  let types = Vars.subst_instance_constr u types in
-  let entry = Declare.definition_entry ~types ~univs term in
-  let cst = Declare.declare_constant ~name ~kind:Decls.(IsDefinition StructureComponent) (Declare.DefinitionEntry entry) in
-  let p = Projection.Repr.make ind ~proj_npars ~proj_arg label in
-  declare_primitive_projection p cst
-
-let declare_projections univs mind =
-  let env = Global.env () in
-  let mib = Environ.lookup_mind mind env in
-  let open Declarations in
-  match mib.mind_record with
-  | PrimRecord info ->
-    let iter_ind i (_, labs, _, _) =
-      let ind = (mind, i) in
-      let projs = Inductiveops.compute_projections env ind in
-      CArray.iter2_i (declare_one_projection univs ind ~proj_npars:mib.mind_nparams) labs projs
-    in
-    let () = Array.iteri iter_ind info in
-    true
-  | FakeRecord -> false
-  | NotRecord -> false
-
 let feedback_axiom () = Feedback.(feedback AddedAxiom)
 
 let is_unsafe_typing_flags () =
@@ -146,7 +114,7 @@ let declare_mind mie =
   let (sp,kn as oname) = Lib.add_leaf id (inInductive { ind_names = names }) in
   if is_unsafe_typing_flags() then feedback_axiom ();
   let mind = Global.mind_of_delta_kn kn in
-  let isprim = declare_projections mie.mind_entry_universes mind in
+  let isprim = Inductive.is_primitive_record (Inductive.lookup_mind_specif (Global.env()) (mind,0)) in
   Impargs.declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
   oname, isprim
