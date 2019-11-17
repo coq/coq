@@ -1,0 +1,1 @@
+- Fixed bugs sometimes preventing to define valid (co)fixpoints with implicit arguments in the presence of local definitions, see #3282 (`#11132 <https://github.com/coq/coq/pull/11132>`_, by Hugo Herbelin).
