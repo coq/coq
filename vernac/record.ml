@@ -599,7 +599,7 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
       mind_entry_variance = variance;
     }
   in
-  let impls = List.map (fun _ -> paramimpls, []) record_data in
+  let impls = List.map (fun _ -> paramimpls, [[]]) record_data in
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie globnames impls
       ~primitive_expected:primitive_proj
   in
