@@ -115,7 +115,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let env = Global.env() in
   let sigma, udecl = interp_univ_decl_opt env pl in
-  let sigma, (_, ((env', binders_rel), impls)) = interp_context_evars ~program_mode:true env sigma bl in
+  let sigma, (_, ((env', binders_rel), impargs)) = interp_context_evars ~program_mode:true env sigma bl in
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
   let sigma, top_arity = interp_type_evars ~program_mode:true top_env sigma arityc in
@@ -195,7 +195,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r
     let ctx = LocalAssum (make_annot (Name recname) Sorts.Relevant, get_type curry_fun) :: binders_rel in
     let interning_data =
       Constrintern.compute_internalization_data env sigma recname
-        Constrintern.Recursive full_arity impls
+        Constrintern.Recursive full_arity impargs
     in
     let pos = (Name (Id.of_string "recproof"),None,Impargs.default_dependency_explanation) in
     let newimpls = Id.Map.singleton recname
@@ -224,7 +224,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r
   let binders_rel = nf_evar_context sigma binders_rel in
   let binders = nf_evar_context sigma binders in
   let top_arity = Evarutil.nf_evar sigma top_arity in
-  let hook, recname, typ =
+  let hook, recname, typ, impargs =
     if List.length binders_rel > 1 then
       let name = add_suffix recname "_func" in
       (* XXX: Mutating the evar_map in the hook! *)
@@ -238,19 +238,15 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r
         (*FIXME poly? *)
         let ce = definition_entry ~types:ty ~univs (EConstr.to_constr sigma body) in
         (* FIXME: include locality *)
-        let c = Declare.declare_constant ~name:recname ~kind:Decls.(IsDefinition Definition) (DefinitionEntry ce) in
-        let gr = GlobRef.ConstRef c in
-        if Impargs.is_implicit_args () || not (List.is_empty impls) then
-          Impargs.declare_manual_implicits false gr impls
+        let _ = Declare.declare_constant ~name:recname ~kind:Decls.(IsDefinition Definition) ~impargs (DefinitionEntry ce) in
+        ()
       in
       let typ = it_mkProd_or_LetIn top_arity binders in
-      hook, name, typ
+      hook, name, typ, []
     else
       let typ = it_mkProd_or_LetIn top_arity binders_rel in
-      let hook sigma { Declare.Hook.S.dref; _ } =
-        if Impargs.is_implicit_args () || not (List.is_empty impls) then
-          Impargs.declare_manual_implicits false dref impls
-      in hook, recname, typ
+      let hook sigma { Declare.Hook.S.dref; _ } = () in
+      hook, recname, typ, impargs
   in
   (* XXX: Capturing sigma here... bad bad *)
   let hook = Declare.Hook.make (hook sigma) in
@@ -263,7 +259,7 @@ let build_wellfounded pm (recname,pl,bl,arityc,body) poly ?typing_flags ?using r
     Option.map (fun using -> Proof_using.definition_using env sigma ~using ~terms) using
   in
   let uctx = Evd.evar_universe_context sigma in
-  let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ ?using () in
+  let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ ?using ~impargs () in
   let info = Declare.Info.make ~udecl ~poly ~hook ?typing_flags () in
   let pm, _ =
     Declare.Obls.add_definition ~pm ~cinfo ~info ~term:evars_def ~uctx evars in
