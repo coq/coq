@@ -413,13 +413,6 @@ let explicitation ((na,p,_),_) =
   | _, Some p -> ExplByPos p
   | _ -> anomaly (Pp.str "Argument without a position.")
 
-let positions_of_implicits (_,impls) =
-  let rec aux n = function
-    | [] -> []
-    | (_, Some _) :: l -> n :: aux (n+1) l
-    | (_, None) :: l -> aux (n+1) l
-  in aux 1 impls
-
 (* Manage user-given implicit arguments *)
 
 let set_manual_implicits silent flags enriching autoimps l =

@@ -80,7 +80,6 @@ val explicitation : implicit_status -> Constrexpr.explicitation
 val print_allowed_named_implicit : implicit_status list -> Pp.t
 val print_allowed_nondep_implicit : implicit_status list -> Pp.t
 
-val positions_of_implicits : implicits_list -> int list
 
 type manual_implicits = (Name.t * bool) option CAst.t list
 
