@@ -545,7 +545,7 @@ let print_located_qualid ref = print_located_qualid "object" LocAny ref
 (****  Gallina layer                  *****)
 
 let gallina_print_typed_value_in_env env sigma (trm,typ) =
-  (pr_leconstr_env env sigma trm ++ fnl () ++
+  (pr_leconstr_env ~inctx:true env sigma trm ++ fnl () ++
      str "     : " ++ pr_letype_env env sigma typ)
 
 (* To be improved; the type should be used to provide the types in the
@@ -554,7 +554,7 @@ let gallina_print_typed_value_in_env env sigma (trm,typ) =
    synthesizes the type nat of the abstraction on u *)
 
 let print_named_def env sigma name body typ =
-  let pbody = pr_lconstr_env env sigma body in
+  let pbody = pr_lconstr_env ~inctx:true env sigma body in
   let ptyp = pr_ltype_env env sigma typ in
   let pbody = if Constr.isCast body then surround pbody else pbody in
   (str "*** [" ++ str name ++ str " " ++
@@ -596,7 +596,7 @@ let gallina_print_section_variable env sigma id =
   with_line_skip (print_name_infos (GlobRef.VarRef id))
 
 let print_body env evd = function
-  | Some c  -> pr_lconstr_env env evd c
+  | Some c  -> pr_lconstr_env ~inctx:true env evd c
   | None -> (str"<no body>")
 
 let print_typed_body env evd (val_0,typ) =

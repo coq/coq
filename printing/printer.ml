@@ -281,7 +281,7 @@ let pr_compacted_decl env sigma decl =
        ids, mt (), typ
     | CompactedDecl.LocalDef (ids,c,typ) ->
        (* Force evaluation *)
-       let pb = pr_lconstr_env env sigma c in
+       let pb = pr_lconstr_env ~inctx:true env sigma c in
        let pb = if isCast c then surround pb else pb in
        ids, (str" := " ++ pb ++ cut ()), typ
   in
@@ -300,7 +300,7 @@ let pr_rel_decl env sigma decl =
     | RelDecl.LocalAssum _ -> mt ()
     | RelDecl.LocalDef (_,c,_) ->
         (* Force evaluation *)
-        let pb = pr_lconstr_env env sigma c in
+        let pb = pr_lconstr_env ~inctx:true env sigma c in
         let pb = if isCast c then surround pb else pb in
         (str":=" ++ spc () ++ pb ++ spc ()) in
   let ptyp = pr_ltype_env env sigma typ in
