@@ -12,3 +12,8 @@ map id' (1 :: nil)
      : list nat
 map (id'' (A:=nat)) (1 :: nil)
      : list nat
+fix f (x : nat) : option nat := match x with
+                                | 0 => None
+                                | S _ => x
+                                end
+     : nat -> option nat

@@ -969,17 +969,19 @@ let rec extern inctx scopes vars r =
                              ) x))
                 tml
     in
-    let eqns = List.map (extern_eqn inctx scopes vars) (factorize_eqns eqns) in
+    let eqns = List.map (extern_eqn (inctx || rtntypopt <> None) scopes vars) (factorize_eqns eqns) in
     CCases (sty,rtntypopt',tml,eqns)
 
   | GLetTuple (nal,(na,typopt),tm,b) ->
-    CLetTuple (List.map CAst.make nal,
+      let inctx = inctx || typopt <> None in
+      CLetTuple (List.map CAst.make nal,
         (Option.map (fun _ -> (make na)) typopt,
          Option.map (extern_typ scopes (add_vname vars na)) typopt),
         sub_extern false scopes vars tm,
         extern inctx scopes (List.fold_left add_vname vars nal) b)
 
   | GIf (c,(na,typopt),b1,b2) ->
+      let inctx = inctx || typopt <> None in
       CIf (sub_extern false scopes vars c,
         (Option.map (fun _ -> (CAst.make na)) typopt,
          Option.map (extern_typ scopes (add_vname vars na)) typopt),
@@ -1002,7 +1004,7 @@ let rec extern inctx scopes vars r =
                    | Some x -> Some (CAst.make @@ CStructRec (CAst.make @@ Name.get_id (List.nth assums x)))
                              in
                  ((CAst.make fi), n, bl, extern_typ scopes vars0 ty,
-                  extern false scopes vars1 def)) idv
+                  sub_extern true scopes vars1 def)) idv
              in
              CFix (CAst.(make ?loc idv.(n)), Array.to_list listdecl)
          | GCoFix n ->
@@ -1013,7 +1015,7 @@ let rec extern inctx scopes vars r =
                  let vars0 = List.fold_right (Name.fold_right Id.Set.add) ids vars in
                  let vars1 = List.fold_right (Name.fold_right Id.Set.add) ids vars' in
                  ((CAst.make fi),bl,extern_typ scopes vars0 tyv.(i),
-                  sub_extern false scopes vars1 bv.(i))) idv
+                  sub_extern true scopes vars1 bv.(i))) idv
              in
              CCoFix (CAst.(make ?loc idv.(n)),Array.to_list listdecl))
 
