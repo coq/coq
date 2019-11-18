@@ -14,18 +14,16 @@ open Vars
 open Names
 open Context
 open Constrintern
-open Impargs
 open Pretyping
 
 module RelDecl = Context.Rel.Declaration
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
-let declare_variable is_coe ~kind typ univs imps impl {CAst.v=name} =
+let declare_variable is_coe ~kind typ univs impargs impl {CAst.v=name} =
   let kind = Decls.IsAssumption kind in
-  let () = Declare.declare_variable ~name ~kind ~typ ~impl ~univs in
+  let () = Declare.declare_variable ~name ~kind ~impargs ~typ ~impl ~univs in
   let () = Declare.assumption_message name in
   let r = GlobRef.VarRef name in
-  let () = maybe_declare_manual_implicits true r imps in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let () = Classes.declare_instance env sigma None Hints.Local r in
@@ -36,7 +34,7 @@ let instance_of_univ_entry = function
   | UState.Polymorphic_entry univs -> Univ.UContext.instance univs
   | UState.Monomorphic_entry _ -> Univ.Instance.empty
 
-let declare_axiom is_coe ~poly ~local ~kind typ (univs, ubinders) imps nl {CAst.v=name} =
+let declare_axiom is_coe ~poly ~local ~kind typ (univs, ubinders) impargs nl {CAst.v=name} =
   let do_instance = let open Decls in match kind with
   | Context -> true
     (* The typeclass behaviour of Variable and Context doesn't depend
@@ -51,9 +49,8 @@ let declare_axiom is_coe ~poly ~local ~kind typ (univs, ubinders) imps nl {CAst.
   let kind = Decls.IsAssumption kind in
   let entry = Declare.parameter_entry ~univs:(univs, ubinders) ?inline:inl typ in
   let decl = Declare.ParameterEntry entry in
-  let kn = Declare.declare_constant ~name ~local ~kind decl in
+  let kn = Declare.declare_constant ~name ~local ~kind ~impargs decl in
   let gr = GlobRef.ConstRef kn in
-  let () = maybe_declare_manual_implicits false gr imps in
   let () = Declare.assumption_message name in
   let env = Global.env () in
   let sigma = Evd.from_env env in

@@ -90,9 +90,12 @@ val compute_argument_names : env -> Evd.evar_map -> types -> Name.t list
 
 (** {6 Computation of implicits (done using the global environment). } *)
 
-val declare_var_implicits : variable -> impl:Glob_term.binding_kind -> unit
-val declare_constant_implicits : Constant.t -> unit
-val declare_mib_implicits : MutInd.t -> unit
+type mib_manual_implicits = (manual_implicits * manual_implicits list) list
+
+val declare_var_implicits : variable ->
+  impl:Glob_term.binding_kind -> impargs:manual_implicits option -> unit
+val declare_constant_implicits : Constant.t -> impargs:manual_implicits option -> unit
+val declare_mib_implicits : MutInd.t -> impargs:mib_manual_implicits -> unit
 
 val declare_implicits : bool -> GlobRef.t -> unit
 
@@ -102,13 +105,7 @@ val declare_implicits : bool -> GlobRef.t -> unit
    implicits depending on the current state.
    Unsets implicits if [l] is empty. *)
 
-val declare_manual_implicits : bool -> GlobRef.t ->
-  manual_implicits -> unit
-
-(** If the list is empty, do nothing, otherwise declare the implicits. *)
-
-val maybe_declare_manual_implicits : bool -> GlobRef.t ->
-  manual_implicits -> unit
+val declare_manual_implicits : bool -> GlobRef.t -> manual_implicits -> unit
 
 (** [set_implicits local ref l]
    Manual declaration of implicit arguments.

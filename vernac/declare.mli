@@ -359,6 +359,7 @@ val declare_entry
 val declare_variable
   :  name:variable
   -> kind:Decls.logical_kind
+  -> ?impargs:Impargs.manual_implicits
   -> typ:Constr.types
   -> impl:Glob_term.binding_kind
   -> univs:UState.named_universes_entry
@@ -394,6 +395,7 @@ val declare_constant
   -> name:Id.t
   -> kind:Decls.logical_kind
   -> ?typing_flags:Declarations.typing_flags
+  -> ?impargs:Impargs.manual_implicits
   -> constant_entry
   -> Constant.t
 

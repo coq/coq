@@ -526,7 +526,7 @@ type implicit_interactive_request =
 
 type implicit_discharge_request =
   | ImplLocal
-  | ImplConstant of implicits_flags
+  | ImplConstant of Constant.t * implicits_flags
   | ImplMutualInductive of MutInd.t * implicits_flags
   | ImplInteractive of implicits_flags *
       implicit_interactive_request
@@ -608,9 +608,9 @@ let discharge_implicits (_,(req,l)) =
 let rebuild_implicits (req,l) =
   match req with
   | ImplLocal -> assert false
-  | ImplConstant flags ->
+  | ImplConstant (cst,flags) ->
       let ref,oldimpls = List.hd l in
-      let newimpls = compute_global_implicits flags ref in
+      let newimpls = compute_constant_implicits flags cst in
       req, [ref, List.map2 merge_impls oldimpls newimpls]
   | ImplMutualInductive (kn,flags) ->
       let newimpls = compute_all_mib_implicits flags kn in
@@ -667,22 +667,35 @@ let declare_implicits local ref =
     if is_local local ref then ImplLocal else ImplInteractive(flags,ImplAuto) in
     declare_implicits_gen req flags ref
 
-let declare_var_implicits id ~impl =
+let under_full_implicit f (ref,auto_imps) x =
+  (ref, List.map (fun (d,auto_imps) -> (d,f auto_imps x)) auto_imps)
+
+let declare_var_implicits id ~impl ~impargs =
   let flags = !implicit_args in
   sec_implicits := Id.Map.add id impl !sec_implicits;
-  declare_implicits_gen ImplLocal flags (GlobRef.VarRef id)
+  let auto_imps = (GlobRef.VarRef id, compute_var_implicits flags id) in
+  let imps = Option.fold_left (under_full_implicit (set_manual_implicits false flags)) auto_imps impargs in
+  add_anonymous_leaf (inImplicits (ImplLocal,[imps]))
 
-let declare_constant_implicits con =
+let declare_constant_implicits cst ~impargs =
   let flags = !implicit_args in
-    declare_implicits_gen (ImplConstant flags) flags (GlobRef.ConstRef con)
+  let auto_imps = (GlobRef.ConstRef cst, compute_constant_implicits flags cst) in
+  let imps = Option.fold_left (under_full_implicit (set_manual_implicits false flags)) auto_imps impargs in
+  add_anonymous_leaf (inImplicits (ImplConstant (cst,flags),[imps]))
 
-let declare_mib_implicits kn =
+type mib_manual_implicits = (manual_implicits * manual_implicits list) list
+
+let declare_mib_implicits mind ~impargs =
   let flags = !implicit_args in
-  let imps = Array.map_to_list
-    (fun (ind,cstrs) -> ind::(Array.to_list cstrs))
-    (compute_mib_implicits flags kn) in
-    add_anonymous_leaf
-      (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
+  let auto_imps = Array.map_to_list
+    (fun (ind,cstrs) -> (ind,Array.to_list cstrs))
+    (compute_mib_implicits flags mind) in
+  let imps = List.map2 (fun (auto_indimpl,auto_cstrimpls) (manual_indimpl,manual_cstrimpls) ->
+               under_full_implicit (set_manual_implicits false flags) auto_indimpl manual_indimpl ::
+               List.map2 (under_full_implicit (set_manual_implicits false flags)) auto_cstrimpls manual_cstrimpls)
+               auto_imps impargs in
+  add_anonymous_leaf
+    (inImplicits (ImplMutualInductive (mind,flags),List.flatten imps))
 
 let check_inclusion l =
   (* Check strict inclusion *)
@@ -714,10 +727,6 @@ let declare_manual_implicits local ref impls =
     if is_local local ref then ImplLocal
     else ImplInteractive(flags,ImplManual (List.length autoimpls))
   in add_anonymous_leaf (inImplicits (req,[ref,l]))
-
-let maybe_declare_manual_implicits local ref manual_impls =
-  if List.exists (fun x -> x.CAst.v <> None) manual_impls then
-    declare_manual_implicits local ref manual_impls
 
 let set_name (na',x,y as pos) = function
   | Name _ as na -> (na,x,y)

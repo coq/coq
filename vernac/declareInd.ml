@@ -104,7 +104,7 @@ let is_unsafe_typing_flags () =
   not (flags.check_universes && flags.check_guarded && flags.check_positive)
 
 (* for initial declaration *)
-let declare_mind ?typing_flags mie =
+let declare_mind ?typing_flags mie impargs =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
     | [] -> CErrors.anomaly (Pp.str "cannot declare an empty list of inductives.") in
@@ -118,7 +118,7 @@ let declare_mind ?typing_flags mie =
   if is_unsafe_typing_flags() then feedback_axiom ();
   let mind = Global.mind_of_delta_kn kn in
   let isprim = Inductive.is_primitive_record (Inductive.lookup_mind_specif (Global.env()) (mind,0)) in
-  Impargs.declare_mib_implicits mind;
+  Impargs.declare_mib_implicits mind ~impargs;
   declare_inductive_argument_scopes mind mie;
   oname, isprim
 
@@ -166,21 +166,11 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) ?typi
     | _ -> ()
   end;
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
-  let (_, kn), prim = declare_mind ?typing_flags mie in
+  let (_, kn), prim = declare_mind ?typing_flags mie impls in
   let mind = Global.mind_of_delta_kn kn in
   let is_template = match mie.mind_entry_universes with Template_ind_entry _ -> true | _ -> false in
   if primitive_expected && not prim then warn_non_primitive_record (mind,0);
   DeclareUniv.declare_univ_binders (GlobRef.IndRef (mind,0)) ubinders;
-  List.iteri (fun i (indimpls, constrimpls) ->
-      let ind = (mind,i) in
-      let gr = GlobRef.IndRef ind in
-      Impargs.maybe_declare_manual_implicits false gr indimpls;
-      List.iteri
-        (fun j impls ->
-           Impargs.maybe_declare_manual_implicits false
-             (GlobRef.ConstructRef (ind, succ j)) impls)
-        constrimpls)
-    impls;
   Flags.if_verbose Feedback.msg_info (minductive_message names);
   if is_template then
     List.iteri (fun i _ -> Equality.set_keep_equality (mind, i) true) mie.mind_entry_inds;

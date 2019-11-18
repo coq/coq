@@ -340,7 +340,7 @@ let instantiate_possibly_recursive_type ind u ntypes paramdecls fields =
    this could be refactored as noted above by moving to the
    higher-level declare constant API *)
 let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramdecls
-    paramargs decl impls fid subst nfi ti i indsp mib lifted_fields x rp =
+    paramargs decl impargs fid subst nfi ti i indsp mib lifted_fields x rp =
   let ccl = subst_projection fid subst ti in
   let body, p_opt = match decl with
     | LocalDef (_,ci,_) -> subst_projection fid subst ci, None
@@ -369,7 +369,7 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
   let entry = Declare.definition_entry ~univs ~types:projtyp proj in
   let kind = Decls.IsDefinition kind in
   let kn =
-    try Declare.declare_constant ~name:fid ~kind (Declare.DefinitionEntry entry)
+    try Declare.declare_constant ~name:fid ~kind ~impargs (Declare.DefinitionEntry entry)
     with Type_errors.TypeError (ctx,te) as exn when not primitive ->
       let _, info = Exninfo.capture exn in
       Exninfo.iraise (NotDefinable (BadTypedProj (fid,ctx,te)),info)
@@ -386,7 +386,6 @@ let build_named_proj ~primitive ~flags ~poly ~univs ~uinstance ~kind env paramde
       | _ -> applist (mkConstU (kn,uinstance),proj_args)
   in
   let refi = GlobRef.ConstRef kn in
-  Impargs.maybe_declare_manual_implicits false refi impls;
   if flags.pf_subclass then begin
     let cl = ComCoercion.class_of_global (GlobRef.IndRef indsp) in
     ComCoercion.try_add_new_coercion_with_source refi ~local:false ~poly ~source:cl
