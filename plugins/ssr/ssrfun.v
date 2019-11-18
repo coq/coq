@@ -675,6 +675,9 @@ Proof. by move=> fK injf' x; apply: injf'. Qed.
 Lemma inj_comp : injective f -> injective h -> injective (f \o h).
 Proof. by move=> injf injh x y /injf; apply: injh. Qed.
 
+Lemma inj_compr : injective (f \o h) -> injective h.
+Proof. by move=> injfh x y /(congr1 f) /injfh. Qed.
+
 Lemma can_comp f' h' : cancel f f' -> cancel h h' -> cancel (f \o h) (h' \o f').
 Proof. by move=> fK hK x; rewrite /= fK hK. Qed.
 
