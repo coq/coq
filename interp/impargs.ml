@@ -654,15 +654,6 @@ let inImplicits : implicits_obj -> obj =
     discharge_function = discharge_implicits;
     rebuild_function = rebuild_implicits }
 
-let is_local local ref = local || isVarRef ref && is_in_section ref
-
-let set_auto_implicits local ref =
-  let flags = { !implicit_args with auto = true } in
-  let req =
-    if is_local local ref then ImplLocal else ImplInteractive(flags,ImplAuto) in
-  let imps = compute_global_implicits flags ref in
-  add_anonymous_leaf (inImplicits (req,[ref,imps]))
-
 let under_full_implicit f (ref,auto_imps) x =
   (ref, List.map (fun (d,auto_imps) -> (d,f auto_imps x)) auto_imps)
 
@@ -693,6 +684,23 @@ let declare_mib_implicits mind ~impargs =
   add_anonymous_leaf
     (inImplicits (ImplMutualInductive (mind,flags),List.flatten imps))
 
+let projection_implicits env p impls =
+  let npars = Projection.npars p in
+  CList.skipn_at_least npars impls
+
+(** Setting auto implicit arguments *)
+
+let is_local local ref = local || isVarRef ref && is_in_section ref
+
+let set_auto_implicits local ref =
+  let flags = { !implicit_args with auto = true } in
+  let req =
+    if is_local local ref then ImplLocal else ImplInteractive(flags,ImplAuto) in
+  let imps = compute_global_implicits flags ref in
+  add_anonymous_leaf (inImplicits (req,[ref,imps]))
+
+(** Setting manual implicit arguments *)
+
 let check_inclusion l =
   (* Check strict inclusion *)
   let rec aux = function
@@ -706,10 +714,6 @@ let check_inclusion l =
 let check_rigidity isrigid =
   if not isrigid then
     user_err  (strbrk "Multiple sequences of implicit arguments available only for references that cannot be applied to an arbitrarily large number of arguments.")
-
-let projection_implicits env p impls =
-  let npars = Projection.npars p in
-  CList.skipn_at_least npars impls
 
 let set_name (na',x,y as pos) = function
   | Name _ as na -> (na,x,y)
@@ -756,6 +760,8 @@ let set_manual_implicits local ref l =
     if is_local local ref then ImplLocal
     else ImplInteractive(flags,ImplManual (List.length deps))
   in add_anonymous_leaf (inImplicits (req,[ref,l']))
+
+(** Miscellaneous function about multiple implicit arguments signatures *)
 
 let extract_impargs_data impls =
   let rec aux p = function
