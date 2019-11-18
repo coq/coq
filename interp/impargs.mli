@@ -36,19 +36,10 @@ val with_implicit_protection : ('a -> 'b) -> 'a -> 'b
 (** An [implicits_list] is a list of positions telling which arguments
     of a reference can be automatically inferred *)
 
-
-type argument_position =
-  | Conclusion
-  | Hyp of int
-
 type dependency_explanation
 
 (**  We also consider arguments inferable from the conclusion but it is
      operational only if [conclusion_matters] is true. *)
-
-type maximal_insertion = bool (** true = maximal contextual insertion *)
-
-type force_inference = bool (** true = always infer, never turn into evar/subgoal *)
 
 type argument_status = Name.t * int option * dependency_explanation
 
