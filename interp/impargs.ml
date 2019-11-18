@@ -331,9 +331,8 @@ type argument_status = Name.t * int option * dependency_explanation
 
 type implicit_proper_status = implicit_origin * maximal_insertion * force_inference
 
-type implicit_status =
-    (* None = Not implicit *)
-    argument_status * implicit_proper_status option
+type implicit_status = argument_status * implicit_proper_status option
+  (** [None] = Not implicit; let-in skipped *)
 
 type implicit_side_condition = DefaultImpArgs | LessArgsThan of int
 
@@ -453,30 +452,29 @@ let compute_constant_implicits flags cst =
   let sigma = Evd.from_env env in
   let cb = Environ.lookup_constant cst env in
   let ty = of_constr cb.const_type in
-  let impls = compute_semi_auto_implicits env sigma flags ty in
-  impls
+  compute_semi_auto_implicits env sigma flags ty
 
 (*s Inductives and constructors. Their implicit arguments are stored
    in an array, indexed by the inductive number, of pairs $(i,v)$ where
    $i$ are the implicit arguments of the inductive and $v$ the array of
    implicit arguments of the constructors. *)
 
-let compute_mib_implicits flags kn =
+let compute_mib_implicits flags mind =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let mib = Environ.lookup_mind kn env in
+  let mib = Environ.lookup_mind mind env in
   let ar =
     Array.to_list
       (Array.mapi  (* No need to lift, arities contain no de Bruijn *)
         (fun i mip ->
           (* No need to care about constraints here *)
-          let ty, _ = Typeops.type_of_global_in_context env (GlobRef.IndRef (kn,i)) in
-          let r = Inductive.relevance_of_inductive env (kn,i) in
+          let ty, _ = Typeops.type_of_global_in_context env (GlobRef.IndRef (mind,i)) in
+          let r = Inductive.relevance_of_inductive env (mind,i) in
           Context.Rel.Declaration.LocalAssum (Context.make_annot (Name mip.mind_typename) r, ty))
         mib.mind_packets) in
   let env_ar = Environ.push_rel_context ar env in
   let imps_one_inductive i mip =
-    let ind = (kn,i) in
+    let ind = (mind,i) in
     let ar, _ = Typeops.type_of_global_in_context env (GlobRef.IndRef ind) in
     ((GlobRef.IndRef ind,compute_semi_auto_implicits env sigma flags (of_constr ar)),
      Array.mapi (fun j (ctx, cty) ->
@@ -486,10 +484,10 @@ let compute_mib_implicits flags kn =
   in
   Array.mapi imps_one_inductive mib.mind_packets
 
-let compute_all_mib_implicits flags kn =
-  let imps = compute_mib_implicits flags kn in
+let compute_all_mib_implicits flags mind =
+  let imps = compute_mib_implicits flags mind in
   List.flatten
-    (Array.map_to_list (fun (ind,cstrs) -> ind::Array.to_list cstrs) imps)
+    (Array.map_to_list (fun (ind,cstrs) -> ind :: Array.to_list cstrs) imps)
 
 (*s Variables. *)
 
@@ -502,11 +500,11 @@ let compute_var_implicits flags id =
 
 let compute_global_implicits flags = let open GlobRef in function
   | VarRef id -> compute_var_implicits flags id
-  | ConstRef kn -> compute_constant_implicits flags kn
-  | IndRef (kn,i) ->
-      let ((_,imps),_) = (compute_mib_implicits flags kn).(i) in imps
-  | ConstructRef ((kn,i),j) ->
-      let (_,cimps) = (compute_mib_implicits flags kn).(i) in snd cimps.(j-1)
+  | ConstRef cst -> compute_constant_implicits flags cst
+  | IndRef (mind,i) ->
+      let ((_,imps),_) = (compute_mib_implicits flags mind).(i) in imps
+  | ConstructRef ((mind,i),j) ->
+      let (_,cimps) = (compute_mib_implicits flags mind).(i) in snd cimps.(j-1)
 
 (* Merge a manual implicit position with an implicit_status list *)
 
@@ -620,7 +618,6 @@ let rebuild_implicits (req,l) =
        | [], [] -> []
        | _, _ -> assert false
       in req, aux l newimpls
-
   | ImplInteractive (flags,o) ->
       let ref,oldimpls = List.hd l in
       (if isVarRef ref && is_in_section ref then ImplLocal else req),
@@ -638,12 +635,11 @@ let rebuild_implicits (req,l) =
            [ref,oldimpls]
 
 let classify_implicits (req,_ as obj) = match req with
-| ImplLocal -> Dispose
-| _ -> Substitute obj
+  | ImplLocal -> Dispose
+  | _ -> Substitute obj
 
 type implicits_obj =
-    implicit_discharge_request *
-      (GlobRef.t * implicits_list list) list
+  implicit_discharge_request * (GlobRef.t * implicits_list list) list
 
 let inImplicits : implicits_obj -> obj =
   declare_object {(default_object "IMPLICITS") with
