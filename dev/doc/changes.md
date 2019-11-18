@@ -1,5 +1,15 @@
 ## Changes between Coq 8.11 and Coq 8.12
 
+### ML API
+
+Printers:
+
+- Functions such as Printer.pr_lconstr_goal_style_env have been
+  removed, use instead functions such as pr_lconstr with label
+  `goal_concl_style:true`. Functions such as
+  Constrextern.extern_constr which were taking a boolean argument for
+  the goal style now take instead a label.
+
 ## Changes between Coq 8.10 and Coq 8.11
 
 ### ML API

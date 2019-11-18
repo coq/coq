@@ -196,7 +196,7 @@ let process_goal sigma g =
   let min_env = Environ.reset_context env in
   let id = Goal.uid g in
   let ccl =
-    pr_goal_concl_style_env env sigma (Goal.V82.concl sigma g)
+    pr_letype_env ~goal_concl_style:true env sigma (Goal.V82.concl sigma g)
   in
   let process_hyp d (env,l) =
     let d' = CompactedDecl.to_named_context d in

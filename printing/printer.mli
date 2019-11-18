@@ -15,6 +15,7 @@ open Pattern
 open Evd
 open Glob_term
 open Ltac_pretype
+open Notation_term
 
 (** These are the entry points for printing terms, context, tac, ... *)
 
@@ -25,45 +26,38 @@ val enable_goal_names_printing     : bool ref
 
 (** Terms *)
 
-val pr_lconstr_env         : env -> evar_map -> constr -> Pp.t
-val pr_lconstr_goal_style_env : env -> evar_map -> constr -> Pp.t
+val pr_constr_env          : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> constr -> Pp.t
+val pr_lconstr_env         : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> constr -> Pp.t
 
-val pr_constr_env          : env -> evar_map -> constr -> Pp.t
-val pr_constr_goal_style_env : env -> evar_map -> constr -> Pp.t
-
-val pr_constr_n_env        : env -> evar_map -> Notation_gram.tolerability -> constr -> Pp.t
+val pr_constr_n_env        : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Notation_gram.tolerability -> constr -> Pp.t
 
 (** Same, but resilient to [Nametab] errors. Prints fully-qualified
     names when [shortest_qualid_of_global] has failed. Prints "??"
     in case of remaining issues (such as reference not in env). *)
 
-val safe_pr_lconstr_env         : env -> evar_map -> constr -> Pp.t
+val safe_pr_constr_env  : env -> evar_map -> constr -> Pp.t
+val safe_pr_lconstr_env : env -> evar_map -> constr -> Pp.t
 
-val safe_pr_constr_env          : env -> evar_map -> constr -> Pp.t
+val pr_econstr_env      : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> EConstr.t -> Pp.t
+val pr_leconstr_env     : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> EConstr.t -> Pp.t
 
-val pr_econstr_env     : env -> evar_map -> EConstr.t -> Pp.t
-val pr_leconstr_env     : env -> evar_map -> EConstr.t -> Pp.t
+val pr_econstr_n_env    : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Notation_gram.tolerability -> EConstr.t -> Pp.t
 
-val pr_econstr_n_env    : env -> evar_map -> Notation_gram.tolerability -> EConstr.t -> Pp.t
+val pr_etype_env        : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> EConstr.types -> Pp.t
+val pr_letype_env       : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> EConstr.types -> Pp.t
 
-val pr_etype_env           : env -> evar_map -> EConstr.types -> Pp.t
-val pr_letype_env           : env -> evar_map -> EConstr.types -> Pp.t
-
-val pr_open_constr_env     : env -> evar_map -> open_constr -> Pp.t
-
-val pr_open_lconstr_env    : env -> evar_map -> open_constr -> Pp.t
+val pr_open_constr_env  : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> open_constr -> Pp.t
+val pr_open_lconstr_env : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> open_constr -> Pp.t
 
 val pr_constr_under_binders_env  : env -> evar_map -> constr_under_binders -> Pp.t
 
 val pr_lconstr_under_binders_env : env -> evar_map -> constr_under_binders -> Pp.t
 
-val pr_goal_concl_style_env : env -> evar_map -> EConstr.types -> Pp.t
-val pr_ltype_env           : env -> evar_map -> types -> Pp.t
+val pr_ltype_env           : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> types -> Pp.t
+val pr_type_env            : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> types -> Pp.t
 
-val pr_type_env            : env -> evar_map -> types -> Pp.t
-
-val pr_closed_glob_n_env   : env -> evar_map -> Notation_gram.tolerability -> closed_glob_constr -> Pp.t
-val pr_closed_glob_env     : env -> evar_map -> closed_glob_constr -> Pp.t
+val pr_closed_glob_n_env   : ?lax:bool -> ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Notation_gram.tolerability -> closed_glob_constr -> Pp.t
+val pr_closed_glob_env     : ?lax:bool -> ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> closed_glob_constr -> Pp.t
 
 val pr_ljudge_env          : env -> evar_map -> EConstr.unsafe_judgment -> Pp.t * Pp.t
 

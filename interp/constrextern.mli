@@ -28,7 +28,8 @@ val extern_glob_constr : Id.Set.t -> 'a glob_constr_g -> constr_expr
 val extern_glob_type : Id.Set.t -> 'a glob_constr_g -> constr_expr
 val extern_constr_pattern : names_context -> Evd.evar_map ->
   constr_pattern -> constr_expr
-val extern_closed_glob : ?lax:bool -> bool -> env -> Evd.evar_map -> closed_glob_constr -> constr_expr
+val extern_closed_glob : ?lax:bool -> ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name ->
+  env -> Evd.evar_map -> closed_glob_constr -> constr_expr
 
 (** If [b=true] in [extern_constr b env c] then the variables in the first
    level of quantification clashing with the variables in [env] are renamed.
@@ -36,10 +37,12 @@ val extern_closed_glob : ?lax:bool -> bool -> env -> Evd.evar_map -> closed_glob
     env, sigma
 *)
 
-val extern_constr : ?lax:bool -> bool -> env -> Evd.evar_map -> constr -> constr_expr
-val extern_constr_in_scope : bool -> scope_name -> env -> Evd.evar_map -> constr -> constr_expr
+val extern_constr : ?lax:bool -> ?inctx:bool -> ?scope:scope_name ->
+  env -> Evd.evar_map -> constr -> constr_expr
+val extern_constr_in_scope : ?lax:bool -> ?inctx:bool -> scope_name ->
+  env -> Evd.evar_map -> constr -> constr_expr
 val extern_reference : ?loc:Loc.t -> Id.Set.t -> GlobRef.t -> qualid
-val extern_type : bool -> env -> Evd.evar_map -> types -> constr_expr
+val extern_type : ?lax:bool -> ?goal_concl_style:bool -> env -> Evd.evar_map -> types -> constr_expr
 val extern_sort : Evd.evar_map -> Sorts.t -> glob_sort
 val extern_rel_context : constr option -> env -> Evd.evar_map ->
   rel_context -> local_binder_expr list

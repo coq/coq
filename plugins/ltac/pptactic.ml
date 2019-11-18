@@ -1273,7 +1273,7 @@ let pr_intro_pattern_env p = Genprint.TopPrinterNeedsContext (fun env sigma ->
   Miscprint.pr_intro_pattern print_constr p)
 
 let pr_red_expr_env r = Genprint.TopPrinterNeedsContext (fun env sigma ->
-  pr_red_expr env sigma (pr_econstr_env, pr_leconstr_env,
+  pr_red_expr env sigma ((fun e -> pr_econstr_env e), (fun e -> pr_leconstr_env e),
                          pr_evaluable_reference_env env, pr_constr_pattern_env) r)
 
 let pr_bindings_env bl = Genprint.TopPrinterNeedsContext (fun env sigma ->

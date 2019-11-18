@@ -934,7 +934,7 @@ let is_local_unfold env flags =
 let reduce redexp cl =
   let trace env sigma =
     let open Printer in
-    let pr = (pr_econstr_env, pr_leconstr_env, pr_evaluable_reference, pr_constr_pattern_env) in
+    let pr = ((fun e -> pr_econstr_env e), (fun e -> pr_leconstr_env e), pr_evaluable_reference, pr_constr_pattern_env) in
     Pp.(hov 2 (Ppred.pr_red_expr_env env sigma pr str redexp))
   in
   Proofview.Trace.name_tactic trace begin
