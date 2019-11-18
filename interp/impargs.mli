@@ -96,7 +96,7 @@ val declare_mib_implicits : MutInd.t -> unit
 
 val declare_implicits : bool -> GlobRef.t -> unit
 
-(** [declare_manual_implicits local ref enriching l]
+(** [declare_manual_implicits local ref l]
    Manual declaration of which arguments are expected implicit.
    If not set, we decide if it should enrich by automatically inferd
    implicits depending on the current state.

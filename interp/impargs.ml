@@ -415,7 +415,7 @@ let explicitation ((na,p,_),_) =
 
 (* Manage user-given implicit arguments *)
 
-let set_manual_implicits silent flags enriching autoimps l =
+let set_manual_implicits silent flags autoimps l =
   (* Compare with automatic implicits to recover printing data and names *)
   let rec merge k = function
     | autoimp::autoimps, explimp::explimps ->
@@ -425,7 +425,7 @@ let set_manual_implicits silent flags enriching autoimps l =
          (pos, Some (Manual, (set_maximality (if silent then Silent else Error) na k imps' max), true))
        | ((Anonymous,n1,r), _), Some (na,max) ->
          ((na,n1,r), Some (Manual, max, true))  (* why different max for Anonymous *)
-       | ((na,_,_ as pos), Some imp), None when enriching ->
+       | ((na,_,_ as pos), Some imp), None when flags.auto ->
          (pos, Some (Auto, (set_maximality (if silent then Silent else Info) na k imps' flags.maximal), true))
        | (pos,_), None -> (pos, None)
        end :: imps'
@@ -440,9 +440,9 @@ let set_manual_implicits silent flags enriching autoimps l =
 (* Declare manual implicits *)
 type manual_implicits = (Name.t * bool) option CAst.t list
 
-let compute_implicits_with_manual env sigma typ manual_impls =
+let compute_implicits_with_manual env sigma typ impls =
   let autoimpls = compute_implicits_flags env sigma !implicit_args typ in
-  set_manual_implicits true !implicit_args !implicit_args.auto autoimpls manual_impls
+  set_manual_implicits true !implicit_args autoimpls impls
 
 let compute_semi_auto_implicits env sigma f t =
   [DefaultImpArgs, compute_implicits_flags env sigma f t]
@@ -702,15 +702,14 @@ let projection_implicits env p impls =
   let npars = Projection.npars p in
   CList.skipn_at_least npars impls
 
-let declare_manual_implicits local ref manual_impls =
+let declare_manual_implicits local ref impls =
   let flags = !implicit_args in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let t, _ = Typeops.type_of_global_in_context env ref in
   let t = of_constr t in
-  let enriching = flags.auto in
-  let autoimpls = compute_auto_implicits env sigma flags enriching t in
-  let l = [DefaultImpArgs, set_manual_implicits false flags enriching autoimpls manual_impls] in
+  let autoimpls = compute_implicits_flags env sigma flags t in
+  let l = [DefaultImpArgs, set_manual_implicits false flags autoimpls impls] in
   let req =
     if is_local local ref then ImplLocal
     else ImplInteractive(flags,ImplManual (List.length autoimpls))
