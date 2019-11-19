@@ -55,6 +55,7 @@ _build
 config/Makefile
 config/coq_config.ml
 config/coq_config.py
+config/dune.c_flags
 config/Info-*.plist
 dev/ocamldebug-coq
 plugins/micromega/csdpcert
@@ -152,7 +153,6 @@ plugins/ssr/ssrvernac.ml
 
 # other auto-generated files
 
-kernel/byterun/dune.c_flags
 kernel/byterun/coq_instruct.h
 kernel/byterun/coq_jumptbl.h
 kernel/genOpcodeFiles.exe
