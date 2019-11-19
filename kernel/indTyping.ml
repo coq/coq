@@ -327,7 +327,7 @@ let abstract_packets ~template_check univs usubst params ((arity,lc),(indices,sp
       in
       if template_check && List.for_all (fun x -> Option.is_empty x) param_levels
          && Univ.LSet.is_empty concl_levels then
-        CErrors.anomaly ~label:"polymorphic_template_ind"
+        CErrors.user_err
           Pp.(strbrk "Ill-formed template inductive declaration: not polymorphic on any universe.")
       else
         TemplateArity {template_param_levels = param_levels; template_level = min_univ}
