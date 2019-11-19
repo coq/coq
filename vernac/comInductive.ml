@@ -396,9 +396,6 @@ let interp_mutual_inductive_constr ~env0 ~sigma ~template ~udecl ~env_ar ~env_pa
         | Some template ->
           if poly && template then user_err
               Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.");
-          if template && not (template_candidate ()) then
-            user_err Pp.(strbrk "Inductive " ++ Id.print indname ++
-                         str" cannot be made template polymorphic.");
           template
         | None ->
           should_auto_template indname (template_candidate ())
