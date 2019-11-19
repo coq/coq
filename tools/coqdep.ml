@@ -486,6 +486,7 @@ let rec parse = function
   | "-w" :: ll -> option_w := true; parse ll
   | "-boot" :: ll -> option_boot := true; parse ll
   | "-sort" :: ll -> option_sort := true; parse ll
+  | "-vos" :: ll -> write_vos := true; parse ll
   | ("-noglob" | "-no-glob") :: ll -> option_noglob := true; parse ll
   | "-f" :: f :: ll -> treat_coqproject f; parse ll
   | "-I" :: r :: ll -> add_caml_dir r; parse ll

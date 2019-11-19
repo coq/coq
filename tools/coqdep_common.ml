@@ -517,6 +517,8 @@ let mL_dependencies () =
        printf "%!")
     (List.rev !mlpackAccu)
 
+let write_vos = ref false
+
 let coq_dependencies () =
   List.iter
     (fun (name,_) ->
@@ -526,9 +528,10 @@ let coq_dependencies () =
        printf "%s%s%s %s.v.beautified %s.required_vo: %s.v %s\n" ename !suffixe glob ename ename ename
         (string_of_dependency_list !suffixe deps);
        printf "%s.vio: %s.v %s\n" ename ename
-        (string_of_dependency_list ".vio" deps);
-       printf "%s.vos %s.vok %s.required_vos: %s.v %s\n" ename ename ename ename
-        (string_of_dependency_list ".vos" deps);
+         (string_of_dependency_list ".vio" deps);
+       if !write_vos then
+         printf "%s.vos %s.vok %s.required_vos: %s.v %s\n" ename ename ename ename
+           (string_of_dependency_list ".vos" deps);
        printf "%!")
     (List.rev !vAccu)
 
