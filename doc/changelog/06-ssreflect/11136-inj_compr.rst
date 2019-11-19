@@ -1,0 +1,1 @@
+- added lemma inj_compr (`#11136 <https://github.com/coq/coq/pull/11136>`_, by Cyril Cohen).
