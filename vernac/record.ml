@@ -437,8 +437,6 @@ let declare_structure ~cum finite ubinders univs paramimpls params template ?(ki
       | Some template, _ ->
         (* templateness explicitly requested *)
         if poly && template then user_err Pp.(strbrk "template and polymorphism not compatible");
-        if template && not (template_candidate ()) then
-          user_err Pp.(strbrk "record cannot be made template polymorphic on any universe");
         template
       | None, template ->
         (* auto detect template *)
