@@ -488,7 +488,6 @@ GRAMMAR EXTEND Gram
   ;
   record_fields:
     [ [ f = record_field; ";"; fs = record_fields -> { f :: fs }
-      | f = record_field; ";" -> { [f] }
       | f = record_field -> { [f] }
       | -> { [] }
     ] ]

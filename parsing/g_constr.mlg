@@ -210,14 +210,14 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ CGeneralization (Explicit, None, c) } ] ]
   ;
   record_declaration:
-    [ [ fs = record_fields_instance -> { CAst.make ~loc @@ CRecord fs } ] ]
+    [ [ fs = fields_def -> { CAst.make ~loc @@ CRecord fs } ] ]
   ;
-  record_fields_instance:
-    [ [ f = record_field_instance; ";"; fs = record_fields_instance -> { f :: fs }
-      | f = record_field_instance -> { [f] }
+  fields_def:
+    [ [ f = field_def; ";"; fs = fields_def -> { f :: fs }
+      | f = field_def -> { [f] }
       | -> { [] } ] ]
   ;
-  record_field_instance:
+  field_def:
     [ [ id = global; bl = binders; ":="; c = lconstr ->
         { (id, mkLambdaCN ~loc bl c) } ] ]
   ;
