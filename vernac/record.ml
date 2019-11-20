@@ -614,9 +614,9 @@ let declare_structure ~cumulative finite ~univs ~variances ~primitive_proj
   in
   List.mapi map record_data
 
-let implicits_of_context ctx =
+let implicits_of_context na ctx =
   List.map (fun name -> CAst.make (Some (name,true)))
-    (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
+    (List.rev (na :: (List.map RelDecl.get_name ctx)))
 
 let build_class_constant ~univs ~rdata ~primitive_proj field implfs params paramimpls coers binder id proj_name =
   let class_body = it_mkLambda_or_LetIn field params in
@@ -701,13 +701,13 @@ let build_record_constant ~rdata ~univs ~variances ~cumulative ~template ~primit
   *)
 let declare_class def ~cumulative ~univs ~variances ~primitive_proj id idbuild paramimpls params
     rdata template ?(kind=Decls.StructureComponent) coers =
+  let binder_name = Namegen.next_ident_away id (Termops.vars_of_env (Global.env())) in
   let implfs =
     (* Make the class implicit in the projections, and the params if applicable. *)
-    let impls = implicits_of_context params in
+    let impls = implicits_of_context (Name binder_name) params in
       List.map (fun x -> impls @ x) rdata.DataR.implfs
   in
   let rdata = { rdata with DataR.implfs } in
-  let binder_name = Namegen.next_ident_away id (Termops.vars_of_env (Global.env())) in
   let fields = rdata.DataR.fields in
   let data =
     match fields with
