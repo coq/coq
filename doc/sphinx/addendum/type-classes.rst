@@ -576,6 +576,14 @@ Settings
    of goals.  Setting this option to 1 or 2 turns on the :flag:`Typeclasses Debug` flag; setting this
    option to 0 turns that flag off.
 
+.. flag:: Typeclasses Axioms Are Instances
+
+   .. deprecated:: 8.10
+
+   This flag (off by default since 8.8) automatically declares axioms
+   whose type is a typeclass at declaration time as instances of that
+   class.
+
 Typeclasses eauto `:=`
 ~~~~~~~~~~~~~~~~~~~~~~
 
