@@ -96,6 +96,8 @@ sig
   (** [fold_left_map f e_0 [|l_1...l_n|] = e_n,[|k_1...k_n|]]
     where [(e_i,k_i)=f e_{i-1} l_i]; see also [Smart.fold_left_map] *)
 
+  val fold_left_map_i : (int -> 'a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
+
   val fold_right_map : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
   (** Same, folding on the right *)
 

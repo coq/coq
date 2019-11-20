@@ -57,6 +57,7 @@ sig
   val map_left : ('a -> 'b) -> 'a array -> 'b array
   val iter2_i : (int -> 'a -> 'b -> unit) -> 'a array -> 'b array -> unit
   val fold_left_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
+  val fold_left_map_i : (int -> 'a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
   val fold_right_map : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
   val fold_left2_map : ('a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
   val fold_left2_map_i : (int -> 'a -> 'b -> 'c -> 'a * 'd) -> 'a -> 'b array -> 'c array -> 'a * 'd array
@@ -409,6 +410,11 @@ else
 let fold_left_map f e v =
   let e' = ref e in
   let v' = Array.map (fun x -> let (e,y) = f !e' x in e' := e; y) v in
+  (!e',v')
+
+let fold_left_map_i f e v =
+  let e' = ref e in
+  let v' = Array.mapi (fun i x -> let (e,y) = f i !e' x in e' := e; y) v in
   (!e',v')
 
 let fold_right2_map f v1 v2 e =
