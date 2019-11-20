@@ -33,7 +33,7 @@ fun (A : Type@{u}) (Wrap : Wrap@{u} A) => Wrap
      : forall A : Type@{u}, Wrap@{u} A -> A
 (* u |=  *)
 
-Arguments wrap {A%type_scope} {Wrap}
+Arguments wrap {A}%type_scope {Wrap}
 bar@{u} = nat
      : Wrap@{u} Set
 (* u |= Set < u *)
