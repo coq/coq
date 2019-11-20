@@ -455,6 +455,7 @@ let usage () =
   eprintf "  -R dir -as logname : add and import dir recursively to coq load path under logical name logname\n"; (* deprecate? *)
   eprintf "  -R dir logname : add and import dir recursively to coq load path under logical name logname\n";
   eprintf "  -Q dir logname : add (recursively) and open (non recursively) dir to coq load path under logical name logname\n";
+  eprintf "  -vos : also output dependencies about .vos files\n";
   eprintf "  -dumpgraph f : print a dot dependency graph in file 'f'\n";
   eprintf "  -dumpgraphbox f : print a dot dependency graph box in file 'f'\n";
   eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R/-Q search\n";
