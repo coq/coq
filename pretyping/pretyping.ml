@@ -701,7 +701,7 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
               typing the argument, so we replace it by an existential
               variable *)
               let sigma, c_hole = new_evar env sigma ~src:(loc,Evar_kinds.InternalHole) c1 in
-              (sigma, make_judge c_hole c1), (c_hole, c) :: bidiargs
+              (sigma, make_judge c_hole c1), (n, c_hole, c) :: bidiargs
             else pretype tycon env sigma c, bidiargs
           in
           let sigma, candargs, ujval =
@@ -739,21 +739,81 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
       | _ -> sigma, resj
     in
     let sigma, t = inh_conv_coerce_to_tycon ?loc env sigma resj tycon in
-    let refine_arg sigma (newarg,origarg) =
-      (* Refine an argument (originally `origarg`) represented by an evar
-         (`newarg`) to use typing information from the context *)
+    (* When bidirectionality hints are applied we want to:
+       - refine any arguments whose typing was delayed
+       - check that the actual argument unifies with the one inferred from the
+         context (and get rid of the evar we used to delay typing)
+       - replace in t the arguments inferred from the context with the ones
+         provided by the user, since the user's input is sacred *)
+    let refine_arg sigma (pos,newarg,origarg) =
       (* Recover the expected type of the argument *)
       let ty = Retyping.get_type_of !!env sigma newarg in
       (* Type the argument using this expected type *)
       let sigma, j = pretype (Some ty) env sigma origarg in
-      (* Unify the (possibly refined) existential variable with the
-      (typechecked) original value *)
-      Evarconv.unify_delay !!env sigma newarg (j_val j)
+      (* Unify the (possibly refined) evar with the (typed) original value *)
+      let sigma = Evarconv.unify_delay !!env sigma newarg (j_val j) in
+      sigma, (pos, j.uj_val)
     in
-    (* We now refine any arguments whose typing was delayed for
-       bidirectionality *)
-    let sigma = List.fold_left refine_arg sigma bidiargs in
-    (sigma, t)
+    let sigma, bidiargs = CList.fold_left_map refine_arg sigma bidiargs in
+    (* TODO: move to termops *)
+    let kind_of_app sigma t =
+      match EConstr.kind sigma t with
+      | App(hd, args) ->
+          begin match Termops.global_app_of_constr sigma hd with
+          | gref, None -> `Global(gref, args)
+          | gref, Some c -> `Proj(gref, c, args)
+          | exception Not_found -> `App(hd,args)
+          end
+      | _ -> `Other in
+    let is_f =
+      match Termops.global_app_of_constr sigma fj.uj_val with
+      | (gref,_), _ -> Names.GlobRef.equal gref
+      | exception Not_found -> fun _ -> false      
+      in
+    let rec zip ctx t =
+      match kind_of_app sigma t with
+      | `Global((gref,_ as r),args) when is_f gref -> mkRef r, `CApp (args,ctx)
+      | `Global((gref,_ as r),args) when Classops.coercion_exists gref ->
+           let { Classops.coe_param } = Classops.coercion_info gref in
+           let params = Array.sub args 0 coe_param in
+           let c_args = Array.sub args coe_param (Array.length args - coe_param) in
+           let c, args = Array.hd c_args, Array.tl c_args in
+           zip (`CCast(r, params, args, ctx)) c
+      | `Proj((gref,_ as r),c,args) when is_f gref -> mkRef r, `CProj (c,args,ctx)
+      | `Proj((gref,_ as r),c,args) -> zip (`CCast(r,[||],args,ctx)) c
+      | _ -> assert false           
+    in
+    let replace1 pos bidiargs c =
+      match bidiargs with
+      | [] -> [], c
+      | (apos, v) :: rest ->
+         if apos < pos then assert false
+         else if apos > pos then bidiargs, c
+         else rest, v in
+    let replace pos bidiargs args =
+      Array.fold_left_map_i (fun i bidiargs t ->
+        replace1 (pos+i) bidiargs t) bidiargs args in
+    let rec unzip_replace bidiargs pos t ctx =
+      match ctx with
+      | `Top -> t
+      | `CApp(args,ctx) ->
+        let bidiargs, args = replace pos bidiargs args in
+        let t = mkApp(t,args) in
+        unzip_replace bidiargs (pos + Array.length args) t ctx
+      | `CProj(c,args,ctx) -> assert false
+     (*   let bidiargs, c = replace1 pos bidiargs c in
+        let bidiargs, args = replace (pos+1) bidiargs args in
+        let t = mkApp(mkProj(t,c),args) in
+        unzip_replace bidiargs (pos + Array.length args+1) t ctx*)
+      | `CCast(r,params,args,ctx) ->
+        let bidiargs, args = replace pos bidiargs args in
+        let t = mkApp(mkRef r,Array.concat [params;[|t|];args]) in
+        unzip_replace bidiargs (pos + Array.length args) t ctx
+    in
+    if bidiargs = [] then sigma, t
+    else 
+      let hd, ctx = zip `Top t.uj_val in
+      sigma, { t with uj_val = unzip_replace bidiargs 0 hd ctx }
 
   | GLambda(name,bk,c1,c2) ->
     let sigma, tycon' =

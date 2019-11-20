@@ -112,3 +112,19 @@ Check [TEST (x y : nat), x = y].
 Check [TEST2 (x y : nat), x = y].
 
 End Issue7910.
+
+Module Issue11140.
+
+Axiom T : nat -> Prop.
+Axiom f : forall x, T x.
+Arguments f & x.
+
+Lemma test : (f (1 + _) : T 2) = f 2.
+match goal with
+| |- (f (1 + 1) = f 2) => idtac
+| |- (f 2 = f 2) => idtac 1; fail 99 (* Issue 11140 *)
+| |- _ => idtac 2; fail 99
+end.
+Abort.
+
+End Issue11140.
