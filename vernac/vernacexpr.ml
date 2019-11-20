@@ -250,12 +250,16 @@ type vernac_cumulative = VernacCumulative | VernacNonCumulative
 
 (** {6 The type of vernacular expressions} *)
 
-type vernac_argument_status = {
+type vernac_one_argument_status = {
   name : Name.t;
   recarg_like : bool;
   notation_scope : string CAst.t option;
   implicit_status : Impargs.implicit_kind;
 }
+
+type vernac_argument_status =
+  | VolatileArg | BidiArg
+  | RealArg of vernac_one_argument_status
 
 type arguments_modifier =
   [  `Assert
@@ -383,8 +387,6 @@ type nonrec vernac_expr =
       qualid or_by_notation *
       vernac_argument_status list (* Main arguments status list *) *
       (Name.t * Impargs.implicit_kind) list list (* Extra implicit status lists *) *
-      int option (* Number of args to trigger reduction *) *
-      int option (* Number of args before bidirectional typing *) *
       arguments_modifier list
   | VernacReserve of simple_binder list
   | VernacGeneralizable of (lident list) option
