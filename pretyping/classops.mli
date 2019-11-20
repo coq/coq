@@ -92,6 +92,9 @@ val declare_coercion : env -> evar_map -> coercion -> unit
 (** {6 Access to coercions infos } *)
 val coercion_exists : coe_typ -> bool
 
+(** @raise Not_found if the given argument is not a coercion *)
+val coercion_info : coe_typ -> coe_info_typ
+
 (** {6 Lookup functions for coercion paths } *)
 
 (** @raise Not_found in the following functions when no path exists *)
