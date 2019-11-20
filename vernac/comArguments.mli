@@ -13,7 +13,5 @@ val vernac_arguments
   -> Libnames.qualid Constrexpr.or_by_notation
   -> Vernacexpr.vernac_argument_status list
   -> (Names.Name.t * Impargs.implicit_kind) list list
-  -> int option
-  -> int option
   -> Vernacexpr.arguments_modifier list
   -> unit

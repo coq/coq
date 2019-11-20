@@ -1068,7 +1068,7 @@ let string_of_definition_object_kind = let open Decls in function
                 | Some Flags.Current -> [SetOnlyParsing]
                 | Some v -> [SetCompatVersion v]))
         )
-      | VernacArguments (q, args, more_implicits, nargs, nargs_before_bidi, mods) ->
+      | VernacArguments (q, args, more_implicits, mods) ->
         return (
           hov 2 (
             keyword "Arguments" ++ spc() ++
@@ -1079,28 +1079,22 @@ let string_of_definition_object_kind = let open Decls in function
                 | Impargs.Implicit -> str "[" ++ x ++ str "]"
                 | Impargs.MaximallyImplicit -> str "{" ++ x ++ str "}"
                 | Impargs.NotImplicit -> x in
-              let rec print_arguments n nbidi l =
-                match n, nbidi, l with
-                  | Some 0, _, l -> spc () ++ str"/" ++ print_arguments None nbidi l
-                  | _, Some 0, l -> spc () ++ str"&" ++ print_arguments n None l
-                  | None, None, [] -> mt()
-                  | _, _, [] ->
-                    let dummy = {name=Anonymous; recarg_like=false;
-                                 notation_scope=None; implicit_status=Impargs.NotImplicit}
-                    in
-                    print_arguments n nbidi [dummy]
-                  | n, nbidi, { name = id; recarg_like = k;
+              let rec print_arguments = function
+                  | [] -> mt()
+                  | VolatileArg :: l -> spc () ++ str"/" ++ print_arguments l
+                  | BidiArg :: l -> spc () ++ str"&" ++ print_arguments l
+                  | RealArg { name = id; recarg_like = k;
                          notation_scope = s;
                          implicit_status = imp } :: tl ->
                     spc() ++ pr_br imp (pr_if k (str"!") ++ Name.print id ++ pr_s s) ++
-                    print_arguments (Option.map pred n) (Option.map pred nbidi) tl
+                    print_arguments tl
               in
               let rec print_implicits = function
                 | [] -> mt ()
                 | (name, impl) :: rest ->
                    spc() ++ pr_br impl (Name.print name) ++ print_implicits rest
               in
-              print_arguments nargs nargs_before_bidi args ++
+              print_arguments args ++
                 if not (List.is_empty more_implicits) then
                   prlist (fun l -> str"," ++ print_implicits l) more_implicits
                 else (mt ()) ++

@@ -60,7 +60,7 @@ let warn_arguments_assert =
 (* [nargs_for_red] is the number of arguments required to trigger reduction,
    [args] is the main list of arguments statuses,
    [more_implicits] is a list of extra lists of implicit statuses  *)
-let vernac_arguments ~section_local reference args more_implicits nargs_for_red nargs_before_bidi flags =
+let vernac_arguments ~section_local reference args more_implicits flags =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let assert_flag = List.mem `Assert flags in
@@ -82,6 +82,23 @@ let vernac_arguments ~section_local reference args more_implicits nargs_for_red 
     err_incompat "clear scopes" "extra scopes";
   if clear_implicits_flag && default_implicits_flag then
     err_incompat "clear implicits" "default implicits";
+
+  let args, nargs_for_red, nargs_before_bidi, _i =
+    List.fold_left (fun (args,red,bidi,i) arg ->
+        match arg with
+        | RealArg arg -> (arg::args,red,bidi,i+1)
+        | VolatileArg ->
+          if Option.has_some red
+          then CErrors.user_err Pp.(str "The \"/\" modifier may only occur once.");
+          (args,Some i,bidi,i)
+        | BidiArg ->
+          if Option.has_some bidi
+          then CErrors.user_err Pp.(str "The \"&\" modifier may only occur once.");
+          (args,red,Some i,i))
+      ([],None,None,0)
+      args
+  in
+  let args = List.rev args in
 
   let sr = smart_global reference in
   let inf_names =

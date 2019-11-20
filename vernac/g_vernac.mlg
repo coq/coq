@@ -786,25 +786,8 @@ GRAMMAR EXTEND Gram
           ];
         mods = OPT [ ":"; l = LIST1 arguments_modifier SEP "," -> { l } ] ->
          { let mods = match mods with None -> [] | Some l -> List.flatten l in
-         let slash_position = ref None in
-         let ampersand_position = ref None in
-         let rec parse_args i = function
-           | [] -> []
-           | `Id x :: args -> x :: parse_args (i+1) args
-           | `Slash :: args ->
-              if Option.is_empty !slash_position then
-                (slash_position := Some i; parse_args i args)
-              else
-                user_err Pp.(str "The \"/\" modifier can occur only once")
-           | `Ampersand :: args ->
-             if Option.is_empty !ampersand_position then
-               (ampersand_position := Some i; parse_args i args)
-             else
-               user_err Pp.(str "The \"&\" modifier can occur only once")
-         in
-         let args = parse_args 0 (List.flatten args) in
          let more_implicits = Option.default [] more_implicits in
-         VernacArguments (qid, args, more_implicits, !slash_position, !ampersand_position, mods) }
+         VernacArguments (qid, List.flatten args, more_implicits, mods) }
 
       | IDENT "Implicit"; "Type"; bl = reserv_list ->
 	   { VernacReserve bl }
@@ -848,17 +831,17 @@ GRAMMAR EXTEND Gram
   argument_spec_block: [
     [ item = argument_spec ->
       { let name, recarg_like, notation_scope = item in
-      [`Id { name=name; recarg_like=recarg_like;
+      [RealArg { name=name; recarg_like=recarg_like;
              notation_scope=notation_scope;
              implicit_status = NotImplicit}] }
-    | "/" -> { [`Slash] }
-    | "&" -> { [`Ampersand] }
+    | "/" -> { [VolatileArg] }
+    | "&" -> { [BidiArg] }
     | "("; items = LIST1 argument_spec; ")"; sc = OPT scope_delimiter ->
        { let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
          | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
-           `Id { name=name; recarg_like=recarg_like;
+           RealArg { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
                  implicit_status = NotImplicit}) items }
     | "["; items = LIST1 argument_spec; "]"; sc = OPT scope_delimiter ->
@@ -866,7 +849,7 @@ GRAMMAR EXTEND Gram
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
          | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
-           `Id { name=name; recarg_like=recarg_like;
+           RealArg { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
                  implicit_status = Implicit}) items }
     | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope_delimiter ->
@@ -874,7 +857,7 @@ GRAMMAR EXTEND Gram
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
          | Some _, Some _ -> user_err Pp.(str "scope declared twice") in
        List.map (fun (name,recarg_like,notation_scope) ->
-           `Id { name=name; recarg_like=recarg_like;
+           RealArg { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
                  implicit_status = MaximallyImplicit}) items }
     ]
