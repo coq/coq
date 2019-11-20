@@ -425,9 +425,10 @@ let set_manual_implicits silent flags autoimps l =
          (pos, Some (Manual, (set_maximality (if silent then Silent else Error) na k imps' max), true))
        | ((Anonymous,n1,r), _), Some (na,max) ->
          ((na,n1,r), Some (Manual, (set_maximality (if silent then Silent else Error) na k imps' max), true))
-       | ((na,_,_ as pos), Some imp), None when flags.auto ->
+       | ((na,_,_ as pos), Some imp), None ->
+         (* We recompute maximality *)
          (pos, Some (Auto, (set_maximality (if silent then Silent else Info) na k imps' flags.maximal), true))
-       | (pos,_), None -> (pos, None)
+       | (pos, None), None -> autoimp
        end :: imps'
     | [], [] -> []
     | [], _ -> assert false
