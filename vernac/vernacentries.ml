@@ -1048,27 +1048,27 @@ let vernac_identity_coercion ~atts id qids qidt =
 
 let vernac_instance_program ~atts name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
-  let (program, locality), poly =
-    Attributes.(parse (Notations.(program ++ locality ++ polymorphic))) atts
+  let locality, poly =
+    Attributes.(parse (Notations.(locality ++ polymorphic))) atts
   in
   let global = not (make_section_locality locality) in
   let _id : Id.t = Classes.new_instance_program ~global ~poly name bl t props info in
   ()
 
-let vernac_instance_interactive ~atts name bl t info =
+let vernac_instance_interactive ~atts name bl t info props =
   Dumpglob.dump_constraint (fst name) false "inst";
-  let (program, locality), poly =
-    Attributes.(parse (Notations.(program ++ locality ++ polymorphic))) atts
+  let locality, poly =
+    Attributes.(parse (Notations.(locality ++ polymorphic))) atts
   in
   let global = not (make_section_locality locality) in
   let _id, pstate =
-    Classes.new_instance_interactive ~global ~poly name bl t info in
+    Classes.new_instance_interactive ~global ~poly name bl t info props in
   pstate
 
 let vernac_instance ~atts name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
-  let (program, locality), poly =
-    Attributes.(parse (Notations.(program ++ locality ++ polymorphic))) atts
+  let locality, poly =
+    Attributes.(parse (Notations.(locality ++ polymorphic))) atts
   in
   let global = not (make_section_locality locality) in
   let _id : Id.t =
@@ -2094,16 +2094,21 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
 
   (* Type classes *)
   | VernacInstance (name, bl, t, props, info) ->
-    let { DefAttributes.program } = DefAttributes.parse atts in
+    let atts, program = Attributes.(parse_with_extra program) atts in
     if program then
       VtDefault (fun () -> vernac_instance_program ~atts name bl t props info)
     else begin match props with
     | None ->
-       VtOpenProof(fun () ->
-        vernac_instance_interactive ~atts name bl t info)
+       VtOpenProof (fun () ->
+        vernac_instance_interactive ~atts name bl t info None)
     | Some props ->
-       VtDefault(fun () ->
-        vernac_instance ~atts name bl t props info)
+      let atts, refine = Attributes.parse_with_extra Classes.refine_att atts in
+      if refine then
+        VtOpenProof (fun () ->
+          vernac_instance_interactive ~atts name bl t info (Some props))
+      else
+        VtDefault (fun () ->
+          vernac_instance ~atts name bl t props info)
     end
 
   | VernacDeclareInstance (id, bl, inst, info) ->
