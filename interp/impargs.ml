@@ -421,9 +421,7 @@ let set_manual_implicits silent flags autoimps l =
     | autoimp::autoimps, explimp::explimps ->
        let imps' = merge (k+1) (autoimps,explimps) in
        begin match autoimp, explimp.CAst.v with
-       | ((Name _ as na,_,_ as pos), _), Some (_,max) ->
-         (pos, Some (Manual, (set_maximality (if silent then Silent else Error) na k imps' max), true))
-       | ((Anonymous,n1,r), _), Some (na,max) ->
+       | ((_,n1,r), _), Some (na,max) ->
          ((na,n1,r), Some (Manual, (set_maximality (if silent then Silent else Error) na k imps' max), true))
        | ((na,_,_ as pos), Some imp), None ->
          (* We recompute maximality *)
