@@ -7,7 +7,7 @@ fix F (t : t) : P t :=
      : forall P : t -> Type,
        (let x := t in forall x0 : x, P x0 -> P (k x0)) -> forall t : t, P t
 
-Arguments t_rect _%function_scope _%function_scope
+Arguments t_rect (_ _)%function_scope
      = fun d : TT => match d with
                      | {| f3 := b |} => b
                      end
@@ -26,7 +26,7 @@ match Nat.eq_dec x y with
 end
      : forall (x y : nat) (P : nat -> Type), P x -> P y -> P y
 
-Arguments proj _%nat_scope _%nat_scope _%function_scope
+Arguments proj (_ _)%nat_scope _%function_scope
 foo = 
 fix foo (A : Type) (l : list A) {struct l} : option A :=
   match l with

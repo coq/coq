@@ -13,21 +13,21 @@ where
 ?y : [ |- nat]
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
-Arguments eq {A%type_scope}
-Arguments eq_refl {B%type_scope} {y}, [B] _
+Arguments eq {A}%type_scope
+Arguments eq_refl {B}%type_scope {y}, [B] _
 eq_refl : forall (A : Type) (x : A), x = x
 
 eq_refl is not universe polymorphic
-Arguments eq_refl {B%type_scope} {y}, [B] _
+Arguments eq_refl {B}%type_scope {y}, [B] _
 Expands to: Constructor Coq.Init.Logic.eq_refl
 Inductive myEq (B : Type) (x : A) : A -> Prop :=  myrefl : B -> myEq B x x
 
 Arguments myEq _%type_scope
-Arguments myrefl {C%type_scope} x : rename
+Arguments myrefl {C}%type_scope x : rename
 myrefl : forall (B : Type) (x : A), B -> myEq B x x
 
 myrefl is not universe polymorphic
-Arguments myrefl {C%type_scope} x : rename
+Arguments myrefl {C}%type_scope x : rename
 Expands to: Constructor Arguments_renaming.Test1.myrefl
 myplus = 
 fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
@@ -37,11 +37,11 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   end
      : forall T : Type, T -> nat -> nat -> nat
 
-Arguments myplus {Z%type_scope} !t !n%nat_scope m%nat_scope : rename
+Arguments myplus {Z}%type_scope !t (!n m)%nat_scope : rename
 myplus : forall T : Type, T -> nat -> nat -> nat
 
 myplus is not universe polymorphic
-Arguments myplus {Z%type_scope} !t !n%nat_scope m%nat_scope : rename
+Arguments myplus {Z}%type_scope !t (!n m)%nat_scope : rename
 The reduction tactics unfold myplus when the 2nd and
   3rd arguments evaluate to a constructor
 myplus is transparent
@@ -51,12 +51,12 @@ Expands to: Constant Arguments_renaming.Test1.myplus
 Inductive myEq (A B : Type) (x : A) : A -> Prop :=
     myrefl : B -> myEq A B x x
 
-Arguments myEq _%type_scope _%type_scope
-Arguments myrefl A%type_scope {C%type_scope} x : rename
+Arguments myEq (_ _)%type_scope
+Arguments myrefl A%type_scope {C}%type_scope x : rename
 myrefl : forall (A B : Type) (x : A), B -> myEq A B x x
 
 myrefl is not universe polymorphic
-Arguments myrefl A%type_scope {C%type_scope} x : rename
+Arguments myrefl A%type_scope {C}%type_scope x : rename
 Expands to: Constructor Arguments_renaming.myrefl
 myrefl
      : forall (A C : Type) (x : A), C -> myEq A C x x
@@ -68,11 +68,11 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
   end
      : forall T : Type, T -> nat -> nat -> nat
 
-Arguments myplus {Z%type_scope} !t !n%nat_scope m%nat_scope : rename
+Arguments myplus {Z}%type_scope !t (!n m)%nat_scope : rename
 myplus : forall T : Type, T -> nat -> nat -> nat
 
 myplus is not universe polymorphic
-Arguments myplus {Z%type_scope} !t !n%nat_scope m%nat_scope : rename
+Arguments myplus {Z}%type_scope !t (!n m)%nat_scope : rename
 The reduction tactics unfold myplus when the 2nd and
   3rd arguments evaluate to a constructor
 myplus is transparent
