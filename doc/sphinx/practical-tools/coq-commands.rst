@@ -308,6 +308,14 @@ In addition, ``coq_makefile`` generates for a file ``foo.v`` a target
 next, the purpose of this target is to be able to request the minimal
 working state for editing interactively the file ``foo.v``.
 
+.. warning::
+
+   When writing a custom build system, be aware that ``coqdep`` only
+   produces dependencies related to ``.vos`` and ``.vok`` if the
+   ``-vos`` command line flag is passed. This is to maintain
+   compatibility with dune (see `ocaml/dune#2642 on github
+   <https://github.com/ocaml/dune/issues/2842>`_).
+
 **Typical compilation of a set of file using a build system.**
 
 Assume a file ``foo.v`` that depends on two files ``f1.v`` and ``f2.v``. The
