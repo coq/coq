@@ -715,19 +715,6 @@ let projection_implicits env p impls =
   let npars = Projection.npars p in
   CList.skipn_at_least npars impls
 
-let declare_manual_implicits local ref impls =
-  let flags = !implicit_args in
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
-  let t, _ = Typeops.type_of_global_in_context env ref in
-  let t = of_constr t in
-  let autoimpls = compute_implicits_flags env sigma flags t in
-  let l = [DefaultImpArgs, set_manual_implicits false flags autoimpls impls] in
-  let req =
-    if is_local local ref then ImplLocal
-    else ImplInteractive(flags,ImplManual (List.length autoimpls))
-  in add_anonymous_leaf (inImplicits (req,[ref,l]))
-
 let set_name (na',x,y as pos) = function
   | Name _ as na -> (na,x,y)
   | Anonymous -> pos

@@ -90,14 +90,6 @@ val declare_mib_implicits : MutInd.t -> impargs:mib_manual_implicits -> unit
 
 val declare_implicits : bool -> GlobRef.t -> unit
 
-(** [declare_manual_implicits local ref l]
-   Manual declaration of which arguments are expected implicit.
-   If not set, we decide if it should enrich by automatically inferd
-   implicits depending on the current state.
-   Unsets implicits if [l] is empty. *)
-
-val declare_manual_implicits : bool -> GlobRef.t -> manual_implicits -> unit
-
 (** [set_implicits local ref l]
    Manual declaration of implicit arguments.
   [l] is a list of possible sequences of implicit statuses. *)
