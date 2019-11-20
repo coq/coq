@@ -623,7 +623,7 @@ let build_class_constant ~univs ~rdata ~primitive_proj field implfs params param
   let class_type = it_mkProd_or_LetIn rdata.DataR.arity params in
   let class_entry =
     Declare.definition_entry ~types:class_type ~univs class_body in
-  let cst = Declare.declare_constant ~name:id
+  let cst = Declare.declare_constant ~name:id ~impargs:paramimpls
       (Declare.DefinitionEntry class_entry) ~kind:Decls.(IsDefinition Definition)
   in
   let inst, univs = match univs with
@@ -640,12 +640,10 @@ let build_class_constant ~univs ~rdata ~primitive_proj field implfs params param
   let proj_body =
     it_mkLambda_or_LetIn (mkLambda (binder, inst_type, mkRel 1)) params in
   let proj_entry = Declare.definition_entry ~types:proj_type ~univs proj_body in
-  let proj_cst = Declare.declare_constant ~name:proj_name
+  let proj_cst = Declare.declare_constant ~name:proj_name ~impargs:(List.hd implfs)
       (Declare.DefinitionEntry proj_entry) ~kind:Decls.(IsDefinition Definition)
   in
   let cref = GlobRef.ConstRef cst in
-  Impargs.declare_manual_implicits false cref paramimpls;
-  Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd implfs);
   Classes.set_typeclass_transparency ~locality:Hints.SuperGlobal
     [Tacred.EvalConstRef cst] false;
   let sub = List.hd coers in
