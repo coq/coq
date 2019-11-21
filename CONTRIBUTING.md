@@ -899,8 +899,8 @@ need to know to prepare an overlay manually is in the README in the
 [user-overlays][] directory.  You might want to use some additional
 tooling such as the `make ci-*` targets of `Makefile.ci`, the Nix
 support for getting the dependencies of the external projects (see the
-README in [`dev/ci/nix`](dev-ci-nix), and the (so far undocumented)
-`dev/tools/create_overlays.sh` script.
+README in [`dev/ci/nix`][dev-ci-nix], and the (so far undocumented)
+[`dev/tools/create_overlays.sh`][dev-tools-create_overlays.sh] script.
 
 More work is to be done on understanding how each developer proceeds
 to prepare overlays, and propose a simplified and documented
@@ -1083,9 +1083,11 @@ can be found [on the wiki][wiki-CUDW].
 [coq-repository]: https://github.com/coq/coq
 [Coq-website-repository]: https://github.com/coq/www
 [debugging-doc]: dev/doc/debugging.md
+[dev-ci-nix]: dev/ci/nix/README.md
 [dev-doc-README]: dev/doc/README.md
 [dev-doc-dune]: dev/doc/build-system.dune.md
 [dev-README]: dev/README.md
+[dev-tools-create_overlays.sh]: dev/tools/create_overlays.sh
 [Discourse]: https://coq.discourse.group/
 [Discourse-development-category]: https://coq.discourse.group/c/coq-development
 [doc-README]: doc/README.md
@@ -1129,7 +1131,7 @@ can be found [on the wiki][wiki-CUDW].
 [plugin-tutorial]: doc/plugin_tutorial
 [ProofGeneral-issues]: https://github.com/ProofGeneral/PG/issues
 [Reddit]: https://www.reddit.com/r/Coq/
-[refman]: https://coq.inria.fr/refman
+[refman]: https://coq.inria.fr/distrib/current/refman/
 [refman-sources]: doc/sphinx
 [refman-README]: doc/sphinx/README.rst
 [release-plan]: https://github.com/coq/coq/wiki/Release-Plan
