@@ -323,7 +323,7 @@ pkg:opam:
     - opam pin add --kind=path coqide.$COQ_VERSION .
     - set +e
   variables:
-    COQ_VERSION: "8.11"
+    COQ_VERSION: "8.12"
     OPAM_SWITCH: "edge"
     OPAM_VARIANT: "+flambda"
   only: *full-ci
