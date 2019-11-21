@@ -354,11 +354,11 @@ within a section.
 **Interaction with standard compilation**
 
 When compiling a file ``foo.v`` using ``coqc`` in the standard way (i.e., without
-``-vos`` nor ``-vok``), an empty file ``foo.vos`` is created in addition to the
-regular output file ``foo.vo``. If ``coqc`` is subsequently invoked on some other
-file ``bar.v`` using option ``-vos`` or ``-vok``, and that ``bar.v`` requires
-``foo.v``, if |Coq| finds an empty file ``foo.vos``, then it will load
-``foo.vo`` instead of ``foo.vos``.
+``-vos`` nor ``-vok``), an empty file ``foo.vos`` and an empty file ``foo.vok``
+are created in addition to the regular output file ``foo.vo``.
+If ``coqc`` is subsequently invoked on some other file ``bar.v`` using option
+``-vos`` or ``-vok``, and that ``bar.v`` requires ``foo.v``, if |Coq| finds an
+empty file ``foo.vos``, then it will load ``foo.vo`` instead of ``foo.vos``.
 
 The purpose of this feature is to allow users to benefit from the ``-vos``
 option even if they depend on libraries that were compiled in the traditional
