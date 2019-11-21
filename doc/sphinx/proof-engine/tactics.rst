@@ -3281,11 +3281,13 @@ the conversion in hypotheses :n:`{+ @ident}`.
    defined transparent constant or local definition (see
    :ref:`gallina-definitions` and
    :ref:`vernac-controlling-the-reduction-strategies`). The tactic
-   :tacn:`unfold` applies the :math:`\delta` rule to each occurrence of
-   the constant to which :n:`@qualid` refers in the current goal and
-   then replaces it with its :math:`\beta`:math:`\iota`-normal form.
+   :tacn:`unfold` applies the :math:`\delta` rule to each occurrence
+   of the constant to which :n:`@qualid` refers in the current goal
+   and then replaces it with its :math:`\beta\iota\zeta`-normal form.
+   Use the general reduction tactics if you want to avoid this final
+   reduction, for instance :n:`cbv delta [@qualid]`.
 
-   .. exn:: @qualid does not denote an evaluable constant.
+   .. exn:: Cannot coerce @qualid to an evaluable reference.
 
       This error is frequent when trying to unfold something that has
       defined as an inductive type (or constructor) and not as a
