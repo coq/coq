@@ -104,45 +104,45 @@ let buffer_char is_symbolchar ctag c =
       restart_buffering ()
   | Buffering (was_symbolchar,tag,translated,tt) ->
       if tag <> ctag then
-	(* A strong tag comes from Coq; if different Coq tags *)
-	(* hence, we don't try to see the chars as part of a single token *)
-	let translated =
-	  match tt.node with
-	  | Some tok -> Buffer.clear buff; tok
-	  | None -> translated in
-	flush_buffer was_symbolchar tag translated;
-	restart_buffering ()
+        (* A strong tag comes from Coq; if different Coq tags *)
+        (* hence, we don't try to see the chars as part of a single token *)
+        let translated =
+          match tt.node with
+          | Some tok -> Buffer.clear buff; tok
+          | None -> translated in
+        flush_buffer was_symbolchar tag translated;
+        restart_buffering ()
       else
-	begin
-	(* If we change the category of characters (symbol vs ident) *)
-	(* we accept this as a possible token cut point and remember the *)
-	(* translated token up to that point *)
-	let translated =
-	  if is_symbolchar <> was_symbolchar then
-	    match tt.node with
-	    | Some tok -> Buffer.clear buff; tok
-	    | None -> translated
-	  else translated in
-	(* We try to make a significant token from the current *)
-	(* buffer and the new character *)
-	try
-	  let tt = ttree_descend tt c in
-	  Buffer.add_char buff c;
-	  Buffering (is_symbolchar,ctag,translated,tt)
-	with Not_found ->
-	(* No existing translation for the given set of chars *)
-	if is_symbolchar <> was_symbolchar then
-	  (* If we changed the category of character read, we accept it *)
-	  (* as a possible cut point and restart looking for a translation *)
-	  (flush_buffer was_symbolchar tag translated;
-	   restart_buffering ())
-	else
-	  (* If we did not change the category of character read, we do *)
-	  (* not want to cut arbitrarily in the middle of the sequence of *)
-	  (*  symbol characters or identifier characters *)
-	  (Buffer.add_char buff c;
-	   Buffering (is_symbolchar,tag,translated,empty_ttree))
-	end
+        begin
+        (* If we change the category of characters (symbol vs ident) *)
+        (* we accept this as a possible token cut point and remember the *)
+        (* translated token up to that point *)
+        let translated =
+          if is_symbolchar <> was_symbolchar then
+            match tt.node with
+            | Some tok -> Buffer.clear buff; tok
+            | None -> translated
+          else translated in
+        (* We try to make a significant token from the current *)
+        (* buffer and the new character *)
+        try
+          let tt = ttree_descend tt c in
+          Buffer.add_char buff c;
+          Buffering (is_symbolchar,ctag,translated,tt)
+        with Not_found ->
+        (* No existing translation for the given set of chars *)
+        if is_symbolchar <> was_symbolchar then
+          (* If we changed the category of character read, we accept it *)
+          (* as a possible cut point and restart looking for a translation *)
+          (flush_buffer was_symbolchar tag translated;
+           restart_buffering ())
+        else
+          (* If we did not change the category of character read, we do *)
+          (* not want to cut arbitrarily in the middle of the sequence of *)
+          (*  symbol characters or identifier characters *)
+          (Buffer.add_char buff c;
+           Buffering (is_symbolchar,tag,translated,empty_ttree))
+        end
 
   and restart_buffering () =
     let tt = try ttree_descend !(!token_tree) c with Not_found -> empty_ttree in
@@ -163,9 +163,9 @@ let flush_sublexer () =
   | Neutral -> ()
   | Buffering (was_symbolchar,tag,translated,tt) ->
       let translated =
-	match tt.node with
-	| Some tok -> Buffer.clear buff; tok
-	| None -> translated in
+        match tt.node with
+        | Some tok -> Buffer.clear buff; tok
+        | None -> translated in
       flush_buffer was_symbolchar tag translated;
       translation_state := Neutral
 

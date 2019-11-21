@@ -119,7 +119,7 @@ let find_primitive_projection c =
   c := [x1:B1]...[xk:Bk](Build_R a1...am t1...t_n)
 
   If ti has the form (ci ui1...uir) where ci is a global reference (or
-  a sort, or a product or a reference to a parameter) and if the 
+  a sort, or a product or a reference to a parameter) and if the
   corresponding projection Li of the structure R is defined, one
   declares a "conversion" between ci and Li.
 

@@ -155,24 +155,24 @@ let add_load_path (phys_path,coq_path) =
   let physical, logical = !load_paths in
     match List.filter2 (fun p d -> p = phys_path) physical logical with
       | _,[dir] ->
-	  if coq_path <> dir
+          if coq_path <> dir
             (* If this is not the default -I . to coqtop *)
             && not
             (phys_path = CUnix.canonical_path_name Filename.current_dir_name
-		&& coq_path = default_root_prefix)
-	  then
-	    begin
+                && coq_path = default_root_prefix)
+          then
+            begin
               (* Assume the user is concerned by library naming *)
-	      if dir <> default_root_prefix then
-		Feedback.msg_warning
-		  (str phys_path ++ strbrk " was previously bound to " ++
-		   pr_dirpath dir ++ strbrk "; it is remapped to " ++
-		   pr_dirpath coq_path);
-	      remove_load_path phys_path;
-	      load_paths := (phys_path::fst !load_paths, coq_path::snd !load_paths)
-	    end
+              if dir <> default_root_prefix then
+                Feedback.msg_warning
+                  (str phys_path ++ strbrk " was previously bound to " ++
+                   pr_dirpath dir ++ strbrk "; it is remapped to " ++
+                   pr_dirpath coq_path);
+              remove_load_path phys_path;
+              load_paths := (phys_path::fst !load_paths, coq_path::snd !load_paths)
+            end
       | _,[] ->
-	  load_paths := (phys_path :: fst !load_paths, coq_path :: snd !load_paths)
+          load_paths := (phys_path :: fst !load_paths, coq_path :: snd !load_paths)
       | _ -> anomaly (Pp.str ("Two logical paths are associated to "^phys_path^"."))
 
 let load_paths_of_dir_path dir =

@@ -223,21 +223,21 @@ let explain_elim_arity env sigma ind c pj okinds =
       let pki = Sorts.pr_sort_family ki in
       let pkp = Sorts.pr_sort_family kp in
       let explanation =	match explanation with
-	| NonInformativeToInformative ->
+        | NonInformativeToInformative ->
           "proofs can be eliminated only to build proofs"
-	| StrongEliminationOnNonSmallType ->
+        | StrongEliminationOnNonSmallType ->
           "strong elimination on non-small inductive types leads to paradoxes"
-	| WrongArity ->
-	  "wrong arity" in
+        | WrongArity ->
+          "wrong arity" in
       let ppar = pr_disjunction (fun s -> quote (Sorts.pr_sort_family s)) sorts in
       let ppt = pr_leconstr_env env sigma (snd (decompose_prod_assum sigma pj.uj_type)) in
       hov 0
-	(str "the return type has sort" ++ spc () ++ ppt ++ spc () ++
-	 str "while it" ++ spc () ++ str "should be " ++ ppar ++ str ".") ++
+        (str "the return type has sort" ++ spc () ++ ppt ++ spc () ++
+         str "while it" ++ spc () ++ str "should be " ++ ppar ++ str ".") ++
       fnl () ++
       hov 0
-	(str "Elimination of an inductive object of sort " ++
-	 pki ++ brk(1,0) ++
+        (str "Elimination of an inductive object of sort " ++
+         pki ++ brk(1,0) ++
          str "is not allowed on a predicate in sort " ++ pkp ++ fnl () ++
          str "because" ++ spc () ++ str explanation ++ str ".")
   | None ->
@@ -254,11 +254,11 @@ let explain_case_not_inductive env sigma cj =
   let pct = pr_leconstr_env env sigma cj.uj_type in
     match EConstr.kind sigma cj.uj_type with
       | Evar _ ->
-	  str "Cannot infer a type for this expression."
+          str "Cannot infer a type for this expression."
       | _ ->
-	  str "The term" ++ brk(1,1) ++ pc ++ spc () ++
-	  str "has type" ++ brk(1,1) ++ pct ++ spc () ++
-	  str "which is not a (co-)inductive type."
+          str "The term" ++ brk(1,1) ++ pc ++ spc () ++
+          str "has type" ++ brk(1,1) ++ pct ++ spc () ++
+          str "which is not a (co-)inductive type."
 
 let explain_number_branches env sigma cj expn =
   let env = make_all_name_different env sigma in
@@ -294,12 +294,12 @@ let explain_unification_error env sigma p1 p2 = function
      let rec aux p1 p2 = function
      | OccurCheck (evk,rhs) ->
         [str "cannot define " ++ quote (pr_existential_key sigma evk) ++
-	strbrk " with term " ++ pr_leconstr_env env sigma rhs ++
+        strbrk " with term " ++ pr_leconstr_env env sigma rhs ++
         strbrk " that would depend on itself"]
      | NotClean ((evk,args),env,c) ->
         [str "cannot instantiate " ++ quote (pr_existential_key sigma evk)
         ++ strbrk " because " ++ pr_leconstr_env env sigma c ++
-	strbrk " is not in its scope" ++
+        strbrk " is not in its scope" ++
         (if Array.is_empty args then mt() else
          strbrk ": available arguments are " ++
          pr_sequence (pr_leconstr_env env sigma) (List.rev (Array.to_list args)))]
@@ -316,7 +316,7 @@ let explain_unification_error env sigma p1 p2 = function
         else []
      | MetaOccurInBody evk ->
         [str "instance for " ++ quote (pr_existential_key sigma evk) ++
-	strbrk " refers to a metavariable - please report your example" ++
+        strbrk " refers to a metavariable - please report your example" ++
         strbrk "at " ++ str Coq_config.wwwbugtracker ++ str "."]
      | InstanceNotSameType (evk,env,t,u) ->
         let t, u = pr_explicit env sigma t u in
@@ -326,9 +326,9 @@ let explain_unification_error env sigma p1 p2 = function
         t ++ strbrk " is a subtype of " ++ u]
      | UnifUnivInconsistency p ->
         if !Constrextern.print_universes then
-	  [str "universe inconsistency: " ++
+          [str "universe inconsistency: " ++
           Univ.explain_universe_inconsistency (Termops.pr_evd_level sigma) p]
-	else
+        else
           [str "universe inconsistency"]
      | CannotSolveConstraint ((pb,env,t,u),e) ->
         let env = make_all_name_different env sigma in
@@ -386,9 +386,9 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
     if nargs>1 then str "The " ++ pr_nth n ++ str " term" else str "This term"
   in
   let appl = prvect_with_sep fnl
-	       (fun c ->
-		  let pc,pct = pr_ljudge_env env sigma c in
-		  hov 2 (pc ++ spc () ++ str ": " ++ pct)) randl
+               (fun c ->
+                  let pc,pct = pr_ljudge_env env sigma c in
+                  hov 2 (pc ++ spc () ++ str ": " ++ pct)) randl
   in
   str "Illegal application: " ++ (* pe ++ *) fnl () ++
   str "The term" ++ brk(1,1) ++ pr ++ spc () ++
@@ -406,10 +406,10 @@ let explain_cant_apply_not_functional env sigma rator randl =
   let pr = pr_leconstr_env env sigma rator.uj_val in
   let prt = pr_leconstr_env env sigma rator.uj_type in
   let appl = prvect_with_sep fnl
-	       (fun c ->
-		  let pc = pr_leconstr_env env sigma c.uj_val in
-		  let pct = pr_leconstr_env env sigma c.uj_type in
-		  hov 2 (pc ++ spc () ++ str ": " ++ pct)) randl
+               (fun c ->
+                  let pc = pr_leconstr_env env sigma c.uj_val in
+                  let pct = pr_leconstr_env env sigma c.uj_type in
+                  hov 2 (pc ++ spc () ++ str ": " ++ pct)) randl
   in
   str "Illegal application (Non-functional construction): " ++
   (* pe ++ *) fnl () ++
@@ -517,7 +517,7 @@ let explain_ill_formed_rec_body env sigma err names i fixenv vdefj =
   (try (* May fail with unresolved globals. *)
       let fixenv = make_all_name_different fixenv sigma in
       let pvd = pr_lconstr_env fixenv sigma vdefj.(i).uj_val in
-	str"Recursive definition is:" ++ spc () ++ pvd ++ str "."
+        str"Recursive definition is:" ++ spc () ++ pvd ++ str "."
     with e when CErrors.noncritical e -> mt ())
 
 let explain_ill_typed_rec_body env sigma i names vdefj vargs =
@@ -723,8 +723,8 @@ let explain_non_linear_unification env sigma m t =
   pr_lconstr_env env sigma t ++ str "."
 
 let explain_unsatisfied_constraints env sigma cst =
-  strbrk "Unsatisfied constraints: " ++ 
-    Univ.pr_constraints (Termops.pr_evd_level sigma) cst ++ 
+  strbrk "Unsatisfied constraints: " ++
+    Univ.pr_constraints (Termops.pr_evd_level sigma) cst ++
     spc () ++ str "(maybe a bugged tactic)."
 
 let explain_undeclared_universe env sigma l =
@@ -841,7 +841,7 @@ let explain_unsatisfiable_constraints env sigma constr comp =
   | None -> Evar.Set.mem evk tcs
   | Some comp -> Evar.Set.mem evk tcs && Evar.Set.mem evk comp
   in
-  let undef = 
+  let undef =
     let m = Evar.Map.filter is_kept undef in
       if Evar.Map.is_empty m then undef
       else m
@@ -942,12 +942,12 @@ let explain_not_match_error = function
     str "Aliases to inductive types do not match"
   | CumulativeStatusExpected b ->
     let status b = if b then str"cumulative" else str"non-cumulative" in
-      str "a " ++ status b ++ str" declaration was expected, but a " ++ 
-	status (not b) ++ str" declaration was found"
+      str "a " ++ status b ++ str" declaration was expected, but a " ++
+        status (not b) ++ str" declaration was found"
   | PolymorphicStatusExpected b ->
     let status b = if b then str"polymorphic" else str"monomorphic" in
-      str "a " ++ status b ++ str" declaration was expected, but a " ++ 
-	status (not b) ++ str" declaration was found"
+      str "a " ++ status b ++ str" declaration was expected, but a " ++
+        status (not b) ++ str" declaration was found"
   | IncompatibleUniverses incon ->
     str"the universe constraints are inconsistent: " ++
       Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes incon

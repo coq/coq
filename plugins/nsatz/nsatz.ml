@@ -239,7 +239,7 @@ let rec parse_request lp =
   match Constr.kind lp with
     | App (_,[|_|])  -> []
     | App (_,[|_;p;lp1|])  ->
-	(parse_term p)::(parse_request lp1)
+        (parse_term p)::(parse_request lp1)
     |_-> assert false
 
 let set_nvars_term nvars t =
@@ -266,7 +266,7 @@ module Poly = Polynom.Make(Coef)
 module PIdeal = Ideal.Make(Poly)
 open PIdeal
 
-(* term to sparse polynomial 
+(* term to sparse polynomial
    variables <=np are in the coefficients
 *)
 
@@ -278,22 +278,22 @@ let term_pol_sparse nvars np t=
     match t with
     | Zero -> zeroP
     | Const r ->
-	if Num.eq_num r num_0
-	then zeroP
-	else polconst d (Poly.Pint (Coef.of_num r))
+        if Num.eq_num r num_0
+        then zeroP
+        else polconst d (Poly.Pint (Coef.of_num r))
     | Var v ->
-	let v = int_of_string v in
-	if v <= np
-	then polconst d (Poly.x v)
-	else gen d v
+        let v = int_of_string v in
+        if v <= np
+        then polconst d (Poly.x v)
+        else gen d v
     | Opp t1 ->  oppP (aux t1)
     | Add (t1,t2) -> plusP (aux t1) (aux t2)
     | Sub (t1,t2) -> plusP (aux t1) (oppP (aux t2))
     | Mul (t1,t2) -> multP (aux t1) (aux t2)
     | Pow (t1,n) ->  puisP (aux t1) n
-    in 
+    in
 (*       info ("donne: "^(stringP res)^"\n");*)
-       res 
+       res
   in
   let res= aux t in
   res
@@ -321,25 +321,25 @@ let pol_sparse_to_term n2 p =
       let m = Ideal.Monomial.repr m in
       let n = (Array.length m)-1 in
       let (i0,e0) =
-	List.fold_left (fun (r,d) (a,m) ->
+        List.fold_left (fun (r,d) (a,m) ->
               let m = Ideal.Monomial.repr m in
-	      let i0= ref 0 in
-	      for k=1 to n do
-		if m.(k)>0
-		then i0:=k
-	      done;
-	      if Int.equal !i0 0
-	      then (r,d)
-	      else if !i0 > r
-	      then (!i0, m.(!i0))
-	      else if Int.equal !i0 r && m.(!i0)<d
-	      then (!i0, m.(!i0))
-	      else (r,d))
-	  (0,0)
-	  p in
+              let i0= ref 0 in
+              for k=1 to n do
+                if m.(k)>0
+                then i0:=k
+              done;
+              if Int.equal !i0 0
+              then (r,d)
+              else if !i0 > r
+              then (!i0, m.(!i0))
+              else if Int.equal !i0 r && m.(!i0)<d
+              then (!i0, m.(!i0))
+              else (r,d))
+          (0,0)
+          p in
       if Int.equal i0 0
       then
-	let mp = polrec_to_term a in
+        let mp = polrec_to_term a in
         if List.is_empty p1 then mp else add (mp, aux p1)
       else
         let fold (p1, p2) (a, m) =
@@ -352,11 +352,11 @@ let pol_sparse_to_term n2 p =
             (p1, (a, m) :: p2)
         in
         let (p1, p2) = List.fold_left fold ([], []) p in
-	let vm =
-	  if Int.equal e0 1
-	  then Var (string_of_int (i0))
-	  else pow (Var (string_of_int (i0)),e0) in
-	add (mul(vm, aux (List.rev p1)), aux (List.rev p2))
+        let vm =
+          if Int.equal e0 1
+          then Var (string_of_int (i0))
+          else pow (Var (string_of_int (i0)),e0) in
+        add (mul(vm, aux (List.rev p1)), aux (List.rev p2))
   in   (*info "-> pol_sparse_to_term\n";*)
   aux p
 
@@ -410,34 +410,34 @@ open Ideal
  *)
 let clean_pol lp =
   let t = Hashpol.create 12 in
-  let find p = try Hashpol.find t p 
-               with 
+  let find p = try Hashpol.find t p
+               with
                  Not_found -> Hashpol.add t p true; false in
   let rec aux lp =
     match lp with
     | [] -> [], []
-    | p :: lp1 -> 
+    | p :: lp1 ->
       let clp, lb = aux lp1 in
-      if equal p zeroP ||  find p then clp, true::lb 
+      if equal p zeroP ||  find p then clp, true::lb
        else
         (p :: clp, false::lb) in
      aux lp
 
-(* Expand the list of polynomials lp putting zeros where the list of 
-   booleans lb indicates there is a missing element 
+(* Expand the list of polynomials lp putting zeros where the list of
+   booleans lb indicates there is a missing element
    Warning:
    the expansion is relative to the end of the list in reversed order
    lp cannot have less elements than lb
 *)
 let expand_pol lb lp =
- let rec aux lb lp = 
+ let rec aux lb lp =
    match lb with
    | [] -> lp
    | true :: lb1 ->  zeroP :: aux lb1 lp
    | false :: lb1 ->
      match lp with
      [] -> assert false
-     | p :: lp1 -> p :: aux lb1 lp1 
+     | p :: lp1 -> p :: aux lb1 lp1
   in List.rev (aux lb (List.rev lp))
 
 let theoremedeszeros_termes lp =
@@ -446,21 +446,21 @@ let theoremedeszeros_termes lp =
   | Const (Int sugarparam)::Const (Int nparam)::lp ->
       ((match sugarparam with
       |0 -> sinfo "computation without sugar";
-	  lexico:=false;
+          lexico:=false;
       |1 -> sinfo "computation with sugar";
-	  lexico:=false;
+          lexico:=false;
       |2 -> sinfo "ordre lexico computation without sugar";
-	  lexico:=true;
+          lexico:=true;
       |3 -> sinfo "ordre lexico computation with sugar";
-	  lexico:=true;
+          lexico:=true;
       |4 -> sinfo "computation without sugar, division by pairs";
-	  lexico:=false;
+          lexico:=false;
       |5 -> sinfo "computation with sugar, division by pairs";
-	  lexico:=false;
+          lexico:=false;
       |6 -> sinfo "ordre lexico computation without sugar, division by pairs";
-	  lexico:=true;
+          lexico:=true;
       |7 -> sinfo "ordre lexico computation with sugar, division by pairs";
-	  lexico:=true;
+          lexico:=true;
       | _ -> user_err Pp.(str "nsatz: bad parameter")
        );
       let lvar = List.init nvars (fun i -> Printf.sprintf "x%i" (i + 1)) in
@@ -471,32 +471,32 @@ let theoremedeszeros_termes lp =
       match lp with
       | [] -> assert false
       | p::lp1 ->
-	  let lpol = List.rev lp1 in
+          let lpol = List.rev lp1 in
           (* preprocessing :
              we remove zero polynomials and duplicate that are not handled by in_ideal
-             lb is kept in order to fix the certificate in the post-processing 
+             lb is kept in order to fix the certificate in the post-processing
           *)
-	  let lpol, lb  = clean_pol lpol in
-	  let cert = theoremedeszeros metadata nvars lpol p in
+          let lpol, lb  = clean_pol lpol in
+          let cert = theoremedeszeros metadata nvars lpol p in
           sinfo "cert ok";
-	  let lc = cert.last_comb::List.rev cert.gb_comb in
-	  match remove_zeros lc with
-	  | [] -> assert false
-	  | (lq::lci) ->
+          let lc = cert.last_comb::List.rev cert.gb_comb in
+          match remove_zeros lc with
+          | [] -> assert false
+          | (lq::lci) ->
               (* post-processing : we apply the correction for the last line *)
               let lq = expand_pol lb lq in
-	      (* lci commence par les nouveaux polynomes *)
-	      let m = nvars in
-	      let c = pol_sparse_to_term m (polconst m cert.coef) in
-	      let r = Pow(Zero,cert.power) in
-	      let lci = List.rev lci in
+              (* lci commence par les nouveaux polynomes *)
+              let m = nvars in
+              let c = pol_sparse_to_term m (polconst m cert.coef) in
+              let r = Pow(Zero,cert.power) in
+              let lci = List.rev lci in
               (* post-processing we apply the correction for the other lines *)
-	      let lci = List.map (expand_pol lb) lci in
-	      let lci = List.map (List.map (pol_sparse_to_term m)) lci in
-	      let lq = List.map (pol_sparse_to_term m) lq in
-	      info (fun () -> Printf.sprintf "number of parameters: %i" nparam);
-	      sinfo "term computed";
-	      (c,r,lci,lq)
+              let lci = List.map (expand_pol lb) lci in
+              let lci = List.map (List.map (pol_sparse_to_term m)) lci in
+              let lq = List.map (pol_sparse_to_term m) lq in
+              info (fun () -> Printf.sprintf "number of parameters: %i" nparam);
+              sinfo "term computed";
+              (c,r,lci,lq)
       )
   |_ -> assert false
 
@@ -526,13 +526,13 @@ let nsatz lpol =
   let res =
     List.fold_right
       (fun lt r ->
-	 let ltterm =
-	   List.fold_right
-	     (fun t r ->
-		mkt_app lcons [mkt_app tpexpr [Lazy.force tz];t;r])
-	     lt
-	     (mkt_app lnil [mkt_app tpexpr [Lazy.force tz]]) in
-	 mkt_app lcons [tlp ();ltterm;r])
+         let ltterm =
+           List.fold_right
+             (fun t r ->
+                mkt_app lcons [mkt_app tpexpr [Lazy.force tz];t;r])
+             lt
+             (mkt_app lnil [mkt_app tpexpr [Lazy.force tz]]) in
+         mkt_app lcons [tlp ();ltterm;r])
       res
       (mkt_app lnil [tlp ()]) in
   sinfo "term computed";

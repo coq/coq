@@ -99,9 +99,9 @@ module Make (S:SetS)(M:MapS with type key = S.elt) = struct
     match !node with
       | Canon _ -> x, node
       | Equiv y ->
-	let ((z,_) as res) = lookup y p in
-	if not (z == y) then node := Equiv z;
-	res
+        let ((z,_) as res) = lookup y p in
+        if not (z == y) then node := Equiv z;
+        res
 
   let add x p = if not (M.mem x !p) then ignore (fresh x p)
 
@@ -117,10 +117,10 @@ module Make (S:SetS)(M:MapS with type key = S.elt) = struct
       let xcan, ycan = if x < y then xcan, ycan else ycan, xcan in
       let x,xnode = xcan and y,ynode = ycan in
       match !xnode, !ynode with
-	| Canon lx, Canon ly ->
-	  xnode := Canon (S.union lx ly);
-	  ynode := Equiv x;
-	| _ -> assert false
+        | Canon lx, Canon ly ->
+          xnode := Canon (S.union lx ly);
+          ynode := Equiv x;
+        | _ -> assert false
 
   let union_set s p =
     try
@@ -130,9 +130,9 @@ module Make (S:SetS)(M:MapS with type key = S.elt) = struct
 
   let partition p =
     List.rev (M.fold
-		(fun x node acc -> match !node with
-		  | Equiv _ -> acc
-		  | Canon lx -> lx::acc)
-		!p [])
+                (fun x node acc -> match !node with
+                  | Equiv _ -> acc
+                  | Canon lx -> lx::acc)
+                !p [])
 
 end

@@ -80,8 +80,8 @@ let constr_val_discr_st sigma ts t =
     | Var id when not (TransparentState.is_transparent_variable ts id) -> Label(GRLabel (VarRef id),l)
     | Prod (n, d, c) -> Label(ProdLabel, [d; c])
     | Lambda (n, d, c) ->
-      if List.is_empty l then 
-	Label(LambdaLabel, [d; c] @ l)
+      if List.is_empty l then
+        Label(LambdaLabel, [d; c] @ l)
       else Everything
     | Sort _ -> Label(SortLabel, [])
     | Evar _ -> Everything
@@ -154,27 +154,27 @@ struct
 
   let add = function
     | None ->
-	(fun dn (c,v) ->
-	   Dn.add dn bounded_constr_pat_discr ((c,!dnet_depth),v))
+        (fun dn (c,v) ->
+           Dn.add dn bounded_constr_pat_discr ((c,!dnet_depth),v))
     | Some st ->
-	(fun dn (c,v) ->
-	   Dn.add dn (bounded_constr_pat_discr_st st) ((c,!dnet_depth),v))
+        (fun dn (c,v) ->
+           Dn.add dn (bounded_constr_pat_discr_st st) ((c,!dnet_depth),v))
 
   let rmv = function
     | None ->
-	(fun dn (c,v) ->
-	   Dn.rmv dn bounded_constr_pat_discr ((c,!dnet_depth),v))
+        (fun dn (c,v) ->
+           Dn.rmv dn bounded_constr_pat_discr ((c,!dnet_depth),v))
     | Some st ->
-	(fun dn (c,v) ->
-	 Dn.rmv dn (bounded_constr_pat_discr_st st) ((c,!dnet_depth),v))
+        (fun dn (c,v) ->
+         Dn.rmv dn (bounded_constr_pat_discr_st st) ((c,!dnet_depth),v))
 
   let lookup sigma = function
     | None ->
-	(fun dn t ->
-	     Dn.lookup dn (bounded_constr_val_discr sigma) (t,!dnet_depth))
+        (fun dn t ->
+             Dn.lookup dn (bounded_constr_val_discr sigma) (t,!dnet_depth))
     | Some st ->
-	(fun dn t ->
-	     Dn.lookup dn (bounded_constr_val_discr_st sigma st) (t,!dnet_depth))
+        (fun dn t ->
+             Dn.lookup dn (bounded_constr_val_discr_st sigma st) (t,!dnet_depth))
 
   let app f dn = Dn.app f dn
 

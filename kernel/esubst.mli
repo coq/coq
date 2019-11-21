@@ -11,7 +11,7 @@
 (** Explicit substitutions *)
 
 (** {6 Explicit substitutions } *)
-(** Explicit substitutions of type ['a]. 
+(** Explicit substitutions of type ['a].
     - ESID(n)             = %n END   bounded identity
     - CONS([|t1..tn|],S)  = (S.t1...tn)    parallel substitution
         (beware of the order: indice 1 is substituted by tn)

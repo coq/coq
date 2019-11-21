@@ -37,7 +37,7 @@ val subst_constructor : substitution -> constructor -> constructor
 val subst_global : substitution -> GlobRef.t -> GlobRef.t * constr Univ.univ_abstracted option
 val subst_global_reference : substitution -> GlobRef.t -> GlobRef.t
 
-(** This constr is not safe to be typechecked, universe polymorphism is not 
+(** This constr is not safe to be typechecked, universe polymorphism is not
     handled here: just use for printing *)
 val printable_constr_of_global : GlobRef.t -> constr
 
@@ -60,6 +60,6 @@ module ExtRefOrdered : sig
   val hash : t -> int
 end
 
-type global_reference_or_constr = 
+type global_reference_or_constr =
   | IsGlobal of GlobRef.t
   | IsConstr of constr

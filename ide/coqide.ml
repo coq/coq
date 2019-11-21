@@ -166,7 +166,7 @@ let load_file ?(maycreate=false) f =
       | [] -> false
       | sn :: sessions ->
         match sn.fileops#filename with
-	  | Some fn when is_f fn -> notebook#goto_page i; true
+          | Some fn when is_f fn -> notebook#goto_page i; true
           | _ -> search_f (i+1) sessions
     in
     if not (search_f 0 notebook#pages) then begin
@@ -257,7 +257,7 @@ let crash_save exitcode =
     in
     try
       if try_export filename (sn.buffer#get_text ()) then
-	Minilib.log ("Saved "^filename)
+        Minilib.log ("Saved "^filename)
       else Minilib.log ("Could not save "^filename)
     with _ -> Minilib.log ("Could not save "^filename)
   in
@@ -461,8 +461,8 @@ let compile sn =
     |Some f ->
       let args = Coq.get_arguments sn.coqtop in
       let cmd = cmd_coqc#get
-	^ " " ^ String.concat " " args
-	^ " " ^ (Filename.quote f) ^ " 2>&1"
+        ^ " " ^ String.concat " " args
+        ^ " " ^ (Filename.quote f) ^ " 2>&1"
       in
       let buf = Buffer.create 1024 in
       sn.messages#default_route#set (Pp.str ("Running: "^cmd));
@@ -1040,7 +1040,7 @@ let build_ui () =
     item "Preferences" ~accel:"<Primary>comma" ~stock:`PREFERENCES
       ~callback:(fun _ ->
         begin
-	  try Preferences.configure ~apply:refresh_notebook_pos w
+          try Preferences.configure ~apply:refresh_notebook_pos w
           with e ->
             flash_info ("Editing preferences failed (" ^ Printexc.to_string e ^ ")")
         end;

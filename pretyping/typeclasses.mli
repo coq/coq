@@ -40,16 +40,16 @@ type typeclass = {
   (** Context of definitions and properties on defs, will not be shared *)
 
   cl_projs : (Name.t * (direction * hint_info) option * Constant.t option) list;
-  (** The methods implementations of the typeclass as projections. 
-      Some may be undefinable due to sorting restrictions or simply undefined if 
+  (** The methods implementations of the typeclass as projections.
+      Some may be undefinable due to sorting restrictions or simply undefined if
       no name is provided. The [int option option] indicates subclasses whose hint has
       the given priority. *)
 
-  cl_strict : bool; 
+  cl_strict : bool;
   (** Whether we use matching or full unification during resolution *)
 
   cl_unique : bool;
-  (** Whether we can assume that instances are unique, which allows 
+  (** Whether we can assume that instances are unique, which allows
       no backtracking and sharing of resolution. *)
 }
 
@@ -132,7 +132,7 @@ val solve_all_instances_hook : (env -> evar_map -> evar_filter -> bool -> bool -
 val solve_one_instance_hook : (env -> evar_map -> EConstr.types -> bool -> evar_map * EConstr.constr) Hook.t
 
 (** Build the subinstances hints for a given typeclass object.
-    check tells if we should check for existence of the 
+    check tells if we should check for existence of the
     subinstances and add only the missing ones. *)
 
 val build_subclasses : check:bool -> env -> evar_map -> GlobRef.t ->

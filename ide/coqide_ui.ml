@@ -7,14 +7,14 @@ let list_items menu li =
   let tactic_item = function
     |[] -> Buffer.create 1
     |[s] -> let b = Buffer.create 16 in
-	    let () = Buffer.add_string b ("<menuitem action='"^menu^" "^(no_under s)^"' />\n") in
-	    b
+            let () = Buffer.add_string b ("<menuitem action='"^menu^" "^(no_under s)^"' />\n") in
+            b
     |s::_ as l -> let b = Buffer.create 50 in
-		  let () = (Buffer.add_string b ("<menu action='"^menu^" "^(String.make 1 s.[0])^"'>\n")) in
-		  let () = (List.iter
-			     (fun x -> Buffer.add_string b ("<menuitem action='"^menu^" "^(no_under x)^"' />\n")) l) in
-		  let () = Buffer.add_string b"</menu>\n" in
-		  b in
+                  let () = (Buffer.add_string b ("<menu action='"^menu^" "^(String.make 1 s.[0])^"'>\n")) in
+                  let () = (List.iter
+                             (fun x -> Buffer.add_string b ("<menuitem action='"^menu^" "^(no_under x)^"' />\n")) l) in
+                  let () = Buffer.add_string b"</menu>\n" in
+                  b in
   let () = List.iter (fun b -> Buffer.add_buffer res_buf (tactic_item b)) li in
   res_buf
 

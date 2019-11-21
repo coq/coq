@@ -87,7 +87,7 @@ type 'a opaque_entry = {
 
 type inline = int option (* inlining level, None for no inlining *)
 
-type parameter_entry = 
+type parameter_entry =
     Id.Set.t option * types in_universes_entry * inline
 
 type primitive_entry = {

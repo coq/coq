@@ -147,8 +147,8 @@ let check_fix env sg cb i =
     | Def lbody ->
         (match EConstr.kind sg (get_body lbody) with
           | Fix ((_,j),recd) when Int.equal i j -> check_arity env cb; (true,recd)
-	  | CoFix (j,recd) when Int.equal i j -> check_arity env cb; (false,recd)
-	  | _ -> raise Impossible)
+          | CoFix (j,recd) when Int.equal i j -> check_arity env cb; (false,recd)
+          | _ -> raise Impossible)
     | Undef _ | OpaqueDef _ | Primitive _ -> raise Impossible
 
 let prec_declaration_equal sg (na1, ca1, ta1) (na2, ca2, ta2) =
@@ -166,14 +166,14 @@ let factor_fix env sg l cb msb =
     let labels = Array.make n l in
     List.iteri
       (fun j ->
-	 function
-	   | (l,SFBconst cb') ->
+         function
+           | (l,SFBconst cb') ->
               let check' = check_fix env sg cb' (j+1) in
               if not ((fst check : bool) == (fst check') &&
                         prec_declaration_equal sg (snd check) (snd check'))
-	       then raise Impossible;
-	       labels.(j+1) <- l;
-	   | _ -> raise Impossible) msb';
+               then raise Impossible;
+               labels.(j+1) <- l;
+           | _ -> raise Impossible) msb';
     labels, recd, msb''
   end
 
@@ -256,8 +256,8 @@ and extract_mexpr_spec env mp1 (me_struct_o,me_alg) = match me_alg with
       let sg = Evd.from_env env in
       (match extract_with_type env' sg (EConstr.of_constr c) with
        (* cb may contain some kn *)
-	 | None -> mt
-	 | Some (vl,typ) ->
+         | None -> mt
+         | Some (vl,typ) ->
             type_iter_references Visit.add_ref typ;
             MTwith(mt,ML_With_type(idl,vl,typ)))
   | MEwith(me',WithMod(idl,mp))->
@@ -271,8 +271,8 @@ and extract_mexpr_spec env mp1 (me_struct_o,me_alg) = match me_alg with
 and extract_mexpression_spec env mp1 (me_struct,me_alg) = match me_alg with
   | MoreFunctor (mbid, mtb, me_alg') ->
       let me_struct' = match me_struct with
-	| MoreFunctor (mbid',_,me') when MBId.equal mbid' mbid -> me'
-	| _ -> assert false
+        | MoreFunctor (mbid',_,me') when MBId.equal mbid' mbid -> me'
+        | _ -> assert false
       in
       let mp = MPbound mbid in
       let env' = Modops.add_module_type mp mtb env in
@@ -288,7 +288,7 @@ and extract_msignature_spec env mp1 reso = function
       let mp = MPbound mbid in
       let env' = Modops.add_module_type mp mtb env in
       MTfunsig (mbid, extract_mbody_spec env mp mtb,
-		extract_msignature_spec env' mp1 reso me)
+                extract_msignature_spec env' mp1 reso me)
 
 and extract_mbody_spec : 'a. _ -> _ -> 'a generic_module_body -> _ =
   fun env mp mb -> match mb.mod_type_alg with
@@ -308,38 +308,38 @@ let rec extract_structure env mp reso ~all = function
       (try
          let sg = Evd.from_env env in
          let vl,recd,struc = factor_fix env sg l cb struc in
-	 let vc = Array.map (make_cst reso mp) vl in
-	 let ms = extract_structure env mp reso ~all struc in
-	 let b = Array.exists Visit.needed_cst vc in
-	 if all || b then
+         let vc = Array.map (make_cst reso mp) vl in
+         let ms = extract_structure env mp reso ~all struc in
+         let b = Array.exists Visit.needed_cst vc in
+         if all || b then
            let d = extract_fixpoint env sg vc recd in
-	   if (not b) && (logical_decl d) then ms
-	   else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
-	 else ms
+           if (not b) && (logical_decl d) then ms
+           else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
+         else ms
        with Impossible ->
-	 let ms = extract_structure env mp reso ~all struc in
-	 let c = make_cst reso mp l in
-	 let b = Visit.needed_cst c in
-	 if all || b then
-	   let d = extract_constant env c cb in
-	   if (not b) && (logical_decl d) then ms
-	   else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
-	 else ms)
+         let ms = extract_structure env mp reso ~all struc in
+         let c = make_cst reso mp l in
+         let b = Visit.needed_cst c in
+         if all || b then
+           let d = extract_constant env c cb in
+           if (not b) && (logical_decl d) then ms
+           else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
+         else ms)
   | (l,SFBmind mib) :: struc ->
       let ms = extract_structure env mp reso ~all struc in
       let mind = make_mind reso mp l in
       let b = Visit.needed_ind mind in
       if all || b then
-	let d = Dind (mind, extract_inductive env mind) in
-	if (not b) && (logical_decl d) then ms
-	else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
+        let d = Dind (mind, extract_inductive env mind) in
+        if (not b) && (logical_decl d) then ms
+        else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
       else ms
   | (l,SFBmodule mb) :: struc ->
       let ms = extract_structure env mp reso ~all struc in
       let mp = MPdot (mp,l) in
       let all' = all || Visit.needed_mp_all mp in
       if all' || Visit.needed_mp mp then
-	(l,SEmodule (extract_module env mp ~all:all' mb)) :: ms
+        (l,SEmodule (extract_module env mp ~all:all' mb)) :: ms
       else ms
   | (l,SFBmodtype mtb) :: struc ->
       let ms = extract_structure env mp reso ~all struc in
@@ -363,7 +363,7 @@ and extract_mexpr env mp = function
       Visit.add_mp_all mp; Miniml.MEident mp
   | MEapply (me, arg) ->
       Miniml.MEapply (extract_mexpr env mp me,
-	              extract_mexpr env mp (MEident arg))
+                      extract_mexpr env mp (MEident arg))
 
 and extract_mexpression env mp = function
   | NoFunctor me -> extract_mexpr env mp me
@@ -373,7 +373,7 @@ and extract_mexpression env mp = function
       Miniml.MEfunctor
         (mbid,
          extract_mbody_spec env mp1 mtb,
-	 extract_mexpression env' mp me)
+         extract_mexpression env' mp me)
 
 and extract_msignature env mp reso ~all = function
   | NoFunctor struc ->
@@ -385,7 +385,7 @@ and extract_msignature env mp reso ~all = function
       Miniml.MEfunctor
         (mbid,
          extract_mbody_spec env mp1 mtb,
-	 extract_msignature env' mp reso ~all me)
+         extract_msignature env' mp reso ~all me)
 
 and extract_module env mp ~all mb =
   (* A module has an empty [mod_expr] when :
@@ -447,19 +447,19 @@ let mono_filename f =
   match f with
     | None -> None, None, default_id
     | Some f ->
-	let f =
-	  if Filename.check_suffix f d.file_suffix then
-	    Filename.chop_suffix f d.file_suffix
-	  else f
-	in
-	let id =
-	  if lang () != Haskell then default_id
-	  else
+        let f =
+          if Filename.check_suffix f d.file_suffix then
+            Filename.chop_suffix f d.file_suffix
+          else f
+        in
+        let id =
+          if lang () != Haskell then default_id
+          else
             try Id.of_string (Filename.basename f)
-	    with UserError _ ->
+            with UserError _ ->
               user_err Pp.(str "Extraction: provided filename is not a valid identifier")
-	in
-	Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id
+        in
+        Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id
 
 (* Builds a suitable filename from a module id *)
 
@@ -494,8 +494,8 @@ let formatter dry file =
     if dry then Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ())
     else
       match file with
-	| Some f -> Topfmt.with_output_to f
-	| None -> Format.formatter_of_buffer buf
+        | Some f -> Topfmt.with_output_to f
+        | None -> Format.formatter_of_buffer buf
   in
   (* XXX: Fixme, this shouldn't depend on Topfmt *)
   (* We never want to see ellipsis ... in extracted code *)
@@ -554,14 +554,14 @@ let print_structure_to_file (fn,si,mo) dry struc =
        let cout = open_out si in
        let ft = formatter false (Some cout) in
        begin try
-	 set_phase Intf;
-	 pp_with ft (d.sig_preamble mo comment opened unsafe_needs);
-	 pp_with ft (d.pp_sig (signature_of_structure struc));
+         set_phase Intf;
+         pp_with ft (d.sig_preamble mo comment opened unsafe_needs);
+         pp_with ft (d.pp_sig (signature_of_structure struc));
          Format.pp_print_flush ft ();
-	 close_out cout;
+         close_out cout;
        with reraise ->
          Format.pp_print_flush ft ();
-	 close_out cout; raise reraise
+         close_out cout; raise reraise
        end;
        info_file si)
     (if dry then None else si);
@@ -606,9 +606,9 @@ let rec locate_ref = function
       in
       match mpo, ro with
         | None, None -> Nametab.error_global_not_found qid
-	| None, Some r -> let refs,mps = locate_ref l in r::refs,mps
-	| Some mp, None -> let refs,mps = locate_ref l in refs,mp::mps
-	| Some mp, Some r ->
+        | None, Some r -> let refs,mps = locate_ref l in r::refs,mps
+        | Some mp, None -> let refs,mps = locate_ref l in refs,mp::mps
+        | Some mp, Some r ->
            warning_ambiguous_name (qid,mp,r);
            let refs,mps = locate_ref l in refs,mp::mps
 
@@ -637,7 +637,7 @@ let separate_extraction lr =
   warns ();
   let print = function
     | (MPfile dir as mp, sel) as e ->
-	print_structure_to_file (module_filename mp) false [e]
+        print_structure_to_file (module_filename mp) false [e]
     | _ -> assert false
   in
   List.iter print struc;
@@ -686,8 +686,8 @@ let extraction_library is_rec m =
   warns ();
   let print = function
     | (MPfile dir as mp, sel) as e ->
-	let dry = not is_rec && not (DirPath.equal dir dir_m) in
-	print_structure_to_file (module_filename mp) dry [e]
+        let dry = not is_rec && not (DirPath.equal dir dir_m) in
+        print_structure_to_file (module_filename mp) dry [e]
     | _ -> assert false
   in
   List.iter print struc;

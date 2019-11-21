@@ -83,7 +83,7 @@ end
 module Name =
 struct
   type t = Anonymous     (** anonymous identifier *)
-	 | Name of Id.t  (** non-anonymous identifier *)
+         | Name of Id.t  (** non-anonymous identifier *)
 
   let mk_name id =
     Name id
@@ -333,7 +333,7 @@ module ModPath = struct
   module Self_Hashcons = struct
     type t = module_path
     type u = (DirPath.t -> DirPath.t) * (MBId.t -> MBId.t) *
-	(string -> string)
+        (string -> string)
     let rec hashcons (hdir,huniqid,hstr as hfuns) = function
       | MPfile dir -> MPfile (hdir dir)
       | MPbound m -> MPbound (huniqid m)
@@ -727,8 +727,8 @@ type 'a tableKey =
   | RelKey of Int.t
 
 type inv_rel_key = int (* index in the [rel_context] part of environment
-			  starting by the end, {\em inverse}
-			  of de Bruijn indice *)
+                          starting by the end, {\em inverse}
+                          of de Bruijn indice *)
 
 let eq_table_key f ik1 ik2 =
   if ik1 == ik2 then true

@@ -41,7 +41,7 @@ type binder_kind =
   | Default of Glob_term.binding_kind
   | Generalized of Glob_term.binding_kind * bool
       (** (Inner binding always Implicit) Outer bindings, typeclass-specific flag
-	 for implicit generalization of superclasses *)
+         for implicit generalization of superclasses *)
 
 type abstraction_kind = AbsLambda | AbsPi
 
@@ -80,8 +80,8 @@ type cases_pattern_expr_r =
   | CPatOr   of cases_pattern_expr list
   | CPatNotation of notation * cases_pattern_notation_substitution
     * cases_pattern_expr list (** CPatNotation (_, n, l1 ,l2) represents
-				  (notation n applied with substitution l1)
-				  applied to arguments l2 *)
+                                  (notation n applied with substitution l1)
+                                  applied to arguments l2 *)
   | CPatPrim   of prim_token
   | CPatRecord of (qualid * cases_pattern_expr) list
   | CPatDelimiters of string * cases_pattern_expr
@@ -127,7 +127,7 @@ and constr_expr = constr_expr_r CAst.t
 
 and case_expr = constr_expr                 (* expression that is being matched *)
               * lname option                (* as-clause *)
-	      * cases_pattern_expr option   (* in-clause *)
+              * cases_pattern_expr option   (* in-clause *)
 
 and branch_expr =
   (cases_pattern_expr list list * constr_expr) CAst.t

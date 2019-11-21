@@ -56,7 +56,7 @@ module ST=struct
   module IntPairTable = Hashtbl.Make(IntPair)
 
   type t = {toterm: int IntPairTable.t;
-	    tosign: (int * int) IntTable.t}
+            tosign: (int * int) IntTable.t}
 
   let empty () =
     {toterm=IntPairTable.create init_size;
@@ -64,19 +64,19 @@ module ST=struct
 
   let enter t sign st=
     if IntPairTable.mem st.toterm sign then
-	anomaly ~label:"enter" (Pp.str "signature already entered.")
+        anomaly ~label:"enter" (Pp.str "signature already entered.")
     else
-	IntPairTable.replace st.toterm sign t;
-	IntTable.replace st.tosign t sign
+        IntPairTable.replace st.toterm sign t;
+        IntTable.replace st.tosign t sign
 
   let query sign st=IntPairTable.find st.toterm sign
 
   let delete st t=
     try let sign=IntTable.find st.tosign t in
-	IntPairTable.remove st.toterm sign;
-	IntTable.remove st.tosign t
+        IntPairTable.remove st.toterm sign;
+        IntTable.remove st.tosign t
     with
-	Not_found -> ()
+        Not_found -> ()
 
   let delete_set st s = Int.Set.iter (delete st) s
 
@@ -199,7 +199,7 @@ type quant_eq =
     qe_rhs: ccpattern;
     qe_rhs_valid:patt_kind
   }
-    
+
 let swap eq : equality =
   let swap_rule=match eq.rule with
       Congruence -> Congruence
@@ -234,21 +234,21 @@ type node =
 
 module Constrhash = Hashtbl.Make
   (struct type t = constr
-	  let equal = eq_constr_nounivs
-	  let hash = Constr.hash
+          let equal = eq_constr_nounivs
+          let hash = Constr.hash
    end)
 module Typehash = Constrhash
 
 module Termhash = Hashtbl.Make
   (struct type t = term
-	  let equal = term_equal
-	  let hash = hash_term
+          let equal = term_equal
+          let hash = hash_term
    end)
 
 module Identhash = Hashtbl.Make
   (struct type t = Id.t
-	  let equal = Id.equal
-	  let hash = Id.hash
+          let equal = Id.equal
+          let hash = Id.hash
    end)
 
 type forest=
@@ -293,7 +293,7 @@ let empty_forest() =
     axioms=Constrhash.create init_size;
     syms=Termhash.create init_size
   }
-    
+
 let empty depth gls:state =
   {
     uf= empty_forest ();
@@ -311,7 +311,7 @@ let empty depth gls:state =
     env=pf_env gls;
     sigma=project gls
   }
-    
+
 let forest state = state.uf
 
 let compress_path uf i j = uf.map.(j).cpath<-i
@@ -332,11 +332,11 @@ let get_constructors uf i= uf.map.(i).constructors
 
 let rec find_oldest_pac uf i pac=
   try PacMap.find pac (get_constructors uf i) with
-    Not_found -> 
-      match uf.map.(i).clas with 
-	Eqto (j,_) -> find_oldest_pac uf j pac
+    Not_found ->
+      match uf.map.(i).clas with
+        Eqto (j,_) -> find_oldest_pac uf j pac
       | Rep _ -> raise Not_found
-     
+
 
 let get_constructor_info uf i=
   match uf.map.(i).term with
@@ -397,11 +397,11 @@ let next uf=
     if Int.equal nsize uf.max_size then
       let newmax=uf.max_size * 3 / 2 + 1 in
       let newmap=Array.make newmax dummy_node in
-	begin
-	  uf.max_size<-newmax;
-	  Array.blit uf.map 0 newmap 0 size;
-	  uf.map<-newmap
-	end
+        begin
+          uf.max_size<-newmax;
+          Array.blit uf.map 0 newmap 0 size;
+          uf.map<-newmap
+        end
     else ();
     uf.size<-nsize;
     size
@@ -440,14 +440,14 @@ let rec canonize_name sigma c =
   let func c = canonize_name sigma (EConstr.of_constr c) in
     match Constr.kind c with
       | Const (kn,u) ->
-	  let canon_const = Constant.make1 (Constant.canonical kn) in 
-	    (mkConstU (canon_const,u))
+          let canon_const = Constant.make1 (Constant.canonical kn) in
+            (mkConstU (canon_const,u))
       | Ind ((kn,i),u) ->
-	  let canon_mind = MutInd.make1 (MutInd.canonical kn) in
-	    (mkIndU ((canon_mind,i),u))
+          let canon_mind = MutInd.make1 (MutInd.canonical kn) in
+            (mkIndU ((canon_mind,i),u))
       | Construct (((kn,i),j),u) ->
-	  let canon_mind = MutInd.make1 (MutInd.canonical kn) in
-	    mkConstructU (((canon_mind,i),j),u)
+          let canon_mind = MutInd.make1 (MutInd.canonical kn) in
+            mkConstructU (((canon_mind,i),j),u)
       | Prod (na,t,ct) ->
           mkProd (na,func t, func ct)
       | Lambda (na,t,ct) ->
@@ -457,9 +457,9 @@ let rec canonize_name sigma c =
       | App (ct,l) ->
           mkApp (func ct,Array.Smart.map func l)
       | Proj(p,c) ->
-	let p' = Projection.map (fun kn ->
+        let p' = Projection.map (fun kn ->
           MutInd.make1 (MutInd.canonical kn)) p in
-	  (mkProj (p', func c))
+          (mkProj (p', func c))
       | _ -> c
 
 (* rebuild a term from a pattern and a substitution *)
@@ -477,8 +477,8 @@ let rec inst_pattern subst = function
       subst.(pred i)
   | PApp (t, args) ->
       List.fold_right
-	(fun spat f -> Appli (f,inst_pattern subst spat))
-	   args t
+        (fun spat f -> Appli (f,inst_pattern subst spat))
+           args t
 
 let pr_idx_term env sigma uf i = str "[" ++ int i ++ str ":=" ++
   Printer.pr_econstr_env env sigma (EConstr.of_constr (constr_of_term (term uf i))) ++ str "]"
@@ -489,62 +489,62 @@ let pr_term env sigma t = str "[" ++
 let rec add_term state t=
   let uf=state.uf in
     try Termhash.find uf.syms t with
-	Not_found ->
-	  let b=next uf in
+        Not_found ->
+          let b=next uf in
           let trm = constr_of_term t in
           let typ = Typing.unsafe_type_of state.env state.sigma (EConstr.of_constr trm) in
           let typ = canonize_name state.sigma typ in
-	  let new_node=
-	    match t with
-		Symb _ | Product (_,_) ->
-		  let paf =
-		    {fsym=b;
-		     fnargs=0} in
-		    Queue.add (b,Fmark paf) state.marks;
-		    {clas= Rep (new_representative typ);
-		     cpath= -1;
-		     constructors=PacMap.empty;
-		     vertex= Leaf;
-		     term= t}
-	      | Eps id ->
-		  {clas= Rep (new_representative typ);
-		   cpath= -1;
-		   constructors=PacMap.empty;
-		   vertex= Leaf;
-		   term= t}
-	      | Appli (t1,t2) ->
-		  let i1=add_term state t1 and i2=add_term state t2 in
-		    add_lfather uf (find uf i1) b;
-		    add_rfather uf (find uf i2) b;
-		    state.terms<-Int.Set.add b state.terms;
-		    {clas= Rep (new_representative typ);
-		     cpath= -1;
-		     constructors=PacMap.empty;
-		     vertex= Node(i1,i2);
-		     term= t}
-	      | Constructor cinfo ->
-		  let paf =
-		    {fsym=b;
-		     fnargs=0} in
-		    Queue.add (b,Fmark paf) state.marks;
-		  let pac =
-		    {cnode= b;
-		     arity= cinfo.ci_arity;
-		     args=[]} in
-		    Queue.add (b,Cmark pac) state.marks;
-		    {clas=Rep (new_representative typ);
-		     cpath= -1;
-		     constructors=PacMap.empty;
-		     vertex=Leaf;
-		     term=t}
-	  in
-	    uf.map.(b)<-new_node;
-	    Termhash.add uf.syms t b;
-	    Typehash.replace state.by_type typ
-	      (Int.Set.add b
-		 (try Typehash.find state.by_type typ with
-		      Not_found -> Int.Set.empty));
-	    b
+          let new_node=
+            match t with
+                Symb _ | Product (_,_) ->
+                  let paf =
+                    {fsym=b;
+                     fnargs=0} in
+                    Queue.add (b,Fmark paf) state.marks;
+                    {clas= Rep (new_representative typ);
+                     cpath= -1;
+                     constructors=PacMap.empty;
+                     vertex= Leaf;
+                     term= t}
+              | Eps id ->
+                  {clas= Rep (new_representative typ);
+                   cpath= -1;
+                   constructors=PacMap.empty;
+                   vertex= Leaf;
+                   term= t}
+              | Appli (t1,t2) ->
+                  let i1=add_term state t1 and i2=add_term state t2 in
+                    add_lfather uf (find uf i1) b;
+                    add_rfather uf (find uf i2) b;
+                    state.terms<-Int.Set.add b state.terms;
+                    {clas= Rep (new_representative typ);
+                     cpath= -1;
+                     constructors=PacMap.empty;
+                     vertex= Node(i1,i2);
+                     term= t}
+              | Constructor cinfo ->
+                  let paf =
+                    {fsym=b;
+                     fnargs=0} in
+                    Queue.add (b,Fmark paf) state.marks;
+                  let pac =
+                    {cnode= b;
+                     arity= cinfo.ci_arity;
+                     args=[]} in
+                    Queue.add (b,Cmark pac) state.marks;
+                    {clas=Rep (new_representative typ);
+                     cpath= -1;
+                     constructors=PacMap.empty;
+                     vertex=Leaf;
+                     term=t}
+          in
+            uf.map.(b)<-new_node;
+            Termhash.add uf.syms t b;
+            Typehash.replace state.by_type typ
+              (Int.Set.add b
+                 (try Typehash.find state.by_type typ with
+                      Not_found -> Int.Set.empty));
+            b
 
 let add_equality state c s t=
   let i = add_term state s in
@@ -573,7 +573,7 @@ let is_redundant state id args =
     let prev_args = Identhash.find_all state.q_history id in
     List.exists
       (fun old_args ->
-	 Util.Array.for_all2 (fun i j -> Int.equal i (find state.uf j))
+         Util.Array.for_all2 (fun i j -> Int.equal i (find state.uf j))
          norm_args old_args)
       prev_args
     with Not_found -> false
@@ -591,26 +591,26 @@ let add_inst state (inst,int_subst) =
       let args = Array.map constr_of_term subst in
       let _ = Array.rev args in (* highest deBruijn index first *)
       let prf= mkApp(prfhead,args) in
-	  let s = inst_pattern subst inst.qe_lhs
-	  and t = inst_pattern subst inst.qe_rhs in
-	    state.changed<-true;
-	    state.rew_depth<-pred state.rew_depth;
-	    if inst.qe_pol then
-	      begin
-		debug (fun () ->
-		   (str "Adding new equality, depth="++ int state.rew_depth) ++ fnl () ++
+          let s = inst_pattern subst inst.qe_lhs
+          and t = inst_pattern subst inst.qe_rhs in
+            state.changed<-true;
+            state.rew_depth<-pred state.rew_depth;
+            if inst.qe_pol then
+              begin
+                debug (fun () ->
+                   (str "Adding new equality, depth="++ int state.rew_depth) ++ fnl () ++
                   (str "  [" ++ Printer.pr_econstr_env state.env state.sigma (EConstr.of_constr prf) ++ str " : " ++
                            pr_term state.env state.sigma s ++ str " == " ++ pr_term state.env state.sigma t ++ str "]"));
-		add_equality state prf s t
-	      end
-	    else
-	      begin
-		debug (fun () ->
-		   (str "Adding new disequality, depth="++ int state.rew_depth) ++ fnl () ++
+                add_equality state prf s t
+              end
+            else
+              begin
+                debug (fun () ->
+                   (str "Adding new disequality, depth="++ int state.rew_depth) ++ fnl () ++
                   (str "  [" ++ Printer.pr_econstr_env state.env state.sigma (EConstr.of_constr prf) ++ str " : " ++
                            pr_term state.env state.sigma s ++ str " <> " ++ pr_term state.env state.sigma t ++ str "]"));
-		add_disequality state (Hyp prf) s t
-	      end
+                add_disequality state (Hyp prf) s t
+              end
   end
 
 let link uf i j eq = (* links i -> j *)
@@ -643,8 +643,8 @@ let union state i1 i2 eq=
     link state.uf i1 i2 eq;
     Constrhash.replace state.by_type r1.class_type
       (Int.Set.remove i1
-	 (try Constrhash.find state.by_type r1.class_type with
-	      Not_found -> Int.Set.empty));
+         (try Constrhash.find state.by_type r1.class_type with
+              Not_found -> Int.Set.empty));
     let f= Int.Set.union r1.fathers r2.fathers in
       r2.weight<-Int.Set.cardinal f;
       r2.fathers<-f;
@@ -652,28 +652,28 @@ let union state i1 i2 eq=
       ST.delete_set state.sigtable r1.fathers;
       state.terms<-Int.Set.union state.terms r1.fathers;
       PacMap.iter
-	(fun pac b -> Queue.add (b,Cmark pac) state.marks)
-	state.uf.map.(i1).constructors;
+        (fun pac b -> Queue.add (b,Cmark pac) state.marks)
+        state.uf.map.(i1).constructors;
       PafMap.iter
-	(fun paf -> Int.Set.iter
-	   (fun b -> Queue.add (b,Fmark paf) state.marks))
-	r1.functions;
+        (fun paf -> Int.Set.iter
+           (fun b -> Queue.add (b,Fmark paf) state.marks))
+        r1.functions;
       match r1.inductive_status,r2.inductive_status with
-	  Unknown,_ -> ()
-	| Partial pac,Unknown ->
-	    r2.inductive_status<-Partial pac;
-	    state.pa_classes<-Int.Set.remove i1 state.pa_classes;
-	    state.pa_classes<-Int.Set.add i2 state.pa_classes
-	| Partial _ ,(Partial _ |Partial_applied) ->
-	    state.pa_classes<-Int.Set.remove i1 state.pa_classes
-	| Partial_applied,Unknown ->
-	    r2.inductive_status<-Partial_applied
-	| Partial_applied,Partial _ ->
-	    state.pa_classes<-Int.Set.remove i2 state.pa_classes;
-	    r2.inductive_status<-Partial_applied
-	| Total cpl,Unknown -> r2.inductive_status<-Total cpl;
-	| Total (i,pac),Total _ -> Queue.add (i,Cmark pac) state.marks
-	| _,_ -> ()
+          Unknown,_ -> ()
+        | Partial pac,Unknown ->
+            r2.inductive_status<-Partial pac;
+            state.pa_classes<-Int.Set.remove i1 state.pa_classes;
+            state.pa_classes<-Int.Set.add i2 state.pa_classes
+        | Partial _ ,(Partial _ |Partial_applied) ->
+            state.pa_classes<-Int.Set.remove i1 state.pa_classes
+        | Partial_applied,Unknown ->
+            r2.inductive_status<-Partial_applied
+        | Partial_applied,Partial _ ->
+            state.pa_classes<-Int.Set.remove i2 state.pa_classes;
+            r2.inductive_status<-Partial_applied
+        | Total cpl,Unknown -> r2.inductive_status<-Total cpl;
+        | Total (i,pac),Total _ -> Queue.add (i,Cmark pac) state.marks
+        | _,_ -> ()
 
 let merge eq state = (* merge and no-merge *)
   debug
@@ -684,9 +684,9 @@ let merge eq state = (* merge and no-merge *)
   and j=find uf eq.rhs in
     if not (Int.equal i j) then
       if (size uf i)<(size uf j) then
-	union state i j eq
+        union state i j eq
       else
-	union state j i (swap eq)
+        union state j i (swap eq)
 
 let update t state = (* update 1 and 2 *)
   debug
@@ -696,10 +696,10 @@ let update t state = (* update 1 and 2 *)
   let rep = get_representative state.uf i in
     begin
       match rep.inductive_status with
-	  Partial _ ->
-	    rep.inductive_status <- Partial_applied;
-	    state.pa_classes <- Int.Set.remove i state.pa_classes
-	| _ -> ()
+          Partial _ ->
+            rep.inductive_status <- Partial_applied;
+            state.pa_classes <- Int.Set.remove i state.pa_classes
+        | _ -> ()
     end;
     PacMap.iter
       (fun pac _ -> Queue.add (t,Cmark (append_pac v pac)) state.marks)
@@ -709,9 +709,9 @@ let update t state = (* update 1 and 2 *)
       rep.functions;
     try
       let s = ST.query sign state.sigtable in
-	Queue.add {lhs=t;rhs=s;rule=Congruence} state.combine
+        Queue.add {lhs=t;rhs=s;rule=Congruence} state.combine
     with
-	Not_found -> ST.enter t sign state.sigtable
+        Not_found -> ST.enter t sign state.sigtable
 
 let process_function_mark t rep paf state  =
   add_paf rep paf t;
@@ -720,35 +720,35 @@ let process_function_mark t rep paf state  =
 let process_constructor_mark t i rep pac state =
      add_pac state.uf.map.(i) pac t;
      match rep.inductive_status with
-	Total (s,opac) ->
-	  if not (Int.equal pac.cnode opac.cnode) then (* Conflict *)
-	    raise (Discriminable (s,opac,t,pac))
-	  else (* Match *)
-	    let cinfo = get_constructor_info state.uf pac.cnode in
-	    let rec f n oargs args=
-	      if n > 0 then
-		match (oargs,args) with
-		    s1::q1,s2::q2->
-		      Queue.add
-			{lhs=s1;rhs=s2;rule=Injection(s,opac,t,pac,n)}
-			state.combine;
-		      f (n-1) q1 q2
-		  | _-> anomaly ~label:"add_pacs"
-		      (Pp.str "weird error in injection subterms merge.")
-	    in f cinfo.ci_nhyps opac.args pac.args
+        Total (s,opac) ->
+          if not (Int.equal pac.cnode opac.cnode) then (* Conflict *)
+            raise (Discriminable (s,opac,t,pac))
+          else (* Match *)
+            let cinfo = get_constructor_info state.uf pac.cnode in
+            let rec f n oargs args=
+              if n > 0 then
+                match (oargs,args) with
+                    s1::q1,s2::q2->
+                      Queue.add
+                        {lhs=s1;rhs=s2;rule=Injection(s,opac,t,pac,n)}
+                        state.combine;
+                      f (n-1) q1 q2
+                  | _-> anomaly ~label:"add_pacs"
+                      (Pp.str "weird error in injection subterms merge.")
+            in f cinfo.ci_nhyps opac.args pac.args
       | Partial_applied | Partial _ ->
 (*	  add_pac state.uf.map.(i) pac t; *)
-	  state.terms<-Int.Set.union rep.lfathers state.terms
+          state.terms<-Int.Set.union rep.lfathers state.terms
       | Unknown ->
-	  if Int.equal pac.arity 0 then
-	    rep.inductive_status <- Total (t,pac)
-	  else
-	    begin
-	     (* add_pac state.uf.map.(i) pac t; *)
-	      state.terms<-Int.Set.union rep.lfathers state.terms;
-	      rep.inductive_status <- Partial pac;
-	      state.pa_classes<- Int.Set.add i state.pa_classes
-	    end
+          if Int.equal pac.arity 0 then
+            rep.inductive_status <- Total (t,pac)
+          else
+            begin
+             (* add_pac state.uf.map.(i) pac t; *)
+              state.terms<-Int.Set.union rep.lfathers state.terms;
+              rep.inductive_status <- Partial pac;
+              state.pa_classes<- Int.Set.add i state.pa_classes
+            end
 
 let process_mark t m state =
   debug
@@ -756,7 +756,7 @@ let process_mark t m state =
   let i=find state.uf t in
   let rep=get_representative state.uf i in
     match m with
-	Fmark paf -> process_function_mark t rep paf state
+        Fmark paf -> process_function_mark t rep paf state
       | Cmark pac -> process_constructor_mark t i rep pac state
 
 type explanation =
@@ -783,20 +783,20 @@ let check_disequalities state =
 let one_step state =
     try
       let eq = Queue.take state.combine in
-	merge eq state;
-	true
+        merge eq state;
+        true
     with Queue.Empty ->
       try
-	let (t,m) = Queue.take state.marks in
-	  process_mark t m state;
-	  true
+        let (t,m) = Queue.take state.marks in
+          process_mark t m state;
+          true
       with Queue.Empty ->
-	try
-	  let t = Int.Set.choose state.terms in
-	    state.terms<-Int.Set.remove t state.terms;
-	    update t state;
-	    true
-	with Not_found -> false
+        try
+          let t = Int.Set.choose state.terms in
+            state.terms<-Int.Set.remove t state.terms;
+            update t state;
+            true
+        with Not_found -> false
 
 let __eps__ = Id.of_string "_eps_"
 
@@ -810,21 +810,21 @@ let new_state_var typ state =
 let complete_one_class state i=
   match (get_representative state.uf i).inductive_status with
       Partial pac ->
-	let rec app t typ n =
-	  if n<=0 then t else
+        let rec app t typ n =
+          if n<=0 then t else
             let _,etyp,rest= destProd typ in
             let id = new_state_var (EConstr.of_constr etyp) state in
                 app (Appli(t,Eps id)) (substl [mkVar id] rest) (n-1) in
         let _c = Typing.unsafe_type_of state.env state.sigma
-	  (EConstr.of_constr (constr_of_term (term state.uf pac.cnode))) in
+          (EConstr.of_constr (constr_of_term (term state.uf pac.cnode))) in
         let _c = EConstr.Unsafe.to_constr _c in
-	let _args =
-	  List.map (fun i -> constr_of_term (term state.uf  i))
-	    pac.args in
+        let _args =
+          List.map (fun i -> constr_of_term (term state.uf  i))
+            pac.args in
         let typ = Term.prod_applist _c (List.rev _args) in
-	let ct = app (term state.uf i) typ pac.arity in
-	  state.uf.epsilons <- pac :: state.uf.epsilons;
-	  ignore (add_term state ct)
+        let ct = app (term state.uf i) typ pac.arity in
+          state.uf.epsilons <- pac :: state.uf.epsilons;
+          ignore (add_term state ct)
     | _ -> anomaly (Pp.str "wrong incomplete class.")
 
 let complete state =
@@ -841,59 +841,59 @@ let make_fun_table state =
   Array.iteri
     (fun i inode -> if i < uf.size then
        match inode.clas with
-	   Rep rep ->
-	     PafMap.iter
-	       (fun paf _ ->
-		  let elem =
-		    try PafMap.find paf !funtab
-		    with Not_found -> Int.Set.empty in
-		    funtab:= PafMap.add paf (Int.Set.add i elem) !funtab)
-	       rep.functions
-	 | _ -> ()) state.uf.map;
+           Rep rep ->
+             PafMap.iter
+               (fun paf _ ->
+                  let elem =
+                    try PafMap.find paf !funtab
+                    with Not_found -> Int.Set.empty in
+                    funtab:= PafMap.add paf (Int.Set.add i elem) !funtab)
+               rep.functions
+         | _ -> ()) state.uf.map;
     !funtab
 
 
 let do_match state res pb_stack =
   let mp=Stack.pop pb_stack in
     match mp.mp_stack with
-	[] ->
-	  res:= (mp.mp_inst,mp.mp_subst) :: !res
+        [] ->
+          res:= (mp.mp_inst,mp.mp_subst) :: !res
       | (patt,cl)::remains ->
-	  let uf=state.uf in
-	    match patt with
-		PVar i ->
-		  if mp.mp_subst.(pred i)<0 then
-		    begin
-		      mp.mp_subst.(pred i)<- cl; (* no aliasing problem here *)
-		      Stack.push {mp with mp_stack=remains} pb_stack
-		    end
-		  else
-		    if Int.equal mp.mp_subst.(pred i) cl then
-		      Stack.push {mp with mp_stack=remains} pb_stack
-		    else (* mismatch for non-linear variable in pattern *) ()
-	      | PApp (f,[]) ->
-		  begin
-		    try let j=Termhash.find uf.syms f in
-		      if Int.equal (find uf j) cl then
-			Stack.push {mp with mp_stack=remains} pb_stack
-		    with Not_found -> ()
-		  end
-	      | PApp(f, ((last_arg::rem_args) as args)) ->
-		  try
-		    let j=Termhash.find uf.syms f in
-		    let paf={fsym=j;fnargs=List.length args} in
-		    let rep=get_representative uf cl in
-		    let good_terms = PafMap.find paf rep.functions in
-		    let aux i =
-		      let (s,t) = signature state.uf i in
-			Stack.push
-			  {mp with
-			     mp_subst=Array.copy mp.mp_subst;
-			     mp_stack=
-			      (PApp(f,rem_args),s) ::
-				(last_arg,t) :: remains} pb_stack in
-		      Int.Set.iter aux good_terms
-		  with Not_found -> ()
+          let uf=state.uf in
+            match patt with
+                PVar i ->
+                  if mp.mp_subst.(pred i)<0 then
+                    begin
+                      mp.mp_subst.(pred i)<- cl; (* no aliasing problem here *)
+                      Stack.push {mp with mp_stack=remains} pb_stack
+                    end
+                  else
+                    if Int.equal mp.mp_subst.(pred i) cl then
+                      Stack.push {mp with mp_stack=remains} pb_stack
+                    else (* mismatch for non-linear variable in pattern *) ()
+              | PApp (f,[]) ->
+                  begin
+                    try let j=Termhash.find uf.syms f in
+                      if Int.equal (find uf j) cl then
+                        Stack.push {mp with mp_stack=remains} pb_stack
+                    with Not_found -> ()
+                  end
+              | PApp(f, ((last_arg::rem_args) as args)) ->
+                  try
+                    let j=Termhash.find uf.syms f in
+                    let paf={fsym=j;fnargs=List.length args} in
+                    let rep=get_representative uf cl in
+                    let good_terms = PafMap.find paf rep.functions in
+                    let aux i =
+                      let (s,t) = signature state.uf i in
+                        Stack.push
+                          {mp with
+                             mp_subst=Array.copy mp.mp_subst;
+                             mp_stack=
+                              (PApp(f,rem_args),s) ::
+                                (last_arg,t) :: remains} pb_stack in
+                      Int.Set.iter aux good_terms
+                  with Not_found -> ()
 
 let paf_of_patt syms = function
     PVar _ -> invalid_arg "paf_of_patt: pattern is trivial"
@@ -908,49 +908,49 @@ let init_pb_stack state =
   let aux inst =
     begin
       let good_classes =
-	match inst.qe_lhs_valid with
-	  Creates_variables -> Int.Set.empty
-	| Normal ->
-	    begin
-	      try
-		let paf= paf_of_patt syms inst.qe_lhs in
-		  PafMap.find paf funtab
-	      with Not_found -> Int.Set.empty
-	    end
-	| Trivial typ ->
-	    begin
-	      try
-		Typehash.find state.by_type typ
-	      with Not_found -> Int.Set.empty
-	    end in
-	Int.Set.iter (fun i ->
-		       Stack.push
-			 {mp_subst = Array.make inst.qe_nvars (-1);
-			  mp_inst=inst;
-			  mp_stack=[inst.qe_lhs,i]} pb_stack) good_classes
+        match inst.qe_lhs_valid with
+          Creates_variables -> Int.Set.empty
+        | Normal ->
+            begin
+              try
+                let paf= paf_of_patt syms inst.qe_lhs in
+                  PafMap.find paf funtab
+              with Not_found -> Int.Set.empty
+            end
+        | Trivial typ ->
+            begin
+              try
+                Typehash.find state.by_type typ
+              with Not_found -> Int.Set.empty
+            end in
+        Int.Set.iter (fun i ->
+                       Stack.push
+                         {mp_subst = Array.make inst.qe_nvars (-1);
+                          mp_inst=inst;
+                          mp_stack=[inst.qe_lhs,i]} pb_stack) good_classes
     end;
     begin
       let good_classes =
-	match inst.qe_rhs_valid with
-	  Creates_variables -> Int.Set.empty
-	| Normal ->
-	    begin
-	      try
-		let paf= paf_of_patt syms inst.qe_rhs in
-		  PafMap.find paf funtab
-	      with Not_found -> Int.Set.empty
-	    end
-	| Trivial typ ->
-	    begin
-	      try
-		Typehash.find state.by_type typ
-	      with Not_found -> Int.Set.empty
-	    end in
-	Int.Set.iter (fun i ->
-		       Stack.push
-			 {mp_subst = Array.make inst.qe_nvars (-1);
-			  mp_inst=inst;
-			  mp_stack=[inst.qe_rhs,i]} pb_stack) good_classes
+        match inst.qe_rhs_valid with
+          Creates_variables -> Int.Set.empty
+        | Normal ->
+            begin
+              try
+                let paf= paf_of_patt syms inst.qe_rhs in
+                  PafMap.find paf funtab
+              with Not_found -> Int.Set.empty
+            end
+        | Trivial typ ->
+            begin
+              try
+                Typehash.find state.by_type typ
+              with Not_found -> Int.Set.empty
+            end in
+        Int.Set.iter (fun i ->
+                       Stack.push
+                         {mp_subst = Array.make inst.qe_nvars (-1);
+                          mp_inst=inst;
+                          mp_stack=[inst.qe_rhs,i]} pb_stack) good_classes
     end in
     List.iter aux state.quant;
     pb_stack
@@ -962,8 +962,8 @@ let find_instances state =
     debug (fun () -> str "Running E-matching algorithm ... ");
     try
       while true do
-	Control.check_for_interrupt ();
-	do_match state res pb_stack
+        Control.check_for_interrupt ();
+        do_match state res pb_stack
       done;
       anomaly (Pp.str "get out of here!")
     with Stack.Empty -> () in
@@ -977,37 +977,37 @@ let rec execute first_run state =
       one_step state do ()
     done;
     match check_disequalities state with
-	None ->
-	  if not(Int.Set.is_empty state.pa_classes) then
-	    begin
-	      debug (fun () -> str "First run was incomplete, completing ... ");
-	      complete state;
-	      execute false state
-	    end
-	  else
-	    if state.rew_depth>0 then
-	      let l=find_instances state in
-		List.iter (add_inst state) l;
-		if state.changed then
-		  begin
-		    state.changed <- false;
-		    execute true state
-		  end
-		else
-	      begin
-		debug (fun () -> str "Out of instances ... ");
-		None
-	      end
-	    else
-	      begin
-		debug (fun () -> str "Out of depth ... ");
-		None
-	      end
+        None ->
+          if not(Int.Set.is_empty state.pa_classes) then
+            begin
+              debug (fun () -> str "First run was incomplete, completing ... ");
+              complete state;
+              execute false state
+            end
+          else
+            if state.rew_depth>0 then
+              let l=find_instances state in
+                List.iter (add_inst state) l;
+                if state.changed then
+                  begin
+                    state.changed <- false;
+                    execute true state
+                  end
+                else
+              begin
+                debug (fun () -> str "Out of instances ... ");
+                None
+              end
+            else
+              begin
+                debug (fun () -> str "Out of depth ... ");
+                None
+              end
       | Some dis -> Some
-	  begin
-	    if first_run then Contradiction dis
-	    else Incomplete
-	  end
+          begin
+            if first_run then Contradiction dis
+            else Incomplete
+          end
   with Discriminable(s,spac,t,tpac) -> Some
     begin
       if first_run then Discrimination (s,spac,t,tpac)

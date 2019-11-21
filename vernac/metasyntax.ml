@@ -131,37 +131,37 @@ let parse_format ({CAst.loc;v=str} : lstring) =
       (* Parse " // " *)
       | '/' when i+1 < len && str.[i+1] == '/' ->
           (* We discard the useless n spaces... *)
-	  push_token (make_loc (i-n) (i+1)) (UnpCut PpFnl)
+          push_token (make_loc (i-n) (i+1)) (UnpCut PpFnl)
             (parse_token 1 (close_quotation i (i+2)))
       (* Parse " .. / .. " *)
       | '/' when i+1 < len ->
-	  let p = spaces 0 (i+1) in
-	  push_token (make_loc (i-n) (i+p)) (UnpCut (PpBrk (n,p)))
+          let p = spaces 0 (i+1) in
+          push_token (make_loc (i-n) (i+p)) (UnpCut (PpBrk (n,p)))
             (parse_token 1 (close_quotation i (i+p+1)))
       | c ->
       (* The spaces are real spaces *)
       push_white i n (match c with
       | '[' ->
-	  if i+1 < len then match str.[i+1] with
-	    (* Parse " [h .. ",  *)
-	    | 'h' when i+1 <= len && str.[i+2] == 'v' ->
-		  (parse_box i (fun n -> PpHVB n) (i+3))
-		(* Parse " [v .. ",  *)
-	    | 'v' ->
-		    parse_box i (fun n -> PpVB n) (i+2)
-		(* Parse " [ .. ",  *)
-	    | ' ' | '\'' ->
-		parse_box i (fun n -> PpHOVB n) (i+1)
-	    | _ -> user_err ?loc:(make_loc i i) Pp.(str "\"v\", \"hv\", \" \" expected after \"[\" in format.")
-	  else user_err ?loc:(make_loc i i) Pp.(str "\"v\", \"hv\" or \" \" expected after \"[\" in format.")
+          if i+1 < len then match str.[i+1] with
+            (* Parse " [h .. ",  *)
+            | 'h' when i+1 <= len && str.[i+2] == 'v' ->
+                  (parse_box i (fun n -> PpHVB n) (i+3))
+                (* Parse " [v .. ",  *)
+            | 'v' ->
+                    parse_box i (fun n -> PpVB n) (i+2)
+                (* Parse " [ .. ",  *)
+            | ' ' | '\'' ->
+                parse_box i (fun n -> PpHOVB n) (i+1)
+            | _ -> user_err ?loc:(make_loc i i) Pp.(str "\"v\", \"hv\", \" \" expected after \"[\" in format.")
+          else user_err ?loc:(make_loc i i) Pp.(str "\"v\", \"hv\" or \" \" expected after \"[\" in format.")
       (* Parse "]"  *)
       | ']' ->
-	  ((i,[]) :: parse_token 1 (close_quotation i (i+1)))
+          ((i,[]) :: parse_token 1 (close_quotation i (i+1)))
       (* Parse a non formatting token *)
       | c ->
-	  let n = nonspaces true 0 i in
-	  push_token (make_loc i (i+n-1)) (UnpTerminal (String.sub str (i-1) (n+2)))
-	    (parse_token 1 (close_quotation i (i+n))))
+          let n = nonspaces true 0 i in
+          push_token (make_loc i (i+n-1)) (UnpTerminal (String.sub str (i-1) (n+2)))
+            (parse_token 1 (close_quotation i (i+n))))
     else
       if Int.equal n 0 then []
       else user_err ?loc:(make_loc (len-n) len) Pp.(str "Ending spaces non part of a format annotation.")
@@ -174,7 +174,7 @@ let parse_format ({CAst.loc;v=str} : lstring) =
     if i < len then match str.[i] with
       (* Parse a ' *)
       |	'\'' when i+1 >= len || str.[i+1] == ' ' ->
-	  push_white (i-n) (n-k) (push_token (make_loc i (i+1)) (UnpTerminal "'") (parse_token 1 (i+1)))
+          push_white (i-n) (n-k) (push_token (make_loc i (i+1)) (UnpTerminal "'") (parse_token 1 (i+1)))
       (* Parse the beginning of a quoted expression *)
       |	'\'' ->
           parse_quoted (n-k) (i+1)
@@ -261,11 +261,11 @@ let rec get_notation_vars onlyprint = function
   | NonTerminal id :: sl ->
       let vars = get_notation_vars onlyprint sl in
       if Id.equal id ldots_var then vars else
-	(* don't check for nonlinearity if printing only, see Bug 5526 *)
-	if not onlyprint && Id.List.mem id vars then 
-	  user_err ~hdr:"Metasyntax.get_notation_vars"
+        (* don't check for nonlinearity if printing only, see Bug 5526 *)
+        if not onlyprint && Id.List.mem id vars then
+          user_err ~hdr:"Metasyntax.get_notation_vars"
             (str "Variable " ++ Id.print id ++ str " occurs more than once.")
-	else id::vars
+        else id::vars
   | (Terminal _ | Break _) :: sl -> get_notation_vars onlyprint sl
   | SProdList _ :: _ -> assert false
 
@@ -393,23 +393,23 @@ let make_hunks etyps symbols from =
   let vars,typs = List.split etyps in
   let rec make b = function
     | NonTerminal m :: prods ->
-	let i = index_id m vars in
+        let i = index_id m vars in
         let u = unparsing_metavar i from typs in
         if is_next_non_terminal b prods then
           (None, u) :: add_break_if_none 1 b (make b prods)
-	else
+        else
           (None, u) :: make_with_space b prods
     | Terminal s :: prods
          when (* true to simulate presence of non-terminal *) b || List.exists is_non_terminal prods ->
         if (is_comma s || is_operator s) then
           (* Always a breakable space after comma or separator *)
           (None, UnpTerminal s) :: add_break_if_none 1 b (make b prods)
-	else if is_right_bracket s && is_next_terminal prods then
+        else if is_right_bracket s && is_next_terminal prods then
           (* Always no space after right bracked, but possibly a break *)
           (None, UnpTerminal s) :: add_break_if_none 0 b (make b prods)
         else if is_left_bracket s  && is_next_non_terminal b prods then
           (None, UnpTerminal s) :: make b prods
-	else if not (is_next_break prods) then
+        else if not (is_next_break prods) then
           (* Add rigid space, no break, unless user asked for something *)
           (None, UnpTerminal (s^" ")) :: make b prods
         else
@@ -426,20 +426,20 @@ let make_hunks etyps symbols from =
         add_break n (make b prods)
 
     | SProdList (m,sl) :: prods ->
-	let i = index_id m vars in
-	let typ = List.nth typs (i-1) in
-	let _,prec = precedence_of_entry_type from typ in
+        let i = index_id m vars in
+        let typ = List.nth typs (i-1) in
+        let _,prec = precedence_of_entry_type from typ in
         let sl' =
           (* If no separator: add a break *)
-	  if List.is_empty sl then add_break 1 []
+          if List.is_empty sl then add_break 1 []
           (* We add NonTerminal for simulation but remove it afterwards *)
           else make true sl in
-	let hunk = match typ with
-	  | ETConstr _ -> UnpListMetaVar (i,prec,List.map snd sl')
-	  | ETBinder isopen ->
-	      check_open_binder isopen sl m;
-	      UnpBinderListMetaVar (i,isopen,List.map snd sl')
-	  | _ -> assert false in
+        let hunk = match typ with
+          | ETConstr _ -> UnpListMetaVar (i,prec,List.map snd sl')
+          | ETBinder isopen ->
+              check_open_binder isopen sl m;
+              UnpBinderListMetaVar (i,isopen,List.map snd sl')
+          | _ -> assert false in
         (None, hunk) :: make_with_space b prods
 
     | [] -> []
@@ -552,11 +552,11 @@ let hunks_of_format (from,(vars,typs)) symfmt =
       if not (List.is_empty sl) then error_format ?loc:(find_prod_list_loc loc_slfmt fmt) ();
       let symbs, l = aux (symbs,rfmt) in
       let hunk = match typ with
-	| ETConstr _ -> UnpListMetaVar (i,prec,slfmt)
-	| ETBinder isopen ->
-	    check_open_binder isopen sl m;
-	    UnpBinderListMetaVar (i,isopen,slfmt)
-	| _ -> assert false in
+        | ETConstr _ -> UnpListMetaVar (i,prec,slfmt)
+        | ETBinder isopen ->
+            check_open_binder isopen sl m;
+            UnpBinderListMetaVar (i,isopen,slfmt)
+        | _ -> assert false in
       symbs, hunk :: l
   | symbs, [] -> symbs, []
   | Break _ :: symbs, fmt -> warn_format_break (); aux (symbs,fmt)
@@ -656,7 +656,7 @@ let make_production etyps symbols =
           (List.map (function Terminal s -> [CLexer.terminal s]
             | Break _ -> []
             | _ -> anomaly (Pp.str "Found a non terminal token in recursive notation separator.")) sl) in
-	match List.assoc x etyps with
+        match List.assoc x etyps with
         | ETConstr (s,_,typ) ->
             let p,l' = include_possible_similar_trailing_pattern typ etyps sl l in
             expand_list_rule s typ tkl x 1 p (aux l')
@@ -712,7 +712,7 @@ let pr_level ntn (from,fromlevel,args,typs) =
   prlist_with_sep pr_comma (pr_arg_level fromlevel) (List.combine args typs)
 
 let error_incompatible_level ntn oldprec prec =
-  user_err 
+  user_err
     (str "Notation " ++ pr_notation ntn ++ str " is already defined" ++ spc() ++
     pr_level ntn oldprec ++
     spc() ++ str "while it is now required to be" ++ spc() ++
@@ -829,17 +829,17 @@ let interp_modifiers modl = let open NotationMods in
   let rec interp subtyps acc = function
     | [] -> subtyps, acc
     | SetEntryType (s,typ) :: l ->
-	let id = Id.of_string s in
-	if Id.List.mem_assoc id acc.etyps then
-	  user_err ~hdr:"Metasyntax.interp_modifiers"
+        let id = Id.of_string s in
+        if Id.List.mem_assoc id acc.etyps then
+          user_err ~hdr:"Metasyntax.interp_modifiers"
             (str s ++ str " is already assigned to an entry or constr level.");
         interp subtyps { acc with etyps = (id,typ) :: acc.etyps; } l
     | SetItemLevel ([],bko,n) :: l ->
         interp subtyps acc l
     | SetItemLevel (s::idl,bko,n) :: l ->
-	let id = Id.of_string s in
-	if Id.List.mem_assoc id acc.etyps then
-	  user_err ~hdr:"Metasyntax.interp_modifiers"
+        let id = Id.of_string s in
+        if Id.List.mem_assoc id acc.etyps then
+          user_err ~hdr:"Metasyntax.interp_modifiers"
             (str s ++ str " is already assigned to an entry or constr level.");
         interp ((id,bko,n)::subtyps) acc (SetItemLevel (idl,bko,n)::l)
     | SetLevel n :: l ->
@@ -871,7 +871,7 @@ let interp_modifiers modl = let open NotationMods in
            user_err (str "Entry is already assigned to custom " ++ str s ++ (match acc.level with None -> mt () | Some lev -> str " at level " ++ int lev) ++ str ".");
         interp subtyps { acc with custom = InCustomEntry s; level = n } l
     | SetAssoc a :: l ->
-	if not (Option.is_empty acc.assoc) then user_err Pp.(str "An associativity is given more than once.");
+        if not (Option.is_empty acc.assoc) then user_err Pp.(str "An associativity is given more than once.");
         interp subtyps { acc with assoc = Some a; } l
      | SetOnlyParsing :: l ->
         interp subtyps { acc with only_parsing = true; } l
@@ -880,7 +880,7 @@ let interp_modifiers modl = let open NotationMods in
     | SetCompatVersion v :: l ->
         interp subtyps { acc with compat = Some v; } l
     | SetFormat ("text",s) :: l ->
-	if not (Option.is_empty acc.format) then user_err Pp.(str "A format is given more than once.");
+        if not (Option.is_empty acc.format) then user_err Pp.(str "A format is given more than once.");
         interp subtyps { acc with format = Some s; } l
     | SetFormat (k,s) :: l ->
         interp subtyps { acc with extra = (k,s.CAst.v)::acc.extra; } l
@@ -955,9 +955,9 @@ let join_auxiliary_recursive_types recvars etyps =
     | None, Some ytyp -> (x,ytyp)::typs
     | Some xtyp, Some ytyp when (=) xtyp ytyp -> typs (* FIXME *)
     | Some xtyp, Some ytyp ->
-	user_err 
-	  (strbrk "In " ++ Id.print x ++ str " .. " ++ Id.print y ++
-	   strbrk ", both ends have incompatible types."))
+        user_err
+          (strbrk "In " ++ Id.print x ++ str " .. " ++ Id.print y ++
+           strbrk ", both ends have incompatible types."))
     recvars etyps
 
 let internalization_type_of_entry_type = function
@@ -1103,7 +1103,7 @@ let find_precedence custom lev etyps symbols onlyprint =
         | (ETIdent | ETBigint | ETGlobal), _ ->
             begin match lev with
             | None ->
-	      ([Feedback.msg_info ?loc:None ,strbrk "Setting notation at level 0."],0)
+              ([Feedback.msg_info ?loc:None ,strbrk "Setting notation at level 0."],0)
             | Some 0 ->
               ([],0)
             | _ ->
@@ -1115,12 +1115,12 @@ let find_precedence custom lev etyps symbols onlyprint =
               user_err Pp.(str "Need an explicit level.")
             else [],Option.get lev
       with Not_found ->
-	if Option.is_empty lev then
-	  user_err Pp.(str "A left-recursive notation must have an explicit level.")
-	else [],Option.get lev)
+        if Option.is_empty lev then
+          user_err Pp.(str "A left-recursive notation must have an explicit level.")
+        else [],Option.get lev)
   | Some (Terminal _) when last_is_terminal () ->
       if Option.is_empty lev then
-	([Feedback.msg_info ?loc:None ,strbrk "Setting notation at level 0."], 0)
+        ([Feedback.msg_info ?loc:None ,strbrk "Setting notation at level 0."], 0)
       else [],Option.get lev
   | Some _ ->
       if Option.is_empty lev then user_err Pp.(str "Cannot determine the level.");
@@ -1146,7 +1146,7 @@ let remove_curly_brackets l =
             let br',next' = skip_break [] l' in
             (match next' with
               | Terminal "}" as t2 :: l'' ->
-		  if deb && List.is_empty l'' then [t1;x;t2] else begin
+                  if deb && List.is_empty l'' then [t1;x;t2] else begin
                     check_curly_brackets_notation_exists ();
                     x :: aux false l''
                   end
@@ -1565,7 +1565,7 @@ let add_notation ~local deprecation env c ({CAst.loc;v=df},modifiers) sc =
   Dumpglob.dump_notation (loc,df') sc true
 
 let add_notation_extra_printing_rule df k v =
-  let notk = 
+  let notk =
     let _,_, symbs = analyze_notation_tokens ~onlyprint:true df in
     make_notation_key InConstrEntrySomeLevel symbs in
   add_notation_extra_printing_rule notk k v

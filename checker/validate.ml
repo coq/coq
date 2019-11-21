@@ -105,7 +105,7 @@ and val_tuple ?name vs ctx o =
   else
     fail ctx o
       ("tuple size: found "^string_of_int (Obj.size o)^
-	  ", expected "^string_of_int n)
+          ", expected "^string_of_int n)
 
 (* Check that the object is either a constant constructor of tag < cc,
    or a constructed variant. each element of vv is an array of

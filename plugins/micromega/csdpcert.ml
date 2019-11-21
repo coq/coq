@@ -62,9 +62,9 @@ let partition_expr l =
        | Mc.Equal -> ((e,i)::eq,ge,neq)
        | Mc.NonStrict -> (eq,(e,Axiom_le i)::ge,neq)
        | Mc.Strict    -> (* e > 0 == e >= 0 /\ e <> 0 *)
-	  (eq, (e,Axiom_lt i)::ge,(e,Axiom_lt i)::neq)
+          (eq, (e,Axiom_lt i)::ge,(e,Axiom_lt i)::neq)
        | Mc.NonEqual -> (eq,ge,(e,Axiom_eq i)::neq)
-	  (* Not quite sure -- Coq interface has changed *)
+          (* Not quite sure -- Coq interface has changed *)
  in f 0 l
 
 
@@ -72,7 +72,7 @@ let rec sets_of_list l =
  match l with
   | [] -> [[]]
   | e::l -> let s = sets_of_list l in
-	     s@(List.map (fun s0 -> e::s0) s)
+             s@(List.map (fun s0 -> e::s0) s)
 
 (* The exploration is probably not complete - for simple cases, it works... *)
 let real_nonlinear_prover d l =
@@ -83,9 +83,9 @@ let real_nonlinear_prover d l =
   let rec elim_const  = function
     [] ->  []
    | (x,y)::l -> let p = poly_of_term (expr_to_term x) in
-		  if poly_isconst p
-		  then elim_const l
-		  else (p,y)::(elim_const l) in
+                  if poly_isconst p
+                  then elim_const l
+                  else (p,y)::(elim_const l) in
 
   let eq = elim_const eq in
   let peq = List.map  fst eq in
@@ -104,7 +104,7 @@ let real_nonlinear_prover d l =
   let (cert_ideal, cert_cone,monoid) = deepen_until d (fun d ->
    tryfind (fun m -> let (ci,cc) =
     real_positivnullstellensatz_general false d peq pge (poly_neg (fst m) ) in
-		      (ci,cc,snd m)) monoids) 0 in
+                      (ci,cc,snd m)) monoids) 0 in
 
   let proofs_ideal = List.map2 (fun q i -> Eqmul(term_of_poly q,Axiom_eq i))
    cert_ideal (List.map snd eq) in
@@ -141,9 +141,9 @@ let pure_sos  l =
   let plt = poly_neg (poly_of_term (expr_to_term (fst lt))) in
   let (n,polys) = sumofsquares plt in (* n * (ci * pi^2) *)
   let pos = Product (Rational_lt n,
-		    List.fold_right (fun (c,p) rst -> Sum (Product (Rational_lt c, Square
-		     (term_of_poly p)), rst))
-		     polys (Rational_lt (Int 0))) in
+                    List.fold_right (fun (c,p) rst -> Sum (Product (Rational_lt c, Square
+                     (term_of_poly p)), rst))
+                     polys (Rational_lt (Int 0))) in
   let proof = Sum(Axiom_lt i, pos) in
 (*  let s,proof' = scale_certificate proof in
   let cert  = snd (cert_of_pos proof') in *)

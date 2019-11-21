@@ -58,7 +58,7 @@ val new_pure_evar :
 
 val new_pure_evar_full : evar_map -> ?typeclass_candidate:bool -> evar_info -> evar_map * Evar.t
 
-(** Create a new Type existential variable, as we keep track of 
+(** Create a new Type existential variable, as we keep track of
     them during type-checking and unification. *)
 val new_type_evar :
   ?src:Evar_kinds.t Loc.located -> ?filter:Filter.t ->

@@ -163,7 +163,7 @@ let is_flexible_reference env sigma bound depth f =
     | Rel n -> (* since local definitions have been expanded *) false
     | Const (kn,_) ->
         let cb = Environ.lookup_constant kn env in
-	(match cb.const_body with Def _ -> true | _ -> false)
+        (match cb.const_body with Def _ -> true | _ -> false)
     | Var id ->
         env |> Environ.lookup_named id |> NamedDecl.is_local_def
     | Ind _ | Construct _ -> false
@@ -183,19 +183,19 @@ let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc 
     let c = if strongly_strict then hd else c in
     match kind sigma hd with
     | Rel n when (n < bound+depth) && (n >= depth) ->
-	let i = bound + depth - n - 1 in
+        let i = bound + depth - n - 1 in
         acc.(i) <- update pos rig acc.(i)
     | App (f,l) when revpat && is_reversible_pattern sigma bound depth f l ->
         let i = bound + depth - EConstr.destRel sigma f - 1 in
-	acc.(i) <- update pos rig acc.(i)
+        acc.(i) <- update pos rig acc.(i)
     | App (f,_) when rig && is_flexible_reference env sigma bound depth f ->
-	if strict then () else
+        if strict then () else
           iter_with_full_binders sigma push_lift (frec false) ed c
     | Proj (p, _) when rig ->
       if strict then () else
         iter_with_full_binders sigma push_lift (frec false) ed c
     | Case _ when rig ->
-	if strict then () else
+        if strict then () else
           iter_with_full_binders sigma push_lift (frec false) ed c
     | Evar _ -> ()
     | _ ->
@@ -611,9 +611,9 @@ let check_inclusion l =
   (* Check strict inclusion *)
   let rec aux = function
     | n1::(n2::_ as nl) ->
-	if n1 <= n2 then
-	  user_err Pp.(str "Sequences of implicit arguments must be of different lengths.");
-	aux nl
+        if n1 <= n2 then
+          user_err Pp.(str "Sequences of implicit arguments must be of different lengths.");
+        aux nl
     | _ -> () in
   aux (List.map snd l)
 
@@ -621,7 +621,7 @@ let check_rigidity isrigid =
   if not isrigid then
     user_err  (strbrk "Multiple sequences of implicit arguments available only for references that cannot be applied to an arbitrarily large number of arguments.")
 
-let projection_implicits env p impls = 
+let projection_implicits env p impls =
   let npars = Projection.npars p in
   CList.skipn_at_least npars impls
 

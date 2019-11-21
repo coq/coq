@@ -54,10 +54,10 @@ module Env = struct
   type t = (int ConstrHashtbl.t * int ref)
 
   let add (tbl, off) (t : Constr.t) =
-    try ConstrHashtbl.find tbl t 
+    try ConstrHashtbl.find tbl t
     with
-    | Not_found -> 
-      let i = !off in 
+    | Not_found ->
+      let i = !off in
       let () = ConstrHashtbl.add tbl t i in
       let () = incr off in
       i
@@ -159,7 +159,7 @@ module Btauto = struct
   | Bool.Xorb (b1, b2) -> lapp f_xor [|convert b1; convert b2|]
   | Bool.Ifb (b1, b2, b3) -> lapp f_ifb [|convert b1; convert b2; convert b3|]
 
-  let convert_env env : Constr.t = 
+  let convert_env env : Constr.t =
     CoqList.of_list (Lazy.force Bool.typ) env
 
   let reify env t = lapp eval [|convert_env env; convert t|]

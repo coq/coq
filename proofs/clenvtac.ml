@@ -35,15 +35,15 @@ let clenv_cast_meta clenv =
   and crec_hd u =
     match EConstr.kind clenv.evd (strip_outer_cast clenv.evd u) with
       | Meta mv ->
-	  (try
+          (try
             let b = Typing.meta_type clenv.evd mv in
-	    assert (not (occur_meta clenv.evd b));
-	    if occur_meta clenv.evd b then u
+            assert (not (occur_meta clenv.evd b));
+            if occur_meta clenv.evd b then u
             else mkCast (mkMeta mv, DEFAULTcast, b)
-	  with Not_found -> u)
+          with Not_found -> u)
       | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
       | Case(ci,p,c,br) ->
-	  mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)
+          mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)
       | Proj (p, c) -> mkProj (p, crec_hd c)
       | _ -> u
   in
@@ -130,6 +130,6 @@ let unify ?(flags=fail_quick_unif_flags) m =
     let evd = clear_metas (Tacmach.New.project gl) in
     try
       let evd' = w_unify env evd CONV ~flags m n in
-	Proofview.Unsafe.tclEVARSADVANCE evd'
+        Proofview.Unsafe.tclEVARSADVANCE evd'
     with e when CErrors.noncritical e -> Proofview.tclZERO e
   end

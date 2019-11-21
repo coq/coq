@@ -97,7 +97,7 @@ let matrix_transpose mat =
 let identity x = x
 
 (** Left-to-right function composition:
-    
+
     [f1 %> f2] is [fun x -> f2 (f1 x)].
 
     [f1 %> f2 %> f3] is [fun x -> f3 (f2 (f1 x))].

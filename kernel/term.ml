@@ -380,7 +380,7 @@ let kind_of_type t = match kind t with
   | Prod (na,t,c) -> ProdType (na, t, c)
   | LetIn (na,b,t,c) -> LetInType (na, b, t, c)
   | App (c,l) -> AtomicType (c, l)
-  | (Rel _ | Meta _ | Var _ | Evar _ | Const _ 
+  | (Rel _ | Meta _ | Var _ | Evar _ | Const _
   | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
     -> AtomicType (t,[||])
   | (Lambda _ | Construct _ | Int _ | Float _) -> failwith "Not a type"

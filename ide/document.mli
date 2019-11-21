@@ -11,7 +11,7 @@
 (* An 'a document is a structure to hold and manipulate list of sentences.
    Sentences are equipped with an id = Stateid.t and can carry arbitrary
    data ('a).
-   
+
    When added (push) to the document, a sentence has no id, it has
    be manually assigned just afterward or the sentence has to be removed
    (pop) before any other sentence can be pushed.
@@ -21,7 +21,7 @@
    sentence in question, and it is simpler if the sentence is in the document.
    Only the functions pop, find, fold_all and find_map can be called on a
    document with a tip that has no id (and assign_tip_id of course).
-   
+
    The document can be focused (non recursively) to a zone.  After that
    some functions operate on the focused zone only.  When unfocused the
    context (the part of the document out of focus) is restored.

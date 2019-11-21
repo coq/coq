@@ -74,7 +74,7 @@ let classify_vernac e =
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
     | VernacCheckMayEval _ -> VtQuery
     (* ProofStep *)
-    | VernacProof _ 
+    | VernacProof _
     | VernacFocus _ | VernacUnfocus
     | VernacSubproof _
     | VernacCheckGuard
@@ -83,7 +83,7 @@ let classify_vernac e =
         VtProofStep { parallel = `No; proof_block_detection = None }
     | VernacBullet _ ->
         VtProofStep { parallel = `No; proof_block_detection = Some "bullet" }
-    | VernacEndSubproof -> 
+    | VernacEndSubproof ->
         VtProofStep { parallel = `No;
                       proof_block_detection = Some "curly" }
     (* StartProof *)
@@ -146,7 +146,7 @@ let classify_vernac e =
     | VernacUniverse _ | VernacConstraint _
     | VernacCanonical _ | VernacCoercion _ | VernacIdentityCoercion _
     | VernacAddLoadPath _ | VernacRemoveLoadPath _ | VernacAddMLPath _
-    | VernacChdir _ 
+    | VernacChdir _
     | VernacCreateHintDb _ | VernacRemoveHints _ | VernacHints _
     | VernacArguments _
     | VernacReserve _

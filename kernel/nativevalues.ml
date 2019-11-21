@@ -17,11 +17,11 @@ open Constr
 the native compiler *)
 
 type t = t -> t
-    
+
 type accumulator (* = t (* a block [0:code;atom;arguments] *) *)
 
 type tag = int
- 
+
 type arity = int
 
 type reloc_table = (tag * arity) array
@@ -50,7 +50,7 @@ type rec_pos = int array
 
 let eq_rec_pos = Array.equal Int.equal
 
-type atom = 
+type atom =
   | Arel of int
   | Aconstant of pconstant
   | Aind of pinductive
@@ -109,13 +109,13 @@ let mk_accu (a : atom) : t =
 let get_accu (k : accumulator) =
   (Obj.magic k : Obj.t -> accu_val) ret_accu
 
-let mk_rel_accu i = 
+let mk_rel_accu i =
   mk_accu (Arel i)
 
-let rel_tbl_size = 100 
+let rel_tbl_size = 100
 let rel_tbl = Array.init rel_tbl_size mk_rel_accu
 
-let mk_rel_accu i = 
+let mk_rel_accu i =
   if i < rel_tbl_size then rel_tbl.(i)
   else mk_rel_accu i
 
@@ -125,10 +125,10 @@ let mk_rels_accu lvl len =
 let napply (f:t) (args: t array) =
   Array.fold_left (fun f a -> f a) f args
 
-let mk_constant_accu kn u = 
+let mk_constant_accu kn u =
   mk_accu (Aconstant (kn,Univ.Instance.of_array u))
 
-let mk_ind_accu ind u = 
+let mk_ind_accu ind u =
   mk_accu (Aind (ind,Univ.Instance.of_array u))
 
 let mk_sort_accu s u =
@@ -140,10 +140,10 @@ let mk_sort_accu s u =
      let s = Sorts.sort_of_univ (Univ.subst_instance_universe u s) in
      mk_accu (Asort s)
 
-let mk_var_accu id = 
+let mk_var_accu id =
   mk_accu (Avar id)
 
-let mk_sw_accu annot c p ac = 
+let mk_sw_accu annot c p ac =
   mk_accu (Acase(annot,c,p,ac))
 
 let mk_prod_accu s dom codom =
@@ -155,7 +155,7 @@ let mk_meta_accu mv ty =
 let mk_evar_accu ev args =
   mk_accu (Aevar (ev, args))
 
-let mk_proj_accu kn c = 
+let mk_proj_accu kn c =
   mk_accu (Aproj (kn,c))
 
 let atom_of_accu (k:accumulator) =
@@ -183,8 +183,8 @@ let upd_cofix (cofix :t) (cofix_fun : t) =
   | Acofix (typ,norm,pos,_) ->
       set_atom_of_accu (Obj.magic cofix) (Acofix(typ,norm,pos,cofix_fun))
   | _ -> assert false
-  
-let force_cofix (cofix : t) = 
+
+let force_cofix (cofix : t) =
   let accu = (Obj.magic cofix : accumulator) in
   let atom = atom_of_accu accu in
   match atom with
@@ -235,7 +235,7 @@ let block_size (b:block) =
 
 let block_field (b:block) i = (Obj.magic (Obj.field (Obj.magic b) i) : t)
 
-let block_tag (b:block) = 
+let block_tag (b:block) =
   Obj.tag (Obj.magic b)
 
 type kind_of_value =
@@ -258,7 +258,7 @@ let kind_of_value (v:t) =
     else if Int.equal tag Obj.double_tag then Vfloat64 (Obj.magic v)
     else if (tag < Obj.lazy_tag) then Vblock (Obj.magic v)
       else
-        (* assert (tag = Obj.closure_tag || tag = Obj.infix_tag); 
+        (* assert (tag = Obj.closure_tag || tag = Obj.infix_tag);
            or ??? what is 1002*)
         Vfun v
 
@@ -296,7 +296,7 @@ let no_check_add  x y =
 [@@ocaml.inline always]
 
 let add accu x y =
-  if is_int x && is_int y then no_check_add x y 
+  if is_int x && is_int y then no_check_add x y
   else accu x y
 
 let no_check_sub x y =
@@ -320,7 +320,7 @@ let no_check_div x y =
 [@@ocaml.inline always]
 
 let div accu x y =
-  if is_int x && is_int y then no_check_div x y 
+  if is_int x && is_int y then no_check_div x y
   else accu x y
 
 let no_check_rem x y =
@@ -372,12 +372,12 @@ let l_or accu x y =
   else accu x y
 
 [@@@ocaml.warning "-37"]
-type coq_carry = 
+type coq_carry =
   | Caccu of t
   | C0 of t
   | C1 of t
 
-type coq_pair = 
+type coq_pair =
   | Paccu of t
   | PPair of t * t
 
@@ -404,7 +404,7 @@ let subc accu x y =
   else accu x y
 
 let no_check_addCarryC x y =
-  let s = 
+  let s =
     Uint63.add (Uint63.add (to_uint x) (to_uint y))
       (Uint63.of_int 1) in
   mkCarry (Uint63.le s (to_uint x)) s
@@ -412,10 +412,10 @@ let no_check_addCarryC x y =
 
 let addCarryC accu x y =
   if is_int x && is_int y then no_check_addCarryC x y
-  else accu x y 
+  else accu x y
 
 let no_check_subCarryC x y =
-  let s = 
+  let s =
     Uint63.sub (Uint63.sub (to_uint x) (to_uint y))
       (Uint63.of_int 1) in
   mkCarry (Uint63.le (to_uint x) (to_uint y)) s
@@ -423,7 +423,7 @@ let no_check_subCarryC x y =
 
 let subCarryC accu x y =
   if is_int x && is_int y then no_check_subCarryC x y
-  else accu x y 
+  else accu x y
 
 let of_pair (x, y) =
   (Obj.magic (PPair(mk_uint x, mk_uint y)):t)
@@ -472,7 +472,7 @@ type coq_bool =
 
 type coq_cmp =
   | CmpAccu of t
-  | CmpEq 
+  | CmpEq
   | CmpLt
   | CmpGt
 

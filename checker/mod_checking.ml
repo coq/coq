@@ -163,6 +163,6 @@ and check_signature env sign mp_mse res = match sign with
       MoreFunctor(arg_id,mtb,body)
   | NoFunctor struc ->
       let (_:env) = List.fold_left (fun env (lab,mb) ->
-	check_structure_field env mp_mse lab res mb) env struc
+        check_structure_field env mp_mse lab res mb) env struc
       in
       NoFunctor struc

@@ -66,8 +66,8 @@ and general_decompose_aux recognizer id =
   elimHypThen
     (introElimAssumsThen
        (fun bas ->
-	  tclTHEN (clear [id])
-	    (tclMAP (general_decompose_on_hyp recognizer)
+          tclTHEN (clear [id])
+            (tclMAP (general_decompose_on_hyp recognizer)
                (ids_of_named_context bas.Tacticals.assums))))
     id
 
@@ -88,7 +88,7 @@ let general_decompose recognizer c =
     [ tclTHEN (intro_using tmphyp_name)
          (onLastHypId
             (ifOnHyp (recognizer env sigma) (general_decompose_aux (recognizer env sigma))
-	      (fun id -> clear [id])));
+              (fun id -> clear [id])));
        exact_no_check c ]
   end
 
@@ -136,22 +136,22 @@ let induction_trailer abs_i abs_j bargs =
     (onLastHypId
        (fun id ->
           Proofview.Goal.enter begin fun gl ->
-	  let idty = pf_unsafe_type_of gl (mkVar id) in
-	  let fvty = global_vars (pf_env gl) (project gl) idty in
-	  let possible_bring_hyps =
-	    (List.tl (nLastDecls gl (abs_j - abs_i))) @ bargs.Tacticals.assums
+          let idty = pf_unsafe_type_of gl (mkVar id) in
+          let fvty = global_vars (pf_env gl) (project gl) idty in
+          let possible_bring_hyps =
+            (List.tl (nLastDecls gl (abs_j - abs_i))) @ bargs.Tacticals.assums
           in
-	  let (hyps,_) =
+          let (hyps,_) =
             List.fold_left
-	      (fun (bring_ids,leave_ids) d ->
+              (fun (bring_ids,leave_ids) d ->
                  let cid = NamedDecl.get_id d in
                  if not (List.mem cid leave_ids)
                  then (d::bring_ids,leave_ids)
                  else (bring_ids,cid::leave_ids))
-	      ([],fvty) possible_bring_hyps
-	  in
+              ([],fvty) possible_bring_hyps
+          in
           let ids = List.rev (ids_of_named_context hyps) in
-	  (tclTHENLIST
+          (tclTHENLIST
             [revert ids; simple_elimination (mkVar id)])
           end
           ))
@@ -167,7 +167,7 @@ let double_ind h1 h2 =
   abs >>= fun (abs_i,abs_j) ->
   (tclTHEN (tclDO abs_i intro)
      (onLastHypId
-       	(fun id ->
+        (fun id ->
            elimination_then
              (introElimAssumsThen (induction_trailer abs_i abs_j)) (mkVar id))))
   end

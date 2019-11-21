@@ -43,7 +43,7 @@ val pf_get_hyp_typ        : Goal.goal sigma -> Id.t -> types
 val pf_get_new_id         : Id.t -> Goal.goal sigma -> Id.t
 
 val pf_apply : (env -> evar_map -> 'a) -> Goal.goal sigma -> 'a
-val pf_eapply : (env -> evar_map -> 'a -> evar_map * 'b) -> 
+val pf_eapply : (env -> evar_map -> 'a -> evar_map * 'b) ->
   Goal.goal sigma -> 'a -> Goal.goal sigma * 'b
 val pf_reduce :
   (env -> evar_map -> constr -> constr) ->

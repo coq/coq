@@ -39,7 +39,7 @@ module SearchBlacklist =
       let key = ["Search";"Blacklist"]
       let title = "Current search blacklist : "
       let member_message s b =
-	str "Search blacklist does " ++ (if b then mt () else str "not ") ++ str "include " ++ str s
+        str "Search blacklist does " ++ (if b then mt () else str "not ") ++ str "include " ++ str s
      end)
 
 (* The functions iter_constructors and iter_declarations implement the behavior
@@ -330,7 +330,7 @@ let interface_search ?pstate =
     in
     let match_subtype (pat, flag) =
       toggle
-        (Constr_matching.is_matching_appsubterm ~closed:false 
+        (Constr_matching.is_matching_appsubterm ~closed:false
            env (Evd.from_env env) pat (EConstr.of_constr constr)) flag
     in
     let match_module (mdl, flag) =

@@ -134,7 +134,7 @@ let merge_profile filename (curr_table, curr_outside, curr_total as new_data) =
   begin
     (try
        let c =
-	 open_out_gen
+         open_out_gen
            [Open_creat;Open_wronly;Open_trunc;Open_binary] 0o644 filename in
        output_binary_int c magic;
        output_value c updated_data;
@@ -246,7 +246,7 @@ let time_overhead_A_D () =
       p.intcount <- p.intcount + e.intcount - intcount0 + 1;
       p.immcount <- p.immcount + 1;
       if not (p==e) then
-	(match !dummy_stack with [] -> assert false | _::s -> stack := s);
+        (match !dummy_stack with [] -> assert false | _::s -> stack := s);
       dummy_last_alloc := get_alloc ()
   done;
   let after = get_time () in
@@ -328,30 +328,30 @@ let close_profile print =
       let t = get_time () in
       match !stack with
       | [outside] ->
-	  outside.tottime <- outside.tottime + t;
-	  outside.owntime <- outside.owntime + t;
-	  ajoute_ownalloc outside dw;
-	  ajoute_totalloc outside dw;
-	  let ov_bc = time_overhead_B_C () (* B+C overhead *) in
-	  let ov_ad = time_overhead_A_D () (* A+D overhead *) in
-	  let adjust (n,e) = (n, adjust_time ov_bc ov_ad e) in
-	  let adjtable = List.map adjust !prof_table in
-	  let adjoutside = adjust_time ov_bc ov_ad outside in
-	  let totalloc = !last_alloc -. !init_alloc in
-	  let total = create_record () in
-	  total.tottime <- outside.tottime;
-	  total.totalloc <- totalloc;
-	  (* We compute estimations of overhead, put into "own" fields *)
-	  total.owntime <- outside.tottime - adjoutside.tottime;
-	  total.ownalloc <- totalloc -. outside.totalloc;
-	  let current_data = (adjtable, adjoutside, total) in
-	  let updated_data =
-	    match !recording_file with
-	      |	"" -> current_data
-	      | name -> merge_profile !recording_file current_data
-	  in
-	  if print then format_profile updated_data;
-	  init_profile ()
+          outside.tottime <- outside.tottime + t;
+          outside.owntime <- outside.owntime + t;
+          ajoute_ownalloc outside dw;
+          ajoute_totalloc outside dw;
+          let ov_bc = time_overhead_B_C () (* B+C overhead *) in
+          let ov_ad = time_overhead_A_D () (* A+D overhead *) in
+          let adjust (n,e) = (n, adjust_time ov_bc ov_ad e) in
+          let adjtable = List.map adjust !prof_table in
+          let adjoutside = adjust_time ov_bc ov_ad outside in
+          let totalloc = !last_alloc -. !init_alloc in
+          let total = create_record () in
+          total.tottime <- outside.tottime;
+          total.totalloc <- totalloc;
+          (* We compute estimations of overhead, put into "own" fields *)
+          total.owntime <- outside.tottime - adjoutside.tottime;
+          total.ownalloc <- totalloc -. outside.totalloc;
+          let current_data = (adjtable, adjoutside, total) in
+          let updated_data =
+            match !recording_file with
+              |	"" -> current_data
+              | name -> merge_profile !recording_file current_data
+          in
+          if print then format_profile updated_data;
+          init_profile ()
       | _ -> failwith "Inconsistency"
     end
 

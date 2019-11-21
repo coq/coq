@@ -46,7 +46,7 @@ val compile_cases :
   GlobEnv.t -> glob_constr option * tomatch_tuples * cases_clauses ->
   evar_map * unsafe_judgment
 
-val constr_of_pat : 
+val constr_of_pat :
            Environ.env ->
            Evd.evar_map ->
            rel_context ->

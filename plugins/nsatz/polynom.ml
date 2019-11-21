@@ -181,7 +181,7 @@ let norm p = match p with
      let d = (Array.length a -1) in
      let n = ref d in
        while !n>0 && (equal a.(!n) (Pint coef0)) do
-	 n:=!n-1;
+         n:=!n-1;
        done;
        if !n<0 then Pint coef0
        else if Int.equal !n 0 then a.(0)
@@ -222,7 +222,7 @@ let coef v i p =
 let rec plusP p q =
   let res =
     (match (p,q) with
-	 (Pint a,Pint b) -> Pint (C.plus a b)
+         (Pint a,Pint b) -> Pint (C.plus a b)
        |(Pint a, Prec (y,q1)) -> let q2=Array.map copyP q1 in
            q2.(0)<- plusP p q1.(0);
            Prec (y,q2)
@@ -317,7 +317,7 @@ let deriv v p =
          else
            (let p2 = Array.make d (Pint coef0) in
               for i=0 to d-1 do
-		p2.(i)<- multP (Pint (coef_of_int (i+1))) p1.(i+1);
+                p2.(i)<- multP (Pint (coef_of_int (i+1))) p1.(i+1);
               done;
               Prec (x,p2))
     | Prec(x,p1)-> Pint coef0
@@ -416,37 +416,37 @@ let rec string_of_Pcut p =
     for i=(Array.length t)-1 downto 1 do
       if (!nsP)<0
       then (sp:="...";
-	    if not (!fin) then s:=(!s)^"+"^(!sp);
-	    fin:=true)
+            if not (!fin) then s:=(!s)^"+"^(!sp);
+            fin:=true)
       else (
-	let si=string_of_Pcut  t.(i) in
-	sp:="";
-	if Int.equal i 1
-	then (
-	  if not (String.equal si "0")
-	  then (nsP:=(!nsP)-1;
-		if String.equal si "1"
-		then sp:=v
-		else
-		  (if (String.contains si '+')
-		  then sp:="("^si^")*"^v
-		  else sp:=si^"*"^v)))
-	else (
-	  if not (String.equal si "0")
-	  then (nsP:=(!nsP)-1;
-		if String.equal si "1"
-		then sp:=v^"^"^(string_of_int i)
-		else (if (String.contains si '+')
-		then sp:="("^si^")*"^v^"^"^(string_of_int i)
-		else  sp:=si^"*"^v^"^"^(string_of_int i))));
-	if not (String.is_empty !sp) && not (!fin)
-	then (nsP:=(!nsP)-1;
-	      if String.is_empty !s
-	      then s:=!sp
-	      else s:=(!s)^"+"^(!sp)));
+        let si=string_of_Pcut  t.(i) in
+        sp:="";
+        if Int.equal i 1
+        then (
+          if not (String.equal si "0")
+          then (nsP:=(!nsP)-1;
+                if String.equal si "1"
+                then sp:=v
+                else
+                  (if (String.contains si '+')
+                  then sp:="("^si^")*"^v
+                  else sp:=si^"*"^v)))
+        else (
+          if not (String.equal si "0")
+          then (nsP:=(!nsP)-1;
+                if String.equal si "1"
+                then sp:=v^"^"^(string_of_int i)
+                else (if (String.contains si '+')
+                then sp:="("^si^")*"^v^"^"^(string_of_int i)
+                else  sp:=si^"*"^v^"^"^(string_of_int i))));
+        if not (String.is_empty !sp) && not (!fin)
+        then (nsP:=(!nsP)-1;
+              if String.is_empty !s
+              then s:=!sp
+              else s:=(!s)^"+"^(!sp)));
     done;
     if String.is_empty !s then (nsP:=(!nsP)-1;
-		   (s:="0"));
+                   (s:="0"));
     !s
 
 let to_string p =
@@ -471,10 +471,10 @@ let rec quo_rem_pol p q x =
   if Int.equal x 0
   then (match (p,q) with
           |(Pint a, Pint b) ->
-	     if C.equal (C.modulo a b) coef0
+             if C.equal (C.modulo a b) coef0
              then (Pint (C.div a b), cf0)
              else failwith "div_pol1"
-	  |_ -> assert false)
+          |_ -> assert false)
   else
     let m = deg x q in
     let b = coefDom x q in
@@ -483,14 +483,14 @@ let rec quo_rem_pol p q x =
     let s = ref cf0 in
     let continue =ref true in
       while (!continue) && (not (equal !r cf0)) do
-	let n = deg x !r in
-	  if n<m
-	  then continue:=false
-	  else (
+        let n = deg x !r in
+          if n<m
+          then continue:=false
+          else (
             let a = coefDom x !r in
             let p1 = remP x !r in  (* r = a*x^n+p1 *)
             let c = div_pol a b (x-1) in  (* a = c*b *)
-	    let s1 = c @@ ((monome x (n-m))) in
+            let s1 = c @@ ((monome x (n-m))) in
               s:= plusP (!s) s1;
               r:= p1 -- (s1 @@ q1);
           )
@@ -503,11 +503,11 @@ and div_pol p q x =
     if equal r cf0
     then s
     else  failwith ("div_pol:\n"
-		   ^"p:"^(to_string p)^"\n"
-		   ^"q:"^(to_string q)^"\n"
-		   ^"r:"^(to_string r)^"\n"
-		   ^"x:"^(string_of_int x)^"\n"
-		   )
+                   ^"p:"^(to_string p)^"\n"
+                   ^"q:"^(to_string q)^"\n"
+                   ^"r:"^(to_string r)^"\n"
+                   ^"x:"^(string_of_int x)^"\n"
+                   )
 let divP p q=
   let x = max (max_var_pol p) (max_var_pol q) in
   div_pol p q x
@@ -534,29 +534,29 @@ let pseudo_div p q x =
       Pint _ -> (cf0, q,1, p)
     | Prec (v,q1) when not (Int.equal x v) -> (cf0, q,1, p)
     | Prec (v,q1) ->
-	(
-	  (*  pr "pseudo_division: c^d*p = s*q + r";*)
-	  let delta = ref 0 in
-	  let r = ref p in
-	  let c = coefDom x q in
-	  let q1 = remP x q in
-	  let d' = deg x q in
-	  let s = ref cf0 in
-	    while (deg x !r)>=(deg x q) do
-	      let d = deg x !r in
-	      let a = coefDom x !r in
-	      let r1=remP x !r in
-	      let u = a @@ ((monome x (d-d'))) in
-		r:=(c @@ r1) -- (u @@ q1);
-		s:=plusP (c @@ (!s)) u;
-		delta := (!delta) + 1;
-	    done;
-	    (*
-	      pr ("deg d: "^(string_of_int (!delta))^", deg c: "^(string_of_int (deg_total c)));
-	      pr ("deg r:"^(string_of_int (deg_total !r)));
-	    *)
-	    (!r,c,!delta, !s)
-	)
+        (
+          (*  pr "pseudo_division: c^d*p = s*q + r";*)
+          let delta = ref 0 in
+          let r = ref p in
+          let c = coefDom x q in
+          let q1 = remP x q in
+          let d' = deg x q in
+          let s = ref cf0 in
+            while (deg x !r)>=(deg x q) do
+              let d = deg x !r in
+              let a = coefDom x !r in
+              let r1=remP x !r in
+              let u = a @@ ((monome x (d-d'))) in
+                r:=(c @@ r1) -- (u @@ q1);
+                s:=plusP (c @@ (!s)) u;
+                delta := (!delta) + 1;
+            done;
+            (*
+              pr ("deg d: "^(string_of_int (!delta))^", deg c: "^(string_of_int (deg_total c)));
+              pr ("deg r:"^(string_of_int (deg_total !r)));
+            *)
+            (!r,c,!delta, !s)
+        )
 
 (* gcd with subresultants *)
 
@@ -581,28 +581,28 @@ and pgcd_coef_pol c p x =
 
 and pgcd_pol_rec p q x =
  match (p,q) with
-	(Pint a,Pint b) -> Pint (C.pgcd (C.abs a) (C.abs b))
+        (Pint a,Pint b) -> Pint (C.pgcd (C.abs a) (C.abs b))
       |_ ->
-	  if equal p cf0
-	  then q
-	  else if equal q cf0
-	  then p
-	  else if Int.equal (deg x q) 0
-	  then pgcd_coef_pol q p x
-	  else if Int.equal (deg x p) 0
-	  then pgcd_coef_pol p q x
-	  else (
-	    let a = content_pol p x in
-	    let b = content_pol q x in
-	    let c = pgcd_pol_rec a b (x-1) in
-	    pr (string_of_int x);
-	    let p1 = div_pol p c x in
-	    let q1 = div_pol q c x in
-	    let r = gcd_sub_res p1 q1 x in
-	    let cr = content_pol r x in
-	    let res = c @@ (div_pol r cr x) in
-	    res
-	   )
+          if equal p cf0
+          then q
+          else if equal q cf0
+          then p
+          else if Int.equal (deg x q) 0
+          then pgcd_coef_pol q p x
+          else if Int.equal (deg x p) 0
+          then pgcd_coef_pol p q x
+          else (
+            let a = content_pol p x in
+            let b = content_pol q x in
+            let c = pgcd_pol_rec a b (x-1) in
+            pr (string_of_int x);
+            let p1 = div_pol p c x in
+            let q1 = div_pol q c x in
+            let r = gcd_sub_res p1 q1 x in
+            let cr = content_pol r x in
+            let res = c @@ (div_pol r cr x) in
+            res
+           )
 
 (* Sub-résultants:
 
@@ -630,10 +630,10 @@ and gcd_sub_res p q x =
       if d<d'
       then gcd_sub_res q p x
       else
-	let delta = d-d' in
-	let c' = coefDom x q in
-	let r = snd (quo_rem_pol (((oppP c')^^(delta+1))@@p) (oppP q) x) in
-	  gcd_sub_res_rec q r (c'^^delta) c' d' x
+        let delta = d-d' in
+        let c' = coefDom x q in
+        let r = snd (quo_rem_pol (((oppP c')^^(delta+1))@@p) (oppP q) x) in
+          gcd_sub_res_rec q r (c'^^delta) c' d' x
 
 and gcd_sub_res_rec p q s c d x =
   if equal q cf0

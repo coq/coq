@@ -60,12 +60,12 @@ let lpar_id_coloneq =
       match stream_nth 0 strm with
         | KEYWORD "(" ->
             (match stream_nth 1 strm with
-	      | IDENT s ->
+              | IDENT s ->
                   (match stream_nth 2 strm with
                     | KEYWORD ":=" ->
                         stream_njunk 3 strm;
                         Names.Id.of_string s
-	            | _ -> err ())
+                    | _ -> err ())
               | _ -> err ())
         | _ -> err ())
 
@@ -73,23 +73,23 @@ let ensure_fixannot =
   Pcoq.Entry.of_parser "check_fixannot"
     (fun _ strm ->
       match stream_nth 0 strm with
-	| KEYWORD "{" ->
-	    (match stream_nth 1 strm with
+        | KEYWORD "{" ->
+            (match stream_nth 1 strm with
               | IDENT ("wf"|"struct"|"measure") -> ()
-	      | _ -> err ())
-	| _ -> err ())
+              | _ -> err ())
+        | _ -> err ())
 
 let name_colon =
   Pcoq.Entry.of_parser "name_colon"
     (fun _ strm ->
       match stream_nth 0 strm with
-	| IDENT s ->
+        | IDENT s ->
             (match stream_nth 1 strm with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
                   Name (Names.Id.of_string s)
               | _ -> err ())
-	| KEYWORD "_" ->
+        | KEYWORD "_" ->
           (match stream_nth 1 strm with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
@@ -186,7 +186,7 @@ GRAMMAR EXTEND Gram
     | "8" [ ]
     | "1" LEFTA
       [ c = operconstr; ".("; f = global; args = LIST0 appl_arg; ")" ->
-	{ CAst.make ~loc @@ CApp((Some (List.length args+1), CAst.make @@ CRef (f,None)),args@[c,None]) }
+        { CAst.make ~loc @@ CApp((Some (List.length args+1), CAst.make @@ CRef (f,None)),args@[c,None]) }
       | c = operconstr; ".("; "@"; f = global;
         args = LIST0 (operconstr LEVEL "9"); ")" ->
         { CAst.make ~loc @@ CAppExpl((Some (List.length args+1),f,None),args@[c]) }
@@ -453,7 +453,7 @@ GRAMMAR EXTEND Gram
   typeclass_constraint:
     [ [ "!" ; c = operconstr LEVEL "200" -> { (CAst.make ~loc Anonymous), true, c }
       | "{"; id = name; "}"; ":" ; expl = [ "!" -> { true } | -> { false } ] ; c = operconstr LEVEL "200" ->
-	  { id, expl, c }
+          { id, expl, c }
       | iid = name_colon ; expl = [ "!" -> { true } | -> { false } ] ; c = operconstr LEVEL "200" ->
           { (CAst.make ~loc iid), expl, c }
       | c = operconstr LEVEL "200" ->

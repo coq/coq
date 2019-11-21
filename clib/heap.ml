@@ -129,8 +129,8 @@ module Functional(X : Ordered) = struct
 
   let rec fold f h x0 = match h with
     | Leaf ->
-	x0
+        x0
     | Node (l, x, r) ->
-	fold f l (fold f r (f x x0))
+        fold f l (fold f r (f x x0))
 
 end

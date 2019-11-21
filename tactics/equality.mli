@@ -57,7 +57,7 @@ val general_rewrite_bindings_in :
   ?tac:(unit Proofview.tactic * conditions) ->
   Id.t -> constr with_bindings -> evars_flag -> unit Proofview.tactic
 val general_rewrite_in          :
-  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag -> 
+  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
   ?tac:(unit Proofview.tactic * conditions) -> Id.t -> constr -> evars_flag -> unit Proofview.tactic
 
 val general_rewrite_clause :

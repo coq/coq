@@ -100,7 +100,7 @@ val error_global_not_found : qualid -> 'a
    object is loaded inside a module -- or
    - for a precise suffix, when the module containing (the module
    containing ...) the object is opened (imported)
-   
+
 *)
 
 type visibility = Until of int | Exactly of int
