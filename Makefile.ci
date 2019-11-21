@@ -41,6 +41,7 @@ CI_TARGETS= \
     ci-sf \
     ci-simple-io \
     ci-stdlib2 \
+    ci-tlc \
     ci-unimath \
     ci-verdi-raft \
     ci-vst
