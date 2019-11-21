@@ -442,97 +442,31 @@ let merge_auto_manual_implicits silent flags autoimps l =
   merge 1 (autoimps,l)
 
 (* Declare manual implicits *)
+
 type manual_implicits = (Name.t * bool) option CAst.t list
 
 let compute_implicits_with_manual env sigma typ impls =
   let autoimpls = compute_implicits_flags env sigma !implicit_args typ in
   merge_auto_manual_implicits true !implicit_args autoimpls impls
 
-let compute_semi_auto_implicits env sigma f t =
-  [DefaultImpArgs, compute_implicits_flags env sigma f t]
+(* Implicit arguments of a global reference. *)
 
-(*s Constants. *)
-
-let compute_constant_implicits flags cst =
+let compute_global_implicits flags ref =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let cb = Environ.lookup_constant cst env in
-  let ty = of_constr cb.const_type in
-  compute_semi_auto_implicits env sigma flags ty
+  let t, _ = Typeops.type_of_global_in_context env ref in
+  compute_implicits_flags env sigma flags (of_constr t)
 
-(*s Inductives and constructors. Their implicit arguments are stored
-   in an array, indexed by the inductive number, of pairs $(i,v)$ where
-   $i$ are the implicit arguments of the inductive and $v$ the array of
-   implicit arguments of the constructors. *)
+(* Override auto implicit where a manual implicit position is given *)
 
-let compute_mib_implicits flags mind =
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
-  let mib = Environ.lookup_mind mind env in
-  let ar =
-    Array.to_list
-      (Array.mapi  (* No need to lift, arities contain no de Bruijn *)
-        (fun i mip ->
-          (* No need to care about constraints here *)
-          let ty, _ = Typeops.type_of_global_in_context env (GlobRef.IndRef (mind,i)) in
-          let r = Inductive.relevance_of_inductive env (mind,i) in
-          Context.Rel.Declaration.LocalAssum (Context.make_annot (Name mip.mind_typename) r, ty))
-        mib.mind_packets) in
-  let env_ar = Environ.push_rel_context ar env in
-  let imps_one_inductive i mip =
-    let ind = (mind,i) in
-    let ar, _ = Typeops.type_of_global_in_context env (GlobRef.IndRef ind) in
-    ((GlobRef.IndRef ind,compute_semi_auto_implicits env sigma flags (of_constr ar)),
-     Array.mapi (fun j (ctx, cty) ->
-      let c = of_constr (Term.it_mkProd_or_LetIn cty ctx) in
-       (GlobRef.ConstructRef (ind,j+1),compute_semi_auto_implicits env_ar sigma flags c))
-       mip.mind_nf_lc)
-  in
-  Array.mapi imps_one_inductive mib.mind_packets
-
-let compute_all_mib_implicits flags mind =
-  let imps = compute_mib_implicits flags mind in
-  List.flatten
-    (Array.map_to_list (fun (ind,cstrs) -> ind :: Array.to_list cstrs) imps)
-
-(*s Variables. *)
-
-let compute_var_implicits flags id =
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
-  compute_semi_auto_implicits env sigma flags (NamedDecl.get_type (lookup_named id env))
-
-(* Implicits of a global reference. *)
-
-let compute_global_implicits flags = let open GlobRef in function
-  | VarRef id -> compute_var_implicits flags id
-  | ConstRef cst -> compute_constant_implicits flags cst
-  | IndRef (mind,i) ->
-      let ((_,imps),_) = (compute_mib_implicits flags mind).(i) in imps
-  | ConstructRef ((mind,i),j) ->
-      let (_,cimps) = (compute_mib_implicits flags mind).(i) in snd cimps.(j-1)
-
-(* Merge a manual implicit position with an implicit_status list *)
-
-let merge_impls (cond,oldimpls) (_,newimpls) =
-  let oldimpls,usersuffiximpls = List.chop (List.length newimpls) oldimpls in
-  cond, (List.map2 (fun orig ni ->
-    match orig, ni with
-    | (_, (Some (Manual, _, _) as imp)), (pos, _) -> (pos,imp)
-    | _ -> ni) oldimpls newimpls)@usersuffiximpls
+let merge_impls nsecvars newimpls (cond,oldimpls) =
+  let oldimpls,usersuffiximpls = List.chop nsecvars oldimpls in
+  cond, (List.map2 (fun (pos,_ as ni) (_,imp) ->
+    match imp with
+    | Some (Manual, _, _) -> (pos,imp)
+    | _ -> ni) newimpls oldimpls)@usersuffiximpls
 
 (* Caching implicits *)
-
-type implicit_interactive_request =
-  | ImplAuto
-  | ImplManual of int
-
-type implicit_discharge_request =
-  | ImplLocal
-  | ImplConstant of Constant.t * implicits_flags
-  | ImplMutualInductive of MutInd.t * implicits_flags
-  | ImplInteractive of implicits_flags *
-      implicit_interactive_request
 
 let implicits_table = Summary.ref GlobRef.Map.empty ~name:"implicits"
 
@@ -552,7 +486,7 @@ let implicits_of_global ref =
     with Not_found -> l
   with Not_found -> [DefaultImpArgs,[]]
 
-let cache_implicits_decl (ref,imps) =
+let cache_implicits_decl (ref,_,_,imps) =
   implicits_table := GlobRef.Map.add ref imps !implicits_table
 
 let load_implicits _ (_,(_,l)) = List.iter cache_implicits_decl l
@@ -560,11 +494,13 @@ let load_implicits _ (_,(_,l)) = List.iter cache_implicits_decl l
 let cache_implicits o =
   load_implicits 1 o
 
-let subst_implicits_decl subst (r,imps as o) =
-  let r' = fst (subst_global subst r) in if r==r' then o else (r',imps)
+let subst_implicits_decl subst (r,local,n,imps as o) =
+  let r' = fst (subst_global subst r) in
+  (* We force local if in a module ??? *)
+  if r==r' && local then o else (r',true,n,imps)
 
-let subst_implicits (subst,(req,l)) =
-  (ImplLocal,List.Smart.map (subst_implicits_decl subst) l)
+let subst_implicits (subst,(flags,l)) =
+  (flags,List.Smart.map (subst_implicits_decl subst) l)
 
 (* This was moved out of lib.ml, however it is not stored with regular
    implicit data *)
@@ -594,58 +530,41 @@ let add_section_impls vars extra_impls (cond,impls) =
   let k = List.count (function ((_,_,r),_) -> r = NonDependent) extra_impls in
   adjust_side_condition p cond, extra_impls @ List.map (lift_implicits k) impls
 
-let discharge_implicits (_,(req,l)) =
-  match req with
-  | ImplLocal -> None
-  | ImplMutualInductive _ | ImplInteractive _ | ImplConstant _ ->
-     let l' =
-       try
-         List.map (fun (gr, l) ->
-             let vars = variable_section_segment_of_reference gr in
-             let extra_impls = impls_of_context vars in
-             let newimpls = List.map (add_section_impls vars extra_impls) l in
-             (gr, newimpls)) l
-       with Not_found -> l in
-     Some (req,l')
+let discharge_implicits (_,(flags,l)) =
+  let l' =
+    List.map_filter (fun (gr,local,userimplsize,oldimpls as o) ->
+        if local then None
+        else
+          try
+            let vars = variable_section_segment_of_reference gr in
+            let extra_impls = impls_of_context vars in
+            let newimpls = List.map (add_section_impls vars extra_impls) oldimpls in
+            Some (gr,false,userimplsize,newimpls)
+          with Not_found -> (* ref not defined in this section *) Some o) l in
+  if l' = [] then None else Some (flags,l')
 
-let rebuild_implicits (req,l) =
-  match req with
-  | ImplLocal -> assert false
-  | ImplConstant (cst,flags) ->
-      let ref,oldimpls = List.hd l in
-      let newimpls = compute_constant_implicits flags cst in
-      req, [ref, List.map2 merge_impls oldimpls newimpls]
-  | ImplMutualInductive (kn,flags) ->
-      let newimpls = compute_all_mib_implicits flags kn in
-      let rec aux olds news =
-       match olds, news with
-       | (_, oldimpls) :: old, (gr, newimpls) :: tl ->
-          (gr, List.map2 merge_impls oldimpls newimpls) :: aux old tl
-       | [], [] -> []
-       | _, _ -> assert false
-      in req, aux l newimpls
-  | ImplInteractive (flags,o) ->
-      let ref,oldimpls = List.hd l in
-      (if isVarRef ref && is_in_section ref then ImplLocal else req),
-      match o with
-      | ImplAuto ->
-         let newimpls = compute_global_implicits flags ref in
-         [ref,List.map2 merge_impls oldimpls newimpls]
-      | ImplManual userimplsize ->
-         if flags.auto then
-           let newimpls = List.hd (compute_global_implicits flags ref) in
-           let p = List.length (snd newimpls) - userimplsize in
-           let newimpls = on_snd (List.firstn p) newimpls in
-           [ref,List.map (fun o -> merge_impls o newimpls) oldimpls]
-         else
-           [ref,oldimpls]
+let rebuild_implicits (flags,l) =
+  let process_one (gr,_,userimplsize,oldimpls) =
+    let newlocal = isVarRef gr && is_in_section gr in
+    (* Compute the dependency signature *)
+    let newimpls = compute_global_implicits flags gr in
+    (* Keep manual for the suffix explicitly set manual using "Arguments";
+       use auto+manual for the prefix obtained by discharge *)
+    let nsecvars = List.length newimpls - userimplsize in
+    let newimpls = List.firstn nsecvars newimpls in
+    Some (gr,newlocal,userimplsize,List.map (merge_impls nsecvars newimpls) oldimpls) in
+  (flags,List.map_filter process_one l)
 
-let classify_implicits (req,_ as obj) = match req with
-  | ImplLocal -> Dispose
-  | _ -> Substitute obj
+let classify_implicits (flags,l as obj) =
+  if List.for_all (fun (_,local,_,_) -> local) l then Dispose
+  else
+    (* We expect the invariant that all components have the same
+       locality when outside a section *)
+    (assert (List.for_all (fun (_,local,_,_) -> not local) l);
+    Substitute obj)
 
 type implicits_obj =
-  implicit_discharge_request * (GlobRef.t * implicits_list list) list
+  implicits_flags * (GlobRef.t * bool * int * implicits_list list) list
 
 let inImplicits : implicits_obj -> obj =
   declare_object {(default_object "IMPLICITS") with
@@ -656,35 +575,55 @@ let inImplicits : implicits_obj -> obj =
     discharge_function = discharge_implicits;
     rebuild_function = rebuild_implicits }
 
-let under_full_implicit f (ref,auto_imps) x =
-  (ref, List.map (fun (d,auto_imps) -> (d,f auto_imps x)) auto_imps)
+let compute_global_implicits_with_manual flags local ref impls =
+  let env = Global.env () in
+  let sigma = Evd.from_env env in
+  let t, _ = Typeops.type_of_global_in_context env ref in
+  let autoimpls = compute_implicits_flags env sigma flags (of_constr t) in
+  let imps = Option.fold_left (merge_auto_manual_implicits false flags) autoimpls impls in
+  (ref,local,0,[DefaultImpArgs,imps])
+
+(*s Variables. *)
 
 let declare_var_implicits id ~impl ~impargs =
   let flags = !implicit_args in
   sec_implicits := Id.Map.add id impl !sec_implicits;
-  let auto_imps = (GlobRef.VarRef id, compute_var_implicits flags id) in
-  let imps = Option.fold_left (under_full_implicit (merge_auto_manual_implicits false flags)) auto_imps impargs in
-  add_anonymous_leaf (inImplicits (ImplLocal,[imps]))
+  let imps = compute_global_implicits_with_manual flags true (GlobRef.VarRef id) impargs in
+  add_anonymous_leaf (inImplicits (flags,[imps]))
+
+(*s Constants. *)
 
 let declare_constant_implicits cst ~impargs =
   let flags = !implicit_args in
-  let auto_imps = (GlobRef.ConstRef cst, compute_constant_implicits flags cst) in
-  let imps = Option.fold_left (under_full_implicit (merge_auto_manual_implicits false flags)) auto_imps impargs in
-  add_anonymous_leaf (inImplicits (ImplConstant (cst,flags),[imps]))
+  let imps = compute_global_implicits_with_manual flags false (GlobRef.ConstRef cst) impargs in
+  add_anonymous_leaf (inImplicits (flags,[imps]))
+
+(*s Inductives and constructors. Their implicit arguments are stored
+   in an array, indexed by the inductive number, of pairs $(i,v)$ where
+   $i$ are the implicit arguments of the inductive and $v$ the array of
+   implicit arguments of the constructors. *)
 
 type mib_manual_implicits = (manual_implicits * manual_implicits list) list
 
+let compute_inductive_refs mind =
+  let env = Global.env () in
+  let mib = Environ.lookup_mind mind env in
+  let imps_one_inductive i mip =
+    let ind = (mind,i) in
+    (GlobRef.IndRef ind,
+     Array.to_list (Array.mapi (fun j _ -> GlobRef.ConstructRef (ind,j+1)) mip.mind_nf_lc))
+  in
+  Array.to_list (Array.mapi imps_one_inductive mib.mind_packets)
+
 let declare_mib_implicits mind ~impargs =
   let flags = !implicit_args in
-  let auto_imps = Array.map_to_list
-    (fun (ind,cstrs) -> (ind,Array.to_list cstrs))
-    (compute_mib_implicits flags mind) in
-  let imps = List.map2 (fun (auto_indimpl,auto_cstrimpls) (manual_indimpl,manual_cstrimpls) ->
-               under_full_implicit (merge_auto_manual_implicits false flags) auto_indimpl manual_indimpl ::
-               List.map2 (under_full_implicit (merge_auto_manual_implicits false flags)) auto_cstrimpls manual_cstrimpls)
-               auto_imps impargs in
-  add_anonymous_leaf
-    (inImplicits (ImplMutualInductive (mind,flags),List.flatten imps))
+  let imps =
+    List.map2 (fun (indref,cstrrefs) (manual_indimpl,manual_cstrimplss) ->
+        compute_global_implicits_with_manual flags false indref (Some manual_indimpl) ::
+        List.map2 (fun cstrref impls -> compute_global_implicits_with_manual flags false cstrref (Some impls))
+          cstrrefs manual_cstrimplss)
+      (compute_inductive_refs mind) impargs in
+  add_anonymous_leaf (inImplicits (flags,List.flatten imps))
 
 let projection_implicits env p impls =
   let npars = Projection.npars p in
@@ -696,10 +635,9 @@ let is_local local ref = local || isVarRef ref && is_in_section ref
 
 let set_auto_implicits local ref =
   let flags = { !implicit_args with auto = true } in
-  let req =
-    if is_local local ref then ImplLocal else ImplInteractive(flags,ImplAuto) in
-  let imps = compute_global_implicits flags ref in
-  add_anonymous_leaf (inImplicits (req,[ref,imps]))
+  let local = is_local local ref in
+  let imps = [DefaultImpArgs,compute_global_implicits flags ref] in
+  add_anonymous_leaf (inImplicits (flags,[ref,local,0,imps]))
 
 (** Setting manual implicit arguments *)
 
@@ -758,10 +696,9 @@ let set_manual_implicits local ref l =
        List.map (fun (imps,n) ->
            (LessArgsThan (nargs-n),
             prepare_manual_implicits deps imps)) l in
-  let req =
-    if is_local local ref then ImplLocal
-    else ImplInteractive(flags,ImplManual (List.length deps))
-  in add_anonymous_leaf (inImplicits (req,[ref,l']))
+  let local = is_local local ref in
+  let userimplsize = List.length deps in
+  add_anonymous_leaf (inImplicits (flags,[ref,local,userimplsize,l']))
 
 (** Miscellaneous function about multiple implicit arguments signatures *)
 
