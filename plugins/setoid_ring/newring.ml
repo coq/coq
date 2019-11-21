@@ -41,12 +41,12 @@ type protect_flag = Eval|Prot|Rec
 
 type protection = Evd.evar_map -> EConstr.t -> GlobRef.t -> (Int.t -> protect_flag) option
 
-let global_head_of_constr sigma c = 
+let global_head_of_constr sigma c =
   let f, args = decompose_app sigma c in
     try fst (Termops.global_of_constr sigma f)
     with Not_found -> CErrors.anomaly (str "global_head_of_constr.")
 
-let global_of_constr_nofail c = 
+let global_of_constr_nofail c =
   try global_of_constr c
   with Not_found -> GlobRef.VarRef (Id.of_string "dummy")
 
@@ -163,7 +163,7 @@ let ltac_call tac (args:glob_tactic_arg list) =
   TacArg(CAst.make @@ TacCall (CAst.make (ArgArg(Loc.tag @@ Lazy.force tac),args)))
 
 let dummy_goal env sigma =
-  let (gl,_,sigma) = 
+  let (gl,_,sigma) =
     Goal.V82.mk_goal sigma (named_context_val env) EConstr.mkProp in
   {Evd.it = gl; Evd.sigma = sigma}
 
@@ -428,9 +428,9 @@ let op_smorph r add mul req m1 m2 =
 let ring_equality env evd (r,add,mul,opp,req) =
   match EConstr.kind !evd req with
     | App (f, [| _ |]) when eq_constr_nounivs !evd f (Lazy.force coq_eq) ->
-	let setoid = plapp evd coq_eq_setoid [|r|] in
-	let op_morph =
-	  match opp with
+        let setoid = plapp evd coq_eq_setoid [|r|] in
+        let op_morph =
+          match opp with
               Some opp -> plapp evd coq_eq_morph [|r;add;mul;opp|]
           | None -> plapp evd coq_eq_smorph [|r;add;mul|] in
         let sigma = !evd in
@@ -439,41 +439,41 @@ let ring_equality env evd (r,add,mul,opp,req) =
         evd := sigma;
         (setoid,op_morph)
     | _ ->
-	let setoid = setoid_of_relation (Global.env ()) evd r req in
-	let signature = [Some (r,Some req);Some (r,Some req)],Some(r,Some req) in
-	let add_m, add_m_lem =
-	  try Rewrite.default_morphism signature add
+        let setoid = setoid_of_relation (Global.env ()) evd r req in
+        let signature = [Some (r,Some req);Some (r,Some req)],Some(r,Some req) in
+        let add_m, add_m_lem =
+          try Rewrite.default_morphism signature add
           with Not_found ->
             error "ring addition should be declared as a morphism" in
-	let mul_m, mul_m_lem =
+        let mul_m, mul_m_lem =
           try Rewrite.default_morphism signature mul
           with Not_found ->
             error "ring multiplication should be declared as a morphism" in
         let op_morph =
           match opp with
             | Some opp ->
-		(let opp_m,opp_m_lem =
-		  try Rewrite.default_morphism ([Some(r,Some req)],Some(r,Some req)) opp
-		  with Not_found ->
+                (let opp_m,opp_m_lem =
+                  try Rewrite.default_morphism ([Some(r,Some req)],Some(r,Some req)) opp
+                  with Not_found ->
                     error "ring opposite should be declared as a morphism" in
-		let op_morph =
-		  op_morph r add mul opp req add_m_lem mul_m_lem opp_m_lem in
-		  Flags.if_verbose
-		    Feedback.msg_info
+                let op_morph =
+                  op_morph r add mul opp req add_m_lem mul_m_lem opp_m_lem in
+                  Flags.if_verbose
+                    Feedback.msg_info
                     (str"Using setoid \""++ pr_econstr_env env !evd req++str"\""++spc()++
                         str"and morphisms \""++pr_econstr_env env !evd add_m_lem ++
                         str"\","++spc()++ str"\""++pr_econstr_env env !evd mul_m_lem++
                         str"\""++spc()++str"and \""++pr_econstr_env env !evd opp_m_lem++
-			str"\"");
-		  op_morph)
+                        str"\"");
+                  op_morph)
             | None ->
-		(Flags.if_verbose
-		    Feedback.msg_info
+                (Flags.if_verbose
+                    Feedback.msg_info
                     (str"Using setoid \""++pr_econstr_env env !evd req ++str"\"" ++ spc() ++
                         str"and morphisms \""++pr_econstr_env env !evd add_m_lem ++
-			str"\""++spc()++str"and \""++
+                        str"\""++spc()++str"and \""++
                         pr_econstr_env env !evd mul_m_lem++str"\"");
-		 op_smorph r add mul req add_m_lem mul_m_lem) in
+                 op_smorph r add mul req add_m_lem mul_m_lem) in
           (setoid,op_morph)
 
 let build_setoid_params env evd r add mul opp req eqth =
@@ -519,11 +519,11 @@ let make_hyp env evd c =
 let make_hyp_list env evdref lH =
   let evd, carrier = Evarutil.new_global !evdref (Lazy.force coq_hypo) in
   evdref := evd;
-  let l = 
+  let l =
     List.fold_right
       (fun c l -> plapp evdref coq_cons [|carrier; (make_hyp env evdref c); l|]) lH
       (plapp evdref coq_nil [|carrier|])
-  in 
+  in
   let sigma, l' = Typing.solve_evars env !evdref l in
   evdref := sigma;
   let l' = EConstr.Unsafe.to_constr l' in
@@ -609,7 +609,7 @@ let add_theory0 name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div
           ring_morph = params.(2);
           ring_th = params.(0);
           ring_cst_tac = cst_tac;
-	  ring_pow_tac = pow_tac;
+          ring_pow_tac = pow_tac;
           ring_lemma1 = lemma1;
           ring_lemma2 = lemma2;
           ring_pre_tac = pretac;
@@ -867,13 +867,13 @@ let field_equality evd r inv req =
         let c = EConstr.of_constr c in
         mkApp(c,[|r;r;inv|])
     | _ ->
-	let _setoid = setoid_of_relation (Global.env ()) evd r req in
-	let signature = [Some (r,Some req)],Some(r,Some req) in
-	let inv_m, inv_m_lem =
-	  try Rewrite.default_morphism signature inv
+        let _setoid = setoid_of_relation (Global.env ()) evd r req in
+        let signature = [Some (r,Some req)],Some(r,Some req) in
+        let inv_m, inv_m_lem =
+          try Rewrite.default_morphism signature inv
           with Not_found ->
             error "field inverse should be declared as a morphism" in
-	  inv_m_lem
+          inv_m_lem
 
 let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign odiv =
   let open Constr in
@@ -904,13 +904,13 @@ let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign od
       | None -> params.(7) in
   let lemma1 = decl_constant (Id.to_string name^"_field_lemma1")
     ctx lemma1 in
-  let lemma2 = decl_constant (Id.to_string name^"_field_lemma2") 
+  let lemma2 = decl_constant (Id.to_string name^"_field_lemma2")
     ctx lemma2 in
-  let lemma3 = decl_constant (Id.to_string name^"_field_lemma3") 
+  let lemma3 = decl_constant (Id.to_string name^"_field_lemma3")
     ctx lemma3 in
-  let lemma4 = decl_constant (Id.to_string name^"_field_lemma4") 
+  let lemma4 = decl_constant (Id.to_string name^"_field_lemma4")
     ctx lemma4 in
-  let cond_lemma = decl_constant (Id.to_string name^"_lemma5") 
+  let cond_lemma = decl_constant (Id.to_string name^"_lemma5")
     ctx cond_lemma in
   let cst_tac =
     interp_cst_tac env sigma morphth kind (zero,one,add,mul,opp) cst_tac in

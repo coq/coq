@@ -384,7 +384,7 @@ and apply_env env t =
 
 (* The main recursive functions
  *
- * Go under applications and cases/projections (pushed in the stack), 
+ * Go under applications and cases/projections (pushed in the stack),
  * expand head constants or substitued de Bruijn, and try to a make a
  * constructor, a lambda or a fixp appear in the head. If not, it is a value
  * and is completely computed here. The head redexes are NOT reduced:
@@ -403,16 +403,16 @@ let rec norm_head info env t stack =
       norm_head info env head (stack_app nargs stack)
   | Case (ci,p,c,v) -> norm_head info env c (CASE(p,v,ci,env,stack))
   | Cast (ct,_,_) -> norm_head info env ct stack
-  
-  | Proj (p, c) -> 
+
+  | Proj (p, c) ->
     let p' =
       if red_set info.reds (fCONST (Projection.constant p))
         && red_set info.reds fBETA
       then Projection.unfold p
       else p
-    in 
+    in
       norm_head info env c (PROJ (p', stack))
-	
+
   (* constants, axioms
    * the first pattern is CRUCIAL, n=0 happens very often:
    * when reducing closed terms, n is always 0 *)
@@ -437,10 +437,10 @@ let rec norm_head info env t stack =
         (* New rule: for Cbv, Delta does not apply to locally bound variables
            or red_set info.reds fDELTA
          *)
-	let env' = subs_cons ([|cbv_stack_term info TOP env b|],env) in
+        let env' = subs_cons ([|cbv_stack_term info TOP env b|],env) in
         norm_head info env' c stack
       else
-	(CBN(t,env), stack) (* Should we consider a commutative cut ? *)
+        (CBN(t,env), stack) (* Should we consider a commutative cut ? *)
 
   | Evar ev ->
       (match Reductionops.safe_evar_value info.sigma ev with
@@ -517,7 +517,7 @@ and cbv_stack_value info env = function
     (* constructor in a Case -> IOTA *)
     | (CONSTR(((sp,n),u),[||]), APP(args,CASE(_,br,ci,env,stk)))
             when red_set info.reds fMATCH ->
-	let cargs =
+        let cargs =
           Array.sub args ci.ci_npar (Array.length args - ci.ci_npar) in
         cbv_stack_term info (stack_app cargs stk) env br.(n-1)
 
@@ -530,7 +530,7 @@ and cbv_stack_value info env = function
     | (CONSTR(((sp,n),u),[||]), APP(args,PROJ(p,stk)))
         when red_set info.reds fMATCH && Projection.unfolded p ->
       let arg = args.(Projection.npars p + Projection.arg p) in
-	cbv_stack_value info env (strip_appl arg stk)
+        cbv_stack_value info env (strip_appl arg stk)
 
     (* may be reduced later by application *)
     | (FIXP(fix,env,[||]), APP(appl,TOP)) -> FIXP(fix,env,appl)
@@ -601,7 +601,7 @@ let rec apply_stack info t = function
   | CASE (ty,br,ci,env,st) ->
       apply_stack info
         (mkCase (ci, cbv_norm_term info env ty, t,
-		    Array.map (cbv_norm_term info env) br))
+                    Array.map (cbv_norm_term info env) br))
         st
   | PROJ (p, st) ->
        apply_stack info (mkProj (p, t)) st
@@ -630,15 +630,15 @@ and cbv_norm_value info = function (* reduction under binders *)
         (mkFix (lij,
                 (names,
                  Array.map (cbv_norm_term info env) lty,
-		 Array.map (cbv_norm_term info
-			      (subs_liftn (Array.length lty) env)) bds)),
+                 Array.map (cbv_norm_term info
+                              (subs_liftn (Array.length lty) env)) bds)),
          Array.map (cbv_norm_value info) args)
   | COFIXP ((j,(names,lty,bds)),env,args) ->
       mkApp
         (mkCoFix (j,
                   (names,Array.map (cbv_norm_term info env) lty,
-		   Array.map (cbv_norm_term info
-				(subs_liftn (Array.length lty) env)) bds)),
+                   Array.map (cbv_norm_term info
+                                (subs_liftn (Array.length lty) env)) bds)),
          Array.map (cbv_norm_value info) args)
   | CONSTR (c,args) ->
       mkApp(mkConstructU c, Array.map (cbv_norm_value info) args)

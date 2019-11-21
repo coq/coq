@@ -463,16 +463,16 @@ let test_constr_universes env sigma leq m n =
       if Sorts.equal s1 s2 then true
       else (cstrs := Set.add
               (UEq (Sorts.univ_of_sort s1,Sorts.univ_of_sort s2)) !cstrs;
-	    true)
+            true)
     in
-    let leq_sorts s1 s2 = 
+    let leq_sorts s1 s2 =
       let s1 = ESorts.kind sigma s1 in
       let s2 = ESorts.kind sigma s2 in
       if Sorts.equal s1 s2 then true
-      else 
+      else
         (cstrs := Set.add
            (ULe (Sorts.univ_of_sort s1,Sorts.univ_of_sort s2)) !cstrs;
-	 true)
+         true)
     in
     let rec eq_constr' nargs m n = compare_gen kind eq_universes eq_sorts eq_constr' nargs m n in
     let res =
@@ -496,20 +496,20 @@ let compare_head_gen_proj env sigma equ eqs eqc' nargs m n =
   let kind c = kind sigma c in
   match kind m, kind n with
   | Proj (p, c), App (f, args)
-  | App (f, args), Proj (p, c) -> 
+  | App (f, args), Proj (p, c) ->
       (match kind f with
-      | Const (p', u) when Constant.equal (Projection.constant p) p' -> 
+      | Const (p', u) when Constant.equal (Projection.constant p) p' ->
           let npars = Projection.npars p in
           if Array.length args == npars + 1 then
             eqc' 0 c args.(npars)
-	  else false
+          else false
       | _ -> false)
   | _ -> Constr.compare_head_gen_with kind kind equ eqs eqc' nargs m n
 
 let eq_constr_universes_proj env sigma m n =
   let open UnivProblem in
   if m == n then Some Set.empty
-  else 
+  else
     let cstrs = ref Set.empty in
     let eq_universes ref l l' = eq_universes env sigma cstrs Reduction.CONV ref l l' in
     let eq_sorts s1 s2 =
@@ -519,7 +519,7 @@ let eq_constr_universes_proj env sigma m n =
       else
         (cstrs := Set.add
            (UEq (Sorts.univ_of_sort s1, Sorts.univ_of_sort s2)) !cstrs;
-	 true)
+         true)
     in
     let rec eq_constr' nargs m n =
       m == n || compare_head_gen_proj env sigma eq_universes eq_sorts eq_constr' nargs m n

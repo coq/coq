@@ -28,11 +28,11 @@ val autorewrite_in : ?conds:conditions -> Names.Id.t -> unit Proofview.tactic ->
 
 (** Rewriting rules *)
 type rew_rule = { rew_lemma: constr;
-		  rew_type: types;
-		  rew_pat: constr;
-		  rew_ctx: Univ.ContextSet.t;
-		  rew_l2r: bool;
-		  rew_tac: Genarg.glob_generic_argument option }
+                  rew_type: types;
+                  rew_pat: constr;
+                  rew_ctx: Univ.ContextSet.t;
+                  rew_l2r: bool;
+                  rew_tac: Genarg.glob_generic_argument option }
 
 val find_rewrites : string -> rew_rule list
 

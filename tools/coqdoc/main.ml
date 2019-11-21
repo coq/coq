@@ -132,8 +132,8 @@ let coq_module filename =
     (* otherwise, keep only base name *)
     | [] -> fname
     | (p, name) :: rem ->
-	try name_of_path p name dirname [fname]
-	with Not_found -> change_prefix rem
+        try name_of_path p name dirname [fname]
+        with Not_found -> change_prefix rem
   in
   change_prefix !paths
 
@@ -159,22 +159,22 @@ let files_from_file f =
     let buf = Buffer.create 80 in
     let l = ref [] in
       try
-	while true do
-	  match input_char ch with
-	    | ' ' | '\t' | '\n' ->
-		if Buffer.length buf > 0 then l := (Buffer.contents buf) :: !l;
-		Buffer.clear buf
-	    | c ->
-		Buffer.add_char buf c
-	done; []
+        while true do
+          match input_char ch with
+            | ' ' | '\t' | '\n' ->
+                if Buffer.length buf > 0 then l := (Buffer.contents buf) :: !l;
+                Buffer.clear buf
+            | c ->
+                Buffer.add_char buf c
+        done; []
       with End_of_file ->
-	List.rev !l
+        List.rev !l
   in
     try
       check_if_file_exists f;
       let ch = open_in f in
       let l = files_from_channel ch in
-	close_in ch;l
+        close_in ch;l
     with Sys_error s -> begin
       eprintf "coqdoc: cannot read from file %s (%s)\n" f s;
       exit 1
@@ -194,79 +194,79 @@ let parse () =
 
     | ("-nopreamble" | "--nopreamble" | "--no-preamble"
       |  "-bodyonly"   | "--bodyonly"   | "--body-only") :: rem ->
-	header_trailer := false; parse_rec rem
+        header_trailer := false; parse_rec rem
     | ("-with-header" | "--with-header") :: f ::rem ->
-	header_trailer := true; header_file_spec := true; header_file := f; parse_rec rem
+        header_trailer := true; header_file_spec := true; header_file := f; parse_rec rem
     | ("-with-header" | "--with-header") :: [] ->
-	usage ()
+        usage ()
     | ("-with-footer" | "--with-footer") :: f ::rem ->
-	header_trailer := true; footer_file_spec := true; footer_file := f; parse_rec rem
+        header_trailer := true; footer_file_spec := true; footer_file := f; parse_rec rem
     | ("-with-footer" | "--with-footer") :: [] ->
-	usage ()
+        usage ()
     | ("-p" | "--preamble") :: s :: rem ->
-	Output.push_in_preamble s; parse_rec rem
+        Output.push_in_preamble s; parse_rec rem
     | ("-p" | "--preamble") :: [] ->
-	usage ()
+        usage ()
     | ("-noindex" | "--noindex" | "--no-index") :: rem ->
-	index := false; parse_rec rem
+        index := false; parse_rec rem
     | ("-multi-index" | "--multi-index") :: rem ->
-	multi_index := true; parse_rec rem
+        multi_index := true; parse_rec rem
     | ("-index" | "--index") :: s :: rem ->
-	Cdglobals.index_name := s; parse_rec rem
+        Cdglobals.index_name := s; parse_rec rem
     | ("-index" | "--index") :: [] ->
-	usage ()
+        usage ()
     | ("-toc" | "--toc" | "--table-of-contents") :: rem ->
-	toc := true; parse_rec rem
+        toc := true; parse_rec rem
     | ("-stdout" | "--stdout") :: rem ->
-	out_to := StdOut; parse_rec rem
+        out_to := StdOut; parse_rec rem
     | ("-o" | "--output") :: f :: rem ->
-	out_to := File (Filename.basename f); output_dir := Filename.dirname f; parse_rec rem
+        out_to := File (Filename.basename f); output_dir := Filename.dirname f; parse_rec rem
     | ("-o" | "--output") :: [] ->
-	usage ()
+        usage ()
     | ("-d" | "--directory") :: dir :: rem ->
-	output_dir := dir; parse_rec rem
+        output_dir := dir; parse_rec rem
     | ("-d" | "--directory") :: [] ->
-	usage ()
+        usage ()
     | ("-s" | "--short") :: rem ->
-	short := true; parse_rec rem
+        short := true; parse_rec rem
     | ("-l" | "-light" | "--light") :: rem ->
-	gallina := true; light := true; parse_rec rem
+        gallina := true; light := true; parse_rec rem
     | ("-g" | "-gallina" | "--gallina") :: rem ->
-	gallina := true; parse_rec rem
+        gallina := true; parse_rec rem
     | ("-t" | "-title" | "--title") :: s :: rem ->
-	title := s; parse_rec rem
+        title := s; parse_rec rem
     | ("-t" | "-title" | "--title") :: [] ->
-	usage ()
+        usage ()
     | ("-latex" | "--latex") :: rem ->
-	Cdglobals.target_language := LaTeX; parse_rec rem
+        Cdglobals.target_language := LaTeX; parse_rec rem
     | ("-pdf" | "--pdf") :: rem ->
-	Cdglobals.target_language := LaTeX; pdf := true; parse_rec rem
+        Cdglobals.target_language := LaTeX; pdf := true; parse_rec rem
     | ("-dvi" | "--dvi") :: rem ->
-	Cdglobals.target_language := LaTeX; dvi := true; parse_rec rem
+        Cdglobals.target_language := LaTeX; dvi := true; parse_rec rem
     | ("-ps" | "--ps") :: rem ->
-	Cdglobals.target_language := LaTeX; ps := true; parse_rec rem
+        Cdglobals.target_language := LaTeX; ps := true; parse_rec rem
     | ("-html" | "--html") :: rem ->
-	Cdglobals.target_language := HTML; parse_rec rem
+        Cdglobals.target_language := HTML; parse_rec rem
     | ("-texmacs" | "--texmacs") :: rem ->
-	Cdglobals.target_language := TeXmacs; parse_rec rem
+        Cdglobals.target_language := TeXmacs; parse_rec rem
     | ("-raw" | "--raw") :: rem ->
-	Cdglobals.target_language := Raw; parse_rec rem
+        Cdglobals.target_language := Raw; parse_rec rem
     | ("-charset" | "--charset") :: s :: rem ->
-	Cdglobals.charset := s; parse_rec rem
+        Cdglobals.charset := s; parse_rec rem
     | ("-charset" | "--charset") :: [] ->
-	usage ()
+        usage ()
     | ("-inputenc" | "--inputenc") :: s :: rem ->
-	Cdglobals.inputenc := s; parse_rec rem
+        Cdglobals.inputenc := s; parse_rec rem
     | ("-inputenc" | "--inputenc") :: [] ->
-	usage ()
+        usage ()
     | ("-raw-comments" | "--raw-comments") :: rem ->
-	Cdglobals.raw_comments := true; parse_rec rem
+        Cdglobals.raw_comments := true; parse_rec rem
     | ("-parse-comments" | "--parse-comments") :: rem ->
-	Cdglobals.parse_comments := true; parse_rec rem
+        Cdglobals.parse_comments := true; parse_rec rem
     | ("-plain-comments" | "--plain-comments") :: rem ->
-	Cdglobals.plain_comments := true; parse_rec rem
+        Cdglobals.plain_comments := true; parse_rec rem
     | ("-interpolate" | "--interpolate") :: rem ->
-	Cdglobals.interpolate := true; parse_rec rem
+        Cdglobals.interpolate := true; parse_rec rem
     | ("-toc-depth" | "--toc-depth") :: [] ->
       usage ()
     | ("-toc-depth" | "--toc-depth") :: ds :: rem ->
@@ -291,68 +291,68 @@ let parse () =
       parse_rec rem
 
     | ("-latin1" | "--latin1") :: rem ->
-	Cdglobals.set_latin1 (); parse_rec rem
+        Cdglobals.set_latin1 (); parse_rec rem
     | ("-utf8" | "--utf8") :: rem ->
-	Cdglobals.set_utf8 (); parse_rec rem
+        Cdglobals.set_utf8 (); parse_rec rem
 
     | ("-q" | "-quiet" | "--quiet") :: rem ->
-	quiet := true; parse_rec rem
+        quiet := true; parse_rec rem
     | ("-v" | "-verbose" | "--verbose") :: rem ->
-	quiet := false; parse_rec rem
+        quiet := false; parse_rec rem
 
     | ("-h" | "-help" | "-?" | "--help") :: rem ->
-	banner (); usage ()
+        banner (); usage ()
     | ("-V" | "-version" | "--version") :: _ ->
-	banner (); exit 0
+        banner (); exit 0
 
     | ("-vernac-file" | "--vernac-file") :: f :: rem ->
-	check_if_file_exists f;
-	add_file (Vernac_file (f, coq_module f)); parse_rec rem
+        check_if_file_exists f;
+        add_file (Vernac_file (f, coq_module f)); parse_rec rem
     | ("-vernac-file" | "--vernac-file") :: [] ->
-	usage ()
+        usage ()
     | ("-tex-file" | "--tex-file") :: f :: rem ->
-	add_file (Latex_file f); parse_rec rem
+        add_file (Latex_file f); parse_rec rem
     | ("-tex-file" | "--tex-file") :: [] ->
-	usage ()
+        usage ()
     | ("-files" | "--files" | "--files-from") :: f :: rem ->
-	List.iter (fun f -> add_file (what_file f)) (files_from_file f);
-	parse_rec rem
+        List.iter (fun f -> add_file (what_file f)) (files_from_file f);
+        parse_rec rem
     | ("-files" | "--files") :: [] ->
-	usage ()
+        usage ()
     | "-R" :: path :: log :: rem ->
-	add_path path log; parse_rec rem
+        add_path path log; parse_rec rem
     | "-R" :: ([] | [_]) ->
-	usage ()
+        usage ()
     | "-Q" :: path :: log :: rem ->
-	add_path path log; parse_rec rem
+        add_path path log; parse_rec rem
     | "-Q" :: ([] | [_]) ->
-	usage ()
+        usage ()
     | ("-glob-from" | "--glob-from") :: f :: rem ->
-	glob_source := GlobFile f; parse_rec rem
+        glob_source := GlobFile f; parse_rec rem
     | ("-glob-from" | "--glob-from") :: [] ->
-	usage ()
+        usage ()
     | ("-no-glob" | "--no-glob") :: rem ->
-	glob_source := NoGlob; parse_rec rem
+        glob_source := NoGlob; parse_rec rem
     | ("--no-externals" | "-no-externals" | "-noexternals") :: rem ->
-	Cdglobals.externals := false; parse_rec rem
+        Cdglobals.externals := false; parse_rec rem
     | ("--external" | "-external") :: u :: logicalpath :: rem ->
-	Index.add_external_library logicalpath u; parse_rec rem
+        Index.add_external_library logicalpath u; parse_rec rem
     | ("--coqlib" | "-coqlib") :: u :: rem ->
-	Cdglobals.coqlib := u; parse_rec rem
+        Cdglobals.coqlib := u; parse_rec rem
     | ("--coqlib" | "-coqlib") :: [] ->
-	usage ()
+        usage ()
     | ("--boot" | "-boot") :: rem ->
-	Cdglobals.coqlib_path := normalize_path (
+        Cdglobals.coqlib_path := normalize_path (
           Filename.concat
             (Filename.dirname Sys.executable_name)
             Filename.parent_dir_name
         ); parse_rec rem
     | ("--coqlib_path" | "-coqlib_path") :: d :: rem ->
-	Cdglobals.coqlib_path := d; parse_rec rem
+        Cdglobals.coqlib_path := d; parse_rec rem
     | ("--coqlib_path" | "-coqlib_path") :: [] ->
-	usage ()
+        usage ()
     | f :: rem ->
-	add_file (what_file f); parse_rec rem
+        add_file (what_file f); parse_rec rem
   in
     parse_rec (List.tl (Array.to_list Sys.argv));
     List.rev !files
@@ -424,13 +424,13 @@ let gen_mult_files l =
   let file = function
     | Vernac_file (f,m) ->
       let sub = if !lib_subtitles then Cpretty.detect_subtitle f m else None in
-	let hf = target_full_name m in
+        let hf = target_full_name m in
         Output.set_module m sub;
-	  open_out_file hf;
-	  if (!header_trailer) then Output.header ();
-	  Cpretty.coq_file f m;
-	  if (!header_trailer) then Output.trailer ();
-	  close_out_file()
+          open_out_file hf;
+          if (!header_trailer) then Output.header ();
+          Cpretty.coq_file f m;
+          if (!header_trailer) then Output.trailer ();
+          close_out_file()
     | Latex_file _ -> ()
   in
     List.iter file l;
@@ -486,14 +486,14 @@ let produce_document l =
   List.iter index_module l;
   match !out_to with
     | StdOut ->
-	Cdglobals.out_channel := stdout;
-	gen_one_file l
+        Cdglobals.out_channel := stdout;
+        gen_one_file l
     | File f ->
-	open_out_file f;
-	gen_one_file l;
-	close_out_file()
+        open_out_file f;
+        gen_one_file l;
+        close_out_file()
     | MultFiles ->
-	gen_mult_files l
+        gen_mult_files l
 
 let produce_output fl =
   if not (!dvi || !ps || !pdf) then
@@ -503,56 +503,56 @@ let produce_output fl =
       let texfile = Filename.temp_file "coqdoc" ".tex" in
       let basefile = Filename.chop_suffix texfile ".tex" in
       let final_out_to = !out_to in
-	out_to := File texfile;
-	output_dir := (Filename.dirname texfile);
-	produce_document fl;
+        out_to := File texfile;
+        output_dir := (Filename.dirname texfile);
+        produce_document fl;
 
-	let latexexe = if !pdf then "pdflatex" else "latex" in
-	let latexcmd =
-	  let file = Filename.basename texfile in
-	  let file =
-	    if !quiet then sprintf "'\\nonstopmode\\input{%s}'" file else file
-	  in
-	    sprintf "%s %s && %s %s 1>&2 %s" latexexe file latexexe file (if !quiet then "> /dev/null" else "")
-	in
-	let res = locally (Filename.dirname texfile) Sys.command latexcmd in
-	  if res <> 0 then begin
-	      eprintf "Couldn't run LaTeX successfully\n";
-	      clean_and_exit basefile res
-	    end;
+        let latexexe = if !pdf then "pdflatex" else "latex" in
+        let latexcmd =
+          let file = Filename.basename texfile in
+          let file =
+            if !quiet then sprintf "'\\nonstopmode\\input{%s}'" file else file
+          in
+            sprintf "%s %s && %s %s 1>&2 %s" latexexe file latexexe file (if !quiet then "> /dev/null" else "")
+        in
+        let res = locally (Filename.dirname texfile) Sys.command latexcmd in
+          if res <> 0 then begin
+              eprintf "Couldn't run LaTeX successfully\n";
+              clean_and_exit basefile res
+            end;
 
-	  let dvifile = basefile ^ ".dvi" in
-	    if !dvi then
-	      begin
-		match final_out_to with
-		  | MultFiles | StdOut -> cat dvifile
-		  | File f -> copy dvifile f
-	      end;
-	  let pdffile = basefile ^ ".pdf" in
-	    if !pdf then
+          let dvifile = basefile ^ ".dvi" in
+            if !dvi then
+              begin
+                match final_out_to with
+                  | MultFiles | StdOut -> cat dvifile
+                  | File f -> copy dvifile f
+              end;
+          let pdffile = basefile ^ ".pdf" in
+            if !pdf then
             begin
-	        match final_out_to with
-		  | MultFiles | StdOut -> cat pdffile
-		  | File f -> copy pdffile f
-	    end;
-	    if !ps then begin
-	        let psfile = basefile ^ ".ps"
-		in
-		let command =
-		  sprintf "dvips %s -o %s %s" dvifile psfile
-		    (if !quiet then "> /dev/null 2>&1" else "")
-		in
-		let res = Sys.command command in
-		  if res <> 0 then begin
-		      eprintf "Couldn't run dvips successfully\n";
-		      clean_and_exit basefile res
-		    end;
-		  match final_out_to with
-		    | MultFiles | StdOut -> cat psfile
-		    | File f -> copy psfile f
-	      end;
+                match final_out_to with
+                  | MultFiles | StdOut -> cat pdffile
+                  | File f -> copy pdffile f
+            end;
+            if !ps then begin
+                let psfile = basefile ^ ".ps"
+                in
+                let command =
+                  sprintf "dvips %s -o %s %s" dvifile psfile
+                    (if !quiet then "> /dev/null 2>&1" else "")
+                in
+                let res = Sys.command command in
+                  if res <> 0 then begin
+                      eprintf "Couldn't run dvips successfully\n";
+                      clean_and_exit basefile res
+                    end;
+                  match final_out_to with
+                    | MultFiles | StdOut -> cat psfile
+                    | File f -> copy psfile f
+              end;
 
-	    clean_temp_files basefile
+            clean_temp_files basefile
     end
 
 

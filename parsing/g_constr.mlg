@@ -87,12 +87,12 @@ let lpar_id_coloneq =
       match stream_nth 0 strm with
         | KEYWORD "(" ->
             (match stream_nth 1 strm with
-	      | IDENT s ->
+              | IDENT s ->
                   (match stream_nth 2 strm with
                     | KEYWORD ":=" ->
                         stream_njunk 3 strm;
                         Names.Id.of_string s
-	            | _ -> err ())
+                    | _ -> err ())
               | _ -> err ())
         | _ -> err ())
 
@@ -100,26 +100,26 @@ let impl_ident_head =
   Pcoq.Entry.of_parser "impl_ident_head"
     (fun _ strm ->
       match stream_nth 0 strm with
-	| KEYWORD "{" ->
-	    (match stream_nth 1 strm with
-	      | IDENT ("wf"|"struct"|"measure") -> err ()
-	      | IDENT s ->
-		  stream_njunk 2 strm;
-		  Names.Id.of_string s
-	      | _ -> err ())
-	| _ -> err ())
+        | KEYWORD "{" ->
+            (match stream_nth 1 strm with
+              | IDENT ("wf"|"struct"|"measure") -> err ()
+              | IDENT s ->
+                  stream_njunk 2 strm;
+                  Names.Id.of_string s
+              | _ -> err ())
+        | _ -> err ())
 
 let name_colon =
   Pcoq.Entry.of_parser "name_colon"
     (fun _ strm ->
       match stream_nth 0 strm with
-	| IDENT s ->
+        | IDENT s ->
             (match stream_nth 1 strm with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
                   Name (Names.Id.of_string s)
               | _ -> err ())
-	| KEYWORD "_" ->
+        | KEYWORD "_" ->
           (match stream_nth 1 strm with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
@@ -219,7 +219,7 @@ GRAMMAR EXTEND Gram
     | "8" [ ]
     | "1" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
-	{ CAst.make ~loc @@ CApp((Some (List.length args+1), CAst.make @@ CRef (f,None)),args@[c,None]) }
+        { CAst.make ~loc @@ CApp((Some (List.length args+1), CAst.make @@ CRef (f,None)),args@[c,None]) }
       | c=operconstr; ".("; "@"; f=global;
         args=LIST0 (operconstr LEVEL "9"); ")" ->
         { CAst.make ~loc @@ CAppExpl((Some (List.length args+1),f,None),args@[c]) }
@@ -238,9 +238,9 @@ GRAMMAR EXTEND Gram
       | "{"; c = binder_constr ; "}" ->
           { CAst.make ~loc @@ CNotation((InConstrEntrySomeLevel,"{ _ }"),([c],[],[],[])) }
       | "`{"; c = operconstr LEVEL "200"; "}" ->
-	  { CAst.make ~loc @@ CGeneralization (Implicit, None, c) }
+          { CAst.make ~loc @@ CGeneralization (Implicit, None, c) }
       | "`("; c = operconstr LEVEL "200"; ")" ->
-	  { CAst.make ~loc @@ CGeneralization (Explicit, None, c) }
+          { CAst.make ~loc @@ CGeneralization (Explicit, None, c) }
       ] ]
   ;
   record_declaration:
@@ -278,26 +278,26 @@ GRAMMAR EXTEND Gram
             | _ -> assert false in
           CAst.make ~loc @@ CLetIn( CAst.make ?loc:li @@ Name id,fixp,None,c) }
       | "let"; lb = ["("; l=LIST0 name SEP ","; ")" -> { l } | "()" -> { [] } ];
-	  po = return_type;
-	  ":="; c1 = operconstr LEVEL "200"; "in";
+          po = return_type;
+          ":="; c1 = operconstr LEVEL "200"; "in";
           c2 = operconstr LEVEL "200" ->
           { CAst.make ~loc @@ CLetTuple (lb,po,c1,c2) }
       | "let"; "'"; p = pattern LEVEL "200"; ":="; c1 = operconstr LEVEL "200";
           "in"; c2 = operconstr LEVEL "200" ->
-	    { CAst.make ~loc @@
+            { CAst.make ~loc @@
             CCases (LetPatternStyle, None,    [c1, None, None],       [CAst.make ~loc ([[p]], c2)]) }
       | "let"; "'"; p = pattern LEVEL "200"; ":="; c1 = operconstr LEVEL "200";
-	  rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
-	    { CAst.make ~loc @@
+          rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
+            { CAst.make ~loc @@
             CCases (LetPatternStyle, Some rt, [c1, aliasvar p, None], [CAst.make ~loc ([[p]], c2)]) }
 
       | "let"; "'"; p = pattern LEVEL "200"; "in"; t = pattern LEVEL "200";
-	  ":="; c1 = operconstr LEVEL "200"; rt = case_type;
+          ":="; c1 = operconstr LEVEL "200"; rt = case_type;
           "in"; c2 = operconstr LEVEL "200" ->
-	    { CAst.make ~loc @@
+            { CAst.make ~loc @@
             CCases (LetPatternStyle, Some rt, [c1, aliasvar p, Some t], [CAst.make ~loc ([[p]], c2)]) }
       | "if"; c=operconstr LEVEL "200"; po = return_type;
-	"then"; b1=operconstr LEVEL "200";
+        "then"; b1=operconstr LEVEL "200";
         "else"; b2=operconstr LEVEL "200" ->
           { CAst.make ~loc @@ CIf (c, po, b1, b2) }
       | c=fix_constr -> { c } ] ]
@@ -365,7 +365,7 @@ GRAMMAR EXTEND Gram
     [ [ c=operconstr LEVEL "100";
         ona = OPT ["as"; id=name -> { id } ];
         ty = OPT ["in"; t = pattern LEVEL "200" -> { t } ] ->
-	   { (c,ona,ty) } ] ]
+           { (c,ona,ty) } ] ]
   ;
   case_type:
     [ [ "return"; ty = operconstr LEVEL "100" -> { ty } ] ]
@@ -438,7 +438,7 @@ GRAMMAR EXTEND Gram
                                 CAst.make ?loc:(Loc.merge_opt na.CAst.loc (Some loc)) @@
                                 CHole (Some (Evar_kinds.BinderType na.CAst.v), IntroAnonymous, None))) }
     | ":"; c=lconstr; "}" ->
-	{ (fun na -> CLocalAssum ([na],Default Implicit,c)) }
+        { (fun na -> CLocalAssum ([na],Default Implicit,c)) }
     ] ]
   ;
   fixannot:
@@ -465,14 +465,14 @@ GRAMMAR EXTEND Gram
     [ [
         id = name; idl = LIST0 name; ":"; c = lconstr ->
           { [CLocalAssum (id::idl,Default Explicit,c)]
-	(* binders factorized with open binder *) }
+        (* binders factorized with open binder *) }
       | id = name; idl = LIST0 name; bl = binders ->
           { binders_of_names (id::idl) @ bl }
       | id1 = name; ".."; id2 = name ->
           { [CLocalAssum ([id1;(CAst.make ~loc (Name ldots_var));id2],
-	                  Default Explicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))] }
+                          Default Explicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))] }
       | bl = closed_binder; bl' = binders ->
-	  { bl@bl' }
+          { bl@bl' }
     ] ]
   ;
   binders:
@@ -517,7 +517,7 @@ GRAMMAR EXTEND Gram
   typeclass_constraint:
     [ [ "!" ; c = operconstr LEVEL "200" -> { (CAst.make ~loc Anonymous), true, c }
       | "{"; id = name; "}"; ":" ; expl = [ "!" -> { true } | -> { false } ] ; c = operconstr LEVEL "200" ->
-	  { id, expl, c }
+          { id, expl, c }
       | iid=name_colon ; expl = [ "!" -> { true } | -> { false } ] ; c = operconstr LEVEL "200" ->
           { (CAst.make ~loc iid), expl, c }
       | c = operconstr LEVEL "200" ->

@@ -68,7 +68,7 @@ val afterHyp    : Id.t -> Goal.goal sigma -> named_context
 
 val ifOnHyp     : (Id.t * types -> bool) ->
                   (Id.t -> tactic) -> (Id.t -> tactic) ->
-		   Id.t -> tactic
+                   Id.t -> tactic
 
 val onHyps      : (Goal.goal sigma -> named_context) ->
                   (named_context -> tactic) -> tactic
@@ -109,7 +109,7 @@ val get_and_check_or_and_pattern :
   bool list array -> intro_patterns array
 
 (** Tolerate "[]" to mean a disjunctive pattern of any length *)
-val fix_empty_or_and_pattern : int -> 
+val fix_empty_or_and_pattern : int ->
   delayed_open_constr or_and_intro_pattern_expr ->
   delayed_open_constr or_and_intro_pattern_expr
 

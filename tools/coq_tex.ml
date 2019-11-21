@@ -118,9 +118,9 @@ let insert texfile coq_output result =
     let rec read_lines () =
       let s = input_line c_coq in
       if Str.string_match any_prompt s 0 then begin
-	last_read := s; []
+        last_read := s; []
       end else
-	s :: read_lines () in
+        s :: read_lines () in
     (first :: read_lines (), !nb) in
   let unhandled_output = ref None in
   let read_output () =
@@ -225,7 +225,7 @@ let one_file texfile =
     extract texfile inputv;
     (* 2. run Coq on input *)
     let _ = Sys.command (Printf.sprintf "%s < %s > %s 2>&1" !image inputv
-			   coq_output)
+                           coq_output)
     in
     (* 3. insert Coq output into original file *)
     insert texfile coq_output result;
@@ -244,21 +244,21 @@ let files = ref []
 let parse_cl () =
   Arg.parse
       [ "-o", Arg.String (fun s -> output_specified := true; output := s),
-	"output-file    Specify the resulting LaTeX file";
-	"-n", Arg.Int (fun n -> linelen := n),
-	"line-width     Set the line width";
-	"-image", Arg.String (fun s -> image := s),
-	"coq-image  Use coq-image as Coq command";
-	"-w", Arg.Set cut_at_blanks,
-	"               Try to cut lines at blanks";
-	"-v", Arg.Set verbose,
-	"               Verbose mode (show Coq answers on stdout)";
-	"-sl", Arg.Set slanted,
-	"              Coq answers in slanted font (only with LaTeX2e)";
-	"-hrule", Arg.Set hrule,
-	"           Coq parts are written between 2 horizontal lines";
-	"-small", Arg.Set small,
-	"           Coq parts are written in small font";
+        "output-file    Specify the resulting LaTeX file";
+        "-n", Arg.Int (fun n -> linelen := n),
+        "line-width     Set the line width";
+        "-image", Arg.String (fun s -> image := s),
+        "coq-image  Use coq-image as Coq command";
+        "-w", Arg.Set cut_at_blanks,
+        "               Try to cut lines at blanks";
+        "-v", Arg.Set verbose,
+        "               Verbose mode (show Coq answers on stdout)";
+        "-sl", Arg.Set slanted,
+        "              Coq answers in slanted font (only with LaTeX2e)";
+        "-hrule", Arg.Set hrule,
+        "           Coq parts are written between 2 horizontal lines";
+        "-small", Arg.Set small,
+        "           Coq parts are written in small font";
       ]
       (fun s -> files := s :: !files)
       "coq-tex [options] file ..."

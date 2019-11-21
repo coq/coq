@@ -84,7 +84,7 @@ let error_level_assoc p current expected =
     | Gramlib.Gramext.LeftA -> str "left"
     | Gramlib.Gramext.RightA -> str "right"
     | Gramlib.Gramext.NonA -> str "non" in
-  user_err 
+  user_err
     (str "Level " ++ int p ++ str " is already declared " ++
      pr_assoc current ++ str " associative while it is now expected to be " ++
      pr_assoc expected ++ str " associative.")
@@ -104,29 +104,29 @@ let find_position_gen current ensure assoc lev =
         | (p,_,_ as pa)::l when p > n -> pa :: add_level (Some p) l
         | (p,a,reinit)::l when Int.equal p n ->
             if reinit then
-	      let a' = create_assoc assoc in
+              let a' = create_assoc assoc in
               (init := Some (a',create_pos q); (p,a',false)::l)
-	    else if admissible_assoc (a,assoc) then
-	      raise Exit
+            else if admissible_assoc (a,assoc) then
+              raise Exit
             else
-	      error_level_assoc p a (Option.get assoc)
-	| l -> after := q; (n,create_assoc assoc,ensure)::l
+              error_level_assoc p a (Option.get assoc)
+        | l -> after := q; (n,create_assoc assoc,ensure)::l
       in
       try
-	let updated = add_level None current in
-	let assoc = create_assoc assoc in
+        let updated = add_level None current in
+        let assoc = create_assoc assoc in
         begin match !init with
         | None ->
-	  (* Create the entry *)
-	   updated, (Some (create_pos !after), Some assoc, Some (constr_level n), None)
+          (* Create the entry *)
+           updated, (Some (create_pos !after), Some assoc, Some (constr_level n), None)
         | _ ->
-	  (* The reinit flag has been updated *)
+          (* The reinit flag has been updated *)
            updated, (Some (Gramlib.Gramext.Level (constr_level n)), None, None, !init)
         end
       with
-	  (* Nothing has changed *)
+          (* Nothing has changed *)
           Exit ->
-	    (* Just inherit the existing associativity and name (None) *)
+            (* Just inherit the existing associativity and name (None) *)
             current, (Some (Gramlib.Gramext.Level (constr_level n)), None, None, None)
 
 let rec list_mem_assoc_triple x = function
@@ -450,7 +450,7 @@ let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> s env ->
         let constrlist, tail = List.chop (n - p) heads in
         constrlist :: env.constrlists, tail @ constrs
     in
-    ty_eval rem f { env with constrs; constrlists; } 
+    ty_eval rem f { env with constrs; constrlists; }
 
 type ('s, 'a, 'r) mayrec_rule =
 | MayRecRNo : ('s, Extend.norec, 'a, 'r) Extend.rule -> ('s, 'a, 'r) mayrec_rule

@@ -112,18 +112,18 @@ let type_of_global_ref gr =
     | VarRef v ->
       "var" ^ type_of_logical_kind (Decls.variable_kind v)
     | IndRef ind ->
-	let (mib,oib) = Inductive.lookup_mind_specif (Global.env ()) ind in
+        let (mib,oib) = Inductive.lookup_mind_specif (Global.env ()) ind in
           if mib.Declarations.mind_record <> Declarations.NotRecord then
             begin match mib.Declarations.mind_finite with
             | Finite -> "indrec"
             | BiFinite -> "rec"
-	    | CoFinite -> "corec"
+            | CoFinite -> "corec"
             end
-	  else
+          else
             begin match mib.Declarations.mind_finite with
             | Finite -> "ind"
             | BiFinite -> "variant"
-	    | CoFinite -> "coind"
+            | CoFinite -> "coind"
             end
     | ConstructRef _ -> "constr"
 
@@ -150,7 +150,7 @@ let dump_ref ?loc filepath modpath ident ty =
   | _ -> Option.iter (fun loc ->
     let bl,el = interval loc in
     dump_string (Printf.sprintf "R%d:%d %s %s %s %s\n"
-		  bl el filepath modpath ident ty)
+                  bl el filepath modpath ident ty)
     ) loc
 
 let dump_reference ?loc modpath ident ty =
@@ -193,13 +193,13 @@ let cook_notation (from,df) sc =
       (* Next token is a terminal *)
       set ntn !j '\''; incr j;
       while !i <= l && df.[!i] != ' ' do
-	if df.[!i] < ' ' then
-	  let c = char_of_int (int_of_char 'A' + int_of_char df.[!i] - 1) in
-	  (String.blit ("'^" ^ String.make 1 c) 0 ntn !j 3; j := !j+3; incr i)
-	else begin
-	  if df.[!i] == '\'' then (set ntn !j '\''; incr j);
-	  set ntn !j df.[!i]; incr j; incr i
-	end
+        if df.[!i] < ' ' then
+          let c = char_of_int (int_of_char 'A' + int_of_char df.[!i] - 1) in
+          (String.blit ("'^" ^ String.make 1 c) 0 ntn !j 3; j := !j+3; incr i)
+        else begin
+          if df.[!i] == '\'' then (set ntn !j '\''; incr j);
+          set ntn !j df.[!i]; incr j; incr i
+        end
       done;
       set ntn !j '\''; incr j
     end;

@@ -121,7 +121,7 @@ val unify_0 :            Environ.env ->
            types ->
            subst0
 
-val unify_0_with_initial_metas : 
+val unify_0_with_initial_metas :
            subst0 ->
            bool ->
            Environ.env ->

@@ -31,21 +31,21 @@ let load_rcfile ~rcfile ~state =
           Vernac.load_vernac ~echo:false ~interactive:false ~check:true ~state rcfile
         else raise (Sys_error ("Cannot read rcfile: "^ rcfile))
       | None ->
-	try
-	  let warn x = Feedback.msg_warning (str x) in
-	  let inferedrc = List.find CUnix.file_readable_p [
-	    Envars.xdg_config_home warn / rcdefaultname^"."^Coq_config.version;
-	    Envars.xdg_config_home warn / rcdefaultname;
-	    Envars.home ~warn / "."^rcdefaultname^"."^Coq_config.version;
-	    Envars.home ~warn / "."^rcdefaultname
-	  ] in
+        try
+          let warn x = Feedback.msg_warning (str x) in
+          let inferedrc = List.find CUnix.file_readable_p [
+            Envars.xdg_config_home warn / rcdefaultname^"."^Coq_config.version;
+            Envars.xdg_config_home warn / rcdefaultname;
+            Envars.home ~warn / "."^rcdefaultname^"."^Coq_config.version;
+            Envars.home ~warn / "."^rcdefaultname
+          ] in
           Vernac.load_vernac ~echo:false ~interactive:false ~check:true ~state inferedrc
         with Not_found -> state
-	(*
-	Flags.if_verbose
-	  mSGNL (str ("No coqrc or coqrc."^Coq_config.version^
-			 " found. Skipping rcfile loading."))
-	*)
+        (*
+        Flags.if_verbose
+          mSGNL (str ("No coqrc or coqrc."^Coq_config.version^
+                         " found. Skipping rcfile loading."))
+        *)
     with reraise ->
       let reraise = CErrors.push reraise in
       let () = Feedback.msg_info (str"Load of rcfile failed.") in

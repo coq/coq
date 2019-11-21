@@ -373,11 +373,11 @@ let mk_integer n =
   let rec loop n =
     if n =? one then Lazy.force coq_xH else
     mkApp((if n mod two =? zero then Lazy.force coq_xO else Lazy.force coq_xI),
-		[| loop (n/two) |])
+                [| loop (n/two) |])
   in
   if n =? zero then Lazy.force coq_Z0
   else mkApp ((if n >? zero then Lazy.force coq_Zpos else Lazy.force coq_Zneg),
-		 [| loop (abs n) |])
+                 [| loop (abs n) |])
 
 type omega_constant =
   | Zplus | Zmult | Zminus | Zsucc | Zopp | Zpred
@@ -494,11 +494,11 @@ let context sigma operation path (t : constr) =
       | (p, Cast (c,k,t)) -> mkCast (loop i p c,k,t)
       | ([], _) -> operation i t
       | ((P_APP n :: p),  App (f,v)) ->
-	  let v' = Array.copy v in
-	  v'.(pred n) <- loop i p v'.(pred n); mkApp (f, v')
+          let v' = Array.copy v in
+          v'.(pred n) <- loop i p v'.(pred n); mkApp (f, v')
       | (p, Fix ((_,n as ln),(tys,lna,v))) ->
-	  let l = Array.length v in
-	  let v' = Array.copy v in
+          let l = Array.length v in
+          let v' = Array.copy v in
           v'.(n)<- loop (Util.(+) i l) p v.(n); (mkFix (ln,(tys,lna,v')))
       | ((P_TYPE :: p), Prod (n,t,c)) ->
           (mkProd (n,loop i p t,c))
@@ -507,7 +507,7 @@ let context sigma operation path (t : constr) =
       | ((P_TYPE :: p), LetIn (n,b,t,c)) ->
           (mkLetIn (n,b,loop i p t,c))
       | (p, _) ->
-	  failwith ("abstract_path " ^ string_of_int(List.length p))
+          failwith ("abstract_path " ^ string_of_int(List.length p))
   in
   loop 1 path t
 
@@ -521,7 +521,7 @@ let occurrence sigma path (t : constr) =
     | ((P_TYPE :: p), Lambda (n,term,c)) -> loop p term
     | ((P_TYPE :: p), LetIn (n,b,term,c)) -> loop p term
     | (p, _) ->
-	failwith ("occurrence " ^ string_of_int(List.length p))
+        failwith ("occurrence " ^ string_of_int(List.length p))
   in
   loop path t
 
@@ -575,9 +575,9 @@ let compile name kind =
   let rec loop accu = function
     | Oplus(Otimes(Oatom v,Oz n),r) -> loop ({v=intern_id v; c=n} :: accu) r
     | Oz n ->
-	let id = new_id () in
-	tag_hypothesis name id;
-	{kind = kind; body = List.rev accu; constant = n; id = id}
+        let id = new_id () in
+        tag_hypothesis name id;
+        {kind = kind; body = List.rev accu; constant = n; id = id}
     | _ -> anomaly (Pp.str "compile_equation.")
   in
   loop []
@@ -608,9 +608,9 @@ let clever_rewrite_base_poly typ p result theorem =
           mkArrow typ Sorts.Relevant mkProp,
           mkLambda
             (make_annot (Name (Id.of_string "H")) Sorts.Relevant,
-	     applist (mkRel 1,[result]),
-	     mkApp (Lazy.force coq_eq_ind_r,
-		       [| typ; result; mkRel 2; mkRel 1; occ; theorem |]))),
+             applist (mkRel 1,[result]),
+             mkApp (Lazy.force coq_eq_ind_r,
+                       [| typ; result; mkRel 2; mkRel 1; occ; theorem |]))),
        [abstracted])
   in
   let argt = mkApp (abstracted, [|result|]) in
@@ -692,51 +692,51 @@ let simpl_coeffs path_init path_k =
 let rec shuffle p (t1,t2) =
   match t1,t2 with
     | Oplus(l1,r1), Oplus(l2,r2) ->
-	if weight l1 > weight l2 then
+        if weight l1 > weight l2 then
           let (tac,t') = shuffle (P_APP 2 :: p) (r1,t2) in
           (clever_rewrite p [[P_APP 1;P_APP 1];
-			     [P_APP 1; P_APP 2];[P_APP 2]]
+                             [P_APP 1; P_APP 2];[P_APP 2]]
              (Lazy.force coq_fast_Zplus_assoc_reverse)
            :: tac,
            Oplus(l1,t'))
-	else
-	  let (tac,t') = shuffle (P_APP 2 :: p) (t1,r2) in
+        else
+          let (tac,t') = shuffle (P_APP 2 :: p) (t1,r2) in
           (clever_rewrite p [[P_APP 1];[P_APP 2;P_APP 1];[P_APP 2;P_APP 2]]
              (Lazy.force coq_fast_Zplus_permute)
            :: tac,
            Oplus(l2,t'))
     | Oplus(l1,r1), t2 ->
-	if weight l1 > weight t2 then
+        if weight l1 > weight t2 then
           let (tac,t') = shuffle (P_APP 2 :: p) (r1,t2) in
           clever_rewrite p [[P_APP 1;P_APP 1]; [P_APP 1; P_APP 2];[P_APP 2]]
             (Lazy.force coq_fast_Zplus_assoc_reverse)
           :: tac,
           Oplus(l1, t')
-	else
+        else
           [clever_rewrite p [[P_APP 1];[P_APP 2]]
-	     (Lazy.force coq_fast_Zplus_comm)],
+             (Lazy.force coq_fast_Zplus_comm)],
           Oplus(t2,t1)
     | t1,Oplus(l2,r2) ->
-	if weight l2 > weight t1 then
+        if weight l2 > weight t1 then
           let (tac,t') = shuffle (P_APP 2 :: p) (t1,r2) in
           clever_rewrite p [[P_APP 1];[P_APP 2;P_APP 1];[P_APP 2;P_APP 2]]
             (Lazy.force coq_fast_Zplus_permute)
           :: tac,
           Oplus(l2,t')
-	else [],Oplus(t1,t2)
+        else [],Oplus(t1,t2)
     | Oz t1,Oz t2 ->
-	[focused_simpl p], Oz(Bigint.add t1 t2)
+        [focused_simpl p], Oz(Bigint.add t1 t2)
     | t1,t2 ->
-	if weight t1 < weight t2 then
+        if weight t1 < weight t2 then
           [clever_rewrite p [[P_APP 1];[P_APP 2]]
-	     (Lazy.force coq_fast_Zplus_comm)],
-	  Oplus(t2,t1)
-	else [],Oplus(t1,t2)
+             (Lazy.force coq_fast_Zplus_comm)],
+          Oplus(t2,t1)
+        else [],Oplus(t1,t2)
 
 let shuffle_mult p_init k1 e1 k2 e2 =
   let rec loop p = function
     | (({c=c1;v=v1}::l1) as l1'),(({c=c2;v=v2}::l2) as l2') ->
-	if Int.equal v1 v2 then
+        if Int.equal v1 v2 then
           let tac =
             clever_rewrite p [[P_APP 1; P_APP 1; P_APP 1; P_APP 1];
                               [P_APP 1; P_APP 1; P_APP 1; P_APP 2];
@@ -746,15 +746,15 @@ let shuffle_mult p_init k1 e1 k2 e2 =
                               [P_APP 1; P_APP 2];
                               [P_APP 2; P_APP 2]]
               (Lazy.force coq_fast_OMEGA10)
-	  in
+          in
           if Bigint.add (Bigint.mult k1 c1) (Bigint.mult k2 c2) =? zero then
             let tac' =
-	      clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 2]]
+              clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 2]]
                 (Lazy.force coq_fast_Zred_factor5) in
-	    tac :: focused_simpl (P_APP 2::P_APP 1:: p) :: tac' ::
-	    loop p (l1,l2)
+            tac :: focused_simpl (P_APP 2::P_APP 1:: p) :: tac' ::
+            loop p (l1,l2)
           else tac :: loop (P_APP 2 :: p) (l1,l2)
-	else if v1 > v2 then
+        else if v1 > v2 then
           clever_rewrite p [[P_APP 1; P_APP 1; P_APP 1; P_APP 1];
                             [P_APP 1; P_APP 1; P_APP 1; P_APP 2];
                             [P_APP 1; P_APP 1; P_APP 2];
@@ -762,7 +762,7 @@ let shuffle_mult p_init k1 e1 k2 e2 =
                             [P_APP 1; P_APP 2]]
             (Lazy.force coq_fast_OMEGA11) ::
           loop (P_APP 2 :: p) (l1,l2')
-	else
+        else
           clever_rewrite p [[P_APP 2; P_APP 1; P_APP 1; P_APP 1];
                             [P_APP 2; P_APP 1; P_APP 1; P_APP 2];
                             [P_APP 1];
@@ -793,7 +793,7 @@ let shuffle_mult p_init k1 e1 k2 e2 =
 let shuffle_mult_right p_init e1 k2 e2 =
   let rec loop p = function
     | (({c=c1;v=v1}::l1) as l1'),(({c=c2;v=v2}::l2) as l2') ->
-	if Int.equal v1 v2 then
+        if Int.equal v1 v2 then
           let tac =
             clever_rewrite p
               [[P_APP 1; P_APP 1; P_APP 1];
@@ -803,20 +803,20 @@ let shuffle_mult_right p_init e1 k2 e2 =
                [P_APP 2; P_APP 1; P_APP 2];
                [P_APP 2; P_APP 2]]
               (Lazy.force coq_fast_OMEGA15)
-	  in
+          in
           if Bigint.add c1 (Bigint.mult k2 c2) =? zero then
             let tac' =
               clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 2]]
                 (Lazy.force coq_fast_Zred_factor5)
-	    in
+            in
             tac :: focused_simpl (P_APP 2::P_APP 1:: p) :: tac' ::
             loop p (l1,l2)
           else tac :: loop (P_APP 2 :: p) (l1,l2)
-	else if v1 > v2 then
+        else if v1 > v2 then
           clever_rewrite p [[P_APP 1;P_APP 1]; [P_APP 1; P_APP 2];[P_APP 2]]
             (Lazy.force coq_fast_Zplus_assoc_reverse) ::
           loop (P_APP 2 :: p) (l1,l2')
-	else
+        else
           clever_rewrite p [[P_APP 2; P_APP 1; P_APP 1; P_APP 1];
                             [P_APP 2; P_APP 1; P_APP 1; P_APP 2];
                             [P_APP 1];
@@ -844,13 +844,13 @@ let rec shuffle_cancel p = function
   | [] -> [focused_simpl p]
   | ({c=c1}::l1) ->
       let tac =
-	clever_rewrite p [[P_APP 1; P_APP 1; P_APP 1];[P_APP 1; P_APP 2];
+        clever_rewrite p [[P_APP 1; P_APP 1; P_APP 1];[P_APP 1; P_APP 2];
                           [P_APP 2; P_APP 2];
                           [P_APP 1; P_APP 1; P_APP 2; P_APP 1]]
           (if c1 >? zero then
-	     (Lazy.force coq_fast_OMEGA13)
-	   else
-	     (Lazy.force coq_fast_OMEGA14))
+             (Lazy.force coq_fast_OMEGA13)
+           else
+             (Lazy.force coq_fast_OMEGA14))
       in
       tac :: shuffle_cancel p l1
 
@@ -875,7 +875,7 @@ let scalar_norm p_init =
   let rec loop p = function
     | [] -> [simpl_coeffs p_init p]
     | (_::l) ->
-	clever_rewrite p
+        clever_rewrite p
           [[P_APP 1; P_APP 1; P_APP 1];[P_APP 1; P_APP 1; P_APP 2];
            [P_APP 1; P_APP 2];[P_APP 2]]
           (Lazy.force coq_fast_OMEGA16) :: loop (P_APP 2 :: p) l
@@ -886,9 +886,9 @@ let norm_add p_init =
   let rec loop p = function
     | [] -> [simpl_coeffs p_init p]
     | _:: l ->
-	clever_rewrite p [[P_APP 1;P_APP 1]; [P_APP 1; P_APP 2];[P_APP 2]]
+        clever_rewrite p [[P_APP 1;P_APP 1]; [P_APP 1; P_APP 2];[P_APP 2]]
           (Lazy.force coq_fast_Zplus_assoc_reverse) ::
-	loop (P_APP 2 :: p) l
+        loop (P_APP 2 :: p) l
   in
   loop p_init
 
@@ -896,7 +896,7 @@ let scalar_norm_add p_init =
   let rec loop p = function
     | [] -> [simpl_coeffs p_init p]
     | _ :: l ->
-	clever_rewrite p
+        clever_rewrite p
           [[P_APP 1; P_APP 1; P_APP 1; P_APP 1];
            [P_APP 1; P_APP 1; P_APP 1; P_APP 2];
            [P_APP 1; P_APP 1; P_APP 2]; [P_APP 2]; [P_APP 1; P_APP 2]]
@@ -936,24 +936,24 @@ let rec transform sigma p t =
   in
   try match destructurate_term sigma t with
     | Kapp(Zplus,[t1;t2]) ->
-	let tac1,t1' = transform sigma (P_APP 1 :: p) t1
-	and tac2,t2' = transform sigma (P_APP 2 :: p) t2 in
-	let tac,t' = shuffle p (t1',t2') in
-	tac1 @ tac2 @ tac, t'
+        let tac1,t1' = transform sigma (P_APP 1 :: p) t1
+        and tac2,t2' = transform sigma (P_APP 2 :: p) t2 in
+        let tac,t' = shuffle p (t1',t2') in
+        tac1 @ tac2 @ tac, t'
     | Kapp(Zminus,[t1;t2]) ->
-	let tac,t =
-	  transform sigma p
-	    (mkApp (Lazy.force coq_Zplus,
-		     [| t1; (mkApp (Lazy.force coq_Zopp, [| t2 |])) |])) in
-	unfold sp_Zminus :: tac,t
+        let tac,t =
+          transform sigma p
+            (mkApp (Lazy.force coq_Zplus,
+                     [| t1; (mkApp (Lazy.force coq_Zopp, [| t2 |])) |])) in
+        unfold sp_Zminus :: tac,t
     | Kapp(Zsucc,[t1]) ->
-	let tac,t = transform sigma p (mkApp (Lazy.force coq_Zplus,
-					 [| t1; mk_integer one |])) in
-	unfold sp_Zsucc :: tac,t
+        let tac,t = transform sigma p (mkApp (Lazy.force coq_Zplus,
+                                         [| t1; mk_integer one |])) in
+        unfold sp_Zsucc :: tac,t
     | Kapp(Zpred,[t1]) ->
-	let tac,t = transform sigma p (mkApp (Lazy.force coq_Zplus,
-					 [| t1; mk_integer negone |])) in
-	unfold sp_Zpred :: tac,t
+        let tac,t = transform sigma p (mkApp (Lazy.force coq_Zplus,
+                                         [| t1; mk_integer negone |])) in
+        unfold sp_Zpred :: tac,t
    | Kapp(Zmult,[t1;t2]) ->
        let tac1,t1' = transform sigma (P_APP 1 :: p) t1
        and tac2,t2' = transform sigma (P_APP 2 :: p) t2 in
@@ -961,8 +961,8 @@ let rec transform sigma p t =
          | (_,Oz n) -> let tac,t' = scalar p n t1' in tac1 @ tac2 @ tac,t'
          | (Oz n,_) ->
              let sym =
-	       clever_rewrite p [[P_APP 1];[P_APP 2]]
-		 (Lazy.force coq_fast_Zmult_comm) in
+               clever_rewrite p [[P_APP 1];[P_APP 2]]
+                 (Lazy.force coq_fast_Zmult_comm) in
              let tac,t' = scalar p n t2' in tac1 @ tac2 @ (sym :: tac),t'
          | _ -> default false t
        end
@@ -981,26 +981,26 @@ let rec transform sigma p t =
 let shrink_pair p f1 f2 =
   match f1,f2 with
     | Oatom v,Oatom _ ->
-	let r = Otimes(Oatom v,Oz two) in
-	clever_rewrite p [[P_APP 1]] (Lazy.force coq_fast_Zred_factor1), r
+        let r = Otimes(Oatom v,Oz two) in
+        clever_rewrite p [[P_APP 1]] (Lazy.force coq_fast_Zred_factor1), r
     | Oatom v, Otimes(_,c2) ->
-	let r = Otimes(Oatom v,Oplus(c2,Oz one)) in
-	clever_rewrite p [[P_APP 1];[P_APP 2;P_APP 2]]
-	  (Lazy.force coq_fast_Zred_factor2), r
+        let r = Otimes(Oatom v,Oplus(c2,Oz one)) in
+        clever_rewrite p [[P_APP 1];[P_APP 2;P_APP 2]]
+          (Lazy.force coq_fast_Zred_factor2), r
     | Otimes (v1,c1),Oatom v ->
-	let r = Otimes(Oatom v,Oplus(c1,Oz one)) in
-	clever_rewrite p [[P_APP 2];[P_APP 1;P_APP 2]]
+        let r = Otimes(Oatom v,Oplus(c1,Oz one)) in
+        clever_rewrite p [[P_APP 2];[P_APP 1;P_APP 2]]
           (Lazy.force coq_fast_Zred_factor3), r
     | Otimes (Oatom v,c1),Otimes (v2,c2) ->
-	let r = Otimes(Oatom v,Oplus(c1,c2)) in
-	clever_rewrite p
+        let r = Otimes(Oatom v,Oplus(c1,c2)) in
+        clever_rewrite p
           [[P_APP 1;P_APP 1];[P_APP 1;P_APP 2];[P_APP 2;P_APP 2]]
           (Lazy.force coq_fast_Zred_factor4),r
     | t1,t2 ->
-	begin
-	  oprint t1; print_newline (); oprint t2; print_newline ();
+        begin
+          oprint t1; print_newline (); oprint t2; print_newline ();
           flush stdout; CErrors.user_err Pp.(str "shrink.1")
-	end
+        end
 
 let reduce_factor p = function
   | Oatom v ->
@@ -1010,8 +1010,8 @@ let reduce_factor p = function
   | Otimes(Oatom v,c) ->
       let rec compute = function
         | Oz n -> n
-	| Oplus(t1,t2) -> Bigint.add (compute t1) (compute t2)
-	| _ -> CErrors.user_err Pp.(str "condense.1")
+        | Oplus(t1,t2) -> Bigint.add (compute t1) (compute t2)
+        | _ -> CErrors.user_err Pp.(str "condense.1")
       in
       [focused_simpl (P_APP 2 :: p)], Otimes(Oatom v,Oz(compute c))
   | t -> oprint t; CErrors.user_err Pp.(str "reduce_factor.1")
@@ -1019,29 +1019,29 @@ let reduce_factor p = function
 let rec condense p = function
   | Oplus(f1,(Oplus(f2,r) as t)) ->
       if Int.equal (weight f1) (weight f2) then begin
-	let shrink_tac,t = shrink_pair (P_APP 1 :: p) f1 f2 in
-	let assoc_tac =
+        let shrink_tac,t = shrink_pair (P_APP 1 :: p) f1 f2 in
+        let assoc_tac =
           clever_rewrite p
             [[P_APP 1];[P_APP 2;P_APP 1];[P_APP 2;P_APP 2]]
             (Lazy.force coq_fast_Zplus_assoc) in
-	let tac_list,t' = condense p (Oplus(t,r)) in
-	(assoc_tac :: shrink_tac :: tac_list), t'
+        let tac_list,t' = condense p (Oplus(t,r)) in
+        (assoc_tac :: shrink_tac :: tac_list), t'
       end else begin
-	let tac,f = reduce_factor (P_APP 1 :: p) f1 in
-	let tac',t' = condense (P_APP 2 :: p) t in
-	(tac @ tac'), Oplus(f,t')
+        let tac,f = reduce_factor (P_APP 1 :: p) f1 in
+        let tac',t' = condense (P_APP 2 :: p) t in
+        (tac @ tac'), Oplus(f,t')
       end
   | Oplus(f1,Oz n) ->
       let tac,f1' = reduce_factor (P_APP 1 :: p) f1 in tac,Oplus(f1',Oz n)
   | Oplus(f1,f2) ->
       if Int.equal (weight f1) (weight f2) then begin
-	let tac_shrink,t = shrink_pair p f1 f2 in
-	let tac,t' = condense p t in
-	tac_shrink :: tac,t'
+        let tac_shrink,t = shrink_pair p f1 f2 in
+        let tac,t' = condense p t in
+        tac_shrink :: tac,t'
       end else begin
-	let tac,f = reduce_factor (P_APP 1 :: p) f1 in
-	let tac',t' = condense (P_APP 2 :: p) f2 in
-	(tac @ tac'),Oplus(f,t')
+        let tac,f = reduce_factor (P_APP 1 :: p) f1 in
+        let tac',t' = condense (P_APP 2 :: p) f2 in
+        (tac @ tac'),Oplus(f,t')
       end
   | Oz _ as t -> [],t
   | t ->
@@ -1053,8 +1053,8 @@ let rec condense p = function
 let rec clear_zero p = function
   | Oplus(Otimes(Oatom v,Oz n),r) when n =? zero ->
       let tac =
-	clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 2]]
-	  (Lazy.force coq_fast_Zred_factor5) in
+        clever_rewrite p [[P_APP 1;P_APP 1];[P_APP 2]]
+          (Lazy.force coq_fast_Zred_factor5) in
       let tac',t = clear_zero p r in
       tac :: tac',t
   | Oplus(f,r) ->
@@ -1069,304 +1069,304 @@ let replay_history tactic_normalisation =
   let rec loop t : unit Proofview.tactic =
     match t with
       | HYP e :: l ->
-	  begin
-	    try
-	      tclTHEN
-		(Id.List.assoc (hyp_of_tag e.id) tactic_normalisation)
-		(loop l)
-	    with Not_found -> loop l end
+          begin
+            try
+              tclTHEN
+                (Id.List.assoc (hyp_of_tag e.id) tactic_normalisation)
+                (loop l)
+            with Not_found -> loop l end
       | NEGATE_CONTRADICT (e2,e1,b) :: l ->
-	  let eq1 = decompile e1
-	  and eq2 = decompile e2 in
-	  let id1 = hyp_of_tag e1.id
-	  and id2 = hyp_of_tag e2.id in
-	  let k = if b then negone else one in
-	  let p_initial = [P_APP 1;P_TYPE] in
-	  let tac= shuffle_mult_right p_initial e1.body k e2.body in
-	  tclTHENLIST [
-	    generalize_tac
-	      [mkApp (Lazy.force coq_OMEGA17, [|
-		val_of eq1;
-		val_of eq2;
-		mk_integer k;
-		mkVar id1; mkVar id2 |])];
-	    mk_then tac;
-	    (intros_using [aux]);
-	    resolve_id aux;
+          let eq1 = decompile e1
+          and eq2 = decompile e2 in
+          let id1 = hyp_of_tag e1.id
+          and id2 = hyp_of_tag e2.id in
+          let k = if b then negone else one in
+          let p_initial = [P_APP 1;P_TYPE] in
+          let tac= shuffle_mult_right p_initial e1.body k e2.body in
+          tclTHENLIST [
+            generalize_tac
+              [mkApp (Lazy.force coq_OMEGA17, [|
+                val_of eq1;
+                val_of eq2;
+                mk_integer k;
+                mkVar id1; mkVar id2 |])];
+            mk_then tac;
+            (intros_using [aux]);
+            resolve_id aux;
             reflexivity
           ]
       | CONTRADICTION (e1,e2) :: l ->
-	  let eq1 = decompile e1
-	  and eq2 = decompile e2 in
-	  let p_initial = [P_APP 2;P_TYPE] in
-	  let tac = shuffle_cancel p_initial e1.body in
-	  let solve_le =
+          let eq1 = decompile e1
+          and eq2 = decompile e2 in
+          let p_initial = [P_APP 2;P_TYPE] in
+          let tac = shuffle_cancel p_initial e1.body in
+          let solve_le =
             let not_sup_sup = mkApp (Lazy.force coq_eq,
-				     [|
-					Lazy.force coq_comparison;
-					Lazy.force coq_Gt;
-					Lazy.force coq_Gt |])
-	    in
+                                     [|
+                                        Lazy.force coq_comparison;
+                                        Lazy.force coq_Gt;
+                                        Lazy.force coq_Gt |])
+            in
             tclTHENS
-	      (tclTHENLIST [
-		unfold sp_Zle;
-		simpl_in_concl;
-		intro;
-		(absurd not_sup_sup) ])
-	      [ assumption ; reflexivity ]
-	  in
-	  let theorem =
+              (tclTHENLIST [
+                unfold sp_Zle;
+                simpl_in_concl;
+                intro;
+                (absurd not_sup_sup) ])
+              [ assumption ; reflexivity ]
+          in
+          let theorem =
             mkApp (Lazy.force coq_OMEGA2, [|
-		      val_of eq1; val_of eq2;
-		      mkVar (hyp_of_tag e1.id);
-		      mkVar (hyp_of_tag e2.id) |])
-	  in
-	  Proofview.tclTHEN (tclTHEN (generalize_tac [theorem]) (mk_then tac)) solve_le
+                      val_of eq1; val_of eq2;
+                      mkVar (hyp_of_tag e1.id);
+                      mkVar (hyp_of_tag e2.id) |])
+          in
+          Proofview.tclTHEN (tclTHEN (generalize_tac [theorem]) (mk_then tac)) solve_le
       | DIVIDE_AND_APPROX (e1,e2,k,d) :: l ->
-	  let id = hyp_of_tag e1.id in
-	  let eq1 = val_of(decompile e1)
-	  and eq2 = val_of(decompile e2) in
-	  let kk = mk_integer k
-	  and dd = mk_integer d in
-	  let rhs = mk_plus (mk_times eq2 kk) dd in
-	  let state_eg = mk_eq eq1 rhs in
-	  let tac = scalar_norm_add [P_APP 3] e2.body in
-	  tclTHENS
-	    (cut state_eg)
-	    [ tclTHENS
-	        (tclTHENLIST [
-		  (intros_using [aux]);
-		  (generalize_tac
-		    [mkApp (Lazy.force coq_OMEGA1,
-		      [| eq1; rhs; mkVar aux; mkVar id |])]);
-		  (clear [aux;id]);
-		  (intros_using [id]);
-		  (cut (mk_gt kk dd)) ])
-	        [ tclTHENS
-		    (cut (mk_gt kk izero))
-		    [ tclTHENLIST [
-		        (intros_using [aux1; aux2]);
-		        (generalize_tac
-			  [mkApp (Lazy.force coq_Zmult_le_approx,
-			    [| kk;eq2;dd;mkVar aux1;mkVar aux2; mkVar id |])]);
-		        (clear [aux1;aux2;id]);
-		        (intros_using [id]);
-		        (loop l) ];
-		      tclTHENLIST [
-			(unfold sp_Zgt);
-			simpl_in_concl;
-			reflexivity ] ];
-		  tclTHENLIST [ unfold sp_Zgt; simpl_in_concl; reflexivity ]
+          let id = hyp_of_tag e1.id in
+          let eq1 = val_of(decompile e1)
+          and eq2 = val_of(decompile e2) in
+          let kk = mk_integer k
+          and dd = mk_integer d in
+          let rhs = mk_plus (mk_times eq2 kk) dd in
+          let state_eg = mk_eq eq1 rhs in
+          let tac = scalar_norm_add [P_APP 3] e2.body in
+          tclTHENS
+            (cut state_eg)
+            [ tclTHENS
+                (tclTHENLIST [
+                  (intros_using [aux]);
+                  (generalize_tac
+                    [mkApp (Lazy.force coq_OMEGA1,
+                      [| eq1; rhs; mkVar aux; mkVar id |])]);
+                  (clear [aux;id]);
+                  (intros_using [id]);
+                  (cut (mk_gt kk dd)) ])
+                [ tclTHENS
+                    (cut (mk_gt kk izero))
+                    [ tclTHENLIST [
+                        (intros_using [aux1; aux2]);
+                        (generalize_tac
+                          [mkApp (Lazy.force coq_Zmult_le_approx,
+                            [| kk;eq2;dd;mkVar aux1;mkVar aux2; mkVar id |])]);
+                        (clear [aux1;aux2;id]);
+                        (intros_using [id]);
+                        (loop l) ];
+                      tclTHENLIST [
+                        (unfold sp_Zgt);
+                        simpl_in_concl;
+                        reflexivity ] ];
+                  tclTHENLIST [ unfold sp_Zgt; simpl_in_concl; reflexivity ]
                 ];
-	      tclTHEN (mk_then tac) reflexivity ]
+              tclTHEN (mk_then tac) reflexivity ]
 
       | NOT_EXACT_DIVIDE (e1,k) :: l ->
-	  let c = floor_div e1.constant k in
-	  let d = Bigint.sub e1.constant (Bigint.mult c k) in
-	  let e2 =  {id=e1.id; kind=EQUA;constant = c;
+          let c = floor_div e1.constant k in
+          let d = Bigint.sub e1.constant (Bigint.mult c k) in
+          let e2 =  {id=e1.id; kind=EQUA;constant = c;
                      body = map_eq_linear (fun c -> c / k) e1.body } in
-	  let eq2 = val_of(decompile e2) in
-	  let kk = mk_integer k
-	  and dd = mk_integer d in
-	  let tac = scalar_norm_add [P_APP 2] e2.body in
-	  tclTHENS
-	    (cut (mk_gt dd izero))
-	    [ tclTHENS (cut (mk_gt kk dd))
-		[tclTHENLIST [
-		  (intros_using [aux2;aux1]);
-		  (generalize_tac
-		    [mkApp (Lazy.force coq_OMEGA4,
+          let eq2 = val_of(decompile e2) in
+          let kk = mk_integer k
+          and dd = mk_integer d in
+          let tac = scalar_norm_add [P_APP 2] e2.body in
+          tclTHENS
+            (cut (mk_gt dd izero))
+            [ tclTHENS (cut (mk_gt kk dd))
+                [tclTHENLIST [
+                  (intros_using [aux2;aux1]);
+                  (generalize_tac
+                    [mkApp (Lazy.force coq_OMEGA4,
                       [| dd;kk;eq2;mkVar aux1; mkVar aux2 |])]);
-		  (clear [aux1;aux2]);
-		  unfold sp_not;
-		  (intros_using [aux]);
-		  resolve_id aux;
-		  mk_then tac;
-		  assumption ] ;
-		 tclTHENLIST [
-		   unfold sp_Zgt;
-		   simpl_in_concl;
-		   reflexivity ] ];
+                  (clear [aux1;aux2]);
+                  unfold sp_not;
+                  (intros_using [aux]);
+                  resolve_id aux;
+                  mk_then tac;
+                  assumption ] ;
+                 tclTHENLIST [
+                   unfold sp_Zgt;
+                   simpl_in_concl;
+                   reflexivity ] ];
               tclTHENLIST [
-		unfold sp_Zgt;
+                unfold sp_Zgt;
                 simpl_in_concl;
-		reflexivity ] ]
+                reflexivity ] ]
       | EXACT_DIVIDE (e1,k) :: l ->
-	  let id = hyp_of_tag e1.id in
-	  let e2 =  map_eq_afine (fun c -> c / k) e1 in
-	  let eq1 = val_of(decompile e1)
-	  and eq2 = val_of(decompile e2) in
-	  let kk = mk_integer k in
-	  let state_eq = mk_eq eq1 (mk_times eq2 kk) in
-	  if e1.kind == DISE then
+          let id = hyp_of_tag e1.id in
+          let e2 =  map_eq_afine (fun c -> c / k) e1 in
+          let eq1 = val_of(decompile e1)
+          and eq2 = val_of(decompile e2) in
+          let kk = mk_integer k in
+          let state_eq = mk_eq eq1 (mk_times eq2 kk) in
+          if e1.kind == DISE then
             let tac = scalar_norm [P_APP 3] e2.body in
             tclTHENS
-	      (cut state_eq)
-	      [tclTHENLIST [
-		(intros_using [aux1]);
-		(generalize_tac
-		  [mkApp (Lazy.force coq_OMEGA18,
+              (cut state_eq)
+              [tclTHENLIST [
+                (intros_using [aux1]);
+                (generalize_tac
+                  [mkApp (Lazy.force coq_OMEGA18,
                     [| eq1;eq2;kk;mkVar aux1; mkVar id |])]);
-		(clear [aux1;id]);
-		(intros_using [id]);
-		(loop l) ];
-	       tclTHEN (mk_then tac) reflexivity ]
-	  else
+                (clear [aux1;id]);
+                (intros_using [id]);
+                (loop l) ];
+               tclTHEN (mk_then tac) reflexivity ]
+          else
             let tac = scalar_norm [P_APP 3] e2.body in
             tclTHENS (cut state_eq)
-	      [
-		tclTHENS
-		 (cut (mk_gt kk izero))
-		 [tclTHENLIST [
-		   (intros_using [aux2;aux1]);
-		   (generalize_tac
-		     [mkApp (Lazy.force coq_OMEGA3,
-		       [| eq1; eq2; kk; mkVar aux2; mkVar aux1;mkVar id|])]);
-		   (clear [aux1;aux2;id]);
-		   (intros_using [id]);
-		   (loop l) ];
-		  tclTHENLIST [
-		    unfold sp_Zgt;
+              [
+                tclTHENS
+                 (cut (mk_gt kk izero))
+                 [tclTHENLIST [
+                   (intros_using [aux2;aux1]);
+                   (generalize_tac
+                     [mkApp (Lazy.force coq_OMEGA3,
+                       [| eq1; eq2; kk; mkVar aux2; mkVar aux1;mkVar id|])]);
+                   (clear [aux1;aux2;id]);
+                   (intros_using [id]);
+                   (loop l) ];
+                  tclTHENLIST [
+                    unfold sp_Zgt;
                     simpl_in_concl;
-		    reflexivity ] ];
-		tclTHEN (mk_then tac) reflexivity ]
+                    reflexivity ] ];
+                tclTHEN (mk_then tac) reflexivity ]
       | (MERGE_EQ(e3,e1,e2)) :: l ->
-	  let id = new_identifier () in
-	  tag_hypothesis id e3;
-	  let id1 = hyp_of_tag e1.id
-	  and id2 = hyp_of_tag e2 in
-	  let eq1 = val_of(decompile e1)
-	  and eq2 = val_of (decompile (negate_eq e1)) in
-	  let tac =
-	    clever_rewrite [P_APP 3] [[P_APP 1]]
-	      (Lazy.force coq_fast_Zopp_eq_mult_neg_1) ::
+          let id = new_identifier () in
+          tag_hypothesis id e3;
+          let id1 = hyp_of_tag e1.id
+          and id2 = hyp_of_tag e2 in
+          let eq1 = val_of(decompile e1)
+          and eq2 = val_of (decompile (negate_eq e1)) in
+          let tac =
+            clever_rewrite [P_APP 3] [[P_APP 1]]
+              (Lazy.force coq_fast_Zopp_eq_mult_neg_1) ::
             scalar_norm [P_APP 3] e1.body
-	  in
-	  tclTHENS
-	    (cut (mk_eq eq1 (mk_inv eq2)))
-	    [tclTHENLIST [
-	      (intros_using [aux]);
-	      (generalize_tac [mkApp (Lazy.force coq_OMEGA8,
-	        [| eq1;eq2;mkVar id1;mkVar id2; mkVar aux|])]);
-	      (clear [id1;id2;aux]);
-	      (intros_using [id]);
-	      (loop l) ];
+          in
+          tclTHENS
+            (cut (mk_eq eq1 (mk_inv eq2)))
+            [tclTHENLIST [
+              (intros_using [aux]);
+              (generalize_tac [mkApp (Lazy.force coq_OMEGA8,
+                [| eq1;eq2;mkVar id1;mkVar id2; mkVar aux|])]);
+              (clear [id1;id2;aux]);
+              (intros_using [id]);
+              (loop l) ];
             tclTHEN (mk_then tac) reflexivity]
 
       | STATE {st_new_eq=e;st_def=def;st_orig=orig;st_coef=m;st_var=v} :: l ->
-	  let id = new_identifier ()
-	  and id2 = hyp_of_tag orig.id in
-	  tag_hypothesis id e.id;
-	  let eq1 = val_of(decompile def)
-	  and eq2 = val_of(decompile orig) in
-	  let vid = unintern_id v in
-	  let theorem =
+          let id = new_identifier ()
+          and id2 = hyp_of_tag orig.id in
+          tag_hypothesis id e.id;
+          let eq1 = val_of(decompile def)
+          and eq2 = val_of(decompile orig) in
+          let vid = unintern_id v in
+          let theorem =
             mkApp (Lazy.force coq_ex, [|
-		      Lazy.force coq_Z;
-		      mkLambda
+                      Lazy.force coq_Z;
+                      mkLambda
                         (make_annot (Name vid) Sorts.Relevant,
-			 Lazy.force coq_Z,
-			 mk_eq (mkRel 1) eq1) |])
-	  in
-	  let mm = mk_integer m in
-	  let p_initial = [P_APP 2;P_TYPE] in
-	  let tac =
+                         Lazy.force coq_Z,
+                         mk_eq (mkRel 1) eq1) |])
+          in
+          let mm = mk_integer m in
+          let p_initial = [P_APP 2;P_TYPE] in
+          let tac =
             clever_rewrite (P_APP 1 :: P_APP 1 :: P_APP 2 :: p_initial)
               [[P_APP 1]] (Lazy.force coq_fast_Zopp_eq_mult_neg_1) ::
             shuffle_mult_right p_initial
               orig.body m ({c= negone;v= v}::def.body) in
-	  tclTHENS
-	    (cut theorem)
-	    [tclTHENLIST [
-	      (intros_using [aux]);
-	      (elim_id aux);
-	      (clear [aux]);
-	      (intros_using [vid; aux]);
-	      (generalize_tac
-		[mkApp (Lazy.force coq_OMEGA9,
-		  [| mkVar vid;eq2;eq1;mm; mkVar id2;mkVar aux |])]);
-	      mk_then tac;
-	      (clear [aux]);
-	      (intros_using [id]);
-	      (loop l) ];
+          tclTHENS
+            (cut theorem)
+            [tclTHENLIST [
+              (intros_using [aux]);
+              (elim_id aux);
+              (clear [aux]);
+              (intros_using [vid; aux]);
+              (generalize_tac
+                [mkApp (Lazy.force coq_OMEGA9,
+                  [| mkVar vid;eq2;eq1;mm; mkVar id2;mkVar aux |])]);
+              mk_then tac;
+              (clear [aux]);
+              (intros_using [id]);
+              (loop l) ];
             tclTHEN (exists_tac eq1) reflexivity ]
       | SPLIT_INEQ(e,(e1,act1),(e2,act2)) :: l ->
-	  let id1 = new_identifier ()
-	  and id2 = new_identifier () in
-	  tag_hypothesis id1 e1; tag_hypothesis id2 e2;
-	  let id = hyp_of_tag e.id in
-	  let tac1 = norm_add [P_APP 2;P_TYPE] e.body in
-	  let tac2 = scalar_norm_add [P_APP 2;P_TYPE] e.body in
-	  let eq = val_of(decompile e) in
-	  tclTHENS
-	    (simplest_elim (applist (Lazy.force coq_OMEGA19, [eq; mkVar id])))
-	    [tclTHENLIST [ mk_then tac1; (intros_using [id1]); (loop act1) ];
+          let id1 = new_identifier ()
+          and id2 = new_identifier () in
+          tag_hypothesis id1 e1; tag_hypothesis id2 e2;
+          let id = hyp_of_tag e.id in
+          let tac1 = norm_add [P_APP 2;P_TYPE] e.body in
+          let tac2 = scalar_norm_add [P_APP 2;P_TYPE] e.body in
+          let eq = val_of(decompile e) in
+          tclTHENS
+            (simplest_elim (applist (Lazy.force coq_OMEGA19, [eq; mkVar id])))
+            [tclTHENLIST [ mk_then tac1; (intros_using [id1]); (loop act1) ];
              tclTHENLIST [ mk_then tac2; (intros_using [id2]); (loop act2) ]]
       | SUM(e3,(k1,e1),(k2,e2)) :: l ->
-	  let id = new_identifier () in
-	  tag_hypothesis id e3;
-	  let id1 = hyp_of_tag e1.id
-	  and id2 = hyp_of_tag e2.id in
-	  let eq1 = val_of(decompile e1)
-	  and eq2 = val_of(decompile e2) in
-	  if k1 =? one && e2.kind == EQUA then
+          let id = new_identifier () in
+          tag_hypothesis id e3;
+          let id1 = hyp_of_tag e1.id
+          and id2 = hyp_of_tag e2.id in
+          let eq1 = val_of(decompile e1)
+          and eq2 = val_of(decompile e2) in
+          if k1 =? one && e2.kind == EQUA then
             let tac_thm =
               match e1.kind with
-		| EQUA -> Lazy.force coq_OMEGA5
-		| INEQ -> Lazy.force coq_OMEGA6
-		| DISE -> Lazy.force coq_OMEGA20
-	    in
+                | EQUA -> Lazy.force coq_OMEGA5
+                | INEQ -> Lazy.force coq_OMEGA6
+                | DISE -> Lazy.force coq_OMEGA20
+            in
             let kk = mk_integer k2 in
             let p_initial =
               if e1.kind == DISE then [P_APP 1; P_TYPE] else [P_APP 2; P_TYPE] in
             let tac = shuffle_mult_right p_initial e1.body k2 e2.body in
             tclTHENLIST [
-	      (generalize_tac
+              (generalize_tac
                 [mkApp (tac_thm, [| eq1; eq2; kk; mkVar id1; mkVar id2 |])]);
-	      mk_then tac;
-	      (intros_using [id]);
-	      (loop l)
+              mk_then tac;
+              (intros_using [id]);
+              (loop l)
             ]
-	  else
+          else
             let kk1 = mk_integer k1
-	    and kk2 = mk_integer k2 in
-	    let p_initial = [P_APP 2;P_TYPE] in
-	    let tac= shuffle_mult p_initial k1 e1.body k2 e2.body in
+            and kk2 = mk_integer k2 in
+            let p_initial = [P_APP 2;P_TYPE] in
+            let tac= shuffle_mult p_initial k1 e1.body k2 e2.body in
             tclTHENS (cut (mk_gt kk1 izero))
-	      [tclTHENS
-		 (cut (mk_gt kk2 izero))
-		 [tclTHENLIST [
-		   (intros_using [aux2;aux1]);
-		   (generalize_tac
-		     [mkApp (Lazy.force coq_OMEGA7, [|
-		       eq1;eq2;kk1;kk2;
-		       mkVar aux1;mkVar aux2;
-		       mkVar id1;mkVar id2 |])]);
-		   (clear [aux1;aux2]);
-		   mk_then tac;
-		   (intros_using [id]);
-		   (loop l) ];
-		 tclTHENLIST [
-		   unfold sp_Zgt;
+              [tclTHENS
+                 (cut (mk_gt kk2 izero))
+                 [tclTHENLIST [
+                   (intros_using [aux2;aux1]);
+                   (generalize_tac
+                     [mkApp (Lazy.force coq_OMEGA7, [|
+                       eq1;eq2;kk1;kk2;
+                       mkVar aux1;mkVar aux2;
+                       mkVar id1;mkVar id2 |])]);
+                   (clear [aux1;aux2]);
+                   mk_then tac;
+                   (intros_using [id]);
+                   (loop l) ];
+                 tclTHENLIST [
+                   unfold sp_Zgt;
                    simpl_in_concl;
-		   reflexivity ] ];
-	      tclTHENLIST [
-		unfold sp_Zgt;
+                   reflexivity ] ];
+              tclTHENLIST [
+                unfold sp_Zgt;
                 simpl_in_concl;
-		reflexivity ] ]
+                reflexivity ] ]
       | CONSTANT_NOT_NUL(e,k) :: l ->
-	  tclTHEN ((generalize_tac [mkVar (hyp_of_tag e)])) Equality.discrConcl
+          tclTHEN ((generalize_tac [mkVar (hyp_of_tag e)])) Equality.discrConcl
       | CONSTANT_NUL(e) :: l ->
-	  tclTHEN (resolve_id (hyp_of_tag e)) reflexivity
+          tclTHEN (resolve_id (hyp_of_tag e)) reflexivity
       | CONSTANT_NEG(e,k) :: l ->
-	  tclTHENLIST [
-	    (generalize_tac [mkVar (hyp_of_tag e)]);
+          tclTHENLIST [
+            (generalize_tac [mkVar (hyp_of_tag e)]);
             unfold sp_Zle;
-	    simpl_in_concl;
-	    unfold sp_not;
-	    (intros_using [aux]);
-	    resolve_id aux;
-	    reflexivity
+            simpl_in_concl;
+            unfold sp_not;
+            (intros_using [aux]);
+            resolve_id aux;
+            reflexivity
           ]
       | _ -> Proofview.tclUNIT ()
   in
@@ -1401,29 +1401,29 @@ let destructure_omega env sigma tac_def (id,c) =
     try match destructurate_prop sigma c with
       | Kapp(Eq,[typ;t1;t2])
         when begin match destructurate_type env sigma typ with Kapp(Z,[]) -> true | _ -> false end ->
-	  let t = mk_plus t1 (mk_inv t2) in
-	  normalize_equation sigma
-	    id EQUA (Lazy.force coq_Zegal_left) 2 t t1 t2 tac_def
+          let t = mk_plus t1 (mk_inv t2) in
+          normalize_equation sigma
+            id EQUA (Lazy.force coq_Zegal_left) 2 t t1 t2 tac_def
       | Kapp(Zne,[t1;t2]) ->
-	  let t = mk_plus t1 (mk_inv t2) in
-	  normalize_equation sigma
-	    id DISE (Lazy.force coq_Zne_left) 1 t t1 t2 tac_def
+          let t = mk_plus t1 (mk_inv t2) in
+          normalize_equation sigma
+            id DISE (Lazy.force coq_Zne_left) 1 t t1 t2 tac_def
       | Kapp(Zle,[t1;t2]) ->
-	  let t = mk_plus t2 (mk_inv t1) in
-	  normalize_equation sigma
-	    id INEQ (Lazy.force coq_Zle_left) 2 t t1 t2 tac_def
+          let t = mk_plus t2 (mk_inv t1) in
+          normalize_equation sigma
+            id INEQ (Lazy.force coq_Zle_left) 2 t t1 t2 tac_def
       | Kapp(Zlt,[t1;t2]) ->
-	  let t = mk_plus (mk_plus t2 (mk_integer negone)) (mk_inv t1) in
-	  normalize_equation sigma
-	    id INEQ (Lazy.force coq_Zlt_left) 2 t t1 t2 tac_def
+          let t = mk_plus (mk_plus t2 (mk_integer negone)) (mk_inv t1) in
+          normalize_equation sigma
+            id INEQ (Lazy.force coq_Zlt_left) 2 t t1 t2 tac_def
       | Kapp(Zge,[t1;t2]) ->
-	  let t = mk_plus t1 (mk_inv t2) in
-	  normalize_equation sigma
-	    id INEQ (Lazy.force coq_Zge_left) 2 t t1 t2 tac_def
+          let t = mk_plus t1 (mk_inv t2) in
+          normalize_equation sigma
+            id INEQ (Lazy.force coq_Zge_left) 2 t t1 t2 tac_def
       | Kapp(Zgt,[t1;t2]) ->
-	  let t = mk_plus (mk_plus t1 (mk_integer negone)) (mk_inv t2) in
-	  normalize_equation sigma
-	    id INEQ (Lazy.force coq_Zgt_left) 2 t t1 t2 tac_def
+          let t = mk_plus (mk_plus t1 (mk_integer negone)) (mk_inv t2) in
+          normalize_equation sigma
+            id INEQ (Lazy.force coq_Zgt_left) 2 t t1 t2 tac_def
       | _ -> tac_def
     with e when catchable_exception e -> tac_def
 
@@ -1444,25 +1444,25 @@ let coq_omega =
   let prelude,sys =
     List.fold_left
       (fun (tac,sys) (t,(v,th,b)) ->
-	 if b then
+         if b then
            let id = new_identifier () in
            let i = new_id () in
            tag_hypothesis id i;
            (tclTHENLIST [
-	     (simplest_elim (applist (Lazy.force coq_intro_Z, [t])));
-	     (intros_using [v; id]);
-	     (elim_id id);
-	     (clear [id]);
-	     (intros_using [th;id]);
-	     tac ]),
+             (simplest_elim (applist (Lazy.force coq_intro_Z, [t])));
+             (intros_using [v; id]);
+             (elim_id id);
+             (clear [id]);
+             (intros_using [th;id]);
+             tac ]),
            {kind = INEQ;
-	    body = [{v=intern_id v; c=one}];
+            body = [{v=intern_id v; c=one}];
             constant = zero; id = i} :: sys
-	 else
+         else
            (tclTHENLIST [
-	     (simplest_elim (applist (Lazy.force coq_new_var, [t])));
-	     (intros_using [v;th]);
-	     tac ]),
+             (simplest_elim (applist (Lazy.force coq_new_var, [t])));
+             (intros_using [v;th]);
+             tac ]),
            sys)
       (Proofview.tclUNIT (),[]) (dump_tables ())
   in
@@ -1495,61 +1495,61 @@ let nat_inject =
     try match destructurate_term sigma t with
       | Kapp(Plus,[t1;t2]) ->
           tclTHENLIST [
-	    (clever_rewrite_gen p (mk_plus (mk_inj t1) (mk_inj t2))
+            (clever_rewrite_gen p (mk_plus (mk_inj t1) (mk_inj t2))
               ((Lazy.force coq_inj_plus),[t1;t2]));
-	    (explore (P_APP 1 :: p) t1);
-	    (explore (P_APP 2 :: p) t2)
+            (explore (P_APP 1 :: p) t1);
+            (explore (P_APP 2 :: p) t2)
           ]
       | Kapp(Mult,[t1;t2]) ->
           tclTHENLIST [
-	    (clever_rewrite_gen p (mk_times (mk_inj t1) (mk_inj t2))
+            (clever_rewrite_gen p (mk_times (mk_inj t1) (mk_inj t2))
               ((Lazy.force coq_inj_mult),[t1;t2]));
-	    (explore (P_APP 1 :: p) t1);
-	    (explore (P_APP 2 :: p) t2)
+            (explore (P_APP 1 :: p) t1);
+            (explore (P_APP 2 :: p) t2)
           ]
       | Kapp(Minus,[t1;t2]) ->
           let id = new_identifier () in
           tclTHENS
             (tclTHEN
-	       (simplest_elim (applist (Lazy.force coq_le_gt_dec, [t2;t1])))
-	       (intros_using [id]))
-	    [
-	      tclTHENLIST [
-	        (clever_rewrite_gen p
-		  (mk_minus (mk_inj t1) (mk_inj t2))
+               (simplest_elim (applist (Lazy.force coq_le_gt_dec, [t2;t1])))
+               (intros_using [id]))
+            [
+              tclTHENLIST [
+                (clever_rewrite_gen p
+                  (mk_minus (mk_inj t1) (mk_inj t2))
                   ((Lazy.force coq_inj_minus1),[t1;t2;mkVar id]));
-		(loop [id,mkApp (Lazy.force coq_le, [| t2;t1 |])]);
-		(explore (P_APP 1 :: p) t1);
-		(explore (P_APP 2 :: p) t2) ];
-	      (tclTHEN
-		 (clever_rewrite_gen p (mk_integer zero)
+                (loop [id,mkApp (Lazy.force coq_le, [| t2;t1 |])]);
+                (explore (P_APP 1 :: p) t1);
+                (explore (P_APP 2 :: p) t2) ];
+              (tclTHEN
+                 (clever_rewrite_gen p (mk_integer zero)
                     ((Lazy.force coq_inj_minus2),[t1;t2;mkVar id]))
-		 (loop [id,mkApp (Lazy.force coq_gt, [| t2;t1 |])]))
-	    ]
+                 (loop [id,mkApp (Lazy.force coq_gt, [| t2;t1 |])]))
+            ]
       | Kapp(S,[t']) ->
           let rec is_number t =
             try match destructurate_term sigma t with
-		Kapp(S,[t]) -> is_number t
+                Kapp(S,[t]) -> is_number t
               | Kapp(O,[]) -> true
               | _ -> false
             with e when catchable_exception e -> false
-	  in
+          in
           let rec loop p t : unit Proofview.tactic =
             try match destructurate_term sigma t with
-		Kapp(S,[t]) ->
+                Kapp(S,[t]) ->
                   (tclTHEN
                      (clever_rewrite_gen p
-			(mkApp (Lazy.force coq_Zsucc, [| mk_inj t |]))
-			((Lazy.force coq_inj_S),[t]))
-		     (loop (P_APP 1 :: p) t))
+                        (mkApp (Lazy.force coq_Zsucc, [| mk_inj t |]))
+                        ((Lazy.force coq_inj_S),[t]))
+                     (loop (P_APP 1 :: p) t))
               | _ -> explore p t
             with e when catchable_exception e -> explore p t
-	  in
+          in
           if is_number t' then focused_simpl p else loop p t
       | Kapp(Pred,[t]) ->
           let t_minus_one =
-	    mkApp (Lazy.force coq_minus, [| t;
-		      mkApp (Lazy.force coq_S, [| Lazy.force coq_O |]) |]) in
+            mkApp (Lazy.force coq_minus, [| t;
+                      mkApp (Lazy.force coq_S, [| Lazy.force coq_O |]) |]) in
           tclTHEN
             (clever_rewrite_gen_nat (P_APP 1 :: p) t_minus_one
                ((Lazy.force coq_pred_of_minus),[t]))
@@ -1562,65 +1562,65 @@ let nat_inject =
     | [] -> Proofview.tclUNIT ()
     | (i,t)::lit ->
         Proofview.tclEVARMAP >>= fun sigma ->
-	  begin try match destructurate_prop sigma t with
+          begin try match destructurate_prop sigma t with
               Kapp(Le,[t1;t2]) ->
-		tclTHENLIST [
-		  (generalize_tac
-		    [mkApp (Lazy.force coq_inj_le, [| t1;t2;mkVar i |]) ]);
-		  (explore [P_APP 1; P_TYPE] t1);
-		  (explore [P_APP 2; P_TYPE] t2);
-		  (reintroduce i);
-		  (loop lit)
+                tclTHENLIST [
+                  (generalize_tac
+                    [mkApp (Lazy.force coq_inj_le, [| t1;t2;mkVar i |]) ]);
+                  (explore [P_APP 1; P_TYPE] t1);
+                  (explore [P_APP 2; P_TYPE] t2);
+                  (reintroduce i);
+                  (loop lit)
                 ]
             | Kapp(Lt,[t1;t2]) ->
-		tclTHENLIST [
-		  (generalize_tac
-		    [mkApp (Lazy.force coq_inj_lt, [| t1;t2;mkVar i |]) ]);
-		  (explore [P_APP 1; P_TYPE] t1);
-		  (explore [P_APP 2; P_TYPE] t2);
-		  (reintroduce i);
-		  (loop lit)
+                tclTHENLIST [
+                  (generalize_tac
+                    [mkApp (Lazy.force coq_inj_lt, [| t1;t2;mkVar i |]) ]);
+                  (explore [P_APP 1; P_TYPE] t1);
+                  (explore [P_APP 2; P_TYPE] t2);
+                  (reintroduce i);
+                  (loop lit)
                 ]
             | Kapp(Ge,[t1;t2]) ->
-		tclTHENLIST [
-		  (generalize_tac
-		    [mkApp (Lazy.force coq_inj_ge, [| t1;t2;mkVar i |]) ]);
-		  (explore [P_APP 1; P_TYPE] t1);
-		  (explore [P_APP 2; P_TYPE] t2);
-		  (reintroduce i);
-		  (loop lit)
+                tclTHENLIST [
+                  (generalize_tac
+                    [mkApp (Lazy.force coq_inj_ge, [| t1;t2;mkVar i |]) ]);
+                  (explore [P_APP 1; P_TYPE] t1);
+                  (explore [P_APP 2; P_TYPE] t2);
+                  (reintroduce i);
+                  (loop lit)
                 ]
             | Kapp(Gt,[t1;t2]) ->
-		tclTHENLIST [
-		  (generalize_tac
+                tclTHENLIST [
+                  (generalize_tac
                     [mkApp (Lazy.force coq_inj_gt, [| t1;t2;mkVar i |]) ]);
-		  (explore [P_APP 1; P_TYPE] t1);
-		  (explore [P_APP 2; P_TYPE] t2);
-		  (reintroduce i);
-		  (loop lit)
+                  (explore [P_APP 1; P_TYPE] t1);
+                  (explore [P_APP 2; P_TYPE] t2);
+                  (reintroduce i);
+                  (loop lit)
                 ]
             | Kapp(Neq,[t1;t2]) ->
-		tclTHENLIST [
-		  (generalize_tac
-		    [mkApp (Lazy.force coq_inj_neq, [| t1;t2;mkVar i |]) ]);
-		  (explore [P_APP 1; P_TYPE] t1);
-		  (explore [P_APP 2; P_TYPE] t2);
-		  (reintroduce i);
-		  (loop lit)
+                tclTHENLIST [
+                  (generalize_tac
+                    [mkApp (Lazy.force coq_inj_neq, [| t1;t2;mkVar i |]) ]);
+                  (explore [P_APP 1; P_TYPE] t1);
+                  (explore [P_APP 2; P_TYPE] t2);
+                  (reintroduce i);
+                  (loop lit)
                 ]
             | Kapp(Eq,[typ;t1;t2]) ->
-		if is_conv typ (Lazy.force coq_nat) then
+                if is_conv typ (Lazy.force coq_nat) then
                   tclTHENLIST [
-		    (generalize_tac
-		      [mkApp (Lazy.force coq_inj_eq, [| t1;t2;mkVar i |]) ]);
-		    (explore [P_APP 2; P_TYPE] t1);
-		    (explore [P_APP 3; P_TYPE] t2);
-		    (reintroduce i);
-		    (loop lit)
+                    (generalize_tac
+                      [mkApp (Lazy.force coq_inj_eq, [| t1;t2;mkVar i |]) ]);
+                    (explore [P_APP 2; P_TYPE] t1);
+                    (explore [P_APP 3; P_TYPE] t2);
+                    (reintroduce i);
+                    (loop lit)
                   ]
-		else loop lit
-	    | _ -> loop lit
-	  with e when catchable_exception e -> loop lit end
+                else loop lit
+            | _ -> loop lit
+          with e when catchable_exception e -> loop lit end
   in
   let hyps_types = Tacmach.New.pf_hyps_types gl in
   loop (List.rev hyps_types)
@@ -1661,17 +1661,17 @@ exception Undecidable
 let rec decidability env sigma t =
   match destructurate_prop sigma t with
     | Kapp(Or,[t1;t2]) ->
-	mkApp (Lazy.force coq_dec_or, [| t1; t2;
+        mkApp (Lazy.force coq_dec_or, [| t1; t2;
                   decidability env sigma t1; decidability env sigma t2 |])
     | Kapp(And,[t1;t2]) ->
-	mkApp (Lazy.force coq_dec_and, [| t1; t2;
+        mkApp (Lazy.force coq_dec_and, [| t1; t2;
                   decidability env sigma t1; decidability env sigma t2 |])
     | Kapp(Iff,[t1;t2]) ->
-	mkApp (Lazy.force coq_dec_iff, [| t1; t2;
+        mkApp (Lazy.force coq_dec_iff, [| t1; t2;
                   decidability env sigma t1; decidability env sigma t2 |])
     | Kimp(t1,t2) ->
         (* This is the only situation where it's not obvious that [t]
-	   is in Prop. The recursive call on [t2] will ensure that. *)
+           is in Prop. The recursive call on [t2] will ensure that. *)
         mkApp (Lazy.force coq_dec_imp,
                  [| t1; t2; decidability env sigma t1; decidability env sigma t2 |])
     | Kapp(Not,[t1]) ->
@@ -1681,10 +1681,10 @@ let rec decidability env sigma t =
           | Kapp(Z,[]) ->  mkApp (Lazy.force coq_dec_eq, [| t1;t2 |])
           | Kapp(Nat,[]) ->  mkApp (Lazy.force coq_dec_eq_nat, [| t1;t2 |])
           | _ -> raise Undecidable
-	end
+        end
     | Kapp(op,[t1;t2]) ->
         (try mkApp (Lazy.force (dec_binop op), [| t1; t2 |])
-	 with Not_found -> raise Undecidable)
+         with Not_found -> raise Undecidable)
     | Kapp(False,[]) -> Lazy.force coq_dec_False
     | Kapp(True,[]) -> Lazy.force coq_dec_True
     | _ -> raise Undecidable
@@ -1736,8 +1736,8 @@ let destructure_hyps =
     | decl :: lit -> (* variable without body (or !letin_flag isn't set) *)
        let i = NamedDecl.get_id decl in
        Proofview.tclEVARMAP >>= fun sigma ->
-	  begin try match destructurate_prop sigma (NamedDecl.get_type decl) with
-	  | Kapp(False,[]) -> elim_id i
+          begin try match destructurate_prop sigma (NamedDecl.get_type decl) with
+          | Kapp(False,[]) -> elim_id i
           | Kapp((Zle|Zge|Zgt|Zlt|Zne),[t1;t2]) -> loop lit
           | Kapp(Or,[t1;t2]) ->
               (tclTHENS
@@ -1746,125 +1746,125 @@ let destructure_hyps =
                    onClearedName i (fun i -> (loop (LocalAssum (make_annot i Sorts.Relevant,t2)::lit))) ])
           | Kapp(And,[t1;t2]) ->
               tclTHEN
-		(elim_id i)
-		(onClearedName2 i (fun i1 i2 ->
+                (elim_id i)
+                (onClearedName2 i (fun i1 i2 ->
                      loop (LocalAssum (make_annot i1 Sorts.Relevant,t1) ::
                            LocalAssum (make_annot i2 Sorts.Relevant,t2) :: lit)))
           | Kapp(Iff,[t1;t2]) ->
-	      tclTHEN
-		(elim_id i)
-		(onClearedName2 i (fun i1 i2 ->
+              tclTHEN
+                (elim_id i)
+                (onClearedName2 i (fun i1 i2 ->
        loop (LocalAssum (make_annot i1 Sorts.Relevant,mkArrow t1 Sorts.Relevant t2) ::
              LocalAssum (make_annot i2 Sorts.Relevant,mkArrow t2 Sorts.Relevant t1) :: lit)))
           | Kimp(t1,t2) ->
-	      (* t1 and t2 might be in Type rather than Prop.
-		 For t1, the decidability check will ensure being Prop. *)
+              (* t1 and t2 might be in Type rather than Prop.
+                 For t1, the decidability check will ensure being Prop. *)
               if Termops.is_Prop sigma (type_of t2)
               then
-		let d1 = decidability t1 in
-		tclTHENLIST [
-		  (generalize_tac [mkApp (Lazy.force coq_imp_simp,
+                let d1 = decidability t1 in
+                tclTHENLIST [
+                  (generalize_tac [mkApp (Lazy.force coq_imp_simp,
                                                                [| t1; t2; d1; mkVar i|])]);
-		  (onClearedName i (fun i ->
+                  (onClearedName i (fun i ->
                     (loop (LocalAssum (make_annot i Sorts.Relevant,mk_or (mk_not t1) t2) :: lit))))
                 ]
               else
-		loop lit
+                loop lit
           | Kapp(Not,[t]) ->
               begin match destructurate_prop sigma t with
-		Kapp(Or,[t1;t2]) ->
+                Kapp(Or,[t1;t2]) ->
                   tclTHENLIST [
-		    (generalize_tac
+                    (generalize_tac
                                             [mkApp (Lazy.force coq_not_or,[| t1; t2; mkVar i |])]);
-		    (onClearedName i (fun i ->
+                    (onClearedName i (fun i ->
                       (loop (LocalAssum (make_annot i Sorts.Relevant,mk_and (mk_not t1) (mk_not t2)) :: lit))))
                   ]
-	      | Kapp(And,[t1;t2]) ->
-		  let d1 = decidability t1 in
+              | Kapp(And,[t1;t2]) ->
+                  let d1 = decidability t1 in
                   tclTHENLIST [
-		    (generalize_tac
-		                            [mkApp (Lazy.force coq_not_and,
-				                    [| t1; t2; d1; mkVar i |])]);
-		    (onClearedName i (fun i ->
+                    (generalize_tac
+                                            [mkApp (Lazy.force coq_not_and,
+                                                    [| t1; t2; d1; mkVar i |])]);
+                    (onClearedName i (fun i ->
                       (loop (LocalAssum (make_annot i Sorts.Relevant,mk_or (mk_not t1) (mk_not t2)) :: lit))))
                   ]
-	      | Kapp(Iff,[t1;t2]) ->
-		  let d1 = decidability t1 in
-		  let d2 = decidability t2 in
+              | Kapp(Iff,[t1;t2]) ->
+                  let d1 = decidability t1 in
+                  let d2 = decidability t2 in
                   tclTHENLIST [
-		    (generalize_tac
-		                            [mkApp (Lazy.force coq_not_iff,
-				                    [| t1; t2; d1; d2; mkVar i |])]);
-		    (onClearedName i (fun i ->
+                    (generalize_tac
+                                            [mkApp (Lazy.force coq_not_iff,
+                                                    [| t1; t2; d1; d2; mkVar i |])]);
+                    (onClearedName i (fun i ->
                       (loop (LocalAssum (make_annot i Sorts.Relevant,mk_or (mk_and t1 (mk_not t2))
-				                  (mk_and (mk_not t1) t2)) :: lit))))
+                                                  (mk_and (mk_not t1) t2)) :: lit))))
                   ]
-	      | Kimp(t1,t2) ->
-		    (* t2 must be in Prop otherwise ~(t1->t2) wouldn't be ok.
-		       For t1, being decidable implies being Prop. *)
-		  let d1 = decidability t1 in
+              | Kimp(t1,t2) ->
+                    (* t2 must be in Prop otherwise ~(t1->t2) wouldn't be ok.
+                       For t1, being decidable implies being Prop. *)
+                  let d1 = decidability t1 in
                   tclTHENLIST [
-		    (generalize_tac
-		                            [mkApp (Lazy.force coq_not_imp,
-				                    [| t1; t2; d1; mkVar i |])]);
-		    (onClearedName i (fun i ->
+                    (generalize_tac
+                                            [mkApp (Lazy.force coq_not_imp,
+                                                    [| t1; t2; d1; mkVar i |])]);
+                    (onClearedName i (fun i ->
                       (loop (LocalAssum (make_annot i Sorts.Relevant,mk_and t1 (mk_not t2)) :: lit))))
                   ]
-	      | Kapp(Not,[t]) ->
-		  let d = decidability t in
+              | Kapp(Not,[t]) ->
+                  let d = decidability t in
                   tclTHENLIST [
-		    (generalize_tac
-			                    [mkApp (Lazy.force coq_not_not, [| t; d; mkVar i |])]);
+                    (generalize_tac
+                                            [mkApp (Lazy.force coq_not_not, [| t; d; mkVar i |])]);
                     (onClearedName i (fun i -> (loop (LocalAssum (make_annot i Sorts.Relevant,t) :: lit))))
                   ]
-	      | Kapp(op,[t1;t2]) ->
-		  (try
-		     let thm = not_binop op in
+              | Kapp(op,[t1;t2]) ->
+                  (try
+                     let thm = not_binop op in
                      tclTHENLIST [
-		       (generalize_tac
-			                       [mkApp (Lazy.force thm, [| t1;t2;mkVar i|])]);
-		       (onClearedName i (fun _ -> loop lit))
+                       (generalize_tac
+                                               [mkApp (Lazy.force thm, [| t1;t2;mkVar i|])]);
+                       (onClearedName i (fun _ -> loop lit))
                      ]
-		   with Not_found -> loop lit)
-	      | Kapp(Eq,[typ;t1;t2]) ->
+                   with Not_found -> loop lit)
+              | Kapp(Eq,[typ;t1;t2]) ->
                   if !old_style_flag then begin
                     match destructurate_type env sigma typ with
-		    | Kapp(Nat,_) ->
+                    | Kapp(Nat,_) ->
                         tclTHENLIST [
-			  (simplest_elim
-			     (mkApp
+                          (simplest_elim
+                             (mkApp
                                 (Lazy.force coq_not_eq, [|t1;t2;mkVar i|])));
-			  (onClearedName i (fun _ -> loop lit))
+                          (onClearedName i (fun _ -> loop lit))
                         ]
-		    | Kapp(Z,_) ->
+                    | Kapp(Z,_) ->
                         tclTHENLIST [
-			  (simplest_elim
-			     (mkApp
-				(Lazy.force coq_not_Zeq, [|t1;t2;mkVar i|])));
-			  (onClearedName i (fun _ -> loop lit))
+                          (simplest_elim
+                             (mkApp
+                                (Lazy.force coq_not_Zeq, [|t1;t2;mkVar i|])));
+                          (onClearedName i (fun _ -> loop lit))
                         ]
-		    | _ -> loop lit
+                    | _ -> loop lit
                   end else begin
                     match destructurate_type env sigma typ with
-		    | Kapp(Nat,_) ->
+                    | Kapp(Nat,_) ->
                         (tclTHEN
                            (Tactics.convert_hyp ~check:false ~reorder:false (NamedDecl.set_type (mkApp (Lazy.force coq_neq, [| t1;t2|]))
                                                                      decl))
-			   (loop lit))
-		    | Kapp(Z,_) ->
+                           (loop lit))
+                    | Kapp(Z,_) ->
                         (tclTHEN
                            (Tactics.convert_hyp ~check:false ~reorder:false (NamedDecl.set_type (mkApp (Lazy.force coq_Zne, [| t1;t2|]))
                                                                      decl))
-			   (loop lit))
-		    | _ -> loop lit
+                           (loop lit))
+                    | _ -> loop lit
                   end
-	      | _ -> loop lit
+              | _ -> loop lit
               end
           | _ -> loop lit
-	    with
-	    | Undecidable -> loop lit
-	    | e when catchable_exception e -> loop lit
-	  end
+            with
+            | Undecidable -> loop lit
+            | e when catchable_exception e -> loop lit
+          end
     in
     let hyps = Proofview.Goal.hyps gl in
     loop hyps
@@ -1883,23 +1883,23 @@ let destructure_goal =
       match prop with
       | Kapp(Not,[t]) ->
           (tclTHEN
-	     (tclTHEN (unfold sp_not) intro)
-	     destructure_hyps)
+             (tclTHEN (unfold sp_not) intro)
+             destructure_hyps)
       | Kimp(a,b) -> (tclTHEN intro (loop b))
       | Kapp(False,[]) -> destructure_hyps
       | _ ->
-	  let goal_tac =
-	    try
-	      let dec = decidability t in
-	      tclTHEN
+          let goal_tac =
+            try
+              let dec = decidability t in
+              tclTHEN
                 (Proofview.Goal.enter begin fun gl ->
-		                         refine_app gl (mkApp (Lazy.force coq_dec_not_not, [| t; dec |]))
-		                         end)
-	        intro
-	    with Undecidable -> Tactics.elim_type (Lazy.force coq_False)
-	    | e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
-	  in
-	  tclTHEN goal_tac destructure_hyps
+                                         refine_app gl (mkApp (Lazy.force coq_dec_not_not, [| t; dec |]))
+                                         end)
+                intro
+            with Undecidable -> Tactics.elim_type (Lazy.force coq_False)
+            | e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+          in
+          tclTHEN goal_tac destructure_hyps
     in
     (loop concl)
   end

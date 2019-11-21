@@ -526,8 +526,8 @@ let camlbin, caml_version, camllib, findlib_version =
     | None ->
        try reset_caml_find camlexec (which camlexec.find)
        with Not_found ->
-	 die (sprintf "Error: cannot find '%s' in your path!\n" camlexec.find ^
-		"Please adjust your path or use the -ocamlfind option of ./configure")
+         die (sprintf "Error: cannot find '%s' in your path!\n" camlexec.find ^
+                "Please adjust your path or use the -ocamlfind option of ./configure")
   in
   if not (is_executable camlexec.find)
   then die ("Error: cannot find the executable '"^camlexec.find^"'.")

@@ -105,11 +105,11 @@ let max_prefix_sign lid sign =
   let rec max_rec (resid,prefix) = function
     | [] -> (resid,prefix)
     | (id::l) ->
-	let pre = sign_prefix id sign in
-	if sign_length pre > sign_length prefix then
+        let pre = sign_prefix id sign in
+        if sign_length pre > sign_length prefix then
           max_rec (id,pre) l
         else
-	  max_rec (resid,prefix) l
+          max_rec (resid,prefix) l
   in
   match lid with
     | [] -> nil_sign
@@ -119,11 +119,11 @@ let rec add_prods_sign env sigma t =
   match EConstr.kind sigma (whd_all env sigma t) with
     | Prod (na,c1,b) ->
         let id = id_of_name_using_hdchar env sigma t na.binder_name in
-	let b'= subst1 (mkVar id) b in
+        let b'= subst1 (mkVar id) b in
         add_prods_sign (push_named (LocalAssum ({na with binder_name=id},c1)) env) sigma b'
     | LetIn (na,c1,t1,b) ->
         let id = id_of_name_using_hdchar env sigma t na.binder_name in
-	let b'= subst1 (mkVar id) b in
+        let b'= subst1 (mkVar id) b in
         add_prods_sign (push_named (LocalDef ({na with binder_name=id},c1,t1)) env) sigma b'
     | _ -> (env,t)
 
@@ -149,7 +149,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let pty = make_arity env sigma true indf sort in
       let r = relevance_of_inductive_type env ind in
       let goal =
-	mkProd
+        mkProd
           (make_annot Anonymous r, mkAppliedInd ind, applist(mkVar p,realargs@[mkRel 1]))
       in
       pty,goal
@@ -157,14 +157,14 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let i = mkAppliedInd ind in
       let ivars = global_vars env sigma i in
       let revargs,ownsign =
-	fold_named_context
-	  (fun env d (revargs,hyps) ->
+        fold_named_context
+          (fun env d (revargs,hyps) ->
             let d = map_named_decl EConstr.of_constr d in
              let id = NamedDecl.get_id d in
              if Id.List.mem id ivars then
-	       ((mkVar id)::revargs, Context.Named.add d hyps)
-	     else
-	       (revargs,hyps))
+               ((mkVar id)::revargs, Context.Named.add d hyps)
+             else
+               (revargs,hyps))
           env ~init:([],[])
       in
       let pty = it_mkNamedProd_or_LetIn (mkSort sort) ownsign in
@@ -209,7 +209,7 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
       (fun env d sign ->
         let d = map_named_decl EConstr.of_constr d in
          if mem_named_context_val (NamedDecl.get_id d) global_named_context then sign
-	 else Context.Named.add d sign)
+         else Context.Named.add d sign)
       invEnv ~init:Context.Named.empty
   end in
   let avoid = ref Id.Set.empty in
@@ -218,11 +218,11 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
   let rec fill_holes c =
     match EConstr.kind sigma c with
     | Evar (e,args) ->
-	let h = next_ident_away (Id.of_string "H") !avoid in
-	let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
-	avoid := Id.Set.add h !avoid;
+        let h = next_ident_away (Id.of_string "H") !avoid in
+        let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
+        avoid := Id.Set.add h !avoid;
         ownSign := Context.Named.add (LocalAssum (make_annot h Sorts.Relevant,ty)) !ownSign;
-	applist (mkVar h, inst)
+        applist (mkVar h, inst)
     | _ -> EConstr.map sigma fill_holes c
   in
   let c = fill_holes pfterm in
@@ -250,7 +250,7 @@ let add_inversion_lemma_exn ~poly na com comsort bool tac =
     add_inversion_lemma ~poly na env sigma c sort bool tac
   with
     |   UserError (Some "Case analysis",s) -> (* Reference to Indrec *)
-	  user_err ~hdr:"Inv needs Nodep Prop Set" s
+          user_err ~hdr:"Inv needs Nodep Prop Set" s
 
 (* ================================= *)
 (* Applying a given inversion lemma  *)
@@ -264,12 +264,12 @@ let lemInv id c =
     Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false
   with
     | NoSuchBinding ->
-	user_err 
-	  (hov 0 (pr_econstr_env (pf_env gls) (project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
+        user_err
+          (hov 0 (pr_econstr_env (pf_env gls) (project gls) c ++ spc () ++ str "does not refer to an inversion lemma."))
     | UserError (a,b) ->
-	 user_err ~hdr:"LemInv"
-	   (str "Cannot refine current goal with the lemma " ++
-	      pr_leconstr_env (pf_env gls) (project gls) c)
+         user_err ~hdr:"LemInv"
+           (str "Cannot refine current goal with the lemma " ++
+              pr_leconstr_env (pf_env gls) (project gls) c)
   end
 
 let lemInv_gen id c = try_intros_until (fun id -> lemInv id c) id

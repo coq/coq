@@ -112,7 +112,7 @@ type 'a hints_path_gen =
 
 type pre_hints_path = Libnames.qualid hints_path_gen
 type hints_path = GlobRef.t hints_path_gen
-    
+
 val normalize_path : hints_path -> hints_path
 val path_matches : hints_path -> hints_path_atom list -> bool
 val path_derivate : hints_path -> hints_path_atom -> hints_path
@@ -139,17 +139,17 @@ module Hint_db :
     (** All hints associated to the reference *)
     val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
 
-    (** All hints associated to the reference, respecting modes if evars appear in the 
-	arguments, _not_ using the discrimination net. *)
+    (** All hints associated to the reference, respecting modes if evars appear in the
+        arguments, _not_ using the discrimination net. *)
     val map_existential : evar_map -> secvars:Id.Pred.t ->
       (GlobRef.t * constr array) -> constr -> t -> full_hint list
 
-    (** All hints associated to the reference, respecting modes if evars appear in the 
-	arguments and using the discrimination net. *)
+    (** All hints associated to the reference, respecting modes if evars appear in the
+        arguments and using the discrimination net. *)
     val map_eauto : evar_map -> secvars:Id.Pred.t -> (GlobRef.t * constr array) -> constr -> t -> full_hint list
 
-    (** All hints associated to the reference, respecting modes if evars appear in the 
-	arguments. *)
+    (** All hints associated to the reference, respecting modes if evars appear in the
+        arguments. *)
     val map_auto : evar_map -> secvars:Id.Pred.t ->
        (GlobRef.t * constr array) -> constr -> t -> full_hint list
 
@@ -218,7 +218,7 @@ val prepare_hint : bool (* Check no remaining evars *) ->
 (** [make_exact_entry info (c, ctyp, ctx)].
    [c] is the term given as an exact proof to solve the goal;
    [ctyp] is the type of [c].
-   [ctx] is its (refreshable) universe context. 
+   [ctx] is its (refreshable) universe context.
    In info:
    [hint_priority] is the hint's desired priority, it is 0 if unspecified
    [hint_pattern] is the hint's desired pattern, it is inferred if not specified
@@ -233,7 +233,7 @@ val make_exact_entry : env -> evar_map -> hint_info -> poly:bool -> ?name:hints_
    products;
    [c] is the term given as an exact proof to solve the goal;
    [cty] is the type of [c].
-   [ctx] is its (refreshable) universe context. 
+   [ctx] is its (refreshable) universe context.
    In info:
    [hint_priority] is the hint's desired priority, it is computed as the number of products in [cty]
    if unspecified

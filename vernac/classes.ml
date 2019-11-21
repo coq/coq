@@ -47,7 +47,7 @@ let add_instance_hint inst path local info poly =
      in
      Flags.silently (fun () ->
        Hints.add_hints ~local [typeclasses_db]
-	  (Hints.HintsResolveEntry
+          (Hints.HintsResolveEntry
              [info, poly, false, Hints.PathHints path, inst'])) ()
 
 let is_local_for_hint i =
@@ -287,7 +287,7 @@ let type_ctx_instance ~program_mode env sigma ctx inst subst =
     decl :: ctx ->
       let t' = substl subst (RelDecl.get_type decl) in
       let (sigma, c'), l =
-	match decl with
+        match decl with
         | LocalAssum _ -> interp_casted_constr_evars ~program_mode env sigma (List.hd l) t', List.tl l
         | LocalDef (_,b,_) -> (sigma, substl subst b), l
       in
@@ -301,8 +301,8 @@ let id_of_class cl =
   match cl.cl_impl with
     | ConstRef kn -> Label.to_id @@ Constant.label kn
     | IndRef (kn,i) ->
-	let mip = (Environ.lookup_mind kn (Global.env ())).Declarations.mind_packets in
-	  mip.(0).Declarations.mind_typename
+        let mip = (Environ.lookup_mind kn (Global.env ())).Declarations.mind_packets in
+          mip.(0).Declarations.mind_typename
     | _ -> assert false
 
 let instance_hook info global imps ?hook cst =

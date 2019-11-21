@@ -628,13 +628,13 @@ let rec treat_file old_dirname old_name =
            Array.iter (treat_file (Some newdirname)) (Sys.readdir complete_name))
     | S_REG ->
         (match get_extension name [".v";".ml";".mli";".mlg";".mllib";".mlpack"] with
-	   | (base,".v") ->
-	       let name = file_name base dirname
-	       and absname = absolute_file_name base dirname in
-	       addQueue vAccu (name, absname)
+           | (base,".v") ->
+               let name = file_name base dirname
+               and absname = absolute_file_name base dirname in
+               addQueue vAccu (name, absname)
            | (base,(".ml"|".mlg" as ext)) -> addQueue mlAccu (base,ext,dirname)
-	   | (base,".mli") -> addQueue mliAccu (base,dirname)
-	   | (base,".mllib") -> addQueue mllibAccu (base,dirname)
-	   | (base,".mlpack") -> addQueue mlpackAccu (base,dirname)
-	   | _ -> ())
+           | (base,".mli") -> addQueue mliAccu (base,dirname)
+           | (base,".mllib") -> addQueue mllibAccu (base,dirname)
+           | (base,".mlpack") -> addQueue mlpackAccu (base,dirname)
+           | _ -> ())
     | _ -> ()

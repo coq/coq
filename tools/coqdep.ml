@@ -41,7 +41,7 @@ let warning_mult suf iter =
       if (Filename.dirname (file_name f d))
         <> (Filename.dirname (file_name f d')) then begin
           coqdep_warning "the file %s is defined twice!" (f ^ suf)
-	end
+        end
     with Not_found -> () end;
     Hashtbl.add tab f d
   in
@@ -56,20 +56,20 @@ let sort () =
       let cin = open_in (file ^ ".v") in
       let lb = Lexing.from_channel cin in
       try
-	while true do
-	  match coq_action lb with
-	    | Require (from, sl) ->
-		List.iter
-		  (fun s ->
+        while true do
+          match coq_action lb with
+            | Require (from, sl) ->
+                List.iter
+                  (fun s ->
                     match search_v_known ?from s with
                     | None -> ()
                     | Some f -> loop f)
-		sl
-	    | _ -> ()
-	done
+                sl
+            | _ -> ()
+        done
       with Fin_fichier ->
-	close_in cin;
-	printf "%s%s " file !suffixe
+        close_in cin;
+        printf "%s%s " file !suffixe
     end
   in
   List.iter (fun (name,_) -> loop name) !vAccu
@@ -85,18 +85,18 @@ let mL_dep_list b f =
       let chan = open_in f in
       let buf = Lexing.from_channel chan in
       try
-	while true do
-	  let (Use_module str) = caml_action buf in
-	  if str = b then begin
+        while true do
+          let (Use_module str) = caml_action buf in
+          if str = b then begin
             coqdep_warning "in file %s the notation %s. is useless !\n" f b
-	  end else
+          end else
             if not (List.mem str !deja_vu) then addQueue deja_vu str
-      	done; []
+        done; []
       with Fin_fichier -> begin
-	close_in chan;
-	let rl = List.rev !deja_vu in
-      	Hashtbl.add dep_tab f rl;
-	rl
+        close_in chan;
+        let rl = List.rev !deja_vu in
+        Hashtbl.add dep_tab f rl;
+        rl
       end
     with Sys_error _ -> []
 
@@ -116,36 +116,36 @@ let traite_Declare f =
   let decl_list = ref ([] : string list) in
   let rec treat = function
     | s :: ll ->
-	let s' = basename_noext s in
-	(match search_ml_known s with
-	   | Some mldir when not (List.mem s' !decl_list) ->
-	       let fullname = file_name s' mldir in
-	       let depl = mL_dep_list s (fullname ^ ".ml") in
-	       treat depl;
-	       decl_list := s :: !decl_list
-	   | _ -> ());
-	treat ll
+        let s' = basename_noext s in
+        (match search_ml_known s with
+           | Some mldir when not (List.mem s' !decl_list) ->
+               let fullname = file_name s' mldir in
+               let depl = mL_dep_list s (fullname ^ ".ml") in
+               treat depl;
+               decl_list := s :: !decl_list
+           | _ -> ());
+        treat ll
     | [] -> ()
   in
     try
       let chan = open_in f in
       let buf = Lexing.from_channel chan in
-	begin try
-	    while true do
-      	      let tok = coq_action buf in
-      		(match tok with
-		  | Declare sl ->
-		      decl_list := [];
-		      treat sl;
-		      decl_list := List.rev !decl_list;
-		      if !option_D then
-			affiche_Declare f !decl_list
-		      else if !decl_list <> sl then
-			warning_Declare f !decl_list
-		  | _ -> ())
-	    done
-	  with Fin_fichier -> () end;
-	close_in chan
+        begin try
+            while true do
+              let tok = coq_action buf in
+                (match tok with
+                  | Declare sl ->
+                      decl_list := [];
+                      treat sl;
+                      decl_list := List.rev !decl_list;
+                      if !option_D then
+                        affiche_Declare f !decl_list
+                      else if !decl_list <> sl then
+                        warning_Declare f !decl_list
+                  | _ -> ())
+            done
+          with Fin_fichier -> () end;
+        close_in chan
     with Sys_error _ -> ()
 
 let declare_dependencies () =
@@ -246,7 +246,7 @@ struct
       else
         let x = NSet.choose rem in
         let rem = NSet.remove x rem in
-        if NSet.mem x seen then 
+        if NSet.mem x seen then
           aux rem seen
         else
           let seen = NSet.add x seen in

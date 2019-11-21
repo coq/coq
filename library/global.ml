@@ -201,10 +201,10 @@ let is_type_in_type r = is_type_in_type (env ()) r
 let current_modpath () =
   Safe_typing.current_modpath (safe_env ())
 
-let current_dirpath () = 
+let current_dirpath () =
   Safe_typing.current_dirpath (safe_env ())
 
-let with_global f = 
+let with_global f =
   let (a, ctx) = f (env ()) (current_dirpath ()) in
     push_context_set false ctx; a
 

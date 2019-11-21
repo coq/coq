@@ -120,7 +120,7 @@ val match_with_equation:
 
 (***** Destructing patterns bound to some theory *)
 
-(** Match terms [eq A t u], [identity A t u] or [JMeq A t A u] 
+(** Match terms [eq A t u], [identity A t u] or [JMeq A t A u]
    Returns associated lemmas and [A,t,u] or fails PatternMatchingFailure *)
 val find_eq_data_decompose : Proofview.Goal.t -> constr ->
       coq_eq_data * EInstance.t * (types * constr * constr)
@@ -132,7 +132,7 @@ val find_this_eq_data_decompose : Proofview.Goal.t -> constr ->
 (** A variant that returns more informative structure on the equality found *)
 val find_eq_data : evar_map -> constr -> coq_eq_data * EInstance.t * equation_kind
 
-(** Match a term of the form [(existT A P t p)] 
+(** Match a term of the form [(existT A P t p)]
    Returns associated lemmas and [A,P,t,p] *)
 val find_sigma_data_decompose : Environ.env -> evar_map -> constr ->
   coq_sigma_data * (EInstance.t * constr * constr * constr * constr)

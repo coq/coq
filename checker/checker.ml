@@ -29,7 +29,7 @@ let parse_dir s =
     if n>=len then dirs else
     let pos =
       try
-	String.index_from s n '.'
+        String.index_from s n '.'
       with Not_found -> len
     in
     let dir = String.sub s n (pos-n) in
@@ -241,8 +241,8 @@ let explain_exn = function
       hov 0 (str "Stack overflow")
   | Match_failure(filename,pos1,pos2) ->
       hov 1 (anomaly_string () ++ str "Match failure in file " ++
-	     guill filename ++ str " at line " ++ int pos1 ++
-	     str " character " ++ int pos2 ++ report ())
+             guill filename ++ str " at line " ++ int pos1 ++
+             str " character " ++ int pos2 ++ report ())
   | Not_found ->
       hov 0 (anomaly_string () ++ str "uncaught exception Not_found" ++ report ())
   | Failure s ->
@@ -312,12 +312,12 @@ let explain_exn = function
 
   | Assert_failure (s,b,e) ->
       hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
-	       (if s = "" then mt ()
-		else
-		  (str "(file \"" ++ str s ++ str "\", line " ++ int b ++
-		   str ", characters " ++ int e ++ str "-" ++
-		   int (e+6) ++ str ")")) ++
-	       report ())
+               (if s = "" then mt ()
+                else
+                  (str "(file \"" ++ str s ++ str "\", line " ++ int b ++
+                   str ", characters " ++ int e ++ str "-" ++
+                   int (e+6) ++ str ")")) ++
+               report ())
   | e -> CErrors.print e (* for anomalies and other uncaught exceptions *)
 
 let deprecated flag =
@@ -333,8 +333,8 @@ let parse_args argv =
       indices_matter:=true; parse rem
 
     | "-coqlib" :: s :: rem ->
-      if not (exists_dir s) then 
-	fatal_error (str "Directory '" ++ str s ++ str "' does not exist") false;
+      if not (exists_dir s) then
+        fatal_error (str "Directory '" ++ str s ++ str "' does not exist") false;
       Envars.set_user_coqlib s;
       parse rem
 

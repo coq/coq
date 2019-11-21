@@ -127,7 +127,7 @@ val push_rel         : Constr.rel_declaration -> env -> env
 val push_rel_context : Constr.rel_context -> env -> env
 val push_rec_types   : rec_declaration -> env -> env
 
-(** Looks up in the context of local vars referred by indice ([rel_context]) 
+(** Looks up in the context of local vars referred by indice ([rel_context])
    raises [Not_found] if the index points out of the context *)
 val lookup_rel    : int -> env -> Constr.rel_declaration
 val lookup_rel_val : int -> env -> lazy_val
@@ -160,7 +160,7 @@ val push_named_context_val  :
 
 
 
-(** Looks up in the context of local vars referred by names ([named_context]) 
+(** Looks up in the context of local vars referred by names ([named_context])
    raises [Not_found] if the Id.t is not found *)
 
 val lookup_named     : variable -> env -> Constr.named_declaration
@@ -200,7 +200,7 @@ val add_constant_key : Constant.t -> Opaqueproof.opaque constant_body -> link_in
   env -> env
 val lookup_constant_key :  Constant.t -> env -> constant_key
 
-(** Looks up in the context of global constant names 
+(** Looks up in the context of global constant names
    raises an anomaly if the required path is not found *)
 val lookup_constant    : Constant.t -> env -> Opaqueproof.opaque constant_body
 val evaluable_constant : Constant.t -> env -> bool
@@ -227,14 +227,14 @@ exception NotEvaluableConst of const_evaluation_result
 
 val constant_type : env -> Constant.t puniverses -> types constrained
 
-val constant_value_and_type : env -> Constant.t puniverses -> 
+val constant_value_and_type : env -> Constant.t puniverses ->
   constr option * types * Univ.Constraint.t
-(** The universe context associated to the constant, empty if not 
+(** The universe context associated to the constant, empty if not
     polymorphic *)
 val constant_context : env -> Constant.t -> Univ.AUContext.t
 
-(* These functions should be called under the invariant that [env] 
-   already contains the constraints corresponding to the constant 
+(* These functions should be called under the invariant that [env]
+   already contains the constraints corresponding to the constant
    application. *)
 val constant_value_in : env -> Constant.t puniverses -> constr
 val constant_type_in : env -> Constant.t puniverses -> types
@@ -255,7 +255,7 @@ val lookup_mind_key : MutInd.t -> env -> mind_key
 val add_mind_key : MutInd.t -> mind_key -> env -> env
 val add_mind : MutInd.t -> mutual_inductive_body -> env -> env
 
-(** Looks up in the context of global inductive names 
+(** Looks up in the context of global inductive names
    raises an anomaly if the required path is not found *)
 val lookup_mind : MutInd.t -> env -> mutual_inductive_body
 

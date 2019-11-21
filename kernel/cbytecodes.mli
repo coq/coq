@@ -46,7 +46,7 @@ type instruction =
   | Kconst of structured_constant
   | Kmakeblock of (* size: *) int * tag (** allocate an ocaml block. Index 0
                                          ** is accu, all others are popped from
-					 ** the top of the stack  *)
+                                         ** the top of the stack  *)
   | Kmakeprod
   | Kmakeswitchblock of Label.t * Label.t * annot_switch * int
   | Kswitch of Label.t array * Label.t array (** consts,blocks *)

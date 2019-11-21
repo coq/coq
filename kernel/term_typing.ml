@@ -138,7 +138,7 @@ let infer_declaration env (dcl : constant_entry) =
       in
       let def = Vars.subst_univs_level_constr usubst j.uj_val in
       let def = Def (Mod_subst.from_val def) in
-	feedback_completion_typecheck feedback_id;
+        feedback_completion_typecheck feedback_id;
       {
         Cooking.cook_body = def;
         cook_type = typ;
@@ -243,7 +243,7 @@ let build_constant_declaration env result =
   in
   let univs = result.cook_universes in
   let hyps = List.filter (fun d -> Id.Set.mem (NamedDecl.get_id d) hyps) (Environ.named_context env) in
-  let tps = 
+  let tps =
     let res = Cbytegen.compile_constant_body ~fail_on_error:false env univs def in
     Option.map Cemitcodes.from_val res
   in

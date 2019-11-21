@@ -74,7 +74,7 @@ struct
     let get_value = function
       | LocalAssum _ -> None
       | LocalDef (_,v,_) -> Some v
-                                 
+
     (** Return the type of the name bound by a given declaration. *)
     let get_type = function
       | LocalAssum (_,ty)

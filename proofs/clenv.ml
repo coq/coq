@@ -51,11 +51,11 @@ let refresh_undefined_univs clenv =
   match EConstr.kind clenv.evd clenv.templval.rebus with
   | Var _ -> clenv, Univ.empty_level_subst
   | App (f, args) when isVar clenv.evd f -> clenv, Univ.empty_level_subst
-  | _ ->  
+  | _ ->
     let evd', subst = Evd.refresh_undefined_universes clenv.evd in
     let map_freelisted f = { f with rebus = subst_univs_level_constr subst f.rebus } in
       { clenv with evd = evd'; templval = map_freelisted clenv.templval;
-	templtyp = map_freelisted clenv.templtyp }, subst
+        templtyp = map_freelisted clenv.templtyp }, subst
 
 let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
@@ -68,16 +68,16 @@ let clenv_push_prod cl =
   let rec clrec typ = match EConstr.kind cl.evd typ with
     | Cast (t,_,_) -> clrec t
     | Prod (na,t,u) ->
-	let mv = new_meta () in
-	let dep = not (noccurn (cl_sigma cl) 1 u) in
+        let mv = new_meta () in
+        let dep = not (noccurn (cl_sigma cl) 1 u) in
         let na' = if dep then na.binder_name else Anonymous in
         let e' = meta_declare mv t ~name:na' cl.evd in
-	let concl = if dep then subst1 (mkMeta mv) u else u in
-	let def = applist (cl.templval.rebus,[mkMeta mv]) in
-	{ templval = mk_freelisted def;
-	  templtyp = mk_freelisted concl;
-	  evd = e';
-	  env = cl.env }
+        let concl = if dep then subst1 (mkMeta mv) u else u in
+        let def = applist (cl.templval.rebus,[mkMeta mv]) in
+        { templval = mk_freelisted def;
+          templtyp = mk_freelisted concl;
+          evd = e';
+          env = cl.env }
     | _ -> raise NotExtensibleClause
   in clrec typ
 
@@ -102,12 +102,12 @@ let clenv_environments evd bound t =
       | (Some 0, _) -> (e, List.rev metas, t)
       | (n, Cast (t,_,_)) -> clrec (e,metas) n t
       | (n, Prod (na,t1,t2)) ->
-	  let mv = new_meta () in
-	  let dep = not (noccurn evd 1 t2) in
+          let mv = new_meta () in
+          let dep = not (noccurn evd 1 t2) in
           let na' = if dep then na.binder_name else Anonymous in
           let e' = meta_declare mv t1 ~name:na' e in
-	  clrec (e', (mkMeta mv)::metas) (Option.map ((+) (-1)) n)
-	    (if dep then (subst1 (mkMeta mv) t2) else t2)
+          clrec (e', (mkMeta mv)::metas) (Option.map ((+) (-1)) n)
+            (if dep then (subst1 (mkMeta mv) t2) else t2)
       | (n, LetIn (na,b,_,t)) -> clrec (e,metas) n (subst1 b t)
       | (n, _) -> (e, List.rev metas, t)
   in
@@ -167,7 +167,7 @@ let clenv_assign mv rhs clenv =
       if not (EConstr.eq_constr clenv.evd (fst (meta_fvalue clenv.evd mv)).rebus rhs) then
         error_incompatible_inst clenv mv
       else
-	clenv
+        clenv
     else
       let st = (Conv,TypeNotProcessed) in
       {clenv with evd = meta_assign mv (rhs_fls.rebus,st) clenv.evd}
@@ -226,8 +226,8 @@ let dependent_closure clenv mvs =
   let rec aux mvs acc =
     Metaset.fold
       (fun mv deps ->
-	let metas_of_meta_type = clenv_metas_in_type_of_meta clenv.evd mv in
-	aux metas_of_meta_type (Metaset.union deps metas_of_meta_type))
+        let metas_of_meta_type = clenv_metas_in_type_of_meta clenv.evd mv in
+        aux metas_of_meta_type (Metaset.union deps metas_of_meta_type))
       mvs acc in
   aux mvs mvs
 
@@ -241,9 +241,9 @@ let clenv_dependent_gen hyps_only ?(iter=true) clenv =
   List.filter
     (fun mv ->
       if hyps_only then
-	Metaset.mem mv deps_in_hyps && not (Metaset.mem mv deps_in_concl)
+        Metaset.mem mv deps_in_hyps && not (Metaset.mem mv deps_in_concl)
       else
-	Metaset.mem mv deps_in_hyps || Metaset.mem mv deps_in_concl)
+        Metaset.mem mv deps_in_hyps || Metaset.mem mv deps_in_concl)
     all_undefined
 
 let clenv_missing ce = clenv_dependent_gen true ce
@@ -336,8 +336,8 @@ let clenv_pose_metas_as_evars clenv dep_mvs =
         let src = evar_source_of_meta mv clenv.evd in
         let src = adjust_meta_source clenv.evd mv src in
         let evd = clenv.evd in
-	let (evd, evar) = new_evar (cl_env clenv) evd ~src ty in
-	let clenv = clenv_assign mv evar {clenv with evd=evd} in
+        let (evd, evar) = new_evar (cl_env clenv) evd ~src ty in
+        let clenv = clenv_assign mv evar {clenv with evd=evd} in
         fold clenv (fst (destEvar evd evar) :: evs) mvs in
   fold clenv [] dep_mvs
 
@@ -415,13 +415,13 @@ let qhyp_eq h1 h2 = match h1, h2 with
 let check_bindings bl =
   match List.duplicates qhyp_eq (List.map (fun {CAst.v=x} -> fst x) bl) with
     | NamedHyp s :: _ ->
-	user_err 
-	  (str "The variable " ++ Id.print s ++
-	   str " occurs more than once in binding list.");
+        user_err
+          (str "The variable " ++ Id.print s ++
+           str " occurs more than once in binding list.");
     | AnonHyp n :: _ ->
-	user_err 
-	  (str "The position " ++ int n ++
-	   str " occurs more than once in binding list.")
+        user_err
+          (str "The position " ++ int n ++
+           str " occurs more than once in binding list.")
     | [] -> ()
 
 let explain_no_such_bound_variable evd id =
@@ -472,7 +472,7 @@ let meta_of_binder clause loc mvs = function
 let error_already_defined b =
   match b with
     | NamedHyp id ->
-        user_err 
+        user_err
           (str "Binder name \"" ++ Id.print id ++
            str"\" already defined with incompatible value.")
     | AnonHyp n ->
@@ -488,12 +488,12 @@ let clenv_unify_binding_type clenv c t u =
     try
       let evd,c = w_coerce_to_type (cl_env clenv) clenv.evd c t u in
       TypeProcessed, { clenv with evd = evd }, c
-    with 
+    with
       | PretypeError (_,_,ActualTypeNotCoercible (_,_,
           (NotClean _ | ConversionFailed _))) as e ->
-	  raise e
+          raise e
       | e when precatchable_exception e ->
-	  TypeNotProcessed, clenv, c
+          TypeNotProcessed, clenv, c
 
 let clenv_assign_binding clenv k c =
   let k_typ = clenv_hnf_constr clenv (clenv_meta_type clenv k) in
@@ -509,12 +509,12 @@ let clenv_match_args bl clenv =
     check_bindings bl;
     List.fold_left
       (fun clenv {CAst.loc;v=(b,c)} ->
-	let k = meta_of_binder clenv loc mvs b in
+        let k = meta_of_binder clenv loc mvs b in
         if meta_defined clenv.evd k then
           if EConstr.eq_constr clenv.evd (fst (meta_fvalue clenv.evd k)).rebus c then clenv
           else error_already_defined b
         else
-	  clenv_assign_binding clenv k c)
+          clenv_assign_binding clenv k c)
       clenv bl
 
 exception NoSuchBinding
@@ -525,7 +525,7 @@ let clenv_constrain_last_binding c clenv =
   clenv_assign_binding clenv k c
 
 let error_not_right_number_missing_arguments n =
-  user_err 
+  user_err
     (strbrk "Not the right number of missing arguments (expected " ++
       int n ++ str ").")
 
@@ -538,14 +538,14 @@ let clenv_constrain_dep_args hyps_only bl clenv =
       List.fold_left2 clenv_assign_binding clenv occlist bl
     else
       if hyps_only then
-	(* Tolerance for compatibility <= 8.3 *)
-	let occlist' = clenv_dependent_gen hyps_only ~iter:false clenv in
-	if Int.equal (List.length occlist') (List.length bl) then
-	  List.fold_left2 clenv_assign_binding clenv occlist' bl
-	else
-	  error_not_right_number_missing_arguments (List.length occlist)
+        (* Tolerance for compatibility <= 8.3 *)
+        let occlist' = clenv_dependent_gen hyps_only ~iter:false clenv in
+        if Int.equal (List.length occlist') (List.length bl) then
+          List.fold_left2 clenv_assign_binding clenv occlist' bl
+        else
+          error_not_right_number_missing_arguments (List.length occlist)
       else
-	error_not_right_number_missing_arguments (List.length occlist)
+        error_not_right_number_missing_arguments (List.length occlist)
 
 (****************************************************************)
 (* Clausal environment for an application *)
@@ -557,7 +557,7 @@ let make_clenv_binding_gen hyps_only n env sigma (c,t) = function
   | ExplicitBindings lbind ->
       let t = rename_bound_vars_as_displayed sigma Id.Set.empty [] t in
       let clause = mk_clenv_from_env env sigma n
-	(c, t)
+        (c, t)
       in clenv_match_args lbind clause
   | NoBindings ->
       mk_clenv_from_env env sigma n (c,t)
@@ -567,7 +567,7 @@ let make_clenv_binding_env_apply env sigma n =
 
 let make_clenv_binding_env env sigma =
   make_clenv_binding_gen false None env sigma
-	
+
 let make_clenv_binding_apply env sigma n = make_clenv_binding_gen true n env sigma
 let make_clenv_binding env sigma = make_clenv_binding_gen false None env sigma
 
@@ -659,7 +659,7 @@ let evar_with_name holes id =
   | [] -> explain_no_such_bound_variable holes id
   | [h] -> h.hole_evar
   | _ ->
-    user_err 
+    user_err
       (str "Binder name \"" ++ Id.print id ++
         str "\" occurs more than once in clause.")
 

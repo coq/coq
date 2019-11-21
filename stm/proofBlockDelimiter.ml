@@ -108,7 +108,7 @@ let () = register_proof_block_delimiter
   "bullet" static_bullet dynamic_bullet
 
 (* ******************** { block } ***************************************** *)
-  
+
 let static_curly_brace ({ entry_point; prev_node } as view) =
   let open Vernacexpr in
   assert(entry_point.ast.CAst.v.expr = VernacEndSubproof);
@@ -169,7 +169,7 @@ let static_indent ({ entry_point; prev_node } as view) =
       else
         crawl view ~init:(Some last_tac) (fun prev node ->
         if node.indentation >= last_tac.indentation then `Cont node
-        else 
+        else
           `Found { block_stop = entry_point.id; block_start = node.id;
                    dynamic_switch = node.id;
                    carry_on_data = of_vernac_control_val entry_point.ast }
@@ -180,7 +180,7 @@ let dynamic_indent doc { dynamic_switch = id; carry_on_data = e } =
   match is_focused_goal_simple ~doc id with
   | `Simple [] -> `Leaks
   | `Simple focused ->
-      let but_last = List.tl (List.rev focused) in 
+      let but_last = List.tl (List.rev focused) in
       `ValidBlock {
          base_state = id;
          goals_to_admit = but_last;

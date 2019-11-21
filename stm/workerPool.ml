@@ -88,7 +88,7 @@ let rec create_worker extra pool priority id =
   let cpanel = { exit; cancelled; extra } in
   let manager = CThread.create (Model.manager cpanel) worker in
   { name; cancel; manager; process }
-  
+
 and cleanup x priority = locking x begin fun { workers; count; extra_arg } ->
   workers := List.map (function
     | { cancel } as w when !cancel = false -> w

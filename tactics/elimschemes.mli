@@ -12,7 +12,7 @@ open Ind_tables
 
 (** Induction/recursion schemes *)
 
-val optimize_non_type_induction_scheme : 
+val optimize_non_type_induction_scheme :
   'a Ind_tables.scheme_kind ->
   Indrec.dep_flag ->
   Sorts.family ->

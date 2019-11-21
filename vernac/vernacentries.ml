@@ -176,7 +176,7 @@ let print_module qid =
       match globdir with
           DirModule Nametab.{ obj_dir; obj_mp; _ } ->
           Printmod.print_module ~mod_ops:Declaremods.mod_ops (Printmod.printable_body obj_dir) obj_mp
-	| _ -> raise Not_found
+        | _ -> raise Not_found
   with
     Not_found -> user_err (str"Unknown Module " ++ pr_qualid qid)
 
@@ -696,11 +696,11 @@ let vernac_inductive ~atts cum lo finite indl =
   if Dumpglob.dump () then
     List.iter (fun (((coe,lid), _, _, _, cstrs), _) ->
       match cstrs with
-	| Constructors cstrs ->
-	    Dumpglob.dump_definition lid false "ind";
-	    List.iter (fun (_, (lid, _)) ->
-			 Dumpglob.dump_definition lid false "constr") cstrs
-	| _ -> () (* dumping is done by vernac_record (called below) *) )
+        | Constructors cstrs ->
+            Dumpglob.dump_definition lid false "ind";
+            List.iter (fun (_, (lid, _)) ->
+                         Dumpglob.dump_definition lid false "constr") cstrs
+        | _ -> () (* dumping is done by vernac_record (called below) *) )
       indl;
 
   let is_record = function
@@ -780,7 +780,7 @@ let vernac_inductive ~atts cum lo finite indl =
   | [ ( id , bl , c , Class _, Constructors [l]), [] ] ->
       let f =
         let (coe, ({loc;v=id}, ce)) = l in
-	let coe' = if coe then Some true else None in
+        let coe' = if coe then Some true else None in
           (((coe', AssumExpr ((make ?loc @@ Name id), ce)), None), [])
       in vernac_record cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
     *)
@@ -829,11 +829,11 @@ let vernac_cofixpoint ~atts discharge l =
 let vernac_scheme l =
   if Dumpglob.dump () then
     List.iter (fun (lid, s) ->
-	       Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid;
-	       match s with
-	       | InductionScheme (_, r, _)
+               Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid;
+               match s with
+               | InductionScheme (_, r, _)
                | CaseScheme (_, r, _)
-	       | EqualityScheme r -> dump_global r) l;
+               | EqualityScheme r -> dump_global r) l;
   Indschemes.do_scheme l
 
 let vernac_combined_scheme lid l =
@@ -845,15 +845,15 @@ let vernac_combined_scheme lid l =
 let vernac_universe ~poly l =
   if poly && not (Global.sections_are_opened ()) then
     user_err ~hdr:"vernac_universe"
-		 (str"Polymorphic universes can only be declared inside sections, " ++
-		  str "use Monomorphic Universe instead");
+                 (str"Polymorphic universes can only be declared inside sections, " ++
+                  str "use Monomorphic Universe instead");
   DeclareUniv.do_universe ~poly l
 
 let vernac_constraint ~poly l =
   if poly && not (Global.sections_are_opened ()) then
     user_err ~hdr:"vernac_constraint"
-		 (str"Polymorphic universe constraints can only be declared"
-		  ++ str " inside sections, use Monomorphic Constraint instead");
+                 (str"Polymorphic universe constraints can only be declared"
+                  ++ str " inside sections, use Monomorphic Constraint instead");
   DeclareUniv.do_constraint ~poly l
 
 (**********************)
@@ -911,11 +911,11 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
           else (idl,ty)) binders_ast in
        let mp =
          Declaremods.declare_module
-	   id binders_ast mty_ast_o mexpr_ast_l
+           id binders_ast mty_ast_o mexpr_ast_l
        in
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
-	 (str "Module " ++ Id.print id ++ str " is defined");
+         (str "Module " ++ Id.print id ++ str " is defined");
        Option.iter (fun export -> vernac_import export [qualid_of_ident id])
          export
 
@@ -932,7 +932,7 @@ let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
   match mty_ast_l with
     | [] ->
        let binders_ast,argsexport =
-	 List.fold_right
+         List.fold_right
          (fun (export,idl,ty) (args,argsexport) ->
            (idl,ty)::args, (List.map (fun {v=i} -> export,i)idl)@argsexport) binders_ast
              ([],[]) in
@@ -940,7 +940,7 @@ let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
        let mp = Declaremods.start_modtype id binders_ast mty_sign in
        Dumpglob.dump_moddef ?loc mp "modtype";
        Flags.if_verbose Feedback.msg_info
-	 (str "Interactive Module Type " ++ Id.print id ++ str " started");
+         (str "Interactive Module Type " ++ Id.print id ++ str " started");
        List.iter
          (fun (export,id) ->
            Option.iter
@@ -948,15 +948,15 @@ let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
          ) argsexport
 
     | _ :: _ ->
-	let binders_ast = List.map
+        let binders_ast = List.map
           (fun (export,idl,ty) ->
             if not (Option.is_empty export) then
               user_err Pp.(str "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
             else (idl,ty)) binders_ast in
         let mp = Declaremods.declare_modtype id binders_ast mty_sign mty_ast_l in
         Dumpglob.dump_moddef ?loc mp "modtype";
-	Flags.if_verbose Feedback.msg_info
-	  (str "Module Type " ++ Id.print id ++ str " is defined")
+        Flags.if_verbose Feedback.msg_info
+          (str "Module Type " ++ Id.print id ++ str " is defined")
 
 let vernac_end_modtype {loc;v=id} =
   let mp = Declaremods.end_modtype () in
@@ -1157,12 +1157,12 @@ let vernac_chdir = function
   | None -> Feedback.msg_notice (str (Sys.getcwd()))
   | Some path ->
       begin
-	try Sys.chdir (expand path)
-	with Sys_error err ->
-	  (* Cd is typically used to control the output directory of
-	  extraction. A failed Cd could lead to overwriting .ml files
-	  so we make it an error. *)
-	  user_err Pp.(str ("Cd failed: " ^ err))
+        try Sys.chdir (expand path)
+        with Sys_error err ->
+          (* Cd is typically used to control the output directory of
+          extraction. A failed Cd could lead to overwriting .ml files
+          so we make it an error. *)
+          user_err Pp.(str ("Cd failed: " ^ err))
       end;
       Flags.if_verbose Feedback.msg_info (str (Sys.getcwd()))
 
@@ -1357,8 +1357,8 @@ let () =
       optkey   = ["Inline";"Level"];
       optread  = (fun () -> Some (Flags.get_inline_level ()));
       optwrite = (fun o ->
-	           let lev = Option.default Flags.default_inline_level o in
-	           Flags.set_inline_level lev) }
+                   let lev = Option.default Flags.default_inline_level o in
+                   Flags.set_inline_level lev) }
 
 let () =
   declare_bool_option
@@ -1433,7 +1433,7 @@ let () =
       optwrite = CWarnings.set_flags }
 
 let () =
-  declare_string_option 
+  declare_string_option
     { optdepr  = false;
       optname  = "native_compute profiler output";
       optkey   = ["NativeCompute"; "Profile"; "Filename"];
@@ -1599,7 +1599,7 @@ let vernac_check_may_eval ~pstate ~atts redexp glopt rc =
         pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
     | Some r ->
         let (sigma,r_interp) = Hook.get f_interp_redexp env sigma r in
-	let redfun env evm c =
+        let redfun env evm c =
           let (redfun, _) = reduction_of_red_expr env r_interp in
           let (_, c) = redfun env evm c in
           c
@@ -1656,8 +1656,8 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
          (try get_nth_goal ~pstate 1, qualid_basename qid with _ -> raise NoHyp)
       | Some n,AN qid when qualid_is_ident qid ->  (* goal number given, catch if wong *)
          (try get_nth_goal ~pstate n, qualid_basename qid
-	  with
-	    Failure _ -> user_err ?loc ~hdr:"print_about_hyp_globs"
+          with
+            Failure _ -> user_err ?loc ~hdr:"print_about_hyp_globs"
                           (str "No such goal: " ++ int n ++ str "."))
       | _ , _ -> raise NoHyp in
     let hyps = pf_hyps gl in
@@ -1667,7 +1667,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
                      | LocalDef (_,bdy,_) ->"Constant (let in)" in
     let sigma, env = Pfedit.get_current_context pstate in
     v 0 (Id.print id ++ str":" ++ pr_econstr_env env sigma (NamedDecl.get_type decl) ++ fnl() ++ fnl()
-	 ++ str natureofid ++ str " of the goal context.")
+         ++ str natureofid ++ str " of the goal context.")
   with (* fallback to globals *)
     | NoHyp | Not_found ->
     let sigma, env = get_current_or_global_context ~pstate in
@@ -1730,7 +1730,7 @@ let vernac_print ~pstate ~atts =
       let cstr = printable_constr_of_global gr in
       let st = Conv_oracle.get_transp_state (Environ.oracle (Global.env())) in
       let nassums =
-	Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
+        Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
       Printer.pr_assumptionset env sigma nassums
   | PrintStrategy r -> print_strategy r
   | PrintRegistered -> print_registered ()
@@ -1756,12 +1756,12 @@ let interp_search_about_item env sigma =
       GlobSearchString s
   | SearchString (s,sc) ->
       try
-	let ref =
-	  Notation.interp_notation_as_global_reference
-	    (fun _ -> true) s sc in
-	GlobSearchSubPattern (Pattern.PRef ref)
+        let ref =
+          Notation.interp_notation_as_global_reference
+            (fun _ -> true) s sc in
+        GlobSearchSubPattern (Pattern.PRef ref)
       with UserError _ ->
-	user_err ~hdr:"interp_search_about_item"
+        user_err ~hdr:"interp_search_about_item"
           (str "Unable to interp \"" ++ str s ++ str "\" either as a reference or as an identifier component")
 
 (* 05f22a5d6d5b8e3e80f1a37321708ce401834430 introduced the

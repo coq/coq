@@ -30,7 +30,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-MASTER=origin/master
+MASTER=github/master
 
 if ! git log $MASTER --grep "Merge PR #$PRNUM" | grep "." > /dev/null; then
     echo "PR #${PRNUM} does not exist."

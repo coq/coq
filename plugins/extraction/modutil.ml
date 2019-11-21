@@ -36,19 +36,19 @@ let se_iter do_decl do_spec do_mp =
     | MTident mp -> do_mp mp
     | MTfunsig (_,mt,mt') -> mt_iter mt; mt_iter mt'
     | MTwith (mt,ML_With_type(idl,l,t))->
-	let mp_mt = msid_of_mt mt in
-	let l',idl' = List.sep_last idl in
-	let mp_w =
-	  List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl'
-	in
+        let mp_mt = msid_of_mt mt in
+        let l',idl' = List.sep_last idl in
+        let mp_w =
+          List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl'
+        in
         let r = GlobRef.ConstRef (Constant.make2 mp_w (Label.of_id l')) in
         mt_iter mt; do_spec (Stype(r,l,Some t))
     | MTwith (mt,ML_With_module(idl,mp))->
         let mp_mt = msid_of_mt mt in
         let mp_w =
-	  List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl
-	in
-	mt_iter mt; do_mp mp_w; do_mp mp
+          List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl
+        in
+        mt_iter mt; do_mp mp_w; do_mp mp
     | MTsig (_, sign) -> List.iter spec_iter sign
   and spec_iter = function
     | (_,Spec s) -> do_spec s
@@ -58,7 +58,7 @@ let se_iter do_decl do_spec do_mp =
   let rec se_iter = function
     | (_,SEdecl d) -> do_decl d
     | (_,SEmodule m) ->
-	me_iter m.ml_mod_expr; mt_iter m.ml_mod_type
+        me_iter m.ml_mod_expr; mt_iter m.ml_mod_type
     | (_,SEmodtype m) -> mt_iter m
   and me_iter = function
     | MEident mp -> do_mp mp
@@ -103,8 +103,8 @@ let ast_iter_references do_term do_cons do_type a =
       | MLglob r -> do_term r
       | MLcons (_,r,_) -> do_cons r
       | MLcase (ty,_,v) ->
-	type_iter_references do_type ty;
-	Array.iter (fun (_,p,_) -> patt_iter_references do_cons p) v
+        type_iter_references do_type ty;
+        Array.iter (fun (_,p,_) -> patt_iter_references do_cons p) v
 
       | MLrel _ | MLlam _ | MLapp _ | MLletin _ | MLtuple _ | MLfix _ | MLexn _
       | MLdummy _ | MLaxiom | MLmagic _ | MLuint _ | MLfloat _ -> ()
@@ -118,7 +118,7 @@ let ind_iter_references do_term do_cons do_type kn ind =
     if lang () == Ocaml then
       (match ind.ind_equiv with
          | Miniml.Equiv kne -> do_type (GlobRef.IndRef (MutInd.make1 kne, snd ip));
-	 | _ -> ());
+         | _ -> ());
     Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types
   in
   if lang () == Ocaml then record_iter_references do_term ind.ind_kind;
@@ -132,7 +132,7 @@ let decl_iter_references do_term do_cons do_type =
     | Dtype (r,_,t) -> do_type r; type_iter t
     | Dterm (r,a,t) -> do_term r; ast_iter a; type_iter t
     | Dfix(rv,c,t) ->
-	Array.iter do_term rv; Array.iter ast_iter c; Array.iter type_iter t
+        Array.iter do_term rv; Array.iter ast_iter c; Array.iter type_iter t
 
 let spec_iter_references do_term do_cons do_type = function
   | Sind (kn,ind) -> ind_iter_references do_term do_cons do_type kn ind
@@ -163,7 +163,7 @@ let rec type_search f = function
 let decl_type_search f = function
   | Dind (_,{ind_packets=p})  ->
       Array.iter
-	(fun {ip_types=v} -> Array.iter (List.iter (type_search f)) v) p
+        (fun {ip_types=v} -> Array.iter (List.iter (type_search f)) v) p
   | Dterm (_,_,u) -> type_search f u
   | Dfix (_,_,v) -> Array.iter (type_search f) v
   | Dtype (_,_,u) -> type_search f u
@@ -171,7 +171,7 @@ let decl_type_search f = function
 let spec_type_search f = function
   | Sind (_,{ind_packets=p}) ->
       Array.iter
-	(fun {ip_types=v} -> Array.iter (List.iter (type_search f)) v) p
+        (fun {ip_types=v} -> Array.iter (List.iter (type_search f)) v) p
   | Stype (_,_,ot) -> Option.iter (type_search f) ot
   | Sval (_,u) -> type_search f u
 
@@ -195,7 +195,7 @@ let rec msig_of_ms = function
   | (l,SEdecl (Dfix (rv,_,tv))) :: ms ->
       let msig = ref (msig_of_ms ms) in
       for i = Array.length rv - 1 downto 0 do
-	msig := (l,Spec (Sval (rv.(i),tv.(i))))::!msig
+        msig := (l,Spec (Sval (rv.(i),tv.(i))))::!msig
       done;
       !msig
   | (l,SEmodule m) :: ms -> (l,Smodule m.ml_mod_type) :: (msig_of_ms ms)
@@ -229,13 +229,13 @@ let get_decl_in_structure r struc =
     let rec go ll sel = match ll with
       | [] -> assert false
       | l :: ll ->
-	  match search_structure l (not (List.is_empty ll)) sel with
-	    | SEdecl d -> d
-	    | SEmodtype m -> assert false
-	    | SEmodule m ->
-		match m.ml_mod_expr with
-		  | MEstruct (_,sel) -> go ll sel
-		  | _ -> error_not_visible r
+          match search_structure l (not (List.is_empty ll)) sel with
+            | SEdecl d -> d
+            | SEmodtype m -> assert false
+            | SEmodule m ->
+                match m.ml_mod_expr with
+                  | MEstruct (_,sel) -> go ll sel
+                  | _ -> error_not_visible r
     in go ll sel
   with Not_found ->
     anomaly (Pp.str "reference not found in extracted structure.")
@@ -258,7 +258,7 @@ let dfix_to_mlfix rv av i =
   in
   let rec subst n t = match t with
     | MLglob ((GlobRef.ConstRef kn) as refe) ->
-	(try MLrel (n + (Refmap'.find refe s)) with Not_found -> t)
+        (try MLrel (n + (Refmap'.find refe s)) with Not_found -> t)
     | _ -> ast_map_lift subst n t
   in
   let ids = Array.map (fun r -> Label.to_id (label_of_r r)) rv in
@@ -277,9 +277,9 @@ let rec optim_se top to_appear s = function
       let i = inline r a in
       if i then s := Refmap'.add r a !s;
       let d = match dump_unused_vars (optimize_fix a) with
-	| MLfix (0, _, [|c|]) ->
-	  Dfix ([|r|], [|ast_subst (MLglob r) c|], [|t|])
-	| a -> Dterm (r, a, t)
+        | MLfix (0, _, [|c|]) ->
+          Dfix ([|r|], [|ast_subst (MLglob r) c|], [|t|])
+        | a -> Dterm (r, a, t)
       in
       (l,SEdecl d) :: (optim_se top to_appear s lse)
   | (l,SEdecl (Dfix (rv,av,tv))) :: lse ->
@@ -287,8 +287,8 @@ let rec optim_se top to_appear s = function
       (* This fake body ensures that no fixpoint will be auto-inlined. *)
       let fake_body = MLfix (0,[||],[||]) in
       for i = 0 to Array.length rv - 1 do
-	if inline rv.(i) fake_body
-	then s := Refmap'.add rv.(i) (dfix_to_mlfix rv av i) !s
+        if inline rv.(i) fake_body
+        then s := Refmap'.add rv.(i) (dfix_to_mlfix rv av i) !s
       done;
       let av' = Array.map dump_unused_vars av in
       (l,SEdecl (Dfix (rv, av', tv))) :: (optim_se top to_appear s lse)
@@ -343,7 +343,7 @@ let compute_deps_decl = function
   | Dterm (r,u,t) ->
       type_iter_references add_needed t;
       if not (is_custom r) then
-	ast_iter_references add_needed add_needed add_needed u
+        ast_iter_references add_needed add_needed add_needed u
   | Dfix _ as d ->
       decl_iter_references add_needed add_needed add_needed d
 
@@ -370,10 +370,10 @@ let rec depcheck_se = function
       List.iter found_needed refs';
       (* Hack to avoid extracting unused part of a Dfix *)
       match d with
-	| Dfix (rv,trms,tys) when (List.for_all is_custom refs') ->
-	  let trms' =  Array.make (Array.length rv) (MLexn "UNUSED") in
-	  ((l,SEdecl (Dfix (rv,trms',tys))) :: se')
-	| _ -> (compute_deps_decl d; t::se')
+        | Dfix (rv,trms,tys) when (List.for_all is_custom refs') ->
+          let trms' =  Array.make (Array.length rv) (MLexn "UNUSED") in
+          ((l,SEdecl (Dfix (rv,trms',tys))) :: se')
+        | _ -> (compute_deps_decl d; t::se')
     end
   | t :: se ->
     let se' = depcheck_se se in

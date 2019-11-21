@@ -133,8 +133,8 @@ type 'a index = {
 let map f i =
   { i with idx_entries =
       List.map
-	(fun (c,l) -> (c, List.map (fun (s,x) -> (s,f s x)) l))
-	i.idx_entries }
+        (fun (c,l) -> (c, List.map (fun (s,x) -> (s,f s x)) l))
+        i.idx_entries }
 
 let compare_entries (s1,_) (s2,_) = Alpha.compare_string s1 s2
 
@@ -148,7 +148,7 @@ let sort_entries el =
     (fun ((s,_) as e) ->
       let c = Alpha.norm_char s.[0] in
       let c,l =
-	try c,Hashtbl.find t c with Not_found -> '*',Hashtbl.find t '*' in
+        try c,Hashtbl.find t c with Not_found -> '*',Hashtbl.find t '*' in
       Hashtbl.replace t c (e :: l))
     el;
   let res = ref [] in
@@ -208,22 +208,22 @@ let prepare_entry s = function
       let quoted = ref false in
       let l = String.length s - 1 in
       while !j <= l do
-	if not !quoted then begin
-	  (match s.[!j] with
-	  | '_' -> Bytes.set ntn !k ' '; incr k
-	  | 'x' -> Bytes.set ntn !k '_'; incr k
-	  | '\'' -> quoted := true
-	  | _ -> assert false)
-	end
-	else
-	  if s.[!j] = '\'' then
-	    if (!j = l || s.[!j+1] = '_') then quoted := false
-	    else (incr j; Bytes.set ntn !k s.[!j]; incr k)
-	  else begin
-	    Bytes.set ntn !k s.[!j];
-	    incr k
-	  end;
-	incr j
+        if not !quoted then begin
+          (match s.[!j] with
+          | '_' -> Bytes.set ntn !k ' '; incr k
+          | 'x' -> Bytes.set ntn !k '_'; incr k
+          | '\'' -> quoted := true
+          | _ -> assert false)
+        end
+        else
+          if s.[!j] = '\'' then
+            if (!j = l || s.[!j+1] = '_') then quoted := false
+            else (incr j; Bytes.set ntn !k s.[!j]; incr k)
+          else begin
+            Bytes.set ntn !k s.[!j];
+            incr k
+          end;
+        incr j
       done;
       let ntn = Bytes.sub_string ntn 0 !k in
       let ntn = if sc = "" then ntn else ntn ^ " (" ^ sc ^ ")" in
@@ -246,8 +246,8 @@ let all_entries () =
       idx_entries = sort_entries !gl;
       idx_size = List.length !gl },
     Hashtbl.fold (fun t e l -> (t, { idx_name = type_name t;
-			             idx_entries = sort_entries e;
-			             idx_size = List.length e }) :: l) bt []
+                                     idx_entries = sort_entries e;
+                                     idx_size = List.length e }) :: l) bt []
 
 let type_of_string = function
   | "def" | "coe" | "subclass" | "canonstruc" | "fix" | "cofix"
@@ -297,16 +297,16 @@ let read_glob vfile f =
       let s = input_line c in
       let n = String.length s in
       if n > 0 then begin
-	match s.[0] with
-	  | 'F' ->
-	      cur_mod := String.sub s 1 (n - 1);
-	      current_library := !cur_mod
-	  | 'R' ->
-	      (try
-		Scanf.sscanf s "R%d:%d %s %s %s %s"
-		  (fun loc1 loc2 lib_dp sp id ty ->
-		    for loc=loc1 to loc2 do
-		      add_ref !cur_mod loc lib_dp sp id (type_of_string ty);
+        match s.[0] with
+          | 'F' ->
+              cur_mod := String.sub s 1 (n - 1);
+              current_library := !cur_mod
+          | 'R' ->
+              (try
+                Scanf.sscanf s "R%d:%d %s %s %s %s"
+                  (fun loc1 loc2 lib_dp sp id ty ->
+                    for loc=loc1 to loc2 do
+                      add_ref !cur_mod loc lib_dp sp id (type_of_string ty);
 
                       (* Also add an entry for each module mentioned in [lib_dp],
                        * to use in interpolation. *)
@@ -316,13 +316,13 @@ let read_glob vfile f =
                                                                 | _ -> thisPiece ^ "." ^ priorPieces in
                                                 add_ref !cur_mod loc "" "" newPieces Library;
                                                 newPieces) (Str.split (Str.regexp_string ".") lib_dp) "")
-		    done)
-	       with _ -> ())
-	  | _ ->
-	      try Scanf.sscanf s "%s %d:%d %s %s"
-		(fun ty loc1 loc2 sp id ->
+                    done)
+               with _ -> ())
+          | _ ->
+              try Scanf.sscanf s "%s %d:%d %s %s"
+                (fun ty loc1 loc2 sp id ->
                   add_def loc1 loc2 (type_of_string ty) sp id)
-	      with Scanf.Scan_failure _ -> ()
+              with Scanf.Scan_failure _ -> ()
 
       end
     done; assert false

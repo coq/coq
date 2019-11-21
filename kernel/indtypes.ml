@@ -74,18 +74,18 @@ let explain_ind_err id ntyp env nparamsctxt c err =
   let (_lparams,c') = mind_extract_params nparamsctxt c in
   match err with
     | LocalNonPos kt ->
-	raise (InductiveError (NonPos (env,c',mkRel (kt+nparamsctxt))))
+        raise (InductiveError (NonPos (env,c',mkRel (kt+nparamsctxt))))
     | LocalNotEnoughArgs kt ->
-	raise (InductiveError
-		 (NotEnoughArgs (env,c',mkRel (kt+nparamsctxt))))
+        raise (InductiveError
+                 (NotEnoughArgs (env,c',mkRel (kt+nparamsctxt))))
     | LocalNotConstructor (paramsctxt,nargs)->
         let nparams = Context.Rel.nhyps paramsctxt in
-	raise (InductiveError
-		 (NotConstructor (env,id,c',mkRel (ntyp+nparamsctxt),
+        raise (InductiveError
+                 (NotConstructor (env,id,c',mkRel (ntyp+nparamsctxt),
                                   nparams,nargs)))
     | LocalNonPar (n,i,l) ->
-	raise (InductiveError
-		 (NonPar (env,c',n,mkRel i,mkRel (l+nparamsctxt))))
+        raise (InductiveError
+                 (NonPar (env,c',n,mkRel i,mkRel (l+nparamsctxt))))
 
 let failwith_non_pos n ntypes c =
   for k = n to n + ntypes - 1 do
@@ -115,9 +115,9 @@ let check_correct_par (env,n,ntypes,_) paramdecls ind_index args =
       check param_index (paramdecl_index+1) paramdecls
     | _::paramdecls ->
         match kind (whd_all env params.(param_index)) with
-	  | Rel w when Int.equal w paramdecl_index ->
+          | Rel w when Int.equal w paramdecl_index ->
             check (param_index-1) (paramdecl_index+1) paramdecls
-	  | _ ->
+          | _ ->
             let paramdecl_index_in_env = paramdecl_index-n+nparamdecls+1 in
             let err =
               LocalNonPar (param_index+1, paramdecl_index_in_env, ind_index) in
@@ -137,12 +137,12 @@ if Int.equal nmr 0 then 0 else
   let (lpar,_) = List.chop nmr largs in
   let rec find k index =
       function
-	  ([],_) -> nmr
-	| (_,[]) -> assert false (* |paramsctxt|>=nmr *)
-	| (lp, LocalDef _ :: paramsctxt) -> find k (index-1) (lp,paramsctxt)
-	| (p::lp,_::paramsctxt) ->
+          ([],_) -> nmr
+        | (_,[]) -> assert false (* |paramsctxt|>=nmr *)
+        | (lp, LocalDef _ :: paramsctxt) -> find k (index-1) (lp,paramsctxt)
+        | (p::lp,_::paramsctxt) ->
        ( match kind (whd_all env p) with
-	  | Rel w when Int.equal w index -> find (k+1) (index-1) (lp,paramsctxt)
+          | Rel w when Int.equal w index -> find (k+1) (index-1) (lp,paramsctxt)
           | _ -> k)
   in find 0 (n-1) (lpar,List.rev paramsctxt)
 
@@ -177,7 +177,7 @@ let rec ienv_decompose_prod (env,_,_,_ as ienv) n c =
     match kind c' with
         Prod(na,a,b) ->
           let ienv' = ienv_push_var ienv (na,a,mk_norec) in
-	  ienv_decompose_prod ienv' (n-1) b
+          ienv_decompose_prod ienv' (n-1) b
       | _ -> assert false
 
 let array_min nmr a = if Int.equal nmr 0 then 0 else
@@ -205,36 +205,36 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
     let x,largs = decompose_app (whd_all env c) in
       match kind x with
         | Prod (na,b,d) ->
-	    let () = assert (List.is_empty largs) in
+            let () = assert (List.is_empty largs) in
             (** If one of the inductives of the mutually inductive
                 block occurs in the left-hand side of a product, then
                 such an occurrence is a non-strictly-positive
                 recursive call. Occurrences in the right-hand side of
                 the product must be strictly positive.*)
             (match weaker_noccur_between env n ntypes b with
-	      | None when chkpos ->
+              | None when chkpos ->
                   failwith_non_pos_list n ntypes [b]
               | None ->
                   check_pos (ienv_push_var ienv (na, b, mk_norec)) nmr d
               | Some b ->
                   check_pos (ienv_push_var ienv (na, b, mk_norec)) nmr d)
-	| Rel k ->
+        | Rel k ->
             (try let (ra,rarg) = List.nth ra_env (k-1) in
             let largs = List.map (whd_all env) largs in
-	    let nmr1 =
-	      (match ra with
+            let nmr1 =
+              (match ra with
                   Mrec _ -> compute_rec_par ienv paramsctxt nmr largs
-		|  _ -> nmr)
-	    in
+                |  _ -> nmr)
+            in
               (** The case where one of the inductives of the mutually
                   inductive block occurs as an argument of another is not
                   known to be safe. So Coq rejects it. *)
-	      if chkpos &&
+              if chkpos &&
                  not (List.for_all (noccur_between n ntypes) largs)
-	      then failwith_non_pos_list n ntypes largs
-	      else (nmr1,rarg)
+              then failwith_non_pos_list n ntypes largs
+              else (nmr1,rarg)
               with Failure _ | Invalid_argument _ -> (nmr,mk_norec))
-	| Ind ind_kn ->
+        | Ind ind_kn ->
             (** If one of the inductives of the mutually inductive
                 block being defined appears in a parameter, then we
                 have a nested inductive type. The positivity is then
@@ -245,11 +245,11 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
             (** If an inductive of the mutually inductive block
                 appears in any other way, then the positivy check gives
                 up. *)
-	    if not chkpos ||
+            if not chkpos ||
               (noccur_between n ntypes x &&
                List.for_all (noccur_between n ntypes) largs)
-	    then (nmr,mk_norec)
-	    else failwith_non_pos_list n ntypes (x::largs)
+            then (nmr,mk_norec)
+            else failwith_non_pos_list n ntypes (x::largs)
 
   (** [check_positive_nested] handles the case of nested inductive
       calls, that is, when an inductive types from the mutually
@@ -270,35 +270,35 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
           allowed to appear nested in the parameters of another inductive
           type. Not in the proper indices. *)
       if chkpos && not (List.for_all (noccur_between n ntypes) auxnonrecargs) then
-	failwith_non_pos_list n ntypes auxnonrecargs;
+        failwith_non_pos_list n ntypes auxnonrecargs;
       (* Nested mutual inductive types are not supported *)
       let auxntyp = mib.mind_ntypes in
-	if not (Int.equal auxntyp 1) then raise (IllFormedInd (LocalNonPos n));
-	(* The nested inductive type with parameters removed *)
-	let auxlcvect = abstract_mind_lc auxntyp auxnrecpar mip.mind_nf_lc in
-	  (* Extends the environment with a variable corresponding to
-	     the inductive def *)
-	let (env',_,_,_ as ienv') = ienv_push_inductive ienv ((mi,u),auxrecparams) in
-	  (* Parameters expressed in env' *)
-	let auxrecparams' = List.map (lift auxntyp) auxrecparams in
-	let irecargs_nmr =
-	  (** Checks that the "nesting" inductive type is covariant in
-	      the relevant parameters. In other words, that the
-	      (nested) parameters which are instantiated with
-	      inductives of the mutually inductive block occur
-	      positively in the types of the nested constructors. *)
-	  Array.map
-	    (function c ->
-	      let c' = hnf_prod_applist env' c auxrecparams' in
-	      (* skip non-recursive parameters *)
-	      let (ienv',c') = ienv_decompose_prod ienv' auxnnonrecpar c' in
-		check_constructors ienv' false nmr c')
-	    auxlcvect
-	in
-	let irecargs = Array.map snd irecargs_nmr
-	and nmr' = array_min nmr irecargs_nmr
-	in
-	  (nmr',(Rtree.mk_rec [|mk_paths (Imbr mi) irecargs|]).(0))
+        if not (Int.equal auxntyp 1) then raise (IllFormedInd (LocalNonPos n));
+        (* The nested inductive type with parameters removed *)
+        let auxlcvect = abstract_mind_lc auxntyp auxnrecpar mip.mind_nf_lc in
+          (* Extends the environment with a variable corresponding to
+             the inductive def *)
+        let (env',_,_,_ as ienv') = ienv_push_inductive ienv ((mi,u),auxrecparams) in
+          (* Parameters expressed in env' *)
+        let auxrecparams' = List.map (lift auxntyp) auxrecparams in
+        let irecargs_nmr =
+          (** Checks that the "nesting" inductive type is covariant in
+              the relevant parameters. In other words, that the
+              (nested) parameters which are instantiated with
+              inductives of the mutually inductive block occur
+              positively in the types of the nested constructors. *)
+          Array.map
+            (function c ->
+              let c' = hnf_prod_applist env' c auxrecparams' in
+              (* skip non-recursive parameters *)
+              let (ienv',c') = ienv_decompose_prod ienv' auxnnonrecpar c' in
+                check_constructors ienv' false nmr c')
+            auxlcvect
+        in
+        let irecargs = Array.map snd irecargs_nmr
+        and nmr' = array_min nmr irecargs_nmr
+        in
+          (nmr',(Rtree.mk_rec [|mk_paths (Imbr mi) irecargs|]).(0))
 
   (** [check_constructors ienv check_head nmr c] checks the positivity
       condition in the type [c] of a constructor (i.e. that recursive
@@ -311,11 +311,11 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
   and check_constructors ienv check_head nmr c =
     let rec check_constr_rec (env,n,ntypes,_ra_env as ienv) nmr lrec c =
       let x,largs = decompose_app (whd_all env c) in
-	match kind x with
+        match kind x with
 
           | Prod (na,b,d) ->
-	      let () = assert (List.is_empty largs) in
-	      if not recursive && not (noccur_between n ntypes b) then
+              let () = assert (List.is_empty largs) in
+              if not recursive && not (noccur_between n ntypes b) then
                 raise (InductiveError Type_errors.BadEntry);
               let nmr',recarg = check_pos ienv nmr b in
               let ienv' = ienv_push_var ienv (na,b,mk_norec) in
@@ -341,9 +341,9 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
       (fun id c ->
         let _,rawc = mind_extract_params nparamsctxt c in
           try
-	    check_constructors ienv true nmr rawc
+            check_constructors ienv true nmr rawc
           with IllFormedInd err ->
-	    explain_ind_err id (ntypes-i) env nparamsctxt c err)
+            explain_ind_err id (ntypes-i) env nparamsctxt c err)
       (Array.of_list lcnames) indlc
   in
   let irecargs = Array.map snd irecargs_nmr
@@ -397,7 +397,7 @@ let rel_list n m = Array.to_list (rel_vect n m)
 
 (** From a rel context describing the constructor arguments,
     build an expansion function.
-    The term built is expecting to be substituted first by 
+    The term built is expecting to be substituted first by
     a substitution of the form [params, x : ind params] *)
 let compute_projections (kn, i as ind) mib =
   let pkt = mib.mind_packets.(i) in
@@ -444,10 +444,10 @@ let compute_projections (kn, i as ind) mib =
         let t = liftn 1 j t in
         (* from [params, x:I, field1,..,fieldj |- t(params,field1,..,fieldj)]
            to [params-wo-let, x:I |- t(params,proj1 x,..,projj x)] *)
-	let projty = substl letsubst t in
+        let projty = substl letsubst t in
         (* from [params, x:I, field1,..,fieldj |- t(field1,..,fieldj)]
            to [params, x:I |- t(proj1 x,..,projj x)] *)
-	let fterm = mkProj (Projection.make kn false, mkRel 1) in
+        let fterm = mkProj (Projection.make kn false, mkRel 1) in
         (i + 1, j + 1, lab :: labs, r :: rs, projty :: pbs, fterm :: letsubst)
       | Anonymous -> assert false (* checked by indTyping *)
   in
@@ -469,7 +469,7 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
     let nf_lc = Array.map (fun (d, b) -> (d@paramsctxt, b)) splayed_lc in
     let consnrealdecls =
       Array.map (fun (d,_) -> Context.Rel.length d)
-	splayed_lc in
+        splayed_lc in
     let consnrealargs =
       Array.map (fun (d,_) -> Context.Rel.nhyps d)
         splayed_lc in
@@ -481,14 +481,14 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
     let nconst, nblock = ref 0, ref 0 in
     let transf num =
       let arity = List.length (dest_subterms recarg).(num) in
-	if Int.equal arity 0 then
-	  let p  = (!nconst, 0) in
-	    incr nconst; p
-	else
-	  let p = (!nblock + 1, arity) in
-	    incr nblock; p
-	      (* les tag des constructeur constant commence a 0,
-		 les tag des constructeur non constant a 1 (0 => accumulator) *)
+        if Int.equal arity 0 then
+          let p  = (!nconst, 0) in
+            incr nconst; p
+        else
+          let p = (!nblock + 1, arity) in
+            incr nblock; p
+              (* les tag des constructeur constant commence a 0,
+                 les tag des constructeur non constant a 1 (0 => accumulator) *)
     in
     let rtbl = Array.init (List.length cnames) transf in
       (* Build the inductive packet *)
@@ -497,17 +497,17 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
         mind_arity_ctxt = indices @ paramsctxt;
         mind_nrealargs = Context.Rel.nhyps indices;
         mind_nrealdecls = Context.Rel.length indices;
-	mind_kelim = kelim;
-	mind_consnames = Array.of_list cnames;
-	mind_consnrealdecls = consnrealdecls;
-	mind_consnrealargs = consnrealargs;
-	mind_user_lc = lc;
-	mind_nf_lc = nf_lc;
+        mind_kelim = kelim;
+        mind_consnames = Array.of_list cnames;
+        mind_consnrealdecls = consnrealdecls;
+        mind_consnrealargs = consnrealargs;
+        mind_user_lc = lc;
+        mind_nf_lc = nf_lc;
         mind_recargs = recarg;
         mind_relevance;
         mind_nb_constant = !nconst;
-	mind_nb_args = !nblock;
-	mind_reloc_tbl = rtbl;
+        mind_nb_args = !nblock;
+        mind_reloc_tbl = rtbl;
       } in
   let packets = Array.map3 build_one_packet names inds recargs in
   let mib =

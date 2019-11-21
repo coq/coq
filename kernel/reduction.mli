@@ -29,7 +29,7 @@ val nf_betaiota      : env -> constr -> constr
 exception NotConvertible
 
 type 'a kernel_conversion_function = env -> 'a -> 'a -> unit
-type 'a extended_conversion_function = 
+type 'a extended_conversion_function =
   ?l2r:bool -> ?reds:TransparentState.t -> env ->
   ?evars:((existential->constr option) * UGraph.t) ->
   'a -> 'a -> unit
@@ -75,9 +75,9 @@ val conv_leq : types extended_conversion_function
 
 (** These conversion functions are used by module subtyping, which needs to infer
     universe constraints inside the kernel *)
-val infer_conv : ?l2r:bool -> ?evars:(existential->constr option) -> 
+val infer_conv : ?l2r:bool -> ?evars:(existential->constr option) ->
   ?ts:TransparentState.t -> constr infer_conversion_function
-val infer_conv_leq : ?l2r:bool -> ?evars:(existential->constr option) -> 
+val infer_conv_leq : ?l2r:bool -> ?evars:(existential->constr option) ->
   ?ts:TransparentState.t -> types infer_conversion_function
 
 (** Depending on the universe state functions, this might raise

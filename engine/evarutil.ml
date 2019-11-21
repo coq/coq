@@ -562,19 +562,19 @@ let rec check_and_clear_in_constr env evdref err ids global c =
         c
 
       | Evar (evk,l as ev) ->
-	  if Evd.is_defined !evdref evk then
-	    (* If evk is already defined we replace it by its definition *)
+          if Evd.is_defined !evdref evk then
+            (* If evk is already defined we replace it by its definition *)
             let nc = Evd.existential_value !evdref (EConstr.of_existential ev) in
             let nc = EConstr.Unsafe.to_constr nc in
-	      (check_and_clear_in_constr env evdref err ids global nc)
-	  else
-	    (* We check for dependencies to elements of ids in the
-	       evar_info corresponding to e and in the instance of
-	       arguments. Concurrently, we build a new evar
-	       corresponding to e where hypotheses of ids have been
-	       removed *)
-	    let evi = Evd.find_undefined !evdref evk in
-	    let ctxt = Evd.evar_filtered_context evi in
+              (check_and_clear_in_constr env evdref err ids global nc)
+          else
+            (* We check for dependencies to elements of ids in the
+               evar_info corresponding to e and in the instance of
+               arguments. Concurrently, we build a new evar
+               corresponding to e where hypotheses of ids have been
+               removed *)
+            let evi = Evd.find_undefined !evdref evk in
+            let ctxt = Evd.evar_filtered_context evi in
             let (rids,filter) =
               List.fold_right2
                 (fun h a (ri,filter) ->
@@ -594,11 +594,11 @@ let rec check_and_clear_in_constr env evdref err ids global c =
                   (* No dependency at all, we can keep this ev's context hyp *)
                     (ri, true::filter)
                   with Depends id -> (Id.Map.add (NamedDecl.get_id h) id ri, false::filter))
-		ctxt (Array.to_list l) (Id.Map.empty,[]) in
-	    (* Check if some rid to clear in the context of ev has dependencies
-	       in the type of ev and adjust the source of the dependency *)
-	    let _nconcl =
-	      try
+                ctxt (Array.to_list l) (Id.Map.empty,[]) in
+            (* Check if some rid to clear in the context of ev has dependencies
+               in the type of ev and adjust the source of the dependency *)
+            let _nconcl =
+              try
                 let nids = Id.Map.domain rids in
                 let global = Id.Set.exists is_section_variable nids in
                 let concl = EConstr.Unsafe.to_constr (evar_concl evi) in
@@ -694,7 +694,7 @@ let gather_dependent_evars q evm =
     let (is_dependent,e) = Queue.pop q in
     (* checks if [e] has already been added to [!acc] *)
     begin if not (Evar.Map.mem e !acc) then
-        acc := process_dependent_evar q !acc evm is_dependent e  
+        acc := process_dependent_evar q !acc evm is_dependent e
     end
   done;
   !acc
@@ -736,7 +736,7 @@ let undefined_evars_of_term evd t =
     match EConstr.kind evd c with
       | Evar (n, l) ->
         let acc = Evar.Set.add n acc in
-	Array.fold_left evrec acc l
+        Array.fold_left evrec acc l
       | _ -> EConstr.fold evd evrec acc c
   in
   evrec Evar.Set.empty t
@@ -751,10 +751,10 @@ let undefined_evars_of_evar_info evd evi =
   Evar.Set.union (undefined_evars_of_term evd evi.evar_concl)
     (Evar.Set.union
        (match evi.evar_body with
-	 | Evar_empty -> Evar.Set.empty
+         | Evar_empty -> Evar.Set.empty
          | Evar_defined b -> undefined_evars_of_term evd b)
        (undefined_evars_of_named_context evd
-	  (named_context_of_val evi.evar_hyps)))
+          (named_context_of_val evi.evar_hyps)))
 
 type undefined_evars_cache = {
   mutable cache : (EConstr.named_declaration * Evar.Set.t) ref Id.Map.t;

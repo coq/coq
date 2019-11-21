@@ -123,7 +123,7 @@ let equal_norefl cmp t1 t2 =
 
 let equal cmp t1 t2 =
   if t1 == t2 then true else equal_norefl cmp t1 t2
-    
+
 
 let is_empty array = Int.equal (Array.length array) 0
 
