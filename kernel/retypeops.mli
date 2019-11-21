@@ -12,14 +12,14 @@
 
 val relevance_of_term : Environ.env -> Constr.constr -> Sorts.relevance
 
-val relevance_of_fterm : Environ.env -> Sorts.relevance list ->
+val relevance_of_fterm : Environ.env -> Sorts.relevance Range.t ->
   Esubst.lift -> CClosure.fconstr ->
   Sorts.relevance
 
 
 (** Helpers *)
 open Names
-val relevance_of_rel_extra : Environ.env -> Sorts.relevance list -> int -> Sorts.relevance
+val relevance_of_rel : Environ.env -> int -> Sorts.relevance
 val relevance_of_var : Environ.env -> Id.t -> Sorts.relevance
 val relevance_of_constant : Environ.env -> Constant.t -> Sorts.relevance
 val relevance_of_constructor : Environ.env -> constructor -> Sorts.relevance

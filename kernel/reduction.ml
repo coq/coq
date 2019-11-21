@@ -302,7 +302,7 @@ let unfold_ref_with_args infos tab fl v =
 
 type conv_tab = {
   cnv_inf : clos_infos;
-  relevances : Sorts.relevance list;
+  relevances : Sorts.relevance Range.t;
   lft_tab : clos_tab;
   rgt_tab : clos_tab;
 }
@@ -313,16 +313,16 @@ type conv_tab = {
     passed to each respective side of the conversion function below. *)
 
 let push_relevance infos r =
-  { infos with relevances = r.Context.binder_relevance :: infos.relevances }
+  { infos with relevances = Range.cons r.Context.binder_relevance infos.relevances }
 
 let push_relevances infos nas =
-  { infos with relevances = Array.fold_left (fun l x -> x.Context.binder_relevance :: l) infos.relevances nas }
+  { infos with relevances = Array.fold_left (fun l x -> Range.cons x.Context.binder_relevance l) infos.relevances nas }
 
 let rec skip_pattern infos relevances n c1 c2 =
   if Int.equal n 0 then {infos with relevances}, c1, c2
   else match kind c1, kind c2 with
     | Lambda (x, _, c1), Lambda (_, _, c2) ->
-      skip_pattern infos (x.Context.binder_relevance :: relevances) (pred n) c1 c2
+      skip_pattern infos (Range.cons x.Context.binder_relevance relevances) (pred n) c1 c2
     | _ -> raise IrregularPatternShape
 
 let skip_pattern infos n c1 c2 =
@@ -701,7 +701,7 @@ let clos_gen_conv trans cv_pb l2r evars env univs t1 t2 =
   let infos = create_clos_infos ~evars reds env in
   let infos = {
     cnv_inf = infos;
-    relevances = List.map Context.Rel.Declaration.get_relevance (rel_context env);
+    relevances = Range.empty;
     lft_tab = create_tab ();
     rgt_tab = create_tab ();
   } in
