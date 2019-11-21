@@ -188,8 +188,9 @@
 ########################################################################
 # TLC
 ########################################################################
-: "${tlc_CI_REF:=master}"
-: "${tlc_CI_GITURL:=https://gforge.inria.fr/git/tlc/tlc}"
+: "${tlc_CI_REF:=master-for-coq-ci}"
+: "${tlc_CI_GITURL:=https://github.com/charguer/tlc}"
+: "${tlc_CI_ARCHIVEURL:=${tlc_CI_GITURL}/archive}"
 
 ########################################################################
 # Bignums
