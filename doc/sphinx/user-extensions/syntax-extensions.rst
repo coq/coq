@@ -871,7 +871,7 @@ notations are given below. The optional :production:`scope` is described in
                  : Inductive `ind_body` [`decl_notation`] with … with `ind_body` [`decl_notation`].
                  : CoInductive `ind_body` [`decl_notation`] with … with `ind_body` [`decl_notation`].
                  : Fixpoint `fix_body` [`decl_notation`] with … with `fix_body` [`decl_notation`].
-                 : CoFixpoint `cofix_body` [`decl_notation`] with … with `cofix_body` [`decl_notation`].
+                 : CoFixpoint `fix_body` [`decl_notation`] with … with `fix_body` [`decl_notation`].
                  : [Local] Declare Custom Entry `ident`.
    decl_notation : [where `string` := `term` [: `scope`] and … and `string` := `term` [: `scope`]].
    modifiers     : `modifier`, … , `modifier`

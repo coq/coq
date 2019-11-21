@@ -12,3 +12,13 @@
 (* Contents used to generate prodn in doc *)
 
 DOC_GRAMMAR
+
+(* todo: doesn't work, gives
+ltac_match:  @match_key @ltac_expr with {? %| } {+| @ltac_expr } end
+instead of
+ltac_match:  @match_key @ltac_expr with {? %| } {+| {| @match_pattern | _ } => @ltac_expr } end
+
+SPLICE: [
+| match_rule
+]
+*)

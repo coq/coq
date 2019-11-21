@@ -741,7 +741,7 @@ following grammar:
             : topdown `strategy`         (top-down)
             : hints `ident`              (apply hints from hint database)
             : terms `term` ... `term`      (any of the terms)
-            : eval `redexpr`             (apply reduction)
+            : eval `red_expr`             (apply reduction)
             : fold `term`               (unify)
             : ( `strategy` )
 

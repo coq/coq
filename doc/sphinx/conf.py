@@ -183,18 +183,17 @@ todo_include_todos = False
 nitpicky = True
 
 nitpick_ignore = [ ('token', token) for token in [
-    'tactic',
-    # 142 occurrences currently sort of defined in the ltac chapter,
-    # but is it the right place?
-    'module',
-    'redexpr',
-    'modpath',
-    'dirpath',
     'collection',
+    'command',
+    'dirpath',
+    'modpath',
+    'module',
+    'red_expr',
+    'symbol',
+    'tactic',
     'term_pattern',
     'term_pattern_string',
-    'command',
-    'symbol' ]]
+]]
 
 # -- Options for HTML output ----------------------------------------------
 

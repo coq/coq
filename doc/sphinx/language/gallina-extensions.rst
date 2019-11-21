@@ -79,14 +79,6 @@ To build an object of type :token:`ident`, one should provide the constructor
        Definition half := mkRat true 1 2 (O_S 1) one_two_irred.
        Check half.
 
-.. FIXME: move this to the main grammar in the spec chapter
-
-.. _record-named-fields-grammar:
-
-  .. productionlist::
-    record_term : {| [`field_def` ; … ; `field_def`] |}
-    field_def : `ident` [`binders`] := `term`
-
 Alternatively, the following syntax allows creating objects by using named fields, as
 shown in this grammar. The fields do not have to be in any particular order, nor do they have
 to be all present if the missing ones can be inferred or prompted for
@@ -163,10 +155,11 @@ available:
 
 .. _record_projections_grammar:
 
-  .. productionlist:: terms
-     projection : `term` `.` ( `qualid` )
-          : `term` `.` ( `qualid` `arg` … `arg` )
-          : `term` `.` ( @`qualid` `term` … `term` )
+  .. insertgram term_projection term_projection
+
+  .. productionlist:: coq
+     term_projection : `term0` .( `qualid` `args_opt` )
+                     : `term0` .( @ `qualid` `term1_list_opt` )
 
   Syntax of Record projections
 
@@ -591,7 +584,7 @@ Advanced recursive functions
 
 The following experimental command is available when the ``FunInd`` library has been loaded via ``Require Import FunInd``:
 
-.. cmd:: Function @ident {* @binder} { @decrease_annot } : @type := @term
+.. cmd:: Function @ident {* @binder} { @fixannot } : @type := @term
 
    This command can be seen as a generalization of ``Fixpoint``. It is actually a wrapper
    for several ways of defining a function *and other useful related
@@ -600,15 +593,10 @@ The following experimental command is available when the ``FunInd`` library has 
    The meaning of this declaration is to define a function ident,
    similarly to ``Fixpoint``. Like in ``Fixpoint``, the decreasing argument must
    be given (unless the function is not recursive), but it might not
-   necessarily be *structurally* decreasing. The point of the :n:`{ @decrease_annot }` annotation
+   necessarily be *structurally* decreasing. The point of the :n:`{ @fixannot }` annotation
    is to name the decreasing argument *and* to describe which kind of
    decreasing criteria must be used to ensure termination of recursive
    calls.
-
-   .. productionlist::
-      decrease_annot : struct `ident`
-                     : measure `term` `ident`
-                     : wf `term` `ident`
 
 The ``Function`` construction also enjoys the ``with`` extension to define
 mutually recursive definitions. However, this feature does not work
@@ -874,7 +862,7 @@ Sections create local contexts which can be shared across multiple definitions.
       :name: Let Fixpoint
       :undocumented:
 
-   .. cmdv:: Let CoFixpoint @ident @cofix_body {* with @cofix_body}
+   .. cmdv:: Let CoFixpoint @ident @fix_body {* with @fix_body}
       :name: Let CoFixpoint
       :undocumented:
 
@@ -2322,6 +2310,18 @@ Printing universes
 
 Existential variables
 ---------------------
+
+.. insertgram term_evar evar_binding
+
+.. productionlist:: coq
+   term_evar : ?[ `ident` ]
+             : ?[ ?`ident` ]
+             : ?`ident` `evar_bindings_opt`
+   evar_bindings_opt : @{ `evar_bindings_semi` }
+                     : `empty`
+   evar_bindings_semi : `evar_bindings_semi` ; `evar_binding`
+                      : `evar_binding`
+   evar_binding : `ident` := `term`
 
 |Coq| terms can include existential variables which represents unknown
 subterms to eventually be replaced by actual subterms.

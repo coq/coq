@@ -186,6 +186,9 @@ that appear in the specified production:
 | WITH <newprod>
 ```
 
+* `PRINT` <nonterminal> - prints the nonterminal definition at that point in
+  applying the edits.  Most useful when the edits get a bit complicated to follow.
+
 * (any other nonterminal name) - adds a new production (and possibly a new nonterminal)
 to the grammar.
 
