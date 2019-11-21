@@ -451,6 +451,7 @@ module Constr =
     let typeclass_constraint = Entry.create "constr:typeclass_constraint"
     let record_declaration = Entry.create "constr:record_declaration"
     let appl_arg = Entry.create "constr:appl_arg"
+    let type_cstr = Entry.create "constr:type_cstr"
   end
 
 module Module =
