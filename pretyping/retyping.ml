@@ -264,16 +264,19 @@ let relevance_of_term env sigma c =
   if Environ.sprop_allowed env then
     let rec aux rels c =
       match kind sigma c with
-      | Rel n -> Retypeops.relevance_of_rel_extra env rels n
+      | Rel n ->
+        let len = Range.length rels in
+        if n <= len then Range.get rels (n - 1)
+        else Retypeops.relevance_of_rel env (n - len)
       | Var x -> Retypeops.relevance_of_var env x
       | Sort _ -> Sorts.Relevant
       | Cast (c, _, _) -> aux rels c
       | Prod ({binder_relevance=r}, _, codom) ->
-        aux (r::rels) codom
+        aux (Range.cons r rels) codom
       | Lambda ({binder_relevance=r}, _, bdy) ->
-        aux (r::rels) bdy
+        aux (Range.cons r rels) bdy
       | LetIn ({binder_relevance=r}, _, _, bdy) ->
-        aux (r::rels) bdy
+        aux (Range.cons r rels) bdy
       | App (c, _) -> aux rels c
       | Const (c,_) -> Retypeops.relevance_of_constant env c
       | Ind _ -> Sorts.Relevant
@@ -287,7 +290,7 @@ let relevance_of_term env sigma c =
       | Meta _ | Evar _ -> Sorts.Relevant
 
     in
-    aux [] c
+    aux Range.empty c
   else Sorts.Relevant
 
 let relevance_of_type env sigma t =
