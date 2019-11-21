@@ -2129,10 +2129,6 @@ let papp sigma gr args =
 
 let mk_eq sigma typ x y = papp sigma coq_eq_ind [| typ; x ; y |]
 let mk_eq_refl sigma typ x = papp sigma coq_eq_refl [| typ; x |]
-let mk_JMeq sigma typ x typ' y =
-  papp sigma coq_JMeq_ind [| typ; x ; typ'; y |]
-let mk_JMeq_refl sigma typ x =
-  papp sigma coq_JMeq_refl [| typ; x |]
 
 let hole na = DAst.make @@
   GHole (Evar_kinds.QuestionMark {
@@ -2428,7 +2424,25 @@ let abstract_tomatch env sigma tomatchs tycon =
       ([], [], Id.Set.empty, tycon) tomatchs
   in List.rev prev, ctx, tycon
 
+let setup_jmeq_constants () =
+  try
+    Coqlib.check_required_library Coqlib.jmeq_module_name;
+    let coq_JMeq_ind () = Coqlib.lib_ref "core.JMeq.type" in
+    let coq_JMeq_refl () = Coqlib.lib_ref "core.JMeq.refl" in
+    let mk_JMeq sigma typ x typ' y =
+      papp sigma coq_JMeq_ind [| typ; x ; typ'; y |] in
+    let mk_JMeq_refl sigma typ x =
+      papp sigma coq_JMeq_refl [| typ; x |] in
+    Some (mk_JMeq, mk_JMeq_refl)
+  with e when CErrors.noncritical e ->
+    None
+
 let build_dependent_signature env sigma avoid tomatchs arsign =
+  let mk_JMeq, mk_JMeq_refl =
+    match setup_jmeq_constants () with
+    | None -> CErrors.user_err (Pp.str "program requires Coq.Logic.JMeq to be loaded")
+    | Some (mk_JMeq, mk_JMeq_refl) -> mk_JMeq, mk_JMeq_refl
+  in
   let avoid = ref avoid in
   let arsign = List.rev arsign in
   let allnames = List.rev_map (List.map RelDecl.get_name) arsign in
@@ -2557,7 +2571,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
       (* Build the dependent arity signature, the equalities which makes
          the first part of the predicate and their instantiations. *)
     let avoid = Id.Set.empty in
-      build_dependent_signature !!env sigma avoid tomatchs arsign
+    build_dependent_signature !!env sigma avoid tomatchs arsign
 
   in
   let sigma, tycon, arity =

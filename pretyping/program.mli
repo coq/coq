@@ -31,9 +31,6 @@ val coq_eq_refl : unit -> GlobRef.t
 val coq_eq_refl_ref : unit -> GlobRef.t
 val coq_eq_rect : unit -> GlobRef.t
 
-val coq_JMeq_ind : unit -> GlobRef.t
-val coq_JMeq_refl : unit -> GlobRef.t
-
 val mk_coq_and : Evd.evar_map -> constr list -> Evd.evar_map * constr
 val mk_coq_not : Evd.evar_map -> constr -> Evd.evar_map * constr
 
