@@ -64,14 +64,14 @@ type patches = {
   reloc_infos : (reloc_info * int array) array;
 }
 
-let patch_char4 buff pos c1 c2 c3 c4 = 
+let patch_char4 buff pos c1 c2 c3 c4 =
   Bytes.unsafe_set buff pos       c1;
   Bytes.unsafe_set buff (pos + 1) c2;
   Bytes.unsafe_set buff (pos + 2) c3;
-  Bytes.unsafe_set buff (pos + 3) c4 
-  
+  Bytes.unsafe_set buff (pos + 3) c4
+
 let patch1 buff pos n =
-  patch_char4 buff pos 
+  patch_char4 buff pos
     (Char.unsafe_chr n) (Char.unsafe_chr (n asr 8))  (Char.unsafe_chr (n asr 16))
     (Char.unsafe_chr (n asr 24))
 
@@ -116,9 +116,9 @@ let out_word env b1 b2 b3 b4 =
       if len <= Sys.max_string_length / 2
       then 2 * len
       else
-	if len = Sys.max_string_length
-	then invalid_arg "String.create"  (* Pas la bonne exception .... *)
-	else Sys.max_string_length in
+        if len = Sys.max_string_length
+        then invalid_arg "String.create"  (* Pas la bonne exception .... *)
+        else Sys.max_string_length in
     let new_buffer = Bytes.create new_len in
     Bytes.blit env.out_buffer 0 new_buffer 0 len;
     env.out_buffer <- new_buffer
@@ -359,9 +359,9 @@ let emit_instr env = function
 (* Emission of a current list and remaining lists of instructions. Include some peephole optimization. *)
 
 let rec emit env insns remaining = match insns with
-  | [] -> 
-     (match remaining with 
-       [] -> () 
+  | [] ->
+     (match remaining with
+       [] -> ()
      | (first::rest) -> emit env first rest)
   (* Peephole optimizations *)
   | Kpush :: Kacc n :: c ->

@@ -163,16 +163,16 @@ let pp_type par vl t =
     | Tvar i -> (try pp_tvar (List.nth vl (pred i))
                  with Failure _ -> (str "'a" ++ int i))
     | Tglob (r,[a1;a2]) when is_infix r ->
-	pp_par par (pp_rec true a1 ++ str (get_infix r) ++ pp_rec true a2)
+        pp_par par (pp_rec true a1 ++ str (get_infix r) ++ pp_rec true a2)
     | Tglob (r,[]) -> pp_global Type r
     | Tglob (GlobRef.IndRef(kn,0),l)
-	when not (keep_singleton ()) && MutInd.equal kn (mk_ind "Coq.Init.Specif" "sig") ->
-	pp_tuple_light pp_rec l
+        when not (keep_singleton ()) && MutInd.equal kn (mk_ind "Coq.Init.Specif" "sig") ->
+        pp_tuple_light pp_rec l
     | Tglob (r,l) ->
-	pp_tuple_light pp_rec l ++ spc () ++ pp_global Type r
+        pp_tuple_light pp_rec l ++ spc () ++ pp_global Type r
     | Tarr (t1,t2) ->
-	pp_par par
-	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
+        pp_par par
+          (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
     | Tdummy _ -> str "__"
     | Tunknown -> str "__"
   in
@@ -209,101 +209,101 @@ let rec pp_expr par env args =
   and apply2 st = pp_apply2 st par args in
   function
     | MLrel n ->
-	let id = get_db_name n env in
+        let id = get_db_name n env in
         (* Try to survive to the occurrence of a Dummy rel.
            TODO: we should get rid of this hack (cf. #592) *)
         let id = if Id.equal id dummy_name then Id.of_string "__" else id in
         apply (Id.print id)
     | MLapp (f,args') ->
-	let stl = List.map (pp_expr true env []) args' in
+        let stl = List.map (pp_expr true env []) args' in
         pp_expr par env (stl @ args) f
     | MLlam _ as a ->
-      	let fl,a' = collect_lams a in
-	let fl = List.map id_of_mlid fl in
-	let fl,env' = push_vars fl env in
-	let st = pp_abst (List.rev fl) ++ pp_expr false env' [] a' in
-	apply2 st
+        let fl,a' = collect_lams a in
+        let fl = List.map id_of_mlid fl in
+        let fl,env' = push_vars fl env in
+        let st = pp_abst (List.rev fl) ++ pp_expr false env' [] a' in
+        apply2 st
     | MLletin (id,a1,a2) ->
-	let i,env' = push_vars [id_of_mlid id] env in
-	let pp_id = Id.print (List.hd i)
-	and pp_a1 = pp_expr false env [] a1
-	and pp_a2 = pp_expr (not par && expr_needs_par a2) env' [] a2 in
-	hv 0 (apply2 (pp_letin pp_id pp_a1 pp_a2))
+        let i,env' = push_vars [id_of_mlid id] env in
+        let pp_id = Id.print (List.hd i)
+        and pp_a1 = pp_expr false env [] a1
+        and pp_a2 = pp_expr (not par && expr_needs_par a2) env' [] a2 in
+        hv 0 (apply2 (pp_letin pp_id pp_a1 pp_a2))
     | MLglob r -> apply (pp_global Term r)
     | MLfix (i,ids,defs) ->
-	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
-	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args
+        let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
+        pp_fix par env' i (Array.of_list (List.rev ids'),defs) args
     | MLexn s ->
-	(* An [MLexn] may be applied, but I don't really care. *)
-	pp_par par (str "assert false" ++ spc () ++ str ("(* "^s^" *)"))
+        (* An [MLexn] may be applied, but I don't really care. *)
+        pp_par par (str "assert false" ++ spc () ++ str ("(* "^s^" *)"))
     | MLdummy k ->
         (* An [MLdummy] may be applied, but I don't really care. *)
         (match msg_of_implicit k with
          | "" -> str "__"
          | s -> str "__" ++ spc () ++ str ("(* "^s^" *)"))
     | MLmagic a ->
-	pp_apply (str "Obj.magic") par (pp_expr true env [] a :: args)
+        pp_apply (str "Obj.magic") par (pp_expr true env [] a :: args)
     | MLaxiom ->
-	pp_par par (str "failwith \"AXIOM TO BE REALIZED\"")
+        pp_par par (str "failwith \"AXIOM TO BE REALIZED\"")
     | MLcons (_,r,a) as c ->
         assert (List.is_empty args);
         begin match a with
-	  | _ when is_native_char c -> pp_native_char c
-	  | [a1;a2] when is_infix r ->
-	    let pp = pp_expr true env [] in
-	    pp_par par (pp a1 ++ str (get_infix r) ++ pp a2)
-	  | _ when is_coinductive r ->
-	    let ne = not (List.is_empty a) in
-	    let tuple = space_if ne ++ pp_tuple (pp_expr true env []) a in
-	    pp_par par (str "lazy " ++ pp_par ne (pp_global Cons r ++ tuple))
-	  | [] -> pp_global Cons r
-	  | _ ->
-	    let fds = get_record_fields r in
-	    if not (List.is_empty fds) then
-	      pp_record_pat (pp_fields r fds, List.map (pp_expr true env []) a)
-	    else
-	      let tuple = pp_tuple (pp_expr true env []) a in
-	      if String.is_empty (str_global Cons r) (* hack Extract Inductive prod *)
-	      then tuple
-	      else pp_par par (pp_global Cons r ++ spc () ++ tuple)
-	end
+          | _ when is_native_char c -> pp_native_char c
+          | [a1;a2] when is_infix r ->
+            let pp = pp_expr true env [] in
+            pp_par par (pp a1 ++ str (get_infix r) ++ pp a2)
+          | _ when is_coinductive r ->
+            let ne = not (List.is_empty a) in
+            let tuple = space_if ne ++ pp_tuple (pp_expr true env []) a in
+            pp_par par (str "lazy " ++ pp_par ne (pp_global Cons r ++ tuple))
+          | [] -> pp_global Cons r
+          | _ ->
+            let fds = get_record_fields r in
+            if not (List.is_empty fds) then
+              pp_record_pat (pp_fields r fds, List.map (pp_expr true env []) a)
+            else
+              let tuple = pp_tuple (pp_expr true env []) a in
+              if String.is_empty (str_global Cons r) (* hack Extract Inductive prod *)
+              then tuple
+              else pp_par par (pp_global Cons r ++ spc () ++ tuple)
+        end
     | MLtuple l ->
         assert (List.is_empty args);
         pp_boxed_tuple (pp_expr true env []) l
     | MLcase (_, t, pv) when is_custom_match pv ->
         if not (is_regular_match pv) then
-	  user_err Pp.(str "Cannot mix yet user-given match and general patterns.");
-	let mkfun (ids,_,e) =
-	  if not (List.is_empty ids) then named_lams (List.rev ids) e
-	  else dummy_lams (ast_lift 1 e) 1
-	in
-	let pp_branch tr = pp_expr true env [] (mkfun tr) ++ fnl () in
-	let inner =
-	  str (find_custom_match pv) ++ fnl () ++
-	  prvect pp_branch pv ++
-	  pp_expr true env [] t
-	in
-	apply2 (hov 2 inner)
+          user_err Pp.(str "Cannot mix yet user-given match and general patterns.");
+        let mkfun (ids,_,e) =
+          if not (List.is_empty ids) then named_lams (List.rev ids) e
+          else dummy_lams (ast_lift 1 e) 1
+        in
+        let pp_branch tr = pp_expr true env [] (mkfun tr) ++ fnl () in
+        let inner =
+          str (find_custom_match pv) ++ fnl () ++
+          prvect pp_branch pv ++
+          pp_expr true env [] t
+        in
+        apply2 (hov 2 inner)
     | MLcase (typ, t, pv) ->
         let head =
-	  if not (is_coinductive_type typ) then pp_expr false env [] t
-	  else (str "Lazy.force" ++ spc () ++ pp_expr true env [] t)
-	in
-	(* First, can this match be printed as a mere record projection ? *)
+          if not (is_coinductive_type typ) then pp_expr false env [] t
+          else (str "Lazy.force" ++ spc () ++ pp_expr true env [] t)
+        in
+        (* First, can this match be printed as a mere record projection ? *)
         (try pp_record_proj par env typ t pv args
-	 with Impossible ->
-	   (* Second, can this match be printed as a let-in ? *)
-	   if Int.equal (Array.length pv) 1 then
-	     let s1,s2 = pp_one_pat env pv.(0) in
-	     hv 0 (apply2 (pp_letin s1 head s2))
-	   else
-	     (* Third, can this match be printed as [if ... then ... else] ? *)
-	     (try apply2 (pp_ifthenelse env head pv)
-	      with Not_found ->
-		(* Otherwise, standard match *)
-		apply2
-		  (v 0 (str "match " ++ head ++ str " with" ++ fnl () ++
-			pp_pat env pv))))
+         with Impossible ->
+           (* Second, can this match be printed as a let-in ? *)
+           if Int.equal (Array.length pv) 1 then
+             let s1,s2 = pp_one_pat env pv.(0) in
+             hv 0 (apply2 (pp_letin s1 head s2))
+           else
+             (* Third, can this match be printed as [if ... then ... else] ? *)
+             (try apply2 (pp_ifthenelse env head pv)
+              with Not_found ->
+                (* Otherwise, standard match *)
+                apply2
+                  (v 0 (str "match " ++ head ++ str " with" ++ fnl () ++
+                        pp_pat env pv))))
     | MLuint i ->
         assert (args=[]);
         str "(" ++ str (Uint63.compile i) ++ str ")"
@@ -381,9 +381,9 @@ and pp_ifthenelse env expr pv = match pv with
       ->
       hv 0 (hov 2 (str "if " ++ expr) ++ spc () ++
             hov 2 (str "then " ++
-		   hov 2 (pp_expr (expr_needs_par the) env [] the)) ++ spc () ++
-	    hov 2 (str "else " ++
-	           hov 2 (pp_expr (expr_needs_par els) env [] els)))
+                   hov 2 (pp_expr (expr_needs_par the) env [] the)) ++ spc () ++
+            hov 2 (str "else " ++
+                   hov 2 (pp_expr (expr_needs_par els) env [] els)))
   | _ -> raise Not_found
 
 and pp_one_pat env (ids,p,t) =
@@ -404,20 +404,20 @@ and pp_function env t =
   let bl,env' = push_vars (List.map id_of_mlid bl) env in
   match t' with
     | MLcase(Tglob(r,_),MLrel 1,pv) when
-	not (is_coinductive r) && List.is_empty (get_record_fields r) &&
-	not (is_custom_match pv) ->
-	if not (ast_occurs 1 (MLcase(Tunknown,MLaxiom,pv))) then
-	  pr_binding (List.rev (List.tl bl)) ++
-       	  str " = function" ++ fnl () ++
-	  v 0 (pp_pat env' pv)
-	else
+        not (is_coinductive r) && List.is_empty (get_record_fields r) &&
+        not (is_custom_match pv) ->
+        if not (ast_occurs 1 (MLcase(Tunknown,MLaxiom,pv))) then
+          pr_binding (List.rev (List.tl bl)) ++
+          str " = function" ++ fnl () ++
+          v 0 (pp_pat env' pv)
+        else
           pr_binding (List.rev bl) ++
           str " = match " ++ Id.print (List.hd bl) ++ str " with" ++ fnl () ++
-	  v 0 (pp_pat env' pv)
+          v 0 (pp_pat env' pv)
     | _ ->
           pr_binding (List.rev bl) ++
-	  str " =" ++ fnl () ++ str "  " ++
-	  hov 2 (pp_expr false env' [] t')
+          str " =" ++ fnl () ++ str "  " ++
+          hov 2 (pp_expr false env' [] t')
 
 (*s names of the functions ([ids]) are already pushed in [env],
     and passed here just for convenience. *)
@@ -425,12 +425,12 @@ and pp_function env t =
 and pp_fix par env i (ids,bl) args =
   pp_par par
     (v 0 (str "let rec " ++
-	  prvect_with_sep
-      	    (fun () -> fnl () ++ str "and ")
-	    (fun (fi,ti) -> Id.print fi ++ pp_function env ti)
-	    (Array.map2 (fun id b -> (id,b)) ids bl) ++
-	  fnl () ++
-	  hov 2 (str "in " ++ pp_apply (Id.print ids.(i)) false args)))
+          prvect_with_sep
+            (fun () -> fnl () ++ str "and ")
+            (fun (fi,ti) -> Id.print fi ++ pp_function env ti)
+            (Array.map2 (fun id b -> (id,b)) ids bl) ++
+          fnl () ++
+          hov 2 (str "in " ++ pp_apply (Id.print ids.(i)) false args)))
 
 (* Ad-hoc double-newline in v boxes, with enough negative whitespace
    to avoid indenting the intermediate blank line *)
@@ -451,19 +451,19 @@ let pp_Dfix (rv,c,t) =
     if i >= Array.length rv then mt ()
     else
       let void = is_inline_custom rv.(i) ||
-	(not (is_custom rv.(i)) &&
+        (not (is_custom rv.(i)) &&
          match c.(i) with MLexn "UNUSED" -> true | _ -> false)
       in
       if void then pp init (i+1)
       else
-	let def =
-	  if is_custom rv.(i) then str " = " ++ str (find_custom rv.(i))
-	  else pp_function (empty_env ()) c.(i)
-	in
-	(if init then mt () else cut2 ()) ++
-	pp_val names.(i) t.(i) ++
-	str (if init then "let rec " else "and ") ++ names.(i) ++ def ++
-	pp false (i+1)
+        let def =
+          if is_custom rv.(i) then str " = " ++ str (find_custom rv.(i))
+          else pp_function (empty_env ()) c.(i)
+        in
+        (if init then mt () else cut2 ()) ++
+        pp_val names.(i) t.(i) ++
+        str (if init then "let rec " else "and ") ++ names.(i) ++ def ++
+        pp false (i+1)
   in pp true 0
 
 (*s Pretty-printing of inductive types declaration. *)
@@ -481,9 +481,9 @@ let pp_one_ind prefix ip_equiv pl name cnames ctyps =
   let pp_constructor i typs =
     (if Int.equal i 0 then mt () else fnl ()) ++
     hov 3 (str "| " ++ cnames.(i) ++
-	   (if List.is_empty typs then mt () else str " of ") ++
-	   prlist_with_sep
-	    (fun () -> spc () ++ str "* ") (pp_type true pl) typs)
+           (if List.is_empty typs then mt () else str " of ") ++
+           prlist_with_sep
+            (fun () -> spc () ++ str "* ") (pp_type true pl) typs)
   in
   pp_parameters pl ++ str prefix ++ name ++
   pp_equiv pl name ip_equiv ++ str " =" ++
@@ -494,16 +494,16 @@ let pp_logical_ind packet =
   pp_comment (Id.print packet.ip_typename ++ str " : logical inductive") ++
   fnl () ++
   pp_comment (str "with constructors : " ++
-	      prvect_with_sep spc Id.print packet.ip_consnames) ++
+              prvect_with_sep spc Id.print packet.ip_consnames) ++
   fnl ()
 
 let pp_singleton kn packet =
   let name = pp_global Type (GlobRef.IndRef (kn,0)) in
   let l = rename_tvars keywords packet.ip_vars in
   hov 2 (str "type " ++ pp_parameters l ++ name ++ str " =" ++ spc () ++
-	 pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
-	 pp_comment (str "singleton inductive, whose constructor was " ++
-		     Id.print packet.ip_consnames.(0)))
+         pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
+         pp_comment (str "singleton inductive, whose constructor was " ++
+                     Id.print packet.ip_consnames.(0)))
 
 let pp_record kn fields ip_equiv packet =
   let ind = GlobRef.IndRef (kn,0) in
@@ -514,7 +514,7 @@ let pp_record kn fields ip_equiv packet =
   str "type " ++ pp_parameters pl ++ name ++
   pp_equiv pl name ip_equiv ++ str " = { "++
   hov 0 (prlist_with_sep (fun () -> str ";" ++ spc ())
-	   (fun (p,t) -> p ++ str " : " ++ pp_type true pl t) l)
+           (fun (p,t) -> p ++ str " : " ++ pp_type true pl t) l)
   ++ str " }"
 
 let pp_coind pl name =
@@ -536,7 +536,7 @@ let pp_ind co kn ind =
     Array.mapi
       (fun i p -> if p.ip_logical then [||] else
          Array.mapi (fun j _ -> pp_global Cons (GlobRef.ConstructRef ((kn,i),j+1)))
-	   p.ip_types)
+           p.ip_types)
       ind.ind_packets
   in
   let rec pp i kwd =
@@ -548,9 +548,9 @@ let pp_ind co kn ind =
       if is_custom (GlobRef.IndRef ip) then pp (i+1) kwd
       else if p.ip_logical then pp_logical_ind p ++ pp (i+1) kwd
       else
-	kwd ++ (if co then pp_coind p.ip_vars names.(i) else mt ()) ++
-	pp_one_ind prefix ip_equiv p.ip_vars names.(i) cnames.(i) p.ip_types ++
-	pp (i+1) nextkwd
+        kwd ++ (if co then pp_coind p.ip_vars names.(i) else mt ()) ++
+        pp_one_ind prefix ip_equiv p.ip_vars names.(i) cnames.(i) p.ip_types ++
+        pp (i+1) nextkwd
   in
   pp 0 initkwd
 
@@ -570,26 +570,26 @@ let pp_decl = function
     | Dind (kn,i) -> pp_mind kn i
     | Dtype (r, l, t) ->
         let name = pp_global Type r in
-	let l = rename_tvars keywords l in
+        let l = rename_tvars keywords l in
         let ids, def =
-	  try
-	    let ids,s = find_type_custom r in
-	    pp_string_parameters ids, str " =" ++ spc () ++ str s
-	  with Not_found ->
-	    pp_parameters l,
-	    if t == Taxiom then str " (* AXIOM TO BE REALIZED *)"
-	    else str " =" ++ spc () ++ pp_type false l t
-	in
-	hov 2 (str "type " ++ ids ++ name ++ def)
+          try
+            let ids,s = find_type_custom r in
+            pp_string_parameters ids, str " =" ++ spc () ++ str s
+          with Not_found ->
+            pp_parameters l,
+            if t == Taxiom then str " (* AXIOM TO BE REALIZED *)"
+            else str " =" ++ spc () ++ pp_type false l t
+        in
+        hov 2 (str "type " ++ ids ++ name ++ def)
     | Dterm (r, a, t) ->
-	let def =
-	  if is_custom r then str (" = " ^ find_custom r)
-	  else pp_function (empty_env ()) a
-	in
-	let name = pp_global Term r in
+        let def =
+          if is_custom r then str (" = " ^ find_custom r)
+          else pp_function (empty_env ()) a
+        in
+        let name = pp_global Term r in
         pp_val name t ++ hov 0 (str "let " ++ name ++ def ++ mt ())
     | Dfix (rv,defs,typs) ->
-	pp_Dfix (rv,defs,typs)
+        pp_Dfix (rv,defs,typs)
 
 let pp_spec = function
   | Sval (r,_) when is_inline_custom r -> mt ()
@@ -603,15 +603,15 @@ let pp_spec = function
       let name = pp_global Type r in
       let l = rename_tvars keywords vl in
       let ids, def =
-	try
-	  let ids, s = find_type_custom r in
-	  pp_string_parameters ids, str " =" ++ spc () ++ str s
-	with Not_found ->
-	  let ids = pp_parameters l in
-	  match ot with
-	    | None -> ids, mt ()
-	    | Some Taxiom -> ids, str " (* AXIOM TO BE REALIZED *)"
-	    | Some t -> ids, str " =" ++ spc () ++ pp_type false l t
+        try
+          let ids, s = find_type_custom r in
+          pp_string_parameters ids, str " =" ++ spc () ++ str s
+        with Not_found ->
+          let ids = pp_parameters l in
+          match ot with
+            | None -> ids, mt ()
+            | Some Taxiom -> ids, str " (* AXIOM TO BE REALIZED *)"
+            | Some t -> ids, str " =" ++ spc () ++ pp_type false l t
       in
       hov 2 (str "type " ++ ids ++ name ++ def)
 
@@ -621,8 +621,8 @@ let rec pp_specif = function
      (match Common.get_duplicate (top_visible_mp ()) l with
       | None -> pp_spec s
       | Some ren ->
-	 hov 1 (str ("module "^ren^" : sig") ++ fnl () ++ pp_spec s) ++
-	 fnl () ++ str "end" ++ fnl () ++
+         hov 1 (str ("module "^ren^" : sig") ++ fnl () ++ pp_spec s) ++
+         fnl () ++ str "end" ++ fnl () ++
          str ("include module type of struct include "^ren^" end"))
   | (l,Smodule mt) ->
       let def = pp_module_type [] mt in
@@ -670,7 +670,7 @@ and pp_module_type params = function
       let mp_mt = msid_of_mt mt in
       let l,idl' = List.sep_last idl in
       let mp_w =
-	List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl'
+        List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl'
       in
       let r = GlobRef.ConstRef (Constant.make2 mp_w (Label.of_id l)) in
       push_visible mp_mt [];
@@ -680,7 +680,7 @@ and pp_module_type params = function
   | MTwith(mt,ML_With_module(idl,mp)) ->
       let mp_mt = msid_of_mt mt in
       let mp_w =
-	List.fold_left (fun mp id -> MPdot(mp,Label.of_id id)) mp_mt idl
+        List.fold_left (fun mp id -> MPdot(mp,Label.of_id id)) mp_mt idl
       in
       push_visible mp_mt [];
       let pp_w = str " with module " ++ pp_modname mp_w in
@@ -694,20 +694,20 @@ let rec pp_structure_elem = function
      (match Common.get_duplicate (top_visible_mp ()) l with
       | None -> pp_decl d
       | Some ren ->
-	 hov 1 (str ("module "^ren^" = struct") ++ fnl () ++ pp_decl d) ++
-	 fnl () ++ str "end" ++ fnl () ++ str ("include "^ren))
+         hov 1 (str ("module "^ren^" = struct") ++ fnl () ++ pp_decl d) ++
+         fnl () ++ str "end" ++ fnl () ++ str ("include "^ren))
   | (l,SEmodule m) ->
       let typ =
         (* virtual printing of the type, in order to have a correct mli later*)
-	if Common.get_phase () == Pre then
-	  str ": " ++ pp_module_type [] m.ml_mod_type
-	else mt ()
+        if Common.get_phase () == Pre then
+          str ": " ++ pp_module_type [] m.ml_mod_type
+        else mt ()
       in
       let def = pp_module_expr [] m.ml_mod_expr in
       let name = pp_modname (MPdot (top_visible_mp (), l)) in
       hov 1
-	(str "module " ++ name ++ typ ++ str " =" ++
-	 (if is_short m.ml_mod_expr then spc () else fnl ()) ++ def) ++
+        (str "module " ++ name ++ typ ++ str " =" ++
+         (if is_short m.ml_mod_expr then spc () else fnl ()) ++ def) ++
       (match Common.get_duplicate (top_visible_mp ()) l with
        | Some ren -> fnl () ++ str ("module "^ren^" = ") ++ name
        | None -> mt ())

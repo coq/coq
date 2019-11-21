@@ -246,7 +246,7 @@ let fold_glob_constr f acc = DAst.with_val (function
   | GRec (_,_,bl,tyl,bv) ->
     let acc = Array.fold_left
       (List.fold_left (fun acc (na,k,bbd,bty) ->
-	f (Option.fold_left f acc bbd) bty)) acc bl in
+        f (Option.fold_left f acc bbd) bty)) acc bl in
     Array.fold_left f (Array.fold_left f acc tyl) bv
   | GCast (c,k) ->
     let acc = match k with
@@ -283,8 +283,8 @@ let fold_glob_constr_with_binders g f v acc = DAst.(with_val (function
     let v' = Array.fold_right g idl v in
     let f' i acc fid =
       let v,acc =
-	List.fold_left
-	  (fun (v,acc) (na,k,bbd,bty) ->
+        List.fold_left
+          (fun (v,acc) (na,k,bbd,bty) ->
             (Name.fold_right g na v, f v (Option.fold_left (f v) acc bbd) bty))
           (v,acc)
           bll.(i) in

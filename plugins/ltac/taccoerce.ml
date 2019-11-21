@@ -191,7 +191,7 @@ let id_of_name = function
     | None -> fail ()
     | Some c ->
        match EConstr.kind sigma c with
-       | Var id -> id 
+       | Var id -> id
        | Meta m -> id_of_name (Evd.meta_name sigma m)
        | Evar (kn,_) ->
         begin match Evd.evar_ident kn sigma with
@@ -201,12 +201,12 @@ let id_of_name = function
        | Const (cst,_) -> Label.to_id (Constant.label cst)
        | Construct (cstr,_) ->
           let ref = GlobRef.ConstructRef cstr in
-	  let basename = Nametab.basename_of_global ref in
-	  basename
+          let basename = Nametab.basename_of_global ref in
+          basename
        | Ind (ind,_) ->
           let ref = GlobRef.IndRef ind in
-	  let basename = Nametab.basename_of_global ref in
-	  basename
+          let basename = Nametab.basename_of_global ref in
+          basename
        | Sort s ->
           begin
             match ESorts.kind sigma s with

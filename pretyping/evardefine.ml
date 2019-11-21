@@ -94,13 +94,13 @@ let define_pure_evar_as_product env evd evk =
        (* Impredicative product, conclusion must fall in [Prop]. *)
         new_evar newenv evd1 concl ~src ~filter
       else
-	let status = univ_flexible_alg in
-	let evd3, (rng, srng) =
+        let status = univ_flexible_alg in
+        let evd3, (rng, srng) =
           new_type_evar newenv evd1 status ~src ~filter
         in
-	let prods = Univ.sup (univ_of_sort u1) (univ_of_sort srng) in
+        let prods = Univ.sup (univ_of_sort u1) (univ_of_sort srng) in
         let evd3 = Evd.set_leq_sort evenv evd3 (Sorts.sort_of_univ prods) (ESorts.kind evd1 s) in
-	  evd3, rng
+          evd3, rng
   in
   let prod = mkProd (make_annot (Name id) rdom, dom, subst_var id rng) in
   let evd3 = Evd.define evk prod evd2 in
@@ -169,7 +169,7 @@ let rec evar_absorb_arguments env evd (evk,args as ev) = function
 
 let define_evar_as_sort env evd (ev,args) =
   let evd, s = new_sort_variable univ_rigid evd in
-  let evi = Evd.find_undefined evd ev in 
+  let evi = Evd.find_undefined evd ev in
   let concl = Reductionops.whd_all (evar_env evi) evd evi.evar_concl in
   let sort = destSort evd concl in
   let evd' = Evd.define ev (mkSort s) evd in
@@ -185,15 +185,15 @@ let split_tycon ?loc env evd tycon =
     let t = Reductionops.whd_all env evd c in
       match EConstr.kind evd t with
         | Prod (na,dom,rng) -> evd, (na, dom, rng)
-	| Evar ev (* ev is undefined because of whd_all *) ->
+        | Evar ev (* ev is undefined because of whd_all *) ->
             let (evd',prod) = define_evar_as_product env evd ev in
             let (na,dom,rng) = destProd evd prod in
             let anon = {na with binder_name = Anonymous} in
               evd',(anon, dom, rng)
         | App (c,args) when isEvar evd c ->
             let (evd',lam) = define_evar_as_lambda env evd (destEvar evd c) in
-	    real_split evd' (mkApp (lam,args))
-	| _ -> error_not_product ?loc env evd c
+            real_split evd' (mkApp (lam,args))
+        | _ -> error_not_product ?loc env evd c
   in
     match tycon with
       | None -> evd,(make_annot Anonymous Relevant,None,None)

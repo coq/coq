@@ -9,12 +9,12 @@
 (************************************************************************)
 
 module type S = sig
-  
+
   type node
   module NodeSet : Set.S with type elt = node
 
   type ('edge,'info,'cdata) t
-  
+
   val empty : ('e,'i,'d) t
 
   val add_edge : ('e,'i,'d) t -> node -> 'e -> node -> ('e,'i,'d) t
@@ -45,7 +45,7 @@ module type S = sig
   val property_of : ('e,'i,'d) t -> node -> 'd Property.t list
   val del_property : ('e,'i,'d) t -> 'd Property.t -> ('e,'i,'d) t
 
-  val iter : ('e,'i,'d) t -> 
+  val iter : ('e,'i,'d) t ->
     (node -> 'd Property.t list -> 'i option ->
       (node * 'e) list -> unit) -> unit
 

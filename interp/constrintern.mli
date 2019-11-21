@@ -150,7 +150,7 @@ val interp_reference : ltac_sign -> qualid -> glob_constr
 
 (** Interpret binders *)
 
-val interp_binder  : env -> evar_map -> Name.t -> constr_expr -> 
+val interp_binder  : env -> evar_map -> Name.t -> constr_expr ->
   types Evd.in_evar_universe_context
 
 val interp_binder_evars : env -> evar_map -> Name.t -> constr_expr -> evar_map * types
@@ -162,7 +162,7 @@ val interp_context_evars :
   env -> evar_map -> local_binder_expr list ->
   evar_map * (internalization_env * ((env * rel_context) * Impargs.manual_implicits))
 
-(** Locating references of constructions, possibly via a syntactic definition 
+(** Locating references of constructions, possibly via a syntactic definition
    (these functions do not modify the glob file) *)
 
 val locate_reference :  Libnames.qualid -> GlobRef.t

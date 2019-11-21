@@ -98,7 +98,7 @@ val url : string -> string option -> unit
    something smart we can just format the rule verbatim like the user did
 *)
 val inf_rule :  (int * string) list
-             -> (int * string * (string option)) 
+             -> (int * string * (string option))
              -> (int * string) list
              -> unit
 

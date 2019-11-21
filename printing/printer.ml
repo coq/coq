@@ -304,10 +304,10 @@ let pr_rel_decl env sigma decl =
   let pbody = match decl with
     | RelDecl.LocalAssum _ -> mt ()
     | RelDecl.LocalDef (_,c,_) ->
-	(* Force evaluation *)
-	let pb = pr_lconstr_env env sigma c in
-	let pb = if isCast c then surround pb else pb in
-	(str":=" ++ spc () ++ pb ++ spc ()) in
+        (* Force evaluation *)
+        let pb = pr_lconstr_env env sigma c in
+        let pb = if isCast c then surround pb else pb in
+        (str":=" ++ spc () ++ pb ++ spc ()) in
   let ptyp = pr_ltype_env env sigma typ in
   match na with
   | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
@@ -329,7 +329,7 @@ let pr_var_list_decl env sigma decl =
 
 let pr_named_context env sigma ne_context =
   hv 0 (Context.Named.fold_outside
-	  (fun d pps -> pps ++ ws 2 ++ pr_named_decl env sigma d)
+          (fun d pps -> pps ++ ws 2 ++ pr_named_decl env sigma d)
           ne_context ~init:(mt ()))
 
 let pr_rel_context env sigma rel_context =
@@ -436,7 +436,7 @@ let pr_predicate pr_elt (b, elts) =
   let pr_elts = prlist_with_sep spc pr_elt elts in
     if b then
       str"all" ++
-	(if List.is_empty elts then mt () else str" except: " ++ pr_elts)
+        (if List.is_empty elts then mt () else str" except: " ++ pr_elts)
     else
       if List.is_empty elts then str"none" else pr_elts
 
@@ -565,10 +565,10 @@ let pr_subgoal n sigma =
   let rec prrec p = function
     | [] -> user_err Pp.(str "No such goal.")
     | g::rest ->
-	if Int.equal p 1 then
+        if Int.equal p 1 then
           pr_selected_subgoal (int n) sigma g
-	else
-	  prrec (p-1) rest
+        else
+          prrec (p-1) rest
   in
   prrec n
 
@@ -736,7 +736,7 @@ let pr_subgoals ?(pr_first=true) ?(diffs=false) ?os_map
       pr_goal ~diffs ?og_s { it = g ; sigma = sigma }
       ++ (if l=[] then mt () else cut ())
       ++ pr_rec 2 l
-    else 
+    else
       pr_rec 1 (g::l)
   in
   let pr_evar_info gl sigma seeds =
@@ -792,15 +792,15 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
           begin match bgoals,shelf,given_up with
           | [] , [] , [] -> pr_subgoals None sigma ~seeds ~shelf ~stack ~unfocused:[] ~goals
           | [] , [] , _ ->
-	     Feedback.msg_info (str "No more subgoals, but there are some goals you gave up:");
-	     fnl ()
+             Feedback.msg_info (str "No more subgoals, but there are some goals you gave up:");
+             fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma ~seeds ~shelf:[] ~stack:[] ~unfocused:[] ~goals:given_up
             ++ fnl () ++ str "You need to go back and solve them."
           | [] , _ , _ ->
-	    Feedback.msg_info (str "All the remaining goals are on the shelf.");
-	    fnl ()
+            Feedback.msg_info (str "All the remaining goals are on the shelf.");
+            fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma ~seeds ~shelf:[] ~stack:[] ~unfocused:[] ~goals:shelf
-	  | _ , _, _ ->
+          | _ , _, _ ->
             let cmd = if quiet then None else
               Some
                 (str "This subproof is complete, but there are some unfocused goals." ++
@@ -809,8 +809,8 @@ let pr_open_subgoals_diff ?(quiet=false) ?(diffs=false) ?oproof proof =
                 fnl ())
             in
             pr_subgoals ~pr_first:false cmd bsigma ~seeds ~shelf ~stack:[] ~unfocused:[] ~goals:bgoals
-	  end
-  | _ -> 
+          end
+  | _ ->
      let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
      let bgoals_focused, bgoals_unfocused = List.partition (fun x -> List.mem x goals) bgoals in
      let unfocused_if_needed = if should_unfoc() then bgoals_unfocused else [] in
@@ -981,17 +981,17 @@ let pr_assumptionset env sigma s =
         let tran = safe_pr_constant env kn ++ safe_pr_ltype env sigma typ in
         (v, a, o, tran :: tr)
     in
-    let (vars, axioms, opaque, trans) = 
+    let (vars, axioms, opaque, trans) =
       ContextObjectMap.fold fold s ([], [], [], [])
     in
     let theory =
       if is_impredicative_set env then
-	[str "Set is impredicative"]
+        [str "Set is impredicative"]
       else []
     in
     let theory =
       if type_in_type env then
-	str "Type hierarchy is collapsed (logic is inconsistent)" :: theory
+        str "Type hierarchy is collapsed (logic is inconsistent)" :: theory
       else theory
     in
     let opt_list title = function

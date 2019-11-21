@@ -161,9 +161,9 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
       TacRewrite (ev,
-		  List.map (fun (b,m,c) ->
-			      b,m,subst_glob_with_bindings_arg subst c) l,
-		 cl,Option.map (subst_tactic subst) by)
+                  List.map (fun (b,m,c) ->
+                              b,m,subst_glob_with_bindings_arg subst c) l,
+                 cl,Option.map (subst_tactic subst) by)
   | TacInversion (DepInversion (k,c,l),hyp) ->
      TacInversion (DepInversion (k,Option.map (subst_glob_constr subst) c,l),hyp)
   | TacInversion (NonDepInversion _,_) as x -> x
@@ -189,13 +189,13 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacDispatch tl -> TacDispatch (List.map (subst_tactic subst) tl)
   | TacExtendTac (tf,t,tl) ->
       TacExtendTac (Array.map (subst_tactic subst) tf,
-	            subst_tactic subst t,
+                    subst_tactic subst t,
                     Array.map (subst_tactic subst) tl)
   | TacThens (t,tl) ->
       TacThens (subst_tactic subst t, List.map (subst_tactic subst) tl)
   | TacThens3parts (t1,tf,t2,tl) ->
       TacThens3parts (subst_tactic subst t1,Array.map (subst_tactic subst) tf,
-	       subst_tactic subst t2,Array.map (subst_tactic subst) tl)
+               subst_tactic subst t2,Array.map (subst_tactic subst) tl)
   | TacDo (n,tac) -> TacDo (n,subst_tactic subst tac)
   | TacTimeout (n,tac) -> TacTimeout (n,subst_tactic subst tac)
   | TacTime (s,tac) -> TacTime (s,subst_tactic subst tac)

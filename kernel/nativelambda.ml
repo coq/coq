@@ -73,7 +73,7 @@ let mkLapp f args =
 
 let mkLlam ids body =
   if Array.is_empty ids then body
-  else 
+  else
     match body with
     | Llam(ids', body) -> Llam(Array.append ids ids', body)
     | _ -> Llam(ids, body)
@@ -99,7 +99,7 @@ let decompose_Llam_Llet lam =
 
 (*s Operators on substitution *)
 let subst_id = subs_id 0
-let lift = subs_lift 
+let lift = subs_lift
 let liftn = subs_liftn
 let cons v subst = subs_cons([|v|], subst)
 let shift subst = subs_shft (1, subst)
@@ -125,7 +125,7 @@ let map_lam_with_binders g f n lam =
   match lam with
   | Lrel _ | Lvar _  | Lconst _ | Lproj _ | Lval _ | Lsort _ | Lind _ | Luint _
   | Llazy | Lforce | Lmeta _ | Lint _ | Lfloat _ -> lam
-  | Lprod(dom,codom) -> 
+  | Lprod(dom,codom) ->
       let dom' = f n dom in
       let codom' = f n codom in
       if dom == dom' && codom == codom' then lam else Lprod(dom',codom')
@@ -189,10 +189,10 @@ let map_lam_with_binders g f n lam =
     if args == args' then lam else Levar (evk, args')
 
 (*s Lift and substitution *)
- 
+
 let rec lam_exlift el lam =
   match lam with
-  | Lrel(id,i) -> 
+  | Lrel(id,i) ->
       let i' = reloc_rel i el in
       if i == i' then lam else Lrel(id,i')
   | _ -> map_lam_with_binders el_liftn lam_exlift el lam
@@ -204,9 +204,9 @@ let lam_lift k lam =
 let lam_subst_rel lam id n subst =
   match expand_rel n subst with
   | Inl(k,v) -> lam_lift k v
-  | Inr(n',_) -> 
+  | Inr(n',_) ->
       if n == n' then lam
-      else Lrel(id, n') 
+      else Lrel(id, n')
 
 let rec lam_exsubst subst lam =
   match lam with
@@ -214,11 +214,11 @@ let rec lam_exsubst subst lam =
   | _ -> map_lam_with_binders liftn lam_exsubst subst lam
 
 let lam_subst_args subst args =
-  if is_subs_id subst then args 
+  if is_subs_id subst then args
   else Array.Smart.map (lam_exsubst subst) args
-  
+
 (** Simplification of lambda expression *)
-      
+
 (* [simplify subst lam] simplify the expression [lam_subst subst lam] *)
 (* that is :                                                          *)
 (* - Reduce [let] is the definition can be substituted i.e:           *)
@@ -227,11 +227,11 @@ let lam_subst_args subst args =
 (*    - a structured constant                                         *)
 (*    - a function                                                    *)
 (* - Transform beta redex into [let] expression                       *)
-(* - Move arguments under [let]                                       *) 
+(* - Move arguments under [let]                                       *)
 (* Invariant : Terms in [subst] are already simplified and can be     *)
 (*             substituted                                            *)
-  
-let can_subst lam = 
+
+let can_subst lam =
   match lam with
   | Lrel _ | Lvar _ | Lconst _ | Lproj _ | Lval _ | Lsort _ | Lind _ | Llam _
   | Lmeta _ | Levar _ -> true
@@ -247,27 +247,27 @@ let merge_if t bt bf =
   let (idsf,bodyf) = decompose_Llam bf in
   let nt = Array.length idst in
   let nf = Array.length idsf in
-  let common,idst,idsf = 
-    if Int.equal nt nf then idst, [||], [||] 
+  let common,idst,idsf =
+    if Int.equal nt nf then idst, [||], [||]
     else
       if nt < nf then idst,[||], Array.sub idsf nt (nf - nt)
       else idsf, Array.sub idst nf (nt - nf), [||] in
   Llam(common,
-       Lif(lam_lift (Array.length common) t, 
-	   mkLlam idst bodyt,
-	   mkLlam idsf bodyf))
+       Lif(lam_lift (Array.length common) t,
+           mkLlam idst bodyt,
+           mkLlam idsf bodyf))
 
 let rec simplify subst lam =
   match lam with
-  | Lrel(id,i) -> lam_subst_rel lam id i subst 
+  | Lrel(id,i) -> lam_subst_rel lam id i subst
 
   | Llet(id,def,body) ->
       let def' = simplify subst def in
       if can_subst def' then simplify (cons def' subst) body
-      else 
-	let body' = simplify (lift subst) body in
-	if def == def' && body == body' then lam
-	else Llet(id,def',body')
+      else
+        let body' = simplify (lift subst) body in
+        if def == def' && body == body' then lam
+        else Llet(id,def',body')
 
   | Lapp(f,args) ->
       begin match simplify_app subst f subst args with
@@ -280,9 +280,9 @@ let rec simplify subst lam =
       let bt' = simplify subst bt in
       let bf' = simplify subst bf in
       if can_merge_if bt' bf' then merge_if t' bt' bf'
-      else 
-	if t == t' && bt == bt' && bf == bf' then lam
-	else Lif(t',bt',bf')
+      else
+        if t == t' && bt == bt' && bf == bf' then lam
+        else Lif(t',bt',bf')
   | _ -> map_lam_with_binders liftn simplify subst lam
 
 and simplify_app substf f substa args =
@@ -290,9 +290,9 @@ and simplify_app substf f substa args =
   | Lrel(id, i) ->
       begin match lam_subst_rel f id i substf with
       | Llam(ids, body) ->
-	  reduce_lapp 
-	    subst_id (Array.to_list ids) body  
-	    substa (Array.to_list args)
+          reduce_lapp
+            subst_id (Array.to_list ids) body
+            substa (Array.to_list args)
       | f' -> mkLapp f' (simplify_args substa args)
       end
   | Llam(ids, body) ->
@@ -300,16 +300,16 @@ and simplify_app substf f substa args =
   | Llet(id, def, body) ->
       let def' = simplify substf def in
       if can_subst def' then
-	simplify_app (cons def' substf) body substa args
-      else 
-	Llet(id, def', simplify_app (lift substf) body (shift substa) args)
+        simplify_app (cons def' substf) body substa args
+      else
+        Llet(id, def', simplify_app (lift substf) body (shift substa) args)
   | Lapp(f, args') ->
-      let args = Array.append 
-	  (lam_subst_args substf args') (lam_subst_args substa args) in
+      let args = Array.append
+          (lam_subst_args substf args') (lam_subst_args substa args) in
       simplify_app substf f subst_id args
   (* TODO | Lproj -> simplify if the argument is known or a known global *)
   | _ -> mkLapp (simplify substf f) (simplify_args substa args)
-  
+
 and simplify_args subst args = Array.Smart.map (simplify subst) args
 
 and reduce_lapp substf lids body substa largs =
@@ -317,12 +317,12 @@ and reduce_lapp substf lids body substa largs =
   | id::lids, a::largs ->
       let a = simplify substa a in
       if can_subst a then
-	reduce_lapp (cons a substf) lids body substa largs
+        reduce_lapp (cons a substf) lids body substa largs
       else
-	let body = reduce_lapp (lift substf) lids body (shift substa) largs in
-	Llet(id, a, body)
+        let body = reduce_lapp (lift substf) lids body (shift substa) largs in
+        Llet(id, a, body)
   | [], [] -> simplify substf body
-  | _::_, _ -> 
+  | _::_, _ ->
       Llam(Array.of_list lids,  simplify (liftn (List.length lids) substf) body)
   | [], _::_ -> simplify_app substf body substa (Array.of_list largs)
 
@@ -345,8 +345,8 @@ let get_value lc =
 
 let make_args start _end =
   Array.init (start - _end + 1) (fun i -> Lrel (Anonymous, start - i))
-    
-(* Translation of constructors *)	
+
+(* Translation of constructors *)
 let expand_constructor prefix ind tag nparams arity =
   let anon = Context.make_annot Anonymous Sorts.Relevant in (* TODO relevance *)
   let ids = Array.make (nparams + arity) anon in
@@ -405,7 +405,7 @@ let lambda_of_prim env kn op args =
 
 (*i Global environment *)
 
-let get_names decl = 
+let get_names decl =
   let decl = Array.of_list decl in
   Array.map fst decl
 
@@ -428,14 +428,14 @@ module Cache =
     let get_construct_info cache env c : constructor_info =
       try ConstrTable.find cache c
       with Not_found ->
-	let ((mind,j), i) = c in
+        let ((mind,j), i) = c in
         let oib = lookup_mind mind env in
-	let oip = oib.mind_packets.(j) in
-	let tag,arity = oip.mind_reloc_tbl.(i-1) in
-	let nparams = oib.mind_nparams in
-	let r = (tag, nparams, arity) in
+        let oip = oib.mind_packets.(j) in
+        let tag,arity = oip.mind_reloc_tbl.(i-1) in
+        let nparams = oib.mind_nparams in
+        let r = (tag, nparams, arity) in
         ConstrTable.add cache c r;
-	r
+        r
   end
 
 let is_lazy t =
@@ -618,24 +618,24 @@ and lambda_of_app cache env sigma f args =
       let args = lambda_of_args cache env sigma nparams args in
       makeblock env ind tag 0 arity args
     else makeblock env ind tag (nparams - nargs) arity empty_args
-  | _ -> 
+  | _ ->
       let f = lambda_of_constr cache env sigma f in
       let args = lambda_of_args cache env sigma 0 args in
       mkLapp f args
-	
+
 and lambda_of_args cache env sigma start args =
   let nargs = Array.length args in
   if start < nargs then
-    Array.init (nargs - start) 
+    Array.init (nargs - start)
       (fun i -> lambda_of_constr cache env sigma args.(start + i))
   else empty_args
 
 let optimize lam =
   let lam = simplify subst_id lam in
-(*  if Flags.vm_draw_opt () then 
-    (msgerrnl (str "Simplify = \n" ++ pp_lam lam);flush_all()); 
+(*  if Flags.vm_draw_opt () then
+    (msgerrnl (str "Simplify = \n" ++ pp_lam lam);flush_all());
   let lam = remove_let subst_id lam in
-  if Flags.vm_draw_opt () then 
+  if Flags.vm_draw_opt () then
     (msgerrnl (str "Remove let = \n" ++ pp_lam lam);flush_all()); *)
   lam
 
@@ -643,8 +643,8 @@ let lambda_of_constr env sigma c =
   let cache = Cache.ConstrTable.create 91 in
   let lam = lambda_of_constr cache env sigma c in
 (*  if Flags.vm_draw_opt () then begin
-    (msgerrnl (str "Constr = \n" ++ pr_constr c);flush_all()); 
-    (msgerrnl (str "Lambda = \n" ++ pp_lam lam);flush_all()); 
+    (msgerrnl (str "Constr = \n" ++ pr_constr c);flush_all());
+    (msgerrnl (str "Lambda = \n" ++ pp_lam lam);flush_all());
   end; *)
   optimize lam
 

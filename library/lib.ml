@@ -52,7 +52,7 @@ let subst_atomic_objects subst seg =
   let subst_one = fun (id,obj as node) ->
     let obj' = subst_object (subst,obj) in
       if obj' == obj then node else
-	(id, obj')
+        (id, obj')
   in
     List.Smart.map subst_one seg
 
@@ -296,15 +296,15 @@ let start_modtype = start_mod true None
 
 let error_still_opened string oname =
   let id = basename (fst oname) in
-  user_err 
+  user_err
     (str "The " ++ str string ++ str " " ++ Id.print id ++ str " is still opened.")
 
 let end_mod is_type =
   let oname,fs =
     try match find_entry_p is_opening_node with
       | oname,OpenedModule (ty,_,_,fs) ->
-	if ty == is_type then oname, fs
-	else error_still_opened (module_kind ty) oname
+        if ty == is_type then oname, fs
+        else error_still_opened (module_kind ty) oname
       | oname,OpenedSection _ -> error_still_opened "section" oname
       | _ -> assert false
     with Not_found -> user_err (Pp.str "No opened modules.")
@@ -359,7 +359,7 @@ let end_compilation_checks dir =
     match !lib_state.comp_name with
       | None -> anomaly (Pp.str "There should be a module name...")
       | Some m ->
-	  if not (Names.DirPath.equal m dir) then anomaly
+          if not (Names.DirPath.equal m dir) then anomaly
            (str "The current open module has name" ++ spc () ++ DirPath.print m ++
              spc () ++ str "and not" ++ spc () ++ DirPath.print m ++ str ".");
   in

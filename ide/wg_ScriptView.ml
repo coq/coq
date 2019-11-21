@@ -494,10 +494,10 @@ object (self)
       let proceed =
         if not b && i = 1 then
           iter#editable ~default:true &&
-	  iter#forward_line#editable ~default:true
+          iter#forward_line#editable ~default:true
         else if not b && i = -1 then
           iter#editable ~default:true &&
-	  iter#backward_line#editable ~default:true
+          iter#backward_line#editable ~default:true
         else false
       in
       if not proceed then GtkSignal.stop_emit ()
@@ -539,13 +539,13 @@ let script_view ct ?(source_buffer:GSourceView3.source_buffer option)  ?draw_spa
   GtkSourceView3.SourceView.make_params [] ~cont:(
     GtkText.View.make_params ~cont:(
       GContainer.pack_container ~create:
-	(fun pl ->
-	  let w = match source_buffer with
+        (fun pl ->
+          let w = match source_buffer with
             | None -> GtkSourceView3.SourceView.new_ ()
             | Some buf -> GtkSourceView3.SourceView.new_with_buffer
               (Gobject.try_cast buf#as_buffer "GtkSourceBuffer")
-	  in
-	  let w = Gobject.unsafe_cast w in
-	  Gobject.set_params (Gobject.try_cast w "GtkSourceView") pl;
+          in
+          let w = Gobject.unsafe_cast w in
+          Gobject.set_params (Gobject.try_cast w "GtkSourceView") pl;
           Gaux.may ~f:(GtkSourceView3.SourceView.set_draw_spaces w) draw_spaces;
-	  ((new script_view w ct) : script_view))))
+          ((new script_view w ct) : script_view))))

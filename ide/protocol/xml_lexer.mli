@@ -18,26 +18,26 @@
  *)
 
 type error =
-	| EUnterminatedComment
-	| EUnterminatedString
-	| EIdentExpected
-	| ECloseExpected
-	| ENodeExpected
-	| EAttributeNameExpected
-	| EAttributeValueExpected
-	| EUnterminatedEntity
+        | EUnterminatedComment
+        | EUnterminatedString
+        | EIdentExpected
+        | ECloseExpected
+        | ENodeExpected
+        | EAttributeNameExpected
+        | EAttributeValueExpected
+        | EUnterminatedEntity
 
 exception Error of error
 
 type token =
-	| Tag of string * (string * string) list * bool
-	| PCData of string
-	| Endtag of string
-	| Eof
+        | Tag of string * (string * string) list * bool
+        | PCData of string
+        | Endtag of string
+        | Eof
 
 type pos = int * int * int * int
 
-val init : Lexing.lexbuf -> unit 
+val init : Lexing.lexbuf -> unit
 val close : unit -> unit
 val token : Lexing.lexbuf -> token
 val pos : Lexing.lexbuf -> pos

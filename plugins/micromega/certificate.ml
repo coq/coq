@@ -96,7 +96,7 @@ let rec fixpoint f x =
   if (=) y' x then y'
   else fixpoint f y'
 
-let  rec_simpl_cone n_spec e = 
+let  rec_simpl_cone n_spec e =
   let simpl_cone =
     Mc.simpl_cone n_spec.zero n_spec.unit n_spec.mult n_spec.eqb in
 
@@ -107,21 +107,21 @@ let  rec_simpl_cone n_spec e =
        simpl_cone (Mc.PsatzAdd (rec_simpl_cone t1, rec_simpl_cone t2))
     |  x           -> simpl_cone x in
   rec_simpl_cone e
-  
-  
+
+
 let simplify_cone n_spec c = fixpoint (rec_simpl_cone n_spec) c
 
 
 
-(* The binding with Fourier might be a bit obsolete 
+(* The binding with Fourier might be a bit obsolete
    -- how does it handle equalities ? *)
 
 (* Certificates are elements of the cone such that P = 0  *)
 
 (* To begin with, we search for certificates of the form:
-   a1.p1 + ... an.pn + b1.q1 +... + bn.qn + c = 0   
+   a1.p1 + ... an.pn + b1.q1 +... + bn.qn + c = 0
    where pi >= 0 qi > 0
-   ai >= 0 
+   ai >= 0
    bi >= 0
    Sum bi + c >= 1
    This is a linear problem: each monomial is considered as a variable.
@@ -135,7 +135,7 @@ let simplify_cone n_spec c = fixpoint (rec_simpl_cone n_spec) c
 let constrain_variable v l =
   let coeffs = List.fold_left (fun acc p -> (Vect.get v p.coeffs)::acc) [] l in
   { coeffs = Vect.from_list ((Big_int zero_big_int):: (Big_int zero_big_int):: (List.rev coeffs)) ;
-    op = Eq ; 
+    op = Eq ;
     cst = Big_int zero_big_int  }
 
 
@@ -143,10 +143,10 @@ let constrain_variable v l =
 let constrain_constant l =
   let coeffs = List.fold_left (fun acc p -> minus_num p.cst ::acc) [] l in
   { coeffs = Vect.from_list ((Big_int zero_big_int):: (Big_int unit_big_int):: (List.rev coeffs)) ;
-    op = Eq ; 
+    op = Eq ;
     cst = Big_int zero_big_int  }
 
-let positivity l = 
+let positivity l =
   let rec xpositivity i l =
     match l with
     | [] -> []
@@ -169,7 +169,7 @@ let cstr_of_poly (p,o) =
 let variables_of_cstr c = Vect.variables c.coeffs
 
 
-(* If the certificate includes at least one strict inequality, 
+(* If the certificate includes at least one strict inequality,
    the obtained polynomial can also be 0 *)
 
 let build_dual_linear_system l =
@@ -486,7 +486,7 @@ let square_of_var i =
   let x = LinPoly.var i in
   ((LinPoly.product x x,Ge),(ProofFormat.Square  x))
 
-  
+
 (** [nlinear_preprocess  sys]  augments the system [sys] by performing some limited non-linear reasoning.
     For instance, it asserts that the x² ≥0 but also that if c₁ ≥ 0 ∈ sys and c₂ ≥ 0 ∈ sys then c₁ × c₂ ≥ 0.
     The resulting system is linearised.
@@ -510,7 +510,7 @@ let nlinear_preprocess  (sys:WithProof.t list) =
     let sys = ISet.fold (fun i acc -> square_of_var i :: acc) collect_vars sys  in
 
     let sys = sys @ (all_pairs WithProof.product sys) in
-  
+
     if debug then begin
         Printf.fprintf stdout "Preprocessed\n";
         List.iter (fun s -> Printf.fprintf stdout "%a\n" WithProof.output s) sys;
@@ -545,12 +545,12 @@ let linear_prover_with_cert prfdepth sys =
   | Some cert ->
      Prf (ProofFormat.cmpl_prf_rule Mc.normQ CamlToCoq.q (List.mapi (fun i e -> i) sys) cert)
 
-(* The prover is (probably) incomplete -- 
+(* The prover is (probably) incomplete --
    only searching for naive cutting planes *)
 
 open Sos_types
 
-let rec scale_term t = 
+let rec scale_term t =
   match t with
   | Zero    -> unit_big_int , Zero
   | Const n ->  (denominator n) , Const (Big_int (numerator n))
@@ -564,7 +564,7 @@ let rec scale_term t =
                   if Int.equal (compare_big_int e unit_big_int) 0
                   then (unit_big_int, Add (y1,y2))
                   else 	e, Add (Mul(Const (Big_int s2'), y1),
-		                Mul (Const (Big_int s1'), y2))
+                                Mul (Const (Big_int s1'), y2))
   | Sub _ -> failwith "scale term: not implemented"
   | Mul(y,z) ->       let s1,y1 = scale_term y and s2,y2 = scale_term z in
                       mult_big_int s1 s2 , Mul (y1, y2)
@@ -615,14 +615,14 @@ let rec term_to_q_expr = function
 let term_to_q_pol e = Mc.norm_aux (Ml2C.q (Int 0)) (Ml2C.q (Int 1)) Mc.qplus  Mc.qmult Mc.qminus Mc.qopp Mc.qeq_bool (term_to_q_expr e)
 
 
-let rec product l = 
+let rec product l =
   match l with
   | [] -> Mc.PsatzZ
   | [i] -> Mc.PsatzIn (Ml2C.nat i)
   | i ::l -> Mc.PsatzMulE(Mc.PsatzIn (Ml2C.nat i), product l)
 
 
-let  q_cert_of_pos  pos = 
+let  q_cert_of_pos  pos =
   let rec _cert_of_pos = function
       Axiom_eq i ->  Mc.PsatzIn (Ml2C.nat i)
     | Axiom_le i ->  Mc.PsatzIn (Ml2C.nat i)
@@ -651,7 +651,7 @@ let rec term_to_z_expr = function
 
 let term_to_z_pol e = Mc.norm_aux (Ml2C.z 0) (Ml2C.z 1) Mc.Z.add  Mc.Z.mul Mc.Z.sub Mc.Z.opp Mc.zeq_bool (term_to_z_expr e)
 
-let  z_cert_of_pos  pos = 
+let  z_cert_of_pos  pos =
   let s,pos = (scale_certificate pos) in
   let rec _cert_of_pos = function
       Axiom_eq i ->  Mc.PsatzIn (Ml2C.nat i)
@@ -689,7 +689,7 @@ type prf_sys = (cstr * ProofFormat.prf_rule) list
 
 
 (** Proof generating pivoting over variable v *)
-let pivot v (c1,p1) (c2,p2) = 
+let pivot v (c1,p1) (c2,p2) =
   let {coeffs = v1 ; op = op1 ; cst = n1} = c1
   and {coeffs = v2 ; op = op2 ; cst = n2} = c2 in
 
@@ -726,7 +726,7 @@ let pivot v (c1,p1) (c2,p2) =
         else  None (* op2 could be Eq ... this might happen *)
 
 
-let simpl_sys sys = 
+let simpl_sys sys =
   List.fold_left (fun acc (c,p) ->
       match check_int_sat (c,p) with
       | Tauto -> acc
@@ -739,7 +739,7 @@ let simpl_sys sys =
     [ext_gcd a b = (x,y,g)] iff [ax+by=g]
     Source: http://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
  *)
-let rec ext_gcd a b = 
+let rec ext_gcd a b =
   if Int.equal (sign_big_int b) 0
   then (unit_big_int,zero_big_int)
   else
@@ -747,7 +747,7 @@ let rec ext_gcd a b =
     let (s,t) = ext_gcd b r in
     (t, sub_big_int s (mult_big_int q t))
 
-let extract_coprime (c1,p1) (c2,p2) = 
+let extract_coprime (c1,p1) (c2,p2) =
   if c1.op == Eq && c2.op == Eq
   then Vect.exists2 (fun n1 n2 ->
            Int.equal (compare_big_int (gcd_big_int (numerator n1) (numerator n2)) unit_big_int) 0)
@@ -776,7 +776,7 @@ let extract_coprime_equation psys =
 
 let pivot_sys v pc psys = apply_and_normalise check_int_sat (pivot v pc) psys
 
-let reduce_coprime psys = 
+let reduce_coprime psys =
   let oeq,sys = extract_coprime_equation psys in
   match oeq with
   | None -> None (* Nothing to do *)
@@ -793,7 +793,7 @@ let reduce_coprime psys =
      Some (pivot_sys v (cstr,prf) ((c1,p1)::sys))
 
 (** If there is an equation [eq] of the form 1.x + e = c, do a pivot over x with equation [eq] *)
-let reduce_unary psys = 
+let reduce_unary psys =
   let is_unary_equation (cstr,prf) =
     if cstr.op == Eq
     then
@@ -807,7 +807,7 @@ let reduce_unary psys =
      Some(pivot_sys v pc sys)
 
 
-let reduce_var_change psys = 
+let reduce_var_change psys =
 
   let rec rel_prime vect =
     match Vect.choose vect with
@@ -854,7 +854,7 @@ let reduction_equations psys =
 
 
 (** [get_bound sys] returns upon success an interval (lb,e,ub) with proofs *)
-let get_bound sys = 
+let get_bound sys =
   let is_small (v,i) =
     match Itv.range i with
     | None -> false
@@ -909,12 +909,12 @@ let get_bound sys =
   | None -> None
 
 
-let check_sys sys = 
+let check_sys sys =
   List.for_all (fun (c,p) -> Vect.for_all (fun _ n -> sign_num n <> 0) c.coeffs) sys
 
 open ProofFormat
 
-let xlia (can_enum:bool)  reduction_equations  sys = 
+let xlia (can_enum:bool)  reduction_equations  sys =
 
 
   let rec enum_proof (id:int) (sys:prf_sys)  =
@@ -979,9 +979,9 @@ let xlia (can_enum:bool)  reduction_equations  sys =
        end;
        let prf = compile_proof env prf in
      (*try
-	     if Mc.zChecker sys' prf then Some prf else 
-	     raise Certificate.BadCertificate
-	     with Failure s -> (Printf.printf "%s" s ; Some prf)
+             if Mc.zChecker sys' prf then Some prf else
+             raise Certificate.BadCertificate
+             with Failure s -> (Printf.printf "%s" s ; Some prf)
       *) Prf prf
 
 let xlia_simplex env red sys =
@@ -1029,7 +1029,7 @@ let gen_bench (tac, prover) can_enum prfdepth sys =
      end);
   res
 
-let lia (can_enum:bool) (prfdepth:int) sys = 
+let lia (can_enum:bool) (prfdepth:int) sys =
   let sys = develop_constraints prfdepth z_spec sys in
   if debug then begin
       Printf.fprintf stdout "Input problem\n";
@@ -1049,7 +1049,7 @@ let lia (can_enum:bool) (prfdepth:int) sys =
 let make_cstr_system sys =
   List.map (fun ((p,o),prf) -> (cstr_of_poly (p,o), prf)) sys
 
-let nlia enum prfdepth sys = 
+let nlia enum prfdepth sys =
   let sys = develop_constraints prfdepth z_spec sys in
   let is_linear =  List.for_all (fun ((p,_),_) -> LinPoly.is_linear p) sys in
 

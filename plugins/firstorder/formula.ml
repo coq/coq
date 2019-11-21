@@ -41,7 +41,7 @@ let meta_succ m = m+1
 let rec nb_prod_after n c=
   match Constr.kind c with
     | Prod (_,_,b) ->if n>0 then nb_prod_after (n-1) b else
-	1+(nb_prod_after 0 b)
+        1+(nb_prod_after 0 b)
     | _ -> 0
 
 let construct_nhyps env ind =
@@ -82,40 +82,40 @@ let kind_of_formula env sigma term =
   let normalize = special_nf env sigma in
   let cciterm = special_whd env sigma term in
     match match_with_imp_term env sigma cciterm with
-	Some (a,b)-> Arrow (a, pop b)
+        Some (a,b)-> Arrow (a, pop b)
       |_->
          match match_with_forall_term env sigma cciterm with
-	     Some (_,a,b)-> Forall (a, b)
-	   |_->
+             Some (_,a,b)-> Forall (a, b)
+           |_->
               match match_with_nodep_ind env sigma cciterm with
-		  Some (i,l,n)->
-		    let ind,u=EConstr.destInd sigma i in
-		    let u = EConstr.EInstance.kind sigma u in
-		    let (mib,mip) = Global.lookup_inductive ind in
-		    let nconstr=Array.length mip.mind_consnames in
-		      if Int.equal nconstr 0 then
-			False((ind,u),l)
-		      else
-			let has_realargs=(n>0) in
-			let is_trivial=
+                  Some (i,l,n)->
+                    let ind,u=EConstr.destInd sigma i in
+                    let u = EConstr.EInstance.kind sigma u in
+                    let (mib,mip) = Global.lookup_inductive ind in
+                    let nconstr=Array.length mip.mind_consnames in
+                      if Int.equal nconstr 0 then
+                        False((ind,u),l)
+                      else
+                        let has_realargs=(n>0) in
+                        let is_trivial=
                           let is_constant n = Int.equal n 0 in
                             Array.exists is_constant mip.mind_consnrealargs in
-			  if Inductiveops.mis_is_recursive (ind,mib,mip) ||
-			    (has_realargs && not is_trivial)
-			  then
-			    Atom cciterm
-			  else
-			    if Int.equal nconstr 1 then
-			      And((ind,u),l,is_trivial)
-			    else
-			      Or((ind,u),l,is_trivial)
-		| _ ->
+                          if Inductiveops.mis_is_recursive (ind,mib,mip) ||
+                            (has_realargs && not is_trivial)
+                          then
+                            Atom cciterm
+                          else
+                            if Int.equal nconstr 1 then
+                              And((ind,u),l,is_trivial)
+                            else
+                              Or((ind,u),l,is_trivial)
+                | _ ->
                     match match_with_sigma_type env sigma cciterm with
-			Some (i,l)->
+                        Some (i,l)->
                           let (ind, u) = EConstr.destInd sigma i in
                           let u = EConstr.EInstance.kind sigma u in
                           Exists((ind, u), l)
-		      |_-> Atom (normalize cciterm)
+                      |_-> Atom (normalize cciterm)
 
 type atoms = {positive:constr list;negative:constr list}
 
@@ -132,52 +132,52 @@ let build_atoms env sigma metagen side cciterm =
   let normalize=special_nf env sigma in
   let rec build_rec subst polarity cciterm=
     match kind_of_formula env sigma cciterm with
-	False(_,_)->if not polarity then trivial:=true
+        False(_,_)->if not polarity then trivial:=true
       | Arrow (a,b)->
-	  build_rec subst (not polarity) a;
-	  build_rec subst polarity b
+          build_rec subst (not polarity) a;
+          build_rec subst polarity b
       | And(i,l,b) | Or(i,l,b)->
-	  if b then
-	    begin
-	      let unsigned=normalize (substnl subst 0 cciterm) in
-		if polarity then
-		  positive:= unsigned :: !positive
-		else
-		  negative:= unsigned :: !negative
-	    end;
-	  let v = ind_hyps env sigma 0 i l in
-	  let g i _ decl =
-	    build_rec subst polarity (lift i (RelDecl.get_type decl)) in
-	  let f l =
-	    List.fold_left_i g (1-(List.length l)) () l in
-	    if polarity && (* we have a constant constructor *)
-	      Array.exists (function []->true|_->false) v
-	    then trivial:=true;
-	    Array.iter f v
+          if b then
+            begin
+              let unsigned=normalize (substnl subst 0 cciterm) in
+                if polarity then
+                  positive:= unsigned :: !positive
+                else
+                  negative:= unsigned :: !negative
+            end;
+          let v = ind_hyps env sigma 0 i l in
+          let g i _ decl =
+            build_rec subst polarity (lift i (RelDecl.get_type decl)) in
+          let f l =
+            List.fold_left_i g (1-(List.length l)) () l in
+            if polarity && (* we have a constant constructor *)
+              Array.exists (function []->true|_->false) v
+            then trivial:=true;
+            Array.iter f v
       | Exists(i,l)->
-	  let var=mkMeta (metagen true) in
-	  let v =(ind_hyps env sigma 1 i l).(0) in
-	  let g i _ decl =
-	    build_rec (var::subst) polarity (lift i (RelDecl.get_type decl)) in
-	    List.fold_left_i g (2-(List.length l)) () v
+          let var=mkMeta (metagen true) in
+          let v =(ind_hyps env sigma 1 i l).(0) in
+          let g i _ decl =
+            build_rec (var::subst) polarity (lift i (RelDecl.get_type decl)) in
+            List.fold_left_i g (2-(List.length l)) () v
       | Forall(_,b)->
-	  let var=mkMeta (metagen true) in
-	    build_rec (var::subst) polarity b
+          let var=mkMeta (metagen true) in
+            build_rec (var::subst) polarity b
       | Atom t->
-	  let unsigned=substnl subst 0 t in
-	    if not (isMeta sigma unsigned) then (* discarding wildcard atoms *)
-	      if polarity then
-		positive:= unsigned :: !positive
-	      else
-		negative:= unsigned :: !negative in
+          let unsigned=substnl subst 0 t in
+            if not (isMeta sigma unsigned) then (* discarding wildcard atoms *)
+              if polarity then
+                positive:= unsigned :: !positive
+              else
+                negative:= unsigned :: !negative in
     begin
       match side with
-	  Concl    -> build_rec [] true cciterm
-	| Hyp      -> build_rec [] false cciterm
-	| Hint     ->
-	    let rels,head=decompose_prod sigma cciterm in
-	    let subst=List.rev_map (fun _->mkMeta (metagen true)) rels in
-	      build_rec subst false head;trivial:=false (* special for hints *)
+          Concl    -> build_rec [] true cciterm
+        | Hyp      -> build_rec [] false cciterm
+        | Hint     ->
+            let rels,head=decompose_prod sigma cciterm in
+            let subst=List.rev_map (fun _->mkMeta (metagen true)) rels in
+              build_rec subst false head;trivial:=false (* special for hints *)
     end;
     (!trivial,
      {positive= !positive;
@@ -209,65 +209,65 @@ type left_pattern=
   | LA of constr*left_arrow_pattern
 
 type t={id:GlobRef.t;
-	constr:constr;
-	pat:(left_pattern,right_pattern) sum;
-	atoms:atoms}
+        constr:constr;
+        pat:(left_pattern,right_pattern) sum;
+        atoms:atoms}
 
 let build_formula env sigma side nam typ metagen=
   let normalize = special_nf env sigma in
     try
       let m=meta_succ(metagen false) in
       let trivial,atoms=
-	if !qflag then
-	  build_atoms env sigma metagen side typ
-	else no_atoms in
+        if !qflag then
+          build_atoms env sigma metagen side typ
+        else no_atoms in
       let pattern=
-	match side with
-	    Concl ->
-	      let pat=
-		match kind_of_formula env sigma typ with
-		    False(_,_)        -> Rfalse
-		  | Atom a       -> raise (Is_atom a)
-		  | And(_,_,_)        -> Rand
-		  | Or(_,_,_)         -> Ror
-		  | Exists (i,l) ->
-		      let d = RelDecl.get_type (List.last (ind_hyps env sigma 0 i l).(0)) in
-			Rexists(m,d,trivial)
-		  | Forall (_,a) -> Rforall
-		  | Arrow (a,b) -> Rarrow in
-		Right pat
-	  | _ ->
-	      let pat=
-		match kind_of_formula env sigma typ with
-		    False(i,_)        ->  Lfalse
-		  | Atom a       ->  raise (Is_atom a)
-		  | And(i,_,b)         ->
-		      if b then
-			let nftyp=normalize typ in raise (Is_atom nftyp)
-		      else Land i
-		  | Or(i,_,b)          ->
-		      if b then
-			let nftyp=normalize typ in raise (Is_atom nftyp)
-		      else Lor i
-		  | Exists (ind,_) ->  Lexists ind
-		  | Forall (d,_) ->
-		      Lforall(m,d,trivial)
-		  | Arrow (a,b) ->
-		      let nfa=normalize a in
-			LA (nfa,
-			    match kind_of_formula env sigma a with
-				False(i,l)-> LLfalse(i,l)
-			      | Atom t->     LLatom
-			      | And(i,l,_)-> LLand(i,l)
-			      | Or(i,l,_)->  LLor(i,l)
-			      | Arrow(a,c)-> LLarrow(a,c,b)
-			      | Exists(i,l)->LLexists(i,l)
-			      | Forall(_,_)->LLforall a) in
-		Left pat
+        match side with
+            Concl ->
+              let pat=
+                match kind_of_formula env sigma typ with
+                    False(_,_)        -> Rfalse
+                  | Atom a       -> raise (Is_atom a)
+                  | And(_,_,_)        -> Rand
+                  | Or(_,_,_)         -> Ror
+                  | Exists (i,l) ->
+                      let d = RelDecl.get_type (List.last (ind_hyps env sigma 0 i l).(0)) in
+                        Rexists(m,d,trivial)
+                  | Forall (_,a) -> Rforall
+                  | Arrow (a,b) -> Rarrow in
+                Right pat
+          | _ ->
+              let pat=
+                match kind_of_formula env sigma typ with
+                    False(i,_)        ->  Lfalse
+                  | Atom a       ->  raise (Is_atom a)
+                  | And(i,_,b)         ->
+                      if b then
+                        let nftyp=normalize typ in raise (Is_atom nftyp)
+                      else Land i
+                  | Or(i,_,b)          ->
+                      if b then
+                        let nftyp=normalize typ in raise (Is_atom nftyp)
+                      else Lor i
+                  | Exists (ind,_) ->  Lexists ind
+                  | Forall (d,_) ->
+                      Lforall(m,d,trivial)
+                  | Arrow (a,b) ->
+                      let nfa=normalize a in
+                        LA (nfa,
+                            match kind_of_formula env sigma a with
+                                False(i,l)-> LLfalse(i,l)
+                              | Atom t->     LLatom
+                              | And(i,l,_)-> LLand(i,l)
+                              | Or(i,l,_)->  LLor(i,l)
+                              | Arrow(a,c)-> LLarrow(a,c,b)
+                              | Exists(i,l)->LLexists(i,l)
+                              | Forall(_,_)->LLforall a) in
+                Left pat
       in
-	Left {id=nam;
-	      constr=normalize typ;
-	      pat=pattern;
-	      atoms=atoms}
+        Left {id=nam;
+              constr=normalize typ;
+              pat=pattern;
+              atoms=atoms}
     with Is_atom a-> Right a (* already in nf *)
 

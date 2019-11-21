@@ -62,7 +62,7 @@ let parse_dir s =
     if n >= len then dirs else
     let pos =
       try
-	String.index_from s n '.'
+        String.index_from s n '.'
       with Not_found -> len
     in
     if Int.equal pos n then user_err Pp.(str @@ s ^ " is an invalid path.");

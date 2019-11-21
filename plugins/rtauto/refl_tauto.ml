@@ -156,9 +156,9 @@ let rec decal k = function
     [] -> k
   | (start,delta)::rest ->
       if k>start then
-	k - delta
+        k - delta
       else
-	decal k rest
+        decal k rest
 
 let add_pop size d pops=
   match pops with
@@ -168,57 +168,57 @@ let add_pop size d pops=
 let rec build_proof pops size =
   function
       Ax i ->
-	mkApp (force step_count l_Ax,
-	       [|build_pos (decal i pops)|])
+        mkApp (force step_count l_Ax,
+               [|build_pos (decal i pops)|])
       | I_Arrow p ->
-	  mkApp (force step_count l_I_Arrow,
-		 [|build_proof pops (size + 1) p|])
+          mkApp (force step_count l_I_Arrow,
+                 [|build_proof pops (size + 1) p|])
       | E_Arrow(i,j,p) ->
-	  mkApp (force step_count l_E_Arrow,
-		 [|build_pos (decal i pops);
-		   build_pos (decal j pops);
-		   build_proof pops (size + 1) p|])
+          mkApp (force step_count l_E_Arrow,
+                 [|build_pos (decal i pops);
+                   build_pos (decal j pops);
+                   build_proof pops (size + 1) p|])
       | D_Arrow(i,p1,p2) ->
-	  mkApp (force step_count l_D_Arrow,
-		 [|build_pos (decal i pops);
-		   build_proof pops (size + 2) p1;
-		   build_proof pops (size + 1) p2|])
+          mkApp (force step_count l_D_Arrow,
+                 [|build_pos (decal i pops);
+                   build_proof pops (size + 2) p1;
+                   build_proof pops (size + 1) p2|])
       | E_False i ->
-	  mkApp (force step_count l_E_False,
-		 [|build_pos (decal i pops)|])
+          mkApp (force step_count l_E_False,
+                 [|build_pos (decal i pops)|])
       | I_And(p1,p2) ->
-	  mkApp (force step_count l_I_And,
-		 [|build_proof pops size p1;
-		   build_proof pops size p2|])
+          mkApp (force step_count l_I_And,
+                 [|build_proof pops size p1;
+                   build_proof pops size p2|])
       | E_And(i,p) ->
-	  mkApp (force step_count l_E_And,
-		 [|build_pos (decal i pops);
-		   build_proof pops (size + 2) p|])
+          mkApp (force step_count l_E_And,
+                 [|build_pos (decal i pops);
+                   build_proof pops (size + 2) p|])
       | D_And(i,p) ->
-	  mkApp (force step_count l_D_And,
-		 [|build_pos (decal i pops);
-		   build_proof pops (size + 1) p|])
+          mkApp (force step_count l_D_And,
+                 [|build_pos (decal i pops);
+                   build_proof pops (size + 1) p|])
       | I_Or_l(p) ->
-	  mkApp (force step_count l_I_Or_l,
-		 [|build_proof pops size p|])
+          mkApp (force step_count l_I_Or_l,
+                 [|build_proof pops size p|])
       | I_Or_r(p) ->
-	  mkApp (force step_count l_I_Or_r,
-		 [|build_proof pops size p|])
+          mkApp (force step_count l_I_Or_r,
+                 [|build_proof pops size p|])
       | E_Or(i,p1,p2) ->
-	  mkApp (force step_count l_E_Or,
-		 [|build_pos (decal i pops);
-		   build_proof pops (size + 1) p1;
-		   build_proof pops (size + 1) p2|])
+          mkApp (force step_count l_E_Or,
+                 [|build_pos (decal i pops);
+                   build_proof pops (size + 1) p1;
+                   build_proof pops (size + 1) p2|])
       | D_Or(i,p) ->
-	  mkApp (force step_count l_D_Or,
-		 [|build_pos (decal i pops);
-		   build_proof pops (size + 2) p|])
+          mkApp (force step_count l_D_Or,
+                 [|build_pos (decal i pops);
+                   build_proof pops (size + 2) p|])
       | Pop(d,p) ->
-	  build_proof (add_pop size d pops) size p
+          build_proof (add_pop size d pops) size p
 
 let build_env gamma=
   List.fold_right (fun (p,_) e ->
-		     mkApp(force node_count l_push,[|mkProp;p;e|]))
+                     mkApp(force node_count l_push,[|mkProp;p;e|]))
     gamma.env (mkApp (force node_count l_empty,[|mkProp|]))
 
 open Goptions

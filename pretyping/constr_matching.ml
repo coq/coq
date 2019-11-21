@@ -291,46 +291,46 @@ let matches_core env sigma allow_bound_rels
          (let diff = Array.length args2 - Array.length args1 in
           if diff >= 0 then
             let args21, args22 = Array.chop diff args2 in
-	    let c = mkApp(c2,args21) in
+            let c = mkApp(c2,args21) in
             let subst =
               match meta with
               | None -> subst
               | Some n -> merge_binding sigma allow_bound_rels ctx n c subst in
             Array.fold_left2 (sorec ctx env) subst args1 args22
           else (* Might be a projection on the right *)
-	    match EConstr.kind sigma c2 with
-	    | Proj (pr, c) when not (Projection.unfolded pr) ->
-	      (try let term = Retyping.expand_projection env sigma pr c (Array.to_list args2) in
-		     sorec ctx env subst p term
-	       with Retyping.RetypeError _ -> raise PatternMatchingFailure)
-	    | _ -> raise PatternMatchingFailure)
-	   
+            match EConstr.kind sigma c2 with
+            | Proj (pr, c) when not (Projection.unfolded pr) ->
+              (try let term = Retyping.expand_projection env sigma pr c (Array.to_list args2) in
+                     sorec ctx env subst p term
+               with Retyping.RetypeError _ -> raise PatternMatchingFailure)
+            | _ -> raise PatternMatchingFailure)
+
       | PApp (c1,arg1), App (c2,arg2) ->
-	(match c1, EConstr.kind sigma c2 with
+        (match c1, EConstr.kind sigma c2 with
         | PRef (GlobRef.ConstRef r), Proj (pr,c) when not (Constant.equal r (Projection.constant pr))
-	    || Projection.unfolded pr ->
-	  raise PatternMatchingFailure
-	| PProj (pr1,c1), Proj (pr,c) ->
-	  if Projection.equal pr1 pr then 
-	    try Array.fold_left2 (sorec ctx env) (sorec ctx env subst c1 c) arg1 arg2
-	    with Invalid_argument _ -> raise PatternMatchingFailure
-	  else raise PatternMatchingFailure
-	| _, Proj (pr,c) when not (Projection.unfolded pr) ->
-	  (try let term = Retyping.expand_projection env sigma pr c (Array.to_list arg2) in
-		 sorec ctx env subst p term
-	   with Retyping.RetypeError _ -> raise PatternMatchingFailure)	    
-	| _, _ ->
+            || Projection.unfolded pr ->
+          raise PatternMatchingFailure
+        | PProj (pr1,c1), Proj (pr,c) ->
+          if Projection.equal pr1 pr then
+            try Array.fold_left2 (sorec ctx env) (sorec ctx env subst c1 c) arg1 arg2
+            with Invalid_argument _ -> raise PatternMatchingFailure
+          else raise PatternMatchingFailure
+        | _, Proj (pr,c) when not (Projection.unfolded pr) ->
+          (try let term = Retyping.expand_projection env sigma pr c (Array.to_list arg2) in
+                 sorec ctx env subst p term
+           with Retyping.RetypeError _ -> raise PatternMatchingFailure)
+        | _, _ ->
           try Array.fold_left2 (sorec ctx env) (sorec ctx env subst c1 c2) arg1 arg2
           with Invalid_argument _ -> raise PatternMatchingFailure)
-	  
+
       | PApp (PRef (GlobRef.ConstRef c1), _), Proj (pr, c2)
-	when Projection.unfolded pr || not (Constant.equal c1 (Projection.constant pr)) -> 
-	raise PatternMatchingFailure
-	
+        when Projection.unfolded pr || not (Constant.equal c1 (Projection.constant pr)) ->
+        raise PatternMatchingFailure
+
       | PApp (c, args), Proj (pr, c2) ->
-	(try let term = Retyping.expand_projection env sigma pr c2 [] in
-	       sorec ctx env subst p term
-	 with Retyping.RetypeError _ -> raise PatternMatchingFailure)
+        (try let term = Retyping.expand_projection env sigma pr c2 [] in
+               sorec ctx env subst p term
+         with Retyping.RetypeError _ -> raise PatternMatchingFailure)
 
       | PProj (p1,c1), Proj (p2,c2) when Projection.equal p1 p2 ->
           sorec ctx env subst c1 c2
@@ -352,23 +352,23 @@ let matches_core env sigma allow_bound_rels
             (add_binders na1 na2 binding_vars (sorec ctx env subst c1 c2)) d1 d2
 
       | PIf (a1,b1,b1'), Case (ci,_,a2,[|b2;b2'|]) ->
-	  let ctx_b2,b2 = decompose_lam_n_decls sigma ci.ci_cstr_ndecls.(0) b2 in
-	  let ctx_b2',b2' = decompose_lam_n_decls sigma ci.ci_cstr_ndecls.(1) b2' in
-	  let n = Context.Rel.length ctx_b2 in
+          let ctx_b2,b2 = decompose_lam_n_decls sigma ci.ci_cstr_ndecls.(0) b2 in
+          let ctx_b2',b2' = decompose_lam_n_decls sigma ci.ci_cstr_ndecls.(1) b2' in
+          let n = Context.Rel.length ctx_b2 in
           let n' = Context.Rel.length ctx_b2' in
-	  if Vars.noccur_between sigma 1 n b2 && Vars.noccur_between sigma 1 n' b2' then
+          if Vars.noccur_between sigma 1 n b2 && Vars.noccur_between sigma 1 n' b2' then
             let f l (LocalAssum (na,t) | LocalDef (na,_,t)) = push_binder Anonymous na t l in
-	    let ctx_br = List.fold_left f ctx ctx_b2 in
-	    let ctx_br' = List.fold_left f ctx ctx_b2' in
-	    let b1 = lift_pattern n b1 and b1' = lift_pattern n' b1' in
-	    sorec ctx_br' (push_rel_context ctx_b2' env)
-	      (sorec ctx_br (push_rel_context ctx_b2 env)
+            let ctx_br = List.fold_left f ctx ctx_b2 in
+            let ctx_br' = List.fold_left f ctx ctx_b2' in
+            let b1 = lift_pattern n b1 and b1' = lift_pattern n' b1' in
+            sorec ctx_br' (push_rel_context ctx_b2' env)
+              (sorec ctx_br (push_rel_context ctx_b2 env)
                  (sorec ctx env subst a1 a2) b1 b2) b1' b2'
           else
             raise PatternMatchingFailure
 
       | PCase (ci1,p1,a1,br1), Case (ci2,p2,a2,br2) ->
-	  let n2 = Array.length br2 in
+          let n2 = Array.length br2 in
           let () = match ci1.cip_ind with
           | None -> ()
           | Some ind1 ->
@@ -380,14 +380,14 @@ let matches_core env sigma allow_bound_rels
             if not ci1.cip_extensible && not (Int.equal (List.length br1) n2)
             then raise PatternMatchingFailure
           in
-	  let chk_branch subst (j,n,c) =
-	    (* (ind,j+1) is normally known to be a correct constructor
-	       and br2 a correct match over the same inductive *)
-	    assert (j < n2);
-	    sorec ctx env subst c br2.(j)
-	  in
-	  let chk_head = sorec ctx env (sorec ctx env subst a1 a2) p1 p2 in
-	  List.fold_left chk_branch chk_head br1
+          let chk_branch subst (j,n,c) =
+            (* (ind,j+1) is normally known to be a correct constructor
+               and br2 a correct match over the same inductive *)
+            assert (j < n2);
+            sorec ctx env subst c br2.(j)
+          in
+          let chk_head = sorec ctx env (sorec ctx env subst a1 a2) p1 p2 in
+          List.fold_left chk_branch chk_head br1
 
       |	PFix ((ln1,i1),(lna1,tl1,bl1)), Fix ((ln2,i2),(lna2,tl2,bl2))
            when Array.equal Int.equal ln1 ln2 && i1 = i2 ->

@@ -31,7 +31,7 @@ end
 module Make(Model : PoolModel) : sig
 
   type pool
-  
+
   val create : Model.extra -> size:int -> CoqworkmgrApi.priority -> pool
 
   val is_empty : pool -> bool

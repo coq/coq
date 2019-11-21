@@ -84,30 +84,30 @@ let make_inv_predicate env evd indf realargs id status concl =
   let (hyps,concl) =
     match status with
       | NoDep ->
-	  (* We push the arity and leave concl unchanged *)
-	  let hyps_arity,_ = get_arity env indf in
-	  let hyps_arity = List.map (fun d -> map_rel_decl EConstr.of_constr d) hyps_arity in
-	    (hyps_arity,concl)
+          (* We push the arity and leave concl unchanged *)
+          let hyps_arity,_ = get_arity env indf in
+          let hyps_arity = List.map (fun d -> map_rel_decl EConstr.of_constr d) hyps_arity in
+            (hyps_arity,concl)
       | Dep dflt_concl ->
-	  if not (occur_var env !evd id concl) then
-	    user_err ~hdr:"make_inv_predicate"
+          if not (occur_var env !evd id concl) then
+            user_err ~hdr:"make_inv_predicate"
               (str "Current goal does not depend on " ++ Id.print id ++ str".");
           (* We abstract the conclusion of goal with respect to
              realargs and c to * be concl in order to rewrite and have
              c also rewritten when the case * will be done *)
-	  let pred =
+          let pred =
             match dflt_concl with
               | Some concl -> concl (*assumed it's some [x1..xn,H:I(x1..xn)]C*)
               | None ->
-		let sort = get_sort_family_of env !evd concl in
+                let sort = get_sort_family_of env !evd concl in
                 let sort = evd_comb1 Evd.fresh_sort_in_family evd sort in
-		let p = make_arity env !evd true indf sort in
-		let evd',(p,ptyp) = Unification.abstract_list_all env
+                let p = make_arity env !evd true indf sort in
+                let evd',(p,ptyp) = Unification.abstract_list_all env
                   !evd p concl (realargs@[mkVar id])
-		in evd := evd'; p in
-	  let hyps,bodypred = decompose_lam_n_assum !evd (nrealargs+1) pred in
-	  (* We lift to make room for the equations *)
-	  (hyps,lift nrealargs bodypred)
+                in evd := evd'; p in
+          let hyps,bodypred = decompose_lam_n_assum !evd (nrealargs+1) pred in
+          (* We lift to make room for the equations *)
+          (hyps,lift nrealargs bodypred)
   in
   let nhyps = Context.Rel.length hyps in
   let env' = push_rel_context hyps env in
@@ -124,11 +124,11 @@ let make_inv_predicate env evd indf realargs id status concl =
         let (xi, ti) = compute_eqn env' !evd nhyps n ai in
         let (lhs,eqnty,rhs) =
           if closed0 !evd ti then
-	    (xi,ti,ai)
+            (xi,ti,ai)
           else
-	    let sigma, res = make_iterated_tuple env' !evd ai (xi,ti) in
-	      evd := sigma; res
-	in
+            let sigma, res = make_iterated_tuple env' !evd ai (xi,ti) in
+              evd := sigma; res
+        in
         let eq_term = eqdata.Coqlib.eq in
         let eq = evd_comb1 (Evd.fresh_global env) evd eq_term in
         let eqn = applist (eq,[eqnty;lhs;rhs]) in
@@ -195,9 +195,9 @@ let dependent_hyps env id idlist gl =
   let rec dep_rec =function
     | [] -> []
     | d::l ->
-	(* Update the type of id1: it may have been subject to rewriting *)
-	let d = pf_get_hyp (NamedDecl.get_id d) gl in
-	if occur_var_in_decl env (project gl) id d
+        (* Update the type of id1: it may have been subject to rewriting *)
+        let d = pf_get_hyp (NamedDecl.get_id d) gl in
+        if occur_var_in_decl env (project gl) id d
         then d :: dep_rec l
         else dep_rec l
   in
@@ -380,14 +380,14 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     tclTHENLIST
       [if as_mode then clear [id] else tclIDTAC;
        (tclMAP_i (false,false) neqns (function (idopt,_) ->
-	 tclTRY (tclTHEN
+         tclTRY (tclTHEN
            (intro_move_avoid idopt avoid Logic.MoveLast)
-	   (* try again to substitute and if still not a variable after *)
-	   (* decomposition, arbitrarily try to rewrite RL !? *)
-	   (tclTRY (onLastHypId (substHypIfVariable (fun id -> subst_hyp false id))))))
-	 names);
+           (* try again to substitute and if still not a variable after *)
+           (* decomposition, arbitrarily try to rewrite RL !? *)
+           (tclTRY (onLastHypId (substHypIfVariable (fun id -> subst_hyp false id))))))
+         names);
        (if as_mode then tclIDTAC else clear [id])]
-          (* Doing the above late breaks the computation of dids in 
+          (* Doing the above late breaks the computation of dids in
              generalizeRewriteIntros, and hence breaks proper intros_replacing
              but it is needed for compatibility *)
   in
@@ -396,7 +396,7 @@ let projectAndApply as_mode thin avoid id eqname names depids =
     (* and apply a trailer which again try to substitute *)
     (fun id ->
       dEqThen ~keep_proofs:None false (deq_trailer id)
-	(Some (None,ElimOnConstr (EConstr.mkVar id,NoBindings))))
+        (Some (None,ElimOnConstr (EConstr.mkVar id,NoBindings))))
     id
 
 let nLastDecls i tac =
@@ -420,17 +420,17 @@ let rewrite_equations as_mode othin neqns names ba =
              clear (ids_of_named_context nodepids);
              (nLastDecls neqns (fun ctx -> bring_hyps (List.rev ctx)));
              (nLastDecls neqns (fun ctx -> clear (ids_of_named_context ctx)));
-	     tclMAP_i (true,false) neqns (fun (idopt,names) ->
+             tclMAP_i (true,false) neqns (fun (idopt,names) ->
                (tclTHEN
                  (intro_move_avoid idopt avoid Logic.MoveLast)
-		 (onLastHypId (fun id ->
-		   tclTRY (projectAndApply as_mode thin avoid id first_eq names depids)))))
-	       names;
-	     tclMAP (fun d -> tclIDTAC >>= fun () -> (* delay for [first_eq]. *)
+                 (onLastHypId (fun id ->
+                   tclTRY (projectAndApply as_mode thin avoid id first_eq names depids)))))
+               names;
+             tclMAP (fun d -> tclIDTAC >>= fun () -> (* delay for [first_eq]. *)
                let idopt = if as_mode then Some (NamedDecl.get_id d) else None in
                intro_move idopt (if thin then Logic.MoveLast else !first_eq))
-	       nodepids;
-	     (tclMAP (fun d -> tclTRY (clear [NamedDecl.get_id d])) depids)]
+               nodepids;
+             (tclMAP (fun d -> tclTRY (clear [NamedDecl.get_id d])) depids)]
     | None ->
         (* simple inversion *)
         if as_mode then
@@ -505,10 +505,10 @@ let wrap_inv_error id = function (e, info) -> match e with
       Proofview.tclENV >>= fun env ->
       Proofview.tclEVARMAP >>= fun sigma ->
       tclZEROMSG (
-	(strbrk "Inversion would require case analysis on sort " ++
+        (strbrk "Inversion would require case analysis on sort " ++
         pr_sort sigma k ++
-	strbrk " which is not allowed for inductive definition " ++
-	pr_inductive env (fst i) ++ str "."))
+        strbrk " which is not allowed for inductive definition " ++
+        pr_inductive env (fst i) ++ str "."))
   | e -> Proofview.tclZERO ~info e
 
 (* The most general inversion tactic *)

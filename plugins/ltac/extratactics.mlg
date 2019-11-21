@@ -204,7 +204,7 @@ TACTIC EXTEND dependent_rewrite
 END
 
 (** To be deprecated?, "cutrewrite (t=u) as <-" is equivalent to
-    "replace u with t" or "enough (t=u) as <-" and 
+    "replace u with t" or "enough (t=u) as <-" and
     "cutrewrite (t=u) as ->" is equivalent to "enough (t=u) as ->". *)
 
 TACTIC EXTEND cut_rewrite
@@ -314,8 +314,8 @@ let add_rewrite_hint ~poly bases ort t lcsr =
     let ctx =
       let ctx = UState.context_set ctx in
         if poly then ctx
-	else (* This is a global universe context that shouldn't be
-	        refreshed at every use of the hint, declare it globally. *)
+        else (* This is a global universe context that shouldn't be
+                refreshed at every use of the hint, declare it globally. *)
           (Declare.declare_universe_context ~poly:false ctx;
            Univ.ContextSet.empty)
     in
@@ -595,7 +595,7 @@ TACTIC EXTEND dep_generalize_eqs_vars
 | ["dependent" "generalize_eqs_vars" hyp(id) ] -> { abstract_generalize ~force_dep:true ~generalize_vars:true id }
 END
 
-(** Tactic to automatically simplify hypotheses of the form [Π Δ, x_i = t_i -> T] 
+(** Tactic to automatically simplify hypotheses of the form [Π Δ, x_i = t_i -> T]
     where [t_i] is closed w.r.t. Δ. Such hypotheses are automatically generated
     during dependent induction. For internal use. *)
 
@@ -613,17 +613,17 @@ END
 
 {
 
-let subst_var_with_hole occ tid t = 
+let subst_var_with_hole occ tid t =
   let occref = if occ > 0 then ref occ else Find_subterm.error_invalid_occurrence [occ] in
   let locref = ref 0 in
   let rec substrec x = match DAst.get x with
     | GVar id ->
-        if Id.equal id tid 
+        if Id.equal id tid
         then
-	  (decr occref;
-	   if Int.equal !occref 0 then x
+          (decr occref;
+           if Int.equal !occref 0 then x
            else
-	     (incr locref;
+             (incr locref;
               DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
               GHole (Evar_kinds.QuestionMark {
                   Evar_kinds.qm_obligation=Evar_kinds.Define true;
@@ -648,7 +648,7 @@ let subst_hole_with_term occ tc t =
         decr occref;
         if Int.equal !occref 0 then tc
         else
-	  (incr locref;
+          (incr locref;
            DAst.make ~loc:(Loc.make_loc (!locref,0)) @@
            GHole (Evar_kinds.QuestionMark {
                Evar_kinds.qm_obligation=Evar_kinds.Define true;
@@ -670,7 +670,7 @@ let hResolve id c occ t =
   let c_raw = Detyping.detype Detyping.Now true env_ids env sigma c in
   let t_raw = Detyping.detype Detyping.Now true env_ids env sigma t in
   let rec resolve_hole t_hole =
-    try 
+    try
       Pretyping.understand env sigma t_hole
     with
       | Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) as e ->
@@ -686,7 +686,7 @@ let hResolve id c occ t =
   end
 
 let hResolve_auto id c t =
-  let rec resolve_auto n = 
+  let rec resolve_auto n =
     try
       hResolve id c n t
     with
@@ -727,7 +727,7 @@ exception Found of unit Proofview.tactic
 let rewrite_except h =
   Proofview.Goal.enter begin fun gl ->
   let hyps = Tacmach.New.pf_ids_of_hyps gl in
-  Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else 
+  Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else
       Tacticals.New.tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
     hyps
   end
@@ -750,9 +750,9 @@ let  mkCaseEq a  : unit Proofview.tactic =
             (* FIXME: this looks really wrong. Does anybody really use
                this tactic? *)
             let (_, c) = Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env (Evd.from_env env) concl in
-	    change_concl c
+            change_concl c
           end;
-	  simplest_case a]
+          simplest_case a]
   end
 
 
@@ -769,8 +769,8 @@ let case_eq_intros_rewrite x =
       let h = fresh_id_in_env hyps (Id.of_string "heq") (Proofview.Goal.env gl)  in
       Tacticals.New.tclTHENLIST [
                     Tacticals.New.tclDO (n'-n-1) intro;
-		    introduction h;
-		    rewrite_except h]
+                    introduction h;
+                    rewrite_except h]
     end
   ]
   end
@@ -781,14 +781,14 @@ let rec find_a_destructable_match sigma t =
   let dest = TacAtom (CAst.make @@ TacInductionDestruct(false, false, cl)) in
   match EConstr.kind sigma t with
     | Case (_,_,x,_) when closed0 sigma x ->
-	if isVar sigma x then
-	  (* TODO check there is no rel n. *)
-	  raise (Found (Tacinterp.eval_tactic dest))
-	else
-	  (* let _ = Pp.msgnl (Printer.pr_lconstr x)  in *)
-	  raise (Found (case_eq_intros_rewrite x))
+        if isVar sigma x then
+          (* TODO check there is no rel n. *)
+          raise (Found (Tacinterp.eval_tactic dest))
+        else
+          (* let _ = Pp.msgnl (Printer.pr_lconstr x)  in *)
+          raise (Found (case_eq_intros_rewrite x))
     | _ -> EConstr.iter sigma (fun c -> find_a_destructable_match sigma c) t
-	
+
 
 let destauto t =
   Proofview.tclEVARMAP >>= fun sigma ->
@@ -796,7 +796,7 @@ let destauto t =
     Tacticals.New.tclZEROMSG (str "No destructable match found")
   with Found tac -> tac
 
-let destauto_in id = 
+let destauto_in id =
   Proofview.Goal.enter begin fun gl ->
   let ctype = Tacmach.New.pf_unsafe_type_of gl (mkVar id) in
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)

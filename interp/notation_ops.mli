@@ -20,7 +20,7 @@ val eq_notation_constr : Id.t list * Id.t list -> notation_constr -> notation_co
 
 val subst_interpretation :
   Mod_subst.substitution -> interpretation -> interpretation
-                                                
+
 (** Name of the special identifier used to encode recursive notations  *)
 
 val ldots_var : Id.t

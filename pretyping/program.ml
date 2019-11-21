@@ -11,7 +11,7 @@
 open CErrors
 open Util
 
-let papp evdref r args = 
+let papp evdref r args =
   let open EConstr in
   let gr = delayed_force r in
   let evd, hd = Evarutil.new_global !evdref gr in

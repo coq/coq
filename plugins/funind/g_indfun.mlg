@@ -99,9 +99,9 @@ TACTIC EXTEND newfunind
 | ["functional" "induction" ne_constr_list(cl) fun_ind_using(princl) with_names(pat)] ->
      {
        let c = match cl with
-	 | [] -> assert false
-	 | [c] -> c
-	 | c::cl -> EConstr.applist(c,cl)
+         | [] -> assert false
+         | [c] -> c
+         | c::cl -> EConstr.applist(c,cl)
        in
        Extratactics.onSomeWithHoles (fun x -> functional_induction true c x pat) princl }
 END
@@ -110,9 +110,9 @@ TACTIC EXTEND snewfunind
 | ["soft" "functional" "induction" ne_constr_list(cl) fun_ind_using(princl) with_names(pat)] ->
      {
        let c = match cl with
-	 | [] -> assert false
-	 | [c] -> c
-	 | c::cl -> EConstr.applist(c,cl)
+         | [] -> assert false
+         | [c] -> c
+         | c::cl -> EConstr.applist(c,cl)
        in
        Extratactics.onSomeWithHoles (fun x -> functional_induction false c x pat) princl }
 END
@@ -260,7 +260,7 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
                   let names = List.map (fun (_,na,_) -> na) fas in
                   warning_error names e
               end
-	      | _ -> assert false (* we can only have non empty  list *)
+              | _ -> assert false (* we can only have non empty  list *)
           end
         | e when CErrors.noncritical e ->
           let names = List.map (fun (_,na,_) -> na) fas in

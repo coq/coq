@@ -153,7 +153,7 @@ let run key gui action status =
       else (b#place_cursor ~where; script#scroll_mark_onscreen `INSERT);
       status
 
-let emacs = empty 
+let emacs = empty
 
 let emacs = insert emacs "Emacs" [] [
   (* motion *)
@@ -214,7 +214,7 @@ let emacs = insert emacs "Emacs" [] [
     let k =
       if i#ends_line then begin
         b#delete ~start:i ~stop:i#forward_char; "\n"
-      end else begin 
+      end else begin
         let k = b#get_text ~start:i ~stop:i#forward_to_line_end () in
         b#delete ~start:i ~stop:i#forward_to_line_end; k
       end in
@@ -265,7 +265,7 @@ let emacs = insert emacs "Emacs" [mC,_x,"x"] [
   mkE _f "f" "Open" (Action("File", "Open"));
   mkE ~mods:[] _u "u" "Undo" (Action("Edit", "Undo"));
   ]
-  
+
 let pg = insert emacs "Proof General" [mC,_c,"c"] [
   mkE _Return "RET" "Go to" (Action("Navigation", "Go to"));
   mkE _n "n" "Advance 1 sentence" (Action("Navigation", "Forward"));

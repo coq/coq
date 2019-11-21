@@ -221,12 +221,12 @@ val eapply_with_bindings  : constr with_bindings -> unit Proofview.tactic
 val cut_and_apply         : constr -> unit Proofview.tactic
 
 val apply_in :
-  advanced_flag -> evars_flag -> Id.t -> 
+  advanced_flag -> evars_flag -> Id.t ->
     (clear_flag * constr with_bindings CAst.t) list ->
     intro_pattern option -> unit Proofview.tactic
 
 val apply_delayed_in :
-  advanced_flag -> evars_flag -> Id.t -> 
+  advanced_flag -> evars_flag -> Id.t ->
     (clear_flag * delayed_open_constr_with_bindings CAst.t) list ->
     intro_pattern option -> unit Proofview.tactic
 
@@ -270,9 +270,9 @@ type elim_scheme = {
   args: rel_context;        (** (xni, Ti_ni) ... (x1, Ti_1) *)
   nargs: int;                 (** number of arguments *)
   indarg: rel_declaration option;  (** Some (H,I prm1..prmp x1...xni)
-	  		 	                 if HI is in premisses, None otherwise *)
+                                                 if HI is in premisses, None otherwise *)
   concl: types;               (** Qi x1...xni HI (f...), HI and (f...)
-			          are optional and mutually exclusive *)
+                                  are optional and mutually exclusive *)
   indarg_in_concl: bool;      (** true if HI appears at the end of conclusion *)
   farg_in_concl: bool;        (** true if (f...) appears at the end of conclusion *)
 }

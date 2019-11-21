@@ -259,7 +259,7 @@ let set_oracle env o =
 let engagement env = env.env_stratification.env_engagement
 let typing_flags env = env.env_typing_flags
 
-let is_impredicative_set env = 
+let is_impredicative_set env =
   match engagement env with
   | ImpredicativeSet -> true
   | _ -> false
@@ -312,11 +312,11 @@ let fold_rel_context f env ~init =
     match match_rel_context_val env.env_rel_context with
     | None -> init
     | Some (rd, _, rc) ->
-	let env =
-	  { env with
-	    env_rel_context = rc;
-	    env_nb_rel = env.env_nb_rel - 1 } in
-	f env rd (fold_right env)
+        let env =
+          { env with
+            env_rel_context = rc;
+            env_nb_rel = env.env_nb_rel - 1 } in
+        f env rd (fold_right env)
   in fold_right env
 
 (* Named context *)
@@ -376,9 +376,9 @@ let fold_named_context f env ~init =
     match match_named_context_val env.env_named_context with
     | None -> init
     | Some (d, _v, rem) ->
-	let env =
-	  reset_with_named_context rem env in
-	f env d (fold_right env)
+        let env =
+          reset_with_named_context rem env in
+        f env d (fold_right env)
   in fold_right env
 
 let fold_named_context_reverse f ~init env =
@@ -390,7 +390,7 @@ let fold_named_context_reverse f ~init env =
 let map_universes f env =
   let s = env.env_stratification in
     { env with env_stratification =
-	 { s with env_universes = f s.env_universes } }
+         { s with env_universes = f s.env_universes } }
 
 let add_constraints c env =
   if Univ.Constraint.is_empty c then env
@@ -405,10 +405,10 @@ let push_constraints_to_env (_,univs) env =
 let add_universes ~lbound ~strict ctx g =
   let g = Array.fold_left
             (fun g v -> UGraph.add_universe ~lbound ~strict v g)
-	    g (Univ.Instance.to_array (Univ.UContext.instance ctx))
+            g (Univ.Instance.to_array (Univ.UContext.instance ctx))
   in
     UGraph.merge_constraints (Univ.UContext.constraints ctx) g
-			   
+
 let push_context ?(strict=false) ctx env =
   map_universes (add_universes ~lbound:(universes_lbound env) ~strict ctx) env
 
@@ -416,7 +416,7 @@ let add_universes_set ~lbound ~strict ctx g =
   let g = Univ.LSet.fold
             (* Be lenient, module typing reintroduces universes and constraints due to includes *)
             (fun v g -> try UGraph.add_universe ~lbound ~strict v g with UGraph.AlreadyDeclared -> g)
-	    (Univ.ContextSet.levels ctx) g
+            (Univ.ContextSet.levels ctx) g
   in UGraph.merge_constraints (Univ.ContextSet.constraints ctx) g
 
 let push_context_set ?(strict=false) ctx env =
@@ -514,8 +514,8 @@ let constant_value_and_type env (kn, u) =
   in
   b', subst_instance_constr u cb.const_type, cst
 
-(* These functions should be called under the invariant that [env] 
-   already contains the constraints corresponding to the constant 
+(* These functions should be called under the invariant that [env]
+   already contains the constraints corresponding to the constant
    application. *)
 
 (* constant_type gives the type of a constant *)
@@ -526,9 +526,9 @@ let constant_type_in env (kn,u) =
 let constant_value_in env (kn,u) =
   let cb = lookup_constant kn env in
   match cb.const_body with
-    | Def l_body -> 
+    | Def l_body ->
       let b = Mod_subst.force_constr l_body in
-	subst_instance_constr u b
+        subst_instance_constr u b
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)
     | Primitive p -> raise (NotEvaluableConst (IsPrimitive p))
@@ -595,7 +595,7 @@ let template_checked_ind (mind,_i) env =
   (lookup_mind mind env).mind_typing_flags.check_template
 
 let template_polymorphic_ind (mind,i) env =
-  match (lookup_mind mind env).mind_packets.(i).mind_arity with 
+  match (lookup_mind mind env).mind_packets.(i).mind_arity with
   | TemplateArity _ -> true
   | RegularArity _ -> false
 
@@ -608,7 +608,7 @@ let template_polymorphic_variables (mind,i) env =
 let template_polymorphic_pind (ind,u) env =
   if not (Univ.Instance.is_empty u) then false
   else template_polymorphic_ind ind env
-  
+
 let add_mind_key kn (_mind, _ as mind_key) env =
   let new_inds = Mindmap_env.add kn mind_key env.env_globals.Globals.inductives in
   let new_globals =
@@ -749,11 +749,11 @@ let apply_to_hyp ctxt id f =
   let rec aux rtail ctxt =
     match match_named_context_val ctxt with
     | Some (d, v, ctxt) ->
-	if Id.equal (get_id d) id then
+        if Id.equal (get_id d) id then
           push_named_context_val_val (f ctxt.env_named_ctx d rtail) v ctxt
-	else
-	  let ctxt' = aux (d::rtail) ctxt in
-	  push_named_context_val_val d v ctxt'
+        else
+          let ctxt' = aux (d::rtail) ctxt in
+          push_named_context_val_val d v ctxt'
     | None -> raise Hyp_not_found
   in aux [] ctxt
 

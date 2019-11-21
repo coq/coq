@@ -60,7 +60,7 @@ val replace_term_occ_decl_modulo :
 val subst_closed_term_occ : env -> evar_map -> occurrences or_like_first ->
   constr -> constr -> constr * evar_map
 
-(** [subst_closed_term_occ_decl evd occl c decl] replaces occurrences of 
+(** [subst_closed_term_occ_decl evd occl c decl] replaces occurrences of
     closed [c] at positions [occl] by [Rel 1] in [decl]. *)
 val subst_closed_term_occ_decl : env -> evar_map ->
   (occurrences * hyp_location_flag) or_like_first ->

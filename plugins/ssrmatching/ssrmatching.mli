@@ -20,7 +20,7 @@ open Genintern
 
 (** Pattern parsing *)
 
-(** The type of context patterns, the patterns of the [set] tactic and 
+(** The type of context patterns, the patterns of the [set] tactic and
     [:] tactical. These are patterns that identify a precise subterm. *)
 type cpattern
 val pr_cpattern : cpattern -> Pp.t
@@ -78,10 +78,10 @@ type occ = (bool * int list) option
 type subst = env -> constr -> constr -> int -> constr
 
 (** [eval_pattern b env sigma t pat occ subst] maps [t] calling [subst] on every
-    [occ] occurrence of [pat]. The [int] argument is the number of 
+    [occ] occurrence of [pat]. The [int] argument is the number of
     binders traversed. If [pat] is [None] then then subst is called on [t].
-    [t] must live in [env] and [sigma], [pat] must have been interpreted in 
-    (an extension of) [sigma]. 
+    [t] must live in [env] and [sigma], [pat] must have been interpreted in
+    (an extension of) [sigma].
   @raise NoMatch if [pat] has no occurrence and [b] is [true] (default [false])
   @return [t] where all [occ] occurrences of [pat] have been mapped using
     [subst] *)
@@ -91,12 +91,12 @@ val eval_pattern :
   pattern option -> occ -> subst ->
     constr
 
-(** [fill_occ_pattern b env sigma t pat occ h] is a simplified version of 
-    [eval_pattern]. 
-    It replaces all [occ] occurrences of [pat] in [t] with Rel [h]. 
-    [t] must live in [env] and [sigma], [pat] must have been interpreted in 
-    (an extension of) [sigma]. 
-  @raise NoMatch if [pat] has no occurrence and [b] is [true] (default [false]) 
+(** [fill_occ_pattern b env sigma t pat occ h] is a simplified version of
+    [eval_pattern].
+    It replaces all [occ] occurrences of [pat] in [t] with Rel [h].
+    [t] must live in [env] and [sigma], [pat] must have been interpreted in
+    (an extension of) [sigma].
+  @raise NoMatch if [pat] has no occurrence and [b] is [true] (default [false])
   @return the instance of the redex of [pat] that was matched and [t]
     transformed as described above. *)
 val fill_occ_pattern :
@@ -107,7 +107,7 @@ val fill_occ_pattern :
 
 (** *************************** Low level APIs ****************************** *)
 
-(* The primitive matching facility. It matches of a term with holes, like 
+(* The primitive matching facility. It matches of a term with holes, like
    the T pattern above, and calls a continuation on its occurrences. *)
 
 type ssrdir = L2R | R2L
@@ -116,7 +116,7 @@ val pr_dir_side : ssrdir -> Pp.t
 (** a pattern for a term with wildcards *)
 type tpattern
 
-(** [mk_tpattern env sigma0 sigma_p ok p_origin dir t] compiles a term [t] 
+(** [mk_tpattern env sigma0 sigma_p ok p_origin dir t] compiles a term [t]
     living in [env] [sigma] (an extension of [sigma0]) intro a [tpattern].
     The [tpattern] can hold a (proof) term [p] and a diction [dir]. The [ok]
     callback is used to filter occurrences.
@@ -130,14 +130,14 @@ val mk_tpattern :
   ssrdir -> constr ->
     evar_map * tpattern
 
-(** [findP env t i k] is a stateful function that finds the next occurrence 
-    of a tpattern and calls the callback [k] to map the subterm matched. 
-    The [int] argument passed to [k] is the number of binders traversed so far 
-    plus the initial value [i]. 
-  @return [t] where the subterms identified by the selected occurrences of 
+(** [findP env t i k] is a stateful function that finds the next occurrence
+    of a tpattern and calls the callback [k] to map the subterm matched.
+    The [int] argument passed to [k] is the number of binders traversed so far
+    plus the initial value [i].
+  @return [t] where the subterms identified by the selected occurrences of
     the patter have been mapped using [k]
   @raise NoMatch if the raise_NoMatch flag given to [mk_tpattern_matcher] is
-    [true] and if the pattern did not match 
+    [true] and if the pattern did not match
   @raise UserEerror if the raise_NoMatch flag given to [mk_tpattern_matcher] is
     [false] and if the pattern did not match *)
 type find_P =
@@ -150,11 +150,11 @@ type find_P =
 type conclude =
   unit -> constr * ssrdir * (evar_map * UState.t * constr)
 
-(** [mk_tpattern_matcher b o sigma0 occ sigma_tplist] creates a pair 
+(** [mk_tpattern_matcher b o sigma0 occ sigma_tplist] creates a pair
     a function [find_P] and [conclude] with the behaviour explained above.
     The flag [b] (default [false]) changes the error reporting behaviour
     of [find_P] if none of the [tpattern] matches. The argument [o] can
-    be passed to tune the [UserError] eventually raised (useful if the 
+    be passed to tune the [UserError] eventually raised (useful if the
     pattern is coming from the LHS/RHS of an equation) *)
 val mk_tpattern_matcher :
   ?all_instances:bool ->
@@ -163,24 +163,24 @@ val mk_tpattern_matcher :
   evar_map -> occ -> evar_map * tpattern list ->
     find_P * conclude
 
-(** Example of [mk_tpattern_matcher] to implement 
+(** Example of [mk_tpattern_matcher] to implement
     [rewrite \{occ\}\[in t\]rules].
-    It first matches "in t" (called [pat]), then in all matched subterms 
+    It first matches "in t" (called [pat]), then in all matched subterms
     it matches the LHS of the rules using [find_R].
     [concl0] is the initial goal, [concl] will be the goal where some terms
     are replaced by a De Bruijn index. The [rw_progress] extra check
     selects only occurrences that are not rewritten to themselves (e.g.
-    an occurrence "x + x" rewritten with the commutativity law of addition 
+    an occurrence "x + x" rewritten with the commutativity law of addition
     is skipped) {[
   let find_R, conclude = match pat with
   | Some (_, In_T _) ->
       let aux (sigma, pats) (d, r, lhs, rhs) =
-        let sigma, pat = 
+        let sigma, pat =
           mk_tpattern env0 sigma0 (sigma, r) (rw_progress rhs) d lhs in
         sigma, pats @ [pat] in
       let rpats = List.fold_left aux (r_sigma, []) rules in
       let find_R, end_R = mk_tpattern_matcher sigma0 occ rpats in
-      find_R ~k:(fun _ _ h -> mkRel h), 
+      find_R ~k:(fun _ _ h -> mkRel h),
       fun cl -> let rdx, d, r = end_R () in (d,r),rdx
   | _ -> ... in
   let concl = eval_pattern env0 sigma0 concl0 pat occ find_R in
@@ -194,7 +194,7 @@ val pf_fill_occ_term : goal sigma -> occ -> evar_map * EConstr.t -> EConstr.t * 
 (* It may be handy to inject a simple term into the first form of cpattern *)
 val cpattern_of_term : char * glob_constr_and_expr -> Geninterp.interp_sign -> cpattern
 
-(** Helpers to make stateful closures. Example: a [find_P] function may be 
+(** Helpers to make stateful closures. Example: a [find_P] function may be
     called many times, but the pattern instantiation phase is performed only the
     first time. The corresponding [conclude] has to return the instantiated
     pattern redex. Since it is up to [find_P] to raise [NoMatch] if the pattern

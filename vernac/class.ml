@@ -96,8 +96,8 @@ let class_of_global = function
   | GlobRef.VarRef id -> CL_SECVAR id
   | GlobRef.ConstructRef _ as c ->
       user_err ~hdr:"class_of_global"
-	(str "Constructors, such as " ++ Printer.pr_global c ++
-	   str ", cannot be used as a class.")
+        (str "Constructors, such as " ++ Printer.pr_global c ++
+           str ", cannot be used as a class.")
 
 (*
 lp est la liste (inverse'e) des arguments de la coercion
@@ -144,7 +144,7 @@ let get_target t ind =
     | CL_CONST p when Recordops.is_primitive_projection p ->
       CL_PROJ (Option.get @@ Recordops.find_primitive_projection p)
     | x -> x
-      
+
 let strength_of_cl = function
   | CL_CONST kn -> `GLOBAL
   | CL_SECVAR id -> `LOCAL
@@ -188,8 +188,8 @@ let build_id_coercion idf_opt source poly =
   let val_f =
     it_mkLambda_or_LetIn
       (mkLambda (make_annot (Name Namegen.default_dependent_ident) Sorts.Relevant,
-		 applistc vs (Context.Rel.to_extended_list mkRel 0 lams),
-		 mkRel 1))
+                 applistc vs (Context.Rel.to_extended_list mkRel 0 lams),
+                 mkRel 1))
        lams
   in
   let typ_f =
@@ -201,24 +201,24 @@ let build_id_coercion idf_opt source poly =
   let _ =
     if not
       (Reductionops.is_conv_leq env sigma
-	(Typing.unsafe_type_of env sigma (EConstr.of_constr val_f)) (EConstr.of_constr typ_f))
+        (Typing.unsafe_type_of env sigma (EConstr.of_constr val_f)) (EConstr.of_constr typ_f))
     then
       user_err  (strbrk
-	"Cannot be defined as coercion (maybe a bad number of arguments).")
+        "Cannot be defined as coercion (maybe a bad number of arguments).")
   in
   let name =
     match idf_opt with
       | Some idf -> idf
       | None ->
-	  let cl,u,_ = find_class_type sigma (EConstr.of_constr t) in
-	  Id.of_string ("Id_"^(ident_key_of_class source)^"_"^
+          let cl,u,_ = find_class_type sigma (EConstr.of_constr t) in
+          Id.of_string ("Id_"^(ident_key_of_class source)^"_"^
                         (ident_key_of_class cl))
   in
   let univs = Evd.univ_entry ~poly sigma in
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
     DefinitionEntry
       (definition_entry ~types:typ_f ~univs
-	 ~inline:true (mkCast (val_f, DEFAULTcast, typ_f)))
+         ~inline:true (mkCast (val_f, DEFAULTcast, typ_f)))
   in
   let kind = Decls.(IsDefinition IdentityCoercion) in
   let kn = declare_constant ~name ~kind constr_entry in

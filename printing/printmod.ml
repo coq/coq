@@ -63,9 +63,9 @@ let get_new_id locals id =
   let rec get_id l id =
     let dir = DirPath.make [id] in
       if not (Nametab.exists_dir dir) then
-	id
+        id
       else
-	get_id (Id.Set.add id l) (Namegen.next_ident_away id l)
+        get_id (Id.Set.add id l) (Namegen.next_ident_away id l)
   in
   let avoid = List.fold_left (fun accu (_, id) -> Id.Set.add id accu) Id.Set.empty locals in
     get_id avoid id
@@ -205,10 +205,10 @@ let print_kn locals kn =
       pr_qualid qid
   with
       Not_found ->
-	try
-	  print_local_modpath locals kn
-	with
-	    Not_found -> print_modpath locals kn
+        try
+          print_local_modpath locals kn
+        with
+            Not_found -> print_modpath locals kn
 
 let nametab_register_dir obj_mp =
   let id = mk_fake_top () in
@@ -234,11 +234,11 @@ let nametab_register_body mp dir (l,body) =
     | SFBmind mib ->
       let mind = MutInd.make2 mp l in
       Array.iteri
-	(fun i mip ->
+        (fun i mip ->
           push mip.mind_typename (GlobRef.IndRef (mind,i));
           Array.iteri (fun j id -> push id (GlobRef.ConstructRef ((mind,i),j+1)))
-	    mip.mind_consnames)
-	mib.mind_packets
+            mip.mind_consnames)
+        mib.mind_packets
 
 type mod_ops =
   { import_module : export:bool -> ModPath.t -> unit
@@ -285,22 +285,22 @@ let print_body is_impl extent env mp (l,body) =
     | SFBconst cb ->
        let ctx = Declareops.constant_polymorphic_context cb in
       (match cb.const_body with
-	| Def _ -> def "Definition" ++ spc ()
-	| OpaqueDef _ when is_impl -> def "Theorem" ++ spc ()
-	| _ -> def "Parameter" ++ spc ()) ++ name ++
+        | Def _ -> def "Definition" ++ spc ()
+        | OpaqueDef _ when is_impl -> def "Theorem" ++ spc ()
+        | _ -> def "Parameter" ++ spc ()) ++ name ++
       (match extent with
          | OnlyNames -> mt ()
          | WithContents ->
             let bl = UnivNames.universe_binders_with_opt_names ctx None in
             let sigma = Evd.from_ctx (UState.of_binders bl) in
-	    str " :" ++ spc () ++
+            str " :" ++ spc () ++
             hov 0 (Printer.pr_ltype_env env sigma cb.const_type) ++
-	    (match cb.const_body with
-	      | Def l when is_impl ->
-		spc () ++
-		hov 2 (str ":= " ++
+            (match cb.const_body with
+              | Def l when is_impl ->
+                spc () ++
+                hov 2 (str ":= " ++
                        Printer.pr_lconstr_env env sigma (Mod_subst.force_constr l))
-	      | _ -> mt ()) ++ str "." ++
+              | _ -> mt ()) ++ str "." ++
             Printer.pr_abstract_universe_ctx sigma ctx)
     | SFBmind mib ->
       match extent with
@@ -314,7 +314,7 @@ let print_body is_impl extent env mp (l,body) =
           | BiFinite -> def "Variant"
           | CoFinite -> def "CoInductive"
         in
-	keyword ++ spc () ++ name)
+        keyword ++ spc () ++ name)
 
 let print_struct is_impl extent env mp struc =
   prlist_with_sep spc (print_body is_impl extent env mp) struc
@@ -324,7 +324,7 @@ let print_structure ~mod_ops is_type extent env mp locals struc =
   nametab_register_module_body ~mod_ops mp struc;
   let kwd = if is_type then "Sig" else "Struct" in
   hv 2 (keyword kwd ++ spc () ++ print_struct false extent env' mp struc ++
-	brk (1,-2) ++ keyword "End")
+        brk (1,-2) ++ keyword "End")
 
 let rec flatten_app mexpr l = match mexpr with
   | MEapply (mexpr, arg) -> flatten_app mexpr (arg::l)
@@ -339,7 +339,7 @@ let rec print_typ_expr extent env mp locals mty =
       let fapp = List.hd lapp in
       let mapp = List.tl lapp in
       hov 3 (str"(" ++ (print_kn locals fapp) ++ spc () ++
-		 prlist_with_sep spc (print_modpath locals) mapp ++ str")")
+                 prlist_with_sep spc (print_modpath locals) mapp ++ str")")
   | MEwith(me,WithDef(idl,(c, _)))->
       let s = String.concat "." (List.map Id.to_string idl) in
       let body = match extent with
@@ -378,7 +378,7 @@ let rec print_functor ~mod_ops fty fatom is_type extent env mp locals = function
       let kwd = if is_type then "Funsig" else "Functor" in
       hov 2
         (keyword kwd ++ spc () ++
-	 str "(" ++ Id.print id ++ str ":" ++ pr_mtb1 ++ str ")" ++
+         str "(" ++ Id.print id ++ str ":" ++ pr_mtb1 ++ str ")" ++
          spc() ++ print_functor ~mod_ops fty fatom is_type extent env' mp locals' me2)
 
 let rec print_expression ~mod_ops x =
@@ -399,11 +399,11 @@ let rec printable_body dir =
     try
       let open Nametab.GlobDirRef in
       match Nametab.locate_dir (qualid_of_dirpath dir) with
-	  DirOpenModtype _ -> false
-	| DirModule _ | DirOpenModule _ -> printable_body dir
-	| _ -> true
+          DirOpenModtype _ -> false
+        | DirModule _ | DirOpenModule _ -> printable_body dir
+        | _ -> true
     with
-	Not_found -> true
+        Not_found -> true
 
 (** Since we might play with nametab above, we should reset to prior
     state after the printing *)

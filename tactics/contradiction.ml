@@ -66,10 +66,10 @@ let contradiction_context =
       | d :: rest ->
           let id = NamedDecl.get_id d in
           let typ = nf_evar sigma (NamedDecl.get_type d) in
-	  let typ = whd_all env sigma typ in
+          let typ = whd_all env sigma typ in
           if is_empty_type env sigma typ then
-	    simplest_elim (mkVar id)
-	  else match EConstr.kind sigma typ with
+            simplest_elim (mkVar id)
+          else match EConstr.kind sigma typ with
           | Prod (na,t,u) when is_empty_type env sigma u ->
              let is_unit_or_eq = match_with_unit_or_eq_type env sigma t in
              Tacticals.New.tclORELSE
@@ -84,17 +84,17 @@ let contradiction_context =
                    simplest_elim (mkApp (mkVar id,[|p|]))
                | None ->
                  Tacticals.New.tclZEROMSG (Pp.str"Not a negated unit type."))
-	      (Proofview.tclORELSE
+              (Proofview.tclORELSE
                  (Proofview.Goal.enter begin fun gl ->
                    let is_conv_leq = Tacmach.New.pf_apply is_conv_leq gl in
-	           filter_hyp (fun typ -> is_conv_leq typ t)
-		     (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
+                   filter_hyp (fun typ -> is_conv_leq typ t)
+                     (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
                  end)
                  begin function (e, info) -> match e with
-	           | Not_found -> seek_neg rest
+                   | Not_found -> seek_neg rest
                    | e -> Proofview.tclZERO ~info e
                  end)
-	  | _ -> seek_neg rest
+          | _ -> seek_neg rest
     in
     let hyps = Proofview.Goal.hyps gl in
     seek_neg hyps

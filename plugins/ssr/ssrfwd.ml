@@ -42,7 +42,7 @@ let ssrsettac id ((_, (pat, pty)), (_, occ)) gl =
     (mkRHole, Some body), ist) pty in
   let pat = interp_cpattern gl pat pty in
   let cl, sigma, env = pf_concl gl, project gl, pf_env gl in
-  let (c, ucst), cl = 
+  let (c, ucst), cl =
     let cl = EConstr.Unsafe.to_constr cl in
     try fill_occ_pattern ~raise_NoMatch:true env sigma cl pat occ 1
     with NoMatch -> redex_of_pattern ~resolve_typeclasses:true env pat, cl in
@@ -77,8 +77,8 @@ let () =
     })
 
 
-open Constrexpr 
-open Glob_term 
+open Constrexpr
+open Glob_term
 
 let combineCG t1 t2 f g = match t1, t2 with
  | (x, (t1, None)), (_, (t2, None)) -> x, (g t1 t2, None)
@@ -96,7 +96,7 @@ let introstac ipats = Proofview.V82.of_tactic (tclIPAT ipats)
 
 let havetac ist
   (transp,((((clr, orig_pats), binders), simpl), (((fk, _), t), hint)))
-  suff namefst gl 
+  suff namefst gl
 =
  let concl = pf_concl gl in
  let pats = tclCompileIPats orig_pats in
@@ -195,7 +195,7 @@ let havetac ist
    | _,false,true ->
      let _, ty, uc = interp_ty gl fixtc cty in let gl = pf_merge_uc uc gl in
      gl, EConstr.mkArrow ty Sorts.Relevant concl, hint, id, itac_c
-   | _, false, false -> 
+   | _, false, false ->
      let n, cty, uc = interp_ty gl fixtc cty in let gl = pf_merge_uc uc gl in
      gl, cty, Tacticals.tclTHEN (binderstac n) hint, id, Tacticals.tclTHEN itac_c simpltac
    | _, true, false -> assert false in
@@ -260,7 +260,7 @@ let wlogtac ist (((clr0, pats),_),_) (gens, ((_, ct))) hint suff ghave gl =
          | _ -> CErrors.anomaly(str"SSR: wlog: pired: " ++ pr_econstr_env env sigma c) in
     c, args, pired c args, pf_merge_uc uc gl in
   let tacipat pats = introstac pats in
-  let tacigens = 
+  let tacigens =
     Tacticals.tclTHEN
       (Tacticals.tclTHENLIST(List.rev(List.fold_right mkclr gens [old_cleartac clr0])))
       (introstac (List.fold_right mkpats gens [])) in

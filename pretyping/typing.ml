@@ -382,7 +382,7 @@ let rec execute env sigma cstr =
         | Type u -> sigma, judge_of_type u
       end
 
-    | Proj (p, c) -> 
+    | Proj (p, c) ->
       let sigma, cj = execute env sigma c in
       sigma, judge_of_projection env sigma p cj
 

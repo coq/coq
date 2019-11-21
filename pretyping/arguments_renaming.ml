@@ -38,14 +38,14 @@ let classify_rename_args = function
   | ReqLocal, _ -> Dispose
   | ReqGlobal _, _ as o -> Substitute o
 
-let subst_rename_args (subst, (_, (r, names as orig))) = 
+let subst_rename_args (subst, (_, (r, names as orig))) =
   ReqLocal,
-  let r' = fst (subst_global subst r) in 
+  let r' = fst (subst_global subst r) in
   if r==r' then orig else (r', names)
 
 let discharge_rename_args = function
   | _, (ReqGlobal (c, names), _ as req) when not (isVarRef c && Lib.is_in_section c) ->
-     (try 
+     (try
        let vars = Lib.variable_section_segment_of_reference c in
        let var_names = List.map (NamedDecl.get_id %> Name.mk_name) vars in
        let names' = var_names @ names in
@@ -66,7 +66,7 @@ let inRenameArgs = declare_object { (default_object "RENAME-ARGUMENTS" ) with
 
 let rename_arguments local r names =
   let req = if local then ReqLocal else ReqGlobal (r, names) in
-  Lib.add_anonymous_leaf (inRenameArgs (req, (r, names)))       
+  Lib.add_anonymous_leaf (inRenameArgs (req, (r, names)))
 
 let arguments_names r = GlobRef.Map.find r !name_table
 

@@ -341,7 +341,7 @@ let push_context_set poly cst senv =
 
 let add_constraints cst senv =
   match cst with
-  | Later fc -> 
+  | Later fc ->
     {senv with future_cst = fc :: senv.future_cst}
   | Now cst ->
     push_context_set false cst senv
@@ -360,7 +360,7 @@ let join_safe_environment ?(except=Future.UUIDSet.empty) e =
        else add_constraints (Now (Future.join fc)) e)
     {e with future_cst = []} e.future_cst
 
-let is_joined_environment e = List.is_empty e.future_cst 
+let is_joined_environment e = List.is_empty e.future_cst
 
 (** {6 Various checks } *)
 
@@ -493,7 +493,7 @@ let globalize_constant_universes cb =
     [cstrs]
   | Polymorphic _ ->
     []
-      
+
 let globalize_mind_universes mb =
   match mb.mind_universes with
   | Monomorphic ctx ->
@@ -1185,11 +1185,11 @@ let add_include me is_module inl senv =
     | MoreFunctor(mbid,mtb,str) ->
       let cst_sub = Subtyping.check_subtypes senv.env mb mtb in
       let senv =
-	add_constraints
+        add_constraints
           (Now (Univ.ContextSet.add_constraints cst_sub Univ.ContextSet.empty))
-	  senv in
+          senv in
       let mpsup_delta =
-	Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb mb.mod_delta
+        Modops.inline_delta_resolver senv.env inl mp_sup mbid mtb mb.mod_delta
       in
       let subst = Mod_subst.map_mbid mbid mp_sup mpsup_delta in
       let resolver = Mod_subst.subst_codom_delta_resolver subst resolver in
@@ -1291,8 +1291,8 @@ let import lib cst vodigest senv =
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in
   let env = Environ.push_context_set ~strict:true
-				     (Univ.ContextSet.union mb.mod_constraints cst)
-				     senv.env
+                                     (Univ.ContextSet.union mb.mod_constraints cst)
+                                     senv.env
   in
   let env =
     let linkinfo = Nativecode.link_info_of_dirpath lib.comp_name in

@@ -91,25 +91,25 @@ let expmod_constr cache modlist c =
   let rec substrec c =
     match kind c with
       | Case (ci,p,t,br) ->
-	  Constr.map substrec (mkCase (update_case_info ci modlist,p,t,br))
+          Constr.map substrec (mkCase (update_case_info ci modlist,p,t,br))
 
       | Ind (ind,u) ->
-	  (try
-	    share_univs (IndRef ind) u modlist
-	   with
-	    | Not_found -> Constr.map substrec c)
+          (try
+            share_univs (IndRef ind) u modlist
+           with
+            | Not_found -> Constr.map substrec c)
 
       | Construct (cstr,u) ->
-	  (try
-	     share_univs (ConstructRef cstr) u modlist
-	   with
-	    | Not_found -> Constr.map substrec c)
+          (try
+             share_univs (ConstructRef cstr) u modlist
+           with
+            | Not_found -> Constr.map substrec c)
 
       | Const (cst,u) ->
-	  (try
-	    share_univs (ConstRef cst) u modlist
-	   with
-	    | Not_found -> Constr.map substrec c)
+          (try
+            share_univs (ConstRef cst) u modlist
+           with
+            | Not_found -> Constr.map substrec c)
 
       | Proj (p, c') ->
         let map cst npars =

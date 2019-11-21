@@ -85,7 +85,7 @@ let is_empty_subst (ln,lm) =
    would ensure consistency. *)
 let equal_instances env sigma (ctx',c') (ctx,c) =
   (* How to compare instances? Do we want the terms to be convertible?
-     unifiable? Do we want the universe levels to be relevant? 
+     unifiable? Do we want the universe levels to be relevant?
      (historically, conv_x is used) *)
   CList.equal Id.equal ctx ctx' && Reductionops.is_conv env sigma c' c
 
@@ -230,11 +230,11 @@ module PatternMatching (E:StaticEnvironment) = struct
   (** [pattern_match_term refresh pat term lhs] returns the possible
       matchings of [term] with the pattern [pat => lhs]. If refresh is
       true, refreshes the universes of [term]. *)
-  let pattern_match_term refresh pat term lhs = 
+  let pattern_match_term refresh pat term lhs =
 (*     let term = if refresh then Termops.refresh_universes_strict term else term in *)
     match pat with
     | Term p ->
-        begin 
+        begin
           try
             put_subst (Constr_matching.extended_matches E.env E.sigma p term) <*>
             return lhs

@@ -289,7 +289,7 @@ let safe_pr_long_global r =
   with Not_found -> match r with
     | GlobRef.ConstRef kn ->
         let mp,l = Constant.repr2 kn in
-	str ((ModPath.to_string mp)^"."^(Label.to_string l))
+        str ((ModPath.to_string mp)^"."^(Label.to_string l))
     | _ -> assert false
 
 let pr_long_mp mp =
@@ -339,10 +339,10 @@ let warn_extraction_opaque_accessed =
 let warn_extraction_opaque_as_axiom =
   CWarnings.create ~name:"extraction-opaque-as-axiom" ~category:"extraction"
     (fun lst -> strbrk "The extraction now honors the opacity constraints by default, " ++
-	 strbrk "the following opaque constants have been extracted as axioms :" ++
-	 lst ++ str "." ++ fnl () ++
-	 strbrk "If necessary, use \"Set Extraction AccessOpaque\" to change this."
-	 ++ fnl ())
+         strbrk "the following opaque constants have been extracted as axioms :" ++
+         lst ++ str "." ++ fnl () ++
+         strbrk "If necessary, use \"Set Extraction AccessOpaque\" to change this."
+         ++ fnl ())
 
 let warning_opaques accessed =
   let opaques = Refset'.elements !opaques in
@@ -375,14 +375,14 @@ let warn_extraction_inside_module =
 let check_inside_module () =
   if Lib.is_modtype () then
     err (str "You can't do that within a Module Type." ++ fnl () ++
-	 str "Close it and try again.")
+         str "Close it and try again.")
   else if Lib.is_module () then
     warn_extraction_inside_module ()
 
 let check_inside_section () =
   if Global.sections_are_opened () then
     err (str "You can't do that within a section." ++ fnl () ++
-	 str "Close it and try again.")
+         str "Close it and try again.")
 
 let warn_extraction_reserved_identifier =
   CWarnings.create ~name:"extraction-reserved-identifier" ~category:"extraction"
@@ -441,9 +441,9 @@ let error_MPfile_as_mod mp b =
   let s1 = if b then "asked" else "required" in
   let s2 = if b then "extract some objects of this module or\n" else "" in
   err (str ("Extraction of file "^(raw_string_of_modfile mp)^
-	    ".v as a module is "^s1^".\n"^
-	    "Monolithic Extraction cannot deal with this situation.\n"^
-	    "Please "^s2^"use (Recursive) Extraction Library instead.\n"))
+            ".v as a module is "^s1^".\n"^
+            "Monolithic Extraction cannot deal with this situation.\n"^
+            "Please "^s2^"use (Recursive) Extraction Library instead.\n"))
 
 let argnames_of_global r =
   let env = Global.env () in
@@ -481,10 +481,10 @@ let warning_remaining_implicit k =
 let check_loaded_modfile mp = match base_mp mp with
   | MPfile dp ->
       if not (Library.library_is_loaded dp) then begin
-	match base_mp (Lib.current_mp ()) with
-	  | MPfile dp' when not (DirPath.equal dp dp') ->
+        match base_mp (Lib.current_mp ()) with
+          | MPfile dp' when not (DirPath.equal dp dp') ->
             err (str "Please load library " ++ DirPath.print dp ++ str " first.")
-	  | _ -> ()
+          | _ -> ()
       end
   | _ -> ()
 
@@ -574,11 +574,11 @@ let chg_flag n = int_flag_ref := n; opt_flag_ref := flag_of_int n
 let optims () = !opt_flag_ref
 
 let () = declare_bool_option
-	  {optdepr = false;
-	   optname = "Extraction Optimize";
-	   optkey = ["Extraction"; "Optimize"];
-	   optread = (fun () -> not (Int.equal !int_flag_ref 0));
-	   optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
+          {optdepr = false;
+           optname = "Extraction Optimize";
+           optkey = ["Extraction"; "Optimize"];
+           optread = (fun () -> not (Int.equal !int_flag_ref 0));
+           optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
 
 let () = declare_int_option
           { optdepr = false;
@@ -671,11 +671,11 @@ let print_extraction_inline () =
     (str "Extraction Inline:" ++ fnl () ++
      Refset'.fold
        (fun r p ->
-	  (p ++ str "  " ++ safe_pr_long_global r ++ fnl ())) i' (mt ()) ++
+          (p ++ str "  " ++ safe_pr_long_global r ++ fnl ())) i' (mt ()) ++
      str "Extraction NoInline:" ++ fnl () ++
      Refset'.fold
        (fun r p ->
-	  (p ++ str "  " ++ safe_pr_long_global r ++ fnl ())) n (mt ()))
+          (p ++ str "  " ++ safe_pr_long_global r ++ fnl ())) n (mt ()))
 
 (* Reset part *)
 
@@ -708,16 +708,16 @@ let add_implicits r l =
   let n = List.length names in
   let add_arg s = function
     | ArgInt i ->
-	if 1 <= i && i <= n then Int.Set.add i s
-	else err (int i ++ str " is not a valid argument number for " ++
-		  safe_pr_global r)
+        if 1 <= i && i <= n then Int.Set.add i s
+        else err (int i ++ str " is not a valid argument number for " ++
+                  safe_pr_global r)
     | ArgId id ->
        try
          let i = List.index Name.equal (Name id) names in
          Int.Set.add i s
        with Not_found ->
-	 err (str "No argument " ++ Id.print id ++ str " for " ++
-	      safe_pr_global r)
+         err (str "No argument " ++ Id.print id ++ str " for " ++
+              safe_pr_global r)
   in
   let ints = List.fold_left add_arg Int.Set.empty l in
   implicits_table := Refmap'.add r ints !implicits_table
@@ -854,16 +854,16 @@ let extract_constant_inline inline r ids s =
   let g = Smartlocate.global_with_alias r in
   match g with
     | GlobRef.ConstRef kn ->
-	let env = Global.env () in
+        let env = Global.env () in
         let typ, _ = Typeops.type_of_global_in_context env (GlobRef.ConstRef kn) in
-	let typ = Reduction.whd_all env typ in
-	if Reduction.is_arity env typ
-	  then begin
-	    let nargs = Hook.get use_type_scheme_nb_args env typ in
-	    if not (Int.equal (List.length ids) nargs) then error_axiom_scheme g nargs
-	  end;
-	Lib.add_anonymous_leaf (inline_extraction (inline,[g]));
-	Lib.add_anonymous_leaf (in_customs (g,ids,s))
+        let typ = Reduction.whd_all env typ in
+        if Reduction.is_arity env typ
+          then begin
+            let nargs = Hook.get use_type_scheme_nb_args env typ in
+            if not (Int.equal (List.length ids) nargs) then error_axiom_scheme g nargs
+          end;
+        Lib.add_anonymous_leaf (inline_extraction (inline,[g]));
+        Lib.add_anonymous_leaf (in_customs (g,ids,s))
     | _ -> error_constant g
 
 
@@ -873,18 +873,18 @@ let extract_inductive r s l optstr =
   Dumpglob.add_glob ?loc:r.CAst.loc g;
   match g with
     | GlobRef.IndRef ((kn,i) as ip) ->
-	let mib = Global.lookup_mind kn in
-	let n = Array.length mib.mind_packets.(i).mind_consnames in
-	if not (Int.equal n (List.length l)) then error_nb_cons ();
-	Lib.add_anonymous_leaf (inline_extraction (true,[g]));
-	Lib.add_anonymous_leaf (in_customs (g,[],s));
-	Option.iter (fun s -> Lib.add_anonymous_leaf (in_custom_matchs (g,s)))
-	  optstr;
-	List.iteri
-	  (fun j s ->
+        let mib = Global.lookup_mind kn in
+        let n = Array.length mib.mind_packets.(i).mind_consnames in
+        if not (Int.equal n (List.length l)) then error_nb_cons ();
+        Lib.add_anonymous_leaf (inline_extraction (true,[g]));
+        Lib.add_anonymous_leaf (in_customs (g,[],s));
+        Option.iter (fun s -> Lib.add_anonymous_leaf (in_custom_matchs (g,s)))
+          optstr;
+        List.iteri
+          (fun j s ->
              let g = GlobRef.ConstructRef (ip,succ j) in
-	     Lib.add_anonymous_leaf (inline_extraction (true,[g]));
-	     Lib.add_anonymous_leaf (in_customs (g,[],s))) l
+             Lib.add_anonymous_leaf (inline_extraction (true,[g]));
+             Lib.add_anonymous_leaf (in_customs (g,[],s))) l
     | _ -> error_inductive g
 
 

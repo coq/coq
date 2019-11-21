@@ -34,7 +34,7 @@ let declare_generalizable_ident table {CAst.loc;v=id} =
       " is not declarable as generalizable identifier: it must have no trailing digits, quote, or _"));
   if Id.Pred.mem id table then
     user_err ?loc ~hdr:"declare_generalizable_ident"
-		((Id.print id++str" is already declared as a generalizable identifier"))
+                ((Id.print id++str" is already declared as a generalizable identifier"))
   else Id.Pred.add id table
 
 let add_generalizable gen table =
@@ -78,7 +78,7 @@ let is_freevar ids env x =
 
 let ungeneralizable loc id =
   user_err ?loc ~hdr:"Generalization"
-	       (str "Unbound and ungeneralizable variable " ++ Id.print id)
+               (str "Unbound and ungeneralizable variable " ++ Id.print id)
 
 let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
   let found loc id bdvars l =
@@ -102,16 +102,16 @@ let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.emp
   let rec vars bound vs c = match DAst.get c with
     | GVar id ->
         let loc = c.CAst.loc in
-	if is_freevar bound (Global.env ()) id then
+        if is_freevar bound (Global.env ()) id then
           if List.exists (fun {CAst.v} -> Id.equal v id) vs then vs
           else CAst.(make ?loc id) :: vs
-	else vs
+        else vs
     | _ -> Glob_ops.fold_glob_constr_with_binders Id.Set.add vars bound vs c
-  in fun rt -> 
+  in fun rt ->
     let vars = List.rev (vars bound [] rt) in
       List.iter (fun {CAst.loc;v=id} ->
-	if not (Id.Set.mem id allowed || find_generalizable_ident id) then 
-	  ungeneralizable loc id) vars;
+        if not (Id.Set.mem id allowed || find_generalizable_ident id) then
+          ungeneralizable loc id) vars;
       vars
 
 let rec make_fresh ids env x =
@@ -131,10 +131,10 @@ let combine_params avoid applied needed =
             | Name id' -> Id.equal id id'
             | Anonymous -> false
             in
-	    if not (List.exists is_id needed) then
-	      user_err ?loc  (str "Wrong argument name: " ++ Id.print id);
-	    true
-	| _ -> false) applied
+            if not (List.exists is_id needed) then
+              user_err ?loc  (str "Wrong argument name: " ++ Id.print id);
+            true
+        | _ -> false) applied
   in
   let named = List.map
     (fun x -> match x with (t, Some {CAst.loc;v=ExplByName id}) -> id, t | _ -> assert false)
@@ -148,10 +148,10 @@ let combine_params avoid applied needed =
       | [], [] -> List.rev ids, avoid
 
       | app, (_, (LocalAssum ({binder_name=Name id}, _))) :: need when Id.List.mem_assoc id named ->
-	  aux (Id.List.assoc id named :: ids) avoid app need
+          aux (Id.List.assoc id named :: ids) avoid app need
 
       | (x, None) :: app, (None, (LocalAssum ({binder_name=Name id}, _))) :: need ->
-	  aux (x :: ids) avoid app need
+          aux (x :: ids) avoid app need
 
       | x :: app, (None, _) :: need -> aux (fst x :: ids) avoid app need
 
@@ -161,7 +161,7 @@ let combine_params avoid applied needed =
         aux (t' :: ids) (Id.Set.add id' avoid) app need
 
       | (x,_) :: _, [] ->
-	  user_err ?loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
+          user_err ?loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
   in
   aux [] avoid applied needed
 

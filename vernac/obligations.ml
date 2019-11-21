@@ -61,39 +61,39 @@ let subst_evar_constr evm evs n idf t =
   let evar_info id = List.assoc_f Evar.equal id evs in
   let rec substrec (depth, fixrels) c = match EConstr.kind evm c with
     | Evar (k, args) ->
-	let { ev_name = (id, idstr) ;
-	      ev_hyps = hyps ; ev_chop = chop } =
-	  try evar_info k
-	  with Not_found ->
-	    anomaly ~label:"eterm" (Pp.str "existential variable " ++ int (Evar.repr k) ++ str " not found.")
-	in
+        let { ev_name = (id, idstr) ;
+              ev_hyps = hyps ; ev_chop = chop } =
+          try evar_info k
+          with Not_found ->
+            anomaly ~label:"eterm" (Pp.str "existential variable " ++ int (Evar.repr k) ++ str " not found.")
+        in
         seen := Int.Set.add id !seen;
-	  (* Evar arguments are created in inverse order,
-	     and we must not apply to defined ones (i.e. LetIn's)
-	  *)
-	let args =
-	  let n = match chop with None -> 0 | Some c -> c in
-	  let (l, r) = List.chop n (List.rev (Array.to_list args)) in
-	    List.rev r
-	in
-	let args =
-	  let rec aux hyps args acc =
+          (* Evar arguments are created in inverse order,
+             and we must not apply to defined ones (i.e. LetIn's)
+          *)
+        let args =
+          let n = match chop with None -> 0 | Some c -> c in
+          let (l, r) = List.chop n (List.rev (Array.to_list args)) in
+            List.rev r
+        in
+        let args =
+          let rec aux hyps args acc =
              let open Context.Named.Declaration in
-	     match hyps, args with
-		 (LocalAssum _ :: tlh), (c :: tla) ->
-		   aux tlh tla ((substrec (depth, fixrels) c) :: acc)
-	       | (LocalDef _ :: tlh), (_ :: tla) ->
-		   aux tlh tla acc
-	       | [], [] -> acc
-	       | _, _ -> acc (*failwith "subst_evars: invalid argument"*)
-	  in aux hyps args []
-	in
-	  if List.exists
+             match hyps, args with
+                 (LocalAssum _ :: tlh), (c :: tla) ->
+                   aux tlh tla ((substrec (depth, fixrels) c) :: acc)
+               | (LocalDef _ :: tlh), (_ :: tla) ->
+                   aux tlh tla acc
+               | [], [] -> acc
+               | _, _ -> acc (*failwith "subst_evars: invalid argument"*)
+          in aux hyps args []
+        in
+          if List.exists
             (fun x -> match EConstr.kind evm x with
             | Rel n -> Int.List.mem n fixrels
             | _ -> false) args
           then
-	    transparent := Id.Set.add idstr !transparent;
+            transparent := Id.Set.add idstr !transparent;
           EConstr.mkApp (idf idstr, Array.of_list args)
     | Fix _ ->
         EConstr.map_with_binders evm succfix substrec (depth, 1 :: fixrels) c
@@ -122,22 +122,22 @@ let etype_of_evar evm evs hyps concl =
   let rec aux acc n = function
       decl :: tl ->
         let t', s, trans = subst_evar_constr evm evs n EConstr.mkVar (NamedDecl.get_type decl) in
-	let t'' = subst_vars acc 0 t' in
-	let rest, s', trans' = aux (NamedDecl.get_id decl :: acc) (succ n) tl in
-	let s' = Int.Set.union s s' in
-	let trans' = Id.Set.union trans trans' in
-	  (match decl with
+        let t'' = subst_vars acc 0 t' in
+        let rest, s', trans' = aux (NamedDecl.get_id decl :: acc) (succ n) tl in
+        let s' = Int.Set.union s s' in
+        let trans' = Id.Set.union trans trans' in
+          (match decl with
             | LocalDef (id,c,_) ->
                 let c', s'', trans'' = subst_evar_constr evm evs n EConstr.mkVar c in
-		let c' = subst_vars acc 0 c' in
+                let c' = subst_vars acc 0 c' in
                   mkNamedProd_or_LetIn (LocalDef (id, c', t'')) rest,
-		Int.Set.union s'' s',
-		Id.Set.union trans'' trans'
+                Int.Set.union s'' s',
+                Id.Set.union trans'' trans'
             | LocalAssum (id,_) ->
                 mkNamedProd_or_LetIn (LocalAssum (id, t'')) rest, s', trans')
     | [] ->
         let t', s, trans = subst_evar_constr evm evs n EConstr.mkVar concl in
-	  subst_vars acc 0 t', s, trans
+          subst_vars acc 0 t', s, trans
   in aux [] 0 (List.rev hyps)
 
 let trunc_named_context n ctx =
@@ -171,10 +171,10 @@ let evar_dependencies evm oev =
 let move_after (id, ev, deps as obl) l =
   let rec aux restdeps = function
     | (id', _, _) as obl' :: tl ->
-	let restdeps' = Evar.Set.remove id' restdeps in
-	  if Evar.Set.is_empty restdeps' then
-	    obl' :: obl :: tl
-	  else obl' :: aux restdeps' tl
+        let restdeps' = Evar.Set.remove id' restdeps in
+          if Evar.Set.is_empty restdeps' then
+            obl' :: obl :: tl
+          else obl' :: aux restdeps' tl
     | [] -> [obl]
   in aux (Evar.Set.remove id deps) l
 
@@ -182,10 +182,10 @@ let sort_dependencies evl =
   let rec aux l found list =
     match l with
     | (id, ev, deps) as obl :: tl ->
-	let found' = Evar.Set.union found (Evar.Set.singleton id) in
-	  if Evar.Set.subset deps found' then
-	    aux tl found' (obl :: list)
-	  else aux (move_after obl tl) found list
+        let found' = Evar.Set.union found (Evar.Set.singleton id) in
+          if Evar.Set.subset deps found' then
+            aux tl found' (obl :: list)
+          else aux (move_after obl tl) found list
     | [] -> List.rev list
   in aux evl Evar.Set.empty []
 
@@ -204,54 +204,54 @@ let eterm_obligations env name evm fs ?status t ty =
   let evn =
     let i = ref (-1) in
       List.rev_map (fun (id, ev) -> incr i;
-		      (id, (!i, Id.of_string
-			      (Id.to_string name ^ "_obligation_" ^ string_of_int (succ !i))),
-		       ev)) evl
+                      (id, (!i, Id.of_string
+                              (Id.to_string name ^ "_obligation_" ^ string_of_int (succ !i))),
+                       ev)) evl
   in
   let evts =
     (* Remove existential variables in types and build the corresponding products *)
     List.fold_right
       (fun (id, (n, nstr), ev) l ->
-	 let hyps = Evd.evar_filtered_context ev in
+         let hyps = Evd.evar_filtered_context ev in
          let hyps = trunc_named_context nc_len hyps in
          let evtyp, deps, transp = etype_of_evar evm l hyps ev.evar_concl in
-	 let evtyp, hyps, chop =
-	   match chop_product fs evtyp with
-	   | Some t -> t, trunc_named_context fs hyps, fs
-	   | None -> evtyp, hyps, 0
-	 in
-	 let loc, k = evar_source id evm in
-	 let status = match k with
+         let evtyp, hyps, chop =
+           match chop_product fs evtyp with
+           | Some t -> t, trunc_named_context fs hyps, fs
+           | None -> evtyp, hyps, 0
+         in
+         let loc, k = evar_source id evm in
+         let status = match k with
            | Evar_kinds.QuestionMark { Evar_kinds.qm_obligation=o } -> o
            | _ -> match status with
                  | Some o -> o
                  | None -> Evar_kinds.Define (not (Program.get_proofs_transparency ()))
          in
          let force_status, status, chop = match status with
-	   | Evar_kinds.Define true as stat ->
-	      if not (Int.equal chop fs) then true, Evar_kinds.Define false, None
-	      else false, stat, Some chop
-	   | s -> false, s, None
-	 in
-	 let info = { ev_name = (n, nstr);
-		      ev_hyps = hyps; ev_status = force_status, status; ev_chop = chop;
-		      ev_src = loc, k; ev_typ = evtyp ; ev_deps = deps; ev_tac = None }
-	 in (id, info) :: l)
+           | Evar_kinds.Define true as stat ->
+              if not (Int.equal chop fs) then true, Evar_kinds.Define false, None
+              else false, stat, Some chop
+           | s -> false, s, None
+         in
+         let info = { ev_name = (n, nstr);
+                      ev_hyps = hyps; ev_status = force_status, status; ev_chop = chop;
+                      ev_src = loc, k; ev_typ = evtyp ; ev_deps = deps; ev_tac = None }
+         in (id, info) :: l)
       evn []
   in
   let t', _, transparent = (* Substitute evar refs in the term by variables *)
     subst_evar_constr evm evts 0 EConstr.mkVar t
   in
   let ty, _, _ = subst_evar_constr evm evts 0 EConstr.mkVar ty in
-  let evars = 
+  let evars =
     List.map (fun (ev, info) ->
       let { ev_name = (_, name); ev_status = force_status, status;
-	    ev_src = src; ev_typ = typ; ev_deps = deps; ev_tac = tac } = info
+            ev_src = src; ev_typ = typ; ev_deps = deps; ev_tac = tac } = info
       in
       let force_status, status = match status with
-	| Evar_kinds.Define true when Id.Set.mem name transparent ->
-	  true, Evar_kinds.Define false
-	| _ -> force_status, status
+        | Evar_kinds.Define true when Id.Set.mem name transparent ->
+          true, Evar_kinds.Define false
+        | _ -> force_status, status
       in name, typ, src, (force_status, status), deps, tac) evts
   in
   let evnames = List.map (fun (ev, info) -> ev, snd info.ev_name) evts in
@@ -303,20 +303,20 @@ let init_prog_info ?(opaque = false) ?hook n udecl b t ctx deps fixkind
   let obls', b =
     match b with
     | None ->
-	assert(Int.equal (Array.length obls) 0);
-	let n = Nameops.add_suffix n "_obligation" in
-	  [| { obl_name = n; obl_body = None;
-	       obl_location = Loc.tag Evar_kinds.InternalHole; obl_type = t;
-	       obl_status = false, Evar_kinds.Expand; obl_deps = Int.Set.empty;
-	       obl_tac = None } |],
-	mkVar n
+        assert(Int.equal (Array.length obls) 0);
+        let n = Nameops.add_suffix n "_obligation" in
+          [| { obl_name = n; obl_body = None;
+               obl_location = Loc.tag Evar_kinds.InternalHole; obl_type = t;
+               obl_status = false, Evar_kinds.Expand; obl_deps = Int.Set.empty;
+               obl_tac = None } |],
+        mkVar n
     | Some b ->
-	Array.mapi
-	  (fun i (n, t, l, o, d, tac) ->
+        Array.mapi
+          (fun i (n, t, l, o, d, tac) ->
             { obl_name = n ; obl_body = None;
-	      obl_location = l; obl_type = t; obl_status = o;
-	      obl_deps = d; obl_tac = tac })
-	  obls, b
+              obl_location = l; obl_type = t; obl_status = o;
+              obl_deps = d; obl_tac = tac })
+          obls, b
   in
   let ctx = UState.make_flexible_nonalgebraic ctx in
     { prg_name = n
@@ -348,23 +348,23 @@ exception Found of program_info CEphemeron.key
 let map_first m =
   try
     ProgMap.iter (fun _ v ->
-		  if snd (CEphemeron.get v).prg_obligations > 0 then
-		    raise (Found v)) m;
+                  if snd (CEphemeron.get v).prg_obligations > 0 then
+                    raise (Found v)) m;
     assert(false)
   with Found x -> x
 
 let get_prog name =
   let prg_infos = get_prg_info_map () in
     match name with
-	Some n ->
+        Some n ->
           (try CEphemeron.get (ProgMap.find n prg_infos)
-	   with Not_found -> raise (NoObligations (Some n)))
+           with Not_found -> raise (NoObligations (Some n)))
       | None ->
-	  (let n = map_cardinal prg_infos in
-	     match n with
-		 0 -> raise (NoObligations None)
+          (let n = map_cardinal prg_infos in
+             match n with
+                 0 -> raise (NoObligations None)
                | 1 -> CEphemeron.get (map_first prg_infos)
-	       | _ ->
+               | _ ->
                 let progs = Id.Set.elements (ProgMap.domain prg_infos) in
                 let prog = List.hd progs in
                 let progs = prlist_with_sep pr_comma Id.print progs in
@@ -505,9 +505,9 @@ and obligation (user_num, name, typ) tac =
   let obls, rem = prg.prg_obligations in
     if num >= 0 && num < Array.length obls then
       let obl = obls.(num) in
-	match obl.obl_body with
+        match obl.obl_body with
           | None -> solve_obligation prg num tac
-	  | Some r -> error "Obligation already solved"
+          | Some r -> error "Obligation already solved"
     else error (sprintf "Unknown obligation number %i" (succ num))
 
 
@@ -560,12 +560,12 @@ and solve_prg_obligations prg ?oblset tac =
     Array.iteri (fun i x ->
       if p i then
         match solve_obligation_by_tac !prgref obls' i tac with
-	| None -> ()
- 	| Some prg' ->
-	   prgref := prg';
-	   let deps = dependencies obls i in
- 	   (set := Int.Set.union !set deps;
- 	    decr rem))
+        | None -> ()
+        | Some prg' ->
+           prgref := prg';
+           let deps = dependencies obls i in
+           (set := Int.Set.union !set deps;
+            decr rem))
       obls'
   in
     update_obls !prgref obls' !rem
@@ -599,18 +599,18 @@ let show_obligations_of_prg ?(msg=true) prg =
   let showed = ref 5 in
     if msg then Feedback.msg_info (int rem ++ str " obligation(s) remaining: ");
     Array.iteri (fun i x ->
-		   match x.obl_body with
-		   | None ->
-		       if !showed > 0 then (
-		         decr showed;
-			 let x = subst_deps_obl obls x in
+                   match x.obl_body with
+                   | None ->
+                       if !showed > 0 then (
+                         decr showed;
+                         let x = subst_deps_obl obls x in
                          let env = Global.env () in
                          let sigma = Evd.from_env env in
-			 Feedback.msg_info (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
-				   str "of" ++ spc() ++ Id.print n ++ str ":" ++ spc () ++
+                         Feedback.msg_info (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
+                                   str "of" ++ spc() ++ Id.print n ++ str ":" ++ spc () ++
                                    hov 1 (Printer.pr_constr_env env sigma x.obl_type ++
-					    str "." ++ fnl ())))
-		   | Some _ -> ())
+                                            str "." ++ fnl ())))
+                   | Some _ -> ())
       obls
 
 let show_obligations ?(msg=true) n =
@@ -618,7 +618,7 @@ let show_obligations ?(msg=true) n =
     | None -> all_programs ()
     | Some n ->
         try [ProgMap.find n (get_prg_info_map ())]
-	with Not_found -> raise (NoObligations (Some n))
+        with Not_found -> raise (NoObligations (Some n))
   in List.iter (fun x -> show_obligations_of_prg ~msg (CEphemeron.get x)) progs
 
 let show_term n =
@@ -645,9 +645,9 @@ let add_definition ~name ?term t ctx ?(univdecl=UState.default_univ_decl)
     let () = Flags.if_verbose Feedback.msg_info (info ++ str ", generating " ++ int len ++ str (String.plural len " obligation")) in
       progmap_add name (CEphemeron.create prg);
       let res = auto_solve_obligations (Some name) tactic in
-	match res with
+        match res with
         | Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some name)) (); res
-	| _ -> res)
+        | _ -> res)
 
 let add_mutual_definitions l ctx ?(univdecl=UState.default_univ_decl) ?tactic
                            ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Decls.Definition) ?(reduce=reduce)
@@ -660,15 +660,15 @@ let add_mutual_definitions l ctx ?(univdecl=UState.default_univ_decl) ?tactic
      in progmap_add n (CEphemeron.create prg)) l;
     let _defined =
       List.fold_left (fun finished x ->
-	if finished then finished
-	else
-	  let res = auto_solve_obligations (Some x) tactic in
-	    match res with
+        if finished then finished
+        else
+          let res = auto_solve_obligations (Some x) tactic in
+            match res with
             | Defined _ ->
                 (* If one definition is turned into a constant,
-		   the whole block is defined. *) true
-	    | _ -> false)
-	false deps
+                   the whole block is defined. *) true
+            | _ -> false)
+        false deps
     in ()
 
 let admit_prog prg =
