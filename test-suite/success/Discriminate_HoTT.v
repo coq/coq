@@ -18,6 +18,8 @@ Notation "x -> y" := (forall (_:x), y) (at level 99, right associativity, y at l
 Cumulative Variant paths {A} (a:A) : A -> Type
   := idpath : paths a a.
 
+Register paths as core.eq.type.
+
 Arguments idpath {A a} , [A] a.
 
 Scheme paths_ind := Induction for paths Sort Type.
