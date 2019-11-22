@@ -2003,10 +2003,11 @@ applied to an unknown structure instance (an implicit argument) and a
 value. The complete documentation of canonical structures can be found
 in :ref:`canonicalstructures`; here only a simple example is given.
 
-.. cmd:: Canonical {? Structure } @qualid
+.. cmd:: {? Local | #[local] } Canonical {? Structure } @qualid
 
    This command declares :token:`qualid` as a canonical instance of a
-   structure (a record).
+   structure (a record). When the :g:`#[local]` attribute is given the effect
+   stops at the end of the :g:`Section` containig it.
 
    Assume that :token:`qualid` denotes an object ``(Build_struct`` |c_1| … |c_n| ``)`` in the
    structure :g:`struct` of which the fields are |x_1|, …, |x_n|.
@@ -2069,7 +2070,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
       See :ref:`canonicalstructures` for a more realistic example.
 
-   .. cmdv:: Canonical {? Structure } @ident {? : @type } := @term
+   .. cmdv:: {? Local | #[local] } Canonical {? Structure } @ident {? : @type } := @term
 
       This is equivalent to a regular definition of :token:`ident` followed by the
       declaration :n:`Canonical @ident`.
