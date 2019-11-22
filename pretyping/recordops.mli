@@ -86,13 +86,15 @@ val cs_pattern_of_constr : Environ.env -> constr -> cs_pattern * int option * co
 
 val pr_cs_pattern : cs_pattern -> Pp.t
 
+type cs = GlobRef.t * inductive
+
 val lookup_canonical_conversion : (GlobRef.t * cs_pattern) -> constr * obj_typ
 val register_canonical_structure : warn:bool -> Environ.env -> Evd.evar_map ->
-  Constant.t * inductive -> unit
-val subst_canonical_structure : Mod_subst.substitution -> Constant.t * inductive -> Constant.t * inductive
+  cs -> unit
+val subst_canonical_structure : Mod_subst.substitution -> cs -> cs
 val is_open_canonical_projection :
   Environ.env -> Evd.evar_map -> Reductionops.state -> bool
 val canonical_projections : unit ->
   ((GlobRef.t * cs_pattern) * obj_typ) list
 
-val check_and_decompose_canonical_structure : Environ.env -> Evd.evar_map -> GlobRef.t -> Constant.t * inductive
+val check_and_decompose_canonical_structure : Environ.env -> Evd.evar_map -> GlobRef.t -> cs
