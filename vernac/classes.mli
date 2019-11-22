@@ -35,7 +35,6 @@ val new_instance_interactive
   -> ?tac:unit Proofview.tactic
   -> ?hook:(GlobRef.t -> unit)
   -> Hints.hint_info_expr
-  -> (bool * constr_expr) option
   -> Id.t * Lemmas.t
 
 val new_instance
@@ -85,5 +84,3 @@ val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> u
 (** For generation on names based on classes only *)
 
 val id_of_class : typeclass -> Id.t
-
-val refine_att : bool Attributes.attribute

@@ -47,22 +47,9 @@ Leibniz equality on some type. An example implementation is:
          | tt, tt => eq_refl tt
          end }.
 
-Using the attribute ``refine``, if the term is not sufficient to
-finish the definition (e.g. due to a missing field or non-inferable
-hole) it must be finished in proof mode. If it is sufficient a trivial
-proof mode with no open goals is started.
-
-.. coqtop:: in
-
-   #[refine] Instance unit_EqDec' : EqDec unit := { eqb x y := true }.
-   Proof. intros [] [];reflexivity. Defined.
-
-Note that if you finish the proof with :cmd:`Qed` the entire instance
-will be opaque, including the fields given in the initial term.
-
-Alternatively, in :flag:`Program Mode` if one does not give all the
-members in the Instance declaration, Coq generates obligations for the
-remaining fields, e.g.:
+Using :cmd:`Program Instance`, if one does not give all the members in
+the Instance declaration, Coq generates obligations for the remaining
+fields, e.g.:
 
 .. coqtop:: in
 
