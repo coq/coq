@@ -542,6 +542,8 @@ let intern_generalized_binder intern_type ntnvars
     | Anonymous ->
       let id =
         match ty with
+        (* We should have this also for CAppExpl, but H-like
+           names now used in the large *)
         | { v = CApp ({ v = CRef (qid,_) }, _) } when qualid_is_ident qid ->
           qualid_basename qid
         | _ -> default_non_dependent_ident
