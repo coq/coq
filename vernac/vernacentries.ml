@@ -63,14 +63,15 @@ module DefAttributes = struct
     polymorphic : bool;
     program : bool;
     deprecated : Deprecation.t option;
+    canonical_instance : bool;
   }
 
   let parse f =
     let open Attributes in
-    let ((locality, deprecated), polymorphic), program =
-      parse Notations.(locality ++ deprecation ++ polymorphic ++ program) f
+    let (((locality, deprecated), polymorphic), program), canonical_instance =
+      parse Notations.(locality ++ deprecation ++ polymorphic ++ program ++ canonical_instance) f
     in
-    { polymorphic; program; locality; deprecated }
+    { polymorphic; program; locality; deprecated; canonical_instance }
 end
 
 let module_locality = Attributes.Notations.(locality >>= fun l -> return (make_module_locality l))
@@ -522,13 +523,17 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   in
   start_lemma_with_initialization ?hook ~poly ~scope ~kind evd ~udecl recguard thms snl
 
-let vernac_definition_hook ~local ~poly = let open Decls in function
+let vernac_definition_hook ~canonical_instance ~local ~poly = let open Decls in function
 | Coercion ->
   Some (ComCoercion.add_coercion_hook ~poly)
 | CanonicalStructure ->
   Some (DeclareDef.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure ?local dref)))
 | SubClass ->
   Some (ComCoercion.add_subclass_hook ~poly)
+| Definition when canonical_instance ->
+  Some (DeclareDef.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure ?local dref)))
+| Let when canonical_instance ->
+  Some (DeclareDef.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure dref)))
 | _ -> None
 
 let fresh_name_for_anonymous_theorem () =
@@ -551,7 +556,7 @@ let vernac_definition_name lid local =
 let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let open DefAttributes in
   let local = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook ~local:atts.locality ~poly:atts.polymorphic kind in
+  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic kind in
   let program_mode = atts.program in
   let poly = atts.polymorphic in
   let name = vernac_definition_name lid local in
@@ -560,7 +565,7 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
 let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality discharge in
-  let hook = vernac_definition_hook ~local:atts.locality ~poly:atts.polymorphic kind in
+  let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic kind in
   let program_mode = atts.program in
   let name = vernac_definition_name lid scope in
   let red_option = match red_option with
