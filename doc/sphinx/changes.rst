@@ -12,10 +12,85 @@ Version 8.11
 Summary of changes
 ~~~~~~~~~~~~~~~~~~
 
+The main changes brought by |Coq| version 8.11 are:
+
+- `Ltac2`__, a new tactic language for writing more robust larger scale
+  tactics, with built-in support for datatypes and the multi-goal tactic monad.
+- `Primitive floats`__ are integrated in terms and follow the binary64 format
+  of the IEEE 754 standard, as specified in the `Coq.Float.Floats` library.
+- `Cleanups`__ of the section mechanism, delayed proofs and further
+  restrictions of template polymorphism to fix soundness issues related to
+  universes.
+- New `unsafe flags`__ to disable locally guard, positivity and universe
+  checking. Reliance on these flags is always printed by
+  :g:`Print Assumptions`.
+- `Fixed bugs`__ of :g:`Export` and :g:`Import` that can have an impact
+  on user developments.
+- New interactive development method based on `vos` `interface files`__,
+  allowing to work on a file without recompiling the proof parts of their
+  dependencies.
+- New :g:`Arguments` annotation for `bidirectional type inference`__
+  configuration for reference (e.g. constants, inductive) applications.
+- Generalization of the :g:`under` and :g:`over` tactics__ of SSReflect to
+  arbitrary relations.
+- `Revision`__ of the :g:`Coq.Reals` library, its axiomatisation and
+  instances of the constructive and classical real numbers.
+
+__ 811Ltac2_
+__ 811PrimitiveFloats_
+__ 811Sections_
+__ 811UnsafeFlags_
+__ 811ExportBug_
+__ 811vos_
+__ 811BidirArguments_
+__ 811SSRUnderOver_
+__ 811Reals_
+
+The ``dev/doc/critical-bugs`` file documents the known critical bugs of |Coq|
+and affected releases. See the `Changes in 8.11+beta1`_ section for the
+detailed list of changes, including potentially breaking changes marked with
+**Changed**.
+
+Maxime Dénès, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
+Soegtrop, Théo Zimmermann worked on maintaining and improving the
+continuous integration system and package building infrastructure.
+
+Coq's documentation is available at https://coq.github.io/doc/V8.11+beta1/api (documentation of
+the ML API), https://coq.github.io/doc/V8.11+beta1/refman (reference
+manual), and https://coq.github.io/doc/V8.11+beta1/stdlib (documentation of
+the standard library).
+
+The OPAM repository for |Coq| packages has been maintained by
+Karl Palmskog, Matthieu Sozeau, Enrico Tassi with contributions
+from many users. A list of packages is available at
+https://coq.inria.fr/opam/www/.
+
+The ?? contributors to this version are
+
+Many power users helped to improve the design of the new features via
+the issue and pull request system, the |Coq| development mailing list,
+the coq-club@inria.fr mailing list or the `Discourse forum
+<https://coq.discourse.group/>`_. It would be impossible to mention
+exhaustively the names of everybody who to some extent influenced the
+development.
+
+Version 8.11 is the sixth release of |Coq| developed on a time-based
+development cycle. Its development spanned ?? months from the release of
+|Coq| 8.10. Pierre-Marie Pédrot is the release manager and maintainer of this
+release, assisted by Matthieu Sozeau. This release is the result of ~???
+commits and ~??? PRs merged, closing ???+ issues.
+
+| Paris, November 2019,
+| Matthieu Sozeau for the |Coq| development team
+|
+
+
 Changes in 8.11+beta1
 ~~~~~~~~~~~~~~~~~~~~~
 
 **Kernel**
+
+  .. _811PrimitiveFloats:
 
 - **Added:**
   A built-in support of floating-point arithmetic, allowing
@@ -36,6 +111,9 @@ Changes in 8.11+beta1
   inside universe :cmd:`Qed`\-terminated polymorphic definitions, similarly to what
   happens for their monomorphic counterparts,
   (`#10439 <https://github.com/coq/coq/pull/10439>`_, by Pierre-Marie Pédrot).
+
+  .. _811Sections:
+
 - **Fixed:**
   Section data is now part of the kernel. Solves a soundness issue
   in interactive mode where global monomorphic universe constraints would be
@@ -49,6 +127,8 @@ Changes in 8.11+beta1
   <https://github.com/coq/coq/pull/10811>`_, by Gaëtan Gilbert).
 
 **Specification language, type inference**
+
+  .. _811BidirArguments:
 
 - **Added:**
   Annotation in `Arguments` for bidirectionality hints: it is now possible
@@ -96,7 +176,6 @@ Changes in 8.11+beta1
   defined in this section. This makes the behaviour consistent with the
   documentation. (`#10441 <https://github.com/coq/coq/pull/10441>`_,
   by Pierre-Marie Pédrot)
-
 - **Added:**
   The :cmd:`Section` vernacular command now accepts the "universes" attribute. In
   addition to setting the section universe polymorphism, it also locally sets
@@ -147,7 +226,6 @@ Changes in 8.11+beta1
   The :cmd:`Notation` and :cmd:`Infix` commands now support the `deprecated`
   attribute
   (`#10180 <https://github.com/coq/coq/pull/10180>`_, by Maxime Dénès).
-
 - **Deprecated:**
   The former `compat` annotation for notations is
   deprecated, and its semantics changed. It is now made equivalent to using
@@ -205,6 +283,8 @@ Changes in 8.11+beta1
 
 **Tactic language**
 
+  .. _811Ltac2:
+
 - **Added:**
   Ltac2, a new version of the tactic language Ltac, that doesn't
   preserve backward compatibility, has been integrated in the main Coq
@@ -229,6 +309,8 @@ Changes in 8.11+beta1
   authored by Pierre-Marie Pédrot).
 
 **SSReflect**
+
+  .. _811SSRUnderOver:
 
 - **Added:**
   Generalize tactics :tacn:`under` and :tacn:`over` for any registered
@@ -281,11 +363,17 @@ Changes in 8.11+beta1
 - **Removed:**
   Deprecated ``Show Script`` command
   (`#10277 <https://github.com/coq/coq/pull/10277>`_, by Gaëtan Gilbert).
+
+  .. _811UnsafeFlags:
+
 - **Added:**
   Unsafe commands to enable/disable guard checking, positivity checking
   and universes checking (providing a local `-type-in-type`).
   See :ref:`controlling-typing-flags`
   (`#10291 <https://github.com/coq/coq/pull/10291>`_ by Simon Boulier).
+
+  .. _811ExportBug:
+
 - **Fixed:**
   Two bugs in :cmd:`Export`. This can have an impact on the behavior of the
   :cmd:`Import` command on libraries. `Import A` when `A` imports `B` which exports
@@ -314,6 +402,8 @@ Changes in 8.11+beta1
   by Maxime Dénès and Théo Zimmermann).
 
 **Tools**
+
+  .. _811vos:
 
 - **Added:**
   `coqc` now provides the ability to generate compiled interfaces.
@@ -351,6 +441,9 @@ Changes in 8.11+beta1
   Deprecated modules `Coq.ZArith.Zlogarithm` and `Coq.ZArith.Zsqrt_compat`
   (`#9881 <https://github.com/coq/coq/pull/9811>`_,
   by Vincent Laporte).
+
+  .. _811Reals:
+
 - **Added:**
   Module `Reals.ConstructiveCauchyReals` defines constructive real numbers
   by Cauchy sequences of rational numbers
