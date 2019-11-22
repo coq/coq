@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-v8.11-V2019-11-08-V01"
+# CACHEKEY: "bionic_coq-v8.11-V2019-12-08-V01"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -8,7 +8,7 @@ ENV DEBIAN_FRONTEND="noninteractive"
 
 RUN apt-get update -qq && apt-get install --no-install-recommends -y -qq \
         # Dependencies of the image, the test-suite and external projects
-        m4 automake autoconf time wget rsync git gcc-multilib build-essential unzip \
+        m4 automake autoconf time wget rsync git gcc-multilib build-essential unzip jq \
         # Dependencies of lablgtk (for CoqIDE)
         libgtksourceview-3.0-dev \
         # Dependencies of stdlib and sphinx doc

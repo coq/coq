@@ -18,7 +18,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
-  CACHEKEY: "bionic_coq-v8.11-V2019-11-08-V01"
+  CACHEKEY: "bionic_coq-v8.11-V2019-12-08-V01"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -632,7 +632,6 @@ library:ci-math-comp:
 
 library:ci-sf:
   extends: .ci-template
-  allow_failure: true # Waiting for integration of the fix for #10476
 
 library:ci-stdlib2:
   extends: .ci-template-flambda
