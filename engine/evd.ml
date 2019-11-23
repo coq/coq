@@ -584,6 +584,16 @@ let undefined_map d = d.undf_evars
 
 let drop_all_defined d = { d with defn_evars = EvMap.empty }
 
+let reset_non_goal_defined d =
+  let f evk info =
+    match snd info.evar_source with
+    (* These are the two evar kinds used for existing goals *)
+    (* see Proofview.mark_in_evm *)
+    | Evar_kinds.GoalEvar | Evar_kinds.VarInstance _ -> info
+    | _ -> { info with evar_body = Evar_empty } in
+  let defn_evars = EvMap.Smart.mapi f d.defn_evars in
+  { d with defn_evars }
+
 (* spiwack: not clear what folding over an evar_map, for now we shall
     simply fold over the inner evar_map. *)
 let fold f d a =

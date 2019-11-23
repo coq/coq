@@ -19,7 +19,7 @@ open Glob_term
 open Pp
 open Mod_subst
 open Pattern
-open Environ
+open EConstr
 
 let case_info_pattern_eq i1 i2 =
   i1.cip_style == i2.cip_style &&
@@ -151,11 +151,11 @@ let head_of_constr_reference sigma c = match EConstr.kind sigma c with
 let pattern_of_constr env sigma t =
   let rec pattern_of_constr env t =
   let open Context.Rel.Declaration in
-  match kind t with
+  match EConstr.kind sigma t with
     | Rel n  -> PRel n
     | Meta n -> PMeta (Some (Id.of_string ("META" ^ string_of_int n)))
     | Var id -> PVar id
-    | Sort s -> PSort (Sorts.family s)
+    | Sort s -> PSort (Sorts.family (EConstr.ESorts.kind sigma s))
     | Cast (c,_,_)      -> pattern_of_constr env c
     | LetIn (na,c,t,b) -> PLetIn (na.binder_name,
                                   pattern_of_constr env c,Some (pattern_of_constr env t),
@@ -168,7 +168,7 @@ let pattern_of_constr env sigma t =
                                   pattern_of_constr (push_rel (LocalAssum (na, c)) env) b)
     | App (f,a) ->
         (match
-          match kind f with
+          match EConstr.kind sigma f with
           | Evar (evk,args) ->
             (match snd (Evd.evar_source evk sigma) with
               Evar_kinds.MatchingVar (Evar_kinds.SecondOrderPatVar id) -> Some id
@@ -181,16 +181,15 @@ let pattern_of_constr env sigma t =
     | Ind (sp,u)    -> PRef (canonical_gr (GlobRef.IndRef sp))
     | Construct (sp,u) -> PRef (canonical_gr (GlobRef.ConstructRef sp))
     | Proj (p, c) ->
-      pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
-    | Evar (evk,ctxt as ev) ->
+      pattern_of_constr env (Retyping.expand_projection env sigma p c [])
+    | Evar (evk,ctxt) ->
       (match snd (Evd.evar_source evk sigma) with
       | Evar_kinds.MatchingVar (Evar_kinds.FirstOrderPatVar id) ->
         PMeta (Some id)
       | Evar_kinds.GoalEvar | Evar_kinds.VarInstance _ ->
         (* These are the two evar kinds used for existing goals *)
         (* see Proofview.mark_in_evm *)
-         if Evd.is_defined sigma evk then pattern_of_constr env (Evd.existential_value0 sigma ev)
-         else PEvar (evk,Array.map (pattern_of_constr env) ctxt)
+        PEvar (evk,Array.map (pattern_of_constr env) ctxt)
       | Evar_kinds.MatchingVar (Evar_kinds.SecondOrderPatVar ido) -> assert false
       | _ ->
          PMeta None)
@@ -219,6 +218,10 @@ let pattern_of_constr env sigma t =
     | Int i -> PInt i
     | Float f -> PFloat f in
   pattern_of_constr env t
+
+let pattern_of_constr_preserve_non_goal_evars env sigma t =
+  let sigma = Evd.reset_non_goal_defined sigma in
+  pattern_of_constr env sigma t
 
 (* To process patterns, we need a translation without typing at all. *)
 
@@ -265,9 +268,7 @@ let instantiate_pattern env sigma lvar c =
               ctx
           in
           let c = substl inst c in
-          (* FIXME: Stupid workaround to pattern_of_constr being evar sensitive *)
-          let c = Evarutil.nf_evar sigma c in
-          pattern_of_constr env sigma (EConstr.Unsafe.to_constr c)
+          pattern_of_constr env sigma c
         with Not_found (* List.index failed *) ->
           let vars =
             List.map_filter (function Name id -> Some id | _ -> None) vars in
@@ -291,7 +292,7 @@ let rec subst_pattern env sigma subst pat =
     if ref' == ref then pat else (match t with
         | None -> PRef ref'
         | Some t ->
-          pattern_of_constr env sigma t.Univ.univ_abstracted_value)
+          pattern_of_constr env sigma (EConstr.of_constr t.Univ.univ_abstracted_value))
   | PVar _
   | PEvar _
   | PRel _

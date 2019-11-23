@@ -224,6 +224,10 @@ val undefined_map : evar_map -> evar_info Evar.Map.t
 
 val drop_all_defined : evar_map -> evar_map
 
+val reset_non_goal_defined : evar_map -> evar_map
+(* Force all non-GoalEvar non-VarInstance evars to undefined *)
+(* May break typability of types of evars in evar_map, but ok for EConstr.kind *)
+
 val is_maybe_typeclass_hook : (evar_map -> constr -> bool) Hook.t
 
 (** {6 Instantiating partial terms} *)
