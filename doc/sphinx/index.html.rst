@@ -9,6 +9,7 @@ Contents
 
 .. toctree::
    :caption: Indexes
+   :maxdepth: 5
 
    genindex
    coq-cmdindex
@@ -31,9 +32,7 @@ Contents
 
    language/gallina-specification-language
    language/gallina-extensions
-   language/coq-library
-   language/cic
-   language/module-system
+   language/sub
 
 .. toctree::
    :caption: The proof engine
