@@ -37,6 +37,7 @@ val head_pattern_bound : constr_pattern -> GlobRef.t
    returns its label; raises an anomaly otherwise *)
 
 val head_of_constr_reference : Evd.evar_map -> constr -> GlobRef.t
+[@@ocaml.deprecated "use [EConstr.destRef]"]
 
 (** [pattern_of_constr c] translates a term [c] with metavariables into
    a pattern; currently, no destructor (Cases, Fix, Cofix) and no

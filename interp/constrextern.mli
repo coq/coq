@@ -92,5 +92,3 @@ val toggle_scope_printing :
 
 val toggle_notation_printing :
   ?scope:Notation_term.scope_name -> notation:Constrexpr.notation -> activate:bool -> unit
-
-

@@ -674,17 +674,15 @@ let match_coercion_app c = match DAst.get c with
     end
   | _ -> None
 
-let rec remove_coercions inctx c =
-  match match_coercion_app c with
+let remove_one_coercion inctx c =
+  try match match_coercion_app c with
   | Some (loc,r,pars,args) when not (!Flags.raw_print || !print_coercions) ->
       let nargs = List.length args in
-      (try match Classops.hide_coercion r with
+      (match Classops.hide_coercion r with
           | Some n when (n - pars) < nargs && (inctx || (n - pars)+1 < nargs) ->
-              (* We skip a coercion *)
+              (* We skip the coercion *)
               let l = List.skipn (n - pars) args in
               let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
-              (* Recursively remove the head coercions *)
-              let a' = remove_coercions true a in
               (* Don't flatten App's in case of funclass so that
                  (atomic) notations on [a] work; should be compatible
                  since printer does not care whether App's are
@@ -693,10 +691,13 @@ let rec remove_coercions inctx c =
                  been confused with ordinary application or would have need
                  a surrounding context and the coercion to funclass would
                  have been made explicit to match *)
-              if List.is_empty l then a' else DAst.make ?loc @@ GApp (a',l)
-          | _ -> c
-      with Not_found -> c)
-  | _ -> c
+              let a' = if List.is_empty l then a else DAst.make ?loc @@ GApp (a,l) in
+              let inctx = inctx || not (List.is_empty l) in
+              Some (n-pars+1, inctx, a')
+          | _ -> None)
+  | _ -> None
+  with Not_found ->
+    None
 
 let rec flatten_application c = match DAst.get c with
   | GApp (f, l) ->
@@ -721,27 +722,11 @@ let extern_possible_prim_token (custom,scopes) r =
    | None -> raise No_match
    | Some key -> insert_coercion coercion (insert_delimiters (CAst.make ?loc:(loc_of_glob_constr r) @@ CPrim n) key)
 
-let filter_fully_applied r l =
-  let nargs = match DAst.get r with
-  | GApp (f,args) -> List.length args
-  | _ -> assert false in
-  List.filter (fun (keyrule,pat,n as _rule) -> n = Some nargs) l
-
-let extern_optimal extern extern_fully_applied r r' =
-  if r==r' then
-    (* No coercion: we look for a notation for r or a partial application of it *)
-    extern r
-  else
-    (* A coercion is removed: we prefer in order:
-       - a notation w/o a delimiter for the expression w/o coercions (or a partial application of it), if any
-       - a notation for the fully-applied expression with coercions, if any
-       - a notation with a delimiter for the expression w/o coercions (or a partial applied of it), if any *)
-  try
-    let c' = extern r' in
-    match c' with
-    | { CAst.v = CDelimiters _} -> (try extern_fully_applied r with No_match -> c')
-    | _ -> c'
-  with No_match -> extern_fully_applied r
+let filter_enough_applied nargs l =
+  match nargs with
+  | None -> l
+  | Some nargs ->
+  List.filter (fun (keyrule,pat,n as _rule) -> match n with Some n -> n > nargs | None -> false) l
 
 (* Helper function for safe and optimal printing of primitive tokens  *)
 (* such as those for Int63                                            *)
@@ -807,22 +792,17 @@ let extern_ref vars ref us =
 let extern_var ?loc id = CRef (qualid_of_ident ?loc id,None)
 
 let rec extern inctx scopes vars r =
-  let r' = remove_coercions inctx r in
-  try
-    if !Flags.raw_print || !print_no_symbol then raise No_match;
-    let extern_fun = extern_possible_prim_token scopes in
-    extern_optimal extern_fun extern_fun r r'
+  match remove_one_coercion inctx (flatten_application r) with
+  | Some (nargs,inctx,r') ->
+    (try extern_notations scopes vars (Some nargs) r
+     with No_match -> extern inctx scopes vars r')
+  | None ->
+
+  try extern_notations scopes vars None r
   with No_match ->
-  try
-    let r'' = flatten_application r' in
-    if !Flags.raw_print || !print_no_symbol then raise No_match;
-    extern_optimal
-      (fun r -> extern_notation scopes vars r (uninterp_notations r))
-      (fun r -> extern_notation scopes vars r (filter_fully_applied r (uninterp_notations r)))
-      r r''
-  with No_match ->
-  let loc = r'.CAst.loc in
-  match DAst.get r' with
+
+  let loc = r.CAst.loc in
+  match DAst.get r with
   | GRef (ref,us) when entry_has_global (fst scopes) -> CAst.make ?loc (extern_ref vars ref us)
 
   | GVar id when entry_has_ident (fst scopes) -> CAst.make ?loc (extern_var ?loc id)
@@ -1110,7 +1090,15 @@ and extern_eqn inctx scopes vars {CAst.loc;v=(ids,pll,c)} =
   let pll = List.map (List.map (extern_cases_pattern_in_scope scopes vars)) pll in
   make ?loc (pll,extern inctx scopes vars c)
 
-and extern_notation (custom,scopes as allscopes) vars t = function
+and extern_notations scopes vars nargs t =
+  if !Flags.raw_print || !print_no_symbol then raise No_match;
+  try extern_possible_prim_token scopes t
+  with No_match ->
+  let t = flatten_application t in
+  extern_notation scopes vars t (filter_enough_applied nargs (uninterp_notations t))
+
+and extern_notation (custom,scopes as allscopes) vars t rules =
+  match rules with
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
       let loc = Glob_ops.loc_of_glob_constr t in
