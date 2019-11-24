@@ -39,16 +39,10 @@ let relevance_of_projection env p =
   let mib = lookup_mind mind env in
   Declareops.relevance_of_projection_repr mib (Projection.repr p)
 
-let rec relevance_of_rel_extra env extra n =
-  match extra with
-  | [] -> relevance_of_rel env n
-  | r :: _ when Int.equal n 1 -> r
-  | _ :: extra -> relevance_of_rel_extra env extra (n-1)
-
-let relevance_of_flex env extra lft = function
+let relevance_of_flex env = function
   | ConstKey (c,_) -> relevance_of_constant env c
   | VarKey x -> relevance_of_var env x
-  | RelKey p -> relevance_of_rel_extra env extra (Esubst.reloc_rel p lft)
+  | RelKey p -> relevance_of_rel env p
 
 let rec relevance_of_fterm env extra lft f =
   let open CClosure in
@@ -57,9 +51,9 @@ let rec relevance_of_fterm env extra lft f =
   | KnownI -> Sorts.Irrelevant
   | Unknown ->
     let r = match fterm_of f with
-      | FRel n -> relevance_of_rel_extra env extra (Esubst.reloc_rel n lft)
+      | FRel n -> Range.get extra (Esubst.reloc_rel n lft - 1)
       | FAtom c -> relevance_of_term_extra env extra lft (Esubst.subs_id 0) c
-      | FFlex key -> relevance_of_flex env extra lft key
+      | FFlex key -> relevance_of_flex env key
       | FInt _ | FFloat _ -> Sorts.Relevant
       | FInd _ | FProd _ -> Sorts.Relevant (* types are always relevant *)
       | FConstruct (c,_) -> relevance_of_constructor env c
@@ -69,12 +63,12 @@ let rec relevance_of_fterm env extra lft f =
       | FCoFix ((i,(lna,_,_)), _) -> (lna.(i)).binder_relevance
       | FCaseT (ci, _, _, _, _) -> ci.ci_relevance
       | FLambda (len, tys, bdy, e) ->
-        let extra = List.rev_append (List.map (fun (x,_) -> binder_relevance x) tys) extra in
+        let extra = List.fold_left (fun accu (x, _) -> Range.cons (binder_relevance x) accu) extra tys in
         let lft = Esubst.el_liftn len lft in
         let e = Esubst.subs_liftn len e in
         relevance_of_term_extra env extra lft e bdy
       | FLetIn (x, _, _, bdy, e) ->
-        relevance_of_term_extra env (x.binder_relevance :: extra)
+        relevance_of_term_extra env (Range.cons x.binder_relevance extra)
           (Esubst.el_lift lft) (Esubst.subs_lift e) bdy
       | FLIFT (k, f) -> relevance_of_fterm env extra (Esubst.el_shft k lft) f
       | FCLOS (c, e) -> relevance_of_term_extra env extra lft e c
@@ -88,16 +82,18 @@ let rec relevance_of_fterm env extra lft f =
 and relevance_of_term_extra env extra lft subs c =
   match kind c with
   | Rel n ->
-    (match Esubst.expand_rel n subs with
+    begin match Esubst.expand_rel n subs with
      | Inl (k, f) -> relevance_of_fterm env extra (Esubst.el_liftn k lft) f
-     | Inr (n, _) -> relevance_of_rel_extra env extra (Esubst.reloc_rel n lft))
+     | Inr (n, None) -> Range.get extra (Esubst.reloc_rel n lft - 1)
+     | Inr (_, Some p) -> relevance_of_rel env p
+    end
   | Var x -> relevance_of_var env x
   | Sort _ | Ind _ | Prod _ -> Sorts.Relevant (* types are always relevant *)
   | Cast (c, _, _) -> relevance_of_term_extra env extra lft subs c
   | Lambda ({binder_relevance=r;_}, _, bdy) ->
-    relevance_of_term_extra env (r::extra) (Esubst.el_lift lft) (Esubst.subs_lift subs) bdy
+    relevance_of_term_extra env (Range.cons r extra) (Esubst.el_lift lft) (Esubst.subs_lift subs) bdy
   | LetIn ({binder_relevance=r;_}, _, _, bdy) ->
-    relevance_of_term_extra env (r::extra) (Esubst.el_lift lft) (Esubst.subs_lift subs) bdy
+    relevance_of_term_extra env (Range.cons r extra) (Esubst.el_lift lft) (Esubst.subs_lift subs) bdy
   | App (c, _) -> relevance_of_term_extra env extra lft subs c
   | Const (c,_) -> relevance_of_constant env c
   | Construct (c,_) -> relevance_of_constructor env c
@@ -115,5 +111,5 @@ let relevance_of_fterm env extra lft c =
 
 let relevance_of_term env c =
   if Environ.sprop_allowed env
-  then relevance_of_term_extra env [] Esubst.el_id (Esubst.subs_id 0) c
+  then relevance_of_term_extra env Range.empty Esubst.el_id (Esubst.subs_id 0) c
   else Sorts.Relevant
