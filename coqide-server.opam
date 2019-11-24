@@ -21,8 +21,8 @@ license: "LGPL-2.1"
 version: "dev"
 
 depends: [
-  "dune"      { build & >= "1.10.0" }
-  "coq"       {          = version }
+  "dune"      { >= "2.0.0" }
+  "coq"       {  = version }
 ]
 
 build: [ [ "dune" "build" "-p" name "-j" jobs ] ]

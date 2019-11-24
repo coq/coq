@@ -1132,10 +1132,21 @@ function make_findlib {
 function make_dune {
   make_ocaml
 
-  if build_prep https://github.com/ocaml/dune/archive/ 1.10.0 tar.gz 1 dune-1.10.0 ; then
+  if build_prep https://github.com/ocaml/dune/archive/ 2.0.0 tar.gz 1 dune-2.0.0 ; then
 
     log2 make release
     log2 make install
+
+    # Dune support libs, we don't install glob and action-plugin as
+    # they are not needed by Coq
+    logn dune-private-build dune build -p dune-private-libs @install
+    logn dune-private-install dune install dune-private-libs
+
+    logn dune-configurator-build dune build -p dune-configurator @install
+    logn dune-configurator-install dune install dune-configurator
+
+    logn dune-build-info dune build -p dune-build-info @install
+    logn dune-build-info dune install dune-build-info
 
     build_post
   fi
@@ -1191,7 +1202,8 @@ function make_ocaml_cairo2 {
 
     log2 dune build cairo2.install
     log2 dune install cairo2
-    log2 dune clean
+    # See https://github.com/ocaml/dune/issues/2921
+    # log2 dune clean
     build_post
 
   fi
@@ -1216,7 +1228,8 @@ function make_lablgtk {
     log2 dune build -p lablgtk3-sourceview3
     log2 dune install lablgtk3-sourceview3
 
-    log2 dune clean
+    # See https://github.com/ocaml/dune/issues/2921
+    # log2 dune clean
     build_post
   fi
 }
