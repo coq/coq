@@ -666,6 +666,22 @@ Section Elts.
       | y::tl => if (eq_dec x y) then remove x tl else y::(remove x tl)
     end.
 
+  Lemma remove_cons : forall x l, remove x (x :: l) = remove x l.
+  Proof.
+    intros x l; simpl; destruct (eq_dec x x); [ reflexivity | now exfalso ].
+  Qed.
+
+  Lemma remove_app : forall x l1 l2,
+    remove x (l1 ++ l2) = remove x l1 ++ remove x l2.
+  Proof.
+    induction l1; intros l2; simpl.
+    - reflexivity.
+    - destruct (eq_dec x a).
+      + apply IHl1.
+      + rewrite <- app_comm_cons; f_equal.
+        apply IHl1.
+  Qed.
+
   Theorem remove_In : forall (l : list A) (x : A), ~ In x (remove x l).
   Proof.
     induction l as [|x l]; auto.
@@ -673,6 +689,70 @@ Section Elts.
     apply IHl.
     unfold not; intro HF; simpl in HF; destruct HF; auto.
     apply (IHl y); assumption.
+  Qed.
+
+  Lemma notin_remove: forall l x, ~ In x l -> remove x l = l.
+  Proof.
+    intros l x; induction l as [|y l]; simpl; intros Hnin.
+    - reflexivity.
+    - destruct (eq_dec x y); subst; intuition.
+      f_equal; assumption.
+  Qed.
+
+  Lemma in_remove: forall l x y, In x (remove y l) -> In x l /\ x <> y.
+  Proof.
+    induction l as [|z l]; intros x y Hin.
+    - inversion Hin.
+    - simpl in Hin.
+      destruct (eq_dec y z) as [Heq|Hneq]; subst; split.
+      + right; now apply IHl with z.
+      + intros Heq; revert Hin; subst; apply remove_In.
+      + inversion Hin; subst; [left; reflexivity|right].
+        now apply IHl with y.
+      + destruct Hin as [Hin|Hin]; subst.
+        * now intros Heq; apply Hneq.
+        * intros Heq; revert Hin; subst; apply remove_In.
+  Qed.
+
+  Lemma in_in_remove : forall l x y, x <> y -> In x l -> In x (remove y l).
+  Proof.
+    induction l as [|z l]; simpl; intros x y Hneq Hin.
+    - apply Hin.
+    - destruct (eq_dec y z); subst.
+      + destruct Hin.
+        * exfalso; now apply Hneq.
+        * now apply IHl.
+      + simpl; destruct Hin; [now left|right].
+        now apply IHl.
+  Qed.
+
+  Lemma remove_remove_eq : forall l x, remove x (remove x l) = remove x l.
+  Proof. intros l x; now rewrite (notin_remove _ _ (remove_In l x)). Qed.
+
+  Lemma remove_remove_neq : forall l x y, x <> y ->
+    remove x (remove y l) = remove y (remove x l).
+  Proof.
+    induction l as [| z l]; simpl; intros x y Hneq.
+    - reflexivity.
+    - destruct (eq_dec y z); simpl; destruct (eq_dec x z); subst.
+      + now apply IHl.
+      + rewrite remove_cons; now apply IHl.
+      + now apply IHl.
+      + simpl; destruct (eq_dec y z).
+        * now exfalso.
+        * now rewrite IHl.
+    Qed.
+
+  Lemma remove_length : forall l x, In x l -> length (remove x l) < length l.
+  Proof.
+    induction l as [|y l]; simpl; intros x Hin.
+    - inversion Hin.
+    - destruct (eq_dec x y) as [Heq|Hneq]; subst; simpl.
+      + destruct (in_dec eq_dec y l); intuition.
+        rewrite notin_remove; intuition.
+      + destruct Hin as [Hin|Hin].
+        * exfalso; now apply Hneq.
+        * apply IHl in Hin; apply lt_n_S; assumption.
   Qed.
 
 
