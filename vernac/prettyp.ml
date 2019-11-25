@@ -259,6 +259,13 @@ let implicit_kind_of_status = function
   | None -> Anonymous, NotImplicit
   | Some (id,_,(maximal,_)) -> Name id, if maximal then MaximallyImplicit else Implicit
 
+let dummy = {
+  Vernacexpr.implicit_status = NotImplicit;
+  name = Anonymous;
+  recarg_like = false;
+  notation_scope = None;
+}
+
 let is_dummy {Vernacexpr.implicit_status; name; recarg_like; notation_scope} =
   name = Anonymous && not recarg_like && notation_scope = None && implicit_status = NotImplicit
 
@@ -287,6 +294,20 @@ let rec main_implicits i renames recargs scopes impls =
     then [] (* we may have a trail of dummies due to eg "clear scopes" *)
     else status :: rest
 
+let rec insert_fake_args volatile bidi impls =
+  let open Vernacexpr in
+  match volatile, bidi with
+  | Some 0, _ -> VolatileArg :: insert_fake_args None bidi impls
+  | _, Some 0 -> BidiArg :: insert_fake_args volatile None impls
+  | None, None -> List.map (fun a -> RealArg a) impls
+  | _, _ ->
+    let hd, tl = match impls with
+      | impl :: impls -> impl, impls
+      | [] -> dummy, []
+    in
+    let f = Option.map pred in
+    RealArg hd :: insert_fake_args (f volatile) (f bidi) tl
+
 let print_arguments ref =
   let qid = Nametab.shortest_qualid_of_global Id.Set.empty ref in
   let flags, recargs, nargs_for_red =
@@ -312,12 +333,13 @@ let print_arguments ref =
   let impls = main_implicits 0 renames recargs scopes impls in
   let moreimpls = List.map (fun (_,i) -> List.map implicit_kind_of_status i) moreimpls in
   let bidi = Pretyping.get_bidirectionality_hint ref in
-  if impls = [] && moreimpls = [] && nargs_for_red = None && bidi = None && flags = [] then []
+  let impls = insert_fake_args nargs_for_red bidi impls in
+  if impls = [] && moreimpls = [] && flags = [] then []
   else
     let open Constrexpr in
     let open Vernacexpr in
     [Ppvernac.pr_vernac_expr
-       (VernacArguments (CAst.make (AN qid), impls, moreimpls, nargs_for_red, bidi, flags))]
+       (VernacArguments (CAst.make (AN qid), impls, moreimpls, flags))]
 
 let print_name_infos ref =
   let type_info_for_implicit =
