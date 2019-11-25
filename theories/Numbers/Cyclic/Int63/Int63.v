@@ -1318,9 +1318,8 @@ Lemma iter_sqrt_correct n rec i j: 0 < [|i|] -> 0 < [|j|] ->
   [|iter_sqrt n rec i j|] ^ 2 <= [|i|] < ([|iter_sqrt n rec i j|] + 1) ^ 2.
 Proof.
  revert rec i j; elim n; unfold iter_sqrt; fold iter_sqrt; clear n.
- intros rec i j Hi Hj Hij H31 Hrec; apply sqrt_step_correct; auto with zarith.
- intros; apply Hrec; auto with zarith.
- rewrite Zpower_0_r; auto with zarith.
+ intros rec i j Hi Hj Hij H31 Hrec; apply sqrt_step_correct. 1-4: lia.
+ intros; apply Hrec; only 2: rewrite Zpower_0_r; auto with zarith.
  intros n Hrec rec i j Hi Hj Hij H31 HHrec.
  apply sqrt_step_correct; auto.
  intros j1 Hj1  Hjp1; apply Hrec; auto with zarith.
@@ -1518,9 +1517,8 @@ Lemma iter2_sqrt_correct n rec ih il j:
       < ([|iter2_sqrt n rec ih il j|] + 1) ^ 2.
 Proof.
  revert rec ih il j; elim n; unfold iter2_sqrt; fold iter2_sqrt; clear n.
- intros rec ih il j Hi Hj Hij Hrec; apply sqrt2_step_correct; auto with zarith.
- intros; apply Hrec; auto with zarith.
- rewrite Zpower_0_r; auto with zarith.
+ intros rec ih il j Hi Hj Hij Hrec; apply sqrt2_step_correct. 1-3: lia.
+ intros; apply Hrec; only 2: rewrite Zpower_0_r; auto with zarith.
  intros n Hrec rec ih il j Hi Hj Hij HHrec.
  apply sqrt2_step_correct; auto.
  intros j1 Hj1  Hjp1; apply Hrec; auto with zarith.
