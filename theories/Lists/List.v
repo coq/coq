@@ -1899,6 +1899,27 @@ Section SetIncl.
     apply incl_app; [ apply incl_appl | apply incl_appr]; assumption.
   Qed.
 
+  Lemma incl_app_inv : forall l1 l2 m : list A,
+    incl (l1 ++ l2) m -> incl l1 m /\ incl l2 m.
+  Proof.
+    induction l1; intros l2 m Hin; split; auto.
+    - apply incl_nil_l.
+    - intros b Hb; inversion_clear Hb; subst; apply Hin.
+      + now constructor.
+      + simpl; apply in_cons.
+        apply incl_appl with l1; [ apply incl_refl | assumption ].
+    - apply IHl1.
+      now apply incl_cons_inv in Hin.
+  Qed.
+
+  Lemma remove_incl (eq_dec : forall x y : A, {x = y} + {x <> y}) : forall l1 l2 x,
+    incl l1 l2 -> incl (remove eq_dec x l1) (remove eq_dec x l2).
+  Proof.
+    intros l1 l2 x Hincl y Hin.
+    apply in_remove in Hin; destruct Hin as [Hin Hneq].
+    apply in_in_remove; intuition.
+  Qed.
+
 End SetIncl.
 
 Hint Resolve incl_refl incl_tl incl_tran incl_appl incl_appr incl_cons
