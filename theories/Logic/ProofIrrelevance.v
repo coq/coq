@@ -14,6 +14,8 @@ Require Import ProofIrrelevanceFacts.
 
 Axiom proof_irrelevance : forall (P:Prop) (p1 p2:P), p1 = p2.
 
+Register proof_irrelevance as core.proof_irrelevance.
+
 Module PI. Definition proof_irrelevance := proof_irrelevance. End PI.
 
 Module ProofIrrelevanceTheory := ProofIrrelevanceTheory(PI).
