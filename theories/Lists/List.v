@@ -2306,6 +2306,16 @@ Section ReDun.
     + now constructor.
   Qed.
 
+  Lemma NoDup_rev l : NoDup l -> NoDup (rev l).
+  Proof.
+    induction l; simpl; intros Hnd; [ constructor | ].
+    inversion_clear Hnd as [ | ? ? Hnin Hndl ].
+    assert (Add a (rev l) (rev l ++ a :: nil)) as Hadd
+      by (rewrite <- (app_nil_r (rev l)) at 1; apply Add_app).
+    apply NoDup_Add in Hadd; apply Hadd; intuition.
+    now apply Hnin, in_rev.
+  Qed.
+
   (** Effective computation of a list without duplicates *)
 
   Hypothesis decA: forall x y : A, {x = y} + {x <> y}.
@@ -2332,6 +2342,11 @@ Section ReDun.
     - destruct (in_dec decA a l'); simpl; rewrite Hrec.
       * intuition; now subst.
       * reflexivity.
+  Qed.
+
+  Lemma nodup_incl l1 l2 : incl l1 (nodup l2) <-> incl l1 l2.
+  Proof.
+    split; intros Hincl a Ha; apply nodup_In; intuition.
   Qed.
 
   Lemma NoDup_nodup l: NoDup (nodup l).
