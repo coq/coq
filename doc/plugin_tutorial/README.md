@@ -3,13 +3,21 @@ How to write plugins in Coq
   # Working environment
 
   In addition to installing OCaml and Coq, it can help to install several tools for development.
-  
-  ## Merlin
+
+  ## Tuareg and Merlin
 
   These instructions use [OPAM](http://opam.ocaml.org/doc/Install.html)
 
 ```shell
 opam install merlin               # prints instructions for vim and emacs
+opam install tuareg               # syntax highlighting for OCaml
+opam user-setup install           # automatically configures editors for merlin
+```
+
+  Adding this line to your .emacs helps Tuareg recognize the .mlg extension:
+
+```shell
+(add-to-list 'auto-mode-alist '("\\.mlg$"      . tuareg-mode) t)
 ```
 
   ## This tutorial
@@ -23,7 +31,7 @@ make                        # build
   
   
   # tuto0 : basics of project organization
-  package a ml4 file in a plugin, organize a `Makefile`, `_CoqProject`
+  package an mlg file in a plugin, organize a `Makefile`, `_CoqProject`
   - Example of syntax to add a new toplevel command
   - Example of function call to print a simple message
   - Example of function call to print a simple warning
