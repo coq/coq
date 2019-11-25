@@ -897,7 +897,7 @@ endif
 
 $(VDFILE).d: $(D_DEPEND_BEFORE_SRC) $(VFILES) $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
 	$(SHOW)'COQDEP    VFILES'
-	$(HIDE)$(COQDEPBOOT) -boot $(DYNDEP) -Q user-contrib "" $(USERCONTRIBINCLUDES) $(VFILES) $(TOTARGET)
+	$(HIDE)$(COQDEPBOOT) -vos -boot $(DYNDEP) -Q user-contrib "" $(USERCONTRIBINCLUDES) $(VFILES) $(TOTARGET)
 
 ###########################################################################
 
