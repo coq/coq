@@ -1872,7 +1872,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         (* We add the recursive functions to the environment *)
         let env_rec = List.fold_left_i (fun i en name ->
            let (_,bli,tyi,_) = idl_temp.(i) in
-           let fix_args = (List.map (fun (na, bk, _, _) -> build_impls bk na) bli) in
+           let bli = List.filter (fun (_, _, t, _) -> t = None) bli in
+           let fix_args = List.map (fun (na, bk, t, _) -> build_impls bk na) bli in
            push_name_env ntnvars (impls_type_list ~args:fix_args tyi)
            en (CAst.make @@ Name name)) 0 env lf in
         let idl = Array.map2 (fun (_,_,_,_,bd) (n,bl,ty,before_impls) ->
@@ -1903,6 +1904,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
             (bl,intern_type env' ty,bl_impls)) dl in
         let env_rec = List.fold_left_i (fun i en name ->
           let (bli,tyi,_) = idl_tmp.(i) in
+          let bli = List.filter (fun (_, _, t, _) -> t = None) bli in
           let cofix_args =  List.map (fun (na, bk, _, _) -> build_impls bk na) bli in
           push_name_env ntnvars (impls_type_list ~args:cofix_args tyi)
             en (CAst.make @@ Name name)) 0 env lf in
