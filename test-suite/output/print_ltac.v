@@ -42,6 +42,29 @@ Ltac withstrategy l x :=
     )))))))))))))))))).
 Print Ltac withstrategy.
 
+Ltac setstrategy l x :=
+  let idx := smart_global:(id) in
+  let tl := strategy_level:(transparent) in
+  strategy 1 [id id];
+  strategy l [id id];
+  strategy tl [id id];
+  strategy 0 [id id];
+  strategy transparent [id id];
+  strategy opaque [id id];
+  strategy expand [id id];
+  strategy 0 [idx];
+  strategy 0 [id x];
+  strategy 0 [x id];
+  strategy 0 [idn];
+  strategy 0 [idn x];
+  strategy 0 [idn id];
+  strategy 0 [idn id x];
+  strategy 0 [idan];
+  strategy 0 [idan x];
+  strategy 0 [idan id];
+  strategy 0 [idan id x].
+Print Ltac setstrategy.
+
 Module Type Empty. End Empty.
 Module E. End E.
 Module F (E : Empty).
@@ -76,7 +99,31 @@ Module F (E : Empty).
     idtac
       )))))))))))))))))).
   Print Ltac withstrategy.
+
+  Ltac setstrategy l x :=
+    let idx := smart_global:(id) in
+    let tl := strategy_level:(transparent) in
+    strategy 1 [id id];
+    strategy l [id id];
+    strategy tl [id id];
+    strategy 0 [id id];
+    strategy transparent [id id];
+    strategy opaque [id id];
+    strategy expand [id id];
+    strategy 0 [idx];
+    strategy 0 [id x];
+    strategy 0 [x id];
+    strategy 0 [idn];
+    strategy 0 [idn x];
+    strategy 0 [idn id];
+    strategy 0 [idn id x];
+    strategy 0 [idan];
+    strategy 0 [idan x];
+    strategy 0 [idan id];
+    strategy 0 [idan id x].
+  Print Ltac setstrategy.
 End F.
 
 Module FE := F E.
 Print Ltac FE.withstrategy.
+Print Ltac FE.setstrategy.

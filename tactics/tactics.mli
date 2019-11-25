@@ -437,6 +437,8 @@ val with_set_strategy :
   (Conv_oracle.level * Names.GlobRef.t list) list ->
   'a Proofview.tactic -> 'a Proofview.tactic
 
+val set_strategy : (Conv_oracle.level * Names.GlobRef.t list) list -> unit Proofview.tactic
+
 (** {6 Simple form of basic tactics. } *)
 
 module Simple : sig

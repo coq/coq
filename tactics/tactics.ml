@@ -5177,6 +5177,47 @@ let with_set_strategy lvl_ql k =
              (Conv_oracle.set_strategy (Environ.oracle env) k lvl)) env orig_kl in
        Proofview.Unsafe.tclSETENV env)
 
+let set_strategy lvl_ql =
+  let glob_key r =
+    match r with
+    | GlobRef.ConstRef sp -> ConstKey sp
+    | GlobRef.VarRef id -> VarKey id
+    | _ -> user_err Pp.(str
+                          "cannot set an inductive type or a constructor as transparent") in
+  let eval_glob_ref_of_key r =
+    match r with
+    | ConstKey sp -> EvalConstRef sp
+    | VarKey id -> EvalVarRef id
+    | _ -> user_err Pp.(str
+                          "cannot set an inductive type or a constructor as transparent") in
+  let local = true in
+  let kl = List.concat (List.map (fun (lvl, ql) -> List.map (fun q -> (lvl, glob_key q)) ql) lvl_ql) in
+  Proofview.tclENV >>= fun env ->
+  (* Because the global env might be desynchronized from the
+     proof-local env, we need to update the global env.  To have it
+     play well with coqchk, we need to also call Redexpr.set_strategy
+     to add leafs to libstack *)
+  let orig_kl_global = List.map (fun (_lvl, k) ->
+      (Conv_oracle.get_strategy (Environ.oracle (Global.env ())) k, k))
+      kl in
+  let env = List.fold_left (fun env (lvl, k) ->
+      Environ.set_oracle env
+        (Conv_oracle.set_strategy (Environ.oracle env) k lvl)) env kl in
+  Proofview.Unsafe.tclSETENV env <*>
+  (* we add a backtracking point so that backtracking across
+     [set_strategy] will revert the effect of it; N.B. this does not
+     play well with tclONCE *)
+  Proofview.tclOR
+    (Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
+         List.iter (fun (lvl, k) -> Global.set_strategy k lvl;
+                     Redexpr.set_strategy local [(lvl, [eval_glob_ref_of_key k])])
+           kl)))
+    (fun (e, info) ->
+       Proofview.tclLIFT (Proofview.NonLogical.make (fun () ->
+           List.iter (fun (lvl, k) -> Global.set_strategy k lvl;
+                       Redexpr.set_strategy local [(lvl, [eval_glob_ref_of_key k])]) orig_kl_global)) <*>
+       Proofview.tclZERO ~info e)
+
 module Simple = struct
   (** Simplified version of some of the above tactics *)
 

@@ -138,4 +138,10 @@ GRAMMAR EXTEND Gram
       | n=integer -> { Conv_oracle.Level n }
       | IDENT "transparent" -> { Conv_oracle.transparent } ] ]
   ;
+  strategy_level:
+    [ [ IDENT "expand" -> { Conv_oracle.Expand }
+      | IDENT "opaque" -> { Conv_oracle.Opaque }
+      | n=integer -> { Conv_oracle.Level n }
+      | IDENT "transparent" -> { Conv_oracle.transparent } ] ]
+  ;
 END

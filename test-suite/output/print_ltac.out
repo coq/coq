@@ -121,6 +121,17 @@ Ltac withstrategy l x :=
   ]
   idtac
 File "./output/print_ltac.v", line 52, characters 29-34:
+Ltac setstrategy l x :=
+  let idx := smart_global:(id) in
+  let tl := strategy_level:(transparent) in
+  strategy 1 [ id id ]; strategy l [ id id ]; strategy tl [ id id ]; strategy
+   transparent [ id id ]; strategy transparent [ id id ]; strategy opaque [
+   id id ]; strategy expand [ id id ]; strategy transparent [ idx ]; strategy
+   transparent [ id x ]; strategy transparent [ x id ]; strategy transparent
+   [ id ]; strategy transparent [ id x ]; strategy transparent [ id id ];
+   strategy transparent [ id id x ]; strategy transparent [ id ]; strategy
+   transparent [ id x ]; strategy transparent [ id id ]; strategy transparent
+   [ id id x ]
 The command has indeed failed with message:
 idnat is bound to a notation that does not denote a reference.
 Ltac withstrategy l x :=
@@ -234,6 +245,17 @@ Ltac withstrategy l x :=
   x
   ]
   idtac
+Ltac setstrategy l x :=
+  let idx := smart_global:(id) in
+  let tl := strategy_level:(transparent) in
+  strategy 1 [ id id ]; strategy l [ id id ]; strategy tl [ id id ]; strategy
+   transparent [ id id ]; strategy transparent [ id id ]; strategy opaque [
+   id id ]; strategy expand [ id id ]; strategy transparent [ idx ]; strategy
+   transparent [ id x ]; strategy transparent [ x id ]; strategy transparent
+   [ id ]; strategy transparent [ id x ]; strategy transparent [ id id ];
+   strategy transparent [ id id x ]; strategy transparent [ id ]; strategy
+   transparent [ id x ]; strategy transparent [ id id ]; strategy transparent
+   [ id id x ]
 Ltac FE.withstrategy l x :=
   let idx := smart_global:(FE.id) in
   let tl := strategy_level:(transparent) in
@@ -345,3 +367,15 @@ Ltac FE.withstrategy l x :=
   x
   ]
   idtac
+Ltac FE.setstrategy l x :=
+  let idx := smart_global:(FE.id) in
+  let tl := strategy_level:(transparent) in
+  strategy 1 [ FE.id FE.id ]; strategy l [ FE.id FE.id ]; strategy tl [ FE.id
+   FE.id ]; strategy transparent [ FE.id FE.id ]; strategy transparent [
+   FE.id FE.id ]; strategy opaque [ FE.id FE.id ]; strategy expand [ FE.id
+   FE.id ]; strategy transparent [ idx ]; strategy transparent [ FE.id x ];
+   strategy transparent [ x FE.id ]; strategy transparent [ FE.id ]; strategy
+   transparent [ FE.id x ]; strategy transparent [ FE.id FE.id ]; strategy
+   transparent [ FE.id FE.id x ]; strategy transparent [ FE.id ]; strategy
+   transparent [ FE.id x ]; strategy transparent [ FE.id FE.id ]; strategy
+   transparent [ FE.id FE.id x ]

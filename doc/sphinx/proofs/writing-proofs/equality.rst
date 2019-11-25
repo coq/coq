@@ -1142,3 +1142,31 @@ which supports additional fine-tuning.
       tactics to persist information about conversion hints in the
       proof term. See `#12200
       <https://github.com/coq/coq/issues/12200>`_ for more details.
+
+.. tacn:: strategy @strategy_level_or_var [ {+ @smart_qualid } ]
+   :name: strategy
+
+   This tactic allows changing the unfolding behavior of a constant
+   locally within a proof, analogous to the :cmd:`Strategy`
+   command.
+
+   .. note::
+
+      Use this tactic with care, as effects do not persist past the
+      end of the proof script.  Notably, this fine-tuning of the
+      conversion strategy is not in effect during :cmd:`Qed` nor
+      :cmd:`Defined`, so this tactic is most useful either in
+      combination with :tacn:`abstract`, which will check the proof
+      early while the fine-tuning is still in effect, or to guard
+      calls to conversion in tactic automation to ensure that, e.g.,
+      :tacn:`unfold` does not fail just because the user made a
+      constant :cmd:`Opaque`.
+
+   .. note::
+
+      This tactic does not play well with :tacn:`once`.  In
+      particular, if you wrap :tacn:`strategy` in :tacn:`once` and
+      then backtrack across it due to a later failure, the strategy
+      will be reset for the remainder of the current tactic block
+      (until a :g:`.`), but the effect of :tacn:`strategy` will still
+      be in effect for the rest of the proof (after the :g:`.`).
