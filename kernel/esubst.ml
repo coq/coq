@@ -93,11 +93,6 @@ let subs_shft = function
   | (n, s)            -> SHIFT (n,s)
 let subs_shft s = if Int.equal (fst s) 0 then snd s else subs_shft s
 
-let subs_shift_cons = function
-  (0, s, t)           -> CONS(t,s)
-| (k, SHIFT(n,s1), t) -> CONS(t,SHIFT(k+n, s1))
-| (k, s, t)           -> CONS(t,SHIFT(k, s));;
-
 (* Tests whether a substitution is equal to the identity *)
 let rec is_subs_id = function
     ESID _     -> true
@@ -156,31 +151,3 @@ let rec lift_subst mk_cl s1 s2 = match s1 with
       if k<k'
       then subs_liftn k (lift_subst mk_cl s (subs_liftn (k'-k) s'))
       else subs_liftn k' (lift_subst mk_cl (el_liftn (k-k') s) s')
-
-let rec comp mk_cl s1 s2 =
-  match (s1, s2) with
-    | _, ESID _ -> s1
-    | ESID _, _ -> s2
-    | SHIFT(k,s), _ -> subs_shft(k, comp mk_cl s s2)
-    | _, CONS(x,s') ->
-        CONS(Array.Fun1.map (fun s t -> mk_cl(s,t)) s1 x, comp mk_cl s1 s')
-    | CONS(x,s), SHIFT(k,s') ->
-        let lg = Array.length x in
-        if k == lg then comp mk_cl s s'
-        else if k > lg then comp mk_cl s (SHIFT(k-lg, s'))
-        else comp mk_cl (CONS(Array.sub x 0 (lg-k), s)) s'
-    | CONS(x,s), LIFT(k,s') ->
-        let lg = Array.length x in
-        if k == lg then CONS(x, comp mk_cl s s')
-        else if k > lg then CONS(x, comp mk_cl s (LIFT(k-lg, s')))
-        else
-          CONS(Array.sub x (lg-k) k,
-               comp mk_cl (CONS(Array.sub x 0 (lg-k),s)) s')
-    | LIFT(k,s), SHIFT(k',s') ->
-        if k<k'
-        then subs_shft(k, comp mk_cl s (subs_shft(k'-k, s')))
-        else subs_shft(k', comp mk_cl (subs_liftn (k-k') s) s')
-    | LIFT(k,s), LIFT(k',s') ->
-        if k<k'
-        then subs_liftn k (comp mk_cl s (subs_liftn (k'-k) s'))
-        else subs_liftn k' (comp mk_cl (subs_liftn (k-k') s) s')
