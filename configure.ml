@@ -919,16 +919,16 @@ let datadir,datadirsuffix = let (_,_,d,s) = select "DATADIR" in d,s
 
 let cflags_dflt = "-Wall -Wno-unused -g -O2 -fexcess-precision=standard"
 
-let cflags_sse2 = ["-msse2"; "-mfpmath=sse"]
+let cflags_sse2 = "-msse2 -mfpmath=sse"
 
 let cflags, sse2_math =
   let _, slurp =
     (* Test SSE2_MATH support <https://stackoverflow.com/a/45667927> *)
-    tryrun "cc" (["-march=native"; "-dM"; "-E"]
-                 @ cflags_sse2
-                 @ [coqtop/"kernel/byterun/coq_interp.h"] (* any file *)) in
+    tryrun camlexec.find
+      ["ocamlc"; "-ccopt"; cflags_dflt ^ " -march=native -dM -E " ^ cflags_sse2;
+       "-c"; coqtop/"dev/header.c"] in  (* any file *)
   if List.exists (fun line -> starts_with line "#define __SSE2_MATH__ 1") slurp
-  then (cflags_dflt ^ " " ^ String.concat " " cflags_sse2, true)
+  then (cflags_dflt ^ " " ^ cflags_sse2, true)
   else (cflags_dflt, false)
 
 (** Test at configure time that no harmful double rounding seems to
