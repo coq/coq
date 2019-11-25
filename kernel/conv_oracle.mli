@@ -18,7 +18,7 @@ val empty : oracle
    If [oracle_order kn1 kn2] is true, then unfold kn1 first.
    Note: the oracle does not introduce incompleteness, it only
    tries to postpone unfolding of "opaque" constants. *)
-val oracle_order : ('a -> Constant.t) -> oracle -> bool -> 
+val oracle_order : ('a -> Constant.t) -> oracle -> bool ->
   'a tableKey -> 'a tableKey -> bool
 
 (** Priority for the expansion of constant in the conversion test.

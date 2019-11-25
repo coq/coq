@@ -149,7 +149,7 @@ let set_buffer_handlers
     let rec aux old it =
       if it#is_start then None
       else if it#has_tag Tags.Script.processed then Some old
-      else if it#has_tag Tags.Script.error_bg then aux it it#backward_char 
+      else if it#has_tag Tags.Script.error_bg then aux it it#backward_char
       else None in
     aux it it in
   let insert_cb it s = if String.length s = 0 then () else begin
@@ -207,8 +207,8 @@ let set_buffer_handlers
          to a point indicated by coq. *)
       if !no_coq_action_required then begin
         let start, stop = get_start (), get_stop () in
-	List.iter (fun tag -> buffer#remove_tag tag ~start ~stop)
-		  Tags.Script.ephemere;
+        List.iter (fun tag -> buffer#remove_tag tag ~start ~stop)
+                  Tags.Script.ephemere;
         Sentence.tag_on_insert buffer
       end;
     end in
@@ -301,7 +301,7 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
         script#buffer#place_cursor ~where;
         script#misc#grab_focus ();
         ignore (script#scroll_to_iter
-		  ~use_align:false ~yalign:0.75 ~within_margin:0.25 where)) in
+                  ~use_align:false ~yalign:0.75 ~within_margin:0.25 where)) in
   let tip = GMisc.label ~text:"Double click to jump to error line" () in
   let box = GPack.vbox ~homogeneous:false () in
   let () = box#pack ~expand:true table#coerce in
@@ -313,10 +313,10 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
     method update errs =
       if !last_update = errs then ()
       else begin
-	last_update := errs;
-	access (fun _ store -> store#clear ());
+        last_update := errs;
+        access (fun _ store -> store#clear ());
         !callback errs;
-	List.iter (fun (lno, msg) -> access (fun columns store ->
+        List.iter (fun (lno, msg) -> access (fun columns store ->
           let line = store#append () in
           store#set ~row:line ~column:(find_int_col "Line" columns) lno;
           store#set ~row:line ~column:(find_string_col "Error message" columns) msg))
@@ -333,8 +333,8 @@ let create_jobpage coqtop coqops : jobpage =
       (fun columns store tp vc ->
         let row = store#get_iter tp in
         let w = store#get ~row ~column:(find_string_col "Worker" columns) in
-	let info () = Minilib.log ("Coq busy, discarding query") in
-	Coq.try_grab coqtop (coqops#stop_worker w) info
+        let info () = Minilib.log ("Coq busy, discarding query") in
+        Coq.try_grab coqtop (coqops#stop_worker w) info
       ) in
   let tip = GMisc.label ~text:"Double click to interrupt worker" () in
   let box = GPack.vbox ~homogeneous:false () in
@@ -347,10 +347,10 @@ let create_jobpage coqtop coqops : jobpage =
     method update jobs =
       if !last_update = jobs then ()
       else begin
-	last_update := jobs;
-	access (fun _ store -> store#clear ());
+        last_update := jobs;
+        access (fun _ store -> store#clear ());
         !callback jobs;
-	CString.Map.iter (fun id job -> access (fun columns store ->
+        CString.Map.iter (fun id job -> access (fun columns store ->
           let column = find_string_col "Worker" columns in
           if job = "Dead" then
             store#foreach (fun _ row ->

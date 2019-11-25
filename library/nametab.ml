@@ -136,7 +136,7 @@ struct
   (* Dictionaries of short names *)
   type nametree =
       { path : path_status;
-	map : nametree ModIdmap.t }
+        map : nametree ModIdmap.t }
 
   let mktree p m = { path=p; map=m }
   let empty_tree = mktree Nothing ModIdmap.empty
@@ -157,34 +157,34 @@ struct
             let ptab = modify () empty_tree in
             ModIdmap.add modid ptab tree.map
         in
-	let this =
+        let this =
           if level <= 0 then
-	    match tree.path with
-	      | Absolute (n,_) ->
-		  (* This is an absolute name, we must keep it
-		     otherwise it may become unaccessible forever *)
+            match tree.path with
+              | Absolute (n,_) ->
+                  (* This is an absolute name, we must keep it
+                     otherwise it may become unaccessible forever *)
                 warn_masking_absolute n; tree.path
-	      | Nothing
-	      | Relative _ -> Relative (uname,o)
+              | Nothing
+              | Relative _ -> Relative (uname,o)
           else tree.path
-	in
-	mktree this map
+        in
+        mktree this map
     | [] ->
-	match tree.path with
-	  | Absolute (uname',o') ->
-	      if E.equal o' o then begin
-		assert (U.equal uname uname');
-		tree
-		  (* we are putting the same thing for the second time :) *)
-	      end
-	      else
-		(* This is an absolute name, we must keep it otherwise it may
-		   become unaccessible forever *)
-		(* But ours is also absolute! This is an error! *)
-		user_err Pp.(str @@ "Cannot mask the absolute name \""
+        match tree.path with
+          | Absolute (uname',o') ->
+              if E.equal o' o then begin
+                assert (U.equal uname uname');
+                tree
+                  (* we are putting the same thing for the second time :) *)
+              end
+              else
+                (* This is an absolute name, we must keep it otherwise it may
+                   become unaccessible forever *)
+                (* But ours is also absolute! This is an error! *)
+                user_err Pp.(str @@ "Cannot mask the absolute name \""
                                    ^ U.to_string uname' ^ "\"!")
-	  | Nothing
-	  | Relative _ -> mktree (Absolute (uname,o)) tree.map
+          | Nothing
+          | Relative _ -> mktree (Absolute (uname,o)) tree.map
 
 let rec push_exactly uname o level tree = function
 | [] ->
@@ -249,7 +249,7 @@ let user_name qid tab =
 let find uname tab =
   let id,l = U.repr uname in
     match search (Id.Map.find id tab) l with
-	Absolute (_,o) -> o
+        Absolute (_,o) -> o
       | _ -> raise Not_found
 
 let exists uname tab =
@@ -268,9 +268,9 @@ let shortest_qualid ?loc ctx uname tab =
     | Absolute (u,_) | Relative (u,_)
           when U.equal u uname && not (is_empty && hidden) -> List.rev pos
     | _ ->
-	match dir with
-	    [] -> raise Not_found
-	  | id::dir -> find_uname (id::pos) dir (ModIdmap.find id tree.map)
+        match dir with
+            [] -> raise Not_found
+          | id::dir -> find_uname (id::pos) dir (ModIdmap.find id tree.map)
   in
   let ptab = Id.Map.find id tab in
   let found_dir = find_uname [] dir ptab in
@@ -393,24 +393,24 @@ let the_univrevtab = Summary.ref ~name:"univrevtab" (UnivIdMap.empty : univrevta
 let push_xref visibility sp xref =
   match visibility with
     | Until _ ->
-	the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
-	the_globrevtab := Globrevtab.add xref sp !the_globrevtab
+        the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
+        the_globrevtab := Globrevtab.add xref sp !the_globrevtab
     | _ ->
-	begin
-	  if ExtRefTab.exists sp !the_ccitab then
-	    match ExtRefTab.find sp !the_ccitab with
-	      | TrueGlobal( ConstRef _) | TrueGlobal( IndRef _) |
-		    TrueGlobal( ConstructRef _) as xref ->
-		  the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
-	      | _ -> 
-		  the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
-	    else
-	      the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
-	end
+        begin
+          if ExtRefTab.exists sp !the_ccitab then
+            match ExtRefTab.find sp !the_ccitab with
+              | TrueGlobal( ConstRef _) | TrueGlobal( IndRef _) |
+                    TrueGlobal( ConstructRef _) as xref ->
+                  the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
+              | _ ->
+                  the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
+            else
+              the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
+        end
 
 let push_cci visibility sp ref =
   push_xref visibility sp (TrueGlobal ref)
-    
+
 (* This is for Syntactic Definitions *)
 let push_syndef visibility sp kn =
   push_xref visibility sp (SynDef kn)

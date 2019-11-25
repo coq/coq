@@ -58,7 +58,7 @@ type 'a with_metadata = private {
   pri   : int;            (** A number between 0 and 4, 4 = lower priority *)
   poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
   pat   : constr_pattern option; (** A pattern for the concl of the Goal *)
-  name  : hints_path_atom; (** A potential name to refer to the hint *) 
+  name  : hints_path_atom; (** A potential name to refer to the hint *)
   db    : hint_db_name option;
   secvars : Id.Pred.t; (** The section variables this hint depends on, as a predicate *)
   code    : 'a; (** the tactic to apply when the concl matches pat *)
@@ -106,7 +106,7 @@ type 'a hints_path_gen =
 
 type pre_hints_path = Libnames.qualid hints_path_gen
 type hints_path = GlobRef.t hints_path_gen
-    
+
 val normalize_path : hints_path -> hints_path
 val path_matches : hints_path -> hints_path_atom list -> bool
 val path_derivate : hints_path -> hints_path_atom -> hints_path
@@ -133,17 +133,17 @@ module Hint_db :
     (** All hints associated to the reference *)
     val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
 
-    (** All hints associated to the reference, respecting modes if evars appear in the 
-	arguments, _not_ using the discrimination net. *)
+    (** All hints associated to the reference, respecting modes if evars appear in the
+        arguments, _not_ using the discrimination net. *)
     val map_existential : evar_map -> secvars:Id.Pred.t ->
       (GlobRef.t * constr array) -> constr -> t -> full_hint list
 
-    (** All hints associated to the reference, respecting modes if evars appear in the 
-	arguments and using the discrimination net. *)
+    (** All hints associated to the reference, respecting modes if evars appear in the
+        arguments and using the discrimination net. *)
     val map_eauto : evar_map -> secvars:Id.Pred.t -> (GlobRef.t * constr array) -> constr -> t -> full_hint list
 
-    (** All hints associated to the reference, respecting modes if evars appear in the 
-	arguments. *)
+    (** All hints associated to the reference, respecting modes if evars appear in the
+        arguments. *)
     val map_auto : evar_map -> secvars:Id.Pred.t ->
        (GlobRef.t * constr array) -> constr -> t -> full_hint list
 
@@ -213,7 +213,7 @@ val prepare_hint : bool (* Check no remaining evars *) ->
 (** [make_exact_entry info (c, ctyp, ctx)].
    [c] is the term given as an exact proof to solve the goal;
    [ctyp] is the type of [c].
-   [ctx] is its (refreshable) universe context. 
+   [ctx] is its (refreshable) universe context.
    In info:
    [hint_priority] is the hint's desired priority, it is 0 if unspecified
    [hint_pattern] is the hint's desired pattern, it is inferred if not specified
@@ -228,7 +228,7 @@ val make_exact_entry : env -> evar_map -> hint_info -> polymorphic -> ?name:hint
    products;
    [c] is the term given as an exact proof to solve the goal;
    [cty] is the type of [c].
-   [ctx] is its (refreshable) universe context. 
+   [ctx] is its (refreshable) universe context.
    In info:
    [hint_priority] is the hint's desired priority, it is computed as the number of products in [cty]
    if unspecified

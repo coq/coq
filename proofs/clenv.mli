@@ -24,10 +24,10 @@ open Tactypes
 
 type clausenv = {
   env      : env; (** the typing context *)
-  evd      : evar_map; (** the mapping from metavar and evar numbers to their 
-			   types and values *)
-  templval : constr freelisted; (** the template which we are trying to fill 
-				    out *)
+  evd      : evar_map; (** the mapping from metavar and evar numbers to their
+                           types and values *)
+  templval : constr freelisted; (** the template which we are trying to fill
+                                    out *)
   templtyp : constr freelisted (** its type *)}
 
 
@@ -92,8 +92,8 @@ val clenv_unify_meta_types : ?flags:unify_flags -> clausenv -> clausenv
 
 (** start with a clenv to refine with a given term with bindings *)
 
-(** the arity of the lemma is fixed 
-   the optional int tells how many prods of the lemma have to be used 
+(** the arity of the lemma is fixed
+   the optional int tells how many prods of the lemma have to be used
    use all of them if None *)
 val make_clenv_binding_env_apply :
   env -> evar_map -> int option -> EConstr.constr * EConstr.constr -> constr bindings ->

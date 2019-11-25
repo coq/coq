@@ -41,14 +41,14 @@ let wrap n b continue seq =
   let rec aux i nc ctx=
     if i<=0 then seq else
       match nc with
-	  []->anomaly (Pp.str "Not the expected number of hyps.")
-	| nd::q->
+          []->anomaly (Pp.str "Not the expected number of hyps.")
+        | nd::q->
             let id = NamedDecl.get_id nd in
-	    if occur_var env sigma id (pf_concl gls) ||
-	      List.exists (occur_var_in_decl env sigma id) ctx then
-		(aux (i-1) q (nd::ctx))
-	    else
-	      add_formula env sigma Hyp (VarRef id) (NamedDecl.get_type nd) (aux (i-1) q (nd::ctx)) in
+            if occur_var env sigma id (pf_concl gls) ||
+              List.exists (occur_var_in_decl env sigma id) ctx then
+                (aux (i-1) q (nd::ctx))
+            else
+              add_formula env sigma Hyp (VarRef id) (NamedDecl.get_type nd) (aux (i-1) q (nd::ctx)) in
   let seq1=aux n nc [] in
   let seq2=if b then
     add_formula env sigma Concl dummy_id (pf_concl gls) seq1 else seq1 in
@@ -73,17 +73,17 @@ let ll_atom_tac a backtrack id continue seq =
   let open EConstr in
   tclIFTHENELSE
       (tclTHENLIST
-	[(Proofview.tclEVARMAP >>= fun sigma ->
+        [(Proofview.tclEVARMAP >>= fun sigma ->
           let gr =
             try Proofview.tclUNIT (find_left sigma a seq)
             with Not_found -> tclFAIL 0 (Pp.str "No link")
           in
           gr >>= fun gr ->
           pf_constr_of_global gr >>= fun left ->
-	  pf_constr_of_global id >>= fun id -> 
-	    generalize [(mkApp(id, [|left|]))]);
-	 clear_global id;
-	 intro])
+          pf_constr_of_global id >>= fun id ->
+            generalize [(mkApp(id, [|left|]))]);
+         clear_global id;
+         intro])
     (wrap 1 false continue seq) backtrack
 
 (* right connectives rules *)
@@ -152,12 +152,12 @@ let ll_ind_tac (ind,u as indu) largs backtrack id continue seq =
          EConstr.it_mkLambda_or_LetIn head rc in
        let lp=Array.length rcs in
        let newhyps idc =List.init lp (myterm idc) in
-	 tclIFTHENELSE
-	   (tclTHENLIST
-	      [(pf_constr_of_global id >>= fun idc -> generalize (newhyps idc));
-	       clear_global id;
-	       tclDO lp intro])
-	   (wrap lp false continue seq) backtrack
+         tclIFTHENELSE
+           (tclTHENLIST
+              [(pf_constr_of_global id >>= fun idc -> generalize (newhyps idc));
+               clear_global id;
+               tclDO lp intro])
+           (wrap lp false continue seq) backtrack
   end
 
 let ll_arrow_tac a b c backtrack id continue seq=
@@ -168,18 +168,18 @@ let ll_arrow_tac a b c backtrack id continue seq=
                   mkApp (idc, [|mkLambda (Context.make_annot Anonymous Sorts.Relevant,(lift 1 a),(mkRel 2))|])) in
     tclORELSE
       (tclTHENS (cut c)
-	 [tclTHENLIST
-	    [introf;
-	     clear_global id;
-	     wrap 1 false continue seq];
-	  tclTHENS (cut cc)
+         [tclTHENLIST
+            [introf;
+             clear_global id;
+             wrap 1 false continue seq];
+          tclTHENS (cut cc)
             [(pf_constr_of_global id >>= fun c -> exact_no_check c);
-	     tclTHENLIST
-	       [(pf_constr_of_global id >>= fun idc -> generalize [d idc]);
-		clear_global id;
-		introf;
-		introf;
-		tclCOMPLETE (wrap 2 true continue seq)]]])
+             tclTHENLIST
+               [(pf_constr_of_global id >>= fun idc -> generalize [d idc]);
+                clear_global id;
+                introf;
+                introf;
+                tclCOMPLETE (wrap 2 true continue seq)]]])
       backtrack
 
 (* quantifier rules (easy side) *)
@@ -188,8 +188,8 @@ let forall_tac backtrack continue seq=
   tclORELSE
     (tclIFTHENELSE intro (wrap 0 true continue seq)
        (tclORELSE
-	  (tclTHEN introf (tclCOMPLETE (wrap 0 true continue seq)))
-	  backtrack))
+          (tclTHEN introf (tclCOMPLETE (wrap 0 true continue seq)))
+          backtrack))
     (if !qflag then
        tclFAIL 0 (Pp.str "reversible in 1st order mode")
      else
@@ -210,18 +210,18 @@ let ll_forall_tac prod backtrack id continue seq=
   tclORELSE
     (tclTHENS (cut prod)
        [tclTHENLIST
-	  [intro;
+          [intro;
            (pf_constr_of_global id >>= fun idc ->
-	   Proofview.Goal.enter begin fun gls->
+           Proofview.Goal.enter begin fun gls->
               let open EConstr in
-	      let id0 = List.nth (pf_ids_of_hyps gls) 0 in
+              let id0 = List.nth (pf_ids_of_hyps gls) 0 in
               let term=mkApp(idc,[|mkVar(id0)|]) in
               tclTHEN (generalize [term]) (clear [id0])
            end);
-	   clear_global id;
-	   intro;
-	   tclCOMPLETE (wrap 1 false continue (deepen seq))];
-	tclCOMPLETE (wrap 0 true continue (deepen seq))])
+           clear_global id;
+           intro;
+           tclCOMPLETE (wrap 1 false continue (deepen seq))];
+        tclCOMPLETE (wrap 0 true continue (deepen seq))])
     backtrack
 
 (* rules for instantiation with unification moved to instances.ml *)

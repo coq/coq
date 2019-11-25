@@ -39,7 +39,7 @@ let () = Goptions.(declare_bool_option {
   optwrite = (fun b -> refine_instance := b)
 })
 
-let set_typeclass_transparency c local b = 
+let set_typeclass_transparency c local b =
   Hints.add_hints ~local [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
 
@@ -56,8 +56,8 @@ let () =
      in
      Flags.silently (fun () ->
        Hints.add_hints ~local [typeclasses_db]
-	  (Hints.HintsResolveEntry
-	     [info, poly, false, Hints.PathHints path, inst'])) ());
+          (Hints.HintsResolveEntry
+             [info, poly, false, Hints.PathHints path, inst'])) ());
   Hook.set Typeclasses.set_typeclass_transparency_hook set_typeclass_transparency;
   Hook.set Typeclasses.classes_transparent_state_hook classes_transparent_state
 
@@ -91,7 +91,7 @@ let type_ctx_instance ~program_mode env sigma ctx inst subst =
     decl :: ctx ->
       let t' = substl subst (RelDecl.get_type decl) in
       let (sigma, c'), l =
-	match decl with
+        match decl with
         | LocalAssum _ -> interp_casted_constr_evars ~program_mode env sigma (List.hd l) t', List.tl l
         | LocalDef (_,b,_) -> (sigma, substl subst b), l
       in
@@ -104,8 +104,8 @@ let id_of_class cl =
   match cl.cl_impl with
     | ConstRef kn -> Label.to_id @@ Constant.label kn
     | IndRef (kn,i) ->
-	let mip = (Environ.lookup_mind kn (Global.env ())).Declarations.mind_packets in
-	  mip.(0).Declarations.mind_typename
+        let mip = (Environ.lookup_mind kn (Global.env ())).Declarations.mind_packets in
+          mip.(0).Declarations.mind_typename
     | _ -> assert false
 
 let instance_hook k info global imps ?hook cst =
@@ -367,10 +367,10 @@ let named_of_rel_context l =
     List.fold_right
       (fun decl (subst, ctx) ->
         let id = match RelDecl.get_name decl with Anonymous -> invalid_arg "named_of_rel_context" | Name id -> id in
-	let d = match decl with
+        let d = match decl with
           | LocalAssum (_,t) -> id, None, substl subst t
           | LocalDef (_,b,t) -> id, Some (substl subst b), substl subst t in
-	  (mkVar id :: subst, d :: ctx))
+          (mkVar id :: subst, d :: ctx))
       l ([], [])
   in ctx
 
@@ -428,11 +428,11 @@ let context ~pstate poly l =
       in
       let cst = Declare.declare_constant ~internal:Declare.InternalTacticRequest id decl in
         match class_of_constr sigma (of_constr t) with
-	| Some (rels, ((tc,_), args) as _cl) ->
+        | Some (rels, ((tc,_), args) as _cl) ->
             add_instance (Typeclasses.new_instance tc Hints.empty_hint_info false (ConstRef cst));
             status
-	    (* declare_subclasses (ConstRef cst) cl *)
-	| None -> status
+            (* declare_subclasses (ConstRef cst) cl *)
+        | None -> status
     else
       let test (x, _) = match x with
       | ExplByPos (_, Some id') -> Id.equal id id'
@@ -450,6 +450,6 @@ let context ~pstate poly l =
         let _gr = DeclareDef.declare_definition ~ontop:pstate id decl entry UnivNames.empty_binders [] in
         Lib.sections_are_opened () || Lib.is_modtype_strict ()
       in
-	status && nstatus
+        status && nstatus
   in
   List.fold_left fn true (List.rev ctx)

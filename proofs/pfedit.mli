@@ -67,12 +67,12 @@ val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> Proof_global.t -
 
 val build_constant_by_tactic :
   Id.t -> UState.t -> named_context_val -> ?goal_kind:goal_kind ->
-  EConstr.types -> unit Proofview.tactic -> 
+  EConstr.types -> unit Proofview.tactic ->
   Safe_typing.private_constants Entries.definition_entry * bool *
     UState.t
 
 val build_by_tactic : ?side_eff:bool -> env -> UState.t -> ?poly:polymorphic ->
-  EConstr.types -> unit Proofview.tactic -> 
+  EConstr.types -> unit Proofview.tactic ->
   constr * bool * UState.t
 
 val refine_by_tactic

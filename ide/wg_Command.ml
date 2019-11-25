@@ -93,9 +93,9 @@ object(self)
       combo, entry, ok_b in
     let r_bin =
       GBin.scrolled_window
-	~vpolicy:`AUTOMATIC
-	~hpolicy:`AUTOMATIC
-	~packing:(vbox#pack ~fill:true ~expand:true) () in
+        ~vpolicy:`AUTOMATIC
+        ~hpolicy:`AUTOMATIC
+        ~packing:(vbox#pack ~fill:true ~expand:true) () in
     let result = Wg_MessageView.message_view () in
     router#register_route route_id result;
     r_bin#add_with_viewport (result :> GObj.widget);

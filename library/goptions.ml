@@ -53,12 +53,12 @@ end
 module MakeTable =
   functor
    (A : sig
-	  type t
-	  type key
-	  val compare : t -> t -> int
-	  val table : (string * key table_of_A) list ref
-	  val encode : key -> t
-	  val subst : substitution -> t -> t
+          type t
+          type key
+          val compare : t -> t -> int
+          val table : (string * key table_of_A) list ref
+          val encode : key -> t
+          val subst : substitution -> t -> t
           val printer : t -> Pp.t
           val key : option_name
           val title : string
@@ -84,37 +84,37 @@ module MakeTable =
           | GOadd -> t := MySet.add p !t
           | GOrmv -> t := MySet.remove p !t in
         let load_options i o = if Int.equal i 1 then cache_options o in
-	let subst_options (subst,(f,p as obj)) = 
-	  let p' = A.subst subst p in
-	    if p' == p then obj else
-	      (f,p')
-	in
+        let subst_options (subst,(f,p as obj)) =
+          let p' = A.subst subst p in
+            if p' == p then obj else
+              (f,p')
+        in
         let inGo : option_mark * A.t -> obj =
           Libobject.declare_object {(Libobject.default_object nick) with
                 Libobject.load_function = load_options;
-		Libobject.open_function = load_options;
-		Libobject.cache_function = cache_options;
-		Libobject.subst_function = subst_options;
-		Libobject.classify_function = (fun x -> Substitute x)}
-	in
+                Libobject.open_function = load_options;
+                Libobject.cache_function = cache_options;
+                Libobject.subst_function = subst_options;
+                Libobject.classify_function = (fun x -> Substitute x)}
+        in
         ((fun c -> Lib.add_anonymous_leaf (inGo (GOadd, c))),
          (fun c -> Lib.add_anonymous_leaf (inGo (GOrmv, c))))
 
     let print_table table_name printer table =
       Feedback.msg_notice
         (str table_name ++
-	   (hov 0
-	      (if MySet.is_empty table then str " None" ++ fnl ()
+           (hov 0
+              (if MySet.is_empty table then str " None" ++ fnl ()
                else MySet.fold
-		 (fun a b -> spc () ++ printer a ++ b)
-		 table (mt ()) ++ str "." ++ fnl ())))
+                 (fun a b -> spc () ++ printer a ++ b)
+                 table (mt ()) ++ str "." ++ fnl ())))
 
     class table_of_A () =
     object
       method add x = add_option (A.encode x)
       method remove x = remove_option (A.encode x)
       method mem x =
-	let y = A.encode x in
+        let y = A.encode x in
         let answer = MySet.mem y !t in
         Feedback.msg_info (A.member_message y answer)
       method print = print_table A.title A.printer !t

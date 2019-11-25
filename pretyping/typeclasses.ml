@@ -73,8 +73,8 @@ type typeclass = {
 
   (* The method implementations as projections. *)
   cl_projs : (Name.t * (direction * hint_info) option
-	      * Constant.t option) list;
-  
+              * Constant.t option) list;
+
   cl_strict : bool;
 
   cl_unique : bool;
@@ -146,7 +146,7 @@ let class_of_constr sigma c =
   try Some (dest_class_arity (Global.env ()) sigma c)
   with e when CErrors.noncritical e -> None
 
-let is_class_constr sigma c = 
+let is_class_constr sigma c =
   try let gr, u = Termops.global_of_constr sigma c in
     GlobRef.Map.mem gr !classes
   with Not_found -> false
@@ -157,7 +157,7 @@ let rec is_class_type evd c =
     | Prod (_, _, t) -> is_class_type evd t
     | Cast (t, _, _) -> is_class_type evd t
     | _ -> is_class_constr evd c
-      
+
 let is_class_evar evd evi =
   is_class_type evd evi.Evd.evar_concl
 
@@ -208,7 +208,7 @@ let discharge_class (_,cl) =
   let rel_of_variable_context ctx = List.fold_right
     ( fun (decl,_) (ctx', subst) ->
         let decl' = decl |> NamedDecl.map_constr (substn_vars 1 subst) |> NamedDecl.to_rel_decl in
-	(decl' :: ctx', NamedDecl.get_id decl :: subst)
+        (decl' :: ctx', NamedDecl.get_id decl :: subst)
     ) ctx ([], []) in
   let discharge_rel_context (subst, usubst) n rel =
     let rel = Context.Rel.map (Cooking.expmod_constr repl) rel in
@@ -227,10 +227,10 @@ let discharge_class (_,cl) =
   let discharge_context ctx' subst (grs, ctx) =
     let grs' =
       let newgrs = List.map (fun decl ->
-			     match decl |> RelDecl.get_type |> EConstr.of_constr |> class_of_constr Evd.empty with
-			     | None -> None
+                             match decl |> RelDecl.get_type |> EConstr.of_constr |> class_of_constr Evd.empty with
+                             | None -> None
                              | Some (_, ((tc,_), _)) -> Some tc.cl_impl)
-			    ctx'
+                            ctx'
       in
       grs @ newgrs
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
@@ -253,8 +253,8 @@ let discharge_class (_,cl) =
   with Not_found -> (* not defined in the current section *)
     cl
 
-let rebuild_class cl = 
-  try 
+let rebuild_class cl =
+  try
     let cst = Tacred.evaluable_of_global_reference (Global.env ()) cl.cl_impl in
       set_typeclass_transparency cst false false; cl
   with e when CErrors.noncritical e -> cl
@@ -276,7 +276,7 @@ let add_class cl =
 (** Build the subinstances hints. *)
 
 let check_instance env sigma c =
-  try 
+  try
     let (evd, c) = resolve_one_typeclass env sigma
       (Retyping.get_type_of env sigma c) in
       not (Evd.has_undefined evd)
@@ -284,8 +284,8 @@ let check_instance env sigma c =
 
 let build_subclasses ~check env sigma glob { hint_priority = pri } =
   let _id = Nametab.basename_of_global glob in
-  let _next_id = 
-    let i = ref (-1) in 
+  let _next_id =
+    let i = ref (-1) in
       (fun () -> incr i;
         Nameops.add_suffix _id ("_subinstance_" ^ string_of_int !i))
   in
@@ -298,37 +298,37 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
       match class_of_constr sigma ty with
       | None -> []
       | Some (rels, ((tc,u), args)) ->
-	let instapp = 
-	  Reductionops.whd_beta sigma (EConstr.of_constr (appvectc c (Context.Rel.to_extended_vect mkRel 0 rels)))
-	in
-	let instapp = EConstr.Unsafe.to_constr instapp in
-	let projargs = Array.of_list (args @ [instapp]) in
-	let projs = List.map_filter 
-	  (fun (n, b, proj) ->
-	   match b with 
-	   | None -> None
-	   | Some (Backward, _) -> None
-	   | Some (Forward, info) ->
-	     let proj = Option.get proj in
-	     let rels = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) rels in
-	     let u = EConstr.EInstance.kind sigma u in
-	     let body = it_mkLambda_or_LetIn (mkApp (mkConstU (proj,u), projargs)) rels in
-	       if check && check_instance env sigma (EConstr.of_constr body) then None
-	       else 
-		 let newpri =
-		   match pri, info.hint_priority with
-		   | Some p, Some p' -> Some (p + p')
-		   | Some p, None -> Some (p + 1)
-		   | _, _ -> None
-		 in
-		   Some (ConstRef proj, { info with hint_priority = newpri }, body)) tc.cl_projs
-	in
-	let declare_proj hints (cref, info, body) =
-	  let path' = cref :: path in
-	  let ty = Retyping.get_type_of env sigma (EConstr.of_constr body) in
-	  let rest = aux pri body ty path' in
-	    hints @ (path', info, body) :: rest
-	in List.fold_left declare_proj [] projs 
+        let instapp =
+          Reductionops.whd_beta sigma (EConstr.of_constr (appvectc c (Context.Rel.to_extended_vect mkRel 0 rels)))
+        in
+        let instapp = EConstr.Unsafe.to_constr instapp in
+        let projargs = Array.of_list (args @ [instapp]) in
+        let projs = List.map_filter
+          (fun (n, b, proj) ->
+           match b with
+           | None -> None
+           | Some (Backward, _) -> None
+           | Some (Forward, info) ->
+             let proj = Option.get proj in
+             let rels = List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) rels in
+             let u = EConstr.EInstance.kind sigma u in
+             let body = it_mkLambda_or_LetIn (mkApp (mkConstU (proj,u), projargs)) rels in
+               if check && check_instance env sigma (EConstr.of_constr body) then None
+               else
+                 let newpri =
+                   match pri, info.hint_priority with
+                   | Some p, Some p' -> Some (p + p')
+                   | Some p, None -> Some (p + 1)
+                   | _, _ -> None
+                 in
+                   Some (ConstRef proj, { info with hint_priority = newpri }, body)) tc.cl_projs
+        in
+        let declare_proj hints (cref, info, body) =
+          let path' = cref :: path in
+          let ty = Retyping.get_type_of env sigma (EConstr.of_constr body) in
+          let rest = aux pri body ty path' in
+            hints @ (path', info, body) :: rest
+        in List.fold_left declare_proj [] projs
   in
   let term = Constr.mkRef (glob, inst) in
     (*FIXME subclasses should now get substituted for each particular instance of
@@ -339,31 +339,31 @@ let build_subclasses ~check env sigma glob { hint_priority = pri } =
  * instances persistent object
  *)
 
-type instance_action = 
+type instance_action =
   | AddInstance
   | RemoveInstance
 
-let load_instance inst = 
-  let insts = 
+let load_instance inst =
+  let insts =
     try GlobRef.Map.find inst.is_class !instances
     with Not_found -> GlobRef.Map.empty in
   let insts = GlobRef.Map.add inst.is_impl inst insts in
   instances := GlobRef.Map.add inst.is_class insts !instances
 
 let remove_instance inst =
-  let insts = 
+  let insts =
     try GlobRef.Map.find inst.is_class !instances
     with Not_found -> assert false in
   let insts = GlobRef.Map.remove inst.is_impl insts in
   instances := GlobRef.Map.add inst.is_class insts !instances
 
 let cache_instance (_, (action, i)) =
-  match action with 
+  match action with
   | AddInstance -> load_instance i
-  | RemoveInstance -> remove_instance i      
+  | RemoveInstance -> remove_instance i
 
 let subst_instance (subst, (action, inst)) = action,
-  { inst with 
+  { inst with
       is_class = fst (subst_global subst inst.is_class);
       is_impl = fst (subst_global subst inst.is_impl) }
 
@@ -373,11 +373,11 @@ let discharge_instance (_, (action, inst)) =
   | Some n ->
     assert (not (isVarRef inst.is_impl));
     Some (action,
-    { inst with 
+    { inst with
       is_global = Some (pred n);
       is_class = inst.is_class;
       is_impl = inst.is_impl })
-    
+
 
 let is_local i = (i.is_global == None)
 
@@ -472,16 +472,16 @@ let instance_constructor (cl,u) args =
   let open EConstr in
   let pars = fst (List.chop lenpars args) in
     match cl.cl_impl with
-      | IndRef ind -> 
+      | IndRef ind ->
         let ind = ind, u in
           (Some (applist (mkConstructUi (ind, 1), args)),
            applist (mkIndU ind, pars))
-      | ConstRef cst -> 
+      | ConstRef cst ->
         let cst = cst, u in
-	let term = match args with
-	  | [] -> None
-	  | _ -> Some (List.last args)
-	in
+        let term = match args with
+          | [] -> None
+          | _ -> Some (List.last args)
+        in
           (term, applist (mkConstU cst, pars))
       | _ -> assert false
 
@@ -492,15 +492,15 @@ let cmap_elements c = GlobRef.Map.fold (fun k v acc -> v :: acc) c []
 let instances_of c =
   try cmap_elements (GlobRef.Map.find c.cl_impl !instances) with Not_found -> []
 
-let all_instances () = 
+let all_instances () =
   GlobRef.Map.fold (fun k v acc ->
     GlobRef.Map.fold (fun k v acc -> v :: acc) v acc)
     !instances []
 
-let instances r = 
-  let cl = class_info r in instances_of cl    
+let instances r =
+  let cl = class_info r in instances_of cl
 
-let is_class gr = 
+let is_class gr =
   GlobRef.Map.exists (fun _ v -> GlobRef.equal v.cl_impl gr) !classes
 
 open Evar_kinds

@@ -30,29 +30,29 @@ and translate_field prefix mp env acc (l,x) =
      let con = Constant.make2 mp l in
      (if !Flags.debug then
         let msg = Printf.sprintf "Compiling constant %s..." (Constant.to_string con) in
-	Feedback.msg_debug (Pp.str msg));
+        Feedback.msg_debug (Pp.str msg));
      compile_constant_field env prefix con acc cb
   | SFBmind mb ->
      (if !Flags.debug then
-	let id = mb.mind_packets.(0).mind_typename in
-	let msg = Printf.sprintf "Compiling inductive %s..." (Id.to_string id) in
-	Feedback.msg_debug (Pp.str msg));
+        let id = mb.mind_packets.(0).mind_typename in
+        let msg = Printf.sprintf "Compiling inductive %s..." (Id.to_string id) in
+        Feedback.msg_debug (Pp.str msg));
      compile_mind_field mp l acc mb
   | SFBmodule md ->
      let mp = md.mod_mp in
      (if !Flags.debug then
-	let msg =
-	  Printf.sprintf "Compiling module %s..." (ModPath.to_string mp)
-	in
-	Feedback.msg_debug (Pp.str msg));
+        let msg =
+          Printf.sprintf "Compiling module %s..." (ModPath.to_string mp)
+        in
+        Feedback.msg_debug (Pp.str msg));
      translate_mod prefix mp env md.mod_type acc
   | SFBmodtype mdtyp ->
      let mp = mdtyp.mod_mp in
      (if !Flags.debug then
-	let msg =
-	  Printf.sprintf "Compiling module type %s..." (ModPath.to_string mp)
-	in
-	Feedback.msg_debug (Pp.str msg));
+        let msg =
+          Printf.sprintf "Compiling module type %s..." (ModPath.to_string mp)
+        in
+        Feedback.msg_debug (Pp.str msg));
      translate_mod prefix mp env mdtyp.mod_type acc
 
 let dump_library mp dp env mod_expr =

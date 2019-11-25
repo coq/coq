@@ -196,7 +196,7 @@ let subst_cl_typ subst ct = match ct with
             pi1 (find_class_type Evd.empty (EConstr.of_constr t.Univ.univ_abstracted_value)))
   | CL_IND i ->
       let i' = subst_ind subst i in
-	if i' == i then ct else CL_IND i'
+        if i' == i then ct else CL_IND i'
 
 (*CSC: here we should change the datatype for coercions: it should be possible
        to declare any term as a coercion *)
@@ -268,7 +268,7 @@ let lookup_path_between env sigma (s,t) =
   let (s,(t,p)) =
     apply_on_class_of env sigma s (fun i ->
       apply_on_class_of env sigma t (fun j ->
-	lookup_path_between_class (i,j))) in
+        lookup_path_between_class (i,j))) in
   (s,t,p)
 
 let lookup_path_to_fun_from env sigma s =
@@ -324,7 +324,7 @@ let warn_ambiguous_path =
 let different_class_params i =
   let ci = class_info_from_index i in
     if (snd ci).cl_param > 0 then true
-    else 
+    else
       match fst ci with
       | CL_IND i -> Global.is_polymorphic (IndRef i)
       | CL_CONST c -> Global.is_polymorphic (ConstRef c)
@@ -352,16 +352,16 @@ let add_coercion_in_graph (ic,source,target) =
     ClPairMap.iter
       (fun (s,t) p ->
          if not (Bijint.Index.equal s t) then begin
-	   if Bijint.Index.equal t source then begin
+           if Bijint.Index.equal t source then begin
              try_add_new_path1 (s,target) (p@[ic]);
              ClPairMap.iter
-	       (fun (u,v) q ->
+               (fun (u,v) q ->
                   if not (Bijint.Index.equal u v) && Bijint.Index.equal u target &&  not (List.equal coe_info_typ_equal p q) then
-		    try_add_new_path1 (s,v) (p@[ic]@q))
+                    try_add_new_path1 (s,v) (p@[ic]@q))
                old_inheritance_graph
            end;
            if Bijint.Index.equal s target then try_add_new_path1 (source,t) (ic::p)
-	 end)
+         end)
       old_inheritance_graph
   end;
   match !ambig_paths with [] -> () | _ -> warn_ambiguous_path !ambig_paths
@@ -455,7 +455,7 @@ let inCoercion : coercion -> obj =
     discharge_function = discharge_coercion }
 
 let declare_coercion coef ?(local = false) ~isid ~src:cls ~target:clt ~params:ps =
-  let isproj = 
+  let isproj =
     match coef with
     | ConstRef c -> Recordops.find_primitive_projection c
     | _ -> None

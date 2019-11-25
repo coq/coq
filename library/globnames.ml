@@ -131,7 +131,7 @@ module ExtRefOrdered = struct
 
 end
 
-type global_reference_or_constr = 
+type global_reference_or_constr =
   | IsGlobal of global_reference
   | IsConstr of constr
 

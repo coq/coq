@@ -37,7 +37,7 @@ val declare_individual_scheme_object : string -> ?aux:string ->
 
 (** Force generation of a (mutually) scheme with possibly user-level names *)
 
-val define_individual_scheme : individual scheme_kind -> 
+val define_individual_scheme : individual scheme_kind ->
   internal_flag (** internal *) ->
   Id.t option -> inductive -> Constant.t * Safe_typing.private_constants
 

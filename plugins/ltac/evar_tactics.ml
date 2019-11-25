@@ -51,20 +51,20 @@ let instantiate_tac n c ido =
   let sigma = gl.sigma in
   let evl =
     match ido with
-	ConclLocation () -> evar_list sigma (pf_concl gl)
+        ConclLocation () -> evar_list sigma (pf_concl gl)
       | HypLocation (id,hloc) ->
           let decl = Environ.lookup_named id (pf_env gl) in
-	    match hloc with
-		InHyp ->
-		  (match decl with
+            match hloc with
+                InHyp ->
+                  (match decl with
                     | LocalAssum (_,typ) -> evar_list sigma (EConstr.of_constr typ)
-		    | _ -> user_err Pp.(str "Please be more specific: in type or value?"))
-	      | InHypTypeOnly ->
-		  evar_list sigma (EConstr.of_constr (NamedDecl.get_type decl))
-	      | InHypValueOnly ->
-		  (match decl with
+                    | _ -> user_err Pp.(str "Please be more specific: in type or value?"))
+              | InHypTypeOnly ->
+                  evar_list sigma (EConstr.of_constr (NamedDecl.get_type decl))
+              | InHypValueOnly ->
+                  (match decl with
                     | LocalDef (_,body,_) -> evar_list sigma (EConstr.of_constr body)
-		    | _ -> user_err Pp.(str "Not a defined hypothesis.")) in
+                    | _ -> user_err Pp.(str "Not a defined hypothesis.")) in
   if List.length evl < n then
     user_err Pp.(str "Not enough uninstantiated existential variables.");
   if n <= 0 then user_err Pp.(str "Incorrect existential variable index.");
@@ -97,7 +97,7 @@ let let_evar name typ =
     Tacticals.New.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
     (Tactics.pose_tac (Name.Name id) evar)
   end
-  
+
 let hget_evar n =
   let open EConstr in
   Proofview.Goal.enter begin fun gl ->

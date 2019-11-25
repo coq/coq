@@ -65,11 +65,11 @@ and conv_whd env pb k whd1 whd2 cu =
       let tag1 = btag b1 and tag2 = btag b2 in
       let sz = bsize b1 in
       if Int.equal tag1 tag2 && Int.equal sz (bsize b2) then
-	let rcu = ref cu in
-	for i = 0 to sz - 1 do
-	  rcu := conv_val env CONV k (bfield b1 i) (bfield b2 i) !rcu
-	done;
-	!rcu
+        let rcu = ref cu in
+        for i = 0 to sz - 1 do
+          rcu := conv_val env CONV k (bfield b1 i) (bfield b2 i) !rcu
+        done;
+        !rcu
       else raise NotConvertible
   | Vint64 i1, Vint64 i2 ->
     if Int64.equal i1 i2 then cu else raise NotConvertible
@@ -102,12 +102,12 @@ and conv_atom env pb k a1 stk1 a2 stk2 cu =
           let u2 = Univ.Instance.of_array u2 in
           let cu = convert_instances ~flex:false u1 u2 cu in
           conv_arguments env ~from:ulen k args1 args2
-	    (conv_stack env k stk1' stk2' cu)
+            (conv_stack env k stk1' stk2' cu)
         | _, _ -> assert false (* Should not happen if problem is well typed *)
     else raise NotConvertible
   | Aid ik1, Aid ik2 ->
     if Vmvalues.eq_id_key ik1 ik2 && compare_stack stk1 stk2 then
-	conv_stack env k stk1 stk2 cu
+        conv_stack env k stk1 stk2 cu
       else raise NotConvertible
   | Asort s1, Asort s2 ->
     sort_cmp_universes env pb s1 s2 cu
@@ -120,17 +120,17 @@ and conv_stack env k stk1 stk2 cu =
       conv_stack env k stk1 stk2 (conv_arguments env k args1 args2 cu)
   | Zfix(f1,args1) :: stk1, Zfix(f2,args2) :: stk2 ->
       conv_stack env k stk1 stk2
-	(conv_arguments env k args1 args2 (conv_fix env k f1 f2 cu))
+        (conv_arguments env k args1 args2 (conv_fix env k f1 f2 cu))
   | Zswitch sw1 :: stk1, Zswitch sw2 :: stk2 ->
       if check_switch sw1 sw2 then
-	let vt1,vt2 = type_of_switch sw1, type_of_switch sw2 in
-	let rcu = ref (conv_val env CONV k vt1 vt2 cu) in
-	let b1, b2 = branch_of_switch k sw1, branch_of_switch k sw2 in
-	for i = 0 to Array.length b1 - 1 do
-	  rcu :=
-	    conv_val env CONV (k + fst b1.(i)) (snd b1.(i)) (snd b2.(i)) !rcu
-	done;
-	conv_stack env k stk1 stk2 !rcu
+        let vt1,vt2 = type_of_switch sw1, type_of_switch sw2 in
+        let rcu = ref (conv_val env CONV k vt1 vt2 cu) in
+        let b1, b2 = branch_of_switch k sw1, branch_of_switch k sw2 in
+        for i = 0 to Array.length b1 - 1 do
+          rcu :=
+            conv_val env CONV (k + fst b1.(i)) (snd b1.(i)) (snd b2.(i)) !rcu
+        done;
+        conv_stack env k stk1 stk2 !rcu
       else raise NotConvertible
   | Zproj p1 :: stk1, Zproj p2 :: stk2 ->
     if Projection.Repr.equal p1 p2 then conv_stack env k stk1 stk2 cu
@@ -171,7 +171,7 @@ and conv_arguments env ?from:(from=0) k args1 args2 cu =
     if Int.equal n (nargs args2) then
       let rcu = ref cu in
       for i = from to n - 1 do
-	rcu := conv_val env CONV k (arg args1 i) (arg args2 i) !rcu
+        rcu := conv_val env CONV k (arg args1 i) (arg args2 i) !rcu
       done;
       !rcu
     else raise NotConvertible

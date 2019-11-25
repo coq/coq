@@ -72,13 +72,13 @@ let cut_ident skip_quote s =
     else
       let c = Char.code (String.get s (n-1)) in
       if Int.equal c code_of_0 && not (Int.equal n slen) then
-	numpart (n-1) n'
+        numpart (n-1) n'
       else if code_of_0 <= c && c <= code_of_9 then
-	numpart (n-1) (n-1)
+        numpart (n-1) (n-1)
       else if skip_quote && (Int.equal c (Char.code '\'') || Int.equal c (Char.code '_')) then
-	numpart (n-1) (n-1)
+        numpart (n-1) (n-1)
       else
-	n'
+        n'
   in
   numpart slen slen
 
@@ -126,20 +126,20 @@ let increment_subscript id =
     let c = id.[carrypos] in
     if is_digit c then
       if Int.equal (Char.code c) (Char.code '9') then begin
-	assert (carrypos>0);
-	add (carrypos-1)
+        assert (carrypos>0);
+        add (carrypos-1)
       end
       else begin
-	let newid = Bytes.of_string id in
-	Bytes.fill newid (carrypos+1) (len-1-carrypos) '0';
-	Bytes.set newid carrypos (Char.chr (Char.code c + 1));
-	newid
+        let newid = Bytes.of_string id in
+        Bytes.fill newid (carrypos+1) (len-1-carrypos) '0';
+        Bytes.set newid carrypos (Char.chr (Char.code c + 1));
+        newid
       end
     else begin
       let newid = Bytes.of_string (id^"0") in
       if carrypos < len-1 then begin
-	Bytes.fill newid (carrypos+1) (len-1-carrypos) '0';
-	Bytes.set newid (carrypos+1) '1'
+        Bytes.fill newid (carrypos+1) (len-1-carrypos) '0';
+        Bytes.set newid (carrypos+1) '1'
       end;
       newid
     end

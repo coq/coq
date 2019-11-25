@@ -52,7 +52,7 @@ let schedule_vio_checking j fs =
           | ((f',id),_,_) :: tl when last = f' -> aux last (id::acc) tl
           | ((f',id),_,_) :: _ as l -> (last,acc) :: aux f' [] l in
         aux f [] l in
-  let prog = Sys.argv.(0) in  
+  let prog = Sys.argv.(0) in
   let stdargs = filter_argv false (List.tl (Array.to_list Sys.argv)) in
   let make_job () =
     let cur = ref 0.0 in
@@ -79,7 +79,7 @@ let schedule_vio_checking j fs =
     let cmp_job (f1,_,_) (f2,_,_) = compare f1 f2 in
     List.flatten
       (List.map (fun (f, tl) ->
-        "-check-vio-tasks" :: 
+        "-check-vio-tasks" ::
         String.concat "," (List.map string_of_int tl) :: [f])
       (pack (List.sort cmp_job !what))) in
   let rc = ref 0 in
@@ -115,7 +115,7 @@ let schedule_vio_compilation j fs =
     | s :: rest when String.length s > 0 && s.[0] = '-' && b -> filter_argv false (s :: rest)
     | _ :: rest when b -> filter_argv b rest
     | s :: rest -> s :: filter_argv b rest in
-  let prog = Sys.argv.(0) in  
+  let prog = Sys.argv.(0) in
   let stdargs = filter_argv false (List.tl (Array.to_list Sys.argv)) in
   let all_jobs = !jobs in
   let make_job () =

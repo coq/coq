@@ -20,7 +20,7 @@ open Stdarg
 open Tacarg
 open Extraargs
 
-let (set_default_tactic, get_default_tactic, print_default_tactic) = 
+let (set_default_tactic, get_default_tactic, print_default_tactic) =
   Tactic_option.declare_tactic_option "Program tactic"
 
 let () =

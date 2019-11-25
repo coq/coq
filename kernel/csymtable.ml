@@ -135,12 +135,12 @@ let rec slot_for_getglobal env kn =
       match cb.const_body_code with
       | None -> set_global (val_of_constant kn)
       | Some code ->
-	 match Cemitcodes.force code with
-	 | BCdefined(code,pl,fv) ->
+         match Cemitcodes.force code with
+         | BCdefined(code,pl,fv) ->
            let v = eval_to_patch env (code,pl,fv) in
            set_global v
-	 | BCalias kn' -> slot_for_getglobal env kn'
-	 | BCconstant -> set_global (val_of_constant kn)
+         | BCalias kn' -> slot_for_getglobal env kn'
+         | BCconstant -> set_global (val_of_constant kn)
     in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some (CEphemeron.create pos);

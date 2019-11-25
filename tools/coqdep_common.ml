@@ -235,15 +235,15 @@ let file_name s = function
 let depend_ML str =
   match search_mli_known str, search_ml_known str with
     | Some mlidir, Some mldir ->
-	let mlifile = file_name str mlidir
-	and mlfile = file_name str mldir in
-	(" "^mlifile^".cmi"," "^mlfile^".cmx")
+        let mlifile = file_name str mlidir
+        and mlfile = file_name str mldir in
+        (" "^mlifile^".cmi"," "^mlfile^".cmx")
     | None, Some mldir ->
-	let mlfile = file_name str mldir in
-	(" "^mlfile^".cmo"," "^mlfile^".cmx")
+        let mlfile = file_name str mldir in
+        (" "^mlfile^".cmo"," "^mlfile^".cmx")
     | Some mlidir, None ->
-	let mlifile = file_name str mlidir in
-	(" "^mlifile^".cmi"," "^mlifile^".cmi")
+        let mlifile = file_name str mlidir in
+        (" "^mlifile^".cmi"," "^mlifile^".cmi")
     | None, None -> "", ""
 
 let soustraite_fichier_ML dep md ext =
@@ -254,9 +254,9 @@ let soustraite_fichier_ML dep md ext =
     let a_faire_opt = ref "" in
     List.iter
       (fun str ->
-	 let byte,opt = depend_ML str in
-	 a_faire := !a_faire ^ byte;
-	 a_faire_opt := !a_faire_opt ^ opt)
+         let byte,opt = depend_ML str in
+         a_faire := !a_faire ^ byte;
+         a_faire_opt := !a_faire_opt ^ opt)
       (List.rev list);
     (!a_faire, !a_faire_opt)
   with
@@ -274,15 +274,15 @@ let autotraite_fichier_ML md ext =
     let a_faire_opt = ref "" in
     begin try
       while true do
-	let (Use_module str) = caml_action buf in
-	if StrSet.mem str !deja_vu then
-	  ()
-	else begin
-	  deja_vu := StrSet.add str !deja_vu;
-	  let byte,opt = depend_ML str in
-	  a_faire := !a_faire ^ byte;
-	  a_faire_opt := !a_faire_opt ^ opt
-	end
+        let (Use_module str) = caml_action buf in
+        if StrSet.mem str !deja_vu then
+          ()
+        else begin
+          deja_vu := StrSet.add str !deja_vu;
+          let byte,opt = depend_ML str in
+          a_faire := !a_faire ^ byte;
+          a_faire_opt := !a_faire_opt ^ opt
+        end
       done
     with Fin_fichier -> ()
     end;
@@ -301,13 +301,13 @@ let traite_fichier_modules md ext =
     let list = mllib_list (Lexing.from_channel chan) in
     List.fold_left
       (fun a_faire str -> match search_mlpack_known str with
-	| Some mldir ->
-	  let file = file_name str mldir in
+        | Some mldir ->
+          let file = file_name str mldir in
           a_faire @ [file]
-	| None ->
-	  match search_ml_known str with
-	    | Some mldir ->
-	      let file = file_name str mldir in
+        | None ->
+          match search_ml_known str with
+            | Some mldir ->
+              let file = file_name str mldir in
               a_faire @ [file]
             | None -> a_faire) [] list
   with
@@ -329,16 +329,16 @@ let escape =
       let c = s.[i] in
       if c = ' ' || c = '#' || c = ':' (* separators and comments *)
         || c = '%' (* pattern *)
-	|| c = '?' || c = '[' || c = ']' || c = '*' (* expansion in filenames *)
-	|| i=0 && c = '~' && (String.length s = 1 || s.[1] = '/' || 
-	    'A' <= s.[1] && s.[1] <= 'Z' || 
-	    'a' <= s.[1] && s.[1] <= 'z') (* homedir expansion *)
+        || c = '?' || c = '[' || c = ']' || c = '*' (* expansion in filenames *)
+        || i=0 && c = '~' && (String.length s = 1 || s.[1] = '/' ||
+            'A' <= s.[1] && s.[1] <= 'Z' ||
+            'a' <= s.[1] && s.[1] <= 'z') (* homedir expansion *)
       then begin
-	let j = ref (i-1) in
-	while !j >= 0 && s.[!j] = '\\' do 
-	  Buffer.add_char s' '\\'; decr j (* escape all preceding '\' *)
-	done;
-	Buffer.add_char s' '\\';
+        let j = ref (i-1) in
+        while !j >= 0 && s.[!j] = '\\' do
+          Buffer.add_char s' '\\'; decr j (* escape all preceding '\' *)
+        done;
+        Buffer.add_char s' '\\';
       end;
       if c = '$' then Buffer.add_char s' '$';
       Buffer.add_char s' c
@@ -370,27 +370,27 @@ let rec traite_fichier_Coq suffixe verbose f =
     let deja_vu_ml = ref StrSet.empty in
     try
       while true do
-      	let tok = coq_action buf in
-	match tok with
-	  | Require (from, strl) ->
-	      List.iter (fun str ->
-		if not (VCache.mem (from, str) !deja_vu_v) then begin
-	          deja_vu_v := VCache.add (from, str) !deja_vu_v;
+        let tok = coq_action buf in
+        match tok with
+          | Require (from, strl) ->
+              List.iter (fun str ->
+                if not (VCache.mem (from, str) !deja_vu_v) then begin
+                  deja_vu_v := VCache.add (from, str) !deja_vu_v;
                   try
                     let file_str = safe_assoc from verbose f str in
                     printf " %s%s" (canonize file_str) suffixe
                   with Not_found ->
-		    if verbose && not (is_in_coqlib ?from str) then
-		      let str =
-			match from with
-			  | None -> str
-			  | Some pth -> pth @ str
-		      in
+                    if verbose && not (is_in_coqlib ?from str) then
+                      let str =
+                        match from with
+                          | None -> str
+                          | Some pth -> pth @ str
+                      in
                       warning_module_notfound f str
-       		end) strl
-	  | Declare sl ->
-	      let declare suff dir s =
-		let base = escape (file_name s dir) in
+                end) strl
+          | Declare sl ->
+              let declare suff dir s =
+                let base = escape (file_name s dir) in
                 match !option_dynlink with
                 | No -> ()
                 | Byte -> printf " %s%s" base suff
@@ -400,32 +400,32 @@ let rec traite_fichier_Coq suffixe verbose f =
                    printf " %s%s" base
                     (if suff=".cmo" then "$(DYNOBJ)" else "$(DYNLIB)")
               in
-	      let decl str =
+              let decl str =
                 let s = basename_noext str in
-		if not (StrSet.mem s !deja_vu_ml) then begin
-		  deja_vu_ml := StrSet.add s !deja_vu_ml;
-		  match search_mllib_known s with
-		    | Some mldir -> declare ".cma" mldir s
-		    | None ->
-		      match search_mlpack_known s with
-			| Some mldir -> declare ".cmo" mldir s
-			| None ->
-			  match search_ml_known s with
-			    | Some mldir -> declare ".cmo" mldir s
-			    | None -> warning_declare f str
-		end
-	      in List.iter decl sl
-	  | Load str ->
-	      let str = Filename.basename str in
-	      if not (VCache.mem (None, [str]) !deja_vu_v) then begin
-	        deja_vu_v := VCache.add (None, [str]) !deja_vu_v;
+                if not (StrSet.mem s !deja_vu_ml) then begin
+                  deja_vu_ml := StrSet.add s !deja_vu_ml;
+                  match search_mllib_known s with
+                    | Some mldir -> declare ".cma" mldir s
+                    | None ->
+                      match search_mlpack_known s with
+                        | Some mldir -> declare ".cmo" mldir s
+                        | None ->
+                          match search_ml_known s with
+                            | Some mldir -> declare ".cmo" mldir s
+                            | None -> warning_declare f str
+                end
+              in List.iter decl sl
+          | Load str ->
+              let str = Filename.basename str in
+              if not (VCache.mem (None, [str]) !deja_vu_v) then begin
+                deja_vu_v := VCache.add (None, [str]) !deja_vu_v;
                 try
                   let (file_str, _) = Hashtbl.find vKnown [str] in
                   let canon = canonize file_str in
                   printf " %s.v" canon;
                   traite_fichier_Coq suffixe true (canon ^ ".v")
                 with Not_found -> ()
-       	      end
+              end
           | AddLoadPath _ | AddRecLoadPath _ -> (* TODO *) ()
       done
     with Fin_fichier -> close_in chan
@@ -439,8 +439,8 @@ let mL_dependencies () =
        let fullname = file_name name dirname in
        let (dep,dep_opt) = traite_fichier_ML fullname ext in
        let intf = match search_mli_known name with
-	 | None -> ""
-	 | Some mldir -> " "^(file_name name mldir)^".cmi"
+         | None -> ""
+         | Some mldir -> " "^(file_name name mldir)^".cmi"
        in
        let efullname = escape fullname in
        printf "%s.cmo:%s%s\n" efullname dep intf;
@@ -515,16 +515,16 @@ let add_coqlib_known recur phys_dir log_dir f =
 let add_known recur phys_dir log_dir f =
   match get_extension f [".v"; ".vo"; ".vio"] with
     | (basename,".v") ->
-	let name = log_dir@[basename] in
-	let file = phys_dir//basename in
-	let () = safe_hash_add compare_file clash_v vKnown (name, (file, true)) in
-	if recur then
+        let name = log_dir@[basename] in
+        let file = phys_dir//basename in
+        let () = safe_hash_add compare_file clash_v vKnown (name, (file, true)) in
+        if recur then
           let paths = List.tl (suffixes name) in
           let iter n = safe_hash_add compare_file clash_v vKnown (n, (file, false)) in
           List.iter iter paths
     | (basename, (".vo" | ".vio")) when not(!option_boot) ->
         let name = log_dir@[basename] in
-	let paths = if recur then suffixes name else [name] in
+        let paths = if recur then suffixes name else [name] in
         List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
     | _ -> ()
 
@@ -576,22 +576,22 @@ let rec treat_file old_dirname old_name =
   let complete_name = file_name name dirname in
   match try (stat complete_name).st_kind with _ -> S_BLK with
     | S_DIR ->
-	(if name.[0] <> '.' then
+        (if name.[0] <> '.' then
            let newdirname =
              match dirname with
                | None -> name
                | Some d -> d//name
-	   in
+           in
            Array.iter (treat_file (Some newdirname)) (Sys.readdir complete_name))
     | S_REG ->
         (match get_extension name [".v";".ml";".mli";".mlg";".mllib";".mlpack"] with
-	   | (base,".v") ->
-	       let name = file_name base dirname
-	       and absname = absolute_file_name base dirname in
-	       addQueue vAccu (name, absname)
+           | (base,".v") ->
+               let name = file_name base dirname
+               and absname = absolute_file_name base dirname in
+               addQueue vAccu (name, absname)
            | (base,(".ml"|".mlg" as ext)) -> addQueue mlAccu (base,ext,dirname)
-	   | (base,".mli") -> addQueue mliAccu (base,dirname)
-	   | (base,".mllib") -> addQueue mllibAccu (base,dirname)
-	   | (base,".mlpack") -> addQueue mlpackAccu (base,dirname)
-	   | _ -> ())
+           | (base,".mli") -> addQueue mliAccu (base,dirname)
+           | (base,".mllib") -> addQueue mllibAccu (base,dirname)
+           | (base,".mlpack") -> addQueue mlpackAccu (base,dirname)
+           | _ -> ())
     | _ -> ()

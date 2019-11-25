@@ -174,10 +174,10 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
           let mtb_old = module_type_of_module old in
           let chk_cst = Subtyping.check_subtypes env' mtb_mp1 mtb_old in
           Univ.ContextSet.add_constraints chk_cst old.mod_constraints
-	| Algebraic (NoFunctor (MEident(mp'))) ->
-	  check_modpath_equiv env' mp1 mp';
-	  old.mod_constraints
-	| _ -> error_generative_module_expected lab
+        | Algebraic (NoFunctor (MEident(mp'))) ->
+          check_modpath_equiv env' mp1 mp';
+          old.mod_constraints
+        | _ -> error_generative_module_expected lab
       in
       let mp' = MPdot (mp,lab) in
       let new_mb = strengthen_and_subst_mb mb_mp1 mp' false in
@@ -198,28 +198,28 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       let mp' = MPdot (mp,lab) in
       let old = match spec with
         | SFBmodule msb -> msb
-	| _ -> error_not_a_module (Label.to_string lab)
+        | _ -> error_not_a_module (Label.to_string lab)
       in
       begin match old.mod_expr with
       | Abstract ->
         let struc = destr_nofunctor old.mod_type in
-	let struc',equiv',cst =
+        let struc',equiv',cst =
           check_with_mod env' struc (idl,mp1) mp' old.mod_delta
         in
-	let new_mb =
+        let new_mb =
           { old with
             mod_type = NoFunctor struc';
             mod_type_alg = None;
             mod_delta = equiv' }
         in
-	let new_equiv = add_delta_resolver equiv equiv' in
-	let id_subst = map_mp mp' mp' equiv' in
+        let new_equiv = add_delta_resolver equiv equiv' in
+        let id_subst = map_mp mp' mp' equiv' in
         let new_after = subst_structure id_subst after in
-	before@(lab,SFBmodule new_mb)::new_after, new_equiv, cst
+        before@(lab,SFBmodule new_mb)::new_after, new_equiv, cst
       | Algebraic (NoFunctor (MEident mp0)) ->
-	let mpnew = rebuild_mp mp0 idl in
-	check_modpath_equiv env' mpnew mp;
-	before@(lab,spec)::after, equiv, Univ.ContextSet.empty
+        let mpnew = rebuild_mp mp0 idl in
+        check_modpath_equiv env' mpnew mp;
+        before@(lab,spec)::after, equiv, Univ.ContextSet.empty
       | _ -> error_generative_module_expected lab
       end
   with

@@ -167,7 +167,7 @@ let is_flexible_reference env sigma bound depth f =
     | Rel n -> (* since local definitions have been expanded *) false
     | Const (kn,_) ->
         let cb = Environ.lookup_constant kn env in
-	(match cb.const_body with Def _ -> true | _ -> false)
+        (match cb.const_body with Def _ -> true | _ -> false)
     | Var id ->
         env |> Environ.lookup_named id |> NamedDecl.is_local_def
     | Ind _ | Construct _ -> false
@@ -187,19 +187,19 @@ let add_free_rels_until strict strongly_strict revpat bound env sigma m pos acc 
     let c = if strongly_strict then hd else c in
     match kind sigma hd with
     | Rel n when (n < bound+depth) && (n >= depth) ->
-	let i = bound + depth - n - 1 in
+        let i = bound + depth - n - 1 in
         acc.(i) <- update pos rig acc.(i)
     | App (f,l) when revpat && is_reversible_pattern sigma bound depth f l ->
         let i = bound + depth - EConstr.destRel sigma f - 1 in
-	acc.(i) <- update pos rig acc.(i)
+        acc.(i) <- update pos rig acc.(i)
     | App (f,_) when rig && is_flexible_reference env sigma bound depth f ->
-	if strict then () else
+        if strict then () else
           iter_with_full_binders sigma push_lift (frec false) ed c
     | Proj (p, _) when rig ->
       if strict then () else
         iter_with_full_binders sigma push_lift (frec false) ed c
     | Case _ when rig ->
-	if strict then () else
+        if strict then () else
           iter_with_full_binders sigma push_lift (frec false) ed c
     | Evar _ -> ()
     | _ ->
@@ -357,17 +357,17 @@ let assoc_by_pos k l =
 let check_correct_manual_implicits autoimps l =
   List.iter (function
     | ExplByName id,(b,fi,forced) ->
-	if not forced then
-	  user_err 
+        if not forced then
+          user_err
             (str "Wrong or non-dependent implicit argument name: " ++ Id.print id ++ str ".")
     | ExplByPos (i,_id),_t ->
-	if i<1 || i>List.length autoimps then
-	  user_err 
+        if i<1 || i>List.length autoimps then
+          user_err
             (str "Bad implicit argument number: " ++ int i ++ str ".")
-	else
-	  user_err 
-	    (str "Cannot set implicit argument number " ++ int i ++
-	      str ": it has no name.")) l
+        else
+          user_err
+            (str "Cannot set implicit argument number " ++ int i ++
+              str ": it has no name.")) l
 
 (* Take a list l of explicitations, and map them to positions. *)
 let flatten_explicitations l autoimps =
@@ -572,10 +572,10 @@ let discharge_implicits (_,(req,l)) =
   | ImplMutualInductive (kn,flags) ->
     (try
       let l' = List.map (fun (gr, l) ->
-	let vars = variable_section_segment_of_reference gr in
-	let extra_impls = impls_of_context vars in
+        let vars = variable_section_segment_of_reference gr in
+        let extra_impls = impls_of_context vars in
         (gr,
-	 List.map (add_section_impls vars extra_impls) l)) l
+         List.map (add_section_impls vars extra_impls) l)) l
       in
         Some (ImplMutualInductive (kn,flags),l')
     with Not_found -> (* ref not defined in this section *) Some (req,l))
@@ -672,9 +672,9 @@ let check_inclusion l =
   (* Check strict inclusion *)
   let rec aux = function
     | n1::(n2::_ as nl) ->
-	if n1 <= n2 then
-	  user_err Pp.(str "Sequences of implicit arguments must be of different lengths.");
-	aux nl
+        if n1 <= n2 then
+          user_err Pp.(str "Sequences of implicit arguments must be of different lengths.");
+        aux nl
     | _ -> () in
   aux (List.map snd l)
 
@@ -682,7 +682,7 @@ let check_rigidity isrigid =
   if not isrigid then
     user_err  (strbrk "Multiple sequences of implicit arguments available only for references that cannot be applied to an arbitrarily large number of arguments.")
 
-let projection_implicits env p impls = 
+let projection_implicits env p impls =
   let npars = Projection.npars p in
   CList.skipn_at_least npars impls
 
@@ -771,7 +771,7 @@ let extract_impargs_data impls =
 let lift_implicits n =
   List.map (fun x ->
     match fst x with
-	ExplByPos (k, id) -> ExplByPos (k + n, id), snd x
+        ExplByPos (k, id) -> ExplByPos (k + n, id), snd x
       | _ -> x)
 
 let make_implicits_list l = [DefaultImpArgs, l]

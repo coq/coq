@@ -36,7 +36,7 @@ val eq_annot_sw : annot_sw -> annot_sw -> bool
 val hash_annot_sw : annot_sw -> int
 
 type sort_annot = string * int
-      
+
 type rec_pos = int array
 
 val eq_rec_pos : rec_pos -> rec_pos -> bool
@@ -47,8 +47,8 @@ type atom =
   | Aind of pinductive
   | Asort of Sorts.t
   | Avar of Id.t
-  | Acase of annot_sw * accumulator * t * (t -> t) 
-  | Afix of t array * t array * rec_pos * int 
+  | Acase of annot_sw * accumulator * t * (t -> t)
+  | Afix of t array * t array * rec_pos * int
   | Acofix of t array * t array * int * t
   | Acofixe of t array * t array * int * t
   | Aprod of Name.t * t * (t -> t)
@@ -73,7 +73,7 @@ val mk_meta_accu : metavariable -> t
 val mk_evar_accu : Evar.t -> t array -> t
 val mk_proj_accu : (inductive * int) -> accumulator -> t
 val upd_cofix : t -> t -> unit
-val force_cofix : t -> t 
+val force_cofix : t -> t
 val mk_const : tag -> t
 val mk_block : tag -> t array -> t
 
@@ -98,9 +98,9 @@ val cast_accu : t -> accumulator
 [@@ocaml.inline always]
 
 (* Functions over block: i.e constructors *)
-    
+
 type block
-      
+
 val block_size : block -> int
 val block_field : block -> int -> t
 val block_tag : block -> int
@@ -156,7 +156,7 @@ val addMulDiv : t -> t -> t -> t -> t
 val eq      : t -> t -> t -> t
 val lt      : t -> t -> t -> t
 val le      : t -> t -> t -> t
-val compare : t -> t -> t -> t 
+val compare : t -> t -> t -> t
 
 val print : t -> t
 

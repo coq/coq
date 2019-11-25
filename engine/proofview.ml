@@ -130,7 +130,7 @@ let focus_context (left,right) =
     i]. *)
 let focus_sublist i j l =
   let (left,sub_right) = CList.goto (i-1) l in
-  let (sub, right) = 
+  let (sub, right) =
     try CList.chop (j-i+1) sub_right
     with Failure _ -> raise CList.IndexOutOfRange
   in
@@ -487,7 +487,7 @@ let fold_left2_goal i s l =
   let err =
     return () >>= fun () -> (* Delay the computation of list lengths. *)
     tclZERO (SizeMismatch (CList.length initial.comb,CList.length l))
-  in 
+  in
   Proof.List.fold_left2 err begin fun ((r,subgoals) as cur) goal a ->
     Solution.get >>= fun step ->
     match cleared_alias step goal with
@@ -523,7 +523,7 @@ let fold_left2_goal i s l =
 let tclDISPATCHGEN0 join tacs =
   match tacs with
   | [] ->
-      begin 
+      begin
         let open Proof in
         Comb.get >>= function
         | [] -> tclUNIT (join [])
@@ -1020,7 +1020,7 @@ module Unsafe = struct
   let tclEVARSADVANCE evd =
     Pv.modify (fun ps -> { ps with solution = evd; comb = undefined evd ps.comb })
 
-  let tclEVARUNIVCONTEXT ctx = 
+  let tclEVARUNIVCONTEXT ctx =
     Pv.modify (fun ps -> { ps with solution = Evd.set_universe_context ps.solution ctx })
 
   let reset_future_goals p =
@@ -1244,7 +1244,7 @@ module V82 = struct
     let (_goals,evd) = Evd.Monad.List.map map comb ps.solution in
     { ps with solution = evd; }
     end
-      
+
   let has_unresolved_evar pv =
     Evd.has_undefined pv.solution
 
@@ -1253,8 +1253,8 @@ module V82 = struct
     let undef = Evd.undefined_map pv.solution in
     let goals = CList.rev_map fst (Evar.Map.bindings undef) in
     { pv with comb = List.map with_empty_state goals }
-      
-    
+
+
 
   let top_goals initial { solution=solution; } =
     let goals = CList.map (fun (t,_) -> fst (Constr.destEvar (EConstr.Unsafe.to_constr t))) initial in

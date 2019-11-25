@@ -71,7 +71,7 @@ END
 type raw_strategy = (constr_expr, Tacexpr.raw_red_expr) strategy_ast
 type glob_strategy = (glob_constr_and_expr, Tacexpr.raw_red_expr) strategy_ast
 
-let interp_strategy ist gl s = 
+let interp_strategy ist gl s =
   let sigma = project gl in
     sigma, strategy_of_ast s
 let glob_strategy ist s = map_strategy (Tacintern.intern_constr ist) (fun c -> c) s

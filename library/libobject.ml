@@ -85,12 +85,12 @@ let declare_object_full odecl =
   and rebuild lobj = infun (odecl.rebuild_function (outfun lobj))
   in
   Hashtbl.add cache_tab na { dyn_cache_function = cacher;
-			     dyn_load_function = loader;
+                             dyn_load_function = loader;
                              dyn_open_function = opener;
-			     dyn_subst_function = substituter;
-			     dyn_classify_function = classifier;
-			     dyn_discharge_function = discharge;
-			     dyn_rebuild_function = rebuild };
+                             dyn_subst_function = substituter;
+                             dyn_classify_function = classifier;
+                             dyn_discharge_function = discharge;
+                             dyn_rebuild_function = rebuild };
   (infun,outfun)
 
 let declare_object odecl = fst (declare_object_full odecl)
@@ -116,7 +116,7 @@ let load_object i ((_,lobj) as node) =
 let open_object i ((_,lobj) as node) =
   apply_dyn_fun (fun d -> d.dyn_open_function i node) lobj
 
-let subst_object ((_,lobj) as node) = 
+let subst_object ((_,lobj) as node) =
   apply_dyn_fun (fun d -> d.dyn_subst_function node) lobj
 
 let classify_object lobj =

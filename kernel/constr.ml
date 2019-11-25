@@ -16,7 +16,7 @@
 (* Optimization of substitution functions by Chet Murthy *)
 (* Optimization of lifting functions by Bruno Barras, Mar 1997 *)
 (* Hash-consing by Bruno Barras in Feb 1998 *)
-(* Restructuration of Coq of the type-checking kernel by Jean-Christophe 
+(* Restructuration of Coq of the type-checking kernel by Jean-Christophe
    Filliâtre, 1999 *)
 (* Abstraction of the syntax of terms and iterators by Hugo Herbelin, 2000 *)
 (* Cleaning and lightening of the kernel by Bruno Barras, Nov 2001 *)
@@ -919,7 +919,7 @@ let equal n m = eq_constr 0 m n (* to avoid tracing a recursive fun *)
 
 let eq_constr_univs univs m n =
   if m == n then true
-  else 
+  else
     let eq_universes _ _ = UGraph.check_eq_instances univs in
     let eq_sorts s1 s2 = s1 == s2 || UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' nargs m n =
@@ -928,11 +928,11 @@ let eq_constr_univs univs m n =
 
 let leq_constr_univs univs m n =
   if m == n then true
-  else 
+  else
     let eq_universes _ _ = UGraph.check_eq_instances univs in
-    let eq_sorts s1 s2 = s1 == s2 || 
+    let eq_sorts s1 s2 = s1 == s2 ||
       UGraph.check_eq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
-    let leq_sorts s1 s2 = s1 == s2 || 
+    let leq_sorts s1 s2 = s1 == s2 ||
       UGraph.check_leq univs (Sorts.univ_of_sort s1) (Sorts.univ_of_sort s2) in
     let rec eq_constr' nargs m n =
       m == n || compare_head_gen eq_universes eq_sorts eq_constr' nargs m n
@@ -944,17 +944,17 @@ let leq_constr_univs univs m n =
 
 let eq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
-  else 
+  else
     let cstrs = ref Constraint.empty in
     let eq_universes _ _ = UGraph.check_eq_instances univs in
-    let eq_sorts s1 s2 = 
+    let eq_sorts s1 s2 =
       if Sorts.equal s1 s2 then true
       else
-	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if UGraph.check_eq univs u1 u2 then true
-	else
-	  (cstrs := Univ.enforce_eq u1 u2 !cstrs;
-	   true)
+        let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
+        if UGraph.check_eq univs u1 u2 then true
+        else
+          (cstrs := Univ.enforce_eq u1 u2 !cstrs;
+           true)
     in
     let rec eq_constr' nargs m n =
       m == n || compare_head_gen eq_universes eq_sorts eq_constr' nargs m n
@@ -964,23 +964,23 @@ let eq_constr_univs_infer univs m n =
 
 let leq_constr_univs_infer univs m n =
   if m == n then true, Constraint.empty
-  else 
+  else
     let cstrs = ref Constraint.empty in
     let eq_universes _ _ l l' = UGraph.check_eq_instances univs l l' in
-    let eq_sorts s1 s2 = 
+    let eq_sorts s1 s2 =
       if Sorts.equal s1 s2 then true
       else
-	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if UGraph.check_eq univs u1 u2 then true
-	else (cstrs := Univ.enforce_eq u1 u2 !cstrs;
-	      true)
+        let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
+        if UGraph.check_eq univs u1 u2 then true
+        else (cstrs := Univ.enforce_eq u1 u2 !cstrs;
+              true)
     in
-    let leq_sorts s1 s2 = 
+    let leq_sorts s1 s2 =
       if Sorts.equal s1 s2 then true
-      else 
-	let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
-	if UGraph.check_leq univs u1 u2 then true
-	else
+      else
+        let u1 = Sorts.univ_of_sort s1 and u2 = Sorts.univ_of_sort s2 in
+        if UGraph.check_leq univs u1 u2 then true
+        else
           (try let c, _ = UGraph.enforce_leq_alg u1 u2 univs in
             cstrs := Univ.Constraint.union c !cstrs;
             true
@@ -1175,54 +1175,54 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
   let rec hash_term t =
     match t with
       | Var i ->
-	(Var (sh_id i), combinesmall 1 (Id.hash i))
+        (Var (sh_id i), combinesmall 1 (Id.hash i))
       | Sort s ->
-	(Sort (sh_sort s), combinesmall 2 (Sorts.hash s))
+        (Sort (sh_sort s), combinesmall 2 (Sorts.hash s))
       | Cast (c, k, t) ->
-	let c, hc = sh_rec c in
-	let t, ht = sh_rec t in
-	(Cast (c, k, t), combinesmall 3 (combine3 hc (hash_cast_kind k) ht))
+        let c, hc = sh_rec c in
+        let t, ht = sh_rec t in
+        (Cast (c, k, t), combinesmall 3 (combine3 hc (hash_cast_kind k) ht))
       | Prod (na,t,c) ->
-	let t, ht = sh_rec t
-	and c, hc = sh_rec c in
+        let t, ht = sh_rec t
+        and c, hc = sh_rec c in
         (Prod (sh_na na, t, c), combinesmall 4 (combine3 (hash_annot Name.hash na) ht hc))
       | Lambda (na,t,c) ->
-	let t, ht = sh_rec t
-	and c, hc = sh_rec c in
+        let t, ht = sh_rec t
+        and c, hc = sh_rec c in
         (Lambda (sh_na na, t, c), combinesmall 5 (combine3 (hash_annot Name.hash na) ht hc))
       | LetIn (na,b,t,c) ->
-	let b, hb = sh_rec b in
-	let t, ht = sh_rec t in
-	let c, hc = sh_rec c in
+        let b, hb = sh_rec b in
+        let t, ht = sh_rec t in
+        let c, hc = sh_rec c in
         (LetIn (sh_na na, b, t, c), combinesmall 6 (combine4 (hash_annot Name.hash na) hb ht hc))
       | App (c,l) ->
-	let c, hc = sh_rec c in
-	let l, hl = hash_term_array l in
-	(App (c,l), combinesmall 7 (combine hl hc))
+        let c, hc = sh_rec c in
+        let l, hl = hash_term_array l in
+        (App (c,l), combinesmall 7 (combine hl hc))
       | Evar (e,l) ->
-	let l, hl = hash_term_array l in
-	(Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
+        let l, hl = hash_term_array l in
+        (Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
       | Const (c,u) ->
-	let c' = sh_con c in
-	let u', hu = sh_instance u in
-	(Const (c', u'), combinesmall 9 (combine (Constant.SyntacticOrd.hash c) hu))
+        let c' = sh_con c in
+        let u', hu = sh_instance u in
+        (Const (c', u'), combinesmall 9 (combine (Constant.SyntacticOrd.hash c) hu))
       | Ind (ind,u) ->
-	let u', hu = sh_instance u in
-	(Ind (sh_ind ind, u'), 
-	 combinesmall 10 (combine (ind_syntactic_hash ind) hu))
+        let u', hu = sh_instance u in
+        (Ind (sh_ind ind, u'),
+         combinesmall 10 (combine (ind_syntactic_hash ind) hu))
       | Construct (c,u) ->
-	let u', hu = sh_instance u in
-	(Construct (sh_construct c, u'),
-	 combinesmall 11 (combine (constructor_syntactic_hash c) hu))
+        let u', hu = sh_instance u in
+        (Construct (sh_construct c, u'),
+         combinesmall 11 (combine (constructor_syntactic_hash c) hu))
       | Case (ci,p,c,bl) ->
-	let p, hp = sh_rec p
-	and c, hc = sh_rec c in
-	let bl,hbl = hash_term_array bl in
+        let p, hp = sh_rec p
+        and c, hc = sh_rec c in
+        let bl,hbl = hash_term_array bl in
         let hbl = combine (combine hc hp) hbl in
-	(Case (sh_ci ci, p, c, bl), combinesmall 12 hbl)
+        (Case (sh_ci ci, p, c, bl), combinesmall 12 hbl)
       | Fix (ln,(lna,tl,bl)) ->
         let bl,hbl = hash_term_array bl in
-	let tl,htl = hash_term_array tl in
+        let tl,htl = hash_term_array tl in
         let () = Array.iteri (fun i x -> Array.unsafe_set lna i (sh_na x)) lna in
         let fold accu na = combine (hash_annot Name.hash na) accu in
         let hna = Array.fold_left fold 0 lna in
@@ -1230,16 +1230,16 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
         (Fix (ln,(lna,tl,bl)), combinesmall 13 h)
       | CoFix(ln,(lna,tl,bl)) ->
         let bl,hbl = hash_term_array bl in
-	let tl,htl = hash_term_array tl in
+        let tl,htl = hash_term_array tl in
         let () = Array.iteri (fun i x -> Array.unsafe_set lna i (sh_na x)) lna in
         let fold accu na = combine (hash_annot Name.hash na) accu in
         let hna = Array.fold_left fold 0 lna in
         let h = combine3 hna hbl htl in
         (CoFix (ln,(lna,tl,bl)), combinesmall 14 h)
       | Meta n ->
-	(t, combinesmall 15 n)
+        (t, combinesmall 15 n)
       | Rel n ->
-	(t, combinesmall 16 n)
+        (t, combinesmall 16 n)
       | Proj (p,c) ->
         let c, hc = sh_rec c in
         let p' = Projection.hcons p in

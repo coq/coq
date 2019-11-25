@@ -56,7 +56,7 @@ let rec read_all_lines in_chan =
     let len = String.length arg  in
     let arg =
       if len > 0 && arg.[len - 1] = '\r' then
-	String.sub arg 0 (len - 1)
+        String.sub arg 0 (len - 1)
       else arg
     in
     arg::(read_all_lines in_chan)
@@ -135,7 +135,7 @@ and asks_for_coqtop args =
       match file with
       | Some _ ->
           let () = custom_coqtop := file in
-	  filter_coq_opts args
+          filter_coq_opts args
       | None -> exit 0
 
 exception WrongExitStatus of string
@@ -597,8 +597,8 @@ struct
     let opts = Hashtbl.fold mkopt current_state [] in
     eval_call (Xmlprotocol.set_options opts) h
       (function
-	| Interface.Good () -> k ()
-	| _ -> failwith "Cannot set options. Resetting coqtop")
+        | Interface.Good () -> k ()
+        | _ -> failwith "Cannot set options. Resetting coqtop")
 
 end
 

@@ -21,7 +21,7 @@ val uid : goal -> string
 (* Debugging help *)
 val pr_goal : goal -> Pp.t
 
-(* Layer to implement v8.2 tactic engine ontop of the new architecture. 
+(* Layer to implement v8.2 tactic engine ontop of the new architecture.
    Types are different from what they used to be due to a change of the
    internal types. *)
 module V82 : sig
@@ -42,7 +42,7 @@ module V82 : sig
   (* Old style mk_goal primitive, returns a new goal with corresponding
        hypotheses and conclusion, together with a term which is precisely
        the evar corresponding to the goal, and an updated evar_map. *)
-  val mk_goal : Evd.evar_map -> 
+  val mk_goal : Evd.evar_map ->
                          Environ.named_context_val ->
                          EConstr.constr ->
                          goal * EConstr.constr * Evd.evar_map
@@ -61,7 +61,7 @@ module V82 : sig
   val nf_evar : Evd.evar_map -> goal -> goal * Evd.evar_map
 
   (* Goal represented as a type, doesn't take into account section variables *)
-  val abstract_type : Evd.evar_map -> goal -> EConstr.types 
+  val abstract_type : Evd.evar_map -> goal -> EConstr.types
 
 end
 

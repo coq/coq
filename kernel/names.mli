@@ -81,7 +81,7 @@ end
 module Name :
 sig
   type t = Anonymous     (** anonymous identifier *)
-	 | Name of Id.t  (** non-anonymous identifier *)
+         | Name of Id.t  (** non-anonymous identifier *)
 
   val mk_name : Id.t -> t
   (** constructor *)
@@ -530,8 +530,8 @@ type 'a tableKey =
   | RelKey of Int.t
 
 type inv_rel_key = int (** index in the [rel_context] part of environment
-			  starting by the end, {e inverse}
-			  of de Bruijn indice *)
+                          starting by the end, {e inverse}
+                          of de Bruijn indice *)
 
 val eq_table_key : ('a -> 'a -> bool) -> 'a tableKey -> 'a tableKey -> bool
 val eq_constant_key : Constant.t -> Constant.t -> bool

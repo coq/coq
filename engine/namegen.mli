@@ -88,7 +88,7 @@ val next_ident_away : Id.t -> Id.Set.t -> Id.t
 (** Avoid clashing with a name already used in current module *)
 val next_ident_away_in_goal : Id.t -> Id.Set.t -> Id.t
 
-(** Avoid clashing with a name already used in current module 
+(** Avoid clashing with a name already used in current module
    but tolerate overwriting section variables, as in goals *)
 val next_global_ident_away : Id.t -> Id.Set.t -> Id.t
 

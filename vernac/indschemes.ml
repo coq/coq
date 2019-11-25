@@ -109,7 +109,7 @@ let define ~poly id internal sigma c t =
       { const_entry_body = c;
         const_entry_secctx = None;
         const_entry_type = t;
-	const_entry_universes = univs;
+        const_entry_universes = univs;
         const_entry_opaque = false;
         const_entry_inline_code = false;
         const_entry_feedback = None;
@@ -130,7 +130,7 @@ let alarm what internal msg =
   | InternalTacticRequest ->
     (if debug then
       Feedback.msg_debug
-	(hov 0 msg ++ fnl () ++ what ++ str " not defined.")); None
+        (hov 0 msg ++ fnl () ++ what ++ str " not defined.")); None
   | _ -> Some msg
 
 let try_declare_scheme what f internal names kn =
@@ -140,27 +140,27 @@ let try_declare_scheme what f internal names kn =
   let rec extract_exn = function Logic_monad.TacticFailure e -> extract_exn e | e -> e in
   let msg = match extract_exn (fst e) with
     | ParameterWithoutEquality cst ->
-	alarm what internal
-	  (str "Boolean equality not found for parameter " ++ Printer.pr_global cst ++
-	   str".")
+        alarm what internal
+          (str "Boolean equality not found for parameter " ++ Printer.pr_global cst ++
+           str".")
     | InductiveWithProduct ->
-	alarm what internal
-	  (str "Unable to decide equality of functional arguments.")
+        alarm what internal
+          (str "Unable to decide equality of functional arguments.")
     | InductiveWithSort ->
-	alarm what internal
-	  (str "Unable to decide equality of type arguments.")
+        alarm what internal
+          (str "Unable to decide equality of type arguments.")
     | NonSingletonProp ind ->
-	alarm what internal
-	  (str "Cannot extract computational content from proposition " ++
-	   quote (Printer.pr_inductive (Global.env()) ind) ++ str ".")
+        alarm what internal
+          (str "Cannot extract computational content from proposition " ++
+           quote (Printer.pr_inductive (Global.env()) ind) ++ str ".")
     | EqNotFound (ind',ind) ->
-	alarm what internal
-	  (str "Boolean equality on " ++
-	   quote (Printer.pr_inductive (Global.env()) ind') ++
-	   strbrk " is missing.")
+        alarm what internal
+          (str "Boolean equality on " ++
+           quote (Printer.pr_inductive (Global.env()) ind') ++
+           strbrk " is missing.")
     | UndefinedCst s ->
-	alarm what internal
-	  (strbrk "Required constant " ++ str s ++ str " undefined.")
+        alarm what internal
+          (strbrk "Required constant " ++ str s ++ str " undefined.")
     | AlreadyDeclared msg ->
         alarm what internal (msg ++ str ".")
     | DecidabilityMutualNotSupported ->
@@ -182,7 +182,7 @@ let try_declare_scheme what f internal names kn =
             str " is applied to an argument which is not a variable.")
     | e when CErrors.noncritical e ->
         alarm what internal
-	  (str "Unexpected error during scheme creation: " ++ CErrors.print e)
+          (str "Unexpected error during scheme creation: " ++ CErrors.print e)
     | _ -> iraise e
   in
   match msg with
@@ -378,10 +378,10 @@ requested
         let newref = CAst.make newid in
           ((newref,isdep,ind,z)::l1),l2
       in
-	match t with
-	| CaseScheme (x,y,z) -> names "_case" "_case" x y z
-	| InductionScheme (x,y,z) -> names "_ind" "_rec" x y z
-	| EqualityScheme  x -> l1,((None,smart_global_inductive x)::l2)
+        match t with
+        | CaseScheme (x,y,z) -> names "_case" "_case" x y z
+        | InductionScheme (x,y,z) -> names "_ind" "_rec" x y z
+        | EqualityScheme  x -> l1,((None,smart_global_inductive x)::l2)
 
 let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
   let lrecnames = List.map (fun ({CAst.v},_,_,_) -> v) lnamedepindsort
@@ -390,13 +390,13 @@ let do_mutual_induction_scheme ?(force_mutual=false) lnamedepindsort =
     List.fold_right
       (fun (_,dep,ind,sort) (evd, l, inst) ->
        let evd, indu, inst =
-	 match inst with
-	 | None ->
+         match inst with
+         | None ->
             let _, ctx = Typeops.type_of_global_in_context env0 (IndRef ind) in
             let u, ctx = UnivGen.fresh_instance_from ctx None in
             let evd = Evd.from_ctx (UState.of_context_set ctx) in
-	      evd, (ind,u), Some u
-	 | Some ui -> evd, (ind, ui), inst
+              evd, (ind,u), Some u
+         | Some ui -> evd, (ind, ui), inst
        in
           (evd, (indu,dep,sort) :: l, inst))
     lnamedepindsort (Evd.from_env env0,[],None)
@@ -425,10 +425,10 @@ let get_common_underlying_mutual_inductive env = function
       | (_,ind')::_ ->
           raise (RecursionSchemeError (env, NotMutualInScheme (ind,ind')))
       | [] ->
-	  if not (List.distinct_f Int.compare (List.map snd (List.map snd all)))
+          if not (List.distinct_f Int.compare (List.map snd (List.map snd all)))
           then user_err Pp.(str "A type occurs twice");
-	  mind,
-	  List.map_filter
+          mind,
+          List.map_filter
             (function (Some id,(_,i)) -> Some (i,id.CAst.v) | (None,_) -> None) all
 
 let do_scheme l =
@@ -443,8 +443,8 @@ tried to declare different schemes at once *)
       if not (List.is_empty ischeme) then do_mutual_induction_scheme ischeme
       else
         let mind,l = get_common_underlying_mutual_inductive env escheme in
-	declare_beq_scheme_with l mind;
-	declare_eq_decidability_scheme_with l mind
+        declare_beq_scheme_with l mind;
+        declare_eq_decidability_scheme_with l mind
     )
 
 (**********************************************************************)
@@ -477,11 +477,11 @@ let build_combined_scheme env schemes =
     let (ctx, arity) = decompose_prod ty in
     let (_, last) = List.hd ctx in
       match Constr.kind last with
-	| App (ind, args) ->
-	    let ind = destInd ind in
-	    let (_,spec) = Inductive.lookup_mind_specif env (fst ind) in
-	      ctx, ind, spec.mind_nrealargs
-	| _ -> ctx, destInd last, 0
+        | App (ind, args) ->
+            let ind = destInd ind in
+            let (_,spec) = Inductive.lookup_mind_specif env (fst ind) in
+              ctx, ind, spec.mind_nrealargs
+        | _ -> ctx, destInd last, 0
   in
   let (c, t) = List.hd defs in
   let ctx, ind, nargs = find_inductive t in

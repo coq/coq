@@ -154,15 +154,15 @@ let hdchar env sigma c =
     | Var id  -> lowercase_first_char id
     | Sort s -> sort_hdchar (ESorts.kind sigma s)
     | Rel n ->
-	(if n<=k then "p" (* the initial term is flexible product/function *)
-	 else
+        (if n<=k then "p" (* the initial term is flexible product/function *)
+         else
            try match let d = lookup_rel (n-k) env in get_name d, get_type d with
              | Name id, _ -> lowercase_first_char id
              | Anonymous, t -> hdrec 0 (lift (n-k) t)
-	   with Not_found -> "y")
+           with Not_found -> "y")
     | Fix ((_,i),(lna,_,_)) | CoFix (i,(lna,_,_)) ->
         let id = match lna.(i).binder_name with Name id -> id | _ -> assert false in
-	lowercase_first_char id
+        lowercase_first_char id
     | Evar _ (* We could do better... *)
     | Meta _ | Case (_, _, _, _) -> "y"
     | Int _ -> "i"
@@ -196,7 +196,7 @@ let name_context env sigma hyps =
   snd
     (List.fold_left
        (fun (env,hyps) d ->
-	  let d' = name_assumption env sigma d in (push_rel d' env, d' :: hyps))
+          let d' = name_assumption env sigma d in (push_rel d' env, d' :: hyps))
        (env,[]) (List.rev hyps))
 
 let mkProd_or_LetIn_name env sigma b d = mkProd_or_LetIn (name_assumption env sigma d) b
@@ -356,8 +356,8 @@ let next_name_away_with_default_using_types default na avoid t =
   let id = match na with
     | Name id -> id
     | Anonymous -> match !reserved_type_name t with
-	| Name id -> id
-	| Anonymous -> Id.of_string default in
+        | Name id -> id
+        | Anonymous -> Id.of_string default in
   next_ident_away id avoid
 
 let next_name_away = next_name_away_with_default default_non_dependent_string
@@ -458,12 +458,12 @@ let rename_bound_vars_as_displayed sigma avoid env c =
   let rec rename avoid env c =
     match EConstr.kind sigma c with
     | Prod (na,c1,c2)  ->
-	let na',avoid' =
+        let na',avoid' =
           compute_displayed_name_in sigma
             (RenamingElsewhereFor (env,c2)) avoid na.binder_name c2 in
         mkProd ({na with binder_name=na'}, c1, rename avoid' (na' :: env) c2)
     | LetIn (na,c1,t,c2) ->
-	let na',avoid' =
+        let na',avoid' =
           compute_displayed_let_name_in sigma
             (RenamingElsewhereFor (env,c2)) avoid na.binder_name c2 in
         mkLetIn ({na with binder_name=na'},c1,t, rename avoid' (na' :: env) c2)

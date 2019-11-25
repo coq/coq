@@ -91,25 +91,25 @@ let expmod_constr cache modlist c =
   let rec substrec c =
     match kind c with
       | Case (ci,p,t,br) ->
-	  Constr.map substrec (mkCase (update_case_info ci modlist,p,t,br))
+          Constr.map substrec (mkCase (update_case_info ci modlist,p,t,br))
 
       | Ind (ind,u) ->
-	  (try
-	    share_univs (IndRef ind) u modlist
-	   with
-	    | Not_found -> Constr.map substrec c)
+          (try
+            share_univs (IndRef ind) u modlist
+           with
+            | Not_found -> Constr.map substrec c)
 
       | Construct (cstr,u) ->
-	  (try
-	     share_univs (ConstructRef cstr) u modlist
-	   with
-	    | Not_found -> Constr.map substrec c)
+          (try
+             share_univs (ConstructRef cstr) u modlist
+           with
+            | Not_found -> Constr.map substrec c)
 
       | Const (cst,u) ->
-	  (try
-	    share_univs (ConstRef cst) u modlist
-	   with
-	    | Not_found -> Constr.map substrec c)
+          (try
+            share_univs (ConstRef cst) u modlist
+           with
+            | Not_found -> Constr.map substrec c)
 
       | Proj (p, c') ->
         let map cst npars =
@@ -228,7 +228,7 @@ let cook_constant { from = cb; info } =
   let const_hyps =
     Context.Named.fold_outside (fun decl hyps ->
       List.filter (fun decl' -> not (Id.equal (NamedDecl.get_id decl) (NamedDecl.get_id decl')))
-		  hyps)
+                  hyps)
       hyps0 ~init:cb.const_hyps in
   let typ = abstract_constant_type (expmod cb.const_type) hyps in
   let private_univs = Option.map (on_snd (Univ.subst_univs_level_constraints

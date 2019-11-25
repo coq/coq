@@ -58,8 +58,8 @@ let enforce_section_locality locality_flag =
 let make_module_locality = function
   | Some false ->
       if Lib.sections_are_opened () then
-	CErrors.user_err Pp.(str
-	  "This command does not support the Global option in sections.");
+        CErrors.user_err Pp.(str
+          "This command does not support the Global option in sections.");
       false
   | Some true -> true
   | None -> false

@@ -458,7 +458,7 @@ let catchable = function
   | Refiner.FailError _ -> true
   | e -> Logic.catchable_exception e
 
-let pr_depth l = 
+let pr_depth l =
   let rec fmt elts =
     match elts with
     | [] -> []
@@ -759,8 +759,8 @@ module Search = struct
               Feedback.msg_debug
                 (str"Adding shelved subgoals to the search: " ++
                  prlist_with_sep spc (pr_ev sigma) goals ++
-		 str" while shelving " ++
-		 prlist_with_sep spc (pr_ev sigma) shelved);
+                 str" while shelving " ++
+                 prlist_with_sep spc (pr_ev sigma) shelved);
             shelve_goals shelved <*>
               (if List.is_empty goals then tclUNIT ()
                else
@@ -777,7 +777,7 @@ module Search = struct
              (with_shelf tac >>= fun s ->
               let i = !idx in incr idx; result s i None)
              (fun e' ->
-	      if CErrors.noncritical (fst e') then
+              if CErrors.noncritical (fst e') then
                 (pr_error e'; aux (merge_exceptions e e') tl)
               else iraise e')
     and aux e = function

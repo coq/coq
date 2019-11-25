@@ -45,7 +45,7 @@ sig
   (** {6 Creating lists} *)
 
   val interval : int -> int -> int list
-  (** [interval i j] creates the list [[i; i + 1; ...; j]], or [[]] when 
+  (** [interval i j] creates the list [[i; i + 1; ...; j]], or [[]] when
       [j <= i]. *)
 
   val make : int -> 'a -> 'a list

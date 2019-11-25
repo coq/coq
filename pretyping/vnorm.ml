@@ -50,7 +50,7 @@ let invert_tag cst tag reloc_tbl =
       let tagj,arity = reloc_tbl.(j) in
       let no_arity = Int.equal arity 0 in
       if Int.equal tag tagj && (cst && no_arity || not (cst || no_arity)) then
-	raise (Find_at j)
+        raise (Find_at j)
       else ()
     done;raise Not_found
   with Find_at j -> (j+1)
@@ -161,9 +161,9 @@ and nf_whd env sigma whd typ =
       let tag = btag b in
       let (tag,ofs) =
         if tag = Obj.last_non_constant_constructor_tag then
-	  match whd_val (bfield b 0) with
+          match whd_val (bfield b 0) with
           | Vconstr_const tag -> (tag+Obj.last_non_constant_constructor_tag, 1)
-	  | _ -> assert false
+          | _ -> assert false
         else (tag, 0) in
       let capp,ctyp = construct_of_constr_block env tag typ in
       let args = nf_bargs env sigma b ofs ctyp in
@@ -247,11 +247,11 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
   | [] -> c
   | Zapp vargs :: stk ->
       if nargs vargs >= from then
-	let t, args = nf_args ~from:from env sigma vargs t in
-	nf_stk env sigma (mkApp(c,args)) t stk
+        let t, args = nf_args ~from:from env sigma vargs t in
+        nf_stk env sigma (mkApp(c,args)) t stk
       else
-	let rest = from - nargs vargs in
-	nf_stk ~from:rest env sigma c t stk
+        let rest = from - nargs vargs in
+        nf_stk ~from:rest env sigma c t stk
   | Zfix (f,vargs) :: stk ->
       assert (from = 0) ;
       let fa, typ = nf_fix_app env sigma f vargs in
@@ -272,8 +272,8 @@ and nf_stk ?from:(from=0) env sigma c t stk  =
       (* calcul des branches *)
       let bsw = branch_of_switch (nb_rel env) sw in
       let mkbranch i (n,v) =
-	let decl,decl_with_letin,codom = btypes.(i) in
-	let b = nf_val (Termops.push_rels_assum decl env) sigma v codom in
+        let decl,decl_with_letin,codom = btypes.(i) in
+        let b = nf_val (Termops.push_rels_assum decl env) sigma v codom in
         Termops.it_mkLambda_or_LetIn_from_no_LetIn b decl_with_letin
       in
       let branchs = Array.mapi mkbranch bsw in
@@ -298,7 +298,7 @@ and nf_predicate env sigma ind mip params v pT =
       let k = nb_rel env in
       let vb = reduce_fun k f in
       let body =
-	nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in
+        nf_predicate (push_rel (LocalAssum (name,dom)) env) sigma ind mip params vb codom in
       mkLambda(name,dom,body)
     | _ -> assert false
     end
@@ -325,8 +325,8 @@ and nf_args env sigma vargs ?from:(f=0) t =
     Array.init len
       (fun i ->
         let _,dom,codom = decompose_prod env !t in
-	let c = nf_val env sigma (arg vargs (f+i)) dom in
-	t := subst1 c codom; c) in
+        let c = nf_val env sigma (arg vargs (f+i)) dom in
+        t := subst1 c codom; c) in
   !t,args
 
 and nf_bargs env sigma b ofs t =
@@ -336,8 +336,8 @@ and nf_bargs env sigma b ofs t =
     Array.init len
       (fun i ->
         let _,dom,codom = decompose_prod env !t in
-	let c = nf_val env sigma (bfield b (i+ofs)) dom in
-	t := subst1 c codom; c) in
+        let c = nf_val env sigma (bfield b (i+ofs)) dom in
+        t := subst1 c codom; c) in
   args
 
 and nf_fun env sigma f typ =

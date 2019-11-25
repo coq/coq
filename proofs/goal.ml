@@ -121,12 +121,12 @@ module V82 = struct
       try ignore (Environ.lookup_named (NamedDecl.get_id decl) genv); false
       with Not_found -> true in
     Environ.fold_named_context_reverse (fun t decl ->
-					  if is_proof_var decl then
+                                          if is_proof_var decl then
                                             let decl = Termops.map_named_decl EConstr.of_constr decl in
-					    mkNamedProd_or_LetIn decl t
-					  else
-					    t
-				       ) ~init:(concl sigma gl) env
+                                            mkNamedProd_or_LetIn decl t
+                                          else
+                                            t
+                                       ) ~init:(concl sigma gl) env
 
 end
 

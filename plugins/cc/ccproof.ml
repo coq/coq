@@ -43,25 +43,25 @@ let rec ptrans p1 p3=
     | Trans(p1,p2), _ ->ptrans p1 (ptrans p2 p3)
     | Congr(p1,p2), Congr(p3,p4) ->pcongr (ptrans p1 p3) (ptrans p2 p4)
     | Congr(p1,p2), Trans({p_rule=Congr(p3,p4)},p5) ->
-	ptrans (pcongr (ptrans p1 p3) (ptrans p2 p4)) p5
+        ptrans (pcongr (ptrans p1 p3) (ptrans p2 p4)) p5
   | _, _ ->
       if term_equal p1.p_rhs p3.p_lhs then
-	{p_lhs=p1.p_lhs;
-	 p_rhs=p3.p_rhs;
-	 p_rule=Trans (p1,p3)}
+        {p_lhs=p1.p_lhs;
+         p_rhs=p3.p_rhs;
+         p_rule=Trans (p1,p3)}
       else anomaly (Pp.str "invalid cc transitivity.")
 
 let rec psym p =
   match p.p_rule with
       Refl _ -> p
     | SymAx s ->
-	{p_lhs=p.p_rhs;
-	 p_rhs=p.p_lhs;
-	 p_rule=Ax s}
+        {p_lhs=p.p_rhs;
+         p_rhs=p.p_lhs;
+         p_rule=Ax s}
     | Ax s->
-	{p_lhs=p.p_rhs;
-	 p_rhs=p.p_lhs;
-	 p_rule=SymAx s}
+        {p_lhs=p.p_rhs;
+         p_rhs=p.p_lhs;
+         p_rule=SymAx s}
   | Inject (p0,c,n,a)->
       {p_lhs=p.p_rhs;
        p_rhs=p.p_lhs;
@@ -84,9 +84,9 @@ let psymax axioms s =
 let rec nth_arg t n=
   match t with
       Appli (t1,t2)->
-	if n>0 then
-	  nth_arg t1 (n-1)
-	else t2
+        if n>0 then
+          nth_arg t1 (n-1)
+        else t2
     | _ -> anomaly ~label:"nth_arg" (Pp.str "not enough args.")
 
 let pinject p c n a =
@@ -99,7 +99,7 @@ let rec equal_proof env sigma uf i j=
   if i=j then prefl (term uf i) else
     let (li,lj)=join_path uf i j in
     ptrans (path_proof env sigma uf i li) (psym (path_proof env sigma uf j lj))
-      
+
 and edge_proof env sigma uf ((i,j),eq)=
   debug (fun () -> str "edge_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ pr_idx_term env sigma uf j);
   let pi=equal_proof env sigma uf i eq.lhs in
@@ -107,15 +107,15 @@ and edge_proof env sigma uf ((i,j),eq)=
   let pij=
     match eq.rule with
       Axiom (s,reversed)->
-	if reversed then psymax (axioms uf) s
-	else pax (axioms uf) s
+        if reversed then psymax (axioms uf) s
+        else pax (axioms uf) s
     | Congruence ->congr_proof env sigma uf eq.lhs eq.rhs
-    | Injection (ti,ipac,tj,jpac,k) -> (* pi_k ipac = p_k jpac *) 
+    | Injection (ti,ipac,tj,jpac,k) -> (* pi_k ipac = p_k jpac *)
       let p=ind_proof env sigma uf ti ipac tj jpac in
       let cinfo= get_constructor_info uf ipac.cnode in
-      pinject p cinfo.ci_constr cinfo.ci_nhyps k in  
+      pinject p cinfo.ci_constr cinfo.ci_nhyps k in
   ptrans (ptrans pi pij) pj
-  
+
 and constr_proof env sigma uf i ipac=
   debug (fun () -> str "constr_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20));
   let t=find_oldest_pac uf i ipac in
@@ -128,20 +128,20 @@ and constr_proof env sigma uf i ipac=
     let targ=term uf arg in
     let p=constr_proof env sigma uf fi fipac in
     ptrans eq_it (pcongr p (prefl targ))
-      
+
 and path_proof env sigma uf i l=
   debug (fun () -> str "path_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ str "{" ++
-	   (prlist_with_sep (fun () -> str ",") (fun ((_,j),_) -> int j) l) ++ str "}");
+           (prlist_with_sep (fun () -> str ",") (fun ((_,j),_) -> int j) l) ++ str "}");
   match l with
   | [] -> prefl (term uf i)
   | x::q->ptrans (path_proof env sigma uf (snd (fst x)) q) (edge_proof env sigma uf x)
-    
+
 and congr_proof env sigma uf i j=
   debug (fun () -> str "congr_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ pr_idx_term env sigma uf j);
   let (i1,i2) = subterms uf i
   and (j1,j2) = subterms uf j in
   pcongr (equal_proof env sigma uf i1 j1) (equal_proof env sigma uf i2 j2)
-    
+
 and ind_proof env sigma uf i ipac j jpac=
    debug (fun () -> str "ind_proof " ++ pr_idx_term env sigma uf i ++ brk (1,20) ++ pr_idx_term env sigma uf j);
   let p=equal_proof env sigma uf i j

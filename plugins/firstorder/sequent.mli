@@ -28,12 +28,12 @@ module HP: Heap.S with type elt=Formula.t
 
 type t = {redexes:HP.t;
           context: GlobRef.t list CM.t;
-	  latoms:constr list;
-	  gl:types;
-	  glatom:constr option;
-	  cnt:counter;
-	  history:History.t;
-	  depth:int}
+          latoms:constr list;
+          gl:types;
+          glatom:constr option;
+          cnt:counter;
+          history:History.t;
+          depth:int}
 
 val deepen: t -> t
 

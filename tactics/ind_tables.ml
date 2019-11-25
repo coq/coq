@@ -163,7 +163,7 @@ let define_mutual_scheme_base kind suff f mode names mind =
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
-  let consts = Array.map2 (fun id cl -> 
+  let consts = Array.map2 (fun id cl ->
      define mode id cl (Declareops.inductive_is_polymorphic mib) ctx) ids cl in
   let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in
   declare_scheme kind schemes;
@@ -171,7 +171,7 @@ let define_mutual_scheme_base kind suff f mode names mind =
   Safe_typing.concat_private
     (Safe_typing.private_con_of_scheme
       ~kind (Global.safe_env()) (Array.to_list schemes))
-    eff 
+    eff
 
 let define_mutual_scheme kind mode names mind =
   match Hashtbl.find scheme_object_table kind with

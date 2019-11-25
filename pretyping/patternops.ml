@@ -134,7 +134,7 @@ let rec head_pattern_bound t =
     | PRef r         -> r
     | PVar id        -> VarRef id
     | PEvar _ | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _ | PProj _
-	-> raise BoundPattern
+        -> raise BoundPattern
     (* Perhaps they were arguments, but we don't beta-reduce *)
     | PLambda _ -> raise BoundPattern
     | PCoFix _ | PInt _ -> anomaly ~label:"head_pattern_bound" (Pp.str "not a type.")
@@ -178,7 +178,7 @@ let pattern_of_constr env sigma t =
     | Const (sp,u)  -> PRef (ConstRef (Constant.make1 (Constant.canonical sp)))
     | Ind (sp,u)    -> PRef (canonical_gr (IndRef sp))
     | Construct (sp,u) -> PRef (canonical_gr (ConstructRef sp))
-    | Proj (p, c) -> 
+    | Proj (p, c) ->
       pattern_of_constr env (EConstr.Unsafe.to_constr (Retyping.expand_projection env sigma p (EConstr.of_constr c) []))
     | Evar (evk,ctxt as ev) ->
       (match snd (Evd.evar_source evk sigma) with
@@ -190,20 +190,20 @@ let pattern_of_constr env sigma t =
          if Evd.is_defined sigma evk then pattern_of_constr env (Evd.existential_value0 sigma ev)
          else PEvar (evk,Array.map (pattern_of_constr env) ctxt)
       | Evar_kinds.MatchingVar (Evar_kinds.SecondOrderPatVar ido) -> assert false
-      | _ -> 
-	 PMeta None)
+      | _ ->
+         PMeta None)
     | Case (ci,p,a,br) ->
         let cip =
-	  { cip_style = ci.ci_pp_info.style;
-	    cip_ind = Some ci.ci_ind;
-	    cip_ind_tags = Some ci.ci_pp_info.ind_tags;
-	    cip_extensible = false }
-	in
-	let branch_of_constr i c =
-	  (i, ci.ci_pp_info.cstr_tags.(i), pattern_of_constr env c)
-	in
-	PCase (cip, pattern_of_constr env p, pattern_of_constr env a,
-	       Array.to_list (Array.mapi branch_of_constr br))
+          { cip_style = ci.ci_pp_info.style;
+            cip_ind = Some ci.ci_ind;
+            cip_ind_tags = Some ci.ci_pp_info.ind_tags;
+            cip_extensible = false }
+        in
+        let branch_of_constr i c =
+          (i, ci.ci_pp_info.cstr_tags.(i), pattern_of_constr env c)
+        in
+        PCase (cip, pattern_of_constr env p, pattern_of_constr env a,
+               Array.to_list (Array.mapi branch_of_constr br))
     | Fix (lni,(lna,tl,bl)) ->
        let push env na2 c2 = push_rel (LocalAssum (na2,c2)) env in
        let env' = Array.fold_left2 push env lna tl in
@@ -240,7 +240,7 @@ let map_pattern_with_binders g f l = function
 
 let error_instantiate_pattern id l =
   let is = match l with
-  | [_] -> "is" 
+  | [_] -> "is"
   | _ -> "are"
   in
   user_err  (str "Cannot substitute the term bound to " ++ Id.print id
@@ -253,23 +253,23 @@ let instantiate_pattern env sigma lvar c =
   let rec aux vars = function
   | PVar id as x ->
       (try
-	let ctx,c = Id.Map.find id lvar in
-	try
-	  let inst =
-	    List.map
+        let ctx,c = Id.Map.find id lvar in
+        try
+          let inst =
+            List.map
               (fun id -> mkRel (List.index Name.equal (Name id) vars))
               ctx
           in
-	  let c = substl inst c in
+          let c = substl inst c in
           (* FIXME: Stupid workaround to pattern_of_constr being evar sensitive *)
-	  let c = Evarutil.nf_evar sigma c in
-	  pattern_of_constr env sigma (EConstr.Unsafe.to_constr c)
-	with Not_found (* List.index failed *) ->
-	  let vars =
-	    List.map_filter (function Name id -> Some id | _ -> None) vars in
-	  error_instantiate_pattern id (List.subtract Id.equal ctx vars)
+          let c = Evarutil.nf_evar sigma c in
+          pattern_of_constr env sigma (EConstr.Unsafe.to_constr c)
+        with Not_found (* List.index failed *) ->
+          let vars =
+            List.map_filter (function Name id -> Some id | _ -> None) vars in
+          error_instantiate_pattern id (List.subtract Id.equal ctx vars)
        with Not_found (* Map.find failed *) ->
-	 x)
+         x)
   | c ->
       map_pattern_with_binders (fun id vars -> id::vars) aux vars c in
   aux [] c
@@ -294,44 +294,44 @@ let rec subst_pattern subst pat =
   | PEvar _
   | PRel _
   | PInt _ -> pat
-  | PProj (p,c) -> 
+  | PProj (p,c) ->
       let p' = Projection.map (subst_mind subst) p in
       let c' = subst_pattern subst c in
-	if p' == p && c' == c then pat else
-	  PProj(p',c')
+        if p' == p && c' == c then pat else
+          PProj(p',c')
   | PApp (f,args) ->
       let f' = subst_pattern subst f in
       let args' = Array.Smart.map (subst_pattern subst) args in
-	if f' == f && args' == args then pat else
-	  PApp (f',args')
+        if f' == f && args' == args then pat else
+          PApp (f',args')
   | PSoApp (i,args) ->
       let args' = List.Smart.map (subst_pattern subst) args in
-	if args' == args then pat else
-	  PSoApp (i,args')
+        if args' == args then pat else
+          PSoApp (i,args')
   | PLambda (name,c1,c2) ->
       let c1' = subst_pattern subst c1 in
       let c2' = subst_pattern subst c2 in
-	if c1' == c1 && c2' == c2 then pat else
-	  PLambda (name,c1',c2')
+        if c1' == c1 && c2' == c2 then pat else
+          PLambda (name,c1',c2')
   | PProd (name,c1,c2) ->
       let c1' = subst_pattern subst c1 in
       let c2' = subst_pattern subst c2 in
-	if c1' == c1 && c2' == c2 then pat else
-	  PProd (name,c1',c2')
+        if c1' == c1 && c2' == c2 then pat else
+          PProd (name,c1',c2')
   | PLetIn (name,c1,t,c2) ->
       let c1' = subst_pattern subst c1 in
       let t' = Option.Smart.map (subst_pattern subst) t in
       let c2' = subst_pattern subst c2 in
-	if c1' == c1 && t' == t && c2' == c2 then pat else
-	  PLetIn (name,c1',t',c2')
+        if c1' == c1 && t' == t && c2' == c2 then pat else
+          PLetIn (name,c1',t',c2')
   | PSort _
   | PMeta _ -> pat
   | PIf (c,c1,c2) ->
       let c' = subst_pattern subst c in
       let c1' = subst_pattern subst c1 in
       let c2' = subst_pattern subst c2 in
-	if c' == c && c1' == c1 && c2' == c2 then pat else
-	  PIf (c',c1',c2')
+        if c' == c && c1' == c1 && c2' == c2 then pat else
+          PIf (c',c1',c2')
   | PCase (cip,typ,c,branches) ->
       let ind = cip.cip_ind in
       let ind' = Option.Smart.map (subst_ind subst) ind in
@@ -339,8 +339,8 @@ let rec subst_pattern subst pat =
       let typ' = subst_pattern subst typ in
       let c' = subst_pattern subst c in
       let subst_branch ((i,n,c) as br) =
-	let c' = subst_pattern subst c in
-	if c' == c then br else (i,n,c')
+        let c' = subst_pattern subst c in
+        if c' == c then br else (i,n,c')
       in
       let branches' = List.Smart.map subst_branch branches in
       if cip' == cip && typ' == typ && c' == c && branches' == branches
@@ -397,21 +397,21 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
       metas := n::!metas; PSoApp (n, List.map (pat_of_raw metas vars) cl)
     | _ ->
       PApp (pat_of_raw metas vars c,
-	    Array.of_list (List.map (pat_of_raw metas vars) cl))
+            Array.of_list (List.map (pat_of_raw metas vars) cl))
     end
   | GLambda (na,bk,c1,c2) ->
       Name.iter (fun n -> metas := n::!metas) na;
       PLambda (na, pat_of_raw metas vars c1,
-	       pat_of_raw metas (na::vars) c2)
+               pat_of_raw metas (na::vars) c2)
   | GProd (na,bk,c1,c2) ->
       Name.iter (fun n -> metas := n::!metas) na;
       PProd (na, pat_of_raw metas vars c1,
-	       pat_of_raw metas (na::vars) c2)
+               pat_of_raw metas (na::vars) c2)
   | GLetIn (na,c1,t,c2) ->
       Name.iter (fun n -> metas := n::!metas) na;
       PLetIn (na, pat_of_raw metas vars c1,
                Option.map (pat_of_raw metas vars) t,
-	       pat_of_raw metas (na::vars) c2)
+               pat_of_raw metas (na::vars) c2)
   | GSort gs -> PSort (Glob_ops.glob_sort_family gs)
   | GHole _ ->
       PMeta None
@@ -426,26 +426,26 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
         GLambda (na,Explicit, DAst.make @@ GHole (Evar_kinds.InternalHole, Namegen.IntroAnonymous, None),c) in
       let c = List.fold_right mkGLambda nal c in
       let cip =
-	{ cip_style = LetStyle;
-	  cip_ind = None;
-	  cip_ind_tags = None;
-	  cip_extensible = false }
+        { cip_style = LetStyle;
+          cip_ind = None;
+          cip_ind_tags = None;
+          cip_extensible = false }
       in
       let tags = List.map (fun _ -> false) nal (* Approximation which can be without let-ins... *) in
       PCase (cip, PMeta None, pat_of_raw metas vars b,
              [0,tags,pat_of_raw metas vars c])
   | GCases (sty,p,[c,(na,indnames)],brs) ->
-      let get_ind p = match DAst.get p with 
+      let get_ind p = match DAst.get p with
       | PatCstr((ind,_),_,_) -> Some ind
       | _ -> None
       in
       let get_ind = function
         | {CAst.v=(_,[p],_)}::_ -> get_ind p
-	| _ -> None
+        | _ -> None
       in
       let ind_tags,ind = match indnames with
         | Some {CAst.v=(ind,nal)} -> Some (List.length nal), Some ind
-	| None -> None, get_ind brs
+        | None -> None, get_ind brs
       in
       let ext,brs = pats_of_glob_branches loc metas vars ind brs
       in
@@ -454,21 +454,21 @@ let rec pat_of_raw metas vars = DAst.with_loc_val (fun ?loc -> function
           let nvars = na :: List.rev nal @ vars in
           rev_it_mkPLambdaUntyped nal (mkPLambdaUntyped na (pat_of_raw metas nvars p))
         | None, _ -> PMeta None
-	| Some p, None ->
+        | Some p, None ->
           match DAst.get p with
           | GHole _ -> PMeta None
           | _ ->
             user_err ?loc  (strbrk "Clause \"in\" expected in patterns over \"match\" expressions with an explicit \"return\" clause.")
       in
       let info =
-	{ cip_style = sty;
-	  cip_ind = ind;
-	  cip_ind_tags = None;
-	  cip_extensible = ext }
+        { cip_style = sty;
+          cip_ind = ind;
+          cip_ind_tags = None;
+          cip_extensible = ext }
       in
       (* Nota : when we have a non-trivial predicate,
-	 the inductive type is known. Same when we have at least
-	 one non-trivial branch. These facts are used in [Constrextern]. *)
+         the inductive type is known. Same when we have at least
+         one non-trivial branch. These facts are used in [Constrextern]. *)
       PCase (info, pred, pat_of_raw metas vars c, brs)
 
   | GRec (GFix (ln,n), ids, decls, tl, cl) ->

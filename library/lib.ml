@@ -48,11 +48,11 @@ let iter_objects f i prefix =
 let load_objects i pr = iter_objects load_object i pr
 let open_objects i pr = iter_objects open_object i pr
 
-let subst_objects subst seg = 
+let subst_objects subst seg =
   let subst_one = fun (id,obj as node) ->
     let obj' = subst_object (subst,obj) in
       if obj' == obj then node else
-	(id, obj')
+        (id, obj')
   in
     List.Smart.map subst_one seg
 
@@ -67,15 +67,15 @@ let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
     | ((sp,kn),Leaf o) :: stk ->
-	let id = Names.Label.to_id (Names.KerName.label kn) in
-	  (match classify_object o with
-	     | Dispose -> clean acc stk
-	     | Keep o' ->
-		 clean (substl, (id,o')::keepl, anticipl) stk
-	     | Substitute o' ->
-		 clean ((id,o')::substl, keepl, anticipl) stk
-	     | Anticipate o' ->
-		 clean (substl, keepl, o'::anticipl) stk)
+        let id = Names.Label.to_id (Names.KerName.label kn) in
+          (match classify_object o with
+             | Dispose -> clean acc stk
+             | Keep o' ->
+                 clean (substl, (id,o')::keepl, anticipl) stk
+             | Substitute o' ->
+                 clean ((id,o')::substl, keepl, anticipl) stk
+             | Anticipate o' ->
+                 clean (substl, keepl, o'::anticipl) stk)
     | (_,OpenedSection _) :: _ -> user_err Pp.(str "there are still opened sections")
     | (_,OpenedModule (ty,_,_,_)) :: _ ->
       user_err ~hdr:"Lib.classify_segment"
@@ -291,15 +291,15 @@ let start_modtype = start_mod true None
 
 let error_still_opened string oname =
   let id = basename (fst oname) in
-  user_err 
+  user_err
     (str "The " ++ str string ++ str " " ++ Id.print id ++ str " is still opened.")
 
 let end_mod is_type =
   let oname,fs =
     try match find_entry_p is_opening_node with
       | oname,OpenedModule (ty,_,_,fs) ->
-	if ty == is_type then oname, fs
-	else error_still_opened (module_kind ty) oname
+        if ty == is_type then oname, fs
+        else error_still_opened (module_kind ty) oname
       | oname,OpenedSection _ -> error_still_opened "section" oname
       | _ -> assert false
     with Not_found -> user_err (Pp.str "No opened modules.")
@@ -354,7 +354,7 @@ let end_compilation_checks dir =
     match !lib_state.comp_name with
       | None -> anomaly (Pp.str "There should be a module name...")
       | Some m ->
-	  if not (Names.DirPath.equal m dir) then anomaly
+          if not (Names.DirPath.equal m dir) then anomaly
            (str "The current open module has name" ++ spc () ++ DirPath.print m ++
              spc () ++ str "and not" ++ spc () ++ DirPath.print m ++ str ".");
   in
@@ -415,7 +415,7 @@ type abstr_list = abstr_info Names.Cmap.t * abstr_info Names.Mindmap.t
 
 type secentry =
   | Variable of (Names.Id.t * Decl_kinds.binding_kind *
-		   Decl_kinds.polymorphic * Univ.ContextSet.t)
+                   Decl_kinds.polymorphic * Univ.ContextSet.t)
   | Context of Univ.ContextSet.t
 
 let sectab =
@@ -463,7 +463,7 @@ let is_polymorphic_univ u =
 let extract_hyps (secs,ohyps) =
   let rec aux = function
     | (Variable (id,impl,poly,ctx)::idl, decl::hyps) when Names.Id.equal id (NamedDecl.get_id decl) ->
-      let l, r = aux (idl,hyps) in 
+      let l, r = aux (idl,hyps) in
       (decl,impl) :: l, if poly then Univ.ContextSet.union r ctx else r
     | (Variable (_,_,poly,ctx)::idl,hyps) ->
         let l, r = aux (idl,hyps) in

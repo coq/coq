@@ -130,9 +130,9 @@ let print_highlight_location ib loc =
   let highlight_lines =
     match get_bols_of_loc ib (bp,ep) with
       | ([],(bl,el)) ->
-	  let shift = blanch_utf8_string ib.str bl bp in
-	  let span = String.length (blanch_utf8_string ib.str bp ep) in
-	  (str"> " ++ str(Bytes.sub_string ib.str bl (el-bl-1)) ++ fnl () ++
+          let shift = blanch_utf8_string ib.str bl bp in
+          let span = String.length (blanch_utf8_string ib.str bp ep) in
+          (str"> " ++ str(Bytes.sub_string ib.str bl (el-bl-1)) ++ fnl () ++
            str"> " ++ str(shift) ++ str(String.make span '^'))
       | ((b1,e1)::ml,(bn,en)) ->
           let (d1,s1) = dotted_location (b1,bp) in
@@ -144,7 +144,7 @@ let print_highlight_location ib loc =
                       (str"> " ++ str(Bytes.sub_string ib.str bi (ei-bi)))) ml in
           let ln = (str"> " ++ str(Bytes.sub_string ib.str bn (ep-bn)) ++
                       str sn ++ str dn) in
-	  (l1 ++ li ++ ln)
+          (l1 ++ li ++ ln)
   in
   highlight_lines
 

@@ -39,7 +39,7 @@ let conv_leq_vecti env v1 v2 =
     v1
     v2
 
-let check_constraints cst env = 
+let check_constraints cst env =
   if Environ.check_constraints cst env then ()
   else error_unsatisfied_constraints env cst
 
@@ -173,7 +173,7 @@ let type_of_abstraction _env name var ty =
 
 (* Type of an application. *)
 
-let make_judgev c t = 
+let make_judgev c t =
   Array.map2 make_judge c t
 
 let rec check_empty_stack = function
@@ -362,7 +362,7 @@ let check_cast env c ct k expected_type =
 let type_of_inductive_knowing_parameters env (ind,u as indu) args =
   let (mib,_mip) as spec = lookup_mind_specif env ind in
   check_hyps_inclusion env mkIndU indu mib.mind_hyps;
-  let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters 
+  let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters
     env (spec,u) args
   in
   check_constraints cst env;
@@ -423,7 +423,7 @@ let type_of_projection env p c ct =
   assert(eq_ind (Projection.inductive p) ind);
   let ty = Vars.subst_instance_constr u pty in
   substl (c :: CList.rev args) ty
-      
+
 
 (* Fixpoints. *)
 
@@ -494,7 +494,7 @@ let rec execute env cstr =
 
     | Const c ->
       cstr, type_of_constant env c
-	
+
     | Proj (p, c) ->
       let c', ct = execute env c in
       let cstr = if c == c' then cstr else mkProj (p,c') in
@@ -504,14 +504,14 @@ let rec execute env cstr =
     | App (f,args) ->
       let args', argst = execute_array env args in
         let f', ft =
-	  match kind f with
-	  | Ind ind when Environ.template_polymorphic_pind ind env ->
-	    let args = Array.map (fun t -> lazy t) argst in
+          match kind f with
+          | Ind ind when Environ.template_polymorphic_pind ind env ->
+            let args = Array.map (fun t -> lazy t) argst in
               f, type_of_inductive_knowing_parameters env ind args
-	  | _ ->
-	    (* No template polymorphism *)
+          | _ ->
+            (* No template polymorphism *)
             execute env f
-	in
+        in
         let cstr = if f == f' && args == args' then cstr else mkApp (f',args') in
         cstr, type_of_apply env f' ft args' argst
 
@@ -573,7 +573,7 @@ let rec execute env cstr =
           let fix = (vni,recdef') in mkFix fix, fix
       in
       check_fix env fix; cstr, fix_ty
-	  
+
     | CoFix (i,recdef as cofix) ->
       let (fix_ty,recdef') = execute_recdef env recdef i in
       let cstr, cofix = if recdef == recdef' then cstr, cofix else
@@ -586,10 +586,10 @@ let rec execute env cstr =
 
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
-	anomaly (Pp.str "the kernel does not support metavariables.")
+        anomaly (Pp.str "the kernel does not support metavariables.")
 
     | Evar _ ->
-	anomaly (Pp.str "the kernel does not support existential variables.")
+        anomaly (Pp.str "the kernel does not support existential variables.")
 
 and execute_is_type env constr =
   let c, t = execute env constr in
@@ -622,7 +622,7 @@ let infer env constr =
   let constr, t = execute env constr in
   make_judge constr t
 
-let infer = 
+let infer =
   if Flags.profile then
     let infer_key = CProfile.declare_profile "Fast_infer" in
       CProfile.profile2 infer_key (fun b c -> infer b c)

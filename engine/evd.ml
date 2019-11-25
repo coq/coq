@@ -644,7 +644,7 @@ let existential_type0 = existential_type
 let add_constraints d c =
   { d with universes = UState.add_constraints d.universes c }
 
-let add_universe_constraints d c = 
+let add_universe_constraints d c =
   { d with universes = UState.add_universe_constraints d.universes c }
 
 (*** /Lifting... ***)
@@ -656,7 +656,7 @@ let is_empty d =
   List.is_empty d.conv_pbs &&
   Metamap.is_empty d.metas
 
-let cmap f evd = 
+let cmap f evd =
   { evd with
       metas = Metamap.map (map_clb f) evd.metas;
       defn_evars = EvMap.map (map_evar_info f) evd.defn_evars;
@@ -688,7 +688,7 @@ let empty = {
   extras = Store.empty;
 }
 
-let from_env e = 
+let from_env e =
   { empty with universes = UState.make ~lbound:(Environ.universes_lbound e) (Environ.universes e) }
 
 let from_ctx ctx = { empty with universes = ctx }
@@ -698,7 +698,7 @@ let has_undefined evd = not (EvMap.is_empty evd.undf_evars)
 let evars_reset_evd ?(with_conv_pbs=false) ?(with_univs=true) evd d =
   let conv_pbs = if with_conv_pbs then evd.conv_pbs else d.conv_pbs in
   let last_mods = if with_conv_pbs then evd.last_mods else d.last_mods in
-  let universes = 
+  let universes =
     if not with_univs then evd.universes
     else UState.union evd.universes d.universes
   in
@@ -799,10 +799,10 @@ let extract_conv_pbs evd p =
   let (pbs,pbs1) =
     List.fold_left
       (fun (pbs,pbs1) pb ->
-    	 if p pb then
-	   (pb::pbs,pbs1)
+         if p pb then
+           (pb::pbs,pbs1)
          else
-	   (pbs,pb::pbs1))
+           (pbs,pb::pbs1))
       ([],[])
       evd.conv_pbs
   in
@@ -845,10 +845,10 @@ let evars_of_named_context nc =
 let evars_of_filtered_evar_info evi =
   Evar.Set.union (evars_of_term evi.evar_concl)
     (Evar.Set.union
-	(match evi.evar_body with
-	| Evar_empty -> Evar.Set.empty
-	| Evar_defined b -> evars_of_term b)
-	(evars_of_named_context (evar_filtered_context evi)))
+        (match evi.evar_body with
+        | Evar_empty -> Evar.Set.empty
+        | Evar_defined b -> evars_of_term b)
+        (evars_of_named_context (evar_filtered_context evi)))
 
 (**********************************************************)
 (* Sort variables *)
@@ -882,7 +882,7 @@ let universe_subst evd =
 let merge_context_set ?loc ?(sideff=false) rigid evd ctx' =
   {evd with universes = UState.merge ?loc ~sideff ~extend:true rigid evd.universes ctx'}
 
-let merge_universe_subst evd subst = 
+let merge_universe_subst evd subst =
   {evd with universes = UState.merge_subst evd.universes subst }
 
 let with_context_set ?loc rigid d (a, ctx) =
@@ -931,7 +931,7 @@ let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
 
 let is_sort_variable evd s = UState.is_sort_variable evd.universes s
 
-let is_flexible_level evd l = 
+let is_flexible_level evd l =
   let uctx = evd.universes in
     Univ.LMap.mem l (UState.subst uctx)
 
@@ -963,7 +963,7 @@ let normalize_universe_instance evd l =
 let normalize_sort evars s =
   match s with
   | SProp | Prop | Set -> s
-  | Type u -> 
+  | Type u ->
     let u' = normalize_universe evars u in
     if u' == u then s else Sorts.sort_of_univ u'
 
@@ -990,7 +990,7 @@ let set_eq_instances ?(flex=false) d u1 u2 =
     (UnivProblem.enforce_eq_instances_univs flex u1 u2 UnivProblem.Set.empty)
 
 let set_leq_sort env evd s1 s2 =
-  let s1 = normalize_sort evd s1 
+  let s1 = normalize_sort evd s1
   and s2 = normalize_sort evd s2 in
   match is_eq_sort s1 s2 with
   | None -> evd
@@ -998,7 +998,7 @@ let set_leq_sort env evd s1 s2 =
      if not (type_in_type env) then
        add_universe_constraints evd (UnivProblem.Set.singleton (UnivProblem.ULe (u1,u2)))
      else evd
-	    
+
 let check_eq evd s s' =
   UGraph.check_eq (UState.ugraph evd.universes) s s'
 
@@ -1042,7 +1042,7 @@ exception UniversesDiffer = UState.UniversesDiffer
 
 let emit_side_effects eff evd =
   { evd with effects = Safe_typing.concat_private eff evd.effects;
-	     universes = UState.emit_side_effects eff evd.universes }
+             universes = UState.emit_side_effects eff evd.universes }
 
 let drop_side_effects evd =
   { evd with effects = Safe_typing.empty_private_constants; }
@@ -1267,7 +1267,7 @@ type 'a sigma = {
 
 let sig_it x = x.it
 let sig_sig x = x.sigma
-let on_sig s f = 
+let on_sig s f =
   let sigma', v = f s.sigma in
     { s with sigma = sigma' }, v
 

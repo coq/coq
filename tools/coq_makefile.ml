@@ -180,7 +180,7 @@ let generate_conf_subdirs oc sds =
   iter (fprintf oc "clean::\n\tcd \"%s\" && $(MAKE) clean\n") sds;
   iter (fprintf oc "archclean::\n\tcd \"%s\" && $(MAKE) archclean\n") sds;
   iter (fprintf oc "install-extra::\n\tcd \"%s\" && $(MAKE) install\n") sds
-   
+
 
 let generate_conf_includes oc { ml_includes; r_includes; q_includes } =
   section oc "Path directives (-I, -R, -Q).";
@@ -306,7 +306,7 @@ let ensure_root_dir
         r_includes = source (here_path, "Top") :: r_includes }
 ;;
 
-let warn_install_at_root_directory 
+let warn_install_at_root_directory
   ({ q_includes; r_includes; } as project)
 =
   let open CList in
@@ -329,11 +329,11 @@ let check_overlapping_include { q_includes; r_includes } =
   let aux = function
     | [] -> ()
     | {thing = { path; canonical_path }, _} :: l ->
-	if not (is_prefix pwd canonical_path) then
-	  eprintf "Warning: %s (used in -R or -Q) is not a subdirectory of the current directory\n\n" path;
+        if not (is_prefix pwd canonical_path) then
+          eprintf "Warning: %s (used in -R or -Q) is not a subdirectory of the current directory\n\n" path;
         List.iter (fun {thing={ path = p; canonical_path = cp }, _} ->
-	  if is_prefix canonical_path cp  || is_prefix cp canonical_path then
-	    eprintf "Warning: %s and %s overlap (used in -R or -Q)\n\n"
+          if is_prefix canonical_path cp  || is_prefix cp canonical_path then
+            eprintf "Warning: %s and %s overlap (used in -R or -Q)\n\n"
               path p) l
   in
     aux (q_includes @ r_includes)

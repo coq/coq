@@ -195,14 +195,14 @@ let lookup_utf8_tail loc c cs =
       match Stream.npeek 3 cs with
       | [_;c2;c3] ->
           check_utf8_trailing_byte loc cs c2;
-	  check_utf8_trailing_byte loc cs c3;
+          check_utf8_trailing_byte loc cs c3;
           3, (c1 land 0x0F) lsl 12 + (Char.code c2 land 0x3F) lsl 6 +
           (Char.code c3 land 0x3F)
       | _ -> error_utf8 loc cs
       else match Stream.npeek 4 cs with
       | [_;c2;c3;c4] ->
           check_utf8_trailing_byte loc cs c2;
-	  check_utf8_trailing_byte loc cs c3;
+          check_utf8_trailing_byte loc cs c3;
           check_utf8_trailing_byte loc cs c4;
           4, (c1 land 0x07) lsl 18 + (Char.code c2 land 0x3F) lsl 12 +
           (Char.code c3 land 0x3F) lsl 6 + (Char.code c4 land 0x3F)
@@ -831,7 +831,7 @@ let func next_token ?loc cs =
     Stream.from
       (fun i ->
          let (tok, loc) = next_token !cur_loc cs in
-	 cur_loc := after loc;
+         cur_loc := after loc;
          loct_add loct i loc; Some tok)
   in
   (ts, loct_func loct)

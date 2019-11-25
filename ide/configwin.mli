@@ -42,13 +42,13 @@ type configuration_structure =
 type return_button =
     Return_apply
       (** The user clicked on Apply at least once before
-	 closing the window with Cancel or the window manager. *)
+         closing the window with Cancel or the window manager. *)
   | Return_ok
       (** The user closed the window with the ok button. *)
   | Return_cancel
       (** The user closed the window with the cancel
-	 button or the window manager but never clicked
-	 on the apply button.*)
+         button or the window manager but never clicked
+         on the apply button.*)
 
 (** {2 Functions to create parameters} *)
 
@@ -84,7 +84,7 @@ val strings : ?editable: bool -> ?help: string ->
   ?f: (string list -> unit) ->
     ?eq: (string -> string -> bool) ->
       ?add: (unit -> string list) ->
-	string -> string list -> parameter_kind
+        string -> string list -> parameter_kind
 
 (** [list label f_strings value] creates a list parameter.
    [f_strings] is a function taking a value and returning a list
@@ -113,13 +113,13 @@ val list : ?editable: bool -> ?help: string ->
   ?f: ('a list -> unit) ->
     ?eq: ('a -> 'a -> bool) ->
       ?edit: ('a -> 'a) ->
-	?add: (unit -> 'a list) ->
-	  ?titles: string list ->
-	    ?color: ('a -> string option) ->
-	      string ->
-		('a -> string list) ->
-		  'a list ->
-		    parameter_kind
+        ?add: (unit -> 'a list) ->
+          ?titles: string list ->
+            ?color: ('a -> string option) ->
+              string ->
+                ('a -> string list) ->
+                  'a list ->
+                    parameter_kind
 *)
 
 (** [combo label choices value] creates a combo parameter.

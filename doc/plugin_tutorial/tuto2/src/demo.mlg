@@ -12,7 +12,7 @@ DECLARE PLUGIN "demo_plugin"
    Each plugin has a unique name.
    We have decided to name this plugin as "demo_plugin".
    That means that:
-   
+
    (1) If we want to load this particular plugin to Coq toplevel,
        we must use the following command.
 
@@ -81,7 +81,7 @@ END
    The [ and ] characters mark the beginning and the end of the parsing rule.
    The parsing rule itself says that the syntax of the newly defined command
    is composed from a single terminal Cmd1.
-   
+
    The interpretation rule, in this case, is:
 
      { () }
@@ -151,7 +151,7 @@ END
    To see value of which Ocaml types can be bound this way,
    look at the wit_* function declared in interp/stdarg.mli
    (in the Coq's codebase).
-   
+
    If we drop the wit_ prefix, we will get the token
    that we can use in the parsing rule.
    That is, since there exists wit_int, we know that
@@ -194,14 +194,14 @@ END
    means that the new Vernacular command is expected to be followed
    by a (whitespace separated) list of integers.
    This list of integers is bound to the indicated l.
-   
+
    In this case, as well as in the cases we point out below, instead of int
    in int_list we could use any other supported type, e.g. ident, bool, ...
-   
+
    To see which other Ocaml type constructors (in addition to list)
    are supported, have a look at the parse_user_entry function defined
    in grammar/q_util.mlp file.
-   
+
    E.g.:
    - ne_int_list(x) would represent a non-empty list of integers,
    - int_list(x) would represent a list of integers,

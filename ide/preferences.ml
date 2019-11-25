@@ -695,13 +695,13 @@ let configure ?(apply=(fun () -> ())) parent =
       "Goal (∃n : nat, n ≤ 0)∧(∀x,y,z, x∈y⋃z↔x∈y∨x∈z).";
     box#pack ~expand:true w#coerce;
     ignore (w#misc#connect#realize
-	      ~callback:(fun () -> w#set_font_name text_font#get));
+              ~callback:(fun () -> w#set_font_name text_font#get));
     custom
       ~label:"Fonts for text"
       box
       (fun () ->
-	 let fd =  w#font_name in
-	 text_font#set fd)
+         let fd =  w#font_name in
+         text_font#set fd)
       true
   in
 
@@ -823,7 +823,7 @@ let configure ?(apply=(fun () -> ())) parent =
   let global_auto_revert_delay =
     string
     ~f:(fun s -> global_auto_revert_delay#set
-	  (try int_of_string s with _ -> 10000))
+          (try int_of_string s with _ -> 10000))
       "Global auto revert delay (ms)"
       (string_of_int global_auto_revert_delay#get)
   in
@@ -832,7 +832,7 @@ let configure ?(apply=(fun () -> ())) parent =
   let auto_save_delay =
     string
     ~f:(fun s -> auto_save_delay#set
-	  (try int_of_string s with _ -> 10000))
+          (try int_of_string s with _ -> 10000))
       "Auto save delay (ms)"
       (string_of_int auto_save_delay#get)
   in
@@ -851,8 +851,8 @@ let configure ?(apply=(fun () -> ())) parent =
       ~f:(fun s -> encoding#set (inputenc_of_string s))
       ~new_allowed: true
       ("UTF-8"::"LOCALE":: match encoding#get with
-	|Emanual s -> [s]
-	|_ -> []
+        |Emanual s -> [s]
+        |_ -> []
       )
       (string_of_inputenc encoding#get)
   in
@@ -980,26 +980,26 @@ let configure ?(apply=(fun () -> ())) parent =
    (shame on Benjamin) *)
   let cmds =
     [Section("Fonts", Some `SELECT_FONT,
-	     [config_font]);
+             [config_font]);
      Section("Colors", Some `SELECT_COLOR,
              [config_color; source_language; source_style]);
      Section("Tags", Some `SELECT_COLOR,
              [config_tags]);
      Section("Editor", Some `EDIT, [config_editor]);
      Section("Files", Some `DIRECTORY,
-	     [global_auto_revert;global_auto_revert_delay;
-	      auto_save; auto_save_delay; (* auto_save_name*)
-	      encodings; line_ending;
-	     ]);
+             [global_auto_revert;global_auto_revert_delay;
+              auto_save; auto_save_delay; (* auto_save_name*)
+              encodings; line_ending;
+             ]);
      Section("Project", Some (`STOCK "gtk-page-setup"),
-	     [project_file_name;read_project;
-	     ]);
+             [project_file_name;read_project;
+             ]);
      Section("Appearance", Some `PREFERENCES, [window_width; window_height]);
      Section("Externals", None,
-	     [cmd_coqtop;cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc;
+             [cmd_coqtop;cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc;
               cmd_print;cmd_editor;cmd_browse]);
      Section("Shortcuts", Some `PREFERENCES,
-	     [modifiers_valid; modifier_for_tactics;
+             [modifiers_valid; modifier_for_tactics;
         modifier_for_templates; modifier_for_display; modifier_for_navigation;
         modifier_for_queries (*; user_queries *)]);
      Section("Misc", Some `ADD,

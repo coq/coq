@@ -50,7 +50,7 @@ module Strict = struct
   | Suggest of t (* this bullet is mandatory here *)
   | Unfinished of t (* no mandatory bullet here, but this bullet is unfinished *)
   | NoBulletInUse (* No mandatory bullet (or brace) here, no bullet pending,
-      	       some focused goals exists. *)
+               some focused goals exists. *)
   | NeedClosingBrace (* Some unfocussed goal exists "{" needed to focus them *)
   | ProofFinished (* No more goal anywhere *)
 

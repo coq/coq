@@ -130,14 +130,14 @@ let display_eq print_var (l,e) =
   let _ =
     List.fold_left
       (fun not_first f ->
-	 print_string
-	   (if f.c <? zero then "- " else if not_first then "+ " else "");
-	 let c = abs f.c in
-	 if c =? one then
-	   Printf.printf "%s " (print_var f.v)
-	 else
-	   Printf.printf "%s %s " (string_of_bigint c) (print_var f.v);
-	 true)
+         print_string
+           (if f.c <? zero then "- " else if not_first then "+ " else "");
+         let c = abs f.c in
+         if c =? one then
+           Printf.printf "%s " (print_var f.v)
+         else
+           Printf.printf "%s %s " (string_of_bigint c) (print_var f.v);
+         true)
       false l
   in
   if e >? zero then
@@ -148,7 +148,7 @@ let display_eq print_var (l,e) =
 let rec trace_length l =
   let action_length accu = function
     | SPLIT_INEQ (_,(_,l1),(_,l2)) ->
-	accu + one + trace_length l1 + trace_length l2
+        accu + one + trace_length l1 + trace_length l2
     | _ -> accu + one in
   List.fold_left action_length zero l
 
@@ -263,12 +263,12 @@ let rec sum p0 p1 = match (p0,p1) with
   | ([], l) -> l | (l, []) -> l
   | (((x1::l1) as l1'), ((x2::l2) as l2')) ->
       if x1.v = x2.v then
-	let c = x1.c + x2.c in
-	if c =? zero then sum l1 l2 else {v=x1.v;c=c} :: sum l1 l2
+        let c = x1.c + x2.c in
+        if c =? zero then sum l1 l2 else {v=x1.v;c=c} :: sum l1 l2
       else if x1.v > x2.v then
-	x1 :: sum l1 l2'
+        x1 :: sum l1 l2'
       else
-	x2 :: sum l1' l2
+        x2 :: sum l1' l2
 
 let sum_afine new_eq_id eq1 eq2 =
   { kind = eq1.kind; id = new_eq_id ();
@@ -351,7 +351,7 @@ let banerjee_step (new_eq_id,new_var_id,print_var) original l1 l2 =
                              original.body;
       id = new_eq_id (); kind = EQUA } in
   add_event (STATE {st_new_eq = new_eq; st_def = definition;
-		    st_orig = original; st_coef = m; st_var = sigma});
+                    st_orig = original; st_coef = m; st_var = sigma});
   let new_eq = List.hd (normalize new_eq) in
   let eliminated_var, def = chop_var var new_eq.body in
   let other_equations =
@@ -395,8 +395,8 @@ let rec banerjee ((_,_,print_var) as new_ids) (sys_eq,sys_ineq) =
            add_event (CONSTANT_NOT_NUL(eq.id,eq.constant)); raise UNSOLVABLE
          end
        else
-	 banerjee new_ids
-	   (eliminate_one_equation new_ids (eq,other,sys_ineq))
+         banerjee new_ids
+           (eliminate_one_equation new_ids (eq,other,sys_ineq))
 
 type kind = INVERTED | NORMAL
 
@@ -501,7 +501,7 @@ let product new_eq_id dark_shadow low high =
                 (map_eq_afine (fun c -> c * a) eq2) in
             add_event(SUM(eq.id,(b,eq1),(a,eq2)));
             match normalize eq with
-	      | [eq] ->
+              | [eq] ->
                   let final_eq =
                     if dark_shadow then
                       let delta = (a - one) * (b - one) in
@@ -549,43 +549,43 @@ let simplify ((new_eq_id,new_var_id,print_var) as new_ids) dark_shadow system =
 let rec depend relie_on accu = function
   | act :: l ->
       begin match act with
-	| DIVIDE_AND_APPROX (e,_,_,_) ->
+        | DIVIDE_AND_APPROX (e,_,_,_) ->
             if Int.List.mem e.id relie_on then depend relie_on (act::accu) l
             else depend relie_on accu l
-	| EXACT_DIVIDE (e,_) ->
+        | EXACT_DIVIDE (e,_) ->
             if Int.List.mem e.id relie_on then depend relie_on (act::accu) l
             else depend relie_on accu l
-	| WEAKEN (e,_) ->
+        | WEAKEN (e,_) ->
             if Int.List.mem e relie_on then depend relie_on (act::accu) l
             else depend relie_on accu l
-	| SUM (e,(_,e1),(_,e2)) ->
+        | SUM (e,(_,e1),(_,e2)) ->
             if Int.List.mem e relie_on then
-	      depend (e1.id::e2.id::relie_on) (act::accu) l
+              depend (e1.id::e2.id::relie_on) (act::accu) l
             else
-	      depend relie_on accu l
-	| STATE {st_new_eq=e;st_orig=o} ->
+              depend relie_on accu l
+        | STATE {st_new_eq=e;st_orig=o} ->
             if Int.List.mem e.id relie_on then depend (o.id::relie_on) (act::accu) l
             else depend relie_on accu l
-	| HYP e ->
+        | HYP e ->
             if Int.List.mem e.id relie_on then depend relie_on (act::accu) l
             else depend relie_on accu l
-	| FORGET_C _ -> depend relie_on accu l
-	| FORGET _ -> depend relie_on accu l
-	| FORGET_I _ -> depend relie_on accu l
-	| MERGE_EQ (e,e1,e2) ->
+        | FORGET_C _ -> depend relie_on accu l
+        | FORGET _ -> depend relie_on accu l
+        | FORGET_I _ -> depend relie_on accu l
+        | MERGE_EQ (e,e1,e2) ->
             if Int.List.mem e relie_on then
-	      depend (e1.id::e2::relie_on) (act::accu) l
+              depend (e1.id::e2::relie_on) (act::accu) l
             else
-	      depend relie_on accu l
-	| NOT_EXACT_DIVIDE (e,_) -> depend (e.id::relie_on) (act::accu) l
-	| CONTRADICTION (e1,e2) ->
-	    depend (e1.id::e2.id::relie_on) (act::accu) l
-	| CONSTANT_NOT_NUL (e,_) -> depend (e::relie_on) (act::accu) l
-	| CONSTANT_NEG (e,_) -> depend (e::relie_on) (act::accu) l
-	| CONSTANT_NUL e -> depend (e::relie_on) (act::accu) l
-	| NEGATE_CONTRADICT (e1,e2,_) ->
+              depend relie_on accu l
+        | NOT_EXACT_DIVIDE (e,_) -> depend (e.id::relie_on) (act::accu) l
+        | CONTRADICTION (e1,e2) ->
             depend (e1.id::e2.id::relie_on) (act::accu) l
-	| SPLIT_INEQ _ -> failwith "depend"
+        | CONSTANT_NOT_NUL (e,_) -> depend (e::relie_on) (act::accu) l
+        | CONSTANT_NEG (e,_) -> depend (e::relie_on) (act::accu) l
+        | CONSTANT_NUL e -> depend (e::relie_on) (act::accu) l
+        | NEGATE_CONTRADICT (e1,e2,_) ->
+            depend (e1.id::e2.id::relie_on) (act::accu) l
+        | SPLIT_INEQ _ -> failwith "depend"
       end
   | [] -> relie_on, accu
 
@@ -602,9 +602,9 @@ let negation (eqs,ineqs) =
                assert (e.kind = EQUA);
                let {body=ne;constant=c},kind = normal e in
                try
-		 let (kind',e') = Hashtbl.find table (ne,c) in
-		 add_event (NEGATE_CONTRADICT (e,e',kind=kind'));
-		 raise UNSOLVABLE
+                 let (kind',e') = Hashtbl.find table (ne,c) in
+                 add_event (NEGATE_CONTRADICT (e,e',kind=kind'));
+                 raise UNSOLVABLE
                with Not_found -> ()) eqs
 
 exception FULL_SOLUTION of action list * int list
@@ -631,20 +631,20 @@ let simplify_strong ((new_eq_id,new_var_id,print_var) as new_ids) system =
   in
   let rec explode_diseq = function
     | (de::diseq,ineqs,expl_map) ->
-	let id1 = new_eq_id ()
-	and id2 = new_eq_id () in
-	let e1 =
+        let id1 = new_eq_id ()
+        and id2 = new_eq_id () in
+        let e1 =
           {id = id1; kind=INEQ; body = de.body; constant = de.constant -one} in
-	let e2 =
-	  {id = id2; kind=INEQ; body = map_eq_linear neg de.body;
+        let e2 =
+          {id = id2; kind=INEQ; body = map_eq_linear neg de.body;
            constant = neg de.constant - one} in
-	let new_sys =
+        let new_sys =
           List.map (fun (what,sys) -> ((de.id,id1,true)::what, e1::sys))
-	    ineqs @
+            ineqs @
           List.map (fun (what,sys) -> ((de.id,id2,false)::what,e2::sys))
-	    ineqs
-	in
-	explode_diseq (diseq,new_sys,(de.id,(de,id1,id2))::expl_map)
+            ineqs
+        in
+        explode_diseq (diseq,new_sys,(de.id,(de,id1,id2))::expl_map)
     | ([],ineqs,expl_map) -> ineqs,expl_map
   in
   try
@@ -673,19 +673,19 @@ let simplify_strong ((new_eq_id,new_var_id,print_var) as new_ids) system =
       let tbl = Hashtbl.create 7 in
       let augment x =
         try incr (Hashtbl.find tbl x)
-	with Not_found -> Hashtbl.add tbl x (ref 1) in
+        with Not_found -> Hashtbl.add tbl x (ref 1) in
       let eq = ref (-1) and c = ref 0 in
       List.iter (function
-		   | ([],r_on,_,path) -> raise (FULL_SOLUTION (path,r_on))
+                   | ([],r_on,_,path) -> raise (FULL_SOLUTION (path,r_on))
                    | (l,_,_,_) -> List.iter augment l) sys;
       Hashtbl.iter (fun x v -> if !v > !c then begin eq := x; c := !v end) tbl;
       !eq
     in
     let rec solve systems =
       try
-	let id = max_count systems in
+        let id = max_count systems in
         let rec sign = function
-	  | ((id',_,b)::l) -> if id=id' then b else sign l
+          | ((id',_,b)::l) -> if id=id' then b else sign l
           | [] -> failwith "solve" in
         let s1,s2 =
           List.partition (fun (_,_,decomp,_) -> sign decomp) systems in
@@ -695,9 +695,9 @@ let simplify_strong ((new_eq_id,new_var_id,print_var) as new_ids) system =
         let s1' = List.map remove_int s1 in
         let s2' = List.map remove_int s2 in
         let (r1,relie1) = solve s1'
-	and (r2,relie2) = solve s2' in
-	let (eq,id1,id2) = Int.List.assoc id explode_map in
-	[SPLIT_INEQ(eq,(id1,r1),(id2, r2))],
+        and (r2,relie2) = solve s2' in
+        let (eq,id1,id2) = Int.List.assoc id explode_map in
+        [SPLIT_INEQ(eq,(id1,r1),(id2, r2))],
         eq.id :: Util.List.union Int.equal relie1 relie2
       with FULL_SOLUTION (x0,x1) -> (x0,x1)
     in

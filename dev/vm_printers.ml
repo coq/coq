@@ -51,7 +51,7 @@ let rec ppzipper z =
       let n = nargs args in
       open_hbox ();
       for i = 0 to n-2 do
-	ppvalues (arg args i);print_string ";";print_space()
+        ppvalues (arg args i);print_string ";";print_space()
       done;
       if n-1 >= 0 then ppvalues (arg args (n-1));
       close_box()

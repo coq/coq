@@ -30,7 +30,7 @@ type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 
 val declare_variable : variable -> variable_declaration -> Libobject.object_name
 
-(** Declaration of global constructions 
+(** Declaration of global constructions
    i.e. Definition/Theorem/Axiom/Parameter/... *)
 
 type constant_declaration = Safe_typing.private_constants constant_entry * logical_kind
@@ -55,7 +55,7 @@ val definition_entry : ?fix_exn:Future.fix_exn ->
 val declare_constant :
  ?internal:internal_flag -> ?local:bool -> Id.t -> ?export_seff:bool -> constant_declaration -> Constant.t
 
-val declare_definition : 
+val declare_definition :
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
   ?local:bool -> Id.t -> ?types:constr ->
   constr Entries.in_universes_entry -> Constant.t

@@ -158,7 +158,7 @@ val init : unit -> unit
 
 (** {6 Section management for discharge } *)
 type variable_info = Constr.named_declaration * Decl_kinds.binding_kind
-type variable_context = variable_info list 
+type variable_context = variable_info list
 type abstr_info = private {
   abstr_ctx : variable_context;
   (** Section variables of this prefix *)

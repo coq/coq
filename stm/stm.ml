@@ -1080,10 +1080,10 @@ let indent_script_item ((ng1,ngl1),nl,beginend,ppl) (cmd,ng) =
       (ng - ngprev + 1, ng1 - 1 :: ngl1)
     else if ng < ngprev then
       (* A subgoal have been solved. Let's compute the new current level
-	 by discarding all levels with 0 remaining goals. *)
+         by discarding all levels with 0 remaining goals. *)
       let rec loop = function
-	| (0, ng2::ngl2) -> loop (ng2,ngl2)
-	| p -> p
+        | (0, ng2::ngl2) -> loop (ng2,ngl2)
+        | p -> p
       in loop (ng1-1, ngl1)
     else
       (* Standard case, same goal number as before *)
@@ -2506,7 +2506,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
               let st = Vernacstate.freeze_interp_state ~marshallable:false in
               ignore(stm_vernac_interp id st x)
             );
-	    if eff then update_global_env ()
+            if eff then update_global_env ()
           ), eff || cache, true
       | `Cmd { cast = x; ceff = eff } -> (fun () ->
           (match !cur_opt.async_proofs_mode with

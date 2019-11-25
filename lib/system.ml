@@ -29,9 +29,9 @@ let all_subdirs ~unix_path:root =
   let rec traverse path rel =
     let f = function
       | FileDir (path,f) ->
-	  let newrel = rel @ [f] in
-	  add path newrel;
-	  traverse path newrel
+          let newrel = rel @ [f] in
+          add path newrel;
+          traverse path newrel
       | _ -> ()
     in process_directory f path
   in
@@ -133,7 +133,7 @@ let find_file_in_path ?(warn=true) paths filename =
       root, filename
     else
       CErrors.user_err ~hdr:"System.find_file_in_path"
-	(hov 0 (str "Can't find file" ++ spc () ++ str filename))
+        (hov 0 (str "Can't find file" ++ spc () ++ str filename))
   else
     (* the name is considered to be the transcription as a relative
        physical name of a logical name, so we deal with it as a name
@@ -141,8 +141,8 @@ let find_file_in_path ?(warn=true) paths filename =
     try where_in_path ~warn paths filename
     with Not_found ->
       CErrors.user_err ~hdr:"System.find_file_in_path"
-	(hov 0 (str "Can't find file" ++ spc () ++ str filename ++ spc () ++
-		str "on loadpath"))
+        (hov 0 (str "Can't find file" ++ spc () ++ str filename ++ spc () ++
+                str "on loadpath"))
 
 let is_in_path lpath filename =
   try ignore (where_in_path ~warn:false lpath filename); true

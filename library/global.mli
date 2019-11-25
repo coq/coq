@@ -88,7 +88,7 @@ val lookup_named     : variable -> Constr.named_declaration
 val lookup_constant  : Constant.t -> Declarations.constant_body
 val lookup_inductive : inductive ->
   Declarations.mutual_inductive_body * Declarations.one_inductive_body
-val lookup_pinductive : Constr.pinductive -> 
+val lookup_pinductive : Constr.pinductive ->
   Declarations.mutual_inductive_body * Declarations.one_inductive_body
 val lookup_mind      : MutInd.t -> Declarations.mutual_inductive_body
 val lookup_module    : ModPath.t -> Declarations.module_body
@@ -134,7 +134,7 @@ val is_template_checked : GlobRef.t -> bool
 val get_template_polymorphic_variables : GlobRef.t -> Univ.Level.t list
 val is_type_in_type : GlobRef.t -> bool
 
-val type_of_global_in_context : Environ.env -> 
+val type_of_global_in_context : Environ.env ->
   GlobRef.t -> Constr.types * Univ.AUContext.t
   [@@ocaml.deprecated "alias of [Typeops.type_of_global_in_context]"]
 

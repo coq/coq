@@ -283,15 +283,15 @@ let euclid m d =
           else
             m.(!i) / d.(0) in
         q.(!i) <- q.(!i) + v;
-	sub_mult m d v !i
+        sub_mult m d v !i
       end else begin
         let v = (m.(!i) * base + m.(!i+1)) / (d.(0) + 1) in
         q.(!i) <- q.(!i) + v / base;
-	sub_mult m d (v / base) !i;
+        sub_mult m d (v / base) !i;
         q.(!i+1) <- q.(!i+1) + v mod base;
-	if q.(!i+1) >= base then
-	  (q.(!i+1) <- q.(!i+1)-base; q.(!i) <- q.(!i)+1);
-	sub_mult m d (v mod base) (!i+1)
+        if q.(!i+1) >= base then
+          (q.(!i+1) <- q.(!i+1)-base; q.(!i) <- q.(!i)+1);
+        sub_mult m d (v mod base) (!i+1)
       end
     done;
     (normalize q, normalize m) in
@@ -465,9 +465,9 @@ let pow  =
       let quo = m lsr 1 (* i.e. m/2 *)
       and odd = not (Int.equal (m land 1) 0) in
       pow_aux
-	(if odd then mult n odd_rest else odd_rest)
-	(mult n n)
-	quo
+        (if odd then mult n odd_rest else odd_rest)
+        (mult n n)
+        quo
   in
   pow_aux one
 

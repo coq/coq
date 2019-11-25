@@ -19,7 +19,7 @@
    - Focus: a proof has a focus stack: the top of the stack contains
      the context in which to unfocus the current view to a view focused
      with the rest of the stack.
-     In addition, this contains, for each of the focus context,  a 
+     In addition, this contains, for each of the focus context,  a
      "focus kind" and a "focus condition" (in practice, and for modularity,
      the focus kind is actually stored inside the condition). To unfocus, one
      needs to know the focus kind, and the condition (for instance "no condition" or
@@ -211,7 +211,7 @@ let cond_of_focus pr =
   | (cond,_,_)::_ -> cond
   | _ -> raise FullyUnfocused
 
-(* An auxiliary function to pop and read the last {!Proofview.focus_context} 
+(* An auxiliary function to pop and read the last {!Proofview.focus_context}
    on the focus stack. *)
 let pop_focus pr =
   match pr.focus_stack with
@@ -234,7 +234,7 @@ let _unfocus pr =
    { pr with proofview = Proofview.unfocus fc pr.proofview }
 
 (* Focus command (focuses on the [i]th subgoal) *)
-(* spiwack: there could also, easily be a focus-on-a-range tactic, is there 
+(* spiwack: there could also, easily be a focus-on-a-range tactic, is there
    a need for it? *)
 let focus cond inf i pr =
   try _focus cond (Obj.repr inf) i i pr
@@ -282,7 +282,7 @@ let rec unfocus kind pr () =
   | Loose ->
     begin try
             let pr = _unfocus pr in
-	    unfocus kind pr ()
+            unfocus kind pr ()
       with FullyUnfocused -> raise CannotUnfocusThisWay
     end
 
@@ -466,7 +466,7 @@ module V82 = struct
 
   let top_goal p =
     let { Evd.it=gls ; sigma=sigma; } =
-	Proofview.V82.top_goals p.entry p.proofview
+        Proofview.V82.top_goals p.entry p.proofview
     in
     { Evd.it=List.hd gls ; sigma=sigma; }
 

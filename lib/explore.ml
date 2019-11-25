@@ -48,7 +48,7 @@ module Make = functor(S : SearchProblem) -> struct
       | [] -> raise Not_found
       | [s] -> explore (i::p) s
       | s :: l ->
-	  try explore (i::p) s with Not_found -> explore_many (succ i) p l
+          try explore (i::p) s with Not_found -> explore_many (succ i) p l
     in
     explore [1] s
 
@@ -82,11 +82,11 @@ module Make = functor(S : SearchProblem) -> struct
       enqueue 1 p q' (S.branching s)
     and enqueue i p q = function
       | [] ->
-	  explore q
+          explore q
       | s :: l ->
-	  let ps = i::p in
-	  msg_with_position ps (S.pp s);
-	  if S.success s then s else enqueue (succ i) p (push (ps,s) q) l
+          let ps = i::p in
+          msg_with_position ps (S.pp s);
+          if S.success s then s else enqueue (succ i) p (push (ps,s) q) l
     in
     enqueue 1 [] empty [s]
 

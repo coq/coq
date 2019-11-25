@@ -41,7 +41,7 @@ type unification_result =
 
 val is_success : unification_result -> bool
 
-(** Replace the vars and rels that are aliases to other vars and rels by 
+(** Replace the vars and rels that are aliases to other vars and rels by
    their representative that is most ancient in the context *)
 val expand_vars_in_term : env -> evar_map -> constr -> constr
 
@@ -130,5 +130,5 @@ val check_evar_instance : unifier -> unify_flags ->
 val remove_instance_local_defs :
   evar_map -> Evar.t -> 'a array -> 'a list
 
-val get_type_of_refresh : 
+val get_type_of_refresh :
   ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> evar_map * types

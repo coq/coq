@@ -69,8 +69,8 @@ let test_bracket_ident =
         | KEYWORD "[" ->
             (match stream_nth 1 strm with
               | IDENT _ -> ()
-	      | _ -> raise Stream.Failure)
-	| _ -> raise Stream.Failure)
+              | _ -> raise Stream.Failure)
+        | _ -> raise Stream.Failure)
 
 (* Tactics grammar rules *)
 
@@ -110,11 +110,11 @@ GRAMMAR EXTEND Gram
       | ta0 = tactic_expr; ";"; ta1 = tactic_expr -> { TacThen (ta0,ta1) }
       | ta0 = tactic_expr; ";"; l = tactic_then_locality; tg = tactic_then_gen; "]" -> {
           let (first,tail) = tg in
-	  match l , tail with
+          match l , tail with
           | false , Some (t,last) -> TacThen (ta0,TacExtendTac (Array.of_list first, t, last))
-	  | true  , Some (t,last) -> TacThens3parts (ta0, Array.of_list first, t, last)
+          | true  , Some (t,last) -> TacThens3parts (ta0, Array.of_list first, t, last)
           | false , None -> TacThen (ta0,TacDispatch first)
-	  | true  , None -> TacThens (ta0,first) } ]
+          | true  , None -> TacThens (ta0,first) } ]
     | "3" RIGHTA
       [ IDENT "try"; ta = tactic_expr -> { TacTry ta }
       | IDENT "do"; n = int_or_var; ta = tactic_expr -> { TacDo (n,ta) }
@@ -148,12 +148,12 @@ GRAMMAR EXTEND Gram
       |	b = match_key; c = tactic_expr; "with"; mrl = match_list; "end" ->
           { TacMatch (b,c,mrl) }
       | IDENT "first" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
-	  { TacFirst l }
+          { TacFirst l }
       | IDENT "solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
-	  { TacSolve l }
+          { TacSolve l }
       | IDENT "idtac"; l = LIST0 message_token -> { TacId l }
       | g=failkw; n = [ n = int_or_var -> { n } | -> { fail_default_value } ];
-	  l = LIST0 message_token -> { TacFail (g,n,l) }
+          l = LIST0 message_token -> { TacFail (g,n,l) }
       | st = simple_tactic -> { st }
       | a = tactic_arg -> { TacArg(CAst.make ~loc a) }
       | r = reference; la = LIST0 tactic_arg_compat ->
@@ -247,12 +247,12 @@ GRAMMAR EXTEND Gram
       | na = name; ":="; "["; mpv = match_pattern; "]"; ":"; mpt = match_pattern -> { Def (na, mpv, mpt) }
       | na = name; ":="; mpv = match_pattern ->
         { let t, ty =
-	    match mpv with
-	    | Term t -> (match t with
-	      | { CAst.v = CCast (t, (CastConv ty | CastVM ty | CastNative ty)) } -> Term t, Some (Term ty)
-	      | _ -> mpv, None)
-	    | _ -> mpv, None
-	  in Def (na, t, Option.default (Term (CAst.make @@ CHole (None, IntroAnonymous, None))) ty) }
+            match mpv with
+            | Term t -> (match t with
+              | { CAst.v = CCast (t, (CastConv ty | CastVM ty | CastNative ty)) } -> Term t, Some (Term ty)
+              | _ -> mpv, None)
+            | _ -> mpv, None
+          in Def (na, t, Option.default (Term (CAst.make @@ CHole (None, IntroAnonymous, None))) ty) }
     ] ]
   ;
   match_context_rule:
@@ -337,9 +337,9 @@ GRAMMAR EXTEND Gram
       | g = OPT toplevel_selector; "{" -> { Vernacexpr.VernacSubproof g } ] ]
   ;
   command:
-    [ [ IDENT "Proof"; "with"; ta = Pltac.tactic; 
+    [ [ IDENT "Proof"; "with"; ta = Pltac.tactic;
         l = OPT [ "using"; l = G_vernac.section_subset_expr -> { l } ] ->
-          { Vernacexpr.VernacProof (Some (in_tac ta), l) } 
+          { Vernacexpr.VernacProof (Some (in_tac ta), l) }
       | IDENT "Proof"; "using"; l = G_vernac.section_subset_expr;
         ta = OPT [ "with"; ta = Pltac.tactic -> { in_tac ta } ] ->
           { Vernacexpr.VernacProof (ta,Some l) } ] ]

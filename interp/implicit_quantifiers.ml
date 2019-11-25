@@ -38,7 +38,7 @@ let declare_generalizable_ident table {CAst.loc;v=id} =
       " is not declarable as generalizable identifier: it must have no trailing digits, quote, or _"));
   if Id.Pred.mem id table then
     user_err ?loc ~hdr:"declare_generalizable_ident"
-		((Id.print id++str" is already declared as a generalizable identifier"))
+                ((Id.print id++str" is already declared as a generalizable identifier"))
   else Id.Pred.add id table
 
 let add_generalizable gen table =
@@ -85,7 +85,7 @@ let is_freevar ids env x =
 
 let ungeneralizable loc id =
   user_err ?loc ~hdr:"Generalization"
-	       (str "Unbound and ungeneralizable variable " ++ Id.print id)
+               (str "Unbound and ungeneralizable variable " ++ Id.print id)
 
 let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
   let found loc id bdvars l =
@@ -111,15 +111,15 @@ let ids_of_names l =
 let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder_expr list) =
   let rec aux bdvars l c = match c with
       ((CLocalAssum (n, _, c)) :: tl) ->
-	let bound = ids_of_names n in
-	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
-	  aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
+        let bound = ids_of_names n in
+        let l' = free_vars_of_constr_expr c ~bound:bdvars l in
+          aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
 
     | ((CLocalDef (n, c, t)) :: tl) ->
         let bound = match n.CAst.v with Anonymous -> [] | Name n -> [n] in
-	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
-	let l'' = Option.fold_left (fun l t -> free_vars_of_constr_expr t ~bound:bdvars l) l' t in
-	  aux (Id.Set.union (ids_of_list bound) bdvars) l'' tl
+        let l' = free_vars_of_constr_expr c ~bound:bdvars l in
+        let l'' = Option.fold_left (fun l t -> free_vars_of_constr_expr t ~bound:bdvars l) l' t in
+          aux (Id.Set.union (ids_of_list bound) bdvars) l'' tl
 
     | CLocalPattern _ :: tl -> assert false
     | [] -> bdvars, l
@@ -129,16 +129,16 @@ let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.emp
   let rec vars bound vs c = match DAst.get c with
     | GVar id ->
         let loc = c.CAst.loc in
-	if is_freevar bound (Global.env ()) id then
+        if is_freevar bound (Global.env ()) id then
           if List.exists (fun {CAst.v} -> Id.equal v id) vs then vs
           else CAst.(make ?loc id) :: vs
-	else vs
+        else vs
     | _ -> Glob_ops.fold_glob_constr_with_binders Id.Set.add vars bound vs c
-  in fun rt -> 
+  in fun rt ->
     let vars = List.rev (vars bound [] rt) in
       List.iter (fun {CAst.loc;v=id} ->
-	if not (Id.Set.mem id allowed || find_generalizable_ident id) then 
-	  ungeneralizable loc id) vars;
+        if not (Id.Set.mem id allowed || find_generalizable_ident id) then
+          ungeneralizable loc id) vars;
       vars
 
 let rec make_fresh ids env x =
@@ -158,10 +158,10 @@ let combine_params avoid fn applied needed =
             | Name id' -> Id.equal id id'
             | Anonymous -> false
             in
-	    if not (List.exists is_id needed) then
-	      user_err ?loc  (str "Wrong argument name: " ++ Id.print id);
-	    true
-	| _ -> false) applied
+            if not (List.exists is_id needed) then
+              user_err ?loc  (str "Wrong argument name: " ++ Id.print id);
+            true
+        | _ -> false) applied
   in
   let named = List.map
     (fun x -> match x with (t, Some {CAst.loc;v=ExplByName id}) -> id, t | _ -> assert false)
@@ -174,26 +174,26 @@ let combine_params avoid fn applied needed =
   let needed = List.filter is_unset needed in
   let rec aux ids avoid app need =
     match app, need with
-	[], [] -> List.rev ids, avoid
+        [], [] -> List.rev ids, avoid
 
       | app, (_, (LocalAssum ({binder_name=Name id}, _) | LocalDef ({binder_name=Name id}, _, _))) :: need when Id.List.mem_assoc id named ->
-	  aux (Id.List.assoc id named :: ids) avoid app need
+          aux (Id.List.assoc id named :: ids) avoid app need
 
       | (x, None) :: app, (None, (LocalAssum ({binder_name=Name id}, _) | LocalDef ({binder_name=Name id}, _, _))) :: need ->
-	  aux (x :: ids) avoid app need
+          aux (x :: ids) avoid app need
 
       | _, (Some cl, _ as d) :: need ->
-	  let t', avoid' = fn avoid d in
-	    aux (t' :: ids) avoid' app need
+          let t', avoid' = fn avoid d in
+            aux (t' :: ids) avoid' app need
 
       | x :: app, (None, _) :: need -> aux (fst x :: ids) avoid app need
 
       | [], (None, _ as decl) :: need ->
-	  let t', avoid' = fn avoid decl in
-	    aux (t' :: ids) avoid' app need
+          let t', avoid' = fn avoid decl in
+            aux (t' :: ids) avoid' app need
 
       | (x,_) :: _, [] ->
-	  user_err ?loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
+          user_err ?loc:(Constrexpr_ops.constr_loc x) (str "Typeclass does not expect more arguments")
   in aux [] avoid applied needed
 
 let combine_params_freevar avoid (_, decl) =
@@ -230,7 +230,7 @@ let implicit_application env ?(allow_partial=true) f ty =
   match is_class with
   | None -> ty, env
   | Some ({CAst.loc;v=(id, par, inst)}, gr) ->
-	  let avoid = Id.Set.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
+          let avoid = Id.Set.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
    let c = class_info gr in
    let (ci, rd) = c.cl_context in
    if not allow_partial then
@@ -246,7 +246,7 @@ let implicit_application env ?(allow_partial=true) f ty =
      end;
    let pars = List.rev (List.combine ci rd) in
    let args, avoid = combine_params avoid f par pars in
-	 CAst.make ?loc @@ CAppExpl ((None, id, inst), args), avoid
+         CAst.make ?loc @@ CAppExpl ((None, id, inst), args), avoid
 
 let warn_ignoring_implicit_status =
   CWarnings.create ~name:"ignoring_implicit_status" ~category:"implicits"

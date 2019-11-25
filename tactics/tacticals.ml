@@ -174,7 +174,7 @@ let check_or_and_pattern_size ?loc check_and names branchsigns =
     user_err ?loc  (str "Expects " ++ msg p1 p2 ++ str ".") in
   let errn n =
     user_err ?loc  (str "Expects a disjunctive pattern with " ++ int n
-	++ str " branches.") in
+        ++ str " branches.") in
   let err1' p1 p2 =
     user_err ?loc  (strbrk "Expects a disjunctive pattern with 1 branch or " ++ msg p1 p2 ++ str ".") in
   let errforthcoming ?loc =
@@ -254,7 +254,7 @@ let elimination_sort_of_clause = function
   | Some id -> elimination_sort_of_hyp id
 
 
-let pf_with_evars glsev k gls = 
+let pf_with_evars glsev k gls =
   let evd, a = glsev gls in
     tclTHEN (Refiner.tclEVARS evd) (k a) gls
 
@@ -419,7 +419,7 @@ module New = struct
 
   let tclTRY t =
     tclORELSE0 t (tclUNIT ())
-  
+
   let tclTRYb t =
     tclORELSE0L (t <*> tclUNIT true) (tclUNIT false)
 
@@ -506,7 +506,7 @@ module New = struct
       | Evd.Evar_empty -> Some (evk,evi)
       | Evd.Evar_defined c -> match Constr.kind (EConstr.Unsafe.to_constr c) with
         | Evar (evk,l) -> is_undefined_up_to_restriction sigma evk
-        | _ -> 
+        | _ ->
           (* We make the assumption that there is no way to refine an
             evar remaining after typing from the initial term given to
             apply/elim and co tactics, is it correct? *)
@@ -574,11 +574,11 @@ module New = struct
   let nthHypId m gl =
     (* We only use [id] *)
     nthDecl m gl |> NamedDecl.get_id
-  let nthHyp m gl = 
+  let nthHyp m gl =
     mkVar (nthHypId m gl)
 
   let onNthHypId m tac =
-    Proofview.Goal.enter begin fun gl -> tac (nthHypId m gl) end 
+    Proofview.Goal.enter begin fun gl -> tac (nthHypId m gl) end
   let onNthHyp m tac =
     Proofview.Goal.enter begin fun gl -> tac (nthHyp m gl) end
 
@@ -651,12 +651,12 @@ module New = struct
       match EConstr.kind elimclause.evd p with
       | Meta p -> p
       | _ ->
-	  let name_elim =
-	    match EConstr.kind sigma elim with
+          let name_elim =
+            match EConstr.kind sigma elim with
             | Const _ | Var _ -> str " " ++ Printer.pr_econstr_env (pf_env gl) sigma elim
             | _ -> mt ()
-	  in
-	  user_err ~hdr:"Tacticals.general_elim_then_using"
+          in
+          user_err ~hdr:"Tacticals.general_elim_then_using"
             (str "The elimination combinator " ++ name_elim ++ str " is unknown.")
     in
     let elimclause' = clenv_fchain ~with_univs:false indmv elimclause indclause in
@@ -739,7 +739,7 @@ module New = struct
     tac branches
     end
 
-  let case_on_ba tac ba = 
+  let case_on_ba tac ba =
     Proofview.Goal.enter begin fun gl ->
     let branches = make_elim_branch_assumptions ba (Proofview.Goal.hyps gl) in
     tac branches

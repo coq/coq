@@ -28,7 +28,7 @@ val try_add_new_coercion : GlobRef.t -> local:bool ->
    transparent constant which unfolds to some class [tg]; it declares
    an identity coercion from [cst] to [tg], named something like
    ["Id_cst_tg"] *)
-val try_add_new_coercion_subclass : cl_typ -> local:bool -> 
+val try_add_new_coercion_subclass : cl_typ -> local:bool ->
   Decl_kinds.polymorphic -> unit
 
 (** [try_add_new_coercion_with_source ref s src] declares [ref] as a coercion
@@ -39,7 +39,7 @@ val try_add_new_coercion_with_source : GlobRef.t -> local:bool ->
 (** [try_add_new_identity_coercion id s src tg] enriches the
    environment with a new definition of name [id] declared as an
    identity coercion from [src] to [tg] *)
-val try_add_new_identity_coercion : Id.t -> local:bool -> 
+val try_add_new_identity_coercion : Id.t -> local:bool ->
   Decl_kinds.polymorphic -> source:cl_typ -> target:cl_typ -> unit
 
 val add_coercion_hook : Decl_kinds.polymorphic -> Lemmas.declaration_hook

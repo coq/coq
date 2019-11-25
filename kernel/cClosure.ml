@@ -53,10 +53,10 @@ let reset () =
 
 let stop() =
   Feedback.msg_debug (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
-	 str " eta=" ++ int !eta ++ str" zeta=" ++ int !zeta ++ str" evar=" ++
-	 int !evar ++ str" match=" ++ int !nb_match ++ str" fix=" ++ int !fix ++
+         str " eta=" ++ int !eta ++ str" zeta=" ++ int !zeta ++ str" evar=" ++
+         int !evar ++ str" match=" ++ int !nb_match ++ str" fix=" ++ int !fix ++
          str " cofix=" ++ int !cofix ++ str" prune=" ++ int !prune ++
-	 str"]")
+         str"]")
 
 let incr_cnt red cnt =
   if red then begin
@@ -119,7 +119,7 @@ module RedFlags : RedFlagsSig = struct
 
   type red_kind = BETA | DELTA | ETA | MATCH | FIX
               | COFIX | ZETA
-	      | CONST of Constant.t | VAR of Id.t
+              | CONST of Constant.t | VAR of Id.t
   let fBETA = BETA
   let fDELTA = DELTA
   let fETA = ETA
@@ -181,16 +181,16 @@ module RedFlags : RedFlagsSig = struct
     | ETA -> incr_cnt red.r_eta eta
     | CONST kn ->
       let c = is_transparent_constant red.r_const kn in
-	incr_cnt c delta
+        incr_cnt c delta
     | VAR id -> (* En attendant d'avoir des kn pour les Var *)
       let c = is_transparent_variable red.r_const id in
-	incr_cnt c delta
+        incr_cnt c delta
     | ZETA -> incr_cnt red.r_zeta zeta
     | MATCH -> incr_cnt red.r_match nb_match
     | FIX -> incr_cnt red.r_fix fix
     | COFIX -> incr_cnt red.r_cofix cofix
     | DELTA -> (* Used for Rel/Var defined in context *)
-	incr_cnt red.r_delta delta
+        incr_cnt red.r_delta delta
 
   let red_projection red p =
     if Projection.unfolded p then true
@@ -829,10 +829,10 @@ let rec try_drop_parameters depth n = function
           reloc_rargs depth (append_stack aft s)
     | Zshift(k)::s -> try_drop_parameters (depth-k) n s
     | [] ->
-	if Int.equal n 0 then []
-	else raise Not_found
+        if Int.equal n 0 then []
+        else raise Not_found
     | (ZcaseT _ | Zproj _ | Zfix _ | Zupdate _ | Zprimitive _) :: _ -> assert false
-	(* strip_update_shift_app only produces Zapp and Zshift items *)
+        (* strip_update_shift_app only produces Zapp and Zshift items *)
 
 let drop_parameters depth n argstk =
   try try_drop_parameters depth n argstk
@@ -857,7 +857,7 @@ let eta_expand_ind_stack env ind m s (f, s') =
   match Declareops.inductive_make_projections ind mib with
   | Some projs ->
     (* (Construct, pars1 .. parsm :: arg1...argn :: []) ~= (f, s') ->
-	   arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
+           arg1..argn ~= (proj1 t...projn t) where t = zip (f,s') *)
     let pars = mib.Declarations.mind_nparams in
     let right = fapp_stack (f, s') in
     let (depth, args, _s) = strip_update_shift_app m s in
@@ -874,8 +874,8 @@ let eta_expand_ind_stack env ind m s (f, s') =
 let rec project_nth_arg n = function
   | Zapp args :: s ->
       let q = Array.length args in
-	if n >= q then project_nth_arg (n - q) s
-	else (* n < q *) args.(n)
+        if n >= q then project_nth_arg (n - q) s
+        else (* n < q *) args.(n)
   | (ZcaseT _ | Zproj _ | Zfix _ | Zupdate _ | Zshift _ | Zprimitive _) :: _ | [] -> assert false
       (* After drop_parameters we have a purely applicative stack *)
 
@@ -896,12 +896,12 @@ let contract_fix_vect fix =
           (bds.(i),
            (fun j -> { mark = mark Cstr (opt_of_rel nas.(j).binder_relevance);
                        term = FFix (((reci,j),rdcl),env) }),
-	   env, Array.length bds)
+           env, Array.length bds)
       | FCoFix ((i,(nas,_,bds as rdcl)),env) ->
           (bds.(i),
            (fun j -> { mark = mark Cstr (opt_of_rel nas.(j).binder_relevance);
                        term = FCoFix ((j,rdcl),env) }),
-	   env, Array.length bds)
+           env, Array.length bds)
       | _ -> assert false
   in
   (subs_cons(Array.init nfix make_body, env), thisbody)
@@ -1216,11 +1216,11 @@ let rec zip_term zfun m stk =
         zip_term zfun (mkApp(m, Array.map zfun args)) s
     | ZcaseT(ci,p,br,e)::s ->
         let t = mkCase(ci, zfun (mk_clos e p), m,
-		       Array.map (fun b -> zfun (mk_clos e b)) br) in
+                       Array.map (fun b -> zfun (mk_clos e b)) br) in
         zip_term zfun t s
     | Zproj p::s ->
         let t = mkProj (Projection.make p true, m) in
-	zip_term zfun t s
+        zip_term zfun t s
     | Zfix(fx,par)::s ->
         let h = mkApp(zip_term zfun (zfun fx) par,[|m|]) in
         zip_term zfun h s

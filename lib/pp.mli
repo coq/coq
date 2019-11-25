@@ -149,8 +149,8 @@ val prlist_strict :  ('a -> t) -> 'a list -> t
 val prlist_with_sep :
    (unit -> t) -> ('a -> t) -> 'a list -> t
 (** [prlist_with_sep sep pr [a ; ... ; c]] outputs
-    [pr a ++ sep () ++ ... ++ sep () ++ pr c]. 
-    where the thunk sep is memoized, rather than being called each place 
+    [pr a ++ sep () ++ ... ++ sep () ++ pr c].
+    where the thunk sep is memoized, rather than being called each place
      its result is used.
 *)
 

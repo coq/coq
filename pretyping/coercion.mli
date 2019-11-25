@@ -40,7 +40,7 @@ val inh_coerce_to_base : ?loc:Loc.t -> program_mode:bool ->
 val inh_coerce_to_prod : ?loc:Loc.t -> program_mode:bool ->
   env -> evar_map -> types -> evar_map * types
 
-(** [inh_conv_coerce_to resolve_tc Loc.t env isevars j t] coerces [j] to an 
+(** [inh_conv_coerce_to resolve_tc Loc.t env isevars j t] coerces [j] to an
     object of type [t]; i.e. it inserts a coercion into [j], if needed, in such
     a way [t] and [j.uj_type] are convertible; it fails if no coercion is
     applicable. resolve_tc=false disables resolving type classes (as the last

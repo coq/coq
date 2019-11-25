@@ -80,7 +80,7 @@ type section_def_entry = {
 
 type inline = int option (* inlining level, None for no inlining *)
 
-type parameter_entry = 
+type parameter_entry =
     Constr.named_context option * types in_universes_entry * inline
 
 type primitive_entry = {

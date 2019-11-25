@@ -34,7 +34,7 @@ let add_warning_in_category ~name ~category =
 
 let set_warning_status ~name status =
   try
-    let w = Hashtbl.find warnings name in 
+    let w = Hashtbl.find warnings name in
     Hashtbl.replace warnings name { w with status = status }
   with Not_found -> ()
 

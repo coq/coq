@@ -145,9 +145,9 @@ let pP s = pp (hov 0 s)
 let safe_pr_global = function
   | ConstRef kn -> pp (str "CONSTREF(" ++ Constant.debug_print kn ++ str ")")
   | IndRef (kn,i) -> pp (str "INDREF(" ++ MutInd.debug_print kn ++ str "," ++
-			  int i ++ str ")")
+                          int i ++ str ")")
   | ConstructRef ((kn,i),j) -> pp (str "CONSTRUCTREF(" ++ MutInd.debug_print kn ++ str "," ++
-				      int i ++ str "," ++ int j ++ str ")")
+                                      int i ++ str "," ++ int j ++ str ")")
   | VarRef id -> pp (str "VARREF(" ++ Id.print id ++ str ")")
 
 let ppglobal x = try pp(pr_global x) with _ -> safe_pr_global x
@@ -227,7 +227,7 @@ let ppuniverse_level_subst l = pp (Univ.pr_universe_level_subst l)
 let ppevar_universe_context l = pp (Termops.pr_evar_universe_context l)
 let ppconstraints c = pp (pr_constraints Level.pr c)
 let ppuniverseconstraints c = pp (UnivProblem.Set.pr c)
-let ppuniverse_context_future c = 
+let ppuniverse_context_future c =
   let ctx = Future.force c in
     ppuniverse_context ctx
 let ppuniverses u = pp (UGraph.pr_universes Level.pr u)
@@ -318,9 +318,9 @@ let constr_display csr =
     | Set -> "Set"
     | Prop -> "Prop"
     | Type u -> univ_display u;
-	"Type("^(string_of_int !cnt)^")"
+        "Type("^(string_of_int !cnt)^")"
 
-  and universes_display l = 
+  and universes_display l =
     Array.fold_right (fun x i -> level_display x; (string_of_int !cnt)^(if not(i="")
         then (" "^i) else "")) (Instance.to_array l) ""
 
@@ -389,7 +389,7 @@ let print_pure_constr csr =
       print_string "Constr(";
       sp_display sp;
       print_string ",";
-      print_int i; print_string ","; print_int j; 
+      print_int i; print_string ","; print_int j;
       print_string ","; universes_display u;
       print_string ")"
   | Case (ci,p,c,bl) ->
@@ -409,12 +409,12 @@ let print_pure_constr csr =
       open_vbox 0;
       let print_fix () =
         for k = 0 to (Array.length tl) - 1 do
-	  open_vbox 0;
-	  name_display lna.(k); print_string "/";
-	  print_int t.(k); print_cut(); print_string ":";
-	  box_display tl.(k) ; print_cut(); print_string ":=";
-	  box_display bl.(k); close_box ();
-	  print_cut()
+          open_vbox 0;
+          name_display lna.(k); print_string "/";
+          print_int t.(k); print_cut(); print_string ":";
+          box_display tl.(k) ; print_cut(); print_string ":=";
+          box_display bl.(k); close_box ();
+          print_cut()
         done
       in print_string"{"; print_fix(); print_string"}"
   | CoFix(i,(lna,tl,bl)) ->
@@ -424,10 +424,10 @@ let print_pure_constr csr =
       let print_fix () =
         for k = 0 to (Array.length tl) - 1 do
           open_vbox 1;
-	  name_display lna.(k);  print_cut(); print_string ":";
-	  box_display tl.(k) ; print_cut(); print_string ":=";
-	  box_display bl.(k); close_box ();
-	  print_cut();
+          name_display lna.(k);  print_cut(); print_string ":";
+          box_display tl.(k) ; print_cut(); print_string ":=";
+          box_display bl.(k); close_box ();
+          print_cut();
         done
       in print_string"{"; print_fix (); print_string"}"
   | Int i ->
@@ -443,7 +443,7 @@ let print_pure_constr csr =
     | Set -> print_string "Set"
     | Prop -> print_string "Prop"
     | Type u -> open_hbox();
-	print_string "Type("; pp (pr_uni u); print_string ")"; close_box()
+        print_string "Type("; pp (pr_uni u); print_string ")"; close_box()
 
   and name_display x = match x.binder_name with
     | Name id -> print_string (Id.to_string id)
@@ -454,8 +454,8 @@ let print_pure_constr csr =
     let ls =
       match List.rev_map Id.to_string (DirPath.repr dir) with
           ("Top"::l)-> l
-	| ("Coq"::_::l) -> l
-	| l             -> l
+        | ("Coq"::_::l) -> l
+        | l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
       print_string (MutInd.debug_to_string sp)
   and sp_con_display sp =
@@ -463,8 +463,8 @@ let print_pure_constr csr =
     let ls =
       match List.rev_map Id.to_string (DirPath.repr dir) with
           ("Top"::l)-> l
-	| ("Coq"::_::l) -> l
-	| l             -> l
+        | ("Coq"::_::l) -> l
+        | l             -> l
     in  List.iter (fun x -> print_string x; print_string ".") ls;*)
       print_string (Constant.debug_to_string sp)
 
@@ -472,8 +472,8 @@ let print_pure_constr csr =
     try
      box_display csr; print_flush()
     with e ->
-	print_string (Printexc.to_string e);print_flush ();
-	raise e
+        print_string (Printexc.to_string e);print_flush ();
+        raise e
 
 let print_pure_econstr c = print_pure_constr EConstr.Unsafe.(to_constr c) ;;
 
@@ -557,12 +557,12 @@ let raw_string_of_ref ?loc _ = function
   | IndRef (kn,i) ->
       let (mp,id) = MutInd.repr2 kn in
       encode_path ?loc "IND" (Some mp) [Label.to_id id]
-	(Id.of_string ("_"^string_of_int i))
+        (Id.of_string ("_"^string_of_int i))
   | ConstructRef ((kn,i),j) ->
       let (mp,id) = MutInd.repr2 kn in
       encode_path ?loc "CSTR" (Some mp)
-	[Label.to_id id;Id.of_string ("_"^string_of_int i)]
-	(Id.of_string ("_"^string_of_int j))
+        [Label.to_id id;Id.of_string ("_"^string_of_int i)]
+        (Id.of_string ("_"^string_of_int j))
   | VarRef id ->
       encode_path ?loc "SECVAR" None [] id
 
@@ -578,7 +578,7 @@ let short_string_of_ref ?loc _ = function
         [Label.to_id (MutInd.label kn);Id.of_string ("_"^string_of_int i)]
         (Id.of_string ("_"^string_of_int j))
 
-(* Anticipate that printers can be used from ocamldebug and that 
+(* Anticipate that printers can be used from ocamldebug and that
    pretty-printer should not make calls to the global env since ocamldebug
    runs in a different process and does not have the proper env at hand *)
 let _ = Flags.in_debugger := true

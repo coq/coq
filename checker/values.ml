@@ -124,7 +124,7 @@ let v_binder_annot x = v_tuple "binder_annot" [|x;v_relevance|]
 
 let v_puniverses v = v_tuple "punivs" [|v;v_instance|]
 
-let v_boollist = List v_bool  
+let v_boollist = List v_bool
 
 let v_caseinfo =
   let v_cstyle = v_enum "case_style" 5 in

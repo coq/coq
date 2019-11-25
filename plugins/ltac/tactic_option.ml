@@ -34,19 +34,19 @@ let declare_tactic_option ?(default=Tacexpr.TacId []) name =
   let input : bool * Tacexpr.glob_tactic_expr -> obj =
     declare_object
       { (default_object name) with
-	cache_function = cache;
-	load_function = (fun _ -> load);
-	open_function = (fun _ -> load);
-	classify_function = (fun (local, tac) ->
-	  if local then Dispose else Substitute (local, tac));
-	subst_function = subst}
+        cache_function = cache;
+        load_function = (fun _ -> load);
+        open_function = (fun _ -> load);
+        classify_function = (fun (local, tac) ->
+          if local then Dispose else Substitute (local, tac));
+        subst_function = subst}
   in
   let put local tac =
     set_default_tactic local tac;
     Lib.add_anonymous_leaf (input (local, tac))
   in
   let get () = !locality, Tacinterp.eval_tactic !default_tactic in
-  let print () = 
+  let print () =
     Pptactic.pr_glob_tactic (Global.env ()) !default_tactic_expr ++
       (if !locality then str" (locally defined)" else str" (globally defined)")
   in

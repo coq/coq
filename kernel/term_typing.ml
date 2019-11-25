@@ -239,7 +239,7 @@ let infer_declaration (type a) ~(trust : a trust) env (dcl : a constant_entry) =
       in
       let def = Vars.subst_univs_level_constr usubst j.uj_val in
       let def = Def (Mod_subst.from_val def) in
-	feedback_completion_typecheck feedback_id;
+        feedback_completion_typecheck feedback_id;
       {
         Cooking.cook_body = def;
         cook_type = typ;
@@ -292,7 +292,7 @@ let build_constant_declaration _kn env result =
     let context_ids = List.map NamedDecl.get_id (named_context env) in
     let def = result.cook_body in
     match result.cook_context with
-    | None when not (List.is_empty context_ids) -> 
+    | None when not (List.is_empty context_ids) ->
         (* No declared section vars, and non-empty section context:
            we must look at the body NOW, if any *)
         let ids_typ = global_vars_set env typ in
@@ -331,7 +331,7 @@ let build_constant_declaration _kn env result =
               let inferred = keep_hyps env (Id.Set.union ids_typ ids_def) in
               check declared inferred) lc) in
   let univs = result.cook_universes in
-  let tps = 
+  let tps =
     let res = Cbytegen.compile_constant_body ~fail_on_error:false env univs def in
     Option.map Cemitcodes.from_val res
   in

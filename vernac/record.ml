@@ -72,8 +72,8 @@ let interp_fields_evars env sigma impls_env nots l =
         Option.cata (fun x -> on_snd (fun x -> Some (fst x)) @@
                       interp_casted_constr_evars_impls ~program_mode:false env sigma ~impls x t') (sigma,None) b in
       let impls =
-	match i with
-	| Anonymous -> impls
+        match i with
+        | Anonymous -> impls
         | Name id -> Id.Map.add id (compute_internalization_data env sigma Constrintern.Method t' impl) impls
       in
       let d = match b' with
@@ -88,7 +88,7 @@ let compute_constructor_level evars env l =
   List.fold_right (fun d (env, univ) ->
     let univ =
       if is_local_assum d then
-	let s = Retyping.get_sort_of env evars (RelDecl.get_type d) in
+        let s = Retyping.get_sort_of env evars (RelDecl.get_type d) in
           Univ.sup (univ_of_sort s) univ
       else univ
     in (EConstr.push_rel d env, univ))
@@ -124,8 +124,8 @@ let typecheck_params_and_fields finite def poly pl ps records =
       | _ -> ()
     in
       List.iter
-	(function CLocalDef (b, _, _) -> error default_binder_kind b
-	   | CLocalAssum (ls, bk, ce) -> List.iter (error bk) ls
+        (function CLocalDef (b, _, _) -> error default_binder_kind b
+           | CLocalAssum (ls, bk, ce) -> List.iter (error bk) ls
            | CLocalPattern {CAst.loc} ->
               Loc.raise ?loc (Stream.Error "pattern with quote not allowed in record parameters")) ps
   in
@@ -139,9 +139,9 @@ let typecheck_params_and_fields finite def poly pl ps records =
        let sigma, s = interp_type_evars ~program_mode:false env sigma ~impls:empty_internalization_env t in
        let sred = Reductionops.whd_allnolet env sigma s in
          (match EConstr.kind sigma sred with
-	 | Sort s' ->
+         | Sort s' ->
             let s' = EConstr.ESorts.kind sigma s' in
-	    (if poly then
+            (if poly then
                match Evd.is_sort_variable sigma s' with
                | Some l ->
                  let sigma = Evd.make_flexible_variable sigma ~algebraic:true l in
@@ -149,7 +149,7 @@ let typecheck_params_and_fields finite def poly pl ps records =
                | None ->
                  (sigma, false), (s, s')
              else (sigma, false), (s, s'))
-	 | _ -> user_err ?loc:(constr_loc t) (str"Sort expected."))
+         | _ -> user_err ?loc:(constr_loc t) (str"Sort expected."))
     | None ->
       let uvarkind = Evd.univ_flexible_alg in
       let sigma, s = Evd.new_sort_variable uvarkind sigma in
@@ -185,8 +185,8 @@ let typecheck_params_and_fields finite def poly pl ps records =
         let sigma = Evd.set_leq_sort env_ar sigma (Sorts.sort_of_univ univ) sort in
         if Univ.is_small_univ univ &&
            Option.cata (Evd.is_flexible_level sigma) false (Evd.is_sort_variable sigma sort) then
-	   (* We can assume that the level in aritysort is not constrained
-	       and clear it, if it is flexible *)
+           (* We can assume that the level in aritysort is not constrained
+               and clear it, if it is flexible *)
    Evd.set_eq_sort env_ar sigma Sorts.set sort, (univ, EConstr.mkSort (Sorts.sort_of_univ univ))
         else sigma, (univ, typ)
   in
@@ -221,24 +221,24 @@ message. The user might still want to name the field of the record. *)
 let warning_or_error coe indsp err =
   let st = match err with
     | MissingProj (fi,projs) ->
-	let s,have = if List.length projs > 1 then "s","were" else "","was" in
+        let s,have = if List.length projs > 1 then "s","were" else "","was" in
         (Id.print fi ++
-	   strbrk" cannot be defined because the projection" ++ str s ++ spc () ++
+           strbrk" cannot be defined because the projection" ++ str s ++ spc () ++
            prlist_with_sep pr_comma Id.print projs ++ spc () ++ str have ++
-	   strbrk " not defined.")
+           strbrk " not defined.")
     | BadTypedProj (fi,ctx,te) ->
-	match te with
+        match te with
           | ElimArity (_,_,_,Some (_,_,_,NonInformativeToInformative)) ->
               (Id.print fi ++
-		strbrk" cannot be defined because it is informative and " ++
-		Printer.pr_inductive (Global.env()) indsp ++
-		strbrk " is not.")
+                strbrk" cannot be defined because it is informative and " ++
+                Printer.pr_inductive (Global.env()) indsp ++
+                strbrk " is not.")
           | ElimArity (_,_,_,Some (_,_,_,StrongEliminationOnNonSmallType)) ->
-	      (Id.print fi ++
-		strbrk" cannot be defined because it is large and " ++
-		Printer.pr_inductive (Global.env()) indsp ++
-		strbrk " is not.")
-	  | _ ->
+              (Id.print fi ++
+                strbrk" cannot be defined because it is large and " ++
+                Printer.pr_inductive (Global.env()) indsp ++
+                strbrk " is not.")
+          | _ ->
               (Id.print fi ++ strbrk " cannot be defined because it is not typable.")
   in
   if coe then user_err ~hdr:"structure" st;
@@ -260,19 +260,19 @@ let subst_projection fid l c =
   let bad_projs = ref [] in
   let rec substrec depth c = match Constr.kind c with
     | Rel k ->
-	(* We are in context [[params;fields;x:ind;...depth...]] *)
+        (* We are in context [[params;fields;x:ind;...depth...]] *)
         if k <= depth+1 then
-	  c
+          c
         else if k-depth-1 <= lv then
-	  match List.nth l (k-depth-2) with
-	    | Projection t -> lift depth t
-	    | NoProjection (Name id) -> bad_projs := id :: !bad_projs; mkRel k
-	    | NoProjection Anonymous ->
+          match List.nth l (k-depth-2) with
+            | Projection t -> lift depth t
+            | NoProjection (Name id) -> bad_projs := id :: !bad_projs; mkRel k
+            | NoProjection Anonymous ->
                 user_err  (str "Field " ++ Id.print fid ++
                   str " depends on the " ++ pr_nth (k-depth-1) ++ str
                   " field which has no name.")
         else
-	  mkRel (k-lv)
+          mkRel (k-lv)
     | _ -> Constr.map_with_binders succ substrec depth c
   in
   let c' = lift 1 c in (* to get [c] defined in ctxt [[params;fields;x:ind]] *)
@@ -312,13 +312,13 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
       (fun (nfi,i,kinds,sp_projs,subst) coe decl impls ->
         let fi = RelDecl.get_name decl in
         let ti = RelDecl.get_type decl in
-	let (sp_projs,i,subst) =
-	  match fi with
-	  | Anonymous ->
-	      (None::sp_projs,i,NoProjection fi::subst)
-	  | Name fid -> try
+        let (sp_projs,i,subst) =
+          match fi with
+          | Anonymous ->
+              (None::sp_projs,i,NoProjection fi::subst)
+          | Name fid -> try
             let kn, term =
-	      if is_local_assum decl && primitive then
+              if is_local_assum decl && primitive then
                 let p = Projection.Repr.make indsp
                     ~proj_npars:mib.mind_nparams
                     ~proj_arg:i
@@ -328,56 +328,56 @@ let declare_projections indsp ctx ?(kind=StructureComponent) binder_name coers f
                 let kn = Projection.Repr.constant p in
                 Declare.definition_message fid;
                 kn, mkProj (Projection.make p false,mkRel 1)
-	      else
-		let ccl = subst_projection fid subst ti in
-		let body = match decl with
+              else
+                let ccl = subst_projection fid subst ti in
+                let body = match decl with
                   | LocalDef (_,ci,_) -> subst_projection fid subst ci
                   | LocalAssum ({binder_relevance=rci},_) ->
-	            (* [ccl] is defined in context [params;x:rp] *)
-		    (* [ccl'] is defined in context [params;x:rp;x:rp] *)
-		    let ccl' = liftn 1 2 ccl in
+                    (* [ccl] is defined in context [params;x:rp] *)
+                    (* [ccl'] is defined in context [params;x:rp;x:rp] *)
+                    let ccl' = liftn 1 2 ccl in
                     let p = mkLambda (x, lift 1 rp, ccl') in
-		    let branch = it_mkLambda_or_LetIn (mkRel nfi) lifted_fields in
+                    let branch = it_mkLambda_or_LetIn (mkRel nfi) lifted_fields in
                     let ci = Inductiveops.make_case_info env indsp rci LetStyle in
                     (* Record projections have no is *)
                     mkCase (ci, p, mkRel 1, [|branch|])
                 in
-		let proj =
+                let proj =
                   it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
-		let projtyp =
+                let projtyp =
                   it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
-	        try
-		  let entry = {
-		    const_entry_body =
-		      Future.from_val (Safe_typing.mk_pure_proof proj);
-		    const_entry_secctx = None;
-		    const_entry_type = Some projtyp;
+                try
+                  let entry = {
+                    const_entry_body =
+                      Future.from_val (Safe_typing.mk_pure_proof proj);
+                    const_entry_secctx = None;
+                    const_entry_type = Some projtyp;
                     const_entry_universes = ctx;
-		    const_entry_opaque = false;
-		    const_entry_inline_code = false;
-		    const_entry_feedback = None } in
-		  let k = (DefinitionEntry entry,IsDefinition kind) in
-		  let kn = declare_constant ~internal:InternalTacticRequest fid k in
-		  let constr_fip =
-		    let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
+                    const_entry_opaque = false;
+                    const_entry_inline_code = false;
+                    const_entry_feedback = None } in
+                  let k = (DefinitionEntry entry,IsDefinition kind) in
+                  let kn = declare_constant ~internal:InternalTacticRequest fid k in
+                  let constr_fip =
+                    let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
                       applist (mkConstU (kn,u),proj_args)
                   in
                   Declare.definition_message fid;
-		    kn, constr_fip
+                    kn, constr_fip
                 with Type_errors.TypeError (ctx,te) ->
                   raise (NotDefinable (BadTypedProj (fid,ctx,te)))
-	    in
-	    let refi = ConstRef kn in
-	    Impargs.maybe_declare_manual_implicits false refi impls;
-	    if coe then begin
-	      let cl = Class.class_of_global (IndRef indsp) in
-	        Class.try_add_new_coercion_with_source refi ~local:false poly ~source:cl
-	    end;
-	    let i = if is_local_assum decl then i+1 else i in
-	      (Some kn::sp_projs, i, Projection term::subst)
+            in
+            let refi = ConstRef kn in
+            Impargs.maybe_declare_manual_implicits false refi impls;
+            if coe then begin
+              let cl = Class.class_of_global (IndRef indsp) in
+                Class.try_add_new_coercion_with_source refi ~local:false poly ~source:cl
+            end;
+            let i = if is_local_assum decl then i+1 else i in
+              (Some kn::sp_projs, i, Projection term::subst)
             with NotDefinable why ->
-	      warning_or_error coe indsp why;
-	      (None::sp_projs,i,NoProjection fi::subst) in
+              warning_or_error coe indsp why;
+              (None::sp_projs,i,NoProjection fi::subst) in
       (nfi-1,i,(fi, is_local_assum decl)::kinds,sp_projs,subst))
       (List.length fields,0,[],[],[]) coers (List.rev fields) (List.rev fieldimpls)
   in (kinds,sp_projs)
@@ -491,7 +491,7 @@ let declare_class def cum ubinders univs id idbuild paramimpls params univ arity
       let class_entry =
         Declare.definition_entry ~types:class_type ~univs class_body in
       let cst = Declare.declare_constant id
-	(DefinitionEntry class_entry, IsDefinition Definition)
+        (DefinitionEntry class_entry, IsDefinition Definition)
       in
       let inst, univs = match univs with
         | Polymorphic_entry (_, uctx) -> Univ.UContext.instance uctx, univs
@@ -524,8 +524,8 @@ let declare_class def cum ubinders univs id idbuild paramimpls params univ arity
       in
        let coers = List.map2 (fun coe pri ->
                               Option.map (fun b ->
-			      if b then Backward, pri else Forward, pri) coe)
-	  coers priorities
+                              if b then Backward, pri else Forward, pri) coe)
+          coers priorities
        in
       let map ind =
         let l = List.map3 (fun decl b y -> RelDecl.get_name decl, b, y)
@@ -585,7 +585,7 @@ let add_constant_class env cst =
     }
   in add_class tc;
     set_typeclass_transparency (EvalConstRef cst) false false
-      
+
 let add_inductive_class env ind =
   let mind, oneind = Inductive.lookup_mind_specif env ind in
   let k =
@@ -598,11 +598,11 @@ let add_inductive_class env ind =
     let r = Inductive.relevance_of_inductive env ind in
       { cl_univs = univs;
         cl_impl = IndRef ind;
-	cl_context = List.map (const None) ctx, ctx;
+        cl_context = List.map (const None) ctx, ctx;
         cl_props = [LocalAssum (make_annot Anonymous r, ty)];
-	cl_projs = [];
-	cl_strict = !typeclasses_strict;
-	cl_unique = !typeclasses_unique }
+        cl_projs = [];
+        cl_strict = !typeclasses_strict;
+        cl_unique = !typeclasses_unique }
   in add_class k
 
 let warn_already_existing_class =

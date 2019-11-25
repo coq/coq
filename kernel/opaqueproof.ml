@@ -13,11 +13,11 @@ open Univ
 open Constr
 open Mod_subst
 
-type work_list = (Instance.t * Id.t array) Cmap.t * 
+type work_list = (Instance.t * Id.t array) Cmap.t *
   (Instance.t * Id.t array) Mindmap.t
 
-type cooking_info = { 
-  modlist : work_list; 
+type cooking_info = {
+  modlist : work_list;
   abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
 type proofterm = (constr * Univ.ContextSet.t) Future.computation
 type opaque =
@@ -142,7 +142,7 @@ let get_proof { opaque_val = prfs; opaque_dir = odp; _ } = function
         else !get_opaque dp i in
       Future.chain pt (fun c ->
         force_constr (List.fold_right subst_substituted l (from_val c)))
- 
+
 module FMap = Future.UUIDMap
 
 let a_constr = Future.from_val (mkRel 1)

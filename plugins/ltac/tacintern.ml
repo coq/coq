@@ -285,11 +285,11 @@ let intern_destruction_arg ist = function
   | clear,ElimOnAnonHyp n as x -> x
   | clear,ElimOnIdent {loc;v=id} ->
       if !strict_check then
-	(* If in a defined tactic, no intros-until *)
+        (* If in a defined tactic, no intros-until *)
         let c, p = intern_constr ist (make @@ CRef (qualid_of_ident id, None)) in
-	match DAst.get c with
+        match DAst.get c with
         | GVar id -> clear,ElimOnIdent (make ?loc:c.loc id)
-	| _ -> clear,ElimOnConstr ((c, p), NoBindings)
+        | _ -> clear,ElimOnConstr ((c, p), NoBindings)
       else
         clear,ElimOnIdent (make ?loc id)
 
@@ -407,13 +407,13 @@ let dump_glob_red_expr = function
   | Unfold occs -> List.iter (fun (_, r) ->
     try
       Dumpglob.add_glob ?loc:r.loc
-	(Smartlocate.smart_global r)
+        (Smartlocate.smart_global r)
     with e when CErrors.noncritical e -> ()) occs
   | Cbv grf | Lazy grf ->
     List.iter (fun r ->
       try
         Dumpglob.add_glob ?loc:r.loc
-	  (Smartlocate.smart_global r)
+          (Smartlocate.smart_global r)
       with e when CErrors.noncritical e -> ()) grf.rConst
   | _ -> ()
 
@@ -531,18 +531,18 @@ let rec intern_atomic lf ist x =
                  intern_constr_gen false (not (Option.is_empty otac)) ist c)
   | TacGeneralize cl ->
       TacGeneralize (List.map (fun (c,na) ->
-	               intern_constr_with_occurrences ist c,
+                       intern_constr_with_occurrences ist c,
                        intern_name lf ist na) cl)
   | TacLetTac (ev,na,c,cls,b,eqpat) ->
       let na = intern_name lf ist na in
       TacLetTac (ev,na,intern_constr ist c,
                  (clause_app (intern_hyp_location ist) cls),b,
-		 (Option.map (intern_intro_pattern_naming_loc lf ist) eqpat))
+                 (Option.map (intern_intro_pattern_naming_loc lf ist) eqpat))
 
   (* Derived basic tactics *)
   | TacInductionDestruct (ev,isrec,(l,el)) ->
       TacInductionDestruct (ev,isrec,(List.map (fun (c,(ipato,ipats),cls) ->
-	      (intern_destruction_arg ist c,
+              (intern_destruction_arg ist c,
                (Option.map (intern_intro_pattern_naming_loc lf ist) ipato,
                Option.map (intern_or_and_intro_pattern_loc lf ist) ipats),
                Option.map (clause_app (intern_hyp_location ist)) cls)) l,
@@ -563,7 +563,7 @@ let rec intern_atomic lf ist x =
       TacChange (check,None,
         (if is_onhyps && is_onconcl
          then intern_type ist c else intern_constr ist c),
-	clause_app (intern_hyp_location ist) cl)
+        clause_app (intern_hyp_location ist) cl)
   | TacChange (check,Some p,c,cl) ->
       let { ltacvars } = ist in
       let metas,pat = intern_typed_pattern ist ~as_type:false ~ltacvars p in
@@ -571,15 +571,15 @@ let rec intern_atomic lf ist x =
       let ltacvars = List.fold_left fold ltacvars metas in
       let ist' = { ist with ltacvars } in
       TacChange (check,Some pat,intern_constr ist' c,
-	clause_app (intern_hyp_location ist) cl)
+        clause_app (intern_hyp_location ist) cl)
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
       TacRewrite
-	(ev,
-	List.map (fun (b,m,c) -> (b,m,intern_constr_with_bindings_arg ist c)) l,
-	clause_app (intern_hyp_location ist) cl,
-	Option.map (intern_pure_tactic ist) by)
+        (ev,
+        List.map (fun (b,m,c) -> (b,m,intern_constr_with_bindings_arg ist c)) l,
+        clause_app (intern_hyp_location ist) cl,
+        Option.map (intern_pure_tactic ist) by)
   | TacInversion (inv,hyp) ->
       TacInversion (intern_inversion_strength lf ist inv,
         intern_quantified_hypothesis ist hyp)
@@ -596,7 +596,7 @@ and intern_tactic_seq onlytac ist = function
       let ltacvars = Id.Set.union (extract_let_names l) ist.ltacvars in
       let ist' = { ist with ltacvars } in
       let l = List.map (fun (n,b) ->
-	  (n,intern_tacarg !strict_check false (if isrec then ist' else ist) b)) l in
+          (n,intern_tacarg !strict_check false (if isrec then ist' else ist) b)) l in
       ist.ltacvars, TacLetIn (isrec,l,intern_tactic onlytac ist' u)
 
   | TacMatchGoal (lz,lr,lmr) ->
@@ -621,13 +621,13 @@ and intern_tactic_seq onlytac ist = function
       ist.ltacvars ,
       TacExtendTac (Array.map (intern_pure_tactic ist) tf,
                     intern_pure_tactic ist t,
-		    Array.map (intern_pure_tactic ist) tl)
+                    Array.map (intern_pure_tactic ist) tl)
   | TacThens3parts (t1,tf,t2,tl) ->
       let lfun', t1 = intern_tactic_seq onlytac ist t1 in
       let ist' = { ist with ltacvars = lfun' } in
       (* Que faire en cas de (tac complexe avec Match et Thens; tac2) ?? *)
       lfun', TacThens3parts (t1,Array.map (intern_pure_tactic ist') tf,intern_pure_tactic ist' t2,
-		       Array.map (intern_pure_tactic ist') tl)
+                       Array.map (intern_pure_tactic ist') tl)
   | TacThens (t,tl) ->
       let lfun', t = intern_tactic_seq true ist t in
       let ist' = { ist with ltacvars = lfun' } in

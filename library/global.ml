@@ -160,7 +160,7 @@ let env_of_context hyps =
 
 let type_of_global_in_context = Typeops.type_of_global_in_context
 
-let universes_of_global gr = 
+let universes_of_global gr =
   universes_of_global (env ()) gr
 
 let is_polymorphic r = Environ.is_polymorphic (env()) r
@@ -176,10 +176,10 @@ let is_type_in_type r = is_type_in_type (env ()) r
 let current_modpath () =
   Safe_typing.current_modpath (safe_env ())
 
-let current_dirpath () = 
+let current_dirpath () =
   Safe_typing.current_dirpath (safe_env ())
 
-let with_global f = 
+let with_global f =
   let (a, ctx) = f (env ()) (current_dirpath ()) in
     push_context_set false ctx; a
 

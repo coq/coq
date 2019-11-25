@@ -38,15 +38,15 @@ let modifiers_to_string m =
       | c :: m ->
           iter m ((
                     match c with
-			`CONTROL -> "<ctrl>"
-		      | `SHIFT -> "<shft>"
-		      | `LOCK -> "<lock>"
-		      | `MOD1 -> "<alt>"
-		      | `MOD2 -> "<mod2>"
-		      | `MOD3 -> "<mod3>"
-		      | `MOD4 -> "<mod4>"
-		      | `MOD5 -> "<mod5>"
-		      | _  -> raise Not_found
+                        `CONTROL -> "<ctrl>"
+                      | `SHIFT -> "<shft>"
+                      | `LOCK -> "<lock>"
+                      | `MOD1 -> "<alt>"
+                      | `MOD2 -> "<mod2>"
+                      | `MOD3 -> "<mod3>"
+                      | `MOD4 -> "<mod4>"
+                      | `MOD5 -> "<mod5>"
+                      | _  -> raise Not_found
                   ) ^ s)
   in
     iter m ""
@@ -89,13 +89,13 @@ class ['a] list_selection_box
   let wlist = match titles_opt with
     None ->
       GList.clist ~selection_mode: `MULTIPLE
-	~titles_show: false
-	~packing: wscroll#add ()
+        ~titles_show: false
+        ~packing: wscroll#add ()
   | Some l ->
       GList.clist ~selection_mode: `MULTIPLE
-	~titles: l
-	~titles_show: true
-	~packing: wscroll#add ()
+        ~titles: l
+        ~titles_show: true
+        ~packing: wscroll#add ()
   in
   let _ = set_help_tip wev help_opt in
   (* the vbox for the buttons *)
@@ -146,18 +146,18 @@ class ['a] list_selection_box
       wlist#freeze ();
       wlist#clear ();
       List.iter
-	(fun ele ->
-	  ignore (wlist#append (f_strings ele));
-	  match f_color ele with
-	    None -> ()
-	  | Some c ->
-	      try wlist#set_row ~foreground: (`NAME c) (wlist#rows - 1)
-	      with _ -> ()
-	)
-	!listref;
+        (fun ele ->
+          ignore (wlist#append (f_strings ele));
+          match f_color ele with
+            None -> ()
+          | Some c ->
+              try wlist#set_row ~foreground: (`NAME c) (wlist#rows - 1)
+              with _ -> ()
+        )
+        !listref;
 
       (match titles_opt with
-	None -> wlist#columns_autosize ()
+        None -> wlist#columns_autosize ()
       |	Some _ -> GToolbox.autosize_clist wlist);
       wlist#thaw ();
       (* the list of selectd elements is now empty *)
@@ -166,18 +166,18 @@ class ['a] list_selection_box
     (** Move up the selected rows. *)
     method up_selected =
       let rec iter n selrows l =
-	match selrows with
-	  [] -> (l, [])
-	| m :: qrows ->
-	    match l with
-	      [] -> ([],[])
-	    | [_] -> (l,[])
-	    | e1 :: e2 :: q when m = n + 1 ->
-		let newl, newrows = iter (n+1) qrows (e1 :: q) in
-		(e2 :: newl, n :: newrows)
-	    | e1 :: q ->
-		let newl, newrows = iter (n+1) selrows q in
-		(e1 ::  newl, newrows)
+        match selrows with
+          [] -> (l, [])
+        | m :: qrows ->
+            match l with
+              [] -> ([],[])
+            | [_] -> (l,[])
+            | e1 :: e2 :: q when m = n + 1 ->
+                let newl, newrows = iter (n+1) qrows (e1 :: q) in
+                (e2 :: newl, n :: newrows)
+            | e1 :: q ->
+                let newl, newrows = iter (n+1) selrows q in
+                (e1 ::  newl, newrows)
       in
       let sorted_select = List.sort compare list_select in
       let new_list, new_rows = iter 0 sorted_select !listref in
@@ -188,24 +188,24 @@ class ['a] list_selection_box
     method edit_selected f_edit =
       let sorted_select = List.sort compare list_select in
       match sorted_select with
-	[] -> ()
+        [] -> ()
       |	n :: _ ->
-	  try
-	    let ele = List.nth !listref n in
-	    let ele2 = f_edit ele in
-	    let rec iter m = function
-		[] -> []
-	      |	e :: q ->
-		  if n = m then
-		    ele2 :: q
-		  else
-		    e :: (iter (m+1) q)
-	    in
-	    self#update (iter 0 !listref);
-	    wlist#select n 0
-	  with
-	    Not_found ->
-	      ()
+          try
+            let ele = List.nth !listref n in
+            let ele2 = f_edit ele in
+            let rec iter m = function
+                [] -> []
+              |	e :: q ->
+                  if n = m then
+                    ele2 :: q
+                  else
+                    e :: (iter (m+1) q)
+            in
+            self#update (iter 0 !listref);
+            wlist#select n 0
+          with
+            Not_found ->
+              ()
 
     initializer
 
@@ -228,14 +228,14 @@ class ['a] list_selection_box
       in
       let f_remove () =
         (* remove the selected items from the listref and the clist *)
-	let rec iter n = function
-	    [] -> []
-	  | h :: q ->
-	      if List.mem n list_select then
-		iter (n+1) q
-	      else
-		h :: (iter (n+1) q)
-	in
+        let rec iter n = function
+            [] -> []
+          | h :: q ->
+              if List.mem n list_select then
+                iter (n+1) q
+              else
+                h :: (iter (n+1) q)
+        in
         let new_list = iter 0 !listref in
         self#update new_list
       in
@@ -248,10 +248,10 @@ class ['a] list_selection_box
       ignore (wb_up#connect#clicked ~callback:(fun () -> self#up_selected));
       (
        match f_edit_opt with
-	 None -> ()
+         None -> ()
        | Some f ->
-	   let _ = dbg "list_selection_box: connecting wb_edit" in
-	   ignore (wb_edit#connect#clicked ~callback:(fun () -> self#edit_selected f))
+           let _ = dbg "list_selection_box: connecting wb_edit" in
+           ignore (wb_edit#connect#clicked ~callback:(fun () -> self#edit_selected f))
       );
       (* connect the selection and deselection of items in the clist *)
       let f_select ~row ~column ~event =
@@ -303,10 +303,10 @@ class string_param_box param =
     method apply =
       let new_value = param.string_of_string we#text in
       if new_value <> param.string_value then
-	let _ = param.string_f_apply new_value in
-	param.string_value <- new_value
+        let _ = param.string_f_apply new_value in
+        param.string_value <- new_value
       else
-	()
+        ()
   end ;;
 
 (** This class is used to build a box for a combo parameter.*)
@@ -318,16 +318,16 @@ class combo_param_box param =
     let _ = set_help_tip wev param.combo_help in
     let get_value = if not param.combo_new_allowed then
       let wc = GEdit.combo_box_text
-	~strings: param.combo_choices
-	?active:(let rec aux i = function
-		   |[] -> None
-		   |h::_ when h = param.combo_value -> Some i
-		   |_::t -> aux (succ i) t
-		 in aux 0 param.combo_choices)
-	~packing: (hbox#pack ~expand: param.combo_expand ~padding: 2)
-	()
+        ~strings: param.combo_choices
+        ?active:(let rec aux i = function
+                   |[] -> None
+                   |h::_ when h = param.combo_value -> Some i
+                   |_::t -> aux (succ i) t
+                 in aux 0 param.combo_choices)
+        ~packing: (hbox#pack ~expand: param.combo_expand ~padding: 2)
+        ()
       in
-	fun () -> match GEdit.text_combo_get_active wc with |None -> "" |Some s -> s
+        fun () -> match GEdit.text_combo_get_active wc with |None -> "" |Some s -> s
     else
       let (wc,_) = GEdit.combo_box_entry_text
        ~strings: param.combo_choices
@@ -347,10 +347,10 @@ object (self)
   method apply =
     let new_value = get_value () in
       if new_value <> param.combo_value then
-	let _ = param.combo_f_apply new_value in
-	  param.combo_value <- new_value
+        let _ = param.combo_f_apply new_value in
+          param.combo_value <- new_value
       else
-	()
+        ()
 end ;;
 
 (** Class used to pack a custom box. *)
@@ -360,9 +360,9 @@ class custom_param_box param =
     match param.custom_framed with
       None -> param.custom_box#coerce
     | Some l ->
-	let wf = GBin.frame ~label: l () in
-	wf#add param.custom_box#coerce;
-	wf#coerce
+        let wf = GBin.frame ~label: l () in
+        wf#add param.custom_box#coerce;
+        wf#coerce
   in
   object (self)
     method box = top
@@ -401,13 +401,13 @@ class text_param_box param =
     method apply =
       let v = param.string_of_string (buffer#get_text ()) in
       if v <> param.string_value then
-	(
-	 dbg "apply new value!";
-	 let _ = param.string_f_apply v in
-	 param.string_value <- v
-	)
+        (
+         dbg "apply new value!";
+         let _ = param.string_f_apply v in
+         param.string_value <- v
+        )
       else
-	()
+        ()
   end ;;
 
 (** This class is used to build a box for a boolean parameter.*)
@@ -430,10 +430,10 @@ class bool_param_box param =
     method apply =
       let new_value = wchk#active in
       if new_value <> param.bool_value then
-	let _ = param.bool_f_apply new_value in
-	param.bool_value <- new_value
+        let _ = param.bool_f_apply new_value in
+        param.bool_value <- new_value
       else
-	()
+        ()
   end ;;
 
 class modifiers_param_box param =
@@ -461,10 +461,10 @@ class modifiers_param_box param =
     method apply =
       let new_value = !value in
       if new_value <> param.md_value then
-	let _ = param.md_f_apply new_value in
-	param.md_value <- new_value
+        let _ = param.md_f_apply new_value in
+        param.md_value <- new_value
       else
-	()
+        ()
   end ;;
 (*
 (** This class is used to build a box for a parameter whose values are a list.*)
@@ -728,20 +728,20 @@ let list ?(editable=true) ?help
     label (f_strings : 'a -> string list) v =
   List_param
     (fun () ->
-	new list_param_box
-	  {
-	    list_label = label ;
-	    list_help = help ;
-	    list_value = v ;
-	    list_editable = editable ;
-	    list_titles = titles;
-	    list_eq = eq ;
-	    list_strings = f_strings ;
-	    list_color = color ;
-	    list_f_edit = edit ;
-	    list_f_add = add ;
-	    list_f_apply = f ;
-	  }
+        new list_param_box
+          {
+            list_label = label ;
+            list_help = help ;
+            list_value = v ;
+            list_editable = editable ;
+            list_titles = titles;
+            list_eq = eq ;
+            list_strings = f_strings ;
+            list_color = color ;
+            list_f_edit = edit ;
+            list_f_add = add ;
+            list_f_apply = f ;
+          }
     )
 
 (** Create a strings param. *)
@@ -818,10 +818,10 @@ let question_box ~title ~buttons ?(default=1) ?icon ?parent message =
         in
         ignore (b#connect#clicked ~callback:
           (fun () -> button_nb := n; window#destroy ()));
-	(* If it's the first button then give it the focus *)
+        (* If it's the first button then give it the focus *)
         if n = default then b#grab_default () else ();
 
-	iter_buttons (n+1) q
+        iter_buttons (n+1) q
   in
   iter_buttons 1 buttons;
   ignore (window#connect#destroy ~callback: GMain.Main.quit);

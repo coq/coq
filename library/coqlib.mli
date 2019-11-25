@@ -210,9 +210,9 @@ val build_coq_f_equal2 : GlobRef.t delayed
 type coq_inversion_data = {
   inv_eq   : GlobRef.t; (** : forall params, args -> Prop *)
   inv_ind  : GlobRef.t; (** : forall params P (H : P params) args, eq params args
-			 ->  P args *)
+                         ->  P args *)
   inv_congr: GlobRef.t  (** : forall params B (f:t->B) args, eq params args ->
-			 f params = f args *)
+                         f params = f args *)
 }
 
 val build_coq_inversion_eq_data : coq_inversion_data delayed

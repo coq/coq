@@ -164,7 +164,7 @@ let subst_of_rel_context_instance sign l =
     match sign, l with
     | LocalAssum _ :: sign', a::args' -> aux (a::subst) sign' args'
     | LocalDef (_,c,_)::sign', args' ->
-	aux (substl subst c :: subst) sign' args'
+        aux (substl subst c :: subst) sign' args'
     | [], [] -> subst
     | _ -> CErrors.anomaly (Pp.str "Instance and signature do not match.")
   in aux [] (List.rev sign) l
@@ -228,41 +228,41 @@ open Constr
 
 let subst_univs_level_constr subst c =
   if Univ.is_empty_level_subst subst then c
-  else 
+  else
     let f = Univ.Instance.subst_fn (Univ.subst_univs_level_level subst) in
     let changed = ref false in
-    let rec aux t = 
+    let rec aux t =
       match kind t with
-      | Const (c, u) -> 
-	if Univ.Instance.is_empty u then t
-	else 
-          let u' = f u in 
-	    if u' == u then t
-	    else (changed := true; mkConstU (c, u'))
+      | Const (c, u) ->
+        if Univ.Instance.is_empty u then t
+        else
+          let u' = f u in
+            if u' == u then t
+            else (changed := true; mkConstU (c, u'))
       | Ind (i, u) ->
-	if Univ.Instance.is_empty u then t
-	else 
-	  let u' = f u in 
-	    if u' == u then t
-	    else (changed := true; mkIndU (i, u'))
+        if Univ.Instance.is_empty u then t
+        else
+          let u' = f u in
+            if u' == u then t
+            else (changed := true; mkIndU (i, u'))
       | Construct (c, u) ->
-	if Univ.Instance.is_empty u then t
-	else 
-          let u' = f u in 
-	    if u' == u then t
-	    else (changed := true; mkConstructU (c, u'))
-      | Sort (Sorts.Type u) -> 
+        if Univ.Instance.is_empty u then t
+        else
+          let u' = f u in
+            if u' == u then t
+            else (changed := true; mkConstructU (c, u'))
+      | Sort (Sorts.Type u) ->
          let u' = Univ.subst_univs_level_universe subst u in
-	   if u' == u then t else 
-	     (changed := true; mkSort (Sorts.sort_of_univ u'))
+           if u' == u then t else
+             (changed := true; mkSort (Sorts.sort_of_univ u'))
       | _ -> Constr.map aux t
     in
     let c' = aux c in
       if !changed then c' else c
 
-let subst_univs_level_context s = 
+let subst_univs_level_context s =
   Context.Rel.map (subst_univs_level_constr s)
-      
+
 let subst_instance_constr subst c =
   if Univ.Instance.is_empty subst then c
   else
@@ -303,7 +303,7 @@ let univ_instantiate_constr u c =
 (* let substkey = CProfile.declare_profile "subst_instance_constr";; *)
 (* let subst_instance_constr inst c = CProfile.profile2 substkey subst_instance_constr inst c;; *)
 
-let subst_instance_context s ctx = 
+let subst_instance_context s ctx =
   if Univ.Instance.is_empty s then ctx
   else Context.Rel.map (fun x -> subst_instance_constr s x) ctx
 

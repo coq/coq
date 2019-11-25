@@ -17,7 +17,7 @@ val pp_term :
 
 val pr_spc : unit -> Pp.t
 val pr_bar : unit -> Pp.t
-val pr_list : 
+val pr_list :
   (unit -> Pp.t) -> ('a -> Pp.t) -> 'a list -> Pp.t
 
 val pp_concat :

@@ -151,7 +151,7 @@ let pr_name = function Name id -> pr_id id | Anonymous -> str "_"
 let pr_spc () = str " "
 let pr_list = prlist_with_sep
 
-(**************************** ssrhyp **************************************) 
+(**************************** ssrhyp **************************************)
 
 let pr_ssrhyp _ _ _ = pr_hyp
 
@@ -274,7 +274,7 @@ let negate_parser f x =
   let rc = try Some (f x) with Stream.Failure -> None in
   match rc with
   | None -> ()
-  | Some _ -> raise Stream.Failure 
+  | Some _ -> raise Stream.Failure
 
 let test_not_ssrslashnum =
   Pcoq.Entry.of_parser
@@ -616,10 +616,10 @@ let ipat_of_intro_pattern p = Tactypes.(
     | IntroAction IntroWildcard -> IPatAnon Drop
     | IntroAction (IntroOrAndPattern (IntroOrPattern iorpat)) ->
       IPatCase (Regular(
-       List.map (List.map ipat_of_intro_pattern) 
- 	 (List.map (List.map remove_loc) iorpat)))
+       List.map (List.map ipat_of_intro_pattern)
+         (List.map (List.map remove_loc) iorpat)))
     | IntroAction (IntroOrAndPattern (IntroAndPattern iandpat)) ->
-      IPatCase 
+      IPatCase
        (Regular [List.map ipat_of_intro_pattern (List.map remove_loc iandpat)])
     | IntroNaming IntroAnonymous -> IPatAnon (One None)
     | IntroAction (IntroRewrite b) -> IPatRewrite (allocc, if b then L2R else R2L)
@@ -692,7 +692,7 @@ let rec add_intro_pattern_hyps ipat hyps =
   | IntroAction (IntroRewrite _) -> hyps
   | IntroAction (IntroInjection ips) -> List.fold_right add_intro_pattern_hyps ips hyps
   | IntroAction (IntroApplyOn (c,pat)) -> add_intro_pattern_hyps pat hyps
-  | IntroForthcoming _ -> 
+  | IntroForthcoming _ ->
     (* As in ipat_of_intro_pattern, was unable to determine which kind
       of ipat interp_introid could return [HH] *) assert false
 
@@ -896,12 +896,12 @@ let check_ssrhpats loc w_binders ipats =
   let err_loc s = CErrors.user_err ~loc ~hdr:"ssreflect" s in
   let clr, ipats =
     let opt_app = function None -> fun l -> Some l
-      | Some l1 -> fun l2 -> Some (l1 @ l2) in 
+      | Some l1 -> fun l2 -> Some (l1 @ l2) in
     let rec aux clr = function
       | IPatClear cl :: tl -> aux (opt_app clr cl) tl
       | tl -> clr, tl
     in aux None ipats in
-  let simpl, ipats = 
+  let simpl, ipats =
     match List.rev ipats with
     | IPatSimpl _ as s :: tl -> [s], List.rev tl
     | _ -> [],  ipats in
@@ -912,7 +912,7 @@ let check_ssrhpats loc w_binders ipats =
       | [] -> ipat, []
       | ( IPatId _| IPatAnon _| IPatCase _ | IPatDispatch _ | IPatRewrite _ as i) :: tl ->
         if w_binders then
-          if simpl <> [] && tl <> [] then 
+          if simpl <> [] && tl <> [] then
             err_loc(str"binders XOR s-item allowed here: "++pr_ipats(tl@simpl))
           else if not (List.for_all (function IPatId _ -> true | _ -> false) tl)
           then err_loc (str "Only binders allowed here: " ++ pr_ipats tl)
@@ -945,7 +945,7 @@ ARGUMENT EXTEND ssrhpats_wtransp
   | [ ssripats(i) "@" ssripats(j) ] -> { true,check_ssrhpats loc true (i @ j) }
 END
 
-ARGUMENT EXTEND ssrhpats_nobs 
+ARGUMENT EXTEND ssrhpats_nobs
 TYPED AS (((ssrclear option * ssripats) * ssripats) * ssripats) PRINTED BY { pr_ssrhpats }
   | [ ssripats(i) ] -> { check_ssrhpats loc false i }
 END
@@ -1024,7 +1024,7 @@ GRAMMAR EXTEND Gram
   ssrfwdid: [[ test_ssrfwdid; id = Prim.ident -> { id } ]];
   END
 
-  
+
 (* by *)
 (** Tactical arguments. *)
 
@@ -1114,7 +1114,7 @@ END
 open Ssrmatching_plugin.Ssrmatching
 open Ssrmatching_plugin.G_ssrmatching
 
-let pr_wgen = function 
+let pr_wgen = function
   | (clr, Some((id,k),None)) -> spc() ++ pr_clear mt clr ++ str k ++ pr_hoi id
   | (clr, Some((id,k),Some p)) ->
       spc() ++ pr_clear mt clr ++ str"(" ++ str k ++ pr_hoi id ++ str ":=" ++
@@ -1157,7 +1157,7 @@ let pr_ssrclausehyps _ _ _ = pr_clausehyps
 
 }
 
-ARGUMENT EXTEND ssrclausehyps 
+ARGUMENT EXTEND ssrclausehyps
 TYPED AS ssrwgen list PRINTED BY { pr_ssrclausehyps }
 | [ ssrwgen(hyp) "," ssrclausehyps(hyps) ] -> { hyp :: hyps }
 | [ ssrwgen(hyp) ssrclausehyps(hyps) ] -> { hyp :: hyps }
@@ -1168,7 +1168,7 @@ END
 
 (* type ssrclauses = ssrahyps * ssrclseq *)
 
-let pr_clauses (hyps, clseq) = 
+let pr_clauses (hyps, clseq) =
   if clseq = InGoal then mt ()
   else str "in " ++ pr_clausehyps hyps ++ pr_clseq clseq
 let pr_ssrclauses _ _ _ = pr_clauses
@@ -1220,7 +1220,7 @@ let rec format_local_binders h0 bl0 = match h0, bl0 with
   | BFdef :: h, CLocalDef ({CAst.v=x}, v, oty) :: bl ->
     Bdef (x, oty, v) :: format_local_binders h bl
   | _ -> []
-  
+
 let rec format_constr_expr h0 c0 = let open CAst in match h0, c0 with
   | BFvar :: h, { v = CLambdaN ([CLocalAssum([{CAst.v=x}], _, _)], c) } ->
     let bs, c' = format_constr_expr h c in
@@ -1233,11 +1233,11 @@ let rec format_constr_expr h0 c0 = let open CAst in match h0, c0 with
     Bdef (x, oty, v) :: bs, c'
   | [BFcast], { v = CCast (c, Glob_term.CastConv t) } ->
     [Bcast t], c
-  | BFrec (has_str, has_cast) :: h, 
+  | BFrec (has_str, has_cast) :: h,
     { v = CFix ( _, [_, Some {CAst.v = CStructRec locn}, bl, t, c]) } ->
     let bs = format_local_binders h bl in
     let bstr = if has_str then [Bstruct (Name locn.CAst.v)] else [] in
-    bs @ bstr @ (if has_cast then [Bcast t] else []), c 
+    bs @ bstr @ (if has_cast then [Bcast t] else []), c
   | BFrec (_, has_cast) :: h, { v = CCoFix ( _, [_, bl, t, c]) } ->
     format_local_binders h bl @ (if has_cast then [Bcast t] else []), c
   | _, c ->
@@ -1521,7 +1521,7 @@ END
 
 {
 
-let intro_id_to_binder = List.map (function 
+let intro_id_to_binder = List.map (function
   | IPatId id ->
       let { CAst.loc=xloc } as x = bvar_lname (mkCVar id) in
       (FwdPose, [BFvar]),
@@ -1693,7 +1693,7 @@ let ssr_null_entry = Pcoq.Entry.of_parser "ssr_null" (fun _ -> ())
 
 }
 
-GRAMMAR EXTEND Gram 
+GRAMMAR EXTEND Gram
   GLOBAL: Prim.ident;
   Prim.ident: [[ s = IDENT; ssr_null_entry -> { ssr_id_of_string loc s } ]];
 END
@@ -1727,7 +1727,7 @@ let ssrtac_name name = {
 }
 
 let ssrtac_entry name n = {
-  mltac_name = ssrtac_name name; 
+  mltac_name = ssrtac_name name;
   mltac_index = n;
 }
 
@@ -1781,8 +1781,8 @@ END
 {
 
 let ssrautoprop gl =
-  try 
-    let tacname = 
+  try
+    let tacname =
       try Tacenv.locate_tactic (qualid_of_ident (Id.of_string "ssrautoprop"))
       with Not_found -> Tacenv.locate_tactic (ssrqid "ssrautoprop") in
     let tacexpr = CAst.make @@ Tacexpr.Reference (ArgArg (Loc.tag @@ tacname)) in
@@ -2191,7 +2191,7 @@ let pr_ssraarg _ _ _ (view, (dgens, ipats)) =
 
 }
 
-ARGUMENT EXTEND ssrapplyarg 
+ARGUMENT EXTEND ssrapplyarg
 TYPED AS (ssrbwdview * (ssragens * ssrintros))
 PRINTED BY { pr_ssraarg }
 | [ ":" ssragen(gen) ssragens(dgens) ssrintros(intros) ] ->
@@ -2594,7 +2594,7 @@ ARGUMENT EXTEND ssrwlogfwd TYPED AS (ssrwgen list * ssrfwd)
 | [ ":" ssrwgen_list(gens) "/" ast_closure_lterm(t) ] -> { gens, mkFwdHint "/" t}
 END
 
-        
+
 TACTIC EXTEND ssrwlog
 | [ "wlog" ssrhpats_nobs(pats) ssrwlogfwd(fwd) ssrhint(hint) ] ->
   { V82.tactic (wlogtac ist pats fwd hint false `NoGen) }
@@ -2616,13 +2616,13 @@ TACTIC EXTEND ssrwithoutloss
 END
 
 TACTIC EXTEND ssrwithoutlosss
-| [ "without" "loss" "suff" 
+| [ "without" "loss" "suff"
     ssrhpats_nobs(pats) ssrwlogfwd(fwd) ssrhint(hint) ] ->
   { V82.tactic (wlogtac ist pats fwd hint true `NoGen) }
 END
 
 TACTIC EXTEND ssrwithoutlossss
-| [ "without" "loss" "suffices" 
+| [ "without" "loss" "suffices"
     ssrhpats_nobs(pats) ssrwlogfwd(fwd) ssrhint(hint) ]->
   { V82.tactic (wlogtac ist pats fwd hint true `NoGen) }
 END
@@ -2654,7 +2654,7 @@ let test_idcomma = Pcoq.Entry.of_parser "test_idcomma" accept_idcomma
 
 GRAMMAR EXTEND Gram
   GLOBAL: ssr_idcomma;
-  ssr_idcomma: [ [ test_idcomma; 
+  ssr_idcomma: [ [ test_idcomma;
     ip = [ id = IDENT -> { Some (Id.of_string id) } | "_" -> { None } ]; "," ->
     { Some ip }
   ] ];

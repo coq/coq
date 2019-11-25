@@ -68,7 +68,7 @@ let parse_response s =
       let p = try int_of_string p with _ -> raise ParseError in
       Pong (n,m,p)
   | _ -> raise ParseError
-       
+
 let print_request = function
   | Hello Low -> "HELLO LOW\n"
   | Hello High -> "HELLO HIGH\n"
@@ -100,7 +100,7 @@ let option_map f = function None -> None | Some x -> Some (f x)
 let init p =
   try
     let sock = Sys.getenv "COQWORKMGR_SOCK" in
-    manager := option_map (fun s -> 
+    manager := option_map (fun s ->
       let cout = Unix.out_channel_of_descr s in
       set_binary_mode_out cout true;
       let cin = Unix.in_channel_of_descr s in

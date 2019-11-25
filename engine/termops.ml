@@ -100,15 +100,15 @@ let pr_meta_map env sigma =
     | _ -> mt() in
   let pr_meta_binding = function
     | (mv,Cltyp (na,b)) ->
-      	hov 0
-	  (pr_meta mv ++ pr_name na ++ str " : " ++
+        hov 0
+          (pr_meta mv ++ pr_name na ++ str " : " ++
            print_constr env sigma b.rebus ++ fnl ())
     | (mv,Clval(na,(b,s),t)) ->
-      	hov 0
-	  (pr_meta mv ++ pr_name na ++ str " := " ++
+        hov 0
+          (pr_meta mv ++ pr_name na ++ str " := " ++
            print_constr env sigma b.rebus ++
            str " : " ++ print_constr env sigma t.rebus ++
-	   spc () ++ pr_instance_status s ++ fnl ())
+           spc () ++ pr_instance_status s ++ fnl ())
   in
   prlist pr_meta_binding (meta_list sigma)
 
@@ -237,7 +237,7 @@ let pr_evar_universe_context ctx =
   let prl = pr_uctx_level ctx in
   if UState.is_empty ctx then mt ()
   else
-    (str"UNIVERSES:"++brk(0,1)++ 
+    (str"UNIVERSES:"++brk(0,1)++
        h 0 (Univ.pr_universe_context_set prl (UState.context_set ctx)) ++ fnl () ++
      str"ALGEBRAIC UNIVERSES:"++brk(0,1)++
      h 0 (Univ.LSet.pr prl (UState.algebraics ctx)) ++ fnl() ++
@@ -386,10 +386,10 @@ let pr_var_decl env decl =
   let pbody = match decl with
     | LocalAssum _ ->  mt ()
     | LocalDef (_,c,_) ->
-	(* Force evaluation *)
-	let c = EConstr.of_constr c in
+        (* Force evaluation *)
+        let c = EConstr.of_constr c in
         let pb = print_constr_env env sigma c in
-	  (str" := " ++ pb ++ cut () ) in
+          (str" := " ++ pb ++ cut () ) in
   let pt = print_constr_env env sigma (EConstr.of_constr (get_type decl)) in
   let ptyp = (str" : " ++ pt) in
     (Id.print (get_id decl) ++ hov 0 (pbody ++ ptyp))
@@ -400,10 +400,10 @@ let pr_rel_decl env decl =
   let pbody = match decl with
     | LocalAssum _ -> mt ()
     | LocalDef (_,c,_) ->
-	(* Force evaluation *)
-	let c = EConstr.of_constr c in
+        (* Force evaluation *)
+        let c = EConstr.of_constr c in
         let pb = print_constr_env env sigma c in
-	  (str":=" ++ spc () ++ pb ++ spc ()) in
+          (str":=" ++ spc () ++ pb ++ spc ()) in
   let ptyp = print_constr_env env sigma (EConstr.of_constr (get_type decl)) in
     match get_name decl with
       | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
@@ -411,13 +411,13 @@ let pr_rel_decl env decl =
 
 let print_named_context env =
   hv 0 (fold_named_context
-	  (fun env d pps ->
-	    pps ++ ws 2 ++ pr_var_decl env d)
+          (fun env d pps ->
+            pps ++ ws 2 ++ pr_var_decl env d)
           env ~init:(mt ()))
 
 let print_rel_context env =
   hv 0 (fold_rel_context
-	  (fun env d pps -> pps ++ ws 2 ++ pr_rel_decl env d)
+          (fun env d pps -> pps ++ ws 2 ++ pr_rel_decl env d)
           env ~init:(mt ()))
 
 let print_env env =
@@ -425,7 +425,7 @@ let print_env env =
     fold_named_context
       (fun env d pps ->
          let pidt =  pr_var_decl env d in
-	 (pps ++ fnl () ++ pidt))
+         (pps ++ fnl () ++ pidt))
       env ~init:(mt ())
   in
   let db_env =
@@ -516,9 +516,9 @@ let it_mkLambda_or_LetIn_from_no_LetIn c decls =
 let rec strip_head_cast sigma c = match EConstr.kind sigma c with
   | App (f,cl) ->
       let rec collapse_rec f cl2 = match EConstr.kind sigma f with
-	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
-	| Cast (c,_,_) -> collapse_rec c cl2
-	| _ -> if Int.equal (Array.length cl2) 0 then f else EConstr.mkApp (f,cl2)
+        | App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
+        | Cast (c,_,_) -> collapse_rec c cl2
+        | _ -> if Int.equal (Array.length cl2) 0 then f else EConstr.mkApp (f,cl2)
       in
       collapse_rec f cl
   | Cast (c,_,_) -> strip_head_cast sigma c
@@ -530,7 +530,7 @@ let rec drop_extra_implicit_args sigma c = match EConstr.kind sigma c with
   | App (f,args) when EConstr.isEvar sigma (Array.last args) ->
       let open EConstr in
       drop_extra_implicit_args sigma
-	(mkApp (f,fst (Array.chop (Array.length args - 1) args)))
+        (mkApp (f,fst (Array.chop (Array.length args - 1) args)))
   | _ -> c
 
 (* Get the last arg of an application *)
@@ -600,27 +600,27 @@ let map_constr_with_binders_left_to_right sigma g f l c =
   match EConstr.kind sigma c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _ | Int _) -> c
-  | Cast (b,k,t) -> 
-    let b' = f l b in 
+  | Cast (b,k,t) ->
+    let b' = f l b in
     let t' = f l t in
       if b' == b && t' == t then c
       else mkCast (b',k,t')
   | Prod (na,t,b) ->
       let t' = f l t in
       let b' = f (g (LocalAssum (na,t)) l) b in
-	if t' == t && b' == b then c
-	else mkProd (na, t', b')
+        if t' == t && b' == b then c
+        else mkProd (na, t', b')
   | Lambda (na,t,b) ->
       let t' = f l t in
       let b' = f (g (LocalAssum (na,t)) l) b in
-	if t' == t && b' == b then c
-	else mkLambda (na, t', b')
+        if t' == t && b' == b then c
+        else mkLambda (na, t', b')
   | LetIn (na,bo,t,b) ->
       let bo' = f l bo in
       let t' = f l t in
       let b' = f (g (LocalDef (na,bo,t)) l) b in
-	if bo' == bo && t' == t && b' == b then c
-	else mkLetIn (na, bo', t', b')	    
+        if bo' == bo && t' == t && b' == b then c
+        else mkLetIn (na, bo', t', b')
   | App (c,[||]) -> assert false
   | App (t,al) ->
       (*Special treatment to be able to recognize partially applied subterms*)
@@ -628,13 +628,13 @@ let map_constr_with_binders_left_to_right sigma g f l c =
       let app = (mkApp (t, Array.sub al 0 (Array.length al - 1))) in
       let app' = f l app in
       let a' = f l a in
-	if app' == app && a' == a then c
-	else mkApp (app', [| a' |])
+        if app' == app && a' == a then c
+        else mkApp (app', [| a' |])
   | Proj (p,b) ->
     let b' = f l b in
       if b' == b then c
       else mkProj (p, b')
-  | Evar (e,al) -> 
+  | Evar (e,al) ->
     let al' = Array.map_left (f l) al in
       if Array.for_all2 (==) al' al then c
       else mkEvar (e, al')
@@ -643,20 +643,20 @@ let map_constr_with_binders_left_to_right sigma g f l c =
       let b' = f l b in
       let p' = f l p in
       let bl' = Array.map_left (f l) bl in
-	if b' == b && p' == p && bl' == bl then c
-	else mkCase (ci, p', b', bl')
+        if b' == b && p' == p && bl' == bl then c
+        else mkCase (ci, p', b', bl')
   | Fix (ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
       let (tl', bl') = map_left2 (f l) tl (f l') bl in
-	if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
-	then c
-	else mkFix (ln,(lna,tl',bl'))
+        if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
+        then c
+        else mkFix (ln,(lna,tl',bl'))
   | CoFix(ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
       let (tl', bl') = map_left2 (f l) tl (f l') bl in
-	if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
-	then c
-	else mkCoFix (ln,(lna,tl',bl'))
+        if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
+        then c
+        else mkCoFix (ln,(lna,tl',bl'))
 
 let map_under_context_with_full_binders sigma g f l n d =
   let open EConstr in
@@ -702,9 +702,9 @@ let map_constr_with_full_binders_gen userview sigma g f l cstr =
       let c' = f l c in
       let al' = Array.map (f l) al in
       if c==c' && Array.for_all2 (==) al al' then cstr else mkApp (c', al')
-  | Proj (p,c) -> 
+  | Proj (p,c) ->
       let c' = f l c in
-	if c' == c then cstr else mkProj (p, c')
+        if c' == c then cstr else mkProj (p, c')
   | Evar (e,al) ->
       let al' = Array.map (f l) al in
       if Array.for_all2 (==) al al' then cstr else mkEvar (e, al')
@@ -875,14 +875,14 @@ let dependent_main noevar sigma m t =
       raise Occur
     else
       match EConstr.kind sigma m, EConstr.kind sigma t with
-	| App (fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
-	    deprec m (mkApp (ft,Array.sub lt 0 (Array.length lm)));
+        | App (fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
+            deprec m (mkApp (ft,Array.sub lt 0 (Array.length lm)));
             Array.Fun1.iter deprec m
-	      (Array.sub lt
-		(Array.length lm) ((Array.length lt) - (Array.length lm)))
-	| _, Cast (c,_,_) when noevar && isMeta sigma c -> ()
-	| _, Evar _ when noevar -> ()
-	| _ -> EConstr.iter_with_binders sigma (fun c -> Vars.lift 1 c) deprec m t
+              (Array.sub lt
+                (Array.length lm) ((Array.length lt) - (Array.length lm)))
+        | _, Cast (c,_,_) when noevar && isMeta sigma c -> ()
+        | _, Evar _ when noevar -> ()
+        | _ -> EConstr.iter_with_binders sigma (fun c -> Vars.lift 1 c) deprec m t
   in
   try deprec m t; false with Occur -> true
 
@@ -903,14 +903,14 @@ let count_occurrences sigma m t =
       incr n
     else
       match EConstr.kind sigma m, EConstr.kind sigma t with
-	| App (fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
-	    countrec m (mkApp (ft,Array.sub lt 0 (Array.length lm)));
-	    Array.iter (countrec m)
-	      (Array.sub lt
-		(Array.length lm) ((Array.length lt) - (Array.length lm)))
-	| _, Cast (c,_,_) when isMeta sigma c -> ()
-	| _, Evar _ -> ()
-	| _ -> EConstr.iter_with_binders sigma (Vars.lift 1) countrec m t
+        | App (fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
+            countrec m (mkApp (ft,Array.sub lt 0 (Array.length lm)));
+            Array.iter (countrec m)
+              (Array.sub lt
+                (Array.length lm) ((Array.length lt) - (Array.length lm)))
+        | _, Cast (c,_,_) when isMeta sigma c -> ()
+        | _, Evar _ -> ()
+        | _ -> EConstr.iter_with_binders sigma (Vars.lift 1) countrec m t
   in
   countrec m t;
   !n
@@ -957,13 +957,13 @@ let prefix_application sigma eq_fun (k,c) t =
   let c' = collapse_appl sigma c and t' = collapse_appl sigma t in
   match EConstr.kind sigma c', EConstr.kind sigma t' with
     | App (f1,cl1), App (f2,cl2) ->
-	let l1 = Array.length cl1
-	and l2 = Array.length cl2 in
-	if l1 <= l2
-	   && eq_fun sigma c' (mkApp (f2, Array.sub cl2 0 l1)) then
-	  Some (mkApp (mkRel k, Array.sub cl2 l1 (l2 - l1)))
-	else
-	  None
+        let l1 = Array.length cl1
+        and l2 = Array.length cl2 in
+        if l1 <= l2
+           && eq_fun sigma c' (mkApp (f2, Array.sub cl2 0 l1)) then
+          Some (mkApp (mkRel k, Array.sub cl2 l1 (l2 - l1)))
+        else
+          None
     | _ -> None
 
 let my_prefix_application sigma eq_fun (k,c) by_c t =
@@ -971,13 +971,13 @@ let my_prefix_application sigma eq_fun (k,c) by_c t =
   let c' = collapse_appl sigma c and t' = collapse_appl sigma t in
   match EConstr.kind sigma c', EConstr.kind sigma t' with
     | App (f1,cl1), App (f2,cl2) ->
-	let l1 = Array.length cl1
-	and l2 = Array.length cl2 in
-	if l1 <= l2
-	   && eq_fun sigma c' (mkApp (f2, Array.sub cl2 0 l1)) then
-	  Some (mkApp ((Vars.lift k by_c), Array.sub cl2 l1 (l2 - l1)))
-	else
-	  None
+        let l1 = Array.length cl1
+        and l2 = Array.length cl2 in
+        if l1 <= l2
+           && eq_fun sigma c' (mkApp (f2, Array.sub cl2 0 l1)) then
+          Some (mkApp ((Vars.lift k by_c), Array.sub cl2 l1 (l2 - l1)))
+        else
+          None
     | _ -> None
 
 (* Recognizing occurrences of a given subterm in a term: [subst_term c t]
@@ -1010,7 +1010,7 @@ let replace_term_gen sigma eq_fun c by_c in_t =
       | None ->
     (if eq_fun sigma c t then (EConstr.Vars.lift k by_c) else
       EConstr.map_with_binders sigma (fun (k,c) -> (k+1,EConstr.Vars.lift 1 c))
-	substrec kc t)
+        substrec kc t)
   in
   substrec (0,c) in_t
 
@@ -1135,7 +1135,7 @@ let compare_constr_univ sigma f cv_pb t1 t2 =
   match EConstr.kind sigma t1, EConstr.kind sigma t2 with
       Sort s1, Sort s2 -> base_sort_cmp cv_pb (ESorts.kind sigma s1) (ESorts.kind sigma s2)
     | Prod (_,t1,c1), Prod (_,t2,c2) ->
-	f Reduction.CONV t1 t2 && f cv_pb c1 c2
+        f Reduction.CONV t1 t2 && f cv_pb c1 c2
     | Const (c, u), Const (c', u') -> Constant.equal c c'
     | Ind (i, _), Ind (i', _) -> eq_ind i i'
     | Construct (i, _), Construct (i', _) -> eq_constructor i i'
@@ -1153,9 +1153,9 @@ let split_app sigma c = match EConstr.kind sigma c with
     App(c,l) ->
       let len = Array.length l in
       if Int.equal len 0 then ([],c) else
-	let last = Array.get l (len-1) in
-	let prev = Array.sub l 0 (len-1) in
-	c::(Array.to_list prev), last
+        let last = Array.get l (len-1) in
+        let prev = Array.sub l 0 (len-1) in
+        c::(Array.to_list prev), last
   | _ -> assert false
 
 type subst = (EConstr.rel_context * EConstr.constr) Evar.Map.t
@@ -1185,15 +1185,15 @@ let filtering sigma env cv_pb c1 c2 =
         | _ -> assert false
         end
       | Prod (n,t1,c1), Prod (_,t2,c2) ->
-	  aux env cv_pb t1 t2;
-	  aux (RelDecl.LocalAssum (n,t1) :: env) cv_pb c1 c2
+          aux env cv_pb t1 t2;
+          aux (RelDecl.LocalAssum (n,t1) :: env) cv_pb c1 c2
       | _, Evar (ev,_) -> define cv_pb env ev c1
       | Evar (ev,_), _ -> define cv_pb env ev c2
       | _ ->
-	  if compare_constr_univ sigma
-	  (fun pb c1 c2 -> aux env pb c1 c2; true) cv_pb c1 c2 then ()
-	  else raise CannotFilter
-	  (* TODO: le reste des binders *)
+          if compare_constr_univ sigma
+          (fun pb c1 c2 -> aux env pb c1 c2; true) cv_pb c1 c2 then ()
+          else raise CannotFilter
+          (* TODO: le reste des binders *)
   in
   aux env cv_pb c1 c2; !evm
 
@@ -1249,18 +1249,18 @@ let rec eta_reduce_head sigma c =
   let open Vars in
   match EConstr.kind sigma c with
     | Lambda (_,c1,c') ->
-	(match EConstr.kind sigma (eta_reduce_head sigma c') with
+        (match EConstr.kind sigma (eta_reduce_head sigma c') with
            | App (f,cl) ->
                let lastn = (Array.length cl) - 1 in
                if lastn < 0 then anomaly (Pp.str "application without arguments.")
                else
                  (match EConstr.kind sigma cl.(lastn) with
                     | Rel 1 ->
-			let c' =
+                        let c' =
                           if Int.equal lastn 0 then f
-			  else mkApp (f, Array.sub cl 0 lastn)
-			in
-			if noccurn sigma 1 c'
+                          else mkApp (f, Array.sub cl 0 lastn)
+                        in
+                        if noccurn sigma 1 c'
                         then lift (-1) c'
                         else c
                     | _   -> c)
@@ -1286,9 +1286,9 @@ let assums_of_rel_context sign =
 let map_rel_context_in_env f env sign =
   let rec aux env acc = function
     | d::sign ->
-	aux (push_rel d env) (RelDecl.map_constr (f env) d :: acc) sign
+        aux (push_rel d env) (RelDecl.map_constr (f env) d :: acc) sign
     | [] ->
-	acc
+        acc
   in
   aux env [] (List.rev sign)
 

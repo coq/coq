@@ -62,7 +62,7 @@ END
   with an empty evd.
  Question for the developers: why does "Cmd3 (fun x : nat => x)."
  raise an anomaly, not the same error as "Cmd3 (fun x : a => x)." *)
- 
+
 VERNAC COMMAND EXTEND TakingConstr3 CLASSIFIED AS QUERY
 | [ "Cmd3" constr(e) ] ->
   { let _ = Constrintern.interp_constr Environ.empty_env

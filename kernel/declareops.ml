@@ -30,14 +30,14 @@ let safe_flags oracle = {
 
 (** {6 Arities } *)
 
-let subst_decl_arity f g sub ar = 
+let subst_decl_arity f g sub ar =
   match ar with
-  | RegularArity x -> 
-    let x' = f sub x in 
+  | RegularArity x ->
+    let x' = f sub x in
       if x' == x then ar
       else RegularArity x'
-  | TemplateArity x -> 
-    let x' = g sub x in 
+  | TemplateArity x ->
+    let x' = g sub x in
       if x' == x then ar
       else TemplateArity x'
 
@@ -202,7 +202,7 @@ let subst_wf_paths sub p = Rtree.Smart.map (subst_recarg sub) p
 
 let subst_regular_ind_arity sub s =
   let uar' = subst_mps sub s.mind_user_arity in
-    if uar' == s.mind_user_arity then s 
+    if uar' == s.mind_user_arity then s
     else { mind_user_arity = uar'; mind_sort = s.mind_sort }
 
 let subst_template_ind_arity _sub s = s

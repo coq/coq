@@ -52,10 +52,10 @@ let process_vernac_interp_error exn = match fst exn with
   | Univ.UniverseInconsistency i ->
     let msg =
       if !Constrextern.print_universes then
-	str "." ++ spc() ++ 
+        str "." ++ spc() ++
           Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes i
       else
-	mt() in
+        mt() in
     wrap_vernac_error exn (str "Universe inconsistency" ++ msg ++ str ".")
   | TypeError(ctx,te) ->
       let te = map_ptype_error EConstr.of_constr te in
@@ -85,12 +85,12 @@ let process_vernac_interp_error exn = match fst exn with
   | Nametab.GlobalizationError q ->
       wrap_vernac_error exn
         (str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
-	 spc () ++ str "was not found" ++
-	 spc () ++ str "in the current" ++ spc () ++ str "environment.")
+         spc () ++ str "was not found" ++
+         spc () ++ str "in the current" ++ spc () ++ str "environment.")
   | Refiner.FailError (i,s) ->
       let s = Lazy.force s in
       wrap_vernac_error exn
-	(str "Tactic failure" ++
+        (str "Tactic failure" ++
          (if Pp.ismt s then s else str ": " ++ s) ++
          if Int.equal i 0 then str "." else str " (level " ++ int i ++ str").")
   | AlreadyDeclared msg ->

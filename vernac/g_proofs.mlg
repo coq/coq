@@ -63,14 +63,14 @@ GRAMMAR EXTEND Gram
       | IDENT "Abort"; IDENT "All" -> { VernacAbortAll }
       | IDENT "Abort"; id = identref -> { VernacAbort (Some id) }
       | IDENT "Existential"; n = natural; c = constr_body ->
-	  { VernacSolveExistential (n,c) }
+          { VernacSolveExistential (n,c) }
       | IDENT "Admitted" -> { VernacEndProof Admitted }
       | IDENT "Qed" -> { VernacEndProof (Proved (Opaque,None)) }
       | IDENT "Save"; id = identref ->
-	  { VernacEndProof (Proved (Opaque, Some id)) }
+          { VernacEndProof (Proved (Opaque, Some id)) }
       | IDENT "Defined" -> { VernacEndProof (Proved (Transparent,None)) }
       |	IDENT "Defined"; id=identref ->
-	  { VernacEndProof (Proved (Transparent,Some id)) }
+          { VernacEndProof (Proved (Transparent,Some id)) }
       | IDENT "Restart" -> { VernacRestart }
       | IDENT "Undo" -> { VernacUndo 1 }
       | IDENT "Undo"; n = natural -> { VernacUndo n }
@@ -99,10 +99,10 @@ GRAMMAR EXTEND Gram
       | IDENT "Guarded" -> { VernacCheckGuard }
       (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;
-	  id = IDENT ; b = [ "discriminated" -> { true } | -> { false } ] ->
-	    { VernacCreateHintDb (id, b) }
+          id = IDENT ; b = [ "discriminated" -> { true } | -> { false } ] ->
+            { VernacCreateHintDb (id, b) }
       | IDENT "Remove"; IDENT "Hints"; ids = LIST1 global; dbnames = opt_hintbases ->
-	  { VernacRemoveHints (dbnames, ids) }
+          { VernacRemoveHints (dbnames, ids) }
       | IDENT "Hint"; h = hint; dbnames = opt_hintbases ->
           { VernacHints (dbnames, h) }
       ] ];

@@ -21,8 +21,8 @@ let popstop_code i =
   else
     begin
       popstop_tbl :=
-	Array.init (i+10)
-	  (fun j -> if j < len then !popstop_tbl.(j) else mkPopStopCode j);
+        Array.init (i+10)
+          (fun j -> if j < len then !popstop_tbl.(j) else mkPopStopCode j);
       !popstop_tbl.(i)
     end
 
@@ -143,25 +143,25 @@ let rec apply_stack a stk v =
   | Zapp args :: stk -> apply_stack (apply_arguments (fun_of_val a) args) stk v
   | Zproj kn :: stk -> apply_stack (val_of_proj kn a) stk v
   | Zfix(f,args) :: stk ->
-      let a,stk = 
-	match stk with
-	| Zapp args' :: stk ->
-	    push_ra stop;
-	    push_arguments args';
-	    push_val a;
-	    push_arguments args;
-	    let a =
+      let a,stk =
+        match stk with
+        | Zapp args' :: stk ->
+            push_ra stop;
+            push_arguments args';
+            push_val a;
+            push_arguments args;
+            let a =
               interprete (fix_code f) (fix_val f) (fix_env f)
-		(nargs args+ nargs args') in
-	    a, stk
-	| _ -> 
-	    push_ra stop;
-	    push_val a;
-	    push_arguments args;
-	    let a =
+                (nargs args+ nargs args') in
+            a, stk
+        | _ ->
+            push_ra stop;
+            push_val a;
+            push_arguments args;
+            let a =
               interprete (fix_code f) (fix_val f) (fix_env f)
-		(nargs args) in
-	    a, stk in
+                (nargs args) in
+            a, stk in
       apply_stack a stk v
   | Zswitch sw :: stk ->
       apply_stack (apply_switch sw a) stk v
@@ -171,7 +171,7 @@ let apply_whd k whd =
   match whd with
   | Vprod _ | Vconstr_const _ | Vconstr_block _ | Vint64 _ -> assert false
   | Vfun f -> reduce_fun k f
-  | Vfix(f, None) -> 
+  | Vfix(f, None) ->
       push_ra stop;
       push_val v;
       interprete (fix_code f) (fix_val f) (fix_env f) 0

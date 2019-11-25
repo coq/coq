@@ -292,9 +292,9 @@ let pos_rel i r sz =
       let env = !(r.in_env) in
       try Kenvacc(r.offset + find_at db env)
       with Not_found ->
-	let pos = env.size in
-	r.in_env := push_fv db env;
-	Kenvacc(r.offset + pos)
+        let pos = env.size in
+        r.in_env := push_fv db env;
+        Kenvacc(r.offset + pos)
 
 let pos_universe_var i r sz =
   (* Compilation of a universe variable can happen either at toplevel (the
@@ -445,7 +445,7 @@ let nest_block tag arity cont =
   Kconst (Const_b0 (tag - Obj.last_non_constant_constructor_tag)) ::
     Kmakeblock(arity+1, Obj.last_non_constant_constructor_tag) :: cont
 
-let code_makeblock ~stack_size ~arity ~tag cont = 
+let code_makeblock ~stack_size ~arity ~tag cont =
   if tag < Obj.last_non_constant_constructor_tag then
     Kmakeblock(arity, tag) :: cont
   else begin
@@ -473,16 +473,16 @@ let comp_app comp_fun comp_arg cenv f args sz cont =
   match is_tailcall cont with
   | Some k ->
       comp_args comp_arg cenv args sz
-	(Kpush ::
+        (Kpush ::
          comp_fun cenv f (sz + nargs)
-	   (Kappterm(nargs, k + nargs) :: (discard_dead_code cont)))
+           (Kappterm(nargs, k + nargs) :: (discard_dead_code cont)))
   | None ->
       if nargs <= 4 then
         comp_args comp_arg cenv args sz
           (Kpush :: (comp_fun cenv f (sz+nargs) (Kapply nargs :: cont)))
       else
-	let lbl,cont1 = label_code cont in
-	Kpush_retaddr lbl ::
+        let lbl,cont1 = label_code cont in
+        Kpush_retaddr lbl ::
         (comp_args comp_arg cenv args (sz + 3)
            (Kpush :: (comp_fun cenv f (sz+3+nargs) (Kapply nargs :: cont1))))
 
@@ -513,8 +513,8 @@ let rec get_alias env kn =
     | None -> kn
     | Some tps ->
        (match Cemitcodes.force tps with
-	| BCalias kn' -> get_alias env kn'
-	| _ -> kn)
+        | BCalias kn' -> get_alias env kn'
+        | _ -> kn)
 
 (* sz is the size of the local stack *)
 let rec compile_lam env cenv lam sz cont =
@@ -607,24 +607,24 @@ let rec compile_lam env cenv lam sz cont =
         in
         let lbl,fcode = label_code fcode in
         lbl_types.(i) <- lbl;
-	fun_code := [Ksequence(fcode,!fun_code)]
+        fun_code := [Ksequence(fcode,!fun_code)]
       done;
       (* Compiling bodies *)
       for i = 0 to ndef - 1 do
         let params,body = decompose_Llam bodies.(i) in
         let arity = Array.length params in
-	let env_body = comp_env_fix ndef i arity rfv in
+        let env_body = comp_env_fix ndef i arity rfv in
         let cont1 =
           ensure_stack_capacity (compile_lam env env_body body arity) [Kreturn arity]
         in
-	let lbl = Label.create () in
-	lbl_bodies.(i) <- lbl;
-	let fcode =  add_grabrec rec_args.(i) arity lbl cont1 in
-	fun_code := [Ksequence(fcode,!fun_code)]
+        let lbl = Label.create () in
+        lbl_bodies.(i) <- lbl;
+        let fcode =  add_grabrec rec_args.(i) arity lbl cont1 in
+        fun_code := [Ksequence(fcode,!fun_code)]
       done;
       let fv = !rfv in
       compile_fv cenv fv.fv_rev sz
-	(Kclosurerec(fv.size,init,lbl_types,lbl_bodies) :: cont)
+        (Kclosurerec(fv.size,init,lbl_types,lbl_bodies) :: cont)
 
 
   | Lcofix(init, (_decl,types,bodies)) ->
@@ -640,27 +640,27 @@ let rec compile_lam env cenv lam sz cont =
         in
         let lbl,fcode = label_code fcode in
         lbl_types.(i) <- lbl;
-	fun_code := [Ksequence(fcode,!fun_code)]
+        fun_code := [Ksequence(fcode,!fun_code)]
       done;
       (* Compiling bodies *)
       for i = 0 to ndef - 1 do
         let params,body = decompose_Llam bodies.(i) in
         let arity = Array.length params in
-	let env_body = comp_env_cofix ndef arity rfv in
-	let lbl = Label.create () in
+        let env_body = comp_env_cofix ndef arity rfv in
+        let lbl = Label.create () in
         let comp arity =
           (* 4 stack slots are needed to update the cofix when forced *)
           set_max_stack_size (arity + 4);
           compile_lam env env_body body (arity+1) (cont_cofix arity)
         in
-	let cont = ensure_stack_capacity comp arity in
-	lbl_bodies.(i) <- lbl;
-	fun_code := [Ksequence(add_grab (arity+1) lbl cont,!fun_code)];
+        let cont = ensure_stack_capacity comp arity in
+        lbl_bodies.(i) <- lbl;
+        fun_code := [Ksequence(add_grab (arity+1) lbl cont,!fun_code)];
       done;
       let fv = !rfv in
       set_max_stack_size (sz + fv.size + ndef + 2);
       compile_fv cenv fv.fv_rev sz
-	(Kclosurecofix(fv.size, init, lbl_types, lbl_bodies) :: cont)
+        (Kclosurecofix(fv.size, init, lbl_types, lbl_bodies) :: cont)
 
   | Lif(t, bt, bf) ->
       let branch, cont = make_branch cont in
@@ -684,7 +684,7 @@ let rec compile_lam env cenv lam sz cont =
       let nblock = min nallblock (Obj.last_non_constant_constructor_tag + 1) in
       let lbl_blocks = Array.make nblock Label.no in
       let neblock = max 0 (nallblock - Obj.last_non_constant_constructor_tag) in
-      let lbl_eblocks = Array.make neblock Label.no in 
+      let lbl_eblocks = Array.make neblock Label.no in
       let branch1, cont = make_branch cont in
       (* Compilation of the return type *)
       let fcode =
@@ -706,7 +706,7 @@ let rec compile_lam env cenv lam sz cont =
       let c = ref cont in
       (* Perform the extra match if needed (too many block constructors) *)
       if neblock <> 0 then begin
-        let lbl_b, code_b = 
+        let lbl_b, code_b =
           label_code (
             Kpush :: Kfield 0 :: Kswitch(lbl_eblocks, [||]) :: !c) in
         lbl_blocks.(Obj.last_non_constant_constructor_tag) <- lbl_b;
@@ -754,17 +754,17 @@ let rec compile_lam env cenv lam sz cont =
      (* Compiling branch for accumulators *)
       let lbl_accu, code_accu =
         set_max_stack_size (sz+3);
-	label_code(Kmakeswitchblock(lbl_typ,lbl_sw,annot,sz) :: branch :: !c)
+        label_code(Kmakeswitchblock(lbl_typ,lbl_sw,annot,sz) :: branch :: !c)
       in
       lbl_blocks.(0) <- lbl_accu;
 
       c := Klabel lbl_sw :: Kswitch(lbl_consts,lbl_blocks) :: code_accu;
       let code_sw =
- 	match branch1 with
+        match branch1 with
         (* spiwack : branch1 can't be a lbl anymore it's a Branch instead
-	| Klabel lbl -> Kpush_retaddr lbl ::  !c *)
+        | Klabel lbl -> Kpush_retaddr lbl ::  !c *)
         | Kbranch lbl -> Kpush_retaddr lbl ::  !c
-	| _ -> !c
+        | _ -> !c
       in
       compile_lam env cenv a sz code_sw
 
@@ -883,13 +883,13 @@ let compile_constant_body ~fail_on_error env univs = function
       let body = Mod_subst.force_constr sb in
       let instance_size = Univ.AUContext.size (Declareops.universes_context univs) in
       match kind body with
-	| Const (kn',u) when is_univ_copy instance_size u ->
-	    (* we use the canonical name of the constant*)
-	    let con= Constant.make1 (Constant.canonical kn') in
-	      Some (BCalias (get_alias env con))
-	| _ ->
+        | Const (kn',u) when is_univ_copy instance_size u ->
+            (* we use the canonical name of the constant*)
+            let con= Constant.make1 (Constant.canonical kn') in
+              Some (BCalias (get_alias env con))
+        | _ ->
             let res = compile ~fail_on_error ~universes:instance_size env body in
-	      Option.map (fun x -> BCdefined (to_memory x)) res
+              Option.map (fun x -> BCdefined (to_memory x)) res
 
 (* Shortcut of the previous function used during module strengthening *)
 

@@ -29,8 +29,8 @@ let home ~warn =
   getenv_else "HOME" (fun () ->
     try (Sys.getenv "HOMEDRIVE")^(Sys.getenv "HOMEPATH") with Not_found ->
       getenv_else "USERPROFILE" (fun () ->
-	warn ("Cannot determine user home directory, using '.' .");
-	Filename.current_dir_name))
+        warn ("Cannot determine user home directory, using '.' .");
+        Filename.current_dir_name))
 
 let path_to_list p =
   let sep = if String.equal Sys.os_type "Win32" then ';' else ':' in
@@ -46,20 +46,20 @@ let expand_path_macros ~warn s =
     let l = String.length s in
     if Int.equal i l then s else
       match s.[i] with
-	| '$' ->
-	  let n = expand_atom s (i+1) in
-	  let v = safe_getenv warn (String.sub s (i+1) (n-i-1)) in
-	  let s = (String.sub s 0 i)^v^(String.sub s n (l-n)) in
-	  expand_macros s (i + String.length v)
-	| '~' when Int.equal i 0 ->
-	  let n = expand_atom s (i+1) in
-	  let v =
-	    if Int.equal n (i + 1) then home ~warn
-	    else (Unix.getpwnam (String.sub s (i+1) (n-i-1))).Unix.pw_dir
-	  in
-	  let s = v^(String.sub s n (l-n)) in
-	  expand_macros s (String.length v)
-	| c -> expand_macros s (i+1)
+        | '$' ->
+          let n = expand_atom s (i+1) in
+          let v = safe_getenv warn (String.sub s (i+1) (n-i-1)) in
+          let s = (String.sub s 0 i)^v^(String.sub s n (l-n)) in
+          expand_macros s (i + String.length v)
+        | '~' when Int.equal i 0 ->
+          let n = expand_atom s (i+1) in
+          let v =
+            if Int.equal n (i + 1) then home ~warn
+            else (Unix.getpwnam (String.sub s (i+1) (n-i-1))).Unix.pw_dir
+          in
+          let s = v^(String.sub s n (l-n)) in
+          expand_macros s (String.length v)
+        | c -> expand_macros s (i+1)
   in expand_macros s 0
 
 (** {1 Paths} *)
@@ -172,7 +172,7 @@ let xdg_dirs ~warn =
 (* Print the configuration information *)
 
 let print_config ?(prefix_var_name="") f coq_src_subdirs =
-  let open Printf in 
+  let open Printf in
   fprintf f "%sLOCAL=%s\n" prefix_var_name (if Coq_config.local then "1" else "0");
   fprintf f "%sCOQLIB=%s/\n" prefix_var_name (coqlib ());
   fprintf f "%sDOCDIR=%s/\n" prefix_var_name (docdir ());

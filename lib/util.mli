@@ -87,7 +87,7 @@ val matrix_transpose : 'a list list -> 'a list list
 val identity : 'a -> 'a
 
 (** Left-to-right function composition:
-    
+
     [f1 %> f2] is [fun x -> f2 (f1 x)].
 
     [f1 %> f2 %> f3] is [fun x -> f3 (f2 (f1 x))].

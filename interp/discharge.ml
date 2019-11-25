@@ -39,15 +39,15 @@ let abstract_inductive decls nparamdecls inds =
   let inds' =
     List.map
       (function (tname,arity,template,cnames,lc) ->
-	let lc' = List.map (substl subs) lc in
-	let lc'' = List.map (fun b -> Termops.it_mkNamedProd_wo_LetIn b decls) lc' in
-	let arity' = Termops.it_mkNamedProd_wo_LetIn arity decls in
+        let lc' = List.map (substl subs) lc in
+        let lc'' = List.map (fun b -> Termops.it_mkNamedProd_wo_LetIn b decls) lc' in
+        let arity' = Termops.it_mkNamedProd_wo_LetIn arity decls in
         (tname,arity',template,cnames,lc''))
-      	inds in
+        inds in
   let nparamdecls' = nparamdecls + Array.length args in
 (* To be sure to be the same as before, should probably be moved to process_inductive *)
   let params' = let (_,arity,_,_,_) = List.hd inds' in
-		let (params,_) = decompose_prod_n_assum nparamdecls' arity in
+                let (params,_) = decompose_prod_n_assum nparamdecls' arity in
     params
   in
   let ind'' =
@@ -55,12 +55,12 @@ let abstract_inductive decls nparamdecls inds =
     (fun (a,arity,template,c,lc) ->
       let _, short_arity = decompose_prod_n_assum nparamdecls' arity in
       let shortlc =
-	List.map (fun c -> snd (decompose_prod_n_assum nparamdecls' c)) lc in
+        List.map (fun c -> snd (decompose_prod_n_assum nparamdecls' c)) lc in
       { mind_entry_typename = a;
-	mind_entry_arity = short_arity;
-	mind_entry_template = template;
-	mind_entry_consnames = c;
-	mind_entry_lc = shortlc })
+        mind_entry_arity = short_arity;
+        mind_entry_template = template;
+        mind_entry_consnames = c;
+        mind_entry_lc = shortlc })
     inds'
   in (params',ind'')
 
@@ -91,13 +91,13 @@ let process_inductive info modlist mib =
   let inds =
     Array.map_to_list
       (fun mip ->
-	let ty, template = refresh_polymorphic_type_of_inductive (mib,mip) in
+        let ty, template = refresh_polymorphic_type_of_inductive (mib,mip) in
         let arity = discharge ty in
         let lc = Array.map discharge mip.mind_user_lc  in
-	  (mip.mind_typename,
-	   arity, template,
-	   Array.to_list mip.mind_consnames,
-	   Array.to_list lc))
+          (mip.mind_typename,
+           arity, template,
+           Array.to_list mip.mind_consnames,
+           Array.to_list lc))
       mib.mind_packets in
   let section_decls' = Context.Named.map discharge section_decls in
   let (params',inds') = abstract_inductive section_decls' nparamdecls inds in

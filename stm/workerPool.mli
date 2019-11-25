@@ -30,7 +30,7 @@ end
 module Make(Model : PoolModel) : sig
 
   type pool
-  
+
   val create : Model.extra -> size:int -> pool
 
   val is_empty : pool -> bool

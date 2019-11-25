@@ -89,7 +89,7 @@ let thens3parts_tac tacfi tac tacli (sigr,gs) =
   let gll =
       (List.map_i (fun i ->
         apply_sig_tac sigr (if i<nf then tacfi.(i) else if i>=ng-nl then tacli.(nl-ng+i) else tac))
-	0 gs) in
+        0 gs) in
     (sigr,List.flatten gll)
 
 (* Apply [taci.(i)] on the first n subgoals and [tac] on the others *)
@@ -191,13 +191,13 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
       (fun hypl -> List.subtract cmp hypl oldhyps)
       hyps
   in
-  let s = 
+  let s =
     let frst = ref true in
     List.fold_left
     (fun acc lh -> acc ^ (if !frst then (frst:=false;"") else " | ")
       ^ (List.fold_left
-	   (fun acc d -> (Names.Id.to_string (NamedDecl.get_id d)) ^ " " ^ acc)
-	   "" lh))
+           (fun acc d -> (Names.Id.to_string (NamedDecl.get_id d)) ^ " " ^ acc)
+           "" lh))
     "" newhyps in
   Feedback.msg_notice
     (str "<infoH>"
@@ -322,11 +322,11 @@ let tclEVARS sigma gls = tclIDTAC {gls with sigma=sigma}
 let tclEVARUNIVCONTEXT ctx gls = tclIDTAC {gls with sigma= Evd.set_universe_context gls.sigma ctx}
 
 (* Push universe context *)
-let tclPUSHCONTEXT rigid ctx tac gl = 
+let tclPUSHCONTEXT rigid ctx tac gl =
   tclTHEN (tclEVARS (Evd.merge_context_set rigid (project gl) ctx)) tac gl
 
-let tclPUSHEVARUNIVCONTEXT ctx gl = 
+let tclPUSHEVARUNIVCONTEXT ctx gl =
   tclEVARS (Evd.merge_universe_context (project gl) ctx) gl
 
-let tclPUSHCONSTRAINTS cst gl = 
+let tclPUSHCONSTRAINTS cst gl =
   tclEVARS (Evd.add_constraints (project gl) cst) gl

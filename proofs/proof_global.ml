@@ -252,7 +252,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
           let ctx = UState.restrict universes used_univs in
           let univs = UState.check_univ_decl ~poly ctx universe_decl in
           (univs, typ), ((body, Univ.ContextSet.empty), eff)
-      in 
+      in
        fun t p -> Future.split2 (Future.chain p (make_body t))
     else
       fun t p ->

@@ -24,20 +24,20 @@ module type S = sig
   end
 
   type id
-  
+
   type ('kind) branch_info = {
     kind : [> `Master] as 'kind;
     root : id;
     pos  : id;
   }
-  
+
   type ('kind,'diff,'info,'property_data) t constraint 'kind = [> `Master ]
-  
+
   val empty : id -> ('kind,'diff,'info,'property_data) t
-  
+
   val current_branch : ('k,'e,'i,'c) t -> Branch.t
   val branches : ('k,'e,'i,'c) t -> Branch.t list
-  
+
   val get_branch : ('k,'e,'i,'c) t -> Branch.t -> 'k branch_info
   val reset_branch : ('k,'e,'i,'c) t -> Branch.t -> id -> ('k,'e,'i,'c) t
   val branch :
@@ -52,7 +52,7 @@ module type S = sig
     ('k,'diff,'i,'c) t -> id -> ours:'diff -> theirs:'diff -> at:id ->
             Branch.t -> ('k,'diff,'i,'c) t
   val checkout : ('k,'e,'i,'c) t -> Branch.t -> ('k,'e,'i,'c) t
-  
+
   val set_info : ('k,'e,'info,'c) t -> id -> 'info -> ('k,'e,'info,'c) t
   val get_info : ('k,'e,'info,'c) t -> id -> 'info option
 
@@ -62,7 +62,7 @@ module type S = sig
 
   val create_property : ('k,'e,'i,'c) t -> id list -> 'c -> ('k,'e,'i,'c) t
   val property_of : ('k,'e,'i,'c) t -> id -> 'c Dag.Property.t list
-  val delete_property : ('k,'e,'i,'c) t -> 'c Dag.Property.t -> ('k,'e,'i,'c) t 
+  val delete_property : ('k,'e,'i,'c) t -> 'c Dag.Property.t -> ('k,'e,'i,'c) t
 
   (* Removes all unreachable nodes and returns them *)
   val gc : ('k,'e,'info,'c) t -> ('k,'e,'info,'c) t * Dag.NodeSet.t

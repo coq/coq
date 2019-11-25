@@ -157,8 +157,8 @@ and e_my_find_search env sigma db_list local_db secvars hdc concl =
   let hint_of_db = hintmap_of sigma secvars hdc concl in
   let hintl =
       List.map_append (fun db ->
-	let flags = auto_flags_of_state (Hint_db.transparent_state db) in
-	  List.map (fun x -> flags, x) (hint_of_db db)) (local_db::db_list)
+        let flags = auto_flags_of_state (Hint_db.transparent_state db) in
+          List.map (fun x -> flags, x) (hint_of_db db)) (local_db::db_list)
   in
   let tac_of_hint =
     fun (st, {pri = b; pat = p; code = t; poly = poly}) ->
@@ -230,12 +230,12 @@ module SearchProblem = struct
     let rec aux = function
       | [] -> []
       | (tac, cost, pptac) :: tacl ->
-	  try
-	    let lgls = apply_tac_list (Proofview.V82.of_tactic tac) glls in
+          try
+            let lgls = apply_tac_list (Proofview.V82.of_tactic tac) glls in
 (* 	    let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
 (* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
-	      (lgls, cost, pptac) :: aux tacl
-	  with e when CErrors.noncritical e ->
+              (lgls, cost, pptac) :: aux tacl
+          with e when CErrors.noncritical e ->
             let e = CErrors.push e in
             Refiner.catch_failerror e; aux tacl
     in aux l
@@ -265,60 +265,60 @@ module SearchProblem = struct
       let assumption_tacs =
         let tacs = List.map map_assum hyps in
         let l = filter_tactics s.tacres tacs in
-	List.map (fun (res, cost, pp) -> { depth = s.depth; priority = cost; tacres = res;
-				    last_tactic = pp; dblist = s.dblist;
-				    localdb = List.tl s.localdb;
-				    prev = ps; local_lemmas = s.local_lemmas}) l
+        List.map (fun (res, cost, pp) -> { depth = s.depth; priority = cost; tacres = res;
+                                    last_tactic = pp; dblist = s.dblist;
+                                    localdb = List.tl s.localdb;
+                                    prev = ps; local_lemmas = s.local_lemmas}) l
       in
       let intro_tac =
         let l = filter_tactics s.tacres [Tactics.intro, (-1), lazy (str "intro")] in
-	List.map
-	  (fun (lgls, cost, pp) ->
-	     let g' = first_goal lgls in
-	     let hintl =
-	       make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
-	     in
+        List.map
+          (fun (lgls, cost, pp) ->
+             let g' = first_goal lgls in
+             let hintl =
+               make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
+             in
              let ldb = Hint_db.add_list (pf_env g') (project g')
-		  hintl (List.hd s.localdb) in
-	     { depth = s.depth; priority = cost; tacres = lgls;
-	       last_tactic = pp; dblist = s.dblist;
-	       localdb = ldb :: List.tl s.localdb; prev = ps;
+                  hintl (List.hd s.localdb) in
+             { depth = s.depth; priority = cost; tacres = lgls;
+               last_tactic = pp; dblist = s.dblist;
+               localdb = ldb :: List.tl s.localdb; prev = ps;
                local_lemmas = s.local_lemmas})
-	  l
+          l
       in
       let rec_tacs =
-	let l =
+        let l =
           let concl = Reductionops.nf_evar (project g) (pf_concl g) in
-	  filter_tactics s.tacres
+          filter_tactics s.tacres
                          (e_possible_resolve (pf_env g) (project g) s.dblist (List.hd s.localdb) secvars concl)
-	in
-	List.map
-	  (fun (lgls, cost, pp) ->
-	     let nbgl' = List.length (sig_it lgls) in
-	     if nbgl' < nbgl then
-	       { depth = s.depth; priority = cost; tacres = lgls; last_tactic = pp;
+        in
+        List.map
+          (fun (lgls, cost, pp) ->
+             let nbgl' = List.length (sig_it lgls) in
+             if nbgl' < nbgl then
+               { depth = s.depth; priority = cost; tacres = lgls; last_tactic = pp;
                   prev = ps; dblist = s.dblist; localdb = List.tl s.localdb;
                   local_lemmas = s.local_lemmas }
-	     else
-	       let newlocal = 
-		 let hyps = pf_hyps g in
-		   List.map (fun gl ->
-		     let gls = {Evd.it = gl; sigma = lgls.Evd.sigma } in
-		     let hyps' = pf_hyps gls in
-		       if hyps' == hyps then List.hd s.localdb
+             else
+               let newlocal =
+                 let hyps = pf_hyps g in
+                   List.map (fun gl ->
+                     let gls = {Evd.it = gl; sigma = lgls.Evd.sigma } in
+                     let hyps' = pf_hyps gls in
+                       if hyps' == hyps then List.hd s.localdb
                        else make_local_hint_db (pf_env gls) (project gls) ~ts:TransparentState.full true s.local_lemmas)
-		     (List.firstn ((nbgl'-nbgl) + 1) (sig_it lgls))
-	       in
-		 { depth = pred s.depth; priority = cost; tacres = lgls;
-		   dblist = s.dblist; last_tactic = pp; prev = ps;
-		   localdb = newlocal @ List.tl s.localdb;
+                     (List.firstn ((nbgl'-nbgl) + 1) (sig_it lgls))
+               in
+                 { depth = pred s.depth; priority = cost; tacres = lgls;
+                   dblist = s.dblist; last_tactic = pp; prev = ps;
+                   localdb = newlocal @ List.tl s.localdb;
                    local_lemmas = s.local_lemmas })
-	  l
+          l
       in
       List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
 
   let pp s = hov 0 (str " depth=" ++ int s.depth ++ spc () ++
-		      (Lazy.force s.last_tactic))
+                      (Lazy.force s.last_tactic))
 
 end
 
@@ -364,12 +364,12 @@ let pr_info dbg s =
   else
     let rec loop s =
       match s.prev with
-	| Unknown | Init -> s.depth
-	| State sp ->
-	  let mindepth = loop sp in
-	  let indent = String.make (mindepth - sp.depth) ' ' in
+        | Unknown | Init -> s.depth
+        | State sp ->
+          let mindepth = loop sp in
+          let indent = String.make (mindepth - sp.depth) ' ' in
           Feedback.msg_notice (str indent ++ Lazy.force s.last_tactic ++ str ".");
-	  mindepth
+          mindepth
     in
     ignore (loop s)
 
@@ -433,15 +433,15 @@ let make_dimension n = function
 let cons a l = a :: l
 
 let autounfolds db occs cls gl =
-  let unfolds = List.concat (List.map (fun dbname -> 
-    let db = try searchtable_map dbname 
+  let unfolds = List.concat (List.map (fun dbname ->
+    let db = try searchtable_map dbname
       with Not_found -> user_err ~hdr:"autounfold" (str "Unknown database " ++ str dbname)
     in
     let (ids, csts) = Hint_db.unfolds db in
     let hyps = pf_ids_of_hyps gl in
     let ids = Id.Set.filter (fun id -> List.mem id hyps) ids in
       Cset.fold (fun cst -> cons (AllOccurrences, EvalConstRef cst)) csts
-	(Id.Set.fold (fun id -> cons (AllOccurrences, EvalVarRef id)) ids [])) db)
+        (Id.Set.fold (fun id -> cons (AllOccurrences, EvalVarRef id)) ids [])) db)
   in Proofview.V82.of_tactic (unfold_option unfolds cls) gl
 
 let autounfold db cls =
@@ -464,36 +464,36 @@ let autounfold_tac db cls =
   autounfold dbs cls
 
 let unfold_head env sigma (ids, csts) c =
-  let rec aux c = 
+  let rec aux c =
     match EConstr.kind sigma c with
     | Var id when Id.Set.mem id ids ->
-	(match Environ.named_body id env with
-	| Some b -> true, EConstr.of_constr b
-	| None -> false, c)
+        (match Environ.named_body id env with
+        | Some b -> true, EConstr.of_constr b
+        | None -> false, c)
     | Const (cst, u) when Cset.mem cst csts ->
         let u = EInstance.kind sigma u in
-	true, EConstr.of_constr (Environ.constant_value_in env (cst, u))
+        true, EConstr.of_constr (Environ.constant_value_in env (cst, u))
     | App (f, args) ->
-	(match aux f with
-	| true, f' -> true, Reductionops.whd_betaiota sigma (mkApp (f', args))
-	| false, _ -> 
-	    let done_, args' = 
-	      Array.fold_left_i (fun i (done_, acc) arg -> 
-		if done_ then done_, arg :: acc 
-		else match aux arg with
-		| true, arg' -> true, arg' :: acc
-		| false, arg' -> false, arg :: acc)
-		(false, []) args
-	    in 
-	      if done_ then true, mkApp (f, Array.of_list (List.rev args'))
-	      else false, c)
-    | _ -> 
-	let done_ = ref false in
-	let c' = EConstr.map sigma (fun c -> 
-	  if !done_ then c else 
-	    let x, c' = aux c in
-	      done_ := x; c') c
-	in !done_, c'
+        (match aux f with
+        | true, f' -> true, Reductionops.whd_betaiota sigma (mkApp (f', args))
+        | false, _ ->
+            let done_, args' =
+              Array.fold_left_i (fun i (done_, acc) arg ->
+                if done_ then done_, arg :: acc
+                else match aux arg with
+                | true, arg' -> true, arg' :: acc
+                | false, arg' -> false, arg :: acc)
+                (false, []) args
+            in
+              if done_ then true, mkApp (f, Array.of_list (List.rev args'))
+              else false, c)
+    | _ ->
+        let done_ = ref false in
+        let c' = EConstr.map sigma (fun c ->
+          if !done_ then c else
+            let x, c' = aux c in
+              done_ := x; c') c
+        in !done_, c'
   in aux c
 
 let autounfold_one db cl =
@@ -502,15 +502,15 @@ let autounfold_one db cl =
   let sigma = Tacmach.New.project gl in
   let concl = Proofview.Goal.concl gl in
   let st =
-    List.fold_left (fun (i,c) dbname -> 
-      let db = try searchtable_map dbname 
-	with Not_found -> user_err ~hdr:"autounfold" (str "Unknown database " ++ str dbname)
+    List.fold_left (fun (i,c) dbname ->
+      let db = try searchtable_map dbname
+        with Not_found -> user_err ~hdr:"autounfold" (str "Unknown database " ++ str dbname)
       in
       let (ids, csts) = Hint_db.unfolds db in
-	(Id.Set.union ids i, Cset.union csts c)) (Id.Set.empty, Cset.empty) db
+        (Id.Set.union ids i, Cset.union csts c)) (Id.Set.empty, Cset.empty) db
   in
-  let did, c' = unfold_head env sigma st 
-    (match cl with Some (id, _) -> Tacmach.New.pf_get_hyp_typ id gl | None -> concl) 
+  let did, c' = unfold_head env sigma st
+    (match cl with Some (id, _) -> Tacmach.New.pf_get_hyp_typ id gl | None -> concl)
   in
     if did then
       match cl with

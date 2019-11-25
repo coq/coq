@@ -209,8 +209,8 @@ let spawn ?(prefer_sock=prefer_sock) ?(env=Unix.environment ())
   p, cout
 
 let rec wait p =
-  (* On windows kill is not reliable, so wait may never return. *) 
-  if Sys.os_type = "Unix" then 
+  (* On windows kill is not reliable, so wait may never return. *)
+  if Sys.os_type = "Unix" then
     try snd (Unix.waitpid [] p.pid)
     with
     | Unix.Unix_error (Unix.EINTR, _, _) -> wait p
@@ -254,8 +254,8 @@ let kill ({ pid = unixpid; oob_req; oob_resp; cin; cout; alive } as p) =
   with e -> prerr_endline ("kill: "^Printexc.to_string e) end
 
 let rec wait p =
-  (* On windows kill is not reliable, so wait may never return. *) 
-  if Sys.os_type = "Unix" then 
+  (* On windows kill is not reliable, so wait may never return. *)
+  if Sys.os_type = "Unix" then
     try snd (Unix.waitpid [] p.pid)
     with
     | Unix.Unix_error (Unix.EINTR, _, _) -> wait p

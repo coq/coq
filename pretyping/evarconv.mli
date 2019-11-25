@@ -89,9 +89,9 @@ val check_problems_are_solved : env -> evar_map -> unit
 
 (** Check if a canonical structure is applicable *)
 
-val check_conv_record : env -> evar_map -> 
+val check_conv_record : env -> evar_map ->
   state -> state ->
-  Univ.ContextSet.t * (constr * constr) 
+  Univ.ContextSet.t * (constr * constr)
   * constr * constr list * (constr Stack.t * constr Stack.t) *
     (constr Stack.t * constr Stack.t) *
     (constr Stack.t * constr Stack.t) * constr *

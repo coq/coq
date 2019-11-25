@@ -525,11 +525,11 @@ let deepen_until limit f n =
     | 0 -> raise TooDeep
     | -1 -> deepen f n
     | _  ->
-	let rec d_until  f n =
-	  try(* if !debugging
-	  then (print_string "Searching with depth limit ";
-		print_int n; print_newline()) ;*) f n
-	  with Failure x ->
-	    (*if !debugging then (Printf.printf "solver error : %s\n" x) ; *)
-	    if n = limit then raise TooDeep else  d_until f (n + 1) in
-	  d_until f n
+        let rec d_until  f n =
+          try(* if !debugging
+          then (print_string "Searching with depth limit ";
+                print_int n; print_newline()) ;*) f n
+          with Failure x ->
+            (*if !debugging then (Printf.printf "solver error : %s\n" x) ; *)
+            if n = limit then raise TooDeep else  d_until f (n + 1) in
+          d_until f n

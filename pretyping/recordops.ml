@@ -142,7 +142,7 @@ let find_primitive_projection c =
   c := [x1:B1]...[xk:Bk](Build_R a1...am t1...t_n)
 
   If ti has the form (ci ui1...uir) where ci is a global reference (or
-  a sort, or a product or a reference to a parameter) and if the 
+  a sort, or a product or a reference to a parameter) and if the
   corresponding projection Li of the structure R is defined, one
   declares a "conversion" between ci and Li.
 
@@ -243,17 +243,17 @@ let compute_canonical_projections env warn (con,ind) =
   let comp =
     List.fold_left
       (fun l (spopt,t) -> (* comp=components *)
-	 match spopt with
+         match spopt with
            | Some proji_sp ->
-	       begin
-		 try
-		   let patt, n , args = cs_pattern_of_constr nenv t in
-		     ((ConstRef proji_sp, patt, t, n, args) :: l)
-		 with Not_found ->
+               begin
+                 try
+                   let patt, n , args = cs_pattern_of_constr nenv t in
+                     ((ConstRef proji_sp, patt, t, n, args) :: l)
+                 with Not_found ->
                    if warn then warn_projection_no_head_constant (sign,env,t,con,proji_sp);
                    l
-	       end
-	   | _ -> l)
+               end
+           | _ -> l)
       [] lps in
   List.map (fun (refi,c,t,inj,argj) ->
     (refi,(c,t)),

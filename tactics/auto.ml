@@ -135,9 +135,9 @@ let conclPattern concl pat tac =
     match pat with
     | None -> Proofview.tclUNIT Id.Map.empty
     | Some pat ->
-	try
-	  Proofview.tclUNIT (Constr_matching.matches env sigma pat concl)
-	with Constr_matching.PatternMatchingFailure ->
+        try
+          Proofview.tclUNIT (Constr_matching.matches env sigma pat concl)
+        with Constr_matching.PatternMatchingFailure ->
           Tacticals.New.tclZEROMSG (str "pattern-matching failed")
   in
   Proofview.Goal.enter begin fun gl ->
@@ -323,9 +323,9 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
           let nf c = Evarutil.nf_evar sigma c in
           let decl = Tacmach.New.pf_last_hyp gl in
           let hyp = Context.Named.Declaration.map_constr nf decl in
-	  let hintl = make_resolve_hyp env sigma hyp
-	  in trivial_fail_db dbg mod_delta db_list
-	       (Hint_db.add_list env sigma hintl local_db)
+          let hintl = make_resolve_hyp env sigma hyp
+          in trivial_fail_db dbg mod_delta db_list
+               (Hint_db.add_list env sigma hintl local_db)
       end)
   in
   Proofview.Goal.enter begin fun gl ->
@@ -350,31 +350,31 @@ and my_find_search_delta sigma db_list local_db secvars hdc concl =
   let f = hintmap_of sigma secvars hdc concl in
     if occur_existential sigma concl then
       List.map_append
-	(fun db ->
-	  if Hint_db.use_dn db then
-	    let flags = flags_of_state (Hint_db.transparent_state db) in
-	      List.map (fun x -> (Some flags,x)) (f db)
-	  else
-	    let flags = auto_flags_of_state (Hint_db.transparent_state db) in
-	      List.map (fun x -> (Some flags,x)) (f db))
-	(local_db::db_list)
+        (fun db ->
+          if Hint_db.use_dn db then
+            let flags = flags_of_state (Hint_db.transparent_state db) in
+              List.map (fun x -> (Some flags,x)) (f db)
+          else
+            let flags = auto_flags_of_state (Hint_db.transparent_state db) in
+              List.map (fun x -> (Some flags,x)) (f db))
+        (local_db::db_list)
     else
       List.map_append (fun db ->
-	if Hint_db.use_dn db then
-	  let flags = flags_of_state (Hint_db.transparent_state db) in
-	    List.map (fun x -> (Some flags, x)) (f db)
-	else
+        if Hint_db.use_dn db then
+          let flags = flags_of_state (Hint_db.transparent_state db) in
+            List.map (fun x -> (Some flags, x)) (f db)
+        else
           let st = Hint_db.transparent_state db in
-	  let flags, l =
-	    let l =
-	      match hdc with None -> Hint_db.map_none ~secvars db
-	      | Some hdc ->
+          let flags, l =
+            let l =
+              match hdc with None -> Hint_db.map_none ~secvars db
+              | Some hdc ->
                   if TransparentState.is_empty st
-		  then Hint_db.map_auto sigma ~secvars hdc concl db
-		  else Hint_db.map_existential sigma ~secvars hdc concl db
-	    in auto_flags_of_state st, l
-	  in List.map (fun x -> (Some flags,x)) l)
-      	(local_db::db_list)
+                  then Hint_db.map_auto sigma ~secvars hdc concl db
+                  else Hint_db.map_existential sigma ~secvars hdc concl db
+            in auto_flags_of_state st, l
+          in List.map (fun x -> (Some flags,x)) l)
+        (local_db::db_list)
 
 and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=dbname})) =
   let tactic = function
@@ -384,13 +384,13 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=
     | Res_pf_THEN_trivial_fail (c,cl) ->
       Tacticals.New.tclTHEN
         (unify_resolve_gen poly flags (c,cl))
-	(* With "(debug) trivial", we shouldn't end here, and
-	   with "debug auto" we don't display the details of inner trivial *)
+        (* With "(debug) trivial", we shouldn't end here, and
+           with "debug auto" we don't display the details of inner trivial *)
         (trivial_fail_db (no_dbg dbg) (not (Option.is_empty flags)) db_list local_db)
     | Unfold_nth c ->
       Proofview.Goal.enter begin fun gl ->
        if exists_evaluable_reference (Tacmach.New.pf_env gl) c then
-	 Tacticals.New.tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)
+         Tacticals.New.tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)
        else Tacticals.New.tclFAIL 0 (str"Unbound reference")
        end
     | Extern tacast ->
@@ -409,12 +409,12 @@ and trivial_resolve sigma dbg mod_delta db_list local_db secvars cl =
   try
     let head =
       try let hdconstr = decompose_app_bound sigma cl in
-	    Some hdconstr
+            Some hdconstr
       with Bound -> None
     in
       List.map (tac_of_hint dbg db_list local_db cl)
-	(priority
-	    (my_find_search mod_delta sigma db_list local_db secvars head cl))
+        (priority
+            (my_find_search mod_delta sigma db_list local_db secvars head cl))
   with Not_found -> []
 
 (** The use of the "core" database can be de-activated by passing
@@ -458,11 +458,11 @@ let possible_resolve sigma dbg mod_delta db_list local_db secvars cl =
   try
     let head =
       try let hdconstr = decompose_app_bound sigma cl in
-	    Some hdconstr
+            Some hdconstr
       with Bound -> None
     in
       List.map (tac_of_hint dbg db_list local_db cl)
-	(my_find_search mod_delta sigma db_list local_db secvars head cl)
+        (my_find_search mod_delta sigma db_list local_db secvars head cl)
   with Not_found -> []
 
 let extend_local_db decl db gl =
@@ -490,16 +490,16 @@ let search d n mod_delta db_list local_db =
     Proofview.tclEXTEND [] begin
       if Int.equal n 0 then Tacticals.New.tclZEROMSG (str"BOUND 2") else
         Tacticals.New.tclORELSE0 (dbg_assumption d)
-	  (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
-	     ( Proofview.Goal.enter begin fun gl ->
+          (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
+             ( Proofview.Goal.enter begin fun gl ->
                let concl = Tacmach.New.pf_concl gl in
                let sigma = Tacmach.New.project gl in
                let secvars = compute_secvars gl in
-	       let d' = incr_dbg d in
-	       Tacticals.New.tclFIRST
-	         (List.map
-		    (fun ntac -> Tacticals.New.tclTHEN ntac (search d' (n-1) local_db))
-		    (possible_resolve sigma d mod_delta db_list local_db secvars concl))
+               let d' = incr_dbg d in
+               Tacticals.New.tclFIRST
+                 (List.map
+                    (fun ntac -> Tacticals.New.tclTHEN ntac (search d' (n-1) local_db))
+                    (possible_resolve sigma d mod_delta db_list local_db secvars concl))
              end))
     end []
   in
@@ -519,7 +519,7 @@ let delta_auto debug mod_delta n lems dbnames =
     (search d n mod_delta db_list hints)
   end
 
-let delta_auto = 
+let delta_auto =
   if Flags.profile then
     let key = CProfile.declare_profile "delta_auto" in
       CProfile.profile5 key delta_auto

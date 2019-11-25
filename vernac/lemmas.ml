@@ -71,9 +71,9 @@ let adjust_guardness_conditions const = function
           match Constr.kind body with
           | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
 (*      let possible_indexes =
-	List.map2 (fun i c -> match i with Some i -> i | None ->
-	  List.interval 0 (List.length ((lam_assum c))))
-	  lemma_guard (Array.to_list fixdefs) in
+        List.map2 (fun i c -> match i with Some i -> i | None ->
+          List.interval 0 (List.length ((lam_assum c))))
+          lemma_guard (Array.to_list fixdefs) in
 *)
               let fold env eff =
                 try
@@ -85,7 +85,7 @@ let adjust_guardness_conditions const = function
               let indexes =
                 search_guard env
                   possible_indexes fixdecls in
-		(mkFix ((indexes,0),fixdecls), ctx), eff
+                (mkFix ((indexes,0),fixdecls), ctx), eff
           | _ -> (body, ctx), eff) }
 
 let find_mutually_recursive_statements sigma thms =
@@ -123,23 +123,23 @@ let find_mutually_recursive_statements sigma thms =
     (* (degenerated cartesian product since there is at most one coind ccl) *)
     let same_indccl =
       List.cartesians_filter (fun hyp oks ->
-	if List.for_all (of_same_mutind hyp) oks
-	then Some (hyp::oks) else None) [] ind_ccls in
+        if List.for_all (of_same_mutind hyp) oks
+        then Some (hyp::oks) else None) [] ind_ccls in
     let ordered_same_indccl =
       List.filter (List.for_all_i (fun i ((kn,j),_,_) -> Int.equal i j) 0) same_indccl in
     (* Check if some hypotheses are inductive in the same type *)
     let common_same_indhyp =
       List.cartesians_filter (fun hyp oks ->
-	if List.for_all (of_same_mutind hyp) oks
-	then Some (hyp::oks) else None) [] inds_hyps in
+        if List.for_all (of_same_mutind hyp) oks
+        then Some (hyp::oks) else None) [] inds_hyps in
     let ordered_inds,finite,guard =
       match ordered_same_indccl, common_same_indhyp with
       | indccl::rest, _ ->
-	  assert (List.is_empty rest);
+          assert (List.is_empty rest);
           (* One occ. of common coind ccls and no common inductive hyps *)
-	  if not (List.is_empty common_same_indhyp) then
-	    Flags.if_verbose Feedback.msg_info (str "Assuming mutual coinductive statements.");
-	  flush_all ();
+          if not (List.is_empty common_same_indhyp) then
+            Flags.if_verbose Feedback.msg_info (str "Assuming mutual coinductive statements.");
+          flush_all ();
           indccl, true, []
       | [], _::_ ->
           let () = match same_indccl with
@@ -154,10 +154,10 @@ let find_mutually_recursive_statements sigma thms =
           | _ -> ()
           in
           let possible_guards = List.map (List.map pi3) inds_hyps in
-	  (* assume the largest indices as possible *)
-	  List.last common_same_indhyp, false, possible_guards
+          (* assume the largest indices as possible *)
+          List.last common_same_indhyp, false, possible_guards
       | _, [] ->
-	  user_err Pp.(str
+          user_err Pp.(str
             ("Cannot find common (mutual) inductive premises or coinductive" ^
              " conclusions in the statements."))
     in
@@ -242,7 +242,7 @@ let save_remaining_recthms env sigma (locality,p,kind) norm univs body opaq i (i
             | Monomorphic_entry univs -> univs
           in
           let c = SectionLocalAssum ((t_i, univs),p,impl) in
-	  let _ = declare_variable id (Lib.cwd(),c,k) in
+          let _ = declare_variable id (Lib.cwd(),c,k) in
           (Discharge, VarRef id,imps)
       | Local | Global ->
           let local = match locality with
@@ -268,8 +268,8 @@ let save_remaining_recthms env sigma (locality,p,kind) norm univs body opaq i (i
       match locality with
       | Discharge ->
           let const = definition_entry ~types:t_i ~opaque:opaq ~univs body_i in
-	  let c = SectionLocalDef const in
-	  let _ = declare_variable id (Lib.cwd(), c, k) in
+          let c = SectionLocalDef const in
+          let _ = declare_variable id (Lib.cwd(), c, k) in
           (Discharge,VarRef id,imps)
       | Local | Global ->
         let local = match locality with
@@ -279,7 +279,7 @@ let save_remaining_recthms env sigma (locality,p,kind) norm univs body opaq i (i
         in
         let const =
           Declare.definition_entry ~types:t_i ~univs ~opaque:opaq body_i
-	in
+        in
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
         (locality,ConstRef kn,imps)
 
@@ -355,7 +355,7 @@ let rec_tac_initializer finite guard thms snl =
     | _ -> assert false
   else
     (* nl is dummy: it will be recomputed at Qed-time *)
-    let nl = match snl with 
+    let nl = match snl with
      | None -> List.map succ (List.map List.last guard)
      | Some nl -> nl
     in match List.map2 (fun (id,(t,_)) n -> (id,n, t)) thms nl with
@@ -392,7 +392,7 @@ let start_proof_with_initialization ~ontop ?hook kind sigma decl recguard thms s
             List.map_i (save_remaining_recthms env sigma kind norm uctx body opaq) 1 other_thms in
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
-	  maybe_declare_manual_implicits false ref imps;
+          maybe_declare_manual_implicits false ref imps;
           call_hook ?hook ctx [] strength ref) thms_data in
       let pstate = start_proof ~ontop id ~pl:decl kind sigma t ~hook ~compute_guard:guard in
       let pstate, _ = Proof_global.with_current_proof (fun _ p ->

@@ -107,7 +107,7 @@ let interp_ml_tactic { mltac_name = s; mltac_index = i } =
     let () = if Array.length tacs <= i then raise Not_found in
     tacs.(i)
   with Not_found ->
-    CErrors.user_err 
+    CErrors.user_err
       (str "The tactic " ++ pr_tacname s ++ str " is not installed.")
 
 (***************************************************************************)

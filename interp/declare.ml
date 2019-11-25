@@ -274,18 +274,18 @@ let inductive_names sp kn mie =
   let names, _ =
     List.fold_left
       (fun (names, n) ind ->
-	 let ind_p = (kn,n) in
-	 let names, _ =
-	   List.fold_left
-	     (fun (names, p) l ->
-		let sp =
-		  Libnames.make_path dp l
-		in
-		  ((sp, ConstructRef (ind_p,p)) :: names, p+1))
-	     (names, 1) ind.mind_entry_consnames in
-	 let sp = Libnames.make_path dp ind.mind_entry_typename
-	 in
-	   ((sp, IndRef ind_p) :: names, n+1))
+         let ind_p = (kn,n) in
+         let names, _ =
+           List.fold_left
+             (fun (names, p) l ->
+                let sp =
+                  Libnames.make_path dp l
+                in
+                  ((sp, ConstructRef (ind_p,p)) :: names, p+1))
+             (names, 1) ind.mind_entry_consnames in
+         let sp = Libnames.make_path dp ind.mind_entry_typename
+         in
+           ((sp, IndRef ind_p) :: names, n+1))
       ([], 0) mie.mind_entry_inds
   in names
 
@@ -401,15 +401,15 @@ let fixpoint_message indexes l =
   | [] -> anomaly (Pp.str "no recursive definition.")
   | [id] -> Id.print id ++ str " is recursively defined" ++
       (match indexes with
-	 | Some [|i|] -> str " (decreasing on "++pr_rank i++str " argument)"
-	 | _ -> mt ())
+         | Some [|i|] -> str " (decreasing on "++pr_rank i++str " argument)"
+         | _ -> mt ())
   | l -> hov 0 (prlist_with_sep pr_comma Id.print l ++
-		  spc () ++ str "are recursively defined" ++
-		  match indexes with
-		    | Some a -> spc () ++ str "(decreasing respectively on " ++
-			prvect_with_sep pr_comma pr_rank a ++
-			str " arguments)"
-		    | None -> mt ()))
+                  spc () ++ str "are recursively defined" ++
+                  match indexes with
+                    | Some a -> spc () ++ str "(decreasing respectively on " ++
+                        prvect_with_sep pr_comma pr_rank a ++
+                        str " arguments)"
+                    | None -> mt ()))
 
 let cofixpoint_message l =
   Flags.if_verbose Feedback.msg_info (match l with

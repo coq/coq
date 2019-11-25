@@ -141,7 +141,7 @@ val empty : evar_map
 (** The empty evar map. *)
 
 val from_env : env -> evar_map
-(** The empty evar map with given universe context, taking its initial 
+(** The empty evar map with given universe context, taking its initial
     universes from env. *)
 
 val from_ctx : UState.t -> evar_map
@@ -251,7 +251,7 @@ val evar_instance_array : (Constr.named_declaration -> 'a -> bool) -> evar_info 
 
 val instantiate_evar_array : evar_info -> econstr -> econstr array -> econstr
 
-val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool -> 
+val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool ->
   evar_map ->  evar_map -> evar_map
 (** spiwack: this function seems to somewhat break the abstraction. *)
 
@@ -581,8 +581,8 @@ val make_flexible_variable : evar_map -> algebraic:bool -> Univ.Level.t -> evar_
 val make_nonalgebraic_variable : evar_map -> Univ.Level.t -> evar_map
 (** See [UState.make_nonalgebraic_variable]. *)
 
-val is_sort_variable : evar_map -> Sorts.t -> Univ.Level.t option 
-(** [is_sort_variable evm s] returns [Some u] or [None] if [s] is 
+val is_sort_variable : evar_map -> Sorts.t -> Univ.Level.t option
+(** [is_sort_variable evm s] returns [Some u] or [None] if [s] is
     not a local sort variable declared in [evm] *)
 
 val is_flexible_level : evar_map -> Univ.Level.t -> bool
@@ -595,7 +595,7 @@ val set_leq_sort : env -> evar_map -> Sorts.t -> Sorts.t -> evar_map
 val set_eq_sort : env -> evar_map -> Sorts.t -> Sorts.t -> evar_map
 val set_eq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
 val set_leq_level : evar_map -> Univ.Level.t -> Univ.Level.t -> evar_map
-val set_eq_instances : ?flex:bool -> 
+val set_eq_instances : ?flex:bool ->
   evar_map -> Univ.Instance.t -> Univ.Instance.t -> evar_map
 
 val check_eq : evar_map -> Univ.Universe.t -> Univ.Universe.t -> bool

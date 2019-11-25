@@ -95,7 +95,7 @@ type global_declaration =
   | ConstantEntry : 'a effect_entry * 'a Entries.constant_entry -> global_declaration
   | GlobalRecipe of Cooking.recipe
 
-type exported_private_constant = 
+type exported_private_constant =
   Constant.t * Entries.side_effect_role
 
 val export_private_constants : in_section:bool ->

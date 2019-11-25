@@ -161,13 +161,13 @@ let make_eq_univs_test env evd c =
     match EConstr.eq_constr_universes_proj env evd c c' with
     | None -> raise (NotUnifiable None)
     | Some cst ->
-	try Evd.add_universe_constraints evd cst
-	with Evd.UniversesDiffer -> raise (NotUnifiable None)
+        try Evd.add_universe_constraints evd cst
+        with Evd.UniversesDiffer -> raise (NotUnifiable None)
     );
   merge_fun = (fun evd _ -> evd);
   testing_state = evd;
   last_found = None
-} 
+}
 
 let subst_closed_term_occ env evd occs c t =
   let test = make_eq_univs_test env evd c in

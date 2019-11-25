@@ -87,13 +87,13 @@ let compare_mon (m : mon) (m' : mon) =
      (* degre lexicographique inverse *)
     match Int.compare m.(0) m'.(0) with
     | 0 -> (* meme degre total *)
-	let res=ref 0 in
-	let i=ref d in
-	while (!res=0) && (!i>=1) do
-	  res:= - (Int.compare m.(!i) m'.(!i));
-	  i:=!i-1;
-	done;
-	!res
+        let res=ref 0 in
+        let i=ref d in
+        while (!res=0) && (!i>=1) do
+          res:= - (Int.compare m.(!i) m'.(!i));
+          i:=!i-1;
+        done;
+        !res
     | x -> x)
 
 let div_mon m m' =
@@ -135,13 +135,13 @@ let ppcm_mon m m' =
 (* returns a constant polynom ial with d variables *)
 let const_mon d =
   let m = Array.make (d+1) 0 in
-  let m = set_deg m in 
+  let m = set_deg m in
   m
 
 let var_mon d i =
   let m = Array.make (d+1) 0 in
   m.(i) <- 1;
-  let m = set_deg m in 
+  let m = set_deg m in
   m
 
 end
@@ -174,7 +174,7 @@ type polynom = {
 
 (**********************************************************************
   Polynomials
-  list of (coefficient, monomial) decreasing order 
+  list of (coefficient, monomial) decreasing order
 *)
 
 let repr p = p
@@ -216,10 +216,10 @@ let string_of_pol zeroP hdP tlP coefterm monterm string_of_coef
       | e -> s:= (!s) @ [((getvar lvar (i-1)) ^ "^" ^ e)]);
     done;
     (match !s with
-      [] -> if coefone 
+      [] -> if coefone
       then  "1"
       else ""
-    | l -> if coefone 
+    | l -> if coefone
     then  (String.concat "*" l)
     else ( "*" ^
            (String.concat "*" l)))
@@ -233,26 +233,26 @@ let string_of_pol zeroP hdP tlP coefterm monterm string_of_coef
   | "-1" ->( "-" ^" "^(string_of_mon m true))
   | c -> if (String.get c 0)='-'
   then ( "- "^
-         (String.sub c 1 
+         (String.sub c 1
             ((String.length c)-1))^
          (string_of_mon m false))
   else (match start with
     true -> ( c^(string_of_mon m false))
   |false -> ( "+ "^
               c^(string_of_mon m false)))
-  and stringP p start = 
+  and stringP p start =
     if (zeroP p)
-    then (if start 
+    then (if start
     then ("0")
     else "")
     else ((string_of_term (hdP p) start)^
           " "^
           (stringP (tlP p) false))
-  in 
+  in
   (stringP p true)
 
 let stringP metadata (p : poly) =
-  string_of_pol 
+  string_of_pol
     (fun p -> match p with [] -> true | _ -> false)
     (fun p -> match p with (t::p) -> t |_ -> failwith "print_pol dans dansideal")
     (fun p -> match p with (t::p) -> p |_ -> failwith "print_pol dans dansideal")
@@ -309,7 +309,7 @@ let coef_of_int x = P.of_num (Num.Int x)
 
 (* variable i *)
 let gen d i =
-  let m = var_mon d i in 
+  let m = var_mon d i in
   [((coef_of_int 1),m)]
 
 let oppP p =
@@ -349,7 +349,7 @@ let puisP p n=
           let q = multP q q in
           if n mod 2 = 0 then q else multP p q
       in puisP p n
-	
+
 (***********************************************************************
    Division of polynomials
  *)
@@ -366,7 +366,7 @@ type table = {
 let pgcdpos a b  = P.pgcdP a b
 
 let polynom0 = { pol = []; num = 0 }
-   
+
 let ppol p = p.pol
 
 let lm p = snd (List.hd (ppol p))
@@ -390,7 +390,7 @@ let rec selectdiv m l =
       true -> q
     |false -> selectdiv m r
 
-let div_pol p q a b m = 
+let div_pol p q a b m =
   plusP (emultP a p) (mult_t_pol b m q)
 
 let find_hmon table m = match table.hmon with
@@ -424,15 +424,15 @@ let reduce2 table p l =
     match p with
       [] -> (coef1,[])
     |t::p' ->
-	let (a,m)=t in
+        let (a,m)=t in
       let q = selectdiv table m l in
       match q with
-	[] -> if reduire_les_queues
-	then
-	  let (c,r)=(reduce p') in
+        [] -> if reduire_les_queues
+        then
+          let (c,r)=(reduce p') in
           (c,((P.multP a c,m)::r))
-	else (coef1,p)
-      |(b,m')::q' -> 
+        else (coef1,p)
+      |(b,m')::q' ->
           let c=(pgcdpos a b) in
           let a'= (div_coef b c) in
           let b'=(P.oppP (div_coef a c)) in
@@ -450,7 +450,7 @@ let coefpoldep_find table p q =
 let coefpoldep_set table p q c =
   Hashtbl.add table.coefpoldep (p.num,q.num) c
 
-(* keeps trace in coefpoldep 
+(* keeps trace in coefpoldep
    divides without pseudodivisions *)
 
 let reduce2_trace table p l lcp =
@@ -461,16 +461,16 @@ let reduce2_trace table p l lcp =
     match p with
       [] -> ([],[])
     |t::p' ->
-	let (a,m)=t in
+        let (a,m)=t in
       let q = selectdiv table m l in
       match q with
-	[] ->
-	  if reduire_les_queues
-	  then
-	    let (lq,r)=(reduce p') in
+        [] ->
+          if reduire_les_queues
+          then
+            let (lq,r)=(reduce p') in
             (lq,((a,m)::r))
-	  else ([],p)
-      |(b,m')::q' -> 
+          else ([],p)
+      |(b,m')::q' ->
           let b'=(P.oppP (div_coef a b)) in
           let m''= div_mon m m' in
           let p1=plusP p' (mult_t_pol b' m'' q') in
@@ -480,18 +480,18 @@ let reduce2_trace table p l lcp =
   (List.map2
      (fun c0 q ->
        let c =
-	 List.fold_left
-	   (fun x (a,m,s) ->
-	     if equal s (ppol q)
-	     then
-	       plusP x (mult_t_pol a m (polconst (nvar m) (coef_of_int 1)))
-	     else x)
-	   c0
-	   lq in
+         List.fold_left
+           (fun x (a,m,s) ->
+             if equal s (ppol q)
+             then
+               plusP x (mult_t_pol a m (polconst (nvar m) (coef_of_int 1)))
+             else x)
+           c0
+           lq in
        c)
      lcp
      lp,
-   r)     
+   r)
 
 (***********************************************************************
    Completion
@@ -511,12 +511,12 @@ let spol0 ps qs=
   let m1 = div_mon m'' m in
   let m2 = div_mon m'' m' in
   let fsp p' q' =
-    plusP 
-      (mult_t_pol 
-	 (div_coef b c)
-	 m1 p')
-      (mult_t_pol 
-	 (P.oppP (div_coef a c))
+    plusP
+      (mult_t_pol
+         (div_coef b c)
+         m1 p')
+      (mult_t_pol
+         (P.oppP (div_coef a c))
          m2 q') in
   let sp = fsp p' q' in
   let p0 = fsp (polconst (nvar m) (coef_of_int 1)) [] in
@@ -564,7 +564,7 @@ end
 
 let ord i j =
   if i<j then (i,j) else (j,i)
-    
+
 let cpair p q accu =
   if etrangers (ppol p) (ppol q) then accu
   else Heap.add (ord p.num q.num, ppcm_mon (lm p) (lm q)) accu
@@ -582,14 +582,14 @@ let critere3 table ((i,j),m) lp lcp =
     (fun h ->
       h.num <> i && h.num <> j
         && (div_mon_test m (lm h))
-	&& (h.num < j
-	   || not (m = ppcm_mon 
-		   (lm (table.allpol.(i)))
-		   (lm h)))
-	&& (h.num < i
-	  || not (m = ppcm_mon 
-		   (lm (table.allpol.(j)))
-		   (lm h))))
+        && (h.num < j
+           || not (m = ppcm_mon
+                   (lm (table.allpol.(i)))
+                   (lm h)))
+        && (h.num < i
+          || not (m = ppcm_mon
+                   (lm (table.allpol.(j)))
+                   (lm h))))
     lp
 
 let infobuch p q =
@@ -668,18 +668,18 @@ let pbuchf table metadata cur_pb homogeneous (lp, lpc) p =
       infobuch lp lpc;
       match Heap.pop lpc with
       | None ->
-	  test_dans_ideal cur_pb table metadata p lp len0
+          test_dans_ideal cur_pb table metadata p lp len0
       | Some (((i, j), m), lpc2) ->
-	  if critere3 table ((i,j),m) lp lpc2
-	  then (sinfo "c"; pbuchf cur_pb (lp, lpc2))
-	  else    
-	    let (a0, p0, q0) = spol0 table.allpol.(i) table.allpol.(j) in
-	    if homogeneous && a0 <>[] && deg_hom a0 > deg_hom cur_pb.cur_poly
-	    then (sinfo "h"; pbuchf cur_pb (lp, lpc2))
-	    else
+          if critere3 table ((i,j),m) lp lpc2
+          then (sinfo "c"; pbuchf cur_pb (lp, lpc2))
+          else
+            let (a0, p0, q0) = spol0 table.allpol.(i) table.allpol.(j) in
+            if homogeneous && a0 <>[] && deg_hom a0 > deg_hom cur_pb.cur_poly
+            then (sinfo "h"; pbuchf cur_pb (lp, lpc2))
+            else
 (*	      let sa = a.sugar in*)
               match reduce2 table a0 lp with
-		_, [] -> sinfo "0";pbuchf cur_pb (lp, lpc2)
+                _, [] -> sinfo "0";pbuchf cur_pb (lp, lpc2)
               | ca, _ :: _ ->
 (*		info "pair reduced\n";*)
                   let map q =
@@ -692,22 +692,22 @@ let pbuchf table metadata cur_pb homogeneous (lp, lpc) p =
                   let (lca, a0) = reduce2_trace table (emultP ca a0) lp lcp in
 (*		info "paire re-reduced";*)
                   let a = new_allpol table a0 in
-		  List.iter2 (fun c q -> coefpoldep_set table a q c) lca lp;
-		  let a0 = a in
-		  info (fun () -> "new polynomial: "^(stringPcut metadata (ppol a0)));
+                  List.iter2 (fun c q -> coefpoldep_set table a q c) lca lp;
+                  let a0 = a in
+                  info (fun () -> "new polynomial: "^(stringPcut metadata (ppol a0)));
                   let nlp = addS a0 lp in
-		  try test_dans_ideal cur_pb table metadata p nlp len0
-		  with NotInIdealUpdate cur_pb ->
-		    let newlpc = cpairs1 a0 lp lpc2 in
-		    pbuchf cur_pb (nlp, newlpc)
+                  try test_dans_ideal cur_pb table metadata p nlp len0
+                  with NotInIdealUpdate cur_pb ->
+                    let newlpc = cpairs1 a0 lp lpc2 in
+                    pbuchf cur_pb (nlp, newlpc)
   in pbuchf cur_pb (lp, lpc)
-    
+
 let is_homogeneous p =
   match p with
   | [] -> true
   | (a,m)::p1 -> let d = deg m in
     List.for_all (fun (b,m') -> deg m' =d) p1
-    
+
 (* returns
    c
    lp = [pn;...;p1]
@@ -719,7 +719,7 @@ let is_homogeneous p =
    lc = [qn+m; ... q1]
 
    such that
-   c*p = sum qi*pi 
+   c*p = sum qi*pi
    where pn+k = a(n+k,n+k-1)*pn+k-1 + ... + a(n+k,1)* p1
  *)
 

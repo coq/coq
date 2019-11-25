@@ -232,8 +232,8 @@ val uninterp_notations : 'a glob_constr_g -> notation_rule list
 val uninterp_cases_pattern_notations : 'a cases_pattern_g -> notation_rule list
 val uninterp_ind_pattern_notations : inductive -> notation_rule list
 
-(** Test if a notation is available in the scopes 
-   context [scopes]; if available, the result is not None; the first 
+(** Test if a notation is available in the scopes
+   context [scopes]; if available, the result is not None; the first
    argument is itself not None if a delimiters is needed *)
 val availability_of_notation : scope_name option * notation -> subscopes ->
   (scope_name option * delimiters option) option

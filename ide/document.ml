@@ -64,7 +64,7 @@ let tip = function
   | { stack = [] } -> raise Empty
   | { stack = { state_id = Some id }::_ } -> id
   | { stack = { state_id = None }::_ } -> invalid_arg "tip"
-  
+
 let tip_data = function
   | { stack = [] } -> raise Empty
   | { stack = { data }::_ } -> data
@@ -89,19 +89,19 @@ let focus d ~cond_top:c_start ~cond_bot:c_stop =
         else aux (x::a,s,b) grab xs
     | { state_id = Some id; data } as x :: xs ->
         if c_stop id data then List.rev a, List.rev (x::s), xs
-        else aux (a,x::s,b) grab xs 
+        else aux (a,x::s,b) grab xs
     | _ -> assert false in
   let a, s, b = aux ([],[],[]) false d.stack in
   d.stack <- s;
   d.context <- Some (a, b)
-  
+
 let unfocus = function
   | { context = None } -> invalid_arg "unfocus"
   | { context = Some (a,b); stack } as d ->
        assert(invariant stack);
        d.context <- None;
        d.stack <- a @ stack @ b
-  
+
 let focused { context } = context <> None
 
 let to_lists = function
@@ -117,17 +117,17 @@ let find d f =
   try List.find (flat f true)  s with Not_found ->
       List.find (flat f false) b
   ).data
-  
+
 let find_map d f =
   let a, s, b = to_lists d in
-  try CList.find_map (flat f false) a with Not_found -> 
-  try CList.find_map (flat f true)  s with Not_found -> 
+  try CList.find_map (flat f false) a with Not_found ->
+  try CList.find_map (flat f true)  s with Not_found ->
       CList.find_map (flat f false) b
-  
+
 let is_empty = function
   | { stack = []; context = None } -> true
   | _ -> false
-  
+
 let context d =
   let top, _, bot = to_lists d in
   let pair _ x y = try Option.get x, y with Option.IsNone -> assert false in

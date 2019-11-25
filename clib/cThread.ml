@@ -16,7 +16,7 @@ let thread_friendly_read_fd fd s ~off ~len =
   let rec loop () =
     try Unix.read fd s off len
     with Unix.Unix_error(Unix.EINTR,_,_) -> loop ()
-  in 
+  in
     loop ()
 
 let thread_friendly_read ic s ~off ~len =

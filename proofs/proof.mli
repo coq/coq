@@ -19,7 +19,7 @@
    - Focus: a proof has a focus stack: the top of the stack contains
      the context in which to unfocus the current view to a view focused
      with the rest of the stack.
-     In addition, this contains, for each of the focus context,  a 
+     In addition, this contains, for each of the focus context,  a
      "focus kind" and a "focus condition" (in practice, and for modularity,
      the focus kind is actually stored inside the condition). To unfocus, one
      needs to know the focus kind, and the condition (for instance "no condition" or
@@ -156,7 +156,7 @@ val new_focus_kind : unit -> 'a focus_kind
     the action which focused.
     Conditions always carry a focus kind, and inherit their type parameter
     from it.*)
-type 'a focus_condition 
+type 'a focus_condition
 (* [no_cond] only checks that the unfocusing command uses the right
     [focus_kind].
    If [loose_end] (default [false]) is [true], then if the [focus_kind]
@@ -175,7 +175,7 @@ val no_cond : ?loose_end:bool -> 'a focus_kind -> 'a focus_condition
 val done_cond : ?loose_end:bool -> 'a focus_kind -> 'a focus_condition
 
 (* focus command (focuses on the [i]th subgoal) *)
-(* spiwack: there could also, easily be a focus-on-a-range tactic, is there 
+(* spiwack: there could also, easily be a focus-on-a-range tactic, is there
    a need for it? *)
 val focus : 'a focus_condition -> 'a -> int -> t -> t
 

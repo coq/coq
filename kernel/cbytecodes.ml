@@ -106,18 +106,18 @@ let rec pp_instr i =
       str "closure " ++ pp_lbl lbl ++ str ", " ++ int n
   | Kclosurerec(fv,init,lblt,lblb) ->
       h 1 (str "closurerec " ++
-	     int fv ++ str ", " ++ int init ++
-	     str " types = " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
-	     str " bodies = " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
+             int fv ++ str ", " ++ int init ++
+             str " types = " ++
+             prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
+             str " bodies = " ++
+             prlist_with_sep spc pp_lbl (Array.to_list lblb))
   | Kclosurecofix (fv,init,lblt,lblb) ->
       h 1 (str "closurecofix " ++
-	     int fv ++ str ", " ++ int init ++
-	     str " types = " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
-	     str " bodies = " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
+             int fv ++ str ", " ++ int init ++
+             str " types = " ++
+             prlist_with_sep spc pp_lbl (Array.to_list lblt) ++
+             str " bodies = " ++
+             prlist_with_sep spc pp_lbl (Array.to_list lblb))
   | Kgetglobal idu -> str "getglobal " ++ Constant.print idu
   | Kconst sc ->
       str "const " ++ pp_struct_const sc
@@ -126,12 +126,12 @@ let rec pp_instr i =
   | Kmakeprod -> str "makeprod"
   | Kmakeswitchblock(lblt,lbls,_,sz) ->
       str "makeswitchblock " ++ pp_lbl lblt ++ str ", " ++
-	pp_lbl lbls ++ str ", " ++ int sz
+        pp_lbl lbls ++ str ", " ++ int sz
   | Kswitch(lblc,lblb) ->
       h 1 (str "switch " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblc) ++
-	     str " | " ++
-	     prlist_with_sep spc pp_lbl (Array.to_list lblb))
+             prlist_with_sep spc pp_lbl (Array.to_list lblc) ++
+             str " | " ++
+             prlist_with_sep spc pp_lbl (Array.to_list lblb))
   | Kpushfields n -> str "pushfields " ++ int n
   | Kfield n -> str "field " ++ int n
   | Ksetfield n -> str "setfield " ++ int n
@@ -153,8 +153,8 @@ and pp_bytecodes c =
   match c with
   | [] -> str ""
   | Klabel lbl :: c ->
-	str "L" ++ int lbl ++ str ":" ++ fnl () ++
-	pp_bytecodes c
+        str "L" ++ int lbl ++ str ":" ++ fnl () ++
+        pp_bytecodes c
   | Ksequence (l1, l2) :: c ->
       pp_bytecodes l1 ++ pp_bytecodes l2 ++  pp_bytecodes c
   | i :: c ->

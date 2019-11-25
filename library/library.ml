@@ -564,10 +564,10 @@ let require_library_from_dirpath modrefl export =
     if Lib.is_module_or_modtype () then
       begin
         warn_require_in_module ();
-	add_anonymous_leaf (in_require (needed,modrefl,None));
-	Option.iter (fun exp ->
-	  add_anonymous_leaf (in_import_library (modrefl,exp)))
-	  export
+        add_anonymous_leaf (in_require (needed,modrefl,None));
+        Option.iter (fun exp ->
+          add_anonymous_leaf (in_import_library (modrefl,exp)))
+          export
       end
     else
       add_anonymous_leaf (in_require (needed,modrefl,export));
@@ -639,7 +639,7 @@ let current_deps () =
 let current_reexports () = !libraries_exports_list
 
 let error_recursively_dependent_library dir =
-  user_err 
+  user_err
     (strbrk "Unable to use logical name " ++ DirPath.print dir ++
      strbrk " to save current library because" ++
      strbrk " it already depends on a library of this name.")

@@ -84,11 +84,11 @@ let make_labmap mp list =
 
 
 let check_conv_error error why cst poly f env a1 a2 =
-  try 
+  try
     let cst' = f env (Environ.universes env) a1 a2 in
-      if poly then 
-	if Constraint.is_empty cst' then cst
-	else error (IncompatiblePolymorphism (env, a1, a2))
+      if poly then
+        if Constraint.is_empty cst' then cst
+        else error (IncompatiblePolymorphism (env, a1, a2))
       else Constraint.union cst cst'
   with NotConvertible -> error why
      | Univ.UniverseInconsistency e -> error (IncompatibleUniverses e)
@@ -116,7 +116,7 @@ let check_variance error v1 v2 =
 
 (* for now we do not allow reorderings *)
 
-let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2= 
+let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2=
   let kn1 = KerName.make mp1 l in
   let kn2 = KerName.make mp2 l in
   let error why = error_signature_mismatch l spec2 why in
@@ -153,7 +153,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
       let ty1 = type_of_inductive env ((mib1, p1), inst) in
       let ty2 = type_of_inductive env ((mib2, p2), inst) in
       let cst = check_inductive_type cst p2.mind_typename ty1 ty2 in
-	cst
+        cst
   in
   let mind = MutInd.make1 kn1 in
   let check_cons_types _i cst p1 p2 =
@@ -170,7 +170,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   check (fun mib -> mib.mind_ntypes) Int.equal (fun x -> InductiveNumbersFieldExpected x);
   assert (List.is_empty mib1.mind_hyps && List.is_empty mib2.mind_hyps);
   assert (Array.length mib1.mind_packets >= 1
-	    && Array.length mib2.mind_packets >= 1);
+            && Array.length mib2.mind_packets >= 1);
 
   (* Check that the expected numbers of uniform parameters are the same *)
   (* No need to check the contexts of parameters: it is checked *)
@@ -217,7 +217,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   in
     cst
 
-    
+
 let check_constant cst env l info1 cb2 spec2 subst1 subst2 =
   let error why = error_signature_mismatch l spec2 why in
   let check_conv cst poly f = check_conv_error error cst poly f in
@@ -238,21 +238,21 @@ let check_constant cst env l info1 cb2 spec2 subst1 subst2 =
       let typ2 = cb2.const_type in
       let cst = check_type poly cst env typ1 typ2 in
       (* Now we check the bodies:
-	 - A transparent constant can only be implemented by a compatible
-	   transparent constant.
+         - A transparent constant can only be implemented by a compatible
+           transparent constant.
          - In the signature, an opaque is handled just as a parameter:
            anything of the right type can implement it, even if bodies differ.
       *)
       (match cb2.const_body with
         | Primitive _ | Undef _ | OpaqueDef _ -> cst
-	| Def lc2 ->
-	  (match cb1.const_body with
+        | Def lc2 ->
+          (match cb1.const_body with
             | Primitive _ | Undef _ | OpaqueDef _ -> error NotConvertibleBodyField
-	    | Def lc1 ->
-	      (* NB: cb1 might have been strengthened and appear as transparent.
-		 Anyway [check_conv] will handle that afterwards. *)
-	      let c1 = Mod_subst.force_constr lc1 in
-	      let c2 = Mod_subst.force_constr lc2 in
+            | Def lc1 ->
+              (* NB: cb1 might have been strengthened and appear as transparent.
+                 Anyway [check_conv] will handle that afterwards. *)
+              let c1 = Mod_subst.force_constr lc1 in
+              let c2 = Mod_subst.force_constr lc2 in
               check_conv NotConvertibleBodyField cst poly (infer_conv ?l2r:None ?evars:None ?ts:None) env c1 c2))
    | IndType ((_kn,_i),_mind1) ->
        CErrors.user_err Pp.(str @@
@@ -272,31 +272,31 @@ let rec check_modules cst env msb1 msb2 subst1 subst2 =
   let mty2 =  module_type_of_module msb2 in
   check_modtypes cst env mty1 mty2 subst1 subst2 false
 
-and check_signatures cst env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2= 
+and check_signatures cst env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2=
   let map1 = make_labmap mp1 sig1 in
   let check_one_body cst (l,spec2) =
     match spec2 with
-	| SFBconst cb2 ->
+        | SFBconst cb2 ->
             check_constant cst env l (get_obj mp1 map1 l)
-	      cb2 spec2 subst1 subst2
-	| SFBmind mib2 ->
-	    check_inductive cst env mp1 l (get_obj mp1 map1 l)
-	      mp2 mib2 spec2 subst1 subst2 reso1 reso2
-	| SFBmodule msb2 ->
-	    begin match get_mod mp1 map1 l with
-	      | Module msb -> check_modules cst env msb msb2 subst1 subst2
-	      | _ -> error_signature_mismatch l spec2 ModuleFieldExpected
-	    end
-	| SFBmodtype mtb2 ->
-	    let mtb1 = match get_mod mp1 map1 l with
-	      | Modtype mtb -> mtb
-	      | _ -> error_signature_mismatch l spec2 ModuleTypeFieldExpected
-	    in
-	    let env =
-              add_module_type mtb2.mod_mp mtb2
-	        (add_module_type mtb1.mod_mp mtb1 env)
+              cb2 spec2 subst1 subst2
+        | SFBmind mib2 ->
+            check_inductive cst env mp1 l (get_obj mp1 map1 l)
+              mp2 mib2 spec2 subst1 subst2 reso1 reso2
+        | SFBmodule msb2 ->
+            begin match get_mod mp1 map1 l with
+              | Module msb -> check_modules cst env msb msb2 subst1 subst2
+              | _ -> error_signature_mismatch l spec2 ModuleFieldExpected
+            end
+        | SFBmodtype mtb2 ->
+            let mtb1 = match get_mod mp1 map1 l with
+              | Modtype mtb -> mtb
+              | _ -> error_signature_mismatch l spec2 ModuleTypeFieldExpected
             in
-	    check_modtypes cst env mtb1 mtb2 subst1 subst2 true
+            let env =
+              add_module_type mtb2.mod_mp mtb2
+                (add_module_type mtb1.mod_mp mtb1 env)
+            in
+            check_modtypes cst env mtb1 mtb2 subst1 subst2 true
   in
     List.fold_left check_one_body cst sig2
 
@@ -307,40 +307,40 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
       match str1,str2 with
       |NoFunctor list1,
        NoFunctor list2 ->
-	if equiv then
-	  let subst2 = add_mp mtb2.mod_mp mtb1.mod_mp mtb1.mod_delta subst2 in
+        if equiv then
+          let subst2 = add_mp mtb2.mod_mp mtb1.mod_mp mtb1.mod_delta subst2 in
           let cst1 = check_signatures cst env
-	    mtb1.mod_mp list1 mtb2.mod_mp list2 subst1 subst2
-	    mtb1.mod_delta mtb2.mod_delta
+            mtb1.mod_mp list1 mtb2.mod_mp list2 subst1 subst2
+            mtb1.mod_delta mtb2.mod_delta
           in
           let cst2 = check_signatures cst env
-	    mtb2.mod_mp list2 mtb1.mod_mp list1 subst2 subst1
-	    mtb2.mod_delta  mtb1.mod_delta
-	  in
-	  Univ.Constraint.union cst1 cst2
-	else
-	  check_signatures cst env
-	    mtb1.mod_mp list1 mtb2.mod_mp list2 subst1 subst2
-	    mtb1.mod_delta  mtb2.mod_delta
+            mtb2.mod_mp list2 mtb1.mod_mp list1 subst2 subst1
+            mtb2.mod_delta  mtb1.mod_delta
+          in
+          Univ.Constraint.union cst1 cst2
+        else
+          check_signatures cst env
+            mtb1.mod_mp list1 mtb2.mod_mp list2 subst1 subst2
+            mtb1.mod_delta  mtb2.mod_delta
       |MoreFunctor (arg_id1,arg_t1,body_t1),
        MoreFunctor (arg_id2,arg_t2,body_t2) ->
         let mp2 = MPbound arg_id2 in
-	let subst1 = join (map_mbid arg_id1 mp2 arg_t2.mod_delta) subst1 in
-	let cst = check_modtypes cst env arg_t2 arg_t1 subst2 subst1 equiv in
+        let subst1 = join (map_mbid arg_id1 mp2 arg_t2.mod_delta) subst1 in
+        let cst = check_modtypes cst env arg_t2 arg_t1 subst2 subst1 equiv in
         (* contravariant *)
-	let env = add_module_type mp2 arg_t2 env in
-	let env =
+        let env = add_module_type mp2 arg_t2 env in
+        let env =
           if Modops.is_functor body_t1 then env
           else add_module
             {mod_mp = mtb1.mod_mp;
-	     mod_expr = Abstract;
-	     mod_type = subst_signature subst1 body_t1;
-	     mod_type_alg = None;
-	     mod_constraints = mtb1.mod_constraints;
-	     mod_retroknowledge = ModBodyRK [];
-	     mod_delta = mtb1.mod_delta} env
-	in
-	check_structure cst env body_t1 body_t2 equiv subst1 subst2
+             mod_expr = Abstract;
+             mod_type = subst_signature subst1 body_t1;
+             mod_type_alg = None;
+             mod_constraints = mtb1.mod_constraints;
+             mod_retroknowledge = ModBodyRK [];
+             mod_delta = mtb1.mod_delta} env
+        in
+        check_structure cst env body_t1 body_t2 equiv subst1 subst2
       | _ , _ -> error_incompatible_modtypes mtb1 mtb2
     in
     check_structure cst env mtb1.mod_type mtb2.mod_type equiv subst1 subst2

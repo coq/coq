@@ -11,9 +11,9 @@
 let b2c = Ideutils.byte_offset_to_char_offset
 
 class finder name (view : GText.view) =
-  
+
   let widget = Wg_Detachable.detachable
-    ~title:(Printf.sprintf "Find & Replace (%s)" name) () in 
+    ~title:(Printf.sprintf "Find & Replace (%s)" name) () in
   let replace_box = GPack.grid (* ~columns:4 ~rows:2 *) ~col_homogeneous:false ~row_homogeneous:false
     ~packing:widget#add () in
   let hb = GPack.hbox ~packing:(replace_box#attach
@@ -75,7 +75,7 @@ class finder name (view : GText.view) =
       if use_regex#active then
         if use_nocase#active then Str.regexp_case_fold rex
         else Str.regexp rex
-      else 
+      else
         if use_nocase#active then Str.regexp_string_case_fold rex
         else Str.regexp_string rex
 
@@ -94,7 +94,7 @@ class finder name (view : GText.view) =
         Some(view#buffer#start_iter#forward_chars (b2c text i),
              view#buffer#start_iter#forward_chars (b2c text j))
       with Not_found -> None
-    
+
     method private forward_search starti =
       let text = starti#get_text ~stop:view#buffer#end_iter in
       let regexp = self#regex in

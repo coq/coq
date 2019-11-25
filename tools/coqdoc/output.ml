@@ -69,7 +69,7 @@ let is_keyword =
 let is_tactic =
   build_table
     [ "intro"; "intros"; "apply"; "rewrite"; "refine"; "case"; "clear"; "injection";
-      "elimtype"; "progress"; "setoid_rewrite"; "left"; "right"; "constructor"; 
+      "elimtype"; "progress"; "setoid_rewrite"; "left"; "right"; "constructor";
       "econstructor"; "decide equality"; "abstract"; "exists"; "cbv"; "simple destruct";
       "info"; "field"; "specialize"; "evar"; "solve"; "instantiate"; "info_auto"; "info_eauto";
       "quote"; "eexact"; "autorewrite";
@@ -137,25 +137,25 @@ let initialize_tex_html () =
       (Tokens.ttree_add tt s l,
        match l' with None -> tt' | Some l' -> Tokens.ttree_add tt' s l'))
       [ "*" ,  "\\ensuremath{\\times}", if_utf8 "×";
-	"|", "\\ensuremath{|}", None;
-	"->",  "\\ensuremath{\\rightarrow}", if_utf8 "→";
-	"->~",  "\\ensuremath{\\rightarrow\\lnot}", None;
-	"->~~",  "\\ensuremath{\\rightarrow\\lnot\\lnot}", None;
-	"<-",  "\\ensuremath{\\leftarrow}", None;
-	"<->", "\\ensuremath{\\leftrightarrow}", if_utf8 "↔";
-	"=>",  "\\ensuremath{\\Rightarrow}", if_utf8 "⇒";
-	"<=",  "\\ensuremath{\\le}", if_utf8 "≤";
-	">=",  "\\ensuremath{\\ge}", if_utf8 "≥";
-	"<>",  "\\ensuremath{\\not=}", if_utf8 "≠";
-	"~",   "\\ensuremath{\\lnot}", if_utf8 "¬";
-	"/\\", "\\ensuremath{\\land}", if_utf8 "∧";
-	"\\/", "\\ensuremath{\\lor}", if_utf8 "∨";
-	"|-",  "\\ensuremath{\\vdash}", None;
-	"forall", "\\ensuremath{\\forall}", if_utf8 "∀";
-	"exists", "\\ensuremath{\\exists}", if_utf8 "∃";
-	"Π", "\\ensuremath{\\Pi}", if_utf8 "Π";
-	"λ", "\\ensuremath{\\lambda}", if_utf8 "λ";
-	(* "fun", "\\ensuremath{\\lambda}" ? *)
+        "|", "\\ensuremath{|}", None;
+        "->",  "\\ensuremath{\\rightarrow}", if_utf8 "→";
+        "->~",  "\\ensuremath{\\rightarrow\\lnot}", None;
+        "->~~",  "\\ensuremath{\\rightarrow\\lnot\\lnot}", None;
+        "<-",  "\\ensuremath{\\leftarrow}", None;
+        "<->", "\\ensuremath{\\leftrightarrow}", if_utf8 "↔";
+        "=>",  "\\ensuremath{\\Rightarrow}", if_utf8 "⇒";
+        "<=",  "\\ensuremath{\\le}", if_utf8 "≤";
+        ">=",  "\\ensuremath{\\ge}", if_utf8 "≥";
+        "<>",  "\\ensuremath{\\not=}", if_utf8 "≠";
+        "~",   "\\ensuremath{\\lnot}", if_utf8 "¬";
+        "/\\", "\\ensuremath{\\land}", if_utf8 "∧";
+        "\\/", "\\ensuremath{\\lor}", if_utf8 "∨";
+        "|-",  "\\ensuremath{\\vdash}", None;
+        "forall", "\\ensuremath{\\forall}", if_utf8 "∀";
+        "exists", "\\ensuremath{\\exists}", if_utf8 "∃";
+        "Π", "\\ensuremath{\\Pi}", if_utf8 "Π";
+        "λ", "\\ensuremath{\\lambda}", if_utf8 "λ";
+        (* "fun", "\\ensuremath{\\lambda}" ? *)
       ] (Tokens.empty_ttree,Tokens.empty_ttree) in
   token_tree_latex := tree_latex;
   token_tree_html  := tree_html
@@ -243,13 +243,13 @@ module Latex = struct
 
   let char c = match c with
     | '\\' ->
-	printf "\\symbol{92}"
+        printf "\\symbol{92}"
     | '$' | '#' | '%' | '&' | '{' | '}' | '_' ->
-	output_char '\\'; output_char c
+        output_char '\\'; output_char c
     | '^' | '~' ->
-	output_char '\\'; output_char c; printf "{}"
+        output_char '\\'; output_char c; printf "{}"
     | _ ->
-	output_char c
+        output_char c
 
   let label_char c = match c with
     | '_' -> output_char ' '
@@ -273,22 +273,22 @@ module Latex = struct
     fun s ->
       Buffer.clear buff;
       for i = 0 to String.length s - 1 do
-	match s.[i] with
-	| '\\' ->
-	    Buffer.add_string buff "\\symbol{92}"
-	| '$' | '#' | '%' | '&' | '{' | '}' | '_' as c ->
-	    Buffer.add_char buff '\\'; Buffer.add_char buff c
-	| '^' | '~' as c ->
-	    Buffer.add_char buff '\\'; Buffer.add_char buff c;
-	    Buffer.add_string buff "{}"
+        match s.[i] with
+        | '\\' ->
+            Buffer.add_string buff "\\symbol{92}"
+        | '$' | '#' | '%' | '&' | '{' | '}' | '_' as c ->
+            Buffer.add_char buff '\\'; Buffer.add_char buff c
+        | '^' | '~' as c ->
+            Buffer.add_char buff '\\'; Buffer.add_char buff c;
+            Buffer.add_string buff "{}"
         | '\'' ->
             if i < String.length s - 1 && s.[i+1] = '\'' then begin
               Buffer.add_char buff '\''; Buffer.add_char buff '{';
               Buffer.add_char buff '}'
             end else
               Buffer.add_char buff '\''
-	| c ->
-	    Buffer.add_char buff c
+        | c ->
+            Buffer.add_char buff c
       done;
       Buffer.contents buff
 
@@ -310,8 +310,8 @@ module Latex = struct
 
   let start_quote () = output_char '`'; output_char '`'
   let stop_quote () = output_char '\''; output_char '\''
-    
-  let start_verbatim inline = 
+
+  let start_verbatim inline =
     if inline then printf "\\texttt{"
     else printf "\\begin{verbatim}"
 
@@ -319,7 +319,7 @@ module Latex = struct
     if inline then printf "}"
     else printf "\\end{verbatim}\n"
 
-  let url addr name = 
+  let url addr name =
     printf "%s\\footnote{\\url{%s}}"
       (match name with
        | None -> ""
@@ -337,16 +337,16 @@ module Latex = struct
     let id = if fid <> "" then (m ^ "." ^ fid) else m in
     match find_module m with
       | Local ->
-	  if typ = Variable then
-	    printf "\\coqdoc%s{%s}" (type_name typ) s
-	  else
-	    (printf "\\coqref{"; label_ident id;
-	     printf "}{\\coqdoc%s{%s}}" (type_name typ) s)
+          if typ = Variable then
+            printf "\\coqdoc%s{%s}" (type_name typ) s
+          else
+            (printf "\\coqref{"; label_ident id;
+             printf "}{\\coqdoc%s{%s}}" (type_name typ) s)
       | External m when !externals ->
-	  printf "\\coqexternalref{"; label_ident fid;
-	  printf "}{%s}{\\coqdoc%s{%s}}" (escaped m) (type_name typ) s
+          printf "\\coqexternalref{"; label_ident fid;
+          printf "}{%s}{\\coqdoc%s{%s}}" (escaped m) (type_name typ) s
       | External _ | Unknown ->
-	  printf "\\coqdoc%s{%s}" (type_name typ) s
+          printf "\\coqdoc%s{%s}" (type_name typ) s
 
   let defref m id ty s =
     if ty <> Notation then
@@ -360,9 +360,9 @@ module Latex = struct
 
   let reference s = function
     | Def (fullid,typ) ->
-	defref (get_module false) fullid typ s
+        defref (get_module false) fullid typ s
     | Ref (m,fullid,typ) ->
-	ident_ref m fullid typ s
+        ident_ref m fullid typ s
 
   (*s The sublexer buffers symbol characters and attached
        uninterpreted ident and try to apply special translation such as,
@@ -407,7 +407,7 @@ module Latex = struct
   let translate s =
     match Tokens.translate s with Some s -> s | None -> escaped s
 
-  let keyword s loc = 
+  let keyword s loc =
     printf "\\coqdockw{%s}" (translate s)
 
   let ident s loc =
@@ -420,15 +420,15 @@ module Latex = struct
           reference (translate s) tag
     with Not_found ->
       if is_tactic s then
-	printf "\\coqdoctac{%s}" (translate s)
+        printf "\\coqdoctac{%s}" (translate s)
       else if is_keyword s then
-	printf "\\coqdockw{%s}" (translate s)
+        printf "\\coqdockw{%s}" (translate s)
       else if !Cdglobals.interpolate && !in_doc (* always a var otherwise *)
       then
-	try
+        try
           let tag = Index.find_string s in
-	  reference (translate s) tag
-	with _ -> Tokens.output_tagged_ident_string s
+          reference (translate s) tag
+        with _ -> Tokens.output_tagged_ident_string s
       else Tokens.output_tagged_ident_string s
 
   let ident s l =
@@ -527,41 +527,41 @@ module Html = struct
   let header () =
     if !header_trailer then
       if !header_file_spec then
-	let cin = Pervasives.open_in !header_file in
-	  try
-	    while true do
-	      let s = Pervasives.input_line cin in
-		printf "%s\n" s
-	    done
-	  with End_of_file -> Pervasives.close_in cin
+        let cin = Pervasives.open_in !header_file in
+          try
+            while true do
+              let s = Pervasives.input_line cin in
+                printf "%s\n" s
+            done
+          with End_of_file -> Pervasives.close_in cin
       else
-	begin
-	  printf "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\n";
-	  printf "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
-	  printf "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n<head>\n";
-	  printf "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=%s\" />\n" !charset;
-	  printf "<link href=\"coqdoc.css\" rel=\"stylesheet\" type=\"text/css\" />\n";
-	  printf "<title>%s</title>\n</head>\n\n" !page_title;
-	  printf "<body>\n\n<div id=\"page\">\n\n<div id=\"header\">\n</div>\n\n";
-	  printf "<div id=\"main\">\n\n"
-	end
+        begin
+          printf "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\n";
+          printf "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n";
+          printf "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n<head>\n";
+          printf "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=%s\" />\n" !charset;
+          printf "<link href=\"coqdoc.css\" rel=\"stylesheet\" type=\"text/css\" />\n";
+          printf "<title>%s</title>\n</head>\n\n" !page_title;
+          printf "<body>\n\n<div id=\"page\">\n\n<div id=\"header\">\n</div>\n\n";
+          printf "<div id=\"main\">\n\n"
+        end
 
   let trailer () =
     if !header_trailer && !footer_file_spec then
-	let cin = Pervasives.open_in !footer_file in
-	  try
-	    while true do
-	      let s = Pervasives.input_line cin in
-		printf "%s\n" s
-	    done
-	  with End_of_file -> Pervasives.close_in cin
+        let cin = Pervasives.open_in !footer_file in
+          try
+            while true do
+              let s = Pervasives.input_line cin in
+                printf "%s\n" s
+            done
+          with End_of_file -> Pervasives.close_in cin
     else
       begin
         if !index && (get_module false) <> "Index" then
           printf "</div>\n\n<div id=\"footer\">\n<hr/><a href=\"%s.html\">Index</a>" !index_name;
-	printf "<hr/>This page has been generated by ";
-	printf "<a href=\"%s\">coqdoc</a>\n" Coq_config.wwwcoq;
-	printf "</div>\n\n</div>\n\n</body>\n</html>"
+        printf "<hr/>This page has been generated by ";
+        printf "<a href=\"%s\">coqdoc</a>\n" Coq_config.wwwcoq;
+        printf "</div>\n\n</div>\n\n</body>\n</html>"
       end
 
   let start_module () =
@@ -595,12 +595,12 @@ module Html = struct
     fun s ->
       Buffer.clear buff;
       for i = 0 to String.length s - 1 do
-	match s.[i] with
-	| '<' -> Buffer.add_string buff "&lt;"
-	| '>' -> Buffer.add_string buff "&gt;"
-	| '&' -> Buffer.add_string buff "&amp;"
+        match s.[i] with
+        | '<' -> Buffer.add_string buff "&lt;"
+        | '>' -> Buffer.add_string buff "&gt;"
+        | '&' -> Buffer.add_string buff "&amp;"
         | '\"' -> Buffer.add_string buff "&quot;"
-	| c -> Buffer.add_char buff c
+        | c -> Buffer.add_char buff c
       done;
       Buffer.contents buff
 
@@ -628,16 +628,16 @@ module Html = struct
   let start_quote () = char '"'
   let stop_quote () = start_quote ()
 
-  let start_verbatim inline = 
+  let start_verbatim inline =
     if inline then printf "<tt>"
     else printf "<pre>"
 
-  let stop_verbatim inline = 
-    if inline then printf "</tt>" 
+  let stop_verbatim inline =
+    if inline then printf "</tt>"
     else printf "</pre>\n"
 
-  let url addr name = 
-    printf "<a href=\"%s\">%s</a>" addr 
+  let url addr name =
+    printf "<a href=\"%s\">%s</a>" addr
       (match name with
        | Some n -> n
        | None -> addr)
@@ -645,29 +645,29 @@ module Html = struct
   let ident_ref m fid typ s =
     match find_module m with
     | Local ->
-	printf "<a class=\"idref\" href=\"%s.html#%s\">" m (sanitize_name fid);
-	printf "<span class=\"id\" title=\"%s\">%s</span></a>" typ s
+        printf "<a class=\"idref\" href=\"%s.html#%s\">" m (sanitize_name fid);
+        printf "<span class=\"id\" title=\"%s\">%s</span></a>" typ s
     | External m when !externals ->
-	printf "<a class=\"idref\" href=\"%s.html#%s\">" m (sanitize_name fid);
-	printf "<span class=\"id\" title=\"%s\">%s</span></a>" typ s
+        printf "<a class=\"idref\" href=\"%s.html#%s\">" m (sanitize_name fid);
+        printf "<span class=\"id\" title=\"%s\">%s</span></a>" typ s
     | External _ | Unknown ->
-	printf "<span class=\"id\" title=\"%s\">%s</span>" typ s
+        printf "<span class=\"id\" title=\"%s\">%s</span>" typ s
 
   let reference s r =
     match r with
     | Def (fullid,ty) ->
-	printf "<a name=\"%s\">" (sanitize_name fullid);
-	printf "<span class=\"id\" title=\"%s\">%s</span></a>" (type_name ty) s
+        printf "<a name=\"%s\">" (sanitize_name fullid);
+        printf "<span class=\"id\" title=\"%s\">%s</span></a>" (type_name ty) s
     | Ref (m,fullid,ty) ->
-	ident_ref m fullid (type_name ty) s
+        ident_ref m fullid (type_name ty) s
 
   let output_sublexer_string doescape issymbchar tag s =
     let s = if doescape then escaped s else s in
     match tag with
     | Some ref -> reference s ref
     | None ->
-	if issymbchar then output_string s
-	else printf "<span class=\"id\" title=\"var\">%s</span>" s
+        if issymbchar then output_string s
+        else printf "<span class=\"id\" title=\"var\">%s</span>" s
 
   let sublexer c loc =
     let tag =
@@ -686,7 +686,7 @@ module Html = struct
   let translate s =
     match Tokens.translate s with Some s -> s | None -> escaped s
 
-  let keyword s loc = 
+  let keyword s loc =
     printf "<span class=\"id\" title=\"keyword\">%s</span>" (translate s)
 
   let ident s loc =
@@ -697,14 +697,14 @@ module Html = struct
          reference (translate s) (Index.find (get_module false) loc)
     with Not_found ->
       if is_tactic s then
-	printf "<span class=\"id\" title=\"tactic\">%s</span>" (translate s)
+        printf "<span class=\"id\" title=\"tactic\">%s</span>" (translate s)
       else if is_keyword s then
         printf "<span class=\"id\" title=\"keyword\">%s</span>" (translate s)
       else if !Cdglobals.interpolate && !in_doc (* always a var otherwise *) then
         try reference (translate s) (Index.find_string s)
-	with Not_found -> Tokens.output_tagged_ident_string s
+        with Not_found -> Tokens.output_tagged_ident_string s
       else
-	Tokens.output_tagged_ident_string s
+        Tokens.output_tagged_ident_string s
 
   let proofbox () = printf "<font size=-2>&#9744;</font>"
 
@@ -748,7 +748,7 @@ module Html = struct
 
   let end_code () = end_coq (); start_doc ()
 
-  let start_inline_coq () = 
+  let start_inline_coq () =
     if !inline_notmono then printf "<span class=\"inlinecodenm\">"
                        else printf "<span class=\"inlinecode\">"
 
@@ -758,7 +758,7 @@ module Html = struct
 
   let end_inline_coq_block () = end_inline_coq ()
 
-  let paragraph () = printf "\n<div class=\"paragraph\"> </div>\n\n" 
+  let paragraph () = printf "\n<div class=\"paragraph\"> </div>\n\n"
 
   (* inference rules *)
   let inf_rule assumptions (_,_,midnm) conclusions =
@@ -766,12 +766,12 @@ module Html = struct
        in a row with "&nbsp;"s.  We do this to the assumptions so that
        people can put multiple rules on a line with nice formatting *)
     let replace_spaces str =
-      let rec copy a n = match n with 0 -> [] | n -> (a :: copy a (n - 1)) in 
+      let rec copy a n = match n with 0 -> [] | n -> (a :: copy a (n - 1)) in
       let results = Str.full_split (Str.regexp "[' '][' '][' ']+") str in
       let strs = List.map (fun r -> match r with
                                     | Str.Text s  -> [s]
-                                    | Str.Delim s -> 
-                                        copy "&nbsp;" (String.length s))  
+                                    | Str.Delim s ->
+                                        copy "&nbsp;" (String.length s))
                           results
       in
         String.concat "" (List.concat strs)
@@ -782,7 +782,7 @@ module Html = struct
     let end_assumption () =
           (printf "  <td></td>\n";
            printf "</td>\n") in
-    let rec print_assumptions hyps = 
+    let rec print_assumptions hyps =
           match hyps with
           | []                 -> start_assumption "&nbsp;&nbsp;"
           | [(_,hyp)]          -> start_assumption hyp
@@ -793,7 +793,7 @@ module Html = struct
     print_assumptions assumptions;
     printf "  <td class=\"infrulenamecol\" rowspan=\"3\">\n";
     (match midnm with
-     | None   -> printf "    &nbsp;\n  </td>" 
+     | None   -> printf "    &nbsp;\n  </td>"
      | Some s -> printf "    %s &nbsp;\n  </td>" s);
     printf "</tr>\n";
     printf "<tr class=\"infrulemiddle\">\n";
@@ -827,9 +827,9 @@ module Html = struct
       let cat = if category && idx <> "global" then "(" ^ idx ^ ")" else "" in
       printf "<a name=\"%s_%c\"></a><h2>%s %s</h2>\n" idx c (display_letter c) cat;
       List.iter
-	(fun (id,(text,link,t)) ->
-	   let id' = prepare_entry id t in
-	   printf "<a href=\"%s\">%s</a> %s<br/>\n" link id' text) l;
+        (fun (id,(text,link,t)) ->
+           let id' = prepare_entry id t in
+           printf "<a href=\"%s\">%s</a> %s<br/>\n" link id' text) l;
       printf "<br/><br/>"
     end
 
@@ -840,35 +840,35 @@ module Html = struct
   let format_global_index =
     Index.map
       (fun s (m,t) ->
-	if t = Library then
+        if t = Library then
          let ln = !lib_name in
            if ln <> "" then
                "[" ^ String.lowercase_ascii ln ^ "]", m ^ ".html", t
            else
-	       "[library]", m ^ ".html", t
-	else
-	 sprintf "[%s, in <a href=\"%s.html\">%s</a>]" (type_name t) m m ,
-	sprintf "%s.html#%s" m (sanitize_name s), t)
+               "[library]", m ^ ".html", t
+        else
+         sprintf "[%s, in <a href=\"%s.html\">%s</a>]" (type_name t) m m ,
+        sprintf "%s.html#%s" m (sanitize_name s), t)
 
   let format_bytype_index = function
     | Library, idx ->
-	Index.map (fun id m -> "", m ^ ".html", Library) idx
+        Index.map (fun id m -> "", m ^ ".html", Library) idx
     | (t,idx) ->
-	Index.map
-	  (fun s m ->
-	     let text = sprintf "[in <a href=\"%s.html\">%s</a>]" m m in
-	       (text, sprintf "%s.html#%s" m (sanitize_name s), t)) idx
+        Index.map
+          (fun s m ->
+             let text = sprintf "[in <a href=\"%s.html\">%s</a>]" m m in
+               (text, sprintf "%s.html#%s" m (sanitize_name s), t)) idx
 
   (* Impression de la table d'index *)
   let print_index_table_item i =
     printf "<tr>\n<td>%s Index</td>\n" (String.capitalize_ascii i.idx_name);
     List.iter
       (fun (c,l) ->
-	 if l <> [] then
-	   printf "<td><a href=\"%s\">%s</a></td>\n" (index_ref i c)
-	     (display_letter c)
-	 else
-	   printf "<td>%s</td>\n" (display_letter c))
+         if l <> [] then
+           printf "<td><a href=\"%s\">%s</a></td>\n" (index_ref i c)
+             (display_letter c)
+         else
+           printf "<td>%s</td>\n" (display_letter c))
       i.idx_entries;
     let n = i.idx_size in
       printf "<td>(%d %s)</td>\n" n (if n > 1 then "entries" else "entry");
@@ -896,45 +896,45 @@ module Html = struct
   let make_multi_index () =
     let all_index =
       let glob,bt = Index.all_entries () in
-	(format_global_index glob) ::
-	  (List.map format_bytype_index bt) in
+        (format_global_index glob) ::
+          (List.map format_bytype_index bt) in
     let print_table () = print_index_table all_index in
       List.iter (make_one_multi_index print_table) all_index
 
   let make_index () =
     let all_index =
       let glob,bt = Index.all_entries () in
-	(format_global_index glob) ::
-	  (List.map format_bytype_index bt) in
+        (format_global_index glob) ::
+          (List.map format_bytype_index bt) in
     let print_table () = print_index_table all_index in
     let print_one_index i =
       if i.idx_size > 0 then begin
         printf "<hr/>\n<h1>%s Index</h1>\n" (String.capitalize_ascii i.idx_name);
-	all_letters i
+        all_letters i
       end
     in
       set_module "Index" None;
       if !title <> "" then printf "<h1>%s</h1>\n" !title;
       print_table ();
       if not (!multi_index) then
-	begin
-	  List.iter print_one_index all_index;
-	  printf "<hr/>"; print_table ()
-	end
+        begin
+          List.iter print_one_index all_index;
+          printf "<hr/>"; print_table ()
+        end
 
     let make_toc () =
-	let ln = !lib_name in
+        let ln = !lib_name in
       let make_toc_entry = function
         | Toc_library (m,sub) ->
- 		stop_item ();
-		let ms = match sub with | None -> m | Some s -> m ^ ": " ^ s in
+                stop_item ();
+                let ms = match sub with | None -> m | Some s -> m ^ ": " ^ s in
               if ln = "" then
- 	          printf "<a href=\"%s.html\"><h2>%s</h2></a>\n" m ms
+                  printf "<a href=\"%s.html\"><h2>%s</h2></a>\n" m ms
               else
- 	          printf "<a href=\"%s.html\"><h2>%s %s</h2></a>\n" m ln ms
+                  printf "<a href=\"%s.html\"><h2>%s %s</h2></a>\n" m ln ms
         | Toc_section (n, f, r) ->
-  		item n;
-  		printf "<a href=\"%s\">" r; f (); printf "</a>\n"
+                item n;
+                printf "<a href=\"%s\">" r; f (); printf "</a>\n"
       in
         printf "<div id=\"toc\">\n";
         Queue.iter make_toc_entry toc_q;
@@ -990,7 +990,7 @@ module TeXmacs = struct
   let start_verbatim inline = in_doc := true; printf "<\\verbatim>"
   let stop_verbatim inline = in_doc := false; printf "</verbatim>"
 
-  let url addr name = 
+  let url addr name =
     printf "%s<\\footnote><\\url>%s</url></footnote>" addr
       (match name with
        | None -> ""
@@ -1126,7 +1126,7 @@ module Raw = struct
   let start_verbatim inline = ()
   let stop_verbatim inline = ()
 
-  let url addr name = 
+  let url addr name =
     match name with
     | Some n -> printf "%s (%s)" n addr
     | None -> printf "%s" addr
@@ -1285,7 +1285,7 @@ let verbatim_char inline =
   select (if inline then Latex.char else output_char) Html.char TeXmacs.char Raw.char
 let hard_verbatim_char = output_char
 
-let url = 
+let url =
   select Latex.url Html.url TeXmacs.url Raw.url
 
 let start_quote =
@@ -1293,15 +1293,15 @@ let start_quote =
 let stop_quote =
   select Latex.stop_quote Html.stop_quote TeXmacs.stop_quote Raw.stop_quote
 
-let inf_rule_dumb assumptions (midsp,midln,midnm) conclusions = 
+let inf_rule_dumb assumptions (midsp,midln,midnm) conclusions =
   start_verbatim false;
-  let dumb_line = 
+  let dumb_line =
        function (sp,ln) -> (String.iter char ((String.make sp ' ') ^ ln);
                             char '\n')
-  in 
+  in
     (List.iter dumb_line assumptions;
-     dumb_line (midsp, midln ^ (match midnm with 
-                                | Some s -> " " ^ s 
+     dumb_line (midsp, midln ^ (match midnm with
+                                | Some s -> " " ^ s
                                 | None -> ""));
      List.iter dumb_line conclusions);
   stop_verbatim false

@@ -46,11 +46,11 @@ val get_constraints :
 val subst_opaque : substitution -> opaque -> opaque
 val iter_direct_opaque : (constr -> unit) -> opaque -> opaque
 
-type work_list = (Univ.Instance.t * Id.t array) Cmap.t * 
+type work_list = (Univ.Instance.t * Id.t array) Cmap.t *
   (Univ.Instance.t * Id.t array) Mindmap.t
 
-type cooking_info = { 
-  modlist : work_list; 
+type cooking_info = {
+  modlist : work_list;
   abstract : Constr.named_context * Univ.Instance.t * Univ.AUContext.t }
 
 (* The type has two caveats:

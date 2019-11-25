@@ -137,13 +137,13 @@ val mkConstructUi : pinductive * int -> constr
 val mkRef : GlobRef.t Univ.puniverses -> constr
 
 (** Constructs a destructor of inductive type.
-    
-    [mkCase ci p c ac] stand for match [c] as [x] in [I args] return [p] with [ac] 
+
+    [mkCase ci p c ac] stand for match [c] as [x] in [I args] return [p] with [ac]
     presented as describe in [ci].
 
     [p] structure is [fun args x -> "return clause"]
 
-    [ac]{^ ith} element is ith constructor case presented as 
+    [ac]{^ ith} element is ith constructor case presented as
     {e lambda construct_args (without params). case_term } *)
 val mkCase : case_info * constr * constr * constr array -> constr
 
@@ -185,10 +185,10 @@ val mkFix : fixpoint -> constr
 
 (** If [funnames = [|f1,.....fn|]]
       [typarray = [|t1,...tn|]]
-      [bodies   = [b1,.....bn]] 
+      [bodies   = [b1,.....bn]]
    then [mkCoFix (i, (funnames, typarray, bodies))]
    constructs the ith function of the block
-   
+
     [CoFixpoint f1 = b1
      with       f2 = b2
      ...
@@ -361,7 +361,7 @@ val equal : constr -> constr -> bool
    application grouping and the universe equalities in [u]. *)
 val eq_constr_univs : constr UGraph.check_function
 
-(** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo 
+(** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo
     alpha, casts, application grouping and the universe inequalities in [u]. *)
 val leq_constr_univs : constr UGraph.check_function
 
@@ -369,7 +369,7 @@ val leq_constr_univs : constr UGraph.check_function
    application grouping and the universe equalities in [u]. *)
 val eq_constr_univs_infer : UGraph.t -> constr -> constr -> bool Univ.constrained
 
-(** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo 
+(** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo
     alpha, casts, application grouping and the universe inequalities in [u]. *)
 val leq_constr_univs_infer : UGraph.t -> constr -> constr -> bool Univ.constrained
 
