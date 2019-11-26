@@ -2857,6 +2857,45 @@ Section ForallPairs.
   Qed.
 End ForallPairs.
 
+Section Repeat.
+
+  Variable A : Type.
+  Fixpoint repeat (x : A) (n: nat ) :=
+    match n with
+      | O => []
+      | S k => x::(repeat x k)
+    end.
+
+  Theorem repeat_length x n:
+    length (repeat x n) = n.
+  Proof.
+    induction n as [| k Hrec]; simpl; rewrite ?Hrec; reflexivity.
+  Qed.
+
+  Theorem repeat_spec n x y:
+    In y (repeat x n) -> y=x.
+  Proof.
+    induction n as [|k Hrec]; simpl; destruct 1; auto.
+  Qed.
+
+  Lemma repeat_cons n a :
+    a :: repeat a n = repeat a n ++ (a :: nil).
+  Proof.
+    induction n; simpl.
+    - reflexivity.
+    - f_equal; apply IHn.
+  Qed.
+
+End Repeat.
+
+Lemma repeat_to_concat A n (a:A) :
+  repeat a n = concat (repeat [a] n).
+Proof.
+  induction n; simpl.
+  - reflexivity.
+  - f_equal; apply IHn.
+Qed.
+
 (** * Inversion of predicates over lists based on head symbol *)
 
 Ltac is_list_constr c :=
@@ -2923,27 +2962,5 @@ Notation AllS := Forall (only parsing). (* was formerly in TheoryList *)
 Hint Resolve app_nil_end : datatypes.
 (* end hide *)
 
-Section Repeat.
-
-  Variable A : Type.
-  Fixpoint repeat (x : A) (n: nat ) :=
-    match n with
-      | O => []
-      | S k => x::(repeat x k)
-    end.
-
-  Theorem repeat_length x n:
-    length (repeat x n) = n.
-  Proof.
-    induction n as [| k Hrec]; simpl; rewrite ?Hrec; reflexivity.
-  Qed.
-
-  Theorem repeat_spec n x y:
-    In y (repeat x n) -> y=x.
-  Proof.
-    induction n as [|k Hrec]; simpl; destruct 1; auto.
-  Qed.
-
-End Repeat.
 
 (* Unset Universe Polymorphism. *)
