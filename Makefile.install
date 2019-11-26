@@ -115,9 +115,18 @@ endif
 install-merlin:
 	$(INSTALLSH) $(FULLCOQLIB) $(wildcard $(INSTALLCMX:.cmx=.cmt) $(INSTALLCMI:.cmi=.cmti) $(MLIFILES) $(MLFILES) $(MERLINFILES))
 
+#NB: some files don't produce native files (eg Ltac2 files) as they
+#don't have any Coq definitions. Makefile can't predict that so we use || true
+#vos build is bugged in -quick mode, see #11195
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
-	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILES)
+	$(INSTALLSH) $(FULLCOQLIB) $(ALLVO:.$(VO)=.vo)
+	$(INSTALLSH) $(FULLCOQLIB) $(ALLVO:.$(VO)=.vos) || true
+ifneq ($(NATIVECOMPUTE),)
+	$(INSTALLSH) $(FULLCOQLIB) $(NATIVEFILES) || true
+endif
+	$(INSTALLSH) $(FULLCOQLIB) $(VFILES)
+	$(INSTALLSH) $(FULLCOQLIB) $(GLOBFILES)
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
 	$(MKDIR) $(FULLCOQLIB)/kernel/byterun
 ifndef CUSTOM
