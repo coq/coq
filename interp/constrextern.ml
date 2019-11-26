@@ -721,15 +721,27 @@ let extern_possible_prim_token (custom,scopes) r =
    | None -> raise No_match
    | Some key -> insert_coercion coercion (insert_delimiters (CAst.make ?loc:(loc_of_glob_constr r) @@ CPrim n) key)
 
-let extern_possible extern r =
-  try Some (extern r) with No_match -> None
+let filter_fully_applied r l =
+  let nargs = match DAst.get r with
+  | GApp (f,args) -> List.length args
+  | _ -> assert false in
+  List.filter (fun (keyrule,pat,n as _rule) -> n = Some nargs) l
 
-let extern_optimal extern r r' =
-  let c = extern_possible extern r in
-  let c' = if r==r' then None else extern_possible extern r' in
-  match c,c' with
-  | Some n, (Some ({ CAst.v = CDelimiters _}) | None) | _, Some n -> n
-  | _ -> raise No_match
+let extern_optimal extern extern_fully_applied r r' =
+  if r==r' then
+    (* No coercion: we look for a notation for r or a partial application of it *)
+    extern r
+  else
+    (* A coercion is removed: we prefer in order:
+       - a notation w/o a delimiter for the expression w/o coercions (or a partial application of it), if any
+       - a notation for the fully-applied expression with coercions, if any
+       - a notation with a delimiter for the expression w/o coercions (or a partial applied of it), if any *)
+  try
+    let c' = extern r' in
+    match c' with
+    | { CAst.v = CDelimiters _} -> (try extern_fully_applied r with No_match -> c')
+    | _ -> c'
+  with No_match -> extern_fully_applied r
 
 (* Helper function for safe and optimal printing of primitive tokens  *)
 (* such as those for Int63                                            *)
@@ -798,13 +810,15 @@ let rec extern inctx scopes vars r =
   let r' = remove_coercions inctx r in
   try
     if !Flags.raw_print || !print_no_symbol then raise No_match;
-    extern_optimal (extern_possible_prim_token scopes) r r'
+    let extern_fun = extern_possible_prim_token scopes in
+    extern_optimal extern_fun extern_fun r r'
   with No_match ->
   try
     let r'' = flatten_application r' in
     if !Flags.raw_print || !print_no_symbol then raise No_match;
     extern_optimal
       (fun r -> extern_notation scopes vars r (uninterp_notations r))
+      (fun r -> extern_notation scopes vars r (filter_fully_applied r (uninterp_notations r)))
       r r''
   with No_match ->
   let loc = r'.CAst.loc in

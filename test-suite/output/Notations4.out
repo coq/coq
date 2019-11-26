@@ -59,3 +59,5 @@ where
       |- Type] (pat, p0, p cannot be used)
 fun '{| |} => true
      : R -> bool
+b = a
+     : Prop
