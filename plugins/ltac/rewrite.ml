@@ -1944,12 +1944,7 @@ let default_morphism sign m =
   let evars, mor = resolve_one_typeclass env (goalevars evars) morph in
     mor, proper_projection env sigma mor morph
 
-let warn_add_setoid_deprecated =
-  CWarnings.create ~name:"add-setoid" ~category:"deprecated" (fun () ->
-      Pp.(str "Add Setoid is deprecated, please use Add Parametric Relation."))
-
 let add_setoid atts binders a aeq t n =
-  warn_add_setoid_deprecated ?loc:a.CAst.loc ();
   init_setoid ();
   let () = declare_instance_refl atts binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in
   let () = declare_instance_sym atts binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
@@ -1965,10 +1960,6 @@ let make_tactic name =
   let open Tacexpr in
   let tacqid = Libnames.qualid_of_string name in
   TacArg (CAst.make @@ (TacCall (CAst.make (tacqid, []))))
-
-let warn_add_morphism_deprecated =
-  CWarnings.create ~name:"add-morphism" ~category:"deprecated" (fun () ->
-      Pp.(str "Add Morphism f : id is deprecated, please use Add Morphism f with signature (...) as id"))
 
 let add_morphism_as_parameter atts m n : unit =
   init_setoid ();
@@ -1986,7 +1977,6 @@ let add_morphism_as_parameter atts m n : unit =
   declare_projection n instance_id (GlobRef.ConstRef cst)
 
 let add_morphism_interactive atts m n : Lemmas.t =
-  warn_add_morphism_deprecated ?loc:m.CAst.loc ();
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
   let env = Global.env () in
