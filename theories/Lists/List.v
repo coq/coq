@@ -2580,12 +2580,42 @@ Section Exists_Forall.
       - induction l; firstorder; subst; auto.
     Qed.
 
+    Lemma Exists_nth l :
+      Exists l <-> exists i d, i < length l /\ P (nth i l d).
+    Proof.
+      split.
+      - intros HE; apply Exists_exists in HE.
+        destruct HE as [a [Hin HP]].
+        apply In_nth with (d := a) in Hin; destruct Hin as [i [Hl Heq]].
+        rewrite <- Heq in HP.
+        now exists i; exists a.
+      - intros [i [d [Hl HP]]].
+        apply Exists_exists; exists (nth i l d); split.
+        apply nth_In; assumption.
+        assumption.
+    Qed.
+
     Lemma Exists_nil : Exists nil <-> False.
     Proof. split; inversion 1. Qed.
 
     Lemma Exists_cons x l:
       Exists (x::l) <-> P x \/ Exists l.
     Proof. split; inversion 1; auto. Qed.
+
+    Lemma Exists_app l1 l2 :
+      Exists (l1 ++ l2) <-> Exists l1 \/ Exists l2.
+    Proof.
+      induction l1; simpl; split; intros HE; try now intuition.
+      - inversion_clear HE; intuition.
+      - destruct HE as [HE|HE]; intuition.
+        inversion_clear HE; intuition.
+    Qed.
+
+    Lemma Exists_rev l : Exists l -> Exists (rev l).
+    Proof.
+      induction l; intros HE; intuition.
+      inversion_clear HE; simpl; apply Exists_app; intuition.
+    Qed.
 
     Lemma Exists_dec l:
       (forall x:A, {P x} + { ~ P x }) ->
@@ -2599,6 +2629,19 @@ Section Exists_Forall.
           + left. now apply Exists_cons_hd.
           + right. abstract now inversion 1.
     Defined.
+
+    Lemma Exists_fold_right l :
+      Exists l <-> fold_right (fun x => or (P x)) False l.
+    Proof.
+      induction l; simpl; split; intros HE; try now inversion HE; intuition.
+    Qed.
+
+    Lemma incl_Exists l1 l2 : incl l1 l2 -> Exists l1 -> Exists l2.
+    Proof.
+      intros Hincl HE.
+      apply Exists_exists in HE; destruct HE as [a [Hin HP]].
+      apply Exists_exists; exists a; intuition.
+    Qed.
 
     Inductive Forall : list A -> Prop :=
       | Forall_nil : Forall nil
@@ -2614,9 +2657,47 @@ Section Exists_Forall.
       - induction l; firstorder.
     Qed.
 
+    Lemma Forall_nth l :
+      Forall l <-> forall i d, i < length l -> P (nth i l d).
+    Proof.
+      split.
+      - intros HF i d Hl.
+        apply Forall_forall with (x := nth i l d) in HF.
+        assumption.
+        apply nth_In; assumption.
+      - intros HF.
+        apply Forall_forall; intros a Hin.
+        apply In_nth with (d := a) in Hin; destruct Hin as [i [Hl Heq]].
+        rewrite <- Heq; intuition.
+    Qed.
+
     Lemma Forall_inv : forall (a:A) l, Forall (a :: l) -> P a.
     Proof.
       intros; inversion H; trivial.
+    Qed.
+
+    Theorem Forall_inv_tail : forall (a:A) l, Forall (a :: l) -> Forall l.
+    Proof.
+      intros; inversion H; trivial.
+    Qed.
+
+    Lemma Forall_app l1 l2 :
+      Forall (l1 ++ l2) <-> Forall l1 /\ Forall l2.
+    Proof.
+      induction l1; simpl; split; intros HF; try now intuition.
+      - inversion_clear HF; intuition.
+      - destruct HF as [HF1 HF2]; inversion HF1; intuition.
+    Qed.
+
+    Lemma Forall_elt a l1 l2 : Forall (l1 ++ a :: l2) -> P a.
+    Proof.
+      intros HF; apply Forall_app in HF; destruct HF as [HF1 HF2]; now inversion HF2.
+    Qed.
+
+    Lemma Forall_rev l : Forall l -> Forall (rev l).
+    Proof.
+      induction l; intros HF; intuition.
+      inversion_clear HF; simpl; apply Forall_app; intuition.
     Qed.
 
     Lemma Forall_rect : forall (Q : list A -> Type),
@@ -2638,23 +2719,25 @@ Section Exists_Forall.
         + right. abstract now inversion 1.
     Defined.
 
+    Lemma Forall_fold_right l :
+      Forall l <-> fold_right (fun x => and (P x)) True l.
+    Proof.
+      induction l; simpl; split; intros HF; try now inversion HF; intuition.
+    Qed.
+
+    Lemma incl_Forall l1 l2 : incl l2 l1 -> Forall l1 -> Forall l2.
+    Proof.
+      intros Hincl HF.
+      apply Forall_forall; intros a Ha.
+      apply Forall_forall with (x:=a) in HF; intuition.
+    Qed.
+
   End One_predicate.
 
-  Theorem Forall_inv_tail : forall (P : A -> Prop) (x0 : A) (xs : list A),
-    Forall P (x0 :: xs) -> Forall P xs.
+  Lemma map_ext_Forall B : forall (f g : A -> B) l,
+    Forall (fun x => f x = g x) l -> map f l = map g l.
   Proof.
-    intros P x0 xs H.
-    apply Forall_forall with (l := xs).
-    assert (H0 : forall x : A, In x (x0 :: xs) -> P x).
-    apply Forall_forall with (P := P) (l := x0 :: xs).
-    exact H.
-    assert (H1 : forall (x : A) (H2 : In x xs), P x).
-    intros x H2.
-    apply (H0 x).
-    right.
-    exact H2.
-    intros x H2.
-    apply (H1 x H2).
+    intros; apply map_ext_in, Forall_forall; assumption.
   Qed.
 
   Theorem Exists_impl : forall (P Q : A -> Prop), (forall a : A, P a -> Q a) ->
@@ -2746,7 +2829,7 @@ End Exists_Forall.
 Hint Constructors Exists : core.
 Hint Constructors Forall : core.
 
-Lemma concat_nil_Forall {A:Type} : forall (l : list (list A)),
+Lemma concat_nil_Forall A : forall (l : list (list A)),
   concat l = nil <-> Forall (fun x => x = nil) l.
 Proof.
   induction l; simpl; split; intros Hc; auto.
