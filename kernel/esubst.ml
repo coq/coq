@@ -62,41 +62,50 @@ let rec is_lift_id = function
 
 (* (bounded) explicit substitutions of type 'a *)
 type 'a subs =
-  | ESID of int            (* ESID(n)    = %n END   bounded identity *)
+  | ENIL            (* empty substitution *)
   | CONS of 'a array * 'a subs
                            (* CONS([|t1..tn|],S)  =
                               (S.t1...tn)    parallel substitution
                               beware of the order *)
+  | RELS of int * int * 'a subs (* RELS(n, k, S) = S.Rel(n+1) ... Rel(n+k+1) *)
   | SHIFT of int * 'a subs (* SHIFT(n,S) = (^n o S) terms in S are relocated *)
                            (*                        with n vars *)
-  | LIFT of int * 'a subs  (* LIFT(n,S) = (%n S) stands for ((^n o S).n...1) *)
+(* In term of typing rules:
+
+- · ⊢ ENIL : ·
+- If Γ, Ξ, Σ ⊢ σ : Δ then Γ, Ξ, Σ ⊢ RELS (n, k, σ) : Δ, Ξ provided |Σ|=n and |Ξ|=k
+- If Γ ⊢ σ : Δ and Γ ⊢ u : A then Γ ⊢ CONS (u, σ) : Δ, A
+- If Γ ⊢ σ : Δ then Γ, Ξ ⊢ SHIFT (n, σ) : Δ provided |Ξ|=n.
+*)
 
 (* operations of subs: collapses constructors when possible.
  * Needn't be recursive if we always use these functions
  *)
 
-let subs_id i = ESID i
+let subs_id i = if Int.equal i 0 then ENIL else RELS(0, i, ENIL)
 
 let subs_cons(x,s) = if Int.equal (Array.length x) 0 then s else CONS(x,s)
 
-let subs_liftn n = function
-  | ESID p        -> ESID (p+n) (* bounded identity lifted extends by p *)
-  | LIFT (p,lenv) -> LIFT (p+n, lenv)
-  | lenv          -> LIFT (n,lenv)
+let rec subs_shft n s = match s with
+  | SHIFT (k, s) -> SHIFT (k + n, s)
+  | RELS (m, k, s) -> RELS (m + n, k, subs_shft n s)
+  | ENIL | CONS _ -> SHIFT (n, s)
+
+let subs_rels n k s = match s with
+| RELS (m, p, s') ->
+  if Int.equal m (n + k) then RELS (n, p + k, s') else RELS (n, k, s)
+| s -> RELS (n, k, s)
+
+let subs_liftn n s =
+  if Int.equal n 0 then s else subs_rels 0 n (subs_shft n s)
 
 let subs_lift a = subs_liftn 1 a
-let subs_liftn n a = if Int.equal n 0 then a else subs_liftn n a
-
-let subs_shft = function
-  | (0, s)            -> s
-  | (n, SHIFT (k,s1)) -> SHIFT (k+n, s1)
-  | (n, s)            -> SHIFT (n,s)
-let subs_shft s = if Int.equal (fst s) 0 then snd s else subs_shft s
+let subs_shft (n, s) = subs_shft n s
 
 (* Tests whether a substitution is equal to the identity *)
 let rec is_subs_id = function
-    ESID _     -> true
-  | LIFT(_,s)  -> is_subs_id s
+    ENIL     -> true
+  | RELS(0,k,SHIFT(n, s))  -> Int.equal k n && is_subs_id s
   | SHIFT(0,s) -> is_subs_id s
   | CONS(x,s)  -> Int.equal (Array.length x) 0 && is_subs_id s
   | _          -> false
@@ -118,36 +127,43 @@ let rec is_subs_id = function
  *)
 let rec exp_rel lams k subs =
   match subs with
-    | CONS (def,_) when k <= Array.length def
-                           -> Inl(lams,def.(Array.length def - k))
-    | CONS (v,l)           -> exp_rel lams (k - Array.length v) l
-    | LIFT (n,_) when k<=n -> Inr(lams+k,None)
-    | LIFT (n,l)           -> exp_rel (n+lams) (k-n) l
+    | CONS (def, s) ->
+      let len = Array.length def in
+      if k <= len then Inl (lams, def.(len - k))
+      else exp_rel lams (k - len) s
+    | RELS (n, len, s) ->
+      if k <= len then Inr (lams+n+k, None)
+      else exp_rel lams (k - len) s
     | SHIFT (n,s)          -> exp_rel (n+lams) k s
-    | ESID n when k<=n     -> Inr(lams+k,None)
-    | ESID n               -> Inr(lams+k,Some (k-n))
+    | ENIL                 -> Inr (lams+k, Some k)
 
 let expand_rel k subs = exp_rel 0 k subs
 
 let rec subs_map f = function
-| ESID _ as s -> s
+| ENIL -> ENIL
 | CONS (x, s) -> CONS (Array.map f x, subs_map f s)
+| RELS (n, k, s) -> RELS (n, k, subs_map f s)
 | SHIFT (n, s) -> SHIFT (n, subs_map f s)
-| LIFT (n, s) -> LIFT (n, subs_map f s)
+
+let rec reloc_range n k accu e = match e with
+| ELID -> subs_rels n k accu
+| ELSHFT (e, p) -> reloc_range (n + p) k accu e
+| ELLFT (p, e') ->
+  if n < p then subs_rels n (p - n) (reloc_range p (n + k - p) accu e)
+  else reloc_range (n + p) k accu e'
 
 let rec lift_subst mk_cl s1 s2 = match s1 with
 | ELID -> subs_map (fun c -> mk_cl ELID c) s2
 | ELSHFT(s, k) -> subs_shft(k, lift_subst mk_cl s s2)
 | ELLFT (k, s) ->
   match s2 with
+  | ENIL -> ENIL
   | CONS(x,s') ->
       CONS(CArray.Fun1.map mk_cl s1 x, lift_subst mk_cl s1 s')
-  | ESID n -> lift_subst mk_cl s (ESID (n + k))
   | SHIFT(k',s') ->
       if k<k'
       then subs_shft(k, lift_subst mk_cl s (subs_shft(k'-k, s')))
       else subs_shft(k', lift_subst mk_cl (el_liftn (k-k') s) s')
-  | LIFT(k',s') ->
-      if k<k'
-      then subs_liftn k (lift_subst mk_cl s (subs_liftn (k'-k) s'))
-      else subs_liftn k' (lift_subst mk_cl (el_liftn (k-k') s) s')
+  | RELS (m, p, s') ->
+    let s' = lift_subst mk_cl s1 s' in
+    reloc_range m p s' s1
