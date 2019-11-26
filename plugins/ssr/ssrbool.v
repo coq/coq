@@ -290,7 +290,7 @@ Require Import ssreflect ssrfun.
    r -- a right-hand operation, as orb_andr : rightt_distributive orb andb.
    T or t -- boolean truth, as in andbT: right_id true andb.
    U -- predicate union, as in predU.
-   W -- weakening, as in in1W : {in D, forall x, P} -> forall x, P.          **)
+   W -- weakening, as in in1W : (forall x, P) -> {in D, forall x, P}.        **)
 
 
 Set Implicit Arguments.
