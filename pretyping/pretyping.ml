@@ -642,14 +642,6 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
     let sigma, fj = pretype empty_tycon env sigma f in
     let floc = loc_of_glob_constr f in
     let length = List.length args in
-    let nargs_before_bidi =
-      (* if `f` is a global, we retrieve bidirectionality hints *)
-      try
-        let (gr,_) = destRef sigma fj.uj_val in
-        Option.default length @@ GlobRef.Map.find_opt gr !bidi_hints
-      with DestKO ->
-        length
-    in
     let candargs =
       (* Bidirectional typechecking hint:
          parameters of a constructor are completely determined
@@ -685,32 +677,43 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
           else fun f v -> applist (f, [v])
       | _ -> fun _ f v -> applist (f, [v])
     in
-    let rec apply_rec env sigma n resj candargs bidiargs = function
-      | [] -> sigma, resj, List.rev bidiargs
+    let nargs_before_bidi =
+      (* if `f` is a global, we retrieve bidirectionality hints *)
+      try
+        let (gr,_) = destRef sigma fj.uj_val in
+        Option.default length @@ GlobRef.Map.find_opt gr !bidi_hints
+      with DestKO ->
+        length
+    in
+    (* first_run: if true then candargs are allowed to fail unification and we do bidi *)
+    let rec apply_rec ~first_run env sigma n resj candargs restart = function
+      | [] -> sigma, resj, restart
       | c::rest ->
-        let bidi = n >= nargs_before_bidi in
+        let bidi = first_run && n >= nargs_before_bidi in
         let argloc = loc_of_glob_constr c in
         let sigma, resj = Coercion.inh_app_fun ~program_mode resolve_tc !!env sigma resj in
         let resty = whd_all !!env sigma resj.uj_type in
         match EConstr.kind sigma resty with
         | Prod (na,c1,c2) ->
           let tycon = Some c1 in
-          let (sigma, hj), bidiargs =
+          let (sigma, hj), restart =
             if bidi && Option.has_some tycon then
               (* We want to get some typing information from the context before
               typing the argument, so we replace it by an existential
               variable *)
               let sigma, c_hole = new_evar env sigma ~src:(loc,Evar_kinds.InternalHole) c1 in
-              (sigma, make_judge c_hole c1), (c_hole, c) :: bidiargs
-            else pretype tycon env sigma c, bidiargs
+              let rj, rn, rargs, rholes = Option.default (resj,n,[],[]) restart in
+              (sigma, make_judge c_hole c1), Some (rj,rn,c::rargs,c_hole::rholes)
+            else (assert (Option.is_empty restart); pretype tycon env sigma c, None)
           in
           let sigma, candargs, ujval =
             match candargs with
             | [] -> sigma, [], j_val hj
             | arg :: args ->
               begin match Evarconv.unify_delay !!env sigma (j_val hj) arg with
-                | exception Evarconv.UnableToUnify _ ->
-                  sigma, [], j_val hj
+                | exception Evarconv.UnableToUnify (sigma',err) ->
+                  if first_run then sigma, [], j_val hj
+                  else error_cannot_unify ?loc:c.CAst.loc !!env sigma' ~reason:err (j_val hj, arg)
                 | sigma ->
                   sigma, args, nf_evar sigma (j_val hj)
               end
@@ -718,42 +721,40 @@ let rec pretype ~program_mode ~poly resolve_tc (tycon : type_constraint) (env : 
           let sigma, ujval = adjust_evar_source sigma na.binder_name ujval in
           let value, typ = app_f n (j_val resj) ujval, subst1 ujval c2 in
           let j = { uj_val = value; uj_type = typ } in
-          apply_rec env sigma (n+1) j candargs bidiargs rest
+          apply_rec ~first_run env sigma (n+1) j candargs restart rest
         | _ ->
           let sigma, hj = pretype empty_tycon env sigma c in
           error_cant_apply_not_functional
             ?loc:(Loc.merge_opt floc argloc) !!env sigma resj [|hj|]
     in
-    let sigma, resj, bidiargs = apply_rec env sigma 0 fj candargs [] args in
-    let sigma, resj =
-      match EConstr.kind sigma resj.uj_val with
-      | App (f,args) ->
-        if Termops.is_template_polymorphic_ind !!env sigma f then
-          (* Special case for inductive type applications that must be
-             refreshed right away. *)
-          let c = mkApp (f, args) in
-          let sigma, c = Evarsolve.refresh_universes (Some true) !!env sigma c in
-          let t = Retyping.get_type_of !!env sigma c in
-          sigma, make_judge c (* use this for keeping evars: resj.uj_val *) t
-        else sigma, resj
-      | _ -> sigma, resj
+    let sigma, resj, restart = apply_rec ~first_run:true env sigma 0 fj candargs None args in
+    let finish sigma resj =
+      let sigma, resj =
+        match EConstr.kind sigma resj.uj_val with
+        | App (f,args) ->
+          if Termops.is_template_polymorphic_ind !!env sigma f then
+            (* Special case for inductive type applications that must be
+               refreshed right away. *)
+            let c = mkApp (f, args) in
+            let sigma, c = Evarsolve.refresh_universes (Some true) !!env sigma c in
+            let t = Retyping.get_type_of !!env sigma c in
+            sigma, make_judge c (* use this for keeping evars: resj.uj_val *) t
+          else sigma, resj
+        | _ -> sigma, resj
+      in
+      inh_conv_coerce_to_tycon ?loc env sigma resj tycon
     in
-    let sigma, t = inh_conv_coerce_to_tycon ?loc env sigma resj tycon in
-    let refine_arg sigma (newarg,origarg) =
-      (* Refine an argument (originally `origarg`) represented by an evar
-         (`newarg`) to use typing information from the context *)
-      (* Recover the expected type of the argument *)
-      let ty = Retyping.get_type_of !!env sigma newarg in
-      (* Type the argument using this expected type *)
-      let sigma, j = pretype (Some ty) env sigma origarg in
-      (* Unify the (possibly refined) existential variable with the
-      (typechecked) original value *)
-      Evarconv.unify_delay !!env sigma newarg (j_val j)
-    in
-    (* We now refine any arguments whose typing was delayed for
-       bidirectionality *)
-    let sigma = List.fold_left refine_arg sigma bidiargs in
-    (sigma, t)
+    (match restart with
+     | None -> finish sigma resj
+     | Some (oresj,n,args,holes) ->
+       let sigma, _t = finish sigma resj in
+       (* The above [finish] updates the evars present in resj, which
+          is why provides bidirectionality *)
+       let sigma, resj, restart =
+         apply_rec ~first_run:false env sigma n oresj (List.rev holes) None (List.rev args)
+       in
+       assert (Option.is_empty restart);
+       finish sigma resj)
 
   | GLambda(name,bk,c1,c2) ->
     let sigma, tycon' =
