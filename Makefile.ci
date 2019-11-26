@@ -19,6 +19,7 @@ CI_TARGETS= \
     ci-coquelicot \
     ci-corn \
     ci-cross-crypto \
+    ci-coqprime \
     ci-elpi \
     ci-ext-lib \
     ci-equations \
@@ -38,6 +39,7 @@ CI_TARGETS= \
     ci-perennial \
     ci-quickchick \
     ci-relation_algebra \
+    ci-rewriter \
     ci-sf \
     ci-simple-io \
     ci-stdlib2 \
@@ -56,9 +58,13 @@ ci-all: $(CI_TARGETS)
 
 ci-color: ci-bignums
 
+ci-coqprime: ci-bignums
+
 ci-math-classes: ci-bignums
 
 ci-corn: ci-math-classes
+
+ci-fiat-crypto: ci-bedrock2 ci-coqprime ci-rewriter
 
 ci-simple-io: ci-ext-lib
 ci-quickchick: ci-ext-lib ci-simple-io
