@@ -199,6 +199,14 @@ Section Facts.
     apply app_cons_not_nil in H1 as [].
   Qed.
 
+  Lemma elt_eq_unit : forall l1 l2 (a b : A),
+    l1 ++ a :: l2 = [b] -> a = b /\ l1 = [] /\ l2 = [].
+  Proof.
+    intros l1 l2 a b Heq.
+    apply app_eq_unit in Heq.
+    now destruct Heq as [[Heq1 Heq2]|[Heq1 Heq2]]; inversion_clear Heq2.
+  Qed.
+
   Lemma app_inj_tail :
     forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
   Proof.
