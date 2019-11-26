@@ -26,28 +26,12 @@ Module TestAdmittedVisibility.
   Fail Check d2.
 End TestAdmittedVisibility.
 
-(* Test consistent behavior of Local Definition wrt automatic declaration of instances *)
-
 Module TestVariableAsInstances.
-  Module Test1.
-    Set Typeclasses Axioms Are Instances.
-    Class U.
-    Local Parameter b : U.
-    Definition testU := _ : U. (* _ resolved *)
+  Class U.
+  Local Parameter b : U.
+  Fail Definition testU := _ : U. (* _ unresolved *)
 
-    Class T.
-    Variable a : T.  (* warned to be the same as "Local Parameter" *)
-    Definition testT := _ : T. (* _ resolved *)
-  End Test1.
-
-  Module Test2.
-    Unset Typeclasses Axioms Are Instances.
-    Class U.
-    Local Parameter b : U.
-    Fail Definition testU := _ : U. (* _ unresolved *)
-
-    Class T.
-    Variable a : T.  (* warned to be the same as "Local Parameter" thus should not be an instance *)
-    Fail Definition testT := _ : T. (* used to succeed *)
-  End Test2.
+  Class T.
+  Variable a : T.  (* warned to be the same as "Local Parameter" thus should not be an instance *)
+  Fail Definition testT := _ : T. (* used to succeed *)
 End TestVariableAsInstances.

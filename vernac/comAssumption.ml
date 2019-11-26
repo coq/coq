@@ -22,24 +22,6 @@ open Entries
 module RelDecl = Context.Rel.Declaration
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
-let axiom_into_instance = ref false
-
-let () =
-  let open Goptions in
-  declare_bool_option
-    { optdepr = true;
-      optname = "automatically declare axioms whose type is a typeclass as instances";
-      optkey = ["Typeclasses";"Axioms";"Are";"Instances"];
-      optread = (fun _ -> !axiom_into_instance);
-      optwrite = (:=) axiom_into_instance; }
-
-let should_axiom_into_instance = let open Decls in function
-  | Context ->
-    (* The typeclass behaviour of Variable and Context doesn't depend
-       on section status *)
-    true
-  | Definitional | Logical | Conjectural -> !axiom_into_instance
-
 let declare_variable is_coe ~kind typ imps impl {CAst.v=name} =
   let kind = Decls.IsAssumption kind in
   let decl = Declare.SectionLocalAssum {typ; impl} in
@@ -58,7 +40,12 @@ let instance_of_univ_entry = function
   | Monomorphic_entry _ -> Univ.Instance.empty
 
 let declare_axiom is_coe ~poly ~local ~kind typ (univs, pl) imps nl {CAst.v=name} =
-  let do_instance = should_axiom_into_instance kind in
+  let do_instance = let open Decls in match kind with
+  | Context -> true
+    (* The typeclass behaviour of Variable and Context doesn't depend
+       on section status *)
+  | Definitional | Logical | Conjectural -> false
+  in
   let inl = let open Declaremods in match nl with
     | NoInline -> None
     | DefaultInline -> Some (Flags.get_inline_level())
