@@ -592,6 +592,7 @@ library:ci-coqprime:
   - build:edge+flambda
   - plugin:ci-bignums
   dependencies:
+  - build:edge+flambda
   - plugin:ci-bignums
 
 library:ci-coquelicot:
@@ -613,6 +614,7 @@ library:ci-fiat-crypto:
   - plugin:ci-bignums
   - plugin:ci-rewriter
   dependencies:
+  - build:edge+flambda
   - library:ci-bedrock2
   - library:ci-coqprime
   - plugin:ci-rewriter
