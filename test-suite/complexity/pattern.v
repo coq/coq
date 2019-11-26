@@ -24,7 +24,7 @@ Ltac do_time_to n :=
   | ?n' => do_time_to (Nat.div2 n'); idtac n'; do_time n'
   end.
 
-Local Set Warnings Append "-abstract-large-number".
+Local Set Warnings "-abstract-large-number".
 
 (* Don't spend lots of time printing *)
 Notation hide := (_ = _).
