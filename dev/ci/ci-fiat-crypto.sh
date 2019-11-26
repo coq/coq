@@ -10,8 +10,8 @@ git_download fiat_crypto
 # building the executables.
 # c.f. https://github.com/coq/coq/pull/8313#issuecomment-416650241
 
-fiat_crypto_CI_TARGETS1="c-files printlite lite"
-fiat_crypto_CI_TARGETS2="coq"
+fiat_crypto_CI_TARGETS1="standalone-ocaml c-files rust-files printlite lite"
+fiat_crypto_CI_TARGETS2="all"
 
 ( cd "${CI_BUILD_DIR}/fiat_crypto" && git submodule update --init --recursive && \
         ulimit -s 32768 && \
