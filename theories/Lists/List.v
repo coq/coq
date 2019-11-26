@@ -2896,6 +2896,57 @@ Proof.
   - f_equal; apply IHn.
 Qed.
 
+
+(** Sum of elements of a list of [nat]: [list_sum] *)
+
+Definition list_sum l := fold_right plus 0 l.
+
+Lemma list_sum_app : forall l1 l2,
+   list_sum (l1 ++ l2) = list_sum l1 + list_sum l2.
+Proof.
+induction l1; intros l2; [ reflexivity | ].
+simpl; rewrite IHl1.
+apply Nat.add_assoc.
+Qed.
+
+(** Max of elements of a list of [nat]: [list_max] *)
+
+Definition list_max l := fold_right max 0 l.
+
+Lemma list_max_app : forall l1 l2,
+   list_max (l1 ++ l2) = max (list_max l1) (list_max l2).
+Proof.
+induction l1; intros l2; [ reflexivity | ].
+now simpl; rewrite IHl1, Nat.max_assoc.
+Qed.
+
+Lemma list_max_le : forall l n,
+  list_max l <= n <-> Forall (fun k => k <= n) l.
+Proof.
+induction l; simpl; intros n; split; intros H; intuition.
+- apply Nat.max_lub_iff in H.
+  now constructor; [ | apply IHl ].
+- inversion_clear H as [ | ? ? Hle HF ].
+  apply IHl in HF; apply Nat.max_lub; assumption.
+Qed.
+
+Lemma list_max_lt : forall l n, l <> nil ->
+  list_max l < n <-> Forall (fun k => k < n) l.
+Proof.
+induction l; simpl; intros n Hnil; split; intros H; intuition.
+- destruct l.
+  + repeat constructor.
+    now simpl in H; rewrite Nat.max_0_r in H.
+  + apply Nat.max_lub_lt_iff in H.
+    now constructor; [ | apply IHl ].
+- destruct l; inversion_clear H as [ | ? ? Hlt HF ].
+  + now simpl; rewrite Nat.max_0_r.
+  + apply IHl in HF.
+    * now apply Nat.max_lub_lt_iff.
+    * intros Heq; inversion Heq.
+Qed.
+
+
 (** * Inversion of predicates over lists based on head symbol *)
 
 Ltac is_list_constr c :=
