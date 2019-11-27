@@ -340,16 +340,34 @@ let intro_lock ipats =
   let hnf' = Proofview.numgoals >>= fun ng ->
              Proofview.tclDISPATCH
                (ncons (ng - 1) ssrsmovetac @ [Proofview.tclUNIT ()]) in
+  let nomatch_vars env sigma eredex =
+    let sigma, nomatch =
+      Ssrcommon.mkSsrmatchingConst "nomatch" env sigma in
+    match EConstr.kind_of_type sigma eredex with
+        | Term.AtomicType(e, args) when
+               is_app_evar sigma e && Array.length args >= 1 ->
+           let protect sigma t =
+             let sigma, ty = Typing.type_of env sigma t in
+             sigma, EConstr.mkApp(nomatch, [|ty; t|]) in
+           let sigma, largs = Array.fold_left
+                                (fun (sigma, list) arg ->
+                                  let (sigma2, arg') = protect sigma arg in
+                                  sigma2, arg' :: list)
+                                (sigma, []) args in
+           let args = Array.of_list @@ List.rev @@ largs in
+           sigma, EConstr.mkApp(e, args)
+        | _ -> let () =
+                 ppdebug(lazy Pp.(str"under: warning (not an evar-redex):" ++
+                                    pr_econstr_env env sigma eredex)) in
+               sigma, eredex in
   let protect_subgoal env sigma hd args =
     Tactics.New.refine ~typecheck:true (fun sigma ->
         let lm2 = Array.length args - 2 in
         let sigma, carrier =
           Typing.type_of env sigma args.(lm2) in
         let rel = EConstr.mkApp (hd, Array.sub args 0 lm2) in
-        let sigma, nomatch =
-          Ssrcommon.mkSsrmatchingConst "nomatch" env sigma in
-        let rel_args = [|args.(lm2);
-                         EConstr.mkApp(nomatch, [|carrier; args.(lm2 + 1)|])|] in
+        let sigma, arg = nomatch_vars env sigma args.(lm2 + 1) in
+        let rel_args = [|args.(lm2); arg|] in
         let sigma, under_rel =
           Ssrcommon.mkSsrConst "Under_rel" env sigma in
         let sigma, under_from_rel =
