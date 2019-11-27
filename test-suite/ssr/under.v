@@ -108,6 +108,8 @@ Lemma test_big_2cond_0intro (F : nat -> nat) (m : nat) :
   \sum_(0 <= i < m | odd (i + 1)) (i + 2) >= 0.
 Proof.
 (* in interactive mode *)
+Set Debug Ssreflect.
+(* FIXME: "protect_subgoal" fails to protect the goal when there is no =>ipat *)
 under eq_big.
 { move=> n; rewrite (addnC n 1); over. }
 { move=> i Hi; rewrite (addnC i 2); over. }

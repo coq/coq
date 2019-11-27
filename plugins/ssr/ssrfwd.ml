@@ -348,6 +348,8 @@ let intro_lock ipats =
     let sigma, nomatch =
       Ssrcommon.mkSsrmatchingConst "nomatch" env sigma in
     if EConstr.isApp sigma eredex then
+      let () = ppdebug(lazy Pp.(str"under: an evar-redex: " ++
+                         pr_econstr_env env sigma eredex)) in
       let (e, args) = EConstr.destApp sigma eredex in
       if is_app_evar sigma e && Array.length args >= 1 then
         let protect sigma t =
