@@ -556,7 +556,10 @@ let match_upats_FO upats env sigma0 ise orig_c =
     let f, a = splay_app ise c in let i0 = ref (-1) in
     let nomatch =
       is_const_ref sigma0 (EConstr.of_constr f) (mkSsrmatchingRef "nomatch") in
-    let maybe2 = if nomatch then min 2 (Array.length a) else 0 in
+    let maybe2 = if nomatch then
+                   let () = pp(lazy Pp.(str"ssrmatch-1: nomatch")) in
+                   min 2 (Array.length a)
+                 else 0 in
     let a' =
       if nomatch then Array.sub a maybe2 (Array.length a - maybe2) else a in
     let fpats =
@@ -605,7 +608,10 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
   let f, a = splay_app ise c in let i0 = ref (-1) in
   let nomatch =
     is_const_ref sigma0 (EConstr.of_constr f) (mkSsrmatchingRef "nomatch") in
-  let maybe2 = if nomatch then min 2 (Array.length a) else 0 in
+  let maybe2 = if nomatch then
+                 let () = pp(lazy Pp.(str"ssrmatch-2: nomatch")) in
+                 min 2 (Array.length a)
+               else 0 in
   let a' =
     if nomatch then Array.sub a maybe2 (Array.length a - maybe2) else a in
   let fpats = List.fold_right (filter_upat i0 f (Array.length a')) upats [] in
@@ -775,7 +781,10 @@ let rec uniquize = function
     let f, a = splay_app sigma c' in
     let nomatch =
       is_const_ref sigma (EConstr.of_constr f) (mkSsrmatchingRef "nomatch") in
-    let maybe2 = if nomatch then min 2 (Array.length a) else 0 in
+    let maybe2 = if nomatch then
+                   let () = pp(lazy Pp.(str"ssrmatch-3: nomatch")) in
+                   min 2 (Array.length a)
+                 else 0 in
     let a' =
       if nomatch then Array.sub a maybe2 (Array.length a - maybe2) else a in
     if Array.length a' >= pn && match_EQ f && unif_EQ_args env sigma pa a' then
