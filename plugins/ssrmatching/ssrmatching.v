@@ -12,6 +12,20 @@
 
 Declare ML Module "ssrmatching_plugin".
 
+(**
+ This file is the Gallina part of the ssreflect matching implementation.
+
+ In particular, it defines:
+
+        nomatch T t == t, but the first two arguments T and t
+                       of this transparent identity function are ignored
+                       by the ssreflect matching algorithm.                  **)
+
+(* Definition used in the implementatin of the under tactic,
+   see also coq/coq#11118 *)
+Definition nomatch T (t : T) := t.
+Register nomatch as plugins.ssrmatching.nomatch.
+
 Module SsrMatchingSyntax.
 
 (* Reserve the notation for rewrite patterns so that the user is not allowed  *)

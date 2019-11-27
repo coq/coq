@@ -534,6 +534,14 @@ let dont_impact_evars_in sigma0 cl =
     try let _ = Evd.find_undefined sigma k in true
     with Not_found -> false) evs_in_cl
 
+(* Adapted from plugins/ssr/ssrcommon.ml *)
+let mkSsrmatchingRef name =
+  let qn = Format.sprintf "plugins.ssrmatching.%s" name in
+  if Coqlib.has_ref qn then Coqlib.lib_ref qn else
+  CErrors.user_err Pp.(str "ssrmatching library not loaded (" ++ str name ++ str ")")
+let is_const_ref sigma c r =
+  EConstr.isConst sigma c && GlobRef.equal (GlobRef.ConstRef (fst(EConstr.destConst sigma c))) r
+
 (* We are forced to duplicate code between the FO/HO matching because we    *)
 (* have to work around several kludges in unify.ml:                         *)
 (*  - w_unify drops into second-order unification when the pattern is an    *)
@@ -546,11 +554,16 @@ let match_upats_FO upats env sigma0 ise orig_c =
   let dont_impact_evars = dont_impact_evars_in sigma0 (EConstr.of_constr orig_c) in
   let rec loop c =
     let f, a = splay_app ise c in let i0 = ref (-1) in
+    let nomatch =
+      is_const_ref sigma0 (EConstr.of_constr f) (mkSsrmatchingRef "nomatch") in
+    let maybe2 = if nomatch then min 2 (Array.length a) else 0 in
+    let a' =
+      if nomatch then Array.sub a maybe2 (Array.length a - maybe2) else a in
     let fpats =
-      List.fold_right (filter_upat_FO i0 f (Array.length a)) upats [] in
+      List.fold_right (filter_upat_FO i0 f (Array.length a')) upats [] in
     while !i0 >= 0 do
       let i = !i0 in i0 := -1;
-      let c' = mkSubApp f i a in
+      let c' = mkSubApp f (maybe2 + i) a in
       let one_match (u, np) =
          let skip =
            if i <= np then i < np else
@@ -571,7 +584,7 @@ let match_upats_FO upats env sigma0 ise orig_c =
            let ise' = (* Unify again using HO to assign evars *)
              let p = mkApp (u.up_f, u.up_a) in
              try unif_HO env ise (EConstr.of_constr p) (EConstr.of_constr c') with e when CErrors.noncritical e -> raise NoMatch in
-           let lhs = mkSubApp f i a in
+           let lhs = mkSubApp f (maybe2 + i) a in
            let pt' = unif_end env sigma0 ise' (EConstr.of_constr u.up_t) (u.up_ok lhs) in
            let pt' = pi1 pt', pi2 pt', EConstr.Unsafe.to_constr (pi3 pt') in
            raise (FoundUnif (ungen_upat lhs pt' u))
@@ -580,7 +593,7 @@ let match_upats_FO upats env sigma0 ise orig_c =
        | e when CErrors.noncritical e -> () in
     List.iter one_match fpats
   done;
-  iter_constr_LR loop f; Array.iter loop a in
+  iter_constr_LR loop f; Array.iter loop a' in
   try loop orig_c with Invalid_argument _ -> CErrors.anomaly (str"IN FO.")
 
 
@@ -590,7 +603,12 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
  let failed_because_of_TC = ref false in
  let rec aux upats env sigma0 ise c =
   let f, a = splay_app ise c in let i0 = ref (-1) in
-  let fpats = List.fold_right (filter_upat i0 f (Array.length a)) upats [] in
+  let nomatch =
+    is_const_ref sigma0 (EConstr.of_constr f) (mkSsrmatchingRef "nomatch") in
+  let maybe2 = if nomatch then min 2 (Array.length a) else 0 in
+  let a' =
+    if nomatch then Array.sub a maybe2 (Array.length a - maybe2) else a in
+  let fpats = List.fold_right (filter_upat i0 f (Array.length a')) upats [] in
   while !i0 >= 0 do
     let i = !i0 in i0 := -1;
     let one_match (u, np) =
@@ -612,10 +630,10 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
             (Environ.push_rel (Context.Rel.Declaration.LocalAssum(x, t)) env)
             ise' (EConstr.of_constr pb) (EConstr.of_constr b)
         | KpatFlex | KpatProj _ ->
-          unif_HO env ise (EConstr.of_constr u.up_f) (EConstr.of_constr(mkSubApp f (i - Array.length u.up_a) a))
+          unif_HO env ise (EConstr.of_constr u.up_f) (EConstr.of_constr(mkSubApp f (maybe2 + i - Array.length u.up_a) a))
         | _ -> unif_HO env ise (EConstr.of_constr u.up_f) (EConstr.of_constr f) in
-        let ise'' = unif_HO_args env ise' u.up_a (i - Array.length u.up_a) a in
-        let lhs = mkSubApp f i a in
+        let ise'' = unif_HO_args env ise' u.up_a (maybe2 + i - Array.length u.up_a) a in
+        let lhs = mkSubApp f (maybe2 + i) a in
         let pt' = unif_end env sigma0 ise'' (EConstr.of_constr u.up_t) (u.up_ok lhs) in
         let pt' = pi1 pt', pi2 pt', EConstr.Unsafe.to_constr (pi3 pt') in
         on_instance (ungen_upat lhs pt' u)
@@ -628,7 +646,7 @@ let match_upats_HO ~on_instance upats env sigma0 ise c =
     List.iter one_match fpats
   done;
   iter_constr_LR (aux upats env sigma0 ise) f;
-  Array.iter (aux upats env sigma0 ise) a
+  Array.iter (aux upats env sigma0 ise) a'
  in
  aux upats env sigma0 ise c;
  if !it_did_match then raise NoProgress;
@@ -755,8 +773,13 @@ let rec uniquize = function
   let rec subst_loop (env,h as acc) c' =
     if !skip_occ then c' else
     let f, a = splay_app sigma c' in
-    if Array.length a >= pn && match_EQ f && unif_EQ_args env sigma pa a then
-      let a1, a2 = Array.chop (Array.length pa) a in
+    let nomatch =
+      is_const_ref sigma (EConstr.of_constr f) (mkSsrmatchingRef "nomatch") in
+    let maybe2 = if nomatch then min 2 (Array.length a) else 0 in
+    let a' =
+      if nomatch then Array.sub a maybe2 (Array.length a - maybe2) else a in
+    if Array.length a' >= pn && match_EQ f && unif_EQ_args env sigma pa a' then
+      let a1, a2 = Array.chop (maybe2 + Array.length pa) a in
       let fa1 = mkApp (f, a1) in
       let f' = if subst_occ () then k env u.up_t fa1 h else fa1 in
       mkApp (f', Array.map_left (subst_loop acc) a2)
@@ -773,7 +796,8 @@ let rec uniquize = function
       let f = EConstr.of_constr f in
       let f' = map_constr_with_binders_left_to_right sigma inc_h self acc f in
       let f' = EConstr.Unsafe.to_constr f' in
-      mkApp (f', Array.map_left (subst_loop acc) a) in
+      let a0 = Array.map_left (subst_loop acc) a' in
+      mkApp (f', if nomatch then Array.append (Array.sub a 0 maybe2) a0 else a0) in
   subst_loop (env,h) c) : find_P),
 ((fun () ->
   let env, (sigma, uc, ({up_f = pf; up_a = pa} as u)) =

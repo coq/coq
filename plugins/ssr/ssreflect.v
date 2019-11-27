@@ -41,6 +41,9 @@ Declare ML Module "ssreflect_plugin".
                           the ssreflect matching algorithm.
              nosimpl t == t, but on the right-hand side of Definition C :=
                           nosimpl disables expansion of C by /=.
+           nomatch T t == t, (see ssrmatching.v: the first 2 arguments T and t
+                          of this transparent identity function are ignored
+                          by the ssreflect matching algorithm)
               locked t == t, but locked t is not convertible to t.
        locked_with k t == t, but not convertible to t or locked_with k' t
                           unless k = k' (with k : unit). Coq type-checking
