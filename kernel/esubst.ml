@@ -60,110 +60,98 @@ let rec is_lift_id = function
 (*  Substitutions    *)
 (*********************)
 
-(* (bounded) explicit substitutions of type 'a *)
-type 'a subs =
-  | ENIL            (* empty substitution *)
-  | CONS of 'a array * 'a subs
-                           (* CONS([|t1..tn|],S)  =
-                              (S.t1...tn)    parallel substitution
-                              beware of the order *)
-  | RELS of int * int * 'a subs (* RELS(n, k, S) = S.Rel(n+1) ... Rel(n+k+1) *)
-  | SHIFT of int * 'a subs (* SHIFT(n,S) = (^n o S) terms in S are relocated *)
-                           (*                        with n vars *)
-(* In term of typing rules:
+(* Variant of skewed lists enriched w.r.t. a monoid. See the Range module.
 
-- · ⊢ ENIL : ·
-- If Γ, Ξ, Σ ⊢ σ : Δ then Γ, Ξ, Σ ⊢ RELS (n, k, σ) : Δ, Ξ provided |Σ|=n and |Ξ|=k
-- If Γ ⊢ σ : Δ and Γ ⊢ u : A then Γ ⊢ CONS (u, σ) : Δ, A
-- If Γ ⊢ σ : Δ then Γ, Ξ ⊢ SHIFT (n, σ) : Δ provided |Ξ|=n.
-*)
+  In addition to the indexed data, every node contains a monoid element, in our
+  case, integers. It corresponds to the number of partial lifts to apply when
+  reaching this subtree. The total lift is obtained by summing all the partial
+  lifts encountered in the tree traversal. For efficiency, we also cache the
+  sum of partial lifts of the whole subtree as the last argument of the [Node]
+  constructor. *)
 
-(* operations of subs: collapses constructors when possible.
- * Needn't be recursive if we always use these functions
- *)
+type mon = int
+let mul n m = n + m
+let one = 0
 
-let subs_id i = if Int.equal i 0 then ENIL else RELS(0, i, ENIL)
+type 'a or_var = Arg of 'a | Var of int
 
-let subs_cons(x,s) = if Int.equal (Array.length x) 0 then s else CONS(x,s)
+type 'a tree =
+| Leaf of mon * 'a or_var
+| Node of mon * 'a or_var * 'a tree * 'a tree * mon
 
-let rec subs_shft n s = match s with
-  | SHIFT (k, s) -> SHIFT (k + n, s)
-  | RELS (m, k, s) -> RELS (m + n, k, subs_shft n s)
-  | ENIL | CONS _ -> SHIFT (n, s)
+type 'a subs = Nil of mon | Cons of int * 'a tree * 'a subs
 
-let subs_rels n k s = match s with
-| RELS (m, p, s') ->
-  if Int.equal m (n + k) then RELS (n, p + k, s') else RELS (n, k, s)
-| s -> RELS (n, k, s)
+let eval = function
+| Leaf (w, _) -> w
+| Node (w1, _, _, _, w2) -> mul w1 w2
+
+let leaf x = Leaf (one, x)
+let node x t1 t2 = Node (one, x, t1, t2, mul (eval t1) (eval t2))
+
+let rec tree_get h w t i = match t with
+| Leaf (w', x) ->
+  let w = mul w w' in
+  if i = 0 then w, Inl x else assert false
+| Node (w', x, t1, t2, _) ->
+  let w = mul w w' in
+  if i = 0 then w, Inl x
+  else
+    let h = h / 2 in
+    if i <= h then tree_get h w t1 (i - 1)
+    else tree_get h (mul w (eval t1)) t2 (i - h - 1)
+
+let rec get w l i = match l with
+| Nil w' -> mul w w', Inr i
+| Cons (h, t, rem) ->
+  if i < h then tree_get h w t i else get (mul (eval t) w) rem (i - h)
+
+let get l i = get one l i
+
+let tree_write w = function
+| Leaf (w', x) -> Leaf (mul w w', x)
+| Node (w', x, t1, t2, wt) -> Node (mul w w', x, t1, t2, wt)
+
+let write w l = match l with
+| Nil w' -> Nil (mul w w')
+| Cons (h, t, rem) -> Cons (h, tree_write w t, rem)
+
+let empty = Nil one
+
+let cons x l = match l with
+| Cons (h1, t1, Cons (h2, t2, rem)) ->
+  if Int.equal h1 h2 then Cons (1 + h1 + h2, node x t1 t2, rem)
+  else Cons (1, leaf x, l)
+| _ -> Cons (1, leaf x, l)
+
+let expand_rel n s =
+  let k, v = get s (n - 1) in
+  match v with
+  | Inl (Arg v) -> Inl (k, v)
+  | Inl (Var i) -> Inr (k + i, None)
+  | Inr i -> Inr (k + i + 1, Some (i + 1))
+
+let is_subs_id = function
+| Nil w -> Int.equal w 0
+| Cons (_, _, _) -> false
+
+let subs_cons (v, s) =
+  Array.fold_left (fun accu x -> cons (Arg x) accu) s v
+
+let rec push_vars i s =
+  if Int.equal i 0 then s
+  else push_vars (pred i) (cons (Var i) s)
 
 let subs_liftn n s =
-  if Int.equal n 0 then s else subs_rels 0 n (subs_shft n s)
+  if Int.equal n 0 then s
+  else
+    let s = write n s in
+    push_vars n s
 
-let subs_lift a = subs_liftn 1 a
-let subs_shft (n, s) = subs_shft n s
+let subs_lift s =
+  cons (Var 1) (write 1 s)
 
-(* Tests whether a substitution is equal to the identity *)
-let rec is_subs_id = function
-    ENIL     -> true
-  | RELS(0,k,SHIFT(n, s))  -> Int.equal k n && is_subs_id s
-  | SHIFT(0,s) -> is_subs_id s
-  | CONS(x,s)  -> Int.equal (Array.length x) 0 && is_subs_id s
-  | _          -> false
+let subs_id n =
+  if Int.equal n 0 then empty
+  else push_vars n empty
 
-(* Expands de Bruijn k in the explicit substitution subs
- * lams accumulates de shifts to perform when retrieving the i-th value
- * the rules used are the following:
- *
- *    [id]k       --> k
- *    [S.t]1      --> t
- *    [S.t]k      --> [S](k-1)  if k > 1
- *    [^n o S] k  --> [^n]([S]k)
- *    [(%n S)] k  --> k         if k <= n
- *    [(%n S)] k  --> [^n]([S](k-n))
- *
- * the result is (Inr (k+lams,p)) when the variable is just relocated
- * where p is None if the variable points inside subs and Some(k) if the
- * variable points k bindings beyond subs.
- *)
-let rec exp_rel lams k subs =
-  match subs with
-    | CONS (def, s) ->
-      let len = Array.length def in
-      if k <= len then Inl (lams, def.(len - k))
-      else exp_rel lams (k - len) s
-    | RELS (n, len, s) ->
-      if k <= len then Inr (lams+n+k, None)
-      else exp_rel lams (k - len) s
-    | SHIFT (n,s)          -> exp_rel (n+lams) k s
-    | ENIL                 -> Inr (lams+k, Some k)
-
-let expand_rel k subs = exp_rel 0 k subs
-
-let rec subs_map f = function
-| ENIL -> ENIL
-| CONS (x, s) -> CONS (Array.map f x, subs_map f s)
-| RELS (n, k, s) -> RELS (n, k, subs_map f s)
-| SHIFT (n, s) -> SHIFT (n, subs_map f s)
-
-let rec reloc_range n k accu e = match e with
-| ELID -> subs_rels n k accu
-| ELSHFT (e, p) -> reloc_range (n + p) k accu e
-| ELLFT (p, e') ->
-  if n < p then subs_rels n (p - n) (reloc_range p (n + k - p) accu e)
-  else reloc_range (n + p) k accu e'
-
-let rec lift_subst mk_cl s1 s2 = match s1 with
-| ELID -> subs_map (fun c -> mk_cl ELID c) s2
-| ELSHFT(s, k) -> subs_shft(k, lift_subst mk_cl s s2)
-| ELLFT (k, s) ->
-  match s2 with
-  | ENIL -> ENIL
-  | CONS(x,s') ->
-      CONS(CArray.Fun1.map mk_cl s1 x, lift_subst mk_cl s1 s')
-  | SHIFT(k',s') ->
-      if k<k'
-      then subs_shft(k, lift_subst mk_cl s (subs_shft(k'-k, s')))
-      else subs_shft(k', lift_subst mk_cl (el_liftn (k-k') s) s')
-  | RELS (m, p, s') ->
-    let s' = lift_subst mk_cl s1 s' in
-    reloc_range m p s' s1
+let subs_shft (n, s) = write n s
