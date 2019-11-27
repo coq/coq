@@ -1142,6 +1142,26 @@ Section Map.
     destruct l; simpl; reflexivity || discriminate.
   Qed.
 
+  Lemma map_eq_cons : forall l l' b,
+    map l = b :: l' -> exists a tl, l = a :: tl /\ b = f a /\ l' = map tl.
+  Proof.
+    intros l l' b Heq.
+    destruct l; inversion_clear Heq.
+    exists a, l; repeat split.
+  Qed.
+
+  Lemma map_eq_app  : forall l l1 l2,
+    map l = l1 ++ l2 -> exists l1' l2', l = l1' ++ l2' /\ l1 = map l1' /\ l2 = map l2'.
+  Proof.
+    induction l; simpl; intros l1 l2 Heq.
+    - symmetry in Heq; apply app_eq_nil in Heq; destruct Heq; subst.
+      exists nil, nil; repeat split.
+    - destruct l1; simpl in Heq; inversion Heq as [[Heq2 Htl]].
+      + exists nil, (a :: l); repeat split.
+      + destruct (IHl _ _ Htl) as (l1' & l2' & ? & ? & ?); subst.
+        exists (a :: l1'), l2'; repeat split.
+  Qed.
+
   (** [map] and count of occurrences *)
 
   Hypothesis decA: forall x1 x2 : A, {x1 = x2} + {x1 <> x2}.
@@ -2877,6 +2897,31 @@ End Exists_Forall.
 
 Hint Constructors Exists : core.
 Hint Constructors Forall : core.
+
+Lemma exists_Forall A B : forall (P : A -> B -> Prop) l,
+  (exists k, Forall (P k) l) -> Forall (fun x => exists k, P k x) l.
+Proof.
+  induction l; intros [k HF]; constructor; inversion_clear HF.
+  - now exists k.
+  - now apply IHl; exists k.
+Qed.
+
+Lemma Forall_image A B : forall (f : A -> B) l,
+  Forall (fun y => exists x, y = f x) l <-> exists l', l = map f l'.
+Proof.
+  induction l; split; intros HF.
+  - exists nil; reflexivity.
+  - constructor.
+  - inversion_clear HF as [| ? ? [x Hx] HFtl]; subst.
+    destruct (proj1 IHl HFtl) as [l' Heq]; subst.
+    now exists (x :: l').
+  - destruct HF as [l' Heq].
+    symmetry in Heq; apply map_eq_cons in Heq.
+    destruct Heq as (x & tl & ? & ? & ?); subst.
+    constructor.
+    + now exists x.
+    + now apply IHl; exists tl.
+Qed.
 
 Lemma concat_nil_Forall A : forall (l : list (list A)),
   concat l = nil <-> Forall (fun x => x = nil) l.
