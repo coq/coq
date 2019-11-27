@@ -538,7 +538,7 @@ Proof. by move=> /(_ P); apply. Qed.
 Require Export ssrunder.
 
 Hint Extern 0 (@Under_rel.Over_rel _ _ _ _) =>
-  solve [ apply: Under_rel.over_rel_done ] : core.
+  solve [ (try unfold ssrmatching.nomatch); apply: Under_rel.over_rel_done ] : core.
 Hint Resolve Under_rel.over_rel_done : core.
 
 Register Under_rel.Under_rel as plugins.ssreflect.Under_rel.
@@ -549,6 +549,7 @@ Definition over := over_rel.
 
 (** Closing tactic *)
 Ltac over :=
+  (try unfold ssrmatching.nomatch);
   by [ apply: Under_rel.under_rel_done
      | rewrite over
      ].
