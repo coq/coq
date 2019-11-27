@@ -483,7 +483,7 @@ We have a linter that checks a few different things:
   to build every commit, and in principle even the test-suite should
   pass on every commit (but this isn't tested in CI because it would
   take too long).  A good way to test this is to use `git rebase
-  master --exec "make -f Makefile.dune check`.
+  master --exec "make -f Makefile.dune check"`.
 - **No tabs or end-of-line spaces on updated lines**.  We are trying
   to get rid of all tabs and all end-of-line spaces from the code base
   (except in some very special files that need them).  This checks not
