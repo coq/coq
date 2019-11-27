@@ -346,7 +346,10 @@ let intro_lock ipats =
         let sigma, carrier =
           Typing.type_of env sigma args.(lm2) in
         let rel = EConstr.mkApp (hd, Array.sub args 0 lm2) in
-        let rel_args = Array.sub args lm2 2 in
+        let sigma, nomatch =
+          Ssrcommon.mkSsrmatchingConst "nomatch" env sigma in
+        let rel_args = [|args.(lm2);
+                         EConstr.mkApp(nomatch, [|carrier; args.(lm2 + 1)|])|] in
         let sigma, under_rel =
           Ssrcommon.mkSsrConst "Under_rel" env sigma in
         let sigma, under_from_rel =

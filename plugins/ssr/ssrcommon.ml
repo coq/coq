@@ -763,6 +763,14 @@ let mkSsrRef name =
 let mkSsrRRef name = (DAst.make @@ GRef (mkSsrRef name,None)), None
 let mkSsrConst name env sigma =
   EConstr.fresh_global env sigma (mkSsrRef name)
+
+let mkSsrmatchingRef name =
+  let qn = Format.sprintf "plugins.ssrmatching.%s" name in
+  if Coqlib.has_ref qn then Coqlib.lib_ref qn else
+  CErrors.user_err Pp.(str "ssrmatching library not loaded (" ++ str name ++ str ")")
+let mkSsrmatchingConst name env sigma =
+  EConstr.fresh_global env sigma (mkSsrmatchingRef name)
+
 let pf_mkSsrConst name gl =
   let sigma, env, it = project gl, pf_env gl, sig_it gl in
   let (sigma, t) = mkSsrConst name env sigma in

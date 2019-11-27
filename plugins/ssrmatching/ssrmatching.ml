@@ -534,7 +534,7 @@ let dont_impact_evars_in sigma0 cl =
     try let _ = Evd.find_undefined sigma k in true
     with Not_found -> false) evs_in_cl
 
-(* Adapted from plugins/ssr/ssrcommon.ml *)
+(* Copy from plugins/ssr/ssrcommon.ml *)
 let mkSsrmatchingRef name =
   let qn = Format.sprintf "plugins.ssrmatching.%s" name in
   if Coqlib.has_ref qn then Coqlib.lib_ref qn else

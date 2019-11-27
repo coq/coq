@@ -219,6 +219,10 @@ val mkSsrRRef : string -> Glob_term.glob_constr * 'a option
 val mkSsrConst :
            string ->
            env -> evar_map -> evar_map * EConstr.t
+val mkSsrmatchingConst :
+           string ->
+           env -> evar_map -> evar_map * EConstr.t
+
 val pf_mkSsrConst :
            string ->
            Goal.goal Evd.sigma ->
