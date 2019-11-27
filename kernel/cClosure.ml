@@ -568,6 +568,8 @@ let ref_value_cache ({ i_cache = cache; _ }) tab ref =
     in
     KeyTable.add tab ref v; v
 
+let esubs_liftn n (e, s) = (el_liftn n e, subs_liftn n s)
+
 (* The inverse of mk_clos: move back to constr *)
 let rec to_constr lfts v =
   match v.term with
@@ -588,7 +590,7 @@ let rec to_constr lfts v =
       else
         let n = Array.length bds in
         let subs_ty = comp_subs lfts e in
-        let subs_bd = comp_subs (el_liftn n lfts) (subs_liftn n e) in
+        let subs_bd = esubs_liftn n subs_ty in
         let tys = Array.Fun1.map subst_constr subs_ty tys in
         let bds = Array.Fun1.map subst_constr subs_bd bds in
         mkFix (op, (lna, tys, bds))
@@ -598,7 +600,7 @@ let rec to_constr lfts v =
       else
         let n = Array.length bds in
         let subs_ty = comp_subs lfts e in
-        let subs_bd = comp_subs (el_liftn n lfts) (subs_liftn n e) in
+        let subs_bd = esubs_liftn n subs_ty in
         let tys = Array.Fun1.map subst_constr subs_ty tys in
         let bds = Array.Fun1.map subst_constr subs_bd bds in
         mkCoFix (op, (lna, tys, bds))
@@ -613,15 +615,15 @@ let rec to_constr lfts v =
         Term.compose_lam (List.rev tys) f
       else
         let subs = comp_subs lfts e in
-        let tys = List.mapi (fun i (na, c) -> na, subst_constr (subs_liftn i subs) c) tys in
-        let f = subst_constr (subs_liftn len subs) f in
+        let tys = List.mapi (fun i (na, c) -> na, subst_constr (esubs_liftn i subs) c) tys in
+        let f = subst_constr (esubs_liftn len subs) f in
         Term.compose_lam (List.rev tys) f
     | FProd (n, t, c, e) ->
       if is_subs_id e && is_lift_id lfts then
         mkProd (n, to_constr lfts t, c)
       else
         let subs' = comp_subs lfts e in
-        mkProd (n, to_constr lfts t, subst_constr (subs_lift subs') c)
+        mkProd (n, to_constr lfts t, subst_constr (esubs_liftn 1 subs') c)
     | FLetIn (n,b,t,f,e) ->
       let subs = comp_subs (el_lift lfts) (subs_lift e) in
         mkLetIn (n, to_constr lfts b,
@@ -660,15 +662,16 @@ and to_constr_case lfts ci p iv c ve env =
 
 and subst_constr subst c = match [@ocaml.warning "-4"] Constr.kind c with
 | Rel i ->
+  let (el, subst) = subst in
   begin match expand_rel i subst with
-  | Inl (k, lazy v) -> Vars.lift k v
-  | Inr (m, _) -> mkRel m
+  | Inl (k, v) -> Vars.exliftn el (to_constr (el_shft k el_id) v)
+  | Inr (m, _) -> mkRel (reloc_rel m el)
   end
 | _ ->
-  Constr.map_with_binders Esubst.subs_lift subst_constr subst c
+  Constr.map_with_binders (fun s -> esubs_liftn 1 s) subst_constr subst c
 
 and comp_subs el s =
-  Esubst.lift_subst (fun el c -> lazy (to_constr el c)) el s
+  (el, s)
 
 (* This function defines the correspondence between constr and
    fconstr. When we find a closure whose substitution is the identity,
