@@ -341,25 +341,27 @@ let intro_lock ipats =
              Proofview.tclDISPATCH
                (ncons (ng - 1) ssrsmovetac @ [Proofview.tclUNIT ()]) in
   let nomatch_vars env sigma eredex =
+    let default () =
+      ppdebug(lazy Pp.(str"under: warning (not an evar-redex):" ++
+                         pr_econstr_env env sigma eredex));
+      sigma, eredex in
     let sigma, nomatch =
       Ssrcommon.mkSsrmatchingConst "nomatch" env sigma in
-    match EConstr.kind_of_type sigma eredex with
-        | Term.AtomicType(e, args) when
-               is_app_evar sigma e && Array.length args >= 1 ->
-           let protect sigma t =
-             let sigma, ty = Typing.type_of env sigma t in
-             sigma, EConstr.mkApp(nomatch, [|ty; t|]) in
-           let sigma, largs = Array.fold_left
-                                (fun (sigma, list) arg ->
-                                  let (sigma2, arg') = protect sigma arg in
-                                  sigma2, arg' :: list)
-                                (sigma, []) args in
-           let args = Array.of_list @@ List.rev @@ largs in
-           sigma, EConstr.mkApp(e, args)
-        | _ -> let () =
-                 ppdebug(lazy Pp.(str"under: warning (not an evar-redex):" ++
-                                    pr_econstr_env env sigma eredex)) in
-               sigma, eredex in
+    if EConstr.isApp sigma eredex then
+      let (e, args) = EConstr.destApp sigma eredex in
+      if is_app_evar sigma e && Array.length args >= 1 then
+        let protect sigma t =
+          let sigma, ty = Typing.type_of env sigma t in
+          sigma, EConstr.mkApp(nomatch, [|ty; t|]) in
+        let sigma, largs = Array.fold_left
+                             (fun (sigma, list) arg ->
+                               let (sigma2, arg') = protect sigma arg in
+                               sigma2, arg' :: list)
+                             (sigma, []) args in
+        let args = Array.of_list @@ List.rev @@ largs in
+        sigma, EConstr.mkApp(e, args)
+      else default ()
+    else default () in
   let protect_subgoal env sigma hd args =
     Tactics.New.refine ~typecheck:true (fun sigma ->
         let lm2 = Array.length args - 2 in
