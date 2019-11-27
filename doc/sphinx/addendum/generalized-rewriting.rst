@@ -9,7 +9,7 @@ This chapter presents the extension of several equality related
 tactics to work over user-defined structures (called setoids) that are
 equipped with ad-hoc equivalence relations meant to behave as
 equalities. Actually, the tactics have also been generalized to
-relations weaker then equivalences (e.g. rewriting systems). The
+relations weaker than equivalences (e.g. rewriting systems). The
 toolbox also extends the automatic rewriting capabilities of the
 system, allowing the specification of custom strategies for rewriting.
 
