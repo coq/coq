@@ -493,6 +493,22 @@ Section Elts.
     - intros; simpl; rewrite IHl; auto with arith.
   Qed.
 
+  Lemma app_nth2_plus : forall l l' d n,
+    nth (length l + n) (l ++ l') d = nth n l' d.
+  Proof.
+    intros.
+    rewrite app_nth2, minus_plus; trivial.
+    auto with arith.
+  Qed.
+
+  Lemma nth_middle : forall l l' a d,
+    nth (length l) (l ++ a :: l') d = a.
+  Proof.
+    intros.
+    rewrite plus_n_O at 1.
+    apply app_nth2_plus.
+  Qed.
+
   Lemma nth_split n l d : n < length l ->
     exists l1, exists l2, l = l1 ++ nth n l d :: l2 /\ length l1 = n.
   Proof.
@@ -501,6 +517,20 @@ Section Elts.
     - exists nil; exists l; now simpl.
     - destruct (IH l) as (l1 & l2 & Hl & Hl1); auto with arith.
       exists (a::l1); exists l2; simpl; split; now f_equal.
+  Qed.
+
+  Lemma nth_ext : forall l l' d, length l = length l' ->
+    (forall n, nth n l d = nth n l' d) -> l = l'.
+  Proof.
+    induction l; intros l' d Hlen Hnth; destruct l' as [| b l'].
+    - reflexivity.
+    - inversion Hlen.
+    - inversion Hlen.
+    - change a with (nth 0 (a :: l) d).
+      change b with (nth 0 (b :: l') d).
+      rewrite Hnth; f_equal.
+      apply IHl with d; [ now inversion Hlen | ].
+      intros n; apply (Hnth (S n)).
   Qed.
 
   (** Results about [nth_error] *)
@@ -1234,6 +1264,17 @@ Proof.
   intros A B f g Hext l.
   rewrite 2 flat_map_concat_map.
   now rewrite map_ext with (g := g).
+Qed.
+
+Lemma nth_nth A : forall (l : list A) n d ln dn, n < length ln \/ length l <= dn ->
+  nth (nth n ln dn) l d = nth n (map (fun x => nth x l d) ln) d.
+Proof.
+  intros l n d ln dn; revert n; induction ln; intros n Hlen.
+  - destruct Hlen as [Hlen|Hlen].
+    + inversion Hlen.
+    + now rewrite nth_overflow; destruct n.
+  - destruct n; simpl; [ reflexivity | apply IHln ].
+    destruct Hlen; [ left; apply lt_S_n | right ]; assumption.
 Qed.
 
 
