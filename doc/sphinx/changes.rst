@@ -569,7 +569,7 @@ Other changes in 8.10+beta1
   - The prelude used to be automatically Exported and is now only
     Imported. This should be relevant only when importing files which
     don't use `-noinit` into files which do
-    (`#9013 <https://github.com/coq/coq/pull/9013>`_, by Gaëtan Gilert).
+    (`#9013 <https://github.com/coq/coq/pull/9013>`_, by Gaëtan Gilbert).
 
   - Added `Coq.Structures.OrderedTypeEx.String_as_OT` to make strings an
     ordered type, using lexical order
@@ -765,6 +765,51 @@ A few bug fixes and documentation improvements, in particular:
   (`#10897 <https://github.com/coq/coq/pull/10897>`_,
   fixes `#4741 <https://github.com/coq/coq/issues/4741>`_,
   by Helge Bahmann).
+
+Changes in 8.10.2
+~~~~~~~~~~~~~~~~~
+
+**Kernel**
+
+- Fixed a critical bug of template polymorphism and nonlinear universes
+  (`#11128 <https://github.com/coq/coq/pull/11128>`_,
+  fixes `#11039 <https://github.com/coq/coq/issues/11039>`_,
+  by Gaëtan Gilbert).
+
+- Fixed an anomaly “Uncaught exception Constr.DestKO” on :g:`Inductive`
+  (`#11052 <https://github.com/coq/coq/pull/11052>`_,
+  fixes `#11048 <https://github.com/coq/coq/issues/11048>`_,
+  by Gaëtan Gilbert).
+
+- Fixed an anomaly “not enough abstractions in fix body”
+  (`#11014 <https://github.com/coq/coq/pull/11014>`_,
+  fixes `#8459 <https://github.com/coq/coq/issues/8459>`_,
+  by Gaëtan Gilbert).
+
+**Notations**
+
+- Fixed an 8.10 regression related to the printing of coercions associated to notations
+  (`#11090 <https://github.com/coq/coq/pull/11090>`_,
+  fixes `#11033 <https://github.com/coq/coq/issues/11033>`_, by Hugo Herbelin).
+
+**CoqIDE**
+
+- Fixed uneven dimensions of CoqIDE panels when window has been resized
+  (`#11070 <https://github.com/coq/coq/pull/11070>`_,
+  fixes 8.10-regression `#10956 <https://github.com/coq/coq/issues/10956>`_,
+  by Guillaume Melquiond).
+
+- Do not include final stops in queries
+  (`#11069 <https://github.com/coq/coq/pull/11069>`_,
+  fixes 8.10-regression `#11058 <https://github.com/coq/coq/issues/11058>`_,
+  by Guillaume Melquiond).
+
+**Infrastructure and dependencies**
+
+- Enable building of executables when they are running
+  (`#11000 <https://github.com/coq/coq/pull/11000>`_,
+  fixes 8.9-regression `#10728 <https://github.com/coq/coq/issues/10728>`_,
+  by Gaëtan Gilbert).
 
 Version 8.9
 -----------
