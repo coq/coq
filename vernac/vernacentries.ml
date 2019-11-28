@@ -2167,10 +2167,10 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
         vernac_hints ~atts dbnames hints)
   | VernacSyntacticDefinition (id,c,b) ->
      VtDefault(fun () -> vernac_syntactic_definition ~atts id c b)
-  | VernacArguments (qid, args, more_implicits, nargs, bidi, flags) ->
+  | VernacArguments (qid, args, more_implicits, flags) ->
     VtDefault(fun () ->
         with_section_locality ~atts
-          (ComArguments.vernac_arguments qid args more_implicits nargs bidi flags))
+          (ComArguments.vernac_arguments qid args more_implicits flags))
   | VernacReserve bl ->
     VtDefault(fun () ->
         unsupported_attributes atts;

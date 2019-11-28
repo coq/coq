@@ -1,24 +1,24 @@
 existT : forall (A : Type) (P : A -> Type) (x : A), P x -> {x : A & P x}
 
 existT is template universe polymorphic on sigT.u0 sigT.u1
-Arguments existT [A%type_scope] _%function_scope
+Arguments existT [A]%type_scope _%function_scope
 Expands to: Constructor Coq.Init.Specif.existT
 Inductive sigT (A : Type) (P : A -> Type) : Type :=
     existT : forall x : A, P x -> {x : A & P x}
 
-Arguments sigT [A%type_scope] _%type_scope
-Arguments existT [A%type_scope] _%function_scope
+Arguments sigT [A]%type_scope _%type_scope
+Arguments existT [A]%type_scope _%function_scope
 existT : forall (A : Type) (P : A -> Type) (x : A), P x -> {x : A & P x}
 
 Argument A is implicit
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
-Arguments eq {A%type_scope}
-Arguments eq_refl {A%type_scope} {x}, [A] _
+Arguments eq {A}%type_scope
+Arguments eq_refl {A}%type_scope {x}, [A] _
 eq_refl : forall (A : Type) (x : A), x = x
 
 eq_refl is not universe polymorphic
-Arguments eq_refl {A%type_scope} {x}, [A] _
+Arguments eq_refl {A}%type_scope {x}, [A] _
 Expands to: Constructor Coq.Init.Logic.eq_refl
 eq_refl : forall (A : Type) (x : A), x = x
 
@@ -34,11 +34,11 @@ fix add (n m : nat) {struct n} : nat :=
   end
      : nat -> nat -> nat
 
-Arguments Nat.add _%nat_scope _%nat_scope
+Arguments Nat.add (_ _)%nat_scope
 Nat.add : nat -> nat -> nat
 
 Nat.add is not universe polymorphic
-Arguments Nat.add _%nat_scope _%nat_scope
+Arguments Nat.add (_ _)%nat_scope
 Nat.add is transparent
 Expands to: Constant Coq.Init.Nat.add
 Nat.add : nat -> nat -> nat
@@ -52,9 +52,9 @@ Expands to: Constant Coq.Init.Peano.plus_n_O
 Inductive le (n : nat) : nat -> Prop :=
     le_n : n <= n | le_S : forall m : nat, n <= m -> n <= S m
 
-Arguments le _%nat_scope _%nat_scope
+Arguments le (_ _)%nat_scope
 Arguments le_n _%nat_scope
-Arguments le_S {n%nat_scope} [m%nat_scope]
+Arguments le_S {n}%nat_scope [m]%nat_scope
 comparison : Set
 
 comparison is not universe polymorphic
@@ -80,8 +80,8 @@ Notation sym_eq := eq_sym
 Expands to: Notation Coq.Init.Logic.sym_eq
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
-Arguments eq {A%type_scope}
-Arguments eq_refl {A%type_scope} {x}, {A} _
+Arguments eq {A}%type_scope
+Arguments eq_refl {A}%type_scope {x}, {A} _
 n:nat
 
 Hypothesis of the goal context.

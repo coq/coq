@@ -1068,39 +1068,52 @@ let string_of_definition_object_kind = let open Decls in function
                 | Some Flags.Current -> [SetOnlyParsing]
                 | Some v -> [SetCompatVersion v]))
         )
-      | VernacArguments (q, args, more_implicits, nargs, nargs_before_bidi, mods) ->
+      | VernacArguments (q, args, more_implicits, mods) ->
         return (
           hov 2 (
             keyword "Arguments" ++ spc() ++
               pr_smart_global q ++
               let pr_s = function None -> str"" | Some {v=s} -> str "%" ++ str s in
               let pr_if b x = if b then x else str "" in
-              let pr_br imp x = match imp with
-                | Impargs.Implicit -> str "[" ++ x ++ str "]"
-                | Impargs.MaximallyImplicit -> str "{" ++ x ++ str "}"
-                | Impargs.NotImplicit -> x in
-              let rec print_arguments n nbidi l =
-                match n, nbidi, l with
-                  | Some 0, _, l -> spc () ++ str"/" ++ print_arguments None nbidi l
-                  | _, Some 0, l -> spc () ++ str"&" ++ print_arguments n None l
-                  | None, None, [] -> mt()
-                  | _, _, [] ->
-                    let dummy = {name=Anonymous; recarg_like=false;
-                                 notation_scope=None; implicit_status=Impargs.NotImplicit}
-                    in
-                    print_arguments n nbidi [dummy]
-                  | n, nbidi, { name = id; recarg_like = k;
+              let pr_one_arg (x,k) = pr_if k (str"!") ++ Name.print x in
+              let pr_br imp force x =
+                let left,right =
+                match imp with
+                | Impargs.Implicit -> str "[", str "]"
+                | Impargs.MaximallyImplicit -> str "{", str "}"
+                | Impargs.NotImplicit -> if force then str"(",str")" else mt(),mt()
+                in
+                left ++ x ++ right
+              in
+              let get_arguments_like s imp tl =
+                if s = None && imp = Impargs.NotImplicit then [], tl
+                else
+                  let rec fold extra = function
+                    | RealArg arg :: tl when
+                        Option.equal (fun a b -> String.equal a.CAst.v b.CAst.v) arg.notation_scope s
+                        && arg.implicit_status = imp ->
+                      fold ((arg.name,arg.recarg_like) :: extra) tl
+                    | args -> List.rev extra, args
+                  in
+                  fold [] tl
+              in
+              let rec print_arguments = function
+                  | [] -> mt()
+                  | VolatileArg :: l -> spc () ++ str"/" ++ print_arguments l
+                  | BidiArg :: l -> spc () ++ str"&" ++ print_arguments l
+                  | RealArg { name = id; recarg_like = k;
                          notation_scope = s;
                          implicit_status = imp } :: tl ->
-                    spc() ++ pr_br imp (pr_if k (str"!") ++ Name.print id ++ pr_s s) ++
-                    print_arguments (Option.map pred n) (Option.map pred nbidi) tl
+                    let extra, tl = get_arguments_like s imp tl in
+                    spc() ++ pr_br imp (extra<>[]) (prlist_with_sep spc pr_one_arg ((id,k)::extra)) ++
+                    pr_s s ++ print_arguments tl
               in
               let rec print_implicits = function
                 | [] -> mt ()
                 | (name, impl) :: rest ->
-                   spc() ++ pr_br impl (Name.print name) ++ print_implicits rest
+                   spc() ++ pr_br impl false (Name.print name) ++ print_implicits rest
               in
-              print_arguments nargs nargs_before_bidi args ++
+              print_arguments args ++
                 if not (List.is_empty more_implicits) then
                   prlist (fun l -> str"," ++ print_implicits l) more_implicits
                 else (mt ()) ++

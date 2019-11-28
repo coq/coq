@@ -15,7 +15,7 @@ swap =
 fun (A B : Type) '(x, y) => (y, x)
      : forall A B : Type, A * B -> B * A
 
-Arguments swap {A%type_scope} {B%type_scope}
+Arguments swap {A B}%type_scope
 fun (A B : Type) '(x, y) => swap (x, y) = (y, x)
      : forall A B : Type, A * B -> Prop
 forall (A B : Type) '(x, y), swap (x, y) = (y, x)
