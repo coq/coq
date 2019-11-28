@@ -144,6 +144,13 @@
 : "${cross_crypto_CI_ARCHIVEURL:=${cross_crypto_CI_GITURL}/archive}"
 
 ########################################################################
+# rewriter
+########################################################################
+: "${rewriter_CI_REF:=master}"
+: "${rewriter_CI_GITURL:=https://github.com/mit-plv/rewriter}"
+: "${rewriter_CI_ARCHIVEURL:=${rewriter_CI_GITURL}/archive}"
+
+########################################################################
 # fiat_parsers
 ########################################################################
 : "${fiat_parsers_CI_REF:=master}"
@@ -198,6 +205,13 @@
 : "${bignums_CI_REF:=master}"
 : "${bignums_CI_GITURL:=https://github.com/coq/bignums}"
 : "${bignums_CI_ARCHIVEURL:=${bignums_CI_GITURL}/archive}"
+
+########################################################################
+# coqprime
+########################################################################
+: "${coqprime_CI_REF:=master}"
+: "${coqprime_CI_GITURL:=https://github.com/thery/coqprime}"
+: "${coqprime_CI_ARCHIVEURL:=${coqprime_CI_GITURL}/archive}"
 
 ########################################################################
 # bedrock2

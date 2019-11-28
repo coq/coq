@@ -562,7 +562,11 @@ library:ci-argosy:
   extends: .ci-template
 
 library:ci-bedrock2:
-  extends: .ci-template
+  extends: .ci-template-flambda
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _build_ci
 
 library:ci-color:
   extends: .ci-template-flambda
@@ -577,6 +581,20 @@ library:ci-color:
 library:ci-compcert:
   extends: .ci-template-flambda
 
+library:ci-coqprime:
+  stage: stage-3
+  extends: .ci-template-flambda
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _build_ci
+  needs:
+  - build:edge+flambda
+  - plugin:ci-bignums
+  dependencies:
+  - build:edge+flambda
+  - plugin:ci-bignums
+
 library:ci-coquelicot:
   extends: .ci-template
 
@@ -588,6 +606,18 @@ library:ci-fcsl-pcm:
 
 library:ci-fiat-crypto:
   extends: .ci-template-flambda
+  stage: stage-4
+  needs:
+  - build:edge+flambda
+  - library:ci-bedrock2
+  - library:ci-coqprime
+  - plugin:ci-bignums
+  - plugin:ci-rewriter
+  dependencies:
+  - build:edge+flambda
+  - library:ci-bedrock2
+  - library:ci-coqprime
+  - plugin:ci-rewriter
 
 library:ci-fiat-crypto-legacy:
   extends: .ci-template-flambda
@@ -699,3 +729,10 @@ plugin:ci-quickchick:
 
 plugin:ci-relation_algebra:
   extends: .ci-template
+
+plugin:ci-rewriter:
+  extends: .ci-template-flambda
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _build_ci
