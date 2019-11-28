@@ -75,7 +75,8 @@ in time.
 - [ ] Pin the versions of libraries and plugins in
   `dev/ci/ci-basic-overlays.sh` to use commit hashes or tag (or, if it
   exists, a branch dedicated to compatibility with the corresponding
-  Coq branch).
+  Coq branch). You can use the `dev/tools/pin-ci.sh` script to do this
+  semi-automatically.
 - [ ] Remove all remaining unmerged feature PRs from the beta milestone.
 - [ ] Start a new project to track PR backporting. The project should
   have a "Request X.X+beta1 inclusion" column for the PRs that were
