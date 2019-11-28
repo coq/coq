@@ -212,12 +212,11 @@ let constr_of_id env id =
 
 (** Generic arguments : table of interpretation functions *)
 
-(* Some of the code further down depends on the fact that push_trace does not modify sigma (the evar map) *)
 let push_trace call ist =
   if is_traced () then match TacStore.get ist.extra f_trace with
-  | None -> Proofview.tclUNIT [call]
-  | Some trace -> Proofview.tclUNIT (call :: trace)
-  else Proofview.tclUNIT []
+  | None -> [call]
+  | Some trace -> (call :: trace)
+  else []
 
 let propagate_trace ist loc id v =
   if has_type v (topwit wit_tacvalue) then
@@ -225,7 +224,7 @@ let propagate_trace ist loc id v =
     match tacv with
     | VFun (appl,_,lfun,it,b) ->
         let t = if List.is_empty it then b else TacFun (it,b) in
-        push_trace(loc,LtacVarCall (id,t)) ist >>= fun trace ->
+        let trace = push_trace(loc,LtacVarCall (id,t)) ist in
         let ans = VFun (appl,trace,lfun,it,b) in
         Proofview.tclUNIT (of_tacvalue ans)
     | _ ->  Proofview.tclUNIT v
@@ -536,16 +535,7 @@ let interp_gen kind ist pattern_mode flags env sigma c =
     ltac_idents = constrvars.idents;
     ltac_genargs = ist.lfun;
   } in
-  (* Jason Gross: To avoid unnecessary modifications to tacinterp, as
-      suggested by Arnaud Spiwack, we run push_trace immediately.  We do
-      this with the kludge of an empty proofview, and rely on the
-      invariant that running the tactic returned by push_trace does
-      not modify sigma. *)
-  let (_, dummy_proofview) = Proofview.init sigma [] in
-
-  (* Again this is called at times with no open proof! *)
-  let name, poly = Id.of_string "tacinterp", ist.poly in
-  let (trace,_,_,_) = Proofview.apply ~name ~poly env (push_trace (loc_of_glob_constr term,LtacConstrInterp (term,vars)) ist) dummy_proofview in
+  let trace = push_trace (loc_of_glob_constr term,LtacConstrInterp (term,vars)) ist in
   let (evd,c) =
     catch_error trace (understand_ltac flags env sigma vars kind) term
   in
@@ -1067,7 +1057,7 @@ let rec val_interp ist ?(appl=UnnamedAppl) (tac:glob_tactic_expr) : Val.t Ftacti
 and eval_tactic ist tac : unit Proofview.tactic = match tac with
   | TacAtom {loc;v=t} ->
       let call = LtacAtomCall t in
-      push_trace(loc,call) ist >>= fun trace ->
+      let trace = push_trace(loc,call) ist in
       Profile_ltac.do_profile "eval_tactic:2" trace
         (catch_error_tac trace (interp_atomic ist t))
   | TacFun _ | TacLetIn _ | TacMatchGoal _ | TacMatch _ -> interp_tactic ist tac
@@ -1100,7 +1090,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
          end
   | TacAbstract (t,ido) ->
       let call = LtacMLCall tac in
-      push_trace(None,call) ist >>= fun trace ->
+      let trace = push_trace(None,call) ist in
       Profile_ltac.do_profile "eval_tactic:TacAbstract" trace
         (catch_error_tac trace begin
       Proofview.Goal.enter begin fun gl -> Abstract.tclABSTRACT
@@ -1153,7 +1143,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       let tac l =
         let addvar x v accu = Id.Map.add x v accu in
         let lfun = List.fold_right2 addvar alias.Tacenv.alias_args l ist.lfun in
-        Ftactic.lift (push_trace (loc,LtacNotationCall s) ist) >>= fun trace ->
+        let trace = push_trace (loc,LtacNotationCall s) ist in
         let ist = {
           lfun
         ; poly
@@ -1179,7 +1169,7 @@ and eval_tactic ist tac : unit Proofview.tactic = match tac with
       Ftactic.run tac (fun () -> Proofview.tclUNIT ())
 
   | TacML {loc; v=(opn,l)} ->
-      push_trace (Loc.tag ?loc @@ LtacMLCall tac) ist >>= fun trace ->
+      let trace = push_trace (Loc.tag ?loc @@ LtacMLCall tac) ist in
       let ist = { ist with extra = TacStore.set ist.extra f_trace trace; } in
       let tac = Tacenv.interp_ml_tactic opn in
       let args = Ftactic.List.map_right (fun a -> interp_tacarg ist a) l in
@@ -1214,7 +1204,7 @@ and interp_ltac_reference ?loc' mustbetac ist r : Val.t Ftactic.t =
       let ids = extract_ids [] ist.lfun Id.Set.empty in
       let loc_info = (Option.default loc loc',LtacNameCall r) in
       let extra = TacStore.set ist.extra f_avoid_ids ids in
-      push_trace loc_info ist >>= fun trace ->
+      let trace = push_trace loc_info ist in
       let extra = TacStore.set extra f_trace trace in
       let ist = { lfun = Id.Map.empty; poly; extra } in
       let appl = GlbAppl[r,[]] in
