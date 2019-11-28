@@ -133,3 +133,17 @@ Check fun y : nat => # (x,z) |-> y & y.
 Check fun y : nat => # (x,z) |-> (x + y) & (y + z).
 
 End K.
+
+Module L.
+
+(* Testing regression #11053 *)
+
+Section Test.
+Variables (A B : Type) (a : A) (b : B).
+Variable c : A -> B.
+Coercion c : A >-> B.
+Notation COERCION := (c).
+Check b = a.
+End Test.
+
+End L.
