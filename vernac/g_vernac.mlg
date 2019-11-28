@@ -942,15 +942,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Remove"; IDENT "LoadPath"; dir = ne_string ->
           { VernacRemoveLoadPath dir }
 
-       (* For compatibility *)
-      | IDENT "AddPath"; dir = ne_string; "as"; alias = as_dirpath ->
-          { VernacAddLoadPath (false, dir, alias) }
-      | IDENT "AddRecPath"; dir = ne_string; "as"; alias = as_dirpath ->
-          { VernacAddLoadPath (true, dir, alias) }
-      | IDENT "DelPath"; dir = ne_string ->
-          { VernacRemoveLoadPath dir }
-
-      (* Type-Checking (pas dans le refman) *)
+      (* Type-Checking *)
       | "Type"; c = lconstr -> { VernacGlobalCheck c }
 
       (* Printing (careful factorization of entries) *)
