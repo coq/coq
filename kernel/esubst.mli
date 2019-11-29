@@ -22,7 +22,7 @@ type 'a subs
 
 (** Derived constructors granting basic invariants *)
 val subs_id : int -> 'a subs
-val subs_cons: 'a array * 'a subs -> 'a subs
+val subs_cons: 'a -> 'a subs -> 'a subs
 val subs_shft: int * 'a subs -> 'a subs
 val subs_lift: 'a subs -> 'a subs
 val subs_liftn: int -> 'a subs -> 'a subs
