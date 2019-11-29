@@ -50,41 +50,6 @@ and comment = parse
   | utf8_extra_byte { incr utf8_adjust; comment lexbuf }
   | _ { comment lexbuf }
 
-and quotation o c n l = parse | eof { raise Unterminated } | _ {
-  let x = Lexing.lexeme lexbuf in
-  if x = o then quotation_nesting o c n l 1 lexbuf
-  else if x = c then
-    if n = 1 && l = 1 then ()
-    else quotation_closing o c n l 1 lexbuf
-  else quotation o c n l lexbuf
-}
-
-and quotation_nesting o c n l v = parse | eof { raise Unterminated } | _ {
-  let x = Lexing.lexeme lexbuf in
-  if x = o then
-    if n = v+1 then quotation o c n (l+1) lexbuf
-    else quotation_nesting o c n l (v+1) lexbuf
-  else if x = c then quotation_closing o c n l 1 lexbuf
-  else quotation o c n l lexbuf
-}
-
-and quotation_closing o c n l v = parse | eof { raise Unterminated } | _ {
-  let x = Lexing.lexeme lexbuf in
-  if x = c then
-    if n = v+1 then
-      if l = 1 then ()
-      else quotation o c n (l-1) lexbuf
-    else quotation_closing o c n l (v+1) lexbuf
-  else if x = o then quotation_nesting o c n l 1 lexbuf
-  else quotation o c n l lexbuf
-}
-
-and quotation_start o c n = parse | eof { raise Unterminated } | _ {
-  let x = Lexing.lexeme lexbuf in
-  if x = o then quotation_start o c (n+1) lexbuf
-  else quotation o c n 1 lexbuf
-}
-
 (** NB : [mkiter] should be called on increasing offsets *)
 
 and sentence initial stamp = parse
@@ -117,18 +82,6 @@ and sentence initial stamp = parse
 	 at the start of a sentence *)
       if initial then stamp (utf8_lexeme_start lexbuf + String.length (Lexing.lexeme lexbuf) - 1) Tags.Script.sentence;
       sentence initial stamp lexbuf
-    }
-  | ['a'-'z' 'A'-'Z'] ":{" {
-      quotation_start "{" "}" 1 lexbuf;
-      sentence false stamp lexbuf
-    }
-  | ['a'-'z' 'A'-'Z'] ":[" {
-      quotation_start "[" "]" 1 lexbuf;
-      sentence false stamp lexbuf
-    }
-  | ['a'-'z' 'A'-'Z'] ":(" {
-      quotation_start "(" ")" 1 lexbuf;
-      sentence false stamp lexbuf
     }
   | space+ {
        (* Parsing spaces is the only situation preserving initiality *)
