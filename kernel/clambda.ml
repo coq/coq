@@ -190,7 +190,7 @@ let decompose_Llam lam =
 let subst_id = subs_id 0
 let lift = subs_lift
 let liftn = subs_liftn
-let cons v subst = subs_cons([|v|], subst)
+let cons v subst = subs_cons v subst
 let shift subst = subs_shft (1, subst)
 
 (* A generic map function *)

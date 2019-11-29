@@ -111,15 +111,20 @@ let shift_value n v =
  * (S, (fix Fi {F0 := T0 .. Fn-1 := Tn-1}))
  *    -> (S. [S]F0 . [S]F1 ... . [S]Fn-1, Ti)
  *)
+
+let rec mk_fix_subs make_body n env i =
+  if Int.equal i n then env
+  else mk_fix_subs make_body n (subs_cons (make_body i) env) (i + 1)
+
 let contract_fixp env ((reci,i),(_,_,bds as bodies)) =
   let make_body j = FIXP(((reci,j),bodies), env, [||]) in
   let n = Array.length bds in
-  subs_cons(Array.init n make_body, env), bds.(i)
+  mk_fix_subs make_body n env 0, bds.(i)
 
 let contract_cofixp env (i,(_,_,bds as bodies)) =
   let make_body j = COFIXP((j,bodies), env, [||]) in
   let n = Array.length bds in
-  subs_cons(Array.init n make_body, env), bds.(i)
+  mk_fix_subs make_body n env 0, bds.(i)
 
 let make_constr_ref n k t =
   match k with
@@ -397,6 +402,10 @@ and apply_env env t =
   | _ ->
     map_with_binders subs_lift apply_env env t
 
+let rec subs_consn v i n s =
+  if Int.equal i n then s
+  else subs_consn v (i + 1) n (subs_cons v.(i) s)
+
 (* The main recursive functions
  *
  * Go under applications and cases/projections (pushed in the stack),
@@ -452,7 +461,7 @@ let rec norm_head info env t stack =
         (* New rule: for Cbv, Delta does not apply to locally bound variables
            or red_set info.reds fDELTA
          *)
-        let env' = subs_cons ([|cbv_stack_term info TOP env b|],env) in
+        let env' = subs_cons (cbv_stack_term info TOP env b) env in
         norm_head info env' c stack
       else
         (CBN(t,env), stack) (* Should we consider a commutative cut ? *)
@@ -522,14 +531,14 @@ and cbv_stack_value info env = function
       when red_set info.reds fBETA ->
     let nargs = Array.length args in
       if nargs == nlams then
-          cbv_stack_term info stk (subs_cons(args,env)) b
+          cbv_stack_term info stk (subs_consn args 0 nargs env) b
         else if nlams < nargs then
-          let env' = subs_cons(Array.sub args 0 nlams, env) in
+          let env' = subs_consn args 0 nlams env in
           let eargs = Array.sub args nlams (nargs-nlams) in
           cbv_stack_term info (APP(eargs,stk)) env' b
         else
           let ctxt' = List.skipn nargs ctxt in
-          LAM(nlams-nargs,ctxt', b, subs_cons(args,env))
+          LAM(nlams-nargs,ctxt', b, subs_consn args 0 nargs env)
 
     (* a Fix applied enough -> IOTA *)
     | (FIXP(fix,env,[||]), stk)

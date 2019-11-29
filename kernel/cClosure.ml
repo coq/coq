@@ -762,6 +762,10 @@ let get_nth_arg head n stk =
     | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _) :: _ | []) as s -> (None, List.rev rstk @ s) in
   strip_rec [] head n stk
 
+let rec subs_consn v i n s =
+  if Int.equal i n then s
+  else subs_consn v (i + 1) n (subs_cons v.(i) s)
+
 (* Beta reduction: look for an applied argument in the stack.
    Since the encountered update marks are removed, h must be a whnf *)
 let rec get_args n tys f e = function
@@ -773,14 +777,13 @@ let rec get_args n tys f e = function
         get_args n tys f (subs_shft (k,e)) s
     | Zapp l :: s ->
         let na = Array.length l in
-        if n == na then (Inl (subs_cons(l,e)),s)
+        if n == na then (Inl (subs_consn l 0 na e), s)
         else if n < na then (* more arguments *)
-          let args = Array.sub l 0 n in
           let eargs = Array.sub l n (na-n) in
-          (Inl (subs_cons(args,e)), Zapp eargs :: s)
+          (Inl (subs_consn l 0 n e), Zapp eargs :: s)
         else (* more lambdas *)
           let etys = List.skipn na tys in
-          get_args (n-na) etys f (subs_cons(l,e)) s
+          get_args (n-na) etys f (subs_consn l 0 na e) s
     | ((ZcaseT _ | Zproj _ | Zfix _ | Zprimitive _) :: _ | []) as stk ->
       (Inr {mark=mark Cstr Unknown;term=FLambda(n,tys,f,e)}, stk)
 
@@ -934,7 +937,11 @@ let contract_fix_vect fix =
            env, Array.length bds)
       | _ -> assert false
   in
-  (subs_cons(Array.init nfix make_body, env), thisbody)
+  let rec mk_subs env i =
+    if Int.equal i nfix then env
+    else mk_subs (subs_cons (make_body i) env) (i + 1)
+  in
+  (mk_subs env 0, thisbody)
 
 let unfold_projection info p =
   if red_projection info.i_flags p
@@ -1372,7 +1379,7 @@ let rec knr info tab m stk =
             knit info tab fxe fxbd (args@stk')
         | (_,args, ((Zapp _ | Zfix _ | Zshift _ | Zupdate _ | Zprimitive _) :: _ | [] as s)) -> (m,args@s))
   | FLetIn (_,v,_,bd,e) when red_set info.i_flags fZETA ->
-      knit info tab (subs_cons([|v|],e)) bd stk
+      knit info tab (subs_cons v e) bd stk
   | FEvar(ev,env) ->
       (match info.i_cache.i_sigma ev with
           Some c -> knit info tab env c stk
@@ -1422,7 +1429,7 @@ and case_inversion info tab ci (univs,args) v =
     let env = info_env info in
     let ind = ci.ci_ind in
     let params, indices = Array.chop ci.ci_npar args in
-    let psubst = subs_cons (params, subs_id 0) in
+    let psubst = subs_consn params 0 ci.ci_npar (subs_id 0) in
     let mib = Environ.lookup_mind (fst ind) env in
     let mip = mib.mind_packets.(snd ind) in
     (* indtyping enforces 1 ctor with no letins in the context *)

@@ -134,8 +134,7 @@ let is_subs_id = function
 | Nil w -> Int.equal w 0
 | Cons (_, _, _) -> false
 
-let subs_cons (v, s) =
-  Array.fold_left (fun accu x -> cons (Arg x) accu) s v
+let subs_cons v s = cons (Arg v) s
 
 let rec push_vars i s =
   if Int.equal i 0 then s
