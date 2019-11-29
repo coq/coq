@@ -1,4 +1,5 @@
-- A built-in support of floating-point arithmetic was added, allowing
+- **Added:**
+  A built-in support of floating-point arithmetic, allowing
   one to devise efficient reflection tactics involving numerical
   computation. Primitive floats are added in the language of terms,
   following the binary64 format of the IEEE 754 standard, and the
