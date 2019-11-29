@@ -10,7 +10,7 @@ Tactic Notation "admit" := case proof_admitted.
 
 Require Coq.Program.Program.
 Require Coq.Strings.String.
-Require Coq.omega.Omega.
+Require Coq.micromega.Lia.
 Module Export Fiat_DOT_Common.
 Module Export Fiat.
 Module Common.
@@ -489,7 +489,8 @@ Defined.
   End app.
 
 Import Coq.Lists.List.
-Import Coq.omega.Omega.
+Import Coq.Arith.Arith.
+Import Coq.micromega.Lia.
 Import Fiat_DOT_Common.Fiat.Common.
 Import Fiat.Parsers.ContextFreeGrammar.Valid.
 Local Open Scope string_like_scope.
@@ -585,8 +586,8 @@ Defined.
               | _ => discriminate
               | [ H : forall x, (_ * _)%type -> _ |- _ ] => specialize (fun x y z => H x (y, z))
               | _ => solve [ eauto with nocore ]
-              | _ => solve [ apply Min.min_case_strong; omega ]
-              | _ => omega
+              | _ => solve [ apply Min.min_case_strong; lia ]
+              | _ => lia
               | [ H : production_valid (_::_) |- _ ]
                 => let H' := fresh in
                    pose proof H as H';

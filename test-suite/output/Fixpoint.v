@@ -16,7 +16,7 @@ Check
     end
   in f 0.
 
-Require Import ZArith_base Omega.
+Require Import ZArith_base Lia.
 Open Scope Z_scope.
 
 Inductive even: Z -> Prop :=
@@ -35,13 +35,13 @@ Proof.
 fix even_pos_odd_pos 2 with (odd_pos_even_pos n (H:odd n) {struct H} : n >= 1).
  intros.
  destruct H.
-   omega.
+   lia.
    apply odd_pos_even_pos in H.
-   omega.
+   lia.
  intros.
  destruct H.
   apply even_pos_odd_pos in H.
-  omega.
+  lia.
 Qed.
 
 CoInductive Inf := S { projS : Inf }.

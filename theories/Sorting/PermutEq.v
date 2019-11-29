@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Relations Setoid SetoidList List Multiset PermutSetoid Permutation Omega.
+Require Import Relations Setoid SetoidList List Multiset PermutSetoid Permutation Lia.
 
 Set Implicit Arguments.
 
@@ -85,7 +85,7 @@ Section Perm.
     rewrite multiplicity_NoDup in H, H0.
     generalize (H a) (H0 a) (H1 a); clear H H0 H1.
     do 2 rewrite multiplicity_In.
-    destruct 3; omega.
+    destruct 3; lia.
   Qed.
 
   (** Permutation is compatible with In. *)
