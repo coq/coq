@@ -1,5 +1,5 @@
 (** Testing the performance of [pattern].  For not regressing on COQBUG(https://github.com/coq/coq/issues/11150) and COQBUG(https://github.com/coq/coq/issues/6502) *)
-(* Expected time < 0.75s *)
+(* Expected time < 1.65s *)
 (* reference: 0.673s after adjustment *)
 Definition Let_In {A P} (v : A) (f : forall x : A, P x) : P v
 := let x := v in f x.
