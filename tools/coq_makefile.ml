@@ -34,7 +34,7 @@ let rec print_prefix_list sep = function
 let usage_coq_makefile () =
   output_string stderr "Usage summary:\
 \n\
-\ncoq_makefile .... [file.v] ... [file.ml[i4]?] ... [file.ml{lib,pack}]\
+\ncoq_makefile .... [file.v] ... [file.ml[ig]?] ... [file.ml{lib,pack}]\
 \n  ... [any] ... [-extra[-phony] result dependencies command]\
 \n  ... [-I dir] ... [-R physicalpath logicalpath]\
 \n  ... [-Q physicalpath logicalpath] ... [VARIABLE = value]\
@@ -45,7 +45,7 @@ let usage_coq_makefile () =
 \nFull list of options:\
 \n\
 \n[file.v]: Coq file to be compiled\
-\n[file.ml[i4]?]: Objective Caml file to be compiled\
+\n[file.ml[ig]?]: Objective Caml file to be compiled\
 \n[file.ml{lib,pack}]: ocamlbuild-style file that describes a Objective Caml\
 \n  library/module\
 \n[any] : subdirectory that should be \"made\" and has a Makefile itself\
