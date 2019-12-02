@@ -275,7 +275,7 @@ let tag_var = tag Tag.variable
         pr_reference r, latom
 
       | CPatOr pl ->
-        let pp = pr_patt mt (lpator,Any) in
+        let pp p = hov 0 (pr_patt mt (lpator,Any) p) in
         surround (hov 0 (prlist_with_sep pr_spcbar pp pl)), lpator
 
       | CPatNotation ((_,"( _ )"),([p],[]),[]) ->
@@ -304,7 +304,8 @@ let tag_var = tag Tag.variable
     spc() ++ hov 4
       (pr_with_comments ?loc
          (str "| " ++
-            hov 0 (prlist_with_sep pr_spcbar (prlist_with_sep sep_v (pr_patt ltop)) pl
+            hov 0 (prlist_with_sep pr_spcbar
+                     (fun p -> hov 0 (prlist_with_sep sep_v (pr_patt ltop) p)) pl
                    ++ str " =>") ++
             pr_sep_com spc (pr ltop) rhs))
 
