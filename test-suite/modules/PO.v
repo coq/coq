@@ -35,8 +35,8 @@ Module Pair (X: PO) (Y: PO) <: PO.
     destruct p2.
     unfold le.
      intuition.
-     cutrewrite (t = t1).
-     cutrewrite (t0 = t2).
+     enough (t = t1) as ->.
+     enough (t0 = t2) as ->.
     reflexivity.
 
     info auto.
