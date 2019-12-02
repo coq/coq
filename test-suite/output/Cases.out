@@ -166,3 +166,15 @@ fun x : K => match x with
      : K -> nat
 The command has indeed failed with message:
 Pattern "S _, _" is redundant in this clause.
+stray = 
+fun N : Tree =>
+match N with
+| App (App Node (Node as strayvariable)) _ |
+  App (App Node (App Node _ as strayvariable)) _ |
+  App (App Node (App (App Node Node) (App _ _) as strayvariable)) _ |
+  App (App Node (App (App Node (App _ _)) _ as strayvariable)) _ |
+  App (App Node (App (App (App _ _) _) _ as strayvariable)) _ =>
+    strayvariable
+| _ => Node
+end
+     : Tree -> Tree
