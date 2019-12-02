@@ -222,3 +222,23 @@ Check fun x => match x with a3 | a4 | a1 => 3 | _ => 2 end.
 
 (* Test redundant clause within a disjunctive pattern *)
 Fail Check fun n m => match n, m with 0, 0 | _, S _ | S 0, _ | S (S _ | _), _ => false end.
+
+Module Bug11231.
+
+(* Missing dependency in computing if a clause is a default clause *)
+
+Inductive Tree: Set :=
+| Node : Tree
+| App : Tree -> Tree -> Tree
+.
+
+Definition stray N :=
+match N with
+| App (App Node (App (App Node Node) Node)) _ => Node
+| App (App Node strayvariable) _ => strayvariable
+| _ => Node
+end.
+
+Print stray.
+
+End Bug11231.

@@ -455,7 +455,9 @@ let rec decomp_branch tags nal flags (avoid,env as e) sigma c =
       (avoid', add_name_opt na' body t env) sigma c
 
 let rec build_tree na isgoal e sigma ci cl =
-  let mkpat n rhs pl = DAst.make @@ PatCstr((ci.ci_ind,n+1),pl,update_name sigma na rhs) in
+  let mkpat n rhs pl =
+    let na = update_name sigma na rhs in
+    na, DAst.make @@ PatCstr((ci.ci_ind,n+1),pl,na) in
   let cnl = ci.ci_pp_info.cstr_tags in
   List.flatten
     (List.init (Array.length cl)
@@ -485,7 +487,9 @@ and align_tree nal isgoal (e,c as rhs) sigma = match nal with
 and contract_branch isgoal e sigma (cdn,mkpat,rhs) =
   let nal,rhs = decomp_branch cdn [] isgoal e sigma rhs in
   let mat = align_tree nal isgoal rhs sigma in
-  List.map (fun (ids,hd,rhs) -> ids,mkpat rhs hd,rhs) mat
+  List.map (fun (ids,hd,rhs) ->
+      let na, pat = mkpat rhs hd in
+      (Nameops.Name.fold_right Id.Set.add na ids, pat, rhs)) mat
 
 (**********************************************************************)
 (* Transform internal representation of pattern-matching into list of *)
