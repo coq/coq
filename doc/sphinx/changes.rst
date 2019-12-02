@@ -32,6 +32,8 @@ The main changes brought by |Coq| version 8.11 are:
   dependencies.
 - New :g:`Arguments` annotation for `bidirectional type inference`__
   configuration for reference (e.g. constants, inductive) applications.
+- New `refine attribute`__ for :cmd:`Instance` can be used instead of
+  the removed ``Refine Instance Mode``.
 - Generalization of the :g:`under` and :g:`over` tactics__ of SSReflect to
   arbitrary relations.
 - `Revision`__ of the :g:`Coq.Reals` library, its axiomatisation and
@@ -44,6 +46,7 @@ __ 811UnsafeFlags_
 __ 811ExportBug_
 __ 811vos_
 __ 811BidirArguments_
+__ 811RefineInstance_
 __ 811SSRUnderOver_
 __ 811Reals_
 
@@ -194,6 +197,9 @@ Changes in 8.11+beta1
   :cmd:`Arguments <Arguments (implicits)>` command instead of the
   human-targeted prose used in previous Coq versions. (`#10985
   <https://github.com/coq/coq/pull/10985>`_, by Gaëtan Gilbert).
+
+  .. _811RefineInstance:
+
 - **Added:** ``#[refine]`` attribute for :cmd:`Instance`, a more
   predictable version of the old ``Refine Instance Mode`` which
   unconditionally opens a proof (`#10996
