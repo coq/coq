@@ -152,6 +152,10 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 
         c.f. https://caml.inria.fr/mantis/view.php?id=7630
 
+   If you want your build to be reproducible, ensure that the
+   SOURCE_DATE_EPOCH environment variable is set as documented in
+   https://reproducible-builds.org/specs/source-date-epoch/
+
 4- Still in the root directory, do
 
 	make
