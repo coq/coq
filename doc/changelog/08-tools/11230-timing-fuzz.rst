@@ -7,3 +7,9 @@
   ``Makefile`` made by ``coq_makefile``, you can set this argument by
   passing ``TIMING_FUZZ=N`` to ``make``.  (`#11230
   <https://github.com/coq/coq/pull/11230>`_, by Jason Gross).
+
+- **Added:**
+  Coq's build system now supports both ``TIMING_FUZZ`` and
+  ``TIMING_SORT_BY`` just like a ``Makefile`` made by
+  ``coq_makefile``.  (`#11230
+  <https://github.com/coq/coq/pull/11230>`_, by Jason Gross).
