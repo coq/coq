@@ -462,27 +462,17 @@ Changes in 8.11+beta1
   by Cauchy sequences of rational numbers
   (`#10445 <https://github.com/coq/coq/pull/10445>`_, by Vincent Semeria,
   with the help and review of Guillaume Melquiond and Bas Spitters).
-
-- **Changed:** Classical real numbers are now defined
-  as a quotient of these constructive real numbers, which significantly reduces
-  the number of axioms needed (see `Reals.Rdefinitions` and `Reals.Raxioms`),
-  while preserving backward compatibility.
-
-  Futhermore, the new axioms for classical real numbers include the limited
-  principle of omniscience (`sig_forall_dec`), which is a logical principle
-  instead of an *ad hoc* property of the real numbers.
-
-  (`#10445 <https://github.com/coq/coq/pull/10445>`_, by Vincent Semeria,
-  with the help and review of Guillaume Melquiond and Bas Spitters)
 - **Added:**
-  New module `Reals.ClassicalDedekindReals` defines Dedekind real numbers
-  as boolean-values functions along with 3 logical axioms: limited principle
-  of omniscience, excluded middle of negations and functional extensionality.
-  The exposed type :g:`R` in module :g:`Reals.Rdefinitions` is those
-  Dedekind reals, hidden behind an opaque module.
-  Classical Dedekind reals are a quotient of constructive reals, which allows
-  to transport many constructive proofs to the classical case.
-
+  New module `Reals.ClassicalDedekindReals` defines Dedekind real
+  numbers as boolean-valued functions along with 3 logical axioms:
+  limited principle of omniscience, excluded middle of negations, and
+  functional extensionality.  The exposed type :g:`R` in module
+  :g:`Reals.Rdefinitions` now corresponds to these Dedekind reals,
+  hidden behind an opaque module, which significantly reduces the
+  number of axioms needed (see `Reals.Rdefinitions` and
+  `Reals.Raxioms`), while preserving backward compatibility.
+  Classical Dedekind reals are a quotient of constructive reals, which
+  allows to transport many constructive proofs to the classical case
   (`#10827 <https://github.com/coq/coq/pull/10827>`_, by Vincent Semeria,
   based on discussions with Guillaume Melquiond, Bas Spitters and Hugo Herbelin,
   code review by Hugo Herbelin).
