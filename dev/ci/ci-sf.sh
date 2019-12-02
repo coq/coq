@@ -12,9 +12,9 @@ sf_lf_CI_TARURL=$(echo "$data"  | jq -rc '.[] | select (.path == "lf.tgz") | .ur
 sf_plf_CI_TARURL=$(echo "$data" | jq -rc '.[] | select (.path == "plf.tgz") | .url')
 sf_vfa_CI_TARURL=$(echo "$data" | jq -rc '.[] | select (.path == "vfa.tgz") | .url')
 
-wget -O - "${sf_lf_CI_TARURL}" | tar xvz
-wget -O - "${sf_plf_CI_TARURL}" | tar xvz
-wget -O - "${sf_vfa_CI_TARURL}" | tar xvz
+wget -O - "${sf_lf_CI_TARURL}?circle-token=${CIRCLE_SF_TOKEN}" | tar xvz
+wget -O - "${sf_plf_CI_TARURL}?circle-token=${CIRCLE_SF_TOKEN}" | tar xvz
+wget -O - "${sf_vfa_CI_TARURL}?circle-token=${CIRCLE_SF_TOKEN}" | tar xvz
 
 ( cd lf  && make clean && make )
 ( cd plf && make clean && make )
