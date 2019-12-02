@@ -6,6 +6,512 @@ Recent changes
 
    .. include:: ../unreleased.rst
 
+Version 8.11
+------------
+
+Summary of changes
+~~~~~~~~~~~~~~~~~~
+
+The main changes brought by |Coq| version 8.11 are:
+
+- `Ltac2`__, a new tactic language for writing more robust larger scale
+  tactics, with built-in support for datatypes and the multi-goal tactic monad.
+- `Primitive floats`__ are integrated in terms and follow the binary64 format
+  of the IEEE 754 standard, as specified in the `Coq.Float.Floats` library.
+- `Cleanups`__ of the section mechanism, delayed proofs and further
+  restrictions of template polymorphism to fix soundness issues related to
+  universes.
+- New `unsafe flags`__ to disable locally guard, positivity and universe
+  checking. Reliance on these flags is always printed by
+  :g:`Print Assumptions`.
+- `Fixed bugs`__ of :g:`Export` and :g:`Import` that can have a
+  significant impact on user developments (**common source of
+  incompatibility!**).
+- New interactive development method based on `vos` `interface files`__,
+  allowing to work on a file without recompiling the proof parts of their
+  dependencies.
+- New :g:`Arguments` annotation for `bidirectional type inference`__
+  configuration for reference (e.g. constants, inductive) applications.
+- New `refine attribute`__ for :cmd:`Instance` can be used instead of
+  the removed ``Refine Instance Mode``.
+- Generalization of the :g:`under` and :g:`over` tactics__ of SSReflect to
+  arbitrary relations.
+- `Revision`__ of the :g:`Coq.Reals` library, its axiomatisation and
+  instances of the constructive and classical real numbers.
+
+__ 811Ltac2_
+__ 811PrimitiveFloats_
+__ 811Sections_
+__ 811UnsafeFlags_
+__ 811ExportBug_
+__ 811vos_
+__ 811BidirArguments_
+__ 811RefineInstance_
+__ 811SSRUnderOver_
+__ 811Reals_
+
+The ``dev/doc/critical-bugs`` file documents the known critical bugs of |Coq|
+and affected releases. See the `Changes in 8.11+beta1`_ section for the
+detailed list of changes, including potentially breaking changes marked with
+**Changed**.
+
+Maxime Dénès, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
+Soegtrop, Théo Zimmermann worked on maintaining and improving the
+continuous integration system and package building infrastructure.
+
+Coq's documentation is available at https://coq.github.io/doc/V8.11+beta1/api (documentation of
+the ML API), https://coq.github.io/doc/V8.11+beta1/refman (reference
+manual), and https://coq.github.io/doc/V8.11+beta1/stdlib (documentation of
+the standard library).
+
+The OPAM repository for |Coq| packages has been maintained by
+Karl Palmskog, Matthieu Sozeau, Enrico Tassi with contributions
+from many users. A list of packages is available at
+https://coq.inria.fr/opam/www/.
+
+The 61 contributors to this version are Michael D. Adams, Guillaume
+Allais, Helge Bahmann, Langston Barrett, Guillaume Bertholon, Frédéric
+Besson, Simon Boulier, Michele Caci, Tej Chajed, Arthur Charguéraud,
+Cyril Cohen, Frédéric Dabrowski, Arthur Azevedo de Amorim, Maxime
+Dénès, Nikita Eshkeev, Jim Fehrle, Emilio Jesús Gallego Arias,
+Paolo G. Giarrusso, Gaëtan Gilbert, Georges Gonthier, Jason Gross,
+Samuel Gruetter, Armaël Guéneau, Hugo Herbelin, Florent Hivert, Jasper
+Hugunin, Shachar Itzhaky, Jan-Oliver Kaiser, Robbert Krebbers, Vincent
+Laporte, Olivier Laurent, Samuel Lelièvre, Nicholas Lewycky, Yishuai
+Li, Jose Fernando Lopez Fernandez, Andreas Lynge, Kenji Maillard, Erik
+Martin-Dorel, Guillaume Melquiond, Alexandre Moine, Oliver Nash,
+Wojciech Nawrocki, Antonio Nikishaev, Pierre-Marie Pédrot, Clément
+Pit-Claudel, Lars Rasmusson, Robert Rand, Talia Ringer, JP Rodi,
+Pierre Roux, Kazuhiko Sakaguchi, Vincent Semeria, Michael Soegtrop,
+Matthieu Sozeau, spanjel, Claude Stolze, Enrico Tassi, Laurent Théry,
+James R. Wilcox, Xia Li-yao, Théo Zimmermann
+
+Many power users helped to improve the design of the new features via
+the issue and pull request system, the |Coq| development mailing list,
+the coq-club@inria.fr mailing list or the `Discourse forum
+<https://coq.discourse.group/>`_. It would be impossible to mention
+exhaustively the names of everybody who to some extent influenced the
+development.
+
+Version 8.11 is the sixth release of |Coq| developed on a time-based
+development cycle. Its development spanned 3 months from the release of
+|Coq| 8.10. Pierre-Marie Pédrot is the release manager and maintainer of this
+release, assisted by Matthieu Sozeau. This release is the result of 2000+
+commits and 300+ PRs merged, closing 75+ issues.
+
+| Paris, November 2019,
+| Matthieu Sozeau for the |Coq| development team
+|
+
+
+Changes in 8.11+beta1
+~~~~~~~~~~~~~~~~~~~~~
+
+**Kernel**
+
+  .. _811PrimitiveFloats:
+
+- **Added:**
+  A built-in support of floating-point arithmetic, allowing
+  one to devise efficient reflection tactics involving numerical
+  computation. Primitive floats are added in the language of terms,
+  following the binary64 format of the IEEE 754 standard, and the
+  related operations are implemented for the different reduction
+  engines of Coq by using the corresponding processor operators in
+  rounding-to-nearest-even. The properties of these operators are
+  axiomatized in the theory :g:`Coq.Floats.FloatAxioms` which is part
+  of the library :g:`Coq.Floats.Floats`.
+  See Section :ref:`primitive-floats`
+  (`#9867 <https://github.com/coq/coq/pull/9867>`_,
+  closes `#8276 <https://github.com/coq/coq/issues/8276>`_,
+  by Guillaume Bertholon, Erik Martin-Dorel, Pierre Roux).
+- **Changed:**
+  Internal definitions generated by :tacn:`abstract`\-like tactics are now inlined
+  inside universe :cmd:`Qed`\-terminated polymorphic definitions, similarly to what
+  happens for their monomorphic counterparts,
+  (`#10439 <https://github.com/coq/coq/pull/10439>`_, by Pierre-Marie Pédrot).
+
+  .. _811Sections:
+
+- **Fixed:**
+  Section data is now part of the kernel. Solves a soundness issue
+  in interactive mode where global monomorphic universe constraints would be
+  dropped when forcing a delayed opaque proof inside a polymorphic section. Also
+  relaxes the nesting criterion for sections, as polymorphic sections can now
+  appear inside a monomorphic one
+  (`#10664, <https://github.com/coq/coq/pull/10664>`_ by Pierre-Marie Pédrot).
+- **Changed:**
+  Using ``SProp`` is now allowed by default, without needing to pass
+  ``-allow-sprop`` or use :flag:`Allow StrictProp` (`#10811
+  <https://github.com/coq/coq/pull/10811>`_, by Gaëtan Gilbert).
+
+**Specification language, type inference**
+
+  .. _811BidirArguments:
+
+- **Added:**
+  Annotation in `Arguments` for bidirectionality hints: it is now possible
+  to tell type inference to use type information from the context once the `n`
+  first arguments of an application are known. The syntax is:
+  `Arguments foo x y & z`. See :cmd:`Arguments (bidirectionality hints)`
+  (`#10049 <https://github.com/coq/coq/pull/10049>`_, by Maxime Dénès with
+  help from Enrico Tassi).
+- **Added:**
+  Record fields can be annotated to prevent them from being used as canonical projections;
+  see :ref:`canonicalstructures` for details
+  (`#10076 <https://github.com/coq/coq/pull/10076>`_,
+  by Vincent Laporte).
+- **Changed:**
+  Require parentheses around nested disjunctive patterns, so that pattern and
+  term syntax are consistent; match branch patterns no longer require
+  parentheses for notation at level 100 or more.
+
+  .. warning:: Incompatibilities
+
+     + In :g:`match p with (_, (0|1)) => ...` parentheses may no longer be
+       omitted around :n:`0|1`.
+     + Notation :g:`(p | q)` now potentially clashes with core pattern syntax,
+       and should be avoided. ``-w disj-pattern-notation`` flags such :cmd:`Notation`.
+
+  See :ref:`extendedpatternmatching` for details
+  (`#10167 <https://github.com/coq/coq/pull/10167>`_,
+  by Georges Gonthier).
+- **Changed:**
+  :cmd:`Function` always opens a proof when used with a ``measure`` or ``wf``
+  annotation, see :ref:`advanced-recursive-functions` for the updated
+  documentation (`#10215 <https://github.com/coq/coq/pull/10215>`_,
+  by Enrico Tassi).
+- **Changed:**
+  The legacy command :cmd:`Add Morphism` always opens a proof and cannot be used
+  inside a module type. In order to declare a module type parameter that
+  happens to be a morphism, use :cmd:`Declare Morphism`. See
+  :ref:`deprecated_syntax_for_generalized_rewriting` for the updated
+  documentation (`#10215 <https://github.com/coq/coq/pull/10215>`_,
+  by Enrico Tassi).
+- **Changed:**
+  The universe polymorphism setting now applies from the opening of a section.
+  In particular, it is not possible anymore to mix polymorphic and monomorphic
+  definitions in a section when there are no variables nor universe constraints
+  defined in this section. This makes the behaviour consistent with the
+  documentation. (`#10441 <https://github.com/coq/coq/pull/10441>`_,
+  by Pierre-Marie Pédrot)
+- **Added:**
+  The :cmd:`Section` vernacular command now accepts the "universes" attribute. In
+  addition to setting the section universe polymorphism, it also locally sets
+  the universe polymorphic option inside the section.
+  (`#10441 <https://github.com/coq/coq/pull/10441>`_, by Pierre-Marie Pédrot)
+- **Fixed:**
+  ``Program Fixpoint`` now uses ``ex`` and ``sig`` to make telescopes
+  involving ``Prop`` types (`#10758
+  <https://github.com/coq/coq/pull/10758>`_, by Gaëtan Gilbert, fixing
+  `#10757 <https://github.com/coq/coq/issues/10757>`_ reported by
+  Xavier Leroy).
+- **Changed:**
+  Output of the :cmd:`Print` and :cmd:`About` commands.
+  Arguments meta-data is now displayed as the corresponding
+  :cmd:`Arguments <Arguments (implicits)>` command instead of the
+  human-targeted prose used in previous Coq versions. (`#10985
+  <https://github.com/coq/coq/pull/10985>`_, by Gaëtan Gilbert).
+
+  .. _811RefineInstance:
+
+- **Added:** ``#[refine]`` attribute for :cmd:`Instance`, a more
+  predictable version of the old ``Refine Instance Mode`` which
+  unconditionally opens a proof (`#10996
+  <https://github.com/coq/coq/pull/10996>`_, by Gaëtan Gilbert).
+- **Changed:**
+  The unsupported attribute error is now an error-by-default warning,
+  meaning it can be disabled (`#10997
+  <https://github.com/coq/coq/pull/10997>`_, by Gaëtan Gilbert).
+- **Fixed:** Bugs sometimes preventing to define valid (co)fixpoints with implicit arguments
+  in the presence of local definitions, see `#3282 <https://github.com/coq/coq/issues/3282>`_
+  (`#11132 <https://github.com/coq/coq/pull/11132>`_, by Hugo Herbelin).
+
+  .. example::
+
+     The following features an implicit argument after a local
+     definition. It was wrongly rejected.
+
+     .. coqtop:: in
+
+        Definition f := fix f (o := true) {n : nat} m {struct m} :=
+          match m with 0 => 0 | S m' => f (n:=n+1) m' end.
+
+**Notations**
+
+- **Added:**
+  Numeral Notations now support sorts in the input to printing
+  functions (e.g., numeral notations can be defined for terms
+  containing things like `@cons Set nat nil`).  (`#9883
+  <https://github.com/coq/coq/pull/9883>`_, by Jason Gross).
+- **Added:**
+  The :cmd:`Notation` and :cmd:`Infix` commands now support the `deprecated`
+  attribute
+  (`#10180 <https://github.com/coq/coq/pull/10180>`_, by Maxime Dénès).
+- **Deprecated:**
+  The former `compat` annotation for notations is
+  deprecated, and its semantics changed. It is now made equivalent to using
+  a `deprecated` attribute, and is no longer connected with the `-compat`
+  command-line flag
+  (`#10180 <https://github.com/coq/coq/pull/10180>`_, by Maxime Dénès).
+- **Changed:**
+  A simplification of parsing rules could cause a slight change of
+  parsing precedences for the very rare users who defined notations
+  with `constr` at level strictly between 100 and 200 and used these
+  notations on the right-hand side of a cast operator (`:`, `:>`,
+  `:>>`) (`#10963 <https://github.com/coq/coq/pull/10963>`_, by Théo
+  Zimmermann, simplification initially noticed by Jim Fehrle).
+
+**Tactics**
+
+- **Added:**
+  Syntax :n:`injection @term as [= {+ @intropattern} ]` as
+  an alternative to :n:`injection @term as {+ @simple_intropattern}` using
+  the standard :n:`@injection_intropattern` syntax (`#9288
+  <https://github.com/coq/coq/pull/9288>`_, by Hugo Herbelin).
+- **Changed:**
+  Reimplementation of the :tacn:`zify` tactic. The tactic is more efficient and copes with dependent hypotheses.
+  It can also be extended by redefining the tactic ``zify_post_hook``.
+  (`#9856 <https://github.com/coq/coq/pull/9856>`_, fixes
+  `#8898 <https://github.com/coq/coq/issues/8898>`_,
+  `#7886 <https://github.com/coq/coq/issues/7886>`_,
+  `#9848 <https://github.com/coq/coq/issues/9848>`_ and
+  `#5155 <https://github.com/coq/coq/issues/5155>`_, by Frédéric Besson).
+- **Changed:**
+  The goal selector tactical ``only`` now checks that the goal range
+  it is given is valid instead of ignoring goals out of the focus
+  range (`#10318 <https://github.com/coq/coq/pull/10318>`_, by Gaëtan
+  Gilbert).
+- **Added:**
+  Flags :flag:`Lia Cache`, :flag:`Nia Cache` and :flag:`Nra Cache`.
+  (`#10765 <https://github.com/coq/coq/pull/10765>`_, by Frédéric Besson,
+  see `#10772 <https://github.com/coq/coq/issues/10772>`_ for use case).
+- **Added:**
+  The :tacn:`zify` tactic is now aware of `Z.to_N`.
+  (`#10774 <https://github.com/coq/coq/pull/10774>`_, grants
+  `#9162 <https://github.com/coq/coq/issues/9162>`_, by Kazuhiko Sakaguchi).
+- **Changed:**
+  The :tacn:`assert_succeeds` and :tacn:`assert_fails` tactics now
+  only run their tactic argument once, even if it has multiple
+  successes.  This prevents blow-up and looping from using
+  multisuccess tactics with :tacn:`assert_succeeds`.  (`#10966
+  <https://github.com/coq/coq/pull/10966>`_ fixes `#10965
+  <https://github.com/coq/coq/issues/10965>`_, by Jason Gross).
+- **Fixed:**
+  The :tacn:`assert_succeeds` and :tacn:`assert_fails` tactics now
+  behave correctly when their tactic fully solves the goal.  (`#10966
+  <https://github.com/coq/coq/pull/10966>`_ fixes `#9114
+  <https://github.com/coq/coq/issues/9114>`_, by Jason Gross).
+
+**Tactic language**
+
+  .. _811Ltac2:
+
+- **Added:**
+  Ltac2, a new version of the tactic language Ltac, that doesn't
+  preserve backward compatibility, has been integrated in the main Coq
+  distribution.  It is still experimental, but we already recommend
+  users of advanced Ltac to start using it and report bugs or request
+  enhancements.  See its documentation in the :ref:`dedicated chapter
+  <ltac2>` (`#10002 <https://github.com/coq/coq/pull/10002>`_, plugin
+  authored by Pierre-Marie Pédrot, with contributions by various
+  users, integration by Maxime Dénès, help on integrating / improving
+  the documentation by Théo Zimmermann and Jim Fehrle).
+- **Added:**
+  Ltac2 tactic notations with “constr” arguments can specify the
+  interpretation scope for these arguments;
+  see :ref:`ltac2_notations` for details
+  (`#10289 <https://github.com/coq/coq/pull/10289>`_,
+  by Vincent Laporte).
+- **Changed:**
+  White spaces are forbidden in the :n:`&@ident` syntax for ltac2 references
+  that are described in :ref:`ltac2_built-in-quotations`
+  (`#10324 <https://github.com/coq/coq/pull/10324>`_,
+  fixes `#10088 <https://github.com/coq/coq/issues/10088>`_,
+  authored by Pierre-Marie Pédrot).
+
+**SSReflect**
+
+  .. _811SSRUnderOver:
+
+- **Added:**
+  Generalize tactics :tacn:`under` and :tacn:`over` for any registered
+  relation. More precisely, assume the given context lemma has type
+  `forall f1 f2, .. -> (forall i, R1 (f1 i) (f2 i)) -> R2 f1 f2`.  The
+  first step performed by :tacn:`under` (since Coq 8.10) amounts to
+  calling the tactic :tacn:`rewrite <rewrite (ssreflect)>`, which
+  itself relies on :tacn:`setoid_rewrite` if need be. So this step was
+  already compatible with a double implication or setoid equality for
+  the conclusion head symbol `R2`. But a further step consists in
+  tagging the generated subgoal `R1 (f1 i) (?f2 i)` to protect it from
+  unwanted evar instantiation, and get `Under_rel _ R1 (f1 i) (?f2 i)`
+  that is displayed as ``'Under[ f1 i ]``. In Coq 8.10, this second
+  (convenience) step was only performed when `R1` was Leibniz' `eq` or
+  `iff`. Now, it is also performed for any relation `R1` which has a
+  ``RewriteRelation`` instance (a `RelationClasses.Reflexive` instance
+  being also needed so :tacn:`over` can discharge the ``'Under[ _ ]``
+  goal by instantiating the hidden evar.) Also, it is now possible to
+  manipulate `Under_rel _ R1 (f1 i) (?f2 i)` subgoals directly if `R1`
+  is a `PreOrder` relation or so, thanks to extra instances proving
+  that `Under_rel` preserves the properties of the `R1` relation.
+  These two features generalizing support for setoid-like relations is
+  enabled as soon as we do both ``Require Import ssreflect.`` and
+  ``Require Setoid.`` Finally, a rewrite rule ``UnderE`` has been
+  added if one wants to "unprotect" the evar, and instantiate it
+  manually with another rule than reflexivity (i.e., without using the
+  :tacn:`over` tactic nor the ``over`` rewrite rule). See also Section
+  :ref:`under_ssr` (`#10022 <https://github.com/coq/coq/pull/10022>`_,
+  by Erik Martin-Dorel, with suggestions and review by Enrico Tassi
+  and Cyril Cohen).
+- **Added:**
+  A :g:`void` notation for the standard library empty type (:g:`Empty_set`)
+  (`#10932 <https://github.com/coq/coq/pull/10932>`_, by Arthur Azevedo de
+  Amorim).
+- **Added:** Lemma :g:`inj_compr` to :g:`ssr.ssrfun`
+  (`#11136 <https://github.com/coq/coq/pull/11136>`_, by Cyril Cohen).
+
+**Commands and options**
+
+- **Removed:**
+  Deprecated flag `Refine Instance Mode`
+  (`#9530 <https://github.com/coq/coq/pull/9530>`_, fixes
+  `#3632 <https://github.com/coq/coq/issues/3632>`_, `#3890
+  <https://github.com/coq/coq/issues/3890>`_ and `#4638
+  <https://github.com/coq/coq/issues/4638>`_
+  by Maxime Dénès, review by Gaëtan Gilbert).
+- **Removed:**
+  Undocumented :n:`Instance : !@type` syntax
+  (`#10185 <https://github.com/coq/coq/pull/10185>`_, by Gaëtan Gilbert).
+- **Removed:**
+  Deprecated ``Show Script`` command
+  (`#10277 <https://github.com/coq/coq/pull/10277>`_, by Gaëtan Gilbert).
+
+  .. _811UnsafeFlags:
+
+- **Added:**
+  Unsafe commands to enable/disable guard checking, positivity checking
+  and universes checking (providing a local `-type-in-type`).
+  See :ref:`controlling-typing-flags`
+  (`#10291 <https://github.com/coq/coq/pull/10291>`_ by Simon Boulier).
+
+  .. _811ExportBug:
+
+- **Fixed:**
+  Two bugs in :cmd:`Export`. This can have an impact on the behavior of the
+  :cmd:`Import` command on libraries. `Import A` when `A` imports `B` which exports
+  `C` was importing `C`, whereas :cmd:`Import` is not transitive. Also, after
+  `Import A B`, the import of `B` was sometimes incomplete
+  (`#10476 <https://github.com/coq/coq/pull/10476>`_, by Maxime Dénès).
+
+  .. warning::
+
+     This is a common source of incompatibilities in projects
+     migrating to Coq 8.11.
+
+- **Changed:**
+  Output generated by :flag:`Printing Dependent Evars Line` flag
+  used by the Prooftree tool in Proof General.
+  (`#10489 <https://github.com/coq/coq/pull/10489>`_,
+  closes `#4504 <https://github.com/coq/coq/issues/4504>`_,
+  `#10399 <https://github.com/coq/coq/issues/10399>`_ and
+  `#10400 <https://github.com/coq/coq/issues/10400>`_,
+  by Jim Fehrle).
+- **Added:**
+  Optionally highlight the differences between successive proof steps in the
+  :cmd:`Show Proof` command.  Experimental; only available in coqtop
+  and Proof General for now, may be supported in other IDEs
+  in the future.
+  (`#10494 <https://github.com/coq/coq/pull/10494>`_,
+  by Jim Fehrle).
+- **Removed:** Legacy commands ``AddPath``, ``AddRecPath``, and ``DelPath``
+  which were undocumented, broken variants of :cmd:`Add LoadPath`,
+  :cmd:`Add Rec LoadPath`, and :cmd:`Remove LoadPath`
+  (`#11187 <https://github.com/coq/coq/pull/11187>`_,
+  by Maxime Dénès and Théo Zimmermann).
+
+**Tools**
+
+  .. _811vos:
+
+- **Added:**
+  `coqc` now provides the ability to generate compiled interfaces.
+  Use `coqc -vos foo.v` to skip all opaque proofs during the
+  compilation of `foo.v`, and output a file called `foo.vos`.
+  This feature is experimental. It enables working on a Coq file without the need to
+  first compile the proofs contained in its dependencies
+  (`#8642 <https://github.com/coq/coq/pull/8642>`_ by Arthur Charguéraud, review by
+  Maxime Dénès and Emilio Gallego).
+- **Added:**
+  Command-line options `-require-import`, `-require-export`,
+  `-require-import-from` and `-require-export-from`, as well as their
+  shorthand, `-ri`, `-re`, `-refrom` and -`rifrom`. Deprecate
+  confusing command line option `-require`
+  (`#10245 <https://github.com/coq/coq/pull/10245>`_
+  by Hugo Herbelin, review by Emilio Gallego).
+- **Changed:**
+  Renamed `VDFILE` from `.coqdeps.d` to `.<CoqMakefile>.d` in the `coq_makefile`
+  utility, where `<CoqMakefile>` is the name of the output file given by the
+  `-o` option. In this way two generated makefiles can coexist in the same
+  directory.
+  (`#10947 <https://github.com/coq/coq/pull/10947>`_, by Kazuhiko Sakaguchi).
+- **Fixed:** ``coq_makefile`` now supports environment variable ``COQBIN`` with
+  no ending ``/`` character (`#11068
+  <https://github.com/coq/coq/pull/11068>`_, by Gaëtan Gilbert).
+
+**Standard library**
+
+- **Changed:**
+  Moved the :tacn:`auto` hints of the `OrderedType` module into a new `ordered_type`
+  database
+  (`#9772 <https://github.com/coq/coq/pull/9772>`_,
+  by Vincent Laporte).
+- **Removed:**
+  Deprecated modules `Coq.ZArith.Zlogarithm` and `Coq.ZArith.Zsqrt_compat`
+  (`#9881 <https://github.com/coq/coq/pull/9811>`_,
+  by Vincent Laporte).
+
+  .. _811Reals:
+
+- **Added:**
+  Module `Reals.ConstructiveCauchyReals` defines constructive real numbers
+  by Cauchy sequences of rational numbers
+  (`#10445 <https://github.com/coq/coq/pull/10445>`_, by Vincent Semeria,
+  with the help and review of Guillaume Melquiond and Bas Spitters).
+- **Added:**
+  New module `Reals.ClassicalDedekindReals` defines Dedekind real
+  numbers as boolean-valued functions along with 3 logical axioms:
+  limited principle of omniscience, excluded middle of negations, and
+  functional extensionality.  The exposed type :g:`R` in module
+  :g:`Reals.Rdefinitions` now corresponds to these Dedekind reals,
+  hidden behind an opaque module, which significantly reduces the
+  number of axioms needed (see `Reals.Rdefinitions` and
+  `Reals.Raxioms`), while preserving backward compatibility.
+  Classical Dedekind reals are a quotient of constructive reals, which
+  allows to transport many constructive proofs to the classical case
+  (`#10827 <https://github.com/coq/coq/pull/10827>`_, by Vincent Semeria,
+  based on discussions with Guillaume Melquiond, Bas Spitters and Hugo Herbelin,
+  code review by Hugo Herbelin).
+- **Added:**
+  New lemmas on :g:`combine`, :g:`filter`, :g:`nodup`, :g:`nth`, and
+  :g:`nth_error` functions on lists
+  (`#10651 <https://github.com/coq/coq/pull/10651>`_, and
+  `#10731 <https://github.com/coq/coq/pull/10731>`_, by Oliver Nash).
+- **Changed:**
+  The lemma :g:`filter_app` was moved to the :g:`List` module
+  (`#10651 <https://github.com/coq/coq/pull/10651>`_, by Oliver Nash).
+- **Added:**
+  Standard equivalence between weak excluded-middle and the
+  classical instance of De Morgan's law, in module :g:`ClassicalFacts`
+  (`#10895 <https://github.com/coq/coq/pull/10895>`_, by Hugo Herbelin).
+
+**Infrastructure and dependencies**
+
+- **Changed:**
+  Coq now officially supports OCaml 4.08.
+  See `INSTALL` file for details
+  (`#10471 <https://github.com/coq/coq/pull/10471>`_,
+  by Emilio Jesús Gallego Arias).
+
 Version 8.10
 ------------
 
