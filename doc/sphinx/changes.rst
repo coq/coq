@@ -69,7 +69,22 @@ Karl Palmskog, Matthieu Sozeau, Enrico Tassi with contributions
 from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
 
-The ?? contributors to this version are
+The 61 contributors to this version are Michael D. Adams, Guillaume
+Allais, Helge Bahmann, Langston Barrett, Guillaume Bertholon, Frédéric
+Besson, Simon Boulier, Michele Caci, Tej Chajed, Arthur Charguéraud,
+Cyril Cohen, Frédéric Dabrowski, Arthur Azevedo de Amorim, Maxime
+Dénès, Nikita Eshkeev, Jim Fehrle, Emilio Jesús Gallego Arias,
+Paolo G. Giarrusso, Gaëtan Gilbert, Georges Gonthier, Jason Gross,
+Samuel Gruetter, Armaël Guéneau, Hugo Herbelin, Florent Hivert, Jasper
+Hugunin, Shachar Itzhaky, Jan-Oliver Kaiser, Robbert Krebbers, Vincent
+Laporte, Olivier Laurent, Samuel Lelièvre, Nicholas Lewycky, Yishuai
+Li, Jose Fernando Lopez Fernandez, Andreas Lynge, Kenji Maillard, Erik
+Martin-Dorel, Guillaume Melquiond, Alexandre Moine, Oliver Nash,
+Wojciech Nawrocki, Antonio Nikishaev, Pierre-Marie Pédrot, Clément
+Pit-Claudel, Lars Rasmusson, Robert Rand, Talia Ringer, JP Rodi,
+Pierre Roux, Kazuhiko Sakaguchi, Vincent Semeria, Michael Soegtrop,
+Matthieu Sozeau, spanjel, Claude Stolze, Enrico Tassi, Laurent Théry,
+James R. Wilcox, Xia Li-yao, Théo Zimmermann
 
 Many power users helped to improve the design of the new features via
 the issue and pull request system, the |Coq| development mailing list,
@@ -79,10 +94,10 @@ exhaustively the names of everybody who to some extent influenced the
 development.
 
 Version 8.11 is the sixth release of |Coq| developed on a time-based
-development cycle. Its development spanned ?? months from the release of
+development cycle. Its development spanned 3 months from the release of
 |Coq| 8.10. Pierre-Marie Pédrot is the release manager and maintainer of this
-release, assisted by Matthieu Sozeau. This release is the result of ~???
-commits and ~??? PRs merged, closing ???+ issues.
+release, assisted by Matthieu Sozeau. This release is the result of 2000+
+commits and 300+ PRs merged, closing 75+ issues.
 
 | Paris, November 2019,
 | Matthieu Sozeau for the |Coq| development team
