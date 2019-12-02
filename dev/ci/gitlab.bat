@@ -40,6 +40,10 @@ SET PATH=%PATH%;C:\Program Files\7-Zip\;C:\Program Files\Microsoft SDKs\Windows\
 REM Enable all addons on release branch
 SET WINDOWS=enabled_all_addons
 
+REM TODO:
+REM -addon=interval ^
+REM -addon=gappa
+
 IF "%WINDOWS%" == "enabled_all_addons" (
   SET EXTRA_ADDONS=^
     -addon=bignums ^
@@ -55,9 +59,7 @@ IF "%WINDOWS%" == "enabled_all_addons" (
     -addon=vst ^
     -addon=aactactics ^
     -addon=flocq ^
-    -addon=interval ^
-    -addon=gappa_tool ^
-    -addon=gappa
+    -addon=gappa_tool
 ) ELSE (
   SET "EXTRA_ADDONS= "
 )
