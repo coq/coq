@@ -21,6 +21,10 @@
 : "${oddorder_CI_GITURL:=https://github.com/math-comp/odd-order}"
 : "${oddorder_CI_ARCHIVEURL:=${oddorder_CI_GITURL}/archive}"
 
+: "${finmap_CI_REF:=master}"
+: "${finmap_CI_GITURL:=https://github.com/math-comp/finmap}"
+: "${finmap_CI_ARCHIVEURL:=${finmap_CI_GITURL}/archive}"
+
 ########################################################################
 # UniMath
 ########################################################################

@@ -129,4 +129,8 @@ install_ssralg()
     make -C algebra && \
     make -C algebra install )
 
+  git_download finmap
+
+  ( cd "${CI_BUILD_DIR}/finmap" && make && make install )
+
 }
