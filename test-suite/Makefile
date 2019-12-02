@@ -543,13 +543,15 @@ $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	    res=`echo "$$res"00 | sed -n -e "s/\([0-9]*\)\.\([0-9][0-9]\).*/\1\2/p"`; \
 	    true "find expected time * 100"; \
 	    exp=`sed -n -e "s/(\*.*Expected time < \([0-9]\).\([0-9][0-9]\)s.*\*)/\1\2/p" "$<"`; \
+	    true "compute corrected effective time, rounded up"; \
+	    rescorrected=`expr \( $$res \* $(bogomips) \+ 6120 \- 1 \) \/ 6120`; \
 	    ok=`expr \( $$res \* $(bogomips) \) "<" \( $$exp \* 6120 \)`; \
 	    if [ "$$ok" = 1 ]; then \
 	      echo $(log_success); \
 	      echo "    $<...Ok"; \
 	    else \
 	      echo $(log_failure); \
-	      echo "    $<...Error! (should run faster)"; \
+	      echo "    $<...Error! (should run faster ($$rescorrected >= $$exp))"; \
 	      $(FAIL); \
 	    fi; \
 	  fi; \
