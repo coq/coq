@@ -14,11 +14,11 @@ STRIP_REG = re.compile('^(coq/|contrib/|)(?:theories/|src/)?')
 STRIP_REP = r'\1'
 INFINITY  = '\u221e'
 
-def parse_args(argv, USAGE, HELP_STRING):
+def parse_args(args, USAGE, HELP_STRING):
     sort_by = 'auto'
-    if any(arg.startswith('--sort-by=') for arg in argv[1:]):
-        sort_by = [arg for arg in argv[1:] if arg.startswith('--sort-by=')][-1][len('--sort-by='):]
-    args = [arg for arg in argv if not arg.startswith('--sort-by=')]
+    if any(arg.startswith('--sort-by=') for arg in args[1:]):
+        sort_by = [arg for arg in args[1:] if arg.startswith('--sort-by=')][-1][len('--sort-by='):]
+    args = [arg for arg in args if not arg.startswith('--sort-by=')]
     if len(args) < 3 or '--help' in args[1:] or '-h' in args[1:] or sort_by not in ('auto', 'absolute', 'diff'):
         print(USAGE)
         if '--help' in args[1:] or '-h' in args[1:]:
@@ -26,6 +26,18 @@ def parse_args(argv, USAGE, HELP_STRING):
             if len(args) == 2: sys.exit(0)
         sys.exit(1)
     return sort_by, args
+
+def parse_args_with_fuzz(args, USAGE, HELP_STRING):
+    fuzz = 0
+    if any(arg.startswith('--fuzz=') for arg in args[1:]):
+        fuzz = int([arg for arg in args[1:] if arg.startswith('--fuzz=')][-1][len('--fuzz='):])
+        if fuzz < 0:
+            print(USAGE)
+            print('ERROR: fuzz must be non-negative (%d is invalid)' % fuzz)
+            sys.exit(1)
+    args = [arg for arg in args if not arg.startswith('--fuzz=')]
+    sort_by, args = parse_args(args, USAGE, HELP_STRING)
+    return fuzz, sort_by, args
 
 
 def reformat_time_string(time):
@@ -82,6 +94,67 @@ def get_single_file_times(file_name):
     longest = max(max((len(start), len(stop))) for start, stop, name, time, extra in times)
     FORMAT = 'Chars %%0%dd - %%0%dd %%s' % (longest, longest)
     return dict((FORMAT % (int(start), int(stop), name), reformat_time_string(time)) for start, stop, name, time, extra in times)
+
+def fuzz_merge(l1, l2, fuzz):
+    '''Takes two iterables of ((start, end, code), times) and a fuzz
+    parameter, and yields a single iterable of ((start, stop, code),
+    times1, times2)
+
+    We only give both left and right if (a) the codes are the same,
+    (b) the number of characters (stop - start) is the same, and (c)
+    the difference between left and right code locations is <= fuzz.
+
+    We keep a current guess at the overall offset, and prefer drawing
+    from whichever list is earliest after correcting for current
+    offset.
+
+    '''
+    assert(fuzz >= 0)
+    cur_fuzz = 0
+    l1 = list(l1)
+    l2 = list(l2)
+    cur1, cur2 = None, None
+    while (len(l1) > 0 or cur1 is not None) and (len(l2) > 0 or cur2 is not None):
+        if cur1 is None: cur1 = l1.pop(0)
+        if cur2 is None: cur2 = l2.pop(0)
+        ((s1, e1, c1), t1), ((s2, e2, c2), t2) = cur1, cur2
+        assert(t1 is not None)
+        assert(t2 is not None)
+        s2_adjusted, e2_adjusted = s2 + cur_fuzz, e2 + cur_fuzz
+        if cur1[0] == cur2[0]:
+            yield (cur1, cur2)
+            cur1, cur2 = None, None
+            cur_fuzz = 0
+        elif c1 == c2 and e1-s1 == e2-s2 and abs(s1 - s2) <= fuzz:
+            yield (((s1, e1, c1), t1), ((s2, e2, c2), t2))
+            cur1, cur2 = None, None
+            cur_fuzz = s1 - s2
+        elif s1 < s2_adjusted or (s1 == s2_adjusted and e1 <= e2):
+            yield (((s1, e1, c1), t1), ((s1 - cur_fuzz, e1 - cur_fuzz, c1), None))
+            cur1 = None
+        else:
+            yield (((s2 + cur_fuzz, e2 + cur_fuzz, c2), None), ((s2, e2, c2), t2))
+            cur2 = None
+    if len(l1) > 0:
+        for i in l1: yield (i, (i[0], None))
+    elif len(l2) > 0:
+        for i in l2: yield ((i[0], None), i)
+
+def adjust_fuzz(left_dict, right_dict, fuzz):
+    reg = re.compile(r'Chars ([0-9]+) - ([0-9]+) (.*)$')
+    left_dict_list = sorted(((int(s), int(e), c), v) for ((s, e, c), v) in ((reg.match(k).groups(), v) for k, v in left_dict.items()))
+    right_dict_list = sorted(((int(s), int(e), c), v) for ((s, e, c), v) in ((reg.match(k).groups(), v) for k, v in right_dict.items()))
+    merged = list(fuzz_merge(left_dict_list, right_dict_list, fuzz))
+    longest = max(max((len(str(start1)), len(str(stop1)), len(str(start2)), len(str(stop2)))) for ((start1, stop1, code1), t1), ((start2, stop2, code2), t2) in merged)
+    FORMAT1 = 'Chars %%0%dd - %%0%dd %%s' % (longest, longest)
+    FORMAT2 = 'Chars %%0%dd-%%0%dd ~ %%0%dd-%%0%dd %%s' % (longest, longest, longest, longest)
+    if fuzz == 0:
+        left_dict = dict((FORMAT1 % k, t1) for (k, t1), _ in merged if t1 is not None)
+        right_dict = dict((FORMAT1 % k, t2) for _, (k, t2) in merged if t2 is not None)
+    else:
+        left_dict = dict((FORMAT2 % (s1, e1, s2, e2, c1), t1) for ((s1, e1, c1), t1), ((s2, e2, c2), t2) in merged if t1 is not None)
+        right_dict = dict((FORMAT2 % (s1, e1, s2, e2, c1), t2) for ((s1, e1, c1), t1), ((s2, e2, c2), t2) in merged if t2 is not None)
+    return left_dict, right_dict
 
 def fix_sign_for_sorting(num, descending=True):
     return -num if descending else num

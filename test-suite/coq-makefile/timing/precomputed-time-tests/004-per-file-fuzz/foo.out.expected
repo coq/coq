@@ -1,0 +1,24 @@
+After    | Code                                   | Before   || Change    | % Change
+------------------------------------------------------------------------------------
+0m00.00s | Total                                  | 0m00.00s || +0m00.00s | N/A     
+------------------------------------------------------------------------------------
+0m00.s   | Chars 000-010 ~ 000-010 [Goal~_~True.] | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 013-021 ~ 013-021 [exact~I.]     |   N/A    || +0m00.00s | N/A     
+  N/A    | Chars 013-025 ~ 013-025 [constructor.] | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 022-026 ~ 026-030 [Qed.]         | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 028-038 ~ 032-042 [Goal~_~True.] | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 041-049 ~ 045-053 [exact~I.]     |   N/A    || +0m00.00s | N/A     
+  N/A    | Chars 041-053 ~ 045-057 [constructor.] | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 050-054 ~ 058-062 [Qed.]         | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 056-066 ~ 064-074 [Goal~_~True.] | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 069-077 ~ 077-085 [exact~I.]     |   N/A    || +0m00.00s | N/A     
+  N/A    | Chars 069-081 ~ 077-089 [constructor.] | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 078-082 ~ 090-094 [Qed.]         | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 084-094 ~ 096-106 [Goal~_~True.] | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 097-105 ~ 109-117 [exact~I.]     |   N/A    || +0m00.00s | N/A     
+  N/A    | Chars 097-109 ~ 109-121 [constructor.] | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 106-110 ~ 122-126 [Qed.]         | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 112-122 ~ 128-138 [Goal~_~True.] | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 125-133 ~ 141-149 [exact~I.]     |   N/A    || +0m00.00s | N/A     
+  N/A    | Chars 125-137 ~ 141-153 [constructor.] | 0m00.s   || +0m00.00s | N/A     
+0m00.s   | Chars 134-138 ~ 154-158 [Qed.]         | 0m00.s   || +0m00.00s | N/A     

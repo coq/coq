@@ -3,10 +3,11 @@ import sys
 from TimeFileMaker import *
 
 if __name__ == '__main__':
-    USAGE = 'Usage: %s [--sort-by=auto|absolute|diff] AFTER_FILE_NAME BEFORE_FILE_NAME [OUTPUT_FILE_NAME ..]' % sys.argv[0]
+    USAGE = 'Usage: %s [--sort-by=auto|absolute|diff] [--fuzz=N] AFTER_FILE_NAME BEFORE_FILE_NAME [OUTPUT_FILE_NAME ..]' % sys.argv[0]
     HELP_STRING = r'''Formats timing information from the output of two invocations of `coqc -time` into a sorted table'''
-    sort_by, args = parse_args(sys.argv, USAGE, HELP_STRING)
+    fuzz, sort_by, args = parse_args_with_fuzz(sys.argv, USAGE, HELP_STRING)
     left_dict = get_single_file_times(args[1])
     right_dict = get_single_file_times(args[2])
+    left_dict, right_dict = adjust_fuzz(left_dict, right_dict, fuzz=fuzz)
     table = make_diff_table_string(left_dict, right_dict, tag="Code", sort_by=sort_by)
     print_or_write_table(table, args[3:])

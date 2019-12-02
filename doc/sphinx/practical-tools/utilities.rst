@@ -255,7 +255,7 @@ file timing data:
     one, you can pass them via the variable ``TGTS``, e.g., ``make pretty-timed
     TGTS="a.vo b.vo"``.
 
-    .. ::
+    .. note::
        This target requires ``python`` to build the table.
 
     .. note::
@@ -310,6 +310,11 @@ file timing data:
        (which are frequently noise); lexicographic sorting forces an order on
        files which take effectively no time to compile.
 
+       If you prefer a different sorting order, you can pass
+       ``TIMING_SORT_BY=absolute`` to sort by the total time taken, or
+       ``TIMING_SORT_BY=diff`` to sort by the signed difference in
+       time.
+
     .. example::
 
         For example, the output table from
@@ -363,6 +368,21 @@ line timing data:
 
     .. note::
        This target requires python to build the table.
+
+    .. note::
+       This target follows the same sorting order as the
+       ``print-pretty-timed-diff`` target, and supports the same
+       options for the ``TIMING_SORT_BY`` variable.
+
+    .. note::
+       By default, two lines are only considered the same if the
+       character offsets and initial code strings match.  Passing
+       ``TIMING_FUZZ=N`` relaxes this constraint by allowing the
+       character offsets to differ by up to ``N`` characters, as long
+       as the total number of characters and initial code strings
+       continue to match.  This is useful when there are small changes
+       to a file, and you want to match later lines that have not
+       changed even though the character offsets have changed.
 
     .. example::
 
