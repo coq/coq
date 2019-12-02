@@ -1076,14 +1076,14 @@ let string_of_definition_object_kind = let open Decls in function
               let pr_br imp force x =
                 let left,right =
                 match imp with
-                | Impargs.Implicit -> str "[", str "]"
-                | Impargs.MaximallyImplicit -> str "{", str "}"
-                | Impargs.NotImplicit -> if force then str"(",str")" else mt(),mt()
+                | Glob_term.NonMaxImplicit -> str "[", str "]"
+                | Glob_term.MaxImplicit -> str "{", str "}"
+                | Glob_term.Explicit -> if force then str"(",str")" else mt(),mt()
                 in
                 left ++ x ++ right
               in
               let get_arguments_like s imp tl =
-                if s = None && imp = Impargs.NotImplicit then [], tl
+                if s = None && imp = Glob_term.Explicit then [], tl
                 else
                   let rec fold extra = function
                     | RealArg arg :: tl when

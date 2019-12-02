@@ -14,6 +14,7 @@ open Util
 open Names
 open Constr
 open Globnames
+open Glob_term
 open Declarations
 open Lib
 open Libobject
@@ -80,10 +81,24 @@ let with_implicit_protection f x =
     let () = implicit_args := oflags in
     iraise reraise
 
-let set_maximality imps b =
+type on_trailing_implicit = Error | Info | Silent
+
+let msg_trailing_implicit (fail : on_trailing_implicit) id =
+  let str1 = "Argument " ^ Names.Id.to_string id ^ " is a trailing implicit, " in
+  match fail with
+  | Error ->
+    user_err (strbrk (str1 ^ "so it can't be declared non maximal. Please use { } instead of [ ]."))
+  | Info ->
+    Flags.if_verbose Feedback.msg_info (strbrk (str1 ^ "so it has been declared maximally inserted."))
+  | Silent -> ()
+
+let set_maximality fail id imps b =
   (* Force maximal insertion on ending implicits (compatibility) *)
-  let is_set x = match x with None -> false | _ -> true in
-  b || List.for_all is_set imps
+  b || (
+    let is_set x = match x with None -> false | _ -> true in
+    let b' = List.for_all is_set imps in
+    if b' then msg_trailing_implicit fail id;
+    b')
 
 (*s Computation of implicit arguments *)
 
@@ -302,6 +317,11 @@ let is_status_implicit = function
 
 let name_of_pos k = Id.of_string ("arg_" ^ string_of_int k)
 
+let binding_kind_of_status = function
+  | Some (_, _, (false, _)) -> NonMaxImplicit
+  | Some (_, _, (true, _)) -> MaxImplicit
+  | None -> Explicit
+
 let name_of_implicit = function
   | None -> anomaly (Pp.str "Not an implicit argument.")
   | Some (ExplByName id,_,_) -> id
@@ -340,19 +360,19 @@ let rec prepare_implicits f = function
   | (Anonymous, Some _)::_ -> anomaly (Pp.str "Unnamed implicit.")
   | (Name id, Some imp)::imps ->
       let imps' = prepare_implicits f imps in
-      Some (ExplByName id,imp,(set_maximality imps' f.maximal,true)) :: imps'
+      Some (ExplByName id,imp,(set_maximality Silent id imps' f.maximal,true)) :: imps'
   | _::imps -> None :: prepare_implicits f imps
 
-let set_manual_implicits flags enriching autoimps l =
+let set_manual_implicits silent flags enriching autoimps l =
   (* Compare with automatic implicits to recover printing data and names *)
   let rec merge k autoimps explimps = match autoimps, explimps with
     | autoimp::autoimps, explimp::explimps ->
        let imps' = merge (k+1) autoimps explimps in
        begin match autoimp, explimp.CAst.v with
        | (Name id,_), Some (_,max) ->
-          Some (ExplByName id, Manual, (set_maximality imps' max, true))
+          Some (ExplByName id, Manual, (set_maximality (if silent then Silent else Error) id imps' max, true))
        | (Name id,Some exp), None when enriching ->
-          Some (ExplByName id, exp, (set_maximality imps' flags.maximal, true))
+          Some (ExplByName id, exp, (set_maximality (if silent then Silent else Info) id imps' flags.maximal, true))
        | (Name _,_), None -> None
        | (Anonymous,_), Some (Name id,max) ->
           Some (ExplByName id,Manual,(max,true))
@@ -497,8 +517,9 @@ let impls_of_context ctx =
   let map decl =
     let id = NamedDecl.get_id decl in
     match Id.Map.get id !sec_implicits with
-    | Glob_term.Implicit -> Some (ExplByName id, Manual, (true, true))
-    | Glob_term.Explicit -> None
+    | NonMaxImplicit -> Some (ExplByName id, Manual, (false, true))
+    | MaxImplicit -> Some (ExplByName id, Manual, (true, true))
+    | Explicit -> None
   in
   List.rev_map map (List.filter (NamedDecl.is_local_assum) ctx)
 
@@ -608,7 +629,7 @@ type manual_implicits = (Name.t * bool) option CAst.t list
 
 let compute_implicits_with_manual env sigma typ enriching l =
   let autoimpls = compute_auto_implicits env sigma !implicit_args enriching typ in
-  set_manual_implicits !implicit_args enriching autoimpls l
+  set_manual_implicits true !implicit_args enriching autoimpls l
 
 let check_inclusion l =
   (* Check strict inclusion *)
@@ -636,7 +657,7 @@ let declare_manual_implicits local ref ?enriching l =
   let t = of_constr t in
   let enriching = Option.default flags.auto enriching in
   let autoimpls = compute_auto_implicits env sigma flags enriching t in
-  let l = [DefaultImpArgs, set_manual_implicits flags enriching autoimpls l] in
+  let l = [DefaultImpArgs, set_manual_implicits false flags enriching autoimpls l] in
   let req =
     if is_local local ref then ImplLocal
     else ImplInteractive(flags,ImplManual (List.length autoimpls))
@@ -647,22 +668,16 @@ let maybe_declare_manual_implicits local ref ?enriching l =
     declare_manual_implicits local ref ?enriching l
 
 
-let msg_trailing_implicit id =
-  user_err (strbrk ("Argument " ^ Names.Id.to_string id ^ " is a trailing implicit, so it can't be declared non maximal. Please use { } instead of [ ]."))
-
-type implicit_kind = Implicit | MaximallyImplicit | NotImplicit
-
 let compute_implicit_statuses autoimps l =
   let rec aux i = function
-    | _ :: autoimps, NotImplicit :: manualimps -> None :: aux (i+1) (autoimps, manualimps)
-    | Name id :: autoimps, MaximallyImplicit :: manualimps ->
+    | _ :: autoimps, Explicit :: manualimps -> None :: aux (i+1) (autoimps, manualimps)
+    | Name id :: autoimps, MaxImplicit :: manualimps ->
        Some (ExplByName id, Manual, (true, true)) :: aux (i+1) (autoimps, manualimps)
-    | Name id :: autoimps, Implicit :: manualimps ->
+    | Name id :: autoimps, NonMaxImplicit :: manualimps ->
        let imps' = aux (i+1) (autoimps, manualimps) in
-       let max = set_maximality imps' false in
-       if max then msg_trailing_implicit id;
+       let max = set_maximality Error id imps' false in
        Some (ExplByName id, Manual, (max, true)) :: imps'
-    | Anonymous :: _, (Implicit | MaximallyImplicit) :: _ ->
+    | Anonymous :: _, (NonMaxImplicit | MaxImplicit) :: _ ->
        user_err ~hdr:"set_implicits"
          (strbrk ("Argument number " ^ string_of_int i ^ " (anonymous in original definition) cannot be declared implicit."))
     | autoimps, [] -> List.map (fun _ -> None) autoimps
@@ -684,7 +699,7 @@ let set_implicits local ref l =
        check_rigidity (is_rigid env sigma t);
        (* Sort by number of implicits, decreasing *)
        let is_implicit = function
-         | NotImplicit -> false
+         | Explicit -> false
          | _ -> true in
        let l = List.map (fun imps -> (imps,List.count is_implicit imps)) l in
        let l = List.sort (fun (_,n1) (_,n2) -> n2 - n1) l in

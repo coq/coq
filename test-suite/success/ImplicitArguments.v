@@ -1,3 +1,15 @@
+
+Axiom foo : forall (x y z t : nat), nat.
+
+Arguments foo {_} _ [z] t.
+Check (foo 1).
+Arguments foo {_} _ {z} {t}.
+Fail Arguments foo {_} _ [z] {t}.
+Check (foo 1).
+
+Definition foo1 [m] n := n + m.
+Check (foo1 1).
+
 Inductive vector {A : Type} : nat -> Type :=
 | vnil : vector 0
 | vcons : A -> forall {n'}, vector n' -> vector (S n').

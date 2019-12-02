@@ -270,7 +270,7 @@ let context ~poly l =
         | Some (Name id',_) -> Id.equal name id'
         | _ -> false
       in
-      let impl = Glob_term.(if List.exists test impls then Implicit else Explicit) in
+      let impl = Glob_term.(if List.exists test impls then MaxImplicit else Explicit) in (* ??? *)
       name,b,t,impl)
       ctx
   in

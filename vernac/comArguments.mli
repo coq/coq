@@ -12,6 +12,6 @@ val vernac_arguments
   : section_local:bool
   -> Libnames.qualid Constrexpr.or_by_notation
   -> Vernacexpr.vernac_argument_status list
-  -> (Names.Name.t * Impargs.implicit_kind) list list
+  -> (Names.Name.t * Glob_term.binding_kind) list list
   -> Vernacexpr.arguments_modifier list
   -> unit

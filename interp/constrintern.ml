@@ -330,15 +330,18 @@ let exists_name na l =
   | _ -> false
 
 let build_impls ?loc n bk na acc =
-  match bk with
-  | Implicit ->
+  let impl_status max =
     let na =
-       if exists_name na acc then begin warn_shadowed_implicit_name ?loc na; Anonymous end
-       else na in
+      if exists_name na acc then begin warn_shadowed_implicit_name ?loc na; Anonymous end
+      else na in
     let impl = match na with
-     | Name id -> Some (ExplByName id,Manual,(true,true))
-     | Anonymous -> Some (ExplByPos (n,None),Manual,(true,true)) in
-     impl :: acc
+      | Name id -> Some (ExplByName id,Manual,(true,true))
+      | Anonymous -> Some (ExplByPos (n,None),Manual,(true,true)) in
+    impl
+  in
+  match bk with
+  | NonMaxImplicit -> impl_status false :: acc
+  | MaxImplicit -> impl_status true :: acc
   | Explicit -> None :: acc
 
 let impls_binder_list =
@@ -426,7 +429,7 @@ let warn_unexpected_implicit_binder_declaration =
     Pp.(fun () -> str "Unexpected implicit binder declaration.")
 
 let check_implicit_meaningful ?loc k env =
-  if k = Implicit && env.impl_binder_index = None then
+  if k <> Explicit && env.impl_binder_index = None then
     warn_unexpected_implicit_binder_declaration ?loc ()
 
 let intern_generalized_binder intern_type ntnvars
@@ -444,7 +447,7 @@ let intern_generalized_binder intern_type ntnvars
   check_implicit_meaningful ?loc b' env;
   let bl = List.map
     CAst.(map (fun id ->
-      (Name id, Implicit, DAst.make ?loc @@ GHole (Evar_kinds.BinderType (Name id), IntroAnonymous, None))))
+      (Name id, MaxImplicit, DAst.make ?loc @@ GHole (Evar_kinds.BinderType (Name id), IntroAnonymous, None))))
     fvs
   in
   let na = match na with
@@ -2500,8 +2503,10 @@ let interp_glob_context_evars ?(program_mode=false) env sigma k bl =
               let r = Retyping.relevance_of_type env sigma t in
               let d = LocalAssum (make_annot na r,t) in
               let impls =
-                if k == Implicit then CAst.make (Some (na,true)) :: impls
-                else CAst.make None :: impls
+                match k with
+                | NonMaxImplicit -> CAst.make (Some (na,false)) :: impls
+                | MaxImplicit -> CAst.make (Some (na,true)) :: impls
+                | Explicit -> CAst.make None :: impls
               in
                 (push_rel d env, sigma, d::params, succ n, impls)
           | Some b ->

@@ -157,3 +157,10 @@ Check fun f : forall {_:nat}, nat => f (arg_1:=0).
 Set Warnings "+syntax".
 Check id (fun x => let f c {a} (b:a=a) := b in f true (eq_refl 0)).
 Set Warnings "syntax".
+
+
+Axiom eq0le0 : forall (n : nat) (x : n = 0), n <= 0.
+Variable eq0le0' : forall (n : nat) {x : n = 0}, n <= 0.
+Axiom eq0le0'' : forall (n : nat) {x : n = 0}, n <= 0.
+Definition eq0le0''' : forall (n : nat) {x : n = 0}, n <= 0. Admitted.
+Fail Axiom eq0le0'''' : forall [n : nat] {x : n = 0}, n <= 0.
