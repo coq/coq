@@ -662,10 +662,6 @@ library:ci-math-classes:
 library:ci-math-comp:
   extends: .ci-template-flambda
 
-library:ci-sf:
-  extends: .ci-template
-  allow_failure: true # Waiting for integration of the fix for #10476
-
 library:ci-stdlib2:
   extends: .ci-template-flambda
 
