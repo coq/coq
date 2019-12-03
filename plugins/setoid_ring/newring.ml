@@ -358,7 +358,7 @@ let find_ring_structure env sigma l =
              spc() ++ str"\"" ++ pr_econstr_env env sigma ty ++ str"\""))
     | [] -> assert false
 
-let add_entry (sp,_kn) e =
+let add_entry e =
   from_carrier := Cmap.add e.ring_carrier e !from_carrier
 
 let subst_th (subst,th) =
@@ -403,7 +403,7 @@ let subst_th (subst,th) =
 
 
 let theory_to_obj : ring_info -> obj =
-  let cache_th (name,th) = add_entry name th in
+  let cache_th (_, th) = add_entry th in
   declare_object @@ global_object_nodischarge "tactic-new-ring-theory"
     ~cache:cache_th
     ~subst:(Some subst_th)
@@ -599,7 +599,7 @@ let add_theory0 name (sigma, rth) eqth morphth cst_tac (pre,post) power sign div
   let req = EConstr.to_constr sigma req in
   let sth = EConstr.to_constr sigma sth in
   let _ =
-    Lib.add_leaf name
+    Lib.add_anonymous_leaf
       (theory_to_obj
         { ring_name = name;
           ring_carrier = r;
@@ -814,7 +814,7 @@ let find_field_structure env sigma l =
              spc()++str"\""++pr_econstr_env env sigma ty++str"\""))
     | [] -> assert false
 
-let add_field_entry (sp,_kn) e =
+let add_field_entry e =
   field_from_carrier := Cmap.add e.field_carrier e !field_from_carrier
 
 let subst_th (subst,th) =
@@ -855,7 +855,7 @@ let subst_th (subst,th) =
       field_post_tac = posttac' }
 
 let ftheory_to_obj : field_info -> obj =
-  let cache_th (name,th) = add_field_entry name th in
+  let cache_th (_, th) = add_field_entry th in
   declare_object @@ global_object_nodischarge "tactic-new-field-theory"
     ~cache:cache_th
     ~subst:(Some subst_th)
@@ -925,7 +925,7 @@ let add_field_theory0 name fth eqth morphth cst_tac inj (pre,post) power sign od
   let r = EConstr.to_constr sigma r in
   let req = EConstr.to_constr sigma req in
   let _ =
-    Lib.add_leaf name
+    Lib.add_anonymous_leaf
       (ftheory_to_obj
         { field_name = name;
           field_carrier = r;
