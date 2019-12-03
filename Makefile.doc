@@ -71,7 +71,10 @@ refman-%: $(SPHINX_DEPS) doc/unreleased.rst
 	$(HIDE)$(SPHINXENV) $(SPHINXBUILD) -b $* \
 		$(ALLSPHINXOPTS) doc/sphinx $(SPHINXBUILDDIR)/$*
 
+COQREFMAN_FILES := $(wildcard $(SPHINXBUILDDIR)/latex/CoqRefMan*)
+LATEX_REMOVE_FILES := $(filter-out $(SPHINXBUILDDIR)/latex/CoqRefMan.tex, $(COQREFMAN_FILES))
 refman-pdf: refman-latex
+	rm -f $(LATEX_REMOVE_FILES)
 	+$(MAKE) -C $(SPHINXBUILDDIR)/latex
 
 refman: $(SPHINX_DEPS)
