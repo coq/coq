@@ -14,7 +14,7 @@
 
     This file is own its way to deprecation in favor of a purely
    functional state, but meanwhile it will contain options that are
-   truly global to the system such as [compat] or [debug]
+   truly global to the system such as [debug]
 
     If you are thinking about adding a global flag, well, just
    don't. First of all, options make testins exponentially more
@@ -51,13 +51,6 @@ val we_are_parsing : bool ref
 
 (* Set Printing All flag. For some reason it is a global flag *)
 val raw_print : bool ref
-
-type compat_version = V8_9 | V8_10 | V8_11 | Current
-val compat_version : compat_version ref
-val version_compare : compat_version -> compat_version -> int
-val version_strictly_greater : compat_version -> bool
-val version_less_or_equal : compat_version -> bool
-val pr_version : compat_version -> string
 
 (* Beautify command line flags, should move to printing? *)
 val beautify : bool ref

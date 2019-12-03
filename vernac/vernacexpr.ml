@@ -105,7 +105,7 @@ type instance_flag  = bool option
   (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
 type export_flag    = bool (* true = Export;        false = Import         *)
 type inductive_flag = Declarations.recursivity_kind
-type onlyparsing_flag = Flags.compat_version option
+type onlyparsing_flag = { onlyparsing : bool }
  (* Some v = Parse only;  None = Print also.
     If v<>Current, it contains the name of the coq version
     which this notation is trying to be compatible with *)
@@ -185,7 +185,6 @@ type syntax_modifier =
   | SetEntryType of string * Extend.simple_constr_prod_entry_key
   | SetOnlyParsing
   | SetOnlyPrinting
-  | SetCompatVersion of Flags.compat_version
   | SetFormat of string * lstring
 
 type proof_end =

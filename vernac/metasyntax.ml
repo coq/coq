@@ -805,7 +805,6 @@ type notation_modifier = {
   (* common to syn_data below *)
   only_parsing  : bool;
   only_printing : bool;
-  compat        : Flags.compat_version option;
   format        : lstring option;
   extra         : (string * string) list;
 }
@@ -818,7 +817,6 @@ let default = {
   subtyps       = [];
   only_parsing  = false;
   only_printing = false;
-  compat        = None;
   format        = None;
   extra         = [];
 }
@@ -877,8 +875,6 @@ let interp_modifiers modl = let open NotationMods in
         interp subtyps { acc with only_parsing = true; } l
     | SetOnlyPrinting :: l ->
         interp subtyps { acc with only_printing = true; } l
-    | SetCompatVersion v :: l ->
-        interp subtyps { acc with compat = Some v; } l
     | SetFormat ("text",s) :: l ->
         if not (Option.is_empty acc.format) then user_err Pp.(str "A format is given more than once.");
         interp subtyps { acc with format = Some s; } l
@@ -916,7 +912,6 @@ let check_binder_type recvars etyps =
 let not_a_syntax_modifier = function
 | SetOnlyParsing -> true
 | SetOnlyPrinting -> true
-| SetCompatVersion _ -> true
 | _ -> false
 
 let no_syntax_modifiers mods = List.for_all not_a_syntax_modifier mods
@@ -1213,32 +1208,12 @@ let check_locality_compatibility local custom i_typs =
                     strbrk " which is local."))
       (List.uniquize allcustoms)
 
-let warn_deprecated_compat =
-  CWarnings.create ~name:"deprecated-compat" ~category:"deprecated"
-    (fun () -> Pp.(str"The \"compat\" modifier is deprecated." ++ spc () ++
-                   str"Please use the \"deprecated\" attributed instead."))
-
-(* Returns the new deprecation and the onlyparsing status. This should be
-removed together with the compat syntax modifier. *)
-let merge_compat_deprecation compat deprecation =
-  match compat, deprecation with
-  | Some Flags.Current, _ -> deprecation, true
-  | Some _, Some _ ->
-    CErrors.user_err Pp.(str"The \"compat\" modifier cannot be used with the \"deprecated\" attribute."
-                        ++ spc () ++ str"Please use only the latter.")
-  | Some v, None ->
-    warn_deprecated_compat ();
-    Some (Deprecation.make ~since:(Flags.pr_version v) ()), true
-  | None, Some _ -> deprecation, true
-  | None, None -> deprecation, false
-
 let compute_syntax_data ~local deprecation df modifiers =
   let open SynData in
   let open NotationMods in
   let mods = interp_modifiers modifiers in
   let onlyprint = mods.only_printing in
   let onlyparse = mods.only_parsing in
-  let deprecation, _ = merge_compat_deprecation mods.compat deprecation in
   if onlyprint && onlyparse then user_err (str "A notation cannot be both 'only printing' and 'only parsing'.");
   let assoc = Option.append mods.assoc (Some Gramlib.Gramext.NonA) in
   let (recvars,mainvars,symbols) = analyze_notation_tokens ~onlyprint df in
@@ -1659,7 +1634,7 @@ let try_interp_name_alias = function
   | [], { CAst.v = CRef (ref,_) } -> intern_reference ref
   | _ -> raise Not_found
 
-let add_syntactic_definition ~local deprecation env ident (vars,c) compat =
+let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing } =
   let vars,reversibility,pat =
     try [], APrioriReversible, NRef (try_interp_name_alias (vars,c))
     with Not_found ->
@@ -1673,7 +1648,6 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) compat =
       let map id = let (_,sc) = Id.Map.find id nvars in (id, sc) in
       List.map map vars, reversibility, pat
   in
-  let deprecation, onlyparsing = merge_compat_deprecation compat deprecation in
   let onlyparsing = onlyparsing || fst (printability None false reversibility pat) in
   Syntax_def.declare_syntactic_definition ~local deprecation ident ~onlyparsing (vars,pat)
 
