@@ -1,0 +1,187 @@
+diff/patch file created on Tue, Dec  3, 2019  8:33:46 PM with:
+difftar-folder.sh tarballs/interval-839a03e1bddbafab868fbceee59abe678e32a0f3.tar.gz interval-839a03e1bddbafab868fbceee59abe678e32a0f3 1
+TARFILE= tarballs/interval-839a03e1bddbafab868fbceee59abe678e32a0f3.tar.gz
+FOLDER= interval-839a03e1bddbafab868fbceee59abe678e32a0f3
+TARSTRIP= 1
+TARPREFIX= interval-839a03e1bddbafab868fbceee59abe678e32a0f3/
+ORIGFOLDER= interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig
+--- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Integral/Bertrand.v	2019-07-20 09:48:54.000000000 +0200
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Integral/Bertrand.v	2019-12-03 15:47:02.749603700 +0100
+@@ -1,6 +1,6 @@
+ From Coq Require Import Reals ZArith Psatz Fourier_util.
+ From Coquelicot Require Import Coquelicot AutoDerive.
+-From mathcomp.ssreflect Require Import ssreflect ssrfun ssrbool ssrnat bigop.
++From mathcomp.ssreflect Require Import ssreflect ssrfun ssrbool bigop.
+ 
+ Require Import Stdlib.
+ Require Import Coquelicot.
+@@ -8,6 +8,8 @@
+ Require Import Sig.
+ Require Import Interval.
+ 
++From mathcomp.ssreflect Require Import ssrnat.
++
+ Section powerRZMissing.
+ 
+ Lemma powerRZ_ind (P : Z -> (R -> R) -> Prop) :
+@@ -186,7 +188,7 @@
+ pose f'gplusfg' := (fun t : R => plus (f'g t) (fg' t)).
+ apply (is_RInt_ext (fun x => minus (f'gplusfg' x) (fg' x))) => [x HX|].
+ rewrite /f'gplusfg' /fg' /f /g /f'g.
+-by rewrite /minus -plus_assoc plus_opp_r plus_zero_r /scal.
++by rewrite /minus -Hierarchy.plus_assoc plus_opp_r plus_zero_r /scal.
+ apply: is_RInt_minus.
+ - apply: (is_RInt_ext (fun t : R => plus (scal (f' t) (g t)) (scal (f t) (g' t)))) =>[x Hx|].
+     by [].
+--- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Integral/Integral.v	2019-07-20 09:48:54.000000000 +0200
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Integral/Integral.v	2019-12-03 15:53:17.343170000 +0100
+@@ -242,7 +242,7 @@
+         exact: Rlt_le.
+       apply: Rplus_le_compat_r.
+       move: (Hu _ Hfau). rewrite /ball_norm /minus.
+-      rewrite -{2}[If]opp_opp -opp_plus norm_opp plus_comm.
++      rewrite -{2}[If]opp_opp -opp_plus norm_opp Hierarchy.plus_comm.
+       exact: Rlt_le.
+       rewrite /pos_div_2 /=; lra.
+       rewrite -opp_minus -[minus (RInt f a v) If]opp_minus. rewrite -opp_plus.
+@@ -274,7 +274,7 @@
+   unfold minus.
+   apply is_RInt_swap in HI1.
+   have HC := (is_RInt_Chasles _ _ _ _ _ _ HI1 HI2).
+-  rewrite plus_comm.
++  rewrite Hierarchy.plus_comm.
+   move: (H _ _ Qbu2 Qbv2) => /= .
+   move => /(_ _ HC) Hle.
+   apply: Rle_lt_trans Hle _.
+--- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Interval/Eval.v	2019-07-20 09:48:54.000000000 +0200
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Interval/Eval.v	2019-12-03 15:55:33.037225800 +0100
+@@ -62,8 +62,10 @@
+ now rewrite !IH; case no_floor_term; simpl; case no_floor_term; simpl.
+ Qed.
+ 
++Locate nil.
++
+ Lemma no_floor_prog_rcons t prog :
+-  no_floor_prog (prog ++ (t :: nil)) = no_floor_term t && no_floor_prog prog.
++  no_floor_prog (prog ++ (t :: List.nil)) = no_floor_term t && no_floor_prog prog.
+ Proof.
+ unfold no_floor_prog.
+ generalize true.
+--- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Missing/Coquelicot.v	2019-07-20 09:48:54.000000000 +0200
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Missing/Coquelicot.v	2019-12-03 14:55:15.821078400 +0100
+@@ -1,10 +1,13 @@
+ From Coq Require Import Reals Psatz.
+ From Coquelicot Require Import Coquelicot.
+-From mathcomp.ssreflect Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq fintype bigop.
++From mathcomp.ssreflect Require Import ssreflect ssrfun ssrbool eqtype seq fintype bigop.
+ 
+ Require Import Stdlib.
+ Require Import MathComp.
+ 
++(* This needs to be here to have the Delimit Scope N_scope with num active *)
++From mathcomp.ssreflect Require Import ssrnat.
++
+ Lemma continuous_Rinv x :
+   x <> 0 ->
+   continuous (fun x => / x) x.
+@@ -631,7 +634,7 @@
+ 
+ rewrite /=.
+ apply: (filterlim_ext (fun x => minus (exp (-(lam * a)) / lam) (exp (-(lam * x)) / lam))).
+-move => x;rewrite /minus plus_comm; congr plus. rewrite /opp /=; field; lra.
++move => x; rewrite /minus Hierarchy.plus_comm; congr plus. rewrite /opp /=; field; lra.
+ rewrite /opp /=; field; lra.
+ rewrite /minus.
+ apply: (filterlim_comp _ _ _ (fun x => opp (exp (-(lam * x)) / lam)) (fun x => plus (exp (- (lam * a)) / lam) x) (Rbar_locally p_infty) (locally (0)) (locally (exp (- (lam * a)) / lam))); last first.
+--- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Poly/Datatypes.v	2019-07-20 09:48:54.000000000 +0200
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Poly/Datatypes.v	2019-12-03 15:42:40.401690500 +0100
+@@ -22,7 +22,7 @@
+ 
+ From Coq Require Import ZArith Reals.
+ From Coquelicot Require Import Coquelicot.
+-From mathcomp.ssreflect Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq fintype bigop.
++From mathcomp.ssreflect Require Import ssreflect ssrfun ssrbool eqtype seq fintype bigop.
+ From Flocq Require Import Core.
+ 
+ Require Import Stdlib.
+@@ -31,6 +31,8 @@
+ Require Import Xreal.
+ Require Import Basic_rec.
+ 
++From mathcomp.ssreflect Require Import ssrnat.
++
+ Set Implicit Arguments.
+ Unset Strict Implicit.
+ Unset Printing Implicit Defensive.
+@@ -256,7 +258,9 @@
+ Section PrecIsPropagated.
+ Variable u : U.
+ 
+-Definition add := map2 (C.add u) id.
++Locate id.
++
++Definition add := map2 (C.add u) ssrfun.id.
+ 
+ Definition sub := map2 (C.sub u) C.opp.
+ 
+@@ -575,6 +579,8 @@
+ by move=> i /andP [Hi _]; rewrite nth_default // Rmult_0_l.
+ Qed.
+ 
++Print Scopes.
++
+ Lemma coef_deriv p i :
+   nth (deriv tt p) i = (nth p i.+1 * INR i.+1)%R.
+ Proof.
+--- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Poly/Taylor_model_sharp.v	2019-07-20 09:48:54.000000000 +0200
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Poly/Taylor_model_sharp.v	2019-12-03 15:49:16.232514700 +0100
+@@ -23,7 +23,7 @@
+ From Coq Require Import ZArith Psatz Reals.
+ From Flocq Require Import Raux.
+ From Coquelicot Require Import Coquelicot.
+-From mathcomp.ssreflect Require Import ssreflect ssrfun ssrbool eqtype ssrnat seq fintype bigop.
++From mathcomp.ssreflect Require Import ssreflect ssrfun ssrbool eqtype seq fintype bigop.
+ 
+ Require Import Stdlib.
+ Require Import MathComp.
+@@ -38,6 +38,8 @@
+ Require Import Basic_rec.
+ Require Import Bound.
+ 
++From mathcomp.ssreflect Require Import ssrnat.
++
+ (********************************************************************)
+ (** This theory implements Taylor models with interval polynomials for
+     univariate real-valued functions. The implemented algorithms rely
+--- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Tactic.v	2019-07-20 09:48:54.000000000 +0200
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Tactic.v	2019-12-03 20:07:43.622177800 +0100
+@@ -1992,9 +1992,9 @@
+ Qed.
+ 
+ Lemma interval_helper_bisection :
+-  forall bounds check formula prec depth n,
++  forall (bounds:list A.bound_proof) check formula prec depth n,
+   match bounds with
+-  | cons (A.Bproof _ (Float.Ibnd l u) _) tail =>
++  | List.cons (A.Bproof _ (Float.Ibnd l u) _) tail =>
+     let fi := fun b => nth n (A.BndValuator.eval prec formula (b :: map A.interval_from_bp tail)) I.nai in
+     A.bisect_1d l u (fun b => A.check_f check (fi b)) depth = true
+   | _ => False
+@@ -2016,7 +2016,7 @@
+ Lemma interval_helper_bisection_diff :
+   forall bounds check formula prec depth n,
+   match bounds with
+-  | cons (A.Bproof _ (Float.Ibnd l u) _) tail =>
++  | List.cons (A.Bproof _ (Float.Ibnd l u) _) tail =>
+     let fi := fun b => A.DiffValuator.eval prec formula (map A.interval_from_bp tail) n b in
+     A.bisect_1d l u (fun b => A.check_f check (fi b)) depth = true
+   | _ => False
+@@ -2038,7 +2038,7 @@
+ Lemma interval_helper_bisection_taylor :
+   forall bounds check formula prec deg depth n,
+   match bounds with
+-  | cons (A.Bproof _ (Float.Ibnd l u) _) tail =>
++  | List.cons (A.Bproof _ (Float.Ibnd l u) _) tail =>
+     let fi := fun b => A.TaylorValuator.TM.eval (prec, deg)
+       (nth n (A.TaylorValuator.eval prec deg b formula (A.TaylorValuator.TM.var ::
+         map (fun b => A.TaylorValuator.TM.const (A.interval_from_bp b)) tail)) A.TaylorValuator.TM.dummy) b b in
