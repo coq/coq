@@ -29,3 +29,25 @@ Canonical Structure bool_test := mk_test (fun x y => x || y).
 Definition b := bool.
 
 Check (fun x : b => x != x).
+
+Inductive four := x0 | x1 | x2 | x3.
+Structure local := MKL { l : four }.
+
+Section X.
+  Definition s0 := MKL x0.
+  #[local] Canonical Structure s0.
+  Check (refl_equal _ : l _ = x0).
+
+  #[local] Canonical Structure s1 := MKL x1.
+  Check (refl_equal _ : l _ = x1).
+
+  Local Canonical Structure s2 := MKL x2.
+  Check (refl_equal _ : l _ = x2).
+
+End X.
+Fail Check (refl_equal _ : l _ = x0).
+Fail Check (refl_equal _ : l _ = x1).
+Fail Check (refl_equal _ : l _ = x2).
+Check s0.
+Check s1.
+Check s2.
