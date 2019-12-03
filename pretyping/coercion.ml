@@ -31,7 +31,6 @@ open Classops
 open Evarutil
 open Evarconv
 open Evd
-open Termops
 open Globnames
 
 let get_use_typeclasses_for_conversion =
@@ -151,7 +150,7 @@ let mu env evdref t =
       | None -> (None, v)
   in aux t
 
-and coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
+let coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
     : (EConstr.constr -> EConstr.constr) option
     =
   let open Context.Rel.Declaration in
@@ -361,8 +360,8 @@ let app_coercion env evdref coercion v =
 let coerce_itf ?loc env evd v t c1 =
   let evdref = ref evd in
   let coercion = coerce ?loc env evdref t c1 in
-  let t = Option.map (app_coercion env evdref coercion) v in
-    !evdref, t
+  let t = app_coercion env evdref coercion v in
+  !evdref, t
 
 let saturate_evd env evd =
   Typeclasses.resolve_typeclasses
@@ -370,27 +369,25 @@ let saturate_evd env evd =
 
 (* Apply coercion path from p to hj; raise NoCoercion if not applicable *)
 let apply_coercion env sigma p hj typ_cl =
-  try
-    let j,t,evd =
-      List.fold_left
-        (fun (ja,typ_cl,sigma) i ->
-           let isid = i.coe_is_identity in
-           let isproj = i.coe_is_projection in
-           let sigma, c = new_global sigma i.coe_value in
-           let typ = Retyping.get_type_of env sigma c in
-           let fv = make_judge c typ in
-          let argl = (class_args_of env sigma typ_cl)@[ja.uj_val] in
-          let sigma, jres =
-            apply_coercion_args env sigma true isproj argl fv
-          in
-            (if isid then
-              { uj_val = ja.uj_val; uj_type = jres.uj_type }
-             else
-              jres),
-            jres.uj_type,sigma)
+  let j,t,evd =
+    List.fold_left
+      (fun (ja,typ_cl,sigma) i ->
+         let isid = i.coe_is_identity in
+         let isproj = i.coe_is_projection in
+         let sigma, c = new_global sigma i.coe_value in
+         let typ = Retyping.get_type_of env sigma c in
+         let fv = make_judge c typ in
+         let argl = (class_args_of env sigma typ_cl)@[ja.uj_val] in
+         let sigma, jres =
+           apply_coercion_args env sigma true isproj argl fv
+         in
+         (if isid then
+            { uj_val = ja.uj_val; uj_type = jres.uj_type }
+          else
+            jres),
+         jres.uj_type,sigma)
       (hj,typ_cl,sigma) p
-    in evd, j
-  with NoCoercion as e -> raise e
+  in evd, j
 
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
 let inh_app_fun_core ~program_mode env evd j =
@@ -474,17 +471,15 @@ let inh_coerce_to_fail flags env evd rigidonly v t c1 =
     let evd, v', t' =
       try
         let t2,t1,p = lookup_path_between env evd (t,c1) in
-          match v with
-          | Some v ->
-            let evd,j =
-              apply_coercion env evd p
-                {uj_val = v; uj_type = t} t2 in
-              evd, Some j.uj_val, j.uj_type
-          | None -> evd, None, t
+        let evd,j =
+          apply_coercion env evd p
+            {uj_val = v; uj_type = t} t2
+        in
+        evd, j.uj_val, j.uj_type
       with Not_found -> raise NoCoercion
     in
-      try (unify_leq_delay ~flags env evd t' c1, v')
-      with UnableToUnify _ -> raise NoCoercion
+    try (unify_leq_delay ~flags env evd t' c1, v')
+    with UnableToUnify _ -> raise NoCoercion
 
 let default_flags_of env =
   default_flags_of TransparentState.full
@@ -512,25 +507,22 @@ let rec inh_conv_coerce_to_fail ?loc env evd ?(flags=default_flags_of env) rigid
           let env1 = push_rel (LocalAssum (name,u1)) env in
           let (evd', v1) =
             inh_conv_coerce_to_fail ?loc env1 evd rigidonly
-              (Some (mkRel 1)) (lift 1 u1) (lift 1 t1) in
-          let v1 = Option.get v1 in
-          let v2 = Option.map (fun v -> beta_applist evd' (lift 1 v,[v1])) v in
-          let t2 = match v2 with
-            | None -> subst_term evd' v1 t2
-            | Some v2 -> Retyping.get_type_of env1 evd' v2 in
+              (mkRel 1) (lift 1 u1) (lift 1 t1) in
+          let v2 = beta_applist evd' (lift 1 v,[v1]) in
+          let t2 = Retyping.get_type_of env1 evd' v2 in
           let (evd'',v2') = inh_conv_coerce_to_fail ?loc env1 evd' rigidonly v2 t2 u2 in
-            (evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2')
+            (evd'', mkLambda (name, u1, v2'))
       | _ -> raise (NoCoercionNoUnifier (best_failed_evd,e))
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
 let inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc rigidonly flags env evd cj t =
   let (evd', val') =
     try
-      inh_conv_coerce_to_fail ?loc env evd ~flags rigidonly (Some cj.uj_val) cj.uj_type t
+      inh_conv_coerce_to_fail ?loc env evd ~flags rigidonly cj.uj_val cj.uj_type t
     with NoCoercionNoUnifier (best_failed_evd,e) ->
       try
         if program_mode then
-          coerce_itf ?loc env evd (Some cj.uj_val) cj.uj_type t
+          coerce_itf ?loc env evd cj.uj_val cj.uj_type t
         else raise NoSubtacCoercion
       with
       | NoSubtacCoercion when not resolve_tc || not (get_use_typeclasses_for_conversion ()) ->
@@ -541,21 +533,13 @@ let inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc rigidonly flags env evd
             if evd' == evd then
               error_actual_type ?loc env best_failed_evd cj t e
             else
-              inh_conv_coerce_to_fail ?loc env evd' rigidonly (Some cj.uj_val) cj.uj_type t
+              inh_conv_coerce_to_fail ?loc env evd' rigidonly cj.uj_val cj.uj_type t
           with NoCoercionNoUnifier (_evd,_error) ->
             error_actual_type ?loc env best_failed_evd cj t e
   in
-  let val' = match val' with Some v -> v | None -> assert(false) in
-    (evd',{ uj_val = val'; uj_type = t })
+  (evd',{ uj_val = val'; uj_type = t })
 
 let inh_conv_coerce_to ?loc ~program_mode resolve_tc env evd ?(flags=default_flags_of env) =
   inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc false flags env evd
 let inh_conv_coerce_rigid_to ?loc ~program_mode resolve_tc env evd ?(flags=default_flags_of env) =
   inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc true flags env evd
-
-let inh_conv_coerces_to ?loc env evd ?(flags=default_flags_of env) t t' =
-  try
-    fst (inh_conv_coerce_to_fail ?loc env evd ~flags true None t t')
-  with NoCoercion ->
-    evd (* Maybe not enough information to unify *)
-
