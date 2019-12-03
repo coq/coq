@@ -662,7 +662,7 @@ let check_extract_string () =
       | Ocaml -> "string"
       | _ -> raise Not_found
     in
-    String.equal (find_custom (IndRef (ind_string, 0))) string_type
+    String.equal (find_custom (GlobRef.IndRef (ind_string, 0))) string_type
   with Not_found -> false
 
 (* The argument is known to be of type Coq.Strings.String.string.
@@ -671,9 +671,9 @@ let check_extract_string () =
 
 let rec is_native_string_rec = function
   (* "EmptyString" constructor *)
-  | MLcons(_, ConstructRef(_, 1), []) -> true
+  | MLcons(_, GlobRef.ConstructRef(_, 1), []) -> true
   (* "String" constructor *)
-  | MLcons(_, ConstructRef(_, 2), [hd; tl]) ->
+  | MLcons(_, GlobRef.ConstructRef(_, 2), [hd; tl]) ->
       is_native_char hd && is_native_string_rec tl
   (* others *)
   | _ -> false
@@ -684,7 +684,7 @@ let rec is_native_string_rec = function
 
 let is_native_string c =
   match c with
-  | MLcons(_, ConstructRef((kn,0), j), l) ->
+  | MLcons(_, GlobRef.ConstructRef((kn,0), j), l) ->
       MutInd.equal kn ind_string
       && check_extract_string ()
       && is_native_string_rec c
@@ -696,10 +696,10 @@ let get_native_string c =
   let buf = Buffer.create 64 in
   let rec get = function
     (* "EmptyString" constructor *)
-    | MLcons(_, ConstructRef(_, 1), []) ->
+    | MLcons(_, GlobRef.ConstructRef(_, 1), []) ->
         Buffer.contents buf
     (* "String" constructor *)
-    | MLcons(_, ConstructRef(_, 2), [hd; tl]) ->
+    | MLcons(_, GlobRef.ConstructRef(_, 2), [hd; tl]) ->
         Buffer.add_char buf (get_native_char hd);
         get tl
     (* others *)
