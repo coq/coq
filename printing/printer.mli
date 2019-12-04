@@ -19,12 +19,34 @@ open Notation_term
 
 (** These are the entry points for printing terms, context, tac, ... *)
 
-
 val enable_unfocused_goal_printing: bool ref
 val enable_goal_tags_printing      : bool ref
 val enable_goal_names_printing     : bool ref
 
 (** Terms *)
+
+(** Printers for terms.
+
+    The "lconstr" variant does not require parentheses to isolate the
+    expression from the surrounding context (for instance [3 + 4]
+    will be written [3 + 4]). The "constr" variant (w/o "l")
+    enforces parentheses whenever the term is not an atom (for
+    instance, [3] will be written [3] but [3 + 4] will be
+    written [(3 + 4)].
+
+    [~inctx:true] indicates that the term is intended to be printed in
+    a context where its type is known so that a head coercion would be
+    skipped, or implicit arguments inferable from the context will not
+    be made explicit. For instance, if [foo] is declared as a
+    coercion, [foo bar] will be printed as [bar] if [inctx] is [true]
+    and as [foo bar] otherwise.
+
+    [~scope:some_scope_name] indicates that the head of the term is
+    intended to be printed in scope [some_scope_name]. It defaults to
+    [None].
+
+    [~lax:true] is for debugging purpose. It defaults to [~lax:false]. *)
+
 
 val pr_constr_env          : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> constr -> Pp.t
 val pr_lconstr_env         : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> constr -> Pp.t
@@ -52,6 +74,28 @@ val pr_open_lconstr_env : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -
 val pr_constr_under_binders_env  : env -> evar_map -> constr_under_binders -> Pp.t
 
 val pr_lconstr_under_binders_env : env -> evar_map -> constr_under_binders -> Pp.t
+
+(** Printers for types. Types are printed in scope "type_scope" and
+    under the constraint of being of type a sort.
+
+    The "ltype" variant does not require parentheses to isolate the
+    expression from the surrounding context (for instance [nat * bool]
+    will be written [nat * bool]). The "type" variant (w/o "l")
+    enforces parentheses whenever the term is not an atom (for
+    instance, [nat] will be written [nat] but [nat * bool] will be
+    written [(nat * bool)].
+
+    [~goal_concl_style:true] tells to print the type the same way as
+    command [Show] would print a goal. Concretely, it means that all
+    names of goal/section variables and all names of variables
+    referred by de Bruijn indices (if any) in the given environment
+    and all short names of global definitions of the current module
+    must be avoided while printing bound variables. Otherwise, short
+    names of global definitions are printed qualified and only names
+    of goal/section variables and rel names that do _not_ occur in the
+    scope of the binder to be printed are avoided.
+
+    [~lax:true] is for debugging purpose. *)
 
 val pr_ltype_env           : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> types -> Pp.t
 val pr_type_env            : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> types -> Pp.t
