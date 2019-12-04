@@ -14,7 +14,6 @@ open Names
 open ModPath
 open Namegen
 open Nameops
-open Libnames
 open Table
 open Miniml
 open Mlutil
@@ -616,10 +615,15 @@ let pp_module mp =
     [Extract Inductive ascii => char] has been declared, then
     the constants are directly turned into chars *)
 
-let mk_ind path s =
-  MutInd.make2 (MPfile (dirpath_of_string path)) (Label.make s)
+let ascii_type_name = "core.ascii.type"
+let ascii_constructor_name = "core.ascii.ascii"
 
-let ind_ascii = mk_ind "Coq.Strings.Ascii" "ascii"
+let is_ascii_registered () =
+  Coqlib.has_ref ascii_type_name
+  && Coqlib.has_ref ascii_constructor_name
+
+let ascii_type_ref () = Coqlib.lib_ref ascii_type_name
+let ascii_constructor_ref () = Coqlib.lib_ref ascii_constructor_name
 
 let check_extract_ascii () =
   try
@@ -628,15 +632,18 @@ let check_extract_ascii () =
       | Haskell -> "Prelude.Char"
       | _ -> raise Not_found
     in
-    String.equal (find_custom (GlobRef.IndRef (ind_ascii, 0))) (char_type)
+    String.equal (find_custom @@ ascii_type_ref ()) (char_type)
   with Not_found -> false
 
 let is_list_cons l =
  List.for_all (function MLcons (_,GlobRef.ConstructRef(_,_),[]) -> true | _ -> false) l
 
 let is_native_char = function
-  | MLcons(_,GlobRef.ConstructRef ((kn,0),1),l) ->
-    MutInd.equal kn ind_ascii && check_extract_ascii () && is_list_cons l
+  | MLcons(_,gr,l) ->
+    is_ascii_registered ()
+    && GlobRef.equal gr (ascii_constructor_ref ())
+    && check_extract_ascii ()
+    && is_list_cons l
   | _ -> false
 
 let get_native_char c =
@@ -654,7 +661,18 @@ let pp_native_char c = str ("'"^Char.escaped (get_native_char c)^"'")
     [Extract Inductive string => string] has been declared, then
     the constants are directly turned into string literals *)
 
-let ind_string = mk_ind "Coq.Strings.String" "string"
+let string_type_name = "core.string.type"
+let empty_string_name = "core.string.empty"
+let string_constructor_name = "core.string.string"
+
+let is_string_registered () =
+  Coqlib.has_ref string_type_name
+  && Coqlib.has_ref empty_string_name
+  && Coqlib.has_ref string_constructor_name
+
+let string_type_ref () = Coqlib.lib_ref string_type_name
+let empty_string_ref () = Coqlib.lib_ref empty_string_name
+let string_constructor_ref () = Coqlib.lib_ref string_constructor_name
 
 let check_extract_string () =
   try
@@ -662,32 +680,35 @@ let check_extract_string () =
       | Ocaml -> "string"
       | _ -> raise Not_found
     in
-    String.equal (find_custom (GlobRef.IndRef (ind_string, 0))) string_type
+    String.equal (find_custom @@ string_type_ref ()) string_type
   with Not_found -> false
 
 (* The argument is known to be of type Coq.Strings.String.string.
    Check that it is built from constructors EmptyString and String
    with constant ascii arguments. *)
 
-let rec is_native_string_rec = function
+let rec is_native_string_rec empty_string_ref string_constructor_ref = function
   (* "EmptyString" constructor *)
-  | MLcons(_, GlobRef.ConstructRef(_, 1), []) -> true
+  | MLcons(_, gr, []) -> GlobRef.equal gr empty_string_ref
   (* "String" constructor *)
-  | MLcons(_, GlobRef.ConstructRef(_, 2), [hd; tl]) ->
-      is_native_char hd && is_native_string_rec tl
+  | MLcons(_, gr, [hd; tl]) ->
+      GlobRef.equal gr string_constructor_ref
+      && is_native_char hd
+      && is_native_string_rec empty_string_ref string_constructor_ref tl
   (* others *)
   | _ -> false
 
-(* Here we first check that the argument is of type Coq.Strings.String.string
+(* Here we first check that the argument is has a type registered as core.string.type
    and that extraction to native strings was requested.
    Then we check every character via [is_native_string_rec]. *)
 
 let is_native_string c =
   match c with
-  | MLcons(_, GlobRef.ConstructRef((kn,0), j), l) ->
-      MutInd.equal kn ind_string
+  | MLcons(_, GlobRef.ConstructRef(ind, j), l) ->
+      is_string_registered ()
+      && GlobRef.equal (GlobRef.IndRef ind) (string_type_ref ())
       && check_extract_string ()
-      && is_native_string_rec c
+      && is_native_string_rec (empty_string_ref ()) (string_constructor_ref ()) c
   | _ -> false
 
 (* Extract the underlying string. *)
@@ -696,10 +717,10 @@ let get_native_string c =
   let buf = Buffer.create 64 in
   let rec get = function
     (* "EmptyString" constructor *)
-    | MLcons(_, GlobRef.ConstructRef(_, 1), []) ->
+    | MLcons(_, gr, []) when GlobRef.equal gr (empty_string_ref ()) ->
         Buffer.contents buf
     (* "String" constructor *)
-    | MLcons(_, GlobRef.ConstructRef(_, 2), [hd; tl]) ->
+    | MLcons(_, gr, [hd; tl]) when GlobRef.equal gr (string_constructor_ref ()) ->
         Buffer.add_char buf (get_native_char hd);
         get tl
     (* others *)
@@ -710,3 +731,7 @@ let get_native_string c =
 
 let pp_native_string c =
   str ("\"" ^ String.escaped (get_native_string c) ^ "\"")
+
+(* Registered sig type *)
+
+let sig_type_ref () = Coqlib.lib_ref "core.sig.type"

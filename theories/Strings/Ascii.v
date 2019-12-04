@@ -24,6 +24,9 @@ Declare Scope char_scope.
 Delimit Scope char_scope with char.
 Bind Scope char_scope with ascii.
 
+Register ascii as core.ascii.type.
+Register Ascii as core.ascii.ascii.
+
 Definition zero := Ascii false false false false false false false false.
 
 Definition one := Ascii true false false false false false false false.

@@ -70,10 +70,6 @@ val reset_renaming_tables : reset_kind -> unit
 
 val set_keywords : Id.Set.t -> unit
 
-(** For instance: [mk_ind "Coq.Init.Datatypes" "nat"] *)
-
-val mk_ind : string -> string -> MutInd.t
-
 (** Special hack for constants of type Ascii.ascii : if an
     [Extract Inductive ascii => char] has been declared, then
     the constants are directly turned into chars *)
@@ -89,3 +85,6 @@ val pp_native_char : ml_ast -> Pp.t
 val is_native_string : ml_ast -> bool
 val get_native_string : ml_ast -> string
 val pp_native_string : ml_ast -> Pp.t
+
+(* Registered sig type *)
+val sig_type_ref : unit -> GlobRef.t

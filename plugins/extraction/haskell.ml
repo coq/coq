@@ -109,8 +109,8 @@ let rec pp_type par vl t =
       (try Id.print (List.nth vl (pred i))
        with Failure _ -> (str "a" ++ int i))
     | Tglob (r,[]) -> pp_global Type r
-    | Tglob (GlobRef.IndRef(kn,0),l)
-        when not (keep_singleton ()) && MutInd.equal kn (mk_ind "Coq.Init.Specif" "sig") ->
+    | Tglob (gr,l)
+        when not (keep_singleton ()) && GlobRef.equal gr (sig_type_ref ()) ->
           pp_type true vl (List.hd l)
     | Tglob (r,l) ->
           pp_par par
