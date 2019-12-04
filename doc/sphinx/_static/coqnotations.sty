@@ -70,8 +70,23 @@
 \newcssclass{notation}{\nnotation{#1}}
 \newcssclass{repeat}{\nrepeat{#1}}
 \newcssclass{repeat-wrapper}{\nwrapper{#1}}
+\newcssclass{repeat-wrapper-with-sub}{\nwrapper{#1}}
 \newcssclass{hole}{\nhole{#1}}
 \newcssclass{alternative}{\nalternative{\nbox{#1}}{0pt}}
 \newcssclass{alternative-block}{#1}
 \newcssclass{repeated-alternative}{\nalternative{#1}{\nboxsep}}
 \newcssclass{alternative-separator}{\quad\naltsep{}\quad}
+\newcssclass{prodn-table}{%
+  \begin{savenotes}
+  \sphinxattablestart
+  \begin{tabulary}{\linewidth}[t]{lLL}
+  #1
+  \end{tabulary}
+  \par
+  \sphinxattableend
+  \end{savenotes}}
+% latex puts targets 1 line below where they should be; prodn-target corrects for this
+\newcssclass{prodn-target}{\raisebox{\dimexpr \nscriptsize \relax}{#1}}
+\newcssclass{prodn-cell-nonterminal}{#1 &}
+\newcssclass{prodn-cell-op}{#1 &}
+\newcssclass{prodn-cell-production}{#1\\}

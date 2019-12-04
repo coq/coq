@@ -45,7 +45,11 @@ class TacticNotationsToSphinxVisitor(TacticNotationsVisitor):
     def visitRepeat(self, ctx:TacticNotationsParser.RepeatContext):
         # Uses inline nodes instead of subscript and superscript to ensure that
         # we get the right customization hooks at the LaTeX level
-        wrapper = nodes.inline('', '', classes=['repeat-wrapper'])
+        separator = ctx.ATOM() or ctx.PIPE()
+        # I wanted to have 2 independent classes "repeat-wrapper" and "with-sub" here,
+        # but that breaks the latex build (invalid .tex file)
+        classes = 'repeat-wrapper-with-sub' if separator  else 'repeat-wrapper'
+        wrapper = nodes.inline('', '', classes=[classes])
 
         children = self.visitChildren(ctx)
         if len(children) == 1 and self.is_alternative(children[0]):
@@ -58,7 +62,6 @@ class TacticNotationsToSphinxVisitor(TacticNotationsVisitor):
         repeat_marker = ctx.LGROUP().getText()[1]
         wrapper += nodes.inline(repeat_marker, repeat_marker, classes=['notation-sup'])
 
-        separator = ctx.ATOM() or ctx.PIPE()
         if separator:
             sep = separator.getText()
             wrapper += nodes.inline(sep, sep, classes=['notation-sub'])

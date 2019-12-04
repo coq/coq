@@ -85,7 +85,8 @@
     padding-right: 0.6em; /* Space for the left half of the sub- and sup-scripts */
 }
 
-.notation .repeat-wrapper {
+.notation .repeat-wrapper,
+.notation .repeat-wrapper-with-sub {
     display: inline-block;
     position: relative;
     margin-right: 0.4em; /* Space for the right half of the sub- and sup-scripts */
@@ -165,10 +166,52 @@
 /* Overrides */
 /*************/
 
-.rst-content table.docutils td, .rst-content table.docutils th {
-    padding: 8px; /* Reduce horizontal padding */
-    border-left: none;
-    border-right: none;
+.prodn-table {
+    display: table;
+    margin: 1.5em 0px;
+    vertical-align: baseline;
+    font-weight: bold;
+}
+
+.prodn-column-group  {
+    display: table-column-group;
+}
+
+.prodn-column {
+    display: table-column;
+}
+
+.prodn-row-group {
+    display: table-row-group;
+}
+
+.prodn-row {
+    display: table-row;
+}
+
+.prodn-cell-nonterminal,
+.prodn-cell-op,
+.prodn-cell-production
+{
+    display: table-cell;
+}
+
+.prodn-cell-nonterminal {
+    padding-right: 0.49em;
+}
+
+.prodn-cell-op {
+    padding-right: 0.90em;
+    font-weight: normal;
+}
+
+.prodn-table .notation > .repeat-wrapper {
+    margin-top: 0.28em;
+}
+
+.prodn-table .notation > .repeat-wrapper-with-sub {
+    margin-top: 0.28em;
+    margin-bottom: 0.28em;
 }
 
 /* We can't display nested blocks otherwise */
