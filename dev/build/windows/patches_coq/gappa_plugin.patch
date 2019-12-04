@@ -1,0 +1,18 @@
+diff/patch file created on Wed, Dec  4, 2019 11:47:42 AM with:
+difftar-folder.sh tarballs/gappa_plugin-07b2a6e39256b33f6b0b9f89c1e880dae51f740a.tar.gz gappa_plugin-07b2a6e39256b33f6b0b9f89c1e880dae51f740a 1
+TARFILE= tarballs/gappa_plugin-07b2a6e39256b33f6b0b9f89c1e880dae51f740a.tar.gz
+FOLDER= gappa_plugin-07b2a6e39256b33f6b0b9f89c1e880dae51f740a
+TARSTRIP= 1
+TARPREFIX= coq-07b2a6e39256b33f6b0b9f89c1e880dae51f740a/
+ORIGFOLDER= gappa_plugin-07b2a6e39256b33f6b0b9f89c1e880dae51f740a.orig
+--- gappa_plugin-07b2a6e39256b33f6b0b9f89c1e880dae51f740a.orig/src/Gappa_tactic.v	2019-07-17 13:48:30.000000000 +0200
++++ gappa_plugin-07b2a6e39256b33f6b0b9f89c1e880dae51f740a/src/Gappa_tactic.v	2019-12-04 11:46:40.621036000 +0100
+@@ -1136,7 +1136,7 @@
+   trLeaf change_format_func change_format_prop ::
+   trLeaf remove_unknown_func remove_unknown_prop ::
+   trTree simplify_tree simplify_tree_correct ::
+-  nil.
++  List.nil.
+ 
+ Theorem prepare_goal :
+   forall uv t,
