@@ -100,7 +100,7 @@ struct
             init_size seen (fun n -> fold (succ i) (accu + 1 + n) k) os.(i)
         in
         fold 0 1 (fun size -> let () = LargeArray.set !sizes p size in k size)
-      | Int63 _ -> k 0
+      | Int64 _ -> k 0
       | Float64 _ -> k 0
       | String s ->
         let size = 2 + (String.length s / ws) in
@@ -118,7 +118,7 @@ struct
   | Ptr p ->
     match LargeArray.get !memory p with
     | Struct (tag, os) -> BLOCK (tag, os)
-    | Int63 _ -> OTHER (* TODO: pretty-print int63 values *)
+    | Int64 _ -> OTHER (* TODO: pretty-print int63 values *)
     | Float64 _ -> OTHER (* TODO: pretty-print float64 values *)
     | String s -> STRING s
 
