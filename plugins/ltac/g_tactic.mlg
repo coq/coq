@@ -135,7 +135,7 @@ let mk_cofix_tac (loc,id,bl,ann,ty) =
       ~hdr:"Constr:mk_cofix_tac"
       (Pp.str"Annotation forbidden in cofix expression.")) ann in
   let bl = List.map (fun (nal,bk,t) -> CLocalAssum (nal,bk,t)) bl in
-  (id,CAst.make ~loc @@ CProdN(bl,ty))
+  (id,if bl = [] then ty else CAst.make ~loc @@ CProdN(bl,ty))
 
 (* Functions overloaded by quotifier *)
 let destruction_arg_of_constr (c,lbind as clbind) = match lbind with
