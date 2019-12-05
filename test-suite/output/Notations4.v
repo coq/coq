@@ -94,6 +94,10 @@ Coercion App : expr >-> Funclass.
 
 Check (Let "x" e1 e2).
 
+Axiom free_vars :> expr -> list string.
+
+Check (Let "x" e1 e2) : list string.
+
 End D.
 
 (* Fixing bugs reported by G. Gonthier in #9207 *)

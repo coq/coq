@@ -34,10 +34,10 @@ let cases_predicate_names tml =
     | (tm,(na,None)) -> [na]
     | (tm,(na,Some {v=(_,nal)})) -> na::nal) tml)
 
-let mkGApp ?loc p t = DAst.make ?loc @@
+let mkGApp ?loc p l = DAst.make ?loc @@
   match DAst.get p with
-  | GApp (f,l) -> GApp (f,l@[t])
-  | _          -> GApp (p,[t])
+  | GApp (f,l') -> GApp (f,l'@l)
+  | _          -> GApp (p,l)
 
 let map_glob_decl_left_to_right f (na,k,obd,ty) =
   let comp1 = Option.map f obd in

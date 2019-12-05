@@ -1225,7 +1225,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
           bind_bindinglist_env alp sigma id [DAst.make @@ GLocalAssum (Name id',Explicit,t1)]
         else
           match_names metas (alp,sigma) (Name id') na in
-      match_in u alp metas sigma (mkGApp a1 (DAst.make @@ GVar id')) b2
+      match_in u alp metas sigma (mkGApp a1 [DAst.make @@ GVar id']) b2
 
   | (GRef _ | GVar _ | GEvar _ | GPatVar _ | GApp _ | GLambda _ | GProd _
      | GLetIn _ | GCases _ | GLetTuple _ | GIf _ | GRec _ | GSort _ | GHole _
