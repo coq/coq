@@ -2933,6 +2933,21 @@ Proof.
     now apply IHl.
 Qed.
 
+Lemma in_flat_map_Exists A B : forall (f : A -> list B) x l,
+  In x (flat_map f l) <-> Exists (fun y => In x (f y)) l.
+Proof.
+  intros f x l; rewrite in_flat_map.
+  split; apply Exists_exists.
+Qed.
+
+Lemma notin_flat_map_Forall A B : forall (f : A -> list B) x l,
+  ~ In x (flat_map f l) <-> Forall (fun y => ~ In x (f y)) l.
+Proof.
+  intros f x l; rewrite Forall_Exists_neg.
+  apply not_iff_compat, in_flat_map_Exists.
+Qed.
+
+
 Section Forall2.
 
   (** [Forall2]: stating that elements of two lists are pairwise related. *)
