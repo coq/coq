@@ -21,6 +21,7 @@
  (package coqide-server)
  (modules idetop)
  (libraries coq.toplevel coqide-server.protocol)
+ (modes native byte)
  (link_flags -linkall))
 
 (install
@@ -45,6 +46,7 @@
  (name coqide_main)
  (public_name coqide)
  (package coqide)
+ (optional)
  (modules coqide_main)
  (libraries coqide_gui))
 

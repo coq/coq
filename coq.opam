@@ -21,8 +21,8 @@ license: "LGPL-2.1"
 version: "dev"
 
 depends: [
-  "ocaml"     {         >= "4.05.0" }
-  "dune"      { build & >= "1.10.0"  }
+  "ocaml"     { >= "4.05.0" }
+  "dune"      { >= "2.0.0"  }
   "ocamlfind" { build }
   "num"
 ]

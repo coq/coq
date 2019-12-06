@@ -19,10 +19,10 @@ license: "LGPL-2.1"
 version: "dev"
 
 depends: [
-  "dune"                 { build & >= "1.10.0" }
-  "coqide-server"        {          = version }
-  "lablgtk3"             {         >= "3.0.beta5" }
-  "lablgtk3-sourceview3" {         >= "3.0.beta5" }
+  "dune"                 { >= "2.0.0" }
+  "coqide-server"        {  = version }
+  "lablgtk3"             { >= "3.0.beta5" }
+  "lablgtk3-sourceview3" { >= "3.0.beta5" }
 ]
 
 build-env: [
