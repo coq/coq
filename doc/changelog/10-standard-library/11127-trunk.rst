@@ -1,0 +1,2 @@
+- **Added:** theorem :g:`bezout_comm` for natural numbers
+  (`#11127 <https://github.com/coq/coq/pull/11127>`_, by Daniel de Rauglaudre).
