@@ -104,7 +104,7 @@ let print_impargs_by_name max = function
   | []  -> []
   | impls ->
      let n = List.length impls in
-     let names = List.map_i name_of_argument 1 impls in
+     let names = List.map_i id_of_argument 1 impls in
      [hov 0 (str (String.plural n "Argument") ++ spc() ++
       prlist_with_sep pr_comma Id.print names ++ spc() ++
       str (String.conjugate_verb_to_be n) ++ str" implicit" ++
@@ -252,8 +252,8 @@ let needs_extra_scopes ref scopes =
   aux env ty scopes
 
 let implicit_kind_of_status = function
-  | ((na,_,_),None) -> Anonymous, Glob_term.Explicit
-  | ((na,_,_),_ as imp) -> na, if maximal_insertion_of imp then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
+  | (_,None) -> Anonymous, Glob_term.Explicit
+  | (_,_ as imp) -> name_of_argument imp, if maximal_insertion_of imp then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
 
 let extra_implicit_kind_of_status imp =
   let _,imp = implicit_kind_of_status imp in

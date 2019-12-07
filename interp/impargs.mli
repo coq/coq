@@ -37,8 +37,7 @@ val with_implicit_protection : ('a -> 'b) -> 'a -> 'b
 (** An [implicits_list] is a list of positions telling which arguments
     of a reference can be automatically inferred *)
 
-type dependency_explanation
-type argument_status = Name.t * int option * dependency_explanation
+type argument_status
 
 type implicit_proper_status
 type implicit_status = argument_status * implicit_proper_status option
@@ -49,7 +48,7 @@ type implicits_list = implicit_length_condition * implicit_status list
 
 (** {6 Implicit arguments lists. } *)
 
-val default_dependency_explanation : dependency_explanation
+val default_argument_status : Name.t -> argument_status
 val default_implicit : maximal:bool -> force:bool -> implicit_proper_status
   (** maximal:true = maximal contextual insertion
       force:true = always infer, never turn into evar/subgoal *)
@@ -57,7 +56,10 @@ val default_implicit : maximal:bool -> force:bool -> implicit_proper_status
 val is_status_implicit : implicit_status -> bool
 val binding_kind_of_status : implicit_status -> Glob_term.binding_kind
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
-val name_of_argument : int -> implicit_status -> Id.t
+val name_of_argument : implicit_status -> Name.t
+val id_of_argument : int -> implicit_status -> Id.t
+  (** [int] is the index of the argument, starting from 1 *)
+
 val match_argument : int -> implicit_status -> Constrexpr.explicitation -> bool
 val maximal_insertion_of : implicit_status -> bool
 val force_inference_of : implicit_status -> bool

@@ -348,15 +348,18 @@ let warn_shadowed_implicit_name =
     Pp.(fun na -> str "Making shadowed name of implicit argument accessible by position.")
 
 let exists_name na l =
+  let n = List.length l in
+  (* if we renounce to name arg_n the non-dependent argument, this can
+     be simplified into id_of_argument impl = id *)
   match na with
-  | Name id -> List.exists (function ((Name id',_,_),_) -> Id.equal id id' | _ -> false) l
+  | Name id -> List.exists_i (fun i impl -> Id.equal (id_of_argument (n-i) impl) id) 0 l
   | _ -> false
 
 let build_impls ?loc n bk na acc =
   let na =
     if exists_name na acc then begin warn_shadowed_implicit_name ?loc na; Anonymous end
     else na in
-  let pos = (na,(*TODO:compute dependency*)None,default_dependency_explanation) in
+  let pos = default_argument_status na (*TODO:compute dependency*) in
   let impl_status maximal = Some (default_implicit ~maximal ~force:true) in
   match bk with
   | NonMaxImplicit -> (pos, impl_status false) :: acc
@@ -1946,7 +1949,7 @@ let intern_ind_pattern genv ntnvars env pat =
 (* Utilities for application                                          *)
 
 let get_implicit_name n imp =
-  Some (name_of_argument n imp)
+  Some (id_of_argument n imp)
 
 let set_hole_implicit i b c =
   let loc = c.CAst.loc in
