@@ -155,12 +155,20 @@ let print_style_tags opts =
   let () = List.iter iter tags in
   flush_all ()
 
+let init_setup = function
+  | None -> Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
+  | Some s -> Envars.set_user_coqlib s
+
 let print_query opts = function
   | PrintVersion -> Usage.version ()
   | PrintMachineReadableVersion -> Usage.machine_readable_version ()
-  | PrintWhere -> print_endline (Envars.coqlib ())
+  | PrintWhere ->
+    let () = init_setup opts.config.coqlib in
+    print_endline (Envars.coqlib ())
   | PrintHelp h -> Usage.print_usage stderr h
-  | PrintConfig -> Envars.print_config stdout Coq_config.all_src_dirs
+  | PrintConfig ->
+    let () = init_setup opts.config.coqlib in
+    Envars.print_config stdout Coq_config.all_src_dirs
   | PrintTags -> print_style_tags opts.config
 
 (** GC tweaking *)
@@ -187,10 +195,6 @@ let init_gc () =
     Gc.set { (Gc.get ()) with
              Gc.minor_heap_size = 33554432; (* 4M *)
              Gc.space_overhead = 120}
-
-let init_setup = function
-  | None -> Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
-  | Some s -> Envars.set_user_coqlib s
 
 let init_process () =
   (* Coq's init process, phase 1:
@@ -256,11 +260,11 @@ type ('a,'b) custom_toplevel =
 let init_toplevel custom =
   let () = init_process () in
   let opts, customopts = init_parse custom.parse_extra custom.help custom.opts in
-  let () = init_setup opts.config.coqlib in
   (* Querying or running? *)
   match opts.main with
   | Queries q -> List.iter (print_query opts) q; exit 0
   | Run ->
+    let () = init_setup opts.config.coqlib in
     let customstate = init_execution opts (custom.init customopts) in
     opts, customopts, customstate
 
