@@ -57,9 +57,9 @@ val diff_goal : ?og_s:(Goal.goal sigma) -> Goal.goal -> Evd.evar_map -> Pp.t
 (** Convert a string to a list of token strings using the lexer *)
 val tokenize_string : string -> string list
 
-val pr_letype_core         : bool -> Environ.env -> Evd.evar_map -> EConstr.types -> Pp.t
-val pr_leconstr_core       : bool -> Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t
-val pr_lconstr_env         : env -> evar_map -> constr -> Pp.t
+val pr_letype_env          : ?lax:bool -> ?goal_concl_style:bool -> Environ.env -> Evd.evar_map -> EConstr.types -> Pp.t
+val pr_leconstr_env        : ?lax:bool -> ?inctx:bool -> ?scope:Notation_term.scope_name -> Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t
+val pr_lconstr_env         : ?lax:bool -> ?inctx:bool -> ?scope:Notation_term.scope_name -> env -> evar_map -> constr -> Pp.t
 
 (** Computes diffs for a single conclusion *)
 val diff_concl : ?og_s:Goal.goal sigma -> Evd.evar_map -> Goal.goal -> Pp.t

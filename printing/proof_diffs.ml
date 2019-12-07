@@ -245,18 +245,18 @@ let process_goal sigma g : EConstr.t reified_goal =
   let hyps      = List.map to_tuple hyps in
   { name; ty; hyps; env; sigma };;
 
-let pr_letype_core goal_concl_style env sigma t =
-  Ppconstr.pr_lconstr_expr env sigma (Constrextern.extern_type goal_concl_style env sigma t)
+let pr_letype_env ?lax ?goal_concl_style env sigma t =
+  Ppconstr.pr_lconstr_expr env sigma
+    (Constrextern.extern_type ?lax ?goal_concl_style env sigma t)
 
 let pp_of_type env sigma ty =
-  pr_letype_core true env sigma ty
+  pr_letype_env ~goal_concl_style:true env sigma ty
 
-let pr_leconstr_core goal_concl_style env sigma t =
-  Ppconstr.pr_lconstr_expr env sigma (Constrextern.extern_constr goal_concl_style env sigma t)
+let pr_leconstr_env ?lax ?inctx ?scope env sigma t =
+  Ppconstr.pr_lconstr_expr env sigma (Constrextern.extern_constr ?lax ?inctx ?scope env sigma t)
 
-let pr_lconstr_env env sigma c = pr_leconstr_core false env sigma (EConstr.of_constr c)
-
-let pr_lconstr_env_econstr env sigma c = pr_leconstr_core false env sigma c
+let pr_lconstr_env ?lax ?inctx ?scope env sigma c =
+  pr_leconstr_env ?lax ?inctx ?scope env sigma (EConstr.of_constr c)
 
 let diff_concl ?og_s nsigma ng =
   let open Evd in
@@ -301,7 +301,7 @@ let goal_info goal sigma =
     line_idents := idents :: !line_idents;
     let mid = match body with
     | Some c ->
-      let pb = pr_lconstr_env_econstr env sigma c in
+      let pb = pr_leconstr_env env sigma c in
       let pb = if EConstr.isCast sigma c then surround pb else pb in
       str " := " ++ pb
     | None -> mt() in
@@ -556,7 +556,7 @@ let to_constr pf =
   (* pprf generally has only one element, but it may have more in the derive plugin *)
   let t = List.hd pprf in
   let sigma, env = get_proof_context pf in
-  let x = Constrextern.extern_constr false env sigma t in  (* todo: right options?? *)
+  let x = Constrextern.extern_constr env sigma t in  (* todo: right options?? *)
   x.v
 
 

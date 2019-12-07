@@ -15,9 +15,9 @@ open Pattern
 open Evd
 open Glob_term
 open Ltac_pretype
+open Notation_term
 
 (** These are the entry points for printing terms, context, tac, ... *)
-
 
 val enable_unfocused_goal_printing: bool ref
 val enable_goal_tags_printing      : bool ref
@@ -25,45 +25,83 @@ val enable_goal_names_printing     : bool ref
 
 (** Terms *)
 
-val pr_lconstr_env         : env -> evar_map -> constr -> Pp.t
-val pr_lconstr_goal_style_env : env -> evar_map -> constr -> Pp.t
+(** Printers for terms.
 
-val pr_constr_env          : env -> evar_map -> constr -> Pp.t
-val pr_constr_goal_style_env : env -> evar_map -> constr -> Pp.t
+    The "lconstr" variant does not require parentheses to isolate the
+    expression from the surrounding context (for instance [3 + 4]
+    will be written [3 + 4]). The "constr" variant (w/o "l")
+    enforces parentheses whenever the term is not an atom (for
+    instance, [3] will be written [3] but [3 + 4] will be
+    written [(3 + 4)].
 
-val pr_constr_n_env        : env -> evar_map -> Notation_gram.tolerability -> constr -> Pp.t
+    [~inctx:true] indicates that the term is intended to be printed in
+    a context where its type is known so that a head coercion would be
+    skipped, or implicit arguments inferable from the context will not
+    be made explicit. For instance, if [foo] is declared as a
+    coercion, [foo bar] will be printed as [bar] if [inctx] is [true]
+    and as [foo bar] otherwise.
+
+    [~scope:some_scope_name] indicates that the head of the term is
+    intended to be printed in scope [some_scope_name]. It defaults to
+    [None].
+
+    [~lax:true] is for debugging purpose. It defaults to [~lax:false]. *)
+
+
+val pr_constr_env          : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> constr -> Pp.t
+val pr_lconstr_env         : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> constr -> Pp.t
+
+val pr_constr_n_env        : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Notation_gram.tolerability -> constr -> Pp.t
 
 (** Same, but resilient to [Nametab] errors. Prints fully-qualified
     names when [shortest_qualid_of_global] has failed. Prints "??"
     in case of remaining issues (such as reference not in env). *)
 
-val safe_pr_lconstr_env         : env -> evar_map -> constr -> Pp.t
+val safe_pr_constr_env  : env -> evar_map -> constr -> Pp.t
+val safe_pr_lconstr_env : env -> evar_map -> constr -> Pp.t
 
-val safe_pr_constr_env          : env -> evar_map -> constr -> Pp.t
+val pr_econstr_env      : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> EConstr.t -> Pp.t
+val pr_leconstr_env     : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> EConstr.t -> Pp.t
 
-val pr_econstr_env     : env -> evar_map -> EConstr.t -> Pp.t
-val pr_leconstr_env     : env -> evar_map -> EConstr.t -> Pp.t
+val pr_econstr_n_env    : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Notation_gram.tolerability -> EConstr.t -> Pp.t
 
-val pr_econstr_n_env    : env -> evar_map -> Notation_gram.tolerability -> EConstr.t -> Pp.t
+val pr_etype_env        : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> EConstr.types -> Pp.t
+val pr_letype_env       : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> EConstr.types -> Pp.t
 
-val pr_etype_env           : env -> evar_map -> EConstr.types -> Pp.t
-val pr_letype_env           : env -> evar_map -> EConstr.types -> Pp.t
-
-val pr_open_constr_env     : env -> evar_map -> open_constr -> Pp.t
-
-val pr_open_lconstr_env    : env -> evar_map -> open_constr -> Pp.t
+val pr_open_constr_env  : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> open_constr -> Pp.t
+val pr_open_lconstr_env : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> open_constr -> Pp.t
 
 val pr_constr_under_binders_env  : env -> evar_map -> constr_under_binders -> Pp.t
 
 val pr_lconstr_under_binders_env : env -> evar_map -> constr_under_binders -> Pp.t
 
-val pr_goal_concl_style_env : env -> evar_map -> EConstr.types -> Pp.t
-val pr_ltype_env           : env -> evar_map -> types -> Pp.t
+(** Printers for types. Types are printed in scope "type_scope" and
+    under the constraint of being of type a sort.
 
-val pr_type_env            : env -> evar_map -> types -> Pp.t
+    The "ltype" variant does not require parentheses to isolate the
+    expression from the surrounding context (for instance [nat * bool]
+    will be written [nat * bool]). The "type" variant (w/o "l")
+    enforces parentheses whenever the term is not an atom (for
+    instance, [nat] will be written [nat] but [nat * bool] will be
+    written [(nat * bool)].
 
-val pr_closed_glob_n_env   : env -> evar_map -> Notation_gram.tolerability -> closed_glob_constr -> Pp.t
-val pr_closed_glob_env     : env -> evar_map -> closed_glob_constr -> Pp.t
+    [~goal_concl_style:true] tells to print the type the same way as
+    command [Show] would print a goal. Concretely, it means that all
+    names of goal/section variables and all names of variables
+    referred by de Bruijn indices (if any) in the given environment
+    and all short names of global definitions of the current module
+    must be avoided while printing bound variables. Otherwise, short
+    names of global definitions are printed qualified and only names
+    of goal/section variables and rel names that do _not_ occur in the
+    scope of the binder to be printed are avoided.
+
+    [~lax:true] is for debugging purpose. *)
+
+val pr_ltype_env           : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> types -> Pp.t
+val pr_type_env            : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> types -> Pp.t
+
+val pr_closed_glob_n_env   : ?lax:bool -> ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Notation_gram.tolerability -> closed_glob_constr -> Pp.t
+val pr_closed_glob_env     : ?lax:bool -> ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> closed_glob_constr -> Pp.t
 
 val pr_ljudge_env          : env -> evar_map -> EConstr.unsafe_judgment -> Pp.t * Pp.t
 

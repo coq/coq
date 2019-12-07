@@ -117,8 +117,8 @@ let display_eq ~flags env sigma t1 t2 =
   let open Constrextern in
   let t1 = canonize_constr sigma t1 in
   let t2 = canonize_constr sigma t2 in
-  let ct1 = Flags.with_options flags (fun () -> extern_constr false env sigma t1) () in
-  let ct2 = Flags.with_options flags (fun () -> extern_constr false env sigma t2) () in
+  let ct1 = Flags.with_options flags (fun () -> extern_constr env sigma t1) () in
+  let ct2 = Flags.with_options flags (fun () -> extern_constr env sigma t2) () in
   Constrexpr_ops.constr_expr_eq ct1 ct2
 
 (** This function adds some explicit printing flags if the two arguments are
@@ -134,9 +134,9 @@ let rec pr_explicit_aux env sigma t1 t2 = function
     pr_explicit_aux env sigma t1 t2 rem
   else
     let open Constrextern in
-    let ct1 = Flags.with_options flags (fun () -> extern_constr false env sigma t1) ()
+    let ct1 = Flags.with_options flags (fun () -> extern_constr env sigma t1) ()
     in
-    let ct2 = Flags.with_options flags (fun () -> extern_constr false env sigma t2) ()
+    let ct2 = Flags.with_options flags (fun () -> extern_constr env sigma t2) ()
     in
     Ppconstr.pr_lconstr_expr env sigma ct1, Ppconstr.pr_lconstr_expr env sigma ct2
 
@@ -697,7 +697,7 @@ let explain_cannot_find_well_typed_abstraction env sigma p l e =
   str "Abstracting over the " ++
   str (String.plural (List.length l) "term") ++ spc () ++
   hov 0 (pr_enum (fun c -> pr_lconstr_env env sigma (EConstr.to_constr sigma c)) l) ++ spc () ++
-  str "leads to a term" ++ spc () ++ pr_lconstr_goal_style_env env sigma p ++
+  str "leads to a term" ++ spc () ++ pr_ltype_env ~goal_concl_style:true env sigma p ++
   spc () ++ str "which is ill-typed." ++
   (match e with None -> mt () | Some e -> fnl () ++ str "Reason is: " ++ e)
 
@@ -1183,7 +1183,7 @@ let error_ill_formed_constructor env id c v nparams nargs =
 
 let pr_ltype_using_barendregt_convention_env env c =
   (* Use goal_concl_style as an approximation of Barendregt's convention (?) *)
-  quote (pr_goal_concl_style_env env (Evd.from_env env) (EConstr.of_constr c))
+  quote (pr_ltype_env ~goal_concl_style:true env (Evd.from_env env) c)
 
 let error_bad_ind_parameters env c n v1 v2  =
   let pc = pr_ltype_using_barendregt_convention_env env c in
@@ -1338,7 +1338,7 @@ let explain_reduction_tactic_error = function
   | Tacred.InvalidAbstraction (env,sigma,c,(env',e)) ->
       let e = map_ptype_error EConstr.of_constr e in
       str "The abstracted term" ++ spc () ++
-      quote (pr_goal_concl_style_env env sigma c) ++
+      quote (pr_letype_env ~goal_concl_style:true env sigma c) ++
       spc () ++ str "is not well typed." ++ fnl () ++
       explain_type_error env' (Evd.from_env env') e
 

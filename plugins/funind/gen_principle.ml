@@ -142,7 +142,7 @@ let recompute_binder_list fixpoint_exprl =
         with rec_order = ComFixpoint.adjust_rec_order ~structonly:false fix.binders fix.rec_order }) fixpoint_exprl in
   let ((_,_,_,typel),_,ctx,_) = ComFixpoint.interp_fixpoint ~cofix:false fixl in
   let constr_expr_typel =
-    with_full_print (List.map (fun c -> Constrextern.extern_constr false (Global.env ()) (Evd.from_ctx ctx) (EConstr.of_constr c))) typel in
+    with_full_print (List.map (fun c -> Constrextern.extern_constr (Global.env ()) (Evd.from_ctx ctx) (EConstr.of_constr c))) typel in
   let fixpoint_exprl_with_new_bl =
     List.map2 (fun ({ Vernacexpr.binders } as fp) fix_typ ->
         let binders, rtype = rebuild_bl [] binders fix_typ in
@@ -1902,8 +1902,8 @@ let make_graph (f_ref : GlobRef.t) =
      let env = Global.env () in
      let extern_body,extern_type =
        with_full_print (fun () ->
-           (Constrextern.extern_constr false env sigma (EConstr.of_constr body),
-            Constrextern.extern_type false env sigma
+           (Constrextern.extern_constr env sigma (EConstr.of_constr body),
+            Constrextern.extern_type env sigma
               (EConstr.of_constr (*FIXME*) c_body.Declarations.const_type)
            )
          )
