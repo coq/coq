@@ -1210,7 +1210,3 @@ Proof.
  constructor.
  trivial.
 Qed.
-
-
-
-
