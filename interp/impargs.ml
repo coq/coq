@@ -294,7 +294,7 @@ let compute_dependencies strict strongly_strict revpat contextual env sigma t =
 let compute_argument_names env sigma t =
   pi1 (compute_dependencies false false false false env sigma t)
 
-let prepare_implicits flags (names, deps, imps) =
+let prepare_auto_implicits flags (names, deps, imps) =
   let rec aux i = function
      | (na::names, dep::deps, imp::imps) ->
       let i,pos = if dep = NonDependent then (i+1,Some i) else (i,None) in
@@ -317,10 +317,14 @@ let compute_implicits_explanation_flags env sigma flags t =
     compute_dependencies false false false false env sigma t
 
 let compute_implicits_flags env sigma flags t =
-  prepare_implicits flags (compute_implicits_explanation_flags env sigma flags t)
+  prepare_auto_implicits flags (compute_implicits_explanation_flags env sigma flags t)
 
 let compute_auto_implicits env sigma flags enriching t =
   compute_implicits_flags env sigma { flags with auto = enriching } t
+
+(* Invariant: status of arguments is independent of flags *)
+let compute_argument_status env sigma t =
+  List.map fst (compute_auto_implicits env sigma !implicit_args false t)
 
 (* Extra information about implicit arguments *)
 
@@ -714,30 +718,30 @@ let set_name (na',x,y as pos) = function
   | Name _ as na -> (na,x,y)
   | Anonymous -> pos
 
-let compute_implicit_statuses autoimps l =
+let prepare_manual_implicits deps manualimps =
   let rec aux i = function
-    | pos :: autoimps, (_, Explicit) :: manualimps -> (pos, None) :: aux (i+1) (autoimps, manualimps)
-    | pos :: autoimps, (na, MaxImplicit) :: manualimps ->
-       (set_name pos na, Some (Manual, true, true)) :: aux (i+1) (autoimps, manualimps)
-    | pos :: autoimps, (na, NonMaxImplicit) :: manualimps ->
-       let imps' = aux (i+1) (autoimps, manualimps) in
+    | pos :: deps, (_, Explicit) :: manualimps -> (pos, None) :: aux (i+1) (deps, manualimps)
+    | pos :: deps, (na, MaxImplicit) :: manualimps ->
+       (set_name pos na, Some (Manual, true, true)) :: aux (i+1) (deps, manualimps)
+    | pos :: deps, (na, NonMaxImplicit) :: manualimps ->
+       let imps' = aux (i+1) (deps, manualimps) in
        let max = set_maximality Error na i imps' false in
        (set_name pos na, Some (Manual, max, true)) :: imps'
-    | autoimps, [] -> List.map (fun pos -> (pos, None)) autoimps
+    | deps, [] -> List.map (fun pos -> (pos, None)) deps
     | [], _::_ -> assert false
-  in aux 1 (autoimps, l)
+  in aux 1 (deps, manualimps)
 
-let set_implicits local ref l =
+let set_manual_implicits local ref l =
   let flags = !implicit_args in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let t, _ = Typeops.type_of_global_in_context env ref in
   let t = of_constr t in
-  let autoimpls = List.map fst (compute_auto_implicits env sigma flags false t) in
+  let deps = compute_argument_status env sigma t in
   let l' = match l with
     | [] -> assert false
     | [l] ->
-       [DefaultImpArgs, compute_implicit_statuses autoimpls l]
+       [DefaultImpArgs, prepare_manual_implicits deps l]
     | _ ->
        check_rigidity (is_rigid env sigma t);
        (* Sort by number of implicits, decreasing *)
@@ -747,13 +751,13 @@ let set_implicits local ref l =
        let l = List.map (fun imps -> (imps,List.count is_implicit imps)) l in
        let l = List.sort (fun (_,n1) (_,n2) -> n2 - n1) l in
        check_inclusion l;
-       let nargs = List.length autoimpls in
+       let nargs = List.length deps in
        List.map (fun (imps,n) ->
            (LessArgsThan (nargs-n),
-            compute_implicit_statuses autoimpls imps)) l in
+            prepare_manual_implicits deps imps)) l in
   let req =
     if is_local local ref then ImplLocal
-    else ImplInteractive(flags,ImplManual (List.length autoimpls))
+    else ImplInteractive(flags,ImplManual (List.length deps))
   in add_anonymous_leaf (inImplicits (req,[ref,l']))
 
 let extract_impargs_data impls =

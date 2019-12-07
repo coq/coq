@@ -90,10 +90,10 @@ val declare_mib_implicits : MutInd.t -> impargs:mib_manual_implicits -> unit
 
 val declare_implicits : bool -> GlobRef.t -> unit
 
-(** [set_implicits local ref l]
+(** [set_manual_implicits local ref l]
    Manual declaration of implicit arguments.
   [l] is a list of possible sequences of implicit statuses. *)
-val set_implicits : bool -> GlobRef.t -> (Name.t * Glob_term.binding_kind) list list -> unit
+val set_manual_implicits : bool -> GlobRef.t -> (Name.t * Glob_term.binding_kind) list list -> unit
 
 val implicits_of_global : GlobRef.t -> implicits_list list
 

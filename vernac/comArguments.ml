@@ -274,7 +274,7 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   end;
 
   if implicits_specified || clear_implicits_flag then
-    Impargs.set_implicits section_local (smart_global reference) implicits;
+    Impargs.set_manual_implicits section_local (smart_global reference) implicits;
 
   if default_implicits_flag then
     Impargs.declare_implicits section_local (smart_global reference);
