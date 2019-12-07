@@ -214,7 +214,7 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   end;
 
   let implicits =
-    List.map (fun { name; implicit_status = i } -> (name,i)) args
+    List.map (fun { name; implicit_kind = i } -> (name,i)) args
   in
   let implicits = implicits :: more_implicits in
 

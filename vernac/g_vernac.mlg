@@ -809,7 +809,7 @@ GRAMMAR EXTEND Gram
       { let name, recarg_like, notation_scope = item in
       [RealArg { name=name; recarg_like=recarg_like;
              notation_scope=notation_scope;
-             implicit_status = Explicit}] }
+             implicit_kind = Explicit}] }
     | "/" -> { [VolatileArg] }
     | "&" -> { [BidiArg] }
     | "("; items = LIST1 argument_spec; ")"; sc = OPT scope_delimiter ->
@@ -819,7 +819,7 @@ GRAMMAR EXTEND Gram
        List.map (fun (name,recarg_like,notation_scope) ->
            RealArg { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
-                 implicit_status = Explicit}) items }
+                 implicit_kind = Explicit}) items }
     | "["; items = LIST1 argument_spec; "]"; sc = OPT scope_delimiter ->
        { let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
@@ -827,7 +827,7 @@ GRAMMAR EXTEND Gram
        List.map (fun (name,recarg_like,notation_scope) ->
            RealArg { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
-                 implicit_status = NonMaxImplicit}) items }
+                 implicit_kind = NonMaxImplicit}) items }
     | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope_delimiter ->
        { let f x = match sc, x with
          | None, x -> x | x, None -> Option.map (fun y -> CAst.make ~loc y) x
@@ -835,7 +835,7 @@ GRAMMAR EXTEND Gram
        List.map (fun (name,recarg_like,notation_scope) ->
            RealArg { name=name; recarg_like=recarg_like;
                  notation_scope=f notation_scope;
-                 implicit_status = MaxImplicit}) items }
+                 implicit_kind = MaxImplicit}) items }
     ]
   ];
   (* Same as [arg_specs], but with only implicit status and names *)

@@ -267,7 +267,7 @@ type vernac_one_argument_status = {
   name : Name.t;
   recarg_like : bool;
   notation_scope : string CAst.t option;
-  implicit_status : Glob_term.binding_kind;
+  implicit_kind : Glob_term.binding_kind;
 }
 
 type vernac_argument_status =

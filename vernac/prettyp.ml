@@ -260,15 +260,15 @@ let extra_implicit_kind_of_status imp =
   (Anonymous, imp)
 
 let dummy = {
-  Vernacexpr.implicit_status = Glob_term.Explicit;
+  Vernacexpr.implicit_kind = Glob_term.Explicit;
    name = Anonymous;
    recarg_like = false;
    notation_scope = None;
  }
 
 let is_dummy = function
-  | Vernacexpr.(RealArg {implicit_status; name; recarg_like; notation_scope}) ->
-    name = Anonymous && not recarg_like && notation_scope = None && implicit_status = Glob_term.Explicit
+  | Vernacexpr.(RealArg {implicit_kind; name; recarg_like; notation_scope}) ->
+    name = Anonymous && not recarg_like && notation_scope = None && implicit_kind = Glob_term.Explicit
   | _ -> false
 
 let rec main_implicits i renames recargs scopes impls =
@@ -278,7 +278,7 @@ let rec main_implicits i renames recargs scopes impls =
       | j :: recargs when i = j -> true, recargs
       | _ -> false, recargs
     in
-    let (name, implicit_status) =
+    let (name, implicit_kind) =
       match renames, impls with
       | _, (_,Some _ as i) :: _ -> implicit_kind_of_status i
       | name::_, _ -> (name,Glob_term.Explicit)
@@ -288,7 +288,7 @@ let rec main_implicits i renames recargs scopes impls =
       | scope :: _ -> Option.map CAst.make scope
       | [] -> None
     in
-    let status = {Vernacexpr.implicit_status; name; recarg_like; notation_scope} in
+    let status = {Vernacexpr.implicit_kind; name; recarg_like; notation_scope} in
     let tl = function [] -> [] | _::tl -> tl in
     (* recargs is special -> tl handled above *)
     let rest = main_implicits (i+1) (tl renames) recargs (tl scopes) (tl impls) in

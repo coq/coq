@@ -1110,7 +1110,7 @@ let pr_vernac_expr v =
             let rec fold extra = function
               | RealArg arg :: tl when
                   Option.equal (fun a b -> String.equal a.CAst.v b.CAst.v) arg.notation_scope s
-                  && arg.implicit_status = imp ->
+                  && arg.implicit_kind = imp ->
                 fold ((arg.name,arg.recarg_like) :: extra) tl
               | args -> List.rev extra, args
             in
@@ -1122,7 +1122,7 @@ let pr_vernac_expr v =
           | BidiArg :: l -> spc () ++ str"&" ++ print_arguments l
           | RealArg { name = id; recarg_like = k;
                       notation_scope = s;
-                      implicit_status = imp } :: tl ->
+                      implicit_kind = imp } :: tl ->
             let extra, tl = get_arguments_like s imp tl in
             spc() ++ hov 1 (pr_br imp (extra<>[]) (prlist_with_sep spc pr_one_arg ((id,k)::extra)) ++
             pr_s s) ++ print_arguments tl
