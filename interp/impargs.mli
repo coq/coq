@@ -88,7 +88,8 @@ val declare_var_implicits : variable ->
 val declare_constant_implicits : Constant.t -> impargs:manual_implicits option -> unit
 val declare_mib_implicits : MutInd.t -> impargs:mib_manual_implicits -> unit
 
-val declare_implicits : bool -> GlobRef.t -> unit
+val set_auto_implicits : bool -> GlobRef.t -> unit
+
 
 (** [set_manual_implicits local ref l]
    Manual declaration of implicit arguments.

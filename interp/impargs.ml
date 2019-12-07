@@ -656,15 +656,12 @@ let inImplicits : implicits_obj -> obj =
 
 let is_local local ref = local || isVarRef ref && is_in_section ref
 
-let declare_implicits_gen req flags ref =
-  let imps = compute_global_implicits flags ref in
-  add_anonymous_leaf (inImplicits (req,[ref,imps]))
-
-let declare_implicits local ref =
+let set_auto_implicits local ref =
   let flags = { !implicit_args with auto = true } in
   let req =
     if is_local local ref then ImplLocal else ImplInteractive(flags,ImplAuto) in
-    declare_implicits_gen req flags ref
+  let imps = compute_global_implicits flags ref in
+  add_anonymous_leaf (inImplicits (req,[ref,imps]))
 
 let under_full_implicit f (ref,auto_imps) x =
   (ref, List.map (fun (d,auto_imps) -> (d,f auto_imps x)) auto_imps)
