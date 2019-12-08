@@ -139,9 +139,17 @@ let compile opts copts ~echo ~f_in ~f_out =
         ~aux_file:(aux_file_name_for long_f_dot_out)
         ~v_file:long_f_dot_in);
 
-      Dumpglob.set_glob_output copts.glob_out;
-      Dumpglob.start_dump_glob ~vfile:long_f_dot_in ~vofile:long_f_dot_out;
-      Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
+      (* We allow to override the output file, otherwise use the default `file.glob` *)
+      begin match copts.glob_out with
+        | None -> ()
+        | Some glob_file ->
+          let glob_file =
+            Option.default
+              (Dumpglob.File (Filename.chop_extension long_f_dot_in ^ ".glob"))
+              glob_file
+          in
+          Dumpglob.start_dump_glob ~v_file:long_f_dot_in ~output:glob_file ~ldir
+      end;
 
       let wall_clock1 = Unix.gettimeofday () in
       let check = Stm.AsyncOpts.(stm_options.async_proofs_mode = APoff) in
@@ -163,7 +171,7 @@ let compile opts copts ~echo ~f_in ~f_out =
         dump_empty_vos();
         create_empty_file (long_f_dot_out ^ "k");
       end;
-      Dumpglob.end_dump_glob ()
+      if Option.has_some copts.glob_out then Dumpglob.end_dump_glob ()
 
   | BuildVio | BuildVos ->
       (* We need to disable error resiliency, otherwise some errors

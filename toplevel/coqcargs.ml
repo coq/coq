@@ -24,7 +24,8 @@ type t =
   ; echo : bool
 
   ; outputstate : string option
-  ; glob_out    : Dumpglob.glob_output
+  ; glob_out    : Dumpglob.glob_output option option
+  (** None = No output ; Some None = Default output ; Some (Some file) *)
   }
 
 let default =
@@ -41,7 +42,7 @@ let default =
   ; echo = false
 
   ; outputstate = None
-  ; glob_out = Dumpglob.MultFiles
+  ; glob_out = Some None
   }
 
 let depr opt =
@@ -206,11 +207,11 @@ let parse arglist : t =
 
         (* Glob options *)
         |"-no-glob" | "-noglob" ->
-          { oval with glob_out = Dumpglob.NoGlob }
+          { oval with glob_out = None }
 
         |"-dump-glob" ->
           let file = next () in
-          { oval with glob_out = Dumpglob.File file }
+          { oval with glob_out = Some (Some (Dumpglob.File file)) }
 
         (* Rest *)
         | s ->

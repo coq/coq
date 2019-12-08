@@ -11,53 +11,42 @@
 open Util
 
 (* Dump of globalization (to be used by coqdoc) *)
-
-let glob_file = ref stdout
-
-let open_glob_file f =
-  glob_file := open_out f
-
-let close_glob_file () =
-  close_out !glob_file
-
 type glob_output =
-  | NoGlob
   | Feedback
-  | MultFiles
   | File of string
 
-let glob_output = ref NoGlob
+type glob_chan =
+  | FB
+  | Chan of out_channel
 
-let dump () = !glob_output <> NoGlob
+let glob_chan = ref None
 
-let set_glob_output mode =
-  glob_output := mode
+let pause_ref = ref None
 
-let dump_string s =
-  if dump () && !glob_output != Feedback then
-    output_string !glob_file s
+let pause () =
+  pause_ref := !glob_chan;
+  glob_chan := None
 
-let start_dump_glob ~vfile ~vofile =
-  match !glob_output with
-  | MultFiles ->
-      open_glob_file (Filename.chop_extension vofile ^ ".glob");
-      output_string !glob_file "DIGEST ";
-      output_string !glob_file (Digest.to_hex (Digest.file vfile));
-      output_char !glob_file '\n'
+let continue () =
+  glob_chan := !pause_ref
+
+let dump () = Option.has_some !glob_chan
+
+let start_dump_glob ~v_file ~output ~ldir =
+  match output with
+  | Feedback ->
+    glob_chan := Some FB
   | File f ->
-      open_glob_file f;
-      output_string !glob_file "DIGEST NO\n"
-  | NoGlob | Feedback ->
-      ()
+    let oc = open_out f in
+    glob_chan := Some (Chan oc);
+    output_string oc "DIGEST ";
+    output_string oc (Digest.to_hex (Digest.file v_file));
+    output_string oc ("F" ^ Names.DirPath.to_string ldir ^ "\n")
 
 let end_dump_glob () =
-  match !glob_output with
-  | MultFiles | File _ -> close_glob_file ()
-  | NoGlob | Feedback -> ()
-
-let previous_state = ref MultFiles
-let pause () = previous_state := !glob_output; glob_output := NoGlob
-let continue () = glob_output := !previous_state
+  match !glob_chan with
+  | None | Some FB -> ()
+  | Some (Chan oc) -> close_out oc
 
 open Decls
 open Declarations
@@ -141,17 +130,19 @@ let interval loc =
   loc1, loc2-1
 
 let dump_ref ?loc filepath modpath ident ty =
-  match !glob_output with
-  | Feedback ->
+  match !glob_chan with
+  | None -> ()
+  | Some FB ->
     Option.iter (fun loc ->
         Feedback.feedback (Feedback.GlobRef (loc, filepath, modpath, ident, ty))
       ) loc
-  | NoGlob -> ()
-  | _ -> Option.iter (fun loc ->
-    let bl,el = interval loc in
-    dump_string (Printf.sprintf "R%d:%d %s %s %s %s\n"
-                  bl el filepath modpath ident ty)
-    ) loc
+  | Some (Chan oc) ->
+    Option.iter (fun loc ->
+        let bl,el = interval loc in
+        output_string oc
+          (Printf.sprintf "R%d:%d %s %s %s %s\n"
+             bl el filepath modpath ident ty)
+      ) loc
 
 let dump_reference ?loc modpath ident ty =
   let filepath = Names.DirPath.to_string (Lib.library_dp ()) in
@@ -249,11 +240,13 @@ let add_glob_kn ?loc kn =
 let dump_binding ?loc id = ()
 
 let dump_def ?loc ty secpath id = Option.iter (fun loc ->
-  if !glob_output = Feedback then
-    Feedback.feedback (Feedback.GlobDef (loc, id, secpath, ty))
-  else
-    let bl,el = interval loc in
-    dump_string (Printf.sprintf "%s %d:%d %s %s\n" ty bl el secpath id)
+    match !glob_chan with
+    | None -> ()
+    | Some FB ->
+      Feedback.feedback (Feedback.GlobDef (loc, id, secpath, ty))
+    | Some (Chan oc) ->
+      let bl,el = interval loc in
+      output_string oc (Printf.sprintf "%s %d:%d %s %s\n" ty bl el secpath id)
   ) loc
 
 let dump_definition {CAst.loc;v=id} sec s =

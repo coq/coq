@@ -8,19 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val start_dump_glob : vfile:string -> vofile:string -> unit
-val end_dump_glob : unit -> unit
-
-val dump : unit -> bool
-
 type glob_output =
-  | NoGlob
   | Feedback
-  | MultFiles                   (* one glob file per .v file *)
-  | File of string              (* Single file for all coqc arguments *)
+  | File of string
 
-(* Default "NoGlob" *)
-val set_glob_output : glob_output -> unit
+val start_dump_glob
+  :  v_file:CUnix.physical_path
+  -> output:glob_output
+  -> ldir:Names.DirPath.t -> unit
+
+val end_dump_glob : unit -> unit
 
 val pause : unit -> unit
 val continue : unit -> unit
@@ -42,8 +39,6 @@ val dump_notation :
   Notation_term.scope_name option -> bool -> unit
 
 val dump_constraint : Names.lname -> bool -> string -> unit
-
-val dump_string : string -> unit
 
 val type_of_global_ref : Names.GlobRef.t -> string
 

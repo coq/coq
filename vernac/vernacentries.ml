@@ -581,8 +581,7 @@ let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt 
 let vernac_start_proof ~atts kind l =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality NoDischarge in
-  if Dumpglob.dump () then
-    List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
+  List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
   start_lemma_com ~program_mode:atts.program ~poly:atts.polymorphic ~scope ~kind:(Decls.IsProof kind) l
 
 let vernac_end_proof ~lemma = let open Vernacexpr in function
@@ -598,15 +597,18 @@ let vernac_exact_proof ~lemma c =
   let () = save_lemma_proved ~lemma ~opaque:Proof_global.Opaque ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
+let dump_assumptions scope l =
+  List.iter (fun (is_coe,(idl,c)) ->
+      List.iter (fun (lid, _) ->
+          match scope with
+          | DeclareDef.Global _ -> Dumpglob.dump_definition lid false "ax"
+          | DeclareDef.Discharge -> Dumpglob.dump_definition lid true "var") idl)
+    l
+
 let vernac_assumption ~atts discharge kind l nl =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality discharge in
-  List.iter (fun (is_coe,(idl,c)) ->
-    if Dumpglob.dump () then
-      List.iter (fun (lid, _) ->
-          match scope with
-            | DeclareDef.Global _ -> Dumpglob.dump_definition lid false "ax"
-            | DeclareDef.Discharge -> Dumpglob.dump_definition lid true "var") idl) l;
+  dump_assumptions scope l;
   ComAssumption.do_assumptions ~poly:atts.polymorphic ~program_mode:atts.program ~scope ~kind nl l
 
 let is_polymorphic_inductive_cumulativity =
@@ -644,14 +646,13 @@ let vernac_record ~template udecl cum k poly finite records =
       lid.v
     in
     let () =
-      if Dumpglob.dump () then
-        let () = Dumpglob.dump_definition id false "rec" in
-        let iter (x, _) = match x with
+      let () = Dumpglob.dump_definition id false "rec" in
+      let iter (x, _) = match x with
         | Vernacexpr.AssumExpr ({loc;v=Name id}, _) ->
           Dumpglob.dump_definition (make ?loc id) false "proj"
         | _ -> ()
-        in
-        List.iter iter cfs
+      in
+      List.iter iter cfs
     in
     coe, id, binders, cfs, const, sort
   in
@@ -675,24 +676,24 @@ let finite_of_kind = let open Declarations in function
   | CoInductive -> CoFinite
   | Variant | Record | Structure | Class _ -> BiFinite
 
+let dump_inds indl =
+  List.iter (fun (((coe,lid), _, _, cstrs), _) ->
+      match cstrs with
+      | Constructors cstrs ->
+        Dumpglob.dump_definition lid false "ind";
+        List.iter (fun (_, (lid, _)) ->
+            Dumpglob.dump_definition lid false "constr") cstrs
+      | _ -> () (* dumping is done by vernac_record (called below) *) )
+    indl
+
 (** When [poly] is true the type is declared polymorphic. When [lo] is true,
     then the type is declared private (as per the [Private] keyword). [finite]
     indicates whether the type is inductive, co-inductive or
     neither. *)
 let vernac_inductive ~atts cum lo kind indl =
   let template, poly = Attributes.(parse Notations.(template ++ polymorphic) atts) in
-  let open Pp in
   let udecl, indl = extract_inductive_udecl indl in
-  if Dumpglob.dump () then
-    List.iter (fun (((coe,lid), _, _, cstrs), _) ->
-      match cstrs with
-        | Constructors cstrs ->
-            Dumpglob.dump_definition lid false "ind";
-            List.iter (fun (_, (lid, _)) ->
-                         Dumpglob.dump_definition lid false "constr") cstrs
-        | _ -> () (* dumping is done by vernac_record (called below) *) )
-      indl;
-
+  dump_inds indl;
   let finite = finite_of_kind kind in
   let is_record = function
   | ((_ , _ , _ , RecordDecl _), _) -> true
@@ -772,8 +773,7 @@ let vernac_inductive ~atts cum lo kind indl =
     user_err (str "Mixed record-inductive definitions are not allowed")
 
 let vernac_fixpoint_common ~atts discharge l =
-  if Dumpglob.dump () then
-    List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
+  List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
   enforce_locality_exp atts.DefAttributes.locality discharge
 
 let vernac_fixpoint_interactive ~atts discharge l =
@@ -793,8 +793,7 @@ let vernac_fixpoint ~atts discharge l =
     ComFixpoint.do_fixpoint ~scope ~poly:atts.polymorphic l
 
 let vernac_cofixpoint_common ~atts discharge l =
-  if Dumpglob.dump () then
-    List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
+  List.iter (fun { fname } -> Dumpglob.dump_definition fname false "def") l;
   enforce_locality_exp atts.DefAttributes.locality discharge
 
 let vernac_cofixpoint_interactive ~atts discharge l =
@@ -812,21 +811,22 @@ let vernac_cofixpoint ~atts discharge l =
   else
     ComFixpoint.do_cofixpoint ~scope ~poly:atts.polymorphic l
 
+let dump_scheme l =
+  List.iter (fun (lid, s) ->
+      Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid;
+      match s with
+      | InductionScheme (_, r, _)
+      | CaseScheme (_, r, _)
+      | EqualityScheme r -> dump_global r) l
+
 let vernac_scheme l =
-  if Dumpglob.dump () then
-    List.iter (fun (lid, s) ->
-               Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid;
-               match s with
-               | InductionScheme (_, r, _)
-               | CaseScheme (_, r, _)
-               | EqualityScheme r -> dump_global r) l;
+  dump_scheme l;
   Indschemes.do_scheme l
 
 let vernac_combined_scheme lid l =
-  if Dumpglob.dump () then
-    (Dumpglob.dump_definition lid false "def";
-     List.iter (fun {loc;v=id} -> dump_global (make ?loc @@ AN (qualid_of_ident ?loc id))) l);
- Indschemes.do_combined_scheme lid l
+  Dumpglob.dump_definition lid false "def";
+  List.iter (fun {loc;v=id} -> dump_global (make ?loc @@ AN (qualid_of_ident ?loc id))) l;
+  Indschemes.do_combined_scheme lid l
 
 let vernac_universe ~poly l =
   if poly && not (Global.sections_are_opened ()) then
@@ -1004,8 +1004,7 @@ let vernac_require from import qidl =
     | Error LibNotFound -> err_notfound_library ?from:root qid
   in
   let modrefl = List.map locate qidl in
-  if Dumpglob.dump () then
-    List.iter2 (fun {CAst.loc} dp -> Dumpglob.dump_libref ?loc dp "lib") qidl (List.map fst modrefl);
+  List.iter2 (fun {CAst.loc} dp -> Dumpglob.dump_libref ?loc dp "lib") qidl (List.map fst modrefl);
   let lib_resolver = Loadpath.try_locate_absolute_library in
   Library.require_library_from_dirpath ~lib_resolver modrefl import
 

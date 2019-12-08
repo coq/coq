@@ -38,7 +38,8 @@ type t =
   ; echo : bool
 
   ; outputstate : string option
-  ; glob_out    : Dumpglob.glob_output
+  ; glob_out    : Dumpglob.glob_output option option
+  (** None = No output ; Some None = Default output ; Some (Some file) *)
   }
 
 val default : t
