@@ -297,15 +297,15 @@ let lookup_pattern_path_between env (s,t) =
 
 (* rajouter une coercion dans le graphe *)
 
-let path_printer : ((Bijint.Index.t * Bijint.Index.t) * inheritance_path -> Pp.t) ref =
+let path_printer : ((cl_index * cl_index) * inheritance_path -> Pp.t) ref =
   ref (fun _ -> str "<a class path>")
 
 let install_path_printer f = path_printer := f
 
 let print_path x = !path_printer x
 
-let path_comparator : (Environ.env -> Evd.evar_map -> inheritance_path -> inheritance_path -> bool) ref =
-  ref (fun _ _ _ _ -> false)
+let path_comparator : (Environ.env -> Evd.evar_map -> cl_index -> inheritance_path -> inheritance_path -> bool) ref =
+  ref (fun _ _ _ _ _ -> false)
 
 let install_path_comparator f = path_comparator := f
 
@@ -315,7 +315,10 @@ let warn_ambiguous_path =
   CWarnings.create ~name:"ambiguous-paths" ~category:"typechecker"
     (fun l -> prlist_with_sep fnl (fun (c,p,q) ->
          str"New coercion path " ++ print_path (c,p) ++
-         str" is ambiguous with existing " ++ print_path (c, q) ++ str".") l)
+         if List.is_empty q then
+           str" is not definitionally an identity function."
+         else
+           str" is ambiguous with existing " ++ print_path (c, q) ++ str".") l)
 
 (* add_coercion_in_graph : coe_index * cl_index * cl_index -> unit
                          coercion,source,target *)
@@ -334,10 +337,23 @@ let add_coercion_in_graph env sigma (ic,source,target) =
   let ambig_paths =
     (ref [] : ((cl_index * cl_index) * inheritance_path * inheritance_path) list ref) in
   let try_add_new_path (i,j as ij) p =
+    (* If p is a cycle, we check whether p is definitionally an identity
+       function or not. If it is not, we report p as an ambiguous inheritance
+       path. *)
+    if Bijint.Index.equal i j && not (compare_path env sigma i p []) then
+      ambig_paths := (ij,p,[])::!ambig_paths;
     if not (Bijint.Index.equal i j) || different_class_params env i then
       match lookup_path_between_class ij with
       | q ->
-        if not (compare_path env sigma p q) then
+        (* p has the same source and target classes as an existing path q. We
+           report them as ambiguous inheritance paths if
+           1. p and q have no common element, and
+           2. p and q are not convertible.
+           If 1 does not hold, say p = p1 @ [c] @ p2 and q = q1 @ [c] @ q2,
+           convertibility of p1 and q1, also, p2 and q2 should be checked; thus,
+           checking the ambiguity of p and q is redundant with them. *)
+        if not (List.exists (fun c -> List.exists (coe_info_typ_equal c) q) p ||
+                compare_path env sigma i p q) then
           ambig_paths := (ij,p,q)::!ambig_paths;
         false
       | exception Not_found -> (add_new_path ij p; true)
@@ -355,7 +371,7 @@ let add_coercion_in_graph env sigma (ic,source,target) =
              try_add_new_path1 (s,target) (p@[ic]);
              ClPairMap.iter
                (fun (u,v) q ->
-                  if not (Bijint.Index.equal u v) && Bijint.Index.equal u target &&  not (List.equal coe_info_typ_equal p q) then
+                  if not (Bijint.Index.equal u v) && Bijint.Index.equal u target then
                     try_add_new_path1 (s,v) (p@[ic]@q))
                old_inheritance_graph
            end;

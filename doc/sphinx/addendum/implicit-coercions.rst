@@ -165,6 +165,12 @@ Declaring Coercions
      convertible with existing ones when they have coercions that don't satisfy
      the uniform inheritance condition.
 
+  .. warn:: ... is not definitionally an identity function.
+
+     If a coercion path has the same source and target class, that is said to be
+     circular. When a new circular coercion path is not convertible with the
+     identity function, it will be reported as ambiguous.
+
   .. cmdv:: Local Coercion @qualid : @class >-> @class
 
      Declares the construction denoted by :token:`qualid` as a coercion local to
