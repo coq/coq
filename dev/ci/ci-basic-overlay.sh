@@ -179,13 +179,6 @@
 : "${color_CI_ARCHIVEURL:=${color_CI_GITURL}/archive}"
 
 ########################################################################
-# SF
-########################################################################
-: "${sf_lf_CI_TARURL:=https://softwarefoundations.cis.upenn.edu/lf-current/lf.tgz}"
-: "${sf_plf_CI_TARURL:=https://softwarefoundations.cis.upenn.edu/plf-current/plf.tgz}"
-: "${sf_vfa_CI_TARURL:=https://softwarefoundations.cis.upenn.edu/vfa-current/vfa.tgz}"
-
-########################################################################
 # TLC
 ########################################################################
 : "${tlc_CI_REF:=3a77d66bde6fe9365c7452f082d6fb34d044c771}"
