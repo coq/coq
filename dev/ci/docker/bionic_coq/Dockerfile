@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2019-12-03-V81"
+# CACHEKEY: "bionic_coq-V2019-12-08-V82"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -22,7 +22,7 @@ RUN pip3 install sphinx==1.7.8 sphinx_rtd_theme==0.2.5b2 \
                  antlr4-python3-runtime==4.7.1 sphinxcontrib-bibtex==0.4.0
 
 # We need to install OPAM 2.0 manually for now.
-RUN wget https://github.com/ocaml/opam/releases/download/2.0.4/opam-2.0.4-x86_64-linux -O /usr/bin/opam && chmod 755 /usr/bin/opam
+RUN wget https://github.com/ocaml/opam/releases/download/2.0.5/opam-2.0.5-x86_64-linux -O /usr/bin/opam && chmod 755 /usr/bin/opam
 
 # Basic OPAM setup
 ENV NJOBS="2" \
@@ -58,7 +58,7 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
 # EDGE switch
 ENV COMPILER_EDGE="4.09.0" \
     COQIDE_OPAM_EDGE="cairo2.0.6.1 lablgtk3-sourceview3.3.0.beta6" \
-    BASE_OPAM_EDGE="dune-release.1.3.3"
+    BASE_OPAM_EDGE="dune-release.1.3.3 ocamlformat.0.12"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
 # `ci-template-flambda` with everything.
