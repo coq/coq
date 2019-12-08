@@ -310,7 +310,8 @@ lint:
   dependencies: []
   variables:
     GIT_DEPTH: "" # we need an unknown amount of history for per-commit linting
-    OPAM_SWITCH: base
+    OPAM_SWITCH: "edge"
+    OPAM_VARIANT: "+flambda"
 
 pkg:opam:
   stage: stage-1

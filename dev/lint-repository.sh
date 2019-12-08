@@ -32,4 +32,7 @@ find . "(" -path ./.git -prune ")" -o -type f -print0 |
 echo Checking overlays
 dev/tools/check-overlays.sh || CODE=1
 
+echo Checking ocamlformat
+dune build @fmt || CODE=1
+
 exit $CODE
