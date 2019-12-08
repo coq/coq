@@ -76,15 +76,21 @@ Extract Inlined Constant String.prefix =>
      let l1 = String.length s1 and l2 = String.length s2 in
      l1 <= l2 && String.sub s2 0 l1 = s1)".
 Extract Inlined Constant String.string_of_list_ascii =>
-  "(fun l => String.of_seq (List.to_seq l))".
+  "(fun l ->
+      let a = Array.of_list l in
+      String.init (Array.length a) (fun i -> a.(i)))".
 Extract Inlined Constant String.list_ascii_of_string =>
-  "(fun s => List.of_seq (String.to_seq s))".
+  "(fun s ->
+      Array.to_list (Array.init (String.length s) (fun i -> s.[i])))".
 Extract Inlined Constant String.string_of_list_byte =>
-  "(fun l => String.of_seq (List.to_seq l))".
+  "(fun l ->
+      let a = Array.of_list l in
+      String.init (Array.length a) (fun i -> a.(i)))".
 Extract Inlined Constant String.list_byte_of_string =>
-  "(fun s => List.of_seq (String.to_seq s))".
+  "(fun s ->
+      Array.to_list (Array.init (String.length s) (fun i -> s.[i])))".
 
-(* Other operations in module String:
+(* Other operations in module String (at the time of this writing):
       String.length
       String.get
       String.substring
