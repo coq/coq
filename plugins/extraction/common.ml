@@ -698,9 +698,10 @@ let rec is_native_string_rec empty_string_ref string_constructor_ref = function
   (* others *)
   | _ -> false
 
-(* Here we first check that the argument is has a type registered as core.string.type
-   and that extraction to native strings was requested.
-   Then we check every character via [is_native_string_rec]. *)
+(* Here we first check that the argument is the type registered as
+   core.string.type and that extraction to native strings was
+   requested.  Then we check every character via
+   [is_native_string_rec]. *)
 
 let is_native_string c =
   match c with
