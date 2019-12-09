@@ -19,58 +19,49 @@ type 'a summary_declaration = {
   unfreeze_function : 'a -> unit;
   init_function : unit -> unit }
 
+module DynMap = Dyn.Map(struct type 'a t = 'a summary_declaration end)
+
 let sum_mod = ref None
-let sum_map = ref String.Map.empty
+let sum_map = ref DynMap.empty
 
 let mangle id = id ^ "-SUMMARY"
-let unmangle id = String.(sub id 0 (length id - 8))
 
 let ml_modules = "ML-MODULES"
 
-let internal_declare_summary fadd sumname sdecl =
-  let infun, outfun, tag = Dyn.Easy.make_dyn_tag (mangle sumname) in
-  let dyn_freeze ~marshallable = infun (sdecl.freeze_function ~marshallable)
-  and dyn_unfreeze sum = sdecl.unfreeze_function (outfun sum)
-  and dyn_init = sdecl.init_function in
-  let ddecl = {
-    freeze_function = dyn_freeze;
-    unfreeze_function = dyn_unfreeze;
-    init_function = dyn_init }
-  in
-  fadd sumname ddecl;
-  tag
-
 let declare_ml_modules_summary decl =
-  let ml_add _ ddecl = sum_mod := Some ddecl in
-  internal_declare_summary ml_add ml_modules decl
+  let tag = Dyn.create ml_modules in
+  sum_mod := Some (DynMap.Any (tag, decl))
 
-let declare_ml_modules_summary decl =
-  ignore(declare_ml_modules_summary decl)
+let check_name sumname = match Dyn.name sumname with
+| None -> ()
+| Some (Dyn.Any tag) ->
+  anomaly ~label:"Summary.declare_summary"
+    (str "Colliding summary names: " ++ str sumname ++ str " vs. " ++ str (Dyn.repr tag) ++ str ".")
 
 let declare_summary_tag sumname decl =
-  let fadd name ddecl = sum_map := String.Map.add name ddecl !sum_map in
-  let () = if String.Map.mem sumname !sum_map then
-      anomaly ~label:"Summary.declare_summary"
-        (str "Colliding summary names: " ++ str sumname ++ str " vs. " ++ str sumname ++ str ".")
-  in
-  internal_declare_summary fadd sumname decl
+  let () = check_name (mangle sumname) in
+  let tag = Dyn.create (mangle sumname) in
+  let () = sum_map := DynMap.add tag decl !sum_map in
+  tag
 
 let declare_summary sumname decl =
   ignore(declare_summary_tag sumname decl)
 
+module Frozen = Dyn.Map(struct type 'a t = 'a end)
+
 type frozen = {
-  summaries : Dyn.t String.Map.t;
+  summaries : Frozen.t;
   (** Ordered list w.r.t. the first component. *)
   ml_module : Dyn.t option;
   (** Special handling of the ml_module summary. *)
 }
 
-let empty_frozen = { summaries = String.Map.empty; ml_module = None }
+let empty_frozen = { summaries = Frozen.empty; ml_module = None }
 
 let freeze_summaries ~marshallable : frozen =
-  let smap decl = decl.freeze_function ~marshallable in
-  { summaries = String.Map.map smap !sum_map;
-    ml_module = Option.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod;
+  let fold (DynMap.Any (tag, decl)) accu = Frozen.add tag (decl.freeze_function ~marshallable) accu in
+  { summaries = DynMap.fold fold !sum_map Frozen.empty;
+    ml_module = Option.map (fun (DynMap.Any (tag, decl)) -> Dyn.Dyn (tag, decl.freeze_function ~marshallable)) !sum_mod;
   }
 
 let warn_summary_out_of_scope =
@@ -88,22 +79,27 @@ let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
    * may modify the content of [summaries] by loading new ML modules *)
   begin match !sum_mod with
   | None -> anomaly (str "Undeclared summary " ++ str ml_modules ++ str ".")
-  | Some decl -> Option.iter (fun state -> decl.unfreeze_function state) ml_module
+  | Some (DynMap.Any (tag, decl)) ->
+    let iter (Dyn.Dyn (tag', v)) = match Dyn.eq tag tag' with
+    | None -> anomaly (str "Type mismatch in ML module summary")
+    | Some Refl -> decl.unfreeze_function v
+    in
+    Option.iter iter ml_module
   end;
   (* We must be independent on the order of the map! *)
-  let ufz name decl =
-    try decl.unfreeze_function String.Map.(find name summaries)
+  let ufz (DynMap.Any (name, decl)) =
+    try decl.unfreeze_function Frozen.(find name summaries)
     with Not_found ->
       if not partial then begin
-        warn_summary_out_of_scope name;
+        warn_summary_out_of_scope (Dyn.repr name);
         decl.init_function ()
       end;
   in
   (* String.Map.iter unfreeze_single !sum_map *)
-  String.Map.iter ufz !sum_map
+  DynMap.iter ufz !sum_map
 
 let init_summaries () =
-  String.Map.iter (fun _ decl -> decl.init_function ()) !sum_map
+  DynMap.iter (fun (DynMap.Any (_, decl)) -> decl.init_function ()) !sum_map
 
 (** For global tables registered statically before the end of coqtop
     launch, the following empty [init_function] could be used. *)
@@ -112,18 +108,15 @@ let nop () = ()
 
 (** Summary projection *)
 let project_from_summary { summaries } tag =
-  let id = unmangle (Dyn.repr tag) in
-  let state = String.Map.find id summaries in
-  Option.get (Dyn.Easy.prj state tag)
+  Frozen.find tag summaries
 
 let modify_summary st tag v =
-  let id = unmangle (Dyn.repr tag) in
-  let summaries = String.Map.set id (Dyn.Easy.inj v tag) st.summaries in
+  let () = assert (Frozen.mem tag st.summaries) in
+  let summaries = Frozen.add tag v st.summaries in
   {st with summaries}
 
 let remove_from_summary st tag =
-  let id = unmangle (Dyn.repr tag) in
-  let summaries = String.Map.remove id st.summaries in
+  let summaries = Frozen.remove tag st.summaries in
   {st with summaries}
 
 (** All-in-one reference declaration + registration *)
@@ -140,25 +133,31 @@ let ref ?freeze ~name x = fst @@ ref_tag ?freeze ~name x
 
 module Local = struct
 
-type 'a local_ref = ('a CEphemeron.key * string) ref
+type 'a local_ref = ('a CEphemeron.key * 'a Dyn.tag) ref
 
-let (:=) r v = r := (CEphemeron.create v, snd !r)
+let set r v = r := (CEphemeron.create v, snd !r)
 
-let (!) r =
+let get r =
   let key, name = !r in
   try CEphemeron.get key
   with CEphemeron.InvalidKey ->
-    let { init_function } = String.Map.find name !sum_map in
+    let { init_function } = DynMap.find name !sum_map in
     init_function ();
     CEphemeron.get (fst !r)
 
 let ref ?(freeze=fun x -> x) ~name init =
-  let r = pervasives_ref (CEphemeron.create init, name) in
-  declare_summary name
-    { freeze_function = (fun ~marshallable -> freeze !r);
-      unfreeze_function = ((:=) r);
-      init_function = (fun () -> r := init) };
+  let () = check_name (mangle name) in
+  let tag : 'a Dyn.tag = Dyn.create (mangle name) in
+  let r = pervasives_ref (CEphemeron.create init, tag) in
+  let () = sum_map := DynMap.add tag
+    { freeze_function = (fun ~marshallable -> freeze (get r));
+      unfreeze_function = (set r);
+      init_function = (fun () -> set r init) } !sum_map
+  in
   r
+
+let (!) = get
+let (:=) = set
 
 end
 
