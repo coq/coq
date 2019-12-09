@@ -129,6 +129,10 @@ val locate_module : qualid -> ModPath.t
 val locate_section : qualid -> DirPath.t
 val locate_universe : qualid -> Univ.UGlobal.t
 
+(** Remove the binding to an abbreviation *)
+
+val remove_abbreviation : full_path -> Globnames.abbreviation -> unit
+
 (** These functions globalize user-level references into global
    references, like [locate] and co, but raise a nice error message
    in case of failure *)
@@ -236,6 +240,7 @@ module type NAMETREE = sig
   val push : visibility -> user_name -> elt -> t -> t
   val locate : qualid -> t -> elt
   val find : user_name -> t -> elt
+  val remove : user_name -> t -> t
   val exists : user_name -> t -> bool
   val user_name : qualid -> t -> user_name
   val shortest_qualid_gen : ?loc:Loc.t -> (Id.t -> bool) -> user_name -> t -> qualid
