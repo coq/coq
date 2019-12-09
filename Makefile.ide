@@ -106,7 +106,7 @@ ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
-	       -linkpkg -package str,unix,dynlink,threads,lablgtk3-sourceview3 -linkall $(IDEFLAGS:.cma=.cmxa) $^
+	       -linkpkg -package str,unix,threads,lablgtk3-sourceview3 $(IDEFLAGS:.cma=.cmxa) $^
 	$(STRIP_HIDE) $@
 else
 $(COQIDE): $(COQIDEBYTE)
@@ -116,7 +116,7 @@ endif
 $(COQIDEBYTE): $(LINKIDE)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ \
-	       -linkpkg -package str,unix,dynlink,threads,lablgtk3-sourceview3 $(IDEFLAGS) $(IDECDEPSFLAGS) $^
+	       -linkpkg -package str,unix,threads,lablgtk3-sourceview3 $(IDEFLAGS) $(IDECDEPSFLAGS) $^
 
 ide/coqide_os_specific.ml: ide/coqide_$(IDEINT).ml.in config/Makefile
 	rm -f $@ && cp $< $@ && chmod a-w $@
@@ -241,7 +241,7 @@ $(COQIDEAPP)/Contents:
 $(COQIDEINAPP): ide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
-	        -linkpkg -package str,unix,dynlink,threads,lablgtk3-sourceview3 $(IDEFLAGS:.cma=.cmxa) $^
+	        -linkpkg -package str,unix,threads,lablgtk3-sourceview3 $(IDEFLAGS:.cma=.cmxa) $^
 	$(STRIP_HIDE) $@
 
 $(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents
