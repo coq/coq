@@ -11,7 +11,7 @@
 (*i Lemma mult_non_zero :(r1,r2:R)``r1<>0`` /\ ``r2<>0`` -> ``r1*r2<>0``. i*)
 
 
-Require Import Rbase.
+Require Import Rdefinitions Raxioms RIneq.
 
 Ltac split_Rmult :=
   match goal with

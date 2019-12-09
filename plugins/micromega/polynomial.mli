@@ -23,6 +23,9 @@ module Monomial : sig
   (** [fold f m acc]
        folds over the variables with multiplicities *)
 
+  val degree : t -> int
+  (** [degree m] is the sum of the degrees of each variable *)
+
   val const : t
   (** [const]
       @return the empty monomial i.e. without any variable *)
@@ -32,6 +35,10 @@ module Monomial : sig
   val var : var -> t
   (** [var x]
       @return the monomial x^1 *)
+
+  val prod : t -> t -> t
+  (** [prod n m]
+      @return the monomial n*m *)
 
   val sqrt : t -> t option
   (** [sqrt m]
@@ -142,6 +149,12 @@ module LinPoly : sig
     val clear : unit -> unit
     (** [clear ()] clears the mapping. *)
 
+    val reserve : int -> unit
+    (** [reserve i] reserves the integer i *)
+
+    val get_fresh : unit -> int
+    (** [get_fresh ()] return the first fresh variable *)
+
     val retrieve : int -> Monomial.t
     (** [retrieve x]
         @return the monomial corresponding to the variable [x] *)
@@ -225,6 +238,14 @@ module LinPoly : sig
       @return a mapping m such that m[s] = s^2
       for every s^2 that is a monomial of [p] *)
 
+  val monomials : t -> ISet.t
+  (** [monomials p]
+      @return the set of monomials. *)
+
+  val degree : t -> int
+  (** [degree p]
+      @return return the maximum degree *)
+
   val pp_var : out_channel -> var -> unit
   (** [pp_var o v] pretty-prints a monomial indexed by v. *)
 
@@ -260,6 +281,9 @@ module ProofFormat : sig
     | Done
     | Step of int * prf_rule * proof
     | Enum of int * prf_rule * Vect.t * prf_rule * proof list
+    | ExProof of int * int * int * var * var * var * proof
+
+  (* x = z - t, z >= 0, t >= 0 *)
 
   val pr_size : prf_rule -> Num.num
   val pr_rule_max_id : prf_rule -> int

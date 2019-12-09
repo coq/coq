@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Rbase.
+Require Import Rdefinitions Raxioms RIneq.
 Require Import Rbasic_fun.
 Require Import Even.
 Require Import Div2.
@@ -85,7 +85,7 @@ Proof.
   assert (H1 := le_INR _ _ H).
   do 2 rewrite mult_INR in H1.
   apply Rmult_le_reg_l with (INR 2).
-  replace (INR 2) with 2; [ prove_sup0 | reflexivity ].
+  apply lt_0_INR. apply Nat.lt_0_2.
   assumption.
 Qed.
 
