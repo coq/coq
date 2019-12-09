@@ -21,16 +21,15 @@ type 'a summary_declaration = {
 
 module DynMap = Dyn.Map(struct type 'a t = 'a summary_declaration end)
 
-let sum_mod = ref None
+type ml_modules = (string * string option) list
+
+let sum_mod : ml_modules summary_declaration option ref = ref None
 let sum_map = ref DynMap.empty
 
 let mangle id = id ^ "-SUMMARY"
 
-let ml_modules = "ML-MODULES"
-
 let declare_ml_modules_summary decl =
-  let tag = Dyn.create ml_modules in
-  sum_mod := Some (DynMap.Any (tag, decl))
+  sum_mod := Some decl
 
 let check_name sumname = match Dyn.name sumname with
 | None -> ()
@@ -52,7 +51,7 @@ module Frozen = Dyn.Map(struct type 'a t = 'a end)
 type frozen = {
   summaries : Frozen.t;
   (** Ordered list w.r.t. the first component. *)
-  ml_module : Dyn.t option;
+  ml_module : ml_modules option;
   (** Special handling of the ml_module summary. *)
 }
 
@@ -61,7 +60,7 @@ let empty_frozen = { summaries = Frozen.empty; ml_module = None }
 let freeze_summaries ~marshallable : frozen =
   let fold (DynMap.Any (tag, decl)) accu = Frozen.add tag (decl.freeze_function ~marshallable) accu in
   { summaries = DynMap.fold fold !sum_map Frozen.empty;
-    ml_module = Option.map (fun (DynMap.Any (tag, decl)) -> Dyn.Dyn (tag, decl.freeze_function ~marshallable)) !sum_mod;
+    ml_module = Option.map (fun decl -> decl.freeze_function ~marshallable) !sum_mod;
   }
 
 let warn_summary_out_of_scope =
@@ -78,13 +77,8 @@ let unfreeze_summaries ?(partial=false) { summaries; ml_module } =
   (* The unfreezing of [ml_modules_summary] has to be anticipated since it
    * may modify the content of [summaries] by loading new ML modules *)
   begin match !sum_mod with
-  | None -> anomaly (str "Undeclared summary " ++ str ml_modules ++ str ".")
-  | Some (DynMap.Any (tag, decl)) ->
-    let iter (Dyn.Dyn (tag', v)) = match Dyn.eq tag tag' with
-    | None -> anomaly (str "Type mismatch in ML module summary")
-    | Some Refl -> decl.unfreeze_function v
-    in
-    Option.iter iter ml_module
+  | None -> anomaly (str "Undeclared ML-MODULES summary.")
+  | Some decl -> Option.iter decl.unfreeze_function ml_module
   end;
   (* We must be independent on the order of the map! *)
   let ufz (DynMap.Any (name, decl)) =
