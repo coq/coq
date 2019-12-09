@@ -48,6 +48,7 @@
  (package coqide)
  (optional)
  (modules coqide_main)
+ (modes exe byte)
  (libraries coqide_gui))
 
 ; Input-method bindings
