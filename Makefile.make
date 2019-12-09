@@ -46,23 +46,20 @@
 
 # !! Before using FIND_SKIP_DIRS, please read how you should in the !!
 # !! FIND_SKIP_DIRS section of dev/doc/build-system.dev.txt         !!
-FIND_SKIP_DIRS:='(' \
+# "-not -name ." to avoid skipping everything since we "find ."
+# "-type d" to be able to find .merlin.in files
+FIND_SKIP_DIRS:=-not -name . '(' \
   -name '{arch}' -o \
-  -name '.svn' -o \
+  -name '.*' -type d -o \
   -name '_darcs' -o \
-  -name '.git' -o \
-  -name '.bzr' -o \
   -name 'debian' -o \
   -name "$${GIT_DIR}" -o \
   -name '_build' -o \
   -name '_build_ci' -o \
-  -name '_build_boot' -o \
   -name '_install_ci' -o \
   -name 'gramlib' -o \
   -name 'user-contrib' -o \
   -name 'test-suite' -o \
-  -name '.opamcache' -o \
-  -name '.coq-native' -o \
   -name 'plugin_tutorial' \
 ')' -prune -o
 
