@@ -16,13 +16,8 @@ open Univ
 type 'a t
 (** Type of sections with additional data ['a] *)
 
-val empty : 'a t
-
-val is_empty : 'a t -> bool
-(** Checks whether there is no opened section *)
-
 val depth : 'a t -> int
-(** Number of nested sections (0 if no sections are open) *)
+(** Number of nested sections. *)
 
 (** {6 Manipulating sections} *)
 
@@ -30,13 +25,13 @@ type section_entry =
 | SecDefinition of Constant.t
 | SecInductive of MutInd.t
 
-val open_section : custom:'a -> 'a t -> 'a t
+val open_section : custom:'a -> 'a t option -> 'a t
 (** Open a new section with the provided universe polymorphic status. Sections
     can be nested, with the proviso that polymorphic sections cannot appear
     inside a monomorphic one. A custom data can be attached to this section,
     that will be returned by {!close_section}. *)
 
-val close_section : 'a t -> 'a t * section_entry list * ContextSet.t * 'a
+val close_section : 'a t -> 'a t option * section_entry list * ContextSet.t * 'a
 (** Close the current section and returns the entries defined inside, the set
     of global monomorphic constraints added in this section, and the custom data
     provided at the opening of the section. *)

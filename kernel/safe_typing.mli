@@ -35,7 +35,7 @@ val is_initial : safe_environment -> bool
 
 val env_of_safe_env : safe_environment -> Environ.env
 
-val sections_of_safe_env : safe_environment -> section_data Section.t
+val sections_of_safe_env : safe_environment -> section_data Section.t option
 
 (** The safe_environment state monad *)
 
