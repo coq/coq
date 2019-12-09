@@ -420,7 +420,7 @@ let explicitation ((na,p,_),_) =
 
 (* Manage user-given implicit arguments *)
 
-let set_manual_implicits silent flags autoimps l =
+let merge_auto_manual_implicits silent flags autoimps l =
   (* Compare with automatic implicits to recover printing data and names *)
   let rec merge k = function
     | autoimp::autoimps, explimp::explimps ->
@@ -446,7 +446,7 @@ type manual_implicits = (Name.t * bool) option CAst.t list
 
 let compute_implicits_with_manual env sigma typ impls =
   let autoimpls = compute_implicits_flags env sigma !implicit_args typ in
-  set_manual_implicits true !implicit_args autoimpls impls
+  merge_auto_manual_implicits true !implicit_args autoimpls impls
 
 let compute_semi_auto_implicits env sigma f t =
   [DefaultImpArgs, compute_implicits_flags env sigma f t]
@@ -663,13 +663,13 @@ let declare_var_implicits id ~impl ~impargs =
   let flags = !implicit_args in
   sec_implicits := Id.Map.add id impl !sec_implicits;
   let auto_imps = (GlobRef.VarRef id, compute_var_implicits flags id) in
-  let imps = Option.fold_left (under_full_implicit (set_manual_implicits false flags)) auto_imps impargs in
+  let imps = Option.fold_left (under_full_implicit (merge_auto_manual_implicits false flags)) auto_imps impargs in
   add_anonymous_leaf (inImplicits (ImplLocal,[imps]))
 
 let declare_constant_implicits cst ~impargs =
   let flags = !implicit_args in
   let auto_imps = (GlobRef.ConstRef cst, compute_constant_implicits flags cst) in
-  let imps = Option.fold_left (under_full_implicit (set_manual_implicits false flags)) auto_imps impargs in
+  let imps = Option.fold_left (under_full_implicit (merge_auto_manual_implicits false flags)) auto_imps impargs in
   add_anonymous_leaf (inImplicits (ImplConstant (cst,flags),[imps]))
 
 type mib_manual_implicits = (manual_implicits * manual_implicits list) list
@@ -680,8 +680,8 @@ let declare_mib_implicits mind ~impargs =
     (fun (ind,cstrs) -> (ind,Array.to_list cstrs))
     (compute_mib_implicits flags mind) in
   let imps = List.map2 (fun (auto_indimpl,auto_cstrimpls) (manual_indimpl,manual_cstrimpls) ->
-               under_full_implicit (set_manual_implicits false flags) auto_indimpl manual_indimpl ::
-               List.map2 (under_full_implicit (set_manual_implicits false flags)) auto_cstrimpls manual_cstrimpls)
+               under_full_implicit (merge_auto_manual_implicits false flags) auto_indimpl manual_indimpl ::
+               List.map2 (under_full_implicit (merge_auto_manual_implicits false flags)) auto_cstrimpls manual_cstrimpls)
                auto_imps impargs in
   add_anonymous_leaf
     (inImplicits (ImplMutualInductive (mind,flags),List.flatten imps))
