@@ -865,7 +865,7 @@ team.
 #### Building Coq ####
 
 The list of dependencies can be found in the first section of the
-[`INSTALL`](INSTALL) file.
+[`INSTALL.md`](INSTALL.md) file.
 
 Today, the recommended method for building Coq is to use `dune`.  Run
 `make -f Makefile.dune` to get help on the various available targets,

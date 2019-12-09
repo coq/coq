@@ -27,7 +27,7 @@ Dependencies
 ### HTML documentation
 
 To produce the complete documentation in HTML, you will need Coq dependencies
-listed in [`INSTALL`](../INSTALL). Additionally, the Sphinx-based
+listed in [`INSTALL.md`](../INSTALL.md). Additionally, the Sphinx-based
 reference manual requires Python 3, and the following Python packages:
 
   - sphinx >= 1.7.8
