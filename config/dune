@@ -9,5 +9,9 @@
 (rule
  (targets coq_config.ml coq_config.py Makefile dune.c_flags)
  (mode fallback)
- (deps %{project_root}/configure.ml %{project_root}/dev/ocamldebug-coq.run (env_var COQ_CONFIGURE_PREFIX))
+ (deps
+   %{project_root}/configure.ml
+   %{project_root}/dev/ocamldebug-coq.run
+   %{project_root}/dev/header.c
+  (env_var COQ_CONFIGURE_PREFIX))
  (action (chdir %{project_root} (run %{ocaml} configure.ml -no-ask -native-compiler no))))
