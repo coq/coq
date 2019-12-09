@@ -47,6 +47,8 @@ module Coq_Pos : sig
   val size_nat : positive -> nat
   val compare_cont : comparison -> positive -> positive -> comparison
   val compare : positive -> positive -> comparison
+  val max : positive -> positive -> positive
+  val leb : positive -> positive -> bool
   val gcdn : nat -> positive -> positive -> positive
   val gcd : positive -> positive -> positive
   val of_succ_nat : nat -> positive
@@ -624,10 +626,6 @@ val simpl_cone :
   -> 'a1 psatz
   -> 'a1 psatz
 
-module PositiveSet : sig
-  type tree = Leaf | Node of tree * bool * tree
-end
-
 type q = {qnum : z; qden : positive}
 
 val qeq_bool : q -> q -> bool
@@ -672,6 +670,7 @@ type zArithProof =
   | RatProof of zWitness * zArithProof
   | CutProof of zWitness * zArithProof
   | EnumProof of zWitness * zWitness * zArithProof list
+  | ExProof of positive * zArithProof
 
 val zgcdM : z -> z -> z
 val zgcd_pol : z polC -> z * z
@@ -682,40 +681,10 @@ val nformula_of_cutting_plane : (z polC * z) * op1 -> z nFormula
 val is_pol_Z0 : z polC -> bool
 val eval_Psatz0 : z nFormula list -> zWitness -> z nFormula option
 val valid_cut_sign : op1 -> bool
-
-module Vars : sig
-  type elt = positive
-  type tree = PositiveSet.tree = Leaf | Node of tree * bool * tree
-  type t = tree
-
-  val empty : t
-  val add : elt -> t -> t
-  val singleton : elt -> t
-  val union : t -> t -> t
-  val rev_append : elt -> elt -> elt
-  val rev : elt -> elt
-  val xfold : (elt -> 'a1 -> 'a1) -> t -> 'a1 -> elt -> 'a1
-  val fold : (elt -> 'a1 -> 'a1) -> t -> 'a1 -> 'a1
-end
-
-val vars_of_pexpr : z pExpr -> Vars.t
-val vars_of_formula : z formula -> Vars.t
-val vars_of_bformula : (z formula, 'a1, 'a2, 'a3) gFormula -> Vars.t
 val bound_var : positive -> z formula
 val mk_eq_pos : positive -> positive -> positive -> z formula
-
-val bound_vars :
-     (positive -> positive -> bool option -> 'a2)
-  -> positive
-  -> Vars.t
-  -> (z formula, 'a1, 'a2, 'a3) gFormula
-
-val bound_problem_fr :
-     (positive -> positive -> bool option -> 'a2)
-  -> positive
-  -> (z formula, 'a1, 'a2, 'a3) gFormula
-  -> (z formula, 'a1, 'a2, 'a3) gFormula
-
+val max_var : positive -> z pol -> positive
+val max_var_nformulae : z nFormula list -> positive
 val zChecker : z nFormula list -> zArithProof -> bool
 val zTautoChecker : z formula bFormula -> zArithProof list -> bool
 

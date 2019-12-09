@@ -15,8 +15,7 @@
 (************************************************************************)
 
 open Num
-module Utils = Mutils
-open Utils
+open Mutils
 module Mc = Micromega
 
 let max_nb_cstr = ref max_int
@@ -43,12 +42,15 @@ module Monomial : sig
   val fold : (var -> int -> 'a -> 'a) -> t -> 'a -> 'a
   val sqrt : t -> t option
   val variables : t -> ISet.t
+  val degree : t -> int
 end = struct
   (* A monomial is represented by a multiset of variables  *)
   module Map = Map.Make (Int)
   open Map
 
   type t = int Map.t
+
+  let degree m = Map.fold (fun _ i d -> i + d) m 0
 
   let is_singleton m =
     try
@@ -280,10 +282,11 @@ module LinPoly = struct
     let (monomial_of_index : Monomial.t IntMap.t ref) = ref IntMap.empty
     let fresh = ref 0
 
-    let clear () =
-      index_of_monomial := MonoMap.empty;
-      monomial_of_index := IntMap.empty;
-      fresh := 0
+    let reserve vr =
+      if !fresh > vr then failwith (Printf.sprintf "Cannot reserve %i" vr)
+      else fresh := vr + 1
+
+    let get_fresh () = !fresh
 
     let register m =
       try MonoMap.find m !index_of_monomial
@@ -295,6 +298,13 @@ module LinPoly = struct
         res
 
     let retrieve i = IntMap.find i !monomial_of_index
+
+    let clear () =
+      index_of_monomial := MonoMap.empty;
+      monomial_of_index := IntMap.empty;
+      fresh := 0;
+      ignore (register Monomial.const)
+
     let _ = register Monomial.const
   end
 
@@ -389,6 +399,11 @@ module LinPoly = struct
       (fun acc v _ -> ISet.union (Monomial.variables (MonT.retrieve v)) acc)
       ISet.empty p
 
+  let monomials p = Vect.fold (fun acc v _ -> ISet.add v acc) ISet.empty p
+
+  let degree v =
+    Vect.fold (fun acc v vl -> max acc (Monomial.degree (MonT.retrieve v))) 0 v
+
   let pp_goal typ o l =
     let vars =
       List.fold_left
@@ -433,6 +448,9 @@ module ProofFormat = struct
     | Done
     | Step of int * prf_rule * proof
     | Enum of int * prf_rule * Vect.t * prf_rule * proof list
+    | ExProof of int * int * int * var * var * var * proof
+
+  (* x = z - t, z >= 0, t >= 0 *)
 
   let rec output_prf_rule o = function
     | Annot (s, p) -> Printf.fprintf o "(%a)@%s" output_prf_rule p s
@@ -459,6 +477,9 @@ module ProofFormat = struct
     | Enum (i, p1, v, p2, pl) ->
       Printf.fprintf o "%i{%a<=%a<=%a}%a" i output_prf_rule p1 Vect.pp v
         output_prf_rule p2 (pp_list ";" output_proof) pl
+    | ExProof (i, j, k, x, z, t, pr) ->
+      Printf.fprintf o "%i := %i = %i - %i ; %i := %i >= 0 ; %i := %i >= 0 ; %a"
+        i x z t j z k t output_proof pr
 
   let rec pr_size = function
     | Annot (_, p) -> pr_size p
@@ -485,6 +506,8 @@ module ProofFormat = struct
     | Enum (i, p1, _, p2, l) ->
       let m = max (pr_rule_max_id p1) (pr_rule_max_id p2) in
       List.fold_left (fun i prf -> max i (proof_max_id prf)) (max i m) l
+    | ExProof (i, j, k, _, _, _, prf) ->
+      max (max (max i j) k) (proof_max_id prf)
 
   let rec pr_rule_def_cut id = function
     | Annot (_, p) -> pr_rule_def_cut id p
@@ -544,6 +567,16 @@ module ProofFormat = struct
             (ISet.union
                (ISet.union (pr_rule_collect_hyps p1) (pr_rule_collect_hyps p2))
                hyps) )
+      | ExProof (i, j, k, x, z, t, prf) ->
+        let prf', hyps = simplify_proof prf in
+        if
+          (not (ISet.mem i hyps))
+          && (not (ISet.mem j hyps))
+          && not (ISet.mem k hyps)
+        then (prf', hyps)
+        else
+          ( ExProof (i, j, k, x, z, t, prf')
+          , ISet.add i (ISet.add j (ISet.add k hyps)) )
     in
     fst (simplify_proof p)
 
@@ -561,6 +594,9 @@ module ProofFormat = struct
           bds
       in
       (id, prf)
+    | ExProof (i, j, k, x, z, t, prf) ->
+      let id, prf = normalise_proof id prf in
+      (id, ExProof (i, j, k, x, z, t, prf))
     | Enum (i, p1, v, p2, pl) ->
       (* Why do I have  top-level cuts ? *)
       (*      let p1 = implicit_cut p1 in
@@ -608,9 +644,9 @@ module ProofFormat = struct
     let rec compare p1 p2 =
       match (p1, p2) with
       | Annot (s1, p1), Annot (s2, p2) ->
-        if s1 = s2 then compare p1 p2 else Util.pervasives_compare s1 s2
-      | Hyp i, Hyp j -> Util.pervasives_compare i j
-      | Def i, Def j -> Util.pervasives_compare i j
+        if s1 = s2 then compare p1 p2 else String.compare s1 s2
+      | Hyp i, Hyp j -> Int.compare i j
+      | Def i, Def j -> Int.compare i j
       | Cst n, Cst m -> Num.compare_num n m
       | Zero, Zero -> 0
       | Square v1, Square v2 -> Vect.compare v1 v2
@@ -623,7 +659,7 @@ module ProofFormat = struct
       | AddPrf (p1, q1), MulPrf (p2, q2) ->
         cmp_pair compare compare (p1, q1) (p2, q2)
       | CutPrf p, CutPrf p' -> compare p p'
-      | _, _ -> Util.pervasives_compare (id_of_constr p1) (id_of_constr p2)
+      | _, _ -> Int.compare (id_of_constr p1) (id_of_constr p2)
   end
 
   let add_proof x y =
@@ -759,6 +795,8 @@ module ProofFormat = struct
         ( cmpl_prf_rule_z env p1
         , cmpl_prf_rule_z env p2
         , List.map (cmpl_proof (i :: env)) l )
+    | ExProof (i, j, k, x, _, _, prf) ->
+      Mc.ExProof (CamlToCoq.positive x, cmpl_proof (i :: j :: k :: env) prf)
 
   let compile_proof env prf =
     let id = 1 + proof_max_id prf in
@@ -818,6 +856,7 @@ module ProofFormat = struct
       let _ = eval_prf_rule (fun i -> IMap.find i env) r2 in
       (* Should check bounds *)
       failwith "Not implemented"
+    | ExProof _ -> failwith "Not implemented"
 end
 
 module WithProof = struct
@@ -852,7 +891,10 @@ module WithProof = struct
       let n, r = Vect.decomp_cst p in
       if Vect.is_null r && n >/ Int 0 then
         ((LinPoly.product p p1, o1), ProofFormat.mul_cst_proof n prf1)
-      else raise InvalidProof
+      else (
+        Printf.printf "mult_error %a [*] %a\n" LinPoly.pp p output
+          ((p1, o1), prf1);
+        raise InvalidProof )
 
   let cutting_plane ((p, o), prf) =
     let c, p' = Vect.decomp_cst p in

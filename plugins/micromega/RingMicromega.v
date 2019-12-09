@@ -856,7 +856,7 @@ Proof.
       simpl.
       tauto.
     +
-      rewrite <- eval_cnf_cons_iff with (1:= fun env (term:Formula Z) => True) .
+      rewrite <- eval_cnf_cons_iff.
       simpl.
       unfold eval_tt. simpl.
       rewrite IHl.
@@ -940,7 +940,7 @@ Proof.
   destruct (check_inconsistent f) eqn:U.
   - destruct f as [e op].
     assert (US := check_inconsistent_sound _ _ U env).
-    rewrite eval_cnf_ff with (1:= eval_nformula).
+    rewrite eval_cnf_ff.
     tauto.
   - intros. rewrite cnf_of_list_correct.
     now apply xnormalise_correct.
@@ -956,7 +956,7 @@ Proof.
   -
     destruct f as [e o].
     assert (US := check_inconsistent_sound _  _ U env).
-    rewrite eval_cnf_tt with (1:= eval_nformula).
+    rewrite eval_cnf_tt.
     tauto.
   - rewrite cnf_of_list_correct.
     apply xnegate_correct.

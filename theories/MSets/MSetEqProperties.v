@@ -18,6 +18,8 @@
     [equal s s'=true] instead of [Equal s s'], etc. *)
 
 Require Import MSetProperties Zerob Sumbool Lia DecidableTypeEx.
+Require  FSetEqProperties.
+
 
 Module WEqPropertiesOn (Import E:DecidableType)(M:WSetsOn E).
 Module Import MP := WPropertiesOn E M.
@@ -857,7 +859,7 @@ intros.
 rewrite <- (fold_equal _ _ _ _ fc ft 0 _ _ H).
 rewrite <- (fold_equal _ _ _ _ gc gt 0 _ _ H).
 rewrite <- (fold_equal _ _ _ _ fgc fgt 0 _ _ H); auto.
-intros. do 3 (rewrite fold_add; auto with fset). lia.
+intros. do 3 (rewrite fold_add by auto with fset). lia.
 do 3 rewrite fold_empty;auto.
 Qed.
 

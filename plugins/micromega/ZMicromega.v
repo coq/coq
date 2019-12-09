@@ -18,11 +18,11 @@ Require Import List.
 Require Import Bool.
 Require Import OrderedRing.
 Require Import RingMicromega.
-Require  FSetPositive FSetEqProperties.
 Require Import ZCoeff.
 Require Import Refl.
 Require Import ZArith_base.
 Require Import ZArithRing.
+Require Import Ztac.
 Require PreOmega.
 (*Declare ML Module "micromega_plugin".*)
 Local Open Scope Z_scope.
@@ -30,7 +30,7 @@ Local Open Scope Z_scope.
 Ltac flatten_bool :=
   repeat match goal with
            [ id : (_ && _)%bool = true |- _ ] =>  destruct (andb_prop _ _ id); clear id
-           |  [ id : (_ || _)%bool = true |- _ ] =>  destruct (orb_prop _ _ id); clear id
+         |  [ id : (_ || _)%bool = true |- _ ] =>  destruct (orb_prop _ _ id); clear id
          end.
 
 Ltac inv H := inversion H ; try subst ; clear H.
@@ -186,6 +186,7 @@ match o with
 | OpGt => Z.gt
 end.
 
+
 Definition Zeval_formula (env : PolEnv Z) (f : Formula Z):=
   let (lhs, op, rhs) := f in
     (Zeval_op2 op) (Zeval_expr env lhs) (Zeval_expr env rhs).
@@ -193,10 +194,13 @@ Definition Zeval_formula (env : PolEnv Z) (f : Formula Z):=
 Definition Zeval_formula' :=
   eval_formula  Z.add Z.mul Z.sub Z.opp (@eq Z) Z.le Z.lt (fun x => x) (fun x => x) (pow_N 1 Z.mul).
 
-Lemma Zeval_formula_compat : forall env f, Zeval_formula env f <-> Zeval_formula' env f.
+Lemma Zeval_formula_compat' : forall env f,  Zeval_formula env  f <-> Zeval_formula' env f.
 Proof.
-  destruct f ; simpl.
-  rewrite Zeval_expr_compat. rewrite Zeval_expr_compat.
+  intros.
+  unfold Zeval_formula.
+  destruct f.
+  repeat rewrite Zeval_expr_compat.
+  unfold Zeval_formula' ; simpl.
   unfold eval_expr.
   generalize (eval_pexpr Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
         (fun x : N => x) (pow_N 1 Z.mul) env Flhs).
@@ -308,10 +312,10 @@ Definition xnnormalise (t : Formula Z) : NFormula Z :=
 
 Lemma xnnormalise_correct :
   forall env f,
-    eval_nformula env (xnnormalise f) <-> Zeval_formula env f.
+    eval_nformula env (xnnormalise f) <-> Zeval_formula env  f.
 Proof.
   intros.
-  rewrite Zeval_formula_compat.
+  rewrite Zeval_formula_compat'.
   unfold xnnormalise.
   destruct f as [lhs o rhs].
   destruct o eqn:O ; cbn ; rewrite ?eval_pol_sub;
@@ -418,7 +422,7 @@ Proof.
       specialize (Zunsat_sound _ EQ env).
       tauto.
     +
-      rewrite <- eval_cnf_cons_iff with (1:= fun env (term:Formula Z) => True) .
+      rewrite <- eval_cnf_cons_iff.
       rewrite IHf.
       simpl.
       unfold E at 2.
@@ -439,7 +443,7 @@ Proof.
   generalize (xnnormalise t) as f;intro.
   destruct (Zunsat f) eqn:U.
   - assert (US := Zunsat_sound _  U env).
-    rewrite eval_cnf_ff with (1:= eval_nformula).
+    rewrite eval_cnf_ff.
     tauto.
   - rewrite cnf_of_list_correct.
     apply xnormalise_correct.
@@ -474,7 +478,7 @@ Proof.
   - tauto.
 Qed.
 
-Lemma negate_correct : forall T env t (tg:T), eval_cnf eval_nformula env (negate t tg) <-> ~ Zeval_formula env t.
+Lemma negate_correct : forall T env t (tg:T), eval_cnf eval_nformula env (negate t tg) <-> ~ Zeval_formula env  t.
 Proof.
   intros.
   rewrite <- xnnormalise_correct.
@@ -482,13 +486,13 @@ Proof.
   generalize (xnnormalise t) as f;intro.
   destruct (Zunsat f) eqn:U.
   - assert (US := Zunsat_sound _  U env).
-    rewrite eval_cnf_tt with (1:= eval_nformula).
+    rewrite eval_cnf_tt.
     tauto.
   - rewrite cnf_of_list_correct.
     apply xnegate_correct.
 Qed.
 
-Definition cnfZ (Annot TX AF : Type) (f : TFormula (Formula Z) Annot TX AF) :=
+Definition cnfZ (Annot: Type) (TX : Type)  (AF : Type)  (f : TFormula (Formula Z) Annot TX AF) :=
   rxcnf Zunsat Zdeduce normalise negate true f.
 
 Definition ZweakTautoChecker (w: list ZWitness) (f : BFormula (Formula Z)) : bool :=
@@ -555,7 +559,8 @@ Inductive ZArithProof :=
 | RatProof : ZWitness -> ZArithProof -> ZArithProof
 | CutProof : ZWitness -> ZArithProof -> ZArithProof
 | EnumProof : ZWitness -> ZWitness -> list ZArithProof -> ZArithProof
-(*| ExProof   : positive -> positive -> positive -> ZArithProof  ExProof z t x : exists z t, x = z - t /\ z >= 0 /\ t >= 0 *)
+| ExProof   : positive -> ZArithProof -> ZArithProof
+(*ExProof x : exists z t, x = z - t /\ z >= 0 /\ t >= 0 *)
 .
 (*| SplitProof :   PolC Z -> ZArithProof -> ZArithProof -> ZArithProof.*)
 
@@ -826,149 +831,6 @@ Definition valid_cut_sign (op:Op1) :=
     | _         => false
   end.
 
-Module Vars.
-  Import FSetPositive.
-  Include PositiveSet.
-
-  Module Facts := FSetEqProperties.EqProperties(PositiveSet).
-
-  Lemma mem_union_l : forall x s s',
-      mem x s = true ->
-      mem x (union s s') = true.
-  Proof.
-    intros.
-    rewrite Facts.union_mem.
-    rewrite H. reflexivity.
-  Qed.
-
-  Lemma mem_union_r : forall x s s',
-      mem x s' = true ->
-      mem x (union s s') = true.
-  Proof.
-    intros.
-    rewrite Facts.union_mem.
-    rewrite H. rewrite orb_comm. reflexivity.
-  Qed.
-
-  Lemma mem_singleton : forall p,
-      mem p (singleton p) = true.
-  Proof.
-    apply Facts.singleton_mem_1.
-  Qed.
-
-  Lemma mem_elements : forall x v,
-      mem x v = true <-> List.In x (PositiveSet.elements v).
-  Proof.
-    intros.
-    rewrite Facts.MP.FM.elements_b.
-    rewrite existsb_exists.
-    unfold Facts.MP.FM.eqb.
-    split ; intros.
-    - destruct H as (x' & IN & EQ).
-    destruct (PositiveSet.E.eq_dec x x') ; try congruence.
-    subst ; auto.
-    - exists x.
-      split ; auto.
-      destruct (PositiveSet.E.eq_dec x x) ; congruence.
-  Qed.
-
-  Definition max_element (vars : t)  :=
-    fold Pos.max vars xH.
-
-  Lemma max_element_max :
-    forall x vars, mem x vars = true -> Pos.le x (max_element vars).
-  Proof.
-    unfold max_element.
-    intros.
-    rewrite mem_elements in H.
-    rewrite PositiveSet.fold_1.
-    set (F := (fun (a : positive) (e : PositiveSet.elt) => Pos.max e a)).
-    revert H.
-    assert  (((x <= 1 -> x <= fold_left F (PositiveSet.elements vars) 1)
-             /\
-            (List.In x (PositiveSet.elements vars) ->
-             x <= fold_left F (PositiveSet.elements vars) 1))%positive).
-    {
-    revert x.
-    generalize xH as acc.
-    induction (PositiveSet.elements  vars).
-    - simpl. tauto.
-    - simpl.
-      intros.
-      destruct (IHl (F acc a) x).
-      split ; intros.
-      apply H.
-      unfold F.
-      rewrite Pos.max_le_iff.
-      tauto.
-      destruct H1 ; subst.
-      apply H.
-      unfold F.
-      rewrite Pos.max_le_iff.
-      simpl.
-      left.
-      apply Pos.le_refl.
-      tauto.
-    }
-    tauto.
-  Qed.
-
-  Definition is_subset (v1 v2 : t) :=
-    forall x, mem x v1 = true -> mem x v2 = true.
-
-  Lemma is_subset_union_l : forall v1 v2,
-      is_subset v1 (union v1 v2).
-  Proof.
-    unfold is_subset.
-    intros.
-    apply mem_union_l; auto.
-  Qed.
-
-  Lemma is_subset_union_r : forall v1 v2,
-      is_subset v1 (union v2 v1).
-  Proof.
-    unfold is_subset.
-    intros.
-    apply mem_union_r; auto.
-  Qed.
-
-
-  End Vars.
-
-
-Fixpoint vars_of_pexpr (e : PExpr Z) : Vars.t :=
-  match e with
-  | PEc _ => Vars.empty
-  | PEX x => Vars.singleton x
-  | PEadd e1 e2 | PEsub e1 e2 | PEmul e1 e2 =>
-    let v1 := vars_of_pexpr e1 in
-    let v2 := vars_of_pexpr e2 in
-    Vars.union v1 v2
-  | PEopp c => vars_of_pexpr c
-  | PEpow e n => vars_of_pexpr e
-  end.
-
-Definition vars_of_formula (f : Formula Z) :=
-  match f with
-  | Build_Formula l o r =>
-    let v1 := vars_of_pexpr l in
-    let v2 := vars_of_pexpr r in
-    Vars.union v1 v2
-  end.
-
-Fixpoint vars_of_bformula {TX : Type} {TG : Type} {ID : Type}
-         (F : @GFormula (Formula Z) TX TG ID) : Vars.t :=
-  match F with
-  | TT  => Vars.empty
-  | FF  => Vars.empty
-  | X  p => Vars.empty
-  | A a t => vars_of_formula a
-  | Cj f1 f2 | D f1 f2 | I f1 _ f2 =>
-                         let v1 := vars_of_bformula f1 in
-                         let v2 := vars_of_bformula f2 in
-                         Vars.union v1 v2
-  | Tauto.N f     => vars_of_bformula f
-  end.
 
 Definition bound_var (v : positive) : Formula Z :=
   Build_Formula (PEX v) OpGe (PEc 0).
@@ -976,37 +838,164 @@ Definition bound_var (v : positive) : Formula Z :=
 Definition mk_eq_pos (x : positive) (y:positive) (t : positive) : Formula Z :=
   Build_Formula (PEX x) OpEq (PEsub (PEX y) (PEX t)).
 
-Section BOUND.
-  Context {TX TG ID : Type}.
 
-  Variable tag_of_var : positive -> positive -> option bool -> TG.
+Fixpoint vars (jmp : positive) (p : Pol Z) : list positive :=
+  match p with
+  | Pc c => nil
+  | Pinj j p => vars (Pos.add j jmp) p
+  | PX p j q => jmp::(vars jmp p)++vars (Pos.succ jmp) q
+  end.
 
-  Definition bound_vars  (fr : positive)
-             (v : Vars.t) : @GFormula (Formula Z) TX TG ID :=
-    Vars.fold (fun k acc =>
-                 let y := (xO (fr + k)) in
-                 let z := (xI (fr + k)) in
-                 Cj
-                   (Cj (A (mk_eq_pos k y z) (tag_of_var fr k None))
-                       (Cj (A (bound_var y) (tag_of_var fr k (Some false)))
-                           (A (bound_var z) (tag_of_var fr k (Some true)))))
-                   acc) v TT.
+Fixpoint max_var (jmp : positive) (p : Pol Z) : positive :=
+  match p with
+  | Pc _ => jmp
+  | Pinj j p => max_var (Pos.add j jmp) p
+  | PX p j q => Pos.max (max_var jmp p) (max_var (Pos.succ jmp) q)
+  end.
 
-  Definition bound_problem  (F : @GFormula (Formula Z) TX TG ID) : GFormula :=
-    let v := vars_of_bformula F in
-    I (bound_vars (Pos.succ (Vars.max_element v)) v) None F.
-
-
-  Definition bound_problem_fr (fr : positive) (F : @GFormula (Formula Z) TX TG ID) : GFormula :=
-    let v := vars_of_bformula F in
-    I (bound_vars fr v) None F.
-
-
-End BOUND.
+Lemma pos_le_add : forall y x,
+    (x <= y + x)%positive.
+Proof.
+  intros.
+  assert  ((Z.pos x) <= Z.pos (x + y))%Z.
+  rewrite <- (Z.add_0_r (Zpos x)).
+  rewrite <- Pos2Z.add_pos_pos.
+  apply Z.add_le_mono_l.
+  compute. congruence.
+  rewrite Pos.add_comm in H.
+  apply H.
+Qed.
 
 
+Lemma max_var_le : forall p v,
+    (v <= max_var v p)%positive.
+Proof.
+  induction p; simpl.
+  - intros.
+    apply Pos.le_refl.
+  - intros.
+    specialize (IHp (p+v)%positive).
+    eapply Pos.le_trans ; eauto.
+    assert (xH + v <= p + v)%positive.
+    { apply Pos.add_le_mono.
+      apply Pos.le_1_l.
+      apply Pos.le_refl.
+    }
+    eapply Pos.le_trans ; eauto.
+    apply pos_le_add.
+  - intros.
+    apply Pos.max_case_strong;intros ; auto.
+    specialize (IHp2 (Pos.succ v)%positive).
+    eapply Pos.le_trans ; eauto.
+Qed.
 
-Fixpoint ZChecker (l:list (NFormula Z)) (pf : ZArithProof)  {struct pf} : bool :=
+Lemma max_var_correct : forall p j v,
+    In v (vars j p) -> Pos.le v (max_var j p).
+Proof.
+  induction p; simpl.
+  - tauto.
+  - auto.
+  - intros.
+    rewrite in_app_iff in H.
+    destruct H as [H |[ H | H]].
+    + subst.
+      apply Pos.max_case_strong;intros ; auto.
+      apply max_var_le.
+      eapply Pos.le_trans ; eauto.
+      apply max_var_le.
+    + apply Pos.max_case_strong;intros ; auto.
+      eapply Pos.le_trans ; eauto.
+    + apply Pos.max_case_strong;intros ; auto.
+      eapply Pos.le_trans ; eauto.
+Qed.
+
+Definition max_var_nformulae (l : list (NFormula Z)) :=
+  List.fold_left  (fun acc f => Pos.max acc (max_var xH (fst f))) l xH.
+
+Section MaxVar.
+
+  Definition F (acc : positive) (f : Pol Z * Op1) := Pos.max acc (max_var 1 (fst f)).
+
+  Lemma max_var_nformulae_mono_aux :
+    forall l v acc,
+      (v <= acc ->
+       v <= fold_left F l acc)%positive.
+  Proof.
+    induction l ; simpl ; [easy|].
+    intros.
+    apply IHl.
+    unfold F.
+    apply Pos.max_case_strong;intros ; auto.
+    eapply Pos.le_trans ; eauto.
+  Qed.
+
+  Lemma max_var_nformulae_mono_aux' :
+    forall l acc acc',
+      (acc <= acc' ->
+       fold_left F l acc <= fold_left F l acc')%positive.
+  Proof.
+    induction l ; simpl ; [easy|].
+    intros.
+    apply IHl.
+    unfold F.
+    apply Pos.max_le_compat_r; auto.
+  Qed.
+
+
+
+
+  Lemma max_var_nformulae_correct_aux : forall l p o v,
+      In (p,o) l -> In v (vars xH p) -> Pos.le v (fold_left F l 1)%positive.
+  Proof.
+  intros.
+  generalize 1%positive as acc.
+  revert p o v H H0.
+  induction l.
+  - simpl. tauto.
+  - simpl.
+    intros.
+    destruct H ; subst.
+    + unfold F at 2.
+      simpl.
+      apply max_var_correct in H0.
+      apply max_var_nformulae_mono_aux.
+      apply Pos.max_case_strong;intros ; auto.
+      eapply Pos.le_trans ; eauto.
+    + eapply IHl ; eauto.
+  Qed.
+
+End MaxVar.
+
+Lemma max_var_nformalae_correct : forall l p o v,
+      In (p,o) l -> In v (vars xH p) -> Pos.le v (max_var_nformulae l)%positive.
+Proof.
+  intros l p o v.
+  apply max_var_nformulae_correct_aux.
+Qed.
+
+
+Fixpoint max_var_psatz (w : Psatz Z) : positive :=
+  match w with
+  | PsatzIn _ n => xH
+  | PsatzSquare p => max_var xH (Psquare 0 1 Z.add Z.mul Zeq_bool p)
+  | PsatzMulC p w => Pos.max (max_var xH p) (max_var_psatz w)
+  | PsatzMulE w1 w2 => Pos.max (max_var_psatz w1) (max_var_psatz w2)
+  | PsatzAdd w1 w2  => Pos.max (max_var_psatz w1) (max_var_psatz w2)
+  | _   => xH
+  end.
+
+Fixpoint max_var_prf (w : ZArithProof) : positive :=
+  match w with
+  | DoneProof => xH
+  | RatProof w pf | CutProof w pf => Pos.max (max_var_psatz w) (max_var_prf pf)
+  | EnumProof w1 w2 l => List.fold_left (fun acc prf => Pos.max acc (max_var_prf prf)) l
+                                        (Pos.max (max_var_psatz w1) (max_var_psatz w2))
+  | ExProof _ pf => max_var_prf pf
+  end.
+
+
+
+Fixpoint ZChecker  (l:list (NFormula Z)) (pf : ZArithProof)  {struct pf} : bool :=
   match pf with
     | DoneProof => false
     | RatProof w pf =>
@@ -1025,11 +1014,17 @@ Fixpoint ZChecker (l:list (NFormula Z)) (pf : ZArithProof)  {struct pf} : bool :
             | Some cp => ZChecker (nformula_of_cutting_plane cp::l) pf
           end
       end
-(*    | SplitProof e pf1 pf2 =>
-      match ZChecker ((e,NonStrict)::l) pf1 , ZChecker ((
-*)
-
-    | EnumProof w1 w2 pf =>
+    | ExProof x prf =>
+      let fr := max_var_nformulae l in
+      if Pos.leb x fr then
+      let z    := Pos.succ fr in
+      let t    := Pos.succ z in
+      let nfx  := xnnormalise (mk_eq_pos x z t) in
+      let posz := xnnormalise (bound_var z) in
+      let post := xnnormalise (bound_var t) in
+      ZChecker (nfx::posz::post::l) prf
+      else false
+      | EnumProof w1 w2 pf =>
        match eval_Psatz l w1 , eval_Psatz l w2 with
          |  Some f1 , Some f2 =>
            match genCuttingPlane f1 , genCuttingPlane f2 with
@@ -1040,7 +1035,7 @@ Fixpoint ZChecker (l:list (NFormula Z)) (pf : ZArithProof)  {struct pf} : bool :
                    fun lb ub =>
                      match pfs with
                        | nil => if Z.gtb lb ub then true else false
-                       | pf::rsr => andb (ZChecker  ((psub e1 (Pc lb), Equal) :: l) pf) (label rsr (Z.add lb 1%Z) ub)
+                       | pf::rsr => andb (ZChecker ((psub e1 (Pc lb), Equal) :: l) pf) (label rsr (Z.add lb 1%Z) ub)
                      end)   pf (Z.opp z1)  z2
                   else false
               |   _    ,   _   => true
@@ -1057,6 +1052,7 @@ Fixpoint bdepth (pf : ZArithProof) : nat :=
     | RatProof _ p =>  S (bdepth p)
     | CutProof _  p =>   S  (bdepth p)
     | EnumProof _ _ l => S (List.fold_right (fun pf x => Nat.max (bdepth pf) x)   O l)
+    | ExProof _ p   => S (bdepth p)
   end.
 
 Require Import Wf_nat.
@@ -1246,16 +1242,190 @@ Proof.
   destruct (makeCuttingPlane p) ; discriminate.
 Qed.
 
+Lemma eval_nformula_mk_eq_pos : forall env x z t,
+    env x = env z - env t ->
+    eval_nformula env (xnnormalise (mk_eq_pos x z t)).
+Proof.
+  intros.
+  rewrite xnnormalise_correct.
+  simpl. auto.
+Qed.
 
-Lemma ZChecker_sound : forall w l, ZChecker l w = true -> forall env, make_impl  (eval_nformula env)  l False.
+Lemma eval_nformula_bound_var : forall env x,
+    env x >= 0 ->
+    eval_nformula env (xnnormalise (bound_var x)).
+Proof.
+  intros.
+  rewrite xnnormalise_correct.
+  simpl. auto.
+Qed.
+
+
+Definition agree_env (fr : positive) (env env' : positive -> Z) : Prop :=
+  forall x, Pos.le x fr -> env x = env' x.
+
+Lemma agree_env_subset : forall v1 v2 env env',
+    agree_env v1 env env' ->
+    Pos.le v2 v1 ->
+    agree_env v2 env env'.
+Proof.
+  unfold agree_env.
+  intros.
+  apply H.
+  eapply Pos.le_trans ; eauto.
+Qed.
+
+
+Lemma agree_env_jump : forall fr j env env',
+    agree_env (fr + j) env env' ->
+    agree_env fr (Env.jump j env) (Env.jump j env').
+Proof.
+  intros.
+  unfold agree_env ; intro.
+  intros.
+  unfold Env.jump.
+  apply H.
+  apply Pos.add_le_mono_r; auto.
+Qed.
+
+
+Lemma agree_env_tail : forall fr env env',
+    agree_env (Pos.succ fr) env env' ->
+    agree_env fr (Env.tail env) (Env.tail env').
+Proof.
+  intros.
+  unfold Env.tail.
+  apply agree_env_jump.
+  rewrite <- Pos.add_1_r in H.
+  apply H.
+Qed.
+
+
+Lemma max_var_acc : forall p i j,
+    (max_var (i + j) p = max_var i p + j)%positive.
+Proof.
+  induction p; simpl.
+  - reflexivity.
+  - intros.
+    rewrite ! IHp.
+    rewrite Pos.add_assoc.
+    reflexivity.
+  - intros.
+    rewrite !Pplus_one_succ_l.
+    rewrite ! IHp1.
+    rewrite ! IHp2.
+    rewrite ! Pos.add_assoc.
+    rewrite <- Pos.add_max_distr_r.
+    reflexivity.
+Qed.
+
+
+
+Lemma agree_env_eval_nformula :
+  forall env env' e
+         (AGREE : agree_env (max_var xH (fst e))  env env'),
+    eval_nformula env e  <->  eval_nformula env' e.
+Proof.
+  destruct e.
+  simpl; intros.
+  assert ((RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x) env p)
+          =
+          (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x) env' p)).
+  {
+    revert env env' AGREE.
+    generalize xH.
+    induction p ; simpl.
+    - reflexivity.
+    - intros.
+      apply IHp with (p := p1%positive).
+      apply agree_env_jump.
+      eapply agree_env_subset; eauto.
+      rewrite (Pos.add_comm p).
+      rewrite max_var_acc.
+      apply Pos.le_refl.
+    - intros.
+      f_equal.
+      f_equal.
+      { apply IHp1 with (p:= p).
+        eapply agree_env_subset; eauto.
+        apply Pos.le_max_l.
+      }
+      f_equal.
+      { unfold Env.hd.
+        unfold Env.nth.
+        apply AGREE.
+        apply Pos.le_1_l.
+      }
+      {
+        apply IHp2 with (p := p).
+        apply agree_env_tail.
+        eapply agree_env_subset; eauto.
+        rewrite !Pplus_one_succ_r.
+        rewrite max_var_acc.
+        apply Pos.le_max_r.
+      }
+  }
+  rewrite H. tauto.
+Qed.
+
+Lemma agree_env_eval_nformulae :
+  forall env env' l
+         (AGREE : agree_env (max_var_nformulae l) env env'),
+         make_conj (eval_nformula env) l <->
+         make_conj (eval_nformula env') l.
+Proof.
+  induction l.
+  - simpl. tauto.
+  - intros.
+    rewrite ! make_conj_cons.
+    assert (eval_nformula env a <-> eval_nformula env' a).
+    {
+      apply agree_env_eval_nformula.
+      eapply agree_env_subset ; eauto.
+      unfold max_var_nformulae.
+      simpl.
+      rewrite Pos.max_1_l.
+      apply max_var_nformulae_mono_aux.
+      apply Pos.le_refl.
+    }
+    rewrite H.
+    apply  and_iff_compat_l.
+    apply IHl.
+    eapply agree_env_subset ; eauto.
+    unfold max_var_nformulae.
+    simpl.
+    apply max_var_nformulae_mono_aux'.
+    apply Pos.le_1_l.
+Qed.
+
+
+Lemma eq_true_iff_eq :
+  forall b1 b2 : bool, (b1 = true <-> b2 = true) <-> b1 = b2.
+Proof.
+  destruct b1,b2 ; intuition congruence.
+Qed.
+
+Ltac pos_tac :=
+  repeat
+  match goal with
+  | |- false = _ => symmetry
+  | |- Pos.eqb ?X ?Y = false => rewrite Pos.eqb_neq ; intro
+  | H : @eq positive ?X ?Y |- _ =>  apply Zpos_eq in H
+  | H : context[Z.pos (Pos.succ ?X)] |- _ => rewrite (Pos2Z.inj_succ X) in H
+  | H : Pos.leb ?X ?Y = true |- _ => rewrite Pos.leb_le in H ;
+                                     apply (Pos2Z.pos_le_pos X Y) in H
+  end.
+
+Lemma ZChecker_sound : forall w l,
+    ZChecker l w = true -> forall env, make_impl  (eval_nformula env)  l False.
 Proof.
   induction w    using (well_founded_ind (well_founded_ltof _ bdepth)).
-  destruct w as [ | w pf | w pf | w1 w2 pf].
-  (* DoneProof *)
+  destruct w as [ | w pf | w pf | w1 w2 pf | x pf].
+  - (* DoneProof *)
   simpl. discriminate.
-  (* RatProof *)
+  - (* RatProof *)
   simpl.
-  intro l. case_eq (eval_Psatz l w) ; [| discriminate].
+  intros l. case_eq (eval_Psatz l w) ; [| discriminate].
   intros f Hf.
   case_eq (Zunsat f).
   intros.
@@ -1276,15 +1446,15 @@ Proof.
   apply H2.
   split ; auto.
   apply eval_Psatz_sound with (2:= Hf) ; assumption.
-  (* CutProof *)
+  - (* CutProof *)
   simpl.
-  intro l.
+  intros l.
   case_eq (eval_Psatz l w) ; [ | discriminate].
   intros f' Hlc.
   case_eq (genCuttingPlane f').
   intros.
   assert (make_impl (eval_nformula env) (nformula_of_cutting_plane p::l) False).
-   eapply (H pf) ; auto.
+   eapply (H pf)  ; auto.
    unfold ltof.
    simpl.
    auto with arith.
@@ -1303,8 +1473,8 @@ Proof.
   intros.
   apply eval_Psatz_sound with (2:= Hlc) in H2.
   apply genCuttingPlaneNone with (2:= H2) ; auto.
-  (* EnumProof *)
-  intro.
+  - (* EnumProof *)
+  intros l.
   simpl.
   case_eq (eval_Psatz l w1) ; [  | discriminate].
   case_eq (eval_Psatz l w2) ; [  | discriminate].
@@ -1359,7 +1529,7 @@ Proof.
   intros.
   assert (HH :forall x, -z1 <= x <= z2 -> exists pr,
     (In pr pf /\
-      ZChecker  ((PsubC Z.sub p1 x,Equal) :: l) pr = true)%Z).
+      ZChecker ((PsubC Z.sub p1 x,Equal) :: l) pr = true)%Z).
   clear HZ0 Hop1 Hop2 HCutL HCutR H0 H1.
   revert Hfix.
   generalize (-z1). clear z1. intro z1.
@@ -1386,7 +1556,7 @@ Proof.
   (*/asser *)
   destruct (HH _ H1) as [pr [Hin Hcheker]].
   assert (make_impl (eval_nformula env) ((PsubC Z.sub p1 (eval_pol env p1),Equal) :: l) False).
-   apply (H pr);auto.
+   eapply (H pr)  ;auto.
    apply in_bdepth ; auto.
   rewrite <- make_conj_impl in H2.
   apply H2.
@@ -1410,6 +1580,92 @@ Proof.
   intros.
   apply eval_Psatz_sound with (2:= Hf2) in H2.
   apply genCuttingPlaneNone with (2:= H2) ; auto.
+- intros l.
+  unfold ZChecker.
+  fold ZChecker.
+  set (fr := (max_var_nformulae l)%positive).
+  set (z1 := (Pos.succ fr)) in *.
+  set (t1 := (Pos.succ z1)) in *.
+  destruct (x <=? fr)%positive eqn:LE ; [|congruence].
+  intros.
+  set (env':= fun v => if Pos.eqb v z1
+                       then if Z.leb (env x) 0 then 0 else env x
+                       else if Pos.eqb v t1
+                            then if Z.leb (env x) 0 then -(env x) else 0
+                            else env v).
+  apply H with (env:=env') in H0.
+  + rewrite <- make_conj_impl in *.
+    intro.
+    rewrite !make_conj_cons in H0.
+    apply H0 ; repeat split.
+    *
+      apply eval_nformula_mk_eq_pos.
+      unfold env'.
+      rewrite! Pos.eqb_refl.
+      replace (x=?z1)%positive with false.
+      replace (x=?t1)%positive with false.
+      replace (t1=?z1)%positive with false.
+      destruct (env x <=? 0); ring.
+      { unfold t1.
+        pos_tac; normZ.
+        lia (Hyp H2).
+      }
+      {
+        unfold t1, z1.
+        pos_tac; normZ.
+        lia (Add (Hyp LE) (Hyp H3)).
+      }
+      {
+        unfold z1.
+        pos_tac; normZ.
+        lia (Add (Hyp LE) (Hyp H3)).
+      }
+    *
+      apply eval_nformula_bound_var.
+      unfold env'.
+      rewrite! Pos.eqb_refl.
+      destruct (env x <=? 0) eqn:EQ.
+      compute. congruence.
+      rewrite Z.leb_gt in EQ.
+      normZ.
+      lia (Add (Hyp EQ) (Hyp H2)).
+    *
+      apply eval_nformula_bound_var.
+      unfold env'.
+      rewrite! Pos.eqb_refl.
+      replace (t1 =? z1)%positive with false.
+      destruct (env x <=? 0) eqn:EQ.
+      rewrite Z.leb_le in EQ.
+      normZ.
+      lia (Add (Hyp EQ) (Hyp H2)).
+      compute; congruence.
+      unfold t1.
+      clear.
+      pos_tac; normZ.
+      lia (Hyp H).
+    *
+      rewrite agree_env_eval_nformulae with (env':= env') in H1;auto.
+      unfold agree_env; intros.
+      unfold env'.
+      replace (x0 =? z1)%positive with false.
+      replace (x0 =? t1)%positive with false.
+      reflexivity.
+      {
+        unfold t1, z1.
+        unfold fr in *.
+        apply Pos2Z.pos_le_pos in H2.
+        pos_tac; normZ.
+        lia (Add (Hyp H2) (Hyp H4)).
+      }
+      {
+        unfold z1, fr in *.
+        apply Pos2Z.pos_le_pos in H2.
+        pos_tac; normZ.
+        lia (Add (Hyp H2) (Hyp H4)).
+      }
+  + unfold ltof.
+    simpl.
+    apply Nat.lt_succ_diag_r.
 Qed.
 
 
@@ -1417,7 +1673,7 @@ Qed.
 Definition ZTautoChecker  (f : BFormula (Formula Z)) (w: list ZArithProof): bool :=
   @tauto_checker (Formula Z) (NFormula Z) unit Zunsat Zdeduce normalise negate  ZArithProof (fun cl => ZChecker (List.map fst cl)) f w.
 
-Lemma ZTautoChecker_sound : forall f w, ZTautoChecker f w = true -> forall env, eval_f (fun x => x) (Zeval_formula env)  f.
+Lemma ZTautoChecker_sound : forall f w, ZTautoChecker f w = true -> forall env, eval_bf  (Zeval_formula env)  f.
 Proof.
   intros f w.
   unfold ZTautoChecker.
@@ -1430,11 +1686,12 @@ Proof.
   - unfold Zdeduce. intros. revert H.
      apply (nformula_plus_nformula_correct Zsor ZSORaddon); auto.
   -
-    intros env t tg.
-    rewrite normalise_correct ; auto.
+    intros.
+    rewrite normalise_correct  in H.
+    auto.
   -
-    intros env t tg.
-    rewrite negate_correct ; auto.
+    intros.
+    rewrite negate_correct in H ; auto.
   - intros t w0.
     unfold eval_tt.
     intros.
@@ -1443,270 +1700,6 @@ Proof.
     tauto.
 Qed.
 
-Record is_diff_env_elt (fr : positive) (env env' : positive -> Z) (x:positive):=
-  {
-    eq_env  : env x = env' x;
-    eq_diff : env x = env' (xO (fr+ x)) - env' (xI (fr + x));
-    pos_xO  : env' (xO (fr+x)) >= 0;
-    pos_xI  : env' (xI (fr+x)) >= 0;
-  }.
-
-
-Definition is_diff_env  (s : Vars.t) (env env' : positive -> Z) :=
-  let fr := Pos.succ (Vars.max_element s) in
-  forall x, Vars.mem x s = true ->
-            is_diff_env_elt fr env env' x.
-
-Definition mk_diff_env  (s : Vars.t) (env : positive -> Z) :=
-  let fr := Vars.max_element s in
-  fun x =>
-    if Pos.leb x fr
-    then env x
-    else
-      let fr' := Pos.succ fr in
-      match x with
-      | xO x => if Z.leb (env (x - fr')%positive) 0
-                then 0 else env (x -fr')%positive
-      | xI x => if Z.leb (env (x - fr')%positive) 0
-                then - (env (x - fr')%positive) else 0
-      | xH   => 0
-      end.
-
-Lemma le_xO : forall x, (x <= xO x)%positive.
-Proof.
-  intros.
-  change x with (1 * x)%positive at 1.
-  change (xO x) with (2 * x)%positive.
-  apply Pos.mul_le_mono.
-  compute. congruence.
-  apply Pos.le_refl.
-Qed.
-
-Lemma leb_xO_false :
-  (forall x y,  x <=? y = false ->
-             xO x <=? y = false)%positive.
-Proof.
-  intros.
-  rewrite Pos.leb_nle in *.
-  intro. apply H.
-  eapply Pos.le_trans ; eauto.
-  apply le_xO.
-Qed.
-
-Lemma leb_xI_false :
-  (forall x y,  x <=? y = false ->
-             xI x <=? y = false)%positive.
-Proof.
-  intros.
-  rewrite Pos.leb_nle in *.
-  intro. apply H.
-  eapply Pos.le_trans ; eauto.
-  generalize (le_xO x).
-  intros.
-  eapply Pos.le_trans ; eauto.
-  change (xI x) with (Pos.succ (xO x))%positive.
-  apply Pos.lt_le_incl.
-  apply Pos.lt_succ_diag_r.
-Qed.
-
-Lemma is_diff_env_ex : forall s env,
-    is_diff_env s env (mk_diff_env s env).
-Proof.
-  intros.
-  unfold is_diff_env, mk_diff_env.
-  intros.
-  assert
-    ((Pos.succ (Vars.max_element s) + x <=? Vars.max_element s  = false)%positive).
-  {
-      rewrite Pos.leb_nle.
-      intro.
-      eapply (Pos.lt_irrefl (Pos.succ (Vars.max_element s) + x)).
-      eapply Pos.le_lt_trans ; eauto.
-      generalize (Pos.lt_succ_diag_r (Vars.max_element s)).
-      intro.
-      eapply Pos.lt_trans ; eauto.
-      apply Pos.lt_add_r.
-  }
-  constructor.
-  - apply Vars.max_element_max in H.
-    rewrite <- Pos.leb_le   in H.
-    rewrite H. auto.
-  -
-    rewrite  leb_xO_false by auto.
-    rewrite leb_xI_false by auto.
-    rewrite Pos.add_comm.
-    rewrite Pos.add_sub.
-    destruct (env x <=? 0); ring.
-  - rewrite  leb_xO_false by auto.
-    rewrite Pos.add_comm.
-    rewrite Pos.add_sub.
-    destruct (env x <=? 0) eqn:EQ.
-    apply Z.le_ge.
-    apply Z.le_refl.
-    rewrite Z.leb_gt in EQ.
-    apply Z.le_ge.
-    apply Z.lt_le_incl.
-    auto.
-  - rewrite  leb_xI_false by auto.
-    rewrite Pos.add_comm.
-    rewrite Pos.add_sub.
-    destruct (env x <=? 0) eqn:EQ.
-    rewrite Z.leb_le in EQ.
-    apply Z.le_ge.
-    apply Z.opp_nonneg_nonpos; auto.
-    apply Z.le_ge.
-    apply Z.le_refl.
-Qed.
-
-Lemma env_bounds : forall tg env s,
-    let fr := Pos.succ (Vars.max_element s) in
-    exists env', is_diff_env s env env'
-                   /\
-                   eval_bf  (Zeval_formula env') (bound_vars tg fr s).
-Proof.
-  intros.
-  assert (DIFF:=is_diff_env_ex s env).
-  exists (mk_diff_env s env). split ; auto.
-  unfold bound_vars.
-  rewrite FSetPositive.PositiveSet.fold_1.
-  revert DIFF.
-  set (env' := mk_diff_env s env).
-  intro.
-  assert (ACC : eval_bf  (Zeval_formula env') TT ).
-  {
-    simpl. auto.
-  }
-  revert ACC.
-  match goal with
-  | |- context[@TT ?A ?B ?C ?D] => generalize (@TT A B C D) as acc
-  end.
-  unfold is_diff_env in DIFF.
-  assert (DIFFL : forall x, In x (FSetPositive.PositiveSet.elements s) ->
-                            (x < fr)%positive /\
-                            is_diff_env_elt fr env env' x).
-  {
-    intros.
-    rewrite <- Vars.mem_elements in H.
-    split.
-    apply Vars.max_element_max in H.
-    unfold fr in *.
-    eapply Pos.le_lt_trans ; eauto.
-    apply Pos.lt_succ_diag_r.
-    apply DIFF; auto.
-  }
-  clear DIFF.
-  match goal with
-  | |- context[fold_left ?F _ _] =>
-    set (FUN := F)
-  end.
-  induction (FSetPositive.PositiveSet.elements s).
-  - simpl; auto.
-  - simpl.
-    intros.
-    eapply IHl ; eauto.
-    + intros. apply DIFFL.
-      simpl ; auto.
-    + unfold FUN.
-      simpl.
-      split ; auto.
-      assert (HYP : (a < fr /\ is_diff_env_elt fr env env' a)%positive).
-      {
-        apply DIFFL.
-        simpl.  tauto.
-      }
-      destruct HYP as (LT & DIFF).
-      destruct DIFF.
-      rewrite <- eq_env0.
-      tauto.
-Qed.
-
-Definition agree_env (v : Vars.t) (env env' : positive -> Z) : Prop :=
-  forall x, Vars.mem x v = true -> env x = env' x.
-
-Lemma agree_env_subset : forall s1 s2 env env',
-    agree_env s1 env env' ->
-    Vars.is_subset s2 s1 ->
-    agree_env s2 env env'.
-Proof.
-  unfold agree_env.
-  intros.
-  apply H. apply H0; auto.
-Qed.
-
-Lemma agree_env_union : forall s1 s2 env env',
-    agree_env (Vars.union s1 s2) env env' ->
-    agree_env s1 env env' /\ agree_env s2 env env'.
-Proof.
-  split;
-  eapply agree_env_subset; eauto.
-  apply Vars.is_subset_union_l.
-  apply Vars.is_subset_union_r.
-Qed.
-
-
-
-Lemma agree_env_eval_expr :
-  forall env env' e
-         (AGREE : agree_env (vars_of_pexpr e)  env env'),
-  Zeval_expr env e =  Zeval_expr env' e.
-Proof.
-  induction e; simpl;intros;
-    try (apply agree_env_union in AGREE; destruct AGREE);  try f_equal ; auto.
-  - intros ; apply AGREE.
-    apply Vars.mem_singleton.
-Qed.
-
-Lemma agree_env_eval_bf :
-  forall env env' f
-         (AGREE: agree_env (vars_of_bformula f) env env'),
-    eval_bf (Zeval_formula env') f <->
-    eval_bf (Zeval_formula env) f.
-Proof.
-  induction f; simpl; intros ;
-    try (apply agree_env_union in AGREE; destruct AGREE) ; try intuition fail.
-  -
-    unfold Zeval_formula.
-    destruct t.
-    simpl in * ; intros.
-    apply agree_env_union in AGREE ; destruct AGREE.
-    rewrite <- agree_env_eval_expr with (env:=env) by auto.
-    rewrite <- agree_env_eval_expr with (e:= Frhs) (env:=env) by auto.
-    tauto.
-Qed.
-
-Lemma bound_problem_sound : forall tg f,
-    (forall env' : PolEnv Z,
-        eval_bf  (Zeval_formula env')
-                 (bound_problem tg f)) ->
-    forall env,
-      eval_bf (Zeval_formula env) f.
-Proof.
-  intros.
-  unfold bound_problem in H.
-  destruct (env_bounds tg env (vars_of_bformula f))
-           as (env' & DIFF & EVAL).
-  simpl in H.
-  apply H in EVAL.
-  eapply agree_env_eval_bf ; eauto.
-  unfold is_diff_env, agree_env in *.
-  intros.
-  apply DIFF in H0.
-  destruct H0.
-  intuition.
-Qed.
-
-
-
-Definition ZTautoCheckerExt (f : BFormula (Formula Z)) (w : list ZArithProof) : bool :=
-  ZTautoChecker (bound_problem (fun _ _ _ => tt) f) w.
-
-Lemma ZTautoCheckerExt_sound : forall f w, ZTautoCheckerExt f w = true -> forall env, eval_bf (Zeval_formula env)  f.
-Proof.
-  intros.
-  unfold ZTautoCheckerExt in H.
-  specialize (ZTautoChecker_sound _ _ H).
-  intros ; apply bound_problem_sound with (tg:= fun _ _ _ => tt); auto.
-Qed.
 
 Fixpoint xhyps_of_pt (base:nat) (acc : list nat) (pt:ZArithProof)  : list nat :=
   match pt with
@@ -1716,6 +1709,7 @@ Fixpoint xhyps_of_pt (base:nat) (acc : list nat) (pt:ZArithProof)  : list nat :=
     | EnumProof c1 c2 l =>
       let acc := xhyps_of_psatz base (xhyps_of_psatz base acc c2) c1 in
         List.fold_left (xhyps_of_pt (S base)) l acc
+    | ExProof _ pt  =>  xhyps_of_pt (S (S (S base ))) acc pt
   end.
 
 Definition hyps_of_pt (pt : ZArithProof) : list nat := xhyps_of_pt 0 nil pt.

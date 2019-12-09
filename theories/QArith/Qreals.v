@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Export Rbase.
+Require Import Rdefinitions Raxioms RIneq.
 Require Export QArith_base.
 
 (** Injection of rational numbers into real numbers. *)
@@ -48,7 +48,7 @@ set (Y1 := IZR y1) in *; assert (Y2nz := IZR_nz y2);
  set (Y2 := IZR (Zpos y2)) in *.
 assert ((X1 * Y2)%R = (Y1 * X2)%R).
  unfold X1, X2, Y1, Y2; do 2 rewrite <- mult_IZR.
- apply IZR_eq; auto.
+f_equal; auto.
 clear H.
 field_simplify_eq; auto.
 rewrite H0; ring.

@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Rbase.
+Require Import Rdefinitions Raxioms RIneq.
 Require Import Rbasic_fun.
 Local Open Scope R_scope.
 
