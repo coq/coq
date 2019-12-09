@@ -2208,6 +2208,13 @@ or :g:`m` to the type :g:`nat` of natural numbers).
 
   Adds blocks of implicit types with different specifications.
 
+.. flag:: Printing Use Implicit Types
+
+  By default, the type of bound variables is not printed when
+  the variable name is associated to an implicit type which matches the
+  actual type of the variable. This feature can be deactivated by
+  turning this flag off.
+
 .. _implicit-generalization:
 
 Implicit generalization
