@@ -11,10 +11,6 @@
 (*i*)
 open Names
 open Globnames
-open Term
-open Constr
-open Context
-open Environ
 open Util
 open Libobject
 
@@ -30,7 +26,8 @@ type req =
   | ReqGlobal of GlobRef.t * Name.t list
 
 let load_rename_args _ (_, (_, (r, names))) =
-  name_table := GlobRef.Map.add r names !name_table
+  name_table := GlobRef.Map.add r names !name_table;
+  Global.rename_ref r names
 
 let cache_rename_args o = load_rename_args 1 o
 
@@ -64,50 +61,8 @@ let inRenameArgs = declare_object { (default_object "RENAME-ARGUMENTS" ) with
   rebuild_function = rebuild_rename_args;
 }
 
-let rename_arguments local r names =
+let rename_arguments ~local r names =
   let req = if local then ReqLocal else ReqGlobal (r, names) in
   Lib.add_anonymous_leaf (inRenameArgs (req, (r, names)))
 
 let arguments_names r = GlobRef.Map.find r !name_table
-
-let rename_type ty ref =
-  let name_override old_name override =
-    match override with
-    | Name _ as x -> {old_name with binder_name=x}
-    | Anonymous -> old_name in
-  let rec rename_type_aux c = function
-    | [] -> c
-    | rename :: rest as renamings ->
-        match kind_of_type c with
-        | ProdType (old, s, t) ->
-            mkProd (name_override old rename, s, rename_type_aux t rest)
-        | LetInType(old, s, b, t) ->
-            mkLetIn (old ,s, b, rename_type_aux t renamings)
-        | CastType (t,_) -> rename_type_aux t renamings
-        | SortType _ -> c
-        | AtomicType _ -> c in
-  try rename_type_aux ty (arguments_names ref)
-  with Not_found -> ty
-
-let rename_type_of_constant env c =
-  let ty = Typeops.type_of_constant_in env c in
-  rename_type ty (GlobRef.ConstRef (fst c))
-
-let rename_type_of_inductive env ind =
-  let ty = Inductiveops.type_of_inductive env ind in
-  rename_type ty (GlobRef.IndRef (fst ind))
-
-let rename_type_of_constructor env cstruct =
-  let ty = Inductiveops.type_of_constructor env cstruct in
-  rename_type ty (GlobRef.ConstructRef (fst cstruct))
-
-let rename_typing env c =
-  let j = Typeops.infer env c in
-  let j' =
-    match kind c with
-    | Const (c,u) -> { j with uj_type = rename_type j.uj_type (GlobRef.ConstRef c) }
-    | Ind (i,u) -> { j with uj_type = rename_type j.uj_type (GlobRef.IndRef i) }
-    | Construct (k,u) -> { j with uj_type = rename_type j.uj_type (GlobRef.ConstructRef k) }
-    | _ -> j
-  in j'
-

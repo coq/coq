@@ -378,3 +378,6 @@ val set_retroknowledge : env -> Retroknowledge.retroknowledge -> env
 
 val set_native_symbols : env -> Nativevalues.symbols DPmap.t -> env
 val add_native_symbols : DirPath.t -> Nativevalues.symbols -> env -> env
+
+(** Renaming *)
+val rename_ref : GlobRef.t -> Name.t list -> env -> env

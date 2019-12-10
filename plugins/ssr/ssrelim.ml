@@ -160,17 +160,6 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
     match elim with
     | Some elim ->
       let gl, elimty = pf_e_type_of gl elim in
-      let elimty =
-        let rename_elimty r =
-          EConstr.of_constr
-            (Arguments_renaming.rename_type
-              (EConstr.to_constr ~abort_on_undefined_evars:false (project gl)
-                elimty) r) in
-        match EConstr.kind (project gl) elim with
-        | Constr.Var kn -> rename_elimty (GlobRef.VarRef kn)
-        | Constr.Const (kn,_) -> rename_elimty (GlobRef.ConstRef kn)
-        | _ -> elimty
-      in
       let pred_id, n_elim_args, is_rec, elim_is_dep, n_pred_args,ctx_concl =
         analyze_eliminator elimty env (project gl) in
       let seed = subgoals_tys (project gl) ctx_concl in
@@ -213,8 +202,6 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
             Array.mapi (fun j (ctx, cty) ->
               let t = Term.it_mkProd_or_LetIn cty ctx in
                     ppdebug(lazy Pp.(str "Search" ++ Printer.pr_constr_env env (project gl) t));
-              let t = Arguments_renaming.rename_type t
-                (GlobRef.ConstructRef((kn,i),j+1)) in
               ppdebug(lazy Pp.(str"Done Search " ++ Printer.pr_constr_env env (project gl) t));
                 t)
             tys

@@ -22,7 +22,6 @@ open Environ
 open Termops
 open EConstr
 open Vars
-open Arguments_renaming
 open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
@@ -107,10 +106,16 @@ let retype ?(polyprop=true) sigma =
         let ty = RelDecl.get_type (lookup_rel n env) in
         lift n ty
     | Var id -> type_of_var env id
-    | Const (cst, u) -> EConstr.of_constr (rename_type_of_constant env (cst, EInstance.kind sigma u))
+    | Const (cst, u) ->
+      let u = EInstance.kind sigma u in
+      EConstr.of_constr (Typeops.type_of_constant_in env (cst, u))
     | Evar ev -> existential_type sigma ev
-    | Ind (ind, u) -> EConstr.of_constr (rename_type_of_inductive env (ind, EInstance.kind sigma u))
-    | Construct (cstr, u) -> EConstr.of_constr (rename_type_of_constructor env (cstr, EInstance.kind sigma u))
+    | Ind (ind, u) ->
+      let u = EInstance.kind sigma u in
+      EConstr.of_constr (Inductiveops.type_of_inductive env (ind, u))
+    | Construct (cstr, u) ->
+      let u = EInstance.kind sigma u in
+      EConstr.of_constr (Inductiveops.type_of_constructor env (cstr, u))
     | Case (_,p,c,lf) ->
         let Inductiveops.IndType(indf,realargs) =
           let t = type_of env c in

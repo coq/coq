@@ -13,6 +13,7 @@ Constrexpr_ops
 Decls
 Dumpglob
 Reserve
+Arguments_renaming
 Impargs
 Implicit_quantifiers
 Constrintern
