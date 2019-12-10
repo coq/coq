@@ -81,7 +81,7 @@ val compute_implicits_with_manual : env -> Evd.evar_map -> types ->
 
 type mib_manual_implicits = (manual_implicits * manual_implicits list) list
 
-val declare_var_implicits : variable ->
+val declare_variable_implicits : variable ->
   impl:Glob_term.binding_kind -> impargs:manual_implicits option -> unit
 val declare_constant_implicits : Constant.t -> impargs:manual_implicits option -> unit
 val declare_mib_implicits : MutInd.t -> impargs:mib_manual_implicits -> unit

@@ -587,7 +587,7 @@ let compute_global_implicits_with_manual flags local ref impls =
 
 (*s Variables. *)
 
-let declare_var_implicits id ~impl ~impargs =
+let declare_variable_implicits id ~impl ~impargs =
   let flags = !implicit_args in
   sec_implicits := Id.Map.add id impl !sec_implicits;
   let imps = compute_global_implicits_with_manual flags true (GlobRef.VarRef id) impargs in
