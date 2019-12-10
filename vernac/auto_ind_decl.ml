@@ -430,7 +430,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
   end
 
 (* used in the bool -> leb side *)
-let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
+let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
   let open EConstr in
   let avoid = Array.of_list aavoid in
   let do_arg sigma hd v offset =
@@ -658,7 +658,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                               if GlobRef.equal (GlobRef.IndRef indeq) Coqlib.(lib_ref "core.eq.type")
                               then
                                 Tacticals.New.tclTHEN
-                                  (do_replace_bl mode bl_scheme_key ind
+                                  (do_replace_bl bl_scheme_key ind
                                      (!avoid)
                                      nparrec (ca.(2))
                                      (ca.(1)))

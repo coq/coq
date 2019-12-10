@@ -82,10 +82,9 @@ let is_visible_name id =
   with Not_found -> false
 
 let compute_name internal id =
-  match internal with
-  | UserAutomaticRequest | UserIndividualRequest -> id
-  | InternalTacticRequest ->
-      Namegen.next_ident_away_from (add_prefix "internal_" id) is_visible_name
+  if internal then
+    Namegen.next_ident_away_from (add_prefix "internal_" id) is_visible_name
+  else id
 
 let define internal role id c poly univs =
   let id = compute_name internal id in
@@ -94,10 +93,7 @@ let define internal role id c poly univs =
   let univs = UState.univ_entry ~poly ctx in
   let entry = Declare.pure_definition_entry ~univs c in
   let kn, eff = Declare.declare_private_constant ~role ~kind:Decls.(IsDefinition Scheme) ~name:id entry in
-  let () = match internal with
-    | InternalTacticRequest -> ()
-    | _-> Declare.definition_message id
-  in
+  let () = if internal then () else Declare.definition_message id in
   kn, eff
 
 let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
@@ -107,7 +103,8 @@ let define_individual_scheme_base kind suff f mode idopt (mind,i as ind) =
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
   let role = Evd.Schema (ind, kind) in
-  let const, neff = define mode role id c (Declareops.inductive_is_polymorphic mib) ctx in
+  let internal = mode == InternalTacticRequest in
+  let const, neff = define internal role id c (Declareops.inductive_is_polymorphic mib) ctx in
   DeclareScheme.declare_scheme kind [|ind,const|];
   const, Evd.concat_side_effects neff eff
 
@@ -125,7 +122,8 @@ let define_mutual_scheme_base kind suff f mode names mind =
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
   let fold i effs id cl =
     let role = Evd.Schema ((mind, i), kind)in
-    let cst, neff = define mode role id cl (Declareops.inductive_is_polymorphic mib) ctx in
+    let internal = mode == InternalTacticRequest in
+    let cst, neff = define internal role id cl (Declareops.inductive_is_polymorphic mib) ctx in
     (Evd.concat_side_effects neff effs, cst)
   in
   let (eff, consts) = Array.fold_left2_map_i fold eff ids cl in
@@ -153,6 +151,14 @@ let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
       let ca, eff = define_mutual_scheme_base kind s f mode [] mind in
       ca.(i), eff
 
+let define_individual_scheme kind mode names ind =
+  ignore (define_individual_scheme kind mode names ind)
+
+let define_mutual_scheme kind mode names mind =
+  ignore (define_mutual_scheme kind mode names mind)
+
 let check_scheme kind ind =
   try let _ = find_scheme_on_env_too kind ind in true
   with Not_found -> false
+
+let lookup_scheme = DeclareScheme.lookup_scheme
