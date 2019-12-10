@@ -359,12 +359,11 @@ let build_impls ?loc n bk na acc =
   let na =
     if exists_name na acc then begin warn_shadowed_implicit_name ?loc na; Anonymous end
     else na in
-  let pos = default_argument_status na (*TODO:compute dependency*) in
   let impl_status maximal = Some (default_implicit ~maximal ~force:true) in
   match bk with
-  | NonMaxImplicit -> (pos, impl_status false) :: acc
-  | MaxImplicit -> (pos, impl_status true) :: acc
-  | Explicit -> (pos,None) :: acc
+  | NonMaxImplicit -> default_implicit_status na (impl_status false) :: acc
+  | MaxImplicit -> default_implicit_status na (impl_status true) :: acc
+  | Explicit -> default_implicit_status na None :: acc
 
 let impls_binder_list =
   let rec aux acc n = function

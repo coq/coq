@@ -251,9 +251,11 @@ let needs_extra_scopes ref scopes =
   let ty, _ctx = Typeops.type_of_global_in_context env ref in
   aux env ty scopes
 
-let implicit_kind_of_status = function
-  | (_,None) -> Anonymous, Glob_term.Explicit
-  | (_,_ as imp) -> name_of_argument imp, if maximal_insertion_of imp then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
+let implicit_kind_of_status imp =
+  if is_status_implicit imp then
+    (name_of_argument imp, if maximal_insertion_of imp then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit)
+  else
+    (Anonymous, Glob_term.Explicit)
 
 let extra_implicit_kind_of_status imp =
   let _,imp = implicit_kind_of_status imp in
@@ -280,9 +282,9 @@ let rec main_implicits i renames recargs scopes impls =
     in
     let (name, implicit_kind) =
       match renames, impls with
-      | _, (_,Some _ as i) :: _ -> implicit_kind_of_status i
+      | _, imp :: _ when is_status_implicit imp -> implicit_kind_of_status imp
       | name::_, _ -> (name,Glob_term.Explicit)
-      | [], ((_,None)::_ | []) -> (Anonymous, Glob_term.Explicit)
+      | [], _ -> (Anonymous, Glob_term.Explicit)
     in
     let notation_scope = match scopes with
       | scope :: _ -> Option.map CAst.make scope

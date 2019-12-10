@@ -337,8 +337,7 @@ let elaborate_to_post_via env sigma ty_name ty_ind l =
        match modulo [ind2ty] *)
     let rm_impls impls (l, t) =
       let rec aux impls l = match impls, l with
-        | (_, Some _) :: impls, _ :: b -> aux impls b
-        | (_, None) :: impls, (n, a) :: b -> (n, a) :: aux impls b
+        | impl :: impls, (n, a) :: b -> if Impargs.is_status_implicit impl then (n, a) :: aux impls b else aux impls b
         | _ -> l in
       aux impls l, t in
     let replace m (l, t) =
@@ -362,7 +361,7 @@ let elaborate_to_post_via env sigma ty_name ty_ind l =
   (* Finally elaborate [to_post] *)
   let to_post =
     let rec map_prod impls tindc = match impls with
-      | (_, Some _) :: impls -> ToPostHole :: map_prod impls tindc
+      | imp :: impls when Impargs.is_status_implicit imp -> ToPostHole :: map_prod impls tindc
       | _ ->
          match tindc with
          | [] -> []

@@ -346,6 +346,8 @@ let default_argument_status na = (na,None,NonDependent)
 
 let default_implicit ~maximal ~force = (Manual, maximal, force)
 
+let default_implicit_status na status = (default_argument_status na, status)
+
 let is_status_implicit = function
   | _, None -> false
   | _ -> true
