@@ -413,3 +413,6 @@ val no_link_info : link_info
 
 (** Primitives *)
 val set_retroknowledge : env -> Retroknowledge.retroknowledge -> env
+
+(** Renaming *)
+val rename_ref : GlobRef.t -> Name.t list -> env -> env

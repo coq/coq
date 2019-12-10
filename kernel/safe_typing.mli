@@ -269,3 +269,12 @@ val register_inductive : inductive -> 'a CPrimitives.prim_ind -> safe_transforme
 
 val set_strategy :
   Names.Constant.t Names.tableKey -> Conv_oracle.level -> safe_transformer0
+
+
+(** Rename in the type of the reference.
+
+    For variables this will impact the type of the values after
+   discharge, including those declared before the rename.
+
+    Otherwise forgotten after section or module end. *)
+val rename_ref : GlobRef.t -> Name.t list -> safe_transformer0

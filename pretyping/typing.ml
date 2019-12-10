@@ -23,7 +23,6 @@ open Reductionops
 open Inductive
 open Inductiveops
 open Typeops
-open Arguments_renaming
 open Pretype_errors
 open Context.Rel.Declaration
 
@@ -363,7 +362,7 @@ let type_of_constant env sigma (c,u) =
   let u = EInstance.kind sigma u in
   let ty, csts = Environ.constant_type env (c,u) in
   let sigma = Evd.add_constraints sigma csts in
-  sigma, (EConstr.of_constr (rename_type ty (GR.ConstRef c)))
+  sigma, (EConstr.of_constr ty)
 
 let type_of_inductive env sigma (ind,u) =
   let open Declarations in
@@ -372,7 +371,7 @@ let type_of_inductive env sigma (ind,u) =
   let u = EInstance.kind sigma u in
   let ty, csts = Inductive.constrained_type_of_inductive (specif,u) in
   let sigma = Evd.add_constraints sigma csts in
-  sigma, (EConstr.of_constr (rename_type ty (GR.IndRef ind)))
+  sigma, (EConstr.of_constr ty)
 
 let type_of_constructor env sigma ((ind,_ as ctor),u) =
   let open Declarations in
@@ -381,7 +380,7 @@ let type_of_constructor env sigma ((ind,_ as ctor),u) =
   let u = EInstance.kind sigma u in
   let ty, csts = Inductive.constrained_type_of_constructor (ctor,u) specif in
   let sigma = Evd.add_constraints sigma csts in
-  sigma, (EConstr.of_constr (rename_type ty (GR.ConstructRef ctor)))
+  sigma, (EConstr.of_constr ty)
 
 let judge_of_int env v =
   Environ.on_judgment EConstr.of_constr (judge_of_int env v)

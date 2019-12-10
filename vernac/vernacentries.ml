@@ -1875,7 +1875,7 @@ let check_may_eval env sigma redexp rc =
     else
       let c = EConstr.to_constr sigma c in
       (* OK to call kernel which does not support evars *)
-      Environ.on_judgment EConstr.of_constr (Arguments_renaming.rename_typing env c)
+      Environ.on_judgment EConstr.of_constr (Typeops.infer env c)
   in
   let sigma, c = match redexp with
     | None -> sigma, c

@@ -168,17 +168,6 @@ let find_eliminator env sigma ~concl ~is_case ?elim oc c_gen =
   match elim with
   | Some elim ->
     let sigma, elimty = Typing.type_of env sigma elim in
-    let elimty =
-      let rename_elimty r =
-        EConstr.of_constr
-          (Arguments_renaming.rename_type
-            (EConstr.to_constr ~abort_on_undefined_evars:false sigma
-              elimty) r) in
-      match EConstr.kind sigma elim with
-      | Constr.Var kn -> rename_elimty (GlobRef.VarRef kn)
-      | Constr.Const (kn,_) -> rename_elimty (GlobRef.ConstRef kn)
-      | _ -> elimty
-    in
     let pred_id, n_elim_args, is_rec, elim_is_dep, n_pred_args,ctx_concl =
       analyze_eliminator elimty env sigma in
     let seed = subgoals_tys sigma ctx_concl in
@@ -219,20 +208,11 @@ let find_eliminator env sigma ~concl ~is_case ?elim oc c_gen =
       if is_case then
         let mind,indb = Inductive.lookup_mind_specif env (kn,i) in
         let tys = indb.Declarations.mind_nf_lc in
-        let renamed_tys =
-          Array.mapi (fun j (ctx, cty) ->
-            let t = Term.it_mkProd_or_LetIn cty ctx in
-                  debug_ssr (fun () -> Pp.(str "Search" ++ Printer.pr_constr_env env sigma t));
-            let t = Arguments_renaming.rename_type t
-              (GlobRef.ConstructRef((kn,i),j+1)) in
-            debug_ssr (fun () -> Pp.(str"Done Search " ++ Printer.pr_constr_env env sigma t));
-              t)
-          tys
-        in
-        let drop_params x =
+        let drop_params (ctx, cty) =
+          let t = Term.it_mkProd_or_LetIn cty ctx in
           snd @@ EConstr.decompose_prod_n_decls sigma
-            mind.Declarations.mind_nparams (EConstr.of_constr x) in
-        Array.map drop_params renamed_tys
+            mind.Declarations.mind_nparams (EConstr.of_constr t) in
+        Array.map drop_params tys
       else
         subgoals_tys sigma ctx_concl
     in

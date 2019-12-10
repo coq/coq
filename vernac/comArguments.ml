@@ -271,7 +271,7 @@ let vernac_arguments ~section_local reference args more_implicits flags =
   (* Actions *)
 
   if renaming_specified then begin
-    Arguments_renaming.rename_arguments section_local sr names
+     Arguments_renaming.rename_arguments ~local:section_local sr names
   end;
 
   if scopes_specified || clear_scopes_flag then begin

@@ -24,7 +24,6 @@ open Environ
 open Termops
 open EConstr
 open Vars
-open Arguments_renaming
 open Context.Rel.Declaration
 
 module RelDecl = Context.Rel.Declaration
@@ -130,7 +129,7 @@ let type_of_constant env sigma (c,u) =
   let cb = lookup_constant c env in
   let () = check_hyps_inclusion env sigma (GlobRef.ConstRef c) cb.const_hyps in
   let ty = CVars.subst_instance_constr (EConstr.Unsafe.to_instance u) cb.const_type in
-  EConstr.of_constr (rename_type ty (GlobRef.ConstRef c))
+  EConstr.of_constr ty
 
 let retype ?(polyprop=true) sigma =
   let rec type_of env cstr =

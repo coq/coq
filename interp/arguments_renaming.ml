@@ -11,9 +11,6 @@
 (*i*)
 open Names
 open Globnames
-open Constr
-open Context
-open Environ
 open Util
 open Libobject
 
@@ -28,7 +25,8 @@ type req =
   | ReqGlobal
 
 let load_rename_args _ (_, (r, names)) =
-  name_table := GlobRef.Map.add r names !name_table
+  name_table := GlobRef.Map.add r names !name_table;
+  Global.rename_ref r names
 
 let cache_rename_args o = load_rename_args 1 o
 
@@ -44,7 +42,7 @@ let subst_rename_args (subst, (_, (r, names as orig))) =
 let discharge_rename_args = function
   | ReqGlobal, (c, names) as req when not (isVarRef c && Lib.is_in_section c) ->
      (try
-       let var_names = Array.map_to_list (fun c -> Name (destVar c)) (Lib.section_instance c) in
+       let var_names = Array.map_to_list (fun c -> Name (Constr.destVar c)) (Lib.section_instance c) in
        let names = var_names @ names in
        Some (ReqGlobal, (c, names))
      with Not_found -> Some req)
@@ -61,7 +59,7 @@ let inRenameArgs = declare_object { (default_object "RENAME-ARGUMENTS" ) with
   rebuild_function = rebuild_rename_args;
 }
 
-let rename_arguments local r names =
+let rename_arguments ~local r names =
   let () = match r with
     | GlobRef.VarRef id ->
       CErrors.user_err
@@ -74,33 +72,3 @@ let rename_arguments local r names =
   Lib.add_leaf (inRenameArgs (req, (r, names)))
 
 let arguments_names r = GlobRef.Map.find r !name_table
-
-let rename_type ty ref =
-  let name_override old_name override =
-    match override with
-    | Name _ as x -> {old_name with binder_name=x}
-    | Anonymous -> old_name in
-  let rec rename_type_aux c = function
-    | [] -> c
-    | rename :: rest as renamings ->
-        match Constr.kind c with
-        | Prod (old, s, t) ->
-            mkProd (name_override old rename, s, rename_type_aux t rest)
-        | LetIn (old, s, b, t) ->
-            mkLetIn (old ,s, b, rename_type_aux t renamings)
-        | Cast (t,_, _) -> rename_type_aux t renamings
-        | _ -> c
-  in
-  try rename_type_aux ty (arguments_names ref)
-  with Not_found -> ty
-
-let rename_typing env c =
-  let j = Typeops.infer env c in
-  let j' =
-    match kind c with
-    | Const (c,u) -> { j with uj_type = rename_type j.uj_type (GlobRef.ConstRef c) }
-    | Ind (i,u) -> { j with uj_type = rename_type j.uj_type (GlobRef.IndRef i) }
-    | Construct (k,u) -> { j with uj_type = rename_type j.uj_type (GlobRef.ConstructRef k) }
-    | _ -> j
-  in j'
-

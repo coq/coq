@@ -220,3 +220,5 @@ let set_share_reduction b =
 
 let set_VM b = globalize0 (Safe_typing.set_VM b)
 let set_native_compiler b = globalize0 (Safe_typing.set_native_compiler b)
+
+let rename_ref r names = globalize0 (Safe_typing.rename_ref r names)

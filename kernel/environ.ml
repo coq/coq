@@ -911,3 +911,80 @@ struct
   let compare _env c1 c2 = GlobRef.CanOrd.compare c1 c2
   let hash _env c = GlobRef.CanOrd.hash c
 end
+
+(** Renaming *)
+
+let rename old = function
+  | Anonymous -> old
+  | Name _ as x -> {old with Context.binder_name=x}
+
+let rec rename_type c = function
+  | [] -> c
+  | name :: rest as renamings ->
+    match kind c with
+    | Prod (old, a, b) -> mkProd (rename old name, a, rename_type b rest)
+    | LetIn (x,a,b,c) -> mkLetIn (x,a,b, rename_type c renamings)
+    | Cast (c,_,_) -> rename_type c renamings (* why not preserve the cast? *)
+    | _ -> c
+
+let mod_globals env f = {env with env_globals = f env.env_globals}
+
+let rename_constant c names env =
+  mod_globals env (fun globals ->
+      {globals with
+       Globals.constants =
+         globals.Globals.constants |>
+         Cmap_env.modify c (fun _ (cb,info) ->
+             {cb with const_type = rename_type cb.const_type names}, info)})
+
+let mod_inductive (mind,i) env f =
+  mod_globals env (fun globals ->
+      {globals with
+       Globals.inductives =
+         globals.Globals.inductives |>
+         Mindmap_env.modify mind (fun _ (mb,info) ->
+             {mb with
+              mind_packets = Array.mapi (fun j packet -> if i = j then f packet else packet)
+                  mb.mind_packets}, info)})
+
+let rec rename_ctx ctx names = match ctx, names with
+  | _, [] -> ctx
+  | (LocalDef _ as elt) :: ctx, _ -> elt :: (rename_ctx ctx names)
+  | (LocalAssum _ as elt)  :: ctx, Anonymous :: names -> elt :: (rename_ctx ctx names)
+  | LocalAssum (x,t) :: ctx, (Name _ as y) :: names ->
+    LocalAssum (rename x y,t) :: (rename_ctx ctx names)
+  | [], _ :: _ -> []
+(* XXX change semantics to error when too many renames? *)
+
+let rename_ctx ctx names = List.rev (rename_ctx (List.rev ctx) names)
+
+(* This works because parameters are included in the inductive_body
+   components. If that changes we will need some other method. *)
+let rename_ind_type names packet =
+  let mind_arity_ctxt = rename_ctx packet.mind_arity_ctxt names in
+  match packet.mind_arity with
+  | RegularArity arity ->
+    let mind_user_arity = rename_type arity.mind_user_arity names in
+    { packet with mind_arity_ctxt;
+                  mind_arity = RegularArity {mind_sort = arity.mind_sort; mind_user_arity} }
+  | TemplateArity _ -> { packet with mind_arity_ctxt }
+
+let rename_ind ind names env =
+  mod_inductive ind env (fun packet -> rename_ind_type names packet)
+
+let rename_ctor (ind,c) names env =
+  (* NB: we use Array.mapi instead of Array.set because we don't want
+     to mutate the old array. *)
+  mod_inductive ind env (fun packet ->
+      {packet with
+       mind_user_lc = Array.mapi (fun j t ->
+           if j+1 = c then rename_type t names else t) packet.mind_user_lc;
+       mind_nf_lc = Array.mapi (fun j (ctx,t as o) ->
+           if j+1 = c then rename_ctx ctx names, t else o) packet.mind_nf_lc;
+      })
+
+let rename_ref r names env = let open GlobRef in match r with
+  | ConstRef r -> rename_constant r names env
+  | IndRef r -> rename_ind r names env
+  | ConstructRef r -> rename_ctor r names env
+  | VarRef _ -> assert false
