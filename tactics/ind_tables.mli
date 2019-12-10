@@ -45,10 +45,10 @@ val declare_individual_scheme_object : string -> ?aux:string ->
 
 val define_individual_scheme : individual scheme_kind ->
   internal_flag (** internal *) ->
-  Id.t option -> inductive -> Constant.t * Evd.side_effects
+  Id.t option -> inductive -> unit
 
 val define_mutual_scheme : mutual scheme_kind -> internal_flag (** internal *) ->
-  (int * Id.t) list -> MutInd.t -> Constant.t array * Evd.side_effects
+  (int * Id.t) list -> MutInd.t -> unit
 
 (** Main function to retrieve a scheme in the cache or to generate it *)
 val find_scheme : ?mode:internal_flag -> 'a scheme_kind -> inductive -> Constant.t * Evd.side_effects

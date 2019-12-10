@@ -151,6 +151,12 @@ let find_scheme ?(mode=InternalTacticRequest) kind (mind,i as ind) =
       let ca, eff = define_mutual_scheme_base kind s f mode [] mind in
       ca.(i), eff
 
+let define_individual_scheme kind mode names ind =
+  ignore (define_individual_scheme kind mode names ind)
+
+let define_mutual_scheme kind mode names mind =
+  ignore (define_mutual_scheme kind mode names mind)
+
 let check_scheme kind ind =
   try let _ = find_scheme_on_env_too kind ind in true
   with Not_found -> false
