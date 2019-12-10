@@ -617,7 +617,7 @@ let compute_inductive_refs mind =
   in
   Array.to_list (Array.mapi imps_one_inductive mib.mind_packets)
 
-let declare_mib_implicits mind ~impargs =
+let declare_mind_implicits mind ~impargs =
   let flags = !implicit_args in
   let imps =
     List.map2 (fun (indref,cstrrefs) (manual_indimpl,manual_cstrimplss) ->

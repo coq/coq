@@ -84,7 +84,7 @@ type mib_manual_implicits = (manual_implicits * manual_implicits list) list
 val declare_variable_implicits : variable ->
   impl:Glob_term.binding_kind -> impargs:manual_implicits option -> unit
 val declare_constant_implicits : Constant.t -> impargs:manual_implicits option -> unit
-val declare_mib_implicits : MutInd.t -> impargs:mib_manual_implicits -> unit
+val declare_mind_implicits : MutInd.t -> impargs:mib_manual_implicits -> unit
   (** compute auto+manual implicit arguments associated to a global reference *)
 
 val implicits_of_global : GlobRef.t -> implicits_list list

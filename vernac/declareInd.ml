@@ -118,7 +118,7 @@ let declare_mind ?typing_flags mie impargs =
   if is_unsafe_typing_flags() then feedback_axiom ();
   let mind = Global.mind_of_delta_kn kn in
   let isprim = Inductive.is_primitive_record (Inductive.lookup_mind_specif (Global.env()) (mind,0)) in
-  Impargs.declare_mib_implicits mind ~impargs;
+  Impargs.declare_mind_implicits mind ~impargs;
   declare_inductive_argument_scopes mind mie;
   oname, isprim
 
