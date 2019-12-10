@@ -160,3 +160,5 @@ let define_mutual_scheme kind mode names mind =
 let check_scheme kind ind =
   try let _ = find_scheme_on_env_too kind ind in true
   with Not_found -> false
+
+let lookup_scheme = DeclareScheme.lookup_scheme

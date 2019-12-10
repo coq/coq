@@ -12,14 +12,6 @@ open Ind_tables
 
 (** Induction/recursion schemes *)
 
-val optimize_non_type_induction_scheme :
-  'a Ind_tables.scheme_kind ->
-  Indrec.dep_flag ->
-  Sorts.family ->
-  'b ->
-  Names.inductive ->
-  (Constr.constr * UState.t) * Evd.side_effects
-
 val rect_scheme_kind_from_prop : individual scheme_kind
 val ind_scheme_kind_from_prop : individual scheme_kind
 val sind_scheme_kind_from_prop : individual scheme_kind

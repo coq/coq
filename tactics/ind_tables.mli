@@ -55,5 +55,7 @@ val find_scheme : ?mode:internal_flag -> 'a scheme_kind -> inductive -> Constant
 
 val check_scheme : 'a scheme_kind -> inductive -> bool
 
+(** Like [find_scheme] but fails when the scheme is not already in the cache *)
+val lookup_scheme : 'a scheme_kind -> inductive -> Constant.t
 
 val pr_scheme_kind : 'a scheme_kind -> Pp.t

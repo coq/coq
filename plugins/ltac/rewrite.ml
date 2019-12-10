@@ -924,10 +924,10 @@ let reset_env env =
   let env' = Global.env_of_context (Environ.named_context_val env) in
     Environ.push_rel_context (Environ.rel_context env) env'
 
-let fold_match ?(force=false) env sigma c =
+let fold_match env sigma c =
   let (ci, p, c, brs) = destCase sigma c in
   let cty = Retyping.get_type_of env sigma c in
-  let dep, pred, exists, (sk,eff) =
+  let dep, pred, exists, sk =
     let env', ctx, body =
       let ctx, pred = decompose_lam_assum sigma p in
       let env' = push_rel_context ctx env in
@@ -954,8 +954,8 @@ let fold_match ?(force=false) env sigma c =
         else case_scheme_kind_from_type)
     in
     let exists = Ind_tables.check_scheme sk ci.ci_ind in
-      if exists || force then
-        dep, pred, exists, Ind_tables.find_scheme sk ci.ci_ind
+      if exists then
+        dep, pred, exists, Ind_tables.lookup_scheme sk ci.ci_ind
       else raise Not_found
   in
   let app =
@@ -964,7 +964,7 @@ let fold_match ?(force=false) env sigma c =
     let meths = List.map (fun br -> br) (Array.to_list brs) in
       applist (mkConst sk, pars @ [pred] @ meths @ args @ [c])
   in
-    sk, (if exists then env else reset_env env), app, eff
+    sk, (if exists then env else reset_env env), app
 
 let unfold_match env sigma sk app =
   match EConstr.kind sigma app with
@@ -1222,7 +1222,7 @@ let subterm all flags (s : 'a pure_strategy) : 'a pure_strategy =
             else
               match try Some (fold_match env (goalevars evars) t) with Not_found -> None with
               | None -> state, c'
-              | Some (cst, _, t', eff (*FIXME*)) ->
+              | Some (cst, _, t') ->
                  let state, res = aux { state ; env ; unfresh ;
                                         term1 = t' ; ty1 = ty ;
                                         cstr = (prop,cstr) ; evars } in
