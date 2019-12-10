@@ -255,9 +255,13 @@ let needs_extra_scopes ref scopes =
   let ty, _ctx = Typeops.type_of_global_in_context env ref in
   aux env ty scopes
 
+let implicit_name_of_pos = function
+  | Constrexpr.ExplByName id -> Name id
+  | Constrexpr.ExplByPos (n,k) -> Anonymous
+
 let implicit_kind_of_status = function
   | None -> Anonymous, NotImplicit
-  | Some (id,_,(maximal,_)) -> Name id, if maximal then MaximallyImplicit else Implicit
+  | Some (pos,_,(maximal,_)) -> implicit_name_of_pos pos, if maximal then MaximallyImplicit else Implicit
 
 let dummy = {
   Vernacexpr.implicit_status = NotImplicit;
