@@ -430,6 +430,22 @@ let error_recursively_dependent_library dir =
 (* Security weakness: file might have been changed on disk between
    writing the content and computing the checksum... *)
 
+let save_library_base f sum lib univs tasks proofs =
+  let ch = raw_extern_library f in
+  try
+    System.marshal_out_segment f ch (sum    : seg_sum);
+    System.marshal_out_segment f ch (lib    : seg_lib);
+    System.marshal_out_segment f ch (univs  : seg_univ option);
+    System.marshal_out_segment f ch (tasks  : 'tasks option);
+    System.marshal_out_segment f ch (proofs : seg_proofs);
+    close_out ch
+  with reraise ->
+    let reraise = CErrors.push reraise in
+    close_out ch;
+    Feedback.msg_warning (str "Removed file " ++ str f);
+    Sys.remove f;
+    iraise reraise
+
 type ('document,'counters) todo_proofs =
  | ProofsTodoNone (* for .vo *)
  | ProofsTodoSomeEmpty of Future.UUIDSet.t (* for .vos *)
@@ -454,18 +470,17 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
     match todo_proofs with
     | ProofsTodoNone -> None, None
     | ProofsTodoSomeEmpty _except ->
-        None,
-        Some (Univ.ContextSet.empty,false)
+      None, Some (Univ.ContextSet.empty,false)
     | ProofsTodoSome (_except, tasks, rcbackup) ->
-        let tasks =
-          List.map Stateid.(fun (r,b) ->
+      let tasks =
+        List.map Stateid.(fun (r,b) ->
             try { r with uuid = Future.UUIDMap.find r.uuid f2t_map }, b
             with Not_found -> assert b; { r with uuid = -1 }, b)
           tasks in
-        Some (tasks,rcbackup),
-        Some (Univ.ContextSet.empty,false)
-  in
-  let sd = {
+      Some (tasks,rcbackup),
+      Some (Univ.ContextSet.empty,false)
+    in
+    let sd = {
     md_name = dir;
     md_deps = Array.of_list (current_deps ());
   } in
@@ -475,36 +490,15 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
   } in
   if Array.exists (fun (d,_) -> DirPath.equal d dir) sd.md_deps then
     error_recursively_dependent_library dir;
-  (* Open the vo file and write the magic number *)
-  let f' = f in
-  let ch = raw_extern_library f' in
-  try
-    (* Writing vo payload *)
-    System.marshal_out_segment f' ch (sd           : seg_sum);
-    System.marshal_out_segment f' ch (md           : seg_lib);
-    System.marshal_out_segment f' ch (utab         : seg_univ option);
-    System.marshal_out_segment f' ch (tasks        : 'tasks option);
-    System.marshal_out_segment f' ch (opaque_table : seg_proofs);
-    close_out ch;
-    (* Writing native code files *)
-    if output_native_objects then
-      let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
-      Nativelib.compile_library dir ast fn
-   with reraise ->
-    let reraise = CErrors.push reraise in
-    let () = Feedback.msg_warning (str "Removed file " ++ str f') in
-    let () = close_out ch in
-    let () = Sys.remove f' in
-    iraise reraise
+  (* Writing vo payload *)
+  save_library_base f sd md utab tasks opaque_table;
+  (* Writing native code files *)
+  if output_native_objects then
+    let fn = Filename.dirname f ^"/"^ Nativecode.mod_uid_of_dirpath dir in
+    Nativelib.compile_library dir ast fn
 
 let save_library_raw f sum lib univs proofs =
-  let ch = raw_extern_library f in
-  System.marshal_out_segment f ch (sum        : seg_sum);
-  System.marshal_out_segment f ch (lib        : seg_lib);
-  System.marshal_out_segment f ch (Some univs : seg_univ option);
-  System.marshal_out_segment f ch (None       : 'tasks option);
-  System.marshal_out_segment f ch (proofs     : seg_proofs);
-  close_out ch
+  save_library_base f sum lib (Some univs) None proofs
 
 module StringOrd = struct type t = string let compare = String.compare end
 module StringSet = Set.Make(StringOrd)
