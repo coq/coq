@@ -12,6 +12,7 @@
 (executable
  (name coqchk)
  (public_name coqchk)
+ (modes exe byte)
  (package coq)
  (modules coqchk)
  (flags :standard -open Coq_checklib)
