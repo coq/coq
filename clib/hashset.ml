@@ -118,8 +118,10 @@ module Make (E : EqType) =
         t.table.(t.rover) <- emptybucket;
         t.hashes.(t.rover) <- [| |];
       end else begin
-        Obj.truncate (Obj.repr bucket) (prev_len + 1) [@ocaml.alert "--deprecated"];
-        Obj.truncate (Obj.repr hbucket) prev_len [@ocaml.alert "--deprecated"];
+        let newbucket = Weak.create prev_len in
+        Weak.blit bucket 0 newbucket 0 prev_len;
+        t.table.(t.rover) <- newbucket;
+        t.hashes.(t.rover) <- Array.sub hbucket 0 prev_len
       end;
       if len > t.limit && prev_len <= t.limit then t.oversize <- t.oversize - 1;
     end;
