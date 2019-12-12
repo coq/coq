@@ -39,7 +39,7 @@ extern int drawinstr;
 /* interp state */
 
 extern value * coq_sp;
-/* Some predefined pointer code */ 
+/* Some predefined pointer code */
 extern code_t accumulate;
 
 /* functions over global environment */
@@ -49,7 +49,7 @@ value coq_static_alloc(value size);  /* ML */
 value init_coq_vm(value unit); /* ML */
 value re_init_coq_vm(value unit); /* ML */
 
-void  realloc_coq_stack(asize_t required_space); 
+void  realloc_coq_stack(asize_t required_space);
 value coq_set_transp_value(value transp); /* ML */
 value get_coq_transp_value(value unit); /* ML */
 #endif /* _COQ_MEMORY_ */

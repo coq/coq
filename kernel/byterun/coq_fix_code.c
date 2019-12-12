@@ -12,7 +12,7 @@
    for fast computation of bounded (31bits) integers */
 
 #include <stdio.h>
-#include <stdlib.h> 
+#include <stdlib.h>
 #include <stdint.h>
 #include <caml/config.h>
 #include <caml/misc.h>
@@ -42,7 +42,7 @@ void init_arity () {
     arity[GETFIELD0]=arity[GETFIELD1]=arity[SETFIELD0]=arity[SETFIELD1]=
     arity[CONST0]=arity[CONST1]=arity[CONST2]=arity[CONST3]=
     arity[PUSHCONST0]=arity[PUSHCONST1]=arity[PUSHCONST2]=arity[PUSHCONST3]=
-    arity[ACCUMULATE]=arity[STOP]=arity[MAKEPROD]= 
+    arity[ACCUMULATE]=arity[STOP]=arity[MAKEPROD]=
     arity[ADDINT63]=arity[SUBINT63]=arity[LTINT63]=arity[LEINT63]=
     arity[LTFLOAT]=arity[LEFLOAT]=
     arity[ISINT]=arity[AREINT2]=0;
@@ -76,7 +76,7 @@ void init_arity () {
   /* instruction with two operands */
   arity[APPTERM]=arity[MAKEBLOCK]=arity[CLOSURE]=
   arity[PROJ]=2;
-  /* instruction with four operands */ 
+  /* instruction with four operands */
   arity[MAKESWITCHBLOCK]=4;
   /* instruction with arbitrary operands */
   arity[CLOSUREREC]=arity[CLOSURECOFIX]=arity[SWITCH]=0;
@@ -134,7 +134,7 @@ value coq_is_accumulate_code(value code){
 
 #ifdef ARCH_BIG_ENDIAN
 #define Reverse_32(dst,src) {                                               \
-  char * _p, * _q;							    \
+  char * _p, * _q;                                                          \
   char _a, _b;                                                              \
   _p = (char *) (src);                                                      \
   _q = (char *) (dst);                                                      \
@@ -159,9 +159,9 @@ value coq_tcode_of_code (value code) {
   q = coq_stat_alloc(len);
   Code_val(res) = q;
   len /= sizeof(opcode_t);
-  for (p = (code_t)code; p < (code_t)code + len; /*nothing*/) {  
+  for (p = (code_t)code; p < (code_t)code + len; /*nothing*/) {
     opcode_t instr;
-    COPY32(&instr,p); 
+    COPY32(&instr,p);
     p++;
     if (instr < 0 || instr > STOP){
       instr = STOP;
@@ -183,7 +183,7 @@ value coq_tcode_of_code (value code) {
       for(i=1; i<n; i++) { COPY32(q,p); p++; q++; };
     } else {
       uint32_t i, ar;
-      ar = arity[instr]; 
+      ar = arity[instr];
       for(i=0; i<ar; i++) { COPY32(q,p); p++; q++; };
     }
   }

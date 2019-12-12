@@ -9,7 +9,7 @@
 /***********************************************************************/
 
 #include <stdio.h>
-#include <string.h> 
+#include <string.h>
 #include <caml/alloc.h>
 #include <caml/address_class.h>
 #include "coq_gc.h"
@@ -31,7 +31,7 @@ int drawinstr;
 
 long coq_saved_sp_offset;
 value * coq_sp;
-/* Some predefined pointer code */ 
+/* Some predefined pointer code */
 code_t accumulate;
 
 /* functions over global environment */
@@ -80,7 +80,7 @@ void init_coq_stack()
   coq_stack_high = coq_stack_low + Coq_stack_size / sizeof (value);
   coq_stack_threshold = coq_stack_low + Coq_stack_threshold / sizeof(value);
   coq_max_stack_size = Coq_max_stack_size;
-}  
+}
 
 void init_coq_interpreter()
 {
@@ -96,14 +96,14 @@ value init_coq_vm(value unit) /* ML */
     fprintf(stderr,"already open \n");fflush(stderr);}
   else {
     drawinstr=0;
-#ifdef THREADED_CODE   
+#ifdef THREADED_CODE
     init_arity();
 #endif /* THREADED_CODE */
     /* Allocate the table of global and the stack */
     init_coq_stack();
     /* Initialing the interpreter */
     init_coq_interpreter();
-    
+
     /* Some predefined pointer code.
      * It is typically contained in accumulator blocks whose tag is 0 and thus
      * scanned by the GC, so make it look like an OCaml block. */
@@ -117,7 +117,7 @@ value init_coq_vm(value unit) /* ML */
       coq_prev_scan_roots_hook = scan_roots_hook;
     scan_roots_hook = coq_scan_roots;
     coq_vm_initialized = 1;
-  } 
+  }
   return Val_unit;;
 }
 
