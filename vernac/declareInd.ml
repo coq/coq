@@ -60,9 +60,9 @@ let cache_inductive ((sp, kn), names) =
 let discharge_inductive ((sp, kn), names) =
   Some names
 
-let inInductive : inductive_obj -> Libobject.obj =
+let objInductive : inductive_obj Libobject.Dyn.tag =
   let open Libobject in
-  declare_object {(default_object "INDUCTIVE") with
+  declare_object_full {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
     load_function = load_inductive;
     open_function = open_inductive;
@@ -71,6 +71,7 @@ let inInductive : inductive_obj -> Libobject.obj =
     discharge_function = discharge_inductive;
   }
 
+let inInductive v = Libobject.Dyn.Easy.inj v objInductive
 
 let cache_prim (_,(p,c)) = Recordops.register_primitive_projection p c
 
@@ -212,3 +213,9 @@ let declare_mutual_inductive_with_eliminations ?(primitive_expected=false) mie p
   if mie.mind_entry_private == None
   then Indschemes.declare_default_schemes mind;
   mind
+
+module Internal =
+struct
+  type nonrec inductive_obj = inductive_obj
+  let objInductive = objInductive
+end

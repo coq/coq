@@ -254,7 +254,9 @@ let ppenvwithcst e = pp
 
 let pptac = (fun x -> pp(Ltac_plugin.Pptactic.pr_glob_tactic (Global.env()) x))
 
-let ppobj obj = Format.print_string (Libobject.object_tag obj)
+let ppobj obj =
+  let Libobject.Dyn.Dyn (tag, _) = obj in
+  Format.print_string (Libobject.Dyn.repr tag)
 
 let cnt = ref 0
 

@@ -19,11 +19,9 @@ DeclareObl
 Canonical
 RecLemmas
 Library
-Prettyp
 Lemmas
 Class
 Auto_ind_decl
-Search
 Indschemes
 Obligations
 ComDefinition
@@ -31,6 +29,8 @@ Classes
 ComPrimitive
 ComAssumption
 DeclareInd
+Search
+Prettyp
 ComInductive
 ComFixpoint
 ComProgramFixpoint

@@ -127,8 +127,6 @@ val declare_object_full :
 val declare_object :
   'a object_declaration -> ('a -> obj)
 
-val object_tag : obj -> string
-
 val cache_object : object_name * obj -> unit
 val load_object : int -> object_name * obj -> unit
 val open_object : int -> object_name * obj -> unit

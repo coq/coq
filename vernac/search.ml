@@ -71,6 +71,14 @@ let iter_hypothesis ?pstate glnum (fn : GlobRef.t -> env -> constr -> unit) =
   let pfctxt = named_context e in
   iter_named_context_name_type iter_hyp pfctxt
 
+(* FIXME: this is a Libobject hack that should be replaced with a proper
+   registration mechanism. *)
+module DynHandle = Libobject.Dyn.Map(struct type 'a t = 'a -> unit end)
+
+let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
+| f -> f o
+| exception Not_found -> ()
+
 (* General search over declarations *)
 let iter_declarations (fn : GlobRef.t -> env -> constr -> unit) =
   let env = Global.env () in
@@ -78,13 +86,14 @@ let iter_declarations (fn : GlobRef.t -> env -> constr -> unit) =
     (Environ.named_context env);
   let iter_obj (sp, kn) lobj = match lobj with
     | AtomicObject o ->
-      begin match object_tag o with
-        | "CONSTANT" ->
+      let handler =
+        DynHandle.add Declare.Internal.objConstant begin fun _ ->
           let cst = Global.constant_of_delta_kn kn in
           let gr = GlobRef.ConstRef cst in
           let (typ, _) = Typeops.type_of_global_in_context (Global.env ()) gr in
           fn gr env typ
-        | "INDUCTIVE" ->
+        end @@
+        DynHandle.add DeclareInd.Internal.objInductive begin fun _ ->
           let mind = Global.mind_of_delta_kn kn in
           let mib = Global.lookup_mind mind in
           let iter_packet i mip =
@@ -97,8 +106,10 @@ let iter_declarations (fn : GlobRef.t -> env -> constr -> unit) =
             iter_constructors ind u fn env len
           in
           Array.iteri iter_packet mib.mind_packets
-        | _ -> ()
-      end
+        end @@
+        DynHandle.empty
+      in
+      handle handler o
     | _ -> ()
   in
   try Declaremods.iter_all_segments iter_obj

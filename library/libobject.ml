@@ -82,8 +82,6 @@ and objects = (Names.Id.t * t) list
 
 and substitutive_objects = MBId.t list * algebraic_objects
 
-let object_tag (Dyn.Dyn (t, _)) = Dyn.repr t
-
 module DynMap = Dyn.Map (struct type 'a t = 'a object_declaration end)
 
 let cache_tab = ref DynMap.empty
