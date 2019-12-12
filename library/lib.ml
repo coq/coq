@@ -243,15 +243,6 @@ let add_discharged_leaf id obj =
   cache_object (oname,newobj);
   add_entry oname (Leaf (AtomicObject newobj))
 
-let add_leaves id objs =
-  let oname = make_foname id in
-  let add_obj obj =
-    add_entry oname (Leaf (AtomicObject obj));
-    load_object 1 (oname,obj)
-  in
-  List.iter add_obj objs;
-  oname
-
 let add_anonymous_leaf ?(cache_first = true) obj =
   let id = anonymous_id () in
   let oname = make_foname id in

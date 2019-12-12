@@ -65,10 +65,6 @@ val add_anonymous_entry : node -> unit
 val add_leaf : Id.t -> Libobject.obj -> Libobject.object_name
 val add_anonymous_leaf : ?cache_first:bool -> Libobject.obj -> unit
 
-(** this operation adds all objects with the same name and calls [load_object]
-   for each of them *)
-val add_leaves : Id.t -> Libobject.obj list -> Libobject.object_name
-
 (** {6 ... } *)
 
 (** The function [contents] gives access to the current entire segment *)
