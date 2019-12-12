@@ -389,7 +389,11 @@ optfiles: $(if $(DO_NATDYNLINK),$(CMXSFILES))
 .PHONY: optfiles
 
 # FIXME, see Ralf's bugreport
-quick: $(VOFILES:.vo=.vio)
+# quick is deprecated, now renamed vio
+vio: $(VOFILES:.vo=.vio)
+.PHONY: vio
+quick: vio
+	$(warning "'make quick' is deprecated, use 'make vio' or consider using 'vos' files")
 .PHONY: quick
 
 vio2vo:
@@ -397,8 +401,9 @@ vio2vo:
 		-schedule-vio2vo $(J) $(VOFILES:%.vo=%.vio)
 .PHONY: vio2vo
 
+# quick2vo is undocumented
 quick2vo:
-	$(HIDE)make -j $(J) quick
+	$(HIDE)make -j $(J) vio
 	$(HIDE)VIOFILES=$$(for vofile in $(VOFILES); do \
 	  viofile="$$(echo "$$vofile" | sed "s/\.vo$$/.vio/")"; \
 	  if [ "$$vofile" -ot "$$viofile" -o ! -e "$$vofile" ]; then printf "$$viofile "; fi; \
@@ -677,8 +682,8 @@ $(GLOBFILES): %.glob: %.v
 	$(TIMER) $(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
 
 $(VFILES:.v=.vio): %.vio: %.v
-	$(SHOW)COQC -quick $<
-	$(HIDE)$(TIMER) $(COQC) -quick $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
+	$(SHOW)COQC -vio $<
+	$(HIDE)$(TIMER) $(COQC) -vio $(COQDEBUG) $(COQFLAGS) $(COQLIBS) $<
 
 $(VFILES:.v=.vos): %.vos: %.v
 	$(SHOW)COQC -vos $<

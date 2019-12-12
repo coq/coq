@@ -840,7 +840,7 @@ theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_DEP)
 
 theories/Init/%.vio: theories/Init/%.v $(VO_TOOLS_DEP)
 	$(SHOW)'COQC -quick -noinit $<'
-	$(HIDE)$(BOOTCOQC) $< -noinit -R theories Coq -quick -noglob
+	$(HIDE)$(BOOTCOQC) $< -noinit -R theories Coq -vio -noglob
 
 # The general rule for building .vo files :
 
@@ -855,8 +855,8 @@ ifdef VALIDATE
 endif
 
 %.vio: %.v theories/Init/Prelude.vio $(VO_TOOLS_DEP)
-	$(SHOW)'COQC -quick $<'
-	$(HIDE)$(BOOTCOQC) $< -quick -noglob
+	$(SHOW)'COQC -vio $<'
+	$(HIDE)$(BOOTCOQC) $< -vio -noglob
 
 %.v.timing.diff: %.v.before-timing %.v.after-timing
 	$(SHOW)PYTHON TIMING-DIFF $<

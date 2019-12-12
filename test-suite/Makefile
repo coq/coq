@@ -635,7 +635,7 @@ vio: $(patsubst %.v,%.vio.log,$(wildcard vio/*.v))
 %.vio.log:%.v
 	@echo "TEST      $<"
 	$(HIDE){ \
-	  $(coqc) -quick -R vio vio $* 2>&1 && \
+	  $(coqc) -vio -R vio vio $* 2>&1 && \
 	  $(coqc) -R vio vio -vio2vo $*.vio 2>&1 && \
 	  $(coqchk) -R vio vio -norec $(subst /,.,$*) 2>&1; \
 	  if [ $$? = 0 ]; then \

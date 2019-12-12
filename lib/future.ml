@@ -12,13 +12,13 @@ let not_ready_msg = ref (fun name ->
       Pp.strbrk("The value you are asking for ("^name^") is not ready yet. "^
                 "Please wait or pass "^
                 "the \"-async-proofs off\" option to CoqIDE to disable "^
-                "asynchronous script processing and don't pass \"-quick\" to "^
+                "asynchronous script processing and don't pass \"-vio\" to "^
                 "coqc."))
 let not_here_msg = ref (fun name ->
       Pp.strbrk("The value you are asking for ("^name^") is not available "^
                 "in this process. If you really need this, pass "^
                 "the \"-async-proofs off\" option to CoqIDE to disable "^
-                "asynchronous script processing and don't pass \"-quick\" to "^
+                "asynchronous script processing and don't pass \"-vio\" to "^
                 "coqc."))
 
 let customize_not_ready_msg f = not_ready_msg := f
