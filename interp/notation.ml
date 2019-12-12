@@ -1872,6 +1872,7 @@ let collect_notations stack =
       | SingleNotation ntn ->
           if List.mem_f notation_eq ntn knownntn then (all,knownntn)
           else
+          try
             let { not_interp  = (_, r); not_location = (_, df) } =
               NotationMap.find ntn (find_scope default_scope).notations in
             let all' = match all with
@@ -1879,7 +1880,8 @@ let collect_notations stack =
                   (s,(df,r)::lonelyntn)::rest
               | _ ->
                   (default_scope,[df,r])::all in
-            (all',ntn::knownntn))
+            (all',ntn::knownntn)
+          with Not_found -> (* e.g. if only printing *) (all,knownntn))
     ([],[]) stack)
 
 let pr_visible_in_scope prglob (scope,ntns) =
