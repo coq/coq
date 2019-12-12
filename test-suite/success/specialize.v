@@ -109,6 +109,28 @@ match goal with H:_ |- _ => clear H end.
 match goal with H:_ |- _ => exact H end.
 Qed.
 
+(* let ins should be supported in the type of the specialized hypothesis *)
+Axiom foo: forall (m1 m2: nat), let n := 2 * m1 in m1 = m2 -> False.
+Goal False.
+  pose proof foo as P.
+  assert (2 = 2) as A by reflexivity.
+  specialize P with (1 := A).
+  assumption.
+Qed.
+
+(* Another more subtle test on letins: they should not interfere with foralls. *)
+Goal forall (P: forall y:nat,
+                forall A (zz:A),
+                  let a := zz in
+                  let x := 1 in
+                  forall n : y = x,
+                    n = n),
+    True.
+  intros P.
+  specialize P with (zz := @eq_refl _ 2).
+  constructor.
+Qed.
+
 (* Test specialize as *)
 
 Goal (forall x, x=0) -> 1=0.

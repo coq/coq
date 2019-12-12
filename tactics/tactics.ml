@@ -2982,14 +2982,17 @@ let quantify lconstr =
    hypothesis of the goal, the new hypothesis replaces it.
 
    (c,lbind) are supposed to be of the form
-   ((t t1 t2 ... tm) , someBindings)
+   ((H t1 t2 ... tm) , someBindings)
+   whete t1..tn are user given args, to which someBinding must be combined.
 
-   in which case we pose a proof with body
+   The goal is to pose a proof with body
 
-   (fun y1...yp => H t1 t2 ... tm u1 ... uq) where yi are the
-   remaining arguments of H that lbind could not resolve, ui are a mix
-   of inferred args and yi. The overall effect is to remove from H as
-   much quantification as possible given lbind. *)
+   (fun y1...yp => H t1 t2 ... tm u1 ... uq)
+
+   where yi are the remaining arguments of H that lbind could not
+   solve, ui are a mix of inferred args and yi. The overall effect
+   is to remove from H as much quantification as possible given
+   lbind. *)
 let specialize (c,lbind) ipat =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
@@ -2998,6 +3001,7 @@ let specialize (c,lbind) ipat =
     if lbind == NoBindings then
       sigma, c
     else
+      (* ***** SOLVING ARGS ******* *)
       let typ_of_c = Retyping.get_type_of env sigma c in
       (* If the term is lambda then we put a letin to put avoid
          interaction between the term and the bindings. *)
@@ -3010,16 +3014,24 @@ let specialize (c,lbind) ipat =
       let clause = clenv_unify_meta_types ~flags clause in
       let sigma = clause.evd in
       let (thd,tstack) = whd_nored_stack sigma (clenv_value clause) in
-      let c_hd , c_args = decompose_app sigma c in
+      (* The completely applied term is (thd tstack), but tstack may
+         contain unsolved metas, so now we must reabstract them
+         args with there name to have
+         fun unsolv1 unsolv2 ... => (thd tstack_with _rels)
+         Note: letins have been reudced, they are not present in tstack *)
+      (* ****** REBUILDING UNSOLVED FORALLs ****** *)
+      (* thd is the thing to which we reapply everything, solved or
+         unsolved, unsolved things are requantified too *)
       let liftrel x =
         match kind sigma x with
         | Rel n -> mkRel (n+1)
         | _ -> x in
       (* We grab names used in product to remember them at re-abstracting phase *)
-      let typ_of_c_hd = pf_get_type_of gl c_hd in
+      let typ_of_c_hd = pf_get_type_of gl thd in
       let lprod, concl = decompose_prod_assum sigma typ_of_c_hd in
-      (* accumulator args: arguments to apply to c_hd: all inferred
-         args + re-abstracted rels *)
+      (* lprd = initial products (including letins).
+         l(tstack initially) = the same products after unification vs lbind (some metas remain)
+         args: accumulator : args to apply to hd: inferred args + metas reabstracted *)
       let rec rebuild_lambdas sigma lprd args hd l =
         match lprd , l with
         | _, [] -> sigma,applist (hd, (List.map (nf_evar sigma) args))
@@ -3038,8 +3050,13 @@ let specialize (c,lbind) ipat =
         | Context.Rel.Declaration.LocalAssum _::lp' , t::l' ->
           let sigma,hd' = rebuild_lambdas sigma lp' (args@[t]) hd l' in
           sigma,hd'
+        | Context.Rel.Declaration.LocalDef _::lp' , _ ->
+           (* letins have been reduced in l and should anyway not
+              correspond to an arg, we ignore them. *)
+          let sigma,hd' = rebuild_lambdas sigma lp' args hd l in
+          sigma,hd'
         | _ ,_ -> assert false in
-      let sigma,hd = rebuild_lambdas sigma (List.rev lprod) [] c_hd tstack in
+      let sigma,hd = rebuild_lambdas sigma (List.rev lprod) [] thd tstack in
       Evd.clear_metas sigma, hd
   in
   let typ = Retyping.get_type_of env sigma term in
