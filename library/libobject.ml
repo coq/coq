@@ -82,79 +82,58 @@ and objects = (Names.Id.t * t) list
 
 and substitutive_objects = MBId.t list * algebraic_objects
 
-type dynamic_object_declaration = {
-  dyn_cache_function : object_name * obj -> unit;
-  dyn_load_function : int -> object_name * obj -> unit;
-  dyn_open_function : int -> object_name * obj -> unit;
-  dyn_subst_function : Mod_subst.substitution * obj -> obj;
-  dyn_classify_function : obj -> obj substitutivity;
-  dyn_discharge_function : object_name * obj -> obj option;
-  dyn_rebuild_function : obj -> obj }
-
 let object_tag (Dyn.Dyn (t, _)) = Dyn.repr t
 
-let cache_tab =
-  (Hashtbl.create 223 : (string,dynamic_object_declaration) Hashtbl.t)
+module DynMap = Dyn.Map (struct type 'a t = 'a object_declaration end)
+
+let cache_tab = ref DynMap.empty
 
 let declare_object_full odecl =
   let na = odecl.object_name in
-  let (infun, outfun) = Dyn.Easy.make_dyn na in
-  let cacher (oname,lobj) = odecl.cache_function (oname,outfun lobj)
-  and loader i (oname,lobj) = odecl.load_function i (oname,outfun lobj)
-  and opener i (oname,lobj) = odecl.open_function i (oname,outfun lobj)
-  and substituter (sub,lobj) = infun (odecl.subst_function (sub,outfun lobj))
-  and classifier lobj = match odecl.classify_function (outfun lobj) with
-  | Dispose -> Dispose
-  | Substitute atomic_obj -> Substitute (infun atomic_obj)
-  | Keep atomic_obj -> Keep (infun atomic_obj)
-  | Anticipate (atomic_obj) -> Anticipate (infun atomic_obj)
-  and discharge (oname,lobj) =
-    Option.map infun (odecl.discharge_function (oname,outfun lobj))
-  and rebuild lobj = infun (odecl.rebuild_function (outfun lobj))
+  let tag = Dyn.create na in
+  let () = cache_tab := DynMap.add tag odecl !cache_tab in
+  let infun v = Dyn.Dyn (tag, v) in
+  let outfun v = match Dyn.Easy.prj v tag with
+  | None -> assert false
+  | Some v -> v
   in
-  Hashtbl.add cache_tab na { dyn_cache_function = cacher;
-                             dyn_load_function = loader;
-                             dyn_open_function = opener;
-                             dyn_subst_function = substituter;
-                             dyn_classify_function = classifier;
-                             dyn_discharge_function = discharge;
-                             dyn_rebuild_function = rebuild };
   (infun,outfun)
 
 let declare_object odecl = fst (declare_object_full odecl)
-let declare_object_full odecl = declare_object_full odecl
 
-(* this function describes how the cache, load, open, and export functions
-   are triggered. *)
+let cache_object (sp, Dyn.Dyn (tag, v)) =
+  let decl = DynMap.find tag !cache_tab in
+  decl.cache_function (sp, v)
 
-let apply_dyn_fun f lobj =
-  let tag = object_tag lobj in
-  let dodecl =
-    try Hashtbl.find cache_tab tag
-    with Not_found -> assert false
-  in
-  f dodecl
+let load_object i (sp, Dyn.Dyn (tag, v)) =
+  let decl = DynMap.find tag !cache_tab in
+  decl.load_function i (sp, v)
 
-let cache_object ((_,lobj) as node) =
-  apply_dyn_fun (fun d -> d.dyn_cache_function node) lobj
+let open_object i (sp, Dyn.Dyn (tag, v)) =
+  let decl = DynMap.find tag !cache_tab in
+  decl.open_function i (sp, v)
 
-let load_object i ((_,lobj) as node) =
-  apply_dyn_fun (fun d -> d.dyn_load_function i node) lobj
+let subst_object (subs, Dyn.Dyn (tag, v)) =
+  let decl = DynMap.find tag !cache_tab in
+  Dyn.Dyn (tag, decl.subst_function (subs, v))
 
-let open_object i ((_,lobj) as node) =
-  apply_dyn_fun (fun d -> d.dyn_open_function i node) lobj
+let classify_object (Dyn.Dyn (tag, v)) =
+  let decl = DynMap.find tag !cache_tab in
+  match decl.classify_function v with
+  | Dispose -> Dispose
+  | Substitute v -> Substitute (Dyn.Dyn (tag, v))
+  | Keep v -> Keep (Dyn.Dyn (tag, v))
+  | Anticipate v -> Anticipate (Dyn.Dyn (tag, v))
 
-let subst_object ((_,lobj) as node) =
-  apply_dyn_fun (fun d -> d.dyn_subst_function node) lobj
+let discharge_object (sp, Dyn.Dyn (tag, v)) =
+  let decl = DynMap.find tag !cache_tab in
+  match decl.discharge_function (sp, v) with
+  | None -> None
+  | Some v -> Some (Dyn.Dyn (tag, v))
 
-let classify_object lobj =
-  apply_dyn_fun (fun d -> d.dyn_classify_function lobj) lobj
-
-let discharge_object ((_,lobj) as node) =
-  apply_dyn_fun (fun d -> d.dyn_discharge_function node) lobj
-
-let rebuild_object lobj =
-  apply_dyn_fun (fun d -> d.dyn_rebuild_function lobj) lobj
+let rebuild_object (Dyn.Dyn (tag, v)) =
+  let decl = DynMap.find tag !cache_tab in
+  Dyn.Dyn (tag, decl.rebuild_function v)
 
 let dump = Dyn.dump
 
