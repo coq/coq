@@ -101,7 +101,9 @@ val ident_subst_function : substitution * 'a -> 'a
    will hand back two functions, the "injection" and "projection"
    functions for dynamically typed library-objects. *)
 
-type obj
+module Dyn : Dyn.S
+
+type obj = Dyn.t
 
 type algebraic_objects =
   | Objs of objects
@@ -120,7 +122,7 @@ and objects = (Names.Id.t * t) list
 and substitutive_objects = Names.MBId.t list * algebraic_objects
 
 val declare_object_full :
-  'a object_declaration -> ('a -> obj) * (obj -> 'a)
+  'a object_declaration -> 'a Dyn.tag
 
 val declare_object :
   'a object_declaration -> ('a -> obj)

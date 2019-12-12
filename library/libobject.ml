@@ -92,14 +92,12 @@ let declare_object_full odecl =
   let na = odecl.object_name in
   let tag = Dyn.create na in
   let () = cache_tab := DynMap.add tag odecl !cache_tab in
-  let infun v = Dyn.Dyn (tag, v) in
-  let outfun v = match Dyn.Easy.prj v tag with
-  | None -> assert false
-  | Some v -> v
-  in
-  (infun,outfun)
+  tag
 
-let declare_object odecl = fst (declare_object_full odecl)
+let declare_object odecl =
+  let tag = declare_object_full odecl in
+  let infun v = Dyn.Dyn (tag, v) in
+  infun
 
 let cache_object (sp, Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in
