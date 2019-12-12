@@ -25,7 +25,6 @@ let coqc_specific_usage = Usage.{
 coqc specific options:\
 \n  -o f.vo                use f.vo as the output file name\
 \n  -verbose               compile and output the input file\
-\n  -quick                 quickly compile .v files to .vio files (skip proofs)\
 \n  -schedule-vio2vo j f1..fn   run up to j instances of Coq to turn each fi.vio\
 \n                         into fi.vo\
 \n  -schedule-vio-checking j f1..fn   run up to j instances of Coq to check all\
@@ -33,8 +32,10 @@ coqc specific options:\
 \n  -vos                   process statements but ignore opaque proofs, and produce a .vos file\
 \n  -vok                   process the file by loading .vos instead of .vo files for\
 \n                         dependencies, and produce an empty .vok file on success\
+\n  -vio                   process statements and suspend opaque proofs, and produce a .vio file\
 \n\
 \nUndocumented:\
+\n  -quick                 (deprecated) alias for -vio\
 \n  -vio2vo                [see manual]\
 \n  -check-vio-tasks       [see manual]\
 \n"
