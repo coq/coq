@@ -165,3 +165,10 @@ Notation "# x ## t & u" := ((fun x => (x,t)),(fun x => (x,u))) (at level 0, x pa
 Check fun y : nat => # (x,z) ## y & y.
 
 End M17.
+
+Module Bug10750.
+
+Notation "#" := 0 (only printing).
+Print Visibility.
+
+End Bug10750.
