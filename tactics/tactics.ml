@@ -2977,6 +2977,13 @@ let quantify lconstr =
 
 (* Modifying/Adding an hypothesis  *)
 
+(* This applies (f i) to all elements of ctxt where the debrujn i is
+   free (so it is lifted at each level). *)
+let rec map_rel_context_lift f env i (ctxt:EConstr.rel_context):EConstr.rel_context =
+  match ctxt with
+  | [] -> ctxt
+  | decl::ctxt' -> f i decl :: map_rel_context_lift f env (i+1) ctxt'
+
 (* Instantiating some arguments (whatever their position) of an hypothesis
    or any term, leaving other arguments quantified. If operating on an
    hypothesis of the goal, the new hypothesis replaces it.
@@ -2993,16 +3000,17 @@ let quantify lconstr =
    solve, ui are a mix of inferred args and yi. The overall effect
    is to remove from H as much quantification as possible given
    lbind. *)
+
 let specialize (c,lbind) ipat =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let sigma, term =
+  let typ_of_c = Retyping.get_type_of env sigma c in
+  let sigma, term, typ =
     if lbind == NoBindings then
-      sigma, c
+      sigma, c, typ_of_c
     else
       (* ***** SOLVING ARGS ******* *)
-      let typ_of_c = Retyping.get_type_of env sigma c in
       (* If the term is lambda then we put a letin to put avoid
          interaction between the term and the bindings. *)
       let c = match EConstr.kind sigma c with
@@ -3028,38 +3036,53 @@ let specialize (c,lbind) ipat =
         | _ -> x in
       (* We grab names used in product to remember them at re-abstracting phase *)
       let typ_of_c_hd = pf_get_type_of gl thd in
-      let lprod, concl = decompose_prod_assum sigma typ_of_c_hd in
+      let (lprod:rel_context), concl = decompose_prod_assum sigma typ_of_c_hd in
       (* lprd = initial products (including letins).
          l(tstack initially) = the same products after unification vs lbind (some metas remain)
          args: accumulator : args to apply to hd: inferred args + metas reabstracted *)
-      let rec rebuild_lambdas sigma lprd args hd l =
+      let rec rebuild sigma concl (lprd:rel_context) (accargs:EConstr.t list)
+                (accprods:rel_context) hd (l:EConstr.t list) =
+        let open Context.Rel.Declaration in
         match lprd , l with
-        | _, [] -> sigma,applist (hd, (List.map (nf_evar sigma) args))
-        | Context.Rel.Declaration.LocalAssum(nme,_)::lp' , t::l' when occur_meta sigma t ->
+        | _, [] -> sigma
+                  , applist (hd, (List.map (nf_evar sigma) (List.rev accargs)))
+                  , EConstr.it_mkProd_or_LetIn concl accprods
+        | (LocalAssum(nme,_) as assum)::lp' , t::l' when occur_meta sigma t ->
           (* nme has not been resolved, let us re-abstract it. Same
              name but type updated by instantiation of other args. *)
           let sigma,new_typ_of_t = Typing.type_of clause.env sigma t in
           let r = Retyping.relevance_of_type env sigma new_typ_of_t in
-          let liftedargs = List.map liftrel args in
           (* lifting rels in the accumulator args *)
-          let sigma,hd' = rebuild_lambdas sigma lp' (liftedargs@[mkRel 1 ]) hd l' in
+          let liftedargs = List.map liftrel accargs in
+          let sigma,hd',prods =
+            rebuild sigma concl lp' (mkRel 1 ::liftedargs) (assum::accprods) hd l' in
           (* replace meta variable by the abstracted variable *)
           let hd'' = subst_term sigma t hd' in
-          (* lambda expansion *)
-          sigma,mkLambda ({nme with binder_relevance=r},new_typ_of_t,hd'')
-        | Context.Rel.Declaration.LocalAssum _::lp' , t::l' ->
-          let sigma,hd' = rebuild_lambdas sigma lp' (args@[t]) hd l' in
-          sigma,hd'
-        | Context.Rel.Declaration.LocalDef _::lp' , _ ->
-           (* letins have been reduced in l and should anyway not
-              correspond to an arg, we ignore them. *)
-          let sigma,hd' = rebuild_lambdas sigma lp' args hd l in
-          sigma,hd'
+          (* we reabstract the non solved argument *)
+          sigma,mkLambda ({nme with binder_relevance=r},new_typ_of_t,hd''),prods
+        | (LocalAssum (nme,tnme))::lp' , t::l' ->
+           (* thie arg was solved, we update thing accordingly *)
+           (* we replace in lprod the arg by rel 1 *)
+           let substlp' = (* rel 1 must be lifted along the context *)
+             map_rel_context_lift (fun i x -> map_constr (replace_term sigma (mkRel i) t) x)
+               env 1 lp' in
+           (* Then we lift every rel above the just removed arg *)
+           let updatedlp' =
+             map_rel_context_lift (fun i x -> map_constr (liftn (-1) i) x) env 1 substlp' in
+           (* We replace also the term in the conclusion, its rel index is the
+              length of the list lprd (remaining products before concl) *)
+           let concl'' = replace_term sigma (mkRel (List.length lprd)) t concl in
+           (* we also lift in concl the index above the arg *)
+           let concl' = liftn (-1) (List.length lprd) concl'' in
+           rebuild sigma concl' updatedlp' (t::accargs) accprods hd l'
+        | LocalDef _ as assum::lp' , _ ->
+           (* letins have been reduced in l and should anyway not correspond to an arg, we
+              ignore them, but we remember them in accprod, so that they remain in the type. *)
+           rebuild sigma concl lp' accargs (assum::accprods) hd l
         | _ ,_ -> assert false in
-      let sigma,hd = rebuild_lambdas sigma (List.rev lprod) [] thd tstack in
-      Evd.clear_metas sigma, hd
+      let sigma,hd,newtype = rebuild sigma concl (List.rev lprod) [] [] thd tstack in
+      Evd.clear_metas sigma, hd, newtype
   in
-  let typ = Retyping.get_type_of env sigma term in
   let tac =
     match EConstr.kind sigma (fst(EConstr.decompose_app sigma (snd(EConstr.decompose_lam_assum sigma c)))) with
     | Var id when Id.List.mem id (Tacmach.New.pf_ids_of_hyps gl) ->
