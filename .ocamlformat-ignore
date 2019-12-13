@@ -39,7 +39,6 @@ plugins/firstorder/*
 plugins/fourier/*
 plugins/funind/*
 plugins/ltac/*
-plugins/micromega/*
 plugins/nsatz/*
 plugins/omega/*
 plugins/rtauto/*
@@ -49,4 +48,6 @@ plugins/setoid_ring/*
 plugins/ssr/*
 plugins/ssrmatching/*
 plugins/syntax/*
-# Enabled: none for now
+# Enabled: micromega
+# plugins/micromega/*
+plugins/micromega/micromega.ml
