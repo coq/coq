@@ -10,6 +10,7 @@
 open Num
 
 type interval = num option * num option
+
 val pp : out_channel -> interval -> unit
 val inter : interval -> interval -> interval option
 val range : interval -> num option

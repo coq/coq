@@ -13,26 +13,17 @@ module IMap : CSig.MapS with type key = int
 type proof
 
 module Fourier : sig
-
-
-  val find_point : Polynomial.cstr list ->
-    (Vect.t, proof) Util.union
-
-  val optimise : Vect.t ->
-    Polynomial.cstr list ->
-    Itv.interval option
-
+  val find_point : Polynomial.cstr list -> (Vect.t, proof) Util.union
+  val optimise : Vect.t -> Polynomial.cstr list -> Itv.interval option
 end
 
 val pp_proof : out_channel -> proof -> unit
 
 module Proof : sig
-
-  val mk_proof : Polynomial.cstr list ->
-    proof -> (Vect.t * Polynomial.cstr) list
+  val mk_proof :
+    Polynomial.cstr list -> proof -> (Vect.t * Polynomial.cstr) list
 
   val add_op : Polynomial.op -> Polynomial.op -> Polynomial.op
-
 end
 
 exception TimeOut
