@@ -37,8 +37,8 @@ CAMLextern void minor_collection (void);
 
 #define Make_header(wosize, tag, color)                                 \
   (((header_t) (((header_t) (wosize) << 10)                             \
-		+ (color)                                               \
-		+ (tag_t) (tag)))   					\
+                + (color)                                               \
+                + (tag_t) (tag)))                                       \
    )
 #endif
 
@@ -53,7 +53,7 @@ CAMLextern void minor_collection (void);
   }                                                                     \
   Hd_hp (young_ptr) = Make_header ((wosize), (tag), Caml_black);        \
   (result) = Val_hp (young_ptr);                                        \
-  }while(0) 
+  }while(0)
 
 
 #endif /*_COQ_CAML_GC_ */
