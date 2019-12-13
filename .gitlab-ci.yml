@@ -18,7 +18,7 @@ stages:
 variables:
   # Format: $IMAGE-V$DATE [Cache is not used as of today but kept here
   # for reference]
-  CACHEKEY: "bionic_coq-V2019-12-03-V81"
+  CACHEKEY: "bionic_coq-V2019-12-08-V82"
   IMAGE: "$CI_REGISTRY_IMAGE:$CACHEKEY"
   # By default, jobs run in the base switch; override to select another switch
   OPAM_SWITCH: "base"
@@ -310,7 +310,8 @@ lint:
   dependencies: []
   variables:
     GIT_DEPTH: "" # we need an unknown amount of history for per-commit linting
-    OPAM_SWITCH: base
+    OPAM_SWITCH: "edge"
+    OPAM_VARIANT: "+flambda"
 
 pkg:opam:
   stage: stage-1
