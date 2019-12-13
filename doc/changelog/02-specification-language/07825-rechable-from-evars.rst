@@ -1,5 +1,6 @@
-- In `refine`, new existential variables unified with existing ones are no
-  longer considered as fresh. The behavior of `simple refine` no longer depend on
+- **Changed:**
+  In :tacn:`refine`, new existential variables unified with existing ones are no
+  longer considered as fresh. The behavior of :tacn:`simple refine` no longer depends on
   the orientation of evar-evar unification problems, and new existential variables
   are always turned into (unshelved) goals. This can break compatibility in
   some cases (`#7825 <https://github.com/coq/coq/pull/7825>`_, by Matthieu
