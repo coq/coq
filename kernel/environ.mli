@@ -296,7 +296,13 @@ val add_constraints : Univ.Constraint.t -> env -> env
 (** Check constraints are satifiable in the environment. *)
 val check_constraints : Univ.Constraint.t -> env -> bool
 val push_context : ?strict:bool -> Univ.UContext.t -> env -> env
+(* [push_context ?(strict=false) ctx env] pushes the universe context to the environment.
+   @raise UGraph.AlreadyDeclared if one of the universes is already declared.
+*)
 val push_context_set : ?strict:bool -> Univ.ContextSet.t -> env -> env
+(* [push_context_set ?(strict=false) ctx env] pushes the universe context set
+  to the environment. It does not fail if one of the universes is already declared. *)
+
 val push_constraints_to_env : 'a Univ.constrained -> env -> env
 
 val push_subgraph : Univ.ContextSet.t -> env -> env

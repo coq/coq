@@ -113,7 +113,7 @@ val add_modtype :
 (** Adding universe constraints *)
 
 val push_context_set :
-  bool -> Univ.ContextSet.t -> safe_transformer0
+  strict:bool -> Univ.ContextSet.t -> safe_transformer0
 
 val add_constraints :
   Univ.Constraint.t -> safe_transformer0

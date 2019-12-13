@@ -550,7 +550,7 @@ let intern_arg (acc, cst) (idl,(typ,ann)) =
   let lib_dir = Lib.library_dp() in
   let env = Global.env() in
   let (mty, _, cst') = Modintern.interp_module_ast env Modintern.ModType typ in
-  let () = Global.push_context_set true cst' in
+  let () = Global.push_context_set ~strict:true cst' in
   let env = Global.env () in
   let sobjs = get_module_sobjs false env inl mty in
   let mp0 = get_module_path mty in
@@ -674,7 +674,7 @@ module RawModOps = struct
 let start_module export id args res fs =
   let mp = Global.start_module id in
   let arg_entries_r, cst = intern_args args in
-  let () = Global.push_context_set true cst in
+  let () = Global.push_context_set ~strict:true cst in
   let env = Global.env () in
   let res_entry_o, subtyps, cst = match res with
     | Enforce (res,ann) ->
@@ -689,7 +689,7 @@ let start_module export id args res fs =
       let typs, cst = build_subtypes env mp arg_entries_r resl in
       None, typs, cst
   in
-  let () = Global.push_context_set true cst in
+  let () = Global.push_context_set ~strict:true cst in
   openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
   let prefix = Lib.start_module export id mp fs in
   Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModule prefix));
@@ -782,7 +782,7 @@ let declare_module id args res mexpr_o fs =
   | None -> None
   | _ -> inl_res
   in
-  let () = Global.push_context_set true cst in
+  let () = Global.push_context_set ~strict:true cst in
   let mp_env,resolver = Global.add_module id entry inl in
 
   (* Name consistency check : kernel vs. library *)
@@ -804,10 +804,10 @@ module RawModTypeOps = struct
 let start_modtype id args mtys fs =
   let mp = Global.start_modtype id in
   let arg_entries_r, cst = intern_args args in
-  let () = Global.push_context_set true cst in
+  let () = Global.push_context_set ~strict:true cst in
   let env = Global.env () in
   let sub_mty_l, cst = build_subtypes env mp arg_entries_r mtys in
-  let () = Global.push_context_set true cst in
+  let () = Global.push_context_set ~strict:true cst in
   openmodtype_info := sub_mty_l;
   let prefix = Lib.start_modtype id mp fs in
   Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModtype prefix));
@@ -835,19 +835,19 @@ let declare_modtype id args mtys (mty,ann) fs =
      then we adds the module parameters to the global env. *)
   let mp = Global.start_modtype id in
   let arg_entries_r, cst = intern_args args in
-  let () = Global.push_context_set true cst in
+  let () = Global.push_context_set ~strict:true cst in
   let params = mk_params_entry arg_entries_r in
   let env = Global.env () in
   let mte, _, cst = Modintern.interp_module_ast env Modintern.ModType mty in
-  let () = Global.push_context_set true cst in
+  let () = Global.push_context_set ~strict:true cst in
   let env = Global.env () in
   (* We check immediately that mte is well-formed *)
   let _, _, _, cst = Mod_typing.translate_mse env None inl mte in
-  let () = Global.push_context_set true cst in
+  let () = Global.push_context_set ~strict:true cst in
   let env = Global.env () in
   let entry = params, mte in
   let sub_mty_l, cst = build_subtypes env mp arg_entries_r mtys in
-  let () = Global.push_context_set true cst in
+  let () = Global.push_context_set ~strict:true cst in
   let env = Global.env () in
   let sobjs = get_functor_sobjs false env inl entry in
   let subst = map_mp (get_module_path (snd entry)) mp empty_delta_resolver in
@@ -903,7 +903,7 @@ let type_of_incl env is_mod = function
 let declare_one_include (me_ast,annot) =
   let env = Global.env() in
   let me, kind, cst = Modintern.interp_module_ast env Modintern.ModAny me_ast in
-  let () = Global.push_context_set true cst in
+  let () = Global.push_context_set ~strict:true cst in
   let env = Global.env () in
   let is_mod = (kind == Modintern.Module) in
   let cur_mp = Lib.current_mp () in
