@@ -573,16 +573,26 @@ Ltac zify_N := repeat zify_N_rel; repeat zify_N_op; unfold Z_of_N' in *.
 Require  Import ZifyClasses ZifyInst.
 Require  Zify.
 
+
+(** [is_inj T] returns true iff the type T has an injection *)
+Ltac is_inj T :=
+  match T with
+  | _  => let x := constr:(_ : InjTyp T _ ) in true
+  | _  => false
+  end.
+
 (* [elim_let] replaces a let binding (x := e : t)
    by an equation (x = e) if t is an injected type *)
-
-Ltac elim_binding x t ty :=
-  let h := fresh "heq_" x in
-  pose proof (@eq_refl ty x : @eq ty x t) as h;
-  try clearbody x.
-
-Ltac elim_let := zify_iter_let elim_binding.
+Ltac elim_let :=
+  repeat
+  match goal with
+  | x := ?t : ?ty |- _ =>
+         let b := is_inj ty in
+         match b with
+         | true => let h := fresh "heq_" x in pose proof (eq_refl : x = t) as h; clearbody x
+         end
+  end.
 
 Ltac zify :=
   intros ; elim_let ;
-  Zify.zify  ; ZifyInst.zify_saturate.
+  Zify.zify  ; ZifyInst.saturate.

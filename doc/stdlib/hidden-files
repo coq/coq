@@ -32,6 +32,7 @@ theories/micromega/Env.v
 theories/micromega/EnvRing.v
 theories/micromega/Fourier.v
 theories/micromega/Fourier_util.v
+theories//micromega/PreOmega.v
 theories/micromega/Lia.v
 theories/micromega/Lqa.v
 theories/micromega/Lra.v
@@ -52,11 +53,6 @@ theories/micromega/ZifyComparison.v
 theories/micromega/ZifyClasses.v
 theories/micromega/Zify.v
 theories/nsatz/Nsatz.v
-theories/omega/Omega.v
-theories/omega/OmegaLemmas.v
-theories/omega/OmegaPlugin.v
-theories/omega/OmegaTactic.v
-theories/omega/PreOmega.v
 theories/quote/Quote.v
 theories/romega/ROmega.v
 theories/romega/ReflOmegaCore.v

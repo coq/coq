@@ -1739,5 +1739,3 @@ Notation n_of_Z := Z.to_N (only parsing).
 (* Local Variables: *)
 (* coding: utf-8 *)
 (* End: *)
-
-

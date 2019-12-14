@@ -40,7 +40,6 @@ plugins/fourier/*
 plugins/funind/*
 plugins/ltac/*
 plugins/nsatz/*
-plugins/omega/*
 plugins/rtauto/*
 plugins/setoid/*
 plugins/ing/*

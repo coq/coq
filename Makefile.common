@@ -102,7 +102,7 @@ CORESRCDIRS:=\
   tactics 	vernac		stm		toplevel
 
 PLUGINDIRS:=\
-  omega		micromega \
+  micromega \
   setoid_ring 	extraction \
   cc 		funind 		firstorder 	derive \
   rtauto 	nsatz           syntax          btauto \
@@ -138,7 +138,6 @@ CORECMA:=config/config.cma clib/clib.cma lib/lib.cma kernel/kernel.cma library/l
 # plugins object files
 ###########################################################################
 
-OMEGACMO:=plugins/omega/omega_plugin.cmo
 MICROMEGACMO:=plugins/micromega/micromega_plugin.cmo
 RINGCMO:=plugins/setoid_ring/newring_plugin.cmo
 NSATZCMO:=plugins/nsatz/nsatz_plugin.cmo
@@ -161,7 +160,7 @@ SSRCMO:=plugins/ssr/ssreflect_plugin.cmo
 LTAC2CMO:=user-contrib/Ltac2/ltac2_plugin.cmo
 ZIFYCMO:=plugins/micromega/zify_plugin.cmo
 
-PLUGINSCMO:=$(LTACCMO) $(OMEGACMO) $(MICROMEGACMO) \
+PLUGINSCMO:=$(LTACCMO) $(MICROMEGACMO) \
         $(RINGCMO) \
         $(EXTRACTIONCMO) \
         $(CCCMO)  $(FOCMO) $(RTAUTOCMO) $(BTAUTOCMO) \

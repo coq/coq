@@ -307,21 +307,6 @@ package "plugins" (
     plugin(native)  = "tauto_plugin.cmxs"
   )
 
-  package "omega" (
-
-    description = "Coq omega plugin"
-    version     = "8.12"
-
-    requires    = "coq.plugins.ltac"
-    directory   = "omega"
-
-    archive(byte)    = "omega_plugin.cmo"
-    archive(native)  = "omega_plugin.cmx"
-
-    plugin(byte)    = "omega_plugin.cmo"
-    plugin(native)  = "omega_plugin.cmxs"
-  )
-
   package "micromega" (
 
     description = "Coq micromega plugin"
