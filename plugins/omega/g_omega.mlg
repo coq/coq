@@ -45,13 +45,15 @@ let omega_tactic l =
     (Tacticals.New.tclREPEAT (Tacticals.New.tclTHENLIST tacs))
     (omega_solver)
 
+let omega_deprecation = Deprecation.make ~since:"v8.11" ~note:"please use the `lia` tactic" ()
+
 }
 
-TACTIC EXTEND omega
+TACTIC EXTEND omega DEPRECATED { omega_deprecation }
 |  [ "omega" ] -> { omega_tactic [] }
 END
 
-TACTIC EXTEND omega'
+TACTIC EXTEND omega' DEPRECATED { omega_deprecation }
 | [ "omega" "with" ne_ident_list(l) ] ->
     { omega_tactic (List.map Names.Id.to_string l) }
 | [ "omega" "with" "*" ] ->
