@@ -57,4 +57,3 @@ Require Import ZArith.
 
 SearchAbout Z.mul Z.add "distr".
 SearchAbout "+"%Z "*"%Z "distr" -positive -Prop.
-SearchAbout (?x * _ + ?x * _)%Z outside OmegaLemmas.

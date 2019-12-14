@@ -18,9 +18,13 @@ Qed.
 
 (** NB: this could be disabled for compatibility reasons *)
 
+(* after replacement by lia, omega will always use local hypotheses
+
 Unset Omega UseLocalDefs.
 
 Goal let x := 4 in x = 4.
 intros.
 Fail omega.
 Abort.
+
+*)
