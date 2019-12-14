@@ -4,3 +4,4 @@ sequence-style=terminator
 cases-exp-indent=2
 field-space=loose
 exp-grouping=preserve
+break-cases=fit

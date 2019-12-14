@@ -10,9 +10,8 @@
 open Polynomial
 
 val optimise : Vect.t -> cstr list -> (Num.num option * Num.num option) option
-
 val find_point : cstr list -> Vect.t option
-
 val find_unsat_certificate : cstr list -> Vect.t option
 
-val integer_solver : (cstr * ProofFormat.prf_rule) list -> ProofFormat.proof option
+val integer_solver :
+  (cstr * ProofFormat.prf_rule) list -> ProofFormat.proof option
