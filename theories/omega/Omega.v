@@ -9,6 +9,8 @@
 (************************************************************************)
 
 Require Export ZArith_base.
+(* For omega-exported zify *)
+Require Export PreOmega.
 Require Export Lia.
 
 Hint Resolve Z.le_refl Z.add_comm Z.add_assoc Z.mul_comm Z.mul_assoc Z.add_0_l
