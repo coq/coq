@@ -72,7 +72,7 @@
 
     - [[Geuvers01]] H. Geuvers, "Inconsistency of Classical Logic in Type
       Theory", 2001, revised 2007
-      (see {{http://www.cs.ru.nl/~herman/PUBS/newnote.ps.gz}}).
+      (see external link {{http://www.cs.ru.nl/~herman/PUBS/newnote.ps.gz}}).
 *)
 
 
