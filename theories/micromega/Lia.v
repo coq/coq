@@ -34,6 +34,7 @@ Ltac lia := PreOmega.zify; xlia zchecker.
 Ltac nia := PreOmega.zify; xnlia zchecker.
 
 Ltac omega := lia.
+Tactic Notation "omega" "with" "*" := lia.
 
 (* Local Variables: *)
 (* coding: utf-8 *)
