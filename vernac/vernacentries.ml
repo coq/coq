@@ -1701,7 +1701,9 @@ let vernac_print ~pstate ~atts =
   | PrintCoercions -> Prettyp.print_coercions ()
   | PrintCoercionPaths (cls,clt) ->
     Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt)
-  | PrintCanonicalConversions -> Prettyp.print_canonical_projections env sigma
+  | PrintCanonicalConversions qids ->
+    let grefs = List.map Smartlocate.smart_global qids in
+    Prettyp.print_canonical_projections env sigma grefs
   | PrintUniverses (sort, subgraph, dst) -> print_universes ~sort ~subgraph dst
   | PrintHint r -> Hints.pr_hint_ref env sigma (smart_global r)
   | PrintHintGoal ->

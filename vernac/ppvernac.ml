@@ -513,8 +513,8 @@ let string_of_theorem_kind = let open Decls in function
       keyword "Print Coercion Paths" ++ spc()
       ++ pr_class_rawexpr s ++ spc()
       ++ pr_class_rawexpr t
-    | PrintCanonicalConversions ->
-      keyword "Print Canonical Structures"
+    | PrintCanonicalConversions qids ->
+      keyword "Print Canonical Structures" ++ prlist pr_smart_global qids
     | PrintTypingFlags ->
       keyword "Print Typing Flags"
     | PrintTables ->

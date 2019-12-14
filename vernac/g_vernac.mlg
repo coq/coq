@@ -1026,7 +1026,8 @@ GRAMMAR EXTEND Gram
       | IDENT "Coercions" -> { PrintCoercions }
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr
          -> { PrintCoercionPaths (s,t) }
-      | IDENT "Canonical"; IDENT "Projections" -> { PrintCanonicalConversions }
+      | IDENT "Canonical"; IDENT "Projections"; qids = LIST0 smart_global
+         -> { PrintCanonicalConversions qids }
       | IDENT "Typing"; IDENT "Flags" -> { PrintTypingFlags }
       | IDENT "Tables" -> { PrintTables }
       | IDENT "Options" -> { PrintTables (* A Synonymous to Tables *) }

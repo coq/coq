@@ -53,7 +53,7 @@ val print_graph : unit -> Pp.t
 val print_classes : unit -> Pp.t
 val print_coercions : unit -> Pp.t
 val print_path_between : Coercionops.cl_typ -> Coercionops.cl_typ -> Pp.t
-val print_canonical_projections : env -> Evd.evar_map -> Pp.t
+val print_canonical_projections : env -> Evd.evar_map -> GlobRef.t list -> Pp.t
 
 (** Pretty-printing functions for type classes and instances *)
 val print_typeclasses : unit -> Pp.t
