@@ -15,117 +15,95 @@
 
 ########## Build system ##########
 
-/Makefile*        @gares
-/dev/tools/make_git_revision.sh @gares
+/Makefile*                      @coq/legacy-build-maintainers
+/dev/tools/make_git_revision.sh @coq/legacy-build-maintainers
 
-/configure*       @ejgallego
+/configure*        @coq/legacy-build-maintainers @coq/build-maintainers
 
-/META.coq.in      @ejgallego
+/META.coq.in       @coq/legacy-build-maintainers
 
-/dev/build/windows @MSoegtropIMC
-# Secondary maintainer @maximedenes
+/dev/build/windows @coq/windows-build-maintainers
 
 ########## CI infrastructure ##########
 
-/dev/ci/          @coq/ci-maintainers
-/.travis.yml      @coq/ci-maintainers
-/.gitlab-ci.yml   @coq/ci-maintainers
-/Makefile.ci      @coq/ci-maintainers
-/dev/ci/nix	@coq/nix-maintainers
+/dev/ci/             @coq/ci-maintainers
+/.travis.yml         @coq/ci-maintainers
+/.gitlab-ci.yml      @coq/ci-maintainers
+/azure-pipelines.yml @coq/ci-maintainers
+/Makefile.ci         @coq/ci-maintainers
+
+/dev/ci/nix          @coq/nix-maintainers
+*.nix                @coq/nix-maintainers
 
 /dev/ci/user-overlays/*.sh @ghost
 # Trick to avoid getting review requests
 # each time someone adds an overlay
 
-/dev/ci/*.bat          @coq/ci-maintainers
-
-*.nix             @coq/nix-maintainers
-
-azure-pipelines.yml @coq/ci-maintainers
-/dev/ci/azure* @coq/ci-maintainers
-
 ########## Documentation ##########
 
-/README.md        @Zimmi48
-# Secondary maintainer @maximedenes
+/README.md             @coq/doc-maintainers
+/INSTALL.md            @coq/doc-maintainers
 
-/INSTALL*         @Zimmi48
-# Secondary maintainer @maximedenes
+/CODE_OF_CONDUCT.md    @coq/code-of-conduct-team
 
-/CODE_OF_CONDUCT.md    @Zimmi48
-# Secondary maintainer @mattam82
+/doc/                  @coq/doc-maintainers
+/Makefile.doc          @coq/doc-maintainers
 
-/dev/doc/         @Zimmi48
-# Secondary maintainer @maximedenes
+/dev/doc/              @coq/doc-maintainers
 
+/doc/changelog/*/*.rst @ghost
 /dev/doc/changes.md    @ghost
 # Trick to avoid getting review requests
-# each time someone modifies the dev changelog
+# each time someone modifies the changelog
 
-/doc/             @coq/doc-maintainers
-/Makefile.doc     @coq/doc-maintainers
+/man/                  @coq/doc-maintainers
 
-/man/             @silene
-# Secondary maintainer @maximedenes
-
-/doc/plugin_tutorial/ @coq/plugin-tutorial-maintainers
+/doc/plugin_tutorial/  @coq/plugin-tutorial-maintainers
 
 ########## Coqchk ##########
 
-/checker/               @ppedrot
-/test-suite/coqchk/     @ppedrot
-# Secondary maintainers @maximedenes
+/checker/              @coq/kernel-maintainers
+/test-suite/coqchk/    @coq/kernel-maintainers
 
 ########## Coq lib ##########
 
-/clib/            @ppedrot
-/test-suite/unit-tests/clib/ @ppedrot
-# Secondary maintainer @ejgallego
-
-/lib/             @ejgallego
-# Secondary maintainer @ppedrot
-
-/lib/cWarnings.* @maximedenes
-# Secondary maintainer @ejgallego
+/clib/                       @coq/lib-maintainers
+/test-suite/unit-tests/clib/ @coq/lib-maintainers
+/lib/                        @coq/lib-maintainers
 
 ########## Proof engine ##########
 
-/engine/          @ppedrot
-# Secondary maintainer @aspiwack
+/engine/          @coq/engine-maintainers
 
-/engine/universes.* @SkySkimmer
-/engine/univops.* @SkySkimmer
-/engine/uState.* @SkySkimmer
-# Secondary maintainer @mattam82
+/engine/univ*     @coq/universes-maintainers
+/engine/uState.*  @coq/universes-maintainers
 
 ########## CoqIDE ##########
 
-/ide/             @ppedrot
-/test-suite/ide/  @ppedrot
-# Secondary maintainers @gares @herbelin
+/ide/             @coq/coqide-maintainers
+/ide/protocol/    @coq/stm-maintainers
+/test-suite/ide/  @coq/stm-maintainers
 
-########## Interpretation ##########
+########## Desugaring ##########
 
-/interp/          @herbelin
-# Secondary maintainer @ejgallego
+/interp/          @coq/extensible-syntax-maintainers
 
 ########## Kernel ##########
 
-/kernel/          @maximedenes
-# Secondary maintainers @barras @ppedrot
+/kernel/          @coq/kernel-maintainers
 
-/kernel/byterun/  @maximedenes
-# Secondary maintainer @silene
+/kernel/byterun/  @coq/vm-native-maintainers
+/kernel/native*   @coq/vm-native-maintainers
+/kernel/vm*       @coq/vm-native-maintainers
+/kernel/vconv.*   @coq/vm-native-maintainers
 
-/kernel/sorts.* @SkySkimmer
-/kernel/uGraph.* @SkySkimmer
-/kernel/univ.* @SkySkimmer
-# Secondary maintainer @mattam82
+/kernel/sorts.*   @coq/universes-maintainers
+/kernel/uGraph.*  @coq/universes-maintainers
+/kernel/univ.*    @coq/universes-maintainers
 
 ########## Library ##########
 
-/library/         @silene
-# Secondary maintainer @gares
+/library/         @coq/library-maintainers
 
 ########## Parser ##########
 
@@ -135,33 +113,26 @@ azure-pipelines.yml @coq/ci-maintainers
 
 ########## Plugins ##########
 
-/plugins/btauto/  @ppedrot
-# Secondary maintainer @herbelin
+/plugins/btauto/       @coq/btauto-maintainers
 
-/plugins/cc/           @PierreCorbineau
-# Secondary maintainer @herbelin
+/plugins/cc/           @coq/cc-maintainers
 
-/plugins/derive/        @aspiwack
-# Secondary maintainer @ppedrot
+/plugins/derive/       @coq/derive-maintainers
 
-/plugins/extraction/    @maximedenes
+/plugins/extraction/   @coq/extraction-maintainers
 
-/plugins/firstorder/   @PierreCorbineau
-# Secondary maintainer @herbelin
+/plugins/firstorder/   @coq/firstorder-maintainers
 
-/plugins/funind/        @forestjulien
-# Secondary maintainer @Matafou
+/plugins/funind/       @coq/funind-maintainers
 
-/plugins/ltac/          @ppedrot
-# Secondary maintainer @herbelin
+/plugins/ltac/         @coq/ltac-maintainers
 
 /plugins/micromega/    @coq/micromega-maintainers
 /test-suite/micromega/ @coq/micromega-maintainers
 
-/plugins/nsatz/         @thery
-# Secondary maintainer @ppedrot
+/plugins/nsatz/        @coq/nsatz-maintainers
 
-/plugins/setoid_ring/   @coq/ring-maintainers
+/plugins/setoid_ring/  @coq/ring-maintainers
 
 /plugins/ssrmatching/  @coq/ssreflect-maintainers
 /plugins/ssr/          @coq/ssreflect-maintainers
@@ -169,190 +140,101 @@ azure-pipelines.yml @coq/ci-maintainers
 
 /plugins/syntax/       @coq/parsing-maintainers
 
-/plugins/rtauto/       @PierreCorbineau
-# Secondary maintainer @herbelin
+/plugins/rtauto/       @coq/rtauto-maintainers
 
-/user-contrib/Ltac2    @ppedrot
+/user-contrib/Ltac2    @coq/ltac2-maintainers
 
 ########## Pretyper ##########
 
-/pretyping/       @mattam82
-# Secondary maintainer @gares
+/pretyping/             @coq/pretyper-maintainers
 
-/pretyping/vnorm.*     @maximedenes
-/pretyping/nativenorm.* @maximedenes
-# Secondary maintainer @ppedrot
+/pretyping/vnorm.*      @coq/vm-native-maintainers
+/pretyping/nativenorm.* @coq/vm-native-maintainers
 
 ########## Pretty printer ##########
 
-/printing/        @herbelin
-# Secondary maintainer @mattam82
+/printing/        @coq/extensible-syntax-maintainers
 
 ########## Proof infrastructure ##########
 
-/proofs/          @ppedrot
-# Secondary maintainer @Zimmi48
+/proofs/          @coq/engine-maintainers
 
 ########## STM ##########
 
-/stm/                    @gares
-/test-suite/interactive/ @gares
-/test-suite/stm/         @gares
-/test-suite/vio/         @gares
-# Secondary maintainer   @ejgallego
+/stm/                    @coq/stm-maintainers
+/test-suite/interactive/ @coq/stm-maintainers
+/test-suite/stm/         @coq/stm-maintainers
+/test-suite/vio/         @coq/stm-maintainers
 
 ########## Tactics ##########
 
-/tactics/         @ppedrot
-# Secondary maintainer @mattam82
+/tactics/         @coq/tactics-maintainers
 
-/tactics/class_tactics.* @mattam82
-/test-suite/typeclasses/ @mattam82
-# Secondary maintainer   @ppedrot
+/tactics/class_tactics.* @coq/typeclasses-maintainers
+/test-suite/typeclasses/ @coq/typeclasses-maintainers
 
 ########## Standard library ##########
 
-/theories/Arith/          @herbelin
+/theories/         @coq/stdlib-maintainers
 
-/theories/Bool/           @herbelin
+/theories/Classes/ @coq/typeclasses-maintainers
 
-/theories/Classes/        @mattam82
-# Secondary maintainer @herbelin
+/theories/Reals/   @coq/reals-library-maintainers
 
-/theories/FSets/          @herbelin
-
-/theories/Init/           @ppedrot
-
-/theories/Lists/          @ppedrot
-
-/theories/Logic/          @herbelin
-# Secondary maintainer @ppedrot
-
-/theories/MSets/          @herbelin
-
-/theories/NArith/         @herbelin
-
-/theories/Numbers/        @herbelin
-
-/theories/PArith/         @herbelin
-
-/theories/Program/        @mattam82
-# Secondary maintainer @herbelin
-
-/theories/QArith/         @herbelin
-
-/theories/Reals/          @coq/reals-library-maintainers
-
-/theories/Relations/      @mattam82
-# Secondary maintainer @ppedrot
-
-/theories/Setoids/        @mattam82
-# Secondary maintainer @ppedrot
-
-/theories/Sets/           @herbelin
-
-/theories/Sorting/        @herbelin
-
-/theories/Strings/        @herbelin
-
-/theories/Structures/     @herbelin
-
-/theories/Unicode/        @herbelin
-
-/theories/Wellfounded/    @mattam82
-
-/theories/ZArith/         @herbelin
-
-/theories/Compat/         @JasonGross
-# Secondary maintainer @Zimmi48
-
-/theories/Vectors/        @herbelin
+/theories/Compat/  @coq/compat-maintainers
 
 ########## Tools ##########
 
-/tools/coqdoc/         @silene
-/test-suite/coqdoc/    @silene
-# Secondary maintainer @mattam82
+/tools/coqdoc/            @coq/coqdoc-maintainers
+/test-suite/coqdoc/       @coq/coqdoc-maintainers
+/tools/coqwc*             @coq/coqdoc-maintainers
+/test-suite/coqwc/        @coq/coqdoc-maintainers
 
-/tools/coq_makefile*      @gares
-/tools/CoqMakefile*       @gares
-/test-suite/coq-makefile/ @gares
-# Secondary maintainer    @silene
+/tools/coq_makefile*      @coq/coq-makefile-maintainers
+/tools/CoqMakefile*       @coq/coq-makefile-maintainers
+/test-suite/coq-makefile/ @coq/coq-makefile-maintainers
 
-/tools/coqdep*          @ppedrot
-# Secondary maintainer @maximedenes
+/tools/TimeFileMaker.py   @coq/coq-makefile-maintainers
+/tools/make-*-tim*.py     @coq/coq-makefile-maintainers
 
-/tools/coq_tex*         @silene
+/tools/coqdep*  @coq/legacy-build-maintainers @coq/build-maintainers
+
+/tools/coq_tex*        @silene
 # Secondary maintainer @gares
-
-/tools/coqwc*          @silene
-/test-suite/coqwc/     @silene
-# Secondary maintainer @gares
-
-/tools/TimeFileMaker.py                 @JasonGross
-/tools/make-both-single-timing-files.py @JasonGross
-/tools/make-both-time-files.py          @JasonGross
-/tools/make-one-time-file.py            @JasonGross
 
 ########## Toplevel ##########
 
-/toplevel/        @ejgallego
-# Secondary maintainer @gares
+/toplevel/   @coq/toplevel-maintainers
+/topbin/     @coq/toplevel-maintainers
 
 ########## Vernacular ##########
 
-/vernac/          @mattam82
-# Secondary maintainer @maximedenes
+/vernac/              @coq/vernac-maintainers
 
-/vernac/metasyntax.*   @coq/parsing-maintainers
+/vernac/metasyntax.*  @coq/parsing-maintainers
+
+/vernac/classes.*     @coq/typeclasses-maintainers
 
 ########## Test suite ##########
 
-/test-suite/Makefile    @gares
-/test-suite/_CoqProject @gares
-/test-suite/README.md   @gares
-# Secondary maintainer  @SkySkimmer
-
-/test-suite/report.sh   @SkySkimmer
+/test-suite/Makefile        @coq/test-suite-maintainers
+/test-suite/README.md       @coq/test-suite-maintainers
+/test-suite/report.sh       @coq/test-suite-maintainers
+/test-suite/unit-tests/src/ @coq/test-suite-maintainers
 
 /test-suite/complexity/ @herbelin
 
-/test-suite/unit-tests/src/ @jfehrle
-# Secondary maintainer      @SkySkimmer
-
-/test-suite/success/Compat*.v @JasonGross
+/test-suite/success/Compat*.v @coq/compat-maintainers
 
 ########## Developer tools ##########
 
-/dev/tools/backport-pr.sh     @Zimmi48
-# Secondary maintainer @maximedenes
+/dev/tools/ @coq/dev-tools-maintainers
 
-/dev/tools/change-header      @herbelin
-
-/dev/tools/check-eof-newline.sh @SkySkimmer
-
-/dev/tools/coqdev.el @SkySkimmer
-
-/dev/tools/github-check-prs.py @SkySkimmer
-
-/dev/tools/make-changelog.sh @SkySkimmer
-# Secondary maintainer @Zimmi48
-
-/dev/tools/merge-pr.sh @maximedenes
-# Secondary maintainer @gares
-
-/dev/tools/pre-commit @SkySkimmer
-
-/dev/tools/check-owners*.sh @SkySkimmer
-# Secondary maintainer @maximedenes
-
-/dev/tools/update-compat.py @JasonGross
-/test-suite/tools/update-compat/ @JasonGross
-# Secondary maintainer @Zimmi48
+/dev/tools/update-compat.py      @coq/compat-maintainers
+/test-suite/tools/update-compat/ @coq/compat-maintainers
 
 ########## Dune  ##########
 
-/.ocamlinit            @ejgallego
-*dune*                 @ejgallego
-*.opam                 @ejgallego
-# Secondary maintainer @Zimmi48
+/.ocamlinit  @coq/build-maintainers
+*dune*       @coq/build-maintainers
+*.opam       @coq/build-maintainers
