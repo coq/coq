@@ -21,7 +21,7 @@ RecLemmas
 Library
 Prettyp
 Lemmas
-Class
+ComCoercion
 Auto_ind_decl
 Search
 Indschemes

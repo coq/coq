@@ -1326,7 +1326,7 @@ let understand_ltac flags env sigma lvar kind c =
   (sigma, c)
 
 let path_convertible env sigma i p q =
-  let open Classops in
+  let open Coercionops in
   let mkGRef ref          = DAst.make @@ Glob_term.GRef(ref,None) in
   let mkGVar id           = DAst.make @@ Glob_term.GVar(id) in
   let mkGApp(rt,rtl)      = DAst.make @@ Glob_term.GApp(rt,rtl) in
@@ -1379,4 +1379,4 @@ let path_convertible env sigma i p q =
       let _ = Evarconv.unify_delay env sigma tp tq in true
   with Evarconv.UnableToUnify _ | PretypeError _ -> false
 
-let _ = Classops.install_path_comparator path_convertible
+let _ = Coercionops.install_path_comparator path_convertible

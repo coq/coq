@@ -49,9 +49,9 @@ let get_goal_or_global_context ~pstate glnum =
   | Some p -> Pfedit.get_goal_context p glnum
 
 let cl_of_qualid = function
-  | FunClass -> Classops.CL_FUN
-  | SortClass -> Classops.CL_SORT
-  | RefClass r -> Class.class_of_global (Smartlocate.smart_global ~head:true r)
+  | FunClass -> Coercionops.CL_FUN
+  | SortClass -> Coercionops.CL_SORT
+  | RefClass r -> ComCoercion.class_of_global (Smartlocate.smart_global ~head:true r)
 
 let scope_class_of_qualid qid =
   Notation.scope_class_of_class (cl_of_qualid qid)
@@ -524,11 +524,11 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
 
 let vernac_definition_hook ~local ~poly = let open Decls in function
 | Coercion ->
-  Some (Class.add_coercion_hook ~poly)
+  Some (ComCoercion.add_coercion_hook ~poly)
 | CanonicalStructure ->
   Some (DeclareDef.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure ?local dref)))
 | SubClass ->
-  Some (Class.add_subclass_hook ~poly)
+  Some (ComCoercion.add_subclass_hook ~poly)
 | _ -> None
 
 let fresh_name_for_anonymous_theorem () =
@@ -1034,7 +1034,7 @@ let vernac_coercion ~atts ref qids qidt =
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
-  Class.try_add_new_coercion_with_target ref' ~local ~poly ~source ~target;
+  ComCoercion.try_add_new_coercion_with_target ref' ~local ~poly ~source ~target;
   Flags.if_verbose Feedback.msg_info (pr_global ref' ++ str " is now a coercion")
 
 let vernac_identity_coercion ~atts id qids qidt =
@@ -1042,7 +1042,7 @@ let vernac_identity_coercion ~atts id qids qidt =
   let local = enforce_locality local in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  Class.try_add_new_identity_coercion id ~local ~poly ~source ~target
+  ComCoercion.try_add_new_identity_coercion id ~local ~poly ~source ~target
 
 (* Type classes *)
 

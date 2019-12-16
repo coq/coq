@@ -1430,7 +1430,7 @@ let isNVar_or_NHole = function NVar _ | NHole _ -> true | _ -> false
 (**********************************************************************)
 (* Mapping classes to scopes *)
 
-open Classops
+open Coercionops
 
 type scope_class = cl_typ
 

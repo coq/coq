@@ -29,7 +29,7 @@ val ppind : Names.inductive -> unit
 val ppsp : Libnames.full_path -> unit
 val ppqualid : Libnames.qualid -> unit
 
-val ppclindex : Classops.cl_index -> unit
+val ppclindex : Coercionops.cl_index -> unit
 
 val ppscheme : 'a Ind_tables.scheme_kind -> unit
 

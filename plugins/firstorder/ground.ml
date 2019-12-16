@@ -18,11 +18,11 @@ open Tacticals.New
 
 let update_flags ()=
   let open TransparentState in
-  let f accu coe = match coe.Classops.coe_value with
+  let f accu coe = match coe.Coercionops.coe_value with
     | Names.GlobRef.ConstRef kn -> { accu with tr_cst = Names.Cpred.remove kn accu.tr_cst }
     | _ -> accu
   in
-  let flags = List.fold_left f TransparentState.full (Classops.coercions ()) in
+  let flags = List.fold_left f TransparentState.full (Coercionops.coercions ()) in
     red_flags:=
     CClosure.RedFlags.red_add_transparent
       CClosure.betaiotazeta

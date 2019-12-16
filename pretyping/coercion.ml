@@ -27,7 +27,7 @@ open EConstr
 open Vars
 open Reductionops
 open Pretype_errors
-open Classops
+open Coercionops
 open Evarutil
 open Evarconv
 open Evd

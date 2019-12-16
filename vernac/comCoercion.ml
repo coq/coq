@@ -18,7 +18,7 @@ open Context
 open Vars
 open Termops
 open Environ
-open Classops
+open Coercionops
 open Declare
 open Libobject
 
@@ -231,7 +231,7 @@ let check_source = function
 let cache_coercion (_,c) =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  Classops.declare_coercion env sigma c
+  Coercionops.declare_coercion env sigma c
 
 let open_coercion i o =
   if Int.equal i 1 then

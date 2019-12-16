@@ -366,8 +366,8 @@ let declare_projections indsp ctx ?(kind=Decls.StructureComponent) binder_name f
             let refi = GlobRef.ConstRef kn in
             Impargs.maybe_declare_manual_implicits false refi impls;
             if flags.pf_subclass then begin
-              let cl = Class.class_of_global (GlobRef.IndRef indsp) in
-                Class.try_add_new_coercion_with_source refi ~local:false ~poly ~source:cl
+              let cl = ComCoercion.class_of_global (GlobRef.IndRef indsp) in
+                ComCoercion.try_add_new_coercion_with_source refi ~local:false ~poly ~source:cl
             end;
             let i = if is_local_assum decl then i+1 else i in
               (Some kn::sp_projs, i, Projection term::subst)
@@ -489,7 +489,7 @@ let declare_structure ~cumulative finite ubinders univs paramimpls params templa
     let cstr = (rsp, 1) in
     let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name.(i) coers fieldimpls fields in
     let build = GlobRef.ConstructRef cstr in
-    let () = if is_coe then Class.try_add_new_coercion build ~local:false ~poly in
+    let () = if is_coe then ComCoercion.try_add_new_coercion build ~local:false ~poly in
     let () = declare_structure_entry (cstr, List.rev kinds, List.rev sp_projs) in
     rsp
   in
