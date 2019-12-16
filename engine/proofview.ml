@@ -65,13 +65,15 @@ let dependent_init =
   let src = Loc.tag @@ Evar_kinds.GoalEvar in
   (* Main routine *)
   let rec aux = function
-  | TNil sigma -> [], { solution = sigma; comb = []; shelf = [] }
+  | TNil sigma -> [], { solution = sigma; comb = []; local_shelf = []; global_shelf = [] }
   | TCons (env, sigma, typ, t) ->
     let (sigma, econstr) = Evarutil.new_evar env sigma ~src ~typeclass_candidate:false typ in
     let (gl, _) = EConstr.destEvar sigma econstr in
     let ret, { solution = sol; comb = comb } = aux (t sigma econstr) in
     let entry = (econstr, typ) :: ret in
-    entry, { solution = sol; comb = with_empty_state gl :: comb; shelf = [] }
+    let pv = { solution = sol; comb = with_empty_state gl :: comb;
+               local_shelf = []; global_shelf = [] } in
+    entry, pv
   in
   fun t ->
     let entry, v = aux t in
@@ -231,8 +233,8 @@ let apply ~name ~poly env t sp =
   | Nil (e, info) -> iraise (TacticFailure e, info)
   | Cons ((r, (state, _), status, info), _) ->
     let (status, gaveup) = status in
-    let status = (status, state.shelf, gaveup) in
-    let state = { state with shelf = [] } in
+    let status = (status, state.local_shelf, gaveup) in
+    let state = { state with local_shelf = []; global_shelf = [] } in
     r, state, status, Trace.to_tree info
 
 
@@ -744,11 +746,11 @@ let mark_in_evm ~goal evd evars =
 let with_shelf tac =
   let open Proof in
   Pv.get >>= fun pv ->
-  let { shelf; solution } = pv in
-  Pv.set { pv with shelf = []; solution = Evd.reset_future_goals solution } >>
+  let { local_shelf; solution } = pv in
+  Pv.set { pv with local_shelf = []; solution = Evd.reset_future_goals solution } >>
   tac >>= fun ans ->
   Pv.get >>= fun npv ->
-  let { shelf = gls; solution = sigma } = npv in
+  let { local_shelf = gls; solution = sigma } = npv in
   (* The pending future goals are necessarily coming from V82.tactic *)
   (* and thus considered as to shelve, as in Proof.run_tactic *)
   let gls' = Evd.future_goals sigma in
@@ -757,7 +759,7 @@ let with_shelf tac =
   (* Ensure we mark and return only unsolved goals *)
   let gls' = undefined_evars sigma (CList.rev_append gls' gls) in
   let sigma = mark_in_evm ~goal:false sigma gls' in
-  let npv = { npv with shelf; solution = sigma } in
+  let npv = { npv with local_shelf; solution = sigma } in
   Pv.set npv >> tclUNIT (gls', ans)
 
 (** [goodmod p m] computes the representative of [p] modulo [m] in the
@@ -1000,10 +1002,12 @@ module Unsafe = struct
 
   let tclGETSHELF = Shelf.get
 
+  let tclGETGLOBALSHELF = Global_Shelf.get
+
   let tclSETSHELF = Shelf.set
 
   let tclPUTSHELF to_shelve =
-    tclBIND tclGETSHELF (fun shelf -> tclSETSHELF (to_shelve@shelf))
+    tclBIND Shelf.get (fun shelf -> Shelf.set (to_shelve@shelf))
 
   let tclPUTGIVENUP = Giveup.put
 
@@ -1015,6 +1019,9 @@ module Unsafe = struct
 
   let reset_future_goals p =
     { p with solution = Evd.reset_future_goals p.solution }
+
+  let set_global_shelf sh p =
+    { p with global_shelf = sh }
 
   let mark_as_goals evd content =
     mark_in_evm ~goal:true evd content
@@ -1255,7 +1262,7 @@ module V82 = struct
   let of_tactic t gls =
     try
       let env = Global.env () in
-      let init = { shelf = []; solution = gls.Evd.sigma ; comb = [with_empty_state gls.Evd.it] } in
+      let init = { local_shelf = []; global_shelf = []; solution = gls.Evd.sigma ; comb = [with_empty_state gls.Evd.it] } in
       let name, poly = Names.Id.of_string "legacy_pe", false in
       let (_,final,_,_) = apply ~name ~poly (goal_env env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = CList.map drop_state final.comb }

@@ -360,7 +360,7 @@ let compact p =
 
 let run_tactic env tac pr =
   let open Proofview.Notations in
-  let sp = pr.proofview in
+  let sp = Proofview.Unsafe.set_global_shelf pr.shelf pr.proofview in
   let undef sigma l = List.filter (fun g -> Evd.is_undefined sigma g) l in
   let tac =
     tac >>= fun result ->

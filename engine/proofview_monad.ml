@@ -166,7 +166,11 @@ let map_goal_with_state f (g, s) = (f g, s)
 type proofview = {
   solution : Evd.evar_map;
   comb : goal_with_state list;
-  shelf : goal list;
+  local_shelf : goal list;
+  (** The shelf that can be modified by the tactic: moving goals out of focus. *)
+  global_shelf : goal list;
+  (** The global shelf at the start of the tactic:
+      read-only in the monad. *)
 }
 
 (** {6 Instantiation of the logic monad} *)
@@ -201,6 +205,11 @@ module type State = sig
   val get : t Logical.t
   val set : t -> unit Logical.t
   val modify : (t->t) -> unit Logical.t
+end
+
+module type Reader = sig
+  type t
+  val get : t Logical.t
 end
 
 module type Writer = sig
@@ -241,9 +250,13 @@ end
 module Shelf : State with type t = goal list = struct
     (* spiwack: I don't know why I cannot substitute ([:=]) [t] with a type expression. *)
   type t = goal list
-  let get = Logical.map (fun {shelf} -> shelf) Pv.get
-  let set c = Pv.modify (fun pv -> { pv with shelf = c })
-  let modify f = Pv.modify (fun pv -> { pv with shelf = f pv.shelf })
+  let get = Logical.map (fun {local_shelf} -> local_shelf) Pv.get
+  let set c = Pv.modify (fun pv -> { pv with local_shelf = c })
+  let modify f = Pv.modify (fun pv -> { pv with local_shelf = f pv.local_shelf })
+end
+module Global_Shelf : Reader with type t = goal list = struct
+  type t = goal list
+  let get = Logical.map (fun {global_shelf} -> global_shelf) Pv.get
 end
 
 module Giveup : Writer with type t = goal list = struct

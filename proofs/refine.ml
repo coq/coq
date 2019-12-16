@@ -45,15 +45,18 @@ let typecheck_evar ev env sigma =
   sigma
 
 let generic_refine ~typecheck f gl =
-  let sigma = Proofview.Goal.sigma gl in
+  let origsigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
   let concl = Proofview.Goal.concl gl in
   let state = Proofview.Goal.state gl in
   (* Save the [future_goals] state to restore them after the
      refinement. *)
-  let prev_future_goals = Evd.save_future_goals sigma in
+  let prev_future_goals = Evd.save_future_goals origsigma in
   (* Create the refinement term *)
-  Proofview.Unsafe.tclEVARS (Evd.reset_future_goals sigma) >>= fun () ->
+  Proofview.Unsafe.tclGETGLOBALSHELF >>= fun shelf ->
+  let sigma = Evd.reset_future_goals origsigma in
+  let sigma = Evd.add_shelved_evars (Evar.Set.of_list shelf) sigma in
+  Proofview.Unsafe.tclEVARS sigma >>= fun () ->
   f >>= fun (v, c) ->
   Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.V82.wrap_exceptions begin fun () ->
@@ -76,7 +79,7 @@ let generic_refine ~typecheck f gl =
   let sigma = Evd.restore_future_goals sigma prev_future_goals in
   (* Select the goals *)
   let evs = Evd.map_filter_future_goals (Proofview.Unsafe.advance sigma) evs in
-  let comb,shelf,given_up,evkmain = Evd.dispatch_future_goals evs in
+  let comb,newshelf,given_up,evkmain = Evd.dispatch_future_goals evs in
   (* Proceed to the refinement *)
   let sigma = match Proofview.Unsafe.advance sigma self with
   | None ->
@@ -94,7 +97,7 @@ let generic_refine ~typecheck f gl =
   in
   (* Mark goals *)
   let sigma = Proofview.Unsafe.mark_as_goals sigma comb in
-  let sigma = Proofview.Unsafe.mark_unresolvables sigma shelf in
+  let sigma = Proofview.Unsafe.mark_unresolvables sigma newshelf in
   let comb = CList.map (fun x -> Proofview.goal_with_state x state) comb in
   let trace env sigma = Pp.(hov 2 (str"simple refine"++spc()++
                                    Termops.Internal.print_constr_env env sigma c)) in
@@ -102,7 +105,7 @@ let generic_refine ~typecheck f gl =
   Proofview.Unsafe.tclSETENV (Environ.reset_context env) <*>
   Proofview.Unsafe.tclEVARS sigma <*>
   Proofview.Unsafe.tclSETGOALS comb <*>
-  Proofview.Unsafe.tclPUTSHELF shelf <*>
+  Proofview.Unsafe.tclPUTSHELF newshelf <*>
   Proofview.Unsafe.tclPUTGIVENUP given_up <*>
   Proofview.tclUNIT v
   end

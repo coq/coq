@@ -331,6 +331,22 @@ val eval_side_effects : evar_map -> side_effects
 val drop_side_effects : evar_map -> evar_map
 (** This should not be used. For hacking purposes. *)
 
+(** {5 Shelved evars}
+
+  The shelved status is used to communicate with the proofview:
+  the shelved evar status information is used during unification to
+  promote any evar being unified with a shelved evar to the shelf itself.
+  I.e. shelved has priority over non-shelved (regular goal) status.
+*)
+
+val add_shelved_evars : Evar.Set.t -> evar_map -> evar_map
+(** Add the given evars to the shelved evars. This must be used when calling
+  typechecking functions using the evar_map from tactics to carry around the
+  global shelving information. *)
+
+val is_shelved_evar : evar_map -> Evar.t -> bool
+(** Test is an evar is shelved *)
+
 (** {5 Future goals} *)
 
 type goal_kind = ToShelve | ToGiveUp

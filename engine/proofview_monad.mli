@@ -79,11 +79,12 @@ val with_empty_state : goal -> goal_with_state
 val map_goal_with_state : (goal -> goal) -> goal_with_state -> goal_with_state
 
 (** Type of proof views: current [evar_map] together with the list of
-    focused goals. *)
+    focused goals, locally shelved goals and globally shelved goals. *)
 type proofview = {
   solution : Evd.evar_map;
   comb : goal_with_state list;
-  shelf : goal list;
+  local_shelf : goal list;
+  global_shelf: goal list;
 }
 
 (** {6 Instantiation of the logic monad} *)
@@ -116,6 +117,10 @@ module type State = sig
   val set : t -> unit Logical.t
   val modify : (t->t) -> unit Logical.t
 end
+module type Reader = sig
+  type t
+  val get : t Logical.t
+end
 
 module type Writer = sig
   type t
@@ -140,6 +145,10 @@ module Status : Writer with type t := bool
 (** Lens to the list of goals which have been shelved during the
     execution of the tactic. *)
 module Shelf : State with type t = goal list
+
+(** Lens to the list of goals which are globally shelved at the
+  start of the tactic. *)
+module Global_Shelf : Reader with type t = goal list
 
 (** Lens to the list of goals which were given up during the execution
     of the tactic. *)

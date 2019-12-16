@@ -21,7 +21,7 @@ Parameter ID : forall (G:Prop), G -> G.
 Parameter EID : forall A (EA:Enc A) (F:FORM) (Q:A->Prop),
   F _ _ Q ->
   F _ _ Q.
-
+Set Printing Implicit.
 Lemma bla : forall F,
   (forall A (EA:Enc A), IDF F EA (fun (X:A) => True) -> True) ->
   True.
@@ -31,5 +31,6 @@ Proof.
   notypeclasses refine (EID _ _ _ _).
   eapply (ID _).
   Unshelve.
-  + apply FORM_intro.
+  (* Should be 3 goals: the Enc typeclass should not have been resolved *)
+  3:refine (FORM_intro _).
 Qed.

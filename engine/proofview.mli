@@ -462,8 +462,11 @@ module Unsafe : sig
   (** [tclSETSHELF gls] sets goals [gls] as the current shelf. *)
   val tclSETSHELF : Evar.t list -> unit tactic
 
-  (** [tclGETSHELF] returns the list of goals on the shelf. *)
+  (** [tclGETSHELF] returns the list of goals on the local shelf. *)
   val tclGETSHELF : Evar.t list tactic
+
+  (** [tclGETGLOBALSHELF] returns the list of goals on the global shelf. *)
+  val tclGETGLOBALSHELF : Evar.t list tactic
 
   (** [tclPUTSHELF] appends goals to the shelf. *)
   val tclPUTSHELF : Evar.t list -> unit tactic
@@ -476,6 +479,9 @@ module Unsafe : sig
 
   (** Clears the future goals store in the proof view. *)
   val reset_future_goals : proofview -> proofview
+
+  (** Sets the global shelved goals. *)
+  val set_global_shelf : Evar.t list -> proofview -> proofview
 
   (** Give the evars the status of a goal (changes their source location
       and makes them unresolvable for type classes. *)

@@ -464,7 +464,7 @@ type evar_map = {
                                              name) of the evar which
                                              will be instantiated with
                                              a term containing [e]. *)
-  future_goals_status : goal_kind EvMap.t;
+  goals_status : goal_kind EvMap.t; (** If an evar is shelved, it is inherited by aliases *)
   extras : Store.t;
 }
 
@@ -567,9 +567,9 @@ let remove d e =
   | Some e' -> if Evar.equal e e' then None else d.principal_future_goal
   in
   let future_goals = List.filter (fun e' -> not (Evar.equal e e')) d.future_goals in
-  let future_goals_status = EvMap.remove e d.future_goals_status in
+  let goals_status = EvMap.remove e d.goals_status in
   let evar_flags = remove_evar_flags e d.evar_flags in
-  { d with undf_evars; defn_evars; principal_future_goal; future_goals; future_goals_status;
+  { d with undf_evars; defn_evars; principal_future_goal; future_goals; goals_status;
            evar_flags }
 
 let find d e =
@@ -697,7 +697,7 @@ let empty = {
   evar_names = EvNames.empty; (* id<->key for undefined evars *)
   future_goals = [];
   principal_future_goal = None;
-  future_goals_status = EvMap.empty;
+  goals_status = EvMap.empty;
   extras = Store.empty;
 }
 
@@ -769,6 +769,15 @@ let define evk body evd =
 let define_with_evar evk body evd =
   let evk' = fst (destEvar body) in
   let evar_flags = inherit_evar_flags evd.evar_flags evk evk' in
+  let evd =
+    match EvMap.find evk evd.goals_status with
+    | exception Not_found -> evd
+    | ToGiveUp -> evd
+    | ToShelve ->
+      let goals_status = EvMap.remove evk evd.goals_status in
+      { evd with goals_status = EvMap.add evk' ToShelve goals_status }
+      (* Note: this overwrites ToGiveUp status *)
+  in
   define_gen evk body evd evar_flags
 
 let get_aliased_evars evd = evd.evar_flags.aliased_evars
@@ -776,28 +785,6 @@ let get_aliased_evars evd = evd.evar_flags.aliased_evars
 let is_aliased_evar evd evk =
   try Some (Evar.Map.find evk evd.evar_flags.aliased_evars)
   with Not_found -> None
-
-(* In case of restriction, we declare the aliasing and inherit the obligation
-   and typeclass flags. *)
-
-let restrict evk filter ?candidates ?src evd =
-  let evk' = new_untyped_evar () in
-  let evar_info = EvMap.find evk evd.undf_evars in
-  let evar_info' =
-    { evar_info with evar_filter = filter;
-      evar_candidates = candidates;
-      evar_source = (match src with None -> evar_info.evar_source | Some src -> src) } in
-  let last_mods = match evd.conv_pbs with
-  | [] ->  evd.last_mods
-  | _ -> Evar.Set.add evk evd.last_mods in
-  let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
-  let ctxt = Filter.filter_list filter (evar_context evar_info) in
-  let id_inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
-  let body = mkEvar(evk',id_inst) in
-  let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
-  let evar_flags = inherit_evar_flags evd.evar_flags evk evk' in
-  { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
-    defn_evars; last_mods; evar_names; evar_flags }, evk'
 
 let downcast evk ccl evd =
   let evar_info = EvMap.find evk evd.undf_evars in
@@ -1036,17 +1023,31 @@ let drop_side_effects evd =
 
 let eval_side_effects evd = evd.effects
 
+(* Shelved goals *)
+
+let add_shelved_evars evs evd =
+  let goals_status =
+    Evar.Set.fold (fun ev -> EvMap.add ev ToShelve) evs evd.goals_status
+  in
+  { evd with goals_status }
+
+let is_shelved_evar evd ev =
+  match Evar.Map.find ev evd.goals_status with
+  | exception Not_found -> false
+  | ToGiveUp -> false
+  | ToShelve -> true
+
 (* Future goals *)
 let declare_future_goal ?tag evk evd =
   { evd with future_goals = evk::evd.future_goals;
-             future_goals_status = Option.fold_right (EvMap.add evk) tag evd.future_goals_status }
+             goals_status = Option.fold_right (EvMap.add evk) tag evd.goals_status }
 
 let declare_principal_goal ?tag evk evd =
   match evd.principal_future_goal with
   | None -> { evd with
     future_goals = evk::evd.future_goals;
     principal_future_goal=Some evk;
-    future_goals_status = Option.fold_right (EvMap.add evk) tag evd.future_goals_status;
+    goals_status = Option.fold_right (EvMap.add evk) tag evd.goals_status;
     }
   | Some _ -> CErrors.user_err Pp.(str "Only one main subgoal per instantiation.")
 
@@ -1057,21 +1058,21 @@ let future_goals evd = evd.future_goals
 let principal_future_goal evd = evd.principal_future_goal
 
 let save_future_goals evd =
-  (evd.future_goals, evd.principal_future_goal, evd.future_goals_status)
+  (evd.future_goals, evd.principal_future_goal, evd.goals_status)
 
 let reset_future_goals evd =
   { evd with future_goals = [] ; principal_future_goal = None;
-             future_goals_status = EvMap.empty }
+             goals_status = EvMap.empty }
 
 let restore_future_goals evd (gls,pgl,map) =
   { evd with future_goals = gls ; principal_future_goal = pgl;
-             future_goals_status = map }
+             goals_status = map }
 
 let fold_future_goals f sigma (gls,pgl,map) =
   List.fold_left f sigma gls
 
 let map_filter_future_goals f (gls,pgl,map) =
-  (* Note: map is now a superset of filtered evs, but its size should
+  (* Note: map contains is now a superset of filtered evs, but its size should
     not be too big, so that's probably ok not to update it *)
   (List.map_filter f gls,Option.bind pgl f,map)
 
@@ -1104,6 +1105,37 @@ let extract_given_up_future_goals goals =
 let shelve_on_future_goals shelved (gls,pgl,map) =
   (shelved @ gls, pgl, List.fold_right (fun evk -> EvMap.add evk ToShelve) shelved map)
 
+(* In case of restriction, we declare the aliasing and inherit the obligation
+   and typeclass flags. *)
+
+let restrict evk filter ?candidates ?src evd =
+  let evk' = new_untyped_evar () in
+  let evar_info = EvMap.find evk evd.undf_evars in
+  let evar_info' =
+    { evar_info with evar_filter = filter;
+      evar_candidates = candidates;
+      evar_source = (match src with None -> evar_info.evar_source | Some src -> src) } in
+  let last_mods = match evd.conv_pbs with
+  | [] ->  evd.last_mods
+  | _ -> Evar.Set.add evk evd.last_mods in
+  let evar_names = EvNames.reassign_name_defined evk evk' evd.evar_names in
+  let ctxt = Filter.filter_list filter (evar_context evar_info) in
+  let id_inst = Array.map_of_list (NamedDecl.get_id %> mkVar) ctxt in
+  let body = mkEvar(evk',id_inst) in
+  let (defn_evars, undf_evars) = define_aux evd.defn_evars evd.undf_evars evk body in
+  let evar_flags = inherit_evar_flags evd.evar_flags evk evk' in
+  let evd =
+    { evd with undf_evars = EvMap.add evk' evar_info' undf_evars;
+      defn_evars; last_mods; evar_names; evar_flags }
+  in
+  (* Mark new evar as future goal, removing previous one,
+    circumventing Proofview.advance but making Proof.run_tactic catch these. *)
+  let tag = if is_shelved_evar evd evk then Some ToShelve else None in
+  let future_goals = save_future_goals evd in
+  let future_goals = filter_future_goals (fun evk' -> not (Evar.equal evk evk')) future_goals in
+  let evd = restore_future_goals evd future_goals in
+  (declare_future_goal ?tag evk' evd, evk')
+
 (**********************************************************)
 (* Accessing metas *)
 
@@ -1120,7 +1152,7 @@ let set_metas evd metas = {
   effects = evd.effects;
   evar_names = evd.evar_names;
   future_goals = evd.future_goals;
-  future_goals_status = evd.future_goals_status;
+  goals_status = evd.goals_status;
   principal_future_goal = evd.principal_future_goal;
   extras = evd.extras;
 }
