@@ -11,7 +11,8 @@
 # use DUNEOPT=--display=short for a more verbose build
 # DUNEOPT=--display=short
 
-BUILD_CONTEXT=_build/default
+BOOT_DIR=_build_boot
+BOOT_CONTEXT=$(BOOT_DIR)/default
 
 help:
 	@echo "Welcome to Coq's Dune-based build system. Targets are:"
@@ -45,8 +46,8 @@ plugins/ltac/dune:
 	@echo "(library (name ltac_plugin) (public_name coq.plugins.ltac) (modules_without_implementation extraargs extratactics))" > plugins/ltac/dune
 
 voboot: plugins/ltac/dune
-	dune build $(DUNEOPT) @vodeps
-	dune exec ./tools/coq_dune.exe $(BUILD_CONTEXT)/.vfiles.d
+	dune build --build-dir=$(BOOT_DIR) $(DUNEOPT) @vodeps
+	dune exec --build-dir=$(BOOT_DIR) -- ./tools/coq_dune.exe $(BOOT_CONTEXT)/.vfiles.d
 
 states: voboot
 	dune build --display=short $(DUNEOPT) dev/shim/coqtop-prelude
@@ -104,8 +105,8 @@ ocheck: voboot
 
 ireport:
 	dune clean
-	dune build $(DUNEOPT) @vodeps --profile=ireport
-	dune exec coq_dune $(BUILD_CONTEXT)/.vfiles.d --profile=ireport
+	dune build --build-dir=$(BOOT_DIR) $(DUNEOPT) @vodeps
+	dune exec --build-dir=$(BOOT_DIR) -- ./tools/coq_dune.exe $(BOOT_CONTEXT)/.vfiles.d
 	dune build $(DUNEOPT) @install --profile=ireport
 
 clean:
