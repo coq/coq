@@ -70,6 +70,15 @@ See also [Cocorico](https://github.com/coq/coq/wiki) (the Coq wiki),
 and the [Coq FAQ](https://github.com/coq/coq/wiki/The-Coq-FAQ),
 for additional user-contributed documentation.
 
+The documentation of the master branch is continuously deployed.  See:
+- [Reference Manual (master)][refman-master]
+- [Documentation of the standard library (master)][stdlib-master]
+- [Documentation of the ML API (master)][api-master]
+
+[api-master]: https://coq.github.io/doc/master/api/
+[refman-master]: https://coq.github.io/doc/master/refman/
+[stdlib-master]: https://coq.github.io/doc/master/stdlib/
+
 ## Changes
 
 The [Recent
