@@ -72,7 +72,9 @@ let clenv_refine ?(with_evars=false) ?(with_classes=true) clenv =
         Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
           ~fail:(not with_evars) clenv.env clenv.evd
       in
-      Typeclasses.make_unresolvables (fun x -> List.mem_f Evar.equal x evars) evd'
+      (* After an apply, all the subgoals including those dependent shelved ones are in
+         the hands of the user and resolution won't be called implicitely on them. *)
+      Typeclasses.make_unresolvables (fun x -> true) evd'
     else clenv.evd
   in
   let clenv = { clenv with evd = evd' } in

@@ -25,7 +25,8 @@ val refine : typecheck:bool -> (Evd.evar_map -> Evd.evar_map * EConstr.t) -> uni
     for the current goal (refine is a goal-dependent tactic), the
     new holes created by [t] become the new subgoals. Exceptions
     raised during the interpretation of [t] are caught and result in
-    tactic failures. If [typecheck] is [true] [t] is type-checked beforehand. *)
+    tactic failures. If [typecheck] is [true] [t] is type-checked beforehand.
+    Shelved evars and goals are all marked as unresolvable for typeclasses. *)
 
 val generic_refine : typecheck:bool -> ('a * EConstr.t) tactic ->
   Proofview.Goal.t -> 'a tactic
