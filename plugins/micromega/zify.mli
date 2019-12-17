@@ -9,16 +9,19 @@
 (************************************************************************)
 open Constrexpr
 
-module type S = sig val register : constr_expr -> unit val print : unit -> unit end
+module type S = sig
+  val register : constr_expr -> unit
+  val print : unit -> unit
+end
 
 module InjTable : S
-module UnOp     : S
-module BinOp    : S
-module CstOp    : S
-module BinRel   : S
-module PropOp   : S
+module UnOp : S
+module BinOp : S
+module CstOp : S
+module BinRel : S
+module PropOp : S
 module PropUnOp : S
-module Spec     : S
+module Spec : S
 module Saturate : S
 
 val zify_tac : unit Proofview.tactic

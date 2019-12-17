@@ -22,8 +22,7 @@ val sos_R : unit Proofview.tactic -> unit Proofview.tactic
 val lra_Q : unit Proofview.tactic -> unit Proofview.tactic
 val lra_R : unit Proofview.tactic -> unit Proofview.tactic
 
-
 (** {5 Use Micromega independently from tactics. } *)
 
-(** [dump_proof_term] generates the Coq representation of a Micromega proof witness *)
 val dump_proof_term : Micromega.zArithProof -> EConstr.t
+(** [dump_proof_term] generates the Coq representation of a Micromega proof witness *)
