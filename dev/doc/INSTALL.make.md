@@ -102,6 +102,14 @@ Detailed Installation Procedure.
    it is recommended to compile in parallel, via make -jN where N is your number
    of cores.
 
+   If you wish to create timing logs for the standard library, you can
+   pass `TIMING=1` (for per-line timing files) or `TIMED=1` (for
+   per-file timing on stdout).  Further variables and targets are
+   available for more detailed timing analysis; see the section of the
+   reference manual on `coq_makefile`.  If there is any timing target
+   or variable supported by `coq_makefile`-made Makefiles which is not
+   supported by Coq's own Makefile, please report that as a bug.
+
 5. You can now install the Coq system. Executables, libraries, and
    manual pages are copied in some standard places of your system,
    defined at configuration time (step 3). Just do
