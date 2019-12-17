@@ -205,8 +205,8 @@ if (sp - num_args < coq_stack_threshold) {                                     \
 
 /* For signal handling, we hijack some code from the caml runtime */
 
-extern intnat caml_signals_are_pending;
-extern intnat caml_pending_signals[];
+extern intnat volatile caml_signals_are_pending;
+extern intnat volatile caml_pending_signals[];
 extern void caml_process_pending_signals(void);
 
 /* The interpreter itself */
