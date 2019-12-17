@@ -49,7 +49,6 @@ endif
 else
 NATIVEFILES :=
 endif
-LIBFILES:=$(ALLVO:.$(VO)=.vo) $(ALLVO:.$(VO)=.vos) $(NATIVEFILES) $(VFILES) $(GLOBFILES)
 
 # For emacs:
 # Local Variables:
