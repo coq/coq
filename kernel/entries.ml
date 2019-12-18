@@ -50,7 +50,7 @@ type mutual_inductive_entry = {
   mind_entry_params : Constr.rel_context;
   mind_entry_inds : one_inductive_entry list;
   mind_entry_universes : universes_entry;
-  mind_entry_variance : Univ.Variance.t array option;
+  mind_entry_cumulative : bool;
   (* universe constraints and the constraints for subtyping of
      inductive types in the block. *)
   mind_entry_private : bool option;

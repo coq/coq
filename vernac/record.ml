@@ -202,7 +202,7 @@ let typecheck_params_and_fields finite def poly pl ps records =
   in
   let univs = Evd.check_univ_decl ~poly sigma decl in
   let ubinders = Evd.universe_binders sigma in
-  let ce t = Pretyping.check_evars env0 (Evd.from_env env0) sigma (EConstr.of_constr t) in
+  let ce t = Pretyping.check_evars env0 sigma (EConstr.of_constr t) in
   let () = List.iter (iter_constr ce) (List.rev newps) in
   ubinders, univs, template, newps, imps, ans
 
@@ -411,7 +411,6 @@ let declare_structure ~cumulative finite ubinders univs paramimpls params templa
     | Polymorphic_entry (nas, ctx) ->
       true, Polymorphic_entry (nas, ctx)
   in
-  let variance = if poly && cumulative then Some (InferCumulativity.dummy_variance ctx) else None in
   let binder_name =
     match name with
     | None ->
@@ -447,7 +446,8 @@ let declare_structure ~cumulative finite ubinders univs paramimpls params templa
                univs)
             param_levels fields
         in
-        ComInductive.template_polymorphism_candidate (Global.env ()) ~ctor_levels univs params
+        let template_check = Environ.check_template (Global.env ()) in
+        ComInductive.template_polymorphism_candidate ~template_check ~ctor_levels univs params
           (Some (Sorts.sort_of_univ min_univ))
       in
       match template with
@@ -477,10 +477,9 @@ let declare_structure ~cumulative finite ubinders univs paramimpls params templa
       mind_entry_inds = blocks;
       mind_entry_private = None;
       mind_entry_universes = univs;
-      mind_entry_variance = variance;
+      mind_entry_cumulative = poly && cumulative;
     }
   in
-  let mie = InferCumulativity.infer_inductive (Global.env ()) mie in
   let impls = List.map (fun _ -> paramimpls, []) record_data in
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie ubinders impls
       ~primitive_expected:!primitive_flag

@@ -1015,7 +1015,6 @@ let close_section senv =
   | `Inductive (ind, mib) ->
     let info = cooking_info (Section.segment_of_inductive env0 ind sections0) in
     let mie = Cooking.cook_inductive info mib in
-    let mie = InferCumulativity.infer_inductive senv.env mie in
     let _, senv = add_mind (MutInd.label ind) mie senv in
     senv
   in

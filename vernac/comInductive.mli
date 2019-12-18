@@ -49,24 +49,22 @@ val declare_mutual_inductive_with_eliminations
   -> Names.MutInd.t
   [@@ocaml.deprecated "Please use DeclareInd.declare_mutual_inductive_with_eliminations"]
 
-val interp_mutual_inductive_constr :
-  env0:Environ.env ->
-  sigma:Evd.evar_map ->
-  template:bool option ->
-  udecl:UState.universe_decl ->
-  env_ar:Environ.env ->
-  env_params:Environ.env ->
-  ctx_params:(EConstr.t, EConstr.t) Context.Rel.Declaration.pt list ->
-  indnames:Names.Id.t list ->
-  arities:EConstr.t list ->
-  arityconcl:(bool * EConstr.ESorts.t) option list ->
-  constructors:(Names.Id.t list * Constr.constr list * 'a list list) list ->
-  env_ar_params:Environ.env ->
-  cumulative:bool ->
-  poly:bool ->
-  private_ind:bool ->
-  finite:Declarations.recursivity_kind ->
-  Entries.mutual_inductive_entry * UnivNames.universe_binders
+val interp_mutual_inductive_constr
+  : sigma:Evd.evar_map
+  -> template:bool option
+  -> udecl:UState.universe_decl
+  -> ctx_params:(EConstr.t, EConstr.t) Context.Rel.Declaration.pt list
+  -> indnames:Names.Id.t list
+  -> arities:EConstr.t list
+  -> arityconcl:(bool * EConstr.ESorts.t) option list
+  -> constructors:(Names.Id.t list * Constr.constr list) list
+  -> env_ar_params:Environ.env
+  (** Environment with the inductives and parameters in the rel_context *)
+  -> cumulative:bool
+  -> poly:bool
+  -> private_ind:bool
+  -> finite:Declarations.recursivity_kind
+  -> Entries.mutual_inductive_entry * UnivNames.universe_binders
 
 (************************************************************************)
 (** Internal API, exported for Record                                   *)
@@ -78,17 +76,17 @@ val should_auto_template : Id.t -> bool -> bool
    inductive under consideration. *)
 
 val template_polymorphism_candidate
-  : Environ.env
+  : template_check:bool
   -> ctor_levels:Univ.LSet.t
   -> Entries.universes_entry
   -> Constr.rel_context
   -> Sorts.t option
   -> bool
-(** [template_polymorphism_candidate env ~ctor_levels uctx params
+(** [template_polymorphism_candidate ~template_check ~ctor_levels uctx params
    conclsort] is [true] iff an inductive with params [params],
    conclusion [conclsort] and universe levels appearing in the
    constructor arguments [ctor_levels] would be definable as template
    polymorphic. It should have at least one universe in its
    monomorphic universe context that can be made parametric in its
-   conclusion sort, if one is given. If the [Template Check] flag is
+   conclusion sort, if one is given. If the [template_check] flag is
    false we just check that the conclusion sort is not small. *)

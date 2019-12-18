@@ -61,7 +61,7 @@ let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
     mind_entry_params = mb.mind_params_ctxt;
     mind_entry_inds;
     mind_entry_universes;
-    mind_entry_variance = mb.mind_variance;
+    mind_entry_cumulative= Option.has_some mb.mind_variance;
     mind_entry_private = mb.mind_private;
   }
 

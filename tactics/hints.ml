@@ -1289,8 +1289,7 @@ let prepare_hint check env init (sigma,c) =
       mkNamedLambda (make_annot id Sorts.Relevant) t (iter (replace_term sigma evar (mkVar id) c)) in
   let c' = iter c in
     let env = Global.env () in
-    let empty_sigma = Evd.from_env env in
-    if check then Pretyping.check_evars env empty_sigma sigma c';
+    if check then Pretyping.check_evars env sigma c';
     let diff = Univ.ContextSet.diff (Evd.universe_context_set sigma) (Evd.universe_context_set init) in
     (c', diff)
 

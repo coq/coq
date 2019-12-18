@@ -410,7 +410,7 @@ let do_instance_resolve_TC termtype sigma env =
   (* Beware of this step, it is required as to minimize universes. *)
   let sigma = Evd.minimize_universes sigma in
   (* Check that the type is free of evars now. *)
-  Pretyping.check_evars env (Evd.from_env env) sigma termtype;
+  Pretyping.check_evars env sigma termtype;
   termtype, sigma
 
 let do_instance_type_ctx_instance props k env' ctx' sigma ~program_mode subst =

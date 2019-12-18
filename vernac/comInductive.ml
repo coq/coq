@@ -255,7 +255,7 @@ let inductive_levels env evd arities inds =
   in
   let cstrs_levels, min_levels, sizes =
     CList.split3
-      (List.map2 (fun (_,tys,_) (arity,(ctx,du)) ->
+      (List.map2 (fun (_,tys) (arity,(ctx,du)) ->
         let len = List.length tys in
         let minlev = Sorts.univ_of_sort du in
         let minlev =
@@ -323,18 +323,18 @@ let check_named {CAst.loc;v=na} = match na with
   let msg = str "Parameters must be named." in
   user_err ?loc  msg
 
-let template_polymorphism_candidate env ~ctor_levels uctx params concl =
+let template_polymorphism_candidate ~template_check ~ctor_levels uctx params concl =
   match uctx with
   | Entries.Monomorphic_entry uctx ->
     let concltemplate = Option.cata (fun s -> not (Sorts.is_small s)) false concl in
     if not concltemplate then false
+    else if not template_check then true
     else
-      let template_check = Environ.check_template env in
       let conclu = Option.cata Sorts.univ_of_sort Univ.type0m_univ concl in
       let params, conclunivs =
         IndTyping.template_polymorphic_univs ~template_check ~ctor_levels uctx params conclu
       in
-      not (template_check && Univ.LSet.is_empty conclunivs)
+      not (Univ.LSet.is_empty conclunivs)
   | Entries.Polymorphic_entry _ -> false
 
 let check_param = function
@@ -350,33 +350,28 @@ let restrict_inductive_universes sigma ctx_params arities constructors =
   let uvars = Univ.LSet.empty in
   let uvars = Context.Rel.(fold_outside (Declaration.fold_constr merge_universes_of_constr) ctx_params ~init:uvars) in
   let uvars = List.fold_right merge_universes_of_constr arities uvars in
-  let uvars = List.fold_right (fun (_,ctypes,_) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
+  let uvars = List.fold_right (fun (_,ctypes) -> List.fold_right merge_universes_of_constr ctypes) constructors uvars in
   Evd.restrict_universe_context sigma uvars
 
-let interp_mutual_inductive_constr ~env0 ~sigma ~template ~udecl ~env_ar ~env_params ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
+let interp_mutual_inductive_constr ~sigma ~template ~udecl ~ctx_params ~indnames ~arities ~arityconcl ~constructors ~env_ar_params ~cumulative ~poly ~private_ind ~finite =
   (* Compute renewed arities *)
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
-  let constructors = List.map (on_pi2 (List.map nf)) constructors in
+  let constructors = List.map (on_snd (List.map nf)) constructors in
   let arities = List.map EConstr.(to_constr sigma) arities in
   let sigma = List.fold_left make_anonymous_conclusion_flexible sigma arityconcl in
   let sigma, arities = inductive_levels env_ar_params sigma arities constructors in
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
   let arities = List.map (on_snd nf) arities in
-  let constructors = List.map (on_pi2 (List.map nf)) constructors in
+  let constructors = List.map (on_snd (List.map nf)) constructors in
   let ctx_params = List.map Termops.(map_rel_decl (EConstr.to_constr sigma)) ctx_params in
   let arityconcl = List.map (Option.map (fun (_anon, s) -> EConstr.ESorts.kind sigma s)) arityconcl in
   let sigma = restrict_inductive_universes sigma ctx_params (List.map snd arities) constructors in
   let uctx = Evd.check_univ_decl ~poly sigma udecl in
-  List.iter (fun c -> check_evars env_params (Evd.from_env env_params) sigma (EConstr.of_constr (snd c))) arities;
-  Context.Rel.iter (fun c -> check_evars env0 (Evd.from_env env0) sigma (EConstr.of_constr c)) ctx_params;
-  List.iter (fun (_,ctyps,_) ->
-    List.iter (fun c -> check_evars env_ar_params (Evd.from_env env_ar_params) sigma (EConstr.of_constr c)) ctyps)
-    constructors;
 
   (* Build the inductive entries *)
-  let entries = List.map4 (fun indname (templatearity, arity) concl (cnames,ctypes,cimpls) ->
+  let entries = List.map4 (fun indname (templatearity, arity) concl (cnames,ctypes) ->
       let template_candidate () =
         templatearity ||
         let ctor_levels =
@@ -390,7 +385,7 @@ let interp_mutual_inductive_constr ~env0 ~sigma ~template ~udecl ~env_ar ~env_pa
           List.fold_left (fun levels c -> add_levels c levels)
             param_levels ctypes
         in
-        template_polymorphism_candidate env0 ~ctor_levels uctx ctx_params concl
+        template_polymorphism_candidate ~template_check:(Environ.check_template env_ar_params) ~ctor_levels uctx ctx_params concl
       in
       let template = match template with
         | Some template ->
@@ -408,7 +403,6 @@ let interp_mutual_inductive_constr ~env0 ~sigma ~template ~udecl ~env_ar ~env_pa
       })
       indnames arities arityconcl constructors
   in
-  let variance = if poly && cumulative then Some (InferCumulativity.dummy_variance uctx) else None in
   (* Build the mutual inductive entry *)
   let mind_ent =
     { mind_entry_params = ctx_params;
@@ -417,12 +411,10 @@ let interp_mutual_inductive_constr ~env0 ~sigma ~template ~udecl ~env_ar ~env_pa
       mind_entry_inds = entries;
       mind_entry_private = if private_ind then Some false else None;
       mind_entry_universes = uctx;
-      mind_entry_variance = variance;
+      mind_entry_cumulative = poly && cumulative;
     }
   in
-  (if poly && cumulative then
-      InferCumulativity.infer_inductive env_ar mind_ent
-   else mind_ent), Evd.universe_binders sigma
+  mind_ent, Evd.universe_binders sigma
 
 let interp_params env udecl uparamsl paramsl =
   let sigma, udecl = interp_univ_decl_opt env udecl in
@@ -492,9 +484,10 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
     List.init (List.length indl) EConstr.(fun i -> mkApp (mkRel (i + 1 + nuparams), uargs))
     @ List.init nuparams EConstr.(fun i -> mkRel (i + 1)) in
   let generalize_constructor c = EConstr.Unsafe.to_constr (EConstr.Vars.substnl uparam_subst nparams c) in
+  let cimpls = List.map pi3 constructors in
   let constructors = List.map (fun (cnames,ctypes,cimpls) ->
-                         (cnames,List.map generalize_constructor ctypes,cimpls))
-                       constructors
+      (cnames,List.map generalize_constructor ctypes))
+      constructors
   in
   let ctx_params = ctx_params @ ctx_uparams in
   let userimpls = useruimpls @ userimpls in
@@ -505,11 +498,12 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   (* Try further to solve evars, and instantiate them *)
   let sigma = solve_remaining_evars all_and_fail_flags env_params sigma in
   let impls =
-    List.map2 (fun indimpls (_,_,cimpls) ->
+    List.map2 (fun indimpls cimpls ->
         indimpls, List.map (fun impls ->
-            userimpls @ impls) cimpls) indimpls constructors
+            userimpls @ impls) cimpls)
+      indimpls cimpls
   in
-  let mie, pl = interp_mutual_inductive_constr ~env0 ~template ~sigma ~env_params ~env_ar ~ctx_params ~udecl ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
+  let mie, pl = interp_mutual_inductive_constr ~template ~sigma ~ctx_params ~udecl ~arities ~arityconcl ~constructors ~env_ar_params ~poly ~finite ~cumulative ~private_ind ~indnames in
   (mie, pl, impls)
 
 

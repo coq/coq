@@ -42,9 +42,9 @@ Type_errors
 Modops
 Inductive
 Typeops
+InferCumulativity
 IndTyping
 Indtypes
-InferCumulativity
 Cooking
 Term_typing
 Subtyping

@@ -255,7 +255,7 @@ let context ~poly l =
   let sigma, (_, ((_env, ctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let sigma = Evd.minimize_universes sigma in
-  let ce t = Pretyping.check_evars env (Evd.from_env env) sigma t in
+  let ce t = Pretyping.check_evars env sigma t in
   let () = List.iter (fun decl -> Context.Rel.Declaration.iter_constr ce decl) ctx in
   (* reorder, evar-normalize and add implicit status *)
   let ctx = List.rev_map (fun d ->
