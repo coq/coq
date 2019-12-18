@@ -971,7 +971,7 @@ let pr_goal_selector ~toplevel s =
             | TacTime (s,t) ->
               hov 1 (
                 keyword "time"
-                ++ pr_opt str s ++ spc ()
+                ++ pr_opt qstring s ++ spc ()
                 ++ pr_tac (ltactical,E) t),
               ltactical
             | TacRepeat t ->
