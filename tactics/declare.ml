@@ -56,7 +56,7 @@ let declare_universe_context ~poly ctx =
     let nas = name_instance (Univ.UContext.instance uctx) in
     Global.push_section_context (nas, uctx)
   else
-    Global.push_context_set false ctx
+    Global.push_context_set ~strict:true ctx
 
 (** Declaration of constants and parameters *)
 

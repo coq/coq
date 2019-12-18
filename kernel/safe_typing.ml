@@ -331,13 +331,13 @@ type constraints_addition =
   | Now of Univ.ContextSet.t
   | Later of Univ.ContextSet.t Future.computation
 
-let push_context_set poly cst senv =
+let push_context_set ~strict cst senv =
   if Univ.ContextSet.is_empty cst then senv
   else
     let sections = Option.map (Section.push_constraints cst) senv.sections
     in
     { senv with
-      env = Environ.push_context_set ~strict:(not poly) cst senv.env;
+      env = Environ.push_context_set ~strict cst senv.env;
       univ = Univ.ContextSet.union cst senv.univ;
       sections }
 
@@ -346,7 +346,7 @@ let add_constraints cst senv =
   | Later fc ->
     {senv with future_cst = fc :: senv.future_cst}
   | Now cst ->
-    push_context_set false cst senv
+    push_context_set ~strict:true cst senv
 
 let add_constraints_list cst senv =
   List.fold_left (fun acc c -> add_constraints c acc) senv cst
@@ -547,7 +547,7 @@ let add_field ?(is_include=false) ((l,sfb) as field) gn senv =
     else
       (* Delayed constraints from opaque body are added by [add_constant_aux] *)
       let cst = constraints_of_sfb sfb in
-      List.fold_left (fun senv cst -> push_context_set false cst senv) senv cst
+      List.fold_left (fun senv cst -> push_context_set ~strict:true cst senv) senv cst
   in
   let env' = match sfb, gn with
     | SFBconst cb, C con -> Environ.add_constant con cb senv.env
@@ -998,7 +998,7 @@ let close_section senv =
   let env = Environ.set_opaque_tables env (Environ.opaque_tables senv.env) in
   let senv = { senv with env; revstruct; sections; univ; objlabels; } in
   (* Second phase: replay the discharged section contents *)
-  let senv = push_context_set false cstrs senv in
+  let senv = push_context_set ~strict:true cstrs senv in
   let modlist = Section.replacement_context env0 sections0 in
   let cooking_info seg =
     let { abstr_ctx; abstr_subst; abstr_uctx } = seg in
