@@ -233,6 +233,7 @@ let init_execution opts custom_init =
   Global.set_engagement opts.config.logic.impredicative_set;
   Global.set_indices_matter opts.config.logic.indices_matter;
   Global.set_VM opts.config.enable_VM;
+  Flags.set_native_compiler (match opts.config.native_compiler with NativeOff -> false | NativeOn _ -> true);
   Global.set_native_compiler (match opts.config.native_compiler with NativeOff -> false | NativeOn _ -> true);
   Global.set_allow_sprop opts.config.logic.allow_sprop;
   if opts.config.logic.cumulative_sprop then Global.make_sprop_cumulative ();
