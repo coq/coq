@@ -17,12 +17,12 @@
 Require Import OrderedRing.
 Require Import RingMicromega.
 Require Import Refl.
-Require Import Raxioms Rfunctions RIneq Rpow_def DiscrR.
+Require Import Raxioms Rfunctions RIneq Rpow_def.
 Require Import QArith.
 Require Import Qfield.
 Require Import Qreals.
 Require Import DeclConstant.
-Require Import Lia.
+Require Import Ztac.
 
 Require Setoid.
 (*Declare ML Module "micromega_plugin".*)
@@ -334,15 +334,16 @@ Proof.
       apply Qeq_bool_eq in C2.
       rewrite C2.
       simpl.
-      rewrite Qpower0 by lia.
+      rewrite Qpower0.
       apply Q2R_0.
+      intro ; subst ; slia C1 C1.
     + rewrite Q2RpowerRZ.
       rewrite IHc.
       reflexivity.
       rewrite andb_false_iff in C.
       destruct C.
       simpl. apply Z.ltb_ge in H.
-      lia.
+      right ; normZ. slia H H0.
       left ; apply Qeq_bool_neq; auto.
     + simpl.
       rewrite <- IHc.

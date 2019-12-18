@@ -13,8 +13,8 @@
 (*                                                        *)
 (**********************************************************)
 
-Require Import Rbase.
-Require Import Lia.
+Require Import Rdefinitions Raxioms RIneq.
+Require Import Ztac.
 Local Open Scope R_scope.
 
 (*********************************************************)
@@ -60,7 +60,7 @@ Proof.
   apply lt_IZR in H1.
   rewrite <- minus_IZR in H2.
   apply le_IZR in H2.
-  lia.
+  normZ. slia H2 HZ. slia H1 HZ.
 Qed.
 
 (**********)
@@ -229,8 +229,8 @@ Proof.
                                                                                                                     rewrite (Z_R_minus (Int_part r1) (Int_part r2)) in H.
     rewrite <- (plus_IZR (Int_part r1 - Int_part r2) 1) in H;
       generalize (up_tech (r1 - r2) (Int_part r1 - Int_part r2) H0 H);
-        intros; clear H H0; unfold Int_part at 1;
-          lia.
+        intros; clear H H0; unfold Int_part at 1.
+    normZ. slia H HZ. slia H0 HZ.
 Qed.
 
 (**********)
@@ -322,8 +322,8 @@ Proof.
           generalize (Rlt_le (IZR (Int_part r1 - Int_part r2 - 1)) (r1 - r2) H);
             intro; clear H;
               generalize (up_tech (r1 - r2) (Int_part r1 - Int_part r2 - 1) H1 H0);
-                intros; clear H0 H1; unfold Int_part at 1;
-                  lia.
+                intros; clear H0 H1; unfold Int_part at 1.
+  normZ.  slia H HZ. slia H0 HZ.
 Qed.
 
 (**********)
@@ -437,7 +437,8 @@ Proof.
           rewrite <- (plus_IZR (Int_part r1 + Int_part r2) 1) in H0;
             rewrite <- (plus_IZR (Int_part r1 + Int_part r2 + 1) 1) in H0;
               generalize (up_tech (r1 + r2) (Int_part r1 + Int_part r2 + 1) H H0);
-                intro; clear H H0; unfold Int_part at 1; lia.
+              intro; clear H H0; unfold Int_part at 1.
+    normZ. slia H HZ. slia H0 HZ.
 Qed.
 
 (**********)
@@ -498,8 +499,8 @@ Proof.
       rewrite <- (plus_IZR (Int_part r1) (Int_part r2)) in H1;
         rewrite <- (plus_IZR (Int_part r1 + Int_part r2) 1) in H1;
           generalize (up_tech (r1 + r2) (Int_part r1 + Int_part r2) H0 H1);
-            intro; clear H0 H1; unfold Int_part at 1;
-              lia.
+            intro; clear H0 H1; unfold Int_part at 1.
+    normZ. slia H HZ. slia H0 HZ.
 Qed.
 
 (**********)

@@ -281,6 +281,20 @@ module Coq_Pos =
   let compare =
     compare_cont Eq
 
+  (** val max : positive -> positive -> positive **)
+
+  let max p p' =
+    match compare p p' with
+    | Gt -> p
+    | _ -> p'
+
+  (** val leb : positive -> positive -> bool **)
+
+  let leb x y =
+    match compare x y with
+    | Gt -> false
+    | _ -> true
+
   (** val gcdn : nat -> positive -> positive -> positive **)
 
   let rec gcdn n0 a b =
@@ -1760,13 +1774,6 @@ let simpl_cone cO cI ctimes ceqb e = match e with
            | _ -> PsatzAdd (t1, t2)))
 | _ -> e
 
-module PositiveSet =
- struct
-  type tree =
-  | Leaf
-  | Node of tree * bool * tree
- end
-
 type q = { qnum : z; qden : positive }
 
 (** val qeq_bool : q -> q -> bool **)
@@ -1980,6 +1987,7 @@ type zArithProof =
 | RatProof of zWitness * zArithProof
 | CutProof of zWitness * zArithProof
 | EnumProof of zWitness * zWitness * zArithProof list
+| ExProof of positive * zArithProof
 
 (** val zgcdM : z -> z -> z **)
 
@@ -2051,116 +2059,6 @@ let valid_cut_sign = function
 | NonStrict -> true
 | _ -> false
 
-module Vars =
- struct
-  type elt = positive
-
-  type tree = PositiveSet.tree =
-  | Leaf
-  | Node of tree * bool * tree
-
-  type t = tree
-
-  (** val empty : t **)
-
-  let empty =
-    Leaf
-
-  (** val add : elt -> t -> t **)
-
-  let rec add i = function
-  | Leaf ->
-    (match i with
-     | XI i0 -> Node (Leaf, false, (add i0 Leaf))
-     | XO i0 -> Node ((add i0 Leaf), false, Leaf)
-     | XH -> Node (Leaf, true, Leaf))
-  | Node (l, o, r) ->
-    (match i with
-     | XI i0 -> Node (l, o, (add i0 r))
-     | XO i0 -> Node ((add i0 l), o, r)
-     | XH -> Node (l, true, r))
-
-  (** val singleton : elt -> t **)
-
-  let singleton i =
-    add i empty
-
-  (** val union : t -> t -> t **)
-
-  let rec union m m' =
-    match m with
-    | Leaf -> m'
-    | Node (l, o, r) ->
-      (match m' with
-       | Leaf -> m
-       | Node (l', o', r') ->
-         Node ((union l l'), (if o then true else o'), (union r r')))
-
-  (** val rev_append : elt -> elt -> elt **)
-
-  let rec rev_append y x =
-    match y with
-    | XI y0 -> rev_append y0 (XI x)
-    | XO y0 -> rev_append y0 (XO x)
-    | XH -> x
-
-  (** val rev : elt -> elt **)
-
-  let rev x =
-    rev_append x XH
-
-  (** val xfold : (elt -> 'a1 -> 'a1) -> t -> 'a1 -> elt -> 'a1 **)
-
-  let rec xfold f m v i =
-    match m with
-    | Leaf -> v
-    | Node (l, b, r) ->
-      if b
-      then xfold f r (f (rev i) (xfold f l v (XO i))) (XI i)
-      else xfold f r (xfold f l v (XO i)) (XI i)
-
-  (** val fold : (elt -> 'a1 -> 'a1) -> t -> 'a1 -> 'a1 **)
-
-  let fold f m i =
-    xfold f m i XH
- end
-
-(** val vars_of_pexpr : z pExpr -> Vars.t **)
-
-let rec vars_of_pexpr = function
-| PEc _ -> Vars.empty
-| PEX x -> Vars.singleton x
-| PEadd (e1, e2) ->
-  let v1 = vars_of_pexpr e1 in let v2 = vars_of_pexpr e2 in Vars.union v1 v2
-| PEsub (e1, e2) ->
-  let v1 = vars_of_pexpr e1 in let v2 = vars_of_pexpr e2 in Vars.union v1 v2
-| PEmul (e1, e2) ->
-  let v1 = vars_of_pexpr e1 in let v2 = vars_of_pexpr e2 in Vars.union v1 v2
-| PEopp c -> vars_of_pexpr c
-| PEpow (e0, _) -> vars_of_pexpr e0
-
-(** val vars_of_formula : z formula -> Vars.t **)
-
-let vars_of_formula f =
-  let { flhs = l; fop = _; frhs = r } = f in
-  let v1 = vars_of_pexpr l in let v2 = vars_of_pexpr r in Vars.union v1 v2
-
-(** val vars_of_bformula : (z formula, 'a1, 'a2, 'a3) gFormula -> Vars.t **)
-
-let rec vars_of_bformula = function
-| A (a, _) -> vars_of_formula a
-| Cj (f1, f2) ->
-  let v1 = vars_of_bformula f1 in
-  let v2 = vars_of_bformula f2 in Vars.union v1 v2
-| D (f1, f2) ->
-  let v1 = vars_of_bformula f1 in
-  let v2 = vars_of_bformula f2 in Vars.union v1 v2
-| N f0 -> vars_of_bformula f0
-| I (f1, _, f2) ->
-  let v1 = vars_of_bformula f1 in
-  let v2 = vars_of_bformula f2 in Vars.union v1 v2
-| _ -> Vars.empty
-
 (** val bound_var : positive -> z formula **)
 
 let bound_var v =
@@ -2171,24 +2069,18 @@ let bound_var v =
 let mk_eq_pos x y t0 =
   { flhs = (PEX x); fop = OpEq; frhs = (PEsub ((PEX y), (PEX t0))) }
 
-(** val bound_vars :
-    (positive -> positive -> bool option -> 'a2) -> positive -> Vars.t -> (z
-    formula, 'a1, 'a2, 'a3) gFormula **)
+(** val max_var : positive -> z pol -> positive **)
 
-let bound_vars tag_of_var fr v =
-  Vars.fold (fun k acc ->
-    let y = XO (Coq_Pos.add fr k) in
-    let z0 = XI (Coq_Pos.add fr k) in
-    Cj ((Cj ((A ((mk_eq_pos k y z0), (tag_of_var fr k None))), (Cj ((A
-    ((bound_var y), (tag_of_var fr k (Some false)))), (A ((bound_var z0),
-    (tag_of_var fr k (Some true)))))))), acc)) v TT
+let rec max_var jmp = function
+| Pc _ -> jmp
+| Pinj (j, p2) -> max_var (Coq_Pos.add j jmp) p2
+| PX (p2, _, q0) ->
+  Coq_Pos.max (max_var jmp p2) (max_var (Coq_Pos.succ jmp) q0)
 
-(** val bound_problem_fr :
-    (positive -> positive -> bool option -> 'a2) -> positive -> (z formula,
-    'a1, 'a2, 'a3) gFormula -> (z formula, 'a1, 'a2, 'a3) gFormula **)
+(** val max_var_nformulae : z nFormula list -> positive **)
 
-let bound_problem_fr tag_of_var fr f =
-  let v = vars_of_bformula f in I ((bound_vars tag_of_var fr v), None, f)
+let max_var_nformulae l =
+  fold_left (fun acc f -> Coq_Pos.max acc (max_var XH (fst f))) l XH
 
 (** val zChecker : z nFormula list -> zArithProof -> bool **)
 
@@ -2232,6 +2124,16 @@ let rec zChecker l = function
          | None -> true)
       | None -> false)
    | None -> false)
+| ExProof (x, prf) ->
+  let fr = max_var_nformulae l in
+  if Coq_Pos.leb x fr
+  then let z0 = Coq_Pos.succ fr in
+       let t0 = Coq_Pos.succ z0 in
+       let nfx = xnnormalise (mk_eq_pos x z0 t0) in
+       let posz = xnnormalise (bound_var z0) in
+       let post = xnnormalise (bound_var t0) in
+       zChecker (nfx::(posz::(post::l))) prf
+  else false
 
 (** val zTautoChecker : z formula bFormula -> zArithProof list -> bool **)
 

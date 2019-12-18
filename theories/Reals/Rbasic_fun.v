@@ -13,7 +13,7 @@
 (*                                                       *)
 (*********************************************************)
 
-Require Import Rbase.
+Require Import Rdefinitions Raxioms RIneq.
 Require Import R_Ifp.
 Local Open Scope R_scope.
 

@@ -9,8 +9,6 @@
 (************************************************************************)
 
 open Polynomial
-(** A naive simplex *)
-
 open Num
 
 (*open Util*)
@@ -59,6 +57,12 @@ let pp_row o v = LinPoly.pp o v
 let output_tableau o t =
   IMap.iter
     (fun k v -> Printf.fprintf o "%a = %a\n" LinPoly.pp_var k pp_row v)
+    t
+
+let output_env o t =
+  IMap.iter
+    (fun k v ->
+      Printf.fprintf o "%a : %a\n" LinPoly.pp_var k WithProof.output v)
     t
 
 let output_vars o m =
@@ -329,16 +333,6 @@ open Mutils
 
 open Polynomial
 
-let fresh_var l =
-  1
-  +
-  try
-    ISet.max_elt
-      (List.fold_left
-         (fun acc c -> ISet.union acc (Vect.variables c.coeffs))
-         ISet.empty l)
-  with Not_found -> 0
-
 (*type varmap = (int * bool) IMap.t*)
 
 let make_certificate vm l =
@@ -348,6 +342,12 @@ let make_certificate vm l =
          let x', b = IMap.find x vm in
          Vect.set x' (if b then n else Num.minus_num n) acc)
        Vect.null l)
+
+(** [eliminate_equalities vr0 l]
+    represents an equality e = 0 of index idx in the list l
+    by 2 constraints (vr:e >= 0) and (vr+1:-e >= 0)
+    The mapping vm maps vr to idx
+ *)
 
 let eliminate_equalities (vr0 : var) (l : Polynomial.cstr list) =
   let rec elim idx vr vm l acc =
@@ -373,6 +373,9 @@ let find_solution rst tbl =
       if Restricted.is_restricted vr rst then res
       else Vect.set vr (Vect.get_cst v) res)
     tbl Vect.null
+
+let find_full_solution rst tbl =
+  IMap.fold (fun vr v res -> Vect.set vr (Vect.get_cst v) res) tbl Vect.null
 
 let choose_conflict (sol : Vect.t) (l : (var * Vect.t) list) =
   let esol = Vect.set 0 (Int 1) sol in
@@ -404,11 +407,21 @@ let rec solve opt l (rst : Restricted.t) (t : tableau) =
     | Unsat c -> Inr c )
 
 let find_unsat_certificate (l : Polynomial.cstr list) =
-  let vr = fresh_var l in
+  let vr = LinPoly.MonT.get_fresh () in
   let _, vm, l' = eliminate_equalities vr l in
   match solve false l' (Restricted.make vr) IMap.empty with
   | Inr c -> Some (make_certificate vm c)
   | Inl _ -> None
+
+let fresh_var l =
+  1
+  +
+  try
+    ISet.max_elt
+      (List.fold_left
+         (fun acc c -> ISet.union acc (Vect.variables c.coeffs))
+         ISet.empty l)
+  with Not_found -> 0
 
 let find_point (l : Polynomial.cstr list) =
   let vr = fresh_var l in
@@ -418,7 +431,7 @@ let find_point (l : Polynomial.cstr list) =
   | _ -> None
 
 let optimise obj l =
-  let vr0 = fresh_var l in
+  let vr0 = LinPoly.MonT.get_fresh () in
   let _, vm, l' = eliminate_equalities (vr0 + 1) l in
   let bound pos res =
     match res with
@@ -471,43 +484,17 @@ let make_farkas_proof (env : WithProof.t IMap.t) vm v =
 
 let frac_num n = n -/ Num.floor_num n
 
-(* [resolv_var v rst tbl] returns (if it exists) a restricted variable vr such that v = vr *)
-exception FoundVar of int
-
-let resolve_var v rst tbl =
-  let v = Vect.set v (Int 1) Vect.null in
-  try
-    IMap.iter
-      (fun k vect ->
-        if Restricted.is_restricted k rst then
-          if Vect.equal v vect then raise (FoundVar k) else ())
-      tbl;
-    None
-  with FoundVar k -> Some k
-
-let prepare_cut env rst tbl x v =
-  (* extract the unrestricted part *)
-  let unrst, rstv =
-    Vect.partition
-      (fun x vl ->
-        (not (Restricted.is_restricted x rst)) && frac_num vl <>/ Int 0)
-      (Vect.set 0 (Int 0) v)
-  in
-  if Vect.is_null unrst then Some rstv
-  else
-    Some
-      (Vect.fold
-         (fun acc k i ->
-           match resolve_var k rst tbl with
-           | None -> acc (* Should not happen *)
-           | Some v' -> Vect.set v' i acc)
-         rstv unrst)
+type ('a, 'b) hitkind =
+  | Forget
+  (* Not interesting *)
+  | Hit of 'a
+  (* Yes, we have a positive result *)
+  | Keep of 'b
 
 let cut env rmin sol vm (rst : Restricted.t) tbl (x, v) =
-  (*    Printf.printf "Trying to cut %i\n" x;*)
   let n, r = Vect.decomp_cst v in
   let f = frac_num n in
-  if f =/ Int 0 then None (* The solution is integral *)
+  if f =/ Int 0 then Forget (* The solution is integral *)
   else
     (* This is potentially a cut *)
     let t =
@@ -522,11 +509,11 @@ let cut env rmin sol vm (rst : Restricted.t) tbl (x, v) =
     in
     let cut_coeff2 v = frac_num (t */ v) in
     let cut_vector ccoeff =
-      match prepare_cut env rst tbl x v with
-      | None -> Vect.null
-      | Some r ->
-        (*Printf.printf "Potential cut %a\n" LinPoly.pp r;*)
-        Vect.fold (fun acc x n -> Vect.set x (ccoeff n) acc) Vect.null r
+      Vect.fold
+        (fun acc x n ->
+          if Restricted.is_restricted x rst then Vect.set x (ccoeff n) acc
+          else acc)
+        Vect.null r
     in
     let lcut =
       List.map
@@ -538,52 +525,100 @@ let cut env rmin sol vm (rst : Restricted.t) tbl (x, v) =
       match WithProof.cutting_plane c with
       | None ->
         if debug then
-          Printf.printf "This is not cutting plane for %a\n%a:" LinPoly.pp_var x
-            WithProof.output c;
+          Printf.printf "This is not a cutting plane for %a\n%a:" LinPoly.pp_var
+            x WithProof.output c;
         None
       | Some (v, prf) ->
-        if debug then begin
+        if debug then (
           Printf.printf "This is a cutting plane for %a:" LinPoly.pp_var x;
-          Printf.printf " %a\n" WithProof.output (v, prf)
-        end;
+          Printf.printf " %a\n" WithProof.output (v, prf) );
         if snd v = Eq then (* Unsat *) Some (x, (v, prf))
         else
           let vl = Vect.dotproduct (fst v) (Vect.set 0 (Int 1) sol) in
-          if eval_op Ge vl (Int 0) then begin
-            (* Can this happen? *)
+          if eval_op Ge vl (Int 0) then (
             if debug then
-              Printf.printf "The cut is feasible %s >= 0 ??\n"
+              Printf.printf "The cut is feasible %s >= 0 \n"
                 (Num.string_of_num vl);
-            None
-          end
+            None )
           else Some (x, (v, prf))
     in
-    find_some check_cutting_plane lcut
+    match find_some check_cutting_plane lcut with
+    | Some r -> Hit r
+    | None -> Keep (x, v)
+
+let merge_result_old oldr f x =
+  match oldr with
+  | Hit v -> Hit v
+  | Forget -> (
+    match f x with Forget -> Forget | Hit v -> Hit v | Keep v -> Keep v )
+  | Keep v -> (
+    match f x with Forget -> Keep v | Keep v' -> Keep v | Hit v -> Hit v )
+
+let merge_best lt oldr newr =
+  match (oldr, newr) with
+  | x, Forget -> x
+  | Hit v, Hit v' -> if lt v v' then Hit v else Hit v'
+  | _, Hit v | Hit v, _ -> Hit v
+  | Forget, Keep v -> Keep v
+  | Keep v, Keep v' -> Keep v'
 
 let find_cut nb env u sol vm rst tbl =
   if nb = 0 then
     IMap.fold
-      (fun x v acc ->
-        match acc with
-        | None -> cut env u sol vm rst tbl (x, v)
-        | Some c -> Some c)
-      tbl None
+      (fun x v acc -> merge_result_old acc (cut env u sol vm rst tbl) (x, v))
+      tbl Forget
   else
+    let lt (_, (_, p1)) (_, (_, p2)) =
+      ProofFormat.pr_size p1 </ ProofFormat.pr_size p2
+    in
     IMap.fold
-      (fun x v acc ->
-        match (cut env u sol vm rst tbl (x, v), acc) with
-        | None, Some r | Some r, None -> Some r
-        | None, None -> None
-        | Some (v, ((lp, o), p1)), Some (v', ((lp', o'), p2)) ->
-          Some
-            ( if ProofFormat.pr_size p1 </ ProofFormat.pr_size p2 then
-              (v, ((lp, o), p1))
-            else (v', ((lp', o'), p2)) ))
-      tbl None
+      (fun x v acc -> merge_best lt acc (cut env u sol vm rst tbl (x, v)))
+      tbl Forget
+
+let var_of_vect v = fst (fst (Vect.decomp_fst v))
+
+let eliminate_variable (bounded, vr, env, tbl) x =
+  if debug then
+    Printf.printf "Eliminating variable %a from tableau\n%a\n" LinPoly.pp_var x
+      output_tableau tbl;
+  (* We identify the new variables with the constraint. *)
+  LinPoly.MonT.reserve vr;
+  let z = LinPoly.var (vr + 1) in
+  let zv = var_of_vect z in
+  let t = LinPoly.var (vr + 2) in
+  let tv = var_of_vect t in
+  (* x = z - t *)
+  let xdef = Vect.add z (Vect.uminus t) in
+  let xp = ((Vect.set x (Int 1) (Vect.uminus xdef), Eq), Def vr) in
+  let zp = ((z, Ge), Def zv) in
+  let tp = ((t, Ge), Def tv) in
+  (* Pivot the current tableau using xdef *)
+  let tbl = IMap.map (fun v -> Vect.subst x xdef v) tbl in
+  (* Pivot the environment *)
+  let env =
+    IMap.map
+      (fun lp ->
+        let (v, o), p = lp in
+        let ai = Vect.get x v in
+        if ai =/ Int 0 then lp
+        else
+          WithProof.addition
+            (WithProof.mult (Vect.cst (Num.minus_num ai)) xp)
+            lp)
+      env
+  in
+  (* Add the variables to the environment *)
+  let env = IMap.add vr xp (IMap.add zv zp (IMap.add tv tp env)) in
+  (* Remember the mapping *)
+  let bounded = IMap.add x (vr, zv, tv) bounded in
+  if debug then (
+    Printf.printf "Tableau without\n %a\n" output_tableau tbl;
+    Printf.printf "Environment\n %a\n" output_env env );
+  (bounded, vr + 3, env, tbl)
 
 let integer_solver lp =
   let l, _ = List.split lp in
-  let vr0 = fresh_var l in
+  let vr0 = 3 * LinPoly.MonT.get_fresh () in
   let vr, vm, l' = eliminate_equalities vr0 l in
   let _, env = env_of_list (List.map WithProof.of_cstr lp) in
   let insert_row vr v rst tbl =
@@ -601,24 +636,46 @@ let integer_solver lp =
       if debug then begin
         Printf.fprintf stdout "Looking for a cut\n";
         Printf.fprintf stdout "Restricted %a ...\n" Restricted.pp rst;
-        Printf.fprintf stdout "Current Tableau\n%a\n" output_tableau tbl
+        Printf.fprintf stdout "Current Tableau\n%a\n" output_tableau tbl;
+        flush stdout
         (*           Printf.fprintf stdout "Bounding box\n%a\n" output_box (bounding_box (vr+1) rst tbl l')*)
       end;
-      let sol = find_solution rst tbl in
+      let sol = find_full_solution rst tbl in
       match find_cut (!nb mod 2) env cr (*x*) sol vm rst tbl with
-      | None -> None
-      | Some (cr, ((v, op), cut)) -> (
+      | Forget ->
+        None (* There is no hope, there should be an integer solution *)
+      | Hit (cr, ((v, op), cut)) ->
         if op = Eq then
           (* This is a contradiction *)
           Some (Step (vr, CutPrf cut, Done))
-        else
+        else (
+          LinPoly.MonT.reserve vr;
           let res = insert_row vr v (Restricted.set_exc vr rst) tbl in
           let prf =
             isolve (IMap.add vr ((v, op), Def vr) env) (Some cr) (vr + 1) res
           in
           match prf with
           | None -> None
-          | Some p -> Some (Step (vr, CutPrf cut, p)) ) )
+          | Some p -> Some (Step (vr, CutPrf cut, p)) )
+      | Keep (x, v) -> (
+        if debug then
+          Printf.fprintf stdout "Remove %a from Tableau\n" LinPoly.pp_var x;
+        let bounded, vr, env, tbl =
+          Vect.fold
+            (fun acc x n ->
+              if x <> 0 && not (Restricted.is_restricted x rst) then
+                eliminate_variable acc x
+              else acc)
+            (IMap.empty, vr, env, tbl) v
+        in
+        let prf = isolve env cr vr (Inl (rst, tbl, None)) in
+        match prf with
+        | None -> None
+        | Some pf ->
+          Some
+            (IMap.fold
+               (fun x (vr, zv, tv) acc -> ExProof (vr, zv, tv, x, zv, tv, acc))
+               bounded pf) ) )
   in
   let res = solve true l' (Restricted.make vr0) IMap.empty in
   isolve env None vr res

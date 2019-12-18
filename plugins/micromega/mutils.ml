@@ -294,7 +294,7 @@ end
   *)
 
 module type Tag = sig
-  type t
+  type t = int
 
   val from : int -> t
   val next : t -> t
@@ -319,7 +319,9 @@ end
   * MODULE: Ordered sets of tags.
   *)
 
-module TagSet = Set.Make (Tag)
+module TagSet = struct
+  include Set.Make (Tag)
+end
 
 (** As for Unix.close_process, our Unix.waipid will ignore all EINTR *)
 

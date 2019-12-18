@@ -938,8 +938,6 @@ Section S.
       Qed.
 
 
-    Variable eval  : Env -> Term -> Prop.
-
     Variable eval'  : Env -> Term' -> Prop.
 
     Variable no_middle_eval' : forall env d, (eval' env d) \/ ~ (eval' env d).
@@ -1202,7 +1200,7 @@ Section S.
   Qed.
 
 
-
+  Variable eval  : Env -> Term -> Prop.
 
   Variable normalise_correct : forall env t tg, eval_cnf  env (normalise t tg) -> eval env t.
 
