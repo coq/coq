@@ -1629,8 +1629,8 @@ The syntax is supported in all top-level definitions:
 :cmd:`Definition`, :cmd:`Fixpoint`, :cmd:`Lemma` and so on. For (co-)inductive datatype
 declarations, the semantics are the following: an inductive parameter
 declared as an implicit argument need not be repeated in the inductive
-definition but will become implicit for the constructors of the
-inductive only, not the inductive type itself. For example:
+definition and will become implicit for the inductive type and the constructors.
+For example:
 
 .. coqtop:: all
 
