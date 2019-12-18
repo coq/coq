@@ -18,6 +18,7 @@
     [equal s s'=true] instead of [Equal s s'], etc. *)
 
 Require Import MSetProperties Zerob Sumbool Omega DecidableTypeEx.
+Require  FSetEqProperties.
 
 Module WEqPropertiesOn (Import E:DecidableType)(M:WSetsOn E).
 Module Import MP := WPropertiesOn E M.

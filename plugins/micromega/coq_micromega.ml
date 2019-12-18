@@ -285,6 +285,7 @@ module M = struct
   let coq_ratProof = lazy (constant "RatProof")
   let coq_cutProof = lazy (constant "CutProof")
   let coq_enumProof = lazy (constant "EnumProof")
+  let coq_ExProof = lazy (constant "ExProof")
   let coq_Zgt = lazy (z_constant "Z.gt")
   let coq_Zge = lazy (z_constant "Z.ge")
   let coq_Zle = lazy (z_constant "Z.le")
@@ -1420,6 +1421,9 @@ let rec dump_proof_term = function
       , [| dump_psatz coq_Z dump_z c1
          ; dump_psatz coq_Z dump_z c2
          ; dump_list (Lazy.force coq_proofTerm) dump_proof_term prfs |] )
+  | Micromega.ExProof (p, prf) ->
+    EConstr.mkApp
+      (Lazy.force coq_ExProof, [|dump_positive p; dump_proof_term prf|])
 
 let rec size_of_psatz = function
   | Micromega.PsatzIn _ -> 1
@@ -1437,6 +1441,7 @@ let rec size_of_pf = function
   | Micromega.EnumProof (p1, p2, l) ->
     size_of_psatz p1 + size_of_psatz p2
     + List.fold_left (fun acc p -> size_of_pf p + acc) 0 l
+  | Micromega.ExProof (_, a) -> size_of_pf a + 1
 
 let dump_proof_term t =
   if debug then Printf.printf "dump_proof_term %i\n" (size_of_pf t);
@@ -1455,6 +1460,8 @@ let rec pp_proof_term o = function
     Printf.fprintf o "EP[%a,%a,%a]" (pp_psatz pp_z) c1 (pp_psatz pp_z) c2
       (pp_list "[" "]" pp_proof_term)
       rst
+  | Micromega.ExProof (p, prf) ->
+    Printf.fprintf o "Ex[%a,%a]" pp_positive p pp_proof_term prf
 
 let rec parse_hyps gl parse_arith env tg hyps =
   match hyps with
@@ -1504,33 +1511,6 @@ let qq_domain_spec =
 let max_tag f =
   1 + Tag.to_int (Mc.foldA (fun t1 (t2, _) -> Tag.max t1 t2) f (Tag.from 0))
 
-(** For completeness of the cutting-plane procedure,
-    each variable 'x' is replaced by 'y' - 'z' where
-    'y' and 'z' are positive *)
-let pre_processZ mt f =
-  let x0 i = 2 * i in
-  let x1 i = (2 * i) + 1 in
-  let tag_of_var fr p b =
-    let ip = CoqToCaml.positive fr + CoqToCaml.positive p in
-    match b with
-    | None ->
-      let y = Mc.XO (Mc.Coq_Pos.add fr p) in
-      let z = Mc.XI (Mc.Coq_Pos.add fr p) in
-      let tag = Tag.from (-x0 (x0 ip)) in
-      let constr = Mc.mk_eq_pos p y z in
-      (tag, dump_cstr (Lazy.force coq_Z) dump_z constr)
-    | Some false ->
-      let y = Mc.XO (Mc.Coq_Pos.add fr p) in
-      let tag = Tag.from (-x0 (x1 ip)) in
-      let constr = Mc.bound_var (Mc.XO y) in
-      (tag, dump_cstr (Lazy.force coq_Z) dump_z constr)
-    | Some true ->
-      let z = Mc.XI (Mc.Coq_Pos.add fr p) in
-      let tag = Tag.from (-x1 (x1 ip)) in
-      let constr = Mc.bound_var (Mc.XI z) in
-      (tag, dump_cstr (Lazy.force coq_Z) dump_z constr)
-  in
-  Mc.bound_problem_fr tag_of_var mt f
 (** Naive topological sort of constr according to the subterm-ordering *)
 
 (* An element is minimal x is minimal w.r.t y if
@@ -2225,6 +2205,7 @@ let hyps_of_pt pt =
     | Mc.EnumProof (c1, c2, l) ->
       let s = xhyps_of_cone base (xhyps_of_cone base acc c2) c1 in
       List.fold_left (fun s x -> xhyps (base + 1) x s) s l
+    | Mc.ExProof (_, pt) -> xhyps (base + 3) pt acc
   in
   xhyps 0 pt ISet.empty
 
@@ -2242,6 +2223,7 @@ let compact_pt pt f =
         ( compact_cone c1 (translate ofset)
         , compact_cone c2 (translate ofset)
         , Mc.map (fun x -> compact_pt (ofset + 1) x) l )
+    | Mc.ExProof (x, pt) -> Mc.ExProof (x, compact_pt (ofset + 3) pt)
   in
   compact_pt 0 pt
 
@@ -2418,8 +2400,9 @@ let sos_Q =
 let sos_R = micromega_genr (non_linear_prover_R "pure_sos" None)
 
 let xlia =
-  micromega_gen parse_zarith pre_processZ Mc.cnfZ zz_domain_spec dump_zexpr
-    linear_Z
+  micromega_gen parse_zarith
+    (fun _ x -> x)
+    Mc.cnfZ zz_domain_spec dump_zexpr linear_Z
 
 let xnlia =
   micromega_gen parse_zarith

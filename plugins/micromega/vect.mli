@@ -25,6 +25,8 @@ type t
            are not represented.
         *)
 
+type vector = t
+
 (** {1 Generic functions}  *)
 
 (** [hash] [equal] and [compare] so that Vect.t can be used as
@@ -135,6 +137,9 @@ val mul : num -> t -> t
 val mul_add : num -> t -> num -> t -> t
 (** [mul_add c1 v1 c2 v2] returns the linear combination c1.v1+c2.v2 *)
 
+val subst : int -> t -> t -> t
+(** [subst x v v'] replaces x by v in vector v' *)
+
 val div : num -> t -> t
 (** [div c1 v1] returns the mutiplication by the inverse of c1 i.e (1/c1).v1 *)
 
@@ -170,3 +175,10 @@ val dotproduct : t -> t -> num
 val map : (var -> num -> 'a) -> t -> 'a list
 val abs_min_elt : t -> (var * num) option
 val partition : (var -> num -> bool) -> t -> t * t
+
+module Bound : sig
+  type t = {cst : num; var : var; coeff : num}
+  (** represents a0 + ai.xi  *)
+
+  val of_vect : vector -> t option
+end
