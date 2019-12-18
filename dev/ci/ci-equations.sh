@@ -5,5 +5,4 @@ ci_dir="$(dirname "$0")"
 
 git_download equations
 
-( cd "${CI_BUILD_DIR}/equations" && coq_makefile -f _CoqProject -o Makefile && \
-  make && make test-suite && make examples && make install)
+( cd "${CI_BUILD_DIR}/equations" && ./configure.sh coq && make ci)
