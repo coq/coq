@@ -544,7 +544,7 @@ $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	    true "find expected time * 100"; \
 	    exp=`sed -n -e "s/(\*.*Expected time < \([0-9]\).\([0-9][0-9]\)s.*\*)/\1\2/p" "$<"`; \
 	    true "compute corrected effective time, rounded up"; \
-	    rescorrected=`expr \( $$res \* $(bogomips) \+ 6120 \- 1 \) \/ 6120`; \
+	    rescorrected=`expr \( $$res \* $(bogomips) + 6120 - 1 \) / 6120`; \
 	    ok=`expr \( $$res \* $(bogomips) \) "<" \( $$exp \* 6120 \)`; \
 	    if [ "$$ok" = 1 ]; then \
 	      echo $(log_success); \
