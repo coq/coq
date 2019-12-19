@@ -1,0 +1,8 @@
+Ltac t1 := time "my tactic" idtac
+Ltac t2 := let x := string:("my tactic") in
+           idtac
+           x
+Ltac t3 := idtacstr "my tactic"
+Ltac t4 x := match x with
+             | ?A => (A, A)
+             end
