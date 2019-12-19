@@ -994,7 +994,7 @@ Qed.
 
 
 Arguments Vector.cons [A] _ [n].
-Arguments Vector.nil [A].
+Arguments Vector.nil {A}.
 Arguments Vector.hd [A n].
 Arguments Vector.tl [A n].
 
@@ -1161,7 +1161,7 @@ infiniteproof map_iterate'.
 Qed.
 
 
-Arguments LNil [A].
+Arguments LNil {A}.
 
 Lemma Lnil_not_Lcons : forall (A:Set)(a:A)(l:LList A),
                                LNil <> (LCons a l).
