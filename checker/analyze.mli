@@ -7,8 +7,8 @@ type data =
 
 type obj =
 | Struct of int * data array (* tag × data *)
-| Int63 of Uint63.t (* Primitive integer *)
-| Float64 of Float64.t (* Primitive float *)
+| Int64 of Int64.t (* Primitive integer *)
+| Float64 of float (* Primitive float *)
 | String of string
 
 module LargeArray :

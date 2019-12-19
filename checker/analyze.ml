@@ -106,8 +106,8 @@ end
 
 type repr =
 | RInt of int
-| RInt63 of Uint63.t
-| RFloat64 of Float64.t
+| Rint64 of Int64.t
+| RFloat64 of float
 | RBlock of (int * int) (* tag × len *)
 | RString of string
 | RPointer of int
@@ -121,8 +121,8 @@ type data =
 
 type obj =
 | Struct of int * data array (* tag × data *)
-| Int63 of Uint63.t (* Primitive integer *)
-| Float64 of Float64.t (* Primitive float *)
+| Int64 of Int64.t (* Primitive integer *)
+| Float64 of float (* Primitive float *)
 | String of string
 
 module type Input =
@@ -344,13 +344,13 @@ let parse_object chan =
     RCode addr
   | CODE_CUSTOM ->
     begin match input_cstring chan with
-    | "_j" -> RInt63 (Uint63.of_int64 (input_intL chan))
+    | "_j" -> Rint64 (input_intL chan)
     | s -> Printf.eprintf "Unhandled custom code: %s" s; assert false
     end
   | CODE_DOUBLE_BIG ->
-    RFloat64 (Float64.of_float (input_double_big chan))
+    RFloat64 (input_double_big chan)
   | CODE_DOUBLE_LITTLE ->
-    RFloat64 (Float64.of_float (input_double_little chan))
+    RFloat64 (input_double_little chan)
   | CODE_DOUBLE_ARRAY32_LITTLE
   | CODE_DOUBLE_ARRAY8_BIG
   | CODE_DOUBLE_ARRAY8_LITTLE
@@ -388,9 +388,9 @@ let parse chan =
   | RCode addr ->
     let data = Fun addr in
     data, None
-  | RInt63 i ->
+  | Rint64 i ->
     let data = Ptr !current_object in
-    let () = LargeArray.set memory !current_object (Int63 i) in
+    let () = LargeArray.set memory !current_object (Int64 i) in
     let () = incr current_object in
     data, None
   | RFloat64 f ->
@@ -461,7 +461,7 @@ let instantiate (p, mem) =
   for i = 0 to len - 1 do
     let obj = match LargeArray.get mem i with
     | Struct (tag, blk) -> Obj.new_block tag (Array.length blk)
-    | Int63 i -> Obj.repr i
+    | Int64 i -> Obj.repr i
     | Float64 f -> Obj.repr f
     | String str -> Obj.repr str
     in
@@ -481,7 +481,7 @@ let instantiate (p, mem) =
       for k = 0 to Array.length blk - 1 do
         Obj.set_field obj k (get_data blk.(k))
       done
-    | Int63 _
+    | Int64 _
     | Float64 _
     | String _ -> ()
   done;
