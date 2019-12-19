@@ -61,7 +61,7 @@ class TacticNotationsToHTMLVisitor(TacticNotationsVisitor):
             tags.sub(sub.getText()[1:])
 
     def visitEscaped(self, ctx:TacticNotationsParser.EscapedContext):
-        tags.span(ctx.ESCAPED().getText()[1:])
+        tags.span(ctx.ESCAPED().getText().replace("%", ""))
 
     def visitWhitespace(self, ctx:TacticNotationsParser.WhitespaceContext):
         text(" ")

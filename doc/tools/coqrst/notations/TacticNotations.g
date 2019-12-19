@@ -42,7 +42,8 @@ LALT: '{|';
 LGROUP: '{+' | '{*' | '{?';
 LBRACE: '{';
 RBRACE: '}';
-ESCAPED: '%{' | '%}' | '%|';
+// todo: need a cleaner way to escape the 3-character strings here
+ESCAPED: '%{' | '%}' | '%|' | '`%{' | '@%{';
 PIPE: '|';
 ATOM: '@' | '_' | ~[@_{}| ]+;
 ID: '@' ('_'? [a-zA-Z0-9])+;

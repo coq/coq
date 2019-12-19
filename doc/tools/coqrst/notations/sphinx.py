@@ -104,7 +104,7 @@ class TacticNotationsToSphinxVisitor(TacticNotationsVisitor):
 
     def visitEscaped(self, ctx:TacticNotationsParser.EscapedContext):
         escaped = ctx.ESCAPED().getText()
-        return [nodes.inline(escaped, escaped[1:])]
+        return [nodes.inline(escaped, escaped.replace("%", ""))]
 
     def visitWhitespace(self, ctx:TacticNotationsParser.WhitespaceContext):
         return [nodes.Text(" ")]

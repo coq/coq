@@ -53,7 +53,7 @@ class TacticNotationsToDotsVisitor(TacticNotationsVisitor):
         self.buffer.write("‘{}’".format(ctx.ID().getText()[1:]))
 
     def visitEscaped(self, ctx:TacticNotationsParser.EscapedContext):
-        self.buffer.write(ctx.ESCAPED().getText()[1:])
+        self.buffer.write(ctx.ESCAPED().getText().replace("%", ""))
 
     def visitWhitespace(self, ctx:TacticNotationsParser.WhitespaceContext):
         self.buffer.write(" ")
