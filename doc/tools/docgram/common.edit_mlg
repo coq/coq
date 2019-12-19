@@ -65,6 +65,7 @@ DELETE: [
 | test_lpar_idnum_coloneq
 | test_nospace_pipe_closedcurly
 | test_show_goal
+| ensure_fixannot
 
   (* SSR *)
 (* | ssr_null_entry *)
@@ -101,18 +102,8 @@ hyp: [
 | var
 ]
 
-empty: [
-|
-]
-
-or_opt: [
-| "|"
-| empty
-]
-
 ltac_expr_opt: [
-| tactic_expr5
-| empty
+| OPT tactic_expr5
 ]
 
 ltac_expr_opt_list_or: [
@@ -124,7 +115,7 @@ tactic_then_gen: [
 | EDIT ADD_OPT tactic_expr5 "|" tactic_then_gen
 | EDIT ADD_OPT tactic_expr5 ".." tactic_then_last
 | REPLACE OPT tactic_expr5 ".." tactic_then_last
-| WITH ltac_expr_opt ".." or_opt ltac_expr_opt_list_or
+| WITH ltac_expr_opt ".." OPT "|" ltac_expr_opt_list_or
 ]
 
 ltac_expr_opt_list_or: [
@@ -144,24 +135,23 @@ fullyqualid: [
 | qualid
 ]
 
-
-field: [ | DELETENT ]
-
-field: [
+field_ident: [
 | "." ident
 ]
 
 basequalid: [
 | REPLACE ident fields
-| WITH qualid field
+| WITH ident LIST0 field_ident
+| DELETE ident
 ]
 
+field: [ | DELETENT ]
 fields: [ | DELETENT ]
 
 dirpath: [
 | REPLACE ident LIST0 field
 | WITH ident
-| dirpath field
+| dirpath field_ident
 ]
 
 binders: [
@@ -172,45 +162,37 @@ lconstr: [
 | DELETE l_constr
 ]
 
-let_type_cstr: [
-| DELETE OPT [ ":" lconstr ]
-| rec_type_cstr
+type_cstr: [
+| REPLACE ":" lconstr
+| WITH OPT ( ":" lconstr )
+| DELETE (* empty *)
 ]
 
-as_name_opt: [
-| "as" name
-| empty
+let_type_cstr: [
+| DELETE OPT [ ":" lconstr ]
+| type_cstr
 ]
 
 (* rename here because we want to use "return_type" for something else *)
 RENAME: [
-| return_type as_return_type_opt
-]
-
-as_return_type_opt: [
-| REPLACE OPT [ OPT [ "as" name ] case_type ]
-| WITH as_name_opt case_type
-| empty
+| return_type as_return_type
 ]
 
 case_item: [
 | REPLACE operconstr100 OPT [ "as" name ] OPT [ "in" pattern200 ]
-| WITH operconstr100 as_name_opt OPT [ "in" pattern200 ]
-]
-
-as_dirpath: [
-| DELETE OPT [ "as" dirpath ]
-| "as" dirpath
-| empty
+| WITH operconstr100 OPT ("as" name) OPT [ "in" pattern200 ]
 ]
 
 binder_constr: [
 | MOVETO term_let "let" name binders let_type_cstr ":=" operconstr200 "in" operconstr200
-| MOVETO term_let "let" single_fix "in" operconstr200
-| MOVETO term_let "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type_opt ":=" operconstr200 "in" operconstr200
+| MOVETO term_fix "let" "fix" fix_decl "in" operconstr200
+| MOVETO term_cofix "let" "cofix" cofix_decl "in" operconstr200
+| MOVETO term_let "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type ":=" operconstr200 "in" operconstr200
 | MOVETO term_let "let" "'" pattern200 ":=" operconstr200 "in" operconstr200
 | MOVETO term_let "let" "'" pattern200 ":=" operconstr200 case_type "in" operconstr200
 | MOVETO term_let "let" "'" pattern200 "in" pattern200 ":=" operconstr200 case_type "in" operconstr200
+| MOVETO term_fix "fix" fix_decls
+| MOVETO term_cofix "cofix" cofix_decls
 ]
 
 term_let: [
@@ -218,8 +200,8 @@ term_let: [
 | WITH "let" name let_type_cstr ":=" operconstr200 "in" operconstr200
 | "let" name LIST1 binder let_type_cstr ":=" operconstr200 "in" operconstr200
 (* Don't need to document that "( )" is equivalent to "()" *)
-| REPLACE "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type_opt ":=" operconstr200 "in" operconstr200
-| WITH "let" [ "(" LIST1 name SEP "," ")" | "()" ] as_return_type_opt ":=" operconstr200 "in" operconstr200
+| REPLACE "let" [ "(" LIST0 name SEP "," ")" | "()" ] as_return_type ":=" operconstr200 "in" operconstr200
+| WITH "let" "(" LIST0 name SEP "," ")" as_return_type ":=" operconstr200 "in" operconstr200
 | REPLACE "let" "'" pattern200 ":=" operconstr200 "in" operconstr200
 | WITH  "let" "'" pattern200 ":=" operconstr200 OPT case_type "in" operconstr200
 | DELETE "let" "'" pattern200 ":=" operconstr200 case_type "in" operconstr200
@@ -228,6 +210,8 @@ term_let: [
 atomic_constr: [
 (* @Zimmi48: "string" used only for notations, but keep to be consistent with patterns *)
 (* | DELETE string *)
+| REPLACE global univ_instance
+| WITH global OPT univ_instance
 | REPLACE "?" "[" ident "]"
 | WITH "?[" ident "]"
 | MOVETO term_evar "?[" ident "]"
@@ -253,6 +237,8 @@ operconstr10: [
 (* fixme: add in as a prodn somewhere *)
 | MOVETO dangling_pattern_extension_rule "@" pattern_identref LIST1 identref
 | DELETE dangling_pattern_extension_rule
+| REPLACE "@" global univ_instance LIST0 operconstr9
+| WITH "@" global OPT univ_instance LIST0 operconstr9
 ]
 
 operconstr9: [
@@ -260,64 +246,45 @@ operconstr9: [
 | DELETE ".." operconstr0 ".."
 ]
 
-arg_list: [
-| arg_list appl_arg
-| appl_arg
-]
-
-arg_list_opt: [
-| arg_list
-| empty
-]
-
 operconstr1: [
 | REPLACE operconstr0 ".(" global LIST0 appl_arg ")"
-| WITH operconstr0 ".(" global arg_list_opt ")"
-| MOVETO term_projection operconstr0 ".(" global arg_list_opt ")"
+| WITH operconstr0 ".(" global LIST0 appl_arg ")"
+| MOVETO term_projection operconstr0 ".(" global LIST0 appl_arg ")"
 | MOVETO term_projection operconstr0 ".(" "@" global LIST0 ( operconstr9 ) ")"
 ]
 
 operconstr0: [
 (* @Zimmi48: This rule is a hack, according to Hugo, and should not be shown in the manual. *)
 | DELETE "{" binder_constr "}"
+| REPLACE "{|" record_declaration bar_cbrace
+| WITH "{|" LIST0 field_def bar_cbrace
 ]
 
-single_fix: [
-| DELETE fix_kw fix_decl
-| "fix" fix_decl
-| "cofix" fix_decl
+fix_decls: [
+| DELETE fix_decl
+| REPLACE fix_decl "with" LIST1 fix_decl SEP "with" "for" identref
+| WITH fix_decl OPT ( LIST1 ("with" fix_decl) "for" identref )
 ]
 
-fix_kw: [ | DELETENT ]
+cofix_decls: [
+| DELETE cofix_decl
+| REPLACE cofix_decl "with" LIST1 cofix_decl SEP "with" "for" identref
+| WITH cofix_decl OPT ( LIST1 ( "with" cofix_decl ) "for" identref )
+]
+
+fields_def: [
+| REPLACE field_def ";" fields_def
+| WITH LIST1 field_def SEP ";"
+| DELETE field_def
+]
 
 binders_fixannot: [
-(*
-| REPLACE impl_name_head impl_ident_tail binders_fixannot
-| WITH impl_name_head impl_ident_tail "}" binders_fixannot
-*)
-(* Omit this complex detail.  See https://github.com/coq/coq/pull/10614#discussion_r344118146 *)
-| DELETE impl_name_head impl_ident_tail binders_fixannot
-
-| DELETE fixannot
 | DELETE binder binders_fixannot
+| DELETE fixannot
 | DELETE (* empty *)
-
 | LIST0 binder OPT fixannot
 ]
 
-impl_ident_tail: [
-| DELETENT
-(*
-| REPLACE "}"
-| WITH empty
-| REPLACE LIST1 name ":" lconstr "}"
-| WITH LIST1 name ":" lconstr
-| REPLACE LIST1 name "}"
-| WITH LIST1 name
-| REPLACE ":" lconstr "}"
-| WITH ":" lconstr
-*)
-]
 
 of_type_with_opt_coercion: [
 | DELETE ":>" ">"
@@ -347,18 +314,28 @@ closed_binder: [
 | DELETE "(" name ":" lconstr ")"
 
 | DELETE "(" name ":=" lconstr ")"
-| REPLACE "(" name ":" lconstr ":=" lconstr ")"
-| WITH "(" name rec_type_cstr ":=" lconstr ")"
 
+| REPLACE "(" name ":" lconstr ":=" lconstr ")"
+| WITH "(" name type_cstr ":=" lconstr ")"
+
+| DELETE "{" name "}"
 | DELETE "{" name LIST1 name "}"
 
 | REPLACE "{" name LIST1 name ":" lconstr "}"
-| WITH "{" LIST1 name rec_type_cstr "}"
+| WITH "{" LIST1 name type_cstr "}"
 | DELETE "{" name ":" lconstr  "}"
+]
+
+name_colon: [
+| name ":"
 ]
 
 typeclass_constraint: [
 | EDIT ADD_OPT "!" operconstr200
+| REPLACE "{" name "}" ":" [ "!" | ] operconstr200
+| WITH "{" name "}" ":" OPT "!"  operconstr200
+| REPLACE name_colon [ "!" | ] operconstr200
+| WITH name_colon OPT "!" operconstr200
 ]
 
 (* ?? From the grammar, Prim.name seems to be only "_" but ident is also accepted "*)
@@ -376,62 +353,54 @@ DELETE: [
 | orient_rw
 ]
 
-pattern1_list: [
-| pattern1_list pattern1
-| pattern1
-]
-
-pattern1_list_opt: [
-| pattern1_list
-| empty
-]
-
 pattern10: [
 | REPLACE pattern1 LIST1 pattern1
-| WITH LIST1 pattern1
-| REPLACE "@" reference LIST0 pattern1
-| WITH "@" reference pattern1_list_opt
+| WITH pattern1 LIST0 pattern1
+| DELETE pattern1
 ]
 
 pattern0: [
 | REPLACE "(" pattern200 ")"
 | WITH "(" LIST1 pattern200 SEP "|" ")"
 | DELETE "(" pattern200 "|" LIST1 pattern200 SEP "|" ")"
+| REPLACE "{|" record_patterns bar_cbrace
+| WITH "{|" LIST0 record_pattern bar_cbrace
 ]
 
-patterns_comma: [
-| patterns_comma "," pattern100
-| pattern100
-]
-
-patterns_comma_list_or: [
-| patterns_comma_list_or "|" patterns_comma
-| patterns_comma
+DELETE: [
+| record_patterns
 ]
 
 eqn: [
 | REPLACE LIST1 mult_pattern SEP "|" "=>" lconstr
-| WITH patterns_comma_list_or "=>" lconstr
+| WITH LIST1 [ LIST1 pattern100 SEP "," ] SEP "|" "=>" lconstr
 ]
 
-record_patterns: [
-| REPLACE record_pattern ";" record_patterns
-| WITH record_patterns ";" record_pattern
+universe_increment: [
+| REPLACE "+" natural
+| WITH OPT ( "+" natural )
+| DELETE (* empty *)
+]
+
+evar_instance: [
+| REPLACE "@{" LIST1 inst SEP ";" "}"
+| WITH OPT ( "@{" LIST1 inst SEP ";" "}" )
+| DELETE (* empty *)
+]
+
+univ_instance: [
+| DELETE (* empty *)
+]
+
+constr: [
+| REPLACE "@" global univ_instance
+| WITH "@" global OPT univ_instance
 ]
 
 (* todo: binders should be binders_opt *)
 
 
 (* lexer stuff *)
-bigint: [
-| DELETE NUMERAL
-| num
-]
-
-ident: [
-| DELETENT
-]
-
 IDENT: [
 | ident
 ]
@@ -445,9 +414,43 @@ LEFTQMARK: [
 | "?"
 ]
 
+digit: [
+| "0" ".." "9"
+]
+
+num: [
+| LIST1 digit
+]
+
 natural: [ | DELETENT ]
 natural: [
 | num  (* todo: or should it be "nat"? *)
+]
+
+numeral: [
+| LIST1 digit OPT ("." LIST1 digit) OPT [ [ "e" | "E" ] OPT [ "+" | "-" ] LIST1 digit ]
+]
+
+int: [
+| OPT "-" LIST1 digit
+]
+
+bigint: [
+| DELETE NUMERAL
+| num
+]
+
+first_letter: [
+| [ "a" ".." "z" | "A" ".." "Z" | "_" | unicode_letter ]
+]
+
+subsequent_letter: [
+| [ first_letter | digit | "'" | unicode_id_part ]
+]
+
+ident: [
+| DELETE IDENT
+| first_letter LIST0 subsequent_letter
 ]
 
 NUMERAL: [
@@ -466,10 +469,6 @@ STRING: [
 (* todo: "check_int" in g_prim.mlg should be "check_num" *)
 
   (* added productions *)
-
-name_colon: [
-| name ":"
-]
 
 command_entry: [
 | noedit_mode
@@ -526,12 +525,6 @@ simple_tactic: [
 | DELETE "eintros"
 | REPLACE "eintros" ne_intropatterns
 | WITH "eintros" intropatterns
-]
-
-intropatterns: [
-| DELETE LIST0 intropattern
-| intropatterns intropattern
-| empty
 ]
 
 (* todo: don't use DELETENT for this *)
@@ -594,7 +587,6 @@ SPLICE: [
 | reference
 | bar_cbrace
 | lconstr
-| impl_name_head
 
 (*
 | ast_closure_term
@@ -665,6 +657,15 @@ SPLICE: [
 | name_colon
 | closed_binder
 | binders_fixannot
+| as_return_type
+| case_type
+| fields_def
+| universe_increment
+| type_cstr
+| record_pattern
+| evar_instance
+| fix_decls
+| cofix_decls
 ]
 
 RENAME: [
@@ -703,20 +704,13 @@ RENAME: [
 | BULLET bullet
 | nat_or_var num_or_var
 | fix_decl fix_body
-| instance universe_annot_opt
-| rec_type_cstr colon_term_opt
-| fix_constr term_fix
+| cofix_decl cofix_body
 | constr term1_extended
-| case_type return_type
 | appl_arg arg
-| record_patterns record_patterns_opt
-| universe_increment universe_increment_opt
 | rec_definition fix_definition
 | corec_definition cofix_definition
-| record_field_instance field_def
-| record_fields_instance fields_def
-| evar_instance evar_bindings_opt
 | inst evar_binding
+| univ_instance univ_annot
 ]
 
 

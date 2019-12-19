@@ -64,7 +64,7 @@ lconstr: [
 
 constr: [
 | operconstr8
-| "@" global instance
+| "@" global univ_instance
 ]
 
 operconstr200: [
@@ -90,7 +90,7 @@ operconstr90: [
 
 operconstr10: [
 | operconstr9 LIST1 appl_arg
-| "@" global instance LIST0 operconstr9
+| "@" global univ_instance LIST0 operconstr9
 | "@" pattern_identref LIST1 identref
 | operconstr9
 ]
@@ -123,16 +123,16 @@ operconstr0: [
 ]
 
 record_declaration: [
-| record_fields_instance
+| fields_def
 ]
 
-record_fields_instance: [
-| record_field_instance ";" record_fields_instance
-| record_field_instance
+fields_def: [
+| field_def ";" fields_def
+| field_def
 |
 ]
 
-record_field_instance: [
+field_def: [
 | global binders ":=" lconstr
 ]
 
@@ -140,13 +140,15 @@ binder_constr: [
 | "forall" open_binders "," operconstr200
 | "fun" open_binders "=>" operconstr200
 | "let" name binders let_type_cstr ":=" operconstr200 "in" operconstr200
-| "let" single_fix "in" operconstr200
+| "let" "fix" fix_decl "in" operconstr200
+| "let" "cofix" cofix_decl "in" operconstr200
 | "let" [ "(" LIST0 name SEP "," ")" | "()" ] return_type ":=" operconstr200 "in" operconstr200
 | "let" "'" pattern200 ":=" operconstr200 "in" operconstr200
 | "let" "'" pattern200 ":=" operconstr200 case_type "in" operconstr200
 | "let" "'" pattern200 "in" pattern200 ":=" operconstr200 case_type "in" operconstr200
 | "if" operconstr200 return_type "then" operconstr200 "else" operconstr200
-| fix_constr
+| "fix" fix_decls
+| "cofix" cofix_decls
 ]
 
 appl_arg: [
@@ -155,7 +157,7 @@ appl_arg: [
 ]
 
 atomic_constr: [
-| global instance
+| global univ_instance
 | sort
 | NUMERAL
 | string
@@ -174,7 +176,7 @@ evar_instance: [
 |
 ]
 
-instance: [
+univ_instance: [
 | "@{" LIST0 universe_level "}"
 |
 ]
@@ -187,22 +189,22 @@ universe_level: [
 | global
 ]
 
-fix_constr: [
-| single_fix
-| single_fix "with" LIST1 fix_decl SEP "with" "for" identref
+fix_decls: [
+| fix_decl
+| fix_decl "with" LIST1 fix_decl SEP "with" "for" identref
 ]
 
-single_fix: [
-| fix_kw fix_decl
-]
-
-fix_kw: [
-| "fix"
-| "cofix"
+cofix_decls: [
+| cofix_decl
+| cofix_decl "with" LIST1 cofix_decl SEP "with" "for" identref
 ]
 
 fix_decl: [
-| identref binders_fixannot let_type_cstr ":=" operconstr200
+| identref binders_fixannot type_cstr ":=" operconstr200
+]
+
+cofix_decl: [
+| identref binders type_cstr ":=" operconstr200
 ]
 
 match_constr: [
@@ -282,26 +284,14 @@ pattern0: [
 | string
 ]
 
-impl_ident_tail: [
-| "}"
-| LIST1 name ":" lconstr "}"
-| LIST1 name "}"
-| ":" lconstr "}"
-]
-
 fixannot: [
 | "{" "struct" identref "}"
 | "{" "wf" constr identref "}"
 | "{" "measure" constr OPT identref OPT constr "}"
 ]
 
-impl_name_head: [
-| impl_ident_head
-]
-
 binders_fixannot: [
-| impl_name_head impl_ident_tail binders_fixannot
-| fixannot
+| ensure_fixannot fixannot
 | binder binders_fixannot
 |
 ]
@@ -342,6 +332,11 @@ typeclass_constraint: [
 | "{" name "}" ":" [ "!" | ] operconstr200
 | name_colon [ "!" | ] operconstr200
 | operconstr200
+]
+
+type_cstr: [
+| ":" lconstr
+|
 ]
 
 let_type_cstr: [
@@ -514,9 +509,6 @@ command: [
 | "Add" "LoadPath" ne_string as_dirpath
 | "Add" "Rec" "LoadPath" ne_string as_dirpath
 | "Remove" "LoadPath" ne_string
-| "AddPath" ne_string "as" as_dirpath
-| "AddRecPath" ne_string "as" as_dirpath
-| "DelPath" ne_string
 | "Type" lconstr
 | "Print" printable
 | "Print" smart_global OPT univ_name_list
@@ -963,16 +955,11 @@ opt_coercion: [
 ]
 
 rec_definition: [
-| ident_decl binders_fixannot rec_type_cstr OPT [ ":=" lconstr ] decl_notation
+| ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notation
 ]
 
 corec_definition: [
-| ident_decl binders rec_type_cstr OPT [ ":=" lconstr ] decl_notation
-]
-
-rec_type_cstr: [
-| ":" lconstr
-|
+| ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notation
 ]
 
 scheme: [
@@ -994,7 +981,6 @@ record_field: [
 
 record_fields: [
 | record_field ";" record_fields
-| record_field ";"
 | record_field
 |
 ]
@@ -1395,7 +1381,6 @@ syntax: [
 
 only_parsing: [
 | "(" "only" "parsing" ")"
-| "(" "compat" STRING ")"
 |
 ]
 
@@ -1413,7 +1398,6 @@ syntax_modifier: [
 | "no" "associativity"
 | "only" "printing"
 | "only" "parsing"
-| "compat" STRING
 | "format" STRING OPT STRING
 | IDENT; "," LIST1 IDENT SEP "," "at" level
 | IDENT; "at" level

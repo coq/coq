@@ -192,7 +192,7 @@ Disjunctive patterns
 --------------------
 
 Multiple patterns that share the same right-hand-side can be
-factorized using the notation :n:`{+| @patterns_comma}`. For
+factorized using the notation :n:`{+| {+, @pattern } }`. For
 instance, :g:`max` can be rewritten as follows:
 
 .. coqtop:: in reset

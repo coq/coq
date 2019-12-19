@@ -403,13 +403,12 @@ class TableObject(NotationObject):
 class ProductionObject(CoqObject):
     r"""A grammar production.
 
-    Use prodn to document individual grammar productions instead of Sphinx
+    Use ``.. prodn`` to document grammar productions instead of Sphinx
     `production lists
     <http://www.sphinx-doc.org/en/stable/markup/para.html#directive-productionlist>`_.
 
     prodn displays multiple productions together with alignment similar to ``.. productionlist``,
-    i.e. displayed in 3 columns, however
-    unlike ``.. productionlist``\ s, this directive accepts notation syntax.
+    however unlike ``.. productionlist``\ s, this directive accepts notation syntax.
 
     Example::
 
@@ -418,7 +417,8 @@ class ProductionObject(CoqObject):
         | second_production
 
        The first line defines "occ_switch", which must be unique in the document.  The second
-       references but doesn't define "term".  The third form is for continuing the
+       references and expands the definition of "term", whose main definition is elsewhere
+       in the document.  The third form is for continuing the
        definition of a nonterminal when it has multiple productions.  It leaves the first
        column in the output blank.
 

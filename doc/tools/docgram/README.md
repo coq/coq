@@ -194,14 +194,15 @@ to the grammar.
 
 ### `.rst` file updates
 
-`doc_grammar` updates `.rst` files when it sees the following 3 lines
+`doc_grammar` updates `.rst` files where it sees the following 3 lines
 
 ```
-.. insertgram <start> <end>
-.. productionlist:: XXX
+.. insertprodn <start> <end>
+
+.. prodn::
 ```
 
-The end of the existing `productionlist` is recognized by a blank line.
+The end of the existing `prodn` is recognized by a blank line.
 
 ### Other details
 
