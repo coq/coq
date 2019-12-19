@@ -247,7 +247,7 @@ type (_, _) entry =
 | TTReference : ('self, qualid) entry
 | TTBigint : ('self, string) entry
 | TTConstr : notation_entry * prod_info * 'r target -> ('r, 'r) entry
-| TTConstrList : prod_info * string Tok.p list * 'r target -> ('r, 'r list) entry
+| TTConstrList : notation_entry * prod_info * string Tok.p list * 'r target -> ('r, 'r list) entry
 | TTPattern : int -> ('self, cases_pattern_expr) entry
 | TTOpenBinderList : ('self, local_binder_expr list) entry
 | TTClosedBinderList : string Tok.p list -> ('self, local_binder_expr list list) entry
@@ -347,12 +347,12 @@ let symbol_of_target : type s. _ -> _ -> _ -> _ -> s target -> (s, s) mayrec_sym
 
 let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symbol = fun assoc from typ -> match typ with
 | TTConstr (s, p, forpat) -> symbol_of_target s p assoc from forpat
-| TTConstrList (typ', [], forpat) ->
-  begin match symbol_of_target InConstrEntry typ' assoc from forpat with
+| TTConstrList (s, typ', [], forpat) ->
+  begin match symbol_of_target s typ' assoc from forpat with
   | MayRecNo s -> MayRecNo (Alist1 s)
   | MayRecMay s -> MayRecMay (Alist1 s) end
-| TTConstrList (typ', tkl, forpat) ->
-  begin match symbol_of_target InConstrEntry typ' assoc from forpat with
+| TTConstrList (s, typ', tkl, forpat) ->
+  begin match symbol_of_target s typ' assoc from forpat with
   | MayRecNo s -> MayRecNo (Alist1sep (s, make_sep_rules tkl))
   | MayRecMay s -> MayRecMay (Alist1sep (s, make_sep_rules tkl)) end
 | TTPattern p -> MayRecNo (Aentryl (Constr.pattern, string_of_int p))
@@ -369,7 +369,7 @@ let interp_entry forpat e = match e with
 | ETProdBigint -> TTAny TTBigint
 | ETProdConstr (s,p) -> TTAny (TTConstr (s, p, forpat))
 | ETProdPattern p -> TTAny (TTPattern p)
-| ETProdConstrList (p, tkl) -> TTAny (TTConstrList (p, tkl, forpat))
+| ETProdConstrList (s, p, tkl) -> TTAny (TTConstrList (s, p, tkl, forpat))
 | ETProdBinderList ETBinderOpen -> TTAny TTOpenBinderList
 | ETProdBinderList (ETBinderClosed tkl) -> TTAny (TTClosedBinderList tkl)
 
