@@ -278,6 +278,10 @@ let find_custom_entry s =
   try (find_custom_entry constr_custom_entry sc, find_custom_entry pattern_custom_entry sp)
   with Not_found -> user_err Pp.(str "Undeclared custom entry: " ++ str s ++ str ".")
 
+let exists_custom_entry s = match find_custom_entry s with
+| _ -> true
+| exception _ -> false
+
 let locality_of_custom_entry s = String.Set.mem s !custom_entry_locality
 
 (* This computes the name of the level where to add a new rule *)
