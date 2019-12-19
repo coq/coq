@@ -71,6 +71,9 @@ get_coq_prog_args_in_parens = $(subst $(SINGLE_QUOTE),,$(if $(call get_coq_prog_
 get_set_impredicativity= $(filter "-impredicative-set",$(call get_coq_prog_args,$(1)))
 
 bogomips:=
+ifeq (win32,$(ARCH))
+  $(warning windows detected: skipping complexity tests)
+else
 ifneq (,$(wildcard /proc/cpuinfo))
   sedbogo := -e "s/bogomips.*: \([0-9]*\).*/\1/p" # i386, ppc
   sedbogo += -e "s/Cpu0Bogo.*: \([0-9]*\).*/\1/p" # sparc
@@ -80,6 +83,7 @@ endif
 
 ifeq (,$(bogomips))
   $(warning cannot run complexity tests (no bogomips found))
+endif
 endif
 
 # keep these synced with test-suite/save-logs.sh
