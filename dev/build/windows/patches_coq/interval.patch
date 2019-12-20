@@ -1,4 +1,4 @@
-diff/patch file created on Tue, Dec  3, 2019  8:33:46 PM with:
+diff/patch file created on Fri, Dec 20, 2019  6:11:49 PM with:
 difftar-folder.sh tarballs/interval-839a03e1bddbafab868fbceee59abe678e32a0f3.tar.gz interval-839a03e1bddbafab868fbceee59abe678e32a0f3 1
 TARFILE= tarballs/interval-839a03e1bddbafab868fbceee59abe678e32a0f3.tar.gz
 FOLDER= interval-839a03e1bddbafab868fbceee59abe678e32a0f3
@@ -6,7 +6,7 @@ TARSTRIP= 1
 TARPREFIX= interval-839a03e1bddbafab868fbceee59abe678e32a0f3/
 ORIGFOLDER= interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig
 --- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Integral/Bertrand.v	2019-07-20 09:48:54.000000000 +0200
-+++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Integral/Bertrand.v	2019-12-03 15:47:02.749603700 +0100
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Integral/Bertrand.v	2019-12-20 15:10:07.777216000 +0100
 @@ -1,6 +1,6 @@
  From Coq Require Import Reals ZArith Psatz Fourier_util.
  From Coquelicot Require Import Coquelicot AutoDerive.
@@ -34,7 +34,7 @@ ORIGFOLDER= interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig
  - apply: (is_RInt_ext (fun t : R => plus (scal (f' t) (g t)) (scal (f t) (g' t)))) =>[x Hx|].
      by [].
 --- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Integral/Integral.v	2019-07-20 09:48:54.000000000 +0200
-+++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Integral/Integral.v	2019-12-03 15:53:17.343170000 +0100
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Integral/Integral.v	2019-12-20 15:10:07.780217100 +0100
 @@ -242,7 +242,7 @@
          exact: Rlt_le.
        apply: Rplus_le_compat_r.
@@ -54,7 +54,7 @@ ORIGFOLDER= interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig
    move => /(_ _ HC) Hle.
    apply: Rle_lt_trans Hle _.
 --- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Interval/Eval.v	2019-07-20 09:48:54.000000000 +0200
-+++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Interval/Eval.v	2019-12-03 15:55:33.037225800 +0100
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Interval/Eval.v	2019-12-20 15:10:07.784216200 +0100
 @@ -62,8 +62,10 @@
  now rewrite !IH; case no_floor_term; simpl; case no_floor_term; simpl.
  Qed.
@@ -68,7 +68,7 @@ ORIGFOLDER= interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig
  unfold no_floor_prog.
  generalize true.
 --- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Missing/Coquelicot.v	2019-07-20 09:48:54.000000000 +0200
-+++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Missing/Coquelicot.v	2019-12-03 14:55:15.821078400 +0100
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Missing/Coquelicot.v	2019-12-20 15:10:07.787214200 +0100
 @@ -1,10 +1,13 @@
  From Coq Require Import Reals Psatz.
  From Coquelicot Require Import Coquelicot.
@@ -94,7 +94,7 @@ ORIGFOLDER= interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig
  rewrite /minus.
  apply: (filterlim_comp _ _ _ (fun x => opp (exp (-(lam * x)) / lam)) (fun x => plus (exp (- (lam * a)) / lam) x) (Rbar_locally p_infty) (locally (0)) (locally (exp (- (lam * a)) / lam))); last first.
 --- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Poly/Datatypes.v	2019-07-20 09:48:54.000000000 +0200
-+++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Poly/Datatypes.v	2019-12-03 15:42:40.401690500 +0100
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Poly/Datatypes.v	2019-12-20 15:10:07.791212700 +0100
 @@ -22,7 +22,7 @@
  
  From Coq Require Import ZArith Reals.
@@ -134,7 +134,7 @@ ORIGFOLDER= interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig
    nth (deriv tt p) i = (nth p i.+1 * INR i.+1)%R.
  Proof.
 --- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Poly/Taylor_model_sharp.v	2019-07-20 09:48:54.000000000 +0200
-+++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Poly/Taylor_model_sharp.v	2019-12-03 15:49:16.232514700 +0100
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Poly/Taylor_model_sharp.v	2019-12-20 15:10:07.794210100 +0100
 @@ -23,7 +23,7 @@
  From Coq Require Import ZArith Psatz Reals.
  From Flocq Require Import Raux.
@@ -154,7 +154,331 @@ ORIGFOLDER= interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig
  (** This theory implements Taylor models with interval polynomials for
      univariate real-valued functions. The implemented algorithms rely
 --- interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig/src/Tactic.v	2019-07-20 09:48:54.000000000 +0200
-+++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Tactic.v	2019-12-03 20:07:43.622177800 +0100
++++ interval-839a03e1bddbafab868fbceee59abe678e32a0f3/src/Tactic.v	2019-12-20 18:10:56.662275300 +0100
+@@ -1437,11 +1437,11 @@
+ Ltac list_add a l :=
+   let rec aux a l n :=
+     match l with
+-    | nil        => constr:((n, cons a l))
+-    | cons a _   => constr:((n, l))
+-    | cons ?x ?l =>
++    | List.nil        => constr:((n, List.cons a l))
++    | List.cons a _   => constr:((n, l))
++    | List.cons ?x ?l =>
+       match aux a l (S n) with
+-      | (?n, ?l) => constr:((n, cons x l))
++      | (?n, ?l) => constr:((n, List.cons x l))
+       end
+     end in
+   aux a l O.
+@@ -1503,9 +1503,9 @@
+ Ltac list_find1 a l :=
+   let rec aux l n :=
+     match l with
+-    | nil       => false
+-    | cons a _  => n
+-    | cons _ ?l => aux l (S n)
++    | List.nil       => false
++    | List.cons a _  => n
++    | List.cons _ ?l => aux l (S n)
+     end in
+   aux l O.
+ 
+@@ -1521,18 +1521,18 @@
+           | Eunary _ ?a => aux a l
+           | Ebinary _ ?a ?b => aux a ltac:(aux b l)
+           end in
+-        constr:(cons t m)
++        constr:(List.cons t m)
+       | _ => l
+       end
+     end in
+-  aux t (@nil expr).
++  aux t (@List.nil expr).
+ 
+ Ltac list_find2 a l :=
+   let rec aux l n :=
+     match l with
+-    | nil       => false
+-    | cons a _  => n
+-    | cons _ ?l => aux l (S n)
++    | List.nil       => false
++    | List.cons a _  => n
++    | List.cons _ ?l => aux l (S n)
+     end in
+   match a with
+   | Econst ?n => eval compute in (n + length l)%nat
+@@ -1542,8 +1542,8 @@
+ Ltac generate_machine l :=
+   let rec aux l q :=
+     match l with
+-    | nil => q
+-    | cons ?t ?l =>
++    | List.nil => q
++    | List.cons ?t ?l =>
+       let m :=
+         match t with
+         | Eunary ?o ?a =>
+@@ -1554,14 +1554,14 @@
+           let v := list_find2 b l in
+           constr:(Binary o u v)
+         end in
+-      aux l (cons m q)
++      aux l (List.cons m q)
+     end in
+-  aux l (@nil term).
++  aux l (@List.nil term).
+ 
+ Ltac extract_algorithm t l :=
+   match reify t l with
+   | (Econst ?n, ?lc) =>
+-    constr:((cons (Forward n) nil, lc))
++    constr:((List.cons (Forward n) List.nil, lc))
+   | (?t, ?lc) =>
+     let lnc := get_non_constants t in
+     let lm := generate_machine lnc in
+@@ -1596,26 +1596,26 @@
+ Ltac list_warn l :=
+   let rec aux l :=
+     match l with
+-    | nil => idtac
+-    | cons ?a ?l => idtac a ; aux l
++    | List.nil => idtac
++    | List.cons ?a ?l => idtac a ; aux l
+     end in
+   aux l.
+ 
+ Ltac list_warn_rev l :=
+   let rec aux l :=
+     match l with
+-    | nil => idtac
+-    | cons ?a ?l => aux l ; idtac a
++    | List.nil => idtac
++    | List.cons ?a ?l => aux l ; idtac a
+     end in
+   aux l.
+ 
+ Ltac warn_whole l :=
+   match l with
+-  | nil => idtac
+-  | cons _ nil =>
++  | List.nil => idtac
++  | List.cons _ List.nil =>
+     idtac "Warning: Silently use the whole real line for the following term:" ;
+     list_warn_rev l ; idtac "You may need to unfold this term, or provide a bound."
+-  | cons _ _ =>
++  | List.cons _ _ =>
+     idtac "Warning: Silently use the whole real line for the following terms:" ;
+     list_warn_rev l ; idtac "You may need to unfold some of these terms, or provide a bound."
+   end.
+@@ -1623,8 +1623,8 @@
+ Ltac get_trivial_bounds l prec :=
+   let rec aux l prec :=
+     match l with
+-    | nil => constr:(@nil A.bound_proof)
+-    | cons ?x ?l =>
++    | List.nil => constr:(@List.nil A.bound_proof)
++    | List.cons ?x ?l =>
+       let i :=
+       match x with
+       | PI => constr:(A.Bproof x (I.pi prec) (I.pi_correct prec))
+@@ -1632,7 +1632,7 @@
+         constr:(let f := v in let rf := I.T.toR f in A.Bproof x (I.bnd f f) (conj (Rle_refl rf) (Rle_refl rf)))
+       end in
+       match aux l prec with
+-      | ?m => constr:(cons i m)
++      | ?m => constr:(List.cons i m)
+       end
+     end in
+   aux l prec.
+@@ -1644,8 +1644,8 @@
+     let w := get_float b in
+     constr:(A.Bproof x (I.bnd v w) H)
+   | H: Rle ?a x /\ Rle x ?b |- _ =>
+-    let va := extract_algorithm a (@nil R) in
+-    let vb := extract_algorithm b (@nil R) in
++    let va := extract_algorithm a (@List.nil R) in
++    let vb := extract_algorithm b (@List.nil R) in
+     match va with
+     | (?pa, ?la) =>
+       let lca := get_trivial_bounds la prec in
+@@ -1660,7 +1660,7 @@
+     let v := get_float a in
+     constr:(A.Bproof x (I.bnd v F.nan) (conj H I))
+   | H: Rle ?a x |- _ =>
+-    let v := extract_algorithm a (@nil R) in
++    let v := extract_algorithm a (@List.nil R) in
+     match v with
+     | (?p, ?l) =>
+       let lc := get_trivial_bounds l prec in
+@@ -1670,7 +1670,7 @@
+     let v := get_float b in
+     constr:(A.Bproof x (I.bnd F.nan v) (conj I H))
+   | H: Rle x ?b |- _ =>
+-    let v := extract_algorithm b (@nil R) in
++    let v := extract_algorithm b (@List.nil R) in
+     match v with
+     | (?p, ?l) =>
+       let lc := get_trivial_bounds l prec in
+@@ -1680,7 +1680,7 @@
+     let v := get_float b in
+     constr:(A.Bproof x (I.bnd (F.neg v) v) (Rabs_contains_rev v x H))
+   | H: Rle (Rabs x) ?b |- _ =>
+-    let v := extract_algorithm b (@nil R) in
++    let v := extract_algorithm b (@List.nil R) in
+     match v with
+     | (?p, ?l) =>
+       let lc := get_trivial_bounds l prec in
+@@ -1699,9 +1699,9 @@
+   | RInt_gen (fun x => (@?f x) * ((powerRZ x ?alpha) * (pow (ln x) ?beta))) (at_point ?a) (Rbar_locally p_infty) =>
+     let g := eval cbv beta in ((fun (y : R) => (f y) * (powerRZ y alpha * pow (ln y) beta)) reify_var) in
+     let f := eval cbv beta in (f reify_var) in
+-    let vf := extract_algorithm f (cons reify_var nil) in
+-    let vg := extract_algorithm g (cons reify_var nil) in
+-    let va := extract_algorithm a (@nil R) in
++    let vf := extract_algorithm f (List.cons reify_var List.nil) in
++    let vg := extract_algorithm g (List.cons reify_var List.nil) in
++    let va := extract_algorithm a (@List.nil R) in
+     match va with
+     | (?pa, ?la) =>
+       let lca := get_trivial_bounds la prec in
+@@ -1725,9 +1725,9 @@
+   | RInt_gen (fun x => (@?f x) * / (x * (pow (ln x) (S ?beta)))) (at_point ?a) (Rbar_locally p_infty) =>
+     let g := eval cbv beta in ((fun (y : R) => (f y) * / (y * pow (ln y) (S beta))) reify_var) in
+     let f := eval cbv beta in (f reify_var) in
+-    let vf := extract_algorithm f (cons reify_var nil) in
+-    let vg := extract_algorithm g (cons reify_var nil) in
+-    let va := extract_algorithm a (@nil R) in
++    let vf := extract_algorithm f (List.cons reify_var List.nil) in
++    let vg := extract_algorithm g (List.cons reify_var List.nil) in
++    let va := extract_algorithm a (@List.nil R) in
+     match va with
+     | (?pa, ?la) =>
+       let lca := get_trivial_bounds la prec in
+@@ -1751,10 +1751,10 @@
+   | RInt_gen (fun x => (@?f x) * (exp (Ropp (Rmult ?lam x)))) (at_point ?a) (Rbar_locally p_infty) =>
+     let g := eval cbv beta in ((fun (y : R) => (f y) * (exp (Ropp (Rmult lam y)))) reify_var) in
+     let f := eval cbv beta in (f reify_var) in
+-    let vf := extract_algorithm f (cons reify_var nil) in
+-    let vg := extract_algorithm g (cons reify_var nil) in
+-    let va := extract_algorithm a (@nil R) in
+-    let vlam := extract_algorithm lam (@nil R) in
++    let vf := extract_algorithm f (List.cons reify_var List.nil) in
++    let vg := extract_algorithm g (List.cons reify_var List.nil) in
++    let va := extract_algorithm a (@List.nil R) in
++    let vlam := extract_algorithm lam (@List.nil R) in
+     match va with
+     | (?pa, ?la) =>
+       let lca := get_trivial_bounds la prec in
+@@ -1782,11 +1782,11 @@
+   | RInt_gen (fun x => (@?f x) * ((powerRZ x ?alpha) * (pow (ln x) ?beta))) (at_right 0) (at_point ?b) =>
+     let g := eval cbv beta in ((fun (y : R) => (f y) * (powerRZ y alpha * pow (ln y) beta)) reify_var) in
+     let f := eval cbv beta in (f reify_var) in
+-    let vf := extract_algorithm f (cons reify_var nil) in
+-    let vg := extract_algorithm g (cons reify_var nil) in
++    let vf := extract_algorithm f (List.cons reify_var List.nil) in
++    let vg := extract_algorithm g (List.cons reify_var List.nil) in
+     (* for now, hardcoding 0 as the sing *)
+-    let va := extract_algorithm 0 (@nil R) in
+-    let vb := extract_algorithm b (@nil R) in
++    let va := extract_algorithm 0 (@List.nil R) in
++    let vb := extract_algorithm b (@List.nil R) in
+     match va with
+     | (?pa, ?la) =>
+       let lca := get_trivial_bounds la prec in
+@@ -1814,10 +1814,10 @@
+   | RInt_gen (fun x => (@?f x) * / (x * (pow (ln x) (S (S ?beta))))) (at_right 0) (at_point ?b) =>
+     let g := eval cbv beta in ((fun (y : R) => (f y) * / (y * pow (ln y) (S (S beta)))) reify_var) in
+     let f := eval cbv beta in (f reify_var) in
+-    let vf := extract_algorithm f (cons reify_var nil) in
+-    let vg := extract_algorithm g (cons reify_var nil) in
+-    let va := extract_algorithm 0 (@nil R) in
+-    let vb := extract_algorithm b (@nil R) in
++    let vf := extract_algorithm f (List.cons reify_var List.nil) in
++    let vg := extract_algorithm g (List.cons reify_var List.nil) in
++    let va := extract_algorithm 0 (@List.nil R) in
++    let vb := extract_algorithm b (@List.nil R) in
+     match va with
+     | (?pa, ?la) =>
+       let lca := get_trivial_bounds la prec in
+@@ -1846,9 +1846,9 @@
+   match x with
+   | RInt ?f ?a ?b =>
+     let f := eval cbv beta in (f reify_var) in
+-    let vf := extract_algorithm f (cons reify_var nil) in
+-    let va := extract_algorithm a (@nil R) in
+-    let vb := extract_algorithm b (@nil R) in
++    let vf := extract_algorithm f (List.cons reify_var List.nil) in
++    let va := extract_algorithm a (@List.nil R) in
++    let vb := extract_algorithm b (@List.nil R) in
+     match va with
+     | (?pa, ?la) =>
+       let lca := get_trivial_bounds la prec in
+@@ -1872,8 +1872,8 @@
+ Ltac get_bounds l prec rint_depth rint_prec rint_deg :=
+   let rec aux l prec lw :=
+     match l with
+-    | nil => constr:((@nil A.bound_proof, @nil R))
+-    | cons ?x ?l =>
++    | List.nil => constr:((@List.nil A.bound_proof, @List.nil R))
++    | List.cons ?x ?l =>
+       let i :=
+       match x with
+       | PI => constr:((A.Bproof x (I.pi prec) (I.pi_correct prec), @None R))
+@@ -1893,12 +1893,12 @@
+       match aux l prec lw with
+       | (?m, ?lw) =>
+         match i with
+-        | (?i, @None R) => constr:((cons i m, lw))
+-        | (?i, @Some R ?aw) => constr:((cons i m, cons aw lw))
++        | (?i, @None R) => constr:((List.cons i m, lw))
++        | (?i, @Some R ?aw) => constr:((List.cons i m, List.cons aw lw))
+         end
+       end
+     end in
+-  aux l prec (@nil R).
++  aux l prec (@List.nil R).
+ 
+ Ltac xalgorithm_pre prec :=
+   match goal with
+@@ -1913,8 +1913,8 @@
+     let w := get_float b in
+     change (contains (I.convert (I.bnd v w)) (Xreal x))
+   | |- Rle ?a ?x /\ Rle ?x ?b =>
+-    let va := extract_algorithm a (@nil R) in
+-    let vb := extract_algorithm b (@nil R) in
++    let va := extract_algorithm a (@List.nil R) in
++    let vb := extract_algorithm b (@List.nil R) in
+     match va with
+     | (?pa, ?la) =>
+       let lca := get_trivial_bounds la prec in
+@@ -1929,7 +1929,7 @@
+     let v := get_float b in
+     refine (Rabs_contains v a _)
+   | |- Rle (Rabs ?a) ?b =>
+-    let v := extract_algorithm b (@nil R) in
++    let v := extract_algorithm b (@List.nil R) in
+     match v with
+     | (?p, ?l) =>
+       let lc := get_trivial_bounds l prec in
+@@ -1943,7 +1943,7 @@
+     let v := get_float a in
+     refine (proj1 (_ : contains (I.convert (I.bnd v F.nan)) (Xreal b)))
+   | |- Rle ?a ?b =>
+-    let v := extract_algorithm b (@nil R) in
++    let v := extract_algorithm b (@List.nil R) in
+     match v with
+     | (?p, ?l) =>
+       let lc := get_trivial_bounds l prec in
+@@ -1951,7 +1951,7 @@
+       [ vm_cast_no_check (eq_refl true) | idtac ]
+     end
+   | |- Rle ?a ?b =>
+-    let v := extract_algorithm a (@nil R) in
++    let v := extract_algorithm a (@List.nil R) in
+     match v with
+     | (?p, ?l) =>
+       let lc := get_trivial_bounds l prec in
 @@ -1992,9 +1992,9 @@
  Qed.
  
@@ -185,3 +509,127 @@ ORIGFOLDER= interval-839a03e1bddbafab868fbceee59abe678e32a0f3.orig
      let fi := fun b => A.TaylorValuator.TM.eval (prec, deg)
        (nth n (A.TaylorValuator.eval prec deg b formula (A.TaylorValuator.TM.var ::
          map (fun b => A.TaylorValuator.TM.const (A.interval_from_bp b)) tail)) A.TaylorValuator.TM.dummy) b b in
+@@ -2150,21 +2150,21 @@
+ Ltac do_parse params depth :=
+   let rec aux vars prec depth rint_depth rint_prec rint_deg native nocheck itm params :=
+     match params with
+-    | nil => constr:((vars, prec, depth, rint_depth, rint_prec, rint_deg, native, nocheck, itm))
+-    | cons (i_prec ?p) ?t => aux vars p depth rint_depth rint_prec rint_deg native nocheck itm t
+-    | cons (i_bisect ?x) ?t => aux (cons x nil) prec depth rint_depth rint_prec rint_deg native nocheck itm_bisect t
+-    | cons (i_bisect_diff ?x) ?t => aux (cons x nil) prec depth rint_depth rint_prec rint_deg native nocheck itm_bisect_diff t
+-    | cons (i_bisect_taylor ?x ?d) ?t => aux (cons x nil) prec depth rint_depth rint_prec rint_deg native nocheck (itm_bisect_taylor d) t
+-    | cons (i_depth ?d) ?t => aux vars prec d rint_depth rint_prec rint_deg native nocheck itm t
+-    | cons (i_integral_depth ?d) ?t => aux vars prec depth d rint_prec rint_deg native nocheck itm t
+-    | cons (i_integral_prec ?rint_prec) ?t => aux vars prec depth rint_depth (@inr F.type F.type (F.scale2 (F.fromZ 1) (F.ZtoS (- Z.of_nat rint_prec)))) rint_deg native nocheck itm t
+-    | cons (i_integral_width ?rint_prec) ?t => aux vars prec depth rint_depth (@inl F.type F.type (F.scale2 (F.fromZ 1) (F.ZtoS rint_prec))) rint_deg native nocheck itm t
+-    | cons (i_integral_deg ?rint_deg) ?t => aux vars prec depth rint_depth rint_prec rint_deg native nocheck itm t
+-    | cons i_native_compute ?t => aux vars prec depth rint_depth rint_prec rint_deg true nocheck itm t
+-    | cons i_delay ?t => aux vars prec depth rint_depth rint_prec rint_deg native true itm t
+-    | cons ?h _ => fail 100 "Unknown tactic parameter" h
++    | List.nil => constr:((vars, prec, depth, rint_depth, rint_prec, rint_deg, native, nocheck, itm))
++    | List.cons (i_prec ?p) ?t => aux vars p depth rint_depth rint_prec rint_deg native nocheck itm t
++    | List.cons (i_bisect ?x) ?t => aux (List.cons x List.nil) prec depth rint_depth rint_prec rint_deg native nocheck itm_bisect t
++    | List.cons (i_bisect_diff ?x) ?t => aux (List.cons x List.nil) prec depth rint_depth rint_prec rint_deg native nocheck itm_bisect_diff t
++    | List.cons (i_bisect_taylor ?x ?d) ?t => aux (List.cons x List.nil) prec depth rint_depth rint_prec rint_deg native nocheck (itm_bisect_taylor d) t
++    | List.cons (i_depth ?d) ?t => aux vars prec d rint_depth rint_prec rint_deg native nocheck itm t
++    | List.cons (i_integral_depth ?d) ?t => aux vars prec depth d rint_prec rint_deg native nocheck itm t
++    | List.cons (i_integral_prec ?rint_prec) ?t => aux vars prec depth rint_depth (@inr F.type F.type (F.scale2 (F.fromZ 1) (F.ZtoS (- Z.of_nat rint_prec)))) rint_deg native nocheck itm t
++    | List.cons (i_integral_width ?rint_prec) ?t => aux vars prec depth rint_depth (@inl F.type F.type (F.scale2 (F.fromZ 1) (F.ZtoS rint_prec))) rint_deg native nocheck itm t
++    | List.cons (i_integral_deg ?rint_deg) ?t => aux vars prec depth rint_depth rint_prec rint_deg native nocheck itm t
++    | List.cons i_native_compute ?t => aux vars prec depth rint_depth rint_prec rint_deg true nocheck itm t
++    | List.cons i_delay ?t => aux vars prec depth rint_depth rint_prec rint_deg native true itm t
++    | List.cons ?h _ => fail 100 "Unknown tactic parameter" h
+     end in
+-  aux (@nil R) 30%nat depth 3%nat (@inr F.type F.type (F.scale2 (F.fromZ 1) (F.ZtoS (-10)))) 10%nat false false itm_eval params.
++  aux (@List.nil R) 30%nat depth 3%nat (@inr F.type F.type (F.scale2 (F.fromZ 1) (F.ZtoS (-10)))) 10%nat false false itm_eval params.
+ 
+ Ltac do_interval_parse params :=
+   match do_parse params 15%nat with
+@@ -2205,7 +2205,7 @@
+ Ltac do_interval_intro_bisect extend bounds formula prec depth :=
+   let bounds' := eval cbv beta iota zeta delta [map A.interval_from_bp] in (map A.interval_from_bp bounds) in
+   constr:(match bounds' with
+-    | cons (Float.Ibnd l u) tail =>
++    | List.cons (Float.Ibnd l u) tail =>
+       A.lookup_1d (fun b => nth 0 (A.BndValuator.eval prec formula (b :: tail)) I.nai) l u extend depth
+     | _ => I.nai
+     end).
+@@ -2213,7 +2213,7 @@
+ Ltac do_interval_intro_bisect_diff extend bounds formula prec depth :=
+   let bounds' := eval cbv beta iota zeta delta [map A.interval_from_bp] in (map A.interval_from_bp bounds) in
+   constr:(match bounds' with
+-    | cons (Float.Ibnd l u) tail =>
++    | List.cons (Float.Ibnd l u) tail =>
+       A.lookup_1d (fun b => A.DiffValuator.eval prec formula tail 0 b) l u extend depth
+     | _ => I.nai
+     end).
+@@ -2221,7 +2221,7 @@
+ Ltac do_interval_intro_bisect_taylor deg extend bounds formula prec depth :=
+   let bounds' := eval cbv beta iota zeta delta [map A.interval_from_bp] in (map A.interval_from_bp bounds) in
+   constr:(match bounds' with
+-    | cons (Float.Ibnd l u) tail =>
++    | List.cons (Float.Ibnd l u) tail =>
+       A.lookup_1d (fun b => A.TaylorValuator.TM.eval (prec, deg) (nth 0 (A.TaylorValuator.eval prec deg b formula (A.TaylorValuator.TM.var :: map A.TaylorValuator.TM.const tail)) A.TaylorValuator.TM.dummy) b b) l u extend depth
+     | _ => I.nai
+     end).
+@@ -2260,46 +2260,46 @@
+ Import Private.
+ 
+ Tactic Notation "interval" :=
+-  do_interval_parse (@nil interval_tac_parameters).
++  do_interval_parse (@List.nil interval_tac_parameters).
+ 
+ Tactic Notation "interval" "with" constr(params) :=
+-  do_interval_parse ltac:(tuple_to_list params (@nil interval_tac_parameters)).
++  do_interval_parse ltac:(tuple_to_list params (@List.nil interval_tac_parameters)).
+ 
+ Tactic Notation "interval_intro" constr(t) :=
+-  do_interval_intro_parse t (fun v : I.type => v) (@nil interval_tac_parameters) ; intro.
++  do_interval_intro_parse t (fun v : I.type => v) (@List.nil interval_tac_parameters) ; intro.
+ 
+ Tactic Notation "interval_intro" constr(t) "lower" :=
+-  do_interval_intro_parse t I.upper_extent (@nil interval_tac_parameters) ; intro.
++  do_interval_intro_parse t I.upper_extent (@List.nil interval_tac_parameters) ; intro.
+ 
+ Tactic Notation "interval_intro" constr(t) "upper"  :=
+-  do_interval_intro_parse t I.lower_extent (@nil interval_tac_parameters) ; intro.
++  do_interval_intro_parse t I.lower_extent (@List.nil interval_tac_parameters) ; intro.
+ 
+ Tactic Notation "interval_intro" constr(t) "with" constr(params) :=
+-  do_interval_intro_parse t (fun v : I.type => v) ltac:(tuple_to_list params (@nil interval_tac_parameters)) ; intro.
++  do_interval_intro_parse t (fun v : I.type => v) ltac:(tuple_to_list params (@List.nil interval_tac_parameters)) ; intro.
+ 
+ Tactic Notation "interval_intro" constr(t) "lower" "with" constr(params) :=
+-  do_interval_intro_parse t I.upper_extent ltac:(tuple_to_list params (@nil interval_tac_parameters)) ; intro.
++  do_interval_intro_parse t I.upper_extent ltac:(tuple_to_list params (@List.nil interval_tac_parameters)) ; intro.
+ 
+ Tactic Notation "interval_intro" constr(t) "upper" "with" constr(params) :=
+-  do_interval_intro_parse t I.lower_extent ltac:(tuple_to_list params (@nil interval_tac_parameters)) ; intro.
++  do_interval_intro_parse t I.lower_extent ltac:(tuple_to_list params (@List.nil interval_tac_parameters)) ; intro.
+ 
+ Tactic Notation "interval_intro" constr(t) "as" simple_intropattern(H) :=
+-  do_interval_intro_parse t (fun v : I.type => v) (@nil interval_tac_parameters) ; intros H.
++  do_interval_intro_parse t (fun v : I.type => v) (@List.nil interval_tac_parameters) ; intros H.
+ 
+ Tactic Notation "interval_intro" constr(t) "lower" "as" simple_intropattern(H) :=
+-  do_interval_intro_parse t I.upper_extent (@nil interval_tac_parameters) ; intros H.
++  do_interval_intro_parse t I.upper_extent (@List.nil interval_tac_parameters) ; intros H.
+ 
+ Tactic Notation "interval_intro" constr(t) "upper" "as" simple_intropattern(H)  :=
+-  do_interval_intro_parse t I.lower_extent (@nil interval_tac_parameters) ; intros H.
++  do_interval_intro_parse t I.lower_extent (@List.nil interval_tac_parameters) ; intros H.
+ 
+ Tactic Notation "interval_intro" constr(t) "with" constr(params) "as" simple_intropattern(H) :=
+-  do_interval_intro_parse t (fun v : I.type => v) ltac:(tuple_to_list params (@nil interval_tac_parameters)) ; intros H.
++  do_interval_intro_parse t (fun v : I.type => v) ltac:(tuple_to_list params (@List.nil interval_tac_parameters)) ; intros H.
+ 
+ Tactic Notation "interval_intro" constr(t) "lower" "with" constr(params) "as" simple_intropattern(H) :=
+-  do_interval_intro_parse t I.upper_extent ltac:(tuple_to_list params (@nil interval_tac_parameters)) ; intros H.
++  do_interval_intro_parse t I.upper_extent ltac:(tuple_to_list params (@List.nil interval_tac_parameters)) ; intros H.
+ 
+ Tactic Notation "interval_intro" constr(t) "upper" "with" constr(params) "as" simple_intropattern(H) :=
+-  do_interval_intro_parse t I.lower_extent ltac:(tuple_to_list params (@nil interval_tac_parameters)) ; intros H.
++  do_interval_intro_parse t I.lower_extent ltac:(tuple_to_list params (@List.nil interval_tac_parameters)) ; intros H.
+ 
+ End IntervalTactic.
+ 
