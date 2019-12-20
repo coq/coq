@@ -1920,6 +1920,7 @@ function make_addon_interval {
     logn autogen ./autogen.sh
     logn configure ./configure
     logn remake ./remake --jobs=$MAKE_THREADS
+    logn remake_check ./remake --jobs=$MAKE_THREADS check
     logn install ./remake install
     build_post
   fi
