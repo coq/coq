@@ -530,7 +530,7 @@ $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  true "extract effective user time"; \
-	  res=`$(coqc_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\.[0-9]*\)u.*)/\1/p" | head -1`; \
+	  res=`$(coqc_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\.[0-9]*\)u.*)/\1/p" | head -1 | sed "s/\r//g"`; \
 	  R=$$?; times; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
@@ -540,19 +540,25 @@ $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	    echo "    $<...Error! (couldn't find a time measure)"; \
 	  else \
 	    true "express effective time in centiseconds"; \
+	    resorig="$$res"; \
 	    res=`echo "$$res"00 | sed -n -e "s/\([0-9]*\)\.\([0-9][0-9]\).*/\1\2/p"`; \
-	    true "find expected time * 100"; \
-	    exp=`sed -n -e "s/(\*.*Expected time < \([0-9]\).\([0-9][0-9]\)s.*\*)/\1\2/p" "$<"`; \
-	    true "compute corrected effective time, rounded up"; \
-	    rescorrected=`expr \( $$res \* $(bogomips) \+ 6120 \- 1 \) \/ 6120`; \
-	    ok=`expr \( $$res \* $(bogomips) \) "<" \( $$exp \* 6120 \)`; \
-	    if [ "$$ok" = 1 ]; then \
-	      echo $(log_success); \
-	      echo "    $<...Ok"; \
-	    else \
+	    if [ "$$res" = "" ]; then \
 	      echo $(log_failure); \
-	      echo "    $<...Error! (should run faster ($$rescorrected >= $$exp))"; \
-	      $(FAIL); \
+	      echo "    $<...Error! (invalid time measure: $$resorig)"; \
+	    else \
+	      true "find expected time * 100"; \
+	      exp=`sed -n -e "s/(\*.*Expected time < \([0-9]\).\([0-9][0-9]\)s.*\*)/\1\2/p" "$<"`; \
+	      true "compute corrected effective time, rounded up"; \
+	      rescorrected=`expr \( $$res \* $(bogomips) + 6120 - 1 \) / 6120`; \
+	      ok=`expr \( $$res \* $(bogomips) \) "<" \( $$exp \* 6120 \)`; \
+	      if [ "$$ok" = 1 ]; then \
+	        echo $(log_success); \
+	        echo "    $<...Ok"; \
+	      else \
+	        echo $(log_failure); \
+	        echo "    $<...Error! (should run faster ($$rescorrected >= $$exp))"; \
+	        $(FAIL); \
+	      fi; \
 	    fi; \
 	  fi; \
 	} > "$@"
