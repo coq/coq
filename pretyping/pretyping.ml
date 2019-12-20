@@ -1325,19 +1325,20 @@ let understand_ltac flags env sigma lvar kind c =
   let (sigma, c, _) = ise_pretype_gen flags env sigma lvar kind c in
   (sigma, c)
 
-let path_convertible env sigma p q =
+let path_convertible env sigma i p q =
   let open Classops in
   let mkGRef ref          = DAst.make @@ Glob_term.GRef(ref,None) in
   let mkGVar id           = DAst.make @@ Glob_term.GVar(id) in
   let mkGApp(rt,rtl)      = DAst.make @@ Glob_term.GApp(rt,rtl) in
   let mkGLambda(n,t,b)    = DAst.make @@ Glob_term.GLambda(n,Explicit,t,b) in
+  let mkGSort u           = DAst.make @@ Glob_term.GSort u in
   let mkGHole ()          = DAst.make @@ Glob_term.GHole(Evar_kinds.BinderType Anonymous,Namegen.IntroAnonymous,None) in
   let path_to_gterm p =
     match p with
     | ic :: p' ->
       let names =
-        List.map (fun n -> Id.of_string ("x" ^ string_of_int n))
-          (List.interval 0 ic.coe_param)
+        List.init (ic.coe_param + 1)
+          (fun n -> Id.of_string ("x" ^ string_of_int n))
       in
       List.fold_right
         (fun id t -> mkGLambda (Name id, mkGHole (), t)) names @@
@@ -1345,9 +1346,29 @@ let path_convertible env sigma p q =
           (fun t ic ->
              mkGApp (mkGRef ic.coe_value,
                      List.make ic.coe_param (mkGHole ()) @ [t]))
-          (mkGApp (mkGRef ic.coe_value, List.map (fun i -> mkGVar i) names))
+          (mkGApp (mkGRef ic.coe_value, List.map mkGVar names))
           p'
-    | [] -> anomaly (str "A coercion path shouldn't be empty.")
+    | [] ->
+      (* identity function for the class [i]. *)
+      let cl,params = class_info_from_index i in
+      let clty =
+        match cl with
+        | CL_SORT -> mkGSort (Glob_term.UAnonymous {rigid=false})
+        | CL_FUN -> anomaly (str "A source class must not be Funclass.")
+        | CL_SECVAR v -> mkGRef (GlobRef.VarRef v)
+        | CL_CONST c -> mkGRef (GlobRef.ConstRef c)
+        | CL_IND i -> mkGRef (GlobRef.IndRef i)
+        | CL_PROJ p -> mkGRef (GlobRef.ConstRef (Projection.Repr.constant p))
+      in
+      let names =
+        List.init params.cl_param
+          (fun n -> Id.of_string ("x" ^ string_of_int n))
+      in
+      List.fold_right
+        (fun id t -> mkGLambda (Name id, mkGHole (), t)) names @@
+        mkGLambda (Name (Id.of_string "x"),
+                   mkGApp (clty, List.map mkGVar names),
+                   mkGVar (Id.of_string "x"))
   in
   try
     let sigma,tp = understand_tcc env sigma (path_to_gterm p) in

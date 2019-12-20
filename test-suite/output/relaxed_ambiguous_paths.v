@@ -16,6 +16,24 @@ End test1.
 
 Module test2.
 Section test2.
+
+Variable (A B C D : Type).
+Variable (ab : A -> B) (bc : B -> C) (ac : A -> C) (cd : C -> D).
+
+Local Coercion ac : A >-> C.
+Local Coercion cd : C >-> D.
+Local Coercion ab : A >-> B.
+Local Coercion bc : B >-> C.
+(* `[ab; bc; cd], [ac; cd] : A >-> D` should not be shown as ambiguous paths  *)
+(* here because they are redundant with `[ab; bc], [ac] : A >-> C`.           *)
+
+Print Graph.
+
+End test2.
+End test2.
+
+Module test3.
+Section test3.
 Variable (A : Type) (P Q : A -> Prop).
 
 Record B := {
@@ -39,11 +57,11 @@ Local Coercion D_C (d : D) : C := Build_C (D_A d) (D_Q d).
 
 Print Graph.
 
-End test2.
-End test2.
+End test3.
+End test3.
 
-Module test3.
-Section test3.
+Module test4.
+Section test4.
 
 Variable (A : Type) (P Q : A -> Prop).
 
@@ -71,11 +89,11 @@ Local Coercion D_C (d : D) : C true := Build_C true (D_A d) (D_Q d).
 
 Print Graph.
 
-End test3.
-End test3.
+End test4.
+End test4.
 
-Module test4.
-Section test4.
+Module test5.
+Section test5.
 
 Variable (A : Type) (P Q : A -> Prop).
 
@@ -105,5 +123,18 @@ Local Coercion D_C (d : D) : C true :=
 
 Print Graph.
 
-End test4.
-End test4.
+End test5.
+End test5.
+
+Module test6.
+Record > NAT := wrap_nat { unwrap_nat :> nat }.
+Record > LIST (T : Type) := wrap_list { unwrap_list :> list T }.
+Record > TYPE := wrap_Type { unwrap_Type :> Type }.
+End test6.
+
+Module test7.
+Set Primitive Projections.
+Record > NAT_prim := wrap_nat { unwrap_nat :> nat }.
+Record > LIST_prim (T : Type) := wrap_list { unwrap_list :> list T }.
+Record > TYPE_prim := wrap_Type { unwrap_Type :> Type }.
+End test7.
