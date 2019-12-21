@@ -274,11 +274,6 @@ let split_at_recursive_part c =
   | GVar v when Id.equal v ldots_var -> (* Not enough context *) raise Not_found
   | _ -> outer_iterator, c
 
-let subtract_loc loc1 loc2 =
-  let l1 = fst (Option.cata Loc.unloc (0,0) loc1) in
-  let l2 = fst (Option.cata Loc.unloc (0,0) loc2) in
-  Some (Loc.make_loc (l1,l2-1))
-
 let check_is_hole id t = match DAst.get t with GHole _ -> () | _ ->
   user_err ?loc:(loc_of_glob_constr t)
    (strbrk "In recursive notation with binders, " ++ Id.print id ++
@@ -365,7 +360,7 @@ let compare_recursive_parts recvars found f f' (iterator,subc) =
         let loc1 = loc_of_glob_constr iterator in
         let loc2 = loc_of_glob_constr (Option.get !terminator) in
         (* Here, we would need a loc made of several parts ... *)
-        user_err ?loc:(subtract_loc loc1 loc2)
+        user_err ?loc:(Loc.subtract_opt loc1 loc2)
           (str "Both ends of the recursive pattern are the same.")
     | Some (x,y,RecursiveTerms revert) ->
         (* By arbitrary convention, we use the second variable of the pair

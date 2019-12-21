@@ -36,11 +36,22 @@ let make_loc (bp, ep) = {
   bp = bp; ep = ep;
 }
 
-let mergeable loc1 loc2 =
+let same_file loc1 loc2 =
   loc1.fname = loc2.fname
 
+(* We merge locations, such that:
+   - one includes the other:
+     --------- or   ----
+       ----       ---------
+   - they overlap
+     ------    or     ------
+        ------    ------
+   - they are disjoint
+     ------    ------
+*)
+
 let merge loc1 loc2 =
-  if not (mergeable loc1 loc2) then
+  if not (same_file loc1 loc2) then
     failwith "Trying to merge unmergeable locations.";
   if loc1.bp < loc2.bp then
     if loc1.ep < loc2.ep then {
@@ -62,11 +73,30 @@ let merge loc1 loc2 =
   }
   else loc2
 
-let merge_opt l1 l2 = match l1, l2 with
+(* We extend a location up to before another location:
+   from  -----    -----
+   gives ---------
+*)
+
+let subtract loc1 loc2 =
+  if not (same_file loc1 loc2) then
+    failwith "Trying to merge unmergeable locations.";
+  if loc2.bp < loc1.ep then failwith "Non disjoint locations.";
+  let line_nb_last,bol_pos_last =
+    if loc2.bol_pos > 0 then loc2.line_nb, loc2.bol_pos - 1
+    else (* No way to get the exact bol_pos of the previous line *)
+      loc2.line_nb, loc2.bol_pos in
+  let ep = loc2.bp - 1 in
+  { loc1 with line_nb_last; bol_pos_last; ep }
+
+let combine_opt f l1 l2 = match l1, l2 with
   | None, None    -> None
   | Some l , None -> Some l
   | None, Some l  -> Some l
-  | Some l1, Some l2 -> Some (merge l1 l2)
+  | Some l1, Some l2 -> Some (f l1 l2)
+
+let subtract_opt = combine_opt subtract
+let merge_opt = combine_opt merge
 
 let finer l1 l2 = match l1, l2 with
   | None, _    -> false

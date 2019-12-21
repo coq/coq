@@ -45,6 +45,11 @@ val merge : t -> t -> t
 val merge_opt : t option -> t option -> t option
 (** Merge locations, usually generating the largest possible span *)
 
+val subtract : t -> t -> t
+val subtract_opt : t option -> t option -> t option
+(** Extend the first location up to the position preceding the second
+    location assumed to be disjoint and further *)
+
 val finer : t option -> t option -> bool
 (** Answers [true] when the first location is more defined, or, when
     both defined, included in the second one *)
