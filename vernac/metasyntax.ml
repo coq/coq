@@ -611,7 +611,7 @@ let expand_list_rule s typ tkl x n p ll =
   else if Int.equal i (p+n) then
     let hds =
       GramConstrListMark (p+n,true,p) :: hds
-      @	[GramConstrNonTerminal (ETProdConstrList (typ,tkl), Some x)] in
+      @	[GramConstrNonTerminal (ETProdConstrList (s, typ,tkl), Some x)] in
     distribute hds ll
   else
     distribute (GramConstrListMark (i+1,false,p) :: hds @ [main]) ll @
