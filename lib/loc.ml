@@ -80,7 +80,7 @@ let merge loc1 loc2 =
 
 let subtract loc1 loc2 =
   if not (same_file loc1 loc2) then
-    failwith "Trying to merge unmergeable locations.";
+    failwith "Trying to subtract locations from different files.";
   if loc2.bp < loc1.ep then failwith "Non disjoint locations.";
   let line_nb_last,bol_pos_last =
     if loc2.bol_pos > 0 then loc2.line_nb, loc2.bol_pos - 1
@@ -88,6 +88,15 @@ let subtract loc1 loc2 =
       loc2.line_nb, loc2.bol_pos in
   let ep = loc2.bp - 1 in
   { loc1 with line_nb_last; bol_pos_last; ep }
+
+(* We go from the beginning of the second location to the end of the first location *)
+
+let scissor loc1 loc2 =
+  if not (same_file loc1 loc2) then
+    failwith "Trying to scissor locations from different files.";
+  if loc1.ep < loc2.bp then
+    failwith "Second location must start before first location ends.";
+  { loc1 with line_nb = loc2.line_nb; bol_pos = loc2.bol_pos; bp = loc2.bp }
 
 let combine_opt f l1 l2 = match l1, l2 with
   | None, None    -> None
@@ -97,6 +106,7 @@ let combine_opt f l1 l2 = match l1, l2 with
 
 let subtract_opt = combine_opt subtract
 let merge_opt = combine_opt merge
+let scissor_opt = combine_opt scissor
 
 let finer l1 l2 = match l1, l2 with
   | None, _    -> false

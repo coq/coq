@@ -50,6 +50,11 @@ val subtract_opt : t option -> t option -> t option
 (** Extend the first location up to the position preceding the second
     location assumed to be disjoint and further *)
 
+val scissor : t -> t -> t
+val scissor_opt : t option -> t option -> t option
+(** Build a location from the beginning of the second location to the
+    end of the first location *)
+
 val finer : t option -> t option -> bool
 (** Answers [true] when the first location is more defined, or, when
     both defined, included in the second one *)
