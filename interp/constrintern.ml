@@ -570,6 +570,7 @@ let rec expand_binders ?loc mk bl c =
   match bl with
   | [] -> c
   | b :: bl ->
+     let loc = Loc.scissor_opt loc (b.CAst.loc) in
      match DAst.get b with
      | GLocalDef (n, bk, b, oty) ->
         expand_binders ?loc mk bl (DAst.make ?loc @@ GLetIn (n, b, oty, c))
