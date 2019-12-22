@@ -1,11 +1,11 @@
 .. _ltac2:
 
+Ltac2
+=====
+
 .. coqtop:: none
 
    From Ltac2 Require Import Ltac2.
-
-Ltac2
-=====
 
 The Ltac tactic language is probably one of the ingredients of the success of
 Coq, yet it is at the same time its Achilles' heel. Indeed, Ltac:
