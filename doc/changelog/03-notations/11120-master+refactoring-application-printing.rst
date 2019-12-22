@@ -1,5 +1,5 @@
-- **Fixed:** Inheritance of implicit arguments across notations made
-  uniform in parsing and printing. With the exception of notations of
+- **Fixed:** Parsing and printing consistently handle inheritance of implicit
+  arguments in notations. With the exception of notations of
   the form :n:`Notation @string := @@qualid` and :n:`Notation @ident := @@qualid` which
   inhibit implicit arguments, all notations binding a partially
   applied constant, as e.g. in :n:`Notation @string := (@qualid {+ @arg })`,
