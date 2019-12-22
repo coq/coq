@@ -15,8 +15,8 @@ let _ = assert (Sys.word_size = 32)
 
 let uint_size = 63
 
-let maxuint63 = Int64.of_string "0x7FFFFFFFFFFFFFFF"
-let maxuint31 = Int64.of_string "0x7FFFFFFF"
+let maxuint63 = 0x7FFF_FFFF_FFFF_FFFFL
+let maxuint31 = 0x7FFF_FFFFL
 
 let zero = Int64.zero
 let one = Int64.one
