@@ -294,7 +294,7 @@ class VernacObject(NotationObject):
 
     Example::
 
-       .. cmd:: Infix "@symbol" := @term ({+, @modifier}).
+       .. cmd:: Infix @string := @term1_extended {? ( {+, @syntax_modifier } ) } {? : @ident }
 
           This command is equivalent to :n:`…`.
     """
@@ -346,7 +346,7 @@ class AttributeNotationObject(NotationObject):
 
     Example::
 
-       .. attr:: #[ local ]
+       .. attr:: local
     """
     subdomain = "attr"
     index_suffix = "(attribute)"

@@ -1700,9 +1700,9 @@ let process_rst g file args seen tac_prods cmd_prods =
       let start_index = index_of start !g.order in
       let end_index = index_of end_ !g.order in
       if start_index = None then
-        error "%s line %d: '%s' is undefined\n" file !linenum start;
+        error "%s line %d: '%s' is undefined in insertprodn\n" file !linenum start;
       if end_index = None then
-        error "%s line %d: '%s' is undefined\n" file !linenum end_;
+        error "%s line %d: '%s' is undefined in insertprodn\n" file !linenum end_;
       if start_index <> None && end_index <> None then
         check_range_consistency g start end_;
       match start_index, end_index with

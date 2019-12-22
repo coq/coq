@@ -39,7 +39,7 @@ RENAME: [
 | Prim.natural natural
 *)
 | Vernac.rec_definition rec_definition
-
+(* todo: hmm, rename adds 1 prodn to closed_binder?? *)
 | Constr.closed_binder closed_binder
 ]
 
@@ -162,11 +162,6 @@ lconstr: [
 | DELETE l_constr
 ]
 
-type_cstr: [
-| REPLACE ":" lconstr
-| WITH OPT ( ":" lconstr )
-| DELETE (* empty *)
-]
 
 let_type_cstr: [
 | DELETE OPT [ ":" lconstr ]
@@ -210,8 +205,6 @@ term_let: [
 atomic_constr: [
 (* @Zimmi48: "string" used only for notations, but keep to be consistent with patterns *)
 (* | DELETE string *)
-| REPLACE global univ_instance
-| WITH global OPT univ_instance
 | REPLACE "?" "[" ident "]"
 | WITH "?[" ident "]"
 | MOVETO term_evar "?[" ident "]"
@@ -237,8 +230,6 @@ operconstr10: [
 (* fixme: add in as a prodn somewhere *)
 | MOVETO dangling_pattern_extension_rule "@" pattern_identref LIST1 identref
 | DELETE dangling_pattern_extension_rule
-| REPLACE "@" global univ_instance LIST0 operconstr9
-| WITH "@" global OPT univ_instance LIST0 operconstr9
 ]
 
 operconstr9: [
@@ -285,13 +276,6 @@ binders_fixannot: [
 | LIST0 binder OPT fixannot
 ]
 
-
-of_type_with_opt_coercion: [
-| DELETE ":>" ">"
-| DELETE ":" ">" ">"
-| DELETE ":" ">"
-]
-
 binder: [
 | DELETE name
 ]
@@ -306,11 +290,15 @@ open_binders: [
 | DELETE closed_binder binders
 ]
 
+type: [
+| operconstr200
+]
+
 closed_binder: [
 | name
 
 | REPLACE "(" name LIST1 name ":" lconstr ")"
-| WITH "(" LIST1 name ":" lconstr ")"
+| WITH "(" LIST1 name ":" type ")"
 | DELETE "(" name ":" lconstr ")"
 
 | DELETE "(" name ":=" lconstr ")"
@@ -324,6 +312,16 @@ closed_binder: [
 | REPLACE "{" name LIST1 name ":" lconstr "}"
 | WITH "{" LIST1 name type_cstr "}"
 | DELETE "{" name ":" lconstr  "}"
+
+| DELETE "[" name "]"
+| DELETE "[" name LIST1 name "]"
+
+| REPLACE "[" name LIST1 name ":" lconstr "]"
+| WITH "[" LIST1 name type_cstr "]"
+| DELETE "[" name ":" lconstr  "]"
+
+| REPLACE "(" Prim.name ":" lconstr "|" lconstr ")"
+| WITH "(" Prim.name ":" type "|" lconstr ")"
 ]
 
 name_colon: [
@@ -377,28 +375,151 @@ eqn: [
 ]
 
 universe_increment: [
-| REPLACE "+" natural
-| WITH OPT ( "+" natural )
-| DELETE (* empty *)
+| OPTINREF
 ]
 
 evar_instance: [
-| REPLACE "@{" LIST1 inst SEP ";" "}"
-| WITH OPT ( "@{" LIST1 inst SEP ";" "}" )
+| OPTINREF
+]
+
+gallina: [
+| REPLACE thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
+| WITH thm_token ident_decl binders ":" type LIST0 [ "with" ident_decl binders ":" type ]
+| DELETE assumptions_token inline assum_list
+| REPLACE OPT cumulativity_token private_token finite_token LIST1 inductive_definition SEP "with"
+| WITH "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
+|   "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
+|   "Variant" inductive_definition LIST0 ( "with" inductive_definition )
+|   [ "Record" | "Structure" ] inductive_definition LIST0 ( "with" inductive_definition )
+|   "Class" inductive_definition LIST0 ( "with" inductive_definition )
+| REPLACE "Fixpoint" LIST1 rec_definition SEP "with"
+| WITH "Fixpoint" rec_definition LIST0 ( "with" rec_definition )
+| REPLACE "Let" "Fixpoint" LIST1 rec_definition SEP "with"
+| WITH "Let" "Fixpoint" rec_definition LIST0 ( "with" rec_definition )
+| REPLACE "CoFixpoint" LIST1 corec_definition SEP "with"
+| WITH "CoFixpoint" corec_definition LIST0 ( "with" corec_definition )
+| REPLACE "Let" "CoFixpoint" LIST1 corec_definition SEP "with"
+| WITH "Let" "CoFixpoint" corec_definition LIST0 ( "with" corec_definition )
+| REPLACE "Scheme" LIST1 scheme SEP "with"
+| WITH "Scheme" scheme LIST0 ( "with" scheme )
+]
+
+DELETE: [
+| private_token
+| cumulativity_token
+]
+
+opt_coercion: [
+| OPTINREF
+]
+
+opt_constructors_or_fields: [
+| OPTINREF
+]
+
+SPLICE: [
+| opt_coercion
+| opt_constructors_or_fields
+]
+
+constructor_list_or_record_decl: [
+| OPTINREF
+]
+
+record_fields: [
+| REPLACE record_field ";" record_fields
+| WITH LIST1 record_field SEP ";"
+| DELETE record_field
 | DELETE (* empty *)
+]
+
+decl_notation: [
+| REPLACE "where" LIST1 one_decl_notation SEP decl_sep
+| WITH "where" one_decl_notation LIST0 ( decl_sep one_decl_notation )
+]
+
+assumptions_token: [
+| DELETENT
+]
+
+inline: [
+| REPLACE "Inline" "(" natural ")"
+| WITH "Inline" OPT ( "(" natural ")" )
+| DELETE "Inline"
+| OPTINREF
 ]
 
 univ_instance: [
-| DELETE (* empty *)
+| OPTINREF
 ]
 
-constr: [
-| REPLACE "@" global univ_instance
-| WITH "@" global OPT univ_instance
+univ_decl: [
+| REPLACE "@{" LIST0 identref [ "+" | ]     [ "|" LIST0 univ_constraint SEP "," [ "+" | ] "}" | [ "}" | bar_cbrace ] ]
+| WITH    "@{" LIST0 identref  OPT "+"  OPT [ "|" LIST0 univ_constraint SEP "," OPT "+" ] "}"
 ]
 
-(* todo: binders should be binders_opt *)
+of_type_with_opt_coercion: [
+| DELETENT
+]
 
+of_type_with_opt_coercion: [
+| [ ":" | ":>" | ":>>" ] type
+]
+
+attribute_value: [
+| OPTINREF
+]
+
+def_body: [
+| DELETE binders ":=" reduce lconstr
+| REPLACE binders ":" lconstr ":=" reduce lconstr
+| WITH LIST0 binder OPT (":" type) ":=" reduce lconstr
+| REPLACE binders ":" lconstr
+| WITH LIST0 binder ":" type
+]
+
+reduce: [
+| OPTINREF
+]
+
+occs: [
+| OPTINREF
+]
+
+delta_flag: [
+| REPLACE "-" "[" LIST1 smart_global "]"
+| WITH OPT "-" "[" LIST1 smart_global "]"
+| DELETE "[" LIST1 smart_global "]"
+| OPTINREF
+]
+
+strategy_flag: [
+| REPLACE OPT delta_flag
+| WITH delta_flag
+| (* empty *)
+| OPTINREF
+]
+
+export_token: [
+| OPTINREF
+]
+
+functor_app_annot: [
+| OPTINREF
+]
+
+is_module_expr: [
+| OPTINREF
+]
+
+is_module_type: [
+| OPTINREF
+]
+
+gallina_ext: [
+| REPLACE "Arguments" smart_global LIST0 argument_spec_block OPT [ "," LIST1 [ LIST0 more_implicits_block ] SEP "," ] OPT [ ":" LIST1 arguments_modifier SEP "," ]
+| WITH "Arguments" smart_global LIST0 argument_spec_block    LIST0 [  "," LIST0 more_implicits_block ]                OPT [ ":" LIST1 arguments_modifier SEP "," ]
+]
 
 (* lexer stuff *)
 IDENT: [
@@ -478,6 +599,8 @@ tactic_expr1: [
 | EDIT match_key ADD_OPT "reverse" "goal" "with" match_context_list "end"
 | MOVETO ltac_match_goal match_key OPT "reverse" "goal" "with" match_context_list "end"
 | MOVETO ltac_match_term match_key tactic_expr5 "with" match_list "end"
+| REPLACE failkw [ int_or_var | ] LIST0 message_token
+| WITH failkw OPT int_or_var LIST0 message_token
 ]
 
 DELETE: [
@@ -544,10 +667,144 @@ bar_cbrace: [
 | WITH "|}"
 ]
 
+printable: [
+| REPLACE [ "Sorted" | ] "Universes" OPT printunivs_subgraph OPT ne_string
+| WITH OPT "Sorted" "Universes" OPT printunivs_subgraph OPT ne_string
+| INSERTALL "Print"
+]
+
+command: [
+| REPLACE "Print" printable
+| WITH printable
+| "SubClass" ident_decl def_body
+| REPLACE "Ltac" LIST1 ltac_tacdef_body SEP "with"
+| WITH "Ltac" ltac_tacdef_body LIST0 ( "with" ltac_tacdef_body )
+| REPLACE "Function" LIST1 function_rec_definition_loc SEP "with"      (* funind plugin *)
+| WITH "Function" function_rec_definition_loc LIST0 ( "with" function_rec_definition_loc )      (* funind plugin *)
+| REPLACE "Functional" "Scheme" LIST1 fun_scheme_arg SEP "with"      (* funind plugin *)
+| WITH "Functional" "Scheme" fun_scheme_arg LIST0 ( "with" fun_scheme_arg )      (* funind plugin *)
+
+]
+
+only_parsing: [
+| OPTINREF
+]
+
+syntax: [
+| REPLACE "Infix" ne_lstring ":=" constr [ "(" LIST1 syntax_modifier SEP "," ")" | ]   OPT [ ":" IDENT ]
+| WITH    "Infix" ne_lstring ":=" constr OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" IDENT ]
+| REPLACE "Notation" lstring ":=" constr [ "(" LIST1 syntax_modifier SEP "," ")" | ]   OPT [ ":" IDENT ]
+| WITH    "Notation" lstring ":=" constr OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" IDENT ]
+| REPLACE "Reserved" "Infix" ne_lstring [ "(" LIST1 syntax_modifier SEP "," ")" | ]
+| WITH    "Reserved" "Infix" ne_lstring OPT [ "(" LIST1 syntax_modifier SEP "," ")" ]
+| REPLACE "Reserved" "Notation" ne_lstring [ "(" LIST1 syntax_modifier SEP "," ")" | ]
+| WITH    "Reserved" "Notation" ne_lstring OPT [ "(" LIST1 syntax_modifier SEP "," ")" ]
+]
+
+numnotoption: [
+| OPTINREF
+]
+
+binder_tactic: [
+| REPLACE "let" [ "rec" | ] LIST1 let_clause SEP "with" "in" tactic_expr5
+| WITH "let" OPT "rec" let_clause LIST0 ( "with" let_clause ) "in" tactic_expr5
+]
+
+tactic_then_gen: [
+| OPTINREF
+]
+
+record_binder_body: [
+| REPLACE binders of_type_with_opt_coercion lconstr
+| WITH binders of_type_with_opt_coercion
+| REPLACE binders of_type_with_opt_coercion lconstr ":=" lconstr
+| WITH binders of_type_with_opt_coercion ":=" lconstr
+]
+
+simple_assum_coe: [
+| REPLACE LIST1 ident_decl of_type_with_opt_coercion lconstr
+| WITH LIST1 ident_decl of_type_with_opt_coercion
+]
+
+constructor_type: [
+| REPLACE binders [ of_type_with_opt_coercion lconstr | ]
+| WITH binders OPT of_type_with_opt_coercion
+]
+
 (* todo: is this really correct? Search for "Pvernac.register_proof_mode" *)
 (* consider tactic_command vs tac2mode *)
 vernac_aux: [
 | tactic_mode "."
+]
+
+def_token: [
+| DELETE "SubClass" (* document separately from Definition and Example *)
+]
+
+assumption_token: [
+| REPLACE "Axiom"
+| WITH [ "Axiom" | "Axioms" ]
+| REPLACE "Conjecture"
+| WITH [ "Conjecture" | "Conjectures" ]
+| REPLACE "Hypothesis"
+| WITH [ "Hypothesis" | "Hypotheses" ]
+| REPLACE "Parameter"
+| WITH [ "Parameter" | "Parameters" ]
+| REPLACE "Variable"
+| WITH [ "Variable" | "Variables" ]
+]
+
+legacy_attrs: [
+| OPT [ "Local" | "Global" ] OPT [ "Polymorphic" | "Monomorphic" ] OPT "Program" OPT [ "Cumulative" | "NonCumulative" ] OPT "Private"
+]
+
+all_attrs: [
+| LIST0 ( "#[" LIST0 attribute SEP "," "]" ) OPT legacy_attrs
+]
+
+vernacular: [
+| LIST0 ( OPT all_attrs [ command | tactic ] "." )
+]
+
+rec_definition: [
+| REPLACE ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notation
+| WITH ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notation
+]
+
+corec_definition: [
+| REPLACE ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notation
+| WITH ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notation
+]
+
+type_cstr: [
+| REPLACE ":" lconstr
+| WITH ":" type
+| OPTINREF
+]
+
+decl_notation: [
+| OPTINREF
+]
+
+inductive_definition: [
+| REPLACE OPT ">" ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] OPT ( ":=" OPT constructor_list_or_record_decl ) OPT decl_notation
+| WITH OPT ">" ident_decl binders OPT [ "|" binders ] OPT [ ":" type ] OPT ( ":=" OPT constructor_list_or_record_decl ) OPT decl_notation
+]
+
+constructor_list_or_record_decl: [
+| DELETE "|" LIST1 constructor SEP "|"
+| REPLACE identref constructor_type "|" LIST1 constructor SEP "|"
+| WITH OPT "|" LIST1 constructor SEP "|"
+| DELETE identref constructor_type
+| REPLACE identref "{" record_fields "}"
+| WITH OPT identref "{" record_fields "}"
+| DELETE "{" record_fields "}"
+]
+
+record_binder: [
+| REPLACE name record_binder_body
+| WITH name OPT record_binder_body
+| DELETE name
 ]
 
 SPLICE: [
@@ -642,8 +899,6 @@ SPLICE: [
 | tactic
 | uconstr
 | impl_ident_head
-| argument_spec
-| at_level
 | branches
 | check_module_type
 | decorated_vernac
@@ -666,7 +921,27 @@ SPLICE: [
 | evar_instance
 | fix_decls
 | cofix_decls
-]
+| assum_list
+| assum_coe
+| inline
+| occs
+| univ_name_list
+| ltac_info
+| field_mods
+| ltac_production_sep
+| ltac_tactic_level
+| printunivs_subgraph
+| ring_mods
+| scope_delimiter
+| eliminator  (* todo: splice or not? *)
+| quoted_attributes  (* todo: splice or not? *)
+| printable
+| only_parsing
+| def_token
+| record_fields
+| constructor_type
+| record_binder
+] (* end SPLICE *)
 
 RENAME: [
 | clause clause_dft_concl
@@ -711,6 +986,14 @@ RENAME: [
 | corec_definition cofix_definition
 | inst evar_binding
 | univ_instance univ_annot
+| simple_assum_coe assumpt
+| of_type_with_opt_coercion of_type
+| decl_notation decl_notations
+| one_decl_notation decl_notation
+| attribute attr
+| attribute_value attr_value
+| constructor_list_or_record_decl constructors_or_record
+| record_binder_body field_body
 ]
 
 

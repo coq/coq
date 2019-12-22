@@ -152,6 +152,8 @@ Many other commands support the ``Polymorphic`` flag, including:
 - :cmd:`Hint Resolve` and :cmd:`Hint Rewrite` will use the auto/rewrite hint
   polymorphically, not at a single instance.
 
+.. _cumulative:
+
 Cumulative, NonCumulative
 -------------------------
 

@@ -198,7 +198,7 @@ Figure :ref:`vernacular` as follows:
    \comindex{Hypothesis \mbox{\rm (and coercions)}}
 
 .. productionlist::
-   assumption : `assumption_keyword` `assums` .
+   assumption : `assumption_token` `assums` .
    assums : `simple_assums`
           : (`simple_assums`) ... (`simple_assums`)
    simple_assums : `ident` ... `ident` :[>] `term`
@@ -214,12 +214,6 @@ grammar of inductive types from Figure :ref:`vernacular` as follows:
   FIXME:
    \comindex{Inductive \mbox{\rm (and coercions)}}
    \comindex{CoInductive \mbox{\rm (and coercions)}}
-
-.. productionlist::
-   inductive : Inductive `ind_body` with ... with `ind_body`
-             : CoInductive `ind_body` with ... with `ind_body`
-   ind_body : `ident` [ `binders` ] : `term` := [[|] `constructor` | ... | `constructor` ]
-   constructor : `ident` [ `binders` ] [:[>] `term` ]
 
 Especially, if the extra ``>`` is present in a constructor
 declaration, this constructor is declared as a coercion.
@@ -240,7 +234,7 @@ declaration, this constructor is declared as a coercion.
 
       Same as :cmd:`Identity Coercion` but locally to the current section.
 
-   .. cmdv:: SubClass @ident := @type
+   .. cmd:: SubClass @ident_decl @def_body
       :name: SubClass
 
       If :n:`@type` is a class :n:`@ident'` applied to some arguments then
@@ -251,7 +245,7 @@ declaration, this constructor is declared as a coercion.
       :n:`Definition @ident := @type.`
       :n:`Identity Coercion Id_@ident_@ident' : @ident >-> @ident'`.
 
-   .. cmdv:: Local SubClass @ident := @type
+   .. cmdv:: Local SubClass @ident_decl @def_body
 
       Same as before but locally to the current section.
 
@@ -299,7 +293,7 @@ Classes as Records
 We allow the definition of *Structures with Inheritance* (or classes as records)
 by extending the existing :cmd:`Record` macro. Its new syntax is:
 
-.. cmdv:: Record {? >} @ident {? @binders} : @sort := {? @ident} { {+; @ident :{? >} @term } }
+.. cmdv:: {| Record | Structure } {? >} @ident {* @binder } : @sort := {? @ident} { {+; @ident :{? >} @term } }
 
    The first identifier :token:`ident` is the name of the defined record and
    :token:`sort` is its type. The optional identifier after ``:=`` is the name
@@ -314,12 +308,6 @@ by extending the existing :cmd:`Record` macro. Its new syntax is:
    a coercion from the class of the last field type to the record name
    (this may fail if the uniform inheritance condition is not
    satisfied).
-
-.. cmdv:: Structure {? >} @ident {? @binders} : @sort := {? @ident} { {+; @ident :{? >} @term } }
-   :name: Structure
-
-   This is a synonym of :cmd:`Record`.
-
 
 Coercions and Sections
 ----------------------

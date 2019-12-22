@@ -174,7 +174,7 @@ Program Definition
       .. exn:: In environment … the term: @term does not have type @type. Actually, it has type ...
          :undocumented:
 
-   .. cmdv:: Program Definition @ident @binders : @type := @term
+   .. cmdv:: Program Definition @ident {* @binder } : @type := @term
 
       This is equivalent to:
 
@@ -189,7 +189,7 @@ Program Definition
 Program Fixpoint
 ~~~~~~~~~~~~~~~~
 
-.. cmd:: Program Fixpoint @ident @binders {? {@order}} : @type := @term
+.. cmd:: Program Fixpoint @ident {* @binder } {? {@order}} : @type := @term
 
    The optional order annotation follows the grammar:
 
