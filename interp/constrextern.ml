@@ -805,6 +805,17 @@ let mkFlattenedCApp (head,args) =
   | _ ->
     CApp (head, args)
 
+let extern_applied_funclass_coercion ?loc inctx impls head args =
+  try
+    if args = [] then
+      (* No way to reinfer the coercion once implicit arguments are dropped *)
+      raise Expl;
+    let args = adjust_implicit_arguments inctx (List.length args) args impls in
+    Some (CAst.make ?loc @@ mkFlattenedCApp (head, args))
+  with Expl ->
+    (* Cannot use implicit arguments thus do not remove coercion *)
+    None
+
 let extern_applied_notation inctx n impl f args =
   if List.is_empty args then
     f.CAst.v
@@ -845,9 +856,8 @@ let remove_one_coercion inctx c =
                  been confused with ordinary application or would have need
                  a surrounding context and the coercion to funclass would
                  have been made explicit to match *)
-              let a' = if List.is_empty l then a else DAst.make ?loc @@ GApp (a,l) in
-              let inctx = inctx || not (List.is_empty l) in
-              Some (nparams+1, inctx, a')
+              let coe_args = if List.is_empty l then None else Some (r,l) in
+              Some (nparams+1, a, coe_args)
           | _ -> None)
   | _ -> None
   with Not_found ->
@@ -976,12 +986,56 @@ let extern_var ?loc id = CRef (qualid_of_ident ?loc id,None)
 
 let add_vname (vars,uvars) na = add_vname vars na, uvars
 
-let rec extern inctx ?impargs scopes vars r =
-  match remove_one_coercion inctx (flatten_application r) with
-  | Some (nargs,inctx,r') ->
-    (try extern_notations inctx scopes vars (Some nargs) r
-     with No_match -> extern inctx scopes vars r')
+let rec extern ?impargs inctx scopes vars r =
+  match extern_remove_coercions ?impargs inctx scopes vars r [] with
+  | Inl r -> r (* Notation at the head *)
+  | Inr r -> r (* Only coercions *)
+
+and extern_remove_coercions inctx ?impargs scopes vars head allargs =
+  (* Remove as many head coercions as possible *)
+  match remove_one_coercion inctx (flatten_application head) with
+  | Some (nargs,head',is_to_funclass) ->
+    (try
+      (* Since notations don't necessary include the expected
+         coercions, we stepwise try to match with coercions removed
+         one by one, checking already with the coercion included *)
+      let appliedhead = List.fold_left (fun h l -> DAst.make @@ GApp (h,l)) head allargs in
+      Inl (extern_notations inctx scopes vars (Some nargs) appliedhead)
+    with No_match ->
+      match is_to_funclass with
+      | None ->
+        (* Continue removing coercions or using a notation *)
+        sub_extern_remove_coercions inctx scopes vars head' allargs
+      | Some (ref,args) ->
+        let head'' = sub_extern_remove_coercions true scopes vars head' (args::allargs) in
+        match head'' with
+        | Inl r -> Inl r
+        | Inr head'' ->
+        let subscopes, impls =
+          let subscopes = find_arguments_scope ref in
+          let subscopes = try List.skipn nargs subscopes with Failure _ -> [] in
+          let impls =
+            select_stronger_impargs
+              (List.map (drop_first_implicits nargs) (implicits_of_global ref)) in
+          subscopes, impls
+        in
+        let args = fill_arg_scopes args subscopes scopes in
+        let args = extern_args (extern true) vars args in
+        match extern_applied_funclass_coercion ?loc:head.CAst.loc inctx impls head'' args with
+        | Some r -> Inr r
+        | None ->
+          (* The coercion to Funclass cannot be removed by lack of explicit arguments *)
+          Inr (extern_no_coercion inctx ?impargs scopes vars head))
   | None ->
+    try
+      let appliedhead = List.fold_left (fun h l -> DAst.make @@ GApp (h,l)) head allargs in
+      Inl (extern_notations inctx scopes vars None appliedhead)
+    with No_match ->
+      Inr (extern_no_coercion inctx ?impargs scopes vars head)
+
+and sub_extern_remove_coercions inctx (subentry,(_,scopes)) = extern_remove_coercions inctx (subentry,(None,scopes))
+
+and extern_no_coercion inctx ?impargs scopes vars r =
 
   let r' = match DAst.get r with
     | GInt i when Coqlib.has_ref "num.int63.wrap_int" ->

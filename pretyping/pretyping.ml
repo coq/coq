@@ -848,15 +848,14 @@ struct
       | c::rest ->
         let bidi = n >= nargs_before_bidi in
         let argloc = loc_of_glob_constr c in
-        let sigma, body, na, c1, subs, c2, trace = match EConstr.kind sigma typ with
+        let sigma, body, na, c1, subs, c2, trace, impls = match EConstr.kind sigma typ with
         | Prod (na, c1, c2) ->
           (* Fast path *)
           let c1 = Vars.esubst Vars.lift_substituend subs c1 in
-          sigma, body, na, c1, subs, c2, Coercion.empty_coercion_trace
+          sigma, body, na, c1, subs, c2, Coercion.empty_coercion_trace, None
         | _ ->
           let typ = Vars.esubst Vars.lift_substituend subs typ in
           let sigma, body, typ, trace, impls = Coercion.inh_app_fun ~program_mode resolve_tc !!env sigma body typ in
-          let c,rest = insert_impargs ?loc impls c rest in
           let resty = whd_all !!env sigma typ in
           let na, c1, c2 = match EConstr.kind sigma resty with
           | Prod (na, c1, c2) -> (na, c1, c2)
@@ -866,8 +865,9 @@ struct
             error_cant_apply_not_functional
               ?loc:(Loc.merge_opt floc argloc) !!env sigma resj [|hj|]
           in
-          sigma, body, na, c1, Esubst.subs_id 0, c2, trace
+          sigma, body, na, c1, Esubst.subs_id 0, c2, trace, impls
         in
+        let c,rest = insert_impargs ?loc impls c rest in
         let (sigma, hj), bidiargs =
           if bidi then
             (* We want to get some typing information from the context before

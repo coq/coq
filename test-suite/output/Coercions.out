@@ -6,3 +6,13 @@ fun (x : foo) (n : nat) => x n
      : foo -> nat -> nat
 "1" 0
      : PAIR
+0
+     : bool
+0 (1 :: nil)
+     : bool
+0 : list nat -> bool
+     : list nat -> bool
+1 : list nat -> bool
+     : list nat -> bool
+assert: 0
+     : expr
