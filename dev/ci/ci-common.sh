@@ -70,9 +70,8 @@ git_download()
   if [ -d "$DEST" ]; then
     echo "Warning: download and unpacking of $PROJECT skipped because $DEST already exists."
   elif [ "$FORCE_GIT" = "1" ] || [ "$CI" = "" ]; then
-    git clone "$GITURL" "$DEST"
+    git clone --branch "$REF" --depth 1 -- "$GITURL" "$DEST"
     cd "$DEST"
-    git checkout "$REF"
   else # When possible, we download tarballs to reduce bandwidth and latency
     local ARCHIVEURL_VAR="${PROJECT}_CI_ARCHIVEURL"
     local ARCHIVEURL="${!ARCHIVEURL_VAR}"
