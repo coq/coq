@@ -372,6 +372,7 @@ type coercion_trace =
       previous : coercion_trace;
     }
   | ProdCoe of { na : Name.t binder_annot; ty : econstr; dom : coercion_trace; body : coercion_trace }
+  | ArgCoe of { arg : econstr; previous : coercion_trace }
 
 let empty_coercion_trace = IdCoe
 
@@ -392,6 +393,9 @@ let rec reapply_coercions sigma trace c = match trace with
     let c = beta_applist sigma (lift 1 c, [x]) in
     let c = reapply_coercions sigma body c in
     mkLambda (na, ty, c)
+  | ArgCoe { arg; previous } ->
+    let c = reapply_coercions sigma previous c in
+    mkApp (c, [|arg|])
 
 let instance_of_global_constr sigma c =
   match kind sigma c with
@@ -531,16 +535,54 @@ let reapply_coercions_body sigma trace body =
     let body = reapply_coercions sigma trace body in
     start_app_body sigma body
 
+let implicits_of_coercion nparams coef =
+  let open Impargs in
+  let impls = List.map (drop_first_implicits (nparams+1)) (implicits_of_global coef) in
+  select_stronger_impargs impls
+
+let implicits_of_inheritance_path p =
+  let coe = List.hd p in
+  (coe.coe_value, implicits_of_coercion coe.coe_param coe.coe_value)
+
+let adjust_implicit_if_funclass env sigma p j trace =
+  (* This adds maximal implicit argument to the last coercion, when
+     this is one to Funclass.
+     Note that this changes the [Prod] on which the coercion was
+     initially detected: if the target was [P(x) -> Q(x)], it is
+     detected as a Funclass, with a coercion of type [forall {x}, P(x)
+     -> Q(x)] classified to Funclass because of the [forall x, ...]
+     but actually used on the product [P(x) -> Q(x)] *)
+  let coe = List.hd p in
+  match coe.coe_target with
+  | CL_FUN ->
+    let impls = implicits_of_coercion coe.coe_param coe.coe_value in
+    let open Impargs in
+    let rec aux sigma j trace = function
+      | imp :: impls when is_status_implicit imp && maximal_insertion_of imp ->
+        (match kind sigma (whd_all env sigma j.uj_type) with
+        | Prod (_,t,u) ->
+          let src = (None,Evar_kinds.InternalHole) in
+          let sigma, ev = Evarutil.new_evar env sigma ~src t in
+          let j = { uj_val = mkApp (j.uj_val, [|ev|]); uj_type = subst1 ev u } in
+          let trace = ArgCoe { arg = ev ; previous = trace } in
+          aux sigma j trace impls
+        | _ -> assert false)
+      | _ -> sigma, j, trace
+    in aux sigma j trace impls
+  | _ ->
+    sigma, j, trace
+
 (* Try to coerce to a funclass; raise NoCoercion if not possible *)
 let inh_app_fun_core ~program_mode env sigma body typ =
   match unify_product env sigma typ with
-  | Inl sigma -> sigma, body, typ, IdCoe
+  | Inl sigma -> sigma, body, typ, IdCoe, None
   | Inr t ->
     try
       let t,p = lookup_path_to_fun_from env sigma typ in
       let j = {uj_val=force_app_body body; uj_type = typ} in
       let sigma, j, trace = apply_coercion env sigma p j t in
-      sigma, start_app_body sigma j.uj_val, j.uj_type, trace
+      let impls = implicits_of_inheritance_path p in
+      sigma, start_app_body sigma j.uj_val, j.uj_type, trace, Some impls
     with (Not_found | NoCoercion) as exn ->
       let _, info = Exninfo.capture exn in
       if program_mode then
@@ -548,9 +590,9 @@ let inh_app_fun_core ~program_mode env sigma body typ =
           let sigma, (coercef, t, trace) = mu env sigma t in
           let j = {uj_val=force_app_body body; uj_type = typ} in
           let sigma, uj_val = app_opt env sigma coercef j.uj_val in
-          (sigma, start_app_body sigma uj_val, t, trace)
+          (sigma, start_app_body sigma uj_val, t, trace, None)
         with NoSubtacCoercion | NoCoercion ->
-          (sigma,body,typ,IdCoe)
+          (sigma,body,typ,IdCoe,None)
       else Exninfo.iraise (NoCoercion,info)
 
 (* Try to coerce to a funclass; returns [j] if no coercion is applicable *)
@@ -558,10 +600,10 @@ let inh_app_fun ~program_mode resolve_tc env sigma body typ =
   try inh_app_fun_core ~program_mode env sigma body typ
   with
   | NoCoercion when not resolve_tc
-    || not (get_use_typeclasses_for_conversion ()) -> (sigma, body, typ, IdCoe)
+    || not (get_use_typeclasses_for_conversion ()) -> (sigma, body, typ, IdCoe, None)
   | NoCoercion ->
     try inh_app_fun_core ~program_mode env (saturate_evd env sigma) body typ
-    with NoCoercion -> (sigma, body, typ, IdCoe)
+    with NoCoercion -> (sigma, body, typ, IdCoe, None)
 
 let type_judgment env sigma j =
   match EConstr.kind sigma (whd_all env sigma j.uj_type) with
@@ -607,6 +649,7 @@ let inh_coerce_to_fail flags env sigma rigidonly v t c1 =
           apply_coercion env sigma p
             {uj_val = v; uj_type = t} t2
         in
+        let sigma, j, trace = adjust_implicit_if_funclass env sigma p j trace in
         sigma, j.uj_val, j.uj_type, trace
       with Not_found -> raise NoCoercion
     in

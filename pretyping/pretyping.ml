@@ -120,6 +120,29 @@ let esearch_guard ?loc env sigma indexes fix =
   with TypeError (env,err) ->
     raise (PretypeError (env,sigma,TypingError (map_ptype_error of_constr err)))
 
+(* Implicit arguments *)
+
+let insert_impargs ?loc coeimpls c args =
+  match coeimpls with
+  | None -> (c,args)
+  | Some (coe,allimpls) ->
+  let open Impargs in
+  let rec aux n impls args =
+    match (impls,args) with
+    | (imp::impls', args) when is_status_implicit imp ->
+      if List.is_empty args && not (maximal_insertion_of imp) then
+        []
+      else
+        let name = Some (Impargs.name_of_implicit (List.nth allimpls (n-1))) in
+        DAst.make ?loc
+          (GHole(Evar_kinds.ImplicitArg (coe,(n,name),force_inference_of imp),Namegen.IntroAnonymous,None))
+        :: aux (n+1) impls' args
+    | (imp::impls', a::args') -> a :: aux (n+1) impls' args'
+    | (imp::impls', []) -> []
+    | ([], args) -> args
+  in
+  match aux 1 allimpls (c::args) with c::args -> (c,args) | _ -> assert false
+
 (* To force universe name declaration before use *)
 
 let is_strict_universe_declarations =
@@ -832,7 +855,8 @@ struct
           sigma, body, na, c1, subs, c2, Coercion.empty_coercion_trace
         | _ ->
           let typ = Vars.esubst Vars.lift_substituend subs typ in
-          let sigma, body, typ, trace = Coercion.inh_app_fun ~program_mode resolve_tc !!env sigma body typ in
+          let sigma, body, typ, trace, impls = Coercion.inh_app_fun ~program_mode resolve_tc !!env sigma body typ in
+          let c,rest = insert_impargs ?loc impls c rest in
           let resty = whd_all !!env sigma typ in
           let na, c1, c2 = match EConstr.kind sigma resty with
           | Prod (na, c1, c2) -> (na, c1, c2)
