@@ -132,3 +132,8 @@ end
 (** Metavariables *)
 val pr_meta : Constr.metavariable -> Pp.t
 val string_of_meta : Constr.metavariable -> string
+
+(** Miscellaneous types *)
+type explicitation =
+  | ExplByName of Id.t
+  | ExplByPos of int (* a reference to the n-th product starting from left *)

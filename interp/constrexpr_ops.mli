@@ -11,6 +11,7 @@
 open Names
 open Libnames
 open Constrexpr
+open Nameops
 
 (** Constrexpr_ops: utilities on [constr_expr] *)
 

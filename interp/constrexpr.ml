@@ -59,10 +59,6 @@ type 'a or_by_notation = 'a or_by_notation_r CAst.t
 (* NB: the last string in [ByNotation] is actually a [Notation.delimiters],
    but this formulation avoids a useless dependency. *)
 
-type explicitation =
-  | ExplByName of Id.t
-  | ExplByPos of int (* a reference to the n-th non-dependent implicit starting from left *)
-
 type binder_kind =
   | Default of Glob_term.binding_kind
   | Generalized of Glob_term.binding_kind * bool
@@ -107,9 +103,9 @@ and constr_expr_r =
   | CLambdaN of local_binder_expr list * constr_expr
   | CLetIn   of lname * constr_expr * constr_expr option * constr_expr
   | CAppExpl of (qualid * instance_expr option) * constr_expr list
-  | CApp     of constr_expr * (constr_expr * explicitation CAst.t option) list
+  | CApp     of constr_expr * (constr_expr * Nameops.explicitation CAst.t option) list
   | CProj    of explicit_flag * (qualid * instance_expr option)
-              * (constr_expr * explicitation CAst.t option) list * constr_expr
+              * (constr_expr * Nameops.explicitation CAst.t option) list * constr_expr
   | CRecord  of (qualid * constr_expr) list
 
   (* representation of the "let" and "match" constructs *)

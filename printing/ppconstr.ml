@@ -21,6 +21,7 @@ open Glob_term
 open Constrexpr
 open Constrexpr_ops
 open Namegen
+open Nameops
 (*i*)
 
 module Tag =

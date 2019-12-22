@@ -19,7 +19,7 @@ open Declarations
 open Libobject
 open EConstr
 open Reductionops
-open Constrexpr
+open Nameops
 
 let whd_prod env sigma typ =
   let open CClosure in

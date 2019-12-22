@@ -18,6 +18,7 @@ open Constrexpr
 open Constrexpr_ops
 open Util
 open Namegen
+open Nameops
 
 open Pcoq
 open Pcoq.Prim
