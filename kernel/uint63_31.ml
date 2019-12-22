@@ -138,7 +138,7 @@ let mulc x y =
   then Int64.(sub !hr one, mask63 !lr)
   else (!hr, !lr)
 
-let equal x y = mask63 x = mask63 y
+let equal (x : t) y = x = y
 
 let compare x y = Int64.compare x y
 
