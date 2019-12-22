@@ -124,9 +124,10 @@ let esearch_guard ?loc env sigma indexes fix =
 
 let insert_impargs ?loc coeimpls c args =
   match coeimpls with
-  | None -> (c,args)
+  | None -> None
   | Some (coe,allimpls) ->
   let open Impargs in
+  let some = ref false in
   let rec aux n impls args =
     match (impls,args) with
     | (imp::impls', args) when is_status_implicit imp ->
@@ -134,6 +135,7 @@ let insert_impargs ?loc coeimpls c args =
         []
       else
         let name = Some (Impargs.name_of_implicit (List.nth allimpls (n-1))) in
+        let _ = some := true in
         DAst.make ?loc
           (GHole(Evar_kinds.ImplicitArg (coe,(n,name),force_inference_of imp),Namegen.IntroAnonymous,None))
         :: aux (n+1) impls' args
@@ -141,7 +143,9 @@ let insert_impargs ?loc coeimpls c args =
     | (imp::impls', []) -> []
     | ([], args) -> args
   in
-  match aux 1 allimpls (c::args) with c::args -> (c,args) | _ -> assert false
+  match aux 1 allimpls (c::args) with
+  | c::args -> if !some then Some (c,args,coe) else None
+  | _ -> assert false
 
 (* To force universe name declaration before use *)
 
@@ -352,6 +356,13 @@ let adjust_evar_source sigma na c =
      | _ -> sigma, c
      end
   | _, _ -> sigma, c
+
+let warn_tolerance_no_coercion_implicit_argument =
+  CWarnings.create ~name:"funclass-coercion-implicit-arguments-skipping-deprecated" ~category:"deprecated"
+    Pp.(fun (env,sigma,coe) ->
+      let sigma',c = Evd.fresh_global env sigma coe in
+      strbrk "Not skipping implicit arguments of coercions to Funclass (here "
+      ++ Termops.Internal.print_constr_env env sigma' c ++ strbrk ") is deprecated.")
 
 (* coerce to tycon if any *)
 let inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j = function
@@ -867,34 +878,46 @@ struct
           in
           sigma, body, na, c1, Esubst.subs_id 0, c2, trace, impls
         in
-        let c,rest = insert_impargs ?loc impls c rest in
-        let (sigma, hj), bidiargs =
-          if bidi then
-            (* We want to get some typing information from the context before
-               typing the argument, so we replace it by an existential
-               variable *)
-            let sigma, c_hole = new_evar env sigma ~src:(loc,Evar_kinds.InternalHole) c1 in
-            (sigma, make_judge c_hole c1), (c_hole, c1, c, trace) :: bidiargs
-          else
-            let tycon = Some c1 in
-            pretype tycon env sigma c, bidiargs
+        let f c rest =
+          let (sigma, hj), bidiargs =
+            if bidi then
+              (* We want to get some typing information from the context before
+                 typing the argument, so we replace it by an existential
+                 variable *)
+              let sigma, c_hole = new_evar env sigma ~src:(loc,Evar_kinds.InternalHole) c1 in
+              (sigma, make_judge c_hole c1), (c_hole, c1, c, trace) :: bidiargs
+            else
+              let tycon = Some c1 in
+              pretype tycon env sigma c, bidiargs
+          in
+          let sigma, candargs, ujval =
+            match candargs with
+            | [] -> sigma, [], j_val hj
+            | arg :: args ->
+              begin match Evarconv.unify_delay !!env sigma (j_val hj) arg with
+                | exception Evarconv.UnableToUnify (sigma,e) ->
+                  raise (PretypeError (!!env,sigma,CannotUnify (j_val hj, arg, Some e)))
+                | sigma ->
+                  sigma, args, nf_evar sigma (j_val hj)
+              end
+          in
+          let sigma, ujval = adjust_evar_source sigma na.binder_name ujval in
+          let subs = Esubst.subs_cons (Vars.make_substituend ujval) subs in
+          let body = Coercion.push_arg body ujval in
+          let val_before_bidi = if bidi then val_before_bidi else body in
+          apply_rec env sigma (n+1) body (subs, c2) val_before_bidi candargs bidiargs rest
         in
-        let sigma, candargs, ujval =
-          match candargs with
-          | [] -> sigma, [], j_val hj
-          | arg :: args ->
-            begin match Evarconv.unify_delay !!env sigma (j_val hj) arg with
-              | exception Evarconv.UnableToUnify (sigma,e) ->
-                raise (PretypeError (!!env,sigma,CannotUnify (j_val hj, arg, Some e)))
-              | sigma ->
-                sigma, args, nf_evar sigma (j_val hj)
-            end
-        in
-        let sigma, ujval = adjust_evar_source sigma na.binder_name ujval in
-        let subs = Esubst.subs_cons (Vars.make_substituend ujval) subs in
-        let body = Coercion.push_arg body ujval in
-        let val_before_bidi = if bidi then val_before_bidi else body in
-        apply_rec env sigma (n+1) body (subs, c2) val_before_bidi candargs bidiargs rest
+        match insert_impargs ?loc impls c rest with
+        | None -> f c rest
+        | Some (c',rest',coe) ->
+          let g c rest = try Inl (f c rest) with e when CErrors.noncritical e -> Inr (Exninfo.capture e) in
+          match g c' rest' with
+          | Inl x -> x
+          | Inr e' ->
+          (* Temporary fallback on not using implicit arguments in coercions to funclass *)
+            match g c rest with
+            | Inl x -> warn_tolerance_no_coercion_implicit_argument ?loc (!!env,sigma,coe); x
+            | Inr e -> Exninfo.iraise e'
     in
     let typ = (Esubst.subs_id 0, fj.uj_type) in
     let body = (Coercion.start_app_body sigma fj.uj_val) in
