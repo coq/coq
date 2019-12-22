@@ -60,7 +60,7 @@ Nonetheless, the manual has some structure that is explained below.
    of the formalism. Chapter :ref:`themodulesystem` describes the module
    system.
 
--  The second part describes the proof engine. It is divided in seven
+-  The second part describes the proof engine. It is divided into several
    chapters. Chapter :ref:`vernacularcommands` presents all commands (we
    call them *vernacular commands*) that are not directly related to
    interactive proving: requests to the environment, complete or partial
@@ -69,8 +69,8 @@ Nonetheless, the manual has some structure that is explained below.
    Chapter :ref:`proofhandling`. In Chapter :ref:`tactics`, all commands that
    realize one or more steps of the proof are presented: we call them
    *tactics*. The legacy language to combine these tactics into complex proof
-   strategies is given in Chapter :ref:`ltac`. The new and experimental
-   language that is eventually going to replace Ltac is presented in
+   strategies is given in Chapter :ref:`ltac`. The currently experimental
+   language that will eventually replace Ltac is presented in
    Chapter :ref:`ltac2`. Examples of tactics
    are described in Chapter :ref:`detailedexamplesoftactics`.
    Finally, the |SSR| proof language is presented in
