@@ -1,0 +1,11 @@
+The command has indeed failed with message:
+In environment
+x : T
+T : Type
+a : T
+Unable to unify "T" with "?X@{x0:=x; x:=C a}" (cannot instantiate 
+"?X" because "T" is not in its scope: available arguments are 
+"x" "C a").
+The command has indeed failed with message:
+The term "id" has type "ID" while it is expected to have type 
+"Type -> ?T" (cannot instantiate "?T" because "A" is not in its scope).
