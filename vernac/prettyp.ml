@@ -199,7 +199,7 @@ let print_opacity ref =
 (*******************)
 
 let print_if_is_coercion ref =
-  if Classops.coercion_exists ref then [pr_global ref ++ str " is a coercion"] else []
+  if Coercionops.coercion_exists ref then [pr_global ref ++ str " is a coercion"] else []
 
 (*******************)
 (* *)
@@ -951,7 +951,7 @@ let inspect env sigma depth =
 (*************************************************************************)
 (* Pretty-printing functions coming from classops.ml                     *)
 
-open Classops
+open Coercionops
 
 let print_coercion_value v = Printer.pr_global v.coe_value
 
@@ -965,7 +965,7 @@ let print_path ((i,j),p) =
     str"] : ") ++
   print_class i ++ str" >-> " ++ print_class j
 
-let _ = Classops.install_path_printer print_path
+let _ = Coercionops.install_path_printer print_path
 
 let print_graph () =
   prlist_with_sep fnl print_path (inheritance_graph())

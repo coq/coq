@@ -370,14 +370,14 @@ let coerce_search_pattern_to_sort hpat =
   let filter_head, coe_path =
     try
       let _, cp =
-        Classops.lookup_path_to_sort_from (push_rels_assum dc env) sigma ht in
+        Coercionops.lookup_path_to_sort_from (push_rels_assum dc env) sigma ht in
       warn ();
       true, cp
     with _ -> false, [] in
   let coerce hp coe_index =
-    let coe_ref = coe_index.Classops.coe_value in
+    let coe_ref = coe_index.Coercionops.coe_value in
     try
-      let n_imps = Option.get (Classops.hide_coercion coe_ref) in
+      let n_imps = Option.get (Coercionops.hide_coercion coe_ref) in
       mkPApp (Pattern.PRef coe_ref) n_imps [|hp|]
     with Not_found | Option.IsNone ->
     errorstrm (str "need explicit coercion " ++ pr_global coe_ref ++ spc ()

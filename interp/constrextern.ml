@@ -678,7 +678,7 @@ let remove_one_coercion inctx c =
   try match match_coercion_app c with
   | Some (loc,r,pars,args) when not (!Flags.raw_print || !print_coercions) ->
       let nargs = List.length args in
-      (match Classops.hide_coercion r with
+      (match Coercionops.hide_coercion r with
           | Some n when (n - pars) < nargs && (inctx || (n - pars)+1 < nargs) ->
               (* We skip the coercion *)
               let l = List.skipn (n - pars) args in

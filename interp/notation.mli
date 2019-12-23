@@ -271,7 +271,7 @@ val compute_type_scope : Evd.evar_map -> EConstr.types -> scope_name option
 (** Get the current scope bound to Sortclass, if it exists *)
 val current_type_scope_name : unit -> scope_name option
 
-val scope_class_of_class : Classops.cl_typ -> scope_class
+val scope_class_of_class : Coercionops.cl_typ -> scope_class
 
 (** Building notation key *)
 

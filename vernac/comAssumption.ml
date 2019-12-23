@@ -32,7 +32,7 @@ let declare_variable is_coe ~kind typ imps impl {CAst.v=name} =
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let () = Classes.declare_instance env sigma None true r in
-  let () = if is_coe then Class.try_add_new_coercion r ~local:true ~poly:false in
+  let () = if is_coe then ComCoercion.try_add_new_coercion r ~local:true ~poly:false in
   ()
 
 let instance_of_univ_entry = function
@@ -65,7 +65,7 @@ let declare_axiom is_coe ~poly ~local ~kind typ (univs, pl) imps nl {CAst.v=name
     | Declare.ImportNeedQualified -> true
     | Declare.ImportDefaultBehavior -> false
   in
-  let () = if is_coe then Class.try_add_new_coercion gr ~local ~poly in
+  let () = if is_coe then ComCoercion.try_add_new_coercion gr ~local ~poly in
   let inst = instance_of_univ_entry univs in
   (gr,inst)
 

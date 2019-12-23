@@ -60,11 +60,11 @@ open Cases
 open Pattern
 open Patternops
 open Cbv
-open Classops
+open Coercionops
 open Arguments_renaming
 open Pretyping
 open Cbv
-open Classops
+open Coercionops
 open Clenv
 open Clenvtac
 open Constr_matching
@@ -134,7 +134,7 @@ open Tacticals
 open Tactics
 open Eqschemes
 
-open Class
+open ComCoercion
 open ComDefinition
 open Indschemes
 open Ind_tables

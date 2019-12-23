@@ -52,7 +52,7 @@ val print_impargs : qualid Constrexpr.or_by_notation -> Pp.t
 val print_graph : unit -> Pp.t
 val print_classes : unit -> Pp.t
 val print_coercions : unit -> Pp.t
-val print_path_between : Classops.cl_typ -> Classops.cl_typ -> Pp.t
+val print_path_between : Coercionops.cl_typ -> Coercionops.cl_typ -> Pp.t
 val print_canonical_projections : env -> Evd.evar_map -> Pp.t
 
 (** Pretty-printing functions for type classes and instances *)

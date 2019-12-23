@@ -9,7 +9,7 @@
 (************************************************************************)
 
 open Names
-open Classops
+open Coercionops
 
 (** Classes and coercions. *)
 
