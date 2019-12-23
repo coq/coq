@@ -2547,3 +2547,8 @@ the context to help inferring the types of the remaining arguments.
 
       Arguments ex_intro _ _ & _ _.
       Check (ex_intro _ true _ : exists n : nat, n > 0).
+
+Coq will attempt to produce a term which uses the arguments you
+provided, but in some cases involving Program mode the arguments after
+the bidirectionality starts may be replaced by convertible but
+syntactically different terms.
