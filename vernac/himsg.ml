@@ -297,6 +297,7 @@ let explain_unification_error env sigma p1 p2 = function
         strbrk " with term " ++ pr_leconstr_env env sigma rhs ++
         strbrk " that would depend on itself"]
      | NotClean ((evk,args),env,c) ->
+        let env = make_all_name_different env sigma in
         [str "cannot instantiate " ++ quote (pr_existential_key sigma evk)
         ++ strbrk " because " ++ pr_leconstr_env env sigma c ++
         strbrk " is not in its scope" ++
