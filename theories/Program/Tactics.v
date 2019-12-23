@@ -61,12 +61,12 @@ Ltac destruct_pairs := repeat (destruct_one_pair).
 
 Ltac destruct_one_ex :=
   let tac H := let ph := fresh "H" in (destruct H as [H ph]) in
-  let tac2 H := let ph := fresh "H" in let ph' := fresh "H" in 
-    (destruct H as [H ph ph']) 
+  let tac2 H := let ph := fresh "H" in let ph' := fresh "H" in
+    (destruct H as [H ph ph'])
   in
   let tacT H := let ph := fresh "X" in (destruct H as [H ph]) in
-  let tacT2 H := let ph := fresh "X" in let ph' := fresh "X" in 
-    (destruct H as [H ph ph']) 
+  let tacT2 H := let ph := fresh "X" in let ph' := fresh "X" in
+    (destruct H as [H ph ph'])
   in
     match goal with
       | [H : (ex _) |- _] => tac H
@@ -140,7 +140,7 @@ Ltac clear_dups := repeat clear_dup.
 
 (** Try to clear everything except some hyp *)
 
-Ltac clear_except hyp := 
+Ltac clear_except hyp :=
   repeat match goal with [ H : _ |- _ ] =>
            match H with
              | hyp => fail 1
@@ -173,22 +173,10 @@ Ltac on_application f tac T :=
 (** A variant of [apply] using [refine], doing as much conversion as necessary. *)
 
 Ltac rapply p :=
-  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _ _) ||
-  refine (p _ _ _ _ _) ||
-  refine (p _ _ _ _) ||
-  refine (p _ _ _) ||
-  refine (p _ _) ||
-  refine (p _) ||
-  refine p.
+  (** before we try to add more underscores, first ensure that adding such underscores is valid *)
+  (assert_succeeds (idtac; let __ := open_constr:(p _) in idtac);
+   rapply uconstr:(p _))
+  || refine p.
 
 (** Tactical [on_call f tac] applies [tac] on any application of [f] in the hypothesis or goal. *)
 
