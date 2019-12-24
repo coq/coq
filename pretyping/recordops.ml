@@ -19,7 +19,6 @@ open CErrors
 open Util
 open Pp
 open Names
-open GlobRef
 open Constr
 open Mod_subst
 open Reductionops
@@ -89,11 +88,11 @@ let lookup_structure indsp = Indmap.find indsp !structure_table
 let lookup_projections indsp = (lookup_structure indsp).s_PROJ
 
 let find_projection_nparams = function
-  | ConstRef cst -> (Cmap.find cst !projection_table).s_EXPECTEDPARAM
+  | GlobRef.ConstRef cst -> (Cmap.find cst !projection_table).s_EXPECTEDPARAM
   | _ -> raise Not_found
 
 let find_projection = function
-  | ConstRef cst -> Cmap.find cst !projection_table
+  | GlobRef.ConstRef cst -> Cmap.find cst !projection_table
   | _ -> raise Not_found
 
 let is_projection cst = Cmap.mem cst !projection_table
@@ -185,7 +184,7 @@ let rec cs_pattern_of_constr env t =
   | Proj (p, c) ->
     let { Environ.uj_type = ty } = Typeops.infer env c in
     let _, params = Inductive.find_rectype env ty in
-    Const_cs (ConstRef (Projection.constant p)), None, params @ [c]
+    Const_cs (GlobRef.ConstRef (Projection.constant p)), None, params @ [c]
   | Sort s -> Sort_cs (Sorts.family s), None, []
   | _ -> Const_cs (Globnames.global_of_constr t) , None, []
 
@@ -194,7 +193,7 @@ let warn_projection_no_head_constant =
          (fun (sign,env,t,ref,proji_sp) ->
           let env = Termops.push_rels_assum sign env in
           let con_pp = Nametab.pr_global_env Id.Set.empty ref in
-          let proji_sp_pp = Nametab.pr_global_env Id.Set.empty (ConstRef proji_sp) in
+          let proji_sp_pp = Nametab.pr_global_env Id.Set.empty (GlobRef.ConstRef proji_sp) in
           let term_pp = Termops.Internal.print_constr_env env (Evd.from_env env) (EConstr.of_constr t) in
           strbrk "Projection value has no head constant: "
           ++ term_pp ++ strbrk " in canonical instance "
@@ -205,12 +204,12 @@ let compute_canonical_projections env ~warn (gref,ind) =
   let o_CTX = Environ.universes_of_global env gref in
   let o_DEF, c =
     match gref with
-    | ConstRef con ->
+    | GlobRef.ConstRef con ->
         let u = Univ.make_abstract_instance o_CTX in
         mkConstU (con, u), Environ.constant_value_in env (con,u)
-    | VarRef id ->
+    | GlobRef.VarRef id ->
         mkVar id, Option.get (Environ.named_body id env)
-    | ConstructRef _ | IndRef _ -> assert false in
+    | GlobRef.ConstructRef _ | GlobRef.IndRef _ -> assert false in
   let sign,t = Reductionops.splay_lam env (Evd.from_env env) (EConstr.of_constr c) in
   let sign = List.map (on_snd EConstr.Unsafe.to_constr) sign in
   let t = EConstr.Unsafe.to_constr t in
@@ -228,7 +227,7 @@ let compute_canonical_projections env ~warn (gref,ind) =
         Option.cata (fun proji_sp ->
             match cs_pattern_of_constr nenv t with
             | patt, o_INJ, o_TCOMPS ->
-              ((ConstRef proji_sp, (patt, t)),
+              ((GlobRef.ConstRef proji_sp, (patt, t)),
                { o_DEF ; o_CTX ; o_INJ ; o_TABS ; o_TPARAMS ; o_NPARAMS ; o_TCOMPS })
               :: acc
             | exception Not_found ->
@@ -274,10 +273,10 @@ let subst_canonical_structure subst (gref,ind as obj) =
   (* invariant: cst is an evaluable reference. Thus we can take *)
   (* the first component of subst_con.                                   *)
   match gref with
-  | ConstRef cst ->
+  | GlobRef.ConstRef cst ->
       let cst' = subst_constant subst cst in
       let ind' = subst_ind subst ind in
-      if cst' == cst && ind' == ind then obj else (ConstRef cst',ind')
+      if cst' == cst && ind' == ind then obj else (GlobRef.ConstRef cst',ind')
   | _ -> assert false
 
 (*s High-level declaration of a canonical structure *)
@@ -291,16 +290,16 @@ let error_not_structure ref description =
 let check_and_decompose_canonical_structure env sigma ref =
   let vc =
     match ref with
-    | ConstRef sp ->
+    | GlobRef.ConstRef sp ->
         let u = Univ.make_abstract_instance (Environ.constant_context env sp) in
         begin match Environ.constant_opt_value_in env (sp, u) with
         | Some vc -> vc
         | None -> error_not_structure ref (str "Could not find its value in the global environment.") end
-    | VarRef id ->
+    | GlobRef.VarRef id ->
         begin match Environ.named_body id env with
         | Some b -> b
         | None -> error_not_structure ref (str "Could not find its value in the global environment.") end
-    | IndRef _ | ConstructRef _ ->
+    | GlobRef.IndRef _ | GlobRef.ConstructRef _ ->
         error_not_structure ref (str "Expected an instance of a record or structure.")
   in
   let body = snd (splay_lam env sigma (EConstr.of_constr vc)) in
@@ -328,13 +327,13 @@ let lookup_canonical_conversion (proj,pat) =
 let decompose_projection sigma c args =
   match EConstr.kind sigma c with
   | Const (c, u) ->
-     let n = find_projection_nparams (ConstRef c) in
+     let n = find_projection_nparams (GlobRef.ConstRef c) in
      (* Check if there is some canonical projection attached to this structure *)
-     let _ = GlobRef.Map.find (ConstRef c) !object_table in
+     let _ = GlobRef.Map.find (GlobRef.ConstRef c) !object_table in
      let arg = Stack.nth args n in
      arg
   | Proj (p, c) ->
-     let _ = GlobRef.Map.find (ConstRef (Projection.constant p)) !object_table in
+     let _ = GlobRef.Map.find (GlobRef.ConstRef (Projection.constant p)) !object_table in
      c
   | _ -> raise Not_found
 
