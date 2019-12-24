@@ -571,6 +571,8 @@ library:ci-argosy:
 
 library:ci-bedrock2:
   extends: .ci-template
+  variables:
+    NJOBS: "1"
 
 library:ci-color:
   extends: .ci-template-flambda
