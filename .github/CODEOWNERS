@@ -6,12 +6,9 @@
 /.github/                   @coq/contributing-process-maintainers
 
 /CONTRIBUTING.md            @coq/contributing-process-maintainers
+/dev/doc/shield-icon.png    @coq/contributing-process-maintainers
 
 /dev/doc/release-process.md @coq/contributing-process-maintainers
-
-/dev/doc/MERGING.md         @coq/pushers
-# This ensures that all members of the @coq/pushers
-# team are notified when the merging doc changes.
 
 ########## Build system ##########
 

@@ -42,6 +42,7 @@ well.
 - [Becoming a maintainer](#becoming-a-maintainer)
   - [Reviewing pull requests](#reviewing-pull-requests)
   - [Merging pull requests](#merging-pull-requests)
+    - [Additional notes for pull request reviewers and assignees](#additional-notes-for-pull-request-reviewers-and-assignees)
   - [Core development team](#core-development-team)
 - [Release management](#release-management)
   - [Packaging Coq](#packaging-coq)
@@ -56,6 +57,7 @@ well.
     - [Git documentation, tips and tricks](#git-documentation-tips-and-tricks)
     - [GitHub documentation, tips and tricks](#github-documentation-tips-and-tricks)
     - [GitLab documentation, tips and tricks](#gitlab-documentation-tips-and-tricks)
+    - [Merge script dependencies](#merge-script-dependencies)
     - [Coqbot](#coqbot)
   - [Online forum and chat to talk to developers](#online-forum-and-chat-to-talk-to-developers)
   - [Coq remote working groups](#coq-remote-working-groups)
@@ -430,7 +432,7 @@ and merge when it is the case (you can ping them if the PR is ready
 from your side but nothing happens for a few days).
 
 After your PR is accepted and merged, it may get backported to a
-stable branch if appropriate, and will eventually make it to a
+release branch if appropriate, and will eventually make it to a
 release.  You do not have to worry about this, it is the role of the
 assignee and the release manager to do so (see Section [Release
 management](#release-management)).  The milestone should give you an
@@ -736,28 +738,65 @@ spending time in vain.
 
 ### Merging pull requests ###
 
-Our [CODEOWNERS][] file associates a team of maintainers, or a
-principal and secondary maintainers, to each component.  They will be
-responsible for self-assigning and merging PRs (they didn't co-author)
-that change this component.  When several components are changed in
-significant ways, at least a maintainer (other than the PR author)
-must approve the PR for each affected component before it can be
-merged, and one of them has to assign the PR, and merge it when it is
-time.  Before merging, the assignee must also select a milestone for
-the PR (see also Section [Release management](#release-management)).
+Our [CODEOWNERS][] file associates a team of maintainers to each
+component.  When a PR is opened (or a draft PR is marked as ready for
+review), GitHub will automatically request reviews to maintainer teams
+of affected components.  As soon as it is the case, one available
+member of a team that was requested a review should self-assign the
+PR, and will act as its shepherd from then on.
 
-If you feel knowledgeable enough to maintain a component, and have a
-good track record of contributing to it, we would be happy to have you
-join one of the maintainer teams.
+The PR assignee is responsible for making sure that all the proposed
+changes have been reviewed by relevant maintainers, that change
+requests have been implemented, that CI is passing, and eventually
+will be the one who merges the PR.
 
-The merging process is described in more details in [this
-document][MERGING].
+*If you have already frequently contributed to a component, we would
+be happy to have you join one of the maintainer teams.*
 
-The people with merging powers (either because listed as a principal
-or secondary maintainer in [CODEOWNERS][], or because member of a
-maintainer team), are the members of the **@coq/pushers** team
-([member list][coq-pushers] only visible to the Coq organization
-members because of a limitation of GitHub).
+The complete list of maintainer teams is available [here][coq-pushers]
+(link only accessible to people who are already members of the Coq
+organization, because of a limitation of GitHub).
+
+#### Additional notes for pull request reviewers and assignees ####
+
+- NEVER USE GITHUB'S MERGE BUTTON.  Instead, we provide a script
+  [`dev/tools/merge-pr.sh`][merge-pr] which you should use to merge a
+  PR (requires having configured gpg with git).  In the future, we
+  will also support merging through a command to **@coqbot**.
+
+- PR authors or co-authors cannot review, self-assign, or merge the PR
+  they contributed to.  However, reviewers may push small fixes to the
+  PR branch to facilitate the PR integration.
+
+- Only PRs targetting the `master` branch can be merged by a
+  maintainer.  For PRs targetting a release branch, the assignee
+  should always be the RM.
+
+- Before merging, the assignee must also select a milestone for the PR
+  (see also Section [Release management](#release-management)).
+
+- To know which files you are a maintainer of, you can look for black
+  shields icons in the "Files changed" tab.  Alternatively, you may
+  use the [`dev/tools/check-owners-pr.sh`][check-owners] script for
+  the same purpose.
+
+  ![shield icon](dev/doc/shield-icon.png)
+
+- Sometimes, it is a good practice to announce the intent to merge one
+  or several days in advance when unsure that everyone had a chance to
+  voice their opinion, or to finish reviewing the PR.
+
+- When a PR has [overlays][user-overlays], then:
+
+  - the overlays that are backward-compatible (normally the case for
+    overlays fixing Coq code) should have been merged *before* the PR
+    can be merged;
+
+  - the overlays that are not backward-compatible (normally only the
+    case for overlays fixing OCaml code) should be merged *just after*
+    the PR has been merged (and thus the assignee should ping the
+    maintainers of the affected projects to ask them to merge the
+    overlays).
 
 ### Core development team ###
 
@@ -783,23 +822,23 @@ on the wiki.
 
 Development of new features, refactorings, deprecations and clean-ups
 always happens on `master`.  Stabilization starts by branching
-(creating a new stable `v...` branch from the current `master`), which
+(creating a new `v...` release branch from the current `master`), which
 marks the beginning of a feature freeze (new features will continue to
 be merged into `master` but won't make it for the upcoming major
 release, but only for the next one).
 
-After branching, most changes are introduced in the stable branch by a
+After branching, most changes are introduced in the release branch by a
 backporting process.  PR authors and assignee can signal a desire to
 have a PR backported by selecting an appropriate milestone.  Most of
 the time, the choice of milestone is between two options: the next
 major version that has yet to branch from `master`, or the next
-version (beta, final, or patch-level release) of the active stable
+version (beta, final, or patch-level release) of the active release
 branch.  In the end, it is the RM who decides whether to follow or not
 the recommendation of the PR assignee, and who backports PRs to the
-stable branch.
+release branch.
 
-Very specific changes that are only relevant for the stable branch and
-not for the `master` branch can result in a PR targetting the stable
+Very specific changes that are only relevant for the release branch and
+not for the `master` branch can result in a PR targetting the release
 branch instead of `master`.  In this case, the RM is the only one who
 can merge the PR, and they may even do so if they are the author of
 the PR.  Examples of such PRs include bug fixes to a feature that has
@@ -808,13 +847,13 @@ number in preparation for the next release.
 
 Some automation is in place to help the RM in their task: a GitHub
 project is created at branching time to manage PRs to backport; when a
-PR is merged in a milestone corresponding to the stable branch, our
+PR is merged in a milestone corresponding to the release branch, our
 bot will add this PR in a "Request inclusion" column in this project;
 the RM can browse through the list of PRs waiting to be backported in
 this column, possibly reject some of them by simply removing the PR
 from the column (in which case, the bot will update the PR milestone),
 and proceed to backport others; when a backported PR is pushed to the
-stable branch, the bot moves the PR from the "Request inclusion"
+release branch, the bot moves the PR from the "Request inclusion"
 column to a "Shipped" column.
 
 More information about the RM tasks can be found in the [release
@@ -913,6 +952,16 @@ procedure.
 
 We also have a benchmarking infrastructure, which is documented [on
 the wiki][jenkins-doc].
+
+##### Restarting failed jobs #####
+
+When CI has a few failures which look spurious, restarting the
+corresponding jobs is a good way to ensure this was indeed the case.
+You can restart jobs on Azure from the "Checks" tab on GitHub.  To
+restart a job on GitLab CI, you should sign into GitLab (this can be
+done using a GitHub account); if you are part of the [Coq organization
+on GitLab](https://gitlab.com/coq), you should see a "Retry" button;
+otherwise, send a request to join the organization.
 
 #### Code owners, issue and pull request templates ####
 
@@ -1029,6 +1078,22 @@ restart failing CI jobs.
 GitLab too has [extensive documentation][GitLab-doc], in particular on
 configuring CI.
 
+#### Merge script dependencies ####
+
+The merge script passes option `-S` to `git merge` to ensure merge
+commits are signed.  Consequently, it depends on the GnuPG command
+utility being installed and a GPG key being available.  Here is a
+short documentation on how to use GPG, git & GitHub:
+https://help.github.com/articles/signing-commits-with-gpg/.
+
+The script depends on a few other utilities.  If you are a Nix user,
+the simplest way of getting them is to run `nix-shell` first.
+
+**Note for homebrew (MacOS) users:** it has been reported that
+installing GnuPG is not out of the box.  Installing explicitly
+`pinentry-mac` seems important for typing of passphrase to work
+correctly (see also this [Stack Overflow Q-and-A][pinentry-mac]).
+
 #### Coqbot ####
 
 Our bot sources can be found at <https://github.com/coq/bot>.  Its
@@ -1069,6 +1134,7 @@ can be found [on the wiki][wiki-CUDW].
 [add-contributor]: https://github.com/orgs/coq/teams/contributors/members?add=true
 [api-doc]: https://coq.github.io/doc/master/api/
 [CEP]: https://github.com/coq/ceps
+[check-owners]: dev/tools/check-owners-pr.sh
 [CI-README-developers]: dev/ci/README-developers.md
 [CI-README-users]: dev/ci/README-users.md
 [Code-of-Conduct]: CODE_OF_CONDUCT.md
@@ -1084,7 +1150,7 @@ can be found [on the wiki][wiki-CUDW].
 [Coq-documentation]: https://coq.inria.fr/documentation
 [Coq-issue-tracker]: https://github.com/coq/coq/issues
 [Coq-package-index]: https://coq.inria.fr/packages
-[coq-pushers]: https://github.com/orgs/coq/teams/pushers/members
+[coq-pushers]: https://github.com/orgs/coq/teams/pushers/teams
 [coq-repository]: https://github.com/coq/coq
 [Coq-website-repository]: https://github.com/coq/www
 [debugging-doc]: dev/doc/debugging.md
@@ -1118,7 +1184,7 @@ can be found [on the wiki][wiki-CUDW].
 [jenkins-doc]: https://github.com/coq/coq/wiki/Jenkins-(automated-benchmarking)
 [kind-documentation]: https://github.com/coq/coq/issues?q=is%3Aopen+is%3Aissue+label%3A%22kind%3A+documentation%22
 [master-doc]: https://coq.github.io/doc/master/refman/
-[MERGING]: dev/doc/MERGING.md
+[merge-pr]: dev/tools/merge-pr.sh
 [needs-benchmarking]: https://github.com/coq/coq/labels/needs%3A%20benchmarking
 [needs-changelog]: https://github.com/coq/coq/labels/needs%3A%20changelog%20entry
 [needs-documentation]: https://github.com/coq/coq/labels/needs%3A%20documentation
@@ -1133,6 +1199,7 @@ can be found [on the wiki][wiki-CUDW].
 [Octobox]: http://octobox.io/
 [old-style-guide]: dev/doc/style.txt
 [other-standard-libraries]: https://github.com/coq/stdlib2/wiki/Other-%22standard%22-libraries
+[pinentry-mac]: https://stackoverflow.com/questions/39494631/gpg-failed-to-sign-the-data-fatal-failed-to-write-commit-object-git-2-10-0
 [plugin-tutorial]: doc/plugin_tutorial
 [ProofGeneral-issues]: https://github.com/ProofGeneral/PG/issues
 [Reddit]: https://www.reddit.com/r/Coq/
