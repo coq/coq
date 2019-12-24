@@ -62,7 +62,7 @@ the ML-like program for [induction_ltof2] is :
 *)
 
 Theorem induction_ltof1 :
-  forall P:A -> Set,
+  forall P:A -> Type,
     (forall x:A, (forall y:A, ltof y x -> P y) -> P x) -> forall a:A, P a.
 Proof.
   intros P F.
@@ -75,21 +75,21 @@ Proof.
 Defined.
 
 Theorem induction_gtof1 :
-  forall P:A -> Set,
+  forall P:A -> Type,
     (forall x:A, (forall y:A, gtof y x -> P y) -> P x) -> forall a:A, P a.
 Proof.
   exact induction_ltof1.
 Defined.
 
 Theorem induction_ltof2 :
-  forall P:A -> Set,
+  forall P:A -> Type,
     (forall x:A, (forall y:A, ltof y x -> P y) -> P x) -> forall a:A, P a.
 Proof.
-  exact (well_founded_induction well_founded_ltof).
+  exact (well_founded_induction_type well_founded_ltof).
 Defined.
 
 Theorem induction_gtof2 :
-  forall P:A -> Set,
+  forall P:A -> Type,
     (forall x:A, (forall y:A, gtof y x -> P y) -> P x) -> forall a:A, P a.
 Proof.
   exact induction_ltof2.
@@ -119,6 +119,18 @@ Proof.
   exact (well_founded_ltof nat (fun m => m)).
 Defined.
 
+Lemma lt_wf_rect1 :
+  forall n (P:nat -> Type), (forall n, (forall m, m < n -> P m) -> P n) -> P n.
+Proof.
+  exact (fun p P F => induction_ltof1 nat (fun m => m) P F p).
+Defined.
+
+Lemma lt_wf_rect :
+  forall n (P:nat -> Type), (forall n, (forall m, m < n -> P m) -> P n) -> P n.
+Proof.
+  exact (fun p P F => induction_ltof2 nat (fun m => m) P F p).
+Defined.
+
 Lemma lt_wf_rec1 :
   forall n (P:nat -> Set), (forall n, (forall m, m < n -> P m) -> P n) -> P n.
 Proof.
@@ -137,6 +149,12 @@ Proof.
   intro p; intros; elim (lt_wf p); auto with arith.
 Qed.
 
+Lemma gt_wf_rect :
+  forall n (P:nat -> Type), (forall n, (forall m, n > m -> P m) -> P n) -> P n.
+Proof.
+  exact lt_wf_rect.
+Defined.
+
 Lemma gt_wf_rec :
   forall n (P:nat -> Set), (forall n, (forall m, n > m -> P m) -> P n) -> P n.
 Proof.
@@ -146,6 +164,16 @@ Defined.
 Lemma gt_wf_ind :
   forall n (P:nat -> Prop), (forall n, (forall m, n > m -> P m) -> P n) -> P n.
 Proof lt_wf_ind.
+
+Lemma lt_wf_double_rect :
+ forall P:nat -> nat -> Type,
+   (forall n m,
+     (forall p q, p < n -> P p q) ->
+     (forall p, p < m -> P n p) -> P n m) -> forall n m, P n m.
+Proof.
+  intros P Hrec p; pattern p; apply lt_wf_rect.
+  intros n H q; pattern q; apply lt_wf_rect; auto with arith.
+Defined.
 
 Lemma lt_wf_double_rec :
  forall P:nat -> nat -> Set,
