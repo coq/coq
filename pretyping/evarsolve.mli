@@ -77,7 +77,7 @@ type conversion_check = unify_flags -> unification_kind ->
     - [c] does not contain any Meta(_)
  *)
 
-val instantiate_evar : unifier -> unify_flags -> evar_map ->
+val instantiate_evar : unifier -> unify_flags -> env -> evar_map ->
   Evar.t -> constr -> evar_map
 
 (** [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
@@ -125,7 +125,7 @@ exception IllTypedInstance of env * types * types
 
 (* May raise IllTypedInstance if types are not convertible *)
 val check_evar_instance : unifier -> unify_flags ->
-  evar_map -> Evar.t -> constr -> evar_map
+  env -> evar_map -> Evar.t -> constr -> evar_map
 
 val remove_instance_local_defs :
   evar_map -> Evar.t -> 'a array -> 'a list

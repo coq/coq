@@ -1337,8 +1337,8 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
   try
   let evi = Evd.find_undefined evd evk in
   let evi = nf_evar_info evd evi in
-  let env_evar_unf = evar_env evi in
-  let env_evar = evar_filtered_env evi in
+  let env_evar_unf = evar_env env_rhs evi in
+  let env_evar = evar_filtered_env env_rhs evi in
   let sign = named_context_val env_evar in
   let ctxt = evar_filtered_context evi in
   if !debug_ho_unification then
@@ -1473,16 +1473,16 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
                | Some [t] ->
                  if not (noccur_evar env_rhs evd ev (EConstr.of_constr t)) then
                    raise (TypingFailed evd);
-                 instantiate_evar evar_unify flags evd ev (EConstr.of_constr t)
+                 instantiate_evar evar_unify flags env_rhs evd ev (EConstr.of_constr t)
                | Some l when abstract = Abstraction.Abstract &&
                           List.exists (fun c -> isVarId evd id (EConstr.of_constr c)) l ->
-                 instantiate_evar evar_unify flags evd ev vid
+                 instantiate_evar evar_unify flags env_rhs evd ev vid
                | _ -> evd)
            with e -> user_err (Pp.str "Cannot find an instance")
          else
            ((if !debug_ho_unification then
                let evi = Evd.find evd evk in
-               let env = Evd.evar_env evi in
+               let env = Evd.evar_env env_rhs evi in
                Feedback.msg_debug Pp.(str"evar is defined: " ++
                  int (Evar.repr evk) ++ spc () ++
                  prc env evd (match evar_body evi with Evar_defined c -> c
@@ -1498,7 +1498,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
        (if !debug_ho_unification then
           begin
             let evi = Evd.find evd evk in
-            let evenv = evar_env evi in
+            let evenv = evar_env env_rhs evi in
             let body = match evar_body evi with Evar_empty -> assert false | Evar_defined c -> c in
             Feedback.msg_debug Pp.(str"evar was defined already as: " ++ prc evenv evd body)
           end;
@@ -1506,7 +1506,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
      else
        try
          let evi = Evd.find_undefined evd evk in
-         let evenv = evar_env evi in
+         let evenv = evar_env env_rhs evi in
          let rhs' = nf_evar evd rhs' in
            if !debug_ho_unification then
              Feedback.msg_debug Pp.(str"abstracted type before second solve_evars: " ++
@@ -1517,7 +1517,7 @@ let second_order_matching flags env_rhs evd (evk,args) (test,argoccs) rhs =
           if !debug_ho_unification then
             Feedback.msg_debug Pp.(str"abstracted type: " ++ prc evenv evd (nf_evar evd rhs'));
           let flags = default_flags_of TransparentState.full in
-            Evarsolve.instantiate_evar evar_unify flags evd evk rhs'
+            Evarsolve.instantiate_evar evar_unify flags env_rhs evd evk rhs'
          with IllTypedInstance _ -> raise (TypingFailed evd)
   in
   let evd = abstract_free_holes evd subst in
@@ -1664,7 +1664,7 @@ let max_undefined_with_candidates evd =
   with MaxUndefined ans ->
     Some ans
 
-let rec solve_unconstrained_evars_with_candidates flags evd =
+let rec solve_unconstrained_evars_with_candidates flags env evd =
   (* max_undefined is supposed to return the most recent, hence
      possibly most dependent evar *)
   match max_undefined_with_candidates evd with
@@ -1675,9 +1675,9 @@ let rec solve_unconstrained_evars_with_candidates flags evd =
       | a::l ->
           (* In case of variables, most recent ones come first *)
           try
-            let evd = instantiate_evar evar_unify flags evd evk a in
+            let evd = instantiate_evar evar_unify flags env evd evk a in
             match reconsider_unif_constraints evar_unify flags evd with
-            | Success evd -> solve_unconstrained_evars_with_candidates flags evd
+            | Success evd -> solve_unconstrained_evars_with_candidates flags env evd
             | UnifFailure _ -> aux l
           with
           | IllTypedInstance _ -> aux l
@@ -1685,7 +1685,7 @@ let rec solve_unconstrained_evars_with_candidates flags evd =
       (* Expected invariant: most dependent solutions come first *)
       (* so as to favor progress when used with the refine tactics *)
       let evd = aux l in
-      solve_unconstrained_evars_with_candidates flags evd
+      solve_unconstrained_evars_with_candidates flags env evd
 
 let solve_unconstrained_impossible_cases env evd =
   Evd.fold_undefined (fun evk ev_info evd' ->
@@ -1695,18 +1695,18 @@ let solve_unconstrained_impossible_cases env evd =
       let evd' = Evd.merge_context_set Evd.univ_flexible_alg ?loc evd' ctx in
       let ty = j_type j in
       let flags = default_flags env in
-      instantiate_evar evar_unify flags evd' evk ty
+      instantiate_evar evar_unify flags env evd' evk ty
     | _ -> evd') evd evd
 
 let solve_unif_constraints_with_heuristics env
     ?(flags=default_flags env) ?(with_ho=false) evd =
-  let evd = solve_unconstrained_evars_with_candidates flags evd in
+  let evd = solve_unconstrained_evars_with_candidates flags env evd in
   let rec aux evd pbs progress stuck =
     match pbs with
     | (pbty,env,t1,t2 as pb) :: pbs ->
         (match apply_conversion_problem_heuristic flags env evd with_ho pbty t1 t2 with
         | Success evd' ->
-           let evd' = solve_unconstrained_evars_with_candidates flags evd' in
+           let evd' = solve_unconstrained_evars_with_candidates flags env evd' in
            let (evd', rest) = extract_all_conv_pbs evd' in
            begin match rest with
             | [] -> aux evd' pbs true stuck

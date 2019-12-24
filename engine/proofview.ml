@@ -1039,9 +1039,9 @@ let (>>=) = tclBIND
 
 (** {6 Goal-dependent tactics} *)
 
-let goal_env evars gl =
+let goal_env env evars gl =
   let evi = Evd.find evars gl in
-  Evd.evar_filtered_env evi
+  Evd.evar_filtered_env env evi
 
 let goal_nf_evar sigma gl =
   let evi = Evd.find sigma gl in
@@ -1256,9 +1256,10 @@ module V82 = struct
 
   let of_tactic t gls =
     try
+      let env = Global.env () in
       let init = { shelf = []; solution = gls.Evd.sigma ; comb = [with_empty_state gls.Evd.it] } in
       let name, poly = Names.Id.of_string "legacy_pe", false in
-      let (_,final,_,_) = apply ~name ~poly (goal_env gls.Evd.sigma gls.Evd.it) t init in
+      let (_,final,_,_) = apply ~name ~poly (goal_env env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = CList.map drop_state final.comb }
     with Logic_monad.TacticFailure e as src ->
       let (_, info) = CErrors.push src in

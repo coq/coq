@@ -490,8 +490,8 @@ let pr_concl n ?(diffs=false) ?og_s sigma g =
   header ++ str " is:" ++ cut () ++ str" "  ++ pc
 
 (* display evar type: a context and a type *)
-let pr_evgl_sign sigma evi =
-  let env = evar_env evi in
+let pr_evgl_sign env sigma evi =
+  let env = evar_env env evi in
   let ps = pr_named_context_of env sigma in
   let _, l = match Filter.repr (evar_filter evi) with
   | None -> [], []
@@ -517,7 +517,8 @@ let pr_evgl_sign sigma evi =
 (* Print an existential variable *)
 
 let pr_evar sigma (evk, evi) =
-  let pegl = pr_evgl_sign sigma evi in
+  let env = Global.env () in
+  let pegl = pr_evgl_sign env sigma evi in
   hov 0 (pr_existential_key sigma evk ++ str " : " ++ pegl)
 
 (* Print an enumerated list of existential variables *)
