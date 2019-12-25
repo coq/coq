@@ -15,12 +15,12 @@ open Ltac_plugin
 val ssrtacarg : Tacexpr.raw_tactic_expr Pcoq.Entry.t
 val wit_ssrtacarg : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Geninterp.Val.t) Genarg.genarg_type
 val pr_ssrtacarg : Environ.env -> Evd.evar_map -> 'a -> 'b ->
-  (Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> 'c) -> 'c
+  (Environ.env -> Evd.evar_map -> Constrexpr.entry_relative_level -> 'c) -> 'c
 
 val ssrtclarg : Tacexpr.raw_tactic_expr Pcoq.Entry.t
 val wit_ssrtclarg : (Tacexpr.raw_tactic_expr, Tacexpr.glob_tactic_expr, Geninterp.Val.t) Genarg.genarg_type
 val pr_ssrtclarg : Environ.env -> Evd.evar_map -> 'a -> 'b ->
-  (Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> 'c -> 'd) -> 'c -> 'd
+  (Environ.env -> Evd.evar_map -> Constrexpr.entry_relative_level -> 'c -> 'd) -> 'c -> 'd
 
 val add_genarg : string -> (Environ.env -> Evd.evar_map -> 'a -> Pp.t) -> 'a Genarg.uniform_genarg_type
 

@@ -20,8 +20,12 @@ type ident_decl = lident * universe_decl_expr option
 type name_decl = lname * universe_decl_expr option
 
 type notation_with_optional_scope = LastLonelyNotation | NotationInScope of string
+
+type entry_level = int
+type entry_relative_level = LevelLt of entry_level | LevelLe of entry_level | LevelSome
+
 type notation_entry = InConstrEntry | InCustomEntry of string
-type notation_entry_level = InConstrEntrySomeLevel | InCustomEntryLevel of string * int
+type notation_entry_level = InConstrEntrySomeLevel | InCustomEntryLevel of string * entry_level
 type notation_key = string
 
 (* A notation associated to a given parsing rule *)

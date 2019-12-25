@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Constrexpr
-open Notation_gram
 
 (** {6 Pretty-print. } *)
 
@@ -31,15 +30,15 @@ val ppcmd_of_cut : ppcut -> Pp.t
 
 (** Declare and look for the printing rule for symbolic notations *)
 type unparsing =
-  | UnpMetaVar of int * parenRelation
-  | UnpBinderMetaVar of int * parenRelation
-  | UnpListMetaVar of int * parenRelation * unparsing list
+  | UnpMetaVar of int * entry_relative_level
+  | UnpBinderMetaVar of int * entry_relative_level
+  | UnpListMetaVar of int * entry_relative_level * unparsing list
   | UnpBinderListMetaVar of int * bool * unparsing list
   | UnpTerminal of string
   | UnpBox of ppbox * unparsing Loc.located list
   | UnpCut of ppcut
 
-type unparsing_rule = unparsing list * precedence
+type unparsing_rule = unparsing list * entry_level
 type extra_unparsing_rules = (string * string) list
 
 val unparsing_eq : unparsing -> unparsing -> bool

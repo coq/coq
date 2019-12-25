@@ -90,7 +90,7 @@ let cast_arg wit v = Taccoerce.Value.cast (Genarg.topwit wit) v
  * we thus save the lexer to restore it at the end of the file *)
 let frozen_lexer = CLexer.get_keyword_state () ;;
 
-let tacltop = (5,Notation_gram.E)
+let tacltop = (LevelLe 5)
 
 let pr_ssrtacarg env sigma _ _ prt = prt env sigma tacltop
 

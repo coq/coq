@@ -13,6 +13,7 @@ open Constrexpr
 open Notation_gram
 
 val level_eq : level -> level -> bool
+val entry_relative_level_eq : entry_relative_level -> entry_relative_level -> bool
 
 (** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 

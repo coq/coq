@@ -2,8 +2,8 @@ Tok
 CLexer
 Extend
 Notation_gram
-Ppextend
 Notgram_ops
+Ppextend
 Pcoq
 G_constr
 G_prim

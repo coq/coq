@@ -298,7 +298,7 @@ END
 let pr_by_arg_tac env sigma _prc _prlc prtac opt_c =
   match opt_c with
     | None -> mt ()
-    | Some t -> hov 2 (str "by" ++ spc () ++ prtac env sigma (3,Notation_gram.E) t)
+    | Some t -> hov 2 (str "by" ++ spc () ++ prtac env sigma (Constrexpr.LevelLe 3) t)
 
 }
 
