@@ -253,9 +253,9 @@ let insert_pat_alias ?loc p = function
   | Anonymous -> p
   | Name _ as na -> CAst.make ?loc @@ CPatAlias (p,(CAst.make ?loc na))
 
-let rec insert_coercion ?loc l c = match l with
+let rec insert_entry_coercion ?loc l c = match l with
   | [] -> c
-  | ntn::l -> CAst.make ?loc @@ CNotation (ntn,([insert_coercion ?loc l c],[],[],[]))
+  | ntn::l -> CAst.make ?loc @@ CNotation (ntn,([insert_entry_coercion ?loc l c],[],[],[]))
 
 let rec insert_pat_coercion ?loc l c = match l with
   | [] -> c
@@ -720,7 +720,7 @@ let extern_possible_prim_token (custom,scopes) r =
    | Some coercion ->
    match availability_of_prim_token n sc scopes with
    | None -> raise No_match
-   | Some key -> insert_coercion coercion (insert_delimiters (CAst.make ?loc:(loc_of_glob_constr r) @@ CPrim n) key)
+   | Some key -> insert_entry_coercion coercion (insert_delimiters (CAst.make ?loc:(loc_of_glob_constr r) @@ CPrim n) key)
 
 let filter_enough_applied nargs l =
   match nargs with
@@ -992,7 +992,7 @@ let rec extern inctx scopes vars r =
 
   | GFloat f -> extern_float f (snd scopes)
 
-  in insert_coercion coercion (CAst.make ?loc c)
+  in insert_entry_coercion coercion (CAst.make ?loc c)
 
 and extern_typ (subentry,(_,scopes)) =
   extern true (subentry,(Notation.current_type_scope_name (),scopes))
@@ -1171,7 +1171,7 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
                     List.map (fun (bl,(subentry,(scopt,scl))) ->
                       pi3 (extern_local_binder (subentry,(scopt,scl@scopes')) vars bl))
                       binderlists in
-                  insert_coercion coercion (insert_delimiters (make_notation loc ntn (l,ll,bl,bll)) key))
+                  insert_entry_coercion coercion (insert_delimiters (make_notation loc ntn (l,ll,bl,bll)) key))
           | SynDefRule kn ->
              match availability_of_entry_coercion custom InConstrEntrySomeLevel with
              | None -> raise No_match
@@ -1181,7 +1181,7 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
                   extern true (subentry,(scopt,scl@snd scopes)) vars c, None)
                   terms in
               let a = CRef (Nametab.shortest_qualid_of_syndef ?loc vars kn,None) in
-              insert_coercion coercion (CAst.make ?loc @@ if List.is_empty l then a else CApp ((None, CAst.make a),l)) in
+              insert_entry_coercion coercion (CAst.make ?loc @@ if List.is_empty l then a else CApp ((None, CAst.make a),l)) in
         if List.is_empty args then e
         else
           let args = fill_arg_scopes args argsscopes allscopes in
