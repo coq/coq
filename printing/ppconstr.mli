@@ -15,9 +15,8 @@
 open Libnames
 open Constrexpr
 open Names
-open Notation_gram
 
-val prec_less : precedence -> tolerability -> bool
+val prec_less : entry_level -> entry_relative_level -> bool
 
 val pr_tight_coma : unit -> Pp.t
 
@@ -49,7 +48,7 @@ val pr_lconstr_pattern_expr : Environ.env -> Evd.evar_map -> constr_pattern_expr
 val pr_constr_expr : Environ.env -> Evd.evar_map -> constr_expr -> Pp.t
 val pr_lconstr_expr : Environ.env -> Evd.evar_map -> constr_expr -> Pp.t
 val pr_cases_pattern_expr : cases_pattern_expr -> Pp.t
-val pr_constr_expr_n : Environ.env -> Evd.evar_map -> tolerability -> constr_expr -> Pp.t
+val pr_constr_expr_n : Environ.env -> Evd.evar_map -> entry_relative_level -> constr_expr -> Pp.t
 
 type term_pr = {
   pr_constr_expr : Environ.env -> Evd.evar_map -> constr_expr -> Pp.t;
@@ -76,8 +75,8 @@ val default_term_pr : term_pr
   Which has the same type. We can turn a modular printer into a printer by
   taking its fixpoint. *)
 
-val lsimpleconstr : tolerability
-val ltop : tolerability
+val lsimpleconstr : entry_relative_level
+val ltop : entry_relative_level
 val modular_constr_pr :
-  ((unit->Pp.t) -> tolerability -> constr_expr -> Pp.t) ->
-  (unit->Pp.t) -> tolerability -> constr_expr -> Pp.t
+  ((unit->Pp.t) -> entry_relative_level -> constr_expr -> Pp.t) ->
+  (unit->Pp.t) -> entry_relative_level -> constr_expr -> Pp.t

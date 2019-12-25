@@ -17,7 +17,6 @@ open Constrexpr
 open Genarg
 open Geninterp
 open Stdarg
-open Notation_gram
 open Tactypes
 open Locus
 open Genredexpr
@@ -73,43 +72,43 @@ type 'a raw_extra_genarg_printer =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> constr_expr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> constr_expr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> raw_tactic_expr -> Pp.t) ->
+  (Environ.env -> Evd.evar_map -> entry_relative_level -> raw_tactic_expr -> Pp.t) ->
   'a -> Pp.t
 
 type 'a glob_extra_genarg_printer =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> glob_constr_and_expr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> glob_constr_and_expr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> glob_tactic_expr -> Pp.t) ->
+  (Environ.env -> Evd.evar_map -> entry_relative_level -> glob_tactic_expr -> Pp.t) ->
   'a -> Pp.t
 
 type 'a extra_genarg_printer =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> Val.t -> Pp.t) ->
+  (Environ.env -> Evd.evar_map -> entry_relative_level -> Val.t -> Pp.t) ->
   'a -> Pp.t
 
 type 'a raw_extra_genarg_printer_with_level =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> constr_expr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> constr_expr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> raw_tactic_expr -> Pp.t) ->
-  tolerability -> 'a -> Pp.t
+  (Environ.env -> Evd.evar_map -> entry_relative_level -> raw_tactic_expr -> Pp.t) ->
+  entry_relative_level -> 'a -> Pp.t
 
 type 'a glob_extra_genarg_printer_with_level =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> glob_constr_and_expr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> glob_constr_and_expr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> glob_tactic_expr -> Pp.t) ->
-  tolerability -> 'a -> Pp.t
+  (Environ.env -> Evd.evar_map -> entry_relative_level -> glob_tactic_expr -> Pp.t) ->
+  entry_relative_level -> 'a -> Pp.t
 
 type 'a extra_genarg_printer_with_level =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> Val.t -> Pp.t) ->
-  tolerability -> 'a -> Pp.t
+  (Environ.env -> Evd.evar_map -> entry_relative_level -> Val.t -> Pp.t) ->
+  entry_relative_level -> 'a -> Pp.t
 
 let string_of_genarg_arg (ArgumentType arg) =
   let rec aux : type a b c. (a, b, c) genarg_type -> string = function
@@ -294,7 +293,7 @@ let string_of_genarg_arg (ArgumentType arg) =
       let pr _ = str "_" in
       KerName.print key ++ spc() ++ pr_sequence pr l ++ str" (* Generic printer *)"
 
-  let pr_farg prtac arg = prtac (1, Any) (TacArg (CAst.make arg))
+  let pr_farg prtac arg = prtac LevelSome (TacArg (CAst.make arg))
 
   let is_genarg tag wit =
     let ArgT.Any tag = tag in
@@ -314,35 +313,35 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let rec pr_any_arg : type l. (_ -> l generic_argument -> Pp.t) -> _ -> l generic_argument -> Pp.t =
   fun prtac symb arg -> match symb with
-  | Extend.Uentry tag when is_genarg tag (genarg_tag arg) -> prtac (1, Any) arg
+  | Extend.Uentry tag when is_genarg tag (genarg_tag arg) -> prtac LevelSome arg
   | Extend.Ulist1 s | Extend.Ulist0 s ->
     begin match get_list arg with
-    | None -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
+    | None -> str "ltac:(" ++ prtac LevelSome arg ++ str ")"
     | Some l -> pr_sequence (pr_any_arg prtac s) l
     end
   | Extend.Ulist1sep (s, sep) | Extend.Ulist0sep (s, sep) ->
     begin match get_list arg with
-    | None -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
+    | None -> str "ltac:(" ++ prtac LevelSome arg ++ str ")"
     | Some l -> prlist_with_sep (fun () -> str sep) (pr_any_arg prtac s) l
     end
   | Extend.Uopt s ->
     begin match get_opt arg with
-    | None -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
+    | None -> str "ltac:(" ++ prtac LevelSome arg ++ str ")"
     | Some l -> pr_opt (pr_any_arg prtac s) l
     end
   | Extend.Uentry _ | Extend.Uentryl _ ->
-    str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
+    str "ltac:(" ++ prtac LevelSome arg ++ str ")"
 
   let pr_targ prtac symb arg = match symb with
   | Extend.Uentry tag when is_genarg tag (ArgumentType wit_tactic) ->
-    prtac (1, Any) arg
-  | Extend.Uentryl (_, l) -> prtac (l, Any) arg
+    prtac LevelSome arg
+  | Extend.Uentryl (_, l) -> prtac LevelSome arg
   | _ ->
     match arg with
     | TacGeneric arg ->
       let pr l arg = prtac l (TacGeneric arg) in
       pr_any_arg pr symb arg
-    | _ -> str "ltac:(" ++ prtac (1, Any) arg ++ str ")"
+    | _ -> str "ltac:(" ++ prtac LevelSome arg ++ str ")"
 
   let pr_raw_extend_rec prtac =
     pr_extend_gen (pr_farg prtac)
@@ -630,7 +629,7 @@ let pr_goal_selector ~toplevel s =
 
   let pr_then () = str ";"
 
-  let ltop = (5,E)
+  let ltop = LevelLe 5
   let lseq = 4
   let ltactical = 3
   let lorelse = 2
@@ -645,13 +644,13 @@ let pr_goal_selector ~toplevel s =
   let ltatom = 1
   let linfo = 5
 
-  let level_of (n,p) = match p with E -> n | L -> n-1 | Prec n -> n | Any -> lseq
+  let level_of p = match p with LevelLe n -> n | LevelLt n -> n-1 | LevelSome -> lseq
 
   (** A printer for tactics that polymorphically works on the three
       "raw", "glob" and "typed" levels *)
 
   type 'a printer = {
-    pr_tactic    : tolerability -> 'tacexpr -> Pp.t;
+    pr_tactic    : entry_relative_level -> 'tacexpr -> Pp.t;
     pr_constr    : Environ.env -> Evd.evar_map -> 'trm -> Pp.t;
     pr_lconstr   : Environ.env -> Evd.evar_map -> 'trm -> Pp.t;
     pr_dconstr   : Environ.env -> Evd.evar_map -> 'dtrm -> Pp.t;
@@ -780,7 +779,7 @@ let pr_goal_selector ~toplevel s =
           hov 1 (
             primitive (if b then if ev then "eassert" else "assert" else if ev then "eenough" else "enough") ++
               pr_assumption (pr.pr_constr env sigma) (pr.pr_dconstr env sigma) (pr.pr_lconstr env sigma) ipat c ++
-              pr_non_empty_arg (pr_by_tactic (pr.pr_tactic (ltactical,E))) tac
+              pr_non_empty_arg (pr_by_tactic (pr.pr_tactic (LevelLe ltactical))) tac
           )
         | TacAssert (ev,_,None,ipat,c) ->
           hov 1 (
@@ -857,7 +856,7 @@ let pr_goal_selector ~toplevel s =
                   pr_with_bindings_arg_full (pr.pr_dconstr env sigma) (pr.pr_dconstr env sigma) c)
               l
             ++ pr_non_empty_arg (pr_clauses (Some true) pr.pr_name) cl
-            ++ pr_non_empty_arg (pr_by_tactic (pr.pr_tactic (ltactical,E))) tac
+            ++ pr_non_empty_arg (pr_by_tactic (pr.pr_tactic (LevelLe ltactical))) tac
           )
         | TacInversion (DepInversion (k,c,ids),hyp) ->
           hov 1 (
@@ -893,11 +892,11 @@ let pr_goal_selector ~toplevel s =
           let return (doc, l) = (tag tac doc, l) in
           let (strm, prec) = return (match tac with
             | TacAbstract (t,None) ->
-              keyword "abstract " ++ pr_tac (labstract,L) t, labstract
+              keyword "abstract " ++ pr_tac (LevelLt labstract) t, labstract
             | TacAbstract (t,Some s) ->
               hov 0 (
                 keyword "abstract"
-                ++ str" (" ++ pr_tac (labstract,L) t ++ str")" ++ spc ()
+                ++ str" (" ++ pr_tac (LevelLt labstract) t ++ str")" ++ spc ()
                 ++ keyword "using" ++ spc () ++ pr_id s),
               labstract
             | TacLetIn (recflag,llc,u) ->
@@ -906,7 +905,7 @@ let pr_goal_selector ~toplevel s =
                 (hv 0 (
                   pr_let_clauses recflag (pr.pr_generic env sigma) (pr_tac ltop) llc
                   ++ spc () ++ keyword "in"
-                 ) ++ fnl () ++ pr_tac (llet,E) u),
+                 ) ++ fnl () ++ pr_tac (LevelLe llet) u),
               llet
             | TacMatch (lz,t,lrul) ->
               hov 0 (
@@ -931,17 +930,17 @@ let pr_goal_selector ~toplevel s =
               hov 2 (
                 keyword "fun"
                 ++ prlist pr_funvar lvar ++ str " =>" ++ spc ()
-                ++ pr_tac (lfun,E) body),
+                ++ pr_tac (LevelLe lfun) body),
               lfun
             | TacThens (t,tl) ->
               hov 1 (
-                pr_tac (lseq,E) t ++ pr_then () ++ spc ()
+                pr_tac (LevelLe lseq) t ++ pr_then () ++ spc ()
                 ++ pr_seq_body (pr_opt_tactic (pr_tac ltop)) tl),
               lseq
             | TacThen (t1,t2) ->
               hov 1 (
-                pr_tac (lseq,E) t1 ++ pr_then () ++ spc ()
-                ++ pr_tac (lseq,L) t2),
+                pr_tac (LevelLe lseq) t1 ++ pr_then () ++ spc ()
+                ++ pr_tac (LevelLt lseq) t2),
               lseq
             | TacDispatch tl ->
               pr_dispatch (pr_tac ltop) tl, lseq
@@ -949,78 +948,78 @@ let pr_goal_selector ~toplevel s =
               pr_tac_extend (pr_tac ltop) tf t tr , lseq
             | TacThens3parts (t1,tf,t2,tl) ->
               hov 1 (
-                pr_tac (lseq,E) t1 ++ pr_then () ++ spc ()
+                pr_tac (LevelLe lseq) t1 ++ pr_then () ++ spc ()
                 ++ pr_then_gen (pr_tac ltop) tf t2 tl),
               lseq
             | TacTry t ->
               hov 1 (
-                keyword "try" ++ spc () ++ pr_tac (ltactical,E) t),
+                keyword "try" ++ spc () ++ pr_tac (LevelLe ltactical) t),
               ltactical
             | TacDo (n,t) ->
               hov 1 (
                 str "do" ++ spc ()
                 ++ pr_or_var int n ++ spc ()
-                ++ pr_tac (ltactical,E) t),
+                ++ pr_tac (LevelLe ltactical) t),
               ltactical
             | TacTimeout (n,t) ->
               hov 1 (
                 keyword "timeout "
                 ++ pr_or_var int n ++ spc ()
-                ++ pr_tac (ltactical,E) t),
+                ++ pr_tac (LevelLe ltactical) t),
               ltactical
             | TacTime (s,t) ->
               hov 1 (
                 keyword "time"
                 ++ pr_opt qstring s ++ spc ()
-                ++ pr_tac (ltactical,E) t),
+                ++ pr_tac (LevelLe ltactical) t),
               ltactical
             | TacRepeat t ->
               hov 1 (
                 keyword "repeat" ++ spc ()
-                ++ pr_tac (ltactical,E) t),
+                ++ pr_tac (LevelLe ltactical) t),
               ltactical
             | TacProgress t ->
               hov 1 (
                 keyword "progress" ++ spc ()
-                ++ pr_tac (ltactical,E) t),
+                ++ pr_tac (LevelLe ltactical) t),
               ltactical
             | TacShowHyps t ->
               hov 1 (
                 keyword "infoH" ++ spc ()
-                ++ pr_tac (ltactical,E) t),
+                ++ pr_tac (LevelLe ltactical) t),
               ltactical
             | TacInfo t ->
               hov 1 (
                 keyword "info" ++ spc ()
-                ++ pr_tac (ltactical,E) t),
+                ++ pr_tac (LevelLe ltactical) t),
               linfo
             | TacOr (t1,t2) ->
               hov 1 (
-                pr_tac (lorelse,L) t1 ++ spc ()
+                pr_tac (LevelLt lorelse) t1 ++ spc ()
                 ++ str "+" ++ brk (1,1)
-                ++ pr_tac (lorelse,E) t2),
+                ++ pr_tac (LevelLe lorelse) t2),
               lorelse
             | TacOnce t ->
               hov 1 (
                 keyword "once" ++ spc ()
-                ++ pr_tac (ltactical,E) t),
+                ++ pr_tac (LevelLe ltactical) t),
               ltactical
             | TacExactlyOnce t ->
               hov 1 (
                 keyword "exactly_once" ++ spc ()
-                ++ pr_tac (ltactical,E) t),
+                ++ pr_tac (LevelLe ltactical) t),
               ltactical
             | TacIfThenCatch (t,tt,te) ->
                 hov 1 (
-                 str"tryif" ++ spc() ++ pr_tac (ltactical,E) t ++ brk(1,1) ++
-                 str"then" ++ spc() ++ pr_tac (ltactical,E) tt ++ brk(1,1) ++
-                 str"else" ++ spc() ++ pr_tac (ltactical,E) te ++ brk(1,1)),
+                 str"tryif" ++ spc() ++ pr_tac (LevelLe ltactical) t ++ brk(1,1) ++
+                 str"then" ++ spc() ++ pr_tac (LevelLe ltactical) tt ++ brk(1,1) ++
+                 str"else" ++ spc() ++ pr_tac (LevelLe ltactical) te ++ brk(1,1)),
                 ltactical
             | TacOrelse (t1,t2) ->
               hov 1 (
-                pr_tac (lorelse,L) t1 ++ spc ()
+                pr_tac (LevelLt lorelse) t1 ++ spc ()
                 ++ str "||" ++ brk (1,1)
-                ++ pr_tac (lorelse,E) t2),
+                ++ pr_tac (LevelLe lorelse) t2),
               lorelse
             | TacFail (g,n,l) ->
               let arg =
@@ -1042,7 +1041,7 @@ let pr_goal_selector ~toplevel s =
             | TacSolve tl ->
               keyword "solve" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
             | TacComplete t ->
-              pr_tac (lcomplete,E) t, lcomplete
+              pr_tac (LevelLe lcomplete) t, lcomplete
             | TacSelect (s, tac) -> pr_goal_selector ~toplevel:false s ++ spc () ++ pr_tac ltop tac, latom
             | TacId l ->
               keyword "idtac" ++ prlist (pr_arg (pr_message_token pr.pr_name)) l, latom
@@ -1398,10 +1397,10 @@ let () =
 let () =
   let printer env sigma _ _ prtac = prtac env sigma in
   declare_extra_genarg_pprule_with_level wit_tactic printer printer printer
-  ltop (0,E)
+  ltop (LevelLe 0)
 
 let () =
   let pr_unit _env _sigma _ _ _ _ () = str "()" in
   let printer env sigma _ _ prtac = prtac env sigma in
   declare_extra_genarg_pprule_with_level wit_ltac printer printer pr_unit
-  ltop (0,E)
+  ltop (LevelLe 0)

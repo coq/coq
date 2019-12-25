@@ -16,7 +16,6 @@ open Geninterp
 open Names
 open Environ
 open Constrexpr
-open Notation_gram
 open Genintern
 open Tacexpr
 open Tactypes
@@ -29,43 +28,43 @@ type 'a raw_extra_genarg_printer =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> constr_expr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> constr_expr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> raw_tactic_expr -> Pp.t) ->
+  (Environ.env -> Evd.evar_map -> entry_relative_level -> raw_tactic_expr -> Pp.t) ->
   'a -> Pp.t
 
 type 'a glob_extra_genarg_printer =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> glob_constr_and_expr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> glob_constr_and_expr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> glob_tactic_expr -> Pp.t) ->
+  (Environ.env -> Evd.evar_map -> entry_relative_level -> glob_tactic_expr -> Pp.t) ->
   'a -> Pp.t
 
 type 'a extra_genarg_printer =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> Val.t -> Pp.t) ->
+  (Environ.env -> Evd.evar_map -> entry_relative_level -> Val.t -> Pp.t) ->
   'a -> Pp.t
 
 type 'a raw_extra_genarg_printer_with_level =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> constr_expr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> constr_expr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> raw_tactic_expr -> Pp.t) ->
-  tolerability -> 'a -> Pp.t
+  (Environ.env -> Evd.evar_map -> entry_relative_level -> raw_tactic_expr -> Pp.t) ->
+  entry_relative_level -> 'a -> Pp.t
 
 type 'a glob_extra_genarg_printer_with_level =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> glob_constr_and_expr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> glob_constr_and_expr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> glob_tactic_expr -> Pp.t) ->
-  tolerability -> 'a -> Pp.t
+  (Environ.env -> Evd.evar_map -> entry_relative_level -> glob_tactic_expr -> Pp.t) ->
+  entry_relative_level -> 'a -> Pp.t
 
 type 'a extra_genarg_printer_with_level =
   Environ.env -> Evd.evar_map ->
   (Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t) ->
   (Environ.env -> Evd.evar_map -> EConstr.constr -> Pp.t) ->
-  (Environ.env -> Evd.evar_map -> tolerability -> Val.t -> Pp.t) ->
-  tolerability -> 'a -> Pp.t
+  (Environ.env -> Evd.evar_map -> entry_relative_level -> Val.t -> Pp.t) ->
+  entry_relative_level -> 'a -> Pp.t
 
 val declare_extra_genarg_pprule :
   ('a, 'b, 'c) genarg_type ->
@@ -78,7 +77,7 @@ val declare_extra_genarg_pprule_with_level :
   'a raw_extra_genarg_printer_with_level ->
   'b glob_extra_genarg_printer_with_level ->
   'c extra_genarg_printer_with_level ->
-  (* surroounded *) tolerability -> (* non-surroounded *) tolerability -> unit
+  (* surroounded *) entry_relative_level -> (* non-surroounded *) entry_relative_level -> unit
 
 val declare_extra_vernac_genarg_pprule :
   ('a, 'b, 'c) genarg_type ->
@@ -140,7 +139,7 @@ val pr_ltac_constant : ltac_constant -> Pp.t
 
 val pr_raw_tactic : env -> Evd.evar_map -> raw_tactic_expr -> Pp.t
 
-val pr_raw_tactic_level : env -> Evd.evar_map -> tolerability -> raw_tactic_expr -> Pp.t
+val pr_raw_tactic_level : env -> Evd.evar_map -> entry_relative_level -> raw_tactic_expr -> Pp.t
 
 val pr_glob_tactic : env -> glob_tactic_expr -> Pp.t
 
@@ -155,10 +154,10 @@ val pr_match_pattern : ('a -> Pp.t) -> 'a match_pattern -> Pp.t
 val pr_match_rule : bool -> ('a -> Pp.t) -> ('b -> Pp.t) ->
   ('b, 'a) match_rule -> Pp.t
 
-val pr_value : tolerability -> Val.t -> Pp.t
+val pr_value : entry_relative_level -> Val.t -> Pp.t
 
 
-val ltop : tolerability
+val ltop : entry_relative_level
 
-val make_constr_printer : (env -> Evd.evar_map -> tolerability -> 'a -> Pp.t) ->
+val make_constr_printer : (env -> Evd.evar_map -> entry_relative_level -> 'a -> Pp.t) ->
   'a Genprint.top_printer

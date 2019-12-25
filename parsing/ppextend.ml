@@ -12,6 +12,7 @@ open Util
 open Pp
 open CErrors
 open Notation
+open Constrexpr
 open Notation_gram
 
 (*s Pretty-print. *)
@@ -37,15 +38,15 @@ let ppcmd_of_cut = function
   | PpBrk(n1,n2) -> brk(n1,n2)
 
 type unparsing =
-  | UnpMetaVar of int * parenRelation
-  | UnpBinderMetaVar of int * parenRelation
-  | UnpListMetaVar of int * parenRelation * unparsing list
+  | UnpMetaVar of int * entry_relative_level
+  | UnpBinderMetaVar of int * entry_relative_level
+  | UnpListMetaVar of int * entry_relative_level * unparsing list
   | UnpBinderListMetaVar of int * bool * unparsing list
   | UnpTerminal of string
   | UnpBox of ppbox * unparsing Loc.located list
   | UnpCut of ppcut
 
-type unparsing_rule = unparsing list * precedence
+type unparsing_rule = unparsing list * entry_level
 type extra_unparsing_rules = (string * string) list
 (* Concrete syntax for symbolic-extension table *)
 let notation_rules =

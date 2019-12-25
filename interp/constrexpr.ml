@@ -19,8 +19,11 @@ type universe_decl_expr = (lident list, Glob_term.glob_constraint list) UState.g
 type ident_decl = lident * universe_decl_expr option
 type name_decl = lname * universe_decl_expr option
 
+type entry_level = int
+type entry_relative_level = LevelLt of entry_level | LevelLe of entry_level | LevelSome
+
 type notation_entry = InConstrEntry | InCustomEntry of string
-type notation_entry_level = InConstrEntrySomeLevel | InCustomEntryLevel of string * int
+type notation_entry_level = InConstrEntrySomeLevel | InCustomEntryLevel of string * entry_level
 type notation_key = string
 type notation = notation_entry_level * notation_key
 

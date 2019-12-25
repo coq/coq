@@ -286,29 +286,29 @@ let pr_notation_entry = function
   | InConstrEntry -> str "constr"
   | InCustomEntry s -> str "custom " ++ str s
 
-let prec_assoc = let open Gramlib.Gramext in function
-  | RightA -> (L,E)
-  | LeftA -> (E,L)
-  | NonA -> (L,L)
-
 let precedence_of_position_and_level from_level = function
-  | NumLevel n, BorderProd (_,None) -> n, Prec n
   | NumLevel n, BorderProd (b,Some a) ->
-      n, let (lp,rp) = prec_assoc a in if b == Left then lp else rp
-  | NumLevel n, InternalProd -> n, Prec n
-  | NextLevel, _ -> from_level, L
+    (let open Gramlib.Gramext in
+     match a, b with
+     | RightA, Left -> LevelLt n
+     | RightA, Right -> LevelLe n
+     | LeftA, Left -> LevelLe n
+     | LeftA, Right -> LevelLt n
+     | NonA, _ -> LevelLt n)
+  | NumLevel n, _ -> LevelLe n
+  | NextLevel, _ -> LevelLt from_level
 
 (** Computing precedences of subentries for parsing *)
 let precedence_of_entry_type (from_custom,from_level) = function
   | ETConstr (custom,_,x) when notation_entry_eq custom from_custom ->
     precedence_of_position_and_level from_level x
-  | ETConstr (custom,_,(NumLevel n,_)) -> n, Prec n
+  | ETConstr (custom,_,(NumLevel n,_)) -> LevelLe n
   | ETConstr (custom,_,(NextLevel,_)) ->
     user_err (strbrk "\"next level\" is only for sub-expressions in the same entry as where the notation is (" ++
               quote (pr_notation_entry custom) ++ strbrk " is different from " ++
               quote (pr_notation_entry from_custom) ++ str ").")
-  | ETPattern (_,n) -> let n = match n with None -> 0 | Some n -> n in n, Prec n
-  | _ -> 0, E (* should not matter *)
+  | ETPattern (_,n) -> let n = match n with None -> 0 | Some n -> n in LevelLe n
+  | _ -> LevelSome (* should not matter *)
 
 (** Computing precedences for future insertion of parentheses at
     the time of printing using hard-wired constr levels *)
@@ -317,14 +317,14 @@ let unparsing_precedence_of_entry_type from_level = function
     (* Possible insertion of parentheses at printing time to deal
        with precedence in a constr entry is managed using [prec_less]
        in [ppconstr.ml] *)
-    snd (precedence_of_position_and_level from_level x)
+    precedence_of_position_and_level from_level x
   | ETConstr (custom,_,_) ->
     (* Precedence of printing for a custom entry is managed using
        explicit insertion of entry coercions at the time of building
        a [constr_expr] *)
-    Any
-  | ETPattern (_,n) -> (* in constr *) Prec (match n with Some n -> n | None -> 0)
-  | _ -> Any (* should not matter *)
+    LevelSome
+  | ETPattern (_,n) -> (* in constr *) LevelLe (match n with Some n -> n | None -> 0)
+  | _ -> LevelSome (* should not matter *)
 
 (* Some breaking examples *)
 (* "x = y" : "x /1 = y" (breaks before any symbol) *)
@@ -713,12 +713,10 @@ let recompute_assoc typs = let open Gramlib.Gramext in
 
 let pr_arg_level from (lev,typ) =
   let pplev = function
-  | (n,L) when Int.equal n from -> spc () ++ str "at next level"
-  | (n,E) -> spc () ++ str "at level " ++ int n
-  | (n,L) -> spc () ++ str "at level below " ++ int n
-  | (n,Prec m) when Int.equal m n -> spc () ++ str "at level " ++ int n
-  | (n,Prec _) -> assert false
-  | (n,Any) -> mt () in
+  | LevelLt n when Int.equal n from -> spc () ++ str "at next level"
+  | LevelLe n -> spc () ++ str "at level " ++ int n
+  | LevelLt n -> spc () ++ str "at level below " ++ int n
+  | LevelSome -> mt () in
   Ppvernac.pr_set_entry_type (fun _ -> (*TO CHECK*) mt()) typ ++ pplev lev
 
 let pr_level ntn (from,fromlevel,args,typs) =

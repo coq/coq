@@ -10,14 +10,11 @@
 
 open Names
 open Extend
+open Constrexpr
 
 (** Dealing with precedences *)
 
-type precedence = int
-type parenRelation = L | E | Any | Prec of precedence
-type tolerability = precedence * parenRelation
-
-type level = Constrexpr.notation_entry * precedence * tolerability list * constr_entry_key list
+type level = notation_entry * entry_level * entry_relative_level list * constr_entry_key list
   (* first argument is InCustomEntry s for custom entries *)
 
 type grammar_constr_prod_item =
