@@ -184,3 +184,11 @@ Fail Notation " {@ T1 ; T2 ; .. ; Tn } " :=
   (format "'[v' {@  '[' T1 ']'  ;  '//' '['  T2  ']'   ;  '//' ..  ;   '//' '['  Tn  ']'  } ']'").
 
 End M.
+
+Module Bug11331.
+
+Declare Custom Entry expr.
+Notation "{ p }" := (p) (in custom expr at level 201, p constr).
+Print Custom Grammar expr.
+
+End Bug11331.
