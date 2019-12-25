@@ -282,9 +282,9 @@ let insert_pat_alias ?loc p = function
   | Anonymous -> p
   | Name _ as na -> CAst.make ?loc @@ CPatAlias (p,(CAst.make ?loc na))
 
-let rec insert_coercion ?loc l c = match l with
+let rec insert_entry_coercion ?loc l c = match l with
   | [] -> c
-  | (inscope,ntn)::l -> CAst.make ?loc @@ CNotation (Some inscope,ntn,([insert_coercion ?loc l c],[],[],[]))
+  | (inscope,ntn)::l -> CAst.make ?loc @@ CNotation (Some inscope,ntn,([insert_entry_coercion ?loc l c],[],[],[]))
 
 let rec insert_pat_coercion ?loc l c = match l with
   | [] -> c
@@ -849,7 +849,7 @@ let extern_possible_prim_token (custom,scopes) r =
    | Some coercion ->
    match availability_of_prim_token n sc scopes with
    | None -> raise No_match
-   | Some key -> insert_coercion coercion (insert_delimiters (CAst.make ?loc:(loc_of_glob_constr r) @@ CPrim n) key)
+   | Some key -> insert_entry_coercion coercion (insert_delimiters (CAst.make ?loc:(loc_of_glob_constr r) @@ CPrim n) key)
 
 let filter_enough_applied nargs l =
   match nargs with
@@ -1081,7 +1081,7 @@ let rec extern inctx ?impargs scopes vars r =
 
   | GFloat f -> extern_float f (snd scopes)
 
-  in insert_coercion coercion (CAst.make ?loc c)
+  in insert_entry_coercion coercion (CAst.make ?loc c)
 
 and extern_typ ?impargs (subentry,(_,scopes)) =
   extern true ?impargs (subentry,(Notation.current_type_scope_name (),scopes))
@@ -1279,7 +1279,7 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
                       pi3 (extern_local_binder (subentry,(scopt,scl@scopes')) vars bl))
                       binderlists in
                   let c = make_notation loc specific_ntn (l,ll,bl,bll) in
-                  let c = insert_coercion coercion (insert_delimiters c key) in
+                  let c = insert_entry_coercion coercion (insert_delimiters c key) in
                   let args = fill_arg_scopes args argsscopes allscopes in
                   let args = extern_args (extern true) vars args in
                   CAst.make ?loc @@ extern_applied_notation nallargs argsimpls c args)
@@ -1296,7 +1296,7 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
               let args = fill_arg_scopes args argsscopes allscopes in
               let args = extern_args (extern true) vars args in
               let c = CAst.make ?loc @@ extern_applied_syntactic_definition nallargs argsimpls (a,cf) l args in
-              insert_coercion coercion c
+              insert_entry_coercion coercion c
       with
           No_match -> extern_notation allscopes vars t rules
 
