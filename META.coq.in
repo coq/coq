@@ -550,4 +550,19 @@ package "plugins" (
     plugin(byte)    = "ssreflect_plugin.cmo"
     plugin(native)  = "ssreflect_plugin.cmxs"
   )
+
+  package "ltac2" (
+
+    description = "Coq Ltac2 Plugin"
+    version     = "8.11"
+
+    requires    = "coq.plugins.ltac"
+    directory   = "../user-contrib/Ltac2"
+
+    archive(byte)    = "ltac2_plugin.cmo"
+    archive(native)  = "ltac2_plugin.cmx"
+
+    plugin(byte)    = "ltac2_plugin.cmo"
+    plugin(native)  = "ltac2_plugin.cmxs"
+  )
 )
