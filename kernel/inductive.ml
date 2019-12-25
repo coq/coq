@@ -806,7 +806,7 @@ let rec subterm_specif renv stack t =
                         Large... *)
           assign_var_spec renv'
           (nbfix-i, lazy (Subterm(Strict,recargs))) in
-        let decrArg = recindxs.(i) in
+        let decrArg = Option.get recindxs.(i) in
         let theBody = bodies.(i)   in
         let nbOfAbst = decrArg+1 in
         let sign,strippedBody = Term.decompose_lam_n_assum nbOfAbst theBody in

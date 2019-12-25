@@ -53,7 +53,7 @@ let rec relevance_of_fterm env extra lft f =
     let r = match fterm_of f with
       | FRel n -> Range.get extra (Esubst.reloc_rel n lft - 1)
       | FAtom c -> relevance_of_term_extra env extra lft (Esubst.subs_id 0) c
-      | FFlex (key, _) -> relevance_of_flex env extra lft key
+      | FFlex (key, _) -> relevance_of_flex env key
       | FInt _ | FFloat _ -> Sorts.Relevant
       | FInd _ | FProd _ -> Sorts.Relevant (* types are always relevant *)
       | FConstruct (c,_) -> relevance_of_constructor env c

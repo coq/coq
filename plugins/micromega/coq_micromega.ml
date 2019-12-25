@@ -749,7 +749,7 @@ module M = struct
         match EConstr.kind gl.sigma term with
         | App (t, args) -> (
           match EConstr.kind gl.sigma t with
-          | Const c -> (
+          | Const (c, _) -> (
             match assoc_ops gl.sigma t ops_spec with
             | Binop f -> combine env f (args.(0), args.(1))
             | Opp ->
