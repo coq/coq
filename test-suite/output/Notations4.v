@@ -158,3 +158,11 @@ Check b = a.
 End Test.
 
 End L.
+
+Module Bug11331.
+
+Declare Custom Entry expr.
+Notation "{ p }" := (p) (in custom expr at level 201, p constr).
+Print Custom Grammar expr.
+
+End Bug11331.

@@ -63,3 +63,7 @@ fun '{| |} => true
      : R -> bool
 b = a
      : Prop
+Entry constr:expr is
+[ "201" RIGHTA
+  [  "{"; constr:operconstr LEVEL "200";  "}" ] ]
+

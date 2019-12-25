@@ -926,18 +926,28 @@ let is_only_printing mods =
 
 (* Compute precedences from modifiers (or find default ones) *)
 
-let set_entry_type from etyps (x,typ) =
+let set_entry_type from n etyps (x,typ) =
+  let make_lev n s = match typ with
+    | BorderProd _ -> NumLevel n
+    | InternalProd ->
+      if s = InConstrEntry then NumLevel 200 else
+      user_err (strbrk "level of inner subentry " ++ quote (pr_notation_entry s) ++
+                str " cannot be inferred. It must be given explicitly.") in
   let typ = try
     match List.assoc x etyps, typ with
-      | ETConstr (s,bko,Some n), (_,BorderProd (left,_)) ->
+      | ETConstr (s,bko,Some n), BorderProd (left,_) ->
           ETConstr (s,bko,(n,BorderProd (left,None)))
-      | ETConstr (s,bko,Some n), (_,InternalProd) ->
-         ETConstr (s,bko,(n,InternalProd))
+      | ETConstr (s,bko,Some n), InternalProd ->
+          ETConstr (s,bko,(n,InternalProd))
       | ETPattern (b,n), _ -> ETPattern (b,n)
       | (ETIdent | ETBigint | ETGlobal | ETBinder _ as x), _ -> x
-      | ETConstr (s,bko,None), _ -> ETConstr (s,bko,typ)
+      | ETConstr (s,bko,None), _ ->
+         if notation_entry_eq from s then ETConstr (s,bko,(make_lev n s,typ))
+         else if s = InConstrEntry then ETConstr (s,bko,(make_lev 200 s,typ)) else
+         user_err (strbrk "level of subentry " ++ quote (pr_notation_entry s) ++
+                   str " cannot be inferred. It must be given explicitly.")
     with Not_found ->
-      ETConstr (from,None,typ)
+      ETConstr (from,None,(make_lev n from,typ))
   in (x,typ)
 
 let join_auxiliary_recursive_types recvars etyps =
@@ -1187,14 +1197,13 @@ module SynData = struct
 end
 
 let find_subentry_types from n assoc etyps symbols =
-  let innerlevel = NumLevel 200 in
   let typs =
     find_symbols
-      (NumLevel n,BorderProd(Left,assoc))
-      (innerlevel,InternalProd)
-      (NumLevel n,BorderProd(Right,assoc))
+      (BorderProd(Left,assoc))
+      (InternalProd)
+      (BorderProd(Right,assoc))
       symbols in
-  let sy_typs = List.map (set_entry_type from etyps) typs in
+  let sy_typs = List.map (set_entry_type from n etyps) typs in
   let prec = List.map (assoc_of_type from n) sy_typs in
   sy_typs, prec
 

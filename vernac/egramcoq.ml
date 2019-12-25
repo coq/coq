@@ -208,7 +208,9 @@ let assoc_eq al ar =
      Some None = NEXT
      Some (Some (n,cur)) = constr LEVEL n
          s.t. if [cur] is set then [n] is the same as the [from] level *)
-let adjust_level assoc from = let open Gramlib.Gramext in function
+let adjust_level custom assoc (custom',from) p = let open Gramlib.Gramext in match p with
+(* If in a different grammar, no other choice than denoting it by absolute level *)
+  | (NumLevel n,_) when not (Notation.notation_entry_eq custom custom') -> Some (Some (n,true))
 (* Associativity is None means force the level *)
   | (NumLevel n,BorderProd (_,None)) -> Some (Some (n,true))
 (* Compute production name on the right side *)
@@ -231,7 +233,7 @@ let adjust_level assoc from = let open Gramlib.Gramext in function
     | _ -> Some None
     end
   (* None means NEXT *)
-  | (NextLevel,_) -> Some None
+  | (NextLevel,_) -> (* invariant custom=custom' expected *) Some None
 (* Compute production name elsewhere *)
   | (NumLevel n,InternalProd) ->
     if from = n + 1 then Some None else Some (Some (n, Int.equal n from))
@@ -311,13 +313,14 @@ let target_entry : type s. notation_entry -> s target -> s Entry.t = function
    | ForConstr -> entry_for_constr
    | ForPattern -> entry_for_patttern
 
-let is_self from e = match e with
+let is_self custom (custom',from) e = Notation.notation_entry_eq custom custom' && match e with
 | (NumLevel n, BorderProd (Right, _ (* Some(NonA|LeftA) *))) -> false
 | (NumLevel n, BorderProd (Left, _)) -> Int.equal from n
 | _ -> false
 
-let is_binder_level from e = match e with
-| (NumLevel 200, (BorderProd (Right, _) | InternalProd)) -> from = 200
+let is_binder_level custom (custom',from) e = match e with
+| (NumLevel 200, (BorderProd (Right, _) | InternalProd)) ->
+  custom = InConstrEntry && custom' = InConstrEntry && from = 200
 | _ -> false
 
 let make_sep_rules = function
@@ -338,11 +341,11 @@ type ('s, 'a) mayrec_symbol =
 | MayRecMay : ('s, mayrec, 'a) symbol -> ('s, 'a) mayrec_symbol
 
 let symbol_of_target : type s. _ -> _ -> _ -> _ -> s target -> (s, s) mayrec_symbol = fun custom p assoc from forpat ->
-  if custom = InConstrEntry && is_binder_level from p then MayRecNo (Aentryl (target_entry InConstrEntry forpat, "200"))
-  else if is_self from p then MayRecMay Aself
+  if is_binder_level custom from p then (* Prevent self *) MayRecNo (Aentryl (target_entry custom forpat, "200"))
+  else if is_self custom from p then MayRecMay Aself
   else
     let g = target_entry custom forpat in
-    let lev = adjust_level assoc from p in
+    let lev = adjust_level custom assoc from p in
     begin match lev with
     | None -> MayRecNo (Aentry g)
     | Some None -> MayRecMay Anext
@@ -503,19 +506,19 @@ let prepare_empty_levels forpat (where,(pos,p4assoc,name,reinit)) =
   let empty = (pos, [(name, p4assoc, [])]) in
   ExtendRule (target_entry where forpat, reinit, empty)
 
-let rec pure_sublevels' custom assoc from forpat level = function
+let rec pure_sublevels' assoc from forpat level = function
 | [] -> []
 | GramConstrNonTerminal (e,_) :: rem ->
-   let rem = pure_sublevels' custom assoc from forpat level rem in
+   let rem = pure_sublevels' assoc from forpat level rem in
    let push where p rem =
-     match symbol_of_target custom p assoc from forpat with
+     match symbol_of_target where p assoc from forpat with
      | MayRecNo (Aentryl (_,i)) when level <> Some (int_of_string i) -> (where,int_of_string i) :: rem
      | _ -> rem in
    (match e with
    | ETProdPattern i -> push InConstrEntry (NumLevel i,InternalProd) rem
    | ETProdConstr (s,p) -> push s p rem
    | _ -> rem)
-| (GramConstrTerminal _ | GramConstrListMark _) :: rem -> pure_sublevels' custom assoc from forpat level rem
+| (GramConstrTerminal _ | GramConstrListMark _) :: rem -> pure_sublevels' assoc from forpat level rem
 
 let make_act : type r. r target -> _ -> r gen_eval = function
 | ForConstr -> fun notation loc env ->
@@ -530,8 +533,8 @@ let extend_constr state forpat ng =
   let assoc = ng.notgram_assoc in
   let (entry, level) = interp_constr_entry_key custom forpat n in
   let fold (accu, state) pt =
-    let AnyTyRule r = make_ty_rule assoc n forpat pt in
-    let pure_sublevels = pure_sublevels' custom assoc n forpat level pt in
+    let AnyTyRule r = make_ty_rule assoc (custom,n) forpat pt in
+    let pure_sublevels = pure_sublevels' assoc (custom,n) forpat level pt in
     let isforpat = target_to_bool forpat in
     let needed_levels, state = register_empty_levels state isforpat pure_sublevels in
     let (pos,p4assoc,name,reinit), state = find_position state custom isforpat assoc level in
