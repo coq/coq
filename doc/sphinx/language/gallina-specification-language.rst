@@ -327,11 +327,8 @@ function on type :g:`A`). The keyword :g:`fun` can be followed by several
 binders as given in Section :ref:`binders`. Functions over
 several variables are equivalent to an iteration of one-variable
 functions. For instance the expression
-“fun :token:`ident`\ :math:`_{1}` … :token:`ident`\ :math:`_{n}` 
-: :token:`type` => :token:`term`”
-denotes the same function as “ fun :token:`ident`\
-:math:`_{1}` : :token:`type` => … 
-fun :token:`ident`\ :math:`_{n}` : :token:`type` => :token:`term`”. If
+:n:`fun {+ @ident__i } : @type => @term`
+denotes the same function as :n:`{+ fun @ident__i : @type => } @term`. If
 a let-binder occurs in
 the list of binders, it is expanded to a let-in definition (see
 Section :ref:`let-in`).
@@ -362,15 +359,14 @@ the propositional implication and function types.
 Applications
 ------------
 
-The expression :token:`term`\ :math:`_0` :token:`term`\ :math:`_1` denotes the
-application of :token:`term`\ :math:`_0` to :token:`term`\ :math:`_1`.
+The expression :n:`@term__fun @term` denotes the application of
+:n:`@term__fun` (which is expected to have a function type) to
+:token:`term`.
 
-The expression :token:`term`\ :math:`_0` :token:`term`\ :math:`_1` ...
-:token:`term`\ :math:`_n` denotes the application of the term
-:token:`term`\ :math:`_0` to the arguments :token:`term`\ :math:`_1` ... then
-:token:`term`\ :math:`_n`. It is equivalent to ( … ( :token:`term`\ :math:`_0`
-:token:`term`\ :math:`_1` ) … ) :token:`term`\ :math:`_n` : associativity is to the
-left.
+The expression :n:`@term__fun {+ @term__i }` denotes the application
+of the term :n:`@term__fun` to the arguments :n:`@term__i`.  It is
+equivalent to :n:`( … ( @term__fun @term__1 ) … ) @term__n`:
+associativity is to the left.
 
 The notation :n:`(@ident := @term)` for arguments is used for making
 explicit the value of implicit arguments (see
