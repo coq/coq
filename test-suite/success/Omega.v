@@ -90,5 +90,5 @@ Qed.
 (* Postponed... problem with goals of the form "(n*m=0)%nat -> (n*m=0)%Z" *)
 Lemma lem10 : forall n m:nat, le n (plus n (mult n m)).
 Proof.
-intros; omega with *.
+intros; zify; omega.
 Qed.
