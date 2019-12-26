@@ -313,8 +313,7 @@ Qed.
 End TestGeneric2.
 
 Section TestPreOrder.
-(* inspired by https://github.com/coq/coq/pull/10022#issuecomment-530101950
-   but without needing to do [rewrite UnderE] manually. *)
+(* inspired by https://github.com/coq/coq/pull/10022#issuecomment-530101950 *)
 
 Require Import Morphisms.
 
@@ -330,7 +329,7 @@ Parameter leq_mul :
 
 Local Notation "+%N" := addn (at level 0, only parsing).
 
-(** Context lemma (could *)
+(** Context lemma *)
 Lemma leq'_big : forall I (F G : I -> nat) (r : seq I),
     (forall i : I, leq' (F i) (G i)) ->
     (leq' (\big[+%N/0%N]_(i <- r) F i) (\big[+%N/0%N]_(i <- r) G i)).
@@ -370,8 +369,10 @@ have lem : forall (i : nat), i < n -> leq' (3 + i) (3 + n).
 
 under leq'_big => i.
 {
-  (* The "magic" is here: instantiate the evar with the bound "3 + n" *)
-  rewrite lem ?ltn_ord //. over.
+  rewrite UnderE.
+
+  (* instantiate the evar with the bound "3 + n" *)
+  apply: lem; exact: ltn_ord.
 }
 cbv beta.
 
