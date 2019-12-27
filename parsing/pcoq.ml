@@ -533,6 +533,7 @@ let extend_entry_command (type a) (type b) (tag : (a, b) entry_command) (g : a) 
       try EntryDataMap.find tag !camlp5_entries
       with Not_found -> EntryData.Ex String.Map.empty
     in
+    let () = assert (not @@ String.Map.mem name old) in
     let entries = String.Map.add name e old in
     camlp5_entries := EntryDataMap.add tag (EntryData.Ex entries) !camlp5_entries
   in
