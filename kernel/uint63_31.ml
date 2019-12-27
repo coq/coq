@@ -132,6 +132,7 @@ let mulc x y =
   (* add the outer products *)
   let lr = Int64.add (Int64.mul lx ly) lr in
   let hr = Int64.add (Int64.mul hx hy) hr in
+  (* hr fits on 64 bits, since the final result fits on 126 bits *)
   (* now x * y = hr * 2^62 + lr and lr < 2^63 *)
   let lr = Int64.add lr (Int64.shift_left (Int64.logand hr 1L) 62) in
   let hr = Int64.shift_right_logical hr 1 in
