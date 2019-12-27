@@ -1680,10 +1680,16 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) compat =
 (**********************************************************************)
 (* Declaration of custom entry                                        *)
 
+let warn_custom_entry =
+  CWarnings.create ~name:"custom-entry-overriden" ~category:"parsing"
+         (fun s ->
+          strbrk "Custom entry " ++ str s ++ strbrk " has been overriden.")
+
 let load_custom_entry _ _ = ()
 
 let open_custom_entry _ (_,(local,s)) =
-  Egramcoq.create_custom_entry ~local s
+  if Egramcoq.exists_custom_entry s then warn_custom_entry s
+  else Egramcoq.create_custom_entry ~local s
 
 let cache_custom_entry o =
   load_custom_entry 1 o;
@@ -1703,4 +1709,7 @@ let inCustomEntry : locality_flag * string -> obj =
       classify_function = classify_custom_entry}
 
 let declare_custom_entry local s =
-  Lib.add_anonymous_leaf (inCustomEntry (local,s))
+  if Egramcoq.exists_custom_entry s then
+    user_err Pp.(str "Custom entry " ++ str s ++ str " already exists")
+  else
+    Lib.add_anonymous_leaf (inCustomEntry (local,s))
