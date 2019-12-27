@@ -2081,7 +2081,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    canonical structure. For each of them, the canonical structure of
    which it is a projection is indicated. If constants are given as
    its arguments, only the unification rules that involve or are
-   synthesized from given constants will be shown.
+   synthesized from simultaneously all given constants will be shown.
 
    .. example::
 
