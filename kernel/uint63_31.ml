@@ -15,8 +15,8 @@ let _ = assert (Sys.word_size = 32)
 
 let uint_size = 63
 
-let maxuint63 = Int64.of_string "0x7FFFFFFFFFFFFFFF"
-let maxuint31 = Int64.of_string "0x7FFFFFFF"
+let maxuint63 = 0x7FFF_FFFF_FFFF_FFFFL
+let maxuint31 = 0x7FFF_FFFFL
 
 let zero = Int64.zero
 let one = Int64.one
@@ -118,27 +118,30 @@ let div21 xh xl y =
 let div21 xh xl y =
   if Int64.compare y xh <= 0 then zero, zero else div21 xh xl y
 
-     (* exact multiplication *)
+(* exact multiplication *)
 let mulc x y =
-  let lx = ref (Int64.logand x maxuint31) in
-  let ly = ref (Int64.logand y maxuint31) in
+  let lx = Int64.logand x maxuint31 in
+  let ly = Int64.logand y maxuint31 in
   let hx = Int64.shift_right x 31 in
   let hy = Int64.shift_right y 31 in
-  let hr = ref (Int64.mul hx hy) in
-  let lr = ref (Int64.logor (Int64.mul !lx !ly) (Int64.shift_left !hr 62)) in
-  hr := (Int64.shift_right_logical !hr 1);
-  lx := Int64.mul !lx hy;
-  ly := Int64.mul hx !ly;
-  hr := Int64.logor !hr (Int64.add (Int64.shift_right !lx 32) (Int64.shift_right !ly 32));
-  lr := Int64.add !lr (Int64.shift_left !lx 31);
-  hr := Int64.add !hr (Int64.shift_right_logical !lr 63);
-  lr := Int64.add (Int64.shift_left !ly 31) (mask63 !lr);
-  hr := Int64.add !hr (Int64.shift_right_logical !lr 63);
-  if Int64.logand !lr Int64.min_int <> 0L
-  then Int64.(sub !hr one, mask63 !lr)
-  else (!hr, !lr)
+  (* compute the median products *)
+  let s = Int64.add (Int64.mul lx hy) (Int64.mul hx ly) in
+  (* s fits on 64 bits, split it into a 33-bit high part and a 31-bit low part *)
+  let lr = Int64.shift_left (Int64.logand s maxuint31) 31 in
+  let hr = Int64.shift_right_logical s 31 in
+  (* add the outer products *)
+  let lr = Int64.add (Int64.mul lx ly) lr in
+  let hr = Int64.add (Int64.mul hx hy) hr in
+  (* hr fits on 64 bits, since the final result fits on 126 bits *)
+  (* now x * y = hr * 2^62 + lr and lr < 2^63 *)
+  let lr = Int64.add lr (Int64.shift_left (Int64.logand hr 1L) 62) in
+  let hr = Int64.shift_right_logical hr 1 in
+  (* now x * y = hr * 2^63 + lr, but lr might be too large *)
+  if Int64.logand lr Int64.min_int <> 0L
+  then Int64.add hr 1L, mask63 lr
+  else hr, lr
 
-let equal x y = mask63 x = mask63 y
+let equal (x : t) y = x = y
 
 let compare x y = Int64.compare x y
 

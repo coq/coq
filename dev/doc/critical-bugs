@@ -255,6 +255,18 @@ Conversion machines
   GH issue number: #9925
   risk:
 
+  component: "virtual machine" (compilation to bytecode ran by a C-interpreter)
+  summary: broken long multiplication primitive integer emulation layer on 32 bits
+  introduced: e43b176
+  impacted released versions: 8.10.0, 8.10.1, 8.10.2
+  impacted development branches: 8.11
+  impacted coqchk versions: none (no virtual machine in coqchk)
+  fixed in: 4e176a7
+  found by: Soegtrop, Melquiond
+  exploit: test-suite/bugs/closed/bug_11321.v
+  GH issue number: #11321
+  risk: critical, as any BigN computation on 32-bit architectures is wrong
+
   component: "native" conversion machine (translation to OCaml which compiles to native code)
   summary: translation of identifier from Coq to OCaml was not bijective, leading to identify True and False
   introduced: V8.5
