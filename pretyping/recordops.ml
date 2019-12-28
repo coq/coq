@@ -114,7 +114,7 @@ let find_primitive_projection c =
 (*  the effective components of a structure and the projections of the  *)
 (*  structure *)
 
-(* Table des definitions "object" : pour chaque object c,
+(* Table of "object" definitions: for each object c,
 
   c := [x1:B1]...[xk:Bk](Build_R a1...am t1...t_n)
 
@@ -127,16 +127,19 @@ let find_primitive_projection c =
 
   that maps the pair (Li,ci) to the following data
 
+    o_ORIGIN = c (the constant name which this conversion rule is
+                  synthesized from)
     o_DEF = c
     o_TABS = B1...Bk
     o_INJ = Some n        (when ci is a reference to the parameter xi)
-    o_PARAMS = a1...am
-    o_NARAMS = m
+    o_TPARAMS = a1...am
+    o_NPARAMS = m
     o_TCOMP = ui1...uir
 
 *)
 
 type obj_typ = {
+  o_ORIGIN : Constant.t;
   o_DEF : constr;
   o_CTX : Univ.AUContext.t;
   o_INJ : int option;      (* position of trivial argument if any *)
@@ -224,7 +227,7 @@ let compute_canonical_projections env ~warn (con,ind) =
             match cs_pattern_of_constr nenv t with
             | patt, o_INJ, o_TCOMPS ->
               ((GlobRef.ConstRef proji_sp, (patt, t)),
-               { o_DEF ; o_CTX ; o_INJ ; o_TABS ; o_TPARAMS ; o_NPARAMS ; o_TCOMPS })
+               { o_ORIGIN = con ; o_DEF ; o_CTX ; o_INJ ; o_TABS ; o_TPARAMS ; o_NPARAMS ; o_TCOMPS })
               :: acc
             | exception Not_found ->
               if warn then warn_projection_no_head_constant (sign, env, t, con, proji_sp);

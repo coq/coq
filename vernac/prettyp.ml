@@ -996,12 +996,26 @@ let print_path_between cls clt =
   in
   print_path ((i,j),p)
 
-let print_canonical_projections env sigma =
+let print_canonical_projections env sigma grefs =
+  let match_proj_gref ((x,y),c) gr =
+    GlobRef.equal x gr ||
+    begin match y with
+      | Const_cs y -> GlobRef.equal y gr
+      | _ -> false
+    end ||
+    match gr with
+    | GlobRef.ConstRef con -> Names.Constant.equal c.o_ORIGIN con
+    | _ -> false
+  in
+  let projs =
+    List.filter (fun p -> List.for_all (match_proj_gref p) grefs)
+      (canonical_projections ())
+  in
   prlist_with_sep fnl
     (fun ((r1,r2),o) -> pr_cs_pattern r2 ++
     str " <- " ++
     pr_global r1 ++ str " ( " ++ pr_lconstr_env env sigma o.o_DEF ++ str " )")
-    (canonical_projections ())
+    projs
 
 (*************************************************************************)
 

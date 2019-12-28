@@ -2075,11 +2075,13 @@ in :ref:`canonicalstructures`; here only a simple example is given.
       This is equivalent to a regular definition of :token:`ident` followed by the
       declaration :n:`Canonical @ident`.
 
-.. cmd:: Print Canonical Projections
+.. cmd:: Print Canonical Projections {* @ident}
 
    This displays the list of global names that are components of some
    canonical structure. For each of them, the canonical structure of
-   which it is a projection is indicated.
+   which it is a projection is indicated. If constants are given as
+   its arguments, only the unification rules that involve or are
+   synthesized from simultaneously all given constants will be shown.
 
    .. example::
 
@@ -2089,10 +2091,15 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
          Print Canonical Projections.
 
+      .. coqtop:: all
+
+         Print Canonical Projections nat.
+
       .. note::
 
-         The last line would not show up if the corresponding projection (namely
-         :g:`Prf_equiv`) were annotated as not canonical, as described above.
+         The last line in the first example would not show up if the
+         corresponding projection (namely :g:`Prf_equiv`) were annotated as not
+         canonical, as described above.
 
 Implicit types of variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
