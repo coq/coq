@@ -1478,7 +1478,7 @@ Chapter :ref:`Tactics`. The basic assertion command is:
       The name you provided is already defined. You have then to choose
       another name.
 
-   .. exn:: Nested proofs are not allowed unless you turn the :flag:`Nested Proofs Allowed` flag on.
+   .. exn:: Nested proofs are not allowed unless you turn the Nested Proofs Allowed flag on.
 
       You are asserting a new statement while already being in proof editing mode.
       This feature, called nested proofs, is disabled by default.
