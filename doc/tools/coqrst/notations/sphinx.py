@@ -75,10 +75,33 @@ class TacticNotationsToSphinxVisitor(TacticNotationsVisitor):
         sp += nodes.Text("}")
         return [sp]
 
+    def escape(self, atom):
+        node = nodes.inline("","")
+        while atom != "":
+            if atom[0] == "'":
+                node += nodes.raw("\\textquotesingle{}", "\\textquotesingle{}", format="latex")
+                atom = atom[1:]
+            elif atom[0] == "`":
+                node += nodes.raw("\\`{}", "\\`{}", format="latex")
+                atom = atom[1:]
+            else:
+                index_ap = atom.find("'")
+                index_bt = atom.find("`")
+                if index_ap == -1:
+                    index = index_bt
+                elif index_bt == -1:
+                    index = index_ap
+                else:
+                    index = min(index_ap, index_bt)
+                lit = atom if index == -1 else atom[:index]
+                node += nodes.inline(lit, lit)
+                atom = atom[len(lit):]
+        return node
+
     def visitAtomic(self, ctx:TacticNotationsParser.AtomicContext):
         atom = ctx.ATOM().getText()
         sub = ctx.SUB()
-        node = nodes.inline(atom, atom)
+        node = self.escape(atom)
 
         if sub:
             sub_index = sub.getText()[2:]
@@ -104,7 +127,7 @@ class TacticNotationsToSphinxVisitor(TacticNotationsVisitor):
 
     def visitEscaped(self, ctx:TacticNotationsParser.EscapedContext):
         escaped = ctx.ESCAPED().getText()
-        return [nodes.inline(escaped, escaped[1:])]
+        return [self.escape(escaped.replace("%", ""))]
 
     def visitWhitespace(self, ctx:TacticNotationsParser.WhitespaceContext):
         return [nodes.Text(" ")]

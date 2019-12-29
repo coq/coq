@@ -49,7 +49,7 @@ let default_args = {
 }
 
 let start_symbols = ["vernac_toplevel"]
-let tokens = [ "bullet"; "ident"; "int"; "num"; "numeral"; "string" ]
+let tokens = [ "bullet"; "string"; "unicode_id_part"; "unicode_letter" ]
 
 (* translated symbols *)
 
@@ -148,8 +148,10 @@ module DocGram = struct
 
   let g_add_prod_after g ins_after nt prod =
     let prods = try NTMap.find nt !g.map with Not_found -> [] in
-    (* todo: add check for duplicates *)
-    g_add_after g ~update:true ins_after nt (prods @ [prod])
+    if prods <> [] then
+      g_update_prods g nt (prods @ [prod])
+    else
+      g_add_after g ~update:true ins_after nt [prod]
 
   (* replace the map and order *)
   let g_reorder g map order =
@@ -237,7 +239,17 @@ and prod_to_str ?(plist=false) prod =
 
 
 let rec output_prodn = function
-  | Sterm s -> let s = if List.mem s ["{"; "{|"; "|"; "}"] then "%" ^ s else s in
+  | Sterm s ->
+    let s = match s with
+            | "|}" -> "%|%}"
+            | "{|" -> "%{%|"
+            | "`{" -> "`%{"
+            | "@{" -> "@%{"
+            | "{"
+            | "}"
+            | "|" -> "%" ^ s
+            | _ -> s
+    in
     sprintf "%s" s
   | Snterm s -> sprintf "@%s" s
   | Slist1 sym -> sprintf "{+ %s }" (output_prodn sym)
@@ -266,7 +278,14 @@ and output_sep sep =
   | Sterm s -> sprintf "%s" s  (* avoid escaping separator *)
   | _ -> output_prodn sep
 
-and prod_to_prodn prod = String.concat " " (List.map output_prodn prod)
+and prod_to_prodn_r prod =
+  match prod with
+  | Sterm s :: Snterm "ident" :: tl when List.mem s ["?"; "."] ->
+    (sprintf "%s@ident" s) :: (prod_to_prodn_r tl)
+  | p :: tl -> (output_prodn p) :: (prod_to_prodn_r tl)
+  | [] -> []
+
+and prod_to_prodn prod = String.concat " " (prod_to_prodn_r prod)
 
 let pr_prods nt prods = (* duplicative *)
   Printf.printf "%s: [\n" nt;
@@ -304,11 +323,11 @@ let print_in_order out g fmt nt_order hide =
                 fprintf out "%s%s\n" pfx str)
               prods;
           | `PRODN ->
-            fprintf out "\n%s:\n" nt;
-            List.iter (fun prod ->
+            fprintf out "\n%s:\n%s " nt nt;
+            List.iteri (fun i prod ->
                 let str = prod_to_prodn prod in
-                let pfx = if str = "" then "" else " " in
-                fprintf out "%s%s\n" pfx str)
+                let op = if i = 0 then "::=" else "+=" in
+                fprintf out "%s %s\n" op str)
               prods;
         with Not_found -> error "Missing nt '%s' in print_in_order\n" nt)
     nt_order
@@ -458,8 +477,10 @@ let ematch prod edit =
           -> ematchr [psym] [sym] && ematchr [psep] [sep]
         | (Sparen psyml, Sparen syml)
           -> ematchr psyml syml
-        | (Sprod psymll, Sprod symll)
-          -> List.fold_left (&&) true (List.map2 ematchr psymll symll)
+        | (Sprod psymll, Sprod symll) ->
+          if List.compare_lengths psymll symll != 0 then false
+          else
+            List.fold_left (&&) true (List.map2 ematchr psymll symll)
         | _, _ -> phd = hd
       in
       m && ematchr ptl tl
@@ -691,17 +712,22 @@ let rec edit_prod g top edit_map prod =
       | _ -> [Snterm binding]
     with Not_found -> [sym0]
   in
+  let maybe_wrap syms =
+    match syms with
+    | s :: [] -> List.hd syms
+    | s -> Sparen (List.rev syms)
+  in
 
   let rec edit_symbol sym0 =
     match sym0 with
       | Sterm s -> [sym0]
       | Snterm s -> edit_nt edit_map sym0 s
-      | Slist1 sym -> [Slist1 (List.hd (edit_symbol sym))]
+      | Slist1 sym -> [Slist1 (maybe_wrap (edit_symbol sym))]
       (* you'll get a run-time failure deleting a SEP symbol *)
-      | Slist1sep (sym, sep) -> [Slist1sep (List.hd (edit_symbol sym), (List.hd (edit_symbol sep)))]
-      | Slist0 sym -> [Slist0 (List.hd (edit_symbol sym))]
-      | Slist0sep (sym, sep) -> [Slist0sep (List.hd (edit_symbol sym), (List.hd (edit_symbol sep)))]
-      | Sopt sym -> [Sopt (List.hd (edit_symbol sym))]
+      | Slist1sep (sym, sep) -> [Slist1sep (maybe_wrap (edit_symbol sym), (List.hd (edit_symbol sep)))]
+      | Slist0 sym -> [Slist0 (maybe_wrap (edit_symbol sym))]
+      | Slist0sep (sym, sep) -> [Slist0sep (maybe_wrap (edit_symbol sym), (List.hd (edit_symbol sep)))]
+      | Sopt sym -> [Sopt (maybe_wrap (edit_symbol sym))]
       | Sparen slist -> [Sparen (List.hd (edit_prod g false edit_map slist))]
       | Sprod slistlist -> let (_, prods) = edit_rule g edit_map "" slistlist in
                            [Sprod prods]
@@ -1079,7 +1105,9 @@ let apply_edit_file g edits =
             g_add_prod_after g (Some nt) nt2 oprod;
             let prods' = (try
               let posn = find_first oprod prods nt in
-              let prods = insert_after posn [[Snterm nt2]] prods in  (* insert new prod *)
+              let prods = if List.mem [Snterm nt2] prods then prods
+                else insert_after posn [[Snterm nt2]] prods (* insert new prod *)
+              in
               remove_prod oprod prods nt      (* remove orig prod *)
               with Not_found -> prods)
             in
@@ -1091,6 +1119,7 @@ let apply_edit_file g edits =
             aux tl (edit_single_prod g oprod prods nt) add_nt
           | (Snterm "REPLACE" :: oprod) :: (Snterm "WITH" :: rprod) :: tl ->
             report_undef_nts g rprod "";
+            (* todo: check result not already present *)
             let prods' = (try
               let posn = find_first oprod prods nt in
               let prods = insert_after posn [rprod] prods in  (* insert new prod *)
@@ -1580,7 +1609,7 @@ let process_rst g file args seen tac_prods cmd_prods =
     line
   in
   (* todo: maybe pass end_index? *)
-  let output_insertgram start_index end_ indent is_coq_group =
+  let output_insertprodn start_index end_ indent =
     let rec copy_prods list =
       match list with
       | [] -> ()
@@ -1590,21 +1619,21 @@ let process_rst g file args seen tac_prods cmd_prods =
           warn "%s line %d: '%s' already included at %s line %d\n"
               file !linenum nt prev_file prev_linenum;
         with Not_found ->
-          if is_coq_group then
-            seen := { !seen with nts = (NTMap.add nt (file, !linenum) !seen.nts)} );
+          seen := { !seen with nts = (NTMap.add nt (file, !linenum) !seen.nts)} );
         let prods = NTMap.find nt !g.map in
         List.iteri (fun i prod ->
-            let rhs = String.trim (sprintf ": %s" (prod_to_str ~plist:true prod)) in
-            fprintf new_rst "%s   %s %s\n" indent (if i = 0 then nt else String.make (String.length nt) ' ') rhs)
+            let rhs = String.trim (prod_to_prodn prod) in
+            let sep = if i = 0 then " ::=" else "|" in
+            fprintf new_rst "%s   %s%s %s\n" indent (if i = 0 then nt else "") sep rhs)
           prods;
         if nt <> end_ then copy_prods tl
     in
     copy_prods (nthcdr start_index !g.order)
   in
 
-  let process_insertgram line rhs =
+  let process_insertprodn line rhs =
     if not (Str.string_match ig_args_regex rhs 0) then
-      error "%s line %d: bad arguments '%s' for 'insertgram'\n" file !linenum rhs
+      error "%s line %d: bad arguments '%s' for 'insertprodn'\n" file !linenum rhs
     else begin
       let start = Str.matched_group 1 rhs in
       let end_ = Str.matched_group 2 rhs in
@@ -1624,19 +1653,18 @@ let process_rst g file args seen tac_prods cmd_prods =
           try
             let line2 = getline() in
             if not (Str.string_match blank_regex line2 0) then
-              error "%s line %d: expecting a blank line after 'insertgram'\n" file !linenum
+              error "%s line %d: expecting a blank line after 'insertprodn'\n" file !linenum
             else begin
               let line3 = getline() in
-              if not (Str.string_match dir_regex line3 0) || (Str.matched_group 2 line3) <> "productionlist::" then
-                error "%s line %d: expecting 'productionlist' after 'insertgram'\n" file !linenum
+              if not (Str.string_match dir_regex line3 0) || (Str.matched_group 2 line3) <> "prodn::" then
+                error "%s line %d: expecting 'prodn' after 'insertprodn'\n" file !linenum
               else begin
                 let indent = Str.matched_group 1 line3 in
-                let is_coq_group = ("coq" = String.trim (Str.matched_group 3 line3)) in
                 let rec skip_to_end () =
                   let endline = getline() in
                   if Str.string_match end_prodlist_regex endline 0 then begin
                     fprintf new_rst "%s\n\n%s\n" line line3;
-                    output_insertgram start_index end_ indent is_coq_group;
+                    output_insertprodn start_index end_ indent;
                     fprintf new_rst "%s\n" endline
                   end else
                     skip_to_end ()
@@ -1657,9 +1685,9 @@ let process_rst g file args seen tac_prods cmd_prods =
         let dir = Str.matched_group 2 line in
         let rhs = String.trim (Str.matched_group 3 line) in
         match dir with
-        | "productionlist::" ->
+        | "prodn::" ->
           if rhs = "coq" then
-            warn "%s line %d: Missing 'insertgram' before 'productionlist:: coq'\n" file !linenum;
+            warn "%s line %d: Missing 'insertprodn' before 'prodn:: coq'\n" file !linenum;
           fprintf new_rst "%s\n" line;
         | "tacn::" when args.check_tacs ->
           if not (StringSet.mem rhs tac_prods) then
@@ -1675,8 +1703,8 @@ let process_rst g file args seen tac_prods cmd_prods =
             warn "%s line %d: Repeated command: '%s'\n" file !linenum rhs;
           seen := { !seen with cmds = (NTMap.add rhs (file, !linenum) !seen.cmds)};
           fprintf new_rst "%s\n" line
-        | "insertgram" ->
-          process_insertgram line rhs
+        | "insertprodn" ->
+          process_insertprodn line rhs
         | _ -> fprintf new_rst "%s\n" line
       end else
         fprintf new_rst "%s\n" line;

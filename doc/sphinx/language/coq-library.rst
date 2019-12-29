@@ -95,25 +95,23 @@ Logic
 The basic library of |Coq| comes with the definitions of standard
 (intuitionistic) logical connectives (they are defined as inductive
 constructions). They are equipped with an appealing syntax enriching the
-subclass :token:`form` of the syntactic class :token:`term`. The syntax of
-:token:`form` is shown below:
+subclass :token:`form` of the syntactic class :token:`term`. The constructs
+for :production:`form` are:
 
-.. /!\ Please keep the blanks in the lines below, experimentally they produce
-   a nice last column. Or even better, find a proper way to do this!
-
-.. productionlist::
-   form : True                                           (True)
-        : False                                          (False)
-        : ~ `form`                                         (not)
-        : `form` /\ `form`                                   (and)
-        : `form` \/ `form`                                   (or)
-        : `form` -> `form`                                   (primitive implication)
-        : `form` <-> `form`                                  (iff)
-        : forall `ident` : `type`, `form`                      (primitive for all)
-        : exists `ident` [: `specif`], `form`                  (ex)
-        : exists2 `ident` [: `specif`], `form` & `form`          (ex2)
-        : `term` = `term`                                    (eq)
-        : `term` = `term` :> `specif`                          (eq)
+============================================== =======
+True                                           True
+False                                          False
+:n:`~ @form`                                   not
+:n:`@form /\ @form`                            and
+:n:`@form \/ @form`                            or
+:n:`@form -> @form`                            primitive implication
+:n:`@form <-> @form`                           iff
+:n:`forall @ident : @type, @form`              primitive for all
+:n:`exists @ident {? @specif}, @form`          ex
+:n:`exists2 @ident {? @specif}, @form & @form` ex2
+:n:`@term = @term`                             eq
+:n:`@term = @term :> @specif`                  eq
+============================================== =======
 
 .. note::
 
@@ -281,19 +279,20 @@ In the basic library, we find in ``Datatypes.v`` the definition
 of the basic data-types of programming,
 defined as inductive constructions over the sort ``Set``. Some of
 them come with a special syntax shown below (this syntax table is common with
-the next section :ref:`specification`):
+the next section :ref:`specification`).  The constructs for :production:`specif` are:
 
-.. productionlist::
-   specif :  `specif` * `specif`                           (prod)
-          : `specif` + `specif`                          (sum)
-          : `specif` + { `specif` }                      (sumor)
-          : { `specif` } + { `specif` }                  (sumbool)
-          : { `ident` : `specif` | `form` }              (sig)
-          : { `ident` : `specif` | `form` & `form` }       (sig2)
-          : { `ident` : `specif` & `specif` }             (sigT)
-          : { `ident` : `specif` & `specif` & `specif` }    (sigT2)
-  term : (`term`, `term`)                               (pair)
+============================================= =======
+:n:`@specif * @specif`                        prod
+:n:`@specif + @specif`                        sum
+:n:`@specif + { @specif }`                    sumor
+:n:`{ @specif } + { @specif }`                sumbool
+:n:`{ @ident : @specif | @form }`             sig
+:n:`{ @ident : @specif | @form & @form }`     sig2
+:n:`{ @ident : @specif & @specif }`           sigT
+:n:`{ @ident : @specif & @specif & @specif }` sigT2
+============================================= =======
 
+The notation for pairs (elements of type prod) is: :n:`(@term, @term)`
 
 Programming
 +++++++++++

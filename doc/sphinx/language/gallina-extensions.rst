@@ -155,19 +155,19 @@ available:
 
 .. _record_projections_grammar:
 
-  .. insertgram term_projection term_projection
+  .. insertprodn term_projection term_projection
 
-  .. productionlist:: coq
-     term_projection : `term0` .( `qualid` `args_opt` )
-                     : `term0` .( @ `qualid` `term1_list_opt` )
+  .. prodn::
+     term_projection ::= @term0 .( @qualid {* @arg } )
+     | @term0 .( @ @qualid {* @term1 } )
 
   Syntax of Record projections
 
 The corresponding grammar rules are given in the preceding grammar. When :token:`qualid`
-denotes a projection, the syntax :n:`@term.(@qualid)` is equivalent to :n:`@qualid @term`,
-the syntax :n:`@term.(@qualid {+ @arg })` to :n:`@qualid {+ @arg } @term`.
-and the syntax :n:`@term.(@@qualid {+ @term })` to :n:`@@qualid {+ @term } @term`.
-In each case, :token:`term` is the object projected and the
+denotes a projection, the syntax :n:`@term0.(@qualid)` is equivalent to :n:`@qualid @term0`,
+the syntax :n:`@term0.(@qualid {+ @arg })` to :n:`@qualid {+ @arg } @term0`.
+and the syntax :n:`@term0.(@@qualid {+ @term0 })` to :n:`@@qualid {+ @term0 } @term0`.
+In each case, :token:`term0` is the object projected and the
 other arguments are the parameters of the inductive type.
 
 
@@ -1878,27 +1878,16 @@ Controlling the insertion of implicit arguments not followed by explicit argumen
 Explicit applications
 ~~~~~~~~~~~~~~~~~~~~~
 
-In presence of non-strict or contextual argument, or in presence of
+In presence of non-strict or contextual arguments, or in presence of
 partial applications, the synthesis of implicit arguments may fail, so
-one may have to give explicitly certain implicit arguments of an
-application. The syntax for this is :n:`(@ident := @term)` where :token:`ident` is the
-name of the implicit argument and term is its corresponding explicit
-term. Alternatively, one can locally deactivate the hiding of implicit
-arguments of a function by using the notation :n:`@qualid {+ @term }`.
-This syntax extension is given in the following grammar:
+one may have to explicitly give certain implicit arguments of an
+application. Use the :n:`(@ident := @term)` form of :token:`arg` to do so,
+where :token:`ident` is the name of the implicit argument and :token:`term`
+is its corresponding explicit term. Alternatively, one can deactivate
+the hiding of implicit arguments for a single function application using the
+:n:`@ @qualid {? @univ_annot } {* @term1 }` form of :token:`term10`.
 
-.. _explicit_app_grammar:
-
-  .. productionlist:: explicit_apps
-       term     : @ `qualid` `term` … `term`
-                : @ `qualid`
-                : `qualid` `argument` … `argument`
-       argument : `term`
-                : (`ident` := `term`)
-
-  Syntax for explicitly giving implicit arguments
-
-.. example:: (continued)
+.. example:: Syntax for explicitly giving implicit arguments (continued)
 
     .. coqtop:: all
 
@@ -2319,17 +2308,13 @@ Printing universes
 Existential variables
 ---------------------
 
-.. insertgram term_evar evar_binding
+.. insertprodn term_evar evar_binding
 
-.. productionlist:: coq
-   term_evar : ?[ `ident` ]
-             : ?[ ?`ident` ]
-             : ?`ident` `evar_bindings_opt`
-   evar_bindings_opt : @{ `evar_bindings_semi` }
-                     : `empty`
-   evar_bindings_semi : `evar_bindings_semi` ; `evar_binding`
-                      : `evar_binding`
-   evar_binding : `ident` := `term`
+.. prodn::
+   term_evar ::= ?[ @ident ]
+   | ?[ ?@ident ]
+   | ?@ident {? @%{ {+; @evar_binding } %} }
+   evar_binding ::= @ident := @term
 
 |Coq| terms can include existential variables which represents unknown
 subterms to eventually be replaced by actual subterms.

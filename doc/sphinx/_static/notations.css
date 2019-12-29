@@ -10,6 +10,7 @@
 .notation {
     /* font-family: "Ubuntu Mono", "Consolas", monospace; */
     white-space: pre-wrap;
+    font-weight: bold;
 }
 
 .notation .notation-sup {
