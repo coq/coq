@@ -403,55 +403,60 @@ class TableObject(NotationObject):
 class ProductionObject(CoqObject):
     r"""A grammar production.
 
-    This is useful if you intend to document individual grammar productions.
-    Otherwise, use Sphinx's `production lists
+    Use prodn to document individual grammar productions instead of Sphinx
+    `production lists
     <http://www.sphinx-doc.org/en/stable/markup/para.html#directive-productionlist>`_.
 
-    Unlike ``.. productionlist``\ s, this directive accepts notation syntax.
-
-
-    Usage::
-
-       .. prodn:: token += production
-       .. prodn:: token ::= production
+    prodn displays multiple productions together with alignment similar to ``.. productionlist``,
+    i.e. displayed in 3 columns, however
+    unlike ``.. productionlist``\ s, this directive accepts notation syntax.
 
     Example::
 
-        .. prodn:: term += let: @pattern := @term in @term
         .. prodn:: occ_switch ::= { {? {| + | - } } {* @num } }
+        term += let: @pattern := @term in @term
+        | second_production
+
+       The first line defines "occ_switch", which must be unique in the document.  The second
+       references but doesn't define "term".  The third form is for continuing the
+       definition of a nonterminal when it has multiple productions.  It leaves the first
+       column in the output blank.
 
     """
     subdomain = "prodn"
     #annotation = "Grammar production"
+
+    # handle_signature is called for each line of input in the prodn::
+    # 'signatures' accumulates them in order to combine the lines into a single table:
+    signatures = None
 
     def _render_signature(self, signature, signode):
         raise NotImplementedError(self)
 
     SIG_ERROR = ("{}: Invalid syntax in ``.. prodn::`` directive"
                  + "\nExpected ``name ::= ...`` or ``name += ...``"
-                 + " (e.g. ``pattern += constr:(@ident)``)")
+                 + " (e.g. ``pattern += constr:(@ident)``)\n"
+                 + "  in `{}`")
 
     def handle_signature(self, signature, signode):
-        nsplits = 2
-        parts = signature.split(maxsplit=nsplits)
-        if len(parts) != 3:
-            loc = os.path.basename(get_node_location(signode))
-            raise ExtensionError(ProductionObject.SIG_ERROR.format(loc))
+        parts = signature.split(maxsplit=1)
+        if parts[0].strip() == "|" and len(parts) == 2:
+            lhs = ""
+            op = "|"
+            rhs = parts[1].strip()
+        else:
+            nsplits = 2
+            parts = signature.split(maxsplit=nsplits)
+            if len(parts) != 3:
+                loc = os.path.basename(get_node_location(signode))
+                raise ExtensionError(ProductionObject.SIG_ERROR.format(loc, signature))
+            else:
+                lhs, op, rhs = (part.strip() for part in parts)
+                if op not in ["::=", "+="]:
+                    loc = os.path.basename(get_node_location(signode))
+                    raise ExtensionError(ProductionObject.SIG_ERROR.format(loc, signature))
 
-        lhs, op, rhs = (part.strip() for part in parts)
-        if op not in ["::=", "+="]:
-            loc = os.path.basename(get_node_location(signode))
-            raise ExtensionError(ProductionObject.SIG_ERROR.format(loc))
-
-        self._render_annotation(signode)
-
-        lhs_op = '{} {} '.format(lhs, op)
-        lhs_node = nodes.literal(lhs_op, lhs_op)
-
-        position = self.state_machine.get_source_and_line(self.lineno)
-        rhs_node = notation_to_sphinx(rhs, *position)
-        signode += addnodes.desc_name(signature, '', lhs_node, rhs_node)
-
+        self.signatures.append((lhs, op, rhs))
         return ('token', lhs) if op == '::=' else None
 
     def _add_index_entry(self, name, target):
@@ -467,6 +472,49 @@ class ProductionObject(CoqObject):
         objects = env.domaindata['std']['objects']
         self._warn_if_duplicate_name(objects, name)
         objects[name] = env.docname, targetid
+
+    def run(self):
+        self.signatures = []
+        indexnode = super().run()[0]  # makes calls to handle_signature
+
+        table = nodes.inline(classes=['prodn-table'])
+        tgroup = nodes.inline(classes=['prodn-column-group'])
+        for i in range(3):
+            tgroup += nodes.inline(classes=['prodn-column'])
+        table += tgroup
+        tbody = nodes.inline(classes=['prodn-row-group'])
+        table += tbody
+
+        # create rows
+        for signature in self.signatures:
+            lhs, op, rhs = signature
+            position = self.state_machine.get_source_and_line(self.lineno)
+
+            row = nodes.inline(classes=['prodn-row'])
+            entry = nodes.inline(classes=['prodn-cell-nonterminal'])
+            if lhs != "":
+                target_name = 'grammar-token-' + lhs
+                target = nodes.target('', '', ids=[target_name], names=[target_name])
+                # putting prodn-target on the target node won't appear in the tex file
+                inline = nodes.inline(classes=['prodn-target'])
+                inline += target
+                entry += inline
+                entry += notation_to_sphinx('@'+lhs, *position)
+            else:
+                entry += nodes.literal('', '')
+            row += entry
+
+            entry = nodes.inline(classes=['prodn-cell-op'])
+            entry += nodes.literal(op, op)
+            row += entry
+
+            entry = nodes.inline(classes=['prodn-cell-production'])
+            entry += notation_to_sphinx(rhs, *position)
+            row += entry
+
+            tbody += row
+
+        return [indexnode, table] # only this node goes into the doc
 
 class ExceptionObject(NotationObject):
     """An error raised by a Coq command or tactic.

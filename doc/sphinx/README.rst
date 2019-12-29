@@ -143,22 +143,24 @@ Here is the list of all objects of the Coq domain (The symbol :black_nib: indica
           application of a tactic.
 
 ``.. prodn::`` A grammar production.
-    This is useful if you intend to document individual grammar productions.
-    Otherwise, use Sphinx's `production lists
+    Use prodn to document individual grammar productions instead of Sphinx
+    `production lists
     <http://www.sphinx-doc.org/en/stable/markup/para.html#directive-productionlist>`_.
 
-    Unlike ``.. productionlist``\ s, this directive accepts notation syntax.
-
-
-    Usage::
-
-       .. prodn:: token += production
-       .. prodn:: token ::= production
+    prodn displays multiple productions together with alignment similar to ``.. productionlist``,
+    i.e. displayed in 3 columns, however
+    unlike ``.. productionlist``\ s, this directive accepts notation syntax.
 
     Example::
 
-        .. prodn:: term += let: @pattern := @term in @term
         .. prodn:: occ_switch ::= { {? {| + | - } } {* @num } }
+        term += let: @pattern := @term in @term
+        | second_production
+
+       The first line defines "occ_switch", which must be unique in the document.  The second
+       references but doesn't define "term".  The third form is for continuing the
+       definition of a nonterminal when it has multiple productions.  It leaves the first
+       column in the output blank.
 
 ``.. table::`` :black_nib: A Coq table, i.e. a setting that is a set of values.
     Example::
