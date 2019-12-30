@@ -11,7 +11,7 @@
 
 Require Export BinNums.
 Require Import Eqdep_dec EqdepFacts RelationClasses Morphisms Setoid
- Equalities Orders OrdersFacts GenericMinMax Le Plus.
+ Equalities Orders OrdersFacts GenericMinMax PeanoNat.
 
 Require Export BinPosDef.
 
@@ -1799,17 +1799,17 @@ Proof.
  destruct a, b; simpl; try case compare_spec; simpl; auto.
  (* Lt *)
  intros LT LE p Hp1 Hp2. apply IHn; clear IHn; trivial.
- apply le_S_n in LE. eapply Le.le_trans; [|eapply LE].
- rewrite plus_comm, <- plus_n_Sm, <- plus_Sn_m.
- apply plus_le_compat; trivial.
+ apply le_S_n in LE. eapply Nat.le_trans; [|eapply LE].
+ rewrite Nat.add_comm, <- plus_n_Sm, <- plus_Sn_m.
+ apply Nat.add_le_mono; trivial.
  apply size_nat_monotone, sub_decr, LT.
  apply divide_xO_xI with a; trivial.
  apply (divide_add_cancel_l p _ a~1); trivial.
  now rewrite <- sub_xI_xI, sub_add.
  (* Gt *)
  intros LT LE p Hp1 Hp2. apply IHn; clear IHn; trivial.
- apply le_S_n in LE. eapply Le.le_trans; [|eapply LE].
- apply plus_le_compat; trivial.
+ apply le_S_n in LE. eapply Nat.le_trans; [|eapply LE].
+ apply Nat.add_le_mono; trivial.
  apply size_nat_monotone, sub_decr, LT.
  apply divide_xO_xI with b; trivial.
  apply (divide_add_cancel_l p _ b~1); trivial.
@@ -1828,12 +1828,14 @@ Proof.
  change (gcdn n a b)~0 with (2*(gcdn n a b)).
  apply divide_mul_r.
  apply IHn; clear IHn.
- apply le_S_n in LE. apply le_Sn_le. now rewrite plus_n_Sm.
+ apply le_S_n in LE. refine (Nat.le_trans _ _ _ _ LE).
+ apply Nat.add_le_mono_l; auto.
  apply divide_xO_xI with p; trivial. now exists 1.
  apply divide_xO_xI with p; trivial. now exists 1.
  apply divide_xO_xO.
  apply IHn; clear IHn.
- apply le_S_n in LE. apply le_Sn_le. now rewrite plus_n_Sm.
+ apply le_S_n in LE. refine (Nat.le_trans _ _ _ _ LE).
+ apply Nat.add_le_mono_l; auto.
  now apply divide_xO_xO.
  now apply divide_xO_xO.
  exists (gcdn n a b)~0. now rewrite mul_1_r.

@@ -122,7 +122,7 @@ Proof.
   specialize H0 with a0.
   repeat rewrite list_contents_app in *; simpl in *.
   destruct (eqA_dec a a0) as [Ha|Ha]; rewrite H in Ha;
-    decide (eqA_dec a' a0) with Ha; simpl; auto with arith.
+    decide (eqA_dec a' a0) with Ha; simpl; auto.
   do 2 rewrite <- plus_n_Sm; f_equal; auto.
 Qed.
 
@@ -135,7 +135,7 @@ Proof.
   generalize (H a0); clear H.
   do 4 rewrite list_contents_app.
   simpl.
-  destruct (eqA_dec a a0); simpl; auto with arith.
+  destruct (eqA_dec a a0); simpl; auto.
   do 2 rewrite <- plus_n_Sm; f_equal; auto.
 Qed.
 
@@ -170,8 +170,7 @@ Lemma permut_sym_app :
 Proof.
   intros l1 l2;
     unfold permutation, meq;
-	intro a; do 2 rewrite list_contents_app; simpl;
-	  auto with arith.
+        intro a; do 2 rewrite list_contents_app; simpl; lia.
 Qed.
 
 Lemma permut_rev :
@@ -248,7 +247,8 @@ Qed.
 Fact if_eqA_refl : forall a (B:Type)(b b':B),
  (if eqA_dec a a then b else b') = b.
 Proof.
-  intros; apply (decide_left (eqA_dec a a)); auto with *.
+  intros; apply (decide_left (eqA_dec a a)); auto.
+  reflexivity.
 Qed.
 
 (** PL: Inutilisable dans un rewrite sans un change prealable. *)
@@ -259,8 +259,8 @@ Proof.
  intros x x' Hxx' y y' Hyy'.
  intros; destruct (eqA_dec x y) as [H|H];
   destruct (eqA_dec x' y') as [H'|H']; auto.
- contradict H'; transitivity x; auto with *; transitivity y; auto with *.
- contradict H; transitivity x'; auto with *; transitivity y'; auto with *.
+ contradict H'; transitivity x; intuition; transitivity y; auto.
+ contradict H; transitivity x'; auto; transitivity y'; intuition.
 Qed.
 
 Fact if_eqA_rewrite_l : forall a1 a1' a2 (B:Type)(b b':B),
@@ -269,8 +269,8 @@ Fact if_eqA_rewrite_l : forall a1 a1' a2 (B:Type)(b b':B),
 Proof.
  intros; destruct (eqA_dec a1 a2) as [A1|A1];
   destruct (eqA_dec a1' a2) as [A1'|A1']; auto.
- contradict A1'; transitivity a1; eauto with *.
- contradict A1; transitivity a1'; eauto with *.
+ contradict A1'; transitivity a1; intuition.
+ contradict A1; transitivity a1'; auto.
 Qed.
 
 Fact if_eqA_rewrite_r : forall a1 a2 a2' (B:Type)(b b':B),
@@ -279,8 +279,8 @@ Fact if_eqA_rewrite_r : forall a1 a2 a2' (B:Type)(b b':B),
 Proof.
  intros; destruct (eqA_dec a1 a2) as [A2|A2];
   destruct (eqA_dec a1 a2') as [A2'|A2']; auto.
- contradict A2'; transitivity a2; eauto with *.
- contradict A2; transitivity a2'; eauto with *.
+ contradict A2'; transitivity a2; intuition.
+ contradict A2; transitivity a2'; intuition.
 Qed.
 
 
@@ -300,23 +300,23 @@ Proof.
   split; inversion 1.
   simpl.
   intros a'; split; intros H. inversion_clear H.
-  apply (decide_left (eqA_dec a a')); auto with *.
-  destruct (eqA_dec a a'); auto with *. simpl; rewrite <- IHl; auto.
-  destruct (eqA_dec a a'); auto with *. right. rewrite IHl; auto.
+  apply (decide_left (eqA_dec a a')); intuition.
+  destruct (eqA_dec a a'); intuition. simpl; rewrite <- IHl; auto.
+  destruct (eqA_dec a a'); intuition. right. rewrite IHl; auto.
 Qed.
 
 Lemma multiplicity_InA_O :
   forall l a, ~ InA eqA a l -> multiplicity (list_contents l) a = 0.
 Proof.
   intros l a; rewrite multiplicity_InA;
-    destruct (multiplicity (list_contents l) a); auto with arith.
-  destruct 1; auto with arith.
+    destruct (multiplicity (list_contents l) a); auto.
+  destruct 1; lia.
 Qed.
 
 Lemma multiplicity_InA_S :
   forall l a, InA eqA a l -> multiplicity (list_contents l) a >= 1.
 Proof.
-  intros l a; rewrite multiplicity_InA; auto with arith.
+  intros l a; rewrite multiplicity_InA; auto.
 Qed.
 
 Lemma multiplicity_NoDupA : forall l,
@@ -324,11 +324,11 @@ Lemma multiplicity_NoDupA : forall l,
 Proof.
   induction l.
   simpl.
-  split; auto with arith.
+  split; auto.
   split; simpl.
   inversion_clear 1.
   rewrite IHl in H1.
-  intros; destruct (eqA_dec a a0) as [EQ|NEQ]; simpl; auto with *.
+  intros; destruct (eqA_dec a a0) as [EQ|NEQ]; simpl; auto.
   rewrite <- EQ.
   rewrite multiplicity_InA_O; auto.
   intros; constructor.
@@ -353,7 +353,7 @@ Qed.
 Lemma permut_cons_InA :
   forall l1 l2 e, permutation (e :: l1) l2 -> InA eqA e l2.
 Proof.
-  intros; apply (permut_InA_InA (e:=e) H); auto with *.
+  intros; apply (permut_InA_InA (e:=e) H); intuition.
 Qed.
 
 (** Permutation of an empty list. *)
@@ -361,7 +361,7 @@ Lemma permut_nil :
   forall l, permutation l [] -> l = [].
 Proof.
   intro l; destruct l as [ | e l ]; trivial.
-  assert (InA eqA e (e::l)) by (auto with *).
+  assert (InA eqA e (e::l)) by (intuition).
   intro Abs; generalize (permut_InA_InA Abs H).
   inversion 1.
 Qed.
@@ -466,8 +466,8 @@ Proof.
   intros; f_equal; auto.
   destruct (eqB_dec (f b) a0) as [H2|H2];
     destruct (eqB_dec (f a) a0) as [H3|H3]; auto.
-  destruct H3; transitivity (f b); auto with *.
-  destruct H2; transitivity (f a); auto with *.
+  destruct H3; transitivity (f b); auto.
+  destruct H2; transitivity (f a); intuition.
   apply permut_add_cons_inside.
   rewrite <- map_app.
   apply IHl1; auto.

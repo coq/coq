@@ -187,5 +187,6 @@ Hint Immediate lt_plus_trans : arith.
 Hint Resolve plus_lt_compat_l plus_lt_compat_r : arith.
 
 (** For compatibility, we "Require" the same files as before *)
-
+(*
 Require Import Le Lt.
+*)

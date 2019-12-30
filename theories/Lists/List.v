@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Setoid.
-Require Import PeanoNat Le Gt Minus Bool Lt.
+Require Import PeanoNat Bool.
 
 Set Implicit Arguments.
 (* Set Universe Polymorphism. *)
@@ -326,13 +326,17 @@ Section Facts.
     intros l l1 l2; revert l1 l2 l.
     induction l1 as [ | x1 l1]; destruct l2 as [ | x2 l2];
      simpl; auto; intros l H.
-    absurd (length (x2 :: l2 ++ l) <= length l).
-    simpl; rewrite app_length; auto with arith.
-    rewrite <- H; auto with arith.
-    absurd (length (x1 :: l1 ++ l) <= length l).
-    simpl; rewrite app_length; auto with arith.
-    rewrite H; auto with arith.
-    injection H as [= H H0]; f_equal; eauto.
+    - absurd (length (x2 :: l2 ++ l) = length l).
+      + simpl; rewrite app_length.
+        intros Heq; symmetry in Heq.
+        apply (Nat.succ_add_discr _ _ Heq).
+      + rewrite <- H; reflexivity.
+    - absurd (length (x1 :: l1 ++ l) = length l).
+      + simpl; rewrite app_length.
+        intros Heq; symmetry in Heq.
+        apply (Nat.succ_add_discr _ _ Heq).
+      + rewrite H; reflexivity.
+    - injection H as [= H H0]; f_equal; eauto.
   Qed.
 
 End Facts.
@@ -417,8 +421,8 @@ Section Elts.
     unfold lt; induction n as [| n hn]; simpl.
     - destruct l; simpl; [ inversion 2 | auto ].
     - destruct l; simpl.
-      * inversion 2.
-      * intros d ie; right; apply hn; auto with arith.
+      + inversion 2.
+      + intros d ie; right; apply hn. now apply Nat.succ_le_mono.
   Qed.
 
   Lemma In_nth l x d : In x l ->
@@ -427,16 +431,16 @@ Section Elts.
     induction l as [|a l IH].
     - easy.
     - intros [H|H].
-      * subst; exists 0; simpl; auto with arith.
-      * destruct (IH H) as (n & Hn & Hn').
-        exists (S n); simpl; auto with arith.
+      + subst; exists 0; simpl; split; [ apply Nat.lt_0_succ | reflexivity ].
+      + destruct (IH H) as (n & Hn & Hn').
+        exists (S n); simpl; split; [ apply Nat.succ_lt_mono in Hn | ]; assumption.
   Qed.
 
   Lemma nth_overflow : forall l n d, length l <= n -> nth n l d = d.
   Proof.
     induction l; destruct n; simpl; intros; auto.
     - inversion H.
-    - apply IHl; auto with arith.
+    - apply IHl; now apply Nat.succ_le_mono.
   Qed.
 
   Lemma nth_indep :
@@ -444,7 +448,8 @@ Section Elts.
   Proof.
     induction l.
     - inversion 1.
-    - intros [|n] d d'; simpl; auto with arith.
+    - intros [|n] d d'; simpl; intros; [ reflexivity | ].
+      now apply IHl, Nat.succ_lt_mono.
   Qed.
 
   Lemma app_nth1 :
@@ -452,7 +457,8 @@ Section Elts.
   Proof.
     induction l.
     - inversion 1.
-    - intros l' d [|n]; simpl; auto with arith.
+    - intros l' d [|n]; simpl; intros; [ reflexivity | ].
+      now apply IHl, Nat.succ_lt_mono.
   Qed.
 
   Lemma app_nth2 :
@@ -460,7 +466,7 @@ Section Elts.
   Proof.
     induction l; intros l' d [|n]; auto.
     - inversion 1.
-    - intros; simpl; rewrite IHl; auto with arith.
+    - simpl; intros; rewrite IHl; [ reflexivity | now apply Nat.succ_le_mono ].
   Qed.
 
   Lemma nth_split n l d : n < length l ->
@@ -469,8 +475,9 @@ Section Elts.
     revert l.
     induction n as [|n IH]; intros [|a l] H; try easy.
     - exists nil; exists l; now simpl.
-    - destruct (IH l) as (l1 & l2 & Hl & Hl1); auto with arith.
-      exists (a::l1); exists l2; simpl; split; now f_equal.
+    - destruct (IH l) as (l1 & l2 & Hl & Hl1).
+      + simpl in H; now apply Nat.succ_lt_mono.
+      + exists (a::l1); exists l2; simpl; split; now f_equal.
   Qed.
 
   (** Results about [nth_error] *)
@@ -487,18 +494,17 @@ Section Elts.
     induction l as [|a l IH].
     - easy.
     - intros [H|H].
-      * subst; exists 0; simpl; auto with arith.
+      * subst; exists 0; reflexivity.
       * destruct (IH H) as (n,Hn).
-        exists (S n); simpl; auto with arith.
+        exists (S n); simpl; assumption.
   Qed.
 
   Lemma nth_error_None l n : nth_error l n = None <-> length l <= n.
   Proof.
-    revert n. induction l; destruct n; simpl.
-    - split; auto.
-    - split; auto with arith.
-    - split; now auto with arith.
-    - rewrite IHl; split; auto with arith.
+    revert n. induction l; destruct n; simpl; split; intros; auto; try now inversion H.
+    - apply Nat.lt_le_incl, Nat.lt_0_succ.
+    - now apply IHl, Nat.succ_le_mono in H.
+    - now apply IHl, Nat.succ_le_mono.
   Qed.
 
   Lemma nth_error_Some l n : nth_error l n <> None <-> n < length l.
@@ -506,8 +512,10 @@ Section Elts.
    revert n. induction l; destruct n; simpl.
     - split; [now destruct 1 | inversion 1].
     - split; [now destruct 1 | inversion 1].
-    - split; now auto with arith.
-    - rewrite IHl; split; auto with arith.
+    - split; intros _.
+      + apply Nat.lt_0_succ.
+      + intros Heq; inversion Heq.
+    - rewrite IHl; apply Nat.succ_le_mono.
   Qed.
 
   Lemma nth_error_split l n a : nth_error l n = Some a ->
@@ -525,7 +533,7 @@ Section Elts.
   Proof.
     revert l.
     induction n; intros [|a l] H; auto; try solve [inversion H].
-    simpl in *. apply IHn. auto with arith.
+    simpl in *. apply IHn. now apply Nat.succ_lt_mono in H.
   Qed.
 
   Lemma nth_error_app2 l l' n : length l <= n ->
@@ -533,7 +541,7 @@ Section Elts.
   Proof.
     revert l.
     induction n; intros [|a l] H; auto; try solve [inversion H].
-    simpl in *. apply IHn. auto with arith.
+    simpl in *. apply IHn. now apply Nat.succ_le_mono in H.
   Qed.
 
   (** Results directly relating [nth] and [nth_error] *)
@@ -655,8 +663,9 @@ Section Elts.
   Theorem count_occ_In l x : In x l <-> count_occ l x > 0.
   Proof.
     induction l as [|y l]; simpl.
-    - split; [destruct 1 | apply gt_irrefl].
+    - split; [destruct 1 | apply Nat.lt_irrefl].
     - destruct eq_dec as [->|Hneq]; rewrite IHl; intuition.
+      apply Nat.lt_0_succ.
   Qed.
 
   Theorem count_occ_not_In l x : ~ In x l <-> count_occ l x = 0.
@@ -771,23 +780,19 @@ Section ListOps.
   Lemma rev_nth : forall l d n,  n < length l ->
     nth n (rev l) d = nth (length l - S n) l d.
   Proof.
-    induction l.
-    intros; inversion H.
-    intros.
+    induction l; intros; [ inversion H | ].
     simpl in H.
     simpl (rev (a :: l)).
     simpl (length (a :: l) - S n).
     inversion H.
-    rewrite <- minus_n_n; simpl.
-    rewrite <- rev_length.
-    rewrite app_nth2; auto.
-    rewrite <- minus_n_n; auto.
-    rewrite app_nth1; auto.
-    rewrite (minus_plus_simpl_l_reverse (length l) n 1).
-    replace (1 + length l) with (S (length l)); auto with arith.
-    rewrite <- minus_Sn_m; auto with arith.
-    apply IHl ; auto with arith.
-    rewrite rev_length; auto.
+    - rewrite Nat.sub_diag; simpl.
+      rewrite <- rev_length, app_nth2 by auto.
+      rewrite Nat.sub_diag; auto.
+    - rewrite app_nth1; auto.
+      + change (length l - n) with (S (length l) - S n).
+        rewrite Nat.sub_succ_l by assumption.
+        apply IHl; auto.
+      + rewrite rev_length; auto.
   Qed.
 
 
@@ -1091,7 +1096,7 @@ Proof.
   enough (H : forall n, fold_left (fun x _ => S x) l n = n + length l) by exact (H 0).
   induction l; simpl; auto.
   intros; rewrite IHl.
-  simpl; auto with arith.
+  simpl; auto.
 Qed.
 
 (************************************)
@@ -1192,7 +1197,8 @@ End Fold_Right_Recursor.
       simpl; intros.
       destruct (orb_false_elim _ _ H0); clear H0; auto.
       destruct n ; auto.
-      rewrite IHl; auto with arith.
+      rewrite IHl; auto.
+      now apply Nat.succ_lt_mono.
     Qed.
 
     Lemma existsb_app : forall l1 l2,
@@ -1601,37 +1607,37 @@ Section length_order.
 
   Lemma lel_refl : lel l l.
   Proof.
-    unfold lel; auto with arith.
+    unfold lel; auto.
   Qed.
 
   Lemma lel_trans : lel l m -> lel m n -> lel l n.
   Proof.
     unfold lel; intros.
     now_show (length l <= length n).
-    apply le_trans with (length m); auto with arith.
+    apply Nat.le_trans with (length m); auto.
   Qed.
 
   Lemma lel_cons_cons : lel l m -> lel (a :: l) (b :: m).
   Proof.
-    unfold lel; simpl; auto with arith.
+    unfold lel; simpl; apply Nat.succ_le_mono.
   Qed.
 
   Lemma lel_cons : lel l m -> lel l (b :: m).
   Proof.
-    unfold lel; simpl; auto with arith.
+    unfold lel; simpl; auto.
   Qed.
 
   Lemma lel_tail : lel (a :: l) (b :: m) -> lel l m.
   Proof.
-    unfold lel; simpl; auto with arith.
+    unfold lel; simpl; apply Nat.succ_le_mono.
   Qed.
 
   Lemma lel_nil : forall l':list A, lel l' nil -> nil = l'.
   Proof.
-    intro l'; elim l'; auto with arith.
+    intro l'; elim l'; auto.
     intros a' y H H0.
     now_show (nil = a' :: y).
-    absurd (S (length y) <= 0); auto with arith.
+    now simpl in H0; apply Nat.nle_succ_0 in H0.
   Qed.
 End length_order.
 
@@ -1749,17 +1755,17 @@ Section Cutting.
   Lemma firstn_le_length n: forall l:list A, length (firstn n l) <= n.
   Proof.
     induction n as [|k iHk]; simpl; [auto | destruct l as [|x xs]; simpl].
-    - auto with arith.
+    - apply Nat.lt_le_incl, Nat.lt_0_succ.
     - apply Peano.le_n_S, iHk.
   Qed.
 
   Lemma firstn_length_le: forall l:list A, forall n:nat,
     n <= length l -> length (firstn n l) = n.
   Proof. induction l as [|x xs Hrec].
-    - simpl. intros n H. apply le_n_0_eq in H. rewrite <- H. now simpl.
+    - simpl. intros n H. apply Nat.le_0_r in H; subst; now simpl.
     - destruct n.
-      * now simpl.
-      * simpl. intro H. apply le_S_n in H. now rewrite (Hrec n H).
+      + now simpl.
+      + simpl. intro H. apply le_S_n in H. now rewrite (Hrec n H).
   Qed.
 
   Lemma firstn_app n:
@@ -1768,8 +1774,8 @@ Section Cutting.
   Proof. induction n as [|k iHk]; intros l1 l2.
     - now simpl.
     - destruct l1 as [|x xs].
-      * unfold firstn at 2, length. now rewrite 2!app_nil_l, <- minus_n_O.
-      * rewrite <- app_comm_cons. simpl. f_equal. apply iHk.
+      + unfold firstn at 2, length. now rewrite 2!app_nil_l.
+      + rewrite <- app_comm_cons. simpl. f_equal. apply iHk.
   Qed.
 
   Lemma firstn_app_2 n:
@@ -1777,13 +1783,12 @@ Section Cutting.
     firstn ((length l1) + n) (l1 ++ l2) = l1 ++ firstn n l2.
   Proof. induction n as [| k iHk];intros l1 l2.
     - unfold firstn at 2. rewrite <- plus_n_O, app_nil_r.
-      rewrite firstn_app. rewrite <- minus_diag_reverse.
+      rewrite firstn_app. rewrite Nat.sub_diag.
       unfold firstn at 2. rewrite app_nil_r. apply firstn_all.
     - destruct l2 as [|x xs].
-      * simpl. rewrite app_nil_r. apply firstn_all2. auto with arith.
-      * rewrite firstn_app. assert (H0 : (length l1 + S k - length l1) = S k).
-        auto with arith.
-        rewrite H0, firstn_all2; [reflexivity | auto with arith].
+      + simpl. rewrite app_nil_r. apply firstn_all2, Nat.le_add_r.
+      + rewrite firstn_app, Nat.add_comm, Nat.add_sub, firstn_all2; [reflexivity | ].
+        rewrite Nat.add_comm; apply Nat.le_add_r.
   Qed.
 
   Lemma firstn_firstn:
@@ -1793,10 +1798,10 @@ Section Cutting.
   Proof. induction l as [|x xs Hl].
     - intros. simpl. now rewrite ?firstn_nil.
     - destruct i.
-      * intro. now simpl.
-      * destruct j.
-        + now simpl.
-        + simpl. f_equal. apply Hl.
+      + intro. now simpl.
+      + destruct j.
+        * now simpl.
+        * simpl. f_equal. apply Hl.
   Qed.
 
   Fixpoint skipn (n:nat)(l:list A) : list A :=
@@ -1885,45 +1890,36 @@ Section Cutting.
     destruct (Nat.le_ge_cases (length (rev l)) x) as [L | L].
     - rewrite skipn_all2; [apply Nat.sub_0_le in L | trivial].
       now rewrite L, Nat.sub_0_r, skipn_none.
-    - replace (length (rev l) - (length (rev l) - x))
-         with (length (rev l) + x - length (rev l)).
-      rewrite minus_plus. reflexivity.
-      rewrite <- (Nat.sub_add _ _ L) at 2.
-      now rewrite <-!(Nat.add_comm x), <-minus_plus_simpl_l_reverse.
+    - replace (length (rev l) - (length (rev l) - x)) with x; [ reflexivity | ].
+      rewrite Nat.add_sub_eq_l with (p:=x); [ reflexivity | ].
+      now rewrite Nat.sub_add.
   Qed.
 
    Lemma removelast_firstn : forall n l, n < length l ->
      removelast (firstn (S n) l) = firstn n l.
    Proof.
-     induction n; destruct l.
-     simpl; auto.
-     simpl; auto.
-     simpl; auto.
+     induction n; destruct l; try now (simpl; auto).
      intros.
      simpl in H.
      change (firstn (S (S n)) (a::l)) with ((a::nil)++firstn (S n) l).
      change (firstn (S n) (a::l)) with (a::firstn n l).
      rewrite removelast_app.
-     rewrite IHn; auto with arith.
-
-     clear IHn; destruct l; simpl in *; try discriminate.
-     inversion_clear H.
-     inversion_clear H0.
+     - rewrite IHn; [ reflexivity | now apply Nat.succ_lt_mono ].
+     - clear IHn; destruct l; simpl in *; try discriminate.
+       inversion_clear H.
+       inversion_clear H0.
    Qed.
 
    Lemma firstn_removelast : forall n l, n < length l ->
      firstn n (removelast l) = firstn n l.
    Proof.
-     induction n; destruct l.
-     simpl; auto.
-     simpl; auto.
-     simpl; auto.
+     induction n; destruct l; try now (simpl; auto).
      intros.
      simpl in H.
      change (removelast (a :: l)) with (removelast ((a::nil)++l)).
      rewrite removelast_app.
-     simpl; f_equal; auto with arith.
-     intro H0; rewrite H0 in H; inversion_clear H; inversion_clear H1.
+     - simpl; f_equal. apply IHn, Nat.succ_lt_mono; assumption.
+     - intro H0; rewrite H0 in H; inversion_clear H; inversion_clear H1.
    Qed.
 
 End Cutting.
@@ -2014,7 +2010,7 @@ Section Add.
 
   Lemma Add_length a l l' : Add a l l' -> length l' = S (length l).
   Proof.
-   induction 1; simpl; auto with arith.
+   induction 1; simpl; auto.
   Qed.
 
   Lemma Add_inv a l : In a l -> exists l', Add a l' l.
@@ -2169,13 +2165,13 @@ Section ReDun.
       - destruct i, j; simpl in *; auto.
         * elim Hal. eapply nth_error_In; eauto.
         * elim Hal. eapply nth_error_In; eauto.
-        * f_equal. apply IH; auto with arith. }
+        * f_equal. apply IH; auto. now apply Nat.succ_lt_mono. }
     { induction l as [|a l]; intros H; constructor.
       * intro Ha. apply In_nth_error in Ha. destruct Ha as (n,Hn).
         assert (n < length l) by (now rewrite <- nth_error_Some, Hn).
-        specialize (H 0 (S n)). simpl in H. discriminate H; auto with arith.
+        specialize (H 0 (S n)). simpl in H. discriminate H; auto. apply Nat.lt_0_succ.
       * apply IHl.
-        intros i j Hi E. apply eq_add_S, H; simpl; auto with arith. }
+        intros i j Hi E. apply eq_add_S, H; simpl; auto. now apply Nat.succ_lt_mono in Hi. }
   Qed.
 
   Lemma NoDup_nth l d :
@@ -2187,14 +2183,18 @@ Section ReDun.
     { intros H; induction H as [|a l Hal Hl IH]; intros i j Hi Hj E.
       - inversion Hi.
       - destruct i, j; simpl in *; auto.
-        * elim Hal. subst a. apply nth_In; auto with arith.
-        * elim Hal. subst a. apply nth_In; auto with arith.
-        * f_equal. apply IH; auto with arith. }
+        + elim Hal. subst a. apply nth_In. now apply Nat.succ_lt_mono.
+        + elim Hal. subst a. apply nth_In; auto. now apply Nat.succ_lt_mono.
+        + f_equal. apply IH; auto; now apply Nat.succ_lt_mono. }
     { induction l as [|a l]; intros H; constructor.
-      * intro Ha. eapply In_nth in Ha. destruct Ha as (n & Hn & Hn').
-        specialize (H 0 (S n)). simpl in H. discriminate H; eauto with arith.
-      * apply IHl.
-        intros i j Hi Hj E. apply eq_add_S, H; simpl; auto with arith. }
+      - intro Ha. eapply In_nth in Ha. destruct Ha as (n & Hn & Hn').
+        specialize (H 0 (S n)). simpl in H. discriminate H; eauto.
+        + apply Nat.lt_0_succ.
+        + now apply Nat.succ_lt_mono in Hn.
+      - apply IHl.
+        intros i j Hi Hj E. apply eq_add_S, H; simpl; auto.
+        + now apply Nat.succ_lt_mono in Hi.
+        + now apply Nat.succ_lt_mono in Hj. }
   Qed.
 
   (** Having [NoDup] hypotheses bring more precise facts about [incl]. *)
@@ -2203,7 +2203,7 @@ Section ReDun.
     NoDup l -> incl l l' -> length l <= length l'.
   Proof.
    intros N. revert l'. induction N as [|a l Hal N IH]; simpl.
-   - auto with arith.
+   - intros; apply Nat.le_0_l.
    - intros l' H.
      destruct (Add_inv a l') as (l'', AD). { apply H; simpl; auto. }
      rewrite (Add_length AD). apply le_n_S. apply IH.
@@ -2264,8 +2264,8 @@ Section NatSeq.
     inversion H.
     simpl seq.
     destruct n; simpl.
-    auto with arith.
-    rewrite IHlen;simpl; auto with arith.
+    auto.
+    rewrite IHlen; simpl; auto. now apply Nat.succ_lt_mono.
   Qed.
 
   Lemma seq_shift : forall len start,
@@ -2274,7 +2274,7 @@ Section NatSeq.
     induction len; simpl; auto.
     intros.
     rewrite IHlen.
-    auto with arith.
+    auto.
   Qed.
 
   Lemma in_seq len start n :
@@ -2282,16 +2282,18 @@ Section NatSeq.
   Proof.
    revert start. induction len; simpl; intros.
    - rewrite <- plus_n_O. split;[easy|].
-     intros (H,H'). apply (Lt.lt_irrefl _ (Lt.le_lt_trans _ _ _ H H')).
+     intros (H,H'). apply (Nat.lt_irrefl _ (Nat.le_lt_trans _ _ _ H H')).
    - rewrite IHlen, <- plus_n_Sm; simpl; split.
-     * intros [H|H]; subst; intuition auto with arith.
-     * intros (H,H'). destruct (Lt.le_lt_or_eq _ _ H); intuition.
+     + intros [H|H]; subst; intuition.
+       * rewrite <- Nat.add_succ_l; apply Nat.lt_lt_add_r, Nat.lt_succ_r; reflexivity.
+       * transitivity (S start); auto.
+     + intros (H,H'). destruct (proj1 (Nat.lt_eq_cases _ _) H); intuition.
   Qed.
 
   Lemma seq_NoDup len start : NoDup (seq start len).
   Proof.
    revert start; induction len; simpl; constructor; trivial.
-   rewrite in_seq. intros (H,_). apply (Lt.lt_irrefl _ H).
+   rewrite in_seq. intros (H,_). apply (Nat.lt_irrefl _ H).
   Qed.
 
   Lemma seq_app : forall len1 len2 start,
@@ -2342,10 +2344,10 @@ Section Exists_Forall.
       intro Pdec. induction l as [|a l' Hrec].
       - right. abstract now rewrite Exists_nil.
       - destruct Hrec as [Hl'|Hl'].
-        * left. now apply Exists_cons_tl.
-        * destruct (Pdec a) as [Ha|Ha].
-          + left. now apply Exists_cons_hd.
-          + right. abstract now inversion 1.
+        + left. now apply Exists_cons_tl.
+        + destruct (Pdec a) as [Ha|Ha].
+          * left. now apply Exists_cons_hd.
+          * right. abstract now inversion 1.
     Defined.
 
     Inductive Forall : list A -> Prop :=
@@ -2388,8 +2390,8 @@ Section Exists_Forall.
 
   End One_predicate.
 
-  Theorem Forall_inv_tail
-    :  forall (P : A -> Prop) (x0 : A) (xs : list A), Forall P (x0 :: xs) -> Forall P xs.
+  Theorem Forall_inv_tail :
+    forall (P : A -> Prop) (x0 : A) (xs : list A), Forall P (x0 :: xs) -> Forall P xs.
   Proof.
     intros P x0 xs H.
     apply Forall_forall with (l := xs).
@@ -2405,8 +2407,8 @@ Section Exists_Forall.
     apply (H1 x H2).
   Qed.
 
-  Theorem Exists_impl
-    :  forall (P Q : A -> Prop), (forall x : A, P x -> Q x) -> forall xs : list A, Exists P xs -> Exists Q xs.
+  Theorem Exists_impl :
+    forall (P Q : A -> Prop), (forall x : A, P x -> Q x) -> forall xs, Exists P xs -> Exists Q xs.
   Proof.
     intros P Q H xs H0.
     induction H0.

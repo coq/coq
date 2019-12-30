@@ -16,7 +16,7 @@ Notation not_eq_sym := not_eq_sym (only parsing).
 
 Implicit Types m n p q : nat.
 
-Require Import Arith_base.
+Require Import PeanoNat.
 Require Import Peano_dec.
 Require Import Compare_dec.
 
@@ -33,23 +33,24 @@ Lemma le_decide : forall n m, n <= m -> lt_or_eq n m.
 Proof le_lt_eq_dec.
 
 Lemma le_le_S_eq : forall n m, n <= m -> S n <= m \/ n = m.
-Proof le_lt_or_eq.
+Proof. apply Nat.lt_eq_cases. Qed.
 
 (* By special request of G. Kahn - Used in Group Theory *)
 Lemma discrete_nat :
   forall n m, n < m -> S n = m \/ (exists r : nat, m = S (S (n + r))).
 Proof.
   intros m n H.
-  lapply (lt_le_S m n); auto with arith.
-  intro H'; lapply (le_lt_or_eq (S m) n); auto with arith.
-  induction 1; auto with arith.
-  right; exists (n - S (S m)); simpl.
-  rewrite (plus_comm m (n - S (S m))).
-  rewrite (plus_n_Sm (n - S (S m)) m).
-  rewrite (plus_n_Sm (n - S (S m)) (S m)).
-  rewrite (plus_comm (n - S (S m)) (S (S m))); auto with arith.
+  inversion H as [ | k H1 H2 ]; auto; subst.
+  right; exists (S k - S (S m)).
+  rewrite (Nat.add_comm m (S k - S (S m))).
+  rewrite (plus_n_Sm (S k - S (S m)) m).
+  rewrite (plus_n_Sm (S k - S (S m)) (S m)).
+  rewrite Nat.sub_add; auto.
+  now apply Nat.succ_le_mono in H1.
 Qed.
 
 Require Export Wf_nat.
 
+(*
 Require Export Min Max.
+*)

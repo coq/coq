@@ -234,8 +234,7 @@ Open Scope Z_scope.
   simpl Zgcd_bound in *.
   remember (Pos.size_nat a+Pos.size_nat a)%nat as m.
   assert (1 < m)%nat.
-  { rewrite Heqm; destruct a; simpl; rewrite 1?plus_comm;
-    auto with arith. }
+  { rewrite Heqm; destruct a; simpl; rewrite 1?plus_comm; lia. }
   destruct m as [ |m]; [inversion H0; auto| ].
   destruct n as [ |n]; [inversion H; auto| ].
   simpl Zgcdn.

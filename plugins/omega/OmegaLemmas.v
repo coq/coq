@@ -180,7 +180,7 @@ Qed.
 Lemma OMEGA20 x y z : Zne x 0 -> y = 0 -> Zne (x + y * z) 0.
 Proof.
  unfold Zne, not. intros H1 H2 H3; apply H1; rewrite H2 in H3;
- simpl in H3; rewrite Z.add_0_r in H3; trivial with arith.
+ simpl in H3; rewrite Z.add_0_r in H3; trivial.
 Qed.
 
 Definition fast_Zplus_comm (x y : Z) (P : Z -> Prop)

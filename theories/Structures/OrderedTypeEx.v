@@ -9,10 +9,10 @@
 (************************************************************************)
 
 Require Import OrderedType.
-Require Import ZArith_base.
-Require Import PeanoNat.
+Require Import BinInt.
+Require Import PeanoNat Peano_dec.
 Require Import Ascii String.
-Require Import NArith Ndec.
+Require Import BinNat.
 Require Import Compare_dec.
 
 (** * Examples of Ordered Type structures. *)
@@ -51,7 +51,7 @@ Module Nat_as_OT <: UsualOrderedType.
   Definition lt := lt.
 
   Lemma lt_trans : forall x y z : t, lt x y -> lt y z -> lt x z.
-  Proof. unfold lt; intros; apply lt_trans with y; auto. Qed.
+  Proof. unfold lt; intros; apply Nat.lt_trans with y; auto. Qed.
 
   Lemma lt_not_eq : forall x y : t, lt x y -> ~ eq x y.
   Proof. unfold lt, eq; intros ? ? LT ->; revert LT; apply Nat.lt_irrefl. Qed.
@@ -350,7 +350,7 @@ Module String_as_OT <: UsualOrderedType.
   Proof.
     intro H; inversion H; subst; auto.
     remember (nat_of_ascii a) as x.
-    apply lt_irrefl in H1; inversion H1.
+    apply Nat.lt_irrefl in H1; inversion H1.
   Qed.
 
   Lemma lt_trans : forall x y z : t, lt x y -> lt y z -> lt x z.
@@ -363,7 +363,7 @@ Module String_as_OT <: UsualOrderedType.
       + constructor. eapply IHx; eauto.
       + constructor; assumption.
       + constructor; assumption.
-      + constructor. eapply lt_trans; eassumption.
+      + constructor. eapply Nat.lt_trans; eassumption.
   Qed.
 
   Lemma lt_not_eq : forall x y : t, lt x y -> ~ eq x y.

@@ -73,7 +73,7 @@ Qed.
 
 Lemma is_pos p : 0 < to_nat p.
 Proof.
- destruct (is_succ p) as (n,->). auto with arith.
+ destruct (is_succ p) as (n,->). apply Nat.lt_0_succ.
 Qed.
 
 (** [Pos.to_nat] is a bijection between [positive] and

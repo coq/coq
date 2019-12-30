@@ -978,10 +978,11 @@ Proof.
  specialize (Hf acc).
  destruct (f acc) as (t1,acc1).
  destruct Hf as (Hf1,Hf2).
-  { transitivity size; trivial. subst. auto with arith. }
+  { transitivity size; trivial. subst. rewrite plus_n_Sm. apply Nat.le_add_r. }
  destruct acc1 as [|x acc1].
   { exfalso. revert LE. apply Nat.lt_nge. subst.
-    rewrite app_nil_r, <- elements_cardinal; auto with arith. }
+    rewrite app_nil_r, <- elements_cardinal.
+    apply (Nat.succ_le_mono (cardinal t1)), Nat.le_add_r. }
  specialize (Hg acc1).
  destruct (g acc1) as (t2,acc2).
  destruct Hg as (Hg1,Hg2).
@@ -1547,7 +1548,7 @@ Proof.
  - simpl. rewrite <- Nat.succ_le_mono.
    apply Nat.max_lub; eapply Nat.le_trans; eauto;
    [destree l | destree r]; simpl;
-   rewrite !Nat.add_0_r, ?Nat.add_1_r; auto with arith.
+   rewrite !Nat.add_0_r, ?Nat.add_1_r, ?Nat.add_succ_r; auto.
 Qed.
 
 Lemma rb_mindepth s n : rbt n s -> n + redcarac s <= mindepth s.
@@ -1560,7 +1561,11 @@ Proof.
    replace (redcarac r) with 0 in * by now destree r.
    now apply Nat.min_glb.
  - apply -> Nat.succ_le_mono. rewrite Nat.add_0_r.
-   apply Nat.min_glb; eauto with arith.
+   apply Nat.min_glb.
+   + refine (Nat.le_trans _ _ _ _ IHrbt1).
+     apply Nat.le_add_r.
+   + refine (Nat.le_trans _ _ _ _ IHrbt2).
+     apply Nat.le_add_r.
 Qed.
 
 Lemma maxdepth_upperbound s : Rbt s ->
@@ -1571,7 +1576,7 @@ Proof.
  transitivity (2*(n+redcarac s)).
  - rewrite Nat.mul_add_distr_l. apply Nat.add_le_mono_l.
    rewrite <- Nat.mul_1_l at 1. apply Nat.mul_le_mono_r.
-   auto with arith.
+   auto.
  - apply Nat.mul_le_mono_l.
    transitivity (mindepth s).
    + now apply rb_mindepth.
@@ -1812,10 +1817,12 @@ Proof.
  unfold treeify_cont.
  specialize (Hf acc).
  destruct (f acc) as (l, acc1). simpl in *.
- destruct Hf as (Hf1, Hf2). { subst. eauto with arith. }
+ destruct Hf as (Hf1, Hf2).
+ { subst. refine (Nat.le_trans _ _ _ _ Hacc).
+   rewrite plus_n_Sm. apply Nat.le_add_r. }
  destruct acc1 as [|x acc2]; simpl in *.
  - exfalso. revert Hacc. apply Nat.lt_nge. rewrite H, <- Hf2.
-   auto with arith.
+   rewrite <- plus_n_O. apply (Nat.succ_le_mono size1), Nat.le_add_r.
  - specialize (Hg acc2).
    destruct (g acc2) as (r, acc3). simpl in *.
    destruct Hg as (Hg1, Hg2).

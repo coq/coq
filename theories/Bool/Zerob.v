@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Arith.
 Require Import Bool.
 
 Local Open Scope nat_scope.

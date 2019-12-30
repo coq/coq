@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Ascii String.
+Require Import BinInt Ascii String.
 Require Import BinNums.
 Import BinNatDef.
 Import BinIntDef.

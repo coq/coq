@@ -41,7 +41,7 @@ Section Perm.
   Proof.
     intros l a; rewrite multiplicity_In;
       destruct (multiplicity (list_contents l) a); auto.
-    destruct 1; auto with arith.
+    destruct 1; lia.
   Qed.
 
   Lemma multiplicity_In_S :
@@ -54,26 +54,23 @@ Section Perm.
     forall l, NoDup l <-> (forall a, multiplicity (list_contents l) a <= 1).
   Proof.
     induction l.
-    simpl.
-    split; auto with arith.
-    intros; apply NoDup_nil.
-    split; simpl.
-    inversion_clear 1.
-    rewrite IHl in H1.
-    intros; destruct (eq_dec a a0) as [H2|H2]; simpl; auto.
-    subst a0.
-    rewrite multiplicity_In_O; auto.
-    intros; constructor.
-    rewrite multiplicity_In.
-    generalize (H a).
-    destruct (eq_dec a a) as [H0|H0].
-    destruct (multiplicity (list_contents l) a); auto with arith.
-    simpl; inversion 1.
-    inversion H3.
-    destruct H0; auto.
-    rewrite IHl; intros.
-    generalize (H a0); auto with arith.
-    destruct (eq_dec a a0); simpl; auto with arith.
+    - simpl.
+      split; auto.
+      intros; apply NoDup_nil.
+    - split; simpl.
+      + inversion_clear 1.
+        rewrite IHl in H1.
+        intros; destruct (eq_dec a a0) as [H2|H2]; simpl; auto.
+        subst a0.
+        rewrite multiplicity_In_O; auto.
+      + intros; constructor.
+        * rewrite multiplicity_In.
+          generalize (H a).
+          destruct (eq_dec a a) as [H0|H0].
+          -- destruct (multiplicity (list_contents l) a); lia.
+          -- destruct H0; auto.
+        * rewrite IHl; intros.
+          generalize (H a0); lia.
   Qed.
 
   Lemma NoDup_permut :
@@ -223,4 +220,3 @@ Section Perm.
   Qed.
 
 End Perm.
-

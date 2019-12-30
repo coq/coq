@@ -15,7 +15,7 @@
 (* Adapted in May 2006 by Jean-Marc Notin from initial contents by
    Laurent Théry (Huffmann contribution, October 2003) *)
 
-Require Import List Setoid Compare_dec Morphisms FinFun.
+Require Import List Setoid Morphisms PeanoNat FinFun.
 Import ListNotations. (* For notations [] and [a;b;c] *)
 Set Implicit Arguments.
 (* Set Universe Polymorphism. *)
@@ -406,10 +406,12 @@ Lemma nat_bijection_Permutation n f :
 Proof.
  intros Hf BD.
  apply NoDup_Permutation_bis; auto using Injective_map_NoDup, seq_NoDup.
- * now rewrite map_length.
- * intros x. rewrite in_map_iff. intros (y & <- & Hy').
+ - now rewrite map_length.
+ - intros x. rewrite in_map_iff. intros (y & <- & Hy').
    rewrite in_seq in *. simpl in *.
-   destruct Hy' as (_,Hy'). auto with arith.
+   destruct Hy' as (_,Hy').
+   split; auto.
+   apply Nat.le_0_l.
 Qed.
 
 Section Permutation_alt.
@@ -421,40 +423,56 @@ Implicit Type l : list A.
     via [nth_error] and [nth] *)
 
 Let adapt f n :=
- let m := f (S n) in if le_lt_dec m (f 0) then m else pred m.
+ let m := f (S n) in if (m <=? f 0) then m else pred m.
 
 Let adapt_injective f : Injective f -> Injective (adapt f).
 Proof.
  unfold adapt. intros Hf x y EQ.
- destruct le_lt_dec as [LE|LT]; destruct le_lt_dec as [LE'|LT'].
+ case_eq (f (S x) <=? f 0); intros L; rewrite_all L;
+ case_eq (f (S y) <=? f 0); intros L'; rewrite_all L'.
  - now apply eq_add_S, Hf.
- - apply Lt.le_lt_or_eq in LE.
-   destruct LE as [LT|EQ']; [|now apply Hf in EQ'].
-   unfold lt in LT. rewrite EQ in LT.
-   rewrite <- (Lt.S_pred _ _ LT') in LT.
-   elim (Lt.lt_not_le _ _ LT' LT).
- - apply Lt.le_lt_or_eq in LE'.
-   destruct LE' as [LT'|EQ']; [|now apply Hf in EQ'].
-   unfold lt in LT'. rewrite <- EQ in LT'.
-   rewrite <- (Lt.S_pred _ _ LT) in LT'.
-   elim (Lt.lt_not_le _ _ LT LT').
+ - apply Nat.leb_le in L.
+   apply Nat.leb_gt in L'.
+   inversion L as [ Heq | x' Hx Heq ]; [ apply Hf in Heq; inversion Heq | ].
+   destruct (f (S y)); [ inversion L' | ].
+   rewrite Nat.pred_succ in EQ; subst.
+   apply Nat.succ_le_mono in Hx.
+   apply (Nat.le_trans _ _ _ L') in Hx.
+   rewrite <- Heq in Hx.
+   now apply Nat.lt_irrefl in Hx.
+ - apply Nat.leb_gt in L.
+   apply Nat.leb_le in L'.
+   inversion L' as [ Heq | y' Hy Heq ]; [ apply Hf in Heq; inversion Heq | ].
+   destruct (f (S x)); [ inversion L | ].
+   rewrite Nat.pred_succ in EQ; subst.
+   apply Nat.succ_le_mono in Hy.
+   apply (Nat.le_trans _ _ _ L) in Hy.
+   rewrite <- Heq in Hy.
+   now apply Nat.lt_irrefl in Hy.
  - apply eq_add_S, Hf.
-   now rewrite (Lt.S_pred _ _ LT), (Lt.S_pred _ _ LT'), EQ.
+   apply Nat.leb_gt in L.
+   apply Nat.leb_gt in L'.
+   now rewrite <- (Nat.lt_succ_pred _ _ L), <- (Nat.lt_succ_pred _ _ L'), EQ.
 Qed.
 
 Let adapt_ok a l1 l2 f : Injective f -> length l1 = f 0 ->
  forall n, nth_error (l1++a::l2) (f (S n)) = nth_error (l1++l2) (adapt f n).
 Proof.
  unfold adapt. intros Hf E n.
- destruct le_lt_dec as [LE|LT].
- - apply Lt.le_lt_or_eq in LE.
-   destruct LE as [LT|EQ]; [|now apply Hf in EQ].
+ case_eq (f (S n) <=? f 0); intros L; rewrite_all L.
+ - apply Nat.leb_le in L.
+   apply Nat.lt_eq_cases in L.
+   destruct L as [LT|EQ]; [|now apply Hf in EQ].
    rewrite <- E in LT.
    rewrite 2 nth_error_app1; auto.
- - rewrite (Lt.S_pred _ _ LT) at 1.
-   rewrite <- E, (Lt.S_pred _ _ LT) in LT.
-   rewrite 2 nth_error_app2; auto with arith.
-   rewrite <- Minus.minus_Sn_m; auto with arith.
+ - apply Nat.leb_gt in L.
+   rewrite <- (Nat.lt_succ_pred _ _ L) at 1.
+   rewrite <- E, <- (Nat.lt_succ_pred _ _ L) in L.
+   rewrite 2 nth_error_app2; intuition.
+   rewrite Nat.sub_succ_l; auto.
+   + now apply Nat.succ_le_mono.
+   + now apply Nat.succ_le_mono.
+   + now apply Nat.lt_le_incl.
 Qed.
 
 Lemma Permutation_nth_error l l' :
@@ -511,21 +529,21 @@ Proof.
  - intros (E & f & Hf & Hf').
    exists f. do 2 (split; trivial).
    intros n Hn.
-   destruct (Lt.le_or_lt (length l) (f n)) as [LE|LT]; trivial.
+   destruct (Nat.le_gt_cases (length l) (f n)) as [LE|LT]; trivial.
    rewrite <- nth_error_None, <- Hf', nth_error_None, <- E in LE.
-   elim (Lt.lt_not_le _ _ Hn LE).
+   elim (proj1 (Nat.lt_nge _ _) Hn LE).
  - intros (f & Hf & Hf2 & Hf3); split; [|exists f; auto].
-   assert (H : length l' <= length l') by auto with arith.
+   assert (H : length l' <= length l') by intuition.
    rewrite <- nth_error_None, Hf3, nth_error_None in H.
-   destruct (Lt.le_or_lt (length l) (length l')) as [LE|LT];
-    [|apply Hf2 in LT; elim (Lt.lt_not_le _ _ LT H)].
-   apply Lt.le_lt_or_eq in LE. destruct LE as [LT|EQ]; trivial.
+   destruct (Nat.le_gt_cases (length l) (length l')) as [LE|LT];
+    [|apply Hf2 in LT; elim (proj1 (Nat.lt_nge _ _) LT H)].
+   apply Nat.lt_eq_cases in LE. destruct LE as [LT|EQ]; trivial.
    rewrite <- nth_error_Some, Hf3, nth_error_Some in LT.
    assert (Hf' : bInjective (length l) f).
    { intros x y _ _ E. now apply Hf. }
    rewrite (bInjective_bSurjective Hf2) in Hf'.
    destruct (Hf' _ LT) as (y & Hy & Hy').
-   apply Hf in Hy'. subst y. elim (Lt.lt_irrefl _ Hy).
+   apply Hf in Hy'. subst y. elim (Nat.lt_irrefl _ Hy).
 Qed.
 
 Lemma Permutation_nth l l' d :
@@ -550,24 +568,32 @@ Proof.
  - intros (E & f & Hf1 & Hf2 & Hf3).
    rewrite Permutation_nth_error.
    split; auto.
-   exists (fun n => if le_lt_dec (length l) n then n else f n).
+   exists (fun n => if length l <=? n then n else f n).
    split.
-   * intros x y.
-     destruct le_lt_dec as [LE|LT];
-      destruct le_lt_dec as [LE'|LT']; auto.
-     + apply Hf1 in LT'. intros ->.
-       elim (Lt.lt_irrefl (f y)). eapply Lt.lt_le_trans; eauto.
-     + apply Hf1 in LT. intros <-.
-       elim (Lt.lt_irrefl (f x)). eapply Lt.lt_le_trans; eauto.
-   * intros n.
-     destruct le_lt_dec as [LE|LT].
-     + assert (LE' : length l' <= n) by (now rewrite E).
-       rewrite <- nth_error_None in LE, LE'. congruence.
-     + assert (LT' : n < length l') by (now rewrite E).
-       specialize (Hf3 n LT). rewrite <- 2 nth_default_eq in Hf3.
+   + intros x y.
+     case_eq (length l <=? x); intros L; case_eq (length l <=? y); intros L'; auto.
+     * apply Nat.leb_le in L.
+       apply Nat.leb_gt in L'.
+       apply Hf1 in L'. intros ->.
+       elim (Nat.lt_irrefl (f y)). eapply Nat.le_trans; eauto.
+     * apply Nat.leb_gt in L.
+       apply Nat.leb_le in L'.
+       apply Hf1 in L. intros <-.
+       elim (Nat.lt_irrefl (f x)). eapply Nat.le_trans; eauto.
+     * apply Nat.leb_gt in L.
+       apply Nat.leb_gt in L'.
+       intros Heq; apply (Hf2 _ _ L L' Heq).
+   + intros n.
+     case_eq (length l <=? n); intros L.
+     * apply Nat.leb_le in L.
+       assert (L' : length l' <= n) by (now rewrite E).
+       rewrite <- nth_error_None in L, L'. congruence.
+     * apply Nat.leb_gt in L.
+       assert (L' : n < length l') by (now rewrite E).
+       specialize (Hf3 n L). rewrite <- 2 nth_default_eq in Hf3.
        unfold nth_default in Hf3.
-       apply Hf1 in LT.
-       rewrite <- nth_error_Some in LT, LT'.
+       apply Hf1 in L.
+       rewrite <- nth_error_Some in L, L'.
        do 2 destruct nth_error; congruence.
 Qed.
 

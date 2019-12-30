@@ -17,7 +17,7 @@
     [Equal s s'] instead of [equal s s'=true], etc. *)
 
 Require Export FSetInterface.
-Require Import DecidableTypeEx FSetFacts FSetDecide.
+Require Import PeanoNat DecidableTypeEx FSetFacts FSetDecide.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -813,7 +813,9 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   intros.
   rewrite <- (diff_inter_cardinal s' s).
   rewrite (inter_sym s' s).
-  rewrite (inter_subset_equal H); auto with arith.
+  rewrite (inter_subset_equal H).
+  rewrite Nat.add_comm.
+  apply Nat.le_add_r.
   Qed.
 
   Lemma subset_cardinal_lt :
@@ -828,8 +830,8 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   intro H2; destruct (H2 Logic.eq_refl x).
   set_iff; auto.
   intros _.
-  change (0 + cardinal s < S n + cardinal s).
-  apply Plus.plus_lt_le_compat; auto with arith.
+  rewrite plus_Sn_m, plus_n_Sm, Nat.add_comm.
+  apply Nat.le_add_r.
   Qed.
 
   Theorem union_inter_cardinal :
@@ -846,15 +848,14 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   Proof.
   intros.
   rewrite <- union_inter_cardinal.
-  rewrite Plus.plus_comm.
-  auto with arith.
+  now rewrite Nat.add_sub.
   Qed.
 
   Lemma union_cardinal_le :
    forall s s', cardinal (union s s') <= cardinal s  + cardinal s'.
   Proof.
    intros; generalize (union_inter_cardinal s s').
-   intros; rewrite <- H; auto with arith.
+   intros; rewrite <- H. apply Nat.le_add_r.
   Qed.
 
   Lemma add_cardinal_1 :

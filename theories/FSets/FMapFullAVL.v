@@ -27,8 +27,7 @@
 
 *)
 
-Require Import FunInd Recdef FMapInterface FMapList ZArith Int FMapAVL Lia.
-
+Require Import FunInd Recdef FMapInterface FMapList PeanoNat BinInt Int FMapAVL Lia.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
@@ -671,7 +670,8 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
    cardinal_e (Raw.cons m e) = (Raw.cardinal m + cardinal_e e)%nat.
   Proof.
    induction m; simpl; intros; auto.
-   rewrite IHm1; simpl; rewrite <- plus_n_Sm; auto with arith.
+   rewrite IHm1; simpl; rewrite <- plus_n_Sm.
+   now rewrite Nat.add_assoc.
   Qed.
 
   Definition cardinal_e_2 ee :=

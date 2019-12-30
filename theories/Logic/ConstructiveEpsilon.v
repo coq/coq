@@ -42,7 +42,7 @@ For the first one we provide explicit and short proof terms. *)
 
 (* Direct version *)
 
-Require Import Arith.
+Require Import PeanoNat.
 
 Section ConstructiveIndefiniteGroundDescription_Direct.
 
@@ -94,10 +94,10 @@ Proof.
   - (* P start, k cannot exist *)
     intros. assert (proj1_sig (linear_search start pr) = start).
     { unfold linear_search. destruct pr; rewrite -> Pstart; reflexivity. }
-    rewrite -> H0 in H. destruct H. apply (le_lt_trans start k) in H1.
-    apply lt_irrefl in H1. contradiction. assumption.
+    rewrite -> H0 in H. destruct H. apply (Nat.le_lt_trans start k) in H1.
+    apply Nat.lt_irrefl in H1. contradiction. assumption.
   - (* ~P start, step once in the search and use induction hypothesis *)
-    destruct pr. contradiction. destruct H. apply le_lt_or_eq in H. destruct H.
+    destruct pr. contradiction. destruct H. apply Nat.lt_eq_cases in H. destruct H.
     apply (linear_search_smallest (S start) pr). split. assumption.
     simpl in H0. rewrite -> Pstart in H0. assumption. subst. assumption.
 Defined.
@@ -154,13 +154,13 @@ intros x n; generalize x; clear x; induction n as [|n IH]; simpl.
 apply P_implies_acc.
 intros x H. constructor. intros y [fxy _].
 apply IH. rewrite fxy.
-replace (n + S x) with (S (n + x)); auto with arith.
+replace (n + S x) with (S (n + x)); auto.
 Defined.
 
 Corollary P_eventually_implies_acc_ex : (exists n : nat, P n) -> acc 0.
 Proof.
 intros H; elim H. intros x Px. apply P_eventually_implies_acc with (n := x).
-replace (x + 0) with x; auto with arith.
+replace (x + 0) with x; auto.
 Defined.
 
 (** In the following statement, we use the trick with recursion on

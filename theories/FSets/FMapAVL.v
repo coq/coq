@@ -18,7 +18,7 @@
     See the comments at the beginning of FSetAVL for more details.
 *)
 
-Require Import FunInd FMapInterface FMapList ZArith Int.
+Require Import FunInd FMapInterface FMapList PeanoNat BinInt Int.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -2203,4 +2203,3 @@ Module Make_ord (X: OrderedType)(D: OrderedType)
  <: Sord with Module Data := D
             with Module MapS.E := X
  :=IntMake_ord(Z_as_Int)(X)(D).
-

@@ -11,7 +11,7 @@
 
 (** Binary Integers (Pierre Crégut, CNET, Lannion, France) *)
 
-Require Export Arith_base.
+Require Export PeanoNat Compare_dec.
 Require Import BinPos BinInt BinNat Pnat Nnat.
 
 Local Open Scope Z_scope.
@@ -1031,7 +1031,8 @@ Notation Zabs_N_mult := Zabs2N.inj_mul (only parsing).
 
 Theorem inj_minus2 : forall n m:nat, (m > n)%nat -> Z.of_nat (n - m) = 0.
 Proof.
- intros. rewrite not_le_minus_0; auto with arith.
+ intros. rewrite <- Nat2Z.inj_0, Nat2Z.inj_iff, Nat.sub_0_le.
+ now apply Nat.lt_le_incl.
 Qed.
 
 Register inj_minus2 as plugins.omega.inj_minus2.

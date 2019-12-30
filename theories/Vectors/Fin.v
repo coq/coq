@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Arith_base.
+Require PeanoNat Peano_dec.
 
 (** [fin n] is a convenient way to represent \[1 .. n\]
 
@@ -74,8 +74,10 @@ end.
 (** [to_nat f] = p iff [f] is the p{^ th} element of [fin m]. *)
 Fixpoint to_nat {m} (n : t m) : {i | i < m} :=
   match n with
-    |@F1 j => exist _ 0 (Lt.lt_0_Sn j)
-    |FS p => match to_nat p with |exist _ i P => exist _ (S i) (Lt.lt_n_S _ _ P) end
+    |@F1 j => exist _ 0 (PeanoNat.Nat.lt_0_succ j)
+    |FS p => match to_nat p with
+             |exist _ i P => exist _ (S i) (proj1 (PeanoNat.Nat.succ_lt_mono _ _) P)
+             end
   end.
 
 (** [of_nat p n] answers the p{^ th} element of [fin n] if p < n or a proof of
@@ -97,10 +99,10 @@ Fixpoint of_nat (p n : nat) : (t n) + { exists m, p = n + m } :=
 it behaves much better than [of_nat p n] on open term *)
 Fixpoint of_nat_lt {p n : nat} : p < n -> t n :=
   match n with
-    |0 => fun H : p < 0 => False_rect _ (Lt.lt_n_O p H)
+    |0 => fun H : p < 0 => False_rect _ (PeanoNat.Nat.nlt_0_r p H)
     |S n' => match p with
       |0 => fun _ => @F1 n'
-      |S p' => fun H => FS (of_nat_lt (Lt.lt_S_n _ _ H))
+      |S p' => fun H => FS (of_nat_lt (proj2 (PeanoNat.Nat.succ_lt_mono _ _) H))
     end
   end.
 
@@ -119,8 +121,9 @@ Qed.
 Lemma to_nat_of_nat {p}{n} (h : p < n) : to_nat (of_nat_lt h) = exist _ p h.
 Proof.
  revert n h.
- induction p; (destruct n ; intros h; [ destruct (Lt.lt_n_O _ h) | cbn]);
- [ | rewrite (IHp _ (Lt.lt_S_n p n h))];  f_equal; apply Peano_dec.le_unique.
+ induction p; (destruct n ; intros h; [ destruct (PeanoNat.Nat.nlt_0_r _ h) | cbn]);
+ [ | rewrite (IHp _ (proj2 (PeanoNat.Nat.succ_lt_mono p n) h))];
+     f_equal; apply Peano_dec.le_unique.
 Qed.
 
 Lemma to_nat_inj {n} (p q : t n) :
@@ -194,16 +197,15 @@ Lemma depair_sanity {m n} (o : t m) (p : t n) :
   proj1_sig (to_nat (depair o p)) = n * (proj1_sig (to_nat o)) + (proj1_sig (to_nat p)).
 Proof.
 induction o ; simpl.
-- rewrite L_sanity. now rewrite Mult.mult_0_r.
-
+- rewrite L_sanity. now rewrite PeanoNat.Nat.mul_0_r.
 - rewrite R_sanity. rewrite IHo.
-  rewrite Plus.plus_assoc. destruct (to_nat o); simpl; rewrite Mult.mult_succ_r.
-    now rewrite (Plus.plus_comm n).
+  rewrite PeanoNat.Nat.add_assoc. destruct (to_nat o); simpl; rewrite PeanoNat.Nat.mul_succ_r.
+    now rewrite (PeanoNat.Nat.add_comm n).
 Qed.
 
 Fixpoint eqb {m n} (p : t m) (q : t n) :=
 match p, q with
-| @F1 m', @F1 n' => EqNat.beq_nat m' n'
+| @F1 m', @F1 n' => PeanoNat.Nat.eqb m' n'
 | FS _, F1 => false
 | F1, FS _ => false
 | FS p', FS q' => eqb p' q'
@@ -212,7 +214,7 @@ end.
 Lemma eqb_nat_eq : forall m n (p : t m) (q : t n), eqb p q = true -> m = n.
 Proof.
 intros m n p; revert n; induction p; destruct q; simpl; intros; f_equal.
-- now apply EqNat.beq_nat_true.
+- now apply PeanoNat.Nat.eqb_eq.
 - easy.
 - easy.
 - eapply IHp. eassumption.
@@ -221,7 +223,7 @@ Qed.
 Lemma eqb_eq : forall n (p q : t n), eqb p q = true <-> p = q.
 Proof.
 apply rect2; simpl; intros.
-- split; intros ; [ reflexivity | now apply EqNat.beq_nat_true_iff ].
+- split; intros ; [ reflexivity | now apply PeanoNat.Nat.eqb_eq ].
 - now split.
 - now split.
 - eapply iff_trans.

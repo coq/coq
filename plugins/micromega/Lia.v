@@ -30,7 +30,7 @@ Ltac zchecker :=
                                 (@find Z Z0 __varmap)).
 
 Ltac lia := PreOmega.zify; xlia zchecker.
-               
+
 Ltac nia := PreOmega.zify; xnlia zchecker.
 
 

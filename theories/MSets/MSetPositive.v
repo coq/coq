@@ -18,7 +18,7 @@
    Sandrine Blazy (used for building certified compilers).
 *)
 
-Require Import Bool BinPos Orders OrdersEx MSetInterface.
+Require Import Bool PeanoNat BinPos Orders OrdersEx MSetInterface.
 
 Set Implicit Arguments.
 Local Open Scope lazy_bool_scope.
@@ -715,10 +715,10 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
 
     induction s as [|l IHl b r IHr]; intros j acc; simpl; trivial. destruct b.
       rewrite <- IHl. simpl. rewrite <- IHr.
-       rewrite <- plus_n_Sm, Plus.plus_assoc. reflexivity.
-      rewrite <- IHl, <- IHr. rewrite Plus.plus_assoc. reflexivity.
+       rewrite <- plus_n_Sm, Nat.add_assoc. reflexivity.
+      rewrite <- IHl, <- IHr. rewrite Nat.add_assoc. reflexivity.
 
-    intros. rewrite <- H. simpl. rewrite Plus.plus_comm. reflexivity.
+    intros. rewrite <- H. simpl. rewrite Nat.add_comm. reflexivity.
   Qed.
 
   (** Specification of [filter] *)

@@ -944,7 +944,7 @@ Qed.
 (** * Choice => Dependent choice => Countable choice *)
 (* The implications below are standard *)
 
-Require Import Arith.
+Require Import PeanoNat.
 
 Theorem functional_choice_imp_functional_dependent_choice :
    FunctionalChoice -> FunctionalDependentChoice.

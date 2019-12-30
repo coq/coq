@@ -18,7 +18,7 @@
 Names should be "caml name in list.ml" if exists and order of arguments
 have to be the same. complain if you see mistakes ... *)
 
-Require Import Arith_base.
+Require Import PeanoNat.
 Require Vectors.Fin.
 Import EqNotations.
 Local Open Scope nat_scope.
@@ -168,16 +168,16 @@ Lemma trunc : forall {A} {n} (p:nat), n > p -> t A n
   -> t A (n - p).
 Proof.
   induction p as [| p f]; intros H v.
-  rewrite <- minus_n_O.
+  rewrite Nat.sub_0_r.
   exact v.
 
   apply shiftout.
 
-  rewrite minus_Sn_m.
+  rewrite <- Nat.sub_succ_l.
   apply f.
-  auto with *.
+  now apply Nat.lt_le_incl.
   exact v.
-  auto with *.
+  now apply Nat.lt_le_incl.
 Defined.
 
 (** Concatenation of two vectors *)
@@ -204,7 +204,7 @@ reverses the first one *)
 
 (** This one has the exact expected computational behavior *)
 Fixpoint rev_append_tail {A n p} (v : t A n) (w: t A p)
-  : t A (tail_plus n p) :=
+  : t A (Nat.tail_add n p) :=
   match v with
   | [] => w
   | a :: v' => rev_append_tail v' (a :: w)
@@ -215,7 +215,7 @@ Import EqdepFacts.
 (** This one has a better type *)
 Definition rev_append {A n p} (v: t A n) (w: t A p)
   :t A (n + p) :=
-  rew <- (plus_tail_plus n p) in (rev_append_tail v w).
+  rew (Nat.tail_add_spec n p) in (rev_append_tail v w).
 
 (** rev [a₁ ; a₂ ; .. ; an] is [an ; a{n-1} ; .. ; a₁]
 

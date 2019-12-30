@@ -129,7 +129,7 @@ Proof.
  rewrite Nshiftl_nat_S.
  destruct m.
  - destruct (N.shiftl_nat a n); trivial.
- - apply Lt.lt_S_n in H.
+ - apply Nat.succ_lt_mono in H.
    specialize (IHn m H).
    destruct (N.shiftl_nat a n); trivial.
 Qed.
@@ -671,10 +671,10 @@ Lemma Bnth_Nbit : forall n (bv:Bvector n) p (H:p<n),
   Bnth bv H = N.testbit_nat (Bv2N _ bv) p.
 Proof.
 induction bv; intros.
-inversion H.
-destruct p ; simpl.
-  destruct (Bv2N n bv); destruct h; simpl in *; auto.
-  specialize IHbv with p (Lt.lt_S_n _ _ H).
+- inversion H.
+- destruct p ; simpl.
+  + destruct (Bv2N n bv); destruct h; simpl in *; auto.
+  + specialize IHbv with p (proj2 (Nat.succ_lt_mono _ _) H).
     simpl in * ; destruct (Bv2N n bv); destruct h; simpl in *; auto.
 Qed.
 
@@ -691,9 +691,9 @@ Lemma Nbit_Bth: forall n p (H:p < N.size_nat n),
   N.testbit_nat n p = Bnth (N2Bv n) H.
 Proof.
 destruct n as [|n].
-inversion H.
-induction n ; destruct p ; unfold Vector.nth_order in *; simpl in * ; auto.
-intros H ; destruct (Lt.lt_n_O _ (Lt.lt_S_n _ _ H)).
+- inversion H.
+- induction n ; destruct p ; unfold Vector.nth_order in *; simpl in * ; auto.
+  intros H ; destruct (Nat.nlt_0_r _ (proj2 (Nat.succ_lt_mono _ _) H)).
 Qed.
 
 (** Binary bitwise operations are the same in the two worlds. *)

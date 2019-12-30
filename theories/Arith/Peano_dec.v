@@ -23,8 +23,6 @@ Defined.
 
 Notation eq_nat_dec := Nat.eq_dec (only parsing).
 
-Hint Resolve O_or_S eq_nat_dec: arith.
-
 Theorem dec_eq_nat n m : decidable (n = m).
 Proof.
   elim (Nat.eq_dec n m); [left|right]; trivial.
@@ -61,4 +59,8 @@ now rewrite H.
 Qed.
 
 (** For compatibility *)
+(*
+Hint Resolve O_or_S eq_nat_dec: arith.
+
 Require Import Le Lt.
+*)

@@ -49,8 +49,9 @@ Section wf_proof.
     unfold Zwf in H1.
     case (Z.le_gt_cases c y); intro. 2: lia.
     left.
-    apply lt_le_trans with (f a); auto with arith.
+    apply lt_le_trans with (f a).
     unfold f.
+    lia.
     lia.
     apply (H (S (f a))); auto.
   Qed.
