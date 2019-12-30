@@ -615,6 +615,10 @@ let is_projection nargs r =
 
 let is_hole = function CHole _ | CEvar _ -> true | _ -> false
 
+let isCRef_no_univ = function
+  | CRef (_,None) -> true
+  | _ -> false
+
 let is_significant_implicit a =
   not (is_hole (a.CAst.v))
 
@@ -1284,9 +1288,6 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
                   let args = extern_args (extern true) vars args in
                   CAst.make ?loc @@ extern_applied_notation nallargs argsimpls c args)
           | SynDefRule kn ->
-             match availability_of_entry_coercion custom InConstrEntrySomeLevel with
-             | None -> raise No_match
-             | Some coercion ->
               let l =
                 List.map (fun (c,(subentry,(scopt,scl))) ->
                   extern true (subentry,(scopt,scl@snd scopes)) vars c)
@@ -1296,7 +1297,10 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
               let args = fill_arg_scopes args argsscopes allscopes in
               let args = extern_args (extern true) vars args in
               let c = CAst.make ?loc @@ extern_applied_syntactic_definition nallargs argsimpls (a,cf) l args in
-              insert_entry_coercion coercion c
+              if isCRef_no_univ c.CAst.v && entry_has_global custom then c
+             else match availability_of_entry_coercion custom InConstrEntrySomeLevel with
+             | None -> raise No_match
+             | Some coercion -> insert_entry_coercion coercion c
       with
           No_match -> extern_notation allscopes vars t rules
 

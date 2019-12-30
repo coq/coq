@@ -14,6 +14,8 @@ Entry constr:myconstr is
      : nat
 [<< # 0 >>]
      : option nat
+[b + c]
+     : nat
 [1 {f 1}]
      : Expr
 fun (x : nat) (y z : Expr) => [1 + y z + {f x}]
@@ -81,18 +83,18 @@ fun x : nat => [x]
      : nat -> nat
 ∀ x : nat, x = x
      : Prop
-File "stdin", line 219, characters 0-160:
+File "stdin", line 225, characters 0-160:
 Warning: Notation "∀ _ .. _ , _" was already defined with a different format
 in scope type_scope. [notation-incompatible-format,parsing]
 ∀x : nat,x = x
      : Prop
-File "stdin", line 232, characters 0-60:
+File "stdin", line 238, characters 0-60:
 Warning: Notation "_ %%% _" was already defined with a different format.
 [notation-incompatible-format,parsing]
-File "stdin", line 236, characters 0-64:
+File "stdin", line 242, characters 0-64:
 Warning: Notation "_ %%% _" was already defined with a different format.
 [notation-incompatible-format,parsing]
-File "stdin", line 241, characters 0-62:
+File "stdin", line 247, characters 0-62:
 Warning: Lonely notation "_ %%%% _" was already defined with a different
 format. [notation-incompatible-format,parsing]
 3  %%  4
@@ -101,9 +103,9 @@ format. [notation-incompatible-format,parsing]
      : nat
 3   %%   4
      : nat
-File "stdin", line 269, characters 0-61:
+File "stdin", line 275, characters 0-61:
 Warning: The format modifier is irrelevant for only parsing rules.
 [irrelevant-format-only-parsing,parsing]
-File "stdin", line 273, characters 0-63:
+File "stdin", line 279, characters 0-63:
 Warning: The only parsing modifier has no effect in Reserved Notation.
 [irrelevant-reserved-notation-only-parsing,parsing]
