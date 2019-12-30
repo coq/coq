@@ -73,7 +73,7 @@ let check_arity env ar1 ar2 = match ar1, ar2 with
     List.equal (Option.equal Univ.Level.equal) ar.template_param_levels template_param_levels &&
     UGraph.check_leq (universes env) template_level ar.template_level
     (* template_level is inferred by indtypes, so functor application can produce a smaller one *)
-  | (RegularArity _ | TemplateArity _), _ -> false
+  | (RegularArity _ | TemplateArity _), _ -> assert false
 
 let check_kelim k1 k2 = Sorts.family_leq k1 k2
 

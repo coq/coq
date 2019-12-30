@@ -144,11 +144,11 @@ let abstract_context hyps =
   in
   Context.Named.fold_outside fold hyps ~init:([], [])
 
-let abstract_constant_type t (hyps, subst) =
+let abstract_as_type t (hyps, subst) =
   let t = Vars.subst_vars subst t in
   List.fold_left (fun c d -> mkProd_wo_LetIn d c) t hyps
 
-let abstract_constant_body c (hyps, subst) =
+let abstract_as_body c (hyps, subst) =
   let c = Vars.subst_vars subst c in
   it_mkLambda_or_LetIn c hyps
 
@@ -192,8 +192,7 @@ let discharge_abstract_universe_context subst abs_ctx auctx =
     let auctx = Univ.subst_univs_level_abstract_universe_context substf auctx in
     subst, (AUContext.union abs_ctx auctx)
 
-let lift_univs cb subst auctx0 =
-  match cb.const_universes with
+let lift_univs subst auctx0 = function
   | Monomorphic ctx ->
     assert (AUContext.is_empty auctx0);
     subst, (Monomorphic ctx)
@@ -219,7 +218,7 @@ let cook_constr { Opaqueproof.modlist ; abstract } (c, priv) =
   let expmod = expmod_constr_subst cache modlist usubst in
   let hyps = Context.Named.map expmod abstract in
   let hyps = abstract_context hyps in
-  let c = abstract_constant_body (expmod c) hyps in
+  let c = abstract_as_body (expmod c) hyps in
   (c, priv)
 
 let cook_constr infos c =
@@ -230,11 +229,11 @@ let cook_constant { from = cb; info } =
   let { Opaqueproof.modlist; abstract } = info in
   let cache = RefTable.create 13 in
   let abstract, usubst, abs_ctx = abstract in
-  let usubst, univs = lift_univs cb usubst abs_ctx in
+  let usubst, univs = lift_univs usubst abs_ctx cb.const_universes in
   let expmod = expmod_constr_subst cache modlist usubst in
   let hyps0 = Context.Named.map expmod abstract in
   let hyps = abstract_context hyps0 in
-  let map c = abstract_constant_body (expmod c) hyps in
+  let map c = abstract_as_body (expmod c) hyps in
   let body = match cb.const_body with
   | Undef _ as x -> x
   | Def cs -> Def (Mod_subst.from_val (map (Mod_subst.force_constr cs)))
@@ -243,7 +242,7 @@ let cook_constant { from = cb; info } =
   | Primitive _ -> CErrors.anomaly (Pp.str "Primitives cannot be cooked")
   in
   let const_hyps = Id.Set.diff (Context.Named.to_vars cb.const_hyps) (Context.Named.to_vars hyps0) in
-  let typ = abstract_constant_type (expmod cb.const_type) hyps in
+  let typ = abstract_as_type (expmod cb.const_type) hyps in
   {
     cook_body = body;
     cook_type = typ;
@@ -259,104 +258,160 @@ let cook_constant { from = cb; info } =
 (********************************)
 (* Discharging mutual inductive *)
 
-(* Replace
+let template_level_of_var ~template_check d =
+  (* When [template_check], a universe from a section variable may not
+     be in the universes from the inductive (it must be pre-declared)
+     so always [None]. *)
+  if template_check then None
+  else
+    let c = Term.strip_prod_assum (RelDecl.get_type d) in
+    match kind c with
+    | Sort (Type u) -> Univ.Universe.level u
+    | _ -> None
 
-     Var(y1)..Var(yq):C1..Cq |- Ij:Bj
-     Var(y1)..Var(yq):C1..Cq; I1..Ip:B1..Bp |- ci : Ti
+let it_mkProd_wo_LetIn = List.fold_left (fun c d -> mkProd_wo_LetIn d c)
 
-   by
+let abstract_rel_ctx (section_decls,subst) ctx =
+  (* Dealing with substitutions between contexts is too annoying, so
+     we reify [ctx] into a big [forall] term and work on that. *)
+  let t = it_mkProd_or_LetIn mkProp ctx in
+  let t = Vars.subst_vars subst t in
+  let t = it_mkProd_wo_LetIn t section_decls in
+  let ctx, t = decompose_prod_assum t in
+  assert (Constr.equal t mkProp);
+  ctx
 
-     |- Ij: (y1..yq:C1..Cq)Bj
-     I1..Ip:(B1 y1..yq)..(Bp y1..yq) |- ci : (y1..yq:C1..Cq)Ti[Ij:=(Ij y1..yq)]
-*)
-
-let it_mkNamedProd_wo_LetIn b d =
-  List.fold_left (fun c d -> mkNamedProd_wo_LetIn d c) b d
-
-let abstract_inductive decls nparamdecls inds =
-  let open Entries in
-  let ntyp = List.length inds in
-  let ndecls = Context.Named.length decls in
-  let args = Context.Named.to_instance mkVar (List.rev decls) in
-  let args = Array.of_list args in
-  let subs = List.init ntyp (fun k -> lift ndecls (mkApp(mkRel (k+1),args))) in
-  let inds' =
-    List.map
-      (function (tname,arity,template,cnames,lc) ->
-        let lc' = List.map (Vars.substl subs) lc in
-        let lc'' = List.map (fun b -> it_mkNamedProd_wo_LetIn b decls) lc' in
-        let arity' = it_mkNamedProd_wo_LetIn arity decls in
-        (tname,arity',template,cnames,lc''))
-        inds in
-  let nparamdecls' = nparamdecls + Array.length args in
-(* To be sure to be the same as before, should probably be moved to cook_inductive *)
-  let params' = let (_,arity,_,_,_) = List.hd inds' in
-                let (params,_) = decompose_prod_n_assum nparamdecls' arity in
-    params
+let abstract_lc ~ntypes expmod (newparams,subst) c =
+  let args = Array.rev_of_list (CList.map_filter (fun d ->
+      if RelDecl.is_local_def d then None
+      else match RelDecl.get_name d with
+        | Anonymous -> assert false
+        | Name id -> Some (mkVar id))
+      newparams)
   in
-  let ind'' =
-  List.map
-    (fun (a,arity,template,c,lc) ->
-      let _, short_arity = decompose_prod_n_assum nparamdecls' arity in
-      let shortlc =
-        List.map (fun c -> snd (decompose_prod_n_assum nparamdecls' c)) lc in
-      { mind_entry_typename = a;
-        mind_entry_arity = short_arity;
-        mind_entry_template = template;
-        mind_entry_consnames = c;
-        mind_entry_lc = shortlc })
-    inds'
-  in (params',ind'')
+  let diff = List.length newparams in
+  let subs = List.init ntypes (fun k ->
+      lift diff (mkApp (mkRel (k+1), args)))
+  in
+  let c = Vars.substl subs c in
+  let c = Vars.subst_vars subst (expmod c) in
+  let c = it_mkProd_wo_LetIn c newparams in
+  c
 
-let refresh_polymorphic_type_of_inductive (_,mip) =
-  match mip.mind_arity with
-  | RegularArity s -> s.mind_user_arity, false
-  | TemplateArity ar ->
-    let ctx = List.rev mip.mind_arity_ctxt in
-      mkArity (List.rev ctx, Sorts.sort_of_univ ar.template_level), true
+let abstract_projection ~params expmod hyps t =
+  let t = it_mkProd_or_LetIn t params in
+  let t = mkArrowR mkProp t in (* dummy type standing in for the inductive *)
+  let t = abstract_as_type (expmod t) hyps in
+  let _, t = decompose_prod_n_assum (List.length params + 1 + Context.Rel.nhyps (fst hyps)) t in
+  t
+
+let cook_one_ind ~template_check ~ntypes
+    (section_decls,_ as hyps) expmod mip =
+  let mind_arity = match mip.mind_arity with
+    | RegularArity {mind_user_arity=arity;mind_sort=sort} ->
+      let arity = abstract_as_type (expmod arity) hyps in
+      let sort = destSort (expmod (mkSort sort)) in
+      RegularArity {mind_user_arity=arity; mind_sort=sort}
+    | TemplateArity {template_param_levels=levels;template_level} ->
+      let sec_levels = CList.map_filter (fun d ->
+          if RelDecl.is_local_assum d then Some (template_level_of_var ~template_check d)
+          else None)
+          section_decls
+      in
+      let levels = List.rev_append sec_levels levels in
+      TemplateArity {template_param_levels=levels;template_level}
+  in
+  let mind_arity_ctxt =
+    let ctx = Context.Rel.map expmod mip.mind_arity_ctxt in
+    abstract_rel_ctx hyps ctx
+  in
+  let mind_user_lc =
+    Array.map (abstract_lc ~ntypes expmod hyps)
+      mip.mind_user_lc
+  in
+  let mind_nf_lc = Array.map (fun (ctx,t) ->
+      let lc = it_mkProd_or_LetIn t ctx in
+      let lc = abstract_lc ~ntypes expmod hyps lc in
+      decompose_prod_assum lc)
+      mip.mind_nf_lc
+  in
+  { mind_typename = mip.mind_typename;
+    mind_arity_ctxt;
+    mind_arity;
+    mind_consnames = mip.mind_consnames;
+    mind_user_lc;
+    mind_nrealargs = mip.mind_nrealargs;
+    mind_nrealdecls = mip.mind_nrealdecls;
+    mind_kelim = mip.mind_kelim;
+    mind_nf_lc;
+    mind_consnrealargs = mip.mind_consnrealargs;
+    mind_consnrealdecls = mip.mind_consnrealdecls;
+    mind_recargs = mip.mind_recargs; (* TODO is this correct? checker should tell us. *)
+    mind_relevance = mip.mind_relevance;
+    mind_nb_constant = mip.mind_nb_constant;
+    mind_nb_args = mip.mind_nb_args;
+    mind_reloc_tbl = mip.mind_reloc_tbl;
+  }
 
 let cook_inductive { Opaqueproof.modlist; abstract } mib =
-  let open Entries in
   let (section_decls, subst, abs_uctx) = abstract in
-  let nparamdecls = Context.Rel.length mib.mind_params_ctxt in
-  let subst, ind_univs =
-    match mib.mind_universes with
-    | Monomorphic ctx -> Univ.empty_level_subst, Monomorphic_entry ctx
-    | Polymorphic auctx ->
-      let subst, auctx = discharge_abstract_universe_context subst abs_uctx auctx in
-      let subst = Univ.make_instance_subst subst in
-      let nas = Univ.AUContext.names auctx in
-      let auctx = Univ.AUContext.repr auctx in
-      subst, Polymorphic_entry (nas, auctx)
-  in
+  let subst, mind_universes = lift_univs subst abs_uctx mib.mind_universes in
   let cache = RefTable.create 13 in
-  let discharge c = Vars.subst_univs_level_constr subst (expmod_constr cache modlist c) in
-  let inds =
-    Array.map_to_list
-      (fun mip ->
-        let ty, template = refresh_polymorphic_type_of_inductive (mib,mip) in
-        let arity = discharge ty in
-        let lc = Array.map discharge mip.mind_user_lc  in
-          (mip.mind_typename,
-           arity, template,
-           Array.to_list mip.mind_consnames,
-           Array.to_list lc))
-      mib.mind_packets in
-  let section_decls' = Context.Named.map discharge section_decls in
-  let (params',inds') = abstract_inductive section_decls' nparamdecls inds in
-  let record = match mib.mind_record with
-    | PrimRecord info ->
-      Some (Some (Array.map (fun (x,_,_,_) -> x) info))
-    | FakeRecord -> Some None
-    | NotRecord -> None
+  let expmod = expmod_constr_subst cache modlist subst in
+  let section_decls = Context.Named.map expmod section_decls in
+  let removed_vars = Context.Named.to_vars section_decls in
+  let section_decls, _ as hyps = abstract_context section_decls in
+  let nnewparams = Context.Rel.nhyps section_decls in
+  let template_check = mib.mind_typing_flags.check_template in
+  let mind_params_ctxt =
+    let ctx = Context.Rel.map expmod mib.mind_params_ctxt in
+    abstract_rel_ctx hyps ctx
   in
-  { mind_entry_record = record;
-    mind_entry_finite = mib.mind_finite;
-    mind_entry_params = params';
-    mind_entry_inds = inds';
-    mind_entry_private = mib.mind_private;
-    mind_entry_cumulative = Option.has_some mib.mind_variance;
-    mind_entry_universes = ind_univs
+  let ntypes = mib.mind_ntypes in
+  let mind_packets =
+    Array.map (cook_one_ind ~template_check ~ntypes hyps expmod)
+      mib.mind_packets
+  in
+  let mind_record = match mib.mind_record with
+    | NotRecord -> NotRecord
+    | FakeRecord -> FakeRecord
+    | PrimRecord data ->
+      let data = Array.map (fun (id,projs,relevances,tys) ->
+          let tys = Array.map (abstract_projection ~params:mib.mind_params_ctxt expmod hyps) tys in
+          (id,projs,relevances,tys))
+          data
+      in
+      PrimRecord data
+  in
+  let mind_hyps =
+    List.filter (fun d -> not (Id.Set.mem (NamedDecl.get_id d) removed_vars))
+      mib.mind_hyps
+  in
+  let mind_variance, mind_sec_variance =
+    match mib.mind_variance, mib.mind_sec_variance with
+    | None, None -> None, None
+    | None, Some _ | Some _, None -> assert false
+    | Some variance, Some sec_variance ->
+      let sec_variance, newvariance =
+        Array.chop (Array.length sec_variance - AUContext.size abs_uctx)
+          sec_variance
+      in
+      Some (Array.append newvariance variance), Some sec_variance
+  in
+  {
+    mind_packets;
+    mind_record;
+    mind_finite = mib.mind_finite;
+    mind_ntypes = mib.mind_ntypes;
+    mind_hyps;
+    mind_nparams = mib.mind_nparams + nnewparams;
+    mind_nparams_rec = mib.mind_nparams_rec + nnewparams;
+    mind_params_ctxt;
+    mind_universes;
+    mind_variance;
+    mind_sec_variance;
+    mind_private = mib.mind_private;
+    mind_typing_flags = mib.mind_typing_flags;
   }
 
 let expmod_constr modlist c = expmod_constr (RefTable.create 13) modlist c
