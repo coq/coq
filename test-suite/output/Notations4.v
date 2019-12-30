@@ -22,6 +22,12 @@ Notation "<< x >>" := x (in custom myconstr at level 3, x custom anotherconstr a
 Notation "# x" := (Some x) (in custom anotherconstr at level 8, x constr at level 9).
 Check [ << # 0 >> ].
 
+(* Now check with global *)
+
+Axiom c : nat.
+Notation "x" := x (in custom myconstr at level 0, x global).
+Check [ b + c ].
+
 End A.
 
 Module B.
