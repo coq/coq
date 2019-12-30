@@ -139,7 +139,7 @@ let check_inductive env mind mb =
   let entry = to_entry mb in
   let { mind_packets; mind_record; mind_finite; mind_ntypes; mind_hyps;
         mind_nparams; mind_nparams_rec; mind_params_ctxt;
-        mind_universes; mind_variance;
+        mind_universes; mind_variance; mind_sec_variance;
         mind_private; mind_typing_flags; }
     =
     (* Locally set typing flags for further typechecking *)
@@ -148,7 +148,7 @@ let check_inductive env mind mb =
                                                                   check_positive = mb_flags.check_positive;
                                                                   check_universes = mb_flags.check_universes;
                                                                   conv_oracle = mb_flags.conv_oracle} env in
-    Indtypes.check_inductive env mind entry
+    Indtypes.check_inductive env ~sec_univs:None mind entry
   in
   let check = check mind in
 
@@ -165,7 +165,9 @@ let check_inductive env mind mb =
 
   check "mind_params_ctxt" (Context.Rel.equal Constr.equal mb.mind_params_ctxt mind_params_ctxt);
   ignore mind_universes; (* Indtypes did the necessary checking *)
-  ignore mind_variance; (* Indtypes did the necessary checking *)
+  check "mind_variance" (Option.equal (Array.equal Univ.Variance.equal)
+                           mb.mind_variance mind_variance);
+  check "mind_sec_variance" (Option.is_empty mind_sec_variance);
   ignore mind_private; (* passed through Indtypes *)
 
   ignore mind_typing_flags;

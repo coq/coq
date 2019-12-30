@@ -911,7 +911,9 @@ let check_mind mie lab =
 let add_mind l mie senv =
   let () = check_mind mie l in
   let kn = MutInd.make2 senv.modpath l in
-  let mib = Indtypes.check_inductive senv.env kn mie in
+  let sec_univs = Option.map Section.all_poly_univs  senv.sections
+  in
+  let mib = Indtypes.check_inductive senv.env ~sec_univs kn mie in
   let mib =
     match mib.mind_hyps with [] -> Declareops.hcons_mind mib | _ -> mib
   in

@@ -466,7 +466,8 @@ let compute_projections (kn, i as ind) mib =
   Array.of_list (List.rev rs),
   Array.of_list (List.rev pbs)
 
-let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite inds nmr recargs =
+let build_inductive env ~sec_univs names prv univs variance
+    paramsctxt kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
   let hyps = used_section_variables env paramsctxt inds in
@@ -517,6 +518,15 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
         mind_reloc_tbl = rtbl;
       } in
   let packets = Array.map3 build_one_packet names inds recargs in
+  let variance, sec_variance = match variance with
+    | None -> None, None
+    | Some variance -> match sec_univs with
+      | None -> Some variance, None
+      | Some sec_univs ->
+        let nsec = Array.length sec_univs in
+        Some (Array.sub variance nsec (Array.length variance - nsec)),
+        Some (Array.sub variance 0 nsec)
+  in
   let mib =
       (* Build the mutual inductive *)
     { mind_record = NotRecord;
@@ -529,6 +539,7 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
       mind_packets = packets;
       mind_universes = univs;
       mind_variance = variance;
+      mind_sec_variance = sec_variance;
       mind_private = prv;
       mind_typing_flags = Environ.typing_flags env;
     }
@@ -549,9 +560,11 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
 (************************************************************************)
 (************************************************************************)
 
-let check_inductive env kn mie =
+let check_inductive env ~sec_univs kn mie =
   (* First type-check the inductive definition *)
-  let (env_ar_par, univs, variance, record, paramsctxt, inds) = IndTyping.typecheck_inductive env mie in
+  let (env_ar_par, univs, variance, record, paramsctxt, inds) =
+    IndTyping.typecheck_inductive env ~sec_univs mie
+  in
   (* Then check positivity conditions *)
   let chkpos = (Environ.typing_flags env).check_positive in
   let names = Array.map_of_list (fun entry -> entry.mind_entry_typename, entry.mind_entry_consnames)
@@ -562,6 +575,6 @@ let check_inductive env kn mie =
       (Array.map (fun ((_,lc),(indices,_),_) -> Context.Rel.nhyps indices,lc) inds)
   in
   (* Build the inductive packets *)
-    build_inductive env names mie.mind_entry_private univs variance
+    build_inductive env ~sec_univs names mie.mind_entry_private univs variance
       paramsctxt kn record mie.mind_entry_finite
       inds nmr recargs
