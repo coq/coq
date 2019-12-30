@@ -335,8 +335,14 @@ let typecheck_inductive env (mie:mutual_inductive_entry) =
         data, Some None
   in
 
-  (* TODO pass only the needed bits *)
-  let variance = InferCumulativity.infer_inductive env mie in
+  let variance = if not mie.mind_entry_cumulative then None
+    else match mie.mind_entry_universes with
+      | Monomorphic_entry _ ->
+        CErrors.user_err Pp.(str "Inductive cannot be both monomorphic and universe cumulative.")
+      | Polymorphic_entry (_,uctx) ->
+        let univs = Instance.to_array @@ UContext.instance uctx in
+        Some (InferCumulativity.infer_inductive ~env_params univs mie.mind_entry_inds)
+  in
 
   (* Abstract universes *)
   let usubst, univs = Declareops.abstract_universes mie.mind_entry_universes in

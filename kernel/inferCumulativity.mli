@@ -8,5 +8,14 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val infer_inductive : Environ.env -> Entries.mutual_inductive_entry ->
-  Univ.Variance.t array option
+val infer_inductive
+  : env_params:Environ.env
+  (** Environment containing the polymorphic universes and the
+     parameters. *)
+  -> Univ.Level.t array
+  (** Universes whose cumulativity we want to infer. *)
+  -> Entries.one_inductive_entry list
+  (** The inductive block data we want to infer cumulativity for.
+      NB: we ignore the template bool and the names, only the terms
+      are used. *)
+  -> Univ.Variance.t array
