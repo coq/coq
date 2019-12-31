@@ -474,7 +474,7 @@ let program_inference_hook env sigma ev =
   let tac = !Obligations.default_tactic in
   let evi = Evd.find sigma ev in
   let evi = Evarutil.nf_evar_info sigma evi in
-  let env = Evd.evar_filtered_env evi in
+  let env = Evd.evar_filtered_env env evi in
   try
     let concl = evi.Evd.evar_concl in
     if not (Evarutil.is_ground_env sigma env &&

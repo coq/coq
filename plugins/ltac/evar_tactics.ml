@@ -26,9 +26,9 @@ module NamedDecl = Context.Named.Declaration
 
 (* The instantiate tactic *)
 
-let instantiate_evar evk (ist,rawc) sigma =
+let instantiate_evar evk (ist,rawc) env sigma =
   let evi = Evd.find sigma evk in
-  let filtered = Evd.evar_filtered_env evi in
+  let filtered = Evd.evar_filtered_env env evi in
   let constrvars = Tacinterp.extract_ltac_constr_values ist filtered in
   let lvar = {
     ltac_constrs = constrvars;
@@ -36,7 +36,7 @@ let instantiate_evar evk (ist,rawc) sigma =
     ltac_idents = Names.Id.Map.empty;
     ltac_genargs = ist.Geninterp.lfun;
   } in
-  let sigma' = w_refine (evk,evi) (lvar ,rawc) sigma in
+  let sigma' = w_refine (evk,evi) (lvar ,rawc) env sigma in
   tclEVARS sigma'
 
 let evar_list sigma c =
@@ -48,6 +48,7 @@ let evar_list sigma c =
 
 let instantiate_tac n c ido =
   Proofview.V82.tactic begin fun gl ->
+  let env = Global.env () in
   let sigma = gl.sigma in
   let evl =
     match ido with
@@ -69,16 +70,17 @@ let instantiate_tac n c ido =
     user_err Pp.(str "Not enough uninstantiated existential variables.");
   if n <= 0 then user_err Pp.(str "Incorrect existential variable index.");
   let evk,_ = List.nth evl (n-1) in
-  instantiate_evar evk c sigma gl
+  instantiate_evar evk c env sigma gl
   end
 
 let instantiate_tac_by_name id c =
   Proofview.V82.tactic begin fun gl ->
+  let env = Global.env () in
   let sigma = gl.sigma in
   let evk =
     try Evd.evar_key id sigma
     with Not_found -> user_err Pp.(str "Unknown existential variable.") in
-  instantiate_evar evk c sigma gl
+  instantiate_evar evk c env sigma gl
   end
 
 let let_evar name typ =

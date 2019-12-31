@@ -31,8 +31,9 @@ module V82 = struct
 
   (* Old style env primitive *)
   let env evars gl =
+    let env = Global.env () in
     let evi = Evd.find evars gl in
-    Evd.evar_filtered_env evi
+    Evd.evar_filtered_env env evi
 
   (* Old style hyps primitive *)
   let hyps evars gl =

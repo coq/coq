@@ -764,9 +764,9 @@ let restrict_upon_filter evd evk p args =
   let len = Array.length args in
   Filter.restrict_upon oldfullfilter len (fun i -> p (Array.unsafe_get args i))
 
-let check_evar_instance unify flags evd evk1 body =
+let check_evar_instance unify flags env evd evk1 body =
   let evi = Evd.find evd evk1 in
-  let evenv = evar_env evi in
+  let evenv = evar_env env evi in
   (* FIXME: The body might be ill-typed when this is called from w_merge *)
   (* This happens in practice, cf MathClasses build failure on 2013-3-15 *)
   let ty =
@@ -915,7 +915,7 @@ let rec find_solution_type evarenv = function
 let rec do_projection_effects unify flags define_fun env ty evd = function
   | ProjectVar -> evd
   | ProjectEvar ((evk,argsv),evi,id,p) ->
-      let evd = check_evar_instance unify flags evd evk (mkVar id) in
+      let evd = check_evar_instance unify flags env evd evk (mkVar id) in
       let evd = Evd.define evk (EConstr.mkVar id) evd in
       (* TODO: simplify constraints involving evk *)
       let evd = do_projection_effects unify flags define_fun env ty evd p in
@@ -1284,7 +1284,7 @@ let solve_evar_evar_l2r force f unify flags env evd aliases pbty ev1 (evk2,_ as 
         update_evar_info evk2 (fst (destEvar evd' body)) evd'
       else evd'
     in
-    check_evar_instance unify flags evd' evk2 body
+    check_evar_instance unify flags env evd' evk2 body
   with EvarSolvedOnTheFly (evd,c) ->
     f env evd pbty ev2 c
 
@@ -1329,12 +1329,12 @@ let solve_evar_evar ?(force=false) f unify flags env evd pbty (evk1,args1 as ev1
     try
       (* ?X : Π Δ. Type i = ?Y : Π Δ'. Type j.
          The body of ?X and ?Y just has to be of type Π Δ. Type k for some k <= i, j. *)
-      let evienv = Evd.evar_env evi in
+      let evienv = Evd.evar_env env evi in
       let concl1 = EConstr.Unsafe.to_constr evi.evar_concl in
       let ctx1, i = Reduction.dest_arity evienv concl1 in
       let ctx1 = List.map (fun c -> map_rel_decl EConstr.of_constr c) ctx1 in
       let evi2 = Evd.find evd evk2 in
-      let evi2env = Evd.evar_env evi2 in
+      let evi2env = Evd.evar_env env evi2 in
       let concl2 = EConstr.Unsafe.to_constr evi2.evar_concl in
       let ctx2, j = Reduction.dest_arity evi2env concl2 in
       let ctx2 = List.map (fun c -> map_rel_decl EConstr.of_constr c) ctx2 in
@@ -1418,7 +1418,7 @@ let solve_candidates unify flags env evd (evk,argsv) rhs =
           (* time and the evar been solved by the filtering process *)
          if Evd.is_undefined evd evk then
            let evd' = Evd.define evk c evd in
-             check_evar_instance unify flags evd' evk c
+             check_evar_instance unify flags env evd' evk c
          else evd
       | l when List.length l < List.length l' ->
           let candidates = List.map fst l in
@@ -1442,11 +1442,11 @@ let occur_evar_upto_types sigma n c =
   in
   try occur_rec c; false with Occur -> true
 
-let instantiate_evar unify flags evd evk body =
+let instantiate_evar unify flags env evd evk body =
   (* Check instance freezing the evar to be defined, as
      checking could involve the same evar definition problem again otherwise *)
   let flags = { flags with frozen_evars = Evar.Set.add evk flags.frozen_evars } in
-  let evd' = check_evar_instance unify flags evd evk body in
+  let evd' = check_evar_instance unify flags env evd evk body in
   Evd.define evk body evd'
 
 (* We try to instantiate the evar assuming the body won't depend
@@ -1508,7 +1508,7 @@ let rec invert_definition unify flags choose imitate_defs
             raise (NotEnoughInformationToProgress sols);
           (* No unique projection but still restrict to where it is possible *)
           (* materializing is necessary, but is restricting useful? *)
-          let ty = find_solution_type (evar_filtered_env evi) sols in
+          let ty = find_solution_type (evar_filtered_env env evi) sols in
           let ty' = instantiate_evar_array evi ty argsv in
           let (evd,evar,(evk',argsv' as ev')) =
             materialize_evar (evar_define unify flags ~choose) env !evdref 0 ev ty' in
@@ -1571,7 +1571,7 @@ let rec invert_definition unify flags choose imitate_defs
             try
               let evd,body = project_evar_on_evar false unify flags env' evd aliases 0 None ev'' ev' in
               let evd = Evd.define evk' body evd in
-                check_evar_instance unify flags evd evk' body
+                check_evar_instance unify flags env' evd evk' body
             with
             | EvarSolvedOnTheFly _ -> assert false (* ev has no candidates *)
             | CannotProject (evd,ev'') ->
@@ -1638,7 +1638,7 @@ let rec invert_definition unify flags choose imitate_defs
     else
       let t' = imitate (env,0) rhs in
         if !progress then
-          (recheck_applications unify flags (evar_env evi) evdref t'; t')
+          (recheck_applications unify flags (evar_env env evi) evdref t'; t')
         else t'
   in (!evdref,body)
 
@@ -1670,7 +1670,7 @@ and evar_define unify flags ?(choose=false) ?(imitate_defs=true) env evd pbty (e
     if occur_evar_upto_types evd' evk body then raise (OccurCheckIn (evd',body));
     (* needed only if an inferred type *)
     let evd', body = refresh_universes pbty env evd' body in
-    instantiate_evar unify flags evd' evk body
+    instantiate_evar unify flags env evd' evk body
   with
     | NotEnoughInformationToProgress sols ->
         postpone_non_unique_projection env evd pbty ev sols rhs
