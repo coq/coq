@@ -35,7 +35,7 @@ module Delayed :
 sig
 
 type 'a delayed
-val in_delayed : string -> ObjFile.in_handle -> segment:string -> 'a delayed * Digest.t
+val in_delayed : string -> segment:ObjFile.segment -> 'a delayed * Digest.t
 val fetch_delayed : 'a delayed -> 'a
 
 end =
@@ -47,10 +47,9 @@ type 'a delayed = {
   del_digest : Digest.t;
 }
 
-let in_delayed f ch ~segment =
-  let seg = ObjFile.get_segment ch ~segment in
-  let digest = seg.ObjFile.hash in
-  { del_file = f; del_digest = digest; del_off = seg.ObjFile.pos; }, digest
+let in_delayed f ~segment =
+  let digest = segment.ObjFile.hash in
+  { del_file = f; del_digest = digest; del_off = segment.ObjFile.pos; }, digest
 
 (** Fetching a table of opaque terms at position [pos] in file [f],
     expecting to find first a copy of [digest]. *)
@@ -185,37 +184,42 @@ let register_loaded_library m =
 (** Delayed / available tables of opaque terms *)
 
 type 'a table_status =
-  | ToFetch of 'a array delayed
-  | Fetched of 'a array
+  | ToFetch of 'a delayed
+  | Fetched of 'a
 
 let opaque_tables =
-  ref (DPmap.empty : (Opaqueproof.opaque_proofterm table_status) DPmap.t)
+  ref (DPmap.empty : (Constr.t * unit Opaqueproof.delayed_universes) table_status ref Int.Map.t DPmap.t)
+let get_opaque_segment name = match CString.split_on_char '/' name with
+| ["opaques"; n] ->
+  (try let n = int_of_string n in Some n with _ -> None)
+| _ -> None
 
-let add_opaque_table dp st =
-  opaque_tables := DPmap.add dp st !opaque_tables
-
-let access_table what tables dp i =
-  let t = match DPmap.find dp !tables with
-    | Fetched t -> t
-    | ToFetch f ->
-      let dir_path = Names.DirPath.to_string dp in
-      Flags.if_verbose Feedback.msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
-      let t =
-        try fetch_delayed f
-        with Faulty f ->
-          user_err ~hdr:"Library.access_table"
-            (str "The file " ++ str f ++ str " (bound to " ++ str dir_path ++
-             str ") is corrupted,\ncannot load some " ++
-             str what ++ str " in it.\n")
-      in
-      tables := DPmap.add dp (Fetched t) !tables;
-      t
+let add_opaque_table dp (f, segments) =
+  let fold name segment accu = match get_opaque_segment name with
+  | Some n ->
+    let (d, _) = in_delayed f ~segment in
+    Int.Map.add n (ref (ToFetch d)) accu
+  | None -> accu
   in
-  assert (i < Array.length t); t.(i)
+  let opaques = CString.Map.fold fold segments Int.Map.empty in
+  opaque_tables := DPmap.add dp opaques !opaque_tables
 
 let access_opaque_table dp i =
-  let what = "opaque proofs" in
-  access_table what opaque_tables dp i
+  let r = Int.Map.find i (DPmap.find dp !opaque_tables) in
+  match !r with
+  | Fetched v -> Some v
+  | ToFetch f ->
+    let dir_path = Names.DirPath.to_string dp in
+    Flags.if_verbose Feedback.msg_info (str"Fetching opaque proofs from disk for " ++ str dir_path);
+    let v =
+      try fetch_delayed f
+      with Faulty f ->
+        user_err ~hdr:"Library.access_table"
+          (str "The file " ++ str f ++ str " (bound to " ++ str dir_path ++
+            str ") is inaccessible or corrupted,\ncannot load some opaque proofs in it.\n")
+    in
+    let () = r := Fetched v in
+    Some v
 
 let indirect_accessor = {
   Opaqueproof.access_proof = access_opaque_table;
@@ -247,14 +251,14 @@ let mk_summary m = {
 
 let intern_from_file f =
   let ch = raw_intern_library f in
+  let segments = ObjFile.segments ch in
   let (lsd : seg_sum), digest_lsd = ObjFile.marshal_in_segment ch ~segment:"summary" in
   let ((lmd : seg_lib), digest_lmd) = ObjFile.marshal_in_segment ch ~segment:"library" in
   let (univs : seg_univ option), digest_u = ObjFile.marshal_in_segment ch ~segment:"universes" in
-  let ((del_opaque : seg_proofs delayed),_) = in_delayed f ch ~segment:"opaques" in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:lsd.md_ocaml ~file:f;
   register_library_filename lsd.md_name f;
-  add_opaque_table lsd.md_name (ToFetch del_opaque);
+  add_opaque_table lsd.md_name (f, segments);
   let open Safe_typing in
   match univs with
   | None -> mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
@@ -397,17 +401,17 @@ let require_library_from_dirpath ~lib_resolver modrefl export =
 
 let load_library_todo f =
   let ch = raw_intern_library f in
+  let _segments = ObjFile.segments ch in
   let (s0 : seg_sum), _ = ObjFile.marshal_in_segment ch ~segment:"summary" in
   let (s1 : seg_lib), _ = ObjFile.marshal_in_segment ch ~segment:"library" in
   let (s2 : seg_univ option), _ = ObjFile.marshal_in_segment ch ~segment:"universes" in
   let tasks, _ = ObjFile.marshal_in_segment ch ~segment:"tasks" in
-  let (s4 : seg_proofs), _ = ObjFile.marshal_in_segment ch ~segment:"opaques" in
   ObjFile.close_in ch;
   System.check_caml_version ~caml:s0.md_ocaml ~file:f;
   if tasks = None then user_err ~hdr:"restart" (str"not a .vio file");
   if s2 = None then user_err ~hdr:"restart" (str"not a .vio file");
   if snd (Option.get s2) then user_err ~hdr:"restart" (str"not a .vio file");
-  s0, s1, Option.get s2, Option.get tasks, s4
+  s0, s1, Option.get s2, Option.get tasks, assert false (* FIXME *)
 
 (************************************************************************)
 (*s [save_library dir] ends library [dir] and save it to the disk. *)
@@ -436,14 +440,38 @@ let error_recursively_dependent_library dir =
 (* Security weakness: file might have been changed on disk between
    writing the content and computing the checksum... *)
 
-let save_library_base f sum lib univs tasks proofs =
+type opaques =
+| OpaqueDirect of seg_proofs
+| OpaqueAncient of (Constr.t * unit Opaqueproof.delayed_universes) Ancient.t option array
+
+let save_library_base f sum lib univs tasks (proofs : opaques) =
   let ch = raw_extern_library f in
   try
     ObjFile.marshal_out_segment ch ~segment:"summary" (sum    : seg_sum);
     ObjFile.marshal_out_segment ch ~segment:"library" (lib    : seg_lib);
     ObjFile.marshal_out_segment ch ~segment:"universes" (univs  : seg_univ option);
     ObjFile.marshal_out_segment ch ~segment:"tasks" (tasks  : 'tasks option);
-    ObjFile.marshal_out_segment ch ~segment:"opaques" (proofs : seg_proofs);
+    let () = match proofs with
+    | OpaqueDirect proofs ->
+      let iter i = function
+      | None -> ()
+      | Some (proof : Constr.t * unit Opaqueproof.delayed_universes) ->
+        let segment = Printf.sprintf "opaques/%i" i in
+        ObjFile.marshal_out_segment ch ~segment proof
+      in
+      Array.iteri iter proofs
+    | OpaqueAncient proofs ->
+      let iter i = function
+      | None -> ()
+      | Some proof ->
+        let segment = Printf.sprintf "opaques/%i" i in
+        let ch, final = ObjFile.marshal_out_binary ch ~segment in
+        let () = Ancient.serialize proof ch in
+        let () = final () in
+        Ancient.delete proof
+      in
+      Array.iteri iter proofs
+    in
     ObjFile.close_out ch
   with reraise ->
     let reraise = Exninfo.capture reraise in
@@ -498,14 +526,14 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
   if Array.exists (fun (d,_) -> DirPath.equal d dir) sd.md_deps then
     error_recursively_dependent_library dir;
   (* Writing vo payload *)
-  save_library_base f sd md utab tasks opaque_table;
+  save_library_base f sd md utab tasks (OpaqueAncient opaque_table);
   (* Writing native code files *)
   if output_native_objects then
     let fn = Filename.dirname f ^"/"^ Nativecode.mod_uid_of_dirpath dir in
     Nativelib.compile_library dir ast fn
 
 let save_library_raw f sum lib univs proofs =
-  save_library_base f sum lib (Some univs) None proofs
+  save_library_base f sum lib (Some univs) None (OpaqueDirect proofs)
 
 let get_used_load_paths () =
   String.Set.elements

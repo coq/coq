@@ -64,5 +64,5 @@ val discharge_opaque :
 val join_opaque : ?except:Future.UUIDSet.t -> opaquetab -> opaque -> unit
 
 val dump : ?except:Future.UUIDSet.t -> opaquetab ->
-  opaque_proofterm array *
+  (Constr.t * unit delayed_universes) Ancient.t option array *
   int Future.UUIDMap.t

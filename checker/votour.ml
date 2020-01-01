@@ -418,7 +418,6 @@ let visit_vo f =
     "library", Values.v_lib;
     "universes", Values.v_univopaques;
     "tasks", (Opt Values.v_stm_seg);
-    "opaques", Values.v_opaquetable;
   ] in
   let repr =
     if Sys.word_size = 64 then (module ReprMem : S) else (module ReprObj : S)

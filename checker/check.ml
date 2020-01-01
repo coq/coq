@@ -51,7 +51,7 @@ let pr_path sp =
 type compilation_unit_name = DirPath.t
 
 type seg_univ = Univ.ContextSet.t * bool
-type seg_proofs = Opaqueproof.opaque_proofterm array
+type seg_proofs = (Constr.t * unit Opaqueproof.delayed_universes) Int.Map.t
 
 type library_t = {
   library_name : compilation_unit_name;
@@ -97,8 +97,7 @@ let access_opaque_table dp i =
     try LibraryMap.find dp !opaque_tables
     with Not_found -> assert false
   in
-  assert (i < Array.length t);
-  t.(i)
+  try Some (Int.Map.find i t) with Not_found -> None
 
 let access_discharge = Cooking.cook_constr
 
@@ -314,12 +313,22 @@ let marshal_in_segment ~validate ~value ~segment f ch =
   else
     System.marshal_in f ch
 
-let marshal_or_skip ~validate ~value ~segment f ch =
+let get_opaque_segment name = match CString.split_on_char '/' name with
+| ["opaques"; n] ->
+  (try let n = int_of_string n in Some n with _ -> None)
+| _ -> None
+
+let get_opaques ~validate f ch segments =
   if validate then
-    let v = marshal_in_segment ~validate:true ~value ~segment f ch in
+    let fold name segment accu = match get_opaque_segment name with
+    | None -> accu
+    | Some n ->
+      let data = marshal_in_segment ~validate ~value:Values.v_opaqueproof ~segment f ch in
+      Int.Map.add n data accu
+    in
+    let v = CString.Map.fold fold segments Int.Map.empty in
     Some v
-  else
-    None
+  else None
 
 let intern_from_file ~intern_mode (dir, f) =
   let validate = intern_mode <> Dep in
@@ -328,11 +337,11 @@ let intern_from_file ~intern_mode (dir, f) =
     try
       (* First pass to read the metadata of the file *)
       let ch = System.with_magic_number_check raw_intern_library f in
+      let segments = ObjFile.segments ch in
       let seg_sd = ObjFile.get_segment ch ~segment:"summary" in
       let seg_md = ObjFile.get_segment ch ~segment:"library" in
       let seg_univs = ObjFile.get_segment ch ~segment:"universes" in
       let seg_tasks = ObjFile.get_segment ch ~segment:"tasks" in
-      let seg_opaque = ObjFile.get_segment ch ~segment:"opaques" in
       let () = ObjFile.close_in ch in
       (* Actually read the data *)
       let ch = open_in_bin f in
@@ -341,8 +350,7 @@ let intern_from_file ~intern_mode (dir, f) =
       let (md:library_disk) = marshal_in_segment ~validate ~value:Values.v_lib ~segment:seg_md f ch in
       let (opaque_csts:seg_univ option) = marshal_in_segment ~validate ~value:Values.v_univopaques ~segment:seg_univs f ch in
       let (tasks:'a option) = marshal_in_segment ~validate ~value:Values.(Opt Any) ~segment:seg_tasks f ch in
-      let (table:seg_proofs option) =
-        marshal_or_skip ~validate ~value:Values.v_opaquetable ~segment:seg_opaque f ch in
+      let (table:seg_proofs option) = get_opaques ~validate f ch segments in
       (* Verification of the final checksum *)
       let () = close_in ch in
       let ch = open_in_bin f in

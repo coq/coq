@@ -31,17 +31,13 @@ type indirect_accessor = {
   access_discharge : cooking_info list -> (Constr.t * unit delayed_universes) -> (Constr.t * unit delayed_universes);
 }
 
-let drop_mono = function
-| PrivateMonomorphic _ -> PrivateMonomorphic ()
-| PrivatePolymorphic _ as ctx -> ctx
-
 type proofterm = (constr * Univ.ContextSet.t delayed_universes) Future.computation
 
 type opaque =
 | Indirect of substitution list * cooking_info list * DirPath.t * int (* subst, discharge, lib, index *)
 
 type opaquetab = {
-  opaque_val : proofterm Int.Map.t;
+  opaque_val : ((constr * unit delayed_universes) Ancient.t * Univ.ContextSet.t option) Future.computation Int.Map.t;
   (** Actual proof terms *)
   opaque_len : int;
   (** Size of the above map *)
@@ -57,15 +53,14 @@ let not_here () =
   CErrors.user_err Pp.(str "Cannot access opaque delayed proof")
 
 let create dp cu tab =
-  let hcons (c, u) =
-    let c = Constr.hcons c in
-    let u = match u with
-    | PrivateMonomorphic u -> PrivateMonomorphic (Univ.hcons_universe_context_set u)
-    | PrivatePolymorphic (n, u) -> PrivatePolymorphic (n, Univ.hcons_universe_context_set u)
+  let map (c, u) =
+    let u, ctx = match u with
+    | PrivateMonomorphic u -> PrivateMonomorphic (), Some u
+    | PrivatePolymorphic (n, u) -> PrivatePolymorphic (n, u), None
     in
-    (c, u)
+    Ancient.make (c, u), ctx
   in
-  let cu = Future.chain cu hcons in
+  let cu = Future.chain cu map in
   let id = tab.opaque_len in
   let opaque_val = Int.Map.add id cu tab.opaque_val in
   let opaque_dir =
@@ -102,27 +97,23 @@ let force_proof access { opaque_val = prfs; opaque_dir = odp; _ } = function
         if DirPath.equal dp odp
         then
           let cu = Int.Map.find i prfs in
-          let (c, u) = Future.force cu in
-          access.access_discharge d (c, drop_mono u)
+          let p, _ = Future.force cu in
+          access.access_discharge d (Ancient.get p)
         else
           let cu = access.access_proof dp i in
           match cu with
           | None -> not_here ()
-          | Some (c, u) -> access.access_discharge d (c, u)
+          | Some p -> access.access_discharge d p
       in
       let c = force_constr (List.fold_right subst_substituted l (from_val c)) in
       (c, u)
-
-let get_mono (_, u) = match u with
-| PrivateMonomorphic ctx -> ctx
-| PrivatePolymorphic _ -> Univ.ContextSet.empty
 
 let force_constraints _access { opaque_val = prfs; opaque_dir = odp; _ } = function
 | Indirect (_,_,dp,i) ->
       if DirPath.equal dp odp
       then
         let cu = Int.Map.find i prfs in
-        get_mono (Future.force cu)
+        Option.default Univ.ContextSet.empty (snd @@ Future.force cu)
       else Univ.ContextSet.empty
 
 module FMap = Future.UUIDMap
@@ -135,9 +126,8 @@ let dump ?(except = Future.UUIDSet.empty) { opaque_val = otab; opaque_len = n; _
     let () = f2t_map := FMap.add (Future.uuid cu) n !f2t_map in
     let c =
       if Future.is_val cu then
-        let (c, priv) = Future.force cu in
-        let priv = drop_mono priv in
-        Some (c, priv)
+        let c, _ = Future.force cu in
+        Some c
       else if Future.UUIDSet.mem uid except then None
       else
         CErrors.anomaly
