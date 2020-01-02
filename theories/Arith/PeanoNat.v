@@ -223,10 +223,6 @@ Proof.
  reflexivity.
 Qed.
 
-
-(* BUG: Ajout d'un cas * après preuve finie (deuxième niveau +++*** ) :
-    *  --->   Anomaly: Uncaught exception Proofview.IndexOutOfRange(_). Please report. *)
-
 (** ** Minimum, maximum *)
 
 Lemma max_l : forall n m, m <= n -> max n m = n.
