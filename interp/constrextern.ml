@@ -394,7 +394,7 @@ let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
     match availability_of_entry_coercion custom InConstrEntrySomeLevel with
     | None -> raise No_match
     | Some coercion ->
-      let allscopes = (InConstrEntrySomeLevel,scopes) in
+      let allscopes = (InConstrEntrySomeRelativeLevel,scopes) in
       let pat = match pat with
         | PatVar (Name id) -> CAst.make ?loc (CPatAtom (Some (qualid_of_ident ?loc id)))
         | PatVar (Anonymous) -> CAst.make ?loc (CPatAtom None)
@@ -536,7 +536,7 @@ let extern_ind_pattern_in_scope (custom,scopes as allscopes) vars ind args =
            |None           -> CAst.make @@ CPatCstr (c, Some args, [])
 
 let extern_cases_pattern vars p =
-  extern_cases_pattern_in_scope (InConstrEntrySomeLevel,(None,[])) vars p
+  extern_cases_pattern_in_scope (InConstrEntrySomeRelativeLevel,(None,[])) vars p
 
 (**********************************************************************)
 (* Externalising applications *)
@@ -813,7 +813,7 @@ let rec extern inctx scopes vars r =
   | None -> raise No_match
   | Some coercion ->
 
-  let scopes = (InConstrEntrySomeLevel, snd scopes) in
+  let scopes = (InConstrEntrySomeRelativeLevel, snd scopes) in
   let c = match c with
 
   (* The remaining cases are only for the constr entry *)
@@ -1193,10 +1193,10 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
           No_match -> extern_notation allscopes vars t rules
 
 let extern_glob_constr vars c =
-  extern false (InConstrEntrySomeLevel,(None,[])) vars c
+  extern false (InConstrEntrySomeRelativeLevel,(None,[])) vars c
 
 let extern_glob_type vars c =
-  extern_typ (InConstrEntrySomeLevel,(None,[])) vars c
+  extern_typ (InConstrEntrySomeRelativeLevel,(None,[])) vars c
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
@@ -1204,7 +1204,7 @@ let extern_glob_type vars c =
 let extern_constr ?lax ?(inctx=false) ?scope env sigma t =
   let r = Detyping.detype Detyping.Later ?lax false Id.Set.empty env sigma t in
   let vars = vars_of_env env in
-  extern inctx (InConstrEntrySomeLevel,(scope,[])) vars r
+  extern inctx (InConstrEntrySomeRelativeLevel,(scope,[])) vars r
 
 let extern_constr_in_scope ?lax ?inctx scope env sigma t =
   extern_constr ?lax ?inctx ~scope env sigma t
@@ -1229,7 +1229,7 @@ let extern_closed_glob ?lax ?(goal_concl_style=false) ?(inctx=false) ?scope env 
     Detyping.detype_closed_glob ?lax goal_concl_style avoid env sigma t
   in
   let vars = vars_of_env env in
-  extern inctx (InConstrEntrySomeLevel,(scope,[])) vars r
+  extern inctx (InConstrEntrySomeRelativeLevel,(scope,[])) vars r
 
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)
@@ -1343,10 +1343,10 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PFloat f -> GFloat f
 
 let extern_constr_pattern env sigma pat =
-  extern true (InConstrEntrySomeLevel,(None,[])) Id.Set.empty (glob_of_pat Id.Set.empty env sigma pat)
+  extern true (InConstrEntrySomeRelativeLevel,(None,[])) Id.Set.empty (glob_of_pat Id.Set.empty env sigma pat)
 
 let extern_rel_context where env sigma sign =
   let a = detype_rel_context Detyping.Later where Id.Set.empty (names_of_rel_context env,env) sigma sign in
   let vars = vars_of_env env in
   let a = List.map (extended_glob_local_binder_of_decl) a in
-  pi3 (extern_local_binder (InConstrEntrySomeLevel,(None,[])) vars a)
+  pi3 (extern_local_binder (InConstrEntrySomeRelativeLevel,(None,[])) vars a)

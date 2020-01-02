@@ -939,7 +939,7 @@ let is_only_printing mods =
 
 (* Compute precedences from modifiers (or find default ones) *)
 
-let set_entry_type from n etyps (x,typ) =
+let set_subentry_type from n etyps (x,typ) =
   let make_lev n s = match typ with
     | BorderProd _ -> NumLevel n
     | InternalProd ->
@@ -1007,14 +1007,19 @@ let make_interpretation_type isrec isonlybinding = function
      if isrec then NtnTypeBinderList
      else anomaly Pp.(str "Type binder is only for use in recursive notations for binders.")
 
-let subentry_of_constr_prod_entry = function
-  | ETConstr (InCustomEntry s,_,(NumLevel n,_)) -> InCustomEntryLevel (s,n)
+let subentry_of_constr_prod_entry n = function
+  | ETConstr (InCustomEntry s,_,x) -> InCustomEntryRelativeLevel (s,precedence_of_position_and_level n x)
   (* level and use of parentheses for coercion is hard-wired for "constr";
      we don't remember the level *)
-  | ETConstr (InConstrEntry,_,_) -> InConstrEntrySomeLevel
-  | _ -> InConstrEntrySomeLevel
+  | ETConstr (InConstrEntry,_,_) -> InConstrEntrySomeRelativeLevel
+  | _ -> InConstrEntrySomeRelativeLevel
 
-let make_interpretation_vars recvars allvars typs =
+let absolute_entry_of_entry_type = function
+  | ETConstr (InCustomEntry s,_,(NumLevel n,_)) -> Some (InCustomEntryLevel (s,n))
+  | ETConstr (InConstrEntry,_,(NumLevel n,_)) -> Some InConstrEntrySomeLevel
+  | _ -> None
+
+let make_interpretation_vars recvars (_,n,_,prec) allvars typs =
   let eq_subscope (sc1, l1) (sc2, l2) =
     Option.equal String.equal sc1 sc2 &&
     List.equal String.equal l1 l2
@@ -1028,9 +1033,11 @@ let make_interpretation_vars recvars allvars typs =
   let useless_recvars = List.map snd recvars in
   let mainvars =
     Id.Map.filter (fun x _ -> not (Id.List.mem x useless_recvars)) allvars in
+  let vars = List.map fst typs in
   Id.Map.mapi (fun x (isonlybinding, sc) ->
-    let typ = Id.List.assoc x typs in
-    ((subentry_of_constr_prod_entry typ,sc),
+    let i = List.index0 Id.equal x vars in
+    let typ = List.nth prec i in
+    ((subentry_of_constr_prod_entry n typ,sc),
      make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding typ)) mainvars
 
 let check_rule_productivity l =
@@ -1072,9 +1079,11 @@ let is_coercion = function
      (match e, custom with
      | ETConstr _, _ ->
          let customkey = make_custom_entry custom n in
-         let subentry = subentry_of_constr_prod_entry e in
-         if notation_entry_level_eq subentry customkey then None
-         else Some (IsEntryCoercion subentry)
+         let entry = absolute_entry_of_entry_type e in
+         (match entry with
+         | None -> None
+         | Some entry when notation_entry_level_eq entry customkey -> None
+         | Some entry -> Some (IsEntryCoercion entry))
      | ETGlobal, InCustomEntry s -> Some (IsEntryGlobal (s,n))
      | ETIdent, InCustomEntry s -> Some (IsEntryIdent (s,n))
      | _ -> None)
@@ -1216,7 +1225,7 @@ let find_subentry_types from n assoc etyps symbols =
       (InternalProd)
       (BorderProd(Right,assoc))
       symbols in
-  let sy_typs = List.map (set_entry_type from n etyps) typs in
+  let sy_typs = List.map (set_subentry_type from n etyps) typs in
   let prec = List.map (assoc_of_type from n) sy_typs in
   sy_typs, prec
 
@@ -1264,7 +1273,9 @@ let compute_syntax_data ~local deprecation df modifiers =
   check_locality_compatibility local mods.custom sy_typs;
   let pa_sy_data = (sy_typs_for_grammar,symbols_for_grammar) in
   let pp_sy_data = (sy_typs,symbols) in
-  let sy_fulldata = (ntn_for_grammar,(mods.custom,n,prec_for_grammar,List.map snd sy_typs_for_grammar),need_squash) in
+  let ntn_sign = (mods.custom,n,prec,List.map snd sy_typs) in
+  let ntn_sign_for_grammar = (mods.custom,n,prec_for_grammar,List.map snd sy_typs_for_grammar) in
+  let sy_fulldata = (ntn_for_grammar,ntn_sign_for_grammar,need_squash) in
   let df' = ((Lib.library_dp(),Lib.current_dirpath true),df) in
   let i_data = ntn_for_interp, df' in
 
@@ -1283,7 +1294,7 @@ let compute_syntax_data ~local deprecation df modifiers =
     mainvars;
     intern_typs = i_typs;
 
-    ntn_sign  = (mods.custom,n,prec,List.map snd sy_typs);
+    ntn_sign;
     pa_syntax_data = pa_sy_data;
     pp_syntax_data = pp_sy_data;
     not_data    = sy_fulldata;
@@ -1465,7 +1476,7 @@ let add_notation_in_scope ~local deprecation df env c mods scope =
     ninterp_rec_vars = to_map sd.recvars;
   } in
   let (acvars, ac, reversibility) = interp_notation_constr env nenv c in
-  let interp = make_interpretation_vars sd.recvars acvars (fst sd.pa_syntax_data) in
+  let interp = make_interpretation_vars sd.recvars sd.ntn_sign acvars (fst sd.pa_syntax_data) in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let onlyparse,coe = printability (Some sd.ntn_sign) sd.only_parsing reversibility ac in
   let notation = {
@@ -1488,7 +1499,7 @@ let add_notation_in_scope ~local deprecation df env c mods scope =
 let add_notation_interpretation_core ~local df env ?(impls=empty_internalization_env) c scope onlyparse onlyprint deprecation =
   let (recvars,mainvars,symbs) = analyze_notation_tokens ~onlyprint df in
   (* Recover types of variables and pa/pp rules; redeclare them if needed *)
-  let level, i_typs, onlyprint = if not (is_numeral symbs) then begin
+  let sign, i_typs, onlyprint = if not (is_numeral symbs) then begin
     let sy = recover_notation_syntax (make_notation_key InConstrEntrySomeLevel symbs) in
     let () = Lib.add_anonymous_leaf (inSyntaxExtension (local,sy)) in
     (* If the only printing flag has been explicitly requested, put it back *)
@@ -1505,9 +1516,9 @@ let add_notation_interpretation_core ~local df env ?(impls=empty_internalization
     ninterp_rec_vars = to_map recvars;
   } in
   let (acvars, ac, reversibility) = interp_notation_constr env ~impls nenv c in
-  let interp = make_interpretation_vars recvars acvars (List.combine mainvars i_typs) in
+  let interp = match sign with Some sign -> make_interpretation_vars recvars sign acvars (List.combine mainvars i_typs) | None -> Id.Map.empty in
+  let onlyparse,coe = printability sign onlyparse reversibility ac in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
-  let onlyparse,coe = printability level onlyparse reversibility ac in
   let notation = {
     notobj_local = local;
     notobj_scope = scope;

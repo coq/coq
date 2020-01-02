@@ -28,6 +28,9 @@ val notation_entry_level_eq : notation_entry_level -> notation_entry_level -> bo
 val notation_eq : notation -> notation -> bool
 (** Equality on [notation]. *)
 
+val entry_relative_level_eq : entry_relative_level -> entry_relative_level -> bool
+(** Equality on [entry_relative_level]. *)
+
 module NotationSet : Set.S with type elt = notation
 module NotationMap : CMap.ExtS with type key = notation and module Set := NotationSet
 
@@ -301,13 +304,13 @@ val pr_visibility: (glob_constr -> Pp.t) -> scope_name option -> Pp.t
 
 type entry_coercion = notation list
 val declare_entry_coercion : notation -> notation_entry_level -> unit
-val availability_of_entry_coercion : notation_entry_level -> notation_entry_level -> entry_coercion option
+val availability_of_entry_coercion : notation_entry_relative_level -> notation_entry_level -> entry_coercion option
 
 val declare_custom_entry_has_global : string -> int -> unit
 val declare_custom_entry_has_ident : string -> int -> unit
 
-val entry_has_global : notation_entry_level -> bool
-val entry_has_ident : notation_entry_level -> bool
+val entry_has_global : notation_entry_relative_level -> bool
+val entry_has_ident : notation_entry_relative_level -> bool
 
 (** Rem: printing rules for primitive token are canonical *)
 

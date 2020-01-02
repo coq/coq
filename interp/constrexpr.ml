@@ -22,8 +22,25 @@ type name_decl = lname * universe_decl_expr option
 type entry_level = int
 type entry_relative_level = LevelLt of entry_level | LevelLe of entry_level | LevelSome
 
-type notation_entry = InConstrEntry | InCustomEntry of string
-type notation_entry_level = InConstrEntrySomeLevel | InCustomEntryLevel of string * entry_level
+type notation_entry =
+  | InConstrEntry
+  | InCustomEntry of string
+
+(* A grammar entry, together with the level it lives.
+   - For custom entries: the level is explicit and used to insert
+     grammar coercions at printing time;
+   - For constr, precedences are hard-wired in the parsing/printing
+     loop (g_constr.mlg, ppconstr.ml), so we don't need to remember the level. *)
+type notation_entry_level =
+  | InConstrEntrySomeLevel
+  | InCustomEntryLevel of string * entry_level
+
+(* A grammar entry, together with a constraint on the level (typically
+   for the subentry of a rule or the level we are coming from. *)
+type notation_entry_relative_level =
+  | InConstrEntrySomeRelativeLevel
+  | InCustomEntryRelativeLevel of string * entry_relative_level
+
 type notation_key = string
 type notation = notation_entry_level * notation_key
 

@@ -12,7 +12,6 @@ open Pp
 open CErrors
 open Util
 open Notation
-open Constrexpr
 
 (* Uninterpreted notation levels *)
 
@@ -34,12 +33,6 @@ let signature_of_notation ?(onlyprint=false) ntn =
 (* Equality *)
 
 open Extend
-
-let entry_relative_level_eq t1 t2 = match t1, t2 with
-| LevelLt n1, LevelLt n2 -> Int.equal n1 n2
-| LevelLe n1, LevelLe n2 -> Int.equal n1 n2
-| LevelSome, LevelSome -> true
-| (LevelLt _ | LevelLe _ | LevelSome), _ -> false
 
 let production_position_eq pp1 pp2 = match (pp1,pp2) with
 | BorderProd (side1,assoc1), BorderProd (side2,assoc2) -> side1 = side2 && assoc1 = assoc2

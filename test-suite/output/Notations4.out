@@ -16,6 +16,8 @@ Entry constr:myconstr is
      : option nat
 [b + c]
      : nat
+Add [1 + 1] [1 + 1]
+     : Expr
 [1 {f 1}]
      : Expr
 fun (x : nat) (y z : Expr) => [1 + y z + {f x}]

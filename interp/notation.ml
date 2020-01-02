@@ -49,6 +49,17 @@ let notation_entry_level_eq s1 s2 = match (s1,s2) with
 | InCustomEntryLevel (s1,n1), InCustomEntryLevel (s2,n2) -> String.equal s1 s2 && n1 = n2
 | (InConstrEntrySomeLevel | InCustomEntryLevel _), _ -> false
 
+let entry_relative_level_eq t1 t2 = match t1, t2 with
+| LevelLt n1, LevelLt n2 -> Int.equal n1 n2
+| LevelLe n1, LevelLe n2 -> Int.equal n1 n2
+| LevelSome, LevelSome -> true
+| (LevelLt _ | LevelLe _ | LevelSome), _ -> false
+
+let notation_entry_relative_level_eq s1 s2 = match (s1,s2) with
+| InConstrEntrySomeRelativeLevel, InConstrEntrySomeRelativeLevel -> true
+| InCustomEntryRelativeLevel (s1,p1), InCustomEntryRelativeLevel (s2,p2) -> String.equal s1 s2 && entry_relative_level_eq p1 p2
+| (InConstrEntrySomeRelativeLevel | InCustomEntryRelativeLevel _), _ -> false
+
 let notation_eq (from1,ntn1) (from2,ntn2) =
   notation_entry_level_eq from1 from2 && String.equal ntn1 ntn2
 
@@ -1262,21 +1273,34 @@ let level_ord lev lev' =
   | _, None -> true
   | Some n, Some n' -> n <= n'
 
+let level_less child parent =
+  match child with
+  | None -> true
+  | Some child ->
+    match parent with
+    | LevelLt parent -> child < parent
+    | LevelLe parent -> child <= abs parent
+    | LevelSome -> true
+
 let rec search nfrom nto = function
   | [] -> raise Not_found
   | ((pfrom,pto),coe)::l ->
-    if level_ord pfrom nfrom && level_ord nto pto then coe else search nfrom nto l
+    if level_less pfrom nfrom && level_ord nto pto then coe else search nfrom nto l
 
 let decompose_custom_entry = function
   | InConstrEntrySomeLevel -> InConstrEntry, None
   | InCustomEntryLevel (s,n) -> InCustomEntry s, Some n
 
-let availability_of_entry_coercion entry entry' =
+let decompose_custom_subentry = function
+  | InConstrEntrySomeRelativeLevel -> InConstrEntry, LevelSome
+  | InCustomEntryRelativeLevel (s,p) -> InCustomEntry s, p
+
+let availability_of_entry_coercion from_entry entry =
+  let from_entry, from_lev = decompose_custom_subentry from_entry in
   let entry, lev = decompose_custom_entry entry in
-  let entry', lev' = decompose_custom_entry entry' in
-  if notation_entry_eq entry entry' && level_ord lev' lev then Some []
+  if notation_entry_eq from_entry entry && level_less lev from_lev then Some []
   else
-    try Some (search lev lev' (EntryCoercionMap.find (entry,entry') !entry_coercion_map))
+    try Some (search from_lev lev (EntryCoercionMap.find (from_entry,entry) !entry_coercion_map))
     with Not_found -> None
 
 let better_path ((lev1,lev2),path) ((lev1',lev2'),path') =
@@ -1330,9 +1354,9 @@ let declare_custom_entry_has_global s n =
     entry_has_global_map := String.Map.add s n !entry_has_global_map
 
 let entry_has_global = function
-  | InConstrEntrySomeLevel -> true
-  | InCustomEntryLevel (s,n) ->
-     try String.Map.find s !entry_has_global_map <= n with Not_found -> false
+  | InConstrEntrySomeRelativeLevel -> true
+  | InCustomEntryRelativeLevel (s,n) ->
+     try level_less (Some (String.Map.find s !entry_has_global_map)) n with Not_found -> false
 
 let entry_has_ident_map = ref String.Map.empty
 
@@ -1345,9 +1369,9 @@ let declare_custom_entry_has_ident s n =
     entry_has_ident_map := String.Map.add s n !entry_has_ident_map
 
 let entry_has_ident = function
-  | InConstrEntrySomeLevel -> true
-  | InCustomEntryLevel (s,n) ->
-     try String.Map.find s !entry_has_ident_map <= n with Not_found -> false
+  | InConstrEntrySomeRelativeLevel -> true
+  | InCustomEntryRelativeLevel (s,n) ->
+     try level_less (Some (String.Map.find s !entry_has_ident_map)) n with Not_found -> false
 
 let uninterp_prim_token c =
   match glob_prim_constr_key c with
@@ -1409,7 +1433,7 @@ let ntpe_eq t1 t2 = match t1, t2 with
 | (NtnTypeConstr | NtnTypeBinder _ | NtnTypeConstrList | NtnTypeBinderList), _ -> false
 
 let var_attributes_eq (_, ((entry1, sc1), tp1)) (_, ((entry2, sc2), tp2)) =
-  notation_entry_level_eq entry1 entry2 &&
+  notation_entry_relative_level_eq entry1 entry2 &&
   pair_eq (Option.equal String.equal) (List.equal String.equal) sc1 sc2 &&
   ntpe_eq tp1 tp2
 
