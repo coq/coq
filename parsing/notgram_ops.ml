@@ -16,17 +16,17 @@ open Constrexpr
 
 (* Uninterpreted notation levels *)
 
-let notation_level_map = Summary.ref ~name:"notation_level_map" NotationMap.empty
+let notation_signature_map = Summary.ref ~name:"notation_signature_map" NotationMap.empty
 
-let declare_notation_level ?(onlyprint=false) ntn level =
+let declare_notation_signature ?(onlyprint=false) ntn level =
   try
-    let (level,onlyprint) = NotationMap.find ntn !notation_level_map in
+    let (level,onlyprint) = NotationMap.find ntn !notation_signature_map in
     if not onlyprint then anomaly (str "Notation " ++ pr_notation ntn ++ str " is already assigned a level.")
   with Not_found ->
-  notation_level_map := NotationMap.add ntn (level,onlyprint) !notation_level_map
+  notation_signature_map := NotationMap.add ntn (level,onlyprint) !notation_signature_map
 
-let level_of_notation ?(onlyprint=false) ntn =
-  let (level,onlyprint') = NotationMap.find ntn !notation_level_map in
+let signature_of_notation ?(onlyprint=false) ntn =
+  let (level,onlyprint') = NotationMap.find ntn !notation_signature_map in
   if onlyprint' && not onlyprint then raise Not_found;
   level
 
@@ -61,11 +61,11 @@ let constr_entry_key_eq eq v1 v2 = match v1, v2 with
 | ETPattern (b1,n1), ETPattern (b2,n2) -> b1 = b2 && Option.equal Int.equal n1 n2
 | (ETIdent | ETGlobal | ETBigint | ETBinder _ | ETConstr _ | ETPattern _), _ -> false
 
-let level_eq_gen strict (s1, l1, t1, u1) (s2, l2, t2, u2) =
+let notation_signature_eq_gen strict (s1, l1, t1, u1) (s2, l2, t2, u2) =
   let prod_eq (l1,pp1) (l2,pp2) =
     not strict ||
     (production_level_eq l1 l2 && production_position_eq pp1 pp2) in
   notation_entry_eq s1 s2 && Int.equal l1 l2 && List.equal entry_relative_level_eq t1 t2
   && List.equal (constr_entry_key_eq prod_eq) u1 u2
 
-let level_eq = level_eq_gen false
+let notation_signature_eq = notation_signature_eq_gen false

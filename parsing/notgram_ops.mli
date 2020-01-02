@@ -12,9 +12,9 @@
 open Constrexpr
 open Notation_gram
 
-val level_eq : level -> level -> bool
+val notation_signature_eq : notation_signature -> notation_signature -> bool
 
 (** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 
-val declare_notation_level : ?onlyprint:bool -> notation -> level -> unit
-val level_of_notation : ?onlyprint:bool -> notation -> level (** raise [Not_found] if no level or not respecting onlyprint *)
+val declare_notation_signature : ?onlyprint:bool -> notation -> notation_signature -> unit
+val signature_of_notation : ?onlyprint:bool -> notation -> notation_signature (** raise [Not_found] if no level or not respecting onlyprint *)
