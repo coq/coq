@@ -632,7 +632,7 @@ $(MLLIBFILES:.mllib=.cma): %.cma: | %.mllib
 
 $(MLLIBFILES:.mllib=.cmxa): %.cmxa: | %.mllib
 	$(SHOW)'CAMLOPT -a -o $@'
-	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) $(CAMLPKGS) -a -o $@ $^
+	$(HIDE)$(CAMLOPTLINK) $(CAMLDEBUG) $(CAMLFLAGS) -a -o $@ $^
 
 
 $(MLPACKFILES:.mlpack=.cmxs): %.cmxs: %.cmxa
