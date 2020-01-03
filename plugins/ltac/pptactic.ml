@@ -335,7 +335,7 @@ let string_of_genarg_arg (ArgumentType arg) =
   let pr_targ prtac symb arg = match symb with
   | Extend.Uentry tag when is_genarg tag (ArgumentType wit_tactic) ->
     prtac LevelSome arg
-  | Extend.Uentryl (_, l) -> prtac LevelSome arg
+  | Extend.Uentryl (_, l) -> prtac (LevelLe l) arg
   | _ ->
     match arg with
     | TacGeneric (isquot,arg) ->

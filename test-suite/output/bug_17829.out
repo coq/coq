@@ -1,0 +1,1 @@
+Ltac f := foo (foo idtac)
