@@ -1,0 +1,4 @@
+- **Added:**
+  Add support for OCaml 4.10
+  (`#11358 <https://github.com/coq/coq/pull/11358>`_,
+  by Kate Deplaix).
