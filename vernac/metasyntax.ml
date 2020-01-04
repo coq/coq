@@ -26,8 +26,8 @@ open Libnames
 open Notation
 open Nameops
 
-(**********************************************************************)
-(* Tokens                                                             *)
+(** **************************************************************** **)
+(** Tokens                                                           **)
 
 let cache_token (_,s) = CLexer.add_keyword s
 
@@ -38,8 +38,8 @@ let inToken : string -> obj =
 
 let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 
-(**********************************************************************)
-(* Printing grammar entries                                           *)
+(** **************************************************************** **)
+(** Printing grammar entries                                         **)
 
 let entry_buf = Buffer.create 64
 
@@ -87,9 +87,9 @@ let pr_grammar = function
 
 let pr_custom_grammar name = pr_registered_grammar ("constr:"^name)
 
-(**********************************************************************)
-(* Parse a format (every terminal starting with a letter or a single
-   quote (except a single quote alone) must be quoted) *)
+(** **************************************************************** **)
+(** Parse a format (every terminal starting with a letter or a single
+    quote (except a single quote alone) must be quoted) **)
 
 let parse_format ({CAst.loc;v=str} : lstring) =
   let len = String.length str in
@@ -191,8 +191,8 @@ let parse_format ({CAst.loc;v=str} : lstring) =
   else
     []
 
-(***********************)
-(* Analyzing notations *)
+(** **************************************************************** **)
+(** Analyzing notations                                              **)
 
 (* Interpret notations with a recursive component *)
 
@@ -239,7 +239,6 @@ let rec interp_list_parser hd = function
       xyl, List.rev_append hd tl'
   | SProdList _ :: _ -> anomaly (Pp.str "Unexpected SProdList in interp_list_parser.")
 
-
 (* Find non-terminal tokens of notation *)
 
 (* To protect alphabetic tokens and quotes from being seen as variables *)
@@ -279,8 +278,8 @@ let error_not_same_scope x y =
   user_err ~hdr:"Metasyntax.error_not_name_scope"
     (str "Variables " ++ Id.print x ++ str " and " ++ Id.print y ++ str " must be in the same scope.")
 
-(**********************************************************************)
-(* Build pretty-printing rules                                        *)
+(** **************************************************************** **)
+(** Build pretty-printing rules                                      **)
 
 let pr_notation_entry = function
   | InConstrEntry -> str "constr"
@@ -325,6 +324,20 @@ let unparsing_precedence_of_entry_type from_level = function
     LevelSome
   | ETPattern (_,n) -> (* in constr *) LevelLe (match n with Some n -> n | None -> 0)
   | _ -> LevelSome (* should not matter *)
+
+(** Computing subentries for future insertion of parsing coercions at
+    the time of translating from glob_constr to constr_expr *)
+let subentry_of_entry_type from_level = function
+    (* Insertion of coercions between levels - e.g. parentheses - is managed
+       at the time of translating from [glob_constr] to [constr_expr] *)
+  | ETConstr (InCustomEntry s,_,x) ->
+    InCustomEntryRelativeLevel (s,precedence_of_position_and_level from_level x)
+    (* Insertion of parentheses is hard-wired in "constr" parser and printer;
+       we don't remember the level *)
+  | ETConstr (InConstrEntry,_,_) -> InConstrEntrySomeRelativeLevel
+  | _ -> InConstrEntrySomeRelativeLevel
+
+(** Utilities for building default printing rules *)
 
 (* Some breaking examples *)
 (* "x = y" : "x /1 = y" (breaks before any symbol) *)
@@ -402,7 +415,7 @@ let unparsing_metavar i from typs =
   | ETBinder isopen ->
      assert false
 
-(* Heuristics for building default printing rules *)
+(** Heuristics for building default printing rules *)
 
 let index_id id l = List.index Id.equal id l
 
@@ -485,7 +498,7 @@ let make_hunks etyps symbols from_level =
 
   in make false symbols
 
-(* Build default printing rules from explicit format *)
+(** Build default printing rules from explicit format *)
 
 let error_format ?loc () = user_err ?loc Pp.(str "The format does not match the notation.")
 
@@ -583,8 +596,8 @@ let hunks_of_format (from_level,(vars,typs)) symfmt =
   | [], l -> l
   | _ -> error_format ()
 
-(**********************************************************************)
-(* Build parsing rules                                                *)
+(** **************************************************************** **)
+(** Build parsing rules                                              **)
 
 let assoc_of_type from n (_,typ) = precedence_of_entry_type (from,n) typ
 
@@ -708,8 +721,9 @@ let recompute_assoc typs = let open Gramlib.Gramext in
     | _, Some RightA -> Some RightA
     | _ -> None
 
-(**************************************************************************)
-(* Registration of syntax extensions (parsing/printing, no interpretation)*)
+(** ******************************************************************** **)
+(** Registration of syntax extensions                                    **)
+(** (parsing/printing, no interpretation)                                **)
 
 let pr_arg_level from (lev,typ) =
   let pplev = function
@@ -800,8 +814,8 @@ let inSyntaxExtension : syntax_extension_obj -> obj =
        subst_function = subst_syntax_extension;
        classify_function = classify_syntax_definition}
 
-(**************************************************************************)
-(* Precedences                                                            *)
+(** ******************************************************************** **)
+(** Precedences                                                          **)
 
 (* Interpreting user-provided modifiers *)
 
@@ -1007,13 +1021,6 @@ let make_interpretation_type isrec isonlybinding = function
      if isrec then NtnTypeBinderList
      else anomaly Pp.(str "Type binder is only for use in recursive notations for binders.")
 
-let subentry_of_constr_prod_entry n = function
-  | ETConstr (InCustomEntry s,_,x) -> InCustomEntryRelativeLevel (s,precedence_of_position_and_level n x)
-  (* level and use of parentheses for coercion is hard-wired for "constr";
-     we don't remember the level *)
-  | ETConstr (InConstrEntry,_,_) -> InConstrEntrySomeRelativeLevel
-  | _ -> InConstrEntrySomeRelativeLevel
-
 let absolute_entry_of_entry_type = function
   | ETConstr (InCustomEntry s,_,(NumLevel n,_)) -> Some (InCustomEntryLevel (s,n))
   | ETConstr (InConstrEntry,_,(NumLevel n,_)) -> Some InConstrEntrySomeLevel
@@ -1037,7 +1044,7 @@ let make_interpretation_vars recvars (_,n,_,prec) allvars typs =
   Id.Map.mapi (fun x (isonlybinding, sc) ->
     let i = List.index0 Id.equal x vars in
     let typ = List.nth prec i in
-    ((subentry_of_constr_prod_entry n typ,sc),
+    ((subentry_of_entry_type n typ,sc),
      make_interpretation_type (Id.List.mem_assoc x recvars) isonlybinding typ)) mainvars
 
 let check_rule_productivity l =
@@ -1310,8 +1317,8 @@ let compute_pure_syntax_data ~local df mods =
     else sd.msgs in
   { sd with msgs }
 
-(**********************************************************************)
-(* Registration of notations interpretation                            *)
+(** **************************************************************** **)
+(** Registration of notation interpretation                          **)
 
 type notation_obj = {
   notobj_local : bool;
@@ -1391,8 +1398,8 @@ let with_syntax_protection f x =
     (Pcoq.with_grammar_rule_protection
        (with_notation_protection f)) x
 
-(**********************************************************************)
-(* Recovering existing syntax                                         *)
+(** **************************************************************** **)
+(** Recovering existing syntax                                       **)
 
 exception NoSyntaxRule
 
@@ -1415,8 +1422,8 @@ let recover_squash_syntax sy =
   let sq = recover_notation_syntax (InConstrEntrySomeLevel,"{ _ }") in
   sy :: sq.synext_notgram.notgram_rules
 
-(**********************************************************************)
-(* Main entry point for building parsing and printing rules           *)
+(** **************************************************************** **)
+(** Main entry point for building parsing and printing rules         **)
 
 let make_pa_rule ntn_sign (typs,symbols) ntn need_squash =
   let assoc = recompute_assoc typs in
@@ -1457,8 +1464,8 @@ let make_syntax_rules (sd : SynData.syn_data) = let open SynData in
     synext_extra  = sd.extra;
   }
 
-(**********************************************************************)
-(* Main functions about notations                                     *)
+(** **************************************************************** **)
+(** Main functions about notations                                   **)
 
 let to_map l =
   let fold accu (x, v) = Id.Map.add x v accu in
@@ -1593,8 +1600,8 @@ let add_infix ~local deprecation env ({CAst.loc;v=inf},modifiers) pr sc =
   let df = CAst.make ?loc @@ Id.to_string x ^" "^(quote_notation_token inf)^" "^Id.to_string y in
   add_notation ~local deprecation env c (df,modifiers) sc
 
-(**********************************************************************)
-(* Scopes, delimiters and classes bound to scopes                     *)
+(** **************************************************************** **)
+(** Scopes, delimiters and classes bound to scopes                   **)
 
 type scope_command =
   | ScopeDeclare
@@ -1684,8 +1691,8 @@ let add_syntactic_definition ~local deprecation env ident (vars,c) { onlyparsing
   let onlyparsing = onlyparsing || fst (printability None false reversibility pat) in
   Syntax_def.declare_syntactic_definition ~local deprecation ident ~onlyparsing (vars,pat)
 
-(**********************************************************************)
-(* Declaration of custom entry                                        *)
+(** **************************************************************** **)
+(** Declaration of custom entries                                    **)
 
 let warn_custom_entry =
   CWarnings.create ~name:"custom-entry-overriden" ~category:"parsing"
