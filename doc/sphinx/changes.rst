@@ -350,11 +350,8 @@ Changes in 8.11+beta1
   `iff`. Now, it is also performed for any relation `R1` which has a
   ``RewriteRelation`` instance (a `RelationClasses.Reflexive` instance
   being also needed so :tacn:`over` can discharge the ``'Under[ _ ]``
-  goal by instantiating the hidden evar.) Also, it is now possible to
-  manipulate `Under_rel _ R1 (f1 i) (?f2 i)` subgoals directly if `R1`
-  is a `PreOrder` relation or so, thanks to extra instances proving
-  that `Under_rel` preserves the properties of the `R1` relation.
-  These two features generalizing support for setoid-like relations is
+  goal by instantiating the hidden evar.)
+  This feature generalizing support for setoid-like relations is
   enabled as soon as we do both ``Require Import ssreflect.`` and
   ``Require Setoid.`` Finally, a rewrite rule ``UnderE`` has been
   added if one wants to "unprotect" the evar, and instantiate it
