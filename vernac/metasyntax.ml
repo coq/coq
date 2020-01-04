@@ -27,8 +27,8 @@ open Libnames
 open Notation
 open Nameops
 
-(**********************************************************************)
-(* Printing grammar entries                                           *)
+(** **************************************************************** **)
+(** Printing grammar entries                                         **)
 
 let entry_buf = Buffer.create 64
 
@@ -128,9 +128,9 @@ let pr_custom_grammar name = pr_registered_grammar ("custom:"^name)
 let pr_keywords () =
   Pp.prlist_with_sep Pp.fnl Pp.str (CString.Set.elements (CLexer.keywords (Pcoq.get_keyword_state())))
 
-(**********************************************************************)
-(* Parse a format (every terminal starting with a letter or a single
-   quote (except a single quote alone) must be quoted) *)
+(** **************************************************************** **)
+(** Parse a format (every terminal starting with a letter or a single
+    quote (except a single quote alone) must be quoted) **)
 
 let parse_format ({CAst.loc;v=str} : lstring) =
   let len = String.length str in
@@ -232,8 +232,8 @@ let parse_format ({CAst.loc;v=str} : lstring) =
   else
     []
 
-(***********************)
-(* Analyzing notations *)
+(** **************************************************************** **)
+(** Analyzing notations                                              **)
 
 (* Find non-terminal tokens of notation *)
 
@@ -299,8 +299,8 @@ let error_not_same_scope x y =
   user_err
     (str "Variables " ++ Id.print x ++ str " and " ++ Id.print y ++ str " must be in the same scope.")
 
-(**********************************************************************)
-(* Build pretty-printing rules                                        *)
+(** **************************************************************** **)
+(** Build pretty-printing rules                                      **)
 
 let pr_notation_entry = function
   | InConstrEntry -> str "constr"
@@ -348,6 +348,8 @@ let unparsing_precedence_of_entry_type from_level = function
     LevelSome, None
   | ETPattern (_,n) -> (* in constr *) LevelLe (pattern_entry_level n), None
   | _ -> LevelSome, None (* should not matter *)
+
+(** Utilities for building default printing rules *)
 
 (* Some breaking examples *)
 (* "x = y" : "x /1 = y" (breaks before any symbol) *)
@@ -423,7 +425,7 @@ let unparsing_metavar i from typs =
   | ETBinder isopen ->
      UnpBinderMetaVar (prec,QuotedPattern)
 
-(* Heuristics for building default printing rules *)
+(** Heuristics for building default printing rules *)
 
 let index_id id l = List.index Id.equal id l
 
@@ -510,7 +512,7 @@ let make_hunks etyps symbols from_level =
 
   in make false symbols
 
-(* Build default printing rules from explicit format *)
+(** Build default printing rules from explicit format *)
 
 let error_format ?loc () = user_err ?loc Pp.(str "The format does not match the notation.")
 
@@ -641,8 +643,8 @@ let hunks_of_format (from_level,(vars,typs)) symfmt =
   | [], l -> l
   | _ -> error_format ()
 
-(**********************************************************************)
-(* Build parsing rules                                                *)
+(** **************************************************************** **)
+(** Build parsing rules                                              **)
 
 let assoc_of_type from n (_,typ) = precedence_of_entry_type (from,n) typ
 
@@ -782,8 +784,9 @@ let recompute_assoc typs = let open Gramlib.Gramext in
     | _, Some RightA -> Some RightA
     | _ -> None
 
-(**************************************************************************)
-(* Registration of syntax extensions (parsing/printing, no interpretation)*)
+(** ******************************************************************** **)
+(** Registration of syntax extensions                                    **)
+(** (parsing/printing, no interpretation)                                **)
 
 let pr_arg_level from (lev,typ) =
   let pplev = function
@@ -928,8 +931,8 @@ let inSyntaxExtension : syntax_extension_obj -> obj =
      subst_function = subst_syntax_extension;
      classify_function = classify_syntax_definition}
 
-(**************************************************************************)
-(* Precedences                                                            *)
+(** ******************************************************************** **)
+(** Precedences                                                          **)
 
 (* Interpreting user-provided modifiers *)
 
@@ -1450,8 +1453,8 @@ let compute_syntax_data ~local main_data notation_symbols ntn mods =
     not_data    = sy_fulldata;
   }
 
-(**********************************************************************)
-(* Registration of notations interpretation                            *)
+(** **************************************************************** **)
+(** Registration of notation interpretation                          **)
 
 type notation_obj = {
   notobj_local : bool;
@@ -1560,8 +1563,8 @@ let with_syntax_protection f x =
     (Pcoq.with_grammar_rule_protection
        (with_notation_protection f)) x
 
-(**********************************************************************)
-(* Recovering existing syntax                                         *)
+(** **************************************************************** **)
+(** Recovering existing syntax                                       **)
 
 exception NoSyntaxRule
 
@@ -1586,8 +1589,8 @@ let recover_squash_syntax sy =
   | Some gram -> sy :: gram
   | None -> raise NoSyntaxRule
 
-(**********************************************************************)
-(* Main entry point for building parsing and printing rules           *)
+(** **************************************************************** **)
+(** Main entry point for building parsing and printing rules         **)
 
 let make_pa_rule (typs,symbols) parsing_data =
   let { ntn_for_grammar; prec_for_grammar; typs_for_grammar; need_squash } = parsing_data in
@@ -1621,6 +1624,9 @@ let make_parsing_rules main_data (sd : SynData.syn_data) =
   let open SynData in
   if main_data.onlyprinting then None
   else Some (make_pa_rule sd.pa_syntax_data sd.not_data)
+
+(** **************************************************************** **)
+(** Main functions about notations                                   **)
 
 let make_generic_printing_rules reserved main_data ntn sd =
   let open SynData in
@@ -1826,8 +1832,8 @@ let add_notation_syntax ~local ~infix deprecation ntn_decl =
   let ntn_decl = { ntn_decl with ntn_decl_interp = c; ntn_decl_string } in
   ntn_decl, main_data, notation_symbols, ntn, syntax_rules
 
-(**********************************************************************)
-(* Scopes, delimiters and classes bound to scopes                     *)
+(** **************************************************************** **)
+(** Scopes, delimiters and classes bound to scopes                   **)
 
 type scope_command =
   | ScopeDeclare
@@ -1965,8 +1971,8 @@ let inNotationActivation : locality_flag * (bool * bool * notation_query_pattern
 let declare_notation_toggle local ~on ~all s =
   Lib.add_leaf (inNotationActivation (local,(on,all,s)))
 
-(**********************************************************************)
-(* Declaration of custom entry                                        *)
+(** **************************************************************** **)
+(** Declaration of custom entries                                    **)
 
 let warn_custom_entry =
   CWarnings.create ~name:"custom-entry-overridden" ~category:CWarnings.CoreCategories.parsing
