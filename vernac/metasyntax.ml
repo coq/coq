@@ -713,15 +713,13 @@ let recompute_assoc typs = let open Gramlib.Gramext in
 
 let pr_arg_level from (lev,typ) =
   let pplev = function
-  | (n,L) when Int.equal n from -> str "at next level"
-  | (n,E) -> str "at level " ++ int n
-  | (n,L) -> str "at level below " ++ int n
-  | (n,Prec m) when Int.equal m n -> str "at level " ++ int n
-  | (n,_) -> str "Unknown level" in
-  Ppvernac.pr_set_entry_type (fun _ -> (*TO CHECK*) mt()) typ ++
-  (match typ with
-   | ETConstr _ | ETPattern _ -> spc () ++ pplev lev
-   | _ -> mt ())
+  | (n,L) when Int.equal n from -> spc () ++ str "at next level"
+  | (n,E) -> spc () ++ str "at level " ++ int n
+  | (n,L) -> spc () ++ str "at level below " ++ int n
+  | (n,Prec m) when Int.equal m n -> spc () ++ str "at level " ++ int n
+  | (n,Prec _) -> assert false
+  | (n,Any) -> mt () in
+  Ppvernac.pr_set_entry_type (fun _ -> (*TO CHECK*) mt()) typ ++ pplev lev
 
 let pr_level ntn (from,fromlevel,args,typs) =
   (match from with InConstrEntry -> mt () | InCustomEntry s -> str "in " ++ str s ++ spc()) ++
