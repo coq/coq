@@ -981,30 +981,27 @@ Section ListOps.
 
   Section Reverse_Induction.
 
-    Lemma rev_list_ind :
-      forall P:list A-> Prop,
-	P [] ->
-	(forall (a:A) (l:list A), P (rev l) -> P (rev (a :: l))) ->
-	forall l:list A, P (rev l).
+    Lemma rev_list_ind : forall P:list A-> Prop,
+      P [] ->
+      (forall (a:A) (l:list A), P (rev l) -> P (rev (a :: l))) ->
+      forall l:list A, P (rev l).
     Proof.
       induction l; auto.
     Qed.
 
-    Theorem rev_ind :
-      forall P:list A -> Prop,
-	P [] ->
-	(forall (x:A) (l:list A), P l -> P (l ++ [x])) -> forall l:list A, P l.
+    Theorem rev_ind : forall P:list A -> Prop,
+      P [] ->
+      (forall (x:A) (l:list A), P l -> P (l ++ [x])) -> forall l:list A, P l.
     Proof.
       intros.
       generalize (rev_involutive l).
       intros E; rewrite <- E.
       apply (rev_list_ind P).
-      auto.
-
-      simpl.
-      intros.
-      apply (H0 a (rev l0)).
-      auto.
+      - auto.
+      - simpl.
+        intros.
+        apply (H0 a (rev l0)).
+        auto.
     Qed.
 
   End Reverse_Induction.
@@ -1032,8 +1029,8 @@ Section ListOps.
   Lemma concat_app : forall l1 l2, concat (l1 ++ l2) = concat l1 ++ concat l2.
   Proof.
   intros l1; induction l1 as [|x l1 IH]; intros l2; simpl.
-  + reflexivity.
-  + rewrite IH; apply app_assoc.
+  - reflexivity.
+  - rewrite IH; apply app_assoc.
   Qed.
 
   Lemma in_concat : forall l y,
@@ -1175,10 +1172,10 @@ Section Map.
     - reflexivity.
     - specialize (Hrec x).
       destruct (decA a x) as [H1|H1], (decB (f a) (f x)) as [H2|H2].
-      * rewrite Hrec. reflexivity.
-      * contradiction H2. rewrite H1. reflexivity.
-      * specialize (Hfinjective H2). contradiction H1.
-      * assumption.
+      + rewrite Hrec. reflexivity.
+      + contradiction H2. rewrite H1. reflexivity.
+      + specialize (Hfinjective H2). contradiction H1.
+      + assumption.
   Qed.
 
   (** [flat_map] *)
@@ -1222,15 +1219,15 @@ Lemma flat_map_concat_map : forall A B (f : A -> list B) l,
   flat_map f l = concat (map f l).
 Proof.
 intros A B f l; induction l as [|x l IH]; simpl.
-+ reflexivity.
-+ rewrite IH; reflexivity.
+- reflexivity.
+- rewrite IH; reflexivity.
 Qed.
 
 Lemma concat_map : forall A B (f : A -> B) l, map f (concat l) = concat (map (map f) l).
 Proof.
 intros A B f l; induction l as [|x l IH]; simpl.
-+ reflexivity.
-+ rewrite map_app, IH; reflexivity.
+- reflexivity.
+- rewrite map_app, IH; reflexivity.
 Qed.
 
 Lemma remove_concat A (eq_dec : forall x y : A, {x = y}+{x <> y}) : forall l x,
@@ -1408,8 +1405,8 @@ End Fold_Right_Recursor.
 
     Fixpoint existsb (l:list A) : bool :=
       match l with
-	| nil => false
-	| a::l => f a || existsb l
+      | nil => false
+      | a::l => f a || existsb l
       end.
 
     Lemma existsb_exists :
@@ -1448,8 +1445,8 @@ End Fold_Right_Recursor.
 
     Fixpoint forallb (l:list A) : bool :=
       match l with
-	| nil => true
-	| a::l => f a && forallb l
+      | nil => true
+      | a::l => f a && forallb l
       end.
 
     Lemma forallb_forall :
@@ -1471,12 +1468,13 @@ End Fold_Right_Recursor.
         solve[auto].
       case (f a); simpl; solve[auto].
     Qed.
+
   (** [filter] *)
 
     Fixpoint filter (l:list A) : list A :=
       match l with
-	| nil => nil
-	| x :: l => if f x then x::(filter l) else filter l
+      | nil => nil
+      | x :: l => if f x then x::(filter l) else filter l
       end.
 
     Lemma filter_In : forall x l, In x (filter l) <-> In x l /\ f x = true.
@@ -1505,8 +1503,8 @@ End Fold_Right_Recursor.
 
     Fixpoint find (l:list A) : option A :=
       match l with
-	| nil => None
-	| x :: tl => if f x then Some x else find tl
+      | nil => None
+      | x :: tl => if f x then Some x else find tl
       end.
 
     Lemma find_some l x : find l = Some x -> In x l /\ f x = true.
@@ -1528,9 +1526,9 @@ End Fold_Right_Recursor.
 
     Fixpoint partition (l:list A) : list A * list A :=
       match l with
-	| nil => (nil, nil)
-	| x :: tl => let (g,d) := partition tl in
-	  if f x then (x::g,d) else (g,x::d)
+      | nil => (nil, nil)
+      | x :: tl => let (g,d) := partition tl in
+                   if f x then (x::g,d) else (g,x::d)
       end.
 
   Theorem partition_cons1 a l l1 l2:
@@ -1645,8 +1643,8 @@ End Fold_Right_Recursor.
 
     Fixpoint split (l:list (A*B)) : list A * list B :=
       match l with
-	| [] => ([], [])
-	| (x,y) :: tl => let (left,right) := split tl in (x::left, y::right)
+      | [] => ([], [])
+      | (x,y) :: tl => let (left,right) := split tl in (x::left, y::right)
       end.
 
     Lemma in_split_l : forall (l:list (A*B))(p:A*B),
@@ -1700,8 +1698,8 @@ End Fold_Right_Recursor.
 
     Fixpoint combine (l : list A) (l' : list B) : list (A*B) :=
       match l,l' with
-	| x::tl, y::tl' => (x,y)::(combine tl tl')
-	| _, _ => nil
+      | x::tl, y::tl' => (x,y)::(combine tl tl')
+      | _, _ => nil
       end.
 
     Lemma split_combine : forall (l: list (A*B)),
@@ -1768,8 +1766,8 @@ End Fold_Right_Recursor.
     Fixpoint list_prod (l:list A) (l':list B) :
       list (A * B) :=
       match l with
-	| nil => nil
-	| cons x t => (map (fun y:B => (x, y)) l')++(list_prod t l')
+      | nil => nil
+      | cons x t => (map (fun y:B => (x, y)) l')++(list_prod t l')
       end.
 
     Lemma in_prod_aux :
@@ -1784,17 +1782,17 @@ End Fold_Right_Recursor.
 
     Lemma in_prod :
       forall (l:list A) (l':list B) (x:A) (y:B),
-	In x l -> In y l' -> In (x, y) (list_prod l l').
+        In x l -> In y l' -> In (x, y) (list_prod l l').
     Proof.
       induction l;
-	[ simpl; tauto
-	  | simpl; intros; apply in_or_app; destruct H;
-	    [ left; rewrite H; apply in_prod_aux; assumption | right; auto ] ].
+      [ simpl; tauto
+        | simpl; intros; apply in_or_app; destruct H;
+          [ left; rewrite H; apply in_prod_aux; assumption | right; auto ] ].
     Qed.
 
     Lemma in_prod_iff :
       forall (l:list A)(l':list B)(x:A)(y:B),
-	In (x,y) (list_prod l l') <-> In x l /\ In y l'.
+        In (x,y) (list_prod l l') <-> In x l /\ In y l'.
     Proof.
       split; [ | intros; apply in_prod; intuition ].
       induction l; simpl; intros.
@@ -2597,8 +2595,8 @@ Section NatSeq.
    - rewrite <- plus_n_O. split;[easy|].
      intros (H,H'). apply (Lt.lt_irrefl _ (Lt.le_lt_trans _ _ _ H H')).
    - rewrite IHlen, <- plus_n_Sm; simpl; split.
-     * intros [H|H]; subst; intuition auto with arith.
-     * intros (H,H'). destruct (Lt.le_lt_or_eq _ _ H); intuition.
+     + intros [H|H]; subst; intuition auto with arith.
+     + intros (H,H'). destruct (Lt.le_lt_or_eq _ _ H); intuition.
   Qed.
 
   Lemma seq_NoDup len start : NoDup (seq start len).
@@ -2693,10 +2691,10 @@ Section Exists_Forall.
       intro Pdec. induction l as [|a l' Hrec].
       - right. abstract now rewrite Exists_nil.
       - destruct Hrec as [Hl'|Hl'].
-        * left. now apply Exists_cons_tl.
-        * destruct (Pdec a) as [Ha|Ha].
-          + left. now apply Exists_cons_hd.
-          + right. abstract now inversion 1.
+        + left. now apply Exists_cons_tl.
+        + destruct (Pdec a) as [Ha|Ha].
+          * left. now apply Exists_cons_hd.
+          * right. abstract now inversion 1.
     Defined.
 
     Lemma Exists_fold_right l :
