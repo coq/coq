@@ -347,9 +347,7 @@ Section Facts.
 
   (** Inversion *)
   Lemma in_inv : forall (a b:A) (l:list A), In b (a :: l) -> a = b \/ In b l.
-  Proof.
-    intros a b l H; inversion_clear H; auto.
-  Qed.
+  Proof. easy. Qed.
 
   (** Decidability of [In] *)
   Theorem in_dec :
@@ -764,33 +762,36 @@ Section Elts.
         now apply IHl.
   Qed.
 
+  Lemma remove_remove_comm : forall l x y,
+    remove x (remove y l) = remove y (remove x l).
+  Proof.
+    induction l as [| z l]; simpl; intros x y.
+    - reflexivity.
+    - destruct (eq_dec y z); simpl; destruct (eq_dec x z); try rewrite IHl; auto.
+      + subst; symmetry; apply remove_cons.
+      + simpl; destruct (eq_dec y z); tauto.
+  Qed.
+
   Lemma remove_remove_eq : forall l x, remove x (remove x l) = remove x l.
   Proof. intros l x; now rewrite (notin_remove _ _ (remove_In l x)). Qed.
 
-  Lemma remove_remove_neq : forall l x y, x <> y ->
-    remove x (remove y l) = remove y (remove x l).
+  Lemma remove_length_le : forall l x, length (remove x l) <= length l.
   Proof.
-    induction l as [| z l]; simpl; intros x y Hneq.
-    - reflexivity.
-    - destruct (eq_dec y z); simpl; destruct (eq_dec x z); subst.
-      + now apply IHl.
-      + rewrite remove_cons; now apply IHl.
-      + now apply IHl.
-      + simpl; destruct (eq_dec y z).
-        * now exfalso.
-        * now rewrite IHl.
-    Qed.
+    induction l as [|y l IHl]; simpl; intros x; trivial.
+    destruct (eq_dec x y); simpl.
+    - rewrite IHl; constructor; reflexivity.
+    - apply (proj1 (Nat.succ_le_mono _ _) (IHl x)).
+  Qed.
 
-  Lemma remove_length : forall l x, In x l -> length (remove x l) < length l.
+  Lemma remove_length_lt : forall l x, In x l -> length (remove x l) < length l.
   Proof.
-    induction l as [|y l]; simpl; intros x Hin.
-    - inversion Hin.
-    - destruct (eq_dec x y) as [Heq|Hneq]; subst; simpl.
-      + destruct (in_dec eq_dec y l); intuition.
-        rewrite notin_remove; intuition.
-      + destruct Hin as [Hin|Hin].
-        * exfalso; now apply Hneq.
-        * apply IHl in Hin; apply lt_n_S; assumption.
+    induction l as [|y l IHl]; simpl; intros x Hin.
+    - contradiction Hin.
+    - destruct Hin as [-> | Hin].
+      + destruct (eq_dec x x); intuition.
+        apply Nat.lt_succ_r, remove_length_le.
+      + specialize (IHl _ Hin); destruct (eq_dec x y); simpl; auto.
+        now apply Nat.succ_lt_mono in IHl.
   Qed.
 
 
@@ -1283,7 +1284,7 @@ Proof.
   now rewrite map_ext with (g := g).
 Qed.
 
-Lemma nth_nth A : forall (l : list A) n d ln dn, n < length ln \/ length l <= dn ->
+Lemma nth_nth_nth_map A : forall (l : list A) n d ln dn, n < length ln \/ length l <= dn ->
   nth (nth n ln dn) l d = nth n (map (fun x => nth x l d) ln) d.
 Proof.
   intros l n d ln dn; revert n; induction ln; intros n Hlen.
@@ -2113,7 +2114,7 @@ Section Cutting.
   Lemma skipn_all : forall l, skipn (length l) l = nil.
   Proof. now induction l. Qed.
 
-#[deprecated(since="8.11",note="Use skipn_all instead.")] Notation skipn_none := skipn_all.
+#[deprecated(since="8.12",note="Use skipn_all instead.")] Notation skipn_none := skipn_all.
 
   Lemma skipn_all2 n: forall l, length l <= n -> skipn n l = [].
   Proof.
