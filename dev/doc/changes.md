@@ -17,6 +17,11 @@ Printers:
   Constrextern.extern_constr which were taking a boolean argument for
   the goal style now take instead a label.
 
+Implicit arguments:
+
+- The type `Impargs.implicit_kind` was removed in favor of
+  `Glob_term.binding_kind`.
+
 ## Changes between Coq 8.10 and Coq 8.11
 
 ### ML API
