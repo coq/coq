@@ -523,3 +523,22 @@ Instance SatProdPos : Saturate Z.mul :=
     SatOk := Z.mul_pos_pos
   |}.
 Add Saturate SatProdPos.
+
+Lemma pow_pos_strict :
+  forall a b,
+    0 < a -> 0 < b -> 0 < a ^ b.
+Proof.
+  intros.
+  apply Z.pow_pos_nonneg; auto.
+  apply Z.lt_le_incl;auto.
+Qed.
+
+
+Instance SatPowPos : Saturate Z.pow :=
+  {|
+    PArg1 := fun x => 0 < x;
+    PArg2 := fun y => 0 < y;
+    PRes  := fun r => 0 < r;
+    SatOk := pow_pos_strict
+  |}.
+Add Saturate SatPowPos.

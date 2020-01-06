@@ -116,6 +116,7 @@ val simplify : ('a -> 'a option) -> 'a list -> 'a list option
 val saturate :
   ('a -> 'b option) -> ('b * 'a -> 'a -> 'a option) -> 'a list -> 'a list
 
+val saturate_bin : ('a -> 'a -> 'a option) -> 'a list -> 'a list
 val generate : ('a -> 'b option) -> 'a list -> 'b list
 val app_funs : ('a -> 'b option) list -> 'a -> 'b option
 val command : string -> string array -> 'a -> 'b

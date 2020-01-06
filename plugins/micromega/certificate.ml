@@ -395,50 +395,40 @@ let saturate_by_linear_equalities sys =
       output_sys sys output_sys sys';
   sys'
 
-(* let saturate_linear_equality_non_linear sys0 =
-  let (l,_) = extract_all (is_substitution false) sys0 in
-  let rec elim l acc =
-    match l with
-    | [] -> acc
-    | (v,pc)::l' ->
-       let nc = saturate (non_linear_pivot sys0 pc v) (sys0@acc) in
-       elim l' (nc@acc) in
-  elim l []
- *)
-
-let bounded_vars (sys : WithProof.t list) =
-  let l = fst (extract_all (fun ((p, o), prf) -> LinPoly.is_variable p) sys) in
-  List.fold_left (fun acc (i, wp) -> IMap.add i wp acc) IMap.empty l
-
-let rec power n p = if n = 1 then p else WithProof.product p (power (n - 1) p)
-
-let bound_monomial mp m =
-  if Monomial.is_var m || Monomial.is_const m then None
-  else
-    try
-      Some
-        (Monomial.fold
-           (fun v i acc ->
-             let wp = IMap.find v mp in
-             WithProof.product (power i wp) acc)
-           m (WithProof.const (Int 1)))
-    with Not_found -> None
-
 let bound_monomials (sys : WithProof.t list) =
-  let mp = bounded_vars sys in
-  let m =
-    List.fold_left
-      (fun acc ((p, _), _) ->
-        Vect.fold
-          (fun acc v _ ->
-            let m = LinPoly.MonT.retrieve v in
-            match bound_monomial mp m with
-            | None -> acc
-            | Some r -> IMap.add v r acc)
-          acc p)
-      IMap.empty sys
+  let l =
+    extract_all
+      (fun ((p, o), _) ->
+        match LinPoly.get_bound p with
+        | None -> None
+        | Some Vect.Bound.{cst; var; coeff} ->
+          Some (Monomial.degree (LinPoly.MonT.retrieve var)))
+      sys
   in
-  IMap.fold (fun _ e acc -> e :: acc) m []
+  let deg =
+    List.fold_left (fun acc ((p, o), _) -> max acc (LinPoly.degree p)) 0 sys
+  in
+  let vars =
+    List.fold_left
+      (fun acc ((p, o), _) -> ISet.union (LinPoly.monomials p) acc)
+      ISet.empty sys
+  in
+  let bounds =
+    saturate_bin
+      (fun (i1, w1) (i2, w2) ->
+        if i1 + i2 > deg then None
+        else
+          match WithProof.mul_bound w1 w2 with
+          | None -> None
+          | Some b -> Some (i1 + i2, b))
+      (fst l)
+  in
+  let has_mon (_, ((p, o), _)) =
+    match LinPoly.get_bound p with
+    | None -> false
+    | Some Vect.Bound.{cst; var; coeff} -> ISet.mem var vars
+  in
+  List.map snd (List.filter has_mon bounds) @ snd l
 
 let develop_constraints prfdepth n_spec sys =
   LinPoly.MonT.clear ();
