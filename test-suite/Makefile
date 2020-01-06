@@ -530,14 +530,16 @@ $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  true "extract effective user time"; \
-	  res=`$(coqc_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\.[0-9]*\)u.*)/\1/p" | head -1 | sed "s/\r//g"`; \
+	  res=`$(coqc_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 | sed -n -e "s/Finished .*transaction in .*(\([0-9]*\.[0-9]*\)u.*)/\1/p" | head -1 | sed "s/\r//g"`; \
 	  R=$$?; times; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...Error! (should be accepted)" ; \
+	    $(FAIL); \
 	  elif [ "$$res" = "" ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...Error! (couldn't find a time measure)"; \
+	    $(FAIL); \
 	  else \
 	    true "express effective time in centiseconds"; \
 	    resorig="$$res"; \
