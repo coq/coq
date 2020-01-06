@@ -356,8 +356,12 @@ let saturate_evd env evd =
 
 type coercion_trace =
   | IdCoe
+  | PrimProjCoe of {
+      proj : Projection.Repr.t;
+      args : econstr list;
+      previous : coercion_trace;
+    }
   | Coe of {
-      isproj : Projection.Repr.t option;
       head : econstr;
       args : econstr list;
       previous : coercion_trace;
@@ -369,16 +373,15 @@ let empty_coercion_trace = IdCoe
 (* similar to iterated apply_coercion_args *)
 let rec reapply_coercions sigma trace c = match trace with
   | IdCoe -> c
-  | Coe {isproj; head; args; previous} ->
+  | PrimProjCoe { proj; args; previous } ->
     let c = reapply_coercions sigma previous c in
     let args = args@[c] in
-    (match isproj with
-     | None -> applist (head, args)
-     | Some p ->
-       let args = List.skipn (Projection.Repr.npars p) args in
-       (match args with
-        | [] -> assert false
-        | hd :: tl -> applist (mkProj (Projection.make p false, hd), tl)))
+    let head, args = match args with [] -> assert false | hd :: tl -> hd, tl in
+    applist (mkProj (Projection.make proj false, head), args)
+  | Coe {head; args; previous} ->
+    let c = reapply_coercions sigma previous c in
+    let args = args@[c] in
+    applist (head, args)
   | ProdCoe { na; ty; dom; body } ->
     let x = reapply_coercions sigma dom (mkRel 1) in
     let c = beta_applist sigma (lift 1 c, [x]) in
@@ -397,7 +400,14 @@ let apply_coercion env sigma p hj typ_cl =
            let typ = Retyping.get_type_of env sigma c in
            let fv = make_judge c typ in
           let argl = class_args_of env sigma typ_cl in
-          let trace = if isid then trace else Coe {isproj;head=fv.uj_val;args=argl;previous=trace} in
+          let trace =
+            if isid then trace
+            else match isproj with
+            | None -> Coe {head=fv.uj_val;args=argl;previous=trace}
+            | Some proj ->
+              let args = List.skipn (Projection.Repr.npars proj) argl in
+              PrimProjCoe {proj; args; previous=trace }
+          in
           let argl = argl@[ja.uj_val] in
           let sigma, jres = apply_coercion_args env sigma true isproj argl fv in
           let jres =
@@ -425,7 +435,7 @@ let mu env evdref t =
                    app_opt env evdref
                      f (mkApp (p1, [| u; p; x |]))),
            ct,
-           Coe {isproj=None; head=p1; args=[u;p]; previous=trace})
+           Coe {head=p1; args=[u;p]; previous=trace})
       | None -> (None, v, IdCoe)
   in aux t
 
