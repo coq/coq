@@ -144,10 +144,16 @@ let check_inductive env mind mb =
     =
     (* Locally set typing flags for further typechecking *)
     let mb_flags = mb.mind_typing_flags in
-    let env = Environ.set_typing_flags {env.env_typing_flags with check_guarded = mb_flags.check_guarded;
-                                                                  check_positive = mb_flags.check_positive;
-                                                                  check_universes = mb_flags.check_universes;
-                                                                  conv_oracle = mb_flags.conv_oracle} env in
+    let env = Environ.set_typing_flags
+        {env.env_typing_flags with
+         check_guarded = mb_flags.check_guarded;
+         check_positive = mb_flags.check_positive;
+         check_universes = mb_flags.check_universes;
+         check_template = mb_flags.check_template;
+         conv_oracle = mb_flags.conv_oracle;
+        }
+        env
+    in
     Indtypes.check_inductive env ~sec_univs:None mind entry
   in
   let check = check mind in

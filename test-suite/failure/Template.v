@@ -1,4 +1,4 @@
-(*
+
 Module TestUnsetTemplateCheck.
   Unset Template Check.
 
@@ -15,18 +15,14 @@ Module TestUnsetTemplateCheck.
   (* Can only succeed if no template check is performed *)
   Check myind True : Prop.
 
-  Print Assumptions myind.
-  (*
-  Axioms:
-  myind is template polymorphic on all its universe parameters.
-   *)
   About myind.
-(*
-myind : Type@{Top.60} -> Type@{Top.60}
 
-myind is assumed template universe polymorphic on Top.60
-Argument scope is [type_scope]
-Expands to: Inductive Top.TestUnsetTemplateCheck.myind
-*)
+  (* test discharge puts things in the right order (by using the
+     checker on the result) *)
+  Section S.
+
+    Variables (A:Type) (a:A).
+    Inductive bb (B:Type) := BB : forall a', a = a' -> B -> bb B.
+  End S.
+
 End TestUnsetTemplateCheck.
-*)
