@@ -137,7 +137,8 @@ if [ "$LOCAL_BRANCH_COMMIT" != "$UPSTREAM_COMMIT" ]; then
     else
         error "Local branch is not up-to-date with ${REMOTE}."
         error "Pull before merging."
-        ask_confirmation
+        # This check should never be bypassed.
+        exit 1
     fi
 fi
 
