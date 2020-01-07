@@ -361,7 +361,7 @@ let adjust_evar_source sigma na c =
 
 (* coerce to tycon if any *)
 let inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j = function
-  | None -> sigma, j
+  | None -> sigma, j, Some Coercion.empty_coercion_trace
   | Some t ->
     Coercion.inh_conv_coerce_to ?loc ~program_mode resolve_tc !!env sigma j t
 
@@ -604,16 +604,18 @@ let pretype_instance self ~program_mode ~poly resolve_tc env sigma loc hyps evk 
 module Default =
 struct
 
+  let discard_trace (sigma,t,otrace) = sigma, t
+
   let pretype_ref self (ref, u) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
     let sigma, t_ref = pretype_ref ?loc sigma env ref u in
-    inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma t_ref tycon
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma t_ref tycon
 
   let pretype_var self id =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
     let pretype tycon env sigma t = eval_pretyper self ~program_mode ~poly resolve_tc tycon env sigma t in
     let sigma, t_id = pretype_id (fun e r t -> pretype tycon e r t) loc env sigma id in
-    inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma t_id tycon
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma t_id tycon
 
   let pretype_evar self (id, inst) ?loc ~program_mode ~poly resolve_tc tycon env sigma =
       (* Ne faudrait-il pas s'assurer que hyps est bien un
@@ -626,7 +628,7 @@ struct
       let sigma, args = pretype_instance self ~program_mode ~poly resolve_tc env sigma loc hyps evk inst in
       let c = mkEvar (evk, args) in
       let j = Retyping.get_judgment_of !!env sigma c in
-      inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j tycon
+      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j tycon
 
   let pretype_patvar self kind ?loc ~program_mode ~poly resolve_tc tycon env sigma =
     let sigma, ty =
@@ -757,12 +759,12 @@ struct
                iraise (e, info));
             make_judge (mkCoFix cofix) ftys.(i)
       in
-      inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma fixj tycon
+      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma fixj tycon
 
   let pretype_sort self s =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
     let sigma, j = pretype_sort ?loc sigma s in
-    inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j tycon
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma j tycon
 
   let pretype_app self (f, args) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
@@ -771,12 +773,15 @@ struct
     let floc = loc_of_glob_constr f in
     let length = List.length args in
     let nargs_before_bidi =
+      if Option.is_empty tycon then length
+      (* We apply bidirectionality hints only if an expected type is specified *)
+      else
       (* if `f` is a global, we retrieve bidirectionality hints *)
-      try
-        let (gr,_) = destRef sigma fj.uj_val in
-        Option.default length @@ GlobRef.Map.find_opt gr !bidi_hints
-      with DestKO ->
-        length
+        try
+          let (gr,_) = destRef sigma fj.uj_val in
+          Option.default length @@ GlobRef.Map.find_opt gr !bidi_hints
+        with DestKO ->
+          length
     in
     let candargs =
       (* Bidirectional typechecking hint:
@@ -813,24 +818,38 @@ struct
           else fun f v -> applist (f, [v])
       | _ -> fun _ f v -> applist (f, [v])
     in
-    let rec apply_rec env sigma n resj candargs bidiargs = function
-      | [] -> sigma, resj, List.rev bidiargs
+    let refresh_template env sigma resj =
+      (* Special case for inductive type applications that must be
+         refreshed right away. *)
+      match EConstr.kind sigma resj.uj_val with
+      | App (f,args) ->
+        if Termops.is_template_polymorphic_ind !!env sigma f then
+          let c = mkApp (f, args) in
+          let sigma, c = Evarsolve.refresh_universes (Some true) !!env sigma c in
+          let t = Retyping.get_type_of !!env sigma c in
+          sigma, make_judge c (* use this for keeping evars: resj.uj_val *) t
+        else sigma, resj
+      | _ -> sigma, resj
+    in
+    let rec apply_rec env sigma n resj resj_before_bidi candargs bidiargs = function
+      | [] -> sigma, resj, resj_before_bidi, List.rev bidiargs
       | c::rest ->
         let bidi = n >= nargs_before_bidi in
         let argloc = loc_of_glob_constr c in
-        let sigma, resj = Coercion.inh_app_fun ~program_mode resolve_tc !!env sigma resj in
+        let sigma, resj, trace = Coercion.inh_app_fun ~program_mode resolve_tc !!env sigma resj in
         let resty = whd_all !!env sigma resj.uj_type in
         match EConstr.kind sigma resty with
         | Prod (na,c1,c2) ->
-          let tycon = Some c1 in
           let (sigma, hj), bidiargs =
-            if bidi && Option.has_some tycon then
+            if bidi then
               (* We want to get some typing information from the context before
               typing the argument, so we replace it by an existential
               variable *)
               let sigma, c_hole = new_evar env sigma ~src:(loc,Evar_kinds.InternalHole) c1 in
-              (sigma, make_judge c_hole c1), (c_hole, c) :: bidiargs
-            else pretype tycon env sigma c, bidiargs
+              (sigma, make_judge c_hole c1), (c_hole, c, trace) :: bidiargs
+            else
+              let tycon = Some c1 in
+              pretype tycon env sigma c, bidiargs
           in
           let sigma, candargs, ujval =
             match candargs with
@@ -845,29 +864,18 @@ struct
           in
           let sigma, ujval = adjust_evar_source sigma na.binder_name ujval in
           let value, typ = app_f n (j_val resj) ujval, subst1 ujval c2 in
-          let j = { uj_val = value; uj_type = typ } in
-          apply_rec env sigma (n+1) j candargs bidiargs rest
+          let resj = { uj_val = value; uj_type = typ } in
+          let resj_before_bidi = if bidi then resj_before_bidi else resj in
+          apply_rec env sigma (n+1) resj resj_before_bidi candargs bidiargs rest
         | _ ->
           let sigma, hj = pretype empty_tycon env sigma c in
           error_cant_apply_not_functional
             ?loc:(Loc.merge_opt floc argloc) !!env sigma resj [|hj|]
     in
-    let sigma, resj, bidiargs = apply_rec env sigma 0 fj candargs [] args in
-    let sigma, resj =
-      match EConstr.kind sigma resj.uj_val with
-      | App (f,args) ->
-        if Termops.is_template_polymorphic_ind !!env sigma f then
-          (* Special case for inductive type applications that must be
-             refreshed right away. *)
-          let c = mkApp (f, args) in
-          let sigma, c = Evarsolve.refresh_universes (Some true) !!env sigma c in
-          let t = Retyping.get_type_of !!env sigma c in
-          sigma, make_judge c (* use this for keeping evars: resj.uj_val *) t
-        else sigma, resj
-      | _ -> sigma, resj
-    in
-    let sigma, t = inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon in
-    let refine_arg sigma (newarg,origarg) =
+    let sigma, resj, resj_before_bidi, bidiargs = apply_rec env sigma 0 fj fj candargs [] args in
+    let sigma, resj = refresh_template env sigma resj in
+    let sigma, resj, otrace = inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon in
+    let refine_arg n (sigma,t) (newarg,origarg,trace) =
       (* Refine an argument (originally `origarg`) represented by an evar
          (`newarg`) to use typing information from the context *)
       (* Recover the expected type of the argument *)
@@ -876,12 +884,25 @@ struct
       let sigma, j = pretype (Some ty) env sigma origarg in
       (* Unify the (possibly refined) existential variable with the
       (typechecked) original value *)
-      Evarconv.unify_delay !!env sigma newarg (j_val j)
+      let sigma = Evarconv.unify_delay !!env sigma newarg (j_val j) in
+      sigma, app_f n (Coercion.reapply_coercions sigma trace t) (j_val j)
     in
     (* We now refine any arguments whose typing was delayed for
        bidirectionality *)
-    let sigma = List.fold_left refine_arg sigma bidiargs in
-    (sigma, t)
+    let t = resj_before_bidi.uj_val in
+    let sigma, t = List.fold_left_i refine_arg nargs_before_bidi (sigma,t) bidiargs in
+    (* If we did not get a coercion trace (e.g. with `Program` coercions, we
+    replaced user-provided arguments with inferred ones. Otherwise, we apply
+    the coercion trace to the user-provided arguments. *)
+    let resj =
+      match otrace with
+      | None -> resj
+      | Some trace ->
+        let resj = { resj with uj_val = t } in
+        let sigma, resj = refresh_template env sigma resj in
+        { resj with uj_val = Coercion.reapply_coercions sigma trace t }
+    in
+    (sigma, resj)
 
   let pretype_lambda self (name, bk, c1, c2) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
@@ -903,7 +924,7 @@ struct
     let sigma, j' = eval_pretyper self ~program_mode ~poly resolve_tc rng env' sigma c2 in
     let name = get_name var' in
     let resj = judge_of_abstraction !!env (orelse_name name name'.binder_name) j j' in
-    inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
+    discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
 
   let pretype_prod self (name, bk, c1, c2) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
@@ -929,7 +950,7 @@ struct
         let (e, info) = CErrors.push e in
         let info = Option.cata (Loc.add_loc info) info loc in
         iraise (e, info) in
-      inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
+      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
 
   let pretype_letin self (name, c1, t, c2) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
@@ -1122,7 +1143,7 @@ struct
           mkCase (ci, pred, cj.uj_val, [|b1;b2|])
       in
       let cj = { uj_val = v; uj_type = p } in
-      inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma cj tycon
+      discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma cj tycon
 
   let pretype_cast self (c, k) =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
@@ -1165,7 +1186,7 @@ struct
         in
         let v = mkCast (cj.uj_val, k, tval) in
         sigma, { uj_val = v; uj_type = tval }
-    in inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma cj tycon
+    in discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma cj tycon
 
   let pretype_int self i =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
@@ -1174,7 +1195,7 @@ struct
           with Invalid_argument _ ->
             user_err ?loc ~hdr:"pretype" (str "Type of int63 should be registered first.")
         in
-        inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
+        discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
 
   let pretype_float self f =
     fun ?loc ~program_mode ~poly resolve_tc tycon env sigma ->
@@ -1183,7 +1204,7 @@ struct
         with Invalid_argument _ ->
           user_err ?loc ~hdr:"pretype" (str "Type of float should be registered first.")
         in
-        inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
+        discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
 
 (* [pretype_type valcon env sigma c] coerces [c] into a type *)
 let pretype_type self c ?loc ~program_mode ~poly resolve_tc valcon (env : GlobEnv.t) sigma = match DAst.get c with
