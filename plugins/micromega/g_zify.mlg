@@ -34,12 +34,13 @@ VERNAC COMMAND EXTEND DECLAREINJECTION CLASSIFIED AS SIDEFF
 END
 
 TACTIC EXTEND ITER
-| [ "iter_specs" tactic(t)] -> { Zify.iter_specs t }
+| [ "zify_iter_specs" tactic(t)] -> { Zify.iter_specs t }
 END
 
 TACTIC EXTEND TRANS
 | [ "zify_op"  ] -> { Zify.zify_tac }
-| [ "saturate"  ] -> { Zify.saturate }
+| [ "zify_saturate"  ] -> { Zify.saturate }
+| [ "zify_iter_let" tactic(t)] -> { Zify.iter_let t }
 END
 
 VERNAC COMMAND EXTEND ZifyPrint CLASSIFIED AS SIDEFF
