@@ -379,17 +379,25 @@ let check_positivity ~chkpos kn names env_ar_par paramsctxt finite inds =
 (************************************************************************)
 (* Build the inductive packet *)
 
-let repair_arity indices = function
-  | RegularArity ar -> ar.mind_user_arity
-  | TemplateArity ar -> mkArity (indices,Sorts.sort_of_univ ar.template_level)
+let fold_arity f acc params arity indices = match arity with
+  | RegularArity ar -> f acc ar.mind_user_arity
+  | TemplateArity _ ->
+    let fold_ctx acc ctx =
+      List.fold_left (fun acc d ->
+          Context.Rel.Declaration.fold_constr (fun c acc -> f acc c) d acc)
+        acc
+        ctx
+    in
+    fold_ctx (fold_ctx acc params) indices
 
-let fold_inductive_blocks f =
+let fold_inductive_blocks f acc params inds =
   Array.fold_left (fun acc ((arity,lc),(indices,_),_) ->
-    f (Array.fold_left f acc lc) (repair_arity indices arity))
+      fold_arity f (Array.fold_left f acc lc) params arity indices)
+    acc inds
 
-let used_section_variables env inds =
+let used_section_variables env params inds =
   let fold l c = Id.Set.union (Environ.global_vars_set env c) l in
-  let ids = fold_inductive_blocks fold Id.Set.empty inds in
+  let ids = fold_inductive_blocks fold Id.Set.empty params inds in
   keep_hyps env ids
 
 let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
@@ -461,7 +469,7 @@ let compute_projections (kn, i as ind) mib =
 let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
-  let hyps = used_section_variables env inds in
+  let hyps = used_section_variables env paramsctxt inds in
   let nparamargs = Context.Rel.nhyps paramsctxt in
   (* Check one inductive *)
   let build_one_packet (id,cnames) ((arity,lc),(indices,splayed_lc),kelim) recarg =
