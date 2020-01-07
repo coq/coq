@@ -13,7 +13,7 @@
 (** Main result : for functions [f:A->A] with finite [A],
     f injective <-> f bijective <-> f surjective. *)
 
-Require Import PeanoNat List Decidable ListDec. Require Fin.
+Require Import PeanoNat Compare_dec List Decidable ListDec. Require Fin.
 Set Implicit Arguments.
 
 (** General definitions *)
@@ -252,22 +252,20 @@ Definition n2f_ext : forall x n h h', n2f h = n2f h' := @Fin.of_nat_ext.
 Definition f2n_inj : forall n x y, f2n x = f2n y -> x = y := @Fin.to_nat_inj.
 
 Definition extend n (f:Fin.t n -> Fin.t n) : (nat->nat) :=
-  fun x => (match CompareSpec2Type (Nat.compare_spec x n) with
-            | CompLtT _ _ H => f2n (f (n2f H))
-            | _ => 0
-            end).
+ fun x =>
+   match le_lt_dec n x with
+     | left _ => 0
+     | right h => f2n (f (n2f h))
+   end.
 
 Definition restrict n (f:nat->nat)(hf : bFun n f) : (Fin.t n -> Fin.t n) :=
  fun x => let (x',h) := Fin.to_nat x in n2f (hf _ h).
 
 Ltac break_dec H :=
- match type of H with
- | ?x < ?n => destruct (Nat.compare_spec x n) as [H'|H'|H']; simpl;
-              [ exfalso; rewrite H' in H; now apply Nat.lt_irrefl in H
-              | try rewrite (n2f_ext H' H) in *; try clear H'
-              | exfalso; apply (Nat.lt_trans _ _ _ H) in H'; now apply Nat.lt_irrefl in H' ]
- | _ => fail
- end.
+ let H' := fresh "H" in
+ destruct le_lt_dec as [H'|H'];
+  [elim (proj1 (Nat.le_ngt _ _) H' H)
+  |try rewrite (n2f_ext H' H) in *; try clear H'].
 
 Lemma extend_ok n f : bFun n (@extend n f).
 Proof.
