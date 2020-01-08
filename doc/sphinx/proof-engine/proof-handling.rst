@@ -490,6 +490,13 @@ The following example script illustrates all these features:
 
    You just finished a goal focused by ``{``, you must unfocus it with ``}``.
 
+Mandatory Bullets
+`````````````````
+
+Using :opt:`Default Goal Selector` with the ``!`` selector forces
+tactic scripts to keep focus to exactly one goal (e.g. using bullets)
+or use explicit goal selectors.
+
 Set Bullet Behavior
 ```````````````````
 .. opt:: Bullet Behavior {| "None" | "Strict Subproofs" }
