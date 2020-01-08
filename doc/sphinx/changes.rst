@@ -514,6 +514,89 @@ Changes in 8.11+beta1
   (`#10471 <https://github.com/coq/coq/pull/10471>`_,
   by Emilio Jesús Gallego Arias).
 
+Changes in 8.11.0
+~~~~~~~~~~~~~~~~~
+
+**Kernel**
+
+- **Fixed:** `#11360 <https://github.com/issues/11360>`_.
+  Broken section closing when a template polymorphic inductive type depends on
+  a section variable through its parameters (`#11361
+  <https://github.com/coq/coq/pull/11361>`_, by Gaëtan Gilbert).
+
+**Specification language, type inference**
+
+- **Changed:** Heuristics for universe minimization to :g:`Set`: only
+  minimize flexible universes (`#10657 <https://github.com/coq/coq/pull/10657>`_,
+  by Gaëtan Gilbert with help from Maxime Dénès and Matthieu Sozeau).
+- **Fixed:**
+  A dependency was missing when looking for default clauses in the
+  algorithm for printing pattern matching clauses (`#11233
+  <https://github.com/coq/coq/pull/11233>`_, by Hugo Herbelin, fixing
+  `#11231 <https://github.com/coq/coq/pull/11231>`_, reported by Barry
+  Jay).
+
+**Notations**
+
+- **Fixed:**
+  :cmd:`Print Visibility` was failing in the presence of only-printing notations
+  (`#11276 <https://github.com/coq/coq/pull/11276>`_,
+  by Hugo Herbelin, fixing `#10750 <https://github.com/coq/coq/pull/10750>`_).
+- **Fixed:**
+  Recursive notations with custom entries were incorrectly parsing `constr`
+  instead of custom grammars (`#11311 <https://github.com/coq/coq/pull/11311>`_
+  by Maxime Dénès, fixes `#9532 <https://github.com/coq/coq/pull/9532>`_,
+  `#9490 <https://github.com/coq/coq/pull/9490>`_).
+
+**Tactics**
+
+- **Changed:**
+  The tactics :tacn:`eapply`, :tacn:`refine` and variants no
+  longer allow shelved goals to be solved by typeclass resolution
+  (`#10762 <https://github.com/coq/coq/pull/10762>`_, by Matthieu Sozeau).
+- **Fixed:** The optional string argument to :tacn:`time` is now
+  properly quoted under :cmd:`Print Ltac` (`#11203
+  <https://github.com/coq/coq/pull/11203>`_, fixes `#10971
+  <https://github.com/coq/coq/issues/10971>`_, by Jason Gross)
+- **Fixed:**
+  Efficiency regression introduced by  PR `#9725 <https://github.com/coq/coq/pull/9725>`_
+  (`#11263 <https://github.com/coq/coq/pull/11263>`_,
+  fixes `#11063 <https://github.com/coq/coq/issues/11063>`_,
+  and `#11242 <https://github.com/coq/coq/issues/11242>`_,
+  and `#11270 <https://github.com/coq/coq/issues/11270>`_, by Frédéric Besson).
+- **Deprecated:**
+  The undocumented ``omega with`` tactic variant has been deprecated.
+  Using ``lia`` is the recommended replacement, tho the old semantics
+  of ``omega with *`` can be recovered with ``zify; omega``
+  (`#11337 <https://github.com/coq/coq/pull/11337>`_,
+  by Emilio Jesus Gallego Arias).
+
+**Tactic language**
+
+- **Fixed:**
+  Syntax of tactic `cofix ... with ...` was broken from Coq 8.10.
+  (`#11241 <https://github.com/coq/coq/pull/11241>`_,
+  by Hugo Herbelin).
+
+**Tools**
+
+- **Fixed:**
+  ``coqtop --version`` was broken when called in the middle of an installation process
+  (`#11255 <https://github.com/coq/coq/pull/11255>`_, by Hugo Herbelin, fixing
+  `#11254 <https://github.com/coq/coq/pull/11254>`_).
+- **Fixed:**
+  ``coq_makefile`` does not break when using the ``CAMLPKGS`` variable
+  together with an unpacked (``mllib``) plugin. (`#11357
+  <https://github.com/coq/coq/pull/11357>`_, by Gaëtan Gilbert).
+
+**Infrastructure and dependencies**
+
+- **Added:**
+  Build date can now be overriden by setting the `SOURCE_DATE_EPOCH`
+  environment variable
+  (`#11227 <https://github.com/coq/coq/pull/11227>`_,
+  by Bernhard M. Wiedemann).
+
 Version 8.10
 ------------
 
