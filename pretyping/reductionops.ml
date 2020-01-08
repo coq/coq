@@ -1465,7 +1465,7 @@ let report_anomaly (e, info) =
       UserError (None, msg)
     else e
   in
-  iraise (e, info)
+  Exninfo.iraise (e, info)
 
 let f_conv ?l2r ?reds env ?evars x y =
   let inj = EConstr.Unsafe.to_constr in

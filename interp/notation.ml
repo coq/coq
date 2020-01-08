@@ -1959,6 +1959,6 @@ let with_notation_protection f x =
   let fs = freeze ~marshallable:false in
   try let a = f x in unfreeze fs; a
   with reraise ->
-    let reraise = CErrors.push reraise in
+    let reraise = Exninfo.capture reraise in
     let () = unfreeze fs in
-    iraise reraise
+    Exninfo.iraise reraise

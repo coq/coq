@@ -89,12 +89,12 @@ struct
   let catch = fun s h -> ();
     fun () -> try s ()
       with Exception e as src ->
-        let (src, info) = CErrors.push src in
+        let (src, info) = Exninfo.capture src in
         h (e, info) ()
 
   let read_line = fun () -> try read_line () with e ->
-    let (e, info) = CErrors.push e in
-    raise (e, info) ()
+    let (e, info) = Exninfo.capture e in
+    raise (e,info) ()
 
   let print_char = fun c -> (); fun () -> print_char c
 
@@ -104,8 +104,8 @@ struct
   let make f = (); fun () ->
     try f ()
     with e when CErrors.noncritical e ->
-      let (e, info) = CErrors.push e in
-      Util.iraise (Exception e, info)
+      let (e, info) = Exninfo.capture e in
+      Exninfo.iraise (Exception e, info)
 
   (** Use the current logger. The buffer is also flushed. *)
   let print_debug   s = make (fun _ -> Feedback.msg_debug s)
@@ -115,8 +115,8 @@ struct
 
   let run = fun x ->
     try x () with Exception e as src ->
-      let (src, info) = CErrors.push src in
-      Util.iraise (e, info)
+      let (src, info) = Exninfo.capture src in
+      Exninfo.iraise (e, info)
 end
 
 (** {6 Logical layer} *)

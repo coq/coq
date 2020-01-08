@@ -372,7 +372,7 @@ module Make(T : Task) () = struct
   let with_n_workers n priority f =
     let q = create n priority in
     try let rc = f q in destroy q; rc
-    with e -> let e = CErrors.push e in destroy q; iraise e
+    with e -> let e = Exninfo.capture e in destroy q; Exninfo.iraise e
 
   let n_workers { active } = Pool.n_workers active
 

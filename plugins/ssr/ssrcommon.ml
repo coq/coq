@@ -1095,11 +1095,11 @@ let tclDO n tac =
     try tac gl
     with
     | CErrors.UserError (l, s) as e ->
-        let _, info = CErrors.push e in
-        let e' = CErrors.UserError (l, prefix i ++ s) in
-        Util.iraise (e', info)
+      let _, info = Exninfo.capture e in
+      let e' = CErrors.UserError (l, prefix i ++ s) in
+      Exninfo.iraise (e', info)
     | Gramlib.Ploc.Exc(loc, CErrors.UserError (l, s))  ->
-        raise (Gramlib.Ploc.Exc(loc, CErrors.UserError (l, prefix i ++ s))) in
+      raise (Gramlib.Ploc.Exc(loc, CErrors.UserError (l, prefix i ++ s))) in
   let rec loop i gl =
     if i = n then tac_err_at i gl else
     (tclTHEN (tac_err_at i) (loop (i + 1))) gl in

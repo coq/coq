@@ -37,9 +37,9 @@ module Hook = struct
   let call ?hook ?fix_exn x =
     try Option.iter (fun hook -> CEphemeron.get hook x) hook
     with e when CErrors.noncritical e ->
-      let e = CErrors.push e in
+      let e = Exninfo.capture e in
       let e = Option.cata (fun fix -> fix e) e fix_exn in
-      Util.iraise e
+      Exninfo.iraise e
 end
 
 (* Locality stuff *)

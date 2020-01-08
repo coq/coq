@@ -14,7 +14,7 @@
 (** {6 Error handling} *)
 
 val push : exn -> Exninfo.iexn
-(** Alias for [Backtrace.add_backtrace]. *)
+[@@ocaml.deprecated "please use [Exninfo.capture]"]
 
 (** {6 Generic errors.}
 

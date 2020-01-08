@@ -440,11 +440,11 @@ let save_library_base f sum lib univs tasks proofs =
     System.marshal_out_segment f ch (proofs : seg_proofs);
     close_out ch
   with reraise ->
-    let reraise = CErrors.push reraise in
+    let reraise = Exninfo.capture reraise in
     close_out ch;
     Feedback.msg_warning (str "Removed file " ++ str f);
     Sys.remove f;
-    iraise reraise
+    Exninfo.iraise reraise
 
 type ('document,'counters) todo_proofs =
  | ProofsTodoNone (* for .vo *)

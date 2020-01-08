@@ -8,8 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Util
-
 type state = Lib.frozen * Summary.frozen
 
 let lib_of_state = fst
@@ -31,5 +29,5 @@ let with_state_protection f x =
   try
     let a = f x in unfreeze st; a
   with reraise ->
-    let reraise = CErrors.push reraise in
-    (unfreeze st; iraise reraise)
+    let reraise = Exninfo.capture reraise in
+    (unfreeze st; Exninfo.iraise reraise)

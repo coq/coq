@@ -342,9 +342,9 @@ let dump_universes_gen prl g s =
     close ();
     str "Universes written to file \"" ++ str s ++ str "\"."
   with reraise ->
-    let reraise = CErrors.push reraise in
+    let reraise = Exninfo.capture reraise in
     close ();
-    iraise reraise
+    Exninfo.iraise reraise
 
 let universe_subgraph ?loc g univ =
   let open Univ in

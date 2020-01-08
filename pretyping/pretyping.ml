@@ -87,9 +87,9 @@ let search_guard ?loc env possible_indexes fixdefs =
     let fix = ((indexes, 0),fixdefs) in
     (try check_fix env fix
      with reraise ->
-       let (e, info) = CErrors.push reraise in
+       let (e, info) = Exninfo.capture reraise in
        let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
-       iraise (e, info));
+       Exninfo.iraise (e, info));
     indexes
   else
     (* we now search recursively among all combinations *)
@@ -266,8 +266,8 @@ let apply_heuristics env sigma fail_evar =
   let flags = default_flags_of (Typeclasses.classes_transparent_state ()) in
   try solve_unif_constraints_with_heuristics ~flags env sigma
   with e when CErrors.noncritical e ->
-    let e = CErrors.push e in
-    if fail_evar then iraise e else sigma
+    let e = Exninfo.capture e in
+    if fail_evar then Exninfo.iraise e else sigma
 
 let check_typeclasses_instances_are_solved ~program_mode env current_sigma frozen =
   (* Naive way, call resolution again with failure flag *)
@@ -753,9 +753,9 @@ struct
           let cofix = (i, fixdecls) in
             (try check_cofix !!env (i, nf_fix sigma fixdecls)
              with reraise ->
-               let (e, info) = CErrors.push reraise in
+               let (e, info) = Exninfo.capture reraise in
                let info = Option.cata (Loc.add_loc info) info loc in
-               iraise (e, info));
+               Exninfo.iraise (e, info));
             make_judge (mkCoFix cofix) ftys.(i)
       in
       discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma fixj tycon
@@ -946,9 +946,9 @@ struct
       try
         judge_of_product !!env name j j'
       with TypeError _ as e ->
-        let (e, info) = CErrors.push e in
+        let (e, info) = Exninfo.capture e in
         let info = Option.cata (Loc.add_loc info) info loc in
-        iraise (e, info) in
+        Exninfo.iraise (e, info) in
       discard_trace @@ inh_conv_coerce_to_tycon ?loc ~program_mode resolve_tc env sigma resj tycon
 
   let pretype_letin self (name, c1, t, c2) =

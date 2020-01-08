@@ -165,8 +165,8 @@ let catching_error call_trace fail (e, info) =
 let catch_error call_trace f x =
   try f x
   with e when CErrors.noncritical e ->
-    let e = CErrors.push e in
-    catching_error call_trace iraise e
+    let e = Exninfo.capture e in
+    catching_error call_trace Exninfo.iraise e
 
 let wrap_error tac k =
   if is_traced () then Proofview.tclORELSE tac k else tac
@@ -717,13 +717,13 @@ let interp_may_eval f ist env sigma = function
      try
         f ist env sigma c
      with reraise ->
-       let reraise = CErrors.push reraise in
+       let reraise = Exninfo.capture reraise in
        (* spiwack: to avoid unnecessary modifications of tacinterp, as this
           function already use effect, I call [run] hoping it doesn't mess
           up with any assumption. *)
        Proofview.NonLogical.run (debugging_exception_step ist false (fst reraise) (fun () ->
          str"interpretation of term " ++ pr_glob_constr_env env (fst c)));
-       iraise reraise
+       Exninfo.iraise reraise
 
 (* Interprets a constr expression possibly to first evaluate *)
 let interp_constr_may_eval ist env sigma c =
@@ -731,12 +731,12 @@ let interp_constr_may_eval ist env sigma c =
     try
       interp_may_eval interp_constr ist env sigma c
     with reraise ->
-      let reraise = CErrors.push reraise in
+      let reraise = Exninfo.capture reraise in
       (* spiwack: to avoid unnecessary modifications of tacinterp, as this
           function already use effect, I call [run] hoping it doesn't mess
           up with any assumption. *)
        Proofview.NonLogical.run (debugging_exception_step ist false (fst reraise) (fun () -> str"evaluation of term"));
-      iraise reraise
+      Exninfo.iraise reraise
   in
   begin
     (* spiwack: to avoid unnecessary modifications of tacinterp, as this

@@ -180,8 +180,8 @@ let call_linker ?(fatal=true) env ~prefix f upds =
     if Dynlink.is_native then Dynlink.loadfile f else !load_obj f;
     register_native_file prefix
    with Dynlink.Error _ as exn ->
-     let exn = CErrors.push exn in
-     if fatal then iraise exn
+     let exn = Exninfo.capture exn in
+     if fatal then Exninfo.iraise exn
      else if !Flags.debug then Feedback.msg_debug CErrors.(iprint exn));
   match upds with Some upds -> update_locations upds | _ -> ()
 

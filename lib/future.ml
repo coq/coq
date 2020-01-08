@@ -131,7 +131,7 @@ let rec compute ck : 'a value =
         let data = f () in
         c := Val data; `Val data
       with e ->
-        let e = CErrors.push e in
+        let e = Exninfo.capture e in
         let e = fix_exn e in
         match e with
         | (NotReady _, _) -> `Exn e

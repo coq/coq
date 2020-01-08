@@ -1014,7 +1014,7 @@ end = struct (* {{{ *)
       if PG_compat.there_are_pending_proofs () then
         VCS.goals id (PG_compat.get_open_goals ())
     with e ->
-      let (e, info) = CErrors.push e in
+      let (e, info) = Exninfo.capture e in
       let good_id = !cur_id in
       invalidate_cur_state ();
       VCS.reached id;
@@ -1046,7 +1046,7 @@ end = struct (* {{{ *)
       unfreeze st;
       res
     with e ->
-      let e = CErrors.push e in
+      let e = Exninfo.capture e in
       Vernacstate.invalidate_cache ();
       unfreeze st;
       Exninfo.iraise e
@@ -1540,7 +1540,7 @@ end = struct (* {{{ *)
       RespBuiltProof(proof,time)
     with
     | e when CErrors.noncritical e || e = Stack_overflow ->
-        let (e, info) = CErrors.push e in
+        let (e, info) = Exninfo.capture e in
         (* This can happen if the proof is broken.  The error has also been
          * signalled as a feedback, hence we can silently recover *)
         let e_error_at, e_safe_id = match Stateid.get info with
@@ -1687,7 +1687,7 @@ end = struct (* {{{ *)
       `OK proof
       end
     with e ->
-      let (e, info) = CErrors.push e in
+      let (e, info) = Exninfo.capture e in
       (try match Stateid.get info with
       | None ->
         msg_warning Pp.(
@@ -2092,7 +2092,7 @@ end = struct (* {{{ *)
       ignore(stm_vernac_interp r_for st { r_what with verbose = true });
       feedback ~id:r_for Processed
     with e when CErrors.noncritical e ->
-      let e = CErrors.push e in
+      let e = Exninfo.capture e in
       let msg = iprint e     in
       feedback ~id:r_for (Message (Error, None, msg))
 
@@ -2337,7 +2337,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
     else
       try f ()
       with e when CErrors.noncritical e ->
-        let ie = CErrors.push e in
+        let ie = Exninfo.capture e in
         error_absorbing_tactic id blockname ie in
   (* Absorb errors from f x *)
   let resilient_command f x =
@@ -2435,7 +2435,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                let st = Vernacstate.freeze_interp_state ~marshallable:false in
                ignore(stm_vernac_interp id st x);
             with e when CErrors.noncritical e ->
-              let (e, info) = CErrors.push e in
+              let (e, info) = Exninfo.capture e in
               let info = Stateid.add info ~valid:prev id in
               Exninfo.iraise (e, info));
             wall_clock_last_fork := Unix.gettimeofday ()
@@ -2688,7 +2688,7 @@ let observe ~doc id =
     VCS.print ();
     doc
   with e ->
-    let e = CErrors.push e in
+    let e = Exninfo.capture e in
     VCS.print ();
     VCS.restore vcs;
     Exninfo.iraise e
@@ -2763,7 +2763,7 @@ let finish_tasks name u p (t,rcbackup as tasks) =
     let a, _ = List.fold_left finish_task u (info_tasks tasks) in
     (a,true), p
   with e ->
-    let e = CErrors.push e in
+    let e = Exninfo.capture e in
     msg_warning (str"File " ++ str name ++ str ":" ++ spc () ++ iprint e);
     exit 1
 
@@ -2987,7 +2987,7 @@ let process_transaction ~doc ?(newtip=Stateid.fresh ())
     VCS.print ();
     rc
   with e ->
-    let e = CErrors.push e in
+    let e = Exninfo.capture e in
     handle_failure e vcs
 
 let get_ast ~doc id =
@@ -3197,7 +3197,7 @@ let edit_at ~doc id =
     VCS.print ();
     doc, rc
   with e ->
-    let (e, info) = CErrors.push e in
+    let (e, info) = Exninfo.capture e in
     match Stateid.get info with
     | None ->
         VCS.print ();

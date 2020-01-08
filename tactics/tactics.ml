@@ -1848,12 +1848,12 @@ let apply_in_once_main flags innerclause env sigma (loc,d,lbind) =
   let rec aux clause =
     try progress_with_clause flags innerclause clause
     with e when CErrors.noncritical e ->
-    let e' = CErrors.push e in
+    let e' = Exninfo.capture e in
     try aux (clenv_push_prod clause)
     with NotExtensibleClause ->
       match e with
       | UnableToApply -> explain_unable_to_apply_lemma ?loc env sigma thm innerclause
-      | _ -> iraise e'
+      | _ -> Exninfo.iraise e'
   in
   aux (make_clenv_binding env sigma (d,thm) lbind)
 
@@ -1886,7 +1886,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
             tac id
           ])
     with e when with_destruct && CErrors.noncritical e ->
-      let (e, info) = CErrors.push e in
+      let (e, info) = Exninfo.capture e in
         (descend_in_conjunctions (Id.Set.singleton targetid)
            (fun b id -> aux (id::idstoclear) b (mkVar id))
            (e, info) c)
@@ -3155,7 +3155,7 @@ let clear_for_destruct ids =
     (clear_gen (fun env sigma id err inglobal -> raise (ClearDependencyError (id,err,inglobal))) ids)
     (function
      | ClearDependencyError (id,err,inglobal),_ -> warn_cannot_remove_as_expected (id,inglobal); Proofview.tclUNIT ()
-     | e -> iraise e)
+     | e -> Exninfo.iraise e)
 
 (* Either unfold and clear if defined or simply clear if not a definition *)
 let expand_hyp id =

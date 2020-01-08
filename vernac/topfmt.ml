@@ -361,7 +361,7 @@ let in_phase ~phase f x =
   with exn ->
     let iexn = Exninfo.capture exn in
     default_phase := op;
-    Util.iraise iexn
+    Exninfo.iraise iexn
 
 let pr_loc loc =
     let fname = loc.Loc.fname in
@@ -394,7 +394,7 @@ let pr_phase ?loc () =
      None
 
 let print_err_exn any =
-  let (e, info) = CErrors.push any in
+  let (e, info) = Exninfo.capture any in
   let loc = Loc.get_loc info in
   let pre_hdr = pr_phase ?loc () in
   let msg = CErrors.iprint (e, info) ++ fnl () in

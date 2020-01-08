@@ -236,7 +236,7 @@ let unify_resolve_refine poly flags gl clenv =
          Tacticals.New.tclZEROMSG (str "Unable to unify")
       | e when CErrors.noncritical e ->
          Tacticals.New.tclZEROMSG (str "Unexpected error")
-      | _ -> iraise ie)
+      | _ -> Exninfo.iraise ie)
 
 (** Dealing with goals of the form A -> B and hints of the form
   C -> A -> B.
@@ -770,7 +770,7 @@ module Search = struct
              (fun e' ->
               if CErrors.noncritical (fst e') then
                 (pr_error e'; aux (merge_exceptions e e') tl)
-              else iraise e')
+              else Exninfo.iraise e')
     and aux e = function
       | x :: xs -> onetac e x xs
       | [] ->

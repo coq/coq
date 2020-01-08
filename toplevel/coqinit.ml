@@ -47,9 +47,9 @@ let load_rcfile ~rcfile ~state =
                          " found. Skipping rcfile loading."))
         *)
     with reraise ->
-      let reraise = CErrors.push reraise in
+      let reraise = Exninfo.capture reraise in
       let () = Feedback.msg_info (str"Load of rcfile failed.") in
-      iraise reraise
+      Exninfo.iraise reraise
 
 (* Recursively puts `.v` files in the LoadPath if -nois was not passed *)
 let build_stdlib_vo_path ~unix_path ~coq_path =

@@ -69,7 +69,7 @@ let ide_cmd_checks ~last_valid { CAst.loc; v } =
   let user_error s =
     try CErrors.user_err ?loc ~hdr:"IDE" (str s)
     with e ->
-      let (e, info) = CErrors.push e in
+      let (e, info) = Exninfo.capture e in
       let info = Stateid.add info ~valid:last_valid Stateid.dummy in
       Exninfo.iraise (e, info)
   in
@@ -477,7 +477,7 @@ let print_xml =
   fun oc xml ->
     Mutex.lock m;
     try Control.protect_sigalrm (Xml_printer.print oc) xml; Mutex.unlock m
-    with e -> let e = CErrors.push e in Mutex.unlock m; iraise e
+    with e -> let e = Exninfo.capture e in Mutex.unlock m; Exninfo.iraise e
 
 let slave_feeder fmt xml_oc msg =
   let xml = Xmlprotocol.(of_feedback fmt msg) in
