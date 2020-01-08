@@ -646,7 +646,6 @@ let maybe_declare_manual_implicits local ref ?enriching l =
   if List.exists (fun x -> x.CAst.v <> None) l then
     declare_manual_implicits local ref ?enriching l
 
-(* TODO: either turn these warnings on and document them, or handle these cases sensibly *)
 
 let msg_trailing_implicit id =
   user_err (strbrk ("Argument " ^ Names.Id.to_string id ^ " is a trailing implicit, so it can't be declared non maximal. Please use { } instead of [ ]."))

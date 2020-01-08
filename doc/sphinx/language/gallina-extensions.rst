@@ -1728,7 +1728,7 @@ Declaring Implicit Arguments
    To know which are the implicit arguments of an object, use the
    command :cmd:`Print Implicit` (see :ref:`displaying-implicit-args`).
 
-.. exn:: Argument id is a trailing implicit, so it can't be declared non maximal. Please use %{ %} instead of [ ].
+.. exn:: Argument @ident is a trailing implicit, so it can't be declared non maximal. Please use %{ %} instead of [ ].
 
    For instance in
 
