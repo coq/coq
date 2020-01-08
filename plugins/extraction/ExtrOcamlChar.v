@@ -8,13 +8,32 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(* Extraction to Ocaml : extract ascii to OCaml's char type
-   and string to OCaml's string type. *)
+(* Extraction to Ocaml : extract ascii to OCaml's char type *)
 
 Require Coq.extraction.Extraction.
 
 Require Import Ascii String Coq.Strings.Byte.
-Require Export ExtrOcamlChar.
+
+Extract Inductive ascii => char
+[
+"(* If this appears, you're using Ascii internals. Please don't *)
+ (fun (b0,b1,b2,b3,b4,b5,b6,b7) ->
+  let f b i = if b then 1 lsl i else 0 in
+  Char.chr (f b0 0 + f b1 1 + f b2 2 + f b3 3 + f b4 4 + f b5 5 + f b6 6 + f b7 7))"
+]
+"(* If this appears, you're using Ascii internals. Please don't *)
+ (fun f c ->
+  let n = Char.code c in
+  let h i = (n land (1 lsl i)) <> 0 in
+  f (h 0) (h 1) (h 2) (h 3) (h 4) (h 5) (h 6) (h 7))".
+
+Extract Constant zero => "'\000'".
+Extract Constant one => "'\001'".
+Extract Constant shift =>
+ "fun b c -> Char.chr (((Char.code c) lsl 1) land 255 + if b then 1 else 0)".
+
+Extract Inlined Constant ascii_dec => "(=)".
+Extract Inlined Constant Ascii.eqb => "(=)".
 
 (* python -c 'print(" ".join(r""" "%s" """.strip() % (r"'"'\''"'" if chr(i) == "'"'"'" else repr(""" "" """.strip()) if chr(i) == """ " """.strip() else repr(chr(i))) for i in range(256)))' # " to satisfy Coq's comment parser *)
 Extract Inductive byte => char
@@ -24,64 +43,3 @@ Extract Inlined Constant Byte.eqb => "(=)".
 Extract Inlined Constant Byte.byte_eq_dec => "(=)".
 Extract Inlined Constant Ascii.ascii_of_byte => "(fun x -> x)".
 Extract Inlined Constant Ascii.byte_of_ascii => "(fun x -> x)".
-
-(* This differs from ExtrOcamlString.v: the latter extracts "string"
-   to "char list", and we extract "string" to "string" *)
-
-Extract Inductive string => "string"
-[
-(* EmptyString *)
-"(* If this appears, you're using String internals. Please don't *)
-  """"
-"
-(* String *)
-"(* If this appears, you're using String internals. Please don't *)
-  (fun (c, s) -> String.make 1 c ^ s)
-"
-]
-"(* If this appears, you're using String internals. Please don't *)
- (fun f0 f1 s ->
-    let l = String.length s in
-    if l = 0 then f0 else f1 (String.get s 0) (String.sub s 1 (l-1)))
-".
-
-Extract Inlined Constant String.string_dec => "(=)".
-Extract Inlined Constant String.eqb => "(=)".
-Extract Inlined Constant String.append => "(^)".
-Extract Inlined Constant String.concat => "String.concat".
-Extract Inlined Constant String.prefix =>
-  "(fun s1 s2 ->
-     let l1 = String.length s1 and l2 = String.length s2 in
-     l1 <= l2 && String.sub s2 0 l1 = s1)".
-Extract Inlined Constant String.string_of_list_ascii =>
-  "(fun l ->
-      let a = Array.of_list l in
-      String.init (Array.length a) (fun i -> a.(i)))".
-Extract Inlined Constant String.list_ascii_of_string =>
-  "(fun s ->
-      Array.to_list (Array.init (String.length s) (fun i -> s.[i])))".
-Extract Inlined Constant String.string_of_list_byte =>
-  "(fun l ->
-      let a = Array.of_list l in
-      String.init (Array.length a) (fun i -> a.(i)))".
-Extract Inlined Constant String.list_byte_of_string =>
-  "(fun s ->
-      Array.to_list (Array.init (String.length s) (fun i -> s.[i])))".
-
-(* Other operations in module String (at the time of this writing):
-      String.length
-      String.get
-      String.substring
-      String.index
-      String.findex
-   They all use type "nat".  If we know that "nat" extracts
-   to O | S of nat, we can provide OCaml implementations
-   for these functions that work directly on OCaml's strings.
-   However "nat" could be extracted to other OCaml types...
-*)
-
-(*
-Definition test := "ceci est un test"%string.
-
-Recursive Extraction test Ascii.zero Ascii.one.
-*)
