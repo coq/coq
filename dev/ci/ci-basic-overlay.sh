@@ -209,7 +209,7 @@
 ########################################################################
 # bedrock2
 ########################################################################
-: "${bedrock2_CI_REF:=master}"
+: "${bedrock2_CI_REF:=tested}"
 : "${bedrock2_CI_GITURL:=https://github.com/mit-plv/bedrock2}"
 : "${bedrock2_CI_ARCHIVEURL:=${bedrock2_CI_GITURL}/archive}"
 
