@@ -57,12 +57,29 @@ let rec find_and_remove_assoc (i : int) = function
     if rem == ans then (r, l)
     else (r, (j, v) :: ans)
 
-let iraise e =
+type backtrace = Printexc.raw_backtrace
+let backtrace_to_string = Printexc.raw_backtrace_to_string
+
+let backtrace_info : backtrace t = make ()
+
+let is_recording = ref false
+
+let record_backtrace b =
+  let () = Printexc.record_backtrace b in
+  is_recording := b
+
+let get_backtrace e = get e backtrace_info
+
+let iraise (e,i) =
   let () = Mutex.lock lock in
   let id = Thread.id (Thread.self ()) in
-  let () = current := (id, e) :: remove_assoc id !current in
+  let () = current := (id, (e,i)) :: remove_assoc id !current in
   let () = Mutex.unlock lock in
-  raise (fst e)
+  match get i backtrace_info with
+  | None ->
+    raise e
+  | Some bt ->
+    Printexc.raise_with_backtrace e bt
 
 let raise ?info e = match info with
 | None ->
@@ -72,11 +89,7 @@ let raise ?info e = match info with
   let () = Mutex.unlock lock in
   raise e
 | Some i ->
-  let () = Mutex.lock lock in
-  let id = Thread.id (Thread.self ()) in
-  let () = current := (id, (e, i)) :: remove_assoc id !current in
-  let () = Mutex.unlock lock in
-  raise e
+  iraise (e,i)
 
 let find_and_remove () =
   let () = Mutex.lock lock in
@@ -104,3 +117,13 @@ let info e =
     (* Mismatch: the raised exception is not the one stored, either because the
        previous raise was not instrumented, or because something went wrong. *)
     Store.empty
+
+let capture e =
+  if !is_recording then
+    (* This must be the first function call, otherwise the stack may be
+       destroyed *)
+    let bt = Printexc.get_raw_backtrace () in
+    let info = info e in
+    e, add info backtrace_info bt
+  else
+    e, info e

@@ -12,7 +12,7 @@ open Pp
 
 (** Aliases *)
 
-let push = Backtrace.add_backtrace
+let push = Exninfo.capture
 
 (* Errors *)
 
@@ -51,12 +51,10 @@ let raw_anomaly e = match e with
   | _ ->
     str "Uncaught exception " ++ str (Printexc.to_string e) ++ str "."
 
-let print_backtrace e = match Backtrace.get_backtrace e with
+let print_backtrace e = match Exninfo.get_backtrace e with
 | None -> mt ()
 | Some bt ->
-  let bt = Backtrace.repr bt in
-  let pr_frame f = str (Backtrace.print_frame f) in
-  let bt = prlist_with_sep fnl pr_frame bt in
+  let bt = str (Exninfo.backtrace_to_string bt) in
   fnl () ++ hov 0 bt
 
 let print_anomaly askreport e =

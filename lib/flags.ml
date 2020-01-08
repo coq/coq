@@ -19,7 +19,7 @@ let with_modified_ref ?(restore=true) r nf f x =
     if restore || pre == !r then r := old_ref;
     res
   with reraise ->
-    let reraise = Backtrace.add_backtrace reraise in
+    let reraise = Exninfo.capture reraise in
     r := old_ref;
     Exninfo.iraise reraise
 
@@ -37,7 +37,7 @@ let with_options ol f x =
     let r = f x in
     let () = List.iter2 (:=) ol vl in r
   with reraise ->
-    let reraise = Backtrace.add_backtrace reraise in
+    let reraise = Exninfo.capture reraise in
     let () = List.iter2 (:=) ol vl in
     Exninfo.iraise reraise
 

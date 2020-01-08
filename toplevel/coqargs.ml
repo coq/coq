@@ -503,7 +503,7 @@ let parse_args ~help ~init arglist : t * string list =
       }}}
     |"-test-mode" -> Vernacinterp.test_mode := true; oval
     |"-beautify" -> Flags.beautify := true; oval
-    |"-bt" -> Backtrace.record_backtrace true; oval
+    |"-bt" -> Exninfo.record_backtrace true; oval
     |"-color" -> set_color oval (next ())
     |"-config"|"--config" -> set_query oval PrintConfig
     |"-debug" -> Coqinit.set_debug (); oval

@@ -2,6 +2,13 @@
 
 ### ML API
 
+Exception handling:
+
+- Coq's custom `Backtrace` module has been removed in favor of OCaml's
+  native backtrace implementation. Please use the functions in
+  `Exninfo.capture` and `iraise` when re-raising inside an exception
+  handler.
+
 Printers:
 
 - Functions such as Printer.pr_lconstr_goal_style_env have been

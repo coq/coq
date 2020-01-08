@@ -34,6 +34,49 @@ val get : info -> 'a t -> 'a option
 val info : exn -> info
 (** Retrieve the information of the last exception raised. *)
 
+type backtrace
+
+val get_backtrace : info -> backtrace option
+(** [get_backtrace info] does get the backtrace associated to info *)
+
+val backtrace_to_string : backtrace -> string
+(** [backtrace_to_string info] does get the backtrace associated to info *)
+
+val record_backtrace : bool -> unit
+
+val capture : exn -> iexn
+(** Add the current backtrace information to the given exception.
+
+    The intended use case is of the form: {[
+
+    try foo
+    with
+    | Bar -> bar
+    | exn ->
+      let exn = Exninfo.capture err in
+      baz
+
+    ]}
+
+    where [baz] should re-raise using [iraise] below.
+
+    WARNING: any intermediate code between the [with] and the handler may
+    modify the backtrace. Yes, that includes [when] clauses. Ideally, what you
+    should do is something like: {[
+
+    try foo
+    with exn ->
+      let exn = Exninfo.capture exn in
+      match err with
+      | Bar -> bar
+      | err -> baz
+
+    ]}
+
+    I admit that's a bit heavy, but there is not much to do...
+
+*)
+
 val iraise : iexn -> 'a
 (** Raise the given enriched exception. *)
 
