@@ -678,6 +678,7 @@ let check_extract_string () =
   try
     let string_type = match lang () with
       | Ocaml -> "string"
+      | Haskell -> "Prelude.String"
       | _ -> raise Not_found
     in
     String.equal (find_custom @@ string_type_ref ()) string_type

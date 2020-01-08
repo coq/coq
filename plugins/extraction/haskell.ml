@@ -171,6 +171,7 @@ let rec pp_expr par env args =
         assert (List.is_empty args);
         begin match a with
           | _ when is_native_char c -> pp_native_char c
+          | _ when is_native_string c -> pp_native_string c
           | [] -> pp_global Cons r
           | [a] ->
             pp_par par (pp_global Cons r ++ spc () ++ pp_expr true env [] a)
