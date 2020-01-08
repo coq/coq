@@ -107,7 +107,7 @@ sig
   (** Same than [fold_left2_map] but passing the index of the array *)
 
   val fold_right2_map : ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
-  (** Same with two arrays, folding on the left *)
+  (** Same with two arrays, folding on the right *)
 
   val distinct : 'a array -> bool
   (** Return [true] if every element of the array is unique (for default
