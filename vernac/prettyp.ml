@@ -1003,9 +1003,7 @@ let print_canonical_projections env sigma grefs =
       | Const_cs y -> GlobRef.equal y gr
       | _ -> false
     end ||
-    match gr with
-    | GlobRef.ConstRef con -> Names.Constant.equal c.o_ORIGIN con
-    | _ -> false
+    GlobRef.equal c.o_ORIGIN gr
   in
   let projs =
     List.filter (fun p -> List.for_all (match_proj_gref p) grefs)

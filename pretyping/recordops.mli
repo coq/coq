@@ -73,7 +73,7 @@ type cs_pattern =
   | Default_cs
 
 type obj_typ = {
-  o_ORIGIN : Constant.t;
+  o_ORIGIN : GlobRef.t;
   o_DEF : constr;
   o_CTX : Univ.AUContext.t;
   o_INJ : int option;      (** position of trivial argument *)
