@@ -234,5 +234,7 @@ let only_polymorphism atts = parse polymorphic atts
 let vernac_polymorphic_flag = ukey, VernacFlagList ["polymorphic", VernacFlagEmpty]
 let vernac_monomorphic_flag = ukey, VernacFlagList ["monomorphic", VernacFlagEmpty]
 
-let canonical =
+let canonical_field =
   enable_attribute ~key:"canonical" ~default:(fun () -> true)
+let canonical_instance =
+  enable_attribute ~key:"canonical" ~default:(fun () -> false)

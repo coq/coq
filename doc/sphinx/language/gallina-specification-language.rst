@@ -1620,6 +1620,17 @@ variety of commands:
        :n:`@string__1` is the actual notation, :n:`@string__2` is the version number,
        :n:`@string__3` is the note.
 
+``canonical``
+    This attribute can decorate a :cmd:`Definition` or :cmd:`Let` command.
+    It is equivalent to having a :cmd:`Canonical Structure` declaration just
+    after the command.
+
+    This attirbute can take the value ``false`` when decorating a record field
+    declaration with the effect of preventing the field from being involved in
+    the inference of canonical instances.
+
+    See also :ref:`canonical-structure-declaration`.
+
 .. example::
 
    .. coqtop:: all reset warn

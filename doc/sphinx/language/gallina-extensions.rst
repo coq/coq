@@ -1983,6 +1983,8 @@ Deactivation of implicit arguments for parsing
    to be given as if no arguments were implicit. By symmetry, this also
    affects printing.
 
+.. _canonical-structure-declaration:
+
 Canonical structures
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -1993,6 +1995,7 @@ value. The complete documentation of canonical structures can be found
 in :ref:`canonicalstructures`; here only a simple example is given.
 
 .. cmd:: {? Local | #[local] } Canonical {? Structure } @qualid
+  :name: Canonical Structure
 
    This command declares :token:`qualid` as a canonical instance of a
    structure (a record). When the :g:`#[local]` attribute is given the effect

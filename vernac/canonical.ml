@@ -21,10 +21,12 @@ let cache_canonical_structure (_, (o,_)) =
   let sigma = Evd.from_env env in
   register_canonical_structure ~warn:true env sigma o
 
-let discharge_canonical_structure (_,(x, local)) =
-  if local then None else Some (x, local)
+let discharge_canonical_structure (_,((gref, _ as x), local)) =
+  if local || (Globnames.isVarRef gref && Lib.is_in_section gref) then None
+  else Some (x, local)
 
-let inCanonStruc : (Constant.t * inductive) * bool -> obj =
+
+let inCanonStruc : (GlobRef.t * inductive) * bool -> obj =
   declare_object {(default_object "CANONICAL-STRUCTURE") with
                   open_function = open_canonical_structure;
                   cache_function = cache_canonical_structure;

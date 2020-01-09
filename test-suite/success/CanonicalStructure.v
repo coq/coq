@@ -51,3 +51,22 @@ Fail Check (refl_equal _ : l _ = x2).
 Check s0.
 Check s1.
 Check s2.
+
+Section Y.
+  Let s3 := MKL x3.
+  Canonical Structure s3.
+  Check (refl_equal _ : l _ = x3).
+End Y.
+Fail Check (refl_equal _ : l _ = x3).
+Fail Check s3.
+
+Section V.
+  #[canonical] Let s3 := MKL x3.
+  Check (refl_equal _ : l _ = x3).
+End V.
+
+Section W.
+  #[canonical, local] Definition s2' := MKL x2.
+  Check (refl_equal _ : l _ = x2).
+End W.
+Fail Check (refl_equal _ : l _ = x2).
