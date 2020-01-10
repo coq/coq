@@ -138,7 +138,7 @@ let find_primitive_projection c =
 *)
 
 type obj_typ = {
-  o_ORIGIN : Constant.t;
+  o_ORIGIN : GlobRef.t;
   o_DEF : constr;
   o_CTX : Univ.AUContext.t;
   o_INJ : int option;      (* position of trivial argument if any *)
@@ -212,7 +212,8 @@ let compute_canonical_projections env ~warn (gref,ind) =
         mkConstU (con, u), Environ.constant_value_in env (con,u)
     | GlobRef.VarRef id ->
         mkVar id, Option.get (Environ.named_body id env)
-    | GlobRef.ConstructRef _ | GlobRef.IndRef _ -> assert false in
+    | GlobRef.ConstructRef _ | GlobRef.IndRef _ -> assert false
+  in
   let sign,t = Reductionops.splay_lam env (Evd.from_env env) (EConstr.of_constr c) in
   let sign = List.map (on_snd EConstr.Unsafe.to_constr) sign in
   let t = EConstr.Unsafe.to_constr t in
@@ -231,7 +232,7 @@ let compute_canonical_projections env ~warn (gref,ind) =
             match cs_pattern_of_constr nenv t with
             | patt, o_INJ, o_TCOMPS ->
               ((GlobRef.ConstRef proji_sp, (patt, t)),
-               { o_ORIGIN = con ; o_DEF ; o_CTX ; o_INJ ; o_TABS ; o_TPARAMS ; o_NPARAMS ; o_TCOMPS })
+               { o_ORIGIN = gref ; o_DEF ; o_CTX ; o_INJ ; o_TABS ; o_TPARAMS ; o_NPARAMS ; o_TCOMPS })
               :: acc
             | exception Not_found ->
               if warn then warn_projection_no_head_constant (sign, env, t, gref, proji_sp);
