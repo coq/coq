@@ -487,18 +487,17 @@ let build_inductive env names prv univs variance paramsctxt kn isrecord isfinite
     in
     (* Assigning VM tags to constructors *)
     let nconst, nblock = ref 0, ref 0 in
-    let transf num =
-      let arity = List.length (dest_subterms recarg).(num) in
-        if Int.equal arity 0 then
-          let p  = (!nconst, 0) in
-            incr nconst; p
-        else
-          let p = (!nblock + 1, arity) in
-            incr nblock; p
-              (* les tag des constructeur constant commence a 0,
-                 les tag des constructeur non constant a 1 (0 => accumulator) *)
+    let transf arity =
+      if Int.equal arity 0 then
+        let p  = (!nconst, 0) in
+        incr nconst; p
+      else
+        let p = (!nblock + 1, arity) in
+        incr nblock; p
+        (* les tag des constructeur constant commence a 0,
+           les tag des constructeur non constant a 1 (0 => accumulator) *)
     in
-    let rtbl = Array.init (List.length cnames) transf in
+    let rtbl = Array.map transf consnrealargs in
       (* Build the inductive packet *)
       { mind_typename = id;
         mind_arity = arity;

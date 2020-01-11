@@ -197,16 +197,14 @@ let unbounded_from_below u cstrs =
    is u_k and is contributing. *)
 let template_polymorphic_univs ~template_check ~ctor_levels uctx paramsctxt concl =
   let check_level l =
-    if Univ.LSet.mem l (Univ.ContextSet.levels uctx) &&
-       unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
-       not (Univ.LSet.mem l ctor_levels) then
-      Some l
-    else None
+    Univ.LSet.mem l (Univ.ContextSet.levels uctx) &&
+    unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
+    not (Univ.LSet.mem l ctor_levels)
   in
   let univs = Univ.Universe.levels concl in
   let univs =
     if template_check then
-      Univ.LSet.filter (fun l -> Option.has_some (check_level l) || Univ.Level.is_prop l) univs
+      Univ.LSet.filter (fun l -> check_level l || Univ.Level.is_prop l) univs
     else univs (* Doesn't check the universes can be generalized *)
   in
   let fold acc = function
