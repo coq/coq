@@ -1200,7 +1200,7 @@ Controlling the locality of commands
    + Commands whose default behavior is to extend their effect outside
      sections but not outside modules when they occur in a section and to
      extend their effect outside the module or library file they occur in
-     when no section contains them.For these commands, the Local modifier
+     when no section contains them. For these commands, the Local modifier
      limits the effect to the current section or module while the Global
      modifier extends the effect outside the module even when the command
      occurs in a section.  The :cmd:`Set` and :cmd:`Unset` commands belong to this
