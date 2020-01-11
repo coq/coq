@@ -5,6 +5,27 @@ Omega: a solver for quantifier-free problems in Presburger Arithmetic
 
 :Author: Pierre Crégut
 
+.. warning::
+
+   The :tacn:`omega` tactic is about to be deprecated in favor of the
+   :tacn:`lia` tactic.  The goal is to consolidate the arithmetic
+   solving capabilities of Coq into a single engine; moreover,
+   :tacn:`lia` is in general more powerful than :tacn:`omega` (it is a
+   complete Presburger arithmetic solver while :tacn:`omega` was known
+   to be incomplete).
+
+   Work is in progress to make sure that there are no regressions
+   (including no performance regression) when switching from
+   :tacn:`omega` to :tacn:`lia` in existing projects.  However, we
+   already recommend using :tacn:`lia` in new or refactored proof
+   scripts.  We also ask that you report (in our `bug tracker
+   <https://github.com/coq/coq/issues>`_) any issue you encounter,
+   especially if the issue was not present in :tacn:`omega`.
+
+   Note that replacing :tacn:`omega` with :tacn:`lia` can break
+   non-robust proof scripts which rely on incompleteness bugs of
+   :tacn:`omega` (e.g. using the pattern :g:`; try omega`).
+
 Description of ``omega``
 ------------------------
 
