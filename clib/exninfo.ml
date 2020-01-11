@@ -16,18 +16,21 @@ module Store = Store.Make ()
 
 type 'a t = 'a Store.field
 
-type info = Store.t
+type info =
+  { backtrace : Printexc.raw_backtrace option
+  ; store : Store.t
+  }
 
 type iexn = exn * info
 
 let make = Store.field
-let add = Store.set
-let get = Store.get
-let null = Store.empty
+let add { backtrace; store } f d = { backtrace; store = Store.set store f d }
+let get { store } f = Store.get store f
+let null = { backtrace = None; store = Store.empty }
 
 exception Unique
 
-let dummy = (Unique, Store.empty)
+let dummy = (Unique, { backtrace = None; store = Store.empty} )
 
 let current : (int * iexn) list ref = ref []
 (** List associating to each thread id the latest exception raised by an
@@ -60,22 +63,20 @@ let rec find_and_remove_assoc (i : int) = function
 type backtrace = Printexc.raw_backtrace
 let backtrace_to_string = Printexc.raw_backtrace_to_string
 
-let backtrace_info : backtrace t = make ()
-
 let is_recording = ref false
 
 let record_backtrace b =
   let () = Printexc.record_backtrace b in
   is_recording := b
 
-let get_backtrace e = get e backtrace_info
+let get_backtrace { backtrace } = backtrace
 
 let iraise (e,i) =
   let () = Mutex.lock lock in
   let id = Thread.id (Thread.self ()) in
   let () = current := (id, (e,i)) :: remove_assoc id !current in
   let () = Mutex.unlock lock in
-  match get i backtrace_info with
+  match i.backtrace with
   | None ->
     raise e
   | Some bt ->
@@ -106,14 +107,14 @@ let info e =
   else
     (* Mismatch: the raised exception is not the one stored, either because the
        previous raise was not instrumented, or because something went wrong. *)
-    Store.empty
+    null
 
 let capture e =
   if !is_recording then
     (* This must be the first function call, otherwise the stack may be
        destroyed *)
-    let bt = Printexc.get_raw_backtrace () in
+    let backtrace = Printexc.get_raw_backtrace () in
     let info = info e in
-    e, add info backtrace_info bt
+    e, { backtrace = Some backtrace ; store = info.store }
   else
     e, info e
