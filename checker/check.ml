@@ -294,14 +294,22 @@ type intern_mode = Rec | Root | Dep (* Rec = standard, Root = -norec, Dep = depe
 (* Dependency graph *)
 let depgraph = ref LibraryMap.empty
 
-let marshal_in_segment f ch =
-  try
-    let stop = input_binary_int ch in
-    let v = Analyze.instantiate (Analyze.parse_channel ch) in
-    let digest = Digest.input ch in
+let marshal_in_segment ~validate ~value f ch =
+  if validate then
+    let v, stop, digest =
+      try
+        let stop = input_binary_int ch in
+        let v = Analyze.parse_channel ch in
+        let digest = Digest.input ch in
+        v, stop, digest
+      with _ ->
+        user_err (str "Corrupted file " ++ quote (str f))
+    in
+    let v = Analyze.instantiate v in
+    let () = Validate.validate !Flags.debug value v in
     Obj.obj v, stop, digest
-  with _ ->
-    user_err (str "Corrupted file " ++ quote (str f))
+  else
+    System.marshal_in_segment f ch
 
 let skip_in_segment f ch =
   try
@@ -312,30 +320,26 @@ let skip_in_segment f ch =
   with _ ->
     user_err (str "Corrupted file " ++ quote (str f))
 
-let marshal_or_skip ~intern_mode f ch =
-  if intern_mode <> Dep then
-    let v, pos, digest = marshal_in_segment f ch in
+let marshal_or_skip ~validate ~value f ch =
+  if validate then
+    let v, pos, digest = marshal_in_segment ~validate ~value f ch in
     Some v, pos, digest
   else
     let pos, digest = skip_in_segment f ch in
     None, pos, digest
 
 let intern_from_file ~intern_mode (dir, f) =
-  let validate a b c = if intern_mode <> Dep then Validate.validate a b c in
+  let validate = intern_mode <> Dep in
   Flags.if_verbose chk_pp (str"[intern "++str f++str" ...");
   let (sd,md,table,opaque_csts,digest) =
     try
-      let marshal_in_segment f ch = if intern_mode <> Dep
-        then marshal_in_segment f ch
-        else System.marshal_in_segment f ch
-      in
       let ch = System.with_magic_number_check raw_intern_library f in
-      let (sd:summary_disk), _, digest = marshal_in_segment f ch in
-      let (md:library_disk), _, digest = marshal_in_segment f ch in
-      let (opaque_csts:seg_univ option), _, udg = marshal_in_segment f ch in
-      let (tasks:'a option), _, _ = marshal_in_segment f ch in
+      let (sd:summary_disk), _, digest = marshal_in_segment ~validate ~value:Values.v_libsum f ch in
+      let (md:library_disk), _, digest = marshal_in_segment ~validate ~value:Values.v_lib f ch in
+      let (opaque_csts:seg_univ option), _, udg = marshal_in_segment ~validate ~value:Values.v_univopaques f ch in
+      let (tasks:'a option), _, _ = marshal_in_segment ~validate ~value:Values.(Opt Any) f ch in
       let (table:seg_proofs option), pos, checksum =
-        marshal_or_skip ~intern_mode f ch in
+        marshal_or_skip ~validate ~value:Values.v_opaquetable f ch in
       (* Verification of the final checksum *)
       let () = close_in ch in
       let ch = open_in_bin f in
@@ -354,12 +358,7 @@ let intern_from_file ~intern_mode (dir, f) =
         user_err ~hdr:"intern_from_file"
           (str "The file "++str f++str " is still a .vio"))
         opaque_csts;
-      validate !Flags.debug Values.v_univopaques opaque_csts;
       end;
-      (* Verification of the unmarshalled values *)
-      validate !Flags.debug Values.v_libsum sd;
-      validate !Flags.debug Values.v_lib md;
-      validate !Flags.debug Values.(Opt v_opaquetable) table;
       Flags.if_verbose chk_pp (str" done]" ++ fnl ());
       let digest =
         if opaque_csts <> None then Safe_typing.Dvivo (digest,udg)
