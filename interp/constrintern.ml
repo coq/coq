@@ -192,6 +192,9 @@ let compute_internalization_env env sigma ?(impls=empty_internalization_env) ty 
 let extend_internalization_data (r, impls, scopes, uid) impl scope =
   (r, impls@[impl], scopes@[scope], uid)
 
+let implicits_of_decl_in_internalization_env id (int_env:internalization_env) =
+  let (_, impls, _, _) = Id.Map.find id int_env in impls
+
 (**********************************************************************)
 (* Contracting "{ _ }" in notations *)
 

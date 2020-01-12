@@ -182,23 +182,28 @@ let do_assumptions ~program_mode ~poly ~scope ~kind nl l =
 let context_subst subst (name,b,t,impl) =
   name, Option.map (Vars.substl subst) b, Vars.substl subst t, impl
 
-let context_insection sigma ~poly ctx =
+let extract_manual_implicit e =
+  CAst.make (Option.map (fun ((na,_,_),_,(max,_)) -> (na,max)) e)
+
+let context_insection sigma ~poly int_env ctx =
   let uctx = Evd.evar_universe_context sigma in
   let univs = UState.univ_entry ~poly uctx in
   let fn i subst (name,_,_,_ as d) =
-    let d = context_subst subst d in
+    let (id,b,t,impl as d) = context_subst subst d in
+    let impargs = implicits_of_decl_in_internalization_env id int_env in
+    let impargs = List.map extract_manual_implicit impargs in
     let univs = if i = 0 then univs else empty_univ_entry ~poly in
     let () = match d with
       | name, None, t, impl ->
         let kind = Decls.Context in
-        declare_variable false ~kind t univs [] impl (CAst.make name)
+        declare_variable false ~kind t univs impargs impl (CAst.make name)
       | name, Some b, t, impl ->
         let entry = Declare.definition_entry ~univs ~types:t b in
         (* XXX Fixme: Use Declare.prepare_definition *)
         let kind = Decls.(IsDefinition Definition) in
         let _ : GlobRef.t =
           Declare.declare_entry ~name ~scope:Locality.Discharge
-            ~kind ~impargs:[] ~uctx entry
+            ~kind ~impargs ~uctx entry
         in
         ()
     in
@@ -207,7 +212,7 @@ let context_insection sigma ~poly ctx =
   let _ : Vars.substl = List.fold_left_i fn 0 [] ctx in
   ()
 
-let context_nosection sigma ~poly ctx =
+let context_nosection sigma ~poly int_env ctx =
   let (univ_entry,ubinders as univs) = Evd.univ_entry ~poly sigma in
   let fn i subst d =
     let (name,b,t,_impl) = context_subst subst d in
@@ -215,6 +220,8 @@ let context_nosection sigma ~poly ctx =
     let local = if Lib.is_modtype () then Locality.ImportDefaultBehavior
       else Locality.ImportNeedQualified
     in
+    let impls = implicits_of_decl_in_internalization_env name int_env in
+    let impls = List.map extract_manual_implicit impls in
     (* Multiple monomorphic axioms: declare universes only on the first declaration *)
     let univs = if i = 0 then univs else clear_univs (Locality.Global local) univs in
     let decl = match b with
@@ -226,6 +233,7 @@ let context_nosection sigma ~poly ctx =
         Declare.DefinitionEntry entry
     in
     let cst = Declare.declare_constant ~name ~kind ~local decl in
+    let () = maybe_declare_manual_implicits false (GlobRef.ConstRef cst) impls in
     let () = Declare.assumption_message name in
     let env = Global.env () in
     (* why local when is_modtype? *)
@@ -239,7 +247,7 @@ let context_nosection sigma ~poly ctx =
   ()
 
 let interp_context env sigma l =
-  let sigma, (_, ((_env, ctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
+  let sigma, (int_env, ((_env, ctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let ce t = Pretyping.check_evars env sigma t in
   let () = List.iter (fun decl -> Context.Rel.Declaration.iter_constr ce decl) ctx in
@@ -263,12 +271,12 @@ let interp_context env sigma l =
       name,b,t,impl)
       ctx
   in
-   sigma, ctx
+  sigma, int_env, ctx
 
 let do_context ~poly l =
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let sigma, ctx = interp_context env sigma l in
+  let sigma, int_env, ctx = interp_context env sigma l in
   if Global.sections_are_opened ()
-  then context_insection sigma ~poly ctx
-  else context_nosection sigma ~poly ctx
+  then context_insection sigma ~poly int_env ctx
+  else context_nosection sigma ~poly int_env ctx

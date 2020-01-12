@@ -138,14 +138,14 @@ Qed.
 Section mult.
   Context (fold : forall {A} {B}, (A -> B) -> A -> B).
   Context (add : forall A, A -> A).
-  Context (fold_lemma : forall {A B f} {eqA : relation B} x, eqA (fold A B f (add A x)) (fold _ _ f x)).
+  Context (fold_lemma : forall {A B f} {eqA : relation B} x, eqA (fold f (add A x)) (fold f x)).
   Context (ab : forall B, A -> B).
   Context (anat : forall A, nat -> A).
 
-Goal forall x, (fold _ _ (fun x => ab A x) (add A x) = anat _ (fold _ _ (ab nat) (add _ x))). 
+Goal forall x, (fold (fun x => ab A x) (add A x) = anat _ (fold (ab nat) (add _ x))).
 Proof. intros.
   setoid_rewrite fold_lemma. 
-  change (fold A A (fun x0 : A => ab A x0) x = anat A (fold A nat (ab nat) x)).
+  change (fold (fun x0 : A => ab A x0) x = anat A (fold (ab nat) x)).
 Abort.
 
 End mult.
