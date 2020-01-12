@@ -8,4 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val validate : bool -> Values.value -> 'a -> unit
+open Analyze
+
+val validate : debug:bool -> Values.value -> data * obj LargeArray.t -> unit

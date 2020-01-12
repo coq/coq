@@ -305,8 +305,8 @@ let marshal_in_segment ~validate ~value f ch =
       with _ ->
         user_err (str "Corrupted file " ++ quote (str f))
     in
+    let () = Validate.validate ~debug:!Flags.debug value v in
     let v = Analyze.instantiate v in
-    let () = Validate.validate !Flags.debug value v in
     Obj.obj v, stop, digest
   else
     System.marshal_in_segment f ch
