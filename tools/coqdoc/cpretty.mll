@@ -547,6 +547,9 @@ rule coq_bol = parse
             comment lexbuf
           end else skipped_comment lexbuf in
         if eol then coq_bol lexbuf else coq lexbuf }
+  | space* "#[" {
+    let eol = begin backtrack lexbuf; body_bol lexbuf end
+    in if eol then coq_bol lexbuf else coq lexbuf }
   | eof
       { () }
   | _
@@ -643,6 +646,11 @@ and coq = parse
 	  Output.ident s None;
 	let eol = body lexbuf in
 	  if eol then coq_bol lexbuf else coq lexbuf }
+  | "#["
+      { ignore(lexeme lexbuf);
+        Output.char '#'; Output.char '[';
+        let eol = body lexbuf in
+          if eol then coq_bol lexbuf else coq lexbuf }
   | space+ { Output.char ' '; coq lexbuf }
   | eof
       { () }
