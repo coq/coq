@@ -265,6 +265,35 @@ Name a set of section hypotheses for ``Proof using``
    has remaining uninstantiated existential variables. It takes every
    uninstantiated existential variable and turns it into a goal.
 
+Proof modes
+```````````
+
+When entering proof mode through commands such as :cmd:`Goal` and :cmd:`Proof`,
+|Coq| picks by default the |Ltac| mode. Nonetheless, there exist other proof modes
+shipped in the standard |Coq| installation, and furthermore some plugins define
+their own proof modes. The default proof mode used when opening a proof can
+be changed using the following option.
+
+.. opt:: Default Proof Mode @string
+   :name: Default Proof Mode
+
+   Select the proof mode to use when starting a proof. Depending on the proof
+   mode, various syntactic constructs are allowed when writing an interactive
+   proof. The possible option values are listed below.
+
+   - "Classic": this is the default. It activates the |Ltac| language to interact
+     with the proof, and also allows vernacular commands.
+
+   - "Noedit": this proof mode only allows vernacular commands. No tactic
+     language is activated at all. This is the default when the prelude is not
+     loaded, e.g. through the `-noinit` option for `coqc`.
+
+   - "Ltac2": this proof mode is made available when requiring the Ltac2
+     library, and is set to be the default when it is imported. It allows
+     to use the Ltac2 language, as well as vernacular commands.
+
+   - Some external plugins also define their own proof mode, which can be
+     activated via this command.
 
 Navigation in the proof tree
 --------------------------------
