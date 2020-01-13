@@ -154,6 +154,18 @@ to a worker process. The threshold can be configured with
 Batch mode
 ---------------
 
+   .. warning::
+
+      The ``-vio`` flag is subsumed, for most practical usage, by the
+      the more recent ``-vos`` flag. See :ref:`compiled-interfaces`.
+
+   .. warning::
+
+      When working with ``.vio`` files, do not use the ``-vos`` option at
+      the same time, otherwise stale files might get loaded when executing
+      a ``Require``. Indeed, the loading of a nonempty ``.vos`` file is
+      assigned higher priority than the loading of a ``.vio`` file.
+
 When |Coq| is used as a batch compiler by running ``coqc``, it produces
 a ``.vo`` file for each ``.v`` file. A ``.vo`` file contains, among other
 things, theorem statements and proofs. Hence to produce a .vo |Coq|
@@ -161,10 +173,10 @@ need to process all the proofs of the ``.v`` file.
 
 The asynchronous processing of proofs can decouple the generation of a
 compiled file (like the ``.vo`` one) that can be loaded by ``Require`` from the
-generation and checking of the proof objects. The ``-quick`` flag can be
+generation and checking of the proof objects. The ``-vio`` flag can be
 passed to ``coqc`` to produce, quickly, ``.vio`` files.
 Alternatively, when using a Makefile produced by ``coq_makefile``,
-the ``quick`` target can be used to compile all files using the ``-quick`` flag.
+the ``vio`` target can be used to compile all files using the ``-vio`` flag.
 
 A ``.vio`` file can be loaded using ``Require`` exactly as a ``.vo`` file but
 proofs will not be available (the Print command produces an error).
@@ -173,7 +185,7 @@ inconsistencies might go unnoticed. A ``.vio`` file does not contain proof
 objects, but proof tasks, i.e. what a worker process can transform
 into a proof object.
 
-Compiling a set of files with the ``-quick`` flag allows one to work,
+Compiling a set of files with the ``-vio`` flag allows one to work,
 interactively, on any file without waiting for all the proofs to be
 checked.
 

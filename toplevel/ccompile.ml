@@ -121,6 +121,10 @@ let compile opts copts ~echo ~f_in ~f_out =
   in
   let long_f_dot_in, long_f_dot_out =
     ensure_exists_with_prefix f_in f_out ext_in ext_out in
+  let dump_empty_vos () =
+    (* Produce an empty .vos file, as a way to ensure that a stale .vos can never be loaded *)
+    let long_f_dot_vos = (chop_extension long_f_dot_out) ^ ".vos" in
+    create_empty_file long_f_dot_vos in
   match mode with
   | BuildVo | BuildVok ->
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
@@ -145,18 +149,20 @@ let compile opts copts ~echo ~f_in ~f_out =
       let _doc = Stm.join ~doc:state.doc in
       let wall_clock2 = Unix.gettimeofday () in
       check_pending_proofs ();
-      if mode <> BuildVok  (* Don't output proofs in -vok mode *)
-        then Library.save_library_to ~output_native_objects Library.ProofsTodoNone ldir long_f_dot_out (Global.opaque_tables ());
+      (* In .vo production, dump a complete .vo file.
+         In .vok production, only dump an empty .vok file. *)
+      if mode = BuildVo
+        then Library.save_library_to ~output_native_objects Library.ProofsTodoNone ldir long_f_dot_out (Global.opaque_tables ())
+        else create_empty_file long_f_dot_out;
       Aux_file.record_in_aux_at "vo_compile_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
       Aux_file.stop_aux_file ();
-      (* Produce an empty .vos file and an empty .vok file when producing a .vo in standard mode *)
+      (* In .vo production, dump an empty .vos file to indicate that the .vo should be loaded,
+         and dump an empty .vok file to indicate that proofs are ok. *)
       if mode = BuildVo then begin
-        create_empty_file (long_f_dot_out ^ "s");
+        dump_empty_vos();
         create_empty_file (long_f_dot_out ^ "k");
       end;
-      (* Produce an empty .vok file when in -vok mode *)
-      if mode = BuildVok then create_empty_file (long_f_dot_out);
       Dumpglob.end_dump_glob ()
 
   | BuildVio | BuildVos ->
@@ -186,15 +192,22 @@ let compile opts copts ~echo ~f_in ~f_out =
       let doc = Stm.finish ~doc:state.doc in
       check_pending_proofs ();
       let create_vos = (mode = BuildVos) in
+      (* In .vos production, the output .vos file contains compiled statements.
+         In .vio production, the output .vio file contains compiled statements and suspended proofs. *)
       let () = ignore (Stm.snapshot_vio ~create_vos ~doc ~output_native_objects ldir long_f_dot_out) in
-      Stm.reset_task_queue ()
+      Stm.reset_task_queue ();
+      (* In .vio production, dump an empty .vos file to indicate that the .vio should be loaded. *)
+      if mode = BuildVio then dump_empty_vos()
 
   | Vio2Vo ->
 
       let sum, lib, univs, tasks, proofs =
         Library.load_library_todo long_f_dot_in in
       let univs, proofs = Stm.finish_tasks long_f_dot_out univs proofs tasks in
-      Library.save_library_raw long_f_dot_out sum lib univs proofs
+      Library.save_library_raw long_f_dot_out sum lib univs proofs;
+      (* Like in direct .vo production, dump an empty .vok file and an empty .vos file. *)
+      dump_empty_vos();
+      create_empty_file (long_f_dot_out ^ "k")
 
 let compile opts copts ~echo ~f_in ~f_out =
   ignore(CoqworkmgrApi.get 1);

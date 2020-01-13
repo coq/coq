@@ -98,7 +98,7 @@ let set_compilation_mode opts mode =
   match opts.compilation_mode with
   | BuildVo -> { opts with compilation_mode = mode }
   | mode' when mode <> mode' ->
-    prerr_endline "Options -quick and -vio2vo are exclusive";
+    prerr_endline "Options -vio and -vio2vo are exclusive";
     exit 1
   | _ -> opts
 
@@ -125,6 +125,11 @@ let warn_deprecated_outputstate =
   CWarnings.create ~name:"deprecated-outputstate" ~category:"deprecated"
          (fun () ->
           Pp.strbrk "The outputstate option is deprecated and discouraged.")
+
+let warn_deprecated_quick =
+  CWarnings.create ~name:"deprecated-quick" ~category:"deprecated"
+         (fun () ->
+          Pp.strbrk "The -quick option is renamed -vio. Please consider using the -vos feature instead.")
 
 let set_outputstate opts s =
   warn_deprecated_outputstate ();
@@ -165,6 +170,9 @@ let parse arglist : t =
         | "-o" ->
           { oval with compilation_output_name = Some (next ()) }
         | "-quick" ->
+          warn_deprecated_quick();
+          set_compilation_mode oval BuildVio
+        | "-vio" ->
           set_compilation_mode oval BuildVio
         |"-vos" ->
           Flags.load_vos_libraries := true;
