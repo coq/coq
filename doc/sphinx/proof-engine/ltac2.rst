@@ -940,6 +940,13 @@ below will fail immediately and won't print anything.
 In any case, the value returned by the fully applied quotation is an
 unspecified dummy Ltac1 closure and should not be further used.
 
+Switching between Ltac languages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We recommend using the :opt:`Default Proof Mode` option to switch between tactic
+languages with a proof-based granularity. This allows to incrementally port
+the proof scripts.
+
 Transition from Ltac1
 ---------------------
 
