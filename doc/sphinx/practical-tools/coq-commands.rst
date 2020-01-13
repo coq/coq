@@ -253,6 +253,7 @@ and ``coqtop``, unless stated otherwise:
 :-h, --help: Print a short usage and exit.
 
 
+.. _compiled-interfaces:
 
 Compiled interfaces (produced using ``-vos``)
 ----------------------------------------------

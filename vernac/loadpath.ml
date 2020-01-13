@@ -138,27 +138,31 @@ let select_vo_file ~warn loadpath base =
         System.where_in_path ~warn loadpath name in
       Some (lpath, file)
     with Not_found -> None in
+  (* If [!Flags.load_vos_libraries]
+        and the .vos file exists
+        and this file is not empty
+     Then load this library
+     Else load the most recent between the .vo file and the .vio file,
+          or if there is only of the two files, take this one,
+          or raise an error if both are missing. *)
+  let load_most_recent_of_vo_and_vio () =
+    match find ".vo", find ".vio" with
+    | None, None ->
+      Error LibNotFound
+    | Some res, None | None, Some res ->
+      Ok res
+    | Some (_, vo), Some (_, vi as resvi)
+      when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
+      warn_several_object_files (vi, vo);
+      Ok resvi
+    | Some resvo, Some _ ->
+      Ok resvo
+    in
   if !Flags.load_vos_libraries then begin
-    (* If the .vos file exists and is not empty, it describes the library.
-       Otherwise, load the .vo file, or fail if is missing. *)
     match find ".vos" with
     | Some (_, vos as resvos) when (Unix.stat vos).Unix.st_size > 0 -> Ok resvos
-    | _ ->
-        match find ".vo" with
-        | None -> Error LibNotFound
-        | Some resvo -> Ok resvo
-  end else
-  match find ".vo", find ".vio" with
-  | None, None ->
-    Error LibNotFound
-  | Some res, None | None, Some res ->
-    Ok res
-  | Some (_, vo), Some (_, vi as resvi)
-    when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
-    warn_several_object_files (vi, vo);
-    Ok resvi
-  | Some resvo, Some _ ->
-    Ok resvo
+    | _ -> load_most_recent_of_vo_and_vio()
+  end else load_most_recent_of_vo_and_vio()
 
 let locate_absolute_library dir : CUnix.physical_path locate_result =
   (* Search in loadpath *)
