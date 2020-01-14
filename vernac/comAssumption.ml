@@ -185,6 +185,10 @@ let context_subst subst (name,b,t,impl) =
 let extract_manual_implicit e =
   CAst.make (Option.map (fun ((na,_,_),_,(max,_)) -> (na,max)) e)
 
+let warn_discard_implicit =
+  CWarnings.create ~name:"implicit-declaration-not-in-section" ~category:"syntax"
+    Pp.(fun () -> str "Discarding implicit binder declaration since not in a section.")
+
 let context_insection sigma ~poly int_env ctx =
   let uctx = Evd.evar_universe_context sigma in
   let univs = UState.univ_entry ~poly uctx in
@@ -215,7 +219,8 @@ let context_insection sigma ~poly int_env ctx =
 let context_nosection sigma ~poly int_env ctx =
   let (univ_entry,ubinders as univs) = Evd.univ_entry ~poly sigma in
   let fn i subst d =
-    let (name,b,t,_impl) = context_subst subst d in
+    let (name,b,t,impl) = context_subst subst d in
+    Glob_term.(match impl with Explicit -> () | MaxImplicit | NonMaxImplicit -> warn_discard_implicit ());
     let kind = Decls.(IsAssumption Logical) in
     let local = if Lib.is_modtype () then Locality.ImportDefaultBehavior
       else Locality.ImportNeedQualified
