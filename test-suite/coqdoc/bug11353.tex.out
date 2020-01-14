@@ -1,0 +1,34 @@
+\documentclass[12pt]{report}
+\usepackage[utf8x]{inputenc}
+
+%Warning: tipa declares many non-standard macros used by utf8x to
+%interpret utf8 characters but extra packages might have to be added
+%such as "textgreek" for Greek letters not already in tipa
+%or "stmaryrd" for mathematical symbols.
+%Utf8 codes missing a LaTeX interpretation can be defined by using
+%\DeclareUnicodeCharacter{code}{interpretation}.
+%Use coqdoc's option -p to add new packages or declarations.
+\usepackage{tipa}
+
+\usepackage[T1]{fontenc}
+\usepackage{fullpage}
+\usepackage{coqdoc}
+\usepackage{amsmath,amssymb}
+\usepackage{url}
+\begin{document}
+\coqlibrary{Coqdoc.bug11353}{Library }{Coqdoc.bug11353}
+
+\begin{coqdoccode}
+\coqdocnoindent
+\coqdockw{Definition} \coqdef{Coqdoc.bug11353.a}{a}{\coqdocdefinition{a}} := 0. \#[   \coqdocvar{universes}( \coqdocvar{template}) ]\coqdoceol
+\coqdocnoindent
+\coqdockw{Inductive} \coqdef{Coqdoc.bug11353.mysum}{mysum}{\coqdocinductive{mysum}} (\coqdocvar{A} \coqdocvar{B}:\coqdockw{Type}) : \coqdockw{Type} :=\coqdoceol
+\coqdocindent{1.00em}
+\ensuremath{|} \coqdef{Coqdoc.bug11353.myinl}{myinl}{\coqdocconstructor{myinl}} : \coqdocvariable{A} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.bug11353.mysum}{\coqdocinductive{mysum}} \coqdocvariable{A} \coqdocvariable{B}\coqdoceol
+\coqdocindent{1.00em}
+\ensuremath{|} \coqdef{Coqdoc.bug11353.myinr}{myinr}{\coqdocconstructor{myinr}} : \coqdocvariable{B} \coqexternalref{::type scope:x '->' x}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocnotation{\ensuremath{\rightarrow}}} \coqref{Coqdoc.bug11353.mysum}{\coqdocinductive{mysum}} \coqdocvariable{A} \coqdocvariable{B}.\coqdoceol
+\coqdocemptyline
+\coqdocnoindent
+\#[\coqdocvar{local}]\coqdockw{Definition} \coqdef{Coqdoc.bug11353.b}{b}{\coqdocdefinition{b}} := 1.\coqdoceol
+\end{coqdoccode}
+\end{document}
