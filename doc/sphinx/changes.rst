@@ -55,23 +55,23 @@ this version of Coq, it should soon be the case and we already
 recommend users to switch to :tacn:`lia` in new proof scripts (see
 also the warning message in the :ref:`corresponding chapter <omega>`).
 
-The ``dev/doc/critical-bugs`` file documents the known critical bugs of |Coq|
-and affected releases. See the `Changes in 8.11+beta1`_ section for the
-detailed list of changes, including potentially breaking changes marked with
-**Changed**.
+The ``dev/doc/critical-bugs`` file documents the known critical bugs
+of |Coq| and affected releases. See the `Changes in 8.11+beta1`_
+section and following sections for the detailed list of changes,
+including potentially breaking changes marked with **Changed**.
 
 Maxime Dénès, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
 Soegtrop, Théo Zimmermann worked on maintaining and improving the
 continuous integration system and package building infrastructure.
 
-Coq's documentation is available at https://coq.github.io/doc/V8.11+beta1/api (documentation of
-the ML API), https://coq.github.io/doc/V8.11+beta1/refman (reference
-manual), and https://coq.github.io/doc/V8.11+beta1/stdlib (documentation of
+Coq's documentation is available at https://coq.github.io/doc/v8.11/api (documentation of
+the ML API), https://coq.github.io/doc/v8.11/refman (reference
+manual), and https://coq.github.io/doc/v8.11/stdlib (documentation of
 the standard library).
 
 The OPAM repository for |Coq| packages has been maintained by
-Karl Palmskog, Matthieu Sozeau, Enrico Tassi with contributions
-from many users. A list of packages is available at
+Guillaume Claret, Karl Palmskog, Matthieu Sozeau, Enrico Tassi with
+contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
 
 The 61 contributors to this version are Michael D. Adams, Guillaume
