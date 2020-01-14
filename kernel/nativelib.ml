@@ -27,15 +27,35 @@ let open_header = List.map mk_open open_header
 (* Directory where compiled files are stored *)
 let output_dir = ".coq-native"
 
-(* Extension of genereted ml files, stored for debugging purposes *)
+(* Extension of generated ml files, stored for debugging purposes *)
 let source_ext = ".native"
 
 let ( / ) = Filename.concat
 
-(* We have to delay evaluation of include_dirs because coqlib cannot be guessed
-until flags have been properly initialized *)
+(* Directory for temporary files for the conversion and normalisation
+   (as opposed to compiling the library itself, which uses [output_dir]). *)
+let my_temp_dir = lazy (CUnix.mktemp_dir "Coq_native" "")
+
+let () = at_exit (fun () ->
+    if Lazy.is_val my_temp_dir then
+      try
+        let d = Lazy.force my_temp_dir in
+        Array.iter (fun f -> Sys.remove (Filename.concat d f)) (Sys.readdir d);
+        Unix.rmdir d
+      with e ->
+        Feedback.msg_warning
+          Pp.(str "Native compile: failed to cleanup: " ++
+              str(Printexc.to_string e) ++ fnl()))
+
+(* We have to delay evaluation of include_dirs because coqlib cannot
+   be guessed until flags have been properly initialized. It also lets
+   us avoid forcing [my_temp_dir] if we don't need it (eg stdlib file
+   without native compute or native conv uses). *)
 let include_dirs () =
-  [Filename.get_temp_dir_name (); Envars.coqlib () / "kernel"; Envars.coqlib () / "library"]
+  let base = [Envars.coqlib () / "kernel"; Envars.coqlib () / "library"] in
+  if Lazy.is_val my_temp_dir
+  then (Lazy.force my_temp_dir) :: base
+  else base
 
 (* Pointer to the function linking an ML object into coq's toplevel *)
 let load_obj = ref (fun _x -> () : string -> unit)
@@ -44,7 +64,8 @@ let rt1 = ref (dummy_value ())
 let rt2 = ref (dummy_value ())
 
 let get_ml_filename () =
-  let filename = Filename.temp_file "Coq_native" source_ext in
+  let temp_dir = Lazy.force my_temp_dir in
+  let filename = Filename.temp_file ~temp_dir "Coq_native" source_ext in
   let prefix = Filename.chop_extension (Filename.basename filename) ^ "." in
   filename, prefix
 
