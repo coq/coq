@@ -965,6 +965,43 @@ let trans_concl t =
 let tclTHENOpt e tac tac' =
   match e with None -> tac' | Some e' -> Tacticals.New.tclTHEN (tac e') tac'
 
+let assert_inj t =
+  init_cache ();
+  Proofview.Goal.enter (fun gl ->
+      let env = Tacmach.New.pf_env gl in
+      let evd = Tacmach.New.project gl in
+      try
+        ignore (get_injection env evd t);
+        Tacticals.New.tclIDTAC
+      with Not_found ->
+        Tacticals.New.tclFAIL 0 (Pp.str " InjTyp does not exist"))
+
+let do_let tac (h : Constr.named_declaration) =
+  match h with
+  | Context.Named.Declaration.LocalAssum _ -> Tacticals.New.tclIDTAC
+  | Context.Named.Declaration.LocalDef (id, t, ty) ->
+    Proofview.Goal.enter (fun gl ->
+        let env = Tacmach.New.pf_env gl in
+        let evd = Tacmach.New.project gl in
+        try
+          ignore (get_injection env evd (EConstr.of_constr ty));
+          tac id.Context.binder_name t ty
+        with Not_found -> Tacticals.New.tclIDTAC)
+
+let iter_let tac =
+  Proofview.Goal.enter (fun gl ->
+      let env = Tacmach.New.pf_env gl in
+      let sign = Environ.named_context env in
+      Tacticals.New.tclMAP (do_let tac) sign)
+
+let iter_let (tac : Ltac_plugin.Tacinterp.Value.t) =
+  init_cache ();
+  iter_let (fun (id : Names.Id.t) (t : Constr.types) (ty : Constr.types) ->
+      Ltac_plugin.Tacinterp.Value.apply tac
+        [ Ltac_plugin.Tacinterp.Value.of_constr (EConstr.mkVar id)
+        ; Ltac_plugin.Tacinterp.Value.of_constr (EConstr.of_constr t)
+        ; Ltac_plugin.Tacinterp.Value.of_constr (EConstr.of_constr ty) ])
+
 let zify_tac =
   Proofview.Goal.enter (fun gl ->
       Coqlib.check_required_library ["Coq"; "micromega"; "ZifyClasses"];
