@@ -24,7 +24,6 @@ Require Export Rsqrt_def.
 Require Export R_sqrt.
 Require Export Rtrigo_calc.
 Require Export Rgeom.
-Require Export RList.
 Require Export Sqrt_reg.
 Require Export Ranalysis4.
 Require Export Rpower.
