@@ -109,8 +109,8 @@ let rec pp_type par vl t =
       (try Id.print (List.nth vl (pred i))
        with Failure _ -> (str "a" ++ int i))
     | Tglob (r,[]) -> pp_global Type r
-    | Tglob (GlobRef.IndRef(kn,0),l)
-        when not (keep_singleton ()) && MutInd.equal kn (mk_ind "Coq.Init.Specif" "sig") ->
+    | Tglob (gr,l)
+        when not (keep_singleton ()) && GlobRef.equal gr (sig_type_ref ()) ->
           pp_type true vl (List.hd l)
     | Tglob (r,l) ->
           pp_par par
@@ -171,6 +171,7 @@ let rec pp_expr par env args =
         assert (List.is_empty args);
         begin match a with
           | _ when is_native_char c -> pp_native_char c
+          | _ when is_native_string c -> pp_native_string c
           | [] -> pp_global Cons r
           | [a] ->
             pp_par par (pp_global Cons r ++ spc () ++ pp_expr true env [] a)

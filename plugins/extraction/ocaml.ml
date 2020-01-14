@@ -165,8 +165,8 @@ let pp_type par vl t =
     | Tglob (r,[a1;a2]) when is_infix r ->
         pp_par par (pp_rec true a1 ++ str (get_infix r) ++ pp_rec true a2)
     | Tglob (r,[]) -> pp_global Type r
-    | Tglob (GlobRef.IndRef(kn,0),l)
-        when not (keep_singleton ()) && MutInd.equal kn (mk_ind "Coq.Init.Specif" "sig") ->
+    | Tglob (gr,l)
+        when not (keep_singleton ()) && GlobRef.equal gr (sig_type_ref ()) ->
         pp_tuple_light pp_rec l
     | Tglob (r,l) ->
         pp_tuple_light pp_rec l ++ spc () ++ pp_global Type r
@@ -249,6 +249,7 @@ let rec pp_expr par env args =
         assert (List.is_empty args);
         begin match a with
           | _ when is_native_char c -> pp_native_char c
+          | _ when is_native_string c -> pp_native_string c
           | [a1;a2] when is_infix r ->
             let pp = pp_expr true env [] in
             pp_par par (pp a1 ++ str (get_infix r) ++ pp a2)

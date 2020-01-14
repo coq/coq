@@ -313,13 +313,20 @@ The system also provides a mechanism to specify ML terms for inductive
 types and constructors. For instance, the user may want to use the ML
 native boolean type instead of the |Coq| one. The syntax is the following:
 
-.. cmd:: Extract Inductive @qualid => @string [ {+ @string } ]
+.. cmd:: Extract Inductive @qualid => @string__1 [ {+ @string } ]
 
    Give an ML extraction for the given inductive type. You must specify
-   extractions for the type itself (first :token:`string`) and all its
-   constructors (all the :token:`string` between square brackets). In this form,
+   extractions for the type itself (:n:`@string__1`) and all its
+   constructors (all the :n:`@string` between square brackets). In this form,
    the ML extraction must be an ML inductive datatype, and the native
    pattern matching of the language will be used.
+
+   When :n:`@string__1` matches the name of the type of characters or strings
+   (``char`` and ``string`` for OCaml, ``Prelude.Char`` and ``Prelude.String``
+   for Haskell), extraction of literals is handled in a specialized way, so as
+   to generate literals in the target language. This feature requires the type
+   designated by :n:`@qualid` to be registered as the standard char or string type,
+   using the :cmd:`Register` command.
 
 .. cmdv:: Extract Inductive @qualid => @string [ {+ @string } ] @string
 

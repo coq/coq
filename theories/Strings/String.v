@@ -30,8 +30,9 @@ Delimit Scope string_scope with string.
 Bind Scope string_scope with string.
 Local Open Scope string_scope.
 
-Register EmptyString as plugins.syntax.EmptyString.
-Register String as plugins.syntax.String.
+Register string as core.string.type.
+Register EmptyString as core.string.empty.
+Register String as core.string.string.
 
 (** Equality is decidable *)
 

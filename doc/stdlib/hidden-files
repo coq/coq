@@ -12,12 +12,14 @@ plugins/extraction/ExtrHaskellZInteger.v
 plugins/extraction/ExtrHaskellZNum.v
 plugins/extraction/ExtrOcamlBasic.v
 plugins/extraction/ExtrOcamlBigIntConv.v
+plugins/extraction/ExtrOcamlChar.v
 plugins/extraction/ExtrOCamlInt63.v
 plugins/extraction/ExtrOCamlFloats.v
 plugins/extraction/ExtrOcamlIntConv.v
 plugins/extraction/ExtrOcamlNatBigInt.v
 plugins/extraction/ExtrOcamlNatInt.v
 plugins/extraction/ExtrOcamlString.v
+plugins/extraction/ExtrOcamlNativeString.v
 plugins/extraction/ExtrOcamlZBigInt.v
 plugins/extraction/ExtrOcamlZInt.v
 plugins/extraction/Extraction.v
