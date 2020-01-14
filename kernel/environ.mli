@@ -145,7 +145,11 @@ val named_context_of_val : named_context_val -> Constr.named_context
 val val_of_named_context : Constr.named_context -> named_context_val
 val empty_named_context_val : named_context_val
 val ids_of_named_context_val : named_context_val -> Id.Set.t
+val mem_var_val : Id.t -> named_context_val -> bool
 
+(** [mem_var e] pre-computes a predicate [p] such that [p id] holds
+    if [id] is either in the [rel_context] or in the [named_context_val]. *)
+val mem_var : env -> (Id.t -> bool)
 
 (** [map_named_val f ctxt] apply [f] to the body and the type of
    each declarations.

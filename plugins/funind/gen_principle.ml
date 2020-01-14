@@ -177,7 +177,7 @@ let build_functional_principle ?(opaque=Proof_global.Transparent) (evd:Evd.evar_
   (*    let time2 = System.get_time ()  in *)
   (*    Pp.msgnl (str "computing principle type := " ++ System.fmt_time_difference time1 time2); *)
   let new_princ_name =
-    Namegen.next_ident_away_in_goal (Id.of_string "___________princ_________") Id.Set.empty
+    Namegen.next_ident_away_in_goal (Id.of_string "___________princ_________") (fun id -> false)
   in
   let sigma, _ = Typing.type_of ~refresh:true (Global.env ()) !evd (EConstr.of_constr new_principle_type) in
   evd := sigma;
@@ -461,8 +461,9 @@ let generate_type evd g_to_f f graph i =
     | Anonymous -> None
   in
   let named_ctxt = Id.Set.of_list (List.map_filter filter fun_ctxt) in
-  let res_id = Namegen.next_ident_away_in_goal (Id.of_string "_res") named_ctxt in
-  let fv_id = Namegen.next_ident_away_in_goal (Id.of_string "fv") (Id.Set.add res_id named_ctxt) in
+  let res_id = Namegen.next_ident_away_in_goal (Id.of_string "_res") (fun id -> Id.Set.mem id named_ctxt) in
+  let avoid_id = Id.Set.add res_id named_ctxt in
+  let fv_id = Namegen.next_ident_away_in_goal (Id.of_string "fv") (fun id -> Id.Set.mem id avoid_id) in
   (*i we can then type the argument to be applied to the function [f] i*)
   let args_as_rels = Array.of_list (args_from_decl 1 [] fun_ctxt) in
   (*i
@@ -542,7 +543,8 @@ let rec generate_fresh_id x avoid i =
   if i == 0
   then []
   else
-    let id = Namegen.next_ident_away_in_goal x (Id.Set.of_list avoid) in
+    let sid = Id.Set.of_list avoid in
+    let id = Namegen.next_ident_away_in_goal x (fun id -> Id.Set.mem id sid) in
     id::(generate_fresh_id x (id::avoid) (pred i))
 
 let prove_fun_correct evd funs_constr graphs_constr schemes lemmas_types_infos i : Tacmach.tactic =
@@ -573,7 +575,8 @@ let prove_fun_correct evd funs_constr graphs_constr schemes lemmas_types_infos i
        environment and due to the bug #1174, we will need to pose the principle
        using a name
     *)
-    let principle_id = Namegen.next_ident_away_in_goal (Id.of_string "princ") (Id.Set.of_list ids) in
+    let sids = Id.Set.of_list ids in
+    let principle_id = Namegen.next_ident_away_in_goal (Id.of_string "princ") (fun id -> Id.Set.mem id sids) in
     let ids = principle_id :: ids in
     (* We get the branches of the principle *)
     let branches = List.rev princ_infos.Tactics.branches in

@@ -108,7 +108,8 @@ let pf_get_new_ids idl g =
     []
 
 let next_ident_away_in_goal ids avoid =
-  next_ident_away_in_goal ids (Id.Set.of_list avoid)
+  let savoid = Id.Set.of_list avoid in
+  next_ident_away_in_goal ids (fun id -> Id.Set.mem id savoid)
 
 let compute_renamed_type gls c =
   rename_bound_vars_as_displayed (project gls) (*no avoid*) Id.Set.empty (*no rels*) []

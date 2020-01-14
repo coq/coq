@@ -314,8 +314,8 @@ let next_name_away_in_cases_pattern sigma env_t na avoid =
      name is taken by finding a free subscript starting from 0 *)
 
 let next_ident_away_in_goal id avoid =
-  let id = if Id.Set.mem id avoid then restart_subscript id else id in
-  let bad id = Id.Set.mem id avoid || (is_global id && not (is_section_variable id)) in
+  let id = if  avoid id then restart_subscript id else id in
+  let bad id = avoid id || (is_global id && not (is_section_variable id)) in
   next_ident_away_from id bad
 
 let next_name_away_in_goal na avoid =
@@ -422,7 +422,7 @@ type renaming_flags =
 let next_name_for_display sigma flags =
   match flags with
   | RenamingForCasesPattern env_t -> next_name_away_in_cases_pattern sigma env_t
-  | RenamingForGoal -> next_name_away_in_goal
+  | RenamingForGoal -> fun id avoid -> next_name_away_in_goal id (fun id -> Id.Set.mem id avoid)
   | RenamingElsewhereFor env_t -> next_name_away_for_default_printing sigma env_t
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)

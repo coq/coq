@@ -30,6 +30,7 @@ open Vars
 open Declarations
 open Context.Rel.Declaration
 
+module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
 (* The type of environments. *)
@@ -319,11 +320,26 @@ let fold_rel_context f env ~init =
         f env rd (fold_right env)
   in fold_right env
 
+
+let mem_var env =
+  let s =  (named_context_val env).env_named_map in
+  if List.is_empty (rel_context env) then (fun id -> Id.Map.mem id s)
+  else
+    let s' =    Context.Rel.fold_inside
+    (fun s decl  -> match RelDecl.get_name decl with Name id -> Id.Set.add id s | _ -> s)
+    (rel_context env) ~init:Id.Set.empty
+    in
+    fun id -> Id.Map.mem id s || Id.Set.mem id s'
+
+
+
 (* Named context *)
 
 let named_context_of_val c = c.env_named_ctx
 
 let ids_of_named_context_val c = Id.Map.domain c.env_named_map
+
+let mem_var_val id c = Id.Map.mem id c.env_named_map
 
 let empty_named_context = Context.Named.empty
 

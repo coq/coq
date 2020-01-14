@@ -1541,11 +1541,12 @@ let prove_principle_for_gen
 (*   in *)
   let tcc_list = ref [] in
   let start_tac gls =
-    let hyps = pf_ids_of_hyps gls in
-      let hid =
+    let hyps =  pf_ids_of_hyps gls in
+    let shyps = Id.Set.of_list hyps in
+    let hid =
         next_ident_away_in_goal
           (Id.of_string "prov")
-          (Id.Set.of_list hyps)
+          (fun id -> Id.Set.mem id shyps)
       in
       tclTHENLIST
         [
