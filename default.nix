@@ -42,7 +42,6 @@ stdenv.mkDerivation rec {
   buildInputs = [
     hostname
     python3 time # coq-makefile timing tools
-    dune
   ]
   ++ (with ocamlPackages; [ ocaml findlib num ])
   ++ optionals buildIde [
@@ -67,6 +66,7 @@ stdenv.mkDerivation rec {
     [ jq curl gitFull gnupg ] # Dependencies of the merging script
     ++ (with ocamlPackages; [ merlin ocp-indent ocp-index utop ocamlformat ]) # Dev tools
     ++ [ graphviz ] # Useful for STM debugging
+    ++ [ dune_2 ] # Maybe the next build system
   );
 
   src =
@@ -111,7 +111,7 @@ stdenv.mkDerivation rec {
   setupHook = writeText "setupHook.sh" "
     addCoqPath () {
       if test -d \"$1/lib/coq/${coq-version}/user-contrib\"; then
-        export COQPATH=\"$COQPATH\${COQPATH:+:}$1/lib/coq/${coq-version}/user-contrib/\"
+        export COQPATH=\"\${COQPATH-}\${COQPATH:+:}$1/lib/coq/${coq-version}/user-contrib/\"
       fi
     }
 

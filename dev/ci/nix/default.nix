@@ -60,9 +60,23 @@ let iris = (coqPackages.iris.override { inherit coq stdpp; })
 
 let unicoq = callPackage ./unicoq { inherit coq; }; in
 
+let StructTact = coqPackages.StructTact.overrideAttrs (o: {
+    src = fetchTarball "https://github.com/uwplse/StructTact/tarball/master";
+  }); in
+
+let Cheerios = (coqPackages.Cheerios.override { inherit StructTact; })
+  .overrideAttrs (o: {
+    src = fetchTarball "https://github.com/uwplse/cheerios/tarball/master";
+  }); in
+
+let Verdi = (coqPackages.Verdi.override { inherit Cheerios ssreflect; })
+  .overrideAttrs (o: {
+    src = fetchTarball "https://github.com/uwplse/verdi/tarball/master";
+  }); in
+
 let callPackage = newScope { inherit coq
   bignums coq-ext-lib coqprime corn iris math-classes
-  mathcomp simple-io ssreflect stdpp unicoq;
+  mathcomp simple-io ssreflect stdpp unicoq Verdi;
 }; in
 
 # Environments for building CI libraries with this Coq
@@ -89,6 +103,7 @@ let projects = {
   mtac2 = callPackage ./mtac2.nix {};
   oddorder = callPackage ./oddorder.nix {};
   quickchick = callPackage ./quickchick.nix {};
+  verdi-raft = callPackage ./verdi-raft.nix {};
   VST = callPackage ./VST.nix {};
 }; in
 
