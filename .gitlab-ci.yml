@@ -62,6 +62,7 @@ before_script:
 # TODO figure out how to build doc for installed Coq
 .build-template:
   stage: stage-1
+  interruptible: true
   artifacts:
     name: "$CI_JOB_NAME"
     paths:
@@ -98,6 +99,7 @@ before_script:
 # Template for building Coq + stdlib, typical use: overload the switch
 .dune-template:
   stage: stage-1
+  interruptible: true
   dependencies: []
   script:
     - set -e
@@ -117,6 +119,7 @@ before_script:
 
 .dune-ci-template:
   stage: stage-2
+  interruptible: true
   needs:
     - build:edge+flambda:dune:dev
   dependencies:
@@ -143,6 +146,7 @@ before_script:
 
 .doc-template:
   stage: stage-2
+  interruptible: true
   dependencies:
     - not-a-real-job
   script:
@@ -158,6 +162,7 @@ before_script:
 # set dependencies when using
 .test-suite-template:
   stage: stage-2
+  interruptible: true
   dependencies:
     - not-a-real-job
   script:
@@ -179,6 +184,7 @@ before_script:
 # set dependencies when using
 .validate-template:
   stage: stage-2
+  interruptible: true
   dependencies:
     - not-a-real-job
   script:
@@ -195,6 +201,7 @@ before_script:
 
 .ci-template:
   stage: stage-2
+  interruptible: true
   script:
     - set -e
     - echo 'start:coq.test'
@@ -218,6 +225,7 @@ before_script:
 
 .windows-template:
   stage: stage-1
+  interruptible: true
   artifacts:
     name: "%CI_JOB_NAME%"
     paths:
@@ -320,6 +328,7 @@ lint:
 
 pkg:opam:
   stage: stage-1
+  interruptible: true
   # OPAM will build out-of-tree so no point in importing artifacts
   dependencies: []
   script:
@@ -336,6 +345,7 @@ pkg:opam:
 
 .nix-template:
   image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git
+  interruptible: true
   stage: stage-1
   variables:
     # By default we use coq.cachix.org as an extra substituter but this can be overridden
