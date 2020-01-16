@@ -8,6 +8,14 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+(* We register this handler for lower-level toplevel loading code *)
+let _ = CErrors.register_handler (function
+    | Symtable.Error e ->
+      Pp.str (Format.asprintf "%a" Symtable.report_error e)
+    | _ ->
+      raise CErrors.Unhandled
+  )
+
 let drop_setup () =
   begin try
     (* Enable rectypes in the toplevel if it has the directive #rectypes *)
