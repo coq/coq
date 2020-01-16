@@ -249,7 +249,7 @@ package "ide" (
   description = "Coq IDE Libraries"
   version     = "8.12"
 
-  requires    = "coq.lib, coq.ideprotocol, lablgtk3, lablgtk3-sourceview3"
+  requires    = "coq.lib, coq.ideprotocol, lablgtk3, lablgtk3-sourceview4"
   directory   = "ide"
 
   archive(byte)    = "ide.cma"

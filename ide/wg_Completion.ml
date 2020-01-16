@@ -90,8 +90,8 @@ class completion_provider coqtop =
 
     method private add_proposals ctx props =
       let mk text =
-        let item = GSourceView3.source_completion_item ~text ~label:text () in
-        (item :> GSourceView3.source_completion_proposal)
+        let item = GSourceView4.source_completion_item ~text ~label:text () in
+        (item :> GSourceView4.source_completion_proposal)
       in
       let props = List.map mk (Proposals.elements props) in
       ctx#add_proposals (Option.get !self_provider) props true
@@ -154,16 +154,16 @@ class completion_provider coqtop =
     method priority = 0
 
   end in
-  let provider = GSourceView3.source_completion_provider provider in
+  let provider = GSourceView4.source_completion_provider provider in
   object (self)
 
-    inherit GSourceView3.source_completion_provider provider#as_source_completion_provider
+    inherit GSourceView4.source_completion_provider provider#as_source_completion_provider
 
     method active = !active
 
     method set_active b = active := b
 
     initializer
-      self_provider := Some (self :> GSourceView3.source_completion_provider)
+      self_provider := Some (self :> GSourceView4.source_completion_provider)
 
   end

@@ -43,7 +43,7 @@ IDESRCDIRS:= $(CORESRCDIRS) ide ide/protocol
 ifeq ($(HASCOQIDE),no)
 COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS))
 else
-COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) -package lablgtk3-sourceview3
+COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) -package lablgtk3-sourceview4
 endif
 
 IDEDEPS:=config/config.cma clib/clib.cma lib/lib.cma ide/protocol/ideprotocol.cma
@@ -67,7 +67,7 @@ GTKSHARE=$(shell pkg-config --variable=prefix gtk+-3.0)/share
 GTKBIN=$(shell pkg-config --variable=prefix gtk+-3.0)/bin
 GTKLIBS=$(shell pkg-config --variable=libdir gtk+-3.0)
 PIXBUFBIN=$(shell pkg-config --variable=prefix gdk-pixbuf-2.0)/bin
-SOURCEVIEWSHARE=$(shell pkg-config --variable=prefix gtksourceview-3.0)/share
+SOURCEVIEWSHARE=$(shell pkg-config --variable=prefix gtksourceview-4)/share
 ADWAITASHARE=$(shell ls -d /usr/local/Cellar/adwaita-icon-theme/*)/share
 
 ###########################################################################
@@ -106,7 +106,7 @@ ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
-	       -linkpkg -package str,unix,threads,lablgtk3-sourceview3 $(IDEFLAGS:.cma=.cmxa) $^
+	       -linkpkg -package str,unix,threads,lablgtk3-sourceview4 $(IDEFLAGS:.cma=.cmxa) $^
 	$(STRIP_HIDE) $@
 else
 $(COQIDE): $(COQIDEBYTE)
@@ -116,7 +116,7 @@ endif
 $(COQIDEBYTE): $(LINKIDE)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ \
-	       -linkpkg -package str,unix,threads,lablgtk3-sourceview3 $(IDEFLAGS) $(IDECDEPSFLAGS) $^
+	       -linkpkg -package str,unix,threads,lablgtk3-sourceview4 $(IDEFLAGS) $(IDECDEPSFLAGS) $^
 
 ide/coqide_os_specific.ml: ide/coqide_$(IDEINT).ml.in config/Makefile
 	rm -f $@ && cp $< $@ && chmod a-w $@
@@ -241,15 +241,15 @@ $(COQIDEAPP)/Contents:
 $(COQIDEINAPP): ide/macos_prehook.cmx $(LINKIDEOPT) | $(COQIDEAPP)/Contents
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ \
-	        -linkpkg -package str,unix,threads,lablgtk3-sourceview3 $(IDEFLAGS:.cma=.cmxa) $^
+	        -linkpkg -package str,unix,threads,lablgtk3-sourceview4 $(IDEFLAGS:.cma=.cmxa) $^
 	$(STRIP_HIDE) $@
 
 $(COQIDEAPP)/Contents/Resources/share: $(COQIDEAPP)/Contents
 	$(MKDIR) $@/coq/
 	$(INSTALLLIB) ide/coq.png ide/*.lang ide/coq_style.xml $(IDEBINDINGS) $@/coq/
-	$(MKDIR) $@/gtksourceview-3.0/{language-specs,styles}
-	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-3.0/language-specs/{def.lang,language2.rng} $@/gtksourceview-3.0/language-specs/
-	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-3.0/styles/{styles.rng,classic.xml} $@/gtksourceview-3.0/styles/
+	$(MKDIR) $@/gtksourceview-4/{language-specs,styles}
+	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-4/language-specs/{def.lang,language2.rng} $@/gtksourceview-3.0/language-specs/
+	$(INSTALLLIB) "$(SOURCEVIEWSHARE)/"gtksourceview-4/styles/{styles.rng,classic.xml} $@/gtksourceview-4/styles/
 	cp -R "$(GTKSHARE)/"locale $@
 	cp -R "$(GTKSHARE)/"themes $@
 	$(MKDIR) $@/glib-2.0/schemas

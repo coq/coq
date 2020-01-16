@@ -23,9 +23,9 @@ To compile Coq yourself, you need:
   should work nowadays)
 
 - for CoqIDE, the
-  [lablgtk3-sourceview3](https://github.com/garrigue/lablgtk) library
+  [lablgtk3-sourceview4](https://github.com/garrigue/lablgtk) library
   (version >= 3.0.beta8), and the corresponding GTK 3.x libraries, as
-  of today (gtk+3 >= 3.18 and gtksourceview3 >= 3.18)
+  of today (gtk+3 >= 3.18 and gtksourceview4 >= 4.4.0)
 
 The IEEE-754 compliance is required by primitive floating-point
 numbers (`Require Import Floats`). Common sources of incompatibility
@@ -33,21 +33,21 @@ are checked at configure time, preventing compilation. In the,
 unlikely, event an incompatibility remains undetected, using Floats
 would enable to prove False on this architecture.
 
-Note that `num` and `lablgtk3-sourceview3` should be properly
+Note that `num` and `lablgtk3-sourceview4` should be properly
 registered with `findlib/ocamlfind` as Coq's makefile will use it to
 locate the libraries during the build.
 
 Debian / Ubuntu users can get the necessary system packages for
 CoqIDE with:
 
-    $ sudo apt-get install libgtksourceview-3.0-dev
+    $ sudo apt-get install libgtksourceview-4-dev
 
 Opam (https://opam.ocaml.org/) is recommended to install OCaml and
 the corresponding packages.
 
     $ opam switch create coq 4.09.0+flambda
     $ eval $(opam env)
-    $ opam install num ocamlfind lablgtk3-sourceview3
+    $ opam install num ocamlfind lablgtk3-sourceview4
 
 should get you a reasonable OCaml environment to compile Coq. See the
 OPAM documentation for more help.

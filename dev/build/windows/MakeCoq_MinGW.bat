@@ -332,8 +332,8 @@ IF "%CYGWIN_QUIET%" == "Y" (
 
 IF "%GTK_FROM_SOURCES%"=="N" (
   SET CYGWIN_OPT= %CYGWIN_OPT% -P mingw64-%ARCH%-gtk3,mingw64-%ARCH%-libxml2
-  REM gtksourceview3 is always built from sources until the bug in DLLMain is fixed in cygwin
-  REM SET CYGWIN_OPT= %CYGWIN_OPT% -P mingw64-%ARCH%-gtksourceview3.0
+  REM gtksourceview4 is always built from sources until the bug in DLLMain is fixed in cygwin
+  REM SET CYGWIN_OPT= %CYGWIN_OPT% -P mingw64-%ARCH%-gtksourceview4
 )
 
 REM Cygwin setup sets proper ACLs (permissions) for folders it CREATES.

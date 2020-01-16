@@ -908,9 +908,9 @@ function make_libxml2 {
   fi
 }
 
-##### GTK-SOURCEVIEW3 #####
+##### GTK-SOURCEVIEW4 #####
 
-function make_gtk_sourceview3 {
+function make_gtk_sourceview4 {
   # Cygwin packet dependencies: intltool
   # Note: this is always built from sources cause of a bug in the cygwin delivery.
   # Just dependencies are only built if we build from sources
@@ -918,7 +918,7 @@ function make_gtk_sourceview3 {
     make_gtk3
     make_libxml2
   fi
-  build_conf_make_inst  https://download.gnome.org/sources/gtksourceview/3.24  gtksourceview-3.24.11  tar.xz  make_arch_pkg_config
+  build_conf_make_inst  https://download.gnome.org/sources/gtksourceview/4.4  gtksourceview-4.4.0  tar.xz  make_arch_pkg_config
 }
 
 ##### LN replacement #####
@@ -1134,7 +1134,7 @@ function make_lablgtk {
   make_findlib
   make_dune
   make_gtk3
-  make_gtk_sourceview3
+  make_gtk_sourceview4
   make_ocaml_cairo2
 
   if build_prep https://github.com/garrigue/lablgtk/archive  3.0.beta5  tar.gz 1 lablgtk-3.0.beta5 ; then
@@ -1145,8 +1145,8 @@ function make_lablgtk {
     log2 dune build -p lablgtk3
     log2 dune install lablgtk3
 
-    log2 dune build -p lablgtk3-sourceview3
-    log2 dune install lablgtk3-sourceview3
+    log2 dune build -p lablgtk3-sourceview4
+    log2 dune install lablgtk3-sourceview4
 
     # See https://github.com/ocaml/dune/issues/2921
     # log2 dune clean
@@ -1185,7 +1185,7 @@ function copy_coq_dlls {
   copy_coq_dll LIBGLIB-2.0-0.DLL
   copy_coq_dll LIBGOBJECT-2.0-0.DLL
   copy_coq_dll LIBGTK-3-0.DLL
-  copy_coq_dll LIBGTKSOURCEVIEW-3.0-1.DLL
+  copy_coq_dll LIBGTKSOURCEVIEW-4-1.DLL
   copy_coq_dll LIBPANGO-1.0-0.DLL
   copy_coq_dll LIBATK-1.0-0.DLL
   copy_coq_dll LIBBZ2-1.DLL
@@ -1251,12 +1251,12 @@ function copy_coq_gtk {
     install_glob  "$PREFIXMINGW/etc/gtk-3.0" '*'                                 "$PREFIXCOQ/gtk-3.0"
     install -D -T "$PREFIXMINGW/share/glib-2.0/schemas/gschemas.compiled"        "$PREFIXCOQ/share/glib-2.0/schemas/gschemas.compiled"
 
-    install_glob  "$PREFIXMINGW/share/gtksourceview-3.0/language-specs" '*'      "$PREFIXCOQ/share/gtksourceview-3.0/language-specs"
-    install -D -T "ide/coq.lang"                                                 "$PREFIXCOQ/share/gtksourceview-3.0/language-specs/coq.lang"
-    install -D -T "ide/coq-ssreflect.lang"                                       "$PREFIXCOQ/share/gtksourceview-3.0/language-specs/coq-ssreflect.lang"
+    install_glob  "$PREFIXMINGW/share/gtksourceview-4/language-specs" '*'      "$PREFIXCOQ/share/gtksourceview-4/language-specs"
+    install -D -T "ide/coq.lang"                                                 "$PREFIXCOQ/share/gtksourceview-4/language-specs/coq.lang"
+    install -D -T "ide/coq-ssreflect.lang"                                       "$PREFIXCOQ/share/gtksourceview-4/language-specs/coq-ssreflect.lang"
 
-    install_glob  "$PREFIXMINGW/share/gtksourceview-3.0/styles" '*'              "$PREFIXCOQ/share/gtksourceview-3.0/styles"
-    install -D -T "ide/coq_style.xml"                                            "$PREFIXCOQ/share/gtksourceview-3.0/styles/coq_style.xml"
+    install_glob  "$PREFIXMINGW/share/gtksourceview-4/styles" '*'              "$PREFIXCOQ/share/gtksourceview-4/styles"
+    install -D -T "ide/coq_style.xml"                                            "$PREFIXCOQ/share/gtksourceview-4/styles/coq_style.xml"
 
     install_rec   "$PREFIXMINGW/share/themes" '*'                                "$PREFIXCOQ/share/themes"
 

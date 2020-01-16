@@ -707,7 +707,7 @@ let numlib =
 (** Detect and/or verify the Lablgtk3 location *)
 
 let get_lablgtkdir () =
-  tryrun camlexec.find ["query";"lablgtk3-sourceview3"]
+  tryrun camlexec.find ["query";"lablgtk3-sourceview4"]
 
 (** Detect and/or verify the Lablgtk2 version *)
 

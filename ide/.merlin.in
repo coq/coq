@@ -1,4 +1,4 @@
-PKG unix laglgtk3 lablgtk3-sourceview3 
+PKG unix laglgtk3 lablgtk3-sourceview4
 
 S utils
 B utils

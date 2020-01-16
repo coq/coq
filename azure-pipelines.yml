@@ -53,7 +53,7 @@ jobs:
       set -e
       brew update
       (cd $(brew --repository)/Library/Taps/homebrew/homebrew-core/ && git fetch --shallow-since=${HBCORE_DATE} && git checkout ${HBCORE_REF})
-      brew install gnu-time opam pkg-config gtksourceview3 adwaita-icon-theme
+      brew install gnu-time opam pkg-config gtksourceview4 adwaita-icon-theme
       pip3 install macpack
     displayName: 'Install system dependencies'
     env:
@@ -68,7 +68,7 @@ jobs:
       opam switch set ocaml-base-compiler.$COMPILER
       eval $(opam env)
       opam update
-      opam install -j "$NJOBS" num ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3
+      opam install -j "$NJOBS" num ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview4
       opam list
     displayName: 'Install OCaml dependencies'
     env:

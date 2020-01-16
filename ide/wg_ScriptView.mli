@@ -14,7 +14,7 @@ type source_view = [ Gtk.text_view | `sourceview ] Gtk.obj
 
 class script_view : source_view -> Coq.coqtop ->
 object
-  inherit GSourceView3.source_view
+  inherit GSourceView4.source_view
   method undo : unit -> unit
   method redo : unit -> unit
   method clear_undo : unit -> unit
@@ -32,8 +32,8 @@ object
 end
 
 val script_view : Coq.coqtop ->
-  ?source_buffer:GSourceView3.source_buffer ->
-  ?draw_spaces:SourceView3Enums.source_draw_spaces_flags list ->
+  ?source_buffer:GSourceView4.source_buffer ->
+  ?draw_spaces:int list ->
   ?auto_indent:bool ->
   ?highlight_current_line:bool ->
   ?indent_on_tab:bool ->
@@ -43,7 +43,6 @@ val script_view : Coq.coqtop ->
   ?show_line_marks:bool ->
   ?show_line_numbers:bool ->
   ?show_right_margin:bool ->
-  ?smart_home_end:SourceView3Enums.source_smart_home_end_type ->
   ?tab_width:int ->
   ?editable:bool ->
   ?cursor_visible:bool ->
