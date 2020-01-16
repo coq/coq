@@ -36,8 +36,6 @@ let print_usage_common co command =
 \n  -nois                  (idem)\
 \n  -compat X.Y            provides compatibility support for Coq version X.Y\
 \n\
-\n  -load-ml-object f      load ML object file f\
-\n  -load-ml-source f      load ML file f\
 \n  -load-vernac-source f  load Coq file f.v (Load \"f\".)\
 \n  -l f                   (idem)\
 \n  -load-vernac-source-verbose f  load Coq file f.v (Load Verbose \"f\".)\

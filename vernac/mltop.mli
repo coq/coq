@@ -14,7 +14,6 @@
    record. *)
 type toplevel = {
   load_obj : string -> unit;
-  use_file : string -> unit;
   add_dir  : string -> unit;
   ml_loop  : unit -> unit }
 
@@ -37,12 +36,6 @@ val add_ml_dir : recursive:bool -> string -> unit
 
 (** Tests if we can load ML files *)
 val has_dynlink : bool
-
-(** Dynamic loading of .cmo *)
-val dir_ml_load : string -> unit
-
-(** Dynamic interpretation of .ml *)
-val dir_ml_use : string -> unit
 
 (** List of modules linked to the toplevel *)
 val add_known_module : string -> unit
