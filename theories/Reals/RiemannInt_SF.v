@@ -12,6 +12,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Ranalysis_reg.
 Require Import Classical_Prop.
+Require Import List.
 Require Import RList.
 Local Open Scope R_scope.
 
@@ -114,41 +115,41 @@ Qed.
 Definition open_interval (a b x:R) : Prop := a < x < b.
 Definition co_interval (a b x:R) : Prop := a <= x < b.
 
-Definition adapted_couple (f:R -> R) (a b:R) (l lf:Rlist) : Prop :=
+Definition adapted_couple (f:R -> R) (a b:R) (l lf:list R) : Prop :=
   ordered_Rlist l /\
   pos_Rl l 0 = Rmin a b /\
-  pos_Rl l (pred (Rlength l)) = Rmax a b /\
-  Rlength l = S (Rlength lf) /\
+  pos_Rl l (pred (length l)) = Rmax a b /\
+  length l = S (length lf) /\
   (forall i:nat,
-    (i < pred (Rlength l))%nat ->
+    (i < pred (length l))%nat ->
     constant_D_eq f (open_interval (pos_Rl l i) (pos_Rl l (S i)))
     (pos_Rl lf i)).
 
-Definition adapted_couple_opt (f:R -> R) (a b:R) (l lf:Rlist) :=
+Definition adapted_couple_opt (f:R -> R) (a b:R) (l lf:list R) :=
   adapted_couple f a b l lf /\
   (forall i:nat,
-    (i < pred (Rlength lf))%nat ->
+    (i < pred (length lf))%nat ->
     pos_Rl lf i <> pos_Rl lf (S i) \/ f (pos_Rl l (S i)) <> pos_Rl lf i) /\
-  (forall i:nat, (i < pred (Rlength l))%nat -> pos_Rl l i <> pos_Rl l (S i)).
+  (forall i:nat, (i < pred (length l))%nat -> pos_Rl l i <> pos_Rl l (S i)).
 
-Definition is_subdivision (f:R -> R) (a b:R) (l:Rlist) : Type :=
-  { l0:Rlist & adapted_couple f a b l l0 }.
+Definition is_subdivision (f:R -> R) (a b:R) (l:list R) : Type :=
+  { l0:list R & adapted_couple f a b l l0 }.
 
 Definition IsStepFun (f:R -> R) (a b:R) : Type :=
-  { l:Rlist & is_subdivision f a b l }.
+  { l:list R & is_subdivision f a b l }.
 
 (** ** Class of step functions *)
 Record StepFun (a b:R) : Type := mkStepFun
   {fe :> R -> R; pre : IsStepFun fe a b}.
 
-Definition subdivision (a b:R) (f:StepFun a b) : Rlist := projT1 (pre f).
+Definition subdivision (a b:R) (f:StepFun a b) : list R := projT1 (pre f).
 
-Definition subdivision_val (a b:R) (f:StepFun a b) : Rlist :=
+Definition subdivision_val (a b:R) (f:StepFun a b) : list R :=
   match projT2 (pre f) with
     | existT _ a b => a
   end.
 
-Fixpoint Int_SF (l k:Rlist) : R :=
+Fixpoint Int_SF (l k:list R) : R :=
   match l with
     | nil => 0
     | cons a l' =>
@@ -179,7 +180,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P2 :
-  forall (a b:R) (f:R -> R) (l lf:Rlist),
+  forall (a b:R) (f:R -> R) (l lf:list R),
     adapted_couple f a b l lf -> adapted_couple f b a l lf.
 Proof.
   unfold adapted_couple; intros; decompose [and] H; clear H;
@@ -219,7 +220,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P5 :
-  forall (a b:R) (f:R -> R) (l:Rlist),
+  forall (a b:R) (f:R -> R) (l:list R),
     is_subdivision f a b l -> is_subdivision f b a l.
 Proof.
   destruct 1 as (x,(H0,(H1,(H2,(H3,H4))))); exists x;
@@ -236,7 +237,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P7 :
-  forall (a b r1 r2 r3:R) (f:R -> R) (l lf:Rlist),
+  forall (a b r1 r2 r3:R) (f:R -> R) (l lf:list R),
     a <= b ->
     adapted_couple f a b (cons r1 (cons r2 l)) (cons r3 lf) ->
     adapted_couple f r2 b (cons r2 l) lf.
@@ -257,31 +258,36 @@ Proof.
       rewrite H4; reflexivity.
   intros; unfold constant_D_eq, open_interval; intros;
     unfold constant_D_eq, open_interval in H6;
-      assert (H9 : (S i < pred (Rlength (cons r1 (cons r2 l))))%nat).
+      assert (H9 : (S i < pred (length (cons r1 (cons r2 l))))%nat).
   simpl; simpl in H0; apply lt_n_S; assumption.
   assert (H10 := H6 _ H9); apply H10; assumption.
 Qed.
 
 Lemma StepFun_P8 :
-  forall (f:R -> R) (l1 lf1:Rlist) (a b:R),
+  forall (f:R -> R) (l1 lf1:list R) (a b:R),
     adapted_couple f a b l1 lf1 -> a = b -> Int_SF lf1 l1 = 0.
 Proof.
   simple induction l1.
   intros; induction  lf1 as [| r lf1 Hreclf1]; reflexivity.
-  simple induction r0.
+  intros r r0.
+  induction r0 as [ | r1 r2 H0].
   intros; induction  lf1 as [| r1 lf1 Hreclf1].
   reflexivity.
   unfold adapted_couple in H0; decompose [and] H0; clear H0; simpl in H5;
     discriminate.
-  intros; induction  lf1 as [| r3 lf1 Hreclf1].
+  intros H.
+  induction  lf1 as [| r3 lf1 Hreclf1]; intros a b H1 H2.
   reflexivity.
   simpl; cut (r = r1).
-  intro; rewrite H3; rewrite (H0 lf1 r b).
+  intros H3.
+  rewrite H3; rewrite (H lf1 r b).
   ring.
   rewrite H3; apply StepFun_P7 with a r r3; [ right; assumption | assumption ].
-  clear H H0 Hreclf1 r0; unfold adapted_couple in H1; decompose [and] H1;
+  clear H H0 Hreclf1; unfold adapted_couple in H1.
+  decompose [and] H1.
     intros; simpl in H4; rewrite H4; unfold Rmin;
       case (Rle_dec a b); intro; [ assumption | reflexivity ].
+
   unfold adapted_couple in H1; decompose [and] H1; intros; apply Rle_antisym.
   apply (H3 0%nat); simpl; apply lt_O_Sn.
   simpl in H5; rewrite H2 in H5; rewrite H5; replace (Rmin b b) with (Rmax a b);
@@ -292,8 +298,8 @@ Proof.
 Qed.
 
 Lemma StepFun_P9 :
-  forall (a b:R) (f:R -> R) (l lf:Rlist),
-    adapted_couple f a b l lf -> a <> b -> (2 <= Rlength l)%nat.
+  forall (a b:R) (f:R -> R) (l lf:list R),
+    adapted_couple f a b l lf -> a <> b -> (2 <= length l)%nat.
 Proof.
   intros; unfold adapted_couple in H; decompose [and] H; clear H;
     induction  l as [| r l Hrecl];
@@ -307,13 +313,13 @@ Proof.
 Qed.
 
 Lemma StepFun_P10 :
-  forall (f:R -> R) (l lf:Rlist) (a b:R),
+  forall (f:R -> R) (l lf:list R) (a b:R),
     a <= b ->
     adapted_couple f a b l lf ->
-    exists l' : Rlist,
-      (exists lf' : Rlist, adapted_couple_opt f a b l' lf').
+    exists l' : list R,
+      (exists lf' : list R, adapted_couple_opt f a b l' lf').
 Proof.
-  simple induction l.
+  induction l as [ | r r0 H].
   intros; unfold adapted_couple in H0; decompose [and] H0; simpl in H4;
     discriminate.
   intros; case (Req_dec a b); intro.
@@ -503,7 +509,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P11 :
-  forall (a b r r1 r3 s1 s2 r4:R) (r2 lf1 s3 lf2:Rlist)
+  forall (a b r r1 r3 s1 s2 r4:R) (r2 lf1 s3 lf2:list R)
     (f:R -> R),
     a < b ->
     adapted_couple f a b (cons r (cons r1 r2)) (cons r3 lf1) ->
@@ -627,7 +633,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P12 :
-  forall (a b:R) (f:R -> R) (l lf:Rlist),
+  forall (a b:R) (f:R -> R) (l lf:list R),
     adapted_couple_opt f a b l lf -> adapted_couple_opt f b a l lf.
 Proof.
   unfold adapted_couple_opt; unfold adapted_couple; intros;
@@ -643,7 +649,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P13 :
-  forall (a b r r1 r3 s1 s2 r4:R) (r2 lf1 s3 lf2:Rlist)
+  forall (a b r r1 r3 s1 s2 r4:R) (r2 lf1 s3 lf2:list R)
     (f:R -> R),
     a <> b ->
     adapted_couple f a b (cons r (cons r1 r2)) (cons r3 lf1) ->
@@ -657,15 +663,15 @@ Proof.
 Qed.
 
 Lemma StepFun_P14 :
-  forall (f:R -> R) (l1 l2 lf1 lf2:Rlist) (a b:R),
+  forall (f:R -> R) (l1 l2 lf1 lf2:list R) (a b:R),
     a <= b ->
     adapted_couple f a b l1 lf1 ->
     adapted_couple_opt f a b l2 lf2 -> Int_SF lf1 l1 = Int_SF lf2 l2.
 Proof.
-  simple induction l1.
+  induction l1 as [ | r r0 H0].
   intros l2 lf1 lf2 a b Hyp H H0; unfold adapted_couple in H; decompose [and] H;
     clear H H0 H2 H3 H1 H6; simpl in H4; discriminate.
-  simple induction r0.
+  induction r0 as [|r1 r2 H].
   intros; case (Req_dec a b); intro.
   unfold adapted_couple_opt in H2; elim H2; intros; rewrite (StepFun_P8 H4 H3);
     rewrite (StepFun_P8 H1 H3); reflexivity.
@@ -798,7 +804,7 @@ Proof.
   rewrite H9;
     change
       (forall i:nat,
-        (i < pred (Rlength (cons r4 lf2)))%nat ->
+        (i < pred (length (cons r4 lf2)))%nat ->
         pos_Rl (cons r4 lf2) i <> pos_Rl (cons r4 lf2) (S i) \/
         f (pos_Rl (cons s1 (cons s2 s3)) (S i)) <> pos_Rl (cons r4 lf2) i)
      ; rewrite <- H5; apply H3.
@@ -840,7 +846,7 @@ Proof.
   rewrite <- H10; unfold open_interval; apply H2.
   elim H3; clear H3; intros; split.
   rewrite H5 in H3; intros; apply (H3 (S i)).
-  simpl; replace (Rlength lf2) with (S (pred (Rlength lf2))).
+  simpl; replace (length lf2) with (S (pred (length lf2))).
   apply lt_n_S; apply H12.
   symmetry ; apply S_pred with 0%nat; apply neq_O_lt; red;
     intro; rewrite <- H13 in H12; elim (lt_n_O _ H12).
@@ -863,7 +869,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P15 :
-  forall (f:R -> R) (l1 l2 lf1 lf2:Rlist) (a b:R),
+  forall (f:R -> R) (l1 l2 lf1 lf2:list R) (a b:R),
     adapted_couple f a b l1 lf1 ->
     adapted_couple_opt f a b l2 lf2 -> Int_SF lf1 l1 = Int_SF lf2 l2.
 Proof.
@@ -876,10 +882,10 @@ Proof.
 Qed.
 
 Lemma StepFun_P16 :
-  forall (f:R -> R) (l lf:Rlist) (a b:R),
+  forall (f:R -> R) (l lf:list R) (a b:R),
     adapted_couple f a b l lf ->
-    exists l' : Rlist,
-      (exists lf' : Rlist, adapted_couple_opt f a b l' lf').
+    exists l' : list R,
+      (exists lf' : list R, adapted_couple_opt f a b l' lf').
 Proof.
   intros; destruct (Rle_dec a b) as [Hle|Hnle];
     [ apply (StepFun_P10 Hle H)
@@ -891,7 +897,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P17 :
-  forall (f:R -> R) (l1 l2 lf1 lf2:Rlist) (a b:R),
+  forall (f:R -> R) (l1 l2 lf1 lf2:list R) (a b:R),
     adapted_couple f a b l1 lf1 ->
     adapted_couple f a b l2 lf2 -> Int_SF lf1 l1 = Int_SF lf2 l2.
 Proof.
@@ -922,7 +928,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P19 :
-  forall (l1:Rlist) (f g:R -> R) (l:R),
+  forall (l1:list R) (f g:R -> R) (l:R),
     Int_SF (FF l1 (fun x:R => f x + l * g x)) l1 =
     Int_SF (FF l1 f) l1 + l * Int_SF (FF l1 g) l1.
 Proof.
@@ -933,8 +939,8 @@ Proof.
 Qed.
 
 Lemma StepFun_P20 :
-  forall (l:Rlist) (f:R -> R),
-    (0 < Rlength l)%nat -> Rlength l = S (Rlength (FF l f)).
+  forall (l:list R) (f:R -> R),
+    (0 < length l)%nat -> length l = S (length (FF l f)).
 Proof.
   intros l f H; induction l;
     [ elim (lt_irrefl _ H)
@@ -942,7 +948,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P21 :
-  forall (a b:R) (f:R -> R) (l:Rlist),
+  forall (a b:R) (f:R -> R) (l:list R),
     is_subdivision f a b l -> adapted_couple f a b l (FF l f).
 Proof.
   intros * (x & H & H1 & H0 & H2 & H4).
@@ -979,7 +985,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P22 :
-  forall (a b:R) (f g:R -> R) (lf lg:Rlist),
+  forall (a b:R) (f g:R -> R) (lf lg:list R),
     a <= b ->
     is_subdivision f a b lf ->
     is_subdivision g a b lg -> is_subdivision f a b (cons_ORlist lf lg).
@@ -1032,25 +1038,25 @@ Proof.
     (H8 :
       In
       (pos_Rl (cons_ORlist (cons r lf) lg)
-        (pred (Rlength (cons_ORlist (cons r lf) lg))))
+        (pred (length (cons_ORlist (cons r lf) lg))))
       (cons_ORlist (cons r lf) lg)).
   elim
     (RList_P3 (cons_ORlist (cons r lf) lg)
       (pos_Rl (cons_ORlist (cons r lf) lg)
-        (pred (Rlength (cons_ORlist (cons r lf) lg)))));
+        (pred (length (cons_ORlist (cons r lf) lg)))));
     intros _ H10; apply H10;
-      exists (pred (Rlength (cons_ORlist (cons r lf) lg)));
+      exists (pred (length (cons_ORlist (cons r lf) lg)));
         split; [ reflexivity | rewrite RList_P11; simpl; apply lt_n_Sn ].
   elim
     (RList_P9 (cons r lf) lg
       (pos_Rl (cons_ORlist (cons r lf) lg)
-        (pred (Rlength (cons_ORlist (cons r lf) lg)))));
+        (pred (length (cons_ORlist (cons r lf) lg)))));
     intros H10 _.
   assert (H11 := H10 H8); elim H11; intro.
   elim
     (RList_P3 (cons r lf)
       (pos_Rl (cons_ORlist (cons r lf) lg)
-        (pred (Rlength (cons_ORlist (cons r lf) lg)))));
+        (pred (length (cons_ORlist (cons r lf) lg)))));
     intros H13 _; assert (H14 := H13 H12); elim H14; intros;
       elim H15; clear H15; intros; rewrite H15; rewrite <- H5;
         elim (RList_P6 (cons r lf)); intros; apply H17;
@@ -1060,10 +1066,10 @@ Proof.
   elim
     (RList_P3 lg
       (pos_Rl (cons_ORlist (cons r lf) lg)
-        (pred (Rlength (cons_ORlist (cons r lf) lg)))));
+        (pred (length (cons_ORlist (cons r lf) lg)))));
     intros H13 _; assert (H14 := H13 H12); elim H14; intros;
       elim H15; clear H15; intros.
-  rewrite H15; assert (H17 : Rlength lg = S (pred (Rlength lg))).
+  rewrite H15; assert (H17 : length lg = S (pred (length lg))).
   apply S_pred with 0%nat; apply neq_O_lt; red; intro;
     rewrite <- H17 in H16; elim (lt_n_O _ H16).
   rewrite <- H0; elim (RList_P6 lg); intros; apply H18;
@@ -1075,7 +1081,7 @@ Proof.
   assert (H8 : In b (cons_ORlist (cons r lf) lg)).
   elim (RList_P9 (cons r lf) lg b); intros; apply H10; left;
     elim (RList_P3 (cons r lf) b); intros; apply H12;
-      exists (pred (Rlength (cons r lf))); split;
+      exists (pred (length (cons r lf))); split;
         [ symmetry ; assumption | simpl; apply lt_n_Sn ].
   apply RList_P7; [ apply RList_P2; assumption | assumption ].
   apply StepFun_P20; rewrite RList_P11; rewrite H2; rewrite H7; simpl;
@@ -1089,7 +1095,7 @@ Proof.
   intros; elim H11; clear H11; intros; assert (H12 := H11);
     assert
       (Hyp_cons :
-        exists r : R, (exists r0 : Rlist, cons_ORlist lf lg = cons r r0)).
+        exists r : R, (exists r0 : list R, cons_ORlist lf lg = cons r r0)).
   apply RList_P19; red; intro; rewrite H13 in H8; elim (lt_n_O _ H8).
   elim Hyp_cons; clear Hyp_cons; intros r [r0 Hyp_cons]; rewrite Hyp_cons;
     unfold FF; rewrite RList_P12.
@@ -1128,7 +1134,7 @@ Proof.
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H11.
   apply RList_P2; assumption.
   apply le_O_n.
-  apply lt_trans with (pred (Rlength (cons_ORlist lf lg)));
+  apply lt_trans with (pred (length (cons_ORlist lf lg)));
     [ assumption
       | apply lt_pred_n_n; apply neq_O_lt; red; intro;
         rewrite <- H13 in H8; elim (lt_n_O _ H8) ].
@@ -1147,9 +1153,9 @@ Proof.
   set
     (I :=
       fun j:nat =>
-        pos_Rl lf j <= pos_Rl (cons_ORlist lf lg) i /\ (j < Rlength lf)%nat);
+        pos_Rl lf j <= pos_Rl (cons_ORlist lf lg) i /\ (j < length lf)%nat);
     assert (H12 : Nbound I).
-  unfold Nbound; exists (Rlength lf); intros; unfold I in H12; elim H12;
+  unfold Nbound; exists (length lf); intros; unfold I in H12; elim H12;
     intros; apply lt_le_weak; assumption.
   assert (H13 :  exists n : nat, I n).
   exists 0%nat; unfold I; split.
@@ -1159,7 +1165,7 @@ Proof.
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H13.
   apply RList_P2; assumption.
   apply le_O_n.
-  apply lt_trans with (pred (Rlength (cons_ORlist lf lg))).
+  apply lt_trans with (pred (length (cons_ORlist lf lg))).
   assumption.
   apply lt_pred_n_n; apply neq_O_lt; red; intro; rewrite <- H15 in H8;
     elim (lt_n_O _ H8).
@@ -1167,12 +1173,12 @@ Proof.
     rewrite <- H6 in H11; rewrite <- H5 in H11; elim (Rlt_irrefl _ H11).
   assert (H14 := Nzorn H13 H12); elim H14; clear H14; intros x0 H14;
     exists (pos_Rl lf0 x0); unfold constant_D_eq, open_interval;
-      intros; assert (H16 := H9 x0); assert (H17 : (x0 < pred (Rlength lf))%nat).
+      intros; assert (H16 := H9 x0); assert (H17 : (x0 < pred (length lf))%nat).
   elim H14; clear H14; intros; unfold I in H14; elim H14; clear H14; intros;
-    apply lt_S_n; replace (S (pred (Rlength lf))) with (Rlength lf).
+    apply lt_S_n; replace (S (pred (length lf))) with (length lf).
   inversion H18.
   2: apply lt_n_S; assumption.
-  cut (x0 = pred (Rlength lf)).
+  cut (x0 = pred (length lf)).
   intro; rewrite H19 in H14; rewrite H5 in H14;
     cut (pos_Rl (cons_ORlist lf lg) i < b).
   intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H14 H21)).
@@ -1180,7 +1186,7 @@ Proof.
   elim H10; intros; apply Rlt_trans with x; assumption.
   rewrite <- H5;
     apply Rle_trans with
-      (pos_Rl (cons_ORlist lf lg) (pred (Rlength (cons_ORlist lf lg)))).
+      (pos_Rl (cons_ORlist lf lg) (pred (length (cons_ORlist lf lg)))).
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H21.
   apply RList_P2; assumption.
   apply lt_n_Sm_le; apply lt_n_S; assumption.
@@ -1197,8 +1203,8 @@ Proof.
     elim H14; clear H14; intros; split.
   apply Rle_lt_trans with (pos_Rl (cons_ORlist lf lg) i); assumption.
   apply Rlt_le_trans with (pos_Rl (cons_ORlist lf lg) (S i)); try assumption.
-  assert (H22 : (S x0 < Rlength lf)%nat).
-  replace (Rlength lf) with (S (pred (Rlength lf)));
+  assert (H22 : (S x0 < length lf)%nat).
+  replace (length lf) with (S (pred (length lf)));
   [ apply lt_n_S; assumption
     | symmetry ; apply S_pred with 0%nat; apply neq_O_lt; red;
       intro; rewrite <- H22 in H21; elim (lt_n_O _ H21) ].
@@ -1216,7 +1222,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P23 :
-  forall (a b:R) (f g:R -> R) (lf lg:Rlist),
+  forall (a b:R) (f g:R -> R) (lf lg:list R),
     is_subdivision f a b lf ->
     is_subdivision g a b lg -> is_subdivision f a b (cons_ORlist lf lg).
 Proof.
@@ -1229,7 +1235,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P24 :
-  forall (a b:R) (f g:R -> R) (lf lg:Rlist),
+  forall (a b:R) (f g:R -> R) (lf lg:list R),
     a <= b ->
     is_subdivision f a b lf ->
     is_subdivision g a b lg -> is_subdivision g a b (cons_ORlist lf lg).
@@ -1282,24 +1288,24 @@ Proof.
     (H8 :
       In
       (pos_Rl (cons_ORlist (cons r lf) lg)
-        (pred (Rlength (cons_ORlist (cons r lf) lg))))
+        (pred (length (cons_ORlist (cons r lf) lg))))
       (cons_ORlist (cons r lf) lg)).
   elim
     (RList_P3 (cons_ORlist (cons r lf) lg)
       (pos_Rl (cons_ORlist (cons r lf) lg)
-        (pred (Rlength (cons_ORlist (cons r lf) lg)))));
+        (pred (length (cons_ORlist (cons r lf) lg)))));
     intros _ H10; apply H10;
-      exists (pred (Rlength (cons_ORlist (cons r lf) lg)));
+      exists (pred (length (cons_ORlist (cons r lf) lg)));
         split; [ reflexivity | rewrite RList_P11; simpl; apply lt_n_Sn ].
   elim
     (RList_P9 (cons r lf) lg
       (pos_Rl (cons_ORlist (cons r lf) lg)
-        (pred (Rlength (cons_ORlist (cons r lf) lg)))));
+        (pred (length (cons_ORlist (cons r lf) lg)))));
     intros H10 _; assert (H11 := H10 H8); elim H11; intro.
   elim
     (RList_P3 (cons r lf)
       (pos_Rl (cons_ORlist (cons r lf) lg)
-        (pred (Rlength (cons_ORlist (cons r lf) lg)))));
+        (pred (length (cons_ORlist (cons r lf) lg)))));
     intros H13 _; assert (H14 := H13 H12); elim H14; intros;
       elim H15; clear H15; intros; rewrite H15; rewrite <- H5;
         elim (RList_P6 (cons r lf)); intros; apply H17;
@@ -1309,10 +1315,10 @@ Proof.
   elim
     (RList_P3 lg
       (pos_Rl (cons_ORlist (cons r lf) lg)
-        (pred (Rlength (cons_ORlist (cons r lf) lg)))));
+        (pred (length (cons_ORlist (cons r lf) lg)))));
     intros H13 _; assert (H14 := H13 H12); elim H14; intros;
       elim H15; clear H15; intros; rewrite H15;
-        assert (H17 : Rlength lg = S (pred (Rlength lg))).
+        assert (H17 : length lg = S (pred (length lg))).
   apply S_pred with 0%nat; apply neq_O_lt; red; intro;
     rewrite <- H17 in H16; elim (lt_n_O _ H16).
   rewrite <- H0; elim (RList_P6 lg); intros; apply H18;
@@ -1324,7 +1330,7 @@ Proof.
   assert (H8 : In b (cons_ORlist (cons r lf) lg)).
   elim (RList_P9 (cons r lf) lg b); intros; apply H10; left;
     elim (RList_P3 (cons r lf) b); intros; apply H12;
-      exists (pred (Rlength (cons r lf))); split;
+      exists (pred (length (cons r lf))); split;
         [ symmetry ; assumption | simpl; apply lt_n_Sn ].
   apply RList_P7; [ apply RList_P2; assumption | assumption ].
   apply StepFun_P20; rewrite RList_P11; rewrite H7; rewrite H2; simpl;
@@ -1338,7 +1344,7 @@ Proof.
   intros; elim H11; clear H11; intros; assert (H12 := H11);
     assert
       (Hyp_cons :
-        exists r : R, (exists r0 : Rlist, cons_ORlist lf lg = cons r r0)).
+        exists r : R, (exists r0 : list R, cons_ORlist lf lg = cons r r0)).
   apply RList_P19; red; intro; rewrite H13 in H8; elim (lt_n_O _ H8).
   elim Hyp_cons; clear Hyp_cons; intros r [r0 Hyp_cons]; rewrite Hyp_cons;
     unfold FF; rewrite RList_P12.
@@ -1377,7 +1383,7 @@ Proof.
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H11.
   apply RList_P2; assumption.
   apply le_O_n.
-  apply lt_trans with (pred (Rlength (cons_ORlist lf lg)));
+  apply lt_trans with (pred (length (cons_ORlist lf lg)));
     [ assumption
       | apply lt_pred_n_n; apply neq_O_lt; red; intro;
         rewrite <- H13 in H8; elim (lt_n_O _ H8) ].
@@ -1394,9 +1400,9 @@ Proof.
   set
     (I :=
       fun j:nat =>
-        pos_Rl lg j <= pos_Rl (cons_ORlist lf lg) i /\ (j < Rlength lg)%nat);
+        pos_Rl lg j <= pos_Rl (cons_ORlist lf lg) i /\ (j < length lg)%nat);
     assert (H12 : Nbound I).
-  unfold Nbound; exists (Rlength lg); intros; unfold I in H12; elim H12;
+  unfold Nbound; exists (length lg); intros; unfold I in H12; elim H12;
     intros; apply lt_le_weak; assumption.
   assert (H13 :  exists n : nat, I n).
   exists 0%nat; unfold I; split.
@@ -1406,7 +1412,7 @@ Proof.
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H13;
     [ apply RList_P2; assumption
       | apply le_O_n
-      | apply lt_trans with (pred (Rlength (cons_ORlist lf lg)));
+      | apply lt_trans with (pred (length (cons_ORlist lf lg)));
         [ assumption
           | apply lt_pred_n_n; apply neq_O_lt; red; intro;
             rewrite <- H15 in H8; elim (lt_n_O _ H8) ] ].
@@ -1414,12 +1420,12 @@ Proof.
     rewrite <- H1 in H11; rewrite <- H0 in H11; elim (Rlt_irrefl _ H11).
   assert (H14 := Nzorn H13 H12); elim H14; clear H14; intros x0 H14;
     exists (pos_Rl lg0 x0); unfold constant_D_eq, open_interval;
-      intros; assert (H16 := H4 x0); assert (H17 : (x0 < pred (Rlength lg))%nat).
+      intros; assert (H16 := H4 x0); assert (H17 : (x0 < pred (length lg))%nat).
   elim H14; clear H14; intros; unfold I in H14; elim H14; clear H14; intros;
-    apply lt_S_n; replace (S (pred (Rlength lg))) with (Rlength lg).
+    apply lt_S_n; replace (S (pred (length lg))) with (length lg).
   inversion H18.
   2: apply lt_n_S; assumption.
-  cut (x0 = pred (Rlength lg)).
+  cut (x0 = pred (length lg)).
   intro; rewrite H19 in H14; rewrite H0 in H14;
     cut (pos_Rl (cons_ORlist lf lg) i < b).
   intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H14 H21)).
@@ -1427,7 +1433,7 @@ Proof.
   elim H10; intros; apply Rlt_trans with x; assumption.
   rewrite <- H0;
     apply Rle_trans with
-      (pos_Rl (cons_ORlist lf lg) (pred (Rlength (cons_ORlist lf lg)))).
+      (pos_Rl (cons_ORlist lf lg) (pred (length (cons_ORlist lf lg)))).
   elim (RList_P6 (cons_ORlist lf lg)); intros; apply H21.
   apply RList_P2; assumption.
   apply lt_n_Sm_le; apply lt_n_S; assumption.
@@ -1445,8 +1451,8 @@ Proof.
     elim H14; clear H14; intros; split.
   apply Rle_lt_trans with (pos_Rl (cons_ORlist lf lg) i); assumption.
   apply Rlt_le_trans with (pos_Rl (cons_ORlist lf lg) (S i)); try assumption.
-  assert (H22 : (S x0 < Rlength lg)%nat).
-  replace (Rlength lg) with (S (pred (Rlength lg))).
+  assert (H22 : (S x0 < length lg)%nat).
+  replace (length lg) with (S (pred (length lg))).
   apply lt_n_S; assumption.
   symmetry ; apply S_pred with 0%nat; apply neq_O_lt; red;
     intro; rewrite <- H22 in H21; elim (lt_n_O _ H21).
@@ -1463,7 +1469,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P25 :
-  forall (a b:R) (f g:R -> R) (lf lg:Rlist),
+  forall (a b:R) (f g:R -> R) (lf lg:list R),
     is_subdivision f a b lf ->
     is_subdivision g a b lg -> is_subdivision g a b (cons_ORlist lf lg).
 Proof.
@@ -1476,7 +1482,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P26 :
-  forall (a b l:R) (f g:R -> R) (l1:Rlist),
+  forall (a b l:R) (f g:R -> R) (l1:list R),
     is_subdivision f a b l1 ->
     is_subdivision g a b l1 ->
     is_subdivision (fun x:R => f x + l * g x) a b l1.
@@ -1494,7 +1500,7 @@ Proof.
       change
         (pos_Rl x0 i + l * pos_Rl x i =
           pos_Rl
-          (app_Rlist (mid_Rlist (cons r r0) r) (fun x2:R => f x2 + l * g x2))
+          (map (fun x2:R => f x2 + l * g x2) (mid_Rlist (cons r r0) r))
           (S i)); rewrite RList_P12.
   rewrite RList_P13.
   rewrite <- H12; rewrite (H9 _ H8); try rewrite (H4 _ H8);
@@ -1521,7 +1527,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P27 :
-  forall (a b l:R) (f g:R -> R) (lf lg:Rlist),
+  forall (a b l:R) (f g:R -> R) (lf lg:list R),
     is_subdivision f a b lf ->
     is_subdivision g a b lg ->
     is_subdivision (fun x:R => f x + l * g x) a b (cons_ORlist lf lg).
@@ -1586,9 +1592,9 @@ Proof.
 Qed.
 
 Lemma StepFun_P31 :
-  forall (a b:R) (f:R -> R) (l lf:Rlist),
+  forall (a b:R) (f:R -> R) (l lf:list R),
     adapted_couple f a b l lf ->
-    adapted_couple (fun x:R => Rabs (f x)) a b l (app_Rlist lf Rabs).
+    adapted_couple (fun x:R => Rabs (f x)) a b l (map Rabs lf).
 Proof.
   unfold adapted_couple; intros; decompose [and] H; clear H;
     repeat split; try assumption.
@@ -1604,15 +1610,15 @@ Lemma StepFun_P32 :
 Proof.
   intros a b f; unfold IsStepFun; apply existT with (subdivision f);
     unfold is_subdivision;
-      apply existT with (app_Rlist (subdivision_val f) Rabs);
+      apply existT with (map Rabs (subdivision_val f));
         apply StepFun_P31; apply StepFun_P1.
 Qed.
 
 Lemma StepFun_P33 :
-  forall l2 l1:Rlist,
-    ordered_Rlist l1 -> Rabs (Int_SF l2 l1) <= Int_SF (app_Rlist l2 Rabs) l1.
+  forall l2 l1:list R,
+    ordered_Rlist l1 -> Rabs (Int_SF l2 l1) <= Int_SF (map Rabs l2) l1.
 Proof.
-  simple induction l2; intros.
+  induction l2 as [ | r r0 H]; intros.
   simpl; rewrite Rabs_R0; right; reflexivity.
   simpl; induction  l1 as [| r1 l1 Hrecl1].
   rewrite Rabs_R0; right; reflexivity.
@@ -1635,7 +1641,7 @@ Proof.
   replace
   (Int_SF (subdivision_val (mkStepFun (StepFun_P32 f)))
     (subdivision (mkStepFun (StepFun_P32 f)))) with
-  (Int_SF (app_Rlist (subdivision_val f) Rabs) (subdivision f)).
+  (Int_SF (map Rabs (subdivision_val f)) (subdivision f)).
   apply StepFun_P33; assert (H0 := StepFun_P29 f); unfold is_subdivision in H0;
     elim H0; intros; unfold adapted_couple in p; decompose [and] p;
       assumption.
@@ -1645,14 +1651,14 @@ Proof.
 Qed.
 
 Lemma StepFun_P35 :
-  forall (l:Rlist) (a b:R) (f g:R -> R),
+  forall (l:list R) (a b:R) (f g:R -> R),
     ordered_Rlist l ->
     pos_Rl l 0 = a ->
-    pos_Rl l (pred (Rlength l)) = b ->
+    pos_Rl l (pred (length l)) = b ->
     (forall x:R, a < x < b -> f x <= g x) ->
     Int_SF (FF l f) l <= Int_SF (FF l g) l.
 Proof.
-  simple induction l; intros.
+  induction l as [ | r r0 H]; intros.
   right; reflexivity.
   simpl; induction  r0 as [| r0 r1 Hrecr0].
   right; reflexivity.
@@ -1682,7 +1688,7 @@ Proof.
     rewrite <- Rinv_r_sym.
   rewrite Rmult_1_l; rewrite double; assert (H5 : r0 <= b).
   replace b with
-  (pos_Rl (cons r (cons r0 r1)) (pred (Rlength (cons r (cons r0 r1))))).
+  (pos_Rl (cons r (cons r0 r1)) (pred (length (cons r (cons r0 r1))))).
   replace r0 with (pos_Rl (cons r (cons r0 r1)) 1).
   elim (RList_P6 (cons r (cons r0 r1))); intros; apply H5.
   assumption.
@@ -1712,7 +1718,7 @@ Proof.
 Qed.
 
 Lemma StepFun_P36 :
-  forall (a b:R) (f g:StepFun a b) (l:Rlist),
+  forall (a b:R) (f g:StepFun a b) (l:list R),
     a <= b ->
     is_subdivision f a b l ->
     is_subdivision g a b l ->
@@ -1748,18 +1754,18 @@ Proof.
 Qed.
 
 Lemma StepFun_P38 :
-  forall (l:Rlist) (a b:R) (f:R -> R),
+  forall (l:list R) (a b:R) (f:R -> R),
     ordered_Rlist l ->
     pos_Rl l 0 = a ->
-    pos_Rl l (pred (Rlength l)) = b ->
+    pos_Rl l (pred (length l)) = b ->
     { g:StepFun a b |
       g b = f b /\
       (forall i:nat,
-        (i < pred (Rlength l))%nat ->
+        (i < pred (length l))%nat ->
         constant_D_eq g (co_interval (pos_Rl l i) (pos_Rl l (S i)))
         (f (pos_Rl l i))) }.
 Proof.
-  intros l a b f; generalize a; clear a; induction l.
+  intros l a b f; generalize a; clear a; induction l as [|r l IHl].
   intros a H H0 H1; simpl in H0; simpl in H1;
     exists (mkStepFun (StepFun_P4 a b (f b))); split.
   reflexivity.
@@ -1772,7 +1778,7 @@ Proof.
   apply RList_P4 with r; assumption.
   assert (H3 : pos_Rl (cons r1 l) 0 = r1).
   reflexivity.
-  assert (H4 : pos_Rl (cons r1 l) (pred (Rlength (cons r1 l))) = b).
+  assert (H4 : pos_Rl (cons r1 l) (pred (length (cons r1 l))) = b).
   rewrite <- H1; reflexivity.
   elim (IHl r1 H2 H3 H4); intros g [H5 H6].
   set
@@ -1796,7 +1802,7 @@ Proof.
   simpl in H0; rewrite <- H0; apply (H 0%nat); simpl; apply lt_O_Sn.
   unfold Rmin; decide (Rle_dec r1 b) with H7; reflexivity.
   apply (H10 i); apply lt_S_n.
-  replace (S (pred (Rlength lg))) with (Rlength lg).
+  replace (S (pred (length lg))) with (length lg).
   apply H9.
   apply S_pred with 0%nat; apply neq_O_lt; intro; rewrite <- H14 in H9;
     elim (lt_n_O _ H9).
@@ -1825,9 +1831,9 @@ Proof.
   change
     (constant_D_eq g' (open_interval (pos_Rl lg i) (pos_Rl lg (S i)))
       (pos_Rl lg2 i)); clear Hreci; assert (H16 := H15 i);
-    assert (H17 : (i < pred (Rlength lg))%nat).
+    assert (H17 : (i < pred (length lg))%nat).
   apply lt_S_n.
-  replace (S (pred (Rlength lg))) with (Rlength lg).
+  replace (S (pred (length lg))) with (length lg).
   assumption.
   apply S_pred with 0%nat; apply neq_O_lt; red; intro;
     rewrite <- H14 in H9; elim (lt_n_O _ H9).
@@ -1843,7 +1849,7 @@ Proof.
   assumption.
   elim (RList_P3 lg (pos_Rl lg i)); intros; apply H21; exists i; split.
   reflexivity.
-  apply lt_trans with (pred (Rlength lg)); try assumption.
+  apply lt_trans with (pred (length lg)); try assumption.
   apply lt_pred_n_n; apply neq_O_lt; red; intro; rewrite <- H22 in H17;
     elim (lt_n_O _ H17).
   unfold Rmin; decide (Rle_dec r1 b) with H7; reflexivity.
@@ -1860,7 +1866,7 @@ Proof.
       (constant_D_eq (mkStepFun H8)
         (co_interval (pos_Rl (cons r1 l) i) (pos_Rl (cons r1 l) (S i)))
         (f (pos_Rl (cons r1 l) i))); assert (H10 := H6 i);
-      assert (H11 : (i < pred (Rlength (cons r1 l)))%nat).
+      assert (H11 : (i < pred (length (cons r1 l)))%nat).
   simpl; apply lt_S_n; assumption.
   assert (H12 := H10 H11); unfold constant_D_eq, co_interval in H12;
     unfold constant_D_eq, co_interval; intros;
@@ -1873,7 +1879,7 @@ Proof.
         elim (RList_P6 (cons r1 l)); intros; apply H15;
           [ assumption
             | apply le_O_n
-            | simpl; apply lt_trans with (Rlength l);
+            | simpl; apply lt_trans with (length l);
               [ apply lt_S_n; assumption | apply lt_n_Sn ] ].
 Qed.
 
@@ -1912,12 +1918,12 @@ Proof.
 Qed.
 
 Lemma StepFun_P40 :
-  forall (f:R -> R) (a b c:R) (l1 l2 lf1 lf2:Rlist),
+  forall (f:R -> R) (a b c:R) (l1 l2 lf1 lf2:list R),
     a < b ->
     b < c ->
     adapted_couple f a b l1 lf1 ->
     adapted_couple f b c l2 lf2 ->
-    adapted_couple f a c (cons_Rlist l1 l2) (FF (cons_Rlist l1 l2) f).
+    adapted_couple f a c (app l1 l2) (FF (app l1 l2) f).
 Proof.
   intros f a b c l1 l2 lf1 lf2 H H0 H1 H2; unfold adapted_couple in H1, H2;
     unfold adapted_couple; decompose [and] H1;
@@ -1941,28 +1947,28 @@ Proof.
         | left; assumption ].
   red; intro; rewrite H1 in H11; discriminate.
   apply StepFun_P20.
-  rewrite RList_P23; apply neq_O_lt; red; intro.
-  assert (H2 : (Rlength l1 + Rlength l2)%nat = 0%nat).
+  rewrite app_length; apply neq_O_lt; red; intro.
+  assert (H2 : (length l1 + length l2)%nat = 0%nat).
   symmetry ; apply H1.
   elim (plus_is_O _ _ H2); intros; rewrite H12 in H6; discriminate.
   unfold constant_D_eq, open_interval; intros;
-    elim (le_or_lt (S (S i)) (Rlength l1)); intro.
-  assert (H14 : pos_Rl (cons_Rlist l1 l2) i = pos_Rl l1 i).
+    elim (le_or_lt (S (S i)) (length l1)); intro.
+  assert (H14 : pos_Rl (app l1 l2) i = pos_Rl l1 i).
   apply RList_P26; apply lt_S_n; apply le_lt_n_Sm; apply le_S_n;
-    apply le_trans with (Rlength l1); [ assumption | apply le_n_Sn ].
-  assert (H15 : pos_Rl (cons_Rlist l1 l2) (S i) = pos_Rl l1 (S i)).
+    apply le_trans with (length l1); [ assumption | apply le_n_Sn ].
+  assert (H15 : pos_Rl (app l1 l2) (S i) = pos_Rl l1 (S i)).
   apply RList_P26; apply lt_S_n; apply le_lt_n_Sm; assumption.
-  rewrite H14 in H2; rewrite H15 in H2; assert (H16 : (2 <= Rlength l1)%nat).
+  rewrite H14 in H2; rewrite H15 in H2; assert (H16 : (2 <= length l1)%nat).
   apply le_trans with (S (S i));
     [ repeat apply le_n_S; apply le_O_n | assumption ].
   elim (RList_P20 _ H16); intros r1 [r2 [r3 H17]]; rewrite H17;
     change
-      (f x = pos_Rl (app_Rlist (mid_Rlist (cons_Rlist (cons r2 r3) l2) r1) f) i)
+      (f x = pos_Rl (map f (mid_Rlist (app (cons r2 r3) l2) r1)) i)
      ; rewrite RList_P12.
   induction  i as [| i Hreci].
   simpl; assert (H18 := H8 0%nat);
     unfold constant_D_eq, open_interval in H18;
-      assert (H19 : (0 < pred (Rlength l1))%nat).
+      assert (H19 : (0 < pred (length l1))%nat).
   rewrite H17; simpl; apply lt_O_Sn.
   assert (H20 := H18 H19); repeat rewrite H20.
   reflexivity.
@@ -1991,14 +1997,14 @@ Proof.
   clear Hreci; rewrite RList_P13.
   rewrite H17 in H14; rewrite H17 in H15;
     change
-      (pos_Rl (cons_Rlist (cons r2 r3) l2) i =
+      (pos_Rl (app (cons r2 r3) l2) i =
         pos_Rl (cons r1 (cons r2 r3)) (S i)) in H14; rewrite H14;
       change
-        (pos_Rl (cons_Rlist (cons r2 r3) l2) (S i) =
+        (pos_Rl (app (cons r2 r3) l2) (S i) =
           pos_Rl (cons r1 (cons r2 r3)) (S (S i))) in H15;
         rewrite H15; assert (H18 := H8 (S i));
           unfold constant_D_eq, open_interval in H18;
-            assert (H19 : (S i < pred (Rlength l1))%nat).
+            assert (H19 : (S i < pred (length l1))%nat).
   apply lt_pred; apply lt_S_n; apply le_lt_n_Sm; assumption.
   assert (H20 := H18 H19); repeat rewrite H20.
   reflexivity.
@@ -2025,7 +2031,7 @@ Proof.
   simpl; rewrite H17 in H1; simpl in H1; apply lt_S_n; assumption.
   rewrite RList_P14; rewrite H17 in H1; simpl in H1; apply H1.
   inversion H12.
-  assert (H16 : pos_Rl (cons_Rlist l1 l2) (S i) = b).
+  assert (H16 : pos_Rl (app l1 l2) (S i) = b).
   rewrite RList_P29.
   rewrite H15; rewrite <- minus_n_n; rewrite H10; unfold Rmin;
     case (Rle_dec b c) as [|[]]; [ reflexivity | left; assumption ].
@@ -2033,30 +2039,30 @@ Proof.
   induction  l1 as [| r l1 Hrecl1].
   simpl in H15; discriminate.
   clear Hrecl1; simpl in H1; simpl; apply lt_n_S; assumption.
-  assert (H17 : pos_Rl (cons_Rlist l1 l2) i = b).
+  assert (H17 : pos_Rl (app l1 l2) i = b).
   rewrite RList_P26.
-  replace i with (pred (Rlength l1));
+  replace i with (pred (length l1));
   [ rewrite H4; unfold Rmax; case (Rle_dec a b) as [|[]];
     [ reflexivity | left; assumption ]
     | rewrite H15; reflexivity ].
   rewrite H15; apply lt_n_Sn.
   rewrite H16 in H2; rewrite H17 in H2; elim H2; intros;
     elim (Rlt_irrefl _ (Rlt_trans _ _ _ H14 H18)).
-  assert (H16 : pos_Rl (cons_Rlist l1 l2) i = pos_Rl l2 (i - Rlength l1)).
+  assert (H16 : pos_Rl (app l1 l2) i = pos_Rl l2 (i - length l1)).
   apply RList_P29.
   apply le_S_n; assumption.
-  apply lt_le_trans with (pred (Rlength (cons_Rlist l1 l2)));
+  apply lt_le_trans with (pred (length (app l1 l2)));
     [ assumption | apply le_pred_n ].
   assert
-    (H17 : pos_Rl (cons_Rlist l1 l2) (S i) = pos_Rl l2 (S (i - Rlength l1))).
-  replace (S (i - Rlength l1)) with (S i - Rlength l1)%nat.
+    (H17 : pos_Rl (app l1 l2) (S i) = pos_Rl l2 (S (i - length l1))).
+  replace (S (i - length l1)) with (S i - length l1)%nat.
   apply RList_P29.
   apply le_S_n; apply le_trans with (S i); [ assumption | apply le_n_Sn ].
   induction  l1 as [| r l1 Hrecl1].
   simpl in H6; discriminate.
   clear Hrecl1; simpl in H1; simpl; apply lt_n_S; assumption.
   symmetry ; apply minus_Sn_m; apply le_S_n; assumption.
-  assert (H18 : (2 <= Rlength l1)%nat).
+  assert (H18 : (2 <= length l1)%nat).
   clear f c l2 lf2 H0 H3 H8 H7 H10 H9 H11 H13 i H1 x H2 H12 m H14 H15 H16 H17;
     induction  l1 as [| r l1 Hrecl1].
   discriminate.
@@ -2068,7 +2074,7 @@ Proof.
   clear Hrecl1; simpl; repeat apply le_n_S; apply le_O_n.
   elim (RList_P20 _ H18); intros r1 [r2 [r3 H19]]; rewrite H19;
     change
-      (f x = pos_Rl (app_Rlist (mid_Rlist (cons_Rlist (cons r2 r3) l2) r1) f) i)
+      (f x = pos_Rl (map f (mid_Rlist (app (cons r2 r3) l2) r1)) i)
      ; rewrite RList_P12.
   induction  i as [| i Hreci].
   assert (H20 := le_S_n _ _ H15); assert (H21 := le_trans _ _ _ H18 H20);
@@ -2076,31 +2082,31 @@ Proof.
   clear Hreci; rewrite RList_P13.
   rewrite H19 in H16; rewrite H19 in H17;
     change
-      (pos_Rl (cons_Rlist (cons r2 r3) l2) i =
-        pos_Rl l2 (S i - Rlength (cons r1 (cons r2 r3))))
+      (pos_Rl (app (cons r2 r3) l2) i =
+        pos_Rl l2 (S i - length (cons r1 (cons r2 r3))))
       in H16; rewrite H16;
         change
-          (pos_Rl (cons_Rlist (cons r2 r3) l2) (S i) =
-            pos_Rl l2 (S (S i - Rlength (cons r1 (cons r2 r3)))))
-          in H17; rewrite H17; assert (H20 := H13 (S i - Rlength l1)%nat);
+          (pos_Rl (app (cons r2 r3) l2) (S i) =
+            pos_Rl l2 (S (S i - length (cons r1 (cons r2 r3)))))
+          in H17; rewrite H17; assert (H20 := H13 (S i - length l1)%nat);
             unfold constant_D_eq, open_interval in H20;
-              assert (H21 : (S i - Rlength l1 < pred (Rlength l2))%nat).
+              assert (H21 : (S i - length l1 < pred (length l2))%nat).
   apply lt_pred; rewrite minus_Sn_m.
-  apply plus_lt_reg_l with (Rlength l1); rewrite <- le_plus_minus.
+  apply plus_lt_reg_l with (length l1); rewrite <- le_plus_minus.
   rewrite H19 in H1; simpl in H1; rewrite H19; simpl;
-    rewrite RList_P23 in H1; apply lt_n_S; assumption.
+    rewrite app_length in H1; apply lt_n_S; assumption.
   apply le_trans with (S i); [ apply le_S_n; assumption | apply le_n_Sn ].
   apply le_S_n; assumption.
   assert (H22 := H20 H21); repeat rewrite H22.
   reflexivity.
   rewrite <- H19;
     assert
-      (H23 : pos_Rl l2 (S i - Rlength l1) <= pos_Rl l2 (S (S i - Rlength l1))).
+      (H23 : pos_Rl l2 (S i - length l1) <= pos_Rl l2 (S (S i - length l1))).
   apply H7; apply lt_pred.
   rewrite minus_Sn_m.
-  apply plus_lt_reg_l with (Rlength l1); rewrite <- le_plus_minus.
+  apply plus_lt_reg_l with (length l1); rewrite <- le_plus_minus.
   rewrite H19 in H1; simpl in H1; rewrite H19; simpl;
-    rewrite RList_P23 in H1; apply lt_n_S; assumption.
+    rewrite app_length in H1; apply lt_n_S; assumption.
   apply le_trans with (S i); [ apply le_S_n; assumption | apply le_n_Sn ].
   apply le_S_n; assumption.
   elim H23; intro.
@@ -2115,7 +2121,7 @@ Proof.
     [ prove_sup0
       | unfold Rdiv; rewrite <- (Rmult_comm (/ 2)); rewrite <- Rmult_assoc;
         rewrite <- Rinv_r_sym;
-          [ rewrite Rmult_1_l; rewrite (Rplus_comm (pos_Rl l2 (S i - Rlength l1)));
+          [ rewrite Rmult_1_l; rewrite (Rplus_comm (pos_Rl l2 (S i - length l1)));
             rewrite double; apply Rplus_lt_compat_l; assumption
             | discrR ] ].
   rewrite <- H19 in H16; rewrite <- H19 in H17; elim H2; intros;
@@ -2123,11 +2129,11 @@ Proof.
       simpl in H16; rewrite H16 in H25; simpl in H26; simpl in H17;
         rewrite H17 in H26; simpl in H24; rewrite H24 in H25;
           elim (Rlt_irrefl _ (Rlt_trans _ _ _ H25 H26)).
-  assert (H23 : pos_Rl (cons_Rlist l1 l2) (S i) = pos_Rl l2 (S i - Rlength l1)).
+  assert (H23 : pos_Rl (app l1 l2) (S i) = pos_Rl l2 (S i - length l1)).
   rewrite H19; simpl; simpl in H16; apply H16.
   assert
     (H24 :
-      pos_Rl (cons_Rlist l1 l2) (S (S i)) = pos_Rl l2 (S (S i - Rlength l1))).
+      pos_Rl (app l1 l2) (S (S i)) = pos_Rl l2 (S (S i - length l1))).
   rewrite H19; simpl; simpl in H17; apply H17.
   rewrite <- H23; rewrite <- H24; assumption.
   simpl; rewrite H19 in H1; simpl in H1; apply lt_S_n; assumption.
@@ -2141,7 +2147,7 @@ Proof.
   intros f a b c H H0 (l1,(lf1,H1)) (l2,(lf2,H2));
     destruct (total_order_T a b) as [[Hltab|Hab]|Hgtab].
   destruct (total_order_T b c) as [[Hltbc|Hbc]|Hgtbc].
-  exists (cons_Rlist l1 l2); exists (FF (cons_Rlist l1 l2) f);
+  exists (app l1 l2); exists (FF (app l1 l2) f);
     apply StepFun_P40 with b lf1 lf2; assumption.
   exists l1; exists lf1; rewrite Hbc in H1; assumption.
   elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H0 Hgtbc)).
@@ -2150,9 +2156,9 @@ Proof.
 Qed.
 
 Lemma StepFun_P42 :
-  forall (l1 l2:Rlist) (f:R -> R),
-    pos_Rl l1 (pred (Rlength l1)) = pos_Rl l2 0 ->
-    Int_SF (FF (cons_Rlist l1 l2) f) (cons_Rlist l1 l2) =
+  forall (l1 l2:list R) (f:R -> R),
+    pos_Rl l1 (pred (length l1)) = pos_Rl l2 0 ->
+    Int_SF (FF (app l1 l2) f) (app l1 l2) =
     Int_SF (FF l1 f) l1 + Int_SF (FF l2 f) l2.
 Proof.
   intros l1 l2 f; induction l1 as [| r l1 IHl1]; intros H;
@@ -2193,7 +2199,7 @@ Proof.
   elim Hle; intro.
   elim Hle'; intro.
   replace (Int_SF lf3 l3) with
-  (Int_SF (FF (cons_Rlist l1 l2) f) (cons_Rlist l1 l2)).
+  (Int_SF (FF (app l1 l2) f) (app l1 l2)).
   replace (Int_SF lf1 l1) with (Int_SF (FF l1 f) l1).
   replace (Int_SF lf2 l2) with (Int_SF (FF l2 f) l2).
   symmetry ; apply StepFun_P42.
@@ -2225,7 +2231,7 @@ Proof.
   elim Hle''; intro.
   rewrite Rplus_comm;
     replace (Int_SF lf1 l1) with
-    (Int_SF (FF (cons_Rlist l3 l2) f) (cons_Rlist l3 l2)).
+    (Int_SF (FF (app l3 l2) f) (app l3 l2)).
   replace (Int_SF lf3 l3) with (Int_SF (FF l3 f) l3).
   replace (Int_SF lf2 l2) with (Int_SF (FF l2 f) l2).
   apply StepFun_P42.
@@ -2249,7 +2255,7 @@ Proof.
   ring.
   elim Hle; intro.
   replace (Int_SF lf2 l2) with
-  (Int_SF (FF (cons_Rlist l3 l1) f) (cons_Rlist l3 l1)).
+  (Int_SF (FF (app l3 l1) f) (app l3 l1)).
   replace (Int_SF lf3 l3) with (Int_SF (FF l3 f) l3).
   replace (Int_SF lf1 l1) with (Int_SF (FF l1 f) l1).
   symmetry ; apply StepFun_P42.
@@ -2277,7 +2283,7 @@ Proof.
   ring.
   rewrite Rplus_comm; elim Hle''; intro.
   replace (Int_SF lf2 l2) with
-  (Int_SF (FF (cons_Rlist l1 l3) f) (cons_Rlist l1 l3)).
+  (Int_SF (FF (app l1 l3) f) (app l1 l3)).
   replace (Int_SF lf3 l3) with (Int_SF (FF l3 f) l3).
   replace (Int_SF lf1 l1) with (Int_SF (FF l1 f) l1).
   symmetry ; apply StepFun_P42.
@@ -2304,7 +2310,7 @@ Proof.
   ring.
   elim Hle'; intro.
   replace (Int_SF lf1 l1) with
-  (Int_SF (FF (cons_Rlist l2 l3) f) (cons_Rlist l2 l3)).
+  (Int_SF (FF (app l2 l3) f) (app l2 l3)).
   replace (Int_SF lf3 l3) with (Int_SF (FF l3 f) l3).
   replace (Int_SF lf2 l2) with (Int_SF (FF l2 f) l2).
   symmetry ; apply StepFun_P42.
@@ -2334,7 +2340,7 @@ Proof.
   replace (Int_SF lf3 l3) with (Int_SF lf2 l2 + Int_SF lf1 l1).
   ring.
   replace (Int_SF lf3 l3) with
-  (Int_SF (FF (cons_Rlist l2 l1) f) (cons_Rlist l2 l1)).
+  (Int_SF (FF (app l2 l1) f) (app l2 l1)).
   replace (Int_SF lf1 l1) with (Int_SF (FF l1 f) l1).
   replace (Int_SF lf2 l2) with (Int_SF (FF l2 f) l2).
   symmetry ; apply StepFun_P42.
@@ -2395,17 +2401,17 @@ Proof.
   elim H; clear H; intros; unfold IsStepFun in X; unfold is_subdivision in X;
     elim X; clear X; intros l1 [lf1 H2];
       cut
-        (forall (l1 lf1:Rlist) (a b c:R) (f:R -> R),
+        (forall (l1 lf1:list R) (a b c:R) (f:R -> R),
           adapted_couple f a b l1 lf1 ->
           a <= c <= b ->
-          { l:Rlist & { l0:Rlist & adapted_couple f a c l l0 } }).
+          { l:list R & { l0:list R & adapted_couple f a c l l0 } }).
   intro X; unfold IsStepFun; unfold is_subdivision; eapply X.
   apply H2.
   split; assumption.
   clear f a b c H0 H H1 H2 l1 lf1; simple induction l1.
   intros; unfold adapted_couple in H; decompose [and] H; clear H; simpl in H4;
     discriminate.
-  simple induction r0.
+  intros r r0; elim r0.
   intros X lf1 a b c f H H0; assert (H1 : a = b).
   unfold adapted_couple in H; decompose [and] H; clear H; simpl in H3;
     simpl in H2; assert (H7 : a <= b).
@@ -2438,7 +2444,7 @@ Proof.
   unfold constant_D_eq, open_interval; intros; simpl in H8;
     inversion H8.
   simpl; assert (H10 := H7 0%nat);
-    assert (H12 : (0 < pred (Rlength (cons r (cons r1 r2))))%nat).
+    assert (H12 : (0 < pred (length (cons r (cons r1 r2))))%nat).
   simpl; apply lt_O_Sn.
   apply (H10 H12); unfold open_interval; simpl;
     rewrite H11 in H9; simpl in H9; elim H9; clear H9;
@@ -2479,7 +2485,7 @@ Proof.
   intros; simpl in H; unfold constant_D_eq, open_interval; intros;
     induction  i as [| i Hreci].
   simpl; assert (H17 := H10 0%nat);
-    assert (H18 : (0 < pred (Rlength (cons r (cons r1 r2))))%nat).
+    assert (H18 : (0 < pred (length (cons r (cons r1 r2))))%nat).
   simpl; apply lt_O_Sn.
   apply (H17 H18); unfold open_interval; simpl; simpl in H4;
     elim H4; clear H4; intros; split; try assumption;
@@ -2507,16 +2513,16 @@ Proof.
   elim H; clear H; intros; unfold IsStepFun in X; unfold is_subdivision in X;
     elim X; clear X; intros l1 [lf1 H2];
       cut
-        (forall (l1 lf1:Rlist) (a b c:R) (f:R -> R),
+        (forall (l1 lf1:list R) (a b c:R) (f:R -> R),
           adapted_couple f a b l1 lf1 ->
           a <= c <= b ->
-          { l:Rlist & { l0:Rlist & adapted_couple f c b l l0 } }).
+          { l:list R & { l0:list R & adapted_couple f c b l l0 } }).
   intro X; unfold IsStepFun; unfold is_subdivision; eapply X;
     [ apply H2 | split; assumption ].
   clear f a b c H0 H H1 H2 l1 lf1; simple induction l1.
   intros; unfold adapted_couple in H; decompose [and] H; clear H; simpl in H4;
     discriminate.
-  simple induction r0.
+  intros r r0; elim r0.
   intros X lf1 a b c f H H0; assert (H1 : a = b).
   unfold adapted_couple in H; decompose [and] H; clear H; simpl in H3;
     simpl in H2; assert (H7 : a <= b).
