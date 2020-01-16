@@ -29,7 +29,6 @@ depends: [
 
 build: [
   [ "./configure" "-prefix" prefix "-native-compiler" "no" ]
-  [ "dune" "build" "@vodeps" ]
-  [ "dune" "exec" "coq_dune" "_build/default/.vfiles.d" ]
+  [ "make" "-f" "Makefile.dune" "voboot" ]
   [ "dune" "build" "-p" name "-j" jobs ]
 ]

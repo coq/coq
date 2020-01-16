@@ -108,23 +108,43 @@ automatically.
 You can use `ocamldebug` with Dune; after a build, do:
 
 ```
-dune exec -- dev/dune-dbg /path/to/foo.v
+dune exec -- dev/dune-dbg coqc foo.v
 (ocd) source dune_db
+```
+
+to start `coqc.byte foo.v`, other targets are `{checker,coqide,coqtop}`:
+
+```
+dune exec -- dev/dune-dbg checker foo.vo
+(ocd) source dune_db
+```
+
+Unfortunately, dependency handling here is not fully refined, so you
+need to build enough of Coq once to use this target [it will then
+correctly compute the deps and rebuild if you call the script again]
+This will be fixed in the future.
+
+For running in emacs, use `coqdev-ocamldebug` from `coqdev.el`.
+
+**Note**: If you are using OCaml >= 4.08 you need to use
+
+```
+(ocd) source dune_db_408
 ```
 
 or
 
 ```
-dune exec -- dev/dune-dbg checker Foo
-(ocd) source dune_db
+(ocd) source dune_db_409
 ```
 
-for the checker. Unfortunately, dependency handling here is not fully
-refined, so you need to build enough of Coq once to use this target
-[it will then correctly compute the deps and rebuild if you call the
-script again] This will be fixed in the future.
+depending on your OCaml version. This is due to several factors:
 
-For running in emacs, use `coqdev-ocamldebug` from `coqdev.el`.
+- OCaml >= 4.08 doesn't allow doubly-linking modules, however `source`
+  is not re entrant and seems to doubly-load in the default setup, see
+  https://github.com/coq/coq/issues/8952
+- OCaml >= 4.09 comes with `dynlink` already linked in so we need to
+  modify the list of modules loaded.
 
 ## Dropping from coqtop:
 
