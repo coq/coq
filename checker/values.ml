@@ -34,7 +34,7 @@ type value =
   | Dyn
 
   | Proxy of value ref
-  | Uint63
+  | Int64
   | Float64
 
 let fix (f : value -> value) : value =
@@ -129,6 +129,9 @@ let v_cast = v_enum "cast_kind" 4
 let v_proj_repr = v_tuple "projection_repr" [|v_ind;Int;Int;v_id|]
 let v_proj = v_tuple "projection" [|v_proj_repr; v_bool|]
 
+let v_uint63 =
+  if Sys.word_size == 64 then Int else Int64
+
 let rec v_constr =
   Sum ("constr",0,[|
     [|Int|]; (* Rel *)
@@ -148,7 +151,7 @@ let rec v_constr =
     [|v_fix|]; (* Fix *)
     [|v_cofix|]; (* CoFix *)
     [|v_proj;v_constr|]; (* Proj *)
-    [|Uint63|]; (* Int *)
+    [|v_uint63|]; (* Int *)
     [|Float64|] (* Int *)
   |])
 

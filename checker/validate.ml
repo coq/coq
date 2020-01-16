@@ -66,14 +66,12 @@ let is_int _mem o = match o with
 | Int _ -> true
 | Fun _ | Ptr _ | Atm _ -> false
 
-let is_uint63 mem o =
-  if Sys.word_size == 64 then is_int mem o
-  else match o with
-  | Int _ | Fun _ | Atm _ -> false
-  | Ptr p ->
-    match LargeArray.get mem p with
-    | Int64 _ -> true
-    | Float64 _ | Struct _ | String _ -> false
+let is_int64 mem o = match o with
+| Int _ | Fun _ | Atm _ -> false
+| Ptr p ->
+  match LargeArray.get mem p with
+  | Int64 _ -> true
+  | Float64 _ | Struct _ | String _ -> false
 
 let is_float64 mem o = match o with
 | Int _ | Fun _ | Atm _ -> false
@@ -147,7 +145,7 @@ let rec val_gen v mem ctx o = match v with
   | Annot (s,v) -> val_gen v mem (ctx/CtxAnnot s) o
   | Dyn -> val_dyn mem ctx o
   | Proxy { contents = v } -> val_gen v mem ctx o
-  | Uint63 -> val_uint63 mem ctx o
+  | Int64 -> val_int64 mem ctx o
   | Float64 -> val_float64 mem ctx o
 
 (* Check that an object is a tuple (or a record). vs is an array of
@@ -196,8 +194,8 @@ and val_array v mem ctx o =
     val_gen v mem ctx (field mem o i)
   done
 
-and val_uint63 mem ctx o =
-  if not (is_uint63 mem o) then
+and val_int64 mem ctx o =
+  if not (is_int64 mem o) then
     fail mem ctx o "not a 63-bit unsigned integer"
 
 and val_float64 mem ctx o =
