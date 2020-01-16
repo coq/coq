@@ -618,7 +618,7 @@ let printopts_callback opts v =
 
 let get_current_word term =
   (* First look to find if autocompleting *)
-  match term.script#complete_popup#proposal with
+  match term.script#proposal with
   | Some p -> p
   | None ->
   (* Then look at the current selected word *)

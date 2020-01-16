@@ -28,7 +28,7 @@ object
   method uncomment : unit -> unit
   method apply_unicode_binding : unit -> unit
   method recenter_insert : unit
-  method complete_popup : Wg_Completion.complete_popup
+  method proposal : string option
 end
 
 val script_view : Coq.coqtop ->

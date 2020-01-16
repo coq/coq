@@ -82,6 +82,7 @@ val show_toolbar : bool preference
 val window_width : int preference
 val window_height : int preference
 val auto_complete : bool preference
+val auto_complete_delay : int preference
 val stop_before : bool preference
 val reset_on_tab_switch : bool preference
 val line_ending : line_ending preference
