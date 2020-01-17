@@ -626,6 +626,31 @@ through the <tt>Require Import</tt> command.</p>
     plugins/ssr/ssrfun.v
   </dd>
 
+  <dt> <b>Ltac2</b>:
+    The Ltac2 tactic programming language
+  </dt>
+  <dd>
+    user-contrib/Ltac2/Ltac2.v
+    user-contrib/Ltac2/Array.v
+    user-contrib/Ltac2/Bool.v
+    user-contrib/Ltac2/Char.v
+    user-contrib/Ltac2/Constr.v
+    user-contrib/Ltac2/Control.v
+    user-contrib/Ltac2/Env.v
+    user-contrib/Ltac2/Fresh.v
+    user-contrib/Ltac2/Ident.v
+    user-contrib/Ltac2/Init.v
+    user-contrib/Ltac2/Int.v
+    user-contrib/Ltac2/List.v
+    user-contrib/Ltac2/Ltac1.v
+    user-contrib/Ltac2/Message.v
+    user-contrib/Ltac2/Notations.v
+    user-contrib/Ltac2/Option.v
+    user-contrib/Ltac2/Pattern.v
+    user-contrib/Ltac2/Std.v
+    user-contrib/Ltac2/String.v
+  </dd>
+
   <dt> <b>Unicode</b>:
     Unicode-based notations
   </dt>
