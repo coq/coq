@@ -129,6 +129,8 @@ doc/unreleased.rst: $(wildcard doc/changelog/00-title.rst doc/changelog/*/*.rst)
 # Standard library
 ######################################################################
 
+DOCLIBS=-R theories Coq -R plugins Coq -Q user-contrib/Ltac2 Ltac2
+
 ### Standard library (browsable html format)
 
 ifdef QUICK
@@ -139,7 +141,7 @@ endif
 	- rm -rf doc/stdlib/html
 	$(MKDIR) doc/stdlib/html
 	$(COQDOC) -q -d doc/stdlib/html --with-header doc/common/styles/html/$(HTMLSTYLE)/header.html --with-footer doc/common/styles/html/$(HTMLSTYLE)/footer.html --multi-index --html -g \
-	  -R theories Coq -R plugins Coq $(VFILES)
+	  $(DOCLIBS) $(VFILES)
 	mv doc/stdlib/html/index.html doc/stdlib/html/genindex.html
 
 doc/stdlib/index-list.html: doc/stdlib/index-list.html.template doc/stdlib/make-library-index
@@ -178,12 +180,12 @@ doc/stdlib/FullLibrary.tex: doc/stdlib/Library.tex
 ifdef QUICK
 doc/stdlib/FullLibrary.coqdoc.tex:
 	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
-            -R theories Coq -R plugins Coq $(VFILES) > $@
+            $(DOCLIBS) $(VFILES) > $@
 	sed -i.tmp -e 's///g' $@ && rm $@.tmp
 else
 doc/stdlib/FullLibrary.coqdoc.tex: $(COQDOC) $(ALLVO)
 	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
-            -R theories Coq -R plugins Coq $(VFILES) > $@
+            $(DOCLIBS) $(VFILES) > $@
 	sed -i.tmp -e 's///g' $@ && rm $@.tmp
 endif
 
