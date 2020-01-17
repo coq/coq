@@ -379,6 +379,8 @@ module LinPoly = struct
         else acc)
       [] l
 
+  let get_bound p = Vect.Bound.of_vect p
+
   let min_list (l : int list) =
     match l with [] -> None | e :: l -> Some (List.fold_left min e l)
 
@@ -892,8 +894,9 @@ module WithProof = struct
       if Vect.is_null r && n >/ Int 0 then
         ((LinPoly.product p p1, o1), ProofFormat.mul_cst_proof n prf1)
       else (
-        Printf.printf "mult_error %a [*] %a\n" LinPoly.pp p output
-          ((p1, o1), prf1);
+        if debug then
+          Printf.printf "mult_error %a [*] %a\n" LinPoly.pp p output
+            ((p1, o1), prf1);
         raise InvalidProof )
 
   let cutting_plane ((p, o), prf) =
@@ -1027,6 +1030,31 @@ module WithProof = struct
       else None
     in
     saturate select gen sys0
+
+  open Vect.Bound
+
+  let mul_bound w1 w2 =
+    let (p1, o1), prf1 = w1 in
+    let (p2, o2), prf2 = w2 in
+    match (LinPoly.get_bound p1, LinPoly.get_bound p2) with
+    | None, _ | _, None -> None
+    | ( Some {cst = c1; var = v1; coeff = c1'}
+      , Some {cst = c2; var = v2; coeff = c2'} ) -> (
+      let good_coeff b o =
+        match o with
+        | Eq -> Some (minus_num b)
+        | _ -> if b <=/ Int 0 then Some (minus_num b) else None
+      in
+      match (good_coeff c1 o2, good_coeff c2 o1) with
+      | None, _ | _, None -> None
+      | Some c1, Some c2 ->
+        let ext_mult c w =
+          if c =/ Int 0 then zero else mult (LinPoly.constant c) w
+        in
+        Some
+          (addition
+             (addition (product w1 w2) (ext_mult c1 w2))
+             (ext_mult c2 w1)) )
 end
 
 (* Local Variables: *)

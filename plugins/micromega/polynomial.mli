@@ -224,6 +224,8 @@ module LinPoly : sig
       p is linear in x i.e x does not occur in b and
       a is a constant such that [pred a] *)
 
+  val get_bound : t -> Vect.Bound.t option
+
   val product : t -> t -> t
   (** [product p q]
      @return the product of the polynomial [p*q] *)
@@ -372,4 +374,5 @@ module WithProof : sig
 
   val saturate_subst : bool -> t list -> t list
   val is_substitution : bool -> t -> var option
+  val mul_bound : t -> t -> t option
 end
