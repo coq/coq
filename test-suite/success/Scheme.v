@@ -25,3 +25,8 @@ Check myeq_rew_fwd_r_dep.
 Set Rewriting Schemes.
 Inductive myeq_true : bool -> Prop := myrefl_true : myeq_true true.
 Unset Rewriting Schemes.
+
+(* check that the scheme doesn't minimize itself into something non general *)
+Polymorphic Inductive foo@{u v|u<=v} : Type@{u}:= .
+Lemma bla@{u v|u < v} : foo@{u v} -> False.
+Proof. induction 1. Qed.
