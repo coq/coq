@@ -71,7 +71,6 @@ val automatic_tactics : string list preference
 val cmd_print : string preference
 val modifier_for_navigation : string preference
 val modifier_for_templates : string preference
-val modifier_for_tactics : string preference
 val modifier_for_display : string preference
 val modifier_for_queries : string preference
 val modifiers_valid : string preference

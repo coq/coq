@@ -8,6 +8,5 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val tactics : string list list
 val commands : string list list
 val state_preserving : string list

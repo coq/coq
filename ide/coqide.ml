@@ -977,7 +977,6 @@ let build_ui () =
   let view_menu = GAction.action_group ~name:"View" () in
   let export_menu = GAction.action_group ~name:"Export" () in
   let navigation_menu = GAction.action_group ~name:"Navigation" () in
-  let tactics_menu = GAction.action_group ~name:"Tactics" () in
   let templates_menu = GAction.action_group ~name:"Templates" () in
   let tools_menu = GAction.action_group ~name:"Tools" () in
   let queries_menu = GAction.action_group ~name:"Queries" () in
@@ -985,7 +984,7 @@ let build_ui () =
   let windows_menu = GAction.action_group ~name:"Windows" () in
   let help_menu = GAction.action_group ~name:"Help" () in
   let all_menus = [
-    file_menu; edit_menu; view_menu; export_menu; navigation_menu; tactics_menu;
+    file_menu; edit_menu; view_menu; export_menu; navigation_menu;
     templates_menu; tools_menu; queries_menu; compile_menu; windows_menu;
     help_menu; ] in
 
@@ -1121,11 +1120,6 @@ let build_ui () =
     ("Force", "_Force", `EXECUTE, Nav.join_document, "Fully check the document", "f");
   ] end;
 
-  menu tactics_menu [
-    item "Tactics" ~label:"_Tactics";
-  ];
-  alpha_items tactics_menu "Tactic" Coq_commands.tactics;
-
   menu templates_menu [
     item "Templates" ~label:"Te_mplates";
     template_item ("Lemma new_lemma : .\nProof.\n\nQed.\n", 6,9, "J");
@@ -1209,7 +1203,6 @@ let build_ui () =
   Coqide_ui.ui_m#insert_action_group edit_menu 0;
   Coqide_ui.ui_m#insert_action_group view_menu 0;
   Coqide_ui.ui_m#insert_action_group navigation_menu 0;
-  Coqide_ui.ui_m#insert_action_group tactics_menu 0;
   Coqide_ui.ui_m#insert_action_group templates_menu 0;
   Coqide_ui.ui_m#insert_action_group tools_menu 0;
   Coqide_ui.ui_m#insert_action_group queries_menu 0;
