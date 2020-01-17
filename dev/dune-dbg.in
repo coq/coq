@@ -16,4 +16,11 @@ esac
 
 emacs="${INSIDE_EMACS:+-emacs}"
 
-ocamldebug $emacs $(ocamlfind query -recursive -i-format coq.top_printers) -I +threads -I dev $exe "$@"
+# Note: when doing a local dune build, ocamlfind won't work unless you do
+# export OCAMLPATH=<coq_root>/_build/install/default/lib
+# dune exports this automatically to child processes (e.g. this script).
+
+list_coq_packages="$(ocamlfind list | sed 's/ *(.*)//' | grep '^coq')"
+list_coq_include_args=$(ocamlfind query -recursive -i-format $list_coq_packages | sort | uniq)
+
+ocamldebug $emacs $list_coq_include_args -I +threads -I dev $exe "$@"
