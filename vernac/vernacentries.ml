@@ -1535,6 +1535,9 @@ let vernac_declare_instance ~atts id bl inst pri =
   in
   Classes.declare_new_instance ~program_mode:program ~locality ~poly id bl inst pri
 
+let vernac_context ~atts sup =
+  ComAssumption.do_context ~poly:(only_polymorphism atts) sup
+
 let vernac_existing_instance ~atts insts =
   let locality = Attributes.parse Classes.instance_locality atts in
   List.iter (fun (id, info) -> Classes.existing_instance locality id (Some info)) insts
@@ -2444,7 +2447,7 @@ let translate_vernac ?loc ~atts v = let open Vernacextend in match v with
   | VernacDeclareInstance (id, bl, inst, info) ->
     vtdefault(fun () -> vernac_declare_instance ~atts id bl inst info)
   | VernacContext sup ->
-    vtdefault(fun () -> ComAssumption.do_context ~poly:(only_polymorphism atts) sup)
+    vtdefault(fun () -> vernac_context ~atts sup)
   | VernacExistingInstance insts ->
     vtdefault(fun () -> vernac_existing_instance ~atts insts)
   | VernacExistingClass id ->
