@@ -13,7 +13,6 @@
 open Util
 open Names
 open Printer
-open Term
 open Constr
 open Context
 open Termops
@@ -35,7 +34,8 @@ module RelDecl = Context.Rel.Declaration
  * argument (index), it computes it's arity and the arity of the eliminator and
  * checks if the eliminator is recursive or not *)
 let analyze_eliminator elimty env sigma =
-  let rec loop ctx t = match EConstr.kind_of_type sigma t with
+  let open EConstr in
+  let rec loop ctx t = match kind_of_type sigma t with
   | AtomicType (hd, args) when EConstr.isRel sigma hd ->
     ctx, EConstr.destRel sigma hd, not (EConstr.Vars.noccurn sigma 1 t), Array.length args, t
   | CastType (t, _) -> loop ctx t
@@ -243,7 +243,8 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
     let sigma = project gl in
     ppdebug(lazy Pp.(str"elim= "++ pr_econstr_pat env sigma elim));
     ppdebug(lazy Pp.(str"elimty= "++ pr_econstr_pat env sigma elimty)) in
-  let inf_deps_r = match EConstr.kind_of_type (project gl) elimty with
+  let open EConstr in
+  let inf_deps_r = match kind_of_type (project gl) elimty with
     | AtomicType (_, args) -> List.rev (Array.to_list args)
     | _ -> assert false in
   let saturate_until gl c c_ty f =

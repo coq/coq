@@ -711,7 +711,6 @@ module MiniEConstr : sig
 
   val kind : evar_map -> t -> (t, t, ESorts.t, EInstance.t) Constr.kind_of_term
   val kind_upto : evar_map -> constr -> (constr, types, Sorts.t, Univ.Instance.t) Constr.kind_of_term
-  val kind_of_type : evar_map -> t -> (t, t) Term.kind_of_type
 
   val whd_evar : evar_map -> t -> t
 

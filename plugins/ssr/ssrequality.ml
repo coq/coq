@@ -13,7 +13,6 @@
 open Ltac_plugin
 open Util
 open Names
-open Term
 open Constr
 open Context
 open Vars
@@ -380,7 +379,8 @@ let pirrel_rewrite ?(under=false) ?(map_redex=id_map_redex) pred rdx rdx_ty new_
         let hd_ty = Retyping.get_type_of env sigma hd in
         let names = let rec aux t = function 0 -> [] | n ->
           let t = Reductionops.whd_all env sigma t in
-          match EConstr.kind_of_type sigma t with
+          let open EConstr in
+          match kind_of_type sigma t with
           | ProdType (name, _, t) -> name.binder_name :: aux t (n-1)
           | _ -> assert false in aux hd_ty (Array.length args) in
         hd_ty, Util.List.map_filter (fun (t, name) ->
@@ -413,7 +413,8 @@ let rwcltac ?under ?map_redex cl rdx dir sr gl =
       let env, sigma, c, c_eq = pf_env gl, fst sr, snd sr, Coqlib.(lib_ref "core.eq.type") in
       let sigma, c_ty = Typing.type_of env sigma c in
         ppdebug(lazy Pp.(str"c_ty@rwcltac=" ++ pr_econstr_env env sigma c_ty));
-      match EConstr.kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
+      let open EConstr in
+      match kind_of_type sigma (Reductionops.whd_all env sigma c_ty) with
       | AtomicType(e, a) when Ssrcommon.is_ind_ref sigma e c_eq ->
           let new_rdx = if dir = L2R then a.(2) else a.(1) in
           pirrel_rewrite ?under ?map_redex cl rdx rdxt new_rdx dir (sigma,c) c_ty, tclIDTAC, gl

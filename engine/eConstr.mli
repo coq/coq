@@ -80,7 +80,14 @@ val to_constr : ?abort_on_undefined_evars:bool -> Evd.evar_map -> t -> Constr.t
 val to_constr_opt : Evd.evar_map -> t -> Constr.t option
 (** Same as [to_constr], but returns [None] if some unresolved evars remain *)
 
-val kind_of_type : Evd.evar_map -> t -> (t, t) Term.kind_of_type
+type kind_of_type =
+  | SortType   of ESorts.t
+  | CastType   of types * t
+  | ProdType   of Name.t Context.binder_annot * t * t
+  | LetInType  of Name.t Context.binder_annot * t * t * t
+  | AtomicType of t * t array
+
+val kind_of_type : Evd.evar_map -> t -> kind_of_type
 
 (** {5 Constructors} *)
 
