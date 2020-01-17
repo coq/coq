@@ -30,6 +30,21 @@ Module P := N M.
 Print Assumptions M.bar. (* Should answer: foo *)
 Print Assumptions P.bar. (* Should answer: foo *)
 
+(* Print Assumptions used empty instances on polymorphic inductives *)
+Module Poly.
+
+  Set Universe Polymorphism.
+  Axiom bli : Type.
+
+  Definition bla := bli -> bli.
+
+  Inductive blo : bli -> Type := .
+
+  Print Assumptions bla.
+  Print Assumptions blo.
+
+End Poly.
+
 
 (* The original test-case of the bug-report *)
 

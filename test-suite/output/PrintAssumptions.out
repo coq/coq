@@ -3,6 +3,10 @@ foo : nat
 Axioms:
 foo : nat
 Axioms:
+bli : Type
+Axioms:
+bli : Type
+Axioms:
 extensionality : forall (P Q : Type) (f g : P -> Q),
                  (forall x : P, f x = g x) -> f = g
 Axioms:
