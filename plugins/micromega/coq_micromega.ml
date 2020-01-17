@@ -1865,7 +1865,7 @@ let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
           let intro_props = Tacticals.New.tclTHENLIST (List.map intro props) in
           (*       let ipat_of_name id = Some (CAst.make @@ IntroNaming (Namegen.IntroIdentifier id)) in*)
           let goal_name =
-            fresh_id Id.Set.empty (Names.Id.of_string "__arith") gl
+            fresh_id Id.AvoidSet.empty (Names.Id.of_string "__arith") gl
           in
           let env' = List.map (fun (id, i) -> (EConstr.mkVar id, i)) vars in
           let tac_arith =
@@ -2000,7 +2000,7 @@ let micromega_genr prover tac =
             Some (CAst.make @@ IntroNaming (Namegen.IntroIdentifier id))
           in
           let goal_name =
-            fresh_id Id.Set.empty (Names.Id.of_string "__arith") gl
+            fresh_id Id.AvoidSet.empty (Names.Id.of_string "__arith") gl
           in
           let env' = List.map (fun (id, i) -> (EConstr.mkVar id, i)) vars in
           let tac_arith =

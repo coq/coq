@@ -33,6 +33,7 @@ val pf_hyps_types         : Goal.goal sigma -> (Id.t Context.binder_annot * type
 val pf_nth_hyp_id         : Goal.goal sigma -> int -> Id.t
 val pf_last_hyp           : Goal.goal sigma -> named_declaration
 val pf_ids_of_hyps        : Goal.goal sigma -> Id.t list
+val pf_mem_ids_of_hyps    : Goal.goal sigma -> Id.t -> bool
 val pf_unsafe_type_of     : Goal.goal sigma -> constr -> types
 val pf_type_of            : Goal.goal sigma -> constr -> evar_map * types
 val pf_hnf_type_of        : Goal.goal sigma -> constr -> types
@@ -96,6 +97,7 @@ module New : sig
   val pf_get_new_id  : Id.t -> Proofview.Goal.t -> Id.t
   val pf_ids_of_hyps : Proofview.Goal.t -> Id.t list
   val pf_ids_set_of_hyps : Proofview.Goal.t -> Id.Set.t
+  val pf_mem_ids_of_hyps : Proofview.Goal.t -> Id.t -> bool
   val pf_hyps_types : Proofview.Goal.t -> (Id.t * types) list
 
   val pf_get_hyp : Id.t -> Proofview.Goal.t -> named_declaration

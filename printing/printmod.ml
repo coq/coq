@@ -65,7 +65,7 @@ let get_new_id locals id =
       if not (Nametab.exists_dir dir) then
         id
       else
-        get_id (Id.Set.add id l) (Namegen.next_ident_away id l)
+        get_id (Id.Set.add id l) (Namegen.next_ident_away id (Id.AvoidSet.of_set l))
   in
   let avoid = List.fold_left (fun accu (_, id) -> Id.Set.add id accu) Id.Set.empty locals in
     get_id avoid id
@@ -271,7 +271,7 @@ let nametab_register_modparam ~mod_ops mbid mtb =
       (* Otherwise, we try to play with the nametab ourselves *)
       let mp = MPbound mbid in
       let check id = Nametab.exists_dir (DirPath.make [id]) in
-      let id = Namegen.next_ident_away_from id check in
+      let id = Namegen.next_ident_away_from id (Id.AvoidSet.of_pred check) in
       let dir = DirPath.make [id] in
       nametab_register_dir mp;
       List.iter (nametab_register_body mp dir) struc;

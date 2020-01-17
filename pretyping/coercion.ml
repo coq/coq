@@ -205,7 +205,7 @@ let coerce ?loc env evdref (x : EConstr.constr) (y : EConstr.constr)
             {name' with
              binder_name =
                Name (Namegen.next_ident_away
-                       Namegen.default_dependent_ident (Termops.vars_of_env env))}
+                       Namegen.default_dependent_ident (Id.AvoidSet.of_pred (Environ.mem_var env)))}
           in
           let env' = push_rel (LocalAssum (name', a')) env in
           let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in

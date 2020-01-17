@@ -509,7 +509,7 @@ let intern_cases_pattern_as_binder ?loc ntnvars env p =
   let env = List.fold_right (fun {loc;v=id} env -> push_name_env ntnvars (Variable,[],[],[]) env (make ?loc @@ Name id)) il env in
   let na = alias_of_pat (List.hd disjpat) in
   let ienv = Name.fold_right Id.Set.remove na env.ids in
-  let id = Namegen.next_name_away_with_default "pat" na ienv in
+  let id = Namegen.next_name_away_with_default "pat" na (Id.AvoidSet.of_set ienv) in
   let na = make ?loc @@ Name id in
   env,((disjpat,il),id),na
 
@@ -600,7 +600,7 @@ let find_fresh_name renaming (terms,termlists,binders,binderlists) avoid id =
   let fvs2 = Id.Map.fold fold2 termlists fvs1 in
   let fvs3 = Id.Map.fold fold3 renaming fvs2 in
   (* TODO binders *)
-  next_ident_away_from id (fun id -> Id.Set.mem id fvs3)
+  next_ident_away_from id (Id.AvoidSet.of_set fvs3)
 
 let is_patvar c =
   match DAst.get c with
@@ -2245,13 +2245,13 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
                 | _ ->
                   let fresh =
                     Namegen.next_name_away_with_default_using_types "iV" cano_name.binder_name forbidden_names (EConstr.of_constr ty) in
-                  canonize_args t tt (Id.Set.add fresh forbidden_names)
+                  canonize_args t tt (Id.AvoidSet.add fresh forbidden_names)
                     ((fresh,c)::match_acc) ((CAst.make ?loc:(cases_pattern_loc c) @@ Name fresh)::var_acc)
                 end
               | _ -> assert false in
           let _,args_rel =
             List.chop nparams (List.rev mip.Declarations.mind_arity_ctxt) in
-          canonize_args args_rel l forbidden_names_for_gen [] [] in
+          canonize_args args_rel l (Id.AvoidSet.of_set forbidden_names_for_gen) [] [] in
         (Id.Set.of_list (List.map (fun id -> id.CAst.v) ind_ids),alias_subst,match_to_do),
         Some (CAst.make ?loc:(cases_pattern_expr_loc t) (ind,List.rev_map (fun x -> x.v) nal))
     | None ->

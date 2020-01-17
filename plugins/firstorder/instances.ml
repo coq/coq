@@ -116,8 +116,8 @@ let mk_open_instance env evmap id idc m t =
       let nid=(fresh_id_in_env avoid var_id env) in
       let (evmap, (c, _)) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
       let decl = LocalAssum (Context.make_annot (Name nid) Sorts.Relevant, c) in
-        aux (n-1) (Id.Set.add nid avoid) (EConstr.push_rel decl env) evmap (decl::decls) in
-  let evmap, decls = aux m Id.Set.empty env evmap [] in
+        aux (n-1) (Id.AvoidSet.add nid avoid) (EConstr.push_rel decl env) evmap (decl::decls) in
+  let evmap, decls = aux m Id.AvoidSet.empty env evmap [] in
   (evmap, decls, revt)
 
 (* tactics   *)

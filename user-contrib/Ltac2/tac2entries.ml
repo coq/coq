@@ -279,7 +279,7 @@ let fresh_var avoid x =
     Id.Set.mem id avoid ||
     (try ignore (Tac2env.locate_ltac (qualid_of_ident id)); true with Not_found -> false)
   in
-  Namegen.next_ident_away_from (Id.of_string x) bad
+  Namegen.next_ident_away_from (Id.of_string x) (Id.AvoidSet.of_pred bad)
 
 let extract_pattern_type ({loc;v=p} as pat) = match p with
 | CPatCnv (pat, ty) -> pat, Some ty

@@ -71,7 +71,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
         then (s1,push_named_context_val d s2)
         else (Context.Named.add d s1,s2))
       global_sign (Context.Named.empty, Environ.empty_named_context_val) in
-  let name = Namegen.next_global_ident_away name (pf_ids_set_of_hyps gl) in
+  let name = Namegen.next_global_ident_away name (Names.Id.AvoidSet.of_pred (pf_mem_ids_of_hyps gl)) in
   let concl = match goal_type with
               | None ->  Proofview.Goal.concl gl
               | Some ty -> ty in

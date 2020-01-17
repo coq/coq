@@ -537,7 +537,7 @@ let vernac_definition_hook ~canonical_instance ~local ~poly = let open Decls in 
 | _ -> None
 
 let fresh_name_for_anonymous_theorem () =
-  Namegen.next_global_ident_away Lemmas.default_thm_id Id.Set.empty
+  Namegen.next_global_ident_away Lemmas.default_thm_id Id.AvoidSet.empty
 
 let vernac_definition_name lid local =
   let lid =

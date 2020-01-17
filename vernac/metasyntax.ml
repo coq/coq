@@ -1552,7 +1552,7 @@ let inject_var x = CAst.make @@ CRef (qualid_of_ident x,None)
 let add_infix ~local deprecation env ({CAst.loc;v=inf},modifiers) pr sc =
   check_infix_modifiers modifiers;
   (* check the precedence *)
-  let vars = names_of_constr_expr pr in
+  let vars = Id.AvoidSet.of_set (names_of_constr_expr pr) in
   let x = Namegen.next_ident_away (Id.of_string "x") vars in
   let y = Namegen.next_ident_away (Id.of_string "y") vars in
   let metas = [inject_var x; inject_var y] in

@@ -242,7 +242,7 @@ let mangle_id id = if get_mangle_names () then !mangle_names_prefix else id
 
 let next_ident_away_from id bad =
   let id = mangle_id id in
-  let rec name_rec id = if bad id then name_rec (increment_subscript id) else id in
+  let rec name_rec id = if Id.AvoidSet.mem id bad  then name_rec (increment_subscript id) else id in
   name_rec id
 
 (* Restart subscript from x0 if name starts with xN, or x00 if name
@@ -300,8 +300,8 @@ let visible_ids sigma (nenv, c) =
 let next_name_away_in_cases_pattern sigma env_t na avoid =
   let id = match na with Name id -> id | Anonymous -> default_dependent_ident in
   let visible = visible_ids sigma env_t in
-  let bad id = Id.Set.mem id avoid || is_constructor id
-                                    || Id.Set.mem id visible in
+  let bad  = Id.AvoidSet.union  avoid (Id.AvoidSet.of_pred (fun id -> is_constructor id
+                                    || Id.Set.mem id visible)) in
   next_ident_away_from id bad
 
 (* 2- Looks for a fresh name for introduction in goal *)
@@ -314,8 +314,8 @@ let next_name_away_in_cases_pattern sigma env_t na avoid =
      name is taken by finding a free subscript starting from 0 *)
 
 let next_ident_away_in_goal id avoid =
-  let id = if  avoid id then restart_subscript id else id in
-  let bad id = avoid id || (is_global id && not (is_section_variable id)) in
+  let id = if Id.AvoidSet.mem id  avoid then restart_subscript id else id in
+  let bad = Id.AvoidSet.union avoid (Id.AvoidSet.of_pred (fun id -> is_global id && not (is_section_variable id))) in
   next_ident_away_from id bad
 
 let next_name_away_in_goal na avoid =
@@ -332,8 +332,8 @@ let next_name_away_in_goal na avoid =
    beyond the current subscript *)
 
 let next_global_ident_away id avoid =
-  let id = if Id.Set.mem id avoid then restart_subscript id else id in
-  let bad id = Id.Set.mem id avoid || Global.exists_objlabel (Label.of_id id) in
+  let id = if Id.AvoidSet.mem id  avoid  then restart_subscript id else id in
+  let bad  = Id.AvoidSet.union avoid (Id.AvoidSet.of_pred (fun id -> Global.exists_objlabel (Label.of_id id))) in
   next_ident_away_from id bad
 
 (* 4- Looks for next fresh name outside a list; if name already used,
@@ -341,8 +341,8 @@ let next_global_ident_away id avoid =
 
 let next_ident_away id avoid =
   let id = mangle_id id in
-  if Id.Set.mem id avoid then
-    next_ident_away_from (restart_subscript id) (fun id -> Id.Set.mem id avoid)
+  if Id.AvoidSet.mem id avoid  then
+    next_ident_away_from (restart_subscript id) avoid
   else id
 
 let next_name_away_with_default default na avoid =
@@ -364,15 +364,15 @@ let next_name_away = next_name_away_with_default default_non_dependent_string
 
 let make_all_name_different env sigma =
   (* FIXME: this is inefficient, but only used in printing *)
-  let avoid = ref (ids_of_named_context_val (named_context_val env)) in
+  let avoid = ref (Id.AvoidSet.of_pred (fun id -> mem_var_val id (named_context_val env))) in
   let sign = named_context_val env in
   let rels = rel_context env in
   let env0 = reset_with_named_context sign env in
   Context.Rel.fold_outside
     (fun decl newenv ->
        let na = named_hd newenv sigma (RelDecl.get_type decl) (RelDecl.get_name decl) in
-       let id = next_name_away na !avoid in
-       avoid := Id.Set.add id !avoid;
+       let id = next_name_away na  !avoid in
+       avoid := Id.AvoidSet.add id !avoid;
        push_rel (RelDecl.set_name (Name id) decl) newenv)
     rels ~init:env0
 
@@ -383,7 +383,7 @@ let make_all_name_different env sigma =
 
 let next_ident_away_for_default_printing sigma env_t id avoid =
   let visible = visible_ids sigma env_t in
-  let bad id = Id.Set.mem id avoid || Id.Set.mem id visible in
+  let bad = Id.AvoidSet.union avoid (Id.AvoidSet.of_pred (fun id -> Id.Set.mem id visible)) in
   next_ident_away_from id bad
 
 let next_name_away_for_default_printing sigma env_t na avoid =
@@ -422,7 +422,7 @@ type renaming_flags =
 let next_name_for_display sigma flags =
   match flags with
   | RenamingForCasesPattern env_t -> next_name_away_in_cases_pattern sigma env_t
-  | RenamingForGoal -> fun id avoid -> next_name_away_in_goal id (fun id -> Id.Set.mem id avoid)
+  | RenamingForGoal -> fun id avoid -> next_name_away_in_goal id avoid
   | RenamingElsewhereFor env_t -> next_name_away_for_default_printing sigma env_t
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
@@ -433,7 +433,7 @@ let compute_displayed_name_in_gen_poly noccurn_fun sigma flags avoid na c =
   | _ ->
     let fresh_id = next_name_for_display sigma flags na avoid in
     let idopt = if noccurn_fun sigma 1 c then Anonymous else Name fresh_id in
-    (idopt, Id.Set.add fresh_id avoid)
+    (idopt, Id.AvoidSet.add fresh_id avoid)
 
 let compute_displayed_name_in = compute_displayed_name_in_gen_poly noccurn
 
@@ -448,11 +448,11 @@ let compute_and_force_displayed_name_in sigma flags avoid na c =
     (Anonymous,avoid)
   | _ ->
     let fresh_id = next_name_for_display sigma flags na avoid in
-    (Name fresh_id, Id.Set.add fresh_id avoid)
+    (Name fresh_id, Id.AvoidSet.add fresh_id avoid)
 
 let compute_displayed_let_name_in sigma flags avoid na c =
   let fresh_id = next_name_for_display sigma flags na avoid in
-  (Name fresh_id, Id.Set.add fresh_id avoid)
+  (Name fresh_id, Id.AvoidSet.add fresh_id avoid)
 
 let rename_bound_vars_as_displayed sigma avoid env c =
   let rec rename avoid env c =

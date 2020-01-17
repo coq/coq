@@ -65,7 +65,7 @@ val it_mkLambda_or_LetIn_name : env -> evar_map -> constr -> rel_context -> cons
    Fresh names *)
 
 (** Avoid clashing with a name satisfying some predicate *)
-val next_ident_away_from : Id.t -> (Id.t -> bool) -> Id.t
+val next_ident_away_from : Id.t -> Id.AvoidSet.t -> Id.t
 
 (** [next_ident_away original_id unwanted_ids] returns a new identifier as close as possible
     to the [original_id] while avoiding all [unwanted_ids].
@@ -83,22 +83,22 @@ val next_ident_away_from : Id.t -> (Id.t -> bool) -> Id.t
     the whole identifier except for the {i subscript}.
 
     E.g. if we take [foo42], then [42] is the {i subscript}, and [foo] is the root. *)
-val next_ident_away : Id.t -> Id.Set.t -> Id.t
+val next_ident_away : Id.t -> Id.AvoidSet.t -> Id.t
 
 (** Avoid clashing with a name already used in current module *)
-val next_ident_away_in_goal : Id.t -> (Id.t -> bool) -> Id.t
+val next_ident_away_in_goal : Id.t -> Id.AvoidSet.t -> Id.t
 
 (** Avoid clashing with a name already used in current module
    but tolerate overwriting section variables, as in goals *)
-val next_global_ident_away : Id.t -> Id.Set.t -> Id.t
+val next_global_ident_away : Id.t -> Id.AvoidSet.t -> Id.t
 
 (** Default is [default_non_dependent_ident] *)
-val next_name_away  : Name.t -> Id.Set.t -> Id.t
+val next_name_away  : Name.t -> Id.AvoidSet.t -> Id.t
 
-val next_name_away_with_default : string -> Name.t -> Id.Set.t -> Id.t
+val next_name_away_with_default : string -> Name.t -> Id.AvoidSet.t -> Id.t
 
 val next_name_away_with_default_using_types : string -> Name.t ->
-  Id.Set.t -> types -> Id.t
+                                              Id.AvoidSet.t -> types -> Id.t
 
 val set_reserved_typed_name : (types -> Name.t) -> unit
 
@@ -113,15 +113,15 @@ type renaming_flags =
 val make_all_name_different : env -> evar_map -> env
 
 val compute_displayed_name_in :
-  evar_map -> renaming_flags -> Id.Set.t -> Name.t -> constr -> Name.t * Id.Set.t
+  evar_map -> renaming_flags -> Id.AvoidSet.t -> Name.t -> constr -> Name.t * Id.AvoidSet.t
 val compute_and_force_displayed_name_in :
-  evar_map -> renaming_flags -> Id.Set.t -> Name.t -> constr -> Name.t * Id.Set.t
+  evar_map -> renaming_flags -> Id.AvoidSet.t -> Name.t -> constr -> Name.t * Id.AvoidSet.t
 val compute_displayed_let_name_in :
-  evar_map -> renaming_flags -> Id.Set.t -> Name.t -> 'a -> Name.t * Id.Set.t
+  evar_map -> renaming_flags -> Id.AvoidSet.t -> Name.t -> 'a -> Name.t * Id.AvoidSet.t
 val rename_bound_vars_as_displayed :
-  evar_map -> Id.Set.t -> Name.t list -> types -> types
+  evar_map -> Id.AvoidSet.t -> Name.t list -> types -> types
 
 (* Generic function expecting a "not occurn" function *)
 val compute_displayed_name_in_gen :
   (evar_map -> int -> 'a -> bool) ->
-  evar_map -> Id.Set.t -> Name.t -> 'a -> Name.t * Id.Set.t
+  evar_map -> Id.AvoidSet.t -> Name.t -> 'a -> Name.t * Id.AvoidSet.t

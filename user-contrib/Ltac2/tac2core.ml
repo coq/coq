@@ -910,7 +910,7 @@ let () = define1 "fresh_free_of_constr" constr begin fun c ->
 end
 
 let () = define2 "fresh_fresh" (repr_ext val_free) ident begin fun avoid id ->
-  let nid = Namegen.next_ident_away_from id (fun id -> Id.Set.mem id avoid) in
+  let nid = Namegen.next_ident_away_from id  (Id.AvoidSet.of_set avoid) in
   return (Value.of_ident nid)
 end
 

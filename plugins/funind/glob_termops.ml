@@ -139,7 +139,7 @@ let rec alpha_pat excluded pat =
     | PatVar(Name id) ->
         if Id.List.mem id excluded
         then
-          let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
+          let new_id = Namegen.next_ident_away id (Id.AvoidSet.of_set (Id.Set.of_list excluded)) in
           (DAst.make ?loc @@ PatVar(Name new_id)),(new_id::excluded),
         (Id.Map.add id new_id Id.Map.empty)
         else pat, excluded,Id.Map.empty
@@ -147,7 +147,7 @@ let rec alpha_pat excluded pat =
         let new_na,new_excluded,map =
           match na with
             | Name id when Id.List.mem id excluded ->
-                let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
+                let new_id = Namegen.next_ident_away id (Id.AvoidSet.of_set (Id.Set.of_list excluded)) in
                 Name new_id,new_id::excluded, Id.Map.add id new_id Id.Map.empty
             | _ -> na,excluded,Id.Map.empty
         in
@@ -202,7 +202,7 @@ let rec alpha_rt excluded rt =
     match DAst.get rt with
       | GRef _ | GVar _ | GEvar _ | GPatVar _ as rt -> rt
       | GLambda(Anonymous,k,t,b) ->
-          let new_id = Namegen.next_ident_away (Id.of_string "_x") (Id.Set.of_list excluded) in
+          let new_id = Namegen.next_ident_away (Id.of_string "_x") (Id.AvoidSet.of_set (Id.Set.of_list excluded)) in
           let new_excluded = new_id :: excluded in
           let new_t = alpha_rt new_excluded t in
           let new_b = alpha_rt new_excluded b in
@@ -217,7 +217,7 @@ let rec alpha_rt excluded rt =
         let new_c = alpha_rt excluded c in
         GLetIn(Anonymous,new_b,new_t,new_c)
     | GLambda(Name id,k,t,b) ->
-        let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
+        let new_id = Namegen.next_ident_away id (Id.AvoidSet.of_set (Id.Set.of_list excluded)) in
         let t,b =
           if Id.equal new_id id
           then t, b
@@ -230,7 +230,7 @@ let rec alpha_rt excluded rt =
         let new_b = alpha_rt new_excluded b in
         GLambda(Name new_id,k,new_t,new_b)
     | GProd(Name id,k,t,b) ->
-        let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
+        let new_id = Namegen.next_ident_away id (Id.AvoidSet.of_set (Id.Set.of_list excluded)) in
         let new_excluded = new_id::excluded in
         let t,b =
           if Id.equal new_id id
@@ -243,7 +243,7 @@ let rec alpha_rt excluded rt =
         let new_b = alpha_rt new_excluded b in
         GProd(Name new_id,k,new_t,new_b)
     | GLetIn(Name id,b,t,c) ->
-        let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
+        let new_id = Namegen.next_ident_away id (Id.AvoidSet.of_set (Id.Set.of_list excluded)) in
         let c =
           if Id.equal new_id id then c
           else change_vars (Id.Map.add id new_id Id.Map.empty) c
@@ -261,7 +261,7 @@ let rec alpha_rt excluded rt =
                match na with
                  | Anonymous -> (na::nal,excluded,mapping)
                  | Name id ->
-                     let new_id = Namegen.next_ident_away id (Id.Set.of_list excluded) in
+                     let new_id = Namegen.next_ident_away id (Id.AvoidSet.of_set (Id.Set.of_list excluded)) in
                      if Id.equal new_id id
                      then
                        na::nal,id::excluded,mapping

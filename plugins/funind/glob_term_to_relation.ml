@@ -152,7 +152,7 @@ let apply_args ctxt body args =
   let next_name_away (na:Name.t) (mapping: Id.t Id.Map.t) (avoid: Id.Set.t) =
     match na with
        | Name id when Id.Set.mem id avoid ->
-           let new_id = Namegen.next_ident_away id avoid in
+           let new_id = Namegen.next_ident_away id (Id.AvoidSet.of_set avoid) in
            Name new_id,Id.Map.add id new_id mapping,Id.Set.add new_id avoid
        | _ -> na,mapping,avoid
   in
@@ -182,7 +182,7 @@ let apply_args ctxt body args =
             if need_convert_id avoid id
             then
               let new_avoid =  Id.Set.add id avoid in
-              let new_id = Namegen.next_ident_away id new_avoid in
+              let new_id = Namegen.next_ident_away id (Id.AvoidSet.of_set new_avoid) in
               let new_avoid' = Id.Set.add new_id new_avoid in
               let mapping = Id.Map.add id new_id Id.Map.empty in
               let new_ctxt' = change_vars_in_binder mapping ctxt' in
@@ -556,7 +556,7 @@ let rec build_entry_lc env sigma funnames avoid rt : glob_constr build_entry_ret
                   match n with
                     | Name id when List.exists (is_free_in id) args ->
                         (* need to alpha-convert the name *)
-                        let new_id = Namegen.next_ident_away id (Id.Set.of_list avoid) in
+                        let new_id = Namegen.next_ident_away id (Id.AvoidSet.of_set (Id.Set.of_list avoid)) in
                         let new_avoid = id:: avoid in
                         let new_b =
                           replace_var_by_term

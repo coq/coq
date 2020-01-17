@@ -235,12 +235,9 @@ let make_pure_subst evi args =
  *   we have the property that u and phi(t) are convertible in env.
  *)
 
-let next_ident_away id avoid =
-  let avoid id = Id.Set.mem id avoid in
-  next_ident_away_from id avoid
+let next_ident_away id avoid =  next_ident_away_from id avoid
 
 let next_name_away na avoid =
-  let avoid id = Id.Set.mem id avoid in
   let id = match na with Name id -> id | Anonymous -> default_non_dependent_ident in
   next_ident_away_from id avoid
 
@@ -287,7 +284,7 @@ let csubst_subst { csubst_len = k; csubst_var = v; csubst_rel = s } c =
   EConstr.of_constr c
 
 type ext_named_context =
-  csubst * Id.Set.t * EConstr.named_context
+  csubst * Id.AvoidSet.t * EConstr.named_context
 
 let push_var id { csubst_len = n; csubst_var = v; csubst_rel = s; csubst_rev = r } =
   let s = Int.Map.add n (Constr.mkVar id) s in
@@ -372,7 +369,7 @@ let push_rel_decl_to_named_context
       let subst = update_var id0 id subst in
       let d = decl |> NamedDecl.of_rel_decl (fun _ -> id0) |> map_decl (csubst_subst subst) in
       let nc = replace_var_named_declaration id0 id nc in
-      (push_var id0 subst, Id.Set.add id avoid, d :: nc)
+      (push_var id0 subst, Id.AvoidSet.add id avoid, d :: nc)
   | Some id0 when hypnaming = FailIfConflict ->
        user_err Pp.(Id.print id0 ++ str " is already used.")
   | _ ->
@@ -381,7 +378,7 @@ let push_rel_decl_to_named_context
           the new binder has name [id]. Which amounts to the same
           behaviour than when [id=id0]. *)
       let d = decl |> NamedDecl.of_rel_decl (fun _ -> id) |> map_decl (csubst_subst subst) in
-      (push_var id subst, Id.Set.add id avoid, d :: nc)
+      (push_var id subst, Id.AvoidSet.add id avoid, d :: nc)
 
 let push_rel_context_to_named_context ?hypnaming env sigma typ =
   (* compute the instances relative to the named context and rel_context *)
@@ -392,7 +389,7 @@ let push_rel_context_to_named_context ?hypnaming env sigma typ =
   if List.is_empty (Environ.rel_context env) then
     (named_context_val env, typ, inst_vars, empty_csubst)
   else
-    let avoid = List.fold_right Id.Set.add ids Id.Set.empty in
+    let avoid = Id.AvoidSet.of_set (List.fold_left (fun s id -> Id.Set.add id s) Id.Set.empty ids) in
     let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
     (* move the rel context to a named context and extend the named instance *)
     (* with vars of the rel context *)
@@ -422,7 +419,7 @@ let new_pure_evar?(src=default_source) ?(filter = Filter.identity) ?(abstract_ar
   | IntroIdentifier id -> Some id
   | IntroFresh id ->
     let has_name id = try let _ = Evd.evar_key id evd in true with Not_found -> false in
-    let id = Namegen.next_ident_away_from id has_name in
+    let id = Namegen.next_ident_away_from id (Id.AvoidSet.of_pred has_name) in
     Some id
   in
   let evi = {

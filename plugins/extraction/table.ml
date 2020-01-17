@@ -751,7 +751,7 @@ let string_of_modfile mp =
   try MPmap.find mp !modfile_mps
   with Not_found ->
     let id = Id.of_string (raw_string_of_modfile mp) in
-    let id' = next_ident_away id !modfile_ids in
+    let id' = next_ident_away id (Id.AvoidSet.of_set !modfile_ids) in
     let s' = Id.to_string id' in
     modfile_ids := Id.Set.add id' !modfile_ids;
     modfile_mps := MPmap.add mp s' !modfile_mps;

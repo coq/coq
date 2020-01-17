@@ -47,7 +47,7 @@ struct
 open Nameops
 
 type t =
-| Nice of Id.Set.t
+| Nice of Id.AvoidSet.t
 | Fast of Subscript.t Id.Map.t
   (** Overapproximation of the set of names to avoid. If [(id ↦ s) ∈ m] then for
       all subscript [s'] smaller than [s], [add_subscript id s'] needs to be
@@ -62,7 +62,7 @@ let make ~fast ids =
     in
     let avoid = Id.Set.fold fold ids Id.Map.empty in
     Fast avoid
-  else Nice ids
+  else Nice (Id.AvoidSet.of_set ids)
 
 let fresh_id_in id avoid =
   let id, _ = get_subscript id in
@@ -80,8 +80,8 @@ match avoid with
     else RenamingElsewhereFor (fst env, c)
   in
   let na, avoid =
-    if let_in then compute_displayed_let_name_in sigma flags avoid na c
-    else compute_displayed_name_in sigma flags avoid na c
+    if let_in then compute_displayed_let_name_in sigma flags  avoid na c
+    else compute_displayed_name_in sigma flags  avoid na c
   in
   na, Nice avoid
 | Fast avoid ->
@@ -100,8 +100,8 @@ match avoid with
 
 let next_name_away flags na avoid = match avoid with
 | Nice avoid ->
-  let id = next_name_away na avoid in
-  id, Nice (Id.Set.add id avoid)
+  let id = next_name_away na  avoid in
+  id, Nice (Id.AvoidSet.add id avoid)
 | Fast avoid ->
   let id = match na with
   | Anonymous -> default_non_dependent_ident
@@ -311,12 +311,12 @@ let lookup_name_as_displayed env sigma t s =
            | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | Cast (c,_,_) -> lookup avoid n c
     | _ -> None
-  in lookup (Environ.ids_of_named_context_val (Environ.named_context_val env)) 1 t
+  in lookup (Id.AvoidSet.of_pred (fun id -> (Environ.mem_var_val id (Environ.named_context_val env)))) 1 t
 
 let lookup_index_as_renamed env sigma t n =
   let rec lookup n d c = match EConstr.kind sigma c with
     | Prod (name,_,c') ->
-          (match Namegen.compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name.binder_name c' with
+          (match Namegen.compute_displayed_name_in sigma RenamingForGoal Id.AvoidSet.empty name.binder_name c' with
                (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
                  if Int.equal n 0 then
@@ -326,7 +326,7 @@ let lookup_index_as_renamed env sigma t n =
                  else
                    lookup (n-1) (d+1) c')
     | LetIn (name,_,_,c') ->
-          (match Namegen.compute_displayed_name_in sigma RenamingForGoal Id.Set.empty name.binder_name c' with
+          (match Namegen.compute_displayed_name_in sigma RenamingForGoal Id.AvoidSet.empty name.binder_name c' with
              | (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
                  if Int.equal n 0 then
@@ -528,7 +528,7 @@ let it_destRLambda_or_LetIn_names l c =
 (* 	    if occur_glob_constr x c then next (x::l) else x in *)
             x
           in
-          let x = next (free_glob_vars c) in
+          let x = next (Id.AvoidSet.of_set (free_glob_vars c)) in
           let a = DAst.make @@ GVar x in
           aux l (Name x :: nal)
             (match DAst.get c with
@@ -635,8 +635,8 @@ let rec share_pattern_names detype n l avoid env sigma c t =
           | _, Name _ -> na'
           | _ -> na in
         let t' = detype avoid env sigma t in
-        let id = Namegen.next_name_away na avoid in
-        let avoid = Id.Set.add id avoid in
+        let id = Namegen.next_name_away na  avoid in
+        let avoid = Id.AvoidSet.add id avoid in
         let env = Name id :: env in
         share_pattern_names detype (n-1) ((Name id,Explicit,None,t')::l) avoid env sigma c c'
     | _ ->

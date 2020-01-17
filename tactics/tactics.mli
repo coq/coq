@@ -50,18 +50,18 @@ val convert_leq     : constr -> constr -> unit Proofview.tactic
 
 (** {6 Introduction tactics. } *)
 
-val fresh_id_in_env : Id.Set.t -> Id.t -> env -> Id.t
-val fresh_id : Id.Set.t -> Id.t -> Goal.goal sigma -> Id.t
+val fresh_id_in_env : Id.AvoidSet.t -> Id.t -> env -> Id.t
+val fresh_id : Id.AvoidSet.t -> Id.t -> Goal.goal sigma -> Id.t
 val find_intro_names : rel_context -> Goal.goal sigma -> Id.t list
 
 val intro                : unit Proofview.tactic
 val introf               : unit Proofview.tactic
 val intro_move        : Id.t option -> Id.t Logic.move_location -> unit Proofview.tactic
-val intro_move_avoid  : Id.t option -> Id.Set.t -> Id.t Logic.move_location -> unit Proofview.tactic
+val intro_move_avoid  : Id.t option -> Id.AvoidSet.t -> Id.t Logic.move_location -> unit Proofview.tactic
 
   (** [intro_avoiding idl] acts as intro but prevents the new Id.t
      to belong to [idl] *)
-val intro_avoiding       : Id.Set.t -> unit Proofview.tactic
+val intro_avoiding       : Id.AvoidSet.t -> unit Proofview.tactic
 
 val intro_replacing      : Id.t -> unit Proofview.tactic
 val intro_using          : Id.t -> unit Proofview.tactic

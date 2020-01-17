@@ -59,11 +59,18 @@ let pf_get_hyp_typ gls id =
   id |> pf_get_hyp gls |> NamedDecl.get_type
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
-let pf_ids_set_of_hyps gls =
-  Environ.ids_of_named_context_val (Environ.named_context_val (pf_env gls))
+
+let pf_mem_ids_of_hyps gls =
+  let env = Environ.named_context_val (pf_env gls) in
+  fun id -> Environ.mem_var_val id env
+
+(* let pf_ids_set_of_hyps gls =
+  Environ.ids_of_named_context_val (Environ.named_context_val (pf_env gls)) *)
 
 let pf_get_new_id id gls =
-  next_ident_away id (pf_ids_set_of_hyps gls)
+  let env = Environ.named_context_val (pf_env gls) in
+  let avoid id = Environ.mem_var_val id env in
+  next_ident_away id (Names.Id.AvoidSet.of_pred avoid)
 
 let pf_apply f gls = f (pf_env gls) (project gls)
 let pf_eapply f gls x = on_sig gls (fun evm -> f (pf_env gls) evm x)
@@ -135,9 +142,12 @@ module New = struct
     let env = Proofview.Goal.env gl in
     Environ.ids_of_named_context_val (Environ.named_context_val env)
 
+  let pf_mem_ids_of_hyps gl =
+    let env_val = Environ.named_context_val (Proofview.Goal.env gl) in
+    fun id -> Environ.mem_var_val id env_val
+
   let pf_get_new_id id gl =
-    let ids = pf_ids_set_of_hyps gl in
-    next_ident_away id ids
+    next_ident_away id (Names.Id.AvoidSet.of_pred (pf_mem_ids_of_hyps gl))
 
   let pf_get_hyp id gl =
     let hyps = Proofview.Goal.env gl in

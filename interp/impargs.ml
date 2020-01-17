@@ -243,7 +243,7 @@ let compute_implicits_names_gen all env sigma t =
        let na',avoid' = find_displayed_name_in sigma all avoid na.Context.binder_name (names,b) in
        aux (push_rel (LocalAssum (na,a)) env) avoid' (na'::names) b
     | _ -> List.rev names
-  in aux env Id.Set.empty [] t
+  in aux env Id.AvoidSet.empty [] t
 
 let compute_implicits_names = compute_implicits_names_gen true
 

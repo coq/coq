@@ -142,7 +142,7 @@ let rec add_prods_sign env sigma t =
 
 let compute_first_inversion_scheme env sigma ind sort dep_option =
   let indf,realargs = dest_ind_type ind in
-  let allvars = vars_of_env env in
+  let allvars = Id.AvoidSet.of_pred (Environ.mem_var env) in
   let p = next_ident_away (Id.of_string "P") allvars in
   let pty,goal =
     if dep_option  then
@@ -212,7 +212,7 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
          else Context.Named.add d sign)
       invEnv ~init:Context.Named.empty
   end in
-  let avoid = ref Id.Set.empty in
+  let avoid = ref Id.AvoidSet.empty in
   let Proof.{sigma} = Proof.data pf in
   let sigma = Evd.minimize_universes sigma in
   let rec fill_holes c =
@@ -220,7 +220,7 @@ let inversion_scheme ~name ~poly env sigma t sort dep_option inv_op =
     | Evar (e,args) ->
         let h = next_ident_away (Id.of_string "H") !avoid in
         let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
-        avoid := Id.Set.add h !avoid;
+        avoid := Id.AvoidSet.add h !avoid;
         ownSign := Context.Named.add (LocalAssum (make_annot h Sorts.Relevant,ty)) !ownSign;
         applist (mkVar h, inst)
     | _ -> EConstr.map sigma fill_holes c

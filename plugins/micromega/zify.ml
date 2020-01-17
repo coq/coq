@@ -574,7 +574,7 @@ module CstrTable = struct
               if has_hyp types then Tacticals.New.tclIDTAC
               else
                 let n =
-                  Tactics.fresh_id_in_env Id.Set.empty
+                  Tactics.fresh_id_in_env Id.AvoidSet.empty
                     (Names.Id.of_string "cstr")
                     env
                 in
@@ -907,9 +907,9 @@ let trans_hyp h t =
       Proofview.Goal.enter (fun gl ->
           let env = Tacmach.New.pf_env gl in
           let n =
-            fresh_id_in_env Id.Set.empty (Names.Id.of_string "__zify") env
+            fresh_id_in_env Id.AvoidSet.empty (Names.Id.of_string "__zify") env
           in
-          let h' = fresh_id_in_env Id.Set.empty h env in
+          let h' = fresh_id_in_env Id.AvoidSet.empty h env in
           tclTHENLIST
             [ letin_tac None (Names.Name n) t None
                 Locus.{onhyps = None; concl_occs = NoOccurrences}
@@ -1050,7 +1050,7 @@ let sat_constr c d =
           match (find_hyp evd h1 hyps, find_hyp evd h2 hyps) with
           | Some h1, Some h2 ->
             let n =
-              Tactics.fresh_id_in_env Id.Set.empty
+              Tactics.fresh_id_in_env Id.AvoidSet.empty
                 (Names.Id.of_string "__sat")
                 env
             in

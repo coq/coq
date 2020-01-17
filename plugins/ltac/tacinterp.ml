@@ -466,7 +466,7 @@ let interp_fresh_id ist env sigma l =
   | None -> Id.Set.empty
   | Some l -> l
   in
-  let avoid = extract_ids ids ist.lfun avoid in
+  let avoid = Id.AvoidSet.of_set (extract_ids ids ist.lfun avoid) in
   let id =
     if List.is_empty l then default_fresh_id
     else

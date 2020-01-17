@@ -517,7 +517,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
     tclTHENLIST
       [
         (* We first introduce the variables *)
-        tclDO nb_first_intro (Proofview.V82.of_tactic (intro_avoiding (Id.Set.of_list dyn_infos.rec_hyps)));
+        tclDO nb_first_intro (Proofview.V82.of_tactic (intro_avoiding (Id.AvoidSet.of_set (Id.Set.of_list dyn_infos.rec_hyps))));
         (* Then the equation itself *)
         Proofview.V82.of_tactic (intro_using heq_id);
         onLastHypId (fun heq_id -> tclTHENLIST [
@@ -1542,11 +1542,10 @@ let prove_principle_for_gen
   let tcc_list = ref [] in
   let start_tac gls =
     let hyps =  pf_ids_of_hyps gls in
-    let shyps = Id.Set.of_list hyps in
+    let shyps = Id.AvoidSet.of_pred (pf_mem_ids_of_hyps gls) in
     let hid =
         next_ident_away_in_goal
-          (Id.of_string "prov")
-          (fun id -> Id.Set.mem id shyps)
+          (Id.of_string "prov") shyps
       in
       tclTHENLIST
         [

@@ -40,9 +40,9 @@ type t = {
 
 let make ~hypnaming env sigma lvar =
   let get_extra env sigma =
-    let avoid = Environ.ids_of_named_context_val (Environ.named_context_val env) in
+    let avoid id = Environ.mem_var_val id (Environ.named_context_val env) in
     Context.Rel.fold_outside (fun d acc -> push_rel_decl_to_named_context ~hypnaming sigma d acc)
-      (rel_context env) ~init:(empty_csubst, avoid, named_context env) in
+      (rel_context env) ~init:(empty_csubst, Id.AvoidSet.of_pred avoid, named_context env) in
   {
     static_env = env;
     renamed_env = env;
@@ -54,6 +54,12 @@ let env env = env.static_env
 
 let vars_of_env env =
   Id.Set.union (Id.Map.domain env.lvar.ltac_genargs) (vars_of_env env.static_env)
+
+let mem_var env =
+  let mem_var_env = Environ.mem_var env.static_env in
+  (fun id -> Id.Map.mem id env.lvar.ltac_genargs || mem_var_env id)
+
+
 
 let ltac_interp_id { ltac_idents ; ltac_genargs } id =
   try Id.Map.find id ltac_idents

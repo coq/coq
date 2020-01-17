@@ -596,7 +596,7 @@ let fresh_var avoid =
     Id.Set.mem id avoid ||
     (try ignore (locate_ltac (qualid_of_ident id)); true with Not_found -> false)
   in
-  Namegen.next_ident_away_from (Id.of_string "p") bad
+  Namegen.next_ident_away_from (Id.of_string "p") (Id.AvoidSet.of_pred bad)
 
 let add_name accu = function
 | Name id -> Id.Set.add id accu

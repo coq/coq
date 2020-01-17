@@ -75,9 +75,9 @@ let add_binders na1 na2 binding_vars ((names,seen), terms as subst) =
       let () = Glob_ops.warn_variable_collision id1 in
       subst
     else
-      let id2 = Namegen.next_ident_away id2 seen in
+      let id2 = Namegen.next_ident_away id2  seen in
       let names = Id.Map.add id1 id2 names in
-      let seen = Id.Set.add id2 seen in
+      let seen = Id.AvoidSet.add id2 seen in
       let () = if Id.Map.mem id1 terms then
         warn_meta_collision id1 in
       ((names,seen), terms)
@@ -180,8 +180,8 @@ let push_binder na1 na2 t ctx =
   let id2 = map_annot (function
       | Name id2 -> id2
       | Anonymous ->
-        let avoid = Id.Set.of_list (List.map (fun (_,id,_) -> id.binder_name) ctx) in
-        Namegen.next_ident_away Namegen.default_non_dependent_ident avoid) na2
+        let avoid = List.fold_left (fun s (_,id,_) -> Id.Set.add id.binder_name s) Id.Set.empty ctx in
+        Namegen.next_ident_away Namegen.default_non_dependent_ident  (Id.AvoidSet.of_set avoid)) na2
   in
   (na1, id2, t) :: ctx
 
@@ -412,7 +412,7 @@ let matches_core env sigma allow_bound_rels
          | PFix _ | PCoFix _| PEvar _ | PInt _ | PFloat _), _ -> raise PatternMatchingFailure
 
   in
-  sorec [] env ((Id.Map.empty,Id.Set.empty), Id.Map.empty) pat c
+  sorec [] env ((Id.Map.empty,Id.AvoidSet.empty), Id.Map.empty) pat c
 
 let matches_core_closed env sigma pat c =
   let names, subst = matches_core env sigma false pat c in

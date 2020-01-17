@@ -83,7 +83,7 @@ let is_visible_name id =
 
 let compute_name internal id =
   if internal then
-    Namegen.next_ident_away_from (add_prefix "internal_" id) is_visible_name
+    Namegen.next_ident_away_from (add_prefix "internal_" id) (Id.AvoidSet.of_pred is_visible_name)
   else id
 
 let define internal role id c poly univs =

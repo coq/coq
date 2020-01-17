@@ -717,7 +717,7 @@ let pr_goal_selector ~toplevel s =
               (fun ln na -> match na with { CAst.v=Name id } -> Id.Set.add id ln | _ -> ln)
               ln nal)
             Id.Set.empty bll in
-        let idarg,bll = set_nth_name names n bll in
+        let idarg,bll = set_nth_name (Id.AvoidSet.of_set names) n bll in
         let annot =
           if Int.equal (Id.Set.cardinal names) 1 then
             mt ()

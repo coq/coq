@@ -176,7 +176,7 @@ let make_typvar n vl =
     if not (String.contains s '\'') && Unicode.is_basic_ascii s then id
     else id_of_name Anonymous
   in
-  let vl = Id.Set.of_list vl in
+  let vl = Id.AvoidSet.of_set (Id.Set.of_list vl) in
   next_ident_away id' vl
 
 let rec type_sign_vl env sg c =

@@ -51,16 +51,16 @@ val constr_of_pat :
            Evd.evar_map ->
            rel_context ->
            Glob_term.cases_pattern ->
-           Names.Id.Set.t ->
+           Id.AvoidSet.t ->
            Evd.evar_map * Glob_term.cases_pattern *
            (rel_context * constr *
             (types * constr list) * Glob_term.cases_pattern) *
-           Names.Id.Set.t
+             Id.AvoidSet.t
 
 type 'a rhs =
     { rhs_env    : GlobEnv.t;
       rhs_vars   : Id.Set.t;
-      avoid_ids  : Id.Set.t;
+      avoid_ids  : Id.AvoidSet.t;
       it         : 'a option}
 
 type 'a equation =

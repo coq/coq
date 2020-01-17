@@ -1283,7 +1283,7 @@ let prepare_hint check env init (sigma,c) =
   let rec iter c =
     try find_next_evar c; c
     with Found (evar,t) ->
-      let id = next_ident_away_from default_prepare_hint_ident (fun id -> Id.Set.mem id !vars) in
+      let id = next_ident_away_from default_prepare_hint_ident  (Id.AvoidSet.of_set !vars) in
       vars := Id.Set.add id !vars;
       subst := (evar,mkVar id)::!subst;
       mkNamedLambda (make_annot id Sorts.Relevant) t (iter (replace_term sigma evar (mkVar id) c)) in

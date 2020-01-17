@@ -46,6 +46,8 @@ val env : t -> env
 
 val vars_of_env : t -> Id.Set.t
 
+val mem_var : t -> (Id.t -> bool)
+
 (** Push to the environment, returning the declaration(s) with interpreted names *)
 
 val push_rel : hypnaming:naming_mode -> evar_map -> rel_declaration -> t -> rel_declaration * t

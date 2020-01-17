@@ -1214,7 +1214,7 @@ let rec match_ inner u alp metas sigma a1 a2 =
   | _b1, NLambda (Name id as na,(NHole _ | NVar _ as t2),b2) when inner ->
       let avoid =
         Id.Set.union (free_glob_vars a1) (* as in Namegen: *) (glob_visible_short_qualid a1) in
-      let id' = Namegen.next_ident_away id avoid in
+      let id' = Namegen.next_ident_away id (Id.AvoidSet.of_set avoid) in
       let t1 = DAst.make @@ GHole(Evar_kinds.BinderType (Name id'),IntroAnonymous,None) in
       let sigma = match t2 with
       | NHole _ -> sigma

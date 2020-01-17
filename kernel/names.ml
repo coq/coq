@@ -68,6 +68,9 @@ struct
   end
 
   module Set = Set.Make(Self)
+
+  module AvoidSet = AvoidSet.Make(Set)
+
   module Map = CMap.Make(Self)
 
   module Pred = Predicate.Make(Self)

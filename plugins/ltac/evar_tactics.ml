@@ -92,7 +92,7 @@ let let_evar name typ =
     let id = match name with
     | Name.Anonymous ->
       let id = Namegen.id_of_name_using_hdchar env sigma typ name in
-      Namegen.next_ident_away_in_goal id (Environ.mem_var env)
+      Namegen.next_ident_away_in_goal id (Id.AvoidSet.of_pred (Environ.mem_var env))
     | Name.Name id -> id
     in
     let (sigma, evar) = Evarutil.new_evar env sigma ~src ~naming:(Namegen.IntroFresh id) typ in

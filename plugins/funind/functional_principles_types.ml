@@ -48,7 +48,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     | decl :: predicates ->
        (match Context.Rel.Declaration.get_name decl with
         | Name x ->
-           let id = Namegen.next_ident_away x (Id.Set.of_list avoid) in
+           let id = Namegen.next_ident_away x (Id.AvoidSet.of_set (Id.Set.of_list avoid)) in
            Hashtbl.add tbl id x;
            RelDecl.set_name (Name id) decl :: change_predicates_names (id::avoid) predicates
         | Anonymous -> anomaly (Pp.str "Anonymous property binder."))

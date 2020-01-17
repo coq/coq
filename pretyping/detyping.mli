@@ -56,9 +56,9 @@ val detype_rel_context : 'a delay -> ?lax:bool -> constr option -> Id.Set.t -> (
   evar_map -> rel_context -> 'a glob_decl_g list
 
 val share_pattern_names :
-  (Id.Set.t -> names_context -> 'c -> Pattern.constr_pattern -> 'a) -> int ->
+  (Id.AvoidSet.t -> names_context -> 'c -> Pattern.constr_pattern -> 'a) -> int ->
   (Name.t * binding_kind * 'b option * 'a) list ->
-  Id.Set.t -> names_context -> 'c -> Pattern.constr_pattern ->
+  Id.AvoidSet.t -> names_context -> 'c -> Pattern.constr_pattern ->
   Pattern.constr_pattern ->
   (Name.t * binding_kind * 'b option * 'a) list * 'a * 'a
 

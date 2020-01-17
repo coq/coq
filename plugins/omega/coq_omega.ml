@@ -1698,7 +1698,7 @@ let onClearedName id tac =
   tclTHEN
     (tclTRY (clear [id]))
     (Proofview.Goal.enter begin fun gl ->
-     let id = fresh_id Id.Set.empty id gl in
+     let id = fresh_id Id.AvoidSet.empty id gl in
      tclTHEN (introduction id) (tac id)
     end)
 
@@ -1706,8 +1706,8 @@ let onClearedName2 id tac =
   tclTHEN
     (tclTRY (clear [id]))
     (Proofview.Goal.enter begin fun gl ->
-     let id1 = fresh_id Id.Set.empty (add_suffix id "_left") gl in
-     let id2 = fresh_id Id.Set.empty (add_suffix id "_right") gl in
+     let id1 = fresh_id Id.AvoidSet.empty (add_suffix id "_left") gl in
+     let id2 = fresh_id Id.AvoidSet.empty (add_suffix id "_right") gl in
       tclTHENLIST [ introduction id1; introduction id2; tac id1 id2 ]
     end)
 
@@ -1725,7 +1725,7 @@ let destructure_hyps =
          try
            match destructurate_type env sigma typ with
            | Kapp(Nat,_) | Kapp(Z,_) ->
-              let hid = fresh_id Id.Set.empty (add_suffix i.binder_name "_eqn") gl in
+              let hid = fresh_id Id.AvoidSet.empty (add_suffix i.binder_name "_eqn") gl in
               let hty = mk_gen_eq typ (mkVar i.binder_name) body in
               tclTHEN
                 (assert_by (Name hid) hty reflexivity)

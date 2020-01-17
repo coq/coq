@@ -62,6 +62,9 @@ sig
   module Set : Set.S with type elt = t
   (** Finite sets of identifiers. *)
 
+  module AvoidSet : AvoidSet.S with type elt = t and type set = Set.t
+  (** Sets of identifiers that can be built and queried *)
+
   module Map : Map.ExtS with type key = t and module Set := Set
   (** Finite maps of identifiers. *)
 

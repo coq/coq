@@ -344,7 +344,8 @@ let rename_hyp repl =
 (**************************************************************)
 
 let fresh_id_in_env avoid id env =
-  let avoid id = Id.Set.mem id avoid || mem_var_val id (named_context_val env) in
+  let avoid = Id.AvoidSet.union avoid
+                (Id.AvoidSet.of_pred (fun id -> mem_var_val id (named_context_val env))) in
   next_ident_away_in_goal id avoid
 
 
@@ -374,12 +375,12 @@ let default_id env sigma decl =
    possibly a move to do after the introduction *)
 
 type name_flag =
-  | NamingAvoid of Id.Set.t
-  | NamingBasedOn of Id.t * Id.Set.t
+  | NamingAvoid of Id.AvoidSet.t
+  | NamingBasedOn of Id.t * Id.AvoidSet.t
   | NamingMustBe of lident
 
 let naming_of_name = function
-  | Anonymous -> NamingAvoid Id.Set.empty
+  | Anonymous -> NamingAvoid Id.AvoidSet.empty
   | Name id -> NamingMustBe (CAst.make id)
 
 let find_name mayrepl decl naming gl = match naming with
@@ -993,8 +994,8 @@ let find_intro_names ctxt gl =
       let env,idl,avoid = acc in
       let name = fresh_id avoid (default_id env gl.sigma decl) gl in
       let newenv = push_rel decl env in
-      (newenv, name :: idl, Id.Set.add name avoid))
-    ctxt (pf_env gl, [], Id.Set.empty) in
+      (newenv, name :: idl, Id.AvoidSet.add name avoid))
+    ctxt (pf_env gl, [], Id.AvoidSet.empty) in
   List.rev res
 
 let build_intro_tac id dest tac = match dest with
@@ -1040,18 +1041,18 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
 
 let intro_gen n m f d = intro_then_gen n m f d (fun _ -> Proofview.tclUNIT ())
 let intro_mustbe_force id = intro_gen (NamingMustBe (CAst.make id)) MoveLast true false
-let intro_using id = intro_gen (NamingBasedOn (id, Id.Set.empty)) MoveLast false false
+let intro_using id = intro_gen (NamingBasedOn (id, Id.AvoidSet.empty)) MoveLast false false
 
-let intro_then = intro_then_gen (NamingAvoid Id.Set.empty) MoveLast false false
-let intro = intro_gen (NamingAvoid Id.Set.empty) MoveLast false false
-let introf = intro_gen (NamingAvoid Id.Set.empty) MoveLast true false
+let intro_then = intro_then_gen (NamingAvoid Id.AvoidSet.empty) MoveLast false false
+let intro = intro_gen (NamingAvoid Id.AvoidSet.empty) MoveLast false false
+let introf = intro_gen (NamingAvoid Id.AvoidSet.empty) MoveLast true false
 let intro_avoiding l = intro_gen (NamingAvoid l) MoveLast false false
 
 let intro_move_avoid idopt avoid hto = match idopt with
   | None -> intro_gen (NamingAvoid avoid) hto true false
   | Some id -> intro_gen (NamingMustBe (CAst.make id)) hto true false
 
-let intro_move idopt hto = intro_move_avoid idopt Id.Set.empty hto
+let intro_move idopt hto = intro_move_avoid idopt Id.AvoidSet.empty hto
 
 (**** Multiple introduction tactics ****)
 
@@ -1132,7 +1133,7 @@ let auto_intros_tac ids =
     | Name id -> Id.Set.add id used
     | Anonymous -> used
   in
-  let avoid = NamingAvoid (List.fold_left fold Id.Set.empty ids) in
+  let avoid = NamingAvoid (Id.AvoidSet.of_set (List.fold_left fold Id.Set.empty ids)) in
   let naming = function
     | Name id -> NamingMustBe CAst.(make id)
     | Anonymous -> avoid
@@ -1321,7 +1322,7 @@ let cut c =
     in
     match relevance with
     | Some r ->
-      let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_set_of_hyps gl) in
+      let id = next_name_away_with_default "H" Anonymous (Id.AvoidSet.of_pred (Tacmach.New.pf_mem_ids_of_hyps gl)) in
       (* Backward compat: normalize [c]. *)
       let c = if normalize_cut then local_strong whd_betaiota sigma c else c in
       Refine.refine ~typecheck:false begin fun h ->
@@ -1738,7 +1739,7 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
         let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
         let tac =
           if with_destruct then
-            descend_in_conjunctions Id.Set.empty
+            descend_in_conjunctions Id.AvoidSet.empty
               (fun b id ->
                 Tacticals.New.tclTHEN
                   (try_main_apply b (mkVar id))
@@ -1889,7 +1890,7 @@ let apply_in_once ?(respect_opaque = false) with_delta
           ])
     with e when with_destruct && CErrors.noncritical e ->
       let (e, info) = CErrors.push e in
-        (descend_in_conjunctions (Id.Set.singleton targetid)
+        (descend_in_conjunctions (Id.AvoidSet.singleton targetid)
            (fun b id -> aux (id::idstoclear) b (mkVar id))
            (e, info) c)
     end
@@ -2366,8 +2367,8 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
 
 let prepare_naming ?loc = function
   | IntroIdentifier id -> NamingMustBe (CAst.make ?loc id)
-  | IntroAnonymous -> NamingAvoid Id.Set.empty
-  | IntroFresh id -> NamingBasedOn (id, Id.Set.empty)
+  | IntroAnonymous -> NamingAvoid Id.AvoidSet.empty
+  | IntroFresh id -> NamingBasedOn (id, Id.AvoidSet.empty)
 
 let rec explicit_intro_names = let open CAst in function
 | {v=IntroForthcoming _} :: l -> explicit_intro_names l
@@ -2430,8 +2431,8 @@ let make_tmp_naming avoid l = function
      IntroAnonymous, but at the cost of a "renaming"; Note that in the
      case of IntroFresh, we should use check_thin_clash_then anyway to
      prevent the case of an IntroFresh precisely using the wild_id *)
-  | IntroWildcard -> NamingBasedOn (wild_id, Id.Set.union avoid (explicit_intro_names l))
-  | pat -> NamingAvoid(Id.Set.union avoid (explicit_intro_names ((CAst.make @@ IntroAction pat)::l)))
+  | IntroWildcard -> NamingBasedOn (wild_id, Id.AvoidSet.union avoid (Id.AvoidSet.of_set (explicit_intro_names l)))
+  | pat -> NamingAvoid(Id.AvoidSet.union avoid (Id.AvoidSet.of_set (explicit_intro_names ((CAst.make @@ IntroAction pat)::l))))
 
 let fit_bound n = function
   | None -> true
@@ -2472,7 +2473,7 @@ let rec intro_patterns_core with_evars b avoid ids thin destopt bound n tac =
   if exceed_bound n bound then error_unexpected_extra_pattern loc bound pat else
   match pat with
   | IntroForthcoming onlydeps ->
-      intro_forthcoming_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
+      intro_forthcoming_then_gen (NamingAvoid (Id.AvoidSet.union avoid (Id.AvoidSet.of_set (explicit_intro_names l))))
           destopt onlydeps n bound
         (fun ids -> intro_patterns_core with_evars b avoid ids thin destopt bound
           (n+List.length ids) tac l)
@@ -2495,12 +2496,12 @@ and intro_pattern_naming loc with_evars b avoid ids pat thin destopt bound n tac
         intro_then_gen (NamingMustBe CAst.(make ?loc id)) destopt true false
           (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l))
   | IntroAnonymous ->
-      intro_then_gen (NamingAvoid (Id.Set.union avoid (explicit_intro_names l)))
+      intro_then_gen (NamingAvoid (Id.AvoidSet.union avoid (Id.AvoidSet.of_set (explicit_intro_names l))))
         destopt true false
         (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
   | IntroFresh id ->
       (* todo: avoid thinned names to interfere with generation of fresh name *)
-      intro_then_gen (NamingBasedOn (id, Id.Set.union avoid (explicit_intro_names l)))
+      intro_then_gen (NamingBasedOn (id, Id.AvoidSet.union avoid (Id.AvoidSet.of_set (explicit_intro_names l))))
         destopt true false
         (fun id -> intro_patterns_core with_evars b avoid (id::ids) thin destopt bound n tac l)
 
@@ -2534,7 +2535,7 @@ and prepare_intros ?loc with_evars dft destopt = function
   | IntroAction ipat ->
       prepare_naming ?loc dft,
       (let tac thin bound =
-        intro_patterns_core with_evars true Id.Set.empty [] thin destopt bound 0
+        intro_patterns_core with_evars true Id.AvoidSet.empty [] thin destopt bound 0
           (fun _ l -> clear_wildcards l) in
       fun id ->
         intro_pattern_action ?loc with_evars true true ipat [] destopt tac id)
@@ -2545,7 +2546,7 @@ let intro_patterns_head_core with_evars b destopt bound pat =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     check_name_unicity env [] [] pat;
-    intro_patterns_core with_evars b Id.Set.empty [] [] destopt
+    intro_patterns_core with_evars b Id.AvoidSet.empty [] [] destopt
       bound 0 (fun _ l -> clear_wildcards l) pat
   end
 
@@ -2659,8 +2660,8 @@ let letin_tac_gen with_eq (id,depdecls,lastlhyp,ccl,c) ty =
     let (sigma, (newcl, eq_tac)) = match with_eq with
       | Some (lr,{CAst.loc;v=ido}) ->
           let heq = match ido with
-            | IntroAnonymous -> new_fresh_id (Id.Set.singleton id) (add_prefix "Heq" id) gl
-            | IntroFresh heq_base -> new_fresh_id (Id.Set.singleton id) heq_base gl
+            | IntroAnonymous -> new_fresh_id (Id.AvoidSet.singleton id) (add_prefix "Heq" id) gl
+            | IntroFresh heq_base -> new_fresh_id (Id.AvoidSet.singleton id) heq_base gl
             | IntroIdentifier id -> id in
           let eqdata = build_coq_eq_data () in
           let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
@@ -2702,8 +2703,8 @@ let insert_before decls lasthyp env =
 
 let mk_eq_name env id {CAst.loc;v=ido} =
   match ido with
-  | IntroAnonymous -> fresh_id_in_env (Id.Set.singleton id) (add_prefix "Heq" id) env
-  | IntroFresh heq_base -> fresh_id_in_env (Id.Set.singleton id) heq_base env
+  | IntroAnonymous -> fresh_id_in_env (Id.AvoidSet.singleton id) (add_prefix "Heq" id) env
+  | IntroFresh heq_base -> fresh_id_in_env (Id.AvoidSet.singleton id) heq_base env
   | IntroIdentifier id ->
     if List.mem id (ids_of_named_context (named_context env)) then
       user_err ?loc  (Id.print id ++ str" is already used.");
@@ -2751,7 +2752,7 @@ let pose_tac na c =
       id
     | Anonymous ->
       let id = id_of_name_using_hdchar env sigma t Anonymous in
-      next_ident_away_in_goal id (fun id -> mem_var_val id hyps)
+      next_ident_away_in_goal id (Id.AvoidSet.of_pred (fun id -> mem_var_val id hyps))
     in
     Proofview.Unsafe.tclEVARS sigma <*>
     Refine.refine ~typecheck:false begin fun sigma ->
@@ -3212,13 +3213,13 @@ let rec consume_pattern avoid na isdep gl = let open CAst in function
   | {loc;v=IntroForthcoming true}::names when not isdep ->
       consume_pattern avoid na isdep gl names
   | {loc;v=IntroForthcoming _}::names as fullpat ->
-      let avoid = Id.Set.union avoid (explicit_intro_names names) in
+      let avoid = Id.AvoidSet.union avoid (Id.AvoidSet.of_set (explicit_intro_names names)) in
       (CAst.make ?loc @@ intropattern_of_name gl avoid na, fullpat)
   | {loc;v=IntroNaming IntroAnonymous}::names ->
-      let avoid = Id.Set.union avoid (explicit_intro_names names) in
+      let avoid = Id.AvoidSet.union avoid (Id.AvoidSet.of_set (explicit_intro_names names)) in
       (CAst.make ?loc @@ intropattern_of_name gl avoid na, names)
   | {loc;v=IntroNaming (IntroFresh id')}::names ->
-      let avoid = Id.Set.union avoid (explicit_intro_names names) in
+      let avoid = Id.AvoidSet.union avoid (Id.AvoidSet.of_set (explicit_intro_names names)) in
       (CAst.make ?loc @@ IntroNaming (IntroIdentifier (new_fresh_id avoid id' gl)), names)
   | pat::names -> (pat,names)
 
@@ -3276,7 +3277,7 @@ let get_recarg_dest (recargdests,tophyp) =
 *)
 
 let induct_discharge with_evars dests avoid' tac (avoid,ra) names =
-  let avoid = Id.Set.union avoid avoid' in
+  let avoid = Id.AvoidSet.union avoid avoid' in
   let rec peel_tac ra dests names thin =
     match ra with
     | (RecArg,_,deprec,recvarname) ::
@@ -3394,7 +3395,7 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
             | _ ->
             let type_of = Tacmach.New.pf_unsafe_type_of gl in
             id_of_name_using_hdchar env sigma (type_of c) Anonymous in
-            let x = fresh_id_in_env avoid id env in
+            let x = fresh_id_in_env (Id.AvoidSet.of_set avoid) id env in
             Tacticals.New.tclTHEN
               (letin_tac None (Name x) c None allHypsAndConcl)
               (atomize_one (i-1) (mkVar x::args) (mkVar x::args') (Id.Set.add x avoid))
@@ -3471,7 +3472,7 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
   (* First phase from L to R: get [toclear], [decldep] and [statuslist]
      for the hypotheses before (= more ancient than) hyp0 (see above) *)
   let toclear = ref [] in
-  let avoid = ref Id.Set.empty in
+  let avoid = ref Id.AvoidSet.empty in
   let decldeps = ref [] in
   let ldeps = ref [] in
   let rstatus = ref [] in
@@ -3505,7 +3506,7 @@ let cook_sign hyp0_opt inhyps indvars env sigma =
          || dephyp0 || depother
       then begin
         decldeps := decl::!decldeps;
-        avoid := Id.Set.add hyp !avoid;
+        avoid := Id.AvoidSet.add hyp !avoid;
         maindep := dephyp0 || !maindep;
         if !before then begin
           toclear := hyp::!toclear;
@@ -3800,10 +3801,10 @@ let abstract_args gl generalize_vars dep id defined f args =
   let env = Tacmach.New.pf_env gl in
   let concl = Tacmach.New.pf_concl gl in
   let dep = dep || local_occur_var !sigma id concl in
-  let avoid = ref Id.Set.empty in
+  let avoid = ref Id.AvoidSet.empty in
   let get_id name =
     let id = new_fresh_id !avoid (match name with Name n -> n | Anonymous -> Id.of_string "gen_x") gl in
-      avoid := Id.Set.add id !avoid; id
+      avoid := Id.AvoidSet.add id !avoid; id
   in
     (* Build application generalized w.r.t. the argument plus the necessary eqs.
        From env |- c : forall G, T and args : G we build
@@ -4129,6 +4130,10 @@ let compute_elim_sig sigma ?elimc elimt =
           with e when CErrors.noncritical e ->
             error "Cannot find the inductive type of the inductive scheme."
 
+type scheme_signature =
+    (Id.AvoidSet.t * (elim_arg_kind * bool * bool * Id.t) list) array
+
+
 let compute_scheme_signature evd scheme names_info ind_type_guess =
   let open Context.Rel.Declaration in
   let f,l = decompose_app evd scheme.concl in
@@ -4183,7 +4188,7 @@ let compute_scheme_signature evd scheme names_info ind_type_guess =
              List.map (fun (b,is_assum,dep) ->
                (b,is_assum,dep,if b == IndArg then hyprecname else recvarname))
                lchck_brch in
-           (avoid,namesign) :: find_branches (p+1) brs
+           (Id.AvoidSet.of_set avoid,namesign) :: find_branches (p+1) brs
          with Exit-> error_ind_scheme "the branches of")
       | LocalDef _ :: _ -> error_ind_scheme "the branches of"
       | [] -> check_concl is_pred p; []
@@ -4232,8 +4237,6 @@ let given_elim hyp0 (elimc,lbind as e) gl =
   let elimt = Tacmach.New.pf_unsafe_type_of gl elimc in
   Tacmach.New.project gl, (e, elimt), ind_type_guess
 
-type scheme_signature =
-    (Id.Set.t * (elim_arg_kind * bool * bool * Id.t) list) array
 
 type eliminator_source =
   | ElimUsing of (eliminator * EConstr.types) * scheme_signature
@@ -4622,8 +4625,8 @@ let induction_gen clear_flag isrec with_evars elim
     let id =
     (* Type not the right one if partially applied but anyway for internal use*)
       let avoid = match eqname with
-        | Some {CAst.v=IntroIdentifier id} -> Id.Set.singleton id
-        | _ -> Id.Set.empty in
+        | Some {CAst.v=IntroIdentifier id} -> Id.AvoidSet.singleton id
+        | _ -> Id.AvoidSet.empty in
       let x = id_of_name_using_hdchar env evd t Anonymous in
       new_fresh_id avoid x gl in
     let info_arg = (is_arg_pure_hyp, not enough_applied) in
@@ -4664,7 +4667,7 @@ let induction_gen_l isrec with_evars elim names lc =
                 let x =
                   id_of_name_using_hdchar env sigma (type_of c) Anonymous in
 
-                let id = new_fresh_id Id.Set.empty x gl in
+                let id = new_fresh_id Id.AvoidSet.empty x gl in
                 let newl' = List.map (fun r -> replace_term sigma c (mkVar id) r) l' in
                 let () = newlc:=id::!newlc in
                 Tacticals.New.tclTHEN

@@ -120,7 +120,7 @@ let (!!) env = GlobEnv.env env
 type 'a rhs =
     { rhs_env    : GlobEnv.t;
       rhs_vars   : Id.Set.t;
-      avoid_ids  : Id.Set.t;
+      avoid_ids  : Id.AvoidSet.t;
       it         : 'a option}
 
 type 'a equation =
@@ -757,7 +757,7 @@ let get_names avoid env sigma sign eqns =
   (* Otherwise, we take names from the parameters of the constructor but
      avoiding conflicts with user ids *)
   let allvars =
-    List.fold_left (fun l (_,_,eqn) -> Id.Set.union l eqn.rhs.avoid_ids)
+    List.fold_left (fun l (_,_,eqn) -> Id.AvoidSet.union l eqn.rhs.avoid_ids)
       avoid eqns in
   let names3,_ =
     List.fold_left2
@@ -770,8 +770,8 @@ let get_names avoid env sigma sign eqns =
                 Name (next_name_away (named_hd env sigma t na) avoid))
              d na
          in
-         (na::l,Id.Set.add (Name.get_id na) avoid))
-      ([],allvars) (List.rev sign) names2 in
+         (na::l,Id.AvoidSet.add (Name.get_id na) avoid))
+      ([], allvars) (List.rev sign) names2 in
   names3,aliasname
 
 (*****************************************************************)
@@ -1013,7 +1013,7 @@ let add_assert_false_case pb tomatch =
   [ { patterns = pats;
       rhs = { rhs_env = pb.env;
               rhs_vars = Id.Set.empty;
-              avoid_ids = Id.Set.empty;
+              avoid_ids = Id.AvoidSet.empty;
               it = None };
       alias_stack = Anonymous::aliasnames;
       eqn_loc = None;
@@ -1283,7 +1283,7 @@ let build_branch ~program_mode initial current realargs deps (realnames,curname)
   (* that had matched constructor C *)
   let cs_args = const_info.cs_args in
   let cs_args = List.map (fun d -> map_rel_decl EConstr.of_constr d) cs_args in
-  let names,aliasname = get_names (GlobEnv.vars_of_env pb.env) !!(pb.env) sigma cs_args eqns in
+  let names,aliasname = get_names (Id.AvoidSet.of_pred (GlobEnv.mem_var pb.env)) !!(pb.env) sigma cs_args eqns in
   let typs = List.map2 RelDecl.set_name names cs_args
   in
 
@@ -1592,8 +1592,8 @@ substituer après par les initiaux *)
  * Syntactic correctness has already been done in constrintern *)
 let matx_of_eqns env eqns =
   let build_eqn {CAst.loc;v=(ids,initial_lpat,initial_rhs)} =
-    let avoid = ids_of_named_context_val (named_context_val !!env) in
-    let avoid = List.fold_left (fun accu id -> Id.Set.add id accu) avoid ids in
+    let avoid id = mem_var_val id (named_context_val !!env) in
+    let avoid = List.fold_left (fun accu id -> Id.AvoidSet.add id accu) (Id.AvoidSet.of_pred avoid) ids in
     let rhs =
       { rhs_env = env;
         rhs_vars = free_glob_vars initial_rhs;
@@ -1790,7 +1790,7 @@ let build_tycon ?loc env tycon_env s subst tycon extenv sigma t =
 let build_inversion_problem ~program_mode loc env sigma tms t =
   let make_patvar t (subst,avoid) =
     let id = next_name_away (named_hd !!env sigma t Anonymous) avoid in
-    DAst.make @@ PatVar (Name id), ((id,t)::subst, Id.Set.add id avoid) in
+    DAst.make @@ PatVar (Name id), ((id,t)::subst, Id.AvoidSet.add id avoid) in
   let rec reveal_pattern t (subst,avoid as acc) =
     match EConstr.kind sigma (whd_all !!env sigma t) with
     | Construct (cstr,u) -> DAst.make (PatCstr (cstr,[],Anonymous)), acc
@@ -1820,7 +1820,7 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
       let d = LocalAssum (annotR (alias_of_pat pat),typ) in
       let patl,acc_sign,acc = aux (n+1) (snd (push_rel ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma d env)) (d::acc_sign) tms acc in
       pat::patl,acc_sign,acc in
-  let avoid0 = GlobEnv.vars_of_env env in
+  let avoid0 = Id.AvoidSet.of_pred (GlobEnv.mem_var env) in
   (* [patl] is a list of patterns revealing the substructure of
      constructors present in the constraints on the type of the
      multiple terms t1..tn that are matched in the original problem;
@@ -2114,11 +2114,11 @@ let make_prime_id name =
 
 let prime avoid name =
   let previd, id = make_prime_id name in
-    previd, next_ident_away id avoid
+    previd, next_ident_away id  avoid
 
 let make_prime avoid prevname =
   let previd, id = prime !avoid prevname in
-    avoid := Id.Set.add id !avoid;
+    avoid := Id.AvoidSet.add id !avoid;
     previd, id
 
 let eq_id avoid id =
@@ -2154,7 +2154,7 @@ let constr_of_pat env sigma arsign pat avoid =
             Name n -> name, avoid
           | Anonymous ->
               let previd, id = prime avoid (Name (Id.of_string "wildcard")) in
-                Name id, Id.Set.add id avoid
+                Name id, Id.AvoidSet.add id avoid
         in
         let r = Sorts.Relevant in (* TODO relevance *)
           (sigma, (DAst.make ?loc @@ PatVar name), [LocalAssum (make_annot name r, ty)] @ realargs, mkRel 1, ty,
@@ -2201,7 +2201,7 @@ let constr_of_pat env sigma arsign pat avoid =
                 let _, inds = get_arity env indf in
                 let r = Sorts.relevance_of_sort_family inds in
                 let sign = LocalAssum (make_annot alias r, lift m ty) :: sign in
-                let avoid = Id.Set.add id avoid in
+                let avoid = Id.AvoidSet.add id avoid in
                 let sigma, sign, i, avoid =
                   try
                     let env = EConstr.push_rel_context sign env in
@@ -2211,9 +2211,9 @@ let constr_of_pat env sigma arsign pat avoid =
                       (mkRel 1) (* alias *)
                       (lift 1 app) (* aliased term *)
                     in
-                    let neq = eq_id avoid id in
+                    let neq = eq_id  avoid id in
                     (* if we ever allow using a SProp-typed coq_eq_ind this relevance will be wrong *)
-                      sigma, LocalDef (nameR neq, mkRel 0, eq_t) :: sign, 2, Id.Set.add neq avoid
+                      sigma, LocalDef (nameR neq, mkRel 0, eq_t) :: sign, 2, Id.AvoidSet.add neq avoid
                   with Evarconv.UnableToUnify _ -> sigma, sign, 1, avoid
                 in
                   (* Mark the equality as a hole *)
@@ -2226,9 +2226,9 @@ let constr_of_pat env sigma arsign pat avoid =
 (* shadows functional version *)
 let eq_id avoid id =
   let hid = Id.of_string ("Heq_" ^ Id.to_string id) in
-  let hid' = next_ident_away hid !avoid in
-    avoid := Id.Set.add hid' !avoid;
-    hid'
+  let hid' = next_ident_away hid  !avoid in
+  avoid := Id.AvoidSet.add hid' !avoid;
+  hid'
 
 let is_topvar sigma t =
 match EConstr.kind sigma t with
@@ -2324,7 +2324,7 @@ let constrs_of_pats typing_fun env sigma eqns tomatchs sign neqs arity =
              (fun (sigma, idents, newpatterns, pats) pat arsign ->
                 let sigma, pat', cpat, idents = constr_of_pat !!env sigma arsign pat idents in
                   (sigma, idents, pat' :: newpatterns, cpat :: pats))
-              (sigma, Id.Set.empty, [], []) eqn.patterns sign
+              (sigma, Id.AvoidSet.empty, [], []) eqn.patterns sign
          in
          let newpatterns = List.rev newpatterns and opats = List.rev pats in
          let rhs_rels, pats, signlen =
@@ -2428,8 +2428,8 @@ let abstract_tomatch env sigma tomatchs tycon =
                let r = Sorts.Relevant in (* TODO relevance *)
                  (mkRel 1, lift_tomatch_type (succ lenctx) t) :: lift_ctx 1 prev,
                LocalDef (make_annot (Name name) r, lift lenctx c, lift lenctx $ type_of_tomatch t) :: ctx,
-               Id.Set.add name names, tycon)
-      ([], [], Id.Set.empty, tycon) tomatchs
+               Id.AvoidSet.add name names, tycon)
+      ([], [], Id.AvoidSet.empty, tycon) tomatchs
   in List.rev prev, ctx, tycon
 
 let build_dependent_signature env sigma avoid tomatchs arsign =
@@ -2560,7 +2560,7 @@ let compile_program_cases ?loc style (typing_function, sigma) tycon env
     let arsign = extract_arity_signature ~dolift:false !!env tomatchs tomatchl in
       (* Build the dependent arity signature, the equalities which makes
          the first part of the predicate and their instantiations. *)
-    let avoid = Id.Set.empty in
+    let avoid = Id.AvoidSet.empty in
       build_dependent_signature !!env sigma avoid tomatchs arsign
 
   in

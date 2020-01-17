@@ -74,7 +74,7 @@ let generalize_right mk typ c1 c2 =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
   Refine.refine ~typecheck:false begin fun sigma ->
-    let na = Name (next_name_away_with_default "x" Anonymous (Termops.vars_of_env env)) in
+    let na = Name (next_name_away_with_default "x" Anonymous (Id.AvoidSet.of_pred (Environ.mem_var env))) in
     let r = Retyping.relevance_of_type env sigma typ in
     let newconcl = mkProd (make_annot na r, typ, mk typ c1 (mkRel 1)) in
     let (sigma, x) = Evarutil.new_evar env sigma ~principal:true newconcl in
@@ -122,7 +122,7 @@ let idx = Id.of_string "x"
 let idy = Id.of_string "y"
 
 let mkGenDecideEqGoal rectype ops g =
-  let hypnames = pf_ids_set_of_hyps g in
+  let hypnames = Id.AvoidSet.of_pred (pf_mem_ids_of_hyps g) in
   let xname    = next_ident_away idx hypnames
   and yname    = next_ident_away idy hypnames in
   (mkNamedProd (make_annot xname Sorts.Relevant) rectype

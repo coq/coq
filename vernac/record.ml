@@ -506,7 +506,7 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params uni
     let impls = implicits_of_context params in
       List.map (fun x -> impls @ x) fieldimpls
   in
-  let binder_name = Namegen.next_ident_away id (Termops.vars_of_env (Global.env())) in
+  let binder_name = Namegen.next_ident_away id (Id.AvoidSet.of_pred (Environ.mem_var (Global.env()))) in
   let data =
     match fields with
     | [LocalAssum ({binder_name=Name proj_name} as binder, field)

@@ -1308,7 +1308,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
        Array.fold_left
          (fun (avoid, env, l) na ->
            let id = Namegen.next_name_away na avoid in
-           (Id.Set.add id avoid, Name id :: env, id::l))
+           (Id.AvoidSet.add id avoid, Name id :: env, id::l))
       (avoid, env, []) lna in
      let n = Array.length tl in
      let v = Array.map3
@@ -1323,7 +1323,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
        Array.fold_left
          (fun (avoid, env, l) na ->
            let id = Namegen.next_name_away na avoid in
-           (Id.Set.add id avoid, Name id :: env, id::l))
+           (Id.AvoidSet.add id avoid, Name id :: env, id::l))
          (avoid, env, []) lna in
      let ntys = Array.length tl in
      let v = Array.map2
@@ -1341,7 +1341,7 @@ let rec glob_of_pat avoid env sigma pat = DAst.make @@ match pat with
   | PFloat f -> GFloat f
 
 let extern_constr_pattern env sigma pat =
-  extern true (InConstrEntrySomeLevel,(None,[])) Id.Set.empty (glob_of_pat Id.Set.empty env sigma pat)
+  extern true (InConstrEntrySomeLevel,(None,[])) Id.Set.empty (glob_of_pat Id.AvoidSet.empty env sigma pat)
 
 let extern_rel_context where env sigma sign =
   let a = detype_rel_context Detyping.Later where Id.Set.empty (names_of_rel_context env,env) sigma sign in
