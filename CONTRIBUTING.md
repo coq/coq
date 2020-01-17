@@ -43,6 +43,7 @@ well.
   - [Reviewing pull requests](#reviewing-pull-requests)
   - [Merging pull requests](#merging-pull-requests)
     - [Additional notes for pull request reviewers and assignees](#additional-notes-for-pull-request-reviewers-and-assignees)
+    - [Joining / leaving maintainer teams](#joining--leaving-maintainer-teams)
   - [Core development team](#core-development-team)
 - [Release management](#release-management)
   - [Packaging Coq](#packaging-coq)
@@ -60,6 +61,7 @@ well.
     - [Merge script dependencies](#merge-script-dependencies)
     - [Coqbot](#coqbot)
   - [Online forum and chat to talk to developers](#online-forum-and-chat-to-talk-to-developers)
+  - [Coq calls](#coq-calls)
   - [Coq remote working groups](#coq-remote-working-groups)
   - [Coq Users and Developers Workshops](#coq-users-and-developers-workshops)
 
@@ -746,12 +748,15 @@ member of a team that was requested a review should self-assign the
 PR, and will act as its shepherd from then on.
 
 The PR assignee is responsible for making sure that all the proposed
-changes have been reviewed by relevant maintainers, that change
-requests have been implemented, that CI is passing, and eventually
-will be the one who merges the PR.
+changes have been reviewed by relevant maintainers (at least one
+reviewer for each component that is significantly affected), that
+change requests have been implemented, that CI is passing, and
+eventually will be the one who merges the PR.
 
 *If you have already frequently contributed to a component, we would
-be happy to have you join one of the maintainer teams.*
+be happy to have you join one of the maintainer teams.* See the
+[section below](#joining--leaving-maintainer-teams) on joining /
+leaving maintainer teams.
 
 The complete list of maintainer teams is available [here][coq-pushers]
 (link only accessible to people who are already members of the Coq
@@ -768,9 +773,20 @@ organization, because of a limitation of GitHub).
   they contributed to.  However, reviewers may push small fixes to the
   PR branch to facilitate the PR integration.
 
+- PRs are merged when there is consensus.  Consensus is defined by an
+  explicit approval from at least one maintainer for each component
+  that is significantly affected and an absence of dissent.  As soon
+  as a developer opposes a PR, it should not be merged without being
+  discussed first (usually in a call or working group).
+
+- Sometimes (especially for large or potentially controversial PRs),
+  it is a good practice to announce the intent to merge, one or
+  several days in advance, when unsure that everyone had a chance to
+  voice their opinion, or to finish reviewing the PR.
+
 - Only PRs targetting the `master` branch can be merged by a
   maintainer.  For PRs targetting a release branch, the assignee
-  should always be the RM.
+  should always be the release manager.
 
 - Before merging, the assignee must also select a milestone for the PR
   (see also Section [Release management](#release-management)).
@@ -781,10 +797,6 @@ organization, because of a limitation of GitHub).
   the same purpose.
 
   ![shield icon](dev/doc/shield-icon.png)
-
-- Sometimes, it is a good practice to announce the intent to merge one
-  or several days in advance when unsure that everyone had a chance to
-  voice their opinion, or to finish reviewing the PR.
 
 - When a PR has [overlays][user-overlays], then:
 
@@ -797,6 +809,16 @@ organization, because of a limitation of GitHub).
     the PR has been merged (and thus the assignee should ping the
     maintainers of the affected projects to ask them to merge the
     overlays).
+
+#### Joining / leaving maintainer teams ####
+
+We are always happy to have more people involved in the PR reviewing
+and merging process, so do not hesitate to propose yourself if you
+already have experience on a component.
+
+Maintainers can leave teams at any time (and core members can also
+join any team where they feel able to help) but you should always
+announce it to other maintainers when you do join or leave a team.
 
 ### Core development team ###
 
@@ -1110,6 +1132,14 @@ Obviously, the issue tracker is also a good place to ask questions,
 especially if the development processes are unclear, or the developer
 documentation should be improved.
 
+### Coq calls ###
+
+We try to gather every week for one hour through video-conference to
+discuss current and urgent matters.  When longer discussions are
+needed, topics are left out for the next working group.  See the
+[wiki][wiki-calls] for more information about Coq calls, as well as
+notes of past ones.
+
 ### Coq remote working groups ###
 
 We semi-regularly (up to every month) organize remote working groups,
@@ -1219,6 +1249,7 @@ can be found [on the wiki][wiki-CUDW].
 [user-changelog]: doc/changelog
 [user-overlays]: dev/ci/user-overlays
 [wiki]: https://github.com/coq/coq/wiki
+[wiki-calls]: https://github.com/coq/coq/wiki/Coq-Calls
 [wiki-CUDW]: https://github.com/coq/coq/wiki/CoqImplementorsWorkshop
 [wiki-WG]: https://github.com/coq/coq/wiki/Coq-Working-Groups
 [YouTube]: https://www.youtube.com/channel/UCbJo6gYYr0OF18x01M4THdQ
