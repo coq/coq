@@ -198,12 +198,23 @@ class CoqObject(ObjectDescription):
                 index_text += " " + self.index_suffix
             self.indexnode['entries'].append(('single', index_text, target, '', None))
 
+    aliases = None  # additional indexed names for a command or other object
+
     def add_target_and_index(self, name, _, signode):
         """Attach a link target to `signode` and an index entry for `name`.
         This is only called (from ``ObjectDescription.run``) if ``:noindex:`` isn't specified."""
         if name:
             target = self._add_target(signode, name)
             self._add_index_entry(name, target)
+            if self.aliases is not None:
+                parent = signode.parent
+                for alias in self.aliases:
+                    aliasnode = nodes.inline('', '')
+                    signode.parent.append(aliasnode)
+                    target2 = self._add_target(aliasnode, alias)
+                    self._add_index_entry(name, target2)
+                parent.remove(signode) # move to the end
+                parent.append(signode)
             return target
 
     def _prepare_names(self):
@@ -213,10 +224,15 @@ class CoqObject(ObjectDescription):
             self._names = {}
         else:
             names = [n.strip() for n in names.split(";")]
-            if len(names) != len(sigs):
+            if len(sigs) > 1 and len(names) != len(sigs):
                 ERR = ("Expected {} semicolon-separated names, got {}.  " +
                        "Please provide one name per signature line.")
                 raise self.error(ERR.format(len(names), len(sigs)))
+            if len(sigs) == 1 and len(names) > 1:
+                self.aliases = names[:-1]
+                names = names[-1:]
+            else:
+                self.aliases = None
             self._names = dict(zip(sigs, names))
 
     def run(self):
