@@ -39,29 +39,44 @@ let instance_of_univ_entry = function
   | UState.Polymorphic_entry univs -> UVars.UContext.instance univs
   | UState.Monomorphic_entry _ -> UVars.Instance.empty
 
-let declare_axiom is_coe ~local ~kind ?user_warns typ (univs, ubinders) imps nl name =
+(** Declares a global axiom/parameter, possibly declaring it:
+    - as a coercion
+    - as a type class instance
+    - with implicit arguments
+    - with inlining for functor application
+    - with named universes *)
+
+let declare_global is_coe ~try_assum_as_instance ~local ~kind ?user_warns body typ (uentry, ubinders as univs) imps nl name =
   let inl = let open Declaremods in match nl with
     | NoInline -> None
     | DefaultInline -> Some (Flags.get_inline_level())
     | InlineAt i -> Some i
   in
-  let kind = Decls.IsAssumption kind in
-  let entry = Declare.parameter_entry ~univs:(univs, ubinders) ?inline:inl typ in
-  let decl = Declare.ParameterEntry entry in
+  let decl = match body with
+    | None -> Declare.ParameterEntry (Declare.parameter_entry ~univs:(uentry, ubinders) ?inline:inl typ)
+    | Some b -> Declare.DefinitionEntry (Declare.definition_entry ~univs ~types:typ b) in
   let kn = Declare.declare_constant ~name ~local ~kind ?user_warns decl in
   let gr = GlobRef.ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
-  let () = Declare.assumption_message name in
+  let () = match body with None -> Declare.assumption_message name | Some _ -> Declare.definition_message name in
   let local = match local with
     | Locality.ImportNeedQualified -> true
     | Locality.ImportDefaultBehavior -> false
   in
+  let () = if try_assum_as_instance && Option.is_empty body then
+      (* why local when is_modtype? *)
+      let env = Global.env () in
+      let sigma = Evd.from_env env in
+      Classes.declare_instance env sigma None Hints.SuperGlobal gr in
   let () =
     if is_coe = Vernacexpr.AddCoercion then
       ComCoercion.try_add_new_coercion
         gr ~local ~reversible:false in
-  let inst = instance_of_univ_entry univs in
+  let inst = instance_of_univ_entry uentry in
   (gr,inst)
+
+let declare_axiom is_coe ~local ~kind ?user_warns typ univs imps nl name =
+  declare_global is_coe ~try_assum_as_instance:false ~local ~kind:(Decls.IsAssumption kind) ?user_warns None typ univs imps nl name
 
 let interp_assumption ~program_mode env sigma impl_env bl c =
   let flags = { Pretyping.all_no_fail_flags with program_mode } in
@@ -205,29 +220,16 @@ let context_insection sigma ~poly ctx =
 
 let context_nosection sigma ~poly ctx =
   let (univ_entry,ubinders as univs) = Evd.univ_entry ~poly sigma in
+  let local = if Lib.is_modtype () then Locality.ImportDefaultBehavior
+    else Locality.ImportNeedQualified
+  in
   let fn i subst d =
     let (name,b,t,_impl) = context_subst subst d in
-    let kind = Decls.(IsAssumption Logical) in
-    let local = if Lib.is_modtype () then Locality.ImportDefaultBehavior
-      else Locality.ImportNeedQualified
-    in
+    let kind = Decls.(if b = None then IsAssumption Context else IsDefinition LetContext) in
     (* Multiple monomorphic axioms: declare universes only on the first declaration *)
     let univs = if i = 0 then univs else clear_univs (Locality.Global local) univs in
-    let decl = match b with
-      | None ->
-        let entry = Declare.parameter_entry ~univs:(univ_entry, ubinders) t in
-        Declare.ParameterEntry entry
-      | Some b ->
-        let entry = Declare.definition_entry ~univs ~types:t b in
-        Declare.DefinitionEntry entry
-    in
-    let cst = Declare.declare_constant ~name ~kind ~local decl in
-    let () = Declare.assumption_message name in
-    let env = Global.env () in
-    let () = if Option.is_empty b then
-        Classes.declare_instance env sigma None Hints.SuperGlobal (GlobRef.ConstRef cst)
-    in
-    Constr.mkConstU (cst,instance_of_univ_entry univ_entry) :: subst
+    let refu = declare_global NoCoercion ~try_assum_as_instance:true ~local ~kind b t univs [] Declaremods.NoInline name in
+    Constr.mkRef refu :: subst
   in
   let _ : Vars.substl = List.fold_left_i fn 0 [] ctx in
   ()

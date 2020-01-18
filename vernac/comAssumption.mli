@@ -55,6 +55,20 @@ val declare_axiom
   -> variable
   -> GlobRef.t * UVars.Instance.t
 
+val declare_global
+  : coercion_flag
+  -> try_assum_as_instance:bool
+  -> local:Locality.import_status
+  -> kind:Decls.logical_kind
+  -> ?user_warns:UserWarn.t
+  -> Constr.constr option
+  -> Constr.types
+  -> UState.universes_entry * UnivNames.universe_binders
+  -> Impargs.manual_implicits
+  -> Declaremods.inline
+  -> variable
+  -> GlobRef.t * UVars.Instance.t
+
 (** Context command *)
 
 val do_context
