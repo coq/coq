@@ -60,7 +60,7 @@ Ltac zcongruence := repeat red; intros; zify; congruence.
 
 Instance eq_equiv : Equivalence eq.
 Proof.
-  split. 1-2: firstorder.
+  split. 1-2: firstorder auto with crelations.
   intros x y z; apply eq_trans.
 Qed.
 

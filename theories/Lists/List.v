@@ -1413,13 +1413,16 @@ End Fold_Right_Recursor.
     Lemma existsb_exists :
       forall l, existsb l = true <-> exists x, In x l /\ f x = true.
     Proof.
-      induction l; simpl; intuition.
-      inversion H.
-      firstorder.
-      destruct (orb_prop _ _ H1); firstorder.
-      firstorder.
-      subst.
-      rewrite H2; auto.
+      induction l as [ | a m IH ]; split; simpl.
+      - easy.
+      - intros [x [[]]].
+      - rewrite orb_true_iff; intros [ H | H ].
+        + exists a; auto.
+        + rewrite IH in H; destruct H as [ x [ Hxm Hfx ] ].
+          exists x; auto.
+      - intros [ x [ [ Hax | Hxm ] Hfx ] ].
+        + now rewrite Hax, Hfx.
+        + destruct IH as [ _ -> ]; eauto with bool.
     Qed.
 
     Lemma existsb_nth : forall l n d, n < length l ->
@@ -2747,7 +2750,7 @@ Section Exists_Forall.
     Proof.
       split.
       - induction 1; firstorder; subst; auto.
-      - induction l; firstorder.
+      - induction l; firstorder auto with datatypes.
     Qed.
 
     Lemma Forall_nth l :

@@ -74,7 +74,7 @@ Module KeyDecidableType(D:DecidableType).
  Lemma InA_eqk_eqke {elt} p (m:list (key*elt)) :
   InA eqk p m -> exists q, eqk p q /\ InA eqke q m.
  Proof.
-  induction 1; firstorder.
+  induction 1; firstorder auto with crelations.
  Qed.
 
  Lemma InA_eqk {elt} p q (m:list (key*elt)) :

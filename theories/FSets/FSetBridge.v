@@ -772,7 +772,7 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
     generalize C; unfold compat_bool, Proper, respectful; intros; apply (f_equal negb);
      auto.
     simpl; unfold Equal; intuition.
-    apply filter_3; firstorder.
+    apply filter_3; firstorder with bool.
     elim (H2 a); intros.
     assert (In a s).
      eapply filter_1; eauto.

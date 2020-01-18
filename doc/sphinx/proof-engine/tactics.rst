@@ -4286,7 +4286,7 @@ some incompatibilities.
    :name: Firstorder Solver
 
    The default tactic used by :tacn:`firstorder` when no rule applies is
-   :g:`auto with *`, it can be reset locally or globally using this option.
+   :g:`auto with core`, it can be reset locally or globally using this option.
 
    .. cmd:: Print Firstorder Solver
 

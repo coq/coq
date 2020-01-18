@@ -9,3 +9,4 @@
 (************************************************************************)
 
 (** Compatibility file for making Coq act similar to Coq v8.12 *)
+Set Firstorder Solver auto with *.
