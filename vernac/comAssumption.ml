@@ -223,8 +223,7 @@ let interp_context_gen env sigma l =
         interp_named_context_evars ~program_mode:false env sigma l) ()
   in
   (* Note, we must use the normalized evar from now on! *)
-  let ce t = Pretyping.check_evars env sigma t in
-  let () = List.iter (fun decl -> NamedDecl.iter_constr ce decl) ctx in
+  let sigma = solve_remaining_evars all_and_fail_flags env sigma in
   let sigma, ctx = Evarutil.finalize
       sigma (fun nf -> List.map (NamedDecl.map_constr_het nf) ctx) in
   (* reorder, evar-normalize and add implicit status *)
