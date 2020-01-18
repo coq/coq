@@ -216,11 +216,11 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns nl l =
   in
   declare_context ~try_global_assum_as_instance:false ~scope univs ?user_warns nl ctx
 
-let interp_context_gen env sigma l =
+let interp_context_gen ~program_mode env sigma l =
   let sigma, (_, ((env, ctx), impls)) =
     Impargs.with_implicit_protection (fun () ->
         let () = Impargs.make_implicit_args false in
-        interp_named_context_evars ~program_mode:false env sigma l) ()
+        interp_named_context_evars ~program_mode env sigma l) ()
   in
   (* Note, we must use the normalized evar from now on! *)
   let sigma = solve_remaining_evars all_and_fail_flags env sigma in
@@ -244,7 +244,7 @@ let interp_context_gen env sigma l =
   in
    sigma, ctx
 
-let do_context ~poly l =
+let do_context ~program_mode ~poly l =
   let sec = Lib.sections_are_opened () in
   if Dumpglob.dump () then begin
     let l = List.map (function
@@ -261,7 +261,7 @@ let do_context ~poly l =
       (List.flatten l) end;
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let sigma, ctx = interp_context_gen env sigma l in
+  let sigma, ctx = interp_context_gen ~program_mode env sigma l in
   let univs = Evd.univ_entry ~poly sigma in
   let open Locality in
   let scope =
@@ -277,6 +277,6 @@ let interp_context env sigma ctx =
     List.rev (snd (List.fold_left_i (fun n (subst, ctx) (id,b,t,impl) ->
         let decl = (id, Option.map (Vars.subst_vars subst) b, Vars.subst_vars subst t, impl) in
         (id :: subst, decl :: ctx)) 1 ([],[]) ctx)) in
-  let sigma, ctx = interp_context_gen env sigma ctx in
+  let sigma, ctx = interp_context_gen ~program_mode:false env sigma ctx in
   let ctx = List.map (fun (id,b,t,(impl,_,_,_)) -> (id,b,t,impl)) ctx in
   sigma, reverse_rel_context_of_reverse_named_context ctx
