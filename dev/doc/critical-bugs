@@ -158,7 +158,7 @@ Universes
   component: universe polymorphism, asynchronous proofs
   summary: universe constraints erroneously discarded when forcing an asynchronous proof containing delayed monomorphic constraints inside a universe polymorphic section
   introduced: between 8.4 and 8.5 by merging the asynchronous proofs feature branch and universe polymorphism one
-  impacted released: V8.5-V8.10
+  impacted released versions: V8.5-V8.10
   impacted development branches: none
   impacted coqchk versions: immune
   fixed in: PR#10664
@@ -166,6 +166,19 @@ Universes
   exploit: no test
   GH issue number: none
   risk: unlikely to be triggered in interactive mode, not present in batch mode (i.e. coqc)
+
+  component: algebraic universes
+  summary: Set+2 was incorrectly simplified to Set+1
+  introduced: V8.10 (with the SProp commit 75508769762372043387c67a9abe94e8f940e80a)
+  impacted released versions: V8.10.0 V8.10.1 V8.10.2
+  impacted coqchk versions: same
+  fixed in: PR#11422
+  found by: Gilbert
+  exploit: see PR (custom application of Hurkens to get around the refreshing at elaboration)
+  GH issue number: see PR
+  risk: unlikely to be triggered through the vernacular (the system "refreshes" algebraic
+    universes such that +2 increments do not appear), mild risk from plugins which manipulate
+    algebraic universes.
 
 Primitive projections
 
