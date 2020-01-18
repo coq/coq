@@ -420,6 +420,7 @@ copy "%BATCHDIR%\configure_profile.sh" "%CYGWIN_INSTALLDIR_WFMT%\var\tmp" || GOT
 ECHO ========== BUILD COQ ==========
 
 MKDIR "%CYGWIN_INSTALLDIR_WFMT%\build"
+RMDIR /S /Q "%CYGWIN_INSTALLDIR_WFMT%\build\patches"
 MKDIR "%CYGWIN_INSTALLDIR_WFMT%\build\patches"
 
 COPY "%BATCHDIR%\makecoq_mingw.sh" "%CYGWIN_INSTALLDIR_WFMT%\build" || GOTO ErrorExit
