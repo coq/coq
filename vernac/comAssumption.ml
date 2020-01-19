@@ -177,6 +177,18 @@ let process_assumptions_no_udecls l =
                  | ({CAst.loc}, Some _) -> error_polymorphic_section_variable ?loc ()
                  | (id, None) -> id) ids, c))) l
 
+let restrict_assumptions_universes sigma l =
+  let uvars = List.fold_left (fun uvars (coe,t,imps) ->
+      Univ.Level.Set.union uvars (Vars.universes_of_constr t))
+      Univ.Level.Set.empty l
+  in
+  (* XXX: Using `DeclareDef.prepare_parameter` here directly is not
+     possible as we indeed declare several parameters; however,
+     restrict_universe_context should be called in a centralized place
+     IMO, thus I think we should adapt `prepare_parameter` to handle
+     this case too. *)
+  Evd.restrict_universe_context sigma uvars
+
 let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns nl l =
   let open Context.Named.Declaration in
   let env = Global.env () in
@@ -208,19 +220,8 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns nl l =
   let sigma = solve_remaining_evars all_and_fail_flags env sigma in
   (* The universe constraints come from the whole telescope. *)
   let sigma = Evd.minimize_universes sigma in
-  let nf_evar c = EConstr.to_constr sigma c in
-  let uvars, l = List.fold_left_map (fun uvars (coe,t,imps) ->
-      let t = nf_evar t in
-      let uvars = Univ.Level.Set.union uvars (Vars.universes_of_constr t) in
-      uvars, (coe,t,imps))
-      Univ.Level.Set.empty l
-  in
-  (* XXX: Using `Declare.prepare_parameter` here directly is not
-     possible as we indeed declare several parameters; however,
-     restrict_universe_context should be called in a centralized place
-     IMO, thus I think we should adapt `prepare_parameter` to handle
-     this case too. *)
-  let sigma = Evd.restrict_universe_context sigma uvars in
+  let l = List.map (fun (coe,t,imps) -> (coe,EConstr.to_constr sigma t,imps)) l in
+  let sigma = restrict_assumptions_universes sigma l in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   declare_assumptions ~scope ~kind ?user_warns univs nl l
 
