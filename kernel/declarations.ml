@@ -223,6 +223,11 @@ type mutual_inductive_body = {
 
     mind_variance : Univ.Variance.t array option; (** Variance info, [None] when non-cumulative. *)
 
+    mind_sec_variance : Univ.Variance.t array option;
+    (** Variance info for section polymorphic universes. [None]
+       outside sections. The final variance once all sections are
+       discharged is [mind_sec_variance ++ mind_variance]. *)
+
     mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
 
     mind_typing_flags : typing_flags; (** typing flags at the time of the inductive creation *)

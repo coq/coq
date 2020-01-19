@@ -299,6 +299,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     v_rctxt;
     v_univs; (* universes *)
     Opt (Array v_variance);
+    Opt (Array v_variance);
     Opt v_bool;
     v_typing_flags|]
 

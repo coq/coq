@@ -755,6 +755,10 @@ struct
     | Invariant, _ | _, Invariant -> Invariant
     | Covariant, Covariant -> Covariant
 
+  let equal a b = match a,b with
+    | Irrelevant, Irrelevant | Covariant, Covariant | Invariant, Invariant -> true
+    | (Irrelevant | Covariant | Invariant), _ -> false
+
   let check_subtype x y = match x, y with
   | (Irrelevant | Covariant | Invariant), Irrelevant -> true
   | Irrelevant, Covariant -> false

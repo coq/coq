@@ -276,7 +276,7 @@ let abstract_packets ~template_check univs usubst params ((arity,lc),(indices,sp
   let kelim = allowed_sorts univ_info in
   (arity,lc), (indices,splayed_lc), kelim
 
-let typecheck_inductive env (mie:mutual_inductive_entry) =
+let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let () = match mie.mind_entry_inds with
   | [] -> CErrors.anomaly Pp.(str "empty inductive types declaration.")
   | _ -> ()
@@ -335,8 +335,19 @@ let typecheck_inductive env (mie:mutual_inductive_entry) =
         data, Some None
   in
 
-  (* TODO pass only the needed bits *)
-  let variance = InferCumulativity.infer_inductive env mie in
+  let variance = if not mie.mind_entry_cumulative then None
+    else match mie.mind_entry_universes with
+      | Monomorphic_entry _ ->
+        CErrors.user_err Pp.(str "Inductive cannot be both monomorphic and universe cumulative.")
+      | Polymorphic_entry (_,uctx) ->
+        let univs = Instance.to_array @@ UContext.instance uctx in
+        let univs = match sec_univs with
+          | None -> univs
+          | Some sec_univs -> Array.append sec_univs univs
+        in
+        let variances = InferCumulativity.infer_inductive ~env_params univs mie.mind_entry_inds in
+        Some variances
+  in
 
   (* Abstract universes *)
   let usubst, univs = Declareops.abstract_universes mie.mind_entry_universes in

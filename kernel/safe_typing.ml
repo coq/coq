@@ -908,14 +908,19 @@ let check_mind mie lab =
     (* The label and the first inductive type name should match *)
     assert (Id.equal (Label.to_id lab) oie.mind_entry_typename)
 
-let add_mind l mie senv =
-  let () = check_mind mie l in
-  let kn = MutInd.make2 senv.modpath l in
-  let mib = Indtypes.check_inductive senv.env kn mie in
+let add_checked_mind kn mib senv =
   let mib =
     match mib.mind_hyps with [] -> Declareops.hcons_mind mib | _ -> mib
   in
-  kn, add_field (l,SFBmind mib) (I kn) senv
+  add_field (MutInd.label kn,SFBmind mib) (I kn) senv
+
+let add_mind l mie senv =
+  let () = check_mind mie l in
+  let kn = MutInd.make2 senv.modpath l in
+  let sec_univs = Option.map Section.all_poly_univs  senv.sections
+  in
+  let mib = Indtypes.check_inductive senv.env ~sec_univs kn mie in
+  kn, add_checked_mind kn mib senv
 
 (** Insertion of module types *)
 
@@ -1014,9 +1019,8 @@ let close_section senv =
     add_constant_aux senv (kn, cb)
   | `Inductive (ind, mib) ->
     let info = cooking_info (Section.segment_of_inductive env0 ind sections0) in
-    let mie = Cooking.cook_inductive info mib in
-    let _, senv = add_mind (MutInd.label ind) mie senv in
-    senv
+    let mib = Cooking.cook_inductive info mib in
+    add_checked_mind ind mib senv
   in
   List.fold_left fold senv redo
 

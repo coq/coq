@@ -31,7 +31,7 @@ val cook_constr : Opaqueproof.cooking_info list ->
   (constr * unit Opaqueproof.delayed_universes) -> (constr * unit Opaqueproof.delayed_universes)
 
 val cook_inductive :
-  Opaqueproof.cooking_info -> mutual_inductive_body -> Entries.mutual_inductive_entry
+  Opaqueproof.cooking_info -> mutual_inductive_body -> mutual_inductive_body
 
 (** {6 Utility functions used in module [Discharge]. } *)
 

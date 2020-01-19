@@ -188,15 +188,12 @@ let infer_arity_constructor is_arity env variances arcn =
 
 open Entries
 
-let infer_inductive_core env params entries uctx =
-  let uarray = Instance.to_array @@ UContext.instance uctx in
-  if Array.is_empty uarray then raise TrivialVariance;
-  let env = Environ.push_context uctx env in
+let infer_inductive_core env univs entries =
+  if Array.is_empty univs then raise TrivialVariance;
   let variances =
     Array.fold_left (fun variances u -> LMap.add u IrrelevantI variances)
-      LMap.empty uarray
+      LMap.empty univs
   in
-  let env, _ = Typeops.check_context env params in
   let variances = List.fold_left (fun variances entry ->
       let variances = infer_arity_constructor true
           env variances entry.mind_entry_arity
@@ -210,17 +207,8 @@ let infer_inductive_core env params entries uctx =
       | exception Not_found -> Invariant
       | IrrelevantI -> Irrelevant
       | CovariantI -> Covariant)
-    uarray
+    univs
 
-let infer_inductive env mie =
-  let open Entries in
-  let params = mie.mind_entry_params in
-  let entries = mie.mind_entry_inds in
-  if not mie.mind_entry_cumulative then None
-  else
-    let uctx = match mie.mind_entry_universes with
-      | Monomorphic_entry _ -> assert false
-      | Polymorphic_entry (_,uctx) -> uctx
-    in
-    try Some (infer_inductive_core env params entries uctx)
-    with TrivialVariance -> Some (Array.make (UContext.size uctx) Invariant)
+let infer_inductive ~env_params univs entries =
+  try infer_inductive_core env_params univs entries
+  with TrivialVariance -> Array.make (Array.length univs) Invariant

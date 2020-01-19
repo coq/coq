@@ -263,6 +263,8 @@ sig
 
   val pr : t -> Pp.t
 
+  val equal : t -> t -> bool
+
 end
 
 (** {6 Universe instances} *)

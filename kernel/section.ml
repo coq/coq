@@ -28,6 +28,8 @@ type 'a t = {
   sec_mono_universes : ContextSet.t;
   sec_poly_universes : Name.t array * UContext.t;
   (** Universes local to the section *)
+  all_poly_univs : Univ.Level.t array;
+  (** All polymorphic universes, including from previous sections. *)
   has_poly_univs : bool;
   (** Are there polymorphic universes or constraints, including in previous sections. *)
   sec_entries : section_entry list;
@@ -40,6 +42,8 @@ type 'a t = {
 let rec depth sec = 1 + match sec.sec_prev with None -> 0 | Some prev -> depth prev
 
 let has_poly_univs sec = sec.has_poly_univs
+
+let all_poly_univs sec = sec.all_poly_univs
 
 let find_emap e (cmap, imap) = match e with
 | SecDefinition con -> Cmap.find con cmap
@@ -57,7 +61,10 @@ let push_context (nas, ctx) sec =
   else
     let (snas, sctx) = sec.sec_poly_universes in
     let sec_poly_universes = (Array.append snas nas, UContext.union sctx ctx) in
-    { sec with sec_poly_universes; has_poly_univs = true }
+    let all_poly_univs =
+      Array.append sec.all_poly_univs (Instance.to_array @@ UContext.instance ctx)
+    in
+    { sec with sec_poly_universes; all_poly_univs; has_poly_univs = true }
 
 let rec is_polymorphic_univ u sec =
   let (_, uctx) = sec.sec_poly_universes in
@@ -81,6 +88,7 @@ let open_section ~custom sec_prev =
     sec_context = 0;
     sec_mono_universes = ContextSet.empty;
     sec_poly_universes = ([||], UContext.empty);
+    all_poly_univs = Option.cata (fun sec -> sec.all_poly_univs) [| |] sec_prev;
     has_poly_univs = Option.cata has_poly_univs false sec_prev;
     sec_entries = [];
     sec_data = (Cmap.empty, Mindmap.empty);

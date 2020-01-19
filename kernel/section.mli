@@ -57,6 +57,14 @@ val push_inductive : poly:bool -> MutInd.t -> 'a t -> 'a t
 
 (** {6 Retrieving section data} *)
 
+val all_poly_univs : 'a t -> Univ.Level.t array
+(** Returns all polymorphic universes, including those from previous
+   sections. Earlier sections are earlier in the array.
+
+    NB: even if the array is empty there may be polymorphic
+   constraints about monomorphic universes, which prevent declaring
+   monomorphic globals. *)
+
 type abstr_info = private {
   abstr_ctx : Constr.named_context;
   (** Section variables of this prefix *)

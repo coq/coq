@@ -204,3 +204,19 @@ End NonRecLetIn.
 
 Fail Inductive foo (T : Type) : let T := Type in T :=
   { r : forall x : T, x = x }.
+
+Module Discharge.
+  (* discharge test *)
+  Section S.
+    Let x := Prop.
+    Inductive foo : x := bla : foo.
+  End S.
+  Check bla:foo.
+
+  Section S.
+    Variables (A:Type).
+    (* ensure params are scanned for needed section variables even with template arity *)
+    #[universes(template)] Inductive bar (d:A) := .
+  End S.
+  Check @bar nat 0.
+End Discharge.
