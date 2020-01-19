@@ -1649,6 +1649,10 @@ function make_addon_equations {
     logn coq_makefile ${COQBIN}coq_makefile -f _CoqProject -o Makefile
     log1 make $MAKE_OPT
     log2 make install
+    # Hack: cmxs file not installed
+    # Since the makefiles switch to dune in master there is no point in fixing it
+    logn cp_cmxs cp src/equations_plugin.cmxs ${COQLIB}/user-contrib/Equations/
+    logn cp_cmxa cp src/equations_plugin.cmxa ${COQLIB}/user-contrib/Equations/
     build_post
   fi
 }
