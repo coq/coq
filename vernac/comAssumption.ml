@@ -118,14 +118,13 @@ let clear_univs scope univ =
 let context_subst subst (name,b,t,impl) =
   name, Option.map (Vars.substl subst) b, Vars.substl subst t, impl
 
-let declare_context ~try_global_assum_as_instance ~scope univs ctx =
+let declare_context ~try_global_assum_as_instance ~scope univs nl ctx =
   let fn i subst d =
-    let (name,b,t,impl) = context_subst subst d in
-    let kind = Decls.(if b = None then IsAssumption Context else IsDefinition LetContext) in
+    let (name,b,t,(impl,kind,is_coe,impls)) = context_subst subst d in
     let univs = if i = 0 then univs else clear_univs scope univs in
     let refu = match scope with
-      | Locality.Discharge -> declare_local NoCoercion ~try_assum_as_instance:true ~kind b t univs [] impl name
-      | Locality.Global local -> declare_global NoCoercion ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind b t univs [] Declaremods.NoInline name in
+      | Locality.Discharge -> declare_local is_coe ~try_assum_as_instance:true ~kind b t univs impls impl name
+      | Locality.Global local -> declare_global is_coe ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind b t univs impls nl name in
     Constr.mkRef refu :: subst
   in
   let _ : Vars.substl = List.fold_left_i fn 0 [] ctx in
@@ -224,7 +223,7 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns nl l =
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   declare_assumptions ~scope ~kind ?user_warns univs nl l
 
-let interp_context env sigma l =
+let interp_context_gen env sigma l =
   let sigma, (_, ((_env, ctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
   (* Note, we must use the normalized evar from now on! *)
   let ce t = Pretyping.check_evars env sigma t in
@@ -246,7 +245,9 @@ let interp_context env sigma l =
         in
         Option.default Explicit (CList.find_map search impls)
       in
-      name,b,t,impl)
+      let kind = Decls.(if b = None then IsAssumption Context else IsDefinition LetContext) in
+      let data = (impl,kind,Vernacexpr.NoCoercion,[]) in
+      (name,b,t,data))
       ctx
   in
    sigma, ctx
@@ -268,11 +269,16 @@ let do_context ~poly l =
       (List.flatten l) end;
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let sigma, ctx = interp_context env sigma l in
+  let sigma, ctx = interp_context_gen env sigma l in
   let univs = Evd.univ_entry ~poly sigma in
   let open Locality in
   let scope =
     if sec then Discharge
     else Global (if Lib.is_modtype () then ImportDefaultBehavior else ImportNeedQualified)
   in
-  declare_context ~try_global_assum_as_instance:true ~scope univs ctx
+  declare_context ~try_global_assum_as_instance:true ~scope univs Declaremods.NoInline ctx
+
+(* API compatibility *)
+let interp_context env sigma ctx =
+  let sigma, ctx = interp_context_gen env sigma ctx in
+  sigma, List.map (fun (id,b,t,(impl,_,_,_)) -> (id,b,t,impl)) ctx
