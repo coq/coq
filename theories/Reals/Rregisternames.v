@@ -11,7 +11,7 @@
 Require Import Reals.
 
 (*****************************************************************)
-(**           Regsiter names for use in plugins                  *)
+(** *   Register names in the Reals library used by plugins      *)
 (*****************************************************************)
 
 Register R as reals.R.type.

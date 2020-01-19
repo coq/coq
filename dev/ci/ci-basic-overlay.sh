@@ -9,7 +9,22 @@
 ########################################################################
 # MathComp
 ########################################################################
-: "${mathcomp_CI_REF:=8187ed3b12da2c164f1fc90c634b4330b796ab44}"
+
+# Picking:
+#
+# Before picking this was on 8187ed3b12da2c164f1fc90c634b4330b796ab44
+# = Nov 29 2019 master
+#   "Return of PR #226: adds relevant theorems when fcycle f (orbit f x) a…"
+# - The tag mathcomp-1.10.0 contains only one further editorial commit
+#
+# There are no Coq version specific tags or branches
+#
+# The latest tag is mathcomp-1.10.0 from Nov 29 2019
+# - This tag works with Coq 8.11 and it is not older than 6 months.
+#
+# => Use tag mathcomp-1.10.0
+
+: "${mathcomp_CI_REF:=mathcomp-1.10.0}"
 : "${mathcomp_CI_GITURL:=https://github.com/math-comp/math-comp}"
 : "${mathcomp_CI_ARCHIVEURL:=${mathcomp_CI_GITURL}/archive}"
 
@@ -31,11 +46,43 @@
 ########################################################################
 # Unicoq + Mtac2
 ########################################################################
+
+# Picking:
+#
+# Before picking this was on c33e66c8f2924449c7b98aab108d97b5ee105bab
+# = Nov 4 2019 master
+#   "Merge pull request #28 from validsdp/primitive-floats"
+# - This commit seems to be required for 8.11 since primitive floats are included in 8.11
+#
+# There are no 8.11 specific tags or branches
+# - there are 8.10 tags and branches => request tag
+#
+# The latest 8.10 tag v1.3.2-8.10
+# - has just 5 commit from Jan 2 2020 since Mar 15 2019
+# - does not include a port of the commit used before picking
+#   => looks old
+#
+# The commits on master beyond c33e66c look like adoptions to changes not in 8.11
+#
+# => Continue to use c33e66c8f2924449c7b98aab108d97b5ee105bab from Nov 4 2019
+# => Ask upstream to tag this as 8.11.0
+
 : "${unicoq_CI_REF:=c33e66c8f2924449c7b98aab108d97b5ee105bab}"
 : "${unicoq_CI_GITURL:=https://github.com/unicoq/unicoq}"
 : "${unicoq_CI_ARCHIVEURL:=${unicoq_CI_GITURL}/archive}"
 
-: "${mtac2_CI_REF:=master-8.11}"
+# Picking:
+#
+# Before picking this was on master-8.11
+# = (as of Jan 13 2020)
+#   Nov 4 2019 006dc6966348c54da212d015a61773c2b2a5e921
+#   "Force Coq#8.11 branch in CI."
+# - This is the latest commit on master-8.11 as of Jan 13 2020
+#
+# => Choose latest commit on master-8.11
+# => Ask upstream to tag this as 8.11.0
+
+: "${mtac2_CI_REF:=006dc6966348c54da212d015a61773c2b2a5e921}"
 : "${mtac2_CI_GITURL:=https://github.com/Mtac2/Mtac2}"
 : "${mtac2_CI_ARCHIVEURL:=${mtac2_CI_GITURL}/archive}"
 
@@ -90,23 +137,87 @@
 ########################################################################
 # Flocq
 ########################################################################
-: "${Flocq_CI_REF:=7076cd30f4409b72b7bf852bf6a935eb60ca29b4}"
-: "${Flocq_CI_GITURL:=https://gitlab.inria.fr/flocq/flocq}"
-: "${Flocq_CI_ARCHIVEURL:=${Flocq_CI_GITURL}/-/archive}"
+
+# Picking
+#
+# Before picking this was on 7076cd30f4409b72b7bf852bf6a935eb60ca29b4
+# = Nov 19 2019 master
+#   "Use standard macros for checking versions."
+#
+# There are no Coq version specific tags or branches
+#
+# The latest tag is flocq-3.2.0 from July 17 2019
+# - This tag works with Coq 8.11 and it is not older than 6 months.
+#
+# => Use tag flocq-3.2.0
+#
+# The linked commit is 3.2.0 plus a patch for Gappa
+
+: "${Flocq_CI_REF:=66482a0775e39770dde8bebc4c896d8d47980e1a}"
+: "${Flocq_CI_GITURL:=https://github.com/MSoegtropIMC/flocq}"
+: "${Flocq_CI_ARCHIVEURL:=${Flocq_CI_GITURL}/archive}"
+
+# Original source is
+# : "${Flocq_CI_GITURL:=https://gitlab.inria.fr/flocq/flocq}"
+# : "${Flocq_CI_ARCHIVEURL:=${Flocq_CI_GITURL}/-/archive}"
 
 ########################################################################
 # Coquelicot
 ########################################################################
-# Modified until https://gitlab.inria.fr/coquelicot/coquelicot/merge_requests/2 is merged
-: "${coquelicot_CI_REF:=fix-rlist-import}"
-: "${coquelicot_CI_GITURL:=https://gitlab.inria.fr/pedrot/coquelicot}"
-# : "${coquelicot_CI_REF:=master}"
+
+# Picking
+#
+# Before picking this was on 155e88c47e3793f1f2c4118bc1d4520abe780d74
+# = Aug 19 2019 master
+#   "Update URL."
+#
+# There are no Coq version specific tags or branches
+#
+# The latest tag is coquelicot-3.0.3 from Aug 19 2019
+# - This tag works with Coq 8.11 and it is not older than 6 months.
+#
+# The only change on master after 3.0.3 is the pre-pick commit
+# - This commit is purely editorial and helps to follow the examples
+#   (the URL for the exercises solved in the sample was inaccessible)
+#
+# The next commit after this on master is about coq-native libraries
+# - This is currently not supportes on WIndows the main target of the picking
+#
+# A change was require to adjust to PR #11398 Rlist hides standard list constructors cons and nil
+#
+# => Use coquelicot-3.0.3 + URL fix + fix for RList
+# => Ask upstream about opinion for a new tag
+
+: "${coquelicot_CI_REF:=1ec80657ce992fc5aa660dca86d423671f02e33c}"
+: "${coquelicot_CI_GITURL:=https://github.com/MSoegtropIMC/coquelicot}"
+: "${coquelicot_CI_ARCHIVEURL:=${coquelicot_CI_GITURL}/archive}"
+
+# Original source is
 # : "${coquelicot_CI_GITURL:=https://gitlab.inria.fr/coquelicot/coquelicot}"
-: "${coquelicot_CI_ARCHIVEURL:=${coquelicot_CI_GITURL}/-/archive}"
+# : "${coquelicot_CI_ARCHIVEURL:=${coquelicot_CI_GITURL}/-/archive}"
 
 ########################################################################
 # Coq-interval
 ########################################################################
+
+# Picking
+#
+# Before picking this was on 839a03e1bddbafab868fbceee59abe678e32a0f3
+# = Jul 20 2019 master
+#   "Avoid uncontrolled characters (e.g., 'C:/') as arguments to $(addprefix)."
+#
+# There are no Coq version specific tags or branches
+#
+# The latest tag is interval-3.4.1 from "5 months ago"
+# - This tag does not compile with Coq 8.11 mostly cause of library incompatibilities
+#
+# The hash 839a03e1bddbafab868fbceee59abe678e32a0f3 has been patched to work with 8.11
+# - This combination has been tested quite a bit during tests for #11321
+# - The same patch does not work for the latest commit on
+#   master ec99901a45b1acba137a3e0e4230289b4fe9553f
+#
+# => Use commit 839a03e1bddbafab868fbceee59abe678e32a0f3
+
 : "${interval_CI_REF:=839a03e1bddbafab868fbceee59abe678e32a0f3}"
 : "${interval_CI_GITURL:=https://gitlab.inria.fr/coqinterval/interval}"
 : "${interval_CI_ARCHIVEURL:=${interval_CI_GITURL}/-/archive}"
@@ -114,6 +225,22 @@
 ########################################################################
 # Gappa stand alone tool
 ########################################################################
+
+# Picking
+#
+# Before picking this was on f53e105cd73484fc76eb58ba24ead73be502c608
+# = Jun 17 2019 master
+#   "Fix outdated documentation."
+# - This is the latest commit on master
+#
+# There are no Coq version specific tags or branches
+#
+# The latest tag is gappa-1.3.5 from May 24 2019 which is more than 6 months old
+#
+# 8.11 beta has been done with f53e105 (latest on master as of Jan 13 2020)
+#
+# => use f53e105cd73484fc76eb58ba24ead73be502c608
+
 : "${gappa_tool_CI_REF:=f53e105cd73484fc76eb58ba24ead73be502c608}"
 : "${gappa_tool_CI_GITURL:=https://gitlab.inria.fr/gappa/gappa}"
 : "${gappa_tool_CI_ARCHIVEURL:=${gappa_tool_CI_GITURL}/-/archive}"
@@ -121,13 +248,51 @@
 ########################################################################
 # Gappa plugin
 ########################################################################
-: "${gappa_plugin_CI_REF:=07b2a6e39256b33f6b0b9f89c1e880dae51f740a}"
-: "${gappa_plugin_CI_GITURL:=https://gitlab.inria.fr/gappa/coq}"
-: "${gappa_plugin_CI_ARCHIVEURL:=${gappa_plugin_CI_GITURL}/-/archive}"
+
+# Picking
+#
+# Before picking this was on 07b2a6e39256b33f6b0b9f89c1e880dae51f740a
+# = Jun 17 2019 master
+#   "New release."
+# - This is the latest commit on master
+#
+# There are no Coq version specific tags or branches
+#
+# The latest tag is gappalib-coq-1.4.2
+# - this is the same thing as 07b2a6e and the latest commit on master
+# - It does not work with Coq 8.11 (compiles but does not run)
+#
+# => Use tag gappalib-coq-1.4.2 + patch for Coq 8.11
+
+: "${gappa_plugin_CI_REF:=d6f5177181c35f07ff50bd5c173ee13528e06576}"
+: "${gappa_plugin_CI_GITURL:=https://github.com/MSoegtropIMC/gappa-coq}"
+: "${gappa_plugin_CI_ARCHIVEURL:=${gappa_plugin_CI_GITURL}/archive}"
+
+# Original source is
+# : "${gappa_plugin_CI_GITURL:=https://gitlab.inria.fr/gappa/coq}"
+# : "${gappa_plugin_CI_ARCHIVEURL:=${gappa_plugin_CI_GITURL}/-/archive}"
 
 ########################################################################
 # CompCert
 ########################################################################
+
+# Picking:
+#
+# Before picking this was on a99406bbd9c01dc04e79b14681a254fe22c9d424
+# = Nov 28 2019 master
+#   "Fix for AArch64 alignment problem"
+#
+# There are no Coq version specific tags or branches
+#
+# The latest tag is v3.6 from Sep 17 2019
+# - This tag does not work with 8.11
+# - There is a specific compatibility commit b7374d2 from Oct 2 2019
+#
+# => Use tag v3.6 with a patch which cherry picks b7374d2
+# The cherry picking is done via patch dev/build/windows/patches_coq/compcert-v3.6.patch
+# Since CI does not support patches or cherry picking, CI is set to what it was and
+# compcert_CI_REF is overriden in the windows build script
+
 : "${compcert_CI_REF:=a99406bbd9c01dc04e79b14681a254fe22c9d424}"
 : "${compcert_CI_GITURL:=https://github.com/AbsInt/CompCert}"
 : "${compcert_CI_ARCHIVEURL:=${compcert_CI_GITURL}/archive}"
@@ -135,7 +300,20 @@
 ########################################################################
 # VST
 ########################################################################
-: "${vst_CI_REF:=a04b451b3ef9fd99007115f7745713f6fc84d1dc}"
+
+# Picking:
+#
+# Before picking this was on a04b451b3ef9fd99007115f7745713f6fc84d1dc
+# = Nov 26 2019 master
+#   "Update submodules"
+#
+# There are no Coq version specific tags or branches
+#
+# The latest tag is v2.5 from Jan 13 2020
+#
+# => Use tag v2.5
+
+: "${vst_CI_REF:=v2.5}"
 : "${vst_CI_GITURL:=https://github.com/PrincetonUniversity/VST}"
 : "${vst_CI_ARCHIVEURL:=${vst_CI_GITURL}/archive}"
 
@@ -191,7 +369,19 @@
 ########################################################################
 # Bignums
 ########################################################################
-: "${bignums_CI_REF:=v8.11}"
+
+# Picking:
+#
+# Before picking this was on v8.11
+# = (as of Jan 13 2020)
+#   Nov 21 2019 c23738415e814257bd14b009c27a27e7579917bc
+#   "Merge pull request #30 from ejgallego/v8.11+back_to_dune"
+# - This is the latest commit on v8.11 as of Jan 13 2020
+#
+# => Choose latest commit on master-8.11
+# => Ask upstream to tag this as 8.11.0
+
+: "${bignums_CI_REF:=c23738415e814257bd14b009c27a27e7579917bc}"
 : "${bignums_CI_GITURL:=https://github.com/coq/bignums}"
 : "${bignums_CI_ARCHIVEURL:=${bignums_CI_GITURL}/archive}"
 
@@ -205,6 +395,32 @@
 ########################################################################
 # Equations
 ########################################################################
+
+# Picking:
+#
+# Before picking this was on b593e3734f01c6f9c05987e4af593d2712025ae3
+# = Nov 5 2019 master
+#   "Fix Make dependencies of test-suite and examples" on master
+#
+# There are no 8.11 specific tags or branches
+# - there are Coq version specific tags and branches => request tag
+#
+# The latest tag is v1.2.1-8.10-2
+# - it includes a backport of b593e37 (25bed60) and a few more changes.
+# - it does NOT compile with Coq 8.11
+#
+# Choosing b593e37 seems to be arbitrary (latest on master on that day)
+# - still 8.11 beta was done with this pick, so keep it.
+# - it compiles bot does not work with 8.11 (issues with installation)
+#
+# Latest master as of Jan 17 2020 is a13f2993f93d41d0cbd3a94e0bb18f927e5913ae
+# - does not build with Coq 8.11
+#
+# => Choose b593e3734f01c6f9c05987e4af593d2712025ae3
+# => Hack make_addon_equations in makecoq_mingw.sh to work around the installation issues
+# => TODO: remove this hack if a proper picking is found
+# => Ask upstream to tag this as 8.11.0
+
 : "${equations_CI_REF:=b593e3734f01c6f9c05987e4af593d2712025ae3}"
 : "${equations_CI_GITURL:=https://github.com/mattam82/Coq-Equations}"
 : "${equations_CI_ARCHIVEURL:=${equations_CI_GITURL}/archive}"
@@ -226,7 +442,23 @@
 ########################################################################
 # ext-lib
 ########################################################################
-: "${ext_lib_CI_REF:=341323ab3ba1a4941d0944c99fc951b54294f9a7}"
+
+# Picking:
+#
+# Before picking this was on 341323ab3ba1a4941d0944c99fc951b54294f9a7
+# = Nov 22 2019 master
+#   "[ci skip] update template"
+#   This is NOT the latest commit on master
+#
+# There are no 8.11 specific tags or branches
+# - there are Coq version branches up to 8.9 but no tags
+#
+# The latest tag is v0.10.3 from Oct 17 2029
+# - this tag works with 8.11 and is not older than 6 months
+#
+# => Use latest tag
+
+: "${ext_lib_CI_REF:=v0.10.3}"
 : "${ext_lib_CI_GITURL:=https://github.com/coq-ext-lib/coq-ext-lib}"
 : "${ext_lib_CI_ARCHIVEURL:=${ext_lib_CI_GITURL}/archive}"
 
@@ -240,6 +472,33 @@
 ########################################################################
 # quickchick
 ########################################################################
+
+# Picking:
+#
+# Before picking this was on 581d839e7ae989dae311e2669aa2527e6601253f
+# = Aug 23 2019 master
+#   "Merge pull request #178 from ejgallego/api+varkind"
+#   This is NOT the latest commit on master
+#   This is behind the latest commit on the 8.10 branch
+#
+# There are no 8.11 specific tags or branches
+# - there are Coq version branches up to 8.10 but tags only up to 8.7
+#
+# The latest tag is v1.1.0 from Apr 12 2020
+# - this tag is older than 6 months and far behind the 8.10 branch
+#
+# The latest commit on 8.10 branch is
+# = Dec 8 2019 1d00ecf673b370cc1fde4bb9c23ba13d4404b0bd
+#   "fix STLC example"
+# - This does not work with Coq 8.11
+#
+# Use 581d839e7ae989dae311e2669aa2527e6601253f because
+# - it seems to be a Coq specific fix (comes from Coq team)
+# - it was used during 8.11 beta
+#
+# => Use 581d839e7ae989dae311e2669aa2527e6601253f
+# => Ask upstream to create a tag (either on this or something newer)
+
 : "${quickchick_CI_REF:=581d839e7ae989dae311e2669aa2527e6601253f}"
 : "${quickchick_CI_GITURL:=https://github.com/QuickChick/QuickChick}"
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
@@ -247,6 +506,19 @@
 ########################################################################
 # menhirlib
 ########################################################################
+
+# Picking:
+#
+# Before picking this was on ca0655b2f96057a271fb5c9a254a38d195b4a7f9
+# = Feb 14 2019 master
+#   "Axiom-free development, the interpreter should evaluate inside Coq with reasonnable performance.
+#   This is the latest commit on master
+#
+# There are no Coq version specific tags or branches
+#
+# => Choose this commit (we also had it in 8.10)
+# => Ask upstream to create library tags since we used this untagged commit since a while
+
 : "${menhirlib_CI_REF:=ca0655b2f96057a271fb5c9a254a38d195b4a7f9}"
 : "${menhirlib_CI_GITURL:=https://gitlab.inria.fr/fpottier/coq-menhirlib}"
 : "${menhirlib_CI_ARCHIVEURL:=${menhirlib_CI_GITURL}/-/archive}"
@@ -254,7 +526,18 @@
 ########################################################################
 # aac_tactics
 ########################################################################
-: "${aac_tactics_CI_REF:=c57960afb0c9702a8c3c12aec26534e3495bbde9}"
+
+# Picking:
+#
+# Before picking this was on c57960afb0c9702a8c3c12aec26534e3495bbde9
+# = Nov 6 2019 v8.11
+#   Merge pull request #51 from vbgl/noomega "
+# - This is the latest commit on v8.11 as of Jan 13 2020
+#
+# => Choose latest commit on v8.11
+# => Ask upstream to tag this as 8.11.0
+
+: "${aac_tactics_CI_REF:=c10b948e296e2550ecacf09770da6896549299d4}"
 : "${aac_tactics_CI_GITURL:=https://github.com/coq-community/aac-tactics}"
 : "${aac_tactics_CI_ARCHIVEURL:=${aac_tactics_CI_GITURL}/archive}"
 
