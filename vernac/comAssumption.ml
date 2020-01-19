@@ -208,10 +208,8 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns nl l =
 let context_subst subst (name,b,t,impl) =
   name, Option.map (Vars.substl subst) b, Vars.substl subst t, impl
 
-let context_insection sigma ~poly ctx =
-  let uctx = Evd.evar_universe_context sigma in
-  let univs = UState.univ_entry ~poly uctx in
-  let fn i subst (name,_,_,_ as d) =
+let context_insection sigma ~poly univs ctx =
+  let fn i subst d =
     let (name,b,t,impl) = context_subst subst d in
     let kind = Decls.(if b = None then IsAssumption Context else IsDefinition LetContext) in
     let univs = if i = 0 then univs else empty_univ_entry ~poly in
@@ -221,9 +219,9 @@ let context_insection sigma ~poly ctx =
   let _ : Vars.substl = List.fold_left_i fn 0 [] ctx in
   ()
 
-let context_nosection sigma ~poly ctx =
-  let (univ_entry,ubinders as univs) = Evd.univ_entry ~poly sigma in
-  let local = if Lib.is_modtype () then Locality.ImportDefaultBehavior
+let context_nosection sigma ~poly univs ctx =
+  let local =
+    if Lib.is_modtype () then Locality.ImportDefaultBehavior
     else Locality.ImportNeedQualified
   in
   let fn i subst d =
@@ -282,6 +280,7 @@ let do_context ~poly l =
   let env = Global.env() in
   let sigma = Evd.from_env env in
   let sigma, ctx = interp_context env sigma l in
+  let univs = Evd.univ_entry ~poly sigma in
   if sec
-  then context_insection sigma ~poly ctx
-  else context_nosection sigma ~poly ctx
+  then context_insection sigma ~poly univs ctx
+  else context_nosection sigma ~poly univs ctx
