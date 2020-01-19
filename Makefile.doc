@@ -256,7 +256,7 @@ doc/tools/docgram/fullGrammar: $(DOC_GRAM) $(DOC_MLGS)
 #todo: add a dependency of sphinx on updated_rsts when we're ready
 doc/tools/docgram/orderedGrammar doc/tools/docgram/updated_rsts: $(DOC_GRAM) $(DOC_EDIT_MLGS)
 	$(SHOW)'DOC_GRAM_RSTS'
-	$(HIDE)$(DOC_GRAM) $(DOC_MLGS) $(DOC_RSTS)
+	$(HIDE)$(DOC_GRAM) -check-cmds $(DOC_MLGS) $(DOC_RSTS)
 
 doc/tools/docgram/updated_rsts: doc/tools/docgram/orderedGrammar
 

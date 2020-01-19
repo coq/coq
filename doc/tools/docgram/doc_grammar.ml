@@ -1697,10 +1697,12 @@ let process_rst g file args seen tac_prods cmd_prods =
           seen := { !seen with tacs = (NTMap.add rhs (file, !linenum) !seen.tacs)};
           fprintf new_rst "%s\n" line
         | "cmd::" when args.check_cmds ->
+(*
           if not (StringSet.mem rhs cmd_prods) then
             warn "%s line %d: Unknown command: '%s'\n" file !linenum rhs;
           if NTMap.mem rhs !seen.cmds then
             warn "%s line %d: Repeated command: '%s'\n" file !linenum rhs;
+*)
           seen := { !seen with cmds = (NTMap.add rhs (file, !linenum) !seen.cmds)};
           fprintf new_rst "%s\n" line
         | "insertprodn" ->
@@ -1823,10 +1825,34 @@ let process_grammar args =
       report_omitted_prods !g.order !seen.nts "Nonterminal" "";
       let out = open_out (dir "updated_rsts") in
       close_out out;
+(*
       if args.check_tacs then
         report_omitted_prods tac_list !seen.tacs "Tactic" "\n                 ";
       if args.check_cmds then
-        report_omitted_prods cmd_list !seen.cmds "Command" "\n                  "
+        report_omitted_prods cmd_list !seen.cmds "Command" "\n                  ";
+*)
+
+      let rstCmds = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings !seen.cmds)) in
+      let command_nts = ["command"; "gallina"] in
+      let gramCmds = List.fold_left (fun set nt ->
+          StringSet.union set (StringSet.of_list (List.map (fun p -> String.trim (prod_to_prodn p)) (NTMap.find nt !prodn_gram.map)))
+        ) StringSet.empty command_nts in
+
+      let allCmds = StringSet.union rstCmds gramCmds in
+      let out = open_out_bin (dir "prodnCommands") in
+      StringSet.iter (fun c ->
+          let rsts = StringSet.mem c rstCmds in
+          let gram = StringSet.mem c gramCmds in
+          let pfx = match rsts, gram with
+          | true, false -> "+"
+          | false, true -> "-"
+          | _, _ -> " "
+          in
+          fprintf out "%s  %s\n" pfx c)
+        allCmds;
+      close_out out;
+      Printf.printf "# cmds in rsts, gram, total = %d %d %d\n" (StringSet.cardinal gramCmds)
+        (StringSet.cardinal rstCmds) (StringSet.cardinal allCmds);
     end;
 
     (* generate output for prodn: simple_tactic, command, also for Ltac?? *)
