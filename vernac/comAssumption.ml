@@ -10,7 +10,6 @@
 
 open CErrors
 open Util
-open Vars
 open Names
 open Context
 open Constrintern
@@ -105,11 +104,6 @@ let empty_poly_univ_entry = UState.Polymorphic_entry UVars.UContext.empty, UnivN
 let empty_mono_univ_entry = UState.Monomorphic_entry Univ.ContextSet.empty, UnivNames.empty_binders
 let empty_univ_entry poly = if poly then empty_poly_univ_entry else empty_mono_univ_entry
 
-(* When declarations are monomorphic (which is always the case in
-   sections, even when universes are treated as polymorphic variables)
-   the universe constraints and universe names are declared with the
-   first declaration only. *)
-
 let clear_univs scope univ =
   match scope, univ with
   | Locality.Global _, (UState.Polymorphic_entry _, _ as univs) -> univs
@@ -117,38 +111,18 @@ let clear_univs scope univ =
   | _, (UState.Polymorphic_entry _, _) -> empty_univ_entry true
 
 let context_subst subst (name,b,t,impl) =
-  name, Option.map (replace_vars subst) b, replace_vars subst t, impl
+  name, Option.map (Vars.replace_vars subst) b, Vars.replace_vars subst t, impl
 
-let declare_context ~try_global_assum_as_instance ~scope univs nl ctx =
+let declare_context ~try_global_assum_as_instance ~scope univs ?user_warns nl ctx =
   let fn i subst d =
     let (name,b,t,(impl,kind,is_coe,impls)) = context_subst subst d in
     let univs = if i = 0 then univs else clear_univs scope univs in
     let refu = match scope with
       | Locality.Discharge -> declare_local is_coe ~try_assum_as_instance:true ~kind b t univs impls impl name
-      | Locality.Global local -> declare_global is_coe ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind b t univs impls nl name in
+      | Locality.Global local -> declare_global is_coe ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind ?user_warns b t univs impls nl name in
     (name, Constr.mkRef refu) :: subst
   in
   let _ = List.fold_left_i fn 0 [] ctx in
-  ()
-
-let declare_assumptions ~scope ~kind ?user_warns univs nl l =
-  let _, _ = List.fold_left (fun (subst,univs) ((is_coe,idl),typ,imps) ->
-      (* NB: here univs are ignored when scope=Discharge *)
-      let typ = replace_vars subst typ in
-      let univs,subst' =
-        List.fold_left_map (fun univs {CAst.v=id} ->
-            let refu = match scope with
-              | Locality.Discharge ->
-                declare_variable is_coe ~kind typ univs imps Glob_term.Explicit id
-              | Locality.Global local ->
-                declare_axiom is_coe ~local ~kind ?user_warns typ univs imps nl id
-            in
-            clear_univs scope univs, (id, Constr.mkRef refu))
-          univs idl
-      in
-      subst'@subst, clear_univs scope univs)
-      ([], univs) l
-  in
   ()
 
 let error_extra_universe_decl ?loc () =
@@ -178,8 +152,9 @@ let process_assumptions_no_udecls l =
                  | (id, None) -> id) ids, c))) l
 
 let restrict_assumptions_universes sigma l =
-  let uvars = List.fold_left (fun uvars (coe,t,imps) ->
-      Univ.Level.Set.union uvars (Vars.universes_of_constr t))
+  let uvars, l = List.fold_left_map (fun uvars d ->
+      let uvars = NamedDecl.fold_constr (fun t -> Univ.Level.Set.union (Vars.universes_of_constr t)) d uvars in
+      uvars, d)
       Univ.Level.Set.empty l
   in
   (* XXX: Using `DeclareDef.prepare_parameter` here directly is not
@@ -189,41 +164,57 @@ let restrict_assumptions_universes sigma l =
      this case too. *)
   Evd.restrict_universe_context sigma uvars
 
+let extract_manual_implicit e =
+  CAst.make (match e with
+    | Some {impl_pos = (na,_,_); impl_expl = Manual; impl_max = max} -> Some (na,max)
+    | Some {impl_expl = (DepFlexAndRigid _ | DepFlex _ | DepRigid _ )} | None -> None)
+
+let local_binders_of_decls ~poly l =
+  let coercions, l =
+    List.fold_left_map (fun coercions (is_coe,(idl,c)) ->
+      let coercions = match is_coe with
+        | Vernacexpr.NoCoercion -> coercions
+        | Vernacexpr.AddCoercion -> List.fold_right (fun id -> Id.Set.add id.CAst.v) idl coercions in
+      let make_name id = CAst.make ?loc:id.CAst.loc (Name id.CAst.v) in
+      let make_assum idl = Constrexpr.(CLocalAssum (List.map make_name idl,None,Default Glob_term.Explicit,c)) in
+      let decl = if poly then
+        (* Separate declarations so that A B : Type puts A and B in different levels. *)
+        List.map (fun id -> make_assum [id]) idl
+      else
+        [make_assum idl] in
+      (coercions,decl)) Id.Set.empty l in
+  coercions, List.flatten l
+
 let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns nl l =
-  let open Context.Named.Declaration in
   let env = Global.env () in
   let udecl, l = match scope with
     | Locality.Global import_behavior -> process_assumptions_udecls l
     | Locality.Discharge -> None, process_assumptions_no_udecls l in
   let sigma, udecl = interp_univ_decl_opt env udecl in
-  let l =
-    if poly then
-      (* Separate declarations so that A B : Type puts A and B in different levels. *)
-      List.fold_right (fun (is_coe,(idl,c)) acc ->
-        List.fold_right (fun id acc ->
-          (is_coe, ([id], c)) :: acc) idl acc)
-        l []
-    else l
-  in
+  let coercions, ctx = local_binders_of_decls ~poly l in
   (* We interpret all declarations in the same evar_map, i.e. as a telescope. *)
-  let (sigma,_,_),l = List.fold_left_map (fun (sigma,env,ienv) (is_coe,(idl,c)) ->
-    let sigma,t,imps = interp_assumption ~program_mode env sigma ienv [] c in
-    let r = Retyping.relevance_of_type env sigma t in
-    let env =
-      EConstr.push_named_context (List.map (fun {CAst.v=id} -> LocalAssum (make_annot id r,t)) idl) env in
-    let ienv = List.fold_right (fun {CAst.v=id} ienv ->
-      let impls = compute_internalization_data env sigma id Variable t imps in
-      Id.Map.add id impls ienv) idl ienv in
-      ((sigma,env,ienv),((is_coe,idl),t,imps)))
-    (sigma,env,empty_internalization_env) l
-  in
+  let (sigma, (ienv, ((env, ctx), impls))) = interp_named_context_evars ~program_mode ~share:true env sigma ctx in
   let sigma = solve_remaining_evars all_and_fail_flags env sigma in
   (* The universe constraints come from the whole telescope. *)
   let sigma = Evd.minimize_universes sigma in
-  let l = List.map (fun (coe,t,imps) -> (coe,EConstr.to_constr sigma t,imps)) l in
-  let sigma = restrict_assumptions_universes sigma l in
+  let nf_evar c = EConstr.to_constr sigma c in
+  let ctx = List.map (NamedDecl.map_constr_het nf_evar) ctx in
+  let sigma = restrict_assumptions_universes sigma ctx in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  declare_assumptions ~scope ~kind ?user_warns univs nl l
+  (* reorder, evar-normalize and add implicit status *)
+  let ctx = List.rev_map (fun d ->
+      let {binder_name=id}, b, t = NamedDecl.to_tuple d in
+      let impls =
+        try
+          let impls = implicits_of_decl_in_internalization_env id ienv in
+          List.map extract_manual_implicit impls
+        with Not_found -> [] in
+      let is_coe = if Id.Set.mem id coercions then Vernacexpr.AddCoercion else Vernacexpr.NoCoercion in
+      let data = (Glob_term.Explicit,Decls.IsAssumption kind,is_coe,impls) in
+      (id,b,t,data))
+      ctx
+  in
+  declare_context ~try_global_assum_as_instance:false ~scope univs ?user_warns nl ctx
 
 let interp_context_gen env sigma l =
   let sigma, (_, ((env, ctx), impls)) =
@@ -285,7 +276,7 @@ let do_context ~poly l =
 let interp_context env sigma ctx =
   let reverse_rel_context_of_reverse_named_context ctx =
     List.rev (snd (List.fold_left_i (fun n (subst, ctx) (id,b,t,impl) ->
-        let decl = (id, Option.map (subst_vars subst) b, subst_vars subst t, impl) in
+        let decl = (id, Option.map (Vars.subst_vars subst) b, Vars.subst_vars subst t, impl) in
         (id :: subst, decl :: ctx)) 1 ([],[]) ctx)) in
   let sigma, ctx = interp_context_gen env sigma ctx in
   let ctx = List.map (fun (id,b,t,(impl,_,_,_)) -> (id,b,t,impl)) ctx in
