@@ -191,7 +191,7 @@ let context_insection sigma ~poly ctx =
       | name, Some b, t, impl ->
         let entry = Declare.definition_entry ~univs ~types:t b in
         (* XXX Fixme: Use Declare.prepare_definition *)
-        let kind = Decls.(IsDefinition Definition) in
+        let kind = Decls.(IsDefinition LetContext) in
         let gr =
           Declare.declare_entry ~name ~scope:Locality.Discharge
             ~kind ~impargs:[] ~uctx entry

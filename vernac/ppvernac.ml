@@ -166,6 +166,7 @@ let string_of_definition_object_kind = let open Decls in function
     | CanonicalStructure -> "Canonical Structure"
     | Instance -> "Instance"
     | Let -> "Let"
+    | LetContext -> CErrors.anomaly (Pp.str "Bound to Context.")
     | (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Method) ->
       CErrors.anomaly (Pp.str "Internal definition kind.")
 
