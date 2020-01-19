@@ -20,20 +20,35 @@ open Pretyping
 module RelDecl = Context.Rel.Declaration
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
-let declare_variable is_coe ~kind typ univs imps impl name =
-  let kind = Decls.IsAssumption kind in
-  let () = Declare.declare_variable ~name ~kind ~typing_flags:None (Declare.SectionLocalAssum {typ; impl; univs}) in
-  let () = Declare.assumption_message name in
+(** Declares a local variable/let, possibly declaring it:
+    - as a coercion (is_coe)
+    - as a type class instance
+    - with implicit arguments (impls)
+    - with implicit status for discharge (impl)
+    - virtually with named universes *)
+
+let declare_local is_coe ~try_assum_as_instance ~kind body typ univs imps impl name =
+  let decl = match body with
+    | None ->
+      Declare.SectionLocalAssum {typ; impl; univs}
+    | Some b ->
+      Declare.SectionLocalDef {clearbody = (* TODO *) false; entry = Declare.definition_entry ~univs ~types:typ b} in
+  let () = Declare.declare_variable ~name ~kind ~typing_flags:None decl in
+  let () = if body = None then Declare.assumption_message name else Declare.definition_message name in
   let r = GlobRef.VarRef name in
   let () = maybe_declare_manual_implicits true r imps in
-  let env = Global.env () in
-  let sigma = Evd.from_env env in
-  let () = Classes.declare_instance env sigma None Hints.Local r in
+  let _ = if try_assum_as_instance && Option.is_empty body then
+      let env = Global.env () in
+      let sigma = Evd.from_env env in
+      Classes.declare_instance env sigma None Hints.Local r in
   let () =
     if is_coe = Vernacexpr.AddCoercion then
       ComCoercion.try_add_new_coercion
         r ~local:true ~reversible:false in
   (r, UVars.Instance.empty)
+
+let declare_variable is_coe ~kind typ univs imps impl name =
+  declare_local is_coe ~try_assum_as_instance:true ~kind:(Decls.IsAssumption kind) None typ univs imps impl name
 
 let instance_of_univ_entry = function
   | UState.Polymorphic_entry univs -> UVars.UContext.instance univs
@@ -204,14 +219,8 @@ let context_insection sigma ~poly ctx =
         let kind = Decls.Context in
         declare_variable NoCoercion ~kind t univs [] impl name
       | name, Some b, t, impl ->
-        let entry = Declare.definition_entry ~univs ~types:t b in
-        (* XXX Fixme: Use Declare.prepare_definition *)
         let kind = Decls.(IsDefinition LetContext) in
-        let gr =
-          Declare.declare_entry ~name ~scope:Locality.Discharge
-            ~kind ~impargs:[] ~uctx entry
-        in
-        (gr,UVars.Instance.empty)
+        declare_local NoCoercion ~try_assum_as_instance:false ~kind (Some b) t univs [] impl name
     in
     Constr.mkRef refu :: subst
   in

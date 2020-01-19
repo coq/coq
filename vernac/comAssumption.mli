@@ -43,6 +43,18 @@ val declare_variable
   -> variable
   -> GlobRef.t * UVars.Instance.t
 
+val declare_local
+  : coercion_flag
+  -> try_assum_as_instance:bool
+  -> kind:Decls.logical_kind
+  -> Constr.constr option
+  -> Constr.types
+  -> UState.named_universes_entry
+  -> Impargs.manual_implicits
+  -> Glob_term.binding_kind
+  -> variable
+  -> Names.GlobRef.t * UVars.Instance.t
+
 val declare_axiom
   : coercion_flag
   -> local:Locality.import_status
