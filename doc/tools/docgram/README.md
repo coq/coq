@@ -176,9 +176,13 @@ that appear in the specified production:
   production **without** `<grammar_symbol>`.  If found, both productions are
   replaced with single production with `OPT <grammar_symbol>`
 
-  The current version handles a single USE_NT or ADD_OPT per EDIT.
+  The current version handles a single USE_NT or ADD_OPT per EDIT.  These symbols
+  may appear in the middle of the production given in the EDIT.
 
-* `REPLACE` - (2 sequential productions) - removes `<oldprod>` and
+`INSERTALL <symbols>` - inserts <symbols> at the beginning of every production in
+<edited_nt>.
+
+`REPLACE` - (2 sequential productions) - removes `<oldprod>` and
   inserts `<newprod>` in its place.
 
 ```
@@ -186,7 +190,14 @@ that appear in the specified production:
 | WITH <newprod>
 ```
 
-* `PRINT` <nonterminal> - prints the nonterminal definition at that point in
+`MOVETO <destination> <production>` - moves the production to `<destination>` and,
+ if needed, creates a new production <edited_nt> -> <destination>.
+
+`OPTINREF` - verifies that <edited_nt> has an empty production.  If so, it removes
+the empty production and replaces all references to <edited_nt> throughout the
+grammar with `OPT <edited_nt>`
+
+`PRINT` <nonterminal> - prints the nonterminal definition at that point in
   applying the edits.  Most useful when the edits get a bit complicated to follow.
 
 * (any other nonterminal name) - adds a new production (and possibly a new nonterminal)
