@@ -473,9 +473,15 @@ let inline_private_constants ~uctx env ce =
 
 (** Declaration of section variables and local definitions *)
 type variable_declaration =
-  | SectionLocalDef of { clearbody : bool; entry : proof_entry }
-  | SectionLocalAssum of { typ:Constr.types; impl:Glob_term.binding_kind ;
-                           univs:UState.named_universes_entry }
+  | SectionLocalDef of {
+      clearbody : bool;
+      entry : proof_entry;
+    }
+  | SectionLocalAssum of {
+      typ : Constr.types;
+      impl : Glob_term.binding_kind;
+      univs : UState.named_universes_entry;
+    }
 
 (* This object is only for things which iterate over objects to find
    variables (only Prettyp.print_context AFAICT) *)
@@ -486,7 +492,7 @@ let objVariable : Id.t Libobject.Dyn.tag =
 
 let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 
-let declare_variable_core ~name ~kind ~typing_flags d =
+let declare_variable ~name ~kind ~typing_flags d =
   (* Variables are distinguished by only short names *)
   if Decls.variable_exists name then
     raise (DeclareUniv.AlreadyDeclared (None, name));
@@ -557,9 +563,6 @@ let declare_variable_core ~name ~kind ~typing_flags d =
   Lib.add_leaf (inVariable name);
   Impargs.declare_var_implicits ~impl name;
   Notation.declare_ref_arguments_scope (GlobRef.VarRef name)
-
-let declare_variable ~name ~kind ~typing_flags ~typ ~impl ~univs =
-  declare_variable_core ~name ~kind ~typing_flags (SectionLocalAssum { typ; impl; univs })
 
 (* Declaration messages *)
 
@@ -687,7 +690,7 @@ let declare_entry_core ~name ?(scope=Locality.default_scope) ?(clearbody=false) 
   in
   let dref = match scope with
   | Locality.Discharge ->
-    let () = declare_variable_core ~typing_flags ~name ~kind (SectionLocalDef {clearbody; entry}) in
+    let () = declare_variable ~typing_flags ~name ~kind (SectionLocalDef {clearbody; entry}) in
     if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
     Names.GlobRef.VarRef name
   | Locality.Global local ->
