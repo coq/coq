@@ -225,6 +225,9 @@ struct
   (** Check whether given two rel-contexts are equal. *)
   let equal eq l = List.equal (fun c -> Declaration.equal eq c) l
 
+  (** Map all terms in a given rel-context. See also [Smart.map]. *)
+  let map_het f = List.map (Declaration.map_constr_het f)
+
   (** Perform a given action on every declaration in a given rel-context. *)
   let iter f = List.iter (Declaration.iter_constr f)
 
@@ -450,6 +453,9 @@ struct
 
   (** Check whether given two named-contexts are equal. *)
   let equal eq l = List.equal (fun c -> Declaration.equal eq c) l
+
+  (** Map all terms in a given named-context. See also [Smart.app]. *)
+  let map_het f = List.map (Declaration.map_constr_het f)
 
   (** Perform a given action on every declaration in a given named-context. *)
   let iter f = List.iter (Declaration.iter_constr f)

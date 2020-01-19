@@ -150,6 +150,10 @@ sig
       @raise Not_found if the designated de Bruijn index outside the range. *)
   val lookup : int -> ('c, 't) pt -> ('c, 't) Declaration.pt
 
+  (** Map all terms in a given named-context.
+      If domain and codomain are the same, use [Smart.map]. *)
+  val map_het : ('c -> 'd) -> ('c, 'c) pt -> ('d, 'd) pt
+
   (** Perform a given action on every declaration in a given rel-context. *)
   val iter : ('c -> unit) -> ('c, 'c) pt -> unit
 
@@ -298,6 +302,10 @@ sig
 
   (** Check whether given two named-contexts are equal. *)
   val equal : ('c -> 'c -> bool) -> ('c, 'c) pt -> ('c, 'c) pt -> bool
+
+  (** Map all terms in a given named-context.
+      If domain and codomain are the same, use [Smart.map]. *)
+  val map_het : ('c -> 'd) -> ('c, 'c) pt -> ('d, 'd) pt
 
   (** Perform a given action on every declaration in a given named-context. *)
   val iter : ('c -> unit) -> ('c, 'c) pt -> unit
