@@ -40,8 +40,8 @@ val declare_variable
   -> UState.named_universes_entry
   -> Impargs.manual_implicits
   -> Glob_term.binding_kind
-  -> variable CAst.t
-  -> unit
+  -> variable
+  -> GlobRef.t * UVars.Instance.t
 
 val declare_axiom
   : coercion_flag
@@ -52,7 +52,7 @@ val declare_axiom
   -> UState.named_universes_entry
   -> Impargs.manual_implicits
   -> Declaremods.inline
-  -> variable CAst.t
+  -> variable
   -> GlobRef.t * UVars.Instance.t
 
 (** Context command *)
