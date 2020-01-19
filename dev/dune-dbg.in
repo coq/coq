@@ -7,10 +7,20 @@ case $1 in
         exe=_build/default/checker/coqchk.bc
         ;;
     coqide)
+        shift
         exe=_build/default/ide/coqide_main.bc
         ;;
-    *)
+    coqc)
+        shift
         exe=_build/default/topbin/coqc_bin.bc
+        ;;
+    coqtop)
+        shift
+        exe=_build/default/topbin/coqtop_byte_bin.bc
+        ;;
+    *)
+        echo "First argument must be one of {coqc,coqtop,checker,coqide}"
+        exit 1
         ;;
 esac
 

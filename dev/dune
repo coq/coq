@@ -13,6 +13,8 @@
         ../checker/coqchk.bc
         ../topbin/coqc_bin.bc
         ../ide/coqide_main.bc
-        ; This is not enough as the call to `ocamlfind` will fail :/
+        %{lib:coq.plugins.ltac:ltac_plugin.cma}
+        ; This is not enough, the call to `ocamlfind` may fail if the
+        ; META file is not yet in place :/
         top_printers.cma)
   (action (copy dune-dbg.in dune-dbg)))
