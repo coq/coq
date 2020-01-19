@@ -65,7 +65,7 @@ Proof. by []. Qed.
 
 Lemma eqP T : Equality.axiom (@eq_op T).
 Proof. by case: T => ? []. Qed.
-Arguments eqP [T x y].
+Arguments eqP {T x y}.
 
 Delimit Scope eq_scope with EQ.
 Open Scope eq_scope.
@@ -345,7 +345,7 @@ Proof. by []. Qed.
 
 End SubEqType.
 
-Arguments val_eqP [T P sT x y].
+Arguments val_eqP {T P sT x y}.
 Prenex Implicits val_eqP.
 
 Notation "[ 'eqMixin' 'of' T 'by' <: ]" := (SubEqMixin _ : Equality.class_of T)
@@ -386,7 +386,7 @@ Qed.
 Canonical nat_eqMixin := EqMixin eqnP.
 Canonical nat_eqType := Eval hnf in EqType nat nat_eqMixin.
 
-Arguments eqnP [x y].
+Arguments eqnP {x y}.
 Prenex Implicits eqnP.
 
 Coercion nat_of_bool (b : bool) := if b then 1 else 0.

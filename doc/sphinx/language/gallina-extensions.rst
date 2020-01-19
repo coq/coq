@@ -1728,11 +1728,11 @@ Declaring Implicit Arguments
    To know which are the implicit arguments of an object, use the
    command :cmd:`Print Implicit` (see :ref:`displaying-implicit-args`).
 
-.. warn:: Argument number @num is a trailing implicit so must be maximal.
+.. exn:: Argument @ident is a trailing implicit, so it can't be declared non maximal. Please use %{ %} instead of [ ].
 
    For instance in
 
-   .. coqtop:: all warn
+   .. coqtop:: all fail
 
       Arguments prod _ [_].
 
