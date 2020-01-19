@@ -212,16 +212,10 @@ let context_insection sigma ~poly ctx =
   let uctx = Evd.evar_universe_context sigma in
   let univs = UState.univ_entry ~poly uctx in
   let fn i subst (name,_,_,_ as d) =
-    let d = context_subst subst d in
+    let (name,b,t,impl) = context_subst subst d in
+    let kind = Decls.(if b = None then IsAssumption Context else IsDefinition LetContext) in
     let univs = if i = 0 then univs else empty_univ_entry ~poly in
-    let refu = match d with
-      | name, None, t, impl ->
-        let kind = Decls.Context in
-        declare_variable NoCoercion ~kind t univs [] impl name
-      | name, Some b, t, impl ->
-        let kind = Decls.(IsDefinition LetContext) in
-        declare_local NoCoercion ~try_assum_as_instance:false ~kind (Some b) t univs [] impl name
-    in
+    let refu = declare_local NoCoercion ~try_assum_as_instance:true ~kind b t univs [] impl name in
     Constr.mkRef refu :: subst
   in
   let _ : Vars.substl = List.fold_left_i fn 0 [] ctx in
