@@ -179,8 +179,9 @@ Arguments axbar' _%type_scope
 Expands to: Constant UnivBinders.axbar'
 File "./output/UnivBinders.v", line 155, characters 19-26:
 The command has indeed failed with message:
-When declaring multiple axioms in one command, only the first is allowed a
-universe binder (which will be shared by the whole block).
+When declaring multiple assumptions in one command, only the first name is
+allowed to mention a universe binder (which will be shared by the whole
+block).
 foo@{i} = Type@{M.i} -> Type@{i}
      : Type@{max(M.i+1,i+1)}
 (* i |=  *)

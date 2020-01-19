@@ -151,35 +151,38 @@ let declare_assumptions ~scope ~kind ?user_warns univs nl l =
   in
   ()
 
-let maybe_error_many_udecls = function
-  | ({CAst.loc;v=id}, Some _) ->
-    user_err ?loc
-      Pp.(strbrk "When declaring multiple axioms in one command, " ++
-          strbrk "only the first is allowed a universe binder " ++
+let error_extra_universe_decl ?loc () =
+  user_err ?loc
+      Pp.(strbrk "When declaring multiple assumptions in one command, " ++
+          strbrk "only the first name is allowed to mention a universe binder " ++
           strbrk "(which will be shared by the whole block).")
-  | (_, None) -> ()
 
-let process_assumptions_udecls ~scope l =
-  let udecl, first_id = match l with
-    | (coe, ((id, udecl)::rest, c))::rest' ->
-      List.iter maybe_error_many_udecls rest;
-      List.iter (fun (coe, (idl, c)) -> List.iter maybe_error_many_udecls idl) rest';
-      udecl, id
-    | (_, ([], _))::_ | [] -> assert false
-  in
-  let () = match scope, udecl with
-    | Locality.Discharge, Some _ ->
-      let loc = first_id.CAst.loc in
-      let msg = Pp.str "Section variables cannot be polymorphic." in
-      user_err ?loc  msg
-    | _ -> ()
-  in
-  udecl, List.map (fun (coe, (idl, c)) -> coe, (List.map fst idl, c)) l
+let extract_assumption_names = function
+  | ({CAst.loc;v=id}, Some _) -> error_extra_universe_decl ?loc ()
+  | (id, None) -> id
+
+let process_assumptions_udecls = function
+  | (coe, ((id, udecl)::ids, c))::assums ->
+    let ids = List.map extract_assumption_names ids in
+    let assums = List.map (fun (coe, (idl, c)) -> (coe, (List.map extract_assumption_names idl, c))) assums in
+    udecl, (coe,(id::ids,c))::assums
+  | (_, ([], _))::_ | [] -> assert false
+
+let error_polymorphic_section_variable ?loc () =
+  user_err ?loc (Pp.str "Section variables cannot be polymorphic.")
+
+let process_assumptions_no_udecls l =
+  List.map (fun (coe, (ids, c)) ->
+      (coe, (List.map (function
+                 | ({CAst.loc}, Some _) -> error_polymorphic_section_variable ?loc ()
+                 | (id, None) -> id) ids, c))) l
 
 let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns nl l =
   let open Context.Named.Declaration in
   let env = Global.env () in
-  let udecl, l = process_assumptions_udecls ~scope l in
+  let udecl, l = match scope with
+    | Locality.Global import_behavior -> process_assumptions_udecls l
+    | Locality.Discharge -> None, process_assumptions_no_udecls l in
   let sigma, udecl = interp_univ_decl_opt env udecl in
   let l =
     if poly then
