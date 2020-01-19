@@ -17,7 +17,8 @@ open Constrintern
 open Impargs
 open Pretyping
 
-module RelDecl = Context.Rel.Declaration
+module NamedDecl = Context.Named.Declaration
+
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
 (** Declares a local variable/let, possibly declaring it:
@@ -116,7 +117,7 @@ let clear_univs scope univ =
   | _, (UState.Polymorphic_entry _, _) -> empty_univ_entry true
 
 let context_subst subst (name,b,t,impl) =
-  name, Option.map (Vars.substl subst) b, Vars.substl subst t, impl
+  name, Option.map (replace_vars subst) b, replace_vars subst t, impl
 
 let declare_context ~try_global_assum_as_instance ~scope univs nl ctx =
   let fn i subst d =
@@ -125,9 +126,9 @@ let declare_context ~try_global_assum_as_instance ~scope univs nl ctx =
     let refu = match scope with
       | Locality.Discharge -> declare_local is_coe ~try_assum_as_instance:true ~kind b t univs impls impl name
       | Locality.Global local -> declare_global is_coe ~try_assum_as_instance:try_global_assum_as_instance ~local ~kind b t univs impls nl name in
-    Constr.mkRef refu :: subst
+    (name, Constr.mkRef refu) :: subst
   in
-  let _ : Vars.substl = List.fold_left_i fn 0 [] ctx in
+  let _ = List.fold_left_i fn 0 [] ctx in
   ()
 
 let declare_assumptions ~scope ~kind ?user_warns univs nl l =
@@ -224,19 +225,19 @@ let do_assumptions ~program_mode ~poly ~scope ~kind ?user_warns nl l =
   declare_assumptions ~scope ~kind ?user_warns univs nl l
 
 let interp_context_gen env sigma l =
-  let sigma, (_, ((_env, ctx), impls)) = interp_context_evars ~program_mode:false env sigma l in
+  let sigma, (_, ((env, ctx), impls)) =
+    Impargs.with_implicit_protection (fun () ->
+        let () = Impargs.make_implicit_args false in
+        interp_named_context_evars ~program_mode:false env sigma l) ()
+  in
   (* Note, we must use the normalized evar from now on! *)
   let ce t = Pretyping.check_evars env sigma t in
-  let () = List.iter (fun decl -> Context.Rel.Declaration.iter_constr ce decl) ctx in
+  let () = List.iter (fun decl -> NamedDecl.iter_constr ce decl) ctx in
   let sigma, ctx = Evarutil.finalize
-      sigma (fun nf -> List.map (RelDecl.map_constr_het nf) ctx) in
+      sigma (fun nf -> List.map (NamedDecl.map_constr_het nf) ctx) in
   (* reorder, evar-normalize and add implicit status *)
   let ctx = List.rev_map (fun d ->
-      let {binder_name=name}, b, t = RelDecl.to_tuple d in
-      let name = match name with
-        | Anonymous -> user_err Pp.(str "Anonymous variables not allowed in contexts.")
-        | Name id -> id
-      in
+      let {binder_name=name}, b, t = NamedDecl.to_tuple d in
       let impl = let open Glob_term in
       let search x = match x.CAst.v with
         | Some (Name id',max) when Id.equal name id' ->
@@ -278,7 +279,13 @@ let do_context ~poly l =
   in
   declare_context ~try_global_assum_as_instance:true ~scope univs Declaremods.NoInline ctx
 
-(* API compatibility *)
+(* API compatibility (used in Elpi) *)
+
 let interp_context env sigma ctx =
+  let reverse_rel_context_of_reverse_named_context ctx =
+    List.rev (snd (List.fold_left_i (fun n (subst, ctx) (id,b,t,impl) ->
+        let decl = (id, Option.map (subst_vars subst) b, subst_vars subst t, impl) in
+        (id :: subst, decl :: ctx)) 1 ([],[]) ctx)) in
   let sigma, ctx = interp_context_gen env sigma ctx in
-  sigma, List.map (fun (id,b,t,(impl,_,_,_)) -> (id,b,t,impl)) ctx
+  let ctx = List.map (fun (id,b,t,(impl,_,_,_)) -> (id,b,t,impl)) ctx in
+  sigma, reverse_rel_context_of_reverse_named_context ctx

@@ -88,7 +88,8 @@ val do_context
   -> local_binder_expr list
   -> unit
 
-(** The first half of the context command, from expr to constr *)
+(** The first half of the context command, returning the declarations
+    in the same order as [Context], using de Bruijn indices (used by Elpi) *)
 val interp_context
   :  Environ.env
   -> Evd.evar_map
