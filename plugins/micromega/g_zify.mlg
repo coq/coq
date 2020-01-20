@@ -25,7 +25,8 @@ VERNAC COMMAND EXTEND DECLAREINJECTION CLASSIFIED AS SIDEFF
 | ["Add" "UnOp"      constr(t) ] -> { Zify.UnOp.register t }
 | ["Add" "CstOp"     constr(t) ] -> { Zify.CstOp.register t }
 | ["Add" "BinRel"    constr(t) ] -> { Zify.BinRel.register t }
-| ["Add" "PropOp"    constr(t) ] -> { Zify.PropOp.register t }
+| ["Add" "PropOp"    constr(t) ] -> { Zify.PropBinOp.register t }
+| ["Add" "PropBinOp"    constr(t) ] -> { Zify.PropBinOp.register t }
 | ["Add" "PropUOp"   constr(t) ] -> { Zify.PropUnOp.register t }
 | ["Add" "Spec"      constr(t) ] -> { Zify.Spec.register t }
 | ["Add" "BinOpSpec" constr(t) ] -> { Zify.Spec.register t }
@@ -34,13 +35,14 @@ VERNAC COMMAND EXTEND DECLAREINJECTION CLASSIFIED AS SIDEFF
 END
 
 TACTIC EXTEND ITER
-| [ "zify_iter_specs" tactic(t)] -> { Zify.iter_specs t }
+| [ "zify_iter_specs"] -> { Zify.iter_specs}
 END
 
 TACTIC EXTEND TRANS
 | [ "zify_op"  ] -> { Zify.zify_tac }
 | [ "zify_saturate"  ] -> { Zify.saturate }
 | [ "zify_iter_let" tactic(t)] -> { Zify.iter_let t }
+| [ "zify_elim_let" ] -> { Zify.elim_let }
 END
 
 VERNAC COMMAND EXTEND ZifyPrint CLASSIFIED AS SIDEFF

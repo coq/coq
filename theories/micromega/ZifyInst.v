@@ -17,44 +17,10 @@ Require Import ZifyClasses.
 Declare ML Module "zify_plugin".
 Local Open Scope Z_scope.
 
-(** Propositional logic *)
-Instance PropAnd : PropOp and.
-Proof.
-  constructor.
-  tauto.
-Defined.
-Add PropOp PropAnd.
-
-Instance PropOr : PropOp or.
-Proof.
-  constructor.
-  tauto.
-Defined.
-Add PropOp PropOr.
-
-Instance PropArrow : PropOp (fun x y => x -> y).
-Proof.
-  constructor.
-  intros.
-  tauto.
-Defined.
-Add PropOp PropArrow.
-
-Instance PropIff : PropOp iff.
-Proof.
-  constructor.
-  intros.
-  tauto.
-Defined.
-Add PropOp PropIff.
-
-Instance PropNot : PropUOp not.
-Proof.
-  constructor.
-  intros.
-  tauto.
-Defined.
-Add PropUOp PropNot.
+Ltac refl :=
+  abstract (intros ; match goal with
+                     | |- context[@inj _ _ ?X] => unfold X, inj
+                     end ; reflexivity).
 
 
 Instance Inj_Z_Z : InjTyp Z Z :=
@@ -162,12 +128,17 @@ Instance Op_pos_le : BinRel Pos.le :=
   {| TR := Z.le; TRInj := fun x y => iff_refl (Z.pos x <= Z.pos y) |}.
 Add BinRel Op_pos_le.
 
+Lemma eq_pos_inj : forall (x y:positive), x = y <-> Z.pos x = Z.pos y.
+Proof.
+  intros.
+  apply (iff_sym (Pos2Z.inj_iff x y)).
+Qed.
+
 Instance Op_eq_pos : BinRel (@eq positive) :=
-  {| TR := @eq Z ; TRInj := fun x y  => iff_sym (Pos2Z.inj_iff x y) |}.
+  { TR := @eq Z ; TRInj := eq_pos_inj }.
 Add BinRel Op_eq_pos.
 
 (* zify_positive_op *)
-
 
 Instance Op_Z_of_N : UnOp Z.of_N :=
   { TUOp := (fun x => x) ; TUOpInj := fun x => eq_refl (Z.of_N x) }.
@@ -189,8 +160,11 @@ Instance Op_pos_succ : UnOp Pos.succ :=
   { TUOp := fun x => x + 1; TUOpInj := Pos2Z.inj_succ  }.
 Add UnOp Op_pos_succ.
 
+
+
+
 Instance Op_pos_pred_double : UnOp Pos.pred_double :=
-  { TUOp := fun x => 2 * x - 1; TUOpInj := ltac:(reflexivity) }.
+{ TUOp := fun x => 2 * x - 1; TUOpInj := ltac:(refl) }.
 Add UnOp Op_pos_pred_double.
 
 Instance Op_pos_pred : UnOp Pos.pred :=
@@ -217,7 +191,7 @@ Instance Op_pos_of_nat : UnOp Pos.of_nat :=
 Add UnOp Op_pos_of_nat.
 
 Instance Op_pos_add : BinOp Pos.add :=
-  { TBOp := Z.add ; TBOpInj := ltac: (reflexivity) }.
+  { TBOp := Z.add ; TBOpInj := ltac: (refl) }.
 Add BinOp Op_pos_add.
 
 Instance Op_pos_add_carry : BinOp Pos.add_carry :=
@@ -230,7 +204,7 @@ Instance Op_pos_sub : BinOp Pos.sub :=
 Add BinOp Op_pos_sub.
 
 Instance Op_pos_mul : BinOp Pos.mul :=
-  { TBOp :=  Z.mul ; TBOpInj := ltac: (reflexivity) }.
+  { TBOp :=  Z.mul ; TBOpInj := ltac: (refl) }.
 Add BinOp Op_pos_mul.
 
 Instance Op_pos_min : BinOp Pos.min :=
@@ -250,19 +224,19 @@ Instance Op_pos_square : UnOp Pos.square :=
 Add UnOp Op_pos_square.
 
 Instance Op_xO : UnOp xO :=
-  { TUOp := fun x => 2 * x ; TUOpInj := ltac: (reflexivity) }.
+  { TUOp := fun x => 2 * x ; TUOpInj := ltac: (refl) }.
 Add UnOp Op_xO.
 
 Instance Op_xI : UnOp xI :=
-  { TUOp := fun x => 2 * x + 1 ; TUOpInj := ltac: (reflexivity) }.
+  { TUOp := fun x => 2 * x + 1 ; TUOpInj := ltac: (refl) }.
 Add UnOp Op_xI.
 
 Instance Op_xH : CstOp xH :=
-  { TCst := 1%Z ; TCstInj := ltac:(reflexivity)}.
+  { TCst := 1%Z ; TCstInj := ltac:(refl)}.
 Add CstOp Op_xH.
 
 Instance Op_Z_of_nat : UnOp Z.of_nat:=
-  { TUOp := fun x => x ; TUOpInj := ltac:(reflexivity) }.
+  { TUOp := fun x => x ; TUOpInj := (fun x : nat => @eq_refl Z (Z.of_nat x)) }.
 Add UnOp Op_Z_of_nat.
 
 (* zify_N_rel *)
@@ -287,6 +261,14 @@ Instance Op_eq_N : BinRel (@eq N) :=
 Add BinRel Op_eq_N.
 
 (* zify_N_op *)
+Instance Op_N_N0 : CstOp  N0 :=
+  { TCst := Z0 ; TCstInj := eq_refl }.
+Add CstOp Op_N_N0.
+
+Instance Op_N_Npos : UnOp  Npos :=
+  { TUOp := (fun x => x) ; TUOpInj := ltac:(refl) }.
+Add UnOp Op_N_Npos.
+
 Instance Op_N_of_nat : UnOp  N.of_nat :=
   { TUOp := fun x => x ; TUOpInj := nat_N_Z }.
 Add UnOp Op_N_of_nat.
@@ -296,7 +278,7 @@ Instance Op_Z_abs_N : UnOp Z.abs_N :=
 Add UnOp Op_Z_abs_N.
 
 Instance Op_N_pos : UnOp N.pos :=
-  { TUOp := fun x => x ; TUOpInj := ltac:(reflexivity)}.
+  { TUOp := fun x => x ; TUOpInj := ltac:(refl)}.
 Add UnOp Op_N_pos.
 
 Instance Op_N_add : BinOp N.add :=
@@ -360,68 +342,72 @@ Instance Op_eqZ : BinRel (@eq Z) :=
   { TR := @eq Z ; TRInj := fun x y  => iff_refl (x = y) }.
 Add BinRel Op_eqZ.
 
+Instance Op_Z_Z0 : CstOp Z0 :=
+  { TCst := Z0  ; TCstInj := eq_refl }.
+Add CstOp Op_Z_Z0.
+
 Instance Op_Z_add : BinOp Z.add :=
-  { TBOp := Z.add  ; TBOpInj := ltac:(reflexivity) }.
+  { TBOp := Z.add  ; TBOpInj := ltac:(refl) }.
 Add BinOp Op_Z_add.
 
 Instance Op_Z_min : BinOp Z.min :=
-  { TBOp := Z.min ; TBOpInj := ltac:(reflexivity) }.
+  { TBOp := Z.min ; TBOpInj := ltac:(refl) }.
 Add BinOp Op_Z_min.
 
 Instance Op_Z_max : BinOp Z.max :=
-  { TBOp := Z.max ; TBOpInj := ltac:(reflexivity) }.
+  { TBOp := Z.max ; TBOpInj := ltac:(refl) }.
 Add BinOp Op_Z_max.
 
 Instance Op_Z_mul : BinOp Z.mul :=
-  { TBOp := Z.mul ; TBOpInj := ltac:(reflexivity) }.
+  { TBOp := Z.mul ; TBOpInj := ltac:(refl) }.
 Add BinOp Op_Z_mul.
 
 Instance Op_Z_sub : BinOp Z.sub :=
-  { TBOp := Z.sub ; TBOpInj := ltac:(reflexivity) }.
+  { TBOp := Z.sub ; TBOpInj := ltac:(refl) }.
 Add BinOp Op_Z_sub.
 
 Instance Op_Z_div : BinOp Z.div :=
-  { TBOp := Z.div ; TBOpInj := ltac:(reflexivity) }.
+  { TBOp := Z.div ; TBOpInj := ltac:(refl) }.
 Add BinOp Op_Z_div.
 
 Instance Op_Z_mod : BinOp Z.modulo :=
-  { TBOp := Z.modulo ; TBOpInj := ltac:(reflexivity) }.
+  { TBOp := Z.modulo ; TBOpInj := ltac:(refl) }.
 Add BinOp Op_Z_mod.
 
 Instance Op_Z_rem : BinOp Z.rem :=
-  { TBOp := Z.rem ; TBOpInj := ltac:(reflexivity) }.
+  { TBOp := Z.rem ; TBOpInj := ltac:(refl) }.
 Add BinOp Op_Z_rem.
 
 Instance Op_Z_quot : BinOp Z.quot :=
-  { TBOp := Z.quot ; TBOpInj := ltac:(reflexivity) }.
+  { TBOp := Z.quot ; TBOpInj := ltac:(refl) }.
 Add BinOp Op_Z_quot.
 
 Instance Op_Z_succ : UnOp Z.succ :=
-  { TUOp := fun x => x + 1 ; TUOpInj := ltac:(reflexivity) }.
+  { TUOp := fun x => x + 1 ; TUOpInj := ltac:(refl) }.
 Add UnOp Op_Z_succ.
 
 Instance Op_Z_pred : UnOp Z.pred :=
-  { TUOp := fun x => x - 1 ; TUOpInj := ltac:(reflexivity) }.
+  { TUOp := fun x => x - 1 ; TUOpInj := ltac:(refl) }.
 Add UnOp Op_Z_pred.
 
 Instance Op_Z_opp : UnOp Z.opp :=
-  { TUOp := Z.opp ; TUOpInj := ltac:(reflexivity) }.
+  { TUOp := Z.opp ; TUOpInj := ltac:(refl) }.
 Add UnOp Op_Z_opp.
 
 Instance Op_Z_abs : UnOp Z.abs :=
-  { TUOp := Z.abs ; TUOpInj := ltac:(reflexivity) }.
+  { TUOp := Z.abs ; TUOpInj := ltac:(refl) }.
 Add UnOp Op_Z_abs.
 
 Instance Op_Z_sgn : UnOp Z.sgn :=
-  { TUOp := Z.sgn ; TUOpInj := ltac:(reflexivity) }.
+  { TUOp := Z.sgn ; TUOpInj := ltac:(refl) }.
 Add UnOp Op_Z_sgn.
 
 Instance Op_Z_pow : BinOp Z.pow :=
-  { TBOp := Z.pow ; TBOpInj := ltac:(reflexivity) }.
+  { TBOp := Z.pow ; TBOpInj := ltac:(refl) }.
 Add BinOp Op_Z_pow.
 
 Instance Op_Z_pow_pos : BinOp Z.pow_pos :=
-  { TBOp := Z.pow ; TBOpInj := ltac:(reflexivity) }.
+  { TBOp := Z.pow ; TBOpInj := ltac:(refl) }.
 Add BinOp Op_Z_pow_pos.
 
 Instance Op_Z_double : UnOp Z.double :=

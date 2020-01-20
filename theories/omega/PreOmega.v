@@ -573,16 +573,4 @@ Ltac zify_N := repeat zify_N_rel; repeat zify_N_op; unfold Z_of_N' in *.
 Require  Import ZifyClasses ZifyInst.
 Require  Zify.
 
-(* [elim_let] replaces a let binding (x := e : t)
-   by an equation (x = e) if t is an injected type *)
-
-Ltac elim_binding x t ty :=
-  let h := fresh "heq_" x in
-  pose proof (@eq_refl ty x : @eq ty x t) as h;
-  try clearbody x.
-
-Ltac elim_let := zify_iter_let elim_binding.
-
-Ltac zify :=
-  intros ; elim_let ;
-  Zify.zify  ; ZifyInst.zify_saturate.
+Ltac zify := Zify.zify.

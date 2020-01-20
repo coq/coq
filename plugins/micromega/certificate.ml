@@ -413,8 +413,14 @@ let bound_monomials (sys : WithProof.t list) =
       (fun acc ((p, o), _) -> ISet.union (LinPoly.monomials p) acc)
       ISet.empty sys
   in
+  let module SetWP = Set.Make (struct
+    type t = int * WithProof.t
+
+    let compare (_, x) (_, y) = WithProof.compare x y
+  end) in
   let bounds =
     saturate_bin
+      (module SetWP : Set.S with type elt = int * WithProof.t)
       (fun (i1, w1) (i2, w2) ->
         if i1 + i2 > deg then None
         else
