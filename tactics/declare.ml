@@ -362,7 +362,7 @@ let inVariable : unit -> obj =
     classify_function = (fun () -> Dispose)}
 
 let declare_variable ~name ~kind d =
-  (* Constr raisonne sur les noms courts *)
+  (* Variables are distinguished by only short names *)
   if Decls.variable_exists name then
     raise (AlreadyDeclared (None, name));
 
