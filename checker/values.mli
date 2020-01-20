@@ -38,7 +38,7 @@ type value =
   | Proxy of value ref
   (** Same as the inner value, used to define recursive types *)
 
-  | Uint63
+  | Int64
   | Float64
 
 (** NB: List and Opt have their own constructors to make it easy to
