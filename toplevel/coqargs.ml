@@ -204,6 +204,14 @@ let set_query opts q =
   | Queries queries -> Queries (queries@[q])
   }
 
+let warn_depr_load_ml_object =
+  CWarnings.create ~name:"deprecated-mlobject" ~category:"deprecated"
+         (fun () -> Pp.strbrk "The -load-ml-object option is deprecated, see the changelog for more details.")
+
+let warn_depr_ml_load_source =
+  CWarnings.create ~name:"deprecated-mlsource" ~category:"deprecated"
+         (fun () -> Pp.strbrk "The -load-ml-source option is deprecated, see the changelog for more details.")
+
 let warn_deprecated_inputstate =
   CWarnings.create ~name:"deprecated-inputstate" ~category:"deprecated"
          (fun () -> Pp.strbrk "The inputstate option is deprecated and discouraged.")
@@ -392,9 +400,11 @@ let parse_args ~help ~init arglist : t * string list =
       set_inputstate oval (next ())
 
     |"-load-ml-object" ->
+      warn_depr_load_ml_object ();
       Mltop.dir_ml_load (next ()); oval
 
     |"-load-ml-source" ->
+      warn_depr_ml_load_source ();
       Mltop.dir_ml_use (next ()); oval
 
     |"-load-vernac-object" ->
