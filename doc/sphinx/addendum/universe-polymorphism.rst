@@ -529,8 +529,8 @@ sections, except in the following ways:
        Polymorphic Universe i.
        Fail Constraint i = i.
 
-  This includes constraints implictly declared by commands such as
-  :cmd:`Variable`, which may as a such need to be used with universe
+  This includes constraints implicitly declared by commands such as
+  :cmd:`Variable`, which may need to be used with universe
   polymorphism activated (locally by attribute or globally by option):
 
   .. coqtop:: all
