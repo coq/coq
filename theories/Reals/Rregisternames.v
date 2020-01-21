@@ -8,23 +8,23 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import Rbase.
-Require Import Rfunctions.
-Require Import Rtrigo.
-Require Import SeqSeries.
-Require Export Ranalysis1.
-Require Export Ranalysis2.
-Require Export Ranalysis3.
-Require Export Rtopology.
-Require Export MVT.
-Require Export PSeries_reg.
-Require Export Exp_prop.
-Require Export Rtrigo_reg.
-Require Export Rsqrt_def.
-Require Export R_sqrt.
-Require Export Rtrigo_calc.
-Require Export Rgeom.
-Require Export Sqrt_reg.
-Require Export Ranalysis4.
-Require Export Rpower.
-Require Export Ranalysis_reg.
+Require Import Reals.
+
+(*****************************************************************)
+(** *   Register names in the Reals library used by plugins      *)
+(*****************************************************************)
+
+Register R as reals.R.type.
+Register R0 as reals.R.R0.
+Register R1 as reals.R.R1.
+Register Rle as reals.R.Rle.
+Register Rplus as reals.R.Rplus.
+Register Ropp as reals.R.Ropp.
+Register Rminus as reals.R.Rminus.
+Register Rmult as reals.R.Rmult.
+Register Rinv as reals.R.Rinv.
+Register Rdiv as reals.R.Rdiv.
+Register IZR as reals.R.IZR.
+Register Rabs as reals.R.Rabs.
+Register sqrt as reals.R.sqrt.
+Register powerRZ as reals.R.powerRZ.

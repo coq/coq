@@ -1,0 +1,148 @@
+diff --git a/backend/Inliningproof.v b/backend/Inliningproof.v
+index 181f40bf..cc84b1cc 100644
+--- a/backend/Inliningproof.v
++++ b/backend/Inliningproof.v
+@@ -744,7 +744,7 @@ Lemma match_stacks_free_right:
+   match_stacks F m m1' stk stk' sp.
+ Proof.
+   intros. eapply match_stacks_invariant; eauto.
+-  intros. eapply Mem.perm_free_1; eauto.
++  intros. eapply Mem.perm_free_1; eauto with ordered_type.
+   intros. eapply Mem.perm_free_3; eauto.
+ Qed.
+ 
+@@ -1043,7 +1043,7 @@ Proof.
+   eapply match_stacks_bound with (bound := sp').
+   eapply match_stacks_invariant; eauto.
+     intros. eapply Mem.perm_free_3; eauto.
+-    intros. eapply Mem.perm_free_1; eauto.
++    intros. eapply Mem.perm_free_1; eauto with ordered_type.
+     intros. eapply Mem.perm_free_3; eauto.
+   erewrite Mem.nextblock_free; eauto. red in VB; xomega.
+   eapply agree_val_regs; eauto.
+@@ -1135,7 +1135,7 @@ Proof.
+   eapply match_stacks_bound with (bound := sp').
+   eapply match_stacks_invariant; eauto.
+     intros. eapply Mem.perm_free_3; eauto.
+-    intros. eapply Mem.perm_free_1; eauto.
++    intros. eapply Mem.perm_free_1; eauto with ordered_type.
+     intros. eapply Mem.perm_free_3; eauto.
+   erewrite Mem.nextblock_free; eauto. red in VB; xomega.
+   destruct or; simpl. apply agree_val_reg; auto. auto.
+@@ -1182,7 +1182,7 @@ Proof.
+     subst b1. rewrite D in H8; inv H8. eelim Plt_strict; eauto.
+     intros. eapply Mem.perm_alloc_1; eauto.
+     intros. exploit Mem.perm_alloc_inv. eexact A. eauto.
+-    rewrite dec_eq_false; auto.
++    rewrite dec_eq_false; auto with ordered_type.
+   auto. auto. auto. eauto. auto.
+   rewrite H5. apply agree_regs_init_regs. eauto. auto. inv H1; auto. congruence. auto.
+   eapply Mem.valid_new_block; eauto.
+diff --git a/backend/ValueAnalysis.v b/backend/ValueAnalysis.v
+index 8dbb67a7..2b233900 100644
+--- a/backend/ValueAnalysis.v
++++ b/backend/ValueAnalysis.v
+@@ -1148,10 +1148,10 @@ Proof.
+ - constructor.
+ - assert (Plt sp bound') by eauto with va.
+   eapply sound_stack_public_call; eauto. apply IHsound_stack; intros.
+-  apply INV. xomega. rewrite SAME; auto. xomega. auto. auto.
++  apply INV. xomega. rewrite SAME; auto with ordered_type. xomega. auto. auto.
+ - assert (Plt sp bound') by eauto with va.
+   eapply sound_stack_private_call; eauto. apply IHsound_stack; intros.
+-  apply INV. xomega. rewrite SAME; auto. xomega. auto. auto.
++  apply INV. xomega. rewrite SAME; auto with ordered_type. xomega. auto. auto.
+   apply bmatch_ext with m; auto. intros. apply INV. xomega. auto. auto. auto.
+ Qed.
+ 
+@@ -1362,7 +1362,7 @@ Proof.
+   apply sound_stack_exten with bc.
+   apply sound_stack_inv with m. auto.
+   intros. apply Q. red. eapply Plt_trans; eauto.
+-  rewrite C; auto.
++  rewrite C; auto with ordered_type.
+   exact AA.
+ * (* public builtin call *)
+   exploit anonymize_stack; eauto.
+@@ -1381,7 +1381,7 @@ Proof.
+   apply sound_stack_exten with bc.
+   apply sound_stack_inv with m. auto.
+   intros. apply Q. red. eapply Plt_trans; eauto.
+-  rewrite C; auto.
++  rewrite C; auto with ordered_type.
+   exact AA.
+   }
+   unfold transfer_builtin in TR.
+diff --git a/lib/Heaps.v b/lib/Heaps.v
+index 9fa07a1d..85343998 100644
+--- a/lib/Heaps.v
++++ b/lib/Heaps.v
+@@ -256,14 +256,14 @@ Proof.
+   eapply gt_heap_trans with y; eauto. red; auto.
+ - intuition.
+   eapply lt_heap_trans; eauto. red; auto.
+-  eapply gt_heap_trans; eauto. red; auto.
++  eapply gt_heap_trans; eauto. red; auto with ordered_type.
+ - intuition. eapply gt_heap_trans; eauto. red; auto.
+ - rewrite e3 in *; simpl in *. intuition.
+   eapply lt_heap_trans with y; eauto. red; auto.
+   eapply gt_heap_trans; eauto. red; auto.
+ - intuition.
+   eapply lt_heap_trans with y; eauto. red; auto.
+-  eapply gt_heap_trans; eauto. red; auto.
++  eapply gt_heap_trans; eauto. red; auto with ordered_type.
+   eapply gt_heap_trans with x; eauto. red; auto.
+ - rewrite e3 in *; simpl in *; intuition.
+   eapply gt_heap_trans; eauto. red; auto.
+@@ -308,7 +308,7 @@ Proof.
+   intros. unfold insert.
+   case_eq (partition x h). intros a b EQ; simpl.
+   assert (E.eq y x \/ ~E.eq y x).
+-    destruct (E.compare y x); auto.
++    destruct (E.compare y x); auto with ordered_type.
+     right; red; intros. elim (E.lt_not_eq l). apply E.eq_sym; auto.
+   destruct H0.
+   tauto.
+diff --git a/lib/Ordered.v b/lib/Ordered.v
+index bcf24cbd..1adbd330 100644
+--- a/lib/Ordered.v
++++ b/lib/Ordered.v
+@@ -21,6 +21,8 @@ Require Import Coqlib.
+ Require Import Maps.
+ Require Import Integers.
+ 
++Create HintDb ordered_type.
++
+ (** The ordered type of positive numbers *)
+ 
+ Module OrderedPositive <: OrderedType.
+@@ -173,17 +175,17 @@ Definition eq (x y: t) :=
+ 
+ Lemma eq_refl : forall x : t, eq x x.
+ Proof.
+-  intros; split; auto.
++  intros; split; auto with ordered_type.
+ Qed.
+ 
+ Lemma eq_sym : forall x y : t, eq x y -> eq y x.
+ Proof.
+-  unfold eq; intros. intuition auto.
++  unfold eq; intros. intuition auto with ordered_type.
+ Qed.
+ 
+ Lemma eq_trans : forall x y z : t, eq x y -> eq y z -> eq x z.
+ Proof.
+-  unfold eq; intros. intuition eauto.
++  unfold eq; intros. intuition eauto with ordered_type.
+ Qed.
+ 
+ Definition lt (x y: t) :=
+@@ -201,7 +203,7 @@ Proof.
+   case (A.compare (fst x) (fst z)); intro.
+   assumption.
+   generalize (A.lt_not_eq H2); intro. elim H5.
+-  apply A.eq_trans with (fst z). auto. auto.
++  apply A.eq_trans with (fst z). auto. auto with ordered_type.
+   generalize (@A.lt_not_eq (fst z) (fst y)); intro.
+   elim H5. apply A.lt_trans with (fst x); auto.
+   apply A.eq_sym; auto.

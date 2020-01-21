@@ -1147,8 +1147,8 @@ function make_menhir {
   make_ocaml
   make_findlib
   make_ocamlbuild
-  # This is the version required by latest CompCert
-  if build_prep https://gitlab.inria.fr/fpottier/menhir/-/archive/20190626 menhir-20190626 tar.gz 1 ; then
+  # This is the latest version as of Jan 13 2020 and compatible with CompCert
+  if build_prep https://gitlab.inria.fr/fpottier/menhir/-/archive/20190626 menhir-20190924 tar.gz 1 ; then
     # Note: menhir doesn't support -j 8, so don't pass MAKE_OPT
     log2 make all PREFIX="$PREFIXOCAML"
     log2 make install PREFIX="$PREFIXOCAML"
@@ -1649,6 +1649,10 @@ function make_addon_equations {
     logn coq_makefile ${COQBIN}coq_makefile -f _CoqProject -o Makefile
     log1 make $MAKE_OPT
     log2 make install
+    # Hack: cmxs file not installed
+    # Since the makefiles switch to dune in master there is no point in fixing it
+    logn cp_cmxs cp src/equations_plugin.cmxs ${COQLIB}/user-contrib/Equations/
+    logn cp_cmxa cp src/equations_plugin.cmxa ${COQLIB}/user-contrib/Equations/
     build_post
   fi
 }
@@ -1763,6 +1767,8 @@ function make_addon_compcert {
   make_menhir
   make_addon_menhirlib
   installer_addon_dependency_end
+  # Temporary hack for 8.11. See ci-basic-overlays.h
+  compcert_CI_REF=v3.6
   if build_prep_overlay compcert; then
     installer_addon_section compcert "CompCert" "ATTENTION: THIS IS NOT OPEN SOURCE! CompCert verified C compiler and Clightgen (required for using VST for your own code)" "off"
     logn configure ./configure -ignore-coq-version -clightgen -prefix "$PREFIXCOQ" -coqdevdir "$PREFIXCOQ/lib/coq/user-contrib/compcert" x86_32-cygwin
