@@ -4,7 +4,10 @@ ci_dir="$(dirname "$0")"
 . "${ci_dir}/ci-common.sh"
 
 CIRCLE_SF_TOKEN=00127070c10f5f09574b050e4f08e924764680d2
-data=$(wget https://circleci.com/api/v1.1/project/gh/DeepSpec/sfdev/latest/artifacts?circle-token=${CIRCLE_SF_TOKEN} -O -)
+
+# "latest" is disabled due to lack of build credits upstream, thus artifacts fail
+# data=$(wget https://circleci.com/api/v1.1/project/gh/DeepSpec/sfdev/latest/artifacts?circle-token=${CIRCLE_SF_TOKEN} -O -)
+data=$(wget https://circleci.com/api/v1.1/project/gh/DeepSpec/sfdev/1411/artifacts?circle-token=${CIRCLE_SF_TOKEN} -O -)
 
 mkdir -p "${CI_BUILD_DIR}" && cd "${CI_BUILD_DIR}"
 
