@@ -390,9 +390,6 @@ Instance Op_Z_sgn : UnOp Z.sgn :=
   { TUOp := Z.sgn ; TUOpInj := ltac:(reflexivity) }.
 Add UnOp Op_Z_sgn.
 
-Instance Op_Z_pow_pos : BinOp Z.pow_pos :=
-  { TBOp := Z.pow ; TBOpInj := ltac:(reflexivity) }.
-Add BinOp Op_Z_pow_pos.
 
 Lemma of_nat_to_nat_eq : forall x,  Z.of_nat (Z.to_nat x) = Z.max 0 x.
 Proof.
