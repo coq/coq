@@ -322,7 +322,7 @@ val in_punivs : 'a -> 'a puniverses
 val eq_puniverses : ('a -> 'a -> bool) -> 'a puniverses -> 'a puniverses -> bool
 
 (** A vector of universe levels with universe Constraint.t,
-    representiong local universe variables and associated Constraint.t *)
+    representing local universe variables and associated Constraint.t *)
 
 module UContext :
 sig

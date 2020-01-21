@@ -72,7 +72,7 @@ let declare_univ_binders gr pl =
         CErrors.anomaly ~label:"declare_univ_binders" Pp.(str "declare_univ_binders on variable " ++ Id.print id ++ str".")
       | ConstructRef _ ->
         CErrors.anomaly ~label:"declare_univ_binders"
-          Pp.(str "declare_univ_binders on an constructor reference")
+          Pp.(str "declare_univ_binders on a constructor reference")
     in
     let univs = Id.Map.fold (fun id univ univs ->
         match Univ.Level.name univ with
