@@ -1,11 +1,11 @@
 # Coq XML Protocol
 
 This document is based on documentation originally written by CJ Bell
-for his [vscoq](https://github.com/siegebell/vscoq/) project.
+for his [vscoq](https://github.com/coq-community/vscoq/) project.
 
 Here, the aim is to provide a "hands on" description of the XML
 protocol that coqtop and IDEs use to communicate. The protocol first appeared 
-with Coq 8.5, and is used by CoqIDE, [vscoq](https://github.com/siegebell/vscoq/), and other user interfaces.
+with Coq 8.5, and is used by CoqIDE, [vscoq](https://github.com/coq-community/vscoq/), and other user interfaces.
 
 A somewhat out-of-date description of the async state machine is
 [documented here](https://github.com/ejgallego/jscoq/blob/v8.10/etc/notes/coq-notes.md).
