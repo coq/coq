@@ -923,7 +923,7 @@ let datadir,datadirsuffix = let (_,_,d,s) = select "DATADIR" in d,s
 
 (** * CC runtime flags *)
 
-let cflags_dflt = "-Wall -Wno-unused -g -O2 -fexcess-precision=standard"
+let cflags_dflt = "-Wall -Wno-unused -g -O2 -std=c99 -fasm"
 
 let cflags_sse2 = "-msse2 -mfpmath=sse"
 
