@@ -60,14 +60,14 @@ of |Coq| and affected releases. See the `Changes in 8.11+beta1`_
 section and following sections for the detailed list of changes,
 including potentially breaking changes marked with **Changed**.
 
-Maxime Dénès, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
-Soegtrop, Théo Zimmermann worked on maintaining and improving the
-continuous integration system and package building infrastructure.
-
 Coq's documentation is available at https://coq.github.io/doc/v8.11/api (documentation of
 the ML API), https://coq.github.io/doc/v8.11/refman (reference
 manual), and https://coq.github.io/doc/v8.11/stdlib (documentation of
 the standard library).
+
+Maxime Dénès, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
+Soegtrop, Théo Zimmermann worked on maintaining and improving the
+continuous integration system and package building infrastructure.
 
 The OPAM repository for |Coq| packages has been maintained by
 Guillaume Claret, Karl Palmskog, Matthieu Sozeau, Enrico Tassi with
@@ -566,7 +566,8 @@ Changes in 8.11.0
   <https://github.com/coq/coq/pull/11203>`_, fixes `#10971
   <https://github.com/coq/coq/issues/10971>`_, by Jason Gross)
 - **Fixed:**
-  Efficiency regression introduced by  PR `#9725 <https://github.com/coq/coq/pull/9725>`_
+  Efficiency regression of :tacn:`lia` introduced in 8.10
+  by PR `#9725 <https://github.com/coq/coq/pull/9725>`_
   (`#11263 <https://github.com/coq/coq/pull/11263>`_,
   fixes `#11063 <https://github.com/coq/coq/issues/11063>`_,
   and `#11242 <https://github.com/coq/coq/issues/11242>`_,
@@ -579,14 +580,14 @@ Changes in 8.11.0
   by Emilio Jesus Gallego Arias).
 - **Fixed**
   For compatibility reasons, in 8.11, :tacn:`zify` does not support :g:`Z.pow_pos` by default.
-  It can be enabled by loading explicitly the module :g:`ZifyPow`.
+  It can be enabled by loading explicitly the module :g:`ZifyPow`
   (`#11430 <https://github.com/coq/coq/pull/11430>`_ by Frédéric Besson
   fixes `#11191 <https://github.com/coq/coq/issues/11191>`_).
 
 **Tactic language**
 
 - **Fixed:**
-  Syntax of tactic `cofix ... with ...` was broken from Coq 8.10
+  Syntax of tactic `cofix ... with ...` was broken since Coq 8.10
   (`#11241 <https://github.com/coq/coq/pull/11241>`_,
   by Hugo Herbelin).
 
@@ -611,7 +612,7 @@ Changes in 8.11.0
   <https://github.com/coq/coq/pull/11280>`_, by Arthur Charguéraud).
 - **Fixed:**
   ``coq_makefile`` does not break when using the ``CAMLPKGS`` variable
-  together with an unpacked (``mllib``) plugin. (`#11357
+  together with an unpacked (``mllib``) plugin (`#11357
   <https://github.com/coq/coq/pull/11357>`_, by Gaëtan Gilbert).
 - **Fixed:**
   ``coqdoc`` with option ``-g`` (Gallina only) now correctly prints
