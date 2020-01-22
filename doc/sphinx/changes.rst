@@ -573,10 +573,15 @@ Changes in 8.11.0
   and `#11270 <https://github.com/coq/coq/issues/11270>`_, by Frédéric Besson).
 - **Deprecated:**
   The undocumented ``omega with`` tactic variant has been deprecated.
-  Using ``lia`` is the recommended replacement, tho the old semantics
+  Using :tacn:`lia` is the recommended replacement, tho the old semantics
   of ``omega with *`` can be recovered with ``zify; omega``
   (`#11337 <https://github.com/coq/coq/pull/11337>`_,
   by Emilio Jesus Gallego Arias).
+- **Fixed**
+  For compatibility reasons, in 8.11, :tacn:`zify` does not support :g:`Z.pow_pos` by default.
+  It can be enabled by loading explicitly the module :g:`ZifyPow`.
+  (`#11430 <https://github.com/coq/coq/pull/11430>`_ by Frédéric Besson
+  fixes `#11191 <https://github.com/coq/coq/issues/11191>`_).
 
 **Tactic language**
 
