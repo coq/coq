@@ -1,1 +1,3 @@
-- A section variable introduces with :g:`Let` can be declared as a :g:`Canonical Structure` (`#11164 <https://github.com/coq/coq/pull/11164>`_, by Enrico Tassi).
+- **Added:** A section variable introduces with :g:`Let` can be
+  declared as a :g:`Canonical Structure` (`#11164
+  <https://github.com/coq/coq/pull/11164>`_, by Enrico Tassi).

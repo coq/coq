@@ -1,4 +1,5 @@
-- The tactic :tacn:`rapply` in :g:`Coq.Program.Tactics` now handles
+- **Changed:**
+  The tactic :tacn:`rapply` in :g:`Coq.Program.Tactics` now handles
   arbitrary numbers of underscores and takes in a :g:`uconstr`.  In
   rare cases where users were relying on :tacn:`rapply` inserting
   exactly 15 underscores and no more, due to the lemma having a
