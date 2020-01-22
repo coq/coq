@@ -1,4 +1,0 @@
-- **Removed:**
-  Export of module ``RList`` in ``Ranalysis.v`` and ``Ranalysis_reg.v``. Module ``RList`` is still there but must be imported explicitly where required.
-  (`#11396 <https://github.com/coq/coq/pull/11396>`_,
-  by Michael Soegtrop).

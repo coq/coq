@@ -519,10 +519,17 @@ Changes in 8.11.0
 
 **Kernel**
 
+- **Changed:** the native compilation (:tacn:`native_compute`) now
+  creates a directory to contain temporary files instead of putting
+  them in the root of the system temporary directory (`#11081
+  <https://github.com/coq/coq/pull/11081>`_, by Gaëtan Gilbert).
 - **Fixed:** `#11360 <https://github.com/issues/11360>`_.
   Broken section closing when a template polymorphic inductive type depends on
   a section variable through its parameters (`#11361
   <https://github.com/coq/coq/pull/11361>`_, by Gaëtan Gilbert).
+- **Fixed:** The type of :g:`Set+1` would be computed to be itself,
+  leading to a proof of False (`#11422
+  <https://github.com/coq/coq/pull/11422>`_, by Gaëtan Gilbert).
 
 **Specification language, type inference**
 
@@ -574,9 +581,18 @@ Changes in 8.11.0
 **Tactic language**
 
 - **Fixed:**
-  Syntax of tactic `cofix ... with ...` was broken from Coq 8.10.
+  Syntax of tactic `cofix ... with ...` was broken from Coq 8.10
   (`#11241 <https://github.com/coq/coq/pull/11241>`_,
   by Hugo Herbelin).
+
+**Commands and options**
+
+- **Deprecated:** The `-load-ml-source` and `-load-ml-object` command
+  line options have been deprecated; their use was very limited, you
+  can achieve the same by adding object files in the linking step or
+  by using a plugin (`#11428
+  <https://github.com/coq/coq/pull/11428>`_, by Emilio Jesus Gallego
+  Arias).
 
 **Tools**
 
@@ -584,10 +600,32 @@ Changes in 8.11.0
   ``coqtop --version`` was broken when called in the middle of an installation process
   (`#11255 <https://github.com/coq/coq/pull/11255>`_, by Hugo Herbelin, fixing
   `#11254 <https://github.com/coq/coq/pull/11254>`_).
+- **Deprecated:** The ``-quick`` command is renamed to ``-vio``, for
+  consistency with the new ``-vos`` and ``-vok`` flags. Usage of
+  ``-quick`` is now deprecated (`#11280
+  <https://github.com/coq/coq/pull/11280>`_, by Arthur Charguéraud).
 - **Fixed:**
   ``coq_makefile`` does not break when using the ``CAMLPKGS`` variable
   together with an unpacked (``mllib``) plugin. (`#11357
   <https://github.com/coq/coq/pull/11357>`_, by Gaëtan Gilbert).
+- **Fixed:**
+  ``coqdoc`` with option ``-g`` (Gallina only) now correctly prints
+  commands with attributes (`#11394 <https://github.com/coq/coq/pull/11394>`_,
+  fixes `#11353 <https://github.com/coq/coq/issues/11353>`_,
+  by Karl Palmskog).
+
+**CoqIDE**
+
+- **Changed:** CoqIDE now uses the GtkSourceView native implementation
+  of the autocomplete mechanism (`#11400
+  <https://github.com/coq/coq/pull/11400>`_, by Pierre-Marie Pédrot).
+
+**Standard library**
+
+- **Removed:** Export of module :g:`RList` in :g:`Ranalysis` and
+  :g:`Ranalysis_reg`. Module :g:`RList` is still there but must be
+  imported explicitly where required (`#11396
+  <https://github.com/coq/coq/pull/11396>`_, by Michael Soegtrop).
 
 **Infrastructure and dependencies**
 
