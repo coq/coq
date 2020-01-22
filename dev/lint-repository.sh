@@ -33,6 +33,6 @@ echo Checking overlays
 dev/tools/check-overlays.sh || CODE=1
 
 echo Checking ocamlformat
-dune build @fmt || CODE=1
+make -f Makefile.dune fmt || CODE=1
 
 exit $CODE
