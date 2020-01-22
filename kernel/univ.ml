@@ -345,8 +345,8 @@ struct
           (Level.is_prop u && not (Level.is_sprop v))
         else false
 
-    let successor (u,n) =
-      if Level.is_small u then type1
+    let successor (u,n as e) =
+      if is_small e then type1
       else (u, n + 1)
 
     let addn k (u,n as x) =
