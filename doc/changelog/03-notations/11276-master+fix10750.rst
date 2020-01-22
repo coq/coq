@@ -1,4 +1,0 @@
-- **Fixed:**
-  :cmd:`Print Visibility` was failing in the presence of only-printing notations
-  (`#11276 <https://github.com/coq/coq/pull/11276>`_,
-  by Hugo Herbelin, fixing `#10750 <https://github.com/coq/coq/pull/10750>`_).
