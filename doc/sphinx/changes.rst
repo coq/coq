@@ -66,11 +66,11 @@ manual), and https://coq.github.io/doc/v8.11/stdlib (documentation of
 the standard library).
 
 Maxime Dénès, Emilio Jesús Gallego Arias, Gaëtan Gilbert, Michael
-Soegtrop, Théo Zimmermann worked on maintaining and improving the
+Soegtrop and Théo Zimmermann worked on maintaining and improving the
 continuous integration system and package building infrastructure.
 
 The OPAM repository for |Coq| packages has been maintained by
-Guillaume Claret, Karl Palmskog, Matthieu Sozeau, Enrico Tassi with
+Guillaume Claret, Karl Palmskog, Matthieu Sozeau and Enrico Tassi with
 contributions from many users. A list of packages is available at
 https://coq.inria.fr/opam/www/.
 
