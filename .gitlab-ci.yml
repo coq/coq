@@ -234,7 +234,7 @@ before_script:
     expire_in: 1 week
   dependencies: []
   tags:
-    - windows
+    - windows-inria
   before_script: []
   script:
     - call dev/ci/gitlab.bat
