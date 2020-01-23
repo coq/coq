@@ -47,7 +47,6 @@ IF "%WINDOWS%" == "enabled_all_addons" (
     -addon=mtac2 ^
     -addon=mathcomp ^
     -addon=menhir ^
-    -addon=menhirlib ^
     -addon=compcert ^
     -addon=extlib ^
     -addon=quickchick ^

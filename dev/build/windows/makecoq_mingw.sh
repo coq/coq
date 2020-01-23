@@ -1765,7 +1765,6 @@ function make_addon_menhirlib {
 function make_addon_compcert {
   installer_addon_dependency_beg compcert
   make_menhir
-  make_addon_menhirlib
   installer_addon_dependency_end
   # Temporary hack for 8.11. See ci-basic-overlays.h
   compcert_CI_REF=v3.6
