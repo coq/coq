@@ -127,11 +127,11 @@ in time.
 - [ ] Send an e-mail on Coqdev announcing that the tag has been put so that
   package managers can start preparing package updates (including a
   `coq-bignums` compatible version).
-- [ ] Ping **@erikmd** to update the Docker images in `coqorg/coq`
+- [ ] Ping `@erikmd` to update the Docker images in `coqorg/coq`
   (requires `coq-bignums` in `extra-dev` for a beta / in `released`
   for a final release).
 - [ ] Draft a release on GitHub.
-- [ ] Get **@maximedenes** to sign the Windows and MacOS packages and
+- [ ] Get `@maximedenes` to sign the Windows and MacOS packages and
   upload them on GitHub.
 - [ ] Prepare a page of news on the website with the link to the GitHub release
   (see [coq/www#63](https://github.com/coq/www/pull/63)).
@@ -139,8 +139,6 @@ in time.
   *TODO: setup some continuous deployment for this.*
 - [ ] Merge the website update, publish the release
   and send announcement e-mails.
-- [ ] Ping **@Zimmi48** to publish a new version on Zenodo.
-  *TODO: automate this.*
 - [ ] Close the milestone
 
 ## At the final release time ##
@@ -160,7 +158,10 @@ in time.
 
 Repeat the generic process documented above for all releases.
 
+Ping `@Zimmi48` to:
+
 - [ ] Switch the default version of the reference manual on the website.
+- [ ] Publish a new version on Zenodo.
 
 ## At the patch-level release time ##
 
