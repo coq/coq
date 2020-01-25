@@ -3113,6 +3113,12 @@ the conversion in hypotheses :n:`{+ @ident}`.
    compilation cost is higher, so it is worth using only for intensive
    computations.
 
+   .. flag:: NativeCompute Timing
+
+      This flag causes all calls to the native compiler to print
+      timing information for the compilation, execution, and
+      reification phases of native compilation.
+
    .. flag:: NativeCompute Profiling
 
       On Linux, if you have the ``perf`` profiler installed, this flag makes

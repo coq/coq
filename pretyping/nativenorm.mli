@@ -20,6 +20,9 @@ val set_profile_filename : string -> unit
 val get_profiling_enabled : unit -> bool
 val set_profiling_enabled : bool -> unit
 
+val get_timing_enabled : unit -> bool
+val set_timing_enabled : bool -> unit
+
 
 val native_norm : env -> evar_map -> constr -> types -> constr
 

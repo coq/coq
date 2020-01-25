@@ -1453,6 +1453,14 @@ let () =
       optread  = Nativenorm.get_profiling_enabled;
       optwrite = Nativenorm.set_profiling_enabled }
 
+let () =
+  declare_bool_option
+    { optdepr  = false;
+      optname  = "enable native compute timing";
+      optkey   = ["NativeCompute"; "Timing"];
+      optread  = Nativenorm.get_timing_enabled;
+      optwrite = Nativenorm.set_timing_enabled }
+
 let _ =
   declare_bool_option
     { optdepr  = false;
