@@ -151,7 +151,7 @@ val close_section : unit -> unit
 
 type frozen
 
-val freeze : marshallable:bool -> frozen
+val freeze : unit -> frozen
 val unfreeze : frozen -> unit
 
 (** Keep only the libobject structure, not the objects themselves *)
