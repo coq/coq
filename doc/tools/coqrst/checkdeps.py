@@ -37,3 +37,8 @@ try:
     import bs4
 except:
     missing_dep('beautifulsoup4')
+
+try:
+    import sphinxcontrib.bibtex
+except:
+    missing_dep('sphinxcontrib-bibtex')
