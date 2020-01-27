@@ -36,7 +36,6 @@ let init () =
 \n    <menuitem action='Save' />\
 \n    <menuitem action='Save as' />\
 \n    <menuitem action='Save all' />\
-\n    <menuitem action='Revert all buffers' />\
 \n    <menuitem action='Close buffer' />\
 \n    <menuitem action='Print...' />\
 \n    <menu action='Export to'>\

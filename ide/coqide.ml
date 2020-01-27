@@ -996,8 +996,6 @@ let build_ui () =
     item "Save" ~callback:(File.save ~parent:w) ~stock:`SAVE ~tooltip:"Save current buffer";
     item "Save as" ~label:"S_ave as" ~stock:`SAVE_AS ~callback:(File.saveas ~parent:w);
     item "Save all" ~label:"Sa_ve all" ~callback:File.saveall;
-    item "Revert all buffers" ~label:"_Revert all buffers"
-      ~callback:(File.revert_all ~parent:w) ~stock:`REVERT_TO_SAVED;
     item "Close buffer" ~label:"_Close buffer" ~stock:`CLOSE
       ~callback:(File.close_buffer ~parent:w) ~tooltip:"Close current buffer";
     item "Print..." ~label:"_Print..."
