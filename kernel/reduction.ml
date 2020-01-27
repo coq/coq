@@ -812,14 +812,16 @@ let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
     compare_cumul_instances = infer_inductive_instances; }
 
 let gen_conv cv_pb l2r reds env evars univs t1 t2 =
-  let b =
-    if cv_pb = CUMUL then leq_constr_univs univs t1 t2
-    else eq_constr_univs univs t1 t2
-  in
+  if Environ.check_conv env then begin
+    let b =
+      if cv_pb = CUMUL then leq_constr_univs univs t1 t2
+      else eq_constr_univs univs t1 t2
+    in
     if b then ()
     else
-      let _ = clos_gen_conv reds cv_pb l2r evars env (univs, checked_universes) t1 t2 in
-        ()
+      let _ : _ * _ = clos_gen_conv reds cv_pb l2r evars env (univs, checked_universes) t1 t2 in
+      ()
+  end
 
 (* Profiling *)
 let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _->None), universes env) =

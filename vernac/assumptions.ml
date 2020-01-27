@@ -320,6 +320,12 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
   | ConstRef kn ->
       let cb = lookup_constant kn in
       let accu =
+        if cb.const_typing_flags.check_conv then accu
+        else
+          let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
+          ContextObjectMap.add (Axiom (UncheckedConv obj, l)) Constr.mkProp accu
+      in
+      let accu =
         if cb.const_typing_flags.check_guarded then accu
         else
           let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
@@ -345,6 +351,12 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st gr t =
       accu
   | IndRef (m,_) | ConstructRef ((m,_),_) ->
       let mind = lookup_mind m in
+      let accu =
+        if mind.mind_typing_flags.check_conv then accu
+        else
+          let l = try GlobRef.Map_env.find obj ax2ty with Not_found -> [] in
+          ContextObjectMap.add (Axiom (UncheckedConv obj, l)) Constr.mkProp accu
+      in
       let accu =
         if mind.mind_typing_flags.check_positive then accu
         else

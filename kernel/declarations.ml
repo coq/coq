@@ -66,6 +66,9 @@ type universes =
     of a constant are tracked in their {!constant_body} so that they
     can be displayed to the user. *)
 type typing_flags = {
+  check_conv : bool;
+  (** If [false] then Reduction.conv is a noop. *)
+
   check_guarded : bool;
   (** If [false] then fixed points and co-fixed points are assumed to
       be total. *)

@@ -273,6 +273,7 @@ let is_impredicative_univ env u = is_impredicative_sort env (Sorts.sort_of_univ 
 
 let type_in_type env = not (typing_flags env).check_universes
 let deactivated_guard env = not (typing_flags env).check_guarded
+let check_conv env = env.env_typing_flags.check_conv
 
 let indices_matter env = env.env_typing_flags.indices_matter
 
@@ -440,6 +441,7 @@ let set_engagement c env =
 
 (* It's convenient to use [{flags with foo = bar}] so we're smart wrt to it. *)
 let same_flags {
+     check_conv;
      check_guarded;
      check_positive;
      check_universes;
@@ -450,6 +452,7 @@ let same_flags {
      enable_native_compiler;
      cumulative_sprop;
   } alt =
+  check_conv == alt.check_conv &&
   check_guarded == alt.check_guarded &&
   check_positive == alt.check_positive &&
   check_universes == alt.check_universes &&

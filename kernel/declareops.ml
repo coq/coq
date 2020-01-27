@@ -18,6 +18,7 @@ module RelDecl = Context.Rel.Declaration
     [constant_body], [mutual_inductive_body], [module_body] ... *)
 
 let safe_flags oracle = {
+  check_conv = true;
   check_guarded = true;
   check_positive = true;
   check_universes = true;

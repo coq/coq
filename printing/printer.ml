@@ -828,6 +828,7 @@ type axiom =
   | Positive of MutInd.t (* A mutually inductive definition which has been assumed positive. *)
   | Guarded of GlobRef.t (* a constant whose (co)fixpoints have been assumed to be guarded *)
   | TypeInType of GlobRef.t (* a constant which relies on type in type *)
+  | UncheckedConv of GlobRef.t (* uses Unset Conversion Checking *)
 
 type context_object =
   | Variable of Id.t (* A section variable or a Let definition *)
@@ -911,7 +912,9 @@ let pr_assumptionset env sigma s =
       | Guarded gr ->
           hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"is assumed to be guarded.")
       | TypeInType gr ->
-         hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"relies on an unsafe hierarchy.")
+        hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"relies on an unsafe hierarchy.")
+      | UncheckedConv gr ->
+        hov 2 (safe_pr_global env gr ++ spc () ++ strbrk"skipped conversion checking.")
     in
     let fold t typ accu =
       let (v, a, o, tr) = accu in
@@ -987,7 +990,9 @@ let print_and_diff oldp newp =
     Feedback.msg_notice output;;
 
 let pr_typing_flags flags =
-  str "check_guarded: " ++ bool flags.check_guarded ++ fnl ()
-  ++ str "check_positive: " ++ bool flags.check_positive ++ fnl ()
-  ++ str "check_universes: " ++ bool flags.check_universes ++ fnl ()
-  ++ str "cumulative sprop: " ++ bool flags.cumulative_sprop
+  str "check conversion: " ++ bool flags.check_conv ++ fnl ()
+  ++ str "check guarded: " ++ bool flags.check_guarded ++ fnl ()
+  ++ str "check positive: " ++ bool flags.check_positive ++ fnl ()
+  ++ str "check universes: " ++ bool flags.check_universes ++ fnl()
+  ++ str "cumulative sprop: " ++ bool flags.cumulative_sprop ++ fnl()
+  ++ str "indices matter: " ++ bool flags.indices_matter

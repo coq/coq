@@ -242,9 +242,17 @@ let v_cst_def =
 
 let v_typing_flags =
   v_tuple "typing_flags"
-    [|v_bool; v_bool; v_bool;
-      v_oracle; v_bool; v_bool;
-      v_bool; v_bool; v_bool|]
+    [|v_bool (* check_conv *);
+      v_bool (* check_guarded *);
+      v_bool (* check_positive *);
+      v_bool (* check_universes *);
+      v_oracle;
+      v_bool (* share_reduction *);
+      v_bool (* enable_VM *);
+      v_bool (* enable_native_compiler *);
+      v_bool (* indices_matter *);
+      v_bool (* cumulative_sprop *);
+    |]
 
 let v_univs = v_sum "universes" 0 [|[|v_context_set|]; [|v_abs_context|]|]
 
