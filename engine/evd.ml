@@ -902,14 +902,14 @@ let make_nonalgebraic_variable evd u =
 let fresh_sort_in_family ?loc ?(rigid=univ_flexible) evd s =
   with_context_set ?loc rigid evd (UnivGen.fresh_sort_in_family s)
 
-let fresh_constant_instance ?loc env evd c =
-  with_context_set ?loc univ_flexible evd (UnivGen.fresh_constant_instance env c)
+let fresh_constant_instance ?loc ?(rigid=univ_flexible) env evd c =
+  with_context_set ?loc rigid evd (UnivGen.fresh_constant_instance env c)
 
-let fresh_inductive_instance ?loc env evd i =
-  with_context_set ?loc univ_flexible evd (UnivGen.fresh_inductive_instance env i)
+let fresh_inductive_instance ?loc ?(rigid=univ_flexible) env evd i =
+  with_context_set ?loc rigid evd (UnivGen.fresh_inductive_instance env i)
 
-let fresh_constructor_instance ?loc env evd c =
-  with_context_set ?loc univ_flexible evd (UnivGen.fresh_constructor_instance env c)
+let fresh_constructor_instance ?loc ?(rigid=univ_flexible) env evd c =
+  with_context_set ?loc rigid evd (UnivGen.fresh_constructor_instance env c)
 
 let fresh_global ?loc ?(rigid=univ_flexible) ?names env evd gr =
   with_context_set ?loc rigid evd (UnivGen.fresh_global_instance ?loc ?names env gr)
