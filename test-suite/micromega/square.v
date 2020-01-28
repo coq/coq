@@ -11,15 +11,14 @@ Open Scope Z_scope.
 
 Lemma Zabs_square : forall x,  (Z.abs  x)^2 = x^2.
 Proof.
- intros ; case (Zabs_dec x) ; intros ; nia.
+ intros ; nia.
 Qed.
-Hint Resolve Z.abs_nonneg Zabs_square.
 
 Lemma integer_statement :  ~exists n, exists p, n^2 = 2*p^2 /\ n <> 0.
 Proof.
   intros [n [p [Heq Hnz]]]; pose (n' := Z.abs n); pose (p':=Z.abs p).
 assert (facts : 0 <= Z.abs n /\ 0 <= Z.abs p /\ Z.abs n^2=n^2
-         /\ Z.abs p^2 = p^2) by auto.
+         /\ Z.abs p^2 = p^2) by auto using Z.abs_nonneg, Zabs_square.
 assert (H : (0 < n' /\ 0 <= p' /\ n' ^2 = 2* p' ^2)) by
   (destruct facts as [Hf1 [Hf2 [Hf3 Hf4]]]; unfold n', p' ; nia).
 generalize p' H; elim n' using (well_founded_ind (Zwf_well_founded 0)); clear.
@@ -45,10 +44,7 @@ Proof.
   intros.
   destruct x.
   simpl.
-  unfold Z.pow_pos.
-  simpl.
-  rewrite Pos.mul_1_r.
-  reflexivity.
+  lia.
 Qed.
 
 Theorem sqrt2_not_rational : ~exists x:Q, x^2==2#1.
