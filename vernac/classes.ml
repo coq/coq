@@ -42,13 +42,10 @@ let () =
   Hook.set Typeclasses.classes_transparent_state_hook classes_transparent_state
 
 let add_instance_hint inst path local info poly =
-     let inst' = match inst with IsConstr c -> Hints.IsConstr (EConstr.of_constr c, Univ.ContextSet.empty)
-       | IsGlobal gr -> Hints.IsGlobRef gr
-     in
      Flags.silently (fun () ->
        Hints.add_hints ~local [typeclasses_db]
           (Hints.HintsResolveEntry
-             [info, poly, false, Hints.PathHints path, inst'])) ()
+             [info, poly, false, Hints.PathHints path, inst])) ()
 
 let is_local_for_hint i =
   match i.is_global with
@@ -61,9 +58,9 @@ let is_local_for_hint i =
 let add_instance check inst =
   let poly = Global.is_polymorphic inst.is_impl in
   let local = is_local_for_hint inst in
-  add_instance_hint (IsGlobal inst.is_impl) [inst.is_impl] local
+  add_instance_hint (Hints.IsGlobRef inst.is_impl) [inst.is_impl] local
     inst.is_info poly;
-  List.iter (fun (path, pri, c) -> add_instance_hint (IsConstr c) path
+  List.iter (fun (path, pri, c) -> add_instance_hint (Hints.IsConstr (EConstr.of_constr c, Univ.ContextSet.empty)) path
                 local pri poly)
     (build_subclasses ~check:(check && not (isVarRef inst.is_impl))
        (Global.env ()) (Evd.from_env (Global.env ())) inst.is_impl inst.is_info)

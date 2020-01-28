@@ -48,8 +48,6 @@ let fresh_instance_from ?loc ctx = function
 
 (** Fresh universe polymorphic construction *)
 
-open Globnames
-
 let fresh_global_instance ?loc ?names env gr =
   let auctx = Environ.universes_of_global env gr in
   let u, ctx = fresh_instance_from ?loc auctx names in
@@ -77,10 +75,6 @@ let constr_of_monomorphic_global gr =
   else CErrors.user_err ~hdr:"constr_of_global"
       Pp.(str "globalization of polymorphic reference " ++ Nametab.pr_global_env Id.Set.empty gr ++
           str " would forget universes.")
-
-let fresh_global_or_constr_instance env = function
-  | IsConstr c -> c, ContextSet.empty
-  | IsGlobal gr -> fresh_global_instance env gr
 
 let fresh_sort_in_family = function
   | InSProp -> Sorts.sprop, ContextSet.empty
