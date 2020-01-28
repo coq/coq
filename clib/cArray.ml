@@ -392,18 +392,30 @@ let iter2_i f v1 v2 =
   let () = if not (Int.equal len2 len1) then invalid_arg "Array.iter2" in
   for i = 0 to len1 - 1 do f i (uget v1 i) (uget v2 i) done
 
-let pure_functional = false
+let map_right f a =
+  let l = length a in
+  if l = 0 then [||] else begin
+    let r = Array.make l (f (unsafe_get a (l-1))) in
+    for i = l-2 downto 0 do
+      unsafe_set r i (f (unsafe_get a i))
+    done;
+    r
+  end
+
+let map2_right f a b =
+  let l = length a in
+  if l <> length b then invalid_arg "CArray.map2_right: length mismatch";
+  if l = 0 then [||] else begin
+    let r = Array.make l (f (unsafe_get a (l-1)) (unsafe_get b (l-1))) in
+    for i = l-2 downto 0 do
+      unsafe_set r i (f (unsafe_get a i) (unsafe_get b i))
+    done;
+    r
+  end
 
 let fold_right_map f v e =
-if pure_functional then
-  let (l,e) =
-    Array.fold_right
-      (fun x (l,e) -> let (y,e) = f x e in (y::l,e))
-      v ([],e) in
-  (Array.of_list l,e)
-else
   let e' = ref e in
-  let v' = Array.map (fun x -> let (y,e) = f x !e' in e' := e; y) v in
+  let v' = map_right (fun x -> let (y,e) = f x !e' in e' := e; y) v in
   (v',!e')
 
 let fold_left_map f e v =
@@ -414,7 +426,7 @@ let fold_left_map f e v =
 let fold_right2_map f v1 v2 e =
   let e' = ref e in
   let v' =
-    map2 (fun x1 x2 -> let (y,e) = f x1 x2 !e' in e' := e; y) v1 v2
+    map2_right (fun x1 x2 -> let (y,e) = f x1 x2 !e' in e' := e; y) v1 v2
   in
   (v',!e')
 
