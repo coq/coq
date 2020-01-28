@@ -38,6 +38,7 @@ CI_TARGETS= \
     ci-paramcoq \
     ci-perennial \
     ci-quickchick \
+    ci-reduction_effects \
     ci-relation_algebra \
     ci-rewriter \
     ci-sf \
