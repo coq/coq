@@ -67,7 +67,7 @@ See [`test-suite/Makefile`](Makefile) for more information.
 ## Adding a test
 
 Regression tests for closed bugs should be added to
-[`bugs/closed`](bugs/closed), as `1234.v` where `1234` is the bug number.
+[`bugs/closed`](bugs/closed), as `bug_1234.v` where `1234` is the bug number.
 Files in this directory are tested for successful compilation.
 When you fix a bug, you should usually add a regression test here as well.
 
