@@ -2362,7 +2362,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
     let st = Summary.remove_from_summary st Util.(pi1 summary_pstate) in
     let st = Summary.remove_from_summary st Util.(pi2 summary_pstate) in
     let st = Summary.remove_from_summary st Util.(pi3 summary_pstate) in
-    st, Lib.freeze ~marshallable:false in
+    st, Lib.freeze () in
 
   let inject_non_pstate (s,l) =
     Summary.unfreeze_summaries ~partial:true s; Lib.unfreeze l; update_global_env ()

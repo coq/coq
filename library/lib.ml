@@ -500,7 +500,7 @@ let close_section () =
 
 type frozen = lib_state
 
-let freeze ~marshallable = !lib_state
+let freeze () = !lib_state
 
 let unfreeze st = lib_state := st
 

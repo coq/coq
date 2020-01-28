@@ -18,7 +18,7 @@ let replace_summary (lib,_) st = lib, st
 let replace_lib (_,st) lib = lib, st
 
 let freeze ~marshallable =
-  (Lib.freeze ~marshallable, Summary.freeze_summaries ~marshallable)
+  (Lib.freeze (), Summary.freeze_summaries ~marshallable)
 
 let unfreeze (fl,fs) =
   Lib.unfreeze fl;
