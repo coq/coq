@@ -1366,7 +1366,7 @@ let read_coqide_args argv =
     |"-debug"::args ->
       Minilib.debug := true;
       Flags.debug := true;
-      Backtrace.record_backtrace true;
+      Exninfo.record_backtrace true;
       filter_coqtop coqtop project_files bindings_files ("-debug"::out) args
     |"-coqtop-flags" :: flags :: args->
       Coq.ideslave_coqtop_flags := Some flags;

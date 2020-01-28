@@ -14,7 +14,7 @@ open Pp
 let ( / ) s1 s2 = Filename.concat s1 s2
 
 let set_debug () =
-  let () = Backtrace.record_backtrace true in
+  let () = Exninfo.record_backtrace true in
   Flags.debug := true
 
 (* Loading of the resource file.

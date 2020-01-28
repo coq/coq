@@ -359,7 +359,7 @@ let in_phase ~phase f x =
     default_phase := op;
     res
   with exn ->
-    let iexn = Backtrace.add_backtrace exn in
+    let iexn = Exninfo.capture exn in
     default_phase := op;
     Util.iraise iexn
 
@@ -415,7 +415,7 @@ let with_output_to_file fname func input =
     close_out channel;
     output
   with reraise ->
-    let reraise = Backtrace.add_backtrace reraise in
+    let reraise = Exninfo.capture reraise in
     std_ft := Util.pi1 old_fmt;
     err_ft := Util.pi2 old_fmt;
     deep_ft := Util.pi3 old_fmt;

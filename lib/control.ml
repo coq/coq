@@ -38,7 +38,7 @@ let unix_timeout n f x e =
     restore_timeout ();
     res
   with e ->
-    let e = Backtrace.add_backtrace e in
+    let e = Exninfo.capture e in
     restore_timeout ();
     Exninfo.iraise e
 
@@ -76,7 +76,7 @@ let windows_timeout n f x e =
     else raise e
   | e ->
     let () = killed := true in
-    let e = Backtrace.add_backtrace e in
+    let e = Exninfo.capture e in
     Exninfo.iraise e
 
 type timeout = { timeout : 'a 'b. int -> ('a -> 'b) -> 'a -> exn -> 'b }
@@ -102,7 +102,7 @@ let protect_sigalrm f x =
       | true, Sys.Signal_handle f -> f Sys.sigalrm; res
       | _, _ -> res
     with e ->
-      let e = Backtrace.add_backtrace e in
+      let e = Exninfo.capture e in
       Sys.set_signal Sys.sigalrm old_handler;
       Exninfo.iraise e
   with Invalid_argument _ -> (* This happens on Windows, as handling SIGALRM does not seem supported *)

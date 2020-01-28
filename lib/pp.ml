@@ -203,7 +203,7 @@ let pp_with ft pp =
   in
   try pp_cmd pp
   with reraise ->
-    let reraise = Backtrace.add_backtrace reraise in
+    let reraise = Exninfo.capture reraise in
     let () = Format.pp_print_flush ft () in
     Exninfo.iraise reraise
 
