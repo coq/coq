@@ -45,3 +45,11 @@ Abort.
 
 Inductive A {P:forall m {n}, n=m -> Prop} := C : P 0 eq_refl -> A.
 Inductive B (P:forall m {n}, n=m -> Prop) := D : P 0 eq_refl -> B P.
+
+Inductive A' {P:forall m [n], n=m -> Prop} := C' : P 0 eq_refl -> A'.
+Inductive A'' [P:forall m {n}, n=m -> Prop] (b : bool):= C'' : P 0 eq_refl -> A'' b.
+Inductive A''' (P:forall m [n], n=m -> Prop) (b : bool):= C''' : P 0 eq_refl -> A''' P b.
+
+Definition F (id: forall [A] [x : A], A) := id.
+Definition G := let id := (fun [A] (x : A) => x) in id.
+Fail Definition G' := let id := (fun {A} (x : A) => x) in id.

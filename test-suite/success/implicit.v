@@ -114,9 +114,13 @@ Check h 0.
 Inductive I {A} (a:A) : forall {n:nat}, Prop :=
  | C : I a (n:=0).
 
+Inductive I' [A] (a:A) : forall [n:nat], n =0 -> Prop :=
+ | C' : I' a eq_refl.
+
 Inductive I2 (x:=0) : Prop :=
- | C2 {p:nat} : p = 0 -> I2.
-Check C2 eq_refl.
+ | C2 {p:nat} : p = 0 -> I2
+ | C2' [p:nat] : p = 0 -> I2.
+Check C2' eq_refl.
 
 Inductive I3 {A} (x:=0) (a:A) : forall {n:nat}, Prop :=
  | C3 : I3 a (n:=0).
@@ -147,6 +151,7 @@ Set Warnings "syntax".
 (* Miscellaneous tests *)
 
 Check let f := fun {x:nat} y => y=true in f false.
+Check let f := fun [x:nat] y => y=true in f false.
 
 (* Isn't the name "arg_1" a bit fragile, here? *)
 

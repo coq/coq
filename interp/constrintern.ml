@@ -335,8 +335,8 @@ let build_impls ?loc n bk na acc =
       if exists_name na acc then begin warn_shadowed_implicit_name ?loc na; Anonymous end
       else na in
     let impl = match na with
-      | Name id -> Some (ExplByName id,Manual,(true,true))
-      | Anonymous -> Some (ExplByPos (n,None),Manual,(true,true)) in
+      | Name id -> Some (ExplByName id,Manual,(max,true))
+      | Anonymous -> Some (ExplByPos (n,None),Manual,(max,true)) in
     impl
   in
   match bk with
