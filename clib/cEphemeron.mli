@@ -43,12 +43,12 @@ type 'a key
 
 val create : 'a -> 'a key
 
-(* May raise InvalidKey *)
 exception InvalidKey
-val get : 'a key -> 'a
 
-(* These never fail. *)
+val get : 'a key -> 'a
+(** May raise InvalidKey *)
+
 val default : 'a key -> 'a -> 'a
-val iter_opt : 'a key -> ('a -> unit) -> unit
+(** Never fails. *)
 
 val clean : unit -> unit
