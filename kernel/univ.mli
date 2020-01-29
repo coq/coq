@@ -16,6 +16,7 @@ sig
     type t
 
     val make : Names.DirPath.t -> int -> t
+    val repr : t -> Names.DirPath.t * int
     val equal : t -> t -> bool
     val hash : t -> int
     val compare : t -> t -> int
@@ -138,8 +139,10 @@ sig
 
   val exists : (Level.t * int -> bool) -> t -> bool
   val for_all : (Level.t * int -> bool) -> t -> bool
+  val repr : t -> (Level.t * int) list
 
-  val map : (Level.t * int -> 'a) -> t -> 'a list
+  module Set : CSet.S with type elt  = t
+  module Map : CMap.ExtS with type key = t and module Set := Set
 
 end
 

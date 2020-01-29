@@ -696,7 +696,7 @@ let detype_universe sigma u =
       if Univ.Level.is_set l then GSet else
       GType (hack_qualid_of_univ_level sigma l) in
     (s, n) in
-  Univ.Universe.map fn u
+  List.map fn (Univ.Universe.repr u)
 
 let detype_sort sigma = function
   | SProp -> UNamed [GSProp,0]

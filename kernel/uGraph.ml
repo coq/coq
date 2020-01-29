@@ -128,7 +128,7 @@ let enforce_leq_alg u v g =
          | exception (UniverseInconsistency _ as e) -> Inr e)
   in
   (* max(us) <= max(vs) <-> forall u in us, exists v in vs, u <= v *)
-  let c = Universe.map (fun u -> Universe.map (fun v -> (u,v)) v) u in
+  let c = List.map (fun u -> List.map (fun v -> (u,v)) (Universe.repr v)) (Universe.repr u) in
   let c = List.cartesians enforce_one (Inl (Constraint.empty,g)) c in
   (* We pick a best constraint: smallest number of constraints, not an error if possible. *)
   let order x y = match x, y with

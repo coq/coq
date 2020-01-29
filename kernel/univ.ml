@@ -42,6 +42,8 @@ struct
 
     let make dp i = (DirPath.hcons dp,i)
 
+    let repr x : t = x
+
     let equal (d, i) (d', i') = DirPath.equal d d' && Int.equal i i'
 
     let hash (d,i) = Hashset.Combine.combine i (DirPath.hash d)
@@ -320,8 +322,9 @@ struct
       if u == v then 0
       else
         let (x, n) = u and (x', n') = v in
-          if Int.equal n n' then Level.compare x x'
-          else n - n'
+        let c = Int.compare n n' in
+        if Int.equal 0 c then  Level.compare x x'
+        else c
 
     let sprop = hcons (Level.sprop, 0)
     let prop = hcons (Level.prop, 0)
@@ -427,6 +430,10 @@ struct
 
   let hcons = Hashcons.recursive_hcons Huniv.generate Huniv.hcons Expr.hcons
 
+  module Self = struct type nonrec t = t let compare = compare end
+  module Map = CMap.Make(Self)
+  module Set = CSet.Make(Self)
+
   let make l = tip (Expr.make l)
   let tip x = tip x
 
@@ -524,15 +531,10 @@ struct
      Used to type the products. *)
   let sup x y = merge_univs x y
 
-  let empty = []
-
   let exists = List.exists
 
   let for_all = List.for_all
-
-  let smart_map = List.Smart.map
-
-  let map = List.map
+  let repr x : t = x
 end
 
 type universe = Universe.t
@@ -549,8 +551,6 @@ let pr_uni = Universe.pr
 
 let sup = Universe.sup
 let super = Universe.super
-
-open Universe
 
 let universe_level = Universe.level
 
@@ -576,7 +576,7 @@ type univ_inconsistency = constraint_type * universe * universe * explanation La
 exception UniverseInconsistency of univ_inconsistency
 
 let error_inconsistency o u v p =
-  raise (UniverseInconsistency (o,make u,make v,p))
+  raise (UniverseInconsistency (o,Universe.make u,Universe.make v,p))
 
 (* Constraints and sets of constraints. *)
 
@@ -677,7 +677,7 @@ let enforce_eq u v c =
 
 let constraint_add_leq v u c =
   (* We just discard trivial constraints like u<=u *)
-  if Expr.equal v u then c
+  if Universe.Expr.equal v u then c
   else
     match v, u with
     | (x,n), (y,m) ->
@@ -695,13 +695,13 @@ let constraint_add_leq v u c =
         else if Level.is_small x then c (* Prop,Set <= u+S k, trivial *)
         else Constraint.add (x,Le,y) c (* u <= v implies u <= v+k *)
 
-let check_univ_leq_one u v = Universe.exists (Expr.leq u) v
+let check_univ_leq_one u v = Universe.exists (Universe.Expr.leq u) v
 
 let check_univ_leq u v =
   Universe.for_all (fun u -> check_univ_leq_one u v) u
 
 let enforce_leq u v c =
-  match is_sprop u, is_sprop v with
+  match Universe.is_sprop u, Universe.is_sprop v with
   | true, true -> c
   | true, false | false, true ->
     raise (UniverseInconsistency (Le, u, v, None))
@@ -925,7 +925,7 @@ let subst_instance_instance s i =
 
 let subst_instance_universe s u =
   let f x = Universe.Expr.map (fun u -> subst_instance_level s u) x in
-  let u' = Universe.smart_map f u in
+  let u' = List.Smart.map f u in
     if u == u' then u
     else Universe.sort u'
 
@@ -1108,7 +1108,7 @@ let subst_univs_level_level subst l =
 
 let subst_univs_level_universe subst u =
   let f x = Universe.Expr.map (fun u -> subst_univs_level_level subst u) x in
-  let u' = Universe.smart_map f u in
+  let u' = List.Smart.map f u in
     if u == u' then u
     else Universe.sort u'
 
@@ -1150,7 +1150,7 @@ let subst_univs_universe fn ul =
     if CList.is_empty subst then ul
     else
       let substs =
-        List.fold_left Universe.merge_univs Universe.empty subst
+        List.fold_left Universe.merge_univs [] subst
       in
         List.fold_left (fun acc u -> Universe.merge_univs acc (Universe.tip u))
           substs nosubst
