@@ -749,6 +749,9 @@ plugin:plugin-tutorial:
 plugin:ci-quickchick:
   extends: .ci-template-flambda
 
+plugin:ci-reduction_effects:
+  extends: .ci-template
+
 plugin:ci-relation_algebra:
   extends: .ci-template
 

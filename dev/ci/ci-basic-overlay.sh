@@ -259,6 +259,13 @@
 : "${quickchick_CI_ARCHIVEURL:=${quickchick_CI_GITURL}/archive}"
 
 ########################################################################
+# reduction-effects
+########################################################################
+: "${reduction_effects_CI_REF:=master}"
+: "${reduction_effects_CI_GITURL:=https://github.com/coq-community/reduction-effects}"
+: "${reduction_effects_CI_ARCHIVEURL:=${reduction_effects_CI_GITURL}/archive}"
+
+########################################################################
 # menhirlib
 ########################################################################
 : "${menhirlib_CI_REF:=master}"
