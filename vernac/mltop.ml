@@ -94,43 +94,26 @@ let ocaml_toploop () =
     | WithTop t -> Printexc.catch t.ml_loop ()
     | _ -> ()
 
-(* Try to interpret load_obj's (internal) errors *)
-let report_on_load_obj_error exc =
-  let x = Obj.repr exc in
-  (* Try an horrible (fragile) hack to report on Symtable dynlink errors *)
-  (* (we follow ocaml's Printexc.to_string decoding of exceptions) *)
-  if Obj.is_block x && String.equal (Obj.magic (Obj.field (Obj.field x 0) 0)) "Symtable.Error"
-  then
-    let err_block = Obj.field x 1 in
-    if Int.equal (Obj.tag err_block) 0 then
-      (* Symtable.Undefined_global of string *)
-      str "reference to undefined global " ++
-      str (Obj.magic (Obj.field err_block 0))
-    else str (Printexc.to_string exc)
-  else str (Printexc.to_string exc)
-
 (* Dynamic loading of .cmo/.cma *)
 
+(* We register errors at least for Dynlink, it is possible to do so Symtable
+   too, as we do in the bytecode init code.
+*)
+let _ = CErrors.register_handler (function
+    | Dynlink.Error e ->
+      hov 0 (str "Dynlink error: " ++ str Dynlink.(error_message e))
+    | _ ->
+      raise CErrors.Unhandled
+  )
+
 let ml_load s =
-  match !load with
-    | WithTop t ->
-      (try t.load_obj s; s
-       with
-       | e when CErrors.noncritical e ->
-        let e = CErrors.push e in
-        match fst e with
-        | (UserError _ | Failure _ | Not_found as u) -> Exninfo.iraise (u, snd e)
-        | exc ->
-            let msg = report_on_load_obj_error exc in
-            user_err ~hdr:"Mltop.load_object" (str"Cannot link ml-object " ++
-                  str s ++ str" to Coq code (" ++ msg ++ str ")."))
-    | WithoutTop ->
-        try
-          Dynlink.loadfile s; s
-        with Dynlink.Error a ->
-          user_err ~hdr:"Mltop.load_object"
-            (strbrk "while loading " ++ str s ++
-             strbrk ": " ++ str (Dynlink.error_message a))
+  (match !load with
+   | WithTop t ->
+     t.load_obj s
+   | WithoutTop ->
+     Dynlink.loadfile s
+  );
+  s
 
 let dir_ml_load s =
   match !load with
