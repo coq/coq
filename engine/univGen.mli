@@ -46,9 +46,6 @@ val fresh_constructor_instance : env -> constructor ->
 val fresh_global_instance : ?loc:Loc.t -> ?names:Univ.Instance.t -> env -> GlobRef.t ->
   constr in_universe_context_set
 
-val fresh_global_or_constr_instance : env -> Globnames.global_reference_or_constr ->
-  constr in_universe_context_set
-
 (** Get fresh variables for the universe context.
     Useful to make tactics that manipulate constrs in universe contexts polymorphic. *)
 val fresh_universe_context_set_instance : ContextSet.t ->

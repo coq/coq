@@ -123,7 +123,3 @@ module ExtRefOrdered = struct
   | SynDef kn -> combinesmall 2 (KerName.hash kn)
 
 end
-
-type global_reference_or_constr =
-  | IsGlobal of GlobRef.t
-  | IsConstr of constr

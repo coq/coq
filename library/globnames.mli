@@ -59,7 +59,3 @@ module ExtRefOrdered : sig
   val equal : t -> t -> bool
   val hash : t -> int
 end
-
-type global_reference_or_constr =
-  | IsGlobal of GlobRef.t
-  | IsConstr of constr
