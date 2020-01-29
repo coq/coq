@@ -164,7 +164,7 @@ let rawnum_of_r c = match DAst.get c with
              let s, i = if is_pos_or_zero i then SPlus, i else SMinus, neg i in
              let i = Bigint.to_string i in
              let se = if is_gr md glob_Rdiv then "-" else "" in
-             let e = se ^ Bigint.to_string e in
+             let e = "e" ^ se ^ Bigint.to_string e in
              s, { NumTok.int = i; frac = ""; exp = e }
         | _ -> raise Non_closed_number
         end
