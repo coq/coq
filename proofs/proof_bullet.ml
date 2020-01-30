@@ -79,7 +79,7 @@ module Strict = struct
       (function
       | FailedBullet (b,sugg) ->
         let prefix = Pp.(str"Wrong bullet " ++ pr_bullet b ++ str": ") in
-        CErrors.user_err ~hdr:"Focus" Pp.(prefix ++ suggest_on_error sugg)
+        Pp.(str "[Focus]" ++ spc () ++ prefix ++ suggest_on_error sugg)
       | _ -> raise CErrors.Unhandled)
 
 
@@ -204,8 +204,7 @@ exception SuggestNoSuchGoals of int * Proof.t
 let _ = CErrors.register_handler begin function
     | SuggestNoSuchGoals(n,proof) ->
       let suffix = suggest proof in
-      CErrors.user_err
-        Pp.(str "No such " ++ str (CString.plural n "goal") ++ str "." ++
-            pr_non_empty_arg (fun x -> x) suffix)
+      Pp.(str "No such " ++ str (CString.plural n "goal") ++ str "." ++
+          pr_non_empty_arg (fun x -> x) suffix)
     | _ -> raise CErrors.Unhandled
   end
