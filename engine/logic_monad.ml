@@ -83,7 +83,7 @@ struct
 
   (** [Pervasives.raise]. Except that exceptions are wrapped with
       {!Exception}. *)
-  let raise ?info = fun e -> (); fun () -> Exninfo.raise ?info (Exception e)
+  let raise (e, info) () = Exninfo.iraise (Exception e, info)
 
   (** [try ... with ...] but restricted to {!Exception}. *)
   let catch = fun s h -> ();
@@ -93,7 +93,8 @@ struct
         h (e, info) ()
 
   let read_line = fun () -> try read_line () with e ->
-    let (e, info) = CErrors.push e in raise ~info e ()
+    let (e, info) = CErrors.push e in
+    raise (e, info) ()
 
   let print_char = fun c -> (); fun () -> print_char c
 

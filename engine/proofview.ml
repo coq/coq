@@ -937,7 +937,7 @@ let tclTIMEOUT n t =
           return (Util.Inr (Logic_monad.Tac_Timeout, info))
         | Logic_monad.TacticFailure e ->
           return (Util.Inr (e, info))
-        | e -> Logic_monad.NonLogical.raise ~info e
+        | e -> Logic_monad.NonLogical.raise (e, info)
       end
   end >>= function
     | Util.Inl (res,s,m,i) ->

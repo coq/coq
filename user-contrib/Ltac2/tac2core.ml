@@ -161,7 +161,7 @@ let set_bt info =
 let throw ?(info = Exninfo.null) e =
   set_bt info >>= fun info ->
   let info = Exninfo.add info fatal_flag () in
-  Proofview.tclLIFT (Proofview.NonLogical.raise ~info e)
+  Proofview.tclLIFT (Proofview.NonLogical.raise (e, info))
 
 let fail ?(info = Exninfo.null) e =
   set_bt info >>= fun info ->

@@ -81,16 +81,6 @@ let iraise (e,i) =
   | Some bt ->
     Printexc.raise_with_backtrace e bt
 
-let raise ?info e = match info with
-| None ->
-  let () = Mutex.lock lock in
-  let id = Thread.id (Thread.self ()) in
-  let () = current := remove_assoc id !current in
-  let () = Mutex.unlock lock in
-  raise e
-| Some i ->
-  iraise (e,i)
-
 let find_and_remove () =
   let () = Mutex.lock lock in
   let id = Thread.id (Thread.self ()) in
