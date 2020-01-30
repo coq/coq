@@ -28,7 +28,6 @@ open Tactics
 open Logic
 open Libnames
 open Nametab
-open Contradiction
 open Tactypes
 open Context.Named.Declaration
 
@@ -1112,7 +1111,7 @@ let replay_history tactic_normalisation =
                 unfold sp_Zle;
                 simpl_in_concl;
                 intro;
-                (absurd not_sup_sup) ])
+                (Ltac_plugin.Contradiction.absurd not_sup_sup) ])
               [ assumption ; reflexivity ]
           in
           let theorem =

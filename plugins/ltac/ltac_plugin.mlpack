@@ -1,3 +1,11 @@
+Dnet
+Elim
+Contradiction
+Inv
+Leminv
+Term_dnet
+Eqdecide
+Autorewrite
 Tacexpr
 Tacarg
 Tacsubst

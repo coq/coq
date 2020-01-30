@@ -21,8 +21,7 @@
  (package coqide-server)
  (modules idetop)
  (libraries coq.toplevel coqide-server.protocol)
- (modes native byte)
- (link_flags -linkall))
+ (modes native byte))
 
 (install
  (section bin)

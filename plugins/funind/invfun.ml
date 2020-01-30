@@ -93,7 +93,7 @@ let functional_inversion kn hid fconst f_correct = Proofview.Goal.enter (fun gl 
       ; generalize [applist(f_correct,(Array.to_list f_args)@[res;mkVar hid])]
       ; clear [hid]
       ; Simple.intro hid
-      ; Inv.inv Inv.FullInversion None (Tactypes.NamedHyp hid)
+      ; Ltac_plugin.Inv.inv Ltac_plugin.Inv.FullInversion None (Tactypes.NamedHyp hid)
       ; Proofview.Goal.enter (fun gl ->
             let new_ids = List.filter (fun id -> not (Id.Set.mem id old_ids)) (pf_ids_of_hyps gl) in
             tclMAP (revert_graph kn pre_tac)  (hid::new_ids)

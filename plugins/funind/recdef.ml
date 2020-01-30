@@ -1300,7 +1300,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name (gls_type
             ; Proofview.Goal.enter (fun gl ->
                   let ids = pf_ids_of_hyps gl in
                   tclTHEN
-                    (Elim.h_decompose_and (mkVar hid))
+                    (Ltac_plugin.Elim.h_decompose_and (mkVar hid))
                     (Proofview.Goal.enter (fun gl ->
                          let ids' = pf_ids_of_hyps gl in
                          lid := List.rev (List.subtract Id.equal ids' ids);

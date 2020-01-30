@@ -152,7 +152,7 @@ $(IDETOPEXE): $(IDETOP:.opt=.$(BEST))
 
 $(IDETOP): ide/idetop.ml $(LINKCMX) $(LIBCOQRUN) $(IDETOPCMX)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) -I ide -I ide/protocol/ \
+	$(HIDE)$(OCAMLOPT) -linkpkg $(MLINCLUDES) -I ide -I ide/protocol/ \
 			   $(SYSMOD) \
 			   $(LINKCMX) $(IDETOPCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
 	$(STRIP_HIDE) $@
@@ -160,7 +160,7 @@ $(IDETOP): ide/idetop.ml $(LINKCMX) $(LIBCOQRUN) $(IDETOPCMX)
 
 $(IDETOPBYTE): ide/idetop.ml $(LINKCMO) $(LIBCOQRUN) $(IDETOPCMA)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLC) -linkall -linkpkg $(MLINCLUDES) -I ide -I ide/protocol/ \
+	$(HIDE)$(OCAMLC) -linkpkg $(MLINCLUDES) -I ide -I ide/protocol/ \
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
 			 $(SYSMOD) \
 			 $(LINKCMO) $(IDETOPCMA) $(BYTEFLAGS) $< -o $@

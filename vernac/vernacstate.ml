@@ -8,6 +8,16 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+[@@@ocaml.warning "-60"]
+
+(* Link the proper modules *)
+module LinkMods = struct
+  let _ = G_prim.prim_kw
+  let _ = G_constr.constr_kw
+  let _ = G_proofs.thm_token
+  let _ = Himsg.explain_pretype_error
+end
+
 module Parser = struct
 
   type state = Pcoq.frozen_t

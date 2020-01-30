@@ -361,7 +361,7 @@ coqpp/coqpp_lex.cmo: coqpp/coqpp_ast.cmi coqpp/coqpp_parse.cmo
 
 $(COQPP): $(COQPPCMO) coqpp/coqpp_parser.mli coqpp/coqpp_parser.ml coqpp/coqpp_main.ml
 	$(SHOW)'OCAMLC -a $@'
-	$(HIDE)$(OCAMLC) -I coqpp $^ -linkall -o $@
+	$(HIDE)$(OCAMLC) -I coqpp $^ -o $@
 
 ###########################################################################
 # Specific rules for Uint63
@@ -388,7 +388,7 @@ $(COQC): $(COQCOPT:.opt=.$(BEST))
 
 bin/%.opt$(EXE): topbin/%_bin.ml $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLOPT) -linkall -linkpkg $(MLINCLUDES) \
+	$(HIDE)$(OCAMLOPT) -linkpkg $(MLINCLUDES) \
 			   $(SYSMOD) \
 			   $(LINKCMX) $(OPTFLAGS) $(LINKMETADATA) $< -o $@
 	$(STRIP_HIDE) $@
@@ -396,7 +396,7 @@ bin/%.opt$(EXE): topbin/%_bin.ml $(LINKCMX) $(LIBCOQRUN)
 
 bin/%.byte$(EXE): topbin/%_bin.ml $(LINKCMO) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLC) -linkall -linkpkg $(MLINCLUDES) \
+	$(HIDE)$(OCAMLC) -linkpkg $(MLINCLUDES) \
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
 			 $(SYSMOD) \
 			 $(LINKCMO) $(BYTEFLAGS) $< -o $@
@@ -407,7 +407,7 @@ COQTOP_BYTE=topbin/coqtop_byte_bin.ml
 # VMBYTEFLAGS will either contain -custom of the right -dllpath for the VM
 $(COQTOPBYTE): $(COQTOP_BYTE) $(LINKCMO) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'
-	$(HIDE)$(OCAMLC) -linkall -linkpkg -I lib -I vernac -I toplevel \
+	$(HIDE)$(OCAMLC) -linkpkg -I lib -I vernac -I toplevel \
 	                 -I kernel/byterun/ -cclib -lcoqrun $(VMBYTEFLAGS) \
 			 $(SYSMOD) -package compiler-libs.toplevel \
 			 $(LINKCMO) $(BYTEFLAGS) $< -o $@

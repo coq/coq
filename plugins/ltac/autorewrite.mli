@@ -61,4 +61,3 @@ type hypinfo = {
 val find_applied_relation :
   ?loc:Loc.t -> bool ->
   Environ.env -> Evd.evar_map -> constr -> bool -> hypinfo
-
