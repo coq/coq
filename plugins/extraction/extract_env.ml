@@ -26,43 +26,8 @@ open Common
 (*S Part I: computing Coq environment. *)
 (***************************************)
 
-(* FIXME: this is a Libobject hack that should be removed. *)
-module DynHandle = Libobject.Dyn.Map(struct type 'a t = 'a -> (Label.t * structure_field_body) option end)
-
-let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
-| f -> f o
-| exception Not_found -> None
-
 let toplevel_env () =
-  let get_reference = function
-  | (_,kn), Lib.Leaf Libobject.AtomicObject o ->
-    let mp,l = KerName.repr kn in
-    let handler =
-      DynHandle.add Declare.Internal.objConstant begin fun _ ->
-        let constant = Global.lookup_constant (Constant.make1 kn) in
-        Some (l, SFBconst constant)
-      end @@
-      DynHandle.add DeclareInd.Internal.objInductive begin fun _ ->
-        let inductive = Global.lookup_mind (MutInd.make1 kn) in
-        Some (l, SFBmind inductive)
-      end @@
-      DynHandle.empty
-    in
-    handle handler o
-    | (_,kn), Lib.Leaf Libobject.ModuleObject _ ->
-      let mp,l = KerName.repr kn in
-      let modl = Global.lookup_module (MPdot (mp, l)) in
-      Some (l, SFBmodule modl)
-    | (_,kn), Lib.Leaf Libobject.ModuleTypeObject _ ->
-      let mp,l = KerName.repr kn in
-      let modtype = Global.lookup_modtype (MPdot (mp, l)) in
-      Some (l, SFBmodtype modtype)
-    | (_,kn), Lib.Leaf Libobject.IncludeObject _ ->
-      user_err Pp.(str "No extraction of toplevel Include yet.")
-    | _ -> None
-  in
-  List.rev (List.map_filter get_reference (Lib.contents ()))
-
+  List.rev (Safe_typing.structure_body_of_safe_env (Global.safe_env ()))
 
 let environment_until dir_opt =
   let rec parse = function
