@@ -12,7 +12,10 @@
    format *)
 type t = float
 
-let is_nan f = f <> f
+(* The [f : float] type annotation enable the compiler to compile f <> f
+   as comparison on floats rather than the polymorphic OCaml comparison
+   which is much slower. *)
+let is_nan (f : float) = f <> f
 let is_infinity f = f = infinity
 let is_neg_infinity f = f = neg_infinity
 
@@ -42,19 +45,20 @@ let abs = abs_float
 
 type float_comparison = FEq | FLt | FGt | FNotComparable
 
-let eq x y = x = y
+(* See above comment on [is_nan] for the [float] type annotations. *)
+let eq (x : float) (y : float) = x = y
 [@@ocaml.inline always]
 
-let lt x y = x < y
+let lt (x : float) (y : float) = x < y
 [@@ocaml.inline always]
 
-let le x y = x <= y
+let le (x : float) (y : float) = x <= y
 [@@ocaml.inline always]
 
 (* inspired by lib/util.ml; see also #10471 *)
-let pervasives_compare = compare
+let pervasives_compare (x : float) (y : float) = compare x y
 
-let compare x y =
+let compare (x : float) (y : float) =
   if x < y then FLt
   else
   (
