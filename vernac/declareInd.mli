@@ -21,3 +21,12 @@ val declare_mutual_inductive_with_eliminations
   -> UnivNames.universe_binders
   -> one_inductive_impls list
   -> Names.MutInd.t
+
+(** {6 For legacy support, do not use}  *)
+module Internal :
+sig
+
+type inductive_obj
+val objInductive : inductive_obj Libobject.Dyn.tag
+
+end

@@ -26,19 +26,29 @@ open Common
 (*S Part I: computing Coq environment. *)
 (***************************************)
 
+(* FIXME: this is a Libobject hack that should be removed. *)
+module DynHandle = Libobject.Dyn.Map(struct type 'a t = 'a -> (Label.t * structure_field_body) option end)
+
+let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
+| f -> f o
+| exception Not_found -> None
+
 let toplevel_env () =
   let get_reference = function
-    | (_,kn), Lib.Leaf Libobject.AtomicObject o ->
-      let mp,l = KerName.repr kn in
-            begin match Libobject.object_tag o with
-            | "CONSTANT" ->
+  | (_,kn), Lib.Leaf Libobject.AtomicObject o ->
+    let mp,l = KerName.repr kn in
+    let handler =
+      DynHandle.add Declare.Internal.objConstant begin fun _ ->
         let constant = Global.lookup_constant (Constant.make1 kn) in
         Some (l, SFBconst constant)
-            | "INDUCTIVE" ->
+      end @@
+      DynHandle.add DeclareInd.Internal.objInductive begin fun _ ->
         let inductive = Global.lookup_mind (MutInd.make1 kn) in
         Some (l, SFBmind inductive)
-            | _ -> None
-      end
+      end @@
+      DynHandle.empty
+    in
+    handle handler o
     | (_,kn), Lib.Leaf Libobject.ModuleObject _ ->
       let mp,l = KerName.repr kn in
       let modl = Global.lookup_module (MPdot (mp, l)) in

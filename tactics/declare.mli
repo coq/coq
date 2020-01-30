@@ -131,7 +131,8 @@ val check_exists : Id.t -> unit
 (* Used outside this module only in indschemes *)
 exception AlreadyDeclared of (string option * Id.t)
 
-(* For legacy support, do not use *)
+(** {6 For legacy support, do not use}  *)
+
 module Internal : sig
 
   val map_entry_body : f:('a Entries.proof_output -> 'b Entries.proof_output) -> 'a proof_entry -> 'b proof_entry
@@ -144,5 +145,10 @@ module Internal : sig
   val get_fix_exn : 'a proof_entry -> Future.fix_exn
 
   val shrink_entry : EConstr.named_context -> 'a proof_entry -> 'a proof_entry * Constr.constr list
+
+  type constant_obj
+
+  val objConstant : constant_obj Libobject.Dyn.tag
+  val objVariable : unit Libobject.Dyn.tag
 
 end

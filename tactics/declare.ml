@@ -130,14 +130,16 @@ let dummy_constant cst = {
 
 let classify_constant cst = Substitute (dummy_constant cst)
 
-let (inConstant : constant_obj -> obj) =
-  declare_object { (default_object "CONSTANT") with
+let (objConstant : constant_obj Libobject.Dyn.tag) =
+  declare_object_full { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
     open_function = open_constant;
     classify_function = classify_constant;
     subst_function = ident_subst_function;
     discharge_function = discharge_constant }
+
+let inConstant v = Libobject.Dyn.Easy.inj v objConstant
 
 let update_tables c =
   Impargs.declare_constant_implicits c;
@@ -357,9 +359,11 @@ type variable_declaration =
 
 (* This object is only for things which iterate over objects to find
    variables (only Prettyp.print_context AFAICT) *)
-let inVariable : unit -> obj =
-  declare_object { (default_object "VARIABLE") with
+let objVariable : unit Libobject.Dyn.tag =
+  declare_object_full { (default_object "VARIABLE") with
     classify_function = (fun () -> Dispose)}
+
+let inVariable v = Libobject.Dyn.Easy.inj v objVariable
 
 let declare_variable ~name ~kind d =
   (* Variables are distinguished by only short names *)
@@ -496,5 +500,10 @@ module Internal = struct
       proof_entry_body = Future.from_val ((body, uctx), eff)
     ; proof_entry_type = Some typ
     }, args
+
+  type nonrec constant_obj = constant_obj
+
+  let objVariable = objVariable
+  let objConstant = objConstant
 
 end

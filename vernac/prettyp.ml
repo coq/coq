@@ -670,25 +670,35 @@ let gallina_print_syntactic_def env kn =
      Constrextern.without_specific_symbols
        [Notation.SynDefRule kn] (pr_glob_constr_env env) c)
 
-let gallina_print_leaf_entry env sigma with_values ((sp,kn as oname),lobj) =
+module DynHandle = Libobject.Dyn.Map(struct type 'a t = 'a -> Pp.t option end)
+
+let handle h (Libobject.Dyn.Dyn (tag, o)) = match DynHandle.find tag h with
+| f -> f o
+| exception Not_found -> None
+
+(* TODO: this kind of feature should not rely on the Libobject stack. There is
+   no reason that an object in the stack corresponds to a user-facing
+   declaration. It may have been so at the time this was written, but this
+   needs to be done in a more principled way. *)
+let gallina_print_leaf_entry env sigma with_values ((sp, kn),lobj) =
   let sep = if with_values then " = " else " : " in
   match lobj with
   | AtomicObject o ->
-    let tag = object_tag o in
-    begin match (oname,tag) with
-      | (_,"VARIABLE") ->
+    let handler =
+      DynHandle.add Declare.Internal.objVariable begin fun _ ->
           (* Outside sections, VARIABLES still exist but only with universes
              constraints *)
           (try Some(print_named_decl env sigma (basename sp)) with Not_found -> None)
-      | (_,"CONSTANT") ->
+      end @@
+      DynHandle.add Declare.Internal.objConstant begin fun _ ->
           Some (print_constant with_values sep (Constant.make1 kn) None)
-      | (_,"INDUCTIVE") ->
+      end @@
+      DynHandle.add DeclareInd.Internal.objInductive begin fun _ ->
           Some (gallina_print_inductive (MutInd.make1 kn) None)
-      | (_,("AUTOHINT"|"GRAMMAR"|"SYNTAXCONSTANT"|"PPSYNTAX"|"TOKEN"|"CLASS"|
-            "COERCION"|"REQUIRE"|"END-SECTION"|"STRUCTURE")) -> None
-      (* To deal with forgotten cases... *)
-      | (_,s) -> None
-    end
+      end @@
+      DynHandle.empty
+    in
+    handle handler o
   | ModuleObject _ ->
     let (mp,l) = KerName.repr kn in
     Some (print_module with_values ~mod_ops:Declaremods.mod_ops (MPdot (mp,l)))
@@ -777,11 +787,18 @@ let print_full_context env sigma =
 let print_full_context_typ env sigma =
   print_context env sigma false None (Lib.contents ())
 
+module DynHandleF = Libobject.Dyn.Map(struct type 'a t = 'a -> Pp.t end)
+
+let handleF h (Libobject.Dyn.Dyn (tag, o)) = match DynHandleF.find tag h with
+| f -> f o
+| exception Not_found -> mt ()
+
+(* TODO: see the comment for {!gallina_print_leaf_entry} *)
 let print_full_pure_context env sigma =
   let rec prec = function
   | ((_,kn),Lib.Leaf AtomicObject lobj)::rest ->
-      let pp = match object_tag lobj with
-      | "CONSTANT" ->
+    let handler =
+      DynHandleF.add Declare.Internal.objConstant begin fun _ ->
           let con = Global.constant_of_delta_kn kn in
           let cb = Global.lookup_constant con in
           let typ = cb.const_type in
@@ -804,12 +821,16 @@ let print_full_pure_context env sigma =
                  str "Primitive " ++
                    print_basename con ++ str " : " ++ cut () ++ pr_ltype_env env sigma typ)
           ++ str "." ++ fnl () ++ fnl ()
-      | "INDUCTIVE" ->
+      end @@
+      DynHandleF.add DeclareInd.Internal.objInductive begin fun _ ->
           let mind = Global.mind_of_delta_kn kn in
           let mib = Global.lookup_mind mind in
           pr_mutual_inductive_body (Global.env()) mind mib None ++
             str "." ++ fnl () ++ fnl ()
-      | _ -> mt () in
+      end @@
+      DynHandleF.empty
+    in
+    let pp = handleF handler lobj in
       prec rest ++ pp
   | ((_,kn),Lib.Leaf ModuleObject _)::rest ->
           (* TODO: make it reparsable *)
