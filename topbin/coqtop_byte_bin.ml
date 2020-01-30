@@ -31,7 +31,6 @@ let drop_setup () =
            { load_obj = (fun f -> if not (Topdirs.load_file ppf f)
                           then CErrors.user_err Pp.(str ("Could not load plugin "^f))
                         );
-             use_file = Topdirs.dir_use ppf;
              add_dir  = Topdirs.dir_directory;
              ml_loop  = (fun () -> Toploop.loop ppf);
            })

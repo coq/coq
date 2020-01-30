@@ -157,8 +157,6 @@ and ``coqtop``, unless stated otherwise:
   loading the default resource file from the standard configuration
   directories.
 :-q: Do not to load the default resource file.
-:-load-ml-source *file*: Load the OCaml source file *file*.
-:-load-ml-object *file*: Load the OCaml object file *file*.
 :-l *file*, -load-vernac-source *file*: Load and execute the |Coq|
   script from *file.v*.
 :-lv *file*, -load-vernac-source-verbose *file*: Load and execute the

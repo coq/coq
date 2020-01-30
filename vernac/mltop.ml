@@ -56,7 +56,6 @@ let keep_copy_mlpath path =
 (* If there is a toplevel under Coq *)
 type toplevel = {
   load_obj : string -> unit;
-  use_file : string -> unit;
   add_dir  : string -> unit;
   ml_loop  : unit -> unit }
 
@@ -122,17 +121,6 @@ let dir_ml_load s =
         let warn = not !Flags.quiet in
         let _,gname = find_file_in_path ~warn !coq_mlpath_copy s in
         ml_load gname
-
-(* Dynamic interpretation of .ml *)
-let dir_ml_use s =
-  match !load with
-    | WithTop t -> t.use_file s
-    | _ ->
-       let moreinfo =
-         if Sys.(backend_type = Native) then " Loading ML code works only in bytecode."
-         else ""
-       in
-      user_err ~hdr:"Mltop.dir_ml_use" (str "Could not load ML code." ++ str moreinfo)
 
 (* Adds a path to the ML paths *)
 let add_ml_dir s =
@@ -258,7 +246,6 @@ let load_ml_object mname ?path fname=
   init_ml_object mname;
   path
 
-let dir_ml_load m = ignore(dir_ml_load m)
 let add_known_module m = add_known_module m None
 
 (* Summary of declared ML Modules *)
