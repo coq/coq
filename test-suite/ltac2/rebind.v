@@ -32,3 +32,19 @@ Fail Ltac2 Set f := fun x => x.
 Ltac2 mutable g x := x.
 
 Ltac2 Set g := f.
+
+(* Rebinding with old values *)
+
+Ltac2 mutable qux () := Message.print (Message.of_string "Hello").
+
+Ltac2 Set qux as self := fun () => self (); self ().
+
+Ltac2 Eval qux ().
+
+Ltac2 Type rec nat := [O | S (nat)].
+
+Ltac2 mutable quz := O.
+
+Ltac2 Set quz as self := S self.
+
+Ltac2 Eval quz.

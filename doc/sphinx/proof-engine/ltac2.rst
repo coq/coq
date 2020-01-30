@@ -226,12 +226,14 @@ Ltac Definitions
 
    If ``mutable`` is set, the definition can be redefined at a later stage (see below).
 
-.. cmd:: Ltac2 Set @qualid := @ltac2_term
+.. cmd:: Ltac2 Set @qualid {? as @lident} := @ltac2_term
    :name: Ltac2 Set
 
    This command redefines a previous ``mutable`` definition.
    Mutable definitions act like dynamic binding, i.e. at runtime, the last defined
    value for this entry is chosen. This is useful for global flags and the like.
+   The previous value of the binding can be optionally accessed using the `as`
+   binding syntax.
 
 Reduction
 ~~~~~~~~~

@@ -458,6 +458,10 @@ let monomorphic (t : UF.elt glb_typexpr) : mix_type_scheme =
   let subst id = GTypVar (GVar id) in
   (0, subst_type subst t)
 
+let polymorphic ((n, t) : type_scheme) : mix_type_scheme =
+  let subst id = GTypVar (LVar id) in
+  (n, subst_type subst t)
+
 let warn_not_unit =
   CWarnings.create ~name:"not-unit" ~category:"ltac"
     (fun () -> strbrk "The following expression should have type unit.")
@@ -1138,9 +1142,13 @@ let normalize env (count, vars) (t : UF.elt glb_typexpr) =
   in
   subst_type subst t
 
-let intern ~strict e =
+type context = (Id.t * type_scheme) list
+
+let intern ~strict ctx e =
   let env = empty_env () in
   let env = if strict then env else { env with env_str = false } in
+  let fold accu (id, t) = push_name (Name id) (polymorphic t) accu in
+  let env = List.fold_left fold env ctx in
   let (e, t) = intern_rec env e in
   let count = ref 0 in
   let vars = ref UF.Map.empty in
