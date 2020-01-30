@@ -469,6 +469,16 @@ let rec vernac_loop ~state =
   (* Exception printing should be done by the feedback listener,
      however this is not yet ready so we rely on the exception for
      now. *)
+  | Sys_blocked_io ->
+    (* the parser doesn't like nonblocking mode, cf #10918 *)
+    let msg =
+      Pp.(strbrk "Coqtop needs the standard input to be in blocking mode." ++ spc()
+          ++ str "One way of clearing the non-blocking flag is through python:" ++ fnl()
+          ++ str "  import os" ++ fnl()
+          ++ str "  os.set_blocking(0, True)")
+    in
+    TopErr.print_error_for_buffer Feedback.Error msg top_buffer;
+    exit 1
   | any ->
     let (e, info) = CErrors.push any in
     let loc = Loc.get_loc info in
