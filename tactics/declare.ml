@@ -299,7 +299,7 @@ let define_constant ~name cd =
     if not de.proof_entry_opaque then
       (* This globally defines the side-effects in the environment. *)
       let body, eff = Future.force de.proof_entry_body in
-      let body, export = Global.export_private_constants (body, eff.Evd.seff_private) in
+      let export = Global.export_private_constants eff.Evd.seff_private in
       let export = get_roles export eff in
       let de = { de with proof_entry_body = Future.from_val (body, ()) } in
       let cd = Entries.DefinitionEntry (cast_proof_entry de) in
@@ -377,8 +377,8 @@ let declare_variable ~name ~kind d =
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
-      let (body, eff) = Future.force de.proof_entry_body in
-      let ((body, uctx), export) = Global.export_private_constants (body, eff.Evd.seff_private) in
+      let ((body, uctx), eff) = Future.force de.proof_entry_body in
+      let export = Global.export_private_constants eff.Evd.seff_private in
       let eff = get_roles export eff in
       let () = List.iter register_side_effect eff in
       let poly, univs = match de.proof_entry_universes with

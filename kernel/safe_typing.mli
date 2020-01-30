@@ -84,8 +84,8 @@ type side_effect_declaration =
 type exported_private_constant = Constant.t
 
 val export_private_constants :
-  private_constants Entries.proof_output ->
-  (Constr.constr Univ.in_universe_context_set * exported_private_constant list) safe_transformer
+  private_constants ->
+  exported_private_constant list safe_transformer
 
 (** returns the main constant *)
 val add_constant :
