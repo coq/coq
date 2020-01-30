@@ -103,8 +103,4 @@ let default (typ, boxkey) default =
   try (EHashtbl.find values boxkey).get typ
   with Not_found -> default
 
-let iter_opt (typ, boxkey) f =
-  try f ((EHashtbl.find values boxkey).get typ)
-  with Not_found -> ()
-
 let clean () = EHashtbl.clean values
