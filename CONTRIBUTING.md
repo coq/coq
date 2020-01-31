@@ -17,8 +17,8 @@ well.
   - [Writing tutorials and blog posts](#writing-tutorials-and-blog-posts)
   - [Contributing to the wiki](#contributing-to-the-wiki)
   - [Creating and maintaining Coq packages](#creating-and-maintaining-coq-packages)
-    - [Distribution](#distribution)
-    - [Support](#support)
+    - [Distribution of Coq packages](#distribution-of-coq-packages)
+    - [Support for plugin and library authors](#support-for-plugin-and-library-authors)
     - [Standard libraries](#standard-libraries)
     - [Maintaining existing packages in coq-community](#maintaining-existing-packages-in-coq-community)
   - [Contributing to the editor support packages](#contributing-to-the-editor-support-packages)
@@ -159,14 +159,14 @@ tools is great so that others can start building new things on top.
 Having an extensive and healthy package ecosystem will be key to the
 success of Coq.
 
-#### Distribution ####
+#### Distribution of Coq packages ####
 
 You can distribute your library or plugin through the [Coq package
 index][Coq-package-index].  Tools can be advertised on the [tools
 page][tools-website] of the Coq website, or the [tools
 page][tools-wiki] of the wiki.
 
-#### Support ####
+#### Support for plugin and library authors ####
 
 You can find advice and best practices about maintaining a Coq project
 on the [coq-community wiki][coq-community-wiki].
