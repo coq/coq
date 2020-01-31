@@ -640,9 +640,6 @@ library:ci-fiat-crypto:
   - library:ci-coqprime
   - plugin:ci-rewriter
 
-library:ci-fiat-crypto-legacy:
-  extends: .ci-template-flambda
-
 library:ci-flocq:
   extends: .ci-template
 

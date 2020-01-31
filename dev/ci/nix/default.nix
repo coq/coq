@@ -91,7 +91,6 @@ let projects = {
   cross_crypto = callPackage ./cross_crypto.nix {};
   Elpi = callPackage ./Elpi.nix {};
   fiat_crypto = callPackage ./fiat_crypto.nix {};
-  fiat_crypto_legacy = callPackage ./fiat_crypto_legacy.nix {};
   flocq = callPackage ./flocq.nix {};
   formal-topology = callPackage ./formal-topology.nix {};
   GeoCoq = callPackage ./GeoCoq.nix {};
