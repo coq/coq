@@ -462,6 +462,7 @@ module Prim =
     let ident = gec_gen "ident"
     let natural = gec_gen "natural"
     let integer = gec_gen "integer"
+    let bignat = Entry.create "Prim.bignat"
     let bigint = Entry.create "Prim.bigint"
     let string = gec_gen "string"
     let lstring = Entry.create "Prim.lstring"

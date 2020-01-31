@@ -29,8 +29,8 @@ let pr_numnot_option = function
 VERNAC ARGUMENT EXTEND numnotoption
   PRINTED BY { pr_numnot_option }
 | [ ] -> { Nop }
-| [ "(" "warning" "after" bigint(waft) ")" ] -> { Warning waft }
-| [ "(" "abstract" "after" bigint(n) ")" ] -> { Abstract n }
+| [ "(" "warning" "after" bignat(waft) ")" ] -> { Warning waft }
+| [ "(" "abstract" "after" bignat(n) ")" ] -> { Abstract n }
 END
 
 VERNAC COMMAND EXTEND NumeralNotation CLASSIFIED AS SIDEFF

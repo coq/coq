@@ -368,7 +368,7 @@ let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symbol =
 | TTClosedBinderList tkl -> MayRecNo (Alist1sep (Aentry Constr.binder, make_sep_rules tkl))
 | TTName -> MayRecNo (Aentry Prim.name)
 | TTOpenBinderList -> MayRecNo (Aentry Constr.open_binders)
-| TTBigint -> MayRecNo (Aentry Prim.bigint)
+| TTBigint -> MayRecNo (Aentry Prim.bignat)
 | TTReference -> MayRecNo (Aentry Constr.global)
 
 let interp_entry forpat e = match e with

@@ -47,7 +47,7 @@ let test_minus_nat =
 
 GRAMMAR EXTEND Gram
   GLOBAL:
-    bigint natural integer identref name ident var preident
+    bignat bigint natural integer identref name ident var preident
     fullyqualid qualid reference dirpath ne_lstring
     ne_string string lstring pattern_ident pattern_identref by_notation
     smart_global bar_cbrace;
@@ -122,13 +122,16 @@ GRAMMAR EXTEND Gram
     [ [ s = string -> { CAst.make ~loc s } ] ]
   ;
   integer:
-    [ [ i = NUMERAL      -> { my_int_of_string loc (check_int loc i) }
-      | test_minus_nat; "-"; i = NUMERAL -> { - my_int_of_string loc (check_int loc i) } ] ]
+    [ [ i = bigint -> { my_int_of_string loc i } ] ]
   ;
   natural:
-    [ [ i = NUMERAL -> { my_int_of_string loc (check_int loc i) } ] ]
+    [ [ i = bignat -> { my_int_of_string loc i } ] ]
   ;
-  bigint: (* Negative numbers are dealt with elsewhere *)
+  bigint:
+    [ [ i = NUMERAL -> { check_int loc i }
+      | test_minus_nat; "-"; i = NUMERAL -> { check_int loc i } ] ]
+  ;
+  bignat:
     [ [ i = NUMERAL -> { check_int loc i } ] ]
   ;
   bar_cbrace:
