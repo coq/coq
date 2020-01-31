@@ -252,7 +252,7 @@ let quote_notation_token x =
 let is_numeral symbs =
   match List.filter (function Break _ -> false | _ -> true) symbs with
   | ([Terminal "-"; Terminal x] | [Terminal x]) ->
-      NumTok.of_string x <> None
+      NumTok.Unsigned.parse_string x <> None
   | _ ->
       false
 

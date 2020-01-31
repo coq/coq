@@ -24,6 +24,8 @@ install_printer Top_printers.ppglob_constr
 install_printer Top_printers.pppattern
 install_printer Top_printers.ppfconstr
 install_printer Top_printers.ppbigint
+install_printer Top_printers.ppnumtokunsigned
+install_printer Top_printers.ppnumtokunsignednat
 install_printer Top_printers.ppintset
 install_printer Top_printers.ppidset
 install_printer Top_printers.ppidmapgen

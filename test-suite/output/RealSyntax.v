@@ -3,6 +3,7 @@ Check 32%R.
 Check (-31)%R.
 
 Check 1.5_%R.
+Check 1_.5_e1_%R.
 
 Open Scope R_scope.
 

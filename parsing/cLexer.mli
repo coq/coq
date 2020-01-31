@@ -50,7 +50,7 @@ val check_keyword : string -> unit
 val terminal : string -> string Tok.p
 
 (** Precondition: the input is a numeral (c.f. [NumTok.t]) *)
-val terminal_numeral : string -> NumTok.t Tok.p
+val terminal_numeral : string -> NumTok.Unsigned.t Tok.p
 
 (** The lexer of Coq: *)
 

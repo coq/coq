@@ -21,16 +21,16 @@ open Pcoq.Prim
 
 let pr_numnot_option = function
   | Nop -> mt ()
-  | Warning n -> str "(warning after " ++ str n ++ str ")"
-  | Abstract n -> str "(abstract after " ++ str n ++ str ")"
+  | Warning n -> str "(warning after " ++ NumTok.UnsignedNat.print n ++ str ")"
+  | Abstract n -> str "(abstract after " ++ NumTok.UnsignedNat.print n ++ str ")"
 
 }
 
 VERNAC ARGUMENT EXTEND numnotoption
   PRINTED BY { pr_numnot_option }
 | [ ] -> { Nop }
-| [ "(" "warning" "after" bignat(waft) ")" ] -> { Warning waft }
-| [ "(" "abstract" "after" bignat(n) ")" ] -> { Abstract n }
+| [ "(" "warning" "after" bignat(waft) ")" ] -> { Warning (NumTok.UnsignedNat.of_string waft) }
+| [ "(" "abstract" "after" bignat(n) ")" ] -> { Abstract (NumTok.UnsignedNat.of_string n) }
 END
 
 VERNAC COMMAND EXTEND NumeralNotation CLASSIFIED AS SIDEFF

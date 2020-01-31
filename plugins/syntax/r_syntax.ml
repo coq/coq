@@ -12,7 +12,6 @@ open Util
 open Names
 open Glob_term
 open Bigint
-open Constrexpr
 
 (* Poor's man DECLARE PLUGIN *)
 let __coq_plugin_name = "r_syntax_plugin"
@@ -113,8 +112,8 @@ let z_modpath = MPdot (MPfile (make_dir binintdef), Label.make "Z")
 
 let glob_pow_pos = GlobRef.ConstRef (Constant.make2 z_modpath @@ Label.make "pow_pos")
 
-let r_of_rawnum ?loc (sign,n) =
-  let n, f, e = NumTok.(n.int, n.frac, n.exp) in
+let r_of_rawnum ?loc n =
+  let n,e = NumTok.Signed.to_bigint_and_exponent n in
   let izr z =
     DAst.make @@ GApp (DAst.make @@ GRef(glob_IZR,None), [z]) in
   let rmult r r' =
@@ -126,15 +125,7 @@ let r_of_rawnum ?loc (sign,n) =
     let e = pos_of_bignat e in
     DAst.make @@ GApp (DAst.make @@ GRef(glob_pow_pos,None), [ten; e]) in
   let n =
-    let n = Bigint.of_string (n ^ f) in
-    let n = match sign with SPlus -> n | SMinus -> Bigint.(neg n) in
     izr (z_of_int ?loc n) in
-  let e =
-    let e = if e = "" then Bigint.zero else match e.[1] with
-      | '+' -> Bigint.of_string (String.sub e 2 (String.length e - 2))
-      | '-' -> Bigint.(neg (of_string (String.sub e 2 (String.length e - 2))))
-      | _ -> Bigint.of_string (String.sub e 1 (String.length e - 1)) in
-    Bigint.(sub e (of_int (String.length (String.concat "" (String.split_on_char '_' f))))) in
   if Bigint.is_strictly_pos e then rmult n (izr (pow10 e))
   else if Bigint.is_strictly_neg e then rdiv n (izr (pow10 (neg e)))
   else n  (* e = 0 *)
@@ -146,9 +137,7 @@ let r_of_rawnum ?loc (sign,n) =
 let rawnum_of_r c = match DAst.get c with
   | GApp (r, [a]) when is_gr r glob_IZR ->
      let n = bigint_of_z a in
-     let s, n =
-       if is_strictly_neg n then SMinus, neg n else SPlus, n in
-     s, NumTok.int (to_string n)
+     NumTok.Signed.of_bigint n
   | GApp (md,  [l; r]) when is_gr md glob_Rmult || is_gr md glob_Rdiv ->
      begin match DAst.get l, DAst.get r with
      | GApp (i, [l]), GApp (i', [r])
@@ -161,11 +150,8 @@ let rawnum_of_r c = match DAst.get c with
            else
              let i = bigint_of_z l in
              let e = bignat_of_pos e in
-             let s, i = if is_pos_or_zero i then SPlus, i else SMinus, neg i in
-             let i = Bigint.to_string i in
-             let se = if is_gr md glob_Rdiv then "-" else "" in
-             let e = "e" ^ se ^ Bigint.to_string e in
-             s, { NumTok.int = i; frac = ""; exp = e }
+             let e = if is_gr md glob_Rdiv then neg e else e in
+             NumTok.Signed.of_bigint_and_exponent i e
         | _ -> raise Non_closed_number
         end
      | _ -> raise Non_closed_number

@@ -86,6 +86,8 @@ let pptype = (fun x -> try pp(envpp (fun env evm t -> pr_ltype_env env evm t) x)
 let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
 
 let ppbigint n = pp (str (Bigint.to_string n));;
+let ppnumtokunsigned n = pp (NumTok.Unsigned.print n)
+let ppnumtokunsignednat n = pp (NumTok.UnsignedNat.print n)
 
 let prset pr l = str "[" ++ hov 0 (prlist_with_sep spc pr l) ++ str "]"
 let ppintset l = pp (prset int (Int.Set.elements l))

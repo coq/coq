@@ -166,7 +166,7 @@ struct
   | _ -> None
 
   let lk_nat tok n strm = match stream_nth n strm with
-  | Tok.NUMERAL { NumTok.int = _; frac = ""; exp = "" } -> Some (n + 1)
+  | Tok.NUMERAL p when NumTok.Unsigned.is_nat p -> Some (n + 1)
   | _ -> None
 
   let rec lk_list lk_elem n strm =

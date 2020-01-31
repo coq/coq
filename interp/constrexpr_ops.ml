@@ -48,10 +48,9 @@ let names_of_local_binders bl =
    are considered different here. *)
 
 let prim_token_eq t1 t2 = match t1, t2 with
-| Numeral (SPlus,n1), Numeral (SPlus,n2)
-| Numeral (SMinus,n1), Numeral (SMinus,n2) -> NumTok.equal n1 n2
+| Numeral n1, Numeral n2 -> NumTok.Signed.equal n1 n2
 | String s1, String s2 -> String.equal s1 s2
-| (Numeral ((SPlus|SMinus),_) | String _), _ -> false
+| (Numeral _ | String _), _ -> false
 
 let explicitation_eq ex1 ex2 = match ex1, ex2 with
 | ExplByPos (i1, id1), ExplByPos (i2, id2) ->

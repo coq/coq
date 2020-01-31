@@ -723,7 +723,7 @@ let rec next_token ~diff_mode loc s =
         let ep = Stream.count s in
         IDENT id, set_loc_pos loc bp ep end
   | Some ('0'..'9') ->
-      let n = NumTok.parse s in
+      let n = NumTok.Unsigned.parse s in
       let ep = Stream.count s in
       comment_stop bp;
       (NUMERAL n, set_loc_pos loc bp ep)
@@ -813,7 +813,7 @@ let token_text : type c. c Tok.p -> string = function
   | PIDENT None -> "identifier"
   | PIDENT (Some t) -> "'" ^ t ^ "'"
   | PNUMERAL None -> "numeral"
-  | PNUMERAL (Some n) -> "'" ^ NumTok.to_string n ^ "'"
+  | PNUMERAL (Some n) -> "'" ^ NumTok.Unsigned.sprint n ^ "'"
   | PSTRING None -> "string"
   | PSTRING (Some s) -> "STRING \"" ^ s ^ "\""
   | PLEFTQMARK -> "LEFTQMARK"
@@ -888,6 +888,6 @@ let terminal s =
   else PKEYWORD s
 
 (* Precondition: the input is a numeral (c.f. [NumTok.t]) *)
-let terminal_numeral s = match NumTok.of_string s with
+let terminal_numeral s = match NumTok.Unsigned.parse_string s with
   | Some n -> PNUMERAL (Some n)
   | None -> failwith "numeral token expected."

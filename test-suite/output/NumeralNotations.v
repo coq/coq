@@ -457,3 +457,10 @@ Module Test20.
   Check let v := 4%kt in v : ty.
   Check let v := 5%kt in v : ty.
 End Test20.
+
+Module Test21.
+
+  Check 00001.
+  Check (-1_000)%Z.
+
+End Test21.

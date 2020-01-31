@@ -54,6 +54,8 @@ val pppattern : Pattern.constr_pattern -> unit
 val ppfconstr : CClosure.fconstr -> unit
 
 val ppbigint : Bigint.bigint -> unit
+val ppnumtokunsigned : NumTok.Unsigned.t -> unit
+val ppnumtokunsignednat : NumTok.UnsignedNat.t -> unit
 
 val ppintset : Int.Set.t -> unit
 val ppidset : Names.Id.Set.t -> unit

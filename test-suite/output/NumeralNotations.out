@@ -218,3 +218,7 @@ let v : ty := Build_ty Set set in v : ty
      : ty
 let v : ty := Build_ty Type type in v : ty
      : ty
+1
+     : nat
+(-1000)%Z
+     : Z
