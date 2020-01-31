@@ -1273,8 +1273,8 @@ let record_pb_time ?loc proof_name time =
 
 exception RemoteException of Pp.t
 let _ = CErrors.register_handler (function
-  | RemoteException ppcmd -> ppcmd
-  | _ -> raise Unhandled)
+  | RemoteException ppcmd -> Some ppcmd
+  | _ -> None)
 
 (****************** proof structure for error recovery ************************)
 (******************************************************************************)

@@ -46,19 +46,14 @@ exception Timeout
     recent first) until a handle deals with it.
 
     Handles signal that they don't deal with some exception
-    by raising [Unhandled].
+    by returning None. Raising any other exception is
+    forbidden and will result in an anomaly.
 
-    Handles can raise exceptions themselves, in which
-    case, the exception is passed to the handles which
-    were registered before.
-
-    The exception that are considered anomalies should not be
+    Exceptions that are considered anomalies should not be
     handled by registered handlers.
 *)
 
-exception Unhandled
-
-val register_handler : (exn -> Pp.t) -> unit
+val register_handler : (exn -> Pp.t option) -> unit
 
 (** The standard exception printer *)
 val print : exn -> Pp.t

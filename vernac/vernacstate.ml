@@ -124,8 +124,8 @@ module Proof_global = struct
   let () =
     CErrors.register_handler begin function
       | NoCurrentProof ->
-        Pp.(str "No focused proof (No proof-editing in progress).")
-      | _ -> raise CErrors.Unhandled
+        Some (Pp.(str "No focused proof (No proof-editing in progress)."))
+      | _ -> None
     end
 
   open Lemmas

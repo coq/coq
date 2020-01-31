@@ -1356,6 +1356,12 @@ let explain_prim_token_notation_error kind env sigma = function
     Nota: explain_exn does NOT end with a newline anymore!
 *)
 
+exception Unhandled
+
+let wrap_unhandled f e =
+  try Some (f e)
+  with Unhandled -> None
+
 let explain_exn_default = function
   (* Basic interaction exceptions *)
   | Stream.Error txt -> hov 0 (str "Syntax error: " ++ str txt ++ str ".")
@@ -1366,9 +1372,9 @@ let explain_exn_default = function
   | CErrors.Timeout -> hov 0 (str "Timeout!")
   | Sys.Break -> hov 0 (fnl () ++ str "User interrupt.")
   (* Otherwise, not handled here *)
-  | _ -> raise CErrors.Unhandled
+  | _ -> raise Unhandled
 
-let _ = CErrors.register_handler explain_exn_default
+let _ = CErrors.register_handler (wrap_unhandled explain_exn_default)
 
 let rec vernac_interp_error_handler = function
   | Univ.UniverseInconsistency i ->
@@ -1409,6 +1415,6 @@ let rec vernac_interp_error_handler = function
   | Logic_monad.TacticFailure e ->
     vernac_interp_error_handler e
   | _ ->
-    raise CErrors.Unhandled
+    raise Unhandled
 
-let _ = CErrors.register_handler vernac_interp_error_handler
+let _ = CErrors.register_handler (wrap_unhandled vernac_interp_error_handler)

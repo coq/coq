@@ -11,9 +11,9 @@
 (* We register this handler for lower-level toplevel loading code *)
 let _ = CErrors.register_handler (function
     | Symtable.Error e ->
-      Pp.str (Format.asprintf "%a" Symtable.report_error e)
+      Some (Pp.str (Format.asprintf "%a" Symtable.report_error e))
     | _ ->
-      raise CErrors.Unhandled
+      None
   )
 
 let drop_setup () =

@@ -79,8 +79,8 @@ module Strict = struct
       (function
       | FailedBullet (b,sugg) ->
         let prefix = Pp.(str"Wrong bullet " ++ pr_bullet b ++ str": ") in
-        Pp.(str "[Focus]" ++ spc () ++ prefix ++ suggest_on_error sugg)
-      | _ -> raise CErrors.Unhandled)
+        Some Pp.(str "[Focus]" ++ spc () ++ prefix ++ suggest_on_error sugg)
+      | _ -> None)
 
 
   (* spiwack: we need only one focus kind as we keep a stack of (distinct!) bullets *)
@@ -203,7 +203,7 @@ exception SuggestNoSuchGoals of int * Proof.t
 let _ = CErrors.register_handler begin function
     | SuggestNoSuchGoals(n,proof) ->
       let suffix = suggest proof in
-      Pp.(str "No such " ++ str (CString.plural n "goal") ++ str "." ++
-          pr_non_empty_arg (fun x -> x) suffix)
-    | _ -> raise CErrors.Unhandled
+      Some (Pp.(str "No such " ++ str (CString.plural n "goal") ++ str "." ++
+                pr_non_empty_arg (fun x -> x) suffix))
+    | _ -> None
   end

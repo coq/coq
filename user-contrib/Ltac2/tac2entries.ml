@@ -848,8 +848,8 @@ let () = register_handler begin function
   let v = Tac2ffi.of_open (kn, args) in
   let t = GTypRef (Other t_exn, []) in
   let c = Tac2print.pr_valexpr (Global.env ()) Evd.empty v t in
-  hov 0 (str "Uncaught Ltac2 exception:" ++ spc () ++ hov 0 c)
-| _ -> raise Unhandled
+  Some (hov 0 (str "Uncaught Ltac2 exception:" ++ spc () ++ hov 0 c))
+| _ -> None
 end
 
 let () = CErrors.register_additional_error_info begin fun info ->

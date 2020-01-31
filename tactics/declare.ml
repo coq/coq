@@ -24,10 +24,11 @@ exception AlreadyDeclared of (string option * Id.t)
 
 let _ = CErrors.register_handler (function
     | AlreadyDeclared (kind, id) ->
-      seq [ Pp.pr_opt_no_spc (fun s -> str s ++ spc ()) kind
-          ; Id.print id; str " already exists."]
+      Some
+        (seq [ Pp.pr_opt_no_spc (fun s -> str s ++ spc ()) kind
+             ; Id.print id; str " already exists."])
     | _ ->
-      raise CErrors.Unhandled)
+      None)
 
 module NamedDecl = Context.Named.Declaration
 
