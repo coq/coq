@@ -527,10 +527,20 @@ how you can anticipate the results of the CI before opening a PR.
 Such a failure can indicate either a bug in your branch, or a breaking
 change that you introduced voluntarily.  All such breaking changes
 should be properly documented in the [user changelog][user-changelog].
-Furthermore, a backward-compatible fix should be found, and this fix
-should be merged in the broken projects *before* your PR to the Coq
-repository can be.  You can use the same documentation as above to
-learn about testing and fixing locally the broken libraries.
+Furthermore, a backward-compatible fix should be found, properly
+documented in the changelog when non-obvious, and this fix should be
+merged in the broken projects *before* your PR to the Coq repository
+can be.
+
+Note that once the breaking change is well understood, it should not
+feel like it is your role to fix every project that is affected: as
+long as reviewers have approved and are ready to integrate your
+breaking change, you are entitled to (politely) request project
+authors / maintainers to fix the breakage on their own, or help you
+fix it.  Obviously, you should leave enough time for this to happen
+(you cannot expect a project maintainer to allocate time for this as
+soon as you request it) and you should be ready to listen to more
+feedback and reconsider the impact of your change.
 
 #### Understanding reviewers' feedback ####
 
