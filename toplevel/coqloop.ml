@@ -453,28 +453,22 @@ let process_toplevel_command ~state stm =
       Feedback.msg_notice out;
     state
 
-(* This function will only return on [Drop] *)
-let rec vernac_loop ~state =
-  let open Vernac.State in
-  let open G_toplevel in
-  loop_flush_all ();
-  top_stderr (fnl());
-  if !print_emacs then top_stderr (str (top_buffer.prompt state.doc));
-  resynch_buffer top_buffer;
-  (* execute one command *)
-  try
-    let input = top_buffer.tokens in
-    match read_sentence ~state input with
-    | Some VernacDrop ->
-      if Mltop.is_ocaml_top()
-      then (drop_last_doc := Some state; state)
-      else (Feedback.msg_warning (str "There is no ML toplevel."); vernac_loop ~state)
-    | Some stm ->
-      let state = process_toplevel_command ~state stm in
-      vernac_loop ~state
-    (* End of file *)
-    | None ->
-      top_stderr (fnl ()); exit 0
+(* We return a new state and true if we got a `Drop` command  *)
+let read_and_execute_base ~state =
+  let input = top_buffer.tokens in
+  match read_sentence ~state input with
+  | Some G_toplevel.VernacDrop ->
+    if Mltop.is_ocaml_top()
+    then (drop_last_doc := Some state; state, true)
+    else (Feedback.msg_warning (str "There is no ML toplevel."); state, false)
+  | Some stm ->
+    process_toplevel_command ~state stm, false
+  (* End of file *)
+  | None ->
+    top_stderr (fnl ()); exit 0
+
+let read_and_execute ~state =
+  try read_and_execute_base ~state
   with
   (* Exception printing should be done by the feedback listener,
      however this is not yet ready so we rely on the exception for
@@ -495,13 +489,17 @@ let rec vernac_loop ~state =
     let msg = CErrors.iprint (e, info) in
     TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer;
     if exit_on_error () then exit 1;
-    vernac_loop ~state
+    state, false
 
-let vernac_loop ~state =
+(* This function will only return on [Drop], careful to keep it tail-recursive *)
+let rec vernac_loop ~state =
   let open Vernac.State in
-  Sys.catch_break true;
-  reset_input_buffer state.doc stdin top_buffer;
-  vernac_loop ~state
+  loop_flush_all ();
+  top_stderr (fnl());
+  if !print_emacs then top_stderr (str (top_buffer.prompt state.doc));
+  resynch_buffer top_buffer;
+  let state, drop = read_and_execute ~state in
+  if drop then state else vernac_loop ~state
 
 (* Default toplevel loop *)
 
@@ -513,6 +511,10 @@ let loop ~opts ~state =
   print_emacs := opts.config.print_emacs;
   (* We initialize the console only if we run the toploop_run *)
   let tl_feed = Feedback.add_feeder coqloop_feed in
+  (* Initialize buffer *)
+  Sys.catch_break true;
+  reset_input_buffer state.Vernac.State.doc stdin top_buffer;
+  (* Call the main loop *)
   let _ : Vernac.State.t = vernac_loop ~state in
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
