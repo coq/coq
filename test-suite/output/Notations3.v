@@ -219,8 +219,8 @@ Check exists_true '(x,y) (u:=0) '(z,t), x+y=0/\z+t=0.
 Module G.
 Generalizable Variables A R.
 Class Reflexive {A:Type} (R : A->A->Prop) := reflexivity : forall x : A, R x x.
-Check exists_true `{Reflexive A R}, forall x, R x x.
-Check exists_true x `{Reflexive A R} y, x+y=0 -> forall z, R z z.
+Check exists_true `(Reflexive A R), forall x, R x x.
+Check exists_true x `(Reflexive A R) y, x+y=0 -> forall z, R z z.
 End G.
 
 (* Allows recursive patterns for binders to be associative on the left *)

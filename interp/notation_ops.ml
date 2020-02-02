@@ -151,6 +151,24 @@ let rec subst_glob_vars l gc = DAst.map (function
 
 let ldots_var = Id.of_string ".."
 
+type 'a binder_status_fun = {
+  no : 'a -> 'a;
+  restart_prod : 'a -> 'a;
+  restart_lambda : 'a -> 'a;
+  switch_prod : 'a -> 'a;
+  switch_lambda : 'a -> 'a;
+  slide : 'a -> 'a;
+}
+
+let default_binder_status_fun = {
+  no = (fun x -> x);
+  restart_prod = (fun x -> x);
+  restart_lambda = (fun x -> x);
+  switch_prod = (fun x -> x);
+  switch_lambda = (fun x -> x);
+  slide = (fun x -> x);
+}
+
 let protect g e na =
   let e',disjpat,na = g e na in
   if disjpat <> None then user_err (Pp.str "Unsupported substitution of an arbitrary pattern.");
@@ -163,10 +181,10 @@ let apply_cases_pattern_term ?loc (ids,disjpat) tm c =
 let apply_cases_pattern ?loc (ids_disjpat,id) c =
   apply_cases_pattern_term ?loc ids_disjpat (DAst.make ?loc (GVar id)) c
 
-let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
+let glob_constr_of_notation_constr_with_binders ?loc g f ?(h=default_binder_status_fun) e nc =
   let lt x = DAst.make ?loc x in lt @@ match nc with
   | NVar id -> GVar id
-  | NApp (a,args) -> GApp (f e a, List.map (f e) args)
+  | NApp (a,args) -> let e = h.no e in GApp (f e a, List.map (f e) args)
   | NList (x,y,iter,tail,swap) ->
       let t = f e tail in let it = f e iter in
       let innerl = (ldots_var,t)::(if swap then [y, lt @@ GVar x] else []) in
@@ -180,15 +198,18 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
       let outerl = (ldots_var,inner)::(if swap then [] else [y, lt @@ GVar x]) in
       DAst.get (subst_glob_vars outerl it)
   | NLambda (na,ty,c) ->
-      let e',disjpat,na = g e na in GLambda (na,Explicit,f e ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
+      let e = h.switch_lambda e in
+      let e',disjpat,na = g e na in GLambda (na,Explicit,f (h.restart_prod e) ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
   | NProd (na,ty,c) ->
-      let e',disjpat,na = g e na in GProd (na,Explicit,f e ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
+      let e = h.switch_prod e in
+      let e',disjpat,na = g e na in GProd (na,Explicit,f (h.restart_prod e) ty,Option.fold_right (apply_cases_pattern ?loc) disjpat (f e' c))
   | NLetIn (na,b,t,c) ->
       let e',disjpat,na = g e na in
       (match disjpat with
-       | None -> GLetIn (na,f e b,Option.map (f e) t,f e' c)
+       | None -> GLetIn (na,f (h.restart_lambda e) b,Option.map (f (h.restart_prod e)) t,f e' c)
        | Some (disjpat,_id) -> DAst.get (apply_cases_pattern_term ?loc disjpat (f e b) (f e' c)))
   | NCases (sty,rtntypopt,tml,eqnl) ->
+      let e = h.no e in
       let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
         let e',t' = match t with
         | None -> e',None
@@ -207,19 +228,22 @@ let glob_constr_of_notation_constr_with_binders ?loc g f e nc =
         List.map (fun patl -> CAst.make (idl,patl,f e rhs)) disjpatl) eqnl in
       GCases (sty,Option.map (f e') rtntypopt,tml',List.flatten eqnl')
   | NLetTuple (nal,(na,po),b,c) ->
+      let e = h.no e in
       let e',nal = List.fold_left_map (protect g) e nal in
       let e'',na = protect g e na in
       GLetTuple (nal,(na,Option.map (f e'') po),f e b,f e' c)
   | NIf (c,(na,po),b1,b2) ->
+      let e = h.no e in
       let e',na = protect g e na in
       GIf (f e c,(na,Option.map (f e') po),f e b1,f e b2)
   | NRec (fk,idl,dll,tl,bl) ->
+      let e = h.no e in
       let e,dll = Array.fold_left_map (List.fold_left_map (fun e (na,oc,b) ->
           let e,na = protect g e na in
           (e,(na,Explicit,Option.map (f e) oc,f e b)))) e dll in
       let e',idl = Array.fold_left_map (to_id (protect g)) e idl in
       GRec (fk,idl,dll,Array.map (f e) tl,Array.map (f e') bl)
-  | NCast (c,k) -> GCast (f e c,map_cast_type (f e) k)
+  | NCast (c,k) -> GCast (f e c,map_cast_type (f (h.slide e)) k)
   | NSort x -> GSort x
   | NHole (x, naming, arg)  -> GHole (x, naming, arg)
   | NRef x -> GRef (x,None)

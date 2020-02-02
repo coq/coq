@@ -97,7 +97,7 @@ val intern_context : env -> internalization_env -> local_binder_expr list -> int
 (** Main interpretation functions, using type class inference,
     expecting evars and pending problems to be all resolved *)
 
-val interp_constr : env -> evar_map -> ?impls:internalization_env ->
+val interp_constr : ?expected_type:typing_constraint -> env -> evar_map -> ?impls:internalization_env ->
   constr_expr -> constr Evd.in_evar_universe_context
 
 val interp_casted_constr : env -> evar_map -> ?impls:internalization_env ->
@@ -109,7 +109,7 @@ val interp_type : env -> evar_map -> ?impls:internalization_env ->
 (** Main interpretation function expecting all postponed problems to
     be resolved, but possibly leaving evars. *)
 
-val interp_open_constr : env -> evar_map -> constr_expr -> evar_map * constr
+val interp_open_constr : ?expected_type:typing_constraint -> env -> evar_map -> constr_expr -> evar_map * constr
 
 (** Accepting unresolved evars *)
 
