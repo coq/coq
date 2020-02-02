@@ -1643,7 +1643,7 @@ let drop_notations_pattern looked_for genv =
           | Some (a,b,c) -> DAst.make ?loc @@ RCPatCstr(a, b, c)
           | None -> raise (InternalizationError (loc,NotAConstructor head))
       end
-     | CPatCstr (qid, Some expl_pl, pl) ->
+    | CPatCstr (qid, Some expl_pl, pl) ->
       let g = try Nametab.locate qid
               with Not_found ->
               raise (InternalizationError (loc,NotAConstructor qid)) in
