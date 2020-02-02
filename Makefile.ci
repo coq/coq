@@ -65,7 +65,7 @@ ci-math-classes: ci-bignums
 
 ci-corn: ci-math-classes
 
-ci-fiat-crypto: ci-bedrock2 ci-coqprime ci-rewriter
+ci-fiat-crypto: ci-coqprime ci-rewriter
 
 ci-simple-io: ci-ext-lib
 ci-quickchick: ci-ext-lib ci-simple-io
