@@ -76,3 +76,24 @@ Warning: Ignoring implicit binder declaration in unexpected position.
 File "./output/Naming.v", line 112, characters 30-31:
 Warning: Ignoring implicit binder declaration in unexpected position.
 [unexpected-implicit-declaration,syntax]
+File "stdin", line 119, characters 23-24:
+Warning: x occurs twice in the same block of arguments eventually leading to
+ambiguities when referring to arguments by name. [distinct-name,syntax]
+File "stdin", line 120, characters 30-31:
+Warning: x occurs twice in the same block of arguments eventually leading to
+ambiguities when referring to arguments by name. [distinct-name,syntax]
+File "stdin", line 121, characters 38-39:
+Warning: x occurs twice in the same block of arguments eventually leading to
+ambiguities when referring to arguments by name. [distinct-name,syntax]
+File "stdin", line 123, characters 41-42:
+Warning: x occurs twice in the same block of arguments eventually leading to
+ambiguities when referring to arguments by name. [distinct-name,syntax]
+File "stdin", line 123, characters 77-78:
+Warning: x occurs twice in the same block of arguments eventually leading to
+ambiguities when referring to arguments by name. [distinct-name,syntax]
+File "stdin", line 126, characters 30-31:
+Warning: x occurs twice in the same block of arguments eventually leading to
+ambiguities when referring to arguments by name. [distinct-name,syntax]
+File "stdin", line 129, characters 58-59:
+Warning: x occurs twice in the same block of arguments eventually leading to
+ambiguities when referring to arguments by name. [distinct-name,syntax]

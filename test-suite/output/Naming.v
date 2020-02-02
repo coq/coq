@@ -112,3 +112,31 @@ Notation "∀ x .. y , P" := (forall x, .. (forall y, P) ..)
 Definition l1 := ∀ {x:nat} {y:nat}, x=0.
 
 End B.
+
+Module C.
+
+(* Check double occurrence *)
+Definition h1 (x:nat) (x:bool) := x.
+Definition h2 (x:nat) := fun (x:bool) => x.
+Definition h3 := fun (x:bool) => fun (x:nat) => x.
+
+Definition h4 : forall (x:bool), forall (x:nat), nat := fun (x:bool) => fun (x:nat) => x.
+  (* TODO: no need to warn on the "fun" since there is cast *)
+
+Fixpoint h5 (x:nat) y := fun (x:bool) => match y with 0 => 0 | S y => h5 0 y true end.
+
+Inductive I1 (x:nat) : forall x, Type := C1 : I1 x 0.
+Inductive I2 : nat -> nat -> Type := C2 (x:bool) : forall x, I2 x 0.
+
+Definition k1 := ex (fun x => ex (fun x => x=0) -> x=0).
+Definition k2 := exists x, (exists x, x=0) -> x=0.
+Axiom k3 : forall x, (forall x, x = 0) -> x=0.
+
+Notation "∀ x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity,
+  format "'[  ' '[  ' ∀  x  ..  y ']' ,  '/' P ']'") : type_scope.
+
+(* TODO: recognize the redundancy *)
+Definition l1 := ∀ (x:nat) (x:nat), x=0.
+
+End C.
