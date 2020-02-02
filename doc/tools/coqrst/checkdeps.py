@@ -10,13 +10,20 @@
 from __future__ import print_function
 import sys
 
+missing_deps = []
+
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 def missing_dep(dep):
-    eprint('Cannot find %s (needed to build documentation)' % dep)
-    eprint('You can run `pip3 install %s` to install it.' % dep)
-    sys.exit(1)
+    missing_deps.append(dep)
+
+def report_missing_deps():
+    if len(missing_deps) > 0:
+        deps = " ".join(missing_deps)
+        eprint('Cannot find package(s) `%s` (needed to build documentation)' % deps)
+        eprint('You can run `pip3 install %s` to install it/them.' % deps)
+        sys.exit(1)
 
 try:
     import sphinx_rtd_theme
@@ -37,3 +44,10 @@ try:
     import bs4
 except:
     missing_dep('beautifulsoup4')
+
+try:
+    import sphinxcontrib.bibtex
+except:
+    missing_dep('sphinxcontrib-bibtex')
+
+report_missing_deps()
