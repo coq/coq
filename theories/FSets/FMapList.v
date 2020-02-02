@@ -450,7 +450,7 @@ Proof with auto with ordered_type.
 Qed.
 
 
-Lemma equal_2 : forall m (Hm:Sort m) m' (Hm:Sort m') cmp,
+Lemma equal_2 : forall m (Hm:Sort m) m' (Hm':Sort m') cmp,
   equal cmp m m' = true -> Equivb cmp m m'.
 Proof with auto with ordered_type.
  intros m Hm m' Hm' cmp; generalize Hm Hm'; clear Hm Hm'.

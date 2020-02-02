@@ -614,7 +614,7 @@ Definition combine (m:t elt)(m':t elt') : t oee' :=
 
 Lemma fold_right_pair_NoDup :
   forall l r (Hl: NoDupA (eqk (elt:=oee')) l)
-    (Hl: NoDupA (eqk (elt:=oee')) r),
+    (Hr: NoDupA (eqk (elt:=oee')) r),
     NoDupA (eqk (elt:=oee')) (fold_right_pair (add (elt:=oee')) r l).
 Proof.
  induction l; simpl; auto.
