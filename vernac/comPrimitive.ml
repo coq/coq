@@ -8,30 +8,45 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-let do_primitive id prim typopt =
+open Names
+
+let declare id entry =
+  let _ : Constant.t =
+    Declare.declare_constant ~name:id ~kind:Decls.IsPrimitive (Declare.PrimitiveEntry entry)
+  in
+  Flags.if_verbose Feedback.msg_info Pp.(Id.print id ++ str " is declared")
+
+let do_primitive id udecl prim typopt =
   if Global.sections_are_opened () then
     CErrors.user_err Pp.(str "Declaring a primitive is not allowed in sections.");
   if Dumpglob.dump () then Dumpglob.dump_definition id false "ax";
-  let env = Global.env () in
-  let evd = Evd.from_env env in
-  let evd, typopt = Option.fold_left_map
-      Constrintern.(interp_type_evars_impls ~impls:empty_internalization_env env)
-      evd typopt
-  in
-  let evd = Evd.minimize_universes evd in
-  let uvars, impls, typopt = match typopt with
-    | None -> Univ.LSet.empty, [], None
-    | Some (ty,impls) ->
-      EConstr.universes_of_constr evd ty, impls, Some (EConstr.to_constr evd ty)
-  in
-  let evd = Evd.restrict_universe_context evd uvars in
-  let uctx = UState.check_mono_univ_decl (Evd.evar_universe_context evd) UState.default_univ_decl in
-  let entry = Entries.{
-      prim_entry_type = typopt;
-      prim_entry_univs = uctx;
+  let loc = id.CAst.loc in
+  let id = id.CAst.v in
+  match typopt with
+  | None ->
+    if Option.has_some udecl then
+      CErrors.user_err ?loc
+        Pp.(strbrk "Cannot use a universe declaration without a type when declaring primitives.");
+    declare id {Entries.prim_entry_type = None; prim_entry_content = prim}
+  | Some typ ->
+    let env = Global.env () in
+    let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env udecl in
+    let auctx = CPrimitives.op_or_type_univs prim in
+    let evd, u = Evd.with_context_set UState.univ_flexible evd (UnivGen.fresh_instance auctx) in
+    let expected_typ = EConstr.of_constr @@ Typeops.type_of_prim_or_type env u prim in
+    let evd, (typ,impls) =
+      Constrintern.(interp_type_evars_impls ~impls:empty_internalization_env)
+        env evd typ
+    in
+    let evd = Evarconv.unify_delay env evd typ expected_typ in
+    let evd = Evd.minimize_universes evd in
+    let uvars = EConstr.universes_of_constr evd typ in
+    let evd = Evd.restrict_universe_context evd uvars in
+    let typ = EConstr.to_constr evd typ in
+    let univs = Evd.check_univ_decl ~poly:(not (Univ.AUContext.is_empty auctx)) evd udecl in
+    let entry = {
+      Entries.prim_entry_type = Some (typ,univs);
       prim_entry_content = prim;
     }
-  in
-  let _kn : Names.Constant.t =
-    Declare.declare_constant ~name:id.CAst.v ~kind:Decls.IsPrimitive (Declare.PrimitiveEntry entry) in
-  Flags.if_verbose Feedback.msg_info Pp.(Names.Id.print id.CAst.v ++ str " is declared")
+    in
+    declare id entry

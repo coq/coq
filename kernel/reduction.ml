@@ -138,10 +138,10 @@ let nf_betaiota env t =
 let whd_betaiotazeta env x =
   match kind x with
   | (Sort _|Var _|Meta _|Evar _|Const _|Ind _|Construct _|
-       Prod _|Lambda _|Fix _|CoFix _|Int _|Float _) -> x
+       Prod _|Lambda _|Fix _|CoFix _|Int _|Float _|Array _) -> x
     | App (c, _) ->
       begin match kind c with
-      | Ind _ | Construct _ | Evar _ | Meta _ | Const _ | Int _ | Float _ -> x
+      | Ind _ | Construct _ | Evar _ | Meta _ | Const _ | Int _ | Float _ | Array _ -> x
       | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
         | Case _ | Fix _ | CoFix _ | Proj _ ->
          whd_val (create_clos_infos betaiotazeta env) (create_tab ()) (inject x)
@@ -152,10 +152,10 @@ let whd_betaiotazeta env x =
 let whd_all env t =
   match kind t with
     | (Sort _|Meta _|Evar _|Ind _|Construct _|
-       Prod _|Lambda _|Fix _|CoFix _|Int _|Float _) -> t
+       Prod _|Lambda _|Fix _|CoFix _|Int _|Float _|Array _) -> t
     | App (c, _) ->
       begin match kind c with
-      | Ind _ | Construct _ | Evar _ | Meta _ | Int _ | Float _ -> t
+      | Ind _ | Construct _ | Evar _ | Meta _ | Int _ | Float _ | Array _ -> t
       | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | LetIn _ | App _
         | Const _ |Case _ | Fix _ | CoFix _ | Proj _ ->
          whd_val (create_clos_infos all env) (create_tab ()) (inject t)
@@ -166,10 +166,10 @@ let whd_all env t =
 let whd_allnolet env t =
   match kind t with
     | (Sort _|Meta _|Evar _|Ind _|Construct _|
-       Prod _|Lambda _|Fix _|CoFix _|LetIn _|Int _|Float _) -> t
+       Prod _|Lambda _|Fix _|CoFix _|LetIn _|Int _|Float _|Array _) -> t
     | App (c, _) ->
       begin match kind c with
-      | Ind _ | Construct _ | Evar _ | Meta _ | LetIn _ | Int _ | Float _ -> t
+      | Ind _ | Construct _ | Evar _ | Meta _ | LetIn _ | Int _ | Float _ | Array _ -> t
       | Sort _ | Rel _ | Var _ | Cast _ | Prod _ | Lambda _ | App _
         | Const _ | Case _ | Fix _ | CoFix _ | Proj _ ->
          whd_val (create_clos_infos allnolet env) (create_tab ()) (inject t)
@@ -644,13 +644,23 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
       Array.fold_right2 (fun b1 b2 cuniv -> ccnv (mk_clos e1 b1) (mk_clos e2 b2) cuniv)
         br1 br2 cuniv
 
+    | FArray (u1,t1,ty1), FArray (u2,t2,ty2) ->
+      let len = Parray.length_int t1 in
+      if not (Int.equal len (Parray.length_int t2)) then raise NotConvertible;
+      let cuniv = convert_instances ~flex:false u1 u2 cuniv in
+      let el1 = el_stack lft1 v1 in
+      let el2 = el_stack lft2 v2 in
+      let cuniv = ccnv CONV l2r infos el1 el2 ty1 ty2 cuniv in
+      let cuniv = Parray.fold_left2 (fun u v1 v2 -> ccnv CONV l2r infos el1 el2 v1 v2 u) cuniv t1 t2 in
+      convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
+
      (* Should not happen because both (hd1,v1) and (hd2,v2) are in whnf *)
      | ( (FLetIn _, _) | (FCaseT _,_) | (FApp _,_) | (FCLOS _,_) | (FLIFT _,_)
        | (_, FLetIn _) | (_,FCaseT _) | (_,FApp _) | (_,FCLOS _) | (_,FLIFT _)
        | (FLOCKED,_) | (_,FLOCKED) ) -> assert false
 
      | (FRel _ | FAtom _ | FInd _ | FFix _ | FCoFix _ | FCaseInvert _
-        | FProd _ | FEvar _ | FInt _ | FFloat _), _ -> raise NotConvertible
+        | FProd _ | FEvar _ | FInt _ | FFloat _ | FArray _), _ -> raise NotConvertible
 
 and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
   let f (l1, t1) (l2, t2) cuniv = ccnv CONV l2r infos l1 l2 t1 t2 cuniv in

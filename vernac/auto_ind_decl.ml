@@ -155,7 +155,7 @@ let build_beq_scheme_deps kn =
         | None -> accu)
       | Rel _ | Var _ | Sort _ | Prod _ | Lambda _ | LetIn _ | Proj _
       | Construct _ | Case _ | CoFix _ | Fix _ | Meta _ | Evar _ | Int _
-      | Float _ -> accu
+      | Float _ | Array _ -> accu
     in
     let u = Univ.Instance.empty in
     let constrs n = get_constructors env (make_ind_family (((kn, i), u),
@@ -293,6 +293,7 @@ let build_beq_scheme mode kn =
         | Evar _  -> raise (EqUnknown "existential variable")
         | Int _ -> raise (EqUnknown "int")
         | Float _ -> raise (EqUnknown "float")
+              | Array _ -> raise (EqUnknown "array")
     in
       aux t
   in

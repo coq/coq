@@ -92,6 +92,7 @@ type 'a glob_constr_r =
   | GCast of 'a glob_constr_g * 'a glob_constr_g cast_type
   | GInt of Uint63.t
   | GFloat of Float64.t
+  | GArray of glob_level list option * 'a glob_constr_g array * 'a glob_constr_g * 'a glob_constr_g
 and 'a glob_constr_g = ('a glob_constr_r, 'a) DAst.t
 
 and 'a glob_decl_g = Name.t * binding_kind * 'a glob_constr_g option * 'a glob_constr_g

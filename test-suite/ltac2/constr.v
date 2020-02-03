@@ -10,3 +10,9 @@ Axiom something : SProp.
 Ltac2 Eval match (kind '(forall x : something, bool)) with
            | Prod a c => a
            | _ => throw Match_failure end.
+
+From Coq Require Import Int63 PArray.
+Open Scope array_scope.
+Ltac2 Eval match (kind '([|true|true|])) with
+  | Array _ _ _ ty => ty
+  | _ => throw Match_failure end.

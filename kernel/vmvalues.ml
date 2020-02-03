@@ -292,6 +292,7 @@ type whd =
   | Vconstr_block of vblock
   | Vint64 of int64
   | Vfloat64 of float
+  | Varray of values Parray.t
   | Vatom_stk of atom * stack
   | Vuniv_level of Univ.Level.t
 
@@ -324,6 +325,7 @@ let uni_lvl_val (v : values) : Univ.Level.t =
         | Vconstr_block _b -> str "Vconstr_block"
         | Vint64 _ -> str "Vint64"
         | Vfloat64 _ -> str "Vfloat64"
+        | Varray _ -> str "Varray"
         | Vatom_stk (_a,_stk) -> str "Vatom_stk"
         | Vuniv_level _ -> assert false
       in
@@ -403,7 +405,9 @@ let whd_val : values -> whd =
     else
       let tag = Obj.tag o in
       if tag = accu_tag then
-        if is_accumulate (fun_code o) then whd_accu o []
+        if Int.equal (Obj.size o) 1 then
+          Varray(Obj.obj o)
+        else if is_accumulate (fun_code o) then whd_accu o []
         else Vprod(Obj.obj o)
       else
         if tag = Obj.closure_tag || tag = Obj.infix_tag then
@@ -456,7 +460,9 @@ let val_of_atom a = val_of_obj (obj_of_atom a)
 
 let val_of_int i = (Obj.magic i : values)
 
-let val_of_uint i = (Obj.magic i : values)
+let val_of_uint i = (Obj.magic i : structured_values)
+
+let val_of_parray p = (Obj.magic p : structured_values)
 
 let atom_of_proj kn v =
   let r = Obj.new_block proj_tag 2 in
@@ -689,6 +695,7 @@ and pr_whd w =
   | Vconstr_block _b -> str "Vconstr_block"
   | Vint64 i -> i |> Format.sprintf "Vint64(%LiL)" |> str
   | Vfloat64 f -> str "Vfloat64(" ++ str (Float64.(to_string (of_float f))) ++ str ")"
+  | Varray _ -> str "Varray"
   | Vatom_stk (a,stk) -> str "Vatom_stk(" ++ pr_atom a ++ str ", " ++ pr_stack stk ++ str ")"
   | Vuniv_level _ -> assert false)
 and pr_stack stk =
@@ -701,3 +708,13 @@ and pr_zipper z =
   | Zfix (_f,args) -> str "Zfix(..., len=" ++ int (nargs args) ++ str ")"
   | Zswitch _s -> str "Zswitch(...)"
   | Zproj c -> str "Zproj(" ++ Projection.Repr.print c ++ str ")")
+
+(** Primitives implemented in OCaml *)
+
+let parray_make = Obj.magic Parray.make
+let parray_get = Obj.magic Parray.get
+let parray_get_default = Obj.magic Parray.default
+let parray_set = Obj.magic Parray.set
+let parray_copy = Obj.magic Parray.copy
+let parray_reroot = Obj.magic Parray.reroot
+let parray_length = Obj.magic Parray.length

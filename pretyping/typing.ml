@@ -332,6 +332,23 @@ let judge_of_int env v =
 let judge_of_float env v =
   Environ.on_judgment EConstr.of_constr (judge_of_float env v)
 
+let judge_of_array env sigma u tj defj tyj =
+  let ulev = match Univ.Instance.to_array u with
+    | [|u|] -> u
+    | _ -> assert false
+  in
+  let sigma = Evd.set_leq_sort env sigma tyj.utj_type
+      (Sorts.sort_of_univ (Univ.Universe.make ulev))
+  in
+  let check_one sigma j = Evarconv.unify_leq_delay env sigma j.uj_type tyj.utj_val in
+  let sigma = check_one sigma defj in
+  let sigma = Array.fold_left check_one sigma tj in
+  let arr = EConstr.of_constr @@ type_of_array env u in
+  let j = make_judge (mkArray(EInstance.make u, Array.map j_val tj, defj.uj_val, tyj.utj_val))
+      (mkApp (arr, [|tyj.utj_val|]))
+  in
+  sigma, j
+
 (* cstr must be in n.f. w.r.t. evars and execute returns a judgement
    where both the term and type are in n.f. *)
 let rec execute env sigma cstr =
@@ -454,6 +471,13 @@ let rec execute env sigma cstr =
 
     | Float f ->
         sigma, judge_of_float env f
+
+    | Array(u,t,def,ty) ->
+      let sigma, tyj = execute env sigma ty in
+      let sigma, tyj = type_judgment env sigma tyj in
+      let sigma, defj = execute env sigma def in
+      let sigma, tj = execute_array env sigma t in
+      judge_of_array env sigma (EInstance.kind sigma u) tj defj tyj
 
 and execute_recdef env sigma (names,lar,vdef) =
   let sigma, larj = execute_array env sigma lar in

@@ -620,7 +620,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
                 end
               end
         end
-       | exception NotEvaluableConst (IsPrimitive p) when Stack.check_native_args p stack ->
+       | exception NotEvaluableConst (IsPrimitive (u,p)) when Stack.check_native_args p stack ->
           let kargs = CPrimitives.kind p in
           let (kargs,o) = Stack.get_next_primitive_args kargs stack in
           (* Should not fail thanks to [check_native_args] *)
@@ -759,9 +759,9 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
         |_ -> fold ()
       else fold ()
 
-    | Int _ | Float _ ->
+    | Int _ | Float _ | Array _ ->
       begin match Stack.strip_app stack with
-       | (_, Stack.Primitive(p,kn,rargs,kargs,cst_l')::s) ->
+       | (_, Stack.Primitive(p,(_,u as kn),rargs,kargs,cst_l')::s) ->
          let more_to_reduce = List.exists (fun k -> CPrimitives.Kwhnf = k) kargs in
          if more_to_reduce then
            let (kargs,o) = Stack.get_next_primitive_args kargs s in
@@ -775,8 +775,9 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
              try List.chop n args
              with List.IndexOutOfRange -> (args,[]) (* FIXME probably useless *)
            in
+           let s = extra_args @ s in
            let args = Array.of_list (Option.get (Stack.list_of_app_stack (rargs @ Stack.append_app [|x|] args))) in
-             begin match CredNative.red_prim env sigma p args with
+             begin match CredNative.red_prim env sigma p u args with
                | Some t -> whrec cst_l' (t,s)
                | None -> ((mkApp (mkConstU kn, args), s), cst_l)
              end

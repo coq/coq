@@ -103,6 +103,8 @@ let is_rec names =
               names nal)
            b
     | GApp (f, args) -> List.exists (lookup names) (f :: args)
+    | GArray (_u, t, def, ty) ->
+      Array.exists (lookup names) t || lookup names def || lookup names ty
     | GCases (_, _, el, brl) ->
       List.exists (fun (e, _) -> lookup names e) el
       || List.exists (lookup_br names) brl
@@ -2047,7 +2049,8 @@ let rec add_args id new_args =
     | CGeneralization _ ->
       CErrors.anomaly ~label:"add_args " (Pp.str "CGeneralization.")
     | CDelimiters _ ->
-      CErrors.anomaly ~label:"add_args " (Pp.str "CDelimiters."))
+      CErrors.anomaly ~label:"add_args " (Pp.str "CDelimiters.")
+    | CArray _ -> CErrors.anomaly ~label:"add_args " (Pp.str "CArray."))
 
 let rec get_args b t :
     Constrexpr.local_binder_expr list

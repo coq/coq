@@ -542,6 +542,14 @@ let makeblock tag nparams arity args =
       Lval(val_of_block Obj.last_non_constant_constructor_tag args)
   else Lmakeblock(tag, args)
 
+let makearray args def =
+  try
+    let p = Array.map get_value args in
+    Lval (val_of_parray @@ Parray.unsafe_of_array p (get_value def))
+  with Not_found ->
+    let ar = Lmakeblock(0, args) in (* build the ocaml array *)
+    let kind = Lmakeblock(0, [|ar; def|]) in (* Parray.Array *)
+    Lmakeblock(0,[|kind|]) (* the reference *)
 
 (* Compiling constants *)
 
@@ -568,8 +576,13 @@ let expand_prim kn op arity =
 
 let lambda_of_prim kn op args =
   let arity = CPrimitives.arity op in
-  if Array.length args >= arity then prim kn op args
-  else mkLapp (expand_prim kn op arity) args
+  match Int.compare (Array.length args) arity with
+  | 0 -> prim kn op args
+  | x when x > 0 ->
+    let prim_args = Array.sub args 0 arity in
+    let extra_args = Array.sub args arity (Array.length args - arity) in
+    mkLapp(prim kn op prim_args) extra_args
+  | _ -> mkLapp (expand_prim kn op arity) args
 
 (*i Global environment *)
 
@@ -768,6 +781,9 @@ let rec lambda_of_constr env c =
 
   | Int i -> Luint i
   | Float f -> Lfloat f
+  | Array(_u, t,def,_ty) ->
+    let def = lambda_of_constr env def in
+    makearray (lambda_of_args env 0 t) def
 
 and lambda_of_app env f args =
   match Constr.kind f with

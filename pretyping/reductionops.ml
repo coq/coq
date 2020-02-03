@@ -422,8 +422,8 @@ struct
   let get_next_primitive_args kargs stk =
     let rec nargs = function
       | [] -> 0
-      | CPrimitives.Kwhnf :: _ -> 0
-      | _ :: s -> 1 + nargs s
+      | (CPrimitives.Kwhnf | CPrimitives.Karg) :: _ -> 0
+      | CPrimitives.Kparam :: s -> 1 + nargs s
     in
     let n = nargs kargs in
     (List.skipn (n+1) kargs, strip_n_app n stk)
@@ -588,6 +588,7 @@ struct
   type elem = EConstr.t
   type args = EConstr.t array
   type evd = evar_map
+  type uinstance = EConstr.EInstance.t
 
   let get = Array.get
 
@@ -601,6 +602,11 @@ struct
     | Float f -> f
     | _ -> raise Primred.NativeDestKO
 
+  let get_parray evd e =
+    match EConstr.kind evd e with
+    | Array(_u,t,def,_ty) -> Parray.of_array t def
+    | _ -> raise Not_found
+
   let mkInt env i =
     mkInt i
 
@@ -611,12 +617,12 @@ struct
     let (ct,cf) = get_bool_constructors env in
     mkConstruct (if b then ct else cf)
 
-    let mkCarry env b e =
-      let int_ty = mkConst @@ get_int_type env in
-      let (c0,c1) = get_carry_constructors env in
-      mkApp (mkConstruct (if b then c1 else c0),[|int_ty;e|])
+  let mkCarry env b e =
+    let int_ty = mkConst @@ get_int_type env in
+    let (c0,c1) = get_carry_constructors env in
+    mkApp (mkConstruct (if b then c1 else c0),[|int_ty;e|])
 
-    let mkIntPair env e1 e2 =
+  let mkIntPair env e1 e2 =
     let int_ty = mkConst @@ get_int_type env in
     let c = get_pair_constructor env in
     mkApp(mkConstruct c, [|int_ty;int_ty;e1;e2|])
@@ -699,6 +705,11 @@ struct
     let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,nan) =
       get_f_class_constructors env in
     mkConstruct nan
+
+  let mkArray env u t ty =
+    let (t,def) = Parray.to_array t in
+    mkArray(u,t,def,ty)
+
 end
 
 module CredNative = RedNative(CNativeEntries)
@@ -767,7 +778,7 @@ let rec whd_state_gen flags env sigma =
           let body = EConstr.of_constr body in
           whrec (body, stack)
           end
-       | exception NotEvaluableConst (IsPrimitive p) when Stack.check_native_args p stack ->
+       | exception NotEvaluableConst (IsPrimitive (u,p)) when Stack.check_native_args p stack ->
           let kargs = CPrimitives.kind p in
           let (kargs,o) = Stack.get_next_primitive_args kargs stack in
           (* Should not fail thanks to [check_native_args] *)
@@ -841,9 +852,9 @@ let rec whd_state_gen flags env sigma =
         |_ -> fold ()
       else fold ()
 
-    | Int _ | Float _ ->
+    | Int _ | Float _ | Array _ ->
       begin match Stack.strip_app stack with
-       | (_, Stack.Primitive(p,kn,rargs,kargs)::s) ->
+       | (_, Stack.Primitive(p,(_, u as kn),rargs,kargs)::s) ->
          let more_to_reduce = List.exists (fun k -> CPrimitives.Kwhnf = k) kargs in
          if more_to_reduce then
            let (kargs,o) = Stack.get_next_primitive_args kargs s in
@@ -858,10 +869,11 @@ let rec whd_state_gen flags env sigma =
              with List.IndexOutOfRange -> (args,[]) (* FIXME probably useless *)
            in
            let args = Array.of_list (Option.get (Stack.list_of_app_stack (rargs @ Stack.append_app [|x|] args))) in
-             begin match CredNative.red_prim env sigma p args with
-               | Some t -> whrec (t,s)
-               | None -> ((mkApp (mkConstU kn, args), s))
-             end
+           let s = extra_args @ s in
+           begin match CredNative.red_prim env sigma p u args with
+             | Some t -> whrec (t,s)
+             | None -> ((mkApp (mkConstU kn, args), s))
+           end
        | _ -> fold ()
       end
 
@@ -942,7 +954,7 @@ let local_whd_state_gen flags _env sigma =
       else s
 
     | Rel _ | Var _ | Sort _ | Prod _ | LetIn _ | Const _  | Ind _ | Proj _
-      | Int _ | Float _ -> s
+      | Int _ | Float _ | Array _ -> s
 
   in
   whrec

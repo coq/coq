@@ -130,7 +130,7 @@ let flex_kind_of_term flags env evd c sk =
     | Evar ev ->
        if is_frozen flags ev then Rigid
        else Flexible ev
-    | Lambda _ | Prod _ | Sort _ | Ind _ | Construct _ | CoFix _ | Int _ | Float _ -> Rigid
+    | Lambda _ | Prod _ | Sort _ | Ind _ | Construct _ | CoFix _ | Int _ | Float _ | Array _ -> Rigid
     | Meta _ -> Rigid
     | Fix _ -> Rigid (* happens when the fixpoint is partially applied *)
     | Cast _ | App _ | Case _ -> assert false
@@ -212,7 +212,7 @@ let occur_rigidly flags env evd (evk,_) t =
       (match aux c with
       | Rigid b -> Rigid b
       | _ -> Reducible)
-    | Meta _ | Fix _ | CoFix _ | Int _ | Float _ -> Reducible
+    | Meta _ | Fix _ | CoFix _ | Int _ | Float _ | Array _ -> Reducible
   in
     match aux t with
     | Rigid b -> b
@@ -898,7 +898,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
              only if necessary) or the second argument is potentially
              usable as a canonical projection or canonical value *)
           let rec is_unnamed (hd, args) = match EConstr.kind i hd with
-            | (Var _|Construct _|Ind _|Const _|Prod _|Sort _|Int _ |Float _) ->
+            | (Var _|Construct _|Ind _|Const _|Prod _|Sort _|Int _ |Float _|Array _) ->
               Stack.not_purely_applicative args
             | (CoFix _|Meta _|Rel _)-> true
             | Evar _ -> Stack.not_purely_applicative args
@@ -1019,7 +1019,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
         | Ind _, Ind _
         | Construct _, Construct _
         | Int _, Int _
-        | Float _, Float _ ->
+        | Float _, Float _
+        | Array _, Array _ ->
           rigids env evd sk1 term1 sk2 term2
 
         | Evar (sp1,al1), Evar (sp2,al2) -> (* Frozen evars *)
@@ -1064,9 +1065,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
           |Some (sk1',sk2'), Success i' -> evar_conv_x flags env i' CONV (Stack.zip i' (term1,sk1')) (Stack.zip i' (term2,sk2'))
           end
 
-        | (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _ | Float _ | Evar _ | Lambda _), _ ->
+        | (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _ | Float _ | Array _ | Evar _ | Lambda _), _ ->
           UnifFailure (evd,NotSameHead)
-        | _, (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _ | Evar _ | Lambda _) ->
+        | _, (Ind _ | Sort _ | Prod _ | CoFix _ | Fix _ | Rel _ | Var _ | Const _ | Int _ | Array _ | Evar _ | Lambda _) ->
           UnifFailure (evd,NotSameHead)
         | Case _, _ -> UnifFailure (evd,NotSameHead)
         | Proj _, _ -> UnifFailure (evd,NotSameHead)

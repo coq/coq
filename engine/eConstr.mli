@@ -135,6 +135,7 @@ val mkArrow : t -> Sorts.relevance  -> t -> t
 val mkArrowR : t -> t -> t
 val mkInt : Uint63.t -> t
 val mkFloat : Float64.t -> t
+val mkArray : EInstance.t * t array * t * t -> t
 
 val mkRef : GlobRef.t * EInstance.t -> t
 

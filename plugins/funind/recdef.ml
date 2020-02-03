@@ -305,9 +305,11 @@ let check_not_nested env sigma forbidden e =
     | Lambda (_, t, b) -> check_not_nested t; check_not_nested b
     | LetIn (_, v, t, b) ->
       check_not_nested t; check_not_nested b; check_not_nested v
-    | App (f, l) ->
-      check_not_nested f;
-      Array.iter check_not_nested l
+    | App (f, l) -> check_not_nested f
+    | Array (_u, t, def, ty) ->
+      Array.iter check_not_nested t;
+      check_not_nested def;
+      check_not_nested ty
     | Proj (p, c) -> check_not_nested c
     | Const _ -> ()
     | Ind _ -> ()
@@ -447,6 +449,7 @@ let rec travel_aux jinfo continuation_tac (expr_info : constr infos) g =
   match EConstr.kind sigma expr_info.info with
   | CoFix _ | Fix _ ->
     user_err Pp.(str "Function cannot treat local fixpoint or cofixpoint")
+  | Array _ -> user_err Pp.(str "Function cannot treat arrays")
   | Proj _ -> user_err Pp.(str "Function cannot treat projections")
   | LetIn (na, b, t, e) ->
     let new_continuation_tac =

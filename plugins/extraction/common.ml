@@ -63,6 +63,11 @@ let pp_boxed_tuple f = function
   | [x] -> f x
   | l -> pp_par true (hov 0 (prlist_with_sep (fun () -> str "," ++ spc ()) f l))
 
+let pp_array f = function
+  | [] -> mt ()
+  | [x] -> f x
+  | l -> pp_par true (prlist_with_sep (fun () -> str ";" ++ spc ()) f l)
+
 (** By default, in module Format, you can do horizontal placing of blocks
     even if they include newlines, as long as the number of chars in the
     blocks is less that a line length. To avoid this awkward situation,

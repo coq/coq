@@ -1,8 +1,8 @@
 Names
 TransparentState
 Uint63
+Parray
 Float64
-CPrimitives
 Univ
 UGraph
 Esubst
@@ -12,6 +12,7 @@ Context
 Constr
 Vars
 Term
+CPrimitives
 Mod_subst
 Vmvalues
 Cbytecodes

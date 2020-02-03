@@ -40,9 +40,8 @@ These primitive declarations are regular axioms. As such, they must be trusted a
 
    Print Assumptions one_minus_one_is_zero.
 
-The reduction machines (:tacn:`vm_compute`, :tacn:`native_compute`) implement
-dedicated, efficient, rules to reduce the applications of these primitive
-operations.
+The reduction machines implement dedicated, efficient rules to reduce the
+applications of these primitive operations.
 
 The extraction of these primitives can be customized similarly to the extraction
 of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlInt63`
@@ -105,3 +104,53 @@ Literal values (of type :g:`Float64.t`) are extracted to literal OCaml
 values (of type :g:`float`) written in hexadecimal notation and
 wrapped into the :g:`Float64.of_float` constructor, e.g.:
 :g:`Float64.of_float (0x1p+0)`.
+
+.. _primitive-arrays:
+
+Primitive Arrays
+----------------
+
+The language of terms features persistent arrays as values. The type of
+such a value is *axiomatized*; it is declared through the following sentence
+(excerpt from the :g:`PArray` module):
+
+.. coqdoc::
+
+   Primitive array := #array_type.
+
+This type is equipped with a few operators, that must be similarly declared.
+For instance, elements in an array can be accessed and updated using the
+:g:`PArray.get` and :g:`PArray.set` functions, declared and specified as
+follows:
+
+.. coqdoc::
+
+   Primitive get := #array_get.
+   Primitive set := #array_set.
+   Notation "t .[ i ]" := (get t i).
+   Notation "t .[ i <- a ]" := (set t i a).
+
+   Axiom get_set_same : forall A t i (a:A), (i < length t) = true -> t.[i<-a].[i] = a.
+   Axiom get_set_other : forall A t i j (a:A), i <> j -> t.[i<-a].[j] = t.[j].
+
+The complete set of such operators can be obtained looking at the :g:`PArray` module.
+
+These primitive declarations are regular axioms. As such, they must be trusted and are listed by the
+:g:`Print Assumptions` command.
+
+The reduction machines (:tacn:`vm_compute`, :tacn:`native_compute`) implement
+dedicated, efficient rules to reduce the applications of these primitive
+operations.
+
+The extraction of these primitives can be customized similarly to the extraction
+of regular axioms (see :ref:`extraction`). Nonetheless, the :g:`ExtrOCamlPArray`
+module can be used when extracting to OCaml: it maps the Coq primitives to types
+and functions of a :g:`Parray` module. Said OCaml module is not produced by
+extraction. Instead, it has to be provided by the user (if they want to compile
+or execute the extracted code). For instance, an implementation of this module
+can be taken from the kernel of Coq (see ``kernel/parray.ml``).
+
+Primitive arrays expose a functional interface, but they are internally
+implemented using a persistent data structure :cite:`ConchonFilliatre07wml`.
+Update and access to an element in the most recent copy of an array are
+constant time operations.

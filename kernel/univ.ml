@@ -985,6 +985,8 @@ module AUContext =
 struct
   type t = Names.Name.t array constrained
 
+  let make names csts : t = names, csts
+
   let repr (inst, cst) =
     (Array.init (Array.length inst) (fun i -> Level.var i), cst)
 

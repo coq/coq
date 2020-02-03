@@ -350,6 +350,7 @@ and fterm =
   | FEvar of existential * fconstr subs
   | FInt of Uint63.t
   | FFloat of Float64.t
+  | FArray of Univ.Instance.t * fconstr Parray.t * fconstr
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
   | FLOCKED
@@ -456,7 +457,7 @@ let rec lft_fconstr n ft =
     | FLIFT(k,m) -> lft_fconstr (n+k) m
     | FLOCKED -> assert false
     | FFlex (RelKey _) | FAtom _ | FApp _ | FProj _ | FCaseT _ | FCaseInvert _ | FProd _
-      | FLetIn _ | FEvar _ | FCLOS _ -> {mark=ft.mark; term=FLIFT(n,ft)}
+      | FLetIn _ | FEvar _ | FCLOS _ | FArray _ -> {mark=ft.mark; term=FLIFT(n,ft)}
 let lift_fconstr k f =
   if Int.equal k 0 then f else lft_fconstr k f
 let lift_fconstr_vect k v =
@@ -518,10 +519,12 @@ let mk_clos e t =
     | Construct kn -> {mark = mark Cstr Unknown; term = FConstruct kn }
     | Int i -> {mark = mark Cstr Unknown; term = FInt i}
     | Float f -> {mark = mark Cstr Unknown; term = FFloat f}
-    | (CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _|Proj _) ->
+    | (CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _|Proj _|Array _) ->
         {mark = mark Red Unknown; term = FCLOS(t,e)}
 
 let inject c = mk_clos (subs_id 0) c
+
+(************************************************************************)
 
 (** Hand-unrolling of the map function to bypass the call to the generic array
     allocation *)
@@ -558,7 +561,7 @@ let ref_value_cache ({ i_cache = cache; _ }) tab ref =
         in
         Def (inject body)
       with
-      | NotEvaluableConst (IsPrimitive op) (* Const *) -> Primitive op
+      | NotEvaluableConst (IsPrimitive (_u,op)) (* Const *) -> Primitive op
       | Not_found (* List.assoc *)
       | NotEvaluableConst _ (* Const *)
         -> Undef None
@@ -626,13 +629,18 @@ let rec to_constr lfts v =
                     subst_constr subs f)
     | FEvar ((ev,args),env) ->
       let subs = comp_subs lfts env in
-        mkEvar(ev,List.map (fun a -> subst_constr subs a) args)
+        mkEvar(ev, List.map (fun a -> subst_constr subs a) args)
     | FLIFT (k,a) -> to_constr (el_shft k lfts) a
 
     | FInt i ->
        Constr.mkInt i
     | FFloat f ->
         Constr.mkFloat f
+
+    | FArray (u,t,ty) ->
+      let ty = to_constr lfts ty in
+      let init i = to_constr lfts (Parray.get t (Uint63.of_int i)) in
+      mkArray(u,Array.init (Parray.length_int t) init, to_constr lfts (Parray.default t),ty)
 
     | FCLOS (t,env) ->
       if is_subs_id env && is_lift_id lfts then t
@@ -931,57 +939,6 @@ let unfold_projection info p =
     Some (Zproj (Projection.repr p))
   else None
 
-(*********************************************************************)
-(* A machine that inspects the head of a term until it finds an
-   atom or a subterm that may produce a redex (abstraction,
-   constructor, cofix, letin, constant), or a neutral term (product,
-   inductive) *)
-let rec knh info m stk =
-  match m.term with
-    | FLIFT(k,a) -> knh info a (zshift k stk)
-    | FCLOS(t,e) -> knht info e t (zupdate info m stk)
-    | FLOCKED -> assert false
-    | FApp(a,b) -> knh info a (append_stack b (zupdate info m stk))
-    | FCaseT(ci,p,t,br,e) -> knh info t (ZcaseT(ci,p,br,e)::zupdate info m stk)
-    | FFix(((ri,n),_),_) ->
-        (match get_nth_arg m ri.(n) stk with
-             (Some(pars,arg),stk') -> knh info arg (Zfix(m,pars)::stk')
-           | (None, stk') -> (m,stk'))
-    | FProj (p,c) ->
-      (match unfold_projection info p with
-       | None -> (m, stk)
-       | Some s -> knh info c (s :: zupdate info m stk))
-
-(* cases where knh stops *)
-    | (FFlex _|FLetIn _|FConstruct _|FEvar _|FCaseInvert _|
-       FCoFix _|FLambda _|FRel _|FAtom _|FInd _|FProd _|FInt _|FFloat _) ->
-        (m, stk)
-
-(* The same for pure terms *)
-and knht info e t stk =
-  match kind t with
-    | App(a,b) ->
-        knht info e a (append_stack (mk_clos_vect e b) stk)
-    | Case(ci,p,NoInvert,t,br) ->
-        knht info e t (ZcaseT(ci, p, br, e)::stk)
-    | Case(ci,p,CaseInvert{univs;args},t,br) ->
-      let term = FCaseInvert (ci, p, (univs,Array.map (mk_clos e) args), mk_clos e t, br, e) in
-      { mark = mark Red Unknown; term }, stk
-    | Fix fx -> knh info { mark = mark Cstr Unknown; term = FFix (fx, e) } stk
-    | Cast(a,_,_) -> knht info e a stk
-    | Rel n -> knh info (clos_rel e n) stk
-    | Proj (p, c) -> knh info { mark = mark Red Unknown; term = FProj (p, mk_clos e c) } stk
-    | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _ | Int _|Float _) -> (mk_clos e t, stk)
-    | CoFix cfx -> { mark = mark Cstr Unknown; term = FCoFix (cfx,e) }, stk
-    | Lambda _ -> { mark = mark Cstr Unknown; term = mk_lambda e t }, stk
-    | Prod (n, t, c) ->
-      { mark = mark Whnf KnownR; term = FProd (n, mk_clos e t, c, e) }, stk
-    | LetIn (n,b,t,c) ->
-      { mark = mark Red Unknown; term = FLetIn (n, mk_clos e b, mk_clos e t, c, e) }, stk
-    | Evar ev -> { mark = mark Red Unknown; term = FEvar (ev, e) }, stk
-
-let inject c = mk_clos (subs_id 0) c
-
 (************************************************************************)
 (* Reduction of Native operators                                        *)
 
@@ -992,6 +949,7 @@ module FNativeEntries =
     type elem = fconstr
     type args = fconstr array
     type evd = unit
+    type uinstance = Univ.Instance.t
 
     let get = Array.get
 
@@ -1004,6 +962,11 @@ module FNativeEntries =
       match [@ocaml.warning "-4"] e.term with
       | FFloat f -> f
       | _ -> raise Primred.NativeDestKO
+
+    let get_parray () e =
+      match [@ocaml.warning "-4"] e.term with
+      | FArray (_u,t,_ty) -> t
+      | _ -> raise Not_found
 
     let dummy = {mark = mark Norm KnownR; term = FRel 0}
 
@@ -1133,6 +1096,17 @@ module FNativeEntries =
         frefl := { mark = mark Cstr KnownR; term = FConstruct (Univ.in_punivs crefl) }
       | None -> defined_refl := false
 
+    let defined_array = ref false
+
+    let farray = ref dummy
+
+    let init_array retro =
+      match retro.Retroknowledge.retro_array with
+      | Some c ->
+        defined_array := true;
+        farray := { mark = mark Norm KnownR; term = FFlex (ConstKey (Univ.in_punivs c)) }
+      | None -> defined_array := false
+
     let init env =
       current_retro := env.retroknowledge;
       init_int !current_retro;
@@ -1143,7 +1117,8 @@ module FNativeEntries =
       init_cmp !current_retro;
       init_f_cmp !current_retro;
       init_f_class !current_retro;
-      init_refl !current_retro
+      init_refl !current_retro;
+      init_array !current_retro
 
     let check_env env =
       if not (!current_retro == env.retroknowledge) then init env
@@ -1179,6 +1154,10 @@ module FNativeEntries =
     let check_f_class env =
       check_env env;
       assert (!defined_f_class)
+
+    let check_array env =
+      check_env env;
+      assert (!defined_array)
 
     let mkInt env i =
       check_int env;
@@ -1269,9 +1248,69 @@ module FNativeEntries =
     let mkNaN env =
       check_f_class env;
       !fNaN
+
+    let mkArray env u t ty =
+      check_array env;
+      { mark = mark Whnf KnownR; term = FArray (u,t,ty)}
+
   end
 
 module FredNative = RedNative(FNativeEntries)
+
+(*********************************************************************)
+(* A machine that inspects the head of a term until it finds an
+   atom or a subterm that may produce a redex (abstraction,
+   constructor, cofix, letin, constant), or a neutral term (product,
+   inductive) *)
+let rec knh info m stk =
+  match m.term with
+    | FLIFT(k,a) -> knh info a (zshift k stk)
+    | FCLOS(t,e) -> knht info e t (zupdate info m stk)
+    | FLOCKED -> assert false
+    | FApp(a,b) -> knh info a (append_stack b (zupdate info m stk))
+    | FCaseT(ci,p,t,br,e) -> knh info t (ZcaseT(ci,p,br,e)::zupdate info m stk)
+    | FFix(((ri,n),_),_) ->
+        (match get_nth_arg m ri.(n) stk with
+             (Some(pars,arg),stk') -> knh info arg (Zfix(m,pars)::stk')
+           | (None, stk') -> (m,stk'))
+    | FProj (p,c) ->
+      (match unfold_projection info p with
+       | None -> (m, stk)
+       | Some s -> knh info c (s :: zupdate info m stk))
+
+(* cases where knh stops *)
+    | (FFlex _|FLetIn _|FConstruct _|FEvar _|FCaseInvert _|
+       FCoFix _|FLambda _|FRel _|FAtom _|FInd _|FProd _|FInt _|FFloat _|FArray _) ->
+        (m, stk)
+
+(* The same for pure terms *)
+and knht info e t stk =
+  match kind t with
+    | App(a,b) ->
+        knht info e a (append_stack (mk_clos_vect e b) stk)
+    | Case(ci,p,NoInvert,t,br) ->
+        knht info e t (ZcaseT(ci, p, br, e)::stk)
+    | Case(ci,p,CaseInvert{univs;args},t,br) ->
+      let term = FCaseInvert (ci, p, (univs,Array.map (mk_clos e) args), mk_clos e t, br, e) in
+      { mark = mark Red Unknown; term }, stk
+    | Fix fx -> knh info { mark = mark Cstr Unknown; term = FFix (fx, e) } stk
+    | Cast(a,_,_) -> knht info e a stk
+    | Rel n -> knh info (clos_rel e n) stk
+    | Proj (p, c) -> knh info { mark = mark Red Unknown; term = FProj (p, mk_clos e c) } stk
+    | (Ind _|Const _|Construct _|Var _|Meta _ | Sort _ | Int _|Float _) -> (mk_clos e t, stk)
+    | CoFix cfx -> { mark = mark Cstr Unknown; term = FCoFix (cfx,e) }, stk
+    | Lambda _ -> { mark = mark Cstr Unknown; term = mk_lambda e t }, stk
+    | Prod (n, t, c) ->
+      { mark = mark Whnf KnownR; term = FProd (n, mk_clos e t, c, e) }, stk
+    | LetIn (n,b,t,c) ->
+      { mark = mark Red Unknown; term = FLetIn (n, mk_clos e b, mk_clos e t, c, e) }, stk
+    | Evar ev -> { mark = mark Red Unknown; term = FEvar (ev, e) }, stk
+    | Array(u,t,def,ty) ->
+      let len = Array.length t in
+      let ty = mk_clos e ty in
+      let t = Parray.init (Uint63.of_int len) (fun i -> mk_clos e t.(i)) (mk_clos e def) in
+      let term = FArray (u,t,ty) in
+      knh info { mark = mark Cstr Unknown; term } stk
 
 (************************************************************************)
 
@@ -1286,7 +1325,7 @@ let rec knr info tab m stk =
       (match get_args n tys f e stk with
           Inl e', s -> knit info tab e' f s
         | Inr lam, s -> (lam,s))
-  | FFlex(ConstKey (kn,_ as c)) when red_set info.i_flags (fCONST kn) ->
+  | FFlex(ConstKey (kn,_u as c)) when red_set info.i_flags (fCONST kn) ->
       (match ref_value_cache info tab (ConstKey c) with
         | Def v -> kni info tab v stk
         | Primitive op when check_native_args op stk ->
@@ -1335,15 +1374,16 @@ let rec knr info tab m stk =
       (match info.i_cache.i_sigma ev with
           Some c -> knit info tab env c stk
         | None -> (m,stk))
-  | FInt _ | FFloat _ ->
+  | FInt _ | FFloat _ | FArray _ ->
     (match [@ocaml.warning "-4"] strip_update_shift_app m stk with
-     | (_, _, Zprimitive(op,c,rargs,nargs)::s) ->
+     | (_, _, Zprimitive(op,(_,u as c),rargs,nargs)::s) ->
        let (rargs, nargs) = skip_native_args (m::rargs) nargs in
        begin match nargs with
          | [] ->
            let args = Array.of_list (List.rev rargs) in
-           begin match FredNative.red_prim (info_env info) () op args with
-             | Some m -> kni info tab m s
+           begin match FredNative.red_prim (info_env info) () op u args with
+             | Some m ->
+             kni info tab m s
              | None ->
                let f = {mark = mark Whnf KnownR; term = FFlex (ConstKey c)} in
                let m = {mark = mark Whnf KnownR; term = FApp(f,args)} in
@@ -1471,7 +1511,8 @@ and norm_head info tab m =
       | FProj (p,c) ->
           mkProj (p, kl info tab c)
       | FLOCKED | FRel _ | FAtom _ | FFlex _ | FInd _ | FConstruct _
-      | FApp _ | FCaseT _ | FCaseInvert _ | FLIFT _ | FCLOS _ | FInt _ | FFloat _ -> term_of_fconstr m
+      | FApp _ | FCaseT _ | FCaseInvert _ | FLIFT _ | FCLOS _ | FInt _
+      | FFloat _ | FArray _ -> term_of_fconstr m
 
 (* Initialization and then normalization *)
 

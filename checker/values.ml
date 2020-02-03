@@ -152,7 +152,8 @@ let rec v_constr =
     [|v_cofix|]; (* CoFix *)
     [|v_proj;v_constr|]; (* Proj *)
     [|v_uint63|]; (* Int *)
-    [|Float64|] (* Int *)
+    [|Float64|]; (* Float *)
+    [|v_instance;Array v_constr;v_constr;v_constr|] (* Array *)
   |])
 
 and v_prec = Tuple ("prec_declaration",
@@ -235,7 +236,7 @@ let v_template_universes =
   v_tuple "template_universes" [|List(Opt v_level);v_context_set|]
 
 let v_primitive =
-  v_enum "primitive" 44 (* Number of "Primitive" in Int63.v and PrimFloat.v *)
+  v_enum "primitive" 50 (* Number of "Primitive" in Int63.v and PrimFloat.v *)
 
 let v_cst_def =
   v_sum "constant_def" 0
@@ -259,8 +260,11 @@ let v_cb = v_tuple "constant_body"
     v_bool;
     v_typing_flags|]
 
+let v_nested = v_sum "nested" 0
+  [|[|v_ind|] (* NestedInd *);[|v_cst|] (* NestedPrimitive *)|]
+
 let v_recarg = v_sum "recarg" 1 (* Norec *)
-  [|[|v_ind|] (* Mrec *);[|v_ind|] (* Imbr *)|]
+  [|[|v_ind|] (* Mrec *);[|v_nested|] (* Nested *)|]
 
 let rec v_wfp = Sum ("wf_paths",0,
     [|[|Int;Int|]; (* Rtree.Param *)
@@ -317,7 +321,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
 let v_prim_ind = v_enum "prim_ind" 6
 (* Number of "Register ... as kernel.ind_..." in Int63.v and PrimFloat.v *)
 
-let v_prim_type = v_enum "prim_type" 2
+let v_prim_type = v_enum "prim_type" 3
 (* Number of constructors of prim_type in "kernel/cPrimitives.ml" *)
 
 let v_retro_action =

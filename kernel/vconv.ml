@@ -76,6 +76,11 @@ and conv_whd env pb k whd1 whd2 cu =
   | Vfloat64 f1, Vfloat64 f2 ->
     if Float64.(equal (of_float f1) (of_float f2)) then cu
     else raise NotConvertible
+  | Varray t1, Varray t2 ->
+    if t1 == t2 then cu else
+    let n = Parray.length_int t1 in
+    if not (Int.equal n (Parray.length_int t2)) then raise NotConvertible;
+    Parray.fold_left2 (fun cu v1 v2 -> conv_val env CONV k v1 v2 cu) cu t1 t2
   | Vatom_stk(a1,stk1), Vatom_stk(a2,stk2) ->
       conv_atom env pb k a1 stk1 a2 stk2 cu
   | Vfun _, _ | _, Vfun _ ->
@@ -83,7 +88,7 @@ and conv_whd env pb k whd1 whd2 cu =
       conv_val env CONV (k+1) (apply_whd k whd1) (apply_whd k whd2) cu
 
   | Vprod _, _ | Vfix _, _ | Vcofix _, _  | Vconstr_const _, _ | Vint64 _, _
-  | Vfloat64 _, _ | Vconstr_block _, _ | Vatom_stk _, _ -> raise NotConvertible
+  | Vfloat64 _, _ | Varray _, _ | Vconstr_block _, _ | Vatom_stk _, _ -> raise NotConvertible
 
 
 and conv_atom env pb k a1 stk1 a2 stk2 cu =

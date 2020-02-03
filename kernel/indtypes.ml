@@ -165,7 +165,7 @@ let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lrecparams) =
     let decl = LocalAssum (anon, hnf_prod_applist env ty lrecparams) in
     push_rel decl env in
   let ra_env' =
-    (Imbr mi,(Rtree.mk_rec_calls 1).(0)) ::
+    (Nested (NestedInd mi),(Rtree.mk_rec_calls 1).(0)) ::
     List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in
   (* New index of the inductive types *)
   let newidx = n + auxntyp in
@@ -241,6 +241,9 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
                 discharged to the [check_positive_nested] function. *)
             if List.for_all (noccur_between n ntypes) largs then (nmr,mk_norec)
             else check_positive_nested ienv nmr (ind_kn, largs)
+        | Const (c,_) when is_primitive_positive_container env c ->
+          if List.for_all (noccur_between n ntypes) largs then (nmr,mk_norec)
+          else check_positive_nested_primitive ienv nmr (c, largs)
         | _err ->
             (** If an inductive of the mutually inductive block
                 appears in any other way, then the positivy check gives
@@ -298,7 +301,16 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
         let irecargs = Array.map snd irecargs_nmr
         and nmr' = array_min nmr irecargs_nmr
         in
-          (nmr',(Rtree.mk_rec [|mk_paths (Imbr mi) irecargs|]).(0))
+          (nmr',(Rtree.mk_rec [|mk_paths (Nested (NestedInd mi)) irecargs|]).(0))
+
+  and check_positive_nested_primitive (env,n,ntypes,ra_env) nmr (c, largs) =
+    (* We model the primitive type c X1 ... Xn as if it had one constructor
+       C : X1 -> ... -> Xn -> c X1 ... Xn
+       The subterm relation is defined for each primitive in `inductive.ml`. *)
+    let ra_env = List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in
+    let ienv = (env,n,ntypes,ra_env) in
+    let nmr',recargs = List.fold_left_map (check_pos ienv) nmr largs in
+    (nmr', (Rtree.mk_rec [| mk_paths (Nested (NestedPrimitive c)) [| recargs |] |]).(0))
 
   (** [check_constructors ienv check_head nmr c] checks the positivity
       condition in the type [c] of a constructor (i.e. that recursive

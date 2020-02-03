@@ -252,12 +252,22 @@ let subst_univs_level_constr subst c =
          let u' = Univ.subst_univs_level_universe subst u in
            if u' == u then t else
              (changed := true; mkSort (Sorts.sort_of_univ u'))
+
       | Case (ci,p,CaseInvert {univs;args},c,br) ->
         if Univ.Instance.is_empty univs then Constr.map aux t
         else
           let univs' = f univs in
           if univs' == univs then Constr.map aux t
           else (changed:=true; Constr.map aux (mkCase (ci,p,CaseInvert {univs=univs';args},c,br)))
+
+      | Array (u,elems,def,ty) ->
+        let u' = f u in
+        let elems' = CArray.Smart.map aux elems in
+        let def' = aux def in
+        let ty' = aux ty in
+        if u == u' && elems == elems' && def == def' && ty == ty' then t
+        else (changed := true; mkArray (u',elems',def',ty'))
+
       | _ -> Constr.map aux t
     in
     let c' = aux c in
@@ -294,10 +304,20 @@ let subst_instance_constr subst c =
          let u' = Univ.subst_instance_universe subst u in
           if u' == u then t else
             (mkSort (Sorts.sort_of_univ u'))
+
       | Case (ci,p,CaseInvert {univs;args},c,br) ->
         let univs' = f univs in
         if univs' == univs then Constr.map aux t
         else Constr.map aux (mkCase (ci,p,CaseInvert {univs=univs';args},c,br))
+
+      | Array (u,elems,def,ty) ->
+        let u' = f u in
+        let elems' = CArray.Smart.map aux elems in
+        let def' = aux def in
+        let ty' = aux ty in
+        if u == u' && elems == elems' && def == def' && ty == ty' then t
+        else mkArray (u',elems',def',ty')
+
       | _ -> Constr.map aux t
     in
     aux c
@@ -319,11 +339,14 @@ let universes_of_constr c =
   let rec aux s c =
     match kind c with
     | Const (_c, u) ->
-       LSet.fold LSet.add (Instance.levels u) s
+      LSet.fold LSet.add (Instance.levels u) s
     | Ind ((_mind,_), u) | Construct (((_mind,_),_), u) ->
-       LSet.fold LSet.add (Instance.levels u) s
+      LSet.fold LSet.add (Instance.levels u) s
     | Sort u when not (Sorts.is_small u) ->
       let u = Sorts.univ_of_sort u in
       LSet.fold LSet.add (Universe.levels u) s
+    | Array (u,_,_,_) ->
+      let s = LSet.fold LSet.add (Instance.levels u) s in
+      Constr.fold aux s c
     | _ -> Constr.fold aux s c
   in aux LSet.empty c

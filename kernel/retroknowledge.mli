@@ -13,6 +13,7 @@ open Names
 type retroknowledge = {
     retro_int63 : Constant.t option;
     retro_float64 : Constant.t option;
+    retro_array : Constant.t option;
     retro_bool : (constructor * constructor) option; (* true, false *)
     retro_carry : (constructor * constructor) option; (* C0, C1 *)
     retro_pair : constructor option;
@@ -35,4 +36,4 @@ val empty : retroknowledge
 
 type action =
   | Register_ind : 'a CPrimitives.prim_ind * inductive -> action
-  | Register_type : CPrimitives.prim_type * Constant.t -> action
+  | Register_type : 'a CPrimitives.prim_type * Constant.t -> action

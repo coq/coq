@@ -809,6 +809,12 @@ and detype_r d flags avoid env sigma t =
     | CoFix (n,recdef) -> detype_cofix (detype d) flags avoid env sigma n recdef
     | Int i -> GInt i
     | Float f -> GFloat f
+    | Array(u,t,def,ty) ->
+      let t = Array.map (detype d flags avoid env sigma) t in
+      let def = detype d flags avoid env sigma def in
+      let ty = detype d flags avoid env sigma ty in
+      let u = detype_instance sigma u in
+      GArray(u, t, def, ty)
 
 and detype_eqns d flags avoid env sigma ci computable constructs consnargsl bl =
   try
@@ -1095,6 +1101,14 @@ let rec subst_glob_constr env subst = DAst.map (function
       let r1' = subst_glob_constr env subst r1 in
       let k' = smartmap_cast_type (subst_glob_constr env subst) k in
       if r1' == r1 && k' == k then raw else GCast (r1',k')
+
+  | GArray (u,t,def,ty) as raw ->
+      let def' = subst_glob_constr env subst def
+      and t' = Array.Smart.map (subst_glob_constr env subst) t
+      and ty' = subst_glob_constr env subst ty
+      in
+        if def' == def && t' == t && ty' == ty then raw else
+          GArray(u,t',def',ty')
 
   )
 

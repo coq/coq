@@ -1262,7 +1262,7 @@ open Pputils
         )
       | VernacPrimitive(id,r,typopt) ->
          hov 2
-             (keyword "Primitive" ++ spc() ++ pr_lident id ++
+             (keyword "Primitive" ++ spc() ++ pr_ident_decl id ++
                 (Option.cata (fun ty -> spc() ++ str":" ++ pr_spc_lconstr ty) (mt()) typopt) ++ spc() ++
                 str ":=" ++ spc() ++
                 str (CPrimitives.op_or_type_to_string r))

@@ -127,7 +127,7 @@ let classify_vernac e =
     | VernacAssumption (_,_,l) ->
         let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map (fun (id, _) -> id.v) l) l) in
         VtSideff (ids, VtLater)
-    | VernacPrimitive (id,_,_) ->
+    | VernacPrimitive ((id,_),_,_) ->
         VtSideff ([id.CAst.v], VtLater)
     | VernacDefinition (_,({v=id},_),DefineBody _) -> VtSideff (idents_of_name id, VtLater)
     | VernacInductive (_,l) ->

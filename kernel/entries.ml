@@ -91,8 +91,7 @@ type parameter_entry =
     Id.Set.t option * types in_universes_entry * inline
 
 type primitive_entry = {
-  prim_entry_type : types option;
-  prim_entry_univs : Univ.ContextSet.t; (* always monomorphic *)
+  prim_entry_type : types in_universes_entry option;
   prim_entry_content : CPrimitives.op_or_type;
 }
 

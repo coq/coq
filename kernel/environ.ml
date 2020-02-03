@@ -503,7 +503,7 @@ let constant_type env (kn,u) =
 type const_evaluation_result =
   | NoBody
   | Opaque
-  | IsPrimitive of CPrimitives.t
+  | IsPrimitive of Univ.Instance.t * CPrimitives.t
 
 exception NotEvaluableConst of const_evaluation_result
 
@@ -535,7 +535,7 @@ let constant_value_in env (kn,u) =
         subst_instance_constr u b
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)
-    | Primitive p -> raise (NotEvaluableConst (IsPrimitive p))
+    | Primitive p -> raise (NotEvaluableConst (IsPrimitive (u,p)))
 
 let constant_opt_value_in env cst =
   try Some (constant_value_in env cst)

@@ -52,7 +52,8 @@ type cbv_value =
   | FIXP of fixpoint * cbv_value subs * cbv_value array
   | COFIXP of cofixpoint * cbv_value subs * cbv_value array
   | CONSTR of constructor Univ.puniverses * cbv_value array
-  | PRIMITIVE of CPrimitives.t * constr * cbv_value array
+  | PRIMITIVE of CPrimitives.t * pconstant * cbv_value array
+  | ARRAY of Univ.Instance.t * cbv_value Parray.t * cbv_value
 
 (* type of terms with a hole. This hole can appear only under App or Case.
  *   TOP means the term is considered without context
@@ -98,6 +99,8 @@ let rec shift_value n = function
       CONSTR (c, Array.map (shift_value n) args)
   | PRIMITIVE(op,c,args) ->
       PRIMITIVE(op,c,Array.map (shift_value n) args)
+  | ARRAY (u,t,ty) ->
+      ARRAY(u, Parray.map (shift_value n) t, shift_value n ty)
 
 let shift_value n v =
   if Int.equal n 0 then v else shift_value n v
@@ -170,7 +173,7 @@ let strip_appl head stack =
     | COFIXP (cofix,env,app) -> (COFIXP(cofix,env,[||]), stack_app app stack)
     | CONSTR (c,app) -> (CONSTR(c,[||]), stack_app app stack)
     | PRIMITIVE(op,c,app) -> (PRIMITIVE(op,c,[||]), stack_app app stack)
-    | VAL _ | STACK _ | CBN _ | LAM _ -> (head, stack)
+    | VAL _ | STACK _ | CBN _ | LAM _ | ARRAY _ -> (head, stack)
 
 
 (* Tests if fixpoint reduction is possible. *)
@@ -209,6 +212,7 @@ module VNativeEntries =
     type elem = cbv_value
     type args = cbv_value array
     type evd = unit
+    type uinstance = Univ.Instance.t
 
     let get = Array.get
 
@@ -226,6 +230,11 @@ module VNativeEntries =
         (match kind cf with
         | Float f -> f
         | _ -> raise Primred.NativeDestKO)
+      | _ -> raise Primred.NativeDestKO
+
+    let get_parray () e =
+      match e with
+      | ARRAY(_u,t,_ty) -> t
       | _ -> raise Primred.NativeDestKO
 
     let mkInt env i = VAL(0, mkInt i)
@@ -327,6 +336,9 @@ module VNativeEntries =
       let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,nan) =
         get_f_class_constructors env in
       CONSTR(Univ.in_punivs nan, [||])
+
+    let mkArray env u t ty =
+      ARRAY (u,t,ty)
   end
 
 module VredNative = RedNative(VNativeEntries)
@@ -368,7 +380,10 @@ and reify_value = function (* reduction under binders *)
   | CONSTR (c,args) ->
       mkApp(mkConstructU c, Array.map reify_value args)
   | PRIMITIVE(op,c,args) ->
-      mkApp(c, Array.map reify_value args)
+      mkApp(mkConstU c, Array.map reify_value args)
+  | ARRAY (u,t,ty) ->
+    let t, def = Parray.to_array t in
+      mkArray(u, Array.map reify_value t, reify_value def, reify_value ty)
 
 and apply_env env t =
   match kind t with
@@ -458,6 +473,15 @@ let rec norm_head info env t stack =
   | CoFix cofix -> (COFIXP(cofix,env,[||]), stack)
   | Construct c -> (CONSTR(c, [||]), stack)
 
+  | Array(u,t,def,ty) ->
+    let ty = cbv_stack_term info TOP env ty in
+    let len = Array.length t in
+    let t =
+      Parray.init (Uint63.of_int len)
+      (fun i -> cbv_stack_term info TOP env t.(i))
+      (cbv_stack_term info TOP env def) in
+    (ARRAY (u,t,ty), stack)
+
   (* neutral cases *)
   | (Sort _ | Meta _ | Ind _ | Int _ | Float _) -> (VAL(0, t), stack)
   | Prod _ -> (CBN(t,env), stack)
@@ -468,7 +492,12 @@ and norm_head_ref k info env stack normt t =
       | Declarations.Def body ->
          if get_debug_cbv () then Feedback.msg_debug Pp.(str "Unfolding " ++ debug_pr_key normt);
          strip_appl (shift_value k body) stack
-      | Declarations.Primitive op -> (PRIMITIVE(op,t,[||]),stack)
+      | Declarations.Primitive op ->
+        let c = match normt with
+          | ConstKey c -> c
+          | RelKey _ | VarKey _ -> assert false
+        in
+        (PRIMITIVE(op,c,[||]),stack)
       | Declarations.OpaqueDef _ | Declarations.Undef _ ->
          if get_debug_cbv () then Feedback.msg_debug Pp.(str "Not unfolding " ++ debug_pr_key normt);
          (VAL(0,make_constr_ref k normt t),stack)
@@ -538,7 +567,7 @@ and cbv_stack_value info env = function
     | (CONSTR(c,[||]), APP(appl,TOP)) -> CONSTR(c,appl)
 
     (* primitive apply to arguments *)
-    | (PRIMITIVE(op,c,[||]), APP(appl,stk)) ->
+    | (PRIMITIVE(op,(_,u as c),[||]), APP(appl,stk)) ->
       let nargs = CPrimitives.arity op in
       let len = Array.length appl in
       if nargs <= len then
@@ -549,7 +578,7 @@ and cbv_stack_value info env = function
           if nargs < len then
             stack_app (Array.sub appl nargs (len - nargs)) stk
           else stk in
-        match VredNative.red_prim info.env () op args with
+        match VredNative.red_prim info.env () op u args with
         | Some (CONSTR (c, args)) ->
           (* args must be moved to the stack to allow future reductions *)
           cbv_stack_value info env (CONSTR(c, [||]), stack_app args stk)
@@ -585,7 +614,7 @@ and cbv_value_cache info ref =
         let v = cbv_stack_term info TOP (subs_id 0) body in
         Declarations.Def v
       with
-      | Environ.NotEvaluableConst (Environ.IsPrimitive op) -> Declarations.Primitive op
+      | Environ.NotEvaluableConst (Environ.IsPrimitive (_u,op)) -> Declarations.Primitive op
       | Not_found | Environ.NotEvaluableConst _ -> Declarations.Undef None
     in
     KeyTable.add info.tab ref v; v
@@ -643,7 +672,12 @@ and cbv_norm_value info = function (* reduction under binders *)
   | CONSTR (c,args) ->
       mkApp(mkConstructU c, Array.map (cbv_norm_value info) args)
   | PRIMITIVE(op,c,args) ->
-      mkApp(c,Array.map (cbv_norm_value info) args)
+      mkApp(mkConstU c,Array.map (cbv_norm_value info) args)
+  | ARRAY (u,t,ty) ->
+    let ty = cbv_norm_value info ty in
+    let t, def = Parray.to_array t in
+    let def = cbv_norm_value info def in
+      mkArray(u, Array.map (cbv_norm_value info) t, def, ty)
 
 (* with profiling *)
 let cbv_norm infos constr =

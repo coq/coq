@@ -46,6 +46,9 @@ val is_opaque : 'a constant_body -> bool
 
 val eq_recarg : recarg -> recarg -> bool
 
+val pp_recarg : recarg -> Pp.t
+val pp_wf_paths : wf_paths -> Pp.t
+
 val subst_recarg : substitution -> recarg -> recarg
 
 val mk_norec : wf_paths

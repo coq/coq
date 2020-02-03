@@ -214,6 +214,7 @@ let rec nf_val env sigma v typ =
   | Vconst n -> construct_of_constr_const env sigma n typ
   | Vint64 i -> i |> Uint63.of_int64 |> mkInt
   | Vfloat64 f -> f |> Float64.of_float |> mkFloat
+  | Varray t -> nf_array env sigma t typ
   | Vblock b ->
       let capp,ctyp = construct_of_constr_block env sigma (block_tag b) typ in
       let args = nf_bargs env sigma b ctyp in
@@ -441,6 +442,14 @@ and nf_evar env sigma evk args =
        in the correct one, so we have to reverse them again for the
        evar node *)
     mkEvar (evk, List.rev args), ty
+
+and nf_array env sigma t typ =
+  let ty, allargs = app_type env typ in
+  let typ_elem = allargs.(0) in
+  let t, vdef = Parray.to_array t in
+  let t = Array.map (fun v -> nf_val env sigma v typ_elem) t in
+  let u = snd (destConst ty) in
+  mkArray(u, t, nf_val env sigma vdef typ_elem, typ_elem)
 
 let evars_of_evar_map sigma =
   { Nativelambda.evars_val = Evd.existential_opt_value0 sigma;

@@ -151,6 +151,13 @@ let nf_evars_and_universes_opt_subst f subst =
       let univs' = Instance.subst_fn lsubst univs in
       if univs' == univs then Constr.map aux c
       else Constr.map aux (mkCase (ci,p,CaseInvert {univs=univs';args},t,br))
+    | Array (u,elems,def,ty) ->
+      let u' = Univ.Instance.subst_fn lsubst u in
+      let elems' = CArray.Smart.map aux elems in
+      let def' = aux def in
+      let ty' = aux ty in
+      if u == u' && elems == elems' && def == def' && ty == ty' then c
+      else mkArray (u',elems',def',ty')
     | _ -> Constr.map aux c
   in aux
 

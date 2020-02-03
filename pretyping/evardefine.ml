@@ -180,26 +180,71 @@ let define_evar_as_sort env evd (ev,args) =
    constraint on its domain and codomain. If the input constraint is
    an evar instantiate it with the product of 2 new evars. *)
 
+let rec presplit env sigma c =
+  let c = Reductionops.whd_all env sigma c in
+  match EConstr.kind sigma c with
+  | App (h,args) when isEvar sigma h ->
+    let sigma, lam = define_evar_as_lambda env sigma (destEvar sigma h) in
+    (* XXX could be just whd_all -> no recursion? *)
+    presplit env sigma (mkApp (lam, args))
+  | _ -> sigma, c
+
 let split_tycon ?loc env evd tycon =
-  let rec real_split evd c =
-    let t = Reductionops.whd_all env evd c in
-      match EConstr.kind evd t with
-        | Prod (na,dom,rng) -> evd, (na, dom, rng)
-        | Evar ev (* ev is undefined because of whd_all *) ->
-            let (evd',prod) = define_evar_as_product env evd ev in
-            let (na,dom,rng) = destProd evd prod in
-            let anon = {na with binder_name = Anonymous} in
-              evd',(anon, dom, rng)
-        | App (c,args) when isEvar evd c ->
-            let (evd',lam) = define_evar_as_lambda env evd (destEvar evd c) in
-            real_split evd' (mkApp (lam,args))
-        | _ -> error_not_product ?loc env evd c
-  in
-    match tycon with
-      | None -> evd,(make_annot Anonymous Relevant,None,None)
-      | Some c ->
-          let evd', (n, dom, rng) = real_split evd c in
-            evd', (n, mk_tycon dom, mk_tycon rng)
+  match tycon with
+  | None -> evd,(make_annot Anonymous Relevant,None,None)
+  | Some c ->
+    let evd, c = presplit env evd c in
+    let evd, na, dom, rng = match EConstr.kind evd c with
+      | Prod (na,dom,rng) -> evd, na, dom, rng
+      | Evar ev ->
+        let (evd,prod) = define_evar_as_product env evd ev in
+        let (na,dom,rng) = destProd evd prod in
+        let anon = {na with binder_name = Anonymous} in
+        evd, anon, dom, rng
+      | _ ->
+        (* XXX no error to allow later coercion? Not sure if possible with funclass *)
+        error_not_product ?loc env evd c
+    in
+    evd, (na, mk_tycon dom, mk_tycon rng)
+
+
+let define_pure_evar_as_array env sigma evk =
+  let evi = Evd.find_undefined sigma evk in
+  let evenv = evar_env env evi in
+  let evksrc = evar_source evk sigma in
+  let src = subterm_source evk ~where:Domain evksrc in
+  let sigma, (ty,u) = new_type_evar evenv sigma univ_flexible ~src ~filter:(evar_filter evi) in
+  let concl = Reductionops.whd_all evenv sigma evi.evar_concl in
+  let s = destSort sigma concl in
+  (* array@{u} ty : Type@{u} <= Type@{s} *)
+  let sigma = Evd.set_leq_sort env sigma u (ESorts.kind sigma s) in
+  let u = Option.get (Univ.Universe.level (Sorts.univ_of_sort u)) in
+  let ar = Typeops.type_of_array env (Univ.Instance.of_array [|u|]) in
+  let sigma = Evd.define evk (mkApp (EConstr.of_constr ar, [| ty |])) sigma in
+  sigma
+
+let is_array_const env sigma c =
+  match EConstr.kind sigma c with
+  | Const (cst,_) ->
+    (match env.Environ.retroknowledge.Retroknowledge.retro_array with
+     | None -> false
+     | Some cst' -> Constant.equal cst cst')
+  | _ -> false
+
+let split_as_array env sigma0 = function
+  | None -> sigma0, None
+  | Some c ->
+    let sigma, c = presplit env sigma0 c in
+    match EConstr.kind sigma c with
+    | App (h,[|ty|]) when is_array_const env sigma h -> sigma, Some ty
+    | Evar ev ->
+      let sigma = define_pure_evar_as_array env sigma (fst ev) in
+      let ty = match EConstr.kind sigma c with
+        | App (_,[|ty|]) -> ty
+        | _ -> assert false
+      in
+      sigma, Some ty
+    | _ -> sigma0, None
 
 let valcon_of_tycon x = x
 let lift_tycon n = Option.map (lift n)

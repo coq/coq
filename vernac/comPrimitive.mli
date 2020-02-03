@@ -8,4 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val do_primitive : Names.lident -> CPrimitives.op_or_type -> Constrexpr.constr_expr option -> unit
+val do_primitive
+  : Names.lident
+  -> Constrexpr.universe_decl_expr option
+  -> CPrimitives.op_or_type
+  -> Constrexpr.constr_expr option
+  -> unit

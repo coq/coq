@@ -21,6 +21,13 @@ let add_retroknowledge env action =
       | None -> { retro with retro_float64 = Some c }
       | Some c' -> assert (Constant.equal c c'); retro in
     set_retroknowledge env retro
+  | Register_type(PT_array,c) ->
+    let retro = env.retroknowledge in
+    let retro =
+      match retro.retro_array with
+      | None -> { retro with retro_array = Some c }
+      | Some c' -> assert (Constant.equal c c'); retro in
+    set_retroknowledge env retro
   | Register_ind(pit,ind) ->
     let retro = env.retroknowledge in
     let retro =
@@ -120,10 +127,12 @@ module type RedNativeEntries =
     type elem
     type args
     type evd (* will be unit in kernel, evar_map outside *)
+    type uinstance
 
     val get : args -> int -> elem
     val get_int : evd -> elem -> Uint63.t
     val get_float : evd -> elem -> Float64.t
+    val get_parray : evd -> elem -> elem Parray.t
     val mkInt : env -> Uint63.t -> elem
     val mkFloat : env -> Float64.t -> elem
     val mkBool : env -> bool -> elem
@@ -146,6 +155,7 @@ module type RedNativeEntries =
     val mkPInf : env -> elem
     val mkNInf : env -> elem
     val mkNaN : env -> elem
+    val mkArray : env -> uinstance -> elem Parray.t -> elem -> elem
   end
 
 module type RedNative =
@@ -153,17 +163,20 @@ module type RedNative =
    type elem
    type args
    type evd
-   val red_prim : env -> evd -> CPrimitives.t -> args -> elem option
+   type uinstance
+   val red_prim : env -> evd -> CPrimitives.t -> uinstance -> args -> elem option
  end
 
 module RedNative (E:RedNativeEntries) :
   RedNative with type elem = E.elem
   with type args = E.args
-  with type evd = E.evd =
+  with type evd = E.evd
+  with type uinstance = E.uinstance =
 struct
   type elem = E.elem
   type args = E.args
   type evd = E.evd
+  type uinstance = E.uinstance
 
   let get_int evd args i = E.get_int evd (E.get args i)
 
@@ -180,7 +193,9 @@ struct
 
   let get_float2 evd args = get_float evd args 0, get_float evd args 1
 
-  let red_prim_aux env evd op args =
+  let get_parray evd args i = E.get_parray evd (E.get args i)
+
+  let red_prim_aux env evd op u args =
     let open CPrimitives in
     match op with
     | Int63head0 ->
@@ -315,11 +330,43 @@ struct
       let f = get_float1 evd args in E.mkFloat env (Float64.next_up f)
     | Float64next_down ->
       let f = get_float1 evd args in E.mkFloat env (Float64.next_down f)
+    | Arraymake ->
+      let ty = E.get args 0 in
+      let i = get_int evd args 1 in
+      let d = E.get args 2 in
+      E.mkArray env u (Parray.make i d) ty
+    | Arrayget ->
+      let t = get_parray evd args 1 in
+      let i = get_int evd args 2 in
+      Parray.get t i
+    | Arraydefault ->
+      let t = get_parray evd args 1 in
+      Parray.default t
+    | Arrayset ->
+      let ty = E.get args 0 in
+      let t = get_parray evd args 1 in
+      let i = get_int evd args 2 in
+      let a = E.get args 3 in
+      let t' = Parray.set t i a in
+      E.mkArray env u t' ty
+    | Arraycopy ->
+      let ty = E.get args 0 in
+      let t = get_parray evd args 1 in
+      let t' = Parray.copy t in
+      E.mkArray env u t' ty
+    | Arrayreroot ->
+      let ar = E.get args 1 in
+      let t = E.get_parray evd ar in
+      let _ = Parray.reroot t in
+      ar
+    | Arraylength ->
+      let t = get_parray evd args 1 in
+      E.mkInt env (Parray.length t)
 
-  let red_prim env evd p args =
+  let red_prim env evd p u args =
     try
       let r =
-        red_prim_aux env evd p args
+        red_prim_aux env evd p u args
       in Some r
     with NativeDestKO -> None
 

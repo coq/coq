@@ -35,6 +35,11 @@ val split_tycon :
   ?loc:Loc.t -> env ->  evar_map -> type_constraint ->
     evar_map * (Name.t Context.binder_annot * type_constraint * type_constraint)
 
+val split_as_array : env -> evar_map -> type_constraint ->
+  evar_map * type_constraint
+(** If the constraint can be made to look like [array A] return [A],
+   otherwise return [None] (this makes later coercion possible). *)
+
 val valcon_of_tycon : type_constraint -> val_constraint
 val lift_tycon : int -> type_constraint -> type_constraint
 

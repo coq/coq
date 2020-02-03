@@ -65,6 +65,18 @@ let test_name_colon =
 
 let aliasvar = function { CAst.v = CPatAlias (_, na) } -> Some na | _ -> None
 
+let test_array_opening =
+  let open Pcoq.Lookahead in
+  to_entry "test_array_opening" begin
+    lk_kw "[" >> lk_kw "|" >> check_no_space
+  end
+
+let test_array_closing =
+  let open Pcoq.Lookahead in
+  to_entry "test_array_closing" begin
+    lk_kw "|" >> lk_kw "]" >> check_no_space
+  end
+
 }
 
 GRAMMAR EXTEND Gram
@@ -172,8 +184,16 @@ GRAMMAR EXTEND Gram
         { CAst.make ~loc @@ CNotation(None,(InConstrEntry,"{ _ }"),([c],[],[],[])) }
       | "`{"; c = operconstr LEVEL "200"; "}" ->
         { CAst.make ~loc @@ CGeneralization (MaxImplicit, None, c) }
+      | test_array_opening; "["; "|"; ls = array_elems; "|"; def = lconstr; ty = type_cstr; test_array_closing; "|"; "]"; u = univ_instance ->
+        { let t = Array.make (List.length ls) def in
+          List.iteri (fun i e -> t.(i) <- e) ls;
+          CAst.make ~loc @@ CArray(u, t, def, ty)
+        }
       | "`("; c = operconstr LEVEL "200"; ")" ->
         { CAst.make ~loc @@ CGeneralization (Explicit, None, c) } ] ]
+  ;
+  array_elems:
+    [ [ fs = LIST0 lconstr SEP ";" -> { fs } ]]
   ;
   record_declaration:
     [ [ fs = fields_def -> { CAst.make ~loc @@ CRecord fs } ] ]

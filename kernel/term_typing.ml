@@ -21,13 +21,14 @@ open Constr
 open Declarations
 open Environ
 open Entries
+open Univ
 
 module NamedDecl = Context.Named.Declaration
 
 (* Insertion of constants and parameters in environment. *)
 
 type 'a effect_handler =
-  env -> Constr.t -> 'a -> (Constr.t * Univ.ContextSet.t * int)
+  env -> Constr.t -> 'a -> (Constr.t * ContextSet.t * int)
 
 let skip_trusted_seff sl b e =
   let rec aux sl b e acc =
@@ -62,55 +63,91 @@ let feedback_completion_typecheck =
 
 type typing_context =
 | MonoTyCtx of Environ.env * unsafe_type_judgment * Id.Set.t * Stateid.t option
-| PolyTyCtx of Environ.env * unsafe_type_judgment * Univ.universe_level_subst * Univ.AUContext.t * Id.Set.t * Stateid.t option
+| PolyTyCtx of Environ.env * unsafe_type_judgment * universe_level_subst * AUContext.t * Id.Set.t * Stateid.t option
+
+let check_primitive_type env op_t u t =
+  let inft = Typeops.type_of_prim_or_type env u op_t in
+  try Reduction.default_conv ~l2r:false Reduction.CONV env inft t
+  with Reduction.NotConvertible ->
+    Type_errors.error_incorrect_primitive env (make_judge op_t inft) t
+
+let merge_unames =
+  Array.map2 (fun base user -> match user with Anonymous -> base | Name _ -> user)
+
+let infer_primitive env { prim_entry_type = utyp; prim_entry_content = p; } =
+  let open CPrimitives in
+  let auctx = CPrimitives.op_or_type_univs p in
+  let univs, typ =
+    match utyp with
+    | None ->
+      let u = UContext.instance (AUContext.repr auctx) in
+      let typ = Typeops.type_of_prim_or_type env u p in
+      let univs = if AUContext.is_empty auctx then Monomorphic ContextSet.empty
+        else Polymorphic auctx
+      in
+      univs, typ
+
+    | Some (typ,Monomorphic_entry uctx) ->
+      assert (AUContext.is_empty auctx);
+      let env = push_context_set ~strict:true uctx env in
+      let u = Instance.empty in
+      let typ =
+        let typ = Typeops.infer_type env typ in
+        check_primitive_type env p u typ.utj_val;
+        typ.utj_val
+      in
+      Monomorphic uctx, typ
+
+    | Some (typ,Polymorphic_entry (unames,uctx)) ->
+      assert (not (AUContext.is_empty auctx));
+      (* push_context will check that the universes aren't repeated in the instance
+         so comparing the sizes works *)
+      assert (AUContext.size auctx = UContext.size uctx);
+      (* No polymorphic primitive uses constraints currently *)
+      assert (Constraint.is_empty (UContext.constraints uctx));
+      let env = push_context ~strict:false uctx env in
+      (* Now we know that uctx matches the auctx *)
+      let typ = (Typeops.infer_type env typ).utj_val in
+      let () = check_primitive_type env p (UContext.instance uctx) typ in
+      let unames = merge_unames (AUContext.names auctx) unames in
+      let u, auctx = abstract_universes unames uctx in
+      let typ = Vars.subst_univs_level_constr (make_instance_subst u) typ in
+      Polymorphic auctx, typ
+  in
+  let body = match p with
+    | OT_op op -> Declarations.Primitive op
+    | OT_type _ -> Undef None
+    | OT_const c -> Def (Mod_subst.from_val (CPrimitives.body_of_prim_const c))
+  in
+  { Cooking.cook_body = body;
+    cook_type = typ;
+    cook_universes = univs;
+    cook_inline = false;
+    cook_context = None;
+    cook_relevance = Sorts.Relevant;
+  }
 
 let infer_declaration env (dcl : constant_entry) =
   match dcl with
-    | ParameterEntry (ctx,(t,uctx),nl) ->
-      let env = match uctx with
-        | Monomorphic_entry uctx -> push_context_set ~strict:true uctx env
-        | Polymorphic_entry (_, uctx) -> push_context ~strict:false uctx env
-      in
-      let j = Typeops.infer env t in
-      let usubst, univs = Declareops.abstract_universes uctx in
-      let r = Typeops.assumption_of_judgment env j in
-      let t = Vars.subst_univs_level_constr usubst j.uj_val in
-      {
-        Cooking.cook_body = Undef nl;
-        cook_type = t;
-        cook_universes = univs;
-        cook_relevance = r;
-        cook_inline = false;
-        cook_context = ctx;
-      }
+  | ParameterEntry (ctx,(t,uctx),nl) ->
+    let env = match uctx with
+      | Monomorphic_entry uctx -> push_context_set ~strict:true uctx env
+      | Polymorphic_entry (_, uctx) -> push_context ~strict:false uctx env
+    in
+    let j = Typeops.infer env t in
+    let usubst, univs = Declareops.abstract_universes uctx in
+    let r = Typeops.assumption_of_judgment env j in
+    let t = Vars.subst_univs_level_constr usubst j.uj_val in
+    {
+      Cooking.cook_body = Undef nl;
+      cook_type = t;
+      cook_universes = univs;
+      cook_relevance = r;
+      cook_inline = false;
+      cook_context = ctx;
+    }
 
-    (** Primitives cannot be universe polymorphic *)
-    | PrimitiveEntry ({ prim_entry_type = otyp;
-                        prim_entry_univs = uctxt;
-                        prim_entry_content = op_t;
-                      }) ->
-      let env = push_context_set ~strict:true uctxt env in
-      let ty = match otyp with
-      | Some typ ->
-        let typ = Typeops.infer_type env typ in
-        Typeops.check_primitive_type env op_t typ.utj_val;
-        typ.utj_val
-      | None ->
-        match op_t with
-        | CPrimitives.OT_op op -> Typeops.type_of_prim env op
-        | CPrimitives.OT_type _ -> mkSet
-      in
-      let cd =
-        match op_t with
-        | CPrimitives.OT_op op -> Declarations.Primitive op
-        | CPrimitives.OT_type _ -> Undef None in
-      { Cooking.cook_body = cd;
-        cook_type = ty;
-        cook_universes = Monomorphic uctxt;
-        cook_inline = false;
-        cook_context = None;
-        cook_relevance = Sorts.Relevant;
-      }
+  | PrimitiveEntry entry -> infer_primitive env entry
 
   | DefinitionEntry c ->
       let { const_entry_type = typ; _ } = c in
@@ -118,13 +155,13 @@ let infer_declaration env (dcl : constant_entry) =
       let env, usubst, univs = match c.const_entry_universes with
       | Monomorphic_entry ctx ->
         let env = push_context_set ~strict:true ctx env in
-        env, Univ.empty_level_subst, Monomorphic ctx
+        env, empty_level_subst, Monomorphic ctx
       | Polymorphic_entry (nas, uctx) ->
         (** [ctx] must contain local universes, such that it has no impact
             on the rest of the graph (up to transitivity). *)
         let env = push_context ~strict:false uctx env in
-        let sbst, auctx = Univ.abstract_universes nas uctx in
-        let sbst = Univ.make_instance_subst sbst in
+        let sbst, auctx = abstract_universes nas uctx in
+        let sbst = make_instance_subst sbst in
         env, sbst, Polymorphic auctx
       in
       let j = Typeops.infer env body in
@@ -171,8 +208,8 @@ let infer_opaque env = function
       let { opaque_entry_feedback = feedback_id; _ } = c in
       let env = push_context ~strict:false uctx env in
       let tj = Typeops.infer_type env typ in
-      let sbst, auctx = Univ.abstract_universes nas uctx in
-      let usubst = Univ.make_instance_subst sbst in
+      let sbst, auctx = abstract_universes nas uctx in
+      let usubst = make_instance_subst sbst in
       let context = PolyTyCtx (env, tj, usubst, auctx, c.opaque_entry_secctx, feedback_id) in
       let def = OpaqueDef () in
       let typ = Vars.subst_univs_level_constr usubst tj.utj_val in
@@ -260,7 +297,7 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
 | MonoTyCtx (env, tyj, declared, feedback_id) ->
   let ((body, uctx), side_eff) = body in
   let (body, uctx', valid_signatures) = handle env body side_eff in
-  let uctx = Univ.ContextSet.union uctx uctx' in
+  let uctx = ContextSet.union uctx uctx' in
   let env = push_context_set uctx env in
   let body,env,ectx = skip_trusted_seff valid_signatures body env in
   let j = Typeops.infer env body in
@@ -273,17 +310,17 @@ let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_out
 | PolyTyCtx (env, tj, usubst, auctx, declared, feedback_id) ->
   let ((body, ctx), side_eff) = body in
   let body, ctx', _ = handle env body side_eff in
-  let ctx = Univ.ContextSet.union ctx ctx' in
+  let ctx = ContextSet.union ctx ctx' in
   (** [ctx] must contain local universes, such that it has no impact
       on the rest of the graph (up to transitivity). *)
   let env = push_subgraph ctx env in
-  let private_univs = on_snd (Univ.subst_univs_level_constraints usubst) ctx in
+  let private_univs = on_snd (subst_univs_level_constraints usubst) ctx in
   let j = Typeops.infer env body in
   let _ = Typeops.judge_of_cast env j DEFAULTcast tj in
   let () = check_section_variables env declared tj.utj_val body in
   let def = Vars.subst_univs_level_constr usubst j.uj_val in
   let () = feedback_completion_typecheck feedback_id in
-  def, Opaqueproof.PrivatePolymorphic (Univ.AUContext.size auctx, private_univs)
+  def, Opaqueproof.PrivatePolymorphic (AUContext.size auctx, private_univs)
 
 (*s Global and local constant declaration. *)
 
@@ -325,13 +362,13 @@ let translate_local_def env _id centry =
     const_entry_secctx = centry.secdef_secctx;
     const_entry_feedback = centry.secdef_feedback;
     const_entry_type = centry.secdef_type;
-    const_entry_universes = Monomorphic_entry Univ.ContextSet.empty;
+    const_entry_universes = Monomorphic_entry ContextSet.empty;
     const_entry_inline_code = false;
   } in
   let decl = infer_declaration env (DefinitionEntry centry) in
   let typ = decl.cook_type in
   let () = match decl.cook_universes with
-  | Monomorphic ctx -> assert (Univ.ContextSet.is_empty ctx)
+  | Monomorphic ctx -> assert (ContextSet.is_empty ctx)
   | Polymorphic _ -> assert false
   in
   let c = match decl.cook_body with
