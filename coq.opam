@@ -28,7 +28,7 @@ depends: [
 ]
 
 build: [
-  [ "./configure" "-prefix" prefix "-native-compiler" "no" ]
+  [ "./configure" "-prefix" prefix ]
   [ "make" "-f" "Makefile.dune" "voboot" ]
   [ "dune" "build" "-p" name "-j" jobs ]
 ]
