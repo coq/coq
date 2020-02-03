@@ -321,6 +321,8 @@ let universes_of_private eff =
 let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
 
+let structure_body_of_safe_env env = env.revstruct
+
 let sections_of_safe_env senv = senv.sections
 
 let get_section = function

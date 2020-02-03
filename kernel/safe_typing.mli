@@ -37,6 +37,8 @@ val env_of_safe_env : safe_environment -> Environ.env
 
 val sections_of_safe_env : safe_environment -> section_data Section.t option
 
+val structure_body_of_safe_env : safe_environment -> Declarations.structure_body
+
 (** The safe_environment state monad *)
 
 type safe_transformer0 = safe_environment -> safe_environment
