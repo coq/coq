@@ -632,13 +632,11 @@ library:ci-fiat-crypto:
   stage: stage-4
   needs:
   - build:edge+flambda
-  - library:ci-bedrock2
   - library:ci-coqprime
   - plugin:ci-bignums
   - plugin:ci-rewriter
   dependencies:
   - build:edge+flambda
-  - library:ci-bedrock2
   - library:ci-coqprime
   - plugin:ci-rewriter
 
