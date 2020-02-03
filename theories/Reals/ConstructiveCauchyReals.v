@@ -666,7 +666,7 @@ Proof.
   split. exact CRealEq_refl. exact CRealEq_sym. exact CRealEq_trans.
 Qed.
 
-Instance CRealLt_morph
+Polymorphic Instance CRealLt_morph
   : CMorphisms.Proper
       (CMorphisms.respectful CRealEq (CMorphisms.respectful CRealEq CRelationClasses.iffT)) CRealLt.
 Proof.
