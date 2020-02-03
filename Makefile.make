@@ -56,6 +56,7 @@ FIND_SKIP_DIRS:=-not -name . '(' \
   -name "$${GIT_DIR}" -o \
   -name '_build' -o \
   -name '_build_ci' -o \
+  -name '_build_boot' -o \
   -name '_install_ci' -o \
   -name 'gramlib' -o \
   -name 'user-contrib' -o \
@@ -251,7 +252,7 @@ docclean:
 	rm -rf doc/sphinx/_build
 
 archclean: clean-ide optclean voclean plugin-tutorialclean
-	rm -rf _build
+	rm -rf _build _build_boot
 	rm -f $(ALLSTDLIB).*
 
 optclean:
