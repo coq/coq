@@ -331,6 +331,11 @@ let eval alias =
   let () = alias.data <- c in
   c
 
+let repr sigma alias = match EConstr.kind sigma alias.data with
+| Rel n -> Some (RelAlias (n + alias.lift))
+| Var id -> Some (VarAlias id)
+| _ -> None
+
 end
 
 let lift_aliasing n (alias, l) =
@@ -465,9 +470,9 @@ let expansions_of_var sigma aliases x =
 
 let expansion_of_var sigma aliases x =
   match get_alias_chain_of sigma aliases x with
-  | None, [] -> (false, Alias.make @@ of_alias x)
-  | Some a, _ -> (true, a)
-  | None, a :: _ -> (true, Alias.make @@ of_alias a)
+  | None, [] -> (false, Some x)
+  | Some a, _ -> (true, Alias.repr sigma a)
+  | None, a :: _ -> (true, Some a)
 
 let rec expand_vars_in_term_using sigma aliases t = match EConstr.kind sigma t with
   | Rel n -> of_alias (normalize_alias sigma aliases (RelAlias n))
@@ -501,15 +506,14 @@ let free_vars_and_rels_up_alias_expansion env sigma aliases c =
       if is_in_cache depth ck then () else begin
       put_in_cache depth ck;
       let expanded, c' = expansion_of_var sigma aliases ck in
-      let c' = Alias.eval c' in
       (if expanded then (* expansion, hence a let-in *)
         match ck with
         | VarAlias id -> acc4 := Id.Set.add id !acc4
         | RelAlias n -> if n >= depth+1 then acc3 := Int.Set.add (n-depth) !acc3);
-      match EConstr.kind sigma c' with
-        | Var id -> acc2 := Id.Set.add id !acc2
-        | Rel n -> if n >= depth+1 then acc1 := Int.Set.add (n-depth) !acc1
-        | _ -> frec (aliases,depth) c end
+      match c' with
+        | Some (VarAlias id) -> acc2 := Id.Set.add id !acc2
+        | Some (RelAlias n) -> if n >= depth+1 then acc1 := Int.Set.add (n-depth) !acc1
+        | None -> frec (aliases,depth) c end
     | Const _ | Ind _ | Construct _ ->
         acc2 := Id.Set.union (vars_of_global env (fst @@ EConstr.destRef sigma c)) !acc2
     | _ ->
