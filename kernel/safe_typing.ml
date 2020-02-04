@@ -253,6 +253,7 @@ type side_effect = {
   from_env : Declarations.structure_body CEphemeron.key;
   seff_constant : Constant.t;
   seff_body : Constr.t Declarations.constant_body;
+  seff_universes : Univ.ContextSet.t;
 }
 
 module SideEffects :
@@ -311,11 +312,7 @@ let empty_private_constants = SideEffects.empty
 let concat_private = SideEffects.concat
 
 let universes_of_private eff =
-  let fold acc eff =
-    match eff.seff_body.const_universes with
-    | Monomorphic ctx -> Univ.ContextSet.union ctx acc
-    | Polymorphic _ -> acc
-  in
+  let fold acc eff = Univ.ContextSet.union eff.seff_universes acc in
   List.fold_left fold Univ.ContextSet.empty (side_effects_of_private_constants eff)
 
 let env_of_safe_env senv = senv.env
@@ -607,34 +604,32 @@ let inline_side_effects env body side_eff =
   let open Constr in
   (** First step: remove the constants that are still in the environment *)
   let filter e =
-    let cb = (e.seff_constant, e.seff_body) in
     if Environ.mem_constant e.seff_constant env then None
-    else Some (cb, e.from_env)
+    else Some e
   in
   (* CAVEAT: we assure that most recent effects come first *)
   let side_eff = List.map_filter filter (SideEffects.repr side_eff) in
-  let sigs = List.rev_map (fun (_, mb) -> mb) side_eff in
-  let side_eff = List.fold_left (fun accu (cb, _) -> cb :: accu) [] side_eff in
-  let side_eff = List.rev side_eff in
+  let sigs = List.rev_map (fun e -> e.from_env) side_eff in
   (** Most recent side-effects first in side_eff *)
   if List.is_empty side_eff then (body, Univ.ContextSet.empty, sigs)
   else
     (** Second step: compute the lifts and substitutions to apply *)
     let cname c r = Context.make_annot (Name (Label.to_id (Constant.label c))) r in
-    let fold (subst, var, ctx, args) (c, cb) =
+    let fold (subst, var, ctx, args) { seff_constant = c; seff_body = cb; seff_universes = univs; _ } =
       let (b, opaque) = match cb.const_body with
       | Def b -> (Mod_subst.force_constr b, false)
       | OpaqueDef b -> (b, true)
       | _ -> assert false
       in
       match cb.const_universes with
-      | Monomorphic univs ->
+      | Monomorphic _ ->
         (** Abstract over the term at the top of the proof *)
         let ty = cb.const_type in
         let subst = Cmap_env.add c (Inr var) subst in
         let ctx = Univ.ContextSet.union ctx univs in
         (subst, var + 1, ctx, (cname c cb.const_relevance, b, ty, opaque) :: args)
       | Polymorphic _ ->
+        let () = assert (Univ.ContextSet.is_empty univs) in
         (** Inline the term to emulate universe polymorphism *)
         let subst = Cmap_env.add c (Inl b) subst in
         (subst, var, ctx, args)
@@ -891,10 +886,20 @@ let add_private_constant l decl senv : (Constant.t * private_constants) * safe_e
   let senv = add_constant_aux senv (kn, dcb) in
   let eff =
     let from_env = CEphemeron.create senv.revstruct in
+    let open Entries in
+    let get_univs = function
+    | Monomorphic_entry ctx -> ctx
+    | Polymorphic_entry _ -> Univ.ContextSet.empty
+    in
+    let univs = match decl with
+    | DefinitionEff ce -> get_univs ce.const_entry_universes
+    | OpaqueEff ce -> get_univs ce.opaque_entry_universes
+    in
     let eff = {
       from_env = from_env;
       seff_constant = kn;
       seff_body = cb;
+      seff_universes = univs;
     } in
     SideEffects.add eff empty_private_constants
   in
