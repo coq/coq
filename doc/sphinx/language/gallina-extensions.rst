@@ -1571,8 +1571,8 @@ implicitly applied to the implicit arguments it is waiting for: one
 says that the implicit argument is maximally inserted.
 
 Each implicit argument can be declared to be inserted maximally or non
-maximally. In Coq, maximally inserted implicits are written between curly braces
-"{ }" and non maximally inserted implicits are written in square brackets "[ ]".
+maximally. In Coq, maximally-inserted implicit arguments are written between curly braces
+"{ }" and non-maximally-inserted implicit arguments are written in square brackets "[ ]".
 
 .. seealso:: :flag:`Maximal Implicit Insertion`
 
@@ -1895,8 +1895,8 @@ Combining manual declaration and automatic declaration
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 When some arguments are manually specified implicit with binders in a definition
-and the automatic declaration mode in on, the manual implicits are added to the
-automatic ones.
+and the automatic declaration mode in on, the manual implicit arguments are added to the
+automatically declared ones.
 
 In that case, and when the flag :flag:`Maximal Implicit Insertion` is set to off,
 some trailing implicit arguments can be inferred to be non maximally inserted. In
