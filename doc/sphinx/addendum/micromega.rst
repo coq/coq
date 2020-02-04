@@ -35,6 +35,12 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
    use the Simplex method for solving linear goals. If it is not set,
    the decision procedures are using Fourier elimination.
 
+.. cmd:: Show Lia Profile
+
+   This command prints some statistics about the amount of pivoting
+   operations needed by :tacn:`lia` and may be useful to detect
+   inefficiencies (only meaningful if flag :flag:`Simplex` is set).
+
 .. flag:: Lia Cache
 
    This flag (set by default) instructs :tacn:`lia` to cache its results in the file `.lia.cache`

@@ -2416,6 +2416,36 @@ let nqa =
     (fun _ x -> x)
     Mc.cnfQ qq_domain_spec dump_qexpr nlinear_prover_R
 
+let print_lia_profile () =
+  Simplex.(
+    let { number_of_successes
+        ; number_of_failures
+        ; success_pivots
+        ; failure_pivots
+        ; average_pivots
+        ; maximum_pivots } =
+      Simplex.get_profile_info ()
+    in
+    Feedback.msg_notice
+      Pp.(
+        (* successes *)
+        str "number of successes: "
+        ++ int number_of_successes ++ fnl ()
+        (* success pivots *)
+        ++ str "number of success pivots: "
+        ++ int success_pivots ++ fnl ()
+        (* failure *)
+        ++ str "number of failures: "
+        ++ int number_of_failures ++ fnl ()
+        (* failure pivots *)
+        ++ str "number of failure pivots: "
+        ++ int failure_pivots ++ fnl ()
+        (* Other *)
+        ++ str "average number of pivots: "
+        ++ int average_pivots ++ fnl ()
+        ++ str "maximum number of pivots: "
+        ++ int maximum_pivots ++ fnl ()))
+
 (* Local Variables: *)
 (* coding: utf-8 *)
 (* End: *)

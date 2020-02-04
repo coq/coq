@@ -18,6 +18,49 @@ type ('a, 'b) sum = Inl of 'a | Inr of 'b
 
 let debug = false
 
+(** Exploiting profiling information *)
+
+let profile_info = ref []
+let nb_pivot = ref 0
+
+type profile_info =
+  { number_of_successes : int
+  ; number_of_failures : int
+  ; success_pivots : int
+  ; failure_pivots : int
+  ; average_pivots : int
+  ; maximum_pivots : int }
+
+let init_profile =
+  { number_of_successes = 0
+  ; number_of_failures = 0
+  ; success_pivots = 0
+  ; failure_pivots = 0
+  ; average_pivots = 0
+  ; maximum_pivots = 0 }
+
+let get_profile_info () =
+  let update_profile
+      { number_of_successes
+      ; number_of_failures
+      ; success_pivots
+      ; failure_pivots
+      ; average_pivots
+      ; maximum_pivots } (b, i) =
+    { number_of_successes = (number_of_successes + if b then 1 else 0)
+    ; number_of_failures = (number_of_failures + if b then 0 else 1)
+    ; success_pivots = (success_pivots + if b then i else 0)
+    ; failure_pivots = (failure_pivots + if b then 0 else i)
+    ; average_pivots = average_pivots + 1 (* number of proofs *)
+    ; maximum_pivots = max maximum_pivots i }
+  in
+  let p = List.fold_left update_profile init_profile !profile_info in
+  profile_info := [];
+  { p with
+    average_pivots =
+      ( try (p.success_pivots + p.failure_pivots) / p.average_pivots
+        with Division_by_zero -> 0 ) }
+
 type iset = unit IMap.t
 
 type tableau = Vect.t IMap.t
@@ -60,10 +103,7 @@ let output_tableau o t =
     t
 
 let output_env o t =
-  IMap.iter
-    (fun k v ->
-      Printf.fprintf o "%a : %a\n" LinPoly.pp_var k WithProof.output v)
-    t
+  IMap.iter (fun k v -> Printf.fprintf o "%i : %a\n" k WithProof.output v) t
 
 let output_vars o m =
   IMap.iter (fun k _ -> Printf.fprintf o "%a " LinPoly.pp_var k) m
@@ -224,6 +264,7 @@ let pivot_with (m : tableau) (v : var) (p : Vect.t) =
   IMap.map (fun (r : Vect.t) -> pivot_row r v p) m
 
 let pivot (m : tableau) (r : var) (c : var) =
+  incr nb_pivot;
   let row = safe_find "pivot" r m in
   let piv = solve_column c r row in
   IMap.add c piv (pivot_with (IMap.remove r m) c piv)
@@ -477,8 +518,11 @@ let make_farkas_proof (env : WithProof.t IMap.t) vm v =
           try
             let x', b = IMap.find x vm in
             let n = if b then n else Num.minus_num n in
-            WithProof.mult (Vect.cst n) (IMap.find x' env)
-          with Not_found -> WithProof.mult (Vect.cst n) (IMap.find x env)
+            let prf = IMap.find x' env in
+            WithProof.mult (Vect.cst n) prf
+          with Not_found ->
+            let prf = IMap.find x env in
+            WithProof.mult (Vect.cst n) prf
         end)
     WithProof.zero v
 
@@ -493,21 +537,43 @@ type ('a, 'b) hitkind =
 
 let cut env rmin sol vm (rst : Restricted.t) tbl (x, v) =
   let n, r = Vect.decomp_cst v in
-  let f = frac_num n in
-  if f =/ Int 0 then Forget (* The solution is integral *)
+  let fn = frac_num n in
+  if fn =/ Int 0 then Forget (* The solution is integral *)
   else
-    (* This is potentially a cut *)
-    let t =
-      if f </ Int 1 // Int 2 then
-        let t' = Int 1 // f in
-        if Num.is_integer_num t' then t' -/ Int 1 else Num.floor_num t'
-      else Int 1
-    in
-    let cut_coeff1 v =
+    (* The cut construction is from:
+       Letchford and Lodi. Strengthening Chvatal-Gomory cuts and Gomory fractional cuts.
+
+       We implement the classic Proposition 2 from the "known results"
+     *)
+
+    (* Proposition 3 requires all the variables to be restricted and is
+       therefore not always applicable. *)
+    (* let ccoeff_prop1 v = frac_num v in
+    let ccoeff_prop3 v =
+      (* mixed integer cut *)
       let fv = frac_num v in
-      if fv <=/ Int 1 -/ f then fv // (Int 1 -/ f) else (Int 1 -/ fv) // f
+      Num.min_num fv (fn */ (Int 1 -/ fv) // (Int 1 -/ fn))
     in
-    let cut_coeff2 v = frac_num (t */ v) in
+    let ccoeff_prop3 =
+      if Restricted.is_restricted x rst then ("Prop3", ccoeff_prop3)
+      else ("Prop1", ccoeff_prop1)
+    in *)
+    let n0_5 = Int 1 // Int 2 in
+    (* If the fractional part [fn] is small, we construct the t-cut.
+       If the fractional part [fn] is big, we construct the t-cut of the negated row.
+       (This is only a cut if all the fractional variables are restricted.)
+     *)
+    let ccoeff_prop2 =
+      let tmin =
+        if fn </ n0_5 then (* t-cut *)
+          Num.ceiling_num (n0_5 // fn)
+        else
+          (* multiply by -1 & t-cut *)
+          minus_num (Num.ceiling_num (n0_5 // (Int 1 -/ fn)))
+      in
+      ("Prop2", fun v -> frac_num (v */ tmin))
+    in
+    let ccoeff = ccoeff_prop2 in
     let cut_vector ccoeff =
       Vect.fold
         (fun acc x n ->
@@ -516,35 +582,31 @@ let cut env rmin sol vm (rst : Restricted.t) tbl (x, v) =
         Vect.null r
     in
     let lcut =
-      List.map
-        (fun cv -> Vect.normalise (cut_vector cv))
-        [cut_coeff1; cut_coeff2]
+      ( fst ccoeff
+      , make_farkas_proof env vm (Vect.normalise (cut_vector (snd ccoeff))) )
     in
-    let lcut = List.map (make_farkas_proof env vm) lcut in
-    let check_cutting_plane c =
+    let check_cutting_plane (p, c) =
       match WithProof.cutting_plane c with
       | None ->
         if debug then
-          Printf.printf "This is not a cutting plane for %a\n%a:" LinPoly.pp_var
-            x WithProof.output c;
+          Printf.printf "%s: This is not a cutting plane for %a\n%a:" p
+            LinPoly.pp_var x WithProof.output c;
         None
       | Some (v, prf) ->
         if debug then (
-          Printf.printf "This is a cutting plane for %a:" LinPoly.pp_var x;
+          Printf.printf "%s: This is a cutting plane for %a:" p LinPoly.pp_var x;
           Printf.printf " %a\n" WithProof.output (v, prf) );
-        if snd v = Eq then (* Unsat *) Some (x, (v, prf))
-        else
-          let vl = Vect.dotproduct (fst v) (Vect.set 0 (Int 1) sol) in
-          if eval_op Ge vl (Int 0) then (
-            if debug then
-              Printf.printf "The cut is feasible %s >= 0 \n"
-                (Num.string_of_num vl);
-            None )
-          else Some (x, (v, prf))
+        Some (x, (v, prf))
     in
-    match find_some check_cutting_plane lcut with
+    match check_cutting_plane lcut with
     | Some r -> Hit r
-    | None -> Keep (x, v)
+    | None ->
+      let has_unrestricted =
+        Vect.fold
+          (fun acc v vl -> acc || not (Restricted.is_restricted v rst))
+          false r
+      in
+      if has_unrestricted then Keep (x, v) else Forget
 
 let merge_result_old oldr f x =
   match oldr with
@@ -681,12 +743,16 @@ let integer_solver lp =
   isolve env None vr res
 
 let integer_solver lp =
+  nb_pivot := 0;
   if debug then
     Printf.printf "Input integer solver\n%a\n" WithProof.output_sys
       (List.map WithProof.of_cstr lp);
   match integer_solver lp with
-  | None -> None
+  | None ->
+    profile_info := (false, !nb_pivot) :: !profile_info;
+    None
   | Some prf ->
+    profile_info := (true, !nb_pivot) :: !profile_info;
     if debug then
       Printf.fprintf stdout "Proof %a\n" ProofFormat.output_proof prf;
     Some prf

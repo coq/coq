@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(*val is_ground_tac : EConstr.constr -> unit Proofview.tactic*)
 val psatz_Z : int -> unit Proofview.tactic -> unit Proofview.tactic
 val psatz_Q : int -> unit Proofview.tactic -> unit Proofview.tactic
 val psatz_R : int -> unit Proofview.tactic -> unit Proofview.tactic
@@ -21,6 +20,7 @@ val sos_Q : unit Proofview.tactic -> unit Proofview.tactic
 val sos_R : unit Proofview.tactic -> unit Proofview.tactic
 val lra_Q : unit Proofview.tactic -> unit Proofview.tactic
 val lra_R : unit Proofview.tactic -> unit Proofview.tactic
+val print_lia_profile : unit -> unit
 
 (** {5 Use Micromega independently from tactics. } *)
 
