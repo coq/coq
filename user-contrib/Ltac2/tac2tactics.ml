@@ -33,6 +33,7 @@ let delayed_of_tactic tac env sigma =
   let _, pv = Proofview.init sigma [] in
   let name, poly = Id.of_string "ltac2_delayed", false in
   let c, pv, _, _ = Proofview.apply ~name ~poly env tac pv in
+  let _, sigma = Proofview.proofview pv in
   (sigma, c)
 
 let delayed_of_thunk r tac env sigma =
