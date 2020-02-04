@@ -56,8 +56,6 @@ let strong_cbn flags =
 let simplIsCbn = ref (false)
 let () = Goptions.(declare_bool_option {
   optdepr = false;
-  optname =
-    "Plug the simpl tactic to the new cbn mechanism";
   optkey = ["SimplIsCbn"];
   optread = (fun () -> !simplIsCbn);
   optwrite = (fun a -> simplIsCbn:=a);

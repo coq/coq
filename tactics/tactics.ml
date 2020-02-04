@@ -67,7 +67,6 @@ let use_clear_hyp_by_default () = !clear_hyp_by_default
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "default clearing of hypotheses after use";
       optkey   = ["Default";"Clearing";"Used";"Hypotheses"];
       optread  = (fun () -> !clear_hyp_by_default) ;
       optwrite = (fun b -> clear_hyp_by_default := b) }
@@ -83,7 +82,6 @@ let accept_universal_lemma_under_conjunctions () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "trivial unification in tactics applying under conjunctions";
       optkey   = ["Universal";"Lemma";"Under";"Conjunction"];
       optread  = (fun () -> !universal_lemma_under_conjunctions) ;
       optwrite = (fun b -> universal_lemma_under_conjunctions := b) }
@@ -102,7 +100,6 @@ let use_bracketing_last_or_and_intro_pattern () =
 let () =
   declare_bool_option
     { optdepr  = true;
-      optname  = "bracketing last or-and introduction pattern";
       optkey   = ["Bracketing";"Last";"Introduction";"Pattern"];
       optread  = (fun () -> !bracketing_last_or_and_intro_pattern);
       optwrite = (fun b -> bracketing_last_or_and_intro_pattern := b) }

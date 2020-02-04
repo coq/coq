@@ -17,7 +17,6 @@ open Evd
 let use_unification_heuristics_ref = ref true
 let () = Goptions.(declare_bool_option {
   optdepr = false;
-  optname = "Solve unification constraints at every \".\"";
   optkey = ["Solve";"Unification";"Constraints"];
   optread = (fun () -> !use_unification_heuristics_ref);
   optwrite = (fun a -> use_unification_heuristics_ref:=a);

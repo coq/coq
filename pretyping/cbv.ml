@@ -196,7 +196,6 @@ let cofixp_reducible flgs _ stk =
 let get_debug_cbv = Goptions.declare_bool_option_and_ref
     ~depr:false
     ~value:false
-    ~name:"cbv visited constants display"
     ~key:["Debug";"Cbv"]
 
 (* Reduction of primitives *)

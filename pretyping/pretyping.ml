@@ -125,7 +125,6 @@ let esearch_guard ?loc env sigma indexes fix =
 let is_strict_universe_declarations =
   Goptions.declare_bool_option_and_ref
     ~depr:false
-    ~name:"strict universe declaration"
     ~key:["Strict";"Universe";"Declaration"]
     ~value:true
 

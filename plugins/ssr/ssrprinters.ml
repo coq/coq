@@ -134,8 +134,7 @@ let ppdebug_ref = ref (fun _ -> ())
 let ssr_pp s = Feedback.msg_debug (str"SSR: "++Lazy.force s)
 let () =
   Goptions.(declare_bool_option
-    { optname  = "ssreflect debugging";
-      optkey   = ["Debug";"Ssreflect"];
+    { optkey   = ["Debug";"Ssreflect"];
       optdepr  = false;
       optread  = (fun _ -> !ppdebug_ref == ssr_pp);
       optwrite = (fun b ->

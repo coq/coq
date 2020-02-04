@@ -35,6 +35,11 @@ tactics for solving arithmetic goals over :math:`\mathbb{Q}`,
    use the Simplex method for solving linear goals. If it is not set,
    the decision procedures are using Fourier elimination.
 
+.. opt:: Dump Arith
+
+   This option (unset by default) may be set to a file path where
+   debug info will be written.
+
 .. cmd:: Show Lia Profile
 
    This command prints some statistics about the amount of pivoting

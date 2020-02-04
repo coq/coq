@@ -79,13 +79,11 @@ let of_option_state s =
   Element ("option_state", [], [
     of_bool s.opt_sync;
     of_bool s.opt_depr;
-    of_string s.opt_name;
     of_option_value s.opt_value])
 let to_option_state = function
-  | Element ("option_state", [], [sync; depr; name; value]) -> {
+  | Element ("option_state", [], [sync; depr; value]) -> {
       opt_sync = to_bool sync;
       opt_depr = to_bool depr;
-      opt_name = to_string name;
       opt_value = to_option_value value }
   | x -> raise (Marshal_error("option_state",x))
 
@@ -429,8 +427,8 @@ end = struct
     | StringOptValue (Some s) -> s
     | BoolValue b -> if b then "true" else "false"
   let pr_option_state (s : option_state) =
-    Printf.sprintf "sync := %b; depr := %b; name := %s; value := %s\n"
-      s.opt_sync s.opt_depr s.opt_name (pr_option_value s.opt_value)
+    Printf.sprintf "sync := %b; depr := %b; value := %s\n"
+      s.opt_sync s.opt_depr (pr_option_value s.opt_value)
   let pr_list pr l = "["^String.concat ";" (List.map pr l)^"]"
   let pr_option pr = function None -> "None" | Some x -> "Some("^pr x^")"
   let pr_coq_object (o : 'a coq_object) = "FIXME"
@@ -513,7 +511,7 @@ end = struct
                    "type which contains a flattened n-tuple.  We provide one example.\n");
     Printf.printf "%s:\n\n%s\n\n" (print_val_t Option_state)
       (pr_xml (of_option_state { opt_sync = true; opt_depr = false;
-        opt_name = "name1"; opt_value = IntValue (Some 37) }));
+                                 opt_value = IntValue (Some 37) }));
 
 end
 open ReifType

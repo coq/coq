@@ -32,8 +32,6 @@ exception Elimconst
 
 let () = Goptions.(declare_bool_option {
   optdepr = false;
-  optname =
-    "Generate weak constraints between Irrelevant universes";
   optkey = ["Cumulativity";"Weak";"Constraints"];
   optread = (fun () -> not !UState.drop_weak_constraints);
   optwrite = (fun a -> UState.drop_weak_constraints:=not a);
@@ -972,8 +970,6 @@ module CredNative = RedNative(CNativeEntries)
 let debug_RAKAM = ref (false)
 let () = Goptions.(declare_bool_option {
   optdepr = false;
-  optname =
-    "Print states of the Reductionops abstract machine";
   optkey = ["Debug";"RAKAM"];
   optread = (fun () -> !debug_RAKAM);
   optwrite = (fun a -> debug_RAKAM:=a);

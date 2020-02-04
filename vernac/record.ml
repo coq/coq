@@ -39,7 +39,6 @@ let primitive_flag = ref false
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "use of primitive projections";
       optkey   = ["Primitive";"Projections"];
       optread  = (fun () -> !primitive_flag) ;
       optwrite = (fun b -> primitive_flag := b) }
@@ -48,7 +47,6 @@ let typeclasses_strict = ref false
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "strict typeclass resolution";
       optkey   = ["Typeclasses";"Strict";"Resolution"];
       optread  = (fun () -> !typeclasses_strict);
       optwrite = (fun b -> typeclasses_strict := b); }
@@ -57,7 +55,6 @@ let typeclasses_unique = ref false
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "unique typeclass instances";
       optkey   = ["Typeclasses";"Unique";"Instances"];
       optread  = (fun () -> !typeclasses_unique);
       optwrite = (fun b -> typeclasses_unique := b); }

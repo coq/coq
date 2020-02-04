@@ -268,7 +268,6 @@ let warn_let_as_axiom =
 let get_keep_admitted_vars =
   Goptions.declare_bool_option_and_ref
     ~depr:false
-    ~name:"keep section variables in admitted proofs"
     ~key:["Keep"; "Admitted"; "Variables"]
     ~value:true
 

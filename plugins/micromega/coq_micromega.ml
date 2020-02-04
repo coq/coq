@@ -55,7 +55,6 @@ let use_csdp_cache = ref true
 let () =
   let int_opt l vref =
     { optdepr = false
-    ; optname = List.fold_right ( ^ ) l ""
     ; optkey = l
     ; optread = (fun () -> Some !vref)
     ; optwrite =
@@ -63,42 +62,36 @@ let () =
   in
   let lia_enum_opt =
     { optdepr = false
-    ; optname = "Lia Enum"
     ; optkey = ["Lia"; "Enum"]
     ; optread = (fun () -> !lia_enum)
     ; optwrite = (fun x -> lia_enum := x) }
   in
   let solver_opt =
     { optdepr = false
-    ; optname = "Use the Simplex instead of Fourier elimination"
     ; optkey = ["Simplex"]
     ; optread = (fun () -> !Certificate.use_simplex)
     ; optwrite = (fun x -> Certificate.use_simplex := x) }
   in
   let dump_file_opt =
     { optdepr = false
-    ; optname = "Generate Coq goals in file from calls to 'lia' 'nia'"
     ; optkey = ["Dump"; "Arith"]
     ; optread = (fun () -> !Certificate.dump_file)
     ; optwrite = (fun x -> Certificate.dump_file := x) }
   in
   let lia_cache_opt =
     { optdepr = false
-    ; optname = "cache of lia (.lia.cache)"
     ; optkey = ["Lia"; "Cache"]
     ; optread = (fun () -> !use_lia_cache)
     ; optwrite = (fun x -> use_lia_cache := x) }
   in
   let nia_cache_opt =
     { optdepr = false
-    ; optname = "cache of nia (.nia.cache)"
     ; optkey = ["Nia"; "Cache"]
     ; optread = (fun () -> !use_nia_cache)
     ; optwrite = (fun x -> use_nia_cache := x) }
   in
   let nra_cache_opt =
     { optdepr = false
-    ; optname = "cache of nra (.nra.cache)"
     ; optkey = ["Nra"; "Cache"]
     ; optread = (fun () -> !use_nra_cache)
     ; optwrite = (fun x -> use_nra_cache := x) }

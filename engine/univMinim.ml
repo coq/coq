@@ -15,7 +15,6 @@ open UnivSubst
 let get_set_minimization =
   Goptions.declare_bool_option_and_ref
     ~depr:false
-    ~name:"minimization to Set"
     ~key:["Universe";"Minimization";"ToSet"]
     ~value:true
 

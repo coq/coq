@@ -205,7 +205,6 @@ let write_warn_hint = function
 let () =
   Goptions.(declare_string_option
     { optdepr  = false;
-      optname  = "behavior of non-imported hints";
       optkey   = ["Loose"; "Hint"; "Behavior"];
       optread  = read_warn_hint;
       optwrite = write_warn_hint;

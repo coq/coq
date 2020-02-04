@@ -31,7 +31,6 @@ type hint_info = (Pattern.patvar list * Pattern.constr_pattern) hint_info_gen
 let get_typeclasses_unique_solutions =
   Goptions.declare_bool_option_and_ref
     ~depr:false
-    ~name:"check that typeclasses proof search returns unique solutions"
     ~key:["Typeclasses";"Unique";"Solutions"]
     ~value:false
 

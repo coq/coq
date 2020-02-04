@@ -36,7 +36,6 @@ let ground_depth=ref 3
 let ()=
   let gdopt=
     { optdepr=false;
-      optname="Firstorder Depth";
       optkey=["Firstorder";"Depth"];
       optread=(fun ()->Some !ground_depth);
       optwrite=

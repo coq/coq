@@ -36,7 +36,6 @@ open Globnames
 let get_use_typeclasses_for_conversion =
   Goptions.declare_bool_option_and_ref
     ~depr:false
-    ~name:"use typeclass resolution during conversion"
     ~key:["Typeclass"; "Resolution"; "For"; "Conversion"]
     ~value:true
 

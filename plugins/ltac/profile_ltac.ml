@@ -450,7 +450,6 @@ let () =
   let open Goptions in
   declare_bool_option
     { optdepr  = false;
-      optname  = "Ltac Profiling";
       optkey   = ["Ltac"; "Profiling"];
       optread  = get_profiling;
       optwrite = set_profiling }

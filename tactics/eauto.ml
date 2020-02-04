@@ -331,7 +331,6 @@ let global_info_eauto = ref false
 let () =
   Goptions.(declare_bool_option
     { optdepr  = false;
-      optname  = "Debug Eauto";
       optkey   = ["Debug";"Eauto"];
       optread  = (fun () -> !global_debug_eauto);
       optwrite = (:=) global_debug_eauto })
@@ -339,7 +338,6 @@ let () =
 let () =
   Goptions.(declare_bool_option
     { optdepr  = false;
-      optname  = "Info Eauto";
       optkey   = ["Info";"Eauto"];
       optread  = (fun () -> !global_info_eauto);
       optwrite = (:=) global_info_eauto })

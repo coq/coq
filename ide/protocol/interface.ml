@@ -71,8 +71,6 @@ type option_state = {
   (** Whether an option is synchronous *)
   opt_depr  : bool;
   (** Whether an option is deprecated *)
-  opt_name  : string;
-  (** A short string that is displayed when using [Test] *)
   opt_value : option_value;
   (** The current value of the option *)
 }

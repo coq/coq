@@ -86,7 +86,6 @@ open Goptions
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "Ltac batch debug";
       optkey   = ["Ltac";"Batch";"Debug"];
       optread  = (fun () -> !batch);
       optwrite = (fun x -> batch := x) }

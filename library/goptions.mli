@@ -111,8 +111,6 @@ end
 type 'a option_sig = {
   optdepr    : bool;
   (** whether the option is DEPRECATED *)
-  optname    : string;
-  (** a short string describing the option *)
   optkey     : option_name;
   (** the low-level name of this option *)
   optread    : unit -> 'a;
@@ -133,7 +131,7 @@ val declare_stringopt_option: ?preprocess:(string option -> string option) ->
 
 (** Helper to declare a reference controlled by an option. Read-only
    as to avoid races. *)
-val declare_bool_option_and_ref : depr:bool -> name:string -> key:option_name -> value:bool -> (unit -> bool)
+val declare_bool_option_and_ref : depr:bool -> key:option_name -> value:bool -> (unit -> bool)
 
 (** {6 Special functions supposed to be used only in vernacentries.ml } *)
 
@@ -181,7 +179,6 @@ val set_option_value : ?locality:option_locality ->
 (** Summary of an option status *)
 type option_state = {
   opt_depr  : bool;
-  opt_name  : string;
   opt_value : option_value;
 }
 

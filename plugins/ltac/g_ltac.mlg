@@ -368,7 +368,6 @@ let print_info_trace = ref None
 
 let () = declare_int_option {
   optdepr = false;
-  optname = "print info trace";
   optkey = ["Info" ; "Level"];
   optread = (fun () -> !print_info_trace);
   optwrite = fun n -> print_info_trace := n;
