@@ -160,6 +160,18 @@ let register_side_effect (c, role) =
   | None -> ()
   | Some (Evd.Schema (ind, kind)) -> DeclareScheme.declare_scheme kind [|ind,c|]
 
+let get_roles export eff =
+  let map c =
+    let role = try Some (Cmap.find c eff.Evd.seff_roles) with Not_found -> None in
+    (c, role)
+  in
+  List.map map export
+
+let export_side_effects eff =
+  let export = Global.export_private_constants eff.Evd.seff_private in
+  let export = get_roles export eff in
+  List.iter register_side_effect export
+
 let record_aux env s_ty s_bo =
   let open Environ in
   let in_ty = keep_hyps env s_ty in
@@ -278,13 +290,6 @@ let cast_opaque_proof_entry (type a b) (entry : (a, b) effect_entry) (e : a proo
     opaque_entry_universes = univs;
   }
 
-let get_roles export eff =
-  let map c =
-    let role = try Some (Cmap.find c eff.Evd.seff_roles) with Not_found -> None in
-    (c, role)
-  in
-  List.map map export
-
 let feedback_axiom () = Feedback.(feedback AddedAxiom)
 
 let is_unsafe_typing_flags () =
@@ -293,37 +298,36 @@ let is_unsafe_typing_flags () =
 
 let define_constant ~name cd =
   (* Logically define the constant and its subproofs, no libobject tampering *)
-  let export, decl, unsafe = match cd with
-  | DefinitionEntry de ->
-    (* We deal with side effects *)
-    if not de.proof_entry_opaque then
-      (* This globally defines the side-effects in the environment. *)
-      let body, eff = Future.force de.proof_entry_body in
-      let body, export = Global.export_private_constants (body, eff.Evd.seff_private) in
-      let export = get_roles export eff in
-      let de = { de with proof_entry_body = Future.from_val (body, ()) } in
-      let cd = Entries.DefinitionEntry (cast_proof_entry de) in
-      export, ConstantEntry cd, false
-    else
-      let map (body, eff) = body, eff.Evd.seff_private in
-      let body = Future.chain de.proof_entry_body map in
-      let de = { de with proof_entry_body = body } in
-      let de = cast_opaque_proof_entry EffectEntry de in
-      [], OpaqueEntry de, false
-  | ParameterEntry e ->
-    [], ConstantEntry (Entries.ParameterEntry e), not (Lib.is_modtype_strict())
-  | PrimitiveEntry e ->
-    [], ConstantEntry (Entries.PrimitiveEntry e), false
+  let decl, unsafe = match cd with
+    | DefinitionEntry de ->
+      (* We deal with side effects *)
+      if not de.proof_entry_opaque then
+        let body, eff = Future.force de.proof_entry_body in
+        (* This globally defines the side-effects in the environment
+           and registers their libobjects. *)
+        let () = export_side_effects eff in
+        let de = { de with proof_entry_body = Future.from_val (body, ()) } in
+        let cd = Entries.DefinitionEntry (cast_proof_entry de) in
+        ConstantEntry cd, false
+      else
+        let map (body, eff) = body, eff.Evd.seff_private in
+        let body = Future.chain de.proof_entry_body map in
+        let de = { de with proof_entry_body = body } in
+        let de = cast_opaque_proof_entry EffectEntry de in
+        OpaqueEntry de, false
+    | ParameterEntry e ->
+      ConstantEntry (Entries.ParameterEntry e), not (Lib.is_modtype_strict())
+    | PrimitiveEntry e ->
+      ConstantEntry (Entries.PrimitiveEntry e), false
   in
   let kn = Global.add_constant name decl in
   if unsafe || is_unsafe_typing_flags() then feedback_axiom();
-  kn, export
+  kn
 
 let declare_constant ?(local = ImportDefaultBehavior) ~name ~kind cd =
   let () = check_exists name in
-  let kn, export = define_constant ~name cd in
-  (* Register the libobjects attached to the constants and its subproofs *)
-  let () = List.iter register_side_effect export in
+  let kn = define_constant ~name cd in
+  (* Register the libobjects attached to the constants *)
   let () = register_constant kn kind local in
   kn
 
@@ -377,10 +381,8 @@ let declare_variable ~name ~kind d =
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
-      let (body, eff) = Future.force de.proof_entry_body in
-      let ((body, uctx), export) = Global.export_private_constants (body, eff.Evd.seff_private) in
-      let eff = get_roles export eff in
-      let () = List.iter register_side_effect eff in
+      let ((body, uctx), eff) = Future.force de.proof_entry_body in
+      let () = export_side_effects eff in
       let poly, univs = match de.proof_entry_universes with
         | Monomorphic_entry uctx -> false, uctx
         | Polymorphic_entry (_, uctx) -> true, Univ.ContextSet.of_context uctx

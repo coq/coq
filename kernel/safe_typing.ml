@@ -759,7 +759,7 @@ let translate_direct_opaque env kn ce =
   let () = assert (is_empty_private u) in
   { cb with const_body = OpaqueDef c }
 
-let export_side_effects mb env (b_ctx, eff) =
+let export_side_effects mb env eff =
       let not_exists e = not (Environ.mem_constant e.seff_constant env) in
       let aux (acc,sl) e =
         if not (not_exists e) then acc, sl
@@ -776,7 +776,7 @@ let export_side_effects mb env (b_ctx, eff) =
       in
       let rec translate_seff sl seff acc env =
         match seff with
-        | [] -> List.rev acc, b_ctx
+        | [] -> List.rev acc
         | eff :: rest ->
           if Int.equal sl 0 then
             let env, cb =
@@ -805,8 +805,8 @@ let push_opaque_proof pf senv =
   let senv = { senv with env = Environ.set_opaque_tables senv.env otab } in
   senv, o
 
-let export_private_constants ce senv =
-  let exported, ce = export_side_effects senv.revstruct senv.env ce in
+let export_private_constants eff senv =
+  let exported = export_side_effects senv.revstruct senv.env eff in
   let map senv (kn, c) = match c.const_body with
   | OpaqueDef p ->
     let local = empty_private c.const_universes in
@@ -819,7 +819,7 @@ let export_private_constants ce senv =
   let exported = List.map (fun (kn, _) -> kn) exported in
   (* No delayed constants to declare *)
   let senv = List.fold_left add_constant_aux senv bodies in
-  (ce, exported), senv
+  exported, senv
 
 let add_constant l decl senv =
   let kn = Constant.make2 senv.modpath l in
