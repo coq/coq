@@ -94,7 +94,6 @@ let usage () =
 let split_period = Str.split (Str.regexp (Str.quote "."))
 
 let add_q_include path l = add_rec_dir_no_import add_known path (split_period l)
-
 let add_r_include path l = add_rec_dir_import add_known path (split_period l)
 
 let treat_coqproject f =
@@ -108,6 +107,7 @@ let treat_coqproject f =
   iter_sourced (fun f -> treat_file None f) (all_files project)
 
 let rec parse = function
+  (* TODO, deprecate option -c *)
   | "-c" :: ll -> option_c := true; parse ll
   | "-boot" :: ll -> option_boot := true; parse ll
   | "-sort" :: ll -> option_sort := true; parse ll
@@ -144,19 +144,8 @@ let coqdep () =
   (* Add current dir with empty logical path if not set by options above. *)
   (try ignore (Coqdep_common.find_dir_logpath (Sys.getcwd()))
    with Not_found -> add_norec_dir_import add_known "." []);
-  (* NOTE: These directories are searched from last to first *)
-  if !option_boot then begin
-    add_rec_dir_import add_known "theories" ["Coq"];
-    add_rec_dir_import add_known "plugins" ["Coq"];
-    add_rec_dir_import (fun _ -> add_caml_known) "theories" ["Coq"];
-    add_rec_dir_import (fun _ -> add_caml_known) "plugins" ["Coq"];
-    let user = "user-contrib" in
-    if Sys.file_exists user then begin
-      add_rec_dir_no_import add_known user [];
-      add_rec_dir_no_import (fun _ -> add_caml_known) user [];
-    end;
-  end else begin
-    (* option_boot is actually always false in this branch *)
+  (* We don't setup any loadpath if the -boot is passed *)
+  if not !option_boot then begin
     Envars.set_coqlib ~fail:(fun msg -> raise (CoqlibError msg));
     let coqlib = Envars.coqlib () in
     add_rec_dir_import add_coqlib_known (coqlib//"theories") ["Coq"];
