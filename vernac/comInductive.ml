@@ -105,16 +105,16 @@ let mk_mltype_data sigma env assums arity indname =
     the source syntax. *)
 
 let rec check_type_conclusion ind =
-  let open Glob_term in
-    match DAst.get ind with
-    | GSort (UAnonymous {rigid=true}) -> (Some true)
-    | GSort (UNamed _) -> (Some false)
-    | GProd ( _, _, _, e)
-    | GLetIn (_, _, _, e)
-    | GLambda (_, _, _, e)
-    | GApp (e, _)
-    | GCast (e, _) -> check_type_conclusion e
+  match ind.CAst.v with
+  | CSort s ->
+    let open Glob_term in
+    begin match s with
+    | UAnonymous {rigid=true} -> Some true
+    | UNamed _ -> Some false
     | _ -> None
+    end
+  | CProdN (_,c) -> check_type_conclusion c
+  | _ -> None
 
 let make_anonymous_conclusion_flexible sigma = function
   | None -> sigma
@@ -131,10 +131,9 @@ let make_anonymous_conclusion_flexible sigma = function
 let intern_ind_arity env sigma ind =
   let c = intern_gen IsType env sigma ind.ind_arity in
   let impls = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
-  let pseudo_poly = check_type_conclusion c in
-  (constr_loc ind.ind_arity, c, impls, pseudo_poly)
+  (constr_loc ind.ind_arity, c, impls)
 
-let pretype_ind_arity env sigma (loc, c, impls, pseudo_poly) =
+let pretype_ind_arity env sigma (loc, c, impls) pseudo_poly =
   let sigma,t = understand_tcc env sigma ~expected_type:IsType c in
   match Reductionops.sort_of_arity env sigma t with
   | exception Invalid_argument _ ->
@@ -425,8 +424,8 @@ let interp_params env udecl uparamsl paramsl =
   in
   (* Names of parameters as arguments of the inductive type (defs removed) *)
   let assums = List.filter is_local_assum ctx_params in
-  sigma, env_params, (ctx_params, env_uparams, ctx_uparams,
-  List.map (RelDecl.get_name %> Name.get_id) assums, userimpls, useruimpls, impls, udecl)
+  sigma, env_params, ctx_params, env_uparams, ctx_uparams,
+  List.map (RelDecl.get_name %> Name.get_id) assums, userimpls, useruimpls, impls, udecl
 
 let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) notations ~cumulative ~poly ~private_ind finite =
   check_all_names_different indl;
@@ -435,27 +434,24 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   then user_err (str "Inductives with uniform parameters may not have attached notations.");
 
   let indnames = List.map (fun ind -> ind.ind_name) indl in
-  let sigma, env_params, infos =
+  let pseudo_poly = List.map (fun ind -> check_type_conclusion ind.ind_arity) indl in
+  let is_template = List.exists (fun p -> not (Option.is_empty p)) pseudo_poly in
+
+  (* In case of template polymorphism, we need to compute more constraints *)
+  let env0 = if not poly && is_template
+    then Environ.set_universes_lbound env0 Univ.Level.prop
+    else env0
+  in
+
+  let sigma, env_params, ctx_params, env_uparams,
+      ctx_uparams, params, userimpls, useruimpls, impls, udecl =
     interp_params env0 udecl uparamsl paramsl
   in
 
   (* Interpret the arities *)
   let arities = List.map (intern_ind_arity env_params sigma) indl in
 
-  let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, params, userimpls, useruimpls, impls, udecl), arities, is_template =
-    let is_template = List.exists (fun (_,_,_,pseudo_poly) -> not (Option.is_empty pseudo_poly)) arities in
-    if not poly && is_template then
-      (* In case of template polymorphism, we need to compute more constraints *)
-      let env0 = Environ.set_universes_lbound env0 Univ.Level.prop in
-      let sigma, env_params, infos =
-        interp_params env0 udecl uparamsl paramsl
-      in
-      let arities = List.map (intern_ind_arity env_params sigma) indl in
-      sigma, env_params, infos, arities, is_template
-    else sigma, env_params, infos, arities, is_template
-  in
-
-  let sigma, arities = List.fold_left_map (pretype_ind_arity env_params) sigma arities in
+  let sigma, arities = List.fold_left2_map (pretype_ind_arity env_params) sigma arities pseudo_poly in
   let arities, relevances, arityconcl, indimpls = List.split4 arities in
 
   let fullarities = List.map (fun c -> EConstr.it_mkProd_or_LetIn c ctx_params) arities in
@@ -528,7 +524,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun ({CAst.v=indname},_,ar,lc) -> {
     ind_name = indname;
-    ind_arity = Option.cata (fun x -> x) (CAst.make @@ CSort (Glob_term.UAnonymous {rigid=true})) ar;
+    ind_arity = Option.default (CAst.make @@ CSort (Glob_term.UAnonymous {rigid=true})) ar;
     ind_lc = List.map (fun (_,({CAst.v=id},t)) -> (id,t)) lc
   }) indl
 
