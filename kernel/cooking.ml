@@ -312,14 +312,14 @@ let cook_one_ind ~template_check ~ntypes
       let arity = abstract_as_type (expmod arity) hyps in
       let sort = destSort (expmod (mkSort sort)) in
       RegularArity {mind_user_arity=arity; mind_sort=sort}
-    | TemplateArity {template_param_levels=levels;template_level} ->
+    | TemplateArity {template_param_levels=levels;template_level;template_context} ->
       let sec_levels = CList.map_filter (fun d ->
           if RelDecl.is_local_assum d then Some (template_level_of_var ~template_check d)
           else None)
           section_decls
       in
       let levels = List.rev_append sec_levels levels in
-      TemplateArity {template_param_levels=levels;template_level}
+      TemplateArity {template_param_levels=levels;template_level;template_context}
   in
   let mind_arity_ctxt =
     let ctx = Context.Rel.map expmod mip.mind_arity_ctxt in

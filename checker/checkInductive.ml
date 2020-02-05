@@ -69,8 +69,9 @@ let check_arity env ar1 ar2 = match ar1, ar2 with
   | RegularArity ar, RegularArity {mind_user_arity;mind_sort} ->
     Constr.equal ar.mind_user_arity mind_user_arity &&
     Sorts.equal ar.mind_sort mind_sort
-  | TemplateArity ar, TemplateArity {template_param_levels;template_level} ->
+  | TemplateArity ar, TemplateArity {template_param_levels;template_level;template_context} ->
     List.equal (Option.equal Univ.Level.equal) ar.template_param_levels template_param_levels &&
+    ContextSet.equal template_context ar.template_context &&
     UGraph.check_leq (universes env) template_level ar.template_level
     (* template_level is inferred by indtypes, so functor application can produce a smaller one *)
   | (RegularArity _ | TemplateArity _), _ -> assert false

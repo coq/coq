@@ -228,7 +228,7 @@ let v_oracle =
   |]
 
 let v_pol_arity =
-  v_tuple "polymorphic_arity" [|List(Opt v_level);v_univ|]
+  v_tuple "polymorphic_arity" [|List(Opt v_level);v_univ;v_context_set|]
 
 let v_primitive =
   v_enum "primitive" 44 (* Number of "Primitive" in Int63.v and PrimFloat.v *)

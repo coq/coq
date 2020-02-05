@@ -270,7 +270,7 @@ let abstract_packets ~template_check univs usubst params ((arity,lc),(indices,sp
         CErrors.user_err
           Pp.(strbrk "Ill-formed template inductive declaration: not polymorphic on any universe.")
       else
-        TemplateArity {template_param_levels = param_levels; template_level = min_univ}
+        TemplateArity {template_param_levels = param_levels; template_level = min_univ; template_context = ctx }
   in
 
   let kelim = allowed_sorts univ_info in

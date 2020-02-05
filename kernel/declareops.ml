@@ -49,7 +49,8 @@ let map_decl_arity f g = function
 let hcons_template_arity ar =
   { template_param_levels = ar.template_param_levels;
       (* List.Smart.map (Option.Smart.map Univ.hcons_univ_level) ar.template_param_levels; *)
-    template_level = Univ.hcons_univ ar.template_level }
+    template_level = Univ.hcons_univ ar.template_level;
+    template_context = Univ.hcons_universe_context_set ar.template_context }
 
 let universes_context = function
   | Monomorphic _ -> Univ.AUContext.empty

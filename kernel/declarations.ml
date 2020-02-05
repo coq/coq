@@ -32,6 +32,7 @@ type engagement = set_predicativity
 type template_arity = {
   template_param_levels : Univ.Level.t option list;
   template_level : Univ.Universe.t;
+  template_context : Univ.ContextSet.t;
 }
 
 type ('a, 'b) declaration_arity =
