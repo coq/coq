@@ -331,10 +331,6 @@ let modifier_for_navigation =
 let modifier_for_templates =
   new preference ~name:["modifier_for_templates"] ~init:"<Control><Shift>" ~repr:Repr.(string)
 
-let modifier_for_tactics =
-  new preference ~name:["modifier_for_tactics"]
-    ~init:(select_arch "<Control><Alt>" "<Control><Primary>") ~repr:Repr.(string)
-
 let modifier_for_display =
   new preference ~name:["modifier_for_display"]
     ~init:(select_arch "<Alt><Shift>" "<Primary><Shift>")~repr:Repr.(string)
@@ -347,7 +343,6 @@ let attach_modifiers_callback () =
   (* To be done after the preferences are loaded *)
   let _ = attach_modifiers modifier_for_navigation "<Actions>/Navigation/" in
   let _ = attach_modifiers modifier_for_templates "<Actions>/Templates/" in
-  let _ = attach_modifiers modifier_for_tactics "<Actions>/Tactics/" in
   let _ = attach_modifiers modifier_for_display "<Actions>/View/" in
   let _ = attach_modifiers modifier_for_queries "<Actions>/Queries/" in
   ()
@@ -951,9 +946,6 @@ let configure ?(apply=(fun () -> ())) parent =
       (string_of_project_behavior read_project#get)
   in
   let project_file_name = pstring "Default name for project file" project_file_name in
-  let modifier_for_tactics =
-    pmodifiers "Global change of modifiers for Tactics Menu" modifier_for_tactics
-  in
   let modifier_for_templates =
     pmodifiers "Global change of modifiers for Templates Menu" modifier_for_templates
   in
@@ -1056,7 +1048,7 @@ let configure ?(apply=(fun () -> ())) parent =
              [cmd_coqtop;cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc;
               cmd_print;cmd_editor;cmd_browse]);
      Section("Shortcuts", Some `PREFERENCES,
-             [modifiers_valid; modifier_for_tactics;
+             [modifiers_valid;
         modifier_for_templates; modifier_for_display; modifier_for_navigation;
         modifier_for_queries (*; user_queries *)]);
      Section("Misc", Some `ADD,

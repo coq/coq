@@ -99,9 +99,6 @@ let init () =
 \n    <menuitem action='Previous' />\
 \n    <menuitem action='Next' />\
 \n  </menu>\
-\n  <menu action='Tactics'>\
-\n    %s\
-\n  </menu>\
 \n  <menu action='Templates'>\
 \n    <menuitem action='Lemma' />\
 \n    <menuitem action='Theorem' />\
@@ -164,7 +161,6 @@ let init () =
 \n</toolbar>\
 \n</ui>"
     (if Coq_config.gtk_platform <> `QUARTZ then "<menuitem action='Quit' />" else "")
-    (Buffer.contents (list_items "Tactic" Coq_commands.tactics))
     (Buffer.contents (list_items "Template" Coq_commands.commands))
     (Buffer.contents (list_queries "User-Query" Preferences.user_queries#get))
  in
