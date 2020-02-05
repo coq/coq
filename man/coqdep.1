@@ -6,9 +6,6 @@ coqdep \- Compute inter-module dependencies for Coq and Caml programs
 .SH SYNOPSIS
 .B coqdep
 [
-.BI \-w
-]
-[
 .BI \-I \ directory
 ]
 [
@@ -19,9 +16,6 @@ coqdep \- Compute inter-module dependencies for Coq and Caml programs
 ]
 [
 .BI \-i
-]
-[
-.BI \-D
 ]
 [
 .BI \-slash
@@ -61,25 +55,6 @@ directives and the dot notation
 .BI \-c
 Prints the dependencies of Caml modules.
 (On Caml modules, the behaviour is exactly the same as ocamldep).
-\" THESE OPTIONS ARE BROKEN CURRENTLY
-\" .TP
-\" .BI \-w
-\" Prints a warning if a Coq command
-\" .IR Declare \& 
-\" .IR ML \& 
-\" .IR Module \&
-\" is incorrect. (For instance, you wrote `Declare ML Module "A".',
-\" but the module A contains #open "B"). The correct command is printed
-\" (see option \-D). The warning is printed on standard error.
-\" .TP
-\" .BI \-D
-\" This commands looks for every command
-\" .IR Declare \& 
-\" .IR ML \& 
-\" .IR Module \&
-\" of each Coq file given as argument and complete (if needed)
-\" the list of Caml modules. The new command is printed on
-\" the standard output. No dependency is computed with this option.
 .TP
 .BI \-f \ file
 Read filenames and options -I, -R and -Q from a _CoqProject FILE.
@@ -92,10 +67,6 @@ coq commands (coqtop, coqc).
 Indicates where is the Coq library. The default value has been
 determined at installation time, and therefore this option should not
 be used under normal circumstances.
-.TP 
-.BI \-dumpgraph[box] \ file
-Dumps a dot dependency graph in file
-.IR file \&.
 .TP 
 .BI \-exclude-dir \ dir
 Skips subdirectory
@@ -169,7 +140,7 @@ example% coqdep \-I . *.v
 With a warning:
 .IP
 .B
-example% coqdep \-w \-I . *.v
+example% coqdep \-I . *.v
 .RS
 .sp .5
 .nf
