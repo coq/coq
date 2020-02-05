@@ -809,21 +809,20 @@ $(USERCONTRIBMLLIBDFILE).d: $(D_DEPEND_BEFORE_SRC) $(filter user-contrib/%, $(ML
 # NB: for make world, no need to mention explicitly the .cmxs of the plugins,
 # since they are all mentioned in at least one Declare ML Module in some .v
 
-coqlib: theories plugins
+coqlib: stdlib-vo contrib-vo
 ifdef QUICK
-	$(SHOW)'COQC -schedule-vio2vo $(NJOBS) theories/**.vio plugins/**.vio'
-	$(HIDE)$(BOOTCOQC) -schedule-vio2vo $(NJOBS) $(THEORIESVO) $(PLUGINSVO)
+	$(SHOW)'COQC -schedule-vio2vo $(NJOBS) theories/**.vio'
+	$(HIDE)$(BOOTCOQC) -schedule-vio2vo $(NJOBS) $(THEORIESVO) $(CONTRIBVO)
 endif
 
-coqlib.timing.diff: theories.timing.diff plugins.timing.diff
+coqlib.timing.diff: stdlib.timing.diff
 
-theories: $(THEORIESVO)
-plugins: $(PLUGINSVO)
+stdlib-vo: $(THEORIESVO)
+contrib-vo: $(CONTRIBVO)
 
-theories.timing.diff: $(THEORIESVO:.$(VO)=.v.timing.diff)
-plugins.timing.diff: $(PLUGINSVO:.$(VO)=.v.timing.diff)
+stdlib.timing.diff: $(ALLVO:.$(VO)=.v.timing.diff)
 
-.PHONY: coqlib theories plugins coqlib.timing.diff theories.timing.diff plugins.timing.diff
+.PHONY: coqlib stdlib-vo contrib-vo coqlib.timing.diff stdlib.timing.diff
 
 # The .vo files in Init are built with the -noinit option
 

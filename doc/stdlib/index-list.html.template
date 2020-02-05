@@ -619,11 +619,11 @@ through the <tt>Require Import</tt> command.</p>
     small scale reflection formalization technique
   </dt>
   <dd>
-    plugins/ssrmatching/ssrmatching.v
-    plugins/ssr/ssrclasses.v
-    plugins/ssr/ssreflect.v
-    plugins/ssr/ssrbool.v
-    plugins/ssr/ssrfun.v
+    theories/ssrmatching/ssrmatching.v
+    theories/ssr/ssrclasses.v
+    theories/ssr/ssreflect.v
+    theories/ssr/ssrbool.v
+    theories/ssr/ssrfun.v
   </dd>
 
   <dt> <b>Ltac2</b>:

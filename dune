@@ -27,9 +27,9 @@
   (source_tree user-contrib))
  (action
   (with-stdout-to .vfiles.d
-   (bash "%{bin:coqdep} -dyndep both -noglob -boot -R theories Coq -R plugins Coq -Q user-contrib/Ltac2 Ltac2 -I user-contrib/Ltac2 \
+   (bash "%{bin:coqdep} -dyndep both -noglob -boot -R theories Coq -Q user-contrib/Ltac2 Ltac2 -I user-contrib/Ltac2 \
           `find plugins/ -maxdepth 1 -mindepth 1 -type d -printf '-I %p '` \
-          `find theories plugins user-contrib -type f -name *.v`"))))
+          `find theories user-contrib -type f -name *.v`"))))
 
 (alias
  (name vodeps)

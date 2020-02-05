@@ -111,33 +111,48 @@
 ########## Plugins ##########
 
 /plugins/btauto/       @coq/btauto-maintainers
+/theories/btauto/      @coq/btauto-maintainers
 
 /plugins/cc/           @coq/cc-maintainers
+/theories/cc/          @coq/cc-maintainers
 
 /plugins/derive/       @coq/derive-maintainers
+/theories/derive/      @coq/derive-maintainers
 
 /plugins/extraction/   @coq/extraction-maintainers
+/theories/extraction/  @coq/extraction-maintainers
 
 /plugins/firstorder/   @coq/firstorder-maintainers
+/theories/firstorder/  @coq/firstorder-maintainers
 
 /plugins/funind/       @coq/funind-maintainers
+/theories/funind/      @coq/funind-maintainers
 
 /plugins/ltac/         @coq/ltac-maintainers
+/theories/ltac/        @coq/ltac-maintainers
 
 /plugins/micromega/    @coq/micromega-maintainers
+/theories/micromega/   @coq/micromega-maintainers
 /test-suite/micromega/ @coq/micromega-maintainers
 
 /plugins/nsatz/        @coq/nsatz-maintainers
+/theories/nsatz/       @coq/nsatz-maintainers
 
 /plugins/setoid_ring/  @coq/ring-maintainers
+/theories/setoid_ring/ @coq/ring-maintainers
 
 /plugins/ssrmatching/  @coq/ssreflect-maintainers
+/theories/ssrmatching/ @coq/ssreflect-maintainers
+
 /plugins/ssr/          @coq/ssreflect-maintainers
+/theories/ssr/         @coq/ssreflect-maintainers
+
 /test-suite/ssr/       @coq/ssreflect-maintainers
 
 /plugins/syntax/       @coq/parsing-maintainers
 
 /plugins/rtauto/       @coq/rtauto-maintainers
+/theories/rtauto/      @coq/rtauto-maintainers
 
 /user-contrib/Ltac2    @coq/ltac2-maintainers
 

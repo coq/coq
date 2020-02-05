@@ -96,7 +96,7 @@ Alternatively, you can use some specific targets:
 - `make refman-{html,pdf}`
   to produce only one format of the reference manual
 
-- `make stdlib`
+- `make doc-stdlib`
   to produce all formats of the Coq standard library
 
 

@@ -275,7 +275,7 @@ These patterns can be used when the hypothesis is an equality:
    :n:`or` has multiple constructors (:n:`or_introl` and :n:`or_intror`),
    while :n:`and` has a single constructor (:n:`conj`) with multiple parameters
    (:n:`A` and :n:`B`).
-   These are defined in theories/Init/Logic.v.  The "where" clauses define the
+   These are defined in ``theories/Init/Logic.v``.  The "where" clauses define the
    infix notation for "or" and "and".
 
    .. coqdoc::

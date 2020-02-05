@@ -258,7 +258,7 @@ build:base:
   variables:
     COQ_EXTRA_CONF: "-native-compiler yes -coqide opt"
     # coqdoc for stdlib, until we know how to build it from installed Coq
-    EXTRA_TARGET: "stdlib"
+    EXTRA_TARGET: "doc-stdlib"
     EXTRA_INSTALL: "install-doc-stdlib-html install-doc-printable"
 
 # no coqide for 32bit: libgtk installation problems

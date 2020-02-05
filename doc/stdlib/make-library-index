@@ -8,7 +8,7 @@ HIDDEN=$2
 cp -f $FILE.template tmp
 echo -n "Building file index-list.prehtml... "
 
-LIBDIRS=`find theories/* plugins/* user-contrib/* -type d ! -name .coq-native`
+LIBDIRS=`find theories/* user-contrib/* -type d ! -name .coq-native`
 
 for k in $LIBDIRS; do
     if [[ $k =~ "user-contrib" ]]; then
