@@ -30,7 +30,6 @@ val write_vos : bool ref
 type dynlink = Opt | Byte | Both | No | Variable
 
 val option_dynlink : dynlink ref
-val option_mldep : string option ref
 val norec_dirs : StrSet.t ref
 val suffixe : string ref
 type dir = string option

@@ -20,7 +20,6 @@ open Minisys
 
     As of today, this module depends on the following Coq modules:
 
-    - Flags
     - Envars
     - CoqProject_file
 
@@ -126,9 +125,6 @@ let rec parse = function
   | "-coqlib" :: [] -> usage ()
   | "-suffix" :: s :: ll -> suffixe := s ; parse ll
   | "-suffix" :: [] -> usage ()
-  | "-slash" :: ll ->
-    coqdep_warning "warning: option -slash has no effect and is deprecated.";
-    parse ll
   | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
   | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse ll
   | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse ll
