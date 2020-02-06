@@ -4274,7 +4274,7 @@ let get_elim_signature elim hyp0 gl =
 
 let is_functional_induction elimc gl =
   let sigma = Tacmach.New.project gl in
-  let scheme = compute_elim_sig sigma ~elimc (Tacmach.New.pf_unsafe_type_of gl (fst elimc)) in
+  let scheme = compute_elim_sig sigma ~elimc (Tacmach.New.pf_get_type_of gl (fst elimc)) in
   (* The test is not safe: with non-functional induction on non-standard
      induction scheme, this may fail *)
   Option.is_empty scheme.indarg
