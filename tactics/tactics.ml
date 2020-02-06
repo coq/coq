@@ -4948,25 +4948,26 @@ let (forward_setoid_transitivity, setoid_transitivity) = Hook.make ()
 (* This is probably not very useful any longer *)
 let prove_transitivity hdcncl eq_kind t =
   Proofview.Goal.enter begin fun gl ->
-  let (eq1,eq2) = match eq_kind with
-  | MonomorphicLeibnizEq (c1,c2) ->
-      mkApp (hdcncl, [| c1; t|]), mkApp (hdcncl, [| t; c2 |])
-  | PolymorphicLeibnizEq (typ,c1,c2) ->
-      mkApp (hdcncl, [| typ; c1; t |]), mkApp (hdcncl, [| typ; t; c2 |])
-  | HeterogenousEq (typ1,c1,typ2,c2) ->
-      let env = Proofview.Goal.env gl in
-      let sigma = Tacmach.New.project gl in
-      let type_of = Typing.unsafe_type_of env sigma in
-      let typt = type_of t in
-        (mkApp(hdcncl, [| typ1; c1; typt ;t |]),
-         mkApp(hdcncl, [| typt; t; typ2; c2 |]))
-  in
-  Tacticals.New.tclTHENFIRST (cut eq2)
-    (Tacticals.New.tclTHENFIRST (cut eq1)
-       (Tacticals.New.tclTHENLIST
-          [ Tacticals.New.tclDO 2 intro;
-            Tacticals.New.onLastHyp simplest_case;
-            assumption ]))
+    let sigma = Tacmach.New.project gl in
+    let sigma, eq1, eq2 = match eq_kind with
+      | MonomorphicLeibnizEq (c1,c2) ->
+        sigma, mkApp (hdcncl, [| c1; t|]), mkApp (hdcncl, [| t; c2 |])
+      | PolymorphicLeibnizEq (typ,c1,c2) ->
+        sigma, mkApp (hdcncl, [| typ; c1; t |]), mkApp (hdcncl, [| typ; t; c2 |])
+      | HeterogenousEq (typ1,c1,typ2,c2) ->
+        let env = Proofview.Goal.env gl in
+        let sigma, typt = Typing.type_of env sigma t in
+        sigma,
+        mkApp(hdcncl, [| typ1; c1; typt ;t |]),
+        mkApp(hdcncl, [| typt; t; typ2; c2 |])
+    in
+    tclEVARSTHEN sigma
+      (Tacticals.New.tclTHENFIRST (cut eq2)
+         (Tacticals.New.tclTHENFIRST (cut eq1)
+            (Tacticals.New.tclTHENLIST
+               [ Tacticals.New.tclDO 2 intro;
+                 Tacticals.New.onLastHyp simplest_case;
+                 assumption ])))
   end
 
 let transitivity_red allowred t =
