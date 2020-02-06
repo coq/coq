@@ -4772,7 +4772,10 @@ let destruct ev clr c l e =
 
 let elim_scheme_type elim t =
   Proofview.Goal.enter begin fun gl ->
-  let clause = mk_clenv_type_of gl elim in
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let sigma, elimt = Typing.type_of env sigma elim in
+  let clause = mk_clenv_from_env env sigma None (elim,elimt) in
   match EConstr.kind clause.evd (last_arg clause.evd clause.templval.rebus) with
     | Meta mv ->
         let clause' =

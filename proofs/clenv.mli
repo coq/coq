@@ -46,7 +46,6 @@ val clenv_meta_type : clausenv -> metavariable -> types
 val mk_clenv_from : Proofview.Goal.t -> EConstr.constr * EConstr.types -> clausenv
 val mk_clenv_from_n :
   Proofview.Goal.t -> int option -> EConstr.constr * EConstr.types -> clausenv
-val mk_clenv_type_of : Proofview.Goal.t -> EConstr.constr -> clausenv
 val mk_clenv_from_env : env -> evar_map -> int option -> EConstr.constr * EConstr.types -> clausenv
 
 (** Refresh the universes in a clenv *)

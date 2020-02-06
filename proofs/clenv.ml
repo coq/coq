@@ -128,12 +128,6 @@ let mk_clenv_from_n gls n (c,cty) =
 
 let mk_clenv_from gls = mk_clenv_from_n gls None
 
-let mk_clenv_type_of gls t =
-  let env = Proofview.Goal.env gls in
-  let sigma = Tacmach.New.project gls in
-  let sigma, tt = Typing.type_of env sigma t in
-  mk_clenv_from_env env sigma None (t,tt)
-
 (******************************************************************)
 
 (* [mentions clenv mv0 mv1] is true if mv1 is defined and mentions
