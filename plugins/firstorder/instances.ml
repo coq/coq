@@ -100,25 +100,28 @@ let rec collect_quantified sigma seq=
 
 let dummy_bvid=Id.of_string "x"
 
-let mk_open_instance env evmap id idc m t =
-  let var_id=
-    if id==dummy_id then dummy_bvid else
-      let typ=Typing.unsafe_type_of env evmap idc in
+let mk_open_instance env sigma id idc m t =
+  let var_id =
+    (* XXX why physical equality? *)
+    if id == dummy_id then dummy_bvid else
+      let typ = Retyping.get_type_of env sigma idc in
         (* since we know we will get a product,
            reduction is not too expensive *)
-      let (nam,_,_)=destProd evmap (whd_all env evmap typ) in
+      let (nam,_,_) = destProd sigma (whd_all env sigma typ) in
         match nam.Context.binder_name with
-            Name id -> id
-          | Anonymous ->  dummy_bvid in
-  let revt=substl (List.init m (fun i->mkRel (m-i))) t in
-  let rec aux n avoid env evmap decls =
-    if Int.equal n 0 then evmap, decls else
-      let nid=(fresh_id_in_env avoid var_id env) in
-      let (evmap, (c, _)) = Evarutil.new_type_evar env evmap Evd.univ_flexible in
+        | Name id -> id
+        | Anonymous ->  dummy_bvid
+  in
+  let revt = substl (List.init m (fun i->mkRel (m-i))) t in
+  let rec aux n avoid env sigma decls =
+    if Int.equal n 0 then sigma, decls else
+      let nid = fresh_id_in_env avoid var_id env in
+      let (sigma, (c, _)) = Evarutil.new_type_evar env sigma Evd.univ_flexible in
       let decl = LocalAssum (Context.make_annot (Name nid) Sorts.Relevant, c) in
-        aux (n-1) (Id.Set.add nid avoid) (EConstr.push_rel decl env) evmap (decl::decls) in
-  let evmap, decls = aux m Id.Set.empty env evmap [] in
-  (evmap, decls, revt)
+      aux (n-1) (Id.Set.add nid avoid) (EConstr.push_rel decl env) sigma (decl::decls)
+  in
+  let sigma, decls = aux m Id.Set.empty env sigma [] in
+  (sigma, decls, revt)
 
 (* tactics   *)
 
