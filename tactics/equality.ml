@@ -1224,29 +1224,21 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       let sigma, ev = Evarutil.new_evar env sigma a in
       let rty = beta_applist sigma (p_i_minus_1,[ev]) in
       let sigma, tuple_tail = sigrec_clausal_form sigma (siglen-1) rty in
-      let evopt = match EConstr.kind sigma ev with Evar _ -> None | _ -> Some ev in
-      match evopt with
-        | Some w ->
-          let w_type = unsafe_type_of env sigma w in
-          begin match Evarconv.unify_leq_delay env sigma w_type a with
-            | sigma ->
-              let sigma, exist_term = Evd.fresh_global env sigma sigdata.intro in
-              sigma, applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
-            | exception Evarconv.UnableToUnify _ ->
-              user_err Pp.(str "Cannot solve a unification problem.")
-          end
-        | None ->
-            (* This at least happens if what has been detected as a
-               dependency is not one; use an evasive error message;
-               even if the problem is upwards: unification should be
-               tried in the first place in make_iterated_tuple instead
-               of approximatively computing the free rels; then
-               unsolved evars would mean not binding rel *)
-            user_err Pp.(str "Cannot solve a unification problem.")
+      if EConstr.isEvar sigma ev then
+        (* This at least happens if what has been detected as a
+           dependency is not one; use an evasive error message;
+           even if the problem is upwards: unification should be
+           tried in the first place in make_iterated_tuple instead
+           of approximatively computing the free rels; then
+           unsolved evars would mean not binding rel *)
+        user_err Pp.(str "Cannot solve a unification problem.")
+      else
+        let sigma, exist_term = Evd.fresh_global env sigma sigdata.intro in
+        sigma, applist(exist_term,[a;p_i_minus_1;ev;tuple_tail])
   in
   let sigma = Evd.clear_metas sigma in
   let sigma, scf = sigrec_clausal_form sigma siglen ty in
-    sigma, Evarutil.nf_evar sigma scf
+  sigma, Evarutil.nf_evar sigma scf
 
 (* The problem is to build a destructor (a generalization of the
    predecessor) which, when applied to a term made of constructors
