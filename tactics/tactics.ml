@@ -850,12 +850,13 @@ let change_on_subterm ~check cv_pb deep t where env sigma c =
             change_and_check Reduction.CONV mayneedglobalcheck true (t subst)
           else
             fun env sigma _c -> t subst env sigma) env sigma c in
-  if !mayneedglobalcheck then
+  let sigma = if !mayneedglobalcheck then
     begin
-      try ignore (Typing.unsafe_type_of env sigma c)
+      try fst (Typing.type_of env sigma c)
       with e when catchable_exception e ->
         error "Replacement would lead to an ill-typed term."
-    end;
+    end else sigma
+  in
   (sigma, c)
 
 let change_in_concl ~check occl t =
