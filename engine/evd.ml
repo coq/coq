@@ -436,6 +436,7 @@ type side_effect_role =
 
 type side_effects = {
   seff_private : Safe_typing.private_constants;
+  seff_univs : Univ.ContextSet.t;
   seff_roles : side_effect_role Cmap.t;
 }
 
@@ -683,6 +684,7 @@ let empty_evar_flags =
 
 let empty_side_effects = {
   seff_private = Safe_typing.empty_private_constants;
+  seff_univs = Univ.ContextSet.empty;
   seff_roles = Cmap.empty;
 }
 
@@ -1027,12 +1029,13 @@ exception UniversesDiffer = UState.UniversesDiffer
 
 let concat_side_effects eff eff' = {
   seff_private = Safe_typing.concat_private eff.seff_private eff'.seff_private;
+  seff_univs = Univ.ContextSet.union eff.seff_univs eff'.seff_univs;
   seff_roles = Cmap.fold Cmap.add eff.seff_roles eff'.seff_roles;
 }
 
 let emit_side_effects eff evd =
   let effects = concat_side_effects eff evd.effects in
-  { evd with effects; universes = UState.emit_side_effects eff.seff_private evd.universes }
+  { evd with effects; universes = UState.emit_side_effects ~seff_univs:eff.seff_univs evd.universes }
 
 let drop_side_effects evd =
   { evd with effects = empty_side_effects; }

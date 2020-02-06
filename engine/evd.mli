@@ -312,6 +312,7 @@ type side_effect_role =
 
 type side_effects = {
   seff_private : Safe_typing.private_constants;
+  seff_univs : Univ.ContextSet.t;
   seff_roles : side_effect_role Cmap.t;
 }
 
