@@ -66,7 +66,9 @@ let mind_check_names mie =
 
 type univ_info = { ind_squashed : bool; ind_has_relevant_arg : bool;
                    ind_min_univ : Universe.t option; (* Some for template *)
-                   ind_univ : Universe.t }
+                   ind_univ : Universe.t;
+                   missing : Universe.Set.t; (* missing u <= ind_univ constraints *)
+                 }
 
 let check_univ_leq ?(is_real_arg=false) env u info =
   let ind_univ = info.ind_univ in
@@ -78,9 +80,8 @@ let check_univ_leq ?(is_real_arg=false) env u info =
   if type_in_type env || Univ.Universe.is_sprop u || UGraph.check_leq (universes env) u ind_univ
   then { info with ind_min_univ = Option.map (Universe.sup u) info.ind_min_univ }
   else if is_impredicative_univ env ind_univ
-  then if Option.is_empty info.ind_min_univ then { info with ind_squashed = true }
-    else raise (InductiveError BadUnivs)
-  else raise (InductiveError BadUnivs)
+       && Option.is_empty info.ind_min_univ then { info with ind_squashed = true }
+  else {info with missing = Universe.Set.add u info.missing}
 
 let check_context_univs ~ctor env info ctx =
   let check_one d (info,env) =
@@ -109,6 +110,7 @@ let check_arity env_params env_ar ind =
     ind_has_relevant_arg=false;
     ind_min_univ;
     ind_univ=Sorts.univ_of_sort ind_sort;
+    missing=Universe.Set.empty;
   }
   in
   let univ_info = check_indices_matter env_params univ_info indices in
@@ -174,7 +176,7 @@ let check_record data =
 (* - all_sorts in case of small, unitary Prop (not smashed) *)
 (* - logical_sorts in case of large, unitary Prop (smashed) *)
 
-let allowed_sorts {ind_squashed;ind_univ;ind_min_univ=_;ind_has_relevant_arg=_} =
+let allowed_sorts {ind_squashed;ind_univ;ind_min_univ=_;ind_has_relevant_arg=_;missing=_} =
   if not ind_squashed then InType
   else Sorts.family (Sorts.sort_of_univ ind_univ)
 
@@ -224,6 +226,8 @@ let template_polymorphic_univs ~template_check ~ctor_levels uctx paramsctxt conc
   params, univs
 
 let abstract_packets ~template_check univs usubst params ((arity,lc),(indices,splayed_lc),univ_info) =
+  if not (Universe.Set.is_empty univ_info.missing)
+  then raise (InductiveError (MissingConstraints (univ_info.missing,univ_info.ind_univ)));
   let arity = Vars.subst_univs_level_constr usubst arity in
   let lc = Array.map (Vars.subst_univs_level_constr usubst) lc in
   let indices = Vars.subst_univs_level_context usubst indices in

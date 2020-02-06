@@ -12,6 +12,7 @@ open Names
 open Constr
 open Environ
 open Reduction
+open Univ
 
 (* Type errors. *)
 
@@ -63,8 +64,8 @@ type ('constr, 'types) ptype_error =
   | IllFormedRecBody of 'constr pguard_error * Name.t Context.binder_annot array * int * env * ('constr, 'types) punsafe_judgment array
   | IllTypedRecBody of
       int * Name.t Context.binder_annot array * ('constr, 'types) punsafe_judgment array * 'types array
-  | UnsatisfiedConstraints of Univ.Constraint.t
-  | UndeclaredUniverse of Univ.Level.t
+  | UnsatisfiedConstraints of Constraint.t
+  | UndeclaredUniverse of Level.t
   | DisallowedSProp
   | BadRelevance
 
@@ -83,7 +84,7 @@ type inductive_error =
   | NotAnArity of env * constr
   | BadEntry
   | LargeNonPropInductiveNotInType
-  | BadUnivs
+  | MissingConstraints of (Universe.Set.t * Universe.t)
 
 exception InductiveError of inductive_error
 
