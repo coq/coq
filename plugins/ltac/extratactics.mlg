@@ -794,7 +794,7 @@ let destauto t =
 
 let destauto_in id =
   Proofview.Goal.enter begin fun gl ->
-  let ctype = Tacmach.New.pf_unsafe_type_of gl (mkVar id) in
+  let ctype = Tacmach.New.pf_get_type_of gl (mkVar id) in
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
 (*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
   destauto ctype
