@@ -222,7 +222,7 @@ module New : sig
 
   val nLastDecls  : Proofview.Goal.t -> int -> named_context
 
-  val ifOnHyp     : (Id.t * types -> bool) ->
+  val ifOnHyp : (Environ.env -> evar_map -> Id.t * types -> bool) ->
     (Id.t -> unit Proofview.tactic) -> (Id.t -> unit Proofview.tactic) ->
     Id.t -> unit Proofview.tactic
 

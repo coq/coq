@@ -80,14 +80,11 @@ let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c =
   Proofview.Goal.enter begin fun gl ->
-  let type_of = pf_unsafe_type_of gl in
-  let env = pf_env gl in
-  let sigma = project gl in
-  let typc = type_of c in
+  let typc = pf_get_type_of gl c in
   tclTHENS (cut typc)
     [ tclTHEN (intro_using tmphyp_name)
          (onLastHypId
-            (ifOnHyp (recognizer env sigma) (general_decompose_aux (recognizer env sigma))
+            (ifOnHyp recognizer (general_decompose_aux recognizer)
               (fun id -> clear [id])));
        exact_no_check c ]
   end

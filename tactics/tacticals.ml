@@ -587,7 +587,7 @@ module New = struct
   let ifOnHyp pred tac1 tac2 id =
     Proofview.Goal.enter begin fun gl ->
     let typ = Tacmach.New.pf_get_hyp_typ id gl in
-    if pred (id,typ) then
+    if pf_apply pred gl (id,typ) then
       tac1 id
     else
       tac2 id
