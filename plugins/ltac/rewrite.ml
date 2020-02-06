@@ -2196,10 +2196,10 @@ let setoid_transitivity c =
     (transitivity_red true c)
 
 let setoid_symmetry_in id =
-  let open Tacmach.New in
   Proofview.Goal.enter begin fun gl ->
-  let sigma = project gl in
-  let ctype = pf_unsafe_type_of gl (mkVar id) in
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let ctype = Retyping.get_type_of env sigma (mkVar id) in
   let binders,concl = decompose_prod_assum sigma ctype in
   let (equiv, args) = decompose_app sigma concl in
   let rec split_last_two = function
