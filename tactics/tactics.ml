@@ -47,6 +47,9 @@ open Context.Named.Declaration
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
+let tclEVARS = Proofview.Unsafe.tclEVARS
+let tclEVARSTHEN sigma t = Proofview.tclTHEN (tclEVARS sigma) t
+
 let inj_with_occurrences e = (AllOccurrences,e)
 
 let typ_of env sigma c =
@@ -2338,9 +2341,8 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
-    let type_of = Tacmach.New.pf_unsafe_type_of gl in
-    let whd_all = Tacmach.New.pf_apply whd_all gl in
-    let t = whd_all (type_of (mkVar id)) in
+    let sigma, t = Typing.type_of env sigma (mkVar id) in
+    let t = whd_all env sigma t in
     let eqtac, thin = match match_with_equality_type env sigma t with
     | Some (hdcncl,[_;lhs;rhs]) ->
         if l2r && isVar sigma lhs && not (occur_var env sigma (destVar sigma lhs) rhs) then
@@ -2366,7 +2368,7 @@ let rewrite_hyp_then assert_style with_evars thin l2r id tac =
         Tacticals.New.tclTHEN (rew_on l2r onConcl) (clear [id]),
         thin in
     (* Skip the side conditions of the rewriting step *)
-    Tacticals.New.tclTHENFIRST eqtac (tac thin)
+    tclEVARSTHEN sigma (Tacticals.New.tclTHENFIRST eqtac (tac thin))
   end
 
 let prepare_naming ?loc = function
