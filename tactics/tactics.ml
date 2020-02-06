@@ -2312,16 +2312,19 @@ let intro_decomp_eq ?loc l thin tac id =
 let intro_or_and_pattern ?loc with_evars bracketed ll thin tac id =
   Proofview.Goal.enter begin fun gl ->
   let c = mkVar id in
-  let t = Tacmach.New.pf_unsafe_type_of gl c in
-  let (ind,t) = Tacmach.New.pf_reduce_to_quantified_ind gl t in
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let sigma, t = Typing.type_of env sigma c in
+  let (ind,t) = reduce_to_quantified_ind env sigma t in
   let branchsigns = compute_constructor_signatures ~rec_flag:false ind in
   let nv_with_let = Array.map List.length branchsigns in
   let ll = fix_empty_or_and_pattern (Array.length branchsigns) ll in
   let ll = get_and_check_or_and_pattern ?loc ll branchsigns in
-  Tacticals.New.tclTHENLASTn
-    (Tacticals.New.tclTHEN (simplest_ecase c) (clear [id]))
-    (Array.map2 (fun n l -> tac thin (Some (bracketed,n)) l)
-       nv_with_let ll)
+  Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+    (Tacticals.New.tclTHENLASTn
+       (Tacticals.New.tclTHEN (simplest_ecase c) (clear [id]))
+       (Array.map2 (fun n l -> tac thin (Some (bracketed,n)) l)
+          nv_with_let ll))
   end
 
 let rewrite_hyp_then assert_style with_evars thin l2r id tac =
