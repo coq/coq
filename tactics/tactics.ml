@@ -1528,16 +1528,19 @@ exception IsNonrec
 
 let is_nonrec mind = (Global.lookup_mind (fst mind)).mind_finite == Declarations.BiFinite
 
-let find_ind_eliminator ind s gl =
-  let env = Proofview.Goal.env gl in
+let find_ind_eliminator env sigma ind s =
   let gr = lookup_eliminator env ind s in
-  Tacmach.New.pf_apply Evd.fresh_global gl gr
+  Evd.fresh_global env sigma gr
 
 let find_eliminator c gl =
-  let ((ind,u),t) = Tacmach.New.pf_reduce_to_quantified_ind gl (Tacmach.New.pf_unsafe_type_of gl c) in
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let concl = Proofview.Goal.concl gl in
+  let sigma, t = Typing.type_of env sigma c in
+  let ((ind,u),t) = reduce_to_quantified_ind env sigma t in
   if is_nonrec ind then raise IsNonrec;
-  let evd, c = find_ind_eliminator ind (Tacticals.New.elimination_sort_of_goal gl) gl in
-    evd, { elimindex = None; elimbody = (c,NoBindings) }
+  let sigma, c = find_ind_eliminator env sigma ind (Retyping.get_sort_family_of env sigma concl) in
+    sigma, { elimindex = None; elimbody = (c,NoBindings) }
 
 let default_elim with_evars clear_flag (c,_ as cx) =
   Proofview.tclORELSE
@@ -4774,7 +4777,9 @@ let elim_scheme_type elim t =
 let elim_type t =
   Proofview.Goal.enter begin fun gl ->
   let (ind,t) = Tacmach.New.pf_apply reduce_to_atomic_ind gl t in
-  let evd, elimc = find_ind_eliminator (fst ind) (Tacticals.New.elimination_sort_of_goal gl) gl in
+  let evd, elimc = Tacmach.New.pf_apply find_ind_eliminator gl (fst ind)
+      (Tacticals.New.elimination_sort_of_goal gl)
+  in
   Proofview.tclTHEN (Proofview.Unsafe.tclEVARS evd) (elim_scheme_type elimc t)
   end
 
