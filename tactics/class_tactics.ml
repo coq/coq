@@ -1202,10 +1202,9 @@ let autoapply c i =
   in
   let flags = auto_unif_flags
     (Hints.Hint_db.transparent_state hintdb) in
-  let cty = Tacmach.New.pf_unsafe_type_of gl c in
+  let cty = Tacmach.New.pf_get_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
-    unify_e_resolve false flags gl
-                                 ((c,cty,Univ.ContextSet.empty),0,ce) <*>
+    unify_e_resolve false flags gl ((c,cty,Univ.ContextSet.empty),0,ce) <*>
       Proofview.tclEVARMAP >>= (fun sigma ->
       let sigma = Typeclasses.make_unresolvables
           (fun ev -> Typeclasses.all_goals ev (Lazy.from_val (snd (Evd.find sigma ev).evar_source))) sigma in
