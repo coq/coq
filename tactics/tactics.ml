@@ -4667,18 +4667,16 @@ let induction_gen_l isrec with_evars elim names lc =
 
             | _ ->
                 Proofview.Goal.enter begin fun gl ->
-                let type_of = Tacmach.New.pf_unsafe_type_of gl in
-                let sigma = Tacmach.New.project gl in
-                Proofview.tclENV >>= fun env ->
-                let x =
-                  id_of_name_using_hdchar env sigma (type_of c) Anonymous in
-
+                let sigma, t = pf_apply Typing.type_of gl c in
+                let x = id_of_name_using_hdchar (Proofview.Goal.env gl) sigma t Anonymous in
                 let id = new_fresh_id Id.Set.empty x gl in
                 let newl' = List.map (fun r -> replace_term sigma c (mkVar id) r) l' in
                 let () = newlc:=id::!newlc in
-                Tacticals.New.tclTHEN
-                  (letin_tac None (Name id) c None allHypsAndConcl)
-                  (atomize_list newl')
+                Tacticals.New.tclTHENLIST [
+                  tclEVARS sigma;
+                  letin_tac None (Name id) c None allHypsAndConcl;
+                  atomize_list newl';
+                ]
                 end in
   Tacticals.New.tclTHENLIST
     [
