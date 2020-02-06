@@ -79,7 +79,7 @@ let check = ref false
 let with_check = Flags.with_option check
 
 let check_typability env sigma c =
-  if !check then let _ = unsafe_type_of env sigma (EConstr.of_constr c) in ()
+  if !check then fst (type_of env sigma (EConstr.of_constr c)) else sigma
 
 (************************************************************************)
 (************************************************************************)
@@ -363,7 +363,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
           gl::goalacc, conclty, sigma, ev
 
       | Cast (t,k, ty) ->
-        check_typability env sigma ty;
+        let sigma = check_typability env sigma ty in
         let sigma = check_conv_leq_goal env sigma trm ty conclty in
         let res = mk_refgoals sigma goal goalacc ty t in
         (* we keep the casts (in particular VMcast and NATIVEcast) except
@@ -430,13 +430,13 @@ and mk_hdgoals sigma goal goalacc trm =
     Goal.V82.mk_goal sigma hyps concl in
   match kind trm with
     | Cast (c,_, ty) when isMeta c ->
-        check_typability env sigma ty;
+        let sigma = check_typability env sigma ty in
         let (gl,ev,sigma) = mk_goal hyps (nf_betaiota env sigma (EConstr.of_constr ty)) in
         let ev = EConstr.Unsafe.to_constr ev in
         gl::goalacc,ty,sigma,ev
 
     | Cast (t,_, ty) ->
-        check_typability env sigma ty;
+        let sigma = check_typability env sigma ty in
         mk_refgoals sigma goal goalacc ty t
 
     | App (f,l) ->
