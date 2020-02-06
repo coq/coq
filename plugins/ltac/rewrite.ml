@@ -483,7 +483,7 @@ let rec decompose_app_rel env evd t =
   | App (f, [||]) -> assert false
   | App (f, [|arg|]) ->
     let (f', argl, argr) = decompose_app_rel env evd arg in
-    let ty = Typing.unsafe_type_of env evd argl in
+    let ty = Retyping.get_type_of env evd argl in
     let r = Retyping.relevance_of_type env evd ty in
     let f'' = mkLambda (make_annot (Name default_dependent_ident) r, ty,
       mkLambda (make_annot (Name (Id.of_string "y")) r, lift 1 ty,
