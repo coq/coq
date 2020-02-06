@@ -151,11 +151,12 @@ let convert_concl ~check ty k =
     Refine.refine ~typecheck:false begin fun sigma ->
       let sigma =
         if check then begin
-          ignore (Typing.unsafe_type_of env sigma ty);
+          let sigma, _ = Typing.type_of env sigma ty in
           match Reductionops.infer_conv env sigma ty conclty with
           | None -> error "Not convertible."
           | Some sigma -> sigma
-        end else sigma in
+        end else sigma
+      in
       let (sigma, x) = Evarutil.new_evar env sigma ~principal:true ty in
       let ans = if k == DEFAULTcast then x else mkCast(x,k,conclty) in
       (sigma, ans)
