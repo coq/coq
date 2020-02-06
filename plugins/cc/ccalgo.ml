@@ -492,7 +492,7 @@ let rec add_term state t=
         Not_found ->
           let b=next uf in
           let trm = constr_of_term t in
-          let typ = Typing.unsafe_type_of state.env state.sigma (EConstr.of_constr trm) in
+          let typ = Retyping.get_type_of state.env state.sigma (EConstr.of_constr trm) in
           let typ = canonize_name state.sigma typ in
           let new_node=
             match t with
@@ -809,23 +809,23 @@ let new_state_var typ state =
 
 let complete_one_class state i=
   match (get_representative state.uf i).inductive_status with
-      Partial pac ->
-        let rec app t typ n =
-          if n<=0 then t else
-            let _,etyp,rest= destProd typ in
-            let id = new_state_var (EConstr.of_constr etyp) state in
-                app (Appli(t,Eps id)) (substl [mkVar id] rest) (n-1) in
-        let _c = Typing.unsafe_type_of state.env state.sigma
-          (EConstr.of_constr (constr_of_term (term state.uf pac.cnode))) in
-        let _c = EConstr.Unsafe.to_constr _c in
-        let _args =
-          List.map (fun i -> constr_of_term (term state.uf  i))
-            pac.args in
-        let typ = Term.prod_applist _c (List.rev _args) in
-        let ct = app (term state.uf i) typ pac.arity in
-          state.uf.epsilons <- pac :: state.uf.epsilons;
-          ignore (add_term state ct)
-    | _ -> anomaly (Pp.str "wrong incomplete class.")
+  | Partial pac ->
+    let rec app t typ n =
+      if n<=0 then t else
+        let _,etyp,rest= destProd typ in
+        let id = new_state_var (EConstr.of_constr etyp) state in
+        app (Appli(t,Eps id)) (substl [mkVar id] rest) (n-1) in
+    let c = Retyping.get_type_of state.env state.sigma
+        (EConstr.of_constr (constr_of_term (term state.uf pac.cnode))) in
+    let c = EConstr.Unsafe.to_constr c in
+    let args =
+      List.map (fun i -> constr_of_term (term state.uf  i))
+        pac.args in
+    let typ = Term.prod_applist c (List.rev args) in
+    let ct = app (term state.uf i) typ pac.arity in
+    state.uf.epsilons <- pac :: state.uf.epsilons;
+    ignore (add_term state ct)
+  | _ -> anomaly (Pp.str "wrong incomplete class.")
 
 let complete state =
   Int.Set.iter (complete_one_class state) state.pa_classes
