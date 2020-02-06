@@ -4238,8 +4238,8 @@ let given_elim hyp0 (elimc,lbind as e) gl =
   let sigma = Tacmach.New.project gl in
   let tmptyp0 = Tacmach.New.pf_get_hyp_typ hyp0 gl in
   let ind_type_guess,_ = decompose_app sigma (snd (decompose_prod sigma tmptyp0)) in
-  let elimt = Tacmach.New.pf_unsafe_type_of gl elimc in
-  Tacmach.New.project gl, (e, elimt), ind_type_guess
+  let sigma, elimt = Tacmach.New.pf_type_of gl elimc in
+  sigma, (e, elimt), ind_type_guess
 
 type scheme_signature =
     (Id.Set.t * (elim_arg_kind * bool * bool * Id.t) list) array
