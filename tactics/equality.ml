@@ -1062,9 +1062,8 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
 
 let onEquality with_evars tac (c,lbindc) =
   Proofview.Goal.enter begin fun gl ->
-  let type_of = pf_unsafe_type_of gl in
   let reduce_to_quantified_ind = pf_apply Tacred.reduce_to_quantified_ind gl in
-  let t = type_of c in
+  let t = pf_get_type_of gl c in
   let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
   let eq_clause = pf_apply make_clenv_binding gl (c,t') lbindc in
   let eq_clause' = Clenvtac.clenv_pose_dependent_evars ~with_evars eq_clause in
@@ -1166,7 +1165,7 @@ let minimal_free_rels_rec env sigma =
   let rec minimalrec_free_rels_rec prev_rels (c,cty) =
     let (cty,direct_rels) = minimal_free_rels env sigma (c,cty) in
     let combined_rels = Int.Set.union prev_rels direct_rels in
-    let folder rels i = snd (minimalrec_free_rels_rec rels (c, unsafe_type_of env sigma (mkRel i)))
+    let folder rels i = snd (minimalrec_free_rels_rec rels (c, get_type_of env sigma (mkRel i)))
     in (cty, List.fold_left folder combined_rels (Int.Set.elements (Int.Set.diff direct_rels prev_rels)))
   in minimalrec_free_rels_rec Int.Set.empty
 
@@ -1211,7 +1210,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
   let rec sigrec_clausal_form sigma siglen p_i =
     if Int.equal siglen 0 then
       (* is the default value typable with the expected type *)
-      let dflt_typ = unsafe_type_of env sigma dflt in
+      let sigma, dflt_typ = type_of env sigma dflt in
       try
         let sigma = Evarconv.unify_leq_delay env sigma dflt_typ p_i in
         let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
