@@ -32,11 +32,13 @@ let eauto_unif_flags = auto_flags_of_state TransparentState.full
 
 let e_give_exact ?(flags=eauto_unif_flags) c =
   Proofview.Goal.enter begin fun gl ->
-  let t1 = Tacmach.New.pf_unsafe_type_of gl c in
+  let sigma, t1 = Tacmach.New.pf_type_of gl c in
   let t2 = Tacmach.New.pf_concl gl in
-  let sigma = Tacmach.New.project gl in
   if occur_existential sigma t1 || occur_existential sigma t2 then
-     Tacticals.New.tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c)
+    Tacticals.New.tclTHENLIST
+      [Proofview.Unsafe.tclEVARS sigma;
+       Clenvtac.unify ~flags t1;
+       exact_no_check c]
   else exact_check c
   end
 
