@@ -195,13 +195,13 @@ let rec solveArg hyps eqonleft mk largs rargs = match largs, rargs with
   ]
 | a1 :: largs, a2 :: rargs ->
   Proofview.Goal.enter begin fun gl ->
-  let rectype = pf_unsafe_type_of gl a1 in
+  let sigma, rectype = pf_type_of gl a1 in
   let decide = mk rectype a1 a2 in
   let tac hyp = solveArg (hyp :: hyps) eqonleft mk largs rargs in
   let subtacs =
     if eqonleft then [eqCase tac;diseqCase hyps eqonleft;default_auto]
     else [diseqCase hyps eqonleft;eqCase tac;default_auto] in
-  (tclTHENS (elim_type decide) subtacs)
+  tclTHEN (Proofview.Unsafe.tclEVARS sigma) (tclTHENS (elim_type decide) subtacs)
   end
 | _ -> invalid_arg "List.fold_right2"
 
@@ -274,11 +274,12 @@ let compare c1 c2 =
   pf_constr_of_global (lib_ref "core.eq.type") >>= fun eqc ->
   pf_constr_of_global (lib_ref "core.not.type") >>= fun notc ->
   Proofview.Goal.enter begin fun gl ->
-  let rectype = pf_unsafe_type_of gl c1 in
+  let sigma, rectype = pf_type_of gl c1 in
   let ops = (opc,eqc,notc) in
   let decide = mkDecideEqGoal true ops rectype c1 c2 in
-  (tclTHENS (cut decide)
-            [(tclTHEN  intro
-             (tclTHEN (onLastHyp simplest_case) clear_last));
-             decideEquality rectype ops])
+  tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+    (tclTHENS (cut decide)
+       [(tclTHEN  intro
+           (tclTHEN (onLastHyp simplest_case) clear_last));
+        decideEquality rectype ops])
   end
