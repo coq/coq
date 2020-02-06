@@ -789,7 +789,8 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
     let morphargs, morphobjs = Array.chop first args in
     let morphargs', morphobjs' = Array.chop first args' in
     let appm = mkApp(m, morphargs) in
-    let appmtype = Typing.unsafe_type_of env (goalevars evars) appm in
+    let evd, appmtype = Typing.type_of env (goalevars evars) appm in
+    let evars = evd, snd evars in
     let cstrs = List.map
       (Option.map (fun r -> r.rew_car, get_opt_rew_rel r.rew_prf))
       (Array.to_list morphobjs')
