@@ -633,7 +633,7 @@ module New = struct
     (Proofview.Goal.enter begin fun gl ->
     let indclause = mk_clenv_from gl (c, t) in
     (* applying elimination_scheme just a little modified *)
-    let elimclause = mk_clenv_from gl (elim,Tacmach.New.pf_unsafe_type_of gl elim)  in
+    let elimclause = mk_clenv_from gl (elim,Tacmach.New.pf_get_type_of gl elim)  in
     let indmv =
       match EConstr.kind elimclause.evd (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
