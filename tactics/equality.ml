@@ -1311,7 +1311,7 @@ let make_iterated_tuple env sigma dflt (z,zty) =
     sigma, (tuple,tuplety,dfltval)
 
 let rec build_injrec env sigma dflt c = function
-  | [] -> make_iterated_tuple env sigma dflt (c,unsafe_type_of env sigma c)
+  | [] -> make_iterated_tuple env sigma dflt (c,get_type_of env sigma c)
   | ((sp,cnum),argnum)::l ->
     try
       let (cnum_nlams,cnum_env,kont) = descend_then env sigma c cnum in
