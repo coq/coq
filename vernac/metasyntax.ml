@@ -126,7 +126,7 @@ let parse_format ({CAst.loc;v=str} : lstring) =
   let rec parse_non_format i =
     let n = nonspaces false 0 i in
     push_token (make_loc i (i+n-1)) (UnpTerminal (String.sub str i n)) (parse_token 1 (i+n))
-  and parse_quoted n i =
+  and parse_quoted n k i =
     if i < len then match str.[i] with
       (* Parse " // " *)
       | '/' when i+1 < len && str.[i+1] == '/' ->
@@ -140,7 +140,7 @@ let parse_format ({CAst.loc;v=str} : lstring) =
             (parse_token 1 (close_quotation i (i+p+1)))
       | c ->
       (* The spaces are real spaces *)
-      push_white i n (match c with
+      push_white (i-n-1-k) n (match c with
       | '[' ->
           if i+1 < len then match str.[i+1] with
             (* Parse " [h .. ",  *)
@@ -177,7 +177,7 @@ let parse_format ({CAst.loc;v=str} : lstring) =
           push_white (i-n) (n-k) (push_token (make_loc i (i+1)) (UnpTerminal "'") (parse_token 1 (i+1)))
       (* Parse the beginning of a quoted expression *)
       |	'\'' ->
-          parse_quoted (n-k) (i+1)
+          parse_quoted (n-k) k (i+1)
       (* Otherwise *)
       | _ ->
           push_white (i-n) (n-k) (parse_non_format i)
@@ -477,6 +477,9 @@ let warn_format_break =
          (fun () ->
           strbrk "Discarding format implicitly indicated by multiple spaces in notation because an explicit format modifier is given.")
 
+let has_ldots l =
+  List.exists (function (_,UnpTerminal s) -> String.equal s (Id.to_string Notation_ops.ldots_var) | _ -> false) l
+
 let rec split_format_at_ldots hd = function
   | (loc,UnpTerminal s) :: fmt when String.equal s (Id.to_string Notation_ops.ldots_var) -> loc, List.rev hd, fmt
   | u :: fmt ->
@@ -504,11 +507,32 @@ let find_prod_list_loc sfmt fmt =
     (* A separator; we highlight the separating sequence *)
     Loc.merge_opt (fst (List.hd sfmt)) (fst (List.last sfmt))
 
+let is_blank s =
+  let n = String.length s in
+  let rec aux i s = i >= n || s.[i] = ' ' && aux (i+1) s in
+  aux 0 s
+
+let is_formatting = function
+  | (_,UnpCut _) -> true
+  | (_,UnpTerminal s) -> is_blank s
+  | _ -> false
+
+let rec is_var_in_recursive_format = function
+  | (_,UnpTerminal s) when not (is_blank s) -> true
+  | (loc,UnpBox (b,l)) ->
+    (match List.filter (fun a -> not (is_formatting a)) l with
+    | [a] -> is_var_in_recursive_format a
+    | _ -> error_not_same ?loc ())
+  | _ -> false
+
+let rec check_eq_var_upto_name = function
+  | (_,UnpTerminal s1), (_,UnpTerminal s2) when not (is_blank s1 && is_blank s2) || s1 = s2 -> ()
+  | (_,UnpBox (b1,l1)), (_,UnpBox (b2,l2)) when b1 = b2 -> List.iter check_eq_var_upto_name (List.combine l1 l2)
+  | (_,UnpCut b1), (_,UnpCut b2) when b1 = b2 -> ()
+  | _, (loc,_) -> error_not_same ?loc ()
+
 let skip_var_in_recursive_format = function
-  | (_,UnpTerminal s) :: sl (* skip first var *) when not (List.for_all (fun c -> c = " ") (String.explode s)) ->
-      (* To do, though not so important: check that the names match
-         the names in the notation *)
-      sl
+  | a :: sl when is_var_in_recursive_format a -> a, sl
   | (loc,_) :: _ -> error_not_same ?loc ()
   | [] -> assert false
 
@@ -516,15 +540,20 @@ let read_recursive_format sl fmt =
   (* Turn [[UnpTerminal s :: some-list @ UnpTerminal ".." :: same-some-list @ UnpTerminal s' :: rest] *)
   (* into [(some-list,rest)] *)
   let get_head fmt =
-    let sl = skip_var_in_recursive_format fmt in
-    try split_format_at_ldots [] sl with Exit -> error_not_same ?loc:(fst (List.last (if sl = [] then fmt else sl))) () in
+    let var,sl = skip_var_in_recursive_format fmt in
+    try var, split_format_at_ldots [] sl
+    with Exit -> error_not_same ?loc:(fst (List.last (if sl = [] then fmt else sl))) () in
   let rec get_tail = function
     | (loc,a) :: sepfmt, (_,b) :: fmt when (=) a b -> get_tail (sepfmt, fmt) (* FIXME *)
     | [], tail -> skip_var_in_recursive_format tail
     | (loc,_) :: _, ([] | (_,UnpTerminal _) :: _)-> error_not_same ?loc ()
     | _, (loc,_)::_ -> error_not_same ?loc () in
-  let loc, slfmt, fmt = get_head fmt in
-  slfmt, get_tail (slfmt, fmt)
+  let var1, (loc, slfmt, fmt) = get_head fmt in
+  let var2, res = get_tail (slfmt, fmt) in
+  check_eq_var_upto_name (var1,var2);
+  (* To do, though not so important: check that the names match
+     the names in the notation *)
+  slfmt, res
 
 let hunks_of_format (from,(vars,typs)) symfmt =
   let rec aux = function
@@ -537,13 +566,9 @@ let hunks_of_format (from,(vars,typs)) symfmt =
   | NonTerminal s :: symbs, (_,UnpTerminal s') :: fmt when Id.equal s (Id.of_string s') ->
       let i = index_id s vars in
       let symbs, l = aux (symbs,fmt) in symbs, unparsing_metavar i from typs :: l
-  | symbs, (_,UnpBox (a,b)) :: fmt ->
-      let symbs', b' = aux (symbs,b) in
-      let symbs', l = aux (symbs',fmt) in
-      symbs', UnpBox (a,List.map (fun x -> (None,x)) b') :: l
   | symbs, (_,(UnpCut _ as u)) :: fmt ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
-  | SProdList (m,sl) :: symbs, fmt ->
+  | SProdList (m,sl) :: symbs, fmt when has_ldots fmt ->
       let i = index_id m vars in
       let typ = List.nth typs (i-1) in
       let _,prec = precedence_of_entry_type from typ in
@@ -558,6 +583,10 @@ let hunks_of_format (from,(vars,typs)) symfmt =
             UnpBinderListMetaVar (i,isopen,slfmt)
         | _ -> assert false in
       symbs, hunk :: l
+  | symbs, (_,UnpBox (a,b)) :: fmt ->
+      let symbs', b' = aux (symbs,b) in
+      let symbs', l = aux (symbs',fmt) in
+      symbs', UnpBox (a,List.map (fun x -> (None,x)) b') :: l
   | symbs, [] -> symbs, []
   | Break _ :: symbs, fmt -> warn_format_break (); aux (symbs,fmt)
   | _, fmt -> error_format ?loc:(fst (List.hd fmt)) ()
