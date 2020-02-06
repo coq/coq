@@ -1937,7 +1937,7 @@ let build_morphism_signature env sigma m =
 let default_morphism sign m =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let t = Typing.unsafe_type_of env sigma m in
+  let t = Retyping.get_type_of env sigma m in
   let evars, _, sign, cstrs =
     PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
   in
