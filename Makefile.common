@@ -43,8 +43,9 @@ COQMAKE_BOTH_TIME_FILES:=tools/make-both-time-files.py
 COQMAKE_BOTH_SINGLE_TIMING_FILES:=tools/make-both-single-timing-files.py
 VOTOUR:=bin/votour
 
+# these get installed!
 TOOLS:=$(COQDEP) $(COQMAKEFILE) $(COQTEX) $(COQWC) $(COQDOC) $(COQC)\
-	$(COQWORKMGR) $(COQPP) $(DOC_GRAM) $(VOTOUR)
+	$(COQWORKMGR) $(COQPP) $(VOTOUR)
 TOOLS_HELPERS:=tools/CoqMakefile.in $(COQMAKE_ONE_TIME_FILE) $(COQTIME_FILE_MAKER)\
 	$(COQMAKE_BOTH_TIME_FILES) $(COQMAKE_BOTH_SINGLE_TIMING_FILES)
 
@@ -55,7 +56,8 @@ OCAMLLIBDEPBYTE:=bin/ocamllibdep.byte$(EXE)
 FAKEIDE:=bin/fake_ide$(EXE)
 FAKEIDEBYTE:=bin/fake_ide.byte$(EXE)
 
-PRIVATEBINARIES:=$(FAKEIDE) $(OCAMLLIBDEP) $(COQDEPBOOT)
+# These don't get signed on OSX, and don't need to be separately listed for cleaning
+PRIVATEBINARIES:=$(FAKEIDE) $(OCAMLLIBDEP) $(COQDEPBOOT) $(DOC_GRAM)
 
 CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 CSDPCERTBYTE:=plugins/micromega/csdpcert.byte$(EXE)
