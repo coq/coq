@@ -3802,15 +3802,15 @@ let is_defined_variable env id =
   env |> lookup_named id |> is_local_def
 
 let abstract_args gl generalize_vars dep id defined f args =
-  let open Tacmach.New in
   let open Context.Rel.Declaration in
   let sigma = ref (Tacmach.New.project gl) in
   let env = Tacmach.New.pf_env gl in
   let concl = Tacmach.New.pf_concl gl in
+  let hyps = Proofview.Goal.hyps gl in
   let dep = dep || local_occur_var !sigma id concl in
   let avoid = ref Id.Set.empty in
   let get_id name =
-    let id = new_fresh_id !avoid (match name with Name n -> n | Anonymous -> Id.of_string "gen_x") gl in
+    let id = fresh_id_in_env !avoid (match name with Name n -> n | Anonymous -> Id.of_string "gen_x") env in
       avoid := Id.Set.add id !avoid; id
   in
     (* Build application generalized w.r.t. the argument plus the necessary eqs.
@@ -3819,14 +3819,14 @@ let abstract_args gl generalize_vars dep id defined f args =
 
        eqs are not lifted w.r.t. each other yet. (* will be needed when going to dependent indexes *)
     *)
-  let aux (prod, ctx, ctxenv, c, args, eqs, refls, nongenvars, vars, env) arg =
+  let aux (prod, ctx, ctxenv, c, args, eqs, refls, nongenvars, vars) arg =
     let name, ty_relevance, ty, arity =
       let rel, c = Reductionops.splay_prod_n env !sigma 1 prod in
       let decl = List.hd rel in
       RelDecl.get_name decl, RelDecl.get_relevance decl, RelDecl.get_type decl, c
     in
-    let argty = Tacmach.New.pf_unsafe_type_of gl arg in
-    let sigma', ty = Evarsolve.refresh_universes (Some true) env !sigma ty in
+    let sigma', argty = Typing.type_of env !sigma arg in
+    let sigma', ty = Evarsolve.refresh_universes (Some true) env sigma' ty in
     let () = sigma := sigma' in
     let lenctx = List.length ctx in
     let liftargty = lift lenctx argty in
@@ -3834,7 +3834,7 @@ let abstract_args gl generalize_vars dep id defined f args =
       match EConstr.kind !sigma arg with
       | Var id when not (is_defined_variable env id) && leq && not (Id.Set.mem id nongenvars) ->
           (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls,
-          Id.Set.add id nongenvars, Id.Set.remove id vars, env)
+          Id.Set.add id nongenvars, Id.Set.remove id vars)
       | _ ->
           let name = get_id name in
           let decl = LocalAssum (make_annot (Name name) ty_relevance, ty) in
@@ -3856,7 +3856,7 @@ let abstract_args gl generalize_vars dep id defined f args =
           let refls = refl :: refls in
           let argvars = ids_of_constr !sigma vars arg in
             (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls,
-            nongenvars, Id.Set.union argvars vars, env)
+            nongenvars, Id.Set.union argvars vars)
   in
   let f', args' = decompose_indapp !sigma f args in
   let dogen, f', args' =
@@ -3870,15 +3870,16 @@ let abstract_args gl generalize_vars dep id defined f args =
               true, mkApp (f', before), after
   in
     if dogen then
-      let tyf' = Tacmach.New.pf_unsafe_type_of gl f' in
-      let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars, env =
-        Array.fold_left aux (tyf',[],env,f',[],[],[],Id.Set.empty,Id.Set.empty,env) args'
+      let sigma', tyf' = Typing.type_of env !sigma f' in
+      sigma := sigma';
+      let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars =
+        Array.fold_left aux (tyf',[],env,f',[],[],[],Id.Set.empty,Id.Set.empty) args'
       in
       let args, refls = List.rev args, List.rev refls in
       let vars =
         if generalize_vars then
           let nogen = Id.Set.add id nogen in
-            hyps_of_vars (pf_env gl) (project gl) (Proofview.Goal.hyps gl) nogen vars
+            hyps_of_vars env !sigma hyps nogen vars
         else []
       in
       let body, c' =
@@ -3886,7 +3887,7 @@ let abstract_args gl generalize_vars dep id defined f args =
         else None, c'
       in
       let typ = Tacmach.New.pf_get_hyp_typ id gl in
-      let tac = make_abstract_generalize (pf_env gl) id typ concl dep ctx body c' eqs args refls in
+      let tac = make_abstract_generalize env id typ concl dep ctx body c' eqs args refls in
       let tac = Proofview.Unsafe.tclEVARS !sigma <*> tac in
         Some (tac, dep, succ (List.length ctx), vars)
     else None
