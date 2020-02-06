@@ -3399,8 +3399,9 @@ let atomize_param_of_ind_then (indref,nparams,_) hyp0 tac =
             let id = match EConstr.kind sigma c with
             | Var id -> id
             | _ ->
-            let type_of = Tacmach.New.pf_unsafe_type_of gl in
-            id_of_name_using_hdchar env sigma (type_of c) Anonymous in
+              let type_of = Tacmach.New.pf_get_type_of gl in
+              id_of_name_using_hdchar env sigma (type_of c) Anonymous
+            in
             let x = fresh_id_in_env avoid id env in
             Tacticals.New.tclTHEN
               (letin_tac None (Name x) c None allHypsAndConcl)
