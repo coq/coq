@@ -1310,30 +1310,23 @@ let cut c =
     let env = Proofview.Goal.env gl in
     let sigma = Tacmach.New.project gl in
     let concl = Proofview.Goal.concl gl in
-    let relevance =
-      try
-        (* Backward compat: ensure that [c] is well-typed. Plus we
-           need to know the relevance *)
-        let typ = Typing.unsafe_type_of env sigma c in
-        let typ = whd_all env sigma typ in
-        match EConstr.kind sigma typ with
-        | Sort s -> Some (Sorts.relevance_of_sort (ESorts.kind sigma s))
-        | _ -> None
-      with e when Pretype_errors.precatchable_exception e -> None
-    in
-    match relevance with
-    | Some r ->
+    (* Backward compat: ensure that [c] is well-typed. Plus we need to
+       know the relevance *)
+    match Typing.sort_of env sigma c with
+    | exception e when Pretype_errors.precatchable_exception e ->
+      Tacticals.New.tclZEROMSG (str "Not a proposition or a type.")
+    | sigma, s ->
+      let r = Sorts.relevance_of_sort s in
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_set_of_hyps gl) in
       (* Backward compat: normalize [c]. *)
       let c = if normalize_cut then local_strong whd_betaiota sigma c else c in
-      Refine.refine ~typecheck:false begin fun h ->
-        let (h, f) = Evarutil.new_evar ~principal:true env h (mkArrow c r (Vars.lift 1 concl)) in
-        let (h, x) = Evarutil.new_evar env h c in
-        let f = mkLetIn (make_annot (Name id) r, x, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
-        (h, f)
-      end
-    | None ->
-      Tacticals.New.tclZEROMSG (str "Not a proposition or a type.")
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+        (Refine.refine ~typecheck:false begin fun h ->
+            let (h, f) = Evarutil.new_evar ~principal:true env h (mkArrow c r (Vars.lift 1 concl)) in
+            let (h, x) = Evarutil.new_evar env h c in
+            let f = mkLetIn (make_annot (Name id) r, x, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
+            (h, f)
+          end)
   end
 
 let error_uninstantiated_metas t clenv =
