@@ -4231,8 +4231,8 @@ let guess_elim isrec dep s hyp0 gl =
         let ind = EConstr.of_constr ind in
         (sigma, ind)
   in
-  let elimt = Typing.unsafe_type_of env sigma elimc in
-    sigma, ((elimc, NoBindings), elimt), mkIndU (mind, u)
+  let sigma, elimt = Typing.type_of env sigma elimc in
+  sigma, ((elimc, NoBindings), elimt), mkIndU (mind, u)
 
 let given_elim hyp0 (elimc,lbind as e) gl =
   let sigma = Tacmach.New.project gl in
