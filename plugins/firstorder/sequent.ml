@@ -204,28 +204,28 @@ let extend_with_ref_list env sigma l seq =
 open Hints
 
 let extend_with_auto_hints env sigma l seq =
-  let seqref=ref seq in
-  let f p_a_t =
+  let f (seq,sigma) p_a_t =
     match repr_hint p_a_t.code with
-        Res_pf (c,_) | Give_exact (c,_)
-      | Res_pf_THEN_trivial_fail (c,_) ->
-          let (c, _, _) = c in
-          (try
-             let (gr, _) = Termops.global_of_constr sigma c in
-             let typ=(Typing.unsafe_type_of env sigma c) in
-               seqref:=add_formula env sigma Hint gr typ !seqref
-           with Not_found->())
-      | _-> () in
-  let g _ _ l = List.iter f l in
-  let h dbname=
-    let hdb=
+    | Res_pf (c,_) | Give_exact (c,_)
+    | Res_pf_THEN_trivial_fail (c,_) ->
+      let (c, _, _) = c in
+      (try
+         let (gr, _) = Termops.global_of_constr sigma c in
+         let sigma, typ = Typing.type_of env sigma c in
+         add_formula env sigma Hint gr typ seq, sigma
+       with Not_found -> seq, sigma)
+    | _ -> seq, sigma
+  in
+  let h acc dbname =
+    let hdb =
       try
         searchtable_map dbname
       with Not_found->
-        user_err Pp.(str ("Firstorder: "^dbname^" : No such Hint database")) in
-      Hint_db.iter g hdb in
-    List.iter h l;
-    !seqref, sigma (*FIXME: forgetting about universes*)
+        user_err Pp.(str ("Firstorder: "^dbname^" : No such Hint database"))
+    in
+    Hint_db.fold (fun _ _ l acc -> List.fold_left f acc l) hdb acc
+  in
+  List.fold_left h (seq,sigma) l
 
 let print_cmap map=
   let print_entry c l s=

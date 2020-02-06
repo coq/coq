@@ -160,6 +160,8 @@ module Hint_db :
     val iter : (GlobRef.t option ->
                 hint_mode array list -> full_hint list -> unit) -> t -> unit
 
+    val fold : (GlobRef.t option -> hint_mode array list -> full_hint list -> 'a -> 'a) -> t -> 'a -> 'a
+
     val use_dn : t -> bool
     val transparent_state : t -> TransparentState.t
     val set_transparent_state : t -> TransparentState.t -> t
