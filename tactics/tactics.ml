@@ -4866,7 +4866,8 @@ let prove_symmetry hdcncl eq_kind =
         Tacticals.New.onLastHyp simplest_case;
         one_constructor 1 NoBindings ])
 
-let match_with_equation sigma c =
+let match_with_equation c =
+  Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.tclENV >>= fun env ->
   try
     let res = match_with_equation env sigma c in
@@ -4879,9 +4880,8 @@ let symmetry_red allowred =
   (* PL: usual symmetry don't perform any reduction when searching
      for an equality, but we may need to do some when called back from
      inside setoid_reflexivity (see Optimize cases in setoid_replace.ml). *)
-  let sigma = Tacmach.New.project gl in
   let concl = maybe_betadeltaiota_concl allowred gl in
-  match_with_equation sigma concl >>= fun with_eqn ->
+  match_with_equation concl >>= fun with_eqn ->
   match with_eqn with
   | Some eq_data,_,_ ->
       Tacticals.New.tclTHEN
@@ -4903,25 +4903,25 @@ let (forward_setoid_symmetry_in, setoid_symmetry_in) = Hook.make ()
 
 let symmetry_in id =
   Proofview.Goal.enter begin fun gl ->
-  let sigma = Tacmach.New.project gl in
-  let ctype = Tacmach.New.pf_unsafe_type_of gl (mkVar id) in
-  let sign,t = decompose_prod_assum sigma ctype in
-  Proofview.tclORELSE
-    begin
-      match_with_equation sigma t >>= fun (_,hdcncl,eq) ->
-        let symccl =
-          match eq with
-          | MonomorphicLeibnizEq (c1,c2) -> mkApp (hdcncl, [| c2; c1 |])
-          | PolymorphicLeibnizEq (typ,c1,c2) -> mkApp (hdcncl, [| typ; c2; c1 |])
-          | HeterogenousEq (t1,c1,t2,c2) -> mkApp (hdcncl, [| t2; c2; t1; c1 |]) in
-        Tacticals.New.tclTHENS (cut (EConstr.it_mkProd_or_LetIn symccl sign))
-          [ intro_replacing id;
-            Tacticals.New.tclTHENLIST [ intros; symmetry; apply (mkVar id); assumption ] ]
-    end
-    begin function (e, info) -> match e with
-      | NoEquationFound -> Hook.get forward_setoid_symmetry_in id
-      | e -> Proofview.tclZERO ~info e
-    end
+    let sigma, ctype = Tacmach.New.pf_type_of gl (mkVar id) in
+    let sign,t = decompose_prod_assum sigma ctype in
+    tclEVARSTHEN sigma
+      (Proofview.tclORELSE
+         begin
+           match_with_equation t >>= fun (_,hdcncl,eq) ->
+           let symccl =
+             match eq with
+             | MonomorphicLeibnizEq (c1,c2) -> mkApp (hdcncl, [| c2; c1 |])
+             | PolymorphicLeibnizEq (typ,c1,c2) -> mkApp (hdcncl, [| typ; c2; c1 |])
+             | HeterogenousEq (t1,c1,t2,c2) -> mkApp (hdcncl, [| t2; c2; t1; c1 |]) in
+           Tacticals.New.tclTHENS (cut (EConstr.it_mkProd_or_LetIn symccl sign))
+             [ intro_replacing id;
+               Tacticals.New.tclTHENLIST [ intros; symmetry; apply (mkVar id); assumption ] ]
+         end
+         begin function (e, info) -> match e with
+           | NoEquationFound -> Hook.get forward_setoid_symmetry_in id
+           | e -> Proofview.tclZERO ~info e
+         end)
   end
 
 let intros_symmetry =
@@ -4974,9 +4974,8 @@ let transitivity_red allowred t =
   (* PL: usual transitivity don't perform any reduction when searching
      for an equality, but we may need to do some when called back from
      inside setoid_reflexivity (see Optimize cases in setoid_replace.ml). *)
-  let sigma = Tacmach.New.project gl in
   let concl = maybe_betadeltaiota_concl allowred gl in
-  match_with_equation sigma concl >>= fun with_eqn ->
+  match_with_equation concl >>= fun with_eqn ->
   match with_eqn with
   | Some eq_data,_,_ ->
       Tacticals.New.tclTHEN
