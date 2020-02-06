@@ -4249,26 +4249,25 @@ type eliminator_source =
   | ElimOver of bool * Id.t
 
 let find_induction_type isrec elim hyp0 gl =
-  let sigma = Tacmach.New.project gl in
-  let scheme,elim =
+  let sigma, scheme,elim =
     match elim with
     | None ->
        let sort = Tacticals.New.elimination_sort_of_goal gl in
-       let _, (elimc,elimt),_ = guess_elim isrec false sort hyp0 gl in
+       let sigma, (elimc,elimt),_ = guess_elim isrec false sort hyp0 gl in
        let scheme = compute_elim_sig sigma ~elimc elimt in
        (* We drop the scheme waiting to know if it is dependent *)
-       scheme, ElimOver (isrec,hyp0)
+       sigma, scheme, ElimOver (isrec,hyp0)
     | Some e ->
-        let evd, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
+        let sigma, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
         let scheme = compute_elim_sig sigma ~elimc elimt in
         if Option.is_empty scheme.indarg then error "Cannot find induction type";
-        let indsign = compute_scheme_signature evd scheme hyp0 ind_guess in
+        let indsign = compute_scheme_signature sigma scheme hyp0 ind_guess in
         let elim = ({ elimindex = Some(-1); elimbody = elimc },elimt) in
-        scheme, ElimUsing (elim,indsign)
+        sigma, scheme, ElimUsing (elim,indsign)
   in
   match scheme.indref with
   | None -> error_ind_scheme ""
-  | Some ref -> ref, scheme.nparams, elim
+  | Some ref -> sigma, (ref, scheme.nparams, elim)
 
 let get_elim_signature elim hyp0 gl =
   compute_elim_signature (given_elim hyp0 elim gl) hyp0
@@ -4389,10 +4388,11 @@ let apply_induction_in_context with_evars hyp0 inhyps elim indvars names induct_
 
 let induction_with_atomization_of_ind_arg isrec with_evars elim names hyp0 inhyps =
   Proofview.Goal.enter begin fun gl ->
-  let elim_info = find_induction_type isrec elim hyp0 gl in
-  atomize_param_of_ind_then elim_info hyp0 (fun indvars ->
-    apply_induction_in_context with_evars (Some hyp0) inhyps (pi3 elim_info) indvars names
-      (fun elim -> induction_tac with_evars [] [hyp0] elim))
+  let sigma, elim_info = find_induction_type isrec elim hyp0 gl in
+  tclEVARSTHEN sigma
+    (atomize_param_of_ind_then elim_info hyp0 (fun indvars ->
+         apply_induction_in_context with_evars (Some hyp0) inhyps (pi3 elim_info) indvars names
+           (fun elim -> induction_tac with_evars [] [hyp0] elim)))
   end
 
 let msg_not_right_number_induction_arguments scheme =
