@@ -1713,7 +1713,6 @@ let onClearedName2 id tac =
 
 let destructure_hyps =
   Proofview.Goal.enter begin fun gl ->
-  let type_of = Tacmach.New.pf_unsafe_type_of gl in
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
   let decidability = decidability env sigma in
@@ -1759,7 +1758,7 @@ let destructure_hyps =
           | Kimp(t1,t2) ->
               (* t1 and t2 might be in Type rather than Prop.
                  For t1, the decidability check will ensure being Prop. *)
-              if Termops.is_Prop sigma (type_of t2)
+              if Termops.is_Prop sigma (Retyping.get_type_of env sigma t2)
               then
                 let d1 = decidability t1 in
                 tclTHENLIST [
