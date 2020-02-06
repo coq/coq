@@ -741,7 +741,7 @@ module New = struct
 
   let elimination_then tac c =
     Proofview.Goal.enter begin fun gl ->
-    let (ind,t) = pf_reduce_to_quantified_ind gl (pf_unsafe_type_of gl c) in
+    let (ind,t) = pf_reduce_to_quantified_ind gl (pf_get_type_of gl c) in
     let isrec,mkelim =
       match (Global.lookup_mind (fst (fst ind))).mind_record with
       | NotRecord -> true,gl_make_elim
