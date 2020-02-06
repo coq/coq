@@ -1926,18 +1926,20 @@ let apply_in_delayed_once ?(respect_opaque = false) with_delta
 
 let cut_and_apply c =
   Proofview.Goal.enter begin fun gl ->
-    let sigma = Tacmach.New.project gl in
-    match EConstr.kind sigma (Tacmach.New.pf_hnf_constr gl (Tacmach.New.pf_unsafe_type_of gl c)) with
-      | Prod (_,c1,c2) when Vars.noccurn sigma 1 c2 ->
-        let concl = Proofview.Goal.concl gl in
-        let env = Tacmach.New.pf_env gl in
-        Refine.refine ~typecheck:false begin fun sigma ->
-          let typ = mkProd (make_annot Anonymous Sorts.Relevant, c2, concl) in
-          let (sigma, f) = Evarutil.new_evar env sigma typ in
-          let (sigma, x) = Evarutil.new_evar env sigma c1 in
-          (sigma, mkApp (f, [|mkApp (c, [|x|])|]))
-        end
-      | _ -> error "lapply needs a non-dependent product."
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let concl = Proofview.Goal.concl gl in
+    let sigma, t = Typing.type_of env sigma c in
+    match EConstr.kind sigma (hnf_constr env sigma t) with
+    | Prod (_,c1,c2) when Vars.noccurn sigma 1 c2 ->
+      Proofview.tclTHEN (Proofview.Unsafe.tclEVARS sigma)
+        (Refine.refine ~typecheck:false begin fun sigma ->
+            let typ = mkProd (make_annot Anonymous Sorts.Relevant, c2, concl) in
+            let (sigma, f) = Evarutil.new_evar env sigma typ in
+            let (sigma, x) = Evarutil.new_evar env sigma c1 in
+            (sigma, mkApp (f, [|mkApp (c, [|x|])|]))
+          end)
+    | _ -> error "lapply needs a non-dependent product."
   end
 
 (********************************************************************)
