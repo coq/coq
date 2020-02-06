@@ -2285,8 +2285,8 @@ let intro_decomp_eq_function = ref (fun _ -> failwith "Not implemented")
 
 let declare_intro_decomp_eq f = intro_decomp_eq_function := f
 
-let my_find_eq_data_decompose gl t =
-  try Some (find_eq_data_decompose gl t)
+let my_find_eq_data_decompose env sigma t =
+  try Some (find_eq_data_decompose env sigma t)
   with e when is_anomaly e
     (* Hack in case equality is not yet defined... one day, maybe,
        known equalities will be dynamically registered *)
@@ -2296,13 +2296,15 @@ let my_find_eq_data_decompose gl t =
 let intro_decomp_eq ?loc l thin tac id =
   Proofview.Goal.enter begin fun gl ->
   let c = mkVar id in
-  let t = Tacmach.New.pf_unsafe_type_of gl c in
-  let _,t = Tacmach.New.pf_reduce_to_quantified_ind gl t in
-  match my_find_eq_data_decompose gl t with
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let sigma, t = Typing.type_of env sigma c in
+  let _,t = reduce_to_quantified_ind env sigma t in
+  match my_find_eq_data_decompose env sigma t with
   | Some (eq,u,eq_args) ->
     !intro_decomp_eq_function
-    (fun n -> tac ((CAst.make id)::thin) (Some (true,n)) l)
-    (eq,t,eq_args) (c, t)
+      (fun n -> tac ((CAst.make id)::thin) (Some (true,n)) l)
+      (eq,t,eq_args) (c, t)
   | None ->
     Tacticals.New.tclZEROMSG (str "Not a primitive equality here.")
   end

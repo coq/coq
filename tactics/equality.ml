@@ -1069,7 +1069,8 @@ let onEquality with_evars tac (c,lbindc) =
   let eq_clause = pf_apply make_clenv_binding gl (c,t') lbindc in
   let eq_clause' = Clenvtac.clenv_pose_dependent_evars ~with_evars eq_clause in
   let eqn = clenv_type eq_clause' in
-  let (eq,u,eq_args) = find_this_eq_data_decompose gl eqn in
+  (* FIXME evar leak *)
+  let (eq,u,eq_args) = pf_apply find_this_eq_data_decompose gl eqn in
   tclTHEN
     (Proofview.Unsafe.tclEVARS eq_clause'.evd)
     (tac (eq,eqn,eq_args) eq_clause')
@@ -1341,7 +1342,7 @@ let inject_if_homogenous_dependent_pair ty =
   Proofview.Goal.enter begin fun gl ->
   try
     let sigma = Tacmach.New.project gl in
-    let eq,u,(t,t1,t2) = find_this_eq_data_decompose gl ty in
+    let eq,u,(t,t1,t2) = pf_apply find_this_eq_data_decompose gl ty in
     (* fetch the informations of the  pair *)
     let sigTconstr   = Coqlib.(lib_ref "core.sigT.type") in
     let existTconstr = Coqlib.lib_ref    "core.sigT.intro" in
@@ -1603,7 +1604,7 @@ let cutSubstInConcl l2r eqn =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl eqn in
+  let (lbeq,u,(t,e1,e2)) = pf_apply find_eq_data_decompose gl eqn in
   let typ = pf_concl gl in
   let (e1,e2) = if l2r then (e1,e2) else (e2,e1) in
   let (sigma, (typ, expected)) = subst_tuple_term env sigma e1 e2 typ in
@@ -1620,7 +1621,7 @@ let cutSubstInHyp l2r eqn id =
   Proofview.Goal.enter begin fun gl ->
   let env = Proofview.Goal.env gl in
   let sigma = Proofview.Goal.sigma gl in
-  let (lbeq,u,(t,e1,e2)) = find_eq_data_decompose gl eqn in
+  let (lbeq,u,(t,e1,e2)) = pf_apply find_eq_data_decompose gl eqn in
   let typ = pf_get_hyp_typ id gl in
   let (e1,e2) = if l2r then (e1,e2) else (e2,e1) in
   let (sigma, (typ, expected)) = subst_tuple_term env sigma e1 e2 typ in
@@ -1715,7 +1716,7 @@ let is_eq_x gl x d =
     | _ -> false
     in
     let c = pf_nf_evar gl (NamedDecl.get_type d) in
-    let (_,lhs,rhs) = pi3 (find_eq_data_decompose gl c) in
+    let (_,lhs,rhs) = pi3 (pf_apply find_eq_data_decompose gl c) in
     if (is_var x lhs) && not (local_occur_var (project gl) x rhs) then raise (FoundHyp (id,rhs,true));
     if (is_var x rhs) && not (local_occur_var (project gl) x lhs) then raise (FoundHyp (id,lhs,false))
   with Constr_matching.PatternMatchingFailure ->
@@ -1812,7 +1813,7 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
   let find_equations gl =
     let env = Proofview.Goal.env gl in
     let sigma = project gl in
-    let find_eq_data_decompose = find_eq_data_decompose gl in
+    let find_eq_data_decompose = pf_apply find_eq_data_decompose gl in
     let select_equation_name decl =
       try
         let lbeq,u,(_,x,y) = find_eq_data_decompose (NamedDecl.get_type decl) in
@@ -1837,7 +1838,7 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
     Proofview.Goal.enter begin fun gl ->
     let sigma = project gl in
     let env = Proofview.Goal.env gl in
-    let find_eq_data_decompose = find_eq_data_decompose gl in
+    let find_eq_data_decompose = pf_apply find_eq_data_decompose gl in
     let c = pf_get_hyp hyp gl |> NamedDecl.get_type in
     let _,_,(_,x,y) = find_eq_data_decompose c in
     (* J.F.: added to prevent failure on goal containing x=x as an hyp *)
@@ -1863,7 +1864,7 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
    let-ins *)
   Proofview.Goal.enter begin fun gl ->
   let sigma = project gl in
-  let find_eq_data_decompose = find_eq_data_decompose gl in
+  let find_eq_data_decompose = pf_apply find_eq_data_decompose gl in
   let test (_,c) =
     try
       let lbeq,u,(_,x,y) = find_eq_data_decompose c in
@@ -1887,19 +1888,19 @@ let subst_all ?(flags=default_subst_tactic_flags) () =
 
 let cond_eq_term_left c t gl =
   try
-    let (_,x,_) = pi3 (find_eq_data_decompose gl t) in
+    let (_,x,_) = pi3 (pf_apply find_eq_data_decompose gl t) in
     if pf_conv_x gl c x then true else failwith "not convertible"
   with Constr_matching.PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term_right c t gl =
   try
-    let (_,_,x) = pi3 (find_eq_data_decompose gl t) in
+    let (_,_,x) = pi3 (pf_apply find_eq_data_decompose gl t) in
     if pf_conv_x gl c x then false else failwith "not convertible"
   with Constr_matching.PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term c t gl =
   try
-    let (_,x,y) = pi3 (find_eq_data_decompose gl t) in
+    let (_,x,y) = pi3 (pf_apply find_eq_data_decompose gl t) in
     if pf_conv_x gl c x then true
     else if pf_conv_x gl c y then false
     else failwith "not convertible"
