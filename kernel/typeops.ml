@@ -116,7 +116,7 @@ let type_of_variable env id =
 (* Checks if a context of variables can be instantiated by the
    variables of the current env.
    Order does not have to be checked assuming that all names are distinct *)
-let check_hyps_inclusion env ?evars f c sign =
+let check_hyps_inclusion env ?evars c sign =
   let conv env a b = conv env ?evars a b in
   Context.Named.fold_outside
     (fun d1 () ->
@@ -133,7 +133,7 @@ let check_hyps_inclusion env ?evars f c sign =
         | LocalDef _, LocalAssum _ -> raise NotConvertible
         | LocalDef (_,b2,_), LocalDef (_,b1,_) -> conv env b2 b1);
       with Not_found | NotConvertible | Option.Heterogeneous ->
-        error_reference_variables env id (f c))
+        error_reference_variables env id c)
     sign
     ~init:()
 
@@ -146,14 +146,14 @@ let check_hyps_inclusion env ?evars f c sign =
 
 let type_of_constant env (kn,_u as cst) =
   let cb = lookup_constant kn env in
-  let () = check_hyps_inclusion env mkConstU cst cb.const_hyps in
+  let () = check_hyps_inclusion env (GlobRef.ConstRef kn) cb.const_hyps in
   let ty, cu = constant_type env cst in
   let () = check_constraints cu env in
     ty
 
 let type_of_constant_in env (kn,_u as cst) =
   let cb = lookup_constant kn env in
-  let () = check_hyps_inclusion env mkConstU cst cb.const_hyps in
+  let () = check_hyps_inclusion env (GlobRef.ConstRef kn) cb.const_hyps in
   constant_type_in env cst
 
 (* Type of a lambda-abstraction. *)
@@ -368,18 +368,18 @@ let check_cast env c ct k expected_type =
    the App case of execute; from this constraints, the expected
    dynamic constraints of the form u<=v are enforced *)
 
-let type_of_inductive_knowing_parameters env (ind,u as indu) args =
+let type_of_inductive_knowing_parameters env (ind,u) args =
   let (mib,_mip) as spec = lookup_mind_specif env ind in
-  check_hyps_inclusion env mkIndU indu mib.mind_hyps;
+  check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps;
   let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters
     env (spec,u) args
   in
   check_constraints cst env;
   t
 
-let type_of_inductive env (ind,u as indu) =
+let type_of_inductive env (ind,u) =
   let (mib,mip) = lookup_mind_specif env ind in
-  check_hyps_inclusion env mkIndU indu mib.mind_hyps;
+  check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps;
   let t,cst = Inductive.constrained_type_of_inductive env ((mib,mip),u) in
   check_constraints cst env;
   t
@@ -390,7 +390,7 @@ let type_of_constructor env (c,_u as cu) =
   let () =
     let ((kn,_),_) = c in
     let mib = lookup_mind kn env in
-    check_hyps_inclusion env mkConstructU cu mib.mind_hyps
+    check_hyps_inclusion env (GlobRef.ConstructRef c) mib.mind_hyps
   in
   let specif = lookup_mind_specif env (inductive_of_constructor c) in
   let t,cst = constrained_type_of_constructor cu specif in
