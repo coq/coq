@@ -19,6 +19,7 @@ open Coqdep_common
 
 let split_period = Str.split (Str.regexp (Str.quote "."))
 let add_q_include path l = add_rec_dir_no_import add_known path (split_period l)
+let add_r_include path l = add_rec_dir_import add_known path (split_period l)
 
 let rec parse = function
   | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
@@ -26,16 +27,14 @@ let rec parse = function
   | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse ll
   | "-dyndep" :: "both" :: ll -> option_dynlink := Both; parse ll
   | "-dyndep" :: "var" :: ll -> option_dynlink := Variable; parse ll
-  | "-c" :: ll -> option_c := true; parse ll
   | "-boot" :: ll -> parse ll (* We're already in boot mode by default *)
-  | "-mldep" :: ocamldep :: ll ->
-      option_mldep := Some ocamldep; option_c := true; parse ll
   | "-I" :: r :: ll ->
        (* To solve conflict (e.g. same filename in kernel and checker)
           we allow to state an explicit order *)
        add_caml_dir r;
        norec_dirs := StrSet.add r !norec_dirs;
        parse ll
+  | "-R" :: r :: ln :: ll -> add_r_include r ln; parse ll
   | "-Q" :: r :: ln :: ll -> add_q_include r ln; parse ll
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()
@@ -44,16 +43,4 @@ let _ =
   let () = option_boot := true in
   if Array.length Sys.argv < 2 then exit 1;
   parse (List.tl (Array.to_list Sys.argv));
-  if !option_c then begin
-    add_rec_dir_import add_known "." [];
-    add_rec_dir_import (fun _ -> add_caml_known) "." ["Coq"];
-  end
-  else begin
-    add_rec_dir_import add_known "theories" ["Coq"];
-    add_rec_dir_import add_known "plugins" ["Coq"];
-    add_caml_dir "tactics";
-    add_rec_dir_import (fun _ -> add_caml_known) "theories" ["Coq"];
-    add_rec_dir_import (fun _ -> add_caml_known) "plugins" ["Coq"];
-  end;
-  if !option_c then mL_dependencies ();
   coq_dependencies ()

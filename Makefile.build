@@ -865,9 +865,11 @@ endif
 
 # Dependencies of .v files
 
+PLUGININCLUDES=$(addprefix -I plugins/, $(PLUGINDIRS))
+
 $(VDFILE).d: $(D_DEPEND_BEFORE_SRC) $(VFILES) $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
 	$(SHOW)'COQDEP    VFILES'
-	$(HIDE)$(COQDEPBOOT) -vos -boot $(DYNDEP) -Q user-contrib "" $(USERCONTRIBINCLUDES) $(VFILES) $(TOTARGET)
+	$(HIDE)$(COQDEPBOOT) -vos -boot $(DYNDEP) -R theories Coq -R plugins Coq -Q user-contrib "" $(PLUGININCLUDES) $(USERCONTRIBINCLUDES) $(VFILES) $(TOTARGET)
 
 ###########################################################################
 
