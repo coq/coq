@@ -341,8 +341,8 @@ let coerce_to_reference sigma v =
   match Value.to_constr v with
   | Some c ->
     begin
-      try fst (Termops.global_of_constr sigma c)
-      with Not_found -> raise (CannotCoerceTo "a reference")
+      try fst (EConstr.destRef sigma c)
+      with DestKO -> raise (CannotCoerceTo "a reference")
     end
   | None -> raise (CannotCoerceTo "a reference")
 

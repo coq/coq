@@ -1311,11 +1311,9 @@ let reduce_to_ref_gen allow_product env sigma ref t =
           else
             error_cannot_recognize ref
       | _ ->
-          try
-            if GlobRef.equal (fst (global_of_constr sigma c)) ref
-            then it_mkProd_or_LetIn t l
-            else raise Not_found
-          with Not_found ->
+        if isRefX sigma ref c
+        then it_mkProd_or_LetIn t l
+        else
           try
             let t' = nf_betaiota env sigma (one_step_reduce env sigma t) in
             elimrec env t' l

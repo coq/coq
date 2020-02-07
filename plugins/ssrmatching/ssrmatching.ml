@@ -34,7 +34,6 @@ open Tacinterp
 open Pretyping
 open Ppconstr
 open Printer
-open Globnames
 open Namegen
 open Evar_kinds
 open Constrexpr
@@ -464,7 +463,7 @@ let nb_cs_proj_args pc f u =
   | Sort s -> na (Sort_cs (Sorts.family s))
   | Const (c',_) when Constant.equal c' pc -> nargs_of_proj u.up_f
   | Proj (c',_) when Constant.equal (Projection.constant c') pc -> nargs_of_proj u.up_f
-  | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (global_of_constr f))
+  | Var _ | Ind _ | Construct _ | Const _ -> na (Const_cs (fst @@ destRef f))
   | _ -> -1
   with Not_found -> -1
 

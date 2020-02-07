@@ -253,7 +253,7 @@ let mkFloat f = Float f
    least one argument and the function is not itself an applicative
    term *)
 
-let kind c = c
+let kind (c:t) = c
 
 let rec kind_nocast_gen kind c =
   match kind c with
@@ -337,6 +337,19 @@ let isCase c =  match kind c with Case _ -> true | _ -> false
 let isProj c =  match kind c with Proj _ -> true | _ -> false
 let isFix c =  match kind c with Fix _ -> true | _ -> false
 let isCoFix c =  match kind c with CoFix _ -> true | _ -> false
+
+let isRef c = match kind c with
+  | Const _ | Ind _ | Construct _ | Var _ -> true
+  | _ -> false
+
+let isRefX x c =
+  let open GlobRef in
+  match x, kind c with
+  | ConstRef c, Const (c', _) -> Constant.equal c c'
+  | IndRef i, Ind (i', _) -> eq_ind i i'
+  | ConstructRef i, Construct (i', _) -> eq_constructor i i'
+  | VarRef id, Var id' -> Id.equal id id'
+  | _ -> false
 
 (* Destructs a de Bruijn index *)
 let destRel c = match kind c with

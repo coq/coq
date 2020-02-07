@@ -1066,19 +1066,9 @@ let global_of_constr sigma c =
   | Var id -> VarRef id, EConstr.EInstance.empty
   | _ -> raise Not_found
 
-let is_global sigma c t =
-  let open GlobRef in
-  match c, EConstr.kind sigma t with
-  | ConstRef c, Const (c', _) -> Constant.equal c c'
-  | IndRef i, Ind (i', _) -> eq_ind i i'
-  | ConstructRef i, Construct (i', _) -> eq_constructor i i'
-  | VarRef id, Var id' -> Id.equal id id'
-  | _ -> false
+let is_global = EConstr.isRefX
 
-let isGlobalRef sigma c =
-  match EConstr.kind sigma c with
-  | Const _ | Ind _ | Construct _ | Var _ -> true
-  | _ -> false
+let isGlobalRef = EConstr.isRef
 
 let is_template_polymorphic_ind env sigma f =
   match EConstr.kind sigma f with

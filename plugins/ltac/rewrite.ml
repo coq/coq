@@ -289,18 +289,18 @@ end) = struct
     if Int.equal n 0 then c
     else
       match EConstr.kind sigma c with
-      | App (f, [| a; b; relb |]) when Termops.is_global sigma (pointwise_relation_ref ()) f ->
+      | App (f, [| a; b; relb |]) when isRefX sigma (pointwise_relation_ref ()) f ->
         decomp_pointwise sigma (pred n) relb
-      | App (f, [| a; b; arelb |]) when Termops.is_global sigma (forall_relation_ref ()) f ->
+      | App (f, [| a; b; arelb |]) when isRefX sigma (forall_relation_ref ()) f ->
         decomp_pointwise sigma (pred n) (Reductionops.beta_applist sigma (arelb, [mkRel 1]))
       | _ -> invalid_arg "decomp_pointwise"
 
   let rec apply_pointwise sigma rel = function
     | arg :: args ->
       (match EConstr.kind sigma rel with
-      | App (f, [| a; b; relb |]) when Termops.is_global sigma (pointwise_relation_ref ()) f ->
+      | App (f, [| a; b; relb |]) when isRefX sigma (pointwise_relation_ref ()) f ->
         apply_pointwise sigma relb args
-      | App (f, [| a; b; arelb |]) when Termops.is_global sigma (forall_relation_ref ()) f ->
+      | App (f, [| a; b; arelb |]) when isRefX sigma (forall_relation_ref ()) f ->
         apply_pointwise sigma (Reductionops.beta_applist sigma (arelb, [arg])) args
       | _ -> invalid_arg "apply_pointwise")
     | [] -> rel
@@ -357,7 +357,7 @@ end) = struct
     match EConstr.kind sigma t with
     | App (c, args) when Array.length args >= 2 ->
       let head = if isApp sigma c then fst (destApp sigma c) else c in
-        if Termops.is_global sigma (coq_eq_ref ()) head then None
+        if isRefX sigma (coq_eq_ref ()) head then None
         else
           (try
            let params, args = Array.chop (Array.length args - 2) args in
@@ -1880,13 +1880,13 @@ let declare_projection n instance_id r =
       let rec aux t =
         match EConstr.kind sigma t with
         | App (f, [| a ; a' ; rel; rel' |])
-            when Termops.is_global sigma (PropGlobal.respectful_ref ()) f ->
+            when isRefX sigma (PropGlobal.respectful_ref ()) f ->
           succ (aux rel')
         | _ -> 0
       in
       let init =
         match EConstr.kind sigma typ with
-            App (f, args) when Termops.is_global sigma (PropGlobal.respectful_ref ()) f  ->
+            App (f, args) when isRefX sigma (PropGlobal.respectful_ref ()) f  ->
               mkApp (f, fst (Array.chop (Array.length args - 2) args))
           | _ -> typ
       in aux init

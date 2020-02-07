@@ -152,6 +152,7 @@ val mkNamedProd_or_LetIn : named_declaration -> types -> types
 val isRel  : Evd.evar_map -> t -> bool
 val isVar  : Evd.evar_map -> t -> bool
 val isInd  : Evd.evar_map -> t -> bool
+val isRef : Evd.evar_map -> t -> bool
 val isEvar : Evd.evar_map -> t -> bool
 val isMeta : Evd.evar_map -> t -> bool
 val isSort : Evd.evar_map -> t -> bool
@@ -175,6 +176,7 @@ val isArity : Evd.evar_map -> t -> bool
 
 val isVarId  : Evd.evar_map -> Id.t -> t -> bool
 val isRelN : Evd.evar_map -> int -> t -> bool
+val isRefX : Evd.evar_map -> GlobRef.t -> t -> bool
 
 val destRel : Evd.evar_map -> t -> int
 val destMeta : Evd.evar_map -> t -> metavariable
@@ -319,6 +321,7 @@ val fresh_global :
   Evd.evar_map -> GlobRef.t -> Evd.evar_map * t
 
 val is_global : Evd.evar_map -> GlobRef.t -> t -> bool
+[@@ocaml.deprecated "Use [EConstr.isRefX] instead."]
 
 (** {5 Extra} *)
 

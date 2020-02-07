@@ -18,7 +18,6 @@ open EConstr
 open Vars
 open CClosure
 open Environ
-open Globnames
 open Glob_term
 open Locus
 open Tacexpr
@@ -43,12 +42,12 @@ type protection = Evd.evar_map -> EConstr.t -> GlobRef.t -> (Int.t -> protect_fl
 
 let global_head_of_constr sigma c =
   let f, args = decompose_app sigma c in
-    try fst (Termops.global_of_constr sigma f)
-    with Not_found -> CErrors.anomaly (str "global_head_of_constr.")
+    try fst (EConstr.destRef sigma f)
+    with DestKO -> CErrors.anomaly (str "global_head_of_constr.")
 
 let global_of_constr_nofail c =
-  try global_of_constr c
-  with Not_found -> GlobRef.VarRef (Id.of_string "dummy")
+  try fst @@ Constr.destRef c
+  with DestKO -> GlobRef.VarRef (Id.of_string "dummy")
 
 let rec mk_clos_but f_map n t =
   let (f, args) = Constr.decompose_appvect t in
@@ -97,9 +96,9 @@ let protect_tac_in map id =
 
 let rec closed_under sigma cset t =
   try
-    let (gr, _) = Termops.global_of_constr sigma t in
+    let (gr, _) = destRef sigma t in
     GlobRef.Set_env.mem gr cset
-  with Not_found ->
+  with DestKO ->
     match EConstr.kind sigma t with
     | Cast(c,_,_) -> closed_under sigma cset c
     | App(f,l) -> closed_under sigma cset f && Array.for_all (closed_under sigma cset) l
@@ -758,22 +757,21 @@ let af_ar = my_reference"AF_AR"
 let f_r = my_reference"F_R"
 let sf_sr = my_reference"SF_SR"
 let dest_field env evd th_spec =
-  let open Termops in
   let th_typ = Retyping.get_type_of env !evd th_spec in
   match EConstr.kind !evd th_typ with
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
-        when is_global !evd (Lazy.force afield_theory) f ->
+        when isRefX !evd (Lazy.force afield_theory) f ->
         let rth = plapp evd af_ar
           [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (None,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
-        when is_global !evd (Lazy.force field_theory) f ->
+        when isRefX !evd (Lazy.force field_theory) f ->
         let rth =
           plapp evd f_r
             [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (Some false,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;div;inv;req|])
-        when is_global !evd (Lazy.force sfield_theory) f ->
+        when isRefX !evd (Lazy.force sfield_theory) f ->
         let rth = plapp evd sf_sr
           [|r;zero;one;add;mul;div;inv;req;th_spec|] in
         (Some true,r,zero,one,add,mul,None,None,div,inv,req,rth)

@@ -352,7 +352,7 @@ let dest_nf_eq env sigma t = match EConstr.kind sigma t with
 | App (r, [| t; x; y |]) ->
   let open Reductionops in
   let eq = Coqlib.lib_ref "core.eq.type" in
-  if EConstr.is_global sigma eq r then
+  if isRefX sigma eq r then
     (t, whd_all env sigma x, whd_all env sigma y)
   else user_err Pp.(str "Not an equality.")
 | _ ->

@@ -90,14 +90,13 @@ let rec decompose_term env sigma t=
        if closed0 sigma t then Symb (EConstr.to_constr ~abort_on_undefined_evars:false sigma t) else raise Not_found
 
 (* decompose equality in members and type *)
-open Termops
 
 let atom_of_constr env sigma term =
   let wh = whd_delta env sigma term in
   let kot = EConstr.kind sigma wh in
     match kot with
       App (f,args)->
-        if is_global sigma (Lazy.force _eq) f && Int.equal (Array.length args) 3
+        if isRefX sigma (Lazy.force _eq) f && Int.equal (Array.length args) 3
           then `Eq (args.(0),
                    decompose_term env sigma args.(1),
                    decompose_term env sigma args.(2))
@@ -132,7 +131,7 @@ let non_trivial = function
 let patterns_of_constr env sigma nrels term=
   let f,args=
     try destApp sigma (whd_delta env sigma term) with DestKO -> raise Not_found in
-        if is_global sigma (Lazy.force _eq) f && Int.equal (Array.length args) 3
+        if isRefX sigma (Lazy.force _eq) f && Int.equal (Array.length args) 3
         then
           let patt1,rels1 = pattern_of_constr env sigma args.(1)
           and patt2,rels2 = pattern_of_constr env sigma args.(2) in
@@ -153,7 +152,7 @@ let patterns_of_constr env sigma nrels term=
 let rec quantified_atom_of_constr env sigma nrels term =
   match EConstr.kind sigma (whd_delta env sigma term) with
       Prod (id,atom,ff) ->
-        if is_global sigma (Lazy.force _False) ff then
+        if isRefX sigma (Lazy.force _False) ff then
           let patts=patterns_of_constr env sigma nrels atom in
               `Nrule patts
         else
@@ -165,7 +164,7 @@ let rec quantified_atom_of_constr env sigma nrels term =
 let litteral_of_constr env sigma term=
   match EConstr.kind sigma (whd_delta env sigma term) with
     | Prod (id,atom,ff) ->
-        if is_global sigma (Lazy.force _False) ff then
+        if isRefX sigma (Lazy.force _False) ff then
           match (atom_of_constr env sigma atom) with
               `Eq(t,a,b) -> `Neq(t,a,b)
             | `Other(p) -> `Nother(p)
@@ -517,7 +516,7 @@ let f_equal =
     in
     Proofview.tclORELSE
       begin match EConstr.kind sigma concl with
-      | App (r,[|_;t;t'|]) when is_global sigma (Lazy.force _eq) r ->
+      | App (r,[|_;t;t'|]) when isRefX sigma (Lazy.force _eq) r ->
           begin match EConstr.kind sigma t, EConstr.kind sigma t' with
           | App (f,v), App (f',v') when Int.equal (Array.length v) (Array.length v') ->
               let rec cuts i =

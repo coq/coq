@@ -107,9 +107,9 @@ let class_info env sigma c =
     not_a_class env sigma (EConstr.of_constr (printable_constr_of_global c))
 
 let global_class_of_constr env sigma c =
-  try let gr, u = Termops.global_of_constr sigma c in
+  try let gr, u = EConstr.destRef sigma c in
     GlobRef.Map.find gr !classes, u
-  with Not_found -> not_a_class env sigma c
+  with DestKO | Not_found -> not_a_class env sigma c
 
 let dest_class_app env sigma c =
   let cl, args = EConstr.decompose_app sigma c in
@@ -125,9 +125,9 @@ let class_of_constr env sigma c =
   with e when CErrors.noncritical e -> None
 
 let is_class_constr sigma c =
-  try let gr, u = Termops.global_of_constr sigma c in
+  try let gr, u = EConstr.destRef sigma c in
     GlobRef.Map.mem gr !classes
-  with Not_found -> false
+  with DestKO | Not_found -> false
 
 let rec is_class_type evd c =
   let c, _ = Termops.decompose_app_vect evd c in
@@ -140,9 +140,9 @@ let is_class_evar evd evi =
   is_class_type evd evi.Evd.evar_concl
 
 let is_class_constr sigma c =
-  try let gr, u = Termops.global_of_constr sigma c in
+  try let gr, u = EConstr.destRef sigma c in
     GlobRef.Map.mem gr !classes
-  with Not_found -> false
+  with DestKO | Not_found -> false
 
 let rec is_maybe_class_type evd c =
   let c, _ = Termops.decompose_app_vect evd c in
