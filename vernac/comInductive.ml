@@ -329,10 +329,7 @@ let template_polymorphism_candidate ~ctor_levels uctx params concl =
     if not concltemplate then false
     else
       let conclu = Option.cata Sorts.univ_of_sort Univ.type0m_univ concl in
-      let params, conclunivs =
-        IndTyping.template_polymorphic_univs ~ctor_levels uctx params conclu
-      in
-      not (Univ.LSet.is_empty conclunivs)
+      Option.has_some @@ IndTyping.template_polymorphic_univs ~ctor_levels uctx params conclu
   | Entries.Polymorphic_entry _ -> false
 
 let check_param = function

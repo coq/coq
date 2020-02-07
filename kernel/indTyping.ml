@@ -200,26 +200,27 @@ let unbounded_from_below u cstrs =
 let template_polymorphic_univs ~ctor_levels uctx paramsctxt concl =
   let check_level l =
     Univ.LSet.mem l (Univ.ContextSet.levels uctx) &&
+    (let () = assert (not @@ Univ.Level.is_small l) in true) &&
     unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
     not (Univ.LSet.mem l ctor_levels)
   in
   let univs = Univ.Universe.levels concl in
-  let univs =
-    Univ.LSet.filter (fun l -> check_level l || Univ.Level.is_prop l) univs
-  in
+  let univs = Univ.LSet.filter (fun l -> check_level l) univs in
   let fold acc = function
     | (LocalAssum (_, p)) ->
       (let c = Term.strip_prod_assum p in
       match kind c with
         | Sort (Type u) ->
             (match Univ.Universe.level u with
-             | Some l -> if Univ.LSet.mem l univs && not (Univ.Level.is_prop l) then Some l else None
+             | Some l -> if Univ.LSet.mem l univs then Some l else None
              | None -> None)
         | _ -> None) :: acc
     | LocalDef _ -> acc
   in
   let params = List.fold_left fold [] paramsctxt in
-  params, univs
+  if Universe.is_type0m concl then Some (univs, params)
+  else if not @@ Univ.LSet.is_empty univs then Some (univs, params)
+  else None
 
 let abstract_packets univs usubst params ((arity,lc),(indices,splayed_lc),univ_info) =
   if not (Universe.Set.is_empty univ_info.missing)
@@ -262,14 +263,11 @@ let abstract_packets univs usubst params ((arity,lc),(indices,splayed_lc),univ_i
           param_levels
           splayed_lc
       in
-      let param_levels, concl_levels =
-        template_polymorphic_univs ~ctor_levels ctx params min_univ
-      in
-      if List.for_all (fun x -> Option.is_empty x) param_levels
-         && Univ.LSet.is_empty concl_levels then
+      match template_polymorphic_univs ~ctor_levels ctx params min_univ with
+      | None ->
         CErrors.user_err
           Pp.(strbrk "Ill-formed template inductive declaration: not polymorphic on any universe.")
-      else
+      | Some (_, param_levels) ->
         TemplateArity {template_param_levels = param_levels; template_level = min_univ; template_context = ctx }
   in
 
