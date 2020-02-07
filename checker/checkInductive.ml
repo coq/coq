@@ -20,7 +20,7 @@ exception InductiveMismatch of MutInd.t * string
 
 let check mind field b = if not b then raise (InductiveMismatch (mind,field))
 
-let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
+let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
   let open Entries in
   let nparams = List.length mb.mind_params_ctxt in (* include letins *)
   let mind_entry_record = match mb.mind_record with
@@ -28,7 +28,27 @@ let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
     | PrimRecord data -> Some (Some (Array.map (fun (x,_,_,_) -> x) data))
   in
   let mind_entry_universes = match mb.mind_universes with
-    | Monomorphic univs -> Monomorphic_entry univs
+    | Monomorphic _ ->
+      (* We only need to rebuild the set of constraints for template polymorphic
+        inductive types. The set of monomorphic constraints is already part of
+        the graph at that point, but we need to emulate a broken bound variable
+        mechanism for template inductive types. *)
+      let fold accu ind = match ind.mind_arity with
+      | RegularArity _ -> accu
+      | TemplateArity ar ->
+        match accu with
+        | None -> Some ar.template_context
+        | Some ctx ->
+          (* Ensure that all template contexts agree. This is enforced by the
+             kernel. *)
+          let () = check mind "mind_arity" (ContextSet.equal ctx ar.template_context) in
+          Some ctx
+      in
+      let univs = match Array.fold_left fold None mb.mind_packets with
+      | None -> ContextSet.empty
+      | Some ctx -> ctx
+      in
+      Monomorphic_entry univs
     | Polymorphic auctx -> Polymorphic_entry (AUContext.names auctx, AUContext.repr auctx)
   in
   let mind_entry_inds = Array.map_to_list (fun ind ->
@@ -69,8 +89,9 @@ let check_arity env ar1 ar2 = match ar1, ar2 with
   | RegularArity ar, RegularArity {mind_user_arity;mind_sort} ->
     Constr.equal ar.mind_user_arity mind_user_arity &&
     Sorts.equal ar.mind_sort mind_sort
-  | TemplateArity ar, TemplateArity {template_param_levels;template_level} ->
+  | TemplateArity ar, TemplateArity {template_param_levels;template_level;template_context} ->
     List.equal (Option.equal Univ.Level.equal) ar.template_param_levels template_param_levels &&
+    ContextSet.equal template_context ar.template_context &&
     UGraph.check_leq (universes env) template_level ar.template_level
     (* template_level is inferred by indtypes, so functor application can produce a smaller one *)
   | (RegularArity _ | TemplateArity _), _ -> assert false
@@ -136,7 +157,7 @@ let check_same_record r1 r2 = match r1, r2 with
   | (NotRecord | FakeRecord | PrimRecord _), _ -> false
 
 let check_inductive env mind mb =
-  let entry = to_entry mb in
+  let entry = to_entry mind mb in
   let { mind_packets; mind_record; mind_finite; mind_ntypes; mind_hyps;
         mind_nparams; mind_nparams_rec; mind_params_ctxt;
         mind_universes; mind_variance; mind_sec_variance;
