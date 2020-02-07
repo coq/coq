@@ -97,11 +97,8 @@
 ########################################################################
 # Coquelicot
 ########################################################################
-# Modified until https://gitlab.inria.fr/coquelicot/coquelicot/merge_requests/2 is merged
-: "${coquelicot_CI_REF:=fix-rlist-import}"
-: "${coquelicot_CI_GITURL:=https://gitlab.inria.fr/pedrot/coquelicot}"
-# : "${coquelicot_CI_REF:=master}"
-# : "${coquelicot_CI_GITURL:=https://gitlab.inria.fr/coquelicot/coquelicot}"
+: "${coquelicot_CI_REF:=master}"
+: "${coquelicot_CI_GITURL:=https://gitlab.inria.fr/coquelicot/coquelicot}"
 : "${coquelicot_CI_ARCHIVEURL:=${coquelicot_CI_GITURL}/-/archive}"
 
 ########################################################################
