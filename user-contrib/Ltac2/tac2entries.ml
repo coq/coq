@@ -869,6 +869,32 @@ end
 
 (** Printing *)
 
+let print_ltac_type qid =
+  if Tac2env.is_constructor qid then
+    let mkn =
+      try Some (Tac2env.locate_constructor qid)
+      with Not_found -> None
+    in
+    match mkn with
+    | Some kn ->
+      let data = Tac2env.interp_constructor kn in
+      let t = data.Tac2env.cdata_type in
+      Feedback.msg_notice (hov 2 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_typref t))
+    | None -> Feedback.msg_notice (hov 2 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ str "Type"))
+  else
+    let kn =
+      try Tac2env.locate_ltac qid
+      with Not_found -> user_err ?loc:qid.CAst.loc (str "Unknown tactic " ++ pr_qualid qid)
+    in
+    match kn with
+    | TacConstant kn ->
+      let data = Tac2env.interp_global kn in
+      let (_, t) = data.Tac2env.gdata_type in
+      let name = int_name () in
+      Feedback.msg_notice (hov 0 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype name t))
+    | TacAlias kn ->
+      Feedback.msg_notice (str "Alias to ...")
+
 let print_ltac qid =
   if Tac2env.is_constructor qid then
     let kn =

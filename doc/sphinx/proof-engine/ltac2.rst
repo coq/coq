@@ -846,6 +846,16 @@ Ltac2 features a toplevel loop that can be used to evaluate expressions.
    together with its type. This command is pure in the sense that it does not
    modify the state of the proof, and in particular all side-effects are discarded.
 
+.. cmd:: Print Ltac2 @ltac2_qualid
+   :name: Print Ltac2
+
+   Print the value and type of an Ltac2 tactic.
+
+.. cmd:: Check Ltac2 @ltac2_qualid
+   :name: Check Ltac2
+
+   Print the type of an Ltac2 tactic.
+
 Debug
 -----
 

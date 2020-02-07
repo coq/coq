@@ -957,3 +957,7 @@ open Stdarg
 VERNAC COMMAND EXTEND Ltac2Print CLASSIFIED AS SIDEFF
 | [ "Print" "Ltac2" reference(tac) ] -> { Tac2entries.print_ltac tac }
 END
+
+VERNAC COMMAND EXTEND Ltac2Check CLASSIFIED AS SIDEFF
+| [ "Check" "Ltac2" reference(tac) ] -> { Tac2entries.print_ltac_type tac }
+END

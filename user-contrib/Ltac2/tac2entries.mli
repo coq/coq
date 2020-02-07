@@ -48,6 +48,7 @@ val parse_scope : sexpr -> scope_rule
 
 (** {5 Inspecting} *)
 
+val print_ltac_type : Libnames.qualid -> unit
 val print_ltac : Libnames.qualid -> unit
 
 (** {5 Eval loop} *)
