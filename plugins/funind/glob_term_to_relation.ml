@@ -769,9 +769,7 @@ and build_entry_lc_from_case_term env sigma types funname make_discr patterns_to
                  let env_with_pat_ids = add_pat_variables sigma pat typ new_env in
                    List.fold_right
                      (fun id acc ->
-                        let typ_of_id =
-                          Typing.unsafe_type_of env_with_pat_ids (Evd.from_env env) (EConstr.mkVar id)
-                        in
+                        let typ_of_id = Typing.type_of_variable env_with_pat_ids id in
                         let raw_typ_of_id =
                           Detyping.detype Detyping.Now false Id.Set.empty
                             env_with_pat_ids (Evd.from_env env) typ_of_id
@@ -832,7 +830,7 @@ and build_entry_lc_from_case_term env sigma types funname make_discr patterns_to
                    (fun id  acc ->
                       if Id.Set.mem id this_pat_ids
                       then (Prod (Name id),
-                      let typ_of_id = Typing.unsafe_type_of new_env (Evd.from_env env) (EConstr.mkVar id) in
+                      let typ_of_id = Typing.type_of_variable new_env id in
                       let raw_typ_of_id =
                         Detyping.detype Detyping.Now false Id.Set.empty new_env (Evd.from_env env) typ_of_id
                       in

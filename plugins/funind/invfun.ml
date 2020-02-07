@@ -28,7 +28,7 @@ open Indfun_common
 *)
 let revert_graph kn post_tac hid = Proofview.Goal.enter (fun gl ->
   let sigma = project gl in
-  let typ = pf_unsafe_type_of gl (mkVar hid) in
+  let typ = pf_get_hyp_typ hid gl in
   match EConstr.kind sigma typ with
   | App(i,args) when isInd sigma i ->
     let ((kn',num) as ind'),u = destInd sigma i in
@@ -77,7 +77,7 @@ let revert_graph kn post_tac hid = Proofview.Goal.enter (fun gl ->
 let functional_inversion kn hid fconst f_correct = Proofview.Goal.enter (fun gl ->
   let old_ids = List.fold_right Id.Set.add  (pf_ids_of_hyps gl) Id.Set.empty in
   let sigma = project gl in
-  let type_of_h = pf_unsafe_type_of gl (mkVar hid) in
+  let type_of_h = pf_get_hyp_typ hid gl in
   match EConstr.kind sigma type_of_h with
   | App(eq,args) when EConstr.eq_constr sigma eq (make_eq ())  ->
     let pre_tac,f_args,res =
@@ -128,7 +128,7 @@ let invfun qhyp f =
   | None ->
     let tac_action hid gl =
       let sigma = project gl in
-      let hyp_typ = pf_unsafe_type_of gl (mkVar hid)  in
+      let hyp_typ = pf_get_hyp_typ hid gl  in
       match EConstr.kind sigma hyp_typ with
       | App(eq,args) when EConstr.eq_constr sigma eq (make_eq ()) ->
         begin

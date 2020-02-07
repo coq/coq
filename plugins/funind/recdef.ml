@@ -370,7 +370,7 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic =
             Proofview.V82.of_tactic (clear to_intros);
             h_intros to_intros;
             (fun g' ->
-              let ty_teq = pf_unsafe_type_of g' (mkVar heq) in
+              let ty_teq = pf_get_hyp_typ g' heq in
               let teq_lhs,teq_rhs =
                 let _,args = try destApp (project g') ty_teq with DestKO -> assert false in
                 args.(1),args.(2)
@@ -487,13 +487,13 @@ let rec prove_lt hyple g =
       in
       let h =
         List.find (fun id ->
-          match decompose_app sigma (pf_unsafe_type_of g (mkVar id)) with
+          match decompose_app sigma (pf_get_hyp_typ g id) with
             | _, t::_ -> EConstr.eq_constr sigma t varx
             | _ -> false
         ) hyple
       in
       let y =
-        List.hd (List.tl (snd (decompose_app sigma (pf_unsafe_type_of g (mkVar h))))) in
+        List.hd (List.tl (snd (decompose_app sigma (pf_get_hyp_typ g h)))) in
       observe_tclTHENLIST (fun _ _ -> str "prove_lt1")[
         Proofview.V82.of_tactic (apply (mkApp(le_lt_trans (),[|varx;y;varz;mkVar h|])));
         observe_tac (fun _ _ -> str "prove_lt") (prove_lt hyple)

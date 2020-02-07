@@ -253,6 +253,9 @@ let judge_of_type u =
 let judge_of_relative env v =
   Environ.on_judgment EConstr.of_constr (judge_of_relative env v)
 
+let type_of_variable env id =
+  EConstr.of_constr (type_of_variable env id)
+
 let judge_of_variable env id =
   Environ.on_judgment EConstr.of_constr (judge_of_variable env id)
 

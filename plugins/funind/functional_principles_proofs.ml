@@ -475,7 +475,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
       tclIDTAC
   in
   try
-    scan_type [] (Typing.unsafe_type_of env sigma (mkVar hyp_id)), [hyp_id]
+    scan_type [] (Typing.type_of_variable env hyp_id), [hyp_id]
   with TOREMOVE ->
     thin [hyp_id],[]
 
@@ -525,7 +525,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
         tclMAP (fun id -> Proofview.V82.of_tactic (introduction id)) dyn_infos.rec_hyps;
         observe_tac "after_introduction" (fun g' ->
            (* We get infos on the equations introduced*)
-           let new_term_value_eq = pf_unsafe_type_of g' (mkVar heq_id) in
+           let new_term_value_eq = pf_get_hyp_typ g' heq_id in
            (* compute the new value of the body *)
            let new_term_value =
              match EConstr.kind (project g') new_term_value_eq with
@@ -849,7 +849,7 @@ let generalize_non_dep hyp g =
 (*   observe (str "rec id := " ++ Ppconstr.pr_id hyp); *)
   let hyps = [hyp] in
   let env = Global.env () in
-  let hyp_typ = pf_unsafe_type_of g (mkVar hyp) in
+  let hyp_typ = pf_get_hyp_typ g hyp in
   let to_revert,_ =
     let open Context.Named.Declaration in
     Environ.fold_named_context_reverse (fun (clear,keep) decl ->
@@ -1351,7 +1351,7 @@ let backtrack_eqs_until_hrec hrec eqs : tactic =
     let rewrite =
       tclFIRST (List.map (fun x -> Proofview.V82.of_tactic (Equality.rewriteRL x)) eqs )
     in
-    let _,hrec_concl  = decompose_prod (project gls) (pf_unsafe_type_of gls (mkVar hrec)) in
+    let _,hrec_concl  = decompose_prod (project gls) (pf_get_hyp_typ gls hrec) in
     let f_app = Array.last (snd (destApp (project gls) hrec_concl)) in
     let f =  (fst (destApp (project gls) f_app)) in
     let rec backtrack : tactic =
