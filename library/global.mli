@@ -150,7 +150,6 @@ val is_joined_environment : unit -> bool
 
 val is_polymorphic : GlobRef.t -> bool
 val is_template_polymorphic : GlobRef.t -> bool
-val is_template_checked : GlobRef.t -> bool
 val get_template_polymorphic_variables : GlobRef.t -> Univ.Level.t list
 val is_type_in_type : GlobRef.t -> bool
 

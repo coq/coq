@@ -258,17 +258,6 @@ let cook_constant { from = cb; info } =
 (********************************)
 (* Discharging mutual inductive *)
 
-let template_level_of_var ~template_check d =
-  (* When [template_check], a universe from a section variable may not
-     be in the universes from the inductive (it must be pre-declared)
-     so always [None]. *)
-  if template_check then None
-  else
-    let c = Term.strip_prod_assum (RelDecl.get_type d) in
-    match kind c with
-    | Sort (Type u) -> Univ.Universe.level u
-    | _ -> None
-
 let it_mkProd_wo_LetIn = List.fold_left (fun c d -> mkProd_wo_LetIn d c)
 
 let abstract_rel_ctx (section_decls,subst) ctx =
@@ -305,7 +294,7 @@ let abstract_projection ~params expmod hyps t =
   let _, t = decompose_prod_n_assum (List.length params + 1 + Context.Rel.nhyps (fst hyps)) t in
   t
 
-let cook_one_ind ~template_check ~ntypes
+let cook_one_ind ~ntypes
     (section_decls,_ as hyps) expmod mip =
   let mind_arity = match mip.mind_arity with
     | RegularArity {mind_user_arity=arity;mind_sort=sort} ->
@@ -314,7 +303,7 @@ let cook_one_ind ~template_check ~ntypes
       RegularArity {mind_user_arity=arity; mind_sort=sort}
     | TemplateArity {template_param_levels=levels;template_level;template_context} ->
       let sec_levels = CList.map_filter (fun d ->
-          if RelDecl.is_local_assum d then Some (template_level_of_var ~template_check d)
+          if RelDecl.is_local_assum d then Some None
           else None)
           section_decls
       in
@@ -362,14 +351,13 @@ let cook_inductive { Opaqueproof.modlist; abstract } mib =
   let removed_vars = Context.Named.to_vars section_decls in
   let section_decls, _ as hyps = abstract_context section_decls in
   let nnewparams = Context.Rel.nhyps section_decls in
-  let template_check = mib.mind_typing_flags.check_template in
   let mind_params_ctxt =
     let ctx = Context.Rel.map expmod mib.mind_params_ctxt in
     abstract_rel_ctx hyps ctx
   in
   let ntypes = mib.mind_ntypes in
   let mind_packets =
-    Array.map (cook_one_ind ~template_check ~ntypes hyps expmod)
+    Array.map (cook_one_ind ~ntypes hyps expmod)
       mib.mind_packets
   in
   let mind_record = match mib.mind_record with

@@ -170,7 +170,6 @@ let check_inductive env mind mb =
          check_guarded = mb_flags.check_guarded;
          check_positive = mb_flags.check_positive;
          check_universes = mb_flags.check_universes;
-         check_template = mb_flags.check_template;
          conv_oracle = mb_flags.conv_oracle;
         }
         env
