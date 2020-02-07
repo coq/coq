@@ -264,7 +264,7 @@ file timing data:
        ``run make cleanall``.
 
     .. note::
-       By default the table picks up user times.  If the build log
+       By default the table displays user times.  If the build log
        contains real times (which it does by default), passing
        ``TIMING_REAL=1`` to ``make pretty-timed`` will use real times
        rather than user times in the table.
@@ -387,7 +387,7 @@ line timing data:
 
     .. note::
        By default, two lines are only considered the same if the
-       character offsets and initial code strings match.  Passing
+       character offsets and initial code strings are identical.  Passing
        ``TIMING_FUZZ=N`` relaxes this constraint by allowing the
        character offsets to differ by up to ``N`` characters, as long
        as the total number of characters and initial code strings
