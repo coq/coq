@@ -1573,19 +1573,16 @@ let prove_principle_for_gen
         (List.rev_map (get_name %> Nameops.Name.get_id)
            (princ_info.args@princ_info.branches@princ_info.predicates@princ_info.params)
         );
-      (* observe_tac "" *) Proofview.V82.of_tactic (assert_by
-         (Name acc_rec_arg_id)
-         (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
-         (Proofview.V82.tactic prove_rec_arg_acc)
-      );
-(*       observe_tac "reverting" *) (revert (List.rev (acc_rec_arg_id::args_ids)));
-(*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl () ++  *)
-(*                         str "fix arg num" ++ int (List.length args_ids + 1) ); tclIDTAC g); *)
-      (* observe_tac "h_fix " *) (Proofview.V82.of_tactic (fix fix_id (List.length args_ids + 1)));
-(*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl() ++ pr_lconstr_env (pf_env g ) (pf_unsafe_type_of g (mkVar fix_id) )); tclIDTAC g); *)
+      Proofview.V82.of_tactic
+        (assert_by
+           (Name acc_rec_arg_id)
+           (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
+           (Proofview.V82.tactic prove_rec_arg_acc));
+      (revert (List.rev (acc_rec_arg_id::args_ids)));
+      (Proofview.V82.of_tactic (fix fix_id (List.length args_ids + 1)));
       h_intros (List.rev (acc_rec_arg_id::args_ids));
       Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_ref));
-      (* observe_tac "finish" *) (fun gl' ->
+      (fun gl' ->
          let body =
            let _,args = destApp (project gl') (pf_concl gl') in
            Array.last args
