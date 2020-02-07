@@ -536,22 +536,23 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
                            );
                    anomaly (Pp.str "cannot compute new term value.")
            in
-         let fun_body =
-           mkLambda(make_annot Anonymous Sorts.Relevant,
-                    pf_unsafe_type_of g' term,
-                    Termops.replace_term (project g') term (mkRel 1) dyn_infos.info
-                   )
-         in
-         let new_body = pf_nf_betaiota g' (mkApp(fun_body,[| new_term_value |])) in
-         let new_infos =
-           {dyn_infos with
+           let g', termtyp = tac_type_of g' term in
+           let fun_body =
+             mkLambda(make_annot Anonymous Sorts.Relevant,
+                      termtyp,
+                      Termops.replace_term (project g') term (mkRel 1) dyn_infos.info
+                     )
+           in
+           let new_body = pf_nf_betaiota g' (mkApp(fun_body,[| new_term_value |])) in
+           let new_infos =
+             {dyn_infos with
               info = new_body;
               eq_hyps = heq_id::dyn_infos.eq_hyps
-           }
-         in
-         clean_goal_with_heq ptes_infos continue_tac new_infos  g'
-      )])
-    ]
+             }
+           in
+           clean_goal_with_heq ptes_infos continue_tac new_infos  g'
+          )])
+      ]
       g
 
 
@@ -633,7 +634,7 @@ let build_proof
                   let dyn_infos = {dyn_info' with info =
                       mkCase(ci,ct,t,cb)} in
                   let g_nb_prod = nb_prod (project g) (pf_concl g) in
-                  let type_of_term = pf_unsafe_type_of g t in
+                  let g, type_of_term = tac_type_of g t in
                   let term_eq =
                     make_refl_eq (Lazy.force refl_equal) type_of_term t
                   in

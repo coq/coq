@@ -526,3 +526,7 @@ let funind_purify f x =
     let e = CErrors.push e in
     Vernacstate.unfreeze_interp_state st;
     Exninfo.iraise e
+
+let tac_type_of g c =
+  let sigma, t = Tacmach.pf_type_of g c in
+  {g with Evd.sigma}, t

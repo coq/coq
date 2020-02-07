@@ -993,7 +993,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Tacmach.tacti
     (* We get the constant and the principle corresponding to this lemma *)
     let f = funcs.(i) in
     let graph_principle = Reductionops.nf_zeta (pf_env g) (project g) (EConstr.of_constr schemes.(i))  in
-    let princ_type = pf_unsafe_type_of g graph_principle in
+    let g, princ_type = tac_type_of g graph_principle in
     let princ_infos = Tactics.compute_elim_sig (project g) princ_type in
     (* Then we get the number of argument of the function
        and compute a fresh name for each of them
@@ -1210,7 +1210,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_ef
   in
   let _ = evd := sigma in
   let l_schemes =
-    List.map (EConstr.of_constr %> Typing.unsafe_type_of env sigma %> EConstr.Unsafe.to_constr) schemes
+    List.map (EConstr.of_constr %> Retyping.get_type_of env sigma %> EConstr.Unsafe.to_constr) schemes
   in
   let i = ref (-1) in
   let sorts =
@@ -2051,7 +2051,7 @@ let build_case_scheme fa =
   let (sigma, scheme) =
       Indrec.build_case_analysis_scheme_default env sigma ind sf
   in
-  let scheme_type = EConstr.Unsafe.to_constr ((Typing.unsafe_type_of env sigma) (EConstr.of_constr scheme)) in
+  let scheme_type = EConstr.Unsafe.to_constr ((Retyping.get_type_of env sigma) (EConstr.of_constr scheme)) in
   let sorts =
     (fun (_,_,x) ->
        fst @@ UnivGen.fresh_sort_in_family x
