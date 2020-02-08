@@ -464,7 +464,7 @@ Proof.
                       elim (Rlt_irrefl _ H7) ] ].
 Qed.
 
-Fixpoint SubEquiN (N:nat) (x y:R) (del:posreal) : Rlist :=
+Fixpoint SubEquiN (N:nat) (x y:R) (del:posreal) : list R :=
   match N with
     | O => cons y nil
     | S p => cons x (SubEquiN p (x + del) y del)
@@ -473,7 +473,7 @@ Fixpoint SubEquiN (N:nat) (x y:R) (del:posreal) : Rlist :=
 Definition max_N (a b:R) (del:posreal) (h:a < b) : nat :=
   let (N,_) := maxN del h in N.
 
-Definition SubEqui (a b:R) (del:posreal) (h:a < b) : Rlist :=
+Definition SubEqui (a b:R) (del:posreal) (h:a < b) : list R :=
   SubEquiN (S (max_N del h)) a b del.
 
 Lemma Heine_cor1 :
@@ -566,25 +566,25 @@ Qed.
 
 Lemma SubEqui_P2 :
   forall (a b:R) (del:posreal) (h:a < b),
-    pos_Rl (SubEqui del h) (pred (Rlength (SubEqui del h))) = b.
+    pos_Rl (SubEqui del h) (pred (length (SubEqui del h))) = b.
 Proof.
   intros; unfold SubEqui; destruct (maxN del h)as (x,_).
     cut
       (forall (x:nat) (a:R) (del:posreal),
         pos_Rl (SubEquiN (S x) a b del)
-        (pred (Rlength (SubEquiN (S x) a b del))) = b);
+        (pred (length (SubEquiN (S x) a b del))) = b);
       [ intro; apply H
         | simple induction x0;
           [ intros; reflexivity
             | intros;
               change
                 (pos_Rl (SubEquiN (S n) (a0 + del0) b del0)
-                  (pred (Rlength (SubEquiN (S n) (a0 + del0) b del0))) = b)
+                  (pred (length (SubEquiN (S n) (a0 + del0) b del0))) = b)
                ; apply H ] ].
 Qed.
 
 Lemma SubEqui_P3 :
-  forall (N:nat) (a b:R) (del:posreal), Rlength (SubEquiN N a b del) = S N.
+  forall (N:nat) (a b:R) (del:posreal), length (SubEquiN N a b del) = S N.
 Proof.
   simple induction N; intros;
     [ reflexivity | simpl; rewrite H; reflexivity ].
@@ -605,7 +605,7 @@ Qed.
 
 Lemma SubEqui_P5 :
   forall (a b:R) (del:posreal) (h:a < b),
-    Rlength (SubEqui del h) = S (S (max_N del h)).
+    length (SubEqui del h) = S (S (max_N del h)).
 Proof.
   intros; unfold SubEqui; apply SubEqui_P3.
 Qed.
@@ -623,7 +623,7 @@ Proof.
   intros; unfold ordered_Rlist; intros; rewrite SubEqui_P5 in H;
     simpl in H; inversion H.
   rewrite (SubEqui_P6 del h (i:=(max_N del h))).
-  replace (S (max_N del h)) with (pred (Rlength (SubEqui del h))).
+  replace (S (max_N del h)) with (pred (length (SubEqui del h))).
   rewrite SubEqui_P2; unfold max_N; case (maxN del h) as (?&?&?); left;
     assumption.
   rewrite SubEqui_P5; reflexivity.
@@ -639,7 +639,7 @@ Qed.
 
 Lemma SubEqui_P8 :
   forall (a b:R) (del:posreal) (h:a < b) (i:nat),
-    (i < Rlength (SubEqui del h))%nat -> a <= pos_Rl (SubEqui del h) i <= b.
+    (i < length (SubEqui del h))%nat -> a <= pos_Rl (SubEqui del h) i <= b.
 Proof.
   intros; split.
   pattern a at 1; rewrite <- (SubEqui_P1 del h); apply RList_P5.
@@ -657,7 +657,7 @@ Lemma SubEqui_P9 :
     { g:StepFun a b |
       g b = f b /\
       (forall i:nat,
-        (i < pred (Rlength (SubEqui del h)))%nat ->
+        (i < pred (length (SubEqui del h)))%nat ->
         constant_D_eq g
         (co_interval (pos_Rl (SubEqui del h) i)
           (pos_Rl (SubEqui del h) (S i)))
@@ -713,7 +713,7 @@ Proof.
           a <= t <= b ->
           t = b \/
           (exists i : nat,
-            (i < pred (Rlength (SubEqui del H)))%nat /\
+            (i < pred (length (SubEqui del H)))%nat /\
             co_interval (pos_Rl (SubEqui del H) i) (pos_Rl (SubEqui del H) (S i))
             t)).
   intro; elim (H8 _ H7); intro.
@@ -722,7 +722,7 @@ Proof.
   elim H9; clear H9; intros I [H9 H10]; assert (H11 := H6 I H9 t H10);
     rewrite H11; left; apply H4.
   assumption.
-  apply SubEqui_P8; apply lt_trans with (pred (Rlength (SubEqui del H))).
+  apply SubEqui_P8; apply lt_trans with (pred (length (SubEqui del H))).
   assumption.
   apply lt_pred_n_n; apply neq_O_lt; red; intro; rewrite <- H12 in H9;
     elim (lt_n_O _ H9).
@@ -734,7 +734,7 @@ Proof.
     (t - pos_Rl (SubEqui del H) (max_N del H))) with t;
   [ idtac | ring ]; apply Rlt_le_trans with b.
   rewrite H14 in H12;
-    assert (H13 : S (max_N del H) = pred (Rlength (SubEqui del H))).
+    assert (H13 : S (max_N del H) = pred (length (SubEqui del H))).
   rewrite SubEqui_P5; reflexivity.
   rewrite H13 in H12; rewrite SubEqui_P2 in H12; apply H12.
   rewrite SubEqui_P6.
@@ -785,7 +785,7 @@ Proof.
   apply H5.
   assumption.
   inversion H7.
-  replace (S (max_N del H)) with (pred (Rlength (SubEqui del H))).
+  replace (S (max_N del H)) with (pred (length (SubEqui del H))).
   rewrite (SubEqui_P2 del H); elim H8; intros.
   elim H11; intro.
   assumption.
@@ -1753,7 +1753,7 @@ Proof.
   rewrite <- H5; elim (RList_P6 l); intros; apply H10.
   assumption.
   apply le_O_n.
-  apply lt_trans with (pred (Rlength l)); [ assumption | apply lt_pred_n_n ].
+  apply lt_trans with (pred (length l)); [ assumption | apply lt_pred_n_n ].
   apply neq_O_lt; intro; rewrite <- H12 in H6; discriminate.
   unfold Rmin; decide (Rle_dec a b) with H; reflexivity.
   assert (H11 : pos_Rl l (S i) <= b).
@@ -1960,7 +1960,7 @@ Proof.
   replace b with (Rmin b c).
   rewrite <- H5; elim (RList_P6 l1); intros; apply H10; try assumption.
   apply le_O_n.
-  apply lt_trans with (pred (Rlength l1)); try assumption; apply lt_pred_n_n;
+  apply lt_trans with (pred (length l1)); try assumption; apply lt_pred_n_n;
     apply neq_O_lt; red; intro; rewrite <- H12 in H6;
       discriminate.
   unfold Rmin; decide (Rle_dec b c) with Hyp2;
@@ -1991,7 +1991,7 @@ Proof.
   replace a with (Rmin a b).
   rewrite <- H5; elim (RList_P6 l1); intros; apply H11; try assumption.
   apply le_O_n.
-  apply lt_trans with (pred (Rlength l1)); try assumption; apply lt_pred_n_n;
+  apply lt_trans with (pred (length l1)); try assumption; apply lt_pred_n_n;
     apply neq_O_lt; red; intro; rewrite <- H13 in H6;
       discriminate.
   unfold Rmin; decide (Rle_dec a b) with Hyp1; reflexivity.
@@ -2018,7 +2018,7 @@ Proof.
   replace a with (Rmin a b).
   rewrite <- H5; elim (RList_P6 l1); intros; apply H11; try assumption.
   apply le_O_n.
-  apply lt_trans with (pred (Rlength l1)); try assumption; apply lt_pred_n_n;
+  apply lt_trans with (pred (length l1)); try assumption; apply lt_pred_n_n;
     apply neq_O_lt; red; intro; rewrite <- H13 in H6;
       discriminate.
   unfold Rmin; decide (Rle_dec a b) with Hyp1; reflexivity.
@@ -2037,7 +2037,7 @@ Proof.
   replace b with (Rmin b c).
   rewrite <- H5; elim (RList_P6 l1); intros; apply H10; try assumption.
   apply le_O_n.
-  apply lt_trans with (pred (Rlength l1)); try assumption; apply lt_pred_n_n;
+  apply lt_trans with (pred (length l1)); try assumption; apply lt_pred_n_n;
     apply neq_O_lt; red; intro; rewrite <- H12 in H6;
       discriminate.
   unfold Rmin; decide (Rle_dec b c) with Hyp2; reflexivity.

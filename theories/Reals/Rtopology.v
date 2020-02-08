@@ -12,6 +12,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Ranalysis1.
 Require Import RList.
+Require Import List.
 Require Import Classical_Prop.
 Require Import Classical_Pred_Type.
 Local Open Scope R_scope.
@@ -388,7 +389,7 @@ Record family : Type := mkfamily
 Definition family_open_set (f:family) : Prop := forall x:R, open_set (f x).
 
 Definition domain_finite (D:R -> Prop) : Prop :=
-  exists l : Rlist, (forall x:R, D x <-> In x l).
+  exists l : list R, (forall x:R, D x <-> In x l).
 
 Definition family_finite (f:family) : Prop := domain_finite (ind f).
 
@@ -669,7 +670,7 @@ Proof.
   intro H14; simpl in H14; unfold intersection_domain in H14;
     specialize H13 with x0; destruct H13 as (H13,H15);
     destruct (Req_dec x0 y0) as [H16|H16].
-  simpl; left; apply H16.
+  simpl; left. symmetry; apply H16.
   simpl; right; apply H13.
   simpl; unfold intersection_domain; unfold Db in H14;
     decompose [and or] H14.
@@ -678,8 +679,8 @@ Proof.
   intro H14; simpl in H14; destruct H14 as [H15|H15]; simpl;
     unfold intersection_domain.
   split.
-  apply (cond_fam f0); rewrite H15; exists b; apply H6.
-  unfold Db; right; assumption.
+  apply (cond_fam f0); rewrite <- H15; exists b; apply H6.
+  unfold Db; right; symmetry; assumption.
   simpl; unfold intersection_domain; elim (H13 x0).
   intros _ H16; assert (H17 := H16 H15); simpl in H17;
     unfold intersection_domain in H17; split.
@@ -750,15 +751,15 @@ Proof.
   intro H14; simpl in H14; unfold intersection_domain in H14;
     specialize (H13 x0); destruct H13 as (H13,H15);
     destruct (Req_dec x0 y0) as [Heq|Hneq].
-  simpl; left; apply Heq.
+  simpl; left; symmetry; apply Heq.
   simpl; right; apply H13; simpl;
     unfold intersection_domain; unfold Db in H14;
       decompose [and or] H14.
   split; assumption.
   elim Hneq; assumption.
   intros [H15|H15]. split.
-  apply (cond_fam f0); rewrite H15; exists m; apply H6.
-  unfold Db; right; assumption.
+  apply (cond_fam f0); rewrite <- H15; exists m; apply H6.
+  unfold Db; right; symmetry; assumption.
   elim (H13 x0); intros _ H16.
   assert (H17 := H16 H15).
   simpl in H17.
@@ -810,9 +811,10 @@ Proof.
   unfold family_finite; unfold domain_finite;
     exists (cons y0 nil); intro; split.
   simpl; unfold intersection_domain; intros (H3,H4).
-    unfold D' in H4; left; apply H4.
+    unfold D' in H4; left; symmetry; apply H4.
   simpl; unfold intersection_domain; intros [H4|[]].
-  split; [ rewrite H4; apply (cond_fam f0); exists a; apply H2 | apply H4 ].
+  split; [ rewrite <- H4; apply (cond_fam f0); exists a; apply H2 |
+           symmetry; apply H4 ].
   split; [ right; reflexivity | apply Hle ].
   apply compact_eqDom with (fun c:R => False).
   apply compact_EMP.
