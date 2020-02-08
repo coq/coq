@@ -213,6 +213,14 @@ let define3 name r0 r1 r2 f = define_primitive name (arity_suc (arity_suc arity_
   f (Value.repr_to r0 x) (Value.repr_to r1 y) (Value.repr_to r2 z)
 end
 
+let define4 name r0 r1 r2 r3 f = define_primitive name (arity_suc (arity_suc (arity_suc arity_one))) begin fun x0 x1 x2 x3 ->
+  f (Value.repr_to r0 x0) (Value.repr_to r1 x1) (Value.repr_to r2 x2) (Value.repr_to r3 x3)
+end
+
+let define5 name r0 r1 r2 r3 r4 f = define_primitive name (arity_suc (arity_suc (arity_suc (arity_suc arity_one)))) begin fun x0 x1 x2 x3 x4 ->
+  f (Value.repr_to r0 x0) (Value.repr_to r1 x1) (Value.repr_to r2 x2) (Value.repr_to r3 x3) (Value.repr_to r4 x4)
+end
+
 (** Printing *)
 
 let () = define1 "print" pp begin fun pp ->
@@ -253,6 +261,10 @@ end
 
 (** Array *)
 
+let () = define0 "array_empty" begin
+  return (v_blk 0 (Array.of_list []))
+end
+
 let () = define2 "array_make" int valexpr begin fun n x ->
   if n < 0 || n > Sys.max_array_length then throw err_outofbounds
   else wrap (fun () -> v_blk 0 (Array.make n x))
@@ -270,6 +282,20 @@ end
 let () = define2 "array_get" block int begin fun (_, v) n ->
   if n < 0 || n >= Array.length v then throw err_outofbounds
   else wrap (fun () -> v.(n))
+end
+
+let () = define5 "array_blit" block int block int int begin fun (_, v0) s0 (_, v1) s1 l ->
+  if s0 < 0 || s0+l > Array.length v0 || s1 < 0 || s1+l > Array.length v1 || l<0 then throw err_outofbounds
+  else wrap_unit (fun () -> Array.blit v0 s0 v1 s1 l)
+end
+
+let () = define4 "array_fill" block int int valexpr begin fun (_, d) s l v ->
+  if s < 0 || s+l > Array.length d || l<0 then throw err_outofbounds
+  else wrap_unit (fun () -> Array.fill d s l v)
+end
+
+let () = define1 "array_concat" (list block) begin fun l ->
+  wrap (fun () -> v_blk 0 (Array.concat (List.map snd l)))
 end
 
 (** Ident *)
