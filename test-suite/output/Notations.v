@@ -251,11 +251,11 @@ Notation NONE := None.
 Check (fun x => match x with SOME x => x | NONE => 0 end).
 
 Notation NONE2 := (@None _).
-Notation SOME2 := (@Some _).     
+Notation SOME2 := (@Some _).
 Check (fun x => match x with SOME2 x => x | NONE2 => 0 end).
 
 Notation NONE3 := @None.
-Notation SOME3 := @Some.     
+Notation SOME3 := @Some.
 Check (fun x => match x with SOME3 _ x => x | NONE3 _ => 0 end).
 
 Notation "a :'" := (cons a) (at level 12).
@@ -300,3 +300,61 @@ Definition bar (a b : nat) := plus a b.
 Notation "" := A (format "", only printing).
 Check (bar A 0).
 End M.
+
+(* Check eq notations *)
+Module EqNotationsCheck.
+  Import EqNotations.
+  Section nd.
+    Context (A : Type) (x : A) (P : A -> Type)
+            (y : A) (p : x = y) (v : P x) (v' : P y).
+
+    Check let k : P y := rew p in v in k.
+    Check let k : P y := rew -> p in v in k.
+    Check let k : P x := rew <- p in v' in k.
+    Check let k : P y := rew [P] p in v in k.
+    Check let k : P y := rew -> [P] p in v in k.
+    Check let k : P x := rew <- [P] p in v' in k.
+    Check let k : P y := rew [fun y => P y] p in v in k.
+    Check let k : P y := rew -> [fun y => P y] p in v in k.
+    Check let k : P x := rew <- [fun y => P y] p in v' in k.
+    Check let k : P y := rew [fun (y : A) => P y] p in v in k.
+    Check let k : P y := rew -> [fun (y : A) => P y] p in v in k.
+    Check let k : P x := rew <- [fun (y : A) => P y] p in v' in k.
+  End nd.
+  Section dep.
+    Context (A : Type) (x : A) (P : forall y, x = y -> Type)
+            (y : A) (p : x = y) (P' : forall x, y = x -> Type)
+            (v : P x eq_refl) (v' : P' y eq_refl).
+
+    Check let k : P y p := rew dependent p in v in k.
+    Check let k : P y p := rew dependent -> p in v in k.
+    Check let k : P' x (eq_sym p) := rew dependent <- p in v' in k.
+    Check let k : P y p := rew dependent [P] p in v in k.
+    Check let k : P y p := rew dependent -> [P] p in v in k.
+    Check let k : P' x (eq_sym p) := rew dependent <- [P'] p in v' in k.
+    Check let k : P y p := rew dependent [fun y p => P y p] p in v in k.
+    Check let k : P y p := rew dependent -> [fun y p => P y p] p in v in k.
+    Check let k : P' x (eq_sym p) := rew dependent <- [fun y p => P' y p] p in v' in k.
+    Check let k : P y p := rew dependent [fun y p => id (P y p)] p in v in k.
+    Check let k : P y p := rew dependent -> [fun y p => id (P y p)] p in v in k.
+    Check let k : P' x (eq_sym p) := rew dependent <- [fun y p => id (P' y p)] p in v' in k.
+    Check let k : P y p := rew dependent [(fun (y : A) (p : x = y) => P y p)] p in v in k.
+    Check let k : P y p := rew dependent -> [(fun (y : A) (p : x = y) => P y p)] p in v in k.
+    Check let k : P' x (eq_sym p) := rew dependent <- [(fun (x : A) (p : y = x) => P' x p)] p in v' in k.
+    Check let k : P y p := rew dependent [(fun (y : A) (p : x = y) => id (P y p))] p in v in k.
+    Check let k : P y p := rew dependent -> [(fun (y : A) (p : x = y) => id (P y p))] p in v in k.
+    Check let k : P' x (eq_sym p) := rew dependent <- [(fun (x : A) (p : y = x) => id (P' x p))] p in v' in k.
+    Check match p as x in _ = a return P a x with
+          | eq_refl => v
+          end.
+    Check match eq_sym p as p' in _ = a return P' a p' with
+          | eq_refl => v'
+          end.
+    Check match p as x in _ = a return id (P a x) with
+          | eq_refl => v
+          end.
+    Check match eq_sym p as p' in _ = a return id (P' a p') with
+          | eq_refl => v'
+          end.
+  End dep.
+End EqNotationsCheck.

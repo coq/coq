@@ -137,3 +137,71 @@ end = p
      : forall x : nat, x = x -> Prop
 bar  0
      : nat
+let k := rew [P] p in v in k
+     : P y
+let k := rew [P] p in v in k
+     : P y
+let k := rew <- [P] p in v' in k
+     : P x
+let k := rew [P] p in v in k
+     : P y
+let k := rew [P] p in v in k
+     : P y
+let k := rew <- [P] p in v' in k
+     : P x
+let k := rew [fun y : A => P y] p in v in k
+     : P y
+let k := rew [fun y : A => P y] p in v in k
+     : P y
+let k := rew <- [fun y : A => P y] p in v' in k
+     : P x
+let k := rew [fun y : A => P y] p in v in k
+     : P y
+let k := rew [fun y : A => P y] p in v in k
+     : P y
+let k := rew <- [fun y : A => P y] p in v' in k
+     : P x
+let k := rew dependent [P] p in v in k
+     : P y p
+let k := rew dependent [P] p in v in k
+     : P y p
+let k := rew dependent <- [P'] p in v' in k
+     : P' x (eq_sym p)
+let k := rew dependent [P] p in v in k
+     : P y p
+let k := rew dependent [P] p in v in k
+     : P y p
+let k := rew dependent <- [P'] p in v' in k
+     : P' x (eq_sym p)
+let k := rew dependent [P] p in v in k
+     : P y p
+let k := rew dependent [P] p in v in k
+     : P y p
+let k := rew dependent <- [P'] p in v' in k
+     : P' x (eq_sym p)
+let k := rew dependent [fun y p => id (P y p)] p in v in k
+     : P y p
+let k := rew dependent [fun y p => id (P y p)] p in v in k
+     : P y p
+let k := rew dependent <- [fun y0 p => id (P' y0 p)] p in v' in k
+     : P' x (eq_sym p)
+let k := rew dependent [P] p in v in k
+     : P y p
+let k := rew dependent [P] p in v in k
+     : P y p
+let k := rew dependent <- [P'] p in v' in k
+     : P' x (eq_sym p)
+let k := rew dependent [fun y p0 => id (P y p0)] p in v in k
+     : P y p
+let k := rew dependent [fun y p0 => id (P y p0)] p in v in k
+     : P y p
+let k := rew dependent <- [fun y0 p0 => id (P' y0 p0)] p in v' in k
+     : P' x (eq_sym p)
+rew dependent [P] p in v
+     : P y p
+rew dependent <- [P'] p in v'
+     : P' x (eq_sym p)
+rew dependent [fun a x => id (P a x)] p in v
+     : id (P y p)
+rew dependent <- [fun a p' => id (P' a p')] p in v'
+     : id (P' x (eq_sym p))
