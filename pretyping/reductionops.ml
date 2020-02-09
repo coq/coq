@@ -722,32 +722,31 @@ let magicaly_constant_of_fixbody env sigma reference bd = function
   | Name.Anonymous -> bd
   | Name.Name id ->
     let open UnivProblem in
-    try
-      let (cst_mod,_) = Constant.repr2 reference in
-      let cst = Constant.make2 cst_mod (Label.of_id id) in
+    let (cst_mod,_) = Constant.repr2 reference in
+    let cst = Constant.make2 cst_mod (Label.of_id id) in
+    if not (Environ.mem_constant cst env) then bd
+    else
       let (cst, u), ctx = UnivGen.fresh_constant_instance env cst in
       match constant_opt_value_in env (cst,u) with
       | None -> bd
       | Some t ->
         let csts = EConstr.eq_constr_universes env sigma (EConstr.of_constr t) bd in
         begin match csts with
-        | Some csts ->
-          let subst = Set.fold (fun cst acc ->
-              let l, r = match cst with
-                | ULub (u, v) | UWeak (u, v) -> u, v
-                | UEq (u, v) | ULe (u, v) ->
-                  let get u = Option.get (Universe.level u) in
-                  get u, get v
-              in
-            Univ.LMap.add l r acc)
-            csts Univ.LMap.empty
-          in
-          let inst = Instance.subst_fn (fun u -> Univ.LMap.find u subst) u in
-          mkConstU (cst, EInstance.make inst)
-        | None -> bd
+          | Some csts ->
+            let subst = Set.fold (fun cst acc ->
+                let l, r = match cst with
+                  | ULub (u, v) | UWeak (u, v) -> u, v
+                  | UEq (u, v) | ULe (u, v) ->
+                    let get u = Option.get (Universe.level u) in
+                    get u, get v
+                in
+                Univ.LMap.add l r acc)
+                csts Univ.LMap.empty
+            in
+            let inst = Instance.subst_fn (fun u -> Univ.LMap.find u subst) u in
+            mkConstU (cst, EInstance.make inst)
+          | None -> bd
         end
-    with
-    | Not_found -> bd
 
 let contract_cofix ?env sigma ?reference (bodynum,(names,types,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
