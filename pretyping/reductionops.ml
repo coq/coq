@@ -1707,7 +1707,7 @@ let splay_arity env sigma c =
   let l, c = splay_prod env sigma c in
   match EConstr.kind sigma c with
     | Sort s -> l,s
-    | _ -> invalid_arg "splay_arity"
+    | _ -> raise Reduction.NotArity
 
 let sort_of_arity env sigma c = snd (splay_arity env sigma c)
 

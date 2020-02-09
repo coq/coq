@@ -372,7 +372,7 @@ let type_of_inductive_knowing_parameters env (ind,u) args =
   let (mib,_mip) as spec = lookup_mind_specif env ind in
   check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps;
   let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters
-    env (spec,u) args
+      (spec,u) (Inductive.make_param_univs env args)
   in
   check_constraints cst env;
   t
@@ -380,7 +380,7 @@ let type_of_inductive_knowing_parameters env (ind,u) args =
 let type_of_inductive env (ind,u) =
   let (mib,mip) = lookup_mind_specif env ind in
   check_hyps_inclusion env (GlobRef.IndRef ind) mib.mind_hyps;
-  let t,cst = Inductive.constrained_type_of_inductive env ((mib,mip),u) in
+  let t,cst = Inductive.constrained_type_of_inductive ((mib,mip),u) in
   check_constraints cst env;
   t
 
@@ -461,8 +461,7 @@ let type_of_global_in_context env r =
     let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
     let univs = Declareops.inductive_polymorphic_context mib in
     let inst = Univ.make_abstract_instance univs in
-    let env = Environ.push_context ~strict:false (Univ.AUContext.repr univs) env in
-    Inductive.type_of_inductive env (specif, inst), univs
+    Inductive.type_of_inductive (specif, inst), univs
   | ConstructRef cstr ->
     let (mib,_ as specif) =
       Inductive.lookup_mind_specif env (inductive_of_constructor cstr)
@@ -515,8 +514,7 @@ let rec execute env cstr =
         let f', ft =
           match kind f with
           | Ind ind when Environ.template_polymorphic_pind ind env ->
-            let args = Array.map (fun t -> lazy t) argst in
-              f, type_of_inductive_knowing_parameters env ind args
+            f, type_of_inductive_knowing_parameters env ind argst
           | _ ->
             (* No template polymorphism *)
             execute env f

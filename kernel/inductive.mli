@@ -41,16 +41,22 @@ val inductive_paramdecls : mutual_inductive_body puniverses -> Constr.rel_contex
 val instantiate_inductive_constraints :
   mutual_inductive_body -> Instance.t -> Constraint.t
 
-val constrained_type_of_inductive : env -> mind_specif puniverses -> types constrained
+type param_univs = (unit -> Universe.t) list
+
+val make_param_univs : Environ.env -> constr array -> param_univs
+(** The constr array is the types of the arguments to a template
+    polymorphic inductive. *)
+
+val constrained_type_of_inductive : mind_specif puniverses -> types constrained
 val constrained_type_of_inductive_knowing_parameters :
-  env -> mind_specif puniverses -> types Lazy.t array -> types constrained
+  mind_specif puniverses -> param_univs -> types constrained
 
 val relevance_of_inductive : env -> inductive -> Sorts.relevance
 
-val type_of_inductive : env -> mind_specif puniverses -> types
+val type_of_inductive : mind_specif puniverses -> types
 
 val type_of_inductive_knowing_parameters :
-  env -> ?polyprop:bool -> mind_specif puniverses -> types Lazy.t array -> types
+  ?polyprop:bool -> mind_specif puniverses -> param_univs -> types
 
 val elim_sort : mind_specif -> Sorts.family
 
@@ -117,8 +123,8 @@ exception SingletonInductiveBecomesProp of Id.t
 
 val max_inductive_sort : Sorts.t array -> Universe.t
 
-val instantiate_universes : env -> Constr.rel_context ->
-  template_arity -> constr Lazy.t array -> Constr.rel_context * Sorts.t
+val instantiate_universes : Constr.rel_context ->
+  template_arity -> param_univs -> Constr.rel_context * Sorts.t
 
 (** {6 Debug} *)
 

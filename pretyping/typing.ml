@@ -38,8 +38,11 @@ let meta_type evd mv =
 let inductive_type_knowing_parameters env sigma (ind,u) jl =
   let u = Unsafe.to_instance u in
   let mspec = lookup_mind_specif env ind in
-  let paramstyp = Array.map (fun j -> lazy (EConstr.to_constr ~abort_on_undefined_evars:false sigma j.uj_type)) jl in
-  Inductive.type_of_inductive_knowing_parameters env (mspec,u) paramstyp
+  let paramstyp = Array.map_to_list (fun j () ->
+      let s = Reductionops.sort_of_arity env sigma j.uj_type in
+      Sorts.univ_of_sort (EConstr.ESorts.kind sigma s)) jl
+  in
+  Inductive.type_of_inductive_knowing_parameters (mspec,u) paramstyp
 
 let type_judgment env sigma j =
   match EConstr.kind sigma (whd_all env sigma j.uj_type) with
@@ -307,7 +310,7 @@ let type_of_inductive env sigma (ind,u) =
   let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
   let () = check_hyps_inclusion env sigma (GR.IndRef ind) mib.mind_hyps in
   let u = EInstance.kind sigma u in
-  let ty, csts = Inductive.constrained_type_of_inductive env (specif,u) in
+  let ty, csts = Inductive.constrained_type_of_inductive (specif,u) in
   let sigma = Evd.add_constraints sigma csts in
   sigma, (EConstr.of_constr (rename_type ty (GR.IndRef ind)))
 
