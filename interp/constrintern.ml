@@ -2339,7 +2339,7 @@ let extract_ids env =
 let scope_of_type_kind sigma = function
   | IsType -> Notation.current_type_scope_name ()
   | OfType typ -> compute_type_scope sigma typ
-  | WithoutTypeConstraint -> None
+  | WithoutTypeConstraint | UnknownIfTermOrType -> None
 
 let empty_ltac_sign = {
   ltac_vars = Id.Set.empty;

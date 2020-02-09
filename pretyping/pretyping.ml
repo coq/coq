@@ -47,7 +47,7 @@ open Evarconv
 
 module NamedDecl = Context.Named.Declaration
 
-type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
+type typing_constraint = UnknownIfTermOrType | IsType | OfType of types | WithoutTypeConstraint
 
 let (!!) env = GlobEnv.env env
 
@@ -1290,7 +1290,7 @@ let ise_pretype_gen flags env sigma lvar kind c =
   in
   let env = GlobEnv.make ~hypnaming env sigma lvar in
   let sigma', c', c'_ty = match kind with
-    | WithoutTypeConstraint ->
+    | WithoutTypeConstraint | UnknownIfTermOrType ->
       let sigma, j = pretype ~program_mode ~poly flags.use_typeclasses empty_tycon env sigma c in
       sigma, j.uj_val, j.uj_type
     | OfType exptyp ->
