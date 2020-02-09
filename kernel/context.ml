@@ -196,12 +196,10 @@ struct
   (** Return a new rel-context enriched by with a given inner-most declaration. *)
   let add d ctx = d :: ctx
 
-  (** Return the number of {e local declarations} in a given context. *)
+  (** Return the number of {e local declarations} in a given rel-context. *)
   let length = List.length
 
-  (** [extended_rel_list n Γ] builds an instance [args] such that [Γ,Δ ⊢ args:Γ]
-      with n = |Δ| and with the local definitions of [Γ] skipped in
-      [args]. Example: for [x:T,y:=c,z:U] and [n]=2, it gives [Rel 5, Rel 3]. *)
+  (** Return the number of {e local assumptions} in a given rel-context. *)
   let nhyps ctx =
     let open Declaration in
     let rec nhyps acc = function
@@ -413,7 +411,7 @@ struct
   (** empty named-context *)
   let empty = []
 
-  (** empty named-context *)
+  (** Return a new named-context enriched by with a given inner-most declaration. *)
   let add d ctx = d :: ctx
 
   (** Return the number of {e local declarations} in a given named-context. *)

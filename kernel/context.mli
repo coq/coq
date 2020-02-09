@@ -129,7 +129,7 @@ sig
   (** Return a new rel-context enriched by with a given inner-most declaration. *)
   val add : ('c, 't) Declaration.pt -> ('c, 't) pt -> ('c, 't) pt
 
-  (** Return the number of {e local declarations} in a given context. *)
+  (** Return the number of {e local declarations} in a given rel-context. *)
   val length : ('c, 't) pt -> int
 
   (** Check whether given two rel-contexts are equal. *)
