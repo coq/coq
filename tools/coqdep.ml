@@ -9,9 +9,8 @@
 (************************************************************************)
 
 open Format
-open Coqdep_lexer
-open Coqdep_common
 open Minisys
+open Coqdep_common
 
 (** The basic parts of coqdep (i.e. the parts used by [coqdep -boot])
     are now in [Coqdep_common]. The code that remains here concerns
@@ -28,47 +27,6 @@ open Minisys
 *)
 
 let option_sort = ref false
-
-let warning_mult suf iter =
-  let tab = Hashtbl.create 151 in
-  let check f d =
-    begin try
-      let d' = Hashtbl.find tab f in
-      if (Filename.dirname (file_name f d))
-        <> (Filename.dirname (file_name f d')) then begin
-          coqdep_warning "the file %s is defined twice!" (f ^ suf)
-        end
-    with Not_found -> () end;
-    Hashtbl.add tab f d
-  in
-  iter check
-
-let sort () =
-  let seen = Hashtbl.create 97 in
-  let rec loop file =
-    let file = canonize file in
-    if not (Hashtbl.mem seen file) then begin
-      Hashtbl.add seen file ();
-      let cin = open_in (file ^ ".v") in
-      let lb = Lexing.from_channel cin in
-      try
-        while true do
-          match coq_action lb with
-            | Require (from, sl) ->
-                List.iter
-                  (fun s ->
-                    match search_v_known ?from s with
-                    | None -> ()
-                    | Some f -> loop f)
-                sl
-            | _ -> ()
-        done
-      with Fin_fichier ->
-        close_in cin;
-        printf "%s%s " file !suffixe
-    end
-  in
-  List.iter (fun (name,_) -> loop name) !vAccu
 
 let usage () =
   eprintf " usage: coqdep [options] <filename>+\n";
@@ -159,8 +117,6 @@ let coqdep () =
   List.iter (fun (f,d) -> add_mli_known f d ".mli") !mliAccu;
   List.iter (fun (f,d) -> add_mllib_known f d ".mllib") !mllibAccu;
   List.iter (fun (f,suff,d) -> add_ml_known f d suff) !mlAccu;
-  warning_mult ".mli" iter_mli_known;
-  warning_mult ".ml" iter_ml_known;
   if !option_sort then begin sort (); exit 0 end;
   if !option_c then mL_dependencies ();
   coq_dependencies ();
