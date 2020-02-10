@@ -1272,12 +1272,16 @@ type entry_properties = {
   entry_coercion_map : ((entry_level option * entry_level option) * entry_coercion) list EntryCoercionMap.t;
   entry_has_global_map : entry_level String.Map.t;
   entry_has_ident_map : entry_level String.Map.t;
+  entry_has_numeral_map : entry_level String.Map.t;
+  entry_has_string_map : entry_level String.Map.t;
 }
 
 let entry_properties_empty = {
   entry_coercion_map = EntryCoercionMap.empty;
   entry_has_global_map = String.Map.empty;
   entry_has_ident_map = String.Map.empty;
+  entry_has_numeral_map = String.Map.empty;
+  entry_has_string_map = String.Map.empty;
 }
 
 let entry_properties = ref entry_properties_empty
@@ -1374,6 +1378,35 @@ let entry_has_ident = function
   | InConstrEntrySomeLevel -> true
   | InCustomEntryLevel (s,n) ->
      try String.Map.find s !entry_properties.entry_has_ident_map <= n with Not_found -> false
+
+let declare_custom_entry_has_numeral s n =
+  try
+    let p = String.Map.find s !entry_properties.entry_has_numeral_map in
+    user_err (str "Custom entry " ++ str s ++
+              str " has already a rule for numerals at level " ++ int p ++ str ".")
+  with Not_found ->
+    entry_properties :=
+    { !entry_properties with
+      entry_has_numeral_map = String.Map.add s n !entry_properties.entry_has_numeral_map }
+
+let declare_custom_entry_has_string s n =
+  try
+    let p = String.Map.find s !entry_properties.entry_has_string_map in
+    user_err (str "Custom entry " ++ str s ++
+              str " has already a rule for strings at level " ++ int p ++ str ".")
+  with Not_found ->
+    entry_properties :=
+    { !entry_properties with
+      entry_has_string_map = String.Map.add s n !entry_properties.entry_has_string_map }
+
+let entry_has_prim_token prim = function
+  | InConstrEntrySomeLevel -> true
+  | InCustomEntryLevel (s,n) ->
+     match prim with
+     | Numeral _ ->
+       (try String.Map.find s !entry_properties.entry_has_numeral_map <= n with Not_found -> false)
+     | String _ ->
+       (try String.Map.find s !entry_properties.entry_has_string_map <= n with Not_found -> false)
 
 let uninterp_prim_token c =
   match glob_prim_constr_key c with
