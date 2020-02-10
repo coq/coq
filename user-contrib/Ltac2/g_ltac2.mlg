@@ -25,6 +25,10 @@ let err () = raise Stream.Failure
 
 type lookahead = Gramlib.Plexing.location_function -> int -> Tok.t Stream.t -> int option
 
+let check_no_space tok m strm =
+  let n = Stream.count strm in
+  if G_prim.contiguous tok n (n+m-1) then Some m else None
+
 let entry_of_lookahead s (lk : lookahead) =
   let run tok strm = match lk tok 0 strm with None -> err () | Some _ -> () in
   Pcoq.Entry.of_parser s run
@@ -51,7 +55,7 @@ let lk_int tok n strm = match stream_nth n strm with
 | NUMERAL { NumTok.int = _; frac = ""; exp = "" } -> Some (n + 1)
 | _ -> None
 
-let lk_ident_or_anti = lk_ident <+> (lk_kw "$" >> lk_ident)
+let lk_ident_or_anti = lk_ident <+> (lk_kw "$" >> lk_ident >> check_no_space)
 
 let rec lk_ident_list n strm =
   ((lk_ident >> lk_ident_list) <+> lk_empty) n strm
@@ -80,10 +84,6 @@ let test_lpar_id_rpar =
     lk_kw "(" >> lk_ident >> lk_kw ")"
   end
 
-let check_no_space tok m strm =
-  let n = Stream.count strm in
-  if G_prim.contiguous tok n (n+m-1) then Some m else None
-
 let test_ampersand_ident =
   entry_of_lookahead "test_ampersand_ident" begin
     lk_kw "&" >> lk_ident >> check_no_space
@@ -91,7 +91,7 @@ let test_ampersand_ident =
 
 let test_dollar_ident =
   entry_of_lookahead "test_dollar_ident" begin
-    lk_kw "$" >> lk_ident
+    lk_kw "$" >> lk_ident >> check_no_space
   end
 
 let test_ltac1_env =
