@@ -384,12 +384,12 @@ let tag_var = tag Tag.variable
     if is_open then pr_delimited_binders pr_com_at sep pr_c
     else pr_undelimited_binders sep pr_c
 
-  let pr_recursive_decl pr pr_dangling dangling_with_for id bl annot t c =
+  let pr_recursive_decl pr pr_dangling kw dangling_with_for id bl annot t c =
     let pr_body =
       if dangling_with_for then pr_dangling else pr in
-    pr_id id ++ (if bl = [] then mt () else str" ") ++
+    hov 0 (str kw ++ spc () ++ pr_id id ++ (if bl = [] then mt () else str" ") ++
       hov 0 (pr_undelimited_binders spc (pr ltop) bl ++ annot) ++
-      pr_opt_type_spc pr t ++ str " :=" ++
+      pr_opt_type_spc pr t ++ str " :=") ++
       pr_sep_com (fun () -> brk(1,2)) (pr_body ltop) c
 
   let pr_guard_annot pr_aux bl ro =
@@ -413,19 +413,19 @@ let tag_var = tag Tag.variable
             match id with None -> mt() | Some id -> spc () ++ pr_lident id ++
               (match r with None -> mt() | Some r -> str" on " ++ pr_aux r) ++ str"}"
 
-  let pr_fixdecl pr prd dangling_with_for ({v=id},ro,bl,t,c) =
+  let pr_fixdecl pr prd kw dangling_with_for ({v=id},ro,bl,t,c) =
     let annot = pr_guard_annot (pr lsimpleconstr) bl ro in
-    pr_recursive_decl pr prd dangling_with_for id bl annot t c
+    pr_recursive_decl pr prd kw dangling_with_for id bl annot t c
 
-  let pr_cofixdecl pr prd dangling_with_for ({v=id},bl,t,c) =
-    pr_recursive_decl pr prd dangling_with_for id bl (mt()) t c
+  let pr_cofixdecl pr prd kw dangling_with_for ({v=id},bl,t,c) =
+    pr_recursive_decl pr prd kw dangling_with_for id bl (mt()) t c
 
-  let pr_recursive pr_decl id = function
+  let pr_recursive kw pr_decl id = function
     | [] -> anomaly (Pp.str "(co)fixpoint with no definition.")
-    | [d1] -> pr_decl false d1
+    | [d1] -> pr_decl kw false d1
     | dl ->
-      prlist_with_sep (fun () -> fnl() ++ keyword "with" ++ spc ())
-        (pr_decl true) dl ++
+      prlist_with_sep (fun () -> fnl())
+        (pr_decl "with" true) dl ++
         fnl() ++ keyword "for" ++ spc () ++ pr_id id
 
   let pr_asin pr na indnalopt =
@@ -491,15 +491,13 @@ let tag_var = tag Tag.variable
         return (pr_cref r us, latom)
       | CFix (id,fix) ->
         return (
-          hov 0 (keyword "fix" ++ spc () ++
-                   pr_recursive
+          hv 0 (pr_recursive "fix"
                    (pr_fixdecl (pr mt) (pr_dangling_with_for mt pr)) id.v fix),
           lfix
         )
       | CCoFix (id,cofix) ->
         return (
-          hov 0 (keyword "cofix" ++ spc () ++
-                   pr_recursive
+          hv 0 (pr_recursive "cofix"
                    (pr_cofixdecl (pr mt) (pr_dangling_with_for mt pr)) id.v cofix),
           lfix
         )
