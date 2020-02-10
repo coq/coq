@@ -200,46 +200,43 @@ let assoc_eq al ar =
   | LeftA, LeftA -> true
   | _, _ -> false
 
-(* [adjust_level assoc from prod] where [assoc] and [from] are the name
+(** [adjust_level assoc from prod] where [assoc] and [from] are the name
    and associativity of the level where to add the rule; the meaning of
    the result is
 
-     None = SELF
-     Some None = NEXT
-     Some (Some (n,cur)) = constr LEVEL n *)
+     DefaultLevel = entry name
+     NextLevel = NEXT
+     NumLevel n = constr LEVEL n *)
 let adjust_level custom assoc (custom',from) p = let open Gramlib.Gramext in match p with
 (* If a level in a different grammar, no other choice than denoting it by absolute level *)
-  | (NumLevel n,_) when not (Notation.notation_entry_eq custom custom') -> Some (Some n)
+  | (NumLevel n,_) when not (Notation.notation_entry_eq custom custom') -> NumLevel n
 (* If a default level in a different grammar, the entry name is ok *)
   | (DefaultLevel,InternalProd) ->
-    if Notation.notation_entry_eq custom InConstrEntry then Some (Some 200) else None
-  | (DefaultLevel,BorderProd _) when not (Notation.notation_entry_eq custom custom') -> None
+    if Notation.notation_entry_eq custom InConstrEntry then NumLevel 200 else DefaultLevel
+  | (DefaultLevel,BorderProd _) when not (Notation.notation_entry_eq custom custom') -> DefaultLevel
 (* Associativity is None means force the level *)
-  | (NumLevel n,BorderProd (_,None)) -> Some (Some n)
+  | (NumLevel n,BorderProd (_,None)) -> NumLevel n
   | (DefaultLevel,BorderProd (_,None)) -> assert false
 (* Compute production name on the right side *)
   (* If NonA or LeftA on the right-hand side, set to NEXT *)
-  | ((NumLevel _ | DefaultLevel),BorderProd (Right,Some (NonA|LeftA))) ->
-      Some None
+  | ((NumLevel _ | DefaultLevel),BorderProd (Right,Some (NonA|LeftA))) -> NextLevel
   (* If RightA on the right-hand side, set to the explicit (current) level *)
-  | (NumLevel n,BorderProd (Right,Some RightA)) ->
-      Some (Some n)
-  | (DefaultLevel,BorderProd (Right,Some RightA)) ->
-      Some (Some from)
+  | (NumLevel n,BorderProd (Right,Some RightA)) -> NumLevel n
+  | (DefaultLevel,BorderProd (Right,Some RightA)) -> NumLevel from
 (* Compute production name on the left side *)
   (* If NonA on the left-hand side, adopt the current assoc ?? *)
-  | ((NumLevel _ | DefaultLevel),BorderProd (Left,Some NonA)) -> None
+  | ((NumLevel _ | DefaultLevel),BorderProd (Left,Some NonA)) -> DefaultLevel
   (* If the expected assoc is the current one, set to SELF *)
   | ((NumLevel _ | DefaultLevel),BorderProd (Left,Some a)) when assoc_eq a (camlp5_assoc assoc) ->
-      None
+      DefaultLevel
   (* Otherwise, force the level, n or n-1, according to expected assoc *)
-  | (NumLevel n,BorderProd (Left,Some LeftA)) -> Some (Some n)
-  | ((NumLevel _ | DefaultLevel),BorderProd (Left,Some _)) -> Some None
+  | (NumLevel n,BorderProd (Left,Some LeftA)) -> NumLevel n
+  | ((NumLevel _ | DefaultLevel),BorderProd (Left,Some _)) -> NextLevel
   (* None means NEXT *)
-  | (NextLevel,_) -> assert (Notation.notation_entry_eq custom custom'); Some None
+  | (NextLevel,_) -> assert (Notation.notation_entry_eq custom custom'); NextLevel
 (* Compute production name elsewhere *)
   | (NumLevel n,InternalProd) ->
-    if from = n + 1 then Some None else Some (Some n)
+    if from = n + 1 then NextLevel else NumLevel n
 
 type _ target =
 | ForConstr : constr_expr target
@@ -350,9 +347,9 @@ let symbol_of_target : type s. _ -> _ -> _ -> _ -> s target -> (s, s) mayrec_sym
     let g = target_entry custom forpat in
     let lev = adjust_level custom assoc from p in
     begin match lev with
-    | None -> MayRecNo (Aentry g)
-    | Some None -> MayRecMay Anext
-    | Some (Some lev) -> MayRecNo (Aentryl (g, string_of_int lev))
+    | DefaultLevel -> MayRecNo (Aentry g)
+    | NextLevel -> MayRecMay Anext
+    | NumLevel lev -> MayRecNo (Aentryl (g, string_of_int lev))
     end
 
 let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symbol = fun assoc from typ -> match typ with
