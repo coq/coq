@@ -341,6 +341,20 @@ class TacticNotationObject(NotationObject):
     index_suffix = "(tactic)"
     annotation = None
 
+class AttributeNotationObject(NotationObject):
+    """An attribute.
+
+    Example::
+
+       .. attr:: #[ local ]
+    """
+    subdomain = "attr"
+    index_suffix = "(attribute)"
+    annotation = "Attribute"
+
+    def _name_from_signature(self, signature):
+        return notation_to_string(signature)
+
 class TacticNotationVariantObject(TacticNotationObject):
     """A variant of a tactic.
 
@@ -1082,6 +1096,10 @@ class CoqVernacIndex(CoqSubdomainsIndex):
 class CoqTacticIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "tacindex", "Tactic Index", "tactics", ["tacn"]
 
+# Attribute index is generated but not included in output
+class CoqAttributeIndex(CoqSubdomainsIndex):
+    name, localname, shortname, subdomains = "attrindex", "Attribute Index", "attributes", ["attr"]
+
 class CoqOptionIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "optindex", "Flags, options and Tables Index", "options", ["flag", "opt", "table"]
 
@@ -1158,6 +1176,7 @@ class CoqDomain(Domain):
         'opt': ObjType('opt', 'opt'),
         'flag': ObjType('flag', 'flag'),
         'table': ObjType('table', 'table'),
+        'attr': ObjType('attr', 'attr'),
         'thm': ObjType('thm', 'thm'),
         'prodn': ObjType('prodn', 'prodn'),
         'exn': ObjType('exn', 'exn'),
@@ -1176,6 +1195,7 @@ class CoqDomain(Domain):
         'opt': OptionObject,
         'flag': FlagObject,
         'table': TableObject,
+        'attr': AttributeNotationObject,
         'thm': GallinaObject,
         'prodn' : ProductionObject,
         'exn': ExceptionObject,
@@ -1189,6 +1209,7 @@ class CoqDomain(Domain):
         'opt': XRefRole(warn_dangling=True),
         'flag': XRefRole(warn_dangling=True),
         'table': XRefRole(warn_dangling=True),
+        'attr': XRefRole(warn_dangling=True),
         'thm': XRefRole(warn_dangling=True),
         'prodn' : XRefRole(warn_dangling=True),
         'exn': XRefRole(warn_dangling=True),
@@ -1212,6 +1233,7 @@ class CoqDomain(Domain):
             'opt': {},
             'flag': {},
             'table': {},
+            'attr': {},
             'thm': {},
             'prodn' : {},
             'exn': {},
