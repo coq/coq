@@ -206,20 +206,19 @@ let assoc_eq al ar =
 
      None = SELF
      Some None = NEXT
-     Some (Some (n,cur)) = constr LEVEL n
-         s.t. if [cur] is set then [n] is the same as the [from] level *)
+     Some (Some (n,cur)) = constr LEVEL n *)
 let adjust_level custom assoc (custom',from) p = let open Gramlib.Gramext in match p with
 (* If in a different grammar, no other choice than denoting it by absolute level *)
-  | (NumLevel n,_) when not (Notation.notation_entry_eq custom custom') -> Some (Some (n,true))
+  | (NumLevel n,_) when not (Notation.notation_entry_eq custom custom') -> Some (Some n)
 (* Associativity is None means force the level *)
-  | (NumLevel n,BorderProd (_,None)) -> Some (Some (n,true))
+  | (NumLevel n,BorderProd (_,None)) -> Some (Some n)
 (* Compute production name on the right side *)
   (* If NonA or LeftA on the right-hand side, set to NEXT *)
   | (NumLevel n,BorderProd (Right,Some (NonA|LeftA))) ->
       Some None
   (* If RightA on the right-hand side, set to the explicit (current) level *)
   | (NumLevel n,BorderProd (Right,Some RightA)) ->
-      Some (Some (n,true))
+      Some (Some n)
 (* Compute production name on the left side *)
   (* If NonA on the left-hand side, adopt the current assoc ?? *)
   | (NumLevel n,BorderProd (Left,Some NonA)) -> None
@@ -229,14 +228,14 @@ let adjust_level custom assoc (custom',from) p = let open Gramlib.Gramext in mat
   (* Otherwise, force the level, n or n-1, according to expected assoc *)
   | (NumLevel n,BorderProd (Left,Some a)) ->
     begin match a with
-    | LeftA -> Some (Some (n, true))
+    | LeftA -> Some (Some n)
     | _ -> Some None
     end
   (* None means NEXT *)
   | (NextLevel,_) -> assert (Notation.notation_entry_eq custom custom'); Some None
 (* Compute production name elsewhere *)
   | (NumLevel n,InternalProd) ->
-    if from = n + 1 then Some None else Some (Some (n, Int.equal n from))
+    if from = n + 1 then Some None else Some (Some n)
 
 type _ target =
 | ForConstr : constr_expr target
@@ -349,7 +348,7 @@ let symbol_of_target : type s. _ -> _ -> _ -> _ -> s target -> (s, s) mayrec_sym
     begin match lev with
     | None -> MayRecNo (Aentry g)
     | Some None -> MayRecMay Anext
-    | Some (Some (lev, cur)) -> MayRecNo (Aentryl (g, string_of_int lev))
+    | Some (Some lev) -> MayRecNo (Aentryl (g, string_of_int lev))
     end
 
 let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symbol = fun assoc from typ -> match typ with
