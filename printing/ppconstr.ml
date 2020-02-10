@@ -223,7 +223,7 @@ let tag_var = tag Tag.variable
 
   let pr_opt_type_spc pr = function
     | { CAst.v = CHole (_,IntroAnonymous,_) } -> mt ()
-    | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t
+    | t ->  str " :" ++ pr_sep_com (fun()->brk(1,4)) (pr ltop) t
 
   let pr_prim_token = function
     | Numeral (SPlus,n) -> str (NumTok.to_string n)
@@ -387,7 +387,7 @@ let tag_var = tag Tag.variable
   let pr_recursive_decl pr pr_dangling kw dangling_with_for id bl annot t c =
     let pr_body =
       if dangling_with_for then pr_dangling else pr in
-    hov 0 (str kw ++ spc () ++ pr_id id ++ (if bl = [] then mt () else str" ") ++
+    hov 0 (str kw ++ brk(1,2) ++ pr_id id ++ (if bl = [] then mt () else brk(1,2)) ++
       hov 0 (pr_undelimited_binders spc (pr ltop) bl ++ annot) ++
       pr_opt_type_spc pr t ++ str " :=") ++
       pr_sep_com (fun () -> brk(1,2)) (pr_body ltop) c
@@ -404,13 +404,13 @@ let tag_var = tag Tag.variable
               | CLocalPattern _ -> assert false
             in let ids = List.flatten (List.map names_of_binder bl) in
                if List.length ids > 1 then
-                 spc() ++ str "{" ++ keyword "struct" ++ spc () ++ pr_id id ++ str"}"
+                 spc() ++ str "{" ++ keyword "struct" ++ brk (1,1) ++ pr_id id ++ str"}"
                else mt()
           | CWfRec (id,c) ->
-            spc() ++ str "{" ++ keyword "wf" ++ spc () ++ pr_aux c ++ spc() ++ pr_lident id ++ str"}"
+            spc() ++ str "{" ++ keyword "wf" ++ brk (1,1) ++ pr_aux c ++ brk (1,1) ++ pr_lident id ++ str"}"
           | CMeasureRec (id,m,r) ->
-            spc() ++ str "{" ++ keyword "measure" ++ spc () ++ pr_aux m ++
-            match id with None -> mt() | Some id -> spc () ++ pr_lident id ++
+            spc() ++ str "{" ++ keyword "measure" ++ brk (1,1) ++ pr_aux m ++
+            match id with None -> mt() | Some id -> brk (1,1) ++ pr_lident id ++
               (match r with None -> mt() | Some r -> str" on " ++ pr_aux r) ++ str"}"
 
   let pr_fixdecl pr prd kw dangling_with_for ({v=id},ro,bl,t,c) =
