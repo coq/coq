@@ -1669,6 +1669,44 @@ For example:
 One can always specify the parameter if it is not uniform using the
 usual implicit arguments disambiguation syntax.
 
+The syntax is also supported in internal binders. For instance, in the
+following kinds of expressions, the type of each declaration present
+in :token:`binders` can be bracketed to mark the declaration as
+implicit:
+:n:`fun (@ident:forall @binders, @type) => @term`,
+:n:`forall (@ident:forall @binders, @type), @type`,
+:n:`let @ident @binders := @term in @term`,
+:n:`fix @ident @binders := @term in @term` and
+:n:`cofix @ident @binders := @term in @term`.
+Here is an example:
+
+.. coqtop:: all
+
+   Axiom Ax :
+     forall (f:forall {A} (a:A), A * A),
+     let g {A} (x y:A) := (x,y) in
+     f 0 = g 0 0.
+
+.. warn:: Ignoring implicit binder declaration in unexpected position
+
+   This is triggered when setting an argument implicit in an
+   expression which does not correspond to the type of an assumption
+   or to the body of a definition. Here is an example:
+
+   .. coqtop:: all warn
+
+      Definition f := forall {y}, y = 0.
+
+.. warn:: Making shadowed name of implicit argument accessible by position
+
+   This is triggered when two variables of same name are set implicit
+   in the same block of binders, in which case the first occurrence is
+   considered to be unnamed. Here is an example:
+
+   .. coqtop:: all warn
+
+      Check let g {x:nat} (H:x=x) {x} (H:x=x) := x in 0.
+
 
 Declaring Implicit Arguments
 ++++++++++++++++++++++++++++
