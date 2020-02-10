@@ -978,17 +978,12 @@ let is_only_printing mods =
 let set_entry_type from n etyps (x,typ) =
   let make_lev n s = match typ with
     | BorderProd _ -> NumLevel n
-    | InternalProd ->
-      if s = InConstrEntry then NumLevel 200 else
-      user_err (strbrk "level of inner subentry " ++ quote (pr_notation_entry s) ++
-                str " cannot be inferred. It must be given explicitly.") in
+    | InternalProd -> DefaultLevel in
   let typ = try
     match List.assoc x etyps, typ with
       | ETConstr (s,bko,DefaultLevel), _ ->
          if notation_entry_eq from s then ETConstr (s,bko,(make_lev n s,typ))
-         else if s = InConstrEntry then ETConstr (s,bko,(make_lev 200 s,typ)) else
-         user_err (strbrk "level of subentry " ++ quote (pr_notation_entry s) ++
-                   str " cannot be inferred. It must be given explicitly.")
+         else ETConstr (s,bko,(DefaultLevel,typ))
       | ETConstr (s,bko,n), BorderProd (left,_) ->
           ETConstr (s,bko,(n,BorderProd (left,None)))
       | ETConstr (s,bko,n), InternalProd ->

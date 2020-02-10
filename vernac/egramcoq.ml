@@ -213,7 +213,8 @@ let adjust_level custom assoc (custom',from) p = let open Gramlib.Gramext in mat
 (* If a default level in a different grammar, the entry name is ok *)
   | (DefaultLevel,InternalProd) ->
     if Notation.notation_entry_eq custom InConstrEntry then NumLevel 200 else DefaultLevel
-  | (DefaultLevel,BorderProd _) when not (Notation.notation_entry_eq custom custom') -> DefaultLevel
+  | (DefaultLevel,BorderProd _) when not (Notation.notation_entry_eq custom custom') ->
+    if Notation.notation_entry_eq custom InConstrEntry then NumLevel 200 else DefaultLevel
 (* Associativity is None means force the level *)
   | (NumLevel n,BorderProd (_,None)) -> NumLevel n
   | (DefaultLevel,BorderProd (_,None)) -> assert false
