@@ -305,9 +305,12 @@ val availability_of_entry_coercion : notation_entry_level -> notation_entry_leve
 
 val declare_custom_entry_has_global : string -> int -> unit
 val declare_custom_entry_has_ident : string -> int -> unit
+val declare_custom_entry_has_numeral : string -> int -> unit
+val declare_custom_entry_has_string : string -> int -> unit
 
 val entry_has_global : notation_entry_level -> bool
 val entry_has_ident : notation_entry_level -> bool
+val entry_has_prim_token : prim_token -> notation_entry_level -> bool
 
 (** Rem: printing rules for primitive token are canonical *)
 

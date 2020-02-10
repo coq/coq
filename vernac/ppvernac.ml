@@ -126,6 +126,7 @@ open Pputils
     | ETPattern (b,n) -> pr_strict b ++ str"pattern" ++ pr_at_level (level_of_pattern_level n)
     | ETConstr (s,bko,lev) -> pr_notation_entry s ++ pr lev ++ pr_opt pr_constr_as_binder_kind bko
     | ETBigint -> str "bigint"
+    | ETString -> str "string"
     | ETBinder true -> str "binder"
     | ETBinder false -> str "closed binder"
 

@@ -249,6 +249,7 @@ type (_, _) entry =
 | TTName : ('self, lname) entry
 | TTReference : ('self, qualid) entry
 | TTBigint : ('self, string) entry
+| TTString : ('self, string) entry
 | TTConstr : notation_entry * prod_info * 'r target -> ('r, 'r) entry
 | TTConstrList : notation_entry * prod_info * string Tok.p list * 'r target -> ('r, 'r list) entry
 | TTPattern : int -> ('self, cases_pattern_expr) entry
@@ -369,12 +370,14 @@ let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symbol =
 | TTName -> MayRecNo (Aentry Prim.name)
 | TTOpenBinderList -> MayRecNo (Aentry Constr.open_binders)
 | TTBigint -> MayRecNo (Aentry Prim.bigint)
+| TTString -> MayRecNo (Aentry Prim.string)
 | TTReference -> MayRecNo (Aentry Constr.global)
 
 let interp_entry forpat e = match e with
 | ETProdName -> TTAny TTName
 | ETProdReference -> TTAny TTReference
 | ETProdBigint -> TTAny TTBigint
+| ETProdString -> TTAny TTString
 | ETProdConstr (s,p) -> TTAny (TTConstr (s, p, forpat))
 | ETProdPattern p -> TTAny (TTPattern p)
 | ETProdConstrList (s, p, tkl) -> TTAny (TTConstrList (s, p, tkl, forpat))
@@ -413,6 +416,11 @@ match e with
   begin match forpat with
   | ForConstr ->  push_constr subst (CAst.make @@ CPrim (Numeral (SPlus,NumTok.int v)))
   | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (Numeral (SPlus,NumTok.int v)))
+  end
+| TTString ->
+  begin match forpat with
+  | ForConstr ->  push_constr subst (CAst.make @@ CPrim (String v))
+  | ForPattern -> push_constr subst (CAst.make @@ CPatPrim (String v))
   end
 | TTReference ->
   begin match forpat with

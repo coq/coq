@@ -396,7 +396,7 @@ let unparsing_metavar i from typs =
   let x = List.nth typs (i-1) in
   let prec = unparsing_precedence_of_entry_type from x in
   match x with
-  | ETConstr _ | ETGlobal | ETBigint ->
+  | ETConstr _ | ETGlobal | ETBigint | ETString ->
      UnpMetaVar (i,prec)
   | ETPattern _ ->
      UnpBinderMetaVar (i,prec)
@@ -686,6 +686,7 @@ let prod_entry_type = function
   | ETIdent -> ETProdName
   | ETGlobal -> ETProdReference
   | ETBigint -> ETProdBigint
+  | ETString -> ETProdString
   | ETBinder _ -> assert false (* See check_binder_type *)
   | ETConstr (s,_,p) -> ETProdConstr (s,p)
   | ETPattern (_,n) -> ETProdPattern (match n with None -> 0 | Some n -> n)
@@ -989,7 +990,7 @@ let set_entry_type from n etyps (x,typ) =
       | ETConstr (s,bko,n), InternalProd ->
           ETConstr (s,bko,(n,InternalProd))
       | ETPattern (b,n), _ -> ETPattern (b,n)
-      | (ETIdent | ETBigint | ETGlobal | ETBinder _ as x), _ -> x
+      | (ETIdent | ETBigint | ETString | ETGlobal | ETBinder _ as x), _ -> x
     with Not_found ->
       ETConstr (from,None,(make_lev n from,typ))
   in (x,typ)
@@ -1011,7 +1012,7 @@ let join_auxiliary_recursive_types recvars etyps =
 
 let internalization_type_of_entry_type = function
   | ETBinder _ -> NtnInternTypeOnlyBinder
-  | ETConstr _ | ETBigint | ETGlobal
+  | ETConstr _ | ETBigint | ETString | ETGlobal
   | ETIdent | ETPattern _ -> NtnInternTypeAny
 
 let set_internalization_type typs =
@@ -1033,7 +1034,7 @@ let make_interpretation_type isrec isonlybinding = function
   (* Others *)
   | ETIdent -> NtnTypeBinder NtnParsedAsIdent
   | ETPattern (ppstrict,_) -> NtnTypeBinder (NtnParsedAsPattern ppstrict) (* Parsed as ident/pattern, primarily interpreted as binder; maybe strict at printing *)
-  | ETBigint | ETGlobal -> NtnTypeConstr
+  | ETBigint | ETString | ETGlobal -> NtnTypeConstr
   | ETBinder _ ->
      if isrec then NtnTypeBinderList
      else anomaly Pp.(str "Type binder is only for use in recursive notations for binders.")
@@ -1097,6 +1098,8 @@ type entry_coercion_kind =
   | IsEntryCoercion of notation_entry_level
   | IsEntryGlobal of string * int
   | IsEntryIdent of string * int
+  | IsEntryNumeral of string * int
+  | IsEntryString of string * int
 
 let is_coercion = function
   | Some (custom,n,_,[e]) ->
@@ -1108,6 +1111,8 @@ let is_coercion = function
          else Some (IsEntryCoercion subentry)
      | ETGlobal, InCustomEntry s -> Some (IsEntryGlobal (s,n))
      | ETIdent, InCustomEntry s -> Some (IsEntryIdent (s,n))
+     | ETBigint, InCustomEntry s -> Some (IsEntryNumeral (s,n))
+     | ETString, InCustomEntry s -> Some (IsEntryString (s,n))
      | _ -> None)
   | Some _ -> assert false
   | None -> None
@@ -1149,7 +1154,7 @@ let find_precedence custom lev etyps symbols onlyprint =
           user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.") in
       (try match List.assoc x etyps, custom with
         | ETConstr (s,_,(NumLevel _ | NextLevel)), s' when s = s' -> test ()
-        | (ETIdent | ETBigint | ETGlobal), _ ->
+        | (ETIdent | ETBigint | ETString | ETGlobal), _ ->
             begin match lev with
             | None ->
               ([Feedback.msg_info ?loc:None ,strbrk "Setting notation at level 0."],0)
@@ -1375,6 +1380,8 @@ let open_notation i (_, nobj) =
     | Some (IsEntryCoercion entry) -> Notation.declare_entry_coercion ntn entry
     | Some (IsEntryGlobal (entry,n)) -> Notation.declare_custom_entry_has_global entry n
     | Some (IsEntryIdent (entry,n)) -> Notation.declare_custom_entry_has_ident entry n
+    | Some (IsEntryNumeral (entry,n)) -> Notation.declare_custom_entry_has_numeral entry n
+    | Some (IsEntryString (entry,n)) -> Notation.declare_custom_entry_has_string entry n
     | None -> ())
   end
 
