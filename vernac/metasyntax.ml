@@ -292,6 +292,7 @@ let prec_assoc = let open Gramlib.Gramext in function
   | NonA -> (L,L)
 
 let precedence_of_position_and_level from_level = function
+  | NumLevel (-1), _ -> 200, Any
   | NumLevel n, BorderProd (_,None) -> n, Prec n
   | NumLevel n, BorderProd (b,Some a) ->
       n, let (lp,rp) = prec_assoc a in if b == Left then lp else rp
@@ -951,23 +952,18 @@ let is_only_printing mods =
 let set_entry_type from n etyps (x,typ) =
   let make_lev n s = match typ with
     | BorderProd _ -> NumLevel n
-    | InternalProd ->
-      if s = InConstrEntry then NumLevel 200 else
-      user_err (strbrk "level of inner subentry " ++ quote (pr_notation_entry s) ++
-                str " cannot be inferred. It must be given explicitly.") in
+    | InternalProd -> NumLevel (-1) in
   let typ = try
     match List.assoc x etyps, typ with
+      | ETConstr (s,bko,None), _ ->
+         if notation_entry_eq from s then ETConstr (s,bko,(make_lev n s,typ))
+         else ETConstr (s,bko,(NumLevel (-1),typ))
       | ETConstr (s,bko,Some n), BorderProd (left,_) ->
           ETConstr (s,bko,(n,BorderProd (left,None)))
       | ETConstr (s,bko,Some n), InternalProd ->
           ETConstr (s,bko,(n,InternalProd))
       | ETPattern (b,n), _ -> ETPattern (b,n)
       | (ETIdent | ETBigint | ETGlobal | ETBinder _ as x), _ -> x
-      | ETConstr (s,bko,None), _ ->
-         if notation_entry_eq from s then ETConstr (s,bko,(make_lev n s,typ))
-         else if s = InConstrEntry then ETConstr (s,bko,(make_lev 200 s,typ)) else
-         user_err (strbrk "level of subentry " ++ quote (pr_notation_entry s) ++
-                   str " cannot be inferred. It must be given explicitly.")
     with Not_found ->
       ETConstr (from,None,(make_lev n from,typ))
   in (x,typ)

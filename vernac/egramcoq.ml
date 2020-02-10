@@ -209,15 +209,23 @@ let assoc_eq al ar =
      Some (Some (n,cur)) = constr LEVEL n
          s.t. if [cur] is set then [n] is the same as the [from] level *)
 let adjust_level custom assoc (custom',from) p = let open Gramlib.Gramext in match p with
-(* If in a different grammar, no other choice than denoting it by absolute level *)
-  | (NumLevel n,_) when not (Notation.notation_entry_eq custom custom') -> Some (Some (n,true))
+(* If a default level in a different grammar, the entry name is ok *)
+  | (NumLevel (-1),InternalProd) ->
+    if Notation.notation_entry_eq custom InConstrEntry then Some (Some (200,true)) else None
+  | (NumLevel (-1),BorderProd _) when not (Notation.notation_entry_eq custom custom') ->
+    if Notation.notation_entry_eq custom InConstrEntry then Some (Some (200,true)) else None
 (* Associativity is None means force the level *)
+  | (NumLevel (-1),BorderProd (_,None)) -> assert false
+(* If a level in a different grammar, no other choice than denoting it by absolute level *)
+  | (NumLevel n,_) when not (Notation.notation_entry_eq custom custom') -> Some (Some (n,true))
   | (NumLevel n,BorderProd (_,None)) -> Some (Some (n,true))
 (* Compute production name on the right side *)
   (* If NonA or LeftA on the right-hand side, set to NEXT *)
   | (NumLevel n,BorderProd (Right,Some (NonA|LeftA))) ->
       Some None
   (* If RightA on the right-hand side, set to the explicit (current) level *)
+  | (NumLevel (-1),BorderProd (Right,Some RightA)) ->
+      Some (Some (from,true))
   | (NumLevel n,BorderProd (Right,Some RightA)) ->
       Some (Some (n,true))
 (* Compute production name on the left side *)
