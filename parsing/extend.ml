@@ -21,6 +21,7 @@ type production_position =
 type production_level =
   | NextLevel
   | NumLevel of int
+  | DefaultLevel (** Interpreted differently at the border or inside a rule *)
 
 (** User-level types used to tell how to parse or interpret of the non-terminal *)
 
@@ -40,7 +41,7 @@ type constr_entry_key =
 (** Entries used in productions, vernac side (e.g. "x bigint" or "x ident") *)
 
 type simple_constr_prod_entry_key =
-    production_level option constr_entry_key_gen
+    production_level constr_entry_key_gen
 
 (** Entries used in productions (in right-hand-side of grammar rules), to parse non-terminals *)
 

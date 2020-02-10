@@ -48,7 +48,8 @@ let production_position_eq pp1 pp2 = match (pp1,pp2) with
 let production_level_eq l1 l2 = match (l1,l2) with
 | NextLevel, NextLevel -> true
 | NumLevel n1, NumLevel n2 -> Int.equal n1 n2
-| (NextLevel | NumLevel _), _ -> false
+| DefaultLevel, DefaultLevel -> true
+| (NextLevel | NumLevel _ | DefaultLevel), _ -> false
 
 let constr_entry_key_eq eq v1 v2 = match v1, v2 with
 | ETIdent, ETIdent -> true

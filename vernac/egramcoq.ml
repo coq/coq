@@ -208,29 +208,33 @@ let assoc_eq al ar =
      Some None = NEXT
      Some (Some (n,cur)) = constr LEVEL n *)
 let adjust_level custom assoc (custom',from) p = let open Gramlib.Gramext in match p with
-(* If in a different grammar, no other choice than denoting it by absolute level *)
+(* If a level in a different grammar, no other choice than denoting it by absolute level *)
   | (NumLevel n,_) when not (Notation.notation_entry_eq custom custom') -> Some (Some n)
+(* If a default level in a different grammar, the entry name is ok *)
+  | (DefaultLevel,InternalProd) ->
+    if Notation.notation_entry_eq custom InConstrEntry then Some (Some 200) else None
+  | (DefaultLevel,BorderProd _) when not (Notation.notation_entry_eq custom custom') -> None
 (* Associativity is None means force the level *)
   | (NumLevel n,BorderProd (_,None)) -> Some (Some n)
+  | (DefaultLevel,BorderProd (_,None)) -> assert false
 (* Compute production name on the right side *)
   (* If NonA or LeftA on the right-hand side, set to NEXT *)
-  | (NumLevel n,BorderProd (Right,Some (NonA|LeftA))) ->
+  | ((NumLevel _ | DefaultLevel),BorderProd (Right,Some (NonA|LeftA))) ->
       Some None
   (* If RightA on the right-hand side, set to the explicit (current) level *)
   | (NumLevel n,BorderProd (Right,Some RightA)) ->
       Some (Some n)
+  | (DefaultLevel,BorderProd (Right,Some RightA)) ->
+      Some (Some from)
 (* Compute production name on the left side *)
   (* If NonA on the left-hand side, adopt the current assoc ?? *)
-  | (NumLevel n,BorderProd (Left,Some NonA)) -> None
+  | ((NumLevel _ | DefaultLevel),BorderProd (Left,Some NonA)) -> None
   (* If the expected assoc is the current one, set to SELF *)
-  | (NumLevel n,BorderProd (Left,Some a)) when assoc_eq a (camlp5_assoc assoc) ->
+  | ((NumLevel _ | DefaultLevel),BorderProd (Left,Some a)) when assoc_eq a (camlp5_assoc assoc) ->
       None
   (* Otherwise, force the level, n or n-1, according to expected assoc *)
-  | (NumLevel n,BorderProd (Left,Some a)) ->
-    begin match a with
-    | LeftA -> Some (Some n)
-    | _ -> Some None
-    end
+  | (NumLevel n,BorderProd (Left,Some LeftA)) -> Some (Some n)
+  | ((NumLevel _ | DefaultLevel),BorderProd (Left,Some _)) -> Some None
   (* None means NEXT *)
   | (NextLevel,_) -> assert (Notation.notation_entry_eq custom custom'); Some None
 (* Compute production name elsewhere *)

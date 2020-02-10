@@ -107,8 +107,11 @@ open Pputils
     | InCustomEntry s -> keyword "custom" ++ spc () ++ str s
 
   let pr_at_level = function
-    | NumLevel n -> keyword "at" ++ spc () ++ keyword "level" ++ spc () ++ int n
-    | NextLevel -> keyword "at" ++ spc () ++ keyword "next" ++ spc () ++ keyword "level"
+    | NumLevel n -> spc () ++ keyword "at" ++ spc () ++ keyword "level" ++ spc () ++ int n
+    | NextLevel -> spc () ++ keyword "at" ++ spc () ++ keyword "next" ++ spc () ++ keyword "level"
+    | DefaultLevel -> mt ()
+
+  let level_of_pattern_level = function None -> DefaultLevel | Some n -> NumLevel n
 
   let pr_constr_as_binder_kind = let open Notation_term in function
     | AsIdent -> spc () ++ keyword "as ident"
@@ -120,19 +123,14 @@ open Pputils
   let pr_set_entry_type pr = function
     | ETIdent -> str"ident"
     | ETGlobal -> str"global"
-    | ETPattern (b,None) -> pr_strict b ++ str"pattern"
-    | ETPattern (b,Some n) -> pr_strict b ++ str"pattern" ++ spc () ++ pr_at_level (NumLevel n)
+    | ETPattern (b,n) -> pr_strict b ++ str"pattern" ++ pr_at_level (level_of_pattern_level n)
     | ETConstr (s,bko,lev) -> pr_notation_entry s ++ pr lev ++ pr_opt pr_constr_as_binder_kind bko
     | ETBigint -> str "bigint"
     | ETBinder true -> str "binder"
     | ETBinder false -> str "closed binder"
 
-  let pr_at_level_opt = function
-    | None -> mt ()
-    | Some n -> spc () ++ pr_at_level n
-
   let pr_set_simple_entry_type =
-    pr_set_entry_type pr_at_level_opt
+    pr_set_entry_type pr_at_level
 
   let pr_comment pr_c = function
     | CommentConstr c -> pr_c c
@@ -402,7 +400,7 @@ let string_of_theorem_kind = let open Decls in function
 
   let pr_syntax_modifier = let open Gramlib.Gramext in function
     | SetItemLevel (l,bko,n) ->
-      prlist_with_sep sep_v2 str l ++ spc () ++ pr_at_level_opt n ++
+      prlist_with_sep sep_v2 str l ++ spc () ++ pr_at_level n ++
       pr_opt pr_constr_as_binder_kind bko
     | SetLevel n -> pr_at_level (NumLevel n)
     | SetCustomEntry (s,n) -> keyword "in" ++ spc() ++ keyword "custom" ++ spc() ++ str s ++ (match n with None -> mt () | Some n -> pr_at_level (NumLevel n))

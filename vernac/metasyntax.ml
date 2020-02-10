@@ -297,6 +297,9 @@ let precedence_of_position_and_level from_level = function
       n, let (lp,rp) = prec_assoc a in if b == Left then lp else rp
   | NumLevel n, InternalProd -> n, Prec n
   | NextLevel, _ -> from_level, L
+  | DefaultLevel, _ ->
+      (* Fake value, waiting for PR#5 at herbelin's fork *) 200,
+      Any
 
 (** Computing precedences of subentries for parsing *)
 let precedence_of_entry_type (from_custom,from_level) = function
@@ -981,17 +984,17 @@ let set_entry_type from n etyps (x,typ) =
                 str " cannot be inferred. It must be given explicitly.") in
   let typ = try
     match List.assoc x etyps, typ with
-      | ETConstr (s,bko,Some n), BorderProd (left,_) ->
-          ETConstr (s,bko,(n,BorderProd (left,None)))
-      | ETConstr (s,bko,Some n), InternalProd ->
-          ETConstr (s,bko,(n,InternalProd))
-      | ETPattern (b,n), _ -> ETPattern (b,n)
-      | (ETIdent | ETBigint | ETGlobal | ETBinder _ as x), _ -> x
-      | ETConstr (s,bko,None), _ ->
+      | ETConstr (s,bko,DefaultLevel), _ ->
          if notation_entry_eq from s then ETConstr (s,bko,(make_lev n s,typ))
          else if s = InConstrEntry then ETConstr (s,bko,(make_lev 200 s,typ)) else
          user_err (strbrk "level of subentry " ++ quote (pr_notation_entry s) ++
                    str " cannot be inferred. It must be given explicitly.")
+      | ETConstr (s,bko,n), BorderProd (left,_) ->
+          ETConstr (s,bko,(n,BorderProd (left,None)))
+      | ETConstr (s,bko,n), InternalProd ->
+          ETConstr (s,bko,(n,InternalProd))
+      | ETPattern (b,n), _ -> ETPattern (b,n)
+      | (ETIdent | ETBigint | ETGlobal | ETBinder _ as x), _ -> x
     with Not_found ->
       ETConstr (from,None,(make_lev n from,typ))
   in (x,typ)
@@ -1150,7 +1153,7 @@ let find_precedence custom lev etyps symbols onlyprint =
         else
           user_err Pp.(str "The level of the leftmost non-terminal cannot be changed.") in
       (try match List.assoc x etyps, custom with
-        | ETConstr (s,_,Some _), s' when s = s' -> test ()
+        | ETConstr (s,_,(NumLevel _ | NextLevel)), s' when s = s' -> test ()
         | (ETIdent | ETBigint | ETGlobal), _ ->
             begin match lev with
             | None ->

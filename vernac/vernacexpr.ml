@@ -177,7 +177,7 @@ type proof_expr =
   ident_decl * (local_binder_expr list * constr_expr)
 
 type syntax_modifier =
-  | SetItemLevel of string list * Notation_term.constr_as_binder_kind option * Extend.production_level option
+  | SetItemLevel of string list * Notation_term.constr_as_binder_kind option * Extend.production_level
   | SetLevel of int
   | SetCustomEntry of string * int option
   | SetAssoc of Gramlib.Gramext.g_assoc
