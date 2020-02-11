@@ -4,11 +4,11 @@ Entry constr:myconstr is
 [ "6" RIGHTA
   [  ]
 | "5" RIGHTA
-  [ SELF;  "+"; NEXT ]
+  [ SELF; "+"; NEXT ]
 | "4" RIGHTA
-  [ SELF;  "*"; NEXT ]
+  [ SELF; "*"; NEXT ]
 | "3" RIGHTA
-  [  "<"; constr:operconstr LEVEL "10";  ">" ] ]
+  [ "<"; constr:operconstr LEVEL "10"; ">" ] ]
 
 [< b > + < b > * < 2 >]
      : nat
