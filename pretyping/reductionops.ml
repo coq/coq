@@ -24,11 +24,7 @@ open Context.Rel.Declaration
 exception Elimconst
 
 (** This module implements a call by name reduction used by (at
-    least) evarconv unification and cbn tactic.
-
-    It has an ability to "refold" constants by storing constants and
-    their parameters in its stack.
-*)
+    least) evarconv unification. *)
 
 (** Support for reduction effects *)
 
@@ -181,17 +177,12 @@ sig
   type 'a app_node
   val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
 
-  type cst_member =
-    | Cst_const of pconstant
-    | Cst_proj of Projection.t
-
   type 'a member =
   | App of 'a app_node
   | Case of case_info * 'a * 'a array
   | Proj of Projection.t
   | Fix of ('a, 'a) pfixpoint * 'a t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
-  | Cst of cst_member * int * int list * 'a t
 
   and 'a t = 'a member list
 
@@ -238,17 +229,12 @@ struct
                      )
 
 
-  type cst_member =
-    | Cst_const of pconstant
-    | Cst_proj of Projection.t
-
   type 'a member =
   | App of 'a app_node
   | Case of case_info * 'a * 'a array
   | Proj of Projection.t
   | Fix of ('a, 'a) pfixpoint * 'a t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
-  | Cst of cst_member * int * int list * 'a t
 
   and 'a t = 'a member list
 
@@ -270,24 +256,9 @@ struct
     | Primitive (p,c,args,kargs) ->
       str "ZPrimitive(" ++ str (CPrimitives.to_string p)
       ++ pr_comma () ++ pr pr_c args ++ str ")"
-    | Cst (mem,curr,remains,params) ->
-      str "ZCst(" ++ pr_cst_member pr_c mem ++ pr_comma () ++ int curr
-      ++ pr_comma () ++
-        prlist_with_sep pr_semicolon int remains ++
-        pr_comma () ++ pr pr_c params ++ str ")"
   and pr pr_c l =
     let open Pp in
     prlist_with_sep pr_semicolon (fun x -> hov 1 (pr_member pr_c x)) l
-
-  and pr_cst_member pr_c c =
-    let open Pp in
-      match c with
-      | Cst_const (c, u) ->
-        if Univ.Instance.is_empty u then Constant.debug_print c
-        else str"(" ++ Constant.debug_print c ++ str ", " ++
-          Univ.Instance.pr Univ.Level.pr u ++ str")"
-      | Cst_proj p ->
-        str".(" ++ Constant.debug_print (Projection.constant p) ++ str")"
 
   let empty = []
   let is_empty = CList.is_empty
@@ -322,9 +293,7 @@ struct
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
       | (Primitive(_,_,a1,_)::s1, Primitive(_,_,a2,_)::s2) ->
         Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
-      | (Cst (_,_,_,p1)::s1, Cst (_,_,_,p2)::s2) ->
-        Int.equal bal 0 && compare_rec 0 p1 p2 && compare_rec 0 s1 s2
-      | ((Case _|Proj _|Fix _|Cst _|Primitive _) :: _ | []) ,_ -> false in
+      | ((Case _|Proj _|Fix _|Primitive _) :: _ | []) ,_ -> false in
     compare_rec 0 stk1 stk2
 
   exception IncompatibleFold2
@@ -343,10 +312,7 @@ struct
       | Fix ((_,(_,a1,b1)),s1) :: q1, Fix ((_,(_,a2,b2)),s2) :: q2 ->
         let o' = aux (Array.fold_left2 f (Array.fold_left2 f o b1 b2) a1 a2) (List.rev s1) (List.rev s2) in
         aux o' q1 q2
-      | Cst (cst1,_,_,params1) :: q1, Cst (cst2,_,_,params2) :: q2 ->
-        let o' = aux o (List.rev params1) (List.rev params2) in
-        aux o' q1 q2
-      | (((App _|Case _|Proj _|Fix _|Cst _|Primitive _) :: _|[]), _) ->
+      | (((App _|Case _|Proj _|Fix _|Primitive _) :: _|[]), _) ->
               raise IncompatibleFold2
     in aux o (List.rev sk1) (List.rev sk2)
 
@@ -358,8 +324,6 @@ struct
                                | Case (info,ty,br) -> Case (info, f ty, Array.map f br)
                                | Fix ((r,(na,ty,bo)),arg) ->
                                   Fix ((r,(na,Array.map f ty, Array.map f bo)),map f arg)
-                               | Cst (cst,curr,remains,params) ->
-                                 Cst (cst,curr,remains,map f params)
                                | Primitive (p,c,args,kargs) ->
                                  Primitive(p,c, map f args, kargs)
     ) x
@@ -370,7 +334,7 @@ struct
 
   let rec args_size = function
     | App (i,_,j)::s -> j + 1 - i + args_size s
-    | (Case _|Fix _|Proj _|Cst _|Primitive _)::_ | [] -> 0
+    | (Case _|Fix _|Proj _|Primitive _)::_ | [] -> 0
 
   let strip_app s =
     let rec aux out = function
@@ -393,7 +357,7 @@ struct
     in aux n [] s
 
   let not_purely_applicative args =
-    List.exists (function (Fix _ | Case _ | Proj _ | Cst _) -> true
+    List.exists (function (Fix _ | Case _ | Proj _ ) -> true
                           | App _ | Primitive _ -> false) args
 
   let list_of_app_stack s =
@@ -431,14 +395,6 @@ struct
     | Some (_,el,_) -> el
     | None -> raise Not_found
 
-  let constr_of_cst_member f sk =
-    match f with
-    | Cst_const (c, u) -> mkConstU (c, EInstance.make u), sk
-    | Cst_proj p ->
-      match decomp sk with
-      | Some (hd, sk) -> mkProj (p, hd), sk
-      | None -> assert false
-
   let zip sigma s =
   let rec zip = function
     | f, [] -> f
@@ -450,8 +406,6 @@ struct
     | f, (Case (ci,rt,br)::s) -> zip (mkCase (ci,rt,f,br), s)
   | f, (Fix (fix,st)::s) -> zip
     (mkFix fix, st @ (append_app [|f|] s))
-  | f, (Cst (cst,_,_,params)::s) ->
-    zip (constr_of_cst_member cst (params @ (append_app [|f|] s)))
   | f, (Proj (p)::s) -> zip (mkProj (p,f),s)
   | f, (Primitive (p,c,args,kargs)::s) ->
       zip (mkConstU c, args @ append_app [|f|] s)
@@ -873,29 +827,6 @@ let rec whd_state_gen flags env sigma =
           let x' = Stack.zip sigma (x, args) in
           let out_sk = s' @ (Stack.append_app [|x'|] s'') in
           reduce_and_refold_fix whrec env sigma f out_sk
-        |args, (Stack.Cst (const,curr,remains,s') :: s'') ->
-          let x' = Stack.zip sigma (x, args) in
-          begin match remains with
-          | [] ->
-            (match const with
-            | Stack.Cst_const const ->
-              (match constant_opt_value_in env const with
-              | None -> fold ()
-              | Some body ->
-                let body = EConstr.of_constr body in
-                whrec (body, s' @ (Stack.append_app [|x'|] s'')))
-            | Stack.Cst_proj p ->
-              let stack = s' @ (Stack.append_app [|x'|] s'') in
-                match Stack.strip_n_app 0 stack with
-                | None -> assert false
-                | Some (_,arg,s'') ->
-                  whrec (arg, Stack.Proj (p) :: s''))
-          | next :: remains' -> match Stack.strip_n_app (next-curr-1) s'' with
-            | None -> fold ()
-            | Some (bef,arg,s''') ->
-              whrec (arg,
-                 Stack.Cst (const,next,remains',s' @ (Stack.append_app [|x'|] bef)) :: s''')
-          end
         |_, (Stack.App _)::_ -> assert false
         |_, _ -> fold ()
       else fold ()
@@ -996,7 +927,7 @@ let local_whd_state_gen flags _env sigma =
         |args, (Stack.Fix (f,s')::s'') when use_fix ->
           let x' = Stack.zip sigma (x,args) in
           whrec (contract_fix sigma f, s' @ (Stack.append_app [|x'|] s''))
-        |_, (Stack.App _|Stack.Cst _)::_ -> assert false
+        |_, (Stack.App _)::_ -> assert false
         |_, _ -> s
       else s
 
@@ -1477,7 +1408,7 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
           whrec (args.(Projection.npars p + Projection.arg p), stack'')
         | (Some _ | None) -> s
         end
-      |_, ((Stack.App _|Stack.Cst _|Stack.Primitive _) :: _|[]) -> s
+      |_, ((Stack.App _|Stack.Primitive _) :: _|[]) -> s
   in
   whrec s
 

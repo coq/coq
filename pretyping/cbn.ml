@@ -513,130 +513,7 @@ let reduce_and_refold_fix recfun env sigma refold cst_l fix sk =
       in recfun x (t',sk'))
     [] sigma refold Cst_stack.empty raw_answer sk
 
-open Primred
-
-module CNativeEntries =
-struct
-
-  type elem = EConstr.t
-  type args = EConstr.t array
-  type evd = evar_map
-
-  let get = Array.get
-
-  let get_int evd e =
-    match EConstr.kind evd e with
-    | Int i -> i
-    | _ -> raise Primred.NativeDestKO
-
-  let get_float evd e =
-    match EConstr.kind evd e with
-    | Float f -> f
-    | _ -> raise Primred.NativeDestKO
-
-  let mkInt env i =
-    mkInt i
-
-  let mkFloat env f =
-    mkFloat f
-
-  let mkBool env b =
-    let (ct,cf) = get_bool_constructors env in
-    mkConstruct (if b then ct else cf)
-
-    let mkCarry env b e =
-      let int_ty = mkConst @@ get_int_type env in
-      let (c0,c1) = get_carry_constructors env in
-      mkApp (mkConstruct (if b then c1 else c0),[|int_ty;e|])
-
-    let mkIntPair env e1 e2 =
-    let int_ty = mkConst @@ get_int_type env in
-    let c = get_pair_constructor env in
-    mkApp(mkConstruct c, [|int_ty;int_ty;e1;e2|])
-
-  let mkFloatIntPair env f i =
-    let float_ty = mkConst @@ get_float_type env in
-    let int_ty = mkConst @@ get_int_type env in
-    let c = get_pair_constructor env in
-    mkApp(mkConstruct c, [|float_ty;int_ty;f;i|])
-
-  let mkLt env =
-    let (_eq, lt, _gt) = get_cmp_constructors env in
-    mkConstruct lt
-
-  let mkEq env =
-    let (eq, _lt, _gt) = get_cmp_constructors env in
-    mkConstruct eq
-
-  let mkGt env =
-    let (_eq, _lt, gt) = get_cmp_constructors env in
-    mkConstruct gt
-
-  let mkFLt env =
-    let (_eq, lt, _gt, _nc) = get_f_cmp_constructors env in
-    mkConstruct lt
-
-  let mkFEq env =
-    let (eq, _lt, _gt, _nc) = get_f_cmp_constructors env in
-    mkConstruct eq
-
-  let mkFGt env =
-    let (_eq, _lt, gt, _nc) = get_f_cmp_constructors env in
-    mkConstruct gt
-
-  let mkFNotComparable env =
-    let (_eq, _lt, _gt, nc) = get_f_cmp_constructors env in
-    mkConstruct nc
-
-  let mkPNormal env =
-    let (pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
-      get_f_class_constructors env in
-    mkConstruct pNormal
-
-  let mkNNormal env =
-    let (_pNormal,nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
-      get_f_class_constructors env in
-    mkConstruct nNormal
-
-  let mkPSubn env =
-    let (_pNormal,_nNormal,pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
-      get_f_class_constructors env in
-    mkConstruct pSubn
-
-  let mkNSubn env =
-    let (_pNormal,_nNormal,_pSubn,nSubn,_pZero,_nZero,_pInf,_nInf,_nan) =
-      get_f_class_constructors env in
-    mkConstruct nSubn
-
-  let mkPZero env =
-    let (_pNormal,_nNormal,_pSubn,_nSubn,pZero,_nZero,_pInf,_nInf,_nan) =
-      get_f_class_constructors env in
-    mkConstruct pZero
-
-  let mkNZero env =
-    let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,nZero,_pInf,_nInf,_nan) =
-      get_f_class_constructors env in
-    mkConstruct nZero
-
-  let mkPInf env =
-    let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,pInf,_nInf,_nan) =
-      get_f_class_constructors env in
-    mkConstruct pInf
-
-  let mkNInf env =
-    let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,nInf,_nan) =
-      get_f_class_constructors env in
-    mkConstruct nInf
-
-  let mkNaN env =
-    let (_pNormal,_nNormal,_pSubn,_nSubn,_pZero,_nZero,_pInf,_nInf,nan) =
-      get_f_class_constructors env in
-    mkConstruct nan
-end
-
-module CredNative = RedNative(CNativeEntries)
-
-
+module CredNative = Reductionops.CredNative
 
 (** Generic reduction function with environment
 
@@ -651,7 +528,7 @@ module CredNative = RedNative(CNativeEntries)
     contract_* in any case .
 *)
 
-let debug_RAKAM = ref (false)
+let debug_RAKAM = Reductionops.debug_RAKAM
 
 let equal_stacks sigma (x, l) (y, l') =
   let f_equal x y = eq_constr sigma x y in
@@ -662,7 +539,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
   let open Context.Named.Declaration in
   let open ReductionBehaviour in
   let rec whrec cst_l (x, stack) =
-    let () = if !debug_RAKAM then
+    let () = if debug_RAKAM () then
         let open Pp in
         let pr c = Termops.Internal.print_constr_env env sigma c in
         Feedback.msg_debug
@@ -673,7 +550,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
     in
     let c0 = EConstr.kind sigma x in
     let fold () =
-      let () = if !debug_RAKAM then
+      let () = if debug_RAKAM () then
           let open Pp in Feedback.msg_debug (str "<><><><><>") in
       ((EConstr.of_kind c0, stack),cst_l)
     in

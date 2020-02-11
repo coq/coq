@@ -19,6 +19,11 @@ open Environ
 
 exception Elimconst
 
+val debug_RAKAM : unit -> bool
+
+module CredNative : Primred.RedNative with
+  type elem = EConstr.t and type args = EConstr.t array and type evd = Evd.evar_map
+
 (** Machinery to customize the behavior of the reduction *)
 module ReductionBehaviour : sig
 
@@ -51,20 +56,12 @@ module Stack : sig
 
   val pr_app_node : ('a -> Pp.t) -> 'a app_node -> Pp.t
 
-  type cst_member =
-    | Cst_const of pconstant
-    | Cst_proj of Projection.t
-
   type 'a member =
   | App of 'a app_node
   | Case of case_info * 'a * 'a array
   | Proj of Projection.t
   | Fix of ('a, 'a) pfixpoint * 'a t
   | Primitive of CPrimitives.t * (Constant.t * EInstance.t) * 'a t * CPrimitives.args_red
-  | Cst of cst_member
-           * int (* current foccussed arg *)
-           * int list (* remaining args *)
-    * 'a t
   and 'a t = 'a member list
 
   val pr : ('a -> Pp.t) -> 'a t -> Pp.t
