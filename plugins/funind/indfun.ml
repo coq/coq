@@ -64,12 +64,10 @@ let functional_induction with_clean c princl pat =
             | InSet -> finfo.rec_lemma
             | InType -> finfo.rect_lemma
           in
-          let princ =  (* then we get the principle *)
+          let sigma, princ =  (* then we get the principle *)
             match princ_option with
             | Some princ ->
-              let sigma, princ = Evd.fresh_global (pf_env gl) (project gl) (GlobRef.ConstRef princ) in
-              Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-              Proofview.tclUNIT princ
+              Evd.fresh_global (pf_env gl) (project gl) (GlobRef.ConstRef princ)
             | None ->
               (*i If there is not default lemma defined then,
                       we cross our finger and try to find a lemma named f_ind
@@ -87,19 +85,18 @@ let functional_induction with_clean c princl pat =
                   user_err (str "Cannot find induction principle for "
                             ++ Printer.pr_leconstr_env (pf_env gl) sigma (mkConst c') )
               in
-              let sigma, princ = Evd.fresh_global (pf_env gl) (project gl) princ_ref in
-              Proofview.Unsafe.tclEVARS sigma >>= fun () ->
-              Proofview.tclUNIT princ
+              Evd.fresh_global (pf_env gl) (project gl) princ_ref
           in
-          princ >>= fun princ ->
-          (* We need to refresh gl due to the updated evar_map in princ *)
-          Proofview.Goal.enter_one (fun gl ->
-          Proofview.tclUNIT (princ, Tactypes.NoBindings, pf_unsafe_type_of gl princ, args))
+          let princt = Retyping.get_type_of (pf_env gl) sigma princ in
+          Proofview.Unsafe.tclEVARS sigma <*>
+          Proofview.tclUNIT (princ, Tactypes.NoBindings, princt, args)
         | _ ->
           CErrors.user_err (str "functional induction must be used with a function" )
       end
     | Some ((princ,binding)) ->
-      Proofview.tclUNIT (princ, binding, pf_unsafe_type_of gl princ, args)
+      let sigma, princt = pf_type_of gl princ in
+      Proofview.Unsafe.tclEVARS sigma <*>
+      Proofview.tclUNIT (princ, binding, princt, args)
     ) >>= fun (princ, bindings, princ_type, args) ->
   Proofview.Goal.enter (fun gl ->
   let sigma = project gl in

@@ -31,7 +31,6 @@ open Tactics
 open Nametab
 open Declare
 open Tacred
-open Goal
 open Glob_term
 open Pretyping
 open Termops
@@ -110,9 +109,10 @@ let pf_get_new_ids idl g =
 let next_ident_away_in_goal ids avoid =
   next_ident_away_in_goal ids (Id.Set.of_list avoid)
 
-let compute_renamed_type gls c =
+let compute_renamed_type gls id =
   rename_bound_vars_as_displayed (project gls) (*no avoid*) Id.Set.empty (*no rels*) []
-    (pf_unsafe_type_of gls c)
+    (pf_get_hyp_typ gls id)
+
 let h'_id = Id.of_string "h'"
 let teq_id = Id.of_string "teq"
 let ano_id = Id.of_string "anonymous"
@@ -370,7 +370,7 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic =
             Proofview.V82.of_tactic (clear to_intros);
             h_intros to_intros;
             (fun g' ->
-              let ty_teq = pf_unsafe_type_of g' (mkVar heq) in
+              let ty_teq = pf_get_hyp_typ g' heq in
               let teq_lhs,teq_rhs =
                 let _,args = try destApp (project g') ty_teq with DestKO -> assert false in
                 args.(1),args.(2)
@@ -487,13 +487,13 @@ let rec prove_lt hyple g =
       in
       let h =
         List.find (fun id ->
-          match decompose_app sigma (pf_unsafe_type_of g (mkVar id)) with
+          match decompose_app sigma (pf_get_hyp_typ g id) with
             | _, t::_ -> EConstr.eq_constr sigma t varx
             | _ -> false
         ) hyple
       in
       let y =
-        List.hd (List.tl (snd (decompose_app sigma (pf_unsafe_type_of g (mkVar h))))) in
+        List.hd (List.tl (snd (decompose_app sigma (pf_get_hyp_typ g h)))) in
       observe_tclTHENLIST (fun _ _ -> str "prove_lt1")[
         Proofview.V82.of_tactic (apply (mkApp(le_lt_trans (),[|varx;y;varz;mkVar h|])));
         observe_tac (fun _ _ -> str "prove_lt") (prove_lt hyple)
@@ -645,9 +645,7 @@ let pf_typel l tac =
   modified hypotheses are generalized in the process and should be
   introduced back later; the result is the pair of the tactic and the
   list of hypotheses that have been generalized and cleared. *)
-let mkDestructEq :
-  Id.t list -> constr -> goal Evd.sigma -> tactic * Id.t list =
-  fun not_on_hyp expr g ->
+let mkDestructEq not_on_hyp expr g =
   let hyps = pf_hyps g in
   let to_revert =
     Util.List.map_filter
@@ -657,9 +655,9 @@ let mkDestructEq :
         if Id.List.mem id not_on_hyp || not (Termops.dependent (project g) expr (get_type decl))
         then None else Some id) hyps in
   let to_revert_constr = List.rev_map mkVar to_revert in
-  let type_of_expr = pf_unsafe_type_of g expr in
-  let new_hyps = mkApp(Lazy.force refl_equal, [|type_of_expr; expr|])::
-           to_revert_constr in
+  let g, type_of_expr = tac_type_of g expr in
+  let new_hyps = mkApp(Lazy.force refl_equal, [|type_of_expr; expr|])::to_revert_constr in
+  let tac =
     pf_typel new_hyps (fun _ ->
     observe_tclTHENLIST (fun _ _ -> str "mkDestructEq")
      [Proofview.V82.of_tactic (generalize new_hyps);
@@ -668,7 +666,9 @@ let mkDestructEq :
           pattern_occs [Locus.AllOccurrencesBut [1], expr] (pf_env g2) sigma (pf_concl g2)
         in
         Proofview.V82.of_tactic (change_in_concl ~check:true None changefun) g2);
-      Proofview.V82.of_tactic (simplest_case expr)]), to_revert
+      Proofview.V82.of_tactic (simplest_case expr)])
+  in
+  g, tac, to_revert
 
 let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
   let sigma = project g in
@@ -686,7 +686,7 @@ let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
       info = mkCase(ci,t,a',l);
       is_main_branch = expr_info.is_main_branch;
       is_final = expr_info.is_final} in
-  let destruct_tac,rev_to_thin_intro =
+  let g,destruct_tac,rev_to_thin_intro =
     mkDestructEq [expr_info.rec_arg_id] a' g in
   let to_thin_intro = List.rev rev_to_thin_intro in
   observe_tac (fun _ _ -> str "treating cases (" ++ int (Array.length l) ++ str")" ++ spc () ++ Printer.pr_leconstr_env (pf_env g) sigma a')
@@ -842,7 +842,7 @@ let rec make_rewrite_list expr_info max = function
       (observe_tac (fun _ _ -> str "rewrite heq on " ++ Id.print p ) (
         (fun g ->
           let sigma = project g in
-          let t_eq = compute_renamed_type g (mkVar hp) in
+          let t_eq = compute_renamed_type g hp in
           let k,def =
             let k_na,_,t = destProd sigma t_eq in
             let _,_,t  = destProd sigma t in
@@ -868,7 +868,7 @@ let make_rewrite expr_info l hp max =
     (observe_tac (fun _ _ -> str "make_rewrite") (tclTHENS
        (fun g ->
           let sigma = project g in
-          let t_eq = compute_renamed_type g (mkVar hp) in
+          let t_eq = compute_renamed_type g hp in
           let k,def =
             let k_na,_,t = destProd sigma t_eq in
             let _,_,t  = destProd sigma t in

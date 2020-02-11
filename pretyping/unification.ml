@@ -1274,12 +1274,14 @@ let applyHead env evd n c  =
     else
       match EConstr.kind evd (whd_all env evd cty) with
       | Prod (_,c1,c2) ->
-        let (evd',evar) =
-      Evarutil.new_evar env evd ~src:(Loc.tag Evar_kinds.GoalEvar) c1 in
-      apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) evd'
+        let (evd,evar) =
+          Evarutil.new_evar env evd ~src:(Loc.tag Evar_kinds.GoalEvar) c1
+        in
+        apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) evd
       | _ -> user_err Pp.(str "Apply_Head_Then")
   in
-    apprec n c (Typing.unsafe_type_of env evd c) evd
+  let evd, t = Typing.type_of env evd c in
+  apprec n c t evd
 
 let is_mimick_head sigma ts f =
   match EConstr.kind sigma f with

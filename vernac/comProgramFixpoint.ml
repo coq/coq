@@ -127,7 +127,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
   let sigma, (rel, _) = interp_constr_evars_impls ~program_mode:true env sigma r in
-  let relty = Typing.unsafe_type_of env sigma rel in
+  let relty = Retyping.get_type_of env sigma rel in
   let relargty =
     let error () =
       user_err ?loc:(constr_loc r)

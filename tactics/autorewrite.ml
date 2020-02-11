@@ -238,7 +238,7 @@ let decompose_applied_relation metas env sigma c ctype left2right =
     in
       try
         let others,(c1,c2) = split_last_two args in
-        let ty1, ty2 = Typing.unsafe_type_of env eqclause.evd c1, Typing.unsafe_type_of env eqclause.evd c2 in
+        let ty1, ty2 = Retyping.get_type_of env eqclause.evd c1, Retyping.get_type_of env eqclause.evd c2 in
         (* XXX: It looks like mk_clenv_from_env should be fixed instead? *)
         let open EConstr in
         let hyp_ty = Unsafe.to_constr ty in
@@ -261,7 +261,7 @@ let decompose_applied_relation metas env sigma c ctype left2right =
         | None -> None
 
 let find_applied_relation ?loc metas env sigma c left2right =
-  let ctype = Typing.unsafe_type_of env sigma (EConstr.of_constr c) in
+  let ctype = Retyping.get_type_of env sigma (EConstr.of_constr c) in
     match decompose_applied_relation metas env sigma c ctype left2right with
     | Some c -> c
     | None ->

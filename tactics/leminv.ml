@@ -259,7 +259,7 @@ let add_inversion_lemma_exn ~poly na com comsort bool tac =
 let lemInv id c =
   Proofview.Goal.enter begin fun gls ->
   try
-    let clause = mk_clenv_from_env (pf_env gls) (project gls) None (c, pf_unsafe_type_of gls c) in
+    let clause = mk_clenv_from_env (pf_env gls) (project gls) None (c, pf_get_type_of gls c) in
     let clause = clenv_constrain_last_binding (EConstr.mkVar id) clause in
     Clenvtac.res_pf clause ~flags:(Unification.elim_flags ()) ~with_evars:false
   with

@@ -587,7 +587,7 @@ module New = struct
   let ifOnHyp pred tac1 tac2 id =
     Proofview.Goal.enter begin fun gl ->
     let typ = Tacmach.New.pf_get_hyp_typ id gl in
-    if pred (id,typ) then
+    if pf_apply pred gl (id,typ) then
       tac1 id
     else
       tac2 id
@@ -633,7 +633,7 @@ module New = struct
     (Proofview.Goal.enter begin fun gl ->
     let indclause = mk_clenv_from gl (c, t) in
     (* applying elimination_scheme just a little modified *)
-    let elimclause = mk_clenv_from gl (elim,Tacmach.New.pf_unsafe_type_of gl elim)  in
+    let elimclause = mk_clenv_from gl (elim,Tacmach.New.pf_get_type_of gl elim)  in
     let indmv =
       match EConstr.kind elimclause.evd (last_arg elimclause.evd elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
@@ -741,7 +741,7 @@ module New = struct
 
   let elimination_then tac c =
     Proofview.Goal.enter begin fun gl ->
-    let (ind,t) = pf_reduce_to_quantified_ind gl (pf_unsafe_type_of gl c) in
+    let (ind,t) = pf_reduce_to_quantified_ind gl (pf_get_type_of gl c) in
     let isrec,mkelim =
       match (Global.lookup_mind (fst (fst ind))).mind_record with
       | NotRecord -> true,gl_make_elim

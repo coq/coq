@@ -395,7 +395,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
 
   in
   Proofview.Goal.enter begin fun gl ->
-    let type_of_pq = Tacmach.New.pf_unsafe_type_of gl p in
+    let type_of_pq = Tacmach.New.pf_get_type_of gl p in
     let sigma = Tacmach.New.project gl in
     let env = Tacmach.New.pf_env gl in
     let u,v = destruct_ind env sigma type_of_pq
@@ -458,11 +458,11 @@ let do_replace_bl bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
     match (l1,l2) with
     | (t1::q1,t2::q2) ->
         Proofview.Goal.enter begin fun gl ->
-        let tt1 = Tacmach.New.pf_unsafe_type_of gl t1 in
         let sigma = Tacmach.New.project gl in
         let env = Tacmach.New.pf_env gl in
         if EConstr.eq_constr sigma t1 t2 then aux q1 q2
         else (
+          let tt1 = Tacmach.New.pf_get_type_of gl t1 in
           let u,v = try destruct_ind env sigma tt1
           (* trick so that the good sequence is returned*)
                 with e when CErrors.noncritical e -> indu,[||]

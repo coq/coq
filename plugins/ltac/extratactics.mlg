@@ -736,7 +736,7 @@ let refl_equal () = Coqlib.lib_ref "core.eq.type"
   call it before it is defined. *)
 let  mkCaseEq a  : unit Proofview.tactic =
   Proofview.Goal.enter begin fun gl ->
-    let type_of_a = Tacmach.New.pf_unsafe_type_of gl a in
+    let type_of_a = Tacmach.New.pf_get_type_of gl a in
     Tacticals.New.pf_constr_of_global (delayed_force refl_equal) >>= fun req ->
     Tacticals.New.tclTHENLIST
          [Tactics.generalize [(mkApp(req, [| type_of_a; a|]))];
@@ -794,7 +794,7 @@ let destauto t =
 
 let destauto_in id =
   Proofview.Goal.enter begin fun gl ->
-  let ctype = Tacmach.New.pf_unsafe_type_of gl (mkVar id) in
+  let ctype = Tacmach.New.pf_get_type_of gl (mkVar id) in
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
 (*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
   destauto ctype

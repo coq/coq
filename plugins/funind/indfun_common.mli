@@ -119,3 +119,5 @@ type tcc_lemma_value =
   | Not_needed
 
 val funind_purify : ('a -> 'b) -> ('a -> 'b)
+
+val tac_type_of : Goal.goal Evd.sigma -> EConstr.constr -> Goal.goal Evd.sigma * EConstr.types

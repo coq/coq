@@ -446,7 +446,7 @@ let pretype_ref ?loc sigma env ref us =
          Pretype_errors.error_var_not_found ?loc !!env sigma id)
   | ref ->
     let sigma, c = pretype_global ?loc univ_flexible env sigma ref us in
-    let ty = unsafe_type_of !!env sigma c in
+    let sigma, ty = type_of !!env sigma c in
     sigma, make_judge c ty
 
 let interp_sort ?loc evd : glob_sort -> _ = function

@@ -30,6 +30,9 @@ val sort_of : env -> evar_map -> types -> evar_map * Sorts.t
 (** Typecheck a term has a given type (assuming the type is OK) *)
 val check : env -> evar_map -> constr -> types -> evar_map
 
+(** Type of a variable. *)
+val type_of_variable : env -> variable -> types
+
 (** Returns the instantiated type of a metavariable *)
 val meta_type : evar_map -> metavariable -> types
 

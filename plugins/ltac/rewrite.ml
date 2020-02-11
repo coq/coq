@@ -483,7 +483,7 @@ let rec decompose_app_rel env evd t =
   | App (f, [||]) -> assert false
   | App (f, [|arg|]) ->
     let (f', argl, argr) = decompose_app_rel env evd arg in
-    let ty = Typing.unsafe_type_of env evd argl in
+    let ty = Retyping.get_type_of env evd argl in
     let r = Retyping.relevance_of_type env evd ty in
     let f'' = mkLambda (make_annot (Name default_dependent_ident) r, ty,
       mkLambda (make_annot (Name (Id.of_string "y")) r, lift 1 ty,
@@ -789,7 +789,8 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' (b,cstr) ev
     let morphargs, morphobjs = Array.chop first args in
     let morphargs', morphobjs' = Array.chop first args' in
     let appm = mkApp(m, morphargs) in
-    let appmtype = Typing.unsafe_type_of env (goalevars evars) appm in
+    let evd, appmtype = Typing.type_of env (goalevars evars) appm in
+    let evars = evd, snd evars in
     let cstrs = List.map
       (Option.map (fun r -> r.rew_car, get_opt_rew_rel r.rew_prf))
       (Array.to_list morphobjs')
@@ -1906,7 +1907,7 @@ let declare_projection n instance_id r =
 let build_morphism_signature env sigma m =
   let m,ctx = Constrintern.interp_constr env sigma m in
   let sigma = Evd.from_ctx ctx in
-  let t = Typing.unsafe_type_of env sigma m in
+  let t = Retyping.get_type_of env sigma m in
   let cstrs =
     let rec aux t =
       match EConstr.kind sigma t with
@@ -1936,7 +1937,7 @@ let build_morphism_signature env sigma m =
 let default_morphism sign m =
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  let t = Typing.unsafe_type_of env sigma m in
+  let t = Retyping.get_type_of env sigma m in
   let evars, _, sign, cstrs =
     PropGlobal.build_signature (sigma, Evar.Set.empty) env t (fst sign) (snd sign)
   in
@@ -2195,10 +2196,10 @@ let setoid_transitivity c =
     (transitivity_red true c)
 
 let setoid_symmetry_in id =
-  let open Tacmach.New in
   Proofview.Goal.enter begin fun gl ->
-  let sigma = project gl in
-  let ctype = pf_unsafe_type_of gl (mkVar id) in
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  let ctype = Retyping.get_type_of env sigma (mkVar id) in
   let binders,concl = decompose_prod_assum sigma ctype in
   let (equiv, args) = decompose_app sigma concl in
   let rec split_last_two = function

@@ -617,7 +617,7 @@ let prove_fun_correct evd funs_constr graphs_constr schemes lemmas_types_infos i
       let constructor_args g =
         List.fold_right
           (fun hid acc ->
-             let type_of_hid = pf_unsafe_type_of g (mkVar hid) in
+             let type_of_hid = pf_get_hyp_typ g hid in
              let sigma = project g in
              match EConstr.kind sigma type_of_hid with
              | Prod(_,_,t') ->
@@ -953,7 +953,7 @@ let rec reflexivity_with_destruct_cases g =
         match sc with
           None -> tclIDTAC g
         | Some id ->
-          match EConstr.kind (project g) (pf_unsafe_type_of g (mkVar id)) with
+          match EConstr.kind (project g) (pf_get_hyp_typ g id) with
           | App(eq,[|_;t1;t2|]) when EConstr.eq_constr (project g) eq eq_ind ->
             if Equality.discriminable (pf_env g) (project g) t1 t2
             then Proofview.V82.of_tactic (Equality.discrHyp id) g
@@ -993,7 +993,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : Tacmach.tacti
     (* We get the constant and the principle corresponding to this lemma *)
     let f = funcs.(i) in
     let graph_principle = Reductionops.nf_zeta (pf_env g) (project g) (EConstr.of_constr schemes.(i))  in
-    let princ_type = pf_unsafe_type_of g graph_principle in
+    let g, princ_type = tac_type_of g graph_principle in
     let princ_infos = Tactics.compute_elim_sig (project g) princ_type in
     (* Then we get the number of argument of the function
        and compute a fresh name for each of them
@@ -1210,7 +1210,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_ef
   in
   let _ = evd := sigma in
   let l_schemes =
-    List.map (EConstr.of_constr %> Typing.unsafe_type_of env sigma %> EConstr.Unsafe.to_constr) schemes
+    List.map (EConstr.of_constr %> Retyping.get_type_of env sigma %> EConstr.Unsafe.to_constr) schemes
   in
   let i = ref (-1) in
   let sorts =
@@ -2051,7 +2051,7 @@ let build_case_scheme fa =
   let (sigma, scheme) =
       Indrec.build_case_analysis_scheme_default env sigma ind sf
   in
-  let scheme_type = EConstr.Unsafe.to_constr ((Typing.unsafe_type_of env sigma) (EConstr.of_constr scheme)) in
+  let scheme_type = EConstr.Unsafe.to_constr ((Retyping.get_type_of env sigma) (EConstr.of_constr scheme)) in
   let sorts =
     (fun (_,_,x) ->
        fst @@ UnivGen.fresh_sort_in_family x

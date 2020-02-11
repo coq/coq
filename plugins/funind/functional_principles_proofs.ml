@@ -475,7 +475,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
       tclIDTAC
   in
   try
-    scan_type [] (Typing.unsafe_type_of env sigma (mkVar hyp_id)), [hyp_id]
+    scan_type [] (Typing.type_of_variable env hyp_id), [hyp_id]
   with TOREMOVE ->
     thin [hyp_id],[]
 
@@ -525,7 +525,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
         tclMAP (fun id -> Proofview.V82.of_tactic (introduction id)) dyn_infos.rec_hyps;
         observe_tac "after_introduction" (fun g' ->
            (* We get infos on the equations introduced*)
-           let new_term_value_eq = pf_unsafe_type_of g' (mkVar heq_id) in
+           let new_term_value_eq = pf_get_hyp_typ g' heq_id in
            (* compute the new value of the body *)
            let new_term_value =
              match EConstr.kind (project g') new_term_value_eq with
@@ -536,22 +536,23 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
                            );
                    anomaly (Pp.str "cannot compute new term value.")
            in
-         let fun_body =
-           mkLambda(make_annot Anonymous Sorts.Relevant,
-                    pf_unsafe_type_of g' term,
-                    Termops.replace_term (project g') term (mkRel 1) dyn_infos.info
-                   )
-         in
-         let new_body = pf_nf_betaiota g' (mkApp(fun_body,[| new_term_value |])) in
-         let new_infos =
-           {dyn_infos with
+           let g', termtyp = tac_type_of g' term in
+           let fun_body =
+             mkLambda(make_annot Anonymous Sorts.Relevant,
+                      termtyp,
+                      Termops.replace_term (project g') term (mkRel 1) dyn_infos.info
+                     )
+           in
+           let new_body = pf_nf_betaiota g' (mkApp(fun_body,[| new_term_value |])) in
+           let new_infos =
+             {dyn_infos with
               info = new_body;
               eq_hyps = heq_id::dyn_infos.eq_hyps
-           }
-         in
-         clean_goal_with_heq ptes_infos continue_tac new_infos  g'
-      )])
-    ]
+             }
+           in
+           clean_goal_with_heq ptes_infos continue_tac new_infos  g'
+          )])
+      ]
       g
 
 
@@ -633,7 +634,7 @@ let build_proof
                   let dyn_infos = {dyn_info' with info =
                       mkCase(ci,ct,t,cb)} in
                   let g_nb_prod = nb_prod (project g) (pf_concl g) in
-                  let type_of_term = pf_unsafe_type_of g t in
+                  let g, type_of_term = tac_type_of g t in
                   let term_eq =
                     make_refl_eq (Lazy.force refl_equal) type_of_term t
                   in
@@ -849,7 +850,7 @@ let generalize_non_dep hyp g =
 (*   observe (str "rec id := " ++ Ppconstr.pr_id hyp); *)
   let hyps = [hyp] in
   let env = Global.env () in
-  let hyp_typ = pf_unsafe_type_of g (mkVar hyp) in
+  let hyp_typ = pf_get_hyp_typ g hyp in
   let to_revert,_ =
     let open Context.Named.Declaration in
     Environ.fold_named_context_reverse (fun (clear,keep) decl ->
@@ -1351,7 +1352,7 @@ let backtrack_eqs_until_hrec hrec eqs : tactic =
     let rewrite =
       tclFIRST (List.map (fun x -> Proofview.V82.of_tactic (Equality.rewriteRL x)) eqs )
     in
-    let _,hrec_concl  = decompose_prod (project gls) (pf_unsafe_type_of gls (mkVar hrec)) in
+    let _,hrec_concl  = decompose_prod (project gls) (pf_get_hyp_typ gls hrec) in
     let f_app = Array.last (snd (destApp (project gls) hrec_concl)) in
     let f =  (fst (destApp (project gls) f_app)) in
     let rec backtrack : tactic =
@@ -1573,19 +1574,16 @@ let prove_principle_for_gen
         (List.rev_map (get_name %> Nameops.Name.get_id)
            (princ_info.args@princ_info.branches@princ_info.predicates@princ_info.params)
         );
-      (* observe_tac "" *) Proofview.V82.of_tactic (assert_by
-         (Name acc_rec_arg_id)
-         (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
-         (Proofview.V82.tactic prove_rec_arg_acc)
-      );
-(*       observe_tac "reverting" *) (revert (List.rev (acc_rec_arg_id::args_ids)));
-(*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl () ++  *)
-(*                         str "fix arg num" ++ int (List.length args_ids + 1) ); tclIDTAC g); *)
-      (* observe_tac "h_fix " *) (Proofview.V82.of_tactic (fix fix_id (List.length args_ids + 1)));
-(*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl() ++ pr_lconstr_env (pf_env g ) (pf_unsafe_type_of g (mkVar fix_id) )); tclIDTAC g); *)
+      Proofview.V82.of_tactic
+        (assert_by
+           (Name acc_rec_arg_id)
+           (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
+           (Proofview.V82.tactic prove_rec_arg_acc));
+      (revert (List.rev (acc_rec_arg_id::args_ids)));
+      (Proofview.V82.of_tactic (fix fix_id (List.length args_ids + 1)));
       h_intros (List.rev (acc_rec_arg_id::args_ids));
       Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_ref));
-      (* observe_tac "finish" *) (fun gl' ->
+      (fun gl' ->
          let body =
            let _,args = destApp (project gl') (pf_concl gl') in
            Array.last args
