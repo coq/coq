@@ -360,6 +360,7 @@ let compact p =
 
 let run_tactic env tac pr =
   let open Proofview.Notations in
+  (* We set the global shelf in the proofview so that tactics can access this information (read-only).*)
   let sp = Proofview.Unsafe.set_global_shelf pr.shelf pr.proofview in
   let undef sigma l = List.filter (fun g -> Evd.is_undefined sigma g) l in
   let tac =
@@ -382,9 +383,14 @@ let run_tactic env tac pr =
   in
   let sigma = Proofview.return proofview in
   let to_shelve = undef sigma to_shelve in
-  let shelf = (undef sigma pr.shelf)@retrieved@to_shelve in
+  (* Ensure we have no duplicates between the evars declared in the proofview's local shelf and
+    the ones retrived in the sigma at the end of the tactic run. *)
+  let retrieved = List.filter (fun ev -> not (List.mem_f Evar.equal ev to_shelve)) retrieved in
+  let shelf = retrieved@to_shelve in
+  let global_shelf = undef sigma pr.shelf in
+  let shelf = global_shelf @ shelf in
   let proofview = Proofview.Unsafe.mark_as_unresolvables proofview to_shelve in
-  let given_up = pr.given_up@give_up in
+  let given_up = pr.given_up @ give_up in
   let proofview = Proofview.Unsafe.reset_future_goals proofview in
   { pr with proofview ; shelf ; given_up },(status,info_trace),result
 

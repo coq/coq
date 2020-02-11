@@ -54,8 +54,12 @@ let generic_refine ~typecheck f gl =
   let prev_future_goals = Evd.save_future_goals origsigma in
   (* Create the refinement term *)
   Proofview.Unsafe.tclGETGLOBALSHELF >>= fun shelf ->
+  Proofview.Unsafe.tclGETSHELF >>= fun local_shelf ->
   let sigma = Evd.reset_future_goals origsigma in
-  let sigma = Evd.add_shelved_evars (Evar.Set.of_list shelf) sigma in
+  (* Attach the shelved evars information in sigma, so that e.g. unification
+    can know about the shelved status of an evar. *)
+  let shelf = Evar.Set.union (Evar.Set.of_list shelf) (Evar.Set.of_list local_shelf) in
+  let sigma = Evd.add_shelved_evars shelf sigma in
   Proofview.Unsafe.tclEVARS sigma >>= fun () ->
   f >>= fun (v, c) ->
   Proofview.tclEVARMAP >>= fun sigma ->
@@ -80,6 +84,14 @@ let generic_refine ~typecheck f gl =
   (* Select the goals *)
   let evs = Evd.map_filter_future_goals (Proofview.Unsafe.advance sigma) evs in
   let comb,newshelf,given_up,evkmain = Evd.dispatch_future_goals evs in
+  (* Mark goals, shelved or not, as unresolvable *)
+  let sigma = Proofview.Unsafe.mark_as_goals sigma comb in
+  let sigma = Proofview.Unsafe.mark_unresolvables sigma newshelf in
+  (* The [newshelf] might include goals that are already shelved in the initial
+     global and local shelves: e.g. when an evar is aliased to a previously
+     globally shelved evar.
+     Those are not considered as new shelved goals *)
+  let newshelf = List.filter (fun ev -> not (Evar.Set.mem ev shelf)) newshelf in
   (* Proceed to the refinement *)
   let sigma = match Proofview.Unsafe.advance sigma self with
   | None ->
@@ -95,9 +107,6 @@ let generic_refine ~typecheck f gl =
         | None -> sigma
         | Some id -> Evd.rename evk id sigma
   in
-  (* Mark goals *)
-  let sigma = Proofview.Unsafe.mark_as_goals sigma comb in
-  let sigma = Proofview.Unsafe.mark_unresolvables sigma newshelf in
   let comb = CList.map (fun x -> Proofview.goal_with_state x state) comb in
   let trace env sigma = Pp.(hov 2 (str"simple refine"++spc()++
                                    Termops.Internal.print_constr_env env sigma c)) in
