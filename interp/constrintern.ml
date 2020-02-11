@@ -115,7 +115,7 @@ type internalization_error =
   | NotAProjectionOf of qualid * qualid
   | ProjectionsOfDifferentRecords of qualid * qualid
 
-exception InternalizationError of internalization_error Loc.located
+exception InternalizationError of internalization_error
 
 let explain_variable_capture id id' =
   Id.print id ++ str " is dependent in the type of " ++ Id.print id' ++
@@ -163,6 +163,11 @@ let explain_internalization_error e =
   | ProjectionsOfDifferentRecords (inductive1_id, inductive2_id) ->
     explain_projections_of_diff_records inductive1_id inductive2_id
   in pp ++ str "."
+
+let _ = CErrors.register_handler (function
+    | InternalizationError e ->
+      Some (explain_internalization_error e)
+    | _ -> None)
 
 let error_bad_inductive_type ?loc ?info () =
   user_err ?loc ?info (str
@@ -368,7 +373,7 @@ let impls_term_list n ?(args = []) =
 (* Check if in binder "(x1 x2 .. xn : t)", none of x1 .. xn-1 occurs in t *)
 let rec check_capture ty = let open CAst in function
   | { loc; v = Name id } :: { v = Name id' } :: _ when occur_glob_constr id ty ->
-      raise (InternalizationError (loc,VariableCapture (id,id')))
+    Loc.raise ?loc (InternalizationError (VariableCapture (id,id')))
   | _::nal ->
       check_capture ty nal
   | [] ->
@@ -1259,14 +1264,16 @@ let loc_of_lhs lhs =
 let check_linearity lhs ids =
   match has_duplicate ids with
     | Some id ->
-        raise (InternalizationError (loc_of_lhs lhs,NonLinearPattern id))
+      let loc = loc_of_lhs lhs in
+      Loc.raise ?loc (InternalizationError (NonLinearPattern id))
     | None ->
         ()
 
 (* Match the number of pattern against the number of matched args *)
 let check_number_of_pattern loc n l =
   let p = List.length l in
-  if not (Int.equal n p) then raise (InternalizationError (loc,BadPatternsNumber (n,p)))
+  if not (Int.equal n p) then
+    Loc.raise ?loc (InternalizationError (BadPatternsNumber (n,p)))
 
 let check_or_pat_variables loc ids idsl =
   let eq_id {v=id} {v=id'} = Id.equal id id' in
@@ -1398,7 +1405,7 @@ let find_constructor loc add_params ref =
 
 let find_pattern_variable qid =
   if qualid_is_ident qid then qualid_basename qid
-  else raise (InternalizationError(qid.CAst.loc,NotAConstructor qid))
+  else Loc.raise ?loc:qid.CAst.loc (InternalizationError(NotAConstructor qid))
 
 let check_duplicate ?loc fields =
   let eq (ref1, _) (ref2, _) = qualid_eq ref1 ref2 in
@@ -1435,8 +1442,10 @@ let sort_fields ~complete loc fields completer =
             let gr = locate_reference first_field_ref in
             Dumpglob.add_glob ?loc:first_field_ref.CAst.loc gr;
             (gr, Recordops.find_projection gr)
-          with Not_found ->
-            raise (InternalizationError(first_field_ref.CAst.loc, NotAProjection first_field_ref))
+          with Not_found as exn ->
+            let _, info = Exninfo.capture exn in
+            let info = Option.cata (Loc.add_loc info) info loc in
+            Exninfo.iraise (InternalizationError(NotAProjection first_field_ref), info)
         in
         (* the number of parameters *)
         let nparams = record.Recordops.s_EXPECTEDPARAM in
@@ -1471,10 +1480,10 @@ let sort_fields ~complete loc fields completer =
                      try Recordops.find_projection field_glob_ref
                      with Not_found ->
                        let inductive_ref = inductive_of_record floc record in
-                       raise (InternalizationError(floc, NotAProjectionOf (field_ref, inductive_ref))) in
+                       Loc.raise ?loc:floc (InternalizationError(NotAProjectionOf (field_ref, inductive_ref))) in
                    let ind1 = inductive_of_record floc record in
                    let ind2 = inductive_of_record floc this_field_record in
-                   raise (InternalizationError(loc, ProjectionsOfDifferentRecords (ind1, ind2)))
+                   Loc.raise ?loc (InternalizationError(ProjectionsOfDifferentRecords (ind1, ind2)))
                in
                if not regular && complete then
                  (* "regular" is false when the field is defined
@@ -1661,12 +1670,16 @@ let drop_notations_pattern looked_for genv =
       begin
         match drop_syndef top scopes head pl with
           | Some (a,b,c) -> DAst.make ?loc @@ RCPatCstr(a, b, c)
-          | None -> raise (InternalizationError (loc,NotAConstructor head))
+          | None -> Loc.raise ?loc (InternalizationError (NotAConstructor head))
       end
     | CPatCstr (qid, Some expl_pl, pl) ->
-      let g = try Nametab.locate qid
-              with Not_found ->
-              raise (InternalizationError (loc,NotAConstructor qid)) in
+      let g =
+        try Nametab.locate qid
+        with Not_found as exn ->
+          let _, info = Exninfo.capture exn in
+          let info = Option.cata (Loc.add_loc info) info loc in
+          Exninfo.iraise (InternalizationError (NotAConstructor qid), info)
+      in
       if expl_pl == [] then
         (* Convention: (@r) deactivates all further implicit arguments and scopes *)
         DAst.make ?loc @@ RCPatCstr (g, List.map (in_pat false scopes) pl, [])
@@ -1816,9 +1829,9 @@ let intern_ind_pattern genv ntnvars scopes pat =
   let no_not =
     try
       drop_notations_pattern (function (GlobRef.IndRef _ | GlobRef.ConstructRef _) -> () | _ -> raise Not_found) genv scopes pat
-    with InternalizationError(loc,NotAConstructor _) as exn ->
+    with InternalizationError(NotAConstructor _) as exn ->
       let _, info = Exninfo.capture exn in
-      error_bad_inductive_type ?loc ~info ()
+      error_bad_inductive_type ~info ()
   in
   let loc = no_not.CAst.loc in
   match DAst.get no_not with
@@ -1907,8 +1920,10 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         let dl = Array.of_list dl in
         let n =
           try List.index0 Id.equal iddef lf
-          with Not_found ->
-            raise (InternalizationError (locid,UnboundFixName (false,iddef)))
+          with Not_found as exn ->
+            let _, info = Exninfo.capture exn in
+            let info = Option.cata (Loc.add_loc info) info locid in
+            Exninfo.iraise (InternalizationError (UnboundFixName (false,iddef)),info)
         in
         let env = restart_lambda_binders env in
         let idl_temp = Array.map
@@ -1950,8 +1965,10 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         let dl = Array.of_list dl in
         let n =
           try List.index0 Id.equal iddef lf
-          with Not_found ->
-            raise (InternalizationError (locid,UnboundFixName (true,iddef)))
+          with Not_found as exn ->
+            let _, info = Exninfo.capture exn in
+            let info = Option.cata (Loc.add_loc info) info locid in
+            Exninfo.iraise (InternalizationError (UnboundFixName (true,iddef)), info)
         in
         let env = restart_lambda_binders env in
         let idl_tmp = Array.map
@@ -2179,7 +2196,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         DAst.make ?loc @@
         GEvar (n, List.map (on_snd (intern_no_implicit env)) l)
     | CPatVar _ ->
-        raise (InternalizationError (loc,IllegalMetavariable))
+      Loc.raise ?loc (InternalizationError IllegalMetavariable)
     (* end *)
     | CSort s ->
         DAst.make ?loc @@
@@ -2345,12 +2362,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         (intern_no_implicit enva a) :: (intern_args env subscopes args)
 
   in
-  try
-    intern env c
-  with
-      InternalizationError (loc,e) ->
-        user_err ?loc ~hdr:"internalize"
-          (explain_internalization_error e)
+  intern env c
 
 (**************************************************************************)
 (* Functions to translate constr_expr into glob_constr                    *)
@@ -2390,13 +2402,7 @@ let intern_gen kind env sigma
 let intern_constr env sigma c = intern_gen WithoutTypeConstraint env sigma c
 let intern_type env sigma c = intern_gen IsType env sigma c
 let intern_pattern globalenv patt =
-  try
-    intern_cases_pattern globalenv Id.Map.empty (None,[]) empty_alias patt
-  with
-    InternalizationError (loc,e) as exn ->
-    (* XXX: use regular printer? *)
-    let _, info = Exninfo.capture exn in
-    user_err ?loc ~info ~hdr:"internalize" (explain_internalization_error e)
+  intern_cases_pattern globalenv Id.Map.empty (None,[]) empty_alias patt
 
 (*********************************************************************)
 (* Functions to parse and interpret constructions *)
@@ -2509,7 +2515,6 @@ let my_intern_constr env lvar acc c =
   internalize env acc false lvar c
 
 let intern_context env impl_env binders =
-  try
   let lvar = (empty_ltac_sign, Id.Map.empty) in
   let ids =
     (* We assume all ids around are parts of the prefix of the current
@@ -2523,8 +2528,6 @@ let intern_context env impl_env binders =
               tmp_scope = None; scopes = []; impls = impl_env;
               binder_block_names = Some (Some AbsPi,ids)}, []) binders in
   (lenv.impls, List.map glob_local_binder_of_extended bl)
-  with InternalizationError (loc,e) ->
-    user_err ?loc ~hdr:"internalize" (explain_internalization_error e)
 
 let interp_glob_context_evars ?(program_mode=false) env sigma k bl =
   let open EConstr in
