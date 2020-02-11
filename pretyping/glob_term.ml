@@ -65,7 +65,7 @@ and 'a cases_pattern_g = ('a cases_pattern_r, 'a) DAst.t
 
 type cases_pattern = [ `any ] cases_pattern_g
 
-type binding_kind = Explicit | Implicit
+type binding_kind = Explicit | MaxImplicit | NonMaxImplicit
 
 (** Representation of an internalized (or in other words globalized) term. *)
 type 'a glob_constr_r =

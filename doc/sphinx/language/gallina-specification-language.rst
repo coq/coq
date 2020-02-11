@@ -283,8 +283,10 @@ Binders
    | ( {+ @name } : @term )
    | ( @name {? : @term } := @term )
    | %{ {+ @name } {? : @term } %}
+   | [ {+ @name } {? : @term } ]
    | `( {+, @typeclass_constraint } )
    | `%{ {+, @typeclass_constraint } %}
+   | `[ {+, @typeclass_constraint } ]
    | ' @pattern0
    | ( @name : @term %| @term )
    typeclass_constraint ::= {? ! } @term

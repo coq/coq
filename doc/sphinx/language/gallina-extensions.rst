@@ -1570,11 +1570,26 @@ inserted. In the second case, the function is considered to be
 implicitly applied to the implicit arguments it is waiting for: one
 says that the implicit argument is maximally inserted.
 
-Each implicit argument can be declared to have to be inserted maximally or non
-maximally. This can be governed argument per argument by the command
-:cmd:`Arguments (implicits)` or globally by the :flag:`Maximal Implicit Insertion` flag.
+Each implicit argument can be declared to be inserted maximally or non
+maximally. In Coq, maximally-inserted implicit arguments are written between curly braces
+"{ }" and non-maximally-inserted implicit arguments are written in square brackets "[ ]".
 
-.. seealso:: :ref:`displaying-implicit-args`.
+.. seealso:: :flag:`Maximal Implicit Insertion`
+
+Trailing Implicit Arguments
++++++++++++++++++++++++++++
+
+An implicit argument is considered trailing when all following arguments are declared
+implicit. Trailing implicit arguments cannot be declared non maximally inserted,
+otherwise they would never be inserted.
+
+.. exn:: Argument @ident is a trailing implicit, so it can't be declared non maximal. Please use %{ %} instead of [ ].
+
+   For instance:
+
+   .. coqtop:: all fail
+
+      Fail Definition double [n] := n + n.
 
 
 Casual use of implicit arguments
@@ -1608,7 +1623,7 @@ Implicit Argument Binders
 In the first setting, one wants to explicitly give the implicit
 arguments of a declared object as part of its definition. To do this,
 one has to surround the bindings of implicit arguments by curly
-braces:
+braces or square braces:
 
 .. coqtop:: all
 
@@ -1624,6 +1639,17 @@ absent in every situation but still be able to specify it if needed:
 
    Goal forall A, compose id id = id (A:=A).
 
+For non maximally inserted implicit arguments, use square brackets:
+
+.. coqtop:: all
+
+   Fixpoint map [A B : Type] (f : A -> B) (l : list A) : list B :=
+     match l with
+     | nil => nil
+     | cons a t => cons (f a) (map f t)
+     end.
+
+   Print Implicit map.
 
 The syntax is supported in all top-level definitions:
 :cmd:`Definition`, :cmd:`Fixpoint`, :cmd:`Lemma` and so on. For (co-)inductive datatype
@@ -1728,14 +1754,6 @@ Declaring Implicit Arguments
    To know which are the implicit arguments of an object, use the
    command :cmd:`Print Implicit` (see :ref:`displaying-implicit-args`).
 
-.. exn:: Argument @ident is a trailing implicit, so it can't be declared non maximal. Please use %{ %} instead of [ ].
-
-   For instance in
-
-   .. coqtop:: all fail
-
-      Arguments prod _ [_].
-
 Automatic declaration of implicit arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1811,7 +1829,7 @@ appear strictly in the body of the type, they are implicit.
 
 
 Mode for automatic declaration of implicit arguments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. flag:: Implicit Arguments
 
@@ -1823,7 +1841,7 @@ Mode for automatic declaration of implicit arguments
 .. _controlling-strict-implicit-args:
 
 Controlling strict implicit arguments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++++++++++++++++++++++++++++++++++++++
 
 .. flag:: Strict Implicit
 
@@ -1842,7 +1860,7 @@ Controlling strict implicit arguments
 .. _controlling-contextual-implicit-args:
 
 Controlling contextual implicit arguments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++++++++++++++++++++++++++++++++++++++++++
 
 .. flag:: Contextual Implicit
 
@@ -1853,7 +1871,7 @@ Controlling contextual implicit arguments
 .. _controlling-rev-pattern-implicit-args:
 
 Controlling reversible-pattern implicit arguments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. flag:: Reversible Pattern Implicit
 
@@ -1864,7 +1882,7 @@ Controlling reversible-pattern implicit arguments
 .. _controlling-insertion-implicit-args:
 
 Controlling the insertion of implicit arguments not followed by explicit arguments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. flag:: Maximal Implicit Insertion
 
@@ -1872,6 +1890,28 @@ Controlling the insertion of implicit arguments not followed by explicit argumen
    declares implicit arguments to be automatically inserted when a
    function is partially applied and the next argument of the function is
    an implicit one.
+
+Combining manual declaration and automatic declaration
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+When some arguments are manually specified implicit with binders in a definition
+and the automatic declaration mode in on, the manual implicit arguments are added to the
+automatically declared ones.
+
+In that case, and when the flag :flag:`Maximal Implicit Insertion` is set to off,
+some trailing implicit arguments can be inferred to be non maximally inserted. In
+this case, they are converted to maximally inserted ones.
+
+.. example::
+
+   .. coqtop:: all
+
+      Set Implicit Arguments.
+      Axiom eq0_le0 : forall (n : nat) (x : n = 0), n <= 0.
+      Print Implicit eq0_le0.
+      Axiom eq0_le0' : forall (n : nat) {x : n = 0}, n <= 0.
+      Print Implicit eq0_le0'.
+
 
 .. _explicit-applications:
 
@@ -2136,8 +2176,10 @@ Implicit generalization
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: `{ }
+.. index:: `[ ]
 .. index:: `( )
 .. index:: `{! }
+.. index:: `[! ]
 .. index:: `(! )
 
 Implicit generalization is an automatic elaboration of a statement
@@ -2145,11 +2187,12 @@ with free variables into a closed statement where these variables are
 quantified explicitly.
 
 It is activated for a binder by prefixing a \`, and for terms by
-surrounding it with \`{ } or \`( ).
+surrounding it with \`{ }, or \`[ ] or \`( ).
 
 Terms surrounded by \`{ } introduce their free variables as maximally
-inserted implicit arguments, and terms surrounded by \`( ) introduce
-them as explicit arguments.
+inserted implicit arguments, terms surrounded by \`[ ] introduce them as
+non maximally inserted implicit arguments and terms surrounded by \`( )
+introduce them as explicit arguments.
 
 Generalizing binders always introduce their free variables as
 maximally inserted implicit arguments. The binder itself introduces

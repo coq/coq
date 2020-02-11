@@ -260,18 +260,18 @@ let implicit_name_of_pos = function
   | Constrexpr.ExplByPos (n,k) -> Anonymous
 
 let implicit_kind_of_status = function
-  | None -> Anonymous, NotImplicit
-  | Some (pos,_,(maximal,_)) -> implicit_name_of_pos pos, if maximal then MaximallyImplicit else Implicit
+  | None -> Anonymous, Glob_term.Explicit
+  | Some (pos,_,(maximal,_)) -> implicit_name_of_pos pos, if maximal then Glob_term.MaxImplicit else Glob_term.NonMaxImplicit
 
 let dummy = {
-  Vernacexpr.implicit_status = NotImplicit;
+  Vernacexpr.implicit_status = Glob_term.Explicit;
   name = Anonymous;
   recarg_like = false;
   notation_scope = None;
 }
 
 let is_dummy {Vernacexpr.implicit_status; name; recarg_like; notation_scope} =
-  name = Anonymous && not recarg_like && notation_scope = None && implicit_status = NotImplicit
+  name = Anonymous && not recarg_like && notation_scope = None && implicit_status = Glob_term.Explicit
 
 let rec main_implicits i renames recargs scopes impls =
   if renames = [] && recargs = [] && scopes = [] && impls = [] then []
@@ -283,8 +283,8 @@ let rec main_implicits i renames recargs scopes impls =
     let (name, implicit_status) =
       match renames, impls with
       | _, (Some _ as i) :: _ -> implicit_kind_of_status i
-      | name::_, _ -> (name,NotImplicit)
-      | [], (None::_ | []) -> (Anonymous, NotImplicit)
+      | name::_, _ -> (name,Glob_term.Explicit)
+      | [], (None::_ | []) -> (Anonymous, Glob_term.Explicit)
     in
     let notation_scope = match scopes with
       | scope :: _ -> Option.map CAst.make scope

@@ -203,8 +203,9 @@ let warn_ignoring_implicit_status =
 
 let implicits_of_glob_constr ?(with_products=true) l =
   let add_impl ?loc na bk l = match bk with
-  | Implicit -> CAst.make ?loc (Some (na,true)) :: l
-  | _ -> CAst.make ?loc None :: l
+  | NonMaxImplicit -> CAst.make ?loc (Some (na,false)) :: l
+  | MaxImplicit -> CAst.make ?loc (Some (na,true)) :: l
+  | Explicit -> CAst.make ?loc None :: l
   in
   let rec aux c =
     match DAst.get c with
@@ -212,8 +213,9 @@ let implicits_of_glob_constr ?(with_products=true) l =
       if with_products then add_impl na bk (aux b)
       else
         let () = match bk with
-          | Implicit -> warn_ignoring_implicit_status na ?loc:c.CAst.loc
-          | _ -> ()
+          | NonMaxImplicit
+          | MaxImplicit -> warn_ignoring_implicit_status na ?loc:c.CAst.loc
+          | Explicit -> ()
         in []
     | GLambda (na, bk, t, b) -> add_impl ?loc:t.CAst.loc na bk (aux b)
     | GLetIn (na, b, t, c) -> aux c

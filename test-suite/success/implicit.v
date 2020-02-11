@@ -114,9 +114,13 @@ Check h 0.
 Inductive I {A} (a:A) : forall {n:nat}, Prop :=
  | C : I a (n:=0).
 
+Inductive I' [A] (a:A) : forall [n:nat], n =0 -> Prop :=
+ | C' : I' a eq_refl.
+
 Inductive I2 (x:=0) : Prop :=
- | C2 {p:nat} : p = 0 -> I2.
-Check C2 eq_refl.
+ | C2 {p:nat} : p = 0 -> I2
+ | C2' [p:nat] : p = 0 -> I2.
+Check C2' eq_refl.
 
 Inductive I3 {A} (x:=0) (a:A) : forall {n:nat}, Prop :=
  | C3 : I3 a (n:=0).
@@ -147,6 +151,7 @@ Set Warnings "syntax".
 (* Miscellaneous tests *)
 
 Check let f := fun {x:nat} y => y=true in f false.
+Check let f := fun [x:nat] y => y=true in f false.
 
 (* Isn't the name "arg_1" a bit fragile, here? *)
 
@@ -157,3 +162,10 @@ Check fun f : forall {_:nat}, nat => f (arg_1:=0).
 Set Warnings "+syntax".
 Check id (fun x => let f c {a} (b:a=a) := b in f true (eq_refl 0)).
 Set Warnings "syntax".
+
+
+Axiom eq0le0 : forall (n : nat) (x : n = 0), n <= 0.
+Variable eq0le0' : forall (n : nat) {x : n = 0}, n <= 0.
+Axiom eq0le0'' : forall (n : nat) {x : n = 0}, n <= 0.
+Definition eq0le0''' : forall (n : nat) {x : n = 0}, n <= 0. Admitted.
+Fail Axiom eq0le0'''' : forall [n : nat] {x : n = 0}, n <= 0.

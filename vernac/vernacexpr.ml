@@ -254,7 +254,7 @@ type vernac_one_argument_status = {
   name : Name.t;
   recarg_like : bool;
   notation_scope : string CAst.t option;
-  implicit_status : Impargs.implicit_kind;
+  implicit_status : Glob_term.binding_kind;
 }
 
 type vernac_argument_status =
@@ -386,7 +386,7 @@ type nonrec vernac_expr =
   | VernacArguments of
       qualid or_by_notation *
       vernac_argument_status list (* Main arguments status list *) *
-      (Name.t * Impargs.implicit_kind) list list (* Extra implicit status lists *) *
+      (Name.t * Glob_term.binding_kind) list list (* Extra implicit status lists *) *
       arguments_modifier list
   | VernacReserve of simple_binder list
   | VernacGeneralizable of (lident list) option

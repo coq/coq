@@ -68,8 +68,9 @@ let glob_sort_eq u1 u2 = match u1, u2 with
 
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with
   | Explicit, Explicit -> true
-  | Implicit, Implicit -> true
-  | (Explicit | Implicit), _ -> false
+  | NonMaxImplicit, NonMaxImplicit -> true
+  | MaxImplicit, MaxImplicit -> true
+  | (Explicit | NonMaxImplicit | MaxImplicit), _ -> false
 
 let case_style_eq s1 s2 = let open Constr in match s1, s2 with
   | LetStyle, LetStyle -> true

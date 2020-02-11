@@ -11,4 +11,10 @@ Admitted.
 Print a_eq_b.
 
 
+Require Import Morphisms.
 
+Class Equiv A := equiv : A -> A -> Prop.
+Class Setoid A `{Equiv A} := setoid_equiv:> Equivalence (equiv).
+
+Lemma vcons_proper A `[Equiv A] `[!Setoid A] (x : True) : True.
+Admitted.
