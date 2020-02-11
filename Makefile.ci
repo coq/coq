@@ -25,7 +25,6 @@ CI_TARGETS= \
     ci-equations \
     ci-fcsl-pcm \
     ci-fiat-crypto \
-    ci-fiat-crypto-legacy \
     ci-fiat_parsers \
     ci-flocq \
     ci-geocoq \
