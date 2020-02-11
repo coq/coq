@@ -3,6 +3,7 @@ Locus
 Locusops
 Pretype_errors
 Reductionops
+Cbn
 Inductiveops
 Arguments_renaming
 Retyping

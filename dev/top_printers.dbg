@@ -46,7 +46,6 @@ install_printer Top_printers.pp_idpred
 install_printer Top_printers.pp_cpred
 install_printer Top_printers.pp_transparent_state
 install_printer Top_printers.pp_stack_t
-install_printer Top_printers.pp_cst_stack_t
 install_printer Top_printers.pp_state_t
 install_printer Top_printers.ppmetas
 install_printer Top_printers.ppevm

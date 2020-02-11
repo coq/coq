@@ -382,19 +382,19 @@ let ise_stack2 no_app env evd f sk1 sk2 =
       else None, x in
     match sk1, sk2 with
     | [], [] -> None, Success i
-    | Stack.Case (_,t1,c1,_)::q1, Stack.Case (_,t2,c2,_)::q2 ->
+    | Stack.Case (_,t1,c1)::q1, Stack.Case (_,t2,c2)::q2 ->
       (match f env i CONV t1 t2 with
       | Success i' ->
         (match ise_array2 i' (fun ii -> f env ii CONV) c1 c2 with
         | Success i'' -> ise_stack2 true i'' q1 q2
         | UnifFailure _ as x -> fail x)
       | UnifFailure _ as x -> fail x)
-    | Stack.Proj (p1,_)::q1, Stack.Proj (p2,_)::q2 ->
+    | Stack.Proj (p1)::q1, Stack.Proj (p2)::q2 ->
        if Projection.Repr.equal (Projection.repr p1) (Projection.repr p2)
        then ise_stack2 true i q1 q2
        else fail (UnifFailure (i, NotSameHead))
-    | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1,_)::q1,
-      Stack.Fix (((li2, i2),(_,tys2,bds2)),a2,_)::q2 ->
+    | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1)::q1,
+      Stack.Fix (((li2, i2),(_,tys2,bds2)),a2)::q2 ->
       if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
         match ise_and i [
           (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
@@ -417,13 +417,13 @@ let exact_ise_stack2 env evd f sk1 sk2 =
   let rec ise_stack2 i sk1 sk2 =
     match sk1, sk2 with
     | [], [] -> Success i
-    | Stack.Case (_,t1,c1,_)::q1, Stack.Case (_,t2,c2,_)::q2 ->
+    | Stack.Case (_,t1,c1)::q1, Stack.Case (_,t2,c2)::q2 ->
       ise_and i [
       (fun i -> ise_stack2 i q1 q2);
       (fun i -> ise_array2 i (fun ii -> f env ii CONV) c1 c2);
       (fun i -> f env i CONV t1 t2)]
-    | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1,_)::q1,
-      Stack.Fix (((li2, i2),(_,tys2,bds2)),a2,_)::q2 ->
+    | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1)::q1,
+      Stack.Fix (((li2, i2),(_,tys2,bds2)),a2)::q2 ->
       if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
         ise_and i [
           (fun i -> ise_stack2 i q1 q2);
@@ -431,7 +431,7 @@ let exact_ise_stack2 env evd f sk1 sk2 =
           (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
           (fun i -> ise_stack2 i a1 a2)]
       else UnifFailure (i,NotSameHead)
-    | Stack.Proj (p1,_)::q1, Stack.Proj (p2,_)::q2 ->
+    | Stack.Proj (p1)::q1, Stack.Proj (p2)::q2 ->
        if Projection.Repr.equal (Projection.repr p1) (Projection.repr p2)
        then ise_stack2 i q1 q2
        else (UnifFailure (i, NotSameHead))
@@ -556,9 +556,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) flags env evd pbty
     let env' = push_rel (RelDecl.LocalAssum (na,c)) env in
     let out1 = whd_betaiota_deltazeta_for_iota_state
       flags.open_ts env' evd (c'1, Stack.empty) in
-    let out2, _ = whd_nored_state env' evd
-      (lift 1 (Stack.zip evd (term', sk')), Stack.append_app [|EConstr.mkRel 1|] Stack.empty),
-      Cst_stack.empty in
+    let out2 = whd_nored_state env' evd
+      (lift 1 (Stack.zip evd (term', sk')), Stack.append_app [|EConstr.mkRel 1|] Stack.empty) in
     if onleft then evar_eqappr_x flags env' evd CONV out1 out2
     else evar_eqappr_x flags env' evd CONV out2 out1
   in
