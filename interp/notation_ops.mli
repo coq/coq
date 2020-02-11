@@ -35,12 +35,21 @@ val notation_constr_of_glob_constr : notation_interp_env ->
 
 (** Re-interpret a notation as a [glob_constr], taking care of binders *)
 
+type 'a binder_status_fun = {
+  no : 'a -> 'a;
+  restart_prod : 'a -> 'a;
+  restart_lambda : 'a -> 'a;
+  switch_prod : 'a -> 'a;
+  switch_lambda : 'a -> 'a;
+  slide : 'a -> 'a;
+}
+
 val apply_cases_pattern : ?loc:Loc.t ->
   (Id.t list * cases_pattern_disjunction) * Id.t -> glob_constr -> glob_constr
 
 val glob_constr_of_notation_constr_with_binders : ?loc:Loc.t ->
   ('a -> Name.t -> 'a * ((Id.t list * cases_pattern_disjunction) * Id.t) option * Name.t) ->
-  ('a -> notation_constr -> glob_constr) ->
+  ('a -> notation_constr -> glob_constr) -> ?h:'a binder_status_fun ->
   'a -> notation_constr -> glob_constr
 
 val glob_constr_of_notation_constr : ?loc:Loc.t -> notation_constr -> glob_constr

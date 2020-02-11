@@ -90,3 +90,25 @@ apply H with (a:=a). (* test compliance with printing *)
 Abort.
 
 End A.
+
+Module B.
+
+(* Check valid/invalid implicit arguments *)
+Definition f1 {x} (y:forall {x}, x=0) := x+0.
+Definition f2 := (((fun x => 0):forall {x:nat}, nat), 0).
+Definition f3 := fun {x} (y:forall {x}, x=0) => x+0.
+
+Definition g1 {x} := match x with true => fun {x:bool} => x | false => fun x:bool => x end.
+(* TODO: do not ignore the implicit here *)
+Definition g2 '(x,y) {z} := x+y+z.
+
+Definition h1 := fun x:nat => (fun {x} => x) 0.
+Definition h2 := let g := forall {y}, y=0 in g.
+
+Notation "∀ x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity,
+  format "'[  ' '[  ' ∀  x  ..  y ']' ,  '/' P ']'") : type_scope.
+
+Definition l1 := ∀ {x:nat} {y:nat}, x=0.
+
+End B.
