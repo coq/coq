@@ -389,7 +389,7 @@ line timing data:
        By default, two lines are only considered the same if the
        character offsets and initial code strings are identical.  Passing
        ``TIMING_FUZZ=N`` relaxes this constraint by allowing the
-       character offsets to differ by up to ``N`` characters, as long
+       character locations to differ by up to ``N``, as long
        as the total number of characters and initial code strings
        continue to match.  This is useful when there are small changes
        to a file, and you want to match later lines that have not
