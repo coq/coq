@@ -69,15 +69,17 @@ let precatchable_exception = function
   | Nametab.GlobalizationError _ -> true
   | _ -> false
 
-let raise_pretype_error ?loc (env,sigma,te) =
-  Loc.raise ?loc (PretypeError(env,sigma,te))
+let raise_pretype_error ?loc ?info (env,sigma,te) =
+  let info = Option.default Exninfo.null info in
+  let info = Option.cata (Loc.add_loc info) info loc in
+  Exninfo.iraise (PretypeError(env,sigma,te),info)
 
 let raise_type_error ?loc (env,sigma,te) =
   Loc.raise ?loc (PretypeError(env,sigma,TypingError te))
 
-let error_actual_type ?loc env sigma {uj_val=c;uj_type=actty} expty reason =
+let error_actual_type ?loc ?info env sigma {uj_val=c;uj_type=actty} expty reason =
   let j = {uj_val=c;uj_type=actty} in
-  raise_pretype_error ?loc
+  raise_pretype_error ?loc ?info
     (env, sigma, ActualTypeNotCoercible (j, expty, reason))
 
 let error_actual_type_core ?loc env sigma {uj_val=c;uj_type=actty} expty =

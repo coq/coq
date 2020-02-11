@@ -125,13 +125,14 @@ let declare_scope scope =
   with Not_found ->
     scope_map := String.Map.add scope empty_scope !scope_map
 
-let error_unknown_scope sc =
-  user_err ~hdr:"Notation"
+let error_unknown_scope ~info sc =
+  user_err ~hdr:"Notation" ~info
     (str "Scope " ++ str sc ++ str " is not declared.")
 
 let find_scope ?(tolerant=false) scope =
   try String.Map.find scope !scope_map
-  with Not_found ->
+  with Not_found as exn ->
+    let _, info = Exninfo.capture exn in
     if tolerant then
       (* tolerant mode to be turn off after deprecation phase *)
       begin
@@ -140,7 +141,7 @@ let find_scope ?(tolerant=false) scope =
         empty_scope
       end
     else
-      error_unknown_scope scope
+      error_unknown_scope ~info scope
 
 let check_scope ?(tolerant=false) scope =
   let _ = find_scope ~tolerant scope in ()
@@ -158,7 +159,9 @@ let normalize_scope sc =
     try
       let sc = String.Map.find sc !delimiters_map in
       let _ = String.Map.find sc !scope_map in sc
-    with Not_found -> error_unknown_scope sc
+    with Not_found as exn ->
+      let _, info = Exninfo.capture exn in
+      error_unknown_scope ~info sc
 
 (**********************************************************************)
 (* The global stack of scopes                                         *)
@@ -257,8 +260,10 @@ let remove_delimiters scope =
        try
          let _ = ignore (String.Map.find key !delimiters_map) in
          delimiters_map := String.Map.remove key !delimiters_map
-       with Not_found ->
-         assert false (* A delimiter for scope [scope] should exist *)
+       with Not_found as exn ->
+         let _, info = Exninfo.capture exn in
+         (* XXX info *)
+         CErrors.anomaly ~info (str "A delimiter for scope [scope] should exist")
 
 let find_delimiters_scope ?loc key =
   try String.Map.find key !delimiters_map
@@ -1031,12 +1036,17 @@ let declare_string_interpreter ?(local=false) sc dir interp (patl,uninterp,b) =
 
 let check_required_module ?loc sc (sp,d) =
   try let _ = Nametab.global_of_path sp in ()
-  with Not_found ->
+  with Not_found as exn ->
+    let _, info = Exninfo.capture exn in
     match d with
-    | [] -> user_err ?loc ~hdr:"prim_token_interpreter"
-       (str "Cannot interpret in " ++ str sc ++ str " because " ++ pr_path sp ++ str " could not be found in the current environment.")
-    | _ -> user_err ?loc ~hdr:"prim_token_interpreter"
-       (str "Cannot interpret in " ++ str sc ++ str " without requiring first module " ++ str (List.last d) ++ str ".")
+    | [] ->
+      user_err ?loc ~info ~hdr:"prim_token_interpreter"
+        (str "Cannot interpret in " ++ str sc ++ str " because " ++ pr_path sp ++
+         str " could not be found in the current environment.")
+    | _ ->
+      user_err ?loc ~info ~hdr:"prim_token_interpreter"
+        (str "Cannot interpret in " ++ str sc ++ str " without requiring first module " ++
+         str (List.last d) ++ str ".")
 
 (* Look if some notation or numeral printer in [scope] can be used in
    the scope stack [scopes], and if yes, using delimiters or not *)
@@ -1158,8 +1168,9 @@ let interp_prim_token_gen ?loc g p local_scopes =
   try
     let (pat,loc), sc = find_interpretation p_as_ntn (find_prim_token ?loc g p) scopes in
     pat, (loc,sc)
-  with Not_found ->
-    user_err ?loc ~hdr:"interp_prim_token"
+  with Not_found as exn ->
+    let _, info = Exninfo.capture exn in
+    user_err ?loc ~info ~hdr:"interp_prim_token"
     ((match p with
       | Numeral _ ->
          str "No interpretation for numeral " ++ pr_notation (notation_of_prim_token p)
@@ -1192,9 +1203,10 @@ let interp_notation ?loc ntn local_scopes =
     let (n,sc) = find_interpretation ntn (find_notation ntn) scopes in
     Option.iter (fun d -> warn_deprecated_notation ?loc (ntn,d)) n.not_deprecation;
     n.not_interp, (n.not_location, sc)
-  with Not_found ->
-    user_err ?loc
-    (str "Unknown interpretation for notation " ++ pr_notation ntn ++ str ".")
+  with Not_found as exn ->
+    let _, info = Exninfo.capture exn in
+    user_err ?loc ~info
+      (str "Unknown interpretation for notation " ++ pr_notation ntn ++ str ".")
 
 let uninterp_notations c =
   List.map_append (fun key -> keymap_find key !notations_key_table)

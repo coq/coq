@@ -146,8 +146,9 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
   let rec coerce_unify env sigma x y =
     let x = hnf env sigma x and y = hnf env sigma y in
     try
-      (Evarconv.unify_leq_delay env sigma x y, None)
-    with UnableToUnify _ -> coerce' env sigma x y
+      Evarconv.unify_leq_delay env sigma x y, None
+    with
+      Evarconv.UnableToUnify _ -> coerce' env sigma x y
   and coerce' env sigma x y : evar_map * (evar_map -> EConstr.constr -> evar_map * EConstr.constr) option =
     let subco sigma = subset_coerce env sigma x y in
     let dest_prod c =
@@ -165,16 +166,20 @@ let coerce ?loc env sigma (x : EConstr.constr) (y : EConstr.constr)
             let (n, eqT), restT = dest_prod typ in
             let (n', eqT'), restT' = dest_prod typ' in
             aux sigma (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
-          with UnableToUnify _ ->
+          with UnableToUnify _ as exn ->
+            let _, info = Exninfo.capture exn in
             let (n, eqT), restT = dest_prod typ in
             let (n', eqT'), restT' = dest_prod typ' in
             let sigma =
               try
                 unify_leq_delay env sigma eqT eqT'
-              with UnableToUnify _ -> raise NoSubtacCoercion
+              with UnableToUnify _ ->
+                let e, info = Exninfo.capture exn in
+                Exninfo.iraise (NoSubtacCoercion,info)
             in
             (* Disallow equalities on arities *)
-            if Reductionops.is_arity env sigma eqT then raise NoSubtacCoercion;
+            if Reductionops.is_arity env sigma eqT then
+              Exninfo.iraise (NoSubtacCoercion,info);
             let restargs = lift_args 1
                 (List.rev (Array.to_list (Array.sub l (succ i) (len - (succ i)))))
             in
@@ -448,7 +453,8 @@ let inh_app_fun_core ~program_mode env sigma j =
         try let t,p =
           lookup_path_to_fun_from env sigma j.uj_type in
             apply_coercion env sigma p j t
-       with Not_found | NoCoercion ->
+       with (Not_found | NoCoercion) as exn ->
+         let _, info = Exninfo.capture exn in
          if program_mode then
            try
              let sigma, (coercef, t, trace) = mu env sigma t in
@@ -457,7 +463,7 @@ let inh_app_fun_core ~program_mode env sigma j =
              (sigma, res, trace)
            with NoSubtacCoercion | NoCoercion ->
              (sigma,j,IdCoe)
-         else raise NoCoercion
+         else Exninfo.iraise (NoCoercion,info)
 
 (* Try to coerce to a funclass; returns [j] if no coercion is applicable *)
 let inh_app_fun ~program_mode resolve_tc env sigma j =
@@ -523,7 +529,9 @@ let inh_coerce_to_fail flags env sigma rigidonly v t c1 =
       with Not_found -> raise NoCoercion
     in
     try (unify_leq_delay ~flags env sigma t' c1, v', trace)
-    with UnableToUnify _ -> raise NoCoercion
+    with Evarconv.UnableToUnify _ as exn ->
+      let _, info = Exninfo.capture exn in
+      Exninfo.iraise (NoCoercion,info)
 
 let default_flags_of env =
   default_flags_of TransparentState.full
@@ -532,7 +540,8 @@ let rec inh_conv_coerce_to_fail ?loc env sigma ?(flags=default_flags_of env) rig
   try (unify_leq_delay ~flags env sigma t c1, v, IdCoe)
   with UnableToUnify (best_failed_sigma,e) ->
     try inh_coerce_to_fail flags env sigma rigidonly v t c1
-    with NoCoercion ->
+    with NoCoercion as exn ->
+      let _, info = Exninfo.capture exn in
       match
       EConstr.kind sigma (whd_all env sigma t),
       EConstr.kind sigma (whd_all env sigma c1)
@@ -557,7 +566,8 @@ let rec inh_conv_coerce_to_fail ?loc env sigma ?(flags=default_flags_of env) rig
           let (sigma,v2',trace2) = inh_conv_coerce_to_fail ?loc env1 sigma rigidonly v2 t2 u2 in
           let trace = ProdCoe { na=name; ty=u1; dom=trace1; body=trace2 } in
           (sigma, mkLambda (name, u1, v2'), trace)
-      | _ -> raise (NoCoercionNoUnifier (best_failed_sigma,e))
+      | _ ->
+        Exninfo.iraise (NoCoercionNoUnifier (best_failed_sigma,e), info)
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
 let inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc rigidonly flags env sigma cj t =
@@ -565,26 +575,30 @@ let inh_conv_coerce_to_gen ?loc ~program_mode resolve_tc rigidonly flags env sig
     try
       let (sigma, val', trace) = inh_conv_coerce_to_fail ?loc env sigma ~flags rigidonly cj.uj_val cj.uj_type t in
       (sigma, val', Some trace)
-    with NoCoercionNoUnifier (best_failed_sigma,e) ->
+    with NoCoercionNoUnifier (best_failed_sigma,e) as exn ->
+      let _, info = Exninfo.capture exn in
       try
         if program_mode then
           let (sigma, val') = coerce_itf ?loc env sigma cj.uj_val cj.uj_type t in
           (sigma, val', None)
-        else raise NoSubtacCoercion
+        else Exninfo.iraise (NoSubtacCoercion,info)
       with
-      | NoSubtacCoercion when not resolve_tc || not (get_use_typeclasses_for_conversion ()) ->
-          error_actual_type ?loc env best_failed_sigma cj t e
-      | NoSubtacCoercion ->
+      | NoSubtacCoercion as exn when not resolve_tc || not (get_use_typeclasses_for_conversion ()) ->
+        let _, info = Exninfo.capture exn in
+        error_actual_type ?loc ~info env best_failed_sigma cj t e
+      | NoSubtacCoercion as exn ->
+        let _, info = Exninfo.capture exn in
         let sigma' = saturate_evd env sigma in
           try
             if sigma' == sigma then
-              error_actual_type ?loc env best_failed_sigma cj t e
+              error_actual_type ?loc ~info env best_failed_sigma cj t e
             else
               let sigma = sigma' in
               let (sigma, val', trace) = inh_conv_coerce_to_fail ?loc env sigma rigidonly cj.uj_val cj.uj_type t in
               (sigma, val', Some trace)
-          with NoCoercionNoUnifier (_sigma,_error) ->
-            error_actual_type ?loc env best_failed_sigma cj t e
+          with NoCoercionNoUnifier (_sigma,_error) as exn ->
+            let _, info = Exninfo.capture exn in
+            error_actual_type ?loc ~info env best_failed_sigma cj t e
   in
   (sigma,{ uj_val = val'; uj_type = t },otrace)
 

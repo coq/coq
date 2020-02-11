@@ -581,7 +581,7 @@ let rec locate_ref = function
         with Nametab.GlobalizationError _ | UserError _ -> None
       in
       match mpo, ro with
-        | None, None -> Nametab.error_global_not_found qid
+        | None, None -> Nametab.error_global_not_found ~info:Exninfo.null qid
         | None, Some r -> let refs,mps = locate_ref l in r::refs,mps
         | Some mp, None -> let refs,mps = locate_ref l in refs,mp::mps
         | Some mp, Some r ->

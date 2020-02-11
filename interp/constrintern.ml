@@ -164,8 +164,8 @@ let explain_internalization_error e =
     explain_projections_of_diff_records inductive1_id inductive2_id
   in pp ++ str "."
 
-let error_bad_inductive_type ?loc =
-  user_err ?loc  (str
+let error_bad_inductive_type ?loc ?info () =
+  user_err ?loc ?info (str
     "This should be an inductive type applied to patterns.")
 
 let error_parameter_not_implicit ?loc =
@@ -1086,7 +1086,9 @@ let intern_extended_global_of_qualid qid =
 let intern_reference qid =
   let r =
     try intern_extended_global_of_qualid qid
-    with Not_found -> Nametab.error_global_not_found qid
+    with Not_found as exn ->
+      let _, info = Exninfo.capture exn in
+      Nametab.error_global_not_found ~info qid
   in
   Smartlocate.global_of_extended_global r
 
@@ -1170,16 +1172,20 @@ let intern_applied_reference ~isproj intern env namedctx (_, ntnvars as lvar) us
         let r, realref, args2 = intern_qualid ~no_secvar:true qid intern env ntnvars us args in
         check_applied_projection isproj realref qid;
         find_appl_head_data r, args2
-      with Not_found ->
+      with Not_found as exn ->
         (* Extra allowance for non globalizing functions *)
         if !interning_grammar || env.unb then
           (* check_applied_projection ?? *)
           (gvar (loc,qualid_basename qid) us, [], []), args
-        else Nametab.error_global_not_found qid
+        else
+          let _, info = Exninfo.capture exn in
+          Nametab.error_global_not_found ~info qid
   else
     let r,realref,args2 =
       try intern_qualid qid intern env ntnvars us args
-      with Not_found -> Nametab.error_global_not_found qid
+      with Not_found as exn ->
+        let _, info = Exninfo.capture exn in
+        Nametab.error_global_not_found ~info qid
     in
     check_applied_projection isproj realref qid;
     find_appl_head_data r, args2
@@ -1810,20 +1816,22 @@ let intern_ind_pattern genv ntnvars scopes pat =
   let no_not =
     try
       drop_notations_pattern (function (GlobRef.IndRef _ | GlobRef.ConstructRef _) -> () | _ -> raise Not_found) genv scopes pat
-    with InternalizationError(loc,NotAConstructor _) -> error_bad_inductive_type ?loc
+    with InternalizationError(loc,NotAConstructor _) as exn ->
+      let _, info = Exninfo.capture exn in
+      error_bad_inductive_type ?loc ~info ()
   in
   let loc = no_not.CAst.loc in
   match DAst.get no_not with
     | RCPatCstr (head, expl_pl, pl) ->
-      let c = (function GlobRef.IndRef ind -> ind | _ -> error_bad_inductive_type ?loc) head in
+      let c = (function GlobRef.IndRef ind -> ind | _ -> error_bad_inductive_type ?loc ()) head in
       let with_letin, pl2 = add_implicits_check_ind_length genv loc c
         (List.length expl_pl) pl in
       let idslpl = List.map (intern_pat genv ntnvars empty_alias) (expl_pl@pl2) in
       (with_letin,
        match product_of_cases_patterns empty_alias idslpl with
        | ids,[asubst,pl] -> (c,ids,asubst,chop_params_pattern loc c pl with_letin)
-       | _ -> error_bad_inductive_type ?loc)
-    | x -> error_bad_inductive_type ?loc
+       | _ -> error_bad_inductive_type ?loc ())
+    | x -> error_bad_inductive_type ?loc ()
 
 (**********************************************************************)
 (* Utilities for application                                          *)
@@ -2385,9 +2393,10 @@ let intern_pattern globalenv patt =
   try
     intern_cases_pattern globalenv Id.Map.empty (None,[]) empty_alias patt
   with
-      InternalizationError (loc,e) ->
-        user_err ?loc ~hdr:"internalize" (explain_internalization_error e)
-
+    InternalizationError (loc,e) as exn ->
+    (* XXX: use regular printer? *)
+    let _, info = Exninfo.capture exn in
+    user_err ?loc ~info ~hdr:"internalize" (explain_internalization_error e)
 
 (*********************************************************************)
 (* Functions to parse and interpret constructions *)

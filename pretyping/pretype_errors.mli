@@ -75,7 +75,7 @@ val precatchable_exception : exn -> bool
 
 (** Raising errors *)
 val error_actual_type :
-  ?loc:Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> constr ->
+  ?loc:Loc.t -> ?info:Exninfo.info -> env -> Evd.evar_map -> unsafe_judgment -> constr ->
       unification_error -> 'b
 
 val error_actual_type_core :

@@ -223,7 +223,7 @@ let warn_cannot_define_projection =
 (* If a projection is not definable, we throw an error if the user
 asked it to be a coercion. Otherwise, we just print an info
 message. The user might still want to name the field of the record. *)
-let warning_or_error coe indsp err =
+let warning_or_error ~info coe indsp err =
   let st = match err with
     | MissingProj (fi,projs) ->
         let s,have = if List.length projs > 1 then "s","were" else "","was" in
@@ -246,7 +246,7 @@ let warning_or_error coe indsp err =
           | _ ->
               (Id.print fi ++ strbrk " cannot be defined because it is not typable.")
   in
-  if coe then user_err ~hdr:"structure" st;
+  if coe then user_err ~hdr:"structure" ~info st;
   warn_cannot_define_projection (hov 0 st)
 
 type field_status =
@@ -352,8 +352,9 @@ let declare_projections indsp ctx ?(kind=Decls.StructureComponent) binder_name f
                let kind = Decls.IsDefinition kind in
                let kn =
                  try declare_constant ~name:fid ~kind (Declare.DefinitionEntry entry)
-                 with Type_errors.TypeError (ctx,te) when not primitive ->
-                   raise (NotDefinable (BadTypedProj (fid,ctx,te)))
+                 with Type_errors.TypeError (ctx,te) as exn when not primitive ->
+                   let _, info = Exninfo.capture exn in
+                   Exninfo.iraise (NotDefinable (BadTypedProj (fid,ctx,te)),info)
                in
                Declare.definition_message fid;
                let term = match p_opt with
@@ -374,8 +375,9 @@ let declare_projections indsp ctx ?(kind=Decls.StructureComponent) binder_name f
                end;
                let i = if is_local_assum decl then i+1 else i in
                (Some kn::sp_projs, i, Projection term::subst)
-             with NotDefinable why ->
-               warning_or_error flags.pf_subclass indsp why;
+             with NotDefinable why as exn ->
+               let _, info = Exninfo.capture exn in
+               warning_or_error ~info flags.pf_subclass indsp why;
                (None::sp_projs,i,NoProjection fi::subst)
          in
          (nfi - 1, i, { Recordops.pk_name = fi ; pk_true_proj = is_local_assum decl ; pk_canonical = flags.pf_canonical } :: kinds, sp_projs, subst))

@@ -1162,8 +1162,9 @@ let () =
   | Tac2qexpr.QReference qid ->
     let gr =
       try Nametab.locate qid
-      with Not_found ->
-        Nametab.error_global_not_found qid
+      with Not_found as exn ->
+        let _, info = Exninfo.capture exn in
+        Nametab.error_global_not_found ~info qid
     in
     GlbVal gr, gtypref t_reference
   in

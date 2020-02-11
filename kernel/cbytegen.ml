@@ -874,8 +874,11 @@ let compile ~fail_on_error ?universes:(universes=0) env c =
     (if !dump_bytecode then
       Feedback.msg_debug (dump_bytecodes init_code !fun_code fv)) ;
     Some (init_code,!fun_code, Array.of_list fv)
-  with TooLargeInductive msg ->
-    let fn = if fail_on_error then CErrors.user_err ?loc:None ~hdr:"compile" else
+  with TooLargeInductive msg as exn ->
+    let _, info = Exninfo.capture exn in
+    let fn = if fail_on_error then
+        CErrors.user_err ?loc:None ~info ~hdr:"compile"
+      else
         (fun x -> Feedback.msg_warning x) in
     fn msg; None
 
