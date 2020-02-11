@@ -288,22 +288,21 @@ val lookup_modtype : ModPath.t -> env -> module_type_body
 
 (** {5 Universe constraints } *)
 
-(** Add universe constraints to the environment.
-    @raise UniverseInconsistency .
-*)
 val add_constraints : Univ.Constraint.t -> env -> env
+(** Add universe constraints to the environment.
+    @raise UniverseInconsistency. *)
 
-(** Check constraints are satifiable in the environment. *)
 val check_constraints : Univ.Constraint.t -> env -> bool
-val push_context : ?strict:bool -> Univ.UContext.t -> env -> env
-(* [push_context ?(strict=false) ctx env] pushes the universe context to the environment.
-   @raise UGraph.AlreadyDeclared if one of the universes is already declared.
-*)
-val push_context_set : ?strict:bool -> Univ.ContextSet.t -> env -> env
-(* [push_context_set ?(strict=false) ctx env] pushes the universe context set
-  to the environment. It does not fail if one of the universes is already declared. *)
+(** Check constraints are satifiable in the environment. *)
 
-val push_constraints_to_env : 'a Univ.constrained -> env -> env
+val push_context : ?strict:bool -> Univ.UContext.t -> env -> env
+(** [push_context ?(strict=false) ctx env] pushes the universe context to the environment.
+    @raise UGraph.AlreadyDeclared if one of the universes is already declared. *)
+
+val push_context_set : ?strict:bool -> Univ.ContextSet.t -> env -> env
+(** [push_context_set ?(strict=false) ctx env] pushes the universe
+    context set to the environment. It does not fail even if one of the
+    universes is already declared. *)
 
 val push_subgraph : Univ.ContextSet.t -> env -> env
 (** [push_subgraph univs env] adds the universes and constraints in

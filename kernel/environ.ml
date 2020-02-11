@@ -399,9 +399,6 @@ let add_constraints c env =
 let check_constraints c env =
   UGraph.check_constraints c env.env_stratification.env_universes
 
-let push_constraints_to_env (_,univs) env =
-  add_constraints univs env
-
 let add_universes ~lbound ~strict ctx g =
   let g = Array.fold_left
             (fun g v -> UGraph.add_universe ~lbound ~strict v g)
