@@ -831,8 +831,9 @@ let rec print_symbol : type s tr r. formatter -> (s, tr, r) ty_symbol -> unit =
       fprintf ppf "LIST1 %a SEP %a%s" print_symbol1 s print_symbol1 t
         (if osep then " OPT_SEP" else "")
   | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
-  | Stoken p when L.tok_pattern_strings p <> ("", None) ->
+  | Stoken p ->
      begin match L.tok_pattern_strings p with
+     | "", Some s -> print_str ppf s
      | con, Some prm -> fprintf ppf "%s@ %a" con print_str prm
      | con, None -> fprintf ppf "%s" con end
   | Snterml (e, l) ->
