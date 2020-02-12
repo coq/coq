@@ -418,7 +418,7 @@ let extract_ltac_trace ?loc trace =
     (* We entered a user-defined tactic,
        we display the trace with location of the call *)
     let msg = hov 0 (explain_ltac_call_trace c tail loc ++ fnl()) in
-    (if Loc.finer loc tloc then loc else tloc), Some msg
+    (if Loc.finer loc tloc then loc else tloc), msg
   else
     (* We entered a primitive tactic, we don't display trace but
        report on the finest location *)
@@ -434,7 +434,7 @@ let extract_ltac_trace ?loc trace =
              aux best_loc tail
         | [] -> best_loc in
         aux loc trace in
-    best_loc, None
+    best_loc, mt ()
 
 let get_ltac_trace info =
   let ltac_trace = Exninfo.get info ltac_trace_info in

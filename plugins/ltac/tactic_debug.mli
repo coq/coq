@@ -79,4 +79,4 @@ val db_breakpoint : debug_info ->
   lident message_token list -> unit Proofview.NonLogical.t
 
 val extract_ltac_trace :
-  ?loc:Loc.t -> Tacexpr.ltac_trace -> Pp.t option Loc.located
+  ?loc:Loc.t -> Tacexpr.ltac_trace -> Pp.t Loc.located
