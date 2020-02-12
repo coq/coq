@@ -762,16 +762,6 @@ let vernac_inductive ~atts cum lo kind indl =
     ComInductive.do_mutual_inductive ~template udecl indl ~cumulative ~poly ~private_ind:lo ~uniform finite
   else
     user_err (str "Mixed record-inductive definitions are not allowed")
-(*
-
-  match indl with
-  | [ ( id , bl , c , Class _, Constructors [l]), [] ] ->
-      let f =
-        let (coe, ({loc;v=id}, ce)) = l in
-        let coe' = if coe then Some true else None in
-          (((coe', AssumExpr ((make ?loc @@ Name id), ce)), None), [])
-      in vernac_record cum (Class true) atts.polymorphic finite [id, bl, c, None, [f]]
-    *)
 
 let vernac_fixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
