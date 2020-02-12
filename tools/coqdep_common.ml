@@ -31,7 +31,6 @@ module StrListMap = Map.Make(StrList)
 
 type dynlink = Opt | Byte | Both | No | Variable
 
-let option_c = ref false
 let option_noglob = ref false
 let option_dynlink = ref Both
 let option_boot = ref false
@@ -55,18 +54,6 @@ let rec get_extension f = function
 let basename_noext filename =
   let fn = Filename.basename filename in
   try Filename.chop_extension fn with Invalid_argument _ -> fn
-
-(** ML Files specified on the command line. In the entries:
-    - the first string is the basename of the file, without extension nor
-      directory part
-    - the second string of [mlAccu] is the extension (either .ml or .mlg)
-    - the [dir] part is the directory, with None used as the current directory
-*)
-
-let mlAccu  = ref ([] : (string * string * dir) list)
-and mliAccu = ref ([] : (string * dir) list)
-and mllibAccu = ref ([] : (string * dir) list)
-and mlpackAccu = ref ([] : (string * dir) list)
 
 (** Coq files specifies on the command line:
     - first string is the full filename, with only its extension removed
@@ -123,8 +110,6 @@ let mkknown () =
     with Not_found -> None
   in add, iter, search
 
-let add_ml_known, _, search_ml_known = mkknown ()
-let add_mli_known, _, search_mli_known = mkknown ()
 let add_mllib_known, _, search_mllib_known = mkknown ()
 let add_mlpack_known, _, search_mlpack_known = mkknown ()
 
@@ -228,64 +213,6 @@ let register_dir_logpath,find_dir_logpath =
 let file_name s = function
   | None     -> s
   | Some d   -> d // s
-
-let depend_ML str =
-  match search_mli_known str, search_ml_known str with
-    | Some mlidir, Some mldir ->
-        let mlifile = file_name str mlidir
-        and mlfile = file_name str mldir in
-        (" "^mlifile^".cmi"," "^mlfile^".cmx")
-    | None, Some mldir ->
-        let mlfile = file_name str mldir in
-        (" "^mlfile^".cmo"," "^mlfile^".cmx")
-    | Some mlidir, None ->
-        let mlifile = file_name str mlidir in
-        (" "^mlifile^".cmi"," "^mlifile^".cmi")
-    | None, None -> "", ""
-
-let traite_fichier_ML md ext =
-  try
-    let chan = open_in (md ^ ext) in
-    let buf = Lexing.from_channel chan in
-    let deja_vu = ref (StrSet.singleton md) in
-    let a_faire = ref "" in
-    let a_faire_opt = ref "" in
-    begin try
-      while true do
-        let (Use_module str) = caml_action buf in
-        if StrSet.mem str !deja_vu then
-          ()
-        else begin
-          deja_vu := StrSet.add str !deja_vu;
-          let byte,opt = depend_ML str in
-          a_faire := !a_faire ^ byte;
-          a_faire_opt := !a_faire_opt ^ opt
-        end
-      done
-    with Fin_fichier -> ()
-    end;
-    close_in chan;
-    (!a_faire, !a_faire_opt)
-  with Sys_error _ -> ("","")
-
-let traite_fichier_modules md ext =
-  try
-    let chan = open_in (md ^ ext) in
-    let list = mllib_list (Lexing.from_channel chan) in
-    List.fold_left
-      (fun a_faire str -> match search_mlpack_known str with
-        | Some mldir ->
-          let file = file_name str mldir in
-          a_faire @ [file]
-        | None ->
-          match search_ml_known str with
-            | Some mldir ->
-              let file = file_name str mldir in
-                    a_faire @ [file]
-            | None -> a_faire) [] list
-  with
-    | Sys_error _ -> []
-    | Syntax_error (i,j) -> error_cannot_parse (md^ext) (i,j)
 
 (* Makefile's escaping rules are awful: $ is escaped by doubling and
    other special characters are escaped by backslash prefixing while
@@ -416,10 +343,7 @@ let rec find_dependencies basename =
                   | None ->
                     match search_mlpack_known s with
                   | Some mldir -> declare ".cmo" mldir s
-                  | None ->
-                    match search_ml_known s with
-                      | Some mldir -> declare ".cmo" mldir s
-                      | None -> warning_declare f str
+                  | None -> warning_declare f str
                 end
                 in
               List.iter decl sl
@@ -447,49 +371,6 @@ let rec find_dependencies basename =
   with Sys_error _ -> [] (* TODO: report an error? *)
 
 
-let mL_dependencies () =
-  List.iter
-    (fun (name,ext,dirname) ->
-       let fullname = file_name name dirname in
-       let (dep,dep_opt) = traite_fichier_ML fullname ext in
-       let intf = match search_mli_known name with
-         | None -> ""
-         | Some mldir -> " "^(file_name name mldir)^".cmi"
-       in
-       let efullname = escape fullname in
-       printf "%s.cmo:%s%s\n" efullname dep intf;
-       printf "%s.cmx:%s%s\n%!" efullname dep_opt intf)
-    (List.rev !mlAccu);
-  List.iter
-    (fun (name,dirname) ->
-       let fullname = file_name name dirname in
-       let (dep,_) = traite_fichier_ML fullname ".mli" in
-       printf "%s.cmi:%s\n%!" (escape fullname) dep)
-    (List.rev !mliAccu);
-  List.iter
-    (fun (name,dirname) ->
-       let fullname = file_name name dirname in
-       let dep = traite_fichier_modules fullname ".mllib" in
-       let efullname = escape fullname in
-       printf "%s_MLLIB_DEPENDENCIES:=%s\n" efullname (String.concat " " dep);
-       printf "%s.cma:$(addsuffix .cmo,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname;
-       printf "%s.cmxa:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n%!" efullname efullname)
-    (List.rev !mllibAccu);
-  List.iter
-    (fun (name,dirname) ->
-       let fullname = file_name name dirname in
-       let dep = traite_fichier_modules fullname ".mlpack" in
-       let efullname = escape fullname in
-       printf "%s_MLPACK_DEPENDENCIES:=%s\n" efullname (String.concat " " dep);
-       printf "%s.cmo:$(addsuffix .cmo,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname;
-       printf "%s.cmx:$(addsuffix .cmx,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname;
-       let efullname_capital = String.capitalize_ascii (Filename.basename efullname) in
-       List.iter (fun dep ->
-         printf "%s.cmx : FOR_PACK=-for-pack %s\n" dep efullname_capital)
-         dep;
-       printf "%!")
-    (List.rev !mlpackAccu)
-
 let write_vos = ref false
 
 let coq_dependencies () =
@@ -515,10 +396,8 @@ let rec suffixes = function
 
 let add_caml_known phys_dir _ f =
   let basename,suff =
-    get_extension f [".ml";".mli";".mlg";".mllib";".mlpack"] in
+    get_extension f [".mllib"; ".mlpack"] in
   match suff with
-    | ".ml"|".mlg" -> add_ml_known basename (Some phys_dir) suff
-    | ".mli" -> add_mli_known basename (Some phys_dir) suff
     | ".mllib" -> add_mllib_known basename (Some phys_dir) suff
     | ".mlpack" -> add_mlpack_known basename (Some phys_dir) suff
     | _ -> ()
@@ -603,18 +482,15 @@ let rec treat_file old_dirname old_name =
            in
            Array.iter (treat_file (Some newdirname)) (Sys.readdir complete_name))
     | S_REG ->
-        (match get_extension name [".v";".ml";".mli";".mlg";".mllib";".mlpack"] with
-           | (base,".v") ->
-               let name = file_name base dirname
-               and absname = absolute_file_name base dirname in
-               addQueue vAccu (name, absname)
-           | (base,(".ml"|".mlg" as ext)) -> addQueue mlAccu (base,ext,dirname)
-           | (base,".mli") -> addQueue mliAccu (base,dirname)
-           | (base,".mllib") -> addQueue mllibAccu (base,dirname)
-           | (base,".mlpack") -> addQueue mlpackAccu (base,dirname)
-           | _ -> ())
+      (match get_extension name [".v"] with
+       | base,".v" ->
+         let name = file_name base dirname
+         and absname = absolute_file_name base dirname in
+         addQueue vAccu (name, absname)
+       | _ -> ())
     | _ -> ()
 
+(* "[sort]" outputs `.v` files required by others *)
 let sort () =
   let seen = Hashtbl.create 97 in
   let rec loop file =

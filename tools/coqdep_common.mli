@@ -21,7 +21,6 @@ val coqdep_warning : ('a, Format.formatter, unit, unit) format4 -> 'a
 val find_dir_logpath: string -> string list
 
 (** Options *)
-val option_c : bool ref
 val option_noglob : bool ref
 val option_boot : bool ref
 val write_vos : bool ref
@@ -35,18 +34,11 @@ type dir = string option
 val treat_file : dir -> string -> unit
 
 (** ML-related manipulation *)
-val mlAccu : (string * string * dir) list ref
-val mliAccu : (string * dir) list ref
-val mllibAccu : (string * dir) list ref
-val add_ml_known : string -> dir -> string -> unit
-val add_mli_known : string -> dir -> string -> unit
-val add_mllib_known : string -> dir -> string -> unit
-val mL_dependencies : unit -> unit
-
 val coq_dependencies : unit -> unit
 val add_known : bool -> string -> string list -> string -> unit
 val add_coqlib_known : bool -> string -> string list -> string -> unit
 
+(* Used to locate plugins for [Declare ML Module] *)
 val add_caml_dir : string -> unit
 
 (** Simply add this directory and imports it, no subdirs. This is used

@@ -91,6 +91,7 @@ COQDEP   ?= "$(COQBIN)coqdep"
 COQDOC   ?= "$(COQBIN)coqdoc"
 COQPP    ?= "$(COQBIN)coqpp"
 COQMKFILE ?= "$(COQBIN)coq_makefile"
+OCAMLLIBDEP ?= "$(COQBIN)ocamllibdep"
 
 # Timing scripts
 COQMAKE_ONE_TIME_FILE ?= "$(COQLIB)/tools/make-one-time-file.py"
@@ -747,12 +748,12 @@ $(addsuffix .d,$(MLFILES)): %.ml.d: %.ml
 	$(HIDE)$(CAMLDEP) $(OCAMLLIBS) "$<" $(redir_if_ok)
 
 $(addsuffix .d,$(MLLIBFILES)): %.mllib.d: %.mllib
-	$(SHOW)'COQDEP $<'
-	$(HIDE)$(COQDEP) $(OCAMLLIBS) -c "$<" $(redir_if_ok)
+	$(SHOW)'OCAMLLIBDEP $<'
+	$(HIDE)$(OCAMLLIBDEP) -c $(OCAMLLIBS) "$<" $(redir_if_ok)
 
 $(addsuffix .d,$(MLPACKFILES)): %.mlpack.d: %.mlpack
-	$(SHOW)'COQDEP $<'
-	$(HIDE)$(COQDEP) $(OCAMLLIBS) -c "$<" $(redir_if_ok)
+	$(SHOW)'OCAMLLIBDEP $<'
+	$(HIDE)$(OCAMLLIBDEP) -c $(OCAMLLIBS) "$<" $(redir_if_ok)
 
 # If this makefile is created using a _CoqProject we have coqdep get
 # options from it. This avoids argument length limits for pathological

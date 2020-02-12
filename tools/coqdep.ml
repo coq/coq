@@ -31,7 +31,6 @@ let option_sort = ref false
 let usage () =
   eprintf " usage: coqdep [options] <filename>+\n";
   eprintf " options:\n";
-  eprintf "  -c : Also print the dependencies of caml modules (=ocamldep).\n";
   eprintf "  -boot : For coq developers, prints dependencies over coq library files (omitted by default).\n";
   eprintf "  -sort : output the given file name ordered by dependencies\n";
   eprintf "  -noglob | -no-glob : \n";
@@ -44,7 +43,6 @@ let usage () =
   eprintf "  -vos : also output dependencies about .vos files\n";
   eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R/-Q search\n";
   eprintf "  -coqlib dir : set the coq standard library directory\n";
-  eprintf "  -slash : deprecated, no effect\n";
   eprintf "  -dyndep (opt|byte|both|no|var) : set how dependencies over ML modules are printed\n";
   exit 1
 
@@ -64,8 +62,6 @@ let treat_coqproject f =
   iter_sourced (fun f -> treat_file None f) (all_files project)
 
 let rec parse = function
-  (* TODO, deprecate option -c *)
-  | "-c" :: ll -> option_c := true; parse ll
   | "-boot" :: ll -> option_boot := true; parse ll
   | "-sort" :: ll -> option_sort := true; parse ll
   | "-vos" :: ll -> write_vos := true; parse ll
@@ -111,11 +107,7 @@ let coqdep () =
       (Envars.xdg_dirs ~warn:(fun x -> coqdep_warning "%s" x));
     List.iter (fun s -> add_rec_dir_no_import add_coqlib_known s []) Envars.coqpath;
   end;
-  List.iter (fun (f,d) -> add_mli_known f d ".mli") !mliAccu;
-  List.iter (fun (f,d) -> add_mllib_known f d ".mllib") !mllibAccu;
-  List.iter (fun (f,suff,d) -> add_ml_known f d suff) !mlAccu;
   if !option_sort then begin sort (); exit 0 end;
-  if !option_c then mL_dependencies ();
   coq_dependencies ();
   ()
 

@@ -42,17 +42,17 @@ COQTIME_FILE_MAKER:=tools/TimeFileMaker.py
 COQMAKE_BOTH_TIME_FILES:=tools/make-both-time-files.py
 COQMAKE_BOTH_SINGLE_TIMING_FILES:=tools/make-both-single-timing-files.py
 VOTOUR:=bin/votour
+OCAMLLIBDEP:=bin/ocamllibdep$(EXE)
+OCAMLLIBDEPBYTE:=bin/ocamllibdep.byte$(EXE)
 
 # these get installed!
 TOOLS:=$(COQDEP) $(COQMAKEFILE) $(COQTEX) $(COQWC) $(COQDOC) $(COQC)\
-	$(COQWORKMGR) $(COQPP) $(VOTOUR)
+	$(COQWORKMGR) $(COQPP) $(VOTOUR) $(OCAMLLIBDEP)
 TOOLS_HELPERS:=tools/CoqMakefile.in $(COQMAKE_ONE_TIME_FILE) $(COQTIME_FILE_MAKER)\
 	$(COQMAKE_BOTH_TIME_FILES) $(COQMAKE_BOTH_SINGLE_TIMING_FILES)
 
 COQDEPBOOT:=bin/coqdep_boot$(EXE)
 COQDEPBOOTBYTE:=bin/coqdep_boot.byte$(EXE)
-OCAMLLIBDEP:=bin/ocamllibdep$(EXE)
-OCAMLLIBDEPBYTE:=bin/ocamllibdep.byte$(EXE)
 FAKEIDE:=bin/fake_ide$(EXE)
 FAKEIDEBYTE:=bin/fake_ide.byte$(EXE)
 

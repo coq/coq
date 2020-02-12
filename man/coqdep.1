@@ -12,9 +12,6 @@ coqdep \- Compute inter-module dependencies for Coq and Caml programs
 .BI \-coqlib \ directory
 ]
 [
-.BI \-c
-]
-[
 .BI \-i
 ]
 [
@@ -51,10 +48,6 @@ directives and the dot notation
 
 .SH OPTIONS
 
-.TP
-.BI \-c
-Prints the dependencies of Caml modules.
-(On Caml modules, the behaviour is exactly the same as ocamldep).
 .TP
 .BI \-f \ file
 Read filenames and options -I, -R and -Q from a _CoqProject FILE.
@@ -152,29 +145,8 @@ example% coqdep \-I . *.v
 .fi
 .RE
 .br
-.ne 7
-.LP
-To get only the Caml dependencies:
-.IP
-.B
-example% coqdep \-c \-I . *.ml
-.RS
-.sp .5
-.nf
-.B D.cmo: D.ml ./A.cmo ./B.cmo ./C.cmo
-.B D.cmx: D.ml ./A.cmx ./B.cmx ./C.cmx
-.B C.cmo: C.ml
-.B C.cmx: C.ml
-.B B.cmo: B.ml
-.B B.cmx: B.ml
-.B A.cmo: A.ml
-.B A.cmx: A.ml
-.fi
-.RE
-.br
-.ne 7
 
 .SH BUGS
 
 Please report any bug to
-.B coq\-bugs@pauillac.inria.fr
+.B https://github.com/coq/coq/issues

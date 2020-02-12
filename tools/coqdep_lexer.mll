@@ -13,8 +13,6 @@
   open Filename
   open Lexing
 
-  type mL_token = Use_module of string
-
   type qualid = string list
 
   type coq_token =
@@ -152,56 +150,6 @@ and add_loadpath_as path = parse
   | dot
       { AddLoadPath path }
 
-and caml_action = parse
-  | space +
-      { caml_action lexbuf }
-  | "open" space* (caml_up_ident as id)
-        { Use_module (String.uncapitalize_ascii id) }
-  | "module" space+ caml_up_ident
-        { caml_action lexbuf }
-  | caml_low_ident { caml_action lexbuf }
-  | caml_up_ident
-      { qual_id (Lexing.lexeme lexbuf) lexbuf }
-  | ['0'-'9']+
-    | '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
-    | '0' ['o' 'O'] ['0'-'7']+
-    | '0' ['b' 'B'] ['0'-'1']+
-      { caml_action lexbuf }
-  | ['0'-'9']+ ('.' ['0'-'9']*)? (['e' 'E'] ['+' '-']? ['0'-'9']+)?
-      { caml_action lexbuf }
-  | "\""
-      { string lexbuf; caml_action lexbuf }
-  | "'" [^ '\\' '\''] "'"
-      { caml_action lexbuf }
-  | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'"
-      { caml_action lexbuf }
-  | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
-      { caml_action lexbuf }
-  | "(*"
-      { comment lexbuf; caml_action lexbuf }
-  | "#" | "&"  | "&&" | "'" | "(" | ")" | "*" | "," | "?" | "->" | "." | ".."
-   | ".(" | ".[" | ":" | "::" | ":=" | ";" | ";;" | "<-" | "=" | "[" | "[|"
-   | "[<" | "]" | "_" | "{" | "|" | "||" | "|]" | ">]" | "}" | "!=" | "-"
-   | "-."    { caml_action lexbuf }
-
-  | ['!' '?' '~']
-    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
-            { caml_action lexbuf }
-  | ['=' '<' '>' '@' '^' '|' '&' '$']
-    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
-            { caml_action lexbuf }
-  | ['+' '-']
-    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
-            { caml_action lexbuf }
-  | "**"
-    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
-            { caml_action lexbuf }
-  | ['*' '/' '%']
-    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
-            { caml_action lexbuf }
-  | eof { raise Fin_fichier }
-  | _ { caml_action lexbuf }
-
 and comment = parse
   | "(*"
       { comment lexbuf; comment lexbuf }
@@ -217,20 +165,6 @@ and comment = parse
       { raise Fin_fichier }
   | _
       { comment lexbuf }
-
-and string = parse
-  | '"' (* '"' *)
-      { () }
-  | '\\' ("\010" | "\013" | "\010\013") [' ' '\009'] *
-      { string lexbuf }
-  | '\\' ['\\' '"' 'n' 't' 'b' 'r'] (*'"'*)
-      { string lexbuf }
-  | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
-      { string lexbuf }
-  | eof
-      { raise Fin_fichier }
-  | _
-      { string lexbuf }
 
 and load_file = parse
   | '"' [^ '"']* '"' (*'"'*)
@@ -320,20 +254,3 @@ and modules mllist = parse
       { syntax_error lexbuf }
   | _
       { Declare (List.rev mllist) }
-
-and qual_id ml_module_name = parse
-  | '.' [^ '.' '(' '[']
-      { Use_module (String.uncapitalize_ascii ml_module_name) }
-  | eof { raise Fin_fichier }
-  | _ { caml_action lexbuf }
-
-and mllib_list = parse
-  | caml_up_ident { let s = String.uncapitalize_ascii (Lexing.lexeme lexbuf)
-		in s :: mllib_list lexbuf }
-  | "*predef*" { mllib_list lexbuf }
-  | space+ { mllib_list lexbuf }
-  | eof { [] }
-  | _ { syntax_error lexbuf }
-
-and ocamldep_parse = parse
-  | [^ ':' ]* ':' { mllib_list lexbuf }
