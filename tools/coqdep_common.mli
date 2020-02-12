@@ -20,44 +20,34 @@ val coqdep_warning : ('a, Format.formatter, unit, unit) format4 -> 'a
     twice.*)
 val find_dir_logpath: string -> string list
 
+(** Options *)
 val option_c : bool ref
 val option_noglob : bool ref
 val option_boot : bool ref
-
 val write_vos : bool ref
-(** output vos and vok dependencies *)
+val suffixe : string ref
 
 type dynlink = Opt | Byte | Both | No | Variable
-
 val option_dynlink : dynlink ref
+
 val norec_dirs : StrSet.t ref
-val suffixe : string ref
+
 type dir = string option
-val get_extension : string -> string list -> string * string
-val basename_noext : string -> string
+val treat_file : dir -> string -> unit
+
+(** ML-related manipulation *)
 val mlAccu : (string * string * dir) list ref
 val mliAccu : (string * dir) list ref
 val mllibAccu : (string * dir) list ref
-val vAccu : (string * string) list ref
-val addQueue : 'a list ref -> 'a -> unit
 val add_ml_known : string -> dir -> string -> unit
-val iter_ml_known : (string -> dir -> unit) -> unit
-val search_ml_known : string -> dir option
 val add_mli_known : string -> dir -> string -> unit
-val iter_mli_known : (string -> dir -> unit) -> unit
-val search_mli_known : string -> dir option
 val add_mllib_known : string -> dir -> string -> unit
-val search_mllib_known : string -> dir option
-val search_v_known : ?from:string list -> string list -> string option
-val file_name : string -> string option -> string
-val escape : string -> string
-val canonize : string -> string
 val mL_dependencies : unit -> unit
+
 val coq_dependencies : unit -> unit
-val suffixes : 'a list -> 'a list list
 val add_known : bool -> string -> string list -> string -> unit
 val add_coqlib_known : bool -> string -> string list -> string -> unit
-val add_caml_known : string -> string list -> string -> unit
+
 val add_caml_dir : string -> unit
 
 (** Simply add this directory and imports it, no subdirs. This is used
@@ -73,5 +63,4 @@ val add_rec_dir_no_import :
 val add_rec_dir_import :
   (bool -> string -> string list -> string -> unit) -> string -> string list -> unit
 
-val treat_file : dir -> string -> unit
-val error_cannot_parse : string -> int * int -> 'a
+val sort : unit -> unit

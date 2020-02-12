@@ -125,8 +125,8 @@ let mkknown () =
     with Not_found -> None
   in add, iter, search
 
-let add_ml_known, iter_ml_known, search_ml_known = mkknown ()
-let add_mli_known, iter_mli_known, search_mli_known = mkknown ()
+let add_ml_known, _, search_ml_known = mkknown ()
+let add_mli_known, _, search_mli_known = mkknown ()
 let add_mllib_known, _, search_mllib_known = mkknown ()
 let add_mlpack_known, _, search_mlpack_known = mkknown ()
 
@@ -616,3 +616,30 @@ let rec treat_file old_dirname old_name =
            | (base,".mlpack") -> addQueue mlpackAccu (base,dirname)
            | _ -> ())
     | _ -> ()
+
+let sort () =
+  let seen = Hashtbl.create 97 in
+  let rec loop file =
+    let file = canonize file in
+    if not (Hashtbl.mem seen file) then begin
+      Hashtbl.add seen file ();
+      let cin = open_in (file ^ ".v") in
+      let lb = Lexing.from_channel cin in
+      try
+        while true do
+          match coq_action lb with
+            | Require (from, sl) ->
+                List.iter
+                  (fun s ->
+                    match search_v_known ?from s with
+                    | None -> ()
+                    | Some f -> loop f)
+                sl
+            | _ -> ()
+        done
+      with Fin_fichier ->
+        close_in cin;
+        printf "%s%s " file !suffixe
+    end
+  in
+  List.iter (fun (name,_) -> loop name) !vAccu
