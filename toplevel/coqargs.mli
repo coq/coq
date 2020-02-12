@@ -32,6 +32,7 @@ type coqargs_config = {
   enable_VM   : bool;
   native_compiler : native_compiler;
   native_output_dir : CUnix.physical_path;
+  native_include_dirs : CUnix.physical_path list;
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
   diffs_set   : bool;

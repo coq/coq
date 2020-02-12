@@ -56,6 +56,7 @@ type coqargs_config = {
   enable_VM   : bool;
   native_compiler : native_compiler;
   native_output_dir : CUnix.physical_path;
+  native_include_dirs : CUnix.physical_path list;
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
   diffs_set   : bool;
@@ -123,6 +124,7 @@ let default_config = {
   enable_VM    = true;
   native_compiler = default_native;
   native_output_dir = ".coq-native";
+  native_include_dirs = [];
   stm_flags    = Stm.AsyncOpts.default_opts;
   debug        = false;
   diffs_set    = false;
@@ -492,6 +494,10 @@ let parse_args ~help ~init arglist : t * string list =
     |"-native-output-dir" ->
       let native_output_dir = next () in
       { oval with config = { oval.config with native_output_dir } }
+
+    |"-nI" ->
+      let include_dir = next () in
+      { oval with config = {oval.config with native_include_dirs = include_dir :: oval.config.native_include_dirs } }
 
     (* Options with zero arg *)
     |"-async-queries-always-delegate"

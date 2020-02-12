@@ -51,8 +51,13 @@ let () = at_exit (fun () ->
    be guessed until flags have been properly initialized. It also lets
    us avoid forcing [my_temp_dir] if we don't need it (eg stdlib file
    without native compute or native conv uses). *)
-let include_dirs () =
-  let base = [Envars.coqlib () / "kernel"; Envars.coqlib () / "library"] in
+let include_dirs = ref []
+let get_include_dirs () =
+  let base = match !include_dirs with
+  | [] ->
+    [Envars.coqlib () / "kernel"; Envars.coqlib () / "library"]
+  | _::_ as l -> l
+  in
   if Lazy.is_val my_temp_dir
   then (Lazy.force my_temp_dir) :: base
   else base
@@ -89,7 +94,7 @@ let error_native_compiler_failed e =
 let call_compiler ?profile:(profile=false) ml_filename =
   let load_path = !get_load_paths () in
   let load_path = List.map (fun dn -> dn / !output_dir) load_path in
-  let include_dirs = List.flatten (List.map (fun x -> ["-I"; x]) (include_dirs () @ load_path)) in
+  let include_dirs = List.flatten (List.map (fun x -> ["-I"; x]) (get_include_dirs () @ load_path)) in
   let f = Filename.chop_extension ml_filename in
   let link_filename = f ^ ".cmo" in
   let link_filename = Dynlink.adapt_filename link_filename in

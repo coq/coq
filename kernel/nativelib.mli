@@ -14,6 +14,7 @@ used by the native compiler. *)
 
 (* Directory where compiled files are stored *)
 val output_dir : CUnix.physical_path ref
+val include_dirs : CUnix.physical_path list ref
 
 val get_load_paths : (unit -> string list) ref
 
