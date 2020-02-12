@@ -661,25 +661,30 @@ let vernac_record ~template udecl cum k poly finite records =
 let extract_inductive_udecl (indl:(inductive_expr * decl_notation list) list) =
   match indl with
   | [] -> assert false
-  | (((coe,(id,udecl)),b,c,k,d),e) :: rest ->
-    let rest = List.map (fun (((coe,(id,udecl)),b,c,k,d),e) ->
+  | (((coe,(id,udecl)),b,c,d),e) :: rest ->
+    let rest = List.map (fun (((coe,(id,udecl)),b,c,d),e) ->
         if Option.has_some udecl
         then user_err ~hdr:"inductive udecl" Pp.(strbrk "Universe binders must be on the first inductive of the block.")
-        else (((coe,id),b,c,k,d),e))
+        else (((coe,id),b,c,d),e))
         rest
     in
-    udecl, (((coe,id),b,c,k,d),e) :: rest
+    udecl, (((coe,id),b,c,d),e) :: rest
+
+let finite_of_kind = let open Declarations in function
+  | Inductive_kw -> Finite
+  | CoInductive -> CoFinite
+  | Variant | Record | Structure | Class _ -> BiFinite
 
 (** When [poly] is true the type is declared polymorphic. When [lo] is true,
     then the type is declared private (as per the [Private] keyword). [finite]
     indicates whether the type is inductive, co-inductive or
     neither. *)
-let vernac_inductive ~atts cum lo finite indl =
+let vernac_inductive ~atts cum lo kind indl =
   let template, poly = Attributes.(parse Notations.(template ++ polymorphic) atts) in
   let open Pp in
   let udecl, indl = extract_inductive_udecl indl in
   if Dumpglob.dump () then
-    List.iter (fun (((coe,lid), _, _, _, cstrs), _) ->
+    List.iter (fun (((coe,lid), _, _, cstrs), _) ->
       match cstrs with
         | Constructors cstrs ->
             Dumpglob.dump_definition lid false "ind";
@@ -688,16 +693,17 @@ let vernac_inductive ~atts cum lo finite indl =
         | _ -> () (* dumping is done by vernac_record (called below) *) )
       indl;
 
+  let finite = finite_of_kind kind in
   let is_record = function
-  | ((_ , _ , _ , _, RecordDecl _), _) -> true
+  | ((_ , _ , _ , RecordDecl _), _) -> true
   | _ -> false
   in
   let is_constructor = function
-  | ((_ , _ , _ , _, Constructors _), _) -> true
+  | ((_ , _ , _ , Constructors _), _) -> true
   | _ -> false
   in
-  let is_defclass = match indl with
-  | [ ( id , bl , c , Class _, Constructors [l]), [] ] -> Some (id, bl, c, l)
+  let is_defclass = match kind, indl with
+  | Class _, [ ( id , bl , c , Constructors [l]), [] ] -> Some (id, bl, c, l)
   | _ -> None
   in
   if Option.has_some is_defclass then
@@ -710,38 +716,35 @@ let vernac_inductive ~atts cum lo finite indl =
     vernac_record ~template udecl cum (Class true) poly finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then
     (* Mutual record case *)
-    let check_kind ((_, _, _, kind, _), _) = match kind with
-    | Variant ->
-      user_err (str "The Variant keyword does not support syntax { ... }.")
-    | Record | Structure | Class _ | Inductive_kw | CoInductive -> ()
+    let () = match kind with
+      | Variant ->
+        user_err (str "The Variant keyword does not support syntax { ... }.")
+      | Record | Structure | Class _ | Inductive_kw | CoInductive -> ()
     in
-    let () = List.iter check_kind indl in
-    let check_where ((_, _, _, _, _), wh) = match wh with
+    let check_where ((_, _, _, _), wh) = match wh with
     | [] -> ()
     | _ :: _ ->
       user_err (str "where clause not supported for records")
     in
     let () = List.iter check_where indl in
-    let unpack ((id, bl, c, _, decl), _) = match decl with
+    let unpack ((id, bl, c, decl), _) = match decl with
     | RecordDecl (oc, fs) ->
       (id, bl, c, oc, fs)
     | Constructors _ -> assert false (* ruled out above *)
     in
-    let ((_, _, _, kind, _), _) = List.hd indl in
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
     vernac_record ~template udecl cum kind poly finite recordl
   else if List.for_all is_constructor indl then
     (* Mutual inductive case *)
-    let check_kind ((_, _, _, kind, _), _) = match kind with
+    let () = match kind with
     | (Record | Structure) ->
       user_err (str "The Record keyword is for types defined using the syntax { ... }.")
     | Class _ ->
       user_err (str "Inductive classes not supported")
     | Variant | Inductive_kw | CoInductive -> ()
     in
-    let () = List.iter check_kind indl in
-    let check_name ((na, _, _, _, _), _) = match na with
+    let check_name ((na, _, _, _), _) = match na with
     | (true, _) ->
       user_err (str "Variant types do not handle the \"> Name\" \
         syntax, which is reserved for records. Use the \":>\" \
@@ -749,7 +752,7 @@ let vernac_inductive ~atts cum lo finite indl =
     | _ -> ()
     in
     let () = List.iter check_name indl in
-    let unpack (((_, id) , bl, c, _, decl), ntn) = match decl with
+    let unpack (((_, id) , bl, c, decl), ntn) = match decl with
     | Constructors l -> (id, bl, c, l), ntn
     | RecordDecl _ -> assert false (* ruled out above *)
     in
