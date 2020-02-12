@@ -419,7 +419,7 @@ let extract_ltac_trace ?loc trace =
              aux best_loc tail
         | [] -> best_loc in
         aux loc trace in
-    best_loc, None
+    best_loc, Some (mt ())
 
 let get_ltac_trace info =
   let ltac_trace = Exninfo.get info ltac_trace_info in

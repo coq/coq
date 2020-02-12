@@ -97,21 +97,16 @@ let rec print_gen ~anomaly ~extra_msg stk (e, info) =
   | h::stk' ->
     try
       let err_msg = h e in
-      Option.cata (fun msg -> msg ++ err_msg) err_msg extra_msg
+      extra_msg ++ err_msg
     with
     | Unhandled -> print_gen ~anomaly ~extra_msg stk' (e,info)
     | any -> print_gen ~anomaly ~extra_msg stk' (any,info)
 
 let print_gen ~anomaly (e, info) =
-  let extra_info =
-    try CList.find_map (fun f -> Some (f info)) !additional_error_info_handler
-    with Not_found -> None
-  in
-  let extra_msg, info = match extra_info with
-    | None -> None, info
-    | Some (loc, msg) ->
-      let info = Option.cata (fun l -> Loc.add_loc info l) info loc in
-      msg, info
+  let extra_msg =
+    CList.map_filter (fun f -> f info) !additional_error_info_handler
+    (* Location info in the handler is ignored *)
+    |> CList.map_filter snd |> Pp.seq
   in
   print_gen ~anomaly ~extra_msg !handle_stack (e,info)
 
