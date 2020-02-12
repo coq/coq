@@ -25,7 +25,6 @@ val option_c : bool ref
 val option_noglob : bool ref
 val option_boot : bool ref
 val write_vos : bool ref
-val suffixe : string ref
 
 type dynlink = Opt | Byte | Both | No | Variable
 val option_dynlink : dynlink ref

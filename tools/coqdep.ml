@@ -44,7 +44,6 @@ let usage () =
   eprintf "  -vos : also output dependencies about .vos files\n";
   eprintf "  -exclude-dir dir : skip subdirectories named 'dir' during -R/-Q search\n";
   eprintf "  -coqlib dir : set the coq standard library directory\n";
-  eprintf "  -suffix s : \n";
   eprintf "  -slash : deprecated, no effect\n";
   eprintf "  -dyndep (opt|byte|both|no|var) : set how dependencies over ML modules are printed\n";
   exit 1
@@ -81,8 +80,6 @@ let rec parse = function
   | "-exclude-dir" :: [] -> usage ()
   | "-coqlib" :: r :: ll -> Envars.set_user_coqlib r; parse ll
   | "-coqlib" :: [] -> usage ()
-  | "-suffix" :: s :: ll -> suffixe := s ; parse ll
-  | "-suffix" :: [] -> usage ()
   | "-dyndep" :: "no" :: ll -> option_dynlink := No; parse ll
   | "-dyndep" :: "opt" :: ll -> option_dynlink := Opt; parse ll
   | "-dyndep" :: "byte" :: ll -> option_dynlink := Byte; parse ll

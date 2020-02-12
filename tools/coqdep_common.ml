@@ -38,8 +38,6 @@ let option_boot = ref false
 
 let norec_dirs = ref StrSet.empty
 
-let suffixe = ref ".vo"
-
 type dir = string option
 
 (** [get_extension f l] checks whether [f] has one of the extensions
@@ -498,10 +496,10 @@ let coq_dependencies () =
   List.iter
     (fun (name,_) ->
        let ename = escape name in
-       let glob = if !option_noglob then "" else " "^ename^".glob" in
+       let glob = if !option_noglob then "" else ename^".glob " in
        let deps = find_dependencies name in
-       printf "%s%s%s %s.v.beautified %s.required_vo: %s.v %s\n" ename !suffixe glob ename ename ename
-        (string_of_dependency_list !suffixe deps);
+       printf "%s.vo %s%s.v.beautified %s.required_vo: %s.v %s\n" ename glob ename ename ename
+        (string_of_dependency_list ".vo" deps);
        printf "%s.vio: %s.v %s\n" ename ename
          (string_of_dependency_list ".vio" deps);
        if !write_vos then
@@ -639,7 +637,7 @@ let sort () =
         done
       with Fin_fichier ->
         close_in cin;
-        printf "%s%s " file !suffixe
+        printf "%s.v " file
     end
   in
   List.iter (fun (name,_) -> loop name) !vAccu

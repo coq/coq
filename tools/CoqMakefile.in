@@ -455,13 +455,13 @@ all.ps: $(VFILES)
 	$(SHOW)'COQDOC -ps $(GAL)'
 	$(HIDE)$(COQDOC) \
 		-toc $(COQDOCFLAGS) -ps $(GAL) $(COQDOCLIBS) \
-		-o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`
+		-o $@ `$(COQDEP) -sort $(VFILES)`
 
 all.pdf: $(VFILES)
 	$(SHOW)'COQDOC -pdf $(GAL)'
 	$(HIDE)$(COQDOC) \
 		-toc $(COQDOCFLAGS) -pdf $(GAL) $(COQDOCLIBS) \
-		-o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`
+		-o $@ `$(COQDEP) -sort $(VFILES)`
 
 # FIXME: not quite right, since the output name is different
 gallinahtml: GAL=-g
