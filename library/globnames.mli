@@ -32,6 +32,7 @@ val destIndRef : GlobRef.t -> inductive
 val destConstructRef : GlobRef.t -> constructor
 
 val is_global : GlobRef.t -> constr -> bool
+[@@ocaml.deprecated "Use [Constr.isRefX] instead."]
 
 val subst_constructor : substitution -> constructor -> constructor
 val subst_global : substitution -> GlobRef.t -> GlobRef.t * constr Univ.univ_abstracted option
@@ -44,6 +45,7 @@ val printable_constr_of_global : GlobRef.t -> constr
 (** Turn a construction denoting a global reference into a global reference;
    raise [Not_found] if not a global reference *)
 val global_of_constr : constr -> GlobRef.t
+[@@ocaml.deprecated "Use [Constr.destRef] instead (throws DestKO instead of Not_found)."]
 
 (** {6 Extended global references } *)
 

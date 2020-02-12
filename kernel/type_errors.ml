@@ -48,7 +48,7 @@ type ('constr, 'types) ptype_error =
   | UnboundVar of variable
   | NotAType of ('constr, 'types) punsafe_judgment
   | BadAssumption of ('constr, 'types) punsafe_judgment
-  | ReferenceVariables of Id.t * 'constr
+  | ReferenceVariables of Id.t * GlobRef.t
   | ElimArity of pinductive * 'constr * ('constr, 'types) punsafe_judgment
       * (Sorts.family * Sorts.family * Sorts.family * arity_error) option
   | CaseNotInductive of ('constr, 'types) punsafe_judgment
@@ -182,7 +182,7 @@ let map_ptype_error f = function
 | UnboundVar id -> UnboundVar id
 | NotAType j -> NotAType (on_judgment f j)
 | BadAssumption j -> BadAssumption (on_judgment f j)
-| ReferenceVariables (id, c) -> ReferenceVariables (id, f c)
+| ReferenceVariables (id, c) -> ReferenceVariables (id, c)
 | ElimArity (pi, c, j, ar) -> ElimArity (pi, f c, on_judgment f j, ar)
 | CaseNotInductive j -> CaseNotInductive (on_judgment f j)
 | WrongCaseInfo (pi, ci) -> WrongCaseInfo (pi, ci)

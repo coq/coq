@@ -3955,7 +3955,7 @@ let specialize_eqs id =
     match EConstr.kind !evars ty with
     | Prod (na, t, b) ->
         (match EConstr.kind !evars t with
-        | App (eq, [| eqty; x; y |]) when EConstr.is_global !evars Coqlib.(lib_ref "core.eq.type") eq ->
+        | App (eq, [| eqty; x; y |]) when isRefX !evars Coqlib.(lib_ref "core.eq.type") eq ->
             let c = if noccur_between !evars 1 (List.length ctx) x then y else x in
             let pt = mkApp (eq, [| eqty; c; c |]) in
             let ind = destInd !evars eq in
@@ -3963,7 +3963,7 @@ let specialize_eqs id =
               if unif (push_rel_context ctx env) evars pt t then
                 aux true ctx (mkApp (acc, [| p |])) (subst1 p b)
               else acc, in_eqs, ctx, ty
-        | App (heq, [| eqty; x; eqty'; y |]) when EConstr.is_global !evars (Lazy.force coq_heq_ref) heq ->
+        | App (heq, [| eqty; x; eqty'; y |]) when isRefX !evars (Lazy.force coq_heq_ref) heq ->
             let eqt, c = if noccur_between !evars 1 (List.length ctx) x then eqty', y else eqty, x in
             let pt = mkApp (heq, [| eqt; c; eqt; c |]) in
             let ind = destInd !evars heq in
@@ -4134,8 +4134,8 @@ let compute_elim_sig sigma ?elimc elimt =
       | Some (LocalDef _) -> error_ind_scheme ""
       | Some (LocalAssum (_,ind)) ->
           let indhd,indargs = decompose_app sigma ind in
-          try {!res with indref = Some (fst (Termops.global_of_constr sigma indhd)) }
-          with e when CErrors.noncritical e ->
+          try {!res with indref = Some (fst (destRef sigma indhd)) }
+          with DestKO ->
             error "Cannot find the inductive type of the inductive scheme."
 
 let compute_scheme_signature evd scheme names_info ind_type_guess =

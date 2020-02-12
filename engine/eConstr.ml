@@ -119,6 +119,20 @@ let isVarId sigma id c =
 let isRelN sigma n c =
   match kind sigma c with Rel n' -> Int.equal n n' | _ -> false
 
+let isRef sigma c = match kind sigma c with
+  | Const _ | Ind _ | Construct _ | Var _ -> true
+  | _ -> false
+
+let isRefX sigma x c =
+  let open GlobRef in
+  match x, kind sigma c with
+  | ConstRef c, Const (c', _) -> Constant.equal c c'
+  | IndRef i, Ind (i', _) -> eq_ind i i'
+  | ConstructRef i, Construct (i', _) -> eq_constructor i i'
+  | VarRef id, Var id' -> Id.equal id id'
+  | _ -> false
+
+
 let destRel sigma c = match kind sigma c with
 | Rel p -> p
 | _ -> raise DestKO
@@ -723,8 +737,7 @@ let fresh_global ?loc ?rigid ?names env sigma reference =
   let (evd,t) = Evd.fresh_global ?loc ?rigid ?names env sigma reference in
   evd, t
 
-let is_global sigma gr c =
-  Globnames.is_global gr (to_constr sigma c)
+let is_global = isRefX
 
 module Unsafe =
 struct

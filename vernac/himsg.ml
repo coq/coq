@@ -201,9 +201,7 @@ let explain_bad_assumption env sigma j =
   str "because this term is not a type."
 
 let explain_reference_variables sigma id c =
-  (* c is intended to be a global reference *)
-  let pc = pr_global (fst (Termops.global_of_constr sigma c)) in
-  pc ++ strbrk " depends on the variable " ++ Id.print id ++
+  pr_global c ++ strbrk " depends on the variable " ++ Id.print id ++
   strbrk " which is not declared in the context."
 
 let rec pr_disjunction pr = function

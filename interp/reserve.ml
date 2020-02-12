@@ -104,8 +104,8 @@ let declare_reserved_type idl t =
 let find_reserved_type id = Id.Map.find (root_of_id id) !reserve_table
 
 let constr_key c =
-  try RefKey (canonical_gr (global_of_constr (fst (Constr.decompose_app c))))
-  with Not_found -> Oth
+  try RefKey (canonical_gr (fst @@ Constr.destRef (fst (Constr.decompose_app c))))
+  with Constr.DestKO -> Oth
 
 let revert_reserved_type t =
   try

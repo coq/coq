@@ -209,11 +209,11 @@ let extend_with_auto_hints env sigma l seq =
     | Res_pf (c,_) | Give_exact (c,_)
     | Res_pf_THEN_trivial_fail (c,_) ->
       let (c, _, _) = c in
-      (try
-         let (gr, _) = Termops.global_of_constr sigma c in
+      (match  EConstr.destRef sigma c with
+       | exception Constr.DestKO -> seq, sigma
+       | gr, _ ->
          let sigma, typ = Typing.type_of env sigma c in
-         add_formula env sigma Hint gr typ seq, sigma
-       with Not_found -> seq, sigma)
+         add_formula env sigma Hint gr typ seq, sigma)
     | _ -> seq, sigma
   in
   let h acc dbname =

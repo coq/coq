@@ -256,6 +256,8 @@ val isRel  : constr -> bool
 val isRelN : int -> constr -> bool
 val isVar  : constr -> bool
 val isVarId : Id.t -> constr -> bool
+val isRef : constr -> bool
+val isRefX : GlobRef.t -> constr -> bool
 val isInd  : constr -> bool
 val isEvar : constr -> bool
 val isMeta : constr -> bool

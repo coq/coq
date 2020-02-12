@@ -189,7 +189,7 @@ let rec cs_pattern_of_constr env t =
     let _, params = Inductive.find_rectype env ty in
     Const_cs (GlobRef.ConstRef (Projection.constant p)), None, params @ [c]
   | Sort s -> Sort_cs (Sorts.family s), None, []
-  | _ -> Const_cs (Globnames.global_of_constr t) , None, []
+  | _ -> Const_cs (fst @@ destRef t) , None, []
 
 let warn_projection_no_head_constant =
   CWarnings.create ~name:"projection-no-head-constant" ~category:"typechecker"
@@ -234,7 +234,7 @@ let compute_canonical_projections env ~warn (gref,ind) =
               ((GlobRef.ConstRef proji_sp, (patt, t)),
                { o_ORIGIN = gref ; o_DEF ; o_CTX ; o_INJ ; o_TABS ; o_TPARAMS ; o_NPARAMS ; o_TCOMPS })
               :: acc
-            | exception Not_found ->
+            | exception DestKO ->
               if warn then warn_projection_no_head_constant (sign, env, t, gref, proji_sp);
               acc
           ) acc spopt

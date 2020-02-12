@@ -269,7 +269,7 @@ let check_conv_record env sigma (t1,sk1) (t2,sk2) =
         let sk2 = Stack.append_app args sk2 in
         lookup_canonical_conversion (proji, Const_cs c2), sk2
       | _ ->
-        let (c2, _) = Termops.global_of_constr sigma t2 in
+        let (c2, _) = try destRef sigma t2 with DestKO -> raise Not_found in
           lookup_canonical_conversion (proji, Const_cs c2),sk2
     with Not_found ->
       let (c, cs) = lookup_canonical_conversion (proji,Default_cs) in

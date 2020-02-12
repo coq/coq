@@ -264,10 +264,13 @@ val dependency_closure : env -> Evd.evar_map -> named_context -> Id.Set.t -> Id.
 val is_section_variable : Id.t -> bool
 
 val global_of_constr : Evd.evar_map -> constr -> GlobRef.t * EInstance.t
+[@@ocaml.deprecated "Use [EConstr.destRef] instead (throws DestKO instead of Not_found)."]
 
 val is_global : Evd.evar_map -> GlobRef.t -> constr -> bool
+[@@ocaml.deprecated "Use [EConstr.isRefX] instead."]
 
 val isGlobalRef : Evd.evar_map -> constr -> bool
+[@@ocaml.deprecated "Use [EConstr.isRef] instead."]
 
 val is_template_polymorphic_ind : env -> Evd.evar_map -> constr -> bool
 

@@ -27,6 +27,8 @@ open Arguments_renaming
 open Pretype_errors
 open Context.Rel.Declaration
 
+module GR = Names.GlobRef
+
 let meta_type evd mv =
   let ty =
     try Evd.meta_ftype evd mv
@@ -287,37 +289,36 @@ let judge_of_letin env name defj typj j =
   { uj_val = mkLetIn (make_annot name r, defj.uj_val, typj.utj_val, j.uj_val) ;
     uj_type = subst1 defj.uj_val j.uj_type }
 
-let check_hyps_inclusion env sigma f x hyps =
+let check_hyps_inclusion env sigma x hyps =
   let evars = Evarutil.safe_evar_value sigma, Evd.universes sigma in
-  let f x = EConstr.Unsafe.to_constr (f x) in
-  Typeops.check_hyps_inclusion env ~evars f x hyps
+  Typeops.check_hyps_inclusion env ~evars x hyps
 
 let type_of_constant env sigma (c,u) =
   let open Declarations in
   let cb = Environ.lookup_constant c env in
-  let () = check_hyps_inclusion env sigma mkConstU (c,u) cb.const_hyps in
+  let () = check_hyps_inclusion env sigma (GR.ConstRef c) cb.const_hyps in
   let u = EInstance.kind sigma u in
   let ty, csts = Environ.constant_type env (c,u) in
   let sigma = Evd.add_constraints sigma csts in
-  sigma, (EConstr.of_constr (rename_type ty (Names.GlobRef.ConstRef c)))
+  sigma, (EConstr.of_constr (rename_type ty (GR.ConstRef c)))
 
 let type_of_inductive env sigma (ind,u) =
   let open Declarations in
   let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
-  let () = check_hyps_inclusion env sigma mkIndU (ind,u) mib.mind_hyps in
+  let () = check_hyps_inclusion env sigma (GR.IndRef ind) mib.mind_hyps in
   let u = EInstance.kind sigma u in
   let ty, csts = Inductive.constrained_type_of_inductive env (specif,u) in
   let sigma = Evd.add_constraints sigma csts in
-  sigma, (EConstr.of_constr (rename_type ty (Names.GlobRef.IndRef ind)))
+  sigma, (EConstr.of_constr (rename_type ty (GR.IndRef ind)))
 
 let type_of_constructor env sigma ((ind,_ as ctor),u) =
   let open Declarations in
   let (mib,_ as specif) = Inductive.lookup_mind_specif env ind in
-  let () = check_hyps_inclusion env sigma mkIndU (ind,u) mib.mind_hyps in
+  let () = check_hyps_inclusion env sigma (GR.IndRef ind) mib.mind_hyps in
   let u = EInstance.kind sigma u in
   let ty, csts = Inductive.constrained_type_of_constructor (ctor,u) specif in
   let sigma = Evd.add_constraints sigma csts in
-  sigma, (EConstr.of_constr (rename_type ty (Names.GlobRef.ConstructRef ctor)))
+  sigma, (EConstr.of_constr (rename_type ty (GR.ConstructRef ctor)))
 
 let judge_of_int env v =
   Environ.on_judgment EConstr.of_constr (judge_of_int env v)

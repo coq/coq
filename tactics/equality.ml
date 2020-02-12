@@ -356,7 +356,7 @@ let find_elim hdcncl lft2rgt dep cls ot =
   Proofview.Goal.enter_one begin fun gl ->
   let sigma = project gl in
   let is_global_exists gr c =
-    Coqlib.has_ref gr && Termops.is_global sigma (Coqlib.lib_ref gr) c
+    Coqlib.has_ref gr && isRefX sigma (Coqlib.lib_ref gr) c
   in
   let inccl = Option.is_empty cls in
   let env = Proofview.Goal.env gl in
@@ -1339,11 +1339,11 @@ let inject_if_homogenous_dependent_pair ty =
     let existTconstr = Coqlib.lib_ref    "core.sigT.intro" in
     (* check whether the equality deals with dep pairs or not *)
     let eqTypeDest = fst (decompose_app sigma t) in
-    if not (Termops.is_global sigma sigTconstr eqTypeDest) then raise Exit;
+    if not (isRefX sigma sigTconstr eqTypeDest) then raise Exit;
     let hd1,ar1 = decompose_app_vect sigma t1 and
         hd2,ar2 = decompose_app_vect sigma t2 in
-    if not (Termops.is_global sigma existTconstr hd1) then raise Exit;
-    if not (Termops.is_global sigma existTconstr hd2) then raise Exit;
+    if not (isRefX sigma existTconstr hd1) then raise Exit;
+    if not (isRefX sigma existTconstr hd2) then raise Exit;
     let (ind, _), _ = try pf_apply find_mrectype gl ar1.(0) with Not_found -> raise Exit in
     (* check if the user has declared the dec principle *)
     (* and compare the fst arguments of the dep pair *)
@@ -1692,8 +1692,8 @@ let () =
       optwrite = (:=) regular_subst_tactic }
 
 let restrict_to_eq_and_identity eq = (* compatibility *)
-  if not (is_global (lib_ref "core.eq.type") eq) &&
-    not (is_global (lib_ref "core.identity.type") eq)
+  if not (Constr.isRefX (lib_ref "core.eq.type") eq) &&
+    not (Constr.isRefX (lib_ref "core.identity.type") eq)
   then raise Constr_matching.PatternMatchingFailure
 
 exception FoundHyp of (Id.t * constr * bool)
