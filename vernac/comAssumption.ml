@@ -70,7 +70,8 @@ let declare_axiom is_coe ~poly ~local ~kind typ (univs, pl) imps nl {CAst.v=name
   (gr,inst)
 
 let interp_assumption ~program_mode sigma env impls c =
-  let sigma, (ty, impls) = interp_type_evars_impls ~program_mode env sigma ~impls c in
+  let flags = { Pretyping.all_no_fail_flags with program_mode } in
+  let sigma, (ty, impls) = interp_type_evars_impls ~flags env sigma ~impls c in
   sigma, (ty, impls)
 
 (* When monomorphic the universe constraints and universe names are

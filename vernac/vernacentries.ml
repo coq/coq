@@ -486,11 +486,14 @@ let program_inference_hook env sigma ev =
 
 let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   let env0 = Global.env () in
+  let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let decl = fst (List.hd thms) in
   let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env0 (snd decl) in
   let evd, thms = List.fold_left_map (fun evd ((id, _), (bl, t)) ->
-    let evd, (impls, ((env, ctx), imps)) = Constrintern.interp_context_evars ~program_mode env0 evd bl in
-    let evd, (t', imps') = Constrintern.interp_type_evars_impls ~program_mode ~impls env evd t in
+    let evd, (impls, ((env, ctx), imps)) =
+      Constrintern.interp_context_evars ~program_mode env0 evd bl
+    in
+    let evd, (t', imps') = Constrintern.interp_type_evars_impls ~flags ~impls env evd t in
     let flags = Pretyping.{ all_and_fail_flags with program_mode } in
     let inference_hook = if program_mode then Some program_inference_hook else None in
     let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in

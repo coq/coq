@@ -514,7 +514,8 @@ let interp_instance_context ~program_mode env ctx ~generalize pl tclass =
     else tclass
   in
   let sigma, (impls, ((env', ctx), imps)) = interp_context_evars ~program_mode env sigma ctx in
-  let sigma, (c', imps') = interp_type_evars_impls ~program_mode ~impls env' sigma tclass in
+  let flags = Pretyping.{ all_no_fail_flags with program_mode } in
+  let sigma, (c', imps') = interp_type_evars_impls ~flags ~impls env' sigma tclass in
   let imps = imps @ imps' in
   let ctx', c = decompose_prod_assum sigma c' in
   let ctx'' = ctx' @ ctx in

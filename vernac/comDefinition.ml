@@ -79,6 +79,7 @@ let protect_pattern_in_binder bl c ctypopt =
     (bl, c, ctypopt, fun f env evd c -> f env evd c)
 
 let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
+  let flags = Pretyping.{ all_no_fail_flags with program_mode } in
   let env = Global.env() in
   (* Explicitly bound universes and constraints *)
   let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env pl in
@@ -87,7 +88,7 @@ let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
   let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars ~program_mode env evd bl in
   (* Build the type *)
   let evd, tyopt = Option.fold_left_map
-      (interp_type_evars_impls ~program_mode ~impls env_bl)
+      (interp_type_evars_impls ~flags ~impls env_bl)
       evd ctypopt
   in
   (* Build the body, and merge implicits from parameters and from type/body *)

@@ -88,3 +88,9 @@ val template_polymorphism_candidate
    polymorphic. It should have at least one universe in its
    monomorphic universe context that can be made parametric in its
    conclusion sort, if one is given. *)
+
+val maybe_unify_params_in : Environ.env -> Evd.evar_map -> ninds:int -> nparams:int
+  -> EConstr.t -> Evd.evar_map
+(** [nparams] is the number of parameters which aren't treated as
+    uniform, ie the length of params (including letins) where the env
+    is [uniform params, inductives, params]. *)
