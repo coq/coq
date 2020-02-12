@@ -86,7 +86,7 @@ let register_additional_error_info (f : Exninfo.info -> (Pp.t option Loc.located
     all the handlers of a list, and finally a [bottom] handler if all
     others have failed *)
 
-let rec print_gen ~anomaly ~extra_msg stk (e, info) =
+let rec print_gen ~anomaly ~extra_msg stk e =
   match stk with
   | [] ->
     print_anomaly anomaly e
@@ -95,20 +95,22 @@ let rec print_gen ~anomaly ~extra_msg stk (e, info) =
     | Some err_msg ->
       Option.cata (fun msg -> msg ++ err_msg) err_msg extra_msg
     | None ->
-      print_gen ~anomaly ~extra_msg stk' (e,info)
+      print_gen ~anomaly ~extra_msg stk' e
 
 let print_gen ~anomaly (e, info) =
   let extra_info =
     try CList.find_map (fun f -> Some (f info)) !additional_error_info_handler
     with Not_found -> None
   in
-  let extra_msg, info = match extra_info with
-    | None -> None, info
-    | Some (loc, msg) ->
-      let info = Option.cata (fun l -> Loc.add_loc info l) info loc in
-      msg, info
+  let extra_msg = match extra_info with
+    | None -> None
+    | Some (loc, msg) -> msg
   in
-  print_gen ~anomaly ~extra_msg !handle_stack (e,info)
+  try
+    print_gen ~anomaly ~extra_msg !handle_stack e
+  with exn ->
+    (* exception in error printer *)
+    str "<in exception printer>" ++ fnl () ++ print_anomaly anomaly exn
 
 (** The standard exception printer *)
 let iprint (e, info) =
