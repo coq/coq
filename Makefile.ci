@@ -45,6 +45,7 @@ CI_TARGETS= \
     ci-stdlib2 \
     ci-tlc \
     ci-unimath \
+    ci-unicoq \
     ci-verdi-raft \
     ci-vst
 
@@ -63,6 +64,8 @@ ci-coqprime: ci-bignums
 ci-math-classes: ci-bignums
 
 ci-corn: ci-math-classes
+
+ci-mtac2: ci-unicoq
 
 ci-fiat-crypto: ci-coqprime ci-rewriter
 
