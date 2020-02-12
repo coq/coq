@@ -1143,15 +1143,22 @@ let token_ematch gram tok =
   let tematch = L.tok_match tok in
   fun tok -> tematch tok
 
+(**
+  nlevn: level for Snext
+  alevn: level for recursive calls on the left-hand side of the rule (depending on associativity)
+*)
+
 let rec parser_of_tree : type s tr r. s ty_entry -> int -> int -> (s, tr, r) ty_tree -> r parser_t =
   fun entry nlevn alevn ->
   function
     DeadEnd -> (fun (strm__ : _ Stream.t) -> raise Stream.Failure)
   | LocAct (act, _) -> (fun (strm__ : _ Stream.t) -> act)
   | Node (_, {node = Sself; son = LocAct (act, _); brother = DeadEnd}) ->
+      (* SELF on the right-hand side of the last rule *)
       (fun (strm__ : _ Stream.t) ->
          let a = entry.estart alevn strm__ in act a)
   | Node (_, {node = Sself; son = LocAct (act, _); brother = bro}) ->
+      (* SELF on the right-hand side of a rule *)
       let p2 = parser_of_tree entry nlevn alevn bro in
       (fun (strm__ : _ Stream.t) ->
          match
@@ -1394,6 +1401,33 @@ and parse_top_symb : type s tr a. s ty_entry -> (s, tr, a) ty_symbol -> a parser
   fun entry symb ->
   parser_of_symbol entry 0 (top_symb entry symb)
 
+(** [start_parser_of_levels entry clevn levels levn strm] goes
+    top-down from level [clevn] to the last level, ignoring rules
+    between [levn] and [clevn], as if starting from
+    [max(clevn,levn)]. On each rule of the form [prefix] (where
+    [prefix] is a rule not starting with [SELF]), it tries to consume
+    the stream [strm].
+
+    The interesting case is [entry.estart] which is
+    [start_parser_of_levels entry 0 entry.edesc], thus practically
+    going from [levn] to the end.
+
+    More schematically, assuming each level has the form
+
+    level n: [ a = SELF; b = suffix_tree_n -> action_n(a,b)
+             | a = prefix_tree_n -> action'_n(a) ]
+
+    then the main loop does the following:
+
+    estart n =
+      if prefix_tree_n matches the stream as a then econtinue n (action'_n(a))
+      else start (n+1)
+
+    econtinue n a =
+      if suffix_tree_n matches the stream as b then econtinue n (action_n(a,b))
+      else if n=0 then a else econtinue (n-1) a
+*)
+
 let rec start_parser_of_levels entry clevn =
   function
     [] -> (fun levn (strm__ : _ Stream.t) -> raise Stream.Failure)
@@ -1426,7 +1460,9 @@ let rec start_parser_of_levels entry clevn =
                  entry.econtinue levn bp a strm)
           | _ ->
               fun levn strm ->
-                if levn > clevn then p1 levn strm
+                if levn > clevn then
+                  (* Skip rules before [levn] *)
+                  p1 levn strm
                 else
                   let (strm__ : _ Stream.t) = strm in
                   let bp = Stream.count strm__ in
@@ -1436,6 +1472,18 @@ let rec start_parser_of_levels entry clevn =
                       let a = act (loc_of_token_interval bp ep) in
                       entry.econtinue levn bp a strm
                   | _ -> p1 levn strm__
+
+(** [continue_parser_of_levels entry clevn levels levn bp a strm] goes
+    bottom-up from the last level to level [clevn], ignoring rules
+    between [levn] and [clevn], as if stopping at [max(clevn,levn)].
+    It tries to consume the stream [strm] on the suffix of rules of
+    the form [SELF; suffix] knowing that [a] is what consumed [SELF]
+    at level [levn] (or [levn+1] depending on associativity).
+
+    The interesting case is [entry.econtinue levn bp a] which is [try
+    continue_parser_of_levels entry 0 entry.edesc levn bp a with
+    Failure -> a], thus practically going from the end to [levn].
+*)
 
 let rec continue_parser_of_levels entry clevn =
   function
@@ -1452,7 +1500,9 @@ let rec continue_parser_of_levels entry clevn =
           in
           let p2 = parser_of_tree entry (succ clevn) alevn tree in
           fun levn bp a strm ->
-            if levn > clevn then p1 levn bp a strm
+            if levn > clevn then
+              (* Skip rules before [levn] *)
+              p1 levn bp a strm
             else
               let (strm__ : _ Stream.t) = strm in
               try p1 levn bp a strm__ with
