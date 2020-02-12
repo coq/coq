@@ -56,10 +56,6 @@ let pr_nonpositive env =
   let inds = fold_inductives (fun c cb acc -> if not cb.mind_typing_flags.check_positive then MutInd.to_string c :: acc else acc) env [] in
   pr_assumptions "Inductives whose positivity is assumed" inds
 
-let pr_unsafe_template env =
-  let inds = fold_inductives  (fun c cb acc -> if not cb.mind_typing_flags.check_template then MutInd.to_string c :: acc else acc) env [] in
-  pr_assumptions "Inductives using unchecked template polymorphism" inds
-
 let print_context env =
   if !output_context then begin
     Feedback.msg_notice
@@ -70,8 +66,8 @@ let print_context env =
       str "* " ++ hov 0 (pr_axioms env ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_type_in_type env ++ fnl()) ++ fnl() ++
       str "* " ++ hov 0 (pr_unguarded env ++ fnl()) ++ fnl() ++
-      str "* " ++ hov 0 (pr_nonpositive env ++ fnl()) ++ fnl() ++
-      str "* " ++ hov 0 (pr_unsafe_template env)))
+      str "* " ++ hov 0 (pr_nonpositive env ++ fnl()))
+      )
   end
 
 let stats env =

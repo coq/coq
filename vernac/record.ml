@@ -446,8 +446,7 @@ let declare_structure ~cumulative finite ubinders univs paramimpls params templa
                univs)
             param_levels fields
         in
-        let template_check = Environ.check_template (Global.env ()) in
-        ComInductive.template_polymorphism_candidate ~template_check ~ctor_levels univs params
+        ComInductive.template_polymorphism_candidate ~ctor_levels univs params
           (Some (Sorts.sort_of_univ min_univ))
       in
       match template with

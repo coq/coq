@@ -197,7 +197,7 @@ let unbounded_from_below u cstrs =
    (starting from the most recent and ignoring let-definitions) is not
    contributing to the inductive type's sort or is Some u_k if its level
    is u_k and is contributing. *)
-let template_polymorphic_univs ~template_check ~ctor_levels uctx paramsctxt concl =
+let template_polymorphic_univs ~ctor_levels uctx paramsctxt concl =
   let check_level l =
     Univ.LSet.mem l (Univ.ContextSet.levels uctx) &&
     unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
@@ -205,27 +205,23 @@ let template_polymorphic_univs ~template_check ~ctor_levels uctx paramsctxt conc
   in
   let univs = Univ.Universe.levels concl in
   let univs =
-    if template_check then
-      Univ.LSet.filter (fun l -> check_level l || Univ.Level.is_prop l) univs
-    else univs (* Doesn't check the universes can be generalized *)
+    Univ.LSet.filter (fun l -> check_level l || Univ.Level.is_prop l) univs
   in
   let fold acc = function
     | (LocalAssum (_, p)) ->
       (let c = Term.strip_prod_assum p in
       match kind c with
         | Sort (Type u) ->
-          if template_check then
             (match Univ.Universe.level u with
              | Some l -> if Univ.LSet.mem l univs && not (Univ.Level.is_prop l) then Some l else None
              | None -> None)
-          else Univ.Universe.level u
         | _ -> None) :: acc
     | LocalDef _ -> acc
   in
   let params = List.fold_left fold [] paramsctxt in
   params, univs
 
-let abstract_packets ~template_check univs usubst params ((arity,lc),(indices,splayed_lc),univ_info) =
+let abstract_packets univs usubst params ((arity,lc),(indices,splayed_lc),univ_info) =
   if not (Universe.Set.is_empty univ_info.missing)
   then raise (InductiveError (MissingConstraints (univ_info.missing,univ_info.ind_univ)));
   let arity = Vars.subst_univs_level_constr usubst arity in
@@ -267,9 +263,9 @@ let abstract_packets ~template_check univs usubst params ((arity,lc),(indices,sp
           splayed_lc
       in
       let param_levels, concl_levels =
-        template_polymorphic_univs ~template_check ~ctor_levels ctx params min_univ
+        template_polymorphic_univs ~ctor_levels ctx params min_univ
       in
-      if template_check && List.for_all (fun x -> Option.is_empty x) param_levels
+      if List.for_all (fun x -> Option.is_empty x) param_levels
          && Univ.LSet.is_empty concl_levels then
         CErrors.user_err
           Pp.(strbrk "Ill-formed template inductive declaration: not polymorphic on any universe.")
@@ -356,8 +352,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   (* Abstract universes *)
   let usubst, univs = Declareops.abstract_universes mie.mind_entry_universes in
   let params = Vars.subst_univs_level_context usubst params in
-  let template_check = Environ.check_template env in
-  let data = List.map (abstract_packets ~template_check univs usubst params) data in
+  let data = List.map (abstract_packets univs usubst params) data in
 
   let env_ar_par =
     let ctx = Environ.rel_context env_ar_par in

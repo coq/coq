@@ -323,16 +323,15 @@ let check_named {CAst.loc;v=na} = match na with
   let msg = str "Parameters must be named." in
   user_err ?loc  msg
 
-let template_polymorphism_candidate ~template_check ~ctor_levels uctx params concl =
+let template_polymorphism_candidate ~ctor_levels uctx params concl =
   match uctx with
   | Entries.Monomorphic_entry uctx ->
     let concltemplate = Option.cata (fun s -> not (Sorts.is_small s)) false concl in
     if not concltemplate then false
-    else if not template_check then true
     else
       let conclu = Option.cata Sorts.univ_of_sort Univ.type0m_univ concl in
       let params, conclunivs =
-        IndTyping.template_polymorphic_univs ~template_check ~ctor_levels uctx params conclu
+        IndTyping.template_polymorphic_univs ~ctor_levels uctx params conclu
       in
       not (Univ.LSet.is_empty conclunivs)
   | Entries.Polymorphic_entry _ -> false
@@ -385,7 +384,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~ctx_params ~indnames
           List.fold_left (fun levels c -> add_levels c levels)
             param_levels ctypes
         in
-        template_polymorphism_candidate ~template_check:(Environ.check_template env_ar_params) ~ctor_levels uctx ctx_params concl
+        template_polymorphism_candidate ~ctor_levels uctx ctx_params concl
       in
       let template = match template with
         | Some template ->
