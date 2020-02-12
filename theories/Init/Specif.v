@@ -255,12 +255,6 @@ Qed.
 (** Equality of sigma types *)
 
 Import EqNotations.
-Local Notation "'rew' 'dependent' H 'in' H'"
-  := (match H with
-      | eq_refl => H'
-      end)
-       (at level 10, H' at level 10,
-        format "'[' 'rew'  'dependent'  '/    ' H  in  '/' H' ']'").
 
 (** Equality for [sigT] *)
 Section sigT.
