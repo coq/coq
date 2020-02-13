@@ -739,6 +739,26 @@ let fresh_global ?loc ?rigid ?names env sigma reference =
 
 let is_global = isRefX
 
+(** Kind of type *)
+
+type kind_of_type =
+  | SortType   of ESorts.t
+  | CastType   of types * t
+  | ProdType   of Name.t Context.binder_annot * t * t
+  | LetInType  of Name.t Context.binder_annot * t * t * t
+  | AtomicType of t * t array
+
+let kind_of_type sigma t = match kind sigma t with
+  | Sort s -> SortType s
+  | Cast (c,_,t) -> CastType (c, t)
+  | Prod (na,t,c) -> ProdType (na, t, c)
+  | LetIn (na,b,t,c) -> LetInType (na, b, t, c)
+  | App (c,l) -> AtomicType (c, l)
+  | (Rel _ | Meta _ | Var _ | Evar _ | Const _
+  | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
+    -> AtomicType (t,[||])
+  | (Lambda _ | Construct _ | Int _ | Float _) -> failwith "Not a type"
+
 module Unsafe =
 struct
 let to_sorts = ESorts.unsafe_to_sorts

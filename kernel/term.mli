@@ -181,17 +181,6 @@ val destArity : types -> arity
 (** Tell if a term has the form of an arity *)
 val isArity : types -> bool
 
-(** {5 Kind of type} *)
-
-type ('constr, 'types) kind_of_type =
-  | SortType   of Sorts.t
-  | CastType   of 'types * 'types
-  | ProdType   of Name.t Context.binder_annot * 'types * 'types
-  | LetInType  of Name.t Context.binder_annot * 'constr * 'types * 'types
-  | AtomicType of 'constr * 'constr array
-
-val kind_of_type : types -> (constr, types) kind_of_type
-
 (* Deprecated *)
 type sorts_family = Sorts.family = InSProp | InProp | InSet | InType
 [@@ocaml.deprecated "Alias for Sorts.family"]

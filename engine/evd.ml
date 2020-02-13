@@ -1364,7 +1364,6 @@ module MiniEConstr = struct
 
   let kind sigma c = Constr.kind (whd_evar sigma c)
   let kind_upto = kind
-  let kind_of_type sigma c = Term.kind_of_type (whd_evar sigma c)
   let of_kind = Constr.of_kind
   let of_constr c = c
   let of_constr_array v = v

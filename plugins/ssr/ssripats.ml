@@ -610,8 +610,9 @@ let tclCompileIPats = IpatMachine.tclCompileIPats
 let with_defective maintac deps clr = Goal.enter begin fun g ->
   let sigma, concl = Goal.(sigma g, concl g) in
   let top_id =
-    match EConstr.kind_of_type sigma concl with
-    | Term.ProdType ({binder_name=Name id}, _, _)
+    let open EConstr in
+    match kind_of_type sigma concl with
+    | ProdType ({binder_name=Name id}, _, _)
       when Ssrcommon.is_discharged_id id -> id
     | _ -> Ssrcommon.top_id in
   let top_gen = Ssrequality.mkclr clr, Ssrmatching.cpattern_of_id top_id in
@@ -641,10 +642,11 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
     | Some (IPatId ipat) when not is_rec ->
        let rec intro_eq () = Goal.enter begin fun g ->
          let sigma, env, concl = Goal.(sigma g, env g, concl g) in
-         match EConstr.kind_of_type sigma concl with
-         | Term.ProdType (_, src, tgt) -> begin
-             match EConstr.kind_of_type sigma src with
-             | Term.AtomicType (hd, _) when Ssrcommon.is_protect hd env sigma ->
+         let open EConstr in
+         match kind_of_type sigma concl with
+         | ProdType (_, src, tgt) -> begin
+             match kind_of_type sigma src with
+             | AtomicType (hd, _) when Ssrcommon.is_protect hd env sigma ->
                 V82.tactic ~nf_evars:false Ssrcommon.unprotecttac <*>
                 Ssrcommon.tclINTRO_ID ipat
              | _ -> Ssrcommon.tclINTRO_ANON () <*> intro_eq ()
@@ -669,8 +671,9 @@ let elim_intro_tac ipats ?seed what eqid ssrelim is_rec clr =
          let sigma, eq =
            EConstr.fresh_global env sigma (Coqlib.lib_ref "core.eq.type") in
          let ctx, last = EConstr.decompose_prod_assum sigma concl in
-         let args = match EConstr.kind_of_type sigma last with
-           | Term.AtomicType (hd, args) ->
+         let open EConstr in
+         let args = match kind_of_type sigma last with
+           | AtomicType (hd, args) ->
                if Ssrcommon.is_protect hd env sigma then args
                else Ssrcommon.errorstrm
                   (Pp.str "Too many names in intro pattern")

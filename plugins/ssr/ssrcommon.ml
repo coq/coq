@@ -906,10 +906,11 @@ let pf_interp_ty ?(resolve_typeclasses=false) ist gl ty =
      | _ -> (mkCCast ty (mkCType None)).v)) ty in
      mk_term ' ' (force_type ty) in
    let strip_cast (sigma, t) =
-     let rec aux t = match EConstr.kind_of_type sigma t with
-     | CastType (t, ty) when !n_binders = 0 && EConstr.isSort sigma ty -> t
-     | ProdType(n,s,t) -> decr n_binders; EConstr.mkProd (n, s, aux t)
-     | LetInType(n,v,ty,t) -> decr n_binders; EConstr.mkLetIn (n, v, ty, aux t)
+     let open EConstr in
+     let rec aux t = match kind_of_type sigma t with
+     | CastType (t, ty) when !n_binders = 0 && isSort sigma ty -> t
+     | ProdType(n,s,t) -> decr n_binders; mkProd (n, s, aux t)
+     | LetInType(n,v,ty,t) -> decr n_binders; mkLetIn (n, v, ty, aux t)
      | _ -> anomaly "pf_interp_ty: ssr Type cast deleted by typecheck" in
      sigma, aux t in
    let sigma, cty as ty = strip_cast (interp_term ist gl ty) in
@@ -930,11 +931,12 @@ exception NotEnoughProducts
 let saturate ?(beta=false) ?(bi_types=false) env sigma c ?(ty=Retyping.get_type_of env sigma c) m
 =
   let rec loop ty args sigma n =
+  let open EConstr in
   if n = 0 then
     let args = List.rev args in
      (if beta then Reductionops.whd_beta sigma else fun x -> x)
       (EConstr.mkApp (c, Array.of_list (List.map snd args))), ty, args, sigma
-  else match EConstr.kind_of_type sigma ty with
+  else match kind_of_type sigma ty with
   | ProdType (_, src, tgt) ->
       let sigma = create_evar_defs sigma in
       let (sigma, x) =
@@ -947,7 +949,7 @@ let saturate ?(beta=false) ?(bi_types=false) env sigma c ?(ty=Retyping.get_type_
   | AtomicType _ ->
       let ty =  (* FIXME *)
         (Reductionops.whd_all env sigma) ty in
-      match EConstr.kind_of_type sigma ty with
+      match kind_of_type sigma ty with
       | ProdType _ -> loop ty args sigma n
       | _ -> raise NotEnoughProducts
   in

@@ -361,8 +361,9 @@ let intro_lock ipats =
         let c = Proofview.Goal.concl gl in
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
-        match EConstr.kind_of_type sigma c with
-        | Term.AtomicType(hd, args) when
+        let open EConstr in
+        match kind_of_type sigma c with
+        | AtomicType(hd, args) when
             Array.length args >= 2 && is_app_evar sigma (Array.last args) &&
             Ssrequality.ssr_is_setoid env sigma hd args
             (* if the last condition above [ssr_is_setoid ...] holds
@@ -375,8 +376,8 @@ let intro_lock ipats =
           protect_subgoal env sigma hd args
         | _ ->
         let t = Reductionops.whd_all env sigma c in
-        match EConstr.kind_of_type sigma t with
-        | Term.AtomicType(hd, args) when
+        match kind_of_type sigma t with
+        | AtomicType(hd, args) when
             Ssrcommon.is_ind_ref sigma hd (Coqlib.lib_ref "core.eq.type") &&
             Array.length args = 3 && is_app_evar sigma args.(2) ->
           protect_subgoal env sigma hd args

@@ -363,24 +363,3 @@ let rec isArity c =
   | Cast (c,_,_)      -> isArity c
   | Sort _          -> true
   | _               -> false
-
-(** Kind of type *)
-
-(* Experimental, used in Presburger contrib *)
-type ('constr, 'types) kind_of_type =
-  | SortType   of Sorts.t
-  | CastType   of 'types * 'types
-  | ProdType   of Name.t Context.binder_annot * 'types * 'types
-  | LetInType  of Name.t Context.binder_annot * 'constr * 'types * 'types
-  | AtomicType of 'constr * 'constr array
-
-let kind_of_type t = match kind t with
-  | Sort s -> SortType s
-  | Cast (c,_,t) -> CastType (c, t)
-  | Prod (na,t,c) -> ProdType (na, t, c)
-  | LetIn (na,b,t,c) -> LetInType (na, b, t, c)
-  | App (c,l) -> AtomicType (c, l)
-  | (Rel _ | Meta _ | Var _ | Evar _ | Const _
-  | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
-    -> AtomicType (t,[||])
-  | (Lambda _ | Construct _ | Int _ | Float _) -> failwith "Not a type"

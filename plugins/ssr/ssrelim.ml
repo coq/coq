@@ -13,7 +13,6 @@
 open Util
 open Names
 open Printer
-open Term
 open Constr
 open Context
 open Termops
@@ -35,16 +34,17 @@ module RelDecl = Context.Rel.Declaration
  * argument (index), it computes it's arity and the arity of the eliminator and
  * checks if the eliminator is recursive or not *)
 let analyze_eliminator elimty env sigma =
-  let rec loop ctx t = match EConstr.kind_of_type sigma t with
-  | AtomicType (hd, args) when EConstr.isRel sigma hd ->
-    ctx, EConstr.destRel sigma hd, not (EConstr.Vars.noccurn sigma 1 t), Array.length args, t
+  let open EConstr in
+  let rec loop ctx t = match kind_of_type sigma t with
+  | AtomicType (hd, args) when isRel sigma hd ->
+    ctx, destRel sigma hd, not (Vars.noccurn sigma 1 t), Array.length args, t
   | CastType (t, _) -> loop ctx t
   | ProdType (x, ty, t) -> loop (RelDecl.LocalAssum (x, ty) :: ctx) t
-  | LetInType (x,b,ty,t) -> loop (RelDecl.LocalDef (x, b, ty) :: ctx) (EConstr.Vars.subst1 b t)
+  | LetInType (x,b,ty,t) -> loop (RelDecl.LocalDef (x, b, ty) :: ctx) (Vars.subst1 b t)
   | _ ->
-    let env' = EConstr.push_rel_context ctx env in
+    let env' = push_rel_context ctx env in
     let t' = Reductionops.whd_all env' sigma t in
-    if not (EConstr.eq_constr sigma t t') then loop ctx t' else
+    if not (eq_constr sigma t t') then loop ctx t' else
       errorstrm Pp.(str"The eliminator has the wrong shape."++spc()++
       str"A (applied) bound variable was expected as the conclusion of "++
       str"the eliminator's"++Pp.cut()++str"type:"++spc()++pr_econstr_env env' sigma elimty) in
@@ -243,7 +243,8 @@ let ssrelim ?(is_case=false) deps what ?elim eqid elim_intro_tac =
     let sigma = project gl in
     ppdebug(lazy Pp.(str"elim= "++ pr_econstr_pat env sigma elim));
     ppdebug(lazy Pp.(str"elimty= "++ pr_econstr_pat env sigma elimty)) in
-  let inf_deps_r = match EConstr.kind_of_type (project gl) elimty with
+  let open EConstr in
+  let inf_deps_r = match kind_of_type (project gl) elimty with
     | AtomicType (_, args) -> List.rev (Array.to_list args)
     | _ -> assert false in
   let saturate_until gl c c_ty f =

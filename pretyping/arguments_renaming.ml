@@ -11,7 +11,6 @@
 (*i*)
 open Names
 open Globnames
-open Term
 open Constr
 open Context
 open Environ
@@ -78,14 +77,14 @@ let rename_type ty ref =
   let rec rename_type_aux c = function
     | [] -> c
     | rename :: rest as renamings ->
-        match kind_of_type c with
-        | ProdType (old, s, t) ->
+        match Constr.kind c with
+        | Prod (old, s, t) ->
             mkProd (name_override old rename, s, rename_type_aux t rest)
-        | LetInType(old, s, b, t) ->
+        | LetIn (old, s, b, t) ->
             mkLetIn (old ,s, b, rename_type_aux t renamings)
-        | CastType (t,_) -> rename_type_aux t renamings
-        | SortType _ -> c
-        | AtomicType _ -> c in
+        | Cast (t,_, _) -> rename_type_aux t renamings
+        | _ -> c
+  in
   try rename_type_aux ty (arguments_names ref)
   with Not_found -> ty
 
