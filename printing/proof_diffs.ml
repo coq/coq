@@ -69,7 +69,6 @@ let write_diffs_option opt =
 let () =
   Goptions.(declare_string_option {
     optdepr = false;
-    optname = "show diffs in proofs";
     optkey = ["Diffs"];
     optread = read_diffs_option;
     optwrite = write_diffs_option

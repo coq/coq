@@ -72,7 +72,6 @@ let use_injection_in_context = function
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "injection in context";
       optkey   = ["Structural";"Injection"];
       optread  = (fun () -> !injection_in_context) ;
       optwrite = (fun b -> injection_in_context := b) }
@@ -734,7 +733,6 @@ let keep_proof_equalities_for_injection = ref false
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "injection on prop arguments";
       optkey   = ["Keep";"Proof";"Equalities"];
       optread  = (fun () -> !keep_proof_equalities_for_injection) ;
       optwrite = (fun b -> keep_proof_equalities_for_injection := b) }
@@ -1686,7 +1684,6 @@ let regular_subst_tactic = ref true
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "more regular behavior of tactic subst";
       optkey   = ["Regular";"Subst";"Tactic"];
       optread  = (fun () -> !regular_subst_tactic);
       optwrite = (:=) regular_subst_tactic }

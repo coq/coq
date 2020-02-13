@@ -65,7 +65,6 @@ let proof_mode_opt_name = ["Default";"Proof";"Mode"]
 let () =
   Goptions.declare_string_option Goptions.{
     optdepr = false;
-    optname = "default proof mode" ;
     optkey = proof_mode_opt_name;
     optread = get_default_proof_mode_opt;
     optwrite = set_default_proof_mode_opt;
@@ -249,7 +248,6 @@ let interp_qed_delayed_control ~proof ~info ~st ~control { CAst.loc; v=pe } =
 let () = let open Goptions in
   declare_int_option
     { optdepr  = false;
-      optname  = "the default timeout";
       optkey   = ["Default";"Timeout"];
       optread  = (fun () -> !default_timeout);
       optwrite = ((:=) default_timeout) }

@@ -611,7 +611,6 @@ let vernac_assumption ~atts discharge kind l nl =
 
 let is_polymorphic_inductive_cumulativity =
   declare_bool_option_and_ref ~depr:false ~value:false
-    ~name:"Polymorphic inductive cumulativity"
     ~key:["Polymorphic"; "Inductive"; "Cumulativity"]
 
 let should_treat_as_cumulative cum poly =
@@ -627,7 +626,6 @@ let should_treat_as_cumulative cum poly =
 let get_uniform_inductive_parameters =
   Goptions.declare_bool_option_and_ref
     ~depr:false
-    ~name:"Uniform inductive parameters"
     ~key:["Uniform"; "Inductive"; "Parameters"]
     ~value:false
 
@@ -1220,7 +1218,6 @@ let vernac_generalizable ~local =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "allow sprop";
       optkey   = ["Allow";"StrictProp"];
       optread  = (fun () -> Global.sprop_allowed());
       optwrite = Global.set_allow_sprop }
@@ -1228,7 +1225,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "silent";
       optkey   = ["Silent"];
       optread  = (fun () -> !Flags.quiet);
       optwrite = ((:=) Flags.quiet) }
@@ -1236,7 +1232,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "implicit arguments";
       optkey   = ["Implicit";"Arguments"];
       optread  = Impargs.is_implicit_args;
       optwrite = Impargs.make_implicit_args }
@@ -1244,7 +1239,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "strict implicit arguments";
       optkey   = ["Strict";"Implicit"];
       optread  = Impargs.is_strict_implicit_args;
       optwrite = Impargs.make_strict_implicit_args }
@@ -1252,7 +1246,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "strong strict implicit arguments";
       optkey   = ["Strongly";"Strict";"Implicit"];
       optread  = Impargs.is_strongly_strict_implicit_args;
       optwrite = Impargs.make_strongly_strict_implicit_args }
@@ -1260,7 +1253,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "contextual implicit arguments";
       optkey   = ["Contextual";"Implicit"];
       optread  = Impargs.is_contextual_implicit_args;
       optwrite = Impargs.make_contextual_implicit_args }
@@ -1268,7 +1260,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "implicit status of reversible patterns";
       optkey   = ["Reversible";"Pattern";"Implicit"];
       optread  = Impargs.is_reversible_pattern_implicit_args;
       optwrite = Impargs.make_reversible_pattern_implicit_args }
@@ -1276,7 +1267,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "maximal insertion of implicit";
       optkey   = ["Maximal";"Implicit";"Insertion"];
       optread  = Impargs.is_maximal_implicit_args;
       optwrite = Impargs.make_maximal_implicit_args }
@@ -1284,7 +1274,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "coercion printing";
       optkey   = ["Printing";"Coercions"];
       optread  = (fun () -> !Constrextern.print_coercions);
       optwrite = (fun b ->  Constrextern.print_coercions := b) }
@@ -1292,7 +1281,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "printing of existential variable instances";
       optkey   = ["Printing";"Existential";"Instances"];
       optread  = (fun () -> !Detyping.print_evar_arguments);
       optwrite = (:=) Detyping.print_evar_arguments }
@@ -1300,7 +1288,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "implicit arguments printing";
       optkey   = ["Printing";"Implicit"];
       optread  = (fun () -> !Constrextern.print_implicits);
       optwrite = (fun b ->  Constrextern.print_implicits := b) }
@@ -1308,7 +1295,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "implicit arguments defensive printing";
       optkey   = ["Printing";"Implicit";"Defensive"];
       optread  = (fun () -> !Constrextern.print_implicits_defensive);
       optwrite = (fun b ->  Constrextern.print_implicits_defensive := b) }
@@ -1316,7 +1302,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "projection printing using dot notation";
       optkey   = ["Printing";"Projections"];
       optread  = (fun () -> !Constrextern.print_projections);
       optwrite = (fun b ->  Constrextern.print_projections := b) }
@@ -1324,7 +1309,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "notations printing";
       optkey   = ["Printing";"Notations"];
       optread  = (fun () -> not !Constrextern.print_no_symbol);
       optwrite = (fun b ->  Constrextern.print_no_symbol := not b) }
@@ -1332,7 +1316,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "raw printing";
       optkey   = ["Printing";"All"];
       optread  = (fun () -> !Flags.raw_print);
       optwrite = (fun b -> Flags.raw_print := b) }
@@ -1340,7 +1323,6 @@ let () =
 let () =
   declare_int_option
     { optdepr  = false;
-      optname  = "the level of inlining during functor application";
       optkey   = ["Inline";"Level"];
       optread  = (fun () -> Some (Flags.get_inline_level ()));
       optwrite = (fun o ->
@@ -1350,7 +1332,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "kernel term sharing";
       optkey   = ["Kernel"; "Term"; "Sharing"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.share_reduction);
       optwrite = Global.set_share_reduction }
@@ -1358,7 +1339,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "display compact goal contexts";
       optkey   = ["Printing";"Compact";"Contexts"];
       optread  = (fun () -> Printer.get_compact_context());
       optwrite = (fun b -> Printer.set_compact_context b) }
@@ -1366,7 +1346,6 @@ let () =
 let () =
   declare_int_option
     { optdepr  = false;
-      optname  = "the printing depth";
       optkey   = ["Printing";"Depth"];
       optread  = Topfmt.get_depth_boxes;
       optwrite = Topfmt.set_depth_boxes }
@@ -1374,7 +1353,6 @@ let () =
 let () =
   declare_int_option
     { optdepr  = false;
-      optname  = "the printing width";
       optkey   = ["Printing";"Width"];
       optread  = Topfmt.get_margin;
       optwrite = Topfmt.set_margin }
@@ -1382,7 +1360,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "printing of universes";
       optkey   = ["Printing";"Universes"];
       optread  = (fun () -> !Constrextern.print_universes);
       optwrite = (fun b -> Constrextern.print_universes:=b) }
@@ -1390,7 +1367,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "dumping bytecode after compilation";
       optkey   = ["Dump";"Bytecode"];
       optread  = (fun () -> !Cbytegen.dump_bytecode);
       optwrite = (:=) Cbytegen.dump_bytecode }
@@ -1398,7 +1374,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "dumping VM lambda code after compilation";
       optkey   = ["Dump";"Lambda"];
       optread  = (fun () -> !Clambda.dump_lambda);
       optwrite = (:=) Clambda.dump_lambda }
@@ -1406,7 +1381,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "explicitly parsing implicit arguments";
       optkey   = ["Parsing";"Explicit"];
       optread  = (fun () -> !Constrintern.parsing_explicit);
       optwrite = (fun b ->  Constrintern.parsing_explicit := b) }
@@ -1414,7 +1388,6 @@ let () =
 let () =
   declare_string_option ~preprocess:CWarnings.normalize_flags_string
     { optdepr  = false;
-      optname  = "warnings display";
       optkey   = ["Warnings"];
       optread  = CWarnings.get_flags;
       optwrite = CWarnings.set_flags }
@@ -1422,7 +1395,6 @@ let () =
 let () =
   declare_string_option
     { optdepr  = false;
-      optname  = "native_compute profiler output";
       optkey   = ["NativeCompute"; "Profile"; "Filename"];
       optread  = Nativenorm.get_profile_filename;
       optwrite = Nativenorm.set_profile_filename }
@@ -1430,7 +1402,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "enable native compute profiling";
       optkey   = ["NativeCompute"; "Profiling"];
       optread  = Nativenorm.get_profiling_enabled;
       optwrite = Nativenorm.set_profiling_enabled }
@@ -1438,7 +1409,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "enable native compute timing";
       optkey   = ["NativeCompute"; "Timing"];
       optread  = Nativenorm.get_timing_enabled;
       optwrite = Nativenorm.set_timing_enabled }
@@ -1446,7 +1416,6 @@ let () =
 let _ =
   declare_bool_option
     { optdepr  = false;
-      optname  = "guard checking";
       optkey   = ["Guard"; "Checking"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.check_guarded);
       optwrite = (fun b -> Global.set_check_guarded b) }
@@ -1454,7 +1423,6 @@ let _ =
 let _ =
   declare_bool_option
     { optdepr  = false;
-      optname  = "positivity/productivity checking";
       optkey   = ["Positivity"; "Checking"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.check_positive);
       optwrite = (fun b -> Global.set_check_positive b) }
@@ -1462,7 +1430,6 @@ let _ =
 let _ =
   declare_bool_option
     { optdepr  = false;
-      optname  = "universes checking";
       optkey   = ["Universe"; "Checking"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.check_universes);
       optwrite = (fun b -> Global.set_check_universes b) }
@@ -1777,7 +1744,6 @@ let search_output_name_only = ref false
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "output-name-only search";
       optkey   = ["Search";"Output";"Name";"Only"];
       optread  = (fun () -> !search_output_name_only);
       optwrite = (:=) search_output_name_only }

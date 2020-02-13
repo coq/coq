@@ -53,7 +53,7 @@ let empty =
     uctx_weak_constraints = UPairSet.empty; }
 
 let elaboration_sprop_cumul =
-  Goptions.declare_bool_option_and_ref ~depr:false ~name:"SProp cumulativity during elaboration"
+  Goptions.declare_bool_option_and_ref ~depr:false
     ~key:["Elaboration";"StrictProp";"Cumulativity"] ~value:true
 
 let make ~lbound u =

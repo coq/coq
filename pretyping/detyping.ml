@@ -228,7 +228,6 @@ let force_wildcard () = !wildcard_value
 
 let () = declare_bool_option
           { optdepr  = false;
-            optname  = "forced wildcard";
             optkey   = ["Printing";"Wildcard"];
             optread  = force_wildcard;
             optwrite = (:=) wildcard_value }
@@ -237,7 +236,6 @@ let fast_name_generation = ref false
 
 let () = declare_bool_option {
   optdepr = false;
-  optname = "fast bound name generation algorithm";
   optkey = ["Fast";"Name";"Printing"];
   optread = (fun () -> !fast_name_generation);
   optwrite = (:=) fast_name_generation;
@@ -248,7 +246,6 @@ let synthetize_type () = !synth_type_value
 
 let () = declare_bool_option
           { optdepr  = false;
-            optname  = "pattern matching return type synthesizability";
             optkey   = ["Printing";"Synth"];
             optread  = synthetize_type;
             optwrite = (:=) synth_type_value }
@@ -258,7 +255,6 @@ let reverse_matching () = !reverse_matching_value
 
 let () = declare_bool_option
           { optdepr  = false;
-            optname  = "pattern-matching reversibility";
             optkey   = ["Printing";"Matching"];
             optread  = reverse_matching;
             optwrite = (:=) reverse_matching_value }
@@ -268,7 +264,6 @@ let print_primproj_params () = !print_primproj_params_value
 
 let () = declare_bool_option
           { optdepr  = false;
-            optname  = "printing of primitive projection parameters";
             optkey   = ["Printing";"Primitive";"Projection";"Parameters"];
             optread  = print_primproj_params;
             optwrite = (:=) print_primproj_params_value }
@@ -348,7 +343,6 @@ let print_factorize_match_patterns = ref true
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "factorization of \"match\" patterns in printing";
       optkey   = ["Printing";"Factorizable";"Match";"Patterns"];
       optread  = (fun () -> !print_factorize_match_patterns);
       optwrite = (fun b -> print_factorize_match_patterns := b) }
@@ -358,7 +352,6 @@ let print_allow_match_default_clause = ref true
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "possible use of \"match\" default pattern in printing";
       optkey   = ["Printing";"Allow";"Match";"Default";"Clause"];
       optread  = (fun () -> !print_allow_match_default_clause);
       optwrite = (fun b -> print_allow_match_default_clause := b) }

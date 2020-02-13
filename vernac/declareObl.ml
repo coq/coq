@@ -56,7 +56,7 @@ type program_info =
 
 let get_shrink_obligations =
   Goptions.declare_bool_option_and_ref ~depr:true (* remove in 8.8 *)
-    ~name:"Shrinking of Program obligations" ~key:["Shrink"; "Obligations"]
+    ~key:["Shrink"; "Obligations"]
     ~value:true
 
 (* XXX: Is this the right place for this? *)
@@ -133,7 +133,6 @@ let add_hint local prg cst =
 let get_hide_obligations =
   Goptions.declare_bool_option_and_ref
     ~depr:false
-    ~name:"Hidding of Program obligations"
     ~key:["Hide"; "Obligations"]
     ~value:false
 

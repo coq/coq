@@ -143,7 +143,6 @@ let private_poly_univs =
   let b = ref true in
   let _ = Goptions.(declare_bool_option {
       optdepr = false;
-      optname = "use private polymorphic universes for Qed constants";
       optkey = ["Private";"Polymorphic";"Universes"];
       optread = (fun () -> !b);
       optwrite = ((:=) b);

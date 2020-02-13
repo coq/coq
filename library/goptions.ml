@@ -27,7 +27,6 @@ type option_value =
 (** Summary of an option status *)
 type option_state = {
   opt_depr  : bool;
-  opt_name  : string;
   opt_value : option_value;
 }
 
@@ -190,7 +189,6 @@ module MakeRefTable =
 
 type 'a option_sig = {
   optdepr  : bool;
-  optname  : string;
   optkey   : option_name;
   optread  : unit -> 'a;
   optwrite : 'a -> unit }
@@ -229,7 +227,7 @@ let warn_deprecated_option =
                        strbrk " is deprecated")
 
 let declare_option cast uncast append ?(preprocess = fun x -> x)
-  { optdepr=depr; optname=name; optkey=key; optread=read; optwrite=write } =
+  { optdepr=depr; optkey=key; optread=read; optwrite=write } =
   check_key key;
   let default = read() in
   let change =
@@ -275,7 +273,7 @@ let declare_option cast uncast append ?(preprocess = fun x -> x)
   let cread () = cast (read ()) in
   let cwrite l v = warn (); change l OptSet (uncast v) in
   let cappend l v = warn (); change l OptAppend (uncast v) in
-  value_tab := OptionMap.add key (name, depr, (cread,cwrite,cappend)) !value_tab
+  value_tab := OptionMap.add key (depr, (cread,cwrite,cappend)) !value_tab
 
 let declare_int_option =
   declare_option
@@ -298,13 +296,12 @@ let declare_stringopt_option =
     (function StringOptValue v -> v | _ -> anomaly (Pp.str "async_option."))
     (fun _ _ -> anomaly (Pp.str "async_option."))
 
-let declare_bool_option_and_ref ~depr ~name ~key ~(value:bool) =
+let declare_bool_option_and_ref ~depr ~key ~(value:bool) =
   let r_opt = ref value in
   let optwrite v = r_opt := v in
   let optread () = !r_opt in
   let _ = declare_bool_option {
       optdepr = depr;
-      optname = name;
       optkey = key;
       optread; optwrite
     } in
@@ -323,7 +320,7 @@ let set_option_value ?(locality = OptDefault) check_and_cast key v =
   let opt = try Some (get_option key) with Not_found -> None in
   match opt with
   | None -> warn_unknown_option key
-  | Some (name, depr, (read,write,append)) ->
+  | Some (depr, (read,write,append)) ->
     write locality (check_and_cast v (read ()))
 
 let show_value_type = function
@@ -373,7 +370,7 @@ let set_string_option_append_value_gen ?(locality = OptDefault) key v =
   let opt = try Some (get_option key) with Not_found -> None in
   match opt with
   | None -> warn_unknown_option key
-  | Some (name, depr, (read,write,append)) ->
+  | Some (depr, (read,write,append)) ->
     append locality (check_string_value v (read ()))
 
 let set_int_option_value opt v = set_int_option_value_gen opt v
@@ -382,7 +379,7 @@ let set_string_option_value opt v = set_string_option_value_gen opt v
 
 (* Printing options/tables *)
 
-let msg_option_value (name,v) =
+let msg_option_value v =
   match v with
     | BoolValue true  -> str "on"
     | BoolValue false -> str "off"
@@ -394,19 +391,18 @@ let msg_option_value (name,v) =
 (*     | IdentValue r    -> pr_global_env Id.Set.empty r *)
 
 let print_option_value key =
-  let (name, depr, (read,_,_)) = get_option key in
+  let (depr, (read,_,_)) = get_option key in
   let s = read () in
   match s with
     | BoolValue b ->
-        Feedback.msg_notice (str "The " ++ str name ++ str " mode is " ++ str (if b then "on" else "off"))
+        Feedback.msg_notice (prlist_with_sep spc str key ++ str " is " ++ str (if b then "on" else "off"))
     | _ ->
-        Feedback.msg_notice (str "Current value of " ++ str name ++ str " is " ++ msg_option_value (name, s))
+        Feedback.msg_notice (str "Current value of " ++ prlist_with_sep spc str key ++ str " is " ++ msg_option_value s)
 
 let get_tables () =
   let tables = !value_tab in
-  let fold key (name, depr, (read,_,_)) accu =
+  let fold key (depr, (read,_,_)) accu =
     let state = {
-      opt_name = name;
       opt_depr = depr;
       opt_value = read ();
     } in
@@ -415,15 +411,15 @@ let get_tables () =
   OptionMap.fold fold tables OptionMap.empty
 
 let print_tables () =
-  let print_option key name value depr =
-    let msg = str "  " ++ str (nickname key) ++ str ": " ++ msg_option_value (name, value) in
+  let print_option key value depr =
+    let msg = str "  " ++ str (nickname key) ++ str ": " ++ msg_option_value value in
     if depr then msg ++ str " [DEPRECATED]" ++ fnl ()
     else msg ++ fnl ()
   in
   str "Options:" ++ fnl () ++
     OptionMap.fold
-      (fun key (name, depr, (read,_,_)) p ->
-        p ++ print_option key name (read ()) depr)
+      (fun key (depr, (read,_,_)) p ->
+        p ++ print_option key (read ()) depr)
       !value_tab (mt ()) ++
   str "Tables:" ++ fnl () ++
     List.fold_right

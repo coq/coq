@@ -69,8 +69,7 @@ let ssrhaveNOtcresolution = Summary.ref ~name:"SSR:havenotcresolution" false
 
 let () =
   Goptions.(declare_bool_option
-    { optname  = "have type classes";
-      optkey   = ["SsrHave";"NoTCResolution"];
+    { optkey   = ["SsrHave";"NoTCResolution"];
       optread  = (fun _ -> !ssrhaveNOtcresolution);
       optdepr  = false;
       optwrite = (fun b -> ssrhaveNOtcresolution := b);

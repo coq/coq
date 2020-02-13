@@ -503,7 +503,6 @@ let my_bool_option name initval =
   let access = fun () -> !flag in
   let () = declare_bool_option
     {optdepr = false;
-     optname = "Extraction "^name;
      optkey = ["Extraction"; name];
      optread = access;
      optwrite = (:=) flag }
@@ -575,14 +574,12 @@ let optims () = !opt_flag_ref
 
 let () = declare_bool_option
           {optdepr = false;
-           optname = "Extraction Optimize";
            optkey = ["Extraction"; "Optimize"];
            optread = (fun () -> not (Int.equal !int_flag_ref 0));
            optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
 
 let () = declare_int_option
           { optdepr = false;
-            optname = "Extraction Flag";
             optkey = ["Extraction";"Flag"];
             optread = (fun _ -> Some !int_flag_ref);
             optwrite = (function
@@ -596,7 +593,6 @@ let conservative_types () = !conservative_types_ref
 
 let () = declare_bool_option
   {optdepr = false;
-   optname = "Extraction Conservative Types";
    optkey = ["Extraction"; "Conservative"; "Types"];
    optread = (fun () -> !conservative_types_ref);
    optwrite = (fun b -> conservative_types_ref := b) }
@@ -608,7 +604,6 @@ let file_comment () = !file_comment_ref
 
 let () = declare_string_option
   {optdepr = false;
-   optname = "Extraction File Comment";
    optkey = ["Extraction"; "File"; "Comment"];
    optread = (fun () -> !file_comment_ref);
    optwrite = (fun s -> file_comment_ref := s) }

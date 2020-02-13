@@ -83,8 +83,6 @@ open Goptions
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "do typeclass search avoiding eta-expansions " ^
-                   " in proof terms (expensive)";
       optkey   = ["Typeclasses";"Limit";"Intros"];
       optread  = get_typeclasses_limit_intros;
       optwrite = set_typeclasses_limit_intros; }
@@ -92,7 +90,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "during typeclass resolution, solve instances according to their dependency order";
       optkey   = ["Typeclasses";"Dependency";"Order"];
       optread  = get_typeclasses_dependency_order;
       optwrite = set_typeclasses_dependency_order; }
@@ -100,7 +97,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "use iterative deepening strategy";
       optkey   = ["Typeclasses";"Iterative";"Deepening"];
       optread  = get_typeclasses_iterative_deepening;
       optwrite = set_typeclasses_iterative_deepening; }
@@ -108,7 +104,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "compat";
       optkey   = ["Typeclasses";"Filtered";"Unification"];
       optread  = get_typeclasses_filtered_unification;
       optwrite = set_typeclasses_filtered_unification; }
@@ -116,7 +111,6 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "debug output for typeclasses proof search";
       optkey   = ["Typeclasses";"Debug"];
       optread  = get_typeclasses_debug;
       optwrite = set_typeclasses_debug; }
@@ -124,7 +118,6 @@ let () =
 let _ =
   declare_int_option
     { optdepr  = false;
-      optname  = "verbosity of debug output for typeclasses proof search";
       optkey   = ["Typeclasses";"Debug";"Verbosity"];
       optread  = get_typeclasses_verbose;
       optwrite = set_typeclasses_verbose; }
@@ -132,7 +125,6 @@ let _ =
 let () =
   declare_int_option
     { optdepr  = false;
-      optname  = "depth for typeclasses proof search";
       optkey   = ["Typeclasses";"Depth"];
       optread  = get_typeclasses_depth;
       optwrite = set_typeclasses_depth; }

@@ -179,7 +179,6 @@ let current_behavior = ref Strict.strict
 let () =
   Goptions.(declare_string_option {
     optdepr = false;
-    optname = "bullet behavior";
     optkey = ["Bullet";"Behavior"];
     optread = begin fun () ->
       (!current_behavior).name

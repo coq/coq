@@ -46,7 +46,6 @@ module NamedDecl = Context.Named.Declaration
 let keyed_unification = ref (false)
 let () = Goptions.(declare_bool_option {
   optdepr = false;
-  optname = "Unification is keyed";
   optkey = ["Keyed";"Unification"];
   optread = (fun () -> !keyed_unification);
   optwrite = (fun a -> keyed_unification:=a);
@@ -57,8 +56,6 @@ let is_keyed_unification () = !keyed_unification
 let debug_unification = ref (false)
 let () = Goptions.(declare_bool_option {
   optdepr = false;
-  optname =
-    "Print states sent to tactic unification";
   optkey = ["Debug";"Tactic";"Unification"];
   optread = (fun () -> !debug_unification);
   optwrite = (fun a -> debug_unification:=a);

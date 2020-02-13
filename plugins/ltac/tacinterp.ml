@@ -2082,7 +2082,6 @@ let () =
   let open Goptions in
   declare_bool_option
     { optdepr  = false;
-      optname  = "Ltac debug";
       optkey   = ["Ltac";"Debug"];
       optread  = (fun () -> get_debug () != Tactic_debug.DebugOff);
       optwrite = vernac_debug }
@@ -2091,7 +2090,6 @@ let () =
   let open Goptions in
   declare_bool_option
     { optdepr  = false;
-      optname  = "Ltac Backtrace";
       optkey   = ["Ltac"; "Backtrace"];
       optread  = (fun () -> !log_trace);
       optwrite = (fun b -> log_trace := b) }

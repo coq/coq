@@ -194,7 +194,6 @@ let without_specific_symbols l =
 let get_record_print =
   Goptions.declare_bool_option_and_ref
     ~depr:false
-    ~name:"record printing"
     ~key:["Printing";"Records"]
     ~value:true
 

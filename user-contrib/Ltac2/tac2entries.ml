@@ -824,7 +824,6 @@ let register_struct ?local str = match str with
 
 let _ = Goptions.declare_bool_option {
   Goptions.optdepr = false;
-  Goptions.optname = "print Ltac2 backtrace";
   Goptions.optkey = ["Ltac2"; "Backtrace"];
   Goptions.optread = (fun () -> !Tac2interp.print_ltac2_backtrace);
   Goptions.optwrite = (fun b -> Tac2interp.print_ltac2_backtrace := b);

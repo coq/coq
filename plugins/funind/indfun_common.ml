@@ -320,7 +320,6 @@ open Goptions
 let functional_induction_rewrite_dependent_proofs_sig =
   {
     optdepr = false;
-    optname = "Functional Induction Rewrite Dependent";
     optkey =  ["Functional";"Induction";"Rewrite";"Dependent"];
     optread = (fun () -> !functional_induction_rewrite_dependent_proofs);
     optwrite = (fun b -> functional_induction_rewrite_dependent_proofs := b)
@@ -332,7 +331,6 @@ let do_rewrite_dependent () = !functional_induction_rewrite_dependent_proofs = t
 let function_debug_sig =
   {
     optdepr = false;
-    optname = "Function debug";
     optkey =  ["Function_debug"];
     optread = (fun () -> !function_debug);
     optwrite = (fun b -> function_debug := b)
@@ -416,7 +414,6 @@ let is_strict_tcc () = !strict_tcc
 let strict_tcc_sig =
   {
     optdepr = false;
-    optname = "Raw Function Tcc";
     optkey =  ["Function_raw_tcc"];
     optread = (fun () -> !strict_tcc);
     optwrite = (fun b -> strict_tcc := b)

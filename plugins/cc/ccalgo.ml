@@ -33,7 +33,6 @@ let debug x =
 let () =
   let gdopt=
     { optdepr=false;
-      optname="Congruence Verbose";
       optkey=["Congruence";"Verbose"];
       optread=(fun ()-> !cc_verbose);
       optwrite=(fun b -> cc_verbose := b)}

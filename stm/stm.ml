@@ -2849,7 +2849,6 @@ let process_back_meta_command ~newtip ~head oid aast =
 let get_allow_nested_proofs =
   Goptions.declare_bool_option_and_ref
     ~depr:false
-    ~name:"Nested Proofs Allowed"
     ~key:Vernac_classifier.stm_allow_nested_proofs_option_name
     ~value:false
 

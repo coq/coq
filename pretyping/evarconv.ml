@@ -50,8 +50,6 @@ let default_flags env =
 let debug_unification = ref (false)
 let () = Goptions.(declare_bool_option {
   optdepr = false;
-  optname =
-    "Print states sent to Evarconv unification";
   optkey = ["Debug";"Unification"];
   optread = (fun () -> !debug_unification);
   optwrite = (fun a -> debug_unification:=a);
@@ -60,8 +58,6 @@ let () = Goptions.(declare_bool_option {
 let debug_ho_unification = ref (false)
 let () = Goptions.(declare_bool_option {
   optdepr = false;
-  optname =
-    "Print higher-order unification debug information";
   optkey = ["Debug";"HO";"Unification"];
   optread = (fun () -> !debug_ho_unification);
   optwrite = (fun a -> debug_ho_unification:=a);

@@ -42,7 +42,6 @@ let should_auto_template =
   let auto = ref true in
   let () = declare_bool_option
       { optdepr  = false;
-        optname  = "Automatically make some inductive types template polymorphic";
         optkey   = ["Auto";"Template";"Polymorphism"];
         optread  = (fun () -> !auto);
         optwrite = (fun b -> auto := b); }

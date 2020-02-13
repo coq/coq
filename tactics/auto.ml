@@ -177,7 +177,6 @@ let global_info_auto = ref false
 let add_option ls refe =
   Goptions.(declare_bool_option
     { optdepr  = false;
-      optname  = String.concat " " ls;
       optkey   = ls;
       optread  = (fun () -> !refe);
       optwrite = (:=) refe })

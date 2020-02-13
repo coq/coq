@@ -68,7 +68,6 @@ open Goptions
 let () =
   declare_bool_option
     { optdepr  = false;
-      optname  = "unfolding of not in intuition";
       optkey   = ["Intuition";"Negation";"Unfolding"];
       optread  = (fun () -> !negation_unfolding);
       optwrite = (:=) negation_unfolding }

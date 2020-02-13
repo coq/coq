@@ -1615,7 +1615,6 @@ let is_non_zero_pat c = match c with
 
 let get_asymmetric_patterns = Goptions.declare_bool_option_and_ref
     ~depr:false
-    ~name:"no parameters in constructors"
     ~key:["Asymmetric";"Patterns"]
     ~value:false
 

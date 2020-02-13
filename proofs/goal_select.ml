@@ -56,7 +56,6 @@ let parse_goal_selector = function
 let () = let open Goptions in
   declare_string_option
     { optdepr = false;
-      optname = "default goal selector" ;
       optkey  = ["Default";"Goal";"Selector"] ;
       optread = begin fun () ->
         Pp.string_of_ppcmds

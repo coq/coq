@@ -216,7 +216,6 @@ let it_mkLambda_or_LetIn_name env sigma b hyps =
 let get_mangle_names =
   Goptions.declare_bool_option_and_ref
     ~depr:false
-    ~name:"mangle auto-generated names"
     ~key:["Mangle";"Names"]
     ~value:false
 
@@ -227,7 +226,6 @@ let set_prefix x = mangle_names_prefix := forget_subscript x
 let () = Goptions.(
     declare_string_option
       { optdepr  = false;
-        optname  = "mangled names prefix";
         optkey   = ["Mangle";"Names";"Prefix"];
         optread  = (fun () -> Id.to_string !mangle_names_prefix);
         optwrite = begin fun x ->
