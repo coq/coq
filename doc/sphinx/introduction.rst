@@ -1,107 +1,68 @@
-This document is the Reference Manual of the |Coq| proof assistant.
-To start using Coq, it is advised to first read a tutorial.
-Links to several tutorials can be found at
-https://coq.inria.fr/documentation and
-https://github.com/coq/coq/wiki#coq-tutorials
+This is the reference manual of |Coq|.  Coq is an interactive theorem
+prover.  It lets you formalize mathematical concepts and then helps
+you interactively generate machine-checked proofs of theorems.
+Machine checking gives users much more confidence that the proofs are
+correct compared to human-generated and -checked proofs.  Coq has been
+used in a number of flagship verification projects, including the
+`CompCert verified C compiler <http://compcert.inria.fr/>`_, and has
+served to verify the proof of the `four color theorem
+<https://github.com/math-comp/fourcolor>`_ (among many other
+mathematical formalizations).
 
-The |Coq| system is designed to develop mathematical proofs, and
-especially to write formal specifications, programs and to verify that
-programs are correct with respect to their specifications. It provides a
-specification language named |Gallina|. Terms of |Gallina| can represent
-programs as well as properties of these programs and proofs of these
-properties. Using the so-called *Curry-Howard isomorphism*, programs,
-properties and proofs are formalized in the same language called
-*Calculus of Inductive Constructions*, that is a
-:math:`\lambda`-calculus with a rich type system. All logical judgments
-in |Coq| are typing judgments. The very heart of the |Coq| system is the
-type checking algorithm that checks the correctness of proofs, in other
-words that checks that a program complies to its specification. |Coq| also
-provides an interactive proof assistant to build proofs using specific
-programs called *tactics*.
+Users generate proofs by entering a series of tactics that constitute
+steps in the proof.  There are many built-in tactics, some of which
+are elementary, while others implement complex decision procedures
+(such as :tacn:`lia`, a decision procedure for linear integer
+arithmetic).  :ref:`Ltac <ltac>` and its planned replacement,
+:ref:`Ltac2 <ltac2>`, provide languages to define new tactics by
+combining existing tactics with looping and conditional constructs.
+These permit automation of large parts of proofs and sometimes entire
+proofs.  Furthermore, users can add novel tactics or functionality by
+creating Coq plugins using OCaml.
 
-All services of the |Coq| proof assistant are accessible by interpretation
-of a command language called *the vernacular*.
+The Coq kernel, a small part of Coq, does the final verification that
+the tactic-generated proof is valid.  Usually the tactic-generated
+proof is indeed correct, but delegating proof verification to the
+kernel means that even if a tactic is buggy, it won't be able to
+introduce an incorrect proof into the system.
 
-Coq has an interactive mode in which commands are interpreted as the
-user types them in from the keyboard and a compiled mode where commands
-are processed from a file.
+Finally, Coq also supports extraction of verified programs to
+programming languages such as OCaml and Haskell.  This provides a way
+of executing Coq code efficiently and can be used to create verified
+software libraries.
 
--  In interactive mode, users can develop their theories and proofs step by
-   step, and query the system for available theorems and definitions. The
-   interactive mode is generally run with the help of an IDE, such
-   as CoqIDE, documented in :ref:`coqintegrateddevelopmentenvironment`,
-   Emacs with Proof-General :cite:`Asp00` [#PG]_,
-   or jsCoq to run Coq in your browser (see https://github.com/ejgallego/jscoq).
-   The `coqtop` read-eval-print-loop can also be used directly, for debugging
-   purposes.
+To learn Coq, beginners are advised to first start with a tutorial /
+book.  Several such tutorials / books are listed at
+https://coq.inria.fr/documentation.
 
--  The compiled mode acts as a proof checker taking a file containing a
-   whole development in order to ensure its correctness. Moreover,
-   |Coq|’s compiler provides an output file containing a compact
-   representation of its input. The compiled mode is run with the `coqc`
-   command.
+This manual is organized in three main parts, plus an appendix:
 
-.. seealso:: :ref:`thecoqcommands`.
+- **The first part presents the specification language of Coq**, that
+  allows to define programs and state mathematical theorems.
+  :ref:`core-language` presents the language that the kernel of Coq
+  understands.  :ref:`extensions` presents the richer language, with
+  notations, implicits, etc. that a user can use and which is
+  translated down to the language of the kernel by means of an
+  "elaboration process".
 
-How to read this book
----------------------
+- **The second part presents the interactive proof mode**, the central
+  feature of Coq.  :ref:`writing-proofs` introduces this interactive
+  proof mode and the available proof languages.
+  :ref:`automatic-tactics` presents some more advanced tactics, while
+  :ref:`writing-tactics` is about the languages that allow a user to
+  combine tactics together and develop new ones.
 
-This is a Reference Manual, so it is not intended for continuous reading.
-We recommend using the various indexes to quickly locate the documentation
-you are looking for. There is a global index, and a number of specific indexes
-for tactics, vernacular commands, and error messages and warnings.
-Nonetheless, the manual has some structure that is explained below.
+- **The third part shows how to use Coq in practice.**
+  :ref:`libraries` presents some of the essential reusable blocks from
+  the ecosystem and some particularly important extensions such as the
+  program extraction mechanism.  :ref:`tools` documents important
+  tools that a user needs to build a Coq project.
 
--  The first part describes the specification language, |Gallina|.
-   Chapters :ref:`gallinaspecificationlanguage` and :ref:`extensionsofgallina` describe the concrete
-   syntax as well as the meaning of programs, theorems and proofs in the
-   Calculus of Inductive Constructions. Chapter :ref:`thecoqlibrary` describes the
-   standard library of |Coq|. Chapter :ref:`calculusofinductiveconstructions` is a mathematical description
-   of the formalism. Chapter :ref:`themodulesystem` describes the module
-   system.
+- In the appendix, :ref:`history-and-changes` presents the history of
+  Coq and changes in recent releases.  This is an important reference
+  if you upgrade the version of Coq that you use.  The various
+  :ref:`indexes <indexes>` are very useful to **quickly browse the
+  manual and find what you are looking for.** They are often the main
+  entry point to the manual.
 
--  The second part describes the proof engine. It is divided into several
-   chapters. Chapter :ref:`vernacularcommands` presents all commands (we
-   call them *vernacular commands*) that are not directly related to
-   interactive proving: requests to the environment, complete or partial
-   evaluation, loading and compiling files. How to start and stop
-   proofs, do multiple proofs in parallel is explained in
-   Chapter :ref:`proofhandling`. In Chapter :ref:`tactics`, all commands that
-   realize one or more steps of the proof are presented: we call them
-   *tactics*. The legacy language to combine these tactics into complex proof
-   strategies is given in Chapter :ref:`ltac`. The currently experimental
-   language that will eventually replace Ltac is presented in
-   Chapter :ref:`ltac2`. Examples of tactics
-   are described in Chapter :ref:`detailedexamplesoftactics`.
-   Finally, the |SSR| proof language is presented in
-   Chapter :ref:`thessreflectprooflanguage`.
-
--  The third part describes how to extend the syntax of |Coq| in
-   Chapter :ref:`syntaxextensionsandinterpretationscopes` and how to define
-   new induction principles in Chapter :ref:`proofschemes`.
-
--  In the fourth part more practical tools are documented. First in
-   Chapter :ref:`thecoqcommands`, the usage of `coqc` (batch mode) and
-   `coqtop` (interactive mode) with their options is described. Then,
-   in Chapter :ref:`utilities`, various utilities that come with the
-   |Coq| distribution are presented. Finally, Chapter :ref:`coqintegrateddevelopmentenvironment` 
-   describes CoqIDE.
-
--  The fifth part documents a number of advanced features, including coercions,
-   canonical structures, typeclasses, program extraction, and specialized
-   solvers and tactics. See the table of contents for a complete list.
-
-List of additional documentation
---------------------------------
-
-This manual does not contain all the documentation the user may need
-about |Coq|. Various informations can be found in the following documents:
-
-Installation
-    A text file `INSTALL` that comes with the sources explains how to
-    install |Coq|.
-
-The |Coq| standard library
-    A commented version of sources of the |Coq| standard library
-    (including only the specifications, the proofs are removed) is
-    available at https://coq.inria.fr/stdlib/.
+The full table of contents is presented below:
