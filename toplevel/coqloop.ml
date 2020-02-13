@@ -371,100 +371,104 @@ let exit_on_error =
   declare_bool_option_and_ref ~depr:false ~name:"coqtop-exit-on-error" ~key:["Coqtop";"Exit";"On";"Error"]
     ~value:false
 
-let rec vernac_loop ~state =
-  let open CAst in
+(* XXX: This is duplicated with Vernacentries.show_proof , at some
+   point we should consolidate the code *)
+let show_proof_diff_to_pp pstate =
+  let p = Option.get pstate in
+  let sigma, env = Pfedit.get_proof_context p in
+  let pprf = Proof.partial_proof p in
+  Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
+
+let show_proof_diff_cmd ~state removed =
+  let open Vernac.State in
+  try
+    let n_pp = show_proof_diff_to_pp state.proof in
+    if true (*Proof_diffs.show_diffs ()*) then
+      let doc = state.doc in
+      let oproof = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
+      try
+        let o_pp = show_proof_diff_to_pp oproof in
+        let tokenize_string = Proof_diffs.tokenize_string in
+        let show_removed = Some removed in
+        Pp_diff.diff_pp_combined ~tokenize_string ?show_removed o_pp n_pp
+      with
+      | Pfedit.NoSuchGoal
+      | Option.IsNone -> n_pp
+      | Pp_diff.Diff_Failure msg -> begin
+          (* todo: print the unparsable string (if we know it) *)
+          Feedback.msg_warning Pp.(str ("Diff failure: " ^ msg) ++ cut()
+                                   ++ str "Showing results without diff highlighting" );
+          n_pp
+        end
+    else
+      n_pp
+  with
+  | Pfedit.NoSuchGoal
+  | Option.IsNone ->
+    CErrors.user_err (str "No goals to show.")
+
+let process_toplevel_command ~state stm =
   let open Vernac.State in
   let open G_toplevel in
-  loop_flush_all ();
-  top_stderr (fnl());
-  if !print_emacs then top_stderr (str (top_buffer.prompt state.doc));
-  resynch_buffer top_buffer;
-  (* execute one command *)
-  try
-    let input = top_buffer.tokens in
-    match read_sentence ~state input with
-    | Some (VernacBackTo bid) ->
-      let bid = Stateid.of_int bid in
-      let doc, res = Stm.edit_at ~doc:state.doc bid in
-      assert (res = `NewTip);
-      let state = { state with doc; sid = bid } in
-      vernac_loop ~state
+  match stm with
+  (* Usually handled in the caller *)
+  | VernacDrop ->
+    state
 
-    | Some VernacQuit ->
-      exit 0
+  | VernacBackTo bid ->
+    let bid = Stateid.of_int bid in
+    let doc, res = Stm.edit_at ~doc:state.doc bid in
+    assert (res = `NewTip);
+    { state with doc; sid = bid }
 
-    | Some VernacDrop ->
-      if Mltop.is_ocaml_top()
-      then (drop_last_doc := Some state; state)
-      else (Feedback.msg_warning (str "There is no ML toplevel."); vernac_loop ~state)
+  | VernacQuit ->
+    exit 0
 
-    | Some VernacControl { loc; v=c } ->
-      let nstate = Vernac.process_expr ~state (make ?loc c) in
-      top_goal_print ~doc:state.doc c state.proof nstate.proof;
-      vernac_loop ~state:nstate
+  | VernacControl { CAst.loc; v=c } ->
+    let nstate = Vernac.process_expr ~state (CAst.make ?loc c) in
+    top_goal_print ~doc:state.doc c state.proof nstate.proof;
+    nstate
 
-    | Some (VernacShowGoal {gid; sid}) ->
-      let proof = Stm.get_proof ~doc:state.doc (Stateid.of_int sid) in
-      let goal = Printer.pr_goal_emacs ~proof gid sid in
-      let evars =
-        match proof with
-        | None -> mt()
-        | Some p ->
-          let gl = (Evar.unsafe_of_int gid) in
-          let { Proof.sigma } = Proof.data p in
-          try Printer.print_dependent_evars (Some gl) sigma [ gl ]
-          with Not_found -> mt()
-      in
-      Feedback.msg_notice (v 0 (goal ++ evars));
-      vernac_loop ~state
+  | VernacShowGoal { gid; sid } ->
+    let proof = Stm.get_proof ~doc:state.doc (Stateid.of_int sid) in
+    let goal = Printer.pr_goal_emacs ~proof gid sid in
+    let evars =
+      match proof with
+      | None -> mt()
+      | Some p ->
+        let gl = (Evar.unsafe_of_int gid) in
+        let { Proof.sigma } = Proof.data p in
+        try Printer.print_dependent_evars (Some gl) sigma [ gl ]
+        with Not_found -> mt()
+    in
+    Feedback.msg_notice (v 0 (goal ++ evars));
+    state
 
-    | Some VernacShowProofDiffs removed ->
-      (* extension of Vernacentries.show_proof *)
-      let to_pp pstate =
-        let p = Option.get pstate in
-        let sigma, env = Pfedit.get_proof_context p in
-        let pprf = Proof.partial_proof p in
-        Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
-        (* We print nothing if there are no goals left *)
-      in
+  | VernacShowProofDiffs removed ->
+    (* We print nothing if there are no goals left *)
+    if not (Proof_diffs.color_enabled ()) then
+      CErrors.user_err Pp.(str "Show Proof Diffs requires setting the \"-color\" command line argument to \"on\" or \"auto\".")
+    else
+      let out = show_proof_diff_cmd ~state removed in
+      Feedback.msg_notice out;
+    state
 
-      if not (Proof_diffs.color_enabled ()) then
-        CErrors.user_err Pp.(str "Show Proof Diffs requires setting the \"-color\" command line argument to \"on\" or \"auto\".")
-      else begin
-        let out =
-          try
-            let n_pp = to_pp state.proof in
-            if true (*Proof_diffs.show_diffs ()*) then
-              let doc = state.doc in
-              let oproof = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
-              try
-                let o_pp = to_pp oproof in
-                let tokenize_string = Proof_diffs.tokenize_string in
-                let show_removed = Some removed in
-                Pp_diff.diff_pp_combined ~tokenize_string ?show_removed o_pp n_pp
-              with
-              | Pfedit.NoSuchGoal
-              | Option.IsNone -> n_pp
-              | Pp_diff.Diff_Failure msg -> begin
-                (* todo: print the unparsable string (if we know it) *)
-                Feedback.msg_warning Pp.(str ("Diff failure: " ^ msg) ++ cut()
-                    ++ str "Showing results without diff highlighting" );
-                n_pp
-                end
-            else
-              n_pp
-          with
-          | Pfedit.NoSuchGoal
-          | Option.IsNone ->
-            CErrors.user_err (str "No goals to show.")
-        in
-        Feedback.msg_notice out;
-      end;
-      vernac_loop ~state
+(* We return a new state and true if we got a `Drop` command  *)
+let read_and_execute_base ~state =
+  let input = top_buffer.tokens in
+  match read_sentence ~state input with
+  | Some G_toplevel.VernacDrop ->
+    if Mltop.is_ocaml_top()
+    then (drop_last_doc := Some state; state, true)
+    else (Feedback.msg_warning (str "There is no ML toplevel."); state, false)
+  | Some stm ->
+    process_toplevel_command ~state stm, false
+  (* End of file *)
+  | None ->
+    top_stderr (fnl ()); exit 0
 
-    | None ->
-      top_stderr (fnl ()); exit 0
-
+let read_and_execute ~state =
+  try read_and_execute_base ~state
   with
   (* Exception printing should be done by the feedback listener,
      however this is not yet ready so we rely on the exception for
@@ -473,7 +477,7 @@ let rec vernac_loop ~state =
     (* the parser doesn't like nonblocking mode, cf #10918 *)
     let msg =
       Pp.(strbrk "Coqtop needs the standard input to be in blocking mode." ++ spc()
-          ++ str "One way of clearing the non-blocking flag is through python:" ++ fnl()
+          ++ str "One way of clearing the non-blocking flag is through Python:" ++ fnl()
           ++ str "  import os" ++ fnl()
           ++ str "  os.set_blocking(0, True)")
     in
@@ -485,21 +489,17 @@ let rec vernac_loop ~state =
     let msg = CErrors.iprint (e, info) in
     TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer;
     if exit_on_error () then exit 1;
-    vernac_loop ~state
+    state, false
 
-let rec loop ~state =
+(* This function will only return on [Drop], careful to keep it tail-recursive *)
+let rec vernac_loop ~state =
   let open Vernac.State in
-  Sys.catch_break true;
-  try
-    reset_input_buffer state.doc stdin top_buffer;
-    vernac_loop ~state
-  with
-    | any ->
-      top_stderr
-        (hov 0 (str "Anomaly: main loop exited with exception:" ++ spc () ++
-                str (Printexc.to_string any)) ++ spc () ++
-         hov 0 (str "Please report at " ++ str Coq_config.wwwbugtracker ++ str "."));
-      loop ~state
+  loop_flush_all ();
+  top_stderr (fnl());
+  if !print_emacs then top_stderr (str (top_buffer.prompt state.doc));
+  resynch_buffer top_buffer;
+  let state, drop = read_and_execute ~state in
+  if drop then state else vernac_loop ~state
 
 (* Default toplevel loop *)
 
@@ -511,7 +511,11 @@ let loop ~opts ~state =
   print_emacs := opts.config.print_emacs;
   (* We initialize the console only if we run the toploop_run *)
   let tl_feed = Feedback.add_feeder coqloop_feed in
-  let _ = loop ~state in
+  (* Initialize buffer *)
+  Sys.catch_break true;
+  reset_input_buffer state.Vernac.State.doc stdin top_buffer;
+  (* Call the main loop *)
+  let _ : Vernac.State.t = vernac_loop ~state in
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
   Mltop.ocaml_toploop();
