@@ -11,7 +11,6 @@
 open CErrors
 open Util
 open Pp
-open Libobject
 open System
 
 (* Code to hook Coq into the ML toplevel -- depends on having the
@@ -304,23 +303,38 @@ let _ =
 
 (* Liboject entries of declared ML Modules *)
 
+(* Digest of module used to compile the file *)
+type ml_module_digest =
+  | NoDigest
+  | AnyDigest of Digest.t             (* digest of any used cma / cmxa *)
+
 type ml_module_object = {
   mlocal : Vernacexpr.locality_flag;
-  mnames : string list
+  mnames : (string * ml_module_digest) list
 }
 
+let add_module_digest m =
+  try
+    let file = file_of_name m in
+    let path, file = System.where_in_path ~warn:false !coq_mlpath_copy file in
+    m, AnyDigest (Digest.file file)
+  with
+  | Not_found ->
+    m, NoDigest
+
 let cache_ml_objects (_,{mnames=mnames}) =
-  let iter obj = trigger_ml_object true true true obj in
+  let iter (obj, _) = trigger_ml_object true true true obj in
   List.iter iter mnames
 
 let load_ml_objects _ (_,{mnames=mnames}) =
-  let iter obj = trigger_ml_object true false true obj in
+  let iter (obj, _) = trigger_ml_object true false true obj in
   List.iter iter mnames
 
 let classify_ml_objects ({mlocal=mlocal} as o) =
-  if mlocal then Dispose else Substitute o
+  if mlocal then Libobject.Dispose else Libobject.Substitute o
 
-let inMLModule : ml_module_object -> obj =
+let inMLModule : ml_module_object -> Libobject.obj =
+  let open Libobject in
   declare_object
     {(default_object "ML-MODULE") with
       cache_function = cache_ml_objects;
@@ -330,6 +344,7 @@ let inMLModule : ml_module_object -> obj =
 
 let declare_ml_modules local l =
   let l = List.map mod_of_name l in
+  let l = List.map add_module_digest l in
   Lib.add_anonymous_leaf ~cache_first:false (inMLModule {mlocal=local; mnames=l})
 
 let print_ml_path () =
