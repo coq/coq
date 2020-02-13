@@ -198,7 +198,14 @@ let relevance_of_inductive env ind =
   let _, mip = lookup_mind_specif env ind in
   mip.mind_relevance
 
-let type_of_inductive_gen ?(polyprop=true) env ((_,mip),u) paramtyps =
+let check_instance mib u =
+  if not (match mib.mind_universes with
+      | Monomorphic _ -> Instance.is_empty u
+      | Polymorphic uctx -> Instance.length u = AUContext.size uctx)
+  then CErrors.anomaly Pp.(str "bad instance length on mutind.")
+
+let type_of_inductive_gen ?(polyprop=true) env ((mib,mip),u) paramtyps =
+  check_instance mib u;
   match mip.mind_arity with
   | RegularArity a -> subst_instance_constr u a.mind_user_arity
   | TemplateArity ar ->
@@ -244,6 +251,7 @@ let max_inductive_sort =
 (* Type of a constructor *)
 
 let type_of_constructor (cstr, u) (mib,mip) =
+  check_instance mib u;
   let ind = inductive_of_constructor cstr in
   let specif = mip.mind_user_lc in
   let i = index_of_constructor cstr in
