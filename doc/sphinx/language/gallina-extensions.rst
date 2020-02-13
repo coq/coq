@@ -1583,7 +1583,7 @@ An implicit argument is considered trailing when all following arguments are dec
 implicit. Trailing implicit arguments cannot be declared non maximally inserted,
 otherwise they would never be inserted.
 
-.. exn:: Argument @ident is a trailing implicit, so it can't be declared non maximal. Please use %{ %} instead of [ ].
+.. exn:: Argument @name is a trailing implicit, so it can't be declared non maximal. Please use %{ %} instead of [ ].
 
    For instance:
 
@@ -1713,11 +1713,11 @@ Declaring Implicit Arguments
 
 
 
-.. cmd:: Arguments @qualid {* {| [ @ident ] | { @ident } | @ident } }
+.. cmd:: Arguments @qualid {* {| [ @name ] | { @name } | @name } }
    :name: Arguments (implicits)
 
    This command is used to set implicit arguments *a posteriori*,
-   where the list of possibly bracketed :token:`ident` is a prefix of the list of
+   where the list of possibly bracketed :token:`name` is a prefix of the list of
    arguments of :token:`qualid` where the ones to be declared implicit are
    surrounded by square brackets and the ones to be declared as maximally
    inserted implicits are surrounded by curly braces.
@@ -1731,20 +1731,20 @@ Declaring Implicit Arguments
 
    This command clears implicit arguments.
 
-.. cmdv:: Global Arguments @qualid {* {| [ @ident ] | { @ident } | @ident } }
+.. cmdv:: Global Arguments @qualid {* {| [ @name ] | { @name } | @name } }
 
    This command is used to recompute the implicit arguments of
    :token:`qualid` after ending of the current section if any, enforcing the
    implicit arguments known from inside the section to be the ones
    declared by the command.
 
-.. cmdv:: Local Arguments @qualid {* {| [ @ident ] | { @ident } | @ident } }
+.. cmdv:: Local Arguments @qualid {* {| [ @name ] | { @name } | @name } }
 
    When in a module, tell not to activate the
    implicit arguments of :token:`qualid` declared by this command to contexts that
    require the module.
 
-.. cmdv:: {? {| Global | Local } } Arguments @qualid {*, {+ {| [ @ident ] | { @ident } | @ident } } }
+.. cmdv:: {? {| Global | Local } } Arguments @qualid {*, {+ {| [ @name ] | { @name } | @name } } }
 
    For names of constants, inductive types,
    constructors, lemmas which can only be applied to a fixed number of

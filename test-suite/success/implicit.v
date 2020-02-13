@@ -169,3 +169,16 @@ Variable eq0le0' : forall (n : nat) {x : n = 0}, n <= 0.
 Axiom eq0le0'' : forall (n : nat) {x : n = 0}, n <= 0.
 Definition eq0le0''' : forall (n : nat) {x : n = 0}, n <= 0. Admitted.
 Fail Axiom eq0le0'''' : forall [n : nat] {x : n = 0}, n <= 0.
+
+Module TestUnnamedImplicit.
+
+Axiom foo : forall A, A -> A.
+
+Arguments foo {A} {_}.
+Check foo (arg_2:=true) : bool.
+Check foo : bool.
+
+Arguments foo {A} {x}.
+Check foo (x:=true) : bool.
+
+End TestUnnamedImplicit.
