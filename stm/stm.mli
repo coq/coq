@@ -71,7 +71,8 @@ type stm_init_options = {
 
   (* Initial load path in scope for the document. Usually extracted
      from -R options / _CoqProject *)
-  iload_path   : Loadpath.coq_path list;
+  ml_load_path   : CUnix.physical_path list;
+  vo_load_path   : Loadpath.vo_path list;
 
   (* Require [require_libs] before the initial state is
      ready. Parameters follow [Library], that is to say,

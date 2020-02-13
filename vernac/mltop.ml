@@ -128,11 +128,6 @@ let add_ml_dir s =
     | WithoutTop when has_dynlink -> keep_copy_mlpath s
     | _ -> ()
 
-(* For Rec Add ML Path (-R) *)
-let add_ml_dir ~recursive unix_path =
-  let dirs = if recursive then (all_subdirs ~unix_path) else [unix_path,[]] in
-  List.iter (fun (lp,_) -> add_ml_dir lp) dirs
-
 (* convertit un nom quelconque en nom de fichier ou de module *)
 let mod_of_name name =
     if Filename.check_suffix name ".cmo" then

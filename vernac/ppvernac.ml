@@ -1016,22 +1016,18 @@ let string_of_definition_object_kind = let open Decls in function
         return (keyword "Existential" ++ spc () ++ int i ++ pr_lconstrarg c)
 
       (* Auxiliary file and library management *)
-      | VernacAddLoadPath (fl,s,d) ->
+      | VernacAddLoadPath (fl,s,dir) ->
         return (
           hov 2
             (keyword "Add" ++
-               (if fl then spc () ++ keyword "Rec" ++ spc () else spc()) ++
-               keyword "LoadPath" ++ spc() ++ qs s ++
-               (match d with
-                 | None -> mt()
-                 | Some dir -> spc() ++ keyword "as" ++ spc() ++ DirPath.print dir))
-        )
+             (if fl then spc () ++ keyword "Rec" ++ spc () else spc()) ++
+             keyword "LoadPath" ++ spc() ++ qs s ++
+             spc() ++ keyword "as" ++ spc() ++ DirPath.print dir))
       | VernacRemoveLoadPath s ->
         return (keyword "Remove LoadPath" ++ qs s)
-      | VernacAddMLPath (fl,s) ->
+      | VernacAddMLPath (s) ->
         return (
           keyword "Add"
-          ++ (if fl then spc () ++ keyword "Rec" ++ spc () else spc())
           ++ keyword "ML Path"
           ++ qs s
         )

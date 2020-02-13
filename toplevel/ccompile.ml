@@ -104,7 +104,7 @@ let compile opts copts ~echo ~f_in ~f_out =
                         |> prlist_with_sep pr_comma Names.Id.print)
                     ++ str ".")
   in
-  let iload_path = build_load_path opts in
+  let ml_load_path, vo_load_path = build_load_path opts in
   let require_libs = require_libs opts in
   let stm_options = opts.config.stm_flags in
   let output_native_objects = match opts.config.native_compiler with
@@ -129,8 +129,8 @@ let compile opts copts ~echo ~f_in ~f_out =
   | BuildVo | BuildVok ->
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
-          Stm.{ doc_type = VoDoc long_f_dot_out;
-                iload_path; require_libs; stm_options;
+          Stm.{ doc_type = VoDoc long_f_dot_out; ml_load_path;
+                vo_load_path; require_libs; stm_options;
               } in
       let state = { doc; sid; proof = None; time = opts.config.time } in
       let state = load_init_vernaculars opts ~state in
@@ -181,8 +181,8 @@ let compile opts copts ~echo ~f_in ~f_out =
 
       let doc, sid = Topfmt.(in_phase ~phase:LoadingPrelude)
           Stm.new_doc
-          Stm.{ doc_type = VioDoc long_f_dot_out;
-                iload_path; require_libs; stm_options;
+          Stm.{ doc_type = VioDoc long_f_dot_out; ml_load_path;
+                vo_load_path; require_libs; stm_options;
               } in
 
       let state = { doc; sid; proof = None; time = opts.config.time } in
@@ -252,8 +252,9 @@ let do_vio opts copts =
   (* We must initialize the loadpath here as the vio scheduling
      process happens outside of the STM *)
   if copts.vio_files <> [] || copts.vio_tasks <> [] then
-    let iload_path = build_load_path opts in
-    List.iter Loadpath.add_coq_path iload_path;
+    let ml_lp, vo_lp = build_load_path opts in
+    List.iter Mltop.add_ml_dir ml_lp;
+    List.iter Loadpath.add_vo_path vo_lp;
 
   (* Vio compile pass *)
   if copts.vio_files <> [] then schedule_vio copts;

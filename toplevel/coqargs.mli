@@ -46,8 +46,8 @@ type coqargs_pre = {
   load_init   : bool;
   load_rcfile : bool;
 
-  ml_includes : Loadpath.coq_path list;
-  vo_includes : Loadpath.coq_path list;
+  ml_includes : CUnix.physical_path list;
+  vo_includes : Loadpath.vo_path list;
   vo_requires : (string * string option * bool option) list;
   (* None = No Import; Some false = Import; Some true = Export *)
 
@@ -83,4 +83,4 @@ val parse_args : help:Usage.specific_usage -> init:t -> string list -> t * strin
 val error_wrong_arg : string -> unit
 
 val require_libs : t -> (string * string option * bool option) list
-val build_load_path : t -> Loadpath.coq_path list
+val build_load_path : t -> CUnix.physical_path list * Loadpath.vo_path list

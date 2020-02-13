@@ -327,11 +327,7 @@ let main =
     { xml_printer = op; xml_parser = ip } in
   let init () =
     match base_eval_call ~print:false (Xmlprotocol.init None) coq with
-    | Interface.Good id ->
-        let dir = Filename.dirname input_file in
-        let phrase = Printf.sprintf "Add LoadPath \"%s\". " dir in
-        let eid, tip = add_sentence ~name:"initial" phrase in
-        after_add (base_eval_call (Xmlprotocol.add ((phrase,eid),(tip,true))) coq)
+    | Interface.Good id -> ()
     | Interface.Fail _ -> error "init call failed" in
   let finish () =
     match base_eval_call (Xmlprotocol.status true) coq with
