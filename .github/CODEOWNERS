@@ -1,14 +1,11 @@
-# This file describes the maintainers for the main components. See
-# `dev/doc/MERGING.md`.
+# This file associates maintainer teams to each component.
+# See CONTRIBUTING.md
 
 ########## Contributing process ##########
 
 /.github/                   @coq/contributing-process-maintainers
 
 /CONTRIBUTING.md            @coq/contributing-process-maintainers
-/dev/doc/shield-icon.png    @coq/contributing-process-maintainers
-
-/dev/doc/release-process.md @coq/contributing-process-maintainers
 
 ########## Build system ##########
 
@@ -52,6 +49,19 @@
 /dev/doc/changes.md    @ghost
 # Trick to avoid getting review requests
 # each time someone modifies the changelog
+
+/dev/doc/build-system*.txt    @coq/legacy-build-maintainers
+/dev/doc/build-system.dune.md @coq/build-maintainers
+/dev/doc/critical-bugs        @coq/kernel-maintainers
+/dev/doc/econstr.md           @coq/engine-maintainers
+/dev/doc/proof-engine.md      @coq/engine-maintainers
+/dev/doc/release-process.md   @coq/contributing-process-maintainers
+/dev/doc/shield-icon.png      @coq/contributing-process-maintainers
+/dev/doc/SProp.md             @coq/universes-maintainers
+/dev/doc/style.txt            @coq/contributing-process-maintainers
+/dev/doc/unification.txt      @coq/pretyper-maintainers
+/dev/doc/universes.md         @coq/universes-maintainers
+/dev/doc/xml-protocol         @coq/stm-maintainers
 
 /man/                  @coq/doc-maintainers
 
