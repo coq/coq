@@ -262,18 +262,24 @@ struct
 
 type t = {
   certif_struc : Declarations.structure_body;
+  certif_univs : Univ.ContextSet.t;
 }
 
 let make senv = {
   certif_struc = senv.revstruct;
+  certif_univs = senv.univ;
 }
 
 let is_suffix l suf = match l with
 | [] -> false
 | _ :: l -> l == suf
 
+let is_subset (s1, cst1) (s2, cst2) =
+  Univ.LSet.subset s1 s2 && Univ.Constraint.subset cst1 cst2
+
 let check ~src ~dst =
-  is_suffix dst.certif_struc src.certif_struc
+  is_suffix dst.certif_struc src.certif_struc &&
+  is_subset src.certif_univs dst.certif_univs
 
 end
 
