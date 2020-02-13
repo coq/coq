@@ -433,25 +433,16 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   then user_err (str "Inductives with uniform parameters may not have attached notations.");
 
   let indnames = List.map (fun ind -> ind.ind_name) indl in
-  let sigma, env_params, infos =
+
+  (* In case of template polymorphism, we need to compute more constraints *)
+  let env0 = if poly then env0 else Environ.set_universes_lbound env0 Univ.Level.prop in
+
+  let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, params, userimpls, useruimpls, impls, udecl) =
     interp_params env0 udecl uparamsl paramsl
   in
 
   (* Interpret the arities *)
   let arities = List.map (intern_ind_arity env_params sigma) indl in
-
-  let sigma, env_params, (ctx_params, env_uparams, ctx_uparams, params, userimpls, useruimpls, impls, udecl), arities, is_template =
-    let is_template = List.exists (fun (_,_,_,pseudo_poly) -> not (Option.is_empty pseudo_poly)) arities in
-    if not poly && is_template then
-      (* In case of template polymorphism, we need to compute more constraints *)
-      let env0 = Environ.set_universes_lbound env0 Univ.Level.prop in
-      let sigma, env_params, infos =
-        interp_params env0 udecl uparamsl paramsl
-      in
-      let arities = List.map (intern_ind_arity env_params sigma) indl in
-      sigma, env_params, infos, arities, is_template
-    else sigma, env_params, infos, arities, is_template
-  in
 
   let sigma, arities = List.fold_left_map (pretype_ind_arity env_params) sigma arities in
   let arities, relevances, arityconcl, indimpls = List.split4 arities in
