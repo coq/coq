@@ -1063,9 +1063,6 @@ Parameterized inductive types
         | cons3 : A -> list3 -> list3.
         End list3.
 
-     Attributes ``uniform`` and ``nonuniform`` respectively enable and
-     disable uniform parameters for a single inductive declaration block.
-
 .. seealso::
    Section :ref:`inductive-definitions` and the :tacn:`induction` tactic.
 
