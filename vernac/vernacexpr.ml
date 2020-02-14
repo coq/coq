@@ -128,7 +128,12 @@ type definition_expr =
   | DefineBody of local_binder_expr list * Genredexpr.raw_red_expr option * constr_expr
       * constr_expr option
 
-type decl_notation = lstring * constr_expr * bool * scope_name option
+type decl_notation =
+  { decl_ntn_string : lstring
+  ; decl_ntn_interp : constr_expr
+  ; decl_ntn_only_parsing : bool
+  ; decl_ntn_scope : scope_name option
+  }
 
 type 'a fix_expr_gen =
   { fname : lident

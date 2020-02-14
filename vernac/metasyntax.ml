@@ -1654,11 +1654,21 @@ let add_syntax_extension ~local ({CAst.loc;v=df},mods) = let open SynData in
 
 (* Notations with only interpretation *)
 
-let add_notation_interpretation env ({CAst.loc;v=df},c,onlyparse,sc) =
+let add_notation_interpretation env decl_ntn =
+  let
+    { decl_ntn_string = { CAst.loc ; v = df };
+      decl_ntn_interp = c;
+      decl_ntn_only_parsing = onlyparse;
+      decl_ntn_scope = sc } = decl_ntn in
   let df' = add_notation_interpretation_core ~local:false df env c sc onlyparse false None in
   Dumpglob.dump_notation (loc,df') sc true
 
-let set_notation_for_interpretation env impls ({CAst.v=df},c,onlyparse,sc) =
+let set_notation_for_interpretation env impls decl_ntn =
+  let
+    { decl_ntn_string = { CAst.v = df };
+      decl_ntn_interp = c;
+      decl_ntn_only_parsing = onlyparse;
+      decl_ntn_scope = sc } = decl_ntn in
   (try ignore
     (Flags.silently (fun () -> add_notation_interpretation_core ~local:false df env ~impls c sc onlyparse false None) ());
   with NoSyntaxRule ->

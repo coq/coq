@@ -416,7 +416,13 @@ let string_of_theorem_kind = let open Decls in function
   let pr_only_parsing_clause onlyparsing =
     pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else [])
 
-  let pr_decl_notation prc ({loc; v=ntn},c,onlyparsing, scopt) =
+  let pr_decl_notation prc decl_ntn =
+    let open Vernacexpr in
+    let
+      { decl_ntn_string = {CAst.loc;v=ntn};
+        decl_ntn_interp = c;
+        decl_ntn_only_parsing = onlyparsing;
+        decl_ntn_scope = scopt } = decl_ntn in
     fnl () ++ keyword "where " ++ qs ntn ++ str " := "
     ++ Flags.without_option Flags.beautify prc c
     ++ pr_only_parsing_clause onlyparsing

@@ -379,7 +379,9 @@ GRAMMAR EXTEND Gram
   ;
   decl_notation:
     [ [ ntn = ne_lstring; ":="; c = constr; b = only_parsing;
-        scopt = OPT [ ":"; sc = IDENT -> { sc } ] -> { (ntn,c,b,scopt) } ] ]
+        scopt = OPT [ ":"; sc = IDENT -> { sc } ] ->
+      { { decl_ntn_string = ntn; decl_ntn_interp = c;
+          decl_ntn_only_parsing = b; decl_ntn_scope = scopt } } ] ]
   ;
   decl_sep:
     [ [ IDENT "and" -> { () } ] ]
