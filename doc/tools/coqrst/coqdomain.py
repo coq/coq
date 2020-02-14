@@ -270,7 +270,7 @@ class GallinaObject(PlainObject):
           :math:`p \ge c \rightarrow p \ge \lceil{c}\rceil`.
     """
     subdomain = "thm"
-    index_suffix = "(thm)"
+    index_suffix = "(theorem)"
     annotation = "Theorem"
 
 class VernacObject(NotationObject):
@@ -283,7 +283,7 @@ class VernacObject(NotationObject):
           This command is equivalent to :n:`…`.
     """
     subdomain = "cmd"
-    index_suffix = "(cmd)"
+    index_suffix = "(command)"
     annotation = "Command"
 
     def _name_from_signature(self, signature):
@@ -306,7 +306,7 @@ class VernacVariantObject(VernacObject):
 
              This is equivalent to :n:`Axiom @ident : @term`.
     """
-    index_suffix = "(cmdv)"
+    index_suffix = "(command variant)"
     annotation = "Variant"
 
     def _name_from_signature(self, signature):
@@ -322,7 +322,7 @@ class TacticNotationObject(NotationObject):
           :token:`expr` is evaluated to ``v`` which must be a tactic value. …
     """
     subdomain = "tacn"
-    index_suffix = "(tacn)"
+    index_suffix = "(tactic)"
     annotation = None
 
 class TacticNotationVariantObject(TacticNotationObject):
@@ -342,7 +342,7 @@ class TacticNotationVariantObject(TacticNotationObject):
              The number is the failure level. If no level is specified, it
              defaults to 0. …
     """
-    index_suffix = "(tacnv)"
+    index_suffix = "(tactic variant)"
     annotation = "Variant"
 
 class OptionObject(NotationObject):
@@ -357,7 +357,7 @@ class OptionObject(NotationObject):
           application of a tactic.
     """
     subdomain = "opt"
-    index_suffix = "(opt)"
+    index_suffix = "(option)"
     annotation = "Option"
 
     def _name_from_signature(self, signature):
@@ -534,7 +534,7 @@ class ExceptionObject(NotationObject):
              Raised if :n:`@tactic` does not fully solve the goal.
     """
     subdomain = "exn"
-    index_suffix = "(err)"
+    index_suffix = "(error)"
     annotation = "Error"
     # Uses “exn” since “err” already is a CSS class added by “writer_aux”.
 
@@ -557,7 +557,7 @@ class WarningObject(NotationObject):
           valid coercion paths are ignored.
     """
     subdomain = "warn"
-    index_suffix = "(warn)"
+    index_suffix = "(warning)"
     annotation = "Warning"
 
     # Generate names automatically
