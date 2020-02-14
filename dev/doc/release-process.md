@@ -127,9 +127,9 @@ in time.
 - [ ] Send an e-mail on Coqdev announcing that the tag has been put so that
   package managers can start preparing package updates (including a
   `coq-bignums` compatible version).
-- [ ] Ping `@erikmd` to update the Docker images in `coqorg/coq`
-  (requires `coq-bignums` in `extra-dev` for a beta / in `released`
-  for a final release).
+- [ ] When opening the corresponding PR for `coq` in the opam repository ([`coq/opam-coq-archive`](https://github.com/coq/opam-coq-archive) or [`ocaml/opam-repository`](https://github.com/ocaml/opam-repository)),
+  the package managers can Cc `@erikmd` to request that he prepare the necessary configuration for the Docker release in [`coqorg/coq`](https://hub.docker.com/r/coqorg/coq)
+  (namely, he'll need to make sure a `coq-bignums` opam package is available in [`extra-dev`](https://github.com/coq/opam-coq-archive/tree/master/extra-dev), respectively [`released`](https://github.com/coq/opam-coq-archive/tree/master/released), so the Docker image gathering `coq` and `coq-bignums` can be built).
 - [ ] Draft a release on GitHub.
 - [ ] Get `@maximedenes` to sign the Windows and MacOS packages and
   upload them on GitHub.
