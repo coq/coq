@@ -323,8 +323,7 @@ file timing data:
 
     .. note::
        Just like ``pretty-timed``, this table defaults to using user
-       times and supports ``TIMING_REAL=1`` to specify that real times
-       rather than user times should be used.
+       times.  Pass ``TIMING_REAL=1`` to ``make`` on the command line to show real times instead.
 
     .. example::
 
