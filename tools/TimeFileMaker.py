@@ -15,6 +15,9 @@ STRIP_REG = re.compile('^(coq/|contrib/|)(?:theories/|src/)?')
 STRIP_REP = r'\1'
 INFINITY  = '\u221e'
 
+TIME_KEY = 'time'
+MEM_KEY = 'mem'
+
 def nonnegative(arg):
     v = int(arg)
     if v < 0: raise argparse.ArgumentTypeError("%s is an invalid non-negative int value" % arg)
@@ -37,6 +40,11 @@ def add_sort_by(parser):
               'The "absolute" method sorts by the total time taken.\n' +
               'The "diff" method sorts by the signed difference in time.'))
 
+def add_sort_by_mem(parser):
+    return parser.add_argument(
+        '--sort-by-mem', action='store_true', dest='sort_by_mem',
+        help=('Sort the table entries by memory rather than time.'))
+
 def add_fuzz(parser):
     return parser.add_argument(
         '--fuzz', dest='fuzz', metavar='N', type=nonnegative, default=0,
@@ -55,9 +63,9 @@ def add_real(parser, single_timing=False):
         help=(r'''Use real times rather than user times.
 
 ''' + ('''By default, the input is expected to contain lines in the format:
-FILE_NAME (...user: NUMBER_IN_SECONDS...)
+FILE_NAME (...user: NUMBER_IN_SECONDS...mem: NUMBER ko...)
 If --real is passed, then the lines are instead expected in the format:
-FILE_NAME (...real: NUMBER_IN_SECONDS...)''' if not single_timing else
+FILE_NAME (...real: NUMBER_IN_SECONDS...mem: NUMBER ko...)''' if not single_timing else
 '''The input is expected to contain lines in the format:
 Chars START - END COMMAND NUMBER secs (NUMBERu...)''')))
 
@@ -67,11 +75,16 @@ def add_user(parser, single_timing=False):
         help=(r'''Use user times rather than real times.
 
 ''' + ('''By default, the input is expected to contain lines in the format:
-FILE_NAME (...real: NUMBER_IN_SECONDS...)
+FILE_NAME (...real: NUMBER_IN_SECONDS...mem: NUMBER ko...)
 If --user is passed, then the lines are instead expected in the format:
-FILE_NAME (...user: NUMBER_IN_SECONDS...)''' if not single_timing else
+FILE_NAME (...user: NUMBER_IN_SECONDS...mem: NUMBER ko...)''' if not single_timing else
 '''The input is expected to contain lines in the format:
 Chars START - END COMMAND NUMBER secs (NUMBERu...)''')))
+
+def add_include_mem(parser):
+    return parser.add_argument(
+        '--no-include-mem', dest='include_mem', default=True, action='store_false',
+        help=(r'''Don't include memory in the table.'''))
 
 # N.B. We need to include default=None for nargs='*', c.f., https://bugs.python.org/issue28609#msg280180
 def add_file_name_gen(parser, prefix='', descr='file containing the build log', stddir='in', defaults=None, **kwargs):
@@ -113,14 +126,24 @@ def get_file_lines(file_name):
 def get_file(file_name):
     return ''.join(get_file_lines(file_name))
 
-def get_times(file_name, use_real=False):
-    '''
-    Reads the contents of file_name, which should be the output of
-    'make TIMED=1', and parses it to construct a dict mapping file
-    names to compile durations, as strings.  Removes common prefixes
-    using STRIP_REG and STRIP_REP.
-    '''
-    lines = get_file(file_name)
+def merge_dicts(d1, d2):
+    if d2 is None: return d1
+    if d1 is None: return d2
+    assert(isinstance(d1, dict))
+    assert(isinstance(d2, dict))
+    ret = {}
+    for k in set(list(d1.keys()) + list(d2.keys())):
+        ret[k] = merge_dicts(d1.get(k), d2.get(k))
+    return ret
+
+def get_mems_of_lines(lines):
+    reg = re.compile(r'^([^\s]+) \([^\)]*?mem: ([0-9]+) ko[^\)]*?\)\s*$', re.MULTILINE)
+    mems = reg.findall(lines)
+    if all(STRIP_REG.search(name.strip()) for name, mem in mems):
+        mems = tuple((STRIP_REG.sub(STRIP_REP, name.strip()), mem) for name, mem in mems)
+    return dict((name, {MEM_KEY:int(mem)}) for name, mem in mems)
+
+def get_times_of_lines(lines, use_real=False):
     reg_user = re.compile(r'^([^\s]+) \([^\)]*?user: ([0-9\.]+)[^\)]*?\)\s*$', re.MULTILINE)
     reg_real = re.compile(r'^([^\s]+) \([^\)]*?real: ([0-9\.]+)[^\)]*?\)\s*$', re.MULTILINE)
     reg = reg_real if use_real else reg_user
@@ -130,7 +153,31 @@ def get_times(file_name, use_real=False):
         times = reg.findall(lines)
     if all(STRIP_REG.search(name.strip()) for name, time in times):
         times = tuple((STRIP_REG.sub(STRIP_REP, name.strip()), time) for name, time in times)
-    return dict((name, reformat_time_string(time)) for name, time in times)
+    return dict((name, {TIME_KEY:reformat_time_string(time)}) for name, time in times)
+
+def get_times_and_mems(file_name, use_real=False, include_mem=True):
+    # we only get the file once, in case it is a stream like stdin
+    lines = get_file(file_name)
+    return merge_dicts(get_times_of_lines(lines, use_real=use_real),
+                       (get_mems_of_lines(lines) if include_mem else None))
+
+def get_mems(file_name):
+    '''
+    Reads the contents of file_name, which should be the output of
+    'make TIMED=1', and parses it to construct a dict mapping file
+    names to peak memory usage, as integers.  Removes common prefixes
+    using STRIP_REG and STRIP_REP.
+    '''
+    return get_mems_of_lines(get_file(file_name))
+
+def get_times(file_name, use_real=False):
+    '''
+    Reads the contents of file_name, which should be the output of
+    'make TIMED=1', and parses it to construct a dict mapping file
+    names to compile durations, as strings.  Removes common prefixes
+    using STRIP_REG and STRIP_REP.
+    '''
+    return get_times_of_lines(get_file(file_name))
 
 def get_single_file_times(file_name, use_real=False):
     '''
@@ -144,7 +191,7 @@ def get_single_file_times(file_name, use_real=False):
     if len(times) == 0: return dict()
     longest = max(max((len(start), len(stop))) for start, stop, name, real, user, extra in times)
     FORMAT = 'Chars %%0%dd - %%0%dd %%s' % (longest, longest)
-    return dict((FORMAT % (int(start), int(stop), name), reformat_time_string(real if use_real else user)) for start, stop, name, real, user, extra in times)
+    return dict((FORMAT % (int(start), int(stop), name), {TIME_KEY:reformat_time_string(real if use_real else user)}) for start, stop, name, real, user, extra in times)
 
 def fuzz_merge(l1, l2, fuzz):
     '''Takes two iterables of ((start, end, code), times) and a fuzz
@@ -215,20 +262,30 @@ def adjust_fuzz(left_dict, right_dict, fuzz):
 def fix_sign_for_sorting(num, descending=True):
     return -num if descending else num
 
-def make_sorting_key(times_dict, descending=True):
-    def get_key(name):
-        minutes, seconds = times_dict[name].replace('s', '').split('m')
-        return (fix_sign_for_sorting(int(minutes), descending=descending),
-                fix_sign_for_sorting(float(seconds), descending=descending),
-                name)
+def make_sorting_key(stats_dict, descending=True, sort_by_mem=False):
+    if sort_by_mem:
+        def get_key(name):
+            if MEM_KEY not in stats_dict[name].keys():
+                print('WARNING: %s has no mem key: %s' % (name, repr(stats_dict[name])), file=sys.stderr)
+            mem = stats_dict[name].get(MEM_KEY, '0')
+            return (fix_sign_for_sorting(int(mem), descending=descending),
+                    name)
+    else:
+        def get_key(name):
+            if TIME_KEY not in stats_dict[name].keys():
+                print('WARNING: %s has no time key: %s' % (name, repr(stats_dict[name])), file=sys.stderr)
+            minutes, seconds = stats_dict[name].get(TIME_KEY, '0m00s').replace('s', '').split('m')
+            return (fix_sign_for_sorting(int(minutes), descending=descending),
+                    fix_sign_for_sorting(float(seconds), descending=descending),
+                    name)
     return get_key
 
-def get_sorted_file_list_from_times_dict(times_dict, descending=True):
+def get_sorted_file_list_from_stats_dict(stats_dict, descending=True, sort_by_mem=False):
     '''
     Takes the output dict of get_times and returns the list of keys,
     sorted by duration.
     '''
-    return sorted(times_dict.keys(), key=make_sorting_key(times_dict, descending=descending))
+    return sorted(stats_dict.keys(), key=make_sorting_key(stats_dict, descending=descending, sort_by_mem=sort_by_mem))
 
 def to_seconds(time):
     '''
@@ -265,85 +322,149 @@ def format_percentage(num, signed=True):
     frac_part = int(100 * (num * 100 - whole_part))
     return sign + '%d.%02d%%' % (whole_part, frac_part)
 
-def make_diff_table_string(left_times_dict, right_times_dict,
+def make_diff_table_string(left_dict, right_dict,
                            sort_by='auto',
-                           descending=True,
-                           left_tag="After", tag="File Name", right_tag="Before", with_percent=True,
-                           change_tag="Change", percent_change_tag="% Change"):
+                           descending=True, sort_by_mem=False,
+                           left_tag='After', tag='File Name', right_tag='Before', with_percent=True,
+                           left_mem_tag='Peak Mem', right_mem_tag='Peak Mem',
+                           include_mem=False,
+                           change_tag='Change', percent_change_tag='% Change',
+                           change_mem_tag='Change (mem)', percent_change_mem_tag='% Change (mem)',
+                           mem_fmt='%d ko'):
     # We first get the names of all of the compiled files: all files
     # that were compiled either before or after.
     all_names_dict = dict()
-    all_names_dict.update(right_times_dict)
-    all_names_dict.update(left_times_dict) # do the left (after) last, so that we give precedence to those ones
+    all_names_dict.update(right_dict)
+    all_names_dict.update(left_dict) # do the left (after) last, so that we give precedence to those ones
     if len(all_names_dict.keys()) == 0: return 'No timing data'
-    prediff_times = tuple((name, to_seconds(left_times_dict.get(name,'0m0.0s')), to_seconds(right_times_dict.get(name,'0m0.0s')))
+    get_time = (lambda d, name: to_seconds(d.get(name, {}).get(TIME_KEY, '0m0.0s')))
+    prediff_times = tuple((name, get_time(left_dict, name), get_time(right_dict, name))
                           for name in all_names_dict.keys())
     diff_times_dict = dict((name, from_seconds(lseconds - rseconds, signed=True))
                            for name, lseconds, rseconds in prediff_times)
     percent_diff_times_dict = dict((name, ((format_percentage((lseconds - rseconds) / rseconds))
                                            if rseconds != 0 else (INFINITY if lseconds > 0 else 'N/A')))
                                    for name, lseconds, rseconds in prediff_times)
+
+    get_mem = (lambda d, name: d.get(name, {}).get(MEM_KEY, 0))
+    prediff_mems = tuple((name, get_mem(left_dict, name), get_mem(right_dict, name))
+                         for name in all_names_dict.keys())
+    diff_mems_dict = dict((name, lmem - rmem) for name, lmem, rmem in prediff_mems)
+    percent_diff_mems_dict = dict((name, ((format_percentage((lmem - rmem) / float(rmem)))
+                                          if rmem != 0 else (INFINITY if lmem > 0 else 'N/A')))
+                                  for name, lmem, rmem in prediff_mems)
+
     # update to sort by approximate difference, first
-    get_key_abs = make_sorting_key(all_names_dict, descending=descending)
-    get_key_diff_float = (lambda name: fix_sign_for_sorting(to_seconds(diff_times_dict[name]), descending=descending))
-    get_key_diff_absint = (lambda name: fix_sign_for_sorting(int(abs(to_seconds(diff_times_dict[name]))), descending=descending))
+    if sort_by_mem:
+        get_prekey = (lambda name: diff_mems_dict[name])
+    else:
+        get_prekey = (lambda name: to_seconds(diff_times_dict[name]))
+    get_key_abs = make_sorting_key(all_names_dict, descending=descending, sort_by_mem=sort_by_mem)
+    get_key_diff_float = (lambda name: fix_sign_for_sorting(get_prekey(name), descending=descending))
+    get_key_diff_absint = (lambda name: fix_sign_for_sorting(int(abs(get_prekey(name))), descending=descending))
+    get_key_with_name = (lambda get_key: lambda name: (get_key(name), name))
     if sort_by == 'absolute':
-        get_key = get_key_abs
+        get_key = get_key_with_name(get_key_abs)
     elif sort_by == 'diff':
-        get_key = get_key_diff_float
+        get_key = get_key_with_name(get_key_diff_float)
     else: # sort_by == 'auto'
-        get_key = (lambda name: (get_key_diff_absint(name), get_key_abs(name)))
+        get_key = get_key_with_name((lambda name: (get_key_diff_absint(name), get_key_abs(name))))
     names = sorted(all_names_dict.keys(), key=get_key)
-    #names = get_sorted_file_list_from_times_dict(all_names_dict, descending=descending)
+    #names = get_sorted_file_list_from_stats_dict(all_names_dict, descending=descending)
     # set the widths of each of the columns by the longest thing to go in that column
-    left_sum = sum_times(left_times_dict.values())
-    right_sum = sum_times(right_times_dict.values())
-    left_sum_float = sum(sorted(map(to_seconds, left_times_dict.values())))
-    right_sum_float = sum(sorted(map(to_seconds, right_times_dict.values())))
+    left_sum = sum_times(v[TIME_KEY] for v in left_dict.values() if TIME_KEY in v.keys())
+    right_sum = sum_times(v[TIME_KEY] for v in right_dict.values() if TIME_KEY in v.keys())
+    left_sum_float = sum(sorted(to_seconds(v[TIME_KEY]) for v in left_dict.values() if TIME_KEY in v.keys()))
+    right_sum_float = sum(sorted(to_seconds(v[TIME_KEY]) for v in right_dict.values() if TIME_KEY in v.keys()))
     diff_sum = from_seconds(left_sum_float - right_sum_float, signed=True)
     percent_diff_sum = (format_percentage((left_sum_float - right_sum_float) / right_sum_float)
                         if right_sum_float > 0 else 'N/A')
-    left_width = max(max(map(len, ['N/A'] + list(left_times_dict.values()))), len(left_sum))
-    right_width = max(max(map(len, ['N/A'] + list(right_times_dict.values()))), len(right_sum))
+
+    left_width = max(max(map(len, ['N/A', left_tag] + [v[TIME_KEY] for v in left_dict.values() if TIME_KEY in v.keys()])), len(left_sum))
+    right_width = max(max(map(len, ['N/A', right_tag] + [v[TIME_KEY] for v in right_dict.values() if TIME_KEY in v.keys()])), len(right_sum))
     far_right_width = max(max(map(len, ['N/A', change_tag] + list(diff_times_dict.values()))), len(diff_sum))
     far_far_right_width = max(max(map(len, ['N/A', percent_change_tag] + list(percent_diff_times_dict.values()))), len(percent_diff_sum))
-    middle_width = max(map(len, names + [tag, "Total"]))
-    format_string = ("%%(left)-%ds | %%(middle)-%ds | %%(right)-%ds || %%(far_right)-%ds"
-                     % (left_width, middle_width, right_width, far_right_width))
+    total_string = 'Total' if not include_mem else 'Total Time / Peak Mem'
+    middle_width = max(map(len, names + [tag, total_string]))
+
+    left_peak = max(v.get(MEM_KEY, 0) for v in left_dict.values())
+    right_peak = max(v.get(MEM_KEY, 0) for v in right_dict.values())
+    diff_peak = left_peak - right_peak
+    percent_diff_peak = (format_percentage((left_peak - right_peak) / float(right_peak))
+                         if right_peak != 0 else (INFINITY if left_peak > 0 else 'N/A'))
+
+    left_mem_width = max(max(map(len, ['N/A', left_mem_tag] + [mem_fmt % v.get(MEM_KEY, 0) for v in left_dict.values()])), len(mem_fmt % left_peak))
+    right_mem_width = max(max(map(len, ['N/A', right_mem_tag] + [mem_fmt % v.get(MEM_KEY, 0) for v in right_dict.values()])), len(mem_fmt % right_peak))
+    far_right_mem_width = max(max(map(len, ['N/A', change_mem_tag] + [mem_fmt % v for v in diff_mems_dict.values()])), len(mem_fmt % diff_peak))
+    far_far_right_mem_width = max(max(map(len, ['N/A', percent_change_mem_tag] + list(percent_diff_mems_dict.values()))), len(percent_diff_peak))
+
+    if include_mem:
+        format_string = ("%%(left)%ds | %%(left_mem)%ds | %%(middle)-%ds | %%(right)%ds | %%(right_mem)%ds || %%(far_right)%ds || %%(far_right_mem)%ds"
+                         % (left_width, left_mem_width, middle_width, right_width, right_mem_width, far_right_width, far_right_mem_width))
+    else:
+        format_string = ("%%(left)%ds | %%(middle)-%ds | %%(right)%ds || %%(far_right)%ds"
+                         % (left_width, middle_width, right_width, far_right_width))
+
     if with_percent:
-        format_string += " | %%(far_far_right)-%ds" % far_far_right_width
-    header = format_string % {'left': left_tag, 'middle': tag, 'right': right_tag, 'far_right': change_tag, 'far_far_right': percent_change_tag}
-    total = format_string % {'left': left_sum, 'middle': "Total", 'right': right_sum, 'far_right': diff_sum, 'far_far_right': percent_diff_sum}
+        format_string += " | %%(far_far_right)%ds" % far_far_right_width
+        if include_mem:
+            format_string += " | %%(far_far_right_mem)%ds" % far_far_right_mem_width
+
+    header = format_string % {'left': left_tag, 'left_mem': left_mem_tag,
+                              'middle': tag,
+                              'right': right_tag, 'right_mem': right_mem_tag,
+                              'far_right': change_tag, 'far_right_mem': change_mem_tag,
+                              'far_far_right': percent_change_tag, 'far_far_right_mem': percent_change_mem_tag}
+    total = format_string % {'left': left_sum, 'left_mem': mem_fmt % left_peak,
+                             'middle': total_string,
+                             'right': right_sum, 'right_mem': mem_fmt % right_peak,
+                             'far_right': diff_sum, 'far_right_mem': mem_fmt % diff_peak,
+                             'far_far_right': percent_diff_sum, 'far_far_right_mem': percent_diff_peak}
     # separator to go between headers and body
     sep = '-' * len(header)
     # the representation of the default value (0), to get replaced by N/A
-    left_rep, right_rep, far_right_rep, far_far_right_rep = ("%%-%ds | " % left_width) % 0, (" | %%-%ds || " % right_width) % 0, ("|| %%-%ds" % far_right_width) % 0, ("| %%-%ds" % far_far_right_width) % 0
+    left_rep, right_rep, far_right_rep, far_far_right_rep = ("%%%ds | " % left_width) % 'N/A', (" | %%%ds |" % right_width) % 'N/A', ("|| %%%ds" % far_right_width) % 'N/A', ("| %%%ds" % far_far_right_width) % 'N/A'
+    left_mem_rep, right_mem_rep, far_right_mem_rep, far_far_right_mem_rep = ("%%%ds | " % left_mem_width) % 'N/A', (" | %%%ds |" % right_mem_width) % 'N/A', ("|| %%%ds" % far_right_mem_width) % 'N/A', ("| %%%ds" % far_far_right_mem_width) % 'N/A'
+    get_formatted_mem = (lambda k, v: (mem_fmt % v[k]) if k in v.keys() else 'N/A')
     return '\n'.join([header, sep, total, sep] +
-                     [format_string % {'left': left_times_dict.get(name, 0),
+                     [format_string % {'left': left_dict.get(name, {}).get(TIME_KEY, 'N/A'),
+                                       'left_mem': get_formatted_mem(MEM_KEY, left_dict.get(name, {})),
                                        'middle': name,
-                                       'right': right_times_dict.get(name, 0),
-                                       'far_right': diff_times_dict.get(name, 0),
-                                       'far_far_right': percent_diff_times_dict.get(name, 0)}
-                      for name in names]).replace(left_rep, 'N/A'.center(len(left_rep) - 3) + ' | ').replace(right_rep, ' | ' + 'N/A'.center(len(right_rep) - 7) + ' || ').replace(far_right_rep, '|| ' + 'N/A'.center(len(far_right_rep) - 3)).replace(far_far_right_rep, '| ' + 'N/A'.center(len(far_far_right_rep) - 2))
+                                       'right': right_dict.get(name, {}).get(TIME_KEY, 'N/A'),
+                                       'right_mem': get_formatted_mem(MEM_KEY, right_dict.get(name, {})),
+                                       'far_right': diff_times_dict.get(name, 'N/A'),
+                                       'far_right_mem': get_formatted_mem(name, diff_mems_dict),
+                                       'far_far_right': percent_diff_times_dict.get(name, 'N/A'),
+                                       'far_far_right_mem': percent_diff_mems_dict.get(name, 'N/A')}
+                      for name in names]).replace(left_rep, 'N/A'.center(len(left_rep) - 3) + ' | ').replace(right_rep, ' | ' + 'N/A'.center(len(right_rep) - 5) + ' |').replace(far_right_rep, '|| ' + 'N/A'.center(len(far_right_rep) - 3)).replace(far_far_right_rep, '| ' + 'N/A'.center(len(far_far_right_rep) - 2)).replace(left_mem_rep, 'N/A'.center(len(left_mem_rep) - 3) + ' | ').replace(right_mem_rep, ' | ' + 'N/A'.center(len(right_mem_rep) - 5) + ' |').replace(far_right_mem_rep, '|| ' + 'N/A'.center(len(far_right_mem_rep) - 3)).replace(far_far_right_mem_rep, '| ' + 'N/A'.center(len(far_far_right_mem_rep) - 2))
 
-def make_table_string(times_dict,
-                      descending=True,
-                      tag="Time"):
-    if len(times_dict.keys()) == 0: return 'No timing data'
+def make_table_string(stats_dict,
+                      descending=True, sort_by_mem=False,
+                      tag="Time", mem_tag="Peak Mem", mem_fmt='%d ko',
+                      include_mem=False):
+    if len(stats_dict.keys()) == 0: return 'No timing data'
     # We first get the names of all of the compiled files, sorted by
     # duration
-    names = get_sorted_file_list_from_times_dict(times_dict, descending=descending)
+    names = get_sorted_file_list_from_stats_dict(stats_dict, descending=descending, sort_by_mem=sort_by_mem)
     # compute the widths of the columns
-    times_width = max(max(map(len, times_dict.values())), len(sum_times(times_dict.values())))
-    names_width = max(map(len, names + ["File Name", "Total"]))
-    format_string = "%%-%ds | %%-%ds" % (times_width, names_width)
-    header = format_string % (tag, "File Name")
-    total = format_string % (sum_times(times_dict.values()),
-                             "Total")
+    times_width = max(len('N/A'), len(tag), max(len(v[TIME_KEY]) for v in stats_dict.values() if TIME_KEY in v.keys()), len(sum_times(v[TIME_KEY] for v in stats_dict.values() if TIME_KEY in v.keys())))
+    mems_width = max(len('N/A'), len(mem_tag), max(len(mem_fmt % v.get(MEM_KEY, 0)) for v in stats_dict.values()), len(mem_fmt % (max(v.get(MEM_KEY, 0) for v in stats_dict.values()))))
+    total_string = 'Total' if not include_mem else 'Total Time / Peak Mem'
+    names_width = max(map(len, names + ["File Name", total_string]))
+    if include_mem:
+        format_string = "%%(time)%ds | %%(mem)%ds | %%(name)-%ds" % (times_width, mems_width, names_width)
+    else:
+        format_string = "%%(time)%ds | %%(name)-%ds" % (times_width, names_width)
+    get_formatted_mem = (lambda k, v: (mem_fmt % v[k]) if k in v.keys() else 'N/A')
+    header = format_string % {'time': tag, 'mem': mem_tag, 'name': 'File Name'}
+    total = format_string % {'time': sum_times(v[TIME_KEY] for v in stats_dict.values() if TIME_KEY in v.keys()),
+                             'mem': ((mem_fmt % max(v[MEM_KEY] for v in stats_dict.values() if MEM_KEY in v.keys())) if any(MEM_KEY in v.keys() for v in stats_dict.values()) else 'N/A'),
+                             'name': total_string}
     sep = '-' * len(header)
     return '\n'.join([header, sep, total, sep] +
-                     [format_string % (times_dict[name],
-                                       name)
+                     [format_string % {'time': stats_dict[name].get(TIME_KEY, 'N/A'),
+                                       'mem': get_formatted_mem(MEM_KEY, stats_dict[name]),
+                                       'name': name}
                       for name in names])
 
 def print_or_write_table(table, files):
