@@ -1157,7 +1157,7 @@ let find_precedence custom lev etyps symbols onlyprint =
         | (ETIdent | ETBigint | ETString | ETGlobal), _ ->
             begin match lev with
             | None ->
-              ([Feedback.msg_info ?loc:None ,strbrk "Setting notation at level 0."],0)
+              ([fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")],0)
             | Some 0 ->
               ([],0)
             | _ ->
@@ -1174,7 +1174,7 @@ let find_precedence custom lev etyps symbols onlyprint =
         else [],Option.get lev)
   | Some (Terminal _) when last_is_terminal () ->
       if Option.is_empty lev then
-        ([Feedback.msg_info ?loc:None ,strbrk "Setting notation at level 0."], 0)
+        ([fun () -> Flags.if_verbose (Feedback.msg_info ?loc:None) (strbrk "Setting notation at level 0.")], 0)
       else [],Option.get lev
   | Some _ ->
       if Option.is_empty lev then user_err Pp.(str "Cannot determine the level.");
@@ -1227,7 +1227,7 @@ module SynData = struct
     extra         : (string * string) list;
 
     (* XXX: Callback to printing, must remove *)
-    msgs          : ((Pp.t -> unit) * Pp.t) list;
+    msgs          : (unit -> unit) list;
 
     (* Fields for internalization *)
     recvars       : (Id.t * Id.t) list;
@@ -1325,15 +1325,19 @@ let compute_syntax_data ~local deprecation df modifiers =
     not_data    = sy_fulldata;
   }
 
+let warn_only_parsing_reserved_notation =
+  CWarnings.create ~name:"irrelevant-reserved-notation-only-parsing" ~category:"parsing"
+    (fun () -> strbrk "The only parsing modifier has no effect in Reserved Notation.")
+
 let compute_pure_syntax_data ~local df mods =
   let open SynData in
   let sd = compute_syntax_data ~local None df mods in
-  let msgs =
-    if sd.only_parsing then
-      (Feedback.msg_warning ?loc:None,
-      strbrk "The only parsing modifier has no effect in Reserved Notation.")::sd.msgs
-    else sd.msgs in
-  { sd with msgs }
+  if sd.only_parsing
+  then
+    let msgs = (fun () -> warn_only_parsing_reserved_notation ?loc:None ())::sd.msgs in
+    { sd with msgs; only_parsing = false }
+  else
+    sd
 
 (**********************************************************************)
 (* Registration of notations interpretation                            *)
@@ -1518,7 +1522,7 @@ let add_notation_in_scope ~local deprecation df env c mods scope =
     notobj_notation = sd.info;
   } in
   (* Ready to change the global state *)
-  Flags.if_verbose (List.iter (fun (f,x) -> f x)) sd.msgs;
+  List.iter (fun f -> f ()) sd.msgs;
   Lib.add_anonymous_leaf (inSyntaxExtension (local, sy_rules));
   Lib.add_anonymous_leaf (inNotation notation);
   sd.info
@@ -1565,7 +1569,7 @@ let add_notation_interpretation_core ~local df env ?(impls=empty_internalization
 let add_syntax_extension ~local ({CAst.loc;v=df},mods) = let open SynData in
   let psd = compute_pure_syntax_data ~local df mods in
   let sy_rules = make_syntax_rules {psd with deprecation = None} in
-  Flags.if_verbose (List.iter (fun (f,x) -> f x)) psd.msgs;
+  List.iter (fun f -> f ()) psd.msgs;
   Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules))
 
 (* Notations with only interpretation *)

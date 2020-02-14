@@ -437,7 +437,7 @@ Reserved Notation "{ 'on' cd , 'bijective' f }" (at level 0, f at level 8,
  is | or => . It is important that in other notations a leading square
  bracket #[# is always followed by an operator symbol or a fixed identifier.   **)
 
-Reserved Notation "[ /\ P1 & P2 ]" (at level 0, only parsing).
+Reserved Notation "[ /\ P1 & P2 ]" (at level 0).
 Reserved Notation "[ /\ P1 , P2 & P3 ]" (at level 0, format
   "'[hv' [ /\ '['  P1 , '/'  P2 ']' '/ '  &  P3 ] ']'").
 Reserved Notation "[ /\ P1 , P2 , P3 & P4 ]" (at level 0, format
@@ -445,21 +445,21 @@ Reserved Notation "[ /\ P1 , P2 , P3 & P4 ]" (at level 0, format
 Reserved Notation "[ /\ P1 , P2 , P3 , P4 & P5 ]" (at level 0, format
   "'[hv' [ /\ '['  P1 , '/'  P2 , '/'  P3 , '/'  P4 ']' '/ '  &  P5 ] ']'").
 
-Reserved Notation "[ \/ P1 | P2 ]" (at level 0, only parsing).
+Reserved Notation "[ \/ P1 | P2 ]" (at level 0).
 Reserved Notation "[ \/ P1 , P2 | P3 ]" (at level 0, format
   "'[hv' [ \/ '['  P1 , '/'  P2 ']' '/ '  |  P3 ] ']'").
 Reserved Notation "[ \/ P1 , P2 , P3 | P4 ]" (at level 0, format
   "'[hv' [ \/ '['  P1 , '/'  P2 , '/'  P3 ']' '/ '  |  P4 ] ']'").
 
-Reserved Notation "[ && b1 & c ]" (at level 0, only parsing).
+Reserved Notation "[ && b1 & c ]" (at level 0).
 Reserved Notation "[ && b1 , b2 , .. , bn & c ]" (at level 0, format
   "'[hv' [ && '['  b1 , '/'  b2 , '/'  .. , '/'  bn ']' '/ '  &  c ] ']'").
 
-Reserved Notation "[ || b1 | c ]" (at level 0, only parsing).
+Reserved Notation "[ || b1 | c ]" (at level 0).
 Reserved Notation "[ || b1 , b2 , .. , bn | c ]" (at level 0, format
   "'[hv' [ || '['  b1 , '/'  b2 , '/'  .. , '/'  bn ']' '/ '  |  c ] ']'").
 
-Reserved Notation "[ ==> b1 => c ]" (at level 0, only parsing).
+Reserved Notation "[ ==> b1 => c ]" (at level 0).
 Reserved Notation "[ ==> b1 , b2 , .. , bn => c ]" (at level 0, format
   "'[hv' [ ==> '['  b1 , '/'  b2 , '/'  .. , '/'  bn ']' '/'  =>  c ] ']'").
 

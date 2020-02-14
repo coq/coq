@@ -97,11 +97,11 @@ Local Notation CoqCast x T := (x : T) (only parsing).
 
 (** Reserve notation that introduced in this file. **)
 Reserved Notation "'if' c 'then' vT 'else' vF" (at level 200,
-  c, vT, vF at level 200, only parsing).
+  c, vT, vF at level 200).
 Reserved Notation "'if' c 'return' R 'then' vT 'else' vF" (at level 200,
-  c, R, vT, vF at level 200, only parsing).
+  c, R, vT, vF at level 200).
 Reserved Notation "'if' c 'as' x 'return' R 'then' vT 'else' vF" (at level 200,
-  c, R, vT, vF at level 200, x ident, only parsing).
+  c, R, vT, vF at level 200, x ident).
 
 Reserved Notation "x : T" (at level 100, right associativity,
   format "'[hv' x '/ '  :  T ']'").
