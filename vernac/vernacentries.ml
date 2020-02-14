@@ -709,6 +709,10 @@ let vernac_inductive ~atts cum lo kind indl =
   if Option.has_some is_defclass then
     (* Definitional class case *)
     let (id, bl, c, l) = Option.get is_defclass in
+    let bl = match bl with
+      | bl, None -> bl
+      | _ -> CErrors.user_err Pp.(str "Definitional classes do not support the \"|\" syntax.")
+    in
     let (coe, (lid, ce)) = l in
     let coe' = if coe then Some true else None in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce),
@@ -729,6 +733,10 @@ let vernac_inductive ~atts cum lo kind indl =
     let () = List.iter check_where indl in
     let unpack ((id, bl, c, decl), _) = match decl with
     | RecordDecl (oc, fs) ->
+      let bl = match bl with
+        | bl, None -> bl
+        | _ -> CErrors.user_err Pp.(str "Records do not support the \"|\" syntax.")
+      in
       (id, bl, c, oc, fs)
     | Constructors _ -> assert false (* ruled out above *)
     in

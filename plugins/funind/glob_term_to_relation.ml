@@ -1476,7 +1476,7 @@ let do_build_inductive
   in
   let rel_ind i ext_rel_constructors =
     ((CAst.make @@ relnames.(i)),
-    rel_params,
+    (rel_params,None),
     Some rel_arities.(i),
     ext_rel_constructors),[]
   in

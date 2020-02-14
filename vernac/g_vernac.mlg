@@ -395,9 +395,10 @@ GRAMMAR EXTEND Gram
   ;
   inductive_definition:
     [ [ oc = opt_coercion; id = ident_decl; indpar = binders;
+        extrapar = OPT [ "|"; p = binders -> { p } ];
         c = OPT [ ":"; c = lconstr -> { c } ];
         lc=opt_constructors_or_fields; ntn = decl_notation ->
-           { (((oc,id),indpar,c,lc),ntn) } ] ]
+           { (((oc,id),(indpar,extrapar),c,lc),ntn) } ] ]
   ;
   constructor_list_or_record_decl:
     [ [ "|"; l = LIST1 constructor SEP "|" -> { Constructors l }

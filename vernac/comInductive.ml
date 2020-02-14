@@ -456,9 +456,19 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
   let sigma, arities = List.fold_left_map (pretype_ind_arity env_params) sigma arities in
   let arities, relevances, arityconcl, indimpls = List.split4 arities in
 
-  let fullarities = List.map (fun c -> EConstr.it_mkProd_or_LetIn c ctx_params) arities in
+  let lift1_ctx ctx =
+    let t = EConstr.it_mkProd_or_LetIn EConstr.mkProp ctx in
+    let t = EConstr.Vars.lift 1 t in
+    let ctx, _ = EConstr.decompose_prod_assum sigma t in
+    ctx
+  in
+  let ctx_params_lifted, fullarities = CList.fold_left_map
+      (fun ctx_params c -> lift1_ctx ctx_params, EConstr.it_mkProd_or_LetIn c ctx_params)
+      ctx_params
+      arities
+  in
   let env_ar = push_types env_uparams indnames relevances fullarities in
-  let env_ar_params = EConstr.push_rel_context ctx_params env_ar in
+  let env_ar_params = EConstr.push_rel_context ctx_params_lifted env_ar in
 
   (* Compute interpretation metadatas *)
   let indimpls = List.map (fun impls -> userimpls @ impls) indimpls in
@@ -509,6 +519,9 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
 let eq_local_binders bl1 bl2 =
   List.equal local_binder_eq bl1 bl2
 
+let eq_params (up1,p1) (up2,p2) =
+  eq_local_binders up1 up2 && Option.equal eq_local_binders p1 p2
+
 let extract_coercions indl =
   let mkqid (_,({CAst.v=id},_)) = qualid_of_ident id in
   let extract lc = List.filter (fun (iscoe,_) -> iscoe) lc in
@@ -519,7 +532,7 @@ let extract_params indl =
   match paramsl with
   | [] -> anomaly (Pp.str "empty list of inductive types.")
   | params::paramsl ->
-      if not (List.for_all (eq_local_binders params) paramsl) then user_err Pp.(str
+      if not (List.for_all (eq_params params) paramsl) then user_err Pp.(str
         "Parameters should be syntactically the same for each inductive type.");
       params
 
@@ -544,7 +557,12 @@ type uniform_inductive_flag =
 let do_mutual_inductive ~template udecl indl ~cumulative ~poly ~private_ind ~uniform finite =
   let (params,indl),coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)
-  let indl = match uniform with UniformParameters -> (params, [], indl) | NonUniformParameters -> ([], params, indl) in
+  let indl = match params with
+    | uparams, Some params -> (uparams, params, indl)
+    | params, None -> match uniform with
+      | UniformParameters -> (params, [], indl)
+      | NonUniformParameters -> ([], params, indl)
+  in
   let mie,pl,impls = interp_mutual_inductive_gen (Global.env()) ~template udecl indl ntns ~cumulative ~poly ~private_ind finite in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (DeclareInd.declare_mutual_inductive_with_eliminations mie pl impls);
