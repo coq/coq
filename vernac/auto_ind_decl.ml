@@ -178,7 +178,7 @@ let build_beq_scheme mode kn =
   (* current inductive we are working on *)
   let cur_packet = mib.mind_packets.(snd (fst ind)) in
   (* Inductive toto : [rettyp] := *)
-  let rettyp = Inductive.type_of_inductive env ((mib,cur_packet),u) in
+  let rettyp = Inductive.type_of_inductive ((mib,cur_packet),u) in
   (* split rettyp in a list without the non rec params and the last ->
   e.g. Inductive vec (A:Set) : nat -> Set := ... will do [nat] *)
   let rettyp_l = quick_chop nparrec (deconstruct_type rettyp) in

@@ -437,7 +437,7 @@ and extract_really_ind env kn mib =
       Array.mapi
         (fun i mip ->
            let (_,u),_ = UnivGen.fresh_inductive_instance env (kn,i) in
-           let ar = Inductive.type_of_inductive env ((mib,mip),u) in
+           let ar = Inductive.type_of_inductive ((mib,mip),u) in
            let ar = EConstr.of_constr ar in
            let info = (fst (flag_of_type env sg ar) = Info) in
            let s,v = if info then type_sign_vl env sg ar else [],[] in
@@ -526,7 +526,7 @@ and extract_really_ind env kn mib =
         (* Is this record officially declared with its projections ? *)
         (* If so, we use this information. *)
         begin try
-          let ty = Inductive.type_of_inductive env ((mib,mip0),u) in
+          let ty = Inductive.type_of_inductive ((mib,mip0),u) in
           let n = nb_default_params env sg (EConstr.of_constr ty) in
           let check_proj kn = if Cset.mem kn !projs then add_projection n kn ip
           in

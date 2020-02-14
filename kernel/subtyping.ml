@@ -150,8 +150,8 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
       (* nparams done *)
       (* params_ctxt done because part of the inductive types *)
       (* Don't check the sort of the type if polymorphic *)
-      let ty1 = type_of_inductive env ((mib1, p1), inst) in
-      let ty2 = type_of_inductive env ((mib2, p2), inst) in
+      let ty1 = type_of_inductive ((mib1, p1), inst) in
+      let ty2 = type_of_inductive ((mib2, p2), inst) in
       let cst = check_inductive_type cst p2.mind_typename ty1 ty2 in
         cst
   in

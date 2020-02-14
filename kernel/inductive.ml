@@ -143,9 +143,16 @@ let remember_subst u subst =
     Univ.LMap.add u (Univ.sup (Univ.LMap.find u subst) su) subst
   with Not_found -> subst
 
+type param_univs = (unit -> Universe.t) list
+
+let make_param_univs env argtys =
+  Array.map_to_list (fun arg () ->
+      Sorts.univ_of_sort (snd (Reduction.dest_arity env arg)))
+    argtys
+
 (* Bind expected levels of parameters to actual levels *)
 (* Propagate the new levels in the signature *)
-let make_subst env =
+let make_subst =
   let rec make subst = function
     | LocalDef _ :: sign, exp, args ->
         make subst (sign, exp, args)
@@ -158,8 +165,8 @@ let make_subst env =
         (* arity is a global level which, at typing time, will be enforce *)
         (* to be greater than the level of the argument; this is probably *)
         (* a useless extra constraint *)
-        let s = Sorts.univ_of_sort (snd (dest_arity env (Lazy.force a))) in
-          make (cons_subst u s subst) (sign, exp, args)
+        let s = a () in
+        make (cons_subst u s subst) (sign, exp, args)
     | LocalAssum (_na,_t) :: sign, Some u::exp, [] ->
         (* No more argument here: we add the remaining universes to the *)
         (* substitution (when [u] is distinct from all other universes in the *)
@@ -178,9 +185,8 @@ let make_subst env =
 
 exception SingletonInductiveBecomesProp of Id.t
 
-let instantiate_universes env ctx ar argsorts =
-  let args = Array.to_list argsorts in
-  let subst = make_subst env (ctx,ar.template_param_levels,args) in
+let instantiate_universes ctx ar args =
+  let subst = make_subst (ctx,ar.template_param_levels,args) in
   let level = Univ.subst_univs_universe (Univ.make_subst subst) ar.template_level in
   let ty =
     (* Singleton type not containing types are interpretable in Prop *)
@@ -204,13 +210,13 @@ let check_instance mib u =
       | Polymorphic uctx -> Instance.length u = AUContext.size uctx)
   then CErrors.anomaly Pp.(str "bad instance length on mutind.")
 
-let type_of_inductive_gen ?(polyprop=true) env ((mib,mip),u) paramtyps =
+let type_of_inductive_gen ?(polyprop=true) ((mib,mip),u) paramtyps =
   check_instance mib u;
   match mip.mind_arity with
   | RegularArity a -> subst_instance_constr u a.mind_user_arity
   | TemplateArity ar ->
     let ctx = List.rev mip.mind_arity_ctxt in
-    let ctx,s = instantiate_universes env ctx ar paramtyps in
+    let ctx,s = instantiate_universes ctx ar paramtyps in
       (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
          the situation where a non-Prop singleton inductive becomes Prop
          when applied to Prop params *)
@@ -218,21 +224,21 @@ let type_of_inductive_gen ?(polyprop=true) env ((mib,mip),u) paramtyps =
       then raise (SingletonInductiveBecomesProp mip.mind_typename);
       Term.mkArity (List.rev ctx,s)
 
-let type_of_inductive env pind =
-  type_of_inductive_gen env pind [||]
+let type_of_inductive pind =
+  type_of_inductive_gen pind []
 
-let constrained_type_of_inductive env ((mib,_mip),u as pind) =
-  let ty = type_of_inductive env pind in
+let constrained_type_of_inductive ((mib,_mip),u as pind) =
+  let ty = type_of_inductive pind in
   let cst = instantiate_inductive_constraints mib u in
     (ty, cst)
 
-let constrained_type_of_inductive_knowing_parameters env ((mib,_mip),u as pind) args =
-  let ty = type_of_inductive_gen env pind args in
+let constrained_type_of_inductive_knowing_parameters ((mib,_mip),u as pind) args =
+  let ty = type_of_inductive_gen pind args in
   let cst = instantiate_inductive_constraints mib u in
     (ty, cst)
 
-let type_of_inductive_knowing_parameters env ?(polyprop=true) mip args =
-  type_of_inductive_gen ~polyprop env mip args
+let type_of_inductive_knowing_parameters ?(polyprop=true) mip args =
+  type_of_inductive_gen ~polyprop mip args
 
 (* The max of an array of universes *)
 
@@ -589,7 +595,7 @@ let ienv_push_inductive (env, ra_env) ((mind,u),lpar) =
   let push_ind specif env =
     let r = specif.mind_relevance in
     let anon = Context.make_annot Anonymous r in
-    let decl = LocalAssum (anon, hnf_prod_applist env (type_of_inductive env ((mib,specif),u)) lpar) in
+    let decl = LocalAssum (anon, hnf_prod_applist env (type_of_inductive ((mib,specif),u)) lpar) in
     push_rel decl env
   in
   let env = Array.fold_right push_ind mib.mind_packets env in

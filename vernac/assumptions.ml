@@ -239,7 +239,6 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
      in
      (* Build the context of all arities *)
      let arities_ctx =
-       let global_env = Global.env () in
        let instance =
          let open Univ in
          Instance.of_array
@@ -250,7 +249,7 @@ and traverse_inductive (curr, data, ax2ty) mind obj =
        in
        Array.fold_left (fun accu oib ->
           let pspecif = ((mib, oib), instance) in
-          let ind_type = Inductive.type_of_inductive global_env pspecif in
+          let ind_type = Inductive.type_of_inductive pspecif in
           let indr = oib.mind_relevance in
           let ind_name = Name oib.mind_typename in
           Context.Rel.add (Context.Rel.Declaration.LocalAssum (make_annot ind_name indr, ind_type)) accu)

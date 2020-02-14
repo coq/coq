@@ -168,15 +168,21 @@ let retype ?(polyprop=true) sigma =
     | _ -> decomp_sort env sigma (type_of env t)
 
   and type_of_global_reference_knowing_parameters env c args =
-    let argtyps =
-      Array.map (fun c -> lazy (EConstr.to_constr ~abort_on_undefined_evars:false sigma (type_of env c))) args in
     match EConstr.kind sigma c with
     | Ind (ind, u) ->
       let u = EInstance.kind sigma u in
       let mip = lookup_mind_specif env ind in
-        EConstr.of_constr (try Inductive.type_of_inductive_knowing_parameters
-               ~polyprop env (mip, u) argtyps
-         with Reduction.NotArity -> retype_error NotAnArity)
+      let paramtyps = Array.map_to_list (fun arg () ->
+          let t = type_of env arg in
+          let s = try Reductionops.sort_of_arity env sigma t
+            with Reduction.NotArity -> retype_error NotAnArity
+          in
+          Sorts.univ_of_sort (ESorts.kind sigma s))
+          args
+      in
+      EConstr.of_constr
+        (Inductive.type_of_inductive_knowing_parameters
+           ~polyprop (mip, u) paramtyps)
     | Construct (cstr, u) ->
       let u = EInstance.kind sigma u in
       EConstr.of_constr (type_of_constructor env (cstr, u))
