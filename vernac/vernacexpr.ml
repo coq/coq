@@ -104,7 +104,6 @@ type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = bool option
   (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
 type export_flag    = bool (* true = Export;        false = Import         *)
-type inductive_flag = Declarations.recursivity_kind
 type onlyparsing_flag = { onlyparsing : bool }
  (* Some v = Parse only;  None = Print also.
     If v<>Current, it contains the name of the coq version
@@ -165,7 +164,7 @@ type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
   | RecordDecl of lident option * (local_decl_expr * record_field_attr) list
 type inductive_expr =
-  ident_decl with_coercion * local_binder_expr list * constr_expr option * inductive_kind *
+  ident_decl with_coercion * local_binder_expr list * constr_expr option *
     constructor_list_or_record_decl_expr
 
 type one_inductive_expr =
@@ -306,7 +305,7 @@ type nonrec vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
-  | VernacInductive of vernac_cumulative option * bool (* private *) * inductive_flag * (inductive_expr * decl_notation list) list
+  | VernacInductive of vernac_cumulative option * bool (* private *) * inductive_kind * (inductive_expr * decl_notation list) list
   | VernacFixpoint of discharge * fixpoint_expr list
   | VernacCoFixpoint of discharge * cofixpoint_expr list
   | VernacScheme of (lident option * scheme) list

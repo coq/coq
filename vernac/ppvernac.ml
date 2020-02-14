@@ -476,7 +476,7 @@ let string_of_theorem_kind = let open Decls in function
     let prpri = match pri with None -> mt() | Some i -> str "| " ++ int i in
     prx ++ prpri ++ prlist (pr_decl_notation @@ pr_constr env sigma) ntn
 
-  let pr_record_decl b c fs =
+  let pr_record_decl c fs =
     pr_opt pr_lident c ++ (if c = None then str"{" else str" {") ++
       hv 0 (prlist_with_sep pr_semicolon pr_record_field fs ++ str"}")
 
@@ -802,7 +802,7 @@ let string_of_definition_object_kind = let open Decls in function
                    (if coe then str":>" else str":") ++
                    Flags.without_option Flags.beautify pr_spc_lconstr c)
         in
-        let pr_constructor_list b l = match l with
+        let pr_constructor_list l = match l with
           | Constructors [] -> mt()
           | Constructors l ->
             let fst_sep = match l with [_] -> "   " | _ -> " | " in
@@ -810,21 +810,20 @@ let string_of_definition_object_kind = let open Decls in function
               fnl() ++ str fst_sep ++
               prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l
           | RecordDecl (c,fs) ->
-            pr_record_decl b c fs
+            pr_record_decl c fs
         in
-        let pr_oneind key (((coe,iddecl),indpar,s,k,lc),ntn) =
+        let pr_oneind key (((coe,iddecl),indpar,s,lc),ntn) =
           hov 0 (
             str key ++ spc() ++
               (if coe then str"> " else str"") ++ pr_ident_decl iddecl ++
               pr_and_type_binders_arg indpar ++
               pr_opt (fun s -> str":" ++ spc() ++ pr_lconstr_expr env sigma s) s ++
-              str" :=") ++ pr_constructor_list k lc ++
+              str" :=") ++ pr_constructor_list lc ++
             prlist (pr_decl_notation @@ pr_constr env sigma) ntn
         in
         let key =
-          let (_,_,_,k,_),_ = List.hd l in
           let kind =
-            match k with Record -> "Record" | Structure -> "Structure"
+            match f with Record -> "Record" | Structure -> "Structure"
                        | Inductive_kw -> "Inductive" | CoInductive -> "CoInductive"
                        | Class _ -> "Class" | Variant -> "Variant"
           in
