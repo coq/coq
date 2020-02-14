@@ -909,10 +909,10 @@ notations are given below. The optional :production:`scope` is described in
    notation      : [Local] Notation `string` := `term` [(`modifiers`)] [: `scope`].
                  : [Local] Infix `string` := `qualid` [(`modifiers`)] [: `scope`].
                  : [Local] Reserved Notation `string` [(`modifiers`)] .
-                 : Inductive `ind_body` [`decl_notation`] with … with `ind_body` [`decl_notation`].
-                 : CoInductive `ind_body` [`decl_notation`] with … with `ind_body` [`decl_notation`].
-                 : Fixpoint `fix_body` [`decl_notation`] with … with `fix_body` [`decl_notation`].
-                 : CoFixpoint `fix_body` [`decl_notation`] with … with `fix_body` [`decl_notation`].
+                 : Inductive `ind_body` [`decl_notations`] with … with `ind_body` [`decl_notations`].
+                 : CoInductive `ind_body` [`decl_notations`] with … with `ind_body` [`decl_notations`].
+                 : Fixpoint `fix_body` [`decl_notations`] with … with `fix_body` [`decl_notations`].
+                 : CoFixpoint `fix_body` [`decl_notations`] with … with `fix_body` [`decl_notations`].
                  : [Local] Declare Custom Entry `ident`.
    modifiers     : `modifier`, … , `modifier`
    modifier      : at level `num`
@@ -947,7 +947,7 @@ notations are given below. The optional :production:`scope` is described in
 
 .. prodn::
    decl_notations ::= where @decl_notation {* and @decl_notation }
-   decl_notation ::= @string := @term1_extended {? : @ident }
+   decl_notation ::= @string := @term1_extended [(only parsing)] {? : @ident }
 
 .. note:: No typing of the denoted expression is performed at definition
           time. Type checking is done only at the time of use of the notation.

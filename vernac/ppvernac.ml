@@ -297,11 +297,6 @@ open Pputils
     | { v = CHole (k, Namegen.IntroAnonymous, _) } -> mt()
     | _ as c -> brk(0,2) ++ str" :" ++ pr_c c
 
-  let pr_decl_notation prc ({loc; v=ntn},c,scopt) =
-    fnl () ++ keyword "where " ++ qs ntn ++ str " := "
-    ++ Flags.without_option Flags.beautify prc c ++
-      pr_opt (fun sc -> str ": " ++ str sc) scopt
-
   let pr_binders_arg =
     let env = Global.env () in
     let sigma = Evd.from_env env in
@@ -417,6 +412,15 @@ let string_of_theorem_kind = let open Decls in function
     | [] -> mt()
     | l -> spc() ++
       hov 1 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
+
+  let pr_only_parsing_clause onlyparsing =
+    pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else [])
+
+  let pr_decl_notation prc ({loc; v=ntn},c,onlyparsing, scopt) =
+    fnl () ++ keyword "where " ++ qs ntn ++ str " := "
+    ++ Flags.without_option Flags.beautify prc c
+    ++ pr_only_parsing_clause onlyparsing
+    ++ pr_opt (fun sc -> str ": " ++ str sc) scopt
 
   let pr_rec_definition { fname; univs; rec_order; binders; rtype; body_def; notations } =
     let env = Global.env () in
@@ -1057,7 +1061,7 @@ let string_of_definition_object_kind = let open Decls in function
           hov 2
             (keyword "Notation" ++ spc () ++ pr_lident id ++ spc () ++
                prlist_with_sep spc pr_id ids ++ str":=" ++ pr_constrarg c ++
-               pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
+               pr_only_parsing_clause onlyparsing)
         )
       | VernacArguments (q, args, more_implicits, mods) ->
         return (

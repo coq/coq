@@ -24,7 +24,7 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
      record         : `record_keyword` `record_body` with … with `record_body`
      record_keyword : Record | Inductive | CoInductive
      record_body    : `ident` [ `binders` ] [: `sort` ] := [ `ident` ] { [ `field` ; … ; `field` ] }.
-     field          : `ident` [ `binders` ] : `type` [ where `notation` ]
+     field          : `ident` [ `binders` ] : `type` [ `decl_notations` ]
                     : `ident` [ `binders` ] [: `type` ] := `term`
 
 .. cmd:: {| Record | Structure } @inductive_definition {* with @inductive_definition }
@@ -35,8 +35,10 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
    the default name :n:`Build_@ident`, where :token:`ident` is the record name, is used. If :token:`sort` is
    omitted, the default sort is :math:`\Type`. The identifiers inside the brackets are the names of
    fields. For a given field :token:`ident`, its type is :n:`forall {* @binder }, @type`.
-   Remark that the type of a particular identifier may depend on a previously-given identifier. Thus the
-   order of the fields is important. Finally, :token:`binders` are parameters of the record.
+   Notice that the type of a particular identifier may depend on a previously-given identifier. Thus the
+   order of the fields is important. The record can depend as a whole on parameters :token:`binders`
+   and each field can also depend on its own :token:`binders`. Finally, notations can be attached to
+   fields using the :n:`decl_notations` annotation.
 
    :cmd:`Record` and :cmd:`Structure` are synonyms.
 

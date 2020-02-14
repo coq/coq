@@ -44,11 +44,12 @@ let quoted_attributes = Entry.create "vernac:quoted_attributes"
 let class_rawexpr = Entry.create "vernac:class_rawexpr"
 let thm_token = Entry.create "vernac:thm_token"
 let def_body = Entry.create "vernac:def_body"
-let decl_notation = Entry.create "vernac:decl_notation"
+let decl_notations = Entry.create "vernac:decl_notations"
 let record_field = Entry.create "vernac:record_field"
 let of_type_with_opt_coercion = Entry.create "vernac:of_type_with_opt_coercion"
 let section_subset_expr = Entry.create "vernac:section_subset_expr"
 let scope_delimiter = Entry.create "vernac:scope_delimiter"
+let only_parsing = Entry.create "vernac:only_parsing"
 
 let make_bullet s =
   let open Proof_bullet in
@@ -176,7 +177,7 @@ let name_of_ident_decl : ident_decl -> name_decl =
 (* Gallina declarations *)
 GRAMMAR EXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
-    record_field decl_notation rec_definition ident_decl univ_decl;
+    record_field decl_notations rec_definition ident_decl univ_decl;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -376,15 +377,15 @@ GRAMMAR EXTEND Gram
     [ [ IDENT "Eval"; r = red_expr; "in" -> { Some r }
       | -> { None } ] ]
   ;
-  one_decl_notation:
-    [ [ ntn = ne_lstring; ":="; c = constr;
-        scopt = OPT [ ":"; sc = IDENT -> { sc } ] -> { (ntn,c,scopt) } ] ]
+  decl_notation:
+    [ [ ntn = ne_lstring; ":="; c = constr; b = only_parsing;
+        scopt = OPT [ ":"; sc = IDENT -> { sc } ] -> { (ntn,c,b,scopt) } ] ]
   ;
   decl_sep:
     [ [ IDENT "and" -> { () } ] ]
   ;
-  decl_notation:
-    [ [ "where"; l = LIST1 one_decl_notation SEP decl_sep -> { l }
+  decl_notations:
+    [ [ "where"; l = LIST1 decl_notation SEP decl_sep -> { l }
     | -> { [] } ] ]
   ;
   (* Inductives and records *)
@@ -396,7 +397,7 @@ GRAMMAR EXTEND Gram
     [ [ oc = opt_coercion; id = ident_decl; indpar = binders;
         extrapar = OPT [ "|"; p = binders -> { p } ];
         c = OPT [ ":"; c = lconstr -> { c } ];
-        lc=opt_constructors_or_fields; ntn = decl_notation ->
+        lc=opt_constructors_or_fields; ntn = decl_notations ->
            { (((oc,id),(indpar,extrapar),c,lc),ntn) } ] ]
   ;
   constructor_list_or_record_decl:
@@ -423,14 +424,14 @@ GRAMMAR EXTEND Gram
     [ [ id_decl = ident_decl;
         bl = binders_fixannot;
         rtype = type_cstr;
-        body_def = OPT [":="; def = lconstr -> { def } ]; notations = decl_notation ->
+        body_def = OPT [":="; def = lconstr -> { def } ]; notations = decl_notations ->
           { let binders, rec_order = bl in
             {fname = fst id_decl; univs = snd id_decl; rec_order; binders; rtype; body_def; notations}
           } ] ]
   ;
   corec_definition:
     [ [ id_decl = ident_decl; binders = binders; rtype = type_cstr;
-        body_def = OPT [":="; def = lconstr -> { def }]; notations = decl_notation ->
+        body_def = OPT [":="; def = lconstr -> { def }]; notations = decl_notations ->
         { {fname = fst id_decl; univs = snd id_decl; rec_order = (); binders; rtype; body_def; notations}
         } ]]
   ;
@@ -466,7 +467,7 @@ GRAMMAR EXTEND Gram
   record_field:
   [ [ attr = LIST0 quoted_attributes ;
       bd = record_binder; rf_priority = OPT [ "|"; n = natural -> { n } ];
-      rf_notation = decl_notation -> {
+      rf_notation = decl_notations -> {
       let rf_canonical = attr |> List.flatten |> parse canonical_field in
       let rf_subclass, rf_decl = bd in
       rf_decl, { rf_subclass ; rf_priority ; rf_notation ; rf_canonical } } ] ]
@@ -1145,7 +1146,7 @@ GRAMMAR EXTEND Gram
 (* Grammar extensions *)
 
 GRAMMAR EXTEND Gram
-  GLOBAL: syntax;
+  GLOBAL: syntax only_parsing;
 
   syntax:
    [ [ IDENT "Open"; IDENT "Scope"; sc = IDENT ->

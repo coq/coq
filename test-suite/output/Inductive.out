@@ -5,3 +5,5 @@ Inductive foo (A : Type) (x : A) (y : A := x) : Prop :=  Foo : foo A x
 
 Arguments foo _%type_scope
 Arguments Foo _%type_scope
+myprod unit bool
+     : Set

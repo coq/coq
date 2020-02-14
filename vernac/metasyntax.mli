@@ -37,12 +37,12 @@ val add_class_scope : locality_flag -> scope_name -> scope_class list -> unit
 (** Add only the interpretation of a notation that already has pa/pp rules *)
 
 val add_notation_interpretation :
-  env -> (lstring * constr_expr * scope_name option) -> unit
+  env -> decl_notation -> unit
 
 (** Add a notation interpretation for supporting the "where" clause *)
 
-val set_notation_for_interpretation : env -> Constrintern.internalization_env ->
-  (lstring * constr_expr * scope_name option) -> unit
+val set_notation_for_interpretation :
+  env -> Constrintern.internalization_env -> decl_notation -> unit
 
 (** Add only the parsing/printing rule of a notation *)
 
