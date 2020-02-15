@@ -2157,22 +2157,23 @@ let collect_proof keep cur hd brkind id =
  let has_default_proof_using = Option.has_some (Proof_using.get_default_proof_using ()) in
  let proof_using_ast = function
    | VernacProof(_,Some _) -> true
+   | VernacProof(_,None) -> has_default_proof_using
    | _ -> false
  in
  let proof_using_ast = function
    | Some (_, v) when proof_using_ast v.expr.CAst.v.expr
                       && (not (Vernacprop.has_Fail v.expr)) -> Some v
    | _ -> None in
- let has_proof_using x = has_default_proof_using || (proof_using_ast x <> None) in
+ let has_proof_using x = proof_using_ast x <> None in
  let proof_no_using = function
-   | VernacProof(t,None) -> t
+   | VernacProof(t,None) -> if has_default_proof_using then None else t
    | _ -> assert false
  in
  let proof_no_using = function
    | Some (_, v) -> proof_no_using v.expr.CAst.v.expr, v
    | _ -> assert false in
  let has_proof_no_using = function
-   | VernacProof(_,None) -> true
+   | VernacProof(_,None) -> not has_default_proof_using
    | _ -> false
  in
  let has_proof_no_using = function
