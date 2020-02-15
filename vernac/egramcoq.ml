@@ -507,13 +507,18 @@ let prepare_empty_levels forpat (where,(pos,p4assoc,name,reinit)) =
   let empty = (pos, [(name, p4assoc, [])]) in
   ExtendRule (target_entry where forpat, reinit, empty)
 
+let different_levels (custom,opt_level) (custom',string_level) =
+  match opt_level with
+  | None -> true
+  | Some level -> not (Notation.notation_entry_eq custom custom') || level <> int_of_string string_level
+
 let rec pure_sublevels' assoc from forpat level = function
 | [] -> []
 | GramConstrNonTerminal (e,_) :: rem ->
    let rem = pure_sublevels' assoc from forpat level rem in
    let push where p rem =
      match symbol_of_target where p assoc from forpat with
-     | MayRecNo (Aentryl (_,i)) when level <> Some (int_of_string i) -> (where,int_of_string i) :: rem
+     | MayRecNo (Aentryl (_,i)) when different_levels (fst from,level) (where,i) -> (where,int_of_string i) :: rem
      | _ -> rem in
    (match e with
    | ETProdPattern i -> push InConstrEntry (NumLevel i,InternalProd) rem
