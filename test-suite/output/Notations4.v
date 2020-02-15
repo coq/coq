@@ -25,6 +25,20 @@ Check [ << # 0 >> ].
 Notation "n" := n%nat (in custom myconstr at level 0, n bigint).
 Check [ 2 + 3 ].
 
+Module A1.
+  (* This is compatible with bigint *)
+  Notation "x" := x (in custom myconstr at level 0, x ident).
+  (* This is incompatible with ident *)
+  Fail Notation "x" := x (in custom myconstr at level 0, x global).
+End A1.
+
+Module A2.
+  (* This is compatible with bigint *)
+  Notation "x" := x (in custom myconstr at level 0, x global).
+  (* This is compatible with bigint and global *)
+  Notation "x" := x (in custom myconstr at level 0, x string).
+End A2.
+
 End A.
 
 Module B.

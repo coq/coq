@@ -744,30 +744,6 @@ let recompute_assoc typs = let open Gramlib.Gramext in
 (**************************************************************************)
 (* Registration of syntax extensions (parsing/printing, no interpretation)*)
 
-let pr_arg_level from (lev,typ) =
-  let pplev = function
-  | (n,L) when Int.equal n from -> str "at next level"
-  | (n,E) -> str "at level " ++ int n
-  | (n,L) -> str "at level below " ++ int n
-  | (n,Prec m) when Int.equal m n -> str "at level " ++ int n
-  | (n,_) -> str "Unknown level" in
-  Ppvernac.pr_set_entry_type (fun _ -> (*TO CHECK*) mt()) typ ++
-  (match typ with
-   | ETConstr _ | ETPattern _ -> spc () ++ pplev lev
-   | _ -> mt ())
-
-let pr_level ntn (from,fromlevel,args,typs) =
-  (match from with InConstrEntry -> mt () | InCustomEntry s -> str "in " ++ str s ++ spc()) ++
-  str "at level " ++ int fromlevel ++ spc () ++ str "with arguments" ++ spc() ++
-  prlist_with_sep pr_comma (pr_arg_level fromlevel) (List.combine args typs)
-
-let error_incompatible_level ntn oldprec prec =
-  user_err
-    (str "Notation " ++ pr_notation ntn ++ str " is already defined" ++ spc() ++
-    pr_level ntn oldprec ++
-    spc() ++ str "while it is now required to be" ++ spc() ++
-    pr_level ntn prec ++ str ".")
-
 let error_parsing_incompatible_level ntn ntn' oldprec prec =
   user_err
     (str "Notation " ++ pr_notation ntn ++ str " relies on a parsing rule for " ++ pr_notation ntn' ++ spc() ++
@@ -792,27 +768,21 @@ let check_and_extend_constr_grammar ntn rule =
     if notation_eq ntn ntn_for_grammar then raise Not_found;
     let prec = rule.notgram_level in
     let oldprec = Notgram_ops.level_of_notation ntn_for_grammar in
-    if not (Notgram_ops.level_eq prec oldprec) then error_parsing_incompatible_level ntn ntn_for_grammar oldprec prec;
-  with Not_found ->
+    if not (Notgram_ops.level_compatible prec oldprec) then error_parsing_incompatible_level ntn ntn_for_grammar oldprec prec;
+  with NoSyntaxRule ->
     Egramcoq.extend_constr_grammar rule
 
 let cache_one_syntax_extension se =
   let ntn = se.synext_notation in
   let prec = se.synext_level in
   let onlyprint = se.synext_notgram.notgram_onlyprinting in
-  try
-    let oldprec = Notgram_ops.level_of_notation ~onlyprint ntn in
-    if not (Notgram_ops.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec;
-  with Not_found ->
-    begin
-      (* Reserve the notation level *)
-      Notgram_ops.declare_notation_level ntn prec ~onlyprint;
-      (* Declare the parsing rule *)
-      if not onlyprint then List.iter (check_and_extend_constr_grammar ntn) se.synext_notgram.notgram_rules;
-      (* Declare the notation rule *)
-      declare_notation_rule ntn
-        ~extra:se.synext_extra (se.synext_unparsing, let (_,lev,_,_) = prec in lev) se.synext_notgram
-    end
+  (* Reserve the notation level *)
+  Notgram_ops.declare_notation_level ntn prec ~onlyprint;
+  (* Declare the parsing rule *)
+  if not onlyprint then List.iter (check_and_extend_constr_grammar ntn) se.synext_notgram.notgram_rules;
+  (* Declare the notation rule *)
+  declare_notation_rule ntn
+    ~extra:se.synext_extra (se.synext_unparsing, let (_,lev,_,_) = prec in lev) se.synext_notgram
 
 let cache_syntax_extension (_, (_, sy)) =
   cache_one_syntax_extension sy
@@ -1182,7 +1152,7 @@ let find_precedence custom lev etyps symbols onlyprint =
 
 let check_curly_brackets_notation_exists () =
   try let _ = Notgram_ops.level_of_notation (InConstrEntrySomeLevel,"{ _ }") in ()
-  with Not_found ->
+  with NoSyntaxRule ->
     user_err Pp.(str "Notations involving patterns of the form \"{ _ }\" are treated \n\
 specially and require that the notation \"{ _ }\" is already reserved.")
 
@@ -1421,8 +1391,6 @@ let with_syntax_protection f x =
 (**********************************************************************)
 (* Recovering existing syntax                                         *)
 
-exception NoSyntaxRule
-
 let recover_notation_syntax ntn =
   try
     let prec = Notgram_ops.level_of_notation ~onlyprint:true ntn (* Be as little restrictive as possible *) in
@@ -1435,7 +1403,7 @@ let recover_notation_syntax ntn =
       synext_unparsing = pp_rule;
       synext_extra = pp_extra_rules;
     }
-  with Not_found ->
+  with Not_found | NoSyntaxRule ->
     raise NoSyntaxRule
 
 let recover_squash_syntax sy =
