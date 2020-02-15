@@ -12,7 +12,7 @@
 open Constrexpr
 open Notation_gram
 
-val level_compatible : level -> level -> bool
+val level_eq : level -> level -> bool
 
 (** {6 Declare and test the level of a (possibly uninterpreted) notation } *)
 
