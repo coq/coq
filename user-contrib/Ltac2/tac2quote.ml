@@ -236,7 +236,7 @@ let pattern_vars pat =
   in
   aux () Id.Set.empty pat
 
-let abstract_vars loc vars tac =
+let abstract_vars loc ?typ vars tac =
   let get_name = function Name id -> Some id | Anonymous -> None in
   let def = try Some (List.find_map get_name vars) with Not_found -> None in
   let na, tac = match def with
@@ -258,7 +258,15 @@ let abstract_vars loc vars tac =
       let tac = CAst.make ?loc @@ CTacLet (false, bnd, tac) in
       (Name id0, tac)
   in
-  CAst.make ?loc @@ CTacFun ([CAst.make ?loc @@ CPatVar na], tac)
+  let pat = CAst.make ?loc @@ CPatVar na in
+  let pat = match typ with
+  | None -> pat
+  | Some typ ->
+    let t_array = coq_core "array" in
+    let typ = CAst.make ?loc @@ CTypRef (AbsKn (Other t_array), [typ]) in
+    CAst.make ?loc @@ CPatCnv (pat, typ)
+  in
+  CAst.make ?loc @@ CTacFun ([pat], tac)
 
 let of_pattern p =
   inj_wit ?loc:p.CAst.loc wit_pattern p
@@ -400,7 +408,12 @@ let of_constr_matching {loc;v=m} =
     (* Order of elements is crucial here! *)
     let vars = Id.Set.elements vars in
     let vars = List.map (fun id -> Name id) vars in
-    let e = abstract_vars loc vars tac in
+    (* Annotate the bound array variable with constr type *)
+    let typ =
+      let t_constr = coq_core "constr" in
+      CAst.make ?loc @@ CTypRef (AbsKn (Other t_constr), [])
+    in
+    let e = abstract_vars loc ~typ vars tac in
     let e = CAst.make ?loc @@ CTacFun ([CAst.make ?loc @@ CPatVar na], e) in
     let pat = inj_wit ?loc:ploc wit_pattern pat in
     of_tuple [knd; pat; e]
