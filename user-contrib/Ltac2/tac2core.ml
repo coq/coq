@@ -82,17 +82,6 @@ open Core
 let v_unit = Value.of_unit ()
 let v_blk = Valexpr.make_block
 
-let of_relevance = function
-  | Sorts.Relevant -> ValInt 0
-  | Sorts.Irrelevant -> ValInt 1
-
-let to_relevance = function
-  | ValInt 0 -> Sorts.Relevant
-  | ValInt 1 -> Sorts.Irrelevant
-  | _ -> assert false
-
-let relevance = make_repr of_relevance to_relevance
-
 let of_binder b =
   Value.of_ext Value.val_binder b
 
@@ -108,13 +97,14 @@ let to_instance u =
   EConstr.EInstance.make (Univ.Instance.of_array u)
 
 let of_rec_declaration (nas, ts, cs) =
-  (Value.of_array of_binder nas,
-  Value.of_array Value.of_constr ts,
+  let binders = Array.map2 (fun na t -> (na, t)) nas ts in
+  (Value.of_array of_binder binders,
   Value.of_array Value.of_constr cs)
 
-let to_rec_declaration (nas, ts, cs) =
-  (Value.to_array to_binder nas,
-  Value.to_array Value.to_constr ts,
+let to_rec_declaration (nas, cs) =
+  let nas = Value.to_array to_binder nas in
+  (Array.map fst nas,
+  Array.map snd nas,
   Value.to_array Value.to_constr cs)
 
 let of_result f = function
@@ -397,21 +387,18 @@ let () = define1 "constr_kind" constr begin fun c ->
     |]
   | Prod (na, t, u) ->
     v_blk 6 [|
-      of_binder na;
-      Value.of_constr t;
+      of_binder (na, t);
       Value.of_constr u;
     |]
   | Lambda (na, t, c) ->
     v_blk 7 [|
-      of_binder na;
-      Value.of_constr t;
+      of_binder (na, t);
       Value.of_constr c;
     |]
   | LetIn (na, b, t, c) ->
     v_blk 8 [|
-      of_binder na;
+      of_binder (na, t);
       Value.of_constr b;
-      Value.of_constr t;
       Value.of_constr c;
     |]
   | App (c, cl) ->
@@ -442,20 +429,18 @@ let () = define1 "constr_kind" constr begin fun c ->
       Value.of_array Value.of_constr bl;
     |]
   | Fix ((recs, i), def) ->
-    let (nas, ts, cs) = of_rec_declaration def in
+    let (nas, cs) = of_rec_declaration def in
     v_blk 14 [|
       Value.of_array Value.of_int recs;
       Value.of_int i;
       nas;
-      ts;
       cs;
     |]
   | CoFix (i, def) ->
-    let (nas, ts, cs) = of_rec_declaration def in
+    let (nas, cs) = of_rec_declaration def in
     v_blk 15 [|
       Value.of_int i;
       nas;
-      ts;
       cs;
     |]
   | Proj (p, c) ->
@@ -493,20 +478,17 @@ let () = define1 "constr_make" valexpr begin fun knd ->
     let k = Value.to_ext Value.val_cast k in
     let t = Value.to_constr t in
     EConstr.mkCast (c, k, t)
-  | (6, [|na; t; u|]) ->
-    let na = to_binder na in
-    let t = Value.to_constr t in
+  | (6, [|na; u|]) ->
+    let (na, t) = to_binder na in
     let u = Value.to_constr u in
     EConstr.mkProd (na, t, u)
-  | (7, [|na; t; c|]) ->
-    let na = to_binder na in
-    let t = Value.to_constr t in
+  | (7, [|na; c|]) ->
+    let (na, t) = to_binder na in
     let u = Value.to_constr c in
     EConstr.mkLambda (na, t, u)
-  | (8, [|na; b; t; c|]) ->
-    let na = to_binder na in
+  | (8, [|na; b; c|]) ->
+    let (na, t) = to_binder na in
     let b = Value.to_constr b in
-    let t = Value.to_constr t in
     let c = Value.to_constr c in
     EConstr.mkLetIn (na, b, t, c)
   | (9, [|c; cl|]) ->
@@ -531,14 +513,14 @@ let () = define1 "constr_make" valexpr begin fun knd ->
     let t = Value.to_constr t in
     let bl = Value.to_array Value.to_constr bl in
     EConstr.mkCase (ci, c, t, bl)
-  | (14, [|recs; i; nas; ts; cs|]) ->
+  | (14, [|recs; i; nas; cs|]) ->
     let recs = Value.to_array Value.to_int recs in
     let i = Value.to_int i in
-    let def = to_rec_declaration (nas, ts, cs) in
+    let def = to_rec_declaration (nas, cs) in
     EConstr.mkFix ((recs, i), def)
-  | (15, [|i; nas; ts; cs|]) ->
+  | (15, [|i; nas; cs|]) ->
     let i = Value.to_int i in
-    let def = to_rec_declaration (nas, ts, cs) in
+    let def = to_rec_declaration (nas, cs) in
     EConstr.mkCoFix (i, def)
   | (16, [|p; c|]) ->
     let p = Value.to_ext Value.val_projection p in
@@ -653,18 +635,21 @@ let () = define1 "constr_pretype" (repr_ext val_preterm) begin fun c ->
   pf_apply pretype
 end
 
-let () = define2 "constr_binder_make" (option ident) relevance begin fun na rel ->
+let () = define2 "constr_binder_make" (option ident) constr begin fun na ty ->
+  pf_apply begin fun env sigma ->
+  let rel = Retyping.relevance_of_type env sigma ty in
   let na = match na with None -> Anonymous | Some id -> Name id in
-  return (Value.of_ext val_binder (Context.make_annot na rel))
+  return (Value.of_ext val_binder (Context.make_annot na rel, ty))
+  end
 end
 
-let () = define1 "constr_binder_name" (repr_ext val_binder) begin fun bnd ->
+let () = define1 "constr_binder_name" (repr_ext val_binder) begin fun (bnd, _) ->
   let na = match bnd.Context.binder_name with Anonymous -> None | Name id -> Some id in
   return (Value.of_option Value.of_ident na)
 end
 
-let () = define1 "constr_binder_relevance" (repr_ext val_binder) begin fun bnd ->
-  return (of_relevance bnd.Context.binder_relevance)
+let () = define1 "constr_binder_type" (repr_ext val_binder) begin fun (bnd, ty) ->
+  return (of_constr ty)
 end
 
 (** Patterns *)

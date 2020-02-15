@@ -29,16 +29,16 @@ Ltac2 Type kind := [
 | Evar (evar, constr array)
 | Sort (sort)
 | Cast (constr, cast, constr)
-| Prod (binder, constr, constr)
-| Lambda (binder, constr, constr)
-| LetIn (binder, constr, constr, constr)
+| Prod (binder, constr)
+| Lambda (binder, constr)
+| LetIn (binder, constr, constr)
 | App (constr, constr array)
 | Constant (constant, instance)
 | Ind (inductive, instance)
 | Constructor (constructor, instance)
 | Case (case, constr, constr, constr array)
-| Fix (int array, int, binder array, constr array, constr array)
-| CoFix (int, binder array, constr array, constr array)
+| Fix (int array, int, binder array, constr array)
+| CoFix (int, binder array, constr array)
 | Proj (projection, constr)
 | Uint63 (uint63)
 | Float (float)
@@ -72,13 +72,14 @@ End Unsafe.
 
 Module Binder.
 
-Ltac2 Type relevance := [ Relevant | Irrelevant ].
-
-Ltac2 @ external make : ident option -> relevance -> binder := "ltac2" "constr_binder_make".
+Ltac2 @ external make : ident option -> constr -> binder := "ltac2" "constr_binder_make".
+(** Create a binder given the name and the type of the bound variable. *)
 
 Ltac2 @ external name : binder -> ident option := "ltac2" "constr_binder_name".
+(** Retrieve the name of a binder. *)
 
-Ltac2 @ external relevance : binder -> relevance := "ltac2" "constr_binder_relevance".
+Ltac2 @ external type : binder -> constr := "ltac2" "constr_binder_type".
+(** Retrieve the type of a binder. *)
 
 End Binder.
 
