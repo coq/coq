@@ -52,10 +52,10 @@ let load_rcfile ~rcfile ~state =
       iraise reraise
 
 (* Recursively puts `.v` files in the LoadPath if -nois was not passed *)
-let build_stdlib_vo_path ~load_init ~unix_path ~coq_path =
+let build_stdlib_vo_path ~unix_path ~coq_path =
   let open Loadpath in
   { recursive = true;
-    path_spec = VoPath { unix_path; coq_path ; has_ml = AddNoML; implicit = load_init }
+    path_spec = VoPath { unix_path; coq_path ; has_ml = AddNoML; implicit = true }
   }
 
 let build_stdlib_ml_path ~dir =
@@ -88,7 +88,7 @@ let toplevel_init_load_path () =
   ml_path_if Coq_config.local [coqlib/"dev"]
 
 (* LoadPath for Coq user libraries *)
-let libs_init_load_path ~load_init =
+let libs_init_load_path () =
 
   let open Loadpath in
   let coqlib = Envars.coqlib () in
@@ -107,7 +107,7 @@ let libs_init_load_path ~load_init =
 
   (* then standard library *)
   [build_stdlib_ml_path ~dir:(coqlib/"plugins")] @
-  [build_stdlib_vo_path ~load_init ~unix_path:(coqlib/"theories") ~coq_path] @
+  [build_stdlib_vo_path ~unix_path:(coqlib/"theories") ~coq_path] @
 
   (* then user-contrib *)
   (if Sys.file_exists user_contrib then

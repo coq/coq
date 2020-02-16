@@ -40,6 +40,7 @@ type coqargs_config = {
 }
 
 type coqargs_pre = {
+  boot        : bool;
   load_init   : bool;
   load_rcfile : bool;
 
