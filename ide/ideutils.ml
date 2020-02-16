@@ -259,7 +259,7 @@ let current_dir () = match project_path#get with
 | None -> ""
 | Some dir -> dir
 
-let select_file_for_open ~title ?(filter=true) ?parent ?filename () =
+let select_file_for_open ~title ?(filter=true) ?(multiple=false) ?parent ?filename () =
   let file_chooser =
     GWindow.file_chooser_dialog ~action:`OPEN ~modal:true ~title ?parent ()
   in
@@ -271,6 +271,7 @@ let select_file_for_open ~title ?(filter=true) ?parent ?filename () =
       file_chooser#add_filter (filter_all_files ())
     end;
   file_chooser#set_default_response `OPEN;
+  file_chooser#set_select_multiple multiple;
   let dir = match filename with
     | None -> current_dir ()
     | Some f -> Filename.dirname f in
@@ -279,12 +280,12 @@ let select_file_for_open ~title ?(filter=true) ?parent ?filename () =
     match file_chooser#run () with
     | `OPEN ->
       begin
-        match file_chooser#filename with
-          | None -> None
-          | Some _ as f ->
-            project_path#set file_chooser#current_folder; f
+        let filenames = file_chooser#get_filenames in
+        (if filenames <> [] then
+          project_path#set file_chooser#current_folder);
+        filenames
       end
-    | `DELETE_EVENT | `CANCEL -> None in
+    | `DELETE_EVENT | `CANCEL -> [] in
   file_chooser#destroy ();
   file
 
