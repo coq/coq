@@ -231,6 +231,10 @@ let () = define1 "message_of_int" int begin fun n ->
   return (Value.of_pp (Pp.int n))
 end
 
+let () = define1 "message_of_bool" int begin fun b ->
+  return (Value.of_pp (Pp.bool n))
+end
+
 let () = define1 "message_of_string" string begin fun s ->
   return (Value.of_pp (str (Bytes.to_string s)))
 end

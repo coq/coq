@@ -16,6 +16,8 @@ Ltac2 @ external of_string : string -> message := "ltac2" "message_of_string".
 
 Ltac2 @ external of_int : int -> message := "ltac2" "message_of_int".
 
+Ltac2 @ external of_bool : bool -> message := "ltac2" "message_of_bool".
+
 Ltac2 @ external of_ident : ident -> message := "ltac2" "message_of_ident".
 
 Ltac2 @ external of_constr : constr -> message := "ltac2" "message_of_constr".
