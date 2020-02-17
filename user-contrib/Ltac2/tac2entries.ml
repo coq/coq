@@ -880,7 +880,7 @@ let print_ltac_type qid =
       let data = Tac2env.interp_constructor kn in
       let t = data.Tac2env.cdata_type in
       Feedback.msg_notice (hov 2 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_typref t))
-    | None -> Feedback.msg_notice (hov 2 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ str "Type"))
+    | None -> Feedback.msg_notice (hov 2 (pr_qualid qid ++ spc () ++ str "is a type"))
   else
     let kn =
       try Tac2env.locate_ltac qid
@@ -893,7 +893,7 @@ let print_ltac_type qid =
       let name = int_name () in
       Feedback.msg_notice (hov 0 (pr_qualid qid ++ spc () ++ str ":" ++ spc () ++ pr_glbtype name t))
     | TacAlias kn ->
-      Feedback.msg_notice (str "Alias to ...")
+      Feedback.msg_notice (str "Alias to" ++ spc () ++ KerName.print kn)
 
 let print_ltac qid =
   if Tac2env.is_constructor qid then
@@ -921,7 +921,7 @@ let print_ltac qid =
         )
       )
     | TacAlias kn ->
-      Feedback.msg_notice (str "Alias to ...")
+      Feedback.msg_notice (str "Alias to" ++ spc () ++ KerName.print kn)
 
 (** Calling tactics *)
 
