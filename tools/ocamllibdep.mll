@@ -195,6 +195,14 @@ let mllib_dependencies () =
        flush stdout)
     (List.rev !mllibAccu)
 
+let coq_makefile_mode = ref false
+
+let print_for_pack modname d =
+  if !coq_makefile_mode then
+    printf "%s.cmx : FOR_PACK=-for-pack %s\n" d modname
+  else
+    printf "%s_FORPACK:= -for-pack %s\n" d modname
+
 let mlpack_dependencies () =
   List.iter
     (fun (name,dirname) ->
@@ -204,7 +212,7 @@ let mlpack_dependencies () =
        let sdeps = String.concat " " deps in
        let efullname = escape fullname in
        printf "%s_MLPACK_DEPENDENCIES:=%s\n" efullname sdeps;
-       List.iter (fun d -> printf "%s_FORPACK:= -for-pack %s\n" d modname) deps;
+       List.iter (print_for_pack modname) deps;
        printf "%s.cmo:$(addsuffix .cmo,$(%s_MLPACK_DEPENDENCIES))\n"
          efullname efullname;
        printf "%s.cmx:$(addsuffix .cmx,$(%s_MLPACK_DEPENDENCIES))\n"
@@ -213,6 +221,7 @@ let mlpack_dependencies () =
     (List.rev !mlpackAccu)
 
 let rec parse = function
+  | "-c" :: r -> coq_makefile_mode := true; parse r
   | "-I" :: r :: ll ->
        (* To solve conflict (e.g. same filename in kernel and checker)
           we allow to state an explicit order *)

@@ -545,7 +545,7 @@ Computing Module dependencies
 In order to compute module dependencies (to be used by ``make`` or
 ``dune``), |Coq| provides the ``coqdep`` tool.
 
-``coqdep`` computes inter-module dependencies for |Coq| and |OCaml|
+``coqdep`` computes inter-module dependencies for |Coq|
 programs, and prints the dependencies on the standard output in a
 format readable by make. When a directory is given as argument, it is
 recursively looked at.
@@ -553,11 +553,6 @@ recursively looked at.
 Dependencies of |Coq| modules are computed by looking at ``Require``
 commands (``Require``, ``Require Export``, ``Require Import``), but also at the
 command ``Declare ML Module``.
-
-Dependencies of |OCaml| modules are computed by looking at
-`open` commands and the dot notation *module.value*. However, this is
-done approximately and you are advised to use ``ocamldep`` instead for the
-|OCaml| module dependencies.
 
 See the man page of ``coqdep`` for more details and options.
 

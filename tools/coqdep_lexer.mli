@@ -8,12 +8,10 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-type mL_token = Use_module of string
-
 type qualid = string list
 
 type coq_token =
-    Require of qualid option * qualid list
+  | Require of qualid option * qualid list
   | Declare of string list
   | Load of string
   | AddLoadPath of string
@@ -23,6 +21,3 @@ exception Fin_fichier
 exception Syntax_error of int * int
 
 val coq_action : Lexing.lexbuf -> coq_token
-val caml_action : Lexing.lexbuf -> mL_token
-val mllib_list : Lexing.lexbuf -> string list
-val ocamldep_parse : Lexing.lexbuf -> string list
