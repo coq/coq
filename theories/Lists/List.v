@@ -1630,6 +1630,31 @@ End Fold_Right_Recursor.
       intros f g H l. rewrite filter_map. apply map_ext. assumption.
     Qed.
 
+    (** Remove by filtering *)
+
+    Hypothesis eq_dec : forall x y : A, {x = y}+{x <> y}.
+
+    Definition remove' (x : A) : list A -> list A :=
+      filter (fun y => if eq_dec x y then false else true).
+
+    Lemma remove_alt (x : A) (l : list A) : remove' x l = remove eq_dec x l.
+    Proof with intuition.
+      induction l...
+      simpl. destruct eq_dec; f_equal...
+    Qed.
+
+    (** Counting occurrences by filtering *)
+
+    Definition count_occ' (l : list A) (x : A) : nat :=
+      length (filter (fun y => if eq_dec y x then true else false) l).
+
+    Lemma count_occ_alt (l : list A) (x : A) :
+      count_occ' l x = count_occ eq_dec l x.
+    Proof with intuition.
+      unfold count_occ'. induction l...
+      simpl; destruct eq_dec; simpl...
+    Qed.
+
   End Filtering.
 
 
