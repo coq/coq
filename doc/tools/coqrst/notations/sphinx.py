@@ -80,9 +80,11 @@ class TacticNotationsToSphinxVisitor(TacticNotationsVisitor):
         while atom != "":
             if atom[0] == "'":
                 node += nodes.raw("\\textquotesingle{}", "\\textquotesingle{}", format="latex")
+                node += nodes.raw("'", "'", format="html")
                 atom = atom[1:]
             elif atom[0] == "`":
                 node += nodes.raw("\\`{}", "\\`{}", format="latex")
+                node += nodes.raw("`", "`", format="html")
                 atom = atom[1:]
             else:
                 index_ap = atom.find("'")
