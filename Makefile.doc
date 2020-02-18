@@ -56,9 +56,9 @@ DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex
 ######################################################################
 
 .PHONY: doc doc-html doc-pdf doc-ps
-.PHONY: stdlib full-stdlib sphinx
+.PHONY: doc-stdlib full-stdlib sphinx
 
-doc: refman stdlib
+doc: refman doc-stdlib
 
 SPHINX_DEPS ?=
 ifndef QUICK
@@ -93,7 +93,7 @@ doc-pdf:\
 doc-ps:\
   doc/stdlib/Library.ps
 
-stdlib: \
+doc-stdlib: \
   doc/stdlib/html/index.html doc/stdlib/Library.ps doc/stdlib/Library.pdf
 
 full-stdlib: \
@@ -129,7 +129,7 @@ doc/unreleased.rst: $(wildcard doc/changelog/00-title.rst doc/changelog/*/*.rst)
 # Standard library
 ######################################################################
 
-DOCLIBS=-R theories Coq -R plugins Coq -Q user-contrib/Ltac2 Ltac2
+DOCLIBS=-R theories Coq -Q user-contrib/Ltac2 Ltac2
 
 ### Standard library (browsable html format)
 

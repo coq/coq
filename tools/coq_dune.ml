@@ -213,7 +213,7 @@ let record_dune d ff =
   if Sys.file_exists sd && Sys.is_directory sd then
     let out = open_out (bpath [sd;"dune"]) in
     let fmt = formatter_of_out_channel out in
-    if List.nth d 0 = "plugins" || List.nth d 0 = "user-contrib" then
+    if Sys.file_exists (bpath [sd; "plugin_base.dune"]) then
       fprintf fmt "(include plugin_base.dune)@\n";
     out_install fmt d ff;
     List.iter (pp_dep d fmt) ff;
@@ -285,8 +285,11 @@ let exec_ifile f =
     begin try
       let ic = open_in in_file in
       (try f ic
-       with _ -> eprintf "Error: exec_ifile@\n%!"; close_in ic)
-      with _ -> eprintf "Error: cannot open input file %s@\n%!" in_file
+       with exn ->
+         eprintf "Error: exec_ifile @[%s@]@\n%!" (Printexc.to_string exn);
+         close_in ic)
+      with _ ->
+        eprintf "Error: cannot open input file %s@\n%!" in_file
     end
   | _ -> eprintf "Error: wrong number of arguments@\n%!"; exit 1
 

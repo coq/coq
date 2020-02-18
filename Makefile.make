@@ -275,7 +275,7 @@ depclean:
 	find . $(FIND_SKIP_DIRS) '(' -name '*.d' ')' -exec rm -f {} +
 
 cacheclean:
-	find theories plugins test-suite -name '.*.aux' -exec rm -f {} +
+	find theories test-suite -name '.*.aux' -exec rm -f {} +
 
 cleanconfig:
 	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-coq config/Info-*.plist

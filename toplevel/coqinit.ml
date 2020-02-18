@@ -51,12 +51,17 @@ let load_rcfile ~rcfile ~state =
       let () = Feedback.msg_info (str"Load of rcfile failed.") in
       iraise reraise
 
-(* Recursively puts dir in the LoadPath if -nois was not passed *)
-let build_stdlib_path ~load_init ~unix_path ~coq_path ~with_ml =
+(* Recursively puts `.v` files in the LoadPath if -nois was not passed *)
+let build_stdlib_vo_path ~load_init ~unix_path ~coq_path =
   let open Loadpath in
-  let add_ml = if with_ml then AddRecML else AddNoML in
   { recursive = true;
-    path_spec = VoPath { unix_path; coq_path ; has_ml = add_ml; implicit = load_init }
+    path_spec = VoPath { unix_path; coq_path ; has_ml = AddNoML; implicit = load_init }
+  }
+
+let build_stdlib_ml_path ~dir =
+  let open Loadpath in
+  { recursive = true
+  ; path_spec = MlPath dir
   }
 
 let build_userlib_path ~unix_path =
@@ -100,9 +105,9 @@ let libs_init_load_path ~load_init =
                            has_ml = AddTopML }
     } ] @
 
-  (* then standard library and plugins *)
-  [build_stdlib_path ~load_init ~unix_path:(coqlib/"theories") ~coq_path ~with_ml:false;
-   build_stdlib_path ~load_init ~unix_path:(coqlib/"plugins")  ~coq_path ~with_ml:true ] @
+  (* then standard library *)
+  [build_stdlib_ml_path ~dir:(coqlib/"plugins")] @
+  [build_stdlib_vo_path ~load_init ~unix_path:(coqlib/"theories") ~coq_path] @
 
   (* then user-contrib *)
   (if Sys.file_exists user_contrib then
