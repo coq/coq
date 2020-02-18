@@ -792,9 +792,11 @@ let rec flatten_application c = match DAst.get c with
 
 let extern_possible_prim_token (custom,scopes) r =
    let (sc,n) = uninterp_prim_token r in
-   match availability_of_entry_coercion custom InConstrEntrySomeLevel with
-   | None -> raise No_match
-   | Some coercion ->
+   let coercion =
+     if entry_has_prim_token n custom then [] else
+     match availability_of_entry_coercion custom InConstrEntrySomeLevel with
+     | None -> raise No_match
+     | Some coercion -> coercion in
    match availability_of_prim_token n sc scopes with
    | None -> raise No_match
    | Some key -> insert_coercion coercion (insert_delimiters (CAst.make ?loc:(loc_of_glob_constr r) @@ CPrim n) key)

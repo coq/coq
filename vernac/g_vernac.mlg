@@ -1224,31 +1224,32 @@ GRAMMAR EXTEND Gram
           | { CAst.v = k }, Some s -> SetFormat(k,s)
           | s, None -> SetFormat ("text",s) end }
       | x = IDENT; ","; l = LIST1 [id = IDENT -> { id } ] SEP ","; "at";
-        lev = level -> { SetItemLevel (x::l,None,Some lev) }
-      | x = IDENT; "at"; lev = level -> { SetItemLevel ([x],None,Some lev) }
-      | x = IDENT; "at"; lev = level; b = constr_as_binder_kind ->
-        { SetItemLevel ([x],Some b,Some lev) }
-      | x = IDENT; b = constr_as_binder_kind -> { SetItemLevel ([x],Some b,None) }
+        lev = level -> { SetItemLevel (x::l,None,lev) }
+      | x = IDENT; "at"; lev = level; b = OPT constr_as_binder_kind ->
+        { SetItemLevel ([x],b,lev) }
+      | x = IDENT; b = constr_as_binder_kind -> { SetItemLevel ([x],Some b,DefaultLevel) }
       | x = IDENT; typ = syntax_extension_type -> { SetEntryType (x,typ) }
     ] ]
   ;
   syntax_extension_type:
     [ [ IDENT "ident" -> { ETIdent } | IDENT "global" -> { ETGlobal }
       | IDENT "bigint" -> { ETBigint }
+      | IDENT "string" -> { ETString }
       | IDENT "binder" -> { ETBinder true }
-      | IDENT "constr" -> { ETConstr (InConstrEntry,None,None) }
-      | IDENT "constr"; n = OPT at_level; b = OPT constr_as_binder_kind -> { ETConstr (InConstrEntry,b,n) }
+      | IDENT "constr" -> { ETConstr (InConstrEntry,None,DefaultLevel) }
+      | IDENT "constr"; n = at_level_opt; b = OPT constr_as_binder_kind -> { ETConstr (InConstrEntry,b,n) }
       | IDENT "pattern" -> { ETPattern (false,None) }
       | IDENT "pattern"; "at"; IDENT "level"; n = natural -> { ETPattern (false,Some n) }
       | IDENT "strict"; IDENT "pattern" -> { ETPattern (true,None) }
       | IDENT "strict"; IDENT "pattern"; "at"; IDENT "level"; n = natural -> { ETPattern (true,Some n) }
       | IDENT "closed"; IDENT "binder" -> { ETBinder false }
-      | IDENT "custom"; x = IDENT; n = OPT at_level; b = OPT constr_as_binder_kind ->
+      | IDENT "custom"; x = IDENT; n = at_level_opt; b = OPT constr_as_binder_kind ->
            { ETConstr (InCustomEntry x,b,n) }
     ] ]
   ;
-  at_level:
-    [ [ "at"; n = level -> { n } ] ]
+  at_level_opt:
+    [ [ "at"; n = level -> { n }
+      | -> { DefaultLevel } ] ]
   ;
   constr_as_binder_kind:
     [ [ "as"; IDENT "ident" -> { Notation_term.AsIdent }

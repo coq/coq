@@ -21,6 +21,7 @@ type production_position =
 type production_level =
   | NextLevel
   | NumLevel of int
+  | DefaultLevel (** Interpreted differently at the border or inside a rule *)
 
 (** User-level types used to tell how to parse or interpret of the non-terminal *)
 
@@ -28,6 +29,7 @@ type 'a constr_entry_key_gen =
   | ETIdent
   | ETGlobal
   | ETBigint
+  | ETString
   | ETBinder of bool  (* open list of binders if true, closed list of binders otherwise *)
   | ETConstr of Constrexpr.notation_entry * Notation_term.constr_as_binder_kind option * 'a
   | ETPattern of bool * int option (* true = strict pattern, i.e. not a single variable *)
@@ -40,7 +42,7 @@ type constr_entry_key =
 (** Entries used in productions, vernac side (e.g. "x bigint" or "x ident") *)
 
 type simple_constr_prod_entry_key =
-    production_level option constr_entry_key_gen
+    production_level constr_entry_key_gen
 
 (** Entries used in productions (in right-hand-side of grammar rules), to parse non-terminals *)
 
@@ -52,6 +54,7 @@ type constr_prod_entry_key =
   | ETProdName            (* Parsed as a name (ident or _) *)
   | ETProdReference       (* Parsed as a global reference *)
   | ETProdBigint          (* Parsed as an (unbounded) integer *)
+  | ETProdString          (* Parsed as a string *)
   | ETProdConstr of Constrexpr.notation_entry * (production_level * production_position) (* Parsed as constr or pattern, or a subentry of those *)
   | ETProdPattern of int  (* Parsed as pattern as a binder (as subpart of a constr) *)
   | ETProdConstrList of Constrexpr.notation_entry * (production_level * production_position) * string Tok.p list (* Parsed as non-empty list of constr, or subentries of those *)

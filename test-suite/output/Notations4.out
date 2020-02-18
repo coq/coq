@@ -14,6 +14,8 @@ Entry constr:myconstr is
      : nat
 [<< # 0 >>]
      : option nat
+[2 + 3]
+     : nat
 [1 {f 1}]
      : Expr
 fun (x : nat) (y z : Expr) => [1 + y z + {f x}]
@@ -71,3 +73,7 @@ The command has indeed failed with message:
 The format is not the same on the right- and left-hand sides of the special token "..".
 The command has indeed failed with message:
 The format is not the same on the right- and left-hand sides of the special token "..".
+Entry constr:expr is
+[ "201" RIGHTA
+  [ "{"; constr:operconstr LEVEL "200"; "}" ] ]
+
