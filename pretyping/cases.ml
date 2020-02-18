@@ -2126,11 +2126,6 @@ let eq_id avoid id =
   let hid' = next_ident_away hid avoid in
     hid'
 
-let papp sigma gr args =
-  let evdref = ref sigma in
-  let ans = papp evdref gr args in
-  !evdref, ans
-
 let mk_eq sigma typ x y = papp sigma coq_eq_ind [| typ; x ; y |]
 let mk_eq_refl sigma typ x = papp sigma coq_eq_refl [| typ; x |]
 let mk_JMeq sigma typ x typ' y =

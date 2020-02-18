@@ -10,6 +10,7 @@
 
 open Names
 open EConstr
+open Evd
 
 (** A bunch of Coq constants used by Program *)
 
@@ -38,7 +39,7 @@ val mk_coq_and : Evd.evar_map -> constr list -> Evd.evar_map * constr
 val mk_coq_not : Evd.evar_map -> constr -> Evd.evar_map * constr
 
 (** Polymorphic application of delayed references *)
-val papp : Evd.evar_map ref -> (unit -> GlobRef.t) -> constr array -> constr
+val papp : evar_map -> (unit -> GlobRef.t) -> constr array -> evar_map * constr
 
 val get_proofs_transparency : unit -> bool
 val is_program_cases : unit -> bool
