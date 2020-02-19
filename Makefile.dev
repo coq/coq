@@ -140,17 +140,17 @@ noreal: unicode logic arith bool zarith qarith lists sets fsets \
 ### 4) plugins
 ################
 
-OMEGAVO:=$(filter plugins/omega/%, $(PLUGINSVO))
-MICROMEGAVO:=$(filter plugins/micromega/%, $(PLUGINSVO))
-RINGVO:=$(filter plugins/setoid_ring/%, $(PLUGINSVO))
-NSATZVO:=$(filter plugins/nsatz/%, $(PLUGINSVO))
-FUNINDVO:=$(filter plugins/funind/%, $(PLUGINSVO))
-BTAUTOVO:=$(filter plugins/btauto/%, $(PLUGINSVO))
-RTAUTOVO:=$(filter plugins/rtauto/%, $(PLUGINSVO))
-EXTRACTIONVO:=$(filter plugins/extraction/%, $(PLUGINSVO))
+OMEGAVO:=$(filter theories/omega/%, $(THEORIESVO))
+MICROMEGAVO:=$(filter theories/micromega/%, $(THEORIESVO))
+RINGVO:=$(filter theories/setoid_ring/%, $(THEORIESVO))
+NSATZVO:=$(filter theories/nsatz/%, $(THEORIESVO))
+FUNINDVO:=$(filter theories/funind/%, $(THEORIESVO))
+BTAUTOVO:=$(filter theories/btauto/%, $(THEORIESVO))
+RTAUTOVO:=$(filter theories/rtauto/%, $(THEORIESVO))
+EXTRACTIONVO:=$(filter theories/extraction/%, $(THEORIESVO))
 CCVO:=
-DERIVEVO:=$(filter plugins/derive/%, $(PLUGINSVO))
-LTACVO:=$(filter plugins/ltac/%, $(PLUGINSVO))
+DERIVEVO:=$(filter theories/derive/%, $(THEORIESVO))
+LTACVO:=$(filter theories/ltac/%, $(THEORIESVO))
 
 omega: $(OMEGAVO) $(OMEGACMO)
 micromega: $(MICROMEGAVO) $(MICROMEGACMO) $(CSDPCERT)
