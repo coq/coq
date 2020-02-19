@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 from __future__ import print_function
 import sys
 import re
+import argparse
 from io import open
 
 # This script parses the output of `make TIMED=1` into a dictionary
@@ -14,18 +15,76 @@ STRIP_REG = re.compile('^(coq/|contrib/|)(?:theories/|src/)?')
 STRIP_REP = r'\1'
 INFINITY  = '\u221e'
 
-def parse_args(argv, USAGE, HELP_STRING):
-    sort_by = 'auto'
-    if any(arg.startswith('--sort-by=') for arg in argv[1:]):
-        sort_by = [arg for arg in argv[1:] if arg.startswith('--sort-by=')][-1][len('--sort-by='):]
-    args = [arg for arg in argv if not arg.startswith('--sort-by=')]
-    if len(args) < 3 or '--help' in args[1:] or '-h' in args[1:] or sort_by not in ('auto', 'absolute', 'diff'):
-        print(USAGE)
-        if '--help' in args[1:] or '-h' in args[1:]:
-            print(HELP_STRING)
-            if len(args) == 2: sys.exit(0)
-        sys.exit(1)
-    return sort_by, args
+def nonnegative(arg):
+    v = int(arg)
+    if v < 0: raise argparse.ArgumentTypeError("%s is an invalid non-negative int value" % arg)
+    return v
+
+def add_sort_by(parser):
+    return parser.add_argument(
+        '--sort-by', type=str, dest='sort_by', choices=('auto', 'absolute', 'diff'),
+        default='auto',
+        help=('How to sort the table entries.\n' +
+              'The "auto" method sorts by absolute time differences ' +
+              'rounded towards zero to a whole-number of seconds, then ' +
+              'by times in the "after" column, and finally ' +
+              'lexicographically by file name. This will put the ' +
+              'biggest changes in either direction first, and will ' +
+              'prefer sorting by build-time over subsecond changes in ' +
+              'build time (which are frequently noise); lexicographic ' +
+              'sorting forces an order on files which take effectively ' +
+              'no time to compile.\n' +
+              'The "absolute" method sorts by the total time taken.\n' +
+              'The "diff" method sorts by the signed difference in time.'))
+
+def add_fuzz(parser):
+    return parser.add_argument(
+        '--fuzz', dest='fuzz', metavar='N', type=nonnegative, default=0,
+        help=('By default, two lines are only considered the same if ' +
+              'the character offsets and initial code strings match.  '
+              'This option relaxes this constraint by allowing the ' +
+              'character offsets to differ by up to N characters, as long ' +
+              'as the total number of characters and initial code strings ' +
+              'continue to match.  This is useful when there are small changes ' +
+              'to a file, and you want to match later lines that have not ' +
+              'changed even though the character offsets have changed.'))
+
+def add_real(parser, single_timing=False):
+    return parser.add_argument(
+        '--real', action='store_true',
+        help=(r'''Use real times rather than user times.
+
+''' + ('''By default, the input is expected to contain lines in the format:
+FILE_NAME (...user: NUMBER_IN_SECONDS...)
+If --real is passed, then the lines are instead expected in the format:
+FILE_NAME (...real: NUMBER_IN_SECONDS...)''' if not single_timing else
+'''The input is expected to contain lines in the format:
+Chars START - END COMMAND NUMBER secs (NUMBERu...)''')))
+
+def add_user(parser, single_timing=False):
+    return parser.add_argument(
+        '--user', dest='real', action='store_false',
+        help=(r'''Use user times rather than real times.
+
+''' + ('''By default, the input is expected to contain lines in the format:
+FILE_NAME (...real: NUMBER_IN_SECONDS...)
+If --user is passed, then the lines are instead expected in the format:
+FILE_NAME (...user: NUMBER_IN_SECONDS...)''' if not single_timing else
+'''The input is expected to contain lines in the format:
+Chars START - END COMMAND NUMBER secs (NUMBERu...)''')))
+
+# N.B. We need to include default=None for nargs='*', c.f., https://bugs.python.org/issue28609#msg280180
+def add_file_name_gen(parser, prefix='', descr='file containing the build log', stddir='in', defaults=None, **kwargs):
+    extra = ('' if defaults is None else ' (defaults to %s if no argument is passed)' % defaults)
+    return parser.add_argument(
+        prefix + 'FILE_NAME', type=str,
+        help=('The name of the %s (use "-" for std%s)%s.' % (descr, stddir, extra)),
+        **kwargs)
+
+def add_file_name(parser): return add_file_name_gen(parser)
+def add_after_file_name(parser): return add_file_name_gen(parser, 'AFTER_', 'file containing the "after" build log')
+def add_before_file_name(parser): return add_file_name_gen(parser, 'BEFORE_', 'file containing the "before" build log')
+def add_output_file_name(parser): return add_file_name_gen(parser, 'OUTPUT_', 'file to write the output table to', stddir='out', defaults='-', nargs='*', default=None)
 
 
 def reformat_time_string(time):
@@ -45,14 +104,16 @@ def get_file_lines(file_name):
             lines = f.readlines()
     for line in lines:
         try:
-            yield line.decode('utf-8')
+            # Since we read the files in binary mode, we have to
+            # normalize Windows line endings from \r\n to \n
+            yield line.decode('utf-8').replace('\r\n', '\n')
         except UnicodeDecodeError: # invalid utf-8
             pass
 
 def get_file(file_name):
     return ''.join(get_file_lines(file_name))
 
-def get_times(file_name):
+def get_times(file_name, use_real=False):
     '''
     Reads the contents of file_name, which should be the output of
     'make TIMED=1', and parses it to construct a dict mapping file
@@ -60,28 +121,96 @@ def get_times(file_name):
     using STRIP_REG and STRIP_REP.
     '''
     lines = get_file(file_name)
-    reg = re.compile(r'^([^\s]+) \([^\)]*?user: ([0-9\.]+)[^\)]*?\)\s*$', re.MULTILINE)
+    reg_user = re.compile(r'^([^\s]+) \([^\)]*?user: ([0-9\.]+)[^\)]*?\)\s*$', re.MULTILINE)
+    reg_real = re.compile(r'^([^\s]+) \([^\)]*?real: ([0-9\.]+)[^\)]*?\)\s*$', re.MULTILINE)
+    reg = reg_real if use_real else reg_user
     times = reg.findall(lines)
     if all(time in ('0.00', '0.01') for name, time in times):
-        reg = re.compile(r'^([^\s]*) \([^\)]*?real: ([0-9\.]+)[^\)]*?\)\s*$', re.MULTILINE)
+        reg = reg_real
         times = reg.findall(lines)
     if all(STRIP_REG.search(name.strip()) for name, time in times):
         times = tuple((STRIP_REG.sub(STRIP_REP, name.strip()), time) for name, time in times)
     return dict((name, reformat_time_string(time)) for name, time in times)
 
-def get_single_file_times(file_name):
+def get_single_file_times(file_name, use_real=False):
     '''
     Reads the contents of file_name, which should be the output of
     'coqc -time', and parses it to construct a dict mapping lines to
     to compile durations, as strings.
     '''
     lines = get_file(file_name)
-    reg = re.compile(r'^Chars ([0-9]+) - ([0-9]+) ([^ ]+) ([0-9\.]+) secs (.*)$', re.MULTILINE)
+    reg = re.compile(r'^Chars ([0-9]+) - ([0-9]+) ([^ ]+) ([0-9\.]+) secs \(([0-9\.]+)u(.*)\)$', re.MULTILINE)
     times = reg.findall(lines)
     if len(times) == 0: return dict()
-    longest = max(max((len(start), len(stop))) for start, stop, name, time, extra in times)
+    longest = max(max((len(start), len(stop))) for start, stop, name, real, user, extra in times)
     FORMAT = 'Chars %%0%dd - %%0%dd %%s' % (longest, longest)
-    return dict((FORMAT % (int(start), int(stop), name), reformat_time_string(time)) for start, stop, name, time, extra in times)
+    return dict((FORMAT % (int(start), int(stop), name), reformat_time_string(real if use_real else user)) for start, stop, name, real, user, extra in times)
+
+def fuzz_merge(l1, l2, fuzz):
+    '''Takes two iterables of ((start, end, code), times) and a fuzz
+    parameter, and yields a single iterable of ((start, stop, code),
+    times1, times2)
+
+    We only give both left and right if (a) the codes are the same,
+    (b) the number of characters (stop - start) is the same, and (c)
+    the difference between left and right code locations is <= fuzz.
+
+    We keep a current guess at the overall offset, and prefer drawing
+    from whichever list is earliest after correcting for current
+    offset.
+
+    '''
+    assert(fuzz >= 0)
+    cur_fuzz = 0
+    l1 = list(l1)
+    l2 = list(l2)
+    cur1, cur2 = None, None
+    while (len(l1) > 0 or cur1 is not None) and (len(l2) > 0 or cur2 is not None):
+        if cur1 is None: cur1 = l1.pop(0)
+        if cur2 is None: cur2 = l2.pop(0)
+        ((s1, e1, c1), t1), ((s2, e2, c2), t2) = cur1, cur2
+        assert(t1 is not None)
+        assert(t2 is not None)
+        s2_adjusted, e2_adjusted = s2 + cur_fuzz, e2 + cur_fuzz
+        if cur1[0] == cur2[0]:
+            yield (cur1, cur2)
+            cur1, cur2 = None, None
+            cur_fuzz = 0
+        elif c1 == c2 and e1-s1 == e2-s2 and abs(s1 - s2) <= fuzz:
+            yield (((s1, e1, c1), t1), ((s2, e2, c2), t2))
+            cur1, cur2 = None, None
+            cur_fuzz = s1 - s2
+        elif s1 < s2_adjusted or (s1 == s2_adjusted and e1 <= e2):
+            yield (((s1, e1, c1), t1), ((s1 - cur_fuzz, e1 - cur_fuzz, c1), None))
+            cur1 = None
+        else:
+            yield (((s2 + cur_fuzz, e2 + cur_fuzz, c2), None), ((s2, e2, c2), t2))
+            cur2 = None
+    if len(l1) > 0:
+        for i in l1: yield (i, (i[0], None))
+    elif len(l2) > 0:
+        for i in l2: yield ((i[0], None), i)
+
+def adjust_fuzz(left_dict, right_dict, fuzz):
+    reg = re.compile(r'Chars ([0-9]+) - ([0-9]+) (.*)$')
+    left_dict_list = sorted(((int(s), int(e), c), v) for ((s, e, c), v) in ((reg.match(k).groups(), v) for k, v in left_dict.items()))
+    right_dict_list = sorted(((int(s), int(e), c), v) for ((s, e, c), v) in ((reg.match(k).groups(), v) for k, v in right_dict.items()))
+    merged = list(fuzz_merge(left_dict_list, right_dict_list, fuzz))
+    if len(merged) == 0:
+        # assert that both left and right dicts are empty
+        assert(not left_dict)
+        assert(not right_dict)
+        return left_dict, right_dict
+    longest = max(max((len(str(start1)), len(str(stop1)), len(str(start2)), len(str(stop2)))) for ((start1, stop1, code1), t1), ((start2, stop2, code2), t2) in merged)
+    FORMAT1 = 'Chars %%0%dd - %%0%dd %%s' % (longest, longest)
+    FORMAT2 = 'Chars %%0%dd-%%0%dd ~ %%0%dd-%%0%dd %%s' % (longest, longest, longest, longest)
+    if fuzz == 0:
+        left_dict = dict((FORMAT1 % k, t1) for (k, t1), _ in merged if t1 is not None)
+        right_dict = dict((FORMAT1 % k, t2) for _, (k, t2) in merged if t2 is not None)
+    else:
+        left_dict = dict((FORMAT2 % (s1, e1, s2, e2, c1), t1) for ((s1, e1, c1), t1), ((s2, e2, c2), t2) in merged if t1 is not None)
+        right_dict = dict((FORMAT2 % (s1, e1, s2, e2, c1), t2) for ((s1, e1, c1), t1), ((s2, e2, c2), t2) in merged if t2 is not None)
+    return left_dict, right_dict
 
 def fix_sign_for_sorting(num, descending=True):
     return -num if descending else num

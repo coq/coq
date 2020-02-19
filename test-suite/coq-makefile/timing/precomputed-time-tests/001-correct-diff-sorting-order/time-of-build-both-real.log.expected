@@ -1,0 +1,26 @@
+After     | File Name                                      | Before    || Change    | % Change
+----------------------------------------------------------------------------------------------
+20m46.07s | Total                                          | 23m06.30s || -2m20.23s | -10.11% 
+----------------------------------------------------------------------------------------------
+4m16.77s  | Specific/X25519/C64/ladderstep                 | 5m16.83s  || -1m00.06s | -18.95% 
+3m01.77s  | Specific/solinas32_2e255m765_13limbs/femul     | 3m27.94s  || -0m26.16s | -12.58% 
+2m35.79s  | Specific/solinas32_2e255m765_12limbs/femul     | 2m59.21s  || -0m23.42s | -13.06% 
+3m22.96s  | Specific/NISTP256/AMD64/femul                  | 3m37.80s  || -0m14.84s | -6.81%  
+0m39.72s  | Specific/X25519/C64/femul                      | 0m42.98s  || -0m03.25s | -7.58%  
+0m38.19s  | Specific/NISTP256/AMD64/feadd                  | 0m40.48s  || -0m02.28s | -5.65%  
+0m34.35s  | Specific/X25519/C64/freeze                     | 0m36.42s  || -0m02.07s | -5.68%  
+0m33.08s  | Specific/X25519/C64/fesquare                   | 0m35.23s  || -0m02.14s | -6.10%  
+0m31.00s  | Specific/NISTP256/AMD64/feopp                  | 0m32.08s  || -0m01.07s | -3.36%  
+0m27.81s  | Specific/NISTP256/AMD64/fenz                   | 0m28.91s  || -0m01.10s | -3.80%  
+0m27.11s  | Specific/X25519/C64/fecarry                    | 0m28.85s  || -0m01.74s | -6.03%  
+0m24.71s  | Specific/X25519/C64/fesub                      | 0m26.11s  || -0m01.39s | -5.36%  
+0m49.44s  | Specific/solinas32_2e255m765_13limbs/Synthesis | 0m49.50s  || -0m00.06s | -0.12%  
+0m43.34s  | Specific/NISTP256/AMD64/fesub                  | 0m43.78s  || -0m00.43s | -1.00%  
+0m40.13s  | Specific/solinas32_2e255m765_12limbs/Synthesis | 0m39.53s  || +0m00.60s | +1.51%  
+0m22.81s  | Specific/X25519/C64/feadd                      | 0m23.43s  || -0m00.62s | -2.64%  
+0m13.45s  | Specific/NISTP256/AMD64/Synthesis              | 0m13.74s  || -0m00.29s | -2.11%  
+0m11.15s  | Specific/X25519/C64/Synthesis                  | 0m11.23s  || -0m00.08s | -0.71%  
+0m07.33s  | Compilers/Z/Bounds/Pipeline/Definition         | 0m07.40s  || -0m00.07s | -0.94%  
+0m01.93s  | Compilers/Z/Bounds/Pipeline/ReflectiveTactics  | 0m01.73s  || +0m00.19s | +11.56% 
+0m01.85s  | Specific/Framework/SynthesisFramework          | 0m01.95s  || -0m00.09s | -5.12%  
+0m01.38s  | Compilers/Z/Bounds/Pipeline                    | 0m01.18s  || +0m00.19s | +16.94% 

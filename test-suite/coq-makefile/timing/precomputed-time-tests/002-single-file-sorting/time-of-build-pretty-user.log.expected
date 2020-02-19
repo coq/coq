@@ -1,0 +1,26 @@
+Time      | File Name                                     
+----------------------------------------------------------
+19m16.04s | Total                                         
+----------------------------------------------------------
+4m01.34s  | Specific/X25519/C64/ladderstep                
+3m09.62s  | Specific/NISTP256/AMD64/femul                 
+2m48.52s  | Specific/solinas32_2e255m765_13limbs/femul    
+2m23.70s  | Specific/solinas32_2e255m765_12limbs/femul    
+0m45.75s  | Specific/solinas32_2e255m765_13limbs/Synthesis
+0m39.59s  | Specific/NISTP256/AMD64/fesub                 
+0m36.92s  | Specific/solinas32_2e255m765_12limbs/Synthesis
+0m36.32s  | Specific/X25519/C64/femul                     
+0m35.40s  | Specific/NISTP256/AMD64/feadd                 
+0m31.50s  | Specific/X25519/C64/freeze                    
+0m30.13s  | Specific/X25519/C64/fesquare                  
+0m28.51s  | Specific/NISTP256/AMD64/feopp                 
+0m25.50s  | Specific/NISTP256/AMD64/fenz                  
+0m24.99s  | Specific/X25519/C64/fecarry                   
+0m22.65s  | Specific/X25519/C64/fesub                     
+0m20.93s  | Specific/X25519/C64/feadd                     
+0m12.55s  | Specific/NISTP256/AMD64/Synthesis             
+0m10.37s  | Specific/X25519/C64/Synthesis                 
+0m07.18s  | Compilers/Z/Bounds/Pipeline/Definition        
+0m01.72s  | Compilers/Z/Bounds/Pipeline/ReflectiveTactics 
+0m01.67s  | Specific/Framework/SynthesisFramework         
+0m01.19s  | Compilers/Z/Bounds/Pipeline                   

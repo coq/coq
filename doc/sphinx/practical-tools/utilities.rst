@@ -255,13 +255,19 @@ file timing data:
     one, you can pass them via the variable ``TGTS``, e.g., ``make pretty-timed
     TGTS="a.vo b.vo"``.
 
-    .. ::
+    .. note::
        This target requires ``python`` to build the table.
 
     .. note::
        This target will *append* to the timing log; if you want a
-       fresh start, you must remove the ``filetime-of-build.log`` or
+       fresh start, you must remove the file ``time-of-build.log`` or
        ``run make cleanall``.
+
+    .. note::
+       By default the table displays user times.  If the build log
+       contains real times (which it does by default), passing
+       ``TIMING_REAL=1`` to ``make pretty-timed`` will use real times
+       rather than user times in the table.
 
     .. example::
 
@@ -310,6 +316,15 @@ file timing data:
        (which are frequently noise); lexicographic sorting forces an order on
        files which take effectively no time to compile.
 
+       If you prefer a different sorting order, you can pass
+       ``TIMING_SORT_BY=absolute`` to sort by the total time taken, or
+       ``TIMING_SORT_BY=diff`` to sort by the signed difference in
+       time.
+
+    .. note::
+       Just like ``pretty-timed``, this table defaults to using user
+       times.  Pass ``TIMING_REAL=1`` to ``make`` on the command line to show real times instead.
+
     .. example::
 
         For example, the output table from
@@ -349,7 +364,7 @@ line timing data:
 
     ::
 
-       print-pretty-single-time-diff BEFORE=path/to/file.v.before-timing AFTER=path/to/file.v.after-timing
+       print-pretty-single-time-diff AFTER=path/to/file.v.after-timing BEFORE=path/to/file.v.before-timing
 
     this target will make a sorted table of the per-line timing differences
     between the timing logs in the ``BEFORE`` and ``AFTER`` files, display it, and
@@ -363,6 +378,28 @@ line timing data:
 
     .. note::
        This target requires python to build the table.
+
+    .. note::
+       This target follows the same sorting order as the
+       ``print-pretty-timed-diff`` target, and supports the same
+       options for the ``TIMING_SORT_BY`` variable.
+
+    .. note::
+       By default, two lines are only considered the same if the
+       character offsets and initial code strings are identical.  Passing
+       ``TIMING_FUZZ=N`` relaxes this constraint by allowing the
+       character locations to differ by up to ``N``, as long
+       as the total number of characters and initial code strings
+       continue to match.  This is useful when there are small changes
+       to a file, and you want to match later lines that have not
+       changed even though the character offsets have changed.
+
+    .. note::
+       By default the table picks up real times, under the assumption
+       that when comparing line-by-line, the real time is a more
+       accurate representation as it includes disk time and time spent
+       in the native compiler.  Passing ``TIMING_REAL=0`` to ``make``
+       will use user times rather than real times in the table.
 
     .. example::
 
