@@ -948,6 +948,12 @@ VERNAC { tac2mode } EXTEND VernacLtac2
   fun ~pstate -> Tac2entries.call ~pstate ~default t }
 END
 
+GRAMMAR EXTEND Gram
+  GLOBAL: tac2mode;
+  tac2mode:
+    [ [ tac = G_vernac.query_command -> { tac None } ] ];
+END
+
 {
 
 open Stdarg
