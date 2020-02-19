@@ -1349,34 +1349,6 @@ let entry_has_ident = function
   | InCustomEntryLevel (s,n) ->
      try String.Map.find s !entry_has_ident_map <= n with Not_found -> false
 
-let entry_has_numeral_map = ref String.Map.empty
-let entry_has_string_map = ref String.Map.empty
-
-let declare_custom_entry_has_numeral s n =
-  try
-    let p = String.Map.find s !entry_has_numeral_map in
-    user_err (str "Custom entry " ++ str s ++
-              str " has already a rule for numerals at level " ++ int p ++ str ".")
-  with Not_found ->
-    entry_has_numeral_map := String.Map.add s n !entry_has_numeral_map
-
-let declare_custom_entry_has_string s n =
-  try
-    let p = String.Map.find s !entry_has_string_map in
-    user_err (str "Custom entry " ++ str s ++
-              str " has already a rule for strings at level " ++ int p ++ str ".")
-  with Not_found ->
-    entry_has_string_map := String.Map.add s n !entry_has_string_map
-
-let entry_has_prim_token prim = function
-  | InConstrEntrySomeLevel -> true
-  | InCustomEntryLevel (s,n) ->
-     match prim with
-     | Numeral _ ->
-       (try String.Map.find s !entry_has_numeral_map <= n with Not_found -> false)
-     | String _ ->
-       (try String.Map.find s !entry_has_string_map <= n with Not_found -> false)
-
 let uninterp_prim_token c =
   match glob_prim_constr_key c with
   | None -> raise Notation_ops.No_match

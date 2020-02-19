@@ -22,9 +22,6 @@ Notation "<< x >>" := x (in custom myconstr at level 3, x custom anotherconstr a
 Notation "# x" := (Some x) (in custom anotherconstr at level 8, x constr at level 9).
 Check [ << # 0 >> ].
 
-Notation "n" := n%nat (in custom myconstr at level 0, n bigint).
-Check [ 2 + 3 ].
-
 End A.
 
 Module B.
