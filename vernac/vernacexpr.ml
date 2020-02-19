@@ -163,12 +163,15 @@ type constructor_expr = (lident * constr_expr) with_coercion
 type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
   | RecordDecl of lident option * (local_decl_expr * record_field_attr) list
+type inductive_params_expr = local_binder_expr list * local_binder_expr list option
+(** If the option is nonempty the "|" marker was used *)
+
 type inductive_expr =
-  ident_decl with_coercion * local_binder_expr list * constr_expr option *
+  ident_decl with_coercion * inductive_params_expr * constr_expr option *
     constructor_list_or_record_decl_expr
 
 type one_inductive_expr =
-  lident * local_binder_expr list * constr_expr option * constructor_expr list
+  lident * inductive_params_expr * constr_expr option * constructor_expr list
 
 type typeclass_constraint = name_decl * Glob_term.binding_kind * constr_expr
 and typeclass_context = typeclass_constraint list

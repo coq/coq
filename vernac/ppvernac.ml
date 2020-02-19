@@ -811,11 +811,12 @@ let string_of_definition_object_kind = let open Decls in function
           | RecordDecl (c,fs) ->
             pr_record_decl c fs
         in
-        let pr_oneind key (((coe,iddecl),indpar,s,lc),ntn) =
+        let pr_oneind key (((coe,iddecl),(indupar,indpar),s,lc),ntn) =
           hov 0 (
             str key ++ spc() ++
               (if coe then str"> " else str"") ++ pr_ident_decl iddecl ++
-              pr_and_type_binders_arg indpar ++
+              pr_and_type_binders_arg indupar ++
+              pr_opt (fun p -> str "|" ++ spc() ++ pr_and_type_binders_arg p) indpar ++
               pr_opt (fun s -> str":" ++ spc() ++ pr_lconstr_expr env sigma s) s ++
               str" :=") ++ pr_constructor_list lc ++
             prlist (pr_decl_notation @@ pr_constr env sigma) ntn

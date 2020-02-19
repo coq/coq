@@ -1063,8 +1063,17 @@ Parameterized inductive types
         | cons3 : A -> list3 -> list3.
         End list3.
 
-     Attributes ``uniform`` and ``nonuniform`` respectively enable and
-     disable uniform parameters for a single inductive declaration block.
+     For finer control, you can use a ``|`` between the uniform and
+     the non-uniform parameters:
+
+     .. coqtop:: in reset
+
+        Inductive Acc {A:Type} (R:A->A->Prop) | (x:A) : Prop
+          := Acc_in : (forall y, R y x -> Acc y) -> Acc x.
+
+     The flag can then be seen as deciding whether the ``|`` is at the
+     beginning (when the flag is unset) or at the end (when it is set)
+     of the parameters when not explicitly given.
 
 .. seealso::
    Section :ref:`inductive-definitions` and the :tacn:`induction` tactic.
