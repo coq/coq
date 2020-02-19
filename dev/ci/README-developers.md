@@ -43,9 +43,10 @@ See also [`test-suite/README.md`](../../test-suite/README.md) for information ab
 ### Breaking changes
 
 When your PR breaks an external project we test in our CI, you must
-prepare a patch (or ask someone to prepare a patch) to fix the
-project. There is experimental support for an improved workflow, see
-[the next section](#experimental-automatic-overlay-creation-and-building), below
+prepare a patch (or ask someone—possibly the project author—to
+prepare a patch) to fix the project. There is experimental support for
+an improved workflow, see [the next
+section](#experimental-automatic-overlay-creation-and-building), below
 are the steps to manually prepare a patch:
 
 1. Fork the external project, create a new branch, push a commit adapting

@@ -17,8 +17,8 @@ well.
   - [Writing tutorials and blog posts](#writing-tutorials-and-blog-posts)
   - [Contributing to the wiki](#contributing-to-the-wiki)
   - [Creating and maintaining Coq packages](#creating-and-maintaining-coq-packages)
-    - [Distribution](#distribution)
-    - [Support](#support)
+    - [Distribution of Coq packages](#distribution-of-coq-packages)
+    - [Support for plugin and library authors](#support-for-plugin-and-library-authors)
     - [Standard libraries](#standard-libraries)
     - [Maintaining existing packages in coq-community](#maintaining-existing-packages-in-coq-community)
   - [Contributing to the editor support packages](#contributing-to-the-editor-support-packages)
@@ -161,14 +161,14 @@ tools is great so that others can start building new things on top.
 Having an extensive and healthy package ecosystem will be key to the
 success of Coq.
 
-#### Distribution ####
+#### Distribution of Coq packages ####
 
 You can distribute your library or plugin through the [Coq package
 index][Coq-package-index].  Tools can be advertised on the [tools
 page][tools-website] of the Coq website, or the [tools
 page][tools-wiki] of the wiki.
 
-#### Support ####
+#### Support for plugin and library authors ####
 
 You can find advice and best practices about maintaining a Coq project
 on the [coq-community wiki][coq-community-wiki].
@@ -529,10 +529,20 @@ how you can anticipate the results of the CI before opening a PR.
 Such a failure can indicate either a bug in your branch, or a breaking
 change that you introduced voluntarily.  All such breaking changes
 should be properly documented in the [user changelog][user-changelog].
-Furthermore, a backward-compatible fix should be found, and this fix
-should be merged in the broken projects *before* your PR to the Coq
-repository can be.  You can use the same documentation as above to
-learn about testing and fixing locally the broken libraries.
+Furthermore, a backward-compatible fix should be found, properly
+documented in the changelog when non-obvious, and this fix should be
+merged in the broken projects *before* your PR to the Coq repository
+can be.
+
+Note that once the breaking change is well understood, it should not
+feel like it is your role to fix every project that is affected: as
+long as reviewers have approved and are ready to integrate your
+breaking change, you are entitled to (politely) request project
+authors / maintainers to fix the breakage on their own, or help you
+fix it.  Obviously, you should leave enough time for this to happen
+(you cannot expect a project maintainer to allocate time for this as
+soon as you request it) and you should be ready to listen to more
+feedback and reconsider the impact of your change.
 
 #### Understanding reviewers' feedback ####
 
