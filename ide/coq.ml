@@ -133,10 +133,10 @@ and asks_for_coqtop args =
         ~filter:false
         ~filename:(coqtop_path ()) () in
       match file with
-      | Some _ ->
-          let () = custom_coqtop := file in
+      | [file] ->
+          let () = custom_coqtop := Some file in
           filter_coq_opts args
-      | None -> exit 0
+      | _ -> exit 0
 
 exception WrongExitStatus of string
 

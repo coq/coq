@@ -31,7 +31,7 @@ val find_tag_start : GText.tag -> GText.iter -> GText.iter
 val find_tag_stop : GText.tag -> GText.iter -> GText.iter
 
 val select_file_for_open :
-  title:string -> ?filter:bool -> ?parent:GWindow.window -> ?filename:string -> unit -> string option
+  title:string -> ?filter:bool -> ?multiple:bool -> ?parent:GWindow.window -> ?filename:string -> unit -> string list
 val select_file_for_save :
   title:string -> ?parent:GWindow.window -> ?filename:string -> unit -> string option
 val try_convert : string -> string

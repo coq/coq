@@ -282,9 +282,8 @@ let load ?parent _ =
   let filename =
     try notebook#current_term.fileops#filename
     with Invalid_argument _ -> None in
-  match select_file_for_open ~title:"Load file" ?parent ?filename () with
-    | None -> ()
-    | Some f -> FileAux.load_file f
+  let filenames = select_file_for_open ~title:"Load file" ~multiple:true ?parent ?filename () in
+  List.iter FileAux.load_file filenames
 
 let save ?parent _ = on_current_term (FileAux.check_save ?parent ~saveas:false)
 
