@@ -6,13 +6,13 @@ where
 ?B : [ |- Type]
 p 0
      : forall (a2 : nat) (B : Type) (b : B), 0 = a2 /\ b = b
-p 0 0 (B:=bool)
+p 0 0
      : forall b : bool, 0 = 0 /\ b = b
-p 0 0 (B:=bool)
+p 0 0
      : forall b : bool, 0 = 0 /\ b = b
-p (A:=nat)
+p
      : forall (a1 a2 : nat) (B : Type) (b : B), a1 = a2 /\ b = b
-p (A:=nat)
+p
      : forall (a1 a2 : nat) (B : Type) (b : B), a1 = a2 /\ b = b
 @p nat 0 0
      : forall (B : Type) (b : B), 0 = 0 /\ b = b
@@ -44,16 +44,16 @@ p
      : forall (A : Type) (a1 a2 : A) (B : Type) (b : B), a1 = a2 /\ b = b
 f x true
      : 0 = 0 /\ true = true
-f x (B:=bool)
+f x
      : forall b : bool, 0 = 0 /\ b = b
-f x (B:=bool)
+f x
      : forall b : bool, 0 = 0 /\ b = b
 @f nat
      : forall a1 a2 : nat,
        T a1 a2 -> forall (B : Type) (b : B), a1 = a2 /\ b = b
-f (a1:=0) (a2:=0)
+f
      : T 0 0 -> forall (B : Type) (b : B), 0 = 0 /\ b = b
-f (a1:=0) (a2:=0)
+f
      : T 0 0 -> forall (B : Type) (b : B), 0 = 0 /\ b = b
 @f
      : forall (A : Type) (a1 a2 : A),
@@ -62,16 +62,16 @@ f
      : T 0 0 -> forall (B : Type) (b : B), 0 = 0 /\ b = b
 x.(f) true
      : 0 = 0 /\ true = true
-x.(f) (B:=bool)
+x.(f)
      : forall b : bool, 0 = 0 /\ b = b
-x.(f) (B:=bool)
+x.(f)
      : forall b : bool, 0 = 0 /\ b = b
 @f nat
      : forall a1 a2 : nat,
        T a1 a2 -> forall (B : Type) (b : B), a1 = a2 /\ b = b
-f (a1:=0) (a2:=0)
+f
      : T 0 0 -> forall (B : Type) (b : B), 0 = 0 /\ b = b
-f (a1:=0) (a2:=0)
+f
      : T 0 0 -> forall (B : Type) (b : B), 0 = 0 /\ b = b
 @f
      : forall (A : Type) (a1 a2 : A),
@@ -218,7 +218,7 @@ p 0 0
      : forall b : ?B, 0 = 0 /\ b = b
 where
 ?B : [ |- Type]
-p 0 0 (B:=bool)
+p 0 0
      : forall b : bool, 0 = 0 /\ b = b
 p 0 0 true
      : 0 = 0 /\ true = true
