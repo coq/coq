@@ -48,7 +48,7 @@ open NumTok
    types and recursive definitions and of projection names in records *)
 
 type var_internalization_type =
-  | Inductive of Id.t list (* list of params *) * bool (* true = check for possible capture *)
+  | Inductive
   | Recursive
   | Method
   | Variable
@@ -415,20 +415,6 @@ let locate_if_hole ?loc na c = match DAst.get c with
       with Not_found -> DAst.make ?loc @@ GHole (Evar_kinds.BinderType na, naming, arg))
   | _ -> c
 
-let reset_hidden_inductive_implicit_test env =
-  { env with impls = Id.Map.map (function
-         | (Inductive (params,_),b,c) -> (Inductive (params,false),b,c)
-         | x -> x) env.impls }
-
-let check_hidden_implicit_parameters ?loc id impls =
-  if Id.Map.exists (fun _ -> function
-    | (Inductive (indparams,check),_,_) when check -> Id.List.mem id indparams
-    | _ -> false) impls
-  then
-    user_err ?loc (Id.print id ++ strbrk " is already used as name of " ++
-      strbrk "a parameter of the inductive type; bound variables in " ++
-      strbrk "the type of a constructor shall use a different name.")
-
 let pure_push_name_env (id,implargs) env =
   {env with
     ids = Id.Set.add id env.ids;
@@ -442,7 +428,6 @@ let push_name_env ntnvars implargs env =
   | { loc; v = Anonymous } ->
       env
   | { loc; v = Name id } ->
-      check_hidden_implicit_parameters ?loc id env.impls ;
       if Id.Map.is_empty ntnvars && Id.equal id ldots_var
         then error_ldots_var ?loc;
       set_var_scope ?loc id false (env.tmp_scope,env.scopes) ntnvars;
@@ -895,9 +880,6 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
     try
       let pat,(onlyident,scopes) = Id.Map.find id binders in
       let env = set_env_scopes env scopes in
-      (* We deactivate impls to avoid the check on hidden parameters *)
-      (* and since we are only interested in the pattern as a term *)
-      let env = reset_hidden_inductive_implicit_test env in
       if onlyident then
         term_of_name (out_patvar pat)
       else
@@ -1001,7 +983,7 @@ let intern_notation intern env ntnvars loc ntn fullargs =
 (* Discriminating between bound variables and global references       *)
 
 let string_of_ty = function
-  | Inductive _ -> "ind"
+  | Inductive -> "ind"
   | Recursive -> "def"
   | Method -> "meth"
   | Variable -> "var"
@@ -2104,7 +2086,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         let env' = Id.Set.fold
           (fun var bli -> push_name_env ntnvars (Variable,[],[]) bli (CAst.make @@ Name var))
           (Id.Set.union ex_ids as_in_vars)
-          (reset_hidden_inductive_implicit_test (restart_lambda_binders env)) in
+          (restart_lambda_binders env)
+        in
         (* PatVars before a real pattern do not need to be matched *)
         let stripped_match_from_in =
           let rec aux = function
@@ -2139,17 +2122,17 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
         (* "in" is None so no match to add *)
         let ((b',(na',_)),_,_) = intern_case_item env' Id.Set.empty (b,na,None) in
         let p' = Option.map (fun u ->
-          let env'' = push_name_env ntnvars (Variable,[],[]) (reset_hidden_inductive_implicit_test env')
+          let env'' = push_name_env ntnvars (Variable,[],[]) env'
             (CAst.make na') in
           intern_type (slide_binders env'') u) po in
         DAst.make ?loc @@
         GLetTuple (List.map (fun { CAst.v } -> v) nal, (na', p'), b',
-                   intern (List.fold_left (push_name_env ntnvars (Variable,[],[])) (reset_hidden_inductive_implicit_test env) nal) c)
+                   intern (List.fold_left (push_name_env ntnvars (Variable,[],[])) env nal) c)
     | CIf (c, (na,po), b1, b2) ->
       let env' = reset_tmp_scope env in
       let ((c',(na',_)),_,_) = intern_case_item env' Id.Set.empty (c,na,None) in (* no "in" no match to ad too *)
       let p' = Option.map (fun p ->
-          let env'' = push_name_env ntnvars (Variable,[],[]) (reset_hidden_inductive_implicit_test env)
+          let env'' = push_name_env ntnvars (Variable,[],[]) env
             (CAst.make na') in
           intern_type (slide_binders env'') p) po in
         DAst.make ?loc @@

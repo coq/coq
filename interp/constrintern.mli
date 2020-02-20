@@ -38,7 +38,7 @@ open Pretyping
    of [env] *)
 
 type var_internalization_type =
-  | Inductive of Id.t list (* list of params *) * bool (* true = check for possible capture *)
+  | Inductive
   | Recursive
   | Method
   | Variable

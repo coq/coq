@@ -503,8 +503,8 @@ let interp_mutual_inductive_gen env0 ~template udecl (uparamsl,paramsl,indl) not
 
   (* Compute interpretation metadatas *)
   let indimpls = List.map (fun impls -> userimpls @ impls) indimpls in
-  let impls = compute_internalization_env env_uparams sigma ~impls (Inductive (params,true)) indnames fullarities indimpls in
-  let ntn_impls = compute_internalization_env env_uparams sigma (Inductive (params,true)) indnames fullarities indimpls in
+  let impls = compute_internalization_env env_uparams sigma ~impls Inductive indnames fullarities indimpls in
+  let ntn_impls = compute_internalization_env env_uparams sigma Inductive indnames fullarities indimpls in
 
   let ninds = List.length indl in
   let (sigma, _), constructors =

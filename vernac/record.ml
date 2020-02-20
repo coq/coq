@@ -114,7 +114,7 @@ let check_anonymous_type ind =
   | { CAst.v = CSort (Glob_term.UAnonymous {rigid=true}) } -> true
   | _ -> false
 
-let typecheck_params_and_fields finite def poly pl ps records =
+let typecheck_params_and_fields def poly pl ps records =
   let env0 = Global.env () in
   (* Special case elaboration for template-polymorphic inductives,
      lower bound on introduced universes is Prop so that we do not miss
@@ -168,13 +168,10 @@ let typecheck_params_and_fields finite def poly pl ps records =
   let fold accu (id, _, _, _) arity r =
     EConstr.push_rel (LocalAssum (make_annot (Name id) r,arity)) accu in
   let env_ar = EConstr.push_rel_context newps (List.fold_left3 fold env0 records arities relevances) in
-  let assums = List.filter is_local_assum newps in
   let impls_env =
-    let params = List.map (RelDecl.get_name %> Name.get_id) assums in
-    let ty = Inductive (params, (finite != Declarations.BiFinite)) in
     let ids = List.map (fun (id, _, _, _) -> id) records in
     let imps = List.map (fun _ -> imps) arities in
-    compute_internalization_env env0 sigma ~impls:impls_env ty ids arities imps
+    compute_internalization_env env0 sigma ~impls:impls_env Inductive ids arities imps
   in
   let ninds = List.length arities in
   let nparams = List.length newps in
@@ -714,7 +711,7 @@ let definition_structure udecl kind ~template ~cumulative ~poly finite records =
   let ps, data = extract_record_data records in
   let ubinders, univs, auto_template, params, implpars, data =
     States.with_state_protection (fun () ->
-      typecheck_params_and_fields finite (kind = Class true) poly udecl ps data) () in
+      typecheck_params_and_fields (kind = Class true) poly udecl ps data) () in
   let template = template, auto_template in
   match kind with
   | Class def ->
