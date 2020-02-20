@@ -324,11 +324,8 @@ let explain_unification_error env sigma p1 p2 = function
         strbrk ": cannot ensure that " ++
         t ++ strbrk " is a subtype of " ++ u]
      | UnifUnivInconsistency p ->
-        if !Constrextern.print_universes then
-          [str "universe inconsistency: " ++
-          Univ.explain_universe_inconsistency (Termops.pr_evd_level sigma) p]
-        else
-          [str "universe inconsistency"]
+       [str "universe inconsistency: " ++
+        Univ.explain_universe_inconsistency (Termops.pr_evd_level sigma) p]
      | CannotSolveConstraint ((pb,env,t,u),e) ->
         let env = make_all_name_different env sigma in
         (strbrk "cannot satisfy constraint " ++ pr_leconstr_env env sigma t ++
@@ -1375,13 +1372,8 @@ let _ = CErrors.register_handler explain_exn_default
 
 let rec vernac_interp_error_handler = function
   | Univ.UniverseInconsistency i ->
-    let msg =
-      if !Constrextern.print_universes then
-        str "." ++ spc() ++
-        Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes i
-      else
-        mt() in
-    str "Universe inconsistency" ++ msg ++ str "."
+    str "Universe inconsistency." ++ spc() ++
+    Univ.explain_universe_inconsistency UnivNames.pr_with_global_universes i ++ str "."
   | TypeError(ctx,te) ->
     let te = map_ptype_error EConstr.of_constr te in
     explain_type_error ctx Evd.empty te
