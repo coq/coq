@@ -1,4 +1,4 @@
-compose (C:=nat) S
+compose S
      : (nat -> nat) -> nat -> nat
 ex_intro (P:=fun _ : nat => True) (x:=0) I
      : ex (fun _ : nat => True)

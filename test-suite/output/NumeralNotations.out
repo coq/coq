@@ -75,7 +75,7 @@ The command has indeed failed with message:
 In environment
 v := 0 : nat
 The term "v" has type "nat" while it is expected to have type "wuint".
-File "stdin", line 202, characters 2-72:
+File "stdin", line 203, characters 2-72:
 Warning: The 'abstract after' directive has no effect when the parsing
 function (of_uint) targets an option type.
 [abstract-large-number-no-op,numbers]

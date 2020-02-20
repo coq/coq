@@ -123,6 +123,7 @@ Module Test6.
     Export Scopes.
     Numeral Notation wnat of_uint to_uint : wnat_scope (abstract after 5000).
   End Notations.
+  Set Printing Coercions.
   Check let v := 0%wnat in v : wnat.
   Check wrap O.
   Timeout 1 Check wrap (ack 4 4). (* should be instantaneous *)
