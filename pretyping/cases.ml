@@ -1817,6 +1817,7 @@ let build_inversion_problem ~program_mode loc env sigma tms t =
         List.rev_append patl patl',acc_sign,acc
     | (t, NotInd (bo,typ)) :: tms ->
       let pat,acc = make_patvar t acc in
+      let typ = lift n typ in
       let d = LocalAssum (annotR (alias_of_pat pat),typ) in
       let patl,acc_sign,acc = aux (n+1) (snd (push_rel ~hypnaming:KeepUserNameAndRenameExistingButSectionNames sigma d env)) (d::acc_sign) tms acc in
       pat::patl,acc_sign,acc in
