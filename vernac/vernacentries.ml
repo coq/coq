@@ -2103,10 +2103,10 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
         unsupported_attributes atts;
         vernac_solve_existential ~pstate n c)
   (* Auxiliary file and library management *)
-  | VernacAddLoadPath (implicit,s,coq_path) ->
+  | VernacAddLoadPath { implicit; physical_path; logical_path } ->
     VtDefault(fun () ->
         unsupported_attributes atts;
-        vernac_add_loadpath ~implicit s coq_path)
+        vernac_add_loadpath ~implicit physical_path logical_path)
   | VernacRemoveLoadPath s ->
     VtDefault(fun () ->
         unsupported_attributes atts;

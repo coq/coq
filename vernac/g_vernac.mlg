@@ -912,10 +912,11 @@ GRAMMAR EXTEND Gram
       | IDENT "Locate"; l = locatable -> { VernacLocate l }
 
       (* Managing load paths *)
-      | IDENT "Add"; IDENT "LoadPath"; dir = ne_string; "as"; logical_path = dirpath ->
-          { VernacAddLoadPath (false, dir, logical_path) }
-      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = ne_string; "as"; logical_path = dirpath ->
-          { VernacAddLoadPath (true, dir, logical_path) }
+      | IDENT "Add"; IDENT "LoadPath"; physical_path = ne_string; "as"; logical_path = dirpath ->
+          { VernacAddLoadPath { implicit = false; logical_path; physical_path } }
+      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; physical_path = ne_string; "as"; logical_path = dirpath ->
+          { VernacAddLoadPath { implicit = true; logical_path; physical_path } }
+
       | IDENT "Remove"; IDENT "LoadPath"; dir = ne_string ->
           { VernacRemoveLoadPath dir }
 

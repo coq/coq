@@ -362,7 +362,11 @@ type nonrec vernac_expr =
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)
-  | VernacAddLoadPath of bool * string * DirPath.t
+  | VernacAddLoadPath of { implicit : bool
+                         ; physical_path : CUnix.physical_path
+                         ; logical_path : DirPath.t
+                         }
+
   | VernacRemoveLoadPath of string
   | VernacAddMLPath of string
   | VernacDeclareMLModule of string list
