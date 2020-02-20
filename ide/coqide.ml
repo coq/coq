@@ -461,7 +461,7 @@ let compile sn =
     |Some f ->
       let args = Coq.get_arguments sn.coqtop in
       let cmd = cmd_coqc#get
-        ^ " " ^ String.concat " " args
+        ^ " " ^ String.concat " " (List.map Filename.quote args)
         ^ " " ^ (Filename.quote f) ^ " 2>&1"
       in
       let buf = Buffer.create 1024 in
