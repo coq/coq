@@ -75,3 +75,35 @@ Entry constr:expr is
 [ "201" RIGHTA
   [ "{"; constr:operconstr LEVEL "200"; "}" ] ]
 
+fun x : nat => [ x ]
+     : nat -> nat
+fun x : nat => [x]
+     : nat -> nat
+∀ x : nat, x = x
+     : Prop
+File "stdin", line 222, characters 0-160:
+Warning: Notation "∀ _ .. _ , _" was already defined with a different format
+in scope type_scope. [notation-incompatible-format,parsing]
+∀x : nat,x = x
+     : Prop
+File "stdin", line 235, characters 0-60:
+Warning: Notation "_ %%% _" was already defined with a different format.
+[notation-incompatible-format,parsing]
+File "stdin", line 239, characters 0-64:
+Warning: Notation "_ %%% _" was already defined with a different format.
+[notation-incompatible-format,parsing]
+File "stdin", line 244, characters 0-62:
+Warning: Lonely notation "_ %%%% _" was already defined with a different
+format. [notation-incompatible-format,parsing]
+3  %%  4
+     : nat
+3  %%  4
+     : nat
+3   %%   4
+     : nat
+File "stdin", line 272, characters 0-61:
+Warning: The format modifier is irrelevant for only parsing rules.
+[irrelevant-format-only-parsing,parsing]
+File "stdin", line 276, characters 0-63:
+Warning: The only parsing modifier has no effect in Reserved Notation.
+[irrelevant-reserved-notation-only-parsing,parsing]

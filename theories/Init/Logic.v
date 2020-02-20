@@ -465,7 +465,7 @@ Module EqNotations.
         | eq_refl => H'
         end)
          (at level 10, H' at level 10,
-          format "'[' 'rew'  'dependent'  H  in  '/' H' ']'").
+          format "'[' 'rew'  'dependent'  '/    ' H  in  '/' H' ']'").
   Notation "'rew' 'dependent' -> H 'in' H'"
     := (match H with
         | eq_refl => H'
@@ -476,7 +476,7 @@ Module EqNotations.
         | eq_refl => H'
         end)
          (at level 10, H' at level 10,
-          format "'[' 'rew'  'dependent'  <-  H  in  '/' H' ']'").
+          format "'[' 'rew'  'dependent'  <-  '/    ' H  in  '/' H' ']'").
   Notation "'rew' 'dependent' [ 'fun' y p => P ] H 'in' H'"
     := (match H as p in (_ = y) return P with
         | eq_refl => H'

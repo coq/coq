@@ -163,6 +163,10 @@ Grammar constr` is at level 100. To avoid ``x : A`` being parsed as a type cast,
 it is necessary to put ``x`` at a level below 100, typically 99. Hence, a correct
 definition is the following:
 
+.. coqtop:: none
+
+   Reset Initial.
+
 .. coqtop:: all
 
    Notation "{ x : A | P }" := (sig A (fun x => P)) (x at level 99).
@@ -349,6 +353,11 @@ Reserving notations
 
       This command declares an infix parsing rule without giving its
       interpretation.
+
+   When a format is attached to a reserved notation, it is used by
+   default by all subsequent interpretations of the corresponding
+   notation. A specific interpretation can provide its own format
+   overriding the default format though.
 
 Simultaneous definition of terms and notations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

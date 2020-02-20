@@ -75,7 +75,8 @@ let rec cases_pattern_expr_eq p1 p2 =
     Option.equal qualid_eq r1 r2
   | CPatOr a1, CPatOr a2 ->
     List.equal cases_pattern_expr_eq a1 a2
-  | CPatNotation (n1, s1, l1), CPatNotation (n2, s2, l2) ->
+  | CPatNotation (inscope1, n1, s1, l1), CPatNotation (inscope2, n2, s2, l2) ->
+    Option.equal notation_with_optional_scope_eq inscope1 inscope2 &&
     notation_eq n1 n2 &&
     cases_pattern_notation_substitution_eq s1 s2 &&
     List.equal cases_pattern_expr_eq l1 l2
@@ -160,7 +161,8 @@ let rec constr_expr_eq e1 e2 =
       Glob_ops.glob_sort_eq s1 s2
   | CCast(t1,c1), CCast(t2,c2) ->
     constr_expr_eq t1 t2 && cast_expr_eq c1 c2
-    | CNotation(n1, s1), CNotation(n2, s2) ->
+    | CNotation(inscope1, n1, s1), CNotation(inscope2, n2, s2) ->
+      Option.equal notation_with_optional_scope_eq inscope1 inscope2 &&
       notation_eq n1 n2 &&
       constr_notation_substitution_eq s1 s2
     | CPrim i1, CPrim i2 ->
@@ -271,7 +273,7 @@ let rec cases_pattern_fold_names f a pt = match CAst.(pt.v) with
   | CPatCstr (_,patl1,patl2) ->
     List.fold_left (cases_pattern_fold_names f)
       (Option.fold_left (List.fold_left (cases_pattern_fold_names f)) a patl1) patl2
-  | CPatNotation (_,(patl,patll),patl') ->
+  | CPatNotation (_,_,(patl,patll),patl') ->
     List.fold_left (cases_pattern_fold_names f)
       (List.fold_left (cases_pattern_fold_names f) a (patl@List.flatten patll)) patl'
   | CPatDelimiters (_,pat) -> cases_pattern_fold_names f a pat
@@ -320,7 +322,7 @@ let fold_constr_expr_with_binders g f n acc = CAst.with_val (function
       f (Name.fold_right g (na.CAst.v) n) (Option.fold_left (f n) (f n acc a) t) b
     | CCast (a,(CastConv b|CastVM b|CastNative b)) -> f n (f n acc a) b
     | CCast (a,CastCoerce) -> f n acc a
-    | CNotation (_,(l,ll,bl,bll)) ->
+    | CNotation (_,_,(l,ll,bl,bll)) ->
       (* The following is an approximation: we don't know exactly if
          an ident is binding nor to which subterms bindings apply *)
       let acc = List.fold_left (f n) acc (l@List.flatten ll) in
@@ -399,9 +401,9 @@ let map_constr_expr_with_binders g f e = CAst.map (function
     | CLetIn (na,a,t,b) ->
       CLetIn (na,f e a,Option.map (f e) t,f (Name.fold_right g (na.CAst.v) e) b)
     | CCast (a,c) -> CCast (f e a, Glob_ops.map_cast_type (f e) c)
-    | CNotation (n,(l,ll,bl,bll)) ->
+    | CNotation (inscope,n,(l,ll,bl,bll)) ->
       (* This is an approximation because we don't know what binds what *)
-      CNotation (n,(List.map (f e) l,List.map (List.map (f e)) ll, bl,
+      CNotation (inscope,n,(List.map (f e) l,List.map (List.map (f e)) ll, bl,
                     List.map (fun bl -> snd (map_local_binders f g e bl)) bll))
     | CGeneralization (b,a,c) -> CGeneralization (b,a,f e c)
     | CDelimiters (s,a) -> CDelimiters (s,f e a)
@@ -574,7 +576,7 @@ let mkAppPattern ?loc p lp =
      CErrors.user_err ?loc:p.loc ~hdr:"compound_pattern"
                       (Pp.str "Nested applications not supported.")
   | CPatCstr (r, l1, l2) -> CPatCstr (r, l1 , l2@lp)
-  | CPatNotation (n, s, l) -> CPatNotation (n , s, l@lp)
+  | CPatNotation (inscope, n, s, l) -> CPatNotation (inscope, n , s, l@lp)
   | _ -> CErrors.user_err
            ?loc:p.loc ~hdr:"compound_pattern"
            (Pp.str "Such pattern cannot have arguments."))
@@ -591,8 +593,8 @@ let rec coerce_to_cases_pattern_expr c = CAst.map_with_loc (fun ?loc -> function
      (mkAppPattern (coerce_to_cases_pattern_expr p) (List.map (fun (a,_) -> coerce_to_cases_pattern_expr a) args)).CAst.v
   | CAppExpl ((None,r,i),args) ->
      CPatCstr (r,Some (List.map coerce_to_cases_pattern_expr args),[])
-  | CNotation (ntn,(c,cl,[],[])) ->
-     CPatNotation (ntn,(List.map coerce_to_cases_pattern_expr c,
+  | CNotation (inscope,ntn,(c,cl,[],[])) ->
+     CPatNotation (inscope,ntn,(List.map coerce_to_cases_pattern_expr c,
                         List.map (List.map coerce_to_cases_pattern_expr) cl),[])
   | CPrim p ->
      CPatPrim p

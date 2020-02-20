@@ -192,3 +192,84 @@ Notation "{ p }" := (p) (in custom expr at level 201, p constr).
 Print Custom Grammar expr.
 
 End Bug11331.
+
+Module Bug_6082.
+
+Declare Scope foo.
+Notation "[ x ]" := (S x) (format "[  x  ]") : foo.
+Open Scope foo.
+Check fun x => S x.
+
+Declare Scope bar.
+Notation "[ x ]" := (S x) (format "[ x ]") : bar.
+Open Scope bar.
+
+Check fun x => S x.
+
+End Bug_6082.
+
+Module Bug_7766.
+
+Notation "∀ x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity,
+  format "'[  ' ∀  x  ..  y ']' ,  P") : type_scope.
+
+Check forall (x : nat), x = x.
+
+Notation "∀ x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity,
+   format "∀ x .. y , P") : type_scope.
+
+Check forall (x : nat), x = x.
+
+End Bug_7766.
+
+Module N.
+
+(* Other tests about generic and specific formats *)
+
+Reserved Notation "x %%% y" (format "x  %%%  y", at level 35).
+Reserved Notation "x %%% y" (format "x %%% y", at level 35).
+
+(* Not using the reserved format, we warn *)
+
+Notation "x %%% y" := (x+y) (format "x   %%%   y", at level 35).
+
+(* Same scope (here lonely): we warn *)
+
+Notation "x %%%% y" := (x+y) (format "x  %%%%  y", at level 35).
+Notation "x %%%% y" := (x+y) (format "x %%%% y", at level 35).
+
+(* Test if the format for a specific notation becomes the default
+   generic format or if the generic format, in the absence of a
+   Reserved Notation, is the one canonically obtained from the
+   notation *)
+
+Declare Scope foo_scope.
+Declare Scope bar_scope.
+Declare Scope bar'_scope.
+Notation "x %% y" := (x+y) (at level 47, format "x   %%   y") : foo_scope.
+Open Scope foo_scope.
+Check 3 %% 4.
+
+(* No scope, we inherit the initial format *)
+
+Notation "x %% y" := (x*y) : bar_scope. (* Inherit the format *)
+Open Scope bar_scope.
+Check 3 %% 4.
+
+(* Different scope and no reserved notation, we don't warn *)
+
+Notation "x %% y" := (x*y) (at level 47, format "x    %%    y") : bar'_scope.
+Open Scope bar'_scope.
+Check 3 %% 4.
+
+(* Warn for combination of "only parsing" and "format" *)
+
+Notation "###" := 0 (at level 0, only parsing, format "###").
+
+(* In reserved notation, warn only for the "only parsing" *)
+
+Reserved Notation "##" (at level 0, only parsing, format "##").
+
+End N.

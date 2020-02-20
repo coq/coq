@@ -14,21 +14,23 @@ open Util
 open Notation
 open Notation_gram
 
-(* Uninterpreted notation levels *)
+(* Register the level of notation for parsing and printing
+   (we also register a precomputed parsing rule) *)
 
 let notation_level_map = Summary.ref ~name:"notation_level_map" NotationMap.empty
 
-let declare_notation_level ?(onlyprint=false) ntn level =
+let declare_notation_level ntn ~onlyprint parsing_rule level =
   try
-    let (level,onlyprint) = NotationMap.find ntn !notation_level_map in
-    if not onlyprint then anomaly (str "Notation " ++ pr_notation ntn ++ str " is already assigned a level.")
+    let _ = NotationMap.find ntn !notation_level_map in
+    anomaly (str "Notation " ++ pr_notation ntn ++ str " is already assigned a level.")
   with Not_found ->
-  notation_level_map := NotationMap.add ntn (level,onlyprint) !notation_level_map
+  notation_level_map := NotationMap.add ntn (onlyprint,parsing_rule,level) !notation_level_map
 
-let level_of_notation ?(onlyprint=false) ntn =
-  let (level,onlyprint') = NotationMap.find ntn !notation_level_map in
-  if onlyprint' && not onlyprint then raise Not_found;
-  level
+let level_of_notation ntn =
+  NotationMap.find ntn !notation_level_map
+
+let get_defined_notations () =
+  NotationSet.elements @@ NotationMap.domain !notation_level_map
 
 (**********************************************************************)
 (* Equality *)

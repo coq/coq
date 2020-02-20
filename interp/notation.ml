@@ -49,6 +49,11 @@ let notation_entry_level_eq s1 s2 = match (s1,s2) with
 | InCustomEntryLevel (s1,n1), InCustomEntryLevel (s2,n2) -> String.equal s1 s2 && n1 = n2
 | (InConstrEntrySomeLevel | InCustomEntryLevel _), _ -> false
 
+let notation_with_optional_scope_eq inscope1 inscope2 = match (inscope1,inscope2) with
+ | LastLonelyNotation, LastLonelyNotation -> true
+ | NotationInScope s1, NotationInScope s2 -> String.equal s1 s2
+ | (LastLonelyNotation | NotationInScope _), _ -> false
+
 let notation_eq (from1,ntn1) (from2,ntn2) =
   notation_entry_level_eq from1 from2 && String.equal ntn1 ntn2
 
@@ -62,6 +67,15 @@ module NotationOrd =
 
 module NotationSet = Set.Make(NotationOrd)
 module NotationMap = CMap.Make(NotationOrd)
+
+module SpecificNotationOrd =
+  struct
+    type t = specific_notation
+    let compare = pervasives_compare
+  end
+
+module SpecificNotationSet = Set.Make(SpecificNotationOrd)
+module SpecificNotationMap = CMap.Make(SpecificNotationOrd)
 
 (**********************************************************************)
 (* Scope of symbols *)
@@ -148,21 +162,21 @@ let normalize_scope sc =
 (**********************************************************************)
 (* The global stack of scopes                                         *)
 
-type scope_elem = Scope of scope_name | SingleNotation of notation
-type scopes = scope_elem list
+type scope_item = OpenScopeItem of scope_name | LonelyNotationItem of notation
+type scopes = scope_item list
 
 let scope_eq s1 s2 = match s1, s2 with
-| Scope s1, Scope s2 -> String.equal s1 s2
-| SingleNotation s1, SingleNotation s2 -> notation_eq s1 s2
-| Scope _, SingleNotation _
-| SingleNotation _, Scope _ -> false
+| OpenScopeItem s1, OpenScopeItem s2 -> String.equal s1 s2
+| LonelyNotationItem s1, LonelyNotationItem s2 -> notation_eq s1 s2
+| OpenScopeItem _, LonelyNotationItem _
+| LonelyNotationItem _, OpenScopeItem _ -> false
 
 let scope_stack = ref []
 
 let current_scopes () = !scope_stack
 
 let scope_is_open_in_scopes sc l =
-  List.exists (function Scope sc' -> String.equal sc sc' | _ -> false) l
+  List.exists (function OpenScopeItem sc' -> String.equal sc sc' | _ -> false) l
 
 let scope_is_open sc = scope_is_open_in_scopes sc (!scope_stack)
 
@@ -188,7 +202,7 @@ let discharge_scope (_,(local,_,_ as o)) =
 let classify_scope (local,_,_ as o) =
   if local then Dispose else Substitute o
 
-let inScope : bool * bool * scope_elem -> obj =
+let inScope : bool * bool * scope_item -> obj =
   declare_object {(default_object "SCOPE") with
       cache_function = cache_scope;
       open_function = open_scope;
@@ -197,11 +211,11 @@ let inScope : bool * bool * scope_elem -> obj =
       classify_function = classify_scope }
 
 let open_close_scope (local,opening,sc) =
-  Lib.add_anonymous_leaf (inScope (local,opening,Scope (normalize_scope sc)))
+  Lib.add_anonymous_leaf (inScope (local,opening,OpenScopeItem (normalize_scope sc)))
 
 let empty_scope_stack = []
 
-let push_scope sc scopes = Scope sc :: scopes
+let push_scope sc scopes = OpenScopeItem sc :: scopes
 
 let push_scopes = List.fold_right push_scope
 
@@ -254,7 +268,7 @@ let find_delimiters_scope ?loc key =
 (* Uninterpretation tables *)
 
 type interp_rule =
-  | NotationRule of scope_name option * notation
+  | NotationRule of specific_notation
   | SynDefRule of KerName.t
 
 (* We define keys for glob_constr and aconstr to split the syntax entries
@@ -1064,17 +1078,17 @@ let check_required_module ?loc sc (sp,d) =
    the scope stack [scopes], and if yes, using delimiters or not *)
 
 let find_with_delimiters = function
-  | None -> None
-  | Some scope ->
+  | LastLonelyNotation -> None
+  | NotationInScope scope ->
       match (String.Map.find scope !scope_map).delimiters with
         | Some key -> Some (Some scope, Some key)
         | None -> None
 
 let rec find_without_delimiters find (ntn_scope,ntn) = function
-  | Scope scope :: scopes ->
+  | OpenScopeItem scope :: scopes ->
       (* Is the expected ntn/numpr attached to the most recently open scope? *)
       begin match ntn_scope with
-      | Some scope' when String.equal scope scope' ->
+      | NotationInScope scope' when String.equal scope scope' ->
         Some (None,None)
       | _ ->
         (* If the most recently open scope has a notation/numeral printer
@@ -1084,9 +1098,9 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
         else
           find_without_delimiters find (ntn_scope,ntn) scopes
       end
-  | SingleNotation ntn' :: scopes ->
+  | LonelyNotationItem ntn' :: scopes ->
       begin match ntn_scope, ntn with
-      | None, Some ntn when notation_eq ntn ntn' ->
+      | LastLonelyNotation, Some ntn when notation_eq ntn ntn' ->
         Some (None, None)
       | _ ->
         find_without_delimiters find (ntn_scope,ntn) scopes
@@ -1123,7 +1137,7 @@ let declare_notation_interpretation ntn scopt pat df ~onlyprint deprecation =
     scope_map := String.Map.add scope sc !scope_map
   end;
   begin match scopt with
-  | None -> scope_stack := SingleNotation ntn :: !scope_stack
+  | None -> scope_stack := LonelyNotationItem ntn :: !scope_stack
   | Some _ -> ()
   end
 
@@ -1133,15 +1147,15 @@ let declare_uninterpretation rule (metas,c as pat) =
 
 let rec find_interpretation ntn find = function
   | [] -> raise Not_found
-  | Scope scope :: scopes ->
+  | OpenScopeItem scope :: scopes ->
       (try let n = find scope in (n,Some scope)
        with Not_found -> find_interpretation ntn find scopes)
-  | SingleNotation ntn'::scopes when notation_eq ntn' ntn ->
+  | LonelyNotationItem ntn'::scopes when notation_eq ntn' ntn ->
       (try let n = find default_scope in (n,None)
        with Not_found ->
          (* e.g. because single notation only for constr, not cases_pattern *)
          find_interpretation ntn find scopes)
-  | SingleNotation _::scopes ->
+  | LonelyNotationItem _::scopes ->
       find_interpretation ntn find scopes
 
 let find_notation ntn sc =
@@ -1244,7 +1258,7 @@ let availability_of_notation (ntn_scope,ntn) scopes =
    commonly from the lowest level of the source entry to the highest
    level of the target entry. *)
 
-type entry_coercion = notation list
+type entry_coercion = (notation_with_optional_scope * notation) list
 
 module EntryCoercionOrd =
  struct
@@ -1295,7 +1309,7 @@ let rec insert_coercion_path path = function
       else if shorter_path path path' then path::allpaths
       else path'::insert_coercion_path path paths
 
-let declare_entry_coercion (entry,_ as ntn) entry' =
+let declare_entry_coercion (scope,(entry,_) as specific_ntn) entry' =
   let entry, lev = decompose_custom_entry entry in
   let entry', lev' = decompose_custom_entry entry' in
   (* Transitive closure *)
@@ -1304,19 +1318,19 @@ let declare_entry_coercion (entry,_ as ntn) entry' =
         List.fold_right (fun ((lev'',lev'''),path) l ->
         if notation_entry_eq entry entry''' && level_ord lev lev''' &&
            not (notation_entry_eq entry' entry'')
-        then ((entry'',entry'),((lev'',lev'),path@[ntn]))::l else l) paths l)
+        then ((entry'',entry'),((lev'',lev'),path@[specific_ntn]))::l else l) paths l)
       !entry_coercion_map [] in
   let toaddright =
     EntryCoercionMap.fold (fun (entry'',entry''') paths l ->
         List.fold_right (fun ((lev'',lev'''),path) l ->
         if entry' = entry'' && level_ord lev' lev'' && entry <> entry'''
-        then ((entry,entry'''),((lev,lev'''),path@[ntn]))::l else l) paths l)
+        then ((entry,entry'''),((lev,lev'''),path@[specific_ntn]))::l else l) paths l)
       !entry_coercion_map [] in
   entry_coercion_map :=
     List.fold_right (fun (pair,path) ->
         let olds = try EntryCoercionMap.find pair !entry_coercion_map with Not_found -> [] in
         EntryCoercionMap.add pair (insert_coercion_path path olds))
-      (((entry,entry'),((lev,lev'),[ntn]))::toaddright@toaddleft)
+      (((entry,entry'),((lev,lev'),[specific_ntn]))::toaddright@toaddleft)
       !entry_coercion_map
 
 let entry_has_global_map = ref String.Map.empty
@@ -1389,7 +1403,7 @@ let availability_of_prim_token n printer_scope local_scopes =
     with Not_found -> false
   in
   let scopes = make_current_scopes local_scopes in
-  Option.map snd (find_without_delimiters f (Some printer_scope,None) scopes)
+  Option.map snd (find_without_delimiters f (NotationInScope printer_scope,None) scopes)
 
 (* Miscellaneous *)
 
@@ -1705,11 +1719,11 @@ let pr_scopes prglob =
 
 let rec find_default ntn = function
   | [] -> None
-  | Scope scope :: scopes ->
+  | OpenScopeItem scope :: scopes ->
     if NotationMap.mem ntn (find_scope scope).notations then
       Some scope
     else find_default ntn scopes
-  | SingleNotation ntn' :: scopes ->
+  | LonelyNotationItem ntn' :: scopes ->
     if notation_eq ntn ntn' then Some default_scope
     else find_default ntn scopes
 
@@ -1863,13 +1877,13 @@ let collect_notation_in_scope scope sc known =
 let collect_notations stack =
   fst (List.fold_left
     (fun (all,knownntn as acc) -> function
-      | Scope scope ->
+      | OpenScopeItem scope ->
           if String.List.mem_assoc scope all then acc
           else
             let (l,knownntn) =
               collect_notation_in_scope scope (find_scope scope) knownntn in
             ((scope,l)::all,knownntn)
-      | SingleNotation ntn ->
+      | LonelyNotationItem ntn ->
           if List.mem_f notation_eq ntn knownntn then (all,knownntn)
           else
           try

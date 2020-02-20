@@ -75,10 +75,10 @@ let inactive_notations_table =
 let inactive_scopes_table    =
   Summary.ref ~name:"inactive_scopes_table" CString.Set.empty
 
-let show_scope scopt =
-  match scopt with
-  | None -> str ""
-  | Some sc -> spc () ++ str "in scope" ++ spc () ++ str sc
+let show_scope inscope =
+  match inscope with
+  | LastLonelyNotation -> str ""
+  | NotationInScope sc -> spc () ++ str "in scope" ++ spc () ++ str sc
 
 let _show_inactive_notations () =
   begin
@@ -97,8 +97,8 @@ let _show_inactive_notations () =
     let _ = Feedback.msg_notice (str "Inactive notations:") in
     IRuleSet.iter
       (function
-       | NotationRule (scopt, ntn) ->
-         Feedback.msg_notice (pr_notation ntn ++ show_scope scopt)
+       | NotationRule (inscope, ntn) ->
+         Feedback.msg_notice (pr_notation ntn ++ show_scope inscope)
        | SynDefRule kn -> Feedback.msg_notice (str (string_of_qualid (Nametab.shortest_qualid_of_syndef Id.Set.empty kn))))
       !inactive_notations_table
 
@@ -107,18 +107,19 @@ let deactivate_notation nr =
   | SynDefRule kn ->
      (* shouldn't we check whether it is well defined? *)
      inactive_notations_table := IRuleSet.add nr !inactive_notations_table
-  | NotationRule (scopt, ntn) ->
-     match availability_of_notation (scopt, ntn) (scopt, []) with
+  | NotationRule (inscope, ntn) ->
+     let scopt = match inscope with NotationInScope sc -> Some sc | LastLonelyNotation -> None in
+     match availability_of_notation (inscope, ntn) (scopt, []) with
      | None -> user_err ~hdr:"Notation"
                         (pr_notation ntn ++ spc () ++ str "does not exist"
-                         ++ (match scopt with
-                             | None -> spc () ++ str "in the empty scope."
-                             | Some _ -> show_scope scopt ++ str "."))
+                         ++ (match inscope with
+                             | LastLonelyNotation -> spc () ++ str "in the empty scope."
+                             | NotationInScope _ -> show_scope inscope ++ str "."))
      | Some _ ->
         if IRuleSet.mem nr !inactive_notations_table then
           Feedback.msg_warning
             (str "Notation" ++ spc () ++ pr_notation ntn ++ spc ()
-             ++ str "is already inactive" ++ show_scope scopt ++ str ".")
+             ++ str "is already inactive" ++ show_scope inscope ++ str ".")
         else inactive_notations_table := IRuleSet.add nr !inactive_notations_table
 
 let reactivate_notation nr =
@@ -127,9 +128,9 @@ let reactivate_notation nr =
       IRuleSet.remove nr !inactive_notations_table
   with Not_found ->
     match nr with
-    | NotationRule (scopt, ntn) ->
+    | NotationRule (inscope, ntn) ->
        Feedback.msg_warning (str "Notation" ++ spc () ++ pr_notation ntn ++ spc ()
-                             ++ str "is already active" ++ show_scope scopt ++
+                             ++ str "is already active" ++ show_scope inscope ++
   str ".")
     | SynDefRule kn ->
        let s = string_of_qualid (Nametab.shortest_qualid_of_syndef Id.Set.empty kn) in
@@ -157,8 +158,8 @@ let reactivate_scope sc =
 let is_inactive_rule nr =
   IRuleSet.mem nr !inactive_notations_table ||
   match nr with
-    | NotationRule (Some sc, ntn) -> CString.Set.mem sc !inactive_scopes_table
-    | NotationRule (None, ntn) -> false
+    | NotationRule (NotationInScope sc, ntn) -> CString.Set.mem sc !inactive_scopes_table
+    | NotationRule (LastLonelyNotation, ntn) -> false
     | SynDefRule _ -> false
 
 (* args: notation, scope, activate/deactivate *)
@@ -169,10 +170,13 @@ let toggle_scope_printing ~scope ~activate =
     deactivate_scope scope
 
 let toggle_notation_printing ?scope ~notation ~activate =
+  let inscope = match scope with
+  | None -> LastLonelyNotation
+  | Some sc -> NotationInScope sc in
   if activate then
-    reactivate_notation (NotationRule (scope, notation))
+    reactivate_notation (NotationRule (inscope, notation))
   else
-    deactivate_notation (NotationRule (scope, notation))
+    deactivate_notation (NotationRule (inscope, notation))
 
 (* This governs printing of projections using the dot notation symbols *)
 let print_projections = ref false
@@ -254,11 +258,11 @@ let insert_pat_alias ?loc p = function
 
 let rec insert_coercion ?loc l c = match l with
   | [] -> c
-  | ntn::l -> CAst.make ?loc @@ CNotation (ntn,([insert_coercion ?loc l c],[],[],[]))
+  | (inscope,ntn)::l -> CAst.make ?loc @@ CNotation (Some inscope,ntn,([insert_coercion ?loc l c],[],[],[]))
 
 let rec insert_pat_coercion ?loc l c = match l with
   | [] -> c
-  | ntn::l -> CAst.make ?loc @@ CPatNotation (ntn,([insert_pat_coercion ?loc l c],[]),[])
+  | (inscope,ntn)::l -> CAst.make ?loc @@ CPatNotation (Some inscope,ntn,([insert_pat_coercion ?loc l c],[]),[])
 
 (**********************************************************************)
 (* conversion of references                                           *)
@@ -348,19 +352,19 @@ let make_notation_gen loc ntn mknot mkprim destprim l bl =
            | None -> mknot (loc,ntn,l,bl) end
         | _ -> mknot (loc,ntn,l,bl)
 
-let make_notation loc ntn (terms,termlists,binders,binderlists as subst) =
+let make_notation loc (inscope,ntn) (terms,termlists,binders,binderlists as subst) =
   if not (List.is_empty termlists) || not (List.is_empty binderlists) then
-    CAst.make ?loc @@ CNotation (ntn,subst)
+    CAst.make ?loc @@ CNotation (Some inscope,ntn,subst)
   else
     make_notation_gen loc ntn
-      (fun (loc,ntn,l,bl) -> CAst.make ?loc @@ CNotation (ntn,(l,[],bl,[])))
+      (fun (loc,ntn,l,bl) -> CAst.make ?loc @@ CNotation (Some inscope,ntn,(l,[],bl,[])))
       (fun (loc,p) -> CAst.make ?loc @@ CPrim p)
       destPrim terms binders
 
-let make_pat_notation ?loc ntn (terms,termlists as subst) args =
-  if not (List.is_empty termlists) then (CAst.make ?loc @@ CPatNotation (ntn,subst,args)) else
+let make_pat_notation ?loc (inscope,ntn) (terms,termlists as subst) args =
+  if not (List.is_empty termlists) then (CAst.make ?loc @@ CPatNotation (Some inscope,ntn,subst,args)) else
   make_notation_gen loc ntn
-    (fun (loc,ntn,l,_) -> CAst.make ?loc @@ CPatNotation (ntn,(l,[]),args))
+    (fun (loc,ntn,l,_) -> CAst.make ?loc @@ CPatNotation (Some inscope,ntn,(l,[]),args))
     (fun (loc,p)     -> CAst.make ?loc @@ CPatPrim p)
     destPatPrim terms []
 
@@ -450,12 +454,12 @@ let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
 and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
     (custom, (tmp_scope, scopes) as allscopes) vars =
   function
-    | NotationRule (sc,ntn) ->
+    | NotationRule (_,ntn as specific_ntn) ->
       begin
         match availability_of_entry_coercion custom (fst ntn) with
         | None -> raise No_match
         | Some coercion ->
-        match availability_of_notation (sc,ntn) (tmp_scope,scopes) with
+        match availability_of_notation specific_ntn (tmp_scope,scopes) with
           (* Uninterpretation is not allowed in current context *)
           | None -> raise No_match
           (* Uninterpretation is allowed in current context *)
@@ -479,7 +483,7 @@ and apply_notation_to_pattern ?loc gr ((subst,substlist),(nb_to_drop,more_args))
             in
             insert_pat_coercion coercion
               (insert_pat_delimiters ?loc
-                 (make_pat_notation ?loc ntn (l,ll) l2') key)
+                 (make_pat_notation ?loc specific_ntn (l,ll) l2') key)
       end
     | SynDefRule kn ->
       match availability_of_entry_coercion custom InConstrEntrySomeLevel with
@@ -1183,11 +1187,11 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
           match_notation_constr !print_universes t pat in
         (* Try availability of interpretation ... *)
         match keyrule with
-          | NotationRule (sc,ntn) ->
+          | NotationRule (_,ntn as specific_ntn) ->
              (match availability_of_entry_coercion custom (fst ntn) with
              | None -> raise No_match
              | Some coercion ->
-               match availability_of_notation (sc,ntn) scopes with
+               match availability_of_notation specific_ntn scopes with
                   (* Uninterpretation is not allowed in current context *)
               | None -> raise No_match
                   (* Uninterpretation is allowed in current context *)
@@ -1210,7 +1214,7 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
                     List.map (fun (bl,(subentry,(scopt,scl))) ->
                       pi3 (extern_local_binder (subentry,(scopt,scl@scopes')) vars bl))
                       binderlists in
-                  let c = make_notation loc ntn (l,ll,bl,bll) in
+                  let c = make_notation loc specific_ntn (l,ll,bl,bll) in
                   let c = insert_coercion coercion (insert_delimiters c key) in
                   let args = fill_arg_scopes args argsscopes allscopes in
                   let args = extern_args (extern true) vars args in
