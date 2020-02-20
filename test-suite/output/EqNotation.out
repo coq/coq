@@ -1,0 +1,3 @@
+The command has indeed failed with message:
+Cannot infer the implicit parameter A of eq whose type is 
+"Type".

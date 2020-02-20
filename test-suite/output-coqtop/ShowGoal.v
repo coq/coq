@@ -6,6 +6,6 @@ Proof using.
     trivial.
   split.
     trivial.
-Show Goal 16 at 5.
-Show Goal 16 at 7.
-Show Goal 16 at 9.
+Show Goal 13 at 5.
+Show Goal 13 at 7.
+Show Goal 13 at 9.

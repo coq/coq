@@ -52,19 +52,19 @@ x < 1 subgoal
   ============================
   i = i
 
-x < goal ID 16 at state 5
+x < goal ID 13 at state 5
   
   i : nat
   ============================
   i = ?j /\ ?j = ?k /\ i = ?k
 
-x < goal ID 16 at state 7
+x < goal ID 13 at state 7
   
   i : nat
   ============================
   i = i /\ i = ?k /\ i = ?k
 
-x < goal ID 16 at state 9
+x < goal ID 13 at state 9
   
   i : nat
   ============================
