@@ -150,6 +150,7 @@ val ppuniverses : UGraph.t -> unit
 
 val ppnamedcontextval : Environ.named_context_val -> unit
 val ppenv : Environ.env -> unit
+val ppglobenv : GlobEnv.t -> unit
 val ppenvwithcst : Environ.env -> unit
 
 val pptac : Ltac_plugin.Tacexpr.glob_tactic_expr -> unit
