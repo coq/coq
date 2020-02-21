@@ -329,7 +329,7 @@ let make_sep_rules = function
     Pcoq.G.Symbol.token tk
   | tkl ->
     let r = Pcoq.G.mk_rule (List.rev tkl) in
-    Pcoq.G.Symbol.rules ~warning:None [r]
+    Pcoq.G.Symbol.rules [r]
 
 type ('s, 'a) mayrec_symbol =
 | MayRecNo : ('s, Gramlib.Grammar.norec, 'a) G.Symbol.t -> ('s, 'a) mayrec_symbol

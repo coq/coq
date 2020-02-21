@@ -253,7 +253,7 @@ and print_symbol fmt tkn = match tkn with
     fprintf fmt "Pcoq.G.Rules.make @[(%a)@ (%a)@]" (print_symbols ~norec:true) tkn print_fun (vars, body)
   in
   let pr fmt rules = print_list fmt pr rules in
-  fprintf fmt "(Pcoq.G.Symbol.rules ~warning:None %a)" pr (List.rev rules)
+  fprintf fmt "(Pcoq.G.Symbol.rules %a)" pr (List.rev rules)
 | SymbQuote c ->
   fprintf fmt "(%s)" c
 

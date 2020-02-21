@@ -1614,7 +1614,7 @@ let rec make_seq_rule = function
 let () = add_scope "seq" begin fun toks ->
   let scope =
     let Seqrule (r, c) = make_seq_rule (List.rev toks) in
-    Pcoq.G.(Symbol.rules ~warning:None [Rules.make r (apply c [])])
+    Pcoq.G.(Symbol.rules [Rules.make r (apply c [])])
   in
   Tac2entries.ScopeRule (scope, (fun e -> e))
 end

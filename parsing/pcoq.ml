@@ -127,25 +127,24 @@ let grammar_delete_reinit e reinit ({ G.pos; data } as d)=
     | Some (Gramext.Level n) -> n
     | _ -> assert false
   in
-  let warning msg = Feedback.msg_warning Pp.(str msg) in
   let ext = { G.pos = Some ext; data = [Some lev,Some a,[]] } in
-  G.safe_extend ~warning:(Some warning) e ext
+  G.safe_extend e ext
 
 (** Extension *)
 
 let grammar_extend e ext =
   let undo () = grammar_delete e ext in
-  let redo () = G.safe_extend ~warning:None e ext in
+  let redo () = G.safe_extend e ext in
   camlp5_state := ByEXTEND (undo, redo) :: !camlp5_state;
   redo ()
 
 let grammar_extend_sync e ext =
   camlp5_state := ByGrammar (ExtendRule (e, ext)) :: !camlp5_state;
-  G.safe_extend ~warning:None e ext
+  G.safe_extend e ext
 
 let grammar_extend_sync_reinit e reinit ext =
   camlp5_state := ByGrammar (ExtendRuleReinit (e, reinit, ext)) :: !camlp5_state;
-  G.safe_extend ~warning:None e ext
+  G.safe_extend e ext
 
 (** Remove extensions
 
@@ -189,18 +188,16 @@ let eoi_entry en =
   let e = G.Entry.make ((G.Entry.name en) ^ "_eoi") in
   let symbs = G.Rule.next (G.Rule.next G.Rule.stop (G.Symbol.nterm en)) (G.Symbol.token Tok.PEOI) in
   let act = fun _ x loc -> x in
-  let warning msg = Feedback.msg_warning Pp.(str msg) in
   let ext = { G.pos = None; data = make_rule [G.Production.make symbs act] } in
-  G.safe_extend ~warning:(Some warning) e ext;
+  G.safe_extend e ext;
   e
 
 let map_entry f en =
   let e = G.Entry.make ((G.Entry.name en) ^ "_map") in
   let symbs = G.Rule.next G.Rule.stop (G.Symbol.nterm en) in
   let act = fun x loc -> f x in
-  let warning msg = Feedback.msg_warning Pp.(str msg) in
   let ext = { G.pos = None; data = make_rule [G.Production.make symbs act] } in
-  G.safe_extend ~warning:(Some warning) e ext;
+  G.safe_extend e ext;
   e
 
 (* Parse a string, does NOT check if the entire string was read
@@ -348,9 +345,8 @@ module Module =
 let epsilon_value (type s tr a) f (e : (s, tr, a) G.Symbol.t) =
   let r = G.Production.make (G.Rule.next G.Rule.stop e) (fun x _ -> f x) in
   let entry = G.Entry.make "epsilon" in
-  let warning msg = Feedback.msg_warning Pp.(str msg) in
   let ext = { G.pos = None; data = [None, None, [r]] } in
-  let () = G.safe_extend ~warning:(Some warning) entry ext in
+  let () = G.safe_extend entry ext in
   try Some (parse_string entry "") with _ -> None
 
 (** Synchronized grammar extensions *)

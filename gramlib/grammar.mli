@@ -30,7 +30,6 @@ module type GLexerType = sig
   end
 end
 
-
 type norec
 type mayrec
 
@@ -73,7 +72,7 @@ module type S = sig
     val self : ('self, mayrec, 'self) t
     val next : ('self, mayrec, 'self) t
     val token : 'c pattern -> ('self, norec, 'c) t
-    val rules : warning:(string -> unit) option -> 'a Rules.t list -> ('self, norec, 'a) t
+    val rules : 'a Rules.t list -> ('self, norec, 'a) t
 
   end and Rule : sig
 
@@ -111,7 +110,7 @@ module type S = sig
     ; data : 'a single_extend_statement list
     }
 
-  val safe_extend : warning:(string -> unit) option -> 'a Entry.t -> 'a extend_statement -> unit
+  val safe_extend : 'a Entry.t -> 'a extend_statement -> unit
   val safe_delete_rule : 'a Entry.t -> 'a Production.t -> unit
 
   val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
