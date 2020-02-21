@@ -96,7 +96,7 @@ let tag_var = tag Tag.variable
       | UnpMetaVar prec as unp :: l ->
         let c = pop env in
         let pp2 = aux l in
-        let pp1 = pr (if parens then prec else LevelLe 0) c in
+        let pp1 = pr (if parens then LevelLe 0 else prec) c in
         return unp pp1 pp2
       | UnpBinderMetaVar prec as unp :: l ->
         let c = pop bl in
@@ -105,7 +105,7 @@ let tag_var = tag Tag.variable
         return unp pp1 pp2
       | UnpListMetaVar (prec, sl) as unp :: l ->
         let cl = pop envlist in
-        let pp1 = prlist_with_sep (fun () -> aux sl) (pr (if parens then prec else LevelLe 0)) cl in
+        let pp1 = prlist_with_sep (fun () -> aux sl) (pr (if parens then LevelLe 0 else prec)) cl in
         let pp2 = aux l in
         return unp pp1 pp2
       | UnpBinderListMetaVar (isopen, sl) as unp :: l ->
