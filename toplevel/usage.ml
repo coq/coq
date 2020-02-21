@@ -32,7 +32,8 @@ let print_usage_common co command =
 \n  -coqlib dir            set the coq standard library directory\
 \n  -exclude-dir f         exclude subdirectories named f for option -R\
 \n\
-\n  -noinit                start without loading the Init library\
+\n  -boot                  don't bind the `Coq.` prefix to the default -coqlib dir\
+\n  -noinit                don't load Coq.Init.Prelude on start \
 \n  -nois                  (idem)\
 \n  -compat X.Y            provides compatibility support for Coq version X.Y\
 \n\

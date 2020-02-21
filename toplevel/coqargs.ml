@@ -64,6 +64,7 @@ type coqargs_config = {
 }
 
 type coqargs_pre = {
+  boot        : bool;
   load_init   : bool;
   load_rcfile : bool;
 
@@ -131,6 +132,7 @@ let default_config = {
 }
 
 let default_pre = {
+  boot         = false;
   load_init    = true;
   load_rcfile  = true;
   ml_includes  = [];
@@ -512,6 +514,7 @@ let parse_args ~help ~init arglist : t * string list =
     |"-indices-matter" -> set_logic (fun o -> { o with indices_matter = true }) oval
     |"-m"|"--memory" -> { oval with post = { oval.post with memory_stat = true }}
     |"-noinit"|"-nois" -> { oval with pre = { oval.pre with load_init = false }}
+    |"-boot" -> { oval with pre = { oval.pre with boot = true }}
     |"-output-context" -> { oval with post = { oval.post with output_context = true }}
     |"-profile-ltac" -> Flags.profile_ltac := true; oval
     |"-q" -> { oval with pre = { oval.pre with load_rcfile = false; }}
@@ -569,5 +572,5 @@ let cmdline_load_path opts =
   opts.pre.ml_includes @ opts.pre.vo_includes
 
 let build_load_path opts =
-  Coqinit.libs_init_load_path ~load_init:opts.pre.load_init @
+  (if opts.pre.boot then [] else Coqinit.libs_init_load_path ()) @
   cmdline_load_path opts

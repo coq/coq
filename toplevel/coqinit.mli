@@ -20,4 +20,4 @@ val init_ocaml_path : unit -> unit
 val toplevel_init_load_path : unit -> Loadpath.coq_path list
 
 (* LoadPath for Coq user libraries *)
-val libs_init_load_path : load_init:bool -> Loadpath.coq_path list
+val libs_init_load_path : unit -> Loadpath.coq_path list
