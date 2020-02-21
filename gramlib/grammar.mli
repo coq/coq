@@ -15,9 +15,21 @@
        rule "an entry cannot call an entry of another grammar" by
        normal OCaml typing. *)
 
-module type GLexerType = Plexing.Lexer
-   (** The input signature for the functor [Grammar.GMake]: [te] is the
+(** The input signature for the functor [Grammar.GMake]: [te] is the
        type of the tokens. *)
+module type GLexerType = sig
+  include Plexing.Lexer
+
+  module State : sig
+    type t
+    val init : unit -> t
+    val set : t -> unit
+    val get : unit -> t
+    val drop : unit -> unit
+    val get_comments : t -> ((int * int) * string) list
+  end
+end
+
 
 type norec
 type mayrec
@@ -29,6 +41,7 @@ module type S = sig
   module Parsable : sig
     type t
     val make : ?loc:Loc.t -> char Stream.t -> t
+    val comments : t -> ((int * int) * string) list
   end
 
   val tokens : string -> (string option * int) list

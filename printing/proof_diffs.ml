@@ -98,17 +98,16 @@ let tokenize_string s =
     else
       stream_tok ((Tok.extract_string true e) :: acc) str
   in
-  let st = CLexer.get_lexer_state () in
+  let st = CLexer.Lexer.State.get () in
   try
     let istr = Stream.of_string s in
     let lex = CLexer.LexerDiff.tok_func istr in
     let toks = stream_tok [] (fst lex) in
-    CLexer.set_lexer_state st;
+    CLexer.Lexer.State.set st;
     toks
   with exn ->
-    CLexer.set_lexer_state st;
+    CLexer.Lexer.State.set st;
     raise (Diff_Failure "Input string is not lexable");;
-
 
 type hyp_info = {
   idents: string list;

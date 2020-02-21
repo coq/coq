@@ -14,77 +14,7 @@ open Genarg
 open Gramlib
 
 (** The parser of Coq *)
-
-module G : sig
-
-  include Grammar.S
-    with type te = Tok.t
-     and type 'c pattern = 'c Tok.p
-
-  val comment_state : Parsable.t -> ((int * int) * string) list
-
-end = struct
-
-  module G_ = Grammar.GMake(CLexer.Lexer)
-
-  type te = G_.te
-  type 'c pattern = 'c G_.pattern
-
-  type coq_parsable = G_.Parsable.t * CLexer.lexer_state ref
-
-  let coq_parsable ?loc c =
-    let state = ref (CLexer.init_lexer_state ()) in
-    CLexer.set_lexer_state !state;
-    let a = G_.Parsable.make ?loc c in
-    state := CLexer.get_lexer_state ();
-    (a,state)
-
-  let comment_state (p,state) =
-    CLexer.get_comment_state !state
-
-  module Parsable = struct
-    type t = coq_parsable
-    let make = coq_parsable
-    (* let comment_state = comment_state *)
-  end
-
-  let tokens = G_.tokens
-
-  type 'a single_extend_statement = 'a G_.single_extend_statement
-  type 'a extend_statement = 'a G_.extend_statement =
-    { pos : Gramlib.Gramext.position option
-    ; data : 'a single_extend_statement list
-    }
-
-  module Entry = struct
-    include G_.Entry
-
-    let parse e (p,state) =
-      CLexer.set_lexer_state !state;
-      try
-        let c = G_.Entry.parse e p in
-        state := CLexer.get_lexer_state ();
-        c
-      with Ploc.Exc (loc,e) ->
-        CLexer.drop_lexer_state ();
-        let loc' = Loc.get_loc (Exninfo.info e) in
-        let loc = match loc' with None -> loc | Some loc -> loc in
-        Loc.raise ~loc e
-
-  end
-
-  module Symbol = G_.Symbol
-  module Rule = G_.Rule
-  module Rules = G_.Rules
-  module Production = G_.Production
-  module Unsafe = G_.Unsafe
-
-  let safe_extend = G_.safe_extend
-  let safe_delete_rule = G_.safe_delete_rule
-  let level_of_nonterm = G_.level_of_nonterm
-  let generalize_symbol = G_.generalize_symbol
-  let mk_rule = G_.mk_rule
-end
+module G = Grammar.GMake(CLexer.Lexer)
 
 module Entry = struct
   include G.Entry

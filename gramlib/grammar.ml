@@ -8,7 +8,18 @@ open Util
 
 (* Functorial interface *)
 
-module type GLexerType = Plexing.Lexer
+module type GLexerType = sig
+  include Plexing.Lexer
+
+  module State : sig
+    type t
+    val init : unit -> t
+    val set : t -> unit
+    val get : unit -> t
+    val drop : unit -> unit
+    val get_comments : t -> ((int * int) * string) list
+  end
+end
 
 type norec
 type mayrec
@@ -20,6 +31,7 @@ module type S = sig
   module Parsable : sig
     type t
     val make : ?loc:Loc.t -> char Stream.t -> t
+    val comments : t -> ((int * int) * string) list
   end
 
   val tokens : string -> (string option * int) list
@@ -1520,7 +1532,7 @@ module Parsable = struct
     { pa_chr_strm : char Stream.t
     ; pa_tok_strm : L.te Stream.t
     ; pa_loc_func : Plexing.location_function
-    }
+    ; lexer_state : L.State.t ref }
 
   let parse_parsable entry p =
     let efun = entry.estart 0 in
@@ -1556,9 +1568,26 @@ module Parsable = struct
       let loc = Stream.count cs, Stream.count cs + 1 in
       restore (); Ploc.raise (Ploc.make_unlined loc) exc
 
+  let parse_parsable e p =
+    L.State.set !(p.lexer_state);
+    try
+      let c = parse_parsable e p in
+      p.lexer_state := L.State.get ();
+      c
+    with Ploc.Exc (loc,e) ->
+      L.State.drop ();
+      let loc' = Loc.get_loc (Exninfo.info e) in
+      let loc = match loc' with None -> loc | Some loc -> loc in
+      Loc.raise ~loc e
+
   let make ?loc cs =
+    let lexer_state = ref (L.State.init ()) in
+    L.State.set !lexer_state;
     let (ts, lf) = L.tok_func ?loc cs in
-    {pa_chr_strm = cs; pa_tok_strm = ts; pa_loc_func = lf}
+    lexer_state := L.State.get ();
+    {pa_chr_strm = cs; pa_tok_strm = ts; pa_loc_func = lf; lexer_state}
+
+  let comments p = L.State.get_comments !(p.lexer_state)
 
 end
 

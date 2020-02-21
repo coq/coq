@@ -15,14 +15,9 @@ open Libnames
 
 (** The parser of Coq *)
 
-module G : sig
+module G : Gramlib.Grammar.S with type te = Tok.t and type 'a pattern = 'a Tok.p
 
-  include Gramlib.Grammar.S
-
-  val comment_state : Parsable.t -> ((int * int) * string) list
-
-end with type te = Tok.t and type 'a pattern = 'a Tok.p
-
+(** Compatibility module, please avoid  *)
 module Entry : sig
   type 'a t = 'a G.Entry.t
   val create : string -> 'a t

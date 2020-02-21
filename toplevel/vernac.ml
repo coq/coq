@@ -100,7 +100,7 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
     with
     | None ->
       input_cleanup ();
-      state, ids, Pcoq.G.comment_state in_pa
+      state, ids, Pcoq.G.Parsable.comments in_pa
     | Some ast ->
       (* Printing of AST for -compile-verbose *)
       Option.iter (vernac_echo ?loc:ast.CAst.loc) in_echo;

@@ -63,15 +63,6 @@ module Error : sig
   val to_string : t -> string
 end
 
-(* Mainly for comments state, etc... *)
-type lexer_state
-
-val init_lexer_state : unit -> lexer_state
-val set_lexer_state : lexer_state -> unit
-val get_lexer_state : unit -> lexer_state
-val drop_lexer_state : unit -> unit
-val get_comment_state : lexer_state -> ((int * int) * string) list
-
 (** Create a lexer.  true enables alternate handling for computing diffs.
 It ensures that, ignoring white space, the concatenated tokens equal the input
 string.  Specifically:
@@ -81,5 +72,6 @@ as if it was unquoted, possibly becoming multiple tokens
 it was not in a comment, possibly becoming multiple tokens
 - return any unrecognized Ascii or UTF-8 character as a string
 *)
+
 module LexerDiff :
   Gramlib.Grammar.GLexerType with type te = Tok.t and type 'c pattern = 'c Tok.p
