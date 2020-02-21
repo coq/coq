@@ -17,18 +17,6 @@
 
 (** The input signature for the functor [Grammar.GMake]: [te] is the
        type of the tokens. *)
-module type GLexerType = sig
-  include Plexing.Lexer
-
-  module State : sig
-    type t
-    val init : unit -> t
-    val set : t -> unit
-    val get : unit -> t
-    val drop : unit -> unit
-    val get_comments : t -> ((int * int) * string) list
-  end
-end
 
 type norec
 type mayrec
@@ -130,5 +118,4 @@ end
       type (instead of (string * string)); the module parameter
       must specify a way to show them as (string * string) *)
 
-module GMake (L : GLexerType) :
-  S with type te = L.te and type 'c pattern = 'c L.pattern
+module GMake (L : Plexing.S) : S with type te = L.te and type 'c pattern = 'c L.pattern

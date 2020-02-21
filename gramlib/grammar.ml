@@ -8,19 +8,6 @@ open Util
 
 (* Functorial interface *)
 
-module type GLexerType = sig
-  include Plexing.Lexer
-
-  module State : sig
-    type t
-    val init : unit -> t
-    val set : t -> unit
-    val get : unit -> t
-    val drop : unit -> unit
-    val get_comments : t -> ((int * int) * string) list
-  end
-end
-
 type norec
 type mayrec
 
@@ -115,7 +102,7 @@ end
 
 (* Implementation *)
 
-module GMake (L : GLexerType) = struct
+module GMake (L : Plexing.S) = struct
 
 type te = L.te
 type 'c pattern = 'c L.pattern

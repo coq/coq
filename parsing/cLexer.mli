@@ -55,7 +55,7 @@ val terminal_numeral : string -> NumTok.Unsigned.t Tok.p
 (** The lexer of Coq: *)
 
 module Lexer :
-  Gramlib.Grammar.GLexerType with type te = Tok.t and type 'c pattern = 'c Tok.p
+  Gramlib.Plexing.S with type te = Tok.t and type 'c pattern = 'c Tok.p
 
 module Error : sig
   type t
@@ -74,4 +74,4 @@ it was not in a comment, possibly becoming multiple tokens
 *)
 
 module LexerDiff :
-  Gramlib.Grammar.GLexerType with type te = Tok.t and type 'c pattern = 'c Tok.p
+  Gramlib.Plexing.S with type te = Tok.t and type 'c pattern = 'c Tok.p
