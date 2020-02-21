@@ -15,9 +15,6 @@ open Gramlib
 
 (** The parser of Coq *)
 
-type norec = Gramlib.Grammar.norec
-type mayrec = Gramlib.Grammar.mayrec
-
 module G : sig
 
   include Grammar.S
@@ -25,9 +22,6 @@ module G : sig
      and type 'c pattern = 'c Tok.p
 
   val comment_state : Parsable.t -> ((int * int) * string) list
-  val level_of_nonterm : ('a,norec,'c) Symbol.t -> string option
-  val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
-  val mk_rule : 'a Tok.p list -> string Rules.t
 
 end = struct
 
@@ -92,11 +86,6 @@ end = struct
   let mk_rule = G_.mk_rule
 end
 
-module Parsable = struct
-  include G.Parsable
-  let comment_state = G.comment_state
-end
-
 module Entry = struct
   include G.Entry
   let create = make
@@ -121,7 +110,7 @@ struct
 
   let to_entry s (lk : t) =
     let run tok strm = match lk tok 0 strm with None -> err () | Some _ -> () in
-    Entry.of_parser s run
+    G.Entry.of_parser s run
 
   let (>>) (lk1 : t) lk2 tok n strm = match lk1 tok n strm with
   | None -> None
@@ -170,8 +159,6 @@ end
 
     In [single_extend_statement], first two parameters are name and
     assoc iff a level is created *)
-
-(** Binding general entry keys to symbol *)
 
 (** Type of reinitialization data *)
 type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
@@ -230,14 +217,6 @@ let grammar_extend_sync_reinit e reinit ext =
   camlp5_state := ByGrammar (ExtendRuleReinit (e, reinit, ext)) :: !camlp5_state;
   G.safe_extend ~warning:None e ext
 
-(** The apparent parser of Coq; encapsulate G to keep track
-    of the extensions. *)
-
-module Gram =
-  struct
-    include G
-  end
-
 (** Remove extensions
 
    [n] is the number of extended entries (not the number of Grammar commands!)
@@ -277,21 +256,21 @@ let make_rule r = [None, None, r]
 (** An entry that checks we reached the end of the input. *)
 
 let eoi_entry en =
-  let e = Entry.create ((Gram.Entry.name en) ^ "_eoi") in
+  let e = G.Entry.make ((G.Entry.name en) ^ "_eoi") in
   let symbs = G.Rule.next (G.Rule.next G.Rule.stop (G.Symbol.nterm en)) (G.Symbol.token Tok.PEOI) in
   let act = fun _ x loc -> x in
   let warning msg = Feedback.msg_warning Pp.(str msg) in
   let ext = { G.pos = None; data = make_rule [G.Production.make symbs act] } in
-  Gram.safe_extend ~warning:(Some warning) e ext;
+  G.safe_extend ~warning:(Some warning) e ext;
   e
 
 let map_entry f en =
-  let e = Entry.create ((Gram.Entry.name en) ^ "_map") in
+  let e = G.Entry.make ((G.Entry.name en) ^ "_map") in
   let symbs = G.Rule.next G.Rule.stop (G.Symbol.nterm en) in
   let act = fun x loc -> f x in
   let warning msg = Feedback.msg_warning Pp.(str msg) in
   let ext = { G.pos = None; data = make_rule [G.Production.make symbs act] } in
-  Gram.safe_extend ~warning:(Some warning) e ext;
+  G.safe_extend ~warning:(Some warning) e ext;
   e
 
 (* Parse a string, does NOT check if the entire string was read
@@ -320,14 +299,14 @@ let get_univ u =
 
 let new_entry u s =
   let ename = u ^ ":" ^ s in
-  let e = Entry.create ename in
+  let e = G.Entry.make ename in
   e
 
 let make_gen_entry u s = new_entry u s
 
 module GrammarObj =
 struct
-  type ('r, _, _) obj = 'r Entry.t
+  type ('r, _, _) obj = 'r G.Entry.t
   let name = "grammar"
   let default _ = None
 end
@@ -350,7 +329,7 @@ let genarg_grammar x =
   check_compatibility x;
   Grammar.obj x
 
-let create_generic_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Entry.t =
+let create_generic_entry (type a) u s (etyp : a raw_abstract_argument_type) : a G.Entry.t =
   let e = new_entry u s in
   let Rawwit t = etyp in
   let () = Grammar.register0 t e in
@@ -499,7 +478,7 @@ let extend_grammar_command tag g =
   let nb = List.length rules in
   grammar_stack := (GramExt (nb, GrammarCommand.Dyn (tag, g)), st) :: !grammar_stack
 
-let extend_entry_command (type a) (type b) (tag : (a, b) entry_command) (g : a) : b Gram.Entry.t list =
+let extend_entry_command (type a) (type b) (tag : (a, b) entry_command) (g : a) : b G.Entry.t list =
   let EntryInterp.Ex modify = EntryInterpMap.find tag !entry_interp in
   let grammar_state = match !grammar_stack with
   | [] -> GramState.empty
@@ -532,7 +511,7 @@ let extend_dyn_grammar (e, _) = match e with
 
 (** Registering extra grammar *)
 
-type any_entry = AnyEntry : 'a Gram.Entry.t -> any_entry
+type any_entry = AnyEntry : 'a G.Entry.t -> any_entry
 
 let grammar_names : any_entry list String.Map.t ref = ref String.Map.empty
 

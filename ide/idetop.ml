@@ -91,7 +91,7 @@ let set_doc doc = ide_doc := Some doc
 
 let add ((s,eid),(sid,verbose)) =
   let doc = get_doc () in
-  let pa = Pcoq.Parsable.make (Stream.of_string s) in
+  let pa = Pcoq.G.Parsable.make (Stream.of_string s) in
   match Stm.parse_sentence ~doc sid ~entry:Pvernac.main_entry pa with
   | None -> assert false (* s is not an empty string *)
   | Some ast ->
@@ -127,13 +127,13 @@ let edit_at id =
  * be removed in the next version of the protocol.
  *)
 let query (route, (s,id)) =
-  let pa = Pcoq.Parsable.make (Stream.of_string s) in
+  let pa = Pcoq.G.Parsable.make (Stream.of_string s) in
   let doc = get_doc () in
   Stm.query ~at:id ~doc ~route pa
 
 let annotate phrase =
   let doc = get_doc () in
-  let pa = Pcoq.Parsable.make (Stream.of_string phrase) in
+  let pa = Pcoq.G.Parsable.make (Stream.of_string phrase) in
   match Stm.parse_sentence ~doc (Stm.get_current_state ~doc) ~entry:Pvernac.main_entry pa with
   | None -> Richpp.richpp_of_pp 78 (Pp.mt ())
   | Some ast ->

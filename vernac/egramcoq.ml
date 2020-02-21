@@ -332,8 +332,8 @@ let make_sep_rules = function
     Pcoq.G.Symbol.rules ~warning:None [r]
 
 type ('s, 'a) mayrec_symbol =
-| MayRecNo : ('s, norec, 'a) G.Symbol.t -> ('s, 'a) mayrec_symbol
-| MayRecMay : ('s, mayrec, 'a) G.Symbol.t -> ('s, 'a) mayrec_symbol
+| MayRecNo : ('s, Gramlib.Grammar.norec, 'a) G.Symbol.t -> ('s, 'a) mayrec_symbol
+| MayRecMay : ('s, Gramlib.Grammar.mayrec, 'a) G.Symbol.t -> ('s, 'a) mayrec_symbol
 
 let symbol_of_target : type s. _ -> _ -> _ -> _ -> s target -> (s, s) mayrec_symbol = fun custom p assoc from forpat ->
   if is_binder_level custom from p
@@ -458,8 +458,8 @@ let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> s env ->
     ty_eval rem f { env with constrs; constrlists; }
 
 type ('s, 'a, 'r) mayrec_rule =
-| MayRecRNo : ('s, norec, 'a, 'r) G.Rule.t -> ('s, 'a, 'r) mayrec_rule
-| MayRecRMay : ('s, mayrec, 'a, 'r) G.Rule.t -> ('s, 'a, 'r) mayrec_rule
+| MayRecRNo : ('s, Gramlib.Grammar.norec, 'a, 'r) G.Rule.t -> ('s, 'a, 'r) mayrec_rule
+| MayRecRMay : ('s, Gramlib.Grammar.mayrec, 'a, 'r) G.Rule.t -> ('s, 'a, 'r) mayrec_rule
 
 let rec ty_erase : type s a r. (s, a, r) ty_rule -> (s, a, r) mayrec_rule = function
 | TyStop -> MayRecRNo G.Rule.stop

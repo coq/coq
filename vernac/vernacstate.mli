@@ -14,7 +14,7 @@ module Parser : sig
   val init : unit -> state
   val cur_state : unit -> state
 
-  val parse : state -> 'a Pcoq.Entry.t -> Pcoq.Parsable.t -> 'a
+  val parse : state -> 'a Pcoq.Entry.t -> Pcoq.G.Parsable.t -> 'a
 
 end
 

@@ -15,22 +15,18 @@ open Libnames
 
 (** The parser of Coq *)
 
-module Parsable :
-sig
-  type t
-  val make : ?loc:Loc.t -> char Stream.t -> t
-  (* Get comment parsing information from the Lexer *)
-  val comment_state : t -> ((int * int) * string) list
-end
+module G : sig
+
+  include Gramlib.Grammar.S
+
+  val comment_state : Parsable.t -> ((int * int) * string) list
+
+end with type te = Tok.t and type 'a pattern = 'a Tok.p
 
 module Entry : sig
-  type 'a t
+  type 'a t = 'a G.Entry.t
   val create : string -> 'a t
-  val parse : 'a t -> Parsable.t -> 'a
-  val print : Format.formatter -> 'a t -> unit
   val of_parser : string -> (Gramlib.Plexing.location_function -> Tok.t Stream.t -> 'a) -> 'a t
-  val parse_token_stream : 'a t -> Tok.t Stream.t -> 'a
-  val name : 'a t -> string
 end
 
 module Lookahead : sig
@@ -222,21 +218,6 @@ module Module :
   end
 
 (** {5 Type-safe grammar extension} *)
-
-type norec = Gramlib.Grammar.norec
-type mayrec = Gramlib.Grammar.mayrec
-
-module G : sig
-
-  include Gramlib.Grammar.S
-
-  val level_of_nonterm : ('a,norec,'c) Symbol.t -> string option
-  val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
-  val mk_rule : 'a Tok.p list -> string Rules.t
-
-end with type 'a Entry.t = 'a Entry.t
-     and type te = Tok.t
-     and type 'a pattern = 'a Tok.p
 
 val epsilon_value : ('a -> 'self) -> ('self, _, 'a) G.Symbol.t -> 'self option
 

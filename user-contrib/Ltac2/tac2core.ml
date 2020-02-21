@@ -1590,7 +1590,7 @@ let rec apply : type a. a converter -> raw_tacexpr list -> a = function
 | CvCns (c, Some f) -> fun accu x -> apply c (f x :: accu)
 
 type seqrule =
-| Seqrule : (Tac2expr.raw_tacexpr, Pcoq.norec, 'act, Loc.t -> raw_tacexpr) G.Rule.t * 'act converter -> seqrule
+| Seqrule : (Tac2expr.raw_tacexpr, Gramlib.Grammar.norec, 'act, Loc.t -> raw_tacexpr) G.Rule.t * 'act converter -> seqrule
 
 let rec make_seq_rule = function
 | [] ->

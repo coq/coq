@@ -24,9 +24,9 @@ type 's grammar_prod_item =
 type 'a ty_arg = ('a -> raw_generic_argument)
 
 type ('self, 'tr, _, 'r) ty_rule =
-| TyStop : ('self, Pcoq.norec, 'r, 'r) ty_rule
-| TyNext : ('self, _, 'a, 'r) ty_rule * ('self, _, 'b) Pcoq.G.Symbol.t * 'b ty_arg option ->
-  ('self, Pcoq.mayrec, 'b -> 'a, 'r) ty_rule
+| TyStop : ('self, Gramlib.Grammar.norec, 'r, 'r) ty_rule
+| TyNext : ('self, _, 'a, 'r) ty_rule * ('self, _, 'b) G.Symbol.t * 'b ty_arg option ->
+  ('self, Gramlib.Grammar.mayrec, 'b -> 'a, 'r) ty_rule
 
 type ('self, 'r) any_ty_rule =
 | AnyTyRule : ('self, _, 'act, Loc.t -> 'r) ty_rule -> ('self, 'r) any_ty_rule

@@ -65,8 +65,8 @@ module Vernac_ =
       | Some ename -> find_proof_mode ename
 
     let command_entry =
-      Pcoq.Entry.of_parser "command_entry"
-        (fun _ strm -> Pcoq.Entry.parse_token_stream (select_tactic_entry !command_entry_ref) strm)
+      Pcoq.G.Entry.of_parser "command_entry"
+        (fun _ strm -> Pcoq.G.Entry.parse_token_stream (select_tactic_entry !command_entry_ref) strm)
 
   end
 
