@@ -63,6 +63,28 @@ let print_universes = Detyping.print_universes
 (* This suppresses printing of primitive tokens (e.g. numeral) and notations *)
 let print_no_symbol = ref false
 
+(* This tells to skip types if a variable has this type by default *)
+let print_use_implicit_types =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Printing";"Use";"Implicit";"Types"]
+    ~value:true
+
+(**********************************************************************)
+
+let hole = CAst.make @@ CHole (None, IntroAnonymous, None)
+
+let is_reserved_type na t =
+  not !Flags.raw_print && print_use_implicit_types () &&
+  match na with
+  | Anonymous -> false
+  | Name id ->
+    try
+      let pat = Reserve.find_reserved_type id in
+      let _ = match_notation_constr false t ([],pat) in
+      true
+    with Not_found | No_match -> false
+
 (**********************************************************************)
 (* Turning notations and scopes on and off for printing *)
 module IRuleSet = Set.Make(struct
@@ -790,6 +812,12 @@ let rec flatten_application c = match DAst.get c with
     end
   | a -> c
 
+let same_binder_type ty nal c =
+  match nal, DAst.get c with
+  | _::_, GProd (_,_,ty',_) -> glob_constr_eq ty ty'
+  | [], _ -> true
+  | _ -> assert false
+
 (**********************************************************************)
 (* mapping glob_constr to numerals (in presence of coercions, choose the *)
 (* one with no delimiter if possible)                                 *)
@@ -939,12 +967,10 @@ let rec extern inctx scopes vars r =
               extern inctx scopes (add_vname vars na) c)
 
   | GProd (na,bk,t,c) ->
-      let t = extern_typ scopes vars t in
-      factorize_prod scopes (add_vname vars na) na bk t c
+      factorize_prod scopes vars na bk t c
 
   | GLambda (na,bk,t,c) ->
-      let t = extern_typ scopes vars t in
-      factorize_lambda inctx scopes (add_vname vars na) na bk t c
+      factorize_lambda inctx scopes vars na bk t c
 
   | GCases (sty,rtntypopt,tml,eqns) ->
     let vars' =
@@ -1045,7 +1071,10 @@ and extern_typ (subentry,(_,scopes)) =
 
 and sub_extern inctx (subentry,(_,scopes)) = extern inctx (subentry,(None,scopes))
 
-and factorize_prod scopes vars na bk aty c =
+and factorize_prod scopes vars na bk t c =
+  let implicit_type = is_reserved_type na t in
+  let aty = extern_typ scopes vars t in
+  let vars = add_vname vars na in
   let store, get = set_temporary_memory () in
   match na, DAst.get c with
   | Name id, GCases (Constr.LetPatternStyle, None, [(e,(Anonymous,None))],(_::_ as eqns))
@@ -1062,18 +1091,25 @@ and factorize_prod scopes vars na bk aty c =
       | _ -> CProdN ([binder],b))
      | _ -> assert false)
   | _, _ ->
-      let c = extern_typ scopes vars c in
-      match na, c.v with
+      let c' = extern_typ scopes vars c in
+      match na, c'.v with
       | Name id, CProdN (CLocalAssum(nal,Default bk',ty)::bl,b)
-           when binding_kind_eq bk bk' && constr_expr_eq aty ty
-                && not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *) ->
-         CProdN (CLocalAssum(make na::nal,Default bk,aty)::bl,b)
+           when binding_kind_eq bk bk'
+                && not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *)
+                && (constr_expr_eq aty ty || (constr_expr_eq ty hole && same_binder_type t nal c)) ->
+         let ty = if implicit_type then ty else aty in
+         CProdN (CLocalAssum(make na::nal,Default bk,ty)::bl,b)
       | _, CProdN (bl,b) ->
-         CProdN (CLocalAssum([make na],Default bk,aty)::bl,b)
+         let ty = if implicit_type then hole else aty in
+         CProdN (CLocalAssum([make na],Default bk,ty)::bl,b)
       | _, _ ->
-         CProdN ([CLocalAssum([make na],Default bk,aty)],c)
+         let ty = if implicit_type then hole else aty in
+         CProdN ([CLocalAssum([make na],Default bk,ty)],c')
 
-and factorize_lambda inctx scopes vars na bk aty c =
+and factorize_lambda inctx scopes vars na bk t c =
+  let implicit_type = is_reserved_type na t in
+  let aty = extern_typ scopes vars t in
+  let vars = add_vname vars na in
   let store, get = set_temporary_memory () in
   match na, DAst.get c with
   | Name id, GCases (Constr.LetPatternStyle, None, [(e,(Anonymous,None))],(_::_ as eqns))
@@ -1090,16 +1126,20 @@ and factorize_lambda inctx scopes vars na bk aty c =
       | _ -> CLambdaN ([binder],b))
      | _ -> assert false)
   | _, _ ->
-      let c = sub_extern inctx scopes vars c in
-      match c.v with
+      let c' = sub_extern inctx scopes vars c in
+      match c'.v with
       | CLambdaN (CLocalAssum(nal,Default bk',ty)::bl,b)
-           when binding_kind_eq bk bk' && constr_expr_eq aty ty
-                && not (occur_name na ty) (* avoid na in ty escapes scope *) ->
+           when binding_kind_eq bk bk'
+                && not (occur_name na ty)  (* avoid na in ty escapes scope *)
+                && (constr_expr_eq aty ty || (constr_expr_eq ty hole && same_binder_type t nal c)) ->
+         let aty = if implicit_type then ty else aty in
          CLambdaN (CLocalAssum(make na::nal,Default bk,aty)::bl,b)
       | CLambdaN (bl,b) ->
-         CLambdaN (CLocalAssum([make na],Default bk,aty)::bl,b)
+         let ty = if implicit_type then hole else aty in
+         CLambdaN (CLocalAssum([make na],Default bk,ty)::bl,b)
       | _ ->
-         CLambdaN ([CLocalAssum([make na],Default bk,aty)],c)
+         let ty = if implicit_type then hole else aty in
+         CLambdaN ([CLocalAssum([make na],Default bk,ty)],c')
 
 and extern_local_binder scopes vars = function
     [] -> ([],[],[])
@@ -1113,15 +1153,17 @@ and extern_local_binder scopes vars = function
                    Option.map (extern false scopes vars) ty) :: l)
 
     | GLocalAssum (na,bk,ty) ->
+      let implicit_type = is_reserved_type na ty in
       let ty = extern_typ scopes vars ty in
       (match extern_local_binder scopes (Name.fold_right Id.Set.add na vars) l with
           (assums,ids,CLocalAssum(nal,k,ty')::l)
-            when constr_expr_eq ty ty' &&
+            when (constr_expr_eq ty ty' || implicit_type && constr_expr_eq ty' hole) &&
               match na with Name id -> not (occur_var_constr_expr id ty')
                 | _ -> true ->
               (na::assums,na::ids,
                CLocalAssum(CAst.make na::nal,k,ty')::l)
         | (assums,ids,l) ->
+            let ty = if implicit_type then hole else ty in
             (na::assums,na::ids,
              CLocalAssum([CAst.make na],Default bk,ty) :: l))
 

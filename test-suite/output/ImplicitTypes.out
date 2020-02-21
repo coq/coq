@@ -1,0 +1,26 @@
+forall b, b = b
+     : Prop
+forall b : nat, b = b
+     : Prop
+forall b : bool, @eq bool b b
+     : Prop
+forall b : bool, b = b
+     : Prop
+forall b c : bool, b = c
+     : Prop
+forall c b : bool, b = c
+     : Prop
+forall b1 b2, b1 = b2
+     : Prop
+fun b => b = b
+     : bool -> Prop
+fix f b (n : nat) {struct n} : bool :=
+  match n with
+  | 0 => b
+  | S p => f b p
+  end
+     : bool -> nat -> bool
+∀ b c : bool, b = c
+     : Prop
+∀ b1 b2, b1 = b2
+     : Prop
