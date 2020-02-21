@@ -51,3 +51,13 @@ Definition id'' (A:Type) (x:A) := x.
 
 Check map (@id'' nat) (1::nil).
 
+Module MatchBranchesInContext.
+
+Set Implicit Arguments.
+Set Contextual Implicit.
+
+Inductive option A := None | Some (a:A).
+Coercion some_nat := @Some nat.
+Check fix f x := match x with 0 => None | n => some_nat n end.
+
+End MatchBranchesInContext.
