@@ -96,38 +96,38 @@ let create_pos = function
 let find_position_gen current ensure assoc lev =
   match lev with
   | None ->
-      current, (None, None, None, None)
+    current, (None, None, None, None)
   | Some n ->
-      let after = ref None in
-      let init = ref None in
-      let rec add_level q = function
-        | (p,_,_ as pa)::l when p > n -> pa :: add_level (Some p) l
-        | (p,a,reinit)::l when Int.equal p n ->
-            if reinit then
-              let a' = create_assoc assoc in
-              (init := Some (a',create_pos q); (p,a',false)::l)
-            else if admissible_assoc (a,assoc) then
-              raise Exit
-            else
-              error_level_assoc p a (Option.get assoc)
-        | l -> after := q; (n,create_assoc assoc,ensure)::l
-      in
-      try
-        let updated = add_level None current in
-        let assoc = create_assoc assoc in
-        begin match !init with
+    let after = ref None in
+    let init = ref None in
+    let rec add_level q = function
+      | (p,_,_ as pa)::l when p > n -> pa :: add_level (Some p) l
+      | (p,a,reinit)::l when Int.equal p n ->
+        if reinit then
+          let a' = create_assoc assoc in
+          (init := Some (a',create_pos q); (p,a',false)::l)
+        else if admissible_assoc (a,assoc) then
+          raise Exit
+        else
+          error_level_assoc p a (Option.get assoc)
+      | l -> after := q; (n,create_assoc assoc,ensure)::l
+    in
+    try
+      let updated = add_level None current in
+      let assoc = create_assoc assoc in
+      begin match !init with
         | None ->
           (* Create the entry *)
-           updated, (Some (create_pos !after), Some assoc, Some (constr_level n), None)
+          updated, (Some (create_pos !after), Some assoc, Some (constr_level n), None)
         | _ ->
           (* The reinit flag has been updated *)
-           updated, (Some (Gramlib.Gramext.Level (constr_level n)), None, None, !init)
-        end
-      with
-          (* Nothing has changed *)
-          Exit ->
-            (* Just inherit the existing associativity and name (None) *)
-            current, (Some (Gramlib.Gramext.Level (constr_level n)), None, None, None)
+          updated, (Some (Gramlib.Gramext.Level (constr_level n)), None, None, !init)
+      end
+    with
+    (* Nothing has changed *)
+      Exit ->
+      (* Just inherit the existing associativity and name (None) *)
+      current, (Some (Gramlib.Gramext.Level (constr_level n)), None, None, None)
 
 let rec list_mem_assoc_triple x = function
   | [] -> false
@@ -505,7 +505,11 @@ let target_to_bool : type r. r target -> bool = function
 
 let prepare_empty_levels forpat (where,(pos,p4assoc,name,reinit)) =
   let empty = (pos, [(name, p4assoc, [])]) in
-  ExtendRule (target_entry where forpat, reinit, empty)
+  match reinit with
+  | None ->
+    ExtendRule (target_entry where forpat, empty)
+  | Some reinit ->
+    ExtendRuleReinit (target_entry where forpat, reinit, empty)
 
 let different_levels (custom,opt_level) (custom',string_level) =
   match opt_level with
@@ -552,7 +556,12 @@ let extend_constr state forpat ng =
         | MayRecRNo symbs -> Rule (symbs, act)
         | MayRecRMay symbs -> Rule (symbs, act) in
       name, p4assoc, [r] in
-    let r = ExtendRule (entry, reinit, (pos, [rule])) in
+    let r = match reinit with
+      | None ->
+        ExtendRule (entry, (pos, [rule]))
+      | Some reinit ->
+        ExtendRuleReinit (entry, reinit, (pos, [rule]))
+    in
     (accu @ empty_rules @ [r], state)
   in
   List.fold_left fold ([], state) ng.notgram_prods

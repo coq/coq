@@ -212,7 +212,8 @@ type 'a extend_statement =
   'a single_extend_statement list
 
 type extend_rule =
-| ExtendRule : 'a G.Entry.e * gram_reinit option * 'a extend_statement -> extend_rule
+| ExtendRule : 'a Entry.t * 'a extend_statement -> extend_rule
+| ExtendRuleReinit : 'a Entry.t * gram_reinit * 'a extend_statement -> extend_rule
 
 module EntryCommand = Dyn.Make ()
 module EntryData = struct type _ t = Ex : 'b G.Entry.e String.Map.t -> ('a * 'b) t end
@@ -231,33 +232,39 @@ let camlp5_entries = ref EntryDataMap.empty
 
 (** Deletion *)
 
-let grammar_delete e reinit (pos,rls) =
+let grammar_delete e (pos,rls) =
   List.iter
     (fun (n,ass,lev) ->
       List.iter (fun (AnyProduction (pil,_)) -> G.safe_delete_rule e pil) (List.rev lev))
-    (List.rev rls);
-  match reinit with
-  | Some (a,ext) ->
-    let lev = match pos with
+    (List.rev rls)
+
+let grammar_delete_reinit e reinit (pos, rls) =
+  grammar_delete e (pos, rls);
+  let a, ext = reinit in
+  let lev = match pos with
     | Some (Gramext.Level n) -> n
     | _ -> assert false
-    in
-    let warning msg = Feedback.msg_warning Pp.(str msg) in
-    (G.safe_extend ~warning:(Some warning) e) (Some ext) [Some lev,Some a,[]]
-  | None -> ()
+  in
+  let warning msg = Feedback.msg_warning Pp.(str msg) in
+  (G.safe_extend ~warning:(Some warning) e) (Some ext) [Some lev,Some a,[]]
 
 (** Extension *)
 
-let grammar_extend e reinit ext =
+let grammar_extend e ext =
   let ext = of_coq_extend_statement ext in
-  let undo () = grammar_delete e reinit ext in
+  let undo () = grammar_delete e ext in
   let pos, ext = fix_extend_statement ext in
   let redo () = G.safe_extend ~warning:None e pos ext in
   camlp5_state := ByEXTEND (undo, redo) :: !camlp5_state;
   redo ()
 
-let grammar_extend_sync e reinit ext =
-  camlp5_state := ByGrammar (ExtendRule (e, reinit, ext)) :: !camlp5_state;
+let grammar_extend_sync e ext =
+  camlp5_state := ByGrammar (ExtendRule (e, ext)) :: !camlp5_state;
+  let pos, ext = fix_extend_statement (of_coq_extend_statement ext) in
+  G.safe_extend ~warning:None e pos ext
+
+let grammar_extend_sync_reinit e reinit ext =
+  camlp5_state := ByGrammar (ExtendRuleReinit (e, reinit, ext)) :: !camlp5_state;
   let pos, ext = fix_extend_statement (of_coq_extend_statement ext) in
   G.safe_extend ~warning:None e pos ext
 
@@ -278,8 +285,12 @@ let rec remove_grammars n =
   if n>0 then
     match !camlp5_state with
        | [] -> anomaly ~label:"Pcoq.remove_grammars" (Pp.str "too many rules to remove.")
-       | ByGrammar (ExtendRule (g, reinit, ext)) :: t ->
-           grammar_delete g reinit (of_coq_extend_statement ext);
+       | ByGrammar (ExtendRuleReinit (g, reinit, ext)) :: t ->
+           grammar_delete_reinit g reinit (of_coq_extend_statement ext);
+           camlp5_state := t;
+           remove_grammars (n-1)
+       | ByGrammar (ExtendRule (g, ext)) :: t ->
+           grammar_delete g (of_coq_extend_statement ext);
            camlp5_state := t;
            remove_grammars (n-1)
        | ByEXTEND (undo,redo)::t ->
@@ -507,6 +518,12 @@ let create_entry_command name (interp : ('a, 'b) entry_extension) : ('a, 'b) ent
   let () = entry_interp := EntryInterpMap.add obj (EntryInterp.Ex interp) !entry_interp in
   obj
 
+let iter_extend_sync = function
+  | ExtendRule (e, ext) ->
+    grammar_extend_sync e ext
+  | ExtendRuleReinit (e, reinit, ext) ->
+    grammar_extend_sync_reinit e reinit ext
+
 let extend_grammar_command tag g =
   let modify = GrammarInterpMap.find tag !grammar_interp in
   let grammar_state = match !grammar_stack with
@@ -514,8 +531,7 @@ let extend_grammar_command tag g =
   | (_, st) :: _ -> st
   in
   let (rules, st) = modify g grammar_state in
-  let iter (ExtendRule (e, reinit, ext)) = grammar_extend_sync e reinit ext in
-  let () = List.iter iter rules in
+  let () = List.iter iter_extend_sync rules in
   let nb = List.length rules in
   grammar_stack := (GramExt (nb, GrammarCommand.Dyn (tag, g)), st) :: !grammar_stack
 

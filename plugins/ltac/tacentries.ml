@@ -191,7 +191,7 @@ let add_tactic_entry (kn, ml, tg) state =
   in
   let prods = List.map map tg.tacgram_prods in
   let rules = make_rule mkact prods in
-  let r = ExtendRule (entry, None, (pos, [(None, None, [rules])])) in
+  let r = ExtendRule (entry, (pos, [(None, None, [rules])])) in
   ([r], state)
 
 let tactic_grammar =
@@ -415,7 +415,7 @@ let create_ltac_quotation name cast (e, l) =
   in
   let action _ v _ _ _ loc = cast (Some loc, v) in
   let gram = (level, assoc, [Rule (rule, action)]) in
-  Pcoq.grammar_extend Pltac.tactic_arg None (None, [gram])
+  Pcoq.grammar_extend Pltac.tactic_arg (None, [gram])
 
 (** Command *)
 
@@ -759,7 +759,7 @@ let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
     e
   | Vernacextend.Arg_rules rules ->
     let e = Pcoq.create_generic_entry Pcoq.utactic name (Genarg.rawwit wit) in
-    let () = Pcoq.grammar_extend e None (None, [(None, None, rules)]) in
+    let () = Pcoq.grammar_extend e (None, [(None, None, rules)]) in
     e
   in
   let (rpr, gpr, tpr) = arg.arg_printer in
