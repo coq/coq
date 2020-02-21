@@ -15,16 +15,16 @@ open Notation
 open Notation_gram
 
 (* Register the level of notation for parsing and printing
-   (we also register a precomputed parsing rule) *)
+   (also register the parsing rule if not onlyprinting) *)
 
 let notation_level_map = Summary.ref ~name:"notation_level_map" NotationMap.empty
 
-let declare_notation_level ntn ~onlyprint parsing_rule level =
+let declare_notation_level ntn parsing_rule level =
   try
     let _ = NotationMap.find ntn !notation_level_map in
     anomaly (str "Notation " ++ pr_notation ntn ++ str " is already assigned a level.")
   with Not_found ->
-  notation_level_map := NotationMap.add ntn (onlyprint,parsing_rule,level) !notation_level_map
+  notation_level_map := NotationMap.add ntn (parsing_rule,level) !notation_level_map
 
 let level_of_notation ntn =
   NotationMap.find ntn !notation_level_map

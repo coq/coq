@@ -59,7 +59,8 @@ let rec unparsing_eq unp1 unp2 = match (unp1,unp2) with
   | (UnpMetaVar _ | UnpBinderMetaVar _ | UnpListMetaVar _ |
      UnpBinderListMetaVar _ | UnpTerminal _ | UnpBox _ | UnpCut _), _ -> false
 
-(* Concrete syntax for symbolic-extension table *)
+(* Register generic and specific printing rules *)
+
 let generic_notation_printing_rules =
   Summary.ref ~name:"generic-notation-printing-rules" (NotationMap.empty : (unparsing_rule * bool * extra_unparsing_rules) NotationMap.t)
 

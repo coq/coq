@@ -37,7 +37,4 @@ type one_notation_grammar = {
   notgram_prods : grammar_constr_prod_item list list;
 }
 
-type notation_grammar = {
-  notgram_onlyprinting : bool;
-  notgram_rules : one_notation_grammar list
-}
+type notation_grammar = one_notation_grammar list
