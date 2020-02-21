@@ -24,7 +24,7 @@ sig
 end
 
 module Entry : sig
-  type 'a t = 'a Extend.entry
+  type 'a t
   val create : string -> 'a t
   val parse : 'a t -> Parsable.t -> 'a
   val print : Format.formatter -> 'a t -> unit

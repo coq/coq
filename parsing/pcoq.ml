@@ -29,7 +29,7 @@ module G : sig
   val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
   val mk_rule : 'a Tok.p list -> string Rules.t
 
-end with type 'a Entry.t = 'a Extend.entry = struct
+end = struct
 
   module G_ = Grammar.GMake(CLexer.Lexer)
 

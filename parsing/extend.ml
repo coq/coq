@@ -10,8 +10,6 @@
 
 (** Entry keys for constr notations *)
 
-type 'a entry = 'a Gramlib.Grammar.GMake(CLexer.Lexer).Entry.t
-
 type side = Left | Right
 
 type production_position =
