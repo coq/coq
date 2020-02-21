@@ -1282,6 +1282,13 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
+      optkey   = ["Printing";"Parens"];
+      optread  = (fun () -> !Constrextern.print_parens);
+      optwrite = (fun b ->  Constrextern.print_parens := b) }
+
+let () =
+  declare_bool_option
+    { optdepr  = false;
       optkey   = ["Printing";"Existential";"Instances"];
       optread  = (fun () -> !Detyping.print_evar_arguments);
       optwrite = (:=) Detyping.print_evar_arguments }

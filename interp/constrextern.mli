@@ -53,6 +53,7 @@ val print_implicits_defensive : bool ref
 val print_arguments : bool ref
 val print_evar_arguments : bool ref
 val print_coercions : bool ref
+val print_parens : bool ref
 val print_universes : bool ref
 val print_no_symbol : bool ref
 val print_projections : bool ref
