@@ -2,6 +2,12 @@
 
 ### ML API
 
+Types `precedence`, `parenRelation`, `tolerability` in
+`notgram_ops.ml` have been reworked. See `entry_level` and
+`entry_relative_level` in `constrexpr.ml`.
+
+### ML API
+
 Exception handling:
 
 - Coq's custom `Backtrace` module has been removed in favor of OCaml's

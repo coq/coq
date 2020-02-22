@@ -13,15 +13,15 @@
 open Genarg
 
 type 'a with_level =
-  { default_already_surrounded : Notation_gram.tolerability;
-    default_ensure_surrounded : Notation_gram.tolerability;
+  { default_already_surrounded : Constrexpr.entry_relative_level;
+    default_ensure_surrounded : Constrexpr.entry_relative_level;
     printer : 'a }
 
 type printer_result =
 | PrinterBasic of (Environ.env -> Evd.evar_map -> Pp.t)
-| PrinterNeedsLevel of (Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> Pp.t) with_level
+| PrinterNeedsLevel of (Environ.env -> Evd.evar_map -> Constrexpr.entry_relative_level -> Pp.t) with_level
 
-type printer_fun_with_level = Environ.env -> Evd.evar_map -> Notation_gram.tolerability -> Pp.t
+type printer_fun_with_level = Environ.env -> Evd.evar_map -> Constrexpr.entry_relative_level -> Pp.t
 
 type top_printer_result =
 | TopPrinterBasic of (unit -> Pp.t)

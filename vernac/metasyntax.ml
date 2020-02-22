@@ -286,32 +286,30 @@ let pr_notation_entry = function
   | InConstrEntry -> str "constr"
   | InCustomEntry s -> str "custom " ++ str s
 
-let prec_assoc = let open Gramlib.Gramext in function
-  | RightA -> (L,E)
-  | LeftA -> (E,L)
-  | NonA -> (L,L)
-
 let precedence_of_position_and_level from_level = function
-  | NumLevel n, BorderProd (_,None) -> n, Prec n
   | NumLevel n, BorderProd (b,Some a) ->
-      n, let (lp,rp) = prec_assoc a in if b == Left then lp else rp
-  | NumLevel n, InternalProd -> n, Prec n
-  | NextLevel, _ -> from_level, L
-  | DefaultLevel, _ ->
-      (* Fake value, waiting for PR#5 at herbelin's fork *) 200,
-      Any
+    (let open Gramlib.Gramext in
+     match a, b with
+     | RightA, Left -> LevelLt n
+     | RightA, Right -> LevelLe n
+     | LeftA, Left -> LevelLe n
+     | LeftA, Right -> LevelLt n
+     | NonA, _ -> LevelLt n)
+  | NumLevel n, _ -> LevelLe n
+  | NextLevel, _ -> LevelLt from_level
+  | DefaultLevel, _ -> LevelSome
 
 (** Computing precedences of subentries for parsing *)
 let precedence_of_entry_type (from_custom,from_level) = function
   | ETConstr (custom,_,x) when notation_entry_eq custom from_custom ->
     precedence_of_position_and_level from_level x
-  | ETConstr (custom,_,(NumLevel n,_)) -> n, Prec n
+  | ETConstr (custom,_,(NumLevel n,_)) -> LevelLe n
   | ETConstr (custom,_,(NextLevel,_)) ->
     user_err (strbrk "\"next level\" is only for sub-expressions in the same entry as where the notation is (" ++
               quote (pr_notation_entry custom) ++ strbrk " is different from " ++
               quote (pr_notation_entry from_custom) ++ str ").")
-  | ETPattern (_,n) -> let n = match n with None -> 0 | Some n -> n in n, Prec n
-  | _ -> 0, E (* should not matter *)
+  | ETPattern (_,n) -> let n = match n with None -> 0 | Some n -> n in LevelLe n
+  | _ -> LevelSome (* should not matter *)
 
 (** Computing precedences for future insertion of parentheses at
     the time of printing using hard-wired constr levels *)
@@ -320,14 +318,14 @@ let unparsing_precedence_of_entry_type from_level = function
     (* Possible insertion of parentheses at printing time to deal
        with precedence in a constr entry is managed using [prec_less]
        in [ppconstr.ml] *)
-    snd (precedence_of_position_and_level from_level x)
+    precedence_of_position_and_level from_level x
   | ETConstr (custom,_,_) ->
     (* Precedence of printing for a custom entry is managed using
        explicit insertion of entry coercions at the time of building
        a [constr_expr] *)
-    Any
-  | ETPattern (_,n) -> (* in constr *) Prec (match n with Some n -> n | None -> 0)
-  | _ -> Any (* should not matter *)
+    LevelSome
+  | ETPattern (_,n) -> (* in constr *) LevelLe (match n with Some n -> n | None -> 0)
+  | _ -> LevelSome (* should not matter *)
 
 (* Some breaking examples *)
 (* "x = y" : "x /1 = y" (breaks before any symbol) *)
@@ -397,11 +395,11 @@ let unparsing_metavar i from typs =
   let prec = unparsing_precedence_of_entry_type from x in
   match x with
   | ETConstr _ | ETGlobal | ETBigint ->
-     UnpMetaVar (i,prec)
+     UnpMetaVar prec
   | ETPattern _ ->
-     UnpBinderMetaVar (i,prec)
+     UnpBinderMetaVar prec
   | ETIdent ->
-     UnpBinderMetaVar (i,prec)
+     UnpBinderMetaVar prec
   | ETBinder isopen ->
      assert false
 
@@ -455,10 +453,10 @@ let make_hunks etyps symbols from_level =
           (* We add NonTerminal for simulation but remove it afterwards *)
           else make true sl in
         let hunk = match typ with
-          | ETConstr _ -> UnpListMetaVar (i,prec,List.map snd sl')
+          | ETConstr _ -> UnpListMetaVar (prec,List.map snd sl')
           | ETBinder isopen ->
               check_open_binder isopen sl m;
-              UnpBinderListMetaVar (i,isopen,List.map snd sl')
+              UnpBinderListMetaVar (isopen,List.map snd sl')
           | _ -> assert false in
         (None, hunk) :: make_with_space b prods
 
@@ -597,10 +595,10 @@ let hunks_of_format (from_level,(vars,typs)) symfmt =
       if not (List.is_empty sl) then error_format ?loc:(find_prod_list_loc loc_slfmt fmt) ();
       let symbs, l = aux (symbs,rfmt) in
       let hunk = match typ with
-        | ETConstr _ -> UnpListMetaVar (i,prec,slfmt)
+        | ETConstr _ -> UnpListMetaVar (prec,slfmt)
         | ETBinder isopen ->
             check_open_binder isopen sl m;
-            UnpBinderListMetaVar (i,isopen,slfmt)
+            UnpBinderListMetaVar (isopen,slfmt)
         | _ -> assert false in
       symbs, hunk :: l
   | symbs, (_,UnpBox (a,b)) :: fmt ->
@@ -745,15 +743,11 @@ let recompute_assoc typs = let open Gramlib.Gramext in
 
 let pr_arg_level from (lev,typ) =
   let pplev = function
-  | (n,L) when Int.equal n from -> str "at next level"
-  | (n,E) -> str "at level " ++ int n
-  | (n,L) -> str "at level below " ++ int n
-  | (n,Prec m) when Int.equal m n -> str "at level " ++ int n
-  | (n,_) -> str "Unknown level" in
-  Ppvernac.pr_set_entry_type (fun _ -> (*TO CHECK*) mt()) typ ++
-  (match typ with
-   | ETConstr _ | ETPattern _ -> spc () ++ pplev lev
-   | _ -> mt ())
+  | LevelLt n when Int.equal n from -> spc () ++ str "at next level"
+  | LevelLe n -> spc () ++ str "at level " ++ int n
+  | LevelLt n -> spc () ++ str "at level below " ++ int n
+  | LevelSome -> mt () in
+  Ppvernac.pr_set_entry_type (fun _ -> (*TO CHECK*) mt()) typ ++ pplev lev
 
 let pr_level ntn (from,fromlevel,args,typs) =
   (match from with InConstrEntry -> mt () | InCustomEntry s -> str "in " ++ str s ++ spc()) ++
@@ -1417,34 +1411,36 @@ let load_notation =
   load_notation_common true
 
 let open_notation i (_, nobj) =
-  let scope = nobj.notobj_scope in
-  let (ntn, df) = nobj.notobj_notation in
-  let pat = nobj.notobj_interp in
-  let onlyprint = nobj.notobj_onlyprint  in
-  let deprecation = nobj.notobj_deprecation in
-  let specific = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
-  let specific_ntn = (specific,ntn) in
-  let fresh = not (Notation.exists_notation_in_scope scope ntn onlyprint pat) in
-  if Int.equal i 1 && fresh then begin
-    (* Declare the interpretation *)
-    let () = Notation.declare_notation_interpretation ntn scope pat df ~onlyprint deprecation in
-    (* Declare the uninterpretation *)
-    if not nobj.notobj_onlyparse then
-      Notation.declare_uninterpretation (NotationRule specific_ntn) pat;
-    (* Declare a possible coercion *)
-    (match nobj.notobj_coercion with
-    | Some (IsEntryCoercion entry) -> Notation.declare_entry_coercion specific_ntn entry
-    | Some (IsEntryGlobal (entry,n)) -> Notation.declare_custom_entry_has_global entry n
-    | Some (IsEntryIdent (entry,n)) -> Notation.declare_custom_entry_has_ident entry n
-    | None -> ())
-  end;
-  (* Declare specific format if any *)
-  match nobj.notobj_specific_pp_rules with
-  | Some pp_sy ->
-    if specific_format_to_declare specific_ntn pp_sy then
-      Ppextend.declare_specific_notation_printing_rules
-        specific_ntn ~extra:pp_sy.synext_extra pp_sy.synext_unparsing
-  | None -> ()
+  if Int.equal i 1 then begin
+    let scope = nobj.notobj_scope in
+    let (ntn, df) = nobj.notobj_notation in
+    let pat = nobj.notobj_interp in
+    let onlyprint = nobj.notobj_onlyprint  in
+    let deprecation = nobj.notobj_deprecation in
+    let specific = match scope with None -> LastLonelyNotation | Some sc -> NotationInScope sc in
+    let specific_ntn = (specific,ntn) in
+    let fresh = not (Notation.exists_notation_in_scope scope ntn onlyprint pat) in
+    if fresh then begin
+      (* Declare the interpretation *)
+      let () = Notation.declare_notation_interpretation ntn scope pat df ~onlyprint deprecation in
+      (* Declare the uninterpretation *)
+      if not nobj.notobj_onlyparse then
+        Notation.declare_uninterpretation (NotationRule specific_ntn) pat;
+      (* Declare a possible coercion *)
+      (match nobj.notobj_coercion with
+      | Some (IsEntryCoercion entry) -> Notation.declare_entry_coercion specific_ntn entry
+      | Some (IsEntryGlobal (entry,n)) -> Notation.declare_custom_entry_has_global entry n
+      | Some (IsEntryIdent (entry,n)) -> Notation.declare_custom_entry_has_ident entry n
+      | None -> ())
+      end;
+    (* Declare specific format if any *)
+    match nobj.notobj_specific_pp_rules with
+    | Some pp_sy ->
+      if specific_format_to_declare specific_ntn pp_sy then
+        Ppextend.declare_specific_notation_printing_rules
+          specific_ntn ~extra:pp_sy.synext_extra pp_sy.synext_unparsing
+    | None -> ()
+  end
 
 let cache_notation o =
   load_notation_common false 1 o;
