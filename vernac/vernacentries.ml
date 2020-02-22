@@ -1929,7 +1929,9 @@ let vernac_check_guard ~pstate =
 
 (* We interpret vernacular commands to a DSL that specifies their
    allowed actions on proof states *)
-let translate_vernac ~atts v = let open Vernacextend in match v with
+let translate_vernac ~atts v =
+  RestrictedSyntax.check_vernac atts v;
+  let open Vernacextend in match v with
   | VernacAbortAll
   | VernacRestart
   | VernacUndo _
