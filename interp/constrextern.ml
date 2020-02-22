@@ -59,7 +59,7 @@ let print_coercions = ref false
 
 (* This forces printing of parentheses even when
    it is implied by associativity/precedence *)
-let print_parens = ref false
+let print_parentheses = ref false
 
 (* This forces printing universe names of Type{.} *)
 let print_universes = Detyping.print_universes

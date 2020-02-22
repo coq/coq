@@ -1282,9 +1282,9 @@ let () =
 let () =
   declare_bool_option
     { optdepr  = false;
-      optkey   = ["Printing";"Parens"];
-      optread  = (fun () -> !Constrextern.print_parens);
-      optwrite = (fun b ->  Constrextern.print_parens := b) }
+      optkey   = ["Printing";"Parentheses"];
+      optread  = (fun () -> !Constrextern.print_parentheses);
+      optwrite = (fun b ->  Constrextern.print_parentheses := b) }
 
 let () =
   declare_bool_option
