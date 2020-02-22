@@ -92,22 +92,22 @@ let tag_var = tag Tag.variable
     let rec aux = function
       | [] ->
         mt ()
-      | UnpMetaVar (_, prec) as unp :: l ->
+      | UnpMetaVar prec as unp :: l ->
         let c = pop env in
         let pp2 = aux l in
         let pp1 = pr prec c in
         return unp pp1 pp2
-      | UnpBinderMetaVar (_, prec) as unp :: l ->
+      | UnpBinderMetaVar prec as unp :: l ->
         let c = pop bl in
         let pp2 = aux l in
         let pp1 = pr_patt prec c in
         return unp pp1 pp2
-      | UnpListMetaVar (_, prec, sl) as unp :: l ->
+      | UnpListMetaVar (prec, sl) as unp :: l ->
         let cl = pop envlist in
         let pp1 = prlist_with_sep (fun () -> aux sl) (pr prec) cl in
         let pp2 = aux l in
         return unp pp1 pp2
-      | UnpBinderListMetaVar (_, isopen, sl) as unp :: l ->
+      | UnpBinderListMetaVar (isopen, sl) as unp :: l ->
         let cl = pop bll in
         let pp2 = aux l in
         let pp1 = pr_binders (fun () -> aux sl) isopen cl in

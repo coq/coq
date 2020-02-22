@@ -38,10 +38,10 @@ let ppcmd_of_cut = function
   | PpBrk(n1,n2) -> brk(n1,n2)
 
 type unparsing =
-  | UnpMetaVar of int * entry_relative_level
-  | UnpBinderMetaVar of int * entry_relative_level
-  | UnpListMetaVar of int * entry_relative_level * unparsing list
-  | UnpBinderListMetaVar of int * bool * unparsing list
+  | UnpMetaVar of entry_relative_level
+  | UnpBinderMetaVar of entry_relative_level
+  | UnpListMetaVar of entry_relative_level * unparsing list
+  | UnpBinderListMetaVar of bool * unparsing list
   | UnpTerminal of string
   | UnpBox of ppbox * unparsing Loc.located list
   | UnpCut of ppcut
@@ -50,10 +50,10 @@ type unparsing_rule = unparsing list * entry_level
 type extra_unparsing_rules = (string * string) list
 
 let rec unparsing_eq unp1 unp2 = match (unp1,unp2) with
-  | UnpMetaVar (n1,p1), UnpMetaVar (n2,p2) -> n1 = n2 && entry_relative_level_eq p1 p2
-  | UnpBinderMetaVar (n1,p1), UnpBinderMetaVar (n2,p2) -> n1 = n2 && entry_relative_level_eq p1 p2
-  | UnpListMetaVar (n1,p1,l1), UnpListMetaVar (n2,p2,l2) -> n1 = n2 && entry_relative_level_eq p1 p2 && List.for_all2eq unparsing_eq l1 l2
-  | UnpBinderListMetaVar (n1,b1,l1), UnpBinderListMetaVar (n2,b2,l2) -> n1 = n2 && b1 = b2 && List.for_all2eq unparsing_eq l1 l2
+  | UnpMetaVar p1, UnpMetaVar p2 -> entry_relative_level_eq p1 p2
+  | UnpBinderMetaVar p1, UnpBinderMetaVar p2 -> entry_relative_level_eq p1 p2
+  | UnpListMetaVar (p1,l1), UnpListMetaVar (p2,l2) -> entry_relative_level_eq p1 p2 && List.for_all2eq unparsing_eq l1 l2
+  | UnpBinderListMetaVar (b1,l1), UnpBinderListMetaVar (b2,l2) -> b1 = b2 && List.for_all2eq unparsing_eq l1 l2
   | UnpTerminal s1, UnpTerminal s2 -> String.equal s1 s2
   | UnpBox (b1,l1), UnpBox (b2,l2) -> b1 = b2 && List.for_all2eq unparsing_eq (List.map snd l1) (List.map snd l2)
   | UnpCut p1, UnpCut p2 -> p1 = p2

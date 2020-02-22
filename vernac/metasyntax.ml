@@ -395,11 +395,11 @@ let unparsing_metavar i from typs =
   let prec = unparsing_precedence_of_entry_type from x in
   match x with
   | ETConstr _ | ETGlobal | ETBigint ->
-     UnpMetaVar (i,prec)
+     UnpMetaVar prec
   | ETPattern _ ->
-     UnpBinderMetaVar (i,prec)
+     UnpBinderMetaVar prec
   | ETIdent ->
-     UnpBinderMetaVar (i,prec)
+     UnpBinderMetaVar prec
   | ETBinder isopen ->
      assert false
 
@@ -453,10 +453,10 @@ let make_hunks etyps symbols from_level =
           (* We add NonTerminal for simulation but remove it afterwards *)
           else make true sl in
         let hunk = match typ with
-          | ETConstr _ -> UnpListMetaVar (i,prec,List.map snd sl')
+          | ETConstr _ -> UnpListMetaVar (prec,List.map snd sl')
           | ETBinder isopen ->
               check_open_binder isopen sl m;
-              UnpBinderListMetaVar (i,isopen,List.map snd sl')
+              UnpBinderListMetaVar (isopen,List.map snd sl')
           | _ -> assert false in
         (None, hunk) :: make_with_space b prods
 
@@ -595,10 +595,10 @@ let hunks_of_format (from_level,(vars,typs)) symfmt =
       if not (List.is_empty sl) then error_format ?loc:(find_prod_list_loc loc_slfmt fmt) ();
       let symbs, l = aux (symbs,rfmt) in
       let hunk = match typ with
-        | ETConstr _ -> UnpListMetaVar (i,prec,slfmt)
+        | ETConstr _ -> UnpListMetaVar (prec,slfmt)
         | ETBinder isopen ->
             check_open_binder isopen sl m;
-            UnpBinderListMetaVar (i,isopen,slfmt)
+            UnpBinderListMetaVar (isopen,slfmt)
         | _ -> assert false in
       symbs, hunk :: l
   | symbs, (_,UnpBox (a,b)) :: fmt ->
