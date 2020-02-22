@@ -247,6 +247,8 @@ let ppenv e = pp
   (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++
    str "[" ++ pr_rel_context e Evd.empty (rel_context e) ++ str "]")
 
+let ppglobenv e = ppenv (GlobEnv.env e)
+
 let ppenvwithcst e = pp
   (str "[" ++ pr_named_context_of e Evd.empty ++ str "]" ++ spc() ++
    str "[" ++ pr_rel_context e Evd.empty (rel_context e) ++ str "]" ++ spc() ++
