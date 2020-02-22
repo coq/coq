@@ -87,6 +87,8 @@ let declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe =
   let kn = Declare.declare_constant ~name ~local ~kind decl in
   let dref = Names.GlobRef.ConstRef kn in
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
+  let () = Declare.assumption_message name in
+  let () = DeclareUniv.declare_univ_binders dref (UState.universe_binders uctx) in
   let () = Hook.(call ?fix_exn ?hook { S.uctx; obls = []; scope; dref}) in
   dref
 

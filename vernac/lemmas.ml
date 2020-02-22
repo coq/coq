@@ -255,9 +255,6 @@ let compute_proof_using_for_admitted proof typ pproofs =
 
 let finish_admitted ~name ~poly ~scope pe uctx hook ~udecl impargs other_thms =
   let dref = DeclareDef.declare_assumption ~name ~scope ~hook ~uctx ~impargs pe in
-  (* Should both of those be done in declare_axiom? *)
-  let () = Declare.assumption_message name in
-  DeclareUniv.declare_univ_binders dref (UState.universe_binders uctx);
   process_recthms ?fix_exn:None ?hook uctx ~udecl ~poly ~scope dref other_thms
 
 let save_lemma_admitted ~(lemma : t) : unit =
