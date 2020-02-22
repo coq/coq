@@ -172,3 +172,16 @@ Notation "#" := 0 (only printing).
 Print Visibility.
 
 End Bug10750.
+
+Module M18.
+
+  Module A.
+    Module B.
+    Infix "+++" := Nat.add (at level 70).
+    End B.
+  End A.
+Import A.
+(* Check that the notation in module B is not visible *)
+Infix "+++" := Nat.add (at level 80).
+
+End M18.
