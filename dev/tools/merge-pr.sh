@@ -132,7 +132,8 @@ if [ "$LOCAL_BRANCH_COMMIT" != "$UPSTREAM_COMMIT" ]; then
 
     if git merge-base --is-ancestor -- "$UPSTREAM_COMMIT" "$LOCAL_BRANCH_COMMIT"; then
         warning "Your branch is ahead of ${REMOTE}."
-        warning "You should see this warning only if you've just merged another PR and did not push yet."
+        warning "On master, GitHub's branch protection rule prevents merging several PRs at once."
+        warning "You should run [git push ${REMOTE}] between each call to the merge script."
         ask_confirmation
     else
         error "Local branch is not up-to-date with ${REMOTE}."
