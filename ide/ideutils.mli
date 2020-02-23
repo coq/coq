@@ -102,3 +102,19 @@ val run_command :
 (* Checks if an error message is printable, it not replaces it with
  * a printable error *)
 val validate : Pp.t -> Pp.t
+
+(** [encode_string_list l] encodes a list of strings into a single
+    string using a "shell"-like encoding: it quotes strings
+    containing space by surrounding them with single quotes, and,
+    outside quoted strings, quotes both single quote and backslash
+    by prefixing them with backslash; the encoding tries to be
+    minimalistic. *)
+
+val encode_string_list : string list -> string
+
+(** [decode_string_list l] decodes the encoding of a string list as
+    a string; it fails with a Failure if a single quote is unmatched
+    or if a backslash in unquoted part is not followed by a single
+    quote or another backslash. *)
+
+val decode_string_list : string -> string list
