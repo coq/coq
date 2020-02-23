@@ -402,7 +402,7 @@ GRAMMAR EXTEND Gram
   ;
   constructor_list_or_record_decl:
     [ [ "|"; l = LIST1 constructor SEP "|" -> { Constructors l }
-      | id = identref ; c = constructor_type; "|"; l = LIST0 constructor SEP "|" ->
+      | id = identref ; c = constructor_type; "|"; l = LIST1 constructor SEP "|" ->
           { Constructors ((c id)::l) }
       | id = identref ; c = constructor_type -> { Constructors [ c id ] }
       | cstr = identref; "{"; fs = record_fields; "}" ->
