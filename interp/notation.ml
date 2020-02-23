@@ -1268,7 +1268,19 @@ module EntryCoercionOrd =
 
 module EntryCoercionMap = Map.Make(EntryCoercionOrd)
 
-let entry_coercion_map = ref EntryCoercionMap.empty
+type entry_properties = {
+  entry_coercion_map : ((entry_level option * entry_level option) * entry_coercion) list EntryCoercionMap.t;
+  entry_has_global_map : entry_level String.Map.t;
+  entry_has_ident_map : entry_level String.Map.t;
+}
+
+let entry_properties_empty = {
+  entry_coercion_map = EntryCoercionMap.empty;
+  entry_has_global_map = String.Map.empty;
+  entry_has_ident_map = String.Map.empty;
+}
+
+let entry_properties = ref entry_properties_empty
 
 let level_ord lev lev' =
   match lev, lev' with
@@ -1290,7 +1302,7 @@ let availability_of_entry_coercion entry entry' =
   let entry', lev' = decompose_custom_entry entry' in
   if notation_entry_eq entry entry' && level_ord lev' lev then Some []
   else
-    try Some (search lev lev' (EntryCoercionMap.find (entry,entry') !entry_coercion_map))
+    try Some (search lev lev' (EntryCoercionMap.find (entry,entry') !entry_properties.entry_coercion_map))
     with Not_found -> None
 
 let better_path ((lev1,lev2),path) ((lev1',lev2'),path') =
@@ -1319,49 +1331,49 @@ let declare_entry_coercion (scope,(entry,_) as specific_ntn) entry' =
         if notation_entry_eq entry entry''' && level_ord lev lev''' &&
            not (notation_entry_eq entry' entry'')
         then ((entry'',entry'),((lev'',lev'),path@[specific_ntn]))::l else l) paths l)
-      !entry_coercion_map [] in
+      !entry_properties.entry_coercion_map [] in
   let toaddright =
     EntryCoercionMap.fold (fun (entry'',entry''') paths l ->
         List.fold_right (fun ((lev'',lev'''),path) l ->
         if entry' = entry'' && level_ord lev' lev'' && entry <> entry'''
         then ((entry,entry'''),((lev,lev'''),path@[specific_ntn]))::l else l) paths l)
-      !entry_coercion_map [] in
-  entry_coercion_map :=
+      !entry_properties.entry_coercion_map [] in
+  entry_properties := { !entry_properties with entry_coercion_map =
     List.fold_right (fun (pair,path) ->
-        let olds = try EntryCoercionMap.find pair !entry_coercion_map with Not_found -> [] in
+        let olds = try EntryCoercionMap.find pair !entry_properties.entry_coercion_map with Not_found -> [] in
         EntryCoercionMap.add pair (insert_coercion_path path olds))
       (((entry,entry'),((lev,lev'),[specific_ntn]))::toaddright@toaddleft)
-      !entry_coercion_map
-
-let entry_has_global_map = ref String.Map.empty
+      !entry_properties.entry_coercion_map }
 
 let declare_custom_entry_has_global s n =
   try
-    let p = String.Map.find s !entry_has_global_map in
+    let p = String.Map.find s !entry_properties.entry_has_global_map in
     user_err (str "Custom entry " ++ str s ++
               str " has already a rule for global references at level " ++ int p ++ str ".")
   with Not_found ->
-    entry_has_global_map := String.Map.add s n !entry_has_global_map
+    entry_properties :=
+      { !entry_properties with
+        entry_has_global_map = String.Map.add s n !entry_properties.entry_has_global_map }
 
 let entry_has_global = function
   | InConstrEntrySomeLevel -> true
   | InCustomEntryLevel (s,n) ->
-     try String.Map.find s !entry_has_global_map <= n with Not_found -> false
-
-let entry_has_ident_map = ref String.Map.empty
+     try String.Map.find s !entry_properties.entry_has_global_map <= n with Not_found -> false
 
 let declare_custom_entry_has_ident s n =
   try
-    let p = String.Map.find s !entry_has_ident_map in
+    let p = String.Map.find s !entry_properties.entry_has_ident_map in
     user_err (str "Custom entry " ++ str s ++
               str " has already a rule for global references at level " ++ int p ++ str ".")
   with Not_found ->
-    entry_has_ident_map := String.Map.add s n !entry_has_ident_map
+    entry_properties :=
+    { !entry_properties with
+      entry_has_ident_map = String.Map.add s n !entry_properties.entry_has_ident_map }
 
 let entry_has_ident = function
   | InConstrEntrySomeLevel -> true
   | InCustomEntryLevel (s,n) ->
-     try String.Map.find s !entry_has_ident_map <= n with Not_found -> false
+     try String.Map.find s !entry_properties.entry_has_ident_map <= n with Not_found -> false
 
 let uninterp_prim_token c =
   match glob_prim_constr_key c with
@@ -1925,10 +1937,9 @@ let freeze ~marshallable =
  (!scope_map, !scope_stack, !arguments_scope,
   !delimiters_map, !notations_key_table, !scope_class_map,
   !prim_token_interp_infos, !prim_token_uninterp_infos,
-  !entry_coercion_map, !entry_has_global_map,
-  !entry_has_ident_map)
+  !entry_properties)
 
-let unfreeze (scm,scs,asc,dlm,fkm,clsc,ptii,ptui,coe,globs,ids) =
+let unfreeze (scm,scs,asc,dlm,fkm,clsc,ptii,ptui,ppties) =
   scope_map := scm;
   scope_stack := scs;
   delimiters_map := dlm;
@@ -1937,9 +1948,7 @@ let unfreeze (scm,scs,asc,dlm,fkm,clsc,ptii,ptui,coe,globs,ids) =
   scope_class_map := clsc;
   prim_token_interp_infos := ptii;
   prim_token_uninterp_infos := ptui;
-  entry_coercion_map := coe;
-  entry_has_global_map := globs;
-  entry_has_ident_map := ids
+  entry_properties := ppties
 
 let init () =
   init_scope_map ();
