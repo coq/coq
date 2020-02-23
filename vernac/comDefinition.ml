@@ -40,10 +40,50 @@ let check_imps ~impsty ~impsbody =
   | [], [] -> () in
   aux impsty impsbody
 
+let protect_pattern_in_binder bl c ctypopt =
+  (* We turn "Definition d binders := body : typ" into *)
+  (* "Definition d := fun binders => body:type" *)
+  (* This is a hack while waiting for LocalPattern in regular environments *)
+  if List.exists (function Constrexpr.CLocalPattern _ -> true | _ -> false) bl
+  then
+    let t = match ctypopt with
+      | None -> CAst.make ?loc:c.CAst.loc (Constrexpr.CHole (None,Namegen.IntroAnonymous,None))
+      | Some t -> t in
+    let loc = Loc.merge_opt c.CAst.loc t.CAst.loc in
+    let c = CAst.make ?loc @@ Constrexpr.CCast (c, Glob_term.CastConv t) in
+    let loc = match List.hd bl with
+      | Constrexpr.CLocalAssum (a::_,_,_) | Constrexpr.CLocalDef (a,_,_) -> a.CAst.loc
+      | Constrexpr.CLocalPattern {CAst.loc} -> loc
+      | Constrexpr.CLocalAssum ([],_,_) -> assert false in
+    let apply_under_binders f env evd c =
+      let rec aux env evd c =
+        let open Constr in
+        let open EConstr in
+        let open Context.Rel.Declaration in
+        match kind evd c with
+        | Lambda (x,t,c)  ->
+          let evd,c = aux (push_rel (LocalAssum (x,t)) env) evd c in
+          evd, mkLambda (x,t,c)
+        | LetIn (x,b,t,c) ->
+          let evd,c = aux (push_rel (LocalDef (x,b,t)) env) evd c in
+          evd, mkLetIn (x,t,b,c)
+        | Case (ci,p,a,bl) ->
+          let evd,bl = Array.fold_left_map (aux env) evd bl in
+          evd, mkCase (ci,p,a,bl)
+        | Cast (c,_,_)    -> f env evd c  (* we remove the cast we had set *)
+        (* This last case may happen when reaching the proof of an
+           impossible case, as when pattern-matching on a vector of length 1 *)
+        | _ -> (evd,c) in
+      aux env evd c in
+    ([], Constrexpr_ops.mkLambdaCN ?loc:(Loc.merge_opt loc c.CAst.loc) bl c, None, apply_under_binders)
+  else
+    (bl, c, ctypopt, fun f env evd c -> f env evd c)
+
 let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
   let env = Global.env() in
   (* Explicitly bound universes and constraints *)
   let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env pl in
+  let (bl, c, ctypopt, apply_under_binders) = protect_pattern_in_binder bl c ctypopt in
   (* Build the parameters *)
   let evd, (impls, ((env_bl, ctx), imps1)) = interp_context_evars ~program_mode env evd bl in
   (* Build the type *)
@@ -63,7 +103,7 @@ let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
       evd, c, imps1@impsty, Some ty
   in
   (* Do the reduction *)
-  let evd, c = red_constant_body red_option env_bl evd c in
+  let evd, c = apply_under_binders (red_constant_body red_option) env_bl evd c in
 
   (* Declare the definition *)
   let c = EConstr.it_mkLambda_or_LetIn c ctx in
