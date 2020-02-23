@@ -1,0 +1,28 @@
+((1 + (2 * 3), 4), 5)
+     : (nat * nat) * nat
+mult_n_Sm = 
+fun n m : nat =>
+nat_ind (fun n0 : nat => ((n0 * m) + n0) = (n0 * (S m))) eq_refl
+  (fun (p : nat) (H : ((p * m) + p) = (p * (S m))) =>
+   let n0 := p * (S m) in
+   match H in (_ = y) return (((m + (p * m)) + (S p)) = (S (m + y))) with
+   | eq_refl =>
+       eq_ind (S ((m + (p * m)) + p))
+         (fun n1 : nat => n1 = (S (m + ((p * m) + p))))
+         (eq_S ((m + (p * m)) + p) (m + ((p * m) + p))
+            (nat_ind
+               (fun n1 : nat => ((n1 + (p * m)) + p) = (n1 + ((p * m) + p)))
+               eq_refl
+               (fun (n1 : nat)
+                  (H0 : ((n1 + (p * m)) + p) = (n1 + ((p * m) + p))) =>
+                f_equal_nat nat S ((n1 + (p * m)) + p) 
+                  (n1 + ((p * m) + p)) H0) m)) ((m + (p * m)) + (S p))
+         (plus_n_Sm (m + (p * m)) p)
+   end) n
+     : forall n m : nat, ((n * m) + n) = (n * (S m))
+
+Arguments mult_n_Sm (_ _)%nat_scope
+1 :: (2 :: [3; 4])
+     : list nat
+{0 = 1} + {2 <= (4 + 5)}
+     : Set
