@@ -616,8 +616,9 @@ let camltag = match caml_version_list with
     45: "open" shadowing a label or constructor: see 44
     48: implicit elimination of optional arguments: too common
     58: "no cmx file was found in path": See https://github.com/ocaml/num/issues/9
+    67: "unused functor parameter" seems totally bogus
 *)
-let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-58"
+let coq_warnings = "-w +a-4-9-27-41-42-44-45-48-58-67"
 let coq_warn_error =
     if !prefs.warn_error
     then "-warn-error +a"
