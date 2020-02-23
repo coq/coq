@@ -115,21 +115,21 @@ Module AppliedTermsPrinting.
   Notation u := @p.
 
   Check u _.
-  (* p *)
+  (* u ?A *)
   Check p.
-  (* p *)
+  (* u ?A *)
   Check @p.
   (* u *)
   Check u.
   (* u *)
   Check p 0 0.
-  (* p 0 0 *)
+  (* u nat 0 0 ?B *)
   Check u nat 0 0 bool.
-  (* p 0 0 -- WEAKNESS should ideally be (B:=bool) *)
+  (* u nat 0 0 bool *)
   Check u nat 0 0.
-  (* @p nat 0 0 *)
+  (* u nat 0 0 *)
   Check @p nat 0 0.
-  (* @p nat 0 0 *)
+  (* u nat 0 0 *)
 
   End AtAbbreviationForApplicationHead.
 
@@ -145,9 +145,9 @@ Module AppliedTermsPrinting.
   Check p.
   (* u *)
   Check @p.
-  (* u -- BUG *)
+  (* @u *)
   Check @u.
-  (* u -- BUG *)
+  (* @u *)
   Check u.
   (* u *)
   Check p 0 0.
@@ -181,7 +181,7 @@ Module AppliedTermsPrinting.
   Check v 0.
   (* v 0 *)
   Check v 0 true.
-  (* v 0 (B:=bool) true -- BUG *)
+  (* v 0 true *)
   Check @p nat 0.
   (* v *)
   Check @p nat 0 0.
@@ -209,7 +209,7 @@ Module AppliedTermsPrinting.
   Check v 0.
   (* v 0 *)
   Check v 0 true.
-  (* v 0 (B:=bool) true -- BUG *)
+  (* v 0 true *)
   Check @p nat 0.
   (* v *)
   Check @p nat 0 0.
@@ -243,9 +243,9 @@ Module AppliedTermsPrinting.
   Check ## 0 0.
   (* ## 0 0 *)
   Check p 0 0 true.
-  (* ## 0 0 (B:=bool) true -- BUG B should not be displayed *)
+  (* ## 0 0 true *)
   Check ## 0 0 true.
-  (* ## 0 0 (B:=bool) true -- BUG B should not be displayed *)
+  (* ## 0 0 true *)
   Check p 0 0 (B:=bool).
   (* ## 0 0 (B:=bool) *)
   Check ## 0 0 (B:=bool).
@@ -263,25 +263,25 @@ Module AppliedTermsPrinting.
   Notation "##" := @p (at level 0).
 
   Check p.
-  (* p *)
+  (* ## ?A *)
   Check @p.
   (* ## *)
   Check ##.
   (* ## *)
   Check p 0.
-  (* p 0 -- why not "## nat 0" *)
+  (* ## nat 0 *)
   Check ## nat 0.
-  (* p 0 *)
+  (* ## nat 0 *)
   Check ## nat 0 0.
-  (* @p nat 0 0 *)
+  (* ## nat 0 0 *)
   Check p 0 0.
-  (* p 0 0 *)
+  (* ## nat 0 0 ?B *)
   Check ## nat 0 0 _.
-  (* p 0 0 *)
+  (* ## nat 0 0 ?B *)
   Check ## nat 0 0 bool.
-  (* p 0 0 (B:=bool) *)
+  (* ## nat 0 0 bool *)
   Check ## nat 0 0 bool true.
-  (* p 0 0 true *)
+  (* ## nat 0 0 bool true *)
 
   End AtNotationForHeadApplication.
 
@@ -298,16 +298,16 @@ Module AppliedTermsPrinting.
   (* ## 0 *)
   Check ## 0.
   (* ## 0 *)
-  (* Check ## 0 0. *)
-  (* Anomaly *)
+  Check ## 0 0.
+  (* ## 0 0 *)
   Check p 0 0 (B:=bool).
   (* ## 0 0 (B:=bool) *)
-  Check ## 0 0 bool.
-  (* ## 0 0 (B:=bool) -- INCONSISTENT parsing/printing *)
+  Check ## 0 0 (B:=bool).
+  (* ## 0 0 (B:=bool) *)
   Check p 0 0 true.
-  (* ## 0 0 (B:=bool) true -- BUG B should not be displayed *)
-  Check ## 0 0 bool true.
-  (* ## 0 0 (B:=bool) true -- INCONSISTENT parsing/printing + BUG B should not be displayed *)
+  (* ## 0 0 true *)
+  Check ## 0 0 true.
+  (* ## 0 0 true *)
 
   End NotationForPartialApplication.
 
@@ -324,17 +324,75 @@ Module AppliedTermsPrinting.
   (* ## 0 *)
   Check ## 0.
   (* ## 0 *)
-  (* Check ## 0 0. *)
-  (* Anomaly *)
+  Check ## 0 0.
+  (* ## 0 0 *)
   Check p 0 0 (B:=bool).
   (* ## 0 0 (B:=bool) *)
-  Check ## 0 0 bool.
-  (* ## 0 0 (B:=bool) -- INCONSISTENT parsing/printing *)
+  Check ## 0 0 (B:=bool).
+  (* ## 0 0 (B:=bool) *)
   Check p 0 0 true.
-  (* ## 0 0 (B:=bool) true -- BUG B should not be displayed *)
-  Check ## 0 0 bool true.
-  (* ## 0 0 (B:=bool) true -- INCONSISTENCY parsing/printing + BUG B should not be displayed *)
+  (* ## 0 0 true *)
+  Check ## 0 0 true.
+  (* ## 0 0 true *)
 
   End AtNotationForPartialApplication.
 
 End AppliedTermsPrinting.
+
+Module AppliedPatternsPrinting.
+
+  (* Other tests testing inheritance of scope and implicit in
+     term and pattern for parsing and printing *)
+
+  Inductive T := p (a:nat) (b:bool) {B} (b:B) : T.
+  Notation "0" := true : bool_scope.
+
+  Module A.
+  Notation "#" := @p (at level 0).
+  Check # 0 0 _ true.
+  Check fun a => match a with # 0 0 _ _ => 1 | _ => 2 end. (* !! *)
+  End A.
+
+  Module B.
+  Notation "#'" := p (at level 0).
+  Check #' 0 0 true.
+  Check fun a => match a with #' 0 0 _ => 1 | _ => 2 end.
+  End B.
+
+  Module C.
+  Notation "## q" := (@p q) (at level 0, q at level 0).
+  Check ## 0 0 true.
+  Check fun a => match a with ## 0 0 _ => 1 | _ => 2 end.
+  End C.
+
+  Module D.
+  Notation "##' q" := (p q) (at level 0, q at level 0).
+  Check ##' 0 0 true.
+  Check fun a => match a with ##' 0 0 _ => 1 | _ => 2 end.
+  End D.
+
+  Module E.
+  Notation P := @ p.
+  Check P 0 0 _ true.
+  Check fun a => match a with P 0 0 _ _ => 1 | _ => 2 end.
+  End E.
+
+  Module F.
+  Notation P' := p.
+  Check P' 0 0 true.
+  Check fun a => match a with P' 0 0 _ => 1 | _ => 2 end.
+  End F.
+
+  Module G.
+  Notation Q q := (@p q).
+  Check Q 0 0 true.
+  Check fun a => match a with Q 0 0 _ => 1 | _ => 2 end.
+  End G.
+
+  Module H.
+  Notation Q' q := (p q).
+  Check Q' 0 0 true.
+  Check fun a => match a with Q' 0 0 _ => 1 | _ => 2 end.
+  End H.
+
+End AppliedPatternsPrinting.

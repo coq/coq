@@ -637,6 +637,14 @@ let rec expand_binders ?loc mk bl c =
 (**********************************************************************)
 (* Syntax extensions                                                  *)
 
+let check_not_notation_variable f ntnvars =
+  (* Check bug #4690 *)
+  match DAst.get f with
+  | GVar id when Id.Map.mem id ntnvars ->
+    user_err (str "Prefix @ is not applicable to notation variables.")
+  | _ ->
+     ()
+
 let option_mem_assoc id = function
   | Some (id',c) -> Id.equal id id'
   | None -> false
@@ -1071,11 +1079,11 @@ let find_appl_head_data c =
       c, impls, scopes, []
   | GApp (r, l) ->
     begin match DAst.get r with
-    | GRef (ref,_) when l != [] ->
+    | GRef (ref,_) ->
       let n = List.length l in
       let impls = implicits_of_global ref in
       let scopes = find_arguments_scope ref in
-        c, List.map (drop_first_implicits n) impls,
+        c, (if n = 0 then [] else List.map (drop_first_implicits n) impls),
         List.skipn_at_least n scopes,[]
     | _ -> c,[],[],[]
     end
@@ -1659,10 +1667,11 @@ let drop_notations_pattern looked_for genv =
           let () = assert (List.is_empty vars) in
           let (_,argscs) = find_remaining_scopes [] pats g in
           Some (g, [], List.map2 (in_pat_sc scopes) argscs pats)
-        | NApp (NRef g,[]) -> (* special case: Syndef for @Cstr, this deactivates *)
+        | NApp (NRef g,[]) -> (* special case: Syndef for @Cstr deactivates implicit arguments *)
               test_kind top g;
               let () = assert (List.is_empty vars) in
-              Some (g, List.map (in_pat false scopes) pats, [])
+              let (_,argscs) = find_remaining_scopes [] pats g in
+              Some (g, List.map2 (in_pat_sc scopes) argscs pats, [])
         | NApp (NRef g,args) ->
               (* Convention: do not deactivate implicit arguments and scopes for further arguments *)
               test_kind top g;
@@ -1680,7 +1689,7 @@ let drop_notations_pattern looked_for genv =
           test_kind top g;
           Dumpglob.add_glob ?loc:qid.loc g;
           let (_,argscs) = find_remaining_scopes [] pats g in
-          Some (g,[],List.map2 (fun x -> in_pat false (x,snd scopes)) argscs pats)
+          Some (g,[],List.map2 (in_pat_sc scopes) argscs pats)
     with Not_found -> None
   and in_pat top scopes pt =
     let open CAst in
@@ -1780,7 +1789,15 @@ let drop_notations_pattern looked_for genv =
       let (argscs1,argscs2) = find_remaining_scopes pl args g in
       let pl = List.map2 (fun x -> in_not false loc (x,snd scopes) fullsubst []) argscs1 pl in
       let pl = add_local_defs_and_check_length loc genv g pl args in
-      DAst.make ?loc @@ RCPatCstr (g, pl @ List.map (in_pat false scopes) args, [])
+      let args = List.map2 (fun x -> in_pat false (x,snd scopes)) argscs2 args in
+      let pat =
+        if List.length pl = 0 then
+          (* Convention: if notation is @f, encoded as NApp(Nref g,[]), then
+             implicit arguments are not inherited *)
+          RCPatCstr (g, pl @ args, [])
+        else
+          RCPatCstr (g, pl, args) in
+      DAst.make ?loc @@ pat
     | NList (x,y,iter,terminator,revert) ->
       if not (List.is_empty args) then user_err ?loc
         (strbrk "Application of arguments to a recursive notation not supported in patterns.");
@@ -2054,6 +2071,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           intern_applied_reference ~isproj intern env (Environ.named_context_val globalenv)
             lvar us args ref
         in
+        check_not_notation_variable f ntnvars;
         (* Rem: GApp(_,f,[]) stands for @f *)
         if args = [] then DAst.make ?loc @@ GApp (f,[]) else
           smart_gapp f loc (intern_args env args_scopes (List.map fst args))
@@ -2070,9 +2088,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
             | CRef (ref,us) ->
                intern_applied_reference ~isproj intern env
                  (Environ.named_context_val globalenv) lvar us args ref
-            | CNotation (_,ntn,([],[],[],[])) ->
+            | CNotation (_,ntn,ntnargs) ->
                 assert (Option.is_empty isproj);
-                let c = intern_notation intern env ntnvars loc ntn ([],[],[],[]) in
+                let c = intern_notation intern env ntnvars loc ntn ntnargs in
                 let x, impl, scopes, l = find_appl_head_data c in
                   (x,impl,scopes,l), args
             | _ -> assert (Option.is_empty isproj); (intern_no_implicit env f,[],[],[]), args in

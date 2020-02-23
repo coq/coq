@@ -7,21 +7,21 @@ The convention is:
 Constant foo with implicit arguments and scopes used in a term or a pattern:
 
        foo      do not deactivate further arguments and scopes
-       @foo     deactivates further arguments and scopes
-       (foo x)  deactivates further arguments and scopes
-       (@foo x) deactivates further arguments and scopes
+       @foo     deactivate further arguments and scopes
+       (foo x)  deactivate further arguments and scopes
+       (@foo x) deactivate further arguments and scopes
 
 Notations binding to foo:
 
 #   := foo      do not deactivate further arguments and scopes
-#   := @foo     deactivates further arguments and scopes
-# x := foo x    deactivates further arguments and scopes
-# x := @foo x   deactivates further arguments and scopes
+#   := @foo     deactivate further arguments and scopes
+# x := foo x    do not deactivate further arguments and scopes
+# x := @foo x   do not deactivate further arguments and scopes
 
 Abbreviations binding to foo:
 
 f   := foo      do not deactivate further arguments and scopes
-f   := @foo     deactivates further arguments and scopes
+f   := @foo     deactivate further arguments and scopes
 f x := foo x    do not deactivate further arguments and scopes
 f x := @foo x   do not deactivate further arguments and scopes
 *)
@@ -62,18 +62,18 @@ Check c4 _ 0%bool _ 0%bool 0%bool : prod' bool bool.
 Check fun A (x :prod' bool A) => match x with c4 _ 0%bool _ y 0%bool => 2 | _ => 1 end.
 Check fun A (x :prod' bool A) => match x with (@pair') _ 0%bool _ y 0%bool => 2 | _ => 1 end.
 
-(* 5. Notations stop further implicit arguments to be inserted and scopes to be used *)
+(* 5. Non-@id notations inherit implicit arguments to be inserted and scopes to be used *)
 Notation "# x" := (pair' x) (at level 0, x at level 1).
 Check pair' 0 0 0 : prod' bool bool.
-Check # 0 _ 0%bool 0%bool : prod' bool bool.
-Check fun A (x :prod' bool A) => match x with # 0 _ y 0%bool => 2 | _ => 1 end.
+Check # 0 0 0 : prod' bool bool.
+Check fun A (x :prod' bool A) => match x with # 0 y 0 => 2 | _ => 1 end.
 
-(* 6. Notations stop further implicit arguments to be inserted and scopes to be used *)
+(* 6. Non-@id notations inherit implicit arguments to be inserted and scopes to be used *)
 Notation "## x" := ((@pair') _ x) (at level 0, x at level 1).
 Check (@pair') _ 0%bool _ 0%bool 0%bool : prod' bool bool.
 Check ((@pair') _ 0%bool) _ 0%bool 0%bool : prod' bool bool.
-Check ## 0%bool _ 0%bool 0%bool : prod' bool bool.
-Check fun A (x :prod' bool A) => match x with ## 0%bool _ y 0%bool => 2 | _ => 1 end.
+Check ## 0%bool 0 0 : prod' bool bool.
+Check fun A (x :prod' bool A) => match x with ## 0%bool y 0 => 2 | _ => 1 end.
 
 (* 7. Notations stop further implicit arguments to be inserted and scopes to be used *)
 Notation "###" := (@pair') (at level 0).
@@ -86,10 +86,10 @@ Notation "####" := pair' (at level 0).
 Check #### 0 0 0 : prod' bool bool.
 Check fun A (x :prod' bool A) => match x with #### 0 y 0 => 2 | _ => 1 end.
 
-(* 9. Notations w/o @ but arguments do not preserve further implicit arguments and scopes *)
+(* 9. Non-@id notations inherit implicit arguments and scopes *)
 Notation "##### x" := (pair' x) (at level 0, x at level 1).
-Check ##### 0 _ 0%bool 0%bool : prod' bool bool.
-Check fun A (x :prod' bool A) => match x with ##### 0 _ y 0%bool => 2 | _ => 1 end.
+Check ##### 0 0 0 : prod' bool bool.
+Check fun A (x :prod' bool A) => match x with ##### 0 y 0 => 2 | _ => 1 end.
 
 (* 10. Check computation of binding variable through other notations *)
 (* it should be detected as binding variable and the scopes not being checked *)
@@ -185,3 +185,12 @@ Import A.
 Infix "+++" := Nat.add (at level 80).
 
 End M18.
+
+Module InheritanceArgumentScopes.
+
+Axiom p : forall (A:Type) (b:nat), A = A /\ b = b.
+Check fun A n => p (A * A) (n * n). (* safety check *)
+Notation q := @p.
+Check fun A n => q (A * A) (n * n). (* check that argument scopes are propagated *)
+
+End InheritanceArgumentScopes.

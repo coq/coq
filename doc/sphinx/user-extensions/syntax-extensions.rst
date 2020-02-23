@@ -417,6 +417,27 @@ identifiers or tokens starting with a single quote are dropped.
    Locate "exists".
    Locate "exists _ .. _ , _".
 
+Inheritance of the properties of arguments of constants bound to a notation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the right-hand side of a notation is a partially applied constant,
+the notation inherits the implicit arguments (see
+:ref:`ImplicitArguments`) and interpretation scopes (see
+:ref:`Scopes`) of the constant. For instance:
+
+.. coqtop:: in reset
+
+   Record R := {dom : Type; op : forall {A}, A -> dom}.
+   Notation "# x" := (@op x) (at level 8).
+
+.. coqtop:: all
+
+   Check fun x:R => # x 3.
+
+As an exception, if the right-hand side is just of the form
+:n:`@@qualid`, this conventionally stops the inheritance of implicit
+arguments (but not of interpretation scopes).
+
 Notations and binders
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -1414,6 +1435,12 @@ Abbreviations
    Abbreviations disappear when a section is closed. No typing of the
    denoted expression is performed at definition time. Type checking is
    done only at the time of use of the abbreviation.
+
+   Like for notations, if the right-hand side of an abbreviation is a
+   partially applied constant, the abbreviation inherits the implicit
+   arguments and interpretation scopes of the constant. As an
+   exception, if the right-hand side is just of the form :n:`@@qualid`,
+   this conventionally stops the inheritance of implicit arguments.
 
 .. _numeral-notations:
 

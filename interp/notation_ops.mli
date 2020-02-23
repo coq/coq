@@ -69,12 +69,12 @@ val match_notation_constr : bool -> 'a glob_constr_g -> interpretation ->
 val match_notation_constr_cases_pattern :
   'a cases_pattern_g -> interpretation ->
   (('a cases_pattern_g * extended_subscopes) list * ('a cases_pattern_g list * extended_subscopes) list) *
-    (int * 'a cases_pattern_g list)
+    (bool * int * 'a cases_pattern_g list)
 
 val match_notation_constr_ind_pattern :
   inductive -> 'a cases_pattern_g list -> interpretation ->
   (('a cases_pattern_g * extended_subscopes) list * ('a cases_pattern_g list * extended_subscopes) list) *
-    (int * 'a cases_pattern_g list)
+    (bool * int * 'a cases_pattern_g list)
 
 (** {5 Matching a notation pattern against a [glob_constr]} *)
 

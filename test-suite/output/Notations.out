@@ -107,14 +107,15 @@ fun x : option Z => match x with
                     end
      : option Z -> Z
 fun x : option Z => match x with
-                    | SOME2 x0 => x0
-                    | NONE2 => 0
+                    | SOME3 _ x0 => x0
+                    | NONE3 _ => 0
                     end
      : option Z -> Z
-fun x : list ?T => match x with
-                   | NIL => NONE2
-                   | (_ :') t => SOME2 t
-                   end
+fun x : list ?T =>
+match x with
+| NIL => NONE3 (list ?T)
+| (_ :') t => SOME3 (list ?T) t
+end
      : list ?T -> option (list ?T)
 where
 ?T : [x : list ?T  x1 : list ?T  x0 := x1 : list ?T |- Type] (x, x1,
