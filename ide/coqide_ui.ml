@@ -79,6 +79,7 @@ let init () =
 \n    <menuitem action='Display coercions' />\
 \n    <menuitem action='Display raw matching expressions' />\
 \n    <menuitem action='Display notations' />\
+\n    <menuitem action='Display parentheses' />\
 \n    <menuitem action='Display all basic low-level contents' />\
 \n    <menuitem action='Display existential variable instances' />\
 \n    <menuitem action='Display universe levels' />\
