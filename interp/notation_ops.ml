@@ -258,6 +258,8 @@ let glob_constr_of_notation_constr ?loc x =
 (******************************************************************************)
 (* Translating a glob_constr into a notation, interpreting recursive patterns *)
 
+let print_parentheses = ref false
+
 type found_variables = {
     vars : Id.t list;
     recursive_term_vars : (Id.t * Id.t) list;
@@ -1092,6 +1094,7 @@ let match_termlist match_fun alp metas sigma rest x y iter termin revert =
       let rest = Id.List.assoc ldots_var terms in
       let t = Id.List.assoc y terms in
       let sigma = remove_sigma y (remove_sigma ldots_var sigma) in
+      if !print_parentheses && not (List.is_empty acc) then raise No_match;
       aux sigma (t::acc) rest
     with No_match when not (List.is_empty acc) ->
       acc, match_fun metas sigma rest termin in

@@ -61,6 +61,8 @@ val glob_constr_of_notation_constr : ?loc:Loc.t -> notation_constr -> glob_const
 
 exception No_match
 
+val print_parentheses : bool ref
+
 val match_notation_constr : bool -> 'a glob_constr_g -> interpretation ->
       ('a glob_constr_g * extended_subscopes) list * ('a glob_constr_g list * extended_subscopes) list *
       ('a cases_pattern_disjunction_g * extended_subscopes) list *
