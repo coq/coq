@@ -241,6 +241,7 @@ before_script:
   only:
     variables:
       - $WINDOWS =~ /enabled/
+  allow_failure: true
 
 .deploy-template:
   stage: deploy
