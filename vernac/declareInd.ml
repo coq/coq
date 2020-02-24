@@ -65,7 +65,7 @@ let objInductive : inductive_obj Libobject.Dyn.tag =
   declare_object_full {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
     load_function = load_inductive;
-    open_function = open_inductive;
+    open_function = todo_filter open_inductive;
     classify_function = (fun a -> Substitute a);
     subst_function = ident_subst_function;
     discharge_function = discharge_inductive;

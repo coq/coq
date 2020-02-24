@@ -46,7 +46,7 @@ let iter_objects f i prefix =
   List.iter (fun (id,obj) -> f i (make_oname prefix id, obj))
 
 let load_atomic_objects i pr = iter_objects load_object i pr
-let open_atomic_objects i pr = iter_objects open_object i pr
+let open_atomic_objects f i pr = iter_objects (open_object f) i pr
 
 let subst_atomic_objects subst seg =
   let subst_one = fun (id,obj as node) ->

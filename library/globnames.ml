@@ -120,3 +120,7 @@ end
 
 module ExtRefMap = HMap.Make(ExtRefOrdered)
 module ExtRefSet = ExtRefMap.Set
+
+let subst_extended_reference sub = function
+  | SynDef kn -> SynDef (subst_kn sub kn)
+  | TrueGlobal gr -> TrueGlobal (subst_global_reference sub gr)

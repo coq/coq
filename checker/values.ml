@@ -372,6 +372,17 @@ let v_compiled_lib =
 
 let v_obj = Dyn
 
+let v_globref = Sum("globref",0,[|
+    [|v_id|];
+    [|v_cst|];
+    [|v_ind|];
+    [|v_cons|]
+  |])
+
+let v_ext_gref = Sum("extended_global_reference",0,[|[|v_globref|];[|v_kn|]|])
+
+let v_open_filter = Sum ("open_filter",1,[|[|v_hset v_ext_gref|]|])
+
 let rec v_aobjs = Sum("algebraic_objects", 0,
   [| [|v_libobjs|];
      [|v_mp;v_subst|]
@@ -383,7 +394,7 @@ and v_libobjt = Sum("Libobject.t",0,
      [| v_substobjs |];
      [| v_aobjs |];
      [| v_libobjs |];
-     [| List v_mp |];
+     [| List (v_pair v_open_filter v_mp)|];
      [| v_obj |]
   |])
 

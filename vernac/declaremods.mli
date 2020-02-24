@@ -97,11 +97,11 @@ val append_end_library_hook : (unit -> unit) -> unit
    or when [mp] corresponds to a functor. If [export] is [true], the module is also
    opened every time the module containing it is. *)
 
-val import_module : export:bool -> ModPath.t -> unit
+val import_module : Libobject.open_filter -> export:bool -> ModPath.t -> unit
 
 (** Same as [import_module] but for multiple modules, and more optimized than
     iterating [import_module]. *)
-val import_modules : export:bool -> ModPath.t list -> unit
+val import_modules : export:bool -> (Libobject.open_filter * ModPath.t) list -> unit
 
 (** Include  *)
 

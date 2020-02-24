@@ -66,3 +66,5 @@ module ExtRefSet : CSig.SetS with type elt = extended_global_reference
 module ExtRefMap : CMap.ExtS
   with type key = extended_global_reference
    and module Set := ExtRefSet
+
+val subst_extended_reference : substitution -> extended_global_reference -> extended_global_reference
