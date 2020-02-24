@@ -388,7 +388,6 @@ and open_include f i ((sp,kn), aobjs) =
   open_objects f i prefix o
 
 and open_export f i mpl =
-  let _ = todo_filter in (* exports will have their own filters! *)
   let _,objs = collect_export f i mpl (MPmap.empty, []) in
   List.iter (fun (f,o) -> open_object f 1 o) objs
 
