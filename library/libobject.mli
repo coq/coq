@@ -72,15 +72,27 @@ type 'a substitutivity =
 
 type object_name = full_path * Names.KerName.t
 
+type open_filter = Unfiltered | Names of Globnames.ExtRefSet.t
+
 type 'a object_declaration = {
   object_name : string;
   cache_function : object_name * 'a -> unit;
   load_function : int -> object_name * 'a -> unit;
-  open_function : int -> object_name * 'a -> unit;
+  open_function : open_filter -> int -> object_name * 'a -> unit;
   classify_function : 'a -> 'a substitutivity;
   subst_function :  substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
   rebuild_function : 'a -> 'a }
+
+val simple_open : (int -> object_name * 'a -> unit) -> open_filter -> int -> object_name * 'a -> unit
+(** Combinator for making objects which are only opened by unfiltered Import *)
+
+val filter_and : open_filter -> open_filter -> open_filter option
+(** Returns [None] when the intersection is empty. *)
+
+val filter_or :  open_filter -> open_filter -> open_filter
+
+val todo_filter : (int -> object_name * 'a -> unit) -> open_filter -> int -> object_name * 'a -> unit
 
 (** The default object is a "Keep" object with empty methods.
    Object creators are advised to use the construction
@@ -114,7 +126,7 @@ and t =
   | ModuleTypeObject of substitutive_objects
   | IncludeObject of algebraic_objects
   | KeepObject of objects
-  | ExportObject of { mpl : Names.ModPath.t list }
+  | ExportObject of { mpl : (open_filter * Names.ModPath.t) list }
   | AtomicObject of obj
 
 and objects = (Names.Id.t * t) list
@@ -129,7 +141,7 @@ val declare_object :
 
 val cache_object : object_name * obj -> unit
 val load_object : int -> object_name * obj -> unit
-val open_object : int -> object_name * obj -> unit
+val open_object : open_filter -> int -> object_name * obj -> unit
 val subst_object : substitution * obj -> obj
 val classify_object : obj -> obj substitutivity
 val discharge_object : object_name * obj -> obj option

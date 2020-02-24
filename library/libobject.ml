@@ -18,11 +18,34 @@ type 'a substitutivity =
 
 type object_name = Libnames.full_path * Names.KerName.t
 
+module NSet = Globnames.ExtRefSet
+
+type open_filter =
+  | Unfiltered
+  | Names of NSet.t
+
+let simple_open f filter i o = match filter with
+  | Unfiltered -> f i o
+  | Names _ -> ()
+
+let todo_filter = simple_open
+
+let filter_and f1 f2 = match f1, f2 with
+  | Unfiltered, f | f, Unfiltered -> Some f
+  | Names n1, Names n2 ->
+    let n = NSet.inter n1 n2 in
+    if NSet.is_empty n then None
+    else Some (Names n)
+
+let filter_or f1 f2 = match f1, f2 with
+  | Unfiltered, f | f, Unfiltered -> Unfiltered
+  | Names n1, Names n2 -> Names (NSet.union n1 n2)
+
 type 'a object_declaration = {
   object_name : string;
   cache_function : object_name * 'a -> unit;
   load_function : int -> object_name * 'a -> unit;
-  open_function : int -> object_name * 'a -> unit;
+  open_function : open_filter -> int -> object_name * 'a -> unit;
   classify_function : 'a -> 'a substitutivity;
   subst_function : Mod_subst.substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
@@ -32,7 +55,7 @@ let default_object s = {
   object_name = s;
   cache_function = (fun _ -> ());
   load_function = (fun _ _ -> ());
-  open_function = (fun _ _ -> ());
+  open_function = (fun _ _ _ -> ());
   subst_function = (fun _ ->
     CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!"));
   classify_function = (fun atomic_obj -> Keep atomic_obj);
@@ -75,7 +98,7 @@ and t =
   | ModuleTypeObject of substitutive_objects
   | IncludeObject of algebraic_objects
   | KeepObject of objects
-  | ExportObject of { mpl : ModPath.t list }
+  | ExportObject of { mpl : (open_filter * ModPath.t) list }
   | AtomicObject of obj
 
 and objects = (Names.Id.t * t) list
@@ -105,9 +128,9 @@ let load_object i (sp, Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in
   decl.load_function i (sp, v)
 
-let open_object i (sp, Dyn.Dyn (tag, v)) =
+let open_object f i (sp, Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in
-  decl.open_function i (sp, v)
+  decl.open_function f i (sp, v)
 
 let subst_object (subs, Dyn.Dyn (tag, v)) =
   let decl = DynMap.find tag !cache_tab in
@@ -147,7 +170,7 @@ let global_object_nodischarge s ~cache ~subst =
   let import i o = if Int.equal i 1 then cache o in
   { (default_object s) with
     cache_function = cache;
-    open_function = import;
+    open_function = simple_open import;
     subst_function = (match subst with
         | None -> fun _ -> CErrors.anomaly (str "The object " ++ str s ++ str " does not know how to substitute!")
         | Some subst -> subst;

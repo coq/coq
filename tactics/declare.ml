@@ -135,7 +135,7 @@ let (objConstant : constant_obj Libobject.Dyn.tag) =
   declare_object_full { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
-    open_function = open_constant;
+    open_function = todo_filter open_constant;
     classify_function = classify_constant;
     subst_function = ident_subst_function;
     discharge_function = discharge_constant }

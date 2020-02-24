@@ -28,7 +28,7 @@ let discharge_canonical_structure (_,((gref, _ as x), local)) =
 
 let inCanonStruc : (GlobRef.t * inductive) * bool -> obj =
   declare_object {(default_object "CANONICAL-STRUCTURE") with
-                  open_function = open_canonical_structure;
+                  open_function = simple_open open_canonical_structure;
                   cache_function = cache_canonical_structure;
                   subst_function = (fun (subst,(c,local)) -> subst_canonical_structure subst c, local);
                   classify_function = (fun x -> Substitute x);

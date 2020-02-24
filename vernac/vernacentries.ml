@@ -847,7 +847,7 @@ let vernac_constraint ~poly l =
 
 let vernac_import export refl =
   let import_mod qid =
-    try Declaremods.import_module ~export @@ Nametab.locate_module qid
+    try Declaremods.import_module Libobject.Unfiltered ~export @@ Nametab.locate_module qid
     with Not_found ->
       CErrors.user_err Pp.(str "Cannot find module " ++ pr_qualid qid)
    in

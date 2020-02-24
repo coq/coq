@@ -256,7 +256,7 @@ let classify_coercion obj =
 
 let inCoercion : coercion -> obj =
   declare_object {(default_object "COERCION") with
-    open_function = open_coercion;
+    open_function = simple_open open_coercion;
     cache_function = cache_coercion;
     subst_function = (fun (subst,c) -> subst_coercion subst c);
     classify_function = classify_coercion;
