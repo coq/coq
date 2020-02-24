@@ -22,7 +22,6 @@ fi
 RED="\033[31m"
 RESET="\033[0m"
 GREEN="\033[32m"
-BLUE="\033[34m"
 YELLOW="\033[33m"
 info() {
   echo -e "${GREEN}info:${RESET} $1 ${RESET}"
@@ -74,17 +73,17 @@ fi
 PRDATA=$(curl -s "$API/pulls/$PR")
 
 TITLE=$(echo "$PRDATA" | jq -r '.title')
-info "title for PR $PR is ${BLUE}$TITLE"
+info "title for PR $PR is $TITLE"
 
 BASE_BRANCH=$(echo "$PRDATA" | jq -r '.base.label')
-info "PR $PR targets branch ${BLUE}$BASE_BRANCH"
+info "PR $PR targets branch $BASE_BRANCH"
 
 CURRENT_LOCAL_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-info "you are merging in ${BLUE}$CURRENT_LOCAL_BRANCH"
+info "you are merging in $CURRENT_LOCAL_BRANCH"
 
 REMOTE=$(git config --get "branch.$CURRENT_LOCAL_BRANCH.remote")
 if [ -z "$REMOTE" ]; then
-  error "branch ${BLUE}$CURRENT_LOCAL_BRANCH${RESET} has not associated remote"
+  error "branch $CURRENT_LOCAL_BRANCH has not associated remote"
   error "don't know where to fetch the PR from"
   error "please run: git branch --set-upstream-to=THE_REMOTE/$CURRENT_LOCAL_BRANCH"
   exit 1
@@ -96,12 +95,12 @@ if [ "$REMOTE_URL" != "${OFFICIAL_REMOTE_GIT_URL}" ] && \
    [ "$REMOTE_URL" != "https://${OFFICIAL_REMOTE_HTTPS_URL}.git" ] && \
    [[ "$REMOTE_URL" != "https://"*"@${OFFICIAL_REMOTE_HTTPS_URL}" ]] && \
    [[ "$REMOTE_URL" != "https://"*"@${OFFICIAL_REMOTE_HTTPS_URL}.git" ]] ; then
-  error "remote ${BLUE}$REMOTE${RESET} does not point to the official Coq repo"
-  error "that is ${BLUE}$OFFICIAL_REMOTE_GIT_URL"
-  error "it points to ${BLUE}$REMOTE_URL${RESET} instead"
+  error "remote $REMOTE does not point to the official Coq repo"
+  error "that is $OFFICIAL_REMOTE_GIT_URL"
+  error "it points to $REMOTE_URL instead"
   ask_confirmation
 fi
-info "remote for $CURRENT_LOCAL_BRANCH is ${BLUE}$REMOTE"
+info "remote for $CURRENT_LOCAL_BRANCH is $REMOTE"
 
 info "fetching from $REMOTE the PR"
 git remote update "$REMOTE"
@@ -112,12 +111,12 @@ if ! git ls-remote "$REMOTE" | grep pull >/dev/null; then
 fi
 git fetch "$REMOTE" "refs/pull/$PR/head"
 COMMIT=$(git rev-parse FETCH_HEAD)
-info "commit for PR $PR is ${BLUE}$COMMIT"
+info "commit for PR $PR is $COMMIT"
 
 # Sanity check: merge to a different branch
 
 if [ "$BASE_BRANCH" != "coq:$CURRENT_LOCAL_BRANCH" ]; then
-  error "PR requests merge in ${BLUE}$BASE_BRANCH${RESET} but you are merging in ${BLUE}$CURRENT_LOCAL_BRANCH"
+  error "PR requests merge in $BASE_BRANCH but you are merging in $CURRENT_LOCAL_BRANCH"
   ask_confirmation
 fi;
 
@@ -166,7 +165,7 @@ fi
 STATUS=$(curl -s "$API/commits/$COMMIT/status")
 
 if [ "$(echo "$STATUS" | jq -r '.state')" != "success" ]; then
-  error "CI unsuccessful on ${BLUE}$(echo "$STATUS" |
+  error "CI unsuccessful on $(echo "$STATUS" |
     jq -r -c '.statuses|map(select(.state != "success"))|map(.context)')"
   ask_confirmation
 fi;
@@ -175,7 +174,7 @@ fi;
 
 NEEDS_LABELS=$(echo "$PRDATA" | jq -rc '.labels | map(select(.name | match("needs:"))) | map(.name)')
 if [ "$NEEDS_LABELS" != "[]" ]; then
-  error "needs:something labels still present: ${BLUE}$NEEDS_LABELS"
+  error "needs:something labels still present: $NEEDS_LABELS"
   ask_confirmation
 fi
 
