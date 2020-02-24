@@ -34,6 +34,7 @@ val pf_nth_hyp_id         : Goal.goal sigma -> int -> Id.t
 val pf_last_hyp           : Goal.goal sigma -> named_declaration
 val pf_ids_of_hyps        : Goal.goal sigma -> Id.t list
 val pf_unsafe_type_of     : Goal.goal sigma -> constr -> types
+[@@ocaml.deprecated "Use [type_of] or retyping according to your needs."]
 val pf_type_of            : Goal.goal sigma -> constr -> evar_map * types
 val pf_hnf_type_of        : Goal.goal sigma -> constr -> types
 
@@ -83,6 +84,7 @@ module New : sig
   (** WRONG: To be avoided at all costs, it typechecks the term entirely but
      forgets the universe constraints necessary to retypecheck it *)
   val pf_unsafe_type_of : Proofview.Goal.t -> constr -> types
+  [@@ocaml.deprecated "Use [type_of] or retyping according to your needs."]
 
   (** This function does no type inference and expects an already well-typed term.
       It recomputes its type in the fastest way possible (no conversion is ever involved) *)

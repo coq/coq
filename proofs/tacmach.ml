@@ -76,7 +76,6 @@ let pf_nf                        = pf_reduce simpl
 let pf_nf_betaiota               = pf_reduce nf_betaiota
 let pf_compute                   = pf_reduce compute
 let pf_unfoldn ubinds            = pf_reduce (unfoldn ubinds)
-let pf_unsafe_type_of            = pf_reduce unsafe_type_of
 let pf_type_of                   = pf_reduce type_of
 let pf_get_type_of               = pf_reduce Retyping.get_type_of
 
@@ -116,9 +115,6 @@ module New = struct
 
   let pf_env = Proofview.Goal.env
   let pf_concl = Proofview.Goal.concl
-
-  let pf_unsafe_type_of gl t =
-    pf_apply unsafe_type_of gl t
 
   let pf_type_of gl t =
     pf_apply type_of gl t
@@ -182,4 +178,12 @@ module New = struct
   let pf_compute gl t = pf_apply compute gl t
 
   let pf_nf_evar gl t = nf_evar (project gl) t
+
+  (* deprecated *)
+  let pf_unsafe_type_of gl t =
+    pf_apply (unsafe_type_of[@warning "-3"]) gl t
+
 end
+
+(* deprecated *)
+let pf_unsafe_type_of            = pf_reduce unsafe_type_of[@warning "-3"]

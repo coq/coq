@@ -19,6 +19,7 @@ open Evd
 
 (** Typecheck a term and return its type. May trigger an evarmap leak. *)
 val unsafe_type_of : env -> evar_map -> constr -> types
+[@@ocaml.deprecated "Use [type_of] or retyping according to your needs."]
 
 (** Typecheck a term and return its type + updated evars, optionally refreshing
     universes *)
