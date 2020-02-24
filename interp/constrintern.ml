@@ -2168,6 +2168,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
             ltacvars;
             extra;
             intern_sign;
+            strict_check = not !interning_grammar;
           } in
           let (_, glb) = Genintern.generic_intern ist gen in
           Some glb

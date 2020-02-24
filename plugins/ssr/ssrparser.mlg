@@ -487,7 +487,7 @@ let term_annotation =
 (* Old terms *)
 let pr_ssrterm _ _ _ = pr_term
 let glob_ssrterm gs = function
-  | k, (_, Some c) -> k, Tacintern.intern_constr gs c
+  | k, (_, Some c) -> k, Constrmetaintern.intern_constr gs c
   | ct -> ct
 let subst_ssrterm s (k, c) = k, Tacsubst.subst_glob_constr_and_expr s c
 let interp_ssrterm _ gl t = Tacmach.project gl, t

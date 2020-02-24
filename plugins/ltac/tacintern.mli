@@ -23,11 +23,12 @@ type glob_sign = Genintern.glob_sign = {
   genv : Environ.env;
   extra : Genintern.Store.t;
   intern_sign : Genintern.intern_variable_status;
+  strict_check : bool;
 }
 
-val make_empty_glob_sign : unit -> glob_sign
+val make_empty_glob_sign : bool -> glob_sign
  (** build an empty [glob_sign] using [Global.env()] as
-     environment *)
+     environment; strict_check if true *)
 
 (** Main globalization functions *)
 
@@ -42,8 +43,6 @@ val intern_pure_tactic : glob_sign -> raw_tactic_expr -> glob_tactic_expr
 
 val intern_tactic_or_tacarg :
   glob_sign -> raw_tactic_expr -> Tacexpr.glob_tactic_expr
-
-val intern_constr : glob_sign -> constr_expr -> glob_constr_and_expr
 
 val intern_constr_with_bindings :
   glob_sign -> constr_expr * constr_expr bindings ->
@@ -60,8 +59,4 @@ val print_ltac : Libnames.qualid -> Pp.t
 
 (** Reduction expressions *)
 
-val intern_red_expr : glob_sign -> raw_red_expr -> glob_red_expr
 val dump_glob_red_expr : raw_red_expr -> unit
-
-(* Hooks *)
-val strict_check : bool ref

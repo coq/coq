@@ -1122,7 +1122,7 @@ let vernac_solve_existential ~pstate n com =
       Proof.V82.instantiate_evar (Global.env ()) n intern p) pstate
 
 let vernac_set_end_tac ~pstate tac =
-  let env = Genintern.empty_glob_sign (Global.env ()) in
+  let env = Genintern.empty_glob_sign true (Global.env ()) in
   let _, tac = Genintern.generic_intern env tac in
   (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
   Proof_global.set_endline_tactic tac pstate

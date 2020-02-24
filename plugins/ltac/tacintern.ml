@@ -11,10 +11,8 @@
 open Pp
 open CErrors
 open CAst
-open Pattern
 open Genredexpr
 open Glob_term
-open Tacred
 open Util
 open Names
 open Libnames
@@ -29,6 +27,8 @@ open Namegen
 open Tactypes
 open Tactics
 open Locus
+open Constrmetaintern
+open Redexprintern
 
 (** Globalization of tactic expressions :
     Conversion from [raw_tactic_expr] to [glob_tactic_expr] *)
@@ -44,9 +44,10 @@ type glob_sign = Genintern.glob_sign = {
   genv : Environ.env;
   extra : Genintern.Store.t;
   intern_sign : Genintern.intern_variable_status;
+  strict_check : bool;
 }
 
-let make_empty_glob_sign () = Genintern.empty_glob_sign (Global.env ())
+let make_empty_glob_sign strict = Genintern.empty_glob_sign strict (Global.env ())
 
 (* We have identifier <| global_reference <| constr *)
 
@@ -71,13 +72,11 @@ let intern_name l ist = function
   | Anonymous -> Anonymous
   | Name id -> Name (intern_ident l ist id)
 
-let strict_check = ref false
-
-let adjust_loc loc = if !strict_check then None else loc
+let adjust_loc strict loc = if strict then None else loc
 
 (* Globalize a name which must be bound -- actually just check it is bound *)
 let intern_hyp ist ({loc;v=id} as locid) =
-  if not !strict_check then
+  if not ist.strict_check then
     locid
   else if find_ident id ist then
     make id
@@ -204,22 +203,6 @@ let intern_binding_name ist x =
      and if a term w/o ltac vars, check the name is indeed quantified *)
   x
 
-let intern_constr_gen pattern_mode isarity {ltacvars=lfun; genv=env; extra; intern_sign} c =
-  let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
-  let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
-  let ltacvars = {
-    Constrintern.ltac_vars = lfun;
-    ltac_bound = Id.Set.empty;
-    ltac_extra = extra;
-  } in
-  let c' =
-    warn (Constrintern.intern_core scope ~pattern_mode ~ltacvars env Evd.(from_env env) intern_sign) c
-  in
-  (c',if !strict_check then None else Some c)
-
-let intern_constr = intern_constr_gen false false
-let intern_type = intern_constr_gen false true
-
 (* Globalize bindings *)
 let intern_binding ist = map (fun (b,c) ->
     intern_binding_name ist b,intern_constr ist c)
@@ -278,7 +261,7 @@ let intern_destruction_arg ist = function
   | clear,ElimOnConstr c -> clear,ElimOnConstr (intern_constr_with_bindings ist c)
   | clear,ElimOnAnonHyp n as x -> x
   | clear,ElimOnIdent {loc;v=id} ->
-      if !strict_check then
+      if ist.strict_check then
         (* If in a defined tactic, no intros-until *)
         let c, p = intern_constr ist (make @@ CRef (qualid_of_ident id, None)) in
         match DAst.get c with
@@ -286,46 +269,6 @@ let intern_destruction_arg ist = function
         | _ -> clear,ElimOnConstr ((c, p), NoBindings)
       else
         clear,ElimOnIdent (make ?loc id)
-
-let short_name = function
-  | {v=AN qid} when qualid_is_ident qid && not !strict_check ->
-    Some (make ?loc:qid.CAst.loc @@ qualid_basename qid)
-  | _ -> None
-
-let intern_evaluable_global_reference ist qid =
-  try evaluable_of_global_reference ist.genv (locate_global_with_alias ~head:true qid)
-  with Not_found ->
-  if qualid_is_ident qid && not !strict_check then EvalVarRef (qualid_basename qid)
-  else Nametab.error_global_not_found qid
-
-let intern_evaluable_reference_or_by_notation ist = function
-  | {v=AN r} -> intern_evaluable_global_reference ist r
-  | {v=ByNotation (ntn,sc);loc} ->
-      evaluable_of_global_reference ist.genv
-      (Notation.interp_notation_as_global_reference ?loc
-        GlobRef.(function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc)
-
-(* Globalize a reduction expression *)
-let intern_evaluable ist r =
-  let f ist r =
-    let e = intern_evaluable_reference_or_by_notation ist r in
-    let na = short_name r in
-    ArgArg (e,na)
-  in
-  match r with
-  | {v=AN qid} when qualid_is_ident qid && find_var (qualid_basename qid) ist ->
-    ArgVar (make ?loc:qid.CAst.loc @@ qualid_basename qid)
-  | {v=AN qid} when qualid_is_ident qid && not !strict_check && find_hyp (qualid_basename qid) ist ->
-    let id = qualid_basename qid in
-      ArgArg (EvalVarRef id, Some (make ?loc:qid.CAst.loc id))
-  | _ -> f ist r
-
-let intern_unfold ist (l,qid) = (l,intern_evaluable ist qid)
-
-let intern_flag ist red =
-  { red with rConst = List.map (intern_evaluable ist) red.rConst }
-
-let intern_constr_with_occurrences ist (l,c) = (l,intern_constr ist c)
 
 let intern_constr_pattern ist ~as_type ~ltacvars pc =
   let ltacvars = {
@@ -339,61 +282,6 @@ let intern_constr_pattern ist ~as_type ~ltacvars pc =
   let (glob,_ as c) = intern_constr_gen true false ist pc in
   let bound_names = Glob_ops.bound_glob_vars glob in
   metas,(bound_names,c,pat)
-
-let dummy_pat = PRel 0
-
-let intern_typed_pattern ist ~as_type ~ltacvars p =
-  (* we cannot ensure in non strict mode that the pattern is closed *)
-  (* keeping a constr_expr copy is too complicated and we want anyway to *)
-  (* type it, so we remember the pattern as a glob_constr only *)
-  let metas,pat =
-    if !strict_check then
-      let ltacvars = {
-          Constrintern.ltac_vars = ltacvars;
-          ltac_bound = Id.Set.empty;
-          ltac_extra = ist.extra;
-        } in
-      Constrintern.intern_constr_pattern ist.genv Evd.(from_env ist.genv) ~as_type ~ltacvars p
-    else
-      [], dummy_pat in
-  let (glob,_ as c) = intern_constr_gen true false ist p in
-  let bound_names = Glob_ops.bound_glob_vars glob in
-  metas,(bound_names,c,pat)
-
-let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
-  let interp_ref r =
-    try Inl (intern_evaluable ist r)
-    with e when CErrors.noncritical e ->
-      (* Compatibility. In practice, this means that the code above
-         is useless. Still the idea of having either an evaluable
-         ref or a pattern seems interesting, with "head" reduction
-         in case of an evaluable ref, and "strong" reduction in the
-         subterm matched when a pattern *)
-      let r = match r with
-      | {v=AN r} -> r
-      | {loc} -> (qualid_of_path ?loc (Nametab.path_of_global (smart_global r))) in
-      let sign = {
-        Constrintern.ltac_vars = ist.ltacvars;
-        ltac_bound = Id.Set.empty;
-        ltac_extra = ist.extra;
-      } in
-      let c = Constrintern.interp_reference sign r in
-      match DAst.get c with
-      | GRef (r,None) ->
-          Inl (ArgArg (evaluable_of_global_reference ist.genv r,None))
-      | GVar id ->
-          let r = evaluable_of_global_reference ist.genv (GlobRef.VarRef id) in
-          Inl (ArgArg (r,None))
-      | _ ->
-          let bound_names = Glob_ops.bound_glob_vars c in
-          Inr (bound_names,(c,None),dummy_pat) in
-  (l, match p with
-  | Inl r -> interp_ref r
-  | Inr { v = CAppExpl((None,r,None),[]) } ->
-      (* We interpret similarly @ref and ref *)
-      interp_ref (make @@ AN r)
-  | Inr c ->
-      Inr (snd (intern_typed_pattern ist ~as_type:false ~ltacvars:ist.ltacvars c)))
 
 (* This seems fairly hacky, but it's the first way I've found to get proper
    globalization of [unfold].  --adamc *)
@@ -410,20 +298,6 @@ let dump_glob_red_expr = function
           (Smartlocate.smart_global r)
       with e when CErrors.noncritical e -> ()) grf.rConst
   | _ -> ()
-
-let intern_red_expr ist = function
-  | Unfold l -> Unfold (List.map (intern_unfold ist) l)
-  | Fold l -> Fold (List.map (intern_constr ist) l)
-  | Cbv f -> Cbv (intern_flag ist f)
-  | Cbn f -> Cbn (intern_flag ist f)
-  | Lazy f -> Lazy (intern_flag ist f)
-  | Pattern l -> Pattern (List.map (intern_constr_with_occurrences ist) l)
-  | Simpl (f,o) ->
-    Simpl (intern_flag ist f,
-           Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
-  | CbvVm o -> CbvVm (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
-  | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
-  | (Red _ | Hnf | ExtraRedExpr _ as r ) -> r
 
 let intern_in_hyp_as ist lf (id,ipat) =
   (intern_hyp ist id, Option.map (intern_intro_pattern lf ist) ipat)
@@ -584,13 +458,13 @@ and intern_tactic_seq onlytac ist = function
   | TacAtom { loc; v=t } ->
       let lf = ref ist.ltacvars in
       let t = intern_atomic lf ist t in
-      !lf, TacAtom (CAst.make ?loc:(adjust_loc loc) t)
+      !lf, TacAtom (CAst.make ?loc:(adjust_loc ist.strict_check loc) t)
   | TacFun tacfun -> ist.ltacvars, TacFun (intern_tactic_fun ist tacfun)
   | TacLetIn (isrec,l,u) ->
       let ltacvars = Id.Set.union (extract_let_names l) ist.ltacvars in
       let ist' = { ist with ltacvars } in
       let l = List.map (fun (n,b) ->
-          (n,intern_tacarg !strict_check false (if isrec then ist' else ist) b)) l in
+          (n,intern_tacarg ist.strict_check false (if isrec then ist' else ist) b)) l in
       ist.ltacvars, TacLetIn (isrec,l,intern_tactic onlytac ist' u)
 
   | TacMatchGoal (lz,lr,lmr) ->
@@ -661,14 +535,14 @@ and intern_tactic_seq onlytac ist = function
   | TacAlias { loc; v=(s,l) } ->
       let alias = Tacenv.interp_alias s in
       Option.iter (fun o -> warn_deprecated_alias ?loc (s,o)) @@ alias.Tacenv.alias_deprecation;
-      let l = List.map (intern_tacarg !strict_check false ist) l in
+      let l = List.map (intern_tacarg ist.strict_check false ist) l in
       ist.ltacvars, TacAlias (CAst.make ?loc (s,l))
   | TacML { loc; v=(opn,l) } ->
       let _ignore = Tacenv.interp_ml_tactic opn in
-      ist.ltacvars, TacML CAst.(make ?loc (opn,List.map (intern_tacarg !strict_check false ist) l))
+      ist.ltacvars, TacML CAst.(make ?loc (opn,List.map (intern_tacarg ist.strict_check false ist) l))
 
 and intern_tactic_as_arg loc onlytac ist a =
-  match intern_tacarg !strict_check onlytac ist a with
+  match intern_tacarg ist.strict_check onlytac ist a with
   | TacCall _ | Reference _
   | TacGeneric _ as a -> TacArg CAst.(make ?loc a)
   | Tacexp a -> a
@@ -690,7 +564,7 @@ and intern_tacarg strict onlytac ist = function
   | TacCall { loc; v=(f,l) } ->
       TacCall (CAst.make ?loc (
         intern_applied_tactic_reference ist f,
-        List.map (intern_tacarg !strict_check false ist) l))
+        List.map (intern_tacarg ist.strict_check false ist) l))
   | TacFreshId x -> TacFreshId (List.map (intern_string_or_var ist) x)
   | TacPretype c -> TacPretype (intern_constr ist c)
   | TacNumgoals -> TacNumgoals
@@ -741,15 +615,12 @@ and intern_genarg ist (GenArg (Rawwit wit, x)) =
 (** Other entry points *)
 
 let glob_tactic x =
-  Flags.with_option strict_check
-    (intern_pure_tactic (make_empty_glob_sign ())) x
+  intern_pure_tactic (make_empty_glob_sign true) x
 
 let glob_tactic_env l env x =
   let ltacvars =
     List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l in
-  Flags.with_option strict_check
-  (intern_pure_tactic { (Genintern.empty_glob_sign env) with ltacvars })
-    x
+  intern_pure_tactic { (Genintern.empty_glob_sign true env) with ltacvars } x
 
 let split_ltac_fun = function
   | TacFun (l,t) -> (l,t)
@@ -809,7 +680,7 @@ let intern_ident' ist id =
   (ist, intern_ident lf ist id)
 
 let intern_ltac ist tac =
-  Flags.with_option strict_check (fun () -> intern_pure_tactic ist tac) ()
+  intern_pure_tactic { ist with strict_check = true } tac
 
 let () =
   Genintern.register_intern0 wit_int_or_var (lift intern_int_or_var);

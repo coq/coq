@@ -152,7 +152,7 @@ let pr_globc env sigma _prc _prlc _prtac (_,glob) =
 
 let interp_glob ist gl (t,_) = Tacmach.project gl , (ist,t)
 
-let glob_glob = Tacintern.intern_constr
+let glob_glob = Constrmetaintern.intern_constr
 
 let pr_lconstr env sigma _ prc _ c = prc env sigma c
 

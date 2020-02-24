@@ -832,7 +832,7 @@ let wit_rpatternty = add_genarg "rpatternty" (fun env sigma -> pr_pattern)
 
 let glob_ssrterm gs = function
   | k, (_, Some c), None ->
-      let x = Tacintern.intern_constr gs c in
+      let x = Constrmetaintern.intern_constr gs c in
       k, (fst x, Some c), None
   | ct -> ct
 

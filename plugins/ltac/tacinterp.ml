@@ -1717,7 +1717,7 @@ let interp_tac_gen lfun avoid_ids debug t =
   let ist = { lfun; poly; extra } in
   let ltacvars = Id.Map.domain lfun in
   interp_tactic ist
-    (intern_pure_tactic { (Genintern.empty_glob_sign env) with ltacvars } t)
+    (intern_pure_tactic { (Genintern.empty_glob_sign false env) with ltacvars } t)
   end
 
 let interp t = interp_tac_gen Id.Map.empty Id.Set.empty (get_debug()) t
@@ -1726,7 +1726,7 @@ let interp t = interp_tac_gen Id.Map.empty Id.Set.empty (get_debug()) t
 (* [global] means that [t] should be internalized outside of goals. *)
 let hide_interp global t ot =
   let hide_interp env =
-    let ist = Genintern.empty_glob_sign env in
+    let ist = Genintern.empty_glob_sign false env in
     let te = intern_pure_tactic ist t in
     let t = eval_tactic te in
     match ot with
@@ -1849,8 +1849,8 @@ let interp_ltac_constr ist c k = Ftactic.run (interp_ltac_constr ist c) k
 
 let interp_redexp env sigma r =
   let ist = default_ist () in
-  let gist = Genintern.empty_glob_sign env in
-  interp_red_expr ist env sigma (intern_red_expr gist r)
+  let gist = Genintern.empty_glob_sign true env in
+  interp_red_expr ist env sigma (Redexprintern.intern_red_expr gist r)
 
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)

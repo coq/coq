@@ -10,7 +10,9 @@ Locality
 Egramml
 Vernacextend
 Ppvernac
+Constrmetaintern
 Constrmetainterp
+Redexprintern
 Redexprinterp
 Proof_using
 Egramcoq

@@ -789,15 +789,9 @@ let rec intern_rec env {loc;v=e} = match e with
   (* External objects do not have access to the named context because this is
      not stable by dynamic semantics. *)
   let genv = Global.env_of_context Environ.empty_named_context_val in
-  let ist = empty_glob_sign genv in
+  let ist = empty_glob_sign env.env_str genv in
   let ist = { ist with extra = Store.set ist.extra ltac2_env env } in
-  let arg, tpe =
-    if env.env_str then
-      let arg () = obj.ml_intern self ist arg in
-      Flags.with_option Ltac_plugin.Tacintern.strict_check arg ()
-    else
-      obj.ml_intern self ist arg
-  in
+  let arg, tpe = obj.ml_intern self ist arg in
   let e = match arg with
   | GlbVal arg -> GTacExt (tag, arg)
   | GlbTacexpr e -> e
@@ -1514,7 +1508,7 @@ let () =
     | None ->
       (* Only happens when Ltac2 is called from a toplevel ltac1 quotation *)
       let env = empty_env () in
-      if !Ltac_plugin.Tacintern.strict_check then env
+      if ist.strict_check then env
       else { env with env_str = false }
     | Some env -> env
     in
@@ -1536,7 +1530,7 @@ let () =
     | None ->
       (* Only happens when Ltac2 is called from a constr quotation *)
       let env = empty_env () in
-      if !Ltac_plugin.Tacintern.strict_check then env
+      if ist.strict_check then env
       else { env with env_str = false }
     | Some env -> env
     in
@@ -1566,7 +1560,7 @@ let () =
     | None ->
       (* Only happens when Ltac2 is called from a constr or ltac1 quotation *)
       let env = empty_env () in
-      if !Ltac_plugin.Tacintern.strict_check then env
+      if ist.strict_check then env
       else { env with env_str = false }
     | Some env -> env
     in
