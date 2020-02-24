@@ -52,3 +52,5 @@ val generic_raw_print : rlevel generic_argument printer
 val generic_glb_print : glevel generic_argument printer
 val generic_top_print : tlevel generic_argument top_printer
 val generic_val_print : Geninterp.Val.t top_printer
+
+val pr_value : (Environ.env * Evd.evar_map) option -> Geninterp.Val.t -> Pp.t

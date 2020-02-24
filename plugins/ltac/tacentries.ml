@@ -641,7 +641,7 @@ let lift_constr_tac_to_ml_tac vars tac =
     | Name id ->
       let c = Id.Map.find id ist.Geninterp.lfun in
       try Some (Taccoerce.Value.of_constr @@ Taccoerce.coerce_to_closed_constr env c)
-      with Taccoerce.CannotCoerceTo ty ->
+      with Constrmetainterp.CannotCoerceTo ty ->
         Taccoerce.error_ltac_variable dummy_id (Some (env,sigma)) c ty
     in
     let args = List.map_filter map vars in

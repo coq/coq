@@ -153,3 +153,20 @@ let top_print wit v = (Print.obj wit).top v
 let generic_raw_print (GenArg (Rawwit w, v)) = raw_print w v
 let generic_glb_print (GenArg (Glbwit w, v)) = glb_print w v
 let generic_top_print (GenArg (Topwit w, v)) = top_print w v
+
+let pr_argument_type arg =
+  let Val.Dyn (tag, _) = arg in
+  Val.pr tag
+
+(* Displays a value *)
+
+let pr_value env v =
+  let pr_with_env pr =
+    match env with
+    | Some (env,sigma) -> pr env sigma
+    | None -> str "a value of type" ++ spc () ++ pr_argument_type v in
+  match generic_val_print v with
+  | TopPrinterBasic pr -> pr ()
+  | TopPrinterNeedsContext pr -> pr_with_env pr
+  | TopPrinterNeedsContextAndLevel { default_already_surrounded; printer } ->
+     pr_with_env (fun env sigma -> printer env sigma default_already_surrounded)

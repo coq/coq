@@ -19,9 +19,6 @@ open Tactypes
     interpretation. Those functions examinate dynamic types and try to return
     something sensible according to the object content. *)
 
-exception CannotCoerceTo of string
-(** Exception raised whenever a coercion failed. *)
-
 (** {5 High-level access to values}
 
   The [of_*] functions cast a given argument into a value. The [to_*] do the
@@ -94,9 +91,6 @@ val wit_constr_context : (Empty.t, Empty.t, EConstr.constr) genarg_type
 
 val wit_constr_under_binders : (Empty.t, Empty.t, Ltac_pretype.constr_under_binders) genarg_type
 
-val error_ltac_variable : ?loc:Loc.t -> Id.t ->
-  (Environ.env * Evd.evar_map) option -> Value.t -> string -> 'a
-
 (** Abstract application, to print ltac functions *)
 type appl =
   | UnnamedAppl (** For generic applications: nothing is printed *)
@@ -110,4 +104,5 @@ type tacvalue =
 
 val wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type
 
-val pr_value : (Environ.env * Evd.evar_map) option -> Geninterp.Val.t -> Pp.t
+val error_ltac_variable : ?loc:Loc.t -> Id.t ->
+  (Environ.env * Evd.evar_map) option -> Value.t -> string -> 'a

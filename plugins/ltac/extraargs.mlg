@@ -18,9 +18,9 @@ open Pcoq.Constr
 open Names
 open Tacmach
 open Tacexpr
-open Taccoerce
 open Tacinterp
 open Locus
+open Constrmetainterp
 
 (** Adding scopes for generic arguments not defined through ARGUMENT EXTEND *)
 

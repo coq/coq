@@ -19,8 +19,7 @@ open Stdarg
 open Tacarg
 open Geninterp
 open Pp
-
-exception CannotCoerceTo of string
+open Constrmetainterp
 
 let base_val_typ wit =
   match val_tag (topwit wit) with Val.Base t -> t | _ -> CErrors.anomaly (Pp.str "Not a base val.")
@@ -398,26 +397,4 @@ let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
              (fun _ -> Genprint.TopPrinterBasic (fun () -> str "<tactic closure>")) in
   wit
 
-let pr_argument_type arg =
-  let Val.Dyn (tag, _) = arg in
-  Val.pr tag
-
-(** TODO: unify printing of generic Ltac values in case of coercion failure. *)
-
-(* Displays a value *)
-let pr_value env v =
-  let pr_with_env pr =
-    match env with
-    | Some (env,sigma) -> pr env sigma
-    | None -> str "a value of type" ++ spc () ++ pr_argument_type v in
-  let open Genprint in
-  match generic_val_print v with
-  | TopPrinterBasic pr -> pr ()
-  | TopPrinterNeedsContext pr -> pr_with_env pr
-  | TopPrinterNeedsContextAndLevel { default_already_surrounded; printer } ->
-     pr_with_env (fun env sigma -> printer env sigma default_already_surrounded)
-
-let error_ltac_variable ?loc id env v s =
-   CErrors.user_err ?loc  (str "Ltac variable " ++ Id.print id ++
-   strbrk " is bound to" ++ spc () ++ pr_value env v ++ spc () ++
-   strbrk "which cannot be coerced to " ++ str s ++ str".")
+let error_ltac_variable ?loc x = error_metalanguage_variable "Ltac" ?loc x

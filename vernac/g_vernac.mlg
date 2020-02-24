@@ -1226,3 +1226,83 @@ GRAMMAR EXTEND Gram
       | "as"; IDENT "strict"; IDENT "pattern" -> { Notation_term.AsStrictPattern } ] ]
   ;
 END
+
+{
+
+open Locus
+open Genredexpr
+
+let all_with delta = Redops.make_red_flag [FBeta;FMatch;FFix;FCofix;FZeta;delta]
+
+}
+
+(* Reduction expressions *)
+
+GRAMMAR EXTEND Gram
+  GLOBAL: red_expr occs_nums occs pattern_occ;
+  int_or_var:
+    [ [ n = integer  -> { ArgArg n }
+      | id = identref -> { ArgVar id } ] ]
+  ;
+  nat_or_var:
+    [ [ n = natural  -> { ArgArg n }
+      | id = identref -> { ArgVar id } ] ]
+  ;
+  occs_nums:
+    [ [ nl = LIST1 nat_or_var -> { OnlyOccurrences nl }
+      | "-"; n = nat_or_var; nl = LIST0 int_or_var ->
+          (* have used int_or_var instead of nat_or_var for compatibility *)
+         { AllOccurrencesBut (List.map (Locusops.or_var_map abs) (n::nl)) } ] ]
+  ;
+  occs:
+    [ [ "at"; occs = occs_nums -> { occs } | -> { AllOccurrences } ] ]
+  ;
+  pattern_occ:
+    [ [ c = constr; nl = occs -> { (nl,c) } ] ]
+  ;
+  ref_or_pattern_occ:
+    (* If a string, it is interpreted as a ref
+       (anyway a Coq string does not reduce) *)
+    [ [ c = smart_global; nl = occs -> { nl,Inl c }
+      | c = constr; nl = occs -> { nl,Inr c } ] ]
+  ;
+  unfold_occ:
+    [ [ c = smart_global; nl = occs -> { (nl,c) } ] ]
+  ;
+  red_flags:
+    [ [ IDENT "beta" -> { [FBeta] }
+      | IDENT "iota" -> { [FMatch;FFix;FCofix] }
+      | IDENT "match" -> { [FMatch] }
+      | IDENT "fix" -> { [FFix] }
+      | IDENT "cofix" -> { [FCofix] }
+      | IDENT "zeta" -> { [FZeta] }
+      | IDENT "delta"; d = delta_flag -> { [d] }
+    ] ]
+  ;
+  delta_flag:
+    [ [ "-"; "["; idl = LIST1 smart_global; "]" -> { FDeltaBut idl }
+      | "["; idl = LIST1 smart_global; "]" -> { FConst idl }
+      | -> { FDeltaBut [] }
+    ] ]
+  ;
+  strategy_flag:
+    [ [ s = LIST1 red_flags -> { Redops.make_red_flag (List.flatten s) }
+      | d = delta_flag -> { all_with d }
+    ] ]
+  ;
+  red_expr:
+    [ [ IDENT "red" -> { Red false }
+      | IDENT "hnf" -> { Hnf }
+      | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ -> { Simpl (all_with d,po) }
+      | IDENT "cbv"; s = strategy_flag -> { Cbv s }
+      | IDENT "cbn"; s = strategy_flag -> { Cbn s }
+      | IDENT "lazy"; s = strategy_flag -> { Lazy s }
+      | IDENT "compute"; delta = delta_flag -> { Cbv (all_with delta) }
+      | IDENT "vm_compute"; po = OPT ref_or_pattern_occ -> { CbvVm po }
+      | IDENT "native_compute"; po = OPT ref_or_pattern_occ -> { CbvNative po }
+      | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> { Unfold ul }
+      | IDENT "fold"; cl = LIST1 constr -> { Fold cl }
+      | IDENT "pattern"; pl = LIST1 pattern_occ SEP"," -> { Pattern pl }
+      | s = IDENT -> { ExtraRedExpr s } ] ]
+  ;
+END

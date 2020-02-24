@@ -16,18 +16,17 @@ open Util
 open Names
 open Namegen
 open Tacexpr
-open Genredexpr
 open Constrexpr
 open Libnames
 open Tok
 open Tactypes
 open Tactics
 open Inv
+open Pcoq
 open Locus
 
-open Pcoq
-
-
+(* See g_vernac.mlg *)
+open Genredexpr
 let all_with delta = Redops.make_red_flag [FBeta;FMatch;FFix;FCofix;FZeta;delta]
 
 let tactic_kw = [ "->"; "<-" ; "by" ]
@@ -196,15 +195,11 @@ GRAMMAR EXTEND Gram
   bindings red_expr int_or_var open_constr uconstr
   simple_intropattern in_clause clause_dft_concl hypident destruction_arg;
 
+  (* An identifier or a quotation meta-variable *)
   int_or_var:
     [ [ n = integer  -> { ArgArg n }
       | id = identref -> { ArgVar id } ] ]
   ;
-  nat_or_var:
-    [ [ n = natural  -> { ArgArg n }
-      | id = identref -> { ArgVar id } ] ]
-  ;
-  (* An identifier or a quotation meta-variable *)
   id_or_meta:
     [ [ id = identref -> { id } ] ]
   ;
@@ -234,27 +229,6 @@ GRAMMAR EXTEND Gram
       | c1 = constr; "with"; c2 = constr -> { (Some (AllOccurrences,c1),c2) }
       | c1 = constr; "at"; occs = occs_nums; "with"; c2 = constr ->
           { (Some (occs,c1), c2) } ] ]
-  ;
-  occs_nums:
-    [ [ nl = LIST1 nat_or_var -> { OnlyOccurrences nl }
-      | "-"; n = nat_or_var; nl = LIST0 int_or_var ->
-          (* have used int_or_var instead of nat_or_var for compatibility *)
-         { AllOccurrencesBut (List.map (Locusops.or_var_map abs) (n::nl)) } ] ]
-  ;
-  occs:
-    [ [ "at"; occs = occs_nums -> { occs } | -> { AllOccurrences } ] ]
-  ;
-  pattern_occ:
-    [ [ c = constr; nl = occs -> { (nl,c) } ] ]
-  ;
-  ref_or_pattern_occ:
-    (* If a string, it is interpreted as a ref
-       (anyway a Coq string does not reduce) *)
-    [ [ c = smart_global; nl = occs -> { nl,Inl c }
-      | c = constr; nl = occs -> { nl,Inr c } ] ]
-  ;
-  unfold_occ:
-    [ [ c = smart_global; nl = occs -> { (nl,c) } ] ]
   ;
   intropatterns:
     [ [ l = LIST0 intropattern -> { l } ] ]
@@ -323,6 +297,16 @@ GRAMMAR EXTEND Gram
   with_bindings:
     [ [ "with"; bl = bindings -> { bl } | -> { NoBindings } ] ]
   ;
+  (* Begin redundant copy of entries in g_vernac.mlg *)
+  ref_or_pattern_occ:
+    (* If a string, it is interpreted as a ref
+       (anyway a Coq string does not reduce) *)
+    [ [ c = smart_global; nl = occs -> { nl,Inl c }
+      | c = constr; nl = occs -> { nl,Inr c } ] ]
+  ;
+  unfold_occ:
+    [ [ c = smart_global; nl = occs -> { (nl,c) } ] ]
+  ;
   red_flags:
     [ [ IDENT "beta" -> { [FBeta] }
       | IDENT "iota" -> { [FMatch;FFix;FCofix] }
@@ -344,21 +328,7 @@ GRAMMAR EXTEND Gram
       | d = delta_flag -> { all_with d }
     ] ]
   ;
-  red_expr:
-    [ [ IDENT "red" -> { Red false }
-      | IDENT "hnf" -> { Hnf }
-      | IDENT "simpl"; d = delta_flag; po = OPT ref_or_pattern_occ -> { Simpl (all_with d,po) }
-      | IDENT "cbv"; s = strategy_flag -> { Cbv s }
-      | IDENT "cbn"; s = strategy_flag -> { Cbn s }
-      | IDENT "lazy"; s = strategy_flag -> { Lazy s }
-      | IDENT "compute"; delta = delta_flag -> { Cbv (all_with delta) }
-      | IDENT "vm_compute"; po = OPT ref_or_pattern_occ -> { CbvVm po }
-      | IDENT "native_compute"; po = OPT ref_or_pattern_occ -> { CbvNative po }
-      | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> { Unfold ul }
-      | IDENT "fold"; cl = LIST1 constr -> { Fold cl }
-      | IDENT "pattern"; pl = LIST1 pattern_occ SEP"," -> { Pattern pl }
-      | s = IDENT -> { ExtraRedExpr s } ] ]
-  ;
+  (* End redundant copy of entries in g_vernac.mlg *)
   hypident:
     [ [ id = id_or_meta ->
         { let id : lident = id in
@@ -647,6 +617,14 @@ GRAMMAR EXTEND Gram
       | IDENT "inversion"; hyp = quantified_hypothesis;
           "using"; c = constr; cl = in_hyp_list ->
             { TacAtom (CAst.make ~loc @@ TacInversion (InversionUsing (c,cl), hyp)) }
+
+      (* Below, one should only have
+
+      | red_expr; cl = clause_dft_concl ->
+          { TacAtom (CAst.make ~loc @@ TacReduce (red_expr, cl)) }
+
+        but gramlib does not factorize it, so we expand it instead
+      *)
 
       (* Conversion *)
       | IDENT "red"; cl = clause_dft_concl ->

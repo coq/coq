@@ -44,8 +44,12 @@ module Vernac_ =
     let syntax = gec_vernac "syntax_command"
     let vernac_control = gec_vernac "Vernac.vernac_control"
     let rec_definition = gec_vernac "Vernac.rec_definition"
-    let red_expr = new_entry utactic "red_expr"
     let hint_info = gec_vernac "hint_info"
+    (* Reduction expressions *)
+    let pattern_occ = new_entry utactic "pattern_occ"
+    let occs = new_entry utactic "occs"
+    let occs_nums = new_entry utactic "occs_nums"
+    let red_expr = new_entry utactic "red_expr"
     (* Main vernac entry *)
     let main_entry = Entry.create "vernac"
     let noedit_mode = gec_vernac "noedit_command"

@@ -27,6 +27,9 @@ module Vernac_ :
     val noedit_mode : vernac_expr Entry.t
     val command_entry : vernac_expr Entry.t
     val main_entry : vernac_control option Entry.t
+    val pattern_occ : Constrexpr.constr_expr Locus.with_occurrences Entry.t
+    val occs : Locus.occurrences_expr Entry.t
+    val occs_nums : Locus.occurrences_expr Entry.t
     val red_expr : raw_red_expr Entry.t
     val hint_info : Hints.hint_info_expr Entry.t
   end
