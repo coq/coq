@@ -24,9 +24,6 @@ open Attributes
 
 module NamedDecl = Context.Named.Declaration
 
-(** TODO: make this function independent of Ltac *)
-let (f_interp_redexp, interp_redexp_hook) = Hook.make ()
-
 (* Utility functions, at some point they should all disappear and
    instead enviroment/state selection should be done at the Vernac DSL
    level. *)
@@ -558,6 +555,29 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let name = vernac_definition_name lid local in
   start_lemma_com ~program_mode ~poly ~scope:local ~kind:(Decls.IsDefinition kind) ?hook [(name, pl), (bl, t)]
 
+
+module CRS : Redexprinterp.RedExprCoercionSig =
+struct
+  module N = struct
+    let trace f ist env evd t = f env evd t
+    let coerce_to_uconstr t = assert false
+    let coerce_to_constr env t = assert false
+    let coerce_to_constr_list env t = assert false
+    let coerce_var_to_ident b env evd t = assert false
+    let name = ""
+  end
+  let coerce_to_evaluable_ref a b c = assert false
+  let coerce_to_closed_constr a b = assert false
+  let coerce_to_int_or_var_list a = assert false
+  let coerce_to_int a = assert false
+end
+
+module CR = Redexprinterp.Make(CRS)
+let interp_redexp poly env sigma r =
+  let ist = Geninterp.{ lfun = Id.Map.empty; poly; extra = TacStore.empty } in
+  let gist = Genintern.empty_glob_sign true env in
+  CR.interp_red_expr ist env sigma (Redexprintern.intern_red_expr gist r)
+
 let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality discharge in
@@ -569,7 +589,7 @@ let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt 
     | Some r ->
       let env = Global.env () in
       let sigma = Evd.from_env env in
-      Some (snd (Hook.get f_interp_redexp env sigma r)) in
+      Some (snd (interp_redexp atts.polymorphic env sigma r)) in
   let do_definition =
     ComDefinition.(if program_mode then do_definition_program else do_definition) in
   do_definition ~name:name.v
@@ -1592,7 +1612,8 @@ let vernac_check_may_eval ~pstate ~atts redexp glopt rc =
         Prettyp.print_judgment env sigma j ++
         pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
     | Some r ->
-        let (sigma,r_interp) = Hook.get f_interp_redexp env sigma r in
+        let poly = Attributes.(parse polymorphic atts) in
+        let (sigma,r_interp) = interp_redexp poly env sigma r in
         let redfun env evm c =
           let (redfun, _) = Redexpr.reduction_of_red_expr env r_interp in
           let (_, c) = redfun env evm c in
@@ -1606,7 +1627,7 @@ let vernac_declare_reduction ~local s r =
   let local = Option.default false local in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  Redexpr.declare_red_expr local s (snd (Hook.get f_interp_redexp env sigma r))
+  Redexpr.declare_red_expr local s (snd (interp_redexp false (*TODO*) env sigma r))
 
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =

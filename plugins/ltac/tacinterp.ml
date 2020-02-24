@@ -1888,5 +1888,3 @@ let () =
       optkey   = ["Ltac"; "Backtrace"];
       optread  = (fun () -> !log_trace);
       optwrite = (fun b -> log_trace := b) }
-
-let () = Hook.set Vernacentries.interp_redexp_hook interp_redexp

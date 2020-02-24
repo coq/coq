@@ -18,9 +18,5 @@ val translate_vernac
 val vernac_require :
   Libnames.qualid option -> bool option -> Libnames.qualid list -> unit
 
-(** Hook to dissappear when #8240 is fixed *)
-val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr ->
-  Evd.evar_map * Redexpr.red_expr) Hook.t
-
 (** Miscellaneous stuff *)
 val command_focus : unit Proof.focus_kind
