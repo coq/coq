@@ -49,9 +49,12 @@ let load_inductive i ((sp, kn), names) =
   let names = inductive_names sp kn names in
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until i) sp ref ) names
 
-let open_inductive i ((sp, kn), names) =
+let open_inductive f i ((sp, kn), names) =
   let names = inductive_names sp kn names in
-  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Exactly i) sp ref) names
+  List.iter (fun (sp, ref) ->
+      if Libobject.in_filter_ref ref f then
+        Nametab.push (Nametab.Exactly i) sp ref)
+    names
 
 let cache_inductive ((sp, kn), names) =
   let names = inductive_names sp kn names in
@@ -65,7 +68,7 @@ let objInductive : inductive_obj Libobject.Dyn.tag =
   declare_object_full {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
     load_function = load_inductive;
-    open_function = todo_filter open_inductive;
+    open_function = open_inductive;
     classify_function = (fun a -> Substitute a);
     subst_function = ident_subst_function;
     discharge_function = discharge_inductive;

@@ -92,7 +92,7 @@ val filter_and : open_filter -> open_filter -> open_filter option
 
 val filter_or :  open_filter -> open_filter -> open_filter
 
-val todo_filter : (int -> object_name * 'a -> unit) -> open_filter -> int -> object_name * 'a -> unit
+val in_filter_ref : Names.GlobRef.t -> open_filter -> bool
 
 (** The default object is a "Keep" object with empty methods.
    Object creators are advised to use the construction

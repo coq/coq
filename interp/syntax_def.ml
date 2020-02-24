@@ -67,11 +67,18 @@ let subst_syntax_constant (subst,(local,syndef)) =
 let classify_syntax_constant (local,_ as o) =
   if local then Dispose else Substitute o
 
+let filtered_open_syntax_constant f i ((_,kn),_ as o) =
+  let in_f = match f with
+    | Unfiltered -> true
+    | Names ns -> Globnames.(ExtRefSet.mem (SynDef kn) ns)
+  in
+  if in_f then open_syntax_constant i o
+
 let in_syntax_constant : (bool * syndef) -> obj =
   declare_object {(default_object "SYNDEF") with
     cache_function = cache_syntax_constant;
     load_function = load_syntax_constant;
-    open_function = todo_filter open_syntax_constant;
+    open_function = filtered_open_syntax_constant;
     subst_function = subst_syntax_constant;
     classify_function = classify_syntax_constant }
 

@@ -28,8 +28,6 @@ let simple_open f filter i o = match filter with
   | Unfiltered -> f i o
   | Names _ -> ()
 
-let todo_filter = simple_open
-
 let filter_and f1 f2 = match f1, f2 with
   | Unfiltered, f | f, Unfiltered -> Some f
   | Names n1, Names n2 ->
@@ -40,6 +38,10 @@ let filter_and f1 f2 = match f1, f2 with
 let filter_or f1 f2 = match f1, f2 with
   | Unfiltered, f | f, Unfiltered -> Unfiltered
   | Names n1, Names n2 -> Names (NSet.union n1 n2)
+
+let in_filter_ref gr = function
+  | Unfiltered -> true
+  | Names ns -> NSet.mem (Globnames.TrueGlobal gr) ns
 
 type 'a object_declaration = {
   object_name : string;
