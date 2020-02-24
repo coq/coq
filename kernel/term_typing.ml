@@ -61,7 +61,7 @@ let feedback_completion_typecheck =
       Feedback.feedback ~id:state_id Feedback.Complete)
 
 type typing_context =
-| MonoTyCtx of Environ.env * unsafe_type_judgment * Univ.ContextSet.t * Id.Set.t * Stateid.t option
+| MonoTyCtx of Environ.env * unsafe_type_judgment * Id.Set.t * Stateid.t option
 | PolyTyCtx of Environ.env * unsafe_type_judgment * Univ.universe_level_subst * Univ.AUContext.t * Id.Set.t * Stateid.t option
 
 let infer_declaration env (dcl : constant_entry) =
@@ -155,7 +155,7 @@ let infer_opaque env = function
       let env = push_context_set ~strict:true univs env in
       let { opaque_entry_feedback = feedback_id; _ } = c in
       let tyj = Typeops.infer_type env typ in
-      let context = MonoTyCtx (env, tyj, univs, c.opaque_entry_secctx, feedback_id) in
+      let context = MonoTyCtx (env, tyj, c.opaque_entry_secctx, feedback_id) in
       let def = OpaqueDef () in
       {
         Cooking.cook_body = def;
@@ -257,10 +257,8 @@ let build_constant_declaration env result =
     const_typing_flags = Environ.typing_flags env }
 
 let check_delayed (type a) (handle : a effect_handler) tyenv (body : a proof_output) = match tyenv with
-| MonoTyCtx (env, tyj, univs, declared, feedback_id) ->
+| MonoTyCtx (env, tyj, declared, feedback_id) ->
   let ((body, uctx), side_eff) = body in
-  (* don't redeclare universes which are declared for the type *)
-  let uctx = Univ.ContextSet.diff uctx univs in
   let (body, uctx', valid_signatures) = handle env body side_eff in
   let uctx = Univ.ContextSet.union uctx uctx' in
   let env = push_context_set uctx env in
