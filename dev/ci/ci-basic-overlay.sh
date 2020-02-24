@@ -334,7 +334,7 @@
 ########################################################################
 # fiat_crypto
 ########################################################################
-: "${fiat_crypto_CI_REF:=5674566a11eafdbee87ea2730130fe396b09add8}"
+: "${fiat_crypto_CI_REF:=e9153f6b2ece3865a8f50675a598a24e23e99590}"
 : "${fiat_crypto_CI_GITURL:=https://github.com/mit-plv/fiat-crypto}"
 : "${fiat_crypto_CI_ARCHIVEURL:=${fiat_crypto_CI_GITURL}/archive}"
 
@@ -388,7 +388,7 @@
 ########################################################################
 # bedrock2
 ########################################################################
-: "${bedrock2_CI_REF:=2bc8f974854994c4f6330c7021cd9bb28b64bac7}"
+: "${bedrock2_CI_REF:=3585b23d66ed5b64523d9e4866a65ec23675ac11}"
 : "${bedrock2_CI_GITURL:=https://github.com/mit-plv/bedrock2}"
 : "${bedrock2_CI_ARCHIVEURL:=${bedrock2_CI_GITURL}/archive}"
 
