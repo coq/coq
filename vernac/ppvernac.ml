@@ -86,7 +86,10 @@ open Pputils
 
   let pr_module = Libnames.pr_qualid
 
-  let pr_import_module = Libnames.pr_qualid
+  let pr_import_module (m,f) =
+    Libnames.pr_qualid m ++ match f with
+    | ImportAll -> mt()
+    | ImportNames ns -> surround (prlist_with_sep pr_comma Libnames.pr_qualid ns)
 
   let sep_end = function
     | VernacBullet _
