@@ -396,6 +396,11 @@ Displaying information about notations
    Controls whether to use notations for printing terms wherever possible.
    Default is on.
 
+.. flag:: Printing Parentheses
+
+   If on, parentheses are printed even if implied by associativity and precedence
+   Default is off.
+
 .. seealso::
 
    :flag:`Printing All`
