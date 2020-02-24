@@ -208,11 +208,10 @@ let print_frame = function
 | CtxField i -> Printf.sprintf "fld=%i" i
 | CtxTag i -> Printf.sprintf "tag=%i" i
 
-let validate ~debug v (o, mem) =
+let validate v (o, mem) =
   try val_gen v mem mt_ec o
   with ValidObjError(msg,ctx,obj) ->
-    (if debug then
-      let ctx = List.rev_map print_frame ctx in
-      print_endline ("Context: "^String.concat"/"ctx);
-      pr_obj mem obj);
+    let rctx = List.rev_map print_frame ctx in
+    print_endline ("Context: "^String.concat"/"rctx);
+    pr_obj mem obj;
     failwith ("Validation failed: "^msg^" (in "^(print_frame (List.hd ctx))^")")

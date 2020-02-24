@@ -10,4 +10,4 @@
 
 open Analyze
 
-val validate : debug:bool -> Values.value -> data * obj LargeArray.t -> unit
+val validate : Values.value -> data * obj LargeArray.t -> unit
