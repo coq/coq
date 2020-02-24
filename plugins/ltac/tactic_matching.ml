@@ -227,11 +227,9 @@ module PatternMatching (E:StaticEnvironment) = struct
       substitution. *)
   let wildcard_match_term = return
 
-  (** [pattern_match_term refresh pat term lhs] returns the possible
-      matchings of [term] with the pattern [pat => lhs]. If refresh is
-      true, refreshes the universes of [term]. *)
-  let pattern_match_term refresh pat term lhs =
-(*     let term = if refresh then Termops.refresh_universes_strict term else term in *)
+  (** [pattern_match_term pat term lhs] returns the possible
+      matchings of [term] with the pattern [pat => lhs]. *)
+  let pattern_match_term pat term lhs =
     match pat with
     | Term p ->
         begin
@@ -262,7 +260,7 @@ module PatternMatching (E:StaticEnvironment) = struct
       matching rule [rule]. *)
   let rule_match_term term = function
     | All lhs -> wildcard_match_term lhs
-    | Pat ([],pat,lhs) -> pattern_match_term false pat term lhs
+    | Pat ([],pat,lhs) -> pattern_match_term pat term lhs
     | Pat _ ->
       (* Rules with hypotheses, only work in match goal. *)
       fail
@@ -286,8 +284,7 @@ module PatternMatching (E:StaticEnvironment) = struct
   let hyp_match_type hypname pat hyps =
     pick hyps >>= fun decl ->
     let id = NamedDecl.get_id decl in
-    let refresh = is_local_def decl in
-    pattern_match_term refresh pat (NamedDecl.get_type decl) () <*>
+    pattern_match_term pat (NamedDecl.get_type decl) () <*>
     put_terms (id_map_try_add_name hypname (EConstr.mkVar id) empty_term_subst) <*>
     return id
 
@@ -298,8 +295,8 @@ module PatternMatching (E:StaticEnvironment) = struct
   let hyp_match_body_and_type hypname bodypat typepat hyps =
     pick hyps >>= function
       | LocalDef (id,body,hyp) ->
-          pattern_match_term false bodypat body () <*>
-          pattern_match_term true typepat hyp () <*>
+          pattern_match_term bodypat body () <*>
+          pattern_match_term typepat hyp () <*>
           put_terms (id_map_try_add_name hypname (EConstr.mkVar id.binder_name) empty_term_subst) <*>
           return id.binder_name
       | LocalAssum (id,hyp) -> fail
@@ -337,7 +334,7 @@ module PatternMatching (E:StaticEnvironment) = struct
         (* the rules are applied from the topmost one (in the concrete
            syntax) to the bottommost. *)
         let hyppats = List.rev hyppats in
-        pattern_match_term false conclpat concl () <*>
+        pattern_match_term conclpat concl () <*>
         hyp_pattern_list_match hyppats hyps lhs
 
   (** [match_goal hyps concl rules] matches the goal [hyps|-concl]
