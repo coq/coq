@@ -7,4 +7,4 @@ install_ssreflect
 
 git_download coquelicot
 
-( cd "${CI_BUILD_DIR}/coquelicot" && ./autogen.sh && ./configure && ./remake "-j${NJOBS}" )
+( cd "${CI_BUILD_DIR}/coquelicot" && autoreconf -i -s && ./configure && ./remake "-j${NJOBS}" )
