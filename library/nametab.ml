@@ -352,10 +352,8 @@ let the_univtab = Summary.ref ~name:"univtab" (UnivTab.empty : univtab)
 (* Reversed name tables ***************************************************)
 
 (* This table translates extended_global_references back to section paths *)
-module Globrevtab = HMap.Make(ExtRefOrdered)
-
-type globrevtab = full_path Globrevtab.t
-let the_globrevtab = Summary.ref ~name:"globrevtab" (Globrevtab.empty : globrevtab)
+type globrevtab = full_path ExtRefMap.t
+let the_globrevtab = Summary.ref ~name:"globrevtab" (ExtRefMap.empty : globrevtab)
 
 
 type mprevtab = DirPath.t MPmap.t
@@ -386,7 +384,7 @@ let push_xref visibility sp xref =
   match visibility with
     | Until _ ->
         the_ccitab := ExtRefTab.push visibility sp xref !the_ccitab;
-        the_globrevtab := Globrevtab.add xref sp !the_globrevtab
+        the_globrevtab := ExtRefMap.add xref sp !the_globrevtab
     | _ ->
         begin
           if ExtRefTab.exists sp !the_ccitab then
@@ -520,7 +518,7 @@ let path_of_global ref =
   let open GlobRef in
   match ref with
     | VarRef id -> make_path DirPath.empty id
-    | _ -> Globrevtab.find (TrueGlobal ref) !the_globrevtab
+    | _ -> ExtRefMap.find (TrueGlobal ref) !the_globrevtab
 
 let dirpath_of_global ref =
   fst (repr_path (path_of_global ref))
@@ -529,7 +527,7 @@ let basename_of_global ref =
   snd (repr_path (path_of_global ref))
 
 let path_of_syndef kn =
-  Globrevtab.find (SynDef kn) !the_globrevtab
+  ExtRefMap.find (SynDef kn) !the_globrevtab
 
 let dirpath_of_module mp =
   MPmap.find mp !the_modrevtab
@@ -547,7 +545,7 @@ let shortest_qualid_of_global ?loc ctx ref =
   match ref with
     | VarRef id -> make_qualid ?loc DirPath.empty id
     | _ ->
-        let sp = Globrevtab.find (TrueGlobal ref) !the_globrevtab in
+        let sp = ExtRefMap.find (TrueGlobal ref) !the_globrevtab in
         ExtRefTab.shortest_qualid ?loc ctx sp !the_ccitab
 
 let shortest_qualid_of_syndef ?loc ctx kn =

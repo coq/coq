@@ -61,3 +61,8 @@ module ExtRefOrdered : sig
   val equal : t -> t -> bool
   val hash : t -> int
 end
+
+module ExtRefSet : CSig.SetS with type elt = extended_global_reference
+module ExtRefMap : CMap.ExtS
+  with type key = extended_global_reference
+   and module Set := ExtRefSet

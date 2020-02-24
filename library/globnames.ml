@@ -117,3 +117,6 @@ module ExtRefOrdered = struct
   | SynDef kn -> combinesmall 2 (KerName.hash kn)
 
 end
+
+module ExtRefMap = HMap.Make(ExtRefOrdered)
+module ExtRefSet = ExtRefMap.Set
