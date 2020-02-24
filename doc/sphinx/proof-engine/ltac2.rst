@@ -3,10 +3,6 @@
 Ltac2
 =====
 
-.. coqtop:: none
-
-   From Ltac2 Require Import Ltac2.
-
 The Ltac tactic language is probably one of the ingredients of the success of
 Coq, yet it is at the same time its Achilles' heel. Indeed, Ltac:
 
@@ -87,6 +83,12 @@ in a straightforward way. Semantically, proof manipulation lives in a monad,
 which allows to ensure that Ltac2 satisfies the same equations as a generic ML
 with unspecified effects would do, e.g. function reduction is substitution
 by a value.
+
+To import Ltac2, use the following command:
+
+.. coqtop:: in
+
+   From Ltac2 Require Import Ltac2.
 
 Type Syntax
 ~~~~~~~~~~~
