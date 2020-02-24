@@ -145,7 +145,7 @@ Instance Op_Z_of_N : UnOp Z.of_N :=
 Add UnOp Op_Z_of_N.
 
 Instance Op_Z_to_N : UnOp Z.to_N :=
-  { TUOp := fun x => Z.max 0 x ; TUOpInj := ltac:(now intro x; destruct x) }.
+  { TUOp := fun x => Z.max 0 x ; TUOpInj := ltac:(now intros x; destruct x) }.
 Add UnOp Op_Z_to_N.
 
 Instance Op_Z_neg : UnOp Z.neg :=
@@ -177,7 +177,7 @@ Add UnOp Op_pos_pred.
 
 Instance Op_pos_predN : UnOp Pos.pred_N :=
   { TUOp := fun x => x - 1 ;
-    TUOpInj := ltac: (now destruct x; rewrite N.pos_pred_spec) }.
+    TUOpInj := ltac: (now intros x; destruct x; rewrite N.pos_pred_spec) }.
 Add UnOp Op_pos_predN.
 
 Instance Op_pos_of_succ_nat : UnOp Pos.of_succ_nat :=
@@ -186,7 +186,7 @@ Add UnOp Op_pos_of_succ_nat.
 
 Instance Op_pos_of_nat : UnOp Pos.of_nat :=
   { TUOp := fun x => Z.max 1 x ;
-    TUOpInj := ltac: (now destruct x;
+    TUOpInj := ltac: (now intros x; destruct x;
                         [|rewrite <- Pos.of_nat_succ, <- (Nat2Z.inj_max 1)]) }.
 Add UnOp Op_pos_of_nat.
 

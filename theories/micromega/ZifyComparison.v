@@ -38,7 +38,7 @@ Program Instance BinOp_Zcompare : BinOp Z.compare :=
 Add BinOp BinOp_Zcompare.
 
 Instance Op_eq_comparison : BinRel (@eq comparison) :=
-  {TR := @eq Z ; TRInj := ltac:(destruct n,m; simpl ; intuition congruence) }.
+  {TR := @eq Z ; TRInj := ltac:(intros n m; destruct n,m; simpl ; intuition congruence) }.
 Add BinRel Op_eq_comparison.
 
 Instance Op_Eq : CstOp Eq :=

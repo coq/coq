@@ -34,30 +34,30 @@ Add InjTyp Inj_bool_Z.
 
 Instance Op_andb : BinOp andb :=
   { TBOp := Z.min ;
-    TBOpInj := ltac: (destruct n,m; reflexivity)}.
+    TBOpInj := ltac: (intros n m; destruct n,m; reflexivity)}.
 Add BinOp Op_andb.
 
 Instance Op_orb : BinOp orb :=
   { TBOp := Z.max ;
-    TBOpInj := ltac:(destruct n,m; reflexivity)}.
+    TBOpInj := ltac:(intros n m; destruct n,m; reflexivity)}.
 Add BinOp Op_orb.
 
 Instance Op_implb : BinOp implb :=
   { TBOp := fun x y => Z.max (1 - x) y;
-    TBOpInj := ltac:(destruct n,m; reflexivity) }.
+    TBOpInj := ltac:(intros n m; destruct n,m; reflexivity) }.
 Add BinOp Op_implb.
 
 Instance Op_xorb : BinOp xorb :=
   { TBOp := fun x y => Z.max (x - y) (y - x);
-    TBOpInj := ltac:(destruct n,m; reflexivity) }.
+    TBOpInj := ltac:(intros n m; destruct n,m; reflexivity) }.
 Add BinOp Op_xorb.
 
 Instance Op_negb : UnOp negb :=
-  { TUOp := fun x => 1 - x ; TUOpInj := ltac:(destruct x; reflexivity)}.
+  { TUOp := fun x => 1 - x ; TUOpInj := ltac:(intros x; destruct x; reflexivity)}.
 Add UnOp Op_negb.
 
 Instance Op_eq_bool : BinRel (@eq bool) :=
-  {TR := @eq Z ; TRInj := ltac:(destruct n,m; simpl ; intuition congruence) }.
+  {TR := @eq Z ; TRInj := ltac:(intros n m; destruct n,m; simpl ; intuition congruence) }.
 Add BinRel Op_eq_bool.
 
 Instance Op_true : CstOp true :=
