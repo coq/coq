@@ -32,11 +32,15 @@ include ../Makefile.common
 # Variables
 #######################################################################
 
+# Using quotes to anticipate the possibility of spaces in the directory name
+# Note that this will later need an eval in shell to interpret the quotes
+ROOT='$(shell cd ..; pwd)'
+
 ifneq ($(wildcard ../_build),)
-BIN:='$(shell cd ..; pwd)'/_build/install/default/bin/
-COQLIB:='$(shell cd ..; pwd)'/_build/install/default/lib/coq
+BIN:=$(ROOT)/_build/install/default/bin/
+COQLIB:=$(ROOT)/_build/install/default/lib/coq
 else
-BIN := '$(shell cd ..; pwd)'/bin/
+BIN := $(ROOT)/bin/
 
 COQLIB?=
 ifeq ($(COQLIB),)
