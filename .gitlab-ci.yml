@@ -575,6 +575,7 @@ validate:quick:
   only:
     variables:
       - $UNRELIABLE =~ /enabled/
+  allow_failure: true
 
 # Libraries are by convention the projects that depend on Coq
 # but not on its ML API
