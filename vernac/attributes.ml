@@ -163,23 +163,7 @@ let program =
 
 let locality = bool_attribute ~name:"Locality" ~on:"local" ~off:"global"
 
-let warn_unqualified_univ_attr =
-  CWarnings.create ~name:"unqualified-univ-attr" ~category:"deprecated"
-    (fun key -> Pp.(str "Attribute " ++ str key ++
-                    str " should be qualified as \"universes("++str key++str")\"."))
-
 let ukey = "universes"
-let universe_transform ~warn_unqualified : unit attribute =
-  fun atts ->
-    let atts = List.map (fun (key,_ as att) ->
-        match key with
-        | "polymorphic" | "monomorphic"
-        | "template" | "notemplate" ->
-          if warn_unqualified then warn_unqualified_univ_attr key;
-          ukey, VernacFlagList [att]
-        | _ -> att) atts
-    in
-    atts, ()
 
 let universe_polymorphism_option_name = ["Universe"; "Polymorphism"]
 let is_universe_polymorphism =
@@ -198,16 +182,10 @@ let polymorphic_base =
   | Some b -> return b
   | None -> return (is_universe_polymorphism())
 
-let polymorphic_nowarn =
-  universe_transform ~warn_unqualified:false >>
-  qualify_attribute ukey polymorphic_base
-
 let template =
-  universe_transform ~warn_unqualified:true >>
   qualify_attribute ukey (bool_attribute ~name:"Template" ~on:"template" ~off:"notemplate")
 
 let polymorphic =
-  universe_transform ~warn_unqualified:true >>
   qualify_attribute ukey polymorphic_base
 
 let deprecation_parser : Deprecation.t key_parser = fun orig args ->
