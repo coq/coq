@@ -2057,7 +2057,9 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
        intern env (CAst.make ?loc @@ CPrim (Numeral (SMinus,p)))
     | CNotation (_,(InConstrEntrySomeLevel,"( _ )"),([a],[],[],[])) -> intern env a
     | CNotation (_,ntn,args) ->
-        intern_notation intern env ntnvars loc ntn args
+        let c = intern_notation intern env ntnvars loc ntn args in
+        let x, impl, scopes, l = find_appl_head_data c in
+        apply_impargs x env impl scopes l loc
     | CGeneralization (b,a,c) ->
         intern_generalization intern env ntnvars loc b a c
     | CPrim p ->
