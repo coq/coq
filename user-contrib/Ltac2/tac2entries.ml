@@ -643,7 +643,7 @@ let perform_notation syn st =
   | Some lev -> Some (string_of_int lev)
   in
   let rule = (lev, None, [rule]) in
-  ([Pcoq.ExtendRule (Pltac.tac2expr, None, (None, [rule]))], st)
+  ([Pcoq.ExtendRule (Pltac.tac2expr, (None, [rule]))], st)
 
 let ltac2_notation =
   Pcoq.create_grammar_command "ltac2-notation" perform_notation

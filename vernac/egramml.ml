@@ -90,4 +90,4 @@ let extend_vernac_command_grammar s nt gl =
   vernac_exts := (s,gl) :: !vernac_exts;
   let mkact loc l = VernacExtend (s, l) in
   let rules = [make_rule mkact gl] in
-  grammar_extend nt None (None, [None, None, rules])
+  grammar_extend nt (None, [None, None, rules])

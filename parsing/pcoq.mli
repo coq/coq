@@ -225,7 +225,7 @@ type 'a extend_statement =
   Gramlib.Gramext.position option *
   'a single_extend_statement list
 
-val grammar_extend : 'a Entry.t -> gram_reinit option -> 'a extend_statement -> unit
+val grammar_extend : 'a Entry.t -> 'a extend_statement -> unit
 (** Extend the grammar of Coq, without synchronizing it with the backtracking
     mechanism. This means that grammar extensions defined this way will survive
     an undo. *)
@@ -242,7 +242,8 @@ type 'a grammar_command
     marshallable. *)
 
 type extend_rule =
-| ExtendRule : 'a Entry.t * gram_reinit option * 'a extend_statement -> extend_rule
+| ExtendRule : 'a Entry.t * 'a extend_statement -> extend_rule
+| ExtendRuleReinit : 'a Entry.t * gram_reinit * 'a extend_statement -> extend_rule
 
 type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
 (** Grammar extension entry point. Given some ['a] and a current grammar state,
