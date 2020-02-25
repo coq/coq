@@ -1457,12 +1457,15 @@ let pb_equal = function
   | Reduction.CUMUL -> Reduction.CONV
   | Reduction.CONV -> Reduction.CONV
 
-let report_anomaly e =
-  let msg = Pp.(str "Conversion test raised an anomaly:" ++
-                spc () ++ CErrors.print e) in
-  let e = UserError (None,msg) in
-  let e = CErrors.push e in
-  iraise e
+let report_anomaly (e, info) =
+  let e =
+    if is_anomaly e then
+      let msg = Pp.(str "Conversion test raised an anomaly:" ++
+                    spc () ++ CErrors.print e) in
+      UserError (None, msg)
+    else e
+  in
+  iraise (e, info)
 
 let f_conv ?l2r ?reds env ?evars x y =
   let inj = EConstr.Unsafe.to_constr in
@@ -1478,7 +1481,9 @@ let test_trans_conversion (f: constr Reduction.extended_conversion_function) red
     let _ = f ~reds env ~evars:(evars, Evd.universes sigma) x y in
     true
   with Reduction.NotConvertible -> false
-    | e when is_anomaly e -> report_anomaly e
+    | e ->
+      let e = Exninfo.capture e in
+      report_anomaly e
 
 let is_conv ?(reds=TransparentState.full) env sigma = test_trans_conversion f_conv reds env sigma
 let is_conv_leq ?(reds=TransparentState.full) env sigma = test_trans_conversion f_conv_leq reds env sigma
@@ -1494,7 +1499,9 @@ let check_conv ?(pb=Reduction.CUMUL) ?(ts=TransparentState.full) env sigma x y =
     try f ~reds:ts env ~evars:(safe_evar_value sigma, Evd.universes sigma) x y; true
     with Reduction.NotConvertible -> false
     | Univ.UniverseInconsistency _ -> false
-    | e when is_anomaly e -> report_anomaly e
+    | e ->
+      let e = Exninfo.capture e in
+      report_anomaly e
 
 let sigma_compare_sorts env pb s0 s1 sigma =
   match pb with
@@ -1547,7 +1554,9 @@ let infer_conv_gen conv_fun ?(catch_incon=true) ?(pb=Reduction.CUMUL)
   with
   | Reduction.NotConvertible -> None
   | Univ.UniverseInconsistency _ when catch_incon -> None
-  | e when is_anomaly e -> report_anomaly e
+  | e ->
+    let e = Exninfo.capture e in
+    report_anomaly e
 
 let infer_conv = infer_conv_gen (fun pb ~l2r sigma ->
       Reduction.generic_conv pb ~l2r (safe_evar_value sigma))
