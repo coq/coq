@@ -38,9 +38,9 @@ exception Tac_Timeout
 exception TacticFailure of exn
 
 let _ = CErrors.register_handler begin function
-  | Exception e -> CErrors.print e
-  | TacticFailure e -> CErrors.print e
-  | _ -> raise CErrors.Unhandled
+  | Exception e -> Some (CErrors.print e)
+  | TacticFailure e -> Some (CErrors.print e)
+  | _ -> None
 end
 
 (** {6 Non-logical layer} *)

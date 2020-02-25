@@ -66,12 +66,10 @@ let print_anomaly askreport e =
 
 let handle_stack = ref []
 
-exception Unhandled
-
 let register_handler h = handle_stack := h::!handle_stack
 
 let is_handled e =
-  let is_handled_by h = (try let _ = h e in true with | Unhandled -> false) in
+  let is_handled_by h = Option.has_some (h e) in
   List.exists is_handled_by !handle_stack
 
 let is_anomaly = function
@@ -88,30 +86,31 @@ let register_additional_error_info (f : Exninfo.info -> (Pp.t option Loc.located
     all the handlers of a list, and finally a [bottom] handler if all
     others have failed *)
 
-let rec print_gen ~anomaly ~extra_msg stk (e, info) =
+let rec print_gen ~anomaly ~extra_msg stk e =
   match stk with
   | [] ->
     print_anomaly anomaly e
   | h::stk' ->
-    try
-      let err_msg = h e in
+    match h e with
+    | Some err_msg ->
       Option.cata (fun msg -> msg ++ err_msg) err_msg extra_msg
-    with
-    | Unhandled -> print_gen ~anomaly ~extra_msg stk' (e,info)
-    | any -> print_gen ~anomaly ~extra_msg stk' (any,info)
+    | None ->
+      print_gen ~anomaly ~extra_msg stk' e
 
 let print_gen ~anomaly (e, info) =
   let extra_info =
     try CList.find_map (fun f -> Some (f info)) !additional_error_info_handler
     with Not_found -> None
   in
-  let extra_msg, info = match extra_info with
-    | None -> None, info
-    | Some (loc, msg) ->
-      let info = Option.cata (fun l -> Loc.add_loc info l) info loc in
-      msg, info
+  let extra_msg = match extra_info with
+    | None -> None
+    | Some (loc, msg) -> msg
   in
-  print_gen ~anomaly ~extra_msg !handle_stack (e,info)
+  try
+    print_gen ~anomaly ~extra_msg !handle_stack e
+  with exn ->
+    (* exception in error printer *)
+    str "<in exception printer>" ++ fnl () ++ print_anomaly anomaly exn
 
 (** The standard exception printer *)
 let iprint (e, info) =
@@ -130,8 +129,8 @@ let print_no_report e = iprint_no_report (e, Exninfo.info e)
 
 let _ = register_handler begin function
   | UserError(s, pps) ->
-    where s ++ pps
-  | _ -> raise Unhandled
+    Some (where s ++ pps)
+  | _ -> None
 end
 
 (** Critical exceptions should not be caught and ignored by mistake

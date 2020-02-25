@@ -26,8 +26,8 @@ let use_unification_heuristics () = !use_unification_heuristics_ref
 
 exception NoSuchGoal
 let () = CErrors.register_handler begin function
-  | NoSuchGoal -> Pp.(str "No such goal.")
-  | _ -> raise CErrors.Unhandled
+  | NoSuchGoal -> Some Pp.(str "No such goal.")
+  | _ -> None
 end
 
 let get_nth_V82_goal p i =

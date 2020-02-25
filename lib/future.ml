@@ -28,9 +28,9 @@ exception NotReady of string
 exception NotHere of string
 
 let _ = CErrors.register_handler (function
-  | NotReady name -> !not_ready_msg name
-  | NotHere name -> !not_here_msg name
-  | _ -> raise CErrors.Unhandled)
+  | NotReady name -> Some (!not_ready_msg name)
+  | NotHere name -> Some (!not_here_msg name)
+  | _ -> None)
 
 type fix_exn = Exninfo.iexn -> Exninfo.iexn
 let id x = x

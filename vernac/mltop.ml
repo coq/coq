@@ -99,9 +99,9 @@ let ocaml_toploop () =
 *)
 let _ = CErrors.register_handler (function
     | Dynlink.Error e ->
-      hov 0 (str "Dynlink error: " ++ str Dynlink.(error_message e))
+      Some (hov 0 (str "Dynlink error: " ++ str Dynlink.(error_message e)))
     | _ ->
-      raise CErrors.Unhandled
+      None
   )
 
 let ml_load s =

@@ -69,16 +69,16 @@ exception FullyUnfocused
 
 let _ = CErrors.register_handler begin function
   | CannotUnfocusThisWay ->
-    Pp.str "This proof is focused, but cannot be unfocused this way"
+    Some (Pp.str "This proof is focused, but cannot be unfocused this way")
   | NoSuchGoals (i,j) when Int.equal i j ->
-    Pp.(str "[Focus] No such goal (" ++ int i ++ str").")
+    Some Pp.(str "[Focus] No such goal (" ++ int i ++ str").")
   | NoSuchGoals (i,j) ->
-    Pp.(str "[Focus] Not every goal in range ["++ int i ++ str","++int j++str"] exist.")
+    Some Pp.(str "[Focus] Not every goal in range ["++ int i ++ str","++int j++str"] exist.")
   | NoSuchGoal id ->
-    Pp.(str "[Focus] No such goal: " ++ str (Names.Id.to_string id) ++ str ".")
+    Some Pp.(str "[Focus] No such goal: " ++ str (Names.Id.to_string id) ++ str ".")
   | FullyUnfocused ->
-    Pp.str "The proof is not focused"
-  | _ -> raise CErrors.Unhandled
+    Some (Pp.str "The proof is not focused")
+  | _ -> None
 end
 
 let check_cond_kind c k =
@@ -325,9 +325,9 @@ exception OpenProof of Names.Id.t option * open_error_reason
 let _ = CErrors.register_handler begin function
     | OpenProof (pid, reason) ->
       let open Pp in
-      Option.cata (fun pid ->
-          str " (in proof " ++ Names.Id.print pid ++ str "): ") (mt()) pid ++ print_open_error_reason reason
-    | _ -> raise CErrors.Unhandled
+      Some (Option.cata (fun pid ->
+          str " (in proof " ++ Names.Id.print pid ++ str "): ") (mt()) pid ++ print_open_error_reason reason)
+    | _ -> None
   end
 
 let warn_remaining_shelved_goals =

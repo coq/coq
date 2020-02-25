@@ -15,6 +15,12 @@ Exception handling:
   `Exninfo.capture` and `iraise` when re-raising inside an exception
   handler.
 
+- Registration of exception printers now follows more closely OCaml's
+  API, thus:
+
+  + printers are of type `exn -> Pp.t option` [`None` == not handled]
+  + it is forbidden for exception printers to raise.
+
 Printers:
 
 - Functions such as Printer.pr_lconstr_goal_style_env have been
