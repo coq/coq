@@ -118,6 +118,56 @@ struct
 
 end
 
+module Lookahead =
+struct
+
+  let err () = raise Stream.Failure
+
+  type lookahead = Gramlib.Plexing.location_function -> int -> Tok.t Stream.t -> int option
+
+  let rec contiguous tok n m =
+    n == m ||
+    let (_, ep) = Loc.unloc (tok n) in
+    let (bp, _) = Loc.unloc (tok (n + 1)) in
+    Int.equal ep bp && contiguous tok (succ n) m
+
+  let check_no_space tok m strm =
+    let n = Stream.count strm in
+    if contiguous tok n (n+m-1) then Some m else None
+
+  let entry_of_lookahead s (lk : lookahead) =
+    let run tok strm = match lk tok 0 strm with None -> err () | Some _ -> () in
+    Entry.of_parser s run
+
+  let (>>) (lk1 : lookahead) lk2 tok n strm = match lk1 tok n strm with
+  | None -> None
+  | Some n -> lk2 tok n strm
+
+  let (<+>) (lk1 : lookahead) lk2 tok n strm = match lk1 tok n strm with
+  | None -> lk2 tok n strm
+  | Some n -> Some n
+
+  let lk_empty tok n strm = Some n
+
+  let lk_kw kw tok n strm = match stream_nth n strm with
+  | Tok.KEYWORD kw' | Tok.IDENT kw' -> if String.equal kw kw' then Some (n + 1) else None
+  | _ -> None
+
+  let lk_ident tok n strm = match stream_nth n strm with
+  | Tok.IDENT _ -> Some (n + 1)
+  | _ -> None
+
+  let lk_int tok n strm = match stream_nth n strm with
+  | Tok.NUMERAL { NumTok.int = _; frac = ""; exp = "" } -> Some (n + 1)
+  | _ -> None
+
+  let lk_ident_or_anti = lk_ident <+> (lk_kw "$" >> lk_ident >> check_no_space)
+
+  let rec lk_ident_list n strm =
+    ((lk_ident >> lk_ident_list) <+> lk_empty) n strm
+
+end
+
 (** Grammar extensions *)
 
 (** NB: [extend_statement =

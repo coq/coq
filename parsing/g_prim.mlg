@@ -31,13 +31,6 @@ let my_int_of_string loc s =
   with Failure _ ->
     CErrors.user_err ~loc (Pp.str "This number is too large.")
 
-let rec contiguous tok n m =
-    n == m
-  ||
-    let (_, ep) = Loc.unloc (tok n) in
-    let (bp, _) = Loc.unloc (tok (n + 1)) in
-    Int.equal ep bp && contiguous tok (succ n) m
-
 let rec lookahead_kwds strm n = function
   | [] -> ()
   | x :: xs ->
@@ -54,7 +47,7 @@ let test_nospace m = assert(m <> []); Pcoq.Entry.of_parser "test_nospace"
    (fun tok strm ->
       let n = Stream.count strm in
       lookahead_kwds strm 0 m;
-      if contiguous tok n (n + List.length m - 1) then ()
+      if Pcoq.Lookahead.contiguous tok n (n + List.length m - 1) then ()
       else raise Stream.Failure)
 
 let test_nospace_pipe_closedcurly =
