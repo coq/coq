@@ -194,3 +194,11 @@ Notation q := @p.
 Check fun A n => q (A * A) (n * n). (* check that argument scopes are propagated *)
 
 End InheritanceArgumentScopes.
+
+Module InheritanceMaximalImplicitPureNotation.
+
+Definition id {A B:Type} (a:B) := a.
+Notation "#" := (@id nat).
+Check # = (fun a:nat => a). (* # should inherit its maximal implicit argument *)
+
+End InheritanceMaximalImplicitPureNotation.
