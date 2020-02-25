@@ -79,6 +79,3 @@ val capture : exn -> iexn
 
 val iraise : iexn -> 'a
 (** Raise the given enriched exception. *)
-
-val raise : ?info:info -> exn -> 'a
-(** Raise the given exception with additional information. *)

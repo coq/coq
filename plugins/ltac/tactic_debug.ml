@@ -107,13 +107,29 @@ let db_initialize =
 
 let int_of_string s =
   try Proofview.NonLogical.return (int_of_string s)
-  with e -> Proofview.NonLogical.raise e
+  with e ->
+    let e = Exninfo.capture e in
+    Proofview.NonLogical.raise e
 
 let string_get s i =
   try Proofview.NonLogical.return (String.get s i)
-  with e -> Proofview.NonLogical.raise e
+  with e ->
+    let e = Exninfo.capture e in
+    Proofview.NonLogical.raise e
 
-let run_invalid_arg () = Proofview.NonLogical.raise (Invalid_argument "run_com")
+let check_positive n =
+  try
+    if n < 0 then
+      raise (Invalid_argument "number must be positive")
+    else
+      Proofview.NonLogical.return ()
+  with e ->
+    let e = Exninfo.capture e in
+    Proofview.NonLogical.raise e
+
+let run_invalid_arg () =
+  let info = Exninfo.null in
+  Proofview.NonLogical.raise (Invalid_argument "run_com", info)
 
 (* Gives the number of steps or next breakpoint of a run command *)
 let run_com inst =
@@ -125,7 +141,7 @@ let run_com inst =
       let s = String.sub inst i (String.length inst - i) in
       if inst.[0] >= '0' && inst.[0] <= '9' then
         int_of_string s >>= fun num ->
-        (if num<0 then run_invalid_arg () else return ()) >>
+        check_positive num >>
         (skip:=num) >> (skipped:=0)
       else
         breakpoint:=Some (possibly_unquote s)
@@ -156,11 +172,11 @@ let rec prompt level =
     let open Proofview.NonLogical in
     Proofview.NonLogical.print_notice (fnl () ++ str "TcDebug (" ++ int level ++ str ") > ") >>
     if Util.(!batch) then return (DebugOn (level+1)) else
-    let exit = (skip:=0) >> (skipped:=0) >> raise Sys.Break in
+    let exit = (skip:=0) >> (skipped:=0) >> raise (Sys.Break, Exninfo.null) in
     Proofview.NonLogical.catch Proofview.NonLogical.read_line
       begin function (e, info) -> match e with
         | End_of_file -> exit
-        | e -> raise ~info e
+        | e -> raise (e, info)
       end
     >>= fun inst ->
     match inst with
@@ -176,7 +192,7 @@ let rec prompt level =
         Proofview.NonLogical.catch (run_com inst >> runtrue >> return (DebugOn (level+1)))
           begin function (e, info) -> match e with
             | Failure _ | Invalid_argument _ -> prompt level
-            | e -> raise ~info e
+            | e -> raise (e, info)
           end
   end
 

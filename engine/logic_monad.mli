@@ -70,7 +70,7 @@ module NonLogical : sig
 
   (** [Pervasives.raise]. Except that exceptions are wrapped with
       {!Exception}. *)
-  val raise : ?info:Exninfo.info -> exn -> 'a t
+  val raise : Exninfo.iexn -> 'a t
 
   (** [try ... with ...] but restricted to {!Exception}. *)
   val catch : 'a t -> (Exninfo.iexn -> 'a t) -> 'a t

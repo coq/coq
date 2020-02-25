@@ -70,7 +70,7 @@ let ide_cmd_checks ~last_valid { CAst.loc; v } =
     with e ->
       let (e, info) = CErrors.push e in
       let info = Stateid.add info ~valid:last_valid Stateid.dummy in
-      Exninfo.raise ~info e
+      Exninfo.iraise (e, info)
   in
   if is_debug v.expr then
     user_error "Debug mode not available in the IDE"
