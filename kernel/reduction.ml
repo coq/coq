@@ -354,7 +354,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         (match kind a1, kind a2 with
            | (Sort s1, Sort s2) ->
                if not (is_empty_stack v1 && is_empty_stack v2) then
-                 anomaly (Pp.str "conversion was given ill-typed terms (Sort).");
+                 (* May happen because we convert application right to left *)
+                 raise NotConvertible;
               sort_cmp_universes (info_env infos.cnv_inf) cv_pb s1 s2 cuniv
            | (Meta n, Meta m) ->
                if Int.equal n m
@@ -471,7 +472,8 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 
     | (FProd (x1, c1, c2, e), FProd (_, c'1, c'2, e')) ->
         if not (is_empty_stack v1 && is_empty_stack v2) then
-          anomaly (Pp.str "conversion was given ill-typed terms (FProd).");
+          (* May happen because we convert application right to left *)
+          raise NotConvertible;
         (* Luo's system *)
         let el1 = el_stack lft1 v1 in
         let el2 = el_stack lft2 v2 in
