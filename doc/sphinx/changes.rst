@@ -160,7 +160,7 @@ Changes in 8.11+beta1
   Annotation in `Arguments` for bidirectionality hints: it is now possible
   to tell type inference to use type information from the context once the `n`
   first arguments of an application are known. The syntax is:
-  `Arguments foo x y & z`. See :cmd:`Arguments (bidirectionality hints)`
+  `Arguments foo x y & z`. See :ref:`bidirectionality_hints`
   (`#10049 <https://github.com/coq/coq/pull/10049>`_, by Maxime Dénès with
   help from Enrico Tassi).
 - **Added:**
@@ -216,7 +216,7 @@ Changes in 8.11+beta1
 - **Changed:**
   Output of the :cmd:`Print` and :cmd:`About` commands.
   Arguments meta-data is now displayed as the corresponding
-  :cmd:`Arguments <Arguments (implicits)>` command instead of the
+  :cmd:`Arguments` command instead of the
   human-targeted prose used in previous Coq versions. (`#10985
   <https://github.com/coq/coq/pull/10985>`_, by Gaëtan Gilbert).
 
@@ -685,7 +685,7 @@ reference manual. Here are the most important user-visible changes:
 
 - Universes:
 
-  - Added :cmd:`Print Universes Subgraph` variant of :cmd:`Print Universes`.
+  - Added Subgraph variant to :cmd:`Print Universes`.
     Try for instance
     :g:`Print Universes Subgraph(sigT2.u1 sigT_of_sigT2.u1 projT3_eq.u1).`
     (`#8451 <https://github.com/coq/coq/pull/8451>`_, by Gaëtan Gilbert).
@@ -1508,7 +1508,7 @@ changes:
 
   - Removed deprecated commands ``Arguments Scope`` and ``Implicit
     Arguments`` in favor of :cmd:`Arguments (scopes)` and
-    :cmd:`Arguments (implicits)`, with the help of Jasper Hugunin.
+    :cmd:`Arguments`, with the help of Jasper Hugunin.
 
   - New flag :flag:`Uniform Inductive Parameters` by Jasper Hugunin to
     avoid repeating uniform parameters in constructor declarations.
@@ -4715,7 +4715,7 @@ Specification language
 
 Module system
 
-- Include Type is now deprecated since Include now accept both modules and
+- Include Type is now deprecated since Include now accepts both modules and
   module types.
 - Declare ML Module supports Local option.
 - The sharing between non-logical object and the management of the

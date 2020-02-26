@@ -96,11 +96,7 @@ term_projection: [
 term_evar: [
 | "?[" ident "]"
 | "?[" "?" ident "]"
-| "?" ident OPT ( "@{" LIST1 evar_binding SEP ";" "}" )
-]
-
-evar_binding: [
-| ident ":=" term
+| "?" ident OPT ( "@{" LIST1 ( ident ":=" term ) SEP ";" "}" )
 ]
 
 dangling_pattern_extension_rule: [
@@ -185,12 +181,9 @@ attr_value: [
 ]
 
 legacy_attr: [
-| "Local"
-| "Global"
-| "Polymorphic"
-| "Monomorphic"
-| "Cumulative"
-| "NonCumulative"
+| [ "Local" | "Global" ]
+| [ "Polymorphic" | "Monomorphic" ]
+| [ "Cumulative" | "NonCumulative" ]
 | "Private"
 | "Program"
 ]
@@ -285,13 +278,21 @@ binder: [
 | name
 | "(" LIST1 name ":" type ")"
 | "(" name OPT ( ":" type ) ":=" term ")"
+| implicit_binders
+| generalizing_binder
 | "(" name ":" type "|" term ")"
+| "'" pattern0
+]
+
+implicit_binders: [
 | "{" LIST1 name OPT ( ":" type ) "}"
 | "[" LIST1 name OPT ( ":" type ) "]"
+]
+
+generalizing_binder: [
 | "`(" LIST1 typeclass_constraint SEP "," ")"
 | "`{" LIST1 typeclass_constraint SEP "," "}"
 | "`[" LIST1 typeclass_constraint SEP "," "]"
-| "'" pattern0
 ]
 
 typeclass_constraint: [
@@ -371,8 +372,8 @@ gallina: [
 | "Let" ident def_body
 | "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
 | "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
-| "Variant" inductive_definition LIST0 ( "with" inductive_definition )
-| [ "Record" | "Structure" ] inductive_definition LIST0 ( "with" inductive_definition )
+| "Variant" variant_definition LIST0 ( "with" variant_definition )
+| [ "Record" | "Structure" ] record_definition LIST0 ( "with" record_definition )
 | "Class" inductive_definition LIST0 ( "with" inductive_definition )
 | "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
 | "Let" "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
@@ -490,15 +491,6 @@ delta_flag: [
 | OPT "-" "[" LIST1 smart_qualid "]"
 ]
 
-smart_qualid: [
-| qualid
-| by_notation
-]
-
-by_notation: [
-| string OPT [ "%" ident ]
-]
-
 strategy_flag: [
 | LIST1 red_flags
 | delta_flag
@@ -551,17 +543,12 @@ finite_token: [
 | "Class"
 ]
 
-inductive_definition: [
-| OPT ">" ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] OPT ( ":=" OPT constructors_or_record ) OPT decl_notations
+variant_definition: [
+| ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" OPT decl_notations
 ]
 
-constructors_or_record: [
-| OPT "|" LIST1 constructor SEP "|"
-| OPT ident "{" LIST1 record_field SEP ";" "}"
-]
-
-constructor: [
-| ident LIST0 binder OPT of_type
+record_definition: [
+| OPT ">" ident_decl LIST0 binder OPT [ ":" type ] OPT ident "{" LIST0 record_field SEP ";" "}" OPT decl_notations
 ]
 
 record_field: [
@@ -572,6 +559,19 @@ field_body: [
 | LIST0 binder of_type
 | LIST0 binder of_type ":=" term
 | LIST0 binder ":=" term
+]
+
+inductive_definition: [
+| OPT ">" ident_decl LIST0 binder OPT [ "|" LIST0 binder ] OPT [ ":" type ] OPT ( ":=" OPT constructors_or_record ) OPT decl_notations
+]
+
+constructors_or_record: [
+| OPT "|" LIST1 constructor SEP "|"
+| OPT ident "{" LIST0 record_field SEP ";" "}"
+]
+
+constructor: [
+| ident LIST0 binder OPT of_type
 ]
 
 cofix_definition: [
@@ -599,24 +599,24 @@ sort_family: [
 ]
 
 gallina_ext: [
-| "Module" OPT export_token ident LIST0 module_binder of_module_type OPT is_module_expr
-| "Module" "Type" ident LIST0 module_binder LIST0 ( "<:" module_type_inl ) OPT is_module_type
-| "Declare" "Module" OPT export_token ident LIST0 module_binder ":" module_type_inl
+| "Module" OPT [ "Import" | "Export" ] ident LIST0 module_binder OPT of_module_type OPT ( ":=" LIST1 module_expr_inl SEP "<+" )
+| "Module" "Type" ident LIST0 module_binder LIST0 ( "<:" module_type_inl ) OPT ( ":=" LIST1 module_type_inl SEP "<+" )
+| "Declare" "Module" OPT [ "Import" | "Export" ] ident LIST0 module_binder ":" module_type_inl
 | "Section" ident
 | "Chapter" ident
 | "End" ident
 | "Collection" ident ":=" section_subset_expr
-| "Require" OPT export_token LIST1 qualid
-| "From" qualid "Require" OPT export_token LIST1 qualid
+| "Require" OPT [ "Import" | "Export" ] LIST1 qualid
+| "From" qualid "Require" OPT [ "Import" | "Export" ] LIST1 qualid
 | "Import" LIST1 qualid
 | "Export" LIST1 qualid
 | "Include" module_type_inl LIST0 ( "<+" module_expr_inl )
-| "Include" "Type" module_type_inl LIST0 ( "<+" module_type_inl )
+| "Include" "Type" LIST1 module_type_inl SEP "<+"
 | "Transparent" LIST1 smart_qualid
 | "Opaque" LIST1 smart_qualid
 | "Strategy" LIST1 [ strategy_level "[" LIST1 smart_qualid "]" ]
-| "Canonical" OPT "Structure" qualid OPT [ OPT univ_decl def_body ]
-| "Canonical" OPT "Structure" by_notation
+| "Canonical" OPT "Structure" ident_decl def_body
+| "Canonical" OPT "Structure" smart_qualid
 | "Coercion" qualid OPT univ_decl def_body
 | "Identity" "Coercion" ident ":" class ">->" class
 | "Coercion" qualid ":" class ">->" class
@@ -627,9 +627,8 @@ gallina_ext: [
 | "Existing" "Instances" LIST1 qualid OPT [ "|" num ]
 | "Existing" "Class" qualid
 | "Arguments" smart_qualid LIST0 argument_spec_block LIST0 [ "," LIST0 more_implicits_block ] OPT [ ":" LIST1 arguments_modifier SEP "," ]
-| "Implicit" "Type" reserv_list
-| "Implicit" "Types" reserv_list
-| "Generalizable" [ "All" "Variables" | "No" "Variables" | [ "Variable" | "Variables" ] LIST1 ident ]
+| "Implicit" [ "Type" | "Types" ] reserv_list
+| "Generalizable" [ [ "Variable" | "Variables" ] LIST1 ident | "All" "Variables" | "No" "Variables" ]
 | "Export" "Set" LIST1 ident option_setting
 | "Export" "Unset" LIST1 ident
 ]
@@ -645,18 +644,18 @@ hint_info: [
 |
 ]
 
-export_token: [
-| "Import"
-| "Export"
-]
-
 module_binder: [
-| "(" OPT export_token LIST1 ident ":" module_type_inl ")"
+| "(" OPT [ "Import" | "Export" ] LIST1 ident ":" module_type_inl ")"
 ]
 
 module_type_inl: [
 | "!" module_type
 | module_type OPT functor_app_annot
+]
+
+functor_app_annot: [
+| "[" "inline" "at" "level" num "]"
+| "[" "no" "inline" "]"
 ]
 
 module_type: [
@@ -671,9 +670,9 @@ with_declaration: [
 | "Module" qualid ":=" qualid
 ]
 
-functor_app_annot: [
-| "[" "inline" "at" "level" num "]"
-| "[" "no" "inline" "]"
+module_expr_atom: [
+| qualid
+| "(" LIST1 module_expr_atom ")"
 ]
 
 of_module_type: [
@@ -681,27 +680,18 @@ of_module_type: [
 | LIST0 ( "<:" module_type_inl )
 ]
 
-is_module_type: [
-| ":=" module_type_inl LIST0 ( "<+" module_type_inl )
-]
-
-module_expr_atom: [
-| qualid
-| "(" module_expr ")"
-]
-
-module_expr: [
-| module_expr_atom
-| module_expr module_expr_atom
-]
-
-is_module_expr: [
-| ":=" module_expr_inl LIST0 ( "<+" module_expr_inl )
-]
-
 module_expr_inl: [
-| "!" module_expr
-| module_expr OPT functor_app_annot
+| "!" LIST1 module_expr_atom
+| LIST1 module_expr_atom OPT functor_app_annot
+]
+
+smart_qualid: [
+| qualid
+| by_notation
+]
+
+by_notation: [
+| string OPT [ "%" ident ]
 ]
 
 argument_spec_block: [
@@ -750,16 +740,12 @@ instance_name: [
 ]
 
 reserv_list: [
-| LIST1 reserv_tuple
+| LIST1 ( "(" simple_reserv ")" )
 | simple_reserv
 ]
 
-reserv_tuple: [
-| "(" simple_reserv ")"
-]
-
 simple_reserv: [
-| LIST1 ident ":" term
+| LIST1 ident ":" type
 ]
 
 command: [
@@ -1049,6 +1035,10 @@ dirpath: [
 | dirpath field_ident
 ]
 
+bignat: [
+| numeral
+]
+
 locatable: [
 | smart_qualid
 | "Term" smart_qualid
@@ -1117,8 +1107,8 @@ ltac_production_item: [
 ]
 
 numnotoption: [
-| "(" "warning" "after" num ")"
-| "(" "abstract" "after" num ")"
+| "(" "warning" "after" bignat ")"
+| "(" "abstract" "after" bignat ")"
 ]
 
 mlname: [
