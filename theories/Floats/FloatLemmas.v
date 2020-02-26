@@ -24,7 +24,7 @@ Theorem ldexp_spec : forall f e, Prim2SF (ldexp f e) = SFldexp prec emax (Prim2S
   destruct (Prim2SF f); auto.
   unfold SFldexp.
   unfold binary_round.
-  assert (Hmod_elim :  forall e, ([| of_Z (Z.max (Z.min e (emax - emin)) (emin - emax - 1) + shift)|]%int63 - shift = Z.max (Z.min e (emax - emin)) (emin - emax - 1))%Z).
+  assert (Hmod_elim :  forall e, (φ (of_Z (Z.max (Z.min e (emax - emin)) (emin - emax - 1) + shift))%int63 - shift = Z.max (Z.min e (emax - emin)) (emin - emax - 1))%Z).
   {
     intro e1.
     rewrite of_Z_spec, shift_value.

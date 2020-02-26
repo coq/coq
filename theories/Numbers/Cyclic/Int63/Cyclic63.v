@@ -109,7 +109,7 @@ Instance int_ops : ZnZ.Ops int :=
 
 Local Open Scope Z_scope.
 
-Lemma is_zero_spec_aux : forall x : int, is_zero x = true -> [|x|] = 0%Z.
+Lemma is_zero_spec_aux : forall x : int, is_zero x = true -> φ x = 0%Z.
 Proof.
  intros x;rewrite is_zero_spec;intros H;rewrite H;trivial.
 Qed.
@@ -120,8 +120,8 @@ Lemma positive_to_int_spec :
       Z_of_N (fst (positive_to_int p)) * wB + to_Z (snd (positive_to_int p)).
 Proof.
  assert (H: (wB <= wB) -> forall p : positive,
-  Zpos p = Z_of_N (fst (positive_to_int p)) * wB + [|snd (positive_to_int p)|] /\
-  [|snd (positive_to_int p)|] < wB).
+  Zpos p = Z_of_N (fst (positive_to_int p)) * wB + φ (snd (positive_to_int p)) /\
+  φ (snd (positive_to_int p)) < wB).
   2: intros p; case (H (Z.le_refl wB) p); auto.
  unfold positive_to_int, wB at 1 3 4.
  elim size.
@@ -136,7 +136,7 @@ Proof.
  generalize (IH F1 p1); case positive_to_int_rec; simpl.
  intros n1 i (H1,H2).
  rewrite Zpos_xI, H1.
- replace [|i << 1  + 1|] with ([|i|] * 2 + 1).
+ replace (φ (i << 1 + 1)) with (φ i * 2 + 1).
  split; auto with zarith; ring.
  rewrite add_spec, lsl_spec, Zplus_mod_idemp_l, to_Z_1, Z.pow_1_r, Zmod_small; auto.
  case (to_Z_bounded i); split; auto with zarith.
@@ -144,7 +144,7 @@ Proof.
  generalize (IH F1 p1); case positive_to_int_rec; simpl.
  intros n1 i (H1,H2).
  rewrite Zpos_xO, H1.
- replace [|i << 1|] with ([|i|] * 2).
+ replace (φ (i << 1)) with (φ i * 2).
  split; auto with zarith; ring.
  rewrite lsl_spec, to_Z_1, Z.pow_1_r, Zmod_small; auto.
  case (to_Z_bounded i); split; auto with zarith.
@@ -152,7 +152,7 @@ Proof.
 Qed.
 
 Lemma mulc_WW_spec :
-   forall x y,[|| x *c y ||] = [|x|] * [|y|].
+   forall x y, Φ ( x *c y ) = φ x * φ y.
 Proof.
  intros x y;unfold mulc_WW.
  generalize (mulc_spec x y);destruct (mulc x y);simpl;intros Heq;rewrite Heq.
@@ -164,18 +164,18 @@ Qed.
 
 Lemma squarec_spec :
   forall x,
-    [||x *c x||] = [|x|] * [|x|].
+    Φ(x *c x) = φ x * φ x.
 Proof (fun x => mulc_WW_spec x x).
 
-Lemma diveucl_spec_aux : forall a b, 0 < [|b|] ->
+Lemma diveucl_spec_aux : forall a b, 0 < φ b ->
   let (q,r) := diveucl a b in
-  [|a|] = [|q|] * [|b|] + [|r|] /\
-  0 <= [|r|] < [|b|].
+  φ a = φ q * φ b + φ r /\
+  0 <= φ r < φ b.
 Proof.
  intros a b H;assert (W:= diveucl_spec a b).
- assert ([|b|]>0) by (auto with zarith).
- generalize (Z_div_mod [|a|] [|b|] H0).
- destruct (diveucl a b);destruct (Z.div_eucl [|a|] [|b|]).
+ assert (φ b>0) by (auto with zarith).
+ generalize (Z_div_mod φ a φ b H0).
+ destruct (diveucl a b);destruct (Z.div_eucl φ a φ b).
  inversion W;rewrite Zmult_comm;trivial.
 Qed.
 
@@ -252,10 +252,10 @@ Proof.
   case lebP; intros hle.
   2: {
     symmetry; apply Zmod_small.
-    assert (2 ^ [|Int63.digits|] < 2 ^ [|p|]); [ apply Zpower_lt_monotone; auto with zarith | ].
-    change wB with (2 ^ [|Int63.digits|]) in *; auto with zarith. }
-  rewrite <- (shift_unshift_mod_3 [|Int63.digits|] [|p|] [|w|]) by auto with zarith.
-  replace ([|Int63.digits|] - [|p|]) with [|Int63.digits - p|] by (rewrite sub_spec, Zmod_small; auto with zarith).
+    assert (2 ^ φ Int63.digits < 2 ^ φ p); [ apply Zpower_lt_monotone; auto with zarith | ].
+    change wB with (2 ^ φ Int63.digits) in *; auto with zarith. }
+  rewrite <- (shift_unshift_mod_3 φ Int63.digits φ p φ w) by auto with zarith.
+  replace (φ Int63.digits - φ p) with (φ (Int63.digits - p)) by (rewrite sub_spec, Zmod_small; auto with zarith).
   rewrite lsr_spec, lsl_spec; reflexivity.
 Qed.
 
