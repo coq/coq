@@ -292,12 +292,14 @@ let prec_assoc = let open Gramlib.Gramext in function
   | NonA -> (L,L)
 
 let precedence_of_position_and_level from_level = function
+  | NumLevel (-1), _ -> 200, Any
   | NumLevel n, BorderProd (_,None) -> n, Prec n
   | NumLevel n, BorderProd (b,Some a) ->
       n, let (lp,rp) = prec_assoc a in if b == Left then lp else rp
   | NumLevel n, InternalProd -> n, Prec n
   | NextLevel, _ -> from_level, L
 
+(** Computing precedences of subentries for parsing *)
 let precedence_of_entry_type (from_custom,from_level) = function
   | ETConstr (custom,_,x) when notation_entry_eq custom from_custom ->
     precedence_of_position_and_level from_level x
@@ -308,6 +310,22 @@ let precedence_of_entry_type (from_custom,from_level) = function
               quote (pr_notation_entry from_custom) ++ str ").")
   | ETPattern (_,n) -> let n = match n with None -> 0 | Some n -> n in n, Prec n
   | _ -> 0, E (* should not matter *)
+
+(** Computing precedences for future insertion of parentheses at
+    the time of printing using hard-wired constr levels *)
+let unparsing_precedence_of_entry_type from_level = function
+  | ETConstr (InConstrEntry,_,x) ->
+    (* Possible insertion of parentheses at printing time to deal
+       with precedence in a constr entry is managed using [prec_less]
+       in [ppconstr.ml] *)
+    snd (precedence_of_position_and_level from_level x)
+  | ETConstr (custom,_,_) ->
+    (* Precedence of printing for a custom entry is managed using
+       explicit insertion of entry coercions at the time of building
+       a [constr_expr] *)
+    Any
+  | ETPattern (_,n) -> (* in constr *) Prec (match n with Some n -> n | None -> 0)
+  | _ -> Any (* should not matter *)
 
 (* Some breaking examples *)
 (* "x = y" : "x /1 = y" (breaks before any symbol) *)
@@ -374,7 +392,7 @@ let check_open_binder isopen sl m =
 
 let unparsing_metavar i from typs =
   let x = List.nth typs (i-1) in
-  let prec = snd (precedence_of_entry_type from x) in
+  let prec = unparsing_precedence_of_entry_type from x in
   match x with
   | ETConstr _ | ETGlobal | ETBigint ->
      UnpMetaVar (i,prec)
@@ -389,12 +407,12 @@ let unparsing_metavar i from typs =
 
 let index_id id l = List.index Id.equal id l
 
-let make_hunks etyps symbols from =
+let make_hunks etyps symbols from_level =
   let vars,typs = List.split etyps in
   let rec make b = function
     | NonTerminal m :: prods ->
         let i = index_id m vars in
-        let u = unparsing_metavar i from typs in
+        let u = unparsing_metavar i from_level typs in
         if is_next_non_terminal b prods then
           (None, u) :: add_break_if_none 1 b (make b prods)
         else
@@ -428,7 +446,7 @@ let make_hunks etyps symbols from =
     | SProdList (m,sl) :: prods ->
         let i = index_id m vars in
         let typ = List.nth typs (i-1) in
-        let _,prec = precedence_of_entry_type from typ in
+        let prec = unparsing_precedence_of_entry_type from_level typ in
         let sl' =
           (* If no separator: add a break *)
           if List.is_empty sl then add_break 1 []
@@ -526,7 +544,7 @@ let read_recursive_format sl fmt =
   let loc, slfmt, fmt = get_head fmt in
   slfmt, get_tail (slfmt, fmt)
 
-let hunks_of_format (from,(vars,typs)) symfmt =
+let hunks_of_format (from_level,(vars,typs)) symfmt =
   let rec aux = function
   | symbs, (_,(UnpTerminal s' as u)) :: fmt
       when String.equal s' (String.make (String.length s') ' ') ->
@@ -536,7 +554,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
   | NonTerminal s :: symbs, (_,UnpTerminal s') :: fmt when Id.equal s (Id.of_string s') ->
       let i = index_id s vars in
-      let symbs, l = aux (symbs,fmt) in symbs, unparsing_metavar i from typs :: l
+      let symbs, l = aux (symbs,fmt) in symbs, unparsing_metavar i from_level typs :: l
   | symbs, (_,UnpBox (a,b)) :: fmt ->
       let symbs', b' = aux (symbs,b) in
       let symbs', l = aux (symbs',fmt) in
@@ -546,7 +564,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
   | SProdList (m,sl) :: symbs, fmt ->
       let i = index_id m vars in
       let typ = List.nth typs (i-1) in
-      let _,prec = precedence_of_entry_type from typ in
+      let prec = unparsing_precedence_of_entry_type from_level typ in
       let loc_slfmt,rfmt = read_recursive_format sl fmt in
       let sl, slfmt = aux (sl,loc_slfmt) in
       if not (List.is_empty sl) then error_format ?loc:(find_prod_list_loc loc_slfmt fmt) ();
@@ -931,18 +949,23 @@ let is_only_printing mods =
 
 (* Compute precedences from modifiers (or find default ones) *)
 
-let set_entry_type from etyps (x,typ) =
+let set_entry_type from n etyps (x,typ) =
+  let make_lev n s = match typ with
+    | BorderProd _ -> NumLevel n
+    | InternalProd -> NumLevel (-1) in
   let typ = try
     match List.assoc x etyps, typ with
-      | ETConstr (s,bko,Some n), (_,BorderProd (left,_)) ->
+      | ETConstr (s,bko,None), _ ->
+         if notation_entry_eq from s then ETConstr (s,bko,(make_lev n s,typ))
+         else ETConstr (s,bko,(NumLevel (-1),typ))
+      | ETConstr (s,bko,Some n), BorderProd (left,_) ->
           ETConstr (s,bko,(n,BorderProd (left,None)))
-      | ETConstr (s,bko,Some n), (_,InternalProd) ->
-         ETConstr (s,bko,(n,InternalProd))
+      | ETConstr (s,bko,Some n), InternalProd ->
+          ETConstr (s,bko,(n,InternalProd))
       | ETPattern (b,n), _ -> ETPattern (b,n)
       | (ETIdent | ETBigint | ETGlobal | ETBinder _ as x), _ -> x
-      | ETConstr (s,bko,None), _ -> ETConstr (s,bko,typ)
     with Not_found ->
-      ETConstr (from,None,typ)
+      ETConstr (from,None,(make_lev n from,typ))
   in (x,typ)
 
 let join_auxiliary_recursive_types recvars etyps =
@@ -1192,14 +1215,13 @@ module SynData = struct
 end
 
 let find_subentry_types from n assoc etyps symbols =
-  let innerlevel = NumLevel 200 in
   let typs =
     find_symbols
-      (NumLevel n,BorderProd(Left,assoc))
-      (innerlevel,InternalProd)
-      (NumLevel n,BorderProd(Right,assoc))
+      (BorderProd(Left,assoc))
+      (InternalProd)
+      (BorderProd(Right,assoc))
       symbols in
-  let sy_typs = List.map (set_entry_type from etyps) typs in
+  let sy_typs = List.map (set_entry_type from n etyps) typs in
   let prec = List.map (assoc_of_type from n) sy_typs in
   sy_typs, prec
 
@@ -1441,7 +1463,7 @@ let make_syntax_rules (sd : SynData.syn_data) = let open SynData in
   let ntn_for_grammar, prec_for_grammar, need_squash = sd.not_data in
   let custom,level,_,_ = sd.level in
   let pa_rule = make_pa_rule prec_for_grammar sd.pa_syntax_data ntn_for_grammar need_squash in
-  let pp_rule = make_pp_rule (custom,level) sd.pp_syntax_data sd.format in {
+  let pp_rule = make_pp_rule level sd.pp_syntax_data sd.format in {
     synext_level    = sd.level;
     synext_notation = fst sd.info;
     synext_notgram  = { notgram_onlyprinting = sd.only_printing; notgram_rules = pa_rule };

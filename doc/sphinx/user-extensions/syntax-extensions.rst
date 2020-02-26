@@ -798,7 +798,13 @@ associated to the custom entry ``expr``. The level can be omitted, as in
 
    Notation "[ e ]" := e (e custom expr).
 
-in which case Coq tries to infer it.
+in which case Coq infer it. If the sub-expression is at a border of
+the notation (as e.g. ``x`` and ``y`` in ``x + y``), the level is
+determined by the associativity. If the sub-expression is not at the
+border of the notation (as e.g. ``e`` in ``"[ e ]``), the level is
+inferred to be the highest level used for the entry. In particular,
+this level depends on the highest level existing in the entry at the
+time of use of the notation.
 
 In the absence of an explicit entry for parsing or printing a
 sub-expression of a notation in a custom entry, the default is to

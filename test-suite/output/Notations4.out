@@ -59,3 +59,7 @@ where
       |- Type] (pat, p0, p cannot be used)
 b = a
      : Prop
+Entry constr:expr is
+[ "201" RIGHTA
+  [  "{"; constr:operconstr LEVEL "200";  "}" ] ]
+
