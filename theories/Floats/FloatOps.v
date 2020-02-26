@@ -10,7 +10,7 @@ Definition shift := 2101%Z. (** [= 2*emax + prec] *)
 
 Definition frexp f :=
   let (m, se) := frshiftexp f in
-  (m, ([| se |] - shift)%Z%int63).
+  (m, (φ se - shift)%Z%int63).
 
 Definition ldexp f e :=
   let e' := Z.max (Z.min e (emax - emin)) (emin - emax - 1) in
@@ -28,7 +28,7 @@ Definition Prim2SF f :=
             else
               let (r, exp) := frexp f in
               let e := (exp - prec)%Z in
-              let (shr, e') := shr_fexp prec emax [| normfr_mantissa r |]%int63 e loc_Exact in
+              let (shr, e') := shr_fexp prec emax (φ (normfr_mantissa r))%int63 e loc_Exact in
               match shr_m shr with
               | Zpos p => S754_finite (get_sign f) p e'
               | Zneg _ | Z0 => S754_zero false (* must never occur *)
