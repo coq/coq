@@ -689,17 +689,17 @@ let check_signatures curmb sl =
   let is_direct_ancestor accu mb =
     match accu with
     | None -> None
-    | Some (n, curmb) ->
+    | Some curmb ->
         try
           let mb = CEphemeron.get mb in
           if is_suffix mb curmb
-          then Some (n + 1, mb)
+          then Some mb
           else None
         with CEphemeron.InvalidKey -> None in
-  let sl = List.fold_left is_direct_ancestor (Some (0, curmb)) sl in
+  let sl = List.fold_left is_direct_ancestor (Some curmb) sl in
   match sl with
-  | None -> 0
-  | Some (n, _) -> n
+  | None -> false
+  | Some _ -> true
 
 type side_effect_declaration =
 | DefinitionEff : Entries.definition_entry -> side_effect_declaration
@@ -774,31 +774,28 @@ let export_side_effects mb env eff =
         | Monomorphic ctx ->
           Environ.push_context_set ~strict:true ctx env
       in
-      let rec translate_seff sl seff acc env =
-        match seff with
-        | [] -> List.rev acc
-        | eff :: rest ->
-          if Int.equal sl 0 then
-            let env, cb =
-              let kn = eff.seff_constant in
-              let ce = constant_entry_of_side_effect eff in
-              let open Entries in
-              let cb = match ce with
-              | DefinitionEff ce ->
-                Term_typing.translate_constant env kn (DefinitionEntry ce)
-              | OpaqueEff ce ->
-                translate_direct_opaque env kn ce
-              in
-               let eff = { eff with seff_body = cb } in
-               (push_seff env eff, export_eff eff)
-            in
-            translate_seff 0 rest (cb :: acc) env
-          else
-           let env = push_seff env eff in
-           let ecb = export_eff eff in
-           translate_seff (sl - 1) rest (ecb :: acc) env
-     in
-       translate_seff trusted seff [] env
+    if trusted then
+      List.map export_eff seff
+    else
+      let rec recheck_seff seff acc env = match seff with
+      | [] -> List.rev acc
+      | eff :: rest ->
+        let env, cb =
+          let kn = eff.seff_constant in
+          let ce = constant_entry_of_side_effect eff in
+          let open Entries in
+          let cb = match ce with
+          | DefinitionEff ce ->
+            Term_typing.translate_constant env kn (DefinitionEntry ce)
+          | OpaqueEff ce ->
+            translate_direct_opaque env kn ce
+          in
+            let eff = { eff with seff_body = cb } in
+            (push_seff env eff, export_eff eff)
+        in
+        recheck_seff rest (cb :: acc) env
+      in
+      recheck_seff seff [] env
 
 let push_opaque_proof pf senv =
   let o, otab = Opaqueproof.create (library_dp_of_senv senv) pf (Environ.opaque_tables senv.env) in
@@ -829,6 +826,7 @@ let add_constant l decl senv =
         let handle env body eff =
           let body, uctx, signatures = inline_side_effects env body eff in
           let trusted = check_signatures senv.revstruct signatures in
+          let trusted = if trusted then List.length signatures else 0 in
           body, uctx, trusted
         in
         let cb, ctx = Term_typing.translate_opaque senv.env kn ce in
