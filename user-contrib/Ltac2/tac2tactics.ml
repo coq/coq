@@ -20,7 +20,7 @@ let return = Proofview.tclUNIT
 let thaw r f = Tac2ffi.app_fun1 f Tac2ffi.unit r ()
 
 let tactic_infer_flags with_evar = {
-  Pretyping.use_typeclasses = true;
+  Pretyping.use_typeclasses = Pretyping.UseTC;
   Pretyping.solve_unification_constraints = true;
   Pretyping.fail_evar = not with_evar;
   Pretyping.expand_evars = true;

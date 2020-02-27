@@ -44,8 +44,10 @@ type typing_constraint =
   | OfType of types (** A term of the expected type *)
   | WithoutTypeConstraint (** A term of unknown expected type *)
 
+type use_typeclasses = NoUseTC | UseTCForConv | UseTC
+
 type inference_flags = {
-  use_typeclasses : bool;
+  use_typeclasses : use_typeclasses;
   solve_unification_constraints : bool;
   fail_evar : bool;
   expand_evars : bool;

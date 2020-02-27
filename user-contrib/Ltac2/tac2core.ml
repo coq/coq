@@ -20,7 +20,7 @@ open Proofview.Notations
 let constr_flags =
   let open Pretyping in
   {
-    use_typeclasses = true;
+    use_typeclasses = Pretyping.UseTC;
     solve_unification_constraints = true;
     fail_evar = true;
     expand_evars = true;
@@ -31,7 +31,7 @@ let constr_flags =
 let open_constr_no_classes_flags =
   let open Pretyping in
   {
-  use_typeclasses = false;
+  use_typeclasses = Pretyping.NoUseTC;
   solve_unification_constraints = true;
   fail_evar = false;
   expand_evars = true;

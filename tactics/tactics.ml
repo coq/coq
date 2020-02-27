@@ -1223,7 +1223,7 @@ let rec intros_move = function
    or a term with bindings *)
 
 let tactic_infer_flags with_evar = {
-  Pretyping.use_typeclasses = true;
+  Pretyping.use_typeclasses = Pretyping.UseTC;
   Pretyping.solve_unification_constraints = true;
   Pretyping.fail_evar = not with_evar;
   Pretyping.expand_evars = true;

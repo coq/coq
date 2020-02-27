@@ -189,8 +189,10 @@ let interp_sort_info ?loc evd l =
 
 type inference_hook = env -> evar_map -> Evar.t -> (evar_map * constr) option
 
+type use_typeclasses = NoUseTC | UseTCForConv | UseTC
+
 type inference_flags = {
-  use_typeclasses : bool;
+  use_typeclasses : use_typeclasses;
   solve_unification_constraints : bool;
   fail_evar : bool;
   expand_evars : bool;
@@ -312,9 +314,9 @@ let solve_remaining_evars ?hook flags env ?initial sigma =
   let program_mode = flags.program_mode in
   let frozen = frozen_and_pending_holes (initial, sigma) in
   let sigma =
-    if flags.use_typeclasses
-    then apply_typeclasses ~fail_evar:false ~program_mode env sigma frozen
-    else sigma
+    match flags.use_typeclasses with
+    | UseTC -> apply_typeclasses ~program_mode ~fail_evar:false env sigma frozen
+    | NoUseTC | UseTCForConv -> sigma
   in
   let sigma = match hook with
   | None -> sigma
@@ -1287,21 +1289,25 @@ let ise_pretype_gen flags env sigma lvar kind c =
     if program_mode then ProgramNaming else KeepUserNameAndRenameExistingButSectionNames
   in
   let env = GlobEnv.make ~hypnaming env sigma lvar in
+  let use_tc = match flags.use_typeclasses with
+    | NoUseTC -> false
+    | UseTC | UseTCForConv -> true
+  in
   let sigma', c', c'_ty = match kind with
     | WithoutTypeConstraint | UnknownIfTermOrType ->
-      let sigma, j = pretype ~program_mode ~poly flags.use_typeclasses empty_tycon env sigma c in
+      let sigma, j = pretype ~program_mode ~poly use_tc empty_tycon env sigma c in
       sigma, j.uj_val, j.uj_type
     | OfType exptyp ->
-      let sigma, j = pretype ~program_mode ~poly flags.use_typeclasses (mk_tycon exptyp) env sigma c in
+      let sigma, j = pretype ~program_mode ~poly use_tc (mk_tycon exptyp) env sigma c in
       sigma, j.uj_val, j.uj_type
     | IsType ->
-      let sigma, tj = pretype_type ~program_mode ~poly flags.use_typeclasses empty_valcon env sigma c in
+      let sigma, tj = pretype_type ~program_mode ~poly use_tc empty_valcon env sigma c in
       sigma, tj.utj_val, mkSort tj.utj_type
   in
   process_inference_flags flags !!env sigma (sigma',c',c'_ty)
 
 let default_inference_flags fail = {
-  use_typeclasses = true;
+  use_typeclasses = UseTC;
   solve_unification_constraints = true;
   fail_evar = fail;
   expand_evars = true;
@@ -1310,7 +1316,7 @@ let default_inference_flags fail = {
 }
 
 let no_classes_no_fail_inference_flags = {
-  use_typeclasses = false;
+  use_typeclasses = NoUseTC;
   solve_unification_constraints = true;
   fail_evar = false;
   expand_evars = true;

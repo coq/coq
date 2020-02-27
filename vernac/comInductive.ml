@@ -147,7 +147,7 @@ let interp_cstrs env (sigma, ind_rel) impls params ind arity =
   let interp_cstr sigma ctyp =
     let flags =
       Pretyping.{ all_no_fail_flags with
-                  use_typeclasses = false;
+                  use_typeclasses = UseTCForConv;
                   solve_unification_constraints = false }
     in
     let sigma, (ctyp, cimpl) = interp_type_evars_impls ~flags env sigma ~impls ctyp in
