@@ -1620,14 +1620,6 @@ let descend_in_conjunctions avoid tac (err, info) c =
 (*            Resolution tactics                    *)
 (****************************************************)
 
-let tclORELSEOPT t k =
-  Proofview.tclORELSE t
-    (fun e -> match k e with
-    | None ->
-      let (e, info) = e in
-      Proofview.tclZERO ~info e
-    | Some tac -> tac)
-
 let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
     clear_flag {CAst.loc;v=(c,lbind : EConstr.constr with_bindings)} =
   Proofview.Goal.enter begin fun gl ->
@@ -1662,12 +1654,9 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
       try
         (* Try to head-reduce the conclusion of the theorem *)
         let red_thm = try_red_product env sigma thm_ty in
-        tclORELSEOPT
+        Tacticals.New.tclORELSE0
           (try_apply red_thm concl_nprod)
-          (function (e, info) -> match e with
-          | PretypeError _|RefinerError _|UserError _|Failure _ ->
-            Some (try_red_apply red_thm (exn0, info))
-          | _ -> None)
+          (try_red_apply red_thm (exn0, info))
       with Redelimination as exn ->
         (* Last chance: if the head is a variable, apply may try
             second order unification *)
@@ -1684,21 +1673,13 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
           else
             Proofview.tclZERO ~info exn0 in
         if not (Int.equal concl_nprod 0) then
-          tclORELSEOPT
-            (try_apply thm_ty 0)
-            (function (e, info) -> match e with
-            | PretypeError _|RefinerError _|UserError _|Failure _->
-              Some tac
-            | _ -> None)
+          Tacticals.New.tclORELSE0 (try_apply thm_ty 0) tac
         else
           tac
     in
-    tclORELSEOPT
+    Proofview.tclORELSE
       (try_apply thm_ty0 concl_nprod)
-      (function (e, info) -> match e with
-      | PretypeError _|RefinerError _|UserError _|Failure _ ->
-        Some (try_red_apply thm_ty0 (e, info))
-      | _ -> None)
+      (try_red_apply thm_ty0)
     end
   in
     Tacticals.New.tclTHEN
