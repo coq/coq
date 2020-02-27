@@ -55,6 +55,8 @@ type coqargs_config = {
   color       : color;
   enable_VM   : bool;
   native_compiler : native_compiler;
+  native_output_dir : CUnix.physical_path;
+  native_include_dirs : CUnix.physical_path list;
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
   diffs_set   : bool;
@@ -121,6 +123,8 @@ let default_config = {
   color        = `AUTO;
   enable_VM    = true;
   native_compiler = default_native;
+  native_output_dir = ".coq-native";
+  native_include_dirs = [];
   stm_flags    = Stm.AsyncOpts.default_opts;
   debug        = false;
   diffs_set    = false;
@@ -261,8 +265,10 @@ let get_cache opt = function
 let get_native_name s =
   (* We ignore even critical errors because this mode has to be super silent *)
   try
-    String.concat "/" [Filename.dirname s;
-      Nativelib.output_dir; Library.native_name_from_filename s]
+    Filename.(List.fold_left concat (dirname s)
+                [ !Nativelib.output_dir
+                ; Library.native_name_from_filename s
+                ])
   with _ -> ""
 
 let get_compat_file = function
@@ -484,6 +490,14 @@ let parse_args ~help ~init arglist : t * string list =
       let opt = next() in
       let opt = to_opt_key opt in
       { oval with config = { oval.config with set_options = (opt, OptionUnset) :: oval.config.set_options }}
+
+    |"-native-output-dir" ->
+      let native_output_dir = next () in
+      { oval with config = { oval.config with native_output_dir } }
+
+    |"-nI" ->
+      let include_dir = next () in
+      { oval with config = {oval.config with native_include_dirs = include_dir :: oval.config.native_include_dirs } }
 
     (* Options with zero arg *)
     |"-async-queries-always-delegate"
