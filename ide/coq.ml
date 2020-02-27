@@ -558,6 +558,7 @@ struct
     { opts = [raw_matching]; init = true;
       label = "Display raw _matching expressions" };
     { opts = [notations]; init = true; label = "Display _notations" };
+    { opts = [notations]; init = true; label = "Display _parentheses" };
     { opts = [all_basic]; init = false;
       label = "Display _all basic low-level contents" };
     { opts = [existential]; init = false;

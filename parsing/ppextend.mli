@@ -30,9 +30,9 @@ val ppcmd_of_cut : ppcut -> Pp.t
 
 (** Declare and look for the printing rule for symbolic notations *)
 type unparsing =
-  | UnpMetaVar of entry_relative_level
+  | UnpMetaVar of entry_relative_level * Extend.side option
   | UnpBinderMetaVar of entry_relative_level
-  | UnpListMetaVar of entry_relative_level * unparsing list
+  | UnpListMetaVar of entry_relative_level * unparsing list * Extend.side option
   | UnpBinderListMetaVar of bool * unparsing list
   | UnpTerminal of string
   | UnpBox of ppbox * unparsing Loc.located list
