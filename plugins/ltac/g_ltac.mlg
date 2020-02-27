@@ -20,7 +20,6 @@ open Tacexpr
 open Namegen
 open Genarg
 open Genredexpr
-open Tok (* necessary for camlp5 *)
 open Names
 open Attributes
 
@@ -63,14 +62,10 @@ let classic_proof_mode = Pvernac.register_proof_mode "Classic" tactic_mode
 
 (* Hack to parse "[ id" without dropping [ *)
 let test_bracket_ident =
-  Pcoq.Entry.of_parser "test_bracket_ident"
-    (fun _ strm ->
-      match stream_nth 0 strm with
-        | KEYWORD "[" ->
-            (match stream_nth 1 strm with
-              | IDENT _ -> ()
-              | _ -> raise Stream.Failure)
-        | _ -> raise Stream.Failure)
+  let open Pcoq.Lookahead in
+  to_entry "test_bracket_ident" begin
+    lk_kw "[" >> lk_ident
+  end
 
 (* Tactics grammar rules *)
 

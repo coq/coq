@@ -17,7 +17,6 @@ open Glob_term
 open Constrexpr
 open Constrexpr_ops
 open Util
-open Tok
 open Namegen
 
 open Pcoq
@@ -54,48 +53,25 @@ let err () = raise Stream.Failure
 
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
-let lpar_id_coloneq =
-  Pcoq.Entry.of_parser "test_lpar_id_coloneq"
-    (fun _ strm ->
-      match stream_nth 0 strm with
-        | KEYWORD "(" ->
-            (match stream_nth 1 strm with
-              | IDENT s ->
-                  (match stream_nth 2 strm with
-                    | KEYWORD ":=" ->
-                        stream_njunk 3 strm;
-                        Names.Id.of_string s
-                    | _ -> err ())
-              | _ -> err ())
-        | _ -> err ())
+let test_lpar_id_coloneq =
+  let open Pcoq.Lookahead in
+  to_entry "test_lpar_id_coloneq" begin
+    lk_kw "(" >> lk_ident >> lk_kw ":="
+  end
 
 let ensure_fixannot =
-  Pcoq.Entry.of_parser "check_fixannot"
-    (fun _ strm ->
-      match stream_nth 0 strm with
-        | KEYWORD "{" ->
-            (match stream_nth 1 strm with
-              | IDENT ("wf"|"struct"|"measure") -> ()
-              | _ -> err ())
-        | _ -> err ())
+  let open Pcoq.Lookahead in
+  to_entry "check_fixannot" begin
+    lk_kw "{" >> lk_kws ["wf"; "struct"; "measure"]
+  end
 
-let name_colon =
-  Pcoq.Entry.of_parser "name_colon"
-    (fun _ strm ->
-      match stream_nth 0 strm with
-        | IDENT s ->
-            (match stream_nth 1 strm with
-              | KEYWORD ":" ->
-                  stream_njunk 2 strm;
-                  Name (Names.Id.of_string s)
-              | _ -> err ())
-        | KEYWORD "_" ->
-          (match stream_nth 1 strm with
-              | KEYWORD ":" ->
-                  stream_njunk 2 strm;
-                  Anonymous
-              | _ -> err ())
-        | _ -> err ())
+let lk_name = Pcoq.Lookahead.(lk_ident <+> lk_kw "_")
+
+let test_name_colon =
+  let open Pcoq.Lookahead in
+  to_entry "test_name_colon" begin
+    lk_name >> lk_kw ":"
+  end
 
 let aliasvar = function { CAst.v = CPatAlias (_, na) } -> Some na | _ -> None
 
@@ -266,7 +242,7 @@ GRAMMAR EXTEND Gram
       | "cofix"; c = cofix_decls -> { let (id,dcls) = c in CAst.make ~loc @@ CCoFix (id,dcls) } ] ]
   ;
   appl_arg:
-    [ [ id = lpar_id_coloneq; c = lconstr; ")" -> { (c,Some (CAst.make ~loc @@ ExplByName id)) }
+    [ [ test_lpar_id_coloneq; "("; id = ident; ":="; c = lconstr; ")" -> { (c,Some (CAst.make ~loc @@ ExplByName id)) }
       | c=operconstr LEVEL "9" -> { (c,None) } ] ]
   ;
   atomic_constr:
@@ -464,8 +440,8 @@ GRAMMAR EXTEND Gram
     [ [ "!" ; c = operconstr LEVEL "200" -> { (CAst.make ~loc Anonymous), true, c }
       | "{"; id = name; "}"; ":" ; expl = [ "!" -> { true } | -> { false } ] ; c = operconstr LEVEL "200" ->
           { id, expl, c }
-      | iid = name_colon ; expl = [ "!" -> { true } | -> { false } ] ; c = operconstr LEVEL "200" ->
-          { (CAst.make ~loc iid), expl, c }
+      | test_name_colon; iid = name; ":" ; expl = [ "!" -> { true } | -> { false } ] ; c = operconstr LEVEL "200" ->
+          { iid, expl, c }
       | c = operconstr LEVEL "200" ->
           { (CAst.make ~loc Anonymous), false, c } ] ]
   ;

@@ -22,7 +22,6 @@ open Extend
 open Decls
 open Declaremods
 open Namegen
-open Tok (* necessary for camlp5 *)
 
 open Pcoq
 open Pcoq.Prim
@@ -531,16 +530,12 @@ END
 
 {
 
-let only_starredidentrefs =
-  Pcoq.Entry.of_parser "test_only_starredidentrefs"
-    (fun _ strm ->
-      let rec aux n =
-      match Util.stream_nth n strm with
-        | KEYWORD "." -> ()
-        | KEYWORD ")" -> ()
-        | (IDENT _ | KEYWORD "Type" | KEYWORD "*") -> aux (n+1)
-        | _ -> raise Stream.Failure in
-      aux 0)
+let test_only_starredidentrefs =
+  let open Pcoq.Lookahead in
+  to_entry "test_only_starredidentrefs" begin
+    lk_list (lk_ident <+> lk_kws ["Type"; "*"]) >> (lk_kws [".";")"])
+  end
+
 let starredidentreflist_to_expr l =
   match l with
   | [] -> SsEmpty
@@ -670,7 +665,7 @@ GRAMMAR EXTEND Gram
   ;
   (* Proof using *)
   section_subset_expr:
-    [ [ only_starredidentrefs; l = LIST0 starredidentref ->
+    [ [ test_only_starredidentrefs; l = LIST0 starredidentref ->
           { starredidentreflist_to_expr l }
       | e = ssexpr -> { e } ]]
   ;
@@ -688,9 +683,9 @@ GRAMMAR EXTEND Gram
       | e1 = ssexpr; "+"; e2 = ssexpr-> { SsUnion(e1,e2) } ]
     | "0"
       [ i = starredidentref -> { i }
-      | "("; only_starredidentrefs; l = LIST0 starredidentref; ")"->
+      | "("; test_only_starredidentrefs; l = LIST0 starredidentref; ")"->
           { starredidentreflist_to_expr l }
-      | "("; only_starredidentrefs; l = LIST0 starredidentref; ")"; "*" ->
+      | "("; test_only_starredidentrefs; l = LIST0 starredidentref; ")"; "*" ->
           { SsFwdClose(starredidentreflist_to_expr l) }
       | "("; e = ssexpr; ")"-> { e }
       | "("; e = ssexpr; ")"; "*" -> { SsFwdClose e } ] ]

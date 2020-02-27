@@ -20,49 +20,52 @@ open Tac2expr
 open Tac2qexpr
 open Ltac_plugin
 
+let lk_ident_or_anti =
+  Pcoq.Lookahead.(lk_ident <+> (lk_kw "$" >> lk_ident >> check_no_space))
+
 (* lookahead for (x:=t), (?x:=t) and (1:=t) *)
 let test_lpar_idnum_coloneq =
   let open Pcoq.Lookahead in
-  entry_of_lookahead "test_lpar_idnum_coloneq" begin
+  to_entry "test_lpar_idnum_coloneq" begin
     lk_kw "(" >> (lk_ident_or_anti <+> lk_int) >> lk_kw ":="
   end
 
 (* lookahead for (x:t), (?x:t) *)
 let test_lpar_id_colon =
   let open Pcoq.Lookahead in
-  entry_of_lookahead "test_lpar_id_colon" begin
+  to_entry "test_lpar_id_colon" begin
     lk_kw "(" >> lk_ident_or_anti >> lk_kw ":"
   end
 
 (* Hack to recognize "(x := t)" and "($x := t)" *)
 let test_lpar_id_coloneq =
   let open Pcoq.Lookahead in
-  entry_of_lookahead "test_lpar_id_coloneq" begin
+  to_entry "test_lpar_id_coloneq" begin
     lk_kw "(" >> lk_ident_or_anti >> lk_kw ":="
   end
 
 (* Hack to recognize "(x)" *)
 let test_lpar_id_rpar =
   let open Pcoq.Lookahead in
-  entry_of_lookahead "test_lpar_id_rpar" begin
+  to_entry "test_lpar_id_rpar" begin
     lk_kw "(" >> lk_ident >> lk_kw ")"
   end
 
 let test_ampersand_ident =
   let open Pcoq.Lookahead in
-  entry_of_lookahead "test_ampersand_ident" begin
+  to_entry "test_ampersand_ident" begin
     lk_kw "&" >> lk_ident >> check_no_space
   end
 
 let test_dollar_ident =
   let open Pcoq.Lookahead in
-  entry_of_lookahead "test_dollar_ident" begin
+  to_entry "test_dollar_ident" begin
     lk_kw "$" >> lk_ident >> check_no_space
   end
 
 let test_ltac1_env =
   let open Pcoq.Lookahead in
-  entry_of_lookahead "test_ltac1_env" begin
+  to_entry "test_ltac1_env" begin
     lk_ident_list >> lk_kw "|-"
   end
 
