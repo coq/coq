@@ -501,9 +501,15 @@ let rec vernac_loop ~state =
   let state, drop = read_and_execute ~state in
   if drop then state else vernac_loop ~state
 
-(* Default toplevel loop *)
+(* Default toplevel loop, machinery for drop is below *)
 
 let drop_args = ref None
+
+(* Initialises the Ocaml toplevel before launching it, so that it can
+   find the "include" file in the *source* directory *)
+let init_ocaml_path ~coqlib =
+  let add_subdir dl = Mltop.add_ml_dir (Filename.concat coqlib dl) in
+  List.iter add_subdir ("dev" :: Coq_config.all_src_dirs)
 
 let loop ~opts ~state =
   drop_args := Some opts;
@@ -517,7 +523,8 @@ let loop ~opts ~state =
   (* Call the main loop *)
   let _ : Vernac.State.t = vernac_loop ~state in
   (* Initialise and launch the Ocaml toplevel *)
-  Coqinit.init_ocaml_path();
+  let coqlib = Envars.coqlib () in
+  init_ocaml_path ~coqlib;
   Mltop.ocaml_toploop();
   (* We delete the feeder after the OCaml toploop has ended so users
      of Drop can see the feedback. *)

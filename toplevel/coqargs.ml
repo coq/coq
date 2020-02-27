@@ -582,6 +582,10 @@ let require_libs opts =
   if opts.pre.load_init then prelude_data :: opts.pre.vo_requires else opts.pre.vo_requires
 
 let build_load_path opts =
-  let ml_path, vo_path = if opts.pre.boot then [],[] else Coqinit.libs_init_load_path () in
+  let ml_path, vo_path =
+    if opts.pre.boot then [],[]
+    else
+      let coqlib = Envars.coqlib () in
+      Coqinit.libs_init_load_path ~coqlib in
   ml_path @ opts.pre.ml_includes ,
   vo_path @ opts.pre.vo_includes

@@ -155,19 +155,22 @@ let print_style_tags opts =
   let () = List.iter iter tags in
   flush_all ()
 
-let init_setup = function
-  | None -> Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
-  | Some s -> Envars.set_user_coqlib s
+let init_coqlib opts = match opts.config.coqlib with
+  | None when opts.pre.boot -> ()
+  | None ->
+    Envars.set_coqlib ~fail:(fun msg -> CErrors.user_err Pp.(str msg));
+  | Some s ->
+    Envars.set_user_coqlib s
 
 let print_query opts = function
   | PrintVersion -> Usage.version ()
   | PrintMachineReadableVersion -> Usage.machine_readable_version ()
   | PrintWhere ->
-    let () = init_setup opts.config.coqlib in
+    let () = init_coqlib opts in
     print_endline (Envars.coqlib ())
   | PrintHelp h -> Usage.print_usage stderr h
   | PrintConfig ->
-    let () = init_setup opts.config.coqlib in
+    let () = init_coqlib opts in
     Envars.print_config stdout Coq_config.all_src_dirs
   | PrintTags -> print_style_tags opts.config
 
@@ -217,16 +220,12 @@ let init_parse parse_extra help init_opts =
     end;
   opts, customopts
 
+(** Coq's init process, phase 2: Basic Coq environment, plugins. *)
 let init_execution opts custom_init =
-  (* Coq's init process, phase 2:
-     Basic Coq environment, load-path, plugins.
-   *)
   (* If we have been spawned by the Spawn module, this has to be done
    * early since the master waits us to connect back *)
   Spawned.init_channels ();
   if opts.post.memory_stat then at_exit print_memory_stat;
-  let top_lp = Coqinit.toplevel_init_load_path () in
-  List.iter Mltop.add_ml_dir top_lp;
   CoqworkmgrApi.(init opts.config.stm_flags.Stm.AsyncOpts.async_proofs_worker_priority);
   Mltop.init_known_plugins ();
   (* Configuration *)
@@ -268,7 +267,7 @@ let init_toplevel custom =
   match opts.main with
   | Queries q -> List.iter (print_query opts) q; exit 0
   | Run ->
-    let () = init_setup opts.config.coqlib in
+    let () = init_coqlib opts in
     let customstate = init_execution opts (custom.init customopts) in
     opts, customopts, customstate
 
