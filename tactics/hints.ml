@@ -1325,6 +1325,13 @@ let project_hint ~poly pri l2r r =
   let info = {Typeclasses.hint_priority = pri; hint_pattern = None} in
     (info,false,true,PathAny, IsGlobRef (GlobRef.ConstRef c))
 
+let warn_deprecated_hint_constr =
+  CWarnings.create ~name:"deprecated-hint-constr" ~category:"deprecated"
+         (fun () ->
+           Pp.strbrk
+             "Declaring arbitrary terms as hints is deprecated; declare a global reference instead"
+         )
+
 let interp_hints ~poly =
   fun h ->
   let env = Global.env () in
@@ -1349,7 +1356,9 @@ let interp_hints ~poly =
     | HintsReference c ->
       let gr = global_with_alias c in
         (PathHints [gr], poly, IsGlobRef gr)
-    | HintsConstr c -> (PathAny, poly, f poly c)
+    | HintsConstr c ->
+      let () = warn_deprecated_hint_constr () in
+      (PathAny, poly, f poly c)
   in
   let fp = Constrintern.intern_constr_pattern env sigma in
   let fres (info, b, r) =
