@@ -10,70 +10,88 @@ open Util
 
 module type GLexerType = Plexing.Lexer
 
-type ty_norec = TyNoRec
-type ty_mayrec = TyMayRec
+type norec
+type mayrec
 
-module type S =
-  sig
-    type te
-    type 'c pattern
-    type parsable
-    val parsable : ?loc:Loc.t -> char Stream.t -> parsable
-    val tokens : string -> (string option * int) list
-    module Entry :
-      sig
-        type 'a e
-        val create : string -> 'a e
-        val parse : 'a e -> parsable -> 'a
-        val name : 'a e -> string
-        val of_parser : string -> (Plexing.location_function -> te Stream.t -> 'a) -> 'a e
-        val parse_token_stream : 'a e -> te Stream.t -> 'a
-        val print : Format.formatter -> 'a e -> unit
-      end
-    type ('self, 'trec, 'a) ty_symbol
-    type ('self, 'trec, 'f, 'r) ty_rule
-    type 'a ty_rules
-    type 'a ty_production
-    val s_nterm : 'a Entry.e -> ('self, ty_norec, 'a) ty_symbol
-    val s_nterml : 'a Entry.e -> string -> ('self, ty_norec, 'a) ty_symbol
-    val s_list0 : ('self, 'trec, 'a) ty_symbol -> ('self, 'trec, 'a list) ty_symbol
-    val s_list0sep :
-      ('self, 'trec, 'a) ty_symbol -> ('self, ty_norec, 'b) ty_symbol -> bool ->
-        ('self, 'trec, 'a list) ty_symbol
-    val s_list1 : ('self, 'trec, 'a) ty_symbol -> ('self, 'trec, 'a list) ty_symbol
-    val s_list1sep :
-      ('self, 'trec, 'a) ty_symbol -> ('self, ty_norec, 'b) ty_symbol -> bool ->
-        ('self, 'trec, 'a list) ty_symbol
-    val s_opt : ('self, 'trec, 'a) ty_symbol -> ('self, 'trec, 'a option) ty_symbol
-    val s_self : ('self, ty_mayrec, 'self) ty_symbol
-    val s_next : ('self, ty_mayrec, 'self) ty_symbol
-    val s_token : 'c pattern -> ('self, ty_norec, 'c) ty_symbol
-    val s_rules : warning:(string -> unit) option -> 'a ty_rules list -> ('self, ty_norec, 'a) ty_symbol
-    val r_stop : ('self, ty_norec, 'r, 'r) ty_rule
-    val r_next :
-      ('self, _, 'a, 'r) ty_rule -> ('self, _, 'b) ty_symbol ->
-        ('self, ty_mayrec, 'b -> 'a, 'r) ty_rule
-    val r_next_norec :
-      ('self, ty_norec, 'a, 'r) ty_rule -> ('self, ty_norec, 'b) ty_symbol ->
-        ('self, ty_norec, 'b -> 'a, 'r) ty_rule
-    val rules : (_, ty_norec, 'f, Loc.t -> 'a) ty_rule * 'f -> 'a ty_rules
-    val production : ('a, _, 'f, Loc.t -> 'a) ty_rule * 'f -> 'a ty_production
-    module Unsafe :
-      sig
-        val clear_entry : 'a Entry.e -> unit
-      end
-    val safe_extend : warning:(string -> unit) option ->
-      'a Entry.e -> Gramext.position option ->
-        (string option * Gramext.g_assoc option * 'a ty_production list)
-          list ->
-        unit
-    val safe_delete_rule : 'a Entry.e -> ('a, _, 'r, 'f) ty_rule -> unit
+module type S = sig
+  type te
+  type 'c pattern
+
+  module Parsable : sig
+    type t
+    val make : ?loc:Loc.t -> char Stream.t -> t
   end
+
+  val tokens : string -> (string option * int) list
+
+  module Entry : sig
+    type 'a t
+    val make : string -> 'a t
+    val parse : 'a t -> Parsable.t -> 'a
+    val name : 'a t -> string
+    val of_parser : string -> (Plexing.location_function -> te Stream.t -> 'a) -> 'a t
+    val parse_token_stream : 'a t -> te Stream.t -> 'a
+    val print : Format.formatter -> 'a t -> unit
+  end
+
+  module rec Symbol : sig
+
+    type ('self, 'trec, 'a) t
+    val nterm : 'a Entry.t -> ('self, norec, 'a) t
+    val nterml : 'a Entry.t -> string -> ('self, norec, 'a) t
+    val list0 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
+    val list0sep :
+      ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+      ('self, 'trec, 'a list) t
+    val list1 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
+    val list1sep :
+      ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+      ('self, 'trec, 'a list) t
+    val opt : ('self, 'trec, 'a) t -> ('self, 'trec, 'a option) t
+    val self : ('self, mayrec, 'self) t
+    val next : ('self, mayrec, 'self) t
+    val token : 'c pattern -> ('self, norec, 'c) t
+    val rules : warning:(string -> unit) option -> 'a Rules.t list -> ('self, norec, 'a) t
+
+  end and Rule : sig
+
+    type ('self, 'trec, 'f, 'r) t
+
+    val stop : ('self, norec, 'r, 'r) t
+    val next :
+      ('self, _, 'a, 'r) t -> ('self, _, 'b) Symbol.t ->
+      ('self, mayrec, 'b -> 'a, 'r) t
+    val next_norec :
+      ('self, norec, 'a, 'r) Rule.t -> ('self, norec, 'b) Symbol.t ->
+      ('self, norec, 'b -> 'a, 'r) t
+
+  end and Rules : sig
+
+    type 'a t
+    val make : (_, norec, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
+
+  end
+
+  module Production : sig
+    type 'a t
+    val make : ('a, _, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
+  end
+
+  module Unsafe :
+  sig
+    val clear_entry : 'a Entry.t -> unit
+  end
+  val safe_extend : warning:(string -> unit) option ->
+    'a Entry.t -> Gramext.position option ->
+    (string option * Gramext.g_assoc option * 'a Production.t list)
+      list ->
+    unit
+  val safe_delete_rule : 'a Entry.t -> ('a, _, 'f, 'r) Rule.t -> unit
+end
 
 (* Implementation *)
 
-module GMake (L : GLexerType) =
-struct
+module GMake (L : GLexerType) = struct
 
 type te = L.te
 type 'c pattern = 'c L.pattern
@@ -84,7 +102,7 @@ type grammar =
   { gtokens : (string * string option, int ref) Hashtbl.t }
 
 let egram =
-  {gtokens = Hashtbl.create 301 }
+  { gtokens = Hashtbl.create 301 }
 
 let tokens con =
   let list = ref [] in
@@ -94,12 +112,12 @@ let tokens con =
   !list
 
 type ('a, 'b, 'c) ty_and_rec =
-| NoRec2 : (ty_norec, ty_norec, ty_norec) ty_and_rec
-| MayRec2 : ('a, 'b, ty_mayrec) ty_and_rec
+| NoRec2 : (norec, norec, norec) ty_and_rec
+| MayRec2 : ('a, 'b, mayrec) ty_and_rec
 
 type ('a, 'b, 'c, 'd) ty_and_rec3 =
-| NoRec3 : (ty_norec, ty_norec, ty_norec, ty_norec) ty_and_rec3
-| MayRec3 : ('a, 'b, 'c, ty_mayrec) ty_and_rec3
+| NoRec3 : (norec, norec, norec, norec) ty_and_rec3
+| MayRec3 : ('a, 'b, 'c, mayrec) ty_and_rec3
 
 type 'a ty_entry = {
   ename : string;
@@ -122,26 +140,26 @@ and ('trecs, 'trecp, 'a) ty_rec_level = {
 }
 
 and ('self, 'trec, 'a) ty_symbol =
-| Stoken : 'c pattern -> ('self, ty_norec, 'c) ty_symbol
+| Stoken : 'c pattern -> ('self, norec, 'c) ty_symbol
 | Slist1 : ('self, 'trec, 'a) ty_symbol -> ('self, 'trec, 'a list) ty_symbol
-| Slist1sep : ('self, 'trec, 'a) ty_symbol * ('self, ty_norec, _) ty_symbol * bool -> ('self, 'trec, 'a list) ty_symbol
+| Slist1sep : ('self, 'trec, 'a) ty_symbol * ('self, norec, _) ty_symbol * bool -> ('self, 'trec, 'a list) ty_symbol
 | Slist0 : ('self, 'trec, 'a) ty_symbol -> ('self, 'trec, 'a list) ty_symbol
-| Slist0sep : ('self, 'trec, 'a) ty_symbol * ('self, ty_norec, _) ty_symbol * bool -> ('self, 'trec, 'a list) ty_symbol
+| Slist0sep : ('self, 'trec, 'a) ty_symbol * ('self, norec, _) ty_symbol * bool -> ('self, 'trec, 'a list) ty_symbol
 | Sopt : ('self, 'trec, 'a) ty_symbol -> ('self, 'trec, 'a option) ty_symbol
-| Sself : ('self, ty_mayrec, 'self) ty_symbol
-| Snext : ('self, ty_mayrec, 'self) ty_symbol
-| Snterm : 'a ty_entry -> ('self, ty_norec, 'a) ty_symbol
-| Snterml : 'a ty_entry * string -> ('self, ty_norec, 'a) ty_symbol
+| Sself : ('self, mayrec, 'self) ty_symbol
+| Snext : ('self, mayrec, 'self) ty_symbol
+| Snterm : 'a ty_entry -> ('self, norec, 'a) ty_symbol
+| Snterml : 'a ty_entry * string -> ('self, norec, 'a) ty_symbol
 | Stree : ('self, 'trec, Loc.t -> 'a) ty_tree -> ('self, 'trec, 'a) ty_symbol
 
 and ('self, _, _, 'r) ty_rule =
-| TStop : ('self, ty_norec, 'r, 'r) ty_rule
+| TStop : ('self, norec, 'r, 'r) ty_rule
 | TNext : ('trr, 'trs, 'tr) ty_and_rec * ('self, 'trr, 'a, 'r) ty_rule * ('self, 'trs, 'b) ty_symbol -> ('self, 'tr, 'b -> 'a, 'r) ty_rule
 
 and ('self, 'trec, 'a) ty_tree =
 | Node : ('trn, 'trs, 'trb, 'tr) ty_and_rec3 * ('self, 'trn, 'trs, 'trb, 'b, 'a) ty_node -> ('self, 'tr, 'a) ty_tree
-| LocAct : 'k * 'k list -> ('self, ty_norec, 'k) ty_tree
-| DeadEnd : ('self, ty_norec, 'k) ty_tree
+| LocAct : 'k * 'k list -> ('self, norec, 'k) ty_tree
+| DeadEnd : ('self, norec, 'k) ty_tree
 
 and ('self, 'trec, 'trecs, 'trecb, 'a, 'r) ty_node = {
   node : ('self, 'trec, 'a) ty_symbol;
@@ -150,7 +168,7 @@ and ('self, 'trec, 'trecs, 'trecb, 'a, 'r) ty_node = {
 }
 
 type 'a ty_rules =
-| TRules : (_, ty_norec, 'act, Loc.t -> 'a) ty_rule * 'act -> 'a ty_rules
+| TRules : (_, norec, 'act, Loc.t -> 'a) ty_rule * 'act -> 'a ty_rules
 
 type 'a ty_production =
 | TProd : ('a, _, 'act, Loc.t -> 'a) ty_rule * 'act -> 'a ty_production
@@ -222,13 +240,13 @@ let is_before : type s1 s2 r1 r2 a1 a2. (s1, r1, a1) ty_symbol -> (s2, r2, a2) t
 
 (** Ancillary datatypes *)
 
-type 'a ty_rec = MayRec : ty_mayrec ty_rec | NoRec : ty_norec ty_rec
+type 'a ty_rec = MayRec : mayrec ty_rec | NoRec : norec ty_rec
 
 type ('a, 'b, 'c) ty_and_ex =
-| NR00 : (ty_mayrec, ty_mayrec, ty_mayrec) ty_and_ex
-| NR01 : (ty_mayrec, ty_norec, ty_mayrec) ty_and_ex
-| NR10 : (ty_norec, ty_mayrec, ty_mayrec) ty_and_ex
-| NR11 : (ty_norec, ty_norec, ty_norec) ty_and_ex
+| NR00 : (mayrec, mayrec, mayrec) ty_and_ex
+| NR01 : (mayrec, norec, mayrec) ty_and_ex
+| NR10 : (norec, mayrec, mayrec) ty_and_ex
+| NR11 : (norec, norec, norec) ty_and_ex
 
 type ('a, 'b) ty_mayrec_and_ex =
 | MayRecNR : ('a, 'b, _) ty_and_ex -> ('a, 'b) ty_mayrec_and_ex
@@ -243,7 +261,7 @@ type ('s, 'a, 'r) ty_mayrec_rule =
 | MayRecRule : ('s, _, 'a, 'r) ty_rule -> ('s, 'a, 'r) ty_mayrec_rule
 
 type ('self, 'trec, _) ty_symbols =
-| TNil : ('self, ty_norec, unit) ty_symbols
+| TNil : ('self, norec, unit) ty_symbols
 | TCns : ('trh, 'trt, 'tr) ty_and_rec * ('self, 'trh, 'a) ty_symbol * ('self, 'trt, 'b) ty_symbols -> ('self, 'tr, 'a * 'b) ty_symbols
 
 (** ('i, 'p, 'f, 'r) rel_prod0 ~
@@ -313,7 +331,7 @@ let insert_tree (type s trs trt tr p k a) ~warning entry_name (ar : (trs, trt, t
       TCns (ars, s, sl), RelS pf -> insert_in_tree ar ars s sl pf tree action
     | TNil, Rel0 ->
         let node (type tb) ({node = s; son = son; brother = bro} : (_, _, _, tb, _, _) ty_node) =
-          let ar : (ty_norec, tb, tb) ty_and_ex =
+          let ar : (norec, tb, tb) ty_and_ex =
             match get_rec_tree bro with MayRec -> NR10 | NoRec -> NR11 in
           {node = s; son = son; brother = insert ar TNil Rel0 bro action} in
         match ar, tree with
@@ -387,21 +405,21 @@ let insert_tree (type s trs trt tr p k a) ~warning entry_name (ar : (trs, trt, t
   in
   insert ar gsymbols pf tree action
 
-let insert_tree_norec (type s p k a) ~warning entry_name (gsymbols : (s, ty_norec, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, ty_norec, a) ty_tree) : (s, ty_norec, a) ty_tree =
+let insert_tree_norec (type s p k a) ~warning entry_name (gsymbols : (s, norec, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, norec, a) ty_tree) : (s, norec, a) ty_tree =
   insert_tree ~warning entry_name NR11 gsymbols pf action tree
 
 let insert_tree (type s trs trt p k a) ~warning entry_name (gsymbols : (s, trs, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, trt, a) ty_tree) : (s, a) ty_mayrec_tree =
   let MayRecNR ar = and_symbols_tree gsymbols tree in
   MayRecTree (insert_tree ~warning entry_name ar gsymbols pf action tree)
 
-let srules (type self a) ~warning (rl : a ty_rules list) : (self, ty_norec, a) ty_symbol =
-  let rec retype_tree : type s a. (s, ty_norec, a) ty_tree -> (self, ty_norec, a) ty_tree =
+let srules (type self a) ~warning (rl : a ty_rules list) : (self, norec, a) ty_symbol =
+  let rec retype_tree : type s a. (s, norec, a) ty_tree -> (self, norec, a) ty_tree =
     function
     | Node (NoRec3, {node = s; son = son; brother = bro}) ->
       Node (NoRec3, {node = retype_symbol s; son = retype_tree son; brother = retype_tree bro})
     | LocAct (k, kl) -> LocAct (k, kl)
     | DeadEnd -> DeadEnd
-  and retype_symbol : type s a. (s, ty_norec, a) ty_symbol -> (self, ty_norec, a) ty_symbol =
+  and retype_symbol : type s a. (s, norec, a) ty_symbol -> (self, norec, a) ty_symbol =
     function
     | Stoken p -> Stoken p
     | Slist1 s -> Slist1 (retype_symbol s)
@@ -412,7 +430,7 @@ let srules (type self a) ~warning (rl : a ty_rules list) : (self, ty_norec, a) t
     | Snterm e -> Snterm e
     | Snterml (e, l) -> Snterml (e, l)
     | Stree t -> Stree (retype_tree t) in
-  let rec retype_rule : type s k r. (s, ty_norec, k, r) ty_rule -> (self, ty_norec, k, r) ty_rule =
+  let rec retype_rule : type s k r. (s, norec, k, r) ty_rule -> (self, norec, k, r) ty_rule =
     function
     | TStop -> TStop
     | TNext (NoRec2, r, s) -> TNext (NoRec2, retype_rule r, retype_symbol s) in
@@ -1037,7 +1055,7 @@ let level_number entry lab =
     Dlevels elev -> lookup 0 elev
   | Dparser _ -> raise Not_found
 
-let rec top_symb : type s tr a. s ty_entry -> (s, tr, a) ty_symbol -> (s, ty_norec, a) ty_symbol =
+let rec top_symb : type s tr a. s ty_entry -> (s, tr, a) ty_symbol -> (s, norec, a) ty_symbol =
   fun entry ->
   function
     Sself -> Snterm entry
@@ -1484,105 +1502,168 @@ let delete_rule entry sl =
 
 (* Normal interface *)
 
-type parsable =
-  { pa_chr_strm : char Stream.t;
-    pa_tok_strm : L.te Stream.t;
-    pa_loc_func : Plexing.location_function }
+module Parsable = struct
 
-let parse_parsable entry p =
-  let efun = entry.estart 0 in
-  let ts = p.pa_tok_strm in
-  let cs = p.pa_chr_strm in
-  let fun_loc = p.pa_loc_func in
-  let restore =
-    let old_floc = !floc in
-    let old_tc = !token_count in
-    fun () -> floc := old_floc; token_count := old_tc
-  in
-  let get_loc () =
-    try
-      let cnt = Stream.count ts in
-      (* Ensure that the token at location cnt has been peeked so that
-         the location function knows about it *)
-      let _ = Stream.peek ts in
-      let loc = fun_loc cnt in
-      if !token_count - 1 <= cnt then loc
-      else Loc.merge loc (fun_loc (!token_count - 1))
-    with Failure _ -> Ploc.make_unlined (Stream.count cs, Stream.count cs + 1)
-  in
-  floc := fun_loc;
-  token_count := 0;
-  try let r = efun ts in restore (); r with
-    Stream.Failure ->
+  type t =
+    { pa_chr_strm : char Stream.t
+    ; pa_tok_strm : L.te Stream.t
+    ; pa_loc_func : Plexing.location_function
+    }
+
+  let parse_parsable entry p =
+    let efun = entry.estart 0 in
+    let ts = p.pa_tok_strm in
+    let cs = p.pa_chr_strm in
+    let fun_loc = p.pa_loc_func in
+    let restore =
+      let old_floc = !floc in
+      let old_tc = !token_count in
+      fun () -> floc := old_floc; token_count := old_tc
+    in
+    let get_loc () =
+      try
+        let cnt = Stream.count ts in
+        (* Ensure that the token at location cnt has been peeked so that
+           the location function knows about it *)
+        let _ = Stream.peek ts in
+        let loc = fun_loc cnt in
+        if !token_count - 1 <= cnt then loc
+        else Loc.merge loc (fun_loc (!token_count - 1))
+      with Failure _ -> Ploc.make_unlined (Stream.count cs, Stream.count cs + 1)
+    in
+    floc := fun_loc;
+    token_count := 0;
+    try let r = efun ts in restore (); r with
+      Stream.Failure ->
       let loc = get_loc () in
       restore ();
       Ploc.raise loc (Stream.Error ("illegal begin of " ^ entry.ename))
-  | Stream.Error _ as exc ->
+    | Stream.Error _ as exc ->
       let loc = get_loc () in restore (); Ploc.raise loc exc
-  | exc ->
+    | exc ->
       let loc = Stream.count cs, Stream.count cs + 1 in
       restore (); Ploc.raise (Ploc.make_unlined loc) exc
 
-(* Unsafe *)
+  let make ?loc cs =
+    let (ts, lf) = L.tok_func ?loc cs in
+    {pa_chr_strm = cs; pa_tok_strm = ts; pa_loc_func = lf}
 
-let clear_entry e =
-  e.estart <- (fun _ (strm__ : _ Stream.t) -> raise Stream.Failure);
-  e.econtinue <- (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
-  match e.edesc with
-    Dlevels _ -> e.edesc <- Dlevels []
-  | Dparser _ -> ()
+end
 
-    let parsable ?loc cs =
-      let (ts, lf) = L.tok_func ?loc cs in
-      {pa_chr_strm = cs; pa_tok_strm = ts; pa_loc_func = lf}
-    module Entry =
-      struct
-        type 'a e = 'a ty_entry
-        let create n =
-          { ename = n; estart = empty_entry n;
-           econtinue =
-             (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
-           edesc = Dlevels []}
-        let parse (e : 'a e) p : 'a =
-          parse_parsable e p
-        let parse_token_stream (e : 'a e) ts : 'a =
-          e.estart 0 ts
-        let name e = e.ename
-        let of_parser n (p : Plexing.location_function -> te Stream.t -> 'a) : 'a e =
-          { ename = n;
-           estart = (fun _ -> p !floc);
-           econtinue =
-             (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
-           edesc = Dparser p}
-        let print ppf e = fprintf ppf "%a@." print_entry e
-      end
-    let s_nterm e = Snterm e
-    let s_nterml e l = Snterml (e, l)
-    let s_list0 s = Slist0 s
-    let s_list0sep s sep b = Slist0sep (s, sep, b)
-    let s_list1 s = Slist1 s
-    let s_list1sep s sep b = Slist1sep (s, sep, b)
-    let s_opt s = Sopt s
-    let s_self = Sself
-    let s_next = Snext
-    let s_token tok = Stoken tok
-    let s_rules ~warning (t : 'a ty_rules list) = srules ~warning t
-    let r_stop = TStop
-    let r_next r s = TNext (MayRec2, r, s)
-    let r_next_norec r s = TNext (NoRec2, r, s)
-    let rules (p, act) = TRules (p, act)
-    let production (p, act) = TProd (p, act)
-    module Unsafe =
-      struct
-        let clear_entry = clear_entry
-      end
-    let safe_extend ~warning (e : 'a Entry.e) pos
-        (r :
-         (string option * Gramext.g_assoc option * 'a ty_production list)
-           list) =
-      extend_entry ~warning e pos r
-    let safe_delete_rule e r =
-      let AnyS (symbols, _) = get_symbols r in
-      delete_rule e symbols
+module Entry = struct
+  type 'a t = 'a ty_entry
+  let make n =
+    { ename = n; estart = empty_entry n;
+      econtinue =
+        (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
+      edesc = Dlevels []}
+  let parse (e : 'a t) p : 'a =
+    Parsable.parse_parsable e p
+  let parse_token_stream (e : 'a t) ts : 'a =
+    e.estart 0 ts
+  let name e = e.ename
+  let of_parser n (p : Plexing.location_function -> te Stream.t -> 'a) : 'a t =
+    { ename = n;
+      estart = (fun _ -> p !floc);
+      econtinue =
+        (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
+      edesc = Dparser p}
+  let print ppf e = fprintf ppf "%a@." print_entry e
+end
+
+module rec Symbol : sig
+
+  type ('self, 'trec, 'a) t = ('self, 'trec, 'a) ty_symbol
+
+  val nterm : 'a Entry.t -> ('self, norec, 'a) t
+  val nterml : 'a Entry.t -> string -> ('self, norec, 'a) t
+  val list0 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
+  val list0sep :
+    ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+    ('self, 'trec, 'a list) t
+  val list1 : ('self, 'trec, 'a) t -> ('self, 'trec, 'a list) t
+  val list1sep :
+    ('self, 'trec, 'a) t -> ('self, norec, 'b) t -> bool ->
+    ('self, 'trec, 'a list) t
+  val opt : ('self, 'trec, 'a) t -> ('self, 'trec, 'a option) t
+  val self : ('self, mayrec, 'self) t
+  val next : ('self, mayrec, 'self) t
+  val token : 'c pattern -> ('self, norec, 'c) t
+  val rules : warning:(string -> unit) option -> 'a Rules.t list -> ('self, norec, 'a) t
+
+end = struct
+
+  type ('self, 'trec, 'a) t = ('self, 'trec, 'a) ty_symbol
+  let nterm e = Snterm e
+  let nterml e l = Snterml (e, l)
+  let list0 s = Slist0 s
+  let list0sep s sep b = Slist0sep (s, sep, b)
+  let list1 s = Slist1 s
+  let list1sep s sep b = Slist1sep (s, sep, b)
+  let opt s = Sopt s
+  let self = Sself
+  let next = Snext
+  let token tok = Stoken tok
+  let rules ~warning (t : 'a Rules.t list) = srules ~warning t
+
+end and Rule : sig
+
+  type ('self, 'trec, 'f, 'r) t = ('self, 'trec, 'f, 'r) ty_rule
+
+  val stop : ('self, norec, 'r, 'r) t
+  val next :
+    ('self, _, 'a, 'r) t -> ('self, _, 'b) Symbol.t ->
+    ('self, mayrec, 'b -> 'a, 'r) t
+  val next_norec :
+    ('self, norec, 'a, 'r) Rule.t -> ('self, norec, 'b) Symbol.t ->
+    ('self, norec, 'b -> 'a, 'r) t
+
+end = struct
+
+  type ('self, 'trec, 'f, 'r) t = ('self, 'trec, 'f, 'r) ty_rule
+
+  let stop = TStop
+  let next r s = TNext (MayRec2, r, s)
+  let next_norec r s = TNext (NoRec2, r, s)
+
+end and Rules : sig
+
+  type 'a t = 'a ty_rules
+  val make : (_, norec, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
+
+end = struct
+
+  type 'a t = 'a ty_rules
+  let make p act = TRules (p, act)
+
+end
+
+module Production = struct
+
+  type 'a t = 'a ty_production
+  let make p act = TProd (p, act)
+
+end
+
+module Unsafe = struct
+
+  let clear_entry e =
+    e.estart <- (fun _ (strm__ : _ Stream.t) -> raise Stream.Failure);
+    e.econtinue <- (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
+    match e.edesc with
+      Dlevels _ -> e.edesc <- Dlevels []
+    | Dparser _ -> ()
+
+end
+
+let safe_extend ~warning (e : 'a Entry.t) pos
+    (r :
+       (string option * Gramext.g_assoc option * 'a ty_production list)
+         list) =
+  extend_entry ~warning e pos r
+
+let safe_delete_rule e r =
+  let AnyS (symbols, _) = get_symbols r in
+  delete_rule e symbols
 
 end

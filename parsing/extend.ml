@@ -10,7 +10,7 @@
 
 (** Entry keys for constr notations *)
 
-type 'a entry = 'a Gramlib.Grammar.GMake(CLexer.Lexer).Entry.e
+type 'a entry = 'a Gramlib.Grammar.GMake(CLexer.Lexer).Entry.t
 
 type side = Left | Right
 
@@ -82,8 +82,8 @@ type ('a,'b,'c) ty_user_symbol =
 
 (* Should be merged with gramlib's implementation *)
 
-type norec = Gramlib.Grammar.ty_norec
-type mayrec = Gramlib.Grammar.ty_mayrec
+type norec = Gramlib.Grammar.norec
+type mayrec = Gramlib.Grammar.mayrec
 
 type ('self, 'trec, 'a) symbol =
 | Atoken : 'c Tok.p -> ('self, norec, 'c) symbol
