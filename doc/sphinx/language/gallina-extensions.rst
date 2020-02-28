@@ -27,19 +27,26 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
      field          : `ident` [ `binders` ] : `type` [ where `notation` ]
                     : `ident` [ `binders` ] [: `type` ] := `term`
 
-.. cmd:: Record @ident @binders {? : @sort} := {? @ident} { {*; @ident @binders : @type } }
+.. cmd:: {| Record | Structure } @inductive_definition {* with @inductive_definition }
+   :name: Record; Structure
 
    The first identifier :token:`ident` is the name of the defined record and :token:`sort` is its
    type. The optional identifier following ``:=`` is the name of its constructor. If it is omitted,
    the default name :n:`Build_@ident`, where :token:`ident` is the record name, is used. If :token:`sort` is
    omitted, the default sort is :math:`\Type`. The identifiers inside the brackets are the names of
-   fields. For a given field :token:`ident`, its type is :n:`forall @binders, @type`.
+   fields. For a given field :token:`ident`, its type is :n:`forall {* @binder }, @type`.
    Remark that the type of a particular identifier may depend on a previously-given identifier. Thus the
    order of the fields is important. Finally, :token:`binders` are parameters of the record.
 
+   :cmd:`Record` and :cmd:`Structure` are synonyms.
+
+   This command supports the :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
+   :attr:`universes(template)`, :attr:`universes(notemplate)`,
+   :attr:`Cumulative`, :attr:`NonCumulative` and :attr:`Private` attributes.
+
 More generally, a record may have explicitly defined (a.k.a. manifest)
 fields. For instance, we might have:
-:n:`Record @ident @binders : @sort := { @ident__1 : @type__1 ; @ident__2 := @term__2 ; @ident__3 : @type__3 }`.
+:n:`Record @ident {* @binder } : @sort := { @ident__1 : @type__1 ; @ident__2 := @term__2 ; @ident__3 : @type__3 }`.
 in which case the correctness of :n:`@type__3` may rely on the instance :n:`@term__2` of :n:`@ident__2` and :n:`@term__2` may in turn depend on :n:`@ident__1`.
 
 .. example::
@@ -62,7 +69,7 @@ in which case the correctness of :n:`@type__3` may rely on the instance :n:`@ter
 
 Let us now see the work done by the ``Record`` macro. First the macro
 generates a variant type definition with just one constructor:
-:n:`Variant @ident {? @binders } : @sort := @ident__0 {? @binders }`.
+:n:`Variant @ident {* @binder } : @sort := @ident__0 {* @binder }`.
 
 To build an object of type :token:`ident`, one should provide the constructor
 :n:`@ident__0` with the appropriate number of terms filling the fields of the record.
@@ -182,8 +189,6 @@ other arguments are the parameters of the inductive type.
    Automatic generation of induction schemes for non-recursive records
    defined with the ``Record`` keyword can be activated with the
    :flag:`Nonrecursive Elimination Schemes` flag (see :ref:`proofschemes-induction-principles`).
-
-.. note:: ``Structure`` is a synonym of the keyword ``Record``.
 
 .. warn:: @ident cannot be defined.
 
@@ -696,7 +701,7 @@ used by ``Function``. A more precise description is given below.
 
 .. cmdv:: Function @ident {* @binder } : @type := @term
 
-   Defines the not recursive function :token:`ident` as if declared with
+   Defines the nonrecursive function :token:`ident` as if it was declared with
    :cmd:`Definition`. Moreover the following are defined:
 
     + :token:`ident`\ ``_rect``, :token:`ident`\ ``_rec`` and :token:`ident`\ ``_ind``,
@@ -817,32 +822,6 @@ Sections create local contexts which can be shared across multiple definitions.
    Most commands, like :cmd:`Hint`, :cmd:`Notation`, option management, … which
    appear inside a section are canceled when the section is closed.
 
-.. cmd:: Variable @ident : @type
-
-   This command links :token:`type` to the name :token:`ident` in the context of
-   the current section. When the current section is closed, name :token:`ident`
-   will be unknown and every object using this variable will be explicitly
-   parameterized (the variable is *discharged*).
-
-   .. exn:: @ident already exists.
-      :name: @ident already exists. (Variable)
-      :undocumented:
-
-   .. cmdv:: Variable {+ @ident } : @type
-
-      Links :token:`type` to each :token:`ident`.
-
-   .. cmdv:: Variable {+ ( {+ @ident } : @type ) }
-
-      Declare one or more variables with various types.
-
-   .. cmdv:: Variables {+ ( {+ @ident } : @type) }
-             Hypothesis {+ ( {+ @ident } : @type) }
-             Hypotheses {+ ( {+ @ident } : @type) }
-      :name: Variables; Hypothesis; Hypotheses
-
-      These variants are synonyms of :n:`Variable {+ ( {+ @ident } : @type) }`.
-
 .. cmd:: Let @ident := @term
 
    This command binds the value :token:`term` to the name :token:`ident` in the
@@ -855,7 +834,7 @@ Sections create local contexts which can be shared across multiple definitions.
       :name: @ident already exists. (Let)
       :undocumented:
 
-   .. cmdv:: Let @ident {? @binders } {? : @type } := @term
+   .. cmdv:: Let @ident {* @binder } {? : @type } := @term
       :undocumented:
 
    .. cmdv:: Let Fixpoint @ident @fix_body {* with @fix_body}
@@ -866,7 +845,7 @@ Sections create local contexts which can be shared across multiple definitions.
       :name: Let CoFixpoint
       :undocumented:
 
-.. cmd:: Context @binders
+.. cmd:: Context {* @binder }
 
    Declare variables in the context of the current section, like :cmd:`Variable`,
    but also allowing implicit variables, :ref:`implicit-generalization`, and
@@ -1011,7 +990,7 @@ Reserved commands inside an interactive module type:
 
    This is a shortcut for the command :n:`Include @module` for each :token:`module`.
 
-.. cmd:: @assumption_keyword Inline @assums
+.. cmd:: @assumption_token Inline @assums
    :name: Inline
 
    The instance of this assumption will be automatically expanded at functor application, except when
@@ -1673,11 +1652,11 @@ The syntax is also supported in internal binders. For instance, in the
 following kinds of expressions, the type of each declaration present
 in :token:`binders` can be bracketed to mark the declaration as
 implicit:
-:n:`fun (@ident:forall @binders, @type) => @term`,
-:n:`forall (@ident:forall @binders, @type), @type`,
-:n:`let @ident @binders := @term in @term`,
-:n:`fix @ident @binders := @term in @term` and
-:n:`cofix @ident @binders := @term in @term`.
+:n:`fun (@ident:forall {* @binder }, @type) => @term`,
+:n:`forall (@ident:forall {* @binder }, @type), @type`,
+:n:`let @ident {* @binder } := @term in @term`,
+:n:`fix @ident {* @binder } := @term in @term` and
+:n:`cofix @ident {* @binder } := @term in @term`.
 Here is an example:
 
 .. coqtop:: all

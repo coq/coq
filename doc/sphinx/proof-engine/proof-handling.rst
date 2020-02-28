@@ -80,20 +80,19 @@ list of assertion commands is given in :ref:`Assertions`. The command
       a while when the proof is large. In some exceptional cases one may
       even incur a memory overflow.
 
-   .. cmdv:: Defined
-      :name: Defined
+.. cmd:: Defined
 
-      Same as :cmd:`Qed` but the proof is then declared transparent, which means
-      that its content can be explicitly used for type checking and that it can be
-      unfolded in conversion tactics (see :ref:`performingcomputations`,
-      :cmd:`Opaque`, :cmd:`Transparent`).
+   Same as :cmd:`Qed`, except the proof is made *transparent*, which means
+   that its content can be explicitly used for type checking and that it can be
+   unfolded in conversion tactics (see :ref:`performingcomputations`,
+   :cmd:`Opaque`, :cmd:`Transparent`).
 
-   .. cmdv:: Save @ident
-      :name: Save
+.. cmd:: Save @ident
+   :name: Save
 
-      Forces the name of the original goal to be :token:`ident`. This
-      command (and the following ones) can only be used if the original goal
-      has been opened using the :cmd:`Goal` command.
+   Forces the name of the original goal to be :token:`ident`. This
+   command can only be used if the original goal
+   was opened using the :cmd:`Goal` command.
 
 .. cmd:: Admitted
 

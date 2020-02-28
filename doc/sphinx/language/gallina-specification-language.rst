@@ -49,11 +49,11 @@ Blanks
 
 Comments
   Comments are enclosed between ``(*`` and ``*)``.  They can be nested.
-  They can contain any character. However, embedded :token:`string` literals must be
+  They can contain any character. However, embedded :n:`@string` literals must be
   correctly closed. Comments are treated as blanks.
 
 Identifiers
-  Identifiers, written :token:`ident`, are sequences of letters, digits, ``_`` and
+  Identifiers, written :n:`@ident`, are sequences of letters, digits, ``_`` and
   ``'``, that do not start with a digit or ``'``.  That is, they are
   recognized by the following grammar (except that the string ``_`` is reserved;
   it is not a valid identifier):
@@ -74,8 +74,8 @@ Identifiers
 
 Numerals
   Numerals are sequences of digits with an optional fractional part
-  and exponent, optionally preceded by a minus sign. :token:`int` is an integer;
-  a numeral without fractional or exponent parts. :token:`num` is a non-negative
+  and exponent, optionally preceded by a minus sign. :n:`@int` is an integer;
+  a numeral without fractional or exponent parts. :n:`@num` is a non-negative
   integer.  Underscores embedded in the digits are ignored, for example
   ``1_000_000`` is the same as ``1000000``.
 
@@ -175,12 +175,19 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
    | ltac : ( @ltac_expr )
    field_def ::= @qualid {* @binder } := @term
 
+.. _types:
+
 Types
 -----
 
-Coq terms are typed. Coq types are recognized by the same syntactic
-class as :token:`term`. We denote by :production:`type` the semantic subclass
-of types inside the syntactic class :token:`term`.
+.. prodn::
+   type ::= @term
+
+:n:`@type`\s are a subset of :n:`@term`\s; not every :n:`@term` is a :n:`@type`.
+Every term has an associated type, which
+can be determined by applying the :ref:`typing-rules`.  Distinct terms
+may share the same type, for example 0 and 1 are both of type `nat`, the
+natural numbers.
 
 .. _gallina-identifiers:
 
@@ -193,14 +200,14 @@ Qualified identifiers and simple identifiers
    qualid ::= @ident {* @field_ident }
    field_ident ::= .@ident
 
-*Qualified identifiers* (:token:`qualid`) denote *global constants*
+*Qualified identifiers* (:n:`@qualid`) denote *global constants*
 (definitions, lemmas, theorems, remarks or facts), *global variables*
 (parameters or axioms), *inductive types* or *constructors of inductive
-types*. *Simple identifiers* (or shortly :token:`ident`) are a syntactic subset
+types*. *Simple identifiers* (or shortly :n:`@ident`) are a syntactic subset
 of qualified identifiers. Identifiers may also denote *local variables*,
 while qualified identifiers do not.
 
-Field identifiers, written :token:`field_ident`, are identifiers prefixed by
+Field identifiers, written :n:`@field_ident`, are identifiers prefixed by
 `.` (dot) with no blank between the dot and the identifier.
 
 
@@ -215,7 +222,7 @@ numbers (see :ref:`datatypes`).
 
 .. note::
 
-   Negative integers are not at the same level as :token:`num`, for this
+   Negative integers are not at the same level as :n:`@num`, for this
    would make precedence unnatural.
 
 .. index::
@@ -227,7 +234,7 @@ numbers (see :ref:`datatypes`).
 Sorts
 -----
 
-.. insertprodn sort univ_annot
+.. insertprodn sort univ_constraint
 
 .. prodn::
    sort ::= Set
@@ -242,12 +249,14 @@ Sorts
    universe_name ::= @qualid
    | Set
    | Prop
+   univ_annot ::= @%{ {* @universe_level } %}
    universe_level ::= Set
    | Prop
    | Type
    | _
    | @qualid
-   univ_annot ::= @%{ {* @universe_level } %}
+   univ_decl ::= @%{ {* @ident } {? + } {? %| {*, @univ_constraint } {? + } } %}
+   univ_constraint ::= @universe_name {| < | = | <= } @universe_name
 
 There are four sorts :g:`SProp`, :g:`Prop`, :g:`Set`  and :g:`Type`.
 
@@ -255,13 +264,13 @@ There are four sorts :g:`SProp`, :g:`Prop`, :g:`Set`  and :g:`Type`.
    propositions* (also called *strict propositions*).
 
 -  :g:`Prop` is the universe of *logical propositions*. The logical propositions
-   themselves are typing the proofs. We denote propositions by :token:`form`.
-   This constitutes a semantic subclass of the syntactic class :token:`term`.
+   themselves are typing the proofs. We denote propositions by :n:`@form`.
+   This constitutes a semantic subclass of the syntactic class :n:`@term`.
 
 -  :g:`Set` is the universe of *program types* or *specifications*. The
    specifications themselves are typing the programs. We denote
-   specifications by :token:`specif`. This constitutes a semantic subclass of
-   the syntactic class :token:`term`.
+   specifications by :n:`@specif`. This constitutes a semantic subclass of
+   the syntactic class :n:`@term`.
 
 -  :g:`Type` is the type of sorts.
 
@@ -280,15 +289,15 @@ Binders
    name ::= _
    | @ident
    binder ::= @name
-   | ( {+ @name } : @term )
-   | ( @name {? : @term } := @term )
-   | %{ {+ @name } {? : @term } %}
-   | [ {+ @name } {? : @term } ]
+   | ( {+ @name } : @type )
+   | ( @name {? : @type } := @term )
+   | ( @name : @type %| @term )
+   | %{ {+ @name } {? : @type } %}
+   | [ {+ @name } {? : @type } ]
    | `( {+, @typeclass_constraint } )
    | `%{ {+, @typeclass_constraint } %}
    | `[ {+, @typeclass_constraint } ]
    | ' @pattern0
-   | ( @name : @term %| @term )
    typeclass_constraint ::= {? ! } @term
    | %{ @name %} : {? ! } @term
    | @name : {? ! } @term
@@ -303,14 +312,14 @@ a notation for a sequence of binding variables sharing the same type:
 binder can also be any pattern prefixed by a quote, e.g. :g:`'(x,y)`.
 
 Some constructions allow the binding of a variable to value. This is
-called a “let-binder”. The entry :token:`binder` of the grammar accepts
+called a “let-binder”. The entry :n:`@binder` of the grammar accepts
 either an assumption binder as defined above or a let-binder. The notation in
 the latter case is :n:`(@ident := @term)`. In a let-binder, only one
 variable can be introduced at the same time. It is also possible to give
 the type of the variable as follows:
 :n:`(@ident : @type := @term)`.
 
-Lists of :token:`binder`\s are allowed. In the case of :g:`fun` and :g:`forall`,
+Lists of :n:`@binder`\s are allowed. In the case of :g:`fun` and :g:`forall`,
 it is intended that at least one binder of the list is an assumption otherwise
 fun and forall gets identical. Moreover, parentheses can be omitted in
 the case of a single sequence of bindings sharing the same type (e.g.:
@@ -322,9 +331,9 @@ Abstractions: fun
 -----------------
 
 The expression :n:`fun @ident : @type => @term` defines the
-*abstraction* of the variable :token:`ident`, of type :token:`type`, over the term
-:token:`term`. It denotes a function of the variable :token:`ident` that evaluates to
-the expression :token:`term` (e.g. :g:`fun x : A => x` denotes the identity
+*abstraction* of the variable :n:`@ident`, of type :n:`@type`, over the term
+:n:`@term`. It denotes a function of the variable :n:`@ident` that evaluates to
+the expression :n:`@term` (e.g. :g:`fun x : A => x` denotes the identity
 function on type :g:`A`). The keyword :g:`fun` can be followed by several
 binders as given in Section :ref:`binders`. Functions over
 several variables are equivalent to an iteration of one-variable
@@ -341,12 +350,12 @@ Products: forall
 ----------------
 
 The expression :n:`forall @ident : @type, @term` denotes the
-*product* of the variable :token:`ident` of type :token:`type`, over the term :token:`term`.
+*product* of the variable :n:`@ident` of type :n:`@type`, over the term :n:`@term`.
 As for abstractions, :g:`forall` is followed by a binder list, and products
 over several variables are equivalent to an iteration of one-variable
-products. Note that :token:`term` is intended to be a type.
+products. Note that :n:`@term` is intended to be a type.
 
-If the variable :token:`ident` occurs in :token:`term`, the product is called
+If the variable :n:`@ident` occurs in :n:`@term`, the product is called
 *dependent product*. The intention behind a dependent product
 :g:`forall x : A, B` is twofold. It denotes either
 the universal quantification of the variable :g:`x` of type :g:`A`
@@ -391,13 +400,13 @@ Type cast
    | @term10 :>
 
 The expression :n:`@term : @type` is a type cast expression. It enforces
-the type of :token:`term` to be :token:`type`.
+the type of :n:`@term` to be :n:`@type`.
 
 :n:`@term <: @type` locally sets up the virtual machine for checking that
-:token:`term` has type :token:`type`.
+:n:`@term` has type :n:`@type`.
 
-:n:`@term <<: @type` uses native compilation for checking that :token:`term`
-has type :token:`type`.
+:n:`@term <<: @type` uses native compilation for checking that :n:`@term`
+has type :n:`@type`.
 
 .. index:: _
 
@@ -418,15 +427,15 @@ Let-in definitions
 .. insertprodn term_let term_let
 
 .. prodn::
-   term_let ::= let @name {? : @term } := @term in @term
-   | let @name {+ @binder } {? : @term } := @term in @term
+   term_let ::= let @name {? : @type } := @term in @term
+   | let @name {+ @binder } {? : @type } := @term in @term
    | let ( {*, @name } ) {? {? as @name } return @term100 } := @term in @term
    | let ' @pattern := @term {? return @term100 } in @term
    | let ' @pattern in @pattern := @term return @term100 in @term
 
 :n:`let @ident := @term in @term’`
-denotes the local binding of :token:`term` to the variable
-:token:`ident` in :token:`term`’. There is a syntactic sugar for let-in
+denotes the local binding of :n:`@term` to the variable
+:n:`@ident` in :n:`@term`’. There is a syntactic sugar for let-in
 definition of functions: :n:`let @ident {+ @binder} := @term in @term’`
 stands for :n:`let @ident := fun {+ @binder} => @term in @term’`.
 
@@ -463,8 +472,8 @@ to apply specific treatments accordingly.
 This paragraph describes the basic form of pattern matching. See
 Section :ref:`Mult-match` and Chapter :ref:`extendedpatternmatching` for the description
 of the general form. The basic form of pattern matching is characterized
-by a single :token:`case_item` expression, an :token:`eqn` restricted to a
-single :token:`pattern` and :token:`pattern` restricted to the form
+by a single :n:`@case_item` expression, an :n:`@eqn` restricted to a
+single :n:`@pattern` and :n:`@pattern` restricted to the form
 :n:`@qualid {* @ident}`.
 
 The expression
@@ -486,7 +495,7 @@ In the *dependent* case, there are three subcases. In the first subcase,
 the type in each branch may depend on the exact value being matched in
 the branch. In this case, the whole pattern matching itself depends on
 the term being matched. This dependency of the term being matched in the
-return type is expressed with an :n:`@ident` clause where :token:`ident`
+return type is expressed with an :n:`@ident` clause where :n:`@ident`
 is dependent in the return type. For instance, in the following example:
 
 .. coqtop:: in
@@ -538,7 +547,7 @@ dependency of the return type in the annotations of the inductive type
 is expressed with a clause in the form
 :n:`in @qualid {+ _ } {+ @pattern }`, where
 
--  :token:`qualid` is the inductive type of the term being matched;
+-  :n:`@qualid` is the inductive type of the term being matched;
 
 -  the holes :n:`_` match the parameters of the inductive type: the
    return type is not dependent on them.
@@ -587,7 +596,7 @@ Recursive and co-recursive functions: fix and cofix
 .. prodn::
    term_fix ::= let fix @fix_body in @term
    | fix @fix_body {? {+ with @fix_body } for @ident }
-   fix_body ::= @ident {* @binder } {? @fixannot } {? : @term } := @term
+   fix_body ::= @ident {* @binder } {? @fixannot } {? : @type } := @term
    fixannot ::= %{ struct @ident %}
    | %{ wf @term1_extended @ident %}
    | %{ measure @term1_extended {? @ident } {? @term1_extended } %}
@@ -595,92 +604,55 @@ Recursive and co-recursive functions: fix and cofix
    | @ @qualid {? @univ_annot }
 
 
-The expression “``fix`` :token:`ident`:math:`_1` :token:`binder`:math:`_1` ``:``
-:token:`type`:math:`_1` ``:=`` :token:`term`:math:`_1` ``with … with``
-:token:`ident`:math:`_n` :token:`binder`:math:`_n` : :token:`type`:math:`_n`
-``:=`` :token:`term`:math:`_n` ``for`` :token:`ident`:math:`_i`” denotes the
+The expression ":n:`fix @ident__1 @binder__1 : @type__1 := @term__1 with … with @ident__n @binder__n : @type__n := @term__n for @ident__i`" denotes the
 :math:`i`-th component of a block of functions defined by mutual structural
 recursion. It is the local counterpart of the :cmd:`Fixpoint` command. When
-:math:`n=1`, the “``for`` :token:`ident`:math:`_i`” clause is omitted.
+:math:`n=1`, the ":n:`for @ident__i`" clause is omitted.
 
 The association of a single fixpoint and a local definition have a special
-syntax: :n:`let fix @ident @binders := @term in` stands for
-:n:`let @ident := fix @ident @binders := @term in`. The same applies for co-fixpoints.
+syntax: :n:`let fix @ident {* @binder } := @term in` stands for
+:n:`let @ident := fix @ident {* @binder } := @term in`. The same applies for co-fixpoints.
 
 .. insertprodn term_cofix cofix_body
 
 .. prodn::
    term_cofix ::= let cofix @cofix_body in @term
    | cofix @cofix_body {? {+ with @cofix_body } for @ident }
-   cofix_body ::= @ident {* @binder } {? : @term } := @term
+   cofix_body ::= @ident {* @binder } {? : @type } := @term
 
-The expression “``cofix`` :token:`ident`:math:`_1` :token:`binder`:math:`_1` ``:``
-:token:`type`:math:`_1` ``with … with`` :token:`ident`:math:`_n` :token:`binder`:math:`_n`
-: :token:`type`:math:`_n` ``for`` :token:`ident`:math:`_i`” denotes the
-:math:`i`-th component of a block of terms defined by a mutual guarded
+The expression
+":n:`cofix @ident__1 @binder__1 : @type__1 with … with @ident__n @binder__n : @type__n for @ident__i`"
+denotes the :math:`i`-th component of a block of terms defined by a mutual guarded
 co-recursion. It is the local counterpart of the :cmd:`CoFixpoint` command. When
-:math:`n=1`, the “``for`` :token:`ident`:math:`_i`” clause is omitted.
+:math:`n=1`, the ":n:`for @ident__i`" clause is omitted.
 
 .. _vernacular:
 
 The Vernacular
 ==============
 
-.. insertgramXX vernac ident_opt2
+.. insertprodn vernacular vernacular
 
-.. productionlist:: coq
-   decorated-sentence : [ `decoration` … `decoration` ] `sentence`
-   sentence           : `assumption`
-                      : `definition`
-                      : `inductive`
-                      : `fixpoint`
-                      : `assertion` `proof`
-   assumption         : `assumption_keyword` `assums`.
-   assumption_keyword : Axiom | Conjecture
-                      : Parameter | Parameters
-                      : Variable | Variables
-                      : Hypothesis | Hypotheses
-   assums             : `ident` … `ident` : `term`
-                      : ( `ident` … `ident` : `term` ) … ( `ident` … `ident` : `term` )
-   definition         : [Local] Definition `ident` [`binders`] [: `term`] := `term` .
-                      : Let `ident` [`binders`] [: `term`] := `term` .
-   binders            : binders binder
-                      : binder
-   inductive          : Inductive `ind_body` with … with `ind_body` .
-                      : CoInductive `ind_body` with … with `ind_body` .
-   ind_body           : `ident` [`binders`] : `term` :=
-                      : [[|] `ident` [`binders`] [:`term`] | … | `ident` [`binders`] [:`term`]]
-   fixpoint           : Fixpoint `fix_body` with … with `fix_body` .
-                      : CoFixpoint `fix_body` with … with `fix_body` .
-   assertion          : `assertion_keyword` `ident` [`binders`] : `term` .
-   assertion_keyword  : Theorem | Lemma
-                      : Remark | Fact
-                      : Corollary | Property | Proposition
-                      : Definition | Example
-   proof              : Proof . … Qed .
-                      : Proof . … Defined .
-                      : Proof . … Admitted .
-   decoration : #[ `attributes` ]
-   attributes : [`attribute`, … , `attribute`]
-   attribute :  `ident`
-             : `ident` = `string`
-             : `ident` ( `attributes` )
+.. prodn::
+   vernacular ::= {* {? @all_attrs } {| @command | @ltac_expr } . }
 
-.. todo:: This use of … in this grammar is inconsistent
-          What about removing the proof part of this grammar from this chapter
-          and putting it somewhere where top-level tactics can be described as well?
-          See also #7583.
+The top-level input to |Coq| is a series of :production:`command`\s and :production:`tactic`\s,
+each terminated with a period
+and optionally decorated with :ref:`gallina-attributes`.  :n:`@ltac_expr` syntax supports both simple
+and compound tactics.  For example: ``split.`` is a simple tactic while ``split; auto.`` combines two
+simple tactics.
 
-This grammar describes *The Vernacular* which is the language of
-commands of Gallina. A sentence of the vernacular language, like in
-many natural languages, begins with a capital letter and ends with a
-dot.
+Tactics specify how to transform the current proof state as a step in creating a proof.  They
+are syntactically valid only when |Coq| is in proof mode, such as after a :cmd:`Theorem` command
+and before any subsequent proof-terminating command such as :cmd:`Qed`.  See :ref:`proofhandling` for more
+on proof mode.
 
-Sentences may be *decorated* with so-called *attributes*,
-which are described in the corresponding section (:ref:`gallina-attributes`).
+By convention, command names begin with uppercase letters, while
+tactic names begin with lowercase letters.  Commands appear in the
+HTML documentation in blue boxes after the label "Command".  In the pdf, they appear
+after the boldface label "Command:".  Commands are listed in the :ref:`command_index`.
 
-The different kinds of command are described hereafter. They all suppose
-that the terms occurring in the sentences are well-typed.
+Similarly, tactics appear after the label "Tactic".  Tactics are listed in the :ref:`tactic_index`.
 
 .. _gallina-assumptions:
 
@@ -688,73 +660,68 @@ Assumptions
 -----------
 
 Assumptions extend the environment with axioms, parameters, hypotheses
-or variables. An assumption binds an :token:`ident` to a :token:`type`. It is accepted
-by Coq if and only if this :token:`type` is a correct type in the environment
-preexisting the declaration and if :token:`ident` was not previously defined in
-the same module. This :token:`type` is considered to be the type (or
-specification, or statement) assumed by :token:`ident` and we say that :token:`ident`
-has type :token:`type`.
+or variables. An assumption binds an :n:`@ident` to a :n:`@type`. It is accepted
+by Coq if and only if this :n:`@type` is a correct type in the environment
+preexisting the declaration and if :n:`@ident` was not previously defined in
+the same module. This :n:`@type` is considered to be the type (or
+specification, or statement) assumed by :n:`@ident` and we say that :n:`@ident`
+has type :n:`@type`.
 
 .. _Axiom:
 
-.. cmd:: Parameter @ident : @type
+.. cmd:: @assumption_token {? Inline {? ( @num ) } } {| {+ ( @assumpt ) } | @assumpt }
+   :name: Axiom; Axioms; Conjecture; Conjectures; Hypothesis; Hypotheses; Parameter; Parameters; Variable; Variables
 
-   This command links :token:`type` to the name :token:`ident` as its specification in
-   the global context. The fact asserted by :token:`type` is thus assumed as a
-   postulate.
+   .. insertprodn assumption_token of_type
 
-   .. exn:: @ident already exists.
-      :name: @ident already exists. (Axiom)
-      :undocumented:
+   .. prodn::
+      assumption_token ::= {| Axiom | Axioms }
+      | {| Conjecture | Conjectures }
+      | {| Parameter | Parameters }
+      | {| Hypothesis | Hypotheses }
+      | {| Variable | Variables }
+      assumpt ::= {+ @ident_decl } @of_type
+      ident_decl ::= @ident {? @univ_decl }
+      of_type ::= {| : | :> | :>> } @type
 
-   .. cmdv:: Parameter {+ @ident } : @type
+   These commands bind one or more :n:`@ident`\(s) to specified :n:`@type`\(s) as their specifications in
+   the global context. The fact asserted by the :n:`@type` (or, equivalently, the existence
+   of an object of this type) is accepted as a postulate.
 
-      Adds several parameters with specification :token:`type`.
+   :cmd:`Axiom`, :cmd:`Conjecture`, :cmd:`Parameter` and their plural forms
+   are equivalent.  They can take the :attr:`local` attribute (see :ref:`gallina-attributes`),
+   which makes the defined :n:`@ident`\s accessible by :cmd:`Import` and its variants
+   only through their fully qualified names.
 
-   .. cmdv:: Parameter {+ ( {+ @ident } : @type ) }
+   Similarly, :cmd:`Hypothesis`, :cmd:`Variable` and their plural forms are equivalent.  Outside
+   of a section, these are equivalent to :n:`Local Parameter`.  Inside a section, the
+   :n:`@ident`\s defined are only accessible within the section.  When the current section
+   is closed, the :n:`@ident`\(s) become undefined and every object depending on them will be explicitly
+   parameterized (i.e., the variables are *discharged*).  See Section :ref:`section-mechanism`.
 
-      Adds blocks of parameters with different specifications.
+.. example:: Simple assumptions
 
-   .. cmdv:: Local Parameter {+ ( {+ @ident } : @type ) }
-      :name: Local Parameter
+    .. coqtop:: reset in
 
-      Such parameters are never made accessible through their unqualified name by
-      :cmd:`Import` and its variants. You have to explicitly give their fully
-      qualified name to refer to them.
+       Parameter X Y : Set.
+       Parameter (R : X -> Y -> Prop) (S : Y -> X -> Prop).
+       Axiom R_S_inv : forall x y, R x y <-> S y x.
 
-   .. cmdv:: {? Local } Parameters {+ ( {+ @ident } : @type ) }
-             {? Local } Axiom {+ ( {+ @ident } : @type ) }
-             {? Local } Axioms {+ ( {+ @ident } : @type ) }
-             {? Local } Conjecture {+ ( {+ @ident } : @type ) }
-             {? Local } Conjectures {+ ( {+ @ident } : @type ) }
-      :name: Parameters; Axiom; Axioms; Conjecture; Conjectures
+.. exn:: @ident already exists.
+   :name: @ident already exists. (Axiom)
+   :undocumented:
 
-      These variants are synonyms of :n:`{? Local } Parameter {+ ( {+ @ident } : @type ) }`.
+.. warn:: @ident is declared as a local axiom [local-declaration,scope]
 
-   .. cmdv:: Variable  {+ ( {+ @ident } : @type ) }
-             Variables {+ ( {+ @ident } : @type ) }
-             Hypothesis {+ ( {+ @ident } : @type ) }
-             Hypotheses {+ ( {+ @ident } : @type ) }
-      :name: Variable (outside a section); Variables (outside a section); Hypothesis (outside a section); Hypotheses (outside a section)
-
-      Outside of any section, these variants are synonyms of
-      :n:`Local Parameter {+ ( {+ @ident } : @type ) }`.
-      For their meaning inside a section, see :cmd:`Variable` in
-      :ref:`section-mechanism`.
-
-      .. warn:: @ident is declared as a local axiom [local-declaration,scope]
-
-         Warning generated when using :cmd:`Variable` instead of
-         :cmd:`Local Parameter`.
+   Warning generated when using :cmd:`Variable` or its equivalent
+   instead of :n:`Local Parameter` or its equivalent.
 
 .. note::
-   It is advised to use the commands :cmd:`Axiom`, :cmd:`Conjecture` and
+   We advise using the commands :cmd:`Axiom`, :cmd:`Conjecture` and
    :cmd:`Hypothesis` (and their plural forms) for logical postulates (i.e. when
-   the assertion :token:`type` is of sort :g:`Prop`), and to use the commands
+   the assertion :n:`@type` is of sort :g:`Prop`), and to use the commands
    :cmd:`Parameter` and :cmd:`Variable` (and their plural forms) in other cases
-   (corresponding to the declaration of an abstract mathematical entity).
-
-.. seealso:: Section :ref:`section-mechanism`.
+   (corresponding to the declaration of an abstract object of the given type).
 
 .. _gallina-definitions:
 
@@ -777,85 +744,92 @@ type which is the type of its body.
 A formal presentation of constants and environments is given in
 Section :ref:`typing-rules`.
 
-.. cmd:: Definition @ident := @term
+.. cmd:: {| Definition | Example } @ident_decl @def_body
+   :name: Definition; Example
 
-   This command binds :token:`term` to the name :token:`ident` in the environment,
-   provided that :token:`term` is well-typed.
+   .. insertprodn def_body def_body
+
+   .. prodn::
+      def_body ::= {* @binder } {? : @type } := {? @reduce } @term
+      | {* @binder } : @type
+
+   These commands bind :n:`@term` to the name :n:`@ident` in the environment,
+   provided that :n:`@term` is well-typed.  They can take the :attr:`local` attribute (see :ref:`gallina-attributes`),
+   which makes the defined :n:`@ident` accessible by :cmd:`Import` and its variants
+   only through their fully qualified names.
+   If :n:`@reduce` is present then :n:`@ident` is bound to the result of the specified
+   computation on :n:`@term`.
+
+   If :n:`@term` is omitted, Coq enters the proof editing mode.  This can be
+   used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
+   In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
+   for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
+
+   The form :n:`Definition @ident : @type := @term` checks that the type of :n:`@term`
+   is definitionally equal to :n:`@type`, and registers :n:`@ident` as being of type
+   :n:`@type`, and bound to value :n:`@term`.
+
+   The form :n:`Definition @ident {* @binder } : @type := @term` is equivalent to
+   :n:`Definition @ident : forall {* @binder }, @type := fun {* @binder } => @term`.
+
+   .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
 
    .. exn:: @ident already exists.
       :name: @ident already exists. (Definition)
       :undocumented:
 
-   .. cmdv:: Definition @ident : @type := @term
-
-      This variant checks that the type of :token:`term` is definitionally equal to
-      :token:`type`, and registers :token:`ident` as being of type
-      :token:`type`, and bound to value :token:`term`.
-
-      .. exn:: The term @term has type @type while it is expected to have type @type'.
-         :undocumented:
-
-   .. cmdv:: Definition @ident @binders {? : @type } := @term
-
-      This is equivalent to
-      :n:`Definition @ident : forall @binders, @type := fun @binders => @term`.
-
-   .. cmdv:: Local Definition @ident {? @binders } {? : @type } := @term
-      :name: Local Definition
-
-      Such definitions are never made accessible through their
-      unqualified name by :cmd:`Import` and its variants.
-      You have to explicitly give their fully qualified name to refer to them.
-
-   .. cmdv:: {? Local } Example @ident {? @binders } {? : @type } := @term
-      :name: Example
-
-      This is equivalent to :cmd:`Definition`.
-
-   .. cmdv:: Let @ident := @term
-      :name: Let (outside a section)
-
-      Outside of any section, this variant is a synonym of
-      :n:`Local Definition @ident := @term`.
-      For its meaning inside a section, see :cmd:`Let` in
-      :ref:`section-mechanism`.
-
-      .. warn:: @ident is declared as a local definition [local-declaration,scope]
-
-         Warning generated when using :cmd:`Let` instead of
-         :cmd:`Local Definition`.
-
-.. seealso:: Section :ref:`section-mechanism`, commands :cmd:`Opaque`,
-             :cmd:`Transparent`, and tactic :tacn:`unfold`.
+   .. exn:: The term @term has type @type while it is expected to have type @type'.
+      :undocumented:
 
 .. _gallina-inductive-definitions:
 
-Inductive definitions
----------------------
+Inductive types
+---------------
 
-We gradually explain simple inductive types, simple annotated inductive
-types, simple parametric inductive types, mutually inductive types. We
-explain also co-inductive types.
+.. cmd:: Inductive @inductive_definition {* with @inductive_definition }
 
-Simple inductive types
-~~~~~~~~~~~~~~~~~~~~~~
+   .. insertprodn inductive_definition field_body
 
-.. cmd:: Inductive @ident : {? @sort } := {? | } @ident : @type {* | @ident : @type }
+   .. prodn::
+      inductive_definition ::= {? > } @ident_decl {* @binder } {? %| {* @binder } } {? : @type } {? := {? @constructors_or_record } } {? @decl_notations }
+      constructors_or_record ::= {? %| } {+| @constructor }
+      | {? @ident } %{ {+; @record_field } %}
+      constructor ::= @ident {* @binder } {? @of_type }
+      record_field ::= {* #[ {*, @attr } ] } @name {? @field_body } {? %| @num } {? @decl_notations }
+      field_body ::= {* @binder } @of_type
+      | {* @binder } @of_type := @term
+      | {* @binder } := @term
 
-   This command defines a simple inductive type and its constructors.
-   The first :token:`ident` is the name of the inductively defined type
-   and :token:`sort` is the universe where it lives. The next :token:`ident`\s
-   are the names of its constructors and :token:`type` their respective types.
-   Depending on the universe where the inductive type :token:`ident` lives
-   (e.g. its type :token:`sort`), Coq provides a number of destructors.
-   Destructors are named :token:`ident`\ ``_sind``,:token:`ident`\ ``_ind``,
-   :token:`ident`\ ``_rec`` or :token:`ident`\ ``_rect`` which respectively
-   correspond to elimination principles on :g:`SProp`, :g:`Prop`, :g:`Set` and :g:`Type`.
-   The type of the destructors expresses structural induction/recursion
-   principles over objects of type :token:`ident`.
-   The constant :token:`ident`\ ``_ind`` is always provided,
-   whereas :token:`ident`\ ``_rec`` and :token:`ident`\ ``_rect`` can be
-   impossible to derive (for example, when :token:`ident` is a proposition).
+   This command defines one or more
+   inductive types and its constructors.  Coq generates destructors
+   depending on the universe that the inductive type belongs to.
+
+   The destructors are named :n:`@ident`\ ``_rect``, :n:`@ident`\ ``_ind``,
+   :n:`@ident`\ ``_rec`` and :n:`@ident`\ ``_sind``, which
+   respectively correspond to elimination principles on :g:`Type`, :g:`Prop`,
+   :g:`Set` and :g:`SProp`.  The type of the destructors
+   expresses structural induction/recursion principles over objects of
+   type :n:`@ident`.  The constant :n:`@ident`\ ``_ind`` is always
+   generated, whereas :n:`@ident`\ ``_rec`` and :n:`@ident`\ ``_rect``
+   may be impossible to derive (for example, when :n:`@ident` is a
+   proposition).
+
+   This command supports the :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
+   :attr:`universes(template)`, :attr:`universes(notemplate)`,
+   :attr:`Cumulative`, :attr:`NonCumulative` and :attr:`Private` attributes.
+
+   Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
+   The :n:`@ident`\s are simultaneously added to the environment before the types of constructors are checked.
+   Each :n:`@ident` can be used independently thereafter.
+   See :ref:`mutually_inductive_types`.
+
+   If the entire inductive definition is parameterized with :n:`@binder`\s, the parameters correspond
+   to a local context in which the entire set of inductive declarations is interpreted.
+   For this reason, the parameters must be strictly the same for each inductive type.
+   See :ref:`parametrized-inductive-types`.
+
+   Constructor :n:`@ident`\s can come with :n:`@binder`\s, in which case
+   the actual type of the constructor is :n:`forall {* @binder }, @type`.
 
    .. exn:: Non strictly positive occurrence of @ident in @type.
 
@@ -867,66 +841,71 @@ Simple inductive types
    .. exn:: The conclusion of @type is not valid; it must be built from @ident.
 
       The conclusion of the type of the constructors must be the inductive type
-      :token:`ident` being defined (or :token:`ident` applied to arguments in
+      :n:`@ident` being defined (or :n:`@ident` applied to arguments in
       the case of annotated inductive types — cf. next section).
 
-   .. example::
+The following subsections show examples of simple inductive types, simple annotated
+inductive types, simple parametric inductive types and mutually inductive
+types.
 
-      The set of natural numbers is defined as:
+.. _simple-inductive-types:
 
-      .. coqtop:: all
+Simple inductive types
+~~~~~~~~~~~~~~~~~~~~~~
 
-         Inductive nat : Set :=
-         | O : nat
-         | S : nat -> nat.
+A simple inductive type belongs to a universe that is a simple :n:`sort`.
 
-      The type nat is defined as the least :g:`Set` containing :g:`O` and closed by
-      the :g:`S` constructor. The names :g:`nat`, :g:`O` and :g:`S` are added to the
-      environment.
+.. example::
 
-      Now let us have a look at the elimination principles. They are three of them:
-      :g:`nat_ind`, :g:`nat_rec` and :g:`nat_rect`. The type of :g:`nat_ind` is:
+   The set of natural numbers is defined as:
 
-      .. coqtop:: all
+   .. coqtop:: reset all
 
-         Check nat_ind.
+      Inductive nat : Set :=
+      | O : nat
+      | S : nat -> nat.
 
-      This is the well known structural induction principle over natural
-      numbers, i.e. the second-order form of Peano’s induction principle. It
-      allows proving some universal property of natural numbers (:g:`forall
-      n:nat, P n`) by induction on :g:`n`.
+   The type nat is defined as the least :g:`Set` containing :g:`O` and closed by
+   the :g:`S` constructor. The names :g:`nat`, :g:`O` and :g:`S` are added to the
+   environment.
 
-      The types of :g:`nat_rec` and :g:`nat_rect` are similar, except that they pertain
-      to :g:`(P:nat->Set)` and :g:`(P:nat->Type)` respectively. They correspond to
-      primitive induction principles (allowing dependent types) respectively
-      over sorts ``Set`` and ``Type``.
+   This definition generates four elimination principles:
+   :g:`nat_rect`, :g:`nat_ind`, :g:`nat_rec` and :g:`nat_sind`. The type of :g:`nat_ind` is:
 
-   .. cmdv:: Inductive @ident {? : @sort } := {? | } {*| @ident {? @binders } {? : @type } }
+   .. coqtop:: all
 
-      Constructors :token:`ident`\s can come with :token:`binders` in which case,
-      the actual type of the constructor is :n:`forall @binders, @type`.
+      Check nat_ind.
 
-      In the case where inductive types have no annotations (next section
-      gives an example of such annotations), a constructor can be defined
-      by only giving the type of its arguments.
+   This is the well known structural induction principle over natural
+   numbers, i.e. the second-order form of Peano’s induction principle. It
+   allows proving universal properties of natural numbers (:g:`forall
+   n:nat, P n`) by induction on :g:`n`.
 
-      .. example::
+   The types of :g:`nat_rect`, :g:`nat_rec` and :g:`nat_sind` are similar, except that they
+   apply to, respectively, :g:`(P:nat->Type)`, :g:`(P:nat->Set)` and :g:`(P:nat->SProp)`. They correspond to
+   primitive induction principles (allowing dependent types) respectively
+   over sorts ```Type``, ``Set`` and ``SProp``.
 
-         .. coqtop:: none
+In the case where inductive types don't have annotations (the next section
+gives an example of annotations), a constructor can be defined
+by giving the type of its arguments alone.
 
-            Reset nat.
+.. example::
 
-         .. coqtop:: in
+   .. coqtop:: reset none
 
-            Inductive nat : Set := O | S (_:nat).
+      Reset nat.
 
+   .. coqtop:: in
+
+      Inductive nat : Set := O | S (_:nat).
 
 Simple annotated inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In an annotated inductive types, the universe where the inductive type
-is defined is no longer a simple sort, but what is called an arity,
-which is a type whose conclusion is a sort.
+In annotated inductive types, the universe where the inductive type
+is defined is no longer a simple :n:`@sort`, but what is called an arity,
+which is a type whose conclusion is a :n:`@sort`.
 
 .. example::
 
@@ -939,72 +918,74 @@ which is a type whose conclusion is a sort.
       | even_0 : even O
       | even_SS : forall n:nat, even n -> even (S (S n)).
 
-   The type :g:`nat->Prop` means that even is a unary predicate (inductively
+   The type :g:`nat->Prop` means that :g:`even` is a unary predicate (inductively
    defined) over natural numbers. The type of its two constructors are the
-   defining clauses of the predicate even. The type of :g:`even_ind` is:
+   defining clauses of the predicate :g:`even`. The type of :g:`even_ind` is:
 
    .. coqtop:: all
 
       Check even_ind.
 
-   From a mathematical point of view it asserts that the natural numbers satisfying
-   the predicate even are exactly in the smallest set of naturals satisfying the
+   From a mathematical point of view, this asserts that the natural numbers satisfying
+   the predicate :g:`even` are exactly in the smallest set of naturals satisfying the
    clauses :g:`even_0` or :g:`even_SS`. This is why, when we want to prove any
    predicate :g:`P` over elements of :g:`even`, it is enough to prove it for :g:`O`
    and to prove that if any natural number :g:`n` satisfies :g:`P` its double
-   successor :g:`(S (S n))` satisfies also :g:`P`. This is indeed analogous to the
+   successor :g:`(S (S n))` satisfies also :g:`P`. This is analogous to the
    structural induction principle we got for :g:`nat`.
+
+.. _parametrized-inductive-types:
 
 Parameterized inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmdv:: Inductive @ident @binders {? : @type } := {? | } @ident : @type {* | @ident : @type}
+In the previous example, each constructor introduces a different
+instance of the predicate :g:`even`. In some cases, all the constructors
+introduce the same generic instance of the inductive definition, in
+which case, instead of an annotation, we use a context of parameters
+which are :n:`@binder`\s shared by all the constructors of the definition.
 
-   In the previous example, each constructor introduces a different
-   instance of the predicate :g:`even`. In some cases, all the constructors
-   introduce the same generic instance of the inductive definition, in
-   which case, instead of an annotation, we use a context of parameters
-   which are :token:`binders` shared by all the constructors of the definition.
+Parameters differ from inductive type annotations in that the
+conclusion of each type of constructor invokes the inductive type with
+the same parameter values of its specification.
 
-   Parameters differ from inductive type annotations in the fact that the
-   conclusion of each type of constructor invoke the inductive type with
-   the same values of parameters as its specification.
+.. example::
 
-   .. example::
+   A typical example is the definition of polymorphic lists:
 
-      A typical example is the definition of polymorphic lists:
+   .. coqtop:: all
 
-      .. coqtop:: in
+      Inductive list (A:Set) : Set :=
+      | nil : list A
+      | cons : A -> list A -> list A.
 
-         Inductive list (A:Set) : Set :=
-         | nil : list A
-         | cons : A -> list A -> list A.
+   In the type of :g:`nil` and :g:`cons`, we write ":g:`list A`" and not
+   just ":g:`list`". The constructors :g:`nil` and :g:`cons` have these types:
 
-      In the type of :g:`nil` and :g:`cons`, we write :g:`(list A)` and not
-      just :g:`list`. The constructors :g:`nil` and :g:`cons` will have respectively
-      types:
+   .. coqtop:: all
 
-      .. coqtop:: all
+      Check nil.
+      Check cons.
 
-         Check nil.
-         Check cons.
+   Observe that the destructors are also quantified with :g:`(A:Set)`, for example:
 
-      Types of destructors are also quantified with :g:`(A:Set)`.
+   .. coqtop:: all
 
-      Once again, it is possible to specify only the type of the arguments
-      of the constructors, and to omit the type of the conclusion:
+      Check list_ind.
 
-      .. coqtop:: none
+   Once again, the types of the constructor arguments and of the conclusion can be omitted:
 
-         Reset list.
+   .. coqtop:: none
 
-      .. coqtop:: in
+      Reset list.
 
-         Inductive list (A:Set) : Set := nil | cons (_:A) (_:list A).
+   .. coqtop:: in
+
+      Inductive list (A:Set) : Set := nil | cons (_:A) (_:list A).
 
 .. note::
-   + It is possible in the type of a constructor, to
-     invoke recursively the inductive definition on an argument which is not
+   + The constructor type can
+     recursively invoke the inductive definition on an argument which is not
      the parameter itself.
 
      One can define :
@@ -1019,7 +1000,9 @@ Parameterized inductive types
 
      .. coqtop:: all reset
 
-        Inductive list2 (A:Set) : Set := nil2 | cons2 (_:A) (_:list2 (A*A)).
+        Inductive list2 (A:Set) : Set :=
+        | nil2
+        | cons2 (_:A) (_:list2 (A*A)).
 
      But the following definition will give an error:
 
@@ -1078,42 +1061,16 @@ Parameterized inductive types
 .. seealso::
    Section :ref:`inductive-definitions` and the :tacn:`induction` tactic.
 
-Variants
-~~~~~~~~
-
-.. cmd:: Variant @ident @binders {? : @type } := {? | } @ident : @type {* | @ident : @type}
-
-   The :cmd:`Variant` command is identical to the :cmd:`Inductive` command, except
-   that it disallows recursive definition of types (for instance, lists cannot
-   be defined using :cmd:`Variant`). No induction scheme is generated for
-   this variant, unless the :flag:`Nonrecursive Elimination Schemes` flag is on.
-
-   .. exn:: The @num th argument of @ident must be @ident in @type.
-      :undocumented:
+.. _mutually_inductive_types:
 
 Mutually defined inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmdv:: Inductive @ident {? : @type } := {? | } {*| @ident : @type } {* with {? | } {*| @ident {? : @type } } }
+.. example:: Mutually defined inductive types
 
-   This variant allows defining a block of mutually inductive types.
-   It has the same semantics as the above :cmd:`Inductive` definition for each
-   :token:`ident`. All :token:`ident` are simultaneously added to the environment.
-   Then well-typing of constructors can be checked. Each one of the :token:`ident`
-   can be used on its own.
-
-   .. cmdv:: Inductive @ident @binders {? : @type } := {? | } {*| @ident : @type } {* with {? | } {*| @ident @binders {? : @type } } }
-
-      In this variant, the inductive definitions are parameterized
-      with :token:`binders`. However, parameters correspond to a local context
-      in which the whole set of inductive declarations is done. For this
-      reason, the parameters must be strictly the same for each inductive types.
-
-.. example::
-
-   The typical example of a mutual inductive data type is the one for trees and
-   forests. We assume given two types :g:`A` and :g:`B` as variables. It can
-   be declared the following way.
+   A typical example of mutually inductive data types is trees and
+   forests. We assume two types :g:`A` and :g:`B` that are given as variables. The types can
+   be declared like this:
 
    .. coqtop:: in
 
@@ -1125,13 +1082,10 @@ Mutually defined inductive types
       | leaf : B -> forest
       | cons : tree -> forest -> forest.
 
-   This declaration generates automatically six induction principles. They are
-   respectively called :g:`tree_rec`, :g:`tree_ind`, :g:`tree_rect`,
-   :g:`forest_rec`, :g:`forest_ind`, :g:`forest_rect`. These ones are not the most
-   general ones but are just the induction principles corresponding to each
-   inductive part seen as a single inductive definition.
+   This declaration automatically generates eight induction principles. They are not the most
+   general principles, but they correspond to each inductive part seen as a single inductive definition.
 
-   To illustrate this point on our example, we give the types of :g:`tree_rec`
+   To illustrate this point on our example, here are the types of :g:`tree_rec`
    and :g:`forest_rec`.
 
    .. coqtop:: all
@@ -1142,7 +1096,7 @@ Mutually defined inductive types
 
    Assume we want to parameterize our mutual inductive definitions with the
    two type variables :g:`A` and :g:`B`, the declaration should be
-   done the following way:
+   done as follows:
 
    .. coqdoc::
 
@@ -1161,10 +1115,27 @@ Mutually defined inductive types
    A generic command :cmd:`Scheme` is useful to build automatically various
    mutual induction principles.
 
+Variants
+~~~~~~~~
+
+.. cmd:: Variant @inductive_definition {* with @inductive_definition }
+
+   The :cmd:`Variant` command is identical to the :cmd:`Inductive` command, except
+   that it disallows recursive definition of types (for instance, lists cannot
+   be defined using :cmd:`Variant`). No induction scheme is generated for
+   this variant, unless the :flag:`Nonrecursive Elimination Schemes` flag is on.
+
+   This command supports the :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
+   :attr:`universes(template)`, :attr:`universes(notemplate)`,
+   :attr:`Cumulative`, :attr:`NonCumulative` and :attr:`Private` attributes.
+
+   .. exn:: The @num th argument of @ident must be @ident in @type.
+      :undocumented:
+
 .. _coinductive-types:
 
 Co-inductive types
-~~~~~~~~~~~~~~~~~~
+------------------
 
 The objects of an inductive type are well-founded with respect to the
 constructors of the type. In other words, such objects contain only a
@@ -1174,7 +1145,7 @@ constructors. Infinite objects are introduced by a non-ending (but
 effective) process of construction, defined in terms of the constructors
 of the type.
 
-.. cmd:: CoInductive @ident @binders {? : @type } := {? | } @ident : @type {* | @ident : @type}
+.. cmd:: CoInductive @inductive_definition {* with @inductive_definition }
 
    This command introduces a co-inductive type.
    The syntax of the command is the same as the command :cmd:`Inductive`.
@@ -1182,10 +1153,14 @@ of the type.
    type, since such principles only make sense for inductive types.
    For co-inductive types, the only elimination principle is case analysis.
 
+   This command supports the :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
+   :attr:`universes(template)`, :attr:`universes(notemplate)`,
+   :attr:`Cumulative`, :attr:`NonCumulative` and :attr:`Private` attributes.
+
 .. example::
 
-   An example of a co-inductive type is the type of infinite sequences of
-   natural numbers, usually called streams.
+   The type of infinite sequences of natural numbers, usually called streams,
+   is an example of a co-inductive type.
 
    .. coqtop:: in
 
@@ -1199,13 +1174,12 @@ of the type.
       Definition hd (x:Stream) := let (a,s) := x in a.
       Definition tl (x:Stream) := let (a,s) := x in s.
 
-Definition of co-inductive predicates and blocks of mutually
+Definitions of co-inductive predicates and blocks of mutually
 co-inductive definitions are also allowed.
 
 .. example::
 
-   An example of a co-inductive predicate is the extensional equality on
-   streams:
+   The extensional equality on streams is an example of a co-inductive type:
 
    .. coqtop:: in
 
@@ -1219,7 +1193,7 @@ co-inductive definitions are also allowed.
    objects in Section :ref:`cofixpoint`.
 
 Caveat
-++++++
+~~~~~~
 
 The ability to define co-inductive types by constructors, hereafter called
 *positive co-inductive types*, is known to break subject reduction. The story is
@@ -1287,26 +1261,40 @@ constructions.
 
 .. _Fixpoint:
 
-.. cmd:: Fixpoint @ident @binders {? {struct @ident} } {? : @type } := @term
+.. cmd:: Fixpoint @fix_definition {* with @fix_definition }
+
+   .. insertprodn fix_definition fix_definition
+
+   .. prodn::
+      fix_definition ::= @ident_decl {* @binder } {? @fixannot } {? : @type } {? := @term } {? @decl_notations }
 
    This command allows defining functions by pattern matching over inductive
    objects using a fixed point construction. The meaning of this declaration is
-   to define :token:`ident` a recursive function with arguments specified by
-   the :token:`binders` such that :token:`ident` applied to arguments
-   corresponding to these :token:`binders` has type :token:`type`, and is
-   equivalent to the expression :token:`term`. The type of :token:`ident` is
-   consequently :n:`forall @binders, @type` and its value is equivalent
-   to :n:`fun @binders => @term`.
+   to define :n:`@ident` as a recursive function with arguments specified by
+   the :n:`@binder`\s such that :n:`@ident` applied to arguments
+   corresponding to these :n:`@binder`\s has type :n:`@type`, and is
+   equivalent to the expression :n:`@term`. The type of :n:`@ident` is
+   consequently :n:`forall {* @binder }, @type` and its value is equivalent
+   to :n:`fun {* @binder } => @term`.
 
    To be accepted, a :cmd:`Fixpoint` definition has to satisfy some syntactical
    constraints on a special argument called the decreasing argument. They
    are needed to ensure that the :cmd:`Fixpoint` definition always terminates.
-   The point of the :n:`{struct @ident}` annotation is to let the user tell the
-   system which argument decreases along the recursive calls.
+   The point of the :n:`{struct @ident}` annotation (see :n:`@fixannot`) is to
+   let the user tell the system which argument decreases along the recursive calls.
 
-   The :n:`{struct @ident}` annotation may be left implicit, in this case the
-   system tries successively arguments from left to right until it finds one
+   The :n:`{struct @ident}` annotation may be left implicit, in which case the
+   system successively tries arguments from left to right until it finds one
    that satisfies the decreasing condition.
+
+   The :n:`with` clause allows simultaneously defining several mutual fixpoints.
+   It is especially useful when defining functions over mutually defined
+   inductive types.  Example: :ref:`Mutual Fixpoints<example_mutual_fixpoints>`.
+
+   If :n:`@term` is omitted, :n:`@type` is required and Coq enters the proof editing mode.
+   This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
+   In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
+   for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
 
    .. note::
 
@@ -1388,35 +1376,35 @@ constructions.
                   end
          end.
 
+.. _example_mutual_fixpoints:
 
-   .. cmdv:: Fixpoint @ident @binders {? {struct @ident} } {? : @type } := @term {* with @ident @binders {? : @type } := @term }
+   .. example:: Mutual fixpoints
 
-      This variant allows defining simultaneously several mutual fixpoints.
-      It is especially useful when defining functions over mutually defined
-      inductive types.
+      The size of trees and forests can be defined the following way:
 
-      .. example::
+      .. coqtop:: all
 
-         The size of trees and forests can be defined the following way:
-
-         .. coqtop:: all
-
-            Fixpoint tree_size (t:tree) : nat :=
-            match t with
-            | node a f => S (forest_size f)
-            end
-            with forest_size (f:forest) : nat :=
-            match f with
-            | leaf b => 1
-            | cons t f' => (tree_size t + forest_size f')
-            end.
+         Fixpoint tree_size (t:tree) : nat :=
+         match t with
+         | node a f => S (forest_size f)
+         end
+         with forest_size (f:forest) : nat :=
+         match f with
+         | leaf b => 1
+         | cons t f' => (tree_size t + forest_size f')
+         end.
 
 .. _cofixpoint:
 
 Definitions of recursive objects in co-inductive types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd:: CoFixpoint @ident {? @binders } {? : @type } := @term
+.. cmd:: CoFixpoint @cofix_definition {* with @cofix_definition }
+
+   .. insertprodn cofix_definition cofix_definition
+
+   .. prodn::
+      cofix_definition ::= @ident_decl {* @binder } {? : @type } {? := @term } {? @decl_notations }
 
    This command introduces a method for constructing an infinite object of a
    coinductive type. For example, the stream containing all natural numbers can
@@ -1428,7 +1416,7 @@ Definitions of recursive objects in co-inductive types
 
       CoFixpoint from (n:nat) : Stream := Seq n (from (S n)).
 
-   Oppositely to recursive ones, there is no decreasing argument in a
+   Unlike recursive definitions, there is no decreasing argument in a
    co-recursive definition. To be admissible, a method of construction must
    provide at least one extra constructor of the infinite object for each
    iteration. A syntactical guard condition is imposed on co-recursive
@@ -1457,10 +1445,63 @@ Definitions of recursive objects in co-inductive types
       Eval compute in (hd (from 0)).
       Eval compute in (tl (from 0)).
 
-   .. cmdv:: CoFixpoint @ident {? @binders } {? : @type } := @term {* with @ident {? @binders } : {? @type } := @term }
+   As in the :cmd:`Fixpoint` command, the :n:`with` clause allows simultaneously
+   defining several mutual cofixpoints.
 
-      As in the :cmd:`Fixpoint` command, it is possible to introduce a block of
-      mutually dependent methods.
+   If :n:`@term` is omitted, :n:`@type` is required and Coq enters the proof editing mode.
+   This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
+   In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
+   for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
+
+.. _Computations:
+
+Computations
+------------
+
+.. insertprodn reduce pattern_occ
+
+.. prodn::
+   reduce ::= Eval @red_expr in
+   red_expr ::= red
+   | hnf
+   | simpl {? @delta_flag } {? @ref_or_pattern_occ }
+   | cbv {? @strategy_flag }
+   | cbn {? @strategy_flag }
+   | lazy {? @strategy_flag }
+   | compute {? @delta_flag }
+   | vm_compute {? @ref_or_pattern_occ }
+   | native_compute {? @ref_or_pattern_occ }
+   | unfold {+, @unfold_occ }
+   | fold {+ @term1_extended }
+   | pattern {+, @pattern_occ }
+   | @ident
+   delta_flag ::= {? - } [ {+ @smart_global } ]
+   smart_global ::= @qualid
+   | @by_notation
+   by_notation ::= @string {? % @ident }
+   strategy_flag ::= {+ @red_flags }
+   | @delta_flag
+   red_flags ::= beta
+   | iota
+   | match
+   | fix
+   | cofix
+   | zeta
+   | delta {? @delta_flag }
+   ref_or_pattern_occ ::= @smart_global {? at @occs_nums }
+   | @term1_extended {? at @occs_nums }
+   occs_nums ::= {+ @num_or_var }
+   | - @num_or_var {* @int_or_var }
+   num_or_var ::= @num
+   | @ident
+   int_or_var ::= @int
+   | @ident
+   unfold_occ ::= @smart_global {? at @occs_nums }
+   pattern_occ ::= @term1_extended {? at @occs_nums }
+
+See :ref:`Conversion-rules`.
+
+.. todo:: Add text here
 
 .. _Assertions:
 
@@ -1472,40 +1513,26 @@ inhabitant of the type) is interactively built using tactics. The interactive
 proof mode is described in Chapter :ref:`proofhandling` and the tactics in
 Chapter :ref:`Tactics`. The basic assertion command is:
 
-.. cmd:: Theorem @ident {? @binders } : @type
+.. cmd:: @thm_token @ident_decl {* @binder } : @type {* with @ident_decl {* @binder } : @type }
+   :name: Theorem; Lemma; Fact; Remark; Corollary; Proposition; Property
+
+   .. insertprodn thm_token thm_token
+
+   .. prodn::
+      thm_token ::= Theorem
+      | Lemma
+      | Fact
+      | Remark
+      | Corollary
+      | Proposition
+      | Property
 
    After the statement is asserted, Coq needs a proof. Once a proof of
-   :token:`type` under the assumptions represented by :token:`binders` is given and
-   validated, the proof is generalized into a proof of :n:`forall @binders, @type` and
-   the theorem is bound to the name :token:`ident` in the environment.
+   :n:`@type` under the assumptions represented by :n:`@binder`\s is given and
+   validated, the proof is generalized into a proof of :n:`forall {* @binder }, @type` and
+   the theorem is bound to the name :n:`@ident` in the environment.
 
-   .. exn:: The term @term has type @type which should be Set, Prop or Type.
-      :undocumented:
-
-   .. exn:: @ident already exists.
-      :name: @ident already exists. (Theorem)
-
-      The name you provided is already defined. You have then to choose
-      another name.
-
-   .. exn:: Nested proofs are not allowed unless you turn the Nested Proofs Allowed flag on.
-
-      You are asserting a new statement while already being in proof editing mode.
-      This feature, called nested proofs, is disabled by default.
-      To activate it, turn the :flag:`Nested Proofs Allowed` flag on.
-
-   .. cmdv:: Lemma @ident {? @binders } : @type
-             Remark @ident {? @binders } : @type
-             Fact @ident {? @binders } : @type
-             Corollary @ident {? @binders } : @type
-             Proposition @ident {? @binders } : @type
-      :name: Lemma; Remark; Fact; Corollary; Proposition
-
-      These commands are all synonyms of :n:`Theorem @ident {? @binders } : type`.
-
-.. cmdv:: Theorem @ident {? @binders } : @type {* with @ident {? @binders } : @type}
-
-   This command is useful for theorems that are proved by simultaneous induction
+   Forms using the :n:`with` clause are useful for theorems that are proved by simultaneous induction
    over a mutually inductive assumption, or that assert mutually dependent
    statements in some mutual co-inductive type. It is equivalent to
    :cmd:`Fixpoint` or :cmd:`CoFixpoint` but using tactics to build the proof of
@@ -1522,46 +1549,29 @@ Chapter :ref:`Tactics`. The basic assertion command is:
    correct at some time of the interactive development of a proof, use the
    command :cmd:`Guarded`.
 
-   The command can be used also with :cmd:`Lemma`, :cmd:`Remark`, etc. instead of
-   :cmd:`Theorem`.
+   .. exn:: The term @term has type @type which should be Set, Prop or Type.
+      :undocumented:
 
-.. cmdv:: Definition @ident {? @binders } : @type
+   .. exn:: @ident already exists.
+      :name: @ident already exists. (Theorem)
 
-   This allows defining a term of type :token:`type` using the proof editing
-   mode. It behaves as :cmd:`Theorem` but is intended to be used in conjunction with
-   :cmd:`Defined` in order to define a constant of which the computational
-   behavior is relevant.
+      The name you provided is already defined. You have then to choose
+      another name.
 
-   The command can be used also with :cmd:`Example` instead of :cmd:`Definition`.
+   .. exn:: Nested proofs are not allowed unless you turn the Nested Proofs Allowed flag on.
 
-   .. seealso:: :cmd:`Opaque`, :cmd:`Transparent`, :tacn:`unfold`.
+      You are asserting a new statement while already being in proof editing mode.
+      This feature, called nested proofs, is disabled by default.
+      To activate it, turn the :flag:`Nested Proofs Allowed` flag on.
 
-.. cmdv:: Let @ident {? @binders } : @type
-
-   Like :n:`Definition @ident {? @binders } : @type` except that the definition is
-   turned into a let-in definition generalized over the declarations depending
-   on it after closing the current section.
-
-.. cmdv:: Fixpoint @ident @binders : @type {* with @ident @binders : @type}
-
-   This generalizes the syntax of :cmd:`Fixpoint` so that one or more bodies
-   can be defined interactively using the proof editing mode (when a
-   body is omitted, its type is mandatory in the syntax). When the block
-   of proofs is completed, it is intended to be ended by :cmd:`Defined`.
-
-.. cmdv:: CoFixpoint @ident {? @binders } : @type {* with @ident {? @binders } : @type}
-
-   This generalizes the syntax of :cmd:`CoFixpoint` so that one or more bodies
-   can be defined interactively using the proof editing mode.
-
-A proof starts by the keyword :cmd:`Proof`. Then Coq enters the proof editing mode
-until the proof is completed. The proof editing mode essentially contains
-tactics that are described in chapter :ref:`Tactics`. Besides tactics, there
-are commands to manage the proof editing mode. They are described in Chapter
+Proofs start with the keyword :cmd:`Proof`. Then Coq enters the proof editing mode
+until the proof is completed. In proof editing mode, the user primarily enters
+tactics, which are described in chapter :ref:`Tactics`. The user may also enter
+commands to manage the proof editing mode. They are described in Chapter
 :ref:`proofhandling`.
 
-When the proof is completed it should be validated and put in the environment
-using the keyword :cmd:`Qed`.
+When the proof is complete, use the :cmd:`Qed` command so the kernel verifies
+the proof and adds it to the environment.
 
 .. note::
 
@@ -1590,33 +1600,96 @@ using the keyword :cmd:`Qed`.
 Attributes
 -----------
 
-Any vernacular command can be decorated with a list of attributes, enclosed
-between ``#[`` (hash and opening square bracket) and ``]`` (closing square bracket)
-and separated by commas ``,``. Multiple space-separated blocks may be provided.
+.. insertprodn all_attrs legacy_attrs
 
-Each attribute has a name (an identifier) and may have a value.
-A value is either a :token:`string` (in which case it is specified with an equal ``=`` sign),
-or a list of attributes, enclosed within brackets.
+.. prodn::
+   all_attrs ::= {* #[ {*, @attr } ] } {? @legacy_attrs }
+   attr ::= @ident {? @attr_value }
+   attr_value ::= = @string
+   | ( {*, @attr } )
+   legacy_attrs ::= {? {| Local | Global } } {? {| Polymorphic | Monomorphic } } {? Program } {? {| Cumulative | NonCumulative } } {? Private }
+
+Attributes modify the behavior of a command or tactic.
+Syntactically, most commands and tactics can be decorated with attributes, but
+attributes not supported by the command or tactic will be flagged as errors.
+
+The order of top-level attributes doesn't affect their meaning.  ``#[foo,bar]``, ``#[bar,foo]``,
+``#[foo]#[bar]`` and ``#[bar]#[foo]`` are equivalent.
+
+The legacy attributes (:n:`@legacy_attrs`) provide an older, alternate syntax
+for certain attributes.  They are equivalent to new attributes as follows:
+
+================  ================================
+Legacy attribute  New attribute
+================  ================================
+`Local`           :attr:`local`
+`Global`          :attr:`global`
+`Polymorphic`     :attr:`universes(polymorphic)`
+`Monomorphic`     :attr:`universes(monomorphic)`
+`Cumulative`      none
+`NonCumulative`   none
+`Private`         none
+`Program`         :attr:`program`
+================  ================================
 
 Some attributes are specific to a command, and so are described with
-that command. Currently, the following attributes are recognized by a
-variety of commands:
+that command. Currently, the following attributes are recognized:
 
-``universes(monomorphic)``, ``universes(polymorphic)``
-    Equivalent to the ``Monomorphic`` and
-    ``Polymorphic`` flags (see :ref:`polymorphicuniverses`).
+.. attr:: universes(monomorphic)
+   :name: universes(monomorphic)
 
-``program``
-    Takes no value, equivalent to the ``Program`` flag
-    (see :ref:`programs`).
+   See :ref:`polymorphicuniverses`.
 
-``global``, ``local``
-    Take no value, equivalent to the ``Global`` and ``Local`` flags
-    (see :ref:`controlling-locality-of-commands`).
+.. attr:: universes(polymorphic)
+   :name: universes(polymorphic)
 
-``deprecated``
-    Takes as value the optional attributes ``since`` and ``note``;
-    both have a string value.
+   See :ref:`polymorphicuniverses`.
+
+.. attr:: universes(template)
+   :name: universes(template)
+
+   See :ref:`Template-polymorphism`
+
+.. attr:: universes(notemplate)
+   :name: universes(notemplate)
+
+   See :ref:`Template-polymorphism`
+
+.. attr:: program
+
+   See :ref:`programs`.
+
+.. attr:: global
+
+   See :ref:`controlling-locality-of-commands`.
+
+.. attr:: local
+
+   See :ref:`controlling-locality-of-commands`.
+
+.. attr:: Cumulative
+
+   Legacy attribute, only allowed in a polymorphic context.
+   Specifies that two instances of the same inductive type (family) are convertible
+   based on the universe variances; they do not need to be equal.
+   See :ref:`cumulative`.
+
+.. attr:: NonCumulative
+
+   Legacy attribute, only allowed in a polymorphic context.
+   Specifies that two instances of the same inductive type (family) are convertible
+   only if all the universes are equal.
+   See :ref:`cumulative`.
+
+.. attr:: Private
+
+   Legacy attribute.  Documentation to be added.
+
+.. attr:: deprecated ( {? since = @string , } {? note = @string } )
+   :name: deprecated
+
+    At least one of :n:`since` or :n:`note` must be present.  If both are present,
+    either one may appear first and they must be separated by a comma.
 
     This attribute is supported by the following commands: :cmd:`Ltac`,
     :cmd:`Tactic Notation`, :cmd:`Notation`, :cmd:`Infix`.
@@ -1634,12 +1707,13 @@ variety of commands:
        :n:`@string__1` is the actual notation, :n:`@string__2` is the version number,
        :n:`@string__3` is the note.
 
-``canonical``
+.. attr:: canonical
+
     This attribute can decorate a :cmd:`Definition` or :cmd:`Let` command.
     It is equivalent to having a :cmd:`Canonical Structure` declaration just
     after the command.
 
-    This attirbute can take the value ``false`` when decorating a record field
+    This attribute can take the value ``false`` when decorating a record field
     declaration with the effect of preventing the field from being involved in
     the inference of canonical instances.
 

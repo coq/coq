@@ -322,8 +322,13 @@ closed_binder: [
 | "{" name LIST1 name ":" lconstr "}"
 | "{" name ":" lconstr "}"
 | "{" name LIST1 name "}"
+| "[" name "]"
+| "[" name LIST1 name ":" lconstr "]"
+| "[" name ":" lconstr "]"
+| "[" name LIST1 name "]"
 | "`(" LIST1 typeclass_constraint SEP "," ")"
 | "`{" LIST1 typeclass_constraint SEP "," "}"
+| "`[" LIST1 typeclass_constraint SEP "," "]"
 | "'" pattern0
 ]
 
@@ -643,6 +648,7 @@ command: [
 | "Show" "Ltac" "Profile"
 | "Show" "Ltac" "Profile" "CutOff" int
 | "Show" "Ltac" "Profile" string
+| "Show" "Lia" "Profile"      (* micromega plugin *)
 | "Add" "InjTyp" constr      (* micromega plugin *)
 | "Add" "BinOp" constr      (* micromega plugin *)
 | "Add" "UnOp" constr      (* micromega plugin *)
@@ -937,12 +943,12 @@ opt_constructors_or_fields: [
 ]
 
 inductive_definition: [
-| opt_coercion ident_decl binders OPT [ ":" lconstr ] opt_constructors_or_fields decl_notation
+| opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notation
 ]
 
 constructor_list_or_record_decl: [
 | "|" LIST1 constructor SEP "|"
-| identref constructor_type "|" LIST0 constructor SEP "|"
+| identref constructor_type "|" LIST1 constructor SEP "|"
 | identref constructor_type
 | identref "{" record_fields "}"
 | "{" record_fields "}"
@@ -1270,7 +1276,7 @@ printable: [
 | "Instances" smart_global
 | "Coercions"
 | "Coercion" "Paths" class_rawexpr class_rawexpr
-| "Canonical" "Projections"
+| "Canonical" "Projections" LIST0 smart_global
 | "Typing" "Flags"
 | "Tables"
 | "Options"
@@ -1400,8 +1406,7 @@ syntax_modifier: [
 | "only" "parsing"
 | "format" STRING OPT STRING
 | IDENT; "," LIST1 IDENT SEP "," "at" level
-| IDENT; "at" level
-| IDENT; "at" level constr_as_binder_kind
+| IDENT; "at" level OPT constr_as_binder_kind
 | IDENT constr_as_binder_kind
 | IDENT syntax_extension_type
 ]
@@ -1412,17 +1417,18 @@ syntax_extension_type: [
 | "bigint"
 | "binder"
 | "constr"
-| "constr" OPT at_level OPT constr_as_binder_kind
+| "constr" at_level_opt OPT constr_as_binder_kind
 | "pattern"
 | "pattern" "at" "level" natural
 | "strict" "pattern"
 | "strict" "pattern" "at" "level" natural
 | "closed" "binder"
-| "custom" IDENT OPT at_level OPT constr_as_binder_kind
+| "custom" IDENT at_level_opt OPT constr_as_binder_kind
 ]
 
-at_level: [
+at_level_opt: [
 | "at" level
+|
 ]
 
 constr_as_binder_kind: [
@@ -1719,7 +1725,6 @@ simple_tactic: [
 | "restart_timer" OPT string
 | "finish_timing" OPT string
 | "finish_timing" "(" string ")" OPT string
-| "myred"      (* micromega plugin *)
 | "psatz_Z" int_or_var tactic      (* micromega plugin *)
 | "psatz_Z" tactic      (* micromega plugin *)
 | "xlia" tactic      (* micromega plugin *)
@@ -1735,13 +1740,12 @@ simple_tactic: [
 | "psatz_R" tactic      (* micromega plugin *)
 | "psatz_Q" int_or_var tactic      (* micromega plugin *)
 | "psatz_Q" tactic      (* micromega plugin *)
-| "iter_specs" tactic      (* micromega plugin *)
+| "zify_iter_specs" tactic      (* micromega plugin *)
 | "zify_op"      (* micromega plugin *)
-| "saturate"      (* micromega plugin *)
+| "zify_saturate"      (* micromega plugin *)
+| "zify_iter_let" tactic      (* micromega plugin *)
 | "nsatz_compute" constr      (* nsatz plugin *)
 | "omega"      (* omega plugin *)
-| "omega" "with" LIST1 ident      (* omega plugin *)
-| "omega" "with" "*"      (* omega plugin *)
 | "rtauto"
 | "protect_fv" string "in" ident      (* setoid_ring plugin *)
 | "protect_fv" string      (* setoid_ring plugin *)

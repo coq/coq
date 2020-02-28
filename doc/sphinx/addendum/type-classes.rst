@@ -295,14 +295,18 @@ the Existing Instance command to achieve the same effect.
 Summary of the commands
 -----------------------
 
-.. cmd:: Class @ident {? @binders} : {? @sort} := {? @ident} { {+; @ident :{? >} @term } }
+.. cmd:: Class @inductive_definition {* with @inductive_definition }
 
    The :cmd:`Class` command is used to declare a typeclass with parameters
    :token:`binders` and fields the declared record fields.
 
+   This command supports the :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
+   :attr:`universes(template)`, :attr:`universes(notemplate)`,
+   :attr:`Cumulative`, :attr:`NonCumulative` and :attr:`Private` attributes.
+
    .. _singleton-class:
 
-   .. cmdv:: Class @ident {? @binders} : {? @sort} := @ident : @term
+   .. cmdv:: Class @ident {* @binder } : {? @sort} := @ident : @term
 
       This variant declares a *singleton* class with a single method.  This
       singleton class is a so-called definitional class, represented simply
@@ -324,7 +328,7 @@ Summary of the commands
 
          This command has no effect when used on a typeclass.
 
-.. cmd:: Instance @ident {? @binders} : @term__0 {+ @term} {? | @num} := { {*; @field_def} }
+.. cmd:: Instance @ident {* @binder } : @term__0 {+ @term} {? | @num} := { {*; @field_def} }
 
    This command is used to declare a typeclass instance named
    :token:`ident` of the class :n:`@term__0` with parameters :token:`term` and
@@ -337,10 +341,10 @@ Summary of the commands
    :tacn:`auto` hints. If the priority :token:`num` is not specified, it defaults to the number
    of non-dependent binders of the instance.
 
-   .. cmdv:: Instance @ident {? @binders} : forall {? @binders}, @term__0 {+ @term} {? | @num } := @term
+   .. cmdv:: Instance @ident {* @binder } : forall {* @binder }, @term__0 {+ @term} {? | @num } := @term
 
       This syntax is used for declaration of singleton class instances or
-      for directly giving an explicit term of type :n:`forall @binders, @term__0
+      for directly giving an explicit term of type :n:`forall {* @binder }, @term__0
       {+ @term}`.  One need not even mention the unique field name for
       singleton classes.
 

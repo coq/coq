@@ -1702,7 +1702,7 @@ Intro patterns
   when it is the
   very *first* :token:`i_pattern` after tactic ``=>`` tactical *and* tactic
   is not a move, is a *branching*:token:`i_pattern`. It executes the sequence
-  :token:`i_item`:math:`_i` on the i-th   subgoal produced by tactic. The
+  :n:`@i_item__i` on the i-th subgoal produced by tactic. The
   execution of tactic should thus generate exactly m subgoals, unless the
   ``[…]`` :token:`i_pattern` comes after an initial ``//`` or ``//=``
   :token:`s_item` that closes some of the goals produced by ``tactic``, in

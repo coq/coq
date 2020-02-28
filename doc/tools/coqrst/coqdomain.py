@@ -198,12 +198,23 @@ class CoqObject(ObjectDescription):
                 index_text += " " + self.index_suffix
             self.indexnode['entries'].append(('single', index_text, target, '', None))
 
+    aliases = None  # additional indexed names for a command or other object
+
     def add_target_and_index(self, name, _, signode):
         """Attach a link target to `signode` and an index entry for `name`.
         This is only called (from ``ObjectDescription.run``) if ``:noindex:`` isn't specified."""
         if name:
             target = self._add_target(signode, name)
             self._add_index_entry(name, target)
+            if self.aliases is not None:
+                parent = signode.parent
+                for alias in self.aliases:
+                    aliasnode = nodes.inline('', '')
+                    signode.parent.append(aliasnode)
+                    target2 = self._add_target(aliasnode, alias)
+                    self._add_index_entry(name, target2)
+                parent.remove(signode) # move to the end
+                parent.append(signode)
             return target
 
     def _prepare_names(self):
@@ -213,10 +224,15 @@ class CoqObject(ObjectDescription):
             self._names = {}
         else:
             names = [n.strip() for n in names.split(";")]
-            if len(names) != len(sigs):
+            if len(sigs) > 1 and len(names) != len(sigs):
                 ERR = ("Expected {} semicolon-separated names, got {}.  " +
                        "Please provide one name per signature line.")
                 raise self.error(ERR.format(len(names), len(sigs)))
+            if len(sigs) == 1 and len(names) > 1:
+                self.aliases = names[:-1]
+                names = names[-1:]
+            else:
+                self.aliases = None
             self._names = dict(zip(sigs, names))
 
     def run(self):
@@ -278,7 +294,7 @@ class VernacObject(NotationObject):
 
     Example::
 
-       .. cmd:: Infix "@symbol" := @term ({+, @modifier}).
+       .. cmd:: Infix @string := @term1_extended {? ( {+, @syntax_modifier } ) } {? : @ident }
 
           This command is equivalent to :n:`…`.
     """
@@ -324,6 +340,20 @@ class TacticNotationObject(NotationObject):
     subdomain = "tacn"
     index_suffix = "(tactic)"
     annotation = None
+
+class AttributeNotationObject(NotationObject):
+    """An attribute.
+
+    Example::
+
+       .. attr:: local
+    """
+    subdomain = "attr"
+    index_suffix = "(attribute)"
+    annotation = "Attribute"
+
+    def _name_from_signature(self, signature):
+        return notation_to_string(signature)
 
 class TacticNotationVariantObject(TacticNotationObject):
     """A variant of a tactic.
@@ -1066,6 +1096,10 @@ class CoqVernacIndex(CoqSubdomainsIndex):
 class CoqTacticIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "tacindex", "Tactic Index", "tactics", ["tacn"]
 
+# Attribute index is generated but not included in output
+class CoqAttributeIndex(CoqSubdomainsIndex):
+    name, localname, shortname, subdomains = "attrindex", "Attribute Index", "attributes", ["attr"]
+
 class CoqOptionIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "optindex", "Flags, options and Tables Index", "options", ["flag", "opt", "table"]
 
@@ -1142,6 +1176,7 @@ class CoqDomain(Domain):
         'opt': ObjType('opt', 'opt'),
         'flag': ObjType('flag', 'flag'),
         'table': ObjType('table', 'table'),
+        'attr': ObjType('attr', 'attr'),
         'thm': ObjType('thm', 'thm'),
         'prodn': ObjType('prodn', 'prodn'),
         'exn': ObjType('exn', 'exn'),
@@ -1160,6 +1195,7 @@ class CoqDomain(Domain):
         'opt': OptionObject,
         'flag': FlagObject,
         'table': TableObject,
+        'attr': AttributeNotationObject,
         'thm': GallinaObject,
         'prodn' : ProductionObject,
         'exn': ExceptionObject,
@@ -1173,6 +1209,7 @@ class CoqDomain(Domain):
         'opt': XRefRole(warn_dangling=True),
         'flag': XRefRole(warn_dangling=True),
         'table': XRefRole(warn_dangling=True),
+        'attr': XRefRole(warn_dangling=True),
         'thm': XRefRole(warn_dangling=True),
         'prodn' : XRefRole(warn_dangling=True),
         'exn': XRefRole(warn_dangling=True),
@@ -1196,6 +1233,7 @@ class CoqDomain(Domain):
             'opt': {},
             'flag': {},
             'table': {},
+            'attr': {},
             'thm': {},
             'prodn' : {},
             'exn': {},

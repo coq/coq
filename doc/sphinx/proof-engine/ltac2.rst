@@ -909,9 +909,9 @@ Ltac2 from Ltac1
 Same as above by switching Ltac1 by Ltac2 and using the `ltac2` quotation
 instead.
 
-.. productionlist:: coq
-  ltac_expr : ltac2 : ( `ltac2_term` )
-            : ltac2 : ( `ident` ... `ident` |- `ltac2_term` )
+.. prodn::
+   ltac_expr += ltac2 : ( `ltac2_term` )
+   | ltac2 : ( `ident` ... `ident` |- `ltac2_term` )
 
 The typing rules are dual, that is, the optional identifiers are bound
 with type `Ltac2.Ltac1.t` in the Ltac2 expression, which is expected to have

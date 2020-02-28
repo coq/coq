@@ -310,10 +310,10 @@ at the time of use of the notation.
 The Infix command
 ~~~~~~~~~~~~~~~~~~
 
-The :cmd:`Infix` command is a shortening for declaring notations of infix
+The :cmd:`Infix` command is a shortcut for declaring notations for infix
 symbols.
 
-.. cmd:: Infix "@symbol" := @term {? (@modifiers) }.
+.. cmd:: Infix @string := @term {? (@modifiers) }
 
    This command is equivalent to
 
@@ -366,7 +366,7 @@ Thanks to reserved notations, the inductive, co-inductive, record, recursive and
 corecursive definitions can benefit from customized notations. To do this, insert
 a ``where`` notation clause after the definition of the (co)inductive type or
 (co)recursive term (or after the definition of each of them in case of mutual
-definitions). The exact syntax is given by :token:`decl_notation` for inductive,
+definitions). The exact syntax is given by :n:`@decl_notation` for inductive,
 co-inductive, recursive and corecursive definitions and in :ref:`record-types`
 for records. Here are examples:
 
@@ -914,7 +914,6 @@ notations are given below. The optional :production:`scope` is described in
                  : Fixpoint `fix_body` [`decl_notation`] with … with `fix_body` [`decl_notation`].
                  : CoFixpoint `fix_body` [`decl_notation`] with … with `fix_body` [`decl_notation`].
                  : [Local] Declare Custom Entry `ident`.
-   decl_notation : [where `string` := `term` [: `scope`] and … and `string` := `term` [: `scope`]].
    modifiers     : `modifier`, … , `modifier`
    modifier      : at level `num`
                  : in custom `ident`
@@ -943,6 +942,12 @@ notations are given below. The optional :production:`scope` is described in
    binderinterp  : as ident
                  : as pattern
                  : as strict pattern
+
+.. insertprodn decl_notations decl_notation
+
+.. prodn::
+   decl_notations ::= where @decl_notation {* and @decl_notation }
+   decl_notation ::= @string := @term1_extended {? : @ident }
 
 .. note:: No typing of the denoted expression is performed at definition
           time. Type checking is done only at the time of use of the notation.

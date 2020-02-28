@@ -34,14 +34,14 @@ Names (link targets) are auto-generated for most simple objects, though they can
 
 Most objects should have a body (i.e. a block of indented text following the signature, called “contents” in Sphinx terms).  Undocumented objects should have the ``:undocumented:`` flag instead, as shown above.  When multiple objects have a single description, they can be grouped into a single object, like this (semicolons can be used to separate the names of the objects; names starting with ``_`` will be omitted from the indexes)::
 
-   .. cmdv:: Lemma @ident {? @binders} : @type
-             Remark @ident {? @binders} : @type
-             Fact @ident {? @binders} : @type
-             Corollary @ident {? @binders} : @type
-             Proposition @ident {? @binders} : @type
+   .. cmdv:: Lemma @ident {* @binder } : @type
+             Remark @ident {* @binder } : @type
+             Fact @ident {* @binder } : @type
+             Corollary @ident {* @binder } : @type
+             Proposition @ident {* @binder } : @type
       :name: Lemma; Remark; Fact; Corollary; Proposition
 
-      These commands are all synonyms of :n:`Theorem @ident {? @binders } : type`.
+      These commands are all synonyms of :n:`Theorem @ident {* @binder } : type`.
 
 Notations
 ---------

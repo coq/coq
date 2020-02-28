@@ -693,6 +693,58 @@ let create_edit_map g op edits =
 let remove_Sedit2 p =
   List.filter (fun sym -> match sym with | Sedit2 _ -> false | _ -> true) p
 
+(* don't deal with Sedit, Sedit2 yet (ever?) *)
+let rec pmatch fullprod fullpat repl =
+  let map_prod prod = List.concat (List.map (fun s -> pmatch [s] fullpat repl) prod) in
+  let pmatch_wrap sym =
+    let r = pmatch [sym] fullpat repl in
+    match r with
+    | a :: b :: tl -> Sparen r
+    | [a] -> a
+    | x -> error "pmatch: should not happen"; Sterm "??"
+  in
+
+  let symmatch_r s =
+  let res = match s with
+  | Slist1 sym -> Slist1 (pmatch_wrap sym)
+  | Slist1sep (sym, sep) -> Slist1sep (pmatch_wrap sym, sep)
+  | Slist0 sym -> Slist0 (pmatch_wrap sym)
+  | Slist0sep (sym, sep) -> Slist0sep (pmatch_wrap sym, sep)
+  | Sopt sym -> Sopt (pmatch_wrap sym)
+  | Sparen prod -> Sparen (map_prod prod)
+  | Sprod prods -> Sprod (List.map map_prod prods)
+  | sym -> sym
+  in
+(*  Printf.printf "symmatch of %s gives %s\n" (prod_to_str [s]) (prod_to_str [res]);*)
+  res
+  in
+
+  let rec pmatch_r prod pat match_start start_res res =
+(*    Printf.printf "pmatch_r: prod = %s;  pat = %s;  res = %s\n" (prod_to_str prod) (prod_to_str pat) (prod_to_str res);*)
+    match prod, pat with
+    | _, [] ->
+      let new_res = (List.rev repl) @ res in
+      pmatch_r prod fullpat prod new_res new_res (* subst and continue *)
+    | [], _ -> (List.rev ((List.rev match_start) @ res)) (* leftover partial match *)
+    | hdprod :: tlprod, hdpat :: tlpat ->
+      if hdprod = hdpat then
+        pmatch_r tlprod tlpat match_start start_res res
+      else
+        (* match from the next starting position *)
+        match match_start with
+        | hd :: tl ->
+          let new_res = (symmatch_r hd) :: start_res in
+          pmatch_r tl fullpat tl new_res new_res
+        | [] -> List.rev res (* done *)
+  in
+  pmatch_r fullprod fullpat fullprod [] []
+
+(* global replace of production substrings, rhs only *)
+let global_repl g pat repl =
+  List.iter (fun nt ->
+      g_update_prods g nt (List.map (fun prod -> pmatch prod pat repl) (NTMap.find nt !g.map))
+  ) !g.order
+
 (* edit a production: rename nonterminals, drop nonterminals, substitute nonterminals *)
 let rec edit_prod g top edit_map prod =
   let edit_nt edit_map sym0 nt =
@@ -1112,8 +1164,15 @@ let apply_edit_file g edits =
               with Not_found -> prods)
             in
             aux tl prods' add_nt
+          | (Snterm "OPTINREF" :: _) :: tl ->
+            if not (List.mem [] prods) then
+              error "OPTINREF but no empty production for %s\n" nt;
+            global_repl g [(Snterm nt)] [(Sopt (Snterm nt))];
+            aux tl (remove_prod [] prods nt) add_nt
+          | (Snterm "INSERTALL" :: syms) :: tl ->
+            aux tl (List.map (fun p -> syms @ p) prods) add_nt
           | (Snterm "PRINT" :: _) :: tl ->
-            pr_prods nt (NTMap.find nt !g.map);
+            pr_prods nt prods;
             aux tl prods add_nt
           | (Snterm "EDIT" :: oprod) :: tl ->
             aux tl (edit_single_prod g oprod prods nt) add_nt
@@ -1593,6 +1652,7 @@ type seen = {
   nts: (string * int) NTMap.t;
   tacs: (string * int) NTMap.t;
   cmds: (string * int) NTMap.t;
+  cmdvs: (string * int) NTMap.t;
 }
 
 let process_rst g file args seen tac_prods cmd_prods =
@@ -1640,9 +1700,9 @@ let process_rst g file args seen tac_prods cmd_prods =
       let start_index = index_of start !g.order in
       let end_index = index_of end_ !g.order in
       if start_index = None then
-        error "%s line %d: '%s' is undefined\n" file !linenum start;
+        error "%s line %d: '%s' is undefined in insertprodn\n" file !linenum start;
       if end_index = None then
-        error "%s line %d: '%s' is undefined\n" file !linenum end_;
+        error "%s line %d: '%s' is undefined in insertprodn\n" file !linenum end_;
       if start_index <> None && end_index <> None then
         check_range_consistency g start end_;
       match start_index, end_index with
@@ -1697,11 +1757,16 @@ let process_rst g file args seen tac_prods cmd_prods =
           seen := { !seen with tacs = (NTMap.add rhs (file, !linenum) !seen.tacs)};
           fprintf new_rst "%s\n" line
         | "cmd::" when args.check_cmds ->
+(*
           if not (StringSet.mem rhs cmd_prods) then
             warn "%s line %d: Unknown command: '%s'\n" file !linenum rhs;
           if NTMap.mem rhs !seen.cmds then
             warn "%s line %d: Repeated command: '%s'\n" file !linenum rhs;
+*)
           seen := { !seen with cmds = (NTMap.add rhs (file, !linenum) !seen.cmds)};
+          fprintf new_rst "%s\n" line
+        | "cmdv::" when args.check_cmds ->
+          seen := { !seen with cmdvs = (NTMap.add rhs (file, !linenum) !seen.cmdvs)};
           fprintf new_rst "%s\n" line
         | "insertprodn" ->
           process_insertprodn line rhs
@@ -1818,15 +1883,43 @@ let process_grammar args =
         list, StringSet.of_list list in
       let tac_list, tac_prods = plist "simple_tactic" in
       let cmd_list, cmd_prods = plist "command" in
-      let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; cmds=NTMap.empty } in
+      let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; cmds=NTMap.empty; cmdvs=NTMap.empty } in
       List.iter (fun file -> process_rst g file args seen tac_prods cmd_prods) args.rst_files;
       report_omitted_prods !g.order !seen.nts "Nonterminal" "";
       let out = open_out (dir "updated_rsts") in
       close_out out;
+(*
       if args.check_tacs then
         report_omitted_prods tac_list !seen.tacs "Tactic" "\n                 ";
       if args.check_cmds then
-        report_omitted_prods cmd_list !seen.cmds "Command" "\n                  "
+        report_omitted_prods cmd_list !seen.cmds "Command" "\n                  ";
+*)
+
+      let rstCmds = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings !seen.cmds)) in
+      let rstCmdvs = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings !seen.cmdvs)) in
+      let command_nts = ["command"; "gallina"; "gallina_ext"; "query_command"; "syntax"] in
+      (* TODO: need to handle tactic_mode (overlaps with query_command) and subprf *)
+      let gramCmds = List.fold_left (fun set nt ->
+          StringSet.union set (StringSet.of_list (List.map (fun p -> String.trim (prod_to_prodn p)) (NTMap.find nt !prodn_gram.map)))
+        ) StringSet.empty command_nts in
+
+      let allCmds = StringSet.union rstCmdvs (StringSet.union rstCmds gramCmds) in
+      let out = open_out_bin (dir "prodnCommands") in
+      StringSet.iter (fun c ->
+          let rsts = StringSet.mem c rstCmds in
+          let gram = StringSet.mem c gramCmds in
+          let pfx = match rsts, gram with
+          | true, false -> "+"
+          | false, true -> "-"
+          | false, false -> "?"
+          | _, _ -> " "
+          in
+          let var = if StringSet.mem c rstCmdvs then "v" else " " in
+          fprintf out "%s%s  %s\n" pfx var c)
+        allCmds;
+      close_out out;
+      Printf.printf "# cmds in rsts, gram, total = %d %d %d\n" (StringSet.cardinal gramCmds)
+        (StringSet.cardinal rstCmds) (StringSet.cardinal allCmds);
     end;
 
     (* generate output for prodn: simple_tactic, command, also for Ltac?? *)

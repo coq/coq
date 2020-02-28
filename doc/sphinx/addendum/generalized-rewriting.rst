@@ -170,7 +170,7 @@ compatibility constraints.
 Adding new relations and morphisms
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. cmd::  Add Parametric Relation @binders : (A t1 ... tn) (Aeq t′1 ... t′m) {? reflexivity proved by @term} {? symmetry proved by @term} {? transitivity proved by @term} as @ident
+.. cmd::  Add Parametric Relation {* @binder } : (A t1 ... tn) (Aeq t′1 ... t′m) {? reflexivity proved by @term} {? symmetry proved by @term} {? transitivity proved by @term} as @ident
 
    This command declares a parametric relation :g:`Aeq: forall (y1 : β1 ... ym : βm)`,
    :g:`relation (A t1 ... tn)` over :g:`(A : αi -> ... αn -> Type)`.
@@ -219,7 +219,7 @@ replace terms with related ones only in contexts that are syntactic
 compositions of parametric morphism instances declared with the
 following command.
 
-.. cmd:: Add Parametric Morphism @binders : (@ident {+ @term__1}) with signature @term__2 as @ident
+.. cmd:: Add Parametric Morphism {* @binder } : (@ident {+ @term__1}) with signature @term__2 as @ident
 
    This command declares a parametric morphism :n:`@ident {+ @term__1}` of
    signature :n:`@term__2`.  The final identifier :token:`ident` gives a unique
