@@ -114,7 +114,7 @@ END
 
 (** Eauto *)
 
-TACTIC EXTEND prolog
+TACTIC EXTEND prolog DEPRECATED { Deprecation.make ~note:"Use eauto instead" () }
 | [ "prolog" "[" uconstr_list(l) "]" int_or_var(n) ] ->
     { Eauto.prolog_tac (eval_uconstrs ist l) n }
 END
@@ -253,4 +253,3 @@ VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
           (match dbnames with None -> ["core"] | Some l -> l) entry;
  }
 END
-
