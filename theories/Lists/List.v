@@ -698,6 +698,40 @@ Section Elts.
 
   Hypothesis eq_dec : forall x y : A, {x = y}+{x <> y}.
 
+  Definition In_inv (x x0 : A) (xs : list A) (H : In x (x0 :: xs)) : {x0 = x} + {In x xs} :=
+    match eq_dec x0 x with
+      | left H0 => left H0
+      | right H0 =>
+        match (in_dec eq_dec x xs) with
+          | left H1 => right H1
+          | right H1 => False_rec _ ltac:(destruct H; contradiction)
+        end
+    end.
+
+  Fixpoint cut (a : A) (l : list A) : list A * list A :=
+    match l with
+      | [] => ([], [])
+      | b :: l =>
+        if eq_dec b a
+          then ([], l)
+          else
+            let F := cut a l in
+            (b :: fst F, snd F)
+    end.
+
+  Lemma cut_destr : forall (a : A) (l : list A), In a l -> l = fst (cut a l) ++ a :: (snd (cut a l)).
+  Proof.
+    intros a l.
+    simpl.
+    induction l as [| a0 l H].
+    - contradiction.
+    - intro H0; unfold cut; fold cut; destruct (eq_dec a0 a) as [H1 | H1].
+      + rewrite H1; trivial.
+      + destruct (in_inv H0) as [H2 | H2].
+        * contradiction.
+        * simpl; rewrite (app_comm_cons (fst (cut a l)) (a :: snd (cut a l)) a0); simpl; rewrite <- (H H2); reflexivity.
+  Qed.
+
   Fixpoint remove (x : A) (l : list A) : list A :=
     match l with
       | [] => []
@@ -2377,6 +2411,13 @@ Section ReDun.
   Inductive NoDup : list A -> Prop :=
     | NoDup_nil : NoDup nil
     | NoDup_cons : forall x l, ~ In x l -> NoDup l -> NoDup (x::l).
+
+  Lemma NoDup_tail : forall (x0 : A) (xs : list A), NoDup (x0 :: xs) -> NoDup xs.
+  Proof.
+    intros x0 xs H.
+    inversion H.
+    assumption.
+  Qed.
 
   Lemma NoDup_Add a l l' : Add a l l' -> (NoDup l' <-> NoDup l /\ ~In a l).
   Proof.
