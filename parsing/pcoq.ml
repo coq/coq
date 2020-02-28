@@ -165,7 +165,7 @@ struct
   | Tok.IDENT ident when not (List.mem_f String.equal ident idents) -> Some (n + 1)
   | _ -> None
 
-  let lk_int tok n strm = match stream_nth n strm with
+  let lk_nat tok n strm = match stream_nth n strm with
   | Tok.NUMERAL { NumTok.int = _; frac = ""; exp = "" } -> Some (n + 1)
   | _ -> None
 

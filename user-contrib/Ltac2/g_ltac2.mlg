@@ -27,7 +27,7 @@ let lk_ident_or_anti =
 let test_lpar_idnum_coloneq =
   let open Pcoq.Lookahead in
   to_entry "test_lpar_idnum_coloneq" begin
-    lk_kw "(" >> (lk_ident_or_anti <+> lk_int) >> lk_kw ":="
+    lk_kw "(" >> (lk_ident_or_anti <+> lk_nat) >> lk_kw ":="
   end
 
 (* lookahead for (x:t), (?x:t) *)

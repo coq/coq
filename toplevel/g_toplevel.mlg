@@ -36,7 +36,7 @@ let err () = raise Stream.Failure
 let test_show_goal =
   let open Pcoq.Lookahead in
   to_entry "test_show_goal" begin
-   lk_kw "Show" >> lk_kw "Goal" >> lk_int
+   lk_kw "Show" >> lk_kw "Goal" >> lk_nat
   end
 
 }

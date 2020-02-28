@@ -54,7 +54,7 @@ let test_lpar_id_rpar =
 let test_lpar_idnum_coloneq =
   let open Pcoq.Lookahead in
   to_entry "test_lpar_idnum_coloneq" begin
-    lk_kw "(" >> (lk_ident <+> lk_int) >> lk_kw ":="
+    lk_kw "(" >> (lk_ident <+> lk_nat) >> lk_kw ":="
   end
 
 (* idem for (x:t) *)

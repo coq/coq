@@ -43,7 +43,7 @@ module Lookahead : sig
   val check_no_space : t
   val lk_kw : string -> t
   val lk_kws : string list -> t
-  val lk_int : t
+  val lk_nat : t
   val lk_ident : t
   val lk_ident_except : string list -> t
   val lk_ident_list : t
