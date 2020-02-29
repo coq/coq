@@ -16,6 +16,8 @@ type 'a t = private {
 
 val make : ?loc:Loc.t -> 'a -> 'a t
 
+val fold_left_map : ('c -> 'a -> 'c * 'b) -> 'c -> 'a t -> 'c * 'b t
+
 val map : ('a -> 'b) -> 'a t -> 'b t
 val map_with_loc : (?loc:Loc.t -> 'a -> 'b) -> 'a t -> 'b t
 val map_from_loc : (?loc:Loc.t -> 'a -> 'b) -> 'a Loc.located -> 'b t

@@ -16,6 +16,8 @@ type 'a t = {
 
 let make ?loc v = { v; loc }
 
+let fold_left_map f x n = let x, v = f x n.v in (x,{ n with v })
+
 let map f n = { n with v = f n.v }
 let map_with_loc f n = { n with v = f ?loc:n.loc n.v }
 let map_from_loc f l =
