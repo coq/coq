@@ -42,7 +42,7 @@ end
 module Recthm = struct
   type t =
     { name : Id.t
-    ; typ : EConstr.t
+    ; typ : Constr.t
     ; args : Name.t list
     ; impargs : Impargs.manual_implicits
     }
@@ -129,7 +129,7 @@ let start_dependent_lemma ~name ~poly
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
-    match List.map (fun { Recthm.name; typ } -> name,typ) thms with
+    match List.map (fun { Recthm.name; typ } -> name, (EConstr.of_constr typ)) thms with
     | (id,_)::l -> Tactics.mutual_cofix id l 0
     | _ -> assert false
   else
@@ -137,7 +137,7 @@ let rec_tac_initializer finite guard thms snl =
     let nl = match snl with
      | None -> List.map succ (List.map List.last guard)
      | Some nl -> nl
-    in match List.map2 (fun { Recthm.name; typ } n -> (name, n, typ)) thms nl with
+    in match List.map2 (fun { Recthm.name; typ } n -> (name, n, (EConstr.of_constr typ))) thms nl with
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 
@@ -168,7 +168,7 @@ let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recgua
            ; scope
            ; kind
            } in
-    let lemma = start_lemma ~name ~poly ~udecl ~info sigma typ in
+    let lemma = start_lemma ~name ~poly ~udecl ~info sigma (EConstr.of_constr typ) in
     pf_map (Proof_global.map_proof (fun p ->
         match init_tac with
         | None -> p
@@ -178,56 +178,123 @@ let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recgua
 (* Commom constant saving path, for both Qed and Admitted               *)
 (************************************************************************)
 
-(* Helper for process_recthms *)
-let retrieve_first_recthm uctx = function
-  | GlobRef.VarRef id ->
-    NamedDecl.get_value (Global.lookup_named id),
-    Decls.variable_opacity id
-  | GlobRef.ConstRef cst ->
-    let cb = Global.lookup_constant cst in
-    (* we get the right order somehow but surely it could be enforced in a better way *)
-    let uctx = UState.context uctx in
-    let inst = Univ.UContext.instance uctx in
-    let map (c, _, _) = Vars.subst_instance_constr inst c in
-    (Option.map map (Global.body_of_constant_body Library.indirect_accessor cb), Declareops.is_opaque cb)
-  | _ -> assert false
+(* Support for mutually proved theorems *)
 
-let rec select_body i t =
-  let open Constr in
-  match Constr.kind t with
-  | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
-  | CoFix (0,decls) -> mkCoFix (i,decls)
-  | LetIn(na,t1,ty,t2) -> mkLetIn (na,t1,ty, select_body i t2)
-  | Lambda(na,ty,t) -> mkLambda(na,ty, select_body i t)
-  | App (t, args) -> mkApp (select_body i t, args)
-  | _ ->
-    CErrors.anomaly
-      Pp.(str "Not a proof by induction: " ++
-          Termops.Internal.debug_print_constr (EConstr.of_constr t) ++ str ".")
+(* XXX: Most of this does belong to Declare, due to proof_entry manip *)
+module MutualEntry : sig
 
-(* Helper for process_recthms *)
-let save_remaining_recthms ?fix_exn ~poly ~scope ~udecl ~hook uctx body opaque i { Recthm.name; typ; impargs } =
-  let sigma = Evd.from_ctx uctx in
-  let kind = Decls.(IsAssumption Conjectural) in
-  match body with
-  | None ->
-    let _, pe = DeclareDef.prepare_parameter ~allow_evars:false ~poly sigma udecl typ in
-    DeclareDef.declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe
-  | Some body ->
-    let body = EConstr.of_constr (select_body i body) in
-    (* XXX: we are normalizing twice here, entries do contain ground terms *)
-    let _, de = DeclareDef.prepare_definition ~allow_evars:false ~opaque ~poly sigma udecl ~types:(Some typ) ~body in
-    let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
-    let ubind = UnivNames.empty_binders in (* XXX fixme ubind *)
-    DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ubind de impargs
+  (* We keep this type abstract and to avoid uncontrolled hacks *)
+  type t
 
-(* This declares implicits and calls the hooks for other_thms *)
-let process_recthms ?fix_exn ?hook uctx ~udecl ~poly ~scope dref other_thms =
-  if List.is_empty other_thms then ()
-  else
-    let body, opaque = retrieve_first_recthm uctx dref in
-    let _ = List.map_i (save_remaining_recthms ?fix_exn ~poly ~scope ~udecl ~hook uctx body opaque) 1 other_thms in
-    ()
+  val variable : other_thms:Recthm.t list -> Entries.parameter_entry -> t
+
+  val adjust_guardness_conditions
+    : other_thms:Recthm.t list
+    -> possible_indexes:int list list
+    -> Evd.side_effects Declare.proof_entry
+    -> t
+
+  val declare_mutdef
+    (* Common to all recthms *)
+    : ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
+    -> scope:DeclareDef.locality
+    -> poly:bool
+    -> kind:Decls.logical_kind
+    -> hook:DeclareDef.Hook.t option
+    -> uctx:UState.t
+    -> ?hook_data:DeclareDef.Hook.t * UState.t * (Names.Id.t * Constr.t) list
+    -> udecl:UState.universe_decl
+    (* Only for the first constant, introduced by compat *)
+    -> ubind:UnivNames.universe_binders
+    -> name:Id.t
+    -> impargs:Impargs.manual_implicits
+    -> t
+    -> Names.GlobRef.t list
+
+end = struct
+
+  (* Body with the fix *)
+  type et =
+    | NoBody of Entries.parameter_entry
+    | Single of Evd.side_effects Declare.proof_entry
+    | Mutual of Evd.side_effects Declare.proof_entry
+
+  type t =
+    { other_thms : Recthm.t list
+    ; entry : et
+    }
+
+  let variable ~other_thms t = { other_thms; entry = NoBody t }
+
+  (* XXX: Refactor this with the code in
+     [ComFixpoint.declare_fixpoint_generic] *)
+  let guess_decreasing env possible_indexes ((body, ctx), eff) =
+    let open Constr in
+    match Constr.kind body with
+    | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
+      let env = Safe_typing.push_private_constants env eff.Evd.seff_private in
+      let indexes = Pretyping.search_guard env possible_indexes fixdecls in
+      (mkFix ((indexes,0),fixdecls), ctx), eff
+    | _ -> (body, ctx), eff
+
+  let adjust_guardness_conditions ~other_thms ~possible_indexes const =
+    let entry = match possible_indexes with
+    | [] ->
+      (* Not a recursive statement *)
+      Single const
+    | possible_indexes ->
+      (* Try all combinations... not optimal *)
+      let env = Global.env() in
+      let pe = Declare.Internal.map_entry_body const
+          ~f:(guess_decreasing env possible_indexes)
+      in
+      Mutual pe
+    in { other_thms; entry }
+
+  let rec select_body i t =
+    let open Constr in
+    match Constr.kind t with
+    | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
+    | CoFix (0,decls) -> mkCoFix (i,decls)
+    | LetIn(na,t1,ty,t2) -> mkLetIn (na,t1,ty, select_body i t2)
+    | Lambda(na,ty,t) -> mkLambda(na,ty, select_body i t)
+    | App (t, args) -> mkApp (select_body i t, args)
+    | _ ->
+      CErrors.anomaly
+        Pp.(str "Not a proof by induction: " ++
+            Termops.Internal.debug_print_constr (EConstr.of_constr t) ++ str ".")
+
+  let declare_mutdef ?fix_exn ~scope ~poly ~kind ~hook ~uctx ?hook_data ~udecl ~ubind ?typ ~name ~impargs mutpe i =
+    match mutpe with
+    | NoBody pe ->
+      DeclareDef.declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe
+    | Single pe ->
+      (* We'd like to do [assert (i = 0)] here, however this codepath
+         is used when declaring mutual cofixpoints *)
+      DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ubind pe impargs
+    | Mutual pe ->
+      (* if typ = None , we don't touch the type; used in the base case *)
+      let pe =
+        match typ with
+        | None -> pe
+        | Some typ ->
+          Declare.Internal.map_entry_type pe ~f:(fun _ -> Some typ)
+      in
+      let pe = Declare.Internal.map_entry_body pe
+          ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff) in
+      DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ubind pe impargs
+
+  let declare_mutdef ?fix_exn ~scope ~poly ~kind ~hook ~uctx ?hook_data ~udecl ~ubind ~name ~impargs { other_thms ; entry } =
+    (* At some point make this a single iteration *)
+    let r = declare_mutdef ?fix_exn ~poly ~scope ~udecl ~kind ~ubind ~hook ?hook_data ~uctx ~name ~impargs entry 0 in
+    (* Before we used to do this, check if that's right *)
+    let ubind = UnivNames.empty_binders in
+    let rs =
+      List.map_i (
+        fun i { Recthm.name; typ; impargs } ->
+          declare_mutdef ?fix_exn ~name ~poly ~scope ~udecl ~kind ~ubind ~hook ?hook_data ~uctx ~impargs ~typ entry i) 1 other_thms
+    in r :: rs
+end
 
 (************************************************************************)
 (* Admitting a lemma-like constant                                      *)
@@ -253,12 +320,15 @@ let compute_proof_using_for_admitted proof typ pproofs =
       Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
     | _ -> None
 
-let finish_admitted ~name ~poly ~scope pe uctx hook ~udecl impargs other_thms =
-  let dref = DeclareDef.declare_assumption ~name ~scope ~hook ~uctx ~impargs pe in
-  process_recthms ?fix_exn:None ?hook uctx ~udecl ~poly ~scope dref other_thms
+let finish_admitted ~name ~poly ~scope ~kind ~uctx ~hook ~udecl ~impargs ~other_thms pe =
+  let mutpe = MutualEntry.variable ~other_thms pe in
+  let ubind = UnivNames.empty_binders in
+  let _r : Names.GlobRef.t list =
+    MutualEntry.declare_mutdef ~scope ~kind ~uctx ~poly ~udecl ~hook ~ubind ~name ~impargs mutpe in
+  ()
 
 let save_lemma_admitted ~(lemma : t) : unit =
-  let { Info.hook; scope; impargs; other_thms } = lemma.info in
+  let { Info.hook; scope; impargs; other_thms; kind } = lemma.info in
   let udecl = Proof_global.get_universe_decl lemma.proof in
   let Proof.{ name; poly; entry } = Proof.data (Proof_global.get_proof lemma.proof) in
   let typ = match Proofview.initial_goals entry with
@@ -271,7 +341,7 @@ let save_lemma_admitted ~(lemma : t) : unit =
   let sec_vars = compute_proof_using_for_admitted lemma.proof typ pproofs in
   let universes = Proof_global.get_initial_euctx lemma.proof in
   let ctx = UState.check_univ_decl ~poly universes udecl in
-  finish_admitted ~name ~poly ~scope (sec_vars, (typ, ctx), None) universes hook ~udecl impargs other_thms
+  finish_admitted ~name ~poly ~kind ~scope ~uctx:universes ~hook ~udecl ~impargs ~other_thms (sec_vars, (typ, ctx), None)
 
 (************************************************************************)
 (* Saving a lemma-like constant                                         *)
@@ -283,24 +353,6 @@ let check_anonymity id save_ident =
   if not (String.equal (Nameops.atompart_of_id id) (Id.to_string (default_thm_id))) then
     CErrors.user_err Pp.(str "This command can only be used for unnamed theorem.")
 
-(* Support for mutually proved theorems *)
-
-(* Helper for finish_proved *)
-let adjust_guardness_conditions const = function
-  | [] -> const (* Not a recursive statement *)
-  | possible_indexes ->
-    (* Try all combinations... not optimal *)
-    let env = Global.env() in
-    Declare.Internal.map_entry_body const
-      ~f:(fun ((body, ctx), eff) ->
-          let open Constr in
-          match Constr.kind body with
-          | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
-            let env = Safe_typing.push_private_constants env eff.Evd.seff_private in
-            let indexes = Pretyping.search_guard env possible_indexes fixdecls in
-            (mkFix ((indexes,0),fixdecls), ctx), eff
-          | _ -> (body, ctx), eff)
-
 let finish_proved idopt po info =
   let open Proof_global in
   let { Info.hook; compute_guard; impargs; other_thms; scope; kind } = info in
@@ -311,15 +363,12 @@ let finish_proved idopt po info =
       | Some { CAst.v = save_id } -> check_anonymity name save_id; save_id in
     let fix_exn = Declare.Internal.get_fix_exn const in
     let () = try
-      let const = adjust_guardness_conditions const compute_guard in
-      let should_suggest = const.Declare.proof_entry_opaque &&
-                           Option.is_empty const.Declare.proof_entry_secctx in
+      let mutpe = MutualEntry.adjust_guardness_conditions ~other_thms ~possible_indexes:compute_guard const in
       let hook_data = Option.map (fun hook -> hook, universes, []) hook in
       let ubind = UState.universe_binders universes in
-      let r : Names.GlobRef.t =
-        DeclareDef.declare_definition ~should_suggest ~name ~scope ~kind ?hook_data ubind const impargs in
-      (* This takes care of the implicits and hook for the current constant*)
-      process_recthms ~fix_exn ?hook universes ~udecl ~poly ~scope r other_thms
+      let _r : Names.GlobRef.t list =
+        MutualEntry.declare_mutdef ~fix_exn ~scope ~kind ~uctx:universes ~poly ~udecl ?hook_data ~hook ~ubind ~name ~impargs mutpe
+      in ()
     with e when CErrors.noncritical e ->
       let e = Exninfo.capture e in
       Exninfo.iraise (fix_exn e)
@@ -408,7 +457,7 @@ let save_lemma_proved ~lemma ~opaque ~idopt =
 let save_lemma_admitted_delayed ~proof ~info =
   let open Proof_global in
   let { name; entries; universes; udecl; poly } = proof in
-  let { Info.hook; scope; impargs; other_thms } = info in
+  let { Info.hook; scope; impargs; kind; other_thms } = info in
   if List.length entries <> 1 then
     CErrors.user_err Pp.(str "Admitted does not support multiple statements");
   let { Declare.proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
@@ -420,6 +469,6 @@ let save_lemma_admitted_delayed ~proof ~info =
     | Some typ -> typ in
   let ctx = UState.univ_entry ~poly universes in
   let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
-  finish_admitted ~name ~poly ~scope (sec_vars, (typ, ctx), None) universes hook ~udecl impargs other_thms
+  finish_admitted ~name ~poly ~kind ~scope ~uctx:universes ~hook ~udecl ~impargs ~other_thms (sec_vars, (typ, ctx), None)
 
 let save_lemma_proved_delayed ~proof ~info ~idopt = finalize_proof idopt proof info

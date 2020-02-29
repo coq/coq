@@ -43,8 +43,10 @@ module Hook = struct
 end
 
 (* Locality stuff *)
-let declare_definition ~name ~scope ~kind ?hook_data ?(should_suggest=false) udecl ce imps =
+let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
   let fix_exn = Declare.Internal.get_fix_exn ce in
+  let should_suggest = ce.Declare.proof_entry_opaque &&
+                       Option.is_empty ce.Declare.proof_entry_secctx in
   let dref = match scope with
   | Discharge ->
     let () = declare_variable ~name ~kind (SectionLocalDef ce) in

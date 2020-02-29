@@ -255,8 +255,8 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs
     | None -> Decls.CoFixpoint, true, []
   in
   let thms =
-    List.map3 (fun name t (ctx,impargs,_) ->
-        { Lemmas.Recthm.name; typ = EConstr.of_constr t
+    List.map3 (fun name typ (ctx,impargs,_) ->
+        { Lemmas.Recthm.name; typ
         ; args = List.map RelDecl.get_name ctx; impargs})
       fixnames fixtypes fiximps in
   let init_tac =

@@ -503,7 +503,7 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   (* XXX: This nf_evar is critical too!! We are normalizing twice if
      you look at the previous lines... *)
   let thms = List.map (fun (name, (typ, (args, impargs))) ->
-      { Lemmas.Recthm.name; typ = Evarutil.nf_evar evd typ; args; impargs} ) thms in
+      { Lemmas.Recthm.name; typ = EConstr.to_constr evd typ; args; impargs} ) thms in
   let () =
     let open UState in
     if not (udecl.univdecl_extensible_instance && udecl.univdecl_extensible_constraints) then
