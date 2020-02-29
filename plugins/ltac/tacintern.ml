@@ -62,14 +62,19 @@ let find_hyp id ist =
 
 (* Globalize a name introduced by Intro/LetTac/... ; it is allowed to *)
 (* be fresh in which case it is binding later on *)
-let intern_ident s ist id =
-  (* We use identifier both for variables and new names; thus nothing to do *)
-  if not (find_ident id ist) then s := Id.Set.add id !s;
-  id
+let intern_ident ist id =
+  (* We don't care whether it is already bound or not:
+     if it was bound to an ltac var, it'll get the value of its ltac var;
+     if it was not bound to an ltac var, it defines a new ltac var
+     with this name *)
+  ({ ist with ltacvars = Id.Set.add id ist.ltacvars }, id)
 
-let intern_name l ist = function
-  | Anonymous -> Anonymous
-  | Name id -> Name (intern_ident l ist id)
+let intern_name ist = function
+  | Anonymous ->
+    ist, Anonymous
+  | Name id ->
+    let ist, id = intern_ident ist id in
+    ist, Name id
 
 let strict_check = ref false
 
@@ -235,43 +240,57 @@ let intern_constr_with_bindings ist (c,bl) =
 let intern_constr_with_bindings_arg ist (clear,c) =
   (clear,intern_constr_with_bindings ist c)
 
-let rec intern_intro_pattern lf ist = map (function
+let rec intern_intro_pattern ist pat =
+  CAst.fold_left_map intern_intro_pattern_no_loc ist pat
+
+and intern_intro_pattern_no_loc ist = function
   | IntroNaming pat ->
-    IntroNaming (intern_intro_pattern_naming lf ist pat)
+    let ist, pat = intern_intro_pattern_naming ist pat in
+    ist, IntroNaming pat
   | IntroAction pat ->
-    IntroAction (intern_intro_pattern_action lf ist pat)
-  | IntroForthcoming _ as x -> x)
+    let ist, pat = intern_intro_pattern_action ist pat in
+    ist, IntroAction pat
+  | IntroForthcoming _ as x -> ist, x
 
-and intern_intro_pattern_naming lf ist = function
+and intern_intro_pattern_naming ist = function
   | IntroIdentifier id ->
-      IntroIdentifier (intern_ident lf ist id)
+    let ist, id = intern_ident ist id in
+    ist, IntroIdentifier id
   | IntroFresh id ->
-      IntroFresh (intern_ident lf ist id)
-  | IntroAnonymous as x -> x
+    let ist, id = intern_ident ist id in
+    ist, IntroFresh id
+  | IntroAnonymous as x -> ist, x
 
-and intern_intro_pattern_action lf ist = function
+and intern_intro_pattern_action ist = function
   | IntroOrAndPattern l ->
-    IntroOrAndPattern (intern_or_and_intro_pattern lf ist l)
+    let ist, l = intern_or_and_intro_pattern ist l in
+    ist, IntroOrAndPattern l
   | IntroInjection l ->
-    IntroInjection (List.map (intern_intro_pattern lf ist) l)
-  | IntroWildcard | IntroRewrite _ as x -> x
+    let ist, l = List.fold_left_map intern_intro_pattern ist l in
+    ist, IntroInjection l
+  | IntroWildcard | IntroRewrite _ as x -> ist, x
   | IntroApplyOn ({loc;v=c},pat) ->
-    IntroApplyOn (make ?loc @@ intern_constr ist c, intern_intro_pattern lf ist pat)
+    let ist, pat = intern_intro_pattern ist pat in
+    ist, IntroApplyOn (make ?loc @@ intern_constr ist c, pat)
 
-and intern_or_and_intro_pattern lf ist = function
+and intern_or_and_intro_pattern ist = function
    | IntroAndPattern l ->
-      IntroAndPattern (List.map (intern_intro_pattern lf ist) l)
+     let ist, l = List.fold_left_map intern_intro_pattern ist l in
+     ist, IntroAndPattern l
   | IntroOrPattern ll ->
-      IntroOrPattern (List.map (List.map (intern_intro_pattern lf ist)) ll)
+     let ist, ll = List.fold_left_map (List.fold_left_map intern_intro_pattern) ist ll in
+     ist, IntroOrPattern ll
 
-let intern_or_and_intro_pattern_loc lf ist = function
+let intern_or_and_intro_pattern_loc ist = function
   | ArgVar {v=id} as x ->
-      if find_var id ist then x
+      if find_var id ist then (ist, x)
       else user_err Pp.(str "Disjunctive/conjunctive introduction pattern expected.")
-  | ArgArg ll -> ArgArg (map (fun l -> intern_or_and_intro_pattern lf ist l) ll)
+  | ArgArg ll ->
+      let ist, ll = CAst.fold_left_map intern_or_and_intro_pattern ist ll in
+      ist, ArgArg ll
 
-let intern_intro_pattern_naming_loc lf ist = map (fun pat ->
-    intern_intro_pattern_naming lf ist pat)
+let intern_intro_pattern_naming_loc ist pat =
+  CAst.fold_left_map intern_intro_pattern_naming ist pat
 
   (* TODO: catch ltac vars *)
 let intern_destruction_arg ist = function
@@ -425,20 +444,21 @@ let intern_red_expr ist = function
   | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_or_ref_with_occurrences ist) o)
   | (Red _ | Hnf | ExtraRedExpr _ as r ) -> r
 
-let intern_in_hyp_as ist lf (id,ipat) =
-  (intern_hyp ist id, Option.map (intern_intro_pattern lf ist) ipat)
+let intern_in_hyp_as ist (id,ipat) =
+  let ist,l = Option.fold_left_map intern_intro_pattern ist ipat in
+  ist, (intern_hyp ist id, l)
 
 let intern_hyp_list ist = List.map (intern_hyp ist)
 
-let intern_inversion_strength lf ist = function
+let intern_inversion_strength ist = function
   | NonDepInversion (k,idl,ids) ->
-      NonDepInversion (k,intern_hyp_list ist idl,
-      Option.map (intern_or_and_intro_pattern_loc lf ist) ids)
+    let ist, ids = Option.fold_left_map intern_or_and_intro_pattern_loc ist ids in
+    ist, NonDepInversion (k, intern_hyp_list ist idl, ids)
   | DepInversion (k,copt,ids) ->
-      DepInversion (k, Option.map (intern_constr ist) copt,
-      Option.map (intern_or_and_intro_pattern_loc lf ist) ids)
+    let ist, ids = Option.fold_left_map intern_or_and_intro_pattern_loc ist ids in
+    ist, DepInversion (k, Option.map (intern_constr ist) copt, ids)
   | InversionUsing (c,idl) ->
-      InversionUsing (intern_constr ist c, intern_hyp_list ist idl)
+    ist, InversionUsing (intern_constr ist c, intern_hyp_list ist idl)
 
 (* Interprets an hypothesis name *)
 let intern_hyp_location ist ((occs,id),hl) =
@@ -501,50 +521,63 @@ let clause_app f = function
       { onhyps=Some(List.map f l); concl_occs=nl}
 
 (* Globalizes tactics : raw_tactic_expr -> glob_tactic_expr *)
-let rec intern_atomic lf ist x =
+let rec intern_atomic ist x =
   match (x:raw_atomic_tactic_expr) with
   (* Basic tactics *)
   | TacIntroPattern (ev,l) ->
-      TacIntroPattern (ev,List.map (intern_intro_pattern lf ist) l)
+      let ist,l = List.fold_left_map intern_intro_pattern ist l in
+      ist, TacIntroPattern (ev,l)
   | TacApply (a,ev,cb,inhyp) ->
-      TacApply (a,ev,List.map (intern_constr_with_bindings_arg ist) cb,
-                Option.map (intern_in_hyp_as ist lf) inhyp)
+      let ist, inhyp = Option.fold_left_map intern_in_hyp_as ist inhyp in
+      ist, TacApply (a,ev,List.map (intern_constr_with_bindings_arg ist) cb,inhyp)
   | TacElim (ev,cb,cbo) ->
-      TacElim (ev,intern_constr_with_bindings_arg ist cb,
+      ist, TacElim (ev,intern_constr_with_bindings_arg ist cb,
                Option.map (intern_constr_with_bindings ist) cbo)
-  | TacCase (ev,cb) -> TacCase (ev,intern_constr_with_bindings_arg ist cb)
+  | TacCase (ev,cb) -> ist, TacCase (ev,intern_constr_with_bindings_arg ist cb)
   | TacMutualFix (id,n,l) ->
-      let f (id,n,c) = (intern_ident lf ist id,n,intern_type ist c) in
-      TacMutualFix (intern_ident lf ist id, n, List.map f l)
+      let f ist (id,n,c) =
+        let ist, id = intern_ident ist id in
+        ist,(id,n,intern_type ist c) in
+      let ist, l = List.fold_left_map f ist l in
+      let ist, id = intern_ident ist id in
+      ist, TacMutualFix (id, n, l)
   | TacMutualCofix (id,l) ->
-      let f (id,c) = (intern_ident lf ist id,intern_type ist c) in
-      TacMutualCofix (intern_ident lf ist id, List.map f l)
+      let f ist (id,c) =
+        let ist, id = intern_ident ist id in
+        ist,(id,intern_type ist c) in
+      let ist, l = List.fold_left_map f ist l in
+      let ist, id = intern_ident ist id in
+      ist, TacMutualCofix (id, l)
   | TacAssert (ev,b,otac,ipat,c) ->
-      TacAssert (ev,b,Option.map (Option.map (intern_pure_tactic ist)) otac,
-                 Option.map (intern_intro_pattern lf ist) ipat,
+      let ist, ipat = Option.fold_left_map intern_intro_pattern ist ipat in
+      ist, TacAssert (ev,b,Option.map (Option.map (intern_pure_tactic ist)) otac, ipat,
                  intern_constr_gen false (not (Option.is_empty otac)) ist c)
   | TacGeneralize cl ->
-      TacGeneralize (List.map (fun (c,na) ->
-                       intern_constr_with_occurrences ist c,
-                       intern_name lf ist na) cl)
+      let f ist (c,na) =
+        let ist, na = intern_name ist na in
+        ist, (intern_constr_with_occurrences ist c, na) in
+      let ist, cl = List.fold_left_map f ist cl in
+      ist, TacGeneralize cl
   | TacLetTac (ev,na,c,cls,b,eqpat) ->
-      let na = intern_name lf ist na in
-      TacLetTac (ev,na,intern_constr ist c,
-                 (clause_app (intern_hyp_location ist) cls),b,
-                 (Option.map (intern_intro_pattern_naming_loc lf ist) eqpat))
+      let ist, eqpat = Option.fold_left_map intern_intro_pattern_naming_loc ist eqpat in
+      let ist, na = intern_name ist na in
+      ist, TacLetTac (ev,na,intern_constr ist c,
+                 (clause_app (intern_hyp_location ist) cls),b, eqpat)
 
   (* Derived basic tactics *)
   | TacInductionDestruct (ev,isrec,(l,el)) ->
-      TacInductionDestruct (ev,isrec,(List.map (fun (c,(ipato,ipats),cls) ->
-              (intern_destruction_arg ist c,
-               (Option.map (intern_intro_pattern_naming_loc lf ist) ipato,
-               Option.map (intern_or_and_intro_pattern_loc lf ist) ipats),
-               Option.map (clause_app (intern_hyp_location ist)) cls)) l,
+      let f ist (c,(ipato,ipats),cls) =
+        let ist, ipato = Option.fold_left_map intern_intro_pattern_naming_loc ist ipato in
+        let ist, ipats = Option.fold_left_map intern_or_and_intro_pattern_loc ist ipats in
+        ist, (intern_destruction_arg ist c,(ipato,ipats),
+              Option.map (clause_app (intern_hyp_location ist)) cls) in
+      let ist, (l:(_,_) Tacexpr.induction_clause list ) = List.fold_left_map f ist l in
+      ist, TacInductionDestruct (ev,isrec,(l,
                Option.map (intern_constr_with_bindings ist) el))
   (* Conversion *)
   | TacReduce (r,cl) ->
       dump_glob_red_expr r;
-      TacReduce (intern_red_expr ist r, clause_app (intern_hyp_location ist) cl)
+      ist, TacReduce (intern_red_expr ist r, clause_app (intern_hyp_location ist) cl)
   | TacChange (check,None,c,cl) ->
       let is_onhyps = match cl.onhyps with
       | None | Some [] -> true
@@ -554,7 +587,7 @@ let rec intern_atomic lf ist x =
       | AtLeastOneOccurrence | AllOccurrences | NoOccurrences -> true
       | _ -> false
       in
-      TacChange (check,None,
+      ist, TacChange (check,None,
         (if is_onhyps && is_onconcl
          then intern_type ist c else intern_constr ist c),
         clause_app (intern_hyp_location ist) cl)
@@ -564,27 +597,26 @@ let rec intern_atomic lf ist x =
       let fold accu x = Id.Set.add x accu in
       let ltacvars = List.fold_left fold ltacvars metas in
       let ist' = { ist with ltacvars } in
-      TacChange (check,Some pat,intern_constr ist' c,
+      ist, TacChange (check,Some pat,intern_constr ist' c,
         clause_app (intern_hyp_location ist) cl)
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
-      TacRewrite
+      ist, TacRewrite
         (ev,
         List.map (fun (b,m,c) -> (b,m,intern_constr_with_bindings_arg ist c)) l,
         clause_app (intern_hyp_location ist) cl,
         Option.map (intern_pure_tactic ist) by)
   | TacInversion (inv,hyp) ->
-      TacInversion (intern_inversion_strength lf ist inv,
-        intern_quantified_hypothesis ist hyp)
+      let ist, inv = intern_inversion_strength ist inv in
+      ist, TacInversion (inv,intern_quantified_hypothesis ist hyp)
 
 and intern_tactic onlytac ist tac = snd (intern_tactic_seq onlytac ist tac)
 
 and intern_tactic_seq onlytac ist = function
   | TacAtom { loc; v=t } ->
-      let lf = ref ist.ltacvars in
-      let t = intern_atomic lf ist t in
-      !lf, TacAtom (CAst.make ?loc:(adjust_loc loc) t)
+      let ist, t = intern_atomic ist t in
+      ist.ltacvars, TacAtom (CAst.make ?loc:(adjust_loc loc) t)
   | TacFun tacfun -> ist.ltacvars, TacFun (intern_tactic_fun ist tacfun)
   | TacLetIn (isrec,l,u) ->
       let ltacvars = Id.Set.union (extract_let_names l) ist.ltacvars in
@@ -787,15 +819,8 @@ let print_ltac id =
 
 let lift intern = (); fun ist x -> (ist, intern ist x)
 
-let () =
-  let intern_intro_pattern ist pat =
-    let lf = ref Id.Set.empty in
-    let ans = intern_intro_pattern lf ist pat in
-    let ist = { ist with ltacvars = !lf } in
-    (ist, ans)
-  in
-  Genintern.register_intern0 wit_intropattern intern_intro_pattern [@warning "-3"];
-  Genintern.register_intern0 wit_simple_intropattern intern_intro_pattern
+let _ = Genintern.register_intern0 wit_intropattern intern_intro_pattern [@warning "-3"]
+let _ = Genintern.register_intern0 wit_simple_intropattern intern_intro_pattern
 
 let () =
   let intern_clause ist cl =
@@ -804,10 +829,6 @@ let () =
   in
   Genintern.register_intern0 wit_clause_dft_concl intern_clause
 
-let intern_ident' ist id =
-  let lf = ref Id.Set.empty in
-  (ist, intern_ident lf ist id)
-
 let intern_ltac ist tac =
   Flags.with_option strict_check (fun () -> intern_pure_tactic ist tac) ()
 
@@ -815,7 +836,7 @@ let () =
   Genintern.register_intern0 wit_int_or_var (lift intern_int_or_var);
   Genintern.register_intern0 wit_ref (lift intern_global_reference);
   Genintern.register_intern0 wit_pre_ident (fun ist c -> (ist,c));
-  Genintern.register_intern0 wit_ident intern_ident';
+  Genintern.register_intern0 wit_ident intern_ident;
   Genintern.register_intern0 wit_var (lift intern_hyp);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_ltac (lift intern_ltac);
