@@ -9,12 +9,34 @@
 
 (rule
   (targets dune-dbg)
-  (deps dune-dbg.in
-        ../checker/coqchk.bc
-        ../topbin/coqc_bin.bc
-        ../ide/coqide_main.bc
-        %{lib:coq.plugins.ltac:ltac_plugin.cma}
-        ; This is not enough, the call to `ocamlfind` may fail if the
-        ; META file is not yet in place :/
-        top_printers.cma)
+  (deps
+    dune-dbg.in
+    ../checker/coqchk.bc
+    ../topbin/coqc_bin.bc
+    ../ide/coqide_main.bc
+    ; We require all the OCaml libs to be in place and searchable
+    ; by OCamlfind, this is a bit of a hack but until Dune gets
+    ; proper ocamldebug support we have to live with that.
+    %{lib:coq.config:config.cma}
+    %{lib:coq.clib:clib.cma}
+    %{lib:coq.lib:lib.cma}
+    %{lib:coq.kernel:kernel.cma}
+    %{lib:coq.vm:byterun.cma}
+    %{lib:coq.vm:../../stublibs/dllbyterun_stubs.so}
+    %{lib:coq.library:library.cma}
+    %{lib:coq.engine:engine.cma}
+    %{lib:coq.pretyping:pretyping.cma}
+    %{lib:coq.gramlib:gramlib.cma}
+    %{lib:coq.interp:interp.cma}
+    %{lib:coq.proofs:proofs.cma}
+    %{lib:coq.parsing:parsing.cma}
+    %{lib:coq.printing:printing.cma}
+    %{lib:coq.tactics:tactics.cma}
+    %{lib:coq.vernac:vernac.cma}
+    %{lib:coq.stm:stm.cma}
+    %{lib:coq.toplevel:toplevel.cma}
+    %{lib:coq.plugins.ltac:ltac_plugin.cma}
+    %{lib:coq.top_printers:top_printers.cmi}
+    %{lib:coq.top_printers:top_printers.cma}
+    %{lib:coq.top_printers:../META})
   (action (copy dune-dbg.in dune-dbg)))
