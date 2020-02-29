@@ -241,7 +241,7 @@ binders. For example:
 
    Definition lt `{eqa : EqDec A, ! Ord eqa} (x y : A) := andb (le x y) (neqb x y).
 
-The ``!`` modifier switches the way a binder is parsed back to the regular
+The ``!`` modifier switches the way a binder is parsed back to the usual
 interpretation of Coq. In particular, it uses the implicit arguments
 mechanism if available, as shown in the example.
 
@@ -323,7 +323,7 @@ Summary of the commands
 
    .. cmdv:: Existing Class @ident
 
-      This variant declares a class a posteriori from a constant or
+      This variant declares a class from a previously declared constant or
       inductive definition. No methods or instances are defined.
 
       .. warn:: @ident is already declared as a typeclass
@@ -394,7 +394,7 @@ few other commands related to typeclasses.
    :name: typeclasses eauto
 
    This proof search tactic implements the resolution engine that is run
-   implicitly during type-checking. This tactic uses a different resolution
+   implicitly during type checking. This tactic uses a different resolution
    engine than :tacn:`eauto` and :tacn:`auto`. The main differences are the
    following:
 

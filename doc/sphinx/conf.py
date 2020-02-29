@@ -183,18 +183,9 @@ todo_include_todos = False
 nitpicky = True
 
 nitpick_ignore = [ ('token', token) for token in [
-    'assums',
     'binders',
     'collection',
-    'dirpath',
-    'ind_body',
     'modpath',
-    'module',
-    'simple_tactic',
-    'symbol',
-    'term_pattern',
-    'term_pattern_string',
-    'toplevel_selector',
 ]]
 
 # -- Options for HTML output ----------------------------------------------

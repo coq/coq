@@ -474,7 +474,7 @@ Soft cut
 ~~~~~~~~
 
 Another way of restricting backtracking is to restrict a tactic to a
-single success *a posteriori*:
+single success:
 
 .. tacn:: once @ltac_expr
    :name: once

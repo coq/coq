@@ -20,6 +20,7 @@ language presented in the :ref:`previous chapter <core-language>`.
    implicit-arguments
    ../../addendum/extended-pattern-matching
    ../../user-extensions/syntax-extensions
+   arguments-command
    ../../addendum/implicit-coercions
    ../../addendum/type-classes
    ../../addendum/canonical-structures

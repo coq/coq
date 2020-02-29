@@ -37,6 +37,8 @@ In addition to these user-defined classes, we have two built-in classes:
   * ``Funclass``, the class of functions; its objects are all the terms with a functional
     type, i.e. of form :g:`forall x:A,B`.
 
+Formally, the syntax of classes is defined as:
+
    .. insertprodn class class
 
    .. prodn::

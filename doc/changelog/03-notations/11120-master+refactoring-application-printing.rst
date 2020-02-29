@@ -10,7 +10,7 @@
   Herbelin, fixing `#4690 <https://github.com/coq/coq/pull/4690>`_ and
   `#11091 <https://github.com/coq/coq/pull/11091>`_).
 
-- **Changed:** Interpretation scopes are now always inherited in
+- **Changed:** Notation scopes are now always inherited in
   notations binding a partially applied constant, including for
   notations binding an expression of the form :n:`@@qualid`. The latter was
   not the case beforehand

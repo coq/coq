@@ -316,10 +316,10 @@ together, as well as a means of massive abstraction.
    parameters given by the :n:`@module_binder`\s.  (A *functor* is a function
    from modules to modules.)
 
-   .. todo: would like to find a better term than "interactive", not very descriptive
-
    :n:`@of_module_type` specifies the module type.  :n:`{+ <: @module_type_inl }`
    starts a module that satisfies each :n:`@module_type_inl`.
+
+   .. todo: would like to find a better term than "interactive", not very descriptive
 
    :n:`:= {+<+ @module_expr_inl }` specifies the body of a module or functor
    definition.  If it's not specified, then the module is defined *interactively*,
@@ -606,11 +606,8 @@ module can be accessed using the dot notation:
       Parameter x : T.
       End SIG.
 
-The following definition of :g:`N` using the module type expression :g:`SIG` with
+The definition of :g:`N` using the module type expression :g:`SIG` with
 :g:`Definition T := nat` is equivalent to the following one:
-
-.. todo: what is other definition referred to above?
-   "Module N' : SIG with Definition T := nat. End N`." is not it.
 
 .. coqtop:: in
 
@@ -855,7 +852,7 @@ Printing constructions in full
 .. flag:: Printing All
 
    Coercions, implicit arguments, the type of pattern matching, but also
-   notations (see :ref:`syntaxextensionsandinterpretationscopes`) can obfuscate the behavior of some
+   notations (see :ref:`syntaxextensionsandnotationscopes`) can obfuscate the behavior of some
    tactics (typically the tactics applying to occurrences of subterms are
    sensitive to the implicit arguments). Turning this flag on
    deactivates all high-level printing features such as coercions,
@@ -865,6 +862,16 @@ Printing constructions in full
    :flag:`Printing Implicit`, :flag:`Printing Coercions`, :flag:`Printing Synth`,
    :flag:`Printing Projections`, and :flag:`Printing Notations`. To reactivate
    the high-level printing features, use the command ``Unset Printing All``.
+
+   .. note:: In some cases, setting :flag:`Printing All` may display terms
+      that are so big they become very hard to read.  One technique to work around
+      this is use :cmd:`Undelimit Scope` and/or :cmd:`Close Scope` to turn off the
+      printing of notations bound to particular scope(s).  This can be useful when
+      notations in a given scope are getting in the way of understanding
+      a goal, but turning off all notations with :flag:`Printing All` would make
+      the goal unreadable.
+
+      .. see a contrived example here: https://github.com/coq/coq/pull/11718#discussion_r415481854
 
 .. _printing-universes:
 
@@ -1099,51 +1106,3 @@ Literal values (of type :g:`Float64.t`) are extracted to literal OCaml
 values (of type :g:`float`) written in hexadecimal notation and
 wrapped into the :g:`Float64.of_float` constructor, e.g.:
 :g:`Float64.of_float (0x1p+0)`.
-
-.. _bidirectionality_hints:
-
-Bidirectionality hints
-----------------------
-
-When type-checking an application, Coq normally does not use information from
-the context to infer the types of the arguments. It only checks after the fact
-that the type inferred for the application is coherent with the expected type.
-Bidirectionality hints make it possible to specify that after type-checking the
-first arguments of an application, typing information should be propagated from
-the context to help inferring the types of the remaining arguments.
-
-An :cmd:`Arguments` command containing :n:`@argument_spec_block__1 & @argument_spec_block__2`
-provides :ref:`bidirectionality_hints`.
-It tells the typechecking algorithm, when type-checking
-applications of :n:`@qualid`, to first type-check the arguments in
-:n:`@argument_spec_block__1` and then propagate information from the typing context to
-type-check the remaining arguments (in :n:`@argument_spec_block__2`).
-
-.. example:: Bidirectionality hints
-
-   In a context where a coercion was declared from ``bool`` to ``nat``:
-
-   .. coqtop:: in reset
-
-      Definition b2n (b : bool) := if b then 1 else 0.
-      Coercion b2n : bool >-> nat.
-
-   Coq cannot automatically coerce existential statements over ``bool`` to
-   statements over ``nat``, because the need for inserting a coercion is known
-   only from the expected type of a subterm:
-
-   .. coqtop:: all
-
-      Fail Check (ex_intro _ true _ : exists n : nat, n > 0).
-
-   However, a suitable bidirectionality hint makes the example work:
-
-   .. coqtop:: all
-
-      Arguments ex_intro _ _ & _ _.
-      Check (ex_intro _ true _ : exists n : nat, n > 0).
-
-Coq will attempt to produce a term which uses the arguments you
-provided, but in some cases involving Program mode the arguments after
-the bidirectionality starts may be replaced by convertible but
-syntactically different terms.
