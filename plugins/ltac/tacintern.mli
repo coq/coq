@@ -53,7 +53,7 @@ val intern_hyp : glob_sign -> lident -> lident
 
 (** Adds a globalization function for extra generic arguments *)
 
-val intern_genarg : glob_sign -> raw_generic_argument -> glob_generic_argument
+val intern_genarg : glob_sign -> raw_generic_argument -> glob_sign * glob_generic_argument
 
 (** printing *)
 val print_ltac : Libnames.qualid -> Pp.t

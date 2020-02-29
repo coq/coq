@@ -152,3 +152,29 @@ Definition d := ltac:(intro x; exact (x*x)).
 Definition d' : nat -> _ := ltac:(intros;exact 0).
 
 End Evar.
+
+Module Ltac.
+
+(* Binding made by an intro propagate to ";" *)
+Ltac f := intro x; apply x.
+Ltac g := injection as [= H]; apply H.
+
+(* Binding made by an intro does not escape a "let" *)
+Fail Ltac h := let a := intro x in a ; apply x.
+
+(* Binding made in a multiple "then" clause does not escape the n-ary clause *)
+Fail Ltac h := idtac; [intro x]; apply x.
+
+(* An amazing interaction with fresh *)
+
+Ltac h x :=
+  let n := fresh "n" in
+  intros n.
+
+Goal nat -> nat -> nat.
+intro n; clear n; h n.
+(* formerly was giving: n0:nat |- nat *)
+exact n.
+Qed.
+
+End Ltac.

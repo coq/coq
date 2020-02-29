@@ -2,7 +2,7 @@ Theorem test (A:Prop) : A \/ A -> A.
   Fail intros H; destruct H as H.
   (* Cannot coerce to a disjunctive/conjunctive pattern. *)
   Fail intro H; destruct H as H.
-  (* Disjunctive/conjunctive introduction pattern expected. *)
+  (* Cannot coerce to a disjunctive/conjunctive pattern. *)
   Fail let H := fresh in intro H; destruct H as H.
   (* Cannot coerce to a disjunctive/conjunctive pattern. *)
   Fail let H := fresh in intros H; destruct H as H.

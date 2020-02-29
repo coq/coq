@@ -716,7 +716,8 @@ match arg.arg_intern with
 | ArgInternFun f -> f
 | ArgInternWit wit ->
   fun ist v ->
-    let ans = Genarg.out_gen (glbwit wit) (Tacintern.intern_genarg ist (Genarg.in_gen (rawwit wit) v)) in
+    let ist, v = Tacintern.intern_genarg ist (Genarg.in_gen (rawwit wit) v) in
+    let ans = Genarg.out_gen (glbwit wit) v in
     (ist, ans)
 
 let subst_fun (type a b c) (arg : (a, b, c) tactic_argument) : b Genintern.subst_fun =
