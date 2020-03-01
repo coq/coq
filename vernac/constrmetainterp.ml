@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Util
-open Pp
 open Names
 open Ltac_pretype
 open Evd
@@ -19,23 +18,7 @@ open Glob_term
 open Pretyping
 open Constrintern
 open Patternops
-
-(**********************************************************************)
-(* Interpreting variables of the metalanguage (e.g. Ltac)             *)
-
 open Geninterp
-
-exception CannotCoerceTo of string
-
-let error_metalanguage_variable ml ?loc id env v s =
-   CErrors.user_err ?loc  (str ml ++ str " variable " ++ Id.print id ++
-   strbrk " is bound to" ++ spc () ++ Genprint.pr_value env v ++ spc () ++
-   strbrk "which cannot be coerced to " ++ str s ++ str".")
-
-let try_interp_metalanguage_var ml coerce ist env CAst.{loc;v=id} =
-  let v = Id.Map.find id ist.lfun in
-  try coerce v with CannotCoerceTo s ->
-    error_metalanguage_variable ml ?loc id env v s
 
 (**********************************************************************)
 (* Interpreting constr containing variables of the metalanguage (e.g. Ltac) *)

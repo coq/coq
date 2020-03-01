@@ -20,6 +20,7 @@ open Egramml
 open Vernacexpr
 open Libnames
 open Nameops
+open Geninterp
 
 type 'a grammar_tactic_prod_item_expr = 'a Pptactic.grammar_tactic_prod_item_expr =
 | TacTerm of string
@@ -641,7 +642,7 @@ let lift_constr_tac_to_ml_tac vars tac =
     | Name id ->
       let c = Id.Map.find id ist.Geninterp.lfun in
       try Some (Taccoerce.Value.of_constr @@ Taccoerce.coerce_to_closed_constr env c)
-      with Constrmetainterp.CannotCoerceTo ty ->
+      with CannotCoerceTo ty ->
         Taccoerce.error_ltac_variable dummy_id (Some (env,sigma)) c ty
     in
     let args = List.map_filter map vars in

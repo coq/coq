@@ -101,3 +101,16 @@ module Interp = Register(InterpObj)
 let interp = Interp.obj
 
 let register_interp0 = Interp.register0
+
+(**********************************************************************)
+(* Interpreting and coercing a variable of the metalanguage           *)
+
+exception CannotCoerceTo of string
+
+exception CannotCoerceGenargVariable of
+  (Environ.env * Evd.evar_map) option * string * Id.t * Val.t * string
+
+let interp_genarg_var ml coerce ist env CAst.{loc;v=id} =
+  let v = Id.Map.find id ist.lfun in
+  try coerce v with CannotCoerceTo s ->
+    Loc.raise ?loc (CannotCoerceGenargVariable (env,ml,id,v,s))

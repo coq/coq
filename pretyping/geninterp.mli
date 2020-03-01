@@ -73,3 +73,19 @@ val interp : ('raw, 'glb, 'top) genarg_type -> ('glb, Val.t) interp_fun
 
 val register_interp0 :
   ('raw, 'glb, 'top) genarg_type -> ('glb, Val.t) interp_fun -> unit
+
+(**********************************************************************)
+(* Interpreting and coercing a variable of the metalanguage           *)
+
+exception CannotCoerceTo of string
+  (** The error to be raised by a coercion function if not coercible *)
+
+exception CannotCoerceGenargVariable of
+  (Environ.env * Evd.evar_map) option * string * Id.t * Val.t * string
+  (** The error raised by [interp_genarg_var] when failing *)
+
+val interp_genarg_var :
+  string (* Name of the meta-language  for printing purpose *)
+  -> (Val.t -> 'a) (* coercion function *)
+  -> interp_sign -> (Environ.env * Evd.evar_map) option -> Names.Id.Map.key CAst.t -> 'a
+  (** Raise [Not_found] if not bound, [CannotCoerceGenargVariable] if not coercible *) 

@@ -8,20 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-exception CannotCoerceTo of string
-
-val error_metalanguage_variable :
-  string ->
-  ?loc:Loc.t ->
-  Names.Id.t ->
-  (Environ.env * Evd.evar_map) option -> Geninterp.Val.t -> string -> 'a
-
-val try_interp_metalanguage_var :
-  string ->
-  (Geninterp.Val.t -> 'a) ->
-  Geninterp.interp_sign ->
-  (Environ.env * Evd.evar_map) option -> Names.Id.Map.key CAst.t -> 'a
-
 module type ConstrCoercionSig =
   sig
     val trace :

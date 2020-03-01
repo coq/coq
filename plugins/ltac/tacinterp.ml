@@ -327,7 +327,7 @@ let ensure_freshness env =
 
 (* Raise Not_found if not in interpretation sign *)
 
-let try_interp_ltac_var x = try_interp_metalanguage_var "Ltac" x
+let try_interp_ltac_var x = interp_genarg_var "Ltac" x
 
 let interp_ltac_var coerce ist env locid =
   try try_interp_ltac_var coerce ist env locid

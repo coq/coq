@@ -857,6 +857,11 @@ let explain_unsatisfiable_constraints env sigma constr comp =
     let info = Evar.Map.find ev undef in
     explain_typeclass_resolution env sigma info k ++ fnl () ++ cstr
 
+let explain_uncoercible_generic_argument_variable env ml id v s =
+   str ml ++ str " variable " ++ Id.print id ++
+   strbrk " is bound to" ++ spc () ++ Genprint.pr_value env v ++ spc () ++
+   strbrk "which cannot be coerced to " ++ str s ++ str"."
+
 let explain_pretype_error env sigma err =
   let env = Evardefine.env_nf_betaiotaevar sigma env in
   let env = make_all_name_different env sigma in
@@ -1414,6 +1419,8 @@ let rec vernac_interp_error_handler = function
     if Int.equal i 0 then str "." else str " (level " ++ int i ++ str")."
   | Logic_monad.TacticFailure e ->
     vernac_interp_error_handler e
+  | Geninterp.CannotCoerceGenargVariable (env,ml,id,v,s) ->
+    explain_uncoercible_generic_argument_variable env ml id v s
   | _ ->
     raise Unhandled
 

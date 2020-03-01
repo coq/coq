@@ -46,7 +46,7 @@ struct
     | _ -> error_not_evaluable (GlobRef.VarRef id)
 
   let interp_evaluable_ref ist env sigma lid =
-    try_interp_metalanguage_var M.N.name
+    interp_genarg_var M.N.name
       (M.coerce_to_evaluable_ref env sigma) ist (Some (env,sigma)) lid
 
   let interp_evaluable ist env sigma = function
@@ -67,7 +67,7 @@ struct
         with Not_found -> Nametab.error_global_not_found (qualid_of_ident ?loc id)
 
   let interp_int ist ({loc;v=id} as locid) =
-    try try_interp_metalanguage_var M.N.name M.coerce_to_int ist None locid
+    try interp_genarg_var M.N.name M.coerce_to_int ist None locid
     with Not_found ->
       user_err ?loc ~hdr:"interp_int"
        (str "Unbound variable "  ++ Id.print id ++ str".")
@@ -110,7 +110,7 @@ struct
         with CannotCoerceTo _ ->
           let c = M.coerce_to_closed_constr env x in
           Inr (pattern_of_constr env sigma (EConstr.to_constr sigma c)) in
-      (try try_interp_metalanguage_var M.N.name
+      (try interp_genarg_var M.N.name
              coerce_eval_ref_or_constr ist (Some (env,sigma)) (CAst.make ?loc id)
        with Not_found ->
          Nametab.error_global_not_found (qualid_of_ident ?loc id))

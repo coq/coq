@@ -69,6 +69,7 @@ let catchable_exception = function
   | Tacred.ReductionTacticError _ -> true
   (* unification and typing errors *)
   | PretypeError(_,_, e) -> is_unification_error e || is_typing_error e
+  | Geninterp.CannotCoerceGenargVariable _ -> true
   | _ -> false
 
 let error_no_such_hypothesis env sigma id = raise (RefinerError (env, sigma, NoSuchHyp id))

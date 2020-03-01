@@ -19,7 +19,6 @@ open Stdarg
 open Tacarg
 open Geninterp
 open Pp
-open Constrmetainterp
 
 let base_val_typ wit =
   match val_tag (topwit wit) with Val.Base t -> t | _ -> CErrors.anomaly (Pp.str "Not a base val.")
@@ -397,4 +396,5 @@ let (wit_tacvalue : (Empty.t, tacvalue, tacvalue) Genarg.genarg_type) =
              (fun _ -> Genprint.TopPrinterBasic (fun () -> str "<tactic closure>")) in
   wit
 
-let error_ltac_variable ?loc x = error_metalanguage_variable "Ltac" ?loc x
+let error_ltac_variable ?loc id env v s =
+  Loc.raise ?loc (CannotCoerceGenargVariable (env,"Ltac",id,v,s))

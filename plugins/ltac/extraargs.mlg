@@ -20,7 +20,7 @@ open Tacmach
 open Tacexpr
 open Tacinterp
 open Locus
-open Constrmetainterp
+open Geninterp
 
 (** Adding scopes for generic arguments not defined through ARGUMENT EXTEND *)
 
