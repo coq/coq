@@ -75,8 +75,8 @@ let windows_timeout n f x e =
     if not !exited then begin killed := true; raise Sys.Break end
     else raise e
   | e ->
-    let () = killed := true in
     let e = Exninfo.capture e in
+    let () = killed := true in
     Exninfo.iraise e
 
 type timeout = { timeout : 'a 'b. int -> ('a -> 'b) -> 'a -> exn -> 'b }
