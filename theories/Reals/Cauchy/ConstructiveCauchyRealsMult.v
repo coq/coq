@@ -15,7 +15,7 @@ Require Import QArith.
 Require Import Qabs.
 Require Import Qround.
 Require Import Logic.ConstructiveEpsilon.
-Require Export Reals.ConstructiveCauchyReals.
+Require Export ConstructiveCauchyReals.
 Require CMorphisms.
 
 Local Open Scope CReal_scope.
@@ -1412,4 +1412,92 @@ Proof.
     destruct (QCauchySeq_bounded (fun _ : nat => q) Pos.to_nat (ConstCauchy q)).
     destruct (QCauchySeq_bounded (fun _ : nat => r) Pos.to_nat (ConstCauchy r)).
     simpl in maj. ring_simplify in maj. discriminate maj.
+Qed.
+
+Definition Rup_nat (x : CReal)
+  : { n : nat & x < inject_Q (Z.of_nat n #1) }.
+Proof.
+  intros. destruct (CRealArchimedean x) as [p maj].
+  destruct p.
+  - exists O. apply maj.
+  - exists (Pos.to_nat p). rewrite positive_nat_Z. apply maj.
+  - exists O. apply (CReal_lt_trans _ (inject_Q (Z.neg p # 1))).
+    apply maj. apply inject_Q_lt. reflexivity.
+Qed.
+
+Lemma CReal_mult_le_0_compat : forall (a b : CReal),
+    0 <= a -> 0 <= b -> 0 <= a * b.
+Proof.
+  (* Limit of (a + 1/n)*b when n -> infty. *)
+  intros. intro abs.
+  assert (0 < -(a*b)) as epsPos.
+  { rewrite <- CReal_opp_0. apply CReal_opp_gt_lt_contravar. exact abs. }
+  destruct (Rup_nat (b * (/ (-(a*b))) (inr epsPos)))
+    as [n maj].
+  destruct n as [|n].
+  - apply (CReal_mult_lt_compat_r (-(a*b))) in maj.
+    rewrite CReal_mult_0_l, CReal_mult_assoc, CReal_inv_l, CReal_mult_1_r in maj.
+    contradiction. exact epsPos.
+  - (* n > 0 *)
+    assert (0 < inject_Q (Z.of_nat (S n) #1)) as nPos.
+    { apply inject_Q_lt. unfold Qlt, Qnum, Qden.
+      do 2 rewrite Z.mul_1_r. apply Z2Nat.inj_lt. discriminate.
+      apply Zle_0_nat. rewrite Nat2Z.id. apply le_n_S, le_0_n. }
+    assert (b * (/ inject_Q (Z.of_nat (S n) #1)) (inr nPos) < -(a*b)).
+    { apply (CReal_mult_lt_reg_r (inject_Q (Z.of_nat (S n) #1))). apply nPos.
+      rewrite CReal_mult_assoc, CReal_inv_l, CReal_mult_1_r.
+      apply (CReal_mult_lt_compat_r (-(a*b))) in maj.
+      rewrite CReal_mult_assoc, CReal_inv_l, CReal_mult_1_r in maj.
+      rewrite CReal_mult_comm. apply maj. apply epsPos. }
+    pose proof (CReal_mult_le_compat_l_half
+                  (a + (/ inject_Q (Z.of_nat (S n) #1)) (inr nPos)) 0 b).
+    assert (0 + 0 < a + (/ inject_Q (Z.of_nat (S n) #1)) (inr nPos)).
+    { apply CReal_plus_le_lt_compat. apply H. apply CReal_inv_0_lt_compat. apply nPos. }
+    rewrite CReal_plus_0_l in H3. specialize (H2 H3 H0).
+    clear H3. rewrite CReal_mult_0_r in H2.
+    apply H2. clear H2. rewrite CReal_mult_plus_distr_r.
+    apply (CReal_plus_lt_compat_l (a*b)) in H1.
+    rewrite CReal_plus_opp_r in H1.
+    rewrite (CReal_mult_comm ((/ inject_Q (Z.of_nat (S n) #1)) (inr nPos))).
+    apply H1.
+Qed.
+
+Lemma CReal_mult_le_compat_l : forall (r r1 r2:CReal),
+    0 <= r -> r1 <= r2 -> r * r1 <= r * r2.
+Proof.
+  intros. apply (CReal_plus_le_reg_r (-(r*r1))).
+  rewrite CReal_plus_opp_r, CReal_opp_mult_distr_r.
+  rewrite <- CReal_mult_plus_distr_l.
+  apply CReal_mult_le_0_compat. exact H.
+  apply (CReal_plus_le_reg_r r1).
+  rewrite CReal_plus_0_l, CReal_plus_assoc, CReal_plus_opp_l, CReal_plus_0_r.
+  exact H0.
+Qed.
+
+Lemma CReal_mult_le_compat_r : forall (r r1 r2:CReal),
+    0 <= r -> r1 <= r2 -> r1 * r <= r2 * r.
+Proof.
+  intros. apply (CReal_plus_le_reg_r (-(r1*r))).
+  rewrite CReal_plus_opp_r, CReal_opp_mult_distr_l.
+  rewrite <- CReal_mult_plus_distr_r.
+  apply CReal_mult_le_0_compat. 2: exact H.
+  apply (CReal_plus_le_reg_r r1). ring_simplify. exact H0.
+Qed.
+
+Lemma CReal_mult_le_reg_l :
+  forall x y z : CReal,
+    0 < x -> x * y <= x * z -> y <= z.
+Proof.
+  intros. intro abs.
+  apply (CReal_mult_lt_compat_l x) in abs. contradiction.
+  exact H.
+Qed.
+
+Lemma CReal_mult_le_reg_r :
+  forall x y z : CReal,
+    0 < x -> y * x <= z * x -> y <= z.
+Proof.
+  intros. intro abs.
+  apply (CReal_mult_lt_compat_r x) in abs. contradiction.
+  exact H.
 Qed.

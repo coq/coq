@@ -24,7 +24,7 @@ Require Import ClassicalDedekindReals.
 Require Import ConstructiveCauchyReals.
 Require Import ConstructiveCauchyRealsMult.
 Require Import ConstructiveRcomplete.
-Require Import ConstructiveRealsLUB.
+Require Import ConstructiveLUB.
 Require Export Rdefinitions.
 Local Open Scope R_scope.
 
@@ -438,7 +438,7 @@ Proof.
     as Ebound.
   { destruct H. exists (Rrepr x). intros y Ey. rewrite <- (Rquot2 y).
     apply Rrepr_le. apply H. exact Ey. }
-  destruct (CR_sig_lub CRealImplem
+  destruct (@CR_sig_lub CRealConstructive
               Er Erproper sig_forall_dec sig_not_dec Einhab Ebound).
   exists (Rabst x). split.
   intros y Ey. apply Rrepr_le. rewrite Rquot2.

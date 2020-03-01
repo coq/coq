@@ -528,13 +528,17 @@ through the <tt>Require Import</tt> command.</p>
   </dt>
   <dd>
     theories/Reals/Rdefinitions.v
-    theories/Reals/ConstructiveReals.v
-    theories/Reals/ConstructiveRealsMorphisms.v
-    theories/Reals/ConstructiveCauchyReals.v
-    theories/Reals/ConstructiveCauchyRealsMult.v
+    theories/Reals/Cauchy/ConstructiveCauchyReals.v
+    theories/Reals/Cauchy/ConstructiveCauchyRealsMult.v
+    theories/Reals/Cauchy/ConstructiveCauchyAbs.v
     theories/Reals/ClassicalDedekindReals.v
     theories/Reals/Raxioms.v
-    theories/Reals/ConstructiveRealsLUB.v
+    theories/Reals/Abstract/ConstructiveReals.v
+    theories/Reals/Abstract/ConstructiveRealsMorphisms.v
+    theories/Reals/Abstract/ConstructiveLUB.v
+    theories/Reals/Abstract/ConstructiveAbs.v
+    theories/Reals/Abstract/ConstructiveLimits.v
+    theories/Reals/Abstract/ConstructiveSum.v
     theories/Reals/RIneq.v
     theories/Reals/DiscrR.v
     theories/Reals/ROrderedType.v
@@ -579,7 +583,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/Ranalysis5.v
     theories/Reals/Ranalysis_reg.v
     theories/Reals/Rcomplete.v
-    theories/Reals/ConstructiveRcomplete.v
+    theories/Reals/Cauchy/ConstructiveRcomplete.v
     theories/Reals/RiemannInt.v
     theories/Reals/RiemannInt_SF.v
     theories/Reals/Rpow_def.v
