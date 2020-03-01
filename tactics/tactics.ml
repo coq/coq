@@ -4250,10 +4250,11 @@ let find_induction_type isrec elim hyp0 gl =
     match elim with
     | None ->
        let sort = Tacticals.New.elimination_sort_of_goal gl in
-       let sigma, (elimc,elimt),_ = guess_elim isrec false sort hyp0 gl in
-       let scheme = compute_elim_sig sigma ~elimc elimt in
-       (* We drop the scheme waiting to know if it is dependent *)
-       sigma, scheme, ElimOver (isrec,hyp0)
+       let sigma', (elimc,elimt),_ = guess_elim isrec false sort hyp0 gl in
+       let scheme = compute_elim_sig sigma' ~elimc elimt in
+       (* We drop the scheme waiting to know if it is dependent, this
+          needs no update to sigma at this point. *)
+       Tacmach.New.project gl, scheme, ElimOver (isrec,hyp0)
     | Some e ->
         let sigma, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
         let scheme = compute_elim_sig sigma ~elimc elimt in
