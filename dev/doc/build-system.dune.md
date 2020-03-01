@@ -46,21 +46,27 @@ of build threads `(jobs N)` and display options `(display _mode_)`.
 
 ## Running binaries [coqtop / coqide]
 
-There are two special targets `states` and `quickide` that will
-generate "shims" for running `coqtop` and `coqide` in a fast build. In
-order to use them, do:
+Running `coqtop` directly with `dune exec -- coqtop` won't in general
+work well unless you are using `dune exec -- coqtop -noinit`. The
+`coqtop` binary doesn't depend itself on Coq's prelude, so plugins /
+vo files may go stale if you rebuild only `coqtop`.
+
+Instead, you should use the provided "shims" for running `coqtop` and
+`coqide` in a fast build. In order to use them, do:
 
 ```
 $ make -f Makefile.dune voboot                # Only once per session
 $ dune exec -- dev/shim/coqtop-prelude
 ```
 
-or `quickide` / `dev/shim/coqide-prelude` for CoqIDE. These targets
-enjoy quick incremental compilation thanks to `-opaque` so they tend
-to be very fast while developing.
+or `quickide` / `dev/shim/coqide-prelude` for CoqIDE, etc.... See
+`dev/shim/dune` for a complete list of targets. These targets enjoy
+quick incremental compilation thanks to `-opaque` so they tend to be
+very fast while developing.
 
 Note that for a fast developer build of ML files, the `check` target
-will be faster.
+is faster, as it doesn't link the binaries and uses the non-optimizing
+compiler.
 
 ## Targets
 
@@ -214,3 +220,12 @@ useful to Coq, some examples are:
 - Cross-compilation.
 - Automatic Generation of OPAM files.
 - Multi-directory libraries.
+
+## FAQ
+
+- I get "Error: Dynlink error: Interface mismatch":
+
+  You are likely running a partial build which doesn't include
+  implicitly loaded plugins / vo files. See the "Running binaries
+  [coqtop / coqide]" section above as to how to correctly call Coq's
+  binaries.
