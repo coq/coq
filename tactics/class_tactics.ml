@@ -234,9 +234,8 @@ let unify_resolve_refine poly flags gl clenv =
       match fst ie with
       | Evarconv.UnableToUnify _ ->
          Tacticals.New.tclZEROMSG (str "Unable to unify")
-      | e when CErrors.noncritical e ->
-         Tacticals.New.tclZEROMSG (str "Unexpected error")
-      | _ -> Exninfo.iraise ie)
+      | e ->
+         Tacticals.New.tclZEROMSG (str "Unexpected error"))
 
 (** Dealing with goals of the form A -> B and hints of the form
   C -> A -> B.
@@ -447,7 +446,7 @@ let cut_of_hints h =
 
 let catchable = function
   | Refiner.FailError _ -> true
-  | e -> Logic.catchable_exception e
+  | e -> Logic.catchable_exception e [@@ocaml.warning "-3"]
 
 let pr_depth l =
   let rec fmt elts =
@@ -769,9 +768,7 @@ module Search = struct
              (with_shelf tac >>= fun s ->
               let i = !idx in incr idx; result s i None)
              (fun e' ->
-              if CErrors.noncritical (fst e') then
-                (pr_error e'; aux (merge_exceptions e e') tl)
-              else Exninfo.iraise e')
+                (pr_error e'; aux (merge_exceptions e e') tl))
     and aux e = function
       | x :: xs -> onetac e x xs
       | [] ->

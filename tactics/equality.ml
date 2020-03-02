@@ -1627,10 +1627,9 @@ let try_rewrite tac =
   Proofview.tclORELSE tac begin function (e, info) -> match e with
     | Constr_matching.PatternMatchingFailure ->
         tclZEROMSG (str "Not a primitive equality here.")
-    | e when catchable_exception e ->
+    | e ->
         tclZEROMSG
           (strbrk "Cannot find a well-typed generalization of the goal that makes the proof progress.")
-    | e -> Proofview.tclZERO ~info e
   end
 
 let cutSubstClause l2r eqn cls =
