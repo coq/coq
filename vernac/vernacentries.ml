@@ -473,11 +473,14 @@ let program_inference_hook env sigma ev =
     let concl = evi.Evd.evar_concl in
     if not (Evarutil.is_ground_env sigma env &&
             Evarutil.is_ground_term sigma concl)
-    then raise Exit;
-    let c, _, _, ctx =
-      Pfedit.build_by_tactic ~poly:false env ~uctx:(Evd.evar_universe_context sigma) ~typ:concl tac
-    in Evd.set_universe_context sigma ctx, EConstr.of_constr c
-  with Logic_monad.TacticFailure e when noncritical e ->
+    then None
+    else
+      let c, _, _, ctx =
+        Pfedit.build_by_tactic ~poly:false env ~uctx:(Evd.evar_universe_context sigma) ~typ:concl tac
+      in
+      Some (Evd.set_universe_context sigma ctx, EConstr.of_constr c)
+  with
+  | Logic_monad.TacticFailure e when noncritical e ->
     user_err Pp.(str "The statement obligations could not be resolved \
                       automatically, write a statement definition first.")
 

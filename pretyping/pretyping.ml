@@ -187,7 +187,7 @@ let interp_sort_info ?loc evd l =
       in (evd', Univ.sup u u'))
     (evd, Univ.Universe.type0m) l
 
-type inference_hook = env -> evar_map -> Evar.t -> evar_map * constr
+type inference_hook = env -> evar_map -> Evar.t -> (evar_map * constr) option
 
 type inference_flags = {
   use_typeclasses : bool;
@@ -247,17 +247,16 @@ let apply_typeclasses ~program_mode env sigma frozen fail_evar =
     else sigma in
   sigma
 
-let apply_inference_hook hook env sigma frozen = match frozen with
+let apply_inference_hook (hook : inference_hook) env sigma frozen = match frozen with
 | FrozenId _ -> sigma
 | FrozenProgress (lazy (_, pending)) ->
   Evar.Set.fold (fun evk sigma ->
     if Evd.is_undefined sigma evk (* in particular not defined by side-effect *)
     then
-      try
-        let sigma, c = hook env sigma evk in
+      match hook env sigma evk with
+      | Some (sigma, c) ->
         Evd.define evk c sigma
-      with Exit ->
-        sigma
+      | None -> sigma
     else
       sigma) pending sigma
 

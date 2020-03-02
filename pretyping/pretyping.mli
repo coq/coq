@@ -44,8 +44,6 @@ type typing_constraint =
   | OfType of types (** A term of the expected type *)
   | WithoutTypeConstraint (** A term of unknown expected type *)
 
-type inference_hook = env -> evar_map -> Evar.t -> evar_map * constr
-
 type inference_flags = {
   use_typeclasses : bool;
   solve_unification_constraints : bool;
@@ -103,13 +101,17 @@ val understand_ltac : inference_flags ->
 val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
   env -> evar_map -> glob_constr -> constr Evd.in_evar_universe_context
 
+(** [hook env sigma ev] returns [Some (sigma', term)] if [ev] can be
+   instantiated with a solution, [None] otherwise. Used to extend
+   [solve_remaining_evars] below. *)
+type inference_hook = env -> evar_map -> Evar.t -> (evar_map * constr) option
+
 (** Trying to solve remaining evars and remaining conversion problems
     possibly using type classes, heuristics, external tactic solver
     hook depending on given flags. *)
 (* For simplicity, it is assumed that current map has no other evars
    with candidate and no other conversion problems that the one in
    [pending], however, it can contain more evars than the pending ones. *)
-
 val solve_remaining_evars : ?hook:inference_hook -> inference_flags ->
   env -> ?initial:evar_map -> (* current map *) evar_map -> evar_map
 
