@@ -348,12 +348,12 @@ let declare_definition prg =
   in
   let ce = Declare.definition_entry ~fix_exn ~opaque ~types:typ ~univs body in
   let () = progmap_remove prg in
-  let ubinders = UState.universe_binders uctx in
+  let ubind = UState.universe_binders uctx in
   let hook_data = Option.map (fun hook -> hook, uctx, obls) prg.prg_hook in
   DeclareDef.declare_definition
-    ~name:prg.prg_name ~scope:prg.prg_scope ubinders
+    ~name:prg.prg_name ~scope:prg.prg_scope ~ubind
     ~kind:Decls.(IsDefinition prg.prg_kind) ce
-    prg.prg_implicits ?hook_data
+    ~impargs:prg.prg_implicits ?hook_data
 
 let rec lam_index n t acc =
   match Constr.kind t with
@@ -429,12 +429,12 @@ let declare_mutual_definition l =
   let univs = UState.univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
   let kind = Decls.IsDefinition (if fixkind != IsCoFixpoint then Decls.Fixpoint else Decls.CoFixpoint) in
-  let udecl = UnivNames.empty_binders in
+  let ubind = UnivNames.empty_binders in
   let kns =
     List.map4
-      (fun name body types imps ->
+      (fun name body types impargs ->
          let ce = Declare.definition_entry ~opaque ~types ~univs body in
-         DeclareDef.declare_definition ~name ~scope ~kind udecl ce imps)
+         DeclareDef.declare_definition ~name ~scope ~kind ~ubind ~impargs ce)
       fixnames fixdecls fixtypes fiximps
   in
   (* Declare notations *)

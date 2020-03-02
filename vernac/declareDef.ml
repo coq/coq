@@ -43,7 +43,7 @@ module Hook = struct
 end
 
 (* Locality stuff *)
-let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
+let declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs ce =
   let fix_exn = Declare.Internal.get_fix_exn ce in
   let should_suggest = ce.Declare.proof_entry_opaque &&
                        Option.is_empty ce.Declare.proof_entry_secctx in
@@ -56,10 +56,10 @@ let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
     let kn = declare_constant ~name ~local ~kind (DefinitionEntry ce) in
     let gr = Names.GlobRef.ConstRef kn in
     if should_suggest then Proof_using.suggest_constant (Global.env ()) kn;
-    let () = DeclareUniv.declare_univ_binders gr udecl in
+    let () = DeclareUniv.declare_univ_binders gr ubind in
     gr
   in
-  let () = maybe_declare_manual_implicits false dref imps in
+  let () = maybe_declare_manual_implicits false dref impargs in
   let () = definition_message name in
   begin
     match hook_data with
@@ -95,7 +95,7 @@ let check_definition_evars ~allow_evars sigma =
   let env = Global.env () in
   if not allow_evars then Pretyping.check_evars_are_solved ~program_mode:false env sigma
 
-let prepare_definition ~allow_evars ?opaque ?inline ~poly sigma udecl ~types ~body =
+let prepare_definition ~allow_evars ?opaque ?inline ~poly ~udecl ~types ~body sigma =
   check_definition_evars ~allow_evars sigma;
   let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:(not allow_evars)
       sigma (fun nf -> nf body, Option.map nf types)
@@ -103,10 +103,10 @@ let prepare_definition ~allow_evars ?opaque ?inline ~poly sigma udecl ~types ~bo
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   sigma, definition_entry ?opaque ?inline ?types ~univs body
 
-let prepare_parameter ~allow_evars ~poly sigma udecl typ =
+let prepare_parameter ~allow_evars ~poly ~udecl ~types sigma =
   check_definition_evars ~allow_evars sigma;
   let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:(not allow_evars)
-      sigma (fun nf -> nf typ)
+      sigma (fun nf -> nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   sigma, (None(*proof using*), (typ, univs), None(*inline*))

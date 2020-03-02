@@ -267,7 +267,7 @@ end = struct
     | Single pe ->
       (* We'd like to do [assert (i = 0)] here, however this codepath
          is used when declaring mutual cofixpoints *)
-      DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ubind pe impargs
+      DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
     | Mutual pe ->
       (* if typ = None , we don't touch the type; used in the base case *)
       let pe =
@@ -278,7 +278,7 @@ end = struct
       in
       let pe = Declare.Internal.map_entry_body pe
           ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff) in
-      DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ubind pe impargs
+      DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
 
   let declare_mutdef ?fix_exn ~poly ~uctx ?hook_data ~udecl ~ubind ~name { entry; info } =
     (* At some point make this a single iteration *)
