@@ -496,15 +496,10 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
     let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
     let ids = List.map Context.Rel.Declaration.get_name ctx in
     check_name_freshness scope id;
-    (* XXX: The nf_evar is critical !! *)
-    evd, (id.CAst.v,
-          (Evarutil.nf_evar evd (EConstr.it_mkProd_or_LetIn t' ctx),
-           (ids, imps @ imps'))))
+    evd, (id.CAst.v, (EConstr.it_mkProd_or_LetIn t' ctx, (ids, imps @ imps'))))
       evd thms in
   let recguard,thms,snl = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
-  (* XXX: This nf_evar is critical too!! We are normalizing twice if
-     you look at the previous lines... *)
   let thms = List.map (fun (name, (typ, (args, impargs))) ->
       { Lemmas.Recthm.name; typ = EConstr.to_constr evd typ; args; impargs} ) thms in
   let () =
