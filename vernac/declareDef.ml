@@ -69,11 +69,6 @@ let declare_definition ~name ~scope ~kind ?hook_data udecl ce imps =
   end;
   dref
 
-let declare_fix ?(opaque = false) ?hook_data ~name ~scope ~kind udecl univs ((def,_),eff) t imps =
-  let ce = definition_entry ~opaque ~types:t ~univs ~eff def in
-  let kind = Decls.IsDefinition kind in
-  declare_definition ~name ~scope ~kind ?hook_data udecl ce imps
-
 let warn_let_as_axiom =
   CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"
     Pp.(fun id -> strbrk "Let definition" ++ spc () ++ Names.Id.print id ++

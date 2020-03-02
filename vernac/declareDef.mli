@@ -49,19 +49,6 @@ val declare_definition
   -> Impargs.manual_implicits
   -> GlobRef.t
 
-val declare_fix
-  :  ?opaque:bool
-  -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
-  -> name:Id.t
-  -> scope:locality
-  -> kind:Decls.definition_object_kind
-  -> UnivNames.universe_binders
-  -> Entries.universes_entry
-  -> Evd.side_effects Entries.proof_output
-  -> Constr.types
-  -> Impargs.manual_implicits
-  -> GlobRef.t
-
 val declare_assumption
   :  ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
   -> name:Id.t

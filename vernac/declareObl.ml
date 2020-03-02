@@ -376,9 +376,6 @@ let compute_possible_guardness_evidences n fixbody fixtype =
     let ctx = fst (Term.decompose_prod_n_assum m fixtype) in
     List.map_i (fun i _ -> i) 0 ctx
 
-let mk_proof c =
-  ((c, Univ.ContextSet.empty), Evd.empty_side_effects)
-
 let declare_mutual_definition l =
   let len = List.length l in
   let first = List.hd l in
@@ -410,7 +407,6 @@ let declare_mutual_definition l =
   let fixdecls = (Array.map2 make_annot namevec rvec, arrrec, recvec) in
   let fixnames = first.prg_deps in
   let opaque = first.prg_opaque in
-  let kind = if fixkind != IsCoFixpoint then Decls.Fixpoint else Decls.CoFixpoint in
   let indexes, fixdecls =
     match fixkind with
     | IsFixpoint wfl ->
@@ -421,20 +417,23 @@ let declare_mutual_definition l =
         Pretyping.search_guard (Global.env ()) possible_indexes fixdecls
       in
       ( Some indexes
-      , List.map_i (fun i _ -> mk_proof (mkFix ((indexes, i), fixdecls))) 0 l
+      , List.map_i (fun i _ -> mkFix ((indexes, i), fixdecls)) 0 l
       )
     | IsCoFixpoint ->
-      (None, List.map_i (fun i _ -> mk_proof (mkCoFix (i, fixdecls))) 0 l)
+      (None, List.map_i (fun i _ -> mkCoFix (i, fixdecls)) 0 l)
   in
   (* Declare the recursive definitions *)
   let poly = first.prg_poly in
   let scope = first.prg_scope in
   let univs = UState.univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
+  let kind = Decls.IsDefinition (if fixkind != IsCoFixpoint then Decls.Fixpoint else Decls.CoFixpoint) in
+  let udecl = UnivNames.empty_binders in
   let kns =
     List.map4
-      (fun name -> DeclareDef.declare_fix ~name ~opaque ~scope ~kind
-          UnivNames.empty_binders univs)
+      (fun name body types imps ->
+         let ce = Declare.definition_entry ~opaque ~types ~univs body in
+         DeclareDef.declare_definition ~name ~scope ~kind udecl ce imps)
       fixnames fixdecls fixtypes fiximps
   in
   (* Declare notations *)

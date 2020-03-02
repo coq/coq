@@ -272,8 +272,8 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs
 let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
   let indexes, cofix, fix_kind =
     match indexes with
-    | Some indexes -> indexes, false, Decls.Fixpoint
-    | None -> [], true, Decls.CoFixpoint
+    | Some indexes -> indexes, false, Decls.(IsDefinition Fixpoint)
+    | None -> [], true, Decls.(IsDefinition CoFixpoint)
   in
   (* We shortcut the proof process *)
   let fixdefs = List.map Option.get fixdefs in
@@ -294,11 +294,13 @@ let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixt
   let evd = Evd.from_ctx ctx in
   let evd = Evd.restrict_universe_context evd vars in
   let ctx = Evd.check_univ_decl ~poly evd pl in
-  let pl = Evd.universe_binders evd in
-  let mk_pure c = (c, Univ.ContextSet.empty), Evd.empty_side_effects in
-  let fixdecls = List.map mk_pure fixdecls in
-  ignore (List.map4 (fun name -> DeclareDef.declare_fix ~name ~scope ~kind:fix_kind pl ctx)
-            fixnames fixdecls fixtypes fiximps);
+  let udecl = Evd.universe_binders evd in
+  let _ : GlobRef.t list =
+    List.map4 (fun name body types imps ->
+        let ce = Declare.definition_entry ~opaque:false ~types ~univs:ctx body in
+        DeclareDef.declare_definition ~name ~scope ~kind:fix_kind udecl ce imps)
+      fixnames fixdecls fixtypes fiximps
+  in
   recursive_message (not cofix) gidx fixnames;
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
   ()
