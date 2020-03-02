@@ -51,9 +51,9 @@ val default_tactic : unit Proofview.tactic ref
 val add_definition
   :  name:Names.Id.t
   -> ?term:constr -> types
-  -> UState.t
-  -> ?univdecl:UState.universe_decl (* Universe binders and constraints *)
-  -> ?implicits:Impargs.manual_implicits
+  -> uctx:UState.t
+  -> ?udecl:UState.universe_decl (* Universe binders and constraints *)
+  -> ?impargs:Impargs.manual_implicits
   -> poly:bool
   -> ?scope:DeclareDef.locality
   -> ?kind:Decls.definition_object_kind
@@ -65,9 +65,10 @@ val add_definition
   -> DeclareObl.progress
 
 val add_mutual_definitions
+  (* XXX: unify with MutualEntry *)
   : (Names.Id.t * constr * types * Impargs.manual_implicits * obligation_info) list
-  -> UState.t
-  -> ?univdecl:UState.universe_decl
+  -> uctx:UState.t
+  -> ?udecl:UState.universe_decl
   (** Universe binders and constraints *)
   -> ?tactic:unit Proofview.tactic
   -> poly:bool

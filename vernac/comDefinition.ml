@@ -79,9 +79,9 @@ let check_definition ~program_mode (ce, evd, _, imps) =
   check_evars_are_solved ~program_mode env evd;
   ce
 
-let do_definition ~program_mode ?hook ~name ~scope ~poly ~kind univdecl bl red_option c ctypopt =
-  let (ce, evd, univdecl, impargs as def) =
-    interp_definition ~program_mode univdecl bl ~poly red_option c ctypopt
+let do_definition ~program_mode ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
+  let (ce, evd, udecl, impargs as def) =
+    interp_definition ~program_mode udecl bl ~poly red_option c ctypopt
   in
   if program_mode then
     let env = Global.env () in
@@ -97,9 +97,9 @@ let do_definition ~program_mode ?hook ~name ~scope ~poly ~kind univdecl bl red_o
     let obls, _, c, cty =
       Obligations.eterm_obligations env name evd 0 c typ
     in
-    let ctx = Evd.evar_universe_context evd in
+    let uctx = Evd.evar_universe_context evd in
     ignore(Obligations.add_definition
-             ~name ~term:c cty ctx ~univdecl ~implicits:impargs ~scope ~poly ~kind ?hook obls)
+             ~name ~term:c cty ~uctx ~udecl ~impargs ~scope ~poly ~kind ?hook obls)
   else
     let ce = check_definition ~program_mode def in
     let uctx = Evd.evar_universe_context evd in

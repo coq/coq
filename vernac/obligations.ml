@@ -630,11 +630,11 @@ let show_term n =
              Printer.pr_constr_env env sigma prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
             ++ Printer.pr_constr_env env sigma prg.prg_body)
 
-let add_definition ~name ?term t ctx ?(univdecl=UState.default_univ_decl)
-                   ?(implicits=[]) ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Decls.Definition) ?tactic
+let add_definition ~name ?term t ~uctx ?(udecl=UState.default_univ_decl)
+                   ?(impargs=[]) ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Decls.Definition) ?tactic
     ?(reduce=reduce) ?hook ?(opaque = false) obls =
   let info = Id.print name ++ str " has type-checked" in
-  let prg = init_prog_info ~opaque name univdecl term t ctx [] None [] obls implicits ~poly ~scope ~kind reduce ?hook in
+  let prg = init_prog_info ~opaque name udecl term t uctx [] None [] obls impargs ~poly ~scope ~kind reduce ?hook in
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose Feedback.msg_info (info ++ str ".");
@@ -649,13 +649,13 @@ let add_definition ~name ?term t ctx ?(univdecl=UState.default_univ_decl)
         | Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some name)) (); res
         | _ -> res)
 
-let add_mutual_definitions l ctx ?(univdecl=UState.default_univ_decl) ?tactic
+let add_mutual_definitions l ~uctx ?(udecl=UState.default_univ_decl) ?tactic
                            ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Decls.Definition) ?(reduce=reduce)
     ?hook ?(opaque = false) notations fixkind =
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->
-     let prg = init_prog_info ~opaque n univdecl (Some b) t ctx deps (Some fixkind)
+     let prg = init_prog_info ~opaque n udecl (Some b) t uctx deps (Some fixkind)
        notations obls imps ~poly ~scope ~kind reduce ?hook
      in progmap_add n (CEphemeron.create prg)) l;
     let _defined =
