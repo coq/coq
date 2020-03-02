@@ -22,9 +22,10 @@ open Entries
 module RelDecl = Context.Rel.Declaration
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
-let declare_variable is_coe ~kind typ imps impl {CAst.v=name} =
+let declare_variable is_coe ~poly ~kind typ uctx imps impl {CAst.v = name; loc} =
   let kind = Decls.IsAssumption kind in
   let decl = Declare.SectionLocalAssum {typ; impl} in
+  let () = Declare.declare_universe_context ~poly uctx in
   let () = Declare.declare_variable ~name ~kind decl in
   let () = Declare.assumption_message name in
   let r = GlobRef.VarRef name in
@@ -33,7 +34,7 @@ let declare_variable is_coe ~kind typ imps impl {CAst.v=name} =
   let sigma = Evd.from_env env in
   let () = Classes.declare_instance env sigma None true r in
   let () = if is_coe then ComCoercion.try_add_new_coercion r ~local:true ~poly:false in
-  ()
+  r, Univ.Instance.empty
 
 let instance_of_univ_entry = function
   | Polymorphic_entry (_, univs) -> Univ.UContext.instance univs
@@ -87,21 +88,13 @@ let context_set_of_entry = function
 
 let declare_assumptions ~poly ~scope ~kind univs nl l =
   let open DeclareDef in
-  let () = match scope with
-    | Discharge ->
-      (* declare universes separately for variables *)
-      Declare.declare_universe_context ~poly (context_set_of_entry (fst univs))
-    | Global _ -> ()
-  in
   let _, _ = List.fold_left (fun (subst,univs) ((is_coe,idl),typ,imps) ->
-      (* NB: here univs are ignored when scope=Discharge *)
       let typ = replace_vars subst typ in
       let univs,subst' =
         List.fold_left_map (fun univs id ->
             let refu = match scope with
               | Discharge ->
-                declare_variable is_coe ~kind typ imps Glob_term.Explicit id;
-                GlobRef.VarRef id.CAst.v, Univ.Instance.empty
+                declare_variable is_coe ~poly ~kind typ (context_set_of_entry (fst univs)) imps Glob_term.Explicit id
               | Global local ->
                 declare_axiom is_coe ~local ~poly ~kind typ univs imps nl id
             in
@@ -189,26 +182,28 @@ let context_subst subst (name,b,t,impl) =
   name, Option.map (Vars.substl subst) b, Vars.substl subst t, impl
 
 let context_insection sigma ~poly ctx =
+  (* We declare the universe context once and forall *)
   let uctx = Evd.universe_context_set sigma in
   let () = Declare.declare_universe_context ~poly uctx in
+
   let fn subst (name,_,_,_ as d) =
     let d = context_subst subst d in
-    let () = match d with
+    let varref = match d with
       | name, None, t, impl ->
         let kind = Decls.Context in
-        declare_variable false ~kind t [] impl (CAst.make name)
+        fst @@ declare_variable false ~poly ~kind t Univ.ContextSet.empty [] impl (CAst.make name)
       | name, Some b, t, impl ->
         (* We need to get poly right for check_same_poly *)
         let univs = if poly then Polymorphic_entry ([| |], Univ.UContext.empty)
           else Monomorphic_entry Univ.ContextSet.empty
         in
         let entry = Declare.definition_entry ~univs ~types:t b in
-        let _ : GlobRef.t = DeclareDef.declare_definition ~name ~scope:DeclareDef.Discharge
+        DeclareDef.declare_definition ~name ~scope:DeclareDef.Discharge
             ~kind:Decls.(IsDefinition Definition) UnivNames.empty_binders entry []
-        in
-        ()
     in
-    Constr.mkVar name :: subst
+    match varref with
+    | GlobRef.VarRef name -> Constr.mkVar name :: subst
+    | _ -> assert false
   in
   let _ : Vars.substl = List.fold_left fn [] ctx in
   ()
@@ -283,12 +278,6 @@ let declare_assumption is_coe ~poly ~scope ~kind typ univs pl imps impl nl name 
 let open DeclareDef in
 match scope with
 | Discharge ->
-  let univs = match univs with
-    | Monomorphic_entry univs -> univs
-    | Polymorphic_entry (_, univs) -> Univ.ContextSet.of_context univs
-  in
-  let () = Declare.declare_universe_context ~poly univs in
-  declare_variable is_coe ~kind typ imps impl name;
-  GlobRef.VarRef name.CAst.v, Univ.Instance.empty
+  declare_variable is_coe ~poly ~kind typ (context_set_of_entry univs) imps impl name
 | Global local ->
   declare_axiom is_coe ~poly ~local ~kind typ (univs, pl) imps nl name

@@ -23,14 +23,18 @@ val do_assumptions
   -> (ident_decl list * constr_expr) with_coercion list
   -> unit
 
+(* variables cannot be universe polymorphic, but can mention, in the type,
+   polymorphic universes, hence the ~poly argument *)
 val declare_variable
   : coercion_flag
+  -> poly:bool
   -> kind:Decls.assumption_object_kind
   -> Constr.types
+  -> Univ.ContextSet.t
   -> Impargs.manual_implicits
   -> Glob_term.binding_kind
   -> variable CAst.t
-  -> unit
+  -> GlobRef.t * Univ.Instance.t
 
 val declare_axiom
   : coercion_flag
