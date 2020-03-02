@@ -1603,12 +1603,11 @@ let get_nth_goal ~pstate n =
   let gl = {Evd.it=List.nth goals (n-1) ; sigma = sigma; } in
   gl
 
-exception NoHyp
-
 (* Printing "About" information of a hypothesis of the current goal.
    We only print the type and a small statement to this comes from the
    goal. Precondition: there must be at least one current goal. *)
 let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
+  let exception NoHyp in
   let open Context.Named.Declaration in
   try
     (* Fallback early to globals *)
