@@ -16,21 +16,16 @@ Notation "A -> B" := (forall (_ : A), B) : type_scope.
 
 (** * Propositional connectives *)
 
-(** [True] is the always true proposition *)
+From stdlib Require prop.
+Export prop(True,True_intro,False,False_rec,False_ind,False_rect,not,or,OrL,OrR).
 
-Inductive True : Prop :=
-  I : True.
+Notation I := True_intro.
+Notation not := not.
 
 Register True as core.True.type.
 Register I as core.True.I.
 
-(** [False] is the always false proposition *)
-Inductive False : Prop :=.
-
 Register False as core.False.type.
-
-(** [not A], written [~A], is the negation of [A] *)
-Definition not (A:Prop) := A -> False.
 
 Notation "~ x" := (not x) : type_scope.
 
@@ -78,14 +73,19 @@ End Conjunction.
 
 (** [or A B], written [A \/ B], is the disjunction of [A] and [B] *)
 
-Inductive or (A B:Prop) : Prop :=
-  | or_introl : A -> A \/ B
-  | or_intror : B -> A \/ B
+Notation or_introl := OrL.
+Notation or_intror := OrR.
 
-where "A \/ B" := (or A B) : type_scope.
+Notation "A \/ B" := (or A B) : type_scope.
 
 Arguments or_introl [A B] _, [A] B _.
 Arguments or_intror [A B] _, A [B] _.
+
+Definition or_ind (A B P : Prop) (f : A -> P) (f0 : B -> P) (o : A \/ B) :=
+  match o with
+  | or_introl x => f x
+  | or_intror x => f0 x
+  end.
 
 Register or as core.or.type.
 
@@ -338,26 +338,10 @@ End universal_quantification.
 
 (** * Equality *)
 
-(** [eq x y], or simply [x=y] expresses the equality of [x] and
-    [y]. Both [x] and [y] must belong to the same type [A].
-    The definition is inductive and states the reflexivity of the equality.
-    The others properties (symmetry, transitivity, replacement of
-    equals by equals) are proved below. The type of [x] and [y] can be
-    made explicit using the notation [x = y :> A]. This is Leibniz equality
-    as it expresses that [x] and [y] are equal iff every property on
-    [A] which is true of [x] is also true of [y] *)
+From stdlib Require Export equality.
 
-Inductive eq (A:Type) (x:A) : A -> Prop :=
-    eq_refl : x = x :>A
-
-where "x = y :> A" := (@eq A x y) : type_scope.
-
-Arguments eq {A} x _.
-Arguments eq_refl {A x} , [A] x.
-
-Arguments eq_ind [A] x P _ y _.
-Arguments eq_rec [A] x P _ y _.
-Arguments eq_rect [A] x P _ y _.
+Notation eq := eq.
+Notation eq_refl := eq_refl.
 
 Notation "x = y" := (eq x y) : type_scope.
 Notation "x <> y  :> T" := (~ x = y :>T) : type_scope.
@@ -366,11 +350,6 @@ Notation "x <> y" := (~ (x = y)) : type_scope.
 Hint Resolve I conj or_introl or_intror : core.
 Hint Resolve eq_refl: core.
 Hint Resolve ex_intro ex_intro2: core.
-
-Register eq as core.eq.type.
-Register eq_refl as core.eq.refl.
-Register eq_ind as core.eq.ind.
-Register eq_rect as core.eq.rect.
 
 Section Logic_lemmas.
 

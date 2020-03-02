@@ -31,9 +31,8 @@ Inductive unit : Set :=
 
 (** [bool] is the datatype of the boolean values [true] and [false] *)
 
-Inductive bool : Set :=
-  | true : bool
-  | false : bool.
+From stdlib Require bool.
+Export bool(bool,true,false).
 
 Add Printing If bool.
 
@@ -325,7 +324,7 @@ Register Eq as core.comparison.Eq.
 Register Lt as core.comparison.Lt.
 Register Gt as core.comparison.Gt.
 
-Lemma comparison_eq_stable : forall c c' : comparison, ~~ c = c' -> c = c'.
+Lemma comparison_eq_stable : forall c c' : comparison, ~ ~ c = c' -> c = c'.
 Proof.
   destruct c, c'; intro H; reflexivity || destruct H; discriminate.
 Qed.

@@ -13,8 +13,9 @@ endif
 ###########################################################################
 
 THEORIESVO := $(patsubst %.v,%.$(VO),$(shell find theories -type f -name "*.v"))
+STDLIB2VO := $(patsubst %.v,%.$(VO),$(shell find stdlib2 -type f -name "*.v"))
 CONTRIBVO := $(patsubst %.v,%.$(VO),$(shell find $(addprefix user-contrib/, $(USERCONTRIBDIRS)) -type f -name "*.v"))
-ALLVO := $(THEORIESVO) $(CONTRIBVO)
+ALLVO := $(THEORIESVO) $(STDLIB2VO) $(CONTRIBVO)
 VFILES := $(ALLVO:.$(VO)=.v)
 
 ## More specific targets

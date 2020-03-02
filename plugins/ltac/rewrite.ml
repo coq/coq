@@ -72,6 +72,12 @@ let lazy_find_reference dir s =
 
 type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 
+let find_global_ref s =
+  let gr = lazy (Coqlib.lib_ref s) in
+  fun (evd,cstrs) ->
+    let (evd, c) = Evarutil.new_global evd (Lazy.force gr) in
+      (evd, cstrs), c
+
 let find_global dir s =
   let gr = lazy (find_reference dir s) in
     fun (evd,cstrs) ->
@@ -83,7 +89,7 @@ let find_global dir s =
 (** Global constants. *)
 
 let coq_eq_ref  () = Coqlib.lib_ref    "core.eq.type"
-let coq_eq      = find_global    ["Coq"; "Init"; "Logic"] "eq"
+let coq_eq      = find_global_ref "core.eq.type"
 let coq_f_equal = find_global    ["Coq"; "Init"; "Logic"] "f_equal"
 let coq_all     = find_global    ["Coq"; "Init"; "Logic"] "all"
 let impl        = find_global    ["Coq"; "Program"; "Basics"] "impl"

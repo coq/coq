@@ -224,17 +224,21 @@ module M = struct
 
   [@@@ocaml.warning "+3"]
 
+  let init_constant_ref s =
+    EConstr.of_constr
+      (UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref s)
+
   let constant = gen_constant_in_modules "ZMicromega" coq_modules
   let bin_constant = gen_constant_in_modules "ZMicromega" bin_module
   let r_constant = gen_constant_in_modules "ZMicromega" r_modules
   let z_constant = gen_constant_in_modules "ZMicromega" z_modules
   let m_constant = gen_constant_in_modules "ZMicromega" mic_modules
   let coq_and = lazy (init_constant "and")
-  let coq_or = lazy (init_constant "or")
-  let coq_not = lazy (init_constant "not")
+  let coq_or = lazy (init_constant_ref "core.or.type")
+  let coq_not = lazy (init_constant_ref "core.not.type")
   let coq_iff = lazy (init_constant "iff")
-  let coq_True = lazy (init_constant "True")
-  let coq_False = lazy (init_constant "False")
+  let coq_True = lazy (init_constant_ref "core.True.type")
+  let coq_False = lazy (init_constant_ref "core.False.type")
   let coq_cons = lazy (constant "cons")
   let coq_nil = lazy (constant "nil")
   let coq_list = lazy (constant "list")
@@ -283,7 +287,7 @@ module M = struct
   let coq_Zge = lazy (z_constant "Z.ge")
   let coq_Zle = lazy (z_constant "Z.le")
   let coq_Zlt = lazy (z_constant "Z.lt")
-  let coq_Eq = lazy (init_constant "eq")
+  let coq_Eq = lazy (init_constant_ref "core.eq.type")
   let coq_Zplus = lazy (z_constant "Z.add")
   let coq_Zminus = lazy (z_constant "Z.sub")
   let coq_Zopp = lazy (z_constant "Z.opp")

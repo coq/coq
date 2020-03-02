@@ -837,11 +837,12 @@ endif
 coqlib.timing.diff: stdlib.timing.diff
 
 stdlib-vo: $(THEORIESVO)
+stdlib2-vo: $(STDLIB2VO)
 contrib-vo: $(CONTRIBVO)
 
 stdlib.timing.diff: $(ALLVO:.$(VO)=.v.timing.diff)
 
-.PHONY: coqlib stdlib-vo contrib-vo coqlib.timing.diff stdlib.timing.diff
+.PHONY: coqlib stdlib2-vo stdlib-vo contrib-vo coqlib.timing.diff stdlib.timing.diff
 
 # The .vo files in Init are built with the -noinit option
 
@@ -851,12 +852,16 @@ else
 TIMING_EXTRA =
 endif
 
-theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_DEP)
+stdlib2/%.vo stdlib2/%.glob: stdlib2/%.v $(VO_TOOLS_DEP)
+	$(SHOW)'COQC -noinit $<'
+	$(HIDE)$(BOOTCOQC) $< -noinit -R stdlib2 stdlib $(TIMING_ARG) $(TIMING_EXTRA)
+
+theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v
 	$(SHOW)'COQC -noinit $<'
 	$(HIDE)rm -f theories/Init/$*.glob
-	$(HIDE)$(BOOTCOQC) $< -noinit -R theories Coq $(TIMING_ARG) $(TIMING_EXTRA)
+	$(HIDE)$(BOOTCOQC) $< -noinit -R stdlib2 stdlib -R theories Coq $(TIMING_ARG) $(TIMING_EXTRA)
 
-theories/Init/%.vio: theories/Init/%.v $(VO_TOOLS_DEP)
+theories/Init/%.vio: theories/Init/%.v $(VO_TOOLS_DEP) stdlib2
 	$(SHOW)'COQC -quick -noinit $<'
 	$(HIDE)$(BOOTCOQC) $< -noinit -R theories Coq -vio -noglob
 
@@ -865,7 +870,7 @@ theories/Init/%.vio: theories/Init/%.v $(VO_TOOLS_DEP)
 %.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP)
 	$(SHOW)'COQC      $<'
 	$(HIDE)rm -f $*.glob
-	$(HIDE)$(BOOTCOQC) $< $(TIMING_ARG) $(TIMING_EXTRA)
+	$(HIDE)$(BOOTCOQC) -R stdlib2 stdlib $< $(TIMING_ARG) $(TIMING_EXTRA)
 ifdef VALIDATE
 	$(SHOW)'COQCHK    $(call vo_to_mod,$@)'
 	$(HIDE)$(CHICKEN) $(VALIDOPTS) -norec $(call vo_to_mod,$@) \
@@ -887,7 +892,7 @@ PLUGININCLUDES=$(addprefix -I plugins/, $(PLUGINDIRS))
 
 $(VDFILE).d: $(D_DEPEND_BEFORE_SRC) $(VFILES) $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT)
 	$(SHOW)'COQDEP    VFILES'
-	$(HIDE)$(COQDEPBOOT) -vos -boot $(DYNDEP) -R theories Coq -R plugins Coq -Q user-contrib "" $(PLUGININCLUDES) $(USERCONTRIBINCLUDES) $(VFILES) $(TOTARGET)
+	$(HIDE)$(COQDEPBOOT) -vos -boot $(DYNDEP) -R stdlib2 stdlib -R theories Coq -R plugins Coq -Q user-contrib "" $(PLUGININCLUDES) $(USERCONTRIBINCLUDES) $(VFILES) $(TOTARGET)
 
 ###########################################################################
 

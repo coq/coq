@@ -621,9 +621,6 @@ through the <tt>Require Import</tt> command.</p>
   <dd>
     theories/ssrmatching/ssrmatching.v
     theories/ssr/ssrclasses.v
-    theories/ssr/ssreflect.v
-    theories/ssr/ssrbool.v
-    theories/ssr/ssrfun.v
   </dd>
 
   <dt> <b>Ltac2</b>:
