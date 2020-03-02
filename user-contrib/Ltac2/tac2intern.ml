@@ -396,11 +396,13 @@ let is_pure_constructor kn =
 
 let rec is_value = function
 | GTacAtm (AtmInt _) | GTacVar _ | GTacRef _ | GTacFun _ -> true
-| GTacAtm (AtmStr _) | GTacApp _ | GTacLet _ -> false
+| GTacAtm (AtmStr _) | GTacApp _ | GTacLet (true, _, _) -> false
 | GTacCst (Tuple _, _, el) -> List.for_all is_value el
 | GTacCst (_, _, []) -> true
 | GTacOpn (_, el) -> List.for_all is_value el
 | GTacCst (Other kn, _, el) -> is_pure_constructor kn && List.for_all is_value el
+| GTacLet (false, bnd, e) ->
+  is_value e && List.for_all (fun (_, e) -> is_value e) bnd
 | GTacCse _ | GTacPrj _ | GTacSet _ | GTacExt _ | GTacPrm _
 | GTacWth _ -> false
 
