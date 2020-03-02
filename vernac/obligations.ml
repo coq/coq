@@ -416,16 +416,14 @@ let warn_solve_errored = CWarnings.create ~name:"solve_obligation_error" ~catego
     Pp.seq [str "Solve Obligations tactic returned error: "; err; fnl ();
             str "This will become an error in the future"])
 
-let solve_by_tac ?loc name evi t poly ctx =
-  (* spiwack: the status is dropped. *)
+let solve_by_tac ?loc name evi t poly uctx =
   try
-    let (entry,_,ctx') =
-      Pfedit.build_constant_by_tactic
-        ~name ~poly ctx evi.evar_hyps evi.evar_concl t in
+    (* the status is dropped. *)
     let env = Global.env () in
-    let body, ctx' = Declare.inline_private_constants ~univs:ctx' env entry in
+    let body, types, _, ctx' =
+      Pfedit.build_by_tactic env ~uctx ~poly ~typ:evi.evar_concl t in
     Inductiveops.control_only_guard env (Evd.from_ctx ctx') (EConstr.of_constr body);
-    Some (body, entry.Declare.proof_entry_type, ctx')
+    Some (body, types, ctx')
   with
   | Refiner.FailError (_, s) as exn ->
     let _ = Exninfo.capture exn in

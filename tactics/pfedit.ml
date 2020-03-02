@@ -129,10 +129,10 @@ let build_constant_by_tactic ~name ?(opaque=Proof_global.Transparent) ctx sign ~
   | _ ->
     CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
 
-let build_by_tactic ?(side_eff=true) env sigma ~poly typ tac =
+let build_by_tactic ?(side_eff=true) env ~uctx ~poly ~typ tac =
   let name = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = val_of_named_context (named_context env) in
-  let ce, status, univs = build_constant_by_tactic ~name sigma sign ~poly typ tac in
+  let ce, status, univs = build_constant_by_tactic ~name uctx sign ~poly typ tac in
   let cb, univs =
     if side_eff then Declare.inline_private_constants ~univs env ce
     else
@@ -140,7 +140,7 @@ let build_by_tactic ?(side_eff=true) env sigma ~poly typ tac =
       let (cb, ctx), _eff = Future.force ce.Declare.proof_entry_body in
       cb, UState.merge ~sideff:false Evd.univ_rigid univs ctx
   in
-  cb, status, univs
+  cb, ce.Declare.proof_entry_type, status, univs
 
 let refine_by_tactic ~name ~poly env sigma ty tac =
   (* Save the initial side-effects to restore them afterwards. We set the
