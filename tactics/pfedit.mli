@@ -65,7 +65,7 @@ val build_constant_by_tactic
   :  name:Id.t
   -> ?opaque:Proof_global.opacity_flag
   -> uctx:UState.t
-  -> named_context_val
+  -> sign:named_context_val
   -> poly:bool
   -> EConstr.types
   -> unit Proofview.tactic
