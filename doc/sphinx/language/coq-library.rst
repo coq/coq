@@ -23,7 +23,7 @@ These libraries and developments are available
 for download at http://coq.inria.fr (see :ref:`userscontributions`).
 
 This chapter briefly reviews the |Coq| libraries whose contents can
-also be browsed at http://coq.inria.fr/stdlib.
+also be browsed at http://coq.inria.fr/stdlib/.
 
 
 
