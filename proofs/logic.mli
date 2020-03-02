@@ -50,6 +50,7 @@ exception RefinerError of Environ.env * evar_map * refiner_error
 val error_no_such_hypothesis : Environ.env -> evar_map -> Id.t -> 'a
 
 val catchable_exception : exn -> bool
+[@@ocaml.deprecated "This function does not scale in the presence of dynamically added exceptions. Use instead CErrors.noncritical, or the exact name of the exception that matters in the corresponding case."]
 
 (** Move destination for hypothesis *)
 
