@@ -35,7 +35,7 @@ type proof_object =
   (** list of the proof terms (in a form suitable for definitions). *)
   ; poly : bool
   (** polymorphic status *)
-  ; universes: UState.t
+  ; uctx: UState.t
   (** universe state *)
   ; udecl : UState.universe_decl
   (** universe declaration *)

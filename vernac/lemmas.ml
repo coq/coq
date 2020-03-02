@@ -356,17 +356,17 @@ let finish_proved idopt po info =
   let open Proof_global in
   let { Info.hook } = info in
   match po with
-  | { name; entries=[const]; universes; udecl; poly } ->
+  | { name; entries=[const]; uctx; udecl; poly } ->
     let name = match idopt with
       | None -> name
       | Some { CAst.v = save_id } -> check_anonymity name save_id; save_id in
     let fix_exn = Declare.Internal.get_fix_exn const in
     let () = try
       let mutpe = MutualEntry.adjust_guardness_conditions ~info const in
-      let hook_data = Option.map (fun hook -> hook, universes, []) hook in
-      let ubind = UState.universe_binders universes in
+      let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
+      let ubind = UState.universe_binders uctx in
       let _r : Names.GlobRef.t list =
-        MutualEntry.declare_mutdef ~fix_exn ~uctx:universes ~poly ~udecl ?hook_data ~ubind ~name mutpe
+        MutualEntry.declare_mutdef ~fix_exn ~uctx ~poly ~udecl ?hook_data ~ubind ~name mutpe
       in ()
     with e when CErrors.noncritical e ->
       let e = Exninfo.capture e in
@@ -439,7 +439,7 @@ let finalize_proof idopt proof_obj proof_info =
   | Regular ->
     finish_proved idopt proof_obj proof_info
   | End_obligation oinfo ->
-    DeclareObl.obligation_terminator proof_obj.entries proof_obj.universes oinfo
+    DeclareObl.obligation_terminator proof_obj.entries proof_obj.uctx oinfo
   | End_derive { f ; name } ->
     finish_derived ~f ~name ~idopt ~entries:proof_obj.entries
   | End_equations { hook; i; types; wits; sigma } ->
@@ -455,7 +455,7 @@ let save_lemma_proved ~lemma ~opaque ~idopt =
 (***********************************************************************)
 let save_lemma_admitted_delayed ~proof ~info =
   let open Proof_global in
-  let { name; entries; universes; udecl; poly } = proof in
+  let { name; entries; uctx; udecl; poly } = proof in
   if List.length entries <> 1 then
     CErrors.user_err Pp.(str "Admitted does not support multiple statements");
   let { Declare.proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
@@ -465,8 +465,8 @@ let save_lemma_admitted_delayed ~proof ~info =
   let typ = match proof_entry_type with
     | None -> CErrors.user_err Pp.(str "Admitted requires an explicit statement");
     | Some typ -> typ in
-  let ctx = UState.univ_entry ~poly universes in
+  let ctx = UState.univ_entry ~poly uctx in
   let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
-  finish_admitted ~name ~poly ~uctx:universes ~udecl ~info (sec_vars, (typ, ctx), None)
+  finish_admitted ~name ~poly ~uctx ~udecl ~info (sec_vars, (typ, ctx), None)
 
 let save_lemma_proved_delayed ~proof ~info ~idopt = finalize_proof idopt proof info

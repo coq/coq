@@ -108,11 +108,11 @@ val declare_private_constant
   -> unit proof_entry
   -> Constant.t * Evd.side_effects
 
-(** [inline_private_constants ~sideff ~univs env ce] will inline the
+(** [inline_private_constants ~sideff ~uctx env ce] will inline the
    constants in [ce]'s body and return the body plus the updated
    [UState.t]. *)
 val inline_private_constants
-  :  univs:UState.t
+  :  uctx:UState.t
   -> Environ.env
   -> Evd.side_effects proof_entry
   -> Constr.t * UState.t

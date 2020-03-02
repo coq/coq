@@ -91,7 +91,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) Tactics.intro) tac) in
   let ectx = Evd.evar_universe_context sigma in
   let (const, safe, ectx) =
-    try Pfedit.build_constant_by_tactic ~name ~opaque:Proof_global.Transparent ~poly ectx secsign concl solve_tac
+    try Pfedit.build_constant_by_tactic ~name ~opaque:Proof_global.Transparent ~poly ~uctx:ectx secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it

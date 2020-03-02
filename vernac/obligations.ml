@@ -420,10 +420,10 @@ let solve_by_tac ?loc name evi t poly uctx =
   try
     (* the status is dropped. *)
     let env = Global.env () in
-    let body, types, _, ctx' =
+    let body, types, _, uctx =
       Pfedit.build_by_tactic env ~uctx ~poly ~typ:evi.evar_concl t in
-    Inductiveops.control_only_guard env (Evd.from_ctx ctx') (EConstr.of_constr body);
-    Some (body, types, ctx')
+    Inductiveops.control_only_guard env (Evd.from_ctx uctx) (EConstr.of_constr body);
+    Some (body, types, uctx)
   with
   | Refiner.FailError (_, s) as exn ->
     let _ = Exninfo.capture exn in

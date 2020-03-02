@@ -489,7 +489,7 @@ let obligation_terminator entries uctx { name; num; auto } =
   | [entry] ->
     let env = Global.env () in
     let ty = entry.Declare.proof_entry_type in
-    let body, uctx = Declare.inline_private_constants ~univs:uctx env entry in
+    let body, uctx = Declare.inline_private_constants ~uctx env entry in
     let sigma = Evd.from_ctx uctx in
     Inductiveops.control_only_guard (Global.env ()) sigma (EConstr.of_constr body);
     (* Declare the obligation ourselves and drop the hook *)
