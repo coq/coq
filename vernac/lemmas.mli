@@ -103,7 +103,7 @@ val start_lemma_with_initialization
   -> kind:Decls.logical_kind
   -> udecl:UState.universe_decl
   -> Evd.evar_map
-  -> (bool * lemma_possible_guards * unit Proofview.tactic list option) option
+  -> (bool * lemma_possible_guards * Constr.t option list option) option
   -> Recthm.t list
   -> int list option
   -> t

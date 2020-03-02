@@ -144,18 +144,22 @@ let rec_tac_initializer finite guard thms snl =
 let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recguard thms snl =
   let intro_tac { Recthm.args; _ } = Tactics.auto_intros_tac args in
   let init_tac, compute_guard = match recguard with
-  | Some (finite,guard,init_tac) ->
+  | Some (finite,guard,init_terms) ->
     let rec_tac = rec_tac_initializer finite guard thms snl in
-    Some (match init_tac with
-        | None ->
-          Tacticals.New.tclTHENS rec_tac (List.map intro_tac thms)
-        | Some tacl ->
-          Tacticals.New.tclTHENS rec_tac
-            List.(map2 (fun tac thm -> Tacticals.New.tclTHEN tac (intro_tac thm)) tacl thms)
-      ),guard
+    let term_tac =
+      match init_terms with
+      | None ->
+        List.map intro_tac thms
+      | Some init_terms ->
+        (* This is the case for hybrid proof mode / definition
+           fixpoint, where terms for some constants are given with := *)
+        let tacl = List.map (Option.cata (EConstr.of_constr %> Tactics.exact_no_check) Tacticals.New.tclIDTAC) init_terms in
+        List.map2 (fun tac thm -> Tacticals.New.tclTHEN tac (intro_tac thm)) tacl thms
+    in
+    Tacticals.New.tclTHENS rec_tac term_tac, guard
   | None ->
     let () = match thms with [_] -> () | _ -> assert false in
-    Some (intro_tac (List.hd thms)), [] in
+    intro_tac (List.hd thms), [] in
   match thms with
   | [] -> CErrors.anomaly (Pp.str "No proof to start.")
   | { Recthm.name; typ; impargs; _}::other_thms ->
@@ -170,9 +174,7 @@ let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recgua
            } in
     let lemma = start_lemma ~name ~poly ~udecl ~info sigma (EConstr.of_constr typ) in
     pf_map (Proof_global.map_proof (fun p ->
-        match init_tac with
-        | None -> p
-        | Some tac -> pi1 @@ Proof.run_tactic Global.(env ()) tac p)) lemma
+        pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)) lemma
 
 (************************************************************************)
 (* Commom constant saving path, for both Qed and Admitted               *)
