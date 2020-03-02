@@ -4246,26 +4246,26 @@ type eliminator_source =
   | ElimOver of bool * Id.t
 
 let find_induction_type isrec elim hyp0 gl =
-  let sigma, scheme,elim =
+  let sigma, indref, nparams, elim =
     match elim with
     | None ->
        let sort = Tacticals.New.elimination_sort_of_goal gl in
        let sigma', (elimc,elimt),_ = guess_elim isrec false sort hyp0 gl in
        let scheme = compute_elim_sig sigma' ~elimc elimt in
-       (* We drop the scheme waiting to know if it is dependent, this
+       (* We drop the scheme and elimc/elimt waiting to know if it is dependent, this
           needs no update to sigma at this point. *)
-       Tacmach.New.project gl, scheme, ElimOver (isrec,hyp0)
+       Tacmach.New.project gl, scheme.indref, scheme.nparams, ElimOver (isrec,hyp0)
     | Some e ->
         let sigma, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
         let scheme = compute_elim_sig sigma ~elimc elimt in
         if Option.is_empty scheme.indarg then error "Cannot find induction type";
         let indsign = compute_scheme_signature sigma scheme hyp0 ind_guess in
         let elim = ({ elimindex = Some(-1); elimbody = elimc },elimt) in
-        sigma, scheme, ElimUsing (elim,indsign)
+        sigma, scheme.indref, scheme.nparams, ElimUsing (elim,indsign)
   in
-  match scheme.indref with
+  match indref with
   | None -> error_ind_scheme ""
-  | Some ref -> sigma, (ref, scheme.nparams, elim)
+  | Some ref -> sigma, (ref, nparams, elim)
 
 let get_elim_signature elim hyp0 gl =
   compute_elim_signature (given_elim hyp0 elim gl) hyp0
