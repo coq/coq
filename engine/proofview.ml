@@ -262,6 +262,8 @@ module Monad = Proof
 
 (** [tclZERO e] fails with exception [e]. It has no success. *)
 let tclZERO ?info e =
+  if not (CErrors.noncritical e) then
+    CErrors.anomaly (Pp.str "tclZERO receiving critical error: " ++ CErrors.print e);
   let info = match info with
   | None -> Exninfo.null
   | Some info -> info
