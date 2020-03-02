@@ -25,7 +25,6 @@ open EConstr
 open Tacticals.New
 open Tacmach.New
 open Tactics
-open Logic
 open Libnames
 open Nametab
 open Contradiction
@@ -971,7 +970,7 @@ let rec transform sigma p t =
        tac @ tac', t''
    | Kapp(Z_of_nat,[t']) -> default true t'
    | _ -> default false t
-  with e when catchable_exception e -> default false t
+  with e when noncritical e -> default false t
 
 let shrink_pair p f1 f2 =
   match f1,f2 with
@@ -1420,7 +1419,7 @@ let destructure_omega env sigma tac_def (id,c) =
           normalize_equation sigma
             id INEQ (Lazy.force coq_Zgt_left) 2 t t1 t2 tac_def
       | _ -> tac_def
-    with e when catchable_exception e -> tac_def
+    with e when noncritical e -> tac_def
 
 let reintroduce id =
   (* [id] cannot be cleared if dependent: protect it by a try *)
@@ -1527,7 +1526,7 @@ let nat_inject =
                 Kapp(S,[t]) -> is_number t
               | Kapp(O,[]) -> true
               | _ -> false
-            with e when catchable_exception e -> false
+            with e when noncritical e -> false
           in
           let rec loop p t : unit Proofview.tactic =
             try match destructurate_term sigma t with
@@ -1538,7 +1537,7 @@ let nat_inject =
                         ((Lazy.force coq_inj_S),[t]))
                      (loop (P_APP 1 :: p) t))
               | _ -> explore p t
-            with e when catchable_exception e -> explore p t
+            with e when noncritical e -> explore p t
           in
           if is_number t' then focused_simpl p else loop p t
       | Kapp(Pred,[t]) ->
@@ -1551,7 +1550,7 @@ let nat_inject =
             (explore p t_minus_one)
       | Kapp(O,[]) -> focused_simpl p
       | _ -> Proofview.tclUNIT ()
-    with e when catchable_exception e -> Proofview.tclUNIT ()
+    with e when noncritical e -> Proofview.tclUNIT ()
 
   and loop = function
     | [] -> Proofview.tclUNIT ()
@@ -1615,7 +1614,7 @@ let nat_inject =
                   ]
                 else loop lit
             | _ -> loop lit
-          with e when catchable_exception e -> loop lit end
+          with e when noncritical e -> loop lit end
   in
   let hyps_types = Tacmach.New.pf_hyps_types gl in
   loop (List.rev hyps_types)
@@ -1725,7 +1724,7 @@ let destructure_hyps =
                 (assert_by (Name hid) hty reflexivity)
                 (loop (LocalAssum (make_annot hid Sorts.Relevant, hty) :: lit))
            | _ -> loop lit
-         with e when catchable_exception e -> loop lit
+         with e when noncritical e -> loop lit
        end
     | decl :: lit -> (* variable without body (or !letin_flag isn't set) *)
        let i = NamedDecl.get_id decl in
@@ -1857,7 +1856,7 @@ let destructure_hyps =
           | _ -> loop lit
             with
             | Undecidable -> loop lit
-            | e when catchable_exception e -> loop lit
+            | e when noncritical e -> loop lit
           end
     in
     let hyps = Proofview.Goal.hyps gl in

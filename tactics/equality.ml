@@ -563,7 +563,7 @@ let apply_special_clear_request clear_flag f =
       let (sigma, (c, bl)) = f env sigma in
       apply_clear_request clear_flag (use_clear_hyp_by_default ()) c
     with
-      e when catchable_exception e -> tclIDTAC
+      e when noncritical e -> tclIDTAC
   end
 
 type multi =

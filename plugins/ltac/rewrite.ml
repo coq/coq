@@ -129,7 +129,7 @@ let find_class_proof proof_type proof_method env evars carrier relation =
     let evars', c = Typeclasses.resolve_one_typeclass env (goalevars evars) goal in
       if extends_undefined (goalevars evars) evars' then raise Not_found
       else app_poly_check env (evars',cstrevars evars) proof_method [| carrier; relation; c |]
-  with e when Logic.catchable_exception e -> raise Not_found
+  with e when CErrors.noncritical e -> raise Not_found
 
 (** Utility functions *)
 
@@ -724,8 +724,7 @@ let unify_eqn (car, rel, prf, c1, c2, holes, sort) l2r flags env (sigma, cstrs) 
     let rew = if l2r then rew else symmetry env sort rew in
     Some rew
   with
-  | e when Class_tactics.catchable e -> None
-  | Reduction.NotConvertible -> None
+  | e when noncritical e -> None
 
 let unify_abs (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
   try
@@ -741,8 +740,7 @@ let unify_abs (car, rel, prf, c1, c2) l2r sort env (sigma, cstrs) t =
     let rew = if l2r then rew else symmetry env sort rew in
     Some rew
   with
-  | e when Class_tactics.catchable e -> None
-  | Reduction.NotConvertible -> None
+  | e when noncritical e -> None
 
 type rewrite_flags = { under_lambdas : bool; on_morphisms : bool }
 
