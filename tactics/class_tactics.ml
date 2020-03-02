@@ -189,7 +189,7 @@ let clenv_unique_resolver_tac with_evars ~flags clenv' =
   Proofview.Goal.enter begin fun gls ->
     let resolve =
       try Proofview.tclUNIT (clenv_unique_resolver ~flags clenv' gls)
-      with e -> Proofview.tclZERO e
+      with e when noncritical e -> Proofview.tclZERO e
     in resolve >>= fun clenv' ->
        Clenvtac.clenv_refine ~with_evars ~with_classes:false clenv'
   end
