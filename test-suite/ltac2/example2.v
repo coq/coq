@@ -261,6 +261,25 @@ assert (H : 0 + 0 = 0) by reflexivity.
 intros x; exact x.
 Qed.
 
+Goal True.
+Proof.
+enough (H := 0 + 0).
+constructor.
+Qed.
+
+Goal True.
+Proof.
+enough (exists n, n = 0) as [n Hn].
++ exact I.
++ exists 0; reflexivity.
+Qed.
+
+Goal True -> True.
+Proof.
+enough (H : 0 + 0 = 0) by (intros x; exact x).
+reflexivity.
+Qed.
+
 Goal 1 + 1 = 2.
 Proof.
 change (?a + 1 = 2) with (2 = $a + 1).

@@ -265,6 +265,19 @@ Ltac2 Notation "assert" ast(thunk(assert)) := assert0 false ast.
 
 Ltac2 Notation "eassert" ast(thunk(assert)) := assert0 true ast.
 
+Ltac2 enough_from_assertion(a : Std.assertion) :=
+  match a with
+  | Std.AssertType ip_opt term tac_opt => Std.enough term (Some tac_opt) ip_opt
+  | Std.AssertValue ident constr => Std.pose (Some ident) constr
+  end.
+
+Ltac2 enough0 ev ast :=
+  enter_h ev (fun _ ast => enough_from_assertion ast) ast.
+
+Ltac2 Notation "enough" ast(thunk(assert)) := enough0 false ast.
+
+Ltac2 Notation "eenough" ast(thunk(assert)) := enough0 true ast.
+
 Ltac2 default_everywhere cl :=
 match cl with
 | None => { Std.on_hyps := None; Std.on_concl := Std.AllOccurrences }
