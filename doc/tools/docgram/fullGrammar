@@ -152,7 +152,7 @@ binder_constr: [
 ]
 
 appl_arg: [
-| lpar_id_coloneq lconstr ")"
+| test_lpar_id_coloneq "(" ident ":=" lconstr ")"
 | operconstr9
 ]
 
@@ -335,7 +335,7 @@ closed_binder: [
 typeclass_constraint: [
 | "!" operconstr200
 | "{" name "}" ":" [ "!" | ] operconstr200
-| name_colon [ "!" | ] operconstr200
+| test_name_colon name ":" [ "!" | ] operconstr200
 | operconstr200
 ]
 
@@ -449,7 +449,7 @@ bigint: [
 ]
 
 bar_cbrace: [
-| test_nospace_pipe_closedcurly "|" "}"
+| test_pipe_closedcurly "|" "}"
 ]
 
 vernac_toplevel: [
@@ -511,8 +511,8 @@ command: [
 | "Load" [ "Verbose" | ] [ ne_string | IDENT ]
 | "Declare" "ML" "Module" LIST1 ne_string
 | "Locate" locatable
-| "Add" "LoadPath" ne_string as_dirpath
-| "Add" "Rec" "LoadPath" ne_string as_dirpath
+| "Add" "LoadPath" ne_string "as" dirpath
+| "Add" "Rec" "LoadPath" ne_string "as" dirpath
 | "Remove" "LoadPath" ne_string
 | "Type" lconstr
 | "Print" printable
@@ -522,7 +522,6 @@ command: [
 | "Print" "Namespace" dirpath
 | "Inspect" natural
 | "Add" "ML" "Path" ne_string
-| "Add" "Rec" "ML" "Path" ne_string
 | "Set" option_table option_setting
 | "Unset" option_table
 | "Print" "Table" option_table
@@ -655,6 +654,7 @@ command: [
 | "Add" "CstOp" constr      (* micromega plugin *)
 | "Add" "BinRel" constr      (* micromega plugin *)
 | "Add" "PropOp" constr      (* micromega plugin *)
+| "Add" "PropBinOp" constr      (* micromega plugin *)
 | "Add" "PropUOp" constr      (* micromega plugin *)
 | "Add" "Spec" constr      (* micromega plugin *)
 | "Add" "BinOpSpec" constr      (* micromega plugin *)
@@ -924,16 +924,16 @@ reduce: [
 |
 ]
 
-one_decl_notation: [
-| ne_lstring ":=" constr OPT [ ":" IDENT ]
+decl_notation: [
+| ne_lstring ":=" constr only_parsing OPT [ ":" IDENT ]
 ]
 
 decl_sep: [
 | "and"
 ]
 
-decl_notation: [
-| "where" LIST1 one_decl_notation SEP decl_sep
+decl_notations: [
+| "where" LIST1 decl_notation SEP decl_sep
 |
 ]
 
@@ -943,7 +943,7 @@ opt_constructors_or_fields: [
 ]
 
 inductive_definition: [
-| opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notation
+| opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
 ]
 
 constructor_list_or_record_decl: [
@@ -961,11 +961,11 @@ opt_coercion: [
 ]
 
 rec_definition: [
-| ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notation
+| ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
 
 corec_definition: [
-| ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notation
+| ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
 
 scheme: [
@@ -982,7 +982,7 @@ scheme_kind: [
 ]
 
 record_field: [
-| LIST0 quoted_attributes record_binder OPT [ "|" natural ] decl_notation
+| LIST0 quoted_attributes record_binder OPT [ "|" natural ] decl_notations
 ]
 
 record_fields: [
@@ -1148,7 +1148,7 @@ module_type: [
 ]
 
 section_subset_expr: [
-| only_starredidentrefs LIST0 starredidentref
+| test_only_starredidentrefs LIST0 starredidentref
 | ssexpr35
 ]
 
@@ -1172,8 +1172,8 @@ ssexpr50: [
 
 ssexpr0: [
 | starredidentref
-| "(" only_starredidentrefs LIST0 starredidentref ")"
-| "(" only_starredidentrefs LIST0 starredidentref ")" "*"
+| "(" test_only_starredidentrefs LIST0 starredidentref ")"
+| "(" test_only_starredidentrefs LIST0 starredidentref ")" "*"
 | "(" ssexpr35 ")"
 | "(" ssexpr35 ")" "*"
 ]
@@ -1329,10 +1329,6 @@ option_ref_value: [
 
 option_table: [
 | LIST1 IDENT
-]
-
-as_dirpath: [
-| OPT [ "as" dirpath ]
 ]
 
 ne_in_or_out_modules: [
@@ -1684,6 +1680,8 @@ simple_tactic: [
 | "eenough" test_lpar_id_colon "(" identref ":" lconstr ")" by_tactic
 | "assert" constr as_ipat by_tactic
 | "eassert" constr as_ipat by_tactic
+| "pose" "proof" test_lpar_id_coloneq "(" identref ":=" lconstr ")"
+| "epose" "proof" test_lpar_id_coloneq "(" identref ":=" lconstr ")"
 | "pose" "proof" lconstr as_ipat
 | "epose" "proof" lconstr as_ipat
 | "enough" constr as_ipat by_tactic
@@ -1740,10 +1738,11 @@ simple_tactic: [
 | "psatz_R" tactic      (* micromega plugin *)
 | "psatz_Q" int_or_var tactic      (* micromega plugin *)
 | "psatz_Q" tactic      (* micromega plugin *)
-| "zify_iter_specs" tactic      (* micromega plugin *)
+| "zify_iter_specs"      (* micromega plugin *)
 | "zify_op"      (* micromega plugin *)
 | "zify_saturate"      (* micromega plugin *)
 | "zify_iter_let" tactic      (* micromega plugin *)
+| "zify_elim_let"      (* micromega plugin *)
 | "nsatz_compute" constr      (* nsatz plugin *)
 | "omega"      (* omega plugin *)
 | "rtauto"

@@ -372,15 +372,10 @@ to universes and explicitly instantiate polymorphic definitions.
    universe quantification will be discharged on each section definition
    independently.
 
-.. cmd:: Constraint @universe_constraint
-         Polymorphic Constraint @universe_constraint
+.. cmd:: Constraint @univ_constraint
+         Polymorphic Constraint @univ_constraint
 
    This command declares a new constraint between named universes.
-
-   .. productionlist:: coq
-      universe_constraint : `qualid` < `qualid`
-                          : `qualid` <= `qualid`
-                          : `qualid` = `qualid`
 
    If consistent, the constraint is then enforced in the global
    environment. Like :cmd:`Universe`, it can be used with the

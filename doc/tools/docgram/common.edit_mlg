@@ -57,14 +57,15 @@ DELETE: [
 | check_for_coloneq
 | local_test_lpar_id_colon
 | lookup_at_as_comma
-| only_starredidentrefs
+| test_only_starredidentrefs
 | test_bracket_ident
 | test_lpar_id_colon
 | test_lpar_id_coloneq  (* todo: grammar seems incorrect, repeats the "(" IDENT ":=" *)
 | test_lpar_id_rpar
 | test_lpar_idnum_coloneq
-| test_nospace_pipe_closedcurly
 | test_show_goal
+| test_name_colon
+| test_pipe_closedcurly
 | ensure_fixannot
 
   (* SSR *)
@@ -332,8 +333,8 @@ typeclass_constraint: [
 | EDIT ADD_OPT "!" operconstr200
 | REPLACE "{" name "}" ":" [ "!" | ] operconstr200
 | WITH "{" name "}" ":" OPT "!"  operconstr200
-| REPLACE name_colon [ "!" | ] operconstr200
-| WITH name_colon OPT "!" operconstr200
+| REPLACE name ":" [ "!" | ] operconstr200
+| WITH name ":" OPT "!" operconstr200
 ]
 
 (* ?? From the grammar, Prim.name seems to be only "_" but ident is also accepted "*)
@@ -409,19 +410,6 @@ DELETE: [
 | cumulativity_token
 ]
 
-opt_coercion: [
-| OPTINREF
-]
-
-opt_constructors_or_fields: [
-| OPTINREF
-]
-
-SPLICE: [
-| opt_coercion
-| opt_constructors_or_fields
-]
-
 constructor_list_or_record_decl: [
 | OPTINREF
 ]
@@ -431,11 +419,6 @@ record_fields: [
 | WITH LIST1 record_field SEP ";"
 | DELETE record_field
 | DELETE (* empty *)
-]
-
-decl_notation: [
-| REPLACE "where" LIST1 one_decl_notation SEP decl_sep
-| WITH "where" one_decl_notation LIST0 ( decl_sep one_decl_notation )
 ]
 
 assumptions_token: [
@@ -767,13 +750,13 @@ vernacular: [
 ]
 
 rec_definition: [
-| REPLACE ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notation
-| WITH ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notation
+| REPLACE ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
+| WITH ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
 
 corec_definition: [
-| REPLACE ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notation
-| WITH ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notation
+| REPLACE ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
+| WITH ident_decl binders type_cstr OPT [ ":=" lconstr ] decl_notations
 ]
 
 type_cstr: [
@@ -782,13 +765,9 @@ type_cstr: [
 | OPTINREF
 ]
 
-decl_notation: [
-| OPTINREF
-]
-
 inductive_definition: [
-| REPLACE OPT ">" ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] OPT ( ":=" OPT constructor_list_or_record_decl ) OPT decl_notation
-| WITH OPT ">" ident_decl binders OPT [ "|" binders ] OPT [ ":" type ] OPT ( ":=" OPT constructor_list_or_record_decl ) OPT decl_notation
+| REPLACE opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" lconstr ] opt_constructors_or_fields decl_notations
+| WITH opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" type ] opt_constructors_or_fields decl_notations
 ]
 
 constructor_list_or_record_decl: [
@@ -805,6 +784,31 @@ record_binder: [
 | REPLACE name record_binder_body
 | WITH name OPT record_binder_body
 | DELETE name
+]
+
+in_clause: [
+| DELETE in_clause'
+| REPLACE LIST0 hypident_occ SEP "," "|-" concl_occ
+| WITH LIST0 hypident_occ SEP "," OPT ( "|-" concl_occ )
+| DELETE LIST0 hypident_occ SEP ","
+]
+
+concl_occ: [
+| OPTINREF
+]
+
+opt_coercion: [
+| OPTINREF
+]
+
+opt_constructors_or_fields: [
+| OPTINREF
+]
+
+decl_notations: [
+| REPLACE "where" LIST1 decl_notation SEP decl_sep
+| WITH "where" decl_notation LIST0 (decl_sep decl_notation )
+| OPTINREF
 ]
 
 SPLICE: [
@@ -941,11 +945,12 @@ SPLICE: [
 | record_fields
 | constructor_type
 | record_binder
+| opt_coercion
+| opt_constructors_or_fields
 ] (* end SPLICE *)
 
 RENAME: [
 | clause clause_dft_concl
-| in_clause' in_clause
 
 | tactic3 ltac_expr3  (* todo: can't figure out how this gets mapped by coqpp *)
 | tactic1 ltac_expr1  (* todo: can't figure out how this gets mapped by coqpp *)
@@ -980,7 +985,7 @@ RENAME: [
 | nat_or_var num_or_var
 | fix_decl fix_body
 | cofix_decl cofix_body
-| constr term1_extended
+| constr one_term
 | appl_arg arg
 | rec_definition fix_definition
 | corec_definition cofix_definition
@@ -988,12 +993,12 @@ RENAME: [
 | univ_instance univ_annot
 | simple_assum_coe assumpt
 | of_type_with_opt_coercion of_type
-| decl_notation decl_notations
-| one_decl_notation decl_notation
 | attribute attr
 | attribute_value attr_value
 | constructor_list_or_record_decl constructors_or_record
 | record_binder_body field_body
+| class_rawexpr class
+| smart_global smart_qualid
 ]
 
 

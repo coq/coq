@@ -3,8 +3,8 @@
 =============================
 
 ..
-   README.rst is auto-generated from README.template.rst and the coqrst docs;
-   use ``doc/tools/coqrst/regen_readme.py`` to rebuild it.
+   README.rst is auto-generated from README.template.rst and the coqrst/*.py files
+   (in particular coqdomain.py).  Use ``doc/tools/coqrst/regen_readme.py`` to rebuild it.
 
 Coq's reference manual is written in `reStructuredText <http://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html>`_ (“reST”), and compiled with `Sphinx <http://www.sphinx-doc.org/en/master/>`_.
 
@@ -97,7 +97,7 @@ Here is the list of all objects of the Coq domain (The symbol :black_nib: indica
 ``.. cmd::`` :black_nib: A Coq command.
     Example::
 
-       .. cmd:: Infix @string := @term1_extended {? ( {+, @syntax_modifier } ) } {? : @ident }
+       .. cmd:: Infix @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @ident }
 
           This command is equivalent to :n:`…`.
 

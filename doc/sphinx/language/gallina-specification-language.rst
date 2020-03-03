@@ -158,6 +158,8 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
    | @term1
    arg ::= ( @ident := @term )
    | @term1
+   one_term ::= @term1
+   | @ @qualid {? @univ_annot }
    term1 ::= @term_projection
    | @term0 % @ident
    | @term0
@@ -174,6 +176,13 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
    | `( @term )
    | ltac : ( @ltac_expr )
    field_def ::= @qualid {* @binder } := @term
+
+.. note::
+
+   Many commands and tactics use :n:`@one_term` rather than :n:`@term`.
+   The former need to be enclosed in parentheses unless they're very
+   simple, such as a single identifier.  This avoids confusing a space-separated
+   list of terms with a :n:`@term1` applied to a list of arguments.
 
 .. _types:
 
@@ -591,17 +600,15 @@ Sections :ref:`if-then-else` and :ref:`irrefutable-patterns`).
 Recursive and co-recursive functions: fix and cofix
 ---------------------------------------------------
 
-.. insertprodn term_fix term1_extended
+.. insertprodn term_fix fixannot
 
 .. prodn::
    term_fix ::= let fix @fix_body in @term
    | fix @fix_body {? {+ with @fix_body } for @ident }
    fix_body ::= @ident {* @binder } {? @fixannot } {? : @type } := @term
    fixannot ::= %{ struct @ident %}
-   | %{ wf @term1_extended @ident %}
-   | %{ measure @term1_extended {? @ident } {? @term1_extended } %}
-   term1_extended ::= @term1
-   | @ @qualid {? @univ_annot }
+   | %{ wf @one_term @ident %}
+   | %{ measure @one_term {? @ident } {? @one_term } %}
 
 
 The expression ":n:`fix @ident__1 @binder__1 : @type__1 := @term__1 with … with @ident__n @binder__n : @type__n := @term__n for @ident__i`" denotes the
@@ -1472,11 +1479,11 @@ Computations
    | vm_compute {? @ref_or_pattern_occ }
    | native_compute {? @ref_or_pattern_occ }
    | unfold {+, @unfold_occ }
-   | fold {+ @term1_extended }
+   | fold {+ @one_term }
    | pattern {+, @pattern_occ }
    | @ident
-   delta_flag ::= {? - } [ {+ @smart_global } ]
-   smart_global ::= @qualid
+   delta_flag ::= {? - } [ {+ @smart_qualid } ]
+   smart_qualid ::= @qualid
    | @by_notation
    by_notation ::= @string {? % @ident }
    strategy_flag ::= {+ @red_flags }
@@ -1488,16 +1495,16 @@ Computations
    | cofix
    | zeta
    | delta {? @delta_flag }
-   ref_or_pattern_occ ::= @smart_global {? at @occs_nums }
-   | @term1_extended {? at @occs_nums }
+   ref_or_pattern_occ ::= @smart_qualid {? at @occs_nums }
+   | @one_term {? at @occs_nums }
    occs_nums ::= {+ @num_or_var }
    | - @num_or_var {* @int_or_var }
    num_or_var ::= @num
    | @ident
    int_or_var ::= @int
    | @ident
-   unfold_occ ::= @smart_global {? at @occs_nums }
-   pattern_occ ::= @term1_extended {? at @occs_nums }
+   unfold_occ ::= @smart_qualid {? at @occs_nums }
+   pattern_occ ::= @one_term {? at @occs_nums }
 
 See :ref:`Conversion-rules`.
 

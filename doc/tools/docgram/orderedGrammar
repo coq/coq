@@ -58,6 +58,11 @@ arg: [
 | term1
 ]
 
+one_term: [
+| term1
+| "@" qualid OPT univ_annot
+]
+
 term1: [
 | term_projection
 | term0 "%" ident
@@ -238,13 +243,8 @@ fix_body: [
 
 fixannot: [
 | "{" "struct" ident "}"
-| "{" "wf" term1_extended ident "}"
-| "{" "measure" term1_extended OPT ident OPT term1_extended "}"
-]
-
-term1_extended: [
-| term1
-| "@" qualid OPT univ_annot
+| "{" "wf" one_term ident "}"
+| "{" "measure" one_term OPT ident OPT one_term "}"
 ]
 
 term_cofix: [
@@ -400,7 +400,7 @@ decl_notations: [
 ]
 
 decl_notation: [
-| string ":=" term1_extended OPT [ ":" ident ]
+| string ":=" one_term OPT ( "(" "only" "parsing" ")" ) OPT [ ":" ident ]
 ]
 
 register_token: [
@@ -484,16 +484,16 @@ red_expr: [
 | "vm_compute" OPT ref_or_pattern_occ
 | "native_compute" OPT ref_or_pattern_occ
 | "unfold" LIST1 unfold_occ SEP ","
-| "fold" LIST1 term1_extended
+| "fold" LIST1 one_term
 | "pattern" LIST1 pattern_occ SEP ","
 | ident
 ]
 
 delta_flag: [
-| OPT "-" "[" LIST1 smart_global "]"
+| OPT "-" "[" LIST1 smart_qualid "]"
 ]
 
-smart_global: [
+smart_qualid: [
 | qualid
 | by_notation
 ]
@@ -518,8 +518,8 @@ red_flags: [
 ]
 
 ref_or_pattern_occ: [
-| smart_global OPT ( "at" occs_nums )
-| term1_extended OPT ( "at" occs_nums )
+| smart_qualid OPT ( "at" occs_nums )
+| one_term OPT ( "at" occs_nums )
 ]
 
 occs_nums: [
@@ -538,11 +538,11 @@ int_or_var: [
 ]
 
 unfold_occ: [
-| smart_global OPT ( "at" occs_nums )
+| smart_qualid OPT ( "at" occs_nums )
 ]
 
 pattern_occ: [
-| term1_extended OPT ( "at" occs_nums )
+| one_term OPT ( "at" occs_nums )
 ]
 
 finite_token: [
@@ -587,11 +587,11 @@ scheme: [
 ]
 
 scheme_kind: [
-| "Induction" "for" smart_global "Sort" sort_family
-| "Minimality" "for" smart_global "Sort" sort_family
-| "Elimination" "for" smart_global "Sort" sort_family
-| "Case" "for" smart_global "Sort" sort_family
-| "Equality" "for" smart_global
+| "Induction" "for" smart_qualid "Sort" sort_family
+| "Minimality" "for" smart_qualid "Sort" sort_family
+| "Elimination" "for" smart_qualid "Sort" sort_family
+| "Case" "for" smart_qualid "Sort" sort_family
+| "Equality" "for" smart_qualid
 ]
 
 sort_family: [
@@ -615,21 +615,21 @@ gallina_ext: [
 | "Export" LIST1 qualid
 | "Include" module_type_inl LIST0 ( "<+" module_expr_inl )
 | "Include" "Type" module_type_inl LIST0 ( "<+" module_type_inl )
-| "Transparent" LIST1 smart_global
-| "Opaque" LIST1 smart_global
-| "Strategy" LIST1 [ strategy_level "[" LIST1 smart_global "]" ]
+| "Transparent" LIST1 smart_qualid
+| "Opaque" LIST1 smart_qualid
+| "Strategy" LIST1 [ strategy_level "[" LIST1 smart_qualid "]" ]
 | "Canonical" OPT "Structure" qualid OPT [ OPT univ_decl def_body ]
 | "Canonical" OPT "Structure" by_notation
 | "Coercion" qualid OPT univ_decl def_body
-| "Identity" "Coercion" ident ":" class_rawexpr ">->" class_rawexpr
-| "Coercion" qualid ":" class_rawexpr ">->" class_rawexpr
-| "Coercion" by_notation ":" class_rawexpr ">->" class_rawexpr
+| "Identity" "Coercion" ident ":" class ">->" class
+| "Coercion" qualid ":" class ">->" class
+| "Coercion" by_notation ":" class ">->" class
 | "Context" LIST1 binder
 | "Instance" instance_name ":" term hint_info [ ":=" "{" [ LIST1 field_def SEP ";" | ] "}" | ":=" term | ]
 | "Existing" "Instance" qualid hint_info
 | "Existing" "Instances" LIST1 qualid OPT [ "|" num ]
 | "Existing" "Class" qualid
-| "Arguments" smart_global LIST0 argument_spec_block LIST0 [ "," LIST0 more_implicits_block ] OPT [ ":" LIST1 arguments_modifier SEP "," ]
+| "Arguments" smart_qualid LIST0 argument_spec_block LIST0 [ "," LIST0 more_implicits_block ] OPT [ ":" LIST1 arguments_modifier SEP "," ]
 | "Implicit" "Type" reserv_list
 | "Implicit" "Types" reserv_list
 | "Generalizable" [ "All" "Variables" | "No" "Variables" | [ "Variable" | "Variables" ] LIST1 ident ]
@@ -643,14 +643,8 @@ option_setting: [
 | string
 ]
 
-class_rawexpr: [
-| "Funclass"
-| "Sortclass"
-| smart_global
-]
-
 hint_info: [
-| "|" OPT num OPT term1_extended
+| "|" OPT num OPT one_term
 |
 ]
 
@@ -780,11 +774,11 @@ command: [
 | "Load" [ "Verbose" | ] [ string | ident ]
 | "Declare" "ML" "Module" LIST1 string
 | "Locate" locatable
-| "Add" "LoadPath" string as_dirpath
-| "Add" "Rec" "LoadPath" string as_dirpath
+| "Add" "LoadPath" string "as" dirpath
+| "Add" "Rec" "LoadPath" string "as" dirpath
 | "Remove" "LoadPath" string
 | "Type" term
-| "Print" "Term" smart_global OPT ( "@{" LIST0 name "}" )
+| "Print" "Term" smart_qualid OPT ( "@{" LIST0 name "}" )
 | "Print" "All"
 | "Print" "Section" qualid
 | "Print" "Grammar" ident
@@ -798,36 +792,35 @@ command: [
 | "Print" "Graph"
 | "Print" "Classes"
 | "Print" "TypeClasses"
-| "Print" "Instances" smart_global
+| "Print" "Instances" smart_qualid
 | "Print" "Coercions"
-| "Print" "Coercion" "Paths" class_rawexpr class_rawexpr
-| "Print" "Canonical" "Projections" LIST0 smart_global
+| "Print" "Coercion" "Paths" class class
+| "Print" "Canonical" "Projections" LIST0 smart_qualid
 | "Print" "Typing" "Flags"
 | "Print" "Tables"
 | "Print" "Options"
 | "Print" "Hint"
-| "Print" "Hint" smart_global
+| "Print" "Hint" smart_qualid
 | "Print" "Hint" "*"
 | "Print" "HintDb" ident
 | "Print" "Scopes"
 | "Print" "Scope" ident
 | "Print" "Visibility" OPT ident
-| "Print" "Implicit" smart_global
+| "Print" "Implicit" smart_qualid
 | "Print" OPT "Sorted" "Universes" OPT ( "Subgraph" "(" LIST0 qualid ")" ) OPT string
-| "Print" "Assumptions" smart_global
-| "Print" "Opaque" "Dependencies" smart_global
-| "Print" "Transparent" "Dependencies" smart_global
-| "Print" "All" "Dependencies" smart_global
-| "Print" "Strategy" smart_global
+| "Print" "Assumptions" smart_qualid
+| "Print" "Opaque" "Dependencies" smart_qualid
+| "Print" "Transparent" "Dependencies" smart_qualid
+| "Print" "All" "Dependencies" smart_qualid
+| "Print" "Strategy" smart_qualid
 | "Print" "Strategies"
 | "Print" "Registered"
-| "Print" smart_global OPT ( "@{" LIST0 name "}" )
+| "Print" smart_qualid OPT ( "@{" LIST0 name "}" )
 | "Print" "Module" "Type" qualid
 | "Print" "Module" qualid
 | "Print" "Namespace" dirpath
 | "Inspect" num
 | "Add" "ML" "Path" string
-| "Add" "Rec" "ML" "Path" string
 | "Set" LIST1 ident option_setting
 | "Unset" LIST1 ident
 | "Print" "Table" LIST1 ident
@@ -849,7 +842,7 @@ command: [
 | "Debug" "Off"
 | "Declare" "Reduction" ident ":=" red_expr
 | "Declare" "Custom" "Entry" ident
-| "Derive" ident "SuchThat" term1_extended "As" ident      (* derive plugin *)
+| "Derive" ident "SuchThat" one_term "As" ident      (* derive plugin *)
 | "Proof"
 | "Proof" "Mode" string
 | "Proof" term
@@ -907,31 +900,31 @@ command: [
 | "Obligations"
 | "Preterm" "of" ident
 | "Preterm"
-| "Add" "Relation" term1_extended term1_extended "reflexivity" "proved" "by" term1_extended "symmetry" "proved" "by" term1_extended "as" ident
-| "Add" "Relation" term1_extended term1_extended "reflexivity" "proved" "by" term1_extended "as" ident
-| "Add" "Relation" term1_extended term1_extended "as" ident
-| "Add" "Relation" term1_extended term1_extended "symmetry" "proved" "by" term1_extended "as" ident
-| "Add" "Relation" term1_extended term1_extended "symmetry" "proved" "by" term1_extended "transitivity" "proved" "by" term1_extended "as" ident
-| "Add" "Relation" term1_extended term1_extended "reflexivity" "proved" "by" term1_extended "transitivity" "proved" "by" term1_extended "as" ident
-| "Add" "Relation" term1_extended term1_extended "reflexivity" "proved" "by" term1_extended "symmetry" "proved" "by" term1_extended "transitivity" "proved" "by" term1_extended "as" ident
-| "Add" "Relation" term1_extended term1_extended "transitivity" "proved" "by" term1_extended "as" ident
-| "Add" "Parametric" "Relation" LIST0 binder ":" term1_extended term1_extended "reflexivity" "proved" "by" term1_extended "symmetry" "proved" "by" term1_extended "as" ident
-| "Add" "Parametric" "Relation" LIST0 binder ":" term1_extended term1_extended "reflexivity" "proved" "by" term1_extended "as" ident
-| "Add" "Parametric" "Relation" LIST0 binder ":" term1_extended term1_extended "as" ident
-| "Add" "Parametric" "Relation" LIST0 binder ":" term1_extended term1_extended "symmetry" "proved" "by" term1_extended "as" ident
-| "Add" "Parametric" "Relation" LIST0 binder ":" term1_extended term1_extended "symmetry" "proved" "by" term1_extended "transitivity" "proved" "by" term1_extended "as" ident
-| "Add" "Parametric" "Relation" LIST0 binder ":" term1_extended term1_extended "reflexivity" "proved" "by" term1_extended "transitivity" "proved" "by" term1_extended "as" ident
-| "Add" "Parametric" "Relation" LIST0 binder ":" term1_extended term1_extended "reflexivity" "proved" "by" term1_extended "symmetry" "proved" "by" term1_extended "transitivity" "proved" "by" term1_extended "as" ident
-| "Add" "Parametric" "Relation" LIST0 binder ":" term1_extended term1_extended "transitivity" "proved" "by" term1_extended "as" ident
-| "Add" "Setoid" term1_extended term1_extended term1_extended "as" ident
-| "Add" "Parametric" "Setoid" LIST0 binder ":" term1_extended term1_extended term1_extended "as" ident
-| "Add" "Morphism" term1_extended ":" ident
-| "Declare" "Morphism" term1_extended ":" ident
-| "Add" "Morphism" term1_extended "with" "signature" term "as" ident
-| "Add" "Parametric" "Morphism" LIST0 binder ":" term1_extended "with" "signature" term "as" ident
+| "Add" "Relation" one_term one_term "reflexivity" "proved" "by" one_term "symmetry" "proved" "by" one_term "as" ident
+| "Add" "Relation" one_term one_term "reflexivity" "proved" "by" one_term "as" ident
+| "Add" "Relation" one_term one_term "as" ident
+| "Add" "Relation" one_term one_term "symmetry" "proved" "by" one_term "as" ident
+| "Add" "Relation" one_term one_term "symmetry" "proved" "by" one_term "transitivity" "proved" "by" one_term "as" ident
+| "Add" "Relation" one_term one_term "reflexivity" "proved" "by" one_term "transitivity" "proved" "by" one_term "as" ident
+| "Add" "Relation" one_term one_term "reflexivity" "proved" "by" one_term "symmetry" "proved" "by" one_term "transitivity" "proved" "by" one_term "as" ident
+| "Add" "Relation" one_term one_term "transitivity" "proved" "by" one_term "as" ident
+| "Add" "Parametric" "Relation" LIST0 binder ":" one_term one_term "reflexivity" "proved" "by" one_term "symmetry" "proved" "by" one_term "as" ident
+| "Add" "Parametric" "Relation" LIST0 binder ":" one_term one_term "reflexivity" "proved" "by" one_term "as" ident
+| "Add" "Parametric" "Relation" LIST0 binder ":" one_term one_term "as" ident
+| "Add" "Parametric" "Relation" LIST0 binder ":" one_term one_term "symmetry" "proved" "by" one_term "as" ident
+| "Add" "Parametric" "Relation" LIST0 binder ":" one_term one_term "symmetry" "proved" "by" one_term "transitivity" "proved" "by" one_term "as" ident
+| "Add" "Parametric" "Relation" LIST0 binder ":" one_term one_term "reflexivity" "proved" "by" one_term "transitivity" "proved" "by" one_term "as" ident
+| "Add" "Parametric" "Relation" LIST0 binder ":" one_term one_term "reflexivity" "proved" "by" one_term "symmetry" "proved" "by" one_term "transitivity" "proved" "by" one_term "as" ident
+| "Add" "Parametric" "Relation" LIST0 binder ":" one_term one_term "transitivity" "proved" "by" one_term "as" ident
+| "Add" "Setoid" one_term one_term one_term "as" ident
+| "Add" "Parametric" "Setoid" LIST0 binder ":" one_term one_term one_term "as" ident
+| "Add" "Morphism" one_term ":" ident
+| "Declare" "Morphism" one_term ":" ident
+| "Add" "Morphism" one_term "with" "signature" term "as" ident
+| "Add" "Parametric" "Morphism" LIST0 binder ":" one_term "with" "signature" term "as" ident
 | "Grab" "Existential" "Variables"
 | "Unshelve"
-| "Declare" "Equivalent" "Keys" term1_extended term1_extended
+| "Declare" "Equivalent" "Keys" one_term one_term
 | "Print" "Equivalent" "Keys"
 | "Optimize" "Proof"
 | "Optimize" "Heap"
@@ -940,24 +933,25 @@ command: [
 | "Show" "Ltac" "Profile" "CutOff" int
 | "Show" "Ltac" "Profile" string
 | "Show" "Lia" "Profile"      (* micromega plugin *)
-| "Add" "InjTyp" term1_extended      (* micromega plugin *)
-| "Add" "BinOp" term1_extended      (* micromega plugin *)
-| "Add" "UnOp" term1_extended      (* micromega plugin *)
-| "Add" "CstOp" term1_extended      (* micromega plugin *)
-| "Add" "BinRel" term1_extended      (* micromega plugin *)
-| "Add" "PropOp" term1_extended      (* micromega plugin *)
-| "Add" "PropUOp" term1_extended      (* micromega plugin *)
-| "Add" "Spec" term1_extended      (* micromega plugin *)
-| "Add" "BinOpSpec" term1_extended      (* micromega plugin *)
-| "Add" "UnOpSpec" term1_extended      (* micromega plugin *)
-| "Add" "Saturate" term1_extended      (* micromega plugin *)
+| "Add" "InjTyp" one_term      (* micromega plugin *)
+| "Add" "BinOp" one_term      (* micromega plugin *)
+| "Add" "UnOp" one_term      (* micromega plugin *)
+| "Add" "CstOp" one_term      (* micromega plugin *)
+| "Add" "BinRel" one_term      (* micromega plugin *)
+| "Add" "PropOp" one_term      (* micromega plugin *)
+| "Add" "PropBinOp" one_term      (* micromega plugin *)
+| "Add" "PropUOp" one_term      (* micromega plugin *)
+| "Add" "Spec" one_term      (* micromega plugin *)
+| "Add" "BinOpSpec" one_term      (* micromega plugin *)
+| "Add" "UnOpSpec" one_term      (* micromega plugin *)
+| "Add" "Saturate" one_term      (* micromega plugin *)
 | "Show" "Zify" "InjTyp"      (* micromega plugin *)
 | "Show" "Zify" "BinOp"      (* micromega plugin *)
 | "Show" "Zify" "UnOp"      (* micromega plugin *)
 | "Show" "Zify" "CstOp"      (* micromega plugin *)
 | "Show" "Zify" "BinRel"      (* micromega plugin *)
 | "Show" "Zify" "Spec"      (* micromega plugin *)
-| "Add" "Ring" ident ":" term1_extended OPT ( "(" LIST1 ring_mod SEP "," ")" )      (* setoid_ring plugin *)
+| "Add" "Ring" ident ":" one_term OPT ( "(" LIST1 ring_mod SEP "," ")" )      (* setoid_ring plugin *)
 | "Hint" "Cut" "[" hints_path "]" opthints
 | "Typeclasses" "Transparent" LIST0 qualid
 | "Typeclasses" "Opaque" LIST0 qualid
@@ -996,20 +990,20 @@ command: [
 | "Show" "Extraction"      (* extraction plugin *)
 | "Functional" "Case" fun_scheme_arg      (* funind plugin *)
 | "Generate" "graph" "for" qualid      (* funind plugin *)
-| "Hint" "Rewrite" orient LIST1 term1_extended ":" LIST0 ident
-| "Hint" "Rewrite" orient LIST1 term1_extended "using" ltac_expr ":" LIST0 ident
-| "Hint" "Rewrite" orient LIST1 term1_extended
-| "Hint" "Rewrite" orient LIST1 term1_extended "using" ltac_expr
-| "Derive" "Inversion_clear" ident "with" term1_extended "Sort" sort_family
-| "Derive" "Inversion_clear" ident "with" term1_extended
-| "Derive" "Inversion" ident "with" term1_extended "Sort" sort_family
-| "Derive" "Inversion" ident "with" term1_extended
-| "Derive" "Dependent" "Inversion" ident "with" term1_extended "Sort" sort_family
-| "Derive" "Dependent" "Inversion_clear" ident "with" term1_extended "Sort" sort_family
-| "Declare" "Left" "Step" term1_extended
-| "Declare" "Right" "Step" term1_extended
+| "Hint" "Rewrite" orient LIST1 one_term ":" LIST0 ident
+| "Hint" "Rewrite" orient LIST1 one_term "using" ltac_expr ":" LIST0 ident
+| "Hint" "Rewrite" orient LIST1 one_term
+| "Hint" "Rewrite" orient LIST1 one_term "using" ltac_expr
+| "Derive" "Inversion_clear" ident "with" one_term "Sort" sort_family
+| "Derive" "Inversion_clear" ident "with" one_term
+| "Derive" "Inversion" ident "with" one_term "Sort" sort_family
+| "Derive" "Inversion" ident "with" one_term
+| "Derive" "Dependent" "Inversion" ident "with" one_term "Sort" sort_family
+| "Derive" "Dependent" "Inversion_clear" ident "with" one_term "Sort" sort_family
+| "Declare" "Left" "Step" one_term
+| "Declare" "Right" "Step" one_term
 | "Print" "Rings"      (* setoid_ring plugin *)
-| "Add" "Field" ident ":" term1_extended OPT ( "(" LIST1 field_mod SEP "," ")" )      (* setoid_ring plugin *)
+| "Add" "Field" ident ":" one_term OPT ( "(" LIST1 field_mod SEP "," ")" )      (* setoid_ring plugin *)
 | "Print" "Fields"      (* setoid_ring plugin *)
 | "Numeral" "Notation" qualid qualid qualid ":" ident OPT numnotoption
 | "String" "Notation" qualid qualid qualid ":" ident
@@ -1059,8 +1053,8 @@ dirpath: [
 ]
 
 locatable: [
-| smart_global
-| "Term" smart_global
+| smart_qualid
+| "Term" smart_qualid
 | "File" string
 | "Library" qualid
 | "Module" qualid
@@ -1071,19 +1065,15 @@ option_ref_value: [
 | string
 ]
 
-as_dirpath: [
-| OPT [ "as" dirpath ]
-]
-
 comment: [
-| term1_extended
+| one_term
 | string
 | num
 ]
 
 reference_or_constr: [
 | qualid
-| term1_extended
+| one_term
 ]
 
 hint: [
@@ -1100,7 +1090,7 @@ hint: [
 | "Mode" qualid LIST1 [ "+" | "!" | "-" ]
 | "Unfold" LIST1 qualid
 | "Constructors" LIST1 qualid
-| "Extern" num OPT term1_extended "=>" ltac_expr
+| "Extern" num OPT one_term "=>" ltac_expr
 ]
 
 constr_body: [
@@ -1157,23 +1147,23 @@ fun_scheme_arg: [
 ]
 
 ring_mod: [
-| "decidable" term1_extended      (* setoid_ring plugin *)
+| "decidable" one_term      (* setoid_ring plugin *)
 | "abstract"      (* setoid_ring plugin *)
-| "morphism" term1_extended      (* setoid_ring plugin *)
+| "morphism" one_term      (* setoid_ring plugin *)
 | "constants" "[" ltac_expr "]"      (* setoid_ring plugin *)
-| "closed" "[" LIST1 qualid "]"      (* setoid_ring plugin *)
 | "preprocess" "[" ltac_expr "]"      (* setoid_ring plugin *)
 | "postprocess" "[" ltac_expr "]"      (* setoid_ring plugin *)
-| "setoid" term1_extended term1_extended      (* setoid_ring plugin *)
-| "sign" term1_extended      (* setoid_ring plugin *)
-| "power" term1_extended "[" LIST1 qualid "]"      (* setoid_ring plugin *)
-| "power_tac" term1_extended "[" ltac_expr "]"      (* setoid_ring plugin *)
-| "div" term1_extended      (* setoid_ring plugin *)
+| "setoid" one_term one_term      (* setoid_ring plugin *)
+| "sign" one_term      (* setoid_ring plugin *)
+| "power" one_term "[" LIST1 qualid "]"      (* setoid_ring plugin *)
+| "power_tac" one_term "[" ltac_expr "]"      (* setoid_ring plugin *)
+| "div" one_term      (* setoid_ring plugin *)
+| "closed" "[" LIST1 qualid "]"      (* setoid_ring plugin *)
 ]
 
 field_mod: [
 | ring_mod      (* setoid_ring plugin *)
-| "completeness" term1_extended      (* setoid_ring plugin *)
+| "completeness" one_term      (* setoid_ring plugin *)
 ]
 
 debug: [
@@ -1216,13 +1206,19 @@ query_command: [
 | "Eval" red_expr "in" term "."
 | "Compute" term "."
 | "Check" term "."
-| "About" smart_global OPT ( "@{" LIST0 name "}" ) "."
-| "SearchHead" term1_extended in_or_out_modules "."
-| "SearchPattern" term1_extended in_or_out_modules "."
-| "SearchRewrite" term1_extended in_or_out_modules "."
+| "About" smart_qualid OPT ( "@{" LIST0 name "}" ) "."
+| "SearchHead" one_term in_or_out_modules "."
+| "SearchPattern" one_term in_or_out_modules "."
+| "SearchRewrite" one_term in_or_out_modules "."
 | "Search" searchabout_query searchabout_queries "."
 | "SearchAbout" searchabout_query searchabout_queries "."
 | "SearchAbout" "[" LIST1 searchabout_query "]" in_or_out_modules "."
+]
+
+class: [
+| "Funclass"
+| "Sortclass"
+| smart_qualid
 ]
 
 ne_in_or_out_modules: [
@@ -1242,7 +1238,7 @@ positive_search_mark: [
 
 searchabout_query: [
 | positive_search_mark string OPT ( "%" ident )
-| positive_search_mark term1_extended
+| positive_search_mark one_term
 ]
 
 searchabout_queries: [
@@ -1256,10 +1252,10 @@ syntax: [
 | "Close" "Scope" ident
 | "Delimit" "Scope" ident "with" ident
 | "Undelimit" "Scope" ident
-| "Bind" "Scope" ident "with" LIST1 class_rawexpr
-| "Infix" string ":=" term1_extended OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" ident ]
-| "Notation" ident LIST0 ident ":=" term1_extended OPT ( "(" "only" "parsing" ")" )
-| "Notation" string ":=" term1_extended OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" ident ]
+| "Bind" "Scope" ident "with" LIST1 class
+| "Infix" string ":=" one_term OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" ident ]
+| "Notation" ident LIST0 ident ":=" one_term OPT ( "(" "only" "parsing" ")" )
+| "Notation" string ":=" one_term OPT [ "(" LIST1 syntax_modifier SEP "," ")" ] OPT [ ":" ident ]
 | "Format" "Notation" string string string
 | "Reserved" "Infix" string OPT [ "(" LIST1 syntax_modifier SEP "," ")" ]
 | "Reserved" "Notation" string OPT [ "(" LIST1 syntax_modifier SEP "," ")" ]
@@ -1314,17 +1310,17 @@ at_level_opt: [
 
 simple_tactic: [
 | "reflexivity"
-| "exact" term1_extended
+| "exact" one_term
 | "assumption"
 | "etransitivity"
-| "cut" term1_extended
-| "exact_no_check" term1_extended
-| "vm_cast_no_check" term1_extended
-| "native_cast_no_check" term1_extended
-| "casetype" term1_extended
-| "elimtype" term1_extended
-| "lapply" term1_extended
-| "transitivity" term1_extended
+| "cut" one_term
+| "exact_no_check" one_term
+| "vm_cast_no_check" one_term
+| "native_cast_no_check" one_term
+| "casetype" one_term
+| "elimtype" one_term
+| "lapply" one_term
+| "transitivity" one_term
 | "left"
 | "eleft"
 | "left" "with" bindings
@@ -1377,11 +1373,11 @@ simple_tactic: [
 | "clear" LIST0 ident
 | "clear" "-" LIST1 ident
 | "clearbody" LIST1 ident
-| "generalize" "dependent" term1_extended
-| "replace" term1_extended "with" term1_extended clause_dft_concl by_arg_tac
-| "replace" "->" term1_extended clause_dft_concl
-| "replace" "<-" term1_extended clause_dft_concl
-| "replace" term1_extended clause_dft_concl
+| "generalize" "dependent" one_term
+| "replace" one_term "with" one_term clause_dft_concl by_arg_tac
+| "replace" "->" one_term clause_dft_concl
+| "replace" "<-" one_term clause_dft_concl
+| "replace" one_term clause_dft_concl
 | "simplify_eq"
 | "simplify_eq" destruction_arg
 | "esimplify_eq"
@@ -1400,64 +1396,64 @@ simple_tactic: [
 | "einjection" destruction_arg "as" LIST0 simple_intropattern
 | "simple" "injection"
 | "simple" "injection" destruction_arg
-| "dependent" "rewrite" orient term1_extended
-| "dependent" "rewrite" orient term1_extended "in" ident
-| "cutrewrite" orient term1_extended
-| "cutrewrite" orient term1_extended "in" ident
-| "decompose" "sum" term1_extended
-| "decompose" "record" term1_extended
-| "absurd" term1_extended
+| "dependent" "rewrite" orient one_term
+| "dependent" "rewrite" orient one_term "in" ident
+| "cutrewrite" orient one_term
+| "cutrewrite" orient one_term "in" ident
+| "decompose" "sum" one_term
+| "decompose" "record" one_term
+| "absurd" one_term
 | "contradiction" OPT constr_with_bindings
 | "autorewrite" "with" LIST1 ident clause_dft_concl
 | "autorewrite" "with" LIST1 ident clause_dft_concl "using" ltac_expr
 | "autorewrite" "*" "with" LIST1 ident clause_dft_concl
 | "autorewrite" "*" "with" LIST1 ident clause_dft_concl "using" ltac_expr
-| "rewrite" "*" orient term1_extended "in" ident "at" occurrences by_arg_tac
-| "rewrite" "*" orient term1_extended "at" occurrences "in" ident by_arg_tac
-| "rewrite" "*" orient term1_extended "in" ident by_arg_tac
-| "rewrite" "*" orient term1_extended "at" occurrences by_arg_tac
-| "rewrite" "*" orient term1_extended by_arg_tac
-| "refine" term1_extended
-| "simple" "refine" term1_extended
-| "notypeclasses" "refine" term1_extended
-| "simple" "notypeclasses" "refine" term1_extended
+| "rewrite" "*" orient one_term "in" ident "at" occurrences by_arg_tac
+| "rewrite" "*" orient one_term "at" occurrences "in" ident by_arg_tac
+| "rewrite" "*" orient one_term "in" ident by_arg_tac
+| "rewrite" "*" orient one_term "at" occurrences by_arg_tac
+| "rewrite" "*" orient one_term by_arg_tac
+| "refine" one_term
+| "simple" "refine" one_term
+| "notypeclasses" "refine" one_term
+| "simple" "notypeclasses" "refine" one_term
 | "solve_constraints"
 | "subst" LIST1 ident
 | "subst"
 | "simple" "subst"
 | "evar" "(" ident ":" term ")"
-| "evar" term1_extended
+| "evar" one_term
 | "instantiate" "(" ident ":=" term ")"
 | "instantiate" "(" int ":=" term ")" hloc
 | "instantiate"
-| "stepl" term1_extended "by" ltac_expr
-| "stepl" term1_extended
-| "stepr" term1_extended "by" ltac_expr
-| "stepr" term1_extended
+| "stepl" one_term "by" ltac_expr
+| "stepl" one_term
+| "stepr" one_term "by" ltac_expr
+| "stepr" one_term
 | "generalize_eqs" ident
 | "dependent" "generalize_eqs" ident
 | "generalize_eqs_vars" ident
 | "dependent" "generalize_eqs_vars" ident
 | "specialize_eqs" ident
-| "hresolve_core" "(" ident ":=" term1_extended ")" "at" int_or_var "in" term1_extended
-| "hresolve_core" "(" ident ":=" term1_extended ")" "in" term1_extended
+| "hresolve_core" "(" ident ":=" one_term ")" "at" int_or_var "in" one_term
+| "hresolve_core" "(" ident ":=" one_term ")" "in" one_term
 | "hget_evar" int_or_var
 | "destauto"
 | "destauto" "in" ident
 | "transparent_abstract" ltac_expr3
 | "transparent_abstract" ltac_expr3 "using" ident
-| "constr_eq" term1_extended term1_extended
-| "constr_eq_strict" term1_extended term1_extended
-| "constr_eq_nounivs" term1_extended term1_extended
-| "is_evar" term1_extended
-| "has_evar" term1_extended
-| "is_var" term1_extended
-| "is_fix" term1_extended
-| "is_cofix" term1_extended
-| "is_ind" term1_extended
-| "is_constructor" term1_extended
-| "is_proj" term1_extended
-| "is_const" term1_extended
+| "constr_eq" one_term one_term
+| "constr_eq_strict" one_term one_term
+| "constr_eq_nounivs" one_term one_term
+| "is_evar" one_term
+| "has_evar" one_term
+| "is_var" one_term
+| "is_fix" one_term
+| "is_cofix" one_term
+| "is_ind" one_term
+| "is_constructor" one_term
+| "is_proj" one_term
+| "is_const" one_term
 | "shelve"
 | "shelve_unifiable"
 | "unshelve" ltac_expr1
@@ -1466,7 +1462,7 @@ simple_tactic: [
 | "swap" int_or_var int_or_var
 | "revgoals"
 | "guard" int_or_var comparison int_or_var
-| "decompose" "[" LIST1 term1_extended "]" term1_extended
+| "decompose" "[" LIST1 one_term "]" one_term
 | "optimize_heap"
 | "start" "ltac" "profiling"
 | "stop" "ltac" "profiling"
@@ -1478,14 +1474,14 @@ simple_tactic: [
 | "finish_timing" OPT string
 | "finish_timing" "(" string ")" OPT string
 | "eassumption"
-| "eexact" term1_extended
+| "eexact" one_term
 | "trivial" auto_using hintbases
 | "info_trivial" auto_using hintbases
 | "debug" "trivial" auto_using hintbases
 | "auto" OPT int_or_var auto_using hintbases
 | "info_auto" OPT int_or_var auto_using hintbases
 | "debug" "auto" OPT int_or_var auto_using hintbases
-| "prolog" "[" LIST0 term1_extended "]" int_or_var
+| "prolog" "[" LIST0 one_term "]" int_or_var
 | "eauto" OPT int_or_var OPT int_or_var auto_using hintbases
 | "new" "auto" OPT int_or_var auto_using hintbases
 | "debug" "eauto" OPT int_or_var OPT int_or_var auto_using hintbases
@@ -1494,17 +1490,17 @@ simple_tactic: [
 | "autounfold" hintbases clause_dft_concl
 | "autounfold_one" hintbases "in" ident
 | "autounfold_one" hintbases
-| "unify" term1_extended term1_extended
-| "unify" term1_extended term1_extended "with" ident
-| "convert_concl_no_check" term1_extended
+| "unify" one_term one_term
+| "unify" one_term one_term "with" ident
+| "convert_concl_no_check" one_term
 | "typeclasses" "eauto" "bfs" OPT int_or_var "with" LIST1 ident
 | "typeclasses" "eauto" OPT int_or_var "with" LIST1 ident
 | "typeclasses" "eauto" OPT int_or_var
-| "head_of_constr" ident term1_extended
-| "not_evar" term1_extended
-| "is_ground" term1_extended
-| "autoapply" term1_extended "using" ident
-| "autoapply" term1_extended "with" ident
+| "head_of_constr" ident one_term
+| "not_evar" one_term
+| "is_ground" one_term
+| "autoapply" one_term "using" ident
+| "autoapply" one_term "with" ident
 | "progress_evars" ltac_expr
 | "rewrite_strat" rewstrategy
 | "rewrite_db" ident "in" ident
@@ -1518,10 +1514,10 @@ simple_tactic: [
 | "setoid_symmetry"
 | "setoid_symmetry" "in" ident
 | "setoid_reflexivity"
-| "setoid_transitivity" term1_extended
+| "setoid_transitivity" one_term
 | "setoid_etransitivity"
 | "decide" "equality"
-| "compare" term1_extended term1_extended
+| "compare" one_term one_term
 | "rewrite_strat" rewstrategy "in" ident
 | "intros" intropattern_list_opt
 | "eintros" intropattern_list_opt
@@ -1536,41 +1532,43 @@ simple_tactic: [
 | "fix" ident num "with" LIST1 fixdecl
 | "cofix" ident "with" LIST1 cofixdecl
 | "pose" bindings_with_parameters
-| "pose" term1_extended as_name
+| "pose" one_term as_name
 | "epose" bindings_with_parameters
-| "epose" term1_extended as_name
+| "epose" one_term as_name
 | "set" bindings_with_parameters clause_dft_concl
-| "set" term1_extended as_name clause_dft_concl
+| "set" one_term as_name clause_dft_concl
 | "eset" bindings_with_parameters clause_dft_concl
-| "eset" term1_extended as_name clause_dft_concl
-| "remember" term1_extended as_name eqn_ipat clause_dft_all
-| "eremember" term1_extended as_name eqn_ipat clause_dft_all
+| "eset" one_term as_name clause_dft_concl
+| "remember" one_term as_name eqn_ipat clause_dft_all
+| "eremember" one_term as_name eqn_ipat clause_dft_all
 | "assert" "(" ident ":=" term ")"
 | "eassert" "(" ident ":=" term ")"
 | "assert" "(" ident ":" term ")" by_tactic
 | "eassert" "(" ident ":" term ")" by_tactic
 | "enough" "(" ident ":" term ")" by_tactic
 | "eenough" "(" ident ":" term ")" by_tactic
-| "assert" term1_extended as_ipat by_tactic
-| "eassert" term1_extended as_ipat by_tactic
+| "assert" one_term as_ipat by_tactic
+| "eassert" one_term as_ipat by_tactic
+| "pose" "proof" "(" ident ":=" term ")"
+| "epose" "proof" "(" ident ":=" term ")"
 | "pose" "proof" term as_ipat
 | "epose" "proof" term as_ipat
-| "enough" term1_extended as_ipat by_tactic
-| "eenough" term1_extended as_ipat by_tactic
-| "generalize" term1_extended
-| "generalize" term1_extended LIST1 term1_extended
-| "generalize" term1_extended OPT ( "at" occs_nums ) as_name LIST0 [ "," pattern_occ as_name ]
+| "enough" one_term as_ipat by_tactic
+| "eenough" one_term as_ipat by_tactic
+| "generalize" one_term
+| "generalize" one_term LIST1 one_term
+| "generalize" one_term OPT ( "at" occs_nums ) as_name LIST0 [ "," pattern_occ as_name ]
 | "induction" induction_clause_list
 | "einduction" induction_clause_list
 | "destruct" induction_clause_list
 | "edestruct" induction_clause_list
 | "rewrite" LIST1 oriented_rewriter SEP "," clause_dft_concl by_tactic
 | "erewrite" LIST1 oriented_rewriter SEP "," clause_dft_concl by_tactic
-| "dependent" [ "simple" "inversion" | "inversion" | "inversion_clear" ] quantified_hypothesis as_or_and_ipat OPT [ "with" term1_extended ]
+| "dependent" [ "simple" "inversion" | "inversion" | "inversion_clear" ] quantified_hypothesis as_or_and_ipat OPT [ "with" one_term ]
 | "simple" "inversion" quantified_hypothesis as_or_and_ipat in_hyp_list
 | "inversion" quantified_hypothesis as_or_and_ipat in_hyp_list
 | "inversion_clear" quantified_hypothesis as_or_and_ipat in_hyp_list
-| "inversion" quantified_hypothesis "using" term1_extended in_hyp_list
+| "inversion" quantified_hypothesis "using" one_term in_hyp_list
 | "red" clause_dft_concl
 | "hnf" clause_dft_concl
 | "simpl" OPT delta_flag OPT ref_or_pattern_occ clause_dft_concl
@@ -1581,7 +1579,7 @@ simple_tactic: [
 | "vm_compute" OPT ref_or_pattern_occ clause_dft_concl
 | "native_compute" OPT ref_or_pattern_occ clause_dft_concl
 | "unfold" LIST1 unfold_occ SEP "," clause_dft_concl
-| "fold" LIST1 term1_extended clause_dft_concl
+| "fold" LIST1 one_term clause_dft_concl
 | "pattern" LIST1 pattern_occ SEP "," clause_dft_concl
 | "change" conversion clause_dft_concl
 | "change_no_check" conversion clause_dft_concl
@@ -1589,16 +1587,16 @@ simple_tactic: [
 | "rtauto"
 | "congruence"
 | "congruence" int
-| "congruence" "with" LIST1 term1_extended
-| "congruence" int "with" LIST1 term1_extended
+| "congruence" "with" LIST1 one_term
+| "congruence" int "with" LIST1 one_term
 | "f_equal"
 | "firstorder" OPT ltac_expr firstorder_using
 | "firstorder" OPT ltac_expr "with" LIST1 ident
 | "firstorder" OPT ltac_expr firstorder_using "with" LIST1 ident
 | "gintuition" OPT ltac_expr
 | "functional" "inversion" quantified_hypothesis OPT qualid      (* funind plugin *)
-| "functional" "induction" LIST1 term1_extended fun_ind_using with_names      (* funind plugin *)
-| "soft" "functional" "induction" LIST1 term1_extended fun_ind_using with_names      (* funind plugin *)
+| "functional" "induction" LIST1 one_term fun_ind_using with_names      (* funind plugin *)
+| "soft" "functional" "induction" LIST1 one_term fun_ind_using with_names      (* funind plugin *)
 | "psatz_Z" int_or_var ltac_expr      (* micromega plugin *)
 | "psatz_Z" ltac_expr      (* micromega plugin *)
 | "xlia" ltac_expr      (* micromega plugin *)
@@ -1614,16 +1612,17 @@ simple_tactic: [
 | "psatz_R" ltac_expr      (* micromega plugin *)
 | "psatz_Q" int_or_var ltac_expr      (* micromega plugin *)
 | "psatz_Q" ltac_expr      (* micromega plugin *)
-| "zify_iter_specs" ltac_expr      (* micromega plugin *)
+| "zify_iter_specs"      (* micromega plugin *)
 | "zify_op"      (* micromega plugin *)
 | "zify_saturate"      (* micromega plugin *)
 | "zify_iter_let" ltac_expr      (* micromega plugin *)
-| "nsatz_compute" term1_extended      (* nsatz plugin *)
+| "zify_elim_let"      (* micromega plugin *)
+| "nsatz_compute" one_term      (* nsatz plugin *)
 | "omega"      (* omega plugin *)
 | "protect_fv" string "in" ident      (* setoid_ring plugin *)
 | "protect_fv" string      (* setoid_ring plugin *)
-| "ring_lookup" ltac_expr0 "[" LIST0 term1_extended "]" LIST1 term1_extended      (* setoid_ring plugin *)
-| "field_lookup" ltac_expr "[" LIST0 term1_extended "]" LIST1 term1_extended      (* setoid_ring plugin *)
+| "ring_lookup" ltac_expr0 "[" LIST0 one_term "]" LIST1 one_term      (* setoid_ring plugin *)
+| "field_lookup" ltac_expr "[" LIST0 one_term "]" LIST1 one_term      (* setoid_ring plugin *)
 ]
 
 hloc: [
@@ -1646,11 +1645,23 @@ by_arg_tac: [
 ]
 
 in_clause: [
-| in_clause
+| LIST0 hypident_occ SEP "," OPT ( "|-" OPT concl_occ )
+| "*" "|-" OPT concl_occ
 | "*" OPT ( "at" occs_nums )
-| "*" "|-" concl_occ
-| LIST0 hypident_occ SEP "," "|-" concl_occ
-| LIST0 hypident_occ SEP ","
+]
+
+concl_occ: [
+| "*" OPT ( "at" occs_nums )
+]
+
+hypident_occ: [
+| hypident OPT ( "at" occs_nums )
+]
+
+hypident: [
+| ident
+| "(" "type" "of" ident ")"
+| "(" "value" "of" ident ")"
 ]
 
 as_ipat: [
@@ -1707,7 +1718,7 @@ induction_clause_list: [
 ]
 
 auto_using: [
-| "using" LIST1 term1_extended SEP ","
+| "using" LIST1 one_term SEP ","
 |
 ]
 
@@ -1762,7 +1773,7 @@ simple_binding: [
 
 bindings: [
 | LIST1 simple_binding
-| LIST1 term1_extended
+| LIST1 one_term
 ]
 
 comparison: [
@@ -1783,16 +1794,6 @@ bindings_with_parameters: [
 | "(" ident LIST0 simple_binder ":=" term ")"
 ]
 
-hypident: [
-| ident
-| "(" "type" "of" ident ")"
-| "(" "value" "of" ident ")"
-]
-
-hypident_occ: [
-| hypident OPT ( "at" occs_nums )
-]
-
 clause_dft_concl: [
 | "in" in_clause
 | OPT ( "at" occs_nums )
@@ -1807,11 +1808,6 @@ clause_dft_all: [
 opt_clause: [
 | "in" in_clause
 | "at" occs_nums
-|
-]
-
-concl_occ: [
-| "*" OPT ( "at" occs_nums )
 |
 ]
 
@@ -1844,7 +1840,7 @@ cofixdecl: [
 ]
 
 constr_with_bindings: [
-| term1_extended with_bindings
+| one_term with_bindings
 ]
 
 with_bindings: [
@@ -1869,9 +1865,9 @@ quantified_hypothesis: [
 ]
 
 conversion: [
-| term1_extended
-| term1_extended "with" term1_extended
-| term1_extended "at" occs_nums "with" term1_extended
+| one_term
+| one_term "with" one_term
+| one_term "at" occs_nums "with" one_term
 ]
 
 firstorder_using: [
@@ -1897,29 +1893,29 @@ occurrences: [
 ]
 
 rewstrategy: [
-| term1_extended
-| "<-" term1_extended
-| "subterms" rewstrategy
+| one_term
+| "<-" one_term
+| "fail"
+| "id"
+| "refl"
+| "progress" rewstrategy
+| "try" rewstrategy
+| rewstrategy ";" rewstrategy
+| "choice" rewstrategy rewstrategy
+| "repeat" rewstrategy
+| "any" rewstrategy
 | "subterm" rewstrategy
+| "subterms" rewstrategy
 | "innermost" rewstrategy
 | "outermost" rewstrategy
 | "bottomup" rewstrategy
 | "topdown" rewstrategy
-| "id"
-| "fail"
-| "refl"
-| "progress" rewstrategy
-| "try" rewstrategy
-| "any" rewstrategy
-| "repeat" rewstrategy
-| rewstrategy ";" rewstrategy
-| "(" rewstrategy ")"
-| "choice" rewstrategy rewstrategy
-| "old_hints" ident
 | "hints" ident
-| "terms" LIST0 term1_extended
+| "terms" LIST0 one_term
 | "eval" red_expr
-| "fold" term1_extended
+| "fold" one_term
+| "(" rewstrategy ")"
+| "old_hints" ident
 ]
 
 ltac_expr: [
@@ -2037,7 +2033,7 @@ tactic_arg: [
 | "context" ident "[" term "]"
 | "type" "of" term
 | "fresh" LIST0 fresh_id
-| "type_term" term1_extended
+| "type_term" one_term
 | "numgoals"
 ]
 
