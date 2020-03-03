@@ -38,45 +38,24 @@ let err () = raise Stream.Failure
 (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
 (* admissible notation "(x t)" *)
 let test_lpar_id_coloneq =
-  Pcoq.Entry.of_parser "lpar_id_coloneq"
-    (fun _ strm ->
-      match stream_nth 0 strm with
-        | KEYWORD "(" ->
-            (match stream_nth 1 strm with
-              | IDENT _ ->
-                  (match stream_nth 2 strm with
-                    | KEYWORD ":=" -> ()
-                    | _ -> err ())
-              | _ -> err ())
-        | _ -> err ())
+  let open Pcoq.Lookahead in
+  to_entry "lpar_id_coloneq" begin
+    lk_kw "(" >> lk_ident >> lk_kw ":="
+  end
 
 (* Hack to recognize "(x)" *)
 let test_lpar_id_rpar =
-  Pcoq.Entry.of_parser "lpar_id_coloneq"
-    (fun _ strm ->
-      match stream_nth 0 strm with
-        | KEYWORD "(" ->
-            (match stream_nth 1 strm with
-              | IDENT _ ->
-                  (match stream_nth 2 strm with
-                    | KEYWORD ")" -> ()
-                    | _ -> err ())
-              | _ -> err ())
-        | _ -> err ())
+  let open Pcoq.Lookahead in
+  to_entry "lpar_id_coloneq" begin
+    lk_kw "(" >> lk_ident >> lk_kw ")"
+  end
 
 (* idem for (x:=t) and (1:=t) *)
 let test_lpar_idnum_coloneq =
-  Pcoq.Entry.of_parser "test_lpar_idnum_coloneq"
-    (fun _ strm ->
-      match stream_nth 0 strm with
-        | KEYWORD "(" ->
-            (match stream_nth 1 strm with
-              | IDENT _ | NUMERAL _ ->
-                  (match stream_nth 2 strm with
-                    | KEYWORD ":=" -> ()
-                    | _ -> err ())
-              | _ -> err ())
-        | _ -> err ())
+  let open Pcoq.Lookahead in
+  to_entry "test_lpar_idnum_coloneq" begin
+    lk_kw "(" >> (lk_ident <+> lk_nat) >> lk_kw ":="
+  end
 
 (* idem for (x:t) *)
 open Extraargs
@@ -107,11 +86,10 @@ let check_for_coloneq =
       | _ -> err ())
 
 let lookup_at_as_comma =
-  Pcoq.Entry.of_parser "lookup_at_as_comma"
-    (fun _ strm ->
-      match stream_nth 0 strm with
-        | KEYWORD (","|"at"|"as") -> ()
-        | _ -> err ())
+  let open Pcoq.Lookahead in
+  to_entry "lookup_at_as_comma" begin
+    lk_kws [",";"at";"as"]
+  end
 
 open Constr
 open Prim

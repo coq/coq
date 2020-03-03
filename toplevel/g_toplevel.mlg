@@ -11,8 +11,6 @@
 {
 open Pcoq
 open Pcoq.Prim
-open Tok
-open Util
 open Vernacexpr
 
 (* Vernaculars specific to the toplevel *)
@@ -36,17 +34,10 @@ open Toplevel_
 let err () = raise Stream.Failure
 
 let test_show_goal =
-  Pcoq.Entry.of_parser "test_show_goal"
-    (fun _ strm ->
-      match stream_nth 0 strm with
-      | IDENT "Show" ->
-          (match stream_nth 1 strm with
-          | IDENT "Goal" ->
-            (match stream_nth 2 strm with
-              | NUMERAL _ -> ()
-              | _ -> err ())
-          | _ -> err ())
-      | _ -> err ())
+  let open Pcoq.Lookahead in
+  to_entry "test_show_goal" begin
+   lk_kw "Show" >> lk_kw "Goal" >> lk_nat
+  end
 
 }
 

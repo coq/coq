@@ -330,18 +330,10 @@ END
 {
 
 let local_test_lpar_id_colon =
-  let err () = raise Stream.Failure in
-  Pcoq.Entry.of_parser "lpar_id_colon"
-    (fun _ strm ->
-      match Util.stream_nth 0 strm with
-        | Tok.KEYWORD "(" ->
-            (match Util.stream_nth 1 strm with
-              | Tok.IDENT _ ->
-                  (match Util.stream_nth 2 strm with
-                    | Tok.KEYWORD ":" -> ()
-                    | _ -> err ())
-              | _ -> err ())
-        | _ -> err ())
+  let open Pcoq.Lookahead in
+  to_entry "lpar_id_colon" begin
+    lk_kw "(" >> lk_ident >> lk_kw ":"
+  end
 
 let pr_lpar_id_colon _ _ _ _ = mt ()
 

@@ -142,25 +142,6 @@ let add_genarg tag pr =
   Pptactic.declare_extra_genarg_pprule wit gen_pr gen_pr gen_pr;
   wit
 
-(** Primitive parsing to avoid syntax conflicts with basic tactics. *)
-
-let accept_before_syms syms strm =
-  match Util.stream_nth 1 strm with
-  | Tok.KEYWORD sym when List.mem sym syms -> ()
-  | _ -> raise Stream.Failure
-
-let accept_before_syms_or_any_id syms strm =
-  match Util.stream_nth 1 strm with
-  | Tok.KEYWORD sym when List.mem sym syms -> ()
-  | Tok.IDENT _ -> ()
-  | _ -> raise Stream.Failure
-
-let accept_before_syms_or_ids syms ids strm =
-  match Util.stream_nth 1 strm with
-  | Tok.KEYWORD sym when List.mem sym syms -> ()
-  | Tok.IDENT id when List.mem id ids -> ()
-  | _ -> raise Stream.Failure
-
 open Ssrast
 let pr_id = Ppconstr.pr_id
 let pr_name = function Name id -> pr_id id | Anonymous -> str "_"
@@ -746,13 +727,11 @@ let pushIPatNoop = function
   | pats :: orpat -> (IPatNoop :: pats) :: orpat
   | [] -> []
 
-let test_ident_no_do _ strm =
-  match Util.stream_nth 0 strm with
-  | Tok.IDENT s when s <> "do" -> ()
-  | _ -> raise Stream.Failure
-
 let test_ident_no_do =
-  Pcoq.Entry.of_parser "test_ident_no_do" test_ident_no_do
+  let open Pcoq.Lookahead in
+  to_entry "test_ident_no_do" begin
+    lk_ident_except ["do"]
+  end
 
 }
 
@@ -1005,12 +984,11 @@ END
 
 {
 
-let accept_ssrfwdid _ strm =
-  match stream_nth 0 strm with
-  | Tok.IDENT id -> accept_before_syms_or_any_id [":"; ":="; "("] strm
-  | _ -> raise Stream.Failure
-
-let test_ssrfwdid = Pcoq.Entry.of_parser "test_ssrfwdid" accept_ssrfwdid
+let test_ssrfwdid =
+  let open Pcoq.Lookahead in
+  to_entry "test_ssrfwdid" begin
+    lk_ident >> (lk_ident <+> lk_kws [":"; ":="; "("])
+  end
 
 }
 
@@ -1589,13 +1567,12 @@ END
 let sq_brace_tacnames =
    ["first"; "solve"; "do"; "rewrite"; "have"; "suffices"; "wlog"]
    (* "by" is a keyword *)
-let accept_ssrseqvar _ strm =
-  match stream_nth 0 strm with
-  | Tok.IDENT id when not (List.mem id sq_brace_tacnames) ->
-     accept_before_syms_or_ids ["["] ["first";"last"] strm
-  | _ -> raise Stream.Failure
 
-let test_ssrseqvar = Pcoq.Entry.of_parser "test_ssrseqvar" accept_ssrseqvar
+let test_ssrseqvar =
+  let open Pcoq.Lookahead in
+  to_entry "test_ssrseqvar" begin
+    lk_ident_except sq_brace_tacnames >> (lk_kws ["[";"first";"last"])
+  end
 
 let swaptacarg (loc, b) = (b, []), Some (TacId [])
 
@@ -1985,15 +1962,11 @@ END
 
 {
 
-let accept_ssreqid _ strm =
-  match Util.stream_nth 0 strm with
-  | Tok.IDENT _ -> accept_before_syms [":"] strm
-  | Tok.KEYWORD ":" -> ()
-  | Tok.KEYWORD pat when List.mem pat ["_"; "?"; "->"; "<-"] ->
-                      accept_before_syms [":"] strm
-  | _ -> raise Stream.Failure
-
-let test_ssreqid = Pcoq.Entry.of_parser "test_ssreqid" accept_ssreqid
+let test_ssreqid =
+  let open Pcoq.Lookahead in
+  to_entry "test_ssreqid" begin
+    ((lk_ident <+> lk_kws ["_"; "?"; "->"; "<-"]) >> lk_kw ":") <+> lk_kw ":"
+  end
 
 }
 
@@ -2614,12 +2587,11 @@ END
 
 {
 
-let accept_idcomma _ strm =
-  match stream_nth 0 strm with
-  | Tok.IDENT _ | Tok.KEYWORD "_" -> accept_before_syms [","] strm
-  | _ -> raise Stream.Failure
-
-let test_idcomma = Pcoq.Entry.of_parser "test_idcomma" accept_idcomma
+let test_idcomma =
+  let open Pcoq.Lookahead in
+  to_entry "test_idcomma" begin
+    (lk_ident <+> lk_kw "_") >> lk_kw ","
+  end
 
 }
 

@@ -34,6 +34,21 @@ module Entry : sig
   val name : 'a t -> string
 end
 
+module Lookahead : sig
+  type t
+  val to_entry : string -> t -> unit Entry.t
+  val (>>) : t -> t -> t
+  val (<+>) : t -> t -> t
+  val lk_list : t -> t
+  val check_no_space : t
+  val lk_kw : string -> t
+  val lk_kws : string list -> t
+  val lk_nat : t
+  val lk_ident : t
+  val lk_ident_except : string list -> t
+  val lk_ident_list : t
+end
+
 (** The parser of Coq is built from three kinds of rule declarations:
 
    - dynamic rules declared at the evaluation of Coq files (using
