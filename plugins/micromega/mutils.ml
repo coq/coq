@@ -140,24 +140,24 @@ let saturate p f sys =
     Printexc.print_backtrace stdout;
     raise x
 
-let saturate_bin (f : 'a -> 'a -> 'a option) (l : 'a list) =
-  let rec map_with acc e l =
+let saturate_bin (type a) (module Set : Set.S with type elt = a)
+    (f : a -> a -> a option) (l : a list) =
+  let rec map_with (acc : Set.t) e l =
     match l with
     | [] -> acc
-    | e' :: l' -> (
+    | e' :: l -> (
       match f e e' with
-      | None -> map_with acc e l'
-      | Some r -> map_with (r :: acc) e l' )
+      | None -> map_with acc e l
+      | Some r -> map_with (Set.add r acc) e l )
   in
-  let rec map2_with acc l' =
-    match l' with [] -> acc | e' :: l' -> map2_with (map_with acc e' l) l'
-  in
+  let map2_with acc l' = Set.fold (fun e' acc -> map_with acc e' l) l' acc in
   let rec iterate acc l' =
-    match map2_with [] l' with
-    | [] -> List.rev_append l' acc
-    | res -> iterate (List.rev_append l' acc) res
+    let res = map2_with Set.empty l' in
+    if Set.is_empty res then Set.union l' acc
+    else iterate (Set.union l' acc) res
   in
-  iterate [] l
+  let s0 = List.fold_left (fun acc e -> Set.add e acc) Set.empty l in
+  Set.elements (Set.diff (iterate Set.empty s0) s0)
 
 open Num
 open Big_int

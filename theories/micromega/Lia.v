@@ -14,11 +14,8 @@
 (*                                                                      *)
 (************************************************************************)
 
-Require Import ZMicromega.
-Require Import ZArith_base.
-Require Import RingMicromega.
-Require Import VarMap.
-Require Import DeclConstant.
+Require Import ZMicromega RingMicromega VarMap DeclConstant.
+Require Import BinNums.
 Require Coq.micromega.Tauto.
 Declare ML Module "micromega_plugin".
 
@@ -29,9 +26,9 @@ Ltac zchecker :=
                                 (@eq_refl bool true <: @eq bool (ZTautoChecker __ff __wit) true)
                                 (@find Z Z0 __varmap)).
 
-Ltac lia := PreOmega.zify; xlia zchecker.
+Ltac lia := Zify.zify; xlia zchecker.
                
-Ltac nia := PreOmega.zify; xnlia zchecker.
+Ltac nia := Zify.zify; xnlia zchecker.
 
 
 (* Local Variables: *)

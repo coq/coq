@@ -1549,7 +1549,7 @@ Proof.
   apply H ; auto. 
   unfold ltof in *.
   simpl in *.
-  PreOmega.zify.
+  Zify.zify.
   intuition subst. assumption.
   eapply Z.lt_le_trans. eassumption.
   apply Z.add_le_mono_r. assumption.

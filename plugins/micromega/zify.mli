@@ -19,13 +19,14 @@ module UnOp : S
 module BinOp : S
 module CstOp : S
 module BinRel : S
-module PropOp : S
+module PropBinOp : S
 module PropUnOp : S
 module Spec : S
 module Saturate : S
 
 val zify_tac : unit Proofview.tactic
 val saturate : unit Proofview.tactic
-val iter_specs : Ltac_plugin.Tacinterp.Value.t -> unit Proofview.tactic
+val iter_specs : unit Proofview.tactic
 val assert_inj : EConstr.constr -> unit Proofview.tactic
 val iter_let : Ltac_plugin.Tacinterp.Value.t -> unit Proofview.tactic
+val elim_let : unit Proofview.tactic

@@ -320,6 +320,7 @@ module WithProof : sig
   exception InvalidProof
   (** [InvalidProof] is raised if the operation is invalid. *)
 
+  val compare : t -> t -> int
   val annot : string -> t -> t
   val of_cstr : cstr * ProofFormat.prf_rule -> t
 

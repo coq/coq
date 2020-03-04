@@ -73,6 +73,7 @@ Class BinRel {S:Type} {T:Type} (R : S -> S -> Prop) {I : InjTyp S T}  :=
 
 (** [PropOp Op] declares morphisms for [<->].
     This will be used to deal with e.g. [and], [or],... *)
+
 Class PropOp (Op : Prop -> Prop -> Prop) :=
   mkprop {
       op_iff : forall (p1 p2 q1 q2:Prop), (p1 <-> q1) -> (p2 <-> q2) -> (Op p1 p2 <-> Op q1 q2)
@@ -80,7 +81,7 @@ Class PropOp (Op : Prop -> Prop -> Prop) :=
 
 Class PropUOp (Op : Prop -> Prop) :=
   mkuprop {
-      uop_iff : forall (p1 q1 :Prop), (p1 <-> q1) -> (Op p1 <-> Op q1)
+      uop_iff :   forall (p1 q1 :Prop), (p1 <-> q1) -> (Op p1 <-> Op q1)
     }.
 
 
@@ -131,7 +132,7 @@ Class Saturate {T: Type} (Op : T -> T -> T) :=
     are used to store source and target expressions together
     with a correctness proof. *)
 
-Record injterm {S T: Type} {I : S -> T} :=
+Record injterm {S T: Type} (I : S -> T) :=
   mkinjterm { source : S ; target : T ; inj_ok : I source = target}.
 
 Record injprop  :=
@@ -139,82 +140,104 @@ Record injprop  :=
       source_prop : Prop ; target_prop : Prop ;
       injprop_ok : source_prop <-> target_prop}.
 
-(** Lemmas for building [injterm] and [injprop]. *)
-
-Definition mkprop_op  (Op : Prop -> Prop -> Prop) (POp : PropOp Op)
-           (p1 :injprop) (p2: injprop) : injprop :=
-  {| source_prop := (Op (source_prop p1) (source_prop p2)) ;
-     target_prop := (Op (target_prop p1) (target_prop p2)) ;
-     injprop_ok  := (op_iff (source_prop p1) (source_prop p2) (target_prop p1) (target_prop p2)
-                            (injprop_ok p1) (injprop_ok p2))
-  |}.
 
 
-Definition mkuprop_op  (Op : Prop -> Prop) (POp : PropUOp Op)
-           (p1 :injprop)  : injprop :=
-  {| source_prop := (Op (source_prop p1)) ;
-     target_prop := (Op (target_prop p1)) ;
-     injprop_ok  := (uop_iff (source_prop p1) (target_prop p1)  (injprop_ok p1))
-  |}.
 
+
+(** Lemmas for building rewrite rules. *)
+
+Definition PropOp_iff (Op : Prop -> Prop -> Prop) :=
+  forall (p1 p2 q1 q2:Prop), (p1 <-> q1) -> (p2 <-> q2) -> (Op p1 p2 <-> Op q1 q2).
+
+Definition PropUOp_iff (Op : Prop -> Prop) :=
+  forall (p1 q1 :Prop), (p1 <-> q1) -> (Op p1 <-> Op q1).
 
 Lemma mkapp2 (S1 S2 S3 T : Type) (Op : S1 -> S2 -> S3)
-      {I1 : InjTyp S1 T} {I2 : InjTyp S2 T} {I3 : InjTyp S3 T}
-         (B : @BinOp S1 S2 S3 T Op I1 I2 I3)
-         (t1 : @injterm S1 T inj) (t2 : @injterm S2 T inj)
-         : @injterm S3 T inj.
+      (I1 : S1 -> T) (I2 : S2 -> T) (I3 : S3 -> T)
+      (TBOP : T -> T -> T)
+      (TBOPINJ : forall n m, I3 (Op n m) = TBOP (I1 n) (I2 m))
+      (s1 : S1) (t1 : T) (P1: I1 s1 = t1)
+      (s2 : S2) (t2 : T) (P2: I2 s2 = t2):  I3 (Op s1 s2) = TBOP t1 t2.
 Proof.
-  apply (mkinjterm _ _ inj (Op (source t1) (source t2)) (TBOp (target t1) (target t2))).
-   (rewrite <- inj_ok;
-    rewrite <- inj_ok;
-    apply TBOpInj).
-Defined.
+  subst. apply TBOPINJ.
+Qed.
 
-Lemma mkapp (S1 S2 T : Type) (Op : S1 -> S2)
-      {I1 : InjTyp S1 T}
-      {I2 : InjTyp S2 T}
-      (B : @UnOp S1 S2 T Op I1 I2 )
-      (t1 : @injterm S1 T inj)
-         : @injterm S2 T inj.
+Lemma mkapp (S1 S2 T : Type) (OP : S1 -> S2)
+      (I1 : S1 -> T)
+      (I2 : S2 -> T)
+      (TUOP : T -> T)
+      (TUOPINJ : forall n, I2 (OP n) = TUOP (I1 n))
+      (s1: S1) (t1: T) (P1: I1 s1 = t1): I2 (OP s1) = TUOP t1.
 Proof.
-  apply (mkinjterm _ _ inj (Op (source t1)) (TUOp (target t1))).
-  (rewrite <- inj_ok; apply TUOpInj).
-Defined.
-
-Lemma mkapp0 (S T : Type) (Op : S)
-      {I : InjTyp S T}
-      (B : @CstOp S T Op I)
-         : @injterm S T inj.
-Proof.
-  apply (mkinjterm _ _ inj Op  TCst).
-   (apply TCstInj).
-Defined.
+  subst. apply TUOPINJ.
+Qed.
 
 Lemma mkrel (S T : Type) (R : S -> S -> Prop)
-         {Inj : InjTyp S T}
-         (B : @BinRel S T R Inj)
-         (t1 : @injterm S T inj) (t2 : @injterm S T inj)
-         : @injprop.
+      (I : S -> T)
+      (TR : T -> T -> Prop)
+      (TRINJ : forall n m : S, R n m <->  TR (I n) (I m))
+      (s1 : S) (t1 : T) (P1 : I s1 = t1)
+      (s2 : S) (t2 : T) (P2 : I s2 = t2):
+   R s1 s2 <-> TR t1 t2.
 Proof.
-  apply (mkinjprop  (R (source t1) (source t2)) (TR (target t1) (target t2))).
-  (rewrite <- inj_ok; rewrite <- inj_ok;apply TRInj).
+  subst.
+  apply TRINJ.
+Qed.
+
+(** Hardcoded support and lemma for propositional logic *)
+
+Lemma and_morph : forall (s1 s2 t1 t2:Prop), s1 <-> t1 -> s2 <-> t2 -> ((s1 /\ s2) <-> (t1 /\ t2)).
+Proof.
+  intros. tauto.
+Qed.
+
+Lemma or_morph : forall (s1 s2 t1 t2:Prop), s1 <-> t1 -> s2 <-> t2 -> ((s1 \/ s2) <-> (t1 \/ t2)).
+Proof.
+  intros. tauto.
+Qed.
+
+Lemma impl_morph : forall (s1 s2 t1 t2:Prop), s1 <-> t1 -> s2 <-> t2 -> ((s1 -> s2) <-> (t1 -> t2)).
+Proof.
+  intros. tauto.
+Qed.
+
+Lemma iff_morph : forall (s1 s2 t1 t2:Prop), s1 <-> t1 -> s2 <-> t2 -> ((s1 <-> s2) <-> (t1 <-> t2)).
+Proof.
+  intros. tauto.
+Qed.
+
+Lemma not_morph : forall (s1 t1:Prop), s1 <-> t1 ->   (not s1) <-> (not t1).
+Proof.
+  intros. tauto.
+Qed.
+
+Lemma eq_iff : forall (P Q : Prop), P = Q -> (P <-> Q).
+Proof.
+  intros.
+  rewrite H.
+  apply iff_refl.
 Defined.
 
+Lemma rew_iff  (P Q : Prop) (IFF : P <-> Q) :  P -> Q.
+Proof.
+  exact (fun H => proj1 IFF H).
+Qed.
+
+Definition identity (A : Type) : A -> A := fun x => x.
+
 (** Registering constants for use by the plugin *)
+Register eq_iff      as ZifyClasses.eq_iff.
 Register target_prop as ZifyClasses.target_prop.
 Register mkrel       as ZifyClasses.mkrel.
 Register target      as ZifyClasses.target.
 Register mkapp2      as ZifyClasses.mkapp2.
 Register mkapp       as ZifyClasses.mkapp.
-Register mkapp0      as ZifyClasses.mkapp0.
 Register op_iff      as ZifyClasses.op_iff.
 Register uop_iff     as ZifyClasses.uop_iff.
 Register TR          as ZifyClasses.TR.
 Register TBOp        as ZifyClasses.TBOp.
 Register TUOp        as ZifyClasses.TUOp.
 Register TCst        as ZifyClasses.TCst.
-Register mkprop_op   as ZifyClasses.mkprop_op.
-Register mkuprop_op  as ZifyClasses.mkuprop_op.
 Register injprop_ok  as ZifyClasses.injprop_ok.
 Register inj_ok      as ZifyClasses.inj_ok.
 Register source      as ZifyClasses.source.
@@ -225,8 +248,26 @@ Register TUOpInj     as ZifyClasses.TUOpInj.
 Register not         as ZifyClasses.not.
 Register mkinjterm   as ZifyClasses.mkinjterm.
 Register eq_refl     as ZifyClasses.eq_refl.
+Register eq          as ZifyClasses.eq.
 Register mkinjprop   as ZifyClasses.mkinjprop.
 Register iff_refl    as ZifyClasses.iff_refl.
+Register rew_iff     as ZifyClasses.rew_iff.
 Register source_prop as ZifyClasses.source_prop.
 Register injprop_ok  as ZifyClasses.injprop_ok.
 Register iff         as ZifyClasses.iff.
+Register BinOpSpec   as ZifyClasses.BinOpSpec.
+Register UnOpSpec    as ZifyClasses.UnOpSpec.
+
+(** Propositional logic *)
+Register and as ZifyClasses.and.
+Register and_morph as ZifyClasses.and_morph.
+Register or as ZifyClasses.or.
+Register or_morph as ZifyClasses.or_morph.
+Register iff as ZifyClasses.iff.
+Register iff_morph as ZifyClasses.iff_morph.
+Register impl_morph as ZifyClasses.impl_morph.
+Register not as ZifyClasses.not.
+Register not_morph as ZifyClasses.not_morph.
+
+(** Identify function *)
+Register identity as ZifyClasses.identity.

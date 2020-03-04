@@ -864,6 +864,12 @@ end
 module WithProof = struct
   type t = (LinPoly.t * op) * ProofFormat.prf_rule
 
+  (* The comparison ignores proofs on purpose *)
+  let compare : t -> t -> int =
+   fun ((lp1, o1), _) ((lp2, o2), _) ->
+    let c = Vect.compare lp1 lp2 in
+    if c = 0 then compare o1 o2 else c
+
   let annot s (p, prf) = (p, ProofFormat.Annot (s, prf))
 
   let output o ((lp, op), prf) =

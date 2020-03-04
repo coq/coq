@@ -12,17 +12,61 @@ open Constr
 open Names
 open Pp
 open Lazy
+module NamedDecl = Context.Named.Declaration
 
-(** [get_type_of] performs beta reduction ;
-    Is it ok for Retyping.get_type_of (Zpower_nat n q) to return (fun _ : nat => Z) q ? *)
-let get_type_of env evd e =
-  Tacred.cbv_beta env evd (Retyping.get_type_of env evd e)
+let debug = false
+
+(* The following [constr] are necessary for constructing the proof terms *)
+
+let zify str =
+  EConstr.of_constr
+    (UnivGen.constr_of_monomorphic_global
+       (Coqlib.lib_ref ("ZifyClasses." ^ str)))
+
+(* morphism like lemma *)
+
+let mkapp2 = lazy (zify "mkapp2")
+let mkapp = lazy (zify "mkapp")
+let eq_refl = lazy (zify "eq_refl")
+let eq = lazy (zify "eq")
+let mkrel = lazy (zify "mkrel")
+let iff_refl = lazy (zify "iff_refl")
+let eq_iff = lazy (zify "eq_iff")
+let rew_iff = lazy (zify "rew_iff")
+
+(* propositional logic *)
+
+let op_and = lazy (zify "and")
+let op_and_morph = lazy (zify "and_morph")
+let op_or = lazy (zify "or")
+let op_or_morph = lazy (zify "or_morph")
+let op_impl_morph = lazy (zify "impl_morph")
+let op_iff = lazy (zify "iff")
+let op_iff_morph = lazy (zify "iff_morph")
+let op_not = lazy (zify "not")
+let op_not_morph = lazy (zify "not_morph")
+
+(* identity function *)
+(*let identity = lazy (zify "identity")*)
+let whd = Reductionops.clos_whd_flags CClosure.all
 
 (** [unsafe_to_constr c] returns a [Constr.t] without considering an evar_map.
     This is useful for calling Constr.hash *)
 let unsafe_to_constr = EConstr.Unsafe.to_constr
 
 let pr_constr env evd e = Printer.pr_econstr_env env evd e
+
+let gl_pr_constr e =
+  let genv = Global.env () in
+  let evd = Evd.from_env genv in
+  pr_constr genv evd e
+
+let is_convertible env evd t1 t2 = Reductionops.(is_conv env evd t1 t2)
+
+(** [get_type_of] performs beta reduction ;
+    Is it ok for Retyping.get_type_of (Zpower_nat n q) to return (fun _ : nat => Z) q ? *)
+let get_type_of env evd e =
+  Tacred.cbv_beta env evd (Retyping.get_type_of env evd e)
 
 let rec find_option pred l =
   match l with
@@ -62,10 +106,7 @@ end
  *)
 
 let get_projections_from_constant (evd, i) =
-  match
-    EConstr.kind evd
-      (Reductionops.clos_whd_flags CClosure.all (Global.env ()) evd i)
-  with
+  match EConstr.kind evd (whd (Global.env ()) evd i) with
   | App (c, a) -> Some a
   | _ ->
     raise
@@ -98,6 +139,109 @@ module EInjT = struct
       cstr : EConstr.t option (* forall x, pred (inj x) *) }
 end
 
+(** [classify_op] classify injected operators and detect special cases. *)
+
+type classify_op =
+  | OpInj (* e.g. Z.of_nat ->  \x.x *)
+  | OpSame (* e.g. Z.add -> Z.add *)
+  | OpConv (* e.g. Pos.ge     == \x.y. Z.ge (Z.pos x) (Z.pos y)
+                     \x.y. Z.pos (Pos.add x y) == \x.y. Z.add (Z.pos x) (Z.pos y)
+                     Z.succ              == (\x.x + 1)
+                   *)
+  | OpOther
+
+(*let pp_classify_op = function
+  | OpInj -> Pp.str "Identity"
+  | OpSame -> Pp.str "Same"
+  | OpConv -> Pp.str "Conv"
+  | OpOther -> Pp.str "Other"
+ *)
+
+let name x =
+  Context.make_annot (Name.mk_name (Names.Id.of_string x)) Sorts.Relevant
+
+let mkconvert_unop i1 i2 op top =
+  (* fun x => inj (op x) *)
+  let op =
+    EConstr.mkLambda
+      ( name "x"
+      , i1.EInjT.source
+      , EConstr.mkApp (i2.EInjT.inj, [|EConstr.mkApp (op, [|EConstr.mkRel 1|])|])
+      )
+  in
+  (* fun x => top (inj x) *)
+  let top =
+    EConstr.mkLambda
+      ( name "x"
+      , i1.EInjT.source
+      , EConstr.mkApp
+          (top, [|EConstr.mkApp (i1.EInjT.inj, [|EConstr.mkRel 1|])|]) )
+  in
+  (op, top)
+
+let mkconvert_binop i1 i2 i3 op top =
+  (* fun x y => inj (op x y) *)
+  let op =
+    EConstr.mkLambda
+      ( name "x"
+      , i1.EInjT.source
+      , EConstr.mkLambda
+          ( name "y"
+          , i1.EInjT.source
+          , EConstr.mkApp
+              ( i3.EInjT.inj
+              , [|EConstr.mkApp (op, [|EConstr.mkRel 2; EConstr.mkRel 1|])|] )
+          ) )
+  in
+  (* fun x y => top (inj x) (inj y) *)
+  let top =
+    EConstr.mkLambda
+      ( name "x"
+      , i1.EInjT.source
+      , EConstr.mkLambda
+          ( name "y"
+          , i2.EInjT.source
+          , EConstr.mkApp
+              ( top
+              , [| EConstr.mkApp (i1.EInjT.inj, [|EConstr.mkRel 2|])
+                 ; EConstr.mkApp (i2.EInjT.inj, [|EConstr.mkRel 1|]) |] ) ) )
+  in
+  (op, top)
+
+let mkconvert_rel i r tr =
+  let tr =
+    EConstr.mkLambda
+      ( name "x"
+      , i.EInjT.source
+      , EConstr.mkLambda
+          ( name "y"
+          , i.EInjT.source
+          , EConstr.mkApp
+              ( tr
+              , [| EConstr.mkApp (i.EInjT.inj, [|EConstr.mkRel 2|])
+                 ; EConstr.mkApp (i.EInjT.inj, [|EConstr.mkRel 1|]) |] ) ) )
+  in
+  (r, tr)
+
+(** [classify_op mkconvert op top] takes the injection [inj] for the origin operator [op]
+    and the destination operator [top] -- both [op] and [top] are closed terms *)
+let classify_op mkconvert inj op top =
+  let env = Global.env () in
+  let evd = Evd.from_env env in
+  if is_convertible env evd inj op then OpInj
+  else if EConstr.eq_constr evd op top then OpSame
+  else
+    let op, top = mkconvert op top in
+    if is_convertible env evd op top then OpConv else OpOther
+
+(*let classify_op mkconvert tysrc op top =
+  let res = classify_op mkconvert tysrc op top in
+  Feedback.msg_debug
+    Pp.(
+      str "classify_op:" ++ gl_pr_constr op ++ str " " ++ gl_pr_constr top
+      ++ str "  " ++ pp_classify_op res ++ fnl ());
+  res
+ *)
 module EBinOpT = struct
   type t =
     { (* Op : source1 -> source2 -> source3 *)
@@ -105,17 +249,23 @@ module EBinOpT = struct
     ; source2 : EConstr.t
     ; source3 : EConstr.t
     ; target : EConstr.t
-    ; inj1 : EConstr.t
-    ; (* InjTyp source1 target *)
-      inj2 : EConstr.t
-    ; (* InjTyp source2 target *)
-      inj3 : EConstr.t
-    ; (* InjTyp source3 target *)
-      tbop : EConstr.t (* TBOpInj *) }
+    ; inj1 : EInjT.t (* InjTyp source1 target *)
+    ; inj2 : EInjT.t (* InjTyp source2 target *)
+    ; inj3 : EInjT.t (* InjTyp source3 target *)
+    ; bop : EConstr.t (* BOP *)
+    ; tbop : EConstr.t (* TBOP *)
+    ; tbopinj : EConstr.t (* TBOpInj *)
+    ; classify_binop : classify_op }
 end
 
 module ECstOpT = struct
-  type t = {source : EConstr.t; target : EConstr.t; inj : EConstr.t}
+  type t =
+    { source : EConstr.t
+    ; target : EConstr.t
+    ; inj : EInjT.t
+    ; cst : EConstr.t
+    ; cstinj : EConstr.t
+    ; is_construct : bool }
 end
 
 module EUnOpT = struct
@@ -123,26 +273,40 @@ module EUnOpT = struct
     { source1 : EConstr.t
     ; source2 : EConstr.t
     ; target : EConstr.t
-    ; inj1_t : EConstr.t
-    ; inj2_t : EConstr.t
-    ; unop : EConstr.t }
+    ; uop : EConstr.t
+    ; inj1_t : EInjT.t
+    ; inj2_t : EInjT.t
+    ; tuop : EConstr.t
+    ; tuopinj : EConstr.t
+    ; classify_unop : classify_op
+    ; is_construct : bool }
 end
 
 module EBinRelT = struct
   type t =
-    {source : EConstr.t; target : EConstr.t; inj : EConstr.t; brel : EConstr.t}
+    { source : EConstr.t
+    ; target : EConstr.t
+    ; inj : EInjT.t
+    ; brel : EConstr.t
+    ; tbrel : EConstr.t
+    ; brelinj : EConstr.t
+    ; classify_rel : classify_op }
 end
 
 module EPropBinOpT = struct
-  type t = EConstr.t
+  type t = {op : EConstr.t; op_iff : EConstr.t}
 end
 
 module EPropUnOpT = struct
-  type t = EConstr.t
+  type t = {op : EConstr.t; op_iff : EConstr.t}
 end
 
 module ESatT = struct
   type t = {parg1 : EConstr.t; parg2 : EConstr.t; satOK : EConstr.t}
+end
+
+module ESpecT = struct
+  type t = {spec : EConstr.t}
 end
 
 (* Different type of declarations *)
@@ -155,16 +319,7 @@ type decl_kind =
   | UnOp of EUnOpT.t decl
   | CstOp of ECstOpT.t decl
   | Saturate of ESatT.t decl
-
-let get_decl = function
-  | PropOp d -> d.decl
-  | PropUnOp d -> d.decl
-  | InjTyp d -> d.decl
-  | BinRel d -> d.decl
-  | BinOp d -> d.decl
-  | UnOp d -> d.decl
-  | CstOp d -> d.decl
-  | Saturate d -> d.decl
+  | Spec of ESpecT.t decl
 
 type term_kind = Application of EConstr.constr | OtherTerm of EConstr.constr
 
@@ -191,8 +346,10 @@ end
 
 let table = Summary.ref ~name:"zify_table" HConstr.empty
 let saturate = Summary.ref ~name:"zify_saturate" HConstr.empty
+let specs = Summary.ref ~name:"zify_specs" HConstr.empty
 let table_cache = ref HConstr.empty
 let saturate_cache = ref HConstr.empty
+let specs_cache = ref HConstr.empty
 
 (** Each type-class gives rise to a different table.
     They only differ on how projections are extracted.  *)
@@ -207,7 +364,7 @@ module EInj = struct
   let dest = function InjTyp x -> Some x | _ -> None
 
   let mk_elt evd i (a : EConstr.t array) =
-    let isid = EConstr.eq_constr evd a.(0) a.(1) in
+    let isid = EConstr.eq_constr_nounivs evd a.(0) a.(1) in
     { isid
     ; source = a.(0)
     ; target = a.(1)
@@ -218,6 +375,14 @@ module EInj = struct
   let get_key = 0
 end
 
+let get_inj evd c =
+  match get_projections_from_constant (evd, c) with
+  | None ->
+    let env = Global.env () in
+    let t = string_of_ppcmds (pr_constr env evd c) in
+    failwith ("Cannot register term " ^ t)
+  | Some a -> EInj.mk_elt evd c a
+
 module EBinOp = struct
   type elt = EBinOpT.t
 
@@ -227,20 +392,34 @@ module EBinOp = struct
   let table = table
 
   let mk_elt evd i a =
+    let i1 = get_inj evd a.(5) in
+    let i2 = get_inj evd a.(6) in
+    let i3 = get_inj evd a.(7) in
+    let tbop = a.(8) in
     { source1 = a.(0)
     ; source2 = a.(1)
     ; source3 = a.(2)
     ; target = a.(3)
-    ; inj1 = a.(5)
-    ; inj2 = a.(6)
-    ; inj3 = a.(7)
-    ; tbop = a.(9) }
+    ; inj1 = i1
+    ; inj2 = i2
+    ; inj3 = i3
+    ; bop = a.(4)
+    ; tbop = a.(8)
+    ; tbopinj = a.(9)
+    ; classify_binop =
+        classify_op (mkconvert_binop i1 i2 i3) i1.EInjT.inj a.(4) tbop }
 
   let get_key = 4
   let cast x = BinOp x
   let dest = function BinOp x -> Some x | _ -> None
 end
 
+(*let debug_term msg c =
+  let genv = Global.env () in
+  Feedback.msg_debug
+    Pp.(str msg ++ str " " ++ pr_constr genv (Evd.from_env genv) c);
+  c
+ *)
 module ECstOp = struct
   type elt = ECstOpT.t
 
@@ -250,7 +429,15 @@ module ECstOp = struct
   let table = table
   let cast x = CstOp x
   let dest = function CstOp x -> Some x | _ -> None
-  let mk_elt evd i a = {source = a.(0); target = a.(1); inj = a.(3)}
+
+  let mk_elt evd i a =
+    { source = a.(0)
+    ; target = a.(1)
+    ; inj = get_inj evd a.(3)
+    ; cst = a.(4)
+    ; cstinj = a.(5)
+    ; is_construct = EConstr.isConstruct evd a.(2) }
+
   let get_key = 2
 end
 
@@ -265,12 +452,21 @@ module EUnOp = struct
   let dest = function UnOp x -> Some x | _ -> None
 
   let mk_elt evd i a =
+    let i1 = get_inj evd a.(4) in
+    let i2 = get_inj evd a.(5) in
+    let uop = a.(3) in
+    let tuop = a.(6) in
     { source1 = a.(0)
     ; source2 = a.(1)
     ; target = a.(2)
-    ; inj1_t = a.(4)
-    ; inj2_t = a.(5)
-    ; unop = a.(6) }
+    ; uop
+    ; inj1_t = i1
+    ; inj2_t = i2
+    ; tuop
+    ; tuopinj = a.(7)
+    ; is_construct = EConstr.isConstruct evd uop
+    ; classify_unop = classify_op (mkconvert_unop i1 i2) i1.EInjT.inj uop tuop
+    }
 
   let get_key = 3
 end
@@ -286,39 +482,47 @@ module EBinRel = struct
   let dest = function BinRel x -> Some x | _ -> None
 
   let mk_elt evd i a =
-    {source = a.(0); target = a.(1); inj = a.(3); brel = a.(4)}
+    let i = get_inj evd a.(3) in
+    let brel = a.(2) in
+    let tbrel = a.(4) in
+    { source = a.(0)
+    ; target = a.(1)
+    ; inj = get_inj evd a.(3)
+    ; brel
+    ; tbrel
+    ; brelinj = a.(5)
+    ; classify_rel = classify_op (mkconvert_rel i) i.EInjT.inj brel tbrel }
 
   let get_key = 2
 end
 
-module EPropOp = struct
-  type elt = EConstr.t
+module EPropBinOp = struct
+  type elt = EPropBinOpT.t
+
+  open EPropBinOpT
 
   let name = "PropBinOp"
   let table = table
   let cast x = PropOp x
   let dest = function PropOp x -> Some x | _ -> None
-  let mk_elt evd i a = i
+  let mk_elt evd i a = {op = a.(0); op_iff = a.(1)}
   let get_key = 0
 end
 
 module EPropUnOp = struct
-  type elt = EConstr.t
+  type elt = EPropUnOpT.t
+
+  open EPropUnOpT
 
   let name = "PropUnOp"
   let table = table
   let cast x = PropUnOp x
   let dest = function PropUnOp x -> Some x | _ -> None
-  let mk_elt evd i a = i
+  let mk_elt evd i a = {op = a.(0); op_iff = a.(1)}
   let get_key = 0
 end
 
 let constr_of_term_kind = function Application c -> c | OtherTerm c -> c
-
-let fold_declared_const f evd acc =
-  HConstr.fold
-    (fun _ (_, e) acc -> f (fst (EConstr.destConst evd (get_decl e))) acc)
-    !table_cache acc
 
 module type S = sig
   val register : Constrexpr.constr_expr -> unit
@@ -417,117 +621,36 @@ module ESat = struct
   let get_key = 1
 end
 
+module ESpec = struct
+  open ESpecT
+
+  type elt = ESpecT.t
+
+  let name = "Spec"
+  let table = specs
+  let cast x = Spec x
+  let dest = function Spec x -> Some x | _ -> None
+  let mk_elt evd i a = {spec = a.(5)}
+  let get_key = 2
+end
+
 module BinOp = MakeTable (EBinOp)
 module UnOp = MakeTable (EUnOp)
 module CstOp = MakeTable (ECstOp)
 module BinRel = MakeTable (EBinRel)
-module PropOp = MakeTable (EPropOp)
+module PropBinOp = MakeTable (EPropBinOp)
 module PropUnOp = MakeTable (EPropUnOp)
 module Saturate = MakeTable (ESat)
+module Spec = MakeTable (ESpec)
 
 let init_cache () =
   table_cache := !table;
-  saturate_cache := !saturate
-
-(** The module [Spec] is used to register
-    the instances of [BinOpSpec], [UnOpSpec].
-    They are not indexed and stored in a list. *)
-
-module Spec = struct
-  let table = Summary.ref ~name:"zify_Spec" []
-
-  let register_obj : Constr.constr -> Libobject.obj =
-    let cache_constr (_, c) = table := EConstr.of_constr c :: !table in
-    let subst_constr (subst, c) = Mod_subst.subst_mps subst c in
-    Libobject.declare_object
-    @@ Libobject.superglobal_object_nodischarge "register-zify-Spec"
-         ~cache:cache_constr ~subst:(Some subst_constr)
-
-  let register c =
-    let env = Global.env () in
-    let evd = Evd.from_env env in
-    let _, c = Constrintern.interp_open_constr env evd c in
-    let _ = Lib.add_anonymous_leaf (register_obj (EConstr.to_constr evd c)) in
-    ()
-
-  let get () = !table
-
-  let print () =
-    let env = Global.env () in
-    let evd = Evd.from_env env in
-    let constr_of_spec c =
-      let t = get_type_of env evd c in
-      match EConstr.kind evd t with
-      | App (intyp, args) -> pr_constr env evd args.(2)
-      | _ -> Pp.str ""
-    in
-    let l =
-      List.fold_left
-        (fun acc c -> Pp.(constr_of_spec c ++ str " " ++ acc))
-        (Pp.str "") !table
-    in
-    Feedback.msg_notice l
-end
-
-let unfold_decl evd =
-  let f cst acc = cst :: acc in
-  fold_declared_const f evd []
+  saturate_cache := !saturate;
+  specs_cache := !specs
 
 open EInjT
 
 (** Get constr of lemma and projections in ZifyClasses. *)
-
-let zify str =
-  EConstr.of_constr
-    (UnivGen.constr_of_monomorphic_global
-       (Coqlib.lib_ref ("ZifyClasses." ^ str)))
-
-let locate_const str =
-  let rf = "ZifyClasses." ^ str in
-  match Coqlib.lib_ref rf with
-  | GlobRef.ConstRef c -> c
-  | _ -> CErrors.anomaly Pp.(str rf ++ str " should be a constant")
-
-(* The following [constr] are necessary for constructing the proof terms *)
-let mkapp2 = lazy (zify "mkapp2")
-let mkapp = lazy (zify "mkapp")
-let mkapp0 = lazy (zify "mkapp0")
-let mkdp = lazy (zify "mkinjterm")
-let eq_refl = lazy (zify "eq_refl")
-let mkrel = lazy (zify "mkrel")
-let mkprop_op = lazy (zify "mkprop_op")
-let mkuprop_op = lazy (zify "mkuprop_op")
-let mkdpP = lazy (zify "mkinjprop")
-let iff_refl = lazy (zify "iff_refl")
-let q = lazy (zify "target_prop")
-let ieq = lazy (zify "injprop_ok")
-let iff = lazy (zify "iff")
-
-(* A super-set of the previous are needed to unfold the generated proof terms. *)
-
-let to_unfold =
-  lazy
-    (List.rev_map locate_const
-       [ "source_prop"
-       ; "target_prop"
-       ; "uop_iff"
-       ; "op_iff"
-       ; "mkuprop_op"
-       ; "TUOp"
-       ; "inj_ok"
-       ; "TRInj"
-       ; "inj"
-       ; "source"
-       ; "injprop_ok"
-       ; "TR"
-       ; "TBOp"
-       ; "TCst"
-       ; "target"
-       ; "mkrel"
-       ; "mkapp2"
-       ; "mkapp"
-       ; "mkapp0"
-       ; "mkprop_op" ])
 
 (** Module [CstrTable] records terms  [x] injected into [inj x]
     together with the corresponding type constraint.
@@ -563,7 +686,10 @@ module CstrTable = struct
           List.iter
             (fun (_, (t : EConstr.types)) -> HConstr.add hyps_table t ())
             (Tacmach.New.pf_hyps_types gl);
-          fun c -> HConstr.mem hyps_table c
+          fun c ->
+            let m = HConstr.mem hyps_table c in
+            if not m then HConstr.add hyps_table c ();
+            m
         in
         (* Add the constraint (cstr k) if it is not already present *)
         let gen k cstr =
@@ -585,97 +711,183 @@ module CstrTable = struct
           Tacticals.New.tclIDTAC table)
 end
 
-let mkvar red evd inj v =
-  ( if not red then
-    match inj.cstr with None -> () | Some ctr -> CstrTable.register evd v ctr );
-  let iv = EConstr.mkApp (inj.inj, [|v|]) in
-  let iv = if red then Tacred.compute (Global.env ()) evd iv else iv in
-  EConstr.mkApp
-    ( force mkdp
-    , [| inj.source
-       ; inj.target
-       ; inj.inj
-       ; v
-       ; iv
-       ; EConstr.mkApp (force eq_refl, [|inj.target; iv|]) |] )
+type prf =
+  | Term (* source is built from constructors.
+             target = compute(inj source)
+             inj source ==  target *)
+  | Same (* target = source
+             inj source == inj target *)
+  | Conv of EConstr.t (* inj source == target *)
+  | Prf of EConstr.t * EConstr.t
 
-type texpr =
-  | Var of EInj.elt * EConstr.t
-      (** Var is a term that cannot be injected further *)
-  | Constant of EInj.elt * EConstr.t
-      (** Constant is a term that is solely built from constructors *)
-  | Injterm of EConstr.t
-      (** Injected is an injected term represented by a  term of type [injterm] *)
+(** [eq_proof typ source target] returns (target = target : source = target) *)
+let eq_proof typ source target =
+  EConstr.mkCast
+    ( EConstr.mkApp (force eq_refl, [|typ; target|])
+    , DEFAULTcast
+    , EConstr.mkApp (force eq, [|typ; source; target|]) )
 
-let is_constant = function Constant _ -> true | _ -> false
-
-let constr_of_texpr = function
-  | Constant (i, e) | Var (i, e) -> if i.isid then Some e else None
-  | _ -> None
-
-let inj_term_of_texpr evd = function
-  | Injterm e -> e
-  | Var (inj, e) -> mkvar false evd inj e
-  | Constant (inj, e) -> mkvar true evd inj e
-
-let mkapp2_id evd i (* InjTyp S3 T *) inj (* deriv i *) t (* S1 -> S2 -> S3 *) b
-    (* Binop S1 S2 S3 t ... *) dbop (* deriv b *) e1 e2 =
-  let default () =
-    let e1' = inj_term_of_texpr evd e1 in
-    let e2' = inj_term_of_texpr evd e2 in
-    EBinOpT.(
-      Injterm
-        (EConstr.mkApp
-           ( force mkapp2
-           , [| dbop.source1
-              ; dbop.source2
-              ; dbop.source3
-              ; dbop.target
-              ; t
-              ; dbop.inj1
-              ; dbop.inj2
-              ; dbop.inj3
-              ; b
-              ; e1'
-              ; e2' |] )))
+let interp_prf evd inj source prf =
+  let inj_source =
+    if inj.EInjT.isid then source else EConstr.mkApp (inj.EInjT.inj, [|source|])
   in
-  if not inj.isid then default ()
-  else
-    match (e1, e2) with
-    | Constant (_, e1), Constant (_, e2)
-     |Var (_, e1), Var (_, e2)
-     |Constant (_, e1), Var (_, e2)
-     |Var (_, e1), Constant (_, e2) ->
-      Var (inj, EConstr.mkApp (t, [|e1; e2|]))
-    | _, _ -> default ()
+  match prf with
+  | Term ->
+    let target = Tacred.compute (Global.env ()) evd inj_source in
+    (target, EConstr.mkApp (force eq_refl, [|inj.target; target|]))
+  | Same ->
+    (inj_source, EConstr.mkApp (force eq_refl, [|inj.target; inj_source|]))
+  | Conv trm -> (trm, eq_proof inj.target inj_source trm)
+  | Prf (target, prf) -> (target, prf)
 
-let mkapp_id evd i inj (unop, u) f e1 =
-  EUnOpT.(
-    if EConstr.eq_constr evd u.unop f then
-      (* Injection does nothing *)
-      match e1 with
-      | Constant (_, e) | Var (_, e) -> Var (inj, EConstr.mkApp (f, [|e|]))
-      | Injterm e1 ->
-        Injterm
-          (EConstr.mkApp
-             ( force mkapp
-             , [| u.source1
-                ; u.source2
-                ; u.target
-                ; f
-                ; u.inj1_t
-                ; u.inj2_t
-                ; unop
-                ; e1 |] ))
+let pp_prf prf =
+  match prf with
+  | Term -> Pp.str "Term"
+  | Same -> Pp.str "Same"
+  | Conv t -> Pp.(str "Conv " ++ gl_pr_constr t)
+  | Prf (_, _) -> Pp.str "Prf "
+
+let interp_prf evd inj source prf =
+  let t, prf' = interp_prf evd inj source prf in
+  if debug then
+    Feedback.msg_debug
+      Pp.(
+        str "interp_prf " ++ gl_pr_constr inj.EInjT.inj ++ str " "
+        ++ gl_pr_constr source ++ str " = " ++ gl_pr_constr t ++ str " by "
+        ++ gl_pr_constr prf' ++ str " from " ++ pp_prf prf ++ fnl ());
+  (t, prf')
+
+let mkvar evd inj e =
+  (match inj.cstr with None -> () | Some ctr -> CstrTable.register evd e ctr);
+  Same
+
+let pp_prf evd inj src prf =
+  let t, prf' = interp_prf evd inj src prf in
+  Pp.(
+    gl_pr_constr inj.EInjT.inj ++ str " " ++ gl_pr_constr src ++ str " = "
+    ++ gl_pr_constr t ++ str " by "
+    ++
+    match prf with
+    | Term -> Pp.str "Term"
+    | Same -> Pp.str "Same"
+    | Conv t -> Pp.str "Conv"
+    | Prf (_, p) -> Pp.str "Prf " ++ gl_pr_constr p)
+
+let conv_of_term evd op isid arg =
+  Tacred.compute (Global.env ()) evd
+    (if isid then arg else EConstr.mkApp (op, [|arg|]))
+
+let app_unop evd src unop arg prf =
+  let cunop = unop.EUnOpT.classify_unop in
+  let default a' prf' =
+    let target = EConstr.mkApp (unop.EUnOpT.tuop, [|a'|]) in
+    EUnOpT.(
+      Prf
+        ( target
+        , EConstr.mkApp
+            ( force mkapp
+            , [| unop.source1
+               ; unop.source2
+               ; unop.target
+               ; unop.uop
+               ; unop.inj1_t.EInjT.inj
+               ; unop.inj2_t.EInjT.inj
+               ; unop.tuop
+               ; unop.tuopinj
+               ; arg
+               ; a'
+               ; prf' |] ) ))
+  in
+  match prf with
+  | Term -> (
+    if unop.EUnOpT.is_construct then Term (* Keep rebuilding *)
     else
-      let e1 = inj_term_of_texpr evd e1 in
-      Injterm
+      match cunop with
+      | OpInj -> Conv (conv_of_term evd unop.EUnOpT.uop false arg)
+      | OpSame -> Same
+      | _ ->
+        let a', prf = interp_prf evd unop.EUnOpT.inj1_t arg prf in
+        default a' prf )
+  | Same -> (
+    match cunop with
+    | OpSame -> Same
+    | OpInj -> Same
+    | OpConv ->
+      Conv
         (EConstr.mkApp
-           ( force mkapp
-           , [|u.source1; u.source2; u.target; f; u.inj1_t; u.inj2_t; unop; e1|]
-           )))
+           ( unop.EUnOpT.tuop
+           , [|EConstr.mkApp (unop.EUnOpT.inj1_t.EInjT.inj, [|arg|])|] ))
+    | OpOther ->
+      let a', prf' = interp_prf evd unop.EUnOpT.inj1_t arg prf in
+      default a' prf' )
+  | Conv a' -> (
+    match cunop with
+    | OpSame | OpConv -> Conv (EConstr.mkApp (unop.EUnOpT.tuop, [|a'|]))
+    | OpInj -> Conv a'
+    | _ ->
+      let a', prf = interp_prf evd unop.EUnOpT.inj1_t arg prf in
+      default a' prf )
+  | Prf (a', prf') -> default a' prf'
 
-type typed_constr = {constr : EConstr.t; typ : EConstr.t}
+let app_unop evd src unop arg prf =
+  let res = app_unop evd src unop arg prf in
+  if debug then
+    Feedback.msg_debug
+      Pp.(
+        str "\napp_unop "
+        ++ pp_prf evd unop.EUnOpT.inj1_t arg prf
+        ++ str " => "
+        ++ pp_prf evd unop.EUnOpT.inj2_t src res);
+  res
+
+let app_binop evd src binop arg1 prf1 arg2 prf2 =
+  EBinOpT.(
+    let mkApp a1 a2 = EConstr.mkApp (binop.tbop, [|a1; a2|]) in
+    let to_conv inj arg = function
+      | Term -> conv_of_term evd inj.EInjT.inj inj.EInjT.isid arg
+      | Same ->
+        if inj.EInjT.isid then arg else EConstr.mkApp (inj.EInjT.inj, [|arg|])
+      | Conv t -> t
+      | Prf _ -> failwith "Prf is not convertible"
+    in
+    let default a1 prf1 a2 prf2 =
+      let res = mkApp a1 a2 in
+      let prf =
+        EBinOpT.(
+          EConstr.mkApp
+            ( force mkapp2
+            , [| binop.source1
+               ; binop.source2
+               ; binop.source3
+               ; binop.target
+               ; binop.bop
+               ; binop.inj1.EInjT.inj
+               ; binop.inj2.EInjT.inj
+               ; binop.inj3.EInjT.inj
+               ; binop.tbop
+               ; binop.tbopinj
+               ; arg1
+               ; a1
+               ; prf1
+               ; arg2
+               ; a2
+               ; prf2 |] ))
+      in
+      Prf (res, prf)
+    in
+    match (binop.EBinOpT.classify_binop, prf1, prf2) with
+    | OpSame, Same, Same -> Same
+    | OpSame, Term, Same | OpSame, Same, Term -> Same
+    | OpSame, (Term | Same | Conv _), (Term | Same | Conv _) ->
+      let t1 = to_conv binop.EBinOpT.inj1 arg1 prf1 in
+      let t2 = to_conv binop.EBinOpT.inj1 arg2 prf2 in
+      Conv (mkApp t1 t2)
+    | _, _, _ ->
+      let a1, prf1 = interp_prf evd binop.inj1 arg1 prf1 in
+      let a2, prf2 = interp_prf evd binop.inj2 arg2 prf2 in
+      default a1 prf1 a2 prf2)
+
+type typed_constr = {constr : EConstr.t; typ : EConstr.t; inj : EInjT.t}
 
 let get_injection env evd t =
   match snd (HConstr.find t !table_cache) with
@@ -702,23 +914,68 @@ let is_prop env sigma term =
   let sort = Retyping.get_sort_of env sigma term in
   Sorts.is_prop sort
 
-(** [get_application env evd e] expresses [e] as an application (c a)
+let is_arrow env evd a p1 p2 =
+  is_prop env evd p1
+  && is_prop
+       (EConstr.push_rel (Context.Rel.Declaration.LocalAssum (a, p1)) env)
+       evd p2
+  && (a.Context.binder_name = Names.Anonymous || EConstr.Vars.noccurn evd 1 p2)
+
+(** [get_operator env evd e] expresses [e] as an application (c a)
      where c is the head symbol and [a] is the array of arguments.
      The function also transforms (x -> y) as (arrow x y) *)
-let get_operator env evd e =
-  let is_arrow a p1 p2 =
-    is_prop env evd p1
-    && is_prop
-         (EConstr.push_rel (Context.Rel.Declaration.LocalAssum (a, p1)) env)
-         evd p2
-    && (a.Context.binder_name = Names.Anonymous || EConstr.Vars.noccurn evd 1 p2)
-  in
+let get_operator barrow env evd e =
   match EConstr.kind evd e with
-  | Prod (a, p1, p2) when is_arrow a p1 p2 -> (arrow, [|p1; p2|])
-  | App (c, a) -> (c, a)
-  | _ -> (e, [||])
+  | Prod (a, p1, p2) ->
+    if barrow && is_arrow env evd a p1 p2 then (arrow, [|p1; p2|])
+    else raise Not_found
+  | App (c, a) -> (
+    match EConstr.kind evd c with
+    | Construct _ (* e.g. Z0 , Z.pos *) | Const _ (* e.g. Z.max *) | Proj _
+     |Lambda _ (* e.g projections *) | Ind _ (* e.g. eq *) ->
+      (c, a)
+    | _ -> raise Not_found )
+  | Construct _ -> (EConstr.whd_evar evd e, [||])
+  | _ -> raise Not_found
 
-let is_convertible env evd k t = Reductionops.check_conv env evd k t
+let decompose_app env evd e =
+  match EConstr.kind evd e with
+  | Prod (a, p1, p2) when is_arrow env evd a p1 p2 -> (arrow, [|p1; p2|])
+  | App (c, a) -> (c, a)
+  | _ -> (EConstr.whd_evar evd e, [||])
+
+type 'op propop = {op : 'op; op_constr : EConstr.t; op_iff : EConstr.t}
+
+let mk_propop op c1 c2 = {op; op_constr = c1; op_iff = c2}
+
+type prop_binop = AND | OR | IFF | IMPL
+type prop_unop = NOT
+
+type prop_op =
+  | BINOP of prop_binop propop * EConstr.t * EConstr.t
+  | UNOP of prop_unop propop * EConstr.t
+  | OTHEROP of EConstr.t * EConstr.t array
+
+let classify_prop env evd e =
+  match EConstr.kind evd e with
+  | Prod (a, p1, p2) when is_arrow env evd a p1 p2 ->
+    BINOP (mk_propop IMPL arrow (force op_impl_morph), p1, p2)
+  | App (c, a) -> (
+    match Array.length a with
+    | 1 ->
+      if EConstr.eq_constr_nounivs evd (force op_not) c then
+        UNOP (mk_propop NOT c (force op_not_morph), a.(0))
+      else OTHEROP (c, a)
+    | 2 ->
+      if EConstr.eq_constr_nounivs evd (force op_and) c then
+        BINOP (mk_propop AND c (force op_and_morph), a.(0), a.(1))
+      else if EConstr.eq_constr_nounivs evd (force op_or) c then
+        BINOP (mk_propop OR c (force op_or_morph), a.(0), a.(1))
+      else if EConstr.eq_constr_nounivs evd (force op_iff) c then
+        BINOP (mk_propop IFF c (force op_iff_morph), a.(0), a.(1))
+      else OTHEROP (c, a)
+    | _ -> OTHEROP (c, a) )
+  | _ -> OTHEROP (e, [||])
 
 (** [match_operator env evd hd arg (t,d)]
      - hd is head operator of t
@@ -744,13 +1001,159 @@ let match_operator env evd hd args (t, d) =
     | PropUnOp _ -> decomp t 1
     | _ -> None )
 
+let pp_trans_expr env evd e res =
+  let {deriv = inj} = get_injection env evd e.typ in
+  if debug then
+    Feedback.msg_debug Pp.(str "\ntrans_expr " ++ pp_prf evd inj e.constr res);
+  res
+
 let rec trans_expr env evd e =
-  (* Get the injection *)
-  let {decl = i; deriv = inj} = get_injection env evd e.typ in
+  let inj = e.inj in
   let e = e.constr in
-  if EConstr.isConstruct evd e then Constant (inj, e) (* Evaluate later *)
-  else
-    let c, a = get_operator env evd e in
+  try
+    let c, a = get_operator false env evd e in
+    let k, t =
+      find_option (match_operator env evd c a) (HConstr.find_all c !table_cache)
+    in
+    let n = Array.length a in
+    match k with
+    | CstOp {deriv = c'} ->
+      ECstOpT.(if c'.is_construct then Term else Prf (c'.cst, c'.cstinj))
+    | UnOp {deriv = unop} ->
+      let prf =
+        trans_expr env evd
+          { constr = a.(n - 1)
+          ; typ = unop.EUnOpT.source1
+          ; inj = unop.EUnOpT.inj1_t }
+      in
+      app_unop evd e unop a.(n - 1) prf
+    | BinOp {deriv = binop} ->
+      let prf1 =
+        trans_expr env evd
+          { constr = a.(n - 2)
+          ; typ = binop.EBinOpT.source1
+          ; inj = binop.EBinOpT.inj1 }
+      in
+      let prf2 =
+        trans_expr env evd
+          { constr = a.(n - 1)
+          ; typ = binop.EBinOpT.source2
+          ; inj = binop.EBinOpT.inj2 }
+      in
+      app_binop evd e binop a.(n - 2) prf1 a.(n - 1) prf2
+    | d -> mkvar evd inj e
+  with Not_found ->
+    (*    Feedback.msg_debug
+      Pp.(str "Not found " ++ Termops.Internal.debug_print_constr e); *)
+    mkvar evd inj e
+
+let trans_expr env evd e =
+  try pp_trans_expr env evd e (trans_expr env evd e)
+  with Not_found ->
+    raise
+      (CErrors.user_err
+         ( Pp.str "Missing injection for type "
+         ++ Printer.pr_leconstr_env env evd e.typ ))
+
+type prfp =
+  | TProof of EConstr.t * EConstr.t  (** Proof of tranformed proposition *)
+  | CProof of EConstr.t  (** Transformed proposition is convertible *)
+  | IProof  (** Transformed proposition is identical *)
+
+let pp_prfp = function
+  | TProof (t, prf) ->
+    Pp.str "TProof " ++ gl_pr_constr t ++ Pp.str " by " ++ gl_pr_constr prf
+  | CProof t -> Pp.str "CProof " ++ gl_pr_constr t
+  | IProof -> Pp.str "IProof"
+
+let trans_binrel evd src rop a1 prf1 a2 prf2 =
+  EBinRelT.(
+    match (rop.classify_rel, prf1, prf2) with
+    | OpSame, Same, Same -> IProof
+    | (OpSame | OpConv), Conv t1, Conv t2 ->
+      CProof (EConstr.mkApp (rop.tbrel, [|t1; t2|]))
+    | (OpSame | OpConv), (Same | Term | Conv _), (Same | Term | Conv _) ->
+      let a1', _ = interp_prf evd rop.inj a1 prf1 in
+      let a2', _ = interp_prf evd rop.inj a2 prf2 in
+      CProof (EConstr.mkApp (rop.tbrel, [|a1'; a2'|]))
+    | _, _, _ ->
+      let a1', prf1 = interp_prf evd rop.inj a1 prf1 in
+      let a2', prf2 = interp_prf evd rop.inj a2 prf2 in
+      TProof
+        ( EConstr.mkApp (rop.EBinRelT.tbrel, [|a1'; a2'|])
+        , EConstr.mkApp
+            ( force mkrel
+            , [| rop.source
+               ; rop.target
+               ; rop.brel
+               ; rop.EBinRelT.inj.EInjT.inj
+               ; rop.EBinRelT.tbrel
+               ; rop.EBinRelT.brelinj
+               ; a1
+               ; a1'
+               ; prf1
+               ; a2
+               ; a2'
+               ; prf2 |] ) ))
+
+let trans_binrel evd src rop a1 prf1 a2 prf2 =
+  let res = trans_binrel evd src rop a1 prf1 a2 prf2 in
+  if debug then Feedback.msg_debug Pp.(str "\ntrans_binrel " ++ pp_prfp res);
+  res
+
+let mkprf t p =
+  EConstr.(
+    match p with
+    | IProof -> (t, mkApp (force iff_refl, [|t|]))
+    | CProof t' -> (t', mkApp (force eq_iff, [|t; t'; eq_proof mkProp t t'|]))
+    | TProof (t', p) -> (t', p))
+
+let mkprf t p =
+  let t', p = mkprf t p in
+  if debug then
+    Feedback.msg_debug
+      Pp.(
+        str "mkprf " ++ gl_pr_constr t ++ str " <-> " ++ gl_pr_constr t'
+        ++ str " by " ++ gl_pr_constr p);
+  (t', p)
+
+let trans_bin_prop op_constr op_iff t1 p1 t2 p2 =
+  match (p1, p2) with
+  | IProof, IProof -> IProof
+  | CProof t1', IProof -> CProof (EConstr.mkApp (op_constr, [|t1'; t2|]))
+  | IProof, CProof t2' -> CProof (EConstr.mkApp (op_constr, [|t1; t2'|]))
+  | CProof t1', CProof t2' -> CProof (EConstr.mkApp (op_constr, [|t1'; t2'|]))
+  | _, _ ->
+    let t1', p1 = mkprf t1 p1 in
+    let t2', p2 = mkprf t2 p2 in
+    TProof
+      ( EConstr.mkApp (op_constr, [|t1'; t2'|])
+      , EConstr.mkApp (op_iff, [|t1; t2; t1'; t2'; p1; p2|]) )
+
+let trans_bin_prop op_constr op_iff t1 p1 t2 p2 =
+  let prf = trans_bin_prop op_constr op_iff t1 p1 t2 p2 in
+  if debug then Feedback.msg_debug (pp_prfp prf);
+  prf
+
+let trans_un_prop op_constr op_iff p1 prf1 =
+  match prf1 with
+  | IProof -> IProof
+  | CProof p1' -> CProof (EConstr.mkApp (op_constr, [|p1'|]))
+  | TProof (p1', prf) ->
+    TProof
+      ( EConstr.mkApp (op_constr, [|p1'|])
+      , EConstr.mkApp (op_iff, [|p1; p1'; prf|]) )
+
+let rec trans_prop env evd e =
+  match classify_prop env evd e with
+  | BINOP ({op_constr; op_iff}, p1, p2) ->
+    let prf1 = trans_prop env evd p1 in
+    let prf2 = trans_prop env evd p2 in
+    trans_bin_prop op_constr op_iff p1 prf1 p2 prf2
+  | UNOP ({op_constr; op_iff}, p1) ->
+    let prf1 = trans_prop env evd p1 in
+    trans_un_prop op_constr op_iff p1 prf1
+  | OTHEROP (c, a) -> (
     try
       let k, t =
         find_option
@@ -759,208 +1162,81 @@ let rec trans_expr env evd e =
       in
       let n = Array.length a in
       match k with
-      | CstOp {decl = c'} ->
-        Injterm
-          (EConstr.mkApp (force mkapp0, [|inj.source; inj.target; e; i; c'|]))
-      | UnOp {decl = unop; deriv = u} ->
-        let a' =
-          trans_expr env evd {constr = a.(n - 1); typ = u.EUnOpT.source1}
-        in
-        if is_constant a' && EConstr.isConstruct evd t then Constant (inj, e)
-        else mkapp_id evd i inj (unop, u) t a'
-      | BinOp {decl = binop; deriv = b} ->
-        let a0 =
-          trans_expr env evd {constr = a.(n - 2); typ = b.EBinOpT.source1}
-        in
+      | BinRel {decl = br; deriv = rop} ->
         let a1 =
-          trans_expr env evd {constr = a.(n - 1); typ = b.EBinOpT.source2}
-        in
-        if is_constant a0 && is_constant a1 && EConstr.isConstruct evd t then
-          Constant (inj, e)
-        else mkapp2_id evd i inj t binop b a0 a1
-      | d -> Var (inj, e)
-    with Not_found -> Var (inj, e)
-
-let trans_expr env evd e =
-  try trans_expr env evd e
-  with Not_found ->
-    raise
-      (CErrors.user_err
-         ( Pp.str "Missing injection for type "
-         ++ Printer.pr_leconstr_env env evd e.typ ))
-
-type tprop =
-  | TProp of EConstr.t  (** Transformed proposition *)
-  | IProp of EConstr.t  (** Identical proposition *)
-
-let mk_iprop e =
-  EConstr.mkApp (force mkdpP, [|e; e; EConstr.mkApp (force iff_refl, [|e|])|])
-
-let inj_prop_of_tprop = function TProp p -> p | IProp e -> mk_iprop e
-
-let rec trans_prop env evd e =
-  let c, a = get_operator env evd e in
-  try
-    let k, t =
-      find_option (match_operator env evd c a) (HConstr.find_all c !table_cache)
-    in
-    let n = Array.length a in
-    match k with
-    | PropOp {decl = rop} -> (
-      try
-        let t1 = trans_prop env evd a.(n - 2) in
-        let t2 = trans_prop env evd a.(n - 1) in
-        match (t1, t2) with
-        | IProp _, IProp _ -> IProp e
-        | _, _ ->
-          let t1 = inj_prop_of_tprop t1 in
-          let t2 = inj_prop_of_tprop t2 in
-          TProp (EConstr.mkApp (force mkprop_op, [|t; rop; t1; t2|]))
-      with Not_found -> IProp e )
-    | BinRel {decl = br; deriv = rop} -> (
-      try
-        let a1 =
-          trans_expr env evd {constr = a.(n - 2); typ = rop.EBinRelT.source}
+          trans_expr env evd
+            { constr = a.(n - 2)
+            ; typ = rop.EBinRelT.source
+            ; inj = rop.EBinRelT.inj }
         in
         let a2 =
-          trans_expr env evd {constr = a.(n - 1); typ = rop.EBinRelT.source}
+          trans_expr env evd
+            { constr = a.(n - 1)
+            ; typ = rop.EBinRelT.source
+            ; inj = rop.EBinRelT.inj }
         in
-        if EConstr.eq_constr evd t rop.EBinRelT.brel then
-          match (constr_of_texpr a1, constr_of_texpr a2) with
-          | Some e1, Some e2 -> IProp (EConstr.mkApp (t, [|e1; e2|]))
-          | _, _ ->
-            let a1 = inj_term_of_texpr evd a1 in
-            let a2 = inj_term_of_texpr evd a2 in
-            TProp
-              (EConstr.mkApp
-                 ( force mkrel
-                 , [| rop.EBinRelT.source
-                    ; rop.EBinRelT.target
-                    ; t
-                    ; rop.EBinRelT.inj
-                    ; br
-                    ; a1
-                    ; a2 |] ))
-        else
-          let a1 = inj_term_of_texpr evd a1 in
-          let a2 = inj_term_of_texpr evd a2 in
-          TProp
-            (EConstr.mkApp
-               ( force mkrel
-               , [| rop.EBinRelT.source
-                  ; rop.EBinRelT.target
-                  ; t
-                  ; rop.EBinRelT.inj
-                  ; br
-                  ; a1
-                  ; a2 |] ))
-      with Not_found -> IProp e )
-    | PropUnOp {decl = rop} -> (
-      try
-        let t1 = trans_prop env evd a.(n - 1) in
-        match t1 with
-        | IProp _ -> IProp e
-        | _ ->
-          let t1 = inj_prop_of_tprop t1 in
-          TProp (EConstr.mkApp (force mkuprop_op, [|t; rop; t1|]))
-      with Not_found -> IProp e )
-    | _ -> IProp e
-  with Not_found -> IProp e
-
-let unfold n env evd c =
-  let cbv l =
-    CClosure.RedFlags.(
-      Tacred.cbv_norm_flags
-        (mkflags
-           (fBETA :: fMATCH :: fFIX :: fCOFIX :: fZETA :: List.rev_map fCONST l)))
-  in
-  let unfold_decl = unfold_decl evd in
-  (* Unfold the let binding *)
-  let c =
-    match n with
-    | None -> c
-    | Some n ->
-      Tacred.unfoldn [(Locus.AllOccurrences, Names.EvalVarRef n)] env evd c
-  in
-  (* Reduce the term *)
-  let c = cbv (List.rev_append (force to_unfold) unfold_decl) env evd c in
-  c
+        trans_binrel evd e rop a.(n - 2) a1 a.(n - 1) a2
+      | _ -> IProof
+    with Not_found -> IProof )
 
 let trans_check_prop env evd t =
-  if is_prop env evd t then
-    (*let t = Tacred.unfoldn [Locus.AllOccurrences, Names.EvalConstRef coq_not] env evd t in*)
-    match trans_prop env evd t with IProp e -> None | TProp e -> Some e
-  else None
+  if is_prop env evd t then Some (trans_prop env evd t) else None
+
+let get_hyp_typ = function
+  | NamedDecl.LocalDef (h, _, ty) | NamedDecl.LocalAssum (h, ty) ->
+    (h.Context.binder_name, EConstr.of_constr ty)
 
 let trans_hyps env evd l =
   List.fold_left
-    (fun acc (h, p) ->
-      match trans_check_prop env evd p with
+    (fun acc decl ->
+      let h, ty = get_hyp_typ decl in
+      match trans_check_prop env evd ty with
       | None -> acc
-      | Some p' -> (h, p, p') :: acc)
-    [] (List.rev l)
+      | Some p' -> (h, ty, p') :: acc)
+    [] l
 
-(* Only used if a direct rewrite fails *)
-let trans_hyp h t =
-  Tactics.(
+let trans_hyp h t0 prfp =
+  if debug then
+    Feedback.msg_debug Pp.(str "trans_hyp: " ++ pp_prfp prfp ++ fnl ());
+  match prfp with
+  | IProof -> Tacticals.New.tclIDTAC (* Should detect before *)
+  | CProof t' ->
+    Proofview.Goal.enter (fun gl ->
+        let env = Tacmach.New.pf_env gl in
+        let evd = Tacmach.New.project gl in
+        let t' = Reductionops.nf_betaiota env evd t' in
+        Tactics.change_in_hyp ~check:true None
+          (Tactics.make_change_arg t')
+          (h, Locus.InHypTypeOnly))
+  | TProof (t', prf) ->
     Tacticals.New.(
       Proofview.Goal.enter (fun gl ->
           let env = Tacmach.New.pf_env gl in
-          let n =
-            fresh_id_in_env Id.Set.empty (Names.Id.of_string "__zify") env
+          let evd = Tacmach.New.project gl in
+          let target = Reductionops.nf_betaiota env evd t' in
+          let h' = Tactics.fresh_id_in_env Id.Set.empty h env in
+          let prf =
+            EConstr.mkApp (force rew_iff, [|t0; target; prf; EConstr.mkVar h|])
           in
-          let h' = fresh_id_in_env Id.Set.empty h env in
-          tclTHENLIST
-            [ letin_tac None (Names.Name n) t None
-                Locus.{onhyps = None; concl_occs = NoOccurrences}
-            ; assert_by (Name.Name h')
-                (EConstr.mkApp (force q, [|EConstr.mkVar n|]))
-                (tclTHEN
-                   (Equality.rewriteRL
-                      (EConstr.mkApp (force ieq, [|EConstr.mkVar n|])))
-                   (exact_check (EConstr.mkVar h)))
-            ; reduct_in_hyp ~check:true ~reorder:false (unfold (Some n))
-                (h', Locus.InHyp)
-            ; clear [n]
-            ; (* [clear H] may fail if [h] has dependencies *)
-              tclTRY (clear [h]) ])))
+          tclTHEN
+            (Tactics.pose_proof (Name.Name h') prf)
+            (tclTRY
+               (tclTHEN (Tactics.clear [h]) (Tactics.rename_hyp [(h', h)])))))
 
-let is_progress_rewrite evd t rew =
-  match EConstr.kind evd rew with
-  | App (c, [|lhs; rhs|]) ->
-    if EConstr.eq_constr evd (force iff) c then
-      (* This is a successful rewriting *)
-      not (EConstr.eq_constr evd lhs rhs)
-    else
-      CErrors.anomaly
-        Pp.(
-          str "is_progress_rewrite: not a rewrite"
-          ++ pr_constr (Global.env ()) evd rew)
-  | _ -> failwith "is_progress_rewrite: not even an application"
-
-let trans_hyp h t0 t =
-  Tacticals.New.(
+let trans_concl prfp =
+  if debug then
+    Feedback.msg_debug Pp.(str "trans_concl: " ++ pp_prfp prfp ++ fnl ());
+  match prfp with
+  | IProof -> Tacticals.New.tclIDTAC
+  | CProof t ->
     Proofview.Goal.enter (fun gl ->
         let env = Tacmach.New.pf_env gl in
         let evd = Tacmach.New.project gl in
-        let t' = unfold None env evd (EConstr.mkApp (force ieq, [|t|])) in
-        if is_progress_rewrite evd t0 (get_type_of env evd t') then
-          tclFIRST
-            [ Equality.general_rewrite_in true Locus.AllOccurrences true false h
-                t' false
-            ; trans_hyp h t ]
-        else tclIDTAC))
-
-let trans_concl t =
-  Tacticals.New.(
+        let t' = Reductionops.nf_betaiota env evd t in
+        Tactics.change_concl t')
+  | TProof (t, prf) ->
     Proofview.Goal.enter (fun gl ->
-        let concl = Tacmach.New.pf_concl gl in
-        let env = Tacmach.New.pf_env gl in
-        let evd = Tacmach.New.project gl in
-        let t' = unfold None env evd (EConstr.mkApp (force ieq, [|t|])) in
-        if is_progress_rewrite evd concl (get_type_of env evd t') then
-          Equality.general_rewrite true Locus.AllOccurrences true false t'
-        else tclIDTAC))
+        Equality.general_rewrite true Locus.AllOccurrences true false prf)
 
 let tclTHENOpt e tac tac' =
   match e with None -> tac' | Some e' -> Tacticals.New.tclTHEN (tac e') tac'
@@ -976,6 +1252,16 @@ let assert_inj t =
       with Not_found ->
         Tacticals.New.tclFAIL 0 (Pp.str " InjTyp does not exist"))
 
+let elim_binding x t ty =
+  Proofview.Goal.enter (fun gl ->
+      let env = Tacmach.New.pf_env gl in
+      let h =
+        Tactics.fresh_id_in_env Id.Set.empty (Nameops.add_prefix "heq_" x) env
+      in
+      Tacticals.New.tclTHEN
+        (Tactics.pose_proof (Name h) (eq_proof ty (EConstr.mkVar x) t))
+        (Tacticals.New.tclTRY (Tactics.clear_body [x])))
+
 let do_let tac (h : Constr.named_declaration) =
   match h with
   | Context.Named.Declaration.LocalAssum _ -> Tacticals.New.tclIDTAC
@@ -985,22 +1271,25 @@ let do_let tac (h : Constr.named_declaration) =
         let evd = Tacmach.New.project gl in
         try
           ignore (get_injection env evd (EConstr.of_constr ty));
-          tac id.Context.binder_name t ty
+          tac id.Context.binder_name (EConstr.of_constr t)
+            (EConstr.of_constr ty)
         with Not_found -> Tacticals.New.tclIDTAC)
 
-let iter_let tac =
+let iter_let_aux tac =
   Proofview.Goal.enter (fun gl ->
       let env = Tacmach.New.pf_env gl in
       let sign = Environ.named_context env in
+      init_cache ();
       Tacticals.New.tclMAP (do_let tac) sign)
 
 let iter_let (tac : Ltac_plugin.Tacinterp.Value.t) =
-  init_cache ();
-  iter_let (fun (id : Names.Id.t) (t : Constr.types) (ty : Constr.types) ->
+  iter_let_aux (fun (id : Names.Id.t) t ty ->
       Ltac_plugin.Tacinterp.Value.apply tac
         [ Ltac_plugin.Tacinterp.Value.of_constr (EConstr.mkVar id)
-        ; Ltac_plugin.Tacinterp.Value.of_constr (EConstr.of_constr t)
-        ; Ltac_plugin.Tacinterp.Value.of_constr (EConstr.of_constr ty) ])
+        ; Ltac_plugin.Tacinterp.Value.of_constr t
+        ; Ltac_plugin.Tacinterp.Value.of_constr ty ])
+
+let elim_let = iter_let_aux elim_binding
 
 let zify_tac =
   Proofview.Goal.enter (fun gl ->
@@ -1009,8 +1298,9 @@ let zify_tac =
       init_cache ();
       let evd = Tacmach.New.project gl in
       let env = Tacmach.New.pf_env gl in
+      let sign = Environ.named_context env in
       let concl = trans_check_prop env evd (Tacmach.New.pf_concl gl) in
-      let hyps = trans_hyps env evd (Tacmach.New.pf_hyps_types gl) in
+      let hyps = trans_hyps env evd sign in
       let l = CstrTable.get () in
       tclTHENOpt concl trans_concl
         (Tacticals.New.tclTHEN
@@ -1018,14 +1308,101 @@ let zify_tac =
               (List.rev_map (fun (h, p, t) -> trans_hyp h p t) hyps))
            (CstrTable.gen_cstr l)))
 
-let iter_specs tac =
-  Tacticals.New.tclTHENLIST
-    (List.fold_left (fun acc d -> tac d :: acc) [] (Spec.get ()))
+type pscript = Set of Names.Id.t * EConstr.t | Pose of Names.Id.t * EConstr.t
 
-let iter_specs (tac : Ltac_plugin.Tacinterp.Value.t) =
-  iter_specs (fun c ->
-      Ltac_plugin.Tacinterp.Value.apply tac
-        [Ltac_plugin.Tacinterp.Value.of_constr c])
+type spec_env =
+  { map : Names.Id.t HConstr.t
+  ; spec_name : Names.Id.t
+  ; term_name : Names.Id.t
+  ; fresh : Nameops.Subscript.t
+  ; proofs : pscript list }
+
+let register_constr {map; spec_name; term_name; fresh; proofs} c thm =
+  let tname = Nameops.add_subscript term_name fresh in
+  let sname = Nameops.add_subscript spec_name fresh in
+  ( EConstr.mkVar tname
+  , { map = HConstr.add c tname map
+    ; spec_name
+    ; term_name
+    ; fresh = Nameops.Subscript.succ fresh
+    ; proofs = Set (tname, c) :: Pose (sname, thm) :: proofs } )
+
+let fresh_subscript env =
+  let ctx = (Environ.named_context_val env).Environ.env_named_map in
+  Nameops.Subscript.succ
+    (Names.Id.Map.fold
+       (fun id _ s ->
+         let _, s' = Nameops.get_subscript id in
+         let cmp = Nameops.Subscript.compare s s' in
+         if cmp = 0 then s else if cmp < 0 then s' else s)
+       ctx Nameops.Subscript.zero)
+
+let init_env sname tname s =
+  { map = HConstr.empty
+  ; spec_name = sname
+  ; term_name = tname
+  ; fresh = s
+  ; proofs = [] }
+
+let rec spec_of_term env evd (senv : spec_env) t =
+  let get_name t env =
+    try EConstr.mkVar (HConstr.find t senv.map) with Not_found -> t
+  in
+  let c, a = decompose_app env evd t in
+  if a = [||] then (* The term cannot be decomposed. *)
+    (get_name t senv, senv)
+  else
+    (* recursively analyse the sub-terms *)
+    let a', senv' =
+      Array.fold_right
+        (fun e (l, senv) ->
+          let r, senv = spec_of_term env evd senv e in
+          (r :: l, senv))
+        a ([], senv)
+    in
+    let a' = Array.of_list a' in
+    let t' = EConstr.mkApp (c, a') in
+    try (EConstr.mkVar (HConstr.find t' senv'.map), senv')
+    with Not_found -> (
+      try
+        match snd (HConstr.find c !specs_cache) with
+        | Spec s ->
+          let thm = EConstr.mkApp (s.deriv.ESpecT.spec, a') in
+          register_constr senv' t' thm
+        | _ -> (get_name t' senv', senv')
+      with Not_found -> (t', senv') )
+
+let interp_pscript s =
+  match s with
+  | Set (id, c) ->
+    Tacticals.New.tclTHEN
+      (Tactics.letin_tac None (Names.Name id) c None
+         {Locus.onhyps = None; Locus.concl_occs = Locus.AllOccurrences})
+      (Tactics.clear_body [id])
+  | Pose (id, c) -> Tactics.pose_proof (Names.Name id) c
+
+let rec interp_pscripts l =
+  match l with
+  | [] -> Tacticals.New.tclIDTAC
+  | s :: l -> Tacticals.New.tclTHEN (interp_pscript s) (interp_pscripts l)
+
+let spec_of_hyps =
+  Proofview.Goal.enter (fun gl ->
+      let terms =
+        Tacmach.New.pf_concl gl :: List.map snd (Tacmach.New.pf_hyps_types gl)
+      in
+      let env = Tacmach.New.pf_env gl in
+      let evd = Tacmach.New.project gl in
+      let s = fresh_subscript env in
+      let env =
+        List.fold_left
+          (fun acc t -> snd (spec_of_term env evd acc t))
+          (init_env (Names.Id.of_string "H") (Names.Id.of_string "z") s)
+          terms
+      in
+      interp_pscripts (List.rev env.proofs))
+
+let iter_specs = spec_of_hyps
 
 let find_hyp evd t l =
   try Some (fst (List.find (fun (h, t') -> EConstr.eq_constr evd t t') l))
