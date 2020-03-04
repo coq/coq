@@ -612,11 +612,13 @@ let uninterp to_raw o (Glob_term.AnyGlobConstr n) =
 
 end
 
+let z_two = Z.of_int 2
+
 (** Conversion from bigint to int63 *)
 let rec int63_of_pos_bigint i =
   if Z.(equal i zero) then Uint63.of_int 0
   else
-    let quo, remi = Z.div_rem i (Z.of_int 2) in
+    let quo, remi = Z.div_rem i z_two in
     if Z.(equal remi one) then Uint63.add (Uint63.of_int 1)
       (Uint63.mul (Uint63.of_int 2) (int63_of_pos_bigint quo))
     else Uint63.mul (Uint63.of_int 2) (int63_of_pos_bigint quo)
@@ -799,7 +801,7 @@ let rawnum_of_coqint c =
 (** First, [positive] from/to bigint *)
 
 let rec pos_of_bigint posty n =
-  match Z.div_rem n (Z.of_int 2) with
+  match Z.div_rem n z_two with
   | (q, rem) when rem = Z.zero ->
       let c = mkConstruct (posty, 2) in (* xO *)
       mkApp (c, [| pos_of_bigint posty q |])
@@ -815,8 +817,8 @@ let rec bigint_of_pos c = match Constr.kind c with
       begin match Constr.kind c with
       | Construct ((_, n), _) ->
           begin match n with
-          | 1 -> (* xI *) Z.add Z.one (Z.mul Z.(of_int 2) (bigint_of_pos d))
-          | 2 -> (* xO *) Z.mul Z.(of_int 2) (bigint_of_pos d)
+          | 1 -> (* xI *) Z.add Z.one (Z.mul z_two (bigint_of_pos d))
+          | 2 -> (* xO *) Z.mul z_two (bigint_of_pos d)
           | n -> assert false (* no other constructor of type positive *)
           end
       | x -> raise NotAValidPrimToken
@@ -865,7 +867,7 @@ let error_overflow ?loc n =
 let interp_int63 ?loc n =
   if Z.(leq zero n)
   then
-    if Z.(lt n (pow (of_int 2) 63))
+    if Z.(lt n (pow z_two 63))
     then int63_of_pos_bigint ?loc n
     else error_overflow ?loc n
   else error_negative ?loc
