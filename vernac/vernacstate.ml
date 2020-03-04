@@ -21,7 +21,7 @@ module Parser = struct
     Flags.with_option Flags.we_are_parsing (fun () ->
       try Pcoq.Entry.parse entry pa
       with e when CErrors.noncritical e ->
-        let (e, info) = CErrors.push e in
+        let (e, info) = Exninfo.capture e in
         Exninfo.iraise (e, info))
     ()
 

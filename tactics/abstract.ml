@@ -97,8 +97,8 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
        which is an error irrelevant to the proof system (in fact it
        means that [e] comes from [tac] failing to yield enough
        success). Hence it reraises [e]. *)
-    let (_, info) = CErrors.push src in
-    iraise (e, info)
+    let (_, info) = Exninfo.capture src in
+    Exninfo.iraise (e, info)
   in
   let body, effs = Future.force const.Declare.proof_entry_body in
   (* We drop the side-effects from the entry, they already exist in the ambient environment *)

@@ -573,7 +573,7 @@ let () = define1 "constr_check" constr begin fun c ->
       Proofview.Unsafe.tclEVARS sigma >>= fun () ->
       return (of_result Value.of_constr (Inl c))
     with e when CErrors.noncritical e ->
-      let e = CErrors.push e in
+      let e = Exninfo.capture e in
       return (of_result Value.of_constr (Inr e))
   end
 end
@@ -1079,7 +1079,7 @@ let interp_constr flags ist c =
     Proofview.Unsafe.tclEVARS sigma >>= fun () ->
     Proofview.tclUNIT c
   with e when catchable_exception e ->
-    let (e, info) = CErrors.push e in
+    let (e, info) = Exninfo.capture e in
     set_bt info >>= fun info ->
     match Exninfo.get info fatal_flag with
     | None -> Proofview.tclZERO ~info e

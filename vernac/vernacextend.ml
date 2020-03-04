@@ -109,11 +109,11 @@ let type_vernac opn converted_args ~atts =
     phase := "Executing command";
     hunk ~atts
   with
-    | reraise ->
-        let reraise = CErrors.push reraise in
-        if !Flags.debug then
-          Feedback.msg_debug (str"Vernac Interpreter " ++ str !phase);
-        iraise reraise
+  | reraise ->
+    let reraise = Exninfo.capture reraise in
+    if !Flags.debug then
+      Feedback.msg_debug (str"Vernac Interpreter " ++ str !phase);
+    Exninfo.iraise reraise
 
 (** VERNAC EXTEND registering *)
 

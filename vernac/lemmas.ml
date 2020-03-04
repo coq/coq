@@ -375,8 +375,8 @@ let finish_proved env sigma idopt po info =
       (* This takes care of the implicits and hook for the current constant*)
       process_recthms ~fix_exn ?hook env sigma universes ~udecl ~poly ~scope r impargs other_thms
     with e when CErrors.noncritical e ->
-      let e = CErrors.push e in
-      iraise (fix_exn e)
+      let e = Exninfo.capture e in
+      Exninfo.iraise (fix_exn e)
     in ()
   | _ ->
     CErrors.anomaly Pp.(str "[standard_proof_terminator] close_proof returned more than one proof term")

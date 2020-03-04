@@ -96,7 +96,7 @@ let with_fail f : (Pp.t, unit) result =
   (* Fail Timeout is a common pattern so we need to support it. *)
   | e when CErrors.noncritical e || e = CErrors.Timeout ->
     (* The error has to be printed in the failing state *)
-    Ok CErrors.(iprint (push e))
+    Ok CErrors.(iprint (Exninfo.capture e))
 
 (* We restore the state always *)
 let with_fail ~st f =
@@ -262,10 +262,10 @@ let interp_gen ~verbosely ~st ~interp_fn cmd =
       Vernacstate.freeze_interp_state ~marshallable:false
     ) st
   with exn ->
-    let exn = CErrors.push exn in
+    let exn = Exninfo.capture exn in
     let exn = locate_if_not_already ?loc:cmd.CAst.loc exn in
     Vernacstate.invalidate_cache ();
-    Util.iraise exn
+    Exninfo.iraise exn
 
 (* Regular interp *)
 let interp ?(verbosely=true) ~st cmd =

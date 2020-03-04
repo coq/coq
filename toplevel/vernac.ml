@@ -69,7 +69,7 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
       let new_proof = Vernacstate.Proof_global.give_me_the_proof_opt () [@ocaml.warning "-3"] in
       { state with doc = ndoc; sid = nsid; proof = new_proof; }
     with reraise ->
-      let (reraise, info) = CErrors.push reraise in
+      let (reraise, info) = Exninfo.capture reraise in
       (* XXX: In non-interactive mode edit_at seems to do very weird
          things, so we better avoid it while we investigate *)
       if interactive then ignore(Stm.edit_at ~doc:state.doc state.sid);
@@ -77,7 +77,8 @@ let interp_vernac ~check ~interactive ~state ({CAst.loc;_} as com) =
         match Loc.get_loc info with
         | None   -> Option.cata (Loc.add_loc info) info loc
         | Some _ -> info
-      end in iraise (reraise, info)
+      end in
+      Exninfo.iraise (reraise, info)
 
 (* Load a vernac file. CErrors are annotated with file and location *)
 let load_vernac_core ~echo ~check ~interactive ~state file =
@@ -113,9 +114,9 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
   in
   try loop state []
   with any ->   (* whatever the exception *)
-    let (e, info) = CErrors.push any in
+    let (e, info) = Exninfo.capture any in
     input_cleanup ();
-    iraise (e, info)
+    Exninfo.iraise (e, info)
 
 let process_expr ~state loc_ast =
   interp_vernac ~interactive:true ~check:true ~state loc_ast

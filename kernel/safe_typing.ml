@@ -1262,7 +1262,7 @@ let export ?except ~output_native_objects senv dir =
   let senv =
     try join_safe_environment ?except senv
     with e ->
-      let e = CErrors.push e in
+      let e = Exninfo.capture e in
       CErrors.user_err ~hdr:"export" (CErrors.iprint e)
   in
   assert(senv.future_cst = []);

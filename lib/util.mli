@@ -119,8 +119,10 @@ val delayed_force : 'a delayed -> 'a
 (** {6 Enriched exceptions} *)
 
 type iexn = Exninfo.iexn
+[@@ocaml.deprecated "please use [Exninfo.iexn]"]
 
-val iraise : iexn -> 'a
+val iraise : Exninfo.iexn -> 'a
+[@@ocaml.deprecated "please use [Exninfo.iraise]"]
 
 (** {6 Misc. } *)
 

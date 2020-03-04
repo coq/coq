@@ -118,7 +118,7 @@ let alarm what internal msg =
 let try_declare_scheme what f internal names kn =
   try f internal names kn
   with e ->
-  let e = CErrors.push e in
+  let e = Exninfo.capture e in
   let rec extract_exn = function Logic_monad.TacticFailure e -> extract_exn e | e -> e in
   let msg = match extract_exn (fst e) with
     | ParameterWithoutEquality cst ->
@@ -166,11 +166,11 @@ let try_declare_scheme what f internal names kn =
     | e when CErrors.noncritical e ->
         alarm what internal
           (str "Unexpected error during scheme creation: " ++ CErrors.print e)
-    | _ -> iraise e
+    | _ -> Exninfo.iraise e
   in
   match msg with
   | None -> ()
-  | Some msg -> iraise (UserError (None, msg), snd e)
+  | Some msg -> Exninfo.iraise (UserError (None, msg), snd e)
 
 let beq_scheme_msg mind =
   let mib = Global.lookup_mind mind in

@@ -265,7 +265,7 @@ let read_sentence ~state input =
   let open Vernac.State in
   try Stm.parse_sentence ~doc:state.doc state.sid ~entry:G_toplevel.vernac_toplevel input
   with reraise ->
-    let reraise = CErrors.push reraise in
+    let reraise = Exninfo.capture reraise in
     discard_to_dot ();
     (* The caller of read_sentence does the error printing now, this
        should be re-enabled once we rely on the feedback error
@@ -360,7 +360,7 @@ let top_goal_print ~doc c oldp newp =
     end
   with
   | exn ->
-    let (e, info) = CErrors.push exn in
+    let (e, info) = Exninfo.capture exn in
     let loc = Loc.get_loc info in
     let msg = CErrors.iprint (e, info) in
     TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer
@@ -484,7 +484,7 @@ let read_and_execute ~state =
     TopErr.print_error_for_buffer Feedback.Error msg top_buffer;
     exit 1
   | any ->
-    let (e, info) = CErrors.push any in
+    let (e, info) = Exninfo.capture any in
     let loc = Loc.get_loc info in
     let msg = CErrors.iprint (e, info) in
     TopErr.print_error_for_buffer ?loc Feedback.Error msg top_buffer;

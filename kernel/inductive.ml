@@ -962,7 +962,7 @@ let check_one_fix renv recpos trees def =
                 let stack_br = push_stack_args case_spec.(k) stack' in
                 check_rec_call renv stack_br br')
             with (FixGuardError _ as exn) ->
-              let exn = CErrors.push exn in
+              let exn = Exninfo.capture exn in
               (* we try hard to reduce the match away by looking for a
                  constructor in c_0 (we unfold definitions too) *)
               let c_0 = whd_all renv.env c_0 in
@@ -1007,7 +1007,7 @@ let check_one_fix renv recpos trees def =
                   check_nested_fix_body illformed renv' (decrArg+1) arg_sp body
                 else check_rec_call renv' [] body)
             with (FixGuardError _ as exn) ->
-              let exn = CErrors.push exn in
+              let exn = Exninfo.capture exn in
               (* we try hard to reduce the fix away by looking for a
                  constructor in l[decrArg] (we unfold definitions too) *)
               if List.length l <= decrArg then Exninfo.iraise exn;
@@ -1055,7 +1055,7 @@ let check_one_fix renv recpos trees def =
               List.iter (check_rec_call renv []) l;
               check_rec_call renv [] c
             with (FixGuardError _ as exn) ->
-              let exn = CErrors.push exn in
+              let exn = Exninfo.capture exn in
               (* we try hard to reduce the proj away by looking for a
                  constructor in c (we unfold definitions too) *)
               let c = whd_all renv.env c in

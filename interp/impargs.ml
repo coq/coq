@@ -77,9 +77,9 @@ let with_implicit_protection f x =
     implicit_args := oflags;
     rslt
   with reraise ->
-    let reraise = CErrors.push reraise in
+    let reraise = Exninfo.capture reraise in
     let () = implicit_args := oflags in
-    iraise reraise
+    Exninfo.iraise reraise
 
 type on_trailing_implicit = Error | Info | Silent
 

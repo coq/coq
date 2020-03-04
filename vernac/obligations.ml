@@ -428,7 +428,7 @@ let solve_by_tac ?loc name evi t poly ctx =
     Some (body, entry.Declare.proof_entry_type, ctx')
   with
   | Refiner.FailError (_, s) as exn ->
-    let _ = CErrors.push exn in
+    let _ = Exninfo.capture exn in
     user_err ?loc ~hdr:"solve_obligation" (Lazy.force s)
   (* If the proof is open we absorb the error and leave the obligation open *)
   | Proof.OpenProof _ ->
