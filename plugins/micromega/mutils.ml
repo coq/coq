@@ -19,6 +19,9 @@
 (*                                                                      *)
 (************************************************************************)
 
+open NumCompat
+module Z_ = NumCompat.Z
+
 module Int = struct
   type t = int
 
@@ -159,24 +162,6 @@ let saturate_bin (type a) (module Set : Set.S with type elt = a)
   let s0 = List.fold_left (fun acc e -> Set.add e acc) Set.empty l in
   Set.elements (Set.diff (iterate Set.empty s0) s0)
 
-open Num
-open Big_int
-
-let ppcm x y =
-  let g = gcd_big_int x y in
-  let x' = div_big_int x g in
-  let y' = div_big_int y g in
-  mult_big_int g (mult_big_int x' y')
-
-let denominator = function
-  | Int _ | Big_int _ -> unit_big_int
-  | Ratio r -> Ratio.denominator_ratio r
-
-let numerator = function
-  | Ratio r -> Ratio.numerator_ratio r
-  | Int i -> Big_int.big_int_of_int i
-  | Big_int i -> i
-
 let iterate_until_stable f x =
   let rec iter x = match f x with None -> x | Some x' -> iter x' in
   iter x
@@ -207,24 +192,23 @@ module CoqToCaml = struct
     (* Swap left-right ? *)
     match i with XH -> 1 | XI i -> 1 + (2 * index i) | XO i -> 2 * index i
 
-  open Big_int
-
   let rec positive_big_int p =
     match p with
-    | XH -> unit_big_int
-    | XI p -> add_int_big_int 1 (mult_int_big_int 2 (positive_big_int p))
-    | XO p -> mult_int_big_int 2 (positive_big_int p)
+    | XH -> Z_.one
+    | XI p -> Z_.add Z_.one (Z_.mul Z_.two (positive_big_int p))
+    | XO p -> Z_.mul Z_.two (positive_big_int p)
 
   let z_big_int x =
     match x with
-    | Z0 -> zero_big_int
+    | Z0 -> Z_.zero
     | Zpos p -> positive_big_int p
-    | Zneg p -> minus_big_int (positive_big_int p)
+    | Zneg p -> Z_.neg (positive_big_int p)
 
   let z x = match x with Z0 -> 0 | Zpos p -> index p | Zneg p -> -index p
 
   let q_to_num {qnum = x; qden = y} =
-    Big_int (z_big_int x) // Big_int (z_big_int (Zpos y))
+    let open Q.Notations in
+    Q.of_bigint (z_big_int x) // Q.of_bigint (z_big_int (Zpos y))
 end
 
 (**
@@ -259,27 +243,24 @@ module CamlToCoq = struct
       (* this should be -1 *)
       Zneg (positive (-x))
 
-  open Big_int
-
   let positive_big_int n =
-    let two = big_int_of_int 2 in
     let rec _pos n =
-      if eq_big_int n unit_big_int then XH
+      if Z_.equal n Z_.one then XH
       else
-        let q, m = quomod_big_int n two in
-        if eq_big_int unit_big_int m then XI (_pos q) else XO (_pos q)
+        let q, m = Z_.quomod n Z_.two in
+        if Z_.equal Z_.one m then XI (_pos q) else XO (_pos q)
     in
     _pos n
 
   let bigint x =
-    match sign_big_int x with
+    match Z_.sign x with
     | 0 -> Z0
     | 1 -> Zpos (positive_big_int x)
-    | _ -> Zneg (positive_big_int (minus_big_int x))
+    | _ -> Zneg (positive_big_int (Z_.neg x))
 
   let q n =
-    { Micromega.qnum = bigint (numerator n)
-    ; Micromega.qden = positive_big_int (denominator n) }
+    { Micromega.qnum = bigint (Q.num n)
+    ; Micromega.qden = positive_big_int (Q.den n) }
 end
 
 (**

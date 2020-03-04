@@ -518,7 +518,7 @@ module M = struct
     | Mc.Zneg p -> EConstr.mkApp (Lazy.force coq_NEG, [|dump_positive p|])
 
   let pp_z o x =
-    Printf.fprintf o "%s" (Big_int.string_of_big_int (CoqToCaml.z_big_int x))
+    Printf.fprintf o "%s" (NumCompat.Z.to_string (CoqToCaml.z_big_int x))
 
   let dump_q q =
     EConstr.mkApp
@@ -636,14 +636,14 @@ module M = struct
     in
     pp_pol o e
 
-  (*  let pp_clause pp_c o (f: 'cst clause) =
-    List.iter (fun ((p,_),(t,_)) -> Printf.fprintf o "(%a @%a)" (pp_pol pp_c)  p Tag.pp t) f *)
+  (* let pp_clause pp_c o (f: 'cst clause) =
+     List.iter (fun ((p,_),(t,_)) -> Printf.fprintf o "(%a @%a)" (pp_pol pp_c)  p Tag.pp t) f *)
 
   let pp_clause_tag o (f : 'cst clause) =
     List.iter (fun ((p, _), (t, _)) -> Printf.fprintf o "(_ @%a)" Tag.pp t) f
 
-  (*  let pp_cnf pp_c o (f:'cst cnf) =
-    List.iter (fun l -> Printf.fprintf o "[%a]" (pp_clause pp_c) l) f *)
+  (* let pp_cnf pp_c o (f:'cst cnf) =
+     List.iter (fun l -> Printf.fprintf o "[%a]" (pp_clause pp_c) l) f *)
 
   let pp_cnf_tag o (f : 'cst cnf) =
     List.iter (fun l -> Printf.fprintf o "[%a]" pp_clause_tag l) f
@@ -819,16 +819,16 @@ module M = struct
 
     let elements env = env.vars
 
-    (*   let string_of_env gl env =
-     let rec string_of_env i env acc =
-       match env with
-       | [] -> acc
-       | e::env -> string_of_env (i+1) env
-                     (IMap.add i
-                             (Pp.string_of_ppcmds
-                                   (Printer.pr_econstr_env gl.env gl.sigma e)) acc) in
-     string_of_env 1 env IMap.empty
- *)
+    (* let string_of_env gl env =
+       let rec string_of_env i env acc =
+         match env with
+         | [] -> acc
+         | e::env -> string_of_env (i+1) env
+                       (IMap.add i
+                               (Pp.string_of_ppcmds
+                                     (Printer.pr_econstr_env gl.env gl.sigma e)) acc) in
+       string_of_env 1 env IMap.empty
+    *)
     let pp gl env =
       let ppl =
         List.mapi
@@ -951,7 +951,7 @@ module M = struct
   (* NB: R is a different story.
      Because it is axiomatised, reducing would not be effective.
      Therefore, there is a specific parser for constant over R
-   *)
+  *)
 
   let rconst_assoc =
     [ (coq_Rplus, fun x y -> Mc.CPlus (x, y))
@@ -1613,14 +1613,14 @@ let compact_proofs (cnf_ff : 'cst cnf) res (cnf_ff' : 'cst cnf) =
       in
       List.assoc formula new_cl
     in
-    (*    if debug then
-      begin
-        Printf.printf "\ncompact_proof : %a %a %a"
-          (pp_ml_list prover.pp_f) (List.map fst old_cl)
-          prover.pp_prf prf
-          (pp_ml_list prover.pp_f) (List.map fst new_cl)   ;
-          flush stdout
-      end ; *)
+    (* if debug then
+       begin
+         Printf.printf "\ncompact_proof : %a %a %a"
+           (pp_ml_list prover.pp_f) (List.map fst old_cl)
+           prover.pp_prf prf
+           (pp_ml_list prover.pp_f) (List.map fst new_cl)   ;
+           flush stdout
+       end ; *)
     let res =
       try prover.compact prf remap
       with x when CErrors.noncritical x -> (
@@ -1790,14 +1790,14 @@ let micromega_tauto pre_process cnf spec prover env
       flush stdout
     end;
     (* Even if it does not work, this does not mean it is not provable
-  -- the prover is REALLY incomplete *)
+       -- the prover is REALLY incomplete *)
     (* if debug then
-      begin
-        (* recompute the proofs *)
-        match witness_list_tags prover  cnf_ff' with
-          | None -> failwith "abstraction is wrong"
-          | Some res -> ()
-      end ; *)
+       begin
+         (* recompute the proofs *)
+         match witness_list_tags prover  cnf_ff' with
+           | None -> failwith "abstraction is wrong"
+           | Some res -> ()
+       end ; *)
     let res' = compact_proofs cnf_ff res cnf_ff' in
     let ff', res', ids = (ff', res', Mc.ids_of_formula ff') in
     let res' = dump_list spec.proof_typ spec.dump_proof res' in
@@ -2009,7 +2009,7 @@ let micromega_genr prover tac =
           let goal_vars = List.map (fun (_, i) -> List.nth env (i - 1)) vars in
           let arith_args = goal_props @ goal_vars in
           let kill_arith = Tacticals.New.tclTHEN tac_arith tac in
-          (*  Tacticals.New.tclTHEN
+          (* Tacticals.New.tclTHEN
              (Tactics.keep [])
              (Tactics.tclABSTRACT  None*)
           Tacticals.New.tclTHENS

@@ -9,7 +9,9 @@
 (* ========================================================================= *)
 (* Nonlinear universal reals procedure using SOS decomposition.              *)
 (* ========================================================================= *)
-open Num
+
+open NumCompat
+open Q.Notations
 open Sos_types
 open Sos_lib
 
@@ -27,19 +29,19 @@ exception Sanity
 
 let decimalize =
   let rec normalize y =
-    if abs_num y </ Int 1 // Int 10 then normalize (Int 10 */ y) - 1
-    else if abs_num y >=/ Int 1 then normalize (y // Int 10) + 1
+    if Q.abs y </ Q.one // Q.ten then normalize (Q.ten */ y) - 1
+    else if Q.abs y >=/ Q.one then normalize (y // Q.ten) + 1
     else 0
   in
   fun d x ->
-    if x =/ Int 0 then "0.0"
+    if x =/ Q.zero then "0.0"
     else
-      let y = abs_num x in
+      let y = Q.abs x in
       let e = normalize y in
-      let z = (pow10 (-e) */ y) +/ Int 1 in
-      let k = round_num (pow10 d */ z) in
-      (if x </ Int 0 then "-0." else "0.")
-      ^ implode (List.tl (explode (string_of_num k)))
+      let z = (Q.pow10 (-e) */ y) +/ Q.one in
+      let k = Q.round (Q.pow10 d */ z) in
+      (if x </ Q.zero then "-0." else "0.")
+      ^ implode (List.tl (explode (Q.to_string k)))
       ^ if e = 0 then "" else "e" ^ string_of_int e
 
 (* ------------------------------------------------------------------------- *)
@@ -55,22 +57,22 @@ let rec iter (m, n) f a = if n < m then a else iter (m + 1, n) f (f m a)
 (* The main types.                                                           *)
 (* ------------------------------------------------------------------------- *)
 
-type vector = int * (int, num) func
-type matrix = (int * int) * (int * int, num) func
+type vector = int * (int, Q.t) func
+type matrix = (int * int) * (int * int, Q.t) func
 type monomial = (vname, int) func
-type poly = (monomial, num) func
+type poly = (monomial, Q.t) func
 
 (* ------------------------------------------------------------------------- *)
 (* Assignment avoiding zeros.                                                *)
 (* ------------------------------------------------------------------------- *)
 
-let ( |--> ) x y a = if y =/ Int 0 then a else (x |-> y) a
+let ( |--> ) x y a = if y =/ Q.zero then a else (x |-> y) a
 
 (* ------------------------------------------------------------------------- *)
 (* This can be generic.                                                      *)
 (* ------------------------------------------------------------------------- *)
 
-let element (d, v) i = tryapplyd v i (Int 0)
+let element (d, v) i = tryapplyd v i Q.zero
 let mapa f (d, v) = (d, foldl (fun a i c -> (i |--> f c) a) undefined v)
 let is_zero (d, v) = match v with Empty -> true | _ -> false
 
@@ -82,12 +84,12 @@ let vector_0 n = ((n, undefined) : vector)
 let dim (v : vector) = fst v
 
 let vector_const c n =
-  if c =/ Int 0 then vector_0 n
+  if c =/ Q.zero then vector_0 n
   else ((n, List.fold_right (fun k -> k |-> c) (1 -- n) undefined) : vector)
 
 let vector_cmul c (v : vector) =
   let n = dim v in
-  if c =/ Int 0 then vector_0 n else (n, mapf (fun x -> c */ x) (snd v))
+  if c =/ Q.zero then vector_0 n else (n, mapf (fun x -> c */ x) (snd v))
 
 let vector_of_list l =
   let n = List.length l in
@@ -102,15 +104,15 @@ let dimensions (m : matrix) = fst m
 
 let matrix_cmul c (m : matrix) =
   let i, j = dimensions m in
-  if c =/ Int 0 then matrix_0 (i, j)
+  if c =/ Q.zero then matrix_0 (i, j)
   else ((i, j), mapf (fun x -> c */ x) (snd m))
 
-let matrix_neg (m : matrix) = ((dimensions m, mapf minus_num (snd m)) : matrix)
+let matrix_neg (m : matrix) = ((dimensions m, mapf Q.neg (snd m)) : matrix)
 
 let matrix_add (m1 : matrix) (m2 : matrix) =
   let d1 = dimensions m1 and d2 = dimensions m2 in
   if d1 <> d2 then failwith "matrix_add: incompatible dimensions"
-  else ((d1, combine ( +/ ) (fun x -> x =/ Int 0) (snd m1) (snd m2)) : matrix)
+  else ((d1, combine ( +/ ) (fun x -> x =/ Q.zero) (snd m1) (snd m2)) : matrix)
 
 let row k (m : matrix) =
   let i, j = dimensions m in
@@ -150,21 +152,21 @@ let monomial_variables m = dom m
 (* ------------------------------------------------------------------------- *)
 let poly_0 = (undefined : poly)
 let poly_isconst (p : poly) = foldl (fun a m c -> m = monomial_1 && a) true p
-let poly_var x = (monomial_var x |=> Int 1 : poly)
-let poly_const c = if c =/ Int 0 then poly_0 else monomial_1 |=> c
+let poly_var x = (monomial_var x |=> Q.one : poly)
+let poly_const c = if c =/ Q.zero then poly_0 else monomial_1 |=> c
 
 let poly_cmul c (p : poly) =
-  if c =/ Int 0 then poly_0 else mapf (fun x -> c */ x) p
+  if c =/ Q.zero then poly_0 else mapf (fun x -> c */ x) p
 
-let poly_neg (p : poly) = (mapf minus_num p : poly)
+let poly_neg (p : poly) = (mapf Q.neg p : poly)
 
 let poly_add (p1 : poly) (p2 : poly) =
-  (combine ( +/ ) (fun x -> x =/ Int 0) p1 p2 : poly)
+  (combine ( +/ ) (fun x -> x =/ Q.zero) p1 p2 : poly)
 
 let poly_sub p1 p2 = poly_add p1 (poly_neg p2)
 
 let poly_cmmul (c, m) (p : poly) =
-  if c =/ Int 0 then poly_0
+  if c =/ Q.zero then poly_0
   else if m = monomial_1 then mapf (fun d -> c */ d) p
   else foldl (fun a m' d -> (monomial_mul m m' |-> c */ d) a) poly_0 p
 
@@ -174,7 +176,7 @@ let poly_mul (p1 : poly) (p2 : poly) =
 let poly_square p = poly_mul p p
 
 let rec poly_pow p k =
-  if k = 0 then poly_const (Int 1)
+  if k = 0 then poly_const Q.one
   else if k = 1 then p
   else
     let q = poly_square (poly_pow p (k / 2)) in
@@ -228,9 +230,9 @@ let string_of_monomial m =
     String.concat "*" vps
 
 let string_of_cmonomial (c, m) =
-  if m = monomial_1 then string_of_num c
-  else if c =/ Int 1 then string_of_monomial m
-  else string_of_num c ^ "*" ^ string_of_monomial m
+  if m = monomial_1 then Q.to_string c
+  else if c =/ Q.one then string_of_monomial m
+  else Q.to_string c ^ "*" ^ string_of_monomial m
 
 let string_of_poly (p : poly) =
   if p = poly_0 then "<<0>>"
@@ -241,7 +243,7 @@ let string_of_poly (p : poly) =
     let s =
       List.fold_left
         (fun a (m, c) ->
-          if c </ Int 0 then a ^ " - " ^ string_of_cmonomial (minus_num c, m)
+          if c </ Q.zero then a ^ " - " ^ string_of_cmonomial (Q.neg c, m)
           else a ^ " + " ^ string_of_cmonomial (c, m))
         "" cms
     in
@@ -338,21 +340,19 @@ let token s =
 let decimal =
   let ( || ) = parser_or in
   let numeral = some isnum in
-  let decimalint = atleast 1 numeral >> o Num.num_of_string implode in
+  let decimalint = atleast 1 numeral >> o Q.of_string implode in
   let decimalfrac =
     atleast 1 numeral
-    >> fun s -> Num.num_of_string (implode s) // pow10 (List.length s)
+    >> fun s -> Q.of_string (implode s) // Q.pow10 (List.length s)
   in
   let decimalsig =
     decimalint ++ possibly (a "." ++ decimalfrac >> snd)
     >> function h, [x] -> h +/ x | h, _ -> h
   in
-  let signed prs =
-    a "-" ++ prs >> o minus_num snd || a "+" ++ prs >> snd || prs
-  in
+  let signed prs = a "-" ++ prs >> o Q.neg snd || a "+" ++ prs >> snd || prs in
   let exponent = (a "e" || a "E") ++ signed decimalint >> snd in
   signed decimalsig ++ possibly exponent
-  >> function h, [x] -> h */ power_num (Int 10) x | h, _ -> h
+  >> function h, [x] -> h */ Q.power 10 x | h, _ -> h
 
 let mkparser p s =
   let x, rst = p (explode s) in
@@ -469,19 +469,19 @@ let run_csdp dbg obj mats =
 
 let scale_then =
   let common_denominator amat acc =
-    foldl (fun a m c -> lcm_num (denominator c) a) acc amat
+    foldl (fun a m c -> Z.lcm (Q.den c) a) acc amat
   and maximal_element amat acc =
-    foldl (fun maxa m c -> max_num maxa (abs_num c)) acc amat
+    foldl (fun maxa m c -> Q.max maxa (Q.abs c)) acc amat
   in
   fun solver obj mats ->
-    let cd1 = List.fold_right common_denominator mats (Int 1)
-    and cd2 = common_denominator (snd obj) (Int 1) in
+    let cd1 = Q.of_bigint @@ List.fold_right common_denominator mats Z.one
+    and cd2 = Q.of_bigint @@ common_denominator (snd obj) Z.one in
     let mats' = List.map (mapf (fun x -> cd1 */ x)) mats
     and obj' = vector_cmul cd2 obj in
-    let max1 = List.fold_right maximal_element mats' (Int 0)
-    and max2 = maximal_element (snd obj') (Int 0) in
-    let scal1 = pow2 (20 - int_of_float (log (float_of_num max1) /. log 2.0))
-    and scal2 = pow2 (20 - int_of_float (log (float_of_num max2) /. log 2.0)) in
+    let max1 = List.fold_right maximal_element mats' Q.zero
+    and max2 = maximal_element (snd obj') Q.zero in
+    let scal1 = Q.pow2 (20 - int_of_float (log (Q.to_float max1) /. log 2.0))
+    and scal2 = Q.pow2 (20 - int_of_float (log (Q.to_float max2) /. log 2.0)) in
     let mats'' = List.map (mapf (fun x -> x */ scal1)) mats'
     and obj'' = vector_cmul scal2 obj' in
     solver obj'' mats''
@@ -490,7 +490,7 @@ let scale_then =
 (* Round a vector to "nice" rationals.                                       *)
 (* ------------------------------------------------------------------------- *)
 
-let nice_rational n x = round_num (n */ x) // n
+let nice_rational n x = Q.round (n */ x) // n
 let nice_vector n = mapa (nice_rational n)
 
 (* ------------------------------------------------------------------------- *)
@@ -501,7 +501,7 @@ let nice_vector n = mapa (nice_rational n)
 let linear_program_basic a =
   let m, n = dimensions a in
   let mats = List.map (fun j -> diagonal (column j a)) (1 -- n)
-  and obj = vector_const (Int 1) m in
+  and obj = vector_const Q.one m in
   let rv, res = run_csdp false obj mats in
   if rv = 1 || rv = 2 then false
   else if rv = 0 then true
@@ -521,8 +521,8 @@ let in_convex_hull pts pt =
   let mat =
     ( (m, n)
     , itern 1 pts2
-        (fun pts j -> itern 1 pts (fun x i -> (i, j) |-> Int x))
-        (iter (1, n) (fun i -> (v + i, i + 1) |-> Int 1) undefined) )
+        (fun pts j -> itern 1 pts (fun x i -> (i, j) |-> Q.of_int x))
+        (iter (1, n) (fun i -> (v + i, i + 1) |-> Q.one) undefined) )
   in
   linear_program_basic mat
 
@@ -544,12 +544,14 @@ let minimal_convex_hull =
 (* Stuff for "equations" (generic A->num functions).                         *)
 (* ------------------------------------------------------------------------- *)
 
-let equation_cmul c eq = if c =/ Int 0 then Empty else mapf (fun d -> c */ d) eq
-let equation_add eq1 eq2 = combine ( +/ ) (fun x -> x =/ Int 0) eq1 eq2
+let equation_cmul c eq =
+  if c =/ Q.zero then Empty else mapf (fun d -> c */ d) eq
+
+let equation_add eq1 eq2 = combine ( +/ ) (fun x -> x =/ Q.zero) eq1 eq2
 
 let equation_eval assig eq =
   let value v = apply assig v in
-  foldl (fun a v c -> a +/ (value v */ c)) (Int 0) eq
+  foldl (fun a v c -> a +/ (value v */ c)) Q.zero eq
 
 (* ------------------------------------------------------------------------- *)
 (* Eliminate all variables, in an essentially arbitrary order.               *)
@@ -574,11 +576,11 @@ let eliminate_all_equations one =
       else
         let v = choose_variable eq in
         let a = apply eq v in
-        let eq' = equation_cmul (Int (-1) // a) (undefine v eq) in
+        let eq' = equation_cmul (Q.neg_one // a) (undefine v eq) in
         let elim e =
-          let b = tryapplyd e v (Int 0) in
-          if b =/ Int 0 then e
-          else equation_add e (equation_cmul (minus_num b // a) eq)
+          let b = tryapplyd e v Q.zero in
+          if b =/ Q.zero then e
+          else equation_add e (equation_cmul (Q.neg b // a) eq)
         in
         eliminate ((v |-> eq') (mapf elim dun)) (List.map elim oeqs)
   in
@@ -631,8 +633,8 @@ let diag m =
       if is_zero m then []
       else
         let a11 = element m (i, i) in
-        if a11 </ Int 0 then failwith "diagonalize: not PSD"
-        else if a11 =/ Int 0 then
+        if a11 </ Q.zero then failwith "diagonalize: not PSD"
+        else if a11 =/ Q.zero then
           if is_zero (row i m) then diagonalize (i + 1) m
           else failwith "diagonalize: not PSD"
         else
@@ -659,21 +661,23 @@ let diag m =
 (* ------------------------------------------------------------------------- *)
 
 let deration d =
-  if d = [] then (Int 0, d)
+  if d = [] then (Q.zero, d)
   else
     let adj (c, l) =
       let a =
-        foldl (fun a i c -> lcm_num a (denominator c)) (Int 1) (snd l)
-        // foldl (fun a i c -> gcd_num a (numerator c)) (Int 0) (snd l)
+        Q.make
+          (foldl (fun a i c -> Z.lcm a (Q.den c)) Z.one (snd l))
+          (foldl (fun a i c -> Z.gcd a (Q.num c)) Z.zero (snd l))
       in
       (c // (a */ a), mapa (fun x -> a */ x) l)
     in
     let d' = List.map adj d in
     let a =
-      List.fold_right (o lcm_num (o denominator fst)) d' (Int 1)
-      // List.fold_right (o gcd_num (o numerator fst)) d' (Int 0)
+      Q.make
+        (List.fold_right (o Z.lcm (o Q.den fst)) d' Z.one)
+        (List.fold_right (o Z.gcd (o Q.num fst)) d' Z.zero)
     in
-    (Int 1 // a, List.map (fun (c, l) -> (a */ c, l)) d')
+    (Q.one // a, List.map (fun (c, l) -> (a */ c, l)) d')
 
 (* ------------------------------------------------------------------------- *)
 (* Enumeration of monomials with given multidegree bound.                    *)
@@ -702,11 +706,11 @@ let rec enumerate_monomials d vars =
 (* ------------------------------------------------------------------------- *)
 
 let rec enumerate_products d pols =
-  if d = 0 then [(poly_const num_1, Rational_lt num_1)]
+  if d = 0 then [(poly_const Q.one, Rational_lt Q.one)]
   else if d < 0 then []
   else
     match pols with
-    | [] -> [(poly_const num_1, Rational_lt num_1)]
+    | [] -> [(poly_const Q.one, Rational_lt Q.one)]
     | (p, b) :: ps ->
       let e = multidegree p in
       if e = 0 then enumerate_products d ps
@@ -736,7 +740,7 @@ let epoly_pmul p q acc =
 (* ------------------------------------------------------------------------- *)
 
 let epoly_of_poly p =
-  foldl (fun a m c -> (m |-> ((0, 0, 0) |=> minus_num c)) a) undefined p
+  foldl (fun a m c -> (m |-> ((0, 0, 0) |=> Q.neg c)) a) undefined p
 
 (* ------------------------------------------------------------------------- *)
 (* String for block diagonal matrix numbered k.                              *)
@@ -796,7 +800,7 @@ let csdp nblocks blocksizes obj mats =
   if rv = 1 || rv = 2 then failwith "csdp: Problem is infeasible"
   else if rv = 3 then ()
     (*Format.print_string "csdp warning: Reduced accuracy";
-     Format.print_newline() *)
+      Format.print_newline() *)
   else if rv <> 0 then failwith ("csdp: error " ^ string_of_int rv)
   else ();
   res
@@ -805,12 +809,12 @@ let csdp nblocks blocksizes obj mats =
 (* 3D versions of matrix operations to consider blocks separately.           *)
 (* ------------------------------------------------------------------------- *)
 
-let bmatrix_add = combine ( +/ ) (fun x -> x =/ Int 0)
+let bmatrix_add = combine ( +/ ) (fun x -> x =/ Q.zero)
 
 let bmatrix_cmul c bm =
-  if c =/ Int 0 then undefined else mapf (fun x -> c */ x) bm
+  if c =/ Q.zero then undefined else mapf (fun x -> c */ x) bm
 
-let bmatrix_neg = bmatrix_cmul (Int (-1))
+let bmatrix_neg = bmatrix_cmul Q.neg_one
 
 (* ------------------------------------------------------------------------- *)
 (* Smash a block matrix into components.                                     *)
@@ -839,7 +843,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
   in
   let monoid =
     if linf then
-      (poly_const num_1, Rational_lt num_1)
+      (poly_const Q.one, Rational_lt Q.one)
       :: List.filter (fun (p, c) -> multidegree p <= d) leqs
     else enumerate_products d leqs
   in
@@ -850,7 +854,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
     let nons = List.combine mons (1 -- List.length mons) in
     ( mons
     , List.fold_right
-        (fun (m, n) -> m |-> ((-k, -n, n) |=> Int 1))
+        (fun (m, n) -> m |-> ((-k, -n, n) |=> Q.one))
         nons undefined )
   in
   let mk_sqmultiplier k (p, c) =
@@ -865,7 +869,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
               let m = monomial_mul m1 m2 in
               if n1 > n2 then a
               else
-                let c = if n1 = n2 then Int 1 else Int 2 in
+                let c = if n1 = n2 then Q.one else Q.two in
                 let e = tryapplyd a m undefined in
                 (m |-> equation_add ((k, n1, n2) |=> c) e) a)
             nons)
@@ -889,14 +893,14 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
   let eqns = foldl (fun a m e -> e :: a) [] bigsum in
   let pvs, assig = eliminate_all_equations (0, 0, 0) eqns in
   let qvars = (0, 0, 0) :: pvs in
-  let allassig = List.fold_right (fun v -> v |-> (v |=> Int 1)) pvs assig in
+  let allassig = List.fold_right (fun v -> v |-> (v |=> Q.one)) pvs assig in
   let mk_matrix v =
     foldl
       (fun m (b, i, j) ass ->
         if b < 0 then m
         else
-          let c = tryapplyd ass v (Int 0) in
-          if c =/ Int 0 then m else ((b, j, i) |-> c) (((b, i, j) |-> c) m))
+          let c = tryapplyd ass v Q.zero in
+          if c =/ Q.zero then m else ((b, j, i) |-> c) (((b, i, j) |-> c) m))
       undefined allassig
   in
   let diagents =
@@ -907,7 +911,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
   let mats = List.map mk_matrix qvars
   and obj =
     ( List.length pvs
-    , itern 1 pvs (fun v i -> i |--> tryapplyd diagents v (Int 0)) undefined )
+    , itern 1 pvs (fun v i -> i |--> tryapplyd diagents v Q.zero) undefined )
   in
   let raw_vec =
     if pvs = [] then vector_0 0
@@ -915,7 +919,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
   in
   let find_rounding d =
     if !debugging then (
-      Format.print_string ("Trying rounding with limit " ^ string_of_num d);
+      Format.print_string ("Trying rounding with limit " ^ Q.to_string d);
       Format.print_newline () )
     else ();
     let vec = nice_vector d raw_vec in
@@ -930,16 +934,16 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
     (vec, List.map diag allmats)
   in
   let vec, ratdias =
-    if pvs = [] then find_rounding num_1
+    if pvs = [] then find_rounding Q.one
     else
       tryfind find_rounding
-        (List.map Num.num_of_int (1 -- 31) @ List.map pow2 (5 -- 66))
+        (List.map Q.of_int (1 -- 31) @ List.map Q.pow2 (5 -- 66))
   in
   let newassigs =
     List.fold_right
       (fun k -> List.nth pvs (k - 1) |-> element vec k)
       (1 -- dim vec)
-      ((0, 0, 0) |=> Int (-1))
+      ((0, 0, 0) |=> Q.neg_one)
   in
   let finalassigs =
     foldl (fun a v e -> (v |-> equation_eval newassigs e) a) newassigs allassig
@@ -1017,7 +1021,7 @@ let monomial_order =
 let term_of_varpow x k = if k = 1 then Var x else Pow (Var x, k)
 
 let term_of_monomial m =
-  if m = monomial_1 then Const num_1
+  if m = monomial_1 then Const Q.one
   else
     let m' = dest_monomial m in
     let vps = List.fold_right (fun (x, k) a -> term_of_varpow x k :: a) m' [] in
@@ -1025,7 +1029,7 @@ let term_of_monomial m =
 
 let term_of_cmonomial (m, c) =
   if m = monomial_1 then Const c
-  else if c =/ num_1 then term_of_monomial m
+  else if c =/ Q.one then term_of_monomial m
   else Mul (Const c, term_of_monomial m)
 
 let term_of_poly p =
@@ -1114,8 +1118,8 @@ let csdp obj mats =
   let rv, res = run_csdp !debugging obj mats in
   if rv = 1 || rv = 2 then failwith "csdp: Problem is infeasible"
   else if rv = 3 then ()
-    (*    (Format.print_string "csdp warning: Reduced accuracy";
-     Format.print_newline()) *)
+    (* (Format.print_string "csdp warning: Reduced accuracy";
+       Format.print_newline()) *)
   else if rv <> 0 then failwith ("csdp: error " ^ string_of_int rv)
   else ();
   res
@@ -1162,7 +1166,7 @@ let sumofsquares_general_symmetry tool pol =
       match cls with
       | [] -> raise Sanity
       | [h] -> acc
-      | h :: t -> List.map (fun k -> (k |-> Int (-1)) (h |=> Int 1)) t @ acc
+      | h :: t -> List.map (fun k -> (k |-> Q.neg_one) (h |=> Q.one)) t @ acc
     in
     List.fold_right mk_eq eqvcls []
   in
@@ -1176,13 +1180,13 @@ let sumofsquares_general_symmetry tool pol =
                let m = monomial_mul m1 m2 in
                if n1 > n2 then f
                else
-                 let c = if n1 = n2 then Int 1 else Int 2 in
+                 let c = if n1 = n2 then Q.one else Q.two in
                  (m |-> ((n1, n2) |-> c) (tryapplyd f m undefined)) f))
          (foldl (fun a m c -> (m |-> ((0, 0) |=> c)) a) undefined pol))
     @ sym_eqs
   in
   let pvs, assig = eliminate_all_equations (0, 0) eqs in
-  let allassig = List.fold_right (fun v -> v |-> (v |=> Int 1)) pvs assig in
+  let allassig = List.fold_right (fun v -> v |-> (v |=> Q.one)) pvs assig in
   let qvars = (0, 0) :: pvs in
   let diagents =
     end_itlist equation_add (List.map (fun i -> apply allassig (i, i)) (1 -- n))
@@ -1191,20 +1195,20 @@ let sumofsquares_general_symmetry tool pol =
     ( ( (n, n)
       , foldl
           (fun m (i, j) ass ->
-            let c = tryapplyd ass v (Int 0) in
-            if c =/ Int 0 then m else ((j, i) |-> c) (((i, j) |-> c) m))
+            let c = tryapplyd ass v Q.zero in
+            if c =/ Q.zero then m else ((j, i) |-> c) (((i, j) |-> c) m))
           undefined allassig )
       : matrix )
   in
   let mats = List.map mk_matrix qvars
   and obj =
     ( List.length pvs
-    , itern 1 pvs (fun v i -> i |--> tryapplyd diagents v (Int 0)) undefined )
+    , itern 1 pvs (fun v i -> i |--> tryapplyd diagents v Q.zero) undefined )
   in
   let raw_vec = if pvs = [] then vector_0 0 else tool obj mats in
   let find_rounding d =
     if !debugging then (
-      Format.print_string ("Trying rounding with limit " ^ string_of_num d);
+      Format.print_string ("Trying rounding with limit " ^ Q.to_string d);
       Format.print_newline () )
     else ();
     let vec = nice_vector d raw_vec in
@@ -1223,7 +1227,7 @@ let sumofsquares_general_symmetry tool pol =
       deration (diag mat)
     else
       tryfind find_rounding
-        (List.map Num.num_of_int (1 -- 31) @ List.map pow2 (5 -- 66))
+        (List.map Q.of_int (1 -- 31) @ List.map Q.pow2 (5 -- 66))
   in
   let poly_of_lin (d, v) =
     (d, foldl (fun a i c -> (List.nth lpps (i - 1) |-> c) a) undefined (snd v))

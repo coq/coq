@@ -147,7 +147,7 @@ type classify_op =
   | OpConv (* e.g. Pos.ge     == \x.y. Z.ge (Z.pos x) (Z.pos y)
                      \x.y. Z.pos (Pos.add x y) == \x.y. Z.add (Z.pos x) (Z.pos y)
                      Z.succ              == (\x.x + 1)
-                   *)
+           *)
   | OpOther
 
 (*let pp_classify_op = function
@@ -1043,8 +1043,8 @@ let rec trans_expr env evd e =
       app_binop evd e binop a.(n - 2) prf1 a.(n - 1) prf2
     | d -> mkvar evd inj e
   with Not_found ->
-    (*    Feedback.msg_debug
-      Pp.(str "Not found " ++ Termops.Internal.debug_print_constr e); *)
+    (* Feedback.msg_debug
+       Pp.(str "Not found " ++ Termops.Internal.debug_print_constr e); *)
     mkvar evd inj e
 
 let trans_expr env evd e =

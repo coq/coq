@@ -7,8 +7,6 @@
 (* - Frédéric Besson (fbesson@irisa.fr) is using it to feed  micromega       *)
 (* ========================================================================= *)
 
-open Num
-
 (* ------------------------------------------------------------------------- *)
 (* Comparisons that are reflexive on NaN and also short-circuiting.          *)
 (* ------------------------------------------------------------------------- *)
@@ -26,32 +24,6 @@ let ( >? ) x y = cmp x y > 0
 (* ------------------------------------------------------------------------- *)
 
 let o f g x = f (g x)
-
-(* ------------------------------------------------------------------------- *)
-(* Some useful functions on "num" type.                                      *)
-(* ------------------------------------------------------------------------- *)
-
-let num_0 = Int 0
-and num_1 = Int 1
-and num_2 = Int 2
-and num_10 = Int 10
-
-let pow2 n = power_num num_2 (Int n)
-let pow10 n = power_num num_10 (Int n)
-
-let numdom r =
-  let r' = Ratio.normalize_ratio (ratio_of_num r) in
-  ( num_of_big_int (Ratio.numerator_ratio r')
-  , num_of_big_int (Ratio.denominator_ratio r') )
-
-let numerator = o fst numdom
-and denominator = o snd numdom
-
-let gcd_num n1 n2 =
-  num_of_big_int (Big_int.gcd_big_int (big_int_of_num n1) (big_int_of_num n2))
-
-let lcm_num x y =
-  if x =/ num_0 && y =/ num_0 then num_0 else abs_num (x */ y // gcd_num x y)
 
 (* ------------------------------------------------------------------------- *)
 (* Various versions of list iteration.                                       *)
@@ -518,8 +490,8 @@ let deepen_until limit f n =
     let rec d_until f n =
       try
         (* if !debugging
-          then (print_string "Searching with depth limit ";
-                print_int n; print_newline()) ;*)
+           then (print_string "Searching with depth limit ";
+                 print_int n; print_newline()) ;*)
         f n
       with Failure x ->
         (*if !debugging then (Printf.printf "solver error : %s\n" x) ; *)

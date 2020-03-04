@@ -570,8 +570,8 @@ bin/votour.byte: $(VOTOURCMO) $(LIBCOQRUN)
 ###########################################################################
 
 CSDPCERTCMO:=clib/clib.cma $(addprefix plugins/micromega/, \
-  micromega.cmo mutils.cmo 	 \
-  sos_types.cmo sos_lib.cmo sos.cmo 	csdpcert.cmo )
+  micromega.cmo numCompat.cmo mutils.cmo \
+  sos_types.cmo sos_lib.cmo sos.cmo csdpcert.cmo )
 
 $(CSDPCERT): $(call bestobj, $(CSDPCERTCMO))
 	$(SHOW)'OCAMLBEST -o $@'

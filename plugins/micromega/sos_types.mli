@@ -8,13 +8,15 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open NumCompat
+
 (* The type of positivstellensatz -- used to communicate with sos *)
 
 type vname = string
 
 type term =
   | Zero
-  | Const of Num.num
+  | Const of Q.t
   | Var of vname
   | Opp of term
   | Add of (term * term)
@@ -28,9 +30,9 @@ type positivstellensatz =
   | Axiom_eq of int
   | Axiom_le of int
   | Axiom_lt of int
-  | Rational_eq of Num.num
-  | Rational_le of Num.num
-  | Rational_lt of Num.num
+  | Rational_eq of Q.t
+  | Rational_le of Q.t
+  | Rational_lt of Q.t
   | Square of term
   | Monoid of int list
   | Eqmul of term * positivstellensatz

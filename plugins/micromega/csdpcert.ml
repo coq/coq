@@ -14,7 +14,7 @@
 (*                                                                      *)
 (************************************************************************)
 
-open Num
+open NumCompat
 open Sos
 open Sos_types
 open Sos_lib
@@ -96,7 +96,7 @@ let real_nonlinear_prover d l =
                 | Axiom_lt i -> poly_mul p y
                 | Axiom_eq i -> poly_mul (poly_pow p 2) y
                 | _ -> failwith "monoids")
-              m (poly_const (Int 1))
+              m (poly_const Q.one)
           , List.map snd m ))
         (sets_of_list neq)
     in
@@ -127,7 +127,7 @@ let real_nonlinear_prover d l =
         match
           List.map (function Axiom_eq i -> i | _ -> failwith "error") neq
         with
-        | [] -> Rational_lt (Int 1)
+        | [] -> Rational_lt Q.one
         | l -> Monoid l
       in
       List.fold_right (fun x y -> Product (x, y)) lt sq
@@ -146,7 +146,7 @@ let real_nonlinear_prover d l =
 let pure_sos l =
   let l = List.map (fun (e, o) -> (Mc.denorm e, o)) l in
   (* If there is no strict inequality,
-    I should nonetheless be able to try something - over Z  > is equivalent to -1  >= *)
+     I should nonetheless be able to try something - over Z  > is equivalent to -1  >= *)
   try
     let l = List.combine l (CList.interval 0 (List.length l - 1)) in
     let lt, i =
@@ -162,11 +162,11 @@ let pure_sos l =
         , List.fold_right
             (fun (c, p) rst ->
               Sum (Product (Rational_lt c, Square (term_of_poly p)), rst))
-            polys (Rational_lt (Int 0)) )
+            polys (Rational_lt Q.zero) )
     in
     let proof = Sum (Axiom_lt i, pos) in
-    (*  let s,proof' = scale_certificate proof in
-  let cert  = snd (cert_of_pos proof') in *)
+    (* let s,proof' = scale_certificate proof in
+       let cert  = snd (cert_of_pos proof') in *)
     S (Some proof)
   with (*   | Sos.CsdpNotFound -> F "Sos.CsdpNotFound" *)
   | any ->
@@ -184,8 +184,8 @@ let main () =
   try
     let (prover, poly) = (input_value stdin : provername * micromega_polys) in
     let cert = run_prover prover poly in
-    (*      Printf.fprintf chan "%a -> %a" print_list_term poly output_csdp_certificate cert ;
-      close_out chan ;   *)
+    (* Printf.fprintf chan "%a -> %a" print_list_term poly output_csdp_certificate cert ;
+       close_out chan ; *)
     output_value stdout (cert : csdp_certificate);
     flush stdout;
     Marshal.to_channel chan (cert : csdp_certificate) [];

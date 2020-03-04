@@ -9,13 +9,13 @@
 (************************************************************************)
 
 (* The type of positivstellensatz -- used to communicate with sos *)
-open Num
-
 type vname = string
+
+open NumCompat
 
 type term =
   | Zero
-  | Const of Num.num
+  | Const of Q.t
   | Var of vname
   | Opp of term
   | Add of (term * term)
@@ -26,7 +26,7 @@ type term =
 let rec output_term o t =
   match t with
   | Zero -> output_string o "0"
-  | Const n -> output_string o (string_of_num n)
+  | Const n -> output_string o (Q.to_string n)
   | Var n -> Printf.fprintf o "v%s" n
   | Opp t -> Printf.fprintf o "- (%a)" output_term t
   | Add (t1, t2) -> Printf.fprintf o "(%a)+(%a)" output_term t1 output_term t2
@@ -42,9 +42,9 @@ type positivstellensatz =
   | Axiom_eq of int
   | Axiom_le of int
   | Axiom_lt of int
-  | Rational_eq of num
-  | Rational_le of num
-  | Rational_lt of num
+  | Rational_eq of Q.t
+  | Rational_le of Q.t
+  | Rational_lt of Q.t
   | Square of term
   | Monoid of int list
   | Eqmul of term * positivstellensatz
@@ -55,9 +55,9 @@ let rec output_psatz o = function
   | Axiom_eq i -> Printf.fprintf o "Aeq(%i)" i
   | Axiom_le i -> Printf.fprintf o "Ale(%i)" i
   | Axiom_lt i -> Printf.fprintf o "Alt(%i)" i
-  | Rational_eq n -> Printf.fprintf o "eq(%s)" (string_of_num n)
-  | Rational_le n -> Printf.fprintf o "le(%s)" (string_of_num n)
-  | Rational_lt n -> Printf.fprintf o "lt(%s)" (string_of_num n)
+  | Rational_eq n -> Printf.fprintf o "eq(%s)" (Q.to_string n)
+  | Rational_le n -> Printf.fprintf o "le(%s)" (Q.to_string n)
+  | Rational_lt n -> Printf.fprintf o "lt(%s)" (Q.to_string n)
   | Square t -> Printf.fprintf o "(%a)^2" output_term t
   | Monoid l -> Printf.fprintf o "monoid"
   | Eqmul (t, ps) -> Printf.fprintf o "%a * %a" output_term t output_psatz ps
