@@ -17,7 +17,7 @@ struct
   type t = string
   let of_string s =
     assert (String.length s > 0);
-    assert (s.[0] <> '-');
+    assert (s.[0] >= '0' && s.[0] <= '9');
     s
   let to_string s =
     String.(concat "" (split_on_char '_' s))
@@ -54,15 +54,17 @@ type sign = SPlus | SMinus
 module SignedNat =
 struct
   type t = sign * UnsignedNat.t
-  let of_string n =
+  let of_string s =
+    assert (String.length s > 0);
     let sign,n =
-      if String.length n > 0 && n.[0] = '-'
-      then (SMinus,String.sub n 1 (String.length n - 1))
-      else (SPlus,n) in
+      match s.[0] with
+      | '-' -> (SMinus,String.sub s 1 (String.length s - 1))
+      | '+' -> (SPlus,String.sub s 1 (String.length s - 1))
+      | _ -> (SPlus,s) in
     (sign,UnsignedNat.of_string n)
-  let to_string (s,n) =
-    (match s with SPlus -> "" | SMinus -> "-") ^ UnsignedNat.to_string n
-  let to_bigint s = Bigint.of_string (to_string s)
+  let to_string (sign,n) =
+    (match sign with SPlus -> "" | SMinus -> "-") ^ UnsignedNat.to_string n
+  let to_bigint n = Bigint.of_string (to_string n)
   let of_bigint n =
     let sign, n = if Bigint.is_strictly_neg n then (SMinus, Bigint.neg n) else (SPlus, n) in
     (sign, Bigint.to_string n)
@@ -196,10 +198,13 @@ struct
     Pp.str (sprint i)
 
   let parse_string s =
-    if s = "" || s = "-" ||
-       (s.[0] < '0' || s.[0] > '9') && (s.[0] <> '-' || s.[1] < '0' || s.[1] > '9') then None else
+    if s = "" || s = "-" || s = "+" ||
+       (s.[0] < '0' || s.[0] > '9') && ((s.[0] <> '-' && s.[0] <> '+') || s.[1] < '0' || s.[1] > '9') then None else
       let strm = Stream.of_string (s ^ "  ") in
-      let sign = if s.[0] = '-' then (Stream.junk strm; SMinus) else SPlus in
+      let sign = match s.[0] with
+        | '-' -> (Stream.junk strm; SMinus)
+        | '+' -> (Stream.junk strm; SPlus)
+        | _ -> SPlus in
       let n = parse strm in
       if Stream.count strm >= String.length s then Some (sign,n) else None
 
