@@ -13,5 +13,7 @@
    %{project_root}/configure.ml
    %{project_root}/dev/ocamldebug-coq.run
    %{project_root}/dev/header.c
+  ; Needed to generate include lists for coq_makefile
+  (source_tree %{project_root}/plugins)
   (env_var COQ_CONFIGURE_PREFIX))
  (action (chdir %{project_root} (run %{ocaml} configure.ml -no-ask -native-compiler no))))
