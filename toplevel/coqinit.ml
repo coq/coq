@@ -73,6 +73,7 @@ let libs_init_load_path ~coqlib =
   let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)) in
   let coqpath = Envars.coqpath in
   let coq_path = Names.DirPath.make [Libnames.coq_root] in
+  let stdlib_path = Names.DirPath.make [Libnames.stdlib_root] in
 
   (* ML includes *)
   let plugins_dirs = System.all_subdirs ~unix_path:(coqlib/"plugins") in
@@ -87,6 +88,7 @@ let libs_init_load_path ~coqlib =
     } ] @
 
   (* then standard library *)
+  [build_stdlib_vo_path ~unix_path:(coqlib/"stdlib2") ~coq_path:stdlib_path] @
   [build_stdlib_vo_path ~unix_path:(coqlib/"theories") ~coq_path] @
 
   (* then user-contrib *)

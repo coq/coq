@@ -23,6 +23,7 @@ let fatal_error info anomaly =
   exit (if anomaly then 129 else 1)
 
 let coq_root = Id.of_string "Coq"
+let stdlib_root = Id.of_string "stdlib"
 let parse_dir s =
   let len = String.length s in
   let rec decoupe_dirs dirs n =
@@ -114,6 +115,7 @@ let init_load_path () =
   let plugins = coqlib/"plugins" in
   (* NOTE: These directories are searched from last to first *)
   (* first standard library *)
+  add_path ~unix_path:(coqlib/"stdlib2") ~coq_root:(Names.DirPath.make[stdlib_root]);
   add_rec_path ~unix_path:(coqlib/"theories") ~coq_root:(Names.DirPath.make[coq_root]);
   (* then plugins *)
   add_rec_path ~unix_path:plugins ~coq_root:(Names.DirPath.make [coq_root]);

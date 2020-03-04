@@ -99,6 +99,7 @@ let coqdep () =
   if not !option_boot then begin
     Envars.set_coqlib ~fail:(fun msg -> raise (CoqlibError msg));
     let coqlib = Envars.coqlib () in
+    add_rec_dir_no_import add_coqlib_known (coqlib//"stdlib2") ["stdlib"];
     add_rec_dir_import add_coqlib_known (coqlib//"theories") ["Coq"];
     add_rec_dir_import add_coqlib_known (coqlib//"plugins") ["Coq"];
     let user = coqlib//"user-contrib" in

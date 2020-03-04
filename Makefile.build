@@ -863,7 +863,7 @@ theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v
 
 theories/Init/%.vio: theories/Init/%.v $(VO_TOOLS_DEP) stdlib2
 	$(SHOW)'COQC -quick -noinit $<'
-	$(HIDE)$(BOOTCOQC) $< -noinit -R theories Coq -vio -noglob
+	$(HIDE)$(BOOTCOQC) $< -noinit -R stdlib2 stdlib -R theories Coq -vio -noglob
 
 # The general rule for building .vo files :
 
