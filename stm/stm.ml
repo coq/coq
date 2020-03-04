@@ -2569,28 +2569,32 @@ end (* }}} *)
 (********************************* STM API ************************************)
 (******************************************************************************)
 
-(* Main initialization routine *)
-type stm_init_options = {
-  (* The STM will set some internal flags differently depending on the
-     specified [doc_type]. This distinction should disappear at some
-     some point. *)
-  doc_type     : stm_doc_type;
+(** STM initialization options: *)
+type stm_init_options =
+  { doc_type : stm_doc_type
+  (** The STM does set some internal flags differently depending on
+     the specified [doc_type]. This distinction should disappear at
+     some some point. *)
 
-  (* Initial load path in scope for the document. Usually extracted
-     from -R options / _CoqProject *)
-  iload_path   : Loadpath.coq_path list;
+  ; ml_load_path : CUnix.physical_path list
+  (** OCaml load paths for the document. *)
 
-  (* Require [require_libs] before the initial state is
+  ; vo_load_path   : Loadpath.vo_path list
+  (** [vo] load paths for the document. Usually extracted from -R
+     options / _CoqProject *)
+
+  ; require_libs : (string * string option * bool option) list
+  (** Require [require_libs] before the initial state is
      ready. Parameters follow [Library], that is to say,
      [lib,prefix,import_export] means require library [lib] from
      optional [prefix] and [import_export] if [Some false/Some true]
      is used.  *)
-  require_libs : (string * string option * bool option) list;
 
-  (* STM options that apply to the current document. *)
-  stm_options  : AsyncOpts.stm_opt;
-}
-(* fb_handler   : Feedback.feedback -> unit; *)
+  ; stm_options  : AsyncOpts.stm_opt
+  (** Low-level STM options *)
+  }
+
+  (* fb_handler   : Feedback.feedback -> unit; *)
 
 (*
 let doc_type_module_name (std : stm_doc_type) =
@@ -2615,7 +2619,7 @@ let dirpath_of_file f =
   let ldir = Libnames.add_dirpath_suffix ldir0 id in
   ldir
 
-let new_doc { doc_type ; iload_path; require_libs; stm_options } =
+let new_doc { doc_type ; ml_load_path; vo_load_path; require_libs; stm_options } =
 
   let require_file (dir, from, exp) =
     let mp = Libnames.qualid_of_string dir in
@@ -2633,7 +2637,8 @@ let new_doc { doc_type ; iload_path; require_libs; stm_options } =
   (* Set load path; important, this has to happen before we declare
      the library below as [Declaremods/Library] will infer the module
      name by looking at the load path! *)
-  List.iter Loadpath.add_coq_path iload_path;
+  List.iter Mltop.add_ml_dir ml_load_path;
+  List.iter Loadpath.add_vo_path vo_load_path;
 
   Safe_typing.allow_delayed_constants := !cur_opt.async_proofs_mode <> APoff;
 

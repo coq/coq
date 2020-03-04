@@ -32,7 +32,7 @@ val ocaml_toploop : unit -> unit
 (** {5 ML Dynlink} *)
 
 (** Adds a dir to the plugin search path *)
-val add_ml_dir : recursive:bool -> string -> unit
+val add_ml_dir : string -> unit
 
 (** Tests if we can load ML files *)
 val has_dynlink : bool

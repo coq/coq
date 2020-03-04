@@ -226,7 +226,7 @@ let init_execution opts custom_init =
   Spawned.init_channels ();
   if opts.post.memory_stat then at_exit print_memory_stat;
   let top_lp = Coqinit.toplevel_init_load_path () in
-  List.iter Loadpath.add_coq_path top_lp;
+  List.iter Mltop.add_ml_dir top_lp;
   CoqworkmgrApi.(init opts.config.stm_flags.Stm.AsyncOpts.async_proofs_worker_priority);
   Mltop.init_known_plugins ();
   (* Configuration *)
@@ -281,14 +281,14 @@ let init_document opts =
   *)
   (* Next line allows loading .vos files when in interactive mode *)
   Flags.load_vos_libraries := true;
-  let iload_path = build_load_path opts in
+  let ml_load_path, vo_load_path = build_load_path opts in
   let require_libs = require_libs opts in
   let stm_options = opts.config.stm_flags in
   let open Vernac.State in
   let doc, sid =
     Stm.(new_doc
            { doc_type = Interactive opts.config.logic.toplevel_name;
-             iload_path; require_libs; stm_options;
+             ml_load_path; vo_load_path; require_libs; stm_options;
            }) in
   { doc; sid; proof = None; time = opts.config.time }
 

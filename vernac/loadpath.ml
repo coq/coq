@@ -218,24 +218,18 @@ let try_locate_absolute_library dir =
 
 (** { 5 Extending the load path } *)
 
-(* Adds a path to the Coq and ML paths *)
-type add_ml = AddNoML | AddTopML | AddRecML
-
-type vo_path_spec = {
-  unix_path : string;  (* Filesystem path containing vo/ml files *)
-  coq_path  : DP.t;    (* Coq prefix for the path *)
-  implicit  : bool;    (* [implicit = true] avoids having to qualify with [coq_path] *)
-  has_ml    : add_ml;  (* If [has_ml] is true, the directory will also be search for plugins *)
-}
-
-type coq_path_spec =
-  | VoPath of vo_path_spec
-  | MlPath of string
-
-type coq_path = {
-  path_spec: coq_path_spec;
-  recursive: bool;
-}
+type vo_path =
+  { unix_path : string
+  (** Filesystem path containing vo/ml files *)
+  ; coq_path  : DP.t
+  (** Coq prefix for the path *)
+  ; implicit  : bool
+  (** [implicit = true] avoids having to qualify with [coq_path] *)
+  ; has_ml    : bool
+  (** If [has_ml] is true, the directory will also be added to the ml include path *)
+  ; recursive : bool
+  (** [recursive] will determine whether we explore sub-directories  *)
+  }
 
 let warn_cannot_open_path =
   CWarnings.create ~name:"cannot-open-path" ~category:"filesystem"
@@ -255,9 +249,10 @@ let convert_string d =
     warn_cannot_use_directory d;
     raise Exit
 
-let add_vo_path ~recursive lp =
+let add_vo_path lp =
   let unix_path = lp.unix_path in
   let implicit = lp.implicit in
+  let recursive = lp.recursive in
   if System.exists_dir unix_path then
     let dirs = if recursive then System.all_subdirs ~unix_path else [] in
     let prefix = DP.repr lp.coq_path in
@@ -268,22 +263,17 @@ let add_vo_path ~recursive lp =
       with Exit -> None
     in
     let dirs = List.map_filter convert_dirs dirs in
-    let add_ml_dir = Mltop.add_ml_dir ~recursive:false in
-    let () = match lp.has_ml with
-      | AddNoML -> ()
-      | AddTopML ->
-        Mltop.add_ml_dir ~recursive:false unix_path
-      | AddRecML ->
-        List.iter (fun (lp,_) -> add_ml_dir lp) dirs;
-        add_ml_dir unix_path in
+    let () =
+      if lp.has_ml && not lp.recursive then
+        Mltop.add_ml_dir unix_path
+      else if lp.has_ml && lp.recursive then
+        (List.iter (fun (lp,_) -> Mltop.add_ml_dir lp) dirs;
+         Mltop.add_ml_dir unix_path)
+      else
+        ()
+    in
     let add (path, dir) = add_load_path path ~implicit dir in
     let () = List.iter add dirs in
     add_load_path unix_path ~implicit lp.coq_path
   else
     warn_cannot_open_path unix_path
-
-let add_coq_path { recursive; path_spec } = match path_spec with
-  | VoPath lp ->
-    add_vo_path ~recursive lp
-  | MlPath dir ->
-    Mltop.add_ml_dir ~recursive dir

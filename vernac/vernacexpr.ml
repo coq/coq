@@ -98,7 +98,6 @@ type search_restriction =
   | SearchInside of qualid list
   | SearchOutside of qualid list
 
-type rec_flag       = bool (* true = Rec;           false = NoRec          *)
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = bool option
@@ -363,9 +362,13 @@ type nonrec vernac_expr =
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)
-  | VernacAddLoadPath of rec_flag * string * DirPath.t option
+  | VernacAddLoadPath of { implicit : bool
+                         ; physical_path : CUnix.physical_path
+                         ; logical_path : DirPath.t
+                         }
+
   | VernacRemoveLoadPath of string
-  | VernacAddMLPath of rec_flag * string
+  | VernacAddMLPath of string
   | VernacDeclareMLModule of string list
   | VernacChdir of string option
 

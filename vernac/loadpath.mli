@@ -64,26 +64,17 @@ val try_locate_absolute_library : DirPath.t -> string
 (** {6 Extending the Load Path } *)
 
 (** Adds a path to the Coq and ML paths *)
-type add_ml = AddNoML | AddTopML | AddRecML
-
-type vo_path_spec = {
-  unix_path : string;
+type vo_path =
+  { unix_path : string
   (** Filesystem path containing vo/ml files *)
-  coq_path  : Names.DirPath.t;
+  ; coq_path  : DirPath.t
   (** Coq prefix for the path *)
-  implicit  : bool;
+  ; implicit  : bool
   (** [implicit = true] avoids having to qualify with [coq_path] *)
-  has_ml    : add_ml;
-  (** If [has_ml] is true, the directory will also be search for plugins *)
-}
+  ; has_ml    : bool
+  (** If [has_ml] is true, the directory will also be added to the ml include path *)
+  ; recursive : bool
+  (** [recursive] will determine whether we explore sub-directories  *)
+  }
 
-type coq_path_spec =
-  | VoPath of vo_path_spec
-  | MlPath of string
-
-type coq_path = {
-  path_spec: coq_path_spec;
-  recursive: bool;
-}
-
-val add_coq_path : coq_path -> unit
+val add_vo_path : vo_path -> unit

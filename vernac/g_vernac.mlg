@@ -912,10 +912,11 @@ GRAMMAR EXTEND Gram
       | IDENT "Locate"; l = locatable -> { VernacLocate l }
 
       (* Managing load paths *)
-      | IDENT "Add"; IDENT "LoadPath"; dir = ne_string; alias = as_dirpath ->
-          { VernacAddLoadPath (false, dir, alias) }
-      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = ne_string;
-          alias = as_dirpath -> { VernacAddLoadPath (true, dir, alias) }
+      | IDENT "Add"; IDENT "LoadPath"; physical_path = ne_string; "as"; logical_path = dirpath ->
+          { VernacAddLoadPath { implicit = false; logical_path; physical_path } }
+      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; physical_path = ne_string; "as"; logical_path = dirpath ->
+          { VernacAddLoadPath { implicit = true; logical_path; physical_path } }
+
       | IDENT "Remove"; IDENT "LoadPath"; dir = ne_string ->
           { VernacRemoveLoadPath dir }
 
@@ -934,9 +935,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Inspect"; n = natural -> { VernacPrint (PrintInspect n) }
 
       | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = ne_string ->
-          { VernacAddMLPath (false, dir) }
-      | IDENT "Add"; IDENT "Rec"; IDENT "ML"; IDENT "Path"; dir = ne_string ->
-          { VernacAddMLPath (true, dir) }
+          { VernacAddMLPath dir }
 
       (* For acting on parameter tables *)
       | "Set"; table = option_table; v = option_setting ->
@@ -1069,9 +1068,6 @@ GRAMMAR EXTEND Gram
   ;
   option_table:
     [ [ fl = LIST1 [ x = IDENT -> { x } ] -> { fl } ]]
-  ;
-  as_dirpath:
-    [ [ d = OPT [ "as"; d = dirpath -> { d } ] -> { d } ] ]
   ;
   ne_in_or_out_modules:
     [ [ IDENT "inside"; l = LIST1 global -> { SearchInside l }

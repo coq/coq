@@ -52,38 +52,30 @@ type stm_doc_type =
   | VioDoc      of string       (* file path *)
   | Interactive of interactive_top    (* module path *)
 
-(** Coq initialization options:
+(** STM initialization options: *)
+type stm_init_options =
+  { doc_type : stm_doc_type
+  (** The STM does set some internal flags differently depending on
+     the specified [doc_type]. This distinction should disappear at
+     some some point. *)
 
- - [doc_type]: Type of document being created.
+  ; ml_load_path : CUnix.physical_path list
+  (** OCaml load paths for the document. *)
 
- - [require_libs]: list of libraries/modules to be pre-loaded at
-   startup. A tuple [(modname,modfrom,import)] is equivalent to [From
-   modfrom Require modname]; [import] works similarly to
-   [Library.require_library_from_dirpath], [Some false] will import
-   the module, [Some true] will additionally export it.
+  ; vo_load_path   : Loadpath.vo_path list
+  (** [vo] load paths for the document. Usually extracted from -R
+     options / _CoqProject *)
 
-*)
-type stm_init_options = {
-  (* The STM will set some internal flags differently depending on the
-     specified [doc_type]. This distinction should disappear at some
-     some point. *)
-  doc_type     : stm_doc_type;
-
-  (* Initial load path in scope for the document. Usually extracted
-     from -R options / _CoqProject *)
-  iload_path   : Loadpath.coq_path list;
-
-  (* Require [require_libs] before the initial state is
+  ; require_libs : (string * string option * bool option) list
+  (** Require [require_libs] before the initial state is
      ready. Parameters follow [Library], that is to say,
      [lib,prefix,import_export] means require library [lib] from
      optional [prefix] and [import_export] if [Some false/Some true]
      is used.  *)
-  require_libs : (string * string option * bool option) list;
 
-  (* STM options that apply to the current document. *)
-  stm_options  : AsyncOpts.stm_opt;
-}
-(* fb_handler   : Feedback.feedback -> unit; *)
+  ; stm_options  : AsyncOpts.stm_opt
+  (** Low-level STM options *)
+  }
 
 (** The type of a STM document *)
 type doc

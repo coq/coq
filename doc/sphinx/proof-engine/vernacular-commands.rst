@@ -745,22 +745,12 @@ the toplevel, and using them in source files is discouraged.
    :n:`-Q @string @dirpath`. It adds the physical directory string to the current
    |Coq| loadpath and maps it to the logical directory dirpath.
 
-   .. cmdv:: Add LoadPath @string
-
-      Performs as :n:`Add LoadPath @string @dirpath` but
-      for the empty directory path.
-
 
 .. cmd:: Add Rec LoadPath @string as @dirpath
 
    This command is equivalent to the command line option
    :n:`-R @string @dirpath`. It adds the physical directory string and all its
    subdirectories to the current |Coq| loadpath.
-
-   .. cmdv:: Add Rec LoadPath @string
-
-      Works as :n:`Add Rec LoadPath @string as @dirpath` but for the empty
-      logical directory path.
 
 
 .. cmd:: Remove LoadPath @string
@@ -782,12 +772,6 @@ the toplevel, and using them in source files is discouraged.
 
    This command adds the path :n:`@string` to the current OCaml
    loadpath (see the command `Declare ML Module`` in Section :ref:`compiled-files`).
-
-
-.. cmd:: Add Rec ML Path @string
-
-   This command adds the directory :n:`@string` and all its subdirectories to
-   the current OCaml loadpath (see the command :cmd:`Declare ML Module`).
 
 
 .. cmd:: Print ML Path @string

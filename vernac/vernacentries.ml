@@ -1120,20 +1120,17 @@ let vernac_set_used_variables ~pstate e : Proof_global.t =
 let expand filename =
   Envars.expand_path_macros ~warn:(fun x -> Feedback.msg_warning (str x)) filename
 
-let vernac_add_loadpath implicit pdir ldiropt =
+let vernac_add_loadpath ~implicit pdir coq_path =
   let open Loadpath in
   let pdir = expand pdir in
-  let alias = Option.default Libnames.default_root_prefix ldiropt in
-  add_coq_path { recursive = true;
-                 path_spec = VoPath { unix_path = pdir; coq_path = alias; has_ml = AddTopML; implicit } }
+  add_vo_path { unix_path = pdir; coq_path; has_ml = true; implicit; recursive = true }
 
 let vernac_remove_loadpath path =
   Loadpath.remove_load_path (expand path)
   (* Coq syntax for ML or system commands *)
 
-let vernac_add_ml_path isrec path =
-  let open Loadpath in
-  add_coq_path { recursive = isrec; path_spec = MlPath (expand path) }
+let vernac_add_ml_path path =
+  Mltop.add_ml_dir (expand path)
 
 let vernac_declare_ml_module ~local l =
   let local = Option.default false local in
@@ -2106,18 +2103,18 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
         unsupported_attributes atts;
         vernac_solve_existential ~pstate n c)
   (* Auxiliary file and library management *)
-  | VernacAddLoadPath (isrec,s,alias) ->
+  | VernacAddLoadPath { implicit; physical_path; logical_path } ->
     VtDefault(fun () ->
         unsupported_attributes atts;
-        vernac_add_loadpath isrec s alias)
+        vernac_add_loadpath ~implicit physical_path logical_path)
   | VernacRemoveLoadPath s ->
     VtDefault(fun () ->
         unsupported_attributes atts;
         vernac_remove_loadpath s)
-  | VernacAddMLPath (isrec,s) ->
+  | VernacAddMLPath (s) ->
     VtDefault(fun () ->
         unsupported_attributes atts;
-        vernac_add_ml_path isrec s)
+        vernac_add_ml_path s)
   | VernacDeclareMLModule l ->
     VtDefault(fun () -> with_locality ~atts vernac_declare_ml_module l)
   | VernacChdir s ->

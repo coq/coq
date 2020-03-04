@@ -51,34 +51,22 @@ let load_rcfile ~rcfile ~state =
       let () = Feedback.msg_info (str"Load of rcfile failed.") in
       iraise reraise
 
-(* Recursively puts `.v` files in the LoadPath if -nois was not passed *)
+(* Recursively puts `.v` files in the LoadPath *)
 let build_stdlib_vo_path ~unix_path ~coq_path =
   let open Loadpath in
-  { recursive = true;
-    path_spec = VoPath { unix_path; coq_path ; has_ml = AddNoML; implicit = true }
-  }
-
-let build_stdlib_ml_path ~dir =
-  let open Loadpath in
-  { recursive = true
-  ; path_spec = MlPath dir
-  }
+  { unix_path; coq_path ; has_ml = false; implicit = true; recursive = true }
 
 let build_userlib_path ~unix_path =
   let open Loadpath in
-  { recursive = true;
-    path_spec = VoPath {
-        unix_path;
-        coq_path = Libnames.default_root_prefix;
-        has_ml = AddRecML;
-        implicit = false;
-      }
+  { unix_path
+  ; coq_path = Libnames.default_root_prefix
+  ; has_ml = true
+  ; implicit = false
+  ; recursive = true
   }
 
 let ml_path_if c p =
-  let open Loadpath in
-  let f x = { recursive = false; path_spec = MlPath x } in
-  if c then List.map f p else []
+  if c then p else []
 
 (* LoadPath for developers *)
 let toplevel_init_load_path () =
@@ -97,16 +85,19 @@ let libs_init_load_path () =
   let coqpath = Envars.coqpath in
   let coq_path = Names.DirPath.make [Libnames.coq_root] in
 
+  (* ML includes *)
+  let plugins_dirs = System.all_subdirs ~unix_path:(coqlib/"plugins") in
+  List.map fst plugins_dirs,
+
   (* current directory (not recursively!) *)
-  [ { recursive = false;
-      path_spec = VoPath { unix_path = ".";
-                           coq_path = Libnames.default_root_prefix;
-                           implicit = false;
-                           has_ml = AddTopML }
+  [ { unix_path = "."
+    ; coq_path = Libnames.default_root_prefix
+    ; implicit = false
+    ; has_ml = true
+    ; recursive = false
     } ] @
 
   (* then standard library *)
-  [build_stdlib_ml_path ~dir:(coqlib/"plugins")] @
   [build_stdlib_vo_path ~unix_path:(coqlib/"theories") ~coq_path] @
 
   (* then user-contrib *)
@@ -120,10 +111,8 @@ let libs_init_load_path () =
 (* Initialises the Ocaml toplevel before launching it, so that it can
    find the "include" file in the *source* directory *)
 let init_ocaml_path () =
-  let open Loadpath in
-  let lp s = { recursive = false; path_spec = MlPath s } in
   let add_subdir dl =
-    Loadpath.add_coq_path (lp (List.fold_left (/) (Envars.coqlib()) [dl]))
+    Mltop.add_ml_dir (List.fold_left (/) (Envars.coqlib()) [dl])
   in
-    Loadpath.add_coq_path (lp (Envars.coqlib ()));
-    List.iter add_subdir Coq_config.all_src_dirs
+  Mltop.add_ml_dir (Envars.coqlib ());
+  List.iter add_subdir Coq_config.all_src_dirs

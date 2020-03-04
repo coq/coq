@@ -70,8 +70,8 @@ type coqargs_pre = {
   load_init   : bool;
   load_rcfile : bool;
 
-  ml_includes : Loadpath.coq_path list;
-  vo_includes : Loadpath.coq_path list;
+  ml_includes : string list;
+  vo_includes : Loadpath.vo_path list;
   vo_requires : (string * string option * bool option) list;
   (* None = No Import; Some false = Import; Some true = Export *)
 
@@ -164,14 +164,13 @@ let default = {
 (* Functional arguments                                                       *)
 (******************************************************************************)
 let add_ml_include opts s =
-  Loadpath.{ opts with pre = { opts.pre with ml_includes = {recursive = false; path_spec = MlPath s} :: opts.pre.ml_includes }}
+  { opts with pre = { opts.pre with ml_includes = s :: opts.pre.ml_includes }}
 
 let add_vo_include opts unix_path coq_path implicit =
   let open Loadpath in
   let coq_path = Libnames.dirpath_of_string coq_path in
   { opts with pre = { opts.pre with vo_includes = {
-        recursive = true;
-        path_spec = VoPath { unix_path; coq_path; has_ml = AddNoML; implicit } } :: opts.pre.vo_includes }}
+        unix_path; coq_path; has_ml = false; implicit; recursive = true } :: opts.pre.vo_includes }}
 
 let add_vo_require opts d p export =
   { opts with pre = { opts.pre with vo_requires = (d, p, export) :: opts.pre.vo_requires }}
@@ -582,9 +581,7 @@ let prelude_data = "Prelude", Some "Coq", Some false
 let require_libs opts =
   if opts.pre.load_init then prelude_data :: opts.pre.vo_requires else opts.pre.vo_requires
 
-let cmdline_load_path opts =
-  opts.pre.ml_includes @ opts.pre.vo_includes
-
 let build_load_path opts =
-  (if opts.pre.boot then [] else Coqinit.libs_init_load_path ()) @
-  cmdline_load_path opts
+  let ml_path, vo_path = if opts.pre.boot then [],[] else Coqinit.libs_init_load_path () in
+  ml_path @ opts.pre.ml_includes ,
+  vo_path @ opts.pre.vo_includes
