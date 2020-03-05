@@ -589,6 +589,16 @@ GRAMMAR EXTEND Gram
           { TacAtom (CAst.make ~loc @@ TacAssert (false,true,Some tac,ipat,c)) }
       | IDENT "eassert"; c = constr; ipat = as_ipat; tac = by_tactic ->
           { TacAtom (CAst.make ~loc @@ TacAssert (true,true,Some tac,ipat,c)) }
+
+      (* Alternative syntax for "pose proof c as id by tac" *)
+      | IDENT "pose"; IDENT "proof"; test_lpar_id_coloneq; "("; lid = identref; ":=";
+          c = lconstr; ")" ->
+          { let { CAst.loc = loc; v = id } = lid in
+          TacAtom (CAst.make ?loc @@ TacAssert (false,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
+      | IDENT "epose"; IDENT "proof"; test_lpar_id_coloneq; "("; lid = identref; ":=";
+          c = lconstr; ")" ->
+          { let { CAst.loc = loc; v = id } = lid in
+          TacAtom (CAst.make ?loc @@ TacAssert (true,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
       | IDENT "pose"; IDENT "proof"; c = lconstr; ipat = as_ipat ->
           { TacAtom (CAst.make ~loc @@ TacAssert (false,true,None,ipat,c)) }
       | IDENT "epose"; IDENT "proof"; c = lconstr; ipat = as_ipat ->
