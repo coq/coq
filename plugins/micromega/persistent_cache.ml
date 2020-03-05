@@ -41,13 +41,21 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
   type mode = Closed | Open
   type 'a t = {outch : out_channel; mutable status : mode; htbl : 'a Table.t}
 
-  let finally f rst =
-    try
-      let res = f () in
-      rst (); res
-    with reraise ->
-      (try rst () with any -> raise reraise);
-      raise reraise
+  (* XXX: Move to Fun.protect once in Ocaml 4.08 *)
+  let fun_protect ~(finally : unit -> unit) work =
+    let finally_no_exn () =
+      let exception Finally_raised of exn in
+      try finally ()
+      with e ->
+        let bt = Printexc.get_raw_backtrace () in
+        Printexc.raise_with_backtrace (Finally_raised e) bt
+    in
+    match work () with
+    | result -> finally_no_exn (); result
+    | exception work_exn ->
+      let work_bt = Printexc.get_raw_backtrace () in
+      finally_no_exn ();
+      Printexc.raise_with_backtrace work_exn work_bt
 
   let read_key_elem inch =
     try Some (Marshal.from_channel inch) with
@@ -76,21 +84,23 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
 
   let unlock fd =
     let pos = lseek fd 0 SEEK_CUR in
-    try
-      ignore (lseek fd 0 SEEK_SET);
-      lockf fd F_ULOCK 1
-    with Unix.Unix_error (_, _, _) ->
-      ()
-      (* Here, this is really bad news --
-         there is a pending lock which could cause a deadlock.
-         Should it be an anomaly or produce a warning ?
-      *);
-      ignore (lseek fd pos SEEK_SET)
+    let () =
+      try
+        ignore (lseek fd 0 SEEK_SET);
+        lockf fd F_ULOCK 1
+      with Unix.Unix_error (_, _, _) ->
+        (* Here, this is really bad news --
+           there is a pending lock which could cause a deadlock.
+           Should it be an anomaly or produce a warning ?
+        *)
+        ()
+    in
+    ignore (lseek fd pos SEEK_SET)
 
   (* We make the assumption that an acquired lock can always be released *)
 
   let do_under_lock kd fd f =
-    if lock kd fd then finally f (fun () -> unlock fd) else f ()
+    if lock kd fd then fun_protect f ~finally:(fun () -> unlock fd) else f ()
 
   let open_in f =
     let flags = [O_RDONLY; O_CREAT] in
