@@ -181,7 +181,7 @@ type hnf = bool
 
 type hint_term =
   | IsGlobRef of GlobRef.t
-  | IsConstr of constr * Univ.ContextSet.t
+  | IsConstr of constr * Univ.ContextSet.t [@ocaml.deprecated "Declare a hint constant instead"]
 
 type hints_entry =
   | HintsResolveEntry of (hint_info * bool * hnf * hints_path_atom * hint_term) list

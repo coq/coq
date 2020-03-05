@@ -528,9 +528,10 @@ let make_resolve_hyp env sigma st flags only_classes pri decl =
           let hints = build_subclasses ~check:false env sigma (GlobRef.VarRef id) empty_hint_info in
             (List.map_append
              (fun (path,info,c) ->
+              let h = IsConstr (EConstr.of_constr c,Univ.ContextSet.empty) [@ocaml.warning "-3"] in
               make_resolves env sigma ~name:(PathHints path)
                   (true,false,not !Flags.quiet) info ~poly:false
-                 (IsConstr (EConstr.of_constr c,Univ.ContextSet.empty)))
+                 h)
                hints)
         else []
       in

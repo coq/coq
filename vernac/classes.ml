@@ -60,7 +60,9 @@ let add_instance check inst =
   let local = is_local_for_hint inst in
   add_instance_hint (Hints.IsGlobRef inst.is_impl) [inst.is_impl] local
     inst.is_info poly;
-  List.iter (fun (path, pri, c) -> add_instance_hint (Hints.IsConstr (EConstr.of_constr c, Univ.ContextSet.empty)) path
+  List.iter (fun (path, pri, c) ->
+    let h = Hints.IsConstr (EConstr.of_constr c, Univ.ContextSet.empty) [@ocaml.warning "-3"] in
+    add_instance_hint h path
                 local pri poly)
     (build_subclasses ~check:(check && not (isVarRef inst.is_impl))
        (Global.env ()) (Evd.from_env (Global.env ())) inst.is_impl inst.is_info)
