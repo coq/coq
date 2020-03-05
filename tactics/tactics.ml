@@ -182,10 +182,13 @@ let convert_gen pb x y =
   Proofview.Goal.enter begin fun gl ->
     match Tacmach.New.pf_apply (Reductionops.infer_conv ~pb) gl x y with
     | Some sigma -> Proofview.Unsafe.tclEVARS sigma
-    | None -> Tacticals.New.tclFAIL 0 (str "Not convertible")
-    | exception _ ->
+    | None ->
+      let info = Exninfo.reify () in
+      Tacticals.New.tclFAIL ~info 0 (str "Not convertible")
+    | exception e ->
+      let _, info = Exninfo.capture e in
       (* FIXME: Sometimes an anomaly is raised from conversion *)
-      Tacticals.New.tclFAIL 0 (str "Not convertible")
+      Tacticals.New.tclFAIL ~info 0 (str "Not convertible")
 end
 
 let convert x y = convert_gen Reduction.CONV x y
@@ -301,7 +304,9 @@ let rename_hyp repl =
   let init = Some (Id.Set.empty, Id.Set.empty) in
   let dom = List.fold_left fold init repl in
   match dom with
-  | None -> Tacticals.New.tclZEROMSG (str "Not a one-to-one name mapping")
+  | None ->
+    let info = Exninfo.reify () in
+    Tacticals.New.tclZEROMSG ~info (str "Not a one-to-one name mapping")
   | Some (src, dst) ->
     Proofview.Goal.enter begin fun gl ->
       let hyps = Proofview.Goal.hyps gl in
@@ -1023,7 +1028,10 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
           (Proofview.Unsafe.tclEVARS sigma)
           (intro_then_gen name_flag move_flag force_flag dep_flag tac)
     | _ ->
-        begin if not force_flag then Proofview.tclZERO (RefinerError (env, sigma, IntroNeedsProduct))
+        begin if not force_flag
+          then
+            let info = Exninfo.reify () in
+            Proofview.tclZERO ~info (RefinerError (env, sigma, IntroNeedsProduct))
             (* Note: red_in_concl includes betaiotazeta and this was like *)
             (* this since at least V6.3 (a pity *)
             (* that intro do betaiotazeta only when reduction is needed; and *)
@@ -1035,7 +1043,7 @@ let rec intro_then_gen name_flag move_flag force_flag dep_flag tac =
              (intro_then_gen name_flag move_flag false dep_flag tac))
           begin function (e, info) -> match e with
             | RefinerError (env, sigma, IntroNeedsProduct) ->
-                Tacticals.New.tclZEROMSG (str "No product even after head-reduction.")
+              Tacticals.New.tclZEROMSG ~info (str "No product even after head-reduction.")
             | e -> Proofview.tclZERO ~info e
           end
   end
@@ -1314,7 +1322,8 @@ let cut c =
        know the relevance *)
     match Typing.sort_of env sigma c with
     | exception e when noncritical e ->
-      Tacticals.New.tclZEROMSG (str "Not a proposition or a type.")
+      let _, info = Exninfo.capture e in
+      Tacticals.New.tclZEROMSG ~info (str "Not a proposition or a type.")
     | sigma, s ->
       let r = Sorts.relevance_of_sort s in
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_set_of_hyps gl) in
@@ -1666,7 +1675,9 @@ let descend_in_conjunctions avoid tac (err, info) c =
             let env = Proofview.Goal.env gl in
             let sigma = Tacmach.New.project gl in
             match make_projection env sigma params cstr sign elim i n c u with
-            | None -> Tacticals.New.tclFAIL 0 (mt())
+            | None ->
+              let info = Exninfo.reify () in
+              Tacticals.New.tclFAIL ~info 0 (mt())
             | Some (p,pt) ->
               Tacticals.New.tclTHENS
                 (assert_before_gen false (NamingAvoid avoid) pt)
@@ -1718,7 +1729,8 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
         let clause = make_clenv_binding_apply env sigma (Some n) (c,thm_ty) lbind in
         Clenvtac.res_pf clause ~with_evars ~flags
       with exn when noncritical exn ->
-        Proofview.tclZERO exn
+        let exn, info = Exninfo.capture exn in
+        Proofview.tclZERO ~info exn
     in
     let rec try_red_apply thm_ty (exn0, info) =
       try
@@ -1730,9 +1742,10 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
           | PretypeError _|RefinerError _|UserError _|Failure _ ->
             Some (try_red_apply red_thm (exn0, info))
           | _ -> None)
-      with Redelimination ->
+      with Redelimination as exn ->
         (* Last chance: if the head is a variable, apply may try
             second order unification *)
+        let exn, info = Exninfo.capture exn in
         let info = Option.cata (fun loc -> Loc.add_loc info loc) info loc in
         let tac =
           if with_destruct then
@@ -1991,7 +2004,9 @@ let assumption =
     if only_eq then
       let hyps = Proofview.Goal.hyps gl in
       arec gl false hyps
-    else Tacticals.New.tclZEROMSG (str "No such assumption.")
+    else
+      let info = Exninfo.reify () in
+      Tacticals.New.tclZEROMSG ~info (str "No such assumption.")
   | decl::rest ->
     let t = NamedDecl.get_type decl in
     let concl = Proofview.Goal.concl gl in
@@ -2087,12 +2102,13 @@ let clear_body ids =
           else sigma
         in
         Proofview.Unsafe.tclEVARS sigma
-      with DependsOnBody where ->
+      with DependsOnBody where as exn ->
+        let _, info = Exninfo.capture exn in
         let msg = match where with
         | None -> str "Conclusion" ++ on_the_bodies ids
         | Some id -> str "Hypothesis " ++ Id.print id ++ on_the_bodies ids
         in
-        Tacticals.New.tclZEROMSG msg
+        Tacticals.New.tclZEROMSG ~info msg
     in
     check <*>
     Refine.refine ~typecheck:false begin fun sigma ->
@@ -2306,7 +2322,8 @@ let intro_decomp_eq ?loc l thin tac id =
       (fun n -> tac ((CAst.make id)::thin) (Some (true,n)) l)
       (eq,t,eq_args) (c, t)
   | None ->
-    Tacticals.New.tclZEROMSG (str "Not a primitive equality here.")
+    let info = Exninfo.reify () in
+    Tacticals.New.tclZEROMSG ~info (str "Not a primitive equality here.")
   end
 
 let intro_or_and_pattern ?loc with_evars bracketed ll thin tac id =
@@ -3992,13 +4009,14 @@ let specialize_eqs id =
         (internal_cut true id ty')
         (exact_no_check ((* refresh_universes_strict *) acc'))
     else
-      Tacticals.New.tclFAIL 0 (str "Nothing to do in hypothesis " ++ Id.print id)
+      let info = Exninfo.reify () in
+      Tacticals.New.tclFAIL ~info 0 (str "Nothing to do in hypothesis " ++ Id.print id)
   end
 
 let specialize_eqs id = Proofview.Goal.enter begin fun gl ->
   let msg = str "Specialization not allowed on dependent hypotheses" in
   Proofview.tclOR (clear [id])
-    (fun _ -> Tacticals.New.tclZEROMSG msg) >>= fun () ->
+    (fun (_,info) -> Tacticals.New.tclZEROMSG ~info msg) >>= fun () ->
     specialize_eqs id
 end
 
@@ -4414,7 +4432,8 @@ let induction_without_atomization isrec with_evars elim names lid =
     scheme.nargs + (if scheme.farg_in_concl then 1 else 0) in
   if not (Int.equal (List.length lid) (scheme.nparams + nargs_indarg_farg))
   then
-    Tacticals.New.tclZEROMSG (msg_not_right_number_induction_arguments scheme)
+    let info = Exninfo.reify () in
+    Tacticals.New.tclZEROMSG ~info (msg_not_right_number_induction_arguments scheme)
   else
   let indvars,lid_params = List.chop nargs_indarg_farg lid in
   (* terms to patternify we must patternify indarg or farg if present in concl *)
@@ -4528,7 +4547,8 @@ let guard_no_unifiable = Proofview.guard_no_unifiable >>= function
   | Some l ->
     Proofview.tclENV     >>= function env ->
     Proofview.tclEVARMAP >>= function sigma ->
-    Proofview.tclZERO (RefinerError (env, sigma, UnresolvedBindings l))
+    let info = Exninfo.reify () in
+    Proofview.tclZERO ~info (RefinerError (env, sigma, UnresolvedBindings l))
 
 let pose_induction_arg_then isrec with_evars (is_arg_pure_hyp,from_prefix) elim
      id ((pending,(c0,lbind)),(eqname,names)) t0 inhyps cls tac =
@@ -4831,7 +4851,9 @@ let reflexivity_red allowred =
     let sigma = Tacmach.New.project gl in
     let concl = maybe_betadeltaiota_concl allowred gl in
     match match_with_equality_type env sigma concl with
-    | None -> Proofview.tclZERO NoEquationFound
+    | None ->
+      let info = Exninfo.reify () in
+      Proofview.tclZERO ~info NoEquationFound
     | Some _ -> one_constructor 1 NoBindings
   end
 
@@ -4873,8 +4895,9 @@ let match_with_equation c =
   try
     let res = match_with_equation env sigma c in
     Proofview.tclUNIT res
-  with NoEquationFound ->
-    Proofview.tclZERO NoEquationFound
+  with NoEquationFound as exn ->
+    let _, info = Exninfo.capture exn in
+    Proofview.tclZERO ~info NoEquationFound
 
 let symmetry_red allowred =
   Proofview.Goal.enter begin fun gl ->
@@ -4987,7 +5010,9 @@ let transitivity_red allowred t =
           | Some t -> Tacticals.New.pf_constr_of_global eq_data.trans >>= fun trans -> apply_list [trans; t])
    | None,eq,eq_kind ->
       match t with
-      | None -> Tacticals.New.tclZEROMSG (str"etransitivity not supported for this relation.")
+      | None ->
+        let info = Exninfo.reify () in
+        Tacticals.New.tclZEROMSG ~info (str"etransitivity not supported for this relation.")
       | Some t -> prove_transitivity eq eq_kind t
   end
 
@@ -5005,8 +5030,8 @@ let transitivity t = transitivity_gen (Some t)
 let intros_transitivity  n  = Tacticals.New.tclTHEN intros (transitivity_gen n)
 
 let constr_eq ~strict x y =
-  let fail = Tacticals.New.tclFAIL 0 (str "Not equal") in
-  let fail_universes = Tacticals.New.tclFAIL 0 (str "Not equal (due to universes)") in
+  let fail ~info = Tacticals.New.tclFAIL ~info 0 (str "Not equal") in
+  let fail_universes ~info = Tacticals.New.tclFAIL ~info 0 (str "Not equal (due to universes)") in
   Proofview.Goal.enter begin fun gl ->
     let env = Tacmach.New.pf_env gl in
     let evd = Tacmach.New.project gl in
@@ -5015,13 +5040,18 @@ let constr_eq ~strict x y =
         let csts = UnivProblem.to_constraints ~force_weak:false (Evd.universes evd) csts in
         if strict then
           if Evd.check_constraints evd csts then Proofview.tclUNIT ()
-          else fail_universes
+          else
+            let info = Exninfo.reify () in
+            fail_universes ~info
         else
           (match Evd.add_constraints evd csts with
            | evd -> Proofview.Unsafe.tclEVARS evd
-           | exception Univ.UniverseInconsistency _ ->
-             fail_universes)
-      | None -> fail
+           | exception (Univ.UniverseInconsistency _ as e) ->
+             let _, info = Exninfo.capture e in
+             fail_universes ~info)
+      | None ->
+        let info = Exninfo.reify () in
+        fail ~info
   end
 
 let unify ?(state=TransparentState.full) x y =
@@ -5042,7 +5072,8 @@ let unify ?(state=TransparentState.full) x y =
     let sigma = w_unify (Tacmach.New.pf_env gl) sigma Reduction.CONV ~flags x y in
     Proofview.Unsafe.tclEVARS sigma
   with e when noncritical e ->
-    Proofview.tclZERO (PretypeError (env, sigma, CannotUnify (x, y, None)))
+    let e, info = Exninfo.capture e in
+    Proofview.tclZERO ~info (PretypeError (env, sigma, CannotUnify (x, y, None)))
   end
 
 (** [tclWRAPFINALLY before tac finally] runs [before] before each

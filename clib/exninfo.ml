@@ -117,3 +117,10 @@ let capture e =
     e, add info backtrace_info bt
   else
     e, info e
+
+let reify () =
+  if !is_recording then
+    let bt = Printexc.get_callstack 50 in
+    add null backtrace_info bt
+  else
+    null

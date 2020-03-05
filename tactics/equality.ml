@@ -280,8 +280,9 @@ let general_elim_clause with_evars frzevars cls rew elim =
     end
     begin function (e, info) -> match e with
     | PretypeError (env, evd, NoOccurrenceFound (c', _)) ->
-      Proofview.tclZERO (PretypeError (env, evd, NoOccurrenceFound (c', cls)))
-    | e -> Proofview.tclZERO ~info e
+      Proofview.tclZERO ~info (PretypeError (env, evd, NoOccurrenceFound (c', cls)))
+    | e ->
+      Proofview.tclZERO ~info e
     end
 
 let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
@@ -1036,7 +1037,9 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn =
       Proofview.tclUNIT
         (build_discriminator e_env sigma true_0 (false_0,false_ty) dirn (mkVar e) cpath)
     with
-      UserError _ as ex -> Proofview.tclZERO ex
+      UserError _ as ex ->
+      let _, info = Exninfo.capture ex in
+      Proofview.tclZERO ~info ex
   in
     discriminator >>= fun discriminator ->
     discrimination_pf e (t,t1,t2) discriminator lbeq false_kind >>= fun pf ->
@@ -1052,9 +1055,10 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
     let env = Proofview.Goal.env gl in
     match find_positions env sigma ~keep_proofs:false ~no_discr:false t1 t2 with
     | Inr _ ->
-        tclZEROMSG (str"Not a discriminable equality.")
+      let info = Exninfo.reify () in
+      tclZEROMSG ~info (str"Not a discriminable equality.")
     | Inl (cpath, (_,dirn), _) ->
-        discr_positions env sigma u eq_clause cpath dirn
+      discr_positions env sigma u eq_clause cpath dirn
   end
 
 let onEquality with_evars tac (c,lbindc) =
@@ -1083,7 +1087,8 @@ let onNegatedEquality with_evars tac =
           (onLastHypId (fun id ->
             onEquality with_evars tac (mkVar id,NoBindings)))
     | _ ->
-        tclZEROMSG (str "Not a negated primitive equality.")
+      let info = Exninfo.reify () in
+      tclZEROMSG ~info (str "Not a negated primitive equality.")
   end
 
 let discrSimpleClause with_evars = function
@@ -1625,10 +1630,11 @@ let cutSubstInHyp l2r eqn id =
 let try_rewrite tac =
   Proofview.tclORELSE tac begin function (e, info) -> match e with
     | Constr_matching.PatternMatchingFailure ->
-        tclZEROMSG (str "Not a primitive equality here.")
+      tclZEROMSG ~info (str "Not a primitive equality here.")
     | e ->
-        tclZEROMSG
-          (strbrk "Cannot find a well-typed generalization of the goal that makes the proof progress.")
+      (* XXX: absorbing anomalies?? *)
+      tclZEROMSG ~info
+        (strbrk "Cannot find a well-typed generalization of the goal that makes the proof progress.")
   end
 
 let cutSubstClause l2r eqn cls =

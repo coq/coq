@@ -137,8 +137,9 @@ let conclPattern concl pat tac =
     | Some pat ->
         try
           Proofview.tclUNIT (Constr_matching.matches env sigma pat concl)
-        with Constr_matching.PatternMatchingFailure ->
-          Tacticals.New.tclZEROMSG (str "pattern-matching failed")
+        with Constr_matching.PatternMatchingFailure as exn ->
+          let _, info = Exninfo.capture exn in
+          Tacticals.New.tclZEROMSG ~info (str "pattern-matching failed")
   in
   Proofview.Goal.enter begin fun gl ->
      let env = Proofview.Goal.env gl in
@@ -383,7 +384,9 @@ and my_find_search_delta sigma db_list local_db secvars hdc concl =
 and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=dbname})) =
   let tactic = function
     | Res_pf (c,cl) -> unify_resolve_gen ~poly flags (c,cl)
-    | ERes_pf _ -> Proofview.Goal.enter (fun gl -> Tacticals.New.tclZEROMSG (str "eres_pf"))
+    | ERes_pf _ -> Proofview.Goal.enter (fun gl ->
+        let info = Exninfo.reify () in
+        Tacticals.New.tclZEROMSG ~info (str "eres_pf"))
     | Give_exact (c, cl)  -> exact poly (c, cl)
     | Res_pf_THEN_trivial_fail (c,cl) ->
       Tacticals.New.tclTHEN
@@ -395,7 +398,9 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t;poly=poly;db=
       Proofview.Goal.enter begin fun gl ->
        if exists_evaluable_reference (Tacmach.New.pf_env gl) c then
          Tacticals.New.tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl)
-       else Tacticals.New.tclFAIL 0 (str"Unbound reference")
+       else
+         let info = Exninfo.reify () in
+         Tacticals.New.tclFAIL ~info 0 (str"Unbound reference")
        end
     | Extern tacast ->
       conclPattern concl p tacast
@@ -492,7 +497,10 @@ let search d n mod_delta db_list local_db =
     (* spiwack: the test of [n] to 0 must be done independently in
        each goal. Hence the [tclEXTEND] *)
     Proofview.tclEXTEND [] begin
-      if Int.equal n 0 then Tacticals.New.tclZEROMSG (str"BOUND 2") else
+      if Int.equal n 0 then
+        let info = Exninfo.reify () in
+        Tacticals.New.tclZEROMSG ~info (str"BOUND 2")
+      else
         Tacticals.New.tclORELSE0 (dbg_assumption d)
           (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
              ( Proofview.Goal.enter begin fun gl ->

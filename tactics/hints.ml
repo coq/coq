@@ -1570,6 +1570,8 @@ let run_hint tac k = match warn_hint () with
   else Proofview.tclTHEN (log_hint tac) (k tac.obj)
 | HintStrict ->
   if is_imported tac then k tac.obj
-  else Proofview.tclZERO (UserError (None, (str "Tactic failure.")))
+  else
+    let info = Exninfo.reify () in
+    Proofview.tclZERO ~info (UserError (None, (str "Tactic failure.")))
 
 let repr_hint h = h.obj

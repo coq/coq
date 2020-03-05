@@ -1475,7 +1475,9 @@ let coq_omega =
       let path = simplify_strong (new_id,new_var_num,display_var) system in
       if !display_action_flag then display_action display_var path;
       tclTHEN prelude (replay_history tactic_normalisation path)
-    with NO_CONTRADICTION -> tclZEROMSG (Pp.str"Omega can't solve this system")
+    with NO_CONTRADICTION as e ->
+      let _, info = Exninfo.capture e in
+      tclZEROMSG ~info (Pp.str"Omega can't solve this system")
   end
   end
 
@@ -1890,7 +1892,9 @@ let destructure_goal =
                                          end)
                 intro
             with Undecidable -> Tactics.elim_type (Lazy.force coq_False)
-            | e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+            | e when Proofview.V82.catchable_exception e ->
+              let e, info = Exninfo.capture e in
+              Proofview.tclZERO ~info e
           in
           tclTHEN goal_tac destructure_hyps
     in

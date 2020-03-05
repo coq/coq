@@ -266,22 +266,36 @@ module New = struct
   let tclTHEN t1 t2 =
     t1 <*> t2
 
-  let tclFAIL lvl msg =
-    tclZERO (Refiner.FailError (lvl,lazy msg))
-
-  let tclZEROMSG ?loc msg =
-    let err = UserError (None, msg) in
-    let info = match loc with
-    | None -> Exninfo.null
-    | Some loc -> Loc.add_loc Exninfo.null loc
+  let tclFAIL ?info lvl msg =
+    let info = match info with
+      (* If the backtrace points here it means the caller didn't save
+         the backtrace correctly *)
+      | None -> Exninfo.reify ()
+      | Some info -> info
     in
+    tclZERO ~info (Refiner.FailError (lvl,lazy msg))
+
+  let tclZEROMSG ?info ?loc msg =
+    let info = match info with
+      (* If the backtrace points here it means the caller didn't save
+         the backtrace correctly *)
+      | None -> Exninfo.reify ()
+      | Some info -> info
+    in
+    let info = match loc with
+    | None -> info
+    | Some loc -> Loc.add_loc info loc
+    in
+    let err = UserError (None, msg) in
     tclZERO ~info err
 
   let catch_failerror e =
     try
       Refiner.catch_failerror e;
       tclUNIT ()
-    with e when CErrors.noncritical e -> tclZERO e
+    with e when CErrors.noncritical e ->
+      let _, info = Exninfo.capture e in
+      tclZERO ~info e
 
   (* spiwack: I chose to give the Ltac + the same semantics as
      [Proofview.tclOR], however, for consistency with the or-else
@@ -441,8 +455,10 @@ module New = struct
 
   (* Try the first tactic that does not fail in a list of tactics *)
   let rec tclFIRST = function
-    | [] -> tclZEROMSG (str"No applicable tactic.")
-    |  t::rest -> tclORELSE0 t (tclFIRST rest)
+    | [] ->
+      let info = Exninfo.reify () in
+      tclZEROMSG ~info (str"No applicable tactic.")
+    | t::rest -> tclORELSE0 t (tclFIRST rest)
 
   let rec tclFIRST_PROGRESS_ON tac = function
     | []    -> tclFAIL 0 (str "No applicable tactic")
@@ -451,7 +467,8 @@ module New = struct
 
   let rec tclDO n t =
     if n < 0 then
-      tclZEROMSG (str"Wrong argument : Do needs a positive integer.")
+      let info = Exninfo.reify () in
+      tclZEROMSG ~info (str"Wrong argument : Do needs a positive integer.")
     else if n = 0 then tclUNIT ()
     else if n = 1 then t
     else tclTHEN t (tclDO (n-1) t)
@@ -474,7 +491,8 @@ module New = struct
   let tclCOMPLETE t =
     t >>= fun res ->
       (tclINDEPENDENT
-         (tclZEROMSG (str"Proof is not complete."))
+         (let info = Exninfo.reify () in
+          tclZEROMSG ~info (str"Proof is not complete."))
       ) <*>
         tclUNIT res
 
@@ -533,7 +551,8 @@ module New = struct
                   let () = check_evars env sigma_final sigma sigma_initial in
                   tclUNIT x
                 with e when CErrors.noncritical e ->
-                  tclZERO e
+                  let e, info = Exninfo.capture e in
+                  tclZERO ~info e
           else
             tclUNIT x
         in
@@ -552,7 +571,8 @@ module New = struct
       (Proofview.tclTIMEOUT n t)
       begin function (e, info) -> match e with
         | Logic_monad.Tac_Timeout as e ->
-          Proofview.tclZERO (Refiner.FailError (0,lazy (CErrors.print e)))
+          let info = Exninfo.reify () in
+          Proofview.tclZERO ~info (Refiner.FailError (0,lazy (CErrors.print e)))
         | e -> Proofview.tclZERO ~info e
       end
 

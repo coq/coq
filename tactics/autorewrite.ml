@@ -154,7 +154,8 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
   if not (Locusops.is_all_occurrences cl.concl_occs) &&
      cl.concl_occs != NoOccurrences
   then
-    Tacticals.New.tclZEROMSG (str"The \"at\" syntax isn't available yet for the autorewrite tactic.")
+    let info = Exninfo.reify () in
+    Tacticals.New.tclZEROMSG ~info (str"The \"at\" syntax isn't available yet for the autorewrite tactic.")
   else
     let compose_tac t1 t2 =
       match cl.onhyps with
@@ -185,7 +186,9 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
         *)
         Proofview.V82.wrap_exceptions (fun () -> gen_auto_multi_rewrite conds tac_main lbas cl)
     | _ ->
-        Tacticals.New.tclZEROMSG (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")
+      let info = Exninfo.reify () in
+      Tacticals.New.tclZEROMSG ~info
+        (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")
 
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (_,(rbase,lrl)) =

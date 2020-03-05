@@ -186,7 +186,9 @@ module PatternMatching (E:StaticEnvironment) = struct
     { stream = fun k ctx -> m.stream (fun () ctx -> y.stream k ctx) ctx }
 
   (** Failure of the pattern-matching monad: no success. *)
-  let fail (type a) : a m = { stream = fun _ _ -> Proofview.tclZERO matching_error }
+  let fail (type a) : a m = { stream = fun _ _ ->
+      let info = Exninfo.reify () in
+      Proofview.tclZERO ~info matching_error }
 
   let run (m : 'a m) =
     let ctx = {
@@ -209,7 +211,11 @@ module PatternMatching (E:StaticEnvironment) = struct
   (** Declares a substitution, a context substitution and a term substitution. *)
   let put subst context terms : unit m =
     let s = { subst ; context ; terms ; lhs = () } in
-    { stream = fun k ctx -> match merge s ctx with None -> Proofview.tclZERO matching_error | Some s -> k () s }
+    { stream = fun k ctx -> match merge s ctx with
+          | None ->
+            let info = Exninfo.reify () in
+            Proofview.tclZERO ~info matching_error
+          | Some s -> k () s }
 
   (** Declares a substitution. *)
   let put_subst subst : unit m = put subst empty_context_subst empty_term_subst

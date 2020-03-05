@@ -142,7 +142,9 @@ let progress_evars t =
         let sigma = Tacmach.New.project gl' in
         let newconcl = Proofview.Goal.concl gl' in
         if eq_constr_mod_evars sigma concl newconcl
-        then Tacticals.New.tclFAIL 0 (Pp.str"No progress made (modulo evars)")
+        then
+          let info = Exninfo.reify () in
+          Tacticals.New.tclFAIL ~info 0 (Pp.str"No progress made (modulo evars)")
         else Proofview.tclUNIT ()
       end
     in t <*> check

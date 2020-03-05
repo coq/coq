@@ -261,13 +261,9 @@ module Monad = Proof
 
 
 (** [tclZERO e] fails with exception [e]. It has no success. *)
-let tclZERO ?info e =
+let tclZERO ?(info=Exninfo.null) e =
   if not (CErrors.noncritical e) then
     CErrors.anomaly (Pp.str "tclZERO receiving critical error: " ++ CErrors.print e);
-  let info = match info with
-  | None -> Exninfo.null
-  | Some info -> info
-  in
   Proof.zero (e, info)
 
 (** [tclOR t1 t2] behaves like [t1] as long as [t1] succeeds. Whenever
@@ -323,9 +319,10 @@ let tclEXACTLY_ONCE e t =
   split t >>= function
     | Nil (e, info) -> tclZERO ~info e
     | Cons (x,k) ->
-        Proof.split (k (e, Exninfo.null)) >>= function
-          | Nil _ -> tclUNIT x
-          | _ -> tclZERO MoreThanOneSuccess
+      let info = Exninfo.null in
+      Proof.split (k (e, Exninfo.null)) >>= function
+      | Nil _ -> tclUNIT x
+      | _ -> tclZERO ~info MoreThanOneSuccess
 
 
 (** [tclCASE t] wraps the {!Proofview_monad.Logical.split} primitive. *)
@@ -359,7 +356,7 @@ end
     is restored at the end of the tactic). If the range [i]-[j] is not
     valid, then it [tclFOCUS_gen nosuchgoal i j t] is [nosuchgoal]. *)
 let tclFOCUS ?nosuchgoal i j t =
-  let nosuchgoal = Option.default (tclZERO (NoSuchGoals (j+1-i))) nosuchgoal in
+  let nosuchgoal ~info = Option.default (tclZERO ~info (NoSuchGoals (j+1-i))) nosuchgoal in
   let open Proof in
   Pv.get >>= fun initial ->
   try
@@ -368,7 +365,9 @@ let tclFOCUS ?nosuchgoal i j t =
     t >>= fun result ->
     Pv.modify (fun next -> unfocus context next) >>
     return result
-  with CList.IndexOutOfRange -> nosuchgoal
+  with CList.IndexOutOfRange as exn ->
+    let _, info = Exninfo.capture exn in
+    nosuchgoal ~info
 
 let tclTRYFOCUS i j t = tclFOCUS ~nosuchgoal:(tclUNIT ()) i j t
 
@@ -907,7 +906,8 @@ let tclPROGRESS t =
   if not test then
     tclUNIT res
   else
-    tclZERO (CErrors.UserError (Some "Proofview.tclPROGRESS", Pp.str "Failed to progress."))
+    let info = Exninfo.reify () in
+    tclZERO ~info (CErrors.UserError (Some "Proofview.tclPROGRESS", Pp.str "Failed to progress."))
 
 let _ = CErrors.register_handler begin function
   | Logic_monad.Tac_Timeout ->

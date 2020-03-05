@@ -1566,7 +1566,8 @@ let assert_replacing id newt tac =
   Proofview.tclTHEN prf (Proofview.tclFOCUS 2 2 tac)
 
 let newfail n s =
-  Proofview.tclZERO (Refiner.FailError (n, lazy s))
+  let info = Exninfo.reify () in
+  Proofview.tclZERO ~info (Refiner.FailError (n, lazy s))
 
 let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   let open Proofview.Notations in
@@ -1576,8 +1577,10 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
   let treat sigma res =
     match res with
     | None -> newfail 0 (str "Nothing to rewrite")
-    | Some None -> if progress then newfail 0 (str"Failed to progress")
-                   else Proofview.tclUNIT ()
+    | Some None ->
+      if progress
+      then newfail 0 (str"Failed to progress")
+      else Proofview.tclUNIT ()
     | Some (Some res) ->
         let (undef, prf, newt) = res in
         let fold ev _ accu = if Evd.mem sigma ev then accu else ev :: accu in
@@ -1641,7 +1644,9 @@ let cl_rewrite_clause_newtac ?abs ?origsigma ~progress strat clause =
 
 let tactic_init_setoid () =
   try init_setoid (); Proofview.tclUNIT ()
-  with e when CErrors.noncritical e -> Tacticals.New.tclFAIL 0 (str"Setoid library not loaded")
+  with e when CErrors.noncritical e ->
+    let _, info = Exninfo.capture e in
+    Tacticals.New.tclFAIL ~info 0 (str"Setoid library not loaded")
 
 let cl_rewrite_clause_strat progress strat clause =
   tactic_init_setoid () <*>
@@ -1650,10 +1655,11 @@ let cl_rewrite_clause_strat progress strat clause =
       (cl_rewrite_clause_newtac ~progress strat clause)
       (fun (e, info) -> match e with
        | RewriteFailure e ->
-         tclZEROMSG (str"setoid rewrite failed: " ++ e)
+         tclZEROMSG ~info (str"setoid rewrite failed: " ++ e)
        | Refiner.FailError (n, pp) ->
-          tclFAIL n (str"setoid rewrite failed: " ++ Lazy.force pp)
-       | e -> Proofview.tclZERO ~info e))
+         tclFAIL ~info n (str"setoid rewrite failed: " ++ Lazy.force pp)
+       | e ->
+         Proofview.tclZERO ~info e))
 
 (** Setoid rewriting when called with "setoid_rewrite" *)
 let cl_rewrite_clause l left2right occs clause =
@@ -2109,7 +2115,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals =
             (cl_rewrite_clause_newtac ~progress:true ~abs:(Some abs) ~origsigma strat cl)))
     (fun (e, info) -> match e with
     | RewriteFailure e ->
-      tclFAIL 0 (str"setoid rewrite failed: " ++ e)
+      tclFAIL ~info 0 (str"setoid rewrite failed: " ++ e)
     | e -> Proofview.tclZERO ~info e)
   end
 
@@ -2117,8 +2123,8 @@ let _ = Hook.set Equality.general_setoid_rewrite_clause general_s_rewrite
 
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
-let not_declared env sigma ty rel =
-  tclFAIL 0
+let not_declared ~info env sigma ty rel =
+  tclFAIL ~info 0
     (str" The relation " ++ Printer.pr_econstr_env env sigma rel ++ str" is not a declared " ++
      str ty ++ str" relation. Maybe you need to require the Coq.Classes.RelationClasses library")
 
@@ -2135,7 +2141,10 @@ let setoid_proof ty fn fallback =
           let car = snd (List.hd (fst (Reductionops.splay_prod env sigma t))) in
             (try init_relation_classes () with _ -> raise Not_found);
             fn env sigma car rel
-        with e -> Proofview.tclZERO e
+        with e ->
+          (* XXX what is the right test here as to whether e can be converted ? *)
+          let e, info = Exninfo.capture e in
+          Proofview.tclZERO ~info e
       end
       begin function
         | e ->
@@ -2145,9 +2154,10 @@ let setoid_proof ty fn fallback =
                 | Hipattern.NoEquationFound ->
                     begin match e with
                     | (Not_found, _) ->
-                        let rel, _, _ = decompose_app_rel env sigma concl in
-                        not_declared env sigma ty rel
-                    | (e, info) -> Proofview.tclZERO ~info e
+                      let rel, _, _ = decompose_app_rel env sigma concl in
+                      not_declared ~info env sigma ty rel
+                    | (e, info) ->
+                      Proofview.tclZERO ~info e
                     end
                 | e' -> Proofview.tclZERO ~info e'
               end
