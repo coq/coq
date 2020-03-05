@@ -41,10 +41,14 @@ Proof.
  apply Nat.lt_succ_r.
 Qed.
 
+Register lt_n_Sm_le as num.nat.lt_n_Sm_le.
+
 Theorem le_lt_n_Sm n m : n <= m -> n < S m.
 Proof.
  apply Nat.lt_succ_r.
 Qed.
+
+Register le_lt_n_Sm as num.nat.le_lt_n_Sm.
 
 Hint Immediate lt_le_S: arith.
 Hint Immediate lt_n_Sm_le: arith.
@@ -99,6 +103,8 @@ Proof.
  apply Nat.succ_lt_mono.
 Qed.
 
+Register lt_S_n as num.nat.lt_S_n.
+
 Hint Resolve lt_n_Sn lt_S lt_n_S : arith.
 Hint Immediate lt_S_n : arith.
 
@@ -132,6 +138,8 @@ Hint Resolve lt_pred_n_n: arith.
 Notation lt_trans := Nat.lt_trans (only parsing).
 Notation lt_le_trans := Nat.lt_le_trans (only parsing).
 Notation le_lt_trans := Nat.le_lt_trans (only parsing).
+
+Register le_lt_trans as num.nat.le_lt_trans.
 
 Hint Resolve lt_trans lt_le_trans le_lt_trans: arith.
 

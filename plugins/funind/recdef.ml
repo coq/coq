@@ -47,18 +47,12 @@ open Context.Rel.Declaration
 
 (* Ugly things which should not be here *)
 
-[@@@ocaml.warning "-3"]
-let coq_constant m s = EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global @@
-  Coqlib.find_reference "RecursiveDefinition" m s
-
-let arith_Nat = ["Coq"; "Arith";"PeanoNat";"Nat"]
-let arith_Lt  = ["Coq"; "Arith";"Lt"]
+let coq_constant s = EConstr.of_constr @@ UnivGen.constr_of_monomorphic_global @@
+  Coqlib.lib_ref s
 
 let coq_init_constant s =
-  EConstr.of_constr (
-    UnivGen.constr_of_monomorphic_global @@
-    Coqlib.gen_reference_in_modules "RecursiveDefinition" Coqlib.init_modules s)
-[@@@ocaml.warning "+3"]
+  EConstr.of_constr(UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref s)
+;;
 
 let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
@@ -122,26 +116,26 @@ let v_id = Id.of_string "v"
 let def_id = Id.of_string "def"
 let p_id = Id.of_string "p"
 let rec_res_id = Id.of_string "rec_res";;
-let lt = function () -> (coq_init_constant "lt")
-[@@@ocaml.warning "-3"]
-let le = function () -> (Coqlib.gen_reference_in_modules "RecursiveDefinition" Coqlib.init_modules "le")
-let ex = function () -> (coq_init_constant "ex")
-let nat = function () -> (coq_init_constant "nat")
+let lt = function () -> (coq_init_constant "num.nat.lt")
+let le = function () -> Coqlib.lib_ref "num.nat.le"
+
+let ex = function () -> (coq_init_constant "core.ex.type")
+let nat = function () -> (coq_init_constant "num.nat.type")
 let iter_ref () =
   try find_reference ["Recdef"] "iter"
   with Not_found -> user_err Pp.(str "module Recdef not loaded")
 let iter_rd = function () -> (constr_of_monomorphic_global (delayed_force iter_ref))
-let eq = function () -> (coq_init_constant "eq")
+let eq = function () -> (coq_init_constant "core.eq.type")
 let le_lt_SS = function () -> (constant ["Recdef"] "le_lt_SS")
-let le_lt_n_Sm = function () -> (coq_constant arith_Lt "le_lt_n_Sm")
-let le_trans = function () -> (coq_constant arith_Nat "le_trans")
-let le_lt_trans = function () -> (coq_constant arith_Nat "le_lt_trans")
-let lt_S_n = function () -> (coq_constant arith_Lt "lt_S_n")
-let le_n = function () -> (coq_init_constant "le_n")
+let le_lt_n_Sm = function () -> (coq_constant "num.nat.le_lt_n_Sm")
+let le_trans = function () -> (coq_constant "num.nat.le_trans")
+let le_lt_trans = function () -> (coq_constant "num.nat.le_lt_trans")
+let lt_S_n = function () -> (coq_constant "num.nat.lt_S_n")
+let le_n = function () -> (coq_init_constant "num.nat.le_n")
 let coq_sig_ref = function () -> (find_reference ["Coq";"Init";"Specif"] "sig")
-let coq_O = function () -> (coq_init_constant "O")
-let coq_S = function () -> (coq_init_constant "S")
-let lt_n_O = function () -> (coq_constant arith_Nat "nlt_0_r")
+let coq_O = function () -> (coq_init_constant "num.nat.O")
+let coq_S = function () -> (coq_init_constant"num.nat.S")
+let lt_n_O = function () -> (coq_constant "num.nat.nlt_0_r")
 let max_ref = function () -> (find_reference ["Recdef"] "max")
 let max_constr = function () -> EConstr.of_constr (constr_of_monomorphic_global (delayed_force max_ref))
 
@@ -817,7 +811,7 @@ let rec prove_le g =
         | App (c, [| x0 ; _ |]) ->
           EConstr.isVar sigma x0 &&
           Id.equal (destVar sigma x0) (destVar sigma x) &&
-          EConstr.is_global sigma (le ()) c
+          EConstr.isRefX sigma (le ()) c
         | _ -> false
         in
         let (h,t) = List.find (fun (_,t) -> matching_fun t) (pf_hyps_types g) in
@@ -1194,7 +1188,7 @@ let get_current_subgoals_types pstate =
 exception EmptySubgoals
 let build_and_l sigma l =
   let and_constr =  UnivGen.constr_of_monomorphic_global @@ Coqlib.lib_ref "core.and.type" in
-  let conj_constr = Coqlib.build_coq_conj () in
+  let conj_constr = Coqlib.lib_ref "core.and.conj" in
   let mk_and p1 p2 =
     mkApp(EConstr.of_constr and_constr,[|p1;p2|]) in
   let rec is_well_founded t =

@@ -32,11 +32,14 @@ Section Well_founded.
  Inductive Acc (x: A) : Prop :=
      Acc_intro : (forall y:A, R y x -> Acc y) -> Acc x.
 
+ Register Acc as core.wf.acc.
+
  Lemma Acc_inv : forall x:A, Acc x -> forall y:A, R y x -> Acc y.
   destruct 1; trivial.
  Defined.
 
  Global Arguments Acc_inv [x] _ [y] _, [x] _ y _.
+ Register Acc_inv as core.wf.acc_inv.
 
  (** A relation is well-founded if every element is accessible *)
 
