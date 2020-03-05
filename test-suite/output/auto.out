@@ -14,9 +14,9 @@ simple apply or_intror.
  intro.
  exact H.
 (* debug eauto: *)
-Debug: 1 depth=5 
-Debug: 1.1 depth=4 simple apply or_intror
-Debug: 1.1.1 depth=4 intro
-Debug: 1.1.1.1 depth=4 exact H
+1 depth=5 
+1.1 depth=4 simple apply or_intror
+1.1.1 depth=4 intro
+1.1.1.1 depth=4 exact H
 (* info trivial: *)
 exact I (in core).
