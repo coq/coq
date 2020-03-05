@@ -63,9 +63,9 @@ Notation "{ x  |  P  & Q }" := (sig2 (fun x => P) (fun x => Q)) : type_scope.
 Notation "{ x : A  |  P }" := (sig (A:=A) (fun x => P)) : type_scope.
 Notation "{ x : A  |  P  & Q }" := (sig2 (A:=A) (fun x => P) (fun x => Q)) :
   type_scope.
-Notation "{ x  &  P }" := (sigT (fun x => P)) : type_scope.
-Notation "{ x : A  & P }" := (sigT (A:=A) (fun x => P)) : type_scope.
-Notation "{ x : A  & P  & Q }" := (sigT2 (A:=A) (fun x => P) (fun x => Q)) :
+Notation "{ x  &  P }" := (sigT (fun x => (P)%type)) : type_scope.
+Notation "{ x : A  & P }" := (sigT (A:=A) (fun x => (P)%type)) : type_scope.
+Notation "{ x : A  & P  & Q }" := (sigT2 (A:=A) (fun x => (P)%type) (fun x => (Q)%type)) :
   type_scope.
 
 Notation "{ ' pat  |  P }" := (sig (fun pat => P)) : type_scope.

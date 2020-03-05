@@ -202,3 +202,9 @@ Notation "#" := (@id nat).
 Check # = (fun a:nat => a). (* # should inherit its maximal implicit argument *)
 
 End InheritanceMaximalImplicitPureNotation.
+
+Module sigT_type_scope.
+
+Check { T & T * nat }.
+
+End sigT_type_scope
