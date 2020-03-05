@@ -134,7 +134,7 @@ let r_of_rawnum ?loc (sign,n) =
       | '+' -> Bigint.of_string (String.sub e 2 (String.length e - 2))
       | '-' -> Bigint.(neg (of_string (String.sub e 2 (String.length e - 2))))
       | _ -> Bigint.of_string (String.sub e 1 (String.length e - 1)) in
-    Bigint.(sub e (of_int (String.length f))) in
+    Bigint.(sub e (of_int (String.length (String.concat "" (String.split_on_char '_' f))))) in
   if Bigint.is_strictly_pos e then rmult n (izr (pow10 e))
   else if Bigint.is_strictly_neg e then rdiv n (izr (pow10 (neg e)))
   else n  (* e = 0 *)
