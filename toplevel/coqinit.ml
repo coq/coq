@@ -65,21 +65,10 @@ let build_userlib_path ~unix_path =
   ; recursive = true
   }
 
-let ml_path_if c p =
-  if c then p else []
-
-(* LoadPath for developers *)
-let toplevel_init_load_path () =
-  let coqlib = Envars.coqlib () in
-  (* NOTE: These directories are searched from last to first *)
-  (* first, developer specific directory to open *)
-  ml_path_if Coq_config.local [coqlib/"dev"]
-
 (* LoadPath for Coq user libraries *)
-let libs_init_load_path () =
+let libs_init_load_path ~coqlib =
 
   let open Loadpath in
-  let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
   let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> Feedback.msg_warning (str x)) in
   let coqpath = Envars.coqpath in
@@ -107,12 +96,3 @@ let libs_init_load_path () =
 
   (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME and COQPATH *)
   List.map (fun s -> build_userlib_path ~unix_path:s) (xdg_dirs @ coqpath)
-
-(* Initialises the Ocaml toplevel before launching it, so that it can
-   find the "include" file in the *source* directory *)
-let init_ocaml_path () =
-  let add_subdir dl =
-    Mltop.add_ml_dir (List.fold_left (/) (Envars.coqlib()) [dl])
-  in
-  Mltop.add_ml_dir (Envars.coqlib ());
-  List.iter add_subdir Coq_config.all_src_dirs
