@@ -101,10 +101,10 @@ let check_indices_matter env_params info indices =
   else check_context_univs ~ctor:false env_params info indices
 
 (* env_ar contains the inductives before the current ones in the block, and no parameters *)
-let check_arity env_params env_ar ind =
+let check_arity ~template env_params env_ar ind =
   let {utj_val=arity;utj_type=_} = Typeops.infer_type env_params ind.mind_entry_arity in
   let indices, ind_sort = Reduction.dest_arity env_params arity in
-  let ind_min_univ = if ind.mind_entry_template then Some Universe.type0m else None in
+  let ind_min_univ = if template then Some Universe.type0m else None in
   let univ_info = {
     ind_squashed=false;
     ind_has_relevant_arg=false;
@@ -283,7 +283,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   mind_check_names mie;
   assert (List.is_empty (Environ.rel_context env));
 
-  let has_template_poly = List.exists (fun oie -> oie.mind_entry_template) mie.mind_entry_inds in
+  let has_template_poly = mie.mind_entry_template in
 
   (* universes *)
   let env_univs =
@@ -304,7 +304,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let env_params, params = Typeops.check_context env_univs mie.mind_entry_params in
 
   (* Arities *)
-  let env_ar, data = List.fold_left_map (check_arity env_params) env_univs mie.mind_entry_inds in
+  let env_ar, data = List.fold_left_map (check_arity ~template:has_template_poly env_params) env_univs mie.mind_entry_inds in
   let env_ar_par = push_rel_context params env_ar in
 
   (* Constructors *)

@@ -423,7 +423,13 @@ let declare_structure ~cumulative finite ubinders univs paramimpls params templa
     let args = Context.Rel.to_extended_list mkRel nfields params in
     let ind = applist (mkRel (ntypes - i + nparams + nfields), args) in
     let type_constructor = it_mkProd_or_LetIn ind fields in
-    let template =
+    { mind_entry_typename = id;
+      mind_entry_arity = arity;
+      mind_entry_consnames = [idbuild];
+      mind_entry_lc = [type_constructor] }
+  in
+  let blocks = List.mapi mk_block record_data in
+  let check_template (id, _, min_univ, _, _, fields, _, _) =
       let template_candidate () =
         (* we use some dummy values for the arities in the rel_context
            as univs_of_constr doesn't care about localassums and
@@ -454,14 +460,8 @@ let declare_structure ~cumulative finite ubinders univs paramimpls params templa
       | None, template ->
         (* auto detect template *)
         ComInductive.should_auto_template id (template && template_candidate ())
-    in
-    { mind_entry_typename = id;
-      mind_entry_arity = arity;
-      mind_entry_template = template;
-      mind_entry_consnames = [idbuild];
-      mind_entry_lc = [type_constructor] }
   in
-  let blocks = List.mapi mk_block record_data in
+  let template = List.for_all check_template record_data in
   let primitive =
     !primitive_flag &&
     List.for_all (fun (_,_,_,_,_,fields,_,_) -> List.exists is_local_assum fields) record_data
@@ -473,6 +473,7 @@ let declare_structure ~cumulative finite ubinders univs paramimpls params templa
       mind_entry_inds = blocks;
       mind_entry_private = None;
       mind_entry_universes = univs;
+      mind_entry_template = template;
       mind_entry_cumulative = poly && cumulative;
     }
   in

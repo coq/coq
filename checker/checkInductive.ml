@@ -52,20 +52,19 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
     | Polymorphic auctx -> Polymorphic_entry (AUContext.names auctx, AUContext.repr auctx)
   in
   let mind_entry_inds = Array.map_to_list (fun ind ->
-      let mind_entry_arity, mind_entry_template = match ind.mind_arity with
+      let mind_entry_arity = match ind.mind_arity with
         | RegularArity ar ->
           let ctx, arity = Term.decompose_prod_n_assum nparams ar.mind_user_arity in
           ignore ctx; (* we will check that the produced user_arity is equal to the input *)
-          arity, false
+          arity
         | TemplateArity ar ->
           let ctx = ind.mind_arity_ctxt in
           let ctx = List.firstn (List.length ctx - nparams) ctx in
-          Term.mkArity (ctx, Sorts.sort_of_univ ar.template_level), true
+          Term.mkArity (ctx, Sorts.sort_of_univ ar.template_level)
       in
       {
         mind_entry_typename = ind.mind_typename;
         mind_entry_arity;
-        mind_entry_template;
         mind_entry_consnames = Array.to_list ind.mind_consnames;
         mind_entry_lc = Array.map_to_list (fun c ->
             let ctx, c = Term.decompose_prod_n_assum nparams c in
@@ -75,12 +74,19 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
       })
       mb.mind_packets
   in
+  let check_template ind = match ind.mind_arity with
+  | RegularArity _ -> false
+  | TemplateArity _ -> true
+  in
+  let mind_entry_template = Array.exists check_template mb.mind_packets in
+  let () = if mind_entry_template then assert (Array.for_all check_template mb.mind_packets) in
   {
     mind_entry_record;
     mind_entry_finite = mb.mind_finite;
     mind_entry_params = mb.mind_params_ctxt;
     mind_entry_inds;
     mind_entry_universes;
+    mind_entry_template;
     mind_entry_cumulative= Option.has_some mb.mind_variance;
     mind_entry_private = mb.mind_private;
   }
