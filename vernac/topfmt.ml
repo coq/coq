@@ -122,11 +122,15 @@ module Emacs = struct
   let quote_info_start = "<infomsg>"
   let quote_info_end = "</infomsg>"
 
+  let quote_notice_start = "<notice>"
+  let quote_notice_end = "</notice>"
+
   let quote_emacs q_start q_end msg =
-    hov 0 (seq [str q_start; brk(0,0); msg; brk(0,0); str q_end])
+    v 0 (seq [str q_start; brk(0,0); msg; brk(0,0); str q_end])
 
   let quote_warning = quote_emacs quote_warning_start quote_warning_end
   let quote_info = quote_emacs quote_info_start quote_info_end
+  let quote_notice = quote_emacs quote_notice_start quote_notice_end
 
 end
 
@@ -141,10 +145,10 @@ let make_body quoter info ?pre_hdr s =
 (* The empty quoter *)
 let noq x = x
 (* Generic logger *)
-let gen_logger dbg warn ?pre_hdr level msg = let open Feedback in match level with
+let gen_logger dbg warn notice ?pre_hdr level msg = let open Feedback in match level with
   | Debug   -> msgnl_with !std_ft (make_body dbg  dbg_hdr ?pre_hdr msg)
   | Info    -> msgnl_with !std_ft (make_body dbg info_hdr ?pre_hdr msg)
-  | Notice  -> msgnl_with !std_ft (make_body noq info_hdr ?pre_hdr msg)
+  | Notice  -> msgnl_with !std_ft (make_body notice info_hdr ?pre_hdr msg)
   | Warning -> Flags.if_warn (fun () ->
                msgnl_with !err_ft (make_body warn warn_hdr ?pre_hdr msg)) ()
   | Error   -> msgnl_with !err_ft (make_body noq   err_hdr ?pre_hdr msg)
@@ -157,7 +161,7 @@ let gen_logger dbg warn ?pre_hdr level msg = let open Feedback in match level wi
 let std_logger_cleanup = ref (fun () -> ())
 
 let std_logger ?pre_hdr level msg =
-  gen_logger (fun x -> x) (fun x -> x) ?pre_hdr level msg;
+  gen_logger (fun x -> x) (fun x -> x) (fun x -> x) ?pre_hdr level msg;
   !std_logger_cleanup ()
 
 (** Color logging. Moved from Ppstyle, it may need some more refactoring  *)
@@ -337,7 +341,7 @@ let init_terminal_output ~color =
    - Warning/Error: emacs_quote_err
    - Notice: unquoted
  *)
-let emacs_logger = gen_logger Emacs.quote_info Emacs.quote_warning
+let emacs_logger = gen_logger Emacs.quote_info Emacs.quote_warning Emacs.quote_notice
 
 (* This is specific to the toplevel *)
 
