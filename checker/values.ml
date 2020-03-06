@@ -227,8 +227,11 @@ let v_oracle =
     v_pred v_cst;
   |]
 
-let v_pol_arity =
-  v_tuple "polymorphic_arity" [|List(Opt v_level);v_univ;v_context_set|]
+let v_template_arity =
+  v_tuple "template_arity" [|v_univ|]
+
+let v_template_universes =
+  v_tuple "template_universes" [|List(Opt v_level);v_context_set|]
 
 let v_primitive =
   v_enum "primitive" 44 (* Number of "Primitive" in Int63.v and PrimFloat.v *)
@@ -265,7 +268,7 @@ let v_mono_ind_arity =
   v_tuple "monomorphic_inductive_arity" [|v_constr;v_sort|]
 
 let v_ind_arity = v_sum "inductive_arity" 0
-  [|[|v_mono_ind_arity|];[|v_pol_arity|]|]
+  [|[|v_mono_ind_arity|];[|v_template_arity|]|]
 
 let v_one_ind = v_tuple "one_inductive_body"
   [|v_id;
@@ -301,6 +304,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     Int;
     v_rctxt;
     v_univs; (* universes *)
+    Opt v_template_universes;
     Opt (Array v_variance);
     Opt (Array v_variance);
     Opt v_bool;

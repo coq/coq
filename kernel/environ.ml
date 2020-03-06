@@ -590,11 +590,11 @@ let template_polymorphic_ind (mind,i) env =
   | TemplateArity _ -> true
   | RegularArity _ -> false
 
-let template_polymorphic_variables (mind,i) env =
-  match (lookup_mind mind env).mind_packets.(i).mind_arity with
-  | TemplateArity { Declarations.template_param_levels = l; _ } ->
+let template_polymorphic_variables (mind, _) env =
+  match (lookup_mind mind env).mind_template with
+  | Some { Declarations.template_param_levels = l; _ } ->
     List.map_filter (fun level -> level) l
-  | RegularArity _ -> []
+  | None -> []
 
 let template_polymorphic_pind (ind,u) env =
   if not (Univ.Instance.is_empty u) then false

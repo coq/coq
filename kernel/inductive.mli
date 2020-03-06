@@ -123,9 +123,6 @@ exception SingletonInductiveBecomesProp of Id.t
 
 val max_inductive_sort : Sorts.t array -> Universe.t
 
-val instantiate_universes : Constr.rel_context ->
-  template_arity -> param_univs -> Constr.rel_context * Sorts.t
-
 (** {6 Debug} *)
 
 type size = Large | Strict

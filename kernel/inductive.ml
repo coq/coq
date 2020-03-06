@@ -185,8 +185,8 @@ let make_subst =
 
 exception SingletonInductiveBecomesProp of Id.t
 
-let instantiate_universes ctx ar args =
-  let subst = make_subst (ctx,ar.template_param_levels,args) in
+let instantiate_universes ctx (templ, ar) args =
+  let subst = make_subst (ctx,templ.template_param_levels,args) in
   let level = Univ.subst_univs_universe (Univ.make_subst subst) ar.template_level in
   let ty =
     (* Singleton type not containing types are interpretable in Prop *)
@@ -215,8 +215,12 @@ let type_of_inductive_gen ?(polyprop=true) ((mib,mip),u) paramtyps =
   match mip.mind_arity with
   | RegularArity a -> subst_instance_constr u a.mind_user_arity
   | TemplateArity ar ->
+    let templ = match mib.mind_template with
+    | None -> assert false
+    | Some t -> t
+    in
     let ctx = List.rev mip.mind_arity_ctxt in
-    let ctx,s = instantiate_universes ctx ar paramtyps in
+    let ctx,s = instantiate_universes ctx (templ, ar) paramtyps in
       (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
          the situation where a non-Prop singleton inductive becomes Prop
          when applied to Prop params *)

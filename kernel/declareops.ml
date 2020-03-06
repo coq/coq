@@ -46,9 +46,10 @@ let map_decl_arity f g = function
   | TemplateArity a -> TemplateArity (g a)
 
 let hcons_template_arity ar =
+  { template_level = Univ.hcons_univ ar.template_level; }
+
+let hcons_template_universe ar =
   { template_param_levels = ar.template_param_levels;
-      (* List.Smart.map (Option.Smart.map Univ.hcons_univ_level) ar.template_param_levels; *)
-    template_level = Univ.hcons_univ ar.template_level;
     template_context = Univ.hcons_universe_context_set ar.template_context }
 
 let universes_context = function
@@ -247,6 +248,7 @@ let subst_mind_body sub mib =
       Context.Rel.map (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = Array.Smart.map (subst_mind_packet sub) mib.mind_packets ;
     mind_universes = mib.mind_universes;
+    mind_template = mib.mind_template;
     mind_variance = mib.mind_variance;
     mind_sec_variance = mib.mind_sec_variance;
     mind_private = mib.mind_private;
@@ -323,6 +325,7 @@ let hcons_mind mib =
   { mib with
     mind_packets = Array.Smart.map hcons_mind_packet mib.mind_packets;
     mind_params_ctxt = hcons_rel_context mib.mind_params_ctxt;
+    mind_template = Option.Smart.map hcons_template_universe mib.mind_template;
     mind_universes = hcons_universes mib.mind_universes }
 
 (** Hashconsing of modules *)

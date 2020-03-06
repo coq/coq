@@ -466,7 +466,7 @@ let compute_projections (kn, i as ind) mib =
   Array.of_list (List.rev rs),
   Array.of_list (List.rev pbs)
 
-let build_inductive env ~sec_univs names prv univs variance
+let build_inductive env ~sec_univs names prv univs template variance
     paramsctxt kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
@@ -538,6 +538,7 @@ let build_inductive env ~sec_univs names prv univs variance
       mind_params_ctxt = paramsctxt;
       mind_packets = packets;
       mind_universes = univs;
+      mind_template = template;
       mind_variance = variance;
       mind_sec_variance = sec_variance;
       mind_private = prv;
@@ -562,7 +563,7 @@ let build_inductive env ~sec_univs names prv univs variance
 
 let check_inductive env ~sec_univs kn mie =
   (* First type-check the inductive definition *)
-  let (env_ar_par, univs, variance, record, paramsctxt, inds) =
+  let (env_ar_par, univs, template, variance, record, paramsctxt, inds) =
     IndTyping.typecheck_inductive env ~sec_univs mie
   in
   (* Then check positivity conditions *)
@@ -575,6 +576,6 @@ let check_inductive env ~sec_univs kn mie =
       (Array.map (fun ((_,lc),(indices,_),_) -> Context.Rel.nhyps indices,lc) inds)
   in
   (* Build the inductive packets *)
-    build_inductive env ~sec_univs names mie.mind_entry_private univs variance
+    build_inductive env ~sec_univs names mie.mind_entry_private univs template variance
       paramsctxt kn record mie.mind_entry_finite
       inds nmr recargs

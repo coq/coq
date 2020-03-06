@@ -17,4 +17,4 @@ open Environ
 (*s Typing functions (not yet tagged as safe) *)
 
 val check_polymorphic_arity :
-  env -> rel_context -> template_arity -> unit
+  env -> rel_context -> template_universes -> unit
