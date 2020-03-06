@@ -10,6 +10,8 @@
 
 Require Import Ltac2.Init.
 
+(** * Boolean operators *)
+
 Ltac2 and x y :=
   match x with
   | true => y
@@ -61,3 +63,44 @@ Ltac2 eq x y :=
        | false => true
        end
   end.
+
+(** * Boolean operators with lazy evaluation of the second argument *)
+
+Ltac2 Notation "lazy_and" x(tactic(0)) y(thunk(tactic(0))) : 1 :=
+  match x with
+  | true => y ()
+  | false => false
+  end.
+
+Ltac2 Notation "lazy_or" x(tactic(0)) y(thunk(tactic(0))) : 1 :=
+  match x with
+  | true => true
+  | false => y ()
+  end.
+
+Ltac2 Notation "lazy_impl" x(tactic(0)) y(thunk(tactic(0))) : 1 :=
+  match x with
+  | true => y ()
+  | false => true
+  end.
+
+(** * Notations for if constructs *)
+
+(** if then - this only works for tactics returning a unit since false returns unit *)
+
+(** Note: the arguments are tactic(5) = matches and lets,
+    The if term itself is tactic(6) = semicolon tactic sequences *)
+
+Ltac2 Notation "if_bool" cond(tactic(5)) "then" true_tac(thunk(tactic(5))) : 6 :=
+  match cond with
+  | true => true_tac ()
+  | false => ()
+end.
+
+(** if then else - the then and else branch can return arbitrary types *)
+
+Ltac2 Notation "if_bool" cond(tactic(5)) "then" true_tac(thunk(tactic(5))) "else" false_tac(thunk(tactic(5))) : 6 :=
+  match cond with
+  | true => true_tac ()
+  | false => false_tac ()
+end.
