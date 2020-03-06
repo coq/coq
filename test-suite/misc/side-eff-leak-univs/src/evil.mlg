@@ -1,0 +1,13 @@
+DECLARE PLUGIN "evil_plugin"
+
+{
+open Ltac_plugin
+open Stdarg
+}
+
+TACTIC EXTEND magic
+| [ "magic" ident(i) ident(j) ] -> {
+  let open Glob_term in
+  DeclareUniv.do_constraint ~poly:false [ GType (Libnames.qualid_of_ident i), Univ.Lt, GType (Libnames.qualid_of_ident j)]; Proofview.tclUNIT()
+}
+END

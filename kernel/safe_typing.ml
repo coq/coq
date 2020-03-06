@@ -249,11 +249,52 @@ let check_engagement env expected_impredicative_set =
 
 (** {6 Stm machinery } *)
 
+module Certificate :
+sig
+  type t
+
+  val make : safe_environment -> t
+
+  val universes : t -> Univ.ContextSet.t
+
+  (** Checks whether [dst] is a valid extension of [src] *)
+  val check : src:t -> dst:t -> bool
+end =
+struct
+
+type t = {
+  certif_struc : Declarations.structure_body;
+  certif_univs : Univ.ContextSet.t;
+}
+
+let make senv = {
+  certif_struc = senv.revstruct;
+  certif_univs = senv.univ;
+}
+
+let is_suffix l suf = match l with
+| [] -> false
+| _ :: l -> l == suf
+
+let is_subset (s1, cst1) (s2, cst2) =
+  Univ.LSet.subset s1 s2 && Univ.Constraint.subset cst1 cst2
+
+let check ~src ~dst =
+  is_suffix dst.certif_struc src.certif_struc &&
+  is_subset src.certif_univs dst.certif_univs
+
+let universes c = c.certif_univs
+
+end
+
 type side_effect = {
-  from_env : Declarations.structure_body CEphemeron.key;
+  seff_certif : Certificate.t CEphemeron.key;
   seff_constant : Constant.t;
   seff_body : Constr.t Declarations.constant_body;
 }
+(* Invariant: For any senv, if [Certificate.check senv seff_certif] then
+  senv where univs := Certificate.universes seff_certif] +
+  (c.seff_constant -> seff_body) is well-formed. *)
 
 module SideEffects :
 sig
@@ -609,7 +650,7 @@ let inline_side_effects env body side_eff =
   let filter e =
     let cb = (e.seff_constant, e.seff_body) in
     if Environ.mem_constant e.seff_constant env then None
-    else Some (cb, e.from_env)
+    else Some (cb, e.seff_certif)
   in
   (* CAVEAT: we assure that most recent effects come first *)
   let side_eff = List.map_filter filter (SideEffects.repr side_eff) in
@@ -678,28 +719,27 @@ let inline_private_constants env ((body, ctx), side_eff) =
   let ctx' = Univ.ContextSet.union ctx ctx' in
   (body, ctx')
 
-let is_suffix l suf = match l with
-| [] -> false
-| _ :: l -> l == suf
-
 (* Given the list of signatures of side effects, checks if they match.
  * I.e. if they are ordered descendants of the current revstruct.
    Returns the number of effects that can be trusted. *)
-let check_signatures curmb sl =
+let check_signatures senv sl =
+  let curmb = Certificate.make senv in
   let is_direct_ancestor accu mb =
     match accu with
     | None -> None
-    | Some (n, curmb) ->
+    | Some curmb ->
         try
           let mb = CEphemeron.get mb in
-          if is_suffix mb curmb
-          then Some (n + 1, mb)
+          if Certificate.check ~src:curmb ~dst:mb
+          then Some mb
           else None
         with CEphemeron.InvalidKey -> None in
-  let sl = List.fold_left is_direct_ancestor (Some (0, curmb)) sl in
+  let sl = List.fold_left is_direct_ancestor (Some curmb) sl in
   match sl with
-  | None -> 0
-  | Some (n, _) -> n
+  | None -> None
+  | Some mb ->
+    let univs = Certificate.universes mb in
+    Some (Univ.ContextSet.diff univs senv.univ)
 
 type side_effect_declaration =
 | DefinitionEff : Entries.definition_entry -> side_effect_declaration
@@ -759,13 +799,14 @@ let translate_direct_opaque env kn ce =
   let () = assert (is_empty_private u) in
   { cb with const_body = OpaqueDef c }
 
-let export_side_effects mb env eff =
+let export_side_effects senv eff =
+  let env = senv.env in
       let not_exists e = not (Environ.mem_constant e.seff_constant env) in
       let aux (acc,sl) e =
         if not (not_exists e) then acc, sl
-        else e :: acc, e.from_env :: sl in
+        else e :: acc, e.seff_certif :: sl in
       let seff, signatures = List.fold_left aux ([],[]) (SideEffects.repr eff) in
-      let trusted = check_signatures mb signatures in
+      let trusted = check_signatures senv signatures in
       let push_seff env eff =
         let { seff_constant = kn; seff_body = cb ; _ } = eff in
         let env = Environ.add_constant kn (lift_constant cb) env in
@@ -774,31 +815,29 @@ let export_side_effects mb env eff =
         | Monomorphic ctx ->
           Environ.push_context_set ~strict:true ctx env
       in
-      let rec translate_seff sl seff acc env =
-        match seff with
-        | [] -> List.rev acc
-        | eff :: rest ->
-          if Int.equal sl 0 then
-            let env, cb =
-              let kn = eff.seff_constant in
-              let ce = constant_entry_of_side_effect eff in
-              let open Entries in
-              let cb = match ce with
-              | DefinitionEff ce ->
-                Term_typing.translate_constant env kn (DefinitionEntry ce)
-              | OpaqueEff ce ->
-                translate_direct_opaque env kn ce
-              in
-               let eff = { eff with seff_body = cb } in
-               (push_seff env eff, export_eff eff)
-            in
-            translate_seff 0 rest (cb :: acc) env
-          else
-           let env = push_seff env eff in
-           let ecb = export_eff eff in
-           translate_seff (sl - 1) rest (ecb :: acc) env
-     in
-       translate_seff trusted seff [] env
+    match trusted with
+    | Some univs ->
+      univs, List.map export_eff seff
+    | None ->
+      let rec recheck_seff seff acc env = match seff with
+      | [] -> List.rev acc
+      | eff :: rest ->
+        let env, cb =
+          let kn = eff.seff_constant in
+          let ce = constant_entry_of_side_effect eff in
+          let open Entries in
+          let cb = match ce with
+          | DefinitionEff ce ->
+            Term_typing.translate_constant env kn (DefinitionEntry ce)
+          | OpaqueEff ce ->
+            translate_direct_opaque env kn ce
+          in
+            let eff = { eff with seff_body = cb } in
+            (push_seff env eff, export_eff eff)
+        in
+        recheck_seff rest (cb :: acc) env
+      in
+      Univ.ContextSet.empty, recheck_seff seff [] env
 
 let push_opaque_proof pf senv =
   let o, otab = Opaqueproof.create (library_dp_of_senv senv) pf (Environ.opaque_tables senv.env) in
@@ -806,7 +845,8 @@ let push_opaque_proof pf senv =
   senv, o
 
 let export_private_constants eff senv =
-  let exported = export_side_effects senv.revstruct senv.env eff in
+  let uctx, exported = export_side_effects senv eff in
+  let senv = push_context_set ~strict:true uctx senv in
   let map senv (kn, c) = match c.const_body with
   | OpaqueDef p ->
     let local = empty_private c.const_universes in
@@ -828,7 +868,11 @@ let add_constant l decl senv =
       | OpaqueEntry ce ->
         let handle env body eff =
           let body, uctx, signatures = inline_side_effects env body eff in
-          let trusted = check_signatures senv.revstruct signatures in
+          let trusted = check_signatures senv signatures in
+          let trusted, uctx = match trusted with
+          | None -> 0, uctx
+          | Some univs -> List.length signatures, Univ.ContextSet.union univs uctx
+          in
           body, uctx, trusted
         in
         let cb, ctx = Term_typing.translate_opaque senv.env kn ce in
@@ -890,9 +934,9 @@ let add_private_constant l decl senv : (Constant.t * private_constants) * safe_e
   in
   let senv = add_constant_aux senv (kn, dcb) in
   let eff =
-    let from_env = CEphemeron.create senv.revstruct in
+    let from_env = CEphemeron.create (Certificate.make senv) in
     let eff = {
-      from_env = from_env;
+      seff_certif = from_env;
       seff_constant = kn;
       seff_body = cb;
     } in
