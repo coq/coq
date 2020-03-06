@@ -125,10 +125,9 @@ dune exec -- dev/dune-dbg checker foo.vo
 (ocd) source dune_db
 ```
 
-Unfortunately, dependency handling here is not fully refined, so you
-need to build enough of Coq once to use this target [it will then
-correctly compute the deps and rebuild if you call the script again]
-This will be fixed in the future.
+Unfortunately, dependency handling is not fully refined / automated,
+you may find the occasional hiccup due to libraries being renamed,
+etc... Please report any issue.
 
 For running in emacs, use `coqdev-ocamldebug` from `coqdev.el`.
 
