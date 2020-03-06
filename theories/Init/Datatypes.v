@@ -34,6 +34,14 @@ Inductive unit : Set :=
 From stdlib Require bool.
 Export bool(bool,true,false).
 
+Definition bool_rect (P : bool -> Type) (f : P true) (f0 : P false) (b : bool) :=
+  if b as b0 return (P b0) then f else f0.
+
+Definition bool_rec (P : bool -> Set) := bool_rect P.
+
+Definition bool_ind (P : bool -> Prop) (f : P true) (f0 : P false) (b : bool) :=
+  if b as b0 return (P b0) then f else f0.
+
 Add Printing If bool.
 
 Declare Scope bool_scope.

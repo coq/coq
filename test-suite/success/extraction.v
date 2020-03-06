@@ -117,7 +117,7 @@ Extraction test20.
 
 (** Simple inductive type and recursor. *)
 
-Extraction nat.
+Extraction Datatypes.nat.
 (*
 type nat =
   | O
