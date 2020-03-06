@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import prelude ssreflect prop equality.
+From stdlib Require Import prelude ssreflect prop equality.
 
 (** [unit] is a singleton datatype with sole inhabitant [tt] *)
 

@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import prelude ssreflect prop.
+From stdlib Require Import prelude ssreflect prop.
 
 (** [eq x y], or simply [x=y] expresses the equality of [x] and
     [y]. Both [x] and [y] must belong to the same type [A].

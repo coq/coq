@@ -1,7 +1,7 @@
 (* (c) Copyright 2006-2015 Microsoft Corporation and Inria.                  *)
 (* Distributed under the terms of CeCILL-B.                                  *)
 
-Require Import ssreflect equality.
+From stdlib Require Import ssreflect equality.
 Local Open Scope type_scope.
 
 Module SsrMatchingSyntax.

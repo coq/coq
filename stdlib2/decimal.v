@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import prelude ssreflect.
+From stdlib Require Import prelude ssreflect.
 
 (** * Decimal numbers *)
 

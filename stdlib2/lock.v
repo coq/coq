@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import ssreflect prelude prop datatypes equality.
+From stdlib Require Import ssreflect prelude prop datatypes equality.
 
 (**  Ssreflect converse rewrite rule rule idiom.  **)
 Definition ssr_converse R (r : R) := (True_intro, r).

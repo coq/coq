@@ -1,4 +1,4 @@
-Require Import prelude ssreflect datatypes decimal.
+From stdlib Require Import prelude ssreflect datatypes decimal.
 Import equality prop.
 
 Inductive nat :=

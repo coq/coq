@@ -1,2 +1,2 @@
-Require matching functions lock.
+From stdlib Require matching functions lock.
 Export prelude matching ssreflect equality prop datatypes lock.

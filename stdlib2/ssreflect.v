@@ -12,7 +12,7 @@
 
 (** #<style> .doc { font-family: monospace; white-space: pre; } </style># **)
 
-Require Export prelude_plugins.
+From stdlib Require Export prelude_plugins.
 Import prelude.
 
 (**

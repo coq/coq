@@ -1,4 +1,4 @@
-Require Import prelude.
+From stdlib Require Import prelude.
 
 (** Plugins loaded initially *)
 Declare ML Module "ssrmatching_plugin".

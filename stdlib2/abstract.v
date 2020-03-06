@@ -8,7 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import prelude ssreflect datatypes equality nat.
+From stdlib Require Import prelude ssreflect datatypes equality nat.
 
 (* Constants for abstract: and [: name ] intro pattern *)
 Definition abstract_lock := unit.

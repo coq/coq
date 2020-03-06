@@ -10,7 +10,7 @@
 
 (** This file contains basic propositional connectives *)
 
-Require Import prelude ssreflect.
+From stdlib Require Import prelude ssreflect.
 
 (** Notations for propositional connectives *)
 

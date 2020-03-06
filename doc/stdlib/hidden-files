@@ -86,5 +86,8 @@ theories/setoid_ring/Rings_Q.v
 theories/setoid_ring/Rings_R.v
 theories/setoid_ring/Rings_Z.v
 theories/setoid_ring/ZArithRing.v
+theories/ssr/ssreflect.v
+theories/ssr/ssrfun.v
+theories/ssr/ssrbool.v
 theories/ssr/ssrunder.v
 theories/ssr/ssrsetoid.v

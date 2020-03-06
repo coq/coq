@@ -1,4 +1,4 @@
-Require Import prelude ssreflect equality nat abstract.
+From stdlib Require Import prelude ssreflect equality nat abstract.
 
 (* Internal N-ary congruence lemmas for the congr tactic.                     *)
 
