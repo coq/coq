@@ -8,9 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-(** This module defines proof facilities relevant to the
-     toplevel. In particular it defines the global proof
-     environment. *)
+(** State for interactive proofs. *)
 
 type t
 

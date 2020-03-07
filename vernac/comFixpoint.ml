@@ -279,12 +279,10 @@ let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixt
   let fiximps = List.map (fun (n,r,p) -> r) fiximps in
   let evd = Evd.from_ctx ctx in
   let evd = Evd.restrict_universe_context evd vars in
-  let ctx = Evd.check_univ_decl ~poly evd pl in
+  let univs = Evd.check_univ_decl ~poly evd pl in
   let ubind = Evd.universe_binders evd in
   let _ : GlobRef.t list =
-    List.map4 (fun name body types impargs ->
-        let ce = Declare.definition_entry ~opaque:false ~types ~univs:ctx body in
-        DeclareDef.declare_definition ~name ~scope ~kind:fix_kind ~ubind ~impargs ce)
+    DeclareDef.declare_mutually_recursive ~scope ~opaque:false ~univs ~kind:fix_kind ~ubind
       fixnames fixdecls fixtypes fiximps
   in
   Declare.recursive_message (not cofix) gidx fixnames;

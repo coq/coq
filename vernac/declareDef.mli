@@ -59,6 +59,18 @@ val declare_assumption
   -> Entries.parameter_entry
   -> GlobRef.t
 
+val declare_mutually_recursive
+  : opaque:bool
+  -> univs:Entries.universes_entry
+  -> scope:locality
+  -> kind:Decls.logical_kind
+  -> ubind:UnivNames.universe_binders
+  -> Names.variable list
+  -> Constr.constr list
+  -> Constr.types list
+  -> Impargs.manual_implicits list
+  -> Names.GlobRef.t list
+
 val prepare_definition
   :  allow_evars:bool
   -> ?opaque:bool

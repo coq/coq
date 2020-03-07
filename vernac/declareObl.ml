@@ -467,10 +467,7 @@ let declare_mutual_definition l =
   let kind = Decls.IsDefinition (if fixkind != IsCoFixpoint then Decls.Fixpoint else Decls.CoFixpoint) in
   let ubind = UnivNames.empty_binders in
   let kns =
-    List.map4
-      (fun name body types impargs ->
-         let ce = Declare.definition_entry ~opaque ~types ~univs body in
-         DeclareDef.declare_definition ~name ~scope ~kind ~ubind ~impargs ce)
+    DeclareDef.declare_mutually_recursive ~scope ~opaque ~univs ~kind ~ubind
       fixnames fixdecls fixtypes fiximps
   in
   (* Declare notations *)
@@ -478,6 +475,7 @@ let declare_mutual_definition l =
     (Metasyntax.add_notation_interpretation (Global.env ()))
     first.prg_notations;
   Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
+  (* Only for the first constant *)
   let dref = List.hd kns in
   DeclareDef.Hook.(call ?hook:first.prg_hook ~fix_exn { S.uctx = first.prg_ctx; obls; scope; dref });
   List.iter progmap_remove l;
