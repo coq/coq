@@ -29,7 +29,9 @@ module Obligation : sig
 
 end
 
-type obligations = Obligation.t array * int
+type obligations =
+  { obls : Obligation.t array
+  ; remaining : int }
 
 type fixpoint_kind =
   | IsFixpoint of lident option list

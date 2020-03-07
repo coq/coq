@@ -33,7 +33,9 @@ module Obligation = struct
 
 end
 
-type obligations = Obligation.t array * int
+type obligations =
+  { obls : Obligation.t array
+  ; remaining : int }
 
 type fixpoint_kind =
   | IsFixpoint of lident option list
@@ -88,7 +90,7 @@ module ProgramDecl = struct
     ; prg_type = reduce t
     ; prg_ctx = ctx
     ; prg_univdecl = udecl
-    ; prg_obligations = (obls', Array.length obls')
+    ; prg_obligations = { obls = obls' ; remaining = Array.length obls' }
     ; prg_deps = deps
     ; prg_fixkind = fixkind
     ; prg_notations = notations
@@ -287,7 +289,7 @@ let progmap_add n prg =
 let progmap_replace prg' =
   Lib.add_anonymous_leaf (input (map_replace prg'.prg_name prg' !from_prg))
 
-let obligations_solved prg = Int.equal (snd prg.prg_obligations) 0
+let obligations_solved prg = Int.equal prg.prg_obligations.remaining 0
 
 let obligations_message rem =
   if rem > 0 then
@@ -327,7 +329,7 @@ let rec intset_to = function
   | n -> Int.Set.add n (intset_to (pred n))
 
 let obligation_substitution expand prg =
-  let obls, _ = prg.prg_obligations in
+  let obls = prg.prg_obligations.obls in
   let ints = intset_to (pred (Array.length obls)) in
   obl_substitution expand obls ints
 
@@ -503,7 +505,8 @@ let declare_mutual_definition l =
   dref
 
 let update_obls prg obls rem =
-  let prg' = {prg with prg_obligations = (obls, rem)} in
+  let prg_obligations = { obls; remaining = rem } in
+  let prg' = {prg with prg_obligations} in
   progmap_replace prg';
   obligations_message rem;
   if rem > 0 then Remain rem
@@ -564,7 +567,7 @@ let obligation_terminator entries uctx { name; num; auto } =
     let body = EConstr.to_constr sigma (EConstr.of_constr body) in
     let ty = Option.map (fun x -> EConstr.to_constr sigma (EConstr.of_constr x)) ty in
     let ctx = Evd.evar_universe_context sigma in
-    let obls, rem = prg.prg_obligations in
+    let { obls; remaining=rem } = prg.prg_obligations in
     let obl = obls.(num) in
     let status =
       match obl.obl_status, entry.Declare.proof_entry_opaque with
@@ -606,7 +609,7 @@ let obligation_terminator entries uctx { name; num; auto } =
 (* Similar to the terminator but for interactive paths, as the
    terminator is only called in interactive proof mode *)
 let obligation_hook prg obl num auto { DeclareDef.Hook.S.uctx = ctx'; dref; _ } =
-  let obls, rem = prg.prg_obligations in
+  let { obls; remaining=rem } = prg.prg_obligations in
   let cst = match dref with GlobRef.ConstRef cst -> cst | _ -> assert false in
   let transparent = evaluable_constant cst (Global.env ()) in
   let () = match obl.obl_status with

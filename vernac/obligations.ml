@@ -297,7 +297,7 @@ open Evd
 let map_cardinal m =
   let i = ref 0 in
   ProgMap.iter (fun _ v ->
-      if snd (CEphemeron.get v).prg_obligations > 0 then incr i) m;
+      if (CEphemeron.get v).prg_obligations.remaining > 0 then incr i) m;
   !i
 
 exception Found of ProgramDecl.t CEphemeron.key
@@ -305,8 +305,8 @@ exception Found of ProgramDecl.t CEphemeron.key
 let map_first m =
   try
     ProgMap.iter (fun _ v ->
-                  if snd (CEphemeron.get v).prg_obligations > 0 then
-                    raise (Found v)) m;
+        if (CEphemeron.get v).prg_obligations.remaining > 0 then
+          raise (Found v)) m;
     assert(false)
   with Found x -> x
 
@@ -395,7 +395,7 @@ let solve_by_tac ?loc name evi t poly uctx =
 
 let rec solve_obligation prg num tac =
   let user_num = succ num in
-  let obls, rem = prg.prg_obligations in
+  let { obls; remaining=rem } = prg.prg_obligations in
   let obl = obls.(num) in
   let remaining = deps_remaining obls obl.obl_deps in
   let () =
@@ -423,7 +423,7 @@ let rec solve_obligation prg num tac =
 and obligation (user_num, name, typ) tac =
   let num = pred user_num in
   let prg = get_prog_err name in
-  let obls, rem = prg.prg_obligations in
+  let { obls; remaining } = prg.prg_obligations in
     if num >= 0 && num < Array.length obls then
       let obl = obls.(num) in
         match obl.obl_body with
@@ -468,8 +468,8 @@ and solve_obligation_by_tac prg obls i tac =
       else None
 
 and solve_prg_obligations prg ?oblset tac =
-  let obls, rem = prg.prg_obligations in
-  let rem = ref rem in
+  let { obls; remaining } = prg.prg_obligations in
+  let rem = ref remaining in
   let obls' = Array.copy obls in
   let set = ref Int.Set.empty in
   let p = match oblset with
@@ -501,10 +501,10 @@ and solve_all_obligations tac =
 
 and try_solve_obligation n prg tac =
   let prg = get_prog prg in
-  let obls, rem = prg.prg_obligations in
+  let {obls; remaining } = prg.prg_obligations in
   let obls' = Array.copy obls in
     match solve_obligation_by_tac prg obls' n tac with
-    | Some prg' -> ignore(update_obls prg' obls' (pred rem))
+    | Some prg' -> ignore(update_obls prg' obls' (pred remaining))
     | None -> ()
 
 and try_solve_obligations n tac =
@@ -517,9 +517,9 @@ and auto_solve_obligations n ?oblset tac : progress =
 open Pp
 let show_obligations_of_prg ?(msg=true) prg =
   let n = prg.prg_name in
-  let obls, rem = prg.prg_obligations in
+  let {obls; remaining} = prg.prg_obligations in
   let showed = ref 5 in
-    if msg then Feedback.msg_info (int rem ++ str " obligation(s) remaining: ");
+    if msg then Feedback.msg_info (int remaining ++ str " obligation(s) remaining: ");
     Array.iteri (fun i x ->
                    match x.obl_body with
                    | None ->
@@ -557,7 +557,7 @@ let add_definition ~name ?term t ~uctx ?(udecl=UState.default_univ_decl)
     ?(reduce=reduce) ?hook ?(opaque = false) obls =
   let info = Id.print name ++ str " has type-checked" in
   let prg = ProgramDecl.make ~opaque name ~udecl term t ~uctx [] None [] obls ~impargs ~poly ~scope ~kind reduce ?hook in
-  let obls,_ = prg.prg_obligations in
+  let {obls;_} = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose Feedback.msg_info (info ++ str ".");
     let cst = DeclareObl.declare_definition prg in
@@ -594,7 +594,7 @@ let add_mutual_definitions l ~uctx ?(udecl=UState.default_univ_decl) ?tactic
     in ()
 
 let admit_prog prg =
-  let obls, rem = prg.prg_obligations in
+  let {obls; remaining} = prg.prg_obligations in
   let obls = Array.copy obls in
     Array.iteri
       (fun i x ->
@@ -631,7 +631,7 @@ let next_obligation n tac =
   | None -> get_any_prog_err ()
   | Some _ -> get_prog_err n
   in
-  let obls, rem = prg.prg_obligations in
+  let {obls; remaining} = prg.prg_obligations in
   let is_open _ x = Option.is_empty x.obl_body && List.is_empty (deps_remaining obls x.obl_deps) in
   let i = match Array.findi is_open obls with
   | Some i -> i
