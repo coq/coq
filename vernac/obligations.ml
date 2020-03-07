@@ -17,11 +17,8 @@ open Printf
    - Apply term prefixed by quantification on "existentials".
 *)
 
-open Term
 open Constr
-open Vars
 open Names
-open Evd
 open Pp
 open CErrors
 open Util
@@ -41,7 +38,7 @@ let check_evars env evm =
     (fun key evi ->
        if Evd.is_obligation_evar evm key then ()
        else
-         let (loc,k) = evar_source key evm in
+         let (loc,k) = Evd.evar_source key evm in
          Pretype_errors.error_unsolvable_implicit ?loc env evm key None)
   (Evd.undefined_map evm)
 
@@ -133,14 +130,14 @@ let etype_of_evar evm evs hyps concl =
             | LocalDef (id,c,_) ->
                 let c', s'', trans'' = subst_evar_constr evm evs n EConstr.mkVar c in
                 let c' = subst_vars acc 0 c' in
-                  mkNamedProd_or_LetIn (LocalDef (id, c', t'')) rest,
+                Term.mkNamedProd_or_LetIn (LocalDef (id, c', t'')) rest,
                 Int.Set.union s'' s',
                 Id.Set.union trans'' trans'
             | LocalAssum (id,_) ->
-                mkNamedProd_or_LetIn (LocalAssum (id, t'')) rest, s', trans')
+              Term.mkNamedProd_or_LetIn (LocalAssum (id, t'')) rest, s', trans')
     | [] ->
-        let t', s, trans = subst_evar_constr evm evs n EConstr.mkVar concl in
-          subst_vars acc 0 t', s, trans
+      let t', s, trans = subst_evar_constr evm evs n EConstr.mkVar concl in
+      subst_vars acc 0 t', s, trans
   in aux [] 0 (List.rev hyps)
 
 let trunc_named_context n ctx =
@@ -152,14 +149,14 @@ let rec chop_product n t =
   if Int.equal n 0 then Some t
   else
     match Constr.kind t with
-      | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (pop b) else None
+      | Prod (_, _, b) ->  if Vars.noccurn 1 b then chop_product (pred n) (pop b) else None
       | _ -> None
 
 let evar_dependencies evm oev =
   let one_step deps =
     Evar.Set.fold (fun ev s ->
       let evi = Evd.find evm ev in
-      let deps' = evars_of_filtered_evar_info evm evi in
+      let deps' = Evd.evars_of_filtered_evar_info evm evi in
       if Evar.Set.mem oev deps' then
         invalid_arg ("Ill-formed evar map: cycle detected for evar " ^ Pp.string_of_ppcmds @@ Evar.print oev)
       else Evar.Set.union deps' s)
@@ -215,13 +212,13 @@ let eterm_obligations env name evm fs ?status t ty =
       (fun (id, (n, nstr), ev) l ->
          let hyps = Evd.evar_filtered_context ev in
          let hyps = trunc_named_context nc_len hyps in
-         let evtyp, deps, transp = etype_of_evar evm l hyps ev.evar_concl in
+         let evtyp, deps, transp = etype_of_evar evm l hyps ev.Evd.evar_concl in
          let evtyp, hyps, chop =
            match chop_product fs evtyp with
            | Some t -> t, trunc_named_context fs hyps, fs
            | None -> evtyp, hyps, 0
          in
-         let loc, k = evar_source id evm in
+         let loc, k = Evd.evar_source id evm in
          let status = match k with
            | Evar_kinds.QuestionMark { Evar_kinds.qm_obligation=o } -> o
            | _ -> match status with
@@ -282,7 +279,7 @@ let assumption_message = Declare.assumption_message
 
 let default_tactic = ref (Proofview.tclUNIT ())
 
-let evar_of_obligation o = make_evar (Global.named_context_val ()) (EConstr.of_constr o.obl_type)
+let evar_of_obligation o = Evd.make_evar (Global.named_context_val ()) (EConstr.of_constr o.obl_type)
 
 let subst_deps expand obls deps t =
   let osubst = DeclareObl.obl_substitution expand obls deps in
