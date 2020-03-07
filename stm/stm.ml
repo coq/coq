@@ -878,7 +878,7 @@ end = struct (* {{{ *)
     Vernacstate.LemmaStack.t option *
     int *                                   (* Evarutil.meta_counter_summary_tag *)
     int *                                   (* Evd.evar_counter_summary_tag *)
-    DeclareObl.program_info CEphemeron.key Names.Id.Map.t (* Obligations.program_tcc_summary_tag *)
+    DeclareObl.ProgramDecl.t CEphemeron.key Names.Id.Map.t (* Obligations.program_tcc_summary_tag *)
 
   type partial_state =
     [ `Full of Vernacstate.t

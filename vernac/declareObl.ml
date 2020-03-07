@@ -18,39 +18,94 @@ open Entries
 
 type 'a obligation_body = DefinedObl of 'a | TermObl of constr
 
-type obligation =
-  { obl_name : Id.t
-  ; obl_type : types
-  ; obl_location : Evar_kinds.t Loc.located
-  ; obl_body : pconstant obligation_body option
-  ; obl_status : bool * Evar_kinds.obligation_definition_status
-  ; obl_deps : Int.Set.t
-  ; obl_tac : unit Proofview.tactic option }
+module Obligation = struct
+  type t =
+    { obl_name : Id.t
+    ; obl_type : types
+    ; obl_location : Evar_kinds.t Loc.located
+    ; obl_body : pconstant obligation_body option
+    ; obl_status : bool * Evar_kinds.obligation_definition_status
+    ; obl_deps : Int.Set.t
+    ; obl_tac : unit Proofview.tactic option }
 
-type obligations = obligation array * int
+  let set_type ~typ obl = { obl with obl_type = typ }
+  let set_body ~body obl = { obl with obl_body = Some body }
+
+end
+
+type obligations = Obligation.t array * int
 
 type fixpoint_kind =
   | IsFixpoint of lident option list
   | IsCoFixpoint
 
-type program_info =
-  { prg_name : Id.t
-  ; prg_body : constr
-  ; prg_type : constr
-  ; prg_ctx : UState.t
-  ; prg_univdecl : UState.universe_decl
-  ; prg_obligations : obligations
-  ; prg_deps : Id.t list
-  ; prg_fixkind : fixpoint_kind option
-  ; prg_implicits : Impargs.manual_implicits
-  ; prg_notations : Vernacexpr.decl_notation list
-  ; prg_poly : bool
-  ; prg_scope : DeclareDef.locality
-  ; prg_kind : Decls.definition_object_kind
-  ; prg_reduce : constr -> constr
-  ; prg_hook : DeclareDef.Hook.t option
-  ; prg_opaque : bool
-  }
+module ProgramDecl = struct
+
+  type t =
+    { prg_name : Id.t
+    ; prg_body : constr
+    ; prg_type : constr
+    ; prg_ctx : UState.t
+    ; prg_univdecl : UState.universe_decl
+    ; prg_obligations : obligations
+    ; prg_deps : Id.t list
+    ; prg_fixkind : fixpoint_kind option
+    ; prg_implicits : Impargs.manual_implicits
+    ; prg_notations : Vernacexpr.decl_notation list
+    ; prg_poly : bool
+    ; prg_scope : DeclareDef.locality
+    ; prg_kind : Decls.definition_object_kind
+    ; prg_reduce : constr -> constr
+    ; prg_hook : DeclareDef.Hook.t option
+    ; prg_opaque : bool
+    }
+
+  open Obligation
+
+  let make ?(opaque = false) ?hook n ~udecl ~uctx ~impargs
+      ~poly ~scope ~kind b t deps fixkind notations obls reduce =
+    let obls', b =
+      match b with
+      | None ->
+        assert(Int.equal (Array.length obls) 0);
+        let n = Nameops.add_suffix n "_obligation" in
+        [| { obl_name = n; obl_body = None;
+             obl_location = Loc.tag Evar_kinds.InternalHole; obl_type = t;
+             obl_status = false, Evar_kinds.Expand; obl_deps = Int.Set.empty;
+             obl_tac = None } |],
+        mkVar n
+      | Some b ->
+        Array.mapi
+          (fun i (n, t, l, o, d, tac) ->
+             { obl_name = n ; obl_body = None;
+               obl_location = l; obl_type = t; obl_status = o;
+               obl_deps = d; obl_tac = tac })
+          obls, b
+    in
+    let ctx = UState.make_flexible_nonalgebraic uctx in
+    { prg_name = n
+    ; prg_body = b
+    ; prg_type = reduce t
+    ; prg_ctx = ctx
+    ; prg_univdecl = udecl
+    ; prg_obligations = (obls', Array.length obls')
+    ; prg_deps = deps
+    ; prg_fixkind = fixkind
+    ; prg_notations = notations
+    ; prg_implicits = impargs
+    ; prg_poly = poly
+    ; prg_scope = scope
+    ; prg_kind = kind
+    ; prg_reduce = reduce
+    ; prg_hook = hook
+    ; prg_opaque = opaque
+    }
+
+  let set_uctx ~uctx prg = {prg with prg_ctx = uctx}
+end
+
+open Obligation
+open ProgramDecl
 
 (* Saving an obligation *)
 
@@ -120,15 +175,15 @@ let shrink_body c ty =
   in
   (ctx, b', ty', Array.of_list args)
 
+(***********************************************************************)
+(* Saving an obligation                                                *)
+(***********************************************************************)
+
 let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
 
 let add_hint local prg cst =
   let locality = if local then Goptions.OptLocal else Goptions.OptExport in
   Hints.add_hints ~locality [Id.to_string prg.prg_name] (unfold_entry cst)
-
-(***********************************************************************)
-(* Saving an obligation                                                *)
-(***********************************************************************)
 
 (* true = hide obligations *)
 let get_hide_obligations =
@@ -205,7 +260,7 @@ let close sec =
         ++ ( str (if Int.equal (List.length keys) 1 then " has " else " have ")
            ++ str "unsolved obligations" ))
 
-let input : program_info CEphemeron.key ProgMap.t -> Libobject.obj =
+let input : ProgramDecl.t CEphemeron.key ProgMap.t -> Libobject.obj =
   let open Libobject in
   declare_object
     { (default_object "Program state") with
@@ -543,3 +598,39 @@ let obligation_terminator entries uctx { name; num; auto } =
         str
           "[obligation_terminator] close_proof returned more than one proof \
            term")
+
+(* Similar to the terminator but for interactive paths, as the
+   terminator is only called in interactive proof mode *)
+let obligation_hook prg obl num auto { DeclareDef.Hook.S.uctx = ctx'; dref; _ } =
+  let obls, rem = prg.prg_obligations in
+  let cst = match dref with GlobRef.ConstRef cst -> cst | _ -> assert false in
+  let transparent = evaluable_constant cst (Global.env ()) in
+  let () = match obl.obl_status with
+      (true, Evar_kinds.Expand)
+    | (true, Evar_kinds.Define true) ->
+       if not transparent then err_not_transp ()
+    | _ -> ()
+  in
+  let inst, ctx' =
+    if not prg.prg_poly (* Not polymorphic *) then
+      (* The universe context was declared globally, we continue
+         from the new global environment. *)
+      let ctx = UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ()) in
+      let ctx' = UState.merge_subst ctx (UState.subst ctx') in
+      Univ.Instance.empty, ctx'
+    else
+      (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
+      let uctx = UState.context ctx' in
+      Univ.UContext.instance uctx, ctx'
+  in
+  let obl = { obl with obl_body = Some (DefinedObl (cst, inst)) } in
+  let () = if transparent then add_hint true prg cst in
+  let obls = Array.copy obls in
+  let () = obls.(num) <- obl in
+  let prg = { prg with prg_ctx = ctx' } in
+  let () = ignore (update_obls prg obls (pred rem)) in
+  if pred rem > 0 then begin
+    let deps = dependencies obls num in
+    if not (Int.Set.is_empty deps) then
+      ignore (auto (Some prg.prg_name) deps None)
+  end

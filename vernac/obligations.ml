@@ -28,7 +28,10 @@ open Util
 
 module NamedDecl = Context.Named.Declaration
 
+(* For the records fields, opens should go away one these types are private *)
 open DeclareObl
+open DeclareObl.Obligation
+open DeclareObl.ProgramDecl
 
 let succfix (depth, fixrels) =
   (succ depth, List.map succ fixrels)
@@ -189,8 +192,6 @@ let sort_dependencies evl =
     | [] -> List.rev list
   in aux evl Evar.Set.empty []
 
-open Environ
-
 let eterm_obligations env name evm fs ?status t ty =
   (* 'Serialize' the evars *)
   let nc = Environ.named_context env in
@@ -284,58 +285,14 @@ let default_tactic = ref (Proofview.tclUNIT ())
 let evar_of_obligation o = make_evar (Global.named_context_val ()) (EConstr.of_constr o.obl_type)
 
 let subst_deps expand obls deps t =
-  let osubst = obl_substitution expand obls deps in
+  let osubst = DeclareObl.obl_substitution expand obls deps in
     (Vars.replace_vars (List.map (fun (n, (_, b)) -> n, b) osubst) t)
 
 let subst_deps_obl obls obl =
   let t' = subst_deps true obls obl.obl_deps obl.obl_type in
-    { obl with obl_type = t' }
+  Obligation.set_type ~typ:t' obl
 
 open Evd
-
-let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
-
-let add_local_hint prg cst =
-  Hints.add_hints ~locality:Goptions.OptLocal [Id.to_string prg.prg_name] (unfold_entry cst)
-
-let init_prog_info ?(opaque = false) ?hook n udecl b t ctx deps fixkind
-                   notations obls impls ~scope ~poly ~kind reduce =
-  let obls', b =
-    match b with
-    | None ->
-        assert(Int.equal (Array.length obls) 0);
-        let n = Nameops.add_suffix n "_obligation" in
-          [| { obl_name = n; obl_body = None;
-               obl_location = Loc.tag Evar_kinds.InternalHole; obl_type = t;
-               obl_status = false, Evar_kinds.Expand; obl_deps = Int.Set.empty;
-               obl_tac = None } |],
-        mkVar n
-    | Some b ->
-        Array.mapi
-          (fun i (n, t, l, o, d, tac) ->
-            { obl_name = n ; obl_body = None;
-              obl_location = l; obl_type = t; obl_status = o;
-              obl_deps = d; obl_tac = tac })
-          obls, b
-  in
-  let ctx = UState.make_flexible_nonalgebraic ctx in
-    { prg_name = n
-    ; prg_body = b
-    ; prg_type = reduce t
-    ; prg_ctx = ctx
-    ; prg_univdecl = udecl
-    ; prg_obligations = (obls', Array.length obls')
-    ; prg_deps = deps
-    ; prg_fixkind = fixkind
-    ; prg_notations = notations
-    ; prg_implicits = impls
-    ; prg_poly = poly
-    ; prg_scope = scope
-    ; prg_kind = kind
-    ; prg_reduce = reduce
-    ; prg_hook = hook
-    ; prg_opaque = opaque
-    }
 
 let map_cardinal m =
   let i = ref 0 in
@@ -343,7 +300,7 @@ let map_cardinal m =
       if snd (CEphemeron.get v).prg_obligations > 0 then incr i) m;
   !i
 
-exception Found of program_info CEphemeron.key
+exception Found of ProgramDecl.t CEphemeron.key
 
 let map_first m =
   try
@@ -436,40 +393,6 @@ let solve_by_tac ?loc name evi t poly uctx =
     warn_solve_errored ?loc err;
     None
 
-let obligation_hook prg obl num auto { DeclareDef.Hook.S.uctx = ctx'; dref; _ } =
-  let obls, rem = prg.prg_obligations in
-  let cst = match dref with GlobRef.ConstRef cst -> cst | _ -> assert false in
-  let transparent = evaluable_constant cst (Global.env ()) in
-  let () = match obl.obl_status with
-      (true, Evar_kinds.Expand)
-    | (true, Evar_kinds.Define true) ->
-       if not transparent then err_not_transp ()
-    | _ -> ()
-  in
-  let inst, ctx' =
-    if not prg.prg_poly (* Not polymorphic *) then
-      (* The universe context was declared globally, we continue
-         from the new global environment. *)
-      let ctx = UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ()) in
-      let ctx' = UState.merge_subst ctx (UState.subst ctx') in
-      Univ.Instance.empty, ctx'
-    else
-      (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
-      let uctx = UState.context ctx' in
-      Univ.UContext.instance uctx, ctx'
-  in
-  let obl = { obl with obl_body = Some (DefinedObl (cst, inst)) } in
-  let () = if transparent then add_local_hint prg cst in
-  let obls = Array.copy obls in
-  let () = obls.(num) <- obl in
-  let prg = { prg with prg_ctx = ctx' } in
-  let () = ignore (update_obls prg obls (pred rem)) in
-  if pred rem > 0 then begin
-    let deps = dependencies obls num in
-    if not (Int.Set.is_empty deps) then
-      ignore (auto (Some prg.prg_name) deps None)
-  end
-
 let rec solve_obligation prg num tac =
   let user_num = succ num in
   let obls, rem = prg.prg_obligations in
@@ -489,7 +412,7 @@ let rec solve_obligation prg num tac =
   let evd = Evd.update_sigma_env evd (Global.env ()) in
   let auto n oblset tac = auto_solve_obligations n ~oblset tac in
   let proof_ending = Lemmas.Proof_ending.End_obligation (DeclareObl.{name = prg.prg_name; num; auto}) in
-  let hook = DeclareDef.Hook.make (obligation_hook prg obl num auto) in
+  let hook = DeclareDef.Hook.make (DeclareObl.obligation_hook prg obl num auto) in
   let info = Lemmas.Info.make ~hook ~proof_ending ~scope ~kind () in
   let poly = prg.prg_poly in
   let lemma = Lemmas.start_lemma ~name:obl.obl_name ~poly ~info evd (EConstr.of_constr obl.obl_type) in
@@ -530,8 +453,9 @@ and solve_obligation_by_tac prg obls i tac =
                 prg.prg_poly (Evd.evar_universe_context evd) with
         | None -> None
         | Some (t, ty, ctx) ->
+          let prg = ProgramDecl.set_uctx ~uctx:ctx prg in
+          (* Why is uctx not used above? *)
           let uctx = UState.univ_entry ~poly:prg.prg_poly ctx in
-          let prg = {prg with prg_ctx = ctx} in
           let def, obl' = declare_obligation prg obl t ty uctx in
           obls.(i) <- obl';
           if def && not prg.prg_poly then (
@@ -539,7 +463,7 @@ and solve_obligation_by_tac prg obls i tac =
             let evd = Evd.from_env (Global.env ()) in
             let evd = Evd.merge_universe_subst evd (Evd.universe_subst (Evd.from_ctx ctx)) in
             let ctx' = Evd.evar_universe_context evd in
-            Some {prg with prg_ctx = ctx'})
+            Some (ProgramDecl.set_uctx ~uctx:ctx' prg))
           else Some prg
       else None
 
@@ -553,20 +477,20 @@ and solve_prg_obligations prg ?oblset tac =
     | Some s -> set := s;
       (fun i -> Int.Set.mem i !set)
   in
-  let prgref = ref prg in
-  let () =
-    Array.iteri (fun i x ->
+  let prg =
+    Array.fold_left_i (fun i prg x ->
       if p i then
-        match solve_obligation_by_tac !prgref obls' i tac with
-        | None -> ()
-        | Some prg' ->
-           prgref := prg';
-           let deps = dependencies obls i in
-           (set := Int.Set.union !set deps;
-            decr rem))
-      obls'
+        match solve_obligation_by_tac prg obls' i tac with
+        | None -> prg
+        | Some prg ->
+          let deps = dependencies obls i in
+          set := Int.Set.union !set deps;
+          decr rem;
+          prg
+      else prg)
+      prg obls'
   in
-    update_obls !prgref obls' !rem
+  update_obls prg obls' !rem
 
 and solve_obligations n tac =
   let prg = get_prog_err n in
@@ -632,7 +556,7 @@ let add_definition ~name ?term t ~uctx ?(udecl=UState.default_univ_decl)
                    ?(impargs=[]) ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Decls.Definition) ?tactic
     ?(reduce=reduce) ?hook ?(opaque = false) obls =
   let info = Id.print name ++ str " has type-checked" in
-  let prg = init_prog_info ~opaque name udecl term t uctx [] None [] obls impargs ~poly ~scope ~kind reduce ?hook in
+  let prg = ProgramDecl.make ~opaque name ~udecl term t ~uctx [] None [] obls ~impargs ~poly ~scope ~kind reduce ?hook in
   let obls,_ = prg.prg_obligations in
   if Int.equal (Array.length obls) 0 then (
     Flags.if_verbose Feedback.msg_info (info ++ str ".");
@@ -652,9 +576,9 @@ let add_mutual_definitions l ~uctx ?(udecl=UState.default_univ_decl) ?tactic
     ?hook ?(opaque = false) notations fixkind =
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
-    (fun  (n, b, t, imps, obls) ->
-     let prg = init_prog_info ~opaque n udecl (Some b) t uctx deps (Some fixkind)
-       notations obls imps ~poly ~scope ~kind reduce ?hook
+    (fun  (n, b, t, impargs, obls) ->
+     let prg = ProgramDecl.make ~opaque n ~udecl (Some b) t ~uctx deps (Some fixkind)
+       notations obls ~impargs ~poly ~scope ~kind reduce ?hook
      in progmap_add n (CEphemeron.create prg)) l;
     let _defined =
       List.fold_left (fun finished x ->
@@ -682,10 +606,10 @@ let admit_prog prg =
               (Declare.ParameterEntry (None,(x.obl_type,ctx),None)) ~kind:Decls.(IsAssumption Conjectural)
             in
               assumption_message x.obl_name;
-              obls.(i) <- { x with obl_body = Some (DefinedObl (kn, Univ.Instance.empty)) }
+              obls.(i) <- Obligation.set_body ~body:(DefinedObl (kn, Univ.Instance.empty)) x
         | Some _ -> ())
       obls;
-    ignore(update_obls prg obls 0)
+    ignore(DeclareObl.update_obls prg obls 0)
 
 let rec admit_all_obligations () =
   let prg = try Some (get_any_prog ()) with NoObligations _ -> None in
