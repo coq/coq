@@ -533,6 +533,17 @@ let dependencies obls n =
     obls;
   !res
 
+let update_program_decl_on_defined prg obls num obl ~uctx rem ~auto =
+  let obls = Array.copy obls in
+  let () = obls.(num) <- obl in
+  let prg = { prg with prg_ctx = uctx } in
+  let () = ignore (update_obls prg obls (pred rem)) in
+  if pred rem > 0 then begin
+    let deps = dependencies obls num in
+    if not (Int.Set.is_empty deps) then
+      ignore (auto (Some prg.prg_name) deps None)
+  end
+
 type obligation_qed_info =
   { name : Id.t
   ; num : int
@@ -571,8 +582,6 @@ let obligation_terminator entries uctx { name; num; auto } =
     in
     let uctx = UState.univ_entry ~poly:prg.prg_poly ctx in
     let (defined, obl) = declare_obligation prg obl body ty uctx in
-    let obls = Array.copy obls in
-    let () = obls.(num) <- obl in
     let prg_ctx =
       if prg.prg_poly then (* Polymorphic *)
         (* We merge the new universes and constraints of the
@@ -586,12 +595,7 @@ let obligation_terminator entries uctx { name; num; auto } =
         if defined then UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ())
         else ctx
     in
-    let prg = {prg with prg_ctx} in
-    ignore (update_obls prg obls (pred rem));
-    if pred rem > 0 then
-      let deps = dependencies obls num in
-      if not (Int.Set.is_empty deps) then
-        ignore (auto (Some name) deps None)
+    update_program_decl_on_defined prg obls num obl ~uctx:prg_ctx rem ~auto
   | _ ->
     CErrors.anomaly
       Pp.(
@@ -625,12 +629,4 @@ let obligation_hook prg obl num auto { DeclareDef.Hook.S.uctx = ctx'; dref; _ } 
   in
   let obl = { obl with obl_body = Some (DefinedObl (cst, inst)) } in
   let () = if transparent then add_hint true prg cst in
-  let obls = Array.copy obls in
-  let () = obls.(num) <- obl in
-  let prg = { prg with prg_ctx = ctx' } in
-  let () = ignore (update_obls prg obls (pred rem)) in
-  if pred rem > 0 then begin
-    let deps = dependencies obls num in
-    if not (Int.Set.is_empty deps) then
-      ignore (auto (Some prg.prg_name) deps None)
-  end
+  update_program_decl_on_defined prg obls num obl ~uctx:ctx' rem ~auto
