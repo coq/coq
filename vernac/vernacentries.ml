@@ -983,7 +983,7 @@ let vernac_begin_section ~poly ({v=id} as lid) =
      to its current value ie noop. *)
   set_bool_option_value_gen ~locality:OptLocal ["Universe"; "Polymorphism"] poly
 
-let vernac_end_section {CAst.loc} =
+let vernac_end_section {CAst.loc; v} =
   Dumpglob.dump_reference ?loc
     (DirPath.to_string (Lib.current_dirpath true)) "<>" "sec";
   Lib.close_section ()
@@ -993,6 +993,7 @@ let vernac_name_sec_hyp {v=id} set = Proof_using.name_set id set
 (* Dispatcher of the "End" command *)
 
 let vernac_end_segment ({v=id} as lid) =
+  DeclareObl.check_can_close lid.v;
   match Lib.find_opening_node id with
   | Lib.OpenedModule (false,export,_,_) -> vernac_end_module export lid
   | Lib.OpenedModule (true,_,_,_) -> vernac_end_modtype lid
