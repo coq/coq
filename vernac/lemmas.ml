@@ -198,10 +198,8 @@ module MutualEntry : sig
   val declare_mutdef
     (* Common to all recthms *)
     : ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
-    -> poly:bool
     -> uctx:UState.t
     -> ?hook_data:DeclareDef.Hook.t * UState.t * (Names.Id.t * Constr.t) list
-    -> udecl:UState.universe_decl
     (* Only for the first constant, introduced by compat *)
     -> ubind:UnivNames.universe_binders
     -> name:Id.t
@@ -261,7 +259,7 @@ end = struct
         Pp.(str "Not a proof by induction: " ++
             Termops.Internal.debug_print_constr (EConstr.of_constr t) ++ str ".")
 
-  let declare_mutdef ?fix_exn ~poly ~uctx ?hook_data ~udecl ~ubind ~name ?typ ~impargs ~info mutpe i =
+  let declare_mutdef ?fix_exn ~uctx ?hook_data ~ubind ~name ?typ ~impargs ~info mutpe i =
     let { Info.hook; compute_guard; scope; kind; _ } = info in
     match mutpe with
     | NoBody pe ->
@@ -282,17 +280,18 @@ end = struct
           ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff) in
       DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
 
-  let declare_mutdef ?fix_exn ~poly ~uctx ?hook_data ~udecl ~ubind ~name { entry; info } =
+  let declare_mutdef ?fix_exn ~uctx ?hook_data ~ubind ~name { entry; info } =
+    (* At some point make this a single iteration *)
     (* At some point make this a single iteration *)
     (* impargs here are special too, fixed in upcoming PRs *)
     let impargs = info.Info.impargs in
-    let r = declare_mutdef ?fix_exn ~poly ~info ~udecl ~ubind ?hook_data ~uctx ~name ~impargs entry 0 in
+    let r = declare_mutdef ?fix_exn ~info ~ubind ?hook_data ~uctx ~name ~impargs entry 0 in
     (* Before we used to do this, check if that's right *)
     let ubind = UnivNames.empty_binders in
     let rs =
       List.map_i (
         fun i { Recthm.name; typ; impargs } ->
-          declare_mutdef ?fix_exn ~poly ~udecl ~info ~ubind ?hook_data ~uctx ~name ~typ ~impargs entry i) 1 info.Info.other_thms
+          declare_mutdef ?fix_exn ~name ~info ~ubind ?hook_data ~uctx ~typ ~impargs entry i) 1 info.Info.other_thms
     in r :: rs
 end
 
@@ -320,11 +319,11 @@ let compute_proof_using_for_admitted proof typ pproofs =
       Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
     | _ -> None
 
-let finish_admitted ~name ~poly ~info ~uctx ~udecl pe =
+let finish_admitted ~name ~info ~uctx pe =
   let mutpe = MutualEntry.variable ~info pe in
   let ubind = UnivNames.empty_binders in
   let _r : Names.GlobRef.t list =
-    MutualEntry.declare_mutdef ~uctx ~poly ~udecl ~ubind ~name mutpe in
+    MutualEntry.declare_mutdef ~uctx ~ubind ~name mutpe in
   ()
 
 let save_lemma_admitted ~(lemma : t) : unit =
@@ -340,7 +339,7 @@ let save_lemma_admitted ~(lemma : t) : unit =
   let sec_vars = compute_proof_using_for_admitted lemma.proof typ pproofs in
   let universes = Proof_global.get_initial_euctx lemma.proof in
   let ctx = UState.check_univ_decl ~poly universes udecl in
-  finish_admitted ~name ~poly ~info:lemma.info ~uctx:universes ~udecl (sec_vars, (typ, ctx), None)
+  finish_admitted ~name ~info:lemma.info ~uctx:universes (sec_vars, (typ, ctx), None)
 
 (************************************************************************)
 (* Saving a lemma-like constant                                         *)
@@ -356,7 +355,7 @@ let finish_proved idopt po info =
   let open Proof_global in
   let { Info.hook } = info in
   match po with
-  | { name; entries=[const]; uctx; udecl; poly } ->
+  | { name; entries=[const]; uctx; udecl } ->
     let name = match idopt with
       | None -> name
       | Some { CAst.v = save_id } -> check_anonymity name save_id; save_id in
@@ -366,7 +365,7 @@ let finish_proved idopt po info =
       let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
       let ubind = UState.universe_binders uctx in
       let _r : Names.GlobRef.t list =
-        MutualEntry.declare_mutdef ~fix_exn ~uctx ~poly ~udecl ?hook_data ~ubind ~name mutpe
+        MutualEntry.declare_mutdef ~fix_exn ~uctx ?hook_data ~ubind ~name mutpe
       in ()
     with e when CErrors.noncritical e ->
       let e = Exninfo.capture e in
@@ -455,7 +454,7 @@ let save_lemma_proved ~lemma ~opaque ~idopt =
 (***********************************************************************)
 let save_lemma_admitted_delayed ~proof ~info =
   let open Proof_global in
-  let { name; entries; uctx; udecl; poly } = proof in
+  let { name; entries; uctx; udecl } = proof in
   if List.length entries <> 1 then
     CErrors.user_err Pp.(str "Admitted does not support multiple statements");
   let { Declare.proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
@@ -467,6 +466,6 @@ let save_lemma_admitted_delayed ~proof ~info =
     | Some typ -> typ in
   let ctx = UState.univ_entry ~poly uctx in
   let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
-  finish_admitted ~name ~poly ~uctx ~udecl ~info (sec_vars, (typ, ctx), None)
+  finish_admitted ~name ~uctx ~info (sec_vars, (typ, ctx), None)
 
 let save_lemma_proved_delayed ~proof ~info ~idopt = finalize_proof idopt proof info

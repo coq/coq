@@ -27,7 +27,6 @@ module NamedDecl = Context.Named.Declaration
 type proof_object =
   { name : Names.Id.t
   ; entries : Evd.side_effects Declare.proof_entry list
-  ; poly : bool
   ; uctx: UState.t
   ; udecl : UState.universe_decl
   }
@@ -240,7 +239,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id ~now
     Declare.delayed_definition_entry ~opaque ?feedback_id ?section_vars ~univs ~types:typ body
   in
   let entries = Future.map2 entry_fn fpl (Proofview.initial_goals entry) in
-  { name; entries; poly; uctx; udecl }
+  { name; entries; uctx; udecl }
 
 let return_proof ?(allow_partial=false) ps =
  let { proof } = ps in
