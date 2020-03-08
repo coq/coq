@@ -41,13 +41,6 @@ val add_tactic_notation :
     environment at level [level] with locality [local] made of the grammar
     productions [prods] and returning the body [expr] *)
 
-val register_tactic_notation_entry : string -> ('a, 'b, 'c) Genarg.genarg_type -> unit
-(** Register an argument under a given entry name for tactic notations. When
-    translating [raw_argument] into [argument], atomic names will be first
-    looked up according to names registered through this function and fallback
-    to finding an argument by name (as in {!Genarg}) if there is none
-    matching. *)
-
 val add_ml_tactic_notation : ml_tactic_name -> level:int -> ?deprecation:Deprecation.t ->
   argument grammar_tactic_prod_item_expr list list -> unit
 (** A low-level variant of {!add_tactic_notation} used by the TACTIC EXTEND

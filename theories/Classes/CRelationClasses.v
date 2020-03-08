@@ -249,7 +249,7 @@ Ltac reduce_goal :=
     | _ => red ; intros ; try reduce_goal
   end.
 
-Tactic Notation "reduce" "in" hyp(Hid) := reduce_hyp Hid.
+Tactic Notation "reduce" "in" var(Hid) := reduce_hyp Hid.
 
 Ltac reduce := reduce_goal.
 

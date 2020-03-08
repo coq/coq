@@ -431,7 +431,7 @@ Tactic Notation (at level 0)
   let G := Get_goal in
   ring_lookup (PackRing Ring_simplify) [lH] rl G.
 
-Tactic Notation "ring_simplify" constr_list(rl) "in" hyp(H):=
+Tactic Notation "ring_simplify" constr_list(rl) "in" var(H):=
   let G := Get_goal in
   let t := type of H in
   let g := fresh "goal" in
@@ -451,7 +451,7 @@ Tactic Notation "ring_simplify" constr_list(rl) "in" hyp(H):=
   clear H;rename H' into H;
   unfold g;clear g.
 
-Tactic Notation "ring_simplify" "["constr_list(lH)"]" constr_list(rl) "in" hyp(H):=
+Tactic Notation "ring_simplify" "["constr_list(lH)"]" constr_list(rl) "in" var(H):=
   let G := Get_goal in
   let t := type of H in
   let g := fresh "goal" in

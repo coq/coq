@@ -202,23 +202,13 @@ let extend_tactic_grammar kn ml ntn = extend_grammar_command tactic_grammar (kn,
 (**********************************************************************)
 (* Tactic Notation                                                    *)
 
-let entry_names = ref String.Map.empty
-
-let register_tactic_notation_entry name entry =
-  let entry = match entry with
-  | ExtraArg arg -> ArgT.Any arg
-  | _ -> assert false
-  in
-  entry_names := String.Map.add name entry !entry_names
-
 let interp_prod_item = function
   | TacTerm s -> TacTerm s
   | TacNonTerm (loc, ((nt, sep), ido)) ->
     let symbol = parse_user_entry ?loc nt sep in
     let interp s = function
     | None ->
-      if String.Map.mem s !entry_names then String.Map.find s !entry_names
-      else begin match ArgT.name s with
+      begin match ArgT.name s with
       | None -> user_err Pp.(str ("Unknown entry "^s^"."))
       | Some arg -> arg
       end

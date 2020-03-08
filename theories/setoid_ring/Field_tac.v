@@ -276,7 +276,7 @@ Tactic Notation (at level 0)
   let G := Get_goal in
   field_lookup (PackField Field_simplify) [lH] rl G.
 
-Tactic Notation "field_simplify" constr_list(rl) "in" hyp(H):=
+Tactic Notation "field_simplify" constr_list(rl) "in" var(H):=
   let G := Get_goal in
   let t := type of H in
   let g := fresh "goal" in
@@ -287,7 +287,7 @@ Tactic Notation "field_simplify" constr_list(rl) "in" hyp(H):=
   unfold g;clear g.
 
 Tactic Notation "field_simplify"
-    "["constr_list(lH) "]" constr_list(rl) "in" hyp(H):=
+    "["constr_list(lH) "]" constr_list(rl) "in" var(H):=
   let G := Get_goal in
   let t := type of H in
   let g := fresh "goal" in
@@ -302,12 +302,12 @@ Ltac Field_simplify_in hyp:=
    Field_simplify_gen ltac:(fun H => rewrite H in hyp).
 
 Tactic Notation (at level 0)
-  "field_simplify" constr_list(rl) "in" hyp(h) :=
+  "field_simplify" constr_list(rl) "in" var(h) :=
   let t := type of h in
   field_lookup (Field_simplify_in h) [] rl t.
 
 Tactic Notation (at level 0)
-  "field_simplify" "[" constr_list(lH) "]" constr_list(rl) "in" hyp(h) :=
+  "field_simplify" "[" constr_list(lH) "]" constr_list(rl) "in" var(h) :=
   let t := type of h in
   field_lookup (Field_simplify_in h) [lH] rl t.
 *)
@@ -412,7 +412,7 @@ Ltac FIELD_SIMPL_EQ FLD lH rl :=
   Field_simplify_eq Ring_tac.ring_subst_niter FLD lH;
   get_FldPost FLD ().
 
-Tactic Notation (at level 0) "field_simplify_eq" "in" hyp(H) :=
+Tactic Notation (at level 0) "field_simplify_eq" "in" var(H) :=
   let t := type of H in
   generalize H;
   field_lookup (PackField FIELD_SIMPL_EQ) [] t;
@@ -421,7 +421,7 @@ Tactic Notation (at level 0) "field_simplify_eq" "in" hyp(H) :=
 
 
 Tactic Notation (at level 0)
-  "field_simplify_eq" "[" constr_list(lH) "]"  "in" hyp(H) :=
+  "field_simplify_eq" "[" constr_list(lH) "]"  "in" var(H) :=
   let t := type of H in
   generalize H;
   field_lookup (PackField FIELD_SIMPL_EQ) [lH] t;

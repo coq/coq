@@ -215,10 +215,10 @@ Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) :=
 
 (** Specify the hypothesis in which the call occurs as well. *)
 
-Tactic Notation "destruct_call" constr(f) "in" hyp(id) :=
+Tactic Notation "destruct_call" constr(f) "in" var(id) :=
   destruct_call_in f id.
 
-Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) "in" hyp(id) :=
+Tactic Notation "destruct_call" constr(f) "as" simple_intropattern(l) "in" var(id) :=
   destruct_call_as_in f l id.
 
 (** A marker for prototypes to destruct. *)

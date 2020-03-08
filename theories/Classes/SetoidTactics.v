@@ -70,11 +70,11 @@ Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   setoidreplaceat (default_relation x y) idtac o.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
-  "in" hyp(id) :=
+  "in" var(id) :=
   setoidreplacein (default_relation x y) id idtac.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
-  "in" hyp(id)
+  "in" var(id)
   "at" int_or_var_list(o) :=
   setoidreplaceinat (default_relation x y) id idtac o.
 
@@ -88,12 +88,12 @@ Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   setoidreplaceat (default_relation x y) ltac:(t) o.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
-  "in" hyp(id)
+  "in" var(id)
   "by" tactic3(t) :=
   setoidreplacein (default_relation x y) id ltac:(t).
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
-  "in" hyp(id)
+  "in" var(id)
   "at" int_or_var_list(o)
   "by" tactic3(t) :=
   setoidreplaceinat (default_relation x y) id ltac:(t) o.
@@ -120,24 +120,24 @@ Tactic Notation "setoid_replace" constr(x) "with" constr(y)
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel)
-  "in" hyp(id) :=
+  "in" var(id) :=
   setoidreplacein (rel x y) id idtac.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel)
-  "in" hyp(id)
+  "in" var(id)
   "at" int_or_var_list(o) :=
   setoidreplaceinat (rel x y) id idtac o.
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel)
-  "in" hyp(id)
+  "in" var(id)
   "by" tactic3(t) :=
   setoidreplacein (rel x y) id ltac:(t).
 
 Tactic Notation "setoid_replace" constr(x) "with" constr(y)
   "using" "relation" constr(rel)
-  "in" hyp(id)
+  "in" var(id)
   "at" int_or_var_list(o)
   "by" tactic3(t) :=
   setoidreplaceinat (rel x y) id ltac:(t) o.

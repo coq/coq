@@ -147,7 +147,7 @@ Tactic Notation "extensionality" ident(x) :=
 (* Note that you can write [Ltac extensionality_in_checker tac ::= tac tt.] to get a more informative error message. *)
 Ltac extensionality_in_checker tac :=
   first [ tac tt | fail 1 "Anomaly: Unexpected error in extensionality tactic.  Please report." ].
-Tactic Notation "extensionality" "in" hyp(H) :=
+Tactic Notation "extensionality" "in" var(H) :=
   let rec check_is_extensional_equality H :=
       lazymatch type of H with
       | _ = _ => constr:(Prop)

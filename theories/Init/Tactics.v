@@ -153,10 +153,10 @@ bapply lemma ltac:(fun H => destruct H as [H _]; apply H).
 Tactic Notation "apply" "<-" constr(lemma) :=
 bapply lemma ltac:(fun H => destruct H as [_ H]; apply H).
 
-Tactic Notation "apply" "->" constr(lemma) "in" hyp(J) :=
+Tactic Notation "apply" "->" constr(lemma) "in" var(J) :=
 bapply lemma ltac:(fun H => destruct H as [H _]; apply H in J).
 
-Tactic Notation "apply" "<-" constr(lemma) "in" hyp(J) :=
+Tactic Notation "apply" "<-" constr(lemma) "in" var(J) :=
 bapply lemma ltac:(fun H => destruct H as [_ H]; apply H in J).
 
 (** An experimental tactic simpler than auto that is useful for ending
@@ -228,7 +228,7 @@ Tactic Notation "decide" constr(lemma) "with" constr(H) :=
 
 (** Clear an hypothesis and its dependencies *)
 
-Tactic Notation "clear" "dependent" hyp(h) :=
+Tactic Notation "clear" "dependent" var(h) :=
  let rec depclear h :=
   clear h ||
   match goal with
@@ -240,7 +240,7 @@ Tactic Notation "clear" "dependent" hyp(h) :=
 (** Revert an hypothesis and its dependencies :
     this is actually generalize dependent... *)
 
-Tactic Notation "revert" "dependent" hyp(h) :=
+Tactic Notation "revert" "dependent" var(h) :=
  generalize dependent h.
 
 (** Provide an error message for dependent induction that reports an import is
