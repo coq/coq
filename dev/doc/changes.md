@@ -1,19 +1,19 @@
 ## Changes between Coq 8.11 and Coq 8.12
 
-### ML API
+### Code formatting
 
-Refiner.catchable_exception is deprecated, use instead
-CErrors.noncritical in try-with block. Note that nothing is needed in
-tclORELSE block since the exceptions there are supposed to be
-non-critical by construction.
-
-### ML API
-
-Types `precedence`, `parenRelation`, `tolerability` in
-`notgram_ops.ml` have been reworked. See `entry_level` and
-`entry_relative_level` in `constrexpr.ml`.
+- The automatic code formatting tool `ocamlformat` is enabled now for
+  the micromega codebase. Version 0.13.0 is required. See
+  `ocalmformat`'s documentation for more details on integration with
+  your editor.
 
 ### ML API
+
+Notations:
+
+- Types `precedence`, `parenRelation`, `tolerability` in
+  `notgram_ops.ml` have been reworked. See `entry_level` and
+  `entry_relative_level` in `constrexpr.ml`.
 
 Exception handling:
 
@@ -27,6 +27,11 @@ Exception handling:
 
   + printers are of type `exn -> Pp.t option` [`None` == not handled]
   + it is forbidden for exception printers to raise.
+
+- Refiner.catchable_exception is deprecated, use instead
+  CErrors.noncritical in try-with block. Note that nothing is needed in
+  tclORELSE block since the exceptions there are supposed to be
+  non-critical by construction.
 
 Printers:
 
