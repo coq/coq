@@ -4,13 +4,7 @@ command -v "${BIN}coqtop.byte" || { echo "Missing coqtop.byte"; exit 1; }
 
 f=$(mktemp)
 {
-    if [ -n "$INSIDE_DUNE" ]; then
-        printf 'Drop.\n#directory "../dev";;\n#use "include_dune";;\n#quit;;\n' | coqtop.byte -q
-    else
-        # -I ../dev is not needed when compiled with -local (usual dev
-        # setup), but is needed for CI testing.
-        printf 'Drop. #use "include";; #quit;;\n' | "${BIN}coqtop.byte" -I ../dev -q
-    fi
+    printf 'Drop.\n#directory "../dev";;\n#use "include";;\n#quit;;\n' | "${BIN}coqtop.byte" -q
 } 2>&1 | tee "$f"
 
 # if there's an issue in base_include 'go' won't be defined

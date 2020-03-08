@@ -59,7 +59,7 @@ let usage () =
   prerr_endline "  --external <url> <d> set URL for external library d";
   prerr_endline "  --coqlib <url>       set URL for Coq standard library";
   prerr_endline ("                       (default is " ^ Coq_config.wwwstdlib ^ ")");
-  prerr_endline "  --boot               run in boot mode";
+  prerr_endline "  --boot               run in boot mode (no-op)";
   prerr_endline "  --coqlib_path <dir>  set the path where Coq files are installed";
   prerr_endline "  -R <dir> <coqdir>    map physical dir to Coq dir";
   prerr_endline "  -Q <dir> <coqdir>    map physical dir to Coq dir";
@@ -344,11 +344,8 @@ let parse () =
     | ("--coqlib" | "-coqlib") :: [] ->
         usage ()
     | ("--boot" | "-boot") :: rem ->
-        Cdglobals.coqlib_path := normalize_path (
-          Filename.concat
-            (Filename.dirname Sys.executable_name)
-            Filename.parent_dir_name
-        ); parse_rec rem
+        (* XXX: This is useless it seems *)
+        parse_rec rem
     | ("--coqlib_path" | "-coqlib_path") :: d :: rem ->
         Cdglobals.coqlib_path := d; parse_rec rem
     | ("--coqlib_path" | "-coqlib_path") :: [] ->
@@ -477,7 +474,9 @@ let copy_style_file file =
       ; CPath.make [ !Cdglobals.coqlib_path; ".."; "coq-core"; "tools"; "coqdoc" ]
       ] |> function
     | None ->
-      eprintf "coqdoc: cannot find coqdoc style files\n";
+      eprintf
+        "coqdoc: cannot find coqdoc style files in coqlib: %s / %s\n"
+        !Cdglobals.coqlib_path file;
       exit 1
     | Some f -> f
   in

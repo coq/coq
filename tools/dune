@@ -2,7 +2,12 @@
  (section lib)
  (package coq-core)
  (files
-  (CoqMakefile.in as tools/CoqMakefile.in)
+  (CoqMakefile.in as tools/CoqMakefile.in)))
+
+(install
+ (section libexec)
+ (package coq-core)
+ (files
   (TimeFileMaker.py as tools/TimeFileMaker.py)
   (make-one-time-file.py as tools/make-one-time-file.py)
   (make-both-time-files.py as tools/make-both-time-files.py)

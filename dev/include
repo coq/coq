@@ -2,7 +2,7 @@
 
 (* Typical usage :
 
-   $ coqtop.byte    # or even better : rlwrap coqtop.byte
+   $ dune exec -- dev/shim/coqbyte-prelude
    Coq < Drop.
    # #use "include";;
 
@@ -14,8 +14,7 @@
    then ignore (Toploop.use_silently Format.std_formatter "dev/include")
 *)
 
-#cd ".";;
-#use "incdir";;
+#use "incdir_dune";;
 #use "base_include";;
-#use "inc_ltac";;
+#use "inc_ltac_dune";;
 #use "include_printers";;
