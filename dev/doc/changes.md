@@ -1,3 +1,26 @@
+## Changes between Coq 8.13 and Coq 8.14
+
+### Build system and library infrastructure
+
+- ocamlfind library names `coq.*` have been renamed to `coq-core.*`.
+
+- Dune is now used to build the OCaml parts of Coq, thus:
+
+  + ML object files live now in `_build`, as standard in Dune world
+  + .vo files live now in `_build_vo`
+  + you can build object files using `make _build/install/default/bin/coqc`.
+  + Some developer targets have changed or have been removed in favor
+    of Dune's counterparts, for example `byte` and `install-byte` are
+    no longer needed.
+
+  For the large majority of developers, we recommend using the full
+  dune build, which is accessible by `make -f Makefile.dune` or by
+  setting the `COQ_USE_DUNE` environment variable.
+
+- As a consequence of the above, the packing of plugins has changed.
+  Plugins are now packed using modules aliases which is in general safer
+  w.r.t. scoping, as the container module is just a regular OCaml module.
+
 ## Changes between Coq 8.12 and Coq 8.13
 
 ### Code formatting

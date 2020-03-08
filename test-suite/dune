@@ -29,7 +29,7 @@
    ../dev/base_include
    ../dev/inc_ltac_dune
    ../dev/include_printers
-   ../dev/include_dune
+   ../dev/include
    ../dev/top_printers.ml
    ../dev/vm_printers.ml
    ; For the changelog test

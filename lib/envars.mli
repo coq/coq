@@ -29,6 +29,9 @@ val home : warn:(string -> unit) -> string
 (** [coqlib] is the path to the Coq library. *)
 val coqlib : unit -> string
 
+(** [coqcorelib] is the path to the Coq ML libraries, to be replaced by ocamlfind *)
+val coqcorelib : unit -> string
+
 (** [docdir] is the path to the installed documentation. *)
 val docdir : unit -> string
 

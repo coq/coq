@@ -1,5 +1,6 @@
 (rule
  (targets unreleased.rst)
+ (mode promote-until-clean)
  (deps (source_tree changelog))
  (action (with-stdout-to %{targets} (bash "cat changelog/00-title.rst changelog/*/*.rst"))))
 
@@ -26,6 +27,7 @@
  (package coq-doc)
  ; Cannot use this deps alias because of ocaml/dune#3415
  ; (deps (alias refman-deps))
+ ; EJGA: note this should've been fixed in dune master as of 05/03/2021
  (deps
   (package coq-core)
   (package coq-stdlib)
@@ -42,6 +44,7 @@
  (package coq-doc)
  ; Cannot use this deps alias because of ocaml/dune#3415
  ; (deps (alias refman-deps))
+ ; EJGA: note this should've been fixed in dune master as of 05/03/2021
  (deps
   (package coq-core)
   (package coq-stdlib)

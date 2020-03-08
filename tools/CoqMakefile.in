@@ -29,7 +29,7 @@ MLLIBFILES        := $(COQMF_MLLIBFILES)
 CMDLINE_VFILES    := $(COQMF_CMDLINE_VFILES)
 INSTALLCOQDOCROOT := $(COQMF_INSTALLCOQDOCROOT)
 OTHERFLAGS        := $(COQMF_OTHERFLAGS)
-COQ_SRC_SUBDIRS   := $(COQMF_COQ_SRC_SUBDIRS)
+COQCORE_SRC_SUBDIRS := $(COQMF_COQ_SRC_SUBDIRS)
 OCAMLLIBS         := $(COQMF_OCAMLLIBS)
 SRC_SUBDIRS       := $(COQMF_SRC_SUBDIRS)
 COQLIBS           := $(COQMF_COQLIBS)
@@ -221,7 +221,12 @@ COQDOCLIBS?=$(COQLIBS_NOML)
 COQ_VERSION:=$(shell $(COQC) --print-version | cut -d " " -f 1)
 COQMAKEFILE_VERSION:=@COQ_VERSION@
 
-COQSRCLIBS?= $(foreach d,$(COQ_SRC_SUBDIRS), -I "$(COQCORELIB)/$(d)")
+# COQ_SRC_SUBDIRS is for user-overriding, usually to add
+# `user-contrib/Foo` to the includes, we keep COQCORE_SRC_SUBDIRS for
+# Coq's own core libraries, which should be replaced by ocamlfind
+# options at some point.
+COQ_SRC_SUBDIRS?=
+COQSRCLIBS?= $(foreach d,$(COQCORE_SRC_SUBDIRS), -I "$(COQCORELIB)/$(d)") $(foreach d,$(COQ_SRC_SUBDIRS), -I "$(COQLIB)/$(d)")
 
 CAMLFLAGS+=$(OCAMLLIBS) $(COQSRCLIBS)
 # ocamldoc fails with unknown argument otherwise
@@ -829,6 +834,7 @@ printenv::
 	@echo 'HASNATDYNLINK = $(HASNATDYNLINK)'
 	@echo 'SRC_SUBDIRS = $(SRC_SUBDIRS)'
 	@echo 'COQ_SRC_SUBDIRS = $(COQ_SRC_SUBDIRS)'
+	@echo 'COQCORE_SRC_SUBDIRS = $(COQCORE_SRC_SUBDIRS)'
 	@echo 'OCAMLFIND = $(OCAMLFIND)'
 	@echo 'PP = $(PP)'
 	@echo 'COQFLAGS = $(COQFLAGS)'
@@ -844,10 +850,10 @@ printenv::
 	$(HIDE)echo 'FLG $(COQMF_CAMLFLAGS)' > .merlin
 	$(HIDE)echo 'B $(COQCORELIB)' >> .merlin
 	$(HIDE)echo 'S $(COQCORELIB)' >> .merlin
-	$(HIDE)$(foreach d,$(COQ_SRC_SUBDIRS), \
+	$(HIDE)$(foreach d,$(COQCORE_SRC_SUBDIRS), \
 		echo 'B $(COQCORELIB)$(d)' >> .merlin;)
 	$(HIDE)$(foreach d,$(COQ_SRC_SUBDIRS), \
-		echo 'S $(COQCORELIB)$(d)' >> .merlin;)
+		echo 'S $(COQLIB)$(d)' >> .merlin;)
 	$(HIDE)$(foreach d,$(SRC_SUBDIRS), echo 'B $(d)' >> .merlin;)
 	$(HIDE)$(foreach d,$(SRC_SUBDIRS), echo 'S $(d)' >> .merlin;)
 	$(HIDE)$(MAKE) merlin-hook -f "$(SELF)"

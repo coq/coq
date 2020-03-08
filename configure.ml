@@ -228,6 +228,7 @@ type preferences = {
   force_caml_version : bool;
   force_findlib_version : bool;
   warn_error : bool;
+  dune_profile : string;
 }
 
 module Profiles = struct
@@ -265,6 +266,7 @@ let default = {
   force_caml_version = false;
   force_findlib_version = false;
   warn_error = false;
+  dune_profile = "release";
 }
 
 let devel state = { state with
@@ -272,6 +274,7 @@ let devel state = { state with
   bin_annot = true;
   annot = true;
   warn_error = true;
+  dune_profile = "dev";
 }
 let devel_doc = "-local -annot -bin-annot -warn-error yes"
 
@@ -340,7 +343,7 @@ let check_absolute = function
 let args_options = Arg.align [
   "-prefix", arg_string_option (fun p prefix -> check_absolute prefix; { p with prefix }),
     "<dir> Set installation directory to <dir> (absolute path required)";
-  "-local", arg_set (fun p local -> { p with local }),
+  "-local", arg_set (fun p local -> { p with local; dune_profile = "dev" }),
     " Set installation directory to the current source tree";
   "-no-ask", arg_clear (fun p interactive -> { p with interactive }),
     " Don't ask questions / print variables during configure [questions will be filled with defaults]";
@@ -1093,7 +1096,7 @@ let write_configml f =
      | NativeOndemand -> "NativeOn {ondemand=true}");
 
   let core_src_dirs = [ "config"; "lib"; "clib"; "kernel"; "library";
-                        "engine"; "pretyping"; "interp"; "gramlib"; "gramlib/.pack"; "parsing"; "proofs";
+                        "engine"; "pretyping"; "interp"; "gramlib"; "parsing"; "proofs";
                         "tactics"; "toplevel"; "printing"; "ide"; "stm"; "vernac" ] in
   let core_src_dirs = List.fold_left (fun acc core_src_subdir -> acc ^ "  \"" ^ core_src_subdir ^ "\";\n")
                                     ""
@@ -1152,6 +1155,7 @@ let write_makefile f =
   List.iter (fun (v,msg,_,_) -> pr "# %s: path for %s\n" v msg) install_dirs;
   List.iter (fun (v,_,dir,_) -> pr "%s=%S\n" v dir) install_dirs;
   pr "\n# Coq version\n";
+  pr "COQPREFIX=%s\n" ((function None -> "local" | Some v -> v) !prefs.prefix);
   pr "VERSION=%s\n" coq_version;
   pr "# Objective-Caml compile command\n";
   pr "OCAML=%S\n" camlexec.top;
@@ -1213,6 +1217,7 @@ let write_makefile f =
   pr "# Option to produce precompiled files for native_compute\n";
   pr "NATIVECOMPUTE=%s\n" (if !prefs.nativecompiler = NativeYes then "-native-compiler yes" else "");
   pr "COQWARNERROR=%s\n" (if !prefs.warn_error then "-w +default" else "");
+  pr "CONFIGURE_DPROFILE=%s\n" !prefs.dune_profile;
   close_out o;
   Unix.chmod f 0o444
 

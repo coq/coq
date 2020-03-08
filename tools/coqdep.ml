@@ -90,6 +90,10 @@ let rec parse = function
 (* Exception to be raised by Envars *)
 exception CoqlibError of string
 
+let _ = CErrors.register_handler (function
+    | CoqlibError msg -> Some (Pp.str msg)
+    | _ -> None)
+
 let coqdep () =
   if Array.length Sys.argv < 2 then usage ();
   if not Coq_config.has_natdynlink then option_dynlink := No;
@@ -101,14 +105,9 @@ let coqdep () =
   if not !option_boot then begin
     Envars.set_coqlib ~fail:(fun msg -> raise (CoqlibError msg));
     let coqlib = Envars.coqlib () in
-    let coq_plugins_dir = CPath.choose_existing
-      [ CPath.make [ coqlib; "plugins" ]
-      ; CPath.make [ coqlib; ".."; "coq-core"; "plugins" ]
-      ] |> function
-    | None ->
-      CErrors.user_err (Pp.str "coqdep: cannot find plugins directory\n");
-    | Some f -> (f :> string)
-    in
+    let coq_plugins_dir = Filename.concat (Envars.coqcorelib ()) "plugins" in
+    if not (Sys.file_exists coq_plugins_dir) then
+      CErrors.user_err Pp.(str "coqdep: cannot find plugins directory for coqlib: " ++ str coqlib ++ fnl ());
     add_rec_dir_import add_coqlib_known (coqlib//"theories") ["Coq"];
     add_rec_dir_import add_coqlib_known (coq_plugins_dir) ["Coq"];
     let user = coqlib//"user-contrib" in
@@ -124,6 +123,6 @@ let coqdep () =
 let _ =
   try
     coqdep ()
-  with CoqlibError msg ->
-    eprintf "*** Error: %s@\n%!" msg;
+  with exn ->
+    eprintf "*** Error: @[%a@]@\n%!" Pp.pp_with (CErrors.print exn);
     exit 1

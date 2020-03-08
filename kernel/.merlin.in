@@ -1,8 +1,0 @@
-FLG -rectypes -thread -safe-string -w +a-4-44
-
-S ../clib
-B ../clib
-S ../config
-B ../config
-S ../lib
-B ../lib

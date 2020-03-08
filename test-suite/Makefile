@@ -20,13 +20,14 @@
 # The "run" target runs all tests that have not been run yet. To force
 # all tests to be run, use the "clean" target.
 
+# Setup for Dune-build ML artifacts
+COQ_SRC_DIR:=..
 
 ###########################################################################
 # Includes
 ###########################################################################
 
 -include ../config/Makefile
-include ../Makefile.common
 
 #######################################################################
 # Variables
@@ -36,23 +37,36 @@ include ../Makefile.common
 # Note that this will later need an eval in shell to interpret the quotes
 ROOT='$(shell cd ..; pwd)'
 
+BIN:=$(ROOT)/_build/install/default/bin/
+
+# An alternative is ifeq ($(OS),Windows_NT) using make's own variable.
+ifeq ($(ARCH),win32)
+  export FINDLIB_SEP=;
+else
+  export FINDLIB_SEP=:
+endif
+
+# Be careful to use COQPREFIX when in local mode
+ifeq ($(COQPREFIX),local)
+	COQPREFIX:=$(shell cd ../..;pwd)/install/default/
+endif
+
+export OCAMLPATH := $(shell echo $(COQPREFIX)/lib$(FINDLIB_SEP)$$OCAMLPATH)
+export CAML_LD_LIBRARY_PATH:=$(COQPREFIX)/lib/stublibs:$(CAML_LD_LIBRARY_PATH)
+
 ifneq ($(wildcard ../_build/default/config/Makefile),)
 include ../_build/default/config/Makefile
-BIN:=$(ROOT)/_build/install/default/bin/
-# COQLIB is an env variable so no quotes
-COQLIB:=$(shell cd ..; pwd)/_build/install/default/lib/coq
-else
-BIN := $(ROOT)/bin/
+endif
 
+# COQLIB is an env variable so no quotes
 COQLIB?=
 ifeq ($(COQLIB),)
- ifeq ($(LOCAL),true)
-  COQLIB := $(shell ocaml ocaml_pwd.ml ..)
- else
-  COQLIB := $(shell ocaml ocaml_pwd.ml $(COQLIBINSTALL))
- endif
+  ifeq ($(LOCAL),true)
+	COQLIB := $(shell ocaml ocaml_pwd.ml $(ROOT)/_build_vo/default)
+  else
+	COQLIB := $(shell ocaml ocaml_pwd.ml $(COQLIBINSTALL))
+  endif
 endif
-endif # exists ../_build
 export COQLIB
 
 COQEXTRAFLAGS?=
@@ -120,7 +134,7 @@ VSUBSYSTEMS := prerequisite success failure $(BUGS) output output-coqtop \
   coqdoc ssr $(wildcard primitive/*) ltac2
 
 # All subsystems
-SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)
+SUBSYSTEMS := $(VSUBSYSTEMS) misc ide bugs ide vio coqchk output-coqchk coqwc coq-makefile tools $(UNIT_TESTS)
 
 .csdp.cache: .csdp.cache.test-suite
 	cp $< $@
@@ -277,20 +291,9 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 # Unit tests
 #######################################################################
 
-# An alternative is ifeq ($(OS),Windows_NT) using make's own variable.
-ifeq ($(ARCH),win32)
-  export FINDLIB_SEP=";"
-else
-  export FINDLIB_SEP=":"
-endif
-
 # COQLIBINSTALL is quoted in config/make thus we must unquote it,
 # otherwise the directory name will include the quotes, see
 # see for example https://stackoverflow.com/questions/10424645/how-to-convert-a-quoted-string-to-a-normal-one-in-makefile
-
-ifeq ($(LOCAL),true)
-  export OCAMLPATH := $(shell echo $(COQLIBINSTALL)$(FINDLIB_SEP)$$OCAMLPATH)
-endif
 
 OCAMLOPT := $(OCAMLFIND) opt $(CAMLFLAGS)
 OCAMLC := $(OCAMLFIND) ocamlc $(CAMLFLAGS)
@@ -767,6 +770,7 @@ coq-makefile/%.log : coq-makefile/%/run.sh
 	@echo "TEST      coq-makefile/$*"
 	$(HIDE)(\
 	  export COQBIN=$(BIN);\
+	  export COQPREFIX=$(COQPREFIX);\
 	  cd coq-makefile/$* && \
 	  bash run.sh 2>&1; \
 	if [ $$? = 0 ]; then \

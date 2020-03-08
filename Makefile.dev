@@ -22,32 +22,6 @@ DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo
 devel: printers
 printers: $(CORECMA) $(DEBUGPRINTERS)
 
-############
-# revision
-############
-
-# display the revision number when compiling a checked out source tree
-
-revision:
-	$(SHOW)'CHECK revision'
-	$(HIDE)rm -f revision.new
-	$(HIDE)set -e; \
-	./dev/tools/make_git_revision.sh > revision.new
-	$(HIDE)set -e; \
-	if test -e revision.new; then \
-          if test -e revision; then \
-	    if test "`cat revision`" = "`cat revision.new`" ; then \
-	       rm -f revision.new; \
-            else \
-               mv -f revision.new revision; \
-            fi; \
-          else \
-            mv -f revision.new revision; \
-          fi \
-	fi
-
-.PHONY: revision
-
 ###################
 # Partial builds
 ###################
@@ -63,8 +37,6 @@ revision:
 
 coqlight: theories-light tools coqbinaries
 
-states: theories/Init/Prelude.$(VO)
-
 miniopt: $(COQTOPEXE) pluginsopt
 minibyte: $(COQTOPBYTE) pluginsbyte
 
@@ -75,27 +47,6 @@ pluginsbyte: $(PLUGINS)
 coqocaml: tools coqbinaries $(PLUGINSCMO:.cmo=$(DYNOBJ)) coqide printers bin/votour
 
 .PHONY: coqlight states miniopt minibyte pluginsopt pluginsbyte coqocaml
-
-##########################
-### 2) core ML components
-##########################
-
-lib: lib/clib.cma lib/lib.cma
-kernel: kernel/kernel.cma
-byterun: $(BYTERUN)
-library: library/library.cma
-engine: engine/engine.cma
-proofs: proofs/proofs.cma
-tactics: tactics/tactics.cma
-interp: interp/interp.cma
-parsing: parsing/parsing.cma
-pretyping: pretyping/pretyping.cma
-stm: stm/stm.cma
-sysinit: sysinit/sysinit.cma
-toplevel: toplevel/toplevel.cma
-
-.PHONY: lib kernel byterun library proofs tactics interp parsing pretyping
-.PHONY: engine stm sysinit toplevel
 
 ######################
 ### 3) theories files
@@ -136,34 +87,6 @@ noreal: unicode logic arith bool zarith qarith lists sets fsets \
 .PHONY: logic arith bool narith zarith qarith lists strings sets
 .PHONY: fsets relations wellfounded reals setoids sorting numbers
 .PHONY: msets mmaps compat parith classes program unicode structures vectors
-
-################
-### 4) plugins
-################
-
-MICROMEGAVO:=$(filter theories/micromega/%, $(THEORIESVO))
-RINGVO:=$(filter theories/setoid_ring/%, $(THEORIESVO))
-NSATZVO:=$(filter theories/nsatz/%, $(THEORIESVO))
-FUNINDVO:=$(filter theories/funind/%, $(THEORIESVO))
-BTAUTOVO:=$(filter theories/btauto/%, $(THEORIESVO))
-RTAUTOVO:=$(filter theories/rtauto/%, $(THEORIESVO))
-EXTRACTIONVO:=$(filter theories/extraction/%, $(THEORIESVO))
-CCVO:=
-DERIVEVO:=$(filter theories/derive/%, $(THEORIESVO))
-LTACVO:=$(filter theories/ltac/%, $(THEORIESVO))
-
-micromega: $(MICROMEGAVO) $(MICROMEGACMO) $(CSDPCERT)
-ring: $(RINGVO) $(RINGCMO)
-nsatz: $(NSATZVO) $(NSATZCMO)
-extraction: $(EXTRACTIONCMO) $(EXTRACTIONVO)
-funind: $(FUNINDCMO) $(FUNINDVO)
-cc: $(CCVO) $(CCCMO)
-rtauto: $(RTAUTOVO) $(RTAUTOCMO)
-btauto: $(BTAUTOVO) $(BTAUTOCMO)
-ltac: $(LTACVO) $(LTACCMO)
-
-.PHONY: micromega ring nsatz extraction
-.PHONY: funind cc rtauto btauto ltac
 
 # For emacs:
 # Local Variables:

@@ -56,7 +56,9 @@ let include_dirs = ref []
 let get_include_dirs () =
   let base = match !include_dirs with
   | [] ->
-    [Envars.coqlib () / "kernel"; Envars.coqlib () / "library"]
+    [ Envars.coqlib () / "../coq-core/kernel"; Envars.coqlib () / "kernel/.kernel.objs/byte/"
+    ; Envars.coqlib () / "../coq-core/library"; Envars.coqlib () / "library/.library.objs/byte/"
+    ]
   | _::_ as l -> l
   in
   if Lazy.is_val my_temp_dir

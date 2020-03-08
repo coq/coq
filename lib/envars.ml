@@ -137,19 +137,21 @@ let guess_coqlib fail =
               If you intend to use Coq without a standard library, the -boot -noinit options must be used.")
   )
 
-let coqlib : string option ref = ref None
-let set_user_coqlib path = coqlib := Some path
+let coqlib_ref : string option ref = ref None
+let set_user_coqlib path = coqlib_ref := Some path
 
 (** coqlib is now computed once during coqtop initialization *)
 
 let set_coqlib ~fail =
-  match !coqlib with
+  match !coqlib_ref with
   | Some _ -> ()
   | None ->
     let lib = guess_coqlib fail in
-    coqlib := Some lib
+    coqlib_ref := Some lib
 
-let coqlib () = Option.default "" !coqlib
+let coqlib () = Option.default "" !coqlib_ref
+let coqcorelib () =
+  getenv_else "COQCORELIB" (fun () -> Option.cata (fun c -> Filename.concat c "../coq-core/") "" !coqlib_ref)
 
 let docdir () =
   (* This assumes implicitly that the suffix is non-trivial *)

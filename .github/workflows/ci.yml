@@ -34,7 +34,8 @@ jobs:
 
       - name: Install system dependencies
         run: |
-          brew install gnu-time opam gtksourceview3 adwaita-icon-theme
+          brew tap discoteq/discoteq
+          brew install gnu-time opam gtksourceview3 adwaita-icon-theme flock
           pip3 install macpack
 
       - name: Install OCaml dependencies
@@ -44,7 +45,7 @@ jobs:
           opam switch set ocaml-base-compiler.$COMPILER
           eval $(opam env)
           opam update
-          opam install -j "$NJOBS" ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3 zarith.1.10
+          opam install -j "$NJOBS" ocamlfind${FINDLIB_VER} ounit lablgtk3-sourceview3 zarith.1.10 dune.2.8.5
           opam list
         env:
           COMPILER: "4.11.1"
@@ -65,6 +66,7 @@ jobs:
 
       - name: Install Coq
         run: |
+          eval $(opam env)
           make install install-byte
 
       - name: Run Coq Test Suite

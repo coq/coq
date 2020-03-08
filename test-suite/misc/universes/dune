@@ -1,5 +1,6 @@
 (rule
  (targets all_stdlib.v)
+ (mode fallback)
  (deps
    build_all_stdlib.sh
    (source_tree ../../../theories)

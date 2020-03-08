@@ -94,14 +94,11 @@ before_script:
     - echo 'end:coq.config'
 
     - echo 'start:coq.build'
-    - make -j "$NJOBS" byte
     - make -j "$NJOBS" world $EXTRA_TARGET
     - echo 'end:coq:build'
 
     - echo 'start:coq.install'
-    - make install install-byte $EXTRA_INSTALL
-    - make install-byte
-    - cp bin/fake_ide _install_ci/bin/
+    - make install $EXTRA_INSTALL
     - echo 'end:coq.install'
 
     - set +e
