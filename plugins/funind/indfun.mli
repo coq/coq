@@ -8,8 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val functional_induction
-  :  bool
+val functional_induction :
+     bool
   -> EConstr.constr
   -> (EConstr.constr * EConstr.constr Tactypes.bindings) option
   -> Ltac_plugin.Tacexpr.or_and_intro_pattern option

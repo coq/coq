@@ -8,8 +8,5 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-val compute_new_princ_type_from_rel
-  : Constr.constr array
-  -> Sorts.t array
-  -> Constr.t
-  -> Constr.types
+val compute_new_princ_type_from_rel :
+  Constr.constr array -> Sorts.t array -> Constr.t -> Constr.types
