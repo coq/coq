@@ -68,6 +68,7 @@ val start_lemma
   -> poly:bool
   -> ?udecl:UState.universe_decl
   -> ?info:Info.t
+  -> ?impargs:Impargs.manual_implicits
   -> Evd.evar_map
   -> EConstr.types
   -> t
@@ -94,8 +95,6 @@ val start_lemma_with_initialization
   -> DeclareDef.Recthm.t list
   -> int list option
   -> t
-
-val default_thm_id : Names.Id.t
 
 (** {4 Saving proofs} *)
 

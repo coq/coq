@@ -43,22 +43,21 @@ module Info = struct
 
   type t =
     { hook : DeclareDef.Hook.t option
-    ; compute_guard : lemma_possible_guards
-    ; impargs : Impargs.manual_implicits
     ; proof_ending : Proof_ending.t CEphemeron.key
     (* This could be improved and the CEphemeron removed *)
-    ; other_thms : DeclareDef.Recthm.t list
     ; scope : DeclareDef.locality
     ; kind : Decls.logical_kind
+    (* thms and compute guard are specific only to start_lemma_with_initialization + regular terminator *)
+    ; thms : DeclareDef.Recthm.t list
+    ; compute_guard : lemma_possible_guards
     }
 
   let make ?hook ?(proof_ending=Proof_ending.Regular) ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior)
       ?(kind=Decls.(IsProof Lemma)) () =
     { hook
     ; compute_guard = []
-    ; impargs = []
     ; proof_ending = CEphemeron.create proof_ending
-    ; other_thms = []
+    ; thms = []
     ; scope
     ; kind
     }
@@ -100,18 +99,30 @@ let initialize_named_context_for_proof () =
       let d = if Decls.variable_opacity id then NamedDecl.drop_body d else d in
       Environ.push_named_context_val d signv) sign Environ.empty_named_context_val
 
+let add_first_thm ~info ~name ~typ ~impargs =
+  let thms =
+    { DeclareDef.Recthm.name
+    ; impargs
+    ; typ = EConstr.Unsafe.to_constr typ
+    ; args = [] } :: info.Info.thms
+  in
+  { info with Info.thms }
+
 (* Starting a goal *)
 let start_lemma ~name ~poly
     ?(udecl=UState.default_univ_decl)
-    ?(info=Info.make ())
-    sigma c =
+    ?(info=Info.make ()) ?(impargs=[]) sigma c =
   (* We remove the bodies of variables in the named context marked
      "opaque", this is a hack tho, see #10446 *)
   let sign = initialize_named_context_for_proof () in
   let goals = [ Global.env_of_context sign , c ] in
   let proof = Proof_global.start_proof sigma ~name ~udecl ~poly goals in
-  { proof ; info }
+  let info = add_first_thm ~info ~name ~typ:c ~impargs in
+  { proof; info }
 
+(* Note that proofs opened by start_dependent lemma cannot be closed
+   by the regular terminators, thus we don't need to update the [thms]
+   field. We will capture this invariant by typing in the future *)
 let start_dependent_lemma ~name ~poly
     ?(udecl=UState.default_univ_decl)
     ?(info=Info.make ()) telescope =
@@ -153,17 +164,18 @@ let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recgua
     intro_tac (List.hd thms), [] in
   match thms with
   | [] -> CErrors.anomaly (Pp.str "No proof to start.")
-  | { DeclareDef.Recthm.name; typ; impargs; _}::other_thms ->
+  | { DeclareDef.Recthm.name; typ; impargs; _} :: thms ->
     let info =
       Info.{ hook
-           ; impargs
            ; compute_guard
-           ; other_thms
            ; proof_ending = CEphemeron.create Proof_ending.Regular
+           ; thms
            ; scope
            ; kind
            } in
-    let lemma = start_lemma ~name ~poly ~udecl ~info sigma (EConstr.of_constr typ) in
+    (* start_lemma has the responsibility to add (name, impargs, typ)
+       to thms, once Info.t is more refined this won't be necessary *)
+    let lemma = start_lemma ~name ~impargs ~poly ~udecl ~info sigma (EConstr.of_constr typ) in
     pf_map (Proof_global.map_proof (fun p ->
         pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)) lemma
 
@@ -191,9 +203,8 @@ module MutualEntry : sig
     -> ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
     -> uctx:UState.t
     -> ?hook_data:DeclareDef.Hook.t * UState.t * (Names.Id.t * Constr.t) list
-    (* Only for the first constant, introduced by compat *)
+    (* [ubind] is only for the first constant, introduced by compat *)
     -> ubind:UnivNames.universe_binders
-    -> name:Id.t
     -> Evd.side_effects Declare.proof_entry
     -> Names.GlobRef.t list
 
@@ -210,8 +221,7 @@ end = struct
     ; info : Info.t
     }
 
-  (* XXX: Refactor this with the code in
-     [ComFixpoint.declare_fixpoint_generic] *)
+  (* XXX: Refactor this with the code in [DeclareDef.declare_mutdef] *)
   let guess_decreasing env possible_indexes ((body, ctx), eff) =
     let open Constr in
     match Constr.kind body with
@@ -258,7 +268,8 @@ end = struct
          is used when declaring mutual cofixpoints *)
       DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
     | Mutual pe ->
-      (* if typ = None , we don't touch the type; used in the base case *)
+      (* if typ = None , we don't touch the type; this is for compat
+         but not clear it is the right thing to do *)
       let pe =
         match typ with
         | None -> pe
@@ -269,26 +280,29 @@ end = struct
           ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff) in
       DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
 
-  let declare_mutdef ?fix_exn ~uctx ?hook_data ~ubind ~name { entry; info } =
-    (* At some point make this a single iteration *)
-    (* At some point make this a single iteration *)
-    (* impargs here are special too, fixed in upcoming PRs *)
-    let impargs = info.Info.impargs in
-    let r = declare_mutdef ?fix_exn ~info ~ubind ?hook_data ~uctx ~name ~impargs entry 0 in
-    (* Before we used to do this, check if that's right *)
-    let ubind = UnivNames.empty_binders in
+  let declare_mutdef ?fix_exn ~uctx ?hook_data ~ubind { entry; info } =
     let rs =
       List.map_i (
         fun i { DeclareDef.Recthm.name; typ; impargs } ->
-          declare_mutdef ?fix_exn ~name ~info ~ubind ?hook_data ~uctx ~typ ~impargs entry i) 1 info.Info.other_thms
-    in r :: rs
+          (* See start_dependent_proof ~typ:mkProp to understand why
+             we don't we use the type stored here. This is obviously a
+             fixme [was like this for long time]
+
+             Regarding ubind, before we used to do this too, check if
+             that's the right thing to do *)
+          let typ, ubind = if i = 0
+            then None, ubind
+            else Some typ, UnivNames.empty_binders in
+          declare_mutdef ?fix_exn ~name ~info ~ubind ?hook_data ~uctx ?typ ~impargs entry i)
+        0 info.Info.thms
+    in rs
 
   let declare_variable ~info ~uctx ~ubind ~name pe =
-    declare_mutdef ~uctx ~ubind ~name { entry = NoBody pe; info }
+    declare_mutdef ~uctx ~ubind { entry = NoBody pe; info }
 
-  let declare_mutdef ~info ?fix_exn ~uctx ?hook_data ~ubind ~name const =
+  let declare_mutdef ~info ?fix_exn ~uctx ?hook_data ~ubind const =
     let mutpe = adjust_guardness_conditions ~info const in
-    declare_mutdef ?fix_exn ~uctx ?hook_data ~ubind ~name mutpe
+    declare_mutdef ?fix_exn ~uctx ?hook_data ~ubind mutpe
 
 end
 
@@ -340,26 +354,17 @@ let save_lemma_admitted ~(lemma : t) : unit =
 (* Saving a lemma-like constant                                         *)
 (************************************************************************)
 
-let default_thm_id = Id.of_string "Unnamed_thm"
-
-let check_anonymity id save_ident =
-  if not (String.equal (Nameops.atompart_of_id id) (Id.to_string (default_thm_id))) then
-    CErrors.user_err Pp.(str "This command can only be used for unnamed theorem.")
-
-let finish_proved idopt po info =
+let finish_proved po info =
   let open Proof_global in
   let { Info.hook } = info in
   match po with
   | { name; entries=[const]; uctx; udecl } ->
-    let name = match idopt with
-      | None -> name
-      | Some { CAst.v = save_id } -> check_anonymity name save_id; save_id in
     let fix_exn = Declare.Internal.get_fix_exn const in
     let () = try
       let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
       let ubind = UState.universe_binders uctx in
       let _r : Names.GlobRef.t list =
-        MutualEntry.declare_mutdef ~info ~fix_exn ~uctx ?hook_data ~ubind ~name const
+        MutualEntry.declare_mutdef ~info ~fix_exn ~uctx ?hook_data ~ubind const
       in ()
     with e when CErrors.noncritical e ->
       let e = Exninfo.capture e in
@@ -368,11 +373,8 @@ let finish_proved idopt po info =
   | _ ->
     CErrors.anomaly ~label:"finish_proved" Pp.(str "close_proof returned more than one proof term")
 
-let finish_derived ~f ~name ~idopt ~entries =
+let finish_derived ~f ~name ~entries =
   (* [f] and [name] correspond to the proof of [f] and of [suchthat], respectively. *)
-
-  if Option.has_some idopt then
-    CErrors.user_err Pp.(str "Cannot save a proof of Derive with an explicit name.");
 
   let f_def, lemma_def =
     match entries with
@@ -406,7 +408,7 @@ let finish_derived ~f ~name ~idopt ~entries =
   let _ : Names.Constant.t = Declare.declare_constant ~name ~kind:Decls.(IsProof Proposition) lemma_def in
   ()
 
-let finish_proved_equations lid kind proof_obj hook i types wits sigma0 =
+let finish_proved_equations kind proof_obj hook i types wits sigma0 =
 
   let obls = ref 1 in
   let sigma, recobls =
@@ -425,23 +427,40 @@ let finish_proved_equations lid kind proof_obj hook i types wits sigma0 =
   in
   hook recobls sigma
 
-let finalize_proof idopt proof_obj proof_info =
+let finalize_proof proof_obj proof_info =
   let open Proof_global in
   let open Proof_ending in
   match CEphemeron.default proof_info.Info.proof_ending Regular with
   | Regular ->
-    finish_proved idopt proof_obj proof_info
+    finish_proved proof_obj proof_info
   | End_obligation oinfo ->
     DeclareObl.obligation_terminator proof_obj.entries proof_obj.uctx oinfo
   | End_derive { f ; name } ->
-    finish_derived ~f ~name ~idopt ~entries:proof_obj.entries
+    finish_derived ~f ~name ~entries:proof_obj.entries
   | End_equations { hook; i; types; wits; sigma } ->
-    finish_proved_equations idopt proof_info.Info.kind proof_obj hook i types wits sigma
+    finish_proved_equations proof_info.Info.kind proof_obj hook i types wits sigma
+
+let err_save_forbidden_in_place_of_qed () =
+  CErrors.user_err (Pp.str "Cannot use Save with more than one constant or in this proof mode")
+
+let process_idopt_for_save ~idopt info =
+  match idopt with
+  | None -> info
+  | Some { CAst.v = save_name } ->
+    (* Save foo was used; we override the info in the first theorem *)
+    let thms =
+      match info.Info.thms, CEphemeron.default info.Info.proof_ending Proof_ending.Regular with
+      | [ { DeclareDef.Recthm.name; _} as decl ], Proof_ending.Regular ->
+        [ { decl with DeclareDef.Recthm.name = save_name } ]
+      | _ ->
+        err_save_forbidden_in_place_of_qed ()
+    in { info with Info.thms }
 
 let save_lemma_proved ~lemma ~opaque ~idopt =
   (* Env and sigma are just used for error printing in save_remaining_recthms *)
   let proof_obj = Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) lemma.proof in
-  finalize_proof idopt proof_obj lemma.info
+  let proof_info = process_idopt_for_save ~idopt lemma.info in
+  finalize_proof proof_obj proof_info
 
 (***********************************************************************)
 (* Special case to close a lemma without forcing a proof               *)
@@ -462,4 +481,12 @@ let save_lemma_admitted_delayed ~proof ~info =
   let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
   finish_admitted ~name ~uctx ~info (sec_vars, (typ, ctx), None)
 
-let save_lemma_proved_delayed ~proof ~info ~idopt = finalize_proof idopt proof info
+let save_lemma_proved_delayed ~proof ~info ~idopt =
+  (* vio2vo calls this but with invalid info, we have to workaround
+     that to add the name to the info structure *)
+  if CList.is_empty info.Info.thms then
+    let info = add_first_thm ~info ~name:proof.Proof_global.name ~typ:EConstr.mkSet ~impargs:[] in
+    finalize_proof proof info
+  else
+    let info = process_idopt_for_save ~idopt info in
+    finalize_proof proof info
