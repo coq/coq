@@ -926,7 +926,7 @@ let extern_ref vars ref us =
 
 let extern_var ?loc id = CRef (qualid_of_ident ?loc id,None)
 
-let rec extern inctx scopes vars r =
+let rec extern inctx ?impargs scopes vars r =
   match remove_one_coercion inctx (flatten_application r) with
   | Some (nargs,inctx,r') ->
     (try extern_notations scopes vars (Some nargs) r
@@ -990,10 +990,10 @@ let rec extern inctx scopes vars r =
   | GLetIn (na,b,t,c) ->
       CLetIn (make ?loc na,sub_extern false scopes vars b,
               Option.map (extern_typ scopes vars) t,
-              extern inctx scopes (add_vname vars na) c)
+              extern inctx ?impargs scopes (add_vname vars na) c)
 
   | GProd (na,bk,t,c) ->
-      factorize_prod scopes vars na bk t c
+      factorize_prod ?impargs scopes vars na bk t c
 
   | GLambda (na,bk,t,c) ->
       factorize_lambda inctx scopes vars na bk t c
@@ -1092,12 +1092,12 @@ let rec extern inctx scopes vars r =
 
   in insert_coercion coercion (CAst.make ?loc c)
 
-and extern_typ (subentry,(_,scopes)) =
-  extern true (subentry,(Notation.current_type_scope_name (),scopes))
+and extern_typ ?impargs (subentry,(_,scopes)) =
+  extern true ?impargs (subentry,(Notation.current_type_scope_name (),scopes))
 
 and sub_extern inctx (subentry,(_,scopes)) = extern inctx (subentry,(None,scopes))
 
-and factorize_prod scopes vars na bk t c =
+and factorize_prod ?impargs scopes vars na bk t c =
   let implicit_type = is_reserved_type na t in
   let aty = extern_typ scopes vars t in
   let vars = add_vname vars na in
@@ -1117,7 +1117,13 @@ and factorize_prod scopes vars na bk t c =
       | _ -> CProdN ([binder],b))
      | _ -> assert false)
   | _, _ ->
-      let c' = extern_typ scopes vars c in
+      let impargs_hd, impargs_tl =
+        match impargs with
+        | Some [hd] -> Some hd, None
+        | Some (hd::tl) -> Some hd, Some tl
+        | _ -> None, None in
+      let bk = Option.default Explicit impargs_hd in
+      let c' = extern_typ ?impargs:impargs_tl scopes vars c in
       match na, c'.v with
       | Name id, CProdN (CLocalAssum(nal,Default bk',ty)::bl,b)
            when binding_kind_eq bk bk'
@@ -1306,8 +1312,8 @@ and extern_notation (custom,scopes as allscopes) vars t rules =
 let extern_glob_constr vars c =
   extern false (InConstrEntrySomeLevel,(None,[])) vars c
 
-let extern_glob_type vars c =
-  extern_typ (InConstrEntrySomeLevel,(None,[])) vars c
+let extern_glob_type ?impargs vars c =
+  extern_typ ?impargs (InConstrEntrySomeLevel,(None,[])) vars c
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
@@ -1320,7 +1326,7 @@ let extern_constr ?lax ?(inctx=false) ?scope env sigma t =
 let extern_constr_in_scope ?lax ?inctx scope env sigma t =
   extern_constr ?lax ?inctx ~scope env sigma t
 
-let extern_type ?lax ?(goal_concl_style=false) env sigma t =
+let extern_type ?lax ?(goal_concl_style=false) env sigma ?impargs t =
   (* "goal_concl_style" means do alpha-conversion using the "goal" convention *)
   (* i.e.: avoid using the names of goal/section/rel variables and the short *)
   (* names of global definitions of current module when computing names for *)
@@ -1330,7 +1336,7 @@ let extern_type ?lax ?(goal_concl_style=false) env sigma t =
   (* consideration; see namegen.ml for further details *)
   let avoid = if goal_concl_style then vars_of_env env else Id.Set.empty in
   let r = Detyping.detype Detyping.Later ?lax goal_concl_style avoid env sigma t in
-  extern_glob_type (vars_of_env env) r
+  extern_glob_type ?impargs (vars_of_env env) r
 
 let extern_sort sigma s = extern_glob_sort (detype_sort sigma s)
 

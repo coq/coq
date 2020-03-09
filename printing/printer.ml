@@ -106,8 +106,8 @@ let pr_letype_env = Proof_diffs.pr_letype_env
 
 let pr_type_env ?lax ?goal_concl_style env sigma c =
   pr_etype_env ?lax ?goal_concl_style env sigma (EConstr.of_constr c)
-let pr_ltype_env ?lax ?goal_concl_style env sigma c =
-  pr_letype_env ?lax ?goal_concl_style env sigma (EConstr.of_constr c)
+let pr_ltype_env ?lax ?goal_concl_style env sigma ?impargs c =
+  pr_letype_env ?lax ?goal_concl_style env sigma ?impargs (EConstr.of_constr c)
 
 let pr_ljudge_env env sigma j =
   (pr_leconstr_env env sigma j.uj_val, pr_leconstr_env env sigma j.uj_type)

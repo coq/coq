@@ -1774,7 +1774,10 @@ let vernac_search ~pstate ~atts s gopt r =
     let pp = if !search_output_name_only
       then pr
       else begin
-        let pc = pr_lconstr_env env Evd.(from_env env) c in
+        let open Impargs in
+        let impargs = select_stronger_impargs (implicits_of_global ref) in
+        let impargs = List.map binding_kind_of_status impargs in
+        let pc = pr_ltype_env env Evd.(from_env env) ~impargs c in
         hov 2 (pr ++ str":" ++ spc () ++ pc)
       end
     in Feedback.msg_notice pp

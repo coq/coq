@@ -82,7 +82,7 @@ let ppsconstr x = ppconstr (Mod_subst.force_constr x)
 let ppconstr_univ x = Constrextern.with_universes ppconstr x
 let ppglob_constr = (fun x -> pp(pr_lglob_constr_env (Global.env()) x))
 let pppattern = (fun x -> pp(envpp pr_constr_pattern_env x))
-let pptype = (fun x -> try pp(envpp pr_ltype_env x) with e -> pp (str (Printexc.to_string e)))
+let pptype = (fun x -> try pp(envpp (fun env evm t -> pr_ltype_env env evm t) x) with e -> pp (str (Printexc.to_string e)))
 let ppfconstr c = ppconstr (CClosure.term_of_fconstr c)
 
 let ppbigint n = pp (str (Bigint.to_string n));;
