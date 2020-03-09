@@ -264,7 +264,7 @@ let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixt
   (* We shortcut the proof process *)
   let fixdefs = List.map Option.get fixdefs in
   let fixdecls = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
-  let vars, fixdecls, gidx =
+  let vars, fixdecls, indexes =
     if not cofix then
       let env = Global.env() in
       let indexes = Pretyping.search_guard env indexes fixdecls in
@@ -282,10 +282,9 @@ let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixt
   let univs = Evd.check_univ_decl ~poly evd pl in
   let ubind = Evd.universe_binders evd in
   let _ : GlobRef.t list =
-    DeclareDef.declare_mutually_recursive ~scope ~opaque:false ~univs ~kind:fix_kind ~ubind
+    DeclareDef.declare_mutually_recursive ~indexes ~cofix ~scope ~opaque:false ~univs ~kind:fix_kind ~ubind
       fixnames fixdecls fixtypes fiximps
   in
-  Declare.recursive_message (not cofix) gidx fixnames;
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
   ()
 

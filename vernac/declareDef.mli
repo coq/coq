@@ -60,7 +60,9 @@ val declare_assumption
   -> GlobRef.t
 
 val declare_mutually_recursive
-  : opaque:bool
+  : cofix:bool
+  -> indexes:int array option
+  -> opaque:bool
   -> univs:Entries.universes_entry
   -> scope:locality
   -> kind:Decls.logical_kind

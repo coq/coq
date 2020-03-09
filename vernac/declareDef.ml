@@ -69,12 +69,15 @@ let declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs ce =
   end;
   dref
 
-let declare_mutually_recursive ~opaque ~univs ~scope ~kind ~ubind fixnames fixdecls fixtypes fiximps =
-  CList.map4
-    (fun name body types impargs ->
-       let ce = Declare.definition_entry ~opaque ~types ~univs body in
-       declare_definition ~name ~scope ~kind ~ubind ~impargs ce)
-    fixnames fixdecls fixtypes fiximps
+let declare_mutually_recursive ~cofix ~indexes ~opaque ~univs ~scope ~kind ~ubind fixnames fixdecls fixtypes fiximps =
+  let csts = CList.map4
+      (fun name body types impargs ->
+         let ce = Declare.definition_entry ~opaque ~types ~univs body in
+         declare_definition ~name ~scope ~kind ~ubind ~impargs ce)
+      fixnames fixdecls fixtypes fiximps
+  in
+  Declare.recursive_message (not cofix) indexes fixnames;
+  csts
 
 let warn_let_as_axiom =
   CWarnings.create ~name:"let-as-axiom" ~category:"vernacular"

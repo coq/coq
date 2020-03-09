@@ -466,15 +466,15 @@ let declare_mutual_definition l =
   let fix_exn = Hook.get get_fix_exn () in
   let kind = Decls.IsDefinition (if fixkind != IsCoFixpoint then Decls.Fixpoint else Decls.CoFixpoint) in
   let ubind = UnivNames.empty_binders in
+  let cofix = fixkind = IsCoFixpoint in
   let kns =
-    DeclareDef.declare_mutually_recursive ~scope ~opaque ~univs ~kind ~ubind
+    DeclareDef.declare_mutually_recursive ~cofix ~indexes ~scope ~opaque ~univs ~kind ~ubind
       fixnames fixdecls fixtypes fiximps
   in
   (* Declare notations *)
   List.iter
     (Metasyntax.add_notation_interpretation (Global.env ()))
     first.prg_notations;
-  Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
   (* Only for the first constant *)
   let dref = List.hd kns in
   DeclareDef.Hook.(call ?hook:first.prg_hook ~fix_exn { S.uctx = first.prg_ctx; obls; scope; dref });
