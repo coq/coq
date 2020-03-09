@@ -179,12 +179,19 @@ module MutualEntry : sig
   (* We keep this type abstract and to avoid uncontrolled hacks *)
   type t
 
-  val variable : info:Info.t -> Entries.parameter_entry -> t
-
   val adjust_guardness_conditions
     : info:Info.t
     -> Evd.side_effects Declare.proof_entry
     -> t
+
+  val declare_variable
+    : info:Info.t
+    -> uctx:UState.t
+    (* Only for the first constant, introduced by compat *)
+    -> ubind:UnivNames.universe_binders
+    -> name:Id.t
+    -> Entries.parameter_entry
+    -> Names.GlobRef.t list
 
   val declare_mutdef
     (* Common to all recthms *)
@@ -209,8 +216,6 @@ end = struct
     { entry : et
     ; info : Info.t
     }
-
-  let variable ~info t = { entry = NoBody t; info }
 
   (* XXX: Refactor this with the code in
      [ComFixpoint.declare_fixpoint_generic] *)
@@ -284,6 +289,10 @@ end = struct
         fun i { DeclareDef.Recthm.name; typ; impargs } ->
           declare_mutdef ?fix_exn ~name ~info ~ubind ?hook_data ~uctx ~typ ~impargs entry i) 1 info.Info.other_thms
     in r :: rs
+
+  let declare_variable ~info ~uctx ~ubind ~name pe =
+    declare_mutdef ~uctx ~ubind ~name { entry = NoBody pe; info }
+
 end
 
 (************************************************************************)
@@ -311,10 +320,8 @@ let compute_proof_using_for_admitted proof typ pproofs =
     | _ -> None
 
 let finish_admitted ~name ~info ~uctx pe =
-  let mutpe = MutualEntry.variable ~info pe in
   let ubind = UnivNames.empty_binders in
-  let _r : Names.GlobRef.t list =
-    MutualEntry.declare_mutdef ~uctx ~ubind ~name mutpe in
+  let _r : Names.GlobRef.t list = MutualEntry.declare_variable ~info ~uctx ~ubind ~name pe in
   ()
 
 let save_lemma_admitted ~(lemma : t) : unit =
@@ -352,9 +359,9 @@ let finish_proved idopt po info =
       | Some { CAst.v = save_id } -> check_anonymity name save_id; save_id in
     let fix_exn = Declare.Internal.get_fix_exn const in
     let () = try
-      let mutpe = MutualEntry.adjust_guardness_conditions ~info const in
       let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
       let ubind = UState.universe_binders uctx in
+      let mutpe = MutualEntry.adjust_guardness_conditions ~info const in
       let _r : Names.GlobRef.t list =
         MutualEntry.declare_mutdef ~fix_exn ~uctx ?hook_data ~ubind ~name mutpe
       in ()
