@@ -140,8 +140,8 @@ let compute_possible_guardness_evidences (ctx,_,recindex) =
          fixpoints ?) *)
       List.interval 0 (Context.Rel.nhyps ctx - 1)
 
-type recursive_preentry =
-  Id.t list * Sorts.relevance list * Constr.t option list * Constr.types list
+type ('constr, 'types) recursive_preentry =
+  Id.t list * Sorts.relevance list * 'constr option list * 'types list
 
 (* Wellfounded definition *)
 
@@ -230,7 +230,11 @@ let ground_fixpoint env evd (fixnames,fixrs,fixdefs,fixtypes) =
   let fixtypes = List.map EConstr.(to_constr evd) fixtypes in
   Evd.evar_universe_context evd, (fixnames,fixrs,fixdefs,fixtypes)
 
-let interp_fixpoint ~cofix l =
+(* XXX: Unify with interp_recursive  *)
+let interp_fixpoint ~cofix l :
+  ( (Constr.t, Constr.types) recursive_preentry *
+    UState.universe_decl * UState.t *
+    (EConstr.rel_context * Impargs.manual_implicits * int option) list) =
   let (env,_,pl,evd),fix,info = interp_recursive ~program_mode:false ~cofix l in
   check_recursive true env evd fix;
   let uctx,fix = ground_fixpoint env evd fix in
@@ -243,8 +247,10 @@ let build_recthms ~indexes fixnames fixtypes fiximps =
   in
   let thms =
     List.map3 (fun name typ (ctx,impargs,_) ->
-        { DeclareDef.Recthm.name; typ
-        ; args = List.map Context.Rel.Declaration.get_name ctx; impargs})
+        { DeclareDef.Recthm.name
+        ; typ
+        ; args = List.map Context.Rel.Declaration.get_name ctx
+        ; impargs})
       fixnames fixtypes fiximps
   in
   fix_kind, cofix, thms

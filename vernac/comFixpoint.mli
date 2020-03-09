@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Names
-open Constr
 open Vernacexpr
 
 (** {6 Fixpoints and cofixpoints} *)
@@ -40,6 +39,9 @@ val adjust_rec_order
   -> Constrexpr.recursion_order_expr option
   -> lident option
 
+(** names / relevance / defs / types *)
+type ('constr, 'types) recursive_preentry = Id.t list * Sorts.relevance list * 'constr option list * 'types list
+
 (** Exported for Program *)
 val interp_recursive :
   (* Misc arguments *)
@@ -49,18 +51,17 @@ val interp_recursive :
   (* env / signature / univs / evar_map *)
   (Environ.env * EConstr.named_context * UState.universe_decl * Evd.evar_map) *
   (* names / defs / types *)
-  (Id.t list * Sorts.relevance list * EConstr.constr option list * EConstr.types list) *
+  (EConstr.t, EConstr.types) recursive_preentry *
   (* ctx per mutual def / implicits / struct annotations *)
   (EConstr.rel_context * Impargs.manual_implicits * int option) list
 
 (** Exported for Funind *)
 
-type recursive_preentry = Id.t list * Sorts.relevance list * constr option list * types list
-
 val interp_fixpoint
   :  cofix:bool
   -> lident option fix_expr_gen list
-  -> recursive_preentry * UState.universe_decl * UState.t *
+  -> (Constr.t, Constr.types) recursive_preentry *
+     UState.universe_decl * UState.t *
      (EConstr.rel_context * Impargs.manual_implicits * int option) list
 
 (** Very private function, do not use *)
