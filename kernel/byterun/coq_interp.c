@@ -30,18 +30,20 @@
 #include "coq_float64.h"
 
 #if OCAML_VERSION < 41000
+extern void caml_minor_collection(void);
+
 #undef Alloc_small
 #define Alloc_small(result, wosize, tag) do{                            \
-  young_ptr -= Bhsize_wosize (wosize);                                  \
-  if (young_ptr < young_limit){                                         \
-    young_ptr += Bhsize_wosize (wosize);                                \
+  caml_young_ptr -= Bhsize_wosize(wosize);                              \
+  if (caml_young_ptr < caml_young_limit) {                              \
+    caml_young_ptr += Bhsize_wosize(wosize);                            \
     Setup_for_gc;                                                       \
-    minor_collection ();                                                \
+    caml_minor_collection();                                            \
     Restore_after_gc;                                                   \
-    young_ptr -= Bhsize_wosize (wosize);                                \
+    caml_young_ptr -= Bhsize_wosize(wosize);                            \
   }                                                                     \
-  Hd_hp (young_ptr) = Make_header ((wosize), (tag), Caml_black);        \
-  (result) = Val_hp (young_ptr);                                        \
+  Hd_hp(caml_young_ptr) = Make_header((wosize), (tag), Caml_black);     \
+  (result) = Val_hp(caml_young_ptr);                                    \
   }while(0)
 #endif
 
