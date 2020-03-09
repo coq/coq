@@ -244,6 +244,13 @@ let close_and_quit () =
   List.iter (fun sn -> Coq.close_coqtop sn.coqtop) notebook#pages;
   exit 0
 
+(* Work around a deadlock due to OCaml exit cleanup. The standard [exit]
+   function calls [flush_all], which can block if one of the opened channels is
+   not valid anymore. We do not register [at_exit] functions in CoqIDE, so
+   instead of flushing we simply die as gracefully as possible in the function
+   below. *)
+external sys_exit : int -> 'a = "caml_sys_exit"
+
 let crash_save exitcode =
   Minilib.log "Starting emergency save of buffers in .crashcoqide files";
   let idx =
@@ -263,7 +270,7 @@ let crash_save exitcode =
   in
   List.iter save_session notebook#pages;
   Minilib.log "End emergency save";
-  exit exitcode
+  sys_exit exitcode
 
 end
 
