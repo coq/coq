@@ -204,15 +204,9 @@ module MutualEntry : sig
 end = struct
 
   (* Body with the fix *)
-  type et =
-    | NoBody of Entries.parameter_entry
+  type t =
     | Single of Evd.side_effects Declare.proof_entry
     | Mutual of Evd.side_effects Declare.proof_entry
-
-  type t =
-    { entry : et
-    ; info : Info.t
-    }
 
   (* XXX: Refactor this with the code in [DeclareDef.declare_mutdef] *)
   let guess_decreasing env possible_indexes ((body, ctx), eff) =
@@ -225,7 +219,7 @@ end = struct
     | _ -> (body, ctx), eff
 
   let adjust_guardness_conditions ~info const =
-    let entry = match info.Info.compute_guard with
+    match info.Info.compute_guard with
     | [] ->
       (* Not a recursive statement *)
       Single const
@@ -236,7 +230,6 @@ end = struct
           ~f:(guess_decreasing env possible_indexes)
       in
       Mutual pe
-    in { entry; info }
 
   let rec select_body i t =
     let open Constr in
@@ -251,11 +244,9 @@ end = struct
         Pp.(str "Not a proof by induction: " ++
             Termops.Internal.debug_print_constr (EConstr.of_constr t) ++ str ".")
 
-  let declare_mutdef ?fix_exn ~uctx ?hook_data ~name ?typ ~impargs ~info mutpe i =
-    let { Info.hook; compute_guard; scope; kind; _ } = info in
+  let declare_mutdef ~uctx ~info mutpe i DeclareDef.Recthm.{ name; impargs; typ; _} =
+    let { Info.hook; scope; kind; _ } = info in
     match mutpe with
-    | NoBody pe ->
-      DeclareDef.declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe
     | Single pe ->
       (* We'd like to do [assert (i = 0)] here, however this codepath
          is used when declaring mutual cofixpoints *)
@@ -264,18 +255,16 @@ end = struct
       DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
     | Mutual pe ->
       (* if i = 0 , we don't touch the type; this is for compat
-         but not clear it is the right thing to do *)
-      (* See start_dependent_proof ~typ:mkProp to understand why
+         but not clear it is the right thing to do
+
+         See start_dependent_proof ~typ:mkProp to understand why
          we don't we use the type stored here. This is obviously a
          fixme [was like this for long time]
       *)
       let pe =
-        match typ with
-        | None -> pe
-        | Some typ ->
-          if i > 0
-          then Declare.Internal.map_entry_type pe ~f:(fun _ -> Some typ)
-          else pe
+        if i > 0
+        then Declare.Internal.map_entry_type pe ~f:(fun _ -> Some typ)
+        else pe
       in
       let hook_data = Option.map (fun hook -> hook, uctx, []) info.Info.hook in
       let ubind = if i = 0 then UState.universe_binders uctx else UnivNames.empty_binders in
@@ -283,20 +272,16 @@ end = struct
           ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff) in
       DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
 
-  let declare_mutdef ?fix_exn ~uctx { entry; info } =
-    let rs =
-      List.map_i (
-        fun i { DeclareDef.Recthm.name; typ; impargs } ->
-          declare_mutdef ?fix_exn ~name ~info ~uctx ~typ ~impargs entry i)
-        0 info.Info.thms
-    in rs
-
-  let declare_variable ~info ~uctx pe =
-    declare_mutdef ~uctx { entry = NoBody pe; info }
-
   let declare_mutdef ~info ~uctx const =
     let mutpe = adjust_guardness_conditions ~info const in
-    declare_mutdef ~uctx mutpe
+    List.map_i (declare_mutdef ~info ~uctx mutpe) 0 info.Info.thms
+
+  let declare_variable ~info ~uctx pe =
+    let { Info.scope; hook } = info in
+    List.map_i (
+      fun i { DeclareDef.Recthm.name; typ; impargs } ->
+        DeclareDef.declare_assumption ~name ~scope ~hook ~impargs ~uctx pe
+    ) 0 info.Info.thms
 
 end
 
@@ -339,9 +324,9 @@ let save_lemma_admitted ~(lemma : t) : unit =
   let proof = Proof_global.get_proof lemma.proof in
   let pproofs = Proof.partial_proof proof in
   let sec_vars = compute_proof_using_for_admitted lemma.proof typ pproofs in
-  let universes = Proof_global.get_initial_euctx lemma.proof in
-  let ctx = UState.check_univ_decl ~poly universes udecl in
-  finish_admitted ~info:lemma.info ~uctx:universes (sec_vars, (typ, ctx), None)
+  let uctx = Proof_global.get_initial_euctx lemma.proof in
+  let univs = UState.check_univ_decl ~poly uctx udecl in
+  finish_admitted ~info:lemma.info ~uctx (sec_vars, (typ, univs), None)
 
 (************************************************************************)
 (* Saving a lemma-like constant                                         *)
