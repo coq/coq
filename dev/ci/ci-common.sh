@@ -19,7 +19,7 @@ then
 elif [ -d "$PWD/_build/install/default/" ];
 then
     # Dune build
-    export OCAMLPATH="$PWD/_build/install/default/lib/"
+    export OCAMLPATH="$PWD/_build/install/default/lib/:$OCAMLPATH"
     export COQBIN="$PWD/_build/install/default/bin"
     export COQLIB="$PWD/_build/install/default/lib/coq"
     CI_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
