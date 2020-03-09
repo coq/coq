@@ -256,26 +256,15 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs
   lemma
 
 let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
-  let indexes, cofix, fix_kind =
+  let possible_indexes, cofix, fix_kind =
     match indexes with
-    | Some indexes -> indexes, false, Decls.(IsDefinition Fixpoint)
-    | None -> [], true, Decls.(IsDefinition CoFixpoint)
+    | Some indexes -> Some indexes, false, Decls.(IsDefinition Fixpoint)
+    | None -> None, true, Decls.(IsDefinition CoFixpoint)
   in
   (* We shortcut the proof process *)
   let fixdefs = List.map Option.get fixdefs in
-  let fixdecls = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
-  let vars, fixdecls, indexes =
-    if not cofix then
-      let env = Global.env() in
-      let indexes = Pretyping.search_guard env indexes fixdecls in
-      let vars = Vars.universes_of_constr (Constr.mkFix ((indexes,0),fixdecls)) in
-      let fixdecls = List.map_i (fun i _ -> Constr.mkFix ((indexes,i),fixdecls)) 0 fixnames in
-      vars, fixdecls, Some indexes
-    else (* cofix *)
-      let fixdecls = List.map_i (fun i _ -> Constr.mkCoFix (i,fixdecls)) 0 fixnames in
-      let vars = Vars.universes_of_constr (List.hd fixdecls) in
-      vars, fixdecls, None
-  in
+  let rec_declaration = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
+  let vars, fixdecls, indexes = DeclareDef.mutual_make_bodies ~fixnames ~rec_declaration ~possible_indexes in
   let fiximps = List.map (fun (n,r,p) -> r) fiximps in
   let evd = Evd.from_ctx ctx in
   let evd = Evd.restrict_universe_context evd vars in

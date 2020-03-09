@@ -69,6 +69,19 @@ let declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs ce =
   end;
   dref
 
+let mutual_make_bodies ~fixnames ~rec_declaration ~possible_indexes =
+  match possible_indexes with
+  | Some possible_indexes ->
+    let env = Global.env() in
+    let indexes = Pretyping.search_guard env possible_indexes rec_declaration in
+    let vars = Vars.universes_of_constr (Constr.mkFix ((indexes,0),rec_declaration)) in
+    let fixdecls = CList.map_i (fun i _ -> Constr.mkFix ((indexes,i),rec_declaration)) 0 fixnames in
+    vars, fixdecls, Some indexes
+  | None ->
+    let fixdecls = CList.map_i (fun i _ -> Constr.mkCoFix (i,rec_declaration)) 0 fixnames in
+    let vars = Vars.universes_of_constr (List.hd fixdecls) in
+    vars, fixdecls, None
+
 let declare_mutually_recursive ~cofix ~indexes ~opaque ~univs ~scope ~kind ~ubind ~ntns fixnames fixdecls fixtypes fiximps =
   let csts = CList.map4
       (fun name body types impargs ->
