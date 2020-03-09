@@ -294,7 +294,7 @@ class VernacObject(NotationObject):
 
     Example::
 
-       .. cmd:: Infix @string := @term1_extended {? ( {+, @syntax_modifier } ) } {? : @ident }
+       .. cmd:: Infix @string := @one_term {? ( {+, @syntax_modifier } ) } {? : @ident }
 
           This command is equivalent to :n:`…`.
     """

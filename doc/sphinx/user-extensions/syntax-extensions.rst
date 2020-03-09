@@ -947,7 +947,7 @@ notations are given below. The optional :production:`scope` is described in
 
 .. prodn::
    decl_notations ::= where @decl_notation {* and @decl_notation }
-   decl_notation ::= @string := @term1_extended [(only parsing)] {? : @ident }
+   decl_notation ::= @string := @one_term {? ( only parsing ) } {? : @ident }
 
 .. note:: No typing of the denoted expression is performed at definition
           time. Type checking is done only at the time of use of the notation.
@@ -1194,7 +1194,7 @@ Binding arguments of a constant to an interpretation scope
 Binding types of arguments to an interpretation scope
 +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-.. cmd:: Bind Scope @scope with @qualid
+.. cmd:: Bind Scope @ident with {+ @class }
 
    When an interpretation scope is naturally associated to a type (e.g.  the
    scope of operations on the natural numbers), it may be convenient to bind it

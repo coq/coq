@@ -1717,7 +1717,7 @@ let process_rst g file args seen tac_prods cmd_prods =
             else begin
               let line3 = getline() in
               if not (Str.string_match dir_regex line3 0) || (Str.matched_group 2 line3) <> "prodn::" then
-                error "%s line %d: expecting 'prodn' after 'insertprodn'\n" file !linenum
+                error "%s line %d: expecting '.. prodn::' after 'insertprodn'\n" file !linenum
               else begin
                 let indent = Str.matched_group 1 line3 in
                 let rec skip_to_end () =

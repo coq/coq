@@ -37,12 +37,13 @@ In addition to these user-defined classes, we have two built-in classes:
   * ``Funclass``, the class of functions; its objects are all the terms with a functional
     type, i.e. of form :g:`forall x:A,B`.
 
-Formally, the syntax of classes is defined as:
+   .. insertprodn class class
 
-.. productionlist::
-   class: `qualid`
-        : Sortclass
-        : Funclass
+   .. prodn::
+      class ::= Funclass
+      | Sortclass
+      | @smart_qualid
+
 
 
 Coercions
@@ -186,37 +187,12 @@ Declaring Coercions
      This defines :token:`ident` just like :n:`Let @ident := @term  {? @type }`,
      and then declares :token:`ident` as a coercion between it source and its target.
 
-Assumptions can be declared as coercions at declaration time.
-This extends the grammar of assumptions from
-Figure :ref:`vernacular` as follows:
+Some objects can be declared as coercions when they are defined.
+This applies to :ref:`assumptions<gallina-assumptions>` and
+constructors of :ref:`inductive types and record fields<gallina-inductive-definitions>`.
+Use :n:`:>` instead of :n:`:` before the
+:n:`@type` of the assumption to do so.  See :n:`@of_type`.
 
-..
-  FIXME:
-   \comindex{Variable \mbox{\rm (and coercions)}}
-   \comindex{Axiom \mbox{\rm (and coercions)}}
-   \comindex{Parameter \mbox{\rm (and coercions)}}
-   \comindex{Hypothesis \mbox{\rm (and coercions)}}
-
-.. productionlist::
-   assumption : `assumption_token` `assums` .
-   assums : `simple_assums`
-          : (`simple_assums`) ... (`simple_assums`)
-   simple_assums : `ident` ... `ident` :[>] `term`
-
-If the extra ``>`` is present before the type of some assumptions, these
-assumptions are declared as coercions.
-
-Similarly, constructors of inductive types can be declared as coercions at
-definition time of the inductive type. This extends and modifies the
-grammar of inductive types from Figure :ref:`vernacular` as follows:
-
-..
-  FIXME:
-   \comindex{Inductive \mbox{\rm (and coercions)}}
-   \comindex{CoInductive \mbox{\rm (and coercions)}}
-
-Especially, if the extra ``>`` is present in a constructor
-declaration, this constructor is declared as a coercion.
 
 .. cmd:: Identity Coercion @ident : @class >-> @class
 

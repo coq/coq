@@ -300,70 +300,79 @@ following property:
 
 The syntax for adding a new ring is 
 
-.. cmd:: Add Ring @ident : @term {? ( @ring_mod {* , @ring_mod } )}
+.. cmd:: Add Ring @ident : @one_term {? ( {+, @ring_mod } ) }
 
-   The :token:`ident` is not relevant. It is used just for error messages. The
-   :token:`term` is a proof that the ring signature satisfies the (semi-)ring
+   .. insertprodn ring_mod ring_mod
+
+   .. prodn::
+      ring_mod ::= decidable @one_term
+      | abstract
+      | morphism @one_term
+      | constants [ @ltac_expr ]
+      | preprocess [ @ltac_expr ]
+      | postprocess [ @ltac_expr ]
+      | setoid @one_term @one_term
+      | sign @one_term
+      | power @one_term [ {+ @qualid } ]
+      | power_tac @one_term [ @ltac_expr ]
+      | div @one_term
+      | closed [ {+ @qualid } ]
+
+   The :n:`@ident` is used only for error messages. The
+   :n:`@one_term` is a proof that the ring signature satisfies the (semi-)ring
    axioms. The optional list of modifiers is used to tailor the behavior
-   of the tactic. The following list describes their syntax and effects:
+   of the tactic. Here are their effects:
 
-   .. productionlist:: coq
-      ring_mod : abstract | decidable `term` | morphism `term`
-               : setoid `term` `term`
-               : constants [ `tactic` ]
-               : preprocess [ `tactic` ]
-               : postprocess [ `tactic` ]
-               : power_tac `term` [ `tactic` ]
-               : sign `term`
-               : div `term`
-
-   abstract
+   :n:`abstract`
       declares the ring as abstract. This is the default.
 
-   decidable :n:`@term`
+   :n:`decidable @one_term`
       declares the ring as computational. The expression
-      :n:`@term` is the correctness proof of an equality test ``?=!``
+      :n:`@one_term` is the correctness proof of an equality test ``?=!``
       (which should be evaluable). Its type should be of the form
       ``forall x y, x ?=! y = true → x == y``.
 
-   morphism :n:`@term`
+   :n:`morphism @one_term`
       declares the ring as a customized one. The expression
-      :n:`@term` is a proof that there exists a morphism between a set of
+      :n:`@one_term` is a proof that there exists a morphism between a set of
       coefficient and the ring carrier (see ``Ring_theory.ring_morph`` and
       ``Ring_theory.semi_morph``).
 
-   setoid :n:`@term` :n:`@term`
+   :n:`setoid @one_term @one_term`
       forces the use of given setoid. The first
-      :n:`@term` is a proof that the equality is indeed a setoid (see
-      ``Setoid.Setoid_Theory``), and the second :n:`@term` a proof that the
+      :n:`@one_term` is a proof that the equality is indeed a setoid (see
+      ``Setoid.Setoid_Theory``), and the second a proof that the
       ring operations are morphisms (see ``Ring_theory.ring_eq_ext`` and
       ``Ring_theory.sring_eq_ext``).
       This modifier needs not be used if the setoid and morphisms have been
       declared.
 
-   constants [ :n:`@tactic` ]
-      specifies a tactic expression :n:`@tactic` that, given a
+   :n:`constants [ @ltac_expr ]`
+      specifies a tactic expression :n:`@ltac_expr` that, given a
       term, returns either an object of the coefficient set that is mapped
       to the expression via the morphism, or returns
       ``InitialRing.NotConstant``. The default behavior is to map only 0 and 1
       to their counterpart in the coefficient set. This is generally not
       desirable for non trivial computational rings.
 
-   preprocess [ :n:`@tactic` ]
-      specifies a tactic :n:`@tactic` that is applied as a
+   :n:`preprocess [ @ltac_expr ]`
+      specifies a tactic :n:`@ltac_expr` that is applied as a
       preliminary step for :tacn:`ring` and :tacn:`ring_simplify`. It can be used to
       transform a goal so that it is better recognized. For instance, ``S n``
       can be changed to ``plus 1 n``.
 
-   postprocess [ :n:`@tactic` ]
-      specifies a tactic :n:`@tactic` that is applied as a final
+   :n:`postprocess [ @ltac_expr ]`
+      specifies a tactic :n:`@ltac_expr` that is applied as a final
       step for :tacn:`ring_simplify`. For instance, it can be used to undo
       modifications of the preprocessor.
 
-   power_tac :n:`@term` [ :n:`@tactic` ]
+   :n:`power @one_term [ {+ @qualid } ]`
+      to be documented
+
+   :n:`power_tac @one_term @ltac_expr ]`
       allows :tacn:`ring` and :tacn:`ring_simplify` to recognize
       power expressions with a constant positive integer exponent (example:
-      :math:`x^2` ). The term :n:`@term` is a proof that a given power function satisfies
+      :math:`x^2` ). The term :n:`@one_term` is a proof that a given power function satisfies
       the specification of a power function (term has to be a proof of
       ``Ring_theory.power_theory``) and :n:`@tactic` specifies a tactic expression
       that, given a term, “abstracts” it into an object of type |N| whose
@@ -374,21 +383,24 @@ The syntax for adding a new ring is
       and ``plugins/setoid_ring/RealField.v`` for examples. By default the tactic
       does not recognize power expressions as ring expressions.
 
-   sign :n:`@term`
+   :n:`sign @one_term`
       allows :tacn:`ring_simplify` to use a minus operation when
       outputting its normal form, i.e writing ``x − y`` instead of ``x + (− y)``. The
       term :token:`term` is a proof that a given sign function indicates expressions
       that are signed (:token:`term` has to be a proof of ``Ring_theory.get_sign``). See
       ``plugins/setoid_ring/InitialRing.v`` for examples of sign function.
 
-   div :n:`@term`
+   :n:`div @one_term`
       allows :tacn:`ring` and :tacn:`ring_simplify` to use monomials with
-      coefficients other than 1 in the rewriting. The term :n:`@term` is a proof
+      coefficients other than 1 in the rewriting. The term :n:`@one_term` is a proof
       that a given division function satisfies the specification of an
-      euclidean division function (:n:`@term` has to be a proof of
+      euclidean division function (:n:`@one_term` has to be a proof of
       ``Ring_theory.div_theory``). For example, this function is called when
       trying to rewrite :math:`7x` by :math:`2x = z` to tell that :math:`7 = 3 \times 2 + 1`. See
       ``plugins/setoid_ring/InitialRing.v`` for examples of div function.
+
+   :n:`closed [ {+ @qualid } ]`
+      to be documented
 
 Error messages:
 
@@ -653,24 +665,27 @@ zero for the correctness of the algorithm.
 
 The syntax for adding a new field is 
 
-.. cmd:: Add Field @ident : @term {? ( @field_mod {* , @field_mod } )}
+.. cmd:: Add Field @ident : @one_term {? ( {+, @field_mod } ) }
 
-   The :n:`@ident` is not relevant. It is used just for error
-   messages. :n:`@term` is a proof that the field signature satisfies the
+   .. insertprodn field_mod field_mod
+
+   .. prodn::
+      field_mod ::= @ring_mod
+      | completeness @one_term
+
+   The :n:`@ident` is used only for error
+   messages. :n:`@one_term` is a proof that the field signature satisfies the
    (semi-)field axioms. The optional list of modifiers is used to tailor
    the behavior of the tactic.
 
-   .. productionlist:: coq
-      field_mod : `ring_mod` | completeness `term`
-
    Since field tactics are built upon ``ring``
-   tactics, all modifiers of the ``Add Ring`` apply. There is only one
+   tactics, all modifiers of :cmd:`Add Ring` apply. There is only one
    specific modifier:
 
-   completeness :n:`@term`
+   completeness :n:`@one_term`
       allows the field tactic to prove automatically
       that the image of nonzero coefficients are mapped to nonzero
-      elements of the field. :n:`@term` is a proof of
+      elements of the field. :n:`@one_term` is a proof of
       :g:`forall x y, [x] == [y] ->  x ?=! y = true`,
       which is the completeness of equality on coefficients
       w.r.t. the field equality.

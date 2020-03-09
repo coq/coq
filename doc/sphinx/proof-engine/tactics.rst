@@ -72,7 +72,7 @@ specified, the default selector is used.
 .. _bindingslist:
 
 Bindings list
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 Tactics that take a term as an argument may also support a bindings list
 to instantiate some parameters of the term by name or position.
