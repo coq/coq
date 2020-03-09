@@ -236,16 +236,22 @@ let interp_fixpoint ~cofix l =
   let uctx,fix = ground_fixpoint env evd fix in
   (fix,pl,uctx,info)
 
-let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs,fixdefs,fixtypes),udecl,ctx,fiximps) ntns =
-  let fix_kind, cofix, indexes = match indexes with
-    | Some indexes -> Decls.Fixpoint, false, indexes
-    | None -> Decls.CoFixpoint, true, []
+let build_recthms ~indexes fixnames fixtypes fiximps =
+  let fix_kind, cofix = match indexes with
+    | Some indexes -> Decls.Fixpoint, false
+    | None -> Decls.CoFixpoint, true
   in
   let thms =
     List.map3 (fun name typ (ctx,impargs,_) ->
-        { Lemmas.Recthm.name; typ
+        { DeclareDef.Recthm.name; typ
         ; args = List.map Context.Rel.Declaration.get_name ctx; impargs})
-      fixnames fixtypes fiximps in
+      fixnames fixtypes fiximps
+  in
+  fix_kind, cofix, thms
+
+let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs,fixdefs,fixtypes),udecl,ctx,fiximps) ntns =
+  let fix_kind, cofix, thms = build_recthms ~indexes fixnames fixtypes fiximps in
+  let indexes = Option.default [] indexes in
   let init_terms = Some fixdefs in
   let evd = Evd.from_ctx ctx in
   let lemma =
@@ -256,19 +262,15 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs
   lemma
 
 let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
-  let possible_indexes, fix_kind =
-    match indexes with
-    | Some indexes -> Some indexes, Decls.(IsDefinition Fixpoint)
-    | None -> None, Decls.(IsDefinition CoFixpoint)
-  in
   (* We shortcut the proof process *)
+  let fix_kind, cofix, fixitems = build_recthms ~indexes fixnames fixtypes fiximps in
   let fixdefs = List.map Option.get fixdefs in
   let rec_declaration = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
-  let fiximps = List.map (fun (n,r,p) -> r) fiximps in
+  let fix_kind = Decls.IsDefinition fix_kind in
   let _ : GlobRef.t list =
     DeclareDef.declare_mutually_recursive ~scope ~opaque:false ~kind:fix_kind ~poly ~uctx
-      ~possible_indexes ~restrict_ucontext:true ~udecl ~ntns ~rec_declaration
-      fixnames fixtypes fiximps
+      ~possible_indexes:indexes ~restrict_ucontext:true ~udecl ~ntns ~rec_declaration
+      fixitems
   in
   ()
 

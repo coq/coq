@@ -39,15 +39,6 @@ module Proof_ending = struct
 
 end
 
-module Recthm = struct
-  type t =
-    { name : Id.t
-    ; typ : Constr.t
-    ; args : Name.t list
-    ; impargs : Impargs.manual_implicits
-    }
-end
-
 module Info = struct
 
   type t =
@@ -56,7 +47,7 @@ module Info = struct
     ; impargs : Impargs.manual_implicits
     ; proof_ending : Proof_ending.t CEphemeron.key
     (* This could be improved and the CEphemeron removed *)
-    ; other_thms : Recthm.t list
+    ; other_thms : DeclareDef.Recthm.t list
     ; scope : DeclareDef.locality
     ; kind : Decls.logical_kind
     }
@@ -129,7 +120,7 @@ let start_dependent_lemma ~name ~poly
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
-    match List.map (fun { Recthm.name; typ } -> name, (EConstr.of_constr typ)) thms with
+    match List.map (fun { DeclareDef.Recthm.name; typ } -> name, (EConstr.of_constr typ)) thms with
     | (id,_)::l -> Tactics.mutual_cofix id l 0
     | _ -> assert false
   else
@@ -137,12 +128,12 @@ let rec_tac_initializer finite guard thms snl =
     let nl = match snl with
      | None -> List.map succ (List.map List.last guard)
      | Some nl -> nl
-    in match List.map2 (fun { Recthm.name; typ } n -> (name, n, (EConstr.of_constr typ))) thms nl with
+    in match List.map2 (fun { DeclareDef.Recthm.name; typ } n -> (name, n, (EConstr.of_constr typ))) thms nl with
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 
 let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recguard thms snl =
-  let intro_tac { Recthm.args; _ } = Tactics.auto_intros_tac args in
+  let intro_tac { DeclareDef.Recthm.args; _ } = Tactics.auto_intros_tac args in
   let init_tac, compute_guard = match recguard with
   | Some (finite,guard,init_terms) ->
     let rec_tac = rec_tac_initializer finite guard thms snl in
@@ -162,7 +153,7 @@ let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recgua
     intro_tac (List.hd thms), [] in
   match thms with
   | [] -> CErrors.anomaly (Pp.str "No proof to start.")
-  | { Recthm.name; typ; impargs; _}::other_thms ->
+  | { DeclareDef.Recthm.name; typ; impargs; _}::other_thms ->
     let info =
       Info.{ hook
            ; impargs
@@ -290,7 +281,7 @@ end = struct
     let ubind = UnivNames.empty_binders in
     let rs =
       List.map_i (
-        fun i { Recthm.name; typ; impargs } ->
+        fun i { DeclareDef.Recthm.name; typ; impargs } ->
           declare_mutdef ?fix_exn ~name ~info ~ubind ?hook_data ~uctx ~typ ~impargs entry i) 1 info.Info.other_thms
     in r :: rs
 end

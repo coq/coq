@@ -69,22 +69,35 @@ let declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs ce =
   end;
   dref
 
-let mutual_make_bodies ~fixnames ~rec_declaration ~possible_indexes =
+let mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes =
   match possible_indexes with
   | Some possible_indexes ->
     let env = Global.env() in
     let indexes = Pretyping.search_guard env possible_indexes rec_declaration in
     let vars = Vars.universes_of_constr (Constr.mkFix ((indexes,0),rec_declaration)) in
-    let fixdecls = CList.map_i (fun i _ -> Constr.mkFix ((indexes,i),rec_declaration)) 0 fixnames in
+    let fixdecls = CList.map_i (fun i _ -> Constr.mkFix ((indexes,i),rec_declaration)) 0 fixitems in
     vars, fixdecls, Some indexes
   | None ->
-    let fixdecls = CList.map_i (fun i _ -> Constr.mkCoFix (i,rec_declaration)) 0 fixnames in
+    let fixdecls = CList.map_i (fun i _ -> Constr.mkCoFix (i,rec_declaration)) 0 fixitems in
     let vars = Vars.universes_of_constr (List.hd fixdecls) in
     vars, fixdecls, None
 
-let declare_mutually_recursive ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~rec_declaration ~possible_indexes ~restrict_ucontext fixnames fixtypes fiximps =
+module Recthm = struct
+  type t =
+    { name : Names.Id.t
+    (** Name of theorem *)
+    ; typ : Constr.t
+    (** Type of theorem  *)
+    ; args : Names.Name.t list
+    (** Names to pre-introduce  *)
+    ; impargs : Impargs.manual_implicits
+    (** Explicitily declared implicit arguments  *)
+    }
+end
+
+let declare_mutually_recursive ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~rec_declaration ~possible_indexes ~restrict_ucontext fixitems =
   let vars, fixdecls, indexes =
-    mutual_make_bodies ~fixnames ~rec_declaration ~possible_indexes in
+    mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes in
   let ubind, univs =
     (* XXX: Note that obligations don't do this, is that a bug? *)
     if restrict_ucontext
@@ -97,13 +110,14 @@ let declare_mutually_recursive ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~re
       let univs = UState.univ_entry ~poly uctx in
       UnivNames.empty_binders, univs
   in
-  let csts = CList.map4
-      (fun name body types impargs ->
-         let ce = Declare.definition_entry ~opaque ~types ~univs body in
+  let csts = CList.map2
+      (fun Recthm.{ name; typ; impargs } body ->
+         let ce = Declare.definition_entry ~opaque ~types:typ ~univs body in
          declare_definition ~name ~scope ~kind ~ubind ~impargs ce)
-      fixnames fixdecls fixtypes fiximps
+      fixitems fixdecls
   in
   let isfix = Option.is_empty possible_indexes in
+  let fixnames = List.map (fun { Recthm.name } -> name) fixitems in
   Declare.recursive_message isfix indexes fixnames;
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
   csts

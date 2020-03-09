@@ -59,6 +59,19 @@ val declare_assumption
   -> Entries.parameter_entry
   -> GlobRef.t
 
+module Recthm : sig
+  type t =
+    { name : Id.t
+    (** Name of theorem *)
+    ; typ : Constr.t
+    (** Type of theorem  *)
+    ; args : Name.t list
+    (** Names to pre-introduce  *)
+    ; impargs : Impargs.manual_implicits
+    (** Explicitily declared implicit arguments  *)
+    }
+end
+
 val declare_mutually_recursive
   : opaque:bool
   -> scope:locality
@@ -70,9 +83,7 @@ val declare_mutually_recursive
   -> rec_declaration:Constr.rec_declaration
   -> possible_indexes:int list list option
   -> restrict_ucontext:bool
-  -> Names.variable list
-  -> Constr.types list
-  -> Impargs.manual_implicits list
+  -> Recthm.t list
   -> Names.GlobRef.t list
 
 val prepare_definition

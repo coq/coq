@@ -436,7 +436,12 @@ let declare_mutual_definition l =
         (xdef :: defs, xobls @ obls)) l ([], [])
   in
   (*   let fixdefs = List.map reduce_fix fixdefs in *)
-  let fixdefs, fixrs,fixtypes, fiximps = List.split4 defs in
+  let fixdefs, fixrs, fixtypes, fixitems =
+    List.fold_right2 (fun (d,r,typ,impargs) name (a1,a2,a3,a4) ->
+        d :: a1, r :: a2, typ :: a3,
+        DeclareDef.Recthm.{ name; typ; impargs; args = [] } :: a4
+      ) defs first.prg_deps ([],[],[],[])
+  in
   let fixkind = Option.get first.prg_fixkind in
   let arrrec, recvec = (Array.of_list fixtypes, Array.of_list fixdefs) in
   let rvec = Array.of_list fixrs in
@@ -449,14 +454,14 @@ let declare_mutual_definition l =
     | IsCoFixpoint -> None
   in
   (* In the future we will pack all this in a proper record *)
-  let poly, scope, ntns, opaque, fixnames = first.prg_poly, first.prg_scope, first.prg_notations, first.prg_opaque, first.prg_deps in
+  let poly, scope, ntns, opaque = first.prg_poly, first.prg_scope, first.prg_notations, first.prg_opaque in
   let kind = if fixkind != IsCoFixpoint then Decls.(IsDefinition Fixpoint) else Decls.(IsDefinition CoFixpoint) in
   (* Declare the recursive definitions *)
   let udecl = UState.default_univ_decl in
   let kns =
     DeclareDef.declare_mutually_recursive ~scope ~opaque ~kind
-      ~udecl ~ntns ~uctx:first.prg_ctx ~rec_declaration ~possible_indexes
-      ~poly ~restrict_ucontext:false fixnames fixtypes fiximps
+      ~udecl ~ntns ~uctx:first.prg_ctx ~rec_declaration ~possible_indexes ~poly
+      ~restrict_ucontext:false fixitems
   in
   (* Only for the first constant *)
   let fix_exn = Hook.get get_fix_exn () in
