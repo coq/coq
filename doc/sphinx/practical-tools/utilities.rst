@@ -505,34 +505,41 @@ Building a |Coq| project with Dune
 
 .. note::
 
+   Dune's Coq support is still experimental; we strongly recommend
+   using Dune 2.3 or later.
+
+.. note::
+
    The canonical documentation for the Coq Dune extension is
    maintained upstream; please refer to the `Dune manual
-   <https://dune.readthedocs.io/>`_ for up-to-date information.
+   <https://dune.readthedocs.io/>`_ for up-to-date information. This
+   documentation is up to date for Dune 2.3.
 
 Building a Coq project with Dune requires setting up a Dune project
 for your files. This involves adding a ``dune-project`` and
-``pkg.opam`` file to the root (``pkg.opam`` can be empty), and then
-providing ``dune`` files in the directories your ``.v`` files are
-placed. For the experimental version "0.1" of the Coq Dune language,
-|Coq| library stanzas look like:
+``pkg.opam`` file to the root (``pkg.opam`` can be empty or generated
+by Dune itself), and then providing ``dune`` files in the directories
+your ``.v`` files are placed. For the experimental version "0.1" of
+the Coq Dune language, |Coq| library stanzas look like:
 
 .. code:: scheme
 
-    (coqlib
+    (coq.theory
      (name <module_prefix>)
-     (public_name <package.lib_name>)
+     (package <opam_package>)
      (synopsis <text>)
      (modules <ordered_set_lang>)
      (libraries <ocaml_libraries>)
      (flags <coq_flags>))
 
 This stanza will build all `.v` files in the given directory, wrapping
-the library under ``<module_prefix>``. If you declare a
-``<package.lib_name>`` a ``.install`` file for the library will be
-generated; the optional ``<modules>`` field allows you to filter
-the list of modules, and ``<libraries>`` allows to depend on ML
-plugins. For the moment, Dune relies on Coq's standard mechanisms
-(such as ``COQPATH``) to locate installed Coq libraries.
+the library under ``<module_prefix>``. If you declare an
+``<opam_package>``, an ``.install`` file for the library will be
+generated; the optional ``(modules <ordered_set_lang>)`` field allows
+you to filter the list of modules, and ``(libraries
+<ocaml_libraries>)`` allows the Coq theory depend on ML plugins. For
+the moment, Dune relies on Coq's standard mechanisms (such as
+``COQPATH``) to locate installed Coq libraries.
 
 By default Dune will skip ``.v`` files present in subdirectories. In
 order to enable the usual recursive organization of Coq projects add
@@ -565,9 +572,9 @@ of your project.
 
    .. code:: scheme
 
-       (coqlib
+       (coq.theory
         (name Equations) ; -R flag
-        (public_name equations.Equations)
+        (package equations)
         (synopsis "Equations Plugin")
         (libraries coq.plugins.extraction equations.plugin)
         (modules :standard \ IdDec NoCycle)) ; exclude some modules that don't build
