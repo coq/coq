@@ -176,14 +176,6 @@ let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recgua
 (* XXX: Most of this does belong to Declare, due to proof_entry manip *)
 module MutualEntry : sig
 
-  (* We keep this type abstract and to avoid uncontrolled hacks *)
-  type t
-
-  val adjust_guardness_conditions
-    : info:Info.t
-    -> Evd.side_effects Declare.proof_entry
-    -> t
-
   val declare_variable
     : info:Info.t
     -> uctx:UState.t
@@ -195,13 +187,14 @@ module MutualEntry : sig
 
   val declare_mutdef
     (* Common to all recthms *)
-    : ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
+    : info:Info.t
+    -> ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
     -> uctx:UState.t
     -> ?hook_data:DeclareDef.Hook.t * UState.t * (Names.Id.t * Constr.t) list
     (* Only for the first constant, introduced by compat *)
     -> ubind:UnivNames.universe_binders
     -> name:Id.t
-    -> t
+    -> Evd.side_effects Declare.proof_entry
     -> Names.GlobRef.t list
 
 end = struct
@@ -293,6 +286,10 @@ end = struct
   let declare_variable ~info ~uctx ~ubind ~name pe =
     declare_mutdef ~uctx ~ubind ~name { entry = NoBody pe; info }
 
+  let declare_mutdef ~info ?fix_exn ~uctx ?hook_data ~ubind ~name const =
+    let mutpe = adjust_guardness_conditions ~info const in
+    declare_mutdef ?fix_exn ~uctx ?hook_data ~ubind ~name mutpe
+
 end
 
 (************************************************************************)
@@ -361,9 +358,8 @@ let finish_proved idopt po info =
     let () = try
       let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
       let ubind = UState.universe_binders uctx in
-      let mutpe = MutualEntry.adjust_guardness_conditions ~info const in
       let _r : Names.GlobRef.t list =
-        MutualEntry.declare_mutdef ~fix_exn ~uctx ?hook_data ~ubind ~name mutpe
+        MutualEntry.declare_mutdef ~info ~fix_exn ~uctx ?hook_data ~ubind ~name const
       in ()
     with e when CErrors.noncritical e ->
       let e = Exninfo.capture e in
