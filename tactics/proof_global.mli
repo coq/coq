@@ -33,8 +33,6 @@ type proof_object =
   (** list of the proof terms (in a form suitable for definitions). *)
   ; uctx: UState.t
   (** universe state *)
-  ; udecl : UState.universe_decl
-  (** universe declaration *)
   }
 
 type opacity_flag = Opaque | Transparent

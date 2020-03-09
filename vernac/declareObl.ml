@@ -464,9 +464,8 @@ let declare_mutual_definition l =
       ~restrict_ucontext:false fixitems
   in
   (* Only for the first constant *)
-  let fix_exn = Hook.get get_fix_exn () in
   let dref = List.hd kns in
-  DeclareDef.Hook.(call ?hook:first.prg_hook ~fix_exn { S.uctx = first.prg_ctx; obls; scope; dref });
+  DeclareDef.Hook.(call ?hook:first.prg_hook { S.uctx = first.prg_ctx; obls; scope; dref });
   List.iter progmap_remove l;
   dref
 

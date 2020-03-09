@@ -199,7 +199,7 @@ let build_functional_principle ?(opaque=Proof_global.Transparent) (evd:Evd.evar_
   (*    end; *)
 
   let open Proof_global in
-  let { name; entries } = Lemmas.pf_fold (close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x)) lemma in
+  let { entries } = Lemmas.pf_fold (close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x)) lemma in
   match entries with
   | [entry] ->
     entry, hook

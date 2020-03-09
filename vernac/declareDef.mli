@@ -36,7 +36,7 @@ module Hook : sig
   end
 
   val make : (S.t -> unit) -> t
-  val call : ?hook:t -> ?fix_exn:Future.fix_exn -> S.t -> unit
+  val call : ?hook:t -> S.t -> unit
 end
 
 val declare_definition

@@ -34,17 +34,12 @@ module Hook = struct
 
   let make hook = CEphemeron.create hook
 
-  let call ?hook ?fix_exn x =
-    try Option.iter (fun hook -> CEphemeron.get hook x) hook
-    with e when CErrors.noncritical e ->
-      let e = Exninfo.capture e in
-      let e = Option.cata (fun fix -> fix e) e fix_exn in
-      Exninfo.iraise e
+  let call ?hook x = Option.iter (fun hook -> CEphemeron.get hook x) hook
+
 end
 
 (* Locality stuff *)
 let declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs ce =
-  let fix_exn = Declare.Internal.get_fix_exn ce in
   let should_suggest = ce.Declare.proof_entry_opaque &&
                        Option.is_empty ce.Declare.proof_entry_secctx in
   let dref = match scope with
@@ -65,9 +60,16 @@ let declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs ce =
     match hook_data with
     | None -> ()
     | Some (hook, uctx, obls) ->
-      Hook.call ~fix_exn ~hook { Hook.S.uctx; obls; scope; dref }
+      Hook.call ~hook { Hook.S.uctx; obls; scope; dref }
   end;
   dref
+
+let declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs ce =
+  let fix_exn = Declare.Internal.get_fix_exn ce in
+  try declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs ce
+  with exn ->
+    let exn = Exninfo.capture exn in
+    Exninfo.iraise (fix_exn exn)
 
 let mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes =
   match possible_indexes with
@@ -127,7 +129,7 @@ let warn_let_as_axiom =
     Pp.(fun id -> strbrk "Let definition" ++ spc () ++ Names.Id.print id ++
                   spc () ++ strbrk "declared as an axiom.")
 
-let declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe =
+let declare_assumption ~name ~scope ~hook ~impargs ~uctx pe =
   let local = match scope with
     | Discharge -> warn_let_as_axiom name; Declare.ImportNeedQualified
     | Global local -> local
@@ -139,8 +141,15 @@ let declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe =
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
   let () = Declare.assumption_message name in
   let () = DeclareUniv.declare_univ_binders dref (UState.universe_binders uctx) in
-  let () = Hook.(call ?fix_exn ?hook { S.uctx; obls = []; scope; dref}) in
+  let () = Hook.(call ?hook { S.uctx; obls = []; scope; dref}) in
   dref
+
+let declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe =
+  try declare_assumption ~name ~scope ~hook ~impargs ~uctx pe
+  with exn ->
+    let exn = Exninfo.capture exn in
+    let exn = Option.cata (fun fix -> fix exn) exn fix_exn in
+    Exninfo.iraise exn
 
 (* Preparing proof entries *)
 

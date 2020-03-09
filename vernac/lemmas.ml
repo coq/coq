@@ -191,20 +191,13 @@ module MutualEntry : sig
   val declare_variable
     : info:Info.t
     -> uctx:UState.t
-    (* Only for the first constant, introduced by compat *)
-    -> ubind:UnivNames.universe_binders
-    -> name:Id.t
     -> Entries.parameter_entry
     -> Names.GlobRef.t list
 
   val declare_mutdef
     (* Common to all recthms *)
     : info:Info.t
-    -> ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
     -> uctx:UState.t
-    -> ?hook_data:DeclareDef.Hook.t * UState.t * (Names.Id.t * Constr.t) list
-    (* [ubind] is only for the first constant, introduced by compat *)
-    -> ubind:UnivNames.universe_binders
     -> Evd.side_effects Declare.proof_entry
     -> Names.GlobRef.t list
 
@@ -258,7 +251,7 @@ end = struct
         Pp.(str "Not a proof by induction: " ++
             Termops.Internal.debug_print_constr (EConstr.of_constr t) ++ str ".")
 
-  let declare_mutdef ?fix_exn ~uctx ?hook_data ~ubind ~name ?typ ~impargs ~info mutpe i =
+  let declare_mutdef ?fix_exn ~uctx ?hook_data ~name ?typ ~impargs ~info mutpe i =
     let { Info.hook; compute_guard; scope; kind; _ } = info in
     match mutpe with
     | NoBody pe ->
@@ -266,43 +259,44 @@ end = struct
     | Single pe ->
       (* We'd like to do [assert (i = 0)] here, however this codepath
          is used when declaring mutual cofixpoints *)
+      let ubind = UState.universe_binders uctx in
+      let hook_data = Option.map (fun hook -> hook, uctx, []) info.Info.hook in
       DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
     | Mutual pe ->
-      (* if typ = None , we don't touch the type; this is for compat
+      (* if i = 0 , we don't touch the type; this is for compat
          but not clear it is the right thing to do *)
+      (* See start_dependent_proof ~typ:mkProp to understand why
+         we don't we use the type stored here. This is obviously a
+         fixme [was like this for long time]
+      *)
       let pe =
         match typ with
         | None -> pe
         | Some typ ->
-          Declare.Internal.map_entry_type pe ~f:(fun _ -> Some typ)
+          if i > 0
+          then Declare.Internal.map_entry_type pe ~f:(fun _ -> Some typ)
+          else pe
       in
+      let hook_data = Option.map (fun hook -> hook, uctx, []) info.Info.hook in
+      let ubind = if i = 0 then UState.universe_binders uctx else UnivNames.empty_binders in
       let pe = Declare.Internal.map_entry_body pe
           ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff) in
       DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
 
-  let declare_mutdef ?fix_exn ~uctx ?hook_data ~ubind { entry; info } =
+  let declare_mutdef ?fix_exn ~uctx { entry; info } =
     let rs =
       List.map_i (
         fun i { DeclareDef.Recthm.name; typ; impargs } ->
-          (* See start_dependent_proof ~typ:mkProp to understand why
-             we don't we use the type stored here. This is obviously a
-             fixme [was like this for long time]
-
-             Regarding ubind, before we used to do this too, check if
-             that's the right thing to do *)
-          let typ, ubind = if i = 0
-            then None, ubind
-            else Some typ, UnivNames.empty_binders in
-          declare_mutdef ?fix_exn ~name ~info ~ubind ?hook_data ~uctx ?typ ~impargs entry i)
+          declare_mutdef ?fix_exn ~name ~info ~uctx ~typ ~impargs entry i)
         0 info.Info.thms
     in rs
 
-  let declare_variable ~info ~uctx ~ubind ~name pe =
-    declare_mutdef ~uctx ~ubind { entry = NoBody pe; info }
+  let declare_variable ~info ~uctx pe =
+    declare_mutdef ~uctx { entry = NoBody pe; info }
 
-  let declare_mutdef ~info ?fix_exn ~uctx ?hook_data ~ubind const =
+  let declare_mutdef ~info ~uctx const =
     let mutpe = adjust_guardness_conditions ~info const in
-    declare_mutdef ?fix_exn ~uctx ?hook_data ~ubind mutpe
+    declare_mutdef ~uctx mutpe
 
 end
 
@@ -330,14 +324,13 @@ let compute_proof_using_for_admitted proof typ pproofs =
       Some (Environ.really_needed env (Id.Set.union ids_typ ids_def))
     | _ -> None
 
-let finish_admitted ~name ~info ~uctx pe =
-  let ubind = UnivNames.empty_binders in
-  let _r : Names.GlobRef.t list = MutualEntry.declare_variable ~info ~uctx ~ubind ~name pe in
+let finish_admitted ~info ~uctx pe =
+  let _r : Names.GlobRef.t list = MutualEntry.declare_variable ~info ~uctx pe in
   ()
 
 let save_lemma_admitted ~(lemma : t) : unit =
   let udecl = Proof_global.get_universe_decl lemma.proof in
-  let Proof.{ name; poly; entry } = Proof.data (Proof_global.get_proof lemma.proof) in
+  let Proof.{ poly; entry } = Proof.data (Proof_global.get_proof lemma.proof) in
   let typ = match Proofview.initial_goals entry with
     | [typ] -> snd typ
     | _ -> CErrors.anomaly ~label:"Lemmas.save_lemma_admitted" (Pp.str "more than one statement.")
@@ -348,7 +341,7 @@ let save_lemma_admitted ~(lemma : t) : unit =
   let sec_vars = compute_proof_using_for_admitted lemma.proof typ pproofs in
   let universes = Proof_global.get_initial_euctx lemma.proof in
   let ctx = UState.check_univ_decl ~poly universes udecl in
-  finish_admitted ~name ~info:lemma.info ~uctx:universes (sec_vars, (typ, ctx), None)
+  finish_admitted ~info:lemma.info ~uctx:universes (sec_vars, (typ, ctx), None)
 
 (************************************************************************)
 (* Saving a lemma-like constant                                         *)
@@ -356,20 +349,10 @@ let save_lemma_admitted ~(lemma : t) : unit =
 
 let finish_proved po info =
   let open Proof_global in
-  let { Info.hook } = info in
   match po with
-  | { name; entries=[const]; uctx; udecl } ->
-    let fix_exn = Declare.Internal.get_fix_exn const in
-    let () = try
-      let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
-      let ubind = UState.universe_binders uctx in
-      let _r : Names.GlobRef.t list =
-        MutualEntry.declare_mutdef ~info ~fix_exn ~uctx ?hook_data ~ubind const
-      in ()
-    with e when CErrors.noncritical e ->
-      let e = Exninfo.capture e in
-      Exninfo.iraise (fix_exn e)
-    in ()
+  | { entries=[const]; uctx } ->
+    let _r : Names.GlobRef.t list = MutualEntry.declare_mutdef ~info ~uctx const in
+    ()
   | _ ->
     CErrors.anomaly ~label:"finish_proved" Pp.(str "close_proof returned more than one proof term")
 
@@ -467,7 +450,7 @@ let save_lemma_proved ~lemma ~opaque ~idopt =
 (***********************************************************************)
 let save_lemma_admitted_delayed ~proof ~info =
   let open Proof_global in
-  let { name; entries; uctx; udecl } = proof in
+  let { entries; uctx } = proof in
   if List.length entries <> 1 then
     CErrors.user_err Pp.(str "Admitted does not support multiple statements");
   let { Declare.proof_entry_secctx; proof_entry_type; proof_entry_universes } = List.hd entries in
@@ -479,7 +462,7 @@ let save_lemma_admitted_delayed ~proof ~info =
     | Some typ -> typ in
   let ctx = UState.univ_entry ~poly uctx in
   let sec_vars = if get_keep_admitted_vars () then proof_entry_secctx else None in
-  finish_admitted ~name ~uctx ~info (sec_vars, (typ, ctx), None)
+  finish_admitted ~uctx ~info (sec_vars, (typ, ctx), None)
 
 let save_lemma_proved_delayed ~proof ~info ~idopt =
   (* vio2vo calls this but with invalid info, we have to workaround
