@@ -67,6 +67,7 @@ val declare_mutually_recursive
   -> scope:locality
   -> kind:Decls.logical_kind
   -> ubind:UnivNames.universe_binders
+  -> ntns:Vernacexpr.decl_notation list
   -> Names.variable list
   -> Constr.constr list
   -> Constr.types list

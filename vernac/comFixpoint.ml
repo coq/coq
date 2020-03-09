@@ -282,10 +282,9 @@ let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixt
   let univs = Evd.check_univ_decl ~poly evd pl in
   let ubind = Evd.universe_binders evd in
   let _ : GlobRef.t list =
-    DeclareDef.declare_mutually_recursive ~indexes ~cofix ~scope ~opaque:false ~univs ~kind:fix_kind ~ubind
+    DeclareDef.declare_mutually_recursive ~indexes ~cofix ~scope ~opaque:false ~univs ~kind:fix_kind ~ubind ~ntns
       fixnames fixdecls fixtypes fiximps
   in
-  List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
   ()
 
 let extract_decreasing_argument ~structonly { CAst.v = v; _ } =
