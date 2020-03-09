@@ -255,24 +255,20 @@ let declare_fixpoint_interactive_generic ?indexes ~scope ~poly ((fixnames,_fixrs
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
   lemma
 
-let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixtypes),pl,ctx,fiximps) ntns =
-  let possible_indexes, cofix, fix_kind =
+let declare_fixpoint_generic ?indexes ~scope ~poly ((fixnames,fixrs,fixdefs,fixtypes),udecl,uctx,fiximps) ntns =
+  let possible_indexes, fix_kind =
     match indexes with
-    | Some indexes -> Some indexes, false, Decls.(IsDefinition Fixpoint)
-    | None -> None, true, Decls.(IsDefinition CoFixpoint)
+    | Some indexes -> Some indexes, Decls.(IsDefinition Fixpoint)
+    | None -> None, Decls.(IsDefinition CoFixpoint)
   in
   (* We shortcut the proof process *)
   let fixdefs = List.map Option.get fixdefs in
   let rec_declaration = prepare_recursive_declaration fixnames fixrs fixtypes fixdefs in
-  let vars, fixdecls, indexes = DeclareDef.mutual_make_bodies ~fixnames ~rec_declaration ~possible_indexes in
   let fiximps = List.map (fun (n,r,p) -> r) fiximps in
-  let evd = Evd.from_ctx ctx in
-  let evd = Evd.restrict_universe_context evd vars in
-  let univs = Evd.check_univ_decl ~poly evd pl in
-  let ubind = Evd.universe_binders evd in
   let _ : GlobRef.t list =
-    DeclareDef.declare_mutually_recursive ~indexes ~cofix ~scope ~opaque:false ~univs ~kind:fix_kind ~ubind ~ntns
-      fixnames fixdecls fixtypes fiximps
+    DeclareDef.declare_mutually_recursive ~scope ~opaque:false ~kind:fix_kind ~poly ~uctx
+      ~possible_indexes ~restrict_ucontext:true ~udecl ~ntns ~rec_declaration
+      fixnames fixtypes fiximps
   in
   ()
 

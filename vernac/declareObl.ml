@@ -450,15 +450,13 @@ let declare_mutual_definition l =
   in
   (* In the future we will pack all this in a proper record *)
   let poly, scope, ntns, opaque, fixnames = first.prg_poly, first.prg_scope, first.prg_notations, first.prg_opaque, first.prg_deps in
-  let kind, cofix = if fixkind != IsCoFixpoint then Decls.(IsDefinition Fixpoint, false) else Decls.(IsDefinition CoFixpoint, true) in
-  let univs = UState.univ_entry ~poly first.prg_ctx in
-  let ubind = UnivNames.empty_binders in
-  (* XXX: Note that obligations doesn't call restrict_universe_context *)
-  let _vars, fixdecls, indexes = DeclareDef.mutual_make_bodies ~fixnames ~rec_declaration ~possible_indexes in
+  let kind = if fixkind != IsCoFixpoint then Decls.(IsDefinition Fixpoint) else Decls.(IsDefinition CoFixpoint) in
   (* Declare the recursive definitions *)
+  let udecl = UState.default_univ_decl in
   let kns =
-    DeclareDef.declare_mutually_recursive ~cofix ~indexes ~scope ~opaque ~univs ~kind ~ubind ~ntns
-      fixnames fixdecls fixtypes fiximps
+    DeclareDef.declare_mutually_recursive ~scope ~opaque ~kind
+      ~udecl ~ntns ~uctx:first.prg_ctx ~rec_declaration ~possible_indexes
+      ~poly ~restrict_ucontext:false fixnames fixtypes fiximps
   in
   (* Only for the first constant *)
   let fix_exn = Hook.get get_fix_exn () in

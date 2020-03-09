@@ -59,25 +59,18 @@ val declare_assumption
   -> Entries.parameter_entry
   -> GlobRef.t
 
-(* Returns [uvars, bodies, indexes], [possible_indexes] determines if
-   we are in a fix / cofix case *)
-val mutual_make_bodies
-  : fixnames:'a list
-  -> rec_declaration:Constr.rec_declaration
-  -> possible_indexes:int list list option
-  -> Univ.LSet.t * Constr.constr list * int array option
-
 val declare_mutually_recursive
-  : cofix:bool
-  -> indexes:int array option
-  -> opaque:bool
-  -> univs:Entries.universes_entry
+  : opaque:bool
   -> scope:locality
   -> kind:Decls.logical_kind
-  -> ubind:UnivNames.universe_binders
+  -> poly:bool
+  -> uctx:UState.t
+  -> udecl:UState.universe_decl
   -> ntns:Vernacexpr.decl_notation list
+  -> rec_declaration:Constr.rec_declaration
+  -> possible_indexes:int list list option
+  -> restrict_ucontext:bool
   -> Names.variable list
-  -> Constr.constr list
   -> Constr.types list
   -> Impargs.manual_implicits list
   -> Names.GlobRef.t list

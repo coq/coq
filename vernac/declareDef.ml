@@ -82,14 +82,29 @@ let mutual_make_bodies ~fixnames ~rec_declaration ~possible_indexes =
     let vars = Vars.universes_of_constr (List.hd fixdecls) in
     vars, fixdecls, None
 
-let declare_mutually_recursive ~cofix ~indexes ~opaque ~univs ~scope ~kind ~ubind ~ntns fixnames fixdecls fixtypes fiximps =
+let declare_mutually_recursive ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~rec_declaration ~possible_indexes ~restrict_ucontext fixnames fixtypes fiximps =
+  let vars, fixdecls, indexes =
+    mutual_make_bodies ~fixnames ~rec_declaration ~possible_indexes in
+  let ubind, univs =
+    (* XXX: Note that obligations don't do this, is that a bug? *)
+    if restrict_ucontext
+    then
+      let evd = Evd.from_ctx uctx in
+      let evd = Evd.restrict_universe_context evd vars in
+      let univs = Evd.check_univ_decl ~poly evd udecl in
+      Evd.universe_binders evd, univs
+    else
+      let univs = UState.univ_entry ~poly uctx in
+      UnivNames.empty_binders, univs
+  in
   let csts = CList.map4
       (fun name body types impargs ->
          let ce = Declare.definition_entry ~opaque ~types ~univs body in
          declare_definition ~name ~scope ~kind ~ubind ~impargs ce)
       fixnames fixdecls fixtypes fiximps
   in
-  Declare.recursive_message (not cofix) indexes fixnames;
+  let isfix = Option.is_empty possible_indexes in
+  Declare.recursive_message isfix indexes fixnames;
   List.iter (Metasyntax.add_notation_interpretation (Global.env())) ntns;
   csts
 
