@@ -159,6 +159,8 @@ Inductive le (n:nat) : nat -> Prop :=
 
 where "n <= m" := (le n m) : nat_scope.
 
+Register le_n as num.nat.le_n.
+
 Hint Constructors le: core.
 (*i equivalent to : "Hints Resolve le_n le_S : core." i*)
 

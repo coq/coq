@@ -34,6 +34,8 @@ Proof.
   intros a. apply (H (S (f a))). auto with arith.
 Defined.
 
+Register well_founded_ltof as num.nat.well_founded_ltof.
+
 Theorem well_founded_gtof : well_founded gtof.
 Proof.
   exact well_founded_ltof.

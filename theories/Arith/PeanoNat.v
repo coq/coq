@@ -764,6 +764,9 @@ Infix "mod" := Nat.modulo (at level 40, no associativity) : nat_scope.
 Hint Unfold Nat.le : core.
 Hint Unfold Nat.lt : core.
 
+Register Nat.le_trans as num.nat.le_trans.
+Register Nat.nlt_0_r as num.nat.nlt_0_r.
+
 (** [Nat] contains an [order] tactic for natural numbers *)
 
 (** Note that [Nat.order] is domain-agnostic: it will not prove
