@@ -1303,12 +1303,7 @@ let start_library dir senv =
     required = senv.required }
 
 let export ?except ~output_native_objects senv dir =
-  let senv =
-    try join_safe_environment ?except senv
-    with e ->
-      let e = Exninfo.capture e in
-      CErrors.user_err ~hdr:"export" (CErrors.iprint e)
-  in
+  let senv = join_safe_environment ?except senv in
   assert(senv.future_cst = []);
   let () = check_current_library dir senv in
   let mp = senv.modpath in

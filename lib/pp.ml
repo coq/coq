@@ -201,11 +201,7 @@ let pp_with ft pp =
                                  pp_cmd s;
                                  pp_close_tag ft () [@warning "-3"]
   in
-  try pp_cmd pp
-  with reraise ->
-    let reraise = Exninfo.capture reraise in
-    let () = Format.pp_print_flush ft () in
-    Exninfo.iraise reraise
+  pp_cmd pp
 
 (* If mixing some output and a goal display, please use msg_warning,
    so that interfaces (proofgeneral for example) can easily dispatch

@@ -120,18 +120,14 @@ let build_constant_by_tactic ~name ?(opaque=Proof_global.Transparent) ctx sign ~
   let evd = Evd.from_ctx ctx in
   let goals = [ (Global.env_of_context sign , typ) ] in
   let pf = Proof_global.start_proof ~name ~poly ~udecl:UState.default_univ_decl evd goals in
-  try
-    let pf, status = by tac pf in
-    let open Proof_global in
-    let { entries; universes } = close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) pf in
-    match entries with
-    | [entry] ->
-      entry, status, universes
-    | _ ->
-      CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
-  with reraise ->
-    let reraise = Exninfo.capture reraise in
-    Exninfo.iraise reraise
+  let pf, status = by tac pf in
+  let open Proof_global in
+  let { entries; universes } = close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) pf in
+  match entries with
+  | [entry] ->
+    entry, status, universes
+  | _ ->
+    CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
 
 let build_by_tactic ?(side_eff=true) env sigma ~poly typ tac =
   let name = Id.of_string ("temporary_proof"^string_of_int (next())) in

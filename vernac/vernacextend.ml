@@ -92,28 +92,18 @@ let warn_deprecated_command =
 (* Interpretation of a vernac command *)
 
 let type_vernac opn converted_args ~atts =
-  let phase = ref "Looking up command" in
-  try
-    let depr, callback = vinterp_map opn in
-    let () = if depr then
+  let depr, callback = vinterp_map opn in
+  let () = if depr then
       let rules = Egramml.get_extend_vernac_rule opn in
       let pr_gram = function
-      | Egramml.GramTerminal s -> str s
-      | Egramml.GramNonTerminal _ -> str "_"
+        | Egramml.GramTerminal s -> str s
+        | Egramml.GramNonTerminal _ -> str "_"
       in
       let pr = pr_sequence pr_gram rules in
       warn_deprecated_command pr;
-    in
-    phase := "Checking arguments";
-    let hunk = callback converted_args in
-    phase := "Executing command";
-    hunk ~atts
-  with
-  | reraise ->
-    let reraise = Exninfo.capture reraise in
-    if !Flags.debug then
-      Feedback.msg_debug (str"Vernac Interpreter " ++ str !phase);
-    Exninfo.iraise reraise
+  in
+  let hunk = callback converted_args in
+  hunk ~atts
 
 (** VERNAC EXTEND registering *)
 

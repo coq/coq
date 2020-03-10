@@ -18,12 +18,9 @@ module Parser = struct
 
   let parse ps entry pa =
     Pcoq.unfreeze ps;
-    Flags.with_option Flags.we_are_parsing (fun () ->
-      try Pcoq.Entry.parse entry pa
-      with e when CErrors.noncritical e ->
-        let (e, info) = Exninfo.capture e in
-        Exninfo.iraise (e, info))
-    ()
+    Flags.with_option Flags.we_are_parsing
+      (fun () -> Pcoq.Entry.parse entry pa)
+      ()
 
 end
 
