@@ -1,12 +1,13 @@
 # Grammar extraction tool for documentation
 
-`doc_grammar` extracts Coq's grammar from `.mlg` files, edits it and inserts it in
-chunks into `.rst` files.  The tool currently inserts Sphinx
-`productionlist` constructs.  It also generates a file with `prodn` constructs
-for the entire grammar, but updates to `tacn` and `cmd` constructs must be done
-manually since the grammar doesn't have names for them as it does for
-nonterminals.  There is an option to report which `tacn` and `cmd` were not
-found in the `.rst` files.  `tacv` and `cmdv` constructs are not processed at all.
+`doc_grammar` extracts Coq's grammar from `.mlg` files, edits it and
+inserts it in chunks into `.rst` files.  The tool currently inserts
+Sphinx `productionlist` and `prodn` constructs (`productionlist` are
+gradually being replaced by `prodn` in the manual).  Updates to `tacn`
+and `cmd` constructs must be done manually since the grammar doesn't
+have names for them as it does for nonterminals.  There is an option
+to report which `tacn` and `cmd` were not found in the `.rst` files.
+`tacv` and `cmdv` constructs are not processed at all.
 
 The mlg grammars present several challenges to generating an accurate grammar
 for documentation purposes:

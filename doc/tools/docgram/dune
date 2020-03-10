@@ -1,0 +1,30 @@
+(executable
+ (name doc_grammar)
+ (libraries coq.clib coqpp))
+
+(env (_ (binaries doc_grammar.exe)))
+
+(rule
+ (targets fullGrammar)
+ (deps
+  ; Main grammar
+  (glob_files %{project_root}/parsing/*.mlg)
+  (glob_files %{project_root}/toplevel/*.mlg)
+  (glob_files %{project_root}/vernac/*.mlg)
+  ; All plugins except SSReflect for now (mimicking what is done in Makefile.doc)
+  (glob_files %{project_root}/plugins/btauto/*.mlg)
+  (glob_files %{project_root}/plugins/cc/*.mlg)
+  (glob_files %{project_root}/plugins/derive/*.mlg)
+  (glob_files %{project_root}/plugins/extraction/*.mlg)
+  (glob_files %{project_root}/plugins/firstorder/*.mlg)
+  (glob_files %{project_root}/plugins/funind/*.mlg)
+  (glob_files %{project_root}/plugins/ltac/*.mlg)
+  (glob_files %{project_root}/plugins/micromega/*.mlg)
+  (glob_files %{project_root}/plugins/nsatz/*.mlg)
+  (glob_files %{project_root}/plugins/omega/*.mlg)
+  (glob_files %{project_root}/plugins/rtauto/*.mlg)
+  (glob_files %{project_root}/plugins/setoid_ring/*.mlg)
+  (glob_files %{project_root}/plugins/syntax/*.mlg))
+ (action
+  (chdir %{project_root} (run doc_grammar -short -no-warn %{deps})))
+ (mode promote))
