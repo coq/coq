@@ -30,8 +30,11 @@ type engagement = set_predicativity
 *)
 
 type template_arity = {
-  template_param_levels : Univ.Level.t option list;
   template_level : Univ.Universe.t;
+}
+
+type template_universes = {
+  template_param_levels : Univ.Level.t option list;
   template_context : Univ.ContextSet.t;
 }
 
@@ -217,6 +220,8 @@ type mutual_inductive_body = {
     mind_params_ctxt : Constr.rel_context;  (** The context of parameters (includes let-in declaration) *)
 
     mind_universes : universes; (** Information about monomorphic/polymorphic/cumulative inductives and their universes *)
+
+    mind_template : template_universes option;
 
     mind_variance : Univ.Variance.t array option; (** Variance info, [None] when non-cumulative. *)
 

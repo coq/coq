@@ -78,9 +78,9 @@ let get_polymorphic_positions env sigma f =
   match EConstr.kind sigma f with
   | Ind (ind, u) | Construct ((ind, _), u) ->
     let mib,oib = Inductive.lookup_mind_specif env ind in
-      (match oib.mind_arity with
-      | RegularArity _ -> assert false
-      | TemplateArity templ -> templ.template_param_levels)
+      (match mib.mind_template with
+      | None -> assert false
+      | Some templ -> templ.template_param_levels)
   | _ -> assert false
 
 let refresh_universes ?(status=univ_rigid) ?(onlyalg=false) ?(refreshset=false)

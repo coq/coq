@@ -29,6 +29,7 @@ val typecheck_inductive : env -> sec_univs:Univ.Level.t array option
   -> mutual_inductive_entry
   -> env
   * universes
+  * template_universes option
   * Univ.Variance.t array option
   * Names.Id.t array option option
   * Constr.rel_context
@@ -44,4 +45,4 @@ val template_polymorphic_univs :
   Univ.ContextSet.t ->
   Constr.rel_context ->
   Univ.Universe.t ->
-  Univ.Level.t option list * Univ.LSet.t
+  (Univ.LSet.t * Univ.Level.t option list) option

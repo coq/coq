@@ -37,7 +37,6 @@ then, in i{^ th} block, [mind_entry_params] is [xn:Xn;...;x1:X1];
 type one_inductive_entry = {
   mind_entry_typename : Id.t;
   mind_entry_arity : constr;
-  mind_entry_template : bool; (* Use template polymorphism *)
   mind_entry_consnames : Id.t list;
   mind_entry_lc : constr list }
 
@@ -50,6 +49,7 @@ type mutual_inductive_entry = {
   mind_entry_params : Constr.rel_context;
   mind_entry_inds : one_inductive_entry list;
   mind_entry_universes : universes_entry;
+  mind_entry_template : bool; (* Use template polymorphism *)
   mind_entry_cumulative : bool;
   (* universe constraints and the constraints for subtyping of
      inductive types in the block. *)

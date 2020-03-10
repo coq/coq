@@ -101,10 +101,10 @@ let check_indices_matter env_params info indices =
   else check_context_univs ~ctor:false env_params info indices
 
 (* env_ar contains the inductives before the current ones in the block, and no parameters *)
-let check_arity env_params env_ar ind =
+let check_arity ~template env_params env_ar ind =
   let {utj_val=arity;utj_type=_} = Typeops.infer_type env_params ind.mind_entry_arity in
   let indices, ind_sort = Reduction.dest_arity env_params arity in
-  let ind_min_univ = if ind.mind_entry_template then Some Universe.type0m else None in
+  let ind_min_univ = if template then Some Universe.type0m else None in
   let univ_info = {
     ind_squashed=false;
     ind_has_relevant_arg=false;
@@ -200,28 +200,88 @@ let unbounded_from_below u cstrs =
 let template_polymorphic_univs ~ctor_levels uctx paramsctxt concl =
   let check_level l =
     Univ.LSet.mem l (Univ.ContextSet.levels uctx) &&
+    (let () = assert (not @@ Univ.Level.is_small l) in true) &&
     unbounded_from_below l (Univ.ContextSet.constraints uctx) &&
     not (Univ.LSet.mem l ctor_levels)
   in
   let univs = Univ.Universe.levels concl in
-  let univs =
-    Univ.LSet.filter (fun l -> check_level l || Univ.Level.is_prop l) univs
-  in
+  let univs = Univ.LSet.filter (fun l -> check_level l) univs in
   let fold acc = function
     | (LocalAssum (_, p)) ->
       (let c = Term.strip_prod_assum p in
       match kind c with
         | Sort (Type u) ->
             (match Univ.Universe.level u with
-             | Some l -> if Univ.LSet.mem l univs && not (Univ.Level.is_prop l) then Some l else None
+             | Some l -> if Univ.LSet.mem l univs then Some l else None
              | None -> None)
         | _ -> None) :: acc
     | LocalDef _ -> acc
   in
   let params = List.fold_left fold [] paramsctxt in
-  params, univs
+  if Universe.is_type0m concl then Some (univs, params)
+  else if not @@ Univ.LSet.is_empty univs then Some (univs, params)
+  else None
 
-let abstract_packets univs usubst params ((arity,lc),(indices,splayed_lc),univ_info) =
+let get_param_levels ctx params arity splayed_lc =
+  let min_univ = match arity with
+  | RegularArity _ ->
+    CErrors.user_err
+      Pp.(strbrk "Ill-formed template mutual inductive declaration: all types must be template.")
+  | TemplateArity ar -> ar.template_level
+  in
+  let ctor_levels =
+    let add_levels c levels = Univ.LSet.union levels (Vars.universes_of_constr c) in
+    let param_levels =
+      List.fold_left (fun levels d -> match d with
+          | LocalAssum _ -> levels
+          | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
+        Univ.LSet.empty params
+    in
+    Array.fold_left
+      (fun levels (d,c) ->
+          let levels =
+            List.fold_left (fun levels d ->
+                Context.Rel.Declaration.fold_constr add_levels d levels)
+              levels d
+          in
+          add_levels c levels)
+      param_levels
+      splayed_lc
+  in
+  match template_polymorphic_univs ~ctor_levels ctx params min_univ with
+  | None ->
+    CErrors.user_err
+      Pp.(strbrk "Ill-formed template inductive declaration: not polymorphic on any universe.")
+  | Some (_, param_levels) ->
+    param_levels
+
+let get_template univs params data =
+  let ctx = match univs with
+      | Monomorphic ctx -> ctx
+      | Polymorphic _ ->
+        CErrors.anomaly ~label:"polymorphic_template_ind"
+          Pp.(strbrk "Template polymorphism and full polymorphism are incompatible.") in
+  (* For each type in the block, compute potential template parameters *)
+  let params = List.map (fun ((arity, _), (_, splayed_lc), _) -> get_param_levels ctx params arity splayed_lc) data in
+  (* Pick the lower bound of template parameters. Note that in particular, if
+     one of the the inductive types from the block is Prop-valued, then no
+     parameters are template. *)
+  let fold min params =
+    let map u v = match u, v with
+    | (None, _) | (_, None) -> None
+    | Some u, Some v ->
+      let () = assert (Univ.Level.equal u v) in
+      Some u
+    in
+    List.map2 map min params
+  in
+  let params = match params with
+  | [] -> assert false
+  | hd :: rem -> List.fold_left fold hd rem
+  in
+  { template_param_levels = params; template_context = ctx }
+
+let abstract_packets usubst ((arity,lc),(indices,splayed_lc),univ_info) =
   if not (Universe.Set.is_empty univ_info.missing)
   then raise (InductiveError (MissingConstraints (univ_info.missing,univ_info.ind_univ)));
   let arity = Vars.subst_univs_level_constr usubst arity in
@@ -237,40 +297,7 @@ let abstract_packets univs usubst params ((arity,lc),(indices,splayed_lc),univ_i
 
   let arity = match univ_info.ind_min_univ with
     | None -> RegularArity {mind_user_arity = arity; mind_sort = Sorts.sort_of_univ ind_univ}
-    | Some min_univ ->
-      let ctx = match univs with
-          | Monomorphic ctx -> ctx
-          | Polymorphic _ ->
-            CErrors.anomaly ~label:"polymorphic_template_ind"
-              Pp.(strbrk "Template polymorphism and full polymorphism are incompatible.") in
-      let ctor_levels =
-        let add_levels c levels = Univ.LSet.union levels (Vars.universes_of_constr c) in
-        let param_levels =
-          List.fold_left (fun levels d -> match d with
-              | LocalAssum _ -> levels
-              | LocalDef (_,b,t) -> add_levels b (add_levels t levels))
-            Univ.LSet.empty params
-        in
-        Array.fold_left
-          (fun levels (d,c) ->
-             let levels =
-               List.fold_left (fun levels d ->
-                   Context.Rel.Declaration.fold_constr add_levels d levels)
-                 levels d
-             in
-             add_levels c levels)
-          param_levels
-          splayed_lc
-      in
-      let param_levels, concl_levels =
-        template_polymorphic_univs ~ctor_levels ctx params min_univ
-      in
-      if List.for_all (fun x -> Option.is_empty x) param_levels
-         && Univ.LSet.is_empty concl_levels then
-        CErrors.user_err
-          Pp.(strbrk "Ill-formed template inductive declaration: not polymorphic on any universe.")
-      else
-        TemplateArity {template_param_levels = param_levels; template_level = min_univ; template_context = ctx }
+    | Some min_univ -> TemplateArity { template_level = min_univ; }
   in
 
   let kelim = allowed_sorts univ_info in
@@ -285,7 +312,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   mind_check_names mie;
   assert (List.is_empty (Environ.rel_context env));
 
-  let has_template_poly = List.exists (fun oie -> oie.mind_entry_template) mie.mind_entry_inds in
+  let has_template_poly = mie.mind_entry_template in
 
   (* universes *)
   let env_univs =
@@ -306,7 +333,7 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   let env_params, params = Typeops.check_context env_univs mie.mind_entry_params in
 
   (* Arities *)
-  let env_ar, data = List.fold_left_map (check_arity env_params) env_univs mie.mind_entry_inds in
+  let env_ar, data = List.fold_left_map (check_arity ~template:has_template_poly env_params) env_univs mie.mind_entry_inds in
   let env_ar_par = push_rel_context params env_ar in
 
   (* Constructors *)
@@ -352,7 +379,14 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
   (* Abstract universes *)
   let usubst, univs = Declareops.abstract_universes mie.mind_entry_universes in
   let params = Vars.subst_univs_level_context usubst params in
-  let data = List.map (abstract_packets univs usubst params) data in
+  let data = List.map (abstract_packets usubst) data in
+  let template =
+    let check ((arity, _), _, _) = match arity with
+    | TemplateArity _ -> true
+    | RegularArity _ -> false
+    in
+    if List.exists check data then Some (get_template univs params data) else None
+  in
 
   let env_ar_par =
     let ctx = Environ.rel_context env_ar_par in
@@ -361,4 +395,4 @@ let typecheck_inductive env ~sec_univs (mie:mutual_inductive_entry) =
     Environ.push_rel_context ctx env
   in
 
-  env_ar_par, univs, variance, record, params, Array.of_list data
+  env_ar_par, univs, template, variance, record, params, Array.of_list data

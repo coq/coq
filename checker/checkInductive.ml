@@ -20,7 +20,7 @@ exception InductiveMismatch of MutInd.t * string
 
 let check mind field b = if not b then raise (InductiveMismatch (mind,field))
 
-let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
+let to_entry (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
   let open Entries in
   let nparams = List.length mb.mind_params_ctxt in (* include letins *)
   let mind_entry_record = match mb.mind_record with
@@ -33,39 +33,27 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
         inductive types. The set of monomorphic constraints is already part of
         the graph at that point, but we need to emulate a broken bound variable
         mechanism for template inductive types. *)
-      let fold accu ind = match ind.mind_arity with
-      | RegularArity _ -> accu
-      | TemplateArity ar ->
-        match accu with
-        | None -> Some ar.template_context
-        | Some ctx ->
-          (* Ensure that all template contexts agree. This is enforced by the
-             kernel. *)
-          let () = check mind "mind_arity" (ContextSet.equal ctx ar.template_context) in
-          Some ctx
-      in
-      let univs = match Array.fold_left fold None mb.mind_packets with
+      let univs = match mb.mind_template with
       | None -> ContextSet.empty
-      | Some ctx -> ctx
+      | Some ctx -> ctx.template_context
       in
       Monomorphic_entry univs
     | Polymorphic auctx -> Polymorphic_entry (AUContext.names auctx, AUContext.repr auctx)
   in
   let mind_entry_inds = Array.map_to_list (fun ind ->
-      let mind_entry_arity, mind_entry_template = match ind.mind_arity with
+      let mind_entry_arity = match ind.mind_arity with
         | RegularArity ar ->
           let ctx, arity = Term.decompose_prod_n_assum nparams ar.mind_user_arity in
           ignore ctx; (* we will check that the produced user_arity is equal to the input *)
-          arity, false
+          arity
         | TemplateArity ar ->
           let ctx = ind.mind_arity_ctxt in
           let ctx = List.firstn (List.length ctx - nparams) ctx in
-          Term.mkArity (ctx, Sorts.sort_of_univ ar.template_level), true
+          Term.mkArity (ctx, Sorts.sort_of_univ ar.template_level)
       in
       {
         mind_entry_typename = ind.mind_typename;
         mind_entry_arity;
-        mind_entry_template;
         mind_entry_consnames = Array.to_list ind.mind_consnames;
         mind_entry_lc = Array.map_to_list (fun c ->
             let ctx, c = Term.decompose_prod_n_assum nparams c in
@@ -75,12 +63,19 @@ let to_entry mind (mb:mutual_inductive_body) : Entries.mutual_inductive_entry =
       })
       mb.mind_packets
   in
+  let check_template ind = match ind.mind_arity with
+  | RegularArity _ -> false
+  | TemplateArity _ -> true
+  in
+  let mind_entry_template = Array.exists check_template mb.mind_packets in
+  let () = if mind_entry_template then assert (Array.for_all check_template mb.mind_packets) in
   {
     mind_entry_record;
     mind_entry_finite = mb.mind_finite;
     mind_entry_params = mb.mind_params_ctxt;
     mind_entry_inds;
     mind_entry_universes;
+    mind_entry_template;
     mind_entry_cumulative= Option.has_some mb.mind_variance;
     mind_entry_private = mb.mind_private;
   }
@@ -89,12 +84,17 @@ let check_arity env ar1 ar2 = match ar1, ar2 with
   | RegularArity ar, RegularArity {mind_user_arity;mind_sort} ->
     Constr.equal ar.mind_user_arity mind_user_arity &&
     Sorts.equal ar.mind_sort mind_sort
-  | TemplateArity ar, TemplateArity {template_param_levels;template_level;template_context} ->
-    List.equal (Option.equal Univ.Level.equal) ar.template_param_levels template_param_levels &&
-    ContextSet.equal template_context ar.template_context &&
+  | TemplateArity ar, TemplateArity {template_level} ->
     UGraph.check_leq (universes env) template_level ar.template_level
     (* template_level is inferred by indtypes, so functor application can produce a smaller one *)
   | (RegularArity _ | TemplateArity _), _ -> assert false
+
+let check_template ar1 ar2 = match ar1, ar2 with
+| None, None -> true
+| Some ar, Some {template_context; template_param_levels} ->
+  List.equal (Option.equal Univ.Level.equal) ar.template_param_levels template_param_levels &&
+  ContextSet.equal template_context ar.template_context
+| None, Some _ | Some _, None -> false
 
 let check_kelim k1 k2 = Sorts.family_leq k1 k2
 
@@ -157,10 +157,10 @@ let check_same_record r1 r2 = match r1, r2 with
   | (NotRecord | FakeRecord | PrimRecord _), _ -> false
 
 let check_inductive env mind mb =
-  let entry = to_entry mind mb in
+  let entry = to_entry mb in
   let { mind_packets; mind_record; mind_finite; mind_ntypes; mind_hyps;
         mind_nparams; mind_nparams_rec; mind_params_ctxt;
-        mind_universes; mind_variance; mind_sec_variance;
+        mind_universes; mind_template; mind_variance; mind_sec_variance;
         mind_private; mind_typing_flags; }
     =
     (* Locally set typing flags for further typechecking *)
@@ -191,6 +191,7 @@ let check_inductive env mind mb =
 
   check "mind_params_ctxt" (Context.Rel.equal Constr.equal mb.mind_params_ctxt mind_params_ctxt);
   ignore mind_universes; (* Indtypes did the necessary checking *)
+  check "mind_template" (check_template mb.mind_template mind_template);
   check "mind_variance" (Option.equal (Array.equal Univ.Variance.equal)
                            mb.mind_variance mind_variance);
   check "mind_sec_variance" (Option.is_empty mind_sec_variance);

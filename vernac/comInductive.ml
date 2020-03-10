@@ -329,10 +329,7 @@ let template_polymorphism_candidate ~ctor_levels uctx params concl =
     if not concltemplate then false
     else
       let conclu = Option.cata Sorts.univ_of_sort Univ.type0m_univ concl in
-      let params, conclunivs =
-        IndTyping.template_polymorphic_univs ~ctor_levels uctx params conclu
-      in
-      not (Univ.LSet.is_empty conclunivs)
+      Option.has_some @@ IndTyping.template_polymorphic_univs ~ctor_levels uctx params conclu
   | Entries.Polymorphic_entry _ -> false
 
 let check_param = function
@@ -370,6 +367,14 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~ctx_params ~indnames
 
   (* Build the inductive entries *)
   let entries = List.map4 (fun indname (templatearity, arity) concl (cnames,ctypes) ->
+      { mind_entry_typename = indname;
+        mind_entry_arity = arity;
+        mind_entry_consnames = cnames;
+        mind_entry_lc = ctypes
+      })
+      indnames arities arityconcl constructors
+  in
+  let template = List.map4 (fun indname (templatearity, _) concl (_, ctypes) ->
       let template_candidate () =
         templatearity ||
         let ctor_levels =
@@ -385,22 +390,17 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~ctx_params ~indnames
         in
         template_polymorphism_candidate ~ctor_levels uctx ctx_params concl
       in
-      let template = match template with
+      match template with
         | Some template ->
           if poly && template then user_err
               Pp.(strbrk "Template-polymorphism and universe polymorphism are not compatible.");
           template
         | None ->
           should_auto_template indname (template_candidate ())
-      in
-      { mind_entry_typename = indname;
-        mind_entry_arity = arity;
-        mind_entry_template = template;
-        mind_entry_consnames = cnames;
-        mind_entry_lc = ctypes
-      })
+      )
       indnames arities arityconcl constructors
   in
+  let is_template = List.for_all (fun t -> t) template in
   (* Build the mutual inductive entry *)
   let mind_ent =
     { mind_entry_params = ctx_params;
@@ -409,6 +409,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~ctx_params ~indnames
       mind_entry_inds = entries;
       mind_entry_private = if private_ind then Some false else None;
       mind_entry_universes = uctx;
+      mind_entry_template = is_template;
       mind_entry_cumulative = poly && cumulative;
     }
   in

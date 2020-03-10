@@ -295,20 +295,14 @@ let abstract_projection ~params expmod hyps t =
   t
 
 let cook_one_ind ~ntypes
-    (section_decls,_ as hyps) expmod mip =
+    hyps expmod mip =
   let mind_arity = match mip.mind_arity with
     | RegularArity {mind_user_arity=arity;mind_sort=sort} ->
       let arity = abstract_as_type (expmod arity) hyps in
       let sort = destSort (expmod (mkSort sort)) in
       RegularArity {mind_user_arity=arity; mind_sort=sort}
-    | TemplateArity {template_param_levels=levels;template_level;template_context} ->
-      let sec_levels = CList.map_filter (fun d ->
-          if RelDecl.is_local_assum d then Some None
-          else None)
-          section_decls
-      in
-      let levels = List.rev_append sec_levels levels in
-      TemplateArity {template_param_levels=levels;template_level;template_context}
+    | TemplateArity {template_level} ->
+      TemplateArity {template_level}
   in
   let mind_arity_ctxt =
     let ctx = Context.Rel.map expmod mip.mind_arity_ctxt in
@@ -386,6 +380,17 @@ let cook_inductive { Opaqueproof.modlist; abstract } mib =
       in
       Some (Array.append newvariance variance), Some sec_variance
   in
+  let mind_template = match mib.mind_template with
+  | None -> None
+  | Some {template_param_levels=levels; template_context} ->
+      let sec_levels = CList.map_filter (fun d ->
+          if RelDecl.is_local_assum d then Some None
+          else None)
+          section_decls
+      in
+      let levels = List.rev_append sec_levels levels in
+      Some {template_param_levels=levels; template_context}
+  in
   {
     mind_packets;
     mind_record;
@@ -396,6 +401,7 @@ let cook_inductive { Opaqueproof.modlist; abstract } mib =
     mind_nparams_rec = mib.mind_nparams_rec + nnewparams;
     mind_params_ctxt;
     mind_universes;
+    mind_template;
     mind_variance;
     mind_sec_variance;
     mind_private = mib.mind_private;
