@@ -640,7 +640,7 @@ Instance PartialOrder_proper `(PartialOrder A eqA R) :
   Proper (eqA==>eqA==>iff) R.
 Proof.
 intros.
-apply proper_sym_impl_iff_2; auto with *.
+apply proper_sym_impl_iff_2. 1-2: auto with relations.
 intros x x' Hx y y' Hy Hr.
 transitivity x.
 - generalize (partial_order_equivalence x x'); compute; intuition.

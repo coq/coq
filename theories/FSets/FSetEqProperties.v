@@ -924,7 +924,7 @@ transitivity (f x (fold f s0 i)).
 apply fold_add with (eqA:=eqA); auto with set.
 transitivity (g x (fold f s0 i)); auto with set.
 transitivity (g x (fold g s0 i)); auto with set.
-apply gc; auto with *.
+apply gc; auto with set.
 symmetry; apply fold_add with (eqA:=eqA); auto.
 do 2 rewrite fold_empty; reflexivity.
 Qed.

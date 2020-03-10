@@ -760,7 +760,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Instance eqke_equiv : Equivalence eqke.
   Proof.
    unfold eq_key_elt; split; repeat red; firstorder.
-   eauto with *.
+   eauto.
    congruence.
   Qed.
 
@@ -910,9 +910,9 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   assert (Hstep' : forall k e a m' m'', InA eqke (k,e) l -> ~In k m' ->
              Add k e m' m'' -> P m' a -> P m'' (F (k,e) a)).
    intros k e a m' m'' H ? ? ?; eapply Hstep; eauto.
-   revert H; unfold l; rewrite InA_rev, elements_mapsto_iff; auto with *.
+   revert H; unfold l; rewrite InA_rev, elements_mapsto_iff. auto.
   assert (Hdup : NoDupA eqk l).
-   unfold l. apply NoDupA_rev; try red; unfold eq_key ; eauto with *.
+   unfold l. apply NoDupA_rev; try red; unfold eq_key. auto with typeclass_instances.
    apply elements_3w.
   assert (Hsame : forall k, find k m = findA (eqb k) l).
    intros k. unfold l. rewrite elements_o, findA_rev; auto.
@@ -993,7 +993,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   rewrite 2 fold_spec_right. set (l:=rev (elements m)).
   assert (Rstep' : forall k e a b, InA eqke (k,e) l ->
     R a b -> R (f k e a) (g k e b)) by
-    (intros; apply Rstep; auto; rewrite elements_mapsto_iff, <- InA_rev; auto with *).
+    (intros; apply Rstep; auto; rewrite elements_mapsto_iff, <- InA_rev; assumption).
   clearbody l; clear Rstep m.
   induction l; simpl; auto.
   apply Rstep'; auto.
@@ -1107,17 +1107,20 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Proof.
   intros.
   rewrite 2 fold_spec_right.
-  assert (NoDupA eqk (rev (elements m1))) by (auto with *).
-  assert (NoDupA eqk (rev (elements m2))) by (auto with *).
-  apply fold_right_equivlistA_restr with (R:=complement eqk)(eqA:=eqke);
-   auto with *.
+  assert (NoDupA eqk (rev (elements m1))) by auto with map typeclass_instances.
+  assert (NoDupA eqk (rev (elements m2))) by auto with map typeclass_instances.
+  apply fold_right_equivlistA_restr with (R:=complement eqk)(eqA:=eqke).
+  auto with typeclass_instances.
+  auto.
+  2: auto with crelations.
+  4, 5: auto with map.
   intros (k1,e1) (k2,e2) (Hk,He) a1 a2 Ha; simpl in *; apply Comp; auto.
   unfold complement, eq_key, eq_key_elt; repeat red. intuition eauto.
   intros (k,e) (k',e'); unfold eq_key, uncurry; simpl; auto.
   rewrite <- NoDupA_altdef; auto.
   intros (k,e).
-  rewrite 2 InA_rev, <- 2 elements_mapsto_iff, 2 find_mapsto_iff, H;
-   auto with *.
+  rewrite 2 InA_rev, <- 2 elements_mapsto_iff, 2 find_mapsto_iff, H.
+  auto with crelations.
   Qed.
 
   Lemma fold_Equal2 : forall m1 m2 i j, Equal m1 m2 -> eqA i j ->
@@ -1125,10 +1128,13 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Proof.
   intros.
   rewrite 2 fold_spec_right.
-  assert (NoDupA eqk (rev (elements m1))) by (auto with * ).
-  assert (NoDupA eqk (rev (elements m2))) by (auto with * ).
-  apply fold_right_equivlistA_restr2 with (R:=complement eqk)(eqA:=eqke)
-  ; auto with *.
+  assert (NoDupA eqk (rev (elements m1))) by auto with map typeclass_instances.
+  assert (NoDupA eqk (rev (elements m2))) by auto with map typeclass_instances.
+  apply fold_right_equivlistA_restr2 with (R:=complement eqk)(eqA:=eqke).
+  auto with typeclass_instances.
+  1, 10: auto.
+  2: auto with crelations.
+  4, 5: auto with map.
   - intros (k1,e1) (k2,e2) (Hk,He) a1 a2 Ha; simpl in *; apply Comp; auto.
   - unfold complement, eq_key, eq_key_elt; repeat red. intuition eauto.
   - intros (k,e) (k',e') z z' h h'; unfold eq_key, uncurry;simpl; auto.
@@ -1136,8 +1142,8 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
     auto.
   - rewrite <- NoDupA_altdef; auto.
   - intros (k,e).
-    rewrite 2 InA_rev, <- 2 elements_mapsto_iff, 2 find_mapsto_iff, H;
-      auto with *.
+    rewrite 2 InA_rev, <- 2 elements_mapsto_iff, 2 find_mapsto_iff, H.
+    auto with crelations.
   Qed.
 
 
@@ -1149,18 +1155,22 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   set (f':=uncurry f).
   change (f k e (fold_right f' i (rev (elements m1))))
    with (f' (k,e) (fold_right f' i (rev (elements m1)))).
-  assert (NoDupA eqk (rev (elements m1))) by (auto with *).
-  assert (NoDupA eqk (rev (elements m2))) by (auto with *).
+  assert (NoDupA eqk (rev (elements m1))) by auto with map typeclass_instances.
+  assert (NoDupA eqk (rev (elements m2))) by auto with map typeclass_instances.
   apply fold_right_add_restr with
-   (R:=complement eqk)(eqA:=eqke)(eqB:=eqA); auto with *.
+   (R:=complement eqk)(eqA:=eqke)(eqB:=eqA).
+  auto with typeclass_instances.
+  auto.
+  2: auto with crelations.
+  4, 5: auto with map.
   intros (k1,e1) (k2,e2) (Hk,He) a a' Ha; unfold f'; simpl in *. apply Comp; auto.
   unfold complement, eq_key_elt, eq_key; repeat red; intuition eauto.
   unfold f'; intros (k1,e1) (k2,e2); unfold eq_key, uncurry; simpl; auto.
   rewrite <- NoDupA_altdef; auto.
-  rewrite InA_rev, <- elements_mapsto_iff by (auto with *). firstorder.
+  rewrite InA_rev, <- elements_mapsto_iff. firstorder.
   intros (a,b).
   rewrite InA_cons, 2 InA_rev, <- 2 elements_mapsto_iff,
-   2 find_mapsto_iff by (auto with *).
+   2 find_mapsto_iff.
   unfold eq_key_elt; simpl.
   rewrite H0.
   rewrite add_o.
@@ -1791,7 +1801,7 @@ Module OrdProperties (M:S).
   Lemma sort_equivlistA_eqlistA : forall l l' : list (key*elt),
    sort ltk l -> sort ltk l' -> equivlistA eqke l l' -> eqlistA eqke l l'.
   Proof.
-  apply SortA_equivlistA_eqlistA; eauto with *.
+  apply SortA_equivlistA_eqlistA; auto with typeclass_instances.
   Qed.
 
   Ltac clean_eauto := unfold O.eqke, O.ltk; simpl; intuition; eauto.
@@ -1842,7 +1852,9 @@ Module OrdProperties (M:S).
     elements m = elements_lt p m ++ elements_ge p m.
   Proof.
   unfold elements_lt, elements_ge, leb; intros.
-  apply filter_split with (eqA:=eqk) (ltA:=ltk); eauto with *.
+  apply filter_split with (eqA:=eqk) (ltA:=ltk).
+  1-3: auto with typeclass_instances.
+  2: auto with map.
   intros; destruct x; destruct y; destruct p.
   rewrite gtb_1 in H; unfold O.ltk in H; simpl in *.
   assert (~ltk (t1,e0) (k,e1)).
@@ -1856,14 +1868,14 @@ Module OrdProperties (M:S).
                  (elements_lt (x,e) m ++ (x,e):: elements_ge (x,e) m).
   Proof.
   intros; unfold elements_lt, elements_ge.
-  apply sort_equivlistA_eqlistA; auto with *.
-  apply (@SortA_app _ eqke); auto with *.
-  apply (@filter_sort _ eqke); auto with *; clean_eauto.
+  apply sort_equivlistA_eqlistA. auto with map.
+  apply (@SortA_app _ eqke). auto with typeclass_instances.
+  apply (@filter_sort _ eqke). 1-3: auto with typeclass_instances. auto with map.
   constructor; auto with map.
-  apply (@filter_sort _ eqke); auto with *; clean_eauto.
-  rewrite (@InfA_alt _ eqke); auto with *; try (clean_eauto; fail).
+  apply (@filter_sort _ eqke). 1-3: auto with typeclass_instances. auto with map.
+  rewrite (@InfA_alt _ eqke). 2-4: auto with typeclass_instances.
   intros.
-  rewrite filter_InA in H1; auto with *; destruct H1.
+  rewrite filter_InA in H1 by auto with map. destruct H1.
   rewrite leb_1 in H2.
   destruct y; unfold O.ltk in *; simpl in *.
   rewrite <- elements_mapsto_iff in H1.
@@ -1871,22 +1883,22 @@ Module OrdProperties (M:S).
    contradict H.
    exists e0; apply MapsTo_1 with t0; auto with ordered_type.
   ME.order.
-  apply (@filter_sort _ eqke); auto with *; clean_eauto.
+  apply (@filter_sort _ eqke). 1-3: auto with typeclass_instances. auto with map.
   intros.
-  rewrite filter_InA in H1; auto with *; destruct H1.
+  rewrite filter_InA in H1 by auto with map. destruct H1.
   rewrite gtb_1 in H3.
   destruct y; destruct x0; unfold O.ltk in *; simpl in *.
   inversion_clear H2.
   red in H4; simpl in *; destruct H4.
   ME.order.
-  rewrite filter_InA in H4; auto with *; destruct H4.
+  rewrite filter_InA in H4 by auto with map. destruct H4.
   rewrite leb_1 in H4.
   unfold O.ltk in *; simpl in *; ME.order.
   red; intros a; destruct a.
   rewrite InA_app_iff, InA_cons, 2 filter_InA,
     <-2 elements_mapsto_iff, leb_1, gtb_1,
     find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
-    add_mapsto_iff by (auto with *).
+    add_mapsto_iff by auto with map.
   unfold O.eqke, O.ltk; simpl.
   destruct (E.compare t0 x); intuition; try fold (~E.eq x t0); auto with ordered_type.
   - elim H; exists e0; apply MapsTo_1 with t0; auto.
@@ -1898,8 +1910,8 @@ Module OrdProperties (M:S).
      eqlistA eqke (elements m') (elements m ++ (x,e)::nil).
   Proof.
   intros.
-  apply sort_equivlistA_eqlistA; auto with *.
-  apply (@SortA_app _ eqke); auto with *.
+  apply sort_equivlistA_eqlistA. auto with map.
+  apply (@SortA_app _ eqke). auto with typeclass_instances. auto with map. auto.
   intros.
   inversion_clear H2.
   destruct x0; destruct y.
@@ -1911,7 +1923,7 @@ Module OrdProperties (M:S).
   red; intros a; destruct a.
   rewrite InA_app_iff, InA_cons, InA_nil, <- 2 elements_mapsto_iff,
    find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
-   add_mapsto_iff by (auto with *).
+   add_mapsto_iff.
   unfold O.eqke; simpl. intuition.
   destruct (E.eq_dec x t0) as [Heq|Hneq]; auto.
   exfalso.
@@ -1926,9 +1938,9 @@ Module OrdProperties (M:S).
      eqlistA eqke (elements m') ((x,e)::elements m).
   Proof.
   intros.
-  apply sort_equivlistA_eqlistA; auto with *.
+  apply sort_equivlistA_eqlistA. auto with map.
   change (sort ltk (((x,e)::nil) ++ elements m)).
-  apply (@SortA_app _ eqke); auto with *.
+  apply (@SortA_app _ eqke). auto with typeclass_instances. auto. auto with map.
   intros.
   inversion_clear H1.
   destruct y; destruct x0.
@@ -1940,7 +1952,7 @@ Module OrdProperties (M:S).
   red; intros a; destruct a.
   rewrite InA_cons, <- 2 elements_mapsto_iff,
     find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
-    add_mapsto_iff by (auto with *).
+    add_mapsto_iff.
   unfold O.eqke; simpl. intuition.
   destruct (E.eq_dec x t0) as [Heq|Hneq]; auto.
   exfalso.
@@ -1954,7 +1966,7 @@ Module OrdProperties (M:S).
    Equal m m' -> eqlistA eqke (elements m) (elements m').
   Proof.
   intros.
-  apply sort_equivlistA_eqlistA; auto with *.
+  apply sort_equivlistA_eqlistA. 1-2: auto with map.
   red; intros.
   destruct x; do 2 rewrite <- elements_mapsto_iff.
   do 2 rewrite find_mapsto_iff; rewrite H; split; auto.
@@ -2056,7 +2068,7 @@ Module OrdProperties (M:S).
   inversion_clear H1 as [? ? H2|? ? H2].
   red in H2; destruct H2; simpl in *; ME.order.
   inversion_clear H4. rename H1 into H3.
-  rewrite (@InfA_alt _ eqke) in H3; eauto with *.
+  rewrite (@InfA_alt _ eqke) in H3 by auto with typeclass_instances.
   apply (H3 (y,x0)); auto.
   Qed.
 
