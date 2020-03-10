@@ -472,7 +472,7 @@ let check_template ~template ~poly ~univs ~params { Data.id; rdata = { DataR.min
         param_levels fields
     in
     ComInductive.template_polymorphism_candidate ~ctor_levels univs params
-      (Some (Sorts.sort_of_univ min_univ))
+      min_univ
   in
   match template with
   | Some template, _ ->

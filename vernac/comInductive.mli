@@ -73,7 +73,7 @@ val template_polymorphism_candidate
   : ctor_levels:Univ.Level.Set.t
   -> UState.universes_entry
   -> Constr.rel_context
-  -> Sorts.t option
+  -> Univ.Universe.t
   -> bool
 (** [template_polymorphism_candidate ~ctor_levels uctx params
    conclsort] is [true] iff an inductive with params [params],

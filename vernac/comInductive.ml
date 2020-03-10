@@ -301,7 +301,7 @@ let inductive_levels env evd arities inds =
     CList.fold_left3 (fun (evd, arities) cu (arity,(ctx,du)) len ->
       if is_impredicative_sort env du then
         (* Any product is allowed here. *)
-        evd, (false, arity) :: arities
+        evd, arity :: arities
       else (* If in a predicative sort, or asked to infer the type,
               we take the max of:
               - indices (if in indices-matter mode)
@@ -325,19 +325,19 @@ let inductive_levels env evd arities inds =
           else evd
         in
         let duu = Sorts.univ_of_sort du in
-        let template_prop, evd =
+        let evd =
           if not (Univ.is_small_univ duu) && Univ.Universe.equal cu duu then
             if is_flexible_sort evd duu && not (Evd.check_leq evd Univ.type0_univ duu)
             then if Term.isArity arity
             (* If not a syntactic arity, the universe may be used in a
                polymorphic instance and so cannot be lowered to Prop.
                See #13300. *)
-              then true, Evd.set_eq_sort env evd Sorts.prop du
-              else false, Evd.set_eq_sort env evd Sorts.set du
-            else false, evd
-          else false, Evd.set_eq_sort env evd (sort_of_univ cu) du
+              then Evd.set_eq_sort env evd Sorts.prop du
+              else Evd.set_eq_sort env evd Sorts.set du
+            else evd
+          else Evd.set_eq_sort env evd (sort_of_univ cu) du
         in
-          (evd, (template_prop, arity) :: arities))
+          (evd, arity :: arities))
     (evd,[]) (Array.to_list levels') destarities sizes
   in evd, List.rev arities
 
@@ -347,14 +347,10 @@ let check_named {CAst.loc;v=na} = match na with
   let msg = str "Parameters must be named." in
   user_err ?loc  msg
 
-let template_polymorphism_candidate ~ctor_levels uctx params concl =
+let template_polymorphism_candidate ~ctor_levels uctx params conclu =
   match uctx with
   | UState.Monomorphic_entry uctx ->
-    let concltemplate = Option.cata (fun s -> not (Sorts.is_small s)) false concl in
-    if not concltemplate then false
-    else
-      let conclu = Option.cata Sorts.univ_of_sort Univ.type0m_univ concl in
-      Option.has_some @@ IndTyping.template_polymorphic_univs ~ctor_levels uctx params conclu
+    Option.has_some @@ IndTyping.template_polymorphic_univs ~ctor_levels uctx params conclu
   | UState.Polymorphic_entry _ -> false
 
 let check_param = function
@@ -402,15 +398,15 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
   let sigma, arities = inductive_levels env_ar_params sigma arities constructors in
   let sigma = Evd.minimize_universes sigma in
   let nf = Evarutil.nf_evars_universes sigma in
-  let arities = List.map (on_snd nf) arities in
+  let arities = List.map nf arities in
   let constructors = List.map (on_snd (List.map nf)) constructors in
   let ctx_params = List.map Termops.(map_rel_decl (EConstr.to_constr sigma)) ctx_params in
   let arityconcl = List.map (Option.map (fun (_anon, s) -> EConstr.ESorts.kind sigma s)) arityconcl in
-  let sigma = restrict_inductive_universes sigma ctx_params (List.map snd arities) constructors in
+  let sigma = restrict_inductive_universes sigma ctx_params arities constructors in
   let univ_entry, binders = Evd.check_univ_decl ~poly sigma udecl in
 
   (* Build the inductive entries *)
-  let entries = List.map4 (fun indname (templatearity, arity) concl (cnames,ctypes) ->
+  let entries = List.map4 (fun indname arity concl (cnames,ctypes) ->
       { mind_entry_typename = indname;
         mind_entry_arity = arity;
         mind_entry_consnames = cnames;
@@ -418,11 +414,10 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
       })
       indnames arities arityconcl constructors
   in
-  let template = List.map4 (fun indname (templatearity, _) concl (_, ctypes) ->
+  let template = List.map3 (fun indname concl (_, ctypes) ->
       let template_candidate () = match concl with
-      | Some (Prop | Set | SProp) -> false
-      | None | Some (Type _) ->
-        templatearity ||
+      | None | Some (Prop | Set | SProp) -> false
+      | Some (Type conclu) ->
         let ctor_levels =
           let add_levels c levels = Univ.Level.Set.union levels (Vars.universes_of_constr c) in
           let param_levels =
@@ -434,7 +429,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
           List.fold_left (fun levels c -> add_levels c levels)
             param_levels ctypes
         in
-        template_polymorphism_candidate ~ctor_levels univ_entry ctx_params concl
+        template_polymorphism_candidate ~ctor_levels univ_entry ctx_params conclu
       in
       match template with
         | Some template ->
@@ -444,7 +439,7 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~variances ~ctx_param
         | None ->
           should_auto_template indname (template_candidate ())
       )
-      indnames arities arityconcl constructors
+      indnames arityconcl constructors
   in
   let is_template = List.for_all (fun t -> t) template in
   let univ_entry, ctx = match univ_entry with
