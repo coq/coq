@@ -103,6 +103,9 @@ before_script:
   interruptible: true
   dependencies: []
   script:
+    # flambda can be pretty stack hungry, specially with -O3
+    # See also https://github.com/ocaml/ocaml/issues/7842#issuecomment-596863244
+    - ulimit -s 16384
     - set -e
     - make -f Makefile.dune world
     - set +e
