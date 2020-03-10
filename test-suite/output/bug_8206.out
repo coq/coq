@@ -1,0 +1,5 @@
+File "stdin", line 11, characters 0-23:
+Error: Signature components for label homework do not match: expected type
+"forall a b : nat, bug_8206.M.add a b = bug_8206.M.add b a" but found type
+"nat -> forall b : nat, bug_8206.M.add 0 b = bug_8206.M.add b 0".
+

@@ -261,15 +261,17 @@ let visible_ids sigma (nenv, c) =
     let (gseen, vseen, ids) = !accu in
     let g = global_of_constr c in
     if not (GlobRef.Set_env.mem g gseen) then
-      begin
-      try
       let gseen = GlobRef.Set_env.add g gseen in
-      let short = Nametab.shortest_qualid_of_global Id.Set.empty g in
-      let dir, id = repr_qualid short in
-      let ids = if DirPath.is_empty dir then Id.Set.add id ids else ids in
+      let ids = match Nametab.shortest_qualid_of_global Id.Set.empty g with
+      | short ->
+        let dir, id = repr_qualid short in
+        if DirPath.is_empty dir then Id.Set.add id ids else ids
+      | exception Not_found ->
+        (* This may happen if given pathological terms or when manipulating
+           open modules *)
+        ids
+      in
       accu := (gseen, vseen, ids)
-      with Not_found when !Flags.in_debugger || !Flags.in_toplevel -> ()
-      end
   | Rel p ->
     let (gseen, vseen, ids) = !accu in
     if p > n && not (Int.Set.mem p vseen) then
