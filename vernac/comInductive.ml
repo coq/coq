@@ -375,7 +375,9 @@ let interp_mutual_inductive_constr ~sigma ~template ~udecl ~ctx_params ~indnames
       indnames arities arityconcl constructors
   in
   let template = List.map4 (fun indname (templatearity, _) concl (_, ctypes) ->
-      let template_candidate () =
+      let template_candidate () = match concl with
+      | Some (Prop | Set | SProp) -> false
+      | None | Some (Type _) ->
         templatearity ||
         let ctor_levels =
           let add_levels c levels = Univ.LSet.union levels (Vars.universes_of_constr c) in

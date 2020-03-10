@@ -1562,7 +1562,6 @@ Notation "[ 'qualify' 'an' x : T | P ]" :=
 Section KeyPred.
 
 Variable T : Type.
-#[universes(template)]
 Variant pred_key (p : {pred T}) := DefaultPredKey.
 
 Variable p : {pred T}.

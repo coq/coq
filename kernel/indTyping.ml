@@ -218,8 +218,7 @@ let template_polymorphic_univs ~ctor_levels uctx paramsctxt concl =
     | LocalDef _ -> acc
   in
   let params = List.fold_left fold [] paramsctxt in
-  if Universe.is_type0m concl then Some (univs, params)
-  else if not @@ Univ.LSet.is_empty univs then Some (univs, params)
+  if not @@ Univ.LSet.is_empty univs then Some (univs, params)
   else None
 
 let get_param_levels ctx params arity splayed_lc =
