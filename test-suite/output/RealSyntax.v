@@ -2,6 +2,8 @@ Require Import Reals.Rdefinitions.
 Check 32%R.
 Check (-31)%R.
 
+Check 1.5_%R.
+
 Open Scope R_scope.
 
 Check (eq_refl : 1.02 = IZR 102 / IZR (Z.pow_pos 10 2)).
