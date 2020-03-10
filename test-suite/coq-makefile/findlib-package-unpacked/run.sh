@@ -16,5 +16,7 @@ coq_makefile -f _CoqProject -o Makefile
 cat Makefile.conf
 cat Makefile.local
 make -C findlib/foo
-make
+if which ocamlopt >/dev/null 2>&1; then
+    make
+fi
 make byte
