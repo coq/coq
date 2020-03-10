@@ -9,7 +9,6 @@ CSet
 CMap
 CList
 CString
-CStack
 
 Int
 Range
@@ -33,7 +32,6 @@ Unionfind
 Dyn
 Store
 Exninfo
-Backtrace
 IStream
 Terminal
 Monad

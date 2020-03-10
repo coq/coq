@@ -82,10 +82,6 @@ module Set = CSet
 
 module Map = CMap
 
-(* Stacks *)
-
-module Stack = CStack
-
 (* Matrices *)
 
 let matrix_transpose mat =
