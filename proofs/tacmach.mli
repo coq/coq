@@ -37,6 +37,7 @@ val pf_unsafe_type_of     : Goal.goal sigma -> constr -> types
 [@@ocaml.deprecated "Use [type_of] or retyping according to your needs."]
 val pf_type_of            : Goal.goal sigma -> constr -> evar_map * types
 val pf_hnf_type_of        : Goal.goal sigma -> constr -> types
+[@@ocaml.deprecated "This is a no-op now"]
 
 val pf_get_hyp            : Goal.goal sigma -> Id.t -> named_declaration
 val pf_get_hyp_typ        : Goal.goal sigma -> Id.t -> types
@@ -49,22 +50,33 @@ val pf_eapply : (env -> evar_map -> 'a -> evar_map * 'b) ->
 val pf_reduce :
   (env -> evar_map -> constr -> constr) ->
   Goal.goal sigma -> constr -> constr
+[@@ocaml.deprecated "Use the version in Tacmach.New"]
+
 val pf_e_reduce :
   (env -> evar_map -> constr -> evar_map * constr) ->
   Goal.goal sigma -> constr -> evar_map * constr
+[@@ocaml.deprecated "Use the version in Tacmach.New"]
 
 val pf_whd_all       : Goal.goal sigma -> constr -> constr
+[@@ocaml.deprecated "Use the version in Tacmach.New"]
 val pf_hnf_constr              : Goal.goal sigma -> constr -> constr
+[@@ocaml.deprecated "Use the version in Tacmach.New"]
 val pf_nf                      : Goal.goal sigma -> constr -> constr
+[@@ocaml.deprecated "Use the version in Tacmach.New"]
 val pf_nf_betaiota             : Goal.goal sigma -> constr -> constr
 val pf_reduce_to_quantified_ind : Goal.goal sigma -> types -> (inductive * EInstance.t) * types
 val pf_reduce_to_atomic_ind     : Goal.goal sigma -> types -> (inductive * EInstance.t) * types
+[@@ocaml.deprecated "Use Tacred.pf_reduce_to_atomic_ind"]
 val pf_compute                 : Goal.goal sigma -> constr -> constr
+[@@ocaml.deprecated "Use the version in Tacmach.New"]
 val pf_unfoldn    : (occurrences * evaluable_global_reference) list
   -> Goal.goal sigma -> constr -> constr
+[@@ocaml.deprecated "Use Tacred.unfoldn"]
 
 val pf_const_value : Goal.goal sigma -> pconstant -> constr
+[@@ocaml.deprecated "Use Environ.constant_value_in"]
 val pf_conv_x      : Goal.goal sigma -> constr -> constr -> bool
+[@@ocaml.deprecated "Use the version in Tacmach.New"]
 
 (** {6 Pretty-printing functions (debug only). } *)
 val pr_gls    : Goal.goal sigma -> Pp.t
