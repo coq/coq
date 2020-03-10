@@ -102,7 +102,7 @@ let failwith_non_pos_list n ntypes l =
 
 (* Check the inductive type is called with the expected parameters *)
 (* [n] is the index of the last inductive type in [env] *)
-let check_correct_par (env,n,ntypes,_) paramdecls ind_index args =
+let check_correct_par ~chkpos (env,n,ntypes,_) paramdecls ind_index args =
   let nparams = Context.Rel.nhyps paramdecls in
   let args = Array.of_list args in
   if Array.length args < nparams then
@@ -123,7 +123,7 @@ let check_correct_par (env,n,ntypes,_) paramdecls ind_index args =
               LocalNonPar (param_index+1, paramdecl_index_in_env, ind_index) in
             raise (IllFormedInd err)
   in check (nparams-1) (n-nparamdecls) paramdecls;
-  if not (Array.for_all (noccur_between n ntypes) realargs) then
+  if chkpos && not (Array.for_all (noccur_between n ntypes) realargs) then
     failwith_non_pos_vect n ntypes realargs
 
 (* Computes the maximum number of recursive parameters:
@@ -325,7 +325,7 @@ let check_positivity_one ~chkpos recursive (env,_,ntypes,_ as ienv) paramsctxt (
               if check_head then
                 begin match hd with
                 | Rel j when Int.equal j (n + ntypes - i - 1) ->
-                  check_correct_par ienv paramsctxt (ntypes - i) largs
+                  check_correct_par ~chkpos ienv paramsctxt (ntypes - i) largs
                 | _ -> raise (IllFormedInd (LocalNotConstructor(paramsctxt,nnonrecargs)))
                 end
               else
