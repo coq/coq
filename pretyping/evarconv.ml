@@ -1182,13 +1182,6 @@ let evar_conv_x flags = evar_conv_x flags
 
 let evar_unify = conv_fun evar_conv_x
 
-(* Profiling *)
-let evar_conv_x =
-  if Flags.profile then
-    let evar_conv_xkey = CProfile.declare_profile "evar_conv_x" in
-      CProfile.profile6 evar_conv_xkey evar_conv_x
-  else evar_conv_x
-
 let evar_conv_hook_get, evar_conv_hook_set = Hook.make ~default:evar_conv_x ()
 
 let evar_conv_x flags = Hook.get evar_conv_hook_get flags

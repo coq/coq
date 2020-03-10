@@ -359,9 +359,6 @@ let e_search_auto debug (in_depth,p) lems db_list =
     tclIDTAC gl
   end
 
-(* let e_search_auto_key = CProfile.declare_profile "e_search_auto" *)
-(* let e_search_auto = CProfile.profile5 e_search_auto_key e_search_auto *)
-
 let eauto_with_bases ?(debug=Off) np lems db_list =
   Hints.wrap_hint_warning (e_search_auto debug np lems db_list)
 

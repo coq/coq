@@ -252,9 +252,6 @@ let cook_constant { from = cb; info } =
     cook_context = Some const_hyps;
   }
 
-(* let cook_constant_key = CProfile.declare_profile "cook_constant" *)
-(* let cook_constant = CProfile.profile2 cook_constant_key cook_constant *)
-
 (********************************)
 (* Discharging mutual inductive *)
 

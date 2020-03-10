@@ -123,11 +123,6 @@ let substn_many lamv n c =
       | _ -> Constr.map_with_binders succ substrec depth c in
     substrec n c
 
-(*
-let substkey = CProfile.declare_profile "substn_many";;
-let substn_many lamv n c = CProfile.profile3 substkey substn_many lamv n c;;
-*)
-
 let make_subst = function
 | [] -> [||]
 | hd :: tl ->
@@ -342,9 +337,6 @@ let univ_instantiate_constr u c =
   let open Univ in
   assert (Int.equal (Instance.length u) (AUContext.size c.univ_abstracted_binder));
   subst_instance_constr u c.univ_abstracted_value
-
-(* let substkey = CProfile.declare_profile "subst_instance_constr";; *)
-(* let subst_instance_constr inst c = CProfile.profile2 substkey subst_instance_constr inst c;; *)
 
 let subst_instance_context s ctx =
   if Univ.Instance.is_empty s then ctx

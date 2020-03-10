@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+let enable_profile = false
+
 let word_length = Sys.word_size / 8
 
 let float_of_time t = float_of_int t /. 100.
@@ -87,9 +89,9 @@ let init_alloc = ref 0.0
 let reset_profile () = List.iter reset_record !prof_table
 
 let init_profile () =
-  (* We test Flags.profile as a way to support declaring profiled
+  (* We test enable_profile as a way to support declaring profiled
      functions in plugins *)
-  if !prof_table <> [] || Flags.profile then begin
+  if !prof_table <> [] || enable_profile then begin
   let outside = create_record () in
   stack := [outside];
   last_alloc := get_alloc ();

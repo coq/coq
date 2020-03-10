@@ -44,8 +44,6 @@ val xml_debug : bool ref
 val in_debugger : bool ref
 val in_toplevel : bool ref
 
-val profile : bool
-
 (* development flag to detect race conditions, it should go away. *)
 val we_are_parsing : bool ref
 

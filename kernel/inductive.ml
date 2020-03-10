@@ -1334,11 +1334,6 @@ let check_fix env ((nvect,_),(names,_,bodies as recdef) as fix) =
   else
     ()
 
-(*
-let cfkey = CProfile.declare_profile "check_fix";;
-let check_fix env fix = CProfile.profile3 cfkey check_fix env fix;;
-*)
-
 (************************************************************************)
 (* Co-fixpoints. *)
 

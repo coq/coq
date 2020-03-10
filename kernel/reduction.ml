@@ -964,7 +964,8 @@ let inferred_universes : (UGraph.t * Univ.Constraint.t) universe_compare =
     compare_instances = infer_convert_instances;
     compare_cumul_instances = infer_inductive_instances; }
 
-let gen_conv cv_pb l2r reds env evars univs t1 t2 =
+let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _ -> None)) t1 t2 =
+  let univs = Environ.universes env in
   let b =
     if cv_pb = CUMUL then leq_constr_univs univs t1 t2
     else eq_constr_univs univs t1 t2
@@ -974,16 +975,7 @@ let gen_conv cv_pb l2r reds env evars univs t1 t2 =
       let _ = clos_gen_conv reds cv_pb l2r evars env univs (univs, checked_universes) t1 t2 in
         ()
 
-(* Profiling *)
-let gen_conv cv_pb ?(l2r=false) ?(reds=TransparentState.full) env ?(evars=(fun _->None)) =
-  let univs = Environ.universes env in
-  if Flags.profile then
-    let fconv_universes_key = CProfile.declare_profile "trans_fconv_universes" in
-      CProfile.profile8 fconv_universes_key gen_conv cv_pb l2r reds env evars univs
-  else gen_conv cv_pb l2r reds env evars univs
-
 let conv = gen_conv CONV
-
 let conv_leq = gen_conv CUMUL
 
 let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
@@ -992,7 +984,7 @@ let generic_conv cv_pb ~l2r evars reds env univs t1 t2 =
     clos_gen_conv reds cv_pb l2r evars env graph univs t1 t2
   in s
 
-let infer_conv_universes cv_pb l2r evars reds env t1 t2 =
+let infer_conv_universes cv_pb ?(l2r=false) ?(evars=fun _ -> None) ?(ts=TransparentState.full) env t1 t2 =
   let univs = Environ.universes env in
   let b, cstrs =
     if cv_pb == CUMUL then Constr.leq_constr_univs_infer univs t1 t2
@@ -1001,37 +993,16 @@ let infer_conv_universes cv_pb l2r evars reds env t1 t2 =
     if b then cstrs
     else
       let state = ((univs, Univ.Constraint.empty), inferred_universes) in
-      let ((_,cstrs), _) = clos_gen_conv reds cv_pb l2r evars env univs state t1 t2 in
+      let ((_,cstrs), _) = clos_gen_conv ts cv_pb l2r evars env univs state t1 t2 in
         cstrs
 
-(* Profiling *)
-let infer_conv_universes =
-  if Flags.profile then
-    let infer_conv_universes_key = CProfile.declare_profile "infer_conv_universes" in
-      CProfile.profile7 infer_conv_universes_key infer_conv_universes
-  else infer_conv_universes
-
-let infer_conv ?(l2r=false) ?(evars=fun _ -> None) ?(ts=TransparentState.full)
-    env t1 t2 =
-  infer_conv_universes CONV l2r evars ts env t1 t2
-
-let infer_conv_leq ?(l2r=false) ?(evars=fun _ -> None) ?(ts=TransparentState.full)
-    env t1 t2 =
-  infer_conv_universes CUMUL l2r evars ts env t1 t2
+let infer_conv = infer_conv_universes CONV
+let infer_conv_leq = infer_conv_universes CUMUL
 
 let default_conv cv_pb ?l2r:_ env t1 t2 =
     gen_conv cv_pb env t1 t2
 
 let default_conv_leq = default_conv CUMUL
-(*
-let convleqkey = CProfile.declare_profile "Kernel_reduction.conv_leq";;
-let conv_leq env t1 t2 =
-  CProfile.profile4 convleqkey conv_leq env t1 t2;;
-
-let convkey = CProfile.declare_profile "Kernel_reduction.conv";;
-let conv env t1 t2 =
-  CProfile.profile4 convleqkey conv env t1 t2;;
-*)
 
 (* Application with on-the-fly reduction *)
 
