@@ -34,9 +34,6 @@ let get_typeclasses_unique_solutions =
     ~key:["Typeclasses";"Unique";"Solutions"]
     ~value:false
 
-let (set_typeclass_transparency, set_typeclass_transparency_hook) = Hook.make ()
-let set_typeclass_transparency gr local c = Hook.get set_typeclass_transparency gr local c
-
 let (classes_transparent_state, classes_transparent_state_hook) = Hook.make ()
 let classes_transparent_state () = Hook.get classes_transparent_state ()
 

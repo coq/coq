@@ -1028,7 +1028,7 @@ let remove_hint dbname grs =
 type hint_action =
   | CreateDB of bool * TransparentState.t
   | AddTransparency of evaluable_global_reference hints_transparency_target * bool
-  | AddHints of hint_entry list
+  | AddHints of bool (* superglobal? *) * hint_entry list
   | RemoveHints of GlobRef.t list
   | AddCut of hints_path
   | AddMode of GlobRef.t * hint_mode array
@@ -1054,14 +1054,21 @@ let load_autohint _ (kn, h) =
   match h.hint_action with
   | CreateDB (b, st) -> searchtable_add (name, Hint_db.empty ~name st b)
   | AddTransparency (grs, b) -> add_transparency name grs b
-  | AddHints hints -> add_hint name hints
+  | AddHints (superglobal, hints) ->
+    if superglobal then add_hint name hints
   | RemoveHints grs -> remove_hint name grs
   | AddCut path -> add_cut name path
   | AddMode (l, m) -> add_mode name l m
 
 let open_autohint i (kn, h) =
   if Int.equal i 1 then match h.hint_action with
-  | AddHints hints ->
+  | AddHints (superglobal, hints) ->
+    let () =
+      if not superglobal then
+        (* Import-bound hints must be declared when not imported yet *)
+        let filter (_, h) = not @@ KNmap.mem h.code.uid !statustable in
+        add_hint h.hint_name (List.filter filter hints)
+    in
     let add (_, hint) = statustable := KNmap.add hint.code.uid true !statustable in
     List.iter add hints
   | _ -> ()
@@ -1130,9 +1137,9 @@ let subst_autohint (subst, obj) =
           else HintsReferences grs'
       in
       if target' == target then obj.hint_action else AddTransparency (target', b)
-    | AddHints hintlist ->
+    | AddHints (superglobal, hintlist) ->
       let hintlist' = List.Smart.map subst_hint hintlist in
-      if hintlist' == hintlist then obj.hint_action else AddHints hintlist'
+      if hintlist' == hintlist then obj.hint_action else AddHints (superglobal, hintlist')
     | RemoveHints grs ->
       let grs' = List.Smart.map (subst_global_reference subst) grs in
       if grs == grs' then obj.hint_action else RemoveHints grs'
@@ -1147,7 +1154,7 @@ let subst_autohint (subst, obj) =
 
 let classify_autohint obj =
   match obj.hint_action with
-  | AddHints [] -> Dispose
+  | AddHints (_, []) -> Dispose
   | _ -> if obj.hint_local then Dispose else Substitute obj
 
 let inAutoHint : hint_obj -> obj =
@@ -1179,7 +1186,7 @@ let remove_hints local dbnames grs =
 (**************************************************************************)
 (*                     The "Hint" vernacular command                      *)
 (**************************************************************************)
-let add_resolves env sigma clist local dbnames =
+let add_resolves env sigma clist ~local ~superglobal dbnames =
   List.iter
     (fun dbname ->
       let r =
@@ -1187,14 +1194,14 @@ let add_resolves env sigma clist local dbnames =
           make_resolves env sigma (true,hnf,not !Flags.quiet)
             pri ~poly ~name:path gr) clist)
       in
-      let hint = make_hint ~local dbname (AddHints r) in
+      let hint = make_hint ~local dbname (AddHints (superglobal, r)) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_unfolds l local dbnames =
+let add_unfolds l ~local ~superglobal dbnames =
   List.iter
     (fun dbname ->
-      let hint = make_hint ~local dbname (AddHints (List.map make_unfold l)) in
+      let hint = make_hint ~local dbname (AddHints (superglobal, List.map make_unfold l)) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
@@ -1220,23 +1227,23 @@ let add_transparency l b local dbnames =
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_extern info tacast local dbname =
+let add_extern info tacast ~local ~superglobal dbname =
   let pat = match info.hint_pattern with
   | None -> None
   | Some (_, pat) -> Some pat
   in
   let hint = make_hint ~local dbname
-                       (AddHints [make_extern (Option.get info.hint_priority) pat tacast]) in
+                       (AddHints (superglobal, [make_extern (Option.get info.hint_priority) pat tacast])) in
   Lib.add_anonymous_leaf (inAutoHint hint)
 
-let add_externs info tacast local dbnames =
-  List.iter (add_extern info tacast local) dbnames
+let add_externs info tacast ~local ~superglobal dbnames =
+  List.iter (add_extern info tacast ~local ~superglobal) dbnames
 
-let add_trivials env sigma l local dbnames =
+let add_trivials env sigma l ~local ~superglobal dbnames =
   List.iter
     (fun dbname ->
       let l = List.map (fun (name, poly, c) -> make_trivial env sigma poly ~name c) l in
-      let hint = make_hint ~local dbname (AddHints l) in
+      let hint = make_hint ~local dbname (AddHints (superglobal, l)) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
@@ -1400,22 +1407,22 @@ let interp_hints ~poly =
       let _, tacexp = Genintern.generic_intern env tacexp in
       HintsExternEntry ({ hint_priority = Some pri; hint_pattern = pat }, tacexp)
 
-let add_hints ~local dbnames h =
+let add_hints ~local ~superglobal dbnames h =
   if String.List.mem "nocore" dbnames then
     user_err Pp.(str "The hint database \"nocore\" is meant to stay empty.");
   assert (not (List.is_empty dbnames));
   let env = Global.env() in
   let sigma = Evd.from_env env in
   match h with
-  | HintsResolveEntry lhints -> add_resolves env sigma lhints local dbnames
-  | HintsImmediateEntry lhints -> add_trivials env sigma lhints local dbnames
+  | HintsResolveEntry lhints -> add_resolves env sigma lhints ~local ~superglobal dbnames
+  | HintsImmediateEntry lhints -> add_trivials env sigma lhints ~local ~superglobal dbnames
   | HintsCutEntry lhints -> add_cuts lhints local dbnames
   | HintsModeEntry (l,m) -> add_mode l m local dbnames
-  | HintsUnfoldEntry lhints -> add_unfolds lhints local dbnames
+  | HintsUnfoldEntry lhints -> add_unfolds lhints ~local ~superglobal dbnames
   | HintsTransparencyEntry (lhints, b) ->
       add_transparency lhints b local dbnames
   | HintsExternEntry (info, tacexp) ->
-      add_externs info tacexp local dbnames
+      add_externs info tacexp ~local ~superglobal dbnames
 
 let expand_constructor_hints env sigma lems =
   List.map_append (fun (evd,lem) ->
