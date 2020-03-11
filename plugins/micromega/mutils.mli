@@ -8,6 +8,8 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open NumCompat
+
 module Int : sig
   type t = int
 
@@ -27,9 +29,6 @@ module IMap : sig
   val from : key -> 'elt t -> 'elt t
   (** [from k  m] returns the submap of [m] with keys greater or equal k *)
 end
-
-val numerator : Num.num -> Big_int.big_int
-val denominator : Num.num -> Big_int.big_int
 
 module Cmp : sig
   val compare_list : ('a -> 'b -> int) -> 'a list -> 'b list -> int
@@ -53,19 +52,19 @@ val pp_list :
 
 module CamlToCoq : sig
   val positive : int -> Micromega.positive
-  val bigint : Big_int.big_int -> Micromega.z
+  val bigint : Z.t -> Micromega.z
   val n : int -> Micromega.n
   val nat : int -> Micromega.nat
-  val q : Num.num -> Micromega.q
+  val q : Q.t -> Micromega.q
   val index : int -> Micromega.positive
   val z : int -> Micromega.z
-  val positive_big_int : Big_int.big_int -> Micromega.positive
+  val positive_big_int : Z.t -> Micromega.positive
 end
 
 module CoqToCaml : sig
-  val z_big_int : Micromega.z -> Big_int.big_int
+  val z_big_int : Micromega.z -> Z.t
   val z : Micromega.z -> int
-  val q_to_num : Micromega.q -> Num.num
+  val q_to_num : Micromega.q -> Q.t
   val positive : Micromega.positive -> int
   val n : Micromega.n -> int
   val nat : Micromega.nat -> int
@@ -96,7 +95,6 @@ module Hash : sig
   val hash_elt : ('a -> int) -> int -> 'a -> int
 end
 
-val ppcm : Big_int.big_int -> Big_int.big_int -> Big_int.big_int
 val all_pairs : ('a -> 'a -> 'b) -> 'a list -> 'b list
 val try_any : (('a -> 'b option) * 'c) list -> 'a -> 'b option
 val is_sublist : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool

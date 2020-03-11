@@ -9,6 +9,7 @@
 (************************************************************************)
 
 open Mutils
+open NumCompat
 module Mc = Micromega
 
 val max_nb_cstr : int ref
@@ -81,7 +82,7 @@ module Poly : sig
 
   type t
 
-  val constant : Num.num -> t
+  val constant : Q.t -> t
   (** [constant c]
       @return the constant polynomial c *)
 
@@ -101,24 +102,24 @@ module Poly : sig
   (** [uminus p]
       @return the polynomial -p i.e product by -1 *)
 
-  val get : Monomial.t -> t -> Num.num
+  val get : Monomial.t -> t -> Q.t
   (** [get mi p]
       @return the coefficient ai of the  monomial mi. *)
 
-  val fold : (Monomial.t -> Num.num -> 'a -> 'a) -> t -> 'a -> 'a
+  val fold : (Monomial.t -> Q.t -> 'a -> 'a) -> t -> 'a -> 'a
   (** [fold f p a] folds f over the monomials of p with non-zero coefficient *)
 
-  val add : Monomial.t -> Num.num -> t -> t
+  val add : Monomial.t -> Q.t -> t -> t
   (** [add m n p]
       @return the polynomial n*m + p *)
 end
 
-type cstr = {coeffs : Vect.t; op : op; cst : Num.num}
+type cstr = {coeffs : Vect.t; op : op; cst : Q.t}
 
 (* Representation of linear constraints *)
 and op = Eq | Ge | Gt
 
-val eval_op : op -> Num.num -> Num.num -> bool
+val eval_op : op -> Q.t -> Q.t -> bool
 
 (*val opMult : op -> op -> op*)
 
@@ -172,7 +173,7 @@ module LinPoly : sig
       @return 1.y where y is the variable index of the monomial x^1.
    *)
 
-  val coq_poly_of_linpol : (Num.num -> 'a) -> t -> 'a Mc.pExpr
+  val coq_poly_of_linpol : (Q.t -> 'a) -> t -> 'a Mc.pExpr
   (** [coq_poly_of_linpol c p]
       @param p is a multi-variate polynomial.
       @param c maps a rational to a Coq polynomial coefficient.
@@ -206,7 +207,7 @@ module LinPoly : sig
       @return true if the polynomial is linear in x
       i.e can be written c*x+r where c is a constant and r is independent from x *)
 
-  val constant : Num.num -> t
+  val constant : Q.t -> t
   (** [constant c]
       @return the constant polynomial c
    *)
@@ -216,9 +217,9 @@ module LinPoly : sig
       p is linear in x i.e x does not occur in b and
       a is a constant such that [pred a] *)
 
-  val search_linear : (Num.num -> bool) -> t -> var option
+  val search_linear : (Q.t -> bool) -> t -> var option
 
-  val search_all_linear : (Num.num -> bool) -> t -> var list
+  val search_all_linear : (Q.t -> bool) -> t -> var list
   (** [search_all_linear pred p]
       @return all the variables x such p = a.x + b such that
       p is linear in x i.e x does not occur in b and
@@ -270,11 +271,11 @@ module ProofFormat : sig
     | Annot of string * prf_rule
     | Hyp of int
     | Def of int
-    | Cst of Num.num
+    | Cst of Q.t
     | Zero
     | Square of Vect.t
     | MulC of Vect.t * prf_rule
-    | Gcd of Big_int.big_int * prf_rule
+    | Gcd of Z.t * prf_rule
     | MulPrf of prf_rule * prf_rule
     | AddPrf of prf_rule * prf_rule
     | CutPrf of prf_rule
@@ -287,20 +288,20 @@ module ProofFormat : sig
 
   (* x = z - t, z >= 0, t >= 0 *)
 
-  val pr_size : prf_rule -> Num.num
+  val pr_size : prf_rule -> Q.t
   val pr_rule_max_id : prf_rule -> int
   val proof_max_id : proof -> int
   val normalise_proof : int -> proof -> int * proof
   val output_prf_rule : out_channel -> prf_rule -> unit
   val output_proof : out_channel -> proof -> unit
   val add_proof : prf_rule -> prf_rule -> prf_rule
-  val mul_cst_proof : Num.num -> prf_rule -> prf_rule
+  val mul_cst_proof : Q.t -> prf_rule -> prf_rule
   val mul_proof : prf_rule -> prf_rule -> prf_rule
   val compile_proof : int list -> proof -> Micromega.zArithProof
 
   val cmpl_prf_rule :
        ('a Micromega.pExpr -> 'a Micromega.pol)
-    -> (Num.num -> 'a)
+    -> (Q.t -> 'a)
     -> int list
     -> prf_rule
     -> 'a Micromega.psatz
@@ -332,7 +333,7 @@ module WithProof : sig
   val zero : t
   (** [zero] represents the tautology (0=0) *)
 
-  val const : Num.num -> t
+  val const : Q.t -> t
   (** [const n] represents the tautology (n>=0) *)
 
   val product : t -> t -> t

@@ -8,12 +8,13 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
+open NumCompat
+open Q.Notations
+
 (** Intervals (extracted from mfourier.ml) *)
 
-open Num
-
 (** The type of intervals is *)
-type interval = num option * num option
+type interval = Q.t option * Q.t option
 (** None models the absence of bound i.e. infinity
           As a result,
           - None , None   -> \]-oo,+oo\[
@@ -26,11 +27,11 @@ type interval = num option * num option
 let pp o (n1, n2) =
   ( match n1 with
   | None -> output_string o "]-oo"
-  | Some n -> Printf.fprintf o "[%s" (string_of_num n) );
+  | Some n -> Printf.fprintf o "[%s" (Q.to_string n) );
   output_string o ",";
   match n2 with
   | None -> output_string o "+oo["
-  | Some n -> Printf.fprintf o "%s]" (string_of_num n)
+  | Some n -> Printf.fprintf o "%s]" (Q.to_string n)
 
 (** if then interval [itv] is empty, [norm_itv itv] returns [None]
       otherwise, it returns [Some itv] *)
@@ -51,11 +52,11 @@ let inter i1 i2 =
     | None, Some _ -> o2
     | Some n1, Some n2 -> Some (f n1 n2)
   in
-  norm_itv (inter max_num l1 l2, inter min_num r1 r2)
+  norm_itv (inter Q.max l1 l2, inter Q.min r1 r2)
 
 let range = function
   | None, _ | _, None -> None
-  | Some i, Some j -> Some (floor_num j -/ ceiling_num i +/ Int 1)
+  | Some i, Some j -> Some (Q.floor j -/ Q.ceiling i +/ Q.one)
 
 let smaller_itv i1 i2 =
   match (range i1, range i2) with

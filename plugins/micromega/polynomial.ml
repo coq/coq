@@ -14,7 +14,8 @@
 (*                                                                      *)
 (************************************************************************)
 
-open Num
+open NumCompat
+open Q.Notations
 open Mutils
 module Mc = Micromega
 
@@ -23,8 +24,8 @@ let max_nb_cstr = ref max_int
 type var = int
 
 let debug = false
-let ( <+> ) = add_num
-let ( <*> ) = mult_num
+let ( <+> ) = ( +/ )
+let ( <*> ) = ( */ )
 
 module Monomial : sig
   type t
@@ -153,13 +154,11 @@ end
 
 let pp_mon o (m, i) =
   if Monomial.is_const m then
-    if eq_num (Int 0) i then () else Printf.fprintf o "%s" (string_of_num i)
-  else
-    match i with
-    | Int 1 -> Monomial.pp o m
-    | Int -1 -> Printf.fprintf o "-%a" Monomial.pp m
-    | Int 0 -> ()
-    | _ -> Printf.fprintf o "%s*%a" (string_of_num i) Monomial.pp m
+    if Q.zero =/ i then () else Printf.fprintf o "%s" (Q.to_string i)
+  else if Q.one =/ i then Monomial.pp o m
+  else if Q.neg_one =/ i then Printf.fprintf o "-%a" Monomial.pp m
+  else if Q.zero =/ i then ()
+  else Printf.fprintf o "%s*%a" (Q.to_string i) Monomial.pp m
 
 module Poly : (* A polynomial is a map of monomials *)
               (*
@@ -171,51 +170,51 @@ sig
   type t
 
   val pp : out_channel -> t -> unit
-  val get : Monomial.t -> t -> num
+  val get : Monomial.t -> t -> Q.t
   val variable : var -> t
-  val add : Monomial.t -> num -> t -> t
-  val constant : num -> t
+  val add : Monomial.t -> Q.t -> t -> t
+  val constant : Q.t -> t
   val product : t -> t -> t
   val addition : t -> t -> t
   val uminus : t -> t
-  val fold : (Monomial.t -> num -> 'a -> 'a) -> t -> 'a -> 'a
+  val fold : (Monomial.t -> Q.t -> 'a -> 'a) -> t -> 'a -> 'a
   val factorise : var -> t -> t * t
 end = struct
   (*normalisation bug : 0*x ... *)
   module P = Map.Make (Monomial)
   open P
 
-  type t = num P.t
+  type t = Q.t P.t
 
   let pp o p = P.iter (fun mn i -> Printf.fprintf o "%a + " pp_mon (mn, i)) p
 
   (* Get the coefficient of monomial mn *)
-  let get : Monomial.t -> t -> num =
-   fun mn p -> try find mn p with Not_found -> Int 0
+  let get : Monomial.t -> t -> Q.t =
+   fun mn p -> try find mn p with Not_found -> Q.zero
 
   (* The polynomial 1.x *)
-  let variable : var -> t = fun x -> add (Monomial.var x) (Int 1) empty
+  let variable : var -> t = fun x -> add (Monomial.var x) Q.one empty
 
   (*The constant polynomial *)
-  let constant : num -> t = fun c -> add Monomial.const c empty
+  let constant : Q.t -> t = fun c -> add Monomial.const c empty
 
   (* The addition of a monomial *)
 
-  let add : Monomial.t -> num -> t -> t =
+  let add : Monomial.t -> Q.t -> t -> t =
    fun mn v p ->
-    if sign_num v = 0 then p
+    if Q.sign v = 0 then p
     else
       let vl = get mn p <+> v in
-      if sign_num vl = 0 then remove mn p else add mn vl p
+      if Q.sign vl = 0 then remove mn p else add mn vl p
 
   (** Design choice: empty is not a polynomial
      I do not remember why ....
    **)
 
   (* The product by a monomial *)
-  let mult : Monomial.t -> num -> t -> t =
+  let mult : Monomial.t -> Q.t -> t -> t =
    fun mn v p ->
-    if sign_num v = 0 then constant (Int 0)
+    if Q.sign v = 0 then constant Q.zero
     else
       fold
         (fun mn' v' res -> P.add (Monomial.prod mn mn') (v <*> v') res)
@@ -227,7 +226,7 @@ end = struct
   let product : t -> t -> t =
    fun p1 p2 -> fold (fun mn v res -> addition (mult mn v p2) res) p1 empty
 
-  let uminus : t -> t = fun p -> map (fun v -> minus_num v) p
+  let uminus : t -> t = fun p -> map (fun v -> Q.neg v) p
   let fold = P.fold
 
   let factorise x p =
@@ -240,12 +239,12 @@ end = struct
           let mx = Monomial.prod m1 (Monomial.exp x (i - 1)) in
           (add mx v px, cx))
       p
-      (constant (Int 0), constant (Int 0))
+      (constant Q.zero, constant Q.zero)
 end
 
 type vector = Vect.t
 
-type cstr = {coeffs : vector; op : op; cst : num}
+type cstr = {coeffs : vector; op : op; cst : Q.t}
 
 and op = Eq | Ge | Gt
 
@@ -256,8 +255,7 @@ let eval_op = function Eq -> ( =/ ) | Ge -> ( >=/ ) | Gt -> ( >/ )
 let string_of_op = function Eq -> "=" | Ge -> ">=" | Gt -> ">"
 
 let output_cstr o {coeffs; op; cst} =
-  Printf.fprintf o "%a %s %s" Vect.pp coeffs (string_of_op op)
-    (string_of_num cst)
+  Printf.fprintf o "%a %s %s" Vect.pp coeffs (string_of_op op) (Q.to_string cst)
 
 let opMult o1 o2 =
   match (o1, o2) with Eq, _ | _, Eq -> Eq | Ge, _ | _, Ge -> Ge | Gt, Gt -> Gt
@@ -308,11 +306,11 @@ module LinPoly = struct
     let _ = register Monomial.const
   end
 
-  let var v = Vect.set (MonT.register (Monomial.var v)) (Int 1) Vect.null
+  let var v = Vect.set (MonT.register (Monomial.var v)) Q.one Vect.null
 
   let of_monomial m =
     let v = MonT.register m in
-    Vect.set v (Int 1) Vect.null
+    Vect.set v Q.one Vect.null
 
   let linpol_of_pol p =
     Poly.fold
@@ -324,7 +322,7 @@ module LinPoly = struct
   let pol_of_linpol v =
     Vect.fold
       (fun p vr n -> Poly.add (MonT.retrieve vr) n p)
-      (Poly.constant (Int 0)) v
+      (Poly.constant Q.zero) v
 
   let coq_poly_of_linpol cst p =
     let pol_of_mon m =
@@ -332,13 +330,13 @@ module LinPoly = struct
         (fun x v p ->
           Mc.PEmul (Mc.PEpow (Mc.PEX (CamlToCoq.positive x), CamlToCoq.n v), p))
         m
-        (Mc.PEc (cst (Int 1)))
+        (Mc.PEc (cst Q.one))
     in
     Vect.fold
       (fun acc x v ->
         let mn = MonT.retrieve x in
         Mc.PEadd (Mc.PEmul (Mc.PEc (cst v), pol_of_mon mn), acc))
-      (Mc.PEc (cst (Int 0)))
+      (Mc.PEc (cst Q.zero))
       p
 
   let pp_var o vr =
@@ -346,7 +344,7 @@ module LinPoly = struct
     with Not_found -> Printf.fprintf o "v%i" vr
 
   let pp o p = Vect.pp_gen pp_var o p
-  let constant c = if sign_num c = 0 then Vect.null else Vect.set 0 c Vect.null
+  let constant c = if Q.sign c = 0 then Vect.null else Vect.set 0 c Vect.null
 
   let is_linear p =
     Vect.for_all
@@ -357,7 +355,7 @@ module LinPoly = struct
 
   let is_variable p =
     let (x, v), r = Vect.decomp_fst p in
-    if Vect.is_null r && v >/ Int 0 then Monomial.get_var (MonT.retrieve x)
+    if Vect.is_null r && v >/ Q.zero then Monomial.get_var (MonT.retrieve x)
     else None
 
   let factorise x p =
@@ -431,17 +429,15 @@ module LinPoly = struct
 end
 
 module ProofFormat = struct
-  open Big_int
-
   type prf_rule =
     | Annot of string * prf_rule
     | Hyp of int
     | Def of int
-    | Cst of Num.num
+    | Cst of Q.t
     | Zero
     | Square of Vect.t
     | MulC of Vect.t * prf_rule
-    | Gcd of Big_int.big_int * prf_rule
+    | Gcd of Z.t * prf_rule
     | MulPrf of prf_rule * prf_rule
     | AddPrf of prf_rule * prf_rule
     | CutPrf of prf_rule
@@ -458,7 +454,7 @@ module ProofFormat = struct
     | Annot (s, p) -> Printf.fprintf o "(%a)@%s" output_prf_rule p s
     | Hyp i -> Printf.fprintf o "Hyp %i" i
     | Def i -> Printf.fprintf o "Def %i" i
-    | Cst c -> Printf.fprintf o "Cst %s" (string_of_num c)
+    | Cst c -> Printf.fprintf o "Cst %s" (Q.to_string c)
     | Zero -> Printf.fprintf o "Zero"
     | Square s -> Printf.fprintf o "(%a)^2" Poly.pp (LinPoly.pol_of_linpol s)
     | MulC (p, pr) ->
@@ -469,8 +465,7 @@ module ProofFormat = struct
     | AddPrf (p1, p2) ->
       Printf.fprintf o "%a + %a" output_prf_rule p1 output_prf_rule p2
     | CutPrf p -> Printf.fprintf o "[%a]" output_prf_rule p
-    | Gcd (c, p) ->
-      Printf.fprintf o "(%a)/%s" output_prf_rule p (string_of_big_int c)
+    | Gcd (c, p) -> Printf.fprintf o "(%a)/%s" output_prf_rule p (Z.to_string c)
 
   let rec output_proof o = function
     | Done -> Printf.fprintf o "."
@@ -485,11 +480,11 @@ module ProofFormat = struct
 
   let rec pr_size = function
     | Annot (_, p) -> pr_size p
-    | Zero | Square _ -> Int 0
-    | Hyp _ -> Int 1
-    | Def _ -> Int 1
+    | Zero | Square _ -> Q.zero
+    | Hyp _ -> Q.one
+    | Def _ -> Q.one
     | Cst n -> n
-    | Gcd (i, p) -> pr_size p // Big_int i
+    | Gcd (i, p) -> pr_size p // Q.of_bigint i
     | MulPrf (p1, p2) | AddPrf (p1, p2) -> pr_size p1 +/ pr_size p2
     | CutPrf p -> pr_size p
     | MulC (v, p) -> pr_size p
@@ -601,12 +596,12 @@ module ProofFormat = struct
       (id, ExProof (i, j, k, x, z, t, prf))
     | Enum (i, p1, v, p2, pl) ->
       (* Why do I have  top-level cuts ? *)
-      (*      let p1 = implicit_cut p1 in
-      let p2 = implicit_cut p2 in
-      let (ids,prfs) = List.split (List.map (normalise_proof id) pl) in
-        (List.fold_left max  0 ids ,
-           Enum(i,p1,v,p2,prfs))
-        *)
+      (* let p1 = implicit_cut p1 in
+         let p2 = implicit_cut p2 in
+         let (ids,prfs) = List.split (List.map (normalise_proof id) pl) in
+           (List.fold_left max  0 ids ,
+              Enum(i,p1,v,p2,prfs))
+      *)
       let bds1, id, p1' = pr_rule_def_cut id (implicit_cut p1) in
       let bds2, id, p2' = pr_rule_def_cut id (implicit_cut p2) in
       let ids, prfs = List.split (List.map (normalise_proof id) pl) in
@@ -649,13 +644,13 @@ module ProofFormat = struct
         if s1 = s2 then compare p1 p2 else String.compare s1 s2
       | Hyp i, Hyp j -> Int.compare i j
       | Def i, Def j -> Int.compare i j
-      | Cst n, Cst m -> Num.compare_num n m
+      | Cst n, Cst m -> Q.compare n m
       | Zero, Zero -> 0
       | Square v1, Square v2 -> Vect.compare v1 v2
       | MulC (v1, p1), MulC (v2, p2) ->
         cmp_pair Vect.compare compare (v1, p1) (v2, p2)
       | Gcd (b1, p1), Gcd (b2, p2) ->
-        cmp_pair Big_int.compare_big_int compare (b1, p1) (b2, p2)
+        cmp_pair Z.compare compare (b1, p1) (b2, p2)
       | MulPrf (p1, q1), MulPrf (p2, q2) ->
         cmp_pair compare compare (p1, q1) (p2, q2)
       | AddPrf (p1, q1), MulPrf (p2, q2) ->
@@ -672,11 +667,11 @@ module ProofFormat = struct
     | Annot (s, p) -> Annot (s, mul_cst_proof c p)
     | MulC (v, p') -> MulC (Vect.mul c v, p')
     | _ -> (
-      match sign_num c with
+      match Q.sign c with
       | 0 -> Zero (* This is likely to be a bug *)
       | -1 ->
         MulC (LinPoly.constant c, p) (* [p] should represent an equality *)
-      | 1 -> if eq_num (Int 1) c then p else MulPrf (Cst c, p)
+      | 1 -> if Q.one =/ c then p else MulPrf (Cst c, p)
       | _ -> assert false )
 
   let sMulC v p =
@@ -698,7 +693,7 @@ module ProofFormat = struct
     match p with
     | Annot (s, p) -> dev_prf_rule p
     | Hyp _ | Def _ | Cst _ | Zero | Square _ ->
-      PrfRuleMap.singleton p (LinPoly.constant (Int 1))
+      PrfRuleMap.singleton p (LinPoly.constant Q.one)
     | MulC (v, p) ->
       PrfRuleMap.map (fun v1 -> LinPoly.product v v1) (dev_prf_rule p)
     | AddPrf (p1, p2) ->
@@ -716,9 +711,9 @@ module ProofFormat = struct
       let p2'' = prf_rule_of_map p2' in
       match p1'' with
       | Cst c -> PrfRuleMap.map (fun v1 -> Vect.mul c v1) p2'
-      | _ ->
-        PrfRuleMap.singleton (MulPrf (p1'', p2'')) (LinPoly.constant (Int 1)) )
-    | _ -> PrfRuleMap.singleton p (LinPoly.constant (Int 1))
+      | _ -> PrfRuleMap.singleton (MulPrf (p1'', p2'')) (LinPoly.constant Q.one)
+      )
+    | _ -> PrfRuleMap.singleton p (LinPoly.constant Q.one)
 
   let simplify_prf_rule p = prf_rule_of_map (dev_prf_rule p)
 
@@ -766,7 +761,7 @@ module ProofFormat = struct
       xid_of_hyp 0 l
   end
 
-  let cmpl_prf_rule norm (cst : num -> 'a) env prf =
+  let cmpl_prf_rule norm (cst : Q.t -> 'a) env prf =
     let rec cmpl = function
       | Annot (s, p) -> cmpl p
       | Hyp i | Def i -> Mc.PsatzIn (CamlToCoq.nat (Env.id_of_hyp i env))
@@ -783,7 +778,7 @@ module ProofFormat = struct
     cmpl prf
 
   let cmpl_prf_rule_z env r =
-    cmpl_prf_rule Mc.normZ (fun x -> CamlToCoq.bigint (numerator x)) env r
+    cmpl_prf_rule Mc.normZ (fun x -> CamlToCoq.bigint (Q.num x)) env r
 
   let rec cmpl_proof env = function
     | Done -> Mc.DoneProof
@@ -810,7 +805,7 @@ module ProofFormat = struct
     | Hyp i | Def i -> env i
     | Cst n -> (
       ( Vect.set 0 n Vect.null
-      , match Num.compare_num n (Int 0) with
+      , match Q.compare n Q.zero with
         | 0 -> Ge
         | 1 -> Gt
         | _ -> failwith "eval_prf_rule : negative constant" ) )
@@ -826,7 +821,7 @@ module ProofFormat = struct
         failwith "eval_prf_rule : not an equality" )
     | Gcd (g, p) ->
       let v, op = eval_prf_rule env p in
-      (Vect.div (Big_int g) v, op)
+      (Vect.div (Q.of_bigint g) v, op)
     | MulPrf (p1, p2) ->
       let v1, o1 = eval_prf_rule env p1 in
       let v2, o2 = eval_prf_rule env p2 in
@@ -839,7 +834,7 @@ module ProofFormat = struct
 
   let is_unsat (p, o) =
     let c, r = Vect.decomp_cst p in
-    if Vect.is_null r then not (eval_op o c (Int 0)) else false
+    if Vect.is_null r then not (eval_op o c Q.zero) else false
 
   let rec eval_proof env p =
     match p with
@@ -882,7 +877,7 @@ module WithProof = struct
 
   let zero = ((Vect.null, Eq), ProofFormat.Zero)
   let const n = ((LinPoly.constant n, Ge), ProofFormat.Cst n)
-  let of_cstr (c, prf) = ((Vect.set 0 (Num.minus_num c.cst) c.coeffs, c.op), prf)
+  let of_cstr (c, prf) = ((Vect.set 0 (Q.neg c.cst) c.coeffs, c.op), prf)
 
   let product : t -> t -> t =
    fun ((p1, o1), prf1) ((p2, o2), prf2) ->
@@ -897,7 +892,7 @@ module WithProof = struct
     | Eq -> ((LinPoly.product p p1, o1), ProofFormat.sMulC p prf1)
     | Gt | Ge ->
       let n, r = Vect.decomp_cst p in
-      if Vect.is_null r && n >/ Int 0 then
+      if Vect.is_null r && n >/ Q.zero then
         ((LinPoly.product p p1, o1), ProofFormat.mul_cst_proof n prf1)
       else (
         if debug then
@@ -908,34 +903,31 @@ module WithProof = struct
   let cutting_plane ((p, o), prf) =
     let c, p' = Vect.decomp_cst p in
     let g = Vect.gcd p' in
-    if
-      Big_int.eq_big_int Big_int.unit_big_int g
-      || c =/ Int 0
-      || not (Big_int.eq_big_int (denominator c) Big_int.unit_big_int)
-    then None (* Nothing to do *)
+    if Z.equal Z.one g || c =/ Q.zero || not (Z.equal (Q.den c) Z.one) then None
+      (* Nothing to do *)
     else
-      let c1 = c // Big_int g in
-      let c1' = Num.floor_num c1 in
+      let c1 = c // Q.of_bigint g in
+      let c1' = Q.floor c1 in
       if c1 =/ c1' then None
       else
         match o with
         | Eq ->
-          Some ((Vect.set 0 (Int (-1)) Vect.null, Eq), ProofFormat.Gcd (g, prf))
+          Some ((Vect.set 0 Q.neg_one Vect.null, Eq), ProofFormat.Gcd (g, prf))
         | Gt -> failwith "cutting_plane ignore strict constraints"
         | Ge ->
           (* This is a non-trivial common divisor *)
           Some
-            ( (Vect.set 0 c1' (Vect.div (Big_int g) p), o)
+            ( (Vect.set 0 c1' (Vect.div (Q.of_bigint g) p), o)
             , ProofFormat.Gcd (g, prf) )
 
   let construct_sign p =
     let c, p' = Vect.decomp_cst p in
     if Vect.is_null p' then
       Some
-        ( match sign_num c with
+        ( match Q.sign c with
         | 0 -> (true, Eq, ProofFormat.Zero)
         | 1 -> (true, Gt, ProofFormat.Cst c)
-        | _ (*-1*) -> (false, Gt, ProofFormat.Cst (minus_num c)) )
+        | _ (*-1*) -> (false, Gt, ProofFormat.Cst (Q.neg c)) )
     else None
 
   let get_sign l p =
@@ -1007,7 +999,7 @@ module WithProof = struct
     | Some (c, p) -> Some (c, ProofFormat.simplify_prf_rule p)
 
   let is_substitution strict ((p, o), prf) =
-    let pred v = if strict then v =/ Int 1 || v =/ Int (-1) else true in
+    let pred v = if strict then v =/ Q.one || v =/ Q.neg_one else true in
     match o with Eq -> LinPoly.search_linear pred p | _ -> None
 
   let subst1 sys0 =
@@ -1048,14 +1040,14 @@ module WithProof = struct
       , Some {cst = c2; var = v2; coeff = c2'} ) -> (
       let good_coeff b o =
         match o with
-        | Eq -> Some (minus_num b)
-        | _ -> if b <=/ Int 0 then Some (minus_num b) else None
+        | Eq -> Some (Q.neg b)
+        | _ -> if b <=/ Q.zero then Some (Q.neg b) else None
       in
       match (good_coeff c1 o2, good_coeff c2 o1) with
       | None, _ | _, None -> None
       | Some c1, Some c2 ->
         let ext_mult c w =
-          if c =/ Int 0 then zero else mult (LinPoly.constant c) w
+          if c =/ Q.zero then zero else mult (LinPoly.constant c) w
         in
         Some
           (addition

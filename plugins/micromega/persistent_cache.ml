@@ -82,9 +82,9 @@ module PHashtable (Key : HashedType) : PHashtable with type key = Key.t = struct
     with Unix.Unix_error (_, _, _) ->
       ()
       (* Here, this is really bad news --
-       there is a pending lock which could cause a deadlock.
-       Should it be an anomaly or produce a warning ?
-    *);
+         there is a pending lock which could cause a deadlock.
+         Should it be an anomaly or produce a warning ?
+      *);
       ignore (lseek fd pos SEEK_SET)
 
   (* We make the assumption that an acquired lock can always be released *)
