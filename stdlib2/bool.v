@@ -366,7 +366,7 @@ Open Scope boolean_if_scope.
 Variant reflect (P : Prop) : bool -> Type :=
   | ReflectT : P -> reflect P true
   | ReflectF : ~ P -> reflect P false.
-Hint Constructors reflect : bool.
+#[global] Hint Constructors reflect : bool.
 
 (** Interest: a case on a reflect lemma or hyp performs clever
     unification, and leave the goal in a convenient shape
@@ -464,7 +464,7 @@ Ltac prop_congr := apply: prop_congr.
 Lemma is_true_true : true.               Proof. by []. Qed.
 Lemma not_false_is_true : ~ false.       Proof. by []. Qed.
 Lemma is_true_locked_true : locked true. Proof. by unlock. Qed.
-Hint Resolve is_true_true not_false_is_true is_true_locked_true : core.
+#[global] Hint Resolve is_true_true not_false_is_true is_true_locked_true : core.
 
 (* Needed for locked predicates, in particular for eqType's.                  *)
 Lemma not_locked_false_eq_true : locked false <> true.

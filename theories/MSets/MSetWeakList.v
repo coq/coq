@@ -258,6 +258,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   Proof.
   unfold Empty; destruct s; simpl; split; intros; auto.
   intro; inv.
+  discriminate.
   elim (H e); auto.
   Qed.
 

@@ -1211,8 +1211,9 @@ let vernac_hints ~atts dbnames h =
     else dbnames
   in
   let local, poly = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
+  let superglobal = Option.is_empty local in
   let local = enforce_module_locality local in
-  Hints.add_hints ~local ~superglobal:true dbnames (Hints.interp_hints ~poly h)
+  Hints.add_hints ~local ~superglobal dbnames (Hints.interp_hints ~poly h)
 
 let vernac_syntactic_definition ~atts lid x only_parsing =
   let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in

@@ -30,7 +30,7 @@ Inductive eq (A : Type) (x : A) : A -> Prop :=
 
 where "x = y :> A" := (@eq A x y) : type_scope.
 
-Hint Resolve eq_refl : core.
+#[global] Hint Resolve eq_refl : core.
 
 Register eq as core.eq.type.
 Register eq_refl as core.eq.refl.
