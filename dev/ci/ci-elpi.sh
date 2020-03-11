@@ -6,3 +6,7 @@ ci_dir="$(dirname "$0")"
 git_download elpi
 
 ( cd "${CI_BUILD_DIR}/elpi" && make && make install )
+
+git_download elpi_hb
+
+( cd "${CI_BUILD_DIR}/elpi_hb" && make && make install )

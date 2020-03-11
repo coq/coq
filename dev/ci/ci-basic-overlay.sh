@@ -214,11 +214,14 @@
 : "${equations_CI_ARCHIVEURL:=${equations_CI_GITURL}/archive}"
 
 ########################################################################
-# Elpi
+# Elpi + Hierarchy Builder
 ########################################################################
 : "${elpi_CI_REF:=coq-master}"
 : "${elpi_CI_GITURL:=https://github.com/LPCIC/coq-elpi}"
 : "${elpi_CI_ARCHIVEURL:=${elpi_CI_GITURL}/archive}"
+: "${elpi_hb_CI_REF:=coq-master}"
+: "${elpi_hb_CI_GITURL:=https://github.com/math-comp/hierarchy-builder}"
+: "${elpi_hb_CI_ARCHIVEURL:=${elpi_hb_CI_GITURL}/archive}"
 
 ########################################################################
 # fcsl-pcm
