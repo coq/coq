@@ -25,6 +25,12 @@ let code_codepointer =           0x10
 let code_infixpointer =          0x11
 let code_custom =                0x12
 let code_block64 =               0x13
+let code_shared64 =              0x14
+let code_string64 =              0x15
+let code_double_array64_big =    0x16
+let code_double_array64_little = 0x17
+let code_custom_len =            0x18
+let code_custom_fixed =          0x19
 
 [@@@ocaml.warning "-37"]
 type code_descr =
@@ -48,8 +54,14 @@ type code_descr =
 | CODE_INFIXPOINTER
 | CODE_CUSTOM
 | CODE_BLOCK64
+| CODE_SHARED64
+| CODE_STRING64
+| CODE_DOUBLE_ARRAY64_BIG
+| CODE_DOUBLE_ARRAY64_LITTLE
+| CODE_CUSTOM_LEN
+| CODE_CUSTOM_FIXED
 
-let code_max = 0x13
+let code_max = 0x19
 
 let magic_number = "\132\149\166\190"
 
@@ -342,7 +354,8 @@ let parse_object chan =
     let addr = input_int32u chan in
     for _i = 0 to 15 do ignore (input_byte chan); done;
     RCode addr
-  | CODE_CUSTOM ->
+  | CODE_CUSTOM
+  | CODE_CUSTOM_FIXED ->
     begin match input_cstring chan with
     | "_j" -> Rint64 (input_intL chan)
     | s -> Printf.eprintf "Unhandled custom code: %s" s; assert false
@@ -356,6 +369,11 @@ let parse_object chan =
   | CODE_DOUBLE_ARRAY8_LITTLE
   | CODE_DOUBLE_ARRAY32_BIG
   | CODE_INFIXPOINTER
+  | CODE_SHARED64
+  | CODE_STRING64
+  | CODE_DOUBLE_ARRAY64_BIG
+  | CODE_DOUBLE_ARRAY64_LITTLE
+  | CODE_CUSTOM_LEN
     -> Printf.eprintf "Unhandled code %04x\n%!" data; assert false
 
 let parse chan =
