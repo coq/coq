@@ -295,8 +295,8 @@ open Evd
 
 let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
 
-let add_hint local prg cst =
-  Hints.add_hints ~local [Id.to_string prg.prg_name] (unfold_entry cst)
+let add_local_hint prg cst =
+  Hints.add_hints ~local:true ~superglobal:false [Id.to_string prg.prg_name] (unfold_entry cst)
 
 let init_prog_info ?(opaque = false) ?hook n udecl b t ctx deps fixkind
                    notations obls impls ~scope ~poly ~kind reduce =
@@ -461,7 +461,7 @@ let obligation_hook prg obl num auto { DeclareDef.Hook.S.uctx = ctx'; dref; _ } 
       Univ.UContext.instance uctx, ctx'
   in
   let obl = { obl with obl_body = Some (DefinedObl (cst, inst)) } in
-  let () = if transparent then add_hint true prg cst in
+  let () = if transparent then add_local_hint prg cst in
   let obls = Array.copy obls in
   let () = obls.(num) <- obl in
   let prg = { prg with prg_ctx = ctx' } in

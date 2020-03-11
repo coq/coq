@@ -219,7 +219,7 @@ val current_pure_db : unit -> hint_db list
 
 val interp_hints : poly:bool -> hints_expr -> hints_entry
 
-val add_hints : local:bool -> hint_db_name list -> hints_entry -> unit
+val add_hints : local:bool -> superglobal:bool -> hint_db_name list -> hints_entry -> unit
 
 val prepare_hint : bool (* Check no remaining evars *) ->
   env -> evar_map -> evar_map * constr -> (constr * Univ.ContextSet.t)

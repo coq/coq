@@ -613,7 +613,7 @@ let add_constant_class env sigma cst =
     }
   in
   Classes.add_class env sigma tc;
-    set_typeclass_transparency (EvalConstRef cst) false false
+    Classes.set_typeclass_transparency (EvalConstRef cst) false false
 
 let add_inductive_class env sigma ind =
   let mind, oneind = Inductive.lookup_mind_specif env ind in
