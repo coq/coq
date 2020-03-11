@@ -1708,7 +1708,7 @@ let add_infix ~local deprecation env ({CAst.loc;v=inf},modifiers) pr sc =
   (* check the precedence *)
   let vars = names_of_constr_expr pr in
   let x = Namegen.next_ident_away (Id.of_string "x") vars in
-  let y = Namegen.next_ident_away (Id.of_string "y") vars in
+  let y = Namegen.next_ident_away (Id.of_string "y") (Id.Set.add x vars) in
   let metas = [inject_var x; inject_var y] in
   let c = mkAppC (pr,metas) in
   let df = CAst.make ?loc @@ Id.to_string x ^" "^(quote_notation_token inf)^" "^Id.to_string y in
