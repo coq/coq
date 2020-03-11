@@ -697,6 +697,7 @@ library:ci-verdi-raft:
 
 library:ci-vst:
   extends: .ci-template-flambda
+  allow_failure: true
 
 # Plugins are by definition the projects that depend on Coq's ML API
 
