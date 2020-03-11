@@ -76,10 +76,6 @@ module Set : module type of CSet
 
 module Map : module type of CMap
 
-(** {6 Stacks.} *)
-
-module Stack : module type of CStack
-
 (** {6 Streams. } *)
 
 val stream_nth : int -> 'a Stream.t -> 'a
