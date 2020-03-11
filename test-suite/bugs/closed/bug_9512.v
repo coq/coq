@@ -4,9 +4,10 @@ Set Primitive Projections.
 Record params := { width : Z }.
 Definition p : params := Build_params 64.
 
+Definition width' := width.
 Set Printing All.
 
-Goal width p = 0%Z -> width p = 0%Z.
+Lemma foo : width p = 0%Z -> width p = 0%Z.
   intros.
 
   assert_succeeds (enough True; [omega|]).
@@ -16,7 +17,9 @@ Goal width p = 0%Z -> width p = 0%Z.
 (*   ============================ *)
 (*   @eq Z (width p) Z0 *)
 
-  change tt with tt in H.
+  change (width' p = 0%Z) in H;cbv [width'] in H.
+  (* check that we correctly got the compat constant in H *)
+  Fail match goal with H : ?l = _ |- ?l' = _ => constr_eq l l' end.
 
 (*   H : @eq Z (width p) Z0 *)
 (*   ============================ *)
