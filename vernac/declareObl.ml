@@ -123,7 +123,8 @@ let shrink_body c ty =
 let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
 
 let add_hint local prg cst =
-  Hints.add_hints ~local ~superglobal:false [Id.to_string prg.prg_name] (unfold_entry cst)
+  let locality = if local then Goptions.OptLocal else Goptions.OptExport in
+  Hints.add_hints ~locality [Id.to_string prg.prg_name] (unfold_entry cst)
 
 (***********************************************************************)
 (* Saving an obligation                                                *)

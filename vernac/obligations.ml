@@ -296,7 +296,7 @@ open Evd
 let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
 
 let add_local_hint prg cst =
-  Hints.add_hints ~local:true ~superglobal:false [Id.to_string prg.prg_name] (unfold_entry cst)
+  Hints.add_hints ~locality:Goptions.OptLocal [Id.to_string prg.prg_name] (unfold_entry cst)
 
 let init_prog_info ?(opaque = false) ?hook n udecl b t ctx deps fixkind
                    notations obls impls ~scope ~poly ~kind reduce =
