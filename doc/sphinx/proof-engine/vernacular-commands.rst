@@ -1190,6 +1190,12 @@ Controlling the locality of commands
      occurs in a section.  The :cmd:`Set` and :cmd:`Unset` commands belong to this
      category.
 
+.. attr:: export
+
+  Some commands support an :attr:`export` attribute. The effect of the attribute
+  is to make the effect of the command available when the module containing it
+  is imported. The :cmd:`Hint` command accepts it for instance.
+
 .. _controlling-typing-flags:
 
 Controlling Typing Flags

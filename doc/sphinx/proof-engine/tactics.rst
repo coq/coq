@@ -3759,6 +3759,24 @@ automatically created.
 .. cmd:: Hint @hint_definition : {+ @ident}
 
    The general command to add a hint to some databases :n:`{+ @ident}`.
+
+   This command supports the :attr:`local`, :attr:`global` and :attr:`export`
+   locality attributes. When no locality is explictly given, the
+   command is :attr:`local` inside a section and :attr:`global` otherwise.
+
+   + :attr:`local` hints are never visible from other modules, even if they
+     require or import the current module. Inside a section, the :attr:`local`
+     attribute is useless since hints do not survive anyway to the closure of
+     sections.
+
+   + :attr:`export` are visible from other modules when they import the current
+     module. Requiring it is not enough. This attribute is only effective for
+     the :cmd:`Hint Resolve`, :cmd:`Hint Immediate`, :cmd:`Hint Unfold` and
+     :cmd:`Hint Extern` variants of the command.
+
+   + :attr:`global` hints are made available by merely requiring the current
+     module.
+
    The various possible :production:`hint_definition`\s are given below.
 
    .. cmdv:: Hint @hint_definition
@@ -3766,13 +3784,6 @@ automatically created.
       No database name is given: the hint is registered in the ``core`` database.
 
       .. deprecated:: 8.10
-
-   .. cmdv:: Local Hint @hint_definition : {+ @ident}
-
-      This is used to declare hints that must not be exported to the other modules
-      that require and import the current module. Inside a section, the flag
-      Local is useless since hints do not survive anyway to the closure of
-      sections.
 
    .. cmdv:: Hint Resolve @qualid {? | {? @num} {? @pattern}} : @ident
       :name: Hint Resolve
