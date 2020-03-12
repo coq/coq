@@ -12,7 +12,7 @@ This section describes the full form of pattern matching in |Coq| terms.
 Patterns
 --------
 
-The full syntax of :g:`match` is presented in section :ref:`Syntax-of-terms`.
+The full syntax of :g:`match` is presented in section :ref:`term`.
 Identifiers in patterns are either constructor names or variables. Any
 identifier that is not the constructor of an inductive or co-inductive
 type is considered to be a variable. A variable name cannot occur more
