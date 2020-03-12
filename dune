@@ -2,7 +2,7 @@
 (env
  (dev     (flags :standard -rectypes -w -9-27+40+60 \ -short-paths))
  (release (flags :standard -rectypes)
-          (ocamlopt_flags -O3 -unbox-closures))
+          (ocamlopt_flags :standard -O3 -unbox-closures))
  (ireport (flags :standard -rectypes -w -9-27-40+60)
           (ocamlopt_flags :standard -O3 -unbox-closures -inlining-report)))
 
