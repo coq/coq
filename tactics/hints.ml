@@ -882,7 +882,7 @@ let fresh_global_or_constr env sigma poly cr =
       (c, Univ.ContextSet.empty)
     end
 
-let make_resolves env sigma flags info ~poly ?name cr =
+let make_resolves env sigma flags info ~check ~poly ?name cr =
   let c, ctx = fresh_global_or_constr env sigma poly cr in
   let cty = Retyping.get_type_of env sigma c in
   let try_apply f =
@@ -891,7 +891,7 @@ let make_resolves env sigma flags info ~poly ?name cr =
                              [make_exact_entry env sigma info ~poly ?name;
                               make_apply_entry env sigma flags info ~poly ?name]
   in
-  if List.is_empty ents then
+  if check && List.is_empty ents then
     user_err ~hdr:"Hint"
       (pr_leconstr_env env sigma c ++ spc() ++
         (if pi1 flags then str"cannot be used as a hint."
@@ -1183,7 +1183,7 @@ let add_resolves env sigma clist ~local ~superglobal dbnames =
       let r =
         List.flatten (List.map (fun (pri, poly, hnf, path, gr) ->
           make_resolves env sigma (true,hnf,not !Flags.quiet)
-            pri ~poly ~name:path gr) clist)
+            pri ~check:true ~poly ~name:path gr) clist)
       in
       let hint = make_hint ~local dbname (AddHints { superglobal; hints = r }) in
       Lib.add_anonymous_leaf (inAutoHint hint))
@@ -1334,7 +1334,7 @@ let expand_constructor_hints env sigma lems =
 let constructor_hints env sigma eapply lems =
   let lems = expand_constructor_hints env sigma lems in
   List.map_append (fun (poly, lem) ->
-      make_resolves env sigma (eapply,true,false) empty_hint_info ~poly lem) lems
+      make_resolves env sigma (eapply,true,false) empty_hint_info ~check:true ~poly lem) lems
 
 let make_local_hint_db env sigma ts eapply lems =
   let map c = c env sigma in
