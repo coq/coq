@@ -1,9 +1,9 @@
 - **Added:**
-  :cmd:`Show Lia Profile` prints some statistics about :tacn:`lia` calls.
+  :cmd:`Show Lia Profile` prints some statistics about :tacn:`lia` calls
   (`#11474 <https://github.com/coq/coq/pull/11474>`_,  by Frédéric Besson).
 
 - **Fixed:**
-  Efficiency regression of ``lia``
+  Efficiency regression of :tacn:`lia`
   (`#11474 <https://github.com/coq/coq/pull/11474>`_,
   fixes `#11436 <https://github.com/coq/coq/issues/11436>`_,
   by Frédéric Besson).

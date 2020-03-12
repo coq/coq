@@ -1,4 +1,4 @@
 - **Added:**
-  Ltac2 notations for enough an eenough
+  Ltac2 notations for :tacn:`enough` and :tacn:`eenough`
   (`#11740 <https://github.com/coq/coq/pull/11740>`_,
   by Michael Soegtrop).

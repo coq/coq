@@ -1,4 +1,4 @@
 - **Removed:**
-  Python 2 is not longer required in any part of the codebase.
+  Python 2 is not longer required in any part of the codebase
   (`#11245 <https://github.com/coq/coq/pull/11245>`_,
   by Emilio Jesus Gallego Arias).
