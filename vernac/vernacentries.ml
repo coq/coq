@@ -1782,7 +1782,7 @@ let vernac_search ~pstate ~atts s gopt r =
       end
     in Feedback.msg_notice pp
   in
-  match s with
+  (match s with
   | SearchPattern c ->
       (Search.search_pattern ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchRewrite c ->
@@ -1795,7 +1795,8 @@ let vernac_search ~pstate ~atts s gopt r =
        Search.prioritize_search) pr_search
   | Search sl ->
       (Search.search_about ?pstate gopt (List.map (on_snd (interp_search_about_item env Evd.(from_env env))) sl) r |>
-       Search.prioritize_search) pr_search
+       Search.prioritize_search) pr_search);
+  Feedback.msg_notice (str "(use \"About\" for full details on implicit arguments)")
 
 let vernac_locate ~pstate = function
   | LocateAny {v=AN qid}  -> print_located_qualid qid
