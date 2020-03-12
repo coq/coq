@@ -1189,6 +1189,12 @@ let remove_hints local dbnames grs =
 (**************************************************************************)
 (*                     The "Hint" vernacular command                      *)
 (**************************************************************************)
+
+let check_no_export ~local ~superglobal () =
+  (* TODO: implement export for these entries *)
+  if not local && not superglobal then
+    CErrors.user_err Pp.(str "This command does not support the \"export\" attribute")
+
 let add_resolves env sigma clist ~local ~superglobal dbnames =
   List.iter
     (fun dbname ->
@@ -1208,14 +1214,16 @@ let add_unfolds l ~local ~superglobal dbnames =
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_cuts l local dbnames =
+let add_cuts l ~local ~superglobal dbnames =
+  let () = check_no_export ~local ~superglobal () in
   List.iter
     (fun dbname ->
       let hint = make_hint ~local dbname (AddCut l) in
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_mode l m local dbnames =
+let add_mode l m ~local ~superglobal dbnames =
+  let () = check_no_export ~local ~superglobal () in
   List.iter
     (fun dbname ->
       let m' = make_mode l m in
@@ -1223,7 +1231,8 @@ let add_mode l m local dbnames =
       Lib.add_anonymous_leaf (inAutoHint hint))
     dbnames
 
-let add_transparency l b local dbnames =
+let add_transparency l b ~local ~superglobal dbnames =
+  let () = check_no_export ~local ~superglobal () in
   List.iter
     (fun dbname ->
       let hint = make_hint ~local dbname (AddTransparency (l, b)) in
@@ -1424,11 +1433,11 @@ let add_hints ~locality dbnames h =
   match h with
   | HintsResolveEntry lhints -> add_resolves env sigma lhints ~local ~superglobal dbnames
   | HintsImmediateEntry lhints -> add_trivials env sigma lhints ~local ~superglobal dbnames
-  | HintsCutEntry lhints -> add_cuts lhints local dbnames
-  | HintsModeEntry (l,m) -> add_mode l m local dbnames
+  | HintsCutEntry lhints -> add_cuts lhints ~local ~superglobal dbnames
+  | HintsModeEntry (l,m) -> add_mode l m ~local ~superglobal dbnames
   | HintsUnfoldEntry lhints -> add_unfolds lhints ~local ~superglobal dbnames
   | HintsTransparencyEntry (lhints, b) ->
-      add_transparency lhints b local dbnames
+      add_transparency lhints b ~local ~superglobal dbnames
   | HintsExternEntry (info, tacexp) ->
       add_externs info tacexp ~local ~superglobal dbnames
 

@@ -163,6 +163,16 @@ let program =
 
 let locality = bool_attribute ~name:"Locality" ~on:"local" ~off:"global"
 
+let option_locality =
+  let name = "Locality" in
+  attribute_of_list [
+    ("local", single_key_parser ~name ~key:"local" Goptions.OptLocal);
+    ("global", single_key_parser ~name ~key:"global" Goptions.OptGlobal);
+    ("export", single_key_parser ~name ~key:"export" Goptions.OptExport);
+  ] >>= function
+  | None -> return Goptions.OptDefault
+  | Some l -> return l
+
 let ukey = "universes"
 
 let universe_polymorphism_option_name = ["Universe"; "Polymorphism"]

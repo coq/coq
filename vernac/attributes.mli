@@ -47,6 +47,7 @@ val polymorphic : bool attribute
 val program : bool attribute
 val template : bool option attribute
 val locality : bool option attribute
+val option_locality : Goptions.option_locality attribute
 val deprecation : Deprecation.t option attribute
 val canonical_field : bool attribute
 val canonical_instance : bool attribute
