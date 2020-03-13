@@ -48,7 +48,7 @@ module Recthm : sig
   type t =
     { name : Id.t
     (** Name of theorem *)
-    ; typ : EConstr.t
+    ; typ : Constr.t
     (** Type of theorem  *)
     ; args : Name.t list
     (** Names to pre-introduce  *)

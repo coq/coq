@@ -15,17 +15,10 @@ open CErrors
 open CAst
 open Util
 open Names
-open Tacmach
-open Constrintern
-open Prettyp
 open Printer
 open Goptions
 open Libnames
-open Globnames
 open Vernacexpr
-open Constrexpr
-open Redexpr
-open Lemmas
 open Locality
 open Attributes
 
@@ -128,7 +121,7 @@ let show_intro ~proof all =
   let Proof.{goals;sigma} = Proof.data proof in
   if not (List.is_empty goals) then begin
     let gl = {Evd.it=List.hd goals ; sigma = sigma; } in
-    let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (pf_concl gl)) in
+    let l,_= decompose_prod_assum sigma (Termops.strip_outer_cast sigma (Tacmach.pf_concl gl)) in
     if all then
       let lid = Tactics.find_intro_names l gl in
       hov 0 (prlist_with_sep  spc Id.print lid)
@@ -493,8 +486,8 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   let decl = fst (List.hd thms) in
   let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env0 (snd decl) in
   let evd, thms = List.fold_left_map (fun evd ((id, _), (bl, t)) ->
-    let evd, (impls, ((env, ctx), imps)) = interp_context_evars ~program_mode env0 evd bl in
-    let evd, (t', imps') = interp_type_evars_impls ~program_mode ~impls env evd t in
+    let evd, (impls, ((env, ctx), imps)) = Constrintern.interp_context_evars ~program_mode env0 evd bl in
+    let evd, (t', imps') = Constrintern.interp_type_evars_impls ~program_mode ~impls env evd t in
     let flags = Pretyping.{ all_and_fail_flags with program_mode } in
     let inference_hook = if program_mode then Some program_inference_hook else None in
     let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
@@ -510,7 +503,7 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   (* XXX: This nf_evar is critical too!! We are normalizing twice if
      you look at the previous lines... *)
   let thms = List.map (fun (name, (typ, (args, impargs))) ->
-      { Recthm.name; typ = Evarutil.nf_evar evd typ; args; impargs} ) thms in
+      { Lemmas.Recthm.name; typ = EConstr.to_constr evd typ; args; impargs} ) thms in
   let () =
     let open UState in
     if not (udecl.univdecl_extensible_instance && udecl.univdecl_extensible_constraints) then
@@ -521,7 +514,7 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
     else (* We fix the variables to ensure they won't be lowered to Set *)
       Evd.fix_undefined_variables evd
   in
-  start_lemma_with_initialization ?hook ~poly ~scope ~kind evd ~udecl recguard thms snl
+  Lemmas.start_lemma_with_initialization ?hook ~poly ~scope ~kind evd ~udecl recguard thms snl
 
 let vernac_definition_hook ~canonical_instance ~local ~poly = let open Decls in function
 | Coercion ->
@@ -587,15 +580,15 @@ let vernac_start_proof ~atts kind l =
 
 let vernac_end_proof ~lemma = let open Vernacexpr in function
   | Admitted ->
-    save_lemma_admitted ~lemma
+    Lemmas.save_lemma_admitted ~lemma
   | Proved (opaque,idopt) ->
-    save_lemma_proved ~lemma ~opaque ~idopt
+    Lemmas.save_lemma_proved ~lemma ~opaque ~idopt
 
 let vernac_exact_proof ~lemma c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the beginning of a proof. *)
   let lemma, status = Lemmas.by (Tactics.exact_proof c) lemma in
-  let () = save_lemma_proved ~lemma ~opaque:Proof_global.Opaque ~idopt:None in
+  let () = Lemmas.save_lemma_proved ~lemma ~opaque:Proof_global.Opaque ~idopt:None in
   if not status then Feedback.feedback Feedback.AddedAxiom
 
 let vernac_assumption ~atts discharge kind l nl =
@@ -825,7 +818,7 @@ let vernac_scheme l =
 let vernac_combined_scheme lid l =
   if Dumpglob.dump () then
     (Dumpglob.dump_definition lid false "def";
-     List.iter (fun {loc;v=id} -> dump_global (make ?loc @@ AN (qualid_of_ident ?loc id))) l);
+     List.iter (fun {loc;v=id} -> dump_global (make ?loc @@ Constrexpr.AN (qualid_of_ident ?loc id))) l);
  Indschemes.do_combined_scheme lid l
 
 let vernac_universe ~poly l =
@@ -1543,7 +1536,7 @@ let query_command_selector ?loc = function
 let vernac_check_may_eval ~pstate ~atts redexp glopt rc =
   let glopt = query_command_selector glopt in
   let sigma, env = get_current_context_of_args ~pstate glopt in
-  let sigma, c = interp_open_constr ~expected_type:Pretyping.UnknownIfTermOrType env sigma rc in
+  let sigma, c = Constrintern.interp_open_constr ~expected_type:Pretyping.UnknownIfTermOrType env sigma rc in
   let sigma = Evarconv.solve_unif_constraints_with_heuristics env sigma in
   Evarconv.check_problems_are_solved env sigma;
   let sigma = Evd.minimize_universes sigma in
@@ -1562,16 +1555,16 @@ let vernac_check_may_eval ~pstate ~atts redexp glopt rc =
         let evars_of_term c = Evarutil.undefined_evars_of_term sigma c in
         let l = Evar.Set.union (evars_of_term j.Environ.uj_val) (evars_of_term j.Environ.uj_type) in
         let j = { j with Environ.uj_type = Reductionops.nf_betaiota env sigma j.Environ.uj_type } in
-        print_judgment env sigma j ++
+        Prettyp.print_judgment env sigma j ++
         pr_ne_evar_set (fnl () ++ str "where" ++ fnl ()) (mt ()) sigma l
     | Some r ->
         let (sigma,r_interp) = Hook.get f_interp_redexp env sigma r in
         let redfun env evm c =
-          let (redfun, _) = reduction_of_red_expr env r_interp in
+          let (redfun, _) = Redexpr.reduction_of_red_expr env r_interp in
           let (_, c) = redfun env evm c in
           c
         in
-        print_eval redfun env sigma rc j
+        Prettyp.print_eval redfun env sigma rc j
   in
   pp ++ Printer.pr_universe_ctx_set sigma uctx
 
@@ -1579,20 +1572,20 @@ let vernac_declare_reduction ~local s r =
   let local = Option.default false local in
   let env = Global.env () in
   let sigma = Evd.from_env env in
-  declare_red_expr local s (snd (Hook.get f_interp_redexp env sigma r))
+  Redexpr.declare_red_expr local s (snd (Hook.get f_interp_redexp env sigma r))
 
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =
   let env = Global.env() in
   let sigma = Evd.from_env env in
-  let c,uctx = interp_constr env sigma c in
+  let c,uctx = Constrintern.interp_constr env sigma c in
   let senv = Global.safe_env() in
   let uctx = UState.context_set uctx in
   let senv = Safe_typing.push_context_set ~strict:false uctx senv in
   let c = EConstr.to_constr sigma c in
   let j = Safe_typing.typing senv c in
   let env = Safe_typing.env_of_safe_env senv in
-  print_safe_judgment env sigma j ++
+  Prettyp.print_safe_judgment env sigma j ++
   pr_universe_ctx_set sigma uctx
 
 
@@ -1618,6 +1611,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     (* FIXME error on non None udecl if we find the hyp. *)
     let glnumopt = query_command_selector ?loc glopt in
     let gl,id =
+      let open Constrexpr in
       match glnumopt, ref_or_by_not.v with
       | None,AN qid when qualid_is_ident qid -> (* goal number not given, catch any failure *)
          (try get_nth_goal ~pstate 1, qualid_basename qid with _ -> raise NoHyp)
@@ -1627,7 +1621,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
             Failure _ -> user_err ?loc ~hdr:"print_about_hyp_globs"
                           (str "No such goal: " ++ int n ++ str "."))
       | _ , _ -> raise NoHyp in
-    let hyps = pf_hyps gl in
+    let hyps = Tacmach.pf_hyps gl in
     let decl = Context.Named.lookup id hyps in
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"
@@ -1638,16 +1632,16 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
   with (* fallback to globals *)
     | NoHyp | Not_found ->
     let sigma, env = get_current_or_global_context ~pstate in
-    print_about env sigma ref_or_by_not udecl
+    Prettyp.print_about env sigma ref_or_by_not udecl
 
 let vernac_print ~pstate ~atts =
   let sigma, env = get_current_or_global_context ~pstate in
   function
   | PrintTypingFlags -> pr_typing_flags (Environ.typing_flags (Global.env ()))
   | PrintTables -> print_tables ()
-  | PrintFullContext-> print_full_context_typ env sigma
-  | PrintSectionContext qid -> print_sec_context_typ env sigma qid
-  | PrintInspect n -> inspect env sigma n
+  | PrintFullContext-> Prettyp.print_full_context_typ env sigma
+  | PrintSectionContext qid -> Prettyp.print_sec_context_typ env sigma qid
+  | PrintInspect n -> Prettyp.inspect env sigma n
   | PrintGrammar ent -> Metasyntax.pr_grammar ent
   | PrintCustomGrammar ent -> Metasyntax.pr_custom_grammar ent
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
@@ -1660,7 +1654,7 @@ let vernac_print ~pstate ~atts =
   | PrintDebugGC -> Mltop.print_gc ()
   | PrintName (qid,udecl) ->
     dump_global qid;
-    print_name env sigma qid udecl
+    Prettyp.print_name env sigma qid udecl
   | PrintGraph -> Prettyp.print_graph ()
   | PrintClasses -> Prettyp.print_classes()
   | PrintTypeClasses -> Prettyp.print_typeclasses()
@@ -1692,11 +1686,11 @@ let vernac_print ~pstate ~atts =
     print_about_hyp_globs ~pstate ref_or_by_not udecl glnumopt
   | PrintImplicit qid ->
     dump_global qid;
-    print_impargs qid
+    Prettyp.print_impargs qid
   | PrintAssumptions (o,t,r) ->
       (* Prints all the axioms and section variables used by a term *)
       let gr = smart_global r in
-      let cstr = printable_constr_of_global gr in
+      let cstr = Globnames.printable_constr_of_global gr in
       let st = Conv_oracle.get_transp_state (Environ.oracle (Global.env())) in
       let nassums =
         Assumptions.assumptions st ~add_opaque:o ~add_transparent:t gr cstr in
@@ -1719,7 +1713,7 @@ open Search
 let interp_search_about_item env sigma =
   function
   | SearchSubPattern pat ->
-      let _,pat = intern_constr_pattern env sigma pat in
+      let _,pat = Constrintern.intern_constr_pattern env sigma pat in
       GlobSearchSubPattern pat
   | SearchString (s,None) when Id.is_valid s ->
       GlobSearchString s
@@ -1768,7 +1762,7 @@ let vernac_search ~pstate ~atts s gopt r =
     (* if goal selector is given and wrong, then let exceptions be raised. *)
     | Some g -> snd (get_goal_or_global_context ~pstate g) , Some g
   in
-  let get_pattern c = snd (intern_constr_pattern env Evd.(from_env env) c) in
+  let get_pattern c = snd (Constrintern.intern_constr_pattern env Evd.(from_env env) c) in
   let pr_search ref env c =
     let pr = pr_global ref in
     let pp = if !search_output_name_only
@@ -1794,17 +1788,17 @@ let vernac_search ~pstate ~atts s gopt r =
       (Search.search_about ?pstate gopt (List.map (on_snd (interp_search_about_item env Evd.(from_env env))) sl) r |>
        Search.prioritize_search) pr_search
 
-let vernac_locate ~pstate = function
-  | LocateAny {v=AN qid}  -> print_located_qualid qid
-  | LocateTerm {v=AN qid} -> print_located_term qid
+let vernac_locate ~pstate = let open Constrexpr in function
+  | LocateAny {v=AN qid}  -> Prettyp.print_located_qualid qid
+  | LocateTerm {v=AN qid} -> Prettyp.print_located_term qid
   | LocateAny {v=ByNotation (ntn, sc)} (* TODO : handle Ltac notations *)
   | LocateTerm {v=ByNotation (ntn, sc)} ->
     let _, env = get_current_or_global_context ~pstate in
     Notation.locate_notation
       (Constrextern.without_symbols (pr_lglob_constr_env env)) ntn sc
   | LocateLibrary qid -> print_located_library qid
-  | LocateModule qid -> print_located_module qid
-  | LocateOther (s, qid) -> print_located_other s qid
+  | LocateModule qid -> Prettyp.print_located_module qid
+  | LocateOther (s, qid) -> Prettyp.print_located_other s qid
   | LocateFile f -> locate_file f
 
 let vernac_register qid r =
