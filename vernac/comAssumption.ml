@@ -277,18 +277,3 @@ let context ~poly l =
   if Global.sections_are_opened ()
   then context_insection sigma ~poly ctx
   else context_nosection sigma ~poly ctx
-
-(* Deprecated *)
-let declare_assumption is_coe ~poly ~scope ~kind typ univs pl imps impl nl name =
-let open DeclareDef in
-match scope with
-| Discharge ->
-  let univs = match univs with
-    | Monomorphic_entry univs -> univs
-    | Polymorphic_entry (_, univs) -> Univ.ContextSet.of_context univs
-  in
-  let () = Declare.declare_universe_context ~poly univs in
-  declare_variable is_coe ~kind typ imps impl name;
-  GlobRef.VarRef name.CAst.v, Univ.Instance.empty
-| Global local ->
-  declare_axiom is_coe ~poly ~local ~kind typ (univs, pl) imps nl name

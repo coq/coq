@@ -50,19 +50,3 @@ val context
   :  poly:bool
   -> local_binder_expr list
   -> unit
-
-(** Deprecated *)
-val declare_assumption
-  : coercion_flag
-  -> poly:bool
-  -> scope:DeclareDef.locality
-  -> kind:Decls.assumption_object_kind
-  -> Constr.types
-  -> Entries.universes_entry
-  -> UnivNames.universe_binders
-  -> Impargs.manual_implicits
-  -> Glob_term.binding_kind
-  -> Declaremods.inline
-  -> variable CAst.t
-  -> GlobRef.t * Univ.Instance.t
-[@@ocaml.deprecated "Use declare_variable or declare_axiom instead."]
