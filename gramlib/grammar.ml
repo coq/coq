@@ -77,10 +77,6 @@ module type S = sig
     val make : ('a, _, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
   end
 
-  module Unsafe : sig
-    val clear_entry : 'a Entry.t -> unit
-  end
-
   type 'a single_extend_statement =
     string option * Gramext.g_assoc option * 'a Production.t list
 
@@ -89,15 +85,25 @@ module type S = sig
     ; data : 'a single_extend_statement list
     }
 
-  val safe_extend : 'a Entry.t -> 'a extend_statement -> unit
-  val safe_delete_rule : 'a Entry.t -> 'a Production.t -> unit
-
   val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
 
   val mk_rule : 'a pattern list -> string Rules.t
 
   (* Used in custom entries, should tweak? *)
   val level_of_nonterm : ('a, norec, 'c) Symbol.t -> string option
+
+end
+
+module type ExtS = sig
+
+  include S
+
+  val safe_extend : 'a Entry.t -> 'a extend_statement -> unit
+  val safe_delete_rule : 'a Entry.t -> 'a Production.t -> unit
+
+  module Unsafe : sig
+    val clear_entry : 'a Entry.t -> unit
+  end
 
 end
 

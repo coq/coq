@@ -87,10 +87,6 @@ module type S = sig
     val make : ('a, _, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
   end
 
-  module Unsafe : sig
-    val clear_entry : 'a Entry.t -> unit
-  end
-
   type 'a single_extend_statement =
     string option * Gramext.g_assoc option * 'a Production.t list
 
@@ -99,16 +95,29 @@ module type S = sig
     ; data : 'a single_extend_statement list
     }
 
-  val safe_extend : 'a Entry.t -> 'a extend_statement -> unit
-  val safe_delete_rule : 'a Entry.t -> 'a Production.t -> unit
-
   val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
 
   val mk_rule : 'a pattern list -> string Rules.t
 
   (* Used in custom entries, should tweak? *)
   val level_of_nonterm : ('a, norec, 'c) Symbol.t -> string option
+
 end
+
+(* Interface private to clients  *)
+module type ExtS = sig
+
+  include S
+
+  val safe_extend : 'a Entry.t -> 'a extend_statement -> unit
+  val safe_delete_rule : 'a Entry.t -> 'a Production.t -> unit
+
+  module Unsafe : sig
+    val clear_entry : 'a Entry.t -> unit
+  end
+
+end
+
 (** Signature type of the functor [Grammar.GMake]. The types and
     functions are almost the same than in generic interface, but:
     -      Grammars are not values. Functions holding a grammar as parameter
@@ -119,4 +128,4 @@ end
       type (instead of (string * string)); the module parameter
       must specify a way to show them as (string * string) *)
 
-module GMake (L : Plexing.S) : S with type te = L.te and type 'c pattern = 'c L.pattern
+module GMake (L : Plexing.S) : ExtS with type te = L.te and type 'c pattern = 'c L.pattern
