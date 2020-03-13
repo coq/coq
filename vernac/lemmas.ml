@@ -231,14 +231,11 @@ end = struct
       in
       Mutual pe
 
-  let rec select_body i t =
+  let select_body i t =
     let open Constr in
     match Constr.kind t with
     | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
     | CoFix (0,decls) -> mkCoFix (i,decls)
-    | LetIn(na,t1,ty,t2) -> mkLetIn (na,t1,ty, select_body i t2)
-    | Lambda(na,ty,t) -> mkLambda(na,ty, select_body i t)
-    | App (t, args) -> mkApp (select_body i t, args)
     | _ ->
       CErrors.anomaly
         Pp.(str "Not a proof by induction: " ++
