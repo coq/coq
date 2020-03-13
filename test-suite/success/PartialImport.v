@@ -9,6 +9,12 @@ Module M.
 
   End N.
 
+  Inductive even : nat -> Prop :=
+  | even_0 : even 0
+  | even_S n : odd n -> even (S n)
+  with odd : nat -> Set :=
+    odd_S n : even n -> odd (S n).
+
 End M.
 
 Module Simple.
@@ -28,6 +34,13 @@ Module Simple.
   Import M(N.c).
   Check N.c.
   (* interestingly prints N.c (also does with unfiltered Import M) *)
+
+  Import M(even(..)).
+  Check even. Check even_0. Check even_S.
+  Check even_sind. Check even_ind.
+  Fail Check even_rect. (* doesn't exist *)
+  Fail Check odd. Check M.odd.
+  Fail Check odd_S. Fail Check odd_sind.
 
 End Simple.
 

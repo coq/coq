@@ -12,6 +12,8 @@
 
 type family = InSProp | InProp | InSet | InType
 
+val all_families : family list
+
 type t = private
   | SProp
   | Prop

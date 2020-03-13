@@ -12,6 +12,8 @@ open Univ
 
 type family = InSProp | InProp | InSet | InType
 
+let all_families = [InSProp; InProp; InSet; InType]
+
 type t =
   | SProp
   | Prop

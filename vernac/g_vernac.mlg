@@ -576,7 +576,10 @@ GRAMMAR EXTEND Gram
   ;
   filtered_import:
     [ [ m = global -> { (m, ImportAll) }
-      | m = global; "("; ns = LIST1 global SEP ","; ")" -> { (m, ImportNames ns) } ] ]
+      | m = global; "("; ns = LIST1 one_import_filter_name SEP ","; ")" -> { (m, ImportNames ns) } ] ]
+  ;
+  one_import_filter_name:
+    [ [ n = global; etc = OPT [ "("; ".."; ")" -> { () } ] -> { n, Option.has_some etc } ] ]
   ;
   export_token:
     [ [ IDENT "Import" -> { Some false }

@@ -104,9 +104,10 @@ type instance_flag  = bool option
 
 type export_flag    = bool (* true = Export;        false = Import         *)
 
+type one_import_filter_name = qualid * bool (* import inductive components *)
 type import_filter_expr =
   | ImportAll
-  | ImportNames of qualid list
+  | ImportNames of one_import_filter_name list
 
 type onlyparsing_flag = { onlyparsing : bool }
  (* Some v = Parse only;  None = Print also.

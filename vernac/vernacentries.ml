@@ -872,13 +872,37 @@ let vernac_constraint ~poly l =
 (**********************)
 (* Modules            *)
 
+let add_subnames_of ns full_n n =
+  let open GlobRef in
+  let module NSet = Globnames.ExtRefSet in
+  let add1 r ns = NSet.add (Globnames.TrueGlobal r) ns in
+  match n with
+  | Globnames.SynDef _ | Globnames.TrueGlobal (ConstRef _ | ConstructRef _ | VarRef _) ->
+    CErrors.user_err Pp.(str "Only inductive types can be used with Import (...).")
+  | Globnames.TrueGlobal (IndRef (mind,i)) ->
+    let open Declarations in
+    let dp = Libnames.dirpath full_n in
+    let mib = Global.lookup_mind mind in
+    let mip = mib.mind_packets.(i) in
+    let ns = add1 (IndRef (mind,i)) ns in
+    let ns = Array.fold_left_i (fun j ns _ -> add1 (ConstructRef ((mind,i),j+1)) ns)
+        ns mip.mind_consnames
+    in
+    List.fold_left (fun ns f ->
+        let s = Indrec.elimination_suffix f in
+        let n_elim = Id.of_string (Id.to_string mip.mind_typename ^ s) in
+        match Nametab.extended_global_of_path (Libnames.make_path dp n_elim) with
+        | exception Not_found -> ns
+        | n_elim -> NSet.add n_elim ns)
+      ns Sorts.all_families
+
 let interp_filter_in m = function
   | ImportAll ->  Libobject.Unfiltered
   | ImportNames ns ->
     let module NSet = Globnames.ExtRefSet in
     let dp_m = Nametab.dirpath_of_module m in
     let ns =
-      List.fold_left (fun ns n ->
+      List.fold_left (fun ns (n,etc) ->
           let full_n =
             let dp_n,n = repr_qualid n in
             make_path (append_dirpath dp_m dp_n) n
@@ -889,7 +913,8 @@ let interp_filter_in m = function
                 Pp.(str "Cannot find name " ++ pr_qualid n ++ spc() ++
                     str "in module " ++ pr_qualid (Nametab.shortest_qualid_of_module m))
           in
-          NSet.add n ns)
+          let ns = NSet.add n ns in
+          if etc then add_subnames_of ns full_n n else ns)
         NSet.empty ns
     in
     Libobject.Names ns

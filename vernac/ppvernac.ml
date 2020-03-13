@@ -86,10 +86,13 @@ open Pputils
 
   let pr_module = Libnames.pr_qualid
 
+  let pr_one_import_filter_name (q,etc) =
+    Libnames.pr_qualid q ++ if etc then str "(..)" else mt()
+
   let pr_import_module (m,f) =
     Libnames.pr_qualid m ++ match f with
     | ImportAll -> mt()
-    | ImportNames ns -> surround (prlist_with_sep pr_comma Libnames.pr_qualid ns)
+    | ImportNames ns -> surround (prlist_with_sep pr_comma pr_one_import_filter_name ns)
 
   let sep_end = function
     | VernacBullet _
