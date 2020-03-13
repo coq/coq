@@ -19,7 +19,7 @@ module Parser = struct
   let parse ps entry pa =
     Pcoq.unfreeze ps;
     Flags.with_option Flags.we_are_parsing
-      (fun () -> Pcoq.G.Entry.parse entry pa)
+      (fun () -> Pcoq.Entry.parse entry pa)
       ()
 
 end

@@ -26,6 +26,7 @@ module type S = sig
   module Entry : sig
     type 'a t
     val make : string -> 'a t
+    val create : string -> 'a t
     val parse : 'a t -> Parsable.t -> 'a
     val name : 'a t -> string
     val of_parser : string -> (Plexing.location_function -> te Stream.t -> 'a) -> 'a t
@@ -1578,6 +1579,7 @@ module Entry = struct
       econtinue =
         (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
       edesc = Dlevels []}
+  let create = make
   let parse (e : 'a t) p : 'a =
     Parsable.parse_parsable e p
   let parse_token_stream (e : 'a t) ts : 'a =

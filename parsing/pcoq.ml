@@ -14,12 +14,7 @@ open Genarg
 open Gramlib
 
 (** The parser of Coq *)
-module G = Grammar.GMake(CLexer.Lexer)
-
-module Entry = struct
-  include G.Entry
-  let create = make
-end
+include Grammar.GMake(CLexer.Lexer)
 
 module Lookahead =
 struct
@@ -40,7 +35,7 @@ struct
 
   let to_entry s (lk : t) =
     let run tok strm = match lk tok 0 strm with None -> err () | Some _ -> () in
-    G.Entry.of_parser s run
+    Entry.of_parser s run
 
   let (>>) (lk1 : t) lk2 tok n strm = match lk1 tok n strm with
   | None -> None
@@ -94,17 +89,17 @@ end
 type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
 
 type extend_rule =
-| ExtendRule : 'a G.Entry.t * 'a G.extend_statement -> extend_rule
-| ExtendRuleReinit : 'a G.Entry.t * gram_reinit * 'a G.extend_statement -> extend_rule
+| ExtendRule : 'a Entry.t * 'a extend_statement -> extend_rule
+| ExtendRuleReinit : 'a Entry.t * gram_reinit * 'a extend_statement -> extend_rule
 
 module EntryCommand = Dyn.Make ()
-module EntryData = struct type _ t = Ex : 'b G.Entry.t String.Map.t -> ('a * 'b) t end
+module EntryData = struct type _ t = Ex : 'b Entry.t String.Map.t -> ('a * 'b) t end
 module EntryDataMap = EntryCommand.Map(EntryData)
 
 type ext_kind =
   | ByGrammar of extend_rule
   | ByEXTEND of (unit -> unit) * (unit -> unit)
-  | ByEntry : ('a * 'b) EntryCommand.tag * string * 'b G.Entry.t -> ext_kind
+  | ByEntry : ('a * 'b) EntryCommand.tag * string * 'b Entry.t -> ext_kind
 
 (** The list of extensions *)
 
@@ -114,37 +109,37 @@ let camlp5_entries = ref EntryDataMap.empty
 
 (** Deletion *)
 
-let grammar_delete e { G.pos; data } =
+let grammar_delete e { pos; data } =
   List.iter
     (fun (n,ass,lev) ->
-      List.iter (fun pil -> G.safe_delete_rule e pil) (List.rev lev))
+      List.iter (fun pil -> safe_delete_rule e pil) (List.rev lev))
     (List.rev data)
 
-let grammar_delete_reinit e reinit ({ G.pos; data } as d)=
+let grammar_delete_reinit e reinit ({ pos; data } as d)=
   grammar_delete e d;
   let a, ext = reinit in
   let lev = match pos with
     | Some (Gramext.Level n) -> n
     | _ -> assert false
   in
-  let ext = { G.pos = Some ext; data = [Some lev,Some a,[]] } in
-  G.safe_extend e ext
+  let ext = { pos = Some ext; data = [Some lev,Some a,[]] } in
+  safe_extend e ext
 
 (** Extension *)
 
 let grammar_extend e ext =
   let undo () = grammar_delete e ext in
-  let redo () = G.safe_extend e ext in
+  let redo () = safe_extend e ext in
   camlp5_state := ByEXTEND (undo, redo) :: !camlp5_state;
   redo ()
 
 let grammar_extend_sync e ext =
   camlp5_state := ByGrammar (ExtendRule (e, ext)) :: !camlp5_state;
-  G.safe_extend e ext
+  safe_extend e ext
 
 let grammar_extend_sync_reinit e reinit ext =
   camlp5_state := ByGrammar (ExtendRuleReinit (e, reinit, ext)) :: !camlp5_state;
-  G.safe_extend e ext
+  safe_extend e ext
 
 (** Remove extensions
 
@@ -170,7 +165,7 @@ let rec remove_grammars n =
            redo();
            camlp5_state := ByEXTEND (undo,redo) :: !camlp5_state
        | ByEntry (tag, name, e) :: t ->
-           G.Unsafe.clear_entry e;
+           Unsafe.clear_entry e;
            camlp5_state := t;
            let EntryData.Ex entries =
              try EntryDataMap.find tag !camlp5_entries
@@ -185,19 +180,19 @@ let make_rule r = [None, None, r]
 (** An entry that checks we reached the end of the input. *)
 
 let eoi_entry en =
-  let e = G.Entry.make ((G.Entry.name en) ^ "_eoi") in
-  let symbs = G.Rule.next (G.Rule.next G.Rule.stop (G.Symbol.nterm en)) (G.Symbol.token Tok.PEOI) in
+  let e = Entry.make ((Entry.name en) ^ "_eoi") in
+  let symbs = Rule.next (Rule.next Rule.stop (Symbol.nterm en)) (Symbol.token Tok.PEOI) in
   let act = fun _ x loc -> x in
-  let ext = { G.pos = None; data = make_rule [G.Production.make symbs act] } in
-  G.safe_extend e ext;
+  let ext = { pos = None; data = make_rule [Production.make symbs act] } in
+  safe_extend e ext;
   e
 
 let map_entry f en =
-  let e = G.Entry.make ((G.Entry.name en) ^ "_map") in
-  let symbs = G.Rule.next G.Rule.stop (G.Symbol.nterm en) in
+  let e = Entry.make ((Entry.name en) ^ "_map") in
+  let symbs = Rule.next Rule.stop (Symbol.nterm en) in
   let act = fun x loc -> f x in
-  let ext = { G.pos = None; data = make_rule [G.Production.make symbs act] } in
-  G.safe_extend e ext;
+  let ext = { pos = None; data = make_rule [Production.make symbs act] } in
+  safe_extend e ext;
   e
 
 (* Parse a string, does NOT check if the entire string was read
@@ -205,7 +200,7 @@ let map_entry f en =
 
 let parse_string f ?loc x =
   let strm = Stream.of_string x in
-  G.Entry.parse f (G.Parsable.make ?loc strm)
+  Entry.parse f (Parsable.make ?loc strm)
 
 type gram_universe = string
 
@@ -226,14 +221,14 @@ let get_univ u =
 
 let new_entry u s =
   let ename = u ^ ":" ^ s in
-  let e = G.Entry.make ename in
+  let e = Entry.make ename in
   e
 
 let make_gen_entry u s = new_entry u s
 
 module GrammarObj =
 struct
-  type ('r, _, _) obj = 'r G.Entry.t
+  type ('r, _, _) obj = 'r Entry.t
   let name = "grammar"
   let default _ = None
 end
@@ -256,7 +251,7 @@ let genarg_grammar x =
   check_compatibility x;
   Grammar.obj x
 
-let create_generic_entry (type a) u s (etyp : a raw_abstract_argument_type) : a G.Entry.t =
+let create_generic_entry (type a) u s (etyp : a raw_abstract_argument_type) : a Entry.t =
   let e = new_entry u s in
   let Rawwit t = etyp in
   let () = Grammar.register0 t e in
@@ -342,11 +337,11 @@ module Module =
     let module_type = Entry.create "module_type"
   end
 
-let epsilon_value (type s tr a) f (e : (s, tr, a) G.Symbol.t) =
-  let r = G.Production.make (G.Rule.next G.Rule.stop e) (fun x _ -> f x) in
-  let entry = G.Entry.make "epsilon" in
-  let ext = { G.pos = None; data = [None, None, [r]] } in
-  let () = G.safe_extend entry ext in
+let epsilon_value (type s tr a) f (e : (s, tr, a) Symbol.t) =
+  let r = Production.make (Rule.next Rule.stop e) (fun x _ -> f x) in
+  let entry = Entry.make "epsilon" in
+  let ext = { pos = None; data = [None, None, [r]] } in
+  let () = safe_extend entry ext in
   try Some (parse_string entry "") with _ -> None
 
 (** Synchronized grammar extensions *)
@@ -404,14 +399,14 @@ let extend_grammar_command tag g =
   let nb = List.length rules in
   grammar_stack := (GramExt (nb, GrammarCommand.Dyn (tag, g)), st) :: !grammar_stack
 
-let extend_entry_command (type a) (type b) (tag : (a, b) entry_command) (g : a) : b G.Entry.t list =
+let extend_entry_command (type a) (type b) (tag : (a, b) entry_command) (g : a) : b Entry.t list =
   let EntryInterp.Ex modify = EntryInterpMap.find tag !entry_interp in
   let grammar_state = match !grammar_stack with
   | [] -> GramState.empty
   | (_, st) :: _ -> st
   in
   let (names, st) = modify g grammar_state in
-  let entries = List.map (fun name -> G.Entry.make name) names in
+  let entries = List.map (fun name -> Entry.make name) names in
   let iter name e =
     camlp5_state := ByEntry (tag, name, e) :: !camlp5_state;
     let EntryData.Ex old =
@@ -437,7 +432,7 @@ let extend_dyn_grammar (e, _) = match e with
 
 (** Registering extra grammar *)
 
-type any_entry = AnyEntry : 'a G.Entry.t -> any_entry
+type any_entry = AnyEntry : 'a Entry.t -> any_entry
 
 let grammar_names : any_entry list String.Map.t ref = ref String.Map.empty
 

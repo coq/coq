@@ -15,14 +15,7 @@ open Libnames
 
 (** The parser of Coq *)
 
-module G : Gramlib.Grammar.S with type te = Tok.t and type 'a pattern = 'a Tok.p
-
-(** Compatibility module, please avoid  *)
-module Entry : sig
-  type 'a t = 'a G.Entry.t
-  val create : string -> 'a t
-  val of_parser : string -> (Gramlib.Plexing.location_function -> Tok.t Stream.t -> 'a) -> 'a t
-end
+include Gramlib.Grammar.S with type te = Tok.t and type 'a pattern = 'a Tok.p
 
 module Lookahead : sig
   type t
@@ -214,11 +207,11 @@ module Module :
 
 (** {5 Type-safe grammar extension} *)
 
-val epsilon_value : ('a -> 'self) -> ('self, _, 'a) G.Symbol.t -> 'self option
+val epsilon_value : ('a -> 'self) -> ('self, _, 'a) Symbol.t -> 'self option
 
 (** {5 Extending the parser without synchronization} *)
 
-val grammar_extend : 'a Entry.t -> 'a G.extend_statement -> unit
+val grammar_extend : 'a Entry.t -> 'a extend_statement -> unit
 (** Extend the grammar of Coq, without synchronizing it with the backtracking
     mechanism. This means that grammar extensions defined this way will survive
     an undo. *)
@@ -238,8 +231,8 @@ type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
 (** Type of reinitialization data *)
 
 type extend_rule =
-| ExtendRule : 'a Entry.t * 'a G.extend_statement -> extend_rule
-| ExtendRuleReinit : 'a Entry.t * gram_reinit * 'a G.extend_statement -> extend_rule
+| ExtendRule : 'a Entry.t * 'a extend_statement -> extend_rule
+| ExtendRuleReinit : 'a Entry.t * gram_reinit * 'a extend_statement -> extend_rule
 
 type 'a grammar_extension = 'a -> GramState.t -> extend_rule list * GramState.t
 (** Grammar extension entry point. Given some ['a] and a current grammar state,

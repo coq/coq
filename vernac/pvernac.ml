@@ -54,10 +54,10 @@ module Vernac_ =
       let act_vernac v loc = Some v in
       let act_eoi _ loc = None in
       let rule = [
-        Pcoq.G.(Production.make (Rule.next Rule.stop (Symbol.token Tok.PEOI)) act_eoi);
-        Pcoq.G.(Production.make (Rule.next Rule.stop (Symbol.nterm vernac_control)) act_vernac);
+        Pcoq.(Production.make (Rule.next Rule.stop (Symbol.token Tok.PEOI)) act_eoi);
+        Pcoq.(Production.make (Rule.next Rule.stop (Symbol.nterm vernac_control)) act_vernac);
       ] in
-      Pcoq.(grammar_extend main_entry {G.pos=None; data=[None, None, rule]})
+      Pcoq.(grammar_extend main_entry {pos=None; data=[None, None, rule]})
 
     let select_tactic_entry spec =
       match spec with
@@ -65,8 +65,8 @@ module Vernac_ =
       | Some ename -> find_proof_mode ename
 
     let command_entry =
-      Pcoq.G.Entry.of_parser "command_entry"
-        (fun _ strm -> Pcoq.G.Entry.parse_token_stream (select_tactic_entry !command_entry_ref) strm)
+      Pcoq.Entry.of_parser "command_entry"
+        (fun _ strm -> Pcoq.Entry.parse_token_stream (select_tactic_entry !command_entry_ref) strm)
 
   end
 

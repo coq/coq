@@ -23,7 +23,7 @@ type input_buffer = {
   mutable str : Bytes.t; (* buffer of already read characters *)
   mutable len : int;    (* number of chars in the buffer *)
   mutable bols : int list; (* offsets in str of beginning of lines *)
-  mutable tokens : Pcoq.G.Parsable.t; (* stream of tokens *)
+  mutable tokens : Pcoq.Parsable.t; (* stream of tokens *)
   mutable start : int } (* stream count of the first char of the buffer *)
 
 (* Double the size of the buffer. *)
@@ -76,7 +76,7 @@ let reset_input_buffer doc ic ibuf =
   ibuf.str <- Bytes.empty;
   ibuf.len <- 0;
   ibuf.bols <- [];
-  ibuf.tokens <- Pcoq.G.Parsable.make (Stream.from (prompt_char doc ic ibuf));
+  ibuf.tokens <- Pcoq.Parsable.make (Stream.from (prompt_char doc ic ibuf));
   ibuf.start <- 0
 
 (* Functions to print underlined locations from an input buffer. *)
@@ -230,7 +230,7 @@ let top_buffer =
     str = Bytes.empty;
     len = 0;
     bols = [];
-    tokens = Pcoq.G.Parsable.make (Stream.of_list []);
+    tokens = Pcoq.Parsable.make (Stream.of_list []);
     start = 0 }
 
 let set_prompt prompt =
@@ -247,7 +247,7 @@ let parse_to_dot =
     | Tok.EOI -> ()
     | _ -> dot tok st
   in
-  Pcoq.G.Entry.of_parser "Coqtoplevel.dot" dot
+  Pcoq.Entry.of_parser "Coqtoplevel.dot" dot
 
 (* If an error occurred while parsing, we try to read the input until a dot
    token is encountered.
@@ -255,7 +255,7 @@ let parse_to_dot =
 
 let rec discard_to_dot () =
   try
-    Pcoq.G.Entry.parse parse_to_dot top_buffer.tokens
+    Pcoq.Entry.parse parse_to_dot top_buffer.tokens
   with
     | CLexer.Error.E _ -> discard_to_dot ()
     | e when CErrors.noncritical e -> ()

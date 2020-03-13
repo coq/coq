@@ -115,7 +115,7 @@ let print_local fmt ext =
   match locals with
   | [] -> ()
   | e :: locals ->
-    let mk_e fmt e = fprintf fmt "Pcoq.Entry.create \"%s\"" e in
+    let mk_e fmt e = fprintf fmt "Pcoq.Entry.make \"%s\"" e in
     let () = fprintf fmt "@[<hv 2>let %s =@ @[%a@]@]@ " e mk_e e in
     let iter e = fprintf fmt "@[<hv 2>and %s =@ @[%a@]@]@ " e mk_e e in
     let () = List.iter iter locals in
@@ -217,43 +217,43 @@ let rec print_prod fmt p =
 
 and print_extrule fmt (tkn, vars, body) =
   let tkn = List.rev tkn in
-  fprintf fmt "@[Pcoq.G.Production.make@ @[(%a)@]@ @[(%a)@]@]" (print_symbols ~norec:false) tkn print_fun (vars, body)
+  fprintf fmt "@[Pcoq.Production.make@ @[(%a)@]@ @[(%a)@]@]" (print_symbols ~norec:false) tkn print_fun (vars, body)
 
 and print_symbols ~norec fmt = function
-| [] -> fprintf fmt "Pcoq.G.Rule.stop"
+| [] -> fprintf fmt "Pcoq.Rule.stop"
 | tkn :: tkns ->
-  let c = if norec then "Pcoq.G.Rule.next_norec" else "Pcoq.G.Rule.next" in
+  let c = if norec then "Pcoq.Rule.next_norec" else "Pcoq.Rule.next" in
   fprintf fmt "%s @[(%a)@ (%a)@]" c (print_symbols ~norec) tkns print_symbol tkn
 
 and print_symbol fmt tkn = match tkn with
 | SymbToken (t, s) ->
-  fprintf fmt "(Pcoq.G.Symbol.token (%a))" print_tok (t, s)
+  fprintf fmt "(Pcoq.Symbol.token (%a))" print_tok (t, s)
 | SymbEntry (e, None) ->
-  fprintf fmt "(Pcoq.G.Symbol.nterm %s)" e
+  fprintf fmt "(Pcoq.Symbol.nterm %s)" e
 | SymbEntry (e, Some l) ->
-  fprintf fmt "(Pcoq.G.Symbol.nterml %s (%a))" e print_string l
+  fprintf fmt "(Pcoq.Symbol.nterml %s (%a))" e print_string l
 | SymbSelf ->
-  fprintf fmt "Pcoq.G.Symbol.self"
+  fprintf fmt "Pcoq.Symbol.self"
 | SymbNext ->
-  fprintf fmt "Pcoq.G.Symbol.next"
+  fprintf fmt "Pcoq.Symbol.next"
 | SymbList0 (s, None) ->
-  fprintf fmt "(Pcoq.G.Symbol.list0 %a)" print_symbol s
+  fprintf fmt "(Pcoq.Symbol.list0 %a)" print_symbol s
 | SymbList0 (s, Some sep) ->
-  fprintf fmt "(Pcoq.G.Symbol.list0sep (%a) (%a) false)" print_symbol s print_symbol sep
+  fprintf fmt "(Pcoq.Symbol.list0sep (%a) (%a) false)" print_symbol s print_symbol sep
 | SymbList1 (s, None) ->
-  fprintf fmt "(Pcoq.G.Symbol.list1 (%a))" print_symbol s
+  fprintf fmt "(Pcoq.Symbol.list1 (%a))" print_symbol s
 | SymbList1 (s, Some sep) ->
-  fprintf fmt "(Pcoq.G.Symbol.list1sep (%a) (%a) false)" print_symbol s print_symbol sep
+  fprintf fmt "(Pcoq.Symbol.list1sep (%a) (%a) false)" print_symbol s print_symbol sep
 | SymbOpt s ->
-  fprintf fmt "(Pcoq.G.Symbol.opt %a)" print_symbol s
+  fprintf fmt "(Pcoq.Symbol.opt %a)" print_symbol s
 | SymbRules rules ->
   let pr fmt (r, body) =
     let (vars, tkn) = List.split r in
     let tkn = List.rev tkn in
-    fprintf fmt "Pcoq.G.Rules.make @[(%a)@ (%a)@]" (print_symbols ~norec:true) tkn print_fun (vars, body)
+    fprintf fmt "Pcoq.Rules.make @[(%a)@ (%a)@]" (print_symbols ~norec:true) tkn print_fun (vars, body)
   in
   let pr fmt rules = print_list fmt pr rules in
-  fprintf fmt "(Pcoq.G.Symbol.rules %a)" pr (List.rev rules)
+  fprintf fmt "(Pcoq.Symbol.rules %a)" pr (List.rev rules)
 | SymbQuote c ->
   fprintf fmt "(%s)" c
 
@@ -266,7 +266,7 @@ let print_rule fmt r =
 let print_entry fmt e =
   let print_position_opt fmt pos = print_opt fmt print_position pos in
   let print_rules fmt rules = print_list fmt print_rule rules in
-  fprintf fmt "let () =@ @[Pcoq.grammar_extend@ %s@ @[{ Pcoq.G.pos=%a; data=%a}@]@]@ in@ "
+  fprintf fmt "let () =@ @[Pcoq.grammar_extend@ %s@ @[{ Pcoq.pos=%a; data=%a}@]@]@ in@ "
     e.gentry_name print_position_opt e.gentry_pos print_rules e.gentry_rules
 
 let print_ast fmt ext =
@@ -452,7 +452,7 @@ let terminal s =
   let p =
     if s <> "" && s.[0] >= '0' && s.[0] <= '9' then "CLexer.terminal_numeral"
     else "CLexer.terminal" in
-  let c = Printf.sprintf "Pcoq.G.Symbol.token (%s \"%s\")" p s in
+  let c = Printf.sprintf "Pcoq.Symbol.token (%s \"%s\")" p s in
   SymbQuote c
 
 let rec parse_symb self = function

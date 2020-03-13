@@ -70,7 +70,7 @@ let input_ssrtermkind _ strm = match Util.stream_nth 0 strm with
   | Tok.KEYWORD "(" -> '('
   | Tok.KEYWORD "@" -> '@'
   | _ -> ' '
-let ssrtermkind = Pcoq.G.Entry.of_parser "ssrtermkind" input_ssrtermkind
+let ssrtermkind = Pcoq.Entry.of_parser "ssrtermkind" input_ssrtermkind
 
 }
 

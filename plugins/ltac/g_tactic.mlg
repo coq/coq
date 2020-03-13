@@ -62,7 +62,7 @@ open Extraargs
 
 (* idem for (x1..xn:t) [n^2 complexity but exceptional use] *)
 let check_for_coloneq =
-  Pcoq.G.Entry.of_parser "lpar_id_colon"
+  Pcoq.Entry.of_parser "lpar_id_colon"
     (fun _ strm ->
       let rec skip_to_rpar p n =
         match List.last (Stream.npeek n strm) with

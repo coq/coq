@@ -88,7 +88,7 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
   let input_cleanup () = close_in in_chan; Option.iter close_in in_echo in
 
   let in_pa =
-    Pcoq.G.Parsable.make ~loc:(Loc.initial (Loc.InFile file))
+    Pcoq.Parsable.make ~loc:(Loc.initial (Loc.InFile file))
       (Stream.of_channel in_chan) in
   let open State in
 
@@ -100,7 +100,7 @@ let load_vernac_core ~echo ~check ~interactive ~state file =
     with
     | None ->
       input_cleanup ();
-      state, ids, Pcoq.G.Parsable.comments in_pa
+      state, ids, Pcoq.Parsable.comments in_pa
     | Some ast ->
       (* Printing of AST for -compile-verbose *)
       Option.iter (vernac_echo ?loc:ast.CAst.loc) in_echo;

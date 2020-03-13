@@ -827,9 +827,9 @@ END
 let () =
 
 let open Tok in
-let (++) r s = Pcoq.G.Rule.next r s in
+let (++) r s = Pcoq.Rule.next r s in
 let rules = [
-  Pcoq.G.(
+  Pcoq.(
     Production.make
       (Rule.stop ++ Symbol.nterm test_dollar_ident ++ Symbol.token (PKEYWORD "$") ++ Symbol.nterm Prim.ident)
     begin fun id _ _ loc ->
@@ -839,7 +839,7 @@ let rules = [
     end
   );
 
-  Pcoq.G.(
+  Pcoq.(
     Production.make
       (Rule.stop ++ Symbol.nterm test_ampersand_ident ++ Symbol.token (PKEYWORD "&") ++ Symbol.nterm Prim.ident)
     begin fun id _ _ loc ->
@@ -849,7 +849,7 @@ let rules = [
     end
   );
 
-  Pcoq.G.(
+  Pcoq.(
     Production.make
       (Rule.stop ++ Symbol.token (PIDENT (Some "ltac2")) ++ Symbol.token (PKEYWORD ":") ++
        Symbol.token (PKEYWORD "(") ++ Symbol.nterm tac2expr ++ Symbol.token (PKEYWORD ")"))
@@ -861,7 +861,7 @@ let rules = [
 ] in
 
 Hook.set Tac2entries.register_constr_quotations begin fun () ->
-  Pcoq.grammar_extend Pcoq.Constr.operconstr {G.pos=Some (Gramlib.Gramext.Level "0"); data=[(None, None, rules)]}
+  Pcoq.grammar_extend Pcoq.Constr.operconstr {pos=Some (Gramlib.Gramext.Level "0"); data=[(None, None, rules)]}
 end
 
 }

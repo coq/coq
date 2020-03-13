@@ -36,6 +36,7 @@ module type S = sig
   module Entry : sig
     type 'a t
     val make : string -> 'a t
+    val create : string -> 'a t (* compat *)
     val parse : 'a t -> Parsable.t -> 'a
     val name : 'a t -> string
     val of_parser : string -> (Plexing.location_function -> te Stream.t -> 'a) -> 'a t

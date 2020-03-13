@@ -326,47 +326,47 @@ let is_binder_level custom (custom',from) e = match e with
 
 let make_sep_rules = function
   | [tk] ->
-    Pcoq.G.Symbol.token tk
+    Pcoq.Symbol.token tk
   | tkl ->
-    let r = Pcoq.G.mk_rule (List.rev tkl) in
-    Pcoq.G.Symbol.rules [r]
+    let r = Pcoq.mk_rule (List.rev tkl) in
+    Pcoq.Symbol.rules [r]
 
 type ('s, 'a) mayrec_symbol =
-| MayRecNo : ('s, Gramlib.Grammar.norec, 'a) G.Symbol.t -> ('s, 'a) mayrec_symbol
-| MayRecMay : ('s, Gramlib.Grammar.mayrec, 'a) G.Symbol.t -> ('s, 'a) mayrec_symbol
+| MayRecNo : ('s, Gramlib.Grammar.norec, 'a) Symbol.t -> ('s, 'a) mayrec_symbol
+| MayRecMay : ('s, Gramlib.Grammar.mayrec, 'a) Symbol.t -> ('s, 'a) mayrec_symbol
 
 let symbol_of_target : type s. _ -> _ -> _ -> _ -> s target -> (s, s) mayrec_symbol = fun custom p assoc from forpat ->
   if is_binder_level custom from p
   then
     (* Prevent self *)
-    MayRecNo (Pcoq.G.Symbol.nterml (target_entry custom forpat) "200")
-  else if is_self custom from p then MayRecMay Pcoq.G.Symbol.self
+    MayRecNo (Pcoq.Symbol.nterml (target_entry custom forpat) "200")
+  else if is_self custom from p then MayRecMay Pcoq.Symbol.self
   else
     let g = target_entry custom forpat in
     let lev = adjust_level custom assoc from p in
     begin match lev with
-    | DefaultLevel -> MayRecNo (Pcoq.G.Symbol.nterm g)
-    | NextLevel -> MayRecMay Pcoq.G.Symbol.next
-    | NumLevel lev -> MayRecNo (Pcoq.G.Symbol.nterml g (string_of_int lev))
+    | DefaultLevel -> MayRecNo (Pcoq.Symbol.nterm g)
+    | NextLevel -> MayRecMay Pcoq.Symbol.next
+    | NumLevel lev -> MayRecNo (Pcoq.Symbol.nterml g (string_of_int lev))
     end
 
 let symbol_of_entry : type s r. _ -> _ -> (s, r) entry -> (s, r) mayrec_symbol = fun assoc from typ -> match typ with
 | TTConstr (s, p, forpat) -> symbol_of_target s p assoc from forpat
 | TTConstrList (s, typ', [], forpat) ->
   begin match symbol_of_target s typ' assoc from forpat with
-  | MayRecNo s -> MayRecNo (Pcoq.G.Symbol.list1 s)
-  | MayRecMay s -> MayRecMay (Pcoq.G.Symbol.list1 s) end
+  | MayRecNo s -> MayRecNo (Pcoq.Symbol.list1 s)
+  | MayRecMay s -> MayRecMay (Pcoq.Symbol.list1 s) end
 | TTConstrList (s, typ', tkl, forpat) ->
   begin match symbol_of_target s typ' assoc from forpat with
-  | MayRecNo s -> MayRecNo (Pcoq.G.Symbol.list1sep s (make_sep_rules tkl) false)
-  | MayRecMay s -> MayRecMay (Pcoq.G.Symbol.list1sep s (make_sep_rules tkl) false) end
-| TTPattern p -> MayRecNo (Pcoq.G.Symbol.nterml Constr.pattern (string_of_int p))
-| TTClosedBinderList [] -> MayRecNo (Pcoq.G.Symbol.list1 (Pcoq.G.Symbol.nterm Constr.binder))
-| TTClosedBinderList tkl -> MayRecNo (Pcoq.G.Symbol.list1sep (Pcoq.G.Symbol.nterm Constr.binder) (make_sep_rules tkl) false)
-| TTName -> MayRecNo (Pcoq.G.Symbol.nterm Prim.name)
-| TTOpenBinderList -> MayRecNo (Pcoq.G.Symbol.nterm Constr.open_binders)
-| TTBigint -> MayRecNo (Pcoq.G.Symbol.nterm Prim.bignat)
-| TTReference -> MayRecNo (Pcoq.G.Symbol.nterm Constr.global)
+  | MayRecNo s -> MayRecNo (Pcoq.Symbol.list1sep s (make_sep_rules tkl) false)
+  | MayRecMay s -> MayRecMay (Pcoq.Symbol.list1sep s (make_sep_rules tkl) false) end
+| TTPattern p -> MayRecNo (Pcoq.Symbol.nterml Constr.pattern (string_of_int p))
+| TTClosedBinderList [] -> MayRecNo (Pcoq.Symbol.list1 (Pcoq.Symbol.nterm Constr.binder))
+| TTClosedBinderList tkl -> MayRecNo (Pcoq.Symbol.list1sep (Pcoq.Symbol.nterm Constr.binder) (make_sep_rules tkl) false)
+| TTName -> MayRecNo (Pcoq.Symbol.nterm Prim.name)
+| TTOpenBinderList -> MayRecNo (Pcoq.Symbol.nterm Constr.open_binders)
+| TTBigint -> MayRecNo (Pcoq.Symbol.nterm Prim.bignat)
+| TTReference -> MayRecNo (Pcoq.Symbol.nterm Constr.global)
 
 let interp_entry forpat e = match e with
 | ETProdName -> TTAny TTName
@@ -458,22 +458,22 @@ let rec ty_eval : type s a. (s, a, Loc.t -> s) ty_rule -> s gen_eval -> s env ->
     ty_eval rem f { env with constrs; constrlists; }
 
 type ('s, 'a, 'r) mayrec_rule =
-| MayRecRNo : ('s, Gramlib.Grammar.norec, 'a, 'r) G.Rule.t -> ('s, 'a, 'r) mayrec_rule
-| MayRecRMay : ('s, Gramlib.Grammar.mayrec, 'a, 'r) G.Rule.t -> ('s, 'a, 'r) mayrec_rule
+| MayRecRNo : ('s, Gramlib.Grammar.norec, 'a, 'r) Rule.t -> ('s, 'a, 'r) mayrec_rule
+| MayRecRMay : ('s, Gramlib.Grammar.mayrec, 'a, 'r) Rule.t -> ('s, 'a, 'r) mayrec_rule
 
 let rec ty_erase : type s a r. (s, a, r) ty_rule -> (s, a, r) mayrec_rule = function
-| TyStop -> MayRecRNo G.Rule.stop
+| TyStop -> MayRecRNo Rule.stop
 | TyMark (_, _, _, r) -> ty_erase r
 | TyNext (rem, TyTerm tok) ->
    begin match ty_erase rem with
-   | MayRecRNo rem -> MayRecRMay (G.Rule.next rem (G.Symbol.token tok))
-   | MayRecRMay rem -> MayRecRMay (G.Rule.next rem (G.Symbol.token tok)) end
+   | MayRecRNo rem -> MayRecRMay (Rule.next rem (Symbol.token tok))
+   | MayRecRMay rem -> MayRecRMay (Rule.next rem (Symbol.token tok)) end
 | TyNext (rem, TyNonTerm (_, _, s, _)) ->
    begin match ty_erase rem, s with
-   | MayRecRNo rem, MayRecNo s -> MayRecRMay (G.Rule.next rem s)
-   | MayRecRNo rem, MayRecMay s -> MayRecRMay (G.Rule.next rem s)
-   | MayRecRMay rem, MayRecNo s -> MayRecRMay (G.Rule.next rem s)
-   | MayRecRMay rem, MayRecMay s -> MayRecRMay (G.Rule.next rem s) end
+   | MayRecRNo rem, MayRecNo s -> MayRecRMay (Rule.next rem s)
+   | MayRecRNo rem, MayRecMay s -> MayRecRMay (Rule.next rem s)
+   | MayRecRMay rem, MayRecNo s -> MayRecRMay (Rule.next rem s)
+   | MayRecRMay rem, MayRecMay s -> MayRecRMay (Rule.next rem s) end
 
 type ('self, 'r) any_ty_rule =
 | AnyTyRule : ('self, 'act, Loc.t -> 'r) ty_rule -> ('self, 'r) any_ty_rule
@@ -501,7 +501,7 @@ let target_to_bool : type r. r target -> bool = function
 | ForPattern -> true
 
 let prepare_empty_levels forpat (where,(pos,p4assoc,name,reinit)) =
-  let empty = { G.pos; data = [(name, p4assoc, [])] } in
+  let empty = { pos; data = [(name, p4assoc, [])] } in
   match reinit with
   | None ->
     ExtendRule (target_entry where forpat, empty)
@@ -520,7 +520,7 @@ let rec pure_sublevels' assoc from forpat level = function
    let push where p rem =
      match symbol_of_target where p assoc from forpat with
      | MayRecNo sym ->
-       (match Pcoq.G.level_of_nonterm sym with
+       (match Pcoq.level_of_nonterm sym with
         | None -> rem
         | Some i ->
           if different_levels (fst from,level) (where,i) then
@@ -556,15 +556,15 @@ let extend_constr state forpat ng =
     let act = ty_eval r (make_act forpat ng.notgram_notation) empty in
     let rule =
       let r = match ty_erase r with
-        | MayRecRNo symbs -> Pcoq.G.Production.make symbs act
-        | MayRecRMay symbs -> Pcoq.G.Production.make symbs act
+        | MayRecRNo symbs -> Pcoq.Production.make symbs act
+        | MayRecRMay symbs -> Pcoq.Production.make symbs act
       in
       name, p4assoc, [r] in
     let r = match reinit with
       | None ->
-        ExtendRule (entry, { G.pos; data = [rule]})
+        ExtendRule (entry, { pos; data = [rule]})
       | Some reinit ->
-        ExtendRuleReinit (entry, reinit, { G.pos; data = [rule]})
+        ExtendRuleReinit (entry, reinit, { pos; data = [rule]})
     in
     (accu @ empty_rules @ [r], state)
   in

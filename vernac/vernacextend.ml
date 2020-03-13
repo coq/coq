@@ -166,15 +166,15 @@ let rec untype_command : type r s. (r, s) ty_sig -> r -> plugin_args -> vernac_c
     | Some Refl -> untype_command ty (f v) args
   end
 
-let rec untype_user_symbol : type s a b c. (a, b, c) Extend.ty_user_symbol -> (s, Gramlib.Grammar.norec, a) Pcoq.G.Symbol.t =
+let rec untype_user_symbol : type s a b c. (a, b, c) Extend.ty_user_symbol -> (s, Gramlib.Grammar.norec, a) Pcoq.Symbol.t =
   let open Extend in function
-  | TUlist1 l -> Pcoq.G.Symbol.list1 (untype_user_symbol l)
-  | TUlist1sep (l, s) -> Pcoq.G.Symbol.list1sep (untype_user_symbol l) (Pcoq.G.Symbol.token (CLexer.terminal s)) false
-  | TUlist0 l -> Pcoq.G.Symbol.list0 (untype_user_symbol l)
-  | TUlist0sep (l, s) -> Pcoq.G.Symbol.list0sep (untype_user_symbol l) (Pcoq.G.Symbol.token (CLexer.terminal s)) false
-  | TUopt o -> Pcoq.G.Symbol.opt (untype_user_symbol o)
-  | TUentry a -> Pcoq.G.Symbol.nterm (Pcoq.genarg_grammar (Genarg.ExtraArg a))
-  | TUentryl (a, i) -> Pcoq.G.Symbol.nterml (Pcoq.genarg_grammar (Genarg.ExtraArg a)) (string_of_int i)
+  | TUlist1 l -> Pcoq.Symbol.list1 (untype_user_symbol l)
+  | TUlist1sep (l, s) -> Pcoq.Symbol.list1sep (untype_user_symbol l) (Pcoq.Symbol.token (CLexer.terminal s)) false
+  | TUlist0 l -> Pcoq.Symbol.list0 (untype_user_symbol l)
+  | TUlist0sep (l, s) -> Pcoq.Symbol.list0sep (untype_user_symbol l) (Pcoq.Symbol.token (CLexer.terminal s)) false
+  | TUopt o -> Pcoq.Symbol.opt (untype_user_symbol o)
+  | TUentry a -> Pcoq.Symbol.nterm (Pcoq.genarg_grammar (Genarg.ExtraArg a))
+  | TUentryl (a, i) -> Pcoq.Symbol.nterml (Pcoq.genarg_grammar (Genarg.ExtraArg a)) (string_of_int i)
 
 let rec untype_grammar : type r s. (r, s) ty_sig -> 'a Egramml.grammar_prod_item list = function
 | TyNil -> []
@@ -193,7 +193,7 @@ let vernac_extend ~command ?classifier ?entry ext =
     | None ->
       let e = match entry with
       | None -> "COMMAND"
-      | Some e -> Pcoq.G.Entry.name e
+      | Some e -> Pcoq.Entry.name e
       in
       let msg = Printf.sprintf "\
         Vernac entry \"%s\" misses a classifier. \
@@ -229,7 +229,7 @@ let vernac_extend ~command ?classifier ?entry ext =
 
 type 'a argument_rule =
 | Arg_alias of 'a Pcoq.Entry.t
-| Arg_rules of 'a Pcoq.G.Production.t list
+| Arg_rules of 'a Pcoq.Production.t list
 
 type 'a vernac_argument = {
   arg_printer : Environ.env -> Evd.evar_map -> 'a -> Pp.t;
@@ -244,7 +244,7 @@ let vernac_argument_extend ~name arg =
     e
   | Arg_rules rules ->
     let e = Pcoq.create_generic_entry Pcoq.utactic name (Genarg.rawwit wit) in
-    let () = Pcoq.grammar_extend e {Pcoq.G.pos=None; data=[(None, None, rules)]} in
+    let () = Pcoq.grammar_extend e {Pcoq.pos=None; data=[(None, None, rules)]} in
     e
   in
   let pr = arg.arg_printer in

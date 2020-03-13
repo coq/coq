@@ -263,16 +263,16 @@ let negate_parser f tok x =
   | Some _ -> raise Stream.Failure
 
 let test_not_ssrslashnum =
-  Pcoq.G.Entry.of_parser
+  Pcoq.Entry.of_parser
     "test_not_ssrslashnum" (negate_parser test_ssrslashnum10)
 let test_ssrslashnum00 =
-  Pcoq.G.Entry.of_parser "test_ssrslashnum01" test_ssrslashnum00
+  Pcoq.Entry.of_parser "test_ssrslashnum01" test_ssrslashnum00
 let test_ssrslashnum10 =
-  Pcoq.G.Entry.of_parser "test_ssrslashnum10" test_ssrslashnum10
+  Pcoq.Entry.of_parser "test_ssrslashnum10" test_ssrslashnum10
 let test_ssrslashnum11 =
-  Pcoq.G.Entry.of_parser "test_ssrslashnum11" test_ssrslashnum11
+  Pcoq.Entry.of_parser "test_ssrslashnum11" test_ssrslashnum11
 let test_ssrslashnum01 =
-  Pcoq.G.Entry.of_parser "test_ssrslashnum01" test_ssrslashnum01
+  Pcoq.Entry.of_parser "test_ssrslashnum01" test_ssrslashnum01
 
 }
 
@@ -459,7 +459,7 @@ let input_ssrtermkind _ strm = match Util.stream_nth 0 strm with
   | Tok.KEYWORD "@" -> xWithAt
   | _ -> xNoFlag
 
-let ssrtermkind = Pcoq.G.Entry.of_parser "ssrtermkind" input_ssrtermkind
+let ssrtermkind = Pcoq.Entry.of_parser "ssrtermkind" input_ssrtermkind
 
 (* New kinds of terms *)
 
@@ -470,7 +470,7 @@ let input_term_annotation _ strm =
   | Tok.KEYWORD "@" :: _ -> `At
   | _ -> `None
 let term_annotation =
-  Pcoq.G.Entry.of_parser "term_annotation" input_term_annotation
+  Pcoq.Entry.of_parser "term_annotation" input_term_annotation
 
 (* terms *)
 
@@ -811,7 +811,7 @@ let reject_ssrhid _ strm =
       | _ -> ())
   | _ -> ()
 
-let test_nohidden = Pcoq.G.Entry.of_parser "test_ssrhid" reject_ssrhid
+let test_nohidden = Pcoq.Entry.of_parser "test_ssrhid" reject_ssrhid
 
 let rec reject_binder crossed_paren k tok s =
   match
@@ -825,7 +825,7 @@ let rec reject_binder crossed_paren k tok s =
   | Some (Tok.KEYWORD ")") when crossed_paren -> raise Stream.Failure
   | _ -> if crossed_paren then () else raise Stream.Failure
 
-let _test_nobinder = Pcoq.G.Entry.of_parser "test_nobinder" (reject_binder false 0)
+let _test_nobinder = Pcoq.Entry.of_parser "test_nobinder" (reject_binder false 0)
 
 }
 
@@ -1659,7 +1659,7 @@ let ssr_id_of_string loc s =
   ^ "Scripts with explicit references to anonymous variables are fragile."))
     end; Id.of_string s
 
-let ssr_null_entry = Pcoq.G.Entry.of_parser "ssr_null" (fun _ _ -> ())
+let ssr_null_entry = Pcoq.Entry.of_parser "ssr_null" (fun _ _ -> ())
 
 }
 
@@ -2382,7 +2382,7 @@ let test_ssr_rw_syntax =
     match Util.stream_nth 0 strm with
     | Tok.KEYWORD key when List.mem key.[0] [lbrace; '['; '/'] -> ()
     | _ -> raise Stream.Failure in
-  Pcoq.G.Entry.of_parser "test_ssr_rw_syntax" test
+  Pcoq.Entry.of_parser "test_ssr_rw_syntax" test
 
 }
 

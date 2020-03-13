@@ -18,7 +18,7 @@ open Vernacexpr
 type 's grammar_prod_item =
   | GramTerminal of string
   | GramNonTerminal : ('a Genarg.raw_abstract_argument_type *
-      ('s, _, 'a) Pcoq.G.Symbol.t) Loc.located -> 's grammar_prod_item
+      ('s, _, 'a) Pcoq.Symbol.t) Loc.located -> 's grammar_prod_item
 
 val extend_vernac_command_grammar :
   extend_name -> vernac_expr Pcoq.Entry.t option ->
@@ -32,4 +32,4 @@ val proj_symbol : ('a, 'b, 'c) Extend.ty_user_symbol -> ('a, 'b, 'c) Genarg.gena
 
 val make_rule :
   (Loc.t -> Genarg.raw_generic_argument list -> 'a) ->
-  'a grammar_prod_item list -> 'a Pcoq.G.Production.t
+  'a grammar_prod_item list -> 'a Pcoq.Production.t
