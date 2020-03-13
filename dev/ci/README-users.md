@@ -105,5 +105,10 @@ images for testing against Coq master. Using these images is highly
 recommended:
 
 - For Docker, see: https://github.com/coq-community/docker-coq
+
+  The https://github.com/coq-community/docker-coq/wiki/CI-setup wiki
+  page contains additional information and templates to help setting
+  Docker-based CI up for your Coq project
+
 - For Nix, see the setup at
   https://github.com/coq-community/manifesto/wiki/Continuous-Integration-with-Nix
