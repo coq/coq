@@ -203,11 +203,6 @@ module MutualEntry : sig
 
 end = struct
 
-  (* Body with the fix *)
-  type t =
-    | Single of Evd.side_effects Declare.proof_entry
-    | Mutual of Evd.side_effects Declare.proof_entry
-
   (* XXX: Refactor this with the code in [DeclareDef.declare_mutdef] *)
   let guess_decreasing env possible_indexes ((body, ctx), eff) =
     let open Constr in
@@ -217,19 +212,6 @@ end = struct
       let indexes = Pretyping.search_guard env possible_indexes fixdecls in
       (mkFix ((indexes,0),fixdecls), ctx), eff
     | _ -> (body, ctx), eff
-
-  let adjust_guardness_conditions ~info const =
-    match info.Info.compute_guard with
-    | [] ->
-      (* Not a recursive statement *)
-      Single const
-    | possible_indexes ->
-      (* Try all combinations... not optimal *)
-      let env = Global.env() in
-      let pe = Declare.Internal.map_entry_body const
-          ~f:(guess_decreasing env possible_indexes)
-      in
-      Mutual pe
 
   let select_body i t =
     let open Constr in
@@ -241,37 +223,39 @@ end = struct
         Pp.(str "Not a proof by induction: " ++
             Termops.Internal.debug_print_constr (EConstr.of_constr t) ++ str ".")
 
-  let declare_mutdef ~uctx ~info mutpe i DeclareDef.Recthm.{ name; impargs; typ; _} =
-    let { Info.hook; scope; kind; _ } = info in
-    match mutpe with
-    | Single pe ->
-      (* We'd like to do [assert (i = 0)] here, however this codepath
-         is used when declaring mutual cofixpoints *)
-      let ubind = UState.universe_binders uctx in
-      let hook_data = Option.map (fun hook -> hook, uctx, []) info.Info.hook in
-      DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
-    | Mutual pe ->
-      (* if i = 0 , we don't touch the type; this is for compat
-         but not clear it is the right thing to do
-
-         See start_dependent_proof ~typ:mkProp to understand why
-         we don't we use the type stored here. This is obviously a
-         fixme [was like this for long time]
-      *)
-      let pe =
-        if i > 0
-        then Declare.Internal.map_entry_type pe ~f:(fun _ -> Some typ)
-        else pe
-      in
-      let hook_data = Option.map (fun hook -> hook, uctx, []) info.Info.hook in
-      let ubind = if i = 0 then UState.universe_binders uctx else UnivNames.empty_binders in
-      let pe = Declare.Internal.map_entry_body pe
-          ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff) in
-      DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
+  let declare_mutdef ~uctx ~info pe i DeclareDef.Recthm.{ name; impargs; typ; _} =
+    let { Info.hook; scope; kind; compute_guard; _ } = info in
+    (* if i = 0 , we don't touch the type; this is for compat
+       but not clear it is the right thing to do.
+    *)
+    let pe, ubind =
+      if i > 0 && not (CList.is_empty compute_guard)
+      then Declare.Internal.map_entry_type pe ~f:(fun _ -> Some typ), UnivNames.empty_binders
+      else pe, UState.universe_binders uctx
+    in
+    let hook_data = Option.map (fun hook -> hook, uctx, []) info.Info.hook in
+    (* We when compute_guard was [] in the previous step we should not
+       substitute the body *)
+    let pe = match compute_guard with
+      | [] -> pe
+      | _ ->
+        Declare.Internal.map_entry_body pe
+          ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff)
+    in
+    DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
 
   let declare_mutdef ~info ~uctx const =
-    let mutpe = adjust_guardness_conditions ~info const in
-    List.map_i (declare_mutdef ~info ~uctx mutpe) 0 info.Info.thms
+    let pe = match info.Info.compute_guard with
+    | [] ->
+      (* Not a recursive statement *)
+      const
+    | possible_indexes ->
+      (* Try all combinations... not optimal *)
+      let env = Global.env() in
+      Declare.Internal.map_entry_body const
+        ~f:(guess_decreasing env possible_indexes)
+    in
+    List.map_i (declare_mutdef ~info ~uctx pe) 0 info.Info.thms
 
   let declare_variable ~info ~uctx pe =
     let { Info.scope; hook } = info in
