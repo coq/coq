@@ -11,7 +11,6 @@
 (* $Id$ *)
 
 open Pp
-open Util
 
 include Minisys
 
@@ -42,15 +41,7 @@ let all_subdirs ~unix_path:root =
 (* Caching directory contents for efficient syntactic equality of file
    names even on case-preserving but case-insensitive file systems *)
 
-module StrMod = struct
-  type t = string
-  let compare = compare
-end
-
-module StrMap = Map.Make(StrMod)
-module StrSet = Set.Make(StrMod)
-
-let dirmap = ref StrMap.empty
+let dirmap = ref CString.Map.empty
 
 let make_dir_table dir =
   let entries =
@@ -59,8 +50,8 @@ let make_dir_table dir =
     with Sys_error _ ->
       warn_cannot_open_dir dir;
       [||] in
-  let filter_dotfiles s f = if f.[0] = '.' then s else StrSet.add f s in
-  Array.fold_left filter_dotfiles StrSet.empty entries
+  let filter_dotfiles s f = if f.[0] = '.' then s else CString.Set.add f s in
+  Array.fold_left filter_dotfiles CString.Set.empty entries
 
 (** Don't trust in interactive mode (the default) *)
 let trust_file_cache = ref false
@@ -68,20 +59,20 @@ let trust_file_cache = ref false
 let exists_in_dir_respecting_case dir bf =
   let cache_dir dir =
     let contents = make_dir_table dir in
-    dirmap := StrMap.add dir contents !dirmap;
+    dirmap := CString.Map.add dir contents !dirmap;
     contents in
   let contents, fresh =
     try
       (* in batch mode, assume the directory content is still fresh *)
-      StrMap.find dir !dirmap, !trust_file_cache
+      CString.Map.find dir !dirmap, !trust_file_cache
     with Not_found ->
       (* in batch mode, we are not yet sure the directory exists *)
-      if !trust_file_cache && not (exists_dir dir) then StrSet.empty, true
+      if !trust_file_cache && not (exists_dir dir) then CString.Set.empty, true
       else cache_dir dir, true in
-  StrSet.mem bf contents ||
+  CString.Set.mem bf contents ||
     not fresh &&
       (* rescan, there is a new file we don't know about *)
-      StrSet.mem bf (cache_dir dir)
+      CString.Set.mem bf (cache_dir dir)
 
 let file_exists_respecting_case path f =
   (* This function ensures that a file with expected lowercase/uppercase

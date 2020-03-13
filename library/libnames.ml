@@ -78,9 +78,6 @@ let dirpath_of_string s =
   in
   DirPath.make path
 
-module Dirset = Set.Make(DirPath)
-module Dirmap = Map.Make(DirPath)
-
 (*s Section paths are absolute names *)
 
 type full_path = {

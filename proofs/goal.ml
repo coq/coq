@@ -131,4 +131,4 @@ module V82 = struct
 
 end
 
-module Set = Set.Make(struct type t = goal let compare = Evar.compare end)
+module Set = Evar.Set

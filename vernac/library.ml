@@ -103,17 +103,13 @@ type library_summary = {
   libsum_digests : Safe_typing.vodigest;
 }
 
-module LibraryOrdered = DirPath
-module LibraryMap = Map.Make(LibraryOrdered)
-module LibraryFilenameMap = Map.Make(LibraryOrdered)
-
 (* This is a map from names to loaded libraries *)
-let libraries_table : library_summary LibraryMap.t ref =
-  Summary.ref LibraryMap.empty ~name:"LIBRARY"
+let libraries_table : library_summary DPmap.t ref =
+  Summary.ref DPmap.empty ~name:"LIBRARY"
 
 (* This is the map of loaded libraries filename *)
 (* (not synchronized so as not to be caught in the states on disk) *)
-let libraries_filename_table = ref LibraryFilenameMap.empty
+let libraries_filename_table = ref DPmap.empty
 
 (* These are the _ordered_ sets of loaded, imported and exported libraries *)
 let libraries_loaded_list = Summary.ref [] ~name:"LIBRARY-LOAD"
@@ -121,7 +117,7 @@ let libraries_loaded_list = Summary.ref [] ~name:"LIBRARY-LOAD"
 (* various requests to the tables *)
 
 let find_library dir =
-  LibraryMap.find dir !libraries_table
+  DPmap.find dir !libraries_table
 
 let try_find_library dir =
   try find_library dir
@@ -133,16 +129,16 @@ let register_library_filename dir f =
   (* Not synchronized: overwrite the previous binding if one existed *)
   (* from a previous play of the session *)
   libraries_filename_table :=
-    LibraryFilenameMap.add dir f !libraries_filename_table
+    DPmap.add dir f !libraries_filename_table
 
 let library_full_filename dir =
-  try LibraryFilenameMap.find dir !libraries_filename_table
+  try DPmap.find dir !libraries_filename_table
   with Not_found -> "<unavailable filename>"
 
 let overwrite_library_filenames f =
   let f =
     if Filename.is_relative f then Filename.concat (Sys.getcwd ()) f else f in
-  LibraryMap.iter (fun dir _ -> register_library_filename dir f)
+  DPmap.iter (fun dir _ -> register_library_filename dir f)
     !libraries_table
 
 let library_is_loaded dir =
@@ -167,7 +163,7 @@ let register_loaded_library m =
     | m'::_ as l when DirPath.equal m' libname -> l
     | m'::l' -> m' :: aux l' in
   libraries_loaded_list := aux !libraries_loaded_list;
-  libraries_table := LibraryMap.add libname m !libraries_table
+  libraries_table := DPmap.add libname m !libraries_table
 
   let loaded_libraries () = !libraries_loaded_list
 
@@ -187,13 +183,13 @@ type 'a table_status =
   | Fetched of 'a array
 
 let opaque_tables =
-  ref (LibraryMap.empty : (Opaqueproof.opaque_proofterm table_status) LibraryMap.t)
+  ref (DPmap.empty : (Opaqueproof.opaque_proofterm table_status) DPmap.t)
 
 let add_opaque_table dp st =
-  opaque_tables := LibraryMap.add dp st !opaque_tables
+  opaque_tables := DPmap.add dp st !opaque_tables
 
 let access_table what tables dp i =
-  let t = match LibraryMap.find dp !tables with
+  let t = match DPmap.find dp !tables with
     | Fetched t -> t
     | ToFetch f ->
       let dir_path = Names.DirPath.to_string dp in
@@ -206,7 +202,7 @@ let access_table what tables dp i =
              str ") is inaccessible or corrupted,\ncannot load some " ++
              str what ++ str " in it.\n")
       in
-      tables := LibraryMap.add dp (Fetched t) !tables;
+      tables := DPmap.add dp (Fetched t) !tables;
       t
   in
   assert (i < Array.length t); t.(i)
@@ -261,14 +257,12 @@ let intern_from_file f =
   | Some (_,false) ->
       mk_library lsd lmd (Dvo_or_vi digest_lmd) Univ.ContextSet.empty
 
-module DPMap = Map.Make(DirPath)
-
 let rec intern_library ~lib_resolver (needed, contents) (dir, f) from =
   (* Look if in the current logical environment *)
   try (find_library dir).libsum_digests, (needed, contents)
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
-  try (DPMap.find dir contents).library_digests, (needed, contents)
+  try (DPmap.find dir contents).library_digests, (needed, contents)
   with Not_found ->
   Feedback.feedback(Feedback.FileDependency (from, DirPath.to_string dir));
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
@@ -286,7 +280,7 @@ and intern_library_deps ~lib_resolver libs dir m from =
   let needed, contents =
     Array.fold_left (intern_mandatory_library ~lib_resolver dir from)
       libs m.library_deps in
-  (dir :: needed, DPMap.add dir m contents )
+  (dir :: needed, DPmap.add dir m contents )
 
 and intern_mandatory_library ~lib_resolver caller from libs (dir,d) =
   let digest, libs = intern_library ~lib_resolver libs (dir, None) (Some from) in
@@ -372,8 +366,8 @@ let warn_require_in_module =
                               strbrk "and optionally Import it inside another one.")
 
 let require_library_from_dirpath ~lib_resolver modrefl export =
-  let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPMap.empty) modrefl in
-  let needed = List.rev_map (fun dir -> DPMap.find dir contents) needed in
+  let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPmap.empty) modrefl in
+  let needed = List.rev_map (fun dir -> DPmap.find dir contents) needed in
   let modrefl = List.map fst modrefl in
     if Lib.is_module_or_modtype () then
       begin
@@ -500,14 +494,11 @@ let save_library_to todo_proofs ~output_native_objects dir f otab =
 let save_library_raw f sum lib univs proofs =
   save_library_base f sum lib (Some univs) None proofs
 
-module StringOrd = struct type t = string let compare = String.compare end
-module StringSet = Set.Make(StringOrd)
-
 let get_used_load_paths () =
-  StringSet.elements
-    (List.fold_left (fun acc m -> StringSet.add
+  String.Set.elements
+    (List.fold_left (fun acc m -> String.Set.add
       (Filename.dirname (library_full_filename m)) acc)
-       StringSet.empty !libraries_loaded_list)
+       String.Set.empty !libraries_loaded_list)
 
 let _ = Nativelib.get_load_paths := get_used_load_paths
 

@@ -8,17 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-module StringOrd =
-struct
-  type t = string
-  let compare s1 s2 =
-    (* we use first size, then usual comparison *)
-    let d = String.length s1 - String.length s2 in
-    if d <> 0 then d
-    else compare s1 s2
-end
-
-module Proposals = Set.Make(StringOrd)
+module Proposals = CString.Set
 
 (** Retrieve completion proposals in the buffer *)
 let get_syntactic_completion (buffer : GText.buffer) pattern accu =

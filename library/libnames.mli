@@ -8,7 +8,6 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Util
 open Names
 
 (** {6 Dirpaths } *)
@@ -33,9 +32,6 @@ val drop_dirpath_prefix : DirPath.t -> DirPath.t -> DirPath.t
 val is_dirpath_prefix_of : DirPath.t -> DirPath.t -> bool
 
 val is_dirpath_suffix_of : DirPath.t -> DirPath.t -> bool
-
-module Dirset : Set.S with type elt = DirPath.t
-module Dirmap : Map.ExtS with type key = DirPath.t and module Set := Dirset
 
 (** {6 Full paths are {e absolute} paths of declarations } *)
 type full_path
