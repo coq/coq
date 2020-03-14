@@ -125,6 +125,10 @@ val glob_hints_path_atom :
 val glob_hints_path :
   Libnames.qualid hints_path_gen -> GlobRef.t hints_path_gen
 
+type 'a with_mode =
+  | ModeMatch of 'a
+  | ModeMismatch
+
 module Hint_db :
   sig
     type t
@@ -140,16 +144,20 @@ module Hint_db :
     val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
 
     (** All hints associated to the reference, respecting modes if evars appear in the
-        arguments, _not_ using the discrimination net. *)
+        arguments, _not_ using the discrimination net.
+        Returns a [ModeMismatch] if there are declared modes and none matches.
+        *)
     val map_existential : evar_map -> secvars:Id.Pred.t ->
-      (GlobRef.t * constr array) -> constr -> t -> full_hint list
+      (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
 
     (** All hints associated to the reference, respecting modes if evars appear in the
-        arguments and using the discrimination net. *)
-    val map_eauto : evar_map -> secvars:Id.Pred.t -> (GlobRef.t * constr array) -> constr -> t -> full_hint list
+        arguments and using the discrimination net.
+        Returns a [ModeMismatch] if there are declared modes and none matches. *)
+    val map_eauto : evar_map -> secvars:Id.Pred.t -> (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
 
-    (** All hints associated to the reference, respecting modes if evars appear in the
-        arguments. *)
+    (** All hints associated to the reference.
+        Precondition: no evars should appear in the arguments, so no modes
+        are checked. *)
     val map_auto : evar_map -> secvars:Id.Pred.t ->
        (GlobRef.t * constr array) -> constr -> t -> full_hint list
 

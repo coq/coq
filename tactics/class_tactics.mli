@@ -66,4 +66,6 @@ module Search : sig
     -> Hints.hint_db list
     (** The list of hint databases to use *)
     -> unit Proofview.tactic
+    (** Note: there might be stuck goals due to mode declarations
+      remaining even in case of success of the tactic. *)
 end

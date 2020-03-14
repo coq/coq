@@ -1,3 +1,64 @@
+Module applydestruct.
+  Class Foo (A : Type) :=
+    { bar : nat -> A;
+      baz  : A -> nat }.
+  Hint Mode Foo + : typeclass_instances.
+
+  Class C (A : Type).
+  Hint Mode C + : typeclass_instances.
+
+  Variable fool : forall {A} {F : Foo A} (x : A), C A -> bar 0 = x.
+  (* apply leaves non-dependent subgoals of typeclass type
+     alone *)
+  Goal forall {A} {F : Foo A} (x : A), bar 0 = x.
+  Proof.
+    intros. apply fool.
+    match goal with
+      |[ |- C A ] => idtac
+    end.
+  Abort.
+
+  Variable fooli : forall {A} {F : Foo A} {c : C A} (x : A), bar 0 = x.
+  (* apply tries to resolve implicit argument typeclass
+     constraints. *)
+  Goal forall {A} {F : Foo A} (x : A), bar 0 = x.
+  Proof.
+    intros.
+    Fail apply fooli.
+    Fail unshelve eapply fooli; solve [typeclasses eauto].
+    eapply fooli.
+  Abort.
+
+  (* It applies resolution after unification of the goal *)
+  Goal forall {A} {F : Foo A} {C : C A} (x : A), bar 0 = x.
+  Proof.
+    intros. apply fooli.
+  Abort.
+    Set Typeclasses Debug Verbosity 2.
+
+  Inductive bazdestr {A} (F : Foo A) : nat -> Prop :=
+    | isbas : bazdestr F 1.
+
+  Variable fooinv : forall {A} {F : Foo A} (x : A),
+      bazdestr F (baz x).
+
+  (* Destruct applies resolution early, before finding
+     occurrences to abstract. *)
+  Goal forall {A} {F : Foo A} {C : C A} (x : A), baz x = 0.
+  Proof.
+    intros. Fail destruct (fooinv _).
+    destruct (fooinv x).
+  Abort.
+
+  Goal forall {A} {F : Foo A} (x y : A), x = y.
+  Proof.
+    intros. rewrite <- (fool x). rewrite <- (fool y). reflexivity.
+    match goal with
+      |[ |- C A ] => idtac
+    end.
+  Abort.
+End applydestruct.
+
 Module onlyclasses.
 
 (* In 8.6 we still allow non-class subgoals *)

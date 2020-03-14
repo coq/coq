@@ -385,8 +385,10 @@ few other commands related to typeclasses.
 .. tacn:: typeclasses eauto
    :name: typeclasses eauto
 
-   This tactic uses a different resolution engine than :tacn:`eauto` and
-   :tacn:`auto`. The main differences are the following:
+   This proof search tactic implements the resolution engine that is run
+   implicitly during type-checking. This tactic uses a different resolution
+   engine than :tacn:`eauto` and :tacn:`auto`. The main differences are the
+   following:
 
    + Contrary to :tacn:`eauto` and :tacn:`auto`, the resolution is done entirely in
      the new proof engine (as of Coq 8.6), meaning that backtracking is
@@ -421,6 +423,17 @@ few other commands related to typeclasses.
      constants as the first argument of ``typeclasses eauto`` hence makes
      resolution with the local hypotheses use full conversion during
      unification.
+
+   + The mode hints (see :cmd:`Hint Mode`) associated to a class are
+     taken into account by :tacn:`typeclasses eauto`. When a goal
+     does not match any of the declared modes for its head (if any),
+     instead of failing like :tacn:`eauto`, the goal is suspended and
+     resolution proceeds on the remaining goals.
+     If after one run of resolution, there remains suspended goals,
+     resolution is launched against on them, until it reaches a fixed
+     point when the set of remaining suspended goals does not change.
+     Using `solve [typeclasses eauto]` can be used to ensure that
+     no suspended goals remain.
 
    + When considering local hypotheses, we use the union of all the modes
      declared in the given databases.

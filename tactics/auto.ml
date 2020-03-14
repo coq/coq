@@ -303,7 +303,9 @@ let hintmap_of sigma secvars hdc concl =
   | None -> Hint_db.map_none ~secvars
   | Some hdc ->
      if occur_existential sigma concl then
-       Hint_db.map_existential sigma ~secvars hdc concl
+       (fun db -> match Hint_db.map_existential sigma ~secvars hdc concl db with
+                  | ModeMatch l -> l
+                  | ModeMismatch -> [])
      else Hint_db.map_auto sigma ~secvars hdc concl
 
 let exists_evaluable_reference env = function
@@ -366,11 +368,14 @@ and my_find_search_delta sigma db_list local_db secvars hdc concl =
           let st = Hint_db.transparent_state db in
           let flags, l =
             let l =
-              match hdc with None -> Hint_db.map_none ~secvars db
+              match hdc with
+              | None -> Hint_db.map_none ~secvars db
               | Some hdc ->
                   if TransparentState.is_empty st
                   then Hint_db.map_auto sigma ~secvars hdc concl db
-                  else Hint_db.map_existential sigma ~secvars hdc concl db
+                  else match Hint_db.map_existential sigma ~secvars hdc concl db with
+                      | ModeMatch l -> l
+                      | ModeMismatch -> []
             in auto_flags_of_state st, l
           in List.map (fun x -> (Some flags,x)) l)
         (local_db::db_list)

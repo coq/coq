@@ -499,6 +499,10 @@ let rec subst_hints_path subst hp =
 
 type hint_db_name = string
 
+type 'a with_mode =
+  | ModeMatch of 'a
+  | ModeMismatch
+
 module Hint_db :
 sig
 type t
@@ -507,9 +511,9 @@ val find : GlobRef.t -> t -> search_entry
 val map_none : secvars:Id.Pred.t -> t -> full_hint list
 val map_all : secvars:Id.Pred.t -> GlobRef.t -> t -> full_hint list
 val map_existential : evar_map -> secvars:Id.Pred.t ->
-                      (GlobRef.t * constr array) -> constr -> t -> full_hint list
+                      (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
 val map_eauto : evar_map -> secvars:Id.Pred.t ->
-                (GlobRef.t * constr array) -> constr -> t -> full_hint list
+                (GlobRef.t * constr array) -> constr -> t -> full_hint list with_mode
 val map_auto : evar_map -> secvars:Id.Pred.t ->
                (GlobRef.t * constr array) -> constr -> t -> full_hint list
 val add_one : env -> evar_map -> hint_entry -> t -> t
@@ -528,7 +532,6 @@ val add_modes : hint_mode array list GlobRef.Map.t -> t -> t
 val modes : t -> hint_mode array list GlobRef.Map.t
 val fold : (GlobRef.t option -> hint_mode array list -> full_hint list -> 'a -> 'a) ->
   t -> 'a -> 'a
-
 end =
 struct
 
@@ -618,8 +621,8 @@ struct
   let map_existential sigma ~secvars (k,args) concl db =
     let se = find k db in
       if matches_modes sigma args se.sentry_mode then
-        merge_entry secvars db se.sentry_nopat se.sentry_pat
-      else merge_entry secvars db [] []
+        ModeMatch (merge_entry secvars db se.sentry_nopat se.sentry_pat)
+      else ModeMismatch
 
   (* [c] contains an existential *)
   let map_eauto sigma ~secvars (k,args) concl db =
@@ -627,8 +630,8 @@ struct
       if matches_modes sigma args se.sentry_mode then
         let st = if db.use_dn then Some db.hintdb_state else None in
         let pat = lookup_tacs sigma concl st se in
-        merge_entry secvars db [] pat
-      else merge_entry secvars db [] []
+        ModeMatch (merge_entry secvars db [] pat)
+      else ModeMismatch
 
   let is_exact = function
     | Give_exact _ -> true
@@ -1519,7 +1522,9 @@ let pr_hint_term env sigma cl =
       let fn = try
           let hdc = decompose_app_bound sigma cl in
             if occur_existential sigma cl then
-              Hint_db.map_existential sigma ~secvars:Id.Pred.full hdc cl
+              (fun db -> match Hint_db.map_existential sigma ~secvars:Id.Pred.full hdc cl db with
+              | ModeMatch l -> l
+              | ModeMismatch -> [])
             else Hint_db.map_auto sigma ~secvars:Id.Pred.full hdc cl
         with Bound -> Hint_db.map_none ~secvars:Id.Pred.full
       in
