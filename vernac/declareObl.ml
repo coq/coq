@@ -365,20 +365,15 @@ let declare_definition prg =
   let sigma = Evd.from_ctx prg.prg_ctx in
   let body, types = subst_prog varsubst prg in
   let body, types = EConstr.(of_constr body, Some (of_constr types)) in
-  let opaque, poly, udecl = prg.prg_opaque, prg.prg_poly, prg.prg_univdecl in
+  (* All these should be grouped into a struct a some point *)
+  let opaque, poly, udecl, hook = prg.prg_opaque, prg.prg_poly, prg.prg_univdecl, prg.prg_hook in
+  let name, scope, kind, impargs = prg.prg_name, prg.prg_scope, Decls.(IsDefinition prg.prg_kind), prg.prg_implicits in
   let fix_exn = Hook.get get_fix_exn () in
   let obls = List.map (fun (id, (_, c)) -> (id, c)) varsubst in
   (* XXX: This is doing normalization twice *)
-  let sigma, ce =
-    DeclareDef.prepare_definition ~fix_exn ~opaque ~poly ~udecl ~types ~body sigma in
+  let ce = DeclareDef.prepare_definition ~fix_exn ~opaque ~poly ~udecl ~types ~body sigma in
   let () = progmap_remove prg in
-  let uctx = Evd.evar_universe_context sigma in
-  let ubind = UState.universe_binders uctx in
-  let hook_data = Option.map (fun hook -> hook, uctx, obls) prg.prg_hook in
-  DeclareDef.declare_definition
-    ~name:prg.prg_name ~scope:prg.prg_scope ~ubind
-    ~kind:Decls.(IsDefinition prg.prg_kind) ce
-    ~impargs:prg.prg_implicits ?hook_data
+  DeclareDef.declare_definition ~name ~scope ~kind ~impargs ?hook ~obls ce
 
 let rec lam_index n t acc =
   match Constr.kind t with

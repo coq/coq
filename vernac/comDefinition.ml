@@ -74,13 +74,10 @@ let do_definition ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
   let (body, types), evd, udecl, impargs =
     interp_definition ~program_mode udecl bl ~poly red_option c ctypopt
   in
-  let evd, ce = DeclareDef.prepare_definition ~opaque:false ~poly evd ~udecl ~types ~body in
-  let uctx = Evd.evar_universe_context evd in
-  let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
+  let ce = DeclareDef.prepare_definition ~opaque:false ~poly evd ~udecl ~types ~body in
   let kind = Decls.IsDefinition kind in
-  let ubind = Evd.universe_binders evd in
   let _ : Names.GlobRef.t =
-    DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs ce
+    DeclareDef.declare_definition ~name ~scope ~kind ?hook ~impargs ce
   in ()
 
 let do_definition_program ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =

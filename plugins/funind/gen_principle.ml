@@ -290,13 +290,11 @@ let generate_functional_principle (evd: Evd.evar_map ref)
      Don't forget to close the goal if an error is raised !!!!
   *)
   let uctx = Evd.evar_universe_context sigma in
-  let hook_data = hook, uctx, [] in
-  let entry = DeclareDef.ClosedDef.of_proof_entry entry in
+  let entry = DeclareDef.ClosedDef.of_proof_entry ~uctx entry in
   let _ : Names.GlobRef.t = DeclareDef.declare_definition
-      ~name:new_princ_name ~hook_data
+      ~name:new_princ_name ~hook
       ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
       ~kind:Decls.(IsProof Theorem)
-      ~ubind:UnivNames.empty_binders
       ~impargs:[]
       entry in
   ()

@@ -313,11 +313,10 @@ let instance_hook info global ?hook cst =
 
 let declare_instance_constant info global impargs ?hook name udecl poly sigma term termtype =
   let kind = Decls.(IsDefinition Instance) in
-  let sigma, entry = DeclareDef.prepare_definition
+  let entry = DeclareDef.prepare_definition
       ~poly sigma ~udecl ~types:(Some termtype) ~body:term in
-  let ubind = Evd.universe_binders sigma in
   let scope = DeclareDef.Global Declare.ImportDefaultBehavior in
-  let kn = DeclareDef.declare_definition ~name ~kind ~scope ~ubind ~impargs entry in
+  let kn = DeclareDef.declare_definition ~name ~kind ~scope ~impargs entry in
   instance_hook info global ?hook kn
 
 let do_declare_instance sigma ~global ~poly k u ctx ctx' pri udecl impargs subst name =

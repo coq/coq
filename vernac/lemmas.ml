@@ -233,7 +233,6 @@ end = struct
       then Declare.Internal.map_entry_type pe ~f:(fun _ -> Some typ), UnivNames.empty_binders
       else pe, UState.universe_binders uctx
     in
-    let hook_data = Option.map (fun hook -> hook, uctx, []) info.Info.hook in
     (* We when compute_guard was [] in the previous step we should not
        substitute the body *)
     let pe = match compute_guard with
@@ -242,8 +241,8 @@ end = struct
         Declare.Internal.map_entry_body pe
           ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff)
     in
-    let pe = DeclareDef.ClosedDef.of_proof_entry pe in
-    DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
+    let pe = DeclareDef.ClosedDef.of_proof_entry ~uctx pe in
+    DeclareDef.declare_definition ~name ~scope ~kind ?hook ~impargs pe
 
   let declare_mutdef ~info ~uctx const =
     let pe = match info.Info.compute_guard with
