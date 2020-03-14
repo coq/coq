@@ -14,6 +14,7 @@ Proof_using
 Egramcoq
 Metasyntax
 DeclareUniv
+RetrieveObl
 DeclareDef
 DeclareObl
 Canonical

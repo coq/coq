@@ -157,13 +157,36 @@ let check_definition_evars ~allow_evars sigma =
   let env = Global.env () in
   if not allow_evars then Pretyping.check_evars_are_solved ~program_mode:false env sigma
 
-let prepare_definition ~allow_evars ?opaque ?inline ~poly ~udecl ~types ~body sigma =
+let prepare_definition ?opaque ?inline ~poly ~udecl ~types ~body sigma =
+  let allow_evars = false in
   check_definition_evars ~allow_evars sigma;
   let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:(not allow_evars)
       sigma (fun nf -> nf body, Option.map nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   sigma, definition_entry ?opaque ?inline ?types ~univs body
+
+let prepare_obligation ?opaque ?inline ~name ~poly ~udecl ~types ~body sigma =
+  let allow_evars = true in
+  check_definition_evars ~allow_evars sigma;
+  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:(not allow_evars)
+      sigma (fun nf -> nf body, Option.map nf types)
+  in
+  let univs = Evd.check_univ_decl ~poly sigma udecl in
+  let ce = definition_entry ?opaque ?inline ?types ~univs body in
+  let env = Global.env () in
+  let (c,ctx), sideff = Future.force ce.Declare.proof_entry_body in
+  assert(Safe_typing.empty_private_constants = sideff.Evd.seff_private);
+  assert(Univ.ContextSet.is_empty ctx);
+  RetrieveObl.check_evars env sigma;
+  let c = EConstr.of_constr c in
+  let typ = match ce.Declare.proof_entry_type with
+    | Some t -> EConstr.of_constr t
+    | None -> Retyping.get_type_of env sigma c
+  in
+  let obls, _, c, cty = RetrieveObl.retrieve_obligations env name sigma 0 c typ in
+  let uctx = Evd.evar_universe_context sigma in
+  c, cty, uctx, obls
 
 let prepare_parameter ~allow_evars ~poly ~udecl ~types sigma =
   check_definition_evars ~allow_evars sigma;

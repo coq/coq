@@ -1,5 +1,5 @@
 let edeclare ?hook ~name ~poly ~scope ~kind ~opaque ~udecl ~impargs sigma body tyopt  =
-  let sigma, ce = DeclareDef.prepare_definition ~allow_evars:false
+  let sigma, ce = DeclareDef.prepare_definition
       ~opaque ~poly sigma ~udecl ~types:tyopt ~body in
   let uctx = Evd.evar_universe_context sigma in
   let ubind = Evd.universe_binders sigma in

@@ -8,43 +8,7 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-open Environ
 open Constr
-open Evd
-open Names
-
-val check_evars : env -> evar_map -> unit
-
-val evar_dependencies : evar_map -> Evar.t -> Evar.Set.t
-val sort_dependencies : (Evar.t * evar_info * Evar.Set.t) list -> (Evar.t * evar_info * Evar.Set.t) list
-
-(* ident, type, location, (opaque or transparent, expand or define), dependencies, tactic to solve it *)
-type obligation_info =
-  (Id.t * types * Evar_kinds.t Loc.located *
-   (bool * Evar_kinds.obligation_definition_status) * Int.Set.t * unit Proofview.tactic option) array
-
-(* env, id, evars, number of function prototypes to try to clear from
-   evars contexts, object and type *)
-val eterm_obligations
-  :  env
-  -> Id.t
-  -> evar_map
-  -> int
-  -> ?status:Evar_kinds.obligation_definition_status
-  -> EConstr.constr
-  -> EConstr.types
-  -> obligation_info *
-
-     (* Existential key, obl. name, type as product, location of the
-        original evar, associated tactic, status and dependencies as
-        indexes into the array *)
-     ((Evar.t * Id.t) list * ((Id.t -> EConstr.constr) -> EConstr.constr -> constr)) *
-
-     (* Translations from existential identifiers to obligation
-        identifiers and for terms with existentials to closed terms,
-        given a translation from obligation identifiers to constrs,
-        new term, new type *)
-     constr * types
 
 val default_tactic : unit Proofview.tactic ref
 
@@ -61,12 +25,12 @@ val add_definition
   -> ?reduce:(constr -> constr)
   -> ?hook:DeclareDef.Hook.t
   -> ?opaque:bool
-  -> obligation_info
+  -> RetrieveObl.obligation_info
   -> DeclareObl.progress
 
 val add_mutual_definitions
   (* XXX: unify with MutualEntry *)
-  : (Names.Id.t * constr * types * Impargs.manual_implicits * obligation_info) list
+  : (Names.Id.t * constr * types * Impargs.manual_implicits * RetrieveObl.obligation_info) list
   -> uctx:UState.t
   -> ?udecl:UState.universe_decl
   (** Universe binders and constraints *)

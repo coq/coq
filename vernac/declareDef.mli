@@ -89,8 +89,7 @@ val declare_mutually_recursive
   -> Names.GlobRef.t list
 
 val prepare_definition
-  :  allow_evars:bool
-  -> ?opaque:bool
+  :  ?opaque:bool
   -> ?inline:bool
   -> poly:bool
   -> udecl:UState.universe_decl
@@ -98,6 +97,17 @@ val prepare_definition
   -> body:EConstr.t
   -> Evd.evar_map
   -> Evd.evar_map * Evd.side_effects Declare.proof_entry
+
+val prepare_obligation
+  :  ?opaque:bool
+  -> ?inline:bool
+  -> name:Id.t
+  -> poly:bool
+  -> udecl:UState.universe_decl
+  -> types:EConstr.t option
+  -> body:EConstr.t
+  -> Evd.evar_map
+  -> Constr.constr * Constr.types * UState.t * RetrieveObl.obligation_info
 
 val prepare_parameter
   : allow_evars:bool

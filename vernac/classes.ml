@@ -315,7 +315,7 @@ let instance_hook info global imps ?hook cst =
 let declare_instance_constant info global imps ?hook name udecl poly sigma term termtype =
   let kind = Decls.(IsDefinition Instance) in
   let sigma, entry = DeclareDef.prepare_definition
-      ~allow_evars:false ~poly sigma ~udecl ~types:(Some termtype) ~body:term in
+      ~poly sigma ~udecl ~types:(Some termtype) ~body:term in
   let kn = Declare.declare_constant ~name ~kind (Declare.DefinitionEntry entry) in
   Declare.definition_message name;
   DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) (Evd.universe_binders sigma);
@@ -343,7 +343,7 @@ let declare_instance_program env sigma ~global ~poly name pri imps udecl term te
     let sigma = Evd.from_env env in
     declare_instance env sigma (Some pri) (not global) (GlobRef.ConstRef cst)
   in
-  let obls, _, term, typ = Obligations.eterm_obligations env name sigma 0 term termtype in
+  let obls, _, term, typ = RetrieveObl.retrieve_obligations env name sigma 0 term termtype in
   let hook = DeclareDef.Hook.make hook in
   let uctx = Evd.evar_universe_context sigma in
   let scope, kind = DeclareDef.Global Declare.ImportDefaultBehavior, Decls.Instance in

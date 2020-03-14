@@ -254,9 +254,9 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   in
   (* XXX: Capturing sigma here... bad bad *)
   let hook = DeclareDef.Hook.make (hook sigma) in
-  Obligations.check_evars env sigma;
+  RetrieveObl.check_evars env sigma;
   let evars, _, evars_def, evars_typ =
-    Obligations.eterm_obligations env recname sigma 0 def typ
+    RetrieveObl.retrieve_obligations env recname sigma 0 def typ
   in
   let uctx = Evd.evar_universe_context sigma in
   ignore(Obligations.add_definition ~name:recname ~term:evars_def ~udecl
@@ -287,7 +287,7 @@ let do_program_recursive ~scope ~poly fixkind fixl =
     let typ = nf_evar evd (Termops.it_mkNamedProd_or_LetIn typ rec_sign) in
     let evm = collect_evars_of_term evd def typ in
     let evars, _, def, typ =
-      Obligations.eterm_obligations env id evm
+      RetrieveObl.retrieve_obligations env id evm
         (List.length rec_sign) def typ in
     (id, def, typ, imps, evars)
   in
