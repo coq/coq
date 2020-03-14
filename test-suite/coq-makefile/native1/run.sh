@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-NATIVECOMP=$(grep "let no_native_compiler = false" ../../../config/coq_config.ml)||true
-if [[ $(which ocamlopt) && $NATIVECOMP ]]; then
+NONATIVECOMP=$(grep "let native_compiler = false" ../../../config/coq_config.ml)||true
+if [[ $(which ocamlopt) && ! $NONATIVECOMP ]]; then
 
 . ../template/init.sh
 
