@@ -153,23 +153,17 @@ let declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe =
 
 (* Preparing proof entries *)
 
-let check_definition_evars ~allow_evars sigma =
-  let env = Global.env () in
-  if not allow_evars then Pretyping.check_evars_are_solved ~program_mode:false env sigma
-
 let prepare_definition ?opaque ?inline ~poly ~udecl ~types ~body sigma =
-  let allow_evars = false in
-  check_definition_evars ~allow_evars sigma;
-  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:(not allow_evars)
+  let env = Global.env () in
+  Pretyping.check_evars_are_solved ~program_mode:false env sigma;
+  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:true
       sigma (fun nf -> nf body, Option.map nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   sigma, definition_entry ?opaque ?inline ?types ~univs body
 
 let prepare_obligation ?opaque ?inline ~name ~poly ~udecl ~types ~body sigma =
-  let allow_evars = true in
-  check_definition_evars ~allow_evars sigma;
-  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:(not allow_evars)
+  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false
       sigma (fun nf -> nf body, Option.map nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
@@ -188,9 +182,10 @@ let prepare_obligation ?opaque ?inline ~name ~poly ~udecl ~types ~body sigma =
   let uctx = Evd.evar_universe_context sigma in
   c, cty, uctx, obls
 
-let prepare_parameter ~allow_evars ~poly ~udecl ~types sigma =
-  check_definition_evars ~allow_evars sigma;
-  let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:(not allow_evars)
+let prepare_parameter ~poly ~udecl ~types sigma =
+  let env = Global.env () in
+  Pretyping.check_evars_are_solved ~program_mode:false env sigma;
+  let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:true
       sigma (fun nf -> nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in

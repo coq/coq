@@ -12,7 +12,6 @@ open Pp
 open Util
 open Redexpr
 open Constrintern
-open Pretyping
 
 (* Commands of the interface: Constant definitions *)
 
@@ -70,18 +69,12 @@ let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
   let tyopt = Option.map (fun ty -> EConstr.it_mkProd_or_LetIn ty ctx) tyopt in
   (c, tyopt), evd, udecl, imps
 
-let check_definition ~program_mode (ce, evd) =
-  let env = Global.env () in
-  check_evars_are_solved ~program_mode env evd;
-  ce
-
 let do_definition ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
   let program_mode = false in
   let (body, types), evd, udecl, impargs =
     interp_definition ~program_mode udecl bl ~poly red_option c ctypopt
   in
   let evd, ce = DeclareDef.prepare_definition ~opaque:false ~poly evd ~udecl ~types ~body in
-  let ce = check_definition ~program_mode (ce, evd) in
   let uctx = Evd.evar_universe_context evd in
   let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
   let kind = Decls.IsDefinition kind in

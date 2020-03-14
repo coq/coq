@@ -110,8 +110,7 @@ val prepare_obligation
   -> Constr.constr * Constr.types * UState.t * RetrieveObl.obligation_info
 
 val prepare_parameter
-  : allow_evars:bool
-  -> poly:bool
+  : poly:bool
   -> udecl:UState.universe_decl
   -> types:EConstr.types
   -> Evd.evar_map

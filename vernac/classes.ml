@@ -328,7 +328,7 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri udecl impargs subst
   in
   let (_, ty_constr) = instance_constructor (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
-  let sigma, entry = DeclareDef.prepare_parameter ~allow_evars:false ~poly sigma ~udecl ~types:termtype in
+  let sigma, entry = DeclareDef.prepare_parameter ~poly sigma ~udecl ~types:termtype in
   let cst = Declare.declare_constant ~name
       ~kind:Decls.(IsAssumption Logical) (Declare.ParameterEntry entry) in
   DeclareUniv.declare_univ_binders (GlobRef.ConstRef cst) (Evd.universe_binders sigma);
