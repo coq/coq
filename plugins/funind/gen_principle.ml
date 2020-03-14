@@ -291,6 +291,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
   *)
   let uctx = Evd.evar_universe_context sigma in
   let hook_data = hook, uctx, [] in
+  let entry = DeclareDef.ClosedDef.of_proof_entry entry in
   let _ : Names.GlobRef.t = DeclareDef.declare_definition
       ~name:new_princ_name ~hook_data
       ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)

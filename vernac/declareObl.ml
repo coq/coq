@@ -362,28 +362,17 @@ let get_fix_exn, stm_get_fix_exn = Hook.make ()
 
 let declare_definition prg =
   let varsubst = obligation_substitution true prg in
-  let body, typ = subst_prog varsubst prg in
-  let nf =
-    UnivSubst.nf_evars_and_universes_opt_subst
-      (fun x -> None)
-      (UState.subst prg.prg_ctx)
-  in
-  let opaque = prg.prg_opaque in
+  let sigma = Evd.from_ctx prg.prg_ctx in
+  let body, types = subst_prog varsubst prg in
+  let body, types = EConstr.(of_constr body, Some (of_constr types)) in
+  let opaque, poly, udecl = prg.prg_opaque, prg.prg_poly, prg.prg_univdecl in
   let fix_exn = Hook.get get_fix_exn () in
-  let typ = nf typ in
-  let body = nf body in
-  let obls = List.map (fun (id, (_, c)) -> (id, nf c)) varsubst in
-  let uvars =
-    Univ.LSet.union
-      (Vars.universes_of_constr typ)
-      (Vars.universes_of_constr body)
-  in
-  let uctx = UState.restrict prg.prg_ctx uvars in
-  let univs =
-    UState.check_univ_decl ~poly:prg.prg_poly uctx prg.prg_univdecl
-  in
-  let ce = Declare.definition_entry ~fix_exn ~opaque ~types:typ ~univs body in
+  let obls = List.map (fun (id, (_, c)) -> (id, c)) varsubst in
+  (* XXX: This is doing normalization twice *)
+  let sigma, ce =
+    DeclareDef.prepare_definition ~fix_exn ~opaque ~poly ~udecl ~types ~body sigma in
   let () = progmap_remove prg in
+  let uctx = Evd.evar_universe_context sigma in
   let ubind = UState.universe_binders uctx in
   let hook_data = Option.map (fun hook -> hook, uctx, obls) prg.prg_hook in
   DeclareDef.declare_definition

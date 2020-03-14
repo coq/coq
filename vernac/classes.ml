@@ -304,22 +304,21 @@ let id_of_class cl =
           mip.(0).Declarations.mind_typename
     | _ -> assert false
 
-let instance_hook info global imps ?hook cst =
-  Impargs.maybe_declare_manual_implicits false cst imps;
+let instance_hook info global ?hook cst =
   let info = intern_info info in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   declare_instance env sigma (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant info global imps ?hook name udecl poly sigma term termtype =
+let declare_instance_constant info global impargs ?hook name udecl poly sigma term termtype =
   let kind = Decls.(IsDefinition Instance) in
   let sigma, entry = DeclareDef.prepare_definition
       ~poly sigma ~udecl ~types:(Some termtype) ~body:term in
-  let kn = Declare.declare_constant ~name ~kind (Declare.DefinitionEntry entry) in
-  Declare.definition_message name;
-  DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) (Evd.universe_binders sigma);
-  instance_hook info global imps ?hook (GlobRef.ConstRef kn)
+  let ubind = Evd.universe_binders sigma in
+  let scope = DeclareDef.Global Declare.ImportDefaultBehavior in
+  let kn = DeclareDef.declare_definition ~name ~kind ~scope ~ubind ~impargs entry in
+  instance_hook info global ?hook kn
 
 let do_declare_instance sigma ~global ~poly k u ctx ctx' pri udecl impargs subst name =
   let subst = List.fold_left2
@@ -332,7 +331,9 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri udecl impargs subst
   let cst = Declare.declare_constant ~name
       ~kind:Decls.(IsAssumption Logical) (Declare.ParameterEntry entry) in
   DeclareUniv.declare_univ_binders (GlobRef.ConstRef cst) (Evd.universe_binders sigma);
-  instance_hook pri global impargs (GlobRef.ConstRef cst)
+  let cst = (GlobRef.ConstRef cst) in
+  Impargs.maybe_declare_manual_implicits false cst impargs;
+  instance_hook pri global cst
 
 let declare_instance_program env sigma ~global ~poly name pri imps udecl term termtype =
   let hook { DeclareDef.Hook.S.scope; dref; _ } =
@@ -351,7 +352,7 @@ let declare_instance_program env sigma ~global ~poly name pri imps udecl term te
     Obligations.add_definition ~name ~term ~udecl ~scope ~poly ~kind ~hook typ ~uctx obls
   in ()
 
-let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids term termtype =
+let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl ids term termtype =
   (* spiwack: it is hard to reorder the actions to do
      the pretyping after the proof has opened. As a
      consequence, we use the low-level primitives to code
@@ -359,12 +360,12 @@ let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids t
   let gls = List.rev (Evd.future_goals sigma) in
   let sigma = Evd.reset_future_goals sigma in
   let kind = Decls.(IsDefinition Instance) in
-  let hook = DeclareDef.Hook.(make (fun { S.dref ; _ } -> instance_hook pri global imps ?hook dref)) in
+  let hook = DeclareDef.Hook.(make (fun { S.dref ; _ } -> instance_hook pri global ?hook dref)) in
   let info = Lemmas.Info.make ~hook ~kind () in
   (* XXX: We need to normalize the type, otherwise Admitted / Qed will fails!
      This is due to a bug in proof_global :( *)
   let termtype = Evarutil.nf_evar sigma termtype in
-  let lemma = Lemmas.start_lemma ~name:id ~poly ~udecl ~info sigma termtype in
+  let lemma = Lemmas.start_lemma ~name:id ~poly ~udecl ~info ~impargs sigma termtype in
   (* spiwack: I don't know what to do with the status here. *)
   let lemma =
     match term with

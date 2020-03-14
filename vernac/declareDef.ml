@@ -38,6 +38,13 @@ module Hook = struct
 
 end
 
+module ClosedDef = struct
+
+  type t = Evd.side_effects Declare.proof_entry
+
+  let of_proof_entry x = x
+end
+
 (* Locality stuff *)
 let declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs ce =
   let should_suggest = ce.Declare.proof_entry_opaque &&
@@ -153,14 +160,14 @@ let declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe =
 
 (* Preparing proof entries *)
 
-let prepare_definition ?opaque ?inline ~poly ~udecl ~types ~body sigma =
+let prepare_definition ?opaque ?inline ?fix_exn ~poly ~udecl ~types ~body sigma =
   let env = Global.env () in
   Pretyping.check_evars_are_solved ~program_mode:false env sigma;
   let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:true
       sigma (fun nf -> nf body, Option.map nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  sigma, definition_entry ?opaque ?inline ?types ~univs body
+  sigma, definition_entry ?fix_exn ?opaque ?inline ?types ~univs body
 
 let prepare_obligation ?opaque ?inline ~name ~poly ~udecl ~types ~body sigma =
   let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false

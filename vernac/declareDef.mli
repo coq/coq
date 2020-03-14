@@ -39,6 +39,13 @@ module Hook : sig
   val call : ?hook:t -> S.t -> unit
 end
 
+module ClosedDef : sig
+  type t
+
+  (* Don't use for non-interactive proofs *)
+  val of_proof_entry : Evd.side_effects Declare.proof_entry -> t
+end
+
 val declare_definition
   :  name:Id.t
   -> scope:locality
@@ -46,7 +53,7 @@ val declare_definition
   -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
   -> ubind:UnivNames.universe_binders
   -> impargs:Impargs.manual_implicits
-  -> Evd.side_effects Declare.proof_entry
+  -> ClosedDef.t
   -> GlobRef.t
 
 val declare_assumption
@@ -88,15 +95,19 @@ val declare_mutually_recursive
   -> Recthm.t list
   -> Names.GlobRef.t list
 
+(* The common use of the returned evar_map is to obtain the universe
+   binders and context for the hook; we should refactor that soon by
+   merging prepare and declare. *)
 val prepare_definition
   :  ?opaque:bool
   -> ?inline:bool
+  -> ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
   -> poly:bool
   -> udecl:UState.universe_decl
   -> types:EConstr.t option
   -> body:EConstr.t
   -> Evd.evar_map
-  -> Evd.evar_map * Evd.side_effects Declare.proof_entry
+  -> Evd.evar_map * ClosedDef.t
 
 val prepare_obligation
   :  ?opaque:bool

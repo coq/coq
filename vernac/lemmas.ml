@@ -242,6 +242,7 @@ end = struct
         Declare.Internal.map_entry_body pe
           ~f:(fun ((body, ctx), eff) -> (select_body i body, ctx), eff)
     in
+    let pe = DeclareDef.ClosedDef.of_proof_entry pe in
     DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs pe
 
   let declare_mutdef ~info ~uctx const =
