@@ -520,7 +520,6 @@ let obligation_terminator entries uctx { name; num; auto } =
     (* Ensure universes are substituted properly in body and type *)
     let body = EConstr.to_constr sigma (EConstr.of_constr body) in
     let ty = Option.map (fun x -> EConstr.to_constr sigma (EConstr.of_constr x)) ty in
-    let ctx = Evd.evar_universe_context sigma in
     let { obls; remaining=rem } = prg.prg_obligations in
     let obl = obls.(num) in
     let status =
@@ -533,24 +532,24 @@ let obligation_terminator entries uctx { name; num; auto } =
       | (_, status), false -> status
     in
     let obl = { obl with obl_status = false, status } in
-    let ctx =
-      if prg.prg_poly then ctx
-      else UState.union prg.prg_ctx ctx
+    let uctx =
+      if prg.prg_poly then uctx
+      else UState.union prg.prg_ctx uctx
     in
-    let uctx = UState.univ_entry ~poly:prg.prg_poly ctx in
-    let (defined, obl) = declare_obligation prg obl body ty uctx in
+    let univs = UState.univ_entry ~poly:prg.prg_poly uctx in
+    let (defined, obl) = declare_obligation prg obl body ty univs in
     let prg_ctx =
       if prg.prg_poly then (* Polymorphic *)
         (* We merge the new universes and constraints of the
            polymorphic obligation with the existing ones *)
-        UState.union prg.prg_ctx ctx
+        UState.union prg.prg_ctx uctx
       else
         (* The first obligation, if defined,
            declares the univs of the constant,
            each subsequent obligation declares its own additional
            universes and constraints if any *)
         if defined then UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ())
-        else ctx
+        else uctx
     in
     update_program_decl_on_defined prg obls num obl ~uctx:prg_ctx rem ~auto
   | _ ->
