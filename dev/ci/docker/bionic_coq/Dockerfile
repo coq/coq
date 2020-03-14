@@ -1,4 +1,4 @@
-# CACHEKEY: "bionic_coq-V2019-03-01-V43"
+# CACHEKEY: "bionic_coq-V2019-03-14-V14"
 # ^^ Update when modifying this file.
 
 FROM ubuntu:bionic
@@ -37,12 +37,12 @@ ENV COMPILER="4.05.0"
 # Common OPAM packages.
 # `num` does not have a version number as the right version to install varies
 # with the compiler version.
-ENV BASE_OPAM="num ocamlfind.1.8.1 dune.2.0.1 ounit.2.0.8 odoc.1.4.2" \
+ENV BASE_OPAM="num ocamlfind.1.8.1 dune.2.0.1 ounit.2.2.2 odoc.1.5.0" \
     CI_OPAM="menhir.20190626 ocamlgraph.1.8.8" \
     BASE_ONLY_OPAM="elpi.1.10.2"
 
 # BASE switch; CI_OPAM contains Coq's CI dependencies.
-ENV COQIDE_OPAM="cairo2.0.6.1 lablgtk3-sourceview3.3.0.beta6"
+ENV COQIDE_OPAM="cairo2.0.6.1 lablgtk3-sourceview3.3.1.0"
 
 # Must add this to COQIDE_OPAM{,_EDGE} when we update the opam
 # packages "lablgtk3-gtksourceview3"
@@ -57,12 +57,11 @@ RUN opam switch create "${COMPILER}+32bit" && eval $(opam env) && \
 
 # EDGE switch
 ENV COMPILER_EDGE="4.09.0" \
-    COQIDE_OPAM_EDGE="cairo2.0.6.1 lablgtk3-sourceview3.3.0.beta6" \
     BASE_OPAM_EDGE="dune-release.1.3.3 ocamlformat.0.12"
 
 # EDGE+flambda switch, we install CI_OPAM as to be able to use
 # `ci-template-flambda` with everything.
 RUN opam switch create "${COMPILER_EDGE}+flambda" && eval $(opam env) && \
-    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM_EDGE $CI_OPAM
+    opam install $BASE_OPAM $BASE_OPAM_EDGE $COQIDE_OPAM $CI_OPAM
 
 RUN opam clean -a -c
