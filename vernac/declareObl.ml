@@ -517,9 +517,6 @@ let obligation_terminator entries uctx { name; num; auto } =
     Inductiveops.control_only_guard (Global.env ()) sigma (EConstr.of_constr body);
     (* Declare the obligation ourselves and drop the hook *)
     let prg = CEphemeron.get (ProgMap.find name !from_prg) in
-    (* Ensure universes are substituted properly in body and type *)
-    let body = EConstr.to_constr sigma (EConstr.of_constr body) in
-    let ty = Option.map (fun x -> EConstr.to_constr sigma (EConstr.of_constr x)) ty in
     let { obls; remaining=rem } = prg.prg_obligations in
     let obl = obls.(num) in
     let status =
