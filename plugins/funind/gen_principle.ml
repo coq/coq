@@ -375,7 +375,6 @@ let register_struct is_rec fixpoint_exprl =
       | None ->
         CErrors.user_err ~hdr:"Function" Pp.(str "Body of Function must be given") in
     ComDefinition.do_definition
-      ~program_mode:false
       ~name:fname.CAst.v
       ~poly:false
       ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)

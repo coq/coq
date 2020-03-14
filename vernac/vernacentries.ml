@@ -567,7 +567,9 @@ let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt 
       let env = Global.env () in
       let sigma = Evd.from_env env in
       Some (snd (Hook.get f_interp_redexp env sigma r)) in
-  ComDefinition.do_definition ~program_mode ~name:name.v
+  let do_definition =
+    ComDefinition.(if program_mode then do_definition_program else do_definition) in
+  do_definition ~name:name.v
     ~poly:atts.polymorphic ~scope ~kind pl bl red_option c typ_opt ?hook
 
 (* NB: pstate argument to use combinators easily *)

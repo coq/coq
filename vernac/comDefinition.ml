@@ -79,30 +79,38 @@ let check_definition ~program_mode (ce, evd, _, imps) =
   check_evars_are_solved ~program_mode env evd;
   ce
 
-let do_definition ~program_mode ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
+let do_definition ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
+  let program_mode = false in
   let (ce, evd, udecl, impargs as def) =
     interp_definition ~program_mode udecl bl ~poly red_option c ctypopt
   in
-  if program_mode then
-    let env = Global.env () in
-    let (c,ctx), sideff = Future.force ce.Declare.proof_entry_body in
-    assert(Safe_typing.empty_private_constants = sideff.Evd.seff_private);
-    assert(Univ.ContextSet.is_empty ctx);
-    Obligations.check_evars env evd;
-    let c = EConstr.of_constr c in
-    let typ = match ce.Declare.proof_entry_type with
-      | Some t -> EConstr.of_constr t
-      | None -> Retyping.get_type_of env evd c
-    in
-    let obls, _, c, cty =
-      Obligations.eterm_obligations env name evd 0 c typ
-    in
-    let uctx = Evd.evar_universe_context evd in
-    ignore(Obligations.add_definition
-             ~name ~term:c cty ~uctx ~udecl ~impargs ~scope ~poly ~kind ?hook obls)
-  else
-    let ce = check_definition ~program_mode def in
-    let uctx = Evd.evar_universe_context evd in
-    let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
-    let kind = Decls.IsDefinition kind in
-    ignore(DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind:(Evd.universe_binders evd) ce ~impargs)
+  let ce = check_definition ~program_mode def in
+  let uctx = Evd.evar_universe_context evd in
+  let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
+  let kind = Decls.IsDefinition kind in
+  let ubind = Evd.universe_binders evd in
+  let _ : Names.GlobRef.t =
+    DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind ce ~impargs
+  in ()
+
+let do_definition_program ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
+  let program_mode = true in
+  let (ce, evd, udecl, impargs as def) =
+    interp_definition ~program_mode udecl bl ~poly red_option c ctypopt
+  in
+  let env = Global.env () in
+  let (c,ctx), sideff = Future.force ce.Declare.proof_entry_body in
+  assert(Safe_typing.empty_private_constants = sideff.Evd.seff_private);
+  assert(Univ.ContextSet.is_empty ctx);
+  Obligations.check_evars env evd;
+  let c = EConstr.of_constr c in
+  let typ = match ce.Declare.proof_entry_type with
+    | Some t -> EConstr.of_constr t
+    | None -> Retyping.get_type_of env evd c
+  in
+  let obls, _, c, cty = Obligations.eterm_obligations env name evd 0 c typ in
+  let uctx = Evd.evar_universe_context evd in
+  let _ : DeclareObl.progress =
+    Obligations.add_definition
+      ~name ~term:c cty ~uctx ~udecl ~impargs ~scope ~poly ~kind ?hook obls
+  in ()
