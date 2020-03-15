@@ -82,11 +82,6 @@ GRAMMAR EXTEND Gram
       | id = ident -> { CAst.make ~loc [id] }
       ] ]
   ;
-  basequalid:
-    [ [ id = ident; f=fields -> { let (l,id') = f in  local_make_qualid loc (l@[id]) id' }
-      | id = ident -> { qualid_of_ident ~loc id }
-      ] ]
-  ;
   name:
     [ [ IDENT "_"  -> { CAst.make ~loc Anonymous }
       | id = ident -> { CAst.make ~loc @@ Name id } ] ]
@@ -95,8 +90,11 @@ GRAMMAR EXTEND Gram
     [ [ id = ident; f = fields -> {
         let (l,id') = f in
         local_make_qualid loc (l@[id]) id' }
-      | id = ident -> { local_make_qualid loc [] id }
+      | id = ident -> { qualid_of_ident ~loc id }
       ] ]
+  ;
+  qualid: (* Synonymous to reference *)
+    [ [ qid = reference -> { qid } ] ]
   ;
   by_notation:
     [ [ s = ne_string; sc = OPT ["%"; key = IDENT -> { key } ] -> { (s, sc) } ] ]
@@ -104,9 +102,6 @@ GRAMMAR EXTEND Gram
   smart_global:
     [ [ c = reference -> { CAst.make ~loc @@ Constrexpr.AN c }
       | ntn = by_notation -> { CAst.make ~loc @@ Constrexpr.ByNotation ntn } ] ]
-  ;
-  qualid:
-    [ [ qid = basequalid -> { qid } ] ]
   ;
   ne_string:
     [ [ s = STRING ->
