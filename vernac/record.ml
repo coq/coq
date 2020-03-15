@@ -136,6 +136,30 @@ module DataI = struct
     }
 end
 
+type projection_flags = {
+  pf_subclass: bool;
+  pf_canonical: bool;
+}
+
+module DataR = struct
+  type t =
+    { min_univ : Univ.Universe.t
+    ; arity : Constr.t
+    ; implfs : Impargs.manual_implicits list
+    ; fields : Constr.rel_declaration list
+    }
+end
+
+module Data = struct
+  type t =
+  { id : Id.t
+  ; idbuild : Id.t
+  ; is_coercion : bool
+  ; coers : projection_flags list
+  ; rdata : DataR.t
+  }
+end
+
 let build_type_telescope newps env0 (sigma, template) { DataI.arity; _ } = match arity with
   | None ->
     let uvarkind = Evd.univ_flexible_alg in
@@ -162,8 +186,17 @@ let build_type_telescope newps env0 (sigma, template) { DataI.arity; _ } = match
         else (sigma, false), (s, s'))
      | _ -> user_err ?loc:(constr_loc t) (str"Sort expected."))
 
+type tc_result =
+  bool
+  * Impargs.manual_implicits
+  (* Part relative to closing the definitions *)
+  * UnivNames.universe_binders
+  * Entries.universes_entry
+  * Constr.rel_context
+  * DataR.t list
+
 (* ps = parameter list *)
-let typecheck_params_and_fields def poly pl ps (records : DataI.t list) =
+let typecheck_params_and_fields def poly pl ps (records : DataI.t list) : tc_result =
   let env0 = Global.env () in
   (* Special case elaboration for template-polymorphic inductives,
      lower bound on introduced universes is Prop so that we do not miss
@@ -210,12 +243,13 @@ let typecheck_params_and_fields def poly pl ps (records : DataI.t list) =
         else sigma, (univ, typ)
   in
   let (sigma, typs) = List.fold_left2_map fold sigma typs data in
+  (* TODO: Have this use Declaredef.prepare_definition *)
   let sigma, (newps, ans) = Evarutil.finalize sigma (fun nf ->
       let newps = List.map (RelDecl.map_constr_het nf) newps in
-      let map (impls, newfs) (univ, typ) =
-        let newfs = List.map (RelDecl.map_constr_het nf) newfs in
-        let typ = nf typ in
-        (univ, typ, impls, newfs)
+      let map (implfs, fields) (min_univ, typ) =
+        let fields = List.map (RelDecl.map_constr_het nf) fields in
+        let arity = nf typ in
+        { DataR.min_univ; arity; implfs; fields }
       in
       let ans = List.map2 map data typs in
       newps, ans)
@@ -224,7 +258,7 @@ let typecheck_params_and_fields def poly pl ps (records : DataI.t list) =
   let ubinders = Evd.universe_binders sigma in
   let ce t = Pretyping.check_evars env0 sigma (EConstr.of_constr t) in
   let () = List.iter (iter_constr ce) (List.rev newps) in
-  ubinders, univs, template, newps, imps, ans
+  template, imps, ubinders, univs, newps, ans
 
 type record_error =
   | MissingProj of Id.t * Id.t list
@@ -304,11 +338,6 @@ let instantiate_possibly_recursive_type ind u ntypes paramdecls fields =
   let subst = List.map_i (fun i _ -> mkRel i) 1 paramdecls in
   let subst' = List.init ntypes (fun i -> mkIndU ((ind, ntypes - i - 1), u)) in
   Termops.substl_rel_context (subst @ subst') fields
-
-type projection_flags = {
-  pf_subclass: bool;
-  pf_canonical: bool;
-}
 
 (* We build projections *)
 
@@ -437,19 +466,6 @@ let inStruc : Recordops.struc_typ -> Libobject.obj =
 let declare_structure_entry o =
   Lib.add_anonymous_leaf (inStruc o)
 
-module Data = struct
-  type t =
-  { id : Id.t
-  ; idbuild : Id.t
-  ; min_univ : Univ.Universe.t
-  ; arity : Constr.t
-  ; fieldimpls : Impargs.manual_implicits list
-  ; fields : Constr.rel_context
-  ; is_coercion : bool
-  ; coers : projection_flags list
-  }
-end
-
 let declare_structure ~cumulative finite ubinders ~univs paramimpls params template ?(kind=Decls.StructureComponent) ?name (record_data : Data.t list) =
   let nparams = List.length params in
   let poly, ctx =
@@ -469,7 +485,7 @@ let declare_structure ~cumulative finite ubinders ~univs paramimpls params templ
     | Some n -> n
   in
   let ntypes = List.length record_data in
-  let mk_block i { Data.id; idbuild; min_univ; arity; fields; _ } =
+  let mk_block i { Data.id; idbuild; rdata = { DataR.min_univ; arity; fields; _ }; _ } =
     let nfields = List.length fields in
     let args = Context.Rel.to_extended_list mkRel nfields params in
     let ind = applist (mkRel (ntypes - i + nparams + nfields), args) in
@@ -480,7 +496,7 @@ let declare_structure ~cumulative finite ubinders ~univs paramimpls params templ
       mind_entry_lc = [type_constructor] }
   in
   let blocks = List.mapi mk_block record_data in
-  let check_template { Data.id; min_univ; fields; _ } =
+  let check_template { Data.id; rdata = { DataR.min_univ; fields; _ }; _ } =
       let template_candidate () =
         (* we use some dummy values for the arities in the rel_context
            as univs_of_constr doesn't care about localassums and
@@ -515,7 +531,7 @@ let declare_structure ~cumulative finite ubinders ~univs paramimpls params templ
   let template = List.for_all check_template record_data in
   let primitive =
     !primitive_flag &&
-    List.for_all (fun { Data.fields; _ } -> List.exists is_local_assum fields) record_data
+    List.for_all (fun { Data.rdata = { DataR.fields; _ }; _ } -> List.exists is_local_assum fields) record_data
   in
   let mie =
     { mind_entry_params = params;
@@ -532,10 +548,10 @@ let declare_structure ~cumulative finite ubinders ~univs paramimpls params templ
   let kn = DeclareInd.declare_mutual_inductive_with_eliminations mie ubinders impls
       ~primitive_expected:!primitive_flag
   in
-  let map i { Data.fieldimpls; fields; is_coercion; coers } =
+  let map i { Data.is_coercion; coers; rdata = { DataR.implfs; fields; _}; _ } =
     let rsp = (kn, i) in (* This is ind path of idstruc *)
     let cstr = (rsp, 1) in
-    let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name.(i) coers fieldimpls fields in
+    let kinds,sp_projs = declare_projections rsp ctx ~kind binder_name.(i) coers implfs fields in
     let build = GlobRef.ConstructRef cstr in
     let () = if is_coercion then ComCoercion.try_add_new_coercion build ~local:false ~poly in
     let npars = Inductiveops.inductive_nparams (Global.env()) rsp in
@@ -555,21 +571,23 @@ let implicits_of_context ctx =
   List.map (fun name -> CAst.make (Some (name,true)))
     (List.rev (Anonymous :: (List.map RelDecl.get_name ctx)))
 
-let declare_class def cumulative ubinders univs id idbuild paramimpls params min_univ arity
-    template fieldimpls fields ?(kind=Decls.StructureComponent) coers =
-  let fieldimpls =
+let declare_class def cumulative ubinders univs id idbuild paramimpls params
+    rdata template ?(kind=Decls.StructureComponent) coers =
+  let implfs =
     (* Make the class implicit in the projections, and the params if applicable. *)
     let impls = implicits_of_context params in
-      List.map (fun x -> impls @ x) fieldimpls
+      List.map (fun x -> impls @ x) rdata.DataR.implfs
   in
+  let rdata = { rdata with DataR.implfs } in
   let binder_name = Namegen.next_ident_away id (Termops.vars_of_env (Global.env())) in
+  let fields = rdata.DataR.fields in
   let data =
     match fields with
     | [ LocalAssum ({binder_name=Name proj_name} as binder, field)
       | LocalDef ({binder_name=Name proj_name} as binder, _, field) ] when def ->
       let binder = {binder with binder_name=Name binder_name} in
       let class_body = it_mkLambda_or_LetIn field params in
-      let class_type = it_mkProd_or_LetIn arity params in
+      let class_type = it_mkProd_or_LetIn rdata.DataR.arity params in
       let class_entry =
         Declare.definition_entry ~types:class_type ~univs class_body in
       let cst = Declare.declare_constant ~name:id
@@ -592,7 +610,7 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params min
       in
       let cref = GlobRef.ConstRef cst in
       Impargs.declare_manual_implicits false cref paramimpls;
-      Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd fieldimpls);
+      Impargs.declare_manual_implicits false (GlobRef.ConstRef proj_cst) (List.hd implfs);
       Classes.set_typeclass_transparency (EvalConstRef cst) false false;
       let sub = List.hd coers in
       let m = {
@@ -605,12 +623,9 @@ let declare_class def cumulative ubinders univs id idbuild paramimpls params min
       let record_data =
         { Data.id
         ; idbuild
-        ; min_univ
-        ; arity
-        ; fieldimpls
-        ; fields
         ; is_coercion = false
         ; coers = List.map (fun _ -> { pf_subclass = false ; pf_canonical = true }) fields
+        ; rdata
         } in
       let inds = declare_structure ~cumulative Declarations.BiFinite ubinders ~univs paramimpls
         params template ~kind:Decls.Method ~name:[|binder_name|] [record_data]
@@ -721,14 +736,13 @@ module Ast = struct
     ; sort : constr_expr option
     }
 
-  let to_idata { name; is_coercion; cfs; idbuild; sort } =
+  let to_rdata { name; is_coercion; cfs; idbuild; sort } =
     let fs = List.map fst cfs in
     { DataI.name = name.CAst.v
     ; arity = sort
     ; nots = List.map (fun (_, { rf_notation }) -> rf_notation) cfs
     ; fs
     }
-
 end
 
 let check_unique_names records =
@@ -753,7 +767,7 @@ let check_priorities kind records =
     user_err Pp.(str "Priorities only allowed for type class substructures")
 
 let extract_record_data records =
-  let data = List.map Ast.to_idata records in
+  let data = List.map Ast.to_rdata records in
   let pss = List.map (fun { Ast.binders; _ } -> binders) records in
   let ps = match pss with
   | [] -> CErrors.anomaly (str "Empty record block")
@@ -775,7 +789,7 @@ let definition_structure udecl kind ~template ~cumulative ~poly finite (records 
   let () = check_unique_names records in
   let () = check_priorities kind records in
   let ps, data = extract_record_data records in
-  let ubinders, univs, auto_template, params, implpars, data =
+  let auto_template, implpars, ubinders, univs, params, data =
     (* In theory we should be able to use
        [Notation.with_notation_protection], due to the call to
        Metasyntax.set_notation_for_interpretation, however something
@@ -786,9 +800,10 @@ let definition_structure udecl kind ~template ~cumulative ~poly finite (records 
   let template = template, auto_template in
   match kind with
   | Class def ->
-    let { Ast.name; cfs; idbuild; _ }, (univ, arity, implfs, fields) = match records, data with
+    let { Ast.name; cfs; idbuild; _ }, rdata = match records, data with
     | [r], [d] -> r, d
-    | _, _ -> CErrors.user_err (str "Mutual definitional classes are not handled")
+    | _, _ ->
+      CErrors.user_err (str "Mutual definitional classes are not handled")
     in
     let coers = List.map (fun (_, { rf_subclass; rf_priority }) ->
         match rf_subclass with
@@ -796,18 +811,19 @@ let definition_structure udecl kind ~template ~cumulative ~poly finite (records 
         | Vernacexpr.NoInstance -> None)
         cfs in
     declare_class def cumulative ubinders univs name.CAst.v idbuild
-      implpars params univ arity template implfs fields coers
+      implpars params rdata template coers
   | _ ->
-    let map impls = implpars @ [CAst.make None] @ impls in
-    let data = List.map (fun (univ, arity, implfs, fields) -> (univ, arity, List.map map implfs, fields)) data in
-    let map (min_univ, arity, fieldimpls, fields) { Ast.name; is_coercion; cfs; idbuild; _ } =
+    let adjust_impls impls = implpars @ [CAst.make None] @ impls in
+    let data = List.map (fun ({ DataR.implfs; _ } as d) -> { d with DataR.implfs = List.map adjust_impls implfs }) data in
+    (* let map (min_univ, arity, fieldimpls, fields) { Ast.name; is_coercion; cfs; idbuild; _ } = *)
+    let map rdata { Ast.name; is_coercion; cfs; idbuild; _ } =
       let coers = List.map (fun (_, { rf_subclass ; rf_canonical }) ->
           { pf_subclass =
               (match rf_subclass with Vernacexpr.BackInstance -> true | Vernacexpr.NoInstance -> false);
             pf_canonical = rf_canonical })
           cfs
       in
-      { Data.id = name.CAst.v; idbuild; min_univ; arity; fieldimpls; fields; is_coercion; coers }
+      { Data.id = name.CAst.v; idbuild; rdata; is_coercion; coers }
     in
     let data = List.map2 map data records in
     let inds = declare_structure ~cumulative finite ubinders ~univs implpars params template data in
