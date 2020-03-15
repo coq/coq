@@ -287,10 +287,14 @@ let compute_proof_using_for_admitted proof typ pproofs =
     | _ -> None
 
 let finish_admitted ~info ~uctx pe =
-  let _r : Names.GlobRef.t list = MutualEntry.declare_variable ~info ~uctx pe in
-  ()
+  let cst = MutualEntry.declare_variable ~info ~uctx pe in
+  (* If the constant was an obligation we need to update the program map *)
+  match CEphemeron.get info.Info.proof_ending with
+  | Proof_ending.End_obligation oinfo ->
+    DeclareObl.obligation_admitted_terminator oinfo uctx (List.hd cst)
+  | _ -> ()
 
-let save_lemma_admitted ~(lemma : t) : unit =
+let save_lemma_admitted ~(lemma : t) =
   let udecl = Declare.Proof.get_universe_decl lemma.proof in
   let Proof.{ poly; entry } = Proof.data (Declare.Proof.get_proof lemma.proof) in
   let typ = match Proofview.initial_goals entry with

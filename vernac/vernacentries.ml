@@ -576,10 +576,14 @@ let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt 
       let env = Global.env () in
       let sigma = Evd.from_env env in
       Some (snd (Hook.get f_interp_redexp env sigma r)) in
-  let do_definition =
-    ComDefinition.(if program_mode then do_definition_program else do_definition) in
-  do_definition ~name:name.v
-    ~poly:atts.polymorphic ~scope ~kind pl bl red_option c typ_opt ?hook
+  if program_mode then
+    ComDefinition.do_definition_program ~name:name.v
+      ~poly:atts.polymorphic ~scope ~kind pl bl red_option c typ_opt ?hook
+  else
+    let () =
+      ComDefinition.do_definition ~name:name.v
+        ~poly:atts.polymorphic ~scope ~kind pl bl red_option c typ_opt ?hook in
+    ()
 
 (* NB: pstate argument to use combinators easily *)
 let vernac_start_proof ~atts kind l =
@@ -1054,10 +1058,21 @@ let vernac_end_section {CAst.loc; v} =
 let vernac_name_sec_hyp {v=id} set = Proof_using.name_set id set
 
 (* Dispatcher of the "End" command *)
+let msg_of_subsection ss id =
+  let kind =
+    match ss with
+    | Lib.OpenedModule (false,_,_,_) -> "module"
+    | Lib.OpenedModule (true,_,_,_) -> "module type"
+    | Lib.OpenedSection _ -> "section"
+    | _ -> "unknown"
+  in
+  Pp.str kind ++ spc () ++ Id.print id
 
 let vernac_end_segment ({v=id} as lid) =
-  DeclareObl.check_can_close lid.v;
-  match Lib.find_opening_node id with
+  let ss = Lib.find_opening_node id in
+  let what_for = msg_of_subsection ss lid.v in
+  DeclareObl.check_solved_obligations ~what_for;
+  match ss with
   | Lib.OpenedModule (false,export,_,_) -> vernac_end_module export lid
   | Lib.OpenedModule (true,_,_,_) -> vernac_end_modtype lid
   | Lib.OpenedSection _ -> vernac_end_section lid

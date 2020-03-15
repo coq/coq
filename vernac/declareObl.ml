@@ -238,43 +238,92 @@ let err_not_transp () = pperror not_transp_msg
 
 module ProgMap = Id.Map
 
-let from_prg, program_tcc_summary_tag =
-  Summary.ref_tag ProgMap.empty ~name:"program-tcc-table"
+module StateFunctional = struct
+
+  type t = ProgramDecl.t CEphemeron.key ProgMap.t
+
+  let _empty = ProgMap.empty
+
+  let pending pm =
+    ProgMap.filter
+      (fun _ v -> (CEphemeron.get v).prg_obligations.remaining > 0)
+      pm
+
+  let num_pending pm = pending pm |> ProgMap.cardinal
+
+  let first_pending pm =
+    pending pm |> ProgMap.choose_opt
+    |> Option.map (fun (_, v) -> CEphemeron.get v)
+
+  let get_unique_open_prog pm name : (_, Id.t list) result =
+    match name with
+    | Some n ->
+      Option.cata
+        (fun p -> Ok (CEphemeron.get p))
+        (Error []) (ProgMap.find_opt n pm)
+    | None -> (
+      let n = num_pending pm in
+      match n with
+      | 0 -> Error []
+      | 1 -> Option.cata (fun p -> Ok p) (Error []) (first_pending pm)
+      | _ ->
+        let progs = Id.Set.elements (ProgMap.domain pm) in
+        Error progs )
+
+  let add t key prg = ProgMap.add key (CEphemeron.create prg) t
+
+  let fold t ~f ~init =
+    let f k v acc = f k (CEphemeron.get v) acc in
+    ProgMap.fold f t init
+
+  let all pm = ProgMap.bindings pm |> List.map (fun (_,v) -> CEphemeron.get v)
+  let find m t = ProgMap.find_opt t m |> Option.map CEphemeron.get
+end
+
+module State = struct
+
+  type t = StateFunctional.t
+
+  open StateFunctional
+
+  let prg_ref, prg_tag =
+    Summary.ref_tag ProgMap.empty ~name:"program-tcc-table"
+
+  let num_pending () = num_pending !prg_ref
+  let first_pending () = first_pending !prg_ref
+  let get_unique_open_prog id = get_unique_open_prog !prg_ref id
+  let add id prg = prg_ref := add !prg_ref id prg
+  let fold ~f ~init = fold !prg_ref ~f ~init
+  let all () = all !prg_ref
+  let find id = find !prg_ref id
+
+end
 
 (* In all cases, the use of the map is read-only so we don't expose the ref *)
-let get_prg_info_map () = !from_prg
-
 let map_keys m = ProgMap.fold (fun k _ l -> k :: l) m []
 
-let check_can_close sec =
-  if not (ProgMap.is_empty !from_prg) then
-    let keys = map_keys !from_prg in
+let check_solved_obligations ~what_for : unit =
+  if not (ProgMap.is_empty !State.prg_ref) then
+    let keys = map_keys !State.prg_ref in
+    let have_string = if Int.equal (List.length keys) 1 then " has " else " have " in
     CErrors.user_err ~hdr:"Program"
       Pp.(
         str "Unsolved obligations when closing "
-        ++ Id.print sec ++ str ":" ++ spc ()
+        ++ what_for ++ str ":" ++ spc ()
         ++ prlist_with_sep spc (fun x -> Id.print x) keys
-        ++ ( str (if Int.equal (List.length keys) 1 then " has " else " have ")
-           ++ str "unsolved obligations" ))
+        ++ str have_string
+        ++ str "unsolved obligations" )
 
 let map_replace k v m = ProgMap.add k (CEphemeron.create v) (ProgMap.remove k m)
-let prgmap_op f = from_prg := f !from_prg
-let progmap_remove prg = prgmap_op (ProgMap.remove prg.prg_name)
-let progmap_add n prg = prgmap_op (ProgMap.add n prg)
-let progmap_replace prg = prgmap_op (map_replace prg.prg_name prg)
-
+let progmap_remove pm prg = ProgMap.remove prg.prg_name pm
+let progmap_replace prg' pm = map_replace prg'.prg_name prg' pm
 let obligations_solved prg = Int.equal prg.prg_obligations.remaining 0
 
 let obligations_message rem =
-  if rem > 0 then
-    if Int.equal rem 1 then
-      Flags.if_verbose Feedback.msg_info
-        Pp.(int rem ++ str " obligation remaining")
-    else
-      Flags.if_verbose Feedback.msg_info
-        Pp.(int rem ++ str " obligations remaining")
-  else
-    Flags.if_verbose Feedback.msg_info Pp.(str "No more obligations remaining")
+  Format.asprintf "%s %s remaining"
+    (if rem > 0 then string_of_int rem else "No more")
+    (CString.plural rem "obligation")
+  |> Pp.str |> Flags.if_verbose Feedback.msg_info
 
 type progress = Remain of int | Dependent | Defined of GlobRef.t
 
@@ -366,11 +415,12 @@ let declare_definition prg =
   let fix_exn = Hook.get get_fix_exn () in
   let obls = List.map (fun (id, (_, c)) -> (id, c)) varsubst in
   (* XXX: This is doing normalization twice *)
-  let () = progmap_remove prg in
   let kn =
     Declare.declare_definition ~name ~scope ~kind ~impargs ?hook ~obls
       ~fix_exn ~opaque ~poly ~udecl ~types ~body sigma
   in
+  let pm = progmap_remove !State.prg_ref prg in
+  State.prg_ref := pm;
   kn
 
 let rec lam_index n t acc =
@@ -448,25 +498,28 @@ let declare_mutual_definition l =
   (* Only for the first constant *)
   let dref = List.hd kns in
   Declare.Hook.(call ?hook:first.prg_hook { S.uctx = first.prg_ctx; obls; scope; dref });
-  List.iter progmap_remove l;
+  let pm = List.fold_left progmap_remove !State.prg_ref l in
+  State.prg_ref := pm;
   dref
 
 let update_obls prg obls rem =
   let prg_obligations = { obls; remaining = rem } in
   let prg' = {prg with prg_obligations} in
-  progmap_replace prg';
+  let pm = progmap_replace prg' !State.prg_ref in
+  State.prg_ref := pm;
   obligations_message rem;
   if rem > 0 then Remain rem
   else
     match prg'.prg_deps with
     | [] ->
       let kn = declare_definition prg' in
-      progmap_remove prg';
+      let pm = progmap_remove !State.prg_ref prg' in
+      State.prg_ref := pm;
       Defined kn
     | l ->
       let progs =
         List.map
-          (fun x -> CEphemeron.get (ProgMap.find x !from_prg))
+          (fun x -> CEphemeron.get (ProgMap.find x pm))
           prg'.prg_deps
       in
       if List.for_all (fun x -> obligations_solved x) progs then
@@ -487,20 +540,27 @@ let update_program_decl_on_defined prg obls num obl ~uctx rem ~auto =
   let obls = Array.copy obls in
   let () = obls.(num) <- obl in
   let prg = { prg with prg_ctx = uctx } in
-  let () = ignore (update_obls prg obls (pred rem)) in
-  if pred rem > 0 then begin
-    let deps = dependencies obls num in
-    if not (Int.Set.is_empty deps) then
-      ignore (auto (Some prg.prg_name) deps None)
-  end
+  let _progress = update_obls prg obls (pred rem) in
+  let () =
+    if pred rem > 0 then
+      let deps = dependencies obls num in
+      if not (Int.Set.is_empty deps) then
+        let _progress = auto (Some prg.prg_name) deps None in
+        ()
+      else ()
+    else ()
+  in
+  ()
 
-type obligation_qed_info =
-  { name : Id.t
-  ; num : int
-  ; auto : Id.t option -> Int.Set.t -> unit Proofview.tactic option -> progress
-  }
+type obligation_resolver =
+     Id.t option
+  -> Int.Set.t
+  -> unit Proofview.tactic option
+  -> progress
 
-let obligation_terminator entries uctx { name; num; auto } =
+type obligation_qed_info = {name : Id.t; num : int; auto : obligation_resolver}
+
+let obligation_terminator entries uctx {name; num; auto} =
   match entries with
   | [entry] ->
     let env = Global.env () in
@@ -509,7 +569,7 @@ let obligation_terminator entries uctx { name; num; auto } =
     let sigma = Evd.from_ctx uctx in
     Inductiveops.control_only_guard (Global.env ()) sigma (EConstr.of_constr body);
     (* Declare the obligation ourselves and drop the hook *)
-    let prg = CEphemeron.get (ProgMap.find name !from_prg) in
+    let prg = Option.get (State.find name) in
     let { obls; remaining=rem } = prg.prg_obligations in
     let obl = obls.(num) in
     let status =
@@ -533,13 +593,15 @@ let obligation_terminator entries uctx { name; num; auto } =
         (* We merge the new universes and constraints of the
            polymorphic obligation with the existing ones *)
         UState.union prg.prg_ctx uctx
-      else
+      else if
         (* The first obligation, if defined,
            declares the univs of the constant,
            each subsequent obligation declares its own additional
            universes and constraints if any *)
-        if defined then UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ())
-        else uctx
+        defined
+      then
+        UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ())
+      else uctx
     in
     update_program_decl_on_defined prg obls num obl ~uctx:prg_ctx rem ~auto
   | _ ->
@@ -549,16 +611,21 @@ let obligation_terminator entries uctx { name; num; auto } =
           "[obligation_terminator] close_proof returned more than one proof \
            term")
 
-(* Similar to the terminator but for interactive paths, as the
-   terminator is only called in interactive proof mode *)
-let obligation_hook prg obl num auto { Declare.Hook.S.uctx = ctx'; dref; _ } =
-  let { obls; remaining=rem } = prg.prg_obligations in
+(* Similar to the terminator but for the admitted path; this assumes
+   the admitted constant was already declared.
+
+   FIXME: There is duplication of this code with obligation_terminator
+   and Obligations.admit_obligations *)
+let obligation_admitted_terminator {name; num; auto} ctx' dref =
+  let prg = Option.get (State.find name) in
+  let {obls; remaining = rem} = prg.prg_obligations in
+  let obl = obls.(num) in
   let cst = match dref with GlobRef.ConstRef cst -> cst | _ -> assert false in
   let transparent = evaluable_constant cst (Global.env ()) in
-  let () = match obl.obl_status with
-      (true, Evar_kinds.Expand)
-    | (true, Evar_kinds.Define true) ->
-       if not transparent then err_not_transp ()
+  let () =
+    match obl.obl_status with
+    | true, Evar_kinds.Expand | true, Evar_kinds.Define true ->
+      if not transparent then err_not_transp ()
     | _ -> ()
   in
   let inst, ctx' =

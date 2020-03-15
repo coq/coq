@@ -202,7 +202,7 @@ let mkTransCmd cast cids ceff cqueue =
 (* Parts of the system state that are morally part of the proof state *)
 let summary_pstate = Evarutil.meta_counter_summary_tag,
                      Evd.evar_counter_summary_tag,
-                     DeclareObl.program_tcc_summary_tag
+                     DeclareObl.State.prg_tag
 
 type cached_state =
   | EmptyState
@@ -878,7 +878,7 @@ end = struct (* {{{ *)
     Vernacstate.LemmaStack.t option *
     int *                                   (* Evarutil.meta_counter_summary_tag *)
     int *                                   (* Evd.evar_counter_summary_tag *)
-    DeclareObl.ProgramDecl.t CEphemeron.key Names.Id.Map.t (* Obligations.program_tcc_summary_tag *)
+    DeclareObl.State.t
 
   type partial_state =
     [ `Full of Vernacstate.t

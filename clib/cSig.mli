@@ -83,6 +83,7 @@ sig
     val min_binding: 'a t -> (key * 'a)
     val max_binding: 'a t -> (key * 'a)
     val choose: 'a t -> (key * 'a)
+    val choose_opt: 'a t -> (key * 'a) option
     val split: key -> 'a t -> 'a t * 'a option * 'a t
     val find: key -> 'a t -> 'a
     val find_opt : key -> 'a t -> 'a option

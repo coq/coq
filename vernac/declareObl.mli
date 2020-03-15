@@ -74,19 +74,14 @@ module ProgramDecl : sig
     -> Names.Id.t list
     -> fixpoint_kind option
     -> Vernacexpr.decl_notation list
-    -> ( Names.Id.t
-         * Constr.types
-         * Evar_kinds.t Loc.located
-         * (bool * Evar_kinds.obligation_definition_status)
-         * Int.Set.t
-         * unit Proofview.tactic option )
-      array
+    -> RetrieveObl.obligation_info
     -> (Constr.constr -> Constr.constr)
     -> t
 
   val set_uctx : uctx:UState.t -> t -> t
 end
 
+(** [declare_obligation] Save an obligation *)
 val declare_obligation :
      ProgramDecl.t
   -> Obligation.t
@@ -94,9 +89,29 @@ val declare_obligation :
   -> Constr.types option
   -> Entries.universes_entry
   -> bool * Obligation.t
-(** [declare_obligation] Save an obligation *)
 
-module ProgMap : CMap.ExtS with type key = Id.t and module Set := Id.Set
+module State : sig
+
+  val num_pending : unit -> int
+  val first_pending : unit -> ProgramDecl.t option
+
+  (** Returns [Error duplicate_list] if not a single program is open *)
+  val get_unique_open_prog :
+    Id.t option -> (ProgramDecl.t, Id.t list) result
+
+  (** Add a new obligation *)
+  val add : Id.t -> ProgramDecl.t -> unit
+
+  val fold : f:(Id.t -> ProgramDecl.t -> 'a -> 'a) -> init:'a -> 'a
+
+  val all : unit -> ProgramDecl.t list
+
+  val find : Id.t -> ProgramDecl.t option
+
+  (* Internal *)
+  type t
+  val prg_tag : t Summary.Dyn.tag
+end
 
 val declare_definition : ProgramDecl.t -> Names.GlobRef.t
 
@@ -109,54 +124,50 @@ type progress =
   | Defined of GlobRef.t
   (** Defined as id *)
 
+type obligation_resolver =
+     Id.t option
+  -> Int.Set.t
+  -> unit Proofview.tactic option
+  -> progress
+
 type obligation_qed_info =
   { name : Id.t
   ; num : int
   ; auto : Id.t option -> Int.Set.t -> unit Proofview.tactic option -> progress
   }
 
-val obligation_terminator
-  : Evd.side_effects Declare.proof_entry list
-  -> UState.t
-  -> obligation_qed_info -> unit
 (** [obligation_terminator] part 2 of saving an obligation, proof mode *)
-
-val obligation_hook
-  : ProgramDecl.t
-  -> Obligation.t
-  -> Int.t
-  -> (Names.Id.t option -> Int.Set.t -> 'a option -> 'b)
-  -> Declare.Hook.S.t
+val obligation_terminator :
+    Evd.side_effects Declare.proof_entry list
+  -> UState.t
+  -> obligation_qed_info
   -> unit
-(** [obligation_hook] part 2 of saving an obligation, non-interactive mode *)
 
+(** [obligation_admitted_terminator] part 2 of saving an obligation, non-interactive mode *)
+val obligation_admitted_terminator :
+  obligation_qed_info -> UState.t -> GlobRef.t -> unit
+
+(** [update_obls prg obls n progress] What does this do? *)
 val update_obls :
      ProgramDecl.t
   -> Obligation.t array
   -> int
   -> progress
-(** [update_obls prg obls n progress] What does this do? *)
+
+(** Check obligations are properly solved before closing the
+   [what_for] section / module *)
+val check_solved_obligations : what_for:Pp.t -> unit
 
 (** { 2 Util }  *)
-
-(** Check obligations are properly solved before closing a section *)
-val check_can_close : Id.t -> unit
-
-val get_prg_info_map : unit -> ProgramDecl.t CEphemeron.key ProgMap.t
-
-val program_tcc_summary_tag :
-  ProgramDecl.t CEphemeron.key Id.Map.t Summary.Dyn.tag
 
 val obl_substitution :
      bool
   -> Obligation.t array
   -> Int.Set.t
-  -> (ProgMap.key * (Constr.types * Constr.types)) list
+  -> (Id.t * (Constr.types * Constr.types)) list
 
 val dependencies : Obligation.t array -> int -> Int.Set.t
-
 val err_not_transp : unit -> unit
-val progmap_add : ProgMap.key -> ProgramDecl.t CEphemeron.key -> unit
 
 (* This is a hack to make it possible for Obligations to craft a Qed
  * behind the scenes.  The fix_exn the Stm attaches to the Future proof

@@ -356,6 +356,10 @@ struct
     let (_, m) = Int.Map.choose s in
     Map.choose m
 
+  let choose_opt s =
+    try Some (choose s)
+    with Not_found -> None
+
   let find k s =
     let h = M.hash k in
     let m = Int.Map.find h s in
