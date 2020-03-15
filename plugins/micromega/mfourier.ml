@@ -17,8 +17,8 @@ open Vect
 let debug = false
 let compare_float (p : float) q = pervasives_compare p q
 
-open Itv
 (** Implementation of intervals *)
+open Itv
 
 type vector = Vect.t
 
@@ -47,8 +47,8 @@ and cstr_info = {bound : interval; prf : proof; pos : int; neg : int}
     [v] is an upper-bound of the set of variables which appear in [s].
 *)
 
-exception SystemContradiction of proof
 (** To be thrown when a system has no solution *)
+exception SystemContradiction of proof
 
 (** Pretty printing *)
 let rec pp_proof o prf =

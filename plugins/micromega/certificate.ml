@@ -651,10 +651,10 @@ let z_cert_of_pos pos =
   in
   simplify_cone z_spec (_cert_of_pos pos)
 
-open Mutils
 (** All constraints (initial or derived) have an index and have a justification i.e., proof.
     Given a constraint, all the coefficients are always integers.
  *)
+open Mutils
 
 open Polynomial
 

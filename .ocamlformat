@@ -6,3 +6,4 @@ cases-exp-indent=2
 field-space=loose
 exp-grouping=preserve
 break-cases=fit
+doc-comments=before
