@@ -1778,7 +1778,12 @@ Tactic notations allow to customize the syntax of tactics. They have the followi
 
       * - ``reference``
         - qualified identifier
-        - a global reference of term
+        - a global reference or a variable
+        -
+
+      * - ``evaluable_ref``
+        - smart qualified identifier
+        - an unfoldable global reference
         - unfold
 
       * - ``constr``
@@ -1833,6 +1838,18 @@ Tactic notations allow to customize the syntax of tactics. They have the followi
              primitive tactics or in other notations at places where a list of the
              underlying entry can be used: entry is either ``constr``, ``hyp``, ``integer``
              or ``int_or_var``.
+
+   .. note:: A *smart* qualified identifier is:
+
+             - either a qualified identifier (possibly with empty qualification)
+             - or some :n:`@string` denoting either the discriminating
+               symbol of a notation (e.g. "+") or an expression defining
+               a notation (e.g. `"_ + _"`), and this notation denotes an
+               application whose head symbol is a constant
+             - or some :n:`@string%ident` where :n:`@string` gets its
+               interpretation from the scope bound to the delimiting
+               key :token:`ident` instead of its default
+               interpretation
 
 .. cmdv:: Local Tactic Notation
 
