@@ -330,12 +330,12 @@ let add_definition ~name ?term t ~uctx ?(udecl=UState.default_univ_decl)
 let add_mutual_definitions l ~uctx ?(udecl=UState.default_univ_decl) ?tactic
                            ~poly ?(scope=DeclareDef.Global Declare.ImportDefaultBehavior) ?(kind=Decls.Definition) ?(reduce=reduce)
     ?hook ?(opaque = false) notations fixkind =
-  let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
+  let deps = List.map (fun ({ DeclareDef.Recthm.name; _ }, _, _) -> name) l in
     List.iter
-    (fun  (n, b, t, impargs, obls) ->
-     let prg = ProgramDecl.make ~opaque n ~udecl (Some b) t ~uctx deps (Some fixkind)
+    (fun ({ DeclareDef.Recthm.name; typ; impargs; _ }, b, obls) ->
+     let prg = ProgramDecl.make ~opaque name ~udecl (Some b) typ ~uctx deps (Some fixkind)
        notations obls ~impargs ~poly ~scope ~kind reduce ?hook
-     in progmap_add n (CEphemeron.create prg)) l;
+     in progmap_add name (CEphemeron.create prg)) l;
     let _defined =
       List.fold_left (fun finished x ->
         if finished then finished
