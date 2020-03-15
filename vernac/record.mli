@@ -14,20 +14,16 @@ open Constrexpr
 
 val primitive_flag : bool ref
 
-type projection_flags = {
-  pf_subclass: bool;
-  pf_canonical: bool;
-}
-
-val declare_projections :
-  inductive ->
-  Entries.universes_entry ->
-  ?kind:Decls.definition_object_kind ->
-  Id.t ->
-  projection_flags list ->
-  Impargs.manual_implicits list ->
-  Constr.rel_context ->
-    Recordops.proj_kind list * Constant.t option list
+module Ast : sig
+  type t =
+    { name : Names.lident
+    ; is_coercion : coercion_flag
+    ; binders: local_binder_expr list
+    ; cfs : (local_decl_expr * record_field_attr) list
+    ; idbuild : Id.t
+    ; sort : constr_expr option
+    }
+end
 
 val definition_structure
   :  universe_decl_expr option
@@ -36,11 +32,7 @@ val definition_structure
   -> cumulative:bool
   -> poly:bool
   -> Declarations.recursivity_kind
-  -> (coercion_flag *
-      Names.lident *
-      local_binder_expr list *
-      (local_decl_expr * record_field_attr) list *
-      Id.t * constr_expr option) list
+  -> Ast.t list
   -> GlobRef.t list
 
 val declare_existing_class : GlobRef.t -> unit
