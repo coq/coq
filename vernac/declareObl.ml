@@ -111,11 +111,6 @@ open ProgramDecl
 
 (* Saving an obligation *)
 
-let get_shrink_obligations =
-  Goptions.declare_bool_option_and_ref ~depr:true (* remove in 8.8 *)
-    ~key:["Shrink"; "Obligations"]
-    ~value:true
-
 (* XXX: Is this the right place for this? *)
 let it_mkLambda_or_LetIn_or_clean t ctx =
   let open Context.Rel.Declaration in
@@ -190,7 +185,7 @@ let add_hint local prg cst =
 (* true = hide obligations *)
 let get_hide_obligations =
   Goptions.declare_bool_option_and_ref
-    ~depr:false
+    ~depr:true
     ~key:["Hide"; "Obligations"]
     ~value:false
 
@@ -203,7 +198,7 @@ let declare_obligation prg obl body ty uctx =
     let opaque = (not force) && opaque in
     let poly = prg.prg_poly in
     let ctx, body, ty, args =
-      if get_shrink_obligations () && not poly then shrink_body body ty
+      if not poly then shrink_body body ty
       else ([], body, ty, [||])
     in
     let ce = Declare.definition_entry ?types:ty ~opaque ~univs:uctx body in

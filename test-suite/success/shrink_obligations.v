@@ -2,8 +2,6 @@ Require Program.
 
 Obligation Tactic := idtac.
 
-Set Shrink Obligations.
-
 Program Definition foo (m : nat) (p := S m) (n : nat) (q := S n) : unit :=
 let bar : {r | n < r} := _ in
 let qux : {r | p < r} := _ in
