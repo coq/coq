@@ -69,31 +69,7 @@ let it_mkLambda_or_LetIn_or_clean t ctx =
   in
   Context.Rel.fold_inside fold ctx ~init:t
 
-(* XXX: Is this the right place for this? *)
-let decompose_lam_prod c ty =
-  let open Context.Rel.Declaration in
-  let rec aux ctx c ty =
-    match (Constr.kind c, Constr.kind ty) with
-    | LetIn (x, b, t, c), LetIn (x', b', t', ty)
-      when Constr.equal b b' && Constr.equal t t' ->
-      let ctx' = Context.Rel.add (LocalDef (x, b', t')) ctx in
-      aux ctx' c ty
-    | _, LetIn (x', b', t', ty) ->
-      let ctx' = Context.Rel.add (LocalDef (x', b', t')) ctx in
-      aux ctx' (lift 1 c) ty
-    | LetIn (x, b, t, c), _ ->
-      let ctx' = Context.Rel.add (LocalDef (x, b, t)) ctx in
-      aux ctx' c (lift 1 ty)
-    | Lambda (x, b, t), Prod (x', b', t')
-    (* By invariant, must be convertible *) ->
-      let ctx' = Context.Rel.add (LocalAssum (x, b')) ctx in
-      aux ctx' t t'
-    | Cast (c, _, _), _ -> aux ctx c ty
-    | _, _ -> (ctx, c, ty)
-  in
-  aux Context.Rel.empty c ty
-
-(* XXX: What's the relation of this with Abstract.shrink ? *)
+(* XXX: What's the relation of this with Declare.Internal.shrink ? *)
 let shrink_body c ty =
   let ctx, b, ty =
     match ty with
@@ -101,7 +77,7 @@ let shrink_body c ty =
       let ctx, b = Term.decompose_lam_assum c in
       (ctx, b, None)
     | Some ty ->
-      let ctx, b, ty = decompose_lam_prod c ty in
+      let ctx, b, ty = Term.decompose_lam_prod_assum c ty in
       (ctx, b, Some ty)
   in
   let b', ty', n, args =

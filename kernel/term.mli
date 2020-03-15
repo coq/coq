@@ -127,12 +127,26 @@ val decompose_prod_n : int -> constr -> (Name.t Context.binder_annot * constr) l
    Raise a user error if not enough lambdas. *)
 val decompose_lam_n : int -> constr -> (Name.t Context.binder_annot * constr) list * constr
 
+(** Simultaneous decompose_lam_n / decompose_prod_n *)
+val decompose_lam_prod_n : int
+  -> constr
+  -> types
+  -> Constr.rel_context
+  -> Constr.rel_context * constr * types
+
 (** Extract the premisses and the conclusion of a term of the form
    "(xi:Ti) ... (xj:=cj:Tj) ..., T" where T is not a product nor a let *)
 val decompose_prod_assum : types -> Constr.rel_context * types
 
 (** Idem with lambda's and let's *)
 val decompose_lam_assum : constr -> Constr.rel_context * constr
+
+(** Simulaneous decompose_lam_assum / decompose_prod_assum: transforms
+    a pair of lambda term λ (x1:T1)..(xn:Tn). t and type Π
+    (x1:T1)..(xn:Tn). T into the triple ([(xn,Tn);...;(x1,T1)],t,T),
+    where [t] is not lambda, [T] is not a prod, and the first element
+    is the abstracted context *)
+val decompose_lam_prod_assum : constr -> types -> Constr.rel_context * constr * types
 
 (** Idem but extract the first [n] premisses, counting let-ins. *)
 val decompose_prod_n_assum : int -> types -> Constr.rel_context * types

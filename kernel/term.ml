@@ -265,6 +265,34 @@ let decompose_lam_assum =
   in
   lamdec_rec Context.Rel.empty
 
+(** Simulaneous decompose_lam_assum / decompose_prod_assum: transforms
+    a pair of lambda term λ (x1:T1)..(xn:Tn). t and type Π
+    (x1:T1)..(xn:Tn). T into the triple ([(xn,Tn);...;(x1,T1)],t,T),
+    where [t] is not lambda, [T] is not a prod, and the first element
+    is the abstracted context *)
+let decompose_lam_prod_assum c ty =
+  let open Context.Rel.Declaration in
+  let rec aux ctx c ty =
+    match kind c, kind ty with
+    | LetIn (x, b, t, c), LetIn (x', b', t', ty)
+      when eq_annot Name.equal x x' && Constr.equal b b' && Constr.equal t t' ->
+      let ctx' = Context.Rel.add (LocalDef (x, b', t')) ctx in
+      aux ctx' c ty
+    | _, LetIn (x', b', t', ty) ->
+      let ctx' = Context.Rel.add (LocalDef (x', b', t')) ctx in
+      aux ctx' (lift 1 c) ty
+    | LetIn (x, b, t, c), _ ->
+      let ctx' = Context.Rel.add (LocalDef (x, b, t)) ctx in
+      aux ctx' c (lift 1 ty)
+    | Lambda (x, b, t), Prod (x', b', t')
+      when eq_annot Name.equal x x' && Constr.equal b b' ->
+      let ctx' = Context.Rel.add (LocalAssum (x, b')) ctx in
+      aux ctx' t t'
+    | Cast (c, _, _), _ -> aux ctx c ty
+    | _, _ -> (ctx, c, ty)
+  in
+  aux Context.Rel.empty c ty
+
 (* Given a positive integer n, decompose a product or let-in term
    of the form [forall (x1:T1)..(xi:=ci:Ti)..(xn:Tn), T] into the pair
    of the quantifying context [(xn,None,Tn);..;(xi,Some
@@ -320,6 +348,16 @@ let decompose_lam_n_decls n =
       | _ -> user_err (str "decompose_lam_n_decls: not enough abstractions")
   in
   lamdec_rec Context.Rel.empty n
+
+let rec decompose_lam_prod_n len c t accu =
+  let open Context.Rel.Declaration in
+  if len = 0 then (accu, c, t)
+  else match kind c, kind t with
+    | Lambda (na, u, c), Prod (_, _, t) ->
+      decompose_lam_prod_n (pred len) c t (LocalAssum (na, u) :: accu)
+    | LetIn (na, b, u, c), LetIn (_, _, _, t) ->
+      decompose_lam_prod_n (pred len) c t (LocalDef (na, b, u) :: accu)
+    | _ -> assert false
 
 let prod_assum t = fst (decompose_prod_assum t)
 let prod_n_assum n t = fst (decompose_prod_n_assum n t)

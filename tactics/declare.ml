@@ -458,17 +458,6 @@ module Internal = struct
 
   let get_fix_exn entry = Future.fix_exn_of entry.proof_entry_body
 
-  let rec decompose len c t accu =
-    let open Constr in
-    let open Context.Rel.Declaration in
-    if len = 0 then (c, t, accu)
-    else match kind c, kind t with
-      | Lambda (na, u, c), Prod (_, _, t) ->
-        decompose (pred len) c t (LocalAssum (na, u) :: accu)
-      | LetIn (na, b, u, c), LetIn (_, _, _, t) ->
-        decompose (pred len) c t (LocalDef (na, b, u) :: accu)
-      | _ -> assert false
-
   let rec shrink ctx sign c t accu =
     let open Constr in
     let open Vars in
@@ -497,7 +486,7 @@ module Internal = struct
     (* The body has been forced by the call to [build_constant_by_tactic] *)
     let () = assert (Future.is_over const.proof_entry_body) in
     let ((body, uctx), eff) = Future.force const.proof_entry_body in
-    let (body, typ, ctx) = decompose (List.length sign) body typ [] in
+    let (ctx, body, typ) = Term.decompose_lam_prod_n (List.length sign) body typ [] in
     let (body, typ, args) = shrink ctx sign body typ [] in
     { const with
       proof_entry_body = Future.from_val ((body, uctx), eff)
