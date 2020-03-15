@@ -34,6 +34,10 @@ val error_not_evaluable : GlobRef.t -> 'a
 val evaluable_of_global_reference :
   Environ.env -> GlobRef.t -> evaluable_global_reference
 
+val evaluable_of_global_reference_lax :
+  GlobRef.t -> evaluable_global_reference
+  (** syntactic translation; raise Not_found if not a constant or variable *)
+
 val global_of_evaluable_reference :
   evaluable_global_reference -> GlobRef.t
 

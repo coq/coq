@@ -74,3 +74,12 @@ let smart_global_inductive = let open Constrexpr in CAst.with_loc_val (fun ?loc 
   | ByNotation (ntn,sc) ->
     destIndRef
       (Notation.interp_notation_as_global_reference ?loc isIndRef ntn sc))
+
+let smart_evaluable_global = let open Constrexpr in CAst.with_loc_val (fun ?loc -> function
+  | AN r ->
+    (try Tacred.evaluable_of_global_reference_lax (locate_global_with_alias ~head:true r)
+     with Not_found -> Nametab.error_global_not_found r)
+  | ByNotation (ntn,sc) ->
+    Tacred.evaluable_of_global_reference_lax
+      (Notation.interp_notation_as_global_reference ?loc
+        Names.GlobRef.(function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc))

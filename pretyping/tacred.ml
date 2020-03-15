@@ -71,6 +71,11 @@ let evaluable_of_global_reference env = function
   | GlobRef.VarRef id when is_evaluable_var env id -> EvalVarRef id
   | r -> error_not_evaluable r
 
+let evaluable_of_global_reference_lax = function
+  | GlobRef.ConstRef cst -> EvalConstRef cst
+  | GlobRef.VarRef id -> EvalVarRef id
+  | r -> raise Not_found
+
 let global_of_evaluable_reference = function
   | EvalConstRef cst -> GlobRef.ConstRef cst
   | EvalVarRef id -> GlobRef.VarRef id

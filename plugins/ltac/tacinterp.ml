@@ -378,13 +378,11 @@ let try_interp_evaluable env (loc, id) =
 
 let interp_evaluable ist env sigma = function
   | ArgArg (r,Some {loc;v=id}) ->
-    (* Maybe [id] has been introduced by Intro-like tactics *)
+    (* Dynamic interpretation: maybe [id] has been introduced by Intro-like tactics *)
     begin
       try try_interp_evaluable env (loc, id)
       with Not_found ->
-        match r with
-        | EvalConstRef _ -> r
-        | _ -> Nametab.error_global_not_found (qualid_of_ident ?loc id)
+        Smartlocate.smart_evaluable_global (CAst.make ?loc (AN (qualid_of_ident ?loc id)))
     end
   | ArgArg (r,None) -> r
   | ArgVar {loc;v=id} ->

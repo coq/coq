@@ -287,38 +287,19 @@ let intern_destruction_arg ist = function
       else
         clear,ElimOnIdent (make ?loc id)
 
-let short_name = function
-  | {v=AN qid} when qualid_is_ident qid && not !strict_check ->
-    Some (make ?loc:qid.CAst.loc @@ qualid_basename qid)
-  | _ -> None
-
-let intern_evaluable_global_reference ist qid =
-  try evaluable_of_global_reference ist.genv (locate_global_with_alias ~head:true qid)
-  with Not_found ->
-  if qualid_is_ident qid && not !strict_check then EvalVarRef (qualid_basename qid)
-  else Nametab.error_global_not_found qid
-
-let intern_evaluable_reference_or_by_notation ist = function
-  | {v=AN r} -> intern_evaluable_global_reference ist r
-  | {v=ByNotation (ntn,sc);loc} ->
-      evaluable_of_global_reference ist.genv
-      (Notation.interp_notation_as_global_reference ?loc
-        GlobRef.(function ConstRef _ | VarRef _ -> true | _ -> false) ntn sc)
-
 (* Globalize a reduction expression *)
 let intern_evaluable ist r =
-  let f ist r =
-    let e = intern_evaluable_reference_or_by_notation ist r in
-    let na = short_name r in
-    ArgArg (e,na)
-  in
   match r with
   | {v=AN qid} when qualid_is_ident qid && find_var (qualid_basename qid) ist ->
+    (* An Ltac variable *)
     ArgVar (make ?loc:qid.CAst.loc @@ qualid_basename qid)
-  | {v=AN qid} when qualid_is_ident qid && not !strict_check && find_hyp (qualid_basename qid) ist ->
+  | {v=AN qid} when qualid_is_ident qid && not !strict_check ->
+    (* Possibly an hypothesis: we postpone the interpretation of the name *)
     let id = qualid_basename qid in
-      ArgArg (EvalVarRef id, Some (make ?loc:qid.CAst.loc id))
-  | _ -> f ist r
+    ArgArg (EvalVarRef id, Some (make ?loc:qid.CAst.loc id))
+  | _ ->
+    (* Ensured not to refer to an hypothesis *)
+    ArgArg (smart_evaluable_global r, None)
 
 let intern_unfold ist (l,qid) = (l,intern_evaluable ist qid)
 

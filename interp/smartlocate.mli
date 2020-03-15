@@ -36,3 +36,6 @@ val smart_global : ?head:bool -> qualid Constrexpr.or_by_notation -> GlobRef.t
 
 (** The same for inductive types *)
 val smart_global_inductive : qualid Constrexpr.or_by_notation -> inductive
+
+(** The same for evaluable references *)
+val smart_evaluable_global : qualid Constrexpr.or_by_notation -> evaluable_global_reference
