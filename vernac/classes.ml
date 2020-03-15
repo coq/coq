@@ -334,10 +334,9 @@ let do_declare_instance sigma ~global ~poly k u ctx ctx' pri udecl impargs subst
   Impargs.maybe_declare_manual_implicits false cst impargs;
   instance_hook pri global cst
 
-let declare_instance_program env sigma ~global ~poly name pri imps udecl term termtype =
+let declare_instance_program env sigma ~global ~poly name pri impargs udecl term termtype =
   let hook { DeclareDef.Hook.S.scope; dref; _ } =
     let cst = match dref with GlobRef.ConstRef kn -> kn | _ -> assert false in
-    Impargs.declare_manual_implicits false dref imps;
     let pri = intern_info pri in
     let env = Global.env () in
     let sigma = Evd.from_env env in
@@ -348,7 +347,7 @@ let declare_instance_program env sigma ~global ~poly name pri imps udecl term te
   let uctx = Evd.evar_universe_context sigma in
   let scope, kind = DeclareDef.Global Declare.ImportDefaultBehavior, Decls.Instance in
   let _ : DeclareObl.progress =
-    Obligations.add_definition ~name ~term ~udecl ~scope ~poly ~kind ~hook typ ~uctx obls
+    Obligations.add_definition ~name ~term ~udecl ~scope ~poly ~kind ~hook ~impargs ~uctx typ obls
   in ()
 
 let declare_instance_open sigma ?hook ~tac ~global ~poly id pri impargs udecl ids term termtype =
