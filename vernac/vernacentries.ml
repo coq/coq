@@ -579,7 +579,7 @@ let vernac_definition_interactive ~atts (discharge, kind) (lid, pl) bl t =
   let name = vernac_definition_name lid local in
   start_lemma_com ~program_mode ~poly ~scope:local ~kind:(Decls.IsDefinition kind) ?hook [(name, pl), (bl, t)]
 
-let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt =
+let vernac_definition ~atts ~pm (discharge, kind) (lid, pl) bl red_option c typ_opt =
   let open DefAttributes in
   let scope = enforce_locality_exp atts.locality discharge in
   let hook = vernac_definition_hook ~canonical_instance:atts.canonical_instance ~local:atts.locality ~poly:atts.polymorphic kind in
@@ -593,13 +593,13 @@ let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt 
       Some (snd (Hook.get f_interp_redexp env sigma r)) in
   if program_mode then
     let kind = Decls.IsDefinition kind in
-    ComDefinition.do_definition_program ~name:name.v
+    ComDefinition.do_definition_program ~pm ~name:name.v
       ~poly:atts.polymorphic ~scope ~kind pl bl red_option c typ_opt ?hook
   else
     let () =
       ComDefinition.do_definition ~name:name.v
         ~poly:atts.polymorphic ~scope ~kind pl bl red_option c typ_opt ?hook in
-    ()
+    pm
 
 (* NB: pstate argument to use combinators easily *)
 let vernac_start_proof ~atts kind l =
@@ -609,19 +609,20 @@ let vernac_start_proof ~atts kind l =
     List.iter (fun ((id, _), _) -> Dumpglob.dump_definition id false "prf") l;
   start_lemma_com ~program_mode:atts.program ~poly:atts.polymorphic ~scope ~kind:(Decls.IsProof kind) l
 
-let vernac_end_proof ~lemma = let open Vernacexpr in function
+let vernac_end_proof ~lemma ~pm = let open Vernacexpr in function
   | Admitted ->
-    Declare.Proof.save_admitted ~proof:lemma
+    Declare.Proof.save_admitted ~pm ~proof:lemma
   | Proved (opaque,idopt) ->
-    let _ : Names.GlobRef.t list = Declare.Proof.save ~proof:lemma ~opaque ~idopt
-    in ()
+    let pm, _ = Declare.Proof.save ~pm ~proof:lemma ~opaque ~idopt
+    in pm
 
-let vernac_exact_proof ~lemma c =
+let vernac_exact_proof ~lemma ~pm c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the beginning of a proof. *)
   let lemma, status = Declare.Proof.by (Tactics.exact_proof c) lemma in
-  let _ : _ list = Declare.Proof.save ~proof:lemma ~opaque:Opaque ~idopt:None in
-  if not status then Feedback.feedback Feedback.AddedAxiom
+  let pm, _ = Declare.Proof.save ~pm ~proof:lemma ~opaque:Opaque ~idopt:None in
+  if not status then Feedback.feedback Feedback.AddedAxiom;
+  pm
 
 let vernac_assumption ~atts discharge kind l nl =
   let open DefAttributes in
@@ -837,14 +838,15 @@ let vernac_fixpoint_interactive ~atts discharge l =
     CErrors.user_err Pp.(str"Program Fixpoint requires a body");
   ComFixpoint.do_fixpoint_interactive ~scope ~poly:atts.polymorphic l
 
-let vernac_fixpoint ~atts discharge l =
+let vernac_fixpoint ~atts ~pm discharge l =
   let open DefAttributes in
   let scope = vernac_fixpoint_common ~atts discharge l in
   if atts.program then
     (* XXX: Switch to the attribute system and match on ~atts *)
-    ComProgramFixpoint.do_fixpoint ~scope ~poly:atts.polymorphic l
+    ComProgramFixpoint.do_fixpoint ~pm ~scope ~poly:atts.polymorphic l
   else
-    ComFixpoint.do_fixpoint ~scope ~poly:atts.polymorphic l
+    let () = ComFixpoint.do_fixpoint ~scope ~poly:atts.polymorphic l in
+    pm
 
 let vernac_cofixpoint_common ~atts discharge l =
   if Dumpglob.dump () then
@@ -858,13 +860,14 @@ let vernac_cofixpoint_interactive ~atts discharge l =
     CErrors.user_err Pp.(str"Program CoFixpoint requires a body");
   ComFixpoint.do_cofixpoint_interactive ~scope ~poly:atts.polymorphic l
 
-let vernac_cofixpoint ~atts discharge l =
+let vernac_cofixpoint ~atts ~pm discharge l =
   let open DefAttributes in
   let scope = vernac_cofixpoint_common ~atts discharge l in
   if atts.program then
-    ComProgramFixpoint.do_cofixpoint ~scope ~poly:atts.polymorphic l
+    ComProgramFixpoint.do_cofixpoint ~pm ~scope ~poly:atts.polymorphic l
   else
-    ComFixpoint.do_cofixpoint ~scope ~poly:atts.polymorphic l
+    let () = ComFixpoint.do_cofixpoint ~scope ~poly:atts.polymorphic l in
+    pm
 
 let vernac_scheme l =
   if Dumpglob.dump () then
@@ -1085,10 +1088,10 @@ let msg_of_subsection ss id =
   in
   Pp.str kind ++ spc () ++ Id.print id
 
-let vernac_end_segment ({v=id} as lid) =
+let vernac_end_segment ~pm ({v=id} as lid) =
   let ss = Lib.find_opening_node id in
   let what_for = msg_of_subsection ss lid.v in
-  Declare.Obls.check_solved_obligations ~what_for;
+  Declare.Obls.check_solved_obligations ~pm ~what_for;
   match ss with
   | Lib.OpenedModule (false,export,_,_) -> vernac_end_module export lid
   | Lib.OpenedModule (true,_,_,_) -> vernac_end_modtype lid
@@ -1147,14 +1150,14 @@ let vernac_identity_coercion ~atts id qids qidt =
 
 (* Type classes *)
 
-let vernac_instance_program ~atts name bl t props info =
+let vernac_instance_program ~atts ~pm name bl t props info =
   Dumpglob.dump_constraint (fst name) false "inst";
   let locality, poly =
     Attributes.(parse (Notations.(locality ++ polymorphic))) atts
   in
   let global = not (make_section_locality locality) in
-  let _id : Id.t = Classes.new_instance_program ~global ~poly name bl t props info in
-  ()
+  let pm, _id = Classes.new_instance_program ~pm ~global ~poly name bl t props info in
+  pm
 
 let vernac_instance_interactive ~atts name bl t info props =
   Dumpglob.dump_constraint (fst name) false "inst";
@@ -1991,9 +1994,9 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
   (* Gallina *)
 
   | VernacDefinition (discharge,lid,DefineBody (bl,red_option,c,typ)) ->
-    VtDefault (fun () ->
+    VtModifyProgram (fun ~pm ->
       with_def_attributes ~atts
-       vernac_definition discharge lid bl red_option c typ)
+       vernac_definition ~pm discharge lid bl red_option c typ)
   | VernacDefinition (discharge,lid,ProveBody(bl,typ)) ->
     VtOpenProof(fun () ->
       with_def_attributes ~atts
@@ -2028,14 +2031,14 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
       VtOpenProof (fun () ->
         with_def_attributes ~atts vernac_fixpoint_interactive discharge l)
     else
-      VtDefault (fun () ->
-        with_def_attributes ~atts vernac_fixpoint discharge l)
+      VtModifyProgram (fun ~pm ->
+        with_def_attributes ~atts (vernac_fixpoint ~pm) discharge l)
   | VernacCoFixpoint (discharge, l) ->
     let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
     if opens then
       VtOpenProof(fun () -> with_def_attributes ~atts vernac_cofixpoint_interactive discharge l)
     else
-      VtDefault(fun () -> with_def_attributes ~atts vernac_cofixpoint discharge l)
+      VtModifyProgram(fun ~pm -> with_def_attributes ~atts (vernac_cofixpoint ~pm) discharge l)
 
   | VernacScheme l ->
     VtDefault(fun () ->
@@ -2064,9 +2067,9 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
     VtNoProof(fun () ->
         vernac_begin_section ~poly:(only_polymorphism atts) lid)
   | VernacEndSegment lid ->
-    VtNoProof(fun () ->
+    VtReadProgram(fun ~pm ->
         unsupported_attributes atts;
-        vernac_end_segment lid)
+        vernac_end_segment ~pm lid)
   | VernacNameSectionHypSet (lid, set) ->
     VtDefault(fun () ->
         unsupported_attributes atts;
@@ -2091,7 +2094,7 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
   | VernacInstance (name, bl, t, props, info) ->
     let atts, program = Attributes.(parse_with_extra program) atts in
     if program then
-      VtDefault (fun () -> vernac_instance_program ~atts name bl t props info)
+      VtModifyProgram (vernac_instance_program ~atts name bl t props info)
     else begin match props with
     | None ->
        VtOpenProof (fun () ->

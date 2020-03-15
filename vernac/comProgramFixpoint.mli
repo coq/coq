@@ -11,11 +11,16 @@
 open Vernacexpr
 
 (** Special Fixpoint handling when command is activated. *)
-
 val do_fixpoint :
-  (* When [false], assume guarded. *)
-  scope:Locality.locality -> poly:bool -> fixpoint_expr list -> unit
+     pm:Declare.OblState.t
+  -> scope:Locality.locality
+  -> poly:bool
+  -> fixpoint_expr list
+  -> Declare.OblState.t
 
 val do_cofixpoint :
-  (* When [false], assume guarded. *)
-  scope:Locality.locality -> poly:bool -> cofixpoint_expr list -> unit
+     pm:Declare.OblState.t
+  -> scope:Locality.locality
+  -> poly:bool
+  -> cofixpoint_expr list
+  -> Declare.OblState.t

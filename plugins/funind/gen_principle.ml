@@ -1526,8 +1526,9 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
           let lemma =
             fst @@ Declare.Proof.by (Proofview.V82.tactic (proving_tac i)) lemma
           in
-          let (_ : GlobRef.t list) =
-            Declare.Proof.save ~proof:lemma ~opaque:Vernacexpr.Transparent
+          let pm = Declare.OblState.empty in
+          let _pm, _ =
+            Declare.Proof.save ~pm ~proof:lemma ~opaque:Vernacexpr.Transparent
               ~idopt:None
           in
           let finfo =
@@ -1598,8 +1599,9 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
                        (proving_tac i)))
                  lemma)
           in
-          let (_ : _ list) =
-            Declare.Proof.save ~proof:lemma ~opaque:Vernacexpr.Transparent
+          let pm = Declare.OblState.empty in
+          let _pm, _ =
+            Declare.Proof.save ~pm ~proof:lemma ~opaque:Vernacexpr.Transparent
               ~idopt:None
           in
           let finfo =

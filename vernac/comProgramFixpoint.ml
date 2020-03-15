@@ -109,7 +109,7 @@ let telescope env sigma l =
 let nf_evar_context sigma ctx =
   List.map (map_constr (fun c -> Evarutil.nf_evar sigma c)) ctx
 
-let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
+let build_wellfounded pm (recname,pl,bl,arityc,body) poly r measure notation =
   let open EConstr in
   let open Vars in
   let lift_rel_context n l = Termops.map_rel_context_with_binders (liftn n) l in
@@ -262,9 +262,9 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   let uctx = Evd.evar_universe_context sigma in
   let cinfo = Declare.CInfo.make ~name:recname ~typ:evars_typ () in
   let info = Declare.Info.make ~udecl ~poly ~hook () in
-  let _ : Declare.Obls.progress =
-    Declare.Obls.add_definition ~cinfo ~info ~term:evars_def ~uctx evars in
-  ()
+  let pm, _ =
+    Declare.Obls.add_definition ~pm ~cinfo ~info ~term:evars_def ~uctx evars in
+  pm
 
 let out_def = function
   | Some def -> def
@@ -275,7 +275,7 @@ let collect_evars_of_term evd c ty =
   Evar.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evd ev))
   evars (Evd.from_ctx (Evd.evar_universe_context evd))
 
-let do_program_recursive ~scope ~poly fixkind fixl =
+let do_program_recursive ~pm ~scope ~poly fixkind fixl =
   let cofix = fixkind = Declare.Obls.IsCoFixpoint in
   let (env, rec_sign, udecl, evd), fix, info =
     interp_recursive ~cofix ~program_mode:true fixl
@@ -323,15 +323,15 @@ let do_program_recursive ~scope ~poly fixkind fixl =
   in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
   let info = Declare.Info.make ~poly ~scope ~kind ~udecl () in
-  Declare.Obls.add_mutual_definitions defs ~info ~uctx ~ntns fixkind
+  Declare.Obls.add_mutual_definitions ~pm defs ~info ~uctx ~ntns fixkind
 
-let do_fixpoint ~scope ~poly l =
+let do_fixpoint ~pm ~scope ~poly l =
   let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in
     match g, l with
     | [Some { CAst.v = CWfRec (n,r) }],
       [ Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations} ] ->
         let recarg = mkIdentC n.CAst.v in
-        build_wellfounded (id, univs, binders, rtype, out_def body_def) poly r recarg notations
+        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly r recarg notations
 
     | [Some { CAst.v = CMeasureRec (n, m, r) }],
       [Vernacexpr.{fname={CAst.v=id}; univs; binders; rtype; body_def; notations }] ->
@@ -344,7 +344,7 @@ let do_fixpoint ~scope ~poly l =
           user_err Pp.(str"Measure takes only two arguments in Program Fixpoint.")
         | _, _ -> r
       in
-        build_wellfounded (id, univs, binders, rtype, out_def body_def) poly
+        build_wellfounded pm (id, univs, binders, rtype, out_def body_def) poly
           (Option.default (CAst.make @@ CRef (lt_ref,None)) r) m notations
 
     | _, _ when List.for_all (fun ro -> match ro with None | Some { CAst.v = CStructRec _} -> true | _ -> false) g ->
@@ -352,12 +352,11 @@ let do_fixpoint ~scope ~poly l =
           Vernacexpr.(ComFixpoint.adjust_rec_order ~structonly:true fix.binders fix.rec_order)) l in
       let fixkind = Declare.Obls.IsFixpoint annots in
       let l = List.map2 (fun fix rec_order -> { fix with Vernacexpr.rec_order }) l annots in
-      do_program_recursive ~scope ~poly fixkind l
-
+      do_program_recursive ~pm ~scope ~poly fixkind l
     | _, _ ->
-        user_err ~hdr:"do_fixpoint"
-          (str "Well-founded fixpoints not allowed in mutually recursive blocks")
+      CErrors.user_err ~hdr:"do_fixpoint"
+        (str "Well-founded fixpoints not allowed in mutually recursive blocks")
 
-let do_cofixpoint ~scope ~poly fixl =
+let do_cofixpoint ~pm ~scope ~poly fixl =
   let fixl = List.map (fun fix -> { fix with Vernacexpr.rec_order = None }) fixl in
-  do_program_recursive ~scope ~poly Declare.Obls.IsCoFixpoint fixl
+  do_program_recursive ~pm ~scope ~poly Declare.Obls.IsCoFixpoint fixl

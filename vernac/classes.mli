@@ -52,6 +52,7 @@ val new_instance
 
 val new_instance_program
   : ?global:bool (** Not global by default. *)
+  -> pm:Declare.OblState.t
   -> poly:bool
   -> name_decl
   -> local_binder_expr list
@@ -60,7 +61,7 @@ val new_instance_program
   -> ?generalize:bool
   -> ?hook:(GlobRef.t -> unit)
   -> Vernacexpr.hint_info_expr
-  -> Id.t
+  -> Declare.OblState.t * Id.t
 
 val declare_new_instance
   : ?global:bool (** Not global by default. *)
