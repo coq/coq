@@ -95,3 +95,18 @@ match goal with |- 0 = Datatypes.fst (0,0) => idtac end.
 Abort.
 
 End D.
+
+Module E.
+
+(* This is #11727: provide an entry which works like unfold *)
+
+Tactic Notation "myunfold" evaluable_ref(x) := unfold x.
+Notation idnat := (@id nat).
+Goal let n := 0 in idnat n = 0.
+Proof.
+  intro n.
+  myunfold idnat.
+  myunfold n.
+Abort.
+
+End E.

@@ -40,6 +40,11 @@ val wit_var : (lident, lident, Id.t) genarg_type
 
 val wit_ref : (qualid, GlobRef.t located or_var, GlobRef.t) genarg_type
 
+val wit_evaluable_ref :
+  (qualid Constrexpr.or_by_notation,
+   (evaluable_global_reference or_dynamic_name) or_var,
+   evaluable_global_reference) genarg_type
+
 val wit_sort_family : (Sorts.family, unit, unit) genarg_type
 
 val wit_constr : (constr_expr, glob_constr_and_expr, constr) genarg_type

@@ -2013,6 +2013,7 @@ let interp_pre_ident ist env sigma s =
 let () =
   register_interp0 wit_int_or_var (fun ist n -> Ftactic.return (interp_int_or_var ist n));
   register_interp0 wit_ref (lift interp_reference);
+  register_interp0 wit_evaluable_ref (lift interp_evaluable);
   register_interp0 wit_pre_ident (lift interp_pre_ident);
   register_interp0 wit_ident (lift interp_ident);
   register_interp0 wit_var (lift interp_hyp);

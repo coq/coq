@@ -278,7 +278,9 @@ let coerce_to_closed_constr env v =
 let coerce_to_evaluable_ref env sigma v =
   let fail () = raise (CannotCoerceTo "an evaluable reference") in
   let ev =
-  match is_intro_pattern v with
+  if has_type v (topwit wit_evaluable_ref) then
+    out_gen (topwit wit_evaluable_ref) v
+  else match is_intro_pattern v with
   | Some (IntroNaming (IntroIdentifier id)) when is_variable env id -> EvalVarRef id
   | Some _ -> fail ()
   | None ->

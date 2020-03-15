@@ -42,6 +42,8 @@ let wit_var =
 
 let wit_ref = make0 "ref"
 
+let wit_evaluable_ref = make0 "evaluable_ref"
+
 let wit_sort_family = make0 "sort_family"
 
 let wit_constr =

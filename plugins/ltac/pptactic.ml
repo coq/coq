@@ -1304,6 +1304,7 @@ let make_constr_printer f c =
 let lift f a = Genprint.PrinterBasic (fun env sigma -> f a)
 let lift_env f a = Genprint.PrinterBasic (fun env sigma -> f env sigma a)
 let lift_top f a = Genprint.TopPrinterBasic (fun () -> f a)
+let lift_context f a = Genprint.TopPrinterNeedsContext (fun env sigma -> f env sigma a)
 
 let register_basic_print0 wit f g h =
   Genprint.register_print0 wit (lift f) (lift g) (lift_top h)
@@ -1327,6 +1328,10 @@ let () =
   register_basic_print0 wit_int_or_var (pr_or_var int) (pr_or_var int) int;
   register_basic_print0 wit_ref
     pr_qualid (pr_or_var (pr_located pr_global)) pr_global;
+  register_print0 wit_evaluable_ref
+    (lift (pr_or_by_notation pr_qualid))
+    (lift_env (fun env sigma -> pr_or_var (pr_or_dynamic_name (pr_evaluable_reference_env env))))
+    (lift_context (fun env sigma -> pr_evaluable_reference_env env));
   register_basic_print0 wit_ident pr_id pr_id pr_id;
   register_basic_print0 wit_var pr_lident pr_lident pr_id;
   register_print0 wit_intropattern pr_raw_intro_pattern pr_glob_intro_pattern pr_intro_pattern_env [@warning "-3"];

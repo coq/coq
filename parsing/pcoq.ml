@@ -699,6 +699,7 @@ let () =
   Grammar.register0 wit_ident (Prim.ident);
   Grammar.register0 wit_var (Prim.var);
   Grammar.register0 wit_ref (Prim.reference);
+  Grammar.register0 wit_evaluable_ref (Prim.smart_global);
   Grammar.register0 wit_sort_family (Constr.sort_family);
   Grammar.register0 wit_constr (Constr.constr);
   ()
