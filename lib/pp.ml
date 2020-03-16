@@ -108,6 +108,8 @@ let fnl  ()   = Ppcmd_force_newline
 let ws n      = Ppcmd_print_break (n,0)
 let comment l = Ppcmd_comment l
 
+let strf fmt = Printf.ksprintf str fmt
+
 (* derived commands *)
 let mt    () = Ppcmd_empty
 let spc   () = Ppcmd_print_break (1,0)

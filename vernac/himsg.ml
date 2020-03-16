@@ -1346,11 +1346,11 @@ let explain_prim_token_notation_error kind env sigma = function
   | Notation.UnexpectedTerm c ->
     (strbrk "Unexpected term " ++
      pr_constr_env env sigma c ++
-     strbrk (" while parsing a "^kind^" notation."))
+     strf " while parsing a %s notation." kind)
   | Notation.UnexpectedNonOptionTerm c ->
     (strbrk "Unexpected non-option term " ++
      pr_constr_env env sigma c ++
-     strbrk (" while parsing a "^kind^" notation."))
+     strf " while parsing a %s notation." kind)
 
 (** Registration of generic errors
     Nota: explain_exn does NOT end with a newline anymore!

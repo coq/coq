@@ -65,6 +65,7 @@ val unrepr : doc_view -> t
 (** {6 Formatting commands} *)
 
 val str   : string -> t
+val strf : ('a, unit, string, t) format4 -> 'a
 val brk   : int * int -> t
 val fnl   : unit -> t
 val ws    : int -> t
