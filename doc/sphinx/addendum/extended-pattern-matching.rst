@@ -5,8 +5,6 @@ Extended pattern matching
 
 :Authors: Cristina Cornes and Hugo Herbelin
 
-.. TODO links to figures
-
 This section describes the full form of pattern matching in |Coq| terms.
 
 .. |rhs| replace:: right hand sides
@@ -14,7 +12,7 @@ This section describes the full form of pattern matching in |Coq| terms.
 Patterns
 --------
 
-The full syntax of match is presented in Figures 1.1 and 1.2.
+The full syntax of :g:`match` is presented in section :ref:`term`.
 Identifiers in patterns are either constructor names or variables. Any
 identifier that is not the constructor of an inductive or co-inductive
 type is considered to be a variable. A variable name cannot occur more
@@ -496,9 +494,8 @@ We can use multiple patterns to write the proof of the lemma
 In the example of :g:`dec`, the first match is dependent while the second
 is not.
 
-The user can also use match in combination with the tactic :tacn:`refine` (see
-Section 8.2.3) to build incomplete proofs beginning with a match
-construction.
+The user can also use match in combination with the tactic :tacn:`refine`
+to build incomplete proofs beginning with a :g:`match` construction.
 
 
 Pattern-matching on inductive objects involving local definitions
