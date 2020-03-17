@@ -134,7 +134,38 @@ let r_of_rawnum ?loc n =
 (* Printing R via scopes                                              *)
 (**********************************************************************)
 
-let rawnum_of_r c = match DAst.get c with
+let rawnum_of_r c =
+  (* print i * 10^e, precondition: e <> 0 *)
+  let numTok_of_int_exp i e =
+    (* choose between 123e-2 and 1.23, this is purely heuristic
+       and doesn't play any soundness role *)
+    let choose_exponent =
+      if Bigint.is_strictly_pos e then
+        true  (* don't print 12 * 10^2 as 1200 to distinguish them *)
+      else
+        let i = Bigint.to_string i in
+        let li = if i.[0] = '-' then String.length i - 1 else String.length i in
+        let e = Bigint.neg e in
+        let le = String.length (Bigint.to_string e) in
+        Bigint.(less_than (add (of_int li) (of_int le)) e) in
+    (* print 123 * 10^-2 as 123e-2 *)
+    let numTok_exponent () = NumTok.Signed.of_bigint_and_exponent i e in
+    (* print 123 * 10^-2 as 1.23, precondition e < 0 *)
+    let numTok_dot () =
+      let s, i =
+        if Bigint.is_pos_or_zero i then NumTok.SPlus, Bigint.to_string i
+        else NumTok.SMinus, Bigint.(to_string (neg i)) in
+      let ni = String.length i in
+      let e = - (Bigint.to_int e) in
+      assert (e > 0);
+      let i, f =
+        if e < ni then String.sub i 0 (ni - e), String.sub i (ni - e) e
+        else "0", String.make (e - ni) '0' ^ i in
+      let i = s, NumTok.UnsignedNat.of_string i in
+      let f = NumTok.UnsignedNat.of_string f in
+      NumTok.Signed.of_decimal_and_exponent i (Some f) None in
+    if choose_exponent then numTok_exponent () else numTok_dot () in
+  match DAst.get c with
   | GApp (r, [a]) when is_gr r glob_IZR ->
      let n = bigint_of_z a in
      NumTok.Signed.of_bigint n
@@ -151,7 +182,7 @@ let rawnum_of_r c = match DAst.get c with
              let i = bigint_of_z l in
              let e = bignat_of_pos e in
              let e = if is_gr md glob_Rdiv then neg e else e in
-             NumTok.Signed.of_bigint_and_exponent i e
+             numTok_of_int_exp i e
         | _ -> raise Non_closed_number
         end
      | _ -> raise Non_closed_number
