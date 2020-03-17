@@ -1297,7 +1297,8 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
   fun t -> fst (sh_rec t)
 
 (* Exported hashing fonction on constr, used mainly in plugins.
-   Appears to have slight differences from [snd (hash_term t)] above ? *)
+   Slight differences from [snd (hash_term t)] above: it ignores binders
+   and doesn't do [land  0x3FFFFFFF]. *)
 
 let rec hash t =
   match kind t with
@@ -1336,7 +1337,7 @@ let rec hash t =
     | Float f -> combinesmall 19 (Float64.hash f)
 
 and hash_term_array t =
-  Array.fold_left (fun acc t -> combine (hash t) acc) 0 t
+  Array.fold_left (fun acc t -> combine acc (hash t)) 0 t
 
 module CaseinfoHash =
 struct
