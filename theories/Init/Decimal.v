@@ -156,6 +156,37 @@ Definition nztail_int d :=
   | Neg d => let (r, n) := nztail d in pair (Neg r) n
   end.
 
+(** [del_head n d] removes [n] digits at beginning of [d]
+    or returns [zero] if [d] has less than [n] digits. *)
+
+Fixpoint del_head n d :=
+  match n with
+  | O => d
+  | S n =>
+    match d with
+    | Nil => zero
+    | D0 d | D1 d | D2 d | D3 d | D4 d | D5 d | D6 d | D7 d | D8 d | D9 d =>
+      del_head n d
+    end
+  end.
+
+Definition del_head_int n d :=
+  match d with
+  | Pos d => Pos (del_head n d)
+  | Neg d => Neg (del_head n d)
+  end.
+
+(** [del_tail n d] removes [n] digits at end of [d]
+    or returns [zero] if [d] has less than [n] digits. *)
+
+Fixpoint del_tail n d := rev (del_head n (rev d)).
+
+Definition del_tail_int n d :=
+  match d with
+  | Pos d => Pos (del_tail n d)
+  | Neg d => Neg (del_tail n d)
+  end.
+
 Module Little.
 
 (** Successor of little-endian numbers *)
