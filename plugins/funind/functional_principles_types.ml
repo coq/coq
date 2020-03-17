@@ -63,14 +63,14 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 (*   observe (str "princ_infos : " ++ pr_elim_scheme princ_type_info); *)
   let change_predicate_sort i decl =
     let new_sort = sorts.(i) in
-    let args,_ = decompose_prod (EConstr.Unsafe.to_constr (RelDecl.get_type decl)) in
+    let args,_ = decompose_prod_assum (EConstr.Unsafe.to_constr (RelDecl.get_type decl)) in
     let real_args =
       if princ_type_info.indarg_in_concl
       then List.tl args
       else args
     in
     Context.Named.Declaration.LocalAssum (map_annot Nameops.Name.get_id (Context.Rel.Declaration.get_annot decl),
-                                          Term.compose_prod real_args (mkSort new_sort))
+                                          Term.it_mkProd_or_LetIn (mkSort new_sort) real_args)
   in
   let new_predicates =
     List.map_i
