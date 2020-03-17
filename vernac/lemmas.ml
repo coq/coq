@@ -27,15 +27,12 @@ module Proof_ending = struct
     | Regular
     | End_obligation of DeclareObl.obligation_qed_info
     | End_derive of { f : Id.t; name : Id.t }
-    | End_equations of { hook : Constant.t list -> Evd.evar_map -> unit
-                       ; i : Id.t
-                       ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
-                       ; wits : EConstr.t list ref
-                       (* wits are actually computed by the proof
-                          engine by side-effect after creating the
-                          proof! This is due to the start_dependent_proof API *)
-                       ; sigma : Evd.evar_map
-                       }
+    | End_equations of
+        { hook : Constant.t list -> Evd.evar_map -> unit
+        ; i : Id.t
+        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
+        ; sigma : Evd.evar_map
+        }
 
 end
 
@@ -357,11 +354,11 @@ let finish_derived ~f ~name ~entries =
   let _ : Names.Constant.t = Declare.declare_constant ~name ~kind:Decls.(IsProof Proposition) lemma_def in
   ()
 
-let finish_proved_equations kind proof_obj hook i types wits sigma0 =
+let finish_proved_equations ~kind ~hook i proof_obj types sigma0 =
 
   let obls = ref 1 in
   let sigma, recobls =
-    CList.fold_left2_map (fun sigma (wit, (evar_env, ev, evi, local_context, type_)) entry ->
+    CList.fold_left2_map (fun sigma (_evar_env, ev, _evi, local_context, _type) entry ->
         let id =
           match Evd.evar_ident ev sigma0 with
           | Some id -> id
@@ -372,7 +369,7 @@ let finish_proved_equations kind proof_obj hook i types wits sigma0 =
         let sigma, app = Evarutil.new_global sigma (GlobRef.ConstRef cst) in
         let sigma = Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma in
         sigma, cst) sigma0
-      (CList.combine (List.rev !wits) types) proof_obj.Proof_global.entries
+      types proof_obj.Proof_global.entries
   in
   hook recobls sigma
 
@@ -386,8 +383,8 @@ let finalize_proof proof_obj proof_info =
     DeclareObl.obligation_terminator proof_obj.entries proof_obj.uctx oinfo
   | End_derive { f ; name } ->
     finish_derived ~f ~name ~entries:proof_obj.entries
-  | End_equations { hook; i; types; wits; sigma } ->
-    finish_proved_equations proof_info.Info.kind proof_obj hook i types wits sigma
+  | End_equations { hook; i; types; sigma } ->
+    finish_proved_equations ~kind:proof_info.Info.kind ~hook i proof_obj types sigma
 
 let err_save_forbidden_in_place_of_qed () =
   CErrors.user_err (Pp.str "Cannot use Save with more than one constant or in this proof mode")
