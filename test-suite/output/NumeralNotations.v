@@ -464,3 +464,26 @@ Module Test21.
   Check (-1_000)%Z.
 
 End Test21.
+
+Module Test22.
+
+Notation "0" := False.
+Notation "+0" := true.
+Notation "-0" := false.
+Notation "00" := (0%nat, 0%nat).
+Check 0.
+Check +0.
+Check -0.
+Check 00.
+
+Notation "1000" := True.
+Notation "1_000" := (cons 1 nil).
+Check 1000.
+Check 1_000.
+
+(* To do: preserve parsing of -0:
+Require Import ZArith.
+Check (-0)%Z.
+*)
+
+End Test22.
