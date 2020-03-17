@@ -46,41 +46,6 @@ let print_memory_stat () =
     close_out oc
   with _ -> ()
 
-let interp_set_option opt v old =
-  let open Goptions in
-  let err expect =
-    let opt = String.concat " " opt in
-    let got = v in (* avoid colliding with Pp.v *)
-    CErrors.user_err
-      Pp.(str "-set: " ++ str opt ++
-          str" expects " ++ str expect ++
-          str" but got " ++ str got)
-  in
-  match old with
-  | BoolValue _ ->
-    let v = match String.trim v with
-      | "true" -> true
-      | "false" | "" -> false
-      | _ -> err "a boolean"
-    in
-    BoolValue v
-  | IntValue _ ->
-    let v = String.trim v in
-    let v = match int_of_string_opt v with
-      | Some _ as v -> v
-      | None -> if v = "" then None else err "an int"
-    in
-    IntValue v
-  | StringValue _ -> StringValue v
-  | StringOptValue _ -> StringOptValue (Some v)
-
-let set_option = let open Goptions in function
-  | opt, OptionUnset -> unset_option_value_gen ~locality:OptLocal opt
-  | opt, OptionSet None -> set_bool_option_value_gen ~locality:OptLocal opt true
-  | opt, OptionSet (Some v) -> set_option_value ~locality:OptLocal (interp_set_option opt) opt v
-
-let set_options = List.iter set_option
-
 (******************************************************************************)
 (* Input/Output State                                                         *)
 (******************************************************************************)
@@ -236,8 +201,6 @@ let init_execution opts custom_init =
   Global.set_allow_sprop opts.config.logic.allow_sprop;
   if opts.config.logic.cumulative_sprop then Global.make_sprop_cumulative ();
 
-  set_options opts.config.set_options;
-
   (* Native output dir *)
   Nativelib.output_dir := opts.config.native_output_dir;
   Nativelib.include_dirs := opts.config.native_include_dirs;
@@ -311,6 +274,7 @@ type run_mode = Interactive | Batch
 let init_toploop opts =
   let state = init_document opts in
   let state = Ccompile.load_init_vernaculars opts ~state in
+  Ccompile.set_options opts.config.set_options;
   state
 
 let coqtop_init run_mode ~opts =

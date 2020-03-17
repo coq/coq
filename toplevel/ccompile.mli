@@ -17,3 +17,5 @@ val compile_files : Coqargs.t -> Coqcargs.t -> unit
 
 (** [do_vio opts] process [.vio] files in [opts] *)
 val do_vio : Coqargs.t -> Coqcargs.t -> unit
+
+val set_options : (Goptions.option_name * Coqargs.option_command) list -> unit
