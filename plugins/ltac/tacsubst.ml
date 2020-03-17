@@ -19,6 +19,7 @@ open Tactics
 open Globnames
 open Genredexpr
 open Patternops
+open Geninterp
 
 (** Substitution of tactics at module closing time *)
 
@@ -72,9 +73,9 @@ let subst_destruction_arg subst = function
   | clear,ElimOnAnonHyp n as x -> x
   | clear,ElimOnIdent id as x -> x
 
-let subst_and_short_name f = function
-  | StaticRef c -> StaticRef (f c)
-  | DynamicRef _ -> assert false (* since tacdef are strictly globalized *)
+let subst_or_dynamic_name f = function
+  | Static c -> Static (f c)
+  | Dynamic _ -> assert false (* since tacdef are strictly globalized *)
 
 let subst_located f = Loc.map f
 
@@ -90,7 +91,7 @@ let subst_global_reference subst =
 
 let subst_evaluable subst =
   let subst_eval_ref = subst_evaluable_reference subst in
-    Locusops.or_var_map (subst_and_short_name subst_eval_ref)
+    Locusops.or_var_map (subst_or_dynamic_name subst_eval_ref)
 
 let subst_constr_with_occurrences subst (l,c) = (l,subst_glob_constr subst c)
 

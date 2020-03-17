@@ -16,6 +16,7 @@ open Genredexpr
 open Genarg
 open Pattern
 open Tactypes
+open Geninterp
 open Locus
 
 type ltac_constant = KerName.t
@@ -271,7 +272,7 @@ constraint 'a = <
 
 type g_trm = Genintern.glob_constr_and_expr
 type g_pat = Genintern.glob_constr_pattern_and_expr
-type g_cst = evaluable_global_reference Genredexpr.and_short_name or_var
+type g_cst = evaluable_global_reference or_dynamic_name or_var
 type g_ref = ltac_constant located or_var
 type g_nam = lident
 

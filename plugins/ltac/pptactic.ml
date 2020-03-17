@@ -188,9 +188,9 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_arg pr x = spc () ++ pr x
 
-  let pr_and_short_name pr = function
-    | StaticRef c -> pr c
-    | DynamicRef id -> pr_id id.CAst.v
+  let pr_or_dynamic_name pr = function
+    | Static c -> pr c
+    | Dynamic id -> pr_id id.CAst.v
 
   let pr_evaluable_reference = function
     | EvalVarRef id -> pr_id id
@@ -1143,7 +1143,7 @@ let pr_goal_selector ~toplevel s =
         pr_lconstr = (fun env sigma -> pr_and_constr_expr (pr_lglob_constr_env env));
         pr_pattern = (fun env sigma -> pr_pat_and_constr_expr (pr_glob_constr_env env));
         pr_lpattern = (fun env sigma -> pr_pat_and_constr_expr (pr_lglob_constr_env env));
-        pr_constant = pr_or_var (pr_and_short_name (pr_evaluable_reference_env env));
+        pr_constant = pr_or_var (pr_or_dynamic_name (pr_evaluable_reference_env env));
         pr_reference = pr_ltac_or_var (pr_located pr_ltac_constant);
         pr_name = pr_lident;
         pr_generic = Pputils.pr_glb_generic;
@@ -1361,7 +1361,7 @@ let () =
     (lift_env (fun env sigma -> pr_red_expr env sigma
                   ((fun env sigma -> pr_and_constr_expr @@ pr_glob_constr_pptac env sigma),
                    (fun env sigma -> pr_and_constr_expr @@ pr_lglob_constr_pptac env sigma),
-                   pr_or_var (pr_and_short_name pr_evaluable_reference),
+                   pr_or_var (pr_or_dynamic_name pr_evaluable_reference),
                    (fun env sigma -> pr_pat_and_constr_expr @@ pr_glob_constr_pptac env sigma))))
     pr_red_expr_env
   ;

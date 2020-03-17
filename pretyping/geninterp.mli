@@ -73,3 +73,10 @@ val interp : ('raw, 'glb, 'top) genarg_type -> ('glb, Val.t) interp_fun
 
 val register_interp0 :
   ('raw, 'glb, 'top) genarg_type -> ('glb, Val.t) interp_fun -> unit
+
+(** {6 Basic interpretation types *)
+
+type 'a or_dynamic_name =
+  | Static of 'a
+  | Dynamic of Names.lident
+(** Tell if an interpreted value or an ident to be interpreted at runtime *)

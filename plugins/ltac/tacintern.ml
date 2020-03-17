@@ -28,6 +28,7 @@ open Tacarg
 open Namegen
 open Tactypes
 open Tactics
+open Geninterp
 open Locus
 
 (** Globalization of tactic expressions :
@@ -296,10 +297,10 @@ let intern_evaluable ist r =
   | {v=AN qid} when qualid_is_ident qid && not !strict_check ->
     (* Possibly an hypothesis: we postpone the interpretation of the name *)
     let id = qualid_basename qid in
-    ArgArg (DynamicRef (make ?loc:qid.CAst.loc id))
+    ArgArg (Dynamic (make ?loc:qid.CAst.loc id))
   | _ ->
     (* Ensured not to refer to an hypothesis *)
-    ArgArg (StaticRef (smart_evaluable_global r))
+    ArgArg (Static (smart_evaluable_global r))
 
 let intern_unfold ist (l,qid) = (l,intern_evaluable ist qid)
 
@@ -361,10 +362,10 @@ let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
       let c = Constrintern.interp_reference sign r in
       match DAst.get c with
       | GRef (r,None) ->
-          Inl (ArgArg (StaticRef (evaluable_of_global_reference ist.genv r)))
+          Inl (ArgArg (Static (evaluable_of_global_reference ist.genv r)))
       | GVar id ->
           let r = evaluable_of_global_reference ist.genv (GlobRef.VarRef id) in
-          Inl (ArgArg (StaticRef r))
+          Inl (ArgArg (Static r))
       | _ ->
           let bound_names = Glob_ops.bound_glob_vars c in
           Inr (bound_names,(c,None),dummy_pat) in

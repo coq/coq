@@ -196,7 +196,7 @@ let evalglobref_of_globref =
 
 let make_unfold name =
   let const = evalglobref_of_globref (Coqlib.lib_ref name) in
-  Locus.(AllOccurrences, ArgArg (Genredexpr.StaticRef const))
+  Locus.(AllOccurrences, ArgArg (Static const))
 
 let reduction_not_iff _ ist =
   let make_reduce c = TacAtom (CAst.make @@ TacReduce (Genredexpr.Unfold c, Locusops.allHypsAndConcl)) in

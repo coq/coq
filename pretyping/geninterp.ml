@@ -101,3 +101,9 @@ module Interp = Register(InterpObj)
 let interp = Interp.obj
 
 let register_interp0 = Interp.register0
+
+(** {6 Basic interpretation types *)
+
+type 'a or_dynamic_name =
+  | Static of 'a
+  | Dynamic of Names.lident

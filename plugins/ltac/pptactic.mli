@@ -104,7 +104,7 @@ val pr_may_eval :
   (env -> Evd.evar_map -> 'a -> Pp.t) -> (env -> Evd.evar_map -> 'a -> Pp.t) -> ('b -> Pp.t) ->
   (env -> Evd.evar_map -> 'c -> Pp.t) -> ('a,'b,'c) Genredexpr.may_eval -> Pp.t
 
-val pr_and_short_name : ('a -> Pp.t) -> 'a Genredexpr.and_short_name -> Pp.t
+val pr_or_dynamic_name : ('a -> Pp.t) -> 'a or_dynamic_name -> Pp.t
 
 val pr_evaluable_reference_env : env -> evaluable_global_reference -> Pp.t
 

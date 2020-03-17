@@ -69,13 +69,9 @@ let make0 ?dyn name =
   let () = Geninterp.register_val0 wit dyn in
   wit
 
-type 'a and_short_name =
- | StaticRef of 'a
- | DynamicRef of Names.lident
-
 let wit_red_expr :
   ((constr_expr,qualid or_by_notation,constr_expr) red_expr_gen,
-   (Genintern.glob_constr_and_expr,Names.evaluable_global_reference and_short_name Locus.or_var,Genintern.glob_constr_pattern_and_expr) red_expr_gen,
+   (Genintern.glob_constr_and_expr,Names.evaluable_global_reference Geninterp.or_dynamic_name Locus.or_var,Genintern.glob_constr_pattern_and_expr) red_expr_gen,
    (EConstr.t,Names.evaluable_global_reference,Pattern.constr_pattern) red_expr_gen)
     Genarg.genarg_type =
   make0 "redexpr"

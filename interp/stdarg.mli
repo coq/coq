@@ -17,6 +17,7 @@ open Libnames
 open Constrexpr
 open Genarg
 open Genintern
+open Geninterp
 open Locus
 
 val wit_unit : unit uniform_genarg_type
