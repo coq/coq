@@ -148,7 +148,8 @@ module Prim :
     val preident : string Entry.t
     val ident : Id.t Entry.t
     val name : lname Entry.t
-    val identref : lident Entry.t
+    val lident : lident Entry.t
+    val identref : lident Entry.t (* Synonymous of lident *)
     val univ_decl : universe_decl_expr Entry.t
     val ident_decl : ident_decl Entry.t
     val pattern_ident : Id.t Entry.t

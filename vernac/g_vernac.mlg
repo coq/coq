@@ -228,16 +228,16 @@ GRAMMAR EXTEND Gram
       | IDENT "Let"; "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
           { VernacCoFixpoint (DoDischarge, corecs) }
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> { VernacScheme l }
-      | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
-              l = LIST1 identref SEP "," -> { VernacCombinedScheme (id, l) }
+      | IDENT "Combined"; IDENT "Scheme"; id = lident; IDENT "from";
+              l = LIST1 lident SEP "," -> { VernacCombinedScheme (id, l) }
       | IDENT "Register"; g = global; "as"; quid = qualid ->
           { VernacRegister(g, RegisterCoqlib quid) }
       | IDENT "Register"; IDENT "Inline"; g = global ->
           { VernacRegister(g, RegisterInline) }
       | IDENT "Primitive"; id = ident_decl; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
           { VernacPrimitive(id, r, typopt) }
-      | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
-      | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }
+      | IDENT "Universe"; l = LIST1 lident -> { VernacUniverse l }
+      | IDENT "Universes"; l = LIST1 lident -> { VernacUniverse l }
       | IDENT "Constraint"; l = LIST1 univ_constraint SEP "," -> { VernacConstraint l }
   ] ]
   ;
@@ -282,7 +282,7 @@ GRAMMAR EXTEND Gram
         r = universe_name -> { (l, ord, r) } ] ]
   ;
   univ_decl :
-    [ [  "@{" ; l = LIST0 identref; ext = [ "+" -> { true } | -> { false } ];
+    [ [  "@{" ; l = LIST0 lident; ext = [ "+" -> { true } | -> { false } ];
          cs = [ "|"; l' = LIST0 univ_constraint SEP ",";
                 ext = [ "+" -> { true } | -> { false } ]; "}" -> { (l',ext) }
               | ext = [ "}" -> { true } | bar_cbrace -> { false } ] -> { ([], ext) } ]
@@ -295,7 +295,7 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   ident_decl:
-    [ [ i = identref; l = OPT univ_decl -> { (i, l) }
+    [ [ i = lident; l = OPT univ_decl -> { (i, l) }
   ] ]
   ;
   finite_token:
@@ -351,10 +351,10 @@ GRAMMAR EXTEND Gram
   ;
   constructor_list_or_record_decl:
     [ [ "|"; l = LIST1 constructor SEP "|" -> { Constructors l }
-      | id = identref ; c = constructor_type; "|"; l = LIST1 constructor SEP "|" ->
+      | id = lident ; c = constructor_type; "|"; l = LIST1 constructor SEP "|" ->
           { Constructors ((c id)::l) }
-      | id = identref ; c = constructor_type -> { Constructors [ c id ] }
-      | cstr = identref; "{"; fs = record_fields; "}" ->
+      | id = lident ; c = constructor_type -> { Constructors [ c id ] }
+      | cstr = lident; "{"; fs = record_fields; "}" ->
           { RecordDecl (Some cstr,fs) }
       | "{";fs = record_fields; "}" -> { RecordDecl (None,fs) }
       |  -> { Constructors [] } ] ]
@@ -387,7 +387,7 @@ GRAMMAR EXTEND Gram
   (* Inductive schemes *)
   scheme:
     [ [ kind = scheme_kind -> { (None,kind) }
-      | id = identref; ":="; kind = scheme_kind -> { (Some id,kind) } ] ]
+      | id = lident; ":="; kind = scheme_kind -> { (Some id,kind) } ] ]
   ;
   scheme_kind:
     [ [ IDENT "Induction"; "for"; ind = smart_global;
@@ -466,7 +466,7 @@ GRAMMAR EXTEND Gram
 ;
 
   constructor:
-    [ [ id = identref; c=constructor_type -> { c id } ] ]
+    [ [ id = lident; c=constructor_type -> { c id } ] ]
   ;
   of_type_with_opt_coercion:
     [ [ ":>>" -> { Some false }
@@ -480,13 +480,13 @@ END
 
 {
 
-let test_only_starredidentrefs =
+let test_only_starredlidents =
   let open Pcoq.Lookahead in
-  to_entry "test_only_starredidentrefs" begin
+  to_entry "test_only_starredlidents" begin
     lk_list (lk_ident <+> lk_kws ["Type"; "*"]) >> (lk_kws [".";")"])
   end
 
-let starredidentreflist_to_expr l =
+let starredlidentlist_to_expr l =
   match l with
   | [] -> SsEmpty
   | x :: xs -> List.fold_right (fun i acc -> SsUnion(i,acc)) xs x
@@ -503,25 +503,25 @@ GRAMMAR EXTEND Gram
 
   gallina_ext:
     [ [ (* Interactive module declaration *)
-        IDENT "Module"; export = export_token; id = identref;
+        IDENT "Module"; export = export_token; id = lident;
         bl = LIST0 module_binder; sign = of_module_type;
         body = is_module_expr ->
           { VernacDefineModule (export, id, bl, sign, body) }
-      | IDENT "Module"; "Type"; id = identref;
+      | IDENT "Module"; "Type"; id = lident;
         bl = LIST0 module_binder; sign = check_module_types;
         body = is_module_type ->
           { VernacDeclareModuleType (id, bl, sign, body) }
-      | IDENT "Declare"; IDENT "Module"; export = export_token; id = identref;
+      | IDENT "Declare"; IDENT "Module"; export = export_token; id = lident;
         bl = LIST0 module_binder; ":"; mty = module_type_inl ->
           { VernacDeclareModule (export, id, bl, mty) }
       (* Section beginning *)
-      | IDENT "Section"; id = identref -> { VernacBeginSection id }
+      | IDENT "Section"; id = lident -> { VernacBeginSection id }
 
       (* This end a Section a Module or a Module Type *)
-      | IDENT "End"; id = identref -> { VernacEndSegment id }
+      | IDENT "End"; id = lident -> { VernacEndSegment id }
 
       (* Naming a set of section hyps *)
-      | IDENT "Collection"; id = identref; ":="; expr = section_subset_expr ->
+      | IDENT "Collection"; id = lident; ":="; expr = section_subset_expr ->
           { VernacNameSectionHypSet (id, expr) }
 
       (* Requiring an already compiled module *)
@@ -591,7 +591,7 @@ GRAMMAR EXTEND Gram
   ;
   (* Module binder  *)
   module_binder:
-    [ [ "("; export = export_token; idl = LIST1 identref; ":";
+    [ [ "("; export = export_token; idl = LIST1 lident; ":";
          mty = module_type_inl; ")" -> { (export,idl,mty) } ] ]
   ;
   (* Module expressions *)
@@ -621,13 +621,13 @@ GRAMMAR EXTEND Gram
   ;
   (* Proof using *)
   section_subset_expr:
-    [ [ test_only_starredidentrefs; l = LIST0 starredidentref ->
-          { starredidentreflist_to_expr l }
+    [ [ test_only_starredlidents; l = LIST0 starredlident ->
+          { starredlidentlist_to_expr l }
       | e = ssexpr -> { e } ]]
   ;
-  starredidentref:
-    [ [ i = identref -> { SsSingl i }
-      | i = identref; "*" -> { SsFwdClose(SsSingl i) }
+  starredlident:
+    [ [ i = lident -> { SsSingl i }
+      | i = lident; "*" -> { SsFwdClose(SsSingl i) }
       | "Type" -> { SsType }
       | "Type"; "*" -> { SsFwdClose SsType } ]]
   ;
@@ -638,11 +638,11 @@ GRAMMAR EXTEND Gram
       [ e1 = ssexpr; "-"; e2 = ssexpr-> { SsSubstr(e1,e2) }
       | e1 = ssexpr; "+"; e2 = ssexpr-> { SsUnion(e1,e2) } ]
     | "0"
-      [ i = starredidentref -> { i }
-      | "("; test_only_starredidentrefs; l = LIST0 starredidentref; ")"->
-          { starredidentreflist_to_expr l }
-      | "("; test_only_starredidentrefs; l = LIST0 starredidentref; ")"; "*" ->
-          { SsFwdClose(starredidentreflist_to_expr l) }
+      [ i = starredlident -> { i }
+      | "("; test_only_starredlidents; l = LIST0 starredlident; ")"->
+          { starredlidentlist_to_expr l }
+      | "("; test_only_starredlidents; l = LIST0 starredlident; ")"; "*" ->
+          { SsFwdClose(starredlidentlist_to_expr l) }
       | "("; e = ssexpr; ")"-> { e }
       | "("; e = ssexpr; ")"; "*" -> { SsFwdClose e } ] ]
   ;
@@ -676,7 +676,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Coercion"; qid = global; u = OPT univ_decl; d = def_body ->
           { let s = coerce_reference_to_id qid in
           VernacDefinition ((NoDischarge,Coercion),((CAst.make ?loc:qid.CAst.loc (Name s)),u),d) }
-      | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
+      | IDENT "Identity"; IDENT "Coercion"; f = lident; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr ->
            { VernacIdentityCoercion (f, s, t) }
       | IDENT "Coercion"; qid = global; ":"; s = class_rawexpr; ">->";
@@ -732,7 +732,7 @@ GRAMMAR EXTEND Gram
            gen = [IDENT "All"; IDENT "Variables" -> { Some [] }
              | IDENT "No"; IDENT "Variables" -> { None }
              | ["Variable" -> { () } | IDENT "Variables" -> { () } ];
-                  idl = LIST1 identref -> { Some idl } ] ->
+                  idl = LIST1 lident -> { Some idl } ] ->
              { VernacGeneralizable gen } ] ]
   ;
   arguments_modifier:
@@ -820,7 +820,7 @@ GRAMMAR EXTEND Gram
     [ [ "("; a = simple_reserv; ")" -> { a } ] ]
   ;
   simple_reserv:
-    [ [ idl = LIST1 identref; ":"; c = lconstr -> { (idl,c) } ] ]
+    [ [ idl = LIST1 lident; ":"; c = lconstr -> { (idl,c) } ] ]
   ;
 
 END
@@ -1094,7 +1094,7 @@ GRAMMAR EXTEND Gram
 
 (* Resetting *)
       | IDENT "Reset"; IDENT "Initial" -> { VernacResetInitial }
-      | IDENT "Reset"; id = identref -> { VernacResetName id }
+      | IDENT "Reset"; id = lident -> { VernacResetName id }
       | IDENT "Back" -> { VernacBack 1 }
       | IDENT "Back"; n = natural -> { VernacBack n }
 
@@ -1143,7 +1143,7 @@ GRAMMAR EXTEND Gram
          modl = syntax_modifiers;
          sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
          { VernacInfix ((op,modl),p,sc) }
-     | IDENT "Notation"; id = identref;
+     | IDENT "Notation"; id = lident;
          idl = LIST0 ident; ":="; c = constr; b = only_parsing ->
            { VernacSyntacticDefinition
              (id,(idl,c),{ onlyparsing = b }) }

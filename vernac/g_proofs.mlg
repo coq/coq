@@ -60,15 +60,15 @@ GRAMMAR EXTEND Gram
       | IDENT "Proof"; c = lconstr -> { VernacExactProof c }
       | IDENT "Abort" -> { VernacAbort None }
       | IDENT "Abort"; IDENT "All" -> { VernacAbortAll }
-      | IDENT "Abort"; id = identref -> { VernacAbort (Some id) }
+      | IDENT "Abort"; id = lident -> { VernacAbort (Some id) }
       | IDENT "Existential"; n = natural; c = constr_body ->
           { VernacSolveExistential (n,c) }
       | IDENT "Admitted" -> { VernacEndProof Admitted }
       | IDENT "Qed" -> { VernacEndProof (Proved (Opaque,None)) }
-      | IDENT "Save"; id = identref ->
+      | IDENT "Save"; id = lident ->
           { VernacEndProof (Proved (Opaque, Some id)) }
       | IDENT "Defined" -> { VernacEndProof (Proved (Transparent,None)) }
-      |	IDENT "Defined"; id=identref ->
+      |	IDENT "Defined"; id = lident ->
           { VernacEndProof (Proved (Transparent,Some id)) }
       | IDENT "Restart" -> { VernacRestart }
       | IDENT "Undo" -> { VernacUndo 1 }

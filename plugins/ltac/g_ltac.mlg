@@ -199,7 +199,7 @@ GRAMMAR EXTEND Gram
   constr_eval:
     [ [ IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->
           { ConstrEval (rtc,c) }
-      | IDENT "context"; id = identref; "["; c = Constr.lconstr; "]" ->
+      | IDENT "context"; id = lident; "["; c = Constr.lconstr; "]" ->
           { ConstrContext (id,c) }
       | IDENT "type"; IDENT "of"; c = Constr.constr ->
           { ConstrTypeOf c } ] ]
@@ -223,11 +223,11 @@ GRAMMAR EXTEND Gram
       | l = ident -> { Name.Name l } ] ]
   ;
   let_clause:
-    [ [ idr = identref; ":="; te = tactic_expr ->
+    [ [ idr = lident; ":="; te = tactic_expr ->
          { (CAst.map (fun id -> Name id) idr, arg_of_expr te) }
       | na = ["_" -> { CAst.make ~loc Anonymous } ]; ":="; te = tactic_expr ->
          { (na, arg_of_expr te) }
-      | idr = identref; args = LIST1 input_fun; ":="; te = tactic_expr ->
+      | idr = lident; args = LIST1 input_fun; ":="; te = tactic_expr ->
          { (CAst.map (fun id -> Name id) idr, arg_of_expr (TacFun(args,te))) } ] ]
   ;
   match_pattern:
@@ -269,7 +269,7 @@ GRAMMAR EXTEND Gram
       | "|"; mrl = LIST1 match_rule SEP "|" -> { mrl } ] ]
   ;
   message_token:
-    [ [ id = identref -> { MsgIdent id }
+    [ [ id = lident -> { MsgIdent id }
       | s = STRING -> { MsgString s }
       | n = natural -> { MsgInt n } ] ]
   ;

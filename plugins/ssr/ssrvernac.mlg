@@ -352,8 +352,8 @@ open Pltac
 GRAMMAR EXTEND Gram
   GLOBAL: hypident;
   hypident: [
-  [ "("; IDENT "type"; "of"; id = Prim.identref; ")" -> { id, Locus.InHypTypeOnly }
-  | "("; IDENT "value"; "of"; id = Prim.identref; ")" -> { id, Locus.InHypValueOnly }
+  [ "("; IDENT "type"; "of"; id = Prim.lident; ")" -> { id, Locus.InHypTypeOnly }
+  | "("; IDENT "value"; "of"; id = Prim.lident; ")" -> { id, Locus.InHypValueOnly }
   ] ];
 END
 

@@ -195,15 +195,15 @@ GRAMMAR EXTEND Gram
 
   int_or_var:
     [ [ n = integer  -> { ArgArg n }
-      | id = identref -> { ArgVar id } ] ]
+      | id = lident -> { ArgVar id } ] ]
   ;
   nat_or_var:
     [ [ n = natural  -> { ArgArg n }
-      | id = identref -> { ArgVar id } ] ]
+      | id = lident -> { ArgVar id } ] ]
   ;
   (* An identifier or a quotation meta-variable *)
   id_or_meta:
-    [ [ id = identref -> { id } ] ]
+    [ [ id = lident -> { id } ] ]
   ;
   open_constr:
     [ [ c = constr -> { c } ] ]
@@ -446,7 +446,7 @@ GRAMMAR EXTEND Gram
   ;
   or_and_intropattern_loc:
     [ [ ipat = or_and_intropattern -> { ArgArg (CAst.make ~loc ipat) }
-      | locid = identref -> { ArgVar locid } ] ]
+      | locid = lident -> { ArgVar locid } ] ]
   ;
   as_or_and_ipat:
     [ [ "as"; ipat = or_and_intropattern_loc -> { Some ipat }
@@ -545,31 +545,31 @@ GRAMMAR EXTEND Gram
           { TacAtom (CAst.make ~loc @@ TacLetTac (true,na,c,p,false,e)) }
 
       (* Alternative syntax for "pose proof c as id" *)
-      | IDENT "assert"; test_lpar_id_coloneq; "("; lid = identref; ":=";
+      | IDENT "assert"; test_lpar_id_coloneq; "("; lid = lident; ":=";
           c = lconstr; ")" ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (false,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
-      | IDENT "eassert"; test_lpar_id_coloneq; "("; lid = identref; ":=";
+      | IDENT "eassert"; test_lpar_id_coloneq; "("; lid = lident; ":=";
           c = lconstr; ")" ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (true,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
 
       (* Alternative syntax for "assert c as id by tac" *)
-      | IDENT "assert"; test_lpar_id_colon; "("; lid = identref; ":";
+      | IDENT "assert"; test_lpar_id_colon; "("; lid = lident; ":";
           c = lconstr; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (false,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
-      | IDENT "eassert"; test_lpar_id_colon; "("; lid = identref; ":";
+      | IDENT "eassert"; test_lpar_id_colon; "("; lid = lident; ":";
           c = lconstr; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (true,true,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
 
       (* Alternative syntax for "enough c as id by tac" *)
-      | IDENT "enough"; test_lpar_id_colon; "("; lid = identref; ":";
+      | IDENT "enough"; test_lpar_id_colon; "("; lid = lident; ":";
           c = lconstr; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (false,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
-      | IDENT "eenough"; test_lpar_id_colon; "("; lid = identref; ":";
+      | IDENT "eenough"; test_lpar_id_colon; "("; lid = lident; ":";
           c = lconstr; ")"; tac=by_tactic ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (true,false,Some tac,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
@@ -580,11 +580,11 @@ GRAMMAR EXTEND Gram
           { TacAtom (CAst.make ~loc @@ TacAssert (true,true,Some tac,ipat,c)) }
 
       (* Alternative syntax for "pose proof c as id by tac" *)
-      | IDENT "pose"; IDENT "proof"; test_lpar_id_coloneq; "("; lid = identref; ":=";
+      | IDENT "pose"; IDENT "proof"; test_lpar_id_coloneq; "("; lid = lident; ":=";
           c = lconstr; ")" ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (false,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }
-      | IDENT "epose"; IDENT "proof"; test_lpar_id_coloneq; "("; lid = identref; ":=";
+      | IDENT "epose"; IDENT "proof"; test_lpar_id_coloneq; "("; lid = lident; ":=";
           c = lconstr; ")" ->
           { let { CAst.loc = loc; v = id } = lid in
           TacAtom (CAst.make ?loc @@ TacAssert (true,true,None,Some (CAst.make ?loc @@ IntroNaming (IntroIdentifier id)),c)) }

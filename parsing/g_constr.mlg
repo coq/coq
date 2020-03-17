@@ -154,7 +154,7 @@ GRAMMAR EXTEND Gram
     | "10" LEFTA
       [ f = operconstr; args = LIST1 appl_arg -> { CAst.make ~loc @@ CApp((None,f),args) }
       | "@"; f = global; i = univ_instance; args = LIST0 NEXT -> { CAst.make ~loc @@ CAppExpl((None,f,i),args) }
-      | "@"; lid = pattern_identref; args = LIST1 identref ->
+      | "@"; lid = pattern_identref; args = LIST1 lident ->
         { let { CAst.loc = locid; v = id } = lid in
           let args = List.map (fun x -> CAst.make @@ CRef (qualid_of_ident ?loc:x.CAst.loc x.CAst.v, None), None) args in
           CAst.make ~loc @@ CApp((None, CAst.make ?loc:locid @@ CPatVar id),args) } ]
@@ -286,21 +286,21 @@ GRAMMAR EXTEND Gram
   ;
   fix_decls:
     [ [ dcl = fix_decl -> { let (id,_,_,_,_) = dcl.CAst.v in (id,[dcl.CAst.v]) }
-      | dcl = fix_decl; "with"; dcls = LIST1 fix_decl SEP "with"; "for"; id = identref ->
+      | dcl = fix_decl; "with"; dcls = LIST1 fix_decl SEP "with"; "for"; id = lident ->
         { (id,List.map (fun x -> x.CAst.v) (dcl::dcls)) } ] ]
   ;
   cofix_decls:
     [ [ dcl = cofix_decl -> { let (id,_,_,_) = dcl.CAst.v in (id,[dcl.CAst.v]) }
-      | dcl = cofix_decl; "with"; dcls = LIST1 cofix_decl SEP "with"; "for"; id = identref ->
+      | dcl = cofix_decl; "with"; dcls = LIST1 cofix_decl SEP "with"; "for"; id = lident ->
         { (id,List.map (fun x -> x.CAst.v) (dcl::dcls)) } ] ]
   ;
   fix_decl:
-    [ [ id = identref; bl = binders_fixannot; ty = type_cstr; ":=";
+    [ [ id = lident; bl = binders_fixannot; ty = type_cstr; ":=";
         c = operconstr LEVEL "200" ->
         { CAst.make ~loc (id,snd bl,fst bl,ty,c) } ] ]
   ;
   cofix_decl:
-    [ [ id = identref; bl = binders; ty = type_cstr; ":=";
+    [ [ id = lident; bl = binders; ty = type_cstr; ":=";
         c = operconstr LEVEL "200" ->
         { CAst.make ~loc (id,bl,ty,c) } ] ]
   ;
@@ -374,9 +374,9 @@ GRAMMAR EXTEND Gram
       | s = string -> { CAst.make ~loc @@ CPatPrim (String s) } ] ]
   ;
   fixannot:
-    [ [ "{"; IDENT "struct"; id = identref; "}" -> { CAst.make ~loc @@ CStructRec id }
-      | "{"; IDENT "wf"; rel = constr; id = identref; "}" -> { CAst.make ~loc @@ CWfRec(id,rel) }
-      | "{"; IDENT "measure"; m = constr; id = OPT identref; rel = OPT constr; "}" ->
+    [ [ "{"; IDENT "struct"; id = lident; "}" -> { CAst.make ~loc @@ CStructRec id }
+      | "{"; IDENT "wf"; rel = constr; id = lident; "}" -> { CAst.make ~loc @@ CWfRec(id,rel) }
+      | "{"; IDENT "measure"; m = constr; id = OPT lident; rel = OPT constr; "}" ->
         { CAst.make ~loc @@ CMeasureRec (id,m,rel) } ] ]
   ;
   binders_fixannot:

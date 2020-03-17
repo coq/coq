@@ -282,6 +282,7 @@ module Prim =
     let var = gec_gen "var"
 
     let name = Entry.create "Prim.name"
+    let lident = Entry.create "Prim.lident"
     let identref = Entry.create "Prim.identref"
     let univ_decl = Entry.create "Prim.univ_decl"
     let ident_decl = Entry.create "Prim.ident_decl"
