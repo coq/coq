@@ -976,6 +976,9 @@ let instantiate_notation_constr loc intern intern_pat ntnvars subst infos c =
    into a substitution for interpretation and based on binding/constr
    distinction *)
 
+let cases_pattern_of_id {loc;v=id} =
+  CAst.make ?loc (CPatAtom (Some (qualid_of_ident ?loc id)))
+
 let cases_pattern_of_name {loc;v=na} =
   let atom = match na with Name id -> Some (qualid_of_ident ?loc id) | Anonymous -> None in
   CAst.make ?loc (CPatAtom atom)
@@ -991,16 +994,20 @@ let split_by_type ids subst =
     | NtnTypeConstr ->
        let terms,terms' = bind id scl terms terms' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
-    | NtnTypeBinder NtnBinderParsedAsConstr (AsIdentOrPattern | AsStrictPattern) ->
+    | NtnTypeBinder NtnBinderParsedAsConstr (AsNameOrPattern | AsStrictPattern) ->
        let a,terms = match terms with a::terms -> a,terms | _ -> assert false in
        let binders' = Id.Map.add id ((coerce_to_cases_pattern_expr a,Explicit),(false,scl)) binders' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
     | NtnTypeBinder NtnBinderParsedAsConstr AsIdent ->
        let a,terms = match terms with a::terms -> a,terms | _ -> assert false in
+       let binders' = Id.Map.add id ((cases_pattern_of_id (coerce_to_id a),Explicit),(true,scl)) binders' in
+       (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
+    | NtnTypeBinder NtnBinderParsedAsConstr AsName ->
+       let a,terms = match terms with a::terms -> a,terms | _ -> assert false in
        let binders' = Id.Map.add id ((cases_pattern_of_name (coerce_to_name a),Explicit),(true,scl)) binders' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
-    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsPattern _ | NtnParsedAsBinder as x) ->
-       let onlyident = (x = NtnParsedAsIdent) in
+    | NtnTypeBinder (NtnParsedAsIdent | NtnParsedAsName | NtnParsedAsPattern _ | NtnParsedAsBinder as x) ->
+       let onlyident = (x = NtnParsedAsIdent || x = NtnParsedAsName) in
        let binders,binders' = bind id (onlyident,scl) binders binders' in
        (terms,termlists,binders,binderlists),(terms',termlists',binders',binderlists')
     | NtnTypeConstrList ->
