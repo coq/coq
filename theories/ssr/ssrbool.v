@@ -335,19 +335,19 @@ Reserved Notation "[ 'predType' 'of' T ]" (at level 0,
 
 Reserved Notation "[ 'pred' : T | E ]" (at level 0,
   format "'[hv' [ 'pred' :  T  | '/ '  E ] ']'").
-Reserved Notation "[ 'pred' x | E ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x | E ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  | '/ '  E ] ']'").
-Reserved Notation "[ 'pred' x : T | E ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x : T | E ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  :  T  | '/ '  E ] ']'").
-Reserved Notation "[ 'pred' x | E1 & E2 ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x | E1 & E2 ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  | '/ '  E1  & '/ '  E2 ] ']'").
-Reserved Notation "[ 'pred' x : T | E1 & E2 ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x : T | E1 & E2 ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  :  T  | '/ '  E1  &  E2 ] ']'").
-Reserved Notation "[ 'pred' x 'in' A ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x 'in' A ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  'in'  A ] ']'").
-Reserved Notation "[ 'pred' x 'in' A | E ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x 'in' A | E ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  'in'  A  | '/ '  E ] ']'").
-Reserved Notation "[ 'pred' x 'in' A | E1 & E2 ]" (at level 0, x ident,
+Reserved Notation "[ 'pred' x 'in' A | E1 & E2 ]" (at level 0, x name,
   format "'[hv' [ 'pred'  x  'in'  A  | '/ '  E1  & '/ '  E2 ] ']'").
 
 Reserved Notation "[ 'qualify' x | P ]" (at level 0, x at level 99,
@@ -363,17 +363,17 @@ Reserved Notation "[ 'qualify' 'an' x | P ]" (at level 0, x at level 99,
 Reserved Notation "[ 'qualify' 'an' x : T | P ]" (at level 0, x at level 99,
   format "'[hv' [ 'qualify'  'an'  x  :  T  | '/ '  P ] ']'").
 
-Reserved Notation "[ 'rel' x y | E ]"  (at level 0, x ident, y ident,
+Reserved Notation "[ 'rel' x y | E ]"  (at level 0, x name, y name,
   format "'[hv' [ 'rel'  x  y  | '/ '  E ] ']'").
-Reserved Notation "[ 'rel' x y : T | E ]" (at level 0, x ident, y ident,
+Reserved Notation "[ 'rel' x y : T | E ]" (at level 0, x name, y name,
   format "'[hv' [ 'rel'  x  y  :  T  | '/ '  E ] ']'").
-Reserved Notation "[ 'rel' x y 'in' A & B | E ]" (at level 0, x ident, y ident,
+Reserved Notation "[ 'rel' x y 'in' A & B | E ]" (at level 0, x name, y name,
   format "'[hv' [ 'rel'  x  y  'in'  A  &  B  | '/ '  E ] ']'").
-Reserved Notation "[ 'rel' x y 'in' A & B ]" (at level 0, x ident, y ident,
+Reserved Notation "[ 'rel' x y 'in' A & B ]" (at level 0, x name, y name,
   format "'[hv' [ 'rel'  x  y  'in'  A  &  B ] ']'").
-Reserved Notation "[ 'rel' x y 'in' A | E ]" (at level 0, x ident, y ident,
+Reserved Notation "[ 'rel' x y 'in' A | E ]" (at level 0, x name, y name,
   format "'[hv' [ 'rel'  x  y  'in'  A  | '/ '  E ] ']'").
-Reserved Notation "[ 'rel' x y 'in' A ]" (at level 0, x ident, y ident,
+Reserved Notation "[ 'rel' x y 'in' A ]" (at level 0, x name, y name,
   format "'[hv' [ 'rel'  x  y  'in'  A ] ']'").
 
 Reserved Notation "[ 'mem' A ]" (at level 0, format "[ 'mem'  A ]").

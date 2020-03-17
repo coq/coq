@@ -305,7 +305,7 @@ Module E.
 Inductive myex2 {A:Type} (P Q:A -> Prop) : Prop :=
   myex_intro2 : forall x:A, P x -> Q x -> myex2 P Q.
 Notation "'myexists2' x : A , p & q" := (myex2 (A:=A) (fun x => p) (fun x => q))
-  (at level 200, x ident, A at level 200, p at level 200, right associativity,
+  (at level 200, x name, A at level 200, p at level 200, right associativity,
     format "'[' 'myexists2'  '/  ' x  :  A ,  '/  ' '[' p  &  '/' q ']' ']'")
   : type_scope.
 Check myex2 (fun x => let '(y,z) := x in y>z) (fun x => let '(y,z) := x in z>y).
