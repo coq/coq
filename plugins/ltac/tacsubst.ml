@@ -72,9 +72,9 @@ let subst_destruction_arg subst = function
   | clear,ElimOnAnonHyp n as x -> x
   | clear,ElimOnIdent id as x -> x
 
-let subst_and_short_name f (c,n) =
-(*  assert (n=None); *)(* since tacdef are strictly globalized *)
-  (f c,None)
+let subst_and_short_name f = function
+  | StaticRef c -> StaticRef (f c)
+  | DynamicRef _ -> assert false (* since tacdef are strictly globalized *)
 
 let subst_located f = Loc.map f
 

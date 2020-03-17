@@ -188,7 +188,9 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let pr_arg pr x = spc () ++ pr x
 
-  let pr_and_short_name pr (c,_) = pr c
+  let pr_and_short_name pr = function
+    | StaticRef c -> pr c
+    | DynamicRef id -> pr_id id.CAst.v
 
   let pr_evaluable_reference = function
     | EvalVarRef id -> pr_id id

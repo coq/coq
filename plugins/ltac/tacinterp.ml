@@ -377,14 +377,14 @@ let try_interp_evaluable env (loc, id) =
   | _ -> error_not_evaluable (GlobRef.VarRef id)
 
 let interp_evaluable ist env sigma = function
-  | ArgArg (r,Some {loc;v=id}) ->
+  | ArgArg (DynamicRef {loc;v=id}) ->
     (* Dynamic interpretation: maybe [id] has been introduced by Intro-like tactics *)
     begin
       try try_interp_evaluable env (loc, id)
       with Not_found ->
         Smartlocate.smart_evaluable_global (CAst.make ?loc (AN (qualid_of_ident ?loc id)))
     end
-  | ArgArg (r,None) -> r
+  | ArgArg (StaticRef r) -> r
   | ArgVar {loc;v=id} ->
     try try_interp_ltac_var (coerce_to_evaluable_ref env sigma) ist (Some (env,sigma)) (make ?loc id)
     with Not_found ->

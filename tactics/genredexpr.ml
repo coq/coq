@@ -69,7 +69,9 @@ let make0 ?dyn name =
   let () = Geninterp.register_val0 wit dyn in
   wit
 
-type 'a and_short_name = 'a * Names.lident option
+type 'a and_short_name =
+ | StaticRef of 'a
+ | DynamicRef of Names.lident
 
 let wit_red_expr :
   ((constr_expr,qualid or_by_notation,constr_expr) red_expr_gen,
