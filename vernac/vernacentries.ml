@@ -1178,9 +1178,19 @@ let vernac_hints ~atts dbnames h =
       (warn_implicit_core_hint_db (); ["core"])
     else dbnames
   in
-  let local, poly = Attributes.(parse Notations.(locality ++ polymorphic) atts) in
-  let local = enforce_module_locality local in
-  Hints.add_hints ~local dbnames (Hints.interp_hints ~poly h)
+  let locality, poly = Attributes.(parse Notations.(option_locality ++ polymorphic) atts) in
+  let () = match locality with
+  | OptGlobal ->
+    if Global.sections_are_opened () then
+    CErrors.user_err Pp.(str
+      "This command does not support the global attribute in sections.");
+  | OptExport ->
+    if Global.sections_are_opened () then
+    CErrors.user_err Pp.(str
+      "This command does not support the export attribute in sections.");
+  | OptDefault | OptLocal -> ()
+  in
+  Hints.add_hints ~locality dbnames (Hints.interp_hints ~poly h)
 
 let vernac_syntactic_definition ~atts lid x only_parsing =
   let module_local, deprecation = Attributes.(parse Notations.(module_locality ++ deprecation) atts) in

@@ -122,9 +122,6 @@ val resolve_typeclasses : ?filter:evar_filter -> ?unique:bool ->
   ?split:bool -> ?fail:bool -> env -> evar_map -> evar_map
 val resolve_one_typeclass : ?unique:bool -> env -> evar_map -> EConstr.types -> evar_map * EConstr.constr
 
-val set_typeclass_transparency_hook : (evaluable_global_reference -> bool (*local?*) -> bool -> unit) Hook.t
-val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> unit
-
 val classes_transparent_state_hook : (unit -> TransparentState.t) Hook.t
 val classes_transparent_state : unit -> TransparentState.t
 

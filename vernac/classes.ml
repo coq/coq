@@ -29,7 +29,8 @@ module NamedDecl = Context.Named.Declaration
 (*i*)
 
 let set_typeclass_transparency c local b =
-  Hints.add_hints ~local [typeclasses_db]
+  let locality = if local then Goptions.OptLocal else Goptions.OptGlobal in
+  Hints.add_hints ~locality [typeclasses_db]
     (Hints.HintsTransparencyEntry (Hints.HintsReferences [c], b))
 
 let classes_transparent_state () =
@@ -38,12 +39,11 @@ let classes_transparent_state () =
   with Not_found -> TransparentState.empty
 
 let () =
-  Hook.set Typeclasses.set_typeclass_transparency_hook set_typeclass_transparency;
   Hook.set Typeclasses.classes_transparent_state_hook classes_transparent_state
 
-let add_instance_hint inst path local info poly =
+let add_instance_hint inst path ~locality info poly =
      Flags.silently (fun () ->
-       Hints.add_hints ~local [typeclasses_db]
+       Hints.add_hints ~locality [typeclasses_db]
           (Hints.HintsResolveEntry
              [info, poly, false, Hints.PathHints path, inst])) ()
 
@@ -55,16 +55,16 @@ let is_local_for_hint i =
                         add_instance_hint; don't ask hints to take discharge into account
                         itself *)
 
-let add_instance check inst =
+let add_instance_base inst =
   let poly = Global.is_polymorphic inst.is_impl in
-  let local = is_local_for_hint inst in
-  add_instance_hint (Hints.IsGlobRef inst.is_impl) [inst.is_impl] local
+  let locality = if is_local_for_hint inst then Goptions.OptLocal else Goptions.OptGlobal in
+  add_instance_hint (Hints.IsGlobRef inst.is_impl) [inst.is_impl] ~locality
     inst.is_info poly;
   List.iter (fun (path, pri, c) ->
     let h = Hints.IsConstr (EConstr.of_constr c, Univ.ContextSet.empty) [@ocaml.warning "-3"] in
     add_instance_hint h path
-                local pri poly)
-    (build_subclasses ~check:(check && not (isVarRef inst.is_impl))
+                ~locality pri poly)
+    (build_subclasses ~check:(not (isVarRef inst.is_impl))
        (Global.env ()) (Evd.from_env (Global.env ())) inst.is_impl inst.is_info)
 
 let mk_instance cl info glob impl =
@@ -104,7 +104,7 @@ let discharge_instance (_, inst) =
 let is_local i = (i.is_global == None)
 
 let rebuild_instance inst =
-  add_instance true inst;
+  add_instance_base inst;
   inst
 
 let classify_instance inst =
@@ -124,7 +124,7 @@ let instance_input : instance -> obj =
 
 let add_instance i =
   Lib.add_anonymous_leaf (instance_input i);
-  add_instance true i
+  add_instance_base i
 
 let warning_not_a_class =
   let name = "not-a-class" in
