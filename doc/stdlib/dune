@@ -13,6 +13,8 @@
 
 (rule
   (targets html)
+  (alias stdlib-html)
+  (package coq-doc)
   (deps
    ; This will be replaced soon by `theories/**/*.v` soon, thanks to rgrinberg
    (source_tree %{project_root}/theories)
@@ -31,6 +33,12 @@
     (progn (cat %{header}) (cat index-list.html) (cat %{footer})))
    (run cp _index.html html/index.html))))
 
-(alias
- (name stdlib-html)
- (deps html))
+; Installable directories are not yet fully supported by Dune.  See
+; ocaml/dune#1868.  Yet, this makes coq-doc.install a valid target to
+; generate the whole Coq documentation.  And the result under
+; _build/install/default/doc/coq-doc looks just right!
+
+(install
+ (files (html as html/stdlib))
+ (section doc)
+ (package coq-doc))
