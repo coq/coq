@@ -39,23 +39,39 @@ module Hook : sig
   val call : ?hook:t -> S.t -> unit
 end
 
-module ClosedDef : sig
-  type t
-
-  (* Don't use for non-interactive proofs *)
-  val of_proof_entry
-    : uctx:UState.t
-    -> Evd.side_effects Declare.proof_entry -> t
-end
-
-val declare_definition
+(** Declare an interactively-defined constant *)
+val declare_entry
   :  name:Id.t
   -> scope:locality
   -> kind:Decls.logical_kind
   -> ?hook:Hook.t
   -> ?obls:(Id.t * Constr.t) list
   -> impargs:Impargs.manual_implicits
-  -> ClosedDef.t
+  -> uctx:UState.t
+  -> Evd.side_effects Declare.proof_entry
+  -> GlobRef.t
+
+(** Declares a non-interactive constant; [body] and [types] will be
+   normalized w.r.t. the passed [evar_map] [sigma]. Universes should
+   be handled properly, including minimization and restriction. Note
+   that [sigma] is checked for unresolved evars, thus you should be
+   careful not to submit open terms or evar maps with stale,
+   unresolved existentials *)
+val declare_definition
+  :  name:Id.t
+  -> scope:locality
+  -> kind:Decls.logical_kind
+  -> opaque:bool
+  -> impargs:Impargs.manual_implicits
+  -> udecl:UState.universe_decl
+  -> ?hook:Hook.t
+  -> ?obls:(Id.t * Constr.t) list
+  -> poly:bool
+  -> ?inline:bool
+  -> types:EConstr.t option
+  -> body:EConstr.t
+  -> ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
+  -> Evd.evar_map
   -> GlobRef.t
 
 val declare_assumption
@@ -96,17 +112,6 @@ val declare_mutually_recursive
      bug in obligations, so this parameter should go away *)
   -> Recthm.t list
   -> Names.GlobRef.t list
-
-val prepare_definition
-  :  ?opaque:bool
-  -> ?inline:bool
-  -> ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
-  -> poly:bool
-  -> udecl:UState.universe_decl
-  -> types:EConstr.t option
-  -> body:EConstr.t
-  -> Evd.evar_map
-  -> ClosedDef.t
 
 val prepare_obligation
   :  ?opaque:bool

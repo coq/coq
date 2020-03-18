@@ -205,9 +205,10 @@ let context_insection sigma ~poly ctx =
         let entry = Declare.definition_entry ~univs ~types:t b in
         (* XXX Fixme: Use DeclareDef.prepare_definition *)
         let uctx = Evd.evar_universe_context sigma in
-        let entry = DeclareDef.ClosedDef.of_proof_entry ~uctx entry in
-        let _ : GlobRef.t = DeclareDef.declare_definition ~name ~scope:DeclareDef.Discharge
-            ~kind:Decls.(IsDefinition Definition) ~impargs:[] entry
+        let kind = Decls.(IsDefinition Definition) in
+        let _ : GlobRef.t =
+          DeclareDef.declare_entry ~name ~scope:DeclareDef.Discharge
+            ~kind ~impargs:[] ~uctx entry
         in
         ()
     in

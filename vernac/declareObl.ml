@@ -371,9 +371,12 @@ let declare_definition prg =
   let fix_exn = Hook.get get_fix_exn () in
   let obls = List.map (fun (id, (_, c)) -> (id, c)) varsubst in
   (* XXX: This is doing normalization twice *)
-  let ce = DeclareDef.prepare_definition ~fix_exn ~opaque ~poly ~udecl ~types ~body sigma in
   let () = progmap_remove prg in
-  DeclareDef.declare_definition ~name ~scope ~kind ~impargs ?hook ~obls ce
+  let kn =
+    DeclareDef.declare_definition ~name ~scope ~kind ~impargs ?hook ~obls
+      ~fix_exn ~opaque ~poly ~udecl ~types ~body sigma
+  in
+  kn
 
 let rec lam_index n t acc =
   match Constr.kind t with

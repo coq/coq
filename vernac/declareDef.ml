@@ -37,19 +37,8 @@ module Hook = struct
 
 end
 
-module ClosedDef = struct
-
-  type t =
-    { entry : Evd.side_effects Declare.proof_entry
-    ; uctx : UState.t
-    }
-
-  let of_proof_entry ~uctx entry = { entry; uctx }
-end
-
 (* Locality stuff *)
-let declare_definition ~name ~scope ~kind ?hook ?(obls=[]) ~impargs ce =
-  let { ClosedDef.entry; uctx } = ce in
+let declare_entry ~name ~scope ~kind ?hook ?(obls=[]) ~impargs ~uctx entry =
   let should_suggest = entry.Declare.proof_entry_opaque &&
                        Option.is_empty entry.Declare.proof_entry_secctx in
   let ubind = UState.universe_binders uctx in
@@ -70,9 +59,9 @@ let declare_definition ~name ~scope ~kind ?hook ?(obls=[]) ~impargs ce =
   Option.iter (fun hook -> Hook.call ~hook { Hook.S.uctx; obls; scope; dref }) hook;
   dref
 
-let declare_definition ~name ~scope ~kind ?hook ?obls ~impargs ce =
-  let fix_exn = Declare.Internal.get_fix_exn ce.ClosedDef.entry in
-  try declare_definition ~name ~scope ~kind ?hook ?obls ~impargs ce
+let declare_entry ~name ~scope ~kind ?hook ?obls ~impargs ~uctx entry =
+  let fix_exn = Declare.Internal.get_fix_exn entry in
+  try declare_entry ~name ~scope ~kind ?hook ?obls ~impargs ~uctx entry
   with exn ->
     let exn = Exninfo.capture exn in
     Exninfo.iraise (fix_exn exn)
@@ -120,7 +109,7 @@ let declare_mutually_recursive ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~re
   let csts = CList.map2
       (fun Recthm.{ name; typ; impargs } body ->
          let entry = Declare.definition_entry ~opaque ~types:typ ~univs body in
-         declare_definition ~name ~scope ~kind ~impargs { ClosedDef.entry; uctx })
+         declare_entry ~name ~scope ~kind ~impargs ~uctx entry)
       fixitems fixdecls
   in
   let isfix = Option.is_empty possible_indexes in
@@ -167,7 +156,12 @@ let prepare_definition ?opaque ?inline ?fix_exn ~poly ~udecl ~types ~body sigma 
   let univs = Evd.check_univ_decl ~poly sigma udecl in
   let entry = definition_entry ?fix_exn ?opaque ?inline ?types ~univs body in
   let uctx = Evd.evar_universe_context sigma in
-  { ClosedDef.entry; uctx }
+  entry, uctx
+
+let declare_definition ~name ~scope ~kind ~opaque ~impargs ~udecl ?hook
+    ?obls ~poly ?inline ~types ~body ?fix_exn sigma =
+  let entry, uctx = prepare_definition ?fix_exn ~opaque ~poly ~udecl ~types ~body ?inline sigma in
+  declare_entry ~name ~scope ~kind ~impargs ?obls ?hook ~uctx entry
 
 let prepare_obligation ?opaque ?inline ~name ~poly ~udecl ~types ~body sigma =
   let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false

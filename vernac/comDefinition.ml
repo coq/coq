@@ -74,10 +74,10 @@ let do_definition ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
   let (body, types), evd, udecl, impargs =
     interp_definition ~program_mode udecl bl ~poly red_option c ctypopt
   in
-  let ce = DeclareDef.prepare_definition ~opaque:false ~poly evd ~udecl ~types ~body in
   let kind = Decls.IsDefinition kind in
   let _ : Names.GlobRef.t =
-    DeclareDef.declare_definition ~name ~scope ~kind ?hook ~impargs ce
+    DeclareDef.declare_definition ~name ~scope ~kind ?hook ~impargs
+      ~opaque:false ~poly evd ~udecl ~types ~body
   in ()
 
 let do_definition_program ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
