@@ -604,17 +604,39 @@ let vernac_assumption ~atts discharge kind l nl =
 
 let is_polymorphic_inductive_cumulativity =
   declare_bool_option_and_ref ~depr:false ~value:false
-    ~key:["Polymorphic"; "Inductive"; "Cumulativity"]
+    ~key:["Polymorphic";"Inductive";"Cumulativity"]
 
-let should_treat_as_cumulative cum poly =
-  match cum with
-  | Some VernacCumulative ->
-    if poly then true
-    else user_err Pp.(str "The Cumulative prefix can only be used in a polymorphic context.")
-  | Some VernacNonCumulative ->
-    if poly then false
-    else user_err Pp.(str "The NonCumulative prefix can only be used in a polymorphic context.")
-  | None -> poly && is_polymorphic_inductive_cumulativity ()
+let polymorphic_cumulative =
+  let error_poly_context () =
+    user_err
+      Pp.(str "The cumulative and noncumulative attributes can only be used in a polymorphic context.");
+  in
+  let open Attributes in
+  let open Notations in
+  qualify_attribute "universes"
+    (bool_attribute ~name:"Polymorphism" ~on:"polymorphic" ~off:"monomorphic"
+     ++ bool_attribute ~name:"Cumulativity" ~on:"cumulative" ~off:"noncumulative")
+  >>= function
+  | Some poly, Some cum ->
+     (* Case of Polymorphic|Monomorphic Cumulative|NonCumulative Inductive
+        and #[ universes(polymorphic|monomorphic,cumulative|noncumulative) ] Inductive *)
+     if poly then return (true, cum)
+     else error_poly_context ()
+  | Some poly, None ->
+     (* Case of Polymorphic|Monomorphic Inductive
+        and #[ universes(polymorphic|monomorphic) ] Inductive *)
+     if poly then return (true, is_polymorphic_inductive_cumulativity ())
+     else return (false, false)
+  | None, Some cum ->
+     (* Case of Cumulative|NonCumulative Inductive *)
+     if is_universe_polymorphism () then return (true, cum)
+     else error_poly_context ()
+  | None, None ->
+     (* Case of Inductive *)
+     if is_universe_polymorphism () then
+       return (true, is_polymorphic_inductive_cumulativity ())
+     else
+       return (false, false)
 
 let get_uniform_inductive_parameters =
   Goptions.declare_bool_option_and_ref
@@ -627,8 +649,7 @@ let should_treat_as_uniform () =
   then ComInductive.UniformParameters
   else ComInductive.NonUniformParameters
 
-let vernac_record ~template udecl cum k poly finite records =
-  let cumulative = should_treat_as_cumulative cum poly in
+let vernac_record ~template udecl ~cumulative k ~poly finite records =
   let map ((coe, id), binders, sort, nameopt, cfs) =
     let const = match nameopt with
     | None -> Nameops.add_prefix "Build_" id.v
@@ -668,12 +689,21 @@ let finite_of_kind = let open Declarations in function
   | CoInductive -> CoFinite
   | Variant | Record | Structure | Class _ -> BiFinite
 
-(** When [poly] is true the type is declared polymorphic. When [lo] is true,
-    then the type is declared private (as per the [Private] keyword). [finite]
-    indicates whether the type is inductive, co-inductive or
-    neither. *)
-let vernac_inductive ~atts cum lo kind indl =
-  let template, poly = Attributes.(parse Notations.(template ++ polymorphic) atts) in
+let private_ind =
+  let open Attributes in
+  let open Notations in
+  attribute_of_list
+    [ "matching"
+    , single_key_parser ~name:"Private (matching) inductive type" ~key:"matching" ()
+    ]
+  |> qualify_attribute "private"
+  >>= function
+  | Some () -> return true
+  | None -> return false
+
+let vernac_inductive ~atts kind indl =
+  let (template, (poly, cumulative)), private_ind = Attributes.(
+      parse Notations.(template ++ polymorphic_cumulative ++ private_ind) atts) in
   let open Pp in
   let udecl, indl = extract_inductive_udecl indl in
   if Dumpglob.dump () then
@@ -710,7 +740,7 @@ let vernac_inductive ~atts cum lo kind indl =
     let coe' = if coe then Some true else None in
     let f = AssumExpr ((make ?loc:lid.loc @@ Name lid.v), ce),
             { rf_subclass = coe' ; rf_priority = None ; rf_notation = [] ; rf_canonical = true } in
-    vernac_record ~template udecl cum (Class true) poly finite [id, bl, c, None, [f]]
+    vernac_record ~template udecl ~cumulative (Class true) ~poly finite [id, bl, c, None, [f]]
   else if List.for_all is_record indl then
     (* Mutual record case *)
     let () = match kind with
@@ -735,7 +765,7 @@ let vernac_inductive ~atts cum lo kind indl =
     in
     let kind = match kind with Class _ -> Class false | _ -> kind in
     let recordl = List.map unpack indl in
-    vernac_record ~template udecl cum kind poly finite recordl
+    vernac_record ~template udecl ~cumulative kind ~poly finite recordl
   else if List.for_all is_constructor indl then
     (* Mutual inductive case *)
     let () = match kind with
@@ -758,9 +788,8 @@ let vernac_inductive ~atts cum lo kind indl =
     | RecordDecl _ -> assert false (* ruled out above *)
     in
     let indl = List.map unpack indl in
-    let cumulative = should_treat_as_cumulative cum poly in
     let uniform = should_treat_as_uniform () in
-    ComInductive.do_mutual_inductive ~template udecl indl ~cumulative ~poly ~private_ind:lo ~uniform finite
+    ComInductive.do_mutual_inductive ~template udecl indl ~cumulative ~poly ~private_ind ~uniform finite
   else
     user_err (str "Mixed record-inductive definitions are not allowed")
 
@@ -2008,8 +2037,8 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
         vernac_declare_module_type lid bl mtys mtyo)
   | VernacAssumption ((discharge,kind),nl,l) ->
     VtDefault(fun () -> with_def_attributes ~atts vernac_assumption discharge kind l nl)
-  | VernacInductive (cum, priv, finite, l) ->
-    VtDefault(fun () -> vernac_inductive ~atts cum priv finite l)
+  | VernacInductive (finite, l) ->
+    VtDefault(fun () -> vernac_inductive ~atts finite l)
   | VernacFixpoint (discharge, l) ->
     let opens = List.exists (fun { body_def } -> Option.is_empty body_def) l in
     if opens then
