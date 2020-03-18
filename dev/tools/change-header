@@ -43,6 +43,7 @@ for i in $(git grep --name-only --fixed-strings "$(head -1 $oldheader)"); do
     mv $i.tmp$$ $i
     modified=$(expr $modified + 1)
   else
+    echo "$i: header unchanged"
     kept=$(expr $kept + 1)
   fi
   rm $i.head.tmp$$
