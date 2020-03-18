@@ -47,7 +47,7 @@ Leibniz equality on some type. An example implementation is:
          | tt, tt => eq_refl tt
          end }.
 
-Using the attribute ``refine``, if the term is not sufficient to
+Using the :attr:`refine` attribute, if the term is not sufficient to
 finish the definition (e.g. due to a missing field or non-inferable
 hole) it must be finished in proof mode. If it is sufficient a trivial
 proof mode with no open goals is started.
@@ -77,9 +77,9 @@ remaining fields, e.g.:
    Defined.
 
 One has to take care that the transparency of every field is
-determined by the transparency of the :cmd:`Instance` proof. One can use
-alternatively the :cmd:`Program Instance` variant which has richer facilities
-for dealing with obligations.
+determined by the transparency of the :cmd:`Instance` proof. One can
+use alternatively the :attr:`program` attribute to get richer
+facilities for dealing with obligations.
 
 
 Binding classes
@@ -174,7 +174,7 @@ For example:
 
 .. coqtop:: in
 
-   Global Program Instance option_eqb : EqDec (option A) :=
+   #[ global, program ] Instance option_eqb : EqDec (option A) :=
      { eqb x y := match x, y with
             | Some x, Some y => eqb x y
             | None, None => true
@@ -188,7 +188,7 @@ For example:
 
    About option_eqb.
 
-Here the :cmd:`Global` modifier redeclares the instance at the end of the
+Here the :attr:`global` attribute redeclares the instance at the end of the
 section, once it has been generalized by the context variables it
 uses.
 
@@ -300,9 +300,11 @@ Summary of the commands
    The :cmd:`Class` command is used to declare a typeclass with parameters
    :token:`binders` and fields the declared record fields.
 
-   This command supports the :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
+   Like any command declaring a record, this command supports the
+   :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
    :attr:`universes(template)`, :attr:`universes(notemplate)`,
-   :attr:`Cumulative`, :attr:`NonCumulative` and :attr:`Private` attributes.
+   :attr:`universes(cumulative)`, :attr:`universes(noncumulative)` and
+   :attr:`private(matching)` attributes.
 
    .. _singleton-class:
 
@@ -341,25 +343,31 @@ Summary of the commands
    :tacn:`auto` hints. If the priority :token:`num` is not specified, it defaults to the number
    of non-dependent binders of the instance.
 
+   This command supports the :attr:`global` attribute that can be
+   used on instances declared in a section so that their
+   generalization is automatically redeclared after the section is
+   closed.
+
+   Like :cmd:`Definition`, it also supports the :attr:`program`
+   attribute to switch the type checking to `Program` (chapter
+   :ref:`programs`) and use the obligation mechanism to manage missing
+   fields.
+
+   Finally, it supports the lighter :attr:`refine` attribute:
+
+   .. attr:: refine
+
+      This attribute can be used to leave holes or not provide all
+      fields in the definition of an instance and open the tactic mode
+      to fill them.  It works exactly as if no body had been given and
+      the :tacn:`refine` tactic has been used first.
+
    .. cmdv:: Instance @ident {* @binder } : forall {* @binder }, @term__0 {+ @term} {? | @num } := @term
 
       This syntax is used for declaration of singleton class instances or
       for directly giving an explicit term of type :n:`forall {* @binder }, @term__0
       {+ @term}`.  One need not even mention the unique field name for
       singleton classes.
-
-   .. cmdv:: Global Instance
-      :name: Global Instance
-
-      One can use the :cmd:`Global` modifier on instances declared in a
-      section so that their generalization is automatically redeclared
-      after the section is closed.
-
-   .. cmdv:: Program Instance
-      :name: Program Instance
-
-      Switches the type checking to `Program` (chapter :ref:`programs`) and
-      uses the obligation mechanism to manage missing fields.
 
    .. cmdv:: Declare Instance
       :name: Declare Instance

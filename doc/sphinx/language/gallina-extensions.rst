@@ -42,9 +42,11 @@ expressions. In this sense, the :cmd:`Record` construction allows defining
 
    :cmd:`Record` and :cmd:`Structure` are synonyms.
 
-   This command supports the :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
-   :attr:`universes(template)`, :attr:`universes(notemplate)`,
-   :attr:`Cumulative`, :attr:`NonCumulative` and :attr:`Private` attributes.
+   This command supports the :attr:`universes(polymorphic)`,
+   :attr:`universes(monomorphic)`, :attr:`universes(template)`,
+   :attr:`universes(notemplate)`, :attr:`universes(cumulative)`,
+   :attr:`universes(noncumulative)` and :attr:`private(matching)`
+   attributes.
 
 More generally, a record may have explicitly defined (a.k.a. manifest)
 fields. For instance, we might have:
@@ -2053,12 +2055,15 @@ applied to an unknown structure instance (an implicit argument) and a
 value. The complete documentation of canonical structures can be found
 in :ref:`canonicalstructures`; here only a simple example is given.
 
-.. cmd:: {? Local | #[local] } Canonical {? Structure } @qualid
+.. cmd:: Canonical {? Structure } @qualid
   :name: Canonical Structure
 
    This command declares :token:`qualid` as a canonical instance of a
-   structure (a record). When the :g:`#[local]` attribute is given the effect
-   stops at the end of the :g:`Section` containig it.
+   structure (a record).
+
+   This command supports the :attr:`local` attribute.  When used, the
+   structure stops being a canonical instance at the end of the
+   :cmd:`Section` containing it.
 
    Assume that :token:`qualid` denotes an object ``(Build_struct`` |c_1| … |c_n| ``)`` in the
    structure :g:`struct` of which the fields are |x_1|, …, |x_n|.
@@ -2106,9 +2111,12 @@ in :ref:`canonicalstructures`; here only a simple example is given.
       If a same field occurs in several canonical structures, then
       only the structure declared first as canonical is considered.
 
-   .. note::
-      To prevent a field from being involved in the inference of canonical instances,
-      its declaration can be annotated with the :g:`#[canonical(false)]` attribute.
+   .. attr:: canonical(false)
+
+      To prevent a field from being involved in the inference of
+      canonical instances, its declaration can be annotated with the
+      :attr:`canonical(false)` attribute (cf. the syntax of
+      :n:`@record_field`).
 
       .. example::
 
@@ -2121,10 +2129,16 @@ in :ref:`canonicalstructures`; here only a simple example is given.
 
       See :ref:`canonicalstructures` for a more realistic example.
 
-   .. cmdv:: {? Local | #[local] } Canonical {? Structure } @ident {? : @type } := @term
+   .. cmdv:: Canonical {? Structure } @ident {? : @type } := @term
 
       This is equivalent to a regular definition of :token:`ident` followed by the
       declaration :n:`Canonical @ident`.
+
+.. attr:: canonical
+
+   This attribute can decorate a :cmd:`Definition` or :cmd:`Let` command.
+   It is equivalent to having a :cmd:`Canonical Structure` declaration just
+   after the command.
 
 .. cmd:: Print Canonical Projections {* @ident}
 

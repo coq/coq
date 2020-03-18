@@ -98,10 +98,17 @@ coercions.
 .. flag:: Program Mode
 
    Enables the program mode, in which 1) typechecking allows subset coercions and
-   2) the elaboration of pattern matching of :cmd:`Program Fixpoint` and
-   :cmd:`Program Definition` act
-   like Program Fixpoint/Definition, generating obligations if there are
-   unresolved holes after typechecking.
+   2) the elaboration of pattern matching of :cmd:`Fixpoint` and
+   :cmd:`Definition` act as if the :attr:`program` attribute had been
+   used, generating obligations if there are unresolved holes after
+   typechecking.
+
+.. attr:: program
+
+   This attribute allows to use the Program mode on a specific
+   definition.  An alternative syntax is to use the legacy ``Program``
+   prefix (cf. :n:`@legacy_attr`) as documented in the rest of this
+   chapter.
 
 .. _syntactic_control:
 

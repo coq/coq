@@ -1152,41 +1152,41 @@ described first.
 Controlling the locality of commands
 -----------------------------------------
 
+.. attr:: global
+          local
 
-.. cmd:: Local @command
-         Global @command
-
-   Some commands support a Local or Global prefix modifier to control the
-   scope of their effect. There are four kinds of commands:
-
+   Some commands support a :attr:`local` or :attr:`global` attribute
+   to control the scope of their effect.  There is also a legacy (and
+   much more commonly used) syntax using the ``Local`` or ``Global``
+   prefixes (see :n:`@legacy_attr`).  There are four kinds of
+   commands:
 
    + Commands whose default is to extend their effect both outside the
      section and the module or library file they occur in.  For these
-     commands, the Local modifier limits the effect of the command to the
+     commands, the :attr:`local` attribute limits the effect of the command to the
      current section or module it occurs in.  As an example, the :cmd:`Coercion`
      and :cmd:`Strategy` commands belong to this category.
    + Commands whose default behavior is to stop their effect at the end
      of the section they occur in but to extend their effect outside the module or
-     library file they occur in. For these commands, the Local modifier limits the
+     library file they occur in. For these commands, the :attr:`local` attribute limits the
      effect of the command to the current module if the command does not occur in a
-     section and the Global modifier extends the effect outside the current
+     section and the :attr:`global` attribute extends the effect outside the current
      sections and current module if the command occurs in a section. As an example,
      the :cmd:`Arguments <Arguments (implicits)>`, :cmd:`Ltac` or :cmd:`Notation` commands belong
      to this category. Notice that a subclass of these commands do not support
-     extension of their scope outside sections at all and the Global modifier is not
+     extension of their scope outside sections at all and the :attr:`global` attribute is not
      applicable to them.
    + Commands whose default behavior is to stop their effect at the end
-     of the section or module they occur in.  For these commands, the ``Global``
-     modifier extends their effect outside the sections and modules they
-     occur in.  The :cmd:`Transparent` and :cmd:`Opaque`
-     (see Section :ref:`vernac-controlling-the-reduction-strategies`) commands
+     of the section or module they occur in.  For these commands, the :attr:`global`
+     attribute extends their effect outside the sections and modules they
+     occur in.  The :cmd:`Transparent` and :cmd:`Opaque` commands
      belong to this category.
    + Commands whose default behavior is to extend their effect outside
      sections but not outside modules when they occur in a section and to
      extend their effect outside the module or library file they occur in
-     when no section contains them. For these commands, the Local modifier
-     limits the effect to the current section or module while the Global
-     modifier extends the effect outside the module even when the command
+     when no section contains them. For these commands, the :attr:`local` attribute
+     limits the effect to the current section or module while the :attr:`global`
+     attribute extends the effect outside the module even when the command
      occurs in a section.  The :cmd:`Set` and :cmd:`Unset` commands belong to this
      category.
 
