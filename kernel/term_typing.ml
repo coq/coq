@@ -143,7 +143,7 @@ let infer_declaration env (dcl : constant_entry) =
         Cooking.cook_body = def;
         cook_type = typ;
         cook_universes = univs;
-        cook_relevance = Retypeops.relevance_of_term env j.uj_val;
+        cook_relevance = Relevanceops.relevance_of_term env j.uj_val;
         cook_inline = c.const_entry_inline_code;
         cook_context = c.const_entry_secctx;
       }

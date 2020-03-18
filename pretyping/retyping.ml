@@ -273,8 +273,8 @@ let relevance_of_term env sigma c =
       | Rel n ->
         let len = Range.length rels in
         if n <= len then Range.get rels (n - 1)
-        else Retypeops.relevance_of_rel env (n - len)
-      | Var x -> Retypeops.relevance_of_var env x
+        else Relevanceops.relevance_of_rel env (n - len)
+      | Var x -> Relevanceops.relevance_of_var env x
       | Sort _ -> Sorts.Relevant
       | Cast (c, _, _) -> aux rels c
       | Prod ({binder_relevance=r}, _, codom) ->
@@ -284,13 +284,13 @@ let relevance_of_term env sigma c =
       | LetIn ({binder_relevance=r}, _, _, bdy) ->
         aux (Range.cons r rels) bdy
       | App (c, _) -> aux rels c
-      | Const (c,_) -> Retypeops.relevance_of_constant env c
+      | Const (c,_) -> Relevanceops.relevance_of_constant env c
       | Ind _ -> Sorts.Relevant
-      | Construct (c,_) -> Retypeops.relevance_of_constructor env c
+      | Construct (c,_) -> Relevanceops.relevance_of_constructor env c
       | Case (ci, _, _, _) -> ci.ci_relevance
       | Fix ((_,i),(lna,_,_)) -> (lna.(i)).binder_relevance
       | CoFix (i,(lna,_,_)) -> (lna.(i)).binder_relevance
-      | Proj (p, _) -> Retypeops.relevance_of_projection env p
+      | Proj (p, _) -> Relevanceops.relevance_of_projection env p
       | Int _ | Float _ -> Sorts.Relevant
 
       | Meta _ | Evar _ -> Sorts.Relevant
