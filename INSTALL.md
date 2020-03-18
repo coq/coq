@@ -7,7 +7,7 @@ Build Requirements
 To compile Coq yourself, you need:
 
 - [OCaml](https://ocaml.org/) (version >= 4.05.0)
-  (This version of Coq has been tested up to OCaml 4.09.0)
+  (This version of Coq has been tested up to OCaml 4.09.1)
 
 - The [num](https://github.com/ocaml/num) library; note that it is
   included in the OCaml distribution for OCaml versions < 4.06.0
@@ -45,7 +45,7 @@ CoqIDE with:
 Opam (https://opam.ocaml.org/) is recommended to install OCaml and
 the corresponding packages.
 
-    $ opam switch create coq 4.09.0+flambda
+    $ opam switch create coq 4.09.1+flambda
     $ eval $(opam env)
     $ opam install num ocamlfind lablgtk3-sourceview3
 

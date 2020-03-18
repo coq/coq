@@ -1,0 +1,4 @@
+- **Added:**
+  Bump official OCaml support to 4.09.1
+  (`#11860 <https://github.com/coq/coq/pull/11860>`_,
+  by Emilio Jesus Gallego Arias).
