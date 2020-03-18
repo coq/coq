@@ -140,10 +140,10 @@ field_ident: [
 | "." ident
 ]
 
-basequalid: [
-| REPLACE ident fields
-| WITH ident LIST0 field_ident
-| DELETE ident
+qualid: [ | DELETENT ]
+
+qualid: [
+| ident LIST0 field_ident
 ]
 
 field: [ | DELETENT ]
@@ -842,7 +842,6 @@ SPLICE: [
 | ne_lstring
 | ne_string
 | lstring
-| basequalid
 | fullyqualid
 | global
 | reference

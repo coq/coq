@@ -386,11 +386,6 @@ fullyqualid: [
 | ident
 ]
 
-basequalid: [
-| ident fields
-| ident
-]
-
 name: [
 | "_"
 | ident
@@ -401,6 +396,10 @@ reference: [
 | ident
 ]
 
+qualid: [
+| reference
+]
+
 by_notation: [
 | ne_string OPT [ "%" IDENT ]
 ]
@@ -408,10 +407,6 @@ by_notation: [
 smart_global: [
 | reference
 | by_notation
-]
-
-qualid: [
-| basequalid
 ]
 
 ne_string: [
@@ -436,7 +431,7 @@ lstring: [
 
 integer: [
 | NUMERAL
-| "-" NUMERAL
+| test_minus_nat "-" NUMERAL
 ]
 
 natural: [
