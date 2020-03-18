@@ -1,4 +1,4 @@
-existT : forall (A : Type) (P : A -> Type) (x : A), P x -> {x : A & P x}
+existT : forall [A : Type] (P : A -> Type) (x : A), P x -> {x : A & P x}
 
 existT is template universe polymorphic on sigT.u0 sigT.u1
 Arguments existT [A]%type_scope _%function_scope
@@ -8,19 +8,19 @@ Inductive sigT (A : Type) (P : A -> Type) : Type :=
 
 Arguments sigT [A]%type_scope _%type_scope
 Arguments existT [A]%type_scope _%function_scope
-existT : forall (A : Type) (P : A -> Type) (x : A), P x -> {x : A & P x}
+existT : forall [A : Type] (P : A -> Type) (x : A), P x -> {x : A & P x}
 
 Argument A is implicit
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 Arguments eq {A}%type_scope
 Arguments eq_refl {A}%type_scope {x}, [A] _
-eq_refl : forall (A : Type) (x : A), x = x
+eq_refl : forall {A : Type} {x : A}, x = x
 
 eq_refl is not universe polymorphic
 Arguments eq_refl {A}%type_scope {x}, [A] _
 Expands to: Constructor Coq.Init.Logic.eq_refl
-eq_refl : forall (A : Type) (x : A), x = x
+eq_refl : forall {A : Type} {x : A}, x = x
 
 When applied to no arguments:
   Arguments A, x are implicit and maximally inserted
@@ -65,14 +65,14 @@ bar : foo
 
 bar is not universe polymorphic
 Expanded type for implicit arguments
-bar : forall x : nat, x = 0
+bar : forall {x : nat}, x = 0
 
 Arguments bar {x}
 Expands to: Constant PrintInfos.bar
 *** [ bar : foo ]
 
 Expanded type for implicit arguments
-bar : forall x : nat, x = 0
+bar : forall {x : nat}, x = 0
 
 Arguments bar {x}
 Module Coq.Init.Peano

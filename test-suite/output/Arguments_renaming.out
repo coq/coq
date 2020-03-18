@@ -15,7 +15,7 @@ Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 Arguments eq {A}%type_scope
 Arguments eq_refl {B}%type_scope {y}, [B] _
-eq_refl : forall (A : Type) (x : A), x = x
+eq_refl : forall {A : Type} {x : A}, x = x
 
 eq_refl is not universe polymorphic
 Arguments eq_refl {B}%type_scope {y}, [B] _
@@ -24,7 +24,7 @@ Inductive myEq (B : Type) (x : A) : A -> Prop :=  myrefl : B -> myEq B x x
 
 Arguments myEq _%type_scope
 Arguments myrefl {C}%type_scope x : rename
-myrefl : forall (B : Type) (x : A), B -> myEq B x x
+myrefl : forall {B : Type} (x : A), B -> myEq B x x
 
 myrefl is not universe polymorphic
 Arguments myrefl {C}%type_scope x : rename
@@ -38,7 +38,7 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
      : forall T : Type, T -> nat -> nat -> nat
 
 Arguments myplus {Z}%type_scope !t (!n m)%nat_scope : rename
-myplus : forall T : Type, T -> nat -> nat -> nat
+myplus : forall {T : Type}, T -> nat -> nat -> nat
 
 myplus is not universe polymorphic
 Arguments myplus {Z}%type_scope !t (!n m)%nat_scope : rename
@@ -53,7 +53,7 @@ Inductive myEq (A B : Type) (x : A) : A -> Prop :=
 
 Arguments myEq (_ _)%type_scope
 Arguments myrefl A%type_scope {C}%type_scope x : rename
-myrefl : forall (A B : Type) (x : A), B -> myEq A B x x
+myrefl : forall (A : Type) {B : Type} (x : A), B -> myEq A B x x
 
 myrefl is not universe polymorphic
 Arguments myrefl A%type_scope {C}%type_scope x : rename
@@ -69,7 +69,7 @@ fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
      : forall T : Type, T -> nat -> nat -> nat
 
 Arguments myplus {Z}%type_scope !t (!n m)%nat_scope : rename
-myplus : forall T : Type, T -> nat -> nat -> nat
+myplus : forall {T : Type}, T -> nat -> nat -> nat
 
 myplus is not universe polymorphic
 Arguments myplus {Z}%type_scope !t (!n m)%nat_scope : rename
