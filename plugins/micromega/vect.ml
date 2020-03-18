@@ -90,7 +90,7 @@ let to_list m =
     match l with
     | [] -> []
     | { var = x; coe = v } :: l' ->
-      if i = x then v :: xto_list (i + 1) l' else Q.zero :: xto_list (i + 1) l
+      if Int.equal i x then v :: xto_list (i + 1) l' else Q.zero :: xto_list (i + 1) l
   in
   xto_list 0 m
 
@@ -190,7 +190,7 @@ let rec decomp_at i v =
   match v with
   | [] -> (Q.zero, null)
   | { var = vr; coe = vl } :: r ->
-    if i = vr then (vl, r) else if i < vr then (Q.zero, v) else decomp_at i r
+    if Int.equal i vr then (vl, r) else if i < vr then (Q.zero, v) else decomp_at i r
 
 let decomp_fst v = match v with [] -> ((0, Q.zero), []) | x :: v -> ((x.var, x.coe), v)
 
@@ -256,7 +256,7 @@ let dotproduct v1 v2 =
     match (v1, v2) with
     | [], _ | _, [] -> acc
     | { var = x1; coe = n1 } :: v1', { var = x2; coe = n2 } :: v2' ->
-      if x1 == x2 then dot (acc +/ (n1 */ n2)) v1' v2'
+      if Int.equal x1 x2 then dot (acc +/ (n1 */ n2)) v1' v2'
       else if x1 < x2 then dot acc v1' v2
       else dot acc v1 v2'
   in
@@ -282,7 +282,7 @@ module Bound = struct
 
   let of_vect (v : vector) =
     match v with
-    | [{ var = x; coe = v }] -> if x = 0 then None else Some {cst = Q.zero; var = x; coeff = v}
+    | [{ var = x; coe = v }] -> if Int.equal x 0 then None else Some {cst = Q.zero; var = x; coeff = v}
     | [{ var = 0; coe = v }; { var = x; coe = v' }] -> Some {cst = v; var = x; coeff = v'}
     | _ -> None
 end
