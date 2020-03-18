@@ -399,7 +399,7 @@ type nonrec vernac_expr =
   | VernacSetOpacity of (Conv_oracle.level * qualid or_by_notation list)
   | VernacSetStrategy of
       (Conv_oracle.level * qualid or_by_notation list) list
-  | VernacSetOption of export_flag * Goptions.option_name * option_setting
+  | VernacSetOption of bool (* Export modifier? *) * Goptions.option_name * option_setting
   | VernacAddOption of Goptions.option_name * option_ref_value list
   | VernacRemoveOption of Goptions.option_name * option_ref_value list
   | VernacMemOption of Goptions.option_name * option_ref_value list

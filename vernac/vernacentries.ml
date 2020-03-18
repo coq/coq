@@ -1493,40 +1493,29 @@ let vernac_set_opacity ~local (v,l) =
   let l = List.map glob_ref l in
   Redexpr.set_strategy local [v,l]
 
-let get_option_locality export local =
-  if export then
-    if Option.is_empty local then OptExport
-    else user_err Pp.(str "Locality modifiers forbidden with Export")
-  else match local with
-  | Some true -> OptLocal
-  | Some false -> OptGlobal
-  | None -> OptDefault
-
-let vernac_set_option0 ~local export key opt =
-  let locality = get_option_locality export local in
+let vernac_set_option0 ~locality key opt =
   match opt with
   | OptionUnset -> unset_option_value_gen ~locality key
   | OptionSetString s -> set_string_option_value_gen ~locality key s
   | OptionSetInt n -> set_int_option_value_gen ~locality key (Some n)
   | OptionSetTrue -> set_bool_option_value_gen ~locality key true
 
-let vernac_set_append_option ~local export key s =
-  let locality = get_option_locality export local in
+let vernac_set_append_option ~locality key s =
   set_string_option_append_value_gen ~locality key s
 
-let vernac_set_option ~local export table v = match v with
+let vernac_set_option ~locality table v = match v with
 | OptionSetString s ->
   (* We make a special case for warnings because appending is their
   natural semantics *)
   if CString.List.equal table ["Warnings"] then
-    vernac_set_append_option ~local export table s
+    vernac_set_append_option ~locality table s
   else
     let (last, prefix) = List.sep_last table in
     if String.equal last "Append" && not (List.is_empty prefix) then
-      vernac_set_append_option ~local export prefix s
+      vernac_set_append_option ~locality prefix s
     else
-      vernac_set_option0 ~local export table v
-| _ -> vernac_set_option0 ~local export table v
+      vernac_set_option0 ~locality table v
+| _ -> vernac_set_option0 ~locality table v
 
 let vernac_add_option key lv =
   let f = function
@@ -2193,9 +2182,10 @@ let translate_vernac ~atts v = let open Vernacextend in match v with
     VtDefault(fun () -> with_locality ~atts vernac_set_opacity qidl)
   | VernacSetStrategy l ->
     VtDefault(fun () -> with_locality ~atts vernac_set_strategy l)
-  | VernacSetOption (export, key,v) ->
+  | VernacSetOption (export,key,v) ->
+    let atts = if export then ("export", VernacFlagEmpty) :: atts else atts in
     VtDefault(fun () ->
-        vernac_set_option ~local:(only_locality atts) export key v)
+        vernac_set_option ~locality:(parse option_locality atts) key v)
   | VernacRemoveOption (key,v) ->
     VtDefault(fun () ->
         unsupported_attributes atts;
