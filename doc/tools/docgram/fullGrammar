@@ -730,21 +730,22 @@ attribute_value: [
 |
 ]
 
-vernac: [
-| "Local" vernac_poly
-| "Global" vernac_poly
-| vernac_poly
+legacy_attr: [
+| "Local"
+| "Global"
+| "Polymorphic"
+| "Monomorphic"
+| "Cumulative"
+| "NonCumulative"
+| "Private"
+| "Program"
 ]
 
-vernac_poly: [
-| "Polymorphic" vernac_aux
-| "Monomorphic" vernac_aux
-| vernac_aux
+vernac: [
+| LIST0 legacy_attr vernac_aux
 ]
 
 vernac_aux: [
-| "Program" gallina "."
-| "Program" gallina_ext "."
 | gallina "."
 | gallina_ext "."
 | command "."
@@ -769,7 +770,7 @@ gallina: [
 | assumptions_token inline assum_list
 | def_token ident_decl def_body
 | "Let" identref def_body
-| OPT cumulativity_token private_token finite_token LIST1 inductive_definition SEP "with"
+| finite_token LIST1 inductive_definition SEP "with"
 | "Fixpoint" LIST1 rec_definition SEP "with"
 | "Let" "Fixpoint" LIST1 rec_definition SEP "with"
 | "CoFixpoint" LIST1 corec_definition SEP "with"
@@ -896,16 +897,6 @@ finite_token: [
 | "Record"
 | "Structure"
 | "Class"
-]
-
-cumulativity_token: [
-| "Cumulative"
-| "NonCumulative"
-]
-
-private_token: [
-| "Private"
-|
 ]
 
 def_body: [
