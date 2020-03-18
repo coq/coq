@@ -385,7 +385,11 @@ module Hash = struct
   let int_of_eq_op1 =
     Mc.(function Equal -> 0 | NonEqual -> 1 | Strict -> 2 | NonStrict -> 3)
 
-  let eq_op1 o1 o2 = int_of_eq_op1 o1 = int_of_eq_op1 o2
+  let int_of_eq_op2 =
+    Mc.(function OpEq -> 0 | OpNEq -> 1 | OpLe -> 2 | OpGe -> 3 | OpLt -> 4 | OpGt -> 5)
+
+  let eq_op1 o1 o2 = Int.equal (int_of_eq_op1 o1) (int_of_eq_op1 o2)
+  let eq_op2 o1 o2 = Int.equal (int_of_eq_op2 o1) (int_of_eq_op2 o2)
   let hash_op1 h o = combine h (int_of_eq_op1 o)
 
   let rec eq_positive p1 p2 =

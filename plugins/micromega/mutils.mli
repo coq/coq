@@ -43,6 +43,7 @@ module Tag : sig
   val max : t -> t -> t
   val from : int -> t
   val to_int : t -> int
+  val compare : t -> t -> int
 end
 
 module TagSet : CSig.SetS with type elt = Tag.t
@@ -73,6 +74,7 @@ end
 
 module Hash : sig
   val eq_op1 : Micromega.op1 -> Micromega.op1 -> bool
+  val eq_op2 : Micromega.op2 -> Micromega.op2 -> bool
   val eq_positive : Micromega.positive -> Micromega.positive -> bool
   val eq_z : Micromega.z -> Micromega.z -> bool
   val eq_q : Micromega.q -> Micromega.q -> bool

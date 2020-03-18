@@ -1279,7 +1279,7 @@ module M = struct
     let dump_expr i e =
       let rec dump_expr = function
         | Mc.PEX n ->
-          EConstr.mkRel (i + List.assoc (CoqToCaml.positive n) vars_idx)
+          EConstr.mkRel (i + CList.assoc_f Int.equal (CoqToCaml.positive n) vars_idx)
         | Mc.PEc z -> dexpr.dump_cst z
         | Mc.PEadd (e1, e2) ->
           EConstr.mkApp (dexpr.dump_add, [|dump_expr e1; dump_expr e2|])
@@ -1294,7 +1294,7 @@ module M = struct
       dump_expr e
     in
     let mkop op e1 e2 =
-      try EConstr.mkApp (List.assoc op dexpr.dump_op, [|e1; e2|])
+      try EConstr.mkApp (CList.assoc_f Mutils.Hash.eq_op2 op dexpr.dump_op, [|e1; e2|])
       with Not_found ->
         EConstr.mkApp (Lazy.force coq_Eq, [|dexpr.interp_typ; e1; e2|])
     in
@@ -1480,7 +1480,8 @@ type ('synt_c, 'prf) domain_spec =
   ; (* is the type of the syntactic coeffs - Z , Q , Rcst *)
     dump_coeff : 'synt_c -> EConstr.constr
   ; proof_typ : EConstr.constr
-  ; dump_proof : 'prf -> EConstr.constr }
+  ; dump_proof : 'prf -> EConstr.constr
+  ; coeff_eq : 'synt_c -> 'synt_c -> bool }
 (**
   * The datastructures that aggregate theory-dependent proof values.
   *)
@@ -1491,7 +1492,8 @@ let zz_domain_spec =
     ; coeff = Lazy.force coq_Z
     ; dump_coeff = dump_z
     ; proof_typ = Lazy.force coq_proofTerm
-    ; dump_proof = dump_proof_term }
+    ; dump_proof = dump_proof_term
+    ; coeff_eq = Mc.zeq_bool }
 
 let qq_domain_spec =
   lazy
@@ -1499,7 +1501,8 @@ let qq_domain_spec =
     ; coeff = Lazy.force coq_Q
     ; dump_coeff = dump_q
     ; proof_typ = Lazy.force coq_QWitness
-    ; dump_proof = dump_psatz coq_Q dump_q }
+    ; dump_proof = dump_psatz coq_Q dump_q
+    ; coeff_eq = Mc.qeq_bool }
 
 let max_tag f =
   1 + Tag.to_int (Mc.foldA (fun t1 (t2, _) -> Tag.max t1 t2) f (Tag.from 0))
@@ -1603,7 +1606,11 @@ let witness_list_tags p g = witness_list p g
   * Prune the proof object, according to the 'diff' between two cnf formulas.
   *)
 
-let compact_proofs (cnf_ff : 'cst cnf) res (cnf_ff' : 'cst cnf) =
+let compact_proofs (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) res (cnf_ff' : 'cst cnf) =
+  let eq_formula (p1, o1) (p2, o2) =
+    let open Mutils.Hash in
+    eq_pol eq_cst p1 p2 && eq_op1 o1 o2
+  in
   let compact_proof (old_cl : 'cst clause) (prf, prover) (new_cl : 'cst clause)
       =
     let new_cl = List.mapi (fun i (f, _) -> (f, i)) new_cl in
@@ -1611,7 +1618,7 @@ let compact_proofs (cnf_ff : 'cst cnf) res (cnf_ff' : 'cst cnf) =
       let formula =
         try fst (List.nth old_cl i) with Failure _ -> failwith "bad old index"
       in
-      List.assoc formula new_cl
+      CList.assoc_f eq_formula formula new_cl
     in
     (* if debug then
        begin
@@ -1641,7 +1648,13 @@ let compact_proofs (cnf_ff : 'cst cnf) res (cnf_ff' : 'cst cnf) =
       (new_cl : 'cst clause) =
     let hyps_idx = prover.hyps prf in
     let hyps = selecti hyps_idx old_cl in
-    is_sublist ( = ) hyps new_cl
+    let eq (f1, (t1, e1)) (f2, (t2, e2)) =
+      Int.equal (Tag.compare t1 t2) 0
+      && eq_formula f1 f2
+      && ( = ) (e1 : EConstr.t) (e2 : EConstr.t)
+      (* FIXME: what equality should we use here? *)
+    in
+    is_sublist eq hyps new_cl
   in
   let cnf_res = List.combine cnf_ff res in
   (* we get pairs clause * proof *)
@@ -1798,7 +1811,7 @@ let micromega_tauto pre_process cnf spec prover env
            | None -> failwith "abstraction is wrong"
            | Some res -> ()
        end ; *)
-    let res' = compact_proofs cnf_ff res cnf_ff' in
+    let res' = compact_proofs spec.coeff_eq cnf_ff res cnf_ff' in
     let ff', res', ids = (ff', res', Mc.ids_of_formula ff') in
     let res' = dump_list spec.proof_typ spec.dump_proof res' in
     Prf (ids, ff', res')
@@ -1946,7 +1959,8 @@ let micromega_genr prover tac =
       ; coeff = Lazy.force coq_Rcst
       ; dump_coeff = dump_q
       ; proof_typ = Lazy.force coq_QWitness
-      ; dump_proof = dump_psatz coq_Q dump_q }
+      ; dump_proof = dump_psatz coq_Q dump_q
+      ; coeff_eq = Mc.qeq_bool }
   in
   Proofview.Goal.enter (fun gl ->
       let sigma = Tacmach.New.project gl in
@@ -1979,7 +1993,7 @@ let micromega_genr prover tac =
         | Prf (ids, ff', res') ->
           let ff, ids =
             formula_hyps_concl
-              (List.filter (fun (n, _) -> List.mem n ids) hyps)
+              (List.filter (fun (n, _) -> CList.mem_f Id.equal n ids) hyps)
               concl
           in
           let ff' = abstract_wrt_formula ff' ff in
