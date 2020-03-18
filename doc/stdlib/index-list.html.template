@@ -595,6 +595,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/SeqSeries.v
     theories/Reals/Sqrt_reg.v
     theories/Reals/Rlogic.v
+    theories/Reals/Rregisternames.v
     (theories/Reals/Reals.v)
     theories/Reals/Runcountable.v
   </dd>
