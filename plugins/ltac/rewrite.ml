@@ -1864,14 +1864,14 @@ let proper_projection env sigma r ty =
                   Array.append args [| instarg |]) in
     it_mkLambda_or_LetIn app ctx
 
-let declare_projection n instance_id r =
+let declare_projection name instance_id r =
   let poly = Global.is_polymorphic r in
   let env = Global.env () in
   let sigma = Evd.from_env env in
   let sigma,c = Evd.fresh_global env sigma r in
   let ty = Retyping.get_type_of env sigma c in
-  let term = proper_projection env sigma c ty in
-  let sigma, typ = Typing.type_of env sigma term in
+  let body = proper_projection env sigma c ty in
+  let sigma, typ = Typing.type_of env sigma body in
   let ctx, typ = decompose_prod_assum sigma typ in
   let typ =
     let n =
@@ -1892,14 +1892,11 @@ let declare_projection n instance_id r =
     let ctx,ccl = Reductionops.splay_prod_n env sigma (3 * n) typ
     in it_mkProd_or_LetIn ccl ctx
   in
-  let typ = it_mkProd_or_LetIn typ ctx in
-  let univs = Evd.univ_entry ~poly sigma in
-  let typ = EConstr.to_constr sigma typ in
-  let term = EConstr.to_constr sigma term in
-  let cst = Declare.definition_entry ~types:typ ~univs term in
-  let _ : Constant.t =
-    Declare.declare_constant ~name:n ~kind:Decls.(IsDefinition Definition)
-      (Declare.DefinitionEntry cst)
+  let types = Some (it_mkProd_or_LetIn typ ctx) in
+  let kind, opaque, scope = Decls.(IsDefinition Definition), false, DeclareDef.Global Declare.ImportDefaultBehavior in
+  let impargs, udecl = [], UState.default_univ_decl in
+  let _r : GlobRef.t =
+    DeclareDef.declare_definition ~name ~scope ~kind ~opaque ~impargs ~udecl ~poly ~types ~body sigma
   in ()
 
 let build_morphism_signature env sigma m =
