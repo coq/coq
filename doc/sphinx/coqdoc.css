@@ -1,7 +1,7 @@
 /************************************************************************/
 /*         *   The Coq Proof Assistant / The Coq Development Team       */
-/*  v      *   INRIA, CNRS and contributors - Copyright 1999-2019       */
-/* <O___,, *       (see CREDITS file for the list of authors)           */
+/*  v      *         Copyright INRIA, CNRS and contributors             */
+/* <O___,, * (see version control and CREDITS file for authors & dates) */
 /*   \VV/  **************************************************************/
 /*    //   *    This file is distributed under the terms of the         */
 /*         *     GNU Lesser General Public License Version 2.1          */
