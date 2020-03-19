@@ -244,9 +244,9 @@ let process_goal sigma g : EConstr.t reified_goal =
   let hyps      = List.map to_tuple hyps in
   { name; ty; hyps; env; sigma };;
 
-let pr_letype_env ?lax ?goal_concl_style env sigma t =
+let pr_letype_env ?lax ?goal_concl_style env sigma ?impargs t =
   Ppconstr.pr_lconstr_expr env sigma
-    (Constrextern.extern_type ?lax ?goal_concl_style env sigma t)
+    (Constrextern.extern_type ?lax ?goal_concl_style env sigma ?impargs t)
 
 let pp_of_type env sigma ty =
   pr_letype_env ~goal_concl_style:true env sigma ty

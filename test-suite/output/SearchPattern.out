@@ -11,6 +11,7 @@ Nat.leb: nat -> nat -> bool
 Nat.ltb: nat -> nat -> bool
 Nat.testbit: nat -> nat -> bool
 Nat.eqb: nat -> nat -> bool
+(use "About" for full details on implicit arguments)
 Nat.two: nat
 Nat.one: nat
 Nat.zero: nat
@@ -44,8 +45,10 @@ Nat.tail_addmul: nat -> nat -> nat -> nat
 Nat.of_uint_acc: Decimal.uint -> nat -> nat
 Nat.sqrt_iter: nat -> nat -> nat -> nat -> nat
 Nat.log2_iter: nat -> nat -> nat -> nat -> nat
-length: forall A : Type, list A -> nat
+length: forall [A : Type], list A -> nat
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
+(use "About" for full details on implicit arguments)
+(use "About" for full details on implicit arguments)
 Nat.div2: nat -> nat
 Nat.sqrt: nat -> nat
 Nat.log2: nat -> nat
@@ -74,18 +77,29 @@ Nat.of_uint_acc: Decimal.uint -> nat -> nat
 Nat.log2_iter: nat -> nat -> nat -> nat -> nat
 Nat.sqrt_iter: nat -> nat -> nat -> nat -> nat
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
+(use "About" for full details on implicit arguments)
 mult_n_Sm: forall n m : nat, n * m + n = n * S m
+(use "About" for full details on implicit arguments)
 iff_refl: forall A : Prop, A <-> A
 le_n: forall n : nat, n <= n
-identity_refl: forall (A : Type) (a : A), identity a a
-eq_refl: forall (A : Type) (x : A), x = x
+identity_refl: forall [A : Type] (a : A), identity a a
+eq_refl: forall {A : Type} {x : A}, x = x
 Nat.divmod: nat -> nat -> nat -> nat -> nat * nat
-conj: forall A B : Prop, A -> B -> A /\ B
-pair: forall A B : Type, A -> B -> A * B
+(use "About" for full details on implicit arguments)
+conj: forall [A B : Prop], A -> B -> A /\ B
+pair: forall {A B : Type}, A -> B -> A * B
 Nat.divmod: nat -> nat -> nat -> nat -> nat * nat
+(use "About" for full details on implicit arguments)
+(use "About" for full details on implicit arguments)
 h: n <> newdef n
+(use "About" for full details on implicit arguments)
 h: n <> newdef n
+(use "About" for full details on implicit arguments)
 h: P n
+(use "About" for full details on implicit arguments)
 h': ~ P n
+(use "About" for full details on implicit arguments)
 h: P n
+(use "About" for full details on implicit arguments)
 h: P n
+(use "About" for full details on implicit arguments)

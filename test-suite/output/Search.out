@@ -18,6 +18,7 @@ le_sind:
   P n ->
   (forall m : nat, n <= m -> P m -> P (S m)) ->
   forall n0 : nat, n <= n0 -> P n0
+(use "About" for full details on implicit arguments)
 false: bool
 true: bool
 eq_true: bool -> Prop
@@ -37,7 +38,7 @@ Nat.leb: nat -> nat -> bool
 Nat.bitwise: (bool -> bool -> bool) -> nat -> nat -> nat -> nat
 bool_rec: forall P : bool -> Set, P true -> P false -> forall b : bool, P b
 eq_true_ind_r:
-  forall (P : bool -> Prop) (b : bool), P b -> eq_true b -> P true
+  forall (P : bool -> Prop) [b : bool], P b -> eq_true b -> P true
 eq_true_rec:
   forall P : bool -> Set, P true -> forall b : bool, eq_true b -> P b
 bool_ind: forall P : bool -> Prop, P true -> P false -> forall b : bool, P b
@@ -49,9 +50,9 @@ bool_rect: forall P : bool -> Type, P true -> P false -> forall b : bool, P b
 eq_true_ind:
   forall P : bool -> Prop, P true -> forall b : bool, eq_true b -> P b
 eq_true_rec_r:
-  forall (P : bool -> Set) (b : bool), P b -> eq_true b -> P true
+  forall (P : bool -> Set) [b : bool], P b -> eq_true b -> P true
 eq_true_rect_r:
-  forall (P : bool -> Type) (b : bool), P b -> eq_true b -> P true
+  forall (P : bool -> Type) [b : bool], P b -> eq_true b -> P true
 bool_sind:
   forall P : bool -> SProp, P true -> P false -> forall b : bool, P b
 Byte.to_bits:
@@ -62,13 +63,13 @@ Byte.of_bits:
   Byte.byte
 andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
 andb_true_intro:
-  forall b1 b2 : bool, b1 = true /\ b2 = true -> (b1 && b2)%bool = true
+  forall [b1 b2 : bool], b1 = true /\ b2 = true -> (b1 && b2)%bool = true
 BoolSpec_sind:
-  forall (P Q : Prop) (P0 : bool -> SProp),
+  forall [P Q : Prop] (P0 : bool -> SProp),
   (P -> P0 true) ->
   (Q -> P0 false) -> forall b : bool, BoolSpec P Q b -> P0 b
 BoolSpec_ind:
-  forall (P Q : Prop) (P0 : bool -> Prop),
+  forall [P Q : Prop] (P0 : bool -> Prop),
   (P -> P0 true) ->
   (Q -> P0 false) -> forall b : bool, BoolSpec P Q b -> P0 b
 Byte.to_bits_of_bits:
@@ -76,9 +77,10 @@ Byte.to_bits_of_bits:
     b : bool * (bool * (bool * (bool * (bool * (bool * (bool * bool)))))),
   Byte.to_bits (Byte.of_bits b) = b
 bool_choice:
-  forall (S : Set) (R1 R2 : S -> Prop),
+  forall [S : Set] [R1 R2 : S -> Prop],
   (forall x : S, {R1 x} + {R2 x}) ->
   {f : S -> bool | forall x : S, f x = true /\ R1 x \/ f x = false /\ R2 x}
+(use "About" for full details on implicit arguments)
 mult_n_O: forall n : nat, 0 = n * 0
 plus_O_n: forall n : nat, 0 + n = n
 plus_n_O: forall n : nat, n = n + 0
@@ -104,25 +106,35 @@ f_equal2_mult:
 f_equal2_nat:
   forall (B : Type) (f : nat -> nat -> B) (x1 y1 x2 y2 : nat),
   x1 = y1 -> x2 = y2 -> f x1 x2 = f y1 y2
+(use "About" for full details on implicit arguments)
 andb_true_intro:
-  forall b1 b2 : bool, b1 = true /\ b2 = true -> (b1 && b2)%bool = true
+  forall [b1 b2 : bool], b1 = true /\ b2 = true -> (b1 && b2)%bool = true
 andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
 bool_choice:
-  forall (S : Set) (R1 R2 : S -> Prop),
+  forall [S : Set] [R1 R2 : S -> Prop],
   (forall x : S, {R1 x} + {R2 x}) ->
   {f : S -> bool | forall x : S, f x = true /\ R1 x \/ f x = false /\ R2 x}
+(use "About" for full details on implicit arguments)
 andb_true_intro:
-  forall b1 b2 : bool, b1 = true /\ b2 = true -> (b1 && b2)%bool = true
+  forall [b1 b2 : bool], b1 = true /\ b2 = true -> (b1 && b2)%bool = true
 andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
+(use "About" for full details on implicit arguments)
 andb_prop: forall a b : bool, (a && b)%bool = true -> a = true /\ b = true
+(use "About" for full details on implicit arguments)
 h: n <> newdef n
 h': newdef n <> n
+(use "About" for full details on implicit arguments)
 h: n <> newdef n
 h': newdef n <> n
+(use "About" for full details on implicit arguments)
 h: n <> newdef n
+(use "About" for full details on implicit arguments)
 h: n <> newdef n
+(use "About" for full details on implicit arguments)
 h: n <> newdef n
 h': newdef n <> n
+(use "About" for full details on implicit arguments)
+(use "About" for full details on implicit arguments)
 The command has indeed failed with message:
 No such goal.
 The command has indeed failed with message:
@@ -131,9 +143,14 @@ The command has indeed failed with message:
 Query commands only support the single numbered goal selector.
 h: P n
 h': ~ P n
+(use "About" for full details on implicit arguments)
 h: P n
 h': ~ P n
+(use "About" for full details on implicit arguments)
 h: P n
 h': ~ P n
+(use "About" for full details on implicit arguments)
 h: P n
+(use "About" for full details on implicit arguments)
 h: P n
+(use "About" for full details on implicit arguments)

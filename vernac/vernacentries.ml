@@ -1778,12 +1778,15 @@ let vernac_search ~pstate ~atts s gopt r =
     let pp = if !search_output_name_only
       then pr
       else begin
-        let pc = pr_lconstr_env env Evd.(from_env env) c in
+        let open Impargs in
+        let impargs = select_stronger_impargs (implicits_of_global ref) in
+        let impargs = List.map binding_kind_of_status impargs in
+        let pc = pr_ltype_env env Evd.(from_env env) ~impargs c in
         hov 2 (pr ++ str":" ++ spc () ++ pc)
       end
     in Feedback.msg_notice pp
   in
-  match s with
+  (match s with
   | SearchPattern c ->
       (Search.search_pattern ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchRewrite c ->
@@ -1796,7 +1799,8 @@ let vernac_search ~pstate ~atts s gopt r =
        Search.prioritize_search) pr_search
   | Search sl ->
       (Search.search_about ?pstate gopt (List.map (on_snd (interp_search_about_item env Evd.(from_env env))) sl) r |>
-       Search.prioritize_search) pr_search
+       Search.prioritize_search) pr_search);
+  Feedback.msg_notice (str "(use \"About\" for full details on implicit arguments)")
 
 let vernac_locate ~pstate = let open Constrexpr in function
   | LocateAny {v=AN qid}  -> Prettyp.print_located_qualid qid

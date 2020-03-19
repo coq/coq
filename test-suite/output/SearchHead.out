@@ -4,6 +4,7 @@ le_S: forall n m : nat, n <= m -> n <= S m
 le_pred: forall n m : nat, n <= m -> Nat.pred n <= Nat.pred m
 le_n_S: forall n m : nat, n <= m -> S n <= S m
 le_S_n: forall n m : nat, S n <= S m -> n <= m
+(use "About" for full details on implicit arguments)
 false: bool
 true: bool
 negb: bool -> bool
@@ -17,6 +18,7 @@ Nat.leb: nat -> nat -> bool
 Nat.ltb: nat -> nat -> bool
 Nat.testbit: nat -> nat -> bool
 Nat.eqb: nat -> nat -> bool
+(use "About" for full details on implicit arguments)
 mult_n_O: forall n : nat, 0 = n * 0
 plus_O_n: forall n : nat, 0 + n = n
 plus_n_O: forall n : nat, n = n + 0
@@ -35,5 +37,8 @@ f_equal2_plus:
   forall x1 y1 x2 y2 : nat, x1 = y1 -> x2 = y2 -> x1 + x2 = y1 + y2
 f_equal2_mult:
   forall x1 y1 x2 y2 : nat, x1 = y1 -> x2 = y2 -> x1 * x2 = y1 * y2
+(use "About" for full details on implicit arguments)
 h: newdef n
+(use "About" for full details on implicit arguments)
 h: P n
+(use "About" for full details on implicit arguments)

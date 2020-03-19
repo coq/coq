@@ -45,6 +45,10 @@ val enable_goal_names_printing     : bool ref
     intended to be printed in scope [some_scope_name]. It defaults to
     [None].
 
+    [~impargs:some_list_of_binding_kind] indicates the implicit arguments
+    of the external quatification. Only used for printing types (not
+    terms), and at toplevel (only "l" versions). It defaults to [None].
+
     [~lax:true] is for debugging purpose. It defaults to [~lax:false]. *)
 
 
@@ -66,7 +70,7 @@ val pr_leconstr_env     : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -
 val pr_econstr_n_env    : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Constrexpr.entry_relative_level -> EConstr.t -> Pp.t
 
 val pr_etype_env        : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> EConstr.types -> Pp.t
-val pr_letype_env       : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> EConstr.types -> Pp.t
+val pr_letype_env       : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> ?impargs:Glob_term.binding_kind list -> EConstr.types -> Pp.t
 
 val pr_open_constr_env  : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> open_constr -> Pp.t
 val pr_open_lconstr_env : ?lax:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> open_constr -> Pp.t
@@ -97,7 +101,7 @@ val pr_lconstr_under_binders_env : env -> evar_map -> constr_under_binders -> Pp
 
     [~lax:true] is for debugging purpose. *)
 
-val pr_ltype_env           : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> types -> Pp.t
+val pr_ltype_env           : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> ?impargs:Glob_term.binding_kind list -> types -> Pp.t
 val pr_type_env            : ?lax:bool -> ?goal_concl_style:bool -> env -> evar_map -> types -> Pp.t
 
 val pr_closed_glob_n_env   : ?lax:bool -> ?goal_concl_style:bool -> ?inctx:bool -> ?scope:scope_name -> env -> evar_map -> Constrexpr.entry_relative_level -> closed_glob_constr -> Pp.t
