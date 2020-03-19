@@ -1,7 +1,7 @@
 .. _extraction:
 
-Extraction of programs in |OCaml| and Haskell
-=============================================
+Program extraction
+==================
 
 :Authors: Jean-Christophe Filliâtre and Pierre Letouzey
 

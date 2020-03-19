@@ -1,10 +1,5 @@
-.. _miscellaneousextensions:
-
-Miscellaneous extensions
-========================
-
 Program derivation
-------------------
+==================
 
 |Coq| comes with an extension called ``Derive``, which supports program
 derivation. Typically in the style of Bird and Meertens or derivations
