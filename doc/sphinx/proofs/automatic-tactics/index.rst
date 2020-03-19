@@ -10,8 +10,6 @@ be used to solve some specific categories of goals, and some
 programmable tactics, that the user can instrument to handle some
 complex goals in new domains.
 
-This chapter is divided in several sub-chapters:
-
 .. toctree::
    :maxdepth: 1
 

@@ -13,13 +13,6 @@ this has also highlighted its limits and fragility.  The experimental
 language :ref:`Ltac2 <ltac2>` is a typed and more principled variant
 which is more adapted to building complex tactics.
 
-.. toctree::
-   :maxdepth: 1
-
-   ../../proof-engine/ltac
-   ../../proof-engine/ltac2
-
-
 There are other solutions beyond these two tactic languages to write
 new tactics:
 
@@ -33,3 +26,9 @@ new tactics:
   effort and commitment.  A tutorial for writing Coq plugins is
   available in the Coq repository in `doc/plugin_tutorial
   <https://github.com/coq/coq/tree/master/doc/plugin_tutorial>`_.
+
+.. toctree::
+   :maxdepth: 1
+
+   ../../proof-engine/ltac
+   ../../proof-engine/ltac2

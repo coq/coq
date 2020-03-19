@@ -20,9 +20,9 @@ When a proof is complete, the user leaves the proof mode and defers
 the verification of the resulting proof term to the :ref:`kernel
 <core-language>`.
 
-This chapter is divided in several sub-chapters, describing the basic
-ideas of the proof mode (during which tactics can be used), and
-several flavors of tactics, including the SSReflect proof language:
+This chapter is divided in several parts, describing the basic ideas
+of the proof mode (during which tactics can be used), and several
+flavors of tactics, including the SSReflect proof language.
 
 .. toctree::
    :maxdepth: 1

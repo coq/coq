@@ -13,8 +13,6 @@ chapter, we present these language extensions and we give some
 explanations on how this language is translated down to the core
 language presented in the :ref:`previous chapter <core-language>`.
 
-This chapter is divided in several sub-chapters:
-
 .. toctree::
    :maxdepth: 1
 

@@ -27,8 +27,6 @@ users may rely on external plugins that provide advanced and complex
 tactics without fear of these tactics being buggy, because the kernel
 will have to check their output.
 
-This chapter is divided in several sub-chapters:
-
 .. toctree::
    :maxdepth: 1
 
