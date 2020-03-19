@@ -233,6 +233,7 @@ Tactic Notation "clear" "dependent" hyp(h) :=
   clear h ||
   match goal with
    | H : context [ h ] |- _ => depclear H; depclear h
+   | H := context [ h ] |- _ => depclear H; depclear h
   end ||
   fail "hypothesis to clear is used in the conclusion (maybe indirectly)"
  in depclear h.
