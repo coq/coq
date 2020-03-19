@@ -229,9 +229,7 @@ let debug_prompt lev tac f =
       Proofview.tclTHEN
         (Proofview.tclLIFT begin
           (skip:=0) >> (skipped:=0) >>
-            if Logic.catchable_exception reraise then
-              msg_tac_debug (str "Level " ++ int lev ++ str ": " ++ explain_logic_error reraise)
-            else return ()
+          msg_tac_debug (str "Level " ++ int lev ++ str ": " ++ explain_logic_error reraise)
         end)
         (Proofview.tclZERO ~info reraise)
     end

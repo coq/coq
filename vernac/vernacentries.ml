@@ -477,7 +477,7 @@ let program_inference_hook env sigma ev =
     let c, _, ctx =
       Pfedit.build_by_tactic ~poly:false env (Evd.evar_universe_context sigma) concl tac
     in Evd.set_universe_context sigma ctx, EConstr.of_constr c
-  with Logic_monad.TacticFailure e when Logic.catchable_exception e ->
+  with Logic_monad.TacticFailure e when noncritical e ->
     user_err Pp.(str "The statement obligations could not be resolved \
                       automatically, write a statement definition first.")
 

@@ -853,7 +853,7 @@ let change_on_subterm ~check cv_pb deep t where env sigma c =
   let sigma = if !mayneedglobalcheck then
     begin
       try fst (Typing.type_of env sigma c)
-      with e when catchable_exception e ->
+      with e when noncritical e ->
         error "Replacement would lead to an ill-typed term."
     end else sigma
   in
@@ -1313,7 +1313,7 @@ let cut c =
     (* Backward compat: ensure that [c] is well-typed. Plus we need to
        know the relevance *)
     match Typing.sort_of env sigma c with
-    | exception e when Pretype_errors.precatchable_exception e ->
+    | exception e when noncritical e ->
       Tacticals.New.tclZEROMSG (str "Not a proposition or a type.")
     | sigma, s ->
       let r = Sorts.relevance_of_sort s in
@@ -1717,7 +1717,7 @@ let general_apply ?(respect_opaque=false) with_delta with_destruct with_evars
         if n<0 then error "Applied theorem does not have enough premises.";
         let clause = make_clenv_binding_apply env sigma (Some n) (c,thm_ty) lbind in
         Clenvtac.res_pf clause ~with_evars ~flags
-      with exn when catchable_exception exn ->
+      with exn when noncritical exn ->
         Proofview.tclZERO exn
     in
     let rec try_red_apply thm_ty (exn0, info) =
@@ -1818,7 +1818,7 @@ let apply_list = function
 let find_matching_clause unifier clause =
   let rec find clause =
     try unifier clause
-    with e when catchable_exception e ->
+    with e when noncritical e ->
     try find (clenv_push_prod clause)
     with NotExtensibleClause -> failwith "Cannot apply"
   in find clause
@@ -4486,7 +4486,7 @@ let use_bindings env sigma elim must_be_closed (c,lbind) typ =
         error "Need a fully applied argument.";
       (* We lose the possibility of coercions in with-bindings *)
       pose_all_metas_as_evars env indclause.evd (clenv_value indclause)
-    with e when catchable_exception e ->
+    with e when noncritical e ->
     try find_clause (try_red_product env sigma typ)
     with Redelimination -> raise e in
   find_clause typ
@@ -5041,7 +5041,7 @@ let unify ?(state=TransparentState.full) x y =
     in
     let sigma = w_unify (Tacmach.New.pf_env gl) sigma Reduction.CONV ~flags x y in
     Proofview.Unsafe.tclEVARS sigma
-  with e when CErrors.noncritical e ->
+  with e when noncritical e ->
     Proofview.tclZERO (PretypeError (env, sigma, CannotUnify (x, y, None)))
   end
 

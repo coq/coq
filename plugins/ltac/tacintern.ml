@@ -363,7 +363,7 @@ let intern_typed_pattern ist ~as_type ~ltacvars p =
 let intern_typed_pattern_or_ref_with_occurrences ist (l,p) =
   let interp_ref r =
     try Inl (intern_evaluable ist r)
-    with e when Logic.catchable_exception e ->
+    with e when CErrors.noncritical e ->
       (* Compatibility. In practice, this means that the code above
          is useless. Still the idea of having either an evaluable
          ref or a pattern seems interesting, with "head" reduction

@@ -186,24 +186,26 @@ module Monad : Monad.S with type +'a t = 'a tactic
 
 (** {7 Failure and backtracking} *)
 
-(** [tclZERO e] fails with exception [e]. It has no success. *)
+(** [tclZERO e] fails with exception [e]. It has no success.
+    Exception is supposed to be non critical *)
 val tclZERO : ?info:Exninfo.info -> exn -> 'a tactic
 
 (** [tclOR t1 t2] behaves like [t1] as long as [t1] succeeds. Whenever
     the successes of [t1] have been depleted and it failed with [e],
     then it behaves as [t2 e]. In other words, [tclOR] inserts a
-    backtracking point. *)
+    backtracking point. In [t2], exception can be assumed non critical. *)
 val tclOR : 'a tactic -> (Exninfo.iexn -> 'a tactic) -> 'a tactic
 
 (** [tclORELSE t1 t2] is equal to [t1] if [t1] has at least one
     success or [t2 e] if [t1] fails with [e]. It is analogous to
     [try/with] handler of exception in that it is not a backtracking
-    point. *)
+    point. In [t2], exception can be assumed non critical. *)
 val tclORELSE : 'a tactic -> (Exninfo.iexn -> 'a tactic) -> 'a tactic
 
 (** [tclIFCATCH a s f] is a generalisation of {!tclORELSE}: if [a]
     succeeds at least once then it behaves as [tclBIND a s] otherwise,
-    if [a] fails with [e], then it behaves as [f e]. *)
+    if [a] fails with [e], then it behaves as [f e]. In [f]
+    exception can be assumed non critical. *)
 val tclIFCATCH : 'a tactic -> ('a -> 'b tactic) -> (Exninfo.iexn -> 'b tactic) -> 'b tactic
 
 (** [tclONCE t] behave like [t] except it has at most one success:
@@ -212,8 +214,9 @@ val tclIFCATCH : 'a tactic -> ('a -> 'b tactic) -> (Exninfo.iexn -> 'b tactic) -
 val tclONCE : 'a tactic -> 'a tactic
 
 (** [tclEXACTLY_ONCE e t] succeeds as [t] if [t] has exactly one
-    success. Otherwise it fails. The tactic [t] is run until its first
-    success, then a failure with exception [e] is simulated. It [t]
+    success. Otherwise it fails. The tactic [t] is run until its
+    first success, then a failure with exception [e] is
+    simulated ([e] has to be non critical). If [t]
     yields another success, then [tclEXACTLY_ONCE e t] fails with
     [MoreThanOneSuccess] (it is a user error). Otherwise,
     [tclEXACTLY_ONCE e t] succeeds with the first success of

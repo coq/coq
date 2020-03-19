@@ -204,14 +204,10 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
 
 
 let catch_failerror (e, info) =
-  if catchable_exception e then Control.check_for_interrupt ()
-  else match e with
-  | FailError (0,_) ->
-      Control.check_for_interrupt ()
-  | FailError (lvl,s) ->
+  match e with
+  | FailError (lvl,s) when lvl > 0 ->
     Exninfo.iraise (FailError (lvl - 1, s), info)
-  | e -> Exninfo.iraise (e, info)
-  (** FIXME: do we need to add a [Errors.push] here? *)
+  | e -> Control.check_for_interrupt ()
 
 (* ORELSE0 t1 t2 tries to apply t1 and if it fails, applies t2 *)
 let tclORELSE0 t1 t2 g =

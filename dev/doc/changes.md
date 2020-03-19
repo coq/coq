@@ -2,6 +2,13 @@
 
 ### ML API
 
+Refiner.catchable_exception is deprecated, use instead
+CErrors.noncritical in try-with block. Note that nothing is needed in
+tclORELSE block since the exceptions there are supposed to be
+non-critical by construction.
+
+### ML API
+
 Types `precedence`, `parenRelation`, `tolerability` in
 `notgram_ops.ml` have been reworked. See `entry_level` and
 `entry_relative_level` in `constrexpr.ml`.
