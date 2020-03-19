@@ -5,6 +5,6 @@ Inductive TT : Set :=
 
 Lemma lem4 : forall (n m : nat),
 S m <= m -> C (S m) <> C n -> False.
-Proof. firstorder. Qed.
+Proof. firstorder lia. Qed.
 
 Print Assumptions lem4.

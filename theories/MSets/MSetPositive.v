@@ -771,7 +771,7 @@ Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
   Proof.
     unfold Exists, In. intro f.
     induction s as [|l IHl o r IHr]; intros i; simpl.
-     firstorder.
+     firstorder with bool.
      rewrite <- 2orb_lazy_alt, 2orb_true_iff, <- andb_lazy_alt, andb_true_iff.
      rewrite IHl, IHr. clear IHl IHr.
       split.
