@@ -1279,7 +1279,8 @@ module M = struct
     let dump_expr i e =
       let rec dump_expr = function
         | Mc.PEX n ->
-          EConstr.mkRel (i + CList.assoc_f Int.equal (CoqToCaml.positive n) vars_idx)
+          EConstr.mkRel
+            (i + CList.assoc_f Int.equal (CoqToCaml.positive n) vars_idx)
         | Mc.PEc z -> dexpr.dump_cst z
         | Mc.PEadd (e1, e2) ->
           EConstr.mkApp (dexpr.dump_add, [|dump_expr e1; dump_expr e2|])
@@ -1294,7 +1295,9 @@ module M = struct
       dump_expr e
     in
     let mkop op e1 e2 =
-      try EConstr.mkApp (CList.assoc_f Mutils.Hash.eq_op2 op dexpr.dump_op, [|e1; e2|])
+      try
+        EConstr.mkApp
+          (CList.assoc_f Mutils.Hash.eq_op2 op dexpr.dump_op, [|e1; e2|])
       with Not_found ->
         EConstr.mkApp (Lazy.force coq_Eq, [|dexpr.interp_typ; e1; e2|])
     in
@@ -1606,7 +1609,8 @@ let witness_list_tags p g = witness_list p g
   * Prune the proof object, according to the 'diff' between two cnf formulas.
   *)
 
-let compact_proofs (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) res (cnf_ff' : 'cst cnf) =
+let compact_proofs (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) res
+    (cnf_ff' : 'cst cnf) =
   let eq_formula (p1, o1) (p2, o2) =
     let open Mutils.Hash in
     eq_pol eq_cst p1 p2 && eq_op1 o1 o2
@@ -1651,7 +1655,7 @@ let compact_proofs (eq_cst : 'cst -> 'cst -> bool) (cnf_ff : 'cst cnf) res (cnf_
     let eq (f1, (t1, e1)) (f2, (t2, e2)) =
       Int.equal (Tag.compare t1 t2) 0
       && eq_formula f1 f2
-      && ( = ) (e1 : EConstr.t) (e2 : EConstr.t)
+      && (e1 : EConstr.t) = (e2 : EConstr.t)
       (* FIXME: what equality should we use here? *)
     in
     is_sublist eq hyps new_cl
