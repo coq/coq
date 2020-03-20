@@ -1531,7 +1531,7 @@ let do_build_inductive evd (funconstants : pconstant list)
     let repacked_rel_inds =
       List.map
         (fun ((a, b, c, l), ntn) ->
-          (((false, (a, None)), b, c, Vernacexpr.Constructors l), ntn))
+          (((false, (a, None)), b, c), Vernacexpr.Constructors l, ntn))
         rel_inds
     in
     let msg =
@@ -1554,7 +1554,7 @@ let do_build_inductive evd (funconstants : pconstant list)
     let repacked_rel_inds =
       List.map
         (fun ((a, b, c, l), ntn) ->
-          (((false, (a, None)), b, c, Vernacexpr.Constructors l), ntn))
+          (((false, (a, None)), b, c), Vernacexpr.Constructors l, ntn))
         rel_inds
     in
     let msg =

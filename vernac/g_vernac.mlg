@@ -229,8 +229,12 @@ GRAMMAR EXTEND Gram
       | IDENT "Let"; id = ident_decl; b = def_body ->
           { VernacDefinition ((DoDischarge, Let), name_of_ident_decl id, b) }
       (* Gallina inductive declarations *)
-      | f = finite_token; ind = inductive_definition ->
-          { VernacInductive (f, [ind]) }
+      | IDENT "Variant"; variant = inductive_definition ->
+          { VernacInductive (Variant, [variant]) }
+      | IDENT "Class"; cl = class_definition ->
+          { VernacInductive (Class true, [cl]) }
+      | r = record_token; record = record_definition ->
+          { VernacInductive (r, [record]) }
       | f = inductive_token; indl = LIST1 inductive_definition SEP "with" ->
           { VernacInductive (f, indl) }
       | "Fixpoint"; recs = LIST1 fix_definition SEP "with" ->
@@ -350,11 +354,9 @@ GRAMMAR EXTEND Gram
     [ [ IDENT "Inductive" -> { Inductive_kw }
       | IDENT "CoInductive" -> { CoInductive } ] ]
   ;
-  finite_token:
-    [ [ IDENT "Variant" -> { Variant }
-      | IDENT "Record" -> { Record }
-      | IDENT "Structure" -> { Structure }
-      | IDENT "Class" -> { Class true } ] ]
+  record_token:
+    [ [ IDENT "Record" -> { Record }
+      | IDENT "Structure" -> { Structure } ] ]
   ;
   (* Simple definitions *)
   def_body:
@@ -389,15 +391,12 @@ GRAMMAR EXTEND Gram
   ;
   (* Inductives and records *)
   opt_constructors_or_fields:
-    [ [ ":="; lc = constructors_or_record -> { lc }
-      | -> { RecordDecl (None, [], None) } ] ]
+    [ [ ":="; lc = constructors_or_record -> { lc } ] ]
   ;
   inductive_definition:
-    [ [ oc = opt_coercion; id = cumul_ident_decl; indpar = binders;
-        extrapar = OPT [ "|"; p = binders -> { p } ];
-        c = OPT [ ":"; c = lconstr -> { c } ];
-        lc=opt_constructors_or_fields; ntn = decl_notations ->
-           { (((oc,id),(indpar,extrapar),c,lc),ntn) } ] ]
+    [ [ header = inductive_header;
+        lc = opt_constructors_or_fields; ntn = decl_notations ->
+           { (header,lc,ntn) } ] ]
   ;
   constructors_or_record:
     [ [ "|"; l = LIST1 constructor SEP "|" -> { Constructors l }
@@ -406,12 +405,41 @@ GRAMMAR EXTEND Gram
       | id = identref ; c = constructor_type -> { Constructors [ c id ] }
       | cstr = identref; "{"; fs = record_fields; "}"; id = default_inhabitant_ident ->
           { RecordDecl (Some cstr,fs,id) }
-      | "{";fs = record_fields; "}"; id = default_inhabitant_ident -> { RecordDecl (None,fs,id) }
+      | "{"; fs = record_fields; "}"; id = default_inhabitant_ident -> { RecordDecl (None,fs,id) }
       |  -> { Constructors [] } ] ]
   ;
   default_inhabitant_ident:
     [ [ "as"; id = identref -> { Some id }
       | -> { None } ] ]
+  ;
+  inductive_header:
+    [ [ oc = opt_coercion; id = cumul_ident_decl; indpar = binders;
+        extrapar = OPT [ "|"; p = binders -> { p } ];
+        c = OPT [ ":"; c = lconstr -> { c } ] -> { ((oc,id),(indpar,extrapar),c) } ] ]
+  ;
+  record_definition_body:
+    [ [ cstr = OPT [ cstr = identref -> { cstr } ]; "{"; fs = record_fields; "}";
+    id = default_inhabitant_ident ->
+          { RecordDecl (cstr,fs,id) } ] ]
+  ;
+  class_definition_body:
+    [ [ cstr = identref; "{"; fs = record_fields; "}"; id = default_inhabitant_ident ->
+          { RecordDecl (Some cstr,fs,id) }
+      | "{"; fs = record_fields; "}"; id = default_inhabitant_ident -> { RecordDecl (None,fs,id) }
+      | id = identref; c = constructor_type -> { Constructors [c id] } ] ]
+  ;
+  class_definition:
+    [ [ header = inductive_header; ":="; cl = class_definition_body; ntn = decl_notations ->
+          { (header,cl,ntn) }
+      | header = inductive_header; ntn = decl_notations ->
+          { (header, RecordDecl (None, [], None), ntn) } ] ]
+  ;
+  record_definition:
+    [ [ header = inductive_header; ":=" ; record = record_definition_body; ntn = decl_notations ->
+          { (header,record,ntn) }
+      | header = inductive_header; ntn = decl_notations ->
+          { (header, RecordDecl (None, [], None), ntn) }
+ ] ]
   ;
 (*
   csort:

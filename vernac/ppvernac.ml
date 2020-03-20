@@ -849,7 +849,7 @@ let pr_vernac_expr v =
       | RecordDecl (c,fs,obinder) ->
         pr_record_decl c fs obinder
     in
-    let pr_oneind key (((coe,iddecl),(indupar,indpar),s,lc),ntn) =
+    let pr_oneind key (((coe,iddecl),(indupar,indpar),s),lc,ntn) =
       hov 0 (
         str key ++ spc() ++
         (if coe then str"> " else str"") ++ pr_cumul_ident_decl iddecl ++

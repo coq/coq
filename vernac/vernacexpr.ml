@@ -193,10 +193,11 @@ type constructor_list_or_record_decl_expr =
 type inductive_params_expr = local_binder_expr list * local_binder_expr list option
 (** If the option is nonempty the "|" marker was used *)
 
+type inductive_header =
+  cumul_ident_decl with_coercion * inductive_params_expr * constr_expr option
+
 type inductive_expr =
-  cumul_ident_decl with_coercion
-  * inductive_params_expr * constr_expr option
-  * constructor_list_or_record_decl_expr
+  inductive_header * constructor_list_or_record_decl_expr * decl_notation list
 
 type one_inductive_expr =
   lident * inductive_params_expr * constr_expr option * constructor_expr list
@@ -350,7 +351,7 @@ type nonrec vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
-  | VernacInductive of inductive_kind * (inductive_expr * decl_notation list) list
+  | VernacInductive of inductive_kind * inductive_expr list
   | VernacFixpoint of discharge * fixpoint_expr list
   | VernacCoFixpoint of discharge * cofixpoint_expr list
   | VernacScheme of (lident option * scheme) list
