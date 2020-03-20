@@ -102,7 +102,7 @@ release: voboot
 	dune build $(DUNEOPT) -p coq
 
 fmt: voboot
-	dune build @fmt
+	dune build @fmt --auto-promote
 
 ocheck: voboot
 	dune build $(DUNEOPT) @install --workspace=dev/dune-workspace.all

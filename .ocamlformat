@@ -1,3 +1,4 @@
+version=0.13.0
 profile=ocamlformat
 module-item-spacing=compact
 sequence-style=terminator
