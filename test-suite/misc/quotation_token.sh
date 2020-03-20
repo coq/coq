@@ -15,10 +15,20 @@ make src/quotation_plugin.cma
 
 TMP=`mktemp`
 
-if make > $TMP 2>&1; then
-  echo "should fail"
-  rm $TMP
-  exit 1
+if which ocamlopt >/dev/null 2>&1; then
+  echo "detected native code"
+  if make > $TMP 2>&1; then
+    echo "should fail"
+    rm $TMP
+    exit 1
+  fi
+else
+  echo "detected byte-code"
+  if OPT=-byte make > $TMP 2>&1; then
+    echo "should fail"
+    rm $TMP
+    exit 1
+  fi
 fi
 
 if grep "File.*quotation.v., line 12, characters 6-30" $TMP; then
