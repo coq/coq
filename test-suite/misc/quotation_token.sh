@@ -35,7 +35,7 @@ if grep "File.*quotation.v., line 12, characters 6-30" $TMP; then
   rm $TMP
   exit 0
 else
-  echo "wong loc: `grep File.*quotation.v $TMP`"
+  echo "wrong loc: `grep File.*quotation.v $TMP`"
   rm $TMP
   exit 1
 fi
