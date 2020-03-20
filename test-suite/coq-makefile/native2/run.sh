@@ -7,7 +7,7 @@ if [[ $(which ocamlopt) && ! $NONATIVECOMP ]]; then
 
 coq_makefile -f _CoqProject -o Makefile
 cat Makefile.conf
-make
+COQEXTRAFLAGS="-native-compiler yes" make
 make html mlihtml
 make install DSTROOT="$PWD/tmp"
 #make debug

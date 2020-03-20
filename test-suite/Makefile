@@ -49,7 +49,8 @@ endif
 endif # exists ../_build
 export COQLIB
 
-COQFLAGS?=
+COQEXTRAFLAGS?=
+COQFLAGS?=$(COQEXTRAFLAGS)
 
 coqc := $(BIN)coqc -q -R prerequisite TestSuite $(COQFLAGS)
 coqchk := $(BIN)coqchk -R prerequisite TestSuite

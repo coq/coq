@@ -499,6 +499,40 @@ To build, say, two targets foo.vo and bar.vo in parallel one can use
     (``.PHONY`` or not) please use ``CoqMakefile.local``.
 
 
+Precompiling for ``native_compute``
++++++++++++++++++++++++++++++++++++
+
+To compile files for ``native_compute``, one can use the
+``-native-compiler yes`` option of |Coq|, for instance by putting the
+following in a :ref:`coqmakefilelocal` file:
+
+::
+
+    COQEXTRAFLAGS += -native-compiler yes
+
+The generated ``CoqMakefile`` installation target will then take care
+of installing the extra ``.coq-native`` directories.
+
+.. note::
+
+   As an alternative to modifying any file, one can set the
+   environment variable when calling ``make``:
+
+   ::
+
+      COQEXTRAFLAGS="-native-compiler yes" make
+
+   This can be useful when files cannot be modified, for instance when
+   installing via OPAM a package built with ``coq_makefile``:
+
+   ::
+
+      COQEXTRAFLAGS="-native-compiler yes" opam install coq-package
+
+.. note::
+
+   This requires all dependencies to be themselves compiled with
+   ``-native-compiler yes``.
 
 Building a |Coq| project with Dune
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
