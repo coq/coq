@@ -16,9 +16,11 @@ find what you are looking for.
    ../../coq-tacindex
    ../../coq-optindex
    ../../coq-exnindex
+   ../../coq-attrindex
 
 For reference, here are direct links to the documentation of:
 
 - :ref:`flags, options and tables <flags-options-tables>`;
 - controlling the display of warning messages with the :opt:`Warnings`
-  option.
+  option;
+- :ref:`gallina-attributes`.
