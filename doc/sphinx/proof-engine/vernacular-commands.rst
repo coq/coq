@@ -91,34 +91,30 @@ and tables:
 Flags, options and tables are identified by a series of identifiers, each with an initial
 capital letter.
 
-.. cmd::  {? {| Local | Global | Export } } Set @flag
+.. cmd::  Set @flag
    :name: Set
 
-   Sets :token:`flag` on. Scoping qualifiers are
-   described :ref:`here <set_unset_scope_qualifiers>`.
+   Sets :token:`flag` on.
 
-.. cmd:: {? {| Local | Global | Export } } Unset @flag
+.. cmd:: Unset @flag
    :name: Unset
 
-   Sets :token:`flag` off. Scoping qualifiers are
-   described :ref:`here <set_unset_scope_qualifiers>`.
+   Sets :token:`flag` off.
 
 .. cmd:: Test @flag
 
    Prints the current value of :token:`flag`.
 
 
-.. cmd:: {? {| Local | Global | Export } } Set @option {| @num | @string }
+.. cmd:: Set @option {| @num | @string }
    :name: Set @option
 
-   Sets :token:`option` to the specified value.  Scoping qualifiers are
-   described :ref:`here <set_unset_scope_qualifiers>`.
+   Sets :token:`option` to the specified value.
 
-.. cmd:: {? {| Local | Global | Export } } Unset @option
+.. cmd:: Unset @option
    :name: Unset @option
 
-   Sets :token:`option` to its default value.  Scoping qualifiers are
-   described :ref:`here <set_unset_scope_qualifiers>`.
+   Sets :token:`option` to its default value.
 
 .. cmd:: Test @option
 
@@ -157,27 +153,37 @@ capital letter.
 
    A synonym for :cmd:`Print Options`.
 
-.. _set_unset_scope_qualifiers:
+Locality attributes supported by :cmd:`Set` and :cmd:`Unset`
+````````````````````````````````````````````````````````````
 
-Scope qualifiers for :cmd:`Set` and :cmd:`Unset`
-`````````````````````````````````````````````````
+The :cmd:`Set` and :cmd:`Unset` commands support the :attr:`local`,
+:attr:`global` and :attr:`export` locality attributes:
 
-:n:`{? {| Local | Global | Export } }`
+* no attribute: the original setting is *not* restored at the end of
+  the current module or section.
+* :attr:`local` (an alternative syntax is to use the ``Local``
+  prefix): the setting is applied within the current module or
+  section.  The original value of the setting is restored at the end
+  of the current module or section.
+* :attr:`export` (an alternative syntax is to use the ``Export``
+  prefix): similar to :attr:`local`, the original value of the setting
+  is restored at the end of the current module or section.  In
+  addition, if the value is set in a module, then :cmd:`Import`\-ing
+  the module sets the option or flag.
+* :attr:`global` (an alternative syntax is to use the ``Global``
+  prefix): the original setting is *not* restored at the end of the
+  current module or section.  In addition, if the value is set in a
+  file, then :cmd:`Require`\-ing the file sets the option.
 
-Flag and option settings can be global in scope or local to nested scopes created by
-:cmd:`Module` and :cmd:`Section` commands.  There are four alternatives:
+Newly opened modules and sections inherit the current settings.
 
-* no qualifier: the original setting is *not* restored at the end of the current module or section.
-* **Local**: the setting is applied within the current scope.  The original value of the option
-  or flag is restored at the end of the current module or section.
-* **Global**: similar to no qualifier, the original setting is *not* restored at the end of the current
-  module or section.  In addition, if the value is set in a file, then :cmd:`Require`-ing
-  the file sets the option.
-* **Export**: similar to **Local**, the original value of the option or flag is restored at the
-  end of the current module or section.  In addition, if the value is set in a file, then :cmd:`Import`-ing
-  the file sets the option.
+.. note::
 
-Newly opened scopes inherit the current settings.
+   The use of the :attr:`global` attribute with the :cmd:`Set` and
+   :cmd:`Unset` commands is discouraged.  If your goal is to define
+   project-wide settings, you should rather use the command-line
+   arguments ``-set`` and ``-unset`` for setting flags and options
+   (cf. :ref:`command-line-options`).
 
 .. _requests-to-the-environment:
 
@@ -1152,49 +1158,51 @@ described first.
 Controlling the locality of commands
 -----------------------------------------
 
+.. attr:: global
+          local
 
-.. cmd:: Local @command
-         Global @command
-
-   Some commands support a Local or Global prefix modifier to control the
-   scope of their effect. There are four kinds of commands:
-
+   Some commands support a :attr:`local` or :attr:`global` attribute
+   to control the scope of their effect.  There is also a legacy (and
+   much more commonly used) syntax using the ``Local`` or ``Global``
+   prefixes (see :n:`@legacy_attr`).  There are four kinds of
+   commands:
 
    + Commands whose default is to extend their effect both outside the
      section and the module or library file they occur in.  For these
-     commands, the Local modifier limits the effect of the command to the
+     commands, the :attr:`local` attribute limits the effect of the command to the
      current section or module it occurs in.  As an example, the :cmd:`Coercion`
      and :cmd:`Strategy` commands belong to this category.
    + Commands whose default behavior is to stop their effect at the end
      of the section they occur in but to extend their effect outside the module or
-     library file they occur in. For these commands, the Local modifier limits the
+     library file they occur in. For these commands, the :attr:`local` attribute limits the
      effect of the command to the current module if the command does not occur in a
-     section and the Global modifier extends the effect outside the current
+     section and the :attr:`global` attribute extends the effect outside the current
      sections and current module if the command occurs in a section. As an example,
      the :cmd:`Arguments <Arguments (implicits)>`, :cmd:`Ltac` or :cmd:`Notation` commands belong
      to this category. Notice that a subclass of these commands do not support
-     extension of their scope outside sections at all and the Global modifier is not
+     extension of their scope outside sections at all and the :attr:`global` attribute is not
      applicable to them.
    + Commands whose default behavior is to stop their effect at the end
-     of the section or module they occur in.  For these commands, the ``Global``
-     modifier extends their effect outside the sections and modules they
-     occur in.  The :cmd:`Transparent` and :cmd:`Opaque`
-     (see Section :ref:`vernac-controlling-the-reduction-strategies`) commands
+     of the section or module they occur in.  For these commands, the :attr:`global`
+     attribute extends their effect outside the sections and modules they
+     occur in.  The :cmd:`Transparent` and :cmd:`Opaque` commands
      belong to this category.
    + Commands whose default behavior is to extend their effect outside
      sections but not outside modules when they occur in a section and to
      extend their effect outside the module or library file they occur in
-     when no section contains them. For these commands, the Local modifier
-     limits the effect to the current section or module while the Global
-     modifier extends the effect outside the module even when the command
+     when no section contains them. For these commands, the :attr:`local` attribute
+     limits the effect to the current section or module while the :attr:`global`
+     attribute extends the effect outside the module even when the command
      occurs in a section.  The :cmd:`Set` and :cmd:`Unset` commands belong to this
      category.
 
 .. attr:: export
 
-  Some commands support an :attr:`export` attribute. The effect of the attribute
-  is to make the effect of the command available when the module containing it
-  is imported. The :cmd:`Hint` command accepts it for instance.
+   Some commands support an :attr:`export` attribute.  The effect of
+   the attribute is to make the effect of the command available when
+   the module containing it is imported.  It is supported in
+   particular by the :cmd:`Hint`, :cmd:`Set` and :cmd:`Unset`
+   commands.
 
 .. _controlling-typing-flags:
 

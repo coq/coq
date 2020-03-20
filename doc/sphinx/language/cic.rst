@@ -1200,45 +1200,47 @@ Conversion is preserved as any (partial) instance :math:`I_j~q_1 … q_r` or
    at level :math:`\Type` (without annotations or hiding it behind a
    definition) template polymorphic if possible.
 
-   This can be prevented using the ``universes(notemplate)``
+   This can be prevented using the :attr:`universes(notemplate)`
    attribute.
+
+   Template polymorphism and full universe polymorphism (see Chapter
+   :ref:`polymorphicuniverses`) are incompatible, so if the latter is
+   enabled (through the :flag:`Universe Polymorphism` flag or the
+   :attr:`universes(polymorphic)` attribute) it will prevail over
+   automatic template polymorphism.
 
 .. warn:: Automatically declaring @ident as template polymorphic.
 
-   Warning ``auto-template`` can be used to find which types are
-   implicitly declared template polymorphic by :flag:`Auto Template
-   Polymorphism`.
+   Warning ``auto-template`` can be used (it is off by default) to
+   find which types are implicitly declared template polymorphic by
+   :flag:`Auto Template Polymorphism`.
 
    An inductive type can be forced to be template polymorphic using
-   the ``universes(template)`` attribute: it should then fulfill the
-   criterion to be template polymorphic or an error is raised.
+   the :attr:`universes(template)` attribute: in this case, the
+   warning is not emitted.
 
-.. exn:: Inductive @ident cannot be made template polymorphic.
+.. attr:: universes(template)
 
-   This error is raised when the `#[universes(template)]` attribute is
-   on but the inductive cannot be made polymorphic on any universe or be
-   inferred to live in :math:`\Prop` or :math:`\Set`.
+   This attribute can be used to explicitly declare an inductive type
+   as template polymorphic, whether the :flag:`Auto Template
+   Polymorphism` flag is on or off.
 
-   Template polymorphism and universe polymorphism (see Chapter
-   :ref:`polymorphicuniverses`) are incompatible, so if the later is
-   enabled it will prevail over automatic template polymorphism and
-   cause an error when using the ``universes(template)`` attribute.
+   .. exn:: template and polymorphism not compatible
 
-.. flag:: Template Check
+      This attribute cannot be used in a full universe polymorphic
+      context, i.e. if the :flag:`Universe Polymorphism` flag is on or
+      if the :attr:`universes(polymorphic)` attribute is used.
 
-   This flag is on by default. Turning it off disables the check of
-   locality of the sorts when abstracting the inductive over its
-   parameters. This is a deprecated and *unsafe* flag that can introduce
-   inconsistencies, it is only meant to help users incrementally update
-   code from Coq versions < 8.10 which did not implement this check.
-   The `Coq89.v` compatibility file sets this flag globally. A global
-   ``-no-template-check`` command line option is also available. Use at
-   your own risk. Use of this flag is recorded in the typing flags
-   associated to a definition but is *not* supported by the |Coq|
-   checker (`coqchk`). It will appear in :g:`Print Assumptions` and
-   :g:`About @ident` output involving inductive declarations that were
-   (potentially unsoundly) assumed to be template polymorphic.
+   .. exn:: Ill-formed template inductive declaration: not polymorphic on any universe.
 
+      The attribute was used but the inductive definition does not
+      satisfy the criterion to be template polymorphic.
+
+.. attr:: universes(notemplate)
+
+   This attribute can be used to prevent an inductive type to be
+   template polymorphic, even if the :flag:`Auto Template
+   Polymorphism` flag is on.
 
 In practice, the rule **Ind-Family** is used by |Coq| only when all the
 inductive types of the inductive definition are declared with an arity

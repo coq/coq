@@ -130,7 +130,7 @@ let classify_vernac e =
     | VernacPrimitive (id,_,_) ->
         VtSideff ([id.CAst.v], VtLater)
     | VernacDefinition (_,({v=id},_),DefineBody _) -> VtSideff (idents_of_name id, VtLater)
-    | VernacInductive (_, _,_,l) ->
+    | VernacInductive (_,l) ->
         let ids = List.map (fun (((_,({v=id},_)),_,_,cl),_) -> id :: match cl with
         | Constructors l -> List.map (fun (_,({v=id},_)) -> id) l
         | RecordDecl (oid,l) -> (match oid with Some {v=x} -> [x] | _ -> []) @

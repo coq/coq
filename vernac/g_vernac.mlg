@@ -107,35 +107,40 @@ GRAMMAR EXTEND Gram
       | -> { VernacFlagEmpty } ]
     ]
   ;
-  vernac:
-    [ [ IDENT "Local"; v = vernac_poly -> { let (f, v) = v in (("local", VernacFlagEmpty) :: f, v) }
-      | IDENT "Global"; v = vernac_poly -> { let (f, v) = v in (("global", VernacFlagEmpty) :: f, v) }
-
-      | v = vernac_poly -> { v } ]
-    ]
+  legacy_attr:
+    [ [ IDENT "Local" ->
+        { ("local", VernacFlagEmpty) }
+      | IDENT "Global" ->
+        { ("global", VernacFlagEmpty) }
+      | IDENT "Polymorphic" ->
+        { Attributes.vernac_polymorphic_flag }
+      | IDENT "Monomorphic" ->
+        { Attributes.vernac_monomorphic_flag }
+      | IDENT "Cumulative" ->
+        { ("universes", VernacFlagList ["cumulative", VernacFlagEmpty]) }
+      | IDENT "NonCumulative" ->
+        { ("universes", VernacFlagList ["noncumulative", VernacFlagEmpty]) }
+      | IDENT "Private" ->
+        { ("private", VernacFlagList ["matching", VernacFlagEmpty]) }
+      | IDENT "Program" ->
+        { ("program", VernacFlagEmpty) }
+      ] ]
   ;
-  vernac_poly:
-    [ [ IDENT "Polymorphic"; v = vernac_aux ->
-        { let (f, v) = v in (Attributes.vernac_polymorphic_flag :: f, v) }
-      | IDENT "Monomorphic"; v = vernac_aux ->
-        { let (f, v) = v in (Attributes.vernac_monomorphic_flag :: f, v) }
-      | v = vernac_aux -> { v } ]
-    ]
+  vernac:
+    [ [ attrs = LIST0 legacy_attr; v = vernac_aux -> { (attrs, v) } ] ]
   ;
   vernac_aux:
     (* Better to parse "." here: in case of failure (e.g. in coerce_to_var), *)
     (* "." is still in the stream and discard_to_dot works correctly         *)
-    [ [ IDENT "Program"; g = gallina; "." -> { (["program", VernacFlagEmpty], g) }
-      | IDENT "Program"; g = gallina_ext; "." -> { (["program", VernacFlagEmpty], g) }
-      | g = gallina; "." -> { ([], g) }
-      | g = gallina_ext; "." -> { ([], g) }
-      | c = command; "." -> { ([], c) }
-      | c = syntax; "." -> { ([], c) }
-      | c = subprf -> { ([], c) }
+    [ [ g = gallina; "." -> { g }
+      | g = gallina_ext; "." -> { g }
+      | c = command; "." -> { c }
+      | c = syntax; "." -> { c }
+      | c = subprf -> { c }
     ] ]
   ;
   vernac_aux: LAST
-    [ [ prfcom = command_entry -> { ([], prfcom) } ] ]
+    [ [ prfcom = command_entry -> { prfcom } ] ]
   ;
   noedit_mode:
     [ [ c = query_command -> { c None } ] ]
@@ -197,9 +202,8 @@ GRAMMAR EXTEND Gram
       | IDENT "Let"; id = identref; b = def_body ->
           { VernacDefinition ((DoDischarge, Let), (lname_of_lident id, None), b) }
       (* Gallina inductive declarations *)
-      | cum = OPT cumulativity_token; priv = private_token; f = finite_token;
-        indl = LIST1 inductive_definition SEP "with" ->
-          { VernacInductive (cum, priv, f, indl) }
+      | f = finite_token; indl = LIST1 inductive_definition SEP "with" ->
+          { VernacInductive (f, indl) }
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           { VernacFixpoint (NoDischarge, recs) }
       | IDENT "Let"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
@@ -340,13 +344,6 @@ GRAMMAR EXTEND Gram
       | IDENT "Record" -> { Record }
       | IDENT "Structure" -> { Structure }
       | IDENT "Class" -> { Class true } ] ]
-  ;
-  cumulativity_token:
-    [ [ IDENT "Cumulative" -> { VernacCumulative }
-      | IDENT "NonCumulative" -> { VernacNonCumulative } ] ]
-  ;
-  private_token:
-    [ [ IDENT "Private" -> { true } | -> { false } ] ]
   ;
   (* Simple definitions *)
   def_body:

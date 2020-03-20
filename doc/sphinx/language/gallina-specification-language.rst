@@ -767,6 +767,10 @@ Section :ref:`typing-rules`.
    If :n:`@reduce` is present then :n:`@ident` is bound to the result of the specified
    computation on :n:`@term`.
 
+   These commands also support the :attr:`universes(polymorphic)`,
+   :attr:`universes(monomorphic)`, :attr:`program` and
+   :attr:`canonical` attributes.
+
    If :n:`@term` is omitted, Coq enters the proof editing mode.  This can be
    used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
@@ -821,9 +825,11 @@ Inductive types
    may be impossible to derive (for example, when :n:`@ident` is a
    proposition).
 
-   This command supports the :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
-   :attr:`universes(template)`, :attr:`universes(notemplate)`,
-   :attr:`Cumulative`, :attr:`NonCumulative` and :attr:`Private` attributes.
+   This command supports the :attr:`universes(polymorphic)`,
+   :attr:`universes(monomorphic)`, :attr:`universes(template)`,
+   :attr:`universes(notemplate)`, :attr:`universes(cumulative)`,
+   :attr:`universes(noncumulative)` and :attr:`private(matching)`
+   attributes.
 
    Mutually inductive types can be defined by including multiple :n:`@inductive_definition`\s.
    The :n:`@ident`\s are simultaneously added to the environment before the types of constructors are checked.
@@ -851,9 +857,9 @@ Inductive types
       :n:`@ident` being defined (or :n:`@ident` applied to arguments in
       the case of annotated inductive types — cf. next section).
 
-The following subsections show examples of simple inductive types, simple annotated
-inductive types, simple parametric inductive types and mutually inductive
-types.
+The following subsections show examples of simple inductive types,
+simple annotated inductive types, simple parametric inductive types,
+mutually inductive types and private (matching) inductive types.
 
 .. _simple-inductive-types:
 
@@ -1122,6 +1128,31 @@ Mutually defined inductive types
    A generic command :cmd:`Scheme` is useful to build automatically various
    mutual induction principles.
 
+Private (matching) inductive types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. attr:: private(matching)
+
+   This attribute can be used to forbid the use of the :g:`match`
+   construct on objects of this inductive type outside of the module
+   where it is defined.  There is also a legacy syntax using the
+   ``Private`` prefix (cf. :n:`@legacy_attr`).
+
+   The main use case of private (matching) inductive types is to emulate
+   quotient types / higher-order inductive types in projects such as
+   the `HoTT library <https://github.com/HoTT/HoTT>`_.
+
+.. example::
+
+   .. coqtop:: all
+
+      Module Foo.
+      #[ private(matching) ] Inductive my_nat := my_O : my_nat | my_S : my_nat -> my_nat.
+      Check (fun x : my_nat => match x with my_O => true | my_S _ => false end).
+      End Foo.
+      Import Foo.
+      Fail Check (fun x : my_nat => match x with my_O => true | my_S _ => false end).
+
 Variants
 ~~~~~~~~
 
@@ -1132,9 +1163,11 @@ Variants
    be defined using :cmd:`Variant`). No induction scheme is generated for
    this variant, unless the :flag:`Nonrecursive Elimination Schemes` flag is on.
 
-   This command supports the :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
-   :attr:`universes(template)`, :attr:`universes(notemplate)`,
-   :attr:`Cumulative`, :attr:`NonCumulative` and :attr:`Private` attributes.
+   This command supports the :attr:`universes(polymorphic)`,
+   :attr:`universes(monomorphic)`, :attr:`universes(template)`,
+   :attr:`universes(notemplate)`, :attr:`universes(cumulative)`,
+   :attr:`universes(noncumulative)` and :attr:`private(matching)`
+   attributes.
 
    .. exn:: The @num th argument of @ident must be @ident in @type.
       :undocumented:
@@ -1160,9 +1193,11 @@ of the type.
    type, since such principles only make sense for inductive types.
    For co-inductive types, the only elimination principle is case analysis.
 
-   This command supports the :attr:`universes(polymorphic)`, :attr:`universes(monomorphic)`,
-   :attr:`universes(template)`, :attr:`universes(notemplate)`,
-   :attr:`Cumulative`, :attr:`NonCumulative` and :attr:`Private` attributes.
+   This command supports the :attr:`universes(polymorphic)`,
+   :attr:`universes(monomorphic)`, :attr:`universes(template)`,
+   :attr:`universes(notemplate)`, :attr:`universes(cumulative)`,
+   :attr:`universes(noncumulative)` and :attr:`private(matching)`
+   attributes.
 
 .. example::
 
@@ -1607,14 +1642,21 @@ the proof and adds it to the environment.
 Attributes
 -----------
 
-.. insertprodn all_attrs legacy_attrs
+.. insertprodn all_attrs legacy_attr
 
 .. prodn::
-   all_attrs ::= {* #[ {*, @attr } ] } {? @legacy_attrs }
+   all_attrs ::= {* #[ {*, @attr } ] } {* @legacy_attr }
    attr ::= @ident {? @attr_value }
    attr_value ::= = @string
    | ( {*, @attr } )
-   legacy_attrs ::= {? {| Local | Global } } {? {| Polymorphic | Monomorphic } } {? Program } {? {| Cumulative | NonCumulative } } {? Private }
+   legacy_attr ::= Local
+   | Global
+   | Polymorphic
+   | Monomorphic
+   | Cumulative
+   | NonCumulative
+   | Private
+   | Program
 
 Attributes modify the behavior of a command or tactic.
 Syntactically, most commands and tactics can be decorated with attributes, but
@@ -1623,7 +1665,7 @@ attributes not supported by the command or tactic will be flagged as errors.
 The order of top-level attributes doesn't affect their meaning.  ``#[foo,bar]``, ``#[bar,foo]``,
 ``#[foo]#[bar]`` and ``#[bar]#[foo]`` are equivalent.
 
-The legacy attributes (:n:`@legacy_attrs`) provide an older, alternate syntax
+The legacy attributes (:n:`@legacy_attr`) provide an older, alternate syntax
 for certain attributes.  They are equivalent to new attributes as follows:
 
 ================  ================================
@@ -1633,64 +1675,11 @@ Legacy attribute  New attribute
 `Global`          :attr:`global`
 `Polymorphic`     :attr:`universes(polymorphic)`
 `Monomorphic`     :attr:`universes(monomorphic)`
-`Cumulative`      none
-`NonCumulative`   none
-`Private`         none
+`Cumulative`      :attr:`universes(cumulative)`
+`NonCumulative`   :attr:`universes(noncumulative)`
+`Private`         :attr:`private(matching)`
 `Program`         :attr:`program`
 ================  ================================
-
-Some attributes are specific to a command, and so are described with
-that command. Currently, the following attributes are recognized:
-
-.. attr:: universes(monomorphic)
-   :name: universes(monomorphic)
-
-   See :ref:`polymorphicuniverses`.
-
-.. attr:: universes(polymorphic)
-   :name: universes(polymorphic)
-
-   See :ref:`polymorphicuniverses`.
-
-.. attr:: universes(template)
-   :name: universes(template)
-
-   See :ref:`Template-polymorphism`
-
-.. attr:: universes(notemplate)
-   :name: universes(notemplate)
-
-   See :ref:`Template-polymorphism`
-
-.. attr:: program
-
-   See :ref:`programs`.
-
-.. attr:: global
-
-   See :ref:`controlling-locality-of-commands`.
-
-.. attr:: local
-
-   See :ref:`controlling-locality-of-commands`.
-
-.. attr:: Cumulative
-
-   Legacy attribute, only allowed in a polymorphic context.
-   Specifies that two instances of the same inductive type (family) are convertible
-   based on the universe variances; they do not need to be equal.
-   See :ref:`cumulative`.
-
-.. attr:: NonCumulative
-
-   Legacy attribute, only allowed in a polymorphic context.
-   Specifies that two instances of the same inductive type (family) are convertible
-   only if all the universes are equal.
-   See :ref:`cumulative`.
-
-.. attr:: Private
-
-   Legacy attribute.  Documentation to be added.
 
 .. attr:: deprecated ( {? since = @string , } {? note = @string } )
    :name: deprecated
@@ -1703,46 +1692,24 @@ that command. Currently, the following attributes are recognized:
 
     It can trigger the following warnings:
 
-    .. warn:: Tactic @qualid is deprecated since @string. @string.
-       :undocumented:
+    .. warn:: Tactic @qualid is deprecated since @string__since. @string__note.
+              Tactic Notation @qualid is deprecated since @string__since. @string__note.
+              Notation @string is deprecated since @string__since. @string__note.
 
-    .. warn:: Tactic Notation @qualid is deprecated since @string. @string.
-       :undocumented:
+       :n:`@qualid` or :n:`@string` is the notation, :n:`@string__since` is the version number,
+       :n:`@string__note` is the note (usually explains the replacement).
 
-    .. warn:: Notation @string__1 is deprecated since @string__2. @string__3.
+    .. example::
 
-       :n:`@string__1` is the actual notation, :n:`@string__2` is the version number,
-       :n:`@string__3` is the note.
+       .. coqtop:: all reset warn
 
-.. attr:: canonical
+          #[deprecated(since="8.9.0", note="Use idtac instead.")]
+          Ltac foo := idtac.
 
-    This attribute can decorate a :cmd:`Definition` or :cmd:`Let` command.
-    It is equivalent to having a :cmd:`Canonical Structure` declaration just
-    after the command.
-
-    This attribute can take the value ``false`` when decorating a record field
-    declaration with the effect of preventing the field from being involved in
-    the inference of canonical instances.
-
-    See also :ref:`canonical-structure-declaration`.
-
-.. example::
-
-   .. coqtop:: all reset warn
-
-        From Coq Require Program.
-        #[program] Definition one : nat := S _.
-        Next Obligation.
-          exact O.
-        Defined.
-
-        #[deprecated(since="8.9.0", note="Use idtac instead.")]
-        Ltac foo := idtac.
-
-        Goal True.
-        Proof.
+          Goal True.
+          Proof.
           now foo.
-        Abort.
+          Abort.
 
 .. warn:: Unsupported attribute
 

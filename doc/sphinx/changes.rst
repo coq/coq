@@ -222,7 +222,7 @@ Changes in 8.11+beta1
 
   .. _811RefineInstance:
 
-- **Added:** ``#[refine]`` attribute for :cmd:`Instance`, a more
+- **Added:** :attr:`refine` attribute for :cmd:`Instance`, a more
   predictable version of the old ``Refine Instance Mode`` which
   unconditionally opens a proof (`#10996
   <https://github.com/coq/coq/pull/10996>`_, by Gaëtan Gilbert).
@@ -1316,7 +1316,7 @@ Changes in 8.10+beta3
   rules governing template-polymorphic types.
 
   To help users incrementally fix this issue, a command line option
-  `-no-template-check` and a global flag :flag:`Template Check` are
+  `-no-template-check` and a global flag ``Template Check`` are
   available to selectively disable the new check. Use at your own risk.
 
   (`#9918 <https://github.com/coq/coq/pull/9918>`_, by Matthieu Sozeau

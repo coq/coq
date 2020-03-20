@@ -172,7 +172,7 @@ vernacular: [
 ]
 
 all_attrs: [
-| LIST0 ( "#[" LIST0 attr SEP "," "]" ) OPT legacy_attrs
+| LIST0 ( "#[" LIST0 attr SEP "," "]" ) LIST0 legacy_attr
 ]
 
 attr: [
@@ -184,8 +184,15 @@ attr_value: [
 | "(" LIST0 attr SEP "," ")"
 ]
 
-legacy_attrs: [
-| OPT [ "Local" | "Global" ] OPT [ "Polymorphic" | "Monomorphic" ] OPT "Program" OPT [ "Cumulative" | "NonCumulative" ] OPT "Private"
+legacy_attr: [
+| "Local"
+| "Global"
+| "Polymorphic"
+| "Monomorphic"
+| "Cumulative"
+| "NonCumulative"
+| "Private"
+| "Program"
 ]
 
 sort: [
@@ -338,20 +345,10 @@ pattern0: [
 ]
 
 vernac: [
-| "Local" vernac_poly
-| "Global" vernac_poly
-| vernac_poly
-]
-
-vernac_poly: [
-| "Polymorphic" vernac_aux
-| "Monomorphic" vernac_aux
-| vernac_aux
+| LIST0 legacy_attr vernac_aux
 ]
 
 vernac_aux: [
-| "Program" gallina "."
-| "Program" gallina_ext "."
 | gallina "."
 | gallina_ext "."
 | command "."

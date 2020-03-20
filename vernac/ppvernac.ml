@@ -804,7 +804,7 @@ let string_of_definition_object_kind = let open Decls in function
         let assumptions = prlist_with_sep spc (fun p -> hov 1 (str "(" ++ pr_params p ++ str ")")) l in
         return (hov 2 (pr_assumption_token (n > 1) discharge kind ++
                        pr_non_empty_arg pr_assumption_inline t ++ spc() ++ assumptions))
-      | VernacInductive (cum, p,f,l) ->
+      | VernacInductive (f,l) ->
         let pr_constructor (coe,(id,c)) =
           hov 2 (pr_lident id ++ str" " ++
                    (if coe then str":>" else str":") ++
@@ -830,24 +830,14 @@ let string_of_definition_object_kind = let open Decls in function
               str" :=") ++ pr_constructor_list lc ++
             prlist (pr_decl_notation @@ pr_constr env sigma) ntn
         in
-        let key =
-          let kind =
-            match f with Record -> "Record" | Structure -> "Structure"
-                       | Inductive_kw -> "Inductive" | CoInductive -> "CoInductive"
-                       | Class _ -> "Class" | Variant -> "Variant"
-          in
-          if p then
-            let cm =
-              match cum with
-              | Some VernacCumulative -> "Cumulative"
-              | Some VernacNonCumulative -> "NonCumulative"
-              | None -> ""
-            in
-            cm ^ " " ^ kind
-          else kind
+        let kind =
+          match f with
+          | Record -> "Record" | Structure -> "Structure"
+          | Inductive_kw -> "Inductive" | CoInductive -> "CoInductive"
+          | Class _ -> "Class" | Variant -> "Variant"
         in
         return (
-          hov 1 (pr_oneind key (List.hd l)) ++
+          hov 1 (pr_oneind kind (List.hd l)) ++
           (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
         )
 

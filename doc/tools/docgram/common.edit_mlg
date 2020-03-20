@@ -140,10 +140,10 @@ field_ident: [
 | "." ident
 ]
 
-basequalid: [
-| REPLACE ident fields
-| WITH ident LIST0 field_ident
-| DELETE ident
+qualid: [ | DELETENT ]
+
+qualid: [
+| ident LIST0 field_ident
 ]
 
 field: [ | DELETENT ]
@@ -387,7 +387,7 @@ gallina: [
 | REPLACE thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
 | WITH thm_token ident_decl binders ":" type LIST0 [ "with" ident_decl binders ":" type ]
 | DELETE assumptions_token inline assum_list
-| REPLACE OPT cumulativity_token private_token finite_token LIST1 inductive_definition SEP "with"
+| REPLACE finite_token LIST1 inductive_definition SEP "with"
 | WITH "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
 |   "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
 |   "Variant" inductive_definition LIST0 ( "with" inductive_definition )
@@ -403,11 +403,6 @@ gallina: [
 | WITH "Let" "CoFixpoint" corec_definition LIST0 ( "with" corec_definition )
 | REPLACE "Scheme" LIST1 scheme SEP "with"
 | WITH "Scheme" scheme LIST0 ( "with" scheme )
-]
-
-DELETE: [
-| private_token
-| cumulativity_token
 ]
 
 constructor_list_or_record_decl: [
@@ -737,12 +732,8 @@ assumption_token: [
 | WITH [ "Variable" | "Variables" ]
 ]
 
-legacy_attrs: [
-| OPT [ "Local" | "Global" ] OPT [ "Polymorphic" | "Monomorphic" ] OPT "Program" OPT [ "Cumulative" | "NonCumulative" ] OPT "Private"
-]
-
 all_attrs: [
-| LIST0 ( "#[" LIST0 attribute SEP "," "]" ) OPT legacy_attrs
+| LIST0 ( "#[" LIST0 attribute SEP "," "]" ) LIST0 legacy_attr
 ]
 
 vernacular: [
@@ -842,7 +833,6 @@ SPLICE: [
 | ne_lstring
 | ne_string
 | lstring
-| basequalid
 | fullyqualid
 | global
 | reference

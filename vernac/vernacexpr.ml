@@ -250,10 +250,6 @@ type register_kind =
 type module_ast_inl = module_ast * Declaremods.inline
 type module_binder = bool option * lident list * module_ast_inl
 
-(** [Some b] if locally enabled/disabled according to [b], [None] if
-    we should use the global flag. *)
-type vernac_cumulative = VernacCumulative | VernacNonCumulative
-
 (** {6 The type of vernacular expressions} *)
 
 type vernac_one_argument_status = {
@@ -312,7 +308,7 @@ type nonrec vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of (discharge * Decls.assumption_object_kind) *
       Declaremods.inline * (ident_decl list * constr_expr) with_coercion list
-  | VernacInductive of vernac_cumulative option * bool (* private *) * inductive_kind * (inductive_expr * decl_notation list) list
+  | VernacInductive of inductive_kind * (inductive_expr * decl_notation list) list
   | VernacFixpoint of discharge * fixpoint_expr list
   | VernacCoFixpoint of discharge * cofixpoint_expr list
   | VernacScheme of (lident option * scheme) list
@@ -403,7 +399,7 @@ type nonrec vernac_expr =
   | VernacSetOpacity of (Conv_oracle.level * qualid or_by_notation list)
   | VernacSetStrategy of
       (Conv_oracle.level * qualid or_by_notation list) list
-  | VernacSetOption of export_flag * Goptions.option_name * option_setting
+  | VernacSetOption of bool (* Export modifier? *) * Goptions.option_name * option_setting
   | VernacAddOption of Goptions.option_name * option_ref_value list
   | VernacRemoveOption of Goptions.option_name * option_ref_value list
   | VernacMemOption of Goptions.option_name * option_ref_value list

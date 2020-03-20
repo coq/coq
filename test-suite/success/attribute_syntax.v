@@ -36,3 +36,10 @@ Check M.zed@{_}.
 Fail Check zed.
 Check M.kats@{_}.
 Fail Check kats.
+
+Export Set Foo.
+
+#[ export ] Set Foo.
+
+Fail #[ export ] Export Foo.
+(* Attribute for Locality specified twice *)

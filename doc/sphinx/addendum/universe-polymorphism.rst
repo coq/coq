@@ -122,62 +122,92 @@ in a universe strictly higher than :g:`Set`.
 Polymorphic, Monomorphic
 -------------------------
 
-.. cmd:: Polymorphic @definition
+.. attr:: universes(polymorphic)
 
-   As shown in the examples, polymorphic definitions and inductives can be
-   declared using the ``Polymorphic`` prefix.
+   This attribute can be used to declare universe polymorphic
+   definitions and inductive types.  There is also a legacy syntax
+   using the ``Polymorphic`` prefix (see :n:`@legacy_attr`) which, as
+   shown in the examples, is more commonly used.
 
 .. flag:: Universe Polymorphism
 
-   Once enabled, this flag will implicitly prepend ``Polymorphic`` to any
-   definition of the user.
+   This flag is off by default.  When it is on, new declarations are
+   polymorphic unless the :attr:`universes(monomorphic)` attribute is
+   used.
 
-.. cmd:: Monomorphic @definition
+.. attr:: universes(monomorphic)
 
-   When the :flag:`Universe Polymorphism` flag is set, to make a definition
-   producing global universe constraints, one can use the ``Monomorphic`` prefix.
+   This attribute can be used to declare universe monomorphic
+   definitions and inductive types (i.e. global universe constraints
+   are produced), even when the :flag:`Universe Polymorphism` flag is
+   on.  There is also a legacy syntax using the ``Monomorphic`` prefix
+   (see :n:`@legacy_attr`).
 
-Many other commands support the ``Polymorphic`` flag, including:
+Many other commands can be used to declare universe polymorphic or
+monomorphic constants depending on whether the :flag:`Universe
+Polymorphism` flag is on or the :attr:`universes(polymorphic)` or
+:attr:`universes(monomorphic)` attributes are used:
 
-.. TODO add links on each of these?
+- :cmd:`Lemma`, :cmd:`Axiom`, etc. can be used to declare universe
+  polymorphic constants.
 
-- ``Lemma``, ``Axiom``, and all the other “definition” keywords support
-  polymorphism.
+- Using the :attr:`universes(polymorphic)` attribute with the
+  :cmd:`Section` command will locally set the polymorphism flag inside
+  the section.
 
-- :cmd:`Section` will locally set the polymorphism flag inside the section.
+- :cmd:`Variable`, :cmd:`Context`, :cmd:`Universe` and
+  :cmd:`Constraint` in a section support polymorphism. See
+  :ref:`universe-polymorphism-in-sections` for more details.
 
-- ``Variables``, ``Context``, ``Universe`` and ``Constraint`` in a section support
-  polymorphism. See :ref:`universe-polymorphism-in-sections` for more details.
-
-- :cmd:`Hint Resolve` and :cmd:`Hint Rewrite` will use the auto/rewrite hint
-  polymorphically, not at a single instance.
+- Using the :attr:`universes(polymorphic)` attribute with the
+  :cmd:`Hint Resolve` or :cmd:`Hint Rewrite` commands will make
+  :tacn:`auto` / :tacn:`rewrite` use the hint polymorphically, not at
+  a single instance.
 
 .. _cumulative:
 
 Cumulative, NonCumulative
 -------------------------
 
-Polymorphic inductive types, coinductive types, variants and records can be
-declared cumulative using the :g:`Cumulative` prefix.
+.. attr:: universes(cumulative)
 
-.. cmd:: Cumulative @inductive
+   Polymorphic inductive types, coinductive types, variants and
+   records can be declared cumulative using this attribute or the
+   legacy ``Cumulative`` prefix (see :n:`@legacy_attr`) which, as
+   shown in the examples, is more commonly used.
 
-   Declares the inductive as cumulative
+   This means that two instances of the same inductive type (family)
+   are convertible based on the universe variances; they do not need
+   to be equal.
 
-Alternatively, there is a :flag:`Polymorphic Inductive
-Cumulativity` flag which when set, makes all subsequent *polymorphic*
-inductive definitions cumulative.  When set, inductive types and the
-like can be enforced to be non-cumulative using the :g:`NonCumulative`
-prefix.
+   .. exn:: The cumulative and noncumulative attributes can only be used in a polymorphic context.
 
-.. cmd:: NonCumulative @inductive
+      Using this attribute requires being in a polymorphic context,
+      i.e. either having the :flag:`Universe Polymorphism` flag on, or
+      having used the :attr:`universes(polymorphic)` attribute as
+      well.
 
-   Declares the inductive as non-cumulative
+   .. note::
+
+      ``#[ universes(polymorphic), universes(cumulative) ]`` can be
+      abbreviated into ``#[ universes(polymorphic, cumulative) ]``.
 
 .. flag:: Polymorphic Inductive Cumulativity
 
-   When this flag is on, it sets all following polymorphic inductive
-   types as cumulative (it is off by default).
+   When this flag is on (it is off by default), it makes all
+   subsequent *polymorphic* inductive definitions cumulative, unless
+   the :attr:`universes(noncumulative)` attribute is used.  It has no
+   effect on *monomorphic* inductive definitions.
+
+.. attr:: universes(noncumulative)
+
+   Declares the inductive type as non-cumulative even if the
+   :flag:`Polymorphic Inductive Cumulativity` flag is on.  There is
+   also a legacy syntax using the ``NonCumulative`` prefix (see
+   :n:`@legacy_attr`).
+
+   This means that two instances of the same inductive type (family)
+   are convertible only if all the universes are equal.
 
 Consider the examples below.
 
@@ -220,34 +250,10 @@ The following is an example of a record with non-trivial subtyping relation:
    E[Γ] ⊢ \mathsf{packType}@\{i\} =_{βδιζη}
    \mathsf{packType}@\{j\}~\mbox{ whenever }~i ≤ j
 
-Cumulative inductive types, coinductive types, variants and records
-only make sense when they are universe polymorphic. Therefore, an
-error is issued whenever the user uses the :g:`Cumulative` or
-:g:`NonCumulative` prefix in a monomorphic context.
-Notice that this is not the case for the :flag:`Polymorphic Inductive Cumulativity` flag.
-That is, this flag, when set, makes all subsequent *polymorphic*
-inductive declarations cumulative (unless, of course the :g:`NonCumulative` prefix is used)
-but has no effect on *monomorphic* inductive declarations.
-
-Consider the following examples.
-
-.. coqtop:: all reset
-
-   Fail Monomorphic Cumulative Inductive Unit := unit.
-
-.. coqtop:: all reset
-
-   Fail Monomorphic NonCumulative Inductive Unit := unit.
-
-.. coqtop:: all reset
-
-   Set Polymorphic Inductive Cumulativity.
-   Inductive Unit := unit.
-
 An example of a proof using cumulativity
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. coqtop:: in
+.. coqtop:: in reset
 
    Set Universe Polymorphism.
    Set Polymorphic Inductive Cumulativity.
@@ -368,9 +374,13 @@ to universes and explicitly instantiate polymorphic definitions.
    In the monorphic case, this command declares a new global universe
    named :g:`ident`, which can be referred to using its qualified name
    as well. Global universe names live in a separate namespace. The
-   command supports the ``Polymorphic`` flag only in sections, meaning the
-   universe quantification will be discharged on each section definition
+   command supports the :attr:`universes(polymorphic)` attribute (or
+   the ``Polymorphic`` prefix) only in sections, meaning the universe
+   quantification will be discharged on each section definition
    independently.
+
+   .. exn:: Polymorphic universes can only be declared inside sections, use Monomorphic Universe instead.
+      :undocumented:
 
 .. cmd:: Constraint @univ_constraint
          Polymorphic Constraint @univ_constraint
@@ -379,14 +389,18 @@ to universes and explicitly instantiate polymorphic definitions.
 
    If consistent, the constraint is then enforced in the global
    environment. Like :cmd:`Universe`, it can be used with the
-   ``Polymorphic`` prefix in sections only to declare constraints
-   discharged at section closing time. One cannot declare a global
-   constraint on polymorphic universes.
+   :attr:`universes(polymorphic)` attribute (or the ``Polymorphic``
+   prefix) in sections only to declare constraints discharged at
+   section closing time. One cannot declare a global constraint on
+   polymorphic universes.
 
    .. exn:: Undeclared universe @ident.
       :undocumented:
 
    .. exn:: Universe inconsistency.
+      :undocumented:
+
+   .. exn:: Polymorphic universe constraints can only be declared inside sections, use Monomorphic Constraint instead
       :undocumented:
 
 
