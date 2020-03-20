@@ -430,29 +430,39 @@ let make_dimension n = function
   | None -> (true,make_depth n)
   | Some d -> (false,d)
 
+let autounfolds ids csts gl cls =
+  let hyps = Tacmach.New.pf_ids_of_hyps gl in
+  let env = Tacmach.New.pf_env gl in
+  let ids = List.filter (fun id -> List.mem id hyps && Tacred.is_evaluable env (EvalVarRef id)) ids in
+  let csts = List.filter (fun cst -> Tacred.is_evaluable env (EvalConstRef cst)) csts in
+  let flags =
+    List.fold_left (fun flags cst -> CClosure.RedFlags.(red_add flags (fCONST cst)))
+      (List.fold_left (fun flags id -> CClosure.RedFlags.(red_add flags (fVAR id)))
+         CClosure.betaiotazeta ids) csts
+  in reduct_option ~check:false (Reductionops.clos_norm_flags flags, DEFAULTcast) cls
+
 let cons a l = a :: l
 
-let autounfolds db occs cls gl =
-  let unfolds = List.concat (List.map (fun dbname ->
-    let db = try searchtable_map dbname
-      with Not_found -> user_err ~hdr:"autounfold" (str "Unknown database " ++ str dbname)
-    in
-    let (ids, csts) = Hint_db.unfolds db in
-    let hyps = pf_ids_of_hyps gl in
-    let ids = Id.Set.filter (fun id -> List.mem id hyps) ids in
-      Cset.fold (fun cst -> cons (AllOccurrences, EvalConstRef cst)) csts
-        (Id.Set.fold (fun id -> cons (AllOccurrences, EvalVarRef id)) ids [])) db)
-  in Proofview.V82.of_tactic (unfold_option unfolds cls) gl
+exception UnknownDatabase of string
 
 let autounfold db cls =
-  Proofview.V82.tactic begin fun gl ->
-  let cls = concrete_clause_of (fun () -> pf_ids_of_hyps gl) cls in
-  let tac = autounfolds db in
-  tclMAP (function
-    | OnHyp (id,occs,where) -> tac occs (Some (id,where))
-    | OnConcl occs -> tac occs None)
-    cls gl
-  end
+  if not (Locusops.clause_with_generic_occurrences cls) then
+    user_err ~hdr:"autounfold" (str "\"at\" clause not supported");
+  match List.fold_left (fun (ids, csts) dbname ->
+    let db = try searchtable_map dbname
+      with Not_found -> raise (UnknownDatabase dbname)
+    in
+    let (db_ids, db_csts) = Hint_db.unfolds db in
+    (Id.Set.fold cons db_ids ids, Cset.fold cons db_csts csts)) ([], []) db
+  with
+  | (ids, csts) -> Proofview.Goal.enter begin fun gl ->
+      let cls = concrete_clause_of (fun () -> Tacmach.New.pf_ids_of_hyps gl) cls in
+      let tac = autounfolds ids csts gl in
+      Tacticals.New.tclMAP (function
+      | OnHyp (id, _, where) -> tac (Some (id, where))
+      | OnConcl _ -> tac None) cls
+    end
+  | exception UnknownDatabase dbname -> Tacticals.New.tclZEROMSG (str "Unknown database " ++ str dbname)
 
 let autounfold_tac db cls =
   Proofview.tclUNIT () >>= fun () ->
