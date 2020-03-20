@@ -530,22 +530,25 @@ let change_sort_arity sort =
    corresponding eta-expanded term *)
 let weaken_sort_scheme env evd set sort npars term ty =
   let evdref = ref evd in
-  let rec drec np elim =
+  let rec drec ctx np elim =
     match kind elim with
       | Prod (n,t,c) ->
+          let ctx = LocalAssum (n, t) :: ctx in
           if Int.equal np 0 then
             let osort, t' = change_sort_arity sort t in
               evdref := (if set then Evd.set_eq_sort else Evd.set_leq_sort) env !evdref sort osort;
               mkProd (n, t', c),
-              mkLambda (n, t', mkApp(term,Termops.rel_vect 0 (npars+1)))
+              mkLambda (n, t', mkApp(term, Context.Rel.to_extended_vect mkRel 0 ctx))
           else
-            let c',term' = drec (np-1) c in
+            let c',term' = drec ctx (np-1) c in
             mkProd (n, t, c'), mkLambda (n, t, term')
-      | LetIn (n,b,t,c) -> let c',term' = drec np c in
-           mkLetIn (n,b,t,c'), mkLetIn (n,b,t,term')
+      | LetIn (n,b,t,c) ->
+        let ctx = LocalDef (n, b, t) :: ctx in
+        let c',term' = drec ctx np c in
+        mkLetIn (n,b,t,c'), mkLetIn (n,b,t,term')
       | _ -> anomaly ~label:"weaken_sort_scheme" (Pp.str "wrong elimination type.")
   in
-  let ty, term = drec npars ty in
+  let ty, term = drec [] npars ty in
     !evdref, ty, term
 
 (**********************************************************************)
