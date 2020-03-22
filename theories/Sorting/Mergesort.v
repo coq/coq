@@ -230,13 +230,13 @@ Proof.
     apply IHl.
 Qed.
 
-Theorem Sorted_sort : forall l, Sorted (sort l).
+Theorem LocallySorted_sort : forall l, Sorted (sort l).
 Proof.
 intro; apply Sorted_iter_merge. constructor.
 Qed.
 
-Corollary LocallySorted_sort : forall l, Sorted.Sorted leb (sort l).
-Proof. intro; eapply Sorted_LocallySorted_iff, Sorted_sort; auto. Qed.
+Corollary Sorted_sort : forall l, Sorted.Sorted leb (sort l).
+Proof. intro; eapply Sorted_LocallySorted_iff, LocallySorted_sort; auto. Qed.
 
 Theorem Permuted_sort : forall l, Permutation l (sort l).
 Proof.
@@ -245,7 +245,7 @@ Qed.
 
 Corollary StronglySorted_sort : forall l,
   Transitive leb -> StronglySorted leb (sort l).
-Proof. auto using Sorted_StronglySorted, LocallySorted_sort. Qed.
+Proof. auto using Sorted_StronglySorted, Sorted_sort. Qed.
 
 End Sort.
 
