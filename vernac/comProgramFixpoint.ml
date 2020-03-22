@@ -115,7 +115,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   let lift_rel_context n l = Termops.map_rel_context_with_binders (liftn n) l in
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let env = Global.env() in
-  let sigma, decl = Constrexpr_ops.interp_univ_decl_opt env pl in
+  let sigma, udecl = Constrexpr_ops.interp_univ_decl_opt env pl in
   let sigma, (_, ((env', binders_rel), impls)) = interp_context_evars ~program_mode:true env sigma bl in
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
@@ -234,7 +234,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
         let body = it_mkLambda_or_LetIn (mkApp (h_body, [|make|])) binders_rel in
         let ty = it_mkProd_or_LetIn top_arity binders_rel in
         let ty = EConstr.Unsafe.to_constr ty in
-        let univs = Evd.check_univ_decl ~poly sigma decl in
+        let univs = Evd.check_univ_decl ~poly sigma udecl in
         (*FIXME poly? *)
         let ce = definition_entry ~types:ty ~univs (EConstr.to_constr sigma body) in
         (* FIXME: include locality *)
@@ -258,9 +258,9 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   let evars, _, evars_def, evars_typ =
     Obligations.eterm_obligations env recname sigma 0 def typ
   in
-  let ctx = Evd.evar_universe_context sigma in
-    ignore(Obligations.add_definition ~name:recname ~term:evars_def ~univdecl:decl
-             ~poly evars_typ ctx evars ~hook)
+  let uctx = Evd.evar_universe_context sigma in
+  ignore(Obligations.add_definition ~name:recname ~term:evars_def ~udecl
+           ~poly evars_typ ~uctx evars ~hook)
 
 let out_def = function
   | Some def -> def
@@ -273,7 +273,7 @@ let collect_evars_of_term evd c ty =
 
 let do_program_recursive ~scope ~poly fixkind fixl =
   let cofix = fixkind = DeclareObl.IsCoFixpoint in
-  let (env, rec_sign, pl, evd), fix, info =
+  let (env, rec_sign, udecl, evd), fix, info =
     interp_recursive ~cofix ~program_mode:true fixl
   in
     (* Program-specific code *)
@@ -311,13 +311,13 @@ let do_program_recursive ~scope ~poly fixkind fixl =
                               ((indexes,i),fixdecls))
         fixl
   end in
-  let ctx = Evd.evar_universe_context evd in
+  let uctx = Evd.evar_universe_context evd in
   let kind = match fixkind with
   | DeclareObl.IsFixpoint _ -> Decls.Fixpoint
   | DeclareObl.IsCoFixpoint -> Decls.CoFixpoint
   in
   let ntns = List.map_append (fun { Vernacexpr.notations } -> notations ) fixl in
-  Obligations.add_mutual_definitions defs ~poly ~scope ~kind ~univdecl:pl ctx ntns fixkind
+  Obligations.add_mutual_definitions defs ~poly ~scope ~kind ~udecl ~uctx ntns fixkind
 
 let do_fixpoint ~scope ~poly l =
   let g = List.map (fun { Vernacexpr.rec_order } -> rec_order) l in

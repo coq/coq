@@ -116,31 +116,31 @@ let by tac = Proof_global.map_fold_proof (solve (Goal_select.SelectNth 1) None t
 
 let next = let n = ref 0 in fun () -> incr n; !n
 
-let build_constant_by_tactic ~name ?(opaque=Proof_global.Transparent) ctx sign ~poly typ tac =
-  let evd = Evd.from_ctx ctx in
+let build_constant_by_tactic ~name ?(opaque=Proof_global.Transparent) ~uctx ~sign ~poly typ tac =
+  let evd = Evd.from_ctx uctx in
   let goals = [ (Global.env_of_context sign , typ) ] in
   let pf = Proof_global.start_proof ~name ~poly ~udecl:UState.default_univ_decl evd goals in
   let pf, status = by tac pf in
   let open Proof_global in
-  let { entries; universes } = close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) pf in
+  let { entries; uctx } = close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) pf in
   match entries with
   | [entry] ->
-    entry, status, universes
+    entry, status, uctx
   | _ ->
     CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
 
-let build_by_tactic ?(side_eff=true) env sigma ~poly typ tac =
+let build_by_tactic ?(side_eff=true) env ~uctx ~poly ~typ tac =
   let name = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = val_of_named_context (named_context env) in
-  let ce, status, univs = build_constant_by_tactic ~name sigma sign ~poly typ tac in
-  let cb, univs =
-    if side_eff then Declare.inline_private_constants ~univs env ce
+  let ce, status, univs = build_constant_by_tactic ~name ~uctx ~sign ~poly typ tac in
+  let cb, uctx =
+    if side_eff then Declare.inline_private_constants ~uctx env ce
     else
       (* GG: side effects won't get reset: no need to treat their universes specially *)
       let (cb, ctx), _eff = Future.force ce.Declare.proof_entry_body in
-      cb, UState.merge ~sideff:false Evd.univ_rigid univs ctx
+      cb, UState.merge ~sideff:false Evd.univ_rigid uctx ctx
   in
-  cb, status, univs
+  cb, ce.Declare.proof_entry_type, status, univs
 
 let refine_by_tactic ~name ~poly env sigma ty tac =
   (* Save the initial side-effects to restore them afterwards. We set the

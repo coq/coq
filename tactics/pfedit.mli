@@ -64,8 +64,8 @@ val use_unification_heuristics : unit -> bool
 val build_constant_by_tactic
   :  name:Id.t
   -> ?opaque:Proof_global.opacity_flag
-  -> UState.t
-  -> named_context_val
+  -> uctx:UState.t
+  -> sign:named_context_val
   -> poly:bool
   -> EConstr.types
   -> unit Proofview.tactic
@@ -74,11 +74,11 @@ val build_constant_by_tactic
 val build_by_tactic
   :  ?side_eff:bool
   -> env
-  -> UState.t
+  -> uctx:UState.t
   -> poly:bool
-  -> EConstr.types
+  -> typ:EConstr.types
   -> unit Proofview.tactic
-  -> constr * bool * UState.t
+  -> constr * types option * bool * UState.t
 
 val refine_by_tactic
   :  name:Id.t

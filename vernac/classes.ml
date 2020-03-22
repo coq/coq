@@ -312,29 +312,29 @@ let instance_hook info global imps ?hook cst =
   declare_instance env sigma (Some info) (not global) cst;
   (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant info global imps ?hook name decl poly sigma term termtype =
+let declare_instance_constant info global imps ?hook name udecl poly sigma term termtype =
   let kind = Decls.(IsDefinition Instance) in
   let sigma, entry = DeclareDef.prepare_definition
-      ~allow_evars:false ~poly sigma decl ~types:(Some termtype) ~body:term in
+      ~allow_evars:false ~poly sigma ~udecl ~types:(Some termtype) ~body:term in
   let kn = Declare.declare_constant ~name ~kind (Declare.DefinitionEntry entry) in
   Declare.definition_message name;
   DeclareUniv.declare_univ_binders (GlobRef.ConstRef kn) (Evd.universe_binders sigma);
   instance_hook info global imps ?hook (GlobRef.ConstRef kn)
 
-let do_declare_instance sigma ~global ~poly k u ctx ctx' pri decl imps subst name =
+let do_declare_instance sigma ~global ~poly k u ctx ctx' pri udecl impargs subst name =
   let subst = List.fold_left2
       (fun subst' s decl -> if is_local_assum decl then s :: subst' else subst')
       [] subst (snd k.cl_context)
   in
   let (_, ty_constr) = instance_constructor (k,u) subst in
   let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
-  let sigma, entry = DeclareDef.prepare_parameter ~allow_evars:false ~poly sigma decl termtype in
+  let sigma, entry = DeclareDef.prepare_parameter ~allow_evars:false ~poly sigma ~udecl ~types:termtype in
   let cst = Declare.declare_constant ~name
       ~kind:Decls.(IsAssumption Logical) (Declare.ParameterEntry entry) in
   DeclareUniv.declare_univ_binders (GlobRef.ConstRef cst) (Evd.universe_binders sigma);
-  instance_hook pri global imps (GlobRef.ConstRef cst)
+  instance_hook pri global impargs (GlobRef.ConstRef cst)
 
-let declare_instance_program env sigma ~global ~poly name pri imps univdecl term termtype =
+let declare_instance_program env sigma ~global ~poly name pri imps udecl term termtype =
   let hook { DeclareDef.Hook.S.scope; dref; _ } =
     let cst = match dref with GlobRef.ConstRef kn -> kn | _ -> assert false in
     Impargs.declare_manual_implicits false dref imps;
@@ -345,10 +345,10 @@ let declare_instance_program env sigma ~global ~poly name pri imps univdecl term
   in
   let obls, _, term, typ = Obligations.eterm_obligations env name sigma 0 term termtype in
   let hook = DeclareDef.Hook.make hook in
-  let ctx = Evd.evar_universe_context sigma in
+  let uctx = Evd.evar_universe_context sigma in
   let scope, kind = DeclareDef.Global Declare.ImportDefaultBehavior, Decls.Instance in
   let _ : DeclareObl.progress =
-    Obligations.add_definition ~name ~term ~univdecl ~scope ~poly ~kind ~hook typ ctx obls
+    Obligations.add_definition ~name ~term ~udecl ~scope ~poly ~kind ~hook typ ~uctx obls
   in ()
 
 let declare_instance_open sigma ?hook ~tac ~global ~poly id pri imps udecl ids term termtype =

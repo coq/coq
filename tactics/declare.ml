@@ -351,11 +351,11 @@ let declare_private_constant ?role ?(local = ImportDefaultBehavior) ~name ~kind 
   let eff = { Evd.seff_private = eff; Evd.seff_roles; } in
   kn, eff
 
-let inline_private_constants ~univs env ce =
+let inline_private_constants ~uctx env ce =
   let body, eff = Future.force ce.proof_entry_body in
   let cb, ctx = Safe_typing.inline_private_constants env (body, eff.Evd.seff_private) in
-  let univs = UState.merge ~sideff:true Evd.univ_rigid univs ctx in
-  cb, univs
+  let uctx = UState.merge ~sideff:true Evd.univ_rigid uctx ctx in
+  cb, uctx
 
 (** Declaration of section variables and local definitions *)
 type variable_declaration =
@@ -382,13 +382,13 @@ let declare_variable ~name ~kind d =
     | SectionLocalDef (de) ->
       (* The body should already have been forced upstream because it is a
          section-local definition, but it's not enforced by typing *)
-      let ((body, uctx), eff) = Future.force de.proof_entry_body in
+      let ((body, body_ui), eff) = Future.force de.proof_entry_body in
       let () = export_side_effects eff in
-      let poly, univs = match de.proof_entry_universes with
+      let poly, entry_ui = match de.proof_entry_universes with
         | Monomorphic_entry uctx -> false, uctx
         | Polymorphic_entry (_, uctx) -> true, Univ.ContextSet.of_context uctx
       in
-      let univs = Univ.ContextSet.union uctx univs in
+      let univs = Univ.ContextSet.union body_ui entry_ui in
       (* We must declare the universe constraints before type-checking the
          term. *)
       let () = declare_universe_context ~poly univs in

@@ -473,11 +473,14 @@ let program_inference_hook env sigma ev =
     let concl = evi.Evd.evar_concl in
     if not (Evarutil.is_ground_env sigma env &&
             Evarutil.is_ground_term sigma concl)
-    then raise Exit;
-    let c, _, ctx =
-      Pfedit.build_by_tactic ~poly:false env (Evd.evar_universe_context sigma) concl tac
-    in Evd.set_universe_context sigma ctx, EConstr.of_constr c
-  with Logic_monad.TacticFailure e when noncritical e ->
+    then None
+    else
+      let c, _, _, ctx =
+        Pfedit.build_by_tactic ~poly:false env ~uctx:(Evd.evar_universe_context sigma) ~typ:concl tac
+      in
+      Some (Evd.set_universe_context sigma ctx, EConstr.of_constr c)
+  with
+  | Logic_monad.TacticFailure e when noncritical e ->
     user_err Pp.(str "The statement obligations could not be resolved \
                       automatically, write a statement definition first.")
 
@@ -493,15 +496,10 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
     let evd = Pretyping.solve_remaining_evars ?hook:inference_hook flags env evd in
     let ids = List.map Context.Rel.Declaration.get_name ctx in
     check_name_freshness scope id;
-    (* XXX: The nf_evar is critical !! *)
-    evd, (id.CAst.v,
-          (Evarutil.nf_evar evd (EConstr.it_mkProd_or_LetIn t' ctx),
-           (ids, imps @ imps'))))
+    evd, (id.CAst.v, (EConstr.it_mkProd_or_LetIn t' ctx, (ids, imps @ imps'))))
       evd thms in
   let recguard,thms,snl = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
-  (* XXX: This nf_evar is critical too!! We are normalizing twice if
-     you look at the previous lines... *)
   let thms = List.map (fun (name, (typ, (args, impargs))) ->
       { Lemmas.Recthm.name; typ = EConstr.to_constr evd typ; args; impargs} ) thms in
   let () =
@@ -1623,12 +1621,11 @@ let get_nth_goal ~pstate n =
   let gl = {Evd.it=List.nth goals (n-1) ; sigma = sigma; } in
   gl
 
-exception NoHyp
-
 (* Printing "About" information of a hypothesis of the current goal.
    We only print the type and a small statement to this comes from the
    goal. Precondition: there must be at least one current goal. *)
 let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
+  let exception NoHyp in
   let open Context.Named.Declaration in
   try
     (* Fallback early to globals *)

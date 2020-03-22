@@ -95,7 +95,7 @@ val start_dependent_lemma
 
 type lemma_possible_guards = int list list
 
-(** Pretty much internal, only used in ComFixpoint *)
+(** Pretty much internal, used by the Lemma / Fixpoint vernaculars *)
 val start_lemma_with_initialization
   :  ?hook:DeclareDef.Hook.t
   -> poly:bool
@@ -103,7 +103,7 @@ val start_lemma_with_initialization
   -> kind:Decls.logical_kind
   -> udecl:UState.universe_decl
   -> Evd.evar_map
-  -> (bool * lemma_possible_guards * unit Proofview.tactic list option) option
+  -> (bool * lemma_possible_guards * Constr.t option list option) option
   -> Recthm.t list
   -> int list option
   -> t

@@ -295,8 +295,9 @@ let generate_functional_principle (evd: Evd.evar_map ref)
       ~name:new_princ_name ~hook_data
       ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
       ~kind:Decls.(IsProof Theorem)
-      UnivNames.empty_binders
-      entry [] in
+      ~ubind:UnivNames.empty_binders
+      ~impargs:[]
+      entry in
   ()
   with e when CErrors.noncritical e ->
     raise (Defining_principle e)

@@ -33,9 +33,7 @@ type proof_object =
   (** name of the proof *)
   ; entries : Evd.side_effects Declare.proof_entry list
   (** list of the proof terms (in a form suitable for definitions). *)
-  ; poly : bool
-  (** polymorphic status *)
-  ; universes: UState.t
+  ; uctx: UState.t
   (** universe state *)
   ; udecl : UState.universe_decl
   (** universe declaration *)

@@ -70,7 +70,7 @@ let interp_definition ~program_mode pl bl ~poly red_option c ctypopt =
   let tyopt = Option.map (fun ty -> EConstr.it_mkProd_or_LetIn ty ctx) tyopt in
 
   let evd, ce = DeclareDef.prepare_definition ~allow_evars:program_mode
-      ~opaque:false ~poly evd udecl ~types:tyopt ~body:c in
+      ~opaque:false ~poly evd ~udecl ~types:tyopt ~body:c in
 
   (ce, evd, udecl, imps)
 
@@ -79,9 +79,9 @@ let check_definition ~program_mode (ce, evd, _, imps) =
   check_evars_are_solved ~program_mode env evd;
   ce
 
-let do_definition ~program_mode ?hook ~name ~scope ~poly ~kind univdecl bl red_option c ctypopt =
-  let (ce, evd, univdecl, imps as def) =
-    interp_definition ~program_mode univdecl bl ~poly red_option c ctypopt
+let do_definition ~program_mode ?hook ~name ~scope ~poly ~kind udecl bl red_option c ctypopt =
+  let (ce, evd, udecl, impargs as def) =
+    interp_definition ~program_mode udecl bl ~poly red_option c ctypopt
   in
   if program_mode then
     let env = Global.env () in
@@ -97,12 +97,12 @@ let do_definition ~program_mode ?hook ~name ~scope ~poly ~kind univdecl bl red_o
     let obls, _, c, cty =
       Obligations.eterm_obligations env name evd 0 c typ
     in
-    let ctx = Evd.evar_universe_context evd in
+    let uctx = Evd.evar_universe_context evd in
     ignore(Obligations.add_definition
-             ~name ~term:c cty ctx ~univdecl ~implicits:imps ~scope ~poly ~kind ?hook obls)
+             ~name ~term:c cty ~uctx ~udecl ~impargs ~scope ~poly ~kind ?hook obls)
   else
     let ce = check_definition ~program_mode def in
     let uctx = Evd.evar_universe_context evd in
     let hook_data = Option.map (fun hook -> hook, uctx, []) hook in
     let kind = Decls.IsDefinition kind in
-    ignore(DeclareDef.declare_definition ~name ~scope ~kind ?hook_data (Evd.universe_binders evd) ce imps)
+    ignore(DeclareDef.declare_definition ~name ~scope ~kind ?hook_data ~ubind:(Evd.universe_binders evd) ce ~impargs)

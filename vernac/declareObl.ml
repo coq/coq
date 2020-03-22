@@ -18,39 +18,96 @@ open Entries
 
 type 'a obligation_body = DefinedObl of 'a | TermObl of constr
 
-type obligation =
-  { obl_name : Id.t
-  ; obl_type : types
-  ; obl_location : Evar_kinds.t Loc.located
-  ; obl_body : pconstant obligation_body option
-  ; obl_status : bool * Evar_kinds.obligation_definition_status
-  ; obl_deps : Int.Set.t
-  ; obl_tac : unit Proofview.tactic option }
+module Obligation = struct
+  type t =
+    { obl_name : Id.t
+    ; obl_type : types
+    ; obl_location : Evar_kinds.t Loc.located
+    ; obl_body : pconstant obligation_body option
+    ; obl_status : bool * Evar_kinds.obligation_definition_status
+    ; obl_deps : Int.Set.t
+    ; obl_tac : unit Proofview.tactic option }
 
-type obligations = obligation array * int
+  let set_type ~typ obl = { obl with obl_type = typ }
+  let set_body ~body obl = { obl with obl_body = Some body }
+
+end
+
+type obligations =
+  { obls : Obligation.t array
+  ; remaining : int }
 
 type fixpoint_kind =
   | IsFixpoint of lident option list
   | IsCoFixpoint
 
-type program_info =
-  { prg_name : Id.t
-  ; prg_body : constr
-  ; prg_type : constr
-  ; prg_ctx : UState.t
-  ; prg_univdecl : UState.universe_decl
-  ; prg_obligations : obligations
-  ; prg_deps : Id.t list
-  ; prg_fixkind : fixpoint_kind option
-  ; prg_implicits : Impargs.manual_implicits
-  ; prg_notations : Vernacexpr.decl_notation list
-  ; prg_poly : bool
-  ; prg_scope : DeclareDef.locality
-  ; prg_kind : Decls.definition_object_kind
-  ; prg_reduce : constr -> constr
-  ; prg_hook : DeclareDef.Hook.t option
-  ; prg_opaque : bool
-  }
+module ProgramDecl = struct
+
+  type t =
+    { prg_name : Id.t
+    ; prg_body : constr
+    ; prg_type : constr
+    ; prg_ctx : UState.t
+    ; prg_univdecl : UState.universe_decl
+    ; prg_obligations : obligations
+    ; prg_deps : Id.t list
+    ; prg_fixkind : fixpoint_kind option
+    ; prg_implicits : Impargs.manual_implicits
+    ; prg_notations : Vernacexpr.decl_notation list
+    ; prg_poly : bool
+    ; prg_scope : DeclareDef.locality
+    ; prg_kind : Decls.definition_object_kind
+    ; prg_reduce : constr -> constr
+    ; prg_hook : DeclareDef.Hook.t option
+    ; prg_opaque : bool
+    }
+
+  open Obligation
+
+  let make ?(opaque = false) ?hook n ~udecl ~uctx ~impargs
+      ~poly ~scope ~kind b t deps fixkind notations obls reduce =
+    let obls', b =
+      match b with
+      | None ->
+        assert(Int.equal (Array.length obls) 0);
+        let n = Nameops.add_suffix n "_obligation" in
+        [| { obl_name = n; obl_body = None;
+             obl_location = Loc.tag Evar_kinds.InternalHole; obl_type = t;
+             obl_status = false, Evar_kinds.Expand; obl_deps = Int.Set.empty;
+             obl_tac = None } |],
+        mkVar n
+      | Some b ->
+        Array.mapi
+          (fun i (n, t, l, o, d, tac) ->
+             { obl_name = n ; obl_body = None;
+               obl_location = l; obl_type = t; obl_status = o;
+               obl_deps = d; obl_tac = tac })
+          obls, b
+    in
+    let ctx = UState.make_flexible_nonalgebraic uctx in
+    { prg_name = n
+    ; prg_body = b
+    ; prg_type = reduce t
+    ; prg_ctx = ctx
+    ; prg_univdecl = udecl
+    ; prg_obligations = { obls = obls' ; remaining = Array.length obls' }
+    ; prg_deps = deps
+    ; prg_fixkind = fixkind
+    ; prg_notations = notations
+    ; prg_implicits = impargs
+    ; prg_poly = poly
+    ; prg_scope = scope
+    ; prg_kind = kind
+    ; prg_reduce = reduce
+    ; prg_hook = hook
+    ; prg_opaque = opaque
+    }
+
+  let set_uctx ~uctx prg = {prg with prg_ctx = uctx}
+end
+
+open Obligation
+open ProgramDecl
 
 (* Saving an obligation *)
 
@@ -120,15 +177,15 @@ let shrink_body c ty =
   in
   (ctx, b', ty', Array.of_list args)
 
+(***********************************************************************)
+(* Saving an obligation                                                *)
+(***********************************************************************)
+
 let unfold_entry cst = Hints.HintsUnfoldEntry [EvalConstRef cst]
 
 let add_hint local prg cst =
   let locality = if local then Goptions.OptLocal else Goptions.OptExport in
   Hints.add_hints ~locality [Id.to_string prg.prg_name] (unfold_entry cst)
-
-(***********************************************************************)
-(* Saving an obligation                                                *)
-(***********************************************************************)
 
 (* true = hide obligations *)
 let get_hide_obligations =
@@ -205,7 +262,7 @@ let close sec =
         ++ ( str (if Int.equal (List.length keys) 1 then " has " else " have ")
            ++ str "unsolved obligations" ))
 
-let input : program_info CEphemeron.key ProgMap.t -> Libobject.obj =
+let input : ProgramDecl.t CEphemeron.key ProgMap.t -> Libobject.obj =
   let open Libobject in
   declare_object
     { (default_object "Program state") with
@@ -232,7 +289,7 @@ let progmap_add n prg =
 let progmap_replace prg' =
   Lib.add_anonymous_leaf (input (map_replace prg'.prg_name prg' !from_prg))
 
-let obligations_solved prg = Int.equal (snd prg.prg_obligations) 0
+let obligations_solved prg = Int.equal prg.prg_obligations.remaining 0
 
 let obligations_message rem =
   if rem > 0 then
@@ -272,7 +329,7 @@ let rec intset_to = function
   | n -> Int.Set.add n (intset_to (pred n))
 
 let obligation_substitution expand prg =
-  let obls, _ = prg.prg_obligations in
+  let obls = prg.prg_obligations.obls in
   let ints = intset_to (pred (Array.length obls)) in
   obl_substitution expand obls ints
 
@@ -348,12 +405,12 @@ let declare_definition prg =
   in
   let ce = Declare.definition_entry ~fix_exn ~opaque ~types:typ ~univs body in
   let () = progmap_remove prg in
-  let ubinders = UState.universe_binders uctx in
+  let ubind = UState.universe_binders uctx in
   let hook_data = Option.map (fun hook -> hook, uctx, obls) prg.prg_hook in
   DeclareDef.declare_definition
-    ~name:prg.prg_name ~scope:prg.prg_scope ubinders
+    ~name:prg.prg_name ~scope:prg.prg_scope ~ubind
     ~kind:Decls.(IsDefinition prg.prg_kind) ce
-    prg.prg_implicits ?hook_data
+    ~impargs:prg.prg_implicits ?hook_data
 
 let rec lam_index n t acc =
   match Constr.kind t with
@@ -429,12 +486,12 @@ let declare_mutual_definition l =
   let univs = UState.univ_entry ~poly first.prg_ctx in
   let fix_exn = Hook.get get_fix_exn () in
   let kind = Decls.IsDefinition (if fixkind != IsCoFixpoint then Decls.Fixpoint else Decls.CoFixpoint) in
-  let udecl = UnivNames.empty_binders in
+  let ubind = UnivNames.empty_binders in
   let kns =
     List.map4
-      (fun name body types imps ->
+      (fun name body types impargs ->
          let ce = Declare.definition_entry ~opaque ~types ~univs body in
-         DeclareDef.declare_definition ~name ~scope ~kind udecl ce imps)
+         DeclareDef.declare_definition ~name ~scope ~kind ~ubind ~impargs ce)
       fixnames fixdecls fixtypes fiximps
   in
   (* Declare notations *)
@@ -448,7 +505,8 @@ let declare_mutual_definition l =
   dref
 
 let update_obls prg obls rem =
-  let prg' = {prg with prg_obligations = (obls, rem)} in
+  let prg_obligations = { obls; remaining = rem } in
+  let prg' = {prg with prg_obligations} in
   progmap_replace prg';
   obligations_message rem;
   if rem > 0 then Remain rem
@@ -478,6 +536,17 @@ let dependencies obls n =
     obls;
   !res
 
+let update_program_decl_on_defined prg obls num obl ~uctx rem ~auto =
+  let obls = Array.copy obls in
+  let () = obls.(num) <- obl in
+  let prg = { prg with prg_ctx = uctx } in
+  let () = ignore (update_obls prg obls (pred rem)) in
+  if pred rem > 0 then begin
+    let deps = dependencies obls num in
+    if not (Int.Set.is_empty deps) then
+      ignore (auto (Some prg.prg_name) deps None)
+  end
+
 type obligation_qed_info =
   { name : Id.t
   ; num : int
@@ -489,7 +558,7 @@ let obligation_terminator entries uctx { name; num; auto } =
   | [entry] ->
     let env = Global.env () in
     let ty = entry.Declare.proof_entry_type in
-    let body, uctx = Declare.inline_private_constants ~univs:uctx env entry in
+    let body, uctx = Declare.inline_private_constants ~uctx env entry in
     let sigma = Evd.from_ctx uctx in
     Inductiveops.control_only_guard (Global.env ()) sigma (EConstr.of_constr body);
     (* Declare the obligation ourselves and drop the hook *)
@@ -498,7 +567,7 @@ let obligation_terminator entries uctx { name; num; auto } =
     let body = EConstr.to_constr sigma (EConstr.of_constr body) in
     let ty = Option.map (fun x -> EConstr.to_constr sigma (EConstr.of_constr x)) ty in
     let ctx = Evd.evar_universe_context sigma in
-    let obls, rem = prg.prg_obligations in
+    let { obls; remaining=rem } = prg.prg_obligations in
     let obl = obls.(num) in
     let status =
       match obl.obl_status, entry.Declare.proof_entry_opaque with
@@ -516,8 +585,6 @@ let obligation_terminator entries uctx { name; num; auto } =
     in
     let uctx = UState.univ_entry ~poly:prg.prg_poly ctx in
     let (defined, obl) = declare_obligation prg obl body ty uctx in
-    let obls = Array.copy obls in
-    let () = obls.(num) <- obl in
     let prg_ctx =
       if prg.prg_poly then (* Polymorphic *)
         (* We merge the new universes and constraints of the
@@ -531,15 +598,38 @@ let obligation_terminator entries uctx { name; num; auto } =
         if defined then UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ())
         else ctx
     in
-    let prg = {prg with prg_ctx} in
-    ignore (update_obls prg obls (pred rem));
-    if pred rem > 0 then
-      let deps = dependencies obls num in
-      if not (Int.Set.is_empty deps) then
-        ignore (auto (Some name) deps None)
+    update_program_decl_on_defined prg obls num obl ~uctx:prg_ctx rem ~auto
   | _ ->
     CErrors.anomaly
       Pp.(
         str
           "[obligation_terminator] close_proof returned more than one proof \
            term")
+
+(* Similar to the terminator but for interactive paths, as the
+   terminator is only called in interactive proof mode *)
+let obligation_hook prg obl num auto { DeclareDef.Hook.S.uctx = ctx'; dref; _ } =
+  let { obls; remaining=rem } = prg.prg_obligations in
+  let cst = match dref with GlobRef.ConstRef cst -> cst | _ -> assert false in
+  let transparent = evaluable_constant cst (Global.env ()) in
+  let () = match obl.obl_status with
+      (true, Evar_kinds.Expand)
+    | (true, Evar_kinds.Define true) ->
+       if not transparent then err_not_transp ()
+    | _ -> ()
+  in
+  let inst, ctx' =
+    if not prg.prg_poly (* Not polymorphic *) then
+      (* The universe context was declared globally, we continue
+         from the new global environment. *)
+      let ctx = UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ()) in
+      let ctx' = UState.merge_subst ctx (UState.subst ctx') in
+      Univ.Instance.empty, ctx'
+    else
+      (* We get the right order somehow, but surely it could be enforced in a clearer way. *)
+      let uctx = UState.context ctx' in
+      Univ.UContext.instance uctx, ctx'
+  in
+  let obl = { obl with obl_body = Some (DefinedObl (cst, inst)) } in
+  let () = if transparent then add_hint true prg cst in
+  update_program_decl_on_defined prg obls num obl ~uctx:ctx' rem ~auto

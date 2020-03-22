@@ -204,7 +204,7 @@ let context_insection sigma ~poly ctx =
         in
         let entry = Declare.definition_entry ~univs ~types:t b in
         let _ : GlobRef.t = DeclareDef.declare_definition ~name ~scope:DeclareDef.Discharge
-            ~kind:Decls.(IsDefinition Definition) UnivNames.empty_binders entry []
+            ~kind:Decls.(IsDefinition Definition) ~ubind:UnivNames.empty_binders ~impargs:[] entry
         in
         ()
     in

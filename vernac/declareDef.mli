@@ -44,9 +44,9 @@ val declare_definition
   -> scope:locality
   -> kind:Decls.logical_kind
   -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
-  -> UnivNames.universe_binders
+  -> ubind:UnivNames.universe_binders
+  -> impargs:Impargs.manual_implicits
   -> Evd.side_effects Declare.proof_entry
-  -> Impargs.manual_implicits
   -> GlobRef.t
 
 val declare_assumption
@@ -64,12 +64,16 @@ val prepare_definition
   -> ?opaque:bool
   -> ?inline:bool
   -> poly:bool
-  -> Evd.evar_map
-  -> UState.universe_decl
+  -> udecl:UState.universe_decl
   -> types:EConstr.t option
   -> body:EConstr.t
+  -> Evd.evar_map
   -> Evd.evar_map * Evd.side_effects Declare.proof_entry
 
-val prepare_parameter : allow_evars:bool ->
-  poly:bool -> Evd.evar_map -> UState.universe_decl -> EConstr.types ->
-  Evd.evar_map * Entries.parameter_entry
+val prepare_parameter
+  : allow_evars:bool
+  -> poly:bool
+  -> udecl:UState.universe_decl
+  -> types:EConstr.types
+  -> Evd.evar_map
+  -> Evd.evar_map * Entries.parameter_entry
