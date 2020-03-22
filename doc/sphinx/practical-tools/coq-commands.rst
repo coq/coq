@@ -227,7 +227,10 @@ and ``coqtop``, unless stated otherwise:
    type of the option. For flags ``Option Name`` is equivalent to
    ``Option Name=true``. For instance ``-set "Universe Polymorphism"``
    will enable :flag:`Universe Polymorphism`. Note that the quotes are
-   shell syntax, Coq does not see them.
+   shell syntax, Coq does not see them. Flags are processed after initialization
+   of the document. This includes the `Prelude` if loaded and any libraries loaded
+   through the `-l`, `-lv`, `-r`, `-re`, `-ri`, `rfrom`, `-refrom` and `-rifrom`
+   options.
 :-unset *string*: As ``-set`` but used to disable options and flags.
 :-compat *version*: Attempt to maintain some backward-compatibility
   with a previous version.
