@@ -597,6 +597,13 @@ Proof.
  now rewrite !IHp, iter_swap.
 Qed.
 
+Theorem iter_succ_r :
+  forall p (A:Type) (f:A -> A) (x:A),
+    iter f x (succ p) = iter f (f x) p.
+Proof.
+ intros; now rewrite iter_succ, iter_swap.
+Qed.
+
 Theorem iter_add :
   forall p q (A:Type) (f:A -> A) (x:A),
     iter f x (p+q) = iter f (iter f x q) p.
@@ -606,14 +613,22 @@ Proof.
  now rewrite add_succ_l, !iter_succ, IHp.
 Qed.
 
+Theorem iter_ind :
+  forall (A:Type) (f:A -> A) (a:A) (P:positive -> A -> Prop),
+    P 1 (f a) ->
+    (forall p a', P p a' -> P (succ p) (f a')) ->
+    forall p, P p (iter f a p).
+Proof.
+ induction p using peano_ind; trivial.
+ rewrite iter_succ; auto.
+Qed.
+
 Theorem iter_invariant :
   forall (p:positive) (A:Type) (f:A -> A) (Inv:A -> Prop),
     (forall x:A, Inv x -> Inv (f x)) ->
     forall x:A, Inv x -> Inv (iter f x p).
 Proof.
- induction p as [p IHp|p IHp|]; simpl; trivial.
- intros A f Inv H x H0. apply H, IHp, IHp; trivial.
- intros A f Inv H x H0. apply IHp, IHp; trivial.
+ intros; apply iter_ind with (P := fun _ => Inv); auto.
 Qed.
 
 (** ** Properties of power *)

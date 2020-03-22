@@ -1,0 +1,8 @@
+- **Added:**
+  Facts about ``N.iter`` and ``Pos.iter``:
+
+    - ``N.iter_swap_gen``, ``N.iter_swap``, ``N.iter_succ``, ``N.iter_succ_r``, ``N.iter_add``, ``N.iter_ind``, ``N.iter_invariant``;
+    - ``Pos.iter_succ_r``, ``Pos.iter_ind``.
+
+  (`#11880 <https://github.com/coq/coq/pull/11880>`_,
+  by Lysxia).
