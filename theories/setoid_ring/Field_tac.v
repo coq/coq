@@ -215,7 +215,7 @@ Ltac fold_field_cond req :=
 Ltac simpl_PCond FLD :=
   let req := get_FldEq FLD in
   let lemma := get_CondLemma FLD in
-  try (apply lemma; intros lock lock_def; vm_compute; rewrite lock_def; clear lock_def lock); 
+  try (apply lemma; intros ?lock ?lock_def; vm_compute; rewrite lock_def; clear lock_def lock);
   protect_fv "field_cond";
   fold_field_cond req;
   try exact I.
@@ -223,7 +223,7 @@ Ltac simpl_PCond FLD :=
 Ltac simpl_PCond_BEURK FLD :=
   let req := get_FldEq FLD in
   let lemma := get_CondLemma FLD in
-  (apply lemma; intros lock lock_def; vm_compute; rewrite lock_def; clear lock_def lock);
+  (apply lemma; intros ?lock ?lock_def; vm_compute; rewrite lock_def; clear lock_def lock);
   protect_fv "field_cond";
   fold_field_cond req.
 
