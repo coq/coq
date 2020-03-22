@@ -541,10 +541,6 @@ let starredidentreflist_to_expr l =
   | [] -> SsEmpty
   | x :: xs -> List.fold_right (fun i acc -> SsUnion(i,acc)) xs x
 
-let warn_deprecated_include_type =
-  CWarnings.create ~name:"deprecated-include-type" ~category:"deprecated"
-         (fun () -> strbrk "Include Type is deprecated; use Include instead")
-
 }
 
 (* Modules and Sections *)
@@ -584,10 +580,7 @@ GRAMMAR EXTEND Gram
       | IDENT "Import"; qidl = LIST1 global -> { VernacImport (false,qidl) }
       | IDENT "Export"; qidl = LIST1 global -> { VernacImport (true,qidl) }
       | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
-          { VernacInclude(e::l) }
-      | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
-         { warn_deprecated_include_type ~loc ();
-        VernacInclude(e::l) } ] ]
+          { VernacInclude(e::l) } ] ]
   ;
   export_token:
     [ [ IDENT "Import" -> { Some false }
