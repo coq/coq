@@ -426,7 +426,16 @@ doc:refman:dune:
   artifacts:
     paths:
       - _build/log
-      - _build/default/doc/sphinx_build/html
+      - _build/default/doc/refman-html
+
+doc:refman-pdf:dune:
+  extends: .dune-ci-template
+  variables:
+    DUNE_TARGET: refman-pdf
+  artifacts:
+    paths:
+      - _build/log
+      - _build/default/doc/refman-pdf
 
 doc:stdlib:dune:
   extends: .dune-ci-template

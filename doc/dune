@@ -1,5 +1,10 @@
 (rule
- (targets sphinx_build)
+ (targets unreleased.rst)
+ (deps (source_tree changelog))
+ (action (with-stdout-to %{targets} (bash "cat changelog/00-title.rst changelog/*/*.rst"))))
+
+(alias
+ (name refman-deps)
  (deps
   ; We could use finer dependencies here so the build is faster:
   ;
@@ -10,23 +15,34 @@
   ;   + tools/coqdoc/coqdoc.css
   (package coq)
   (source_tree sphinx)
-  (source_tree tools)
+  (source_tree tools/coqrst)
   unreleased.rst
-  (env_var SPHINXWARNOPT))
- (action
-  (run env COQLIB=%{project_root} sphinx-build %{env:SPHINXWARNOPT=-W} -b html -d sphinx_build/doctrees sphinx sphinx_build/html)))
-
-(alias
- (name refman-html)
- (deps sphinx_build))
+  (env_var SPHINXWARNOPT)))
 
 (rule
- (targets unreleased.rst)
- (deps (source_tree changelog))
- (action (with-stdout-to %{targets} (bash "cat changelog/00-title.rst changelog/*/*.rst"))))
+ (targets refman-html)
+ (alias refman-html)
+ (package coq-doc)
+ (deps (alias refman-deps))
+ (action
+  (run env COQLIB=%{project_root} sphinx-build %{env:SPHINXWARNOPT=-W} -b html sphinx %{targets})))
 
-; The install target still needs more work.
-; (install
-;  (section doc)
-;  (package coq-refman)
-;  (files sphinx_build))
+(rule
+ (targets refman-pdf)
+ (alias refman-pdf)
+ (package coq-doc)
+ (deps (alias refman-deps))
+ (action
+  (progn
+   (run env COQLIB=%{project_root} sphinx-build %{env:SPHINXWARNOPT=-W} -b latex sphinx %{targets})
+   (chdir %{targets} (run make)))))
+
+; Installable directories are not yet fully supported by Dune.  See
+; ocaml/dune#1868.  Yet, this makes coq-doc.install a valid target to
+; generate the whole Coq documentation.  And the result under
+; _build/install/default/doc/coq-doc looks just right!
+
+(install
+ (files (refman-html as html/refman) (refman-pdf as pdf/refman))
+ (section doc)
+ (package coq-doc))

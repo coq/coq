@@ -27,7 +27,7 @@ build-env: [
 ]
 
 build: [
-  [ "dune" "build" "@refman" "-j" jobs ]
+  [ "dune" "build" "-p" name "-j" jobs ]
 ]
 
 # Would be better to have a *-conf package?
