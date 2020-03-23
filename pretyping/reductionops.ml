@@ -716,7 +716,7 @@ let reducible_mind_case sigma c = match EConstr.kind sigma c with
     f x := t. End M. Definition f := u. and say goodbye to any hope
     of refolding M.f this way ...
 *)
-let magicaly_constant_of_fixbody env sigma reference bd = function
+let magically_constant_of_fixbody env sigma reference bd = function
   | Name.Anonymous -> bd
   | Name.Name id ->
     let open UnivProblem in
@@ -758,7 +758,7 @@ let contract_cofix ?env sigma ?reference (bodynum,(names,types,bodies as typedbo
       | Some e ->
         match reference with
         | None -> bd
-        | Some r -> magicaly_constant_of_fixbody e sigma r bd names.(ind).binder_name in
+        | Some r -> magically_constant_of_fixbody e sigma r bd names.(ind).binder_name in
   let closure = List.init nbodies make_Fi in
   substl closure bodies.(bodynum)
 
@@ -800,7 +800,7 @@ let contract_fix ?env sigma ?reference ((recindices,bodynum),(names,types,bodies
         | Some e ->
           match reference with
           | None -> bd
-          | Some r -> magicaly_constant_of_fixbody e sigma r bd names.(ind).binder_name in
+          | Some r -> magically_constant_of_fixbody e sigma r bd names.(ind).binder_name in
     let closure = List.init nbodies make_Fi in
     substl closure bodies.(bodynum)
 
