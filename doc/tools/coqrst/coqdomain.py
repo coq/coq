@@ -519,7 +519,7 @@ class ProductionObject(CoqObject):
             row = nodes.inline(classes=['prodn-row'])
             entry = nodes.inline(classes=['prodn-cell-nonterminal'])
             if lhs != "":
-                target_name = 'grammar-token-' + lhs
+                target_name = 'grammar-token-' + nodes.make_id(lhs)
                 target = nodes.target('', '', ids=[target_name], names=[target_name])
                 # putting prodn-target on the target node won't appear in the tex file
                 inline = nodes.inline(classes=['prodn-target'])
