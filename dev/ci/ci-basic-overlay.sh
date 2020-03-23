@@ -330,3 +330,10 @@
 : "${perennial_CI_REF:=master}"
 : "${perennial_CI_GITURL:=https://github.com/mit-pdos/perennial}"
 : "${perennial_CI_ARCHIVEURL:=${perennial_CI_GITURL}/archive}"
+
+########################################################################
+# metacoq
+########################################################################
+: "${metacoq_CI_REF:=master}"
+: "${metacoq_CI_GITURL:=https://github.com/MetaCoq/metacoq}"
+: "${metacoq_CI_ARCHIVEURL:=${metacoq_CI_GITURL}/archive}"

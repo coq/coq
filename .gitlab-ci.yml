@@ -731,9 +731,23 @@ plugin:ci-elpi:
 
 plugin:ci-equations:
   extends: .ci-template
+  artifacts:
+    name: "$CI_JOB_NAME"
+    paths:
+      - _build_ci
 
 plugin:ci-fiat_parsers:
   extends: .ci-template
+
+plugin:ci-metacoq:
+  extends: .ci-template
+  stage: stage-3
+  needs:
+  - build:base
+  - plugin:ci-equations
+  dependencies:
+  - build:base
+  - plugin:ci-equations
 
 plugin:ci-mtac2:
   extends: .ci-template
