@@ -192,11 +192,11 @@ Module Type HasLtb (Import T:Typ).
 End HasLtb.
 
 Module Type LebNotation (T:Typ)(E:HasLeb T).
- Infix "<=?" := E.leb (at level 35).
+ Infix "<=?" := E.leb (at level 70, no associativity).
 End LebNotation.
 
 Module Type LtbNotation (T:Typ)(E:HasLtb T).
- Infix "<?" := E.ltb (at level 35).
+ Infix "<?" := E.ltb (at level 70, no associativity).
 End LtbNotation.
 
 Module Type LebSpec (T:Typ)(X:HasLe T)(Y:HasLeb T).
