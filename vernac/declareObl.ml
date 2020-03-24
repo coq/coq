@@ -251,43 +251,22 @@ let get_prg_info_map () = !from_prg
 
 let map_keys m = ProgMap.fold (fun k _ l -> k :: l) m []
 
-let close sec =
+let check_can_close sec =
   if not (ProgMap.is_empty !from_prg) then
     let keys = map_keys !from_prg in
     CErrors.user_err ~hdr:"Program"
       Pp.(
         str "Unsolved obligations when closing "
-        ++ str sec ++ str ":" ++ spc ()
+        ++ Id.print sec ++ str ":" ++ spc ()
         ++ prlist_with_sep spc (fun x -> Id.print x) keys
         ++ ( str (if Int.equal (List.length keys) 1 then " has " else " have ")
            ++ str "unsolved obligations" ))
 
-let input : ProgramDecl.t CEphemeron.key ProgMap.t -> Libobject.obj =
-  let open Libobject in
-  declare_object
-    { (default_object "Program state") with
-      cache_function = (fun (na, pi) -> from_prg := pi)
-    ; load_function = (fun _ (_, pi) -> from_prg := pi)
-    ; discharge_function =
-        (fun _ ->
-          close "section";
-          None )
-    ; classify_function =
-        (fun _ ->
-          close "module";
-          Dispose ) }
-
-let map_replace k v m =
-  ProgMap.add k (CEphemeron.create v) (ProgMap.remove k m)
-
-let progmap_remove prg =
-  Lib.add_anonymous_leaf (input (ProgMap.remove prg.prg_name !from_prg))
-
-let progmap_add n prg =
-  Lib.add_anonymous_leaf (input (ProgMap.add n prg !from_prg))
-
-let progmap_replace prg' =
-  Lib.add_anonymous_leaf (input (map_replace prg'.prg_name prg' !from_prg))
+let map_replace k v m = ProgMap.add k (CEphemeron.create v) (ProgMap.remove k m)
+let prgmap_op f = from_prg := f !from_prg
+let progmap_remove prg = prgmap_op (ProgMap.remove prg.prg_name)
+let progmap_add n prg = prgmap_op (ProgMap.add n prg)
+let progmap_replace prg = prgmap_op (map_replace prg.prg_name prg)
 
 let obligations_solved prg = Int.equal prg.prg_obligations.remaining 0
 

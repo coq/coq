@@ -139,6 +139,9 @@ val update_obls :
 
 (** { 2 Util }  *)
 
+(** Check obligations are properly solved before closing a section *)
+val check_can_close : Id.t -> unit
+
 val get_prg_info_map : unit -> ProgramDecl.t CEphemeron.key ProgMap.t
 
 val program_tcc_summary_tag :
