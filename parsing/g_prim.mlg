@@ -21,15 +21,18 @@ let _ = List.iter CLexer.add_keyword prim_kw
 
 let local_make_qualid loc l id = make_qualid ~loc (DirPath.make l) id
 
-let check_int loc = function
-  | { NumTok.int = i; frac = ""; exp = "" } -> i
-  | _ -> CErrors.user_err ~loc (Pp.str "This number is not an integer.")
-
-let my_int_of_string loc s =
+let my_int_of_string ?loc s =
   try
     int_of_string s
   with Failure _ ->
-    CErrors.user_err ~loc (Pp.str "This number is too large.")
+    CErrors.user_err ?loc (Pp.str "This number is too large.")
+
+let my_to_nat_string ?loc ispos s =
+  match NumTok.Unsigned.to_nat s with
+  | Some n -> n
+  | None ->
+    let pos = if ispos then "a natural" else "an integer" in
+    CErrors.user_err ?loc Pp.(str "This number is not " ++ str pos ++ str " number.")
 
 let test_pipe_closedcurly =
   let open Pcoq.Lookahead in
@@ -47,7 +50,7 @@ let test_minus_nat =
 
 GRAMMAR EXTEND Gram
   GLOBAL:
-    bigint natural integer identref name ident var preident
+    bignat bigint natural integer identref name ident var preident
     fullyqualid qualid reference dirpath ne_lstring
     ne_string string lstring pattern_ident pattern_identref by_notation
     smart_global bar_cbrace;
@@ -122,15 +125,18 @@ GRAMMAR EXTEND Gram
     [ [ s = string -> { CAst.make ~loc s } ] ]
   ;
   integer:
-    [ [ i = NUMERAL      -> { my_int_of_string loc (check_int loc i) }
-      | test_minus_nat; "-"; i = NUMERAL -> { - my_int_of_string loc (check_int loc i) } ] ]
+    [ [ i = bigint -> { my_int_of_string ~loc i } ] ]
   ;
   natural:
-    [ [ i = NUMERAL -> { my_int_of_string loc (check_int loc i) } ] ]
+    [ [ i = bignat -> { my_int_of_string ~loc i } ] ]
   ;
-  bigint: (* Negative numbers are dealt with elsewhere *)
-    [ [ i = NUMERAL -> { check_int loc i } ] ]
+  bigint:
+    [ [ i = NUMERAL -> { my_to_nat_string true ~loc i }
+      | test_minus_nat; "-"; i = NUMERAL -> { "-" ^ my_to_nat_string ~loc false i } ] ]
   ;
+  bignat:
+    [ [ i = NUMERAL -> { my_to_nat_string ~loc true i } ] ]
+ ;
   bar_cbrace:
     [ [ test_pipe_closedcurly; "|"; "}" -> { () } ] ]
   ;

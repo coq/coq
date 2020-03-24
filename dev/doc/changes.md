@@ -11,6 +11,8 @@
 
 Notations:
 
+- Most operators on numerals have moved to file numTok.ml.
+
 - Types `precedence`, `parenRelation`, `tolerability` in
   `notgram_ops.ml` have been reworked. See `entry_level` and
   `entry_relative_level` in `constrexpr.ml`.

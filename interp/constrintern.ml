@@ -32,6 +32,7 @@ open Notation_ops
 open Notation
 open Inductiveops
 open Context.Rel.Declaration
+open NumTok
 
 (** constr_expr -> glob_constr translation:
     - it adds holes for implicit arguments
@@ -1585,12 +1586,6 @@ let alias_of als = match als.alias_ids with
 
 *)
 
-let is_zero s =
-  let rec aux i =
-    Int.equal (String.length s) i || ((s.[i] == '0' || s.[i] == '_') && aux (i+1))
-  in aux 0
-let is_zero n = is_zero n.NumTok.int && is_zero n.NumTok.frac
-
 let merge_subst s1 s2 = Id.Map.fold Id.Map.add s1 s2
 
 let product_of_cases_patterns aliases idspl =
@@ -1614,11 +1609,11 @@ let rec subst_pat_iterator y t = DAst.(map (function
   | RCPatOr pl -> RCPatOr (List.map (subst_pat_iterator y t) pl)))
 
 let is_non_zero c = match c with
-| { CAst.v = CPrim (Numeral (SPlus, p)) } -> not (is_zero p)
+| { CAst.v = CPrim (Numeral p) } -> not (NumTok.Signed.is_zero p)
 | _ -> false
 
 let is_non_zero_pat c = match c with
-| { CAst.v = CPatPrim (Numeral (SPlus, p)) } -> not (is_zero p)
+| { CAst.v = CPatPrim (Numeral p) } -> not (NumTok.Signed.is_zero p)
 | _ -> false
 
 let get_asymmetric_patterns = Goptions.declare_bool_option_and_ref

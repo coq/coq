@@ -354,27 +354,21 @@ let drop_implicits_in_patt cst nb_expl args =
 let destPrim = function { CAst.v = CPrim t } -> Some t | _ -> None
 let destPatPrim = function { CAst.v = CPatPrim t } -> Some t | _ -> None
 
-let is_zero s =
-  let rec aux i =
-    Int.equal (String.length s) i || (s.[i] == '0' && aux (i+1))
-  in aux 0
-let is_zero n = is_zero n.NumTok.int && is_zero n.NumTok.frac
-
 let make_notation_gen loc ntn mknot mkprim destprim l bl =
   match snd ntn,List.map destprim l with
     (* Special case to avoid writing "- 3" for e.g. (Z.opp 3) *)
-    | "- _", [Some (Numeral (SPlus,p))] when not (is_zero p) ->
+    | "- _", [Some (Numeral p)] when not (NumTok.Signed.is_zero p) ->
         assert (bl=[]);
         mknot (loc,ntn,([mknot (loc,(InConstrEntrySomeLevel,"( _ )"),l,[])]),[])
     | _ ->
         match decompose_notation_key ntn, l with
         | (InConstrEntrySomeLevel,[Terminal "-"; Terminal x]), [] ->
-           begin match NumTok.of_string x with
-           | Some n -> mkprim (loc, Numeral (SMinus,n))
+           begin match NumTok.Unsigned.parse_string x with
+           | Some n -> mkprim (loc, Numeral (NumTok.SMinus,n))
            | None -> mknot (loc,ntn,l,bl) end
         | (InConstrEntrySomeLevel,[Terminal x]), [] ->
-           begin match NumTok.of_string x with
-           | Some n -> mkprim (loc, Numeral (SPlus,n))
+           begin match NumTok.Unsigned.parse_string x with
+           | Some n -> mkprim (loc, Numeral (NumTok.SPlus,n))
            | None -> mknot (loc,ntn,l,bl) end
         | _ -> mknot (loc,ntn,l,bl)
 
@@ -899,13 +893,10 @@ let extern_float f scopes =
   else if Float64.is_infinity f then CRef(q_infinity (), None)
   else if Float64.is_neg_infinity f then CRef(q_neg_infinity (), None)
   else
-    let sign = if Float64.sign f then SMinus else SPlus in
-    let s = Float64.(to_string (abs f)) in
-    match NumTok.of_string s with
-    | None -> assert false
-    | Some n ->
-       extern_prim_token_delimiter_if_required (Numeral (sign, n))
-       "float" "float_scope" scopes
+    let s = Float64.(to_string f) in
+    let n = NumTok.Signed.of_string s in
+    extern_prim_token_delimiter_if_required (Numeral n)
+      "float" "float_scope" scopes
 
 (**********************************************************************)
 (* mapping glob_constr to constr_expr                                    *)
@@ -1085,7 +1076,7 @@ let rec extern inctx ?impargs scopes vars r =
 
   | GInt i ->
      extern_prim_token_delimiter_if_required
-       (Numeral (SPlus, NumTok.int (Uint63.to_string i)))
+       (Numeral (NumTok.Signed.of_int_string (Uint63.to_string i)))
        "int63" "int63_scope" (snd scopes)
 
   | GFloat f -> extern_float f (snd scopes)

@@ -174,7 +174,7 @@ GRAMMAR EXTEND Gram
         { (* Preserve parentheses around numerals so that constrintern does not
              collapse -(3) into the numeral -3. *)
           (match c.CAst.v with
-            | CPrim (Numeral (SPlus,n)) ->
+            | CPrim (Numeral (NumTok.SPlus,n)) ->
                 CAst.make ~loc @@ CNotation(None,(InConstrEntrySomeLevel,"( _ )"),([c],[],[],[]))
             | _ -> c) }
       | "{|"; c = record_declaration; bar_cbrace -> { c }
@@ -248,7 +248,7 @@ GRAMMAR EXTEND Gram
   atomic_constr:
     [ [ g = global; i = univ_instance -> { CAst.make ~loc @@ CRef (g,i) }
       | s = sort   -> { CAst.make ~loc @@  CSort s }
-      | n = NUMERAL-> { CAst.make ~loc @@ CPrim (Numeral (SPlus,n)) }
+      | n = NUMERAL-> { CAst.make ~loc @@ CPrim (Numeral (NumTok.SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPrim (String s) }
       | "_"      -> { CAst.make ~loc @@ CHole (None, IntroAnonymous, None) }
       | "?"; "["; id = ident; "]"  -> { CAst.make ~loc @@  CHole (None, IntroIdentifier id, None) }
@@ -355,12 +355,12 @@ GRAMMAR EXTEND Gram
         { (* Preserve parentheses around numerals so that constrintern does not
              collapse -(3) into the numeral -3. *)
           match p.CAst.v with
-          | CPatPrim (Numeral (SPlus,n)) ->
+          | CPatPrim (Numeral (NumTok.SPlus,n)) ->
               CAst.make ~loc @@ CPatNotation(None,(InConstrEntrySomeLevel,"( _ )"),([p],[]),[])
           | _ -> p }
       | "("; p = pattern LEVEL "200"; "|" ; pl = LIST1 pattern LEVEL "200" SEP "|"; ")" ->
         { CAst.make ~loc @@ CPatOr (p::pl) }
-      | n = NUMERAL-> { CAst.make ~loc @@ CPatPrim (Numeral (SPlus,n)) }
+      | n = NUMERAL-> { CAst.make ~loc @@ CPatPrim (Numeral (NumTok.SPlus,n)) }
       | s = string -> { CAst.make ~loc @@ CPatPrim (String s) } ] ]
   ;
   fixannot:

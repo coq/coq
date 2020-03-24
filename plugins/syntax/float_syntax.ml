@@ -22,9 +22,8 @@ let make_path dir id = Libnames.make_path (make_dir dir) (Id.of_string id)
 
 (*** Parsing for float in digital notation ***)
 
-let interp_float ?loc (sign,n) =
-  let sign = Constrexpr.(match sign with SPlus -> "" | SMinus -> "-") in
-  DAst.make ?loc (GFloat (Float64.of_string (sign ^ NumTok.to_string n)))
+let interp_float ?loc n =
+  DAst.make ?loc (GFloat (Float64.of_string (NumTok.Signed.to_string n)))
 
 (* Pretty printing is already handled in constrextern.ml *)
 

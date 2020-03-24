@@ -171,6 +171,7 @@ module Prim :
     val pattern_ident : Id.t Entry.t
     val pattern_identref : lident Entry.t
     val base_ident : Id.t Entry.t
+    val bignat : string Entry.t
     val natural : int Entry.t
     val bigint : string Entry.t
     val integer : int Entry.t

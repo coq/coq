@@ -417,14 +417,16 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v %.out $(PREREQUISITELOG)
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  output=$*.out.real; \
+	  export LC_CTYPE=C; \
+	  export LANG=C; \
 	  $(coqc_interactive) "$<" $(call get_coq_prog_args,"$<") 2>&1 \
-	    | grep -v "Welcome to Coq" \
-	    | grep -v "\[Loading ML file" \
-	    | grep -v "Skipping rcfile loading" \
-	    | grep -v "^<W>" \
+	    | grep -a -v "Welcome to Coq" \
+	    | grep -a -v "\[Loading ML file" \
+	    | grep -a -v "Skipping rcfile loading" \
+	    | grep -a -v "^<W>" \
 	    | sed 's/File "[^"]*"/File "stdin"/' \
 	    > $$output; \
-	  diff -u --strip-trailing-cr $*.out $$output 2>&1; R=$$?; times; \
+	  diff -a -u --strip-trailing-cr $*.out $$output 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

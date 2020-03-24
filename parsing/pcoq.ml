@@ -166,7 +166,7 @@ struct
   | _ -> None
 
   let lk_nat tok n strm = match stream_nth n strm with
-  | Tok.NUMERAL { NumTok.int = _; frac = ""; exp = "" } -> Some (n + 1)
+  | Tok.NUMERAL p when NumTok.Unsigned.is_nat p -> Some (n + 1)
   | _ -> None
 
   let rec lk_list lk_elem n strm =
@@ -462,6 +462,7 @@ module Prim =
     let ident = gec_gen "ident"
     let natural = gec_gen "natural"
     let integer = gec_gen "integer"
+    let bignat = Entry.create "Prim.bignat"
     let bigint = Entry.create "Prim.bigint"
     let string = gec_gen "string"
     let lstring = Entry.create "Prim.lstring"
