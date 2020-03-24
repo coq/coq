@@ -613,11 +613,11 @@ GRAMMAR EXTEND Gram
     [ [ (* Interactive module declaration *)
         IDENT "Module"; export = export_token; id = identref;
         bl = LIST0 module_binder; sign = of_module_type;
-        body = is_module_expr ->
+        body = module_body ->
           { VernacSynterp (VernacDefineModule (export, id, bl, sign, body)) }
       | IDENT "Module"; "Type"; id = identref;
         bl = LIST0 module_binder; sign = check_module_types;
-        body = is_module_type ->
+        body = module_body ->
           { VernacSynterp (VernacDeclareModuleType (id, bl, sign, body)) }
       | IDENT "Declare"; IDENT "Module"; export = export_token; id = identref;
         bl = LIST0 module_binder; ":"; mty = module_type_inl ->
@@ -648,11 +648,11 @@ GRAMMAR EXTEND Gram
         { VernacSynterp (VernacImport ((Import,cats),qidl)) }
       | IDENT "Export"; cats = OPT import_categories; qidl = LIST1 filtered_import ->
         { VernacSynterp (VernacImport ((Export,cats),qidl)) }
-      | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
-          { VernacSynterp (VernacInclude(e::l)) }
-      | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
-         { warn_deprecated_include_type ~loc ();
-        VernacSynterp (VernacInclude(e::l)) } ] ]
+      | IDENT "Include"; l = LIST1 module_type_inl SEP "<+" ->
+          { VernacSynterp (VernacInclude l) }
+      | IDENT "Include"; "Type"; l = LIST1 module_type_inl SEP "<+" ->
+          { warn_deprecated_include_type ~loc ();
+            VernacSynterp (VernacInclude l) } ] ]
   ;
   import_categories:
   [ [ negative = OPT "-"; "("; cats = LIST1 qualid SEP ","; ")" ->
@@ -672,12 +672,6 @@ GRAMMAR EXTEND Gram
       | IDENT "Export"; cats = OPT import_categories -> { Some (Export,cats) }
       |  -> { None } ] ]
   ;
-  ext_module_type:
-    [ [ "<+"; mty = module_type_inl -> { mty } ] ]
-  ;
-  ext_module_expr:
-    [ [ "<+"; mexpr = module_expr_inl -> { mexpr } ] ]
-  ;
   check_module_type:
     [ [ "<:"; mty = module_type_inl -> { mty } ] ]
   ;
@@ -688,12 +682,8 @@ GRAMMAR EXTEND Gram
     [ [ ":"; mty = module_type_inl -> { Enforce mty }
       | mtys = check_module_types -> { Check mtys } ] ]
   ;
-  is_module_type:
-    [ [ ":="; mty = module_type_inl ; l = LIST0 ext_module_type -> { (mty::l) }
-      | -> { [] } ] ]
-  ;
-  is_module_expr:
-    [ [ ":="; mexpr = module_expr_inl; l = LIST0 ext_module_expr -> { (mexpr::l) }
+  module_body:
+    [ [ ":="; l = LIST1 module_type_inl SEP "<+" -> { l }
       | -> { [] } ] ]
   ;
   functor_app_annot:
@@ -702,10 +692,6 @@ GRAMMAR EXTEND Gram
       | "["; IDENT "no"; IDENT "inline"; "]" -> { NoInline }
       | -> { DefaultInline }
       ] ]
-  ;
-  module_expr_inl:
-    [ [ "!"; me = module_expr -> { (me,NoInline) }
-      | me = module_expr; a = functor_app_annot -> { (me,a) } ] ]
   ;
   module_type_inl:
     [ [ "!"; me = module_type -> { (me,NoInline) }

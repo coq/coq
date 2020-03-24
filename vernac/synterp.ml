@@ -165,7 +165,7 @@ let synterp_define_module export {loc;v=id} (binders_ast : module_binder list) m
          (fun (export,idl,ty) (args,argsexport) ->
            (idl,ty)::args, (List.map (fun {v=i} -> Option.map (on_snd synterp_import_cats) export,i)idl)@argsexport) binders_ast
              ([],[]) in
-       let mp, args, sign = Declaremods.Synterp.start_module export id binders_ast mty_ast_o in
+       let info = Declaremods.Synterp.start_module export id binders_ast mty_ast_o in
        let argsexports = List.map_filter
          (fun (export,id) ->
           Option.map (fun export ->
@@ -173,20 +173,20 @@ let synterp_define_module export {loc;v=id} (binders_ast : module_binder list) m
           ) export
          ) argsexport
        in
-       export, args, argsexports, [], sign
+       export, info.cur_syn_params, argsexports, [], info.cur_syn_sign
     | _::_ ->
        let binders_ast = List.map
         (fun (export,idl,ty) ->
           if not (Option.is_empty export) then
            user_err Pp.(str "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
           else (idl,ty)) binders_ast in
-       let mp, args, expr, sign =
-         Declaremods.Synterp.declare_module
+       let info, expr =
+         Declaremods.Synterp.define_module
            id binders_ast mty_ast_o mexpr_ast_l
        in
        Option.iter (fun (export,cats) ->
         ignore (synterp_import_mod (export,cats) (qualid_of_ident id) ImportAll)) export;
-       export, args, [], expr, sign
+       export, info.cur_syn_params, [], expr, info.cur_syn_sign
 
 let synterp_declare_module_type_syntax {loc;v=id} binders_ast mty_sign mty_ast_l =
   if Lib.sections_are_opened () then
@@ -199,7 +199,7 @@ let synterp_declare_module_type_syntax {loc;v=id} binders_ast mty_sign mty_ast_l
            (idl,ty)::args, (List.map (fun {v=i} -> Option.map (on_snd synterp_import_cats) export,i)idl)@argsexport) binders_ast
              ([],[]) in
 
-       let mp, args, sign = Declaremods.Synterp.start_modtype id binders_ast mty_sign in
+       let info = Declaremods.Synterp.start_modtype id binders_ast mty_sign in
        let argsexport =
          List.map_filter
            (fun (export,id) ->
@@ -207,15 +207,15 @@ let synterp_declare_module_type_syntax {loc;v=id} binders_ast mty_sign mty_ast_l
                (fun export -> export, synterp_import_mod export (qualid_of_ident ?loc id) ImportAll) export
            ) argsexport
        in
-       args, argsexport, [], sign
+       info.cur_syn_params, argsexport, [], info.cur_syn_sign
     | _ :: _ ->
         let binders_ast = List.map
           (fun (export,idl,ty) ->
             if not (Option.is_empty export) then
               user_err Pp.(str "Arguments of a functor definition can be imported only if the definition is interactive. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
             else (idl,ty)) binders_ast in
-        let mp, args, expr, sign = Declaremods.Synterp.declare_modtype id binders_ast mty_sign mty_ast_l in
-        args, [], expr, sign
+        let info, expr = Declaremods.Synterp.declare_modtype id binders_ast mty_sign mty_ast_l in
+        info.cur_syn_params, [], expr, info.cur_syn_sign
 
 let synterp_declare_module export {loc;v=id} binders_ast mty_ast =
   let binders_ast = List.map
@@ -223,14 +223,12 @@ let synterp_declare_module export {loc;v=id} binders_ast mty_ast =
      if not (Option.is_empty export) then
       user_err Pp.(str "Arguments of a functor declaration cannot be exported. Remove the \"Export\" and \"Import\" keywords from every functor argument.")
      else (idl,ty)) binders_ast in
-  let mp, args, expr, sign =
-    Declaremods.Synterp.declare_module id binders_ast (Declaremods.Enforce mty_ast) []
+  let info =
+    Declaremods.Synterp.declare_module id binders_ast mty_ast
   in
-  assert (List.is_empty expr);
-  let sign = match sign with Declaremods.Enforce x -> x | _ -> assert false in
   let export = Option.map (on_snd synterp_import_cats) export in
   Option.iter (fun export -> ignore @@ synterp_import_mod export (qualid_of_ident id) ImportAll) export;
-  mp, export, args, sign
+  info.cur_syn_mp, export, info.cur_syn_params, info.cur_syn_sign
 
 let synterp_include l = Declaremods.Synterp.declare_include l
 
@@ -454,11 +452,13 @@ let rec synterp ?loc ~atts v =
       EVernacDefineModule (export,lid,args,argsexport,sign,expr)
     | VernacDeclareModuleType (lid,bl,mtys,mtyo) ->
       let args, argsexport, expr, sign = synterp_declare_module_type_syntax lid bl mtys mtyo in
+      let sign = match sign with Check sign -> sign | Enforce _ -> assert false in
       EVernacDeclareModuleType (lid,args,argsexport,sign,expr)
     | VernacDeclareModule (export,lid,bl,mtyo) ->
       let mp, export, args, sign =
         synterp_declare_module export lid bl mtyo
       in
+      let sign = match sign with Check _ -> assert false | Enforce sign -> sign in
       EVernacDeclareModule (export,lid,args,sign)
     | VernacInclude in_asts ->
       EVernacInclude (synterp_include in_asts)

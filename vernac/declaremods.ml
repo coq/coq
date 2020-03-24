@@ -691,12 +691,13 @@ module InterpVisitor : StagedModS
 (** {6 Modules : start, end, declare} *)
 
 type current_module_syntax_info = {
-  cur_mp : ModPath.t;
-  cur_typ : ((Constrexpr.universe_decl_expr option * Constrexpr.constr_expr) module_alg_expr * int option) option;
-  cur_mbids : MBId.t list;
+  cur_syn_mp : ModPath.t;
+  cur_syn_sign : (Modintern.module_struct_expr * Names.ModPath.t * Modintern.module_kind * int option) module_signature;
+  cur_syn_params : (MBId.t list * (Modintern.module_struct_expr * Names.ModPath.t * Modintern.module_kind * int option)) list; (** parameters *)
+  cur_syn_mbids : MBId.t list;
 }
 
-let default_module_syntax_info mp = { cur_mp = mp; cur_typ = None; cur_mbids = [] }
+let default_module_syntax_info mp = { cur_syn_mp = mp; cur_syn_sign = Check []; cur_syn_params = []; cur_syn_mbids = [] }
 
 let openmod_syntax_info =
   Summary.ref None ~stage:Summary.Stage.Synterp ~name:"MODULE-SYNTAX-INFO"
@@ -708,10 +709,13 @@ let openmod_syntax_info =
 
 type current_module_info = {
   cur_typ : (module_struct_entry * int option) option; (** type via ":" *)
-  cur_typs : module_type_body list (** types via "<:" *)
+  cur_typs : module_type_body list; (** types via "<:" *)
+  cur_params : (MBId.t * module_struct_entry * Entries.inline) list; (** parameters *)
+  cur_ucontext : Univ.ContextSet.t; (** constraints *)
 }
 
-let default_module_info = { cur_typ = None; cur_typs = [] }
+let default_module_info =
+  { cur_typ = None; cur_typs = []; cur_params = []; cur_ucontext = Univ.ContextSet.empty }
 
 let openmod_info = Summary.ref default_module_info ~name:"MODULE-INFO"
 
@@ -761,50 +765,51 @@ let intern_arg (idl,(typ,ann)) =
 let intern_args params =
   List.map intern_arg params
 
-let start_module_core id args res =
+let prepare_module id args res =
   (* Loads the parsing objects in arguments *)
   let args = intern_args args in
   let mbids = List.flatten @@ List.map (fun (mbidl,_) -> mbidl) args in
-  let res_entry_o, sign = match res with
-    | Enforce (res,ann) ->
+  let res_entry_o = match res with
+    | Enforce (res, ann) ->
         let inl = inl2intopt ann in
         let (mte, base, kind) = Modintern.intern_module_ast Modintern.ModType res in
-        Some (mte, inl), Enforce (mte, base, kind, inl)
-    | Check resl -> None, Check (build_subtypes resl)
+        Enforce (mte, base, kind, inl)
+    | Check resl ->
+        Check (build_subtypes resl)
   in
-  let mp = ModPath.MPdot((openmod_syntax_info ()).cur_mp, Label.of_id id) in
-  mp, res_entry_o, mbids, sign, args
+  let mp = ModPath.MPdot((openmod_syntax_info ()).cur_syn_mp, Label.of_id id) in
+  { cur_syn_mp = mp; cur_syn_sign = res_entry_o; cur_syn_params = args; cur_syn_mbids = mbids }
 
 let start_module export id args res =
   let fs = Summary.Synterp.freeze_summaries () in
-  let mp, res_entry_o, mbids, sign, args = start_module_core id args res in
-  set_openmod_syntax_info { cur_mp = mp; cur_typ = res_entry_o; cur_mbids = mbids };
-  let prefix = Lib.Synterp.start_module export id mp fs in
+  let current = prepare_module id args res in
+  set_openmod_syntax_info current;
+  let prefix = Lib.Synterp.start_module export id current.cur_syn_mp fs in
   Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModule prefix.obj_mp));
-  mp, args, sign
+  current
 
 let end_module_core id (m_info : current_module_syntax_info) objects fs =
   let {Lib.Synterp.substobjs = substitute; keepobjs = keep; anticipateobjs = special; } = objects in
 
   (* For sealed modules, we use the substitutive objects of their signatures *)
-  let sobjs0, keep, special = match m_info.cur_typ with
-    | None -> ([], Objs substitute), keep, special
-    | Some (mty, inline) ->
+  let sobjs0, keep, special = match m_info.cur_syn_sign with
+    | Check _ -> ([], Objs substitute), keep, special
+    | Enforce (mty, _, _, inline) ->
       SynterpVisitor.get_module_sobjs false () inline mty, [], special
   in
   Summary.Synterp.unfreeze_summaries fs;
-  let sobjs = let (ms,objs) = sobjs0 in (m_info.cur_mbids@ms,objs) in
+  let sobjs = let (ms,objs) = sobjs0 in (m_info.cur_syn_mbids@ms,objs) in
 
   (* We substitute objects if the module is sealed by a signature *)
   let sobjs =
-    match m_info.cur_typ with
-      | None -> sobjs
-      | Some (mty, _) ->
-        subst_sobjs (map_mp (get_module_path mty) m_info.cur_mp empty_delta_resolver) sobjs
+    match m_info.cur_syn_sign with
+      | Check _ -> sobjs
+      | Enforce (mty, _, _, _) ->
+        subst_sobjs (map_mp (get_module_path mty) m_info.cur_syn_mp empty_delta_resolver) sobjs
   in
   let node = ModuleObject (id,sobjs) in
   (* We add the keep objects, if any, and if this isn't a functor *)
-  let objects = match keep, m_info.cur_mbids with
+  let objects = match keep, m_info.cur_syn_mbids with
     | [], _ | _, _ :: _ -> special@[node]
     | _ -> special@[node;KeepObject (id,keep)]
   in
@@ -817,7 +822,7 @@ let end_module_core id (m_info : current_module_syntax_info) objects fs =
   (* Printf.eprintf "newoname=%s, oldoname=%s\n" (string_of_path (fst newoname)) (string_of_path (fst oldoname)); *)
   (* Printf.eprintf "newoname=%s, cur_mp=%s\n" (ModPath.debug_to_string (mp_of_kn (snd newoname))) (ModPath.debug_to_string m_info.cur_mp); *)
 
-  m_info.cur_mp, objects
+  m_info.cur_syn_mp, objects
 
 let end_module () =
   let oldprefix,fs,objects = Lib.Synterp.end_module () in
@@ -836,41 +841,42 @@ let get_functor_sobjs is_mod inl (mbids,mexpr) =
   let (mbids0, aobjs) = SynterpVisitor.get_module_sobjs is_mod () inl mexpr in
   (mbids @ mbids0, aobjs)
 
-let declare_module id args res mexpr_o =
+(* End a module in algebraic form *)
+let define_algebraic_module id args (mexpr,ann) mty =
+  let fs = Summary.Synterp.freeze_summaries () in
+  let info = prepare_module id args mty in
+  let me, base, kind = Modintern.intern_module_ast Modintern.Module mexpr in
+  let mte, inl = match info.cur_syn_sign with
+    | Enforce (mte, _, _, inl) -> Some mte, (match inl2intopt ann with None -> None | Some _ -> inl)
+    | Check _ -> None, (match inl2intopt ann with None -> None | Some _ -> default_inline ())
+  in
+  let sobjs, mp0 =
+    match mte with
+    | Some mte -> get_functor_sobjs false inl (info.cur_syn_mbids,mte), get_module_path mte
+    | None -> get_functor_sobjs true inl (info.cur_syn_mbids,me), get_module_path me
+  in
+  (* Undo the simulated interactive building of the module
+     and declare the module as a whole, and its universe *)
+  Summary.Synterp.unfreeze_summaries fs;
+  let sobjs = subst_sobjs (map_mp mp0 info.cur_syn_mp empty_delta_resolver) sobjs in
+  ignore (SynterpVisitor.add_leaf (ModuleObject (id,sobjs)));
+  info, (me, base, kind, inl)
+
+(* TODO cleanup push universes directly to global env *)
+let declare_module id args (mty,ann) =
   let fs = Summary.Synterp.freeze_summaries () in
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
-  let mp = ModPath.MPdot((openmod_syntax_info ()).cur_mp, Label.of_id id) in
-  let args = intern_args args in
-  let mbids = List.flatten @@ List.map fst args in
-  let mty_entry_o = match res with
-    | Enforce (mty,ann) ->
-        let inl = inl2intopt ann in
-        let (mte, base, kind) = Modintern.intern_module_ast Modintern.ModType mty in
-        Enforce (mte, base, kind, inl)
-    | Check mtys ->
-      Check (build_subtypes mtys)
-  in
-  let mexpr_entry_o = match mexpr_o with
-    | None -> None
-    | Some (mexpr,ann) ->
-      let (mte, base, kind) = Modintern.intern_module_ast Modintern.Module mexpr in
-      Some (mte, base, kind, inl2intopt ann)
-  in
-  let sobjs, mp0 = match mexpr_entry_o, mty_entry_o with
-    | None, Check _ -> assert false (* No body, no type ... *)
-    | _, Enforce (typ,_,_,inl_res) -> get_functor_sobjs false inl_res (mbids,typ), get_module_path typ
-    | Some (body, _, _, inl_expr), Check _ ->
-      get_functor_sobjs true inl_expr (mbids,body), get_module_path body
-  in
+  let info = prepare_module id args (Enforce (mty,ann)) in
+  let (mte, base, kind, inl) = match info.cur_syn_sign with Enforce res -> res | _ -> assert false in
+  let sobjs, mp0 = get_functor_sobjs false inl (info.cur_syn_mbids,mte), get_module_path mte in
   (* Undo the simulated interactive building of the module
      and declare the module as a whole *)
   Summary.Synterp.unfreeze_summaries fs;
-
   (* We can use an empty delta resolver on syntax objects *)
-  let sobjs = subst_sobjs (map_mp mp0 mp empty_delta_resolver) sobjs in
+  let sobjs = subst_sobjs (map_mp mp0 info.cur_syn_mp empty_delta_resolver) sobjs in
   ignore (SynterpVisitor.add_leaf (ModuleObject (id,sobjs)));
-  mp, args, mexpr_entry_o, mty_entry_o
+  info
 
 end
 
@@ -975,7 +981,8 @@ let intern_args params =
   let args, ctx = List.fold_left intern_arg ([], Univ.ContextSet.empty) params in
   List.rev args, ctx
 
-let start_module_core id args res =
+(* Prepare params and type constraints for an algebraic or interactive module *)
+let prepare_module id args res =
   let mp = Global.start_module id in
   let params, ctx = intern_args args in
   let () = Global.push_context_set ~strict:true ctx in
@@ -994,15 +1001,18 @@ let start_module_core id args res =
       None, typs, ctx
   in
   let () = Global.push_context_set ~strict:true ctx' in
-  mp, res_entry_o, subtyps, params, Univ.ContextSet.union ctx ctx'
+  let ctx = Univ.ContextSet.union ctx ctx' in
+  mp, { cur_typ = res_entry_o; cur_typs = subtyps; cur_params = params; cur_ucontext = ctx }
 
+(* Start an interactive module *)
 let start_module export id args res =
   let fs = Summary.Interp.freeze_summaries () in
-  let mp, res_entry_o, subtyps, _, _ = start_module_core id args res in
-  openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
-  let _ : Nametab.object_prefix = Lib.Interp.start_module export id mp fs in
+  let mp, info = prepare_module id args res in
+  openmod_info := info;
+  let _ = Lib.Interp.start_module export id mp fs in
   mp
 
+(* End a module defined as a collection of fields *)
 let end_module_core id m_info objects fs =
   let {Lib.Interp.substobjs = substitute; keepobjs = keep; anticipateobjs = special; } = objects in
 
@@ -1060,54 +1070,64 @@ let get_functor_sobjs is_mod env inl (params,mexpr) =
   let (mbids, aobjs) = InterpVisitor.get_module_sobjs is_mod env inl mexpr in
   (List.map pi1 params @ mbids, aobjs)
 
-(* TODO cleanup push universes directly to global env *)
-let declare_module id args res mexpr_o =
+(* End a module in algebraic form *)
+let define_algebraic_module id args (me, base, kind, inl) mty =
   let fs = Summary.Interp.freeze_summaries () in
-  (* We simulate the beginning of an interactive module,
-     then we adds the module parameters to the global env. *)
-  let mp, mty_entry_o, subs, params, ctx = start_module_core id args res in
+  let mp, info = prepare_module id args mty in
+  let params = info.cur_params in
   let env = Global.env () in
-  let mexpr_entry_o, inl_expr, ctx' = match mexpr_o with
-    | None -> None, default_inline (), Univ.ContextSet.empty
-    | Some (mte, base, kind, inl) ->
-      let (mte, ctx) = Modintern.interp_module_ast env kind base mte in
-      Some mte, inl, ctx
-  in
-  let env = Environ.push_context_set ~strict:true ctx' env in
-  let ctx = Univ.ContextSet.union ctx ctx' in
-  let entry, inl_res = match mexpr_entry_o, mty_entry_o with
-    | None, None -> assert false (* No body, no type ... *)
-    | None, Some (typ, inl) -> MType (params, typ), inl
-    | Some body, otyp -> MExpr (params, body, Option.map fst otyp), Option.cata snd (default_inline ()) otyp
-  in
-  let sobjs, mp0 = match entry with
-    | MType (_,mte) | MExpr (_,_,Some mte) ->
-      get_functor_sobjs false env inl_res (params,mte), get_module_path mte
-    | MExpr (_,me,None) ->
-      get_functor_sobjs true env inl_expr (params,me), get_module_path me
+  let me, ctx = Modintern.interp_module_ast env Modintern.Module base me in
+  let entry = MExpr (info.cur_params, me, Option.map fst info.cur_typ) in
+  let sobjs, mp0 =
+    let env = Environ.push_context_set ~strict:true ctx env in
+    match info.cur_typ with
+    | Some (mte, _) -> get_functor_sobjs false env inl (params,mte), get_module_path mte
+    | None -> get_functor_sobjs true env inl (params,me), get_module_path me
   in
   (* Undo the simulated interactive building of the module
-     and declare the module as a whole *)
+     and declare the module as a whole, and its universe *)
   Summary.Interp.unfreeze_summaries fs;
-  let inl = match inl_expr with
-  | None -> None
-  | _ -> inl_res
-  in
+  let ctx = Univ.ContextSet.union ctx info.cur_ucontext in
   let () = Global.push_context_set ~strict:true ctx in
   let state = ((Global.universes (), Univ.Constraints.empty), Reductionops.inferred_universes) in
   let _, (_, cst) = Mod_typing.translate_module state (Global.env ()) mp inl entry in
   let () = Global.add_constraints cst in
-  let mp_env,resolver = Global.add_module id entry inl in
+  let mp_env, resolver = Global.add_module id entry inl in
+
+  (* Name consistency check : prepare_module vs. add_module, kernel vs. library *)
+  assert (ModPath.equal mp (mp_of_kn (Lib.make_kn id)));
+  assert (ModPath.equal mp mp_env);
+
+  let () = check_subtypes mp info.cur_typs in
+
+  (* Replace self references in the algebraic module with self
+     reference to the new module name *)
+  let sobjs = subst_sobjs (map_mp mp0 mp resolver) sobjs in
+  InterpVisitor.add_leaf (ModuleObject (id,sobjs));
+  mp
+
+(* TODO cleanup push universes directly to global env *)
+let declare_module id args mexpr =
+  let fs = Summary.Interp.freeze_summaries () in
+  (* Simulate the beginning of an interactive module *)
+  let mp, info = prepare_module id args (Enforce mexpr) in
+  let params = info.cur_params in
+  let env = Global.env () in
+  let mte, inl = Option.get info.cur_typ in
+  let sobjs, mp0 = get_functor_sobjs false env inl (params,mte), get_module_path mte in
+  (* Undo the global preparation of the module
+     and declare the module as a whole *)
+  Summary.Interp.unfreeze_summaries fs;
+  let () = Global.push_context_set ~strict:true info.cur_ucontext in
+  let mp_env,resolver = Global.add_module id (MType (params, mte)) inl in
 
   (* Name consistency check : kernel vs. library *)
   assert (ModPath.equal mp (mp_of_kn (Lib.make_kn id)));
   assert (ModPath.equal mp mp_env);
 
-  let () = check_subtypes mp subs in
-
   let sobjs = subst_sobjs (map_mp mp0 mp resolver) sobjs in
   InterpVisitor.add_leaf (ModuleObject (id,sobjs));
-  mp
+  mp, info
 
 end
 
@@ -1119,20 +1139,13 @@ module RawModTypeOps = struct
 
 module Synterp = struct
 
-let start_modtype_core id cur_mp args mtys =
-  let mp = ModPath.MPdot(cur_mp, Label.of_id id) in
-  let args = RawModOps.Synterp.intern_args args in
-  let mbids = List.flatten @@ List.map (fun (mbidl,_) -> mbidl) args in
-  let sub_mty_l = RawModOps.Synterp.build_subtypes mtys in
-  mp, mbids, args, sub_mty_l
-
 let start_modtype id args mtys =
   let fs = Summary.Synterp.freeze_summaries () in
-  let mp, mbids, args, sub_mty_l = start_modtype_core id (openmod_syntax_info ()).cur_mp args mtys in
-  set_openmod_syntax_info { cur_mp = mp; cur_typ = None; cur_mbids = mbids };
-  let prefix = Lib.Synterp.start_modtype id mp fs in
+  let info = RawModOps.Synterp.prepare_module id args (Check mtys) in
+  set_openmod_syntax_info info;
+  let prefix = Lib.Synterp.start_modtype id info.cur_syn_mp fs in
   Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModtype prefix.obj_mp));
-  mp, args, sub_mty_l
+  info
 
 let end_modtype_core id mbids objects fs =
   let {Lib.Synterp.substobjs = substitute; keepobjs = _; anticipateobjs = special; } = objects in
@@ -1143,27 +1156,26 @@ let end_modtype_core id mbids objects fs =
 let end_modtype () =
   let oldprefix,fs,objects = Lib.Synterp.end_modtype () in
   let olddp, id = split_dirpath oldprefix.Nametab.obj_dir in
-  let objects = end_modtype_core id (openmod_syntax_info ()).cur_mbids objects fs in
+  let objects = end_modtype_core id (openmod_syntax_info ()).cur_syn_mbids objects fs in
   SynterpVisitor.add_leaves objects;
-  (openmod_syntax_info ()).cur_mp
+  (openmod_syntax_info ()).cur_syn_mp
 
 let declare_modtype id args mtys (mty,ann) =
   let fs = Summary.Synterp.freeze_summaries () in
   let inl = inl2intopt ann in
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
-  let mp, mbids, args, sub_mty_l = start_modtype_core id (openmod_syntax_info ()).cur_mp args mtys in
+  let info = RawModOps.Synterp.prepare_module id args (Check mtys) in
   let mte, base, kind = Modintern.intern_module_ast Modintern.ModType mty in
-  let entry = mbids, mte in
-  let sobjs = RawModOps.Synterp.get_functor_sobjs false inl entry in
-  let subst = map_mp (get_module_path (snd entry)) mp empty_delta_resolver in
+  let sobjs = RawModOps.Synterp.get_functor_sobjs false inl (info.cur_syn_mbids,mte) in
+  let subst = map_mp (get_module_path mte) info.cur_syn_mp empty_delta_resolver in
   let sobjs = subst_sobjs subst sobjs in
 
   (* Undo the simulated interactive building of the module type
      and declare the module type as a whole *)
   Summary.Synterp.unfreeze_summaries fs;
   ignore (SynterpVisitor.add_leaf (ModuleTypeObject (id,sobjs)));
-  mp, args, (mte, base, kind, inl), sub_mty_l
+  info, (mte, base, kind, inl)
 
 end
 
@@ -1282,7 +1294,7 @@ let declare_one_include_core cur_mp (me_ast,annot) =
   (me, base, kind, inl), aobjs
 
 let declare_one_include (me_ast,annot) =
-  let res, aobjs = declare_one_include_core (openmod_syntax_info ()).cur_mp (me_ast,annot) in
+  let res, aobjs = declare_one_include_core (openmod_syntax_info ()).cur_syn_mp (me_ast,annot) in
   SynterpVisitor.add_leaf (IncludeObject aobjs);
   res
 
@@ -1401,9 +1413,8 @@ Typically used for `Module M := N <+ P`.
 *)
 let declare_module_includes id args res mexpr_l =
   let fs = Summary.Synterp.freeze_summaries () in
-  let mp, res_entry_o, mbids, sign, args = RawModOps.Synterp.start_module_core id args res in
-  let mod_info = { cur_mp = mp; cur_typ = res_entry_o; cur_mbids = mbids } in
-  let includes = List.map_left (RawIncludeOps.Synterp.declare_one_include_core mp) mexpr_l in
+  let mod_info = RawModOps.Synterp.prepare_module id args res in
+  let includes = List.map_left (RawIncludeOps.Synterp.declare_one_include_core mod_info.cur_syn_mp) mexpr_l in
   let bodies, incl_objs = List.split includes in
   let incl_objs = List.map (fun x -> IncludeObject x) incl_objs in
   let objects = Lib.Synterp.{
@@ -1411,17 +1422,18 @@ let declare_module_includes id args res mexpr_l =
     keepobjs = [];
     anticipateobjs = [];
   } in
-  let mp, objects = RawModOps.Synterp.end_module_core id mod_info objects fs in
+  let mp_env, objects = RawModOps.Synterp.end_module_core id mod_info objects fs in
   SynterpVisitor.add_leaves objects;
-  mp, args, bodies, sign
+  assert (ModPath.equal mod_info.cur_syn_mp mp_env);
+  mod_info, bodies
 
 (** Declare a module type in terms of a list of module bodies, by including them.
 Typically used for `Module Type M := N <+ P`.
 *)
 let declare_modtype_includes id args res mexpr_l =
   let fs = Summary.Synterp.freeze_summaries () in
-  let mp, mbids, args, subtyps = RawModTypeOps.Synterp.start_modtype_core id (openmod_syntax_info ()).cur_mp args res in
-  let includes = List.map_left (RawIncludeOps.Synterp.declare_one_include_core mp) mexpr_l in
+  let info = RawModOps.Synterp.prepare_module id args (Check res) in
+  let includes = List.map_left (RawIncludeOps.Synterp.declare_one_include_core info.cur_syn_mp) mexpr_l in
   let bodies, incl_objs = List.split includes in
   let incl_objs = List.map (fun x -> IncludeObject x) incl_objs in
   let objects = Lib.Synterp.{
@@ -1429,20 +1441,19 @@ let declare_modtype_includes id args res mexpr_l =
     keepobjs = [];
     anticipateobjs = [];
   } in
-  let objects = RawModTypeOps.Synterp.end_modtype_core id mbids objects fs in
+  let objects = RawModTypeOps.Synterp.end_modtype_core id info.cur_syn_mbids objects fs in
   SynterpVisitor.add_leaves objects;
-  mp, args, bodies, subtyps
+  info, bodies
 
-let declare_module id args mtys me_l =
+let declare_module =
+  RawModOps.Synterp.declare_module
+
+let define_module id args mty me_l =
   match me_l with
-  | [] ->
-    let mp, args, body, sign = RawModOps.Synterp.declare_module id args mtys None in
-    assert (Option.is_empty body);
-    mp, args, [], sign
   | [me] ->
-    let mp, args, body, sign = RawModOps.Synterp.declare_module id args mtys (Some me) in
-    mp, args, [Option.get body], sign
-  | me_l -> declare_module_includes id args mtys me_l
+    let info, body = RawModOps.Synterp.define_algebraic_module id args me mty in
+    info, [body]
+  | me_l -> declare_module_includes id args mty me_l
 
 let start_modtype id args mtys =
   RawModTypeOps.Synterp.start_modtype id args mtys
@@ -1453,8 +1464,8 @@ let declare_modtype id args mtys mty_l =
   match mty_l with
     | [] -> assert false
     | [mty] ->
-      let mp, args, body, sign = RawModTypeOps.Synterp.declare_modtype id args mtys mty in
-      mp, args, [body], sign
+      let info, body = RawModTypeOps.Synterp.declare_modtype id args mtys mty in
+      info, [body]
     | mty_l -> declare_modtype_includes id args mtys mty_l
 
 let declare_include = RawIncludeOps.Synterp.declare_include
@@ -1489,15 +1500,15 @@ Typically used for `Module M := N <+ P`.
 *)
 let declare_module_includes id args res mexpr_l =
   let fs = Summary.Interp.freeze_summaries () in
-  let mp, res_entry_o, subtyps, _, _ = RawModOps.Interp.start_module_core id args res in
-  let mod_info = { cur_typ = res_entry_o; cur_typs = subtyps } in
+  let mp, mod_info = RawModOps.Interp.prepare_module id args res in
   let incl_objs = List.map_left (fun x -> IncludeObject (RawIncludeOps.Interp.declare_one_include_core x)) mexpr_l in
   let objects = Lib.Interp.{
     substobjs = incl_objs;
     keepobjs = [];
     anticipateobjs = [];
   } in
-  let mp, objects = RawModOps.Interp.end_module_core id mod_info objects fs in
+  let mp_env, objects = RawModOps.Interp.end_module_core id mod_info objects fs in
+  assert (ModPath.equal mp mp_env);
   InterpVisitor.add_leaves objects;
   mp
 
@@ -1517,11 +1528,13 @@ let declare_modtype_includes id args res mexpr_l =
   InterpVisitor.add_leaves objects;
   mp
 
-let declare_module id args mtys me_l =
+let declare_module id args mtys =
+  fst (RawModOps.Interp.declare_module id args mtys)
+
+let define_module id args mty me_l =
   match me_l with
-  | [] -> RawModOps.Interp.declare_module id args mtys None
-  | [me] -> RawModOps.Interp.declare_module id args mtys (Some me)
-  | me_l -> declare_module_includes id args mtys me_l
+  | [me] -> RawModOps.Interp.define_algebraic_module id args me mty
+  | me_l -> declare_module_includes id args mty me_l
 
 let start_modtype = RawModTypeOps.Interp.start_modtype
 
@@ -1633,25 +1646,32 @@ let import_module f ~export mp =
   Synterp.import_module f ~export mp;
   Interp.import_module f ~export mp
 
-let declare_module id args mtys me_l =
-  let mp, args, bodies, sign = Synterp.declare_module id args mtys me_l in
-  Interp.declare_module id args sign bodies
+let declare_module id args mtys =
+  let info = Synterp.declare_module id args mtys in
+  let mte = match info.cur_syn_sign with Enforce mte -> mte | _ -> assert false in
+  Interp.declare_module id info.cur_syn_params mte
+
+let define_module id args mtys me_l =
+  let info, me_l = Synterp.define_module id args mtys me_l in
+  Interp.define_module id info.cur_syn_params info.cur_syn_sign me_l
 
 let start_module export id args res =
-  let mp, args, sign = Synterp.start_module export id args res in
-  Interp.start_module export id args sign
+  let info = Synterp.start_module export id args res in
+  Interp.start_module export id info.cur_syn_params info.cur_syn_sign
 
 let end_module () =
   let _mp = Synterp.end_module () in
   Interp.end_module ()
 
 let declare_modtype id args mtys mty_l =
-  let mp, args, bodies, subtyps = Synterp.declare_modtype id args mtys mty_l in
-  Interp.declare_modtype id args subtyps bodies
+  let info, bodies = Synterp.declare_modtype id args mtys mty_l in
+  let mtys = match info.cur_syn_sign with Enforce _ -> assert false | Check mtys -> mtys in
+  Interp.declare_modtype id info.cur_syn_params mtys bodies
 
 let start_modtype id args mtys =
-  let mp, args, sub_mty_l = Synterp.start_modtype id args mtys in
-  Interp.start_modtype id args sub_mty_l
+  let info = Synterp.start_modtype id args mtys in
+  let mtys = match info.cur_syn_sign with Enforce _ -> assert false | Check mtys -> mtys in
+  Interp.start_modtype id info.cur_syn_params mtys
 
 let end_modtype () =
   let _mp = Synterp.end_modtype () in

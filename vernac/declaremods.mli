@@ -40,20 +40,34 @@ type library_name = DirPath.t
 
 type library_objects
 
+type current_module_syntax_info = {
+  cur_syn_mp : ModPath.t;
+  cur_syn_sign : (Modintern.module_struct_expr * Names.ModPath.t * Modintern.module_kind * int option) module_signature;
+  cur_syn_params : (MBId.t list * (Modintern.module_struct_expr * Names.ModPath.t * Modintern.module_kind * int option)) list; (** parameters *)
+  cur_syn_mbids : MBId.t list;
+}
+
 module Synterp : sig
 
 val declare_module :
   Id.t ->
   module_params ->
+  (Constrexpr.module_ast * inline) -> current_module_syntax_info
+
+val define_module :
+  Id.t ->
+  module_params ->
   (Constrexpr.module_ast * inline) module_signature ->
   (Constrexpr.module_ast * inline) list ->
-  ModPath.t * module_params_expr * module_expr list * module_expr module_signature
+  current_module_syntax_info *
+  (Modintern.module_struct_expr * Names.ModPath.t *
+   Modintern.module_kind * int option) list
 
 val start_module :
   Lib.export -> Id.t ->
   module_params ->
   (Constrexpr.module_ast * inline) module_signature ->
-  ModPath.t * module_params_expr * module_expr module_signature
+  current_module_syntax_info
 
 val end_module : unit -> ModPath.t
 
@@ -66,13 +80,15 @@ val declare_modtype :
   module_params ->
   (Constrexpr.module_ast * inline) list ->
   (Constrexpr.module_ast * inline) list ->
-  ModPath.t * module_params_expr * module_expr list * module_expr list
+  current_module_syntax_info *
+  (Modintern.module_struct_expr * Names.ModPath.t *
+   Modintern.module_kind * int option) list
 
 val start_modtype :
   Id.t ->
   module_params ->
   (Constrexpr.module_ast * inline) list ->
-  ModPath.t * module_params_expr * module_expr list
+  current_module_syntax_info
 
 val end_modtype : unit -> ModPath.t
 
@@ -95,9 +111,19 @@ module Interp : sig
 val declare_module :
   Id.t ->
   module_params_expr ->
-  module_expr module_signature ->
-  module_expr list ->
+  Modintern.module_struct_expr * Names.ModPath.t *
+  Modintern.module_kind * Entries.inline ->
   ModPath.t
+
+val define_module :
+  Id.t ->
+  module_params_expr ->
+  (Modintern.module_struct_expr * Names.ModPath.t *
+   Modintern.module_kind * Entries.inline)
+    module_signature ->
+  (Modintern.module_struct_expr * Names.ModPath.t *
+   Modintern.module_kind * Entries.inline)
+    list -> ModPath.t
 
 val start_module :
   Lib.export -> Id.t ->
@@ -186,6 +212,12 @@ val process_module_binding :
 val import_module : Libobject.open_filter -> export:Lib.export_flag -> ModPath.t -> unit
 
 val declare_module :
+  Id.t ->
+  module_params ->
+  Constrexpr.module_ast * inline ->
+  ModPath.t
+
+val define_module :
   Id.t ->
   module_params ->
   (Constrexpr.module_ast * inline) module_signature ->

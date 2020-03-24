@@ -1263,7 +1263,7 @@ let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
      and what module information is supplied *)
   if Lib.sections_are_opened () then
     user_err Pp.(str "Modules and Module Types are not allowed inside sections.");
-  let mp = Declaremods.Interp.declare_module id binders_ast (Declaremods.Enforce mty_ast) [] in
+  let mp = Declaremods.Interp.declare_module id binders_ast mty_ast in
   Dumpglob.dump_moddef ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is declared");
   Option.iter (fun export -> vernac_import export [CAst.make ?loc mp, ImportAll]) export
@@ -1284,8 +1284,7 @@ let vernac_define_module export {loc;v=id} binders_ast argsexport mty_ast_o mexp
          argsexport
     | _::_ ->
        let mp =
-         Declaremods.Interp.declare_module
-           id binders_ast mty_ast_o mexpr_ast_l
+         Declaremods.Interp.define_module id binders_ast mty_ast_o mexpr_ast_l
        in
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
