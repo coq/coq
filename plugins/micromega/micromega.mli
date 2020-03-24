@@ -88,6 +88,15 @@ end
 
 val zeq_bool : z -> z -> bool
 
+type 'c pExpr =
+  | PEc of 'c
+  | PEX of positive
+  | PEadd of 'c pExpr * 'c pExpr
+  | PEsub of 'c pExpr * 'c pExpr
+  | PEmul of 'c pExpr * 'c pExpr
+  | PEopp of 'c pExpr
+  | PEpow of 'c pExpr * n
+
 type 'c pol =
   | Pc of 'c
   | Pinj of positive * 'c pol
@@ -209,15 +218,6 @@ val psquare :
   -> 'a1 pol
   -> 'a1 pol
 
-type 'c pExpr =
-  | PEc of 'c
-  | PEX of positive
-  | PEadd of 'c pExpr * 'c pExpr
-  | PEsub of 'c pExpr * 'c pExpr
-  | PEmul of 'c pExpr * 'c pExpr
-  | PEopp of 'c pExpr
-  | PEpow of 'c pExpr * n
-
 val mk_X : 'a1 -> 'a1 -> positive -> 'a1 pol
 
 val ppow_pos :
@@ -255,28 +255,43 @@ val norm_aux :
   -> 'a1 pol
 
 type ('tA, 'tX, 'aA, 'aF) gFormula =
-  | TT
-  | FF
-  | X of 'tX
-  | A of 'tA * 'aA
-  | Cj of ('tA, 'tX, 'aA, 'aF) gFormula * ('tA, 'tX, 'aA, 'aF) gFormula
-  | D of ('tA, 'tX, 'aA, 'aF) gFormula * ('tA, 'tX, 'aA, 'aF) gFormula
-  | N of ('tA, 'tX, 'aA, 'aF) gFormula
-  | I of
-      ('tA, 'tX, 'aA, 'aF) gFormula * 'aF option * ('tA, 'tX, 'aA, 'aF) gFormula
+  | TT of bool
+  | FF of bool
+  | X of bool * 'tX
+  | A of bool * 'tA * 'aA
+  | AND of bool * ('tA, 'tX, 'aA, 'aF) gFormula * ('tA, 'tX, 'aA, 'aF) gFormula
+  | OR of bool * ('tA, 'tX, 'aA, 'aF) gFormula * ('tA, 'tX, 'aA, 'aF) gFormula
+  | NOT of bool * ('tA, 'tX, 'aA, 'aF) gFormula
+  | IMPL of
+      bool
+      * ('tA, 'tX, 'aA, 'aF) gFormula
+      * 'aF option
+      * ('tA, 'tX, 'aA, 'aF) gFormula
+  | IFF of bool * ('tA, 'tX, 'aA, 'aF) gFormula * ('tA, 'tX, 'aA, 'aF) gFormula
+  | EQ of ('tA, 'tX, 'aA, 'aF) gFormula * ('tA, 'tX, 'aA, 'aF) gFormula
 
 val mapX :
-  ('a2 -> 'a2) -> ('a1, 'a2, 'a3, 'a4) gFormula -> ('a1, 'a2, 'a3, 'a4) gFormula
+     (bool -> 'a2 -> 'a2)
+  -> bool
+  -> ('a1, 'a2, 'a3, 'a4) gFormula
+  -> ('a1, 'a2, 'a3, 'a4) gFormula
 
-val foldA : ('a5 -> 'a3 -> 'a5) -> ('a1, 'a2, 'a3, 'a4) gFormula -> 'a5 -> 'a5
+val foldA :
+  ('a5 -> 'a3 -> 'a5) -> bool -> ('a1, 'a2, 'a3, 'a4) gFormula -> 'a5 -> 'a5
+
 val cons_id : 'a1 option -> 'a1 list -> 'a1 list
-val ids_of_formula : ('a1, 'a2, 'a3, 'a4) gFormula -> 'a4 list
-val collect_annot : ('a1, 'a2, 'a3, 'a4) gFormula -> 'a3 list
+val ids_of_formula : bool -> ('a1, 'a2, 'a3, 'a4) gFormula -> 'a4 list
+val collect_annot : bool -> ('a1, 'a2, 'a3, 'a4) gFormula -> 'a3 list
 
-type 'a bFormula = ('a, __, unit0, unit0) gFormula
+type rtyp = __
+type bProp = __
+type 'a bFormula = ('a, bProp, unit0, unit0) gFormula
 
 val map_bformula :
-  ('a1 -> 'a2) -> ('a1, 'a3, 'a4, 'a5) gFormula -> ('a2, 'a3, 'a4, 'a5) gFormula
+     bool
+  -> ('a1 -> 'a2)
+  -> ('a1, 'a3, 'a4, 'a5) gFormula
+  -> ('a2, 'a3, 'a4, 'a5) gFormula
 
 type ('x, 'annot) clause = ('x * 'annot) list
 type ('x, 'annot) cnf = ('x, 'annot) clause list
@@ -334,11 +349,54 @@ val or_cnf_opt :
   -> ('a1, 'a2) cnf
   -> ('a1, 'a2) cnf
 
+val mk_and :
+     ('a2 -> bool)
+  -> ('a2 -> 'a2 -> 'a2 option)
+  -> (bool -> bool -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf)
+  -> bool
+  -> bool
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a2, 'a3) cnf
+
+val mk_or :
+     ('a2 -> bool)
+  -> ('a2 -> 'a2 -> 'a2 option)
+  -> (bool -> bool -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf)
+  -> bool
+  -> bool
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a2, 'a3) cnf
+
+val mk_impl :
+     ('a2 -> bool)
+  -> ('a2 -> 'a2 -> 'a2 option)
+  -> (bool -> bool -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf)
+  -> bool
+  -> bool
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a2, 'a3) cnf
+
+val mk_iff :
+     ('a2 -> bool)
+  -> ('a2 -> 'a2 -> 'a2 option)
+  -> (bool -> bool -> ('a1, 'a3, 'a4, 'a5) tFormula -> ('a2, 'a3) cnf)
+  -> bool
+  -> bool
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a2, 'a3) cnf
+
+val is_bool : bool -> ('a1, 'a2, 'a3, 'a4) tFormula -> bool option
+
 val xcnf :
      ('a2 -> bool)
   -> ('a2 -> 'a2 -> 'a2 option)
   -> ('a1 -> 'a3 -> ('a2, 'a3) cnf)
   -> ('a1 -> 'a3 -> ('a2, 'a3) cnf)
+  -> bool
   -> bool
   -> ('a1, 'a3, 'a4, 'a5) tFormula
   -> ('a2, 'a3) cnf
@@ -387,49 +445,199 @@ val ror_cnf_opt :
 
 val ratom : ('a1, 'a2) cnf -> 'a2 -> ('a1, 'a2) cnf * 'a2 list
 
+val rxcnf_and :
+     ('a2 -> bool)
+  -> ('a2 -> 'a2 -> 'a2 option)
+  -> (   bool
+      -> bool
+      -> ('a1, 'a3, 'a4, 'a5) tFormula
+      -> ('a2, 'a3) cnf * 'a3 list)
+  -> bool
+  -> bool
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a2, 'a3) cnf * 'a3 list
+
+val rxcnf_or :
+     ('a2 -> bool)
+  -> ('a2 -> 'a2 -> 'a2 option)
+  -> (   bool
+      -> bool
+      -> ('a1, 'a3, 'a4, 'a5) tFormula
+      -> ('a2, 'a3) cnf * 'a3 list)
+  -> bool
+  -> bool
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a2, 'a3) cnf * 'a3 list
+
+val rxcnf_impl :
+     ('a2 -> bool)
+  -> ('a2 -> 'a2 -> 'a2 option)
+  -> (   bool
+      -> bool
+      -> ('a1, 'a3, 'a4, 'a5) tFormula
+      -> ('a2, 'a3) cnf * 'a3 list)
+  -> bool
+  -> bool
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a2, 'a3) cnf * 'a3 list
+
+val rxcnf_iff :
+     ('a2 -> bool)
+  -> ('a2 -> 'a2 -> 'a2 option)
+  -> (   bool
+      -> bool
+      -> ('a1, 'a3, 'a4, 'a5) tFormula
+      -> ('a2, 'a3) cnf * 'a3 list)
+  -> bool
+  -> bool
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a1, 'a3, 'a4, 'a5) tFormula
+  -> ('a2, 'a3) cnf * 'a3 list
+
 val rxcnf :
      ('a2 -> bool)
   -> ('a2 -> 'a2 -> 'a2 option)
   -> ('a1 -> 'a3 -> ('a2, 'a3) cnf)
   -> ('a1 -> 'a3 -> ('a2, 'a3) cnf)
   -> bool
+  -> bool
   -> ('a1, 'a3, 'a4, 'a5) tFormula
   -> ('a2, 'a3) cnf * 'a3 list
 
 type ('term, 'annot, 'tX) to_constrT =
-  { mkTT : 'tX
-  ; mkFF : 'tX
-  ; mkA : 'term -> 'annot -> 'tX
-  ; mkCj : 'tX -> 'tX -> 'tX
-  ; mkD : 'tX -> 'tX -> 'tX
-  ; mkI : 'tX -> 'tX -> 'tX
-  ; mkN : 'tX -> 'tX }
+  { mkTT : bool -> 'tX
+  ; mkFF : bool -> 'tX
+  ; mkA : bool -> 'term -> 'annot -> 'tX
+  ; mkAND : bool -> 'tX -> 'tX -> 'tX
+  ; mkOR : bool -> 'tX -> 'tX -> 'tX
+  ; mkIMPL : bool -> 'tX -> 'tX -> 'tX
+  ; mkIFF : bool -> 'tX -> 'tX -> 'tX
+  ; mkNOT : bool -> 'tX -> 'tX
+  ; mkEQ : 'tX -> 'tX -> 'tX }
 
 val aformula :
-  ('a1, 'a2, 'a3) to_constrT -> ('a1, 'a2, 'a3, 'a4) tFormula -> 'a3
+  ('a1, 'a2, 'a3) to_constrT -> bool -> ('a1, 'a2, 'a3, 'a4) tFormula -> 'a3
 
-val is_X : ('a1, 'a2, 'a3, 'a4) tFormula -> 'a3 option
+val is_X : bool -> ('a1, 'a2, 'a3, 'a4) tFormula -> 'a3 option
 
 val abs_and :
      ('a1, 'a2, 'a3) to_constrT
+  -> bool
   -> ('a1, 'a2, 'a3, 'a4) tFormula
   -> ('a1, 'a2, 'a3, 'a4) tFormula
-  -> (   ('a1, 'a2, 'a3, 'a4) tFormula
+  -> (   bool
+      -> ('a1, 'a2, 'a3, 'a4) tFormula
       -> ('a1, 'a2, 'a3, 'a4) tFormula
       -> ('a1, 'a2, 'a3, 'a4) tFormula)
   -> ('a1, 'a3, 'a2, 'a4) gFormula
 
 val abs_or :
      ('a1, 'a2, 'a3) to_constrT
+  -> bool
   -> ('a1, 'a2, 'a3, 'a4) tFormula
   -> ('a1, 'a2, 'a3, 'a4) tFormula
-  -> (   ('a1, 'a2, 'a3, 'a4) tFormula
+  -> (   bool
+      -> ('a1, 'a2, 'a3, 'a4) tFormula
       -> ('a1, 'a2, 'a3, 'a4) tFormula
       -> ('a1, 'a2, 'a3, 'a4) tFormula)
   -> ('a1, 'a3, 'a2, 'a4) gFormula
 
+val abs_not :
+     ('a1, 'a2, 'a3) to_constrT
+  -> bool
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> (bool -> ('a1, 'a2, 'a3, 'a4) tFormula -> ('a1, 'a2, 'a3, 'a4) tFormula)
+  -> ('a1, 'a3, 'a2, 'a4) gFormula
+
 val mk_arrow :
      'a4 option
+  -> bool
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+
+val abst_simpl :
+     ('a1, 'a2, 'a3) to_constrT
+  -> ('a2 -> bool)
+  -> bool
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+
+val abst_and :
+     ('a1, 'a2, 'a3) to_constrT
+  -> (   bool
+      -> bool
+      -> ('a1, 'a2, 'a3, 'a4) tFormula
+      -> ('a1, 'a2, 'a3, 'a4) tFormula)
+  -> bool
+  -> bool
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+
+val abst_or :
+     ('a1, 'a2, 'a3) to_constrT
+  -> (   bool
+      -> bool
+      -> ('a1, 'a2, 'a3, 'a4) tFormula
+      -> ('a1, 'a2, 'a3, 'a4) tFormula)
+  -> bool
+  -> bool
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+
+val abst_impl :
+     ('a1, 'a2, 'a3) to_constrT
+  -> (   bool
+      -> bool
+      -> ('a1, 'a2, 'a3, 'a4) tFormula
+      -> ('a1, 'a2, 'a3, 'a4) tFormula)
+  -> bool
+  -> 'a4 option
+  -> bool
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+
+val or_is_X :
+  bool -> ('a1, 'a2, 'a3, 'a4) tFormula -> ('a1, 'a2, 'a3, 'a4) tFormula -> bool
+
+val abs_iff :
+     ('a1, 'a2, 'a3) to_constrT
+  -> bool
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> bool
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+
+val abst_iff :
+     ('a1, 'a2, 'a3) to_constrT
+  -> ('a2 -> bool)
+  -> (   bool
+      -> bool
+      -> ('a1, 'a2, 'a3, 'a4) tFormula
+      -> ('a1, 'a2, 'a3, 'a4) tFormula)
+  -> bool
+  -> bool
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
+
+val abst_eq :
+     ('a1, 'a2, 'a3) to_constrT
+  -> ('a2 -> bool)
+  -> (   bool
+      -> bool
+      -> ('a1, 'a2, 'a3, 'a4) tFormula
+      -> ('a1, 'a2, 'a3, 'a4) tFormula)
+  -> bool
   -> ('a1, 'a2, 'a3, 'a4) tFormula
   -> ('a1, 'a2, 'a3, 'a4) tFormula
   -> ('a1, 'a2, 'a3, 'a4) tFormula
@@ -438,8 +646,9 @@ val abst_form :
      ('a1, 'a2, 'a3) to_constrT
   -> ('a2 -> bool)
   -> bool
+  -> bool
   -> ('a1, 'a2, 'a3, 'a4) tFormula
-  -> ('a1, 'a3, 'a2, 'a4) gFormula
+  -> ('a1, 'a2, 'a3, 'a4) tFormula
 
 val cnf_checker :
   (('a1 * 'a2) list -> 'a3 -> bool) -> ('a1, 'a2) cnf -> 'a3 list -> bool
@@ -450,7 +659,7 @@ val tauto_checker :
   -> ('a1 -> 'a3 -> ('a2, 'a3) cnf)
   -> ('a1 -> 'a3 -> ('a2, 'a3) cnf)
   -> (('a2 * 'a3) list -> 'a4 -> bool)
-  -> ('a1, __, 'a3, unit0) gFormula
+  -> ('a1, rtyp, 'a3, unit0) gFormula
   -> 'a4 list
   -> bool
 
@@ -661,7 +870,9 @@ val xnegate0 : z nFormula -> z nFormula list
 val negate : z formula -> 'a1 -> (z nFormula, 'a1) cnf
 
 val cnfZ :
-  (z formula, 'a1, 'a2, 'a3) tFormula -> (z nFormula, 'a1) cnf * 'a1 list
+     bool
+  -> (z formula, 'a1, 'a2, 'a3) tFormula
+  -> (z nFormula, 'a1) cnf * 'a1 list
 
 val ceiling : z -> z -> z
 
@@ -698,7 +909,9 @@ val qdeduce : q nFormula -> q nFormula -> q nFormula option
 val normQ : q pExpr -> q pol
 
 val cnfQ :
-  (q formula, 'a1, 'a2, 'a3) tFormula -> (q nFormula, 'a1) cnf * 'a1 list
+     bool
+  -> (q formula, 'a1, 'a2, 'a3) tFormula
+  -> (q nFormula, 'a1) cnf * 'a1 list
 
 val qTautoChecker : q formula bFormula -> qWitness list -> bool
 

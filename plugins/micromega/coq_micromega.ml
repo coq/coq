@@ -132,17 +132,21 @@ type 'cst cnf = ('cst Mc.nFormula, tag * EConstr.constr) Mc.cnf
 let rec pp_formula o (f : 'cst formula) =
   Mc.(
     match f with
-    | TT -> output_string o "tt"
-    | FF -> output_string o "ff"
-    | X c -> output_string o "X "
-    | A (_, (t, _)) -> Printf.fprintf o "A(%a)" Tag.pp t
-    | Cj (f1, f2) -> Printf.fprintf o "C(%a,%a)" pp_formula f1 pp_formula f2
-    | D (f1, f2) -> Printf.fprintf o "D(%a,%a)" pp_formula f1 pp_formula f2
-    | I (f1, n, f2) ->
-      Printf.fprintf o "I(%a,%s,%a)" pp_formula f1
+    | TT b -> output_string o (if b then "True" else "true")
+    | FF b -> output_string o (if b then "False" else "false")
+    | X (b, c) -> Printf.fprintf o "X %b" b
+    | A (_, _, (t, _)) -> Printf.fprintf o "A(%a)" Tag.pp t
+    | AND (b, f1, f2) ->
+      Printf.fprintf o "AND(%a,%a)" pp_formula f1 pp_formula f2
+    | OR (b, f1, f2) -> Printf.fprintf o "OR(%a,%a)" pp_formula f1 pp_formula f2
+    | IMPL (b, f1, n, f2) ->
+      Printf.fprintf o "IMPL(%a,%s,%a)" pp_formula f1
         (match n with Some id -> Names.Id.to_string id | None -> "")
         pp_formula f2
-    | N f -> Printf.fprintf o "N(%a)" pp_formula f)
+    | NOT (b, f) -> Printf.fprintf o "NOT(%a)" pp_formula f
+    | IFF (b, f1, f2) ->
+      Printf.fprintf o "IFF(%a,%a)" pp_formula f1 pp_formula f2
+    | EQ (f1, f2) -> Printf.fprintf o "EQ(%a,%a)" pp_formula f1 pp_formula f2)
 
 (**
   * Given a set of integers s=\{i0,...,iN\} and a list m, return the list of
@@ -176,8 +180,9 @@ module M = struct
 
   let logic_dir = ["Coq"; "Logic"; "Decidable"]
 
-  let mic_modules =
+  let misc_modules =
     [ ["Coq"; "Lists"; "List"]
+    ; ["Coq"; "Bool"]
     ; ["Coq"; "micromega"; "ZMicromega"]
     ; ["Coq"; "micromega"; "Tauto"]
     ; ["Coq"; "micromega"; "DeclConstant"]
@@ -198,7 +203,7 @@ module M = struct
   let coq_modules =
     Coqlib.(
       init_modules @ [logic_dir] @ arith_modules @ zarith_base_modules
-      @ mic_modules)
+      @ misc_modules)
 
   let bin_module = [["Coq"; "Numbers"; "BinNums"]]
 
@@ -228,13 +233,21 @@ module M = struct
   let bin_constant = gen_constant_in_modules "ZMicromega" bin_module
   let r_constant = gen_constant_in_modules "ZMicromega" r_modules
   let z_constant = gen_constant_in_modules "ZMicromega" z_modules
-  let m_constant = gen_constant_in_modules "ZMicromega" mic_modules
+  let m_constant = gen_constant_in_modules "ZMicromega" misc_modules
   let coq_and = lazy (init_constant "and")
   let coq_or = lazy (init_constant "or")
   let coq_not = lazy (init_constant "not")
   let coq_iff = lazy (init_constant "iff")
   let coq_True = lazy (init_constant "True")
   let coq_False = lazy (init_constant "False")
+  let coq_bool = lazy (init_constant "bool")
+  let coq_true = lazy (init_constant "true")
+  let coq_false = lazy (init_constant "false")
+  let coq_andb = lazy (constant "andb")
+  let coq_orb = lazy (constant "orb")
+  let coq_implb = lazy (constant "implb")
+  let coq_eqb = lazy (constant "Bool.eqb")
+  let coq_negb = lazy (constant "negb")
   let coq_cons = lazy (constant "cons")
   let coq_nil = lazy (constant "nil")
   let coq_list = lazy (constant "list")
@@ -283,7 +296,12 @@ module M = struct
   let coq_Zge = lazy (z_constant "Z.ge")
   let coq_Zle = lazy (z_constant "Z.le")
   let coq_Zlt = lazy (z_constant "Z.lt")
-  let coq_Eq = lazy (init_constant "eq")
+  let coq_Zgtb = lazy (z_constant "Z.gtb")
+  let coq_Zgeb = lazy (z_constant "Z.geb")
+  let coq_Zleb = lazy (z_constant "Z.leb")
+  let coq_Zltb = lazy (z_constant "Z.ltb")
+  let coq_Zeqb = lazy (z_constant "Z.eqb")
+  let coq_eq = lazy (init_constant "eq")
   let coq_Zplus = lazy (z_constant "Z.add")
   let coq_Zminus = lazy (z_constant "Z.sub")
   let coq_Zopp = lazy (z_constant "Z.opp")
@@ -350,23 +368,23 @@ module M = struct
          [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
          "FF")
 
-  let coq_And =
+  let coq_AND =
     lazy
       (gen_constant_in_modules "ZMicromega"
          [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
-         "Cj")
+         "AND")
 
-  let coq_Or =
+  let coq_OR =
     lazy
       (gen_constant_in_modules "ZMicromega"
          [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
-         "D")
+         "OR")
 
-  let coq_Neg =
+  let coq_NOT =
     lazy
       (gen_constant_in_modules "ZMicromega"
          [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
-         "N")
+         "NOT")
 
   let coq_Atom =
     lazy
@@ -380,17 +398,35 @@ module M = struct
          [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
          "X")
 
-  let coq_Impl =
+  let coq_IMPL =
     lazy
       (gen_constant_in_modules "ZMicromega"
          [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
-         "I")
+         "IMPL")
+
+  let coq_IFF =
+    lazy
+      (gen_constant_in_modules "ZMicromega"
+         [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
+         "IFF")
+
+  let coq_EQ =
+    lazy
+      (gen_constant_in_modules "ZMicromega"
+         [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
+         "EQ")
 
   let coq_Formula =
     lazy
       (gen_constant_in_modules "ZMicromega"
          [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
          "BFormula")
+
+  let coq_bProp =
+    lazy
+      (gen_constant_in_modules "ZMicromega"
+         [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
+         "bProp")
 
   (**
     * Initialization : a few Caml symbols are derived from other libraries;
@@ -707,52 +743,53 @@ module M = struct
         (List.find (fun (x', y) -> EConstr.eq_constr sigma x (Lazy.force x')) l)
     with Not_found -> raise ParseError
 
-  let zop_table =
+  let zop_table_prop =
     [ (coq_Zgt, Mc.OpGt)
     ; (coq_Zge, Mc.OpGe)
     ; (coq_Zlt, Mc.OpLt)
     ; (coq_Zle, Mc.OpLe) ]
 
-  let rop_table =
+  let zop_table_bool =
+    [ (coq_Zgtb, Mc.OpGt)
+    ; (coq_Zgeb, Mc.OpGe)
+    ; (coq_Zltb, Mc.OpLt)
+    ; (coq_Zleb, Mc.OpLe)
+    ; (coq_Zeqb, Mc.OpEq) ]
+
+  let rop_table_prop =
     [ (coq_Rgt, Mc.OpGt)
     ; (coq_Rge, Mc.OpGe)
     ; (coq_Rlt, Mc.OpLt)
     ; (coq_Rle, Mc.OpLe) ]
 
-  let qop_table = [(coq_Qlt, Mc.OpLt); (coq_Qle, Mc.OpLe); (coq_Qeq, Mc.OpEq)]
+  let rop_table_bool = []
+
+  let qop_table_prop =
+    [(coq_Qlt, Mc.OpLt); (coq_Qle, Mc.OpLe); (coq_Qeq, Mc.OpEq)]
+
+  let qop_table_bool = []
 
   type gl = {env : Environ.env; sigma : Evd.evar_map}
 
   let is_convertible gl t1 t2 = Reductionops.is_conv gl.env gl.sigma t1 t2
 
-  let parse_zop gl (op, args) =
+  let parse_operator table_prop table_bool has_equality typ gl b (op, args) =
     let sigma = gl.sigma in
     match args with
-    | [|a1; a2|] -> (assoc_const sigma op zop_table, a1, a2)
+    | [|a1; a2|] ->
+      (assoc_const sigma op (if b then table_prop else table_bool), a1, a2)
     | [|ty; a1; a2|] ->
       if
-        EConstr.eq_constr sigma op (Lazy.force coq_Eq)
-        && is_convertible gl ty (Lazy.force coq_Z)
+        has_equality
+        && EConstr.eq_constr sigma op (Lazy.force coq_eq)
+        && is_convertible gl ty (Lazy.force typ)
       then (Mc.OpEq, args.(1), args.(2))
       else raise ParseError
     | _ -> raise ParseError
 
-  let parse_rop gl (op, args) =
-    let sigma = gl.sigma in
-    match args with
-    | [|a1; a2|] -> (assoc_const sigma op rop_table, a1, a2)
-    | [|ty; a1; a2|] ->
-      if
-        EConstr.eq_constr sigma op (Lazy.force coq_Eq)
-        && is_convertible gl ty (Lazy.force coq_R)
-      then (Mc.OpEq, a1, a2)
-      else raise ParseError
-    | _ -> raise ParseError
-
-  let parse_qop gl (op, args) =
-    if Array.length args = 2 then
-      (assoc_const gl.sigma op qop_table, args.(0), args.(1))
-    else raise ParseError
+  let parse_zop = parse_operator zop_table_prop zop_table_bool true coq_Z
+  let parse_rop = parse_operator rop_table_prop [] true coq_R
+  let parse_qop = parse_operator qop_table_prop [] false coq_R
 
   type 'a op =
     | Binop of ('a Mc.pExpr -> 'a Mc.pExpr -> 'a Mc.pExpr)
@@ -772,7 +809,7 @@ module M = struct
 
   module Env = struct
     type t =
-      { vars : EConstr.t list
+      { vars : (EConstr.t * bool) list
       ; (* The list represents a mapping from EConstr.t to indexes. *)
         gl : gl
             (* The evar_map may be updated due to unification of universes *) }
@@ -792,16 +829,16 @@ module M = struct
         | exception Univ.UniverseInconsistency _ -> None )
       | None -> None
 
-    let compute_rank_add env v =
+    let compute_rank_add env v is_prop =
       let rec _add gl vars n v =
         match vars with
-        | [] -> (gl, [v], n)
-        | e :: l -> (
+        | [] -> (gl, [(v, is_prop)], n)
+        | (e, b) :: l -> (
           match eq_constr gl e v with
           | Some gl' -> (gl', vars, n)
           | None ->
             let gl, l', n = _add gl l (n + 1) v in
-            (gl, e :: l', n) )
+            (gl, (e, b) :: l', n) )
       in
       let gl', vars', n = _add env.gl env.vars 1 v in
       ({vars = vars'; gl = gl'}, CamlToCoq.positive n)
@@ -811,7 +848,7 @@ module M = struct
       let rec _get_rank env n =
         match env with
         | [] -> raise (Invalid_argument "get_rank")
-        | e :: l -> (
+        | (e, _) :: l -> (
           match eq_constr gl e v with Some _ -> n | None -> _get_rank l (n + 1)
           )
       in
@@ -832,7 +869,7 @@ module M = struct
     let pp gl env =
       let ppl =
         List.mapi
-          (fun i e ->
+          (fun i (e, _) ->
             Pp.str "x"
             ++ Pp.int (i + 1)
             ++ Pp.str ":"
@@ -853,7 +890,7 @@ module M = struct
       Feedback.msg_debug
         (Pp.str "parse_expr: " ++ Printer.pr_leconstr_env gl.env gl.sigma term);
     let parse_variable env term =
-      let env, n = Env.compute_rank_add env term in
+      let env, n = Env.compute_rank_add env term false in
       (Mc.PEX n, env)
     in
     let rec parse_expr env term =
@@ -880,13 +917,13 @@ module M = struct
                 (power, env)
               with ParseError ->
                 (* if the exponent is a variable *)
-                let env, n = Env.compute_rank_add env term in
+                let env, n = Env.compute_rank_add env term false in
                 (Mc.PEX n, env) )
             | Ukn s ->
               if debug then (
                 Printf.printf "unknown op: %s\n" s;
                 flush stdout );
-              let env, n = Env.compute_rank_add env term in
+              let env, n = Env.compute_rank_add env term false in
               (Mc.PEX n, env) )
           | _ -> parse_variable env term )
         | _ -> parse_variable env term )
@@ -1028,7 +1065,7 @@ module M = struct
         Mc.PEpow (expr, exp))
       rop_spec
 
-  let parse_arith parse_op parse_expr env cstr gl =
+  let parse_arith parse_op parse_expr is_prop env cstr gl =
     let sigma = gl.sigma in
     if debug then
       Feedback.msg_debug
@@ -1037,7 +1074,7 @@ module M = struct
         ++ fnl () );
     match EConstr.kind sigma cstr with
     | App (op, args) ->
-      let op, lhs, rhs = parse_op gl (op, args) in
+      let op, lhs, rhs = parse_op gl is_prop (op, args) in
       let e1, env = parse_expr gl env lhs in
       let e2, env = parse_expr gl env rhs in
       ({Mc.flhs = e1; Mc.fop = op; Mc.frhs = e2}, env)
@@ -1049,13 +1086,16 @@ module M = struct
 
   (* generic parsing of arithmetic expressions *)
 
-  let mkC f1 f2 = Mc.Cj (f1, f2)
-  let mkD f1 f2 = Mc.D (f1, f2)
-  let mkIff f1 f2 = Mc.Cj (Mc.I (f1, None, f2), Mc.I (f2, None, f1))
-  let mkI f1 f2 = Mc.I (f1, None, f2)
+  let mkAND b f1 f2 = Mc.AND (b, f1, f2)
+  let mkOR b f1 f2 = Mc.OR (b, f1, f2)
+  let mkIff b f1 f2 = Mc.IFF (b, f1, f2)
+  let mkIMPL b f1 f2 = Mc.IMPL (b, f1, None, f2)
+  let mkEQ f1 f2 = Mc.EQ (f1, f2)
 
-  let mkformula_binary g term f1 f2 =
-    match (f1, f2) with Mc.X _, Mc.X _ -> Mc.X term | _ -> g f1 f2
+  let mkformula_binary b g term f1 f2 =
+    match (f1, f2) with
+    | Mc.X (b1, _), Mc.X (b2, _) -> Mc.X (b, term)
+    | _ -> g f1 f2
 
   (**
     * This is the big generic function for formula parsers.
@@ -1065,83 +1105,128 @@ module M = struct
     let sort = Retyping.get_sort_of env sigma term in
     Sorts.is_prop sort
 
+  type formula_op =
+    { op_and : EConstr.t
+    ; op_or : EConstr.t
+    ; op_iff : EConstr.t
+    ; op_not : EConstr.t
+    ; op_tt : EConstr.t
+    ; op_ff : EConstr.t }
+
+  let prop_op =
+    lazy
+      { op_and = Lazy.force coq_and
+      ; op_or = Lazy.force coq_or
+      ; op_iff = Lazy.force coq_iff
+      ; op_not = Lazy.force coq_not
+      ; op_tt = Lazy.force coq_True
+      ; op_ff = Lazy.force coq_False }
+
+  let bool_op =
+    lazy
+      { op_and = Lazy.force coq_andb
+      ; op_or = Lazy.force coq_orb
+      ; op_iff = Lazy.force coq_eqb
+      ; op_not = Lazy.force coq_negb
+      ; op_tt = Lazy.force coq_true
+      ; op_ff = Lazy.force coq_false }
+
   let parse_formula gl parse_atom env tg term =
     let sigma = gl.sigma in
-    let is_prop term = is_prop gl.env gl.sigma term in
-    let parse_atom env tg t =
+    (*    let is_prop term = is_prop gl.env gl.sigma term in*)
+    let parse_atom b env tg t =
       try
-        let at, env = parse_atom env t gl in
-        (Mc.A (at, (tg, t)), env, Tag.next tg)
-      with ParseError ->
-        if is_prop t then (Mc.X t, env, tg) else raise ParseError
+        let at, env = parse_atom b env t gl in
+        (Mc.A (b, at, (tg, t)), env, Tag.next tg)
+      with ParseError -> (Mc.X (b, t), env, tg)
     in
-    let rec xparse_formula env tg term =
+    let prop_op = Lazy.force prop_op in
+    let bool_op = Lazy.force bool_op in
+    let eq = Lazy.force coq_eq in
+    let bool = Lazy.force coq_bool in
+    let rec xparse_formula op is_prop env tg term =
       match EConstr.kind sigma term with
       | App (l, rst) -> (
         match rst with
-        | [|a; b|] when EConstr.eq_constr sigma l (Lazy.force coq_and) ->
-          let f, env, tg = xparse_formula env tg a in
-          let g, env, tg = xparse_formula env tg b in
-          (mkformula_binary mkC term f g, env, tg)
-        | [|a; b|] when EConstr.eq_constr sigma l (Lazy.force coq_or) ->
-          let f, env, tg = xparse_formula env tg a in
-          let g, env, tg = xparse_formula env tg b in
-          (mkformula_binary mkD term f g, env, tg)
-        | [|a|] when EConstr.eq_constr sigma l (Lazy.force coq_not) ->
-          let f, env, tg = xparse_formula env tg a in
-          (Mc.N f, env, tg)
-        | [|a; b|] when EConstr.eq_constr sigma l (Lazy.force coq_iff) ->
-          let f, env, tg = xparse_formula env tg a in
-          let g, env, tg = xparse_formula env tg b in
-          (mkformula_binary mkIff term f g, env, tg)
-        | _ -> parse_atom env tg term )
+        | [|a; b|] when EConstr.eq_constr sigma l op.op_and ->
+          let f, env, tg = xparse_formula op is_prop env tg a in
+          let g, env, tg = xparse_formula op is_prop env tg b in
+          (mkformula_binary is_prop (mkAND is_prop) term f g, env, tg)
+        | [|a; b|] when EConstr.eq_constr sigma l op.op_or ->
+          let f, env, tg = xparse_formula op is_prop env tg a in
+          let g, env, tg = xparse_formula op is_prop env tg b in
+          (mkformula_binary is_prop (mkOR is_prop) term f g, env, tg)
+        | [|a; b|] when EConstr.eq_constr sigma l op.op_iff ->
+          let f, env, tg = xparse_formula op is_prop env tg a in
+          let g, env, tg = xparse_formula op is_prop env tg b in
+          (mkformula_binary is_prop (mkIff is_prop) term f g, env, tg)
+        | [|ty; a; b|]
+          when EConstr.eq_constr sigma l eq && is_convertible gl ty bool ->
+          let f, env, tg = xparse_formula bool_op false env tg a in
+          let g, env, tg = xparse_formula bool_op false env tg b in
+          (mkformula_binary true mkEQ term f g, env, tg)
+        | [|a|] when EConstr.eq_constr sigma l op.op_not ->
+          let f, env, tg = xparse_formula op is_prop env tg a in
+          (Mc.NOT (is_prop, f), env, tg)
+        | _ -> parse_atom is_prop env tg term )
       | Prod (typ, a, b)
-        when typ.binder_name = Anonymous || EConstr.Vars.noccurn sigma 1 b ->
-        let f, env, tg = xparse_formula env tg a in
-        let g, env, tg = xparse_formula env tg b in
-        (mkformula_binary mkI term f g, env, tg)
+        when is_prop
+             && (typ.binder_name = Anonymous || EConstr.Vars.noccurn sigma 1 b)
+        ->
+        let f, env, tg = xparse_formula op is_prop env tg a in
+        let g, env, tg = xparse_formula op is_prop env tg b in
+        (mkformula_binary true (mkIMPL true) term f g, env, tg)
       | _ ->
-        if EConstr.eq_constr sigma term (Lazy.force coq_True) then
-          (Mc.TT, env, tg)
-        else if EConstr.eq_constr sigma term (Lazy.force coq_False) then
-          Mc.(FF, env, tg)
-        else if is_prop term then (Mc.X term, env, tg)
-        else raise ParseError
+        if EConstr.eq_constr sigma term op.op_tt then (Mc.TT is_prop, env, tg)
+        else if EConstr.eq_constr sigma term op.op_ff then
+          Mc.(FF is_prop, env, tg)
+        else (Mc.X (is_prop, term), env, tg)
     in
-    xparse_formula env tg (*Reductionops.whd_zeta*) term
+    xparse_formula prop_op true env tg (*Reductionops.whd_zeta*) term
+
+  let dump_bool b = Lazy.force (if b then coq_true else coq_false)
 
   let dump_formula typ dump_atom f =
     let app_ctor c args =
       EConstr.mkApp
         ( Lazy.force c
         , Array.of_list
-            ( typ :: EConstr.mkProp :: Lazy.force coq_unit
+            ( typ :: Lazy.force coq_bProp :: Lazy.force coq_unit
             :: Lazy.force coq_unit :: args ) )
     in
     let rec xdump f =
       match f with
-      | Mc.TT -> app_ctor coq_TT []
-      | Mc.FF -> app_ctor coq_FF []
-      | Mc.Cj (x, y) -> app_ctor coq_And [xdump x; xdump y]
-      | Mc.D (x, y) -> app_ctor coq_Or [xdump x; xdump y]
-      | Mc.I (x, _, y) ->
-        app_ctor coq_Impl
-          [ xdump x
+      | Mc.TT b -> app_ctor coq_TT [dump_bool b]
+      | Mc.FF b -> app_ctor coq_FF [dump_bool b]
+      | Mc.AND (b, x, y) -> app_ctor coq_AND [dump_bool b; xdump x; xdump y]
+      | Mc.OR (b, x, y) -> app_ctor coq_OR [dump_bool b; xdump x; xdump y]
+      | Mc.IMPL (b, x, _, y) ->
+        app_ctor coq_IMPL
+          [ dump_bool b
+          ; xdump x
           ; EConstr.mkApp (Lazy.force coq_None, [|Lazy.force coq_unit|])
           ; xdump y ]
-      | Mc.N x -> app_ctor coq_Neg [xdump x]
-      | Mc.A (x, _) -> app_ctor coq_Atom [dump_atom x; Lazy.force coq_tt]
-      | Mc.X t -> app_ctor coq_X [t]
+      | Mc.NOT (b, x) -> app_ctor coq_NOT [dump_bool b; xdump x]
+      | Mc.IFF (b, x, y) -> app_ctor coq_IFF [dump_bool b; xdump x; xdump y]
+      | Mc.EQ (x, y) -> app_ctor coq_EQ [xdump x; xdump y]
+      | Mc.A (b, x, _) ->
+        app_ctor coq_Atom [dump_bool b; dump_atom x; Lazy.force coq_tt]
+      | Mc.X (b, t) -> app_ctor coq_X [dump_bool b; t]
     in
     xdump f
 
   let prop_env_of_formula gl form =
     Mc.(
       let rec doit env = function
-        | TT | FF | A (_, _) -> env
-        | X t -> fst (Env.compute_rank_add env t)
-        | Cj (f1, f2) | D (f1, f2) | I (f1, _, f2) -> doit (doit env f1) f2
-        | N f -> doit env f
+        | TT _ | FF _ | A (_, _, _) -> env
+        | X (b, t) -> fst (Env.compute_rank_add env t b)
+        | AND (b, f1, f2)
+         |OR (b, f1, f2)
+         |IMPL (b, f1, _, f2)
+         |IFF (b, f1, f2) ->
+          doit (doit env f1) f2
+        | NOT (b, f) -> doit env f
+        | EQ (f1, f2) -> doit (doit env f1) f2
       in
       doit (Env.empty gl) form)
 
@@ -1158,11 +1243,15 @@ module M = struct
     in
     Mc.(
       let rec doit = function
-        | TT | FF | X _ -> ISet.empty
-        | A (a, (t, c)) -> vars_of_atom a
-        | Cj (f1, f2) | D (f1, f2) | I (f1, _, f2) ->
+        | TT _ | FF _ | X _ -> ISet.empty
+        | A (_, a, (t, c)) -> vars_of_atom a
+        | AND (_, f1, f2)
+         |OR (_, f1, f2)
+         |IMPL (_, f1, _, f2)
+         |IFF (_, f1, f2)
+         |EQ (f1, f2) ->
           ISet.union (doit f1) (doit f2)
-        | N f -> doit f
+        | NOT (_, f) -> doit f
       in
       doit form)
 
@@ -1176,7 +1265,8 @@ module M = struct
     ; dump_mul : EConstr.constr
     ; dump_pow : EConstr.constr
     ; dump_pow_arg : Mc.n -> EConstr.constr
-    ; dump_op : (Mc.op2 * EConstr.constr) list }
+    ; dump_op_prop : (Mc.op2 * EConstr.constr) list
+    ; dump_op_bool : (Mc.op2 * EConstr.constr) list }
 
   let dump_zexpr =
     lazy
@@ -1188,7 +1278,9 @@ module M = struct
       ; dump_mul = Lazy.force coq_Zmult
       ; dump_pow = Lazy.force coq_Zpower
       ; dump_pow_arg = (fun n -> dump_z (CamlToCoq.z (CoqToCaml.n n)))
-      ; dump_op = List.map (fun (x, y) -> (y, Lazy.force x)) zop_table }
+      ; dump_op_prop = List.map (fun (x, y) -> (y, Lazy.force x)) zop_table_prop
+      ; dump_op_bool = List.map (fun (x, y) -> (y, Lazy.force x)) zop_table_bool
+      }
 
   let dump_qexpr =
     lazy
@@ -1200,7 +1292,9 @@ module M = struct
       ; dump_mul = Lazy.force coq_Qmult
       ; dump_pow = Lazy.force coq_Qpower
       ; dump_pow_arg = (fun n -> dump_z (CamlToCoq.z (CoqToCaml.n n)))
-      ; dump_op = List.map (fun (x, y) -> (y, Lazy.force x)) qop_table }
+      ; dump_op_prop = List.map (fun (x, y) -> (y, Lazy.force x)) qop_table_prop
+      ; dump_op_bool = List.map (fun (x, y) -> (y, Lazy.force x)) qop_table_bool
+      }
 
   let rec dump_Rcst_as_R cst =
     match cst with
@@ -1237,7 +1331,9 @@ module M = struct
       ; dump_mul = Lazy.force coq_Rmult
       ; dump_pow = Lazy.force coq_Rpower
       ; dump_pow_arg = (fun n -> dump_nat (CamlToCoq.nat (CoqToCaml.n n)))
-      ; dump_op = List.map (fun (x, y) -> (y, Lazy.force x)) rop_table }
+      ; dump_op_prop = List.map (fun (x, y) -> (y, Lazy.force x)) rop_table_prop
+      ; dump_op_bool = List.map (fun (x, y) -> (y, Lazy.force x)) rop_table_bool
+      }
 
   let prodn n env b =
     let rec prodrec = function
@@ -1270,7 +1366,9 @@ module M = struct
     in
     let props_n =
       List.mapi
-        (fun i _ -> (fresh_prop "__p" (i + 1), EConstr.mkProp))
+        (fun i (_, b) ->
+          ( fresh_prop "__p" (i + 1)
+          , if b then EConstr.mkProp else Lazy.force coq_bool ))
         (Env.elements props)
     in
     let var_name_pos =
@@ -1279,8 +1377,7 @@ module M = struct
     let dump_expr i e =
       let rec dump_expr = function
         | Mc.PEX n ->
-          EConstr.mkRel
-            (i + CList.assoc_f Int.equal (CoqToCaml.positive n) vars_idx)
+          EConstr.mkRel (i + List.assoc (CoqToCaml.positive n) vars_idx)
         | Mc.PEc z -> dexpr.dump_cst z
         | Mc.PEadd (e1, e2) ->
           EConstr.mkApp (dexpr.dump_add, [|dump_expr e1; dump_expr e2|])
@@ -1294,31 +1391,70 @@ module M = struct
       in
       dump_expr e
     in
-    let mkop op e1 e2 =
-      try
-        EConstr.mkApp
-          (CList.assoc_f Mutils.Hash.eq_op2 op dexpr.dump_op, [|e1; e2|])
+    let mkop_prop op e1 e2 =
+      try EConstr.mkApp (List.assoc op dexpr.dump_op_prop, [|e1; e2|])
       with Not_found ->
-        EConstr.mkApp (Lazy.force coq_Eq, [|dexpr.interp_typ; e1; e2|])
+        EConstr.mkApp (Lazy.force coq_eq, [|dexpr.interp_typ; e1; e2|])
     in
-    let dump_cstr i {Mc.flhs; Mc.fop; Mc.frhs} =
-      mkop fop (dump_expr i flhs) (dump_expr i frhs)
+    let dump_cstr_prop i {Mc.flhs; Mc.fop; Mc.frhs} =
+      mkop_prop fop (dump_expr i flhs) (dump_expr i frhs)
     in
-    let rec xdump pi xi f =
+    let mkop_bool op e1 e2 =
+      try EConstr.mkApp (List.assoc op dexpr.dump_op_bool, [|e1; e2|])
+      with Not_found ->
+        EConstr.mkApp (Lazy.force coq_eq, [|dexpr.interp_typ; e1; e2|])
+    in
+    let dump_cstr_bool i {Mc.flhs; Mc.fop; Mc.frhs} =
+      mkop_bool fop (dump_expr i flhs) (dump_expr i frhs)
+    in
+    let rec xdump_prop pi xi f =
       match f with
-      | Mc.TT -> Lazy.force coq_True
-      | Mc.FF -> Lazy.force coq_False
-      | Mc.Cj (x, y) ->
-        EConstr.mkApp (Lazy.force coq_and, [|xdump pi xi x; xdump pi xi y|])
-      | Mc.D (x, y) ->
-        EConstr.mkApp (Lazy.force coq_or, [|xdump pi xi x; xdump pi xi y|])
-      | Mc.I (x, _, y) ->
-        EConstr.mkArrow (xdump pi xi x) Sorts.Relevant
-          (xdump (pi + 1) (xi + 1) y)
-      | Mc.N x ->
-        EConstr.mkArrow (xdump pi xi x) Sorts.Relevant (Lazy.force coq_False)
-      | Mc.A (x, _) -> dump_cstr xi x
-      | Mc.X t ->
+      | Mc.TT _ -> Lazy.force coq_True
+      | Mc.FF _ -> Lazy.force coq_False
+      | Mc.AND (_, x, y) ->
+        EConstr.mkApp
+          (Lazy.force coq_and, [|xdump_prop pi xi x; xdump_prop pi xi y|])
+      | Mc.OR (_, x, y) ->
+        EConstr.mkApp
+          (Lazy.force coq_or, [|xdump_prop pi xi x; xdump_prop pi xi y|])
+      | Mc.IFF (_, x, y) ->
+        EConstr.mkApp
+          (Lazy.force coq_iff, [|xdump_prop pi xi x; xdump_prop pi xi y|])
+      | Mc.IMPL (_, x, _, y) ->
+        EConstr.mkArrow (xdump_prop pi xi x) Sorts.Relevant
+          (xdump_prop (pi + 1) (xi + 1) y)
+      | Mc.NOT (_, x) ->
+        EConstr.mkArrow (xdump_prop pi xi x) Sorts.Relevant
+          (Lazy.force coq_False)
+      | Mc.EQ (x, y) ->
+        EConstr.mkApp
+          ( Lazy.force coq_eq
+          , [|Lazy.force coq_bool; xdump_bool pi xi x; xdump_bool pi xi y|] )
+      | Mc.A (_, x, _) -> dump_cstr_prop xi x
+      | Mc.X (_, t) ->
+        let idx = Env.get_rank props t in
+        EConstr.mkRel (pi + idx)
+    and xdump_bool pi xi f =
+      match f with
+      | Mc.TT _ -> Lazy.force coq_true
+      | Mc.FF _ -> Lazy.force coq_false
+      | Mc.AND (_, x, y) ->
+        EConstr.mkApp
+          (Lazy.force coq_andb, [|xdump_bool pi xi x; xdump_bool pi xi y|])
+      | Mc.OR (_, x, y) ->
+        EConstr.mkApp
+          (Lazy.force coq_orb, [|xdump_bool pi xi x; xdump_bool pi xi y|])
+      | Mc.IFF (_, x, y) ->
+        EConstr.mkApp
+          (Lazy.force coq_eqb, [|xdump_bool pi xi x; xdump_bool pi xi y|])
+      | Mc.IMPL (_, x, _, y) ->
+        EConstr.mkApp
+          (Lazy.force coq_implb, [|xdump_bool pi xi x; xdump_bool pi xi y|])
+      | Mc.NOT (_, x) ->
+        EConstr.mkApp (Lazy.force coq_negb, [|xdump_bool pi xi x|])
+      | Mc.EQ (x, y) -> assert false
+      | Mc.A (_, x, _) -> dump_cstr_bool xi x
+      | Mc.X (_, t) ->
         let idx = Env.get_rank props t in
         EConstr.mkRel (pi + idx)
     in
@@ -1329,12 +1465,12 @@ module M = struct
       let idx = Env.get_rank props p in
       EConstr.mkVar (Names.Id.of_string (Printf.sprintf "__p%i" idx))
     in
-    let form' = Mc.mapX subst_prop form in
+    let form' = Mc.mapX (fun _ p -> subst_prop p) true form in
     ( prodn nb_props
         (List.map (fun (x, y) -> (Name.Name x, y)) props_n)
         (prodn nb_vars
            (List.map (fun (x, y) -> (Name.Name x, y)) vars_n)
-           (xdump (List.length vars_n) 0 form))
+           (xdump_prop (List.length vars_n) 0 form))
     , List.rev props_n
     , List.rev var_name_pos
     , form' )
@@ -1508,7 +1644,8 @@ let qq_domain_spec =
     ; coeff_eq = Mc.qeq_bool }
 
 let max_tag f =
-  1 + Tag.to_int (Mc.foldA (fun t1 (t2, _) -> Tag.max t1 t2) f (Tag.from 0))
+  1
+  + Tag.to_int (Mc.foldA (fun t1 (t2, _) -> Tag.max t1 t2) true f (Tag.from 0))
 
 (** Naive topological sort of constr according to the subterm-ordering *)
 
@@ -1533,7 +1670,9 @@ let micromega_order_change spec cert cert_typ env ff (*: unit Proofview.tactic*)
             (set
                [ ( "__ff"
                  , ff
-                 , EConstr.mkApp (Lazy.force coq_Formula, [|formula_typ|]) )
+                 , EConstr.mkApp
+                     ( Lazy.force coq_Formula
+                     , [|formula_typ; Lazy.force coq_true|] ) )
                ; ( "__varmap"
                  , vm
                  , EConstr.mkApp (Lazy.force coq_VarMap, [|spec.typ|]) )
@@ -1696,37 +1835,56 @@ let abstract_formula : TagSet.t -> 'a formula -> 'a formula =
  fun hyps f ->
   let to_constr =
     Mc.
-      { mkTT = Lazy.force coq_True
-      ; mkFF = Lazy.force coq_False
-      ; mkA = (fun a (tg, t) -> t)
-      ; mkCj =
+      { mkTT = (fun b -> Lazy.force (if b then coq_True else coq_true))
+      ; mkFF = (fun b -> Lazy.force (if b then coq_False else coq_false))
+      ; mkA = (fun b a (tg, t) -> t)
+      ; mkAND =
           (let coq_and = Lazy.force coq_and in
-           fun x y -> EConstr.mkApp (coq_and, [|x; y|]))
-      ; mkD =
+           let coq_andb = Lazy.force coq_andb in
+           fun b x y ->
+             EConstr.mkApp ((if b then coq_and else coq_andb), [|x; y|]))
+      ; mkOR =
           (let coq_or = Lazy.force coq_or in
-           fun x y -> EConstr.mkApp (coq_or, [|x; y|]))
-      ; mkI = (fun x y -> EConstr.mkArrow x Sorts.Relevant y)
-      ; mkN =
+           let coq_orb = Lazy.force coq_orb in
+           fun b x y -> EConstr.mkApp ((if b then coq_or else coq_orb), [|x; y|]))
+      ; mkIMPL =
+          (fun b x y ->
+            if b then EConstr.mkArrow x Sorts.Relevant y
+            else EConstr.mkApp (Lazy.force coq_implb, [|x; y|]))
+      ; mkIFF =
+          (let coq_iff = Lazy.force coq_iff in
+           let coq_eqb = Lazy.force coq_eqb in
+           fun b x y ->
+             EConstr.mkApp ((if b then coq_iff else coq_eqb), [|x; y|]))
+      ; mkNOT =
           (let coq_not = Lazy.force coq_not in
-           fun x -> EConstr.mkApp (coq_not, [|x|])) }
+           let coq_negb = Lazy.force coq_negb in
+           fun b x -> EConstr.mkApp ((if b then coq_not else coq_negb), [|x|]))
+      ; mkEQ =
+          (let coq_eq = Lazy.force coq_eq in
+           fun x y -> EConstr.mkApp (coq_eq, [|Lazy.force coq_bool; x; y|])) }
   in
-  Mc.abst_form to_constr (fun (t, _) -> TagSet.mem t hyps) true f
+  Mc.abst_form to_constr (fun (t, _) -> TagSet.mem t hyps) true true f
 
 (* [abstract_wrt_formula] is used in contexts whre f1 is already an abstraction of f2   *)
 let rec abstract_wrt_formula f1 f2 =
   Mc.(
     match (f1, f2) with
-    | X c, _ -> X c
+    | X (b, c), _ -> X (b, c)
     | A _, A _ -> f2
-    | Cj (a, b), Cj (a', b') ->
-      Cj (abstract_wrt_formula a a', abstract_wrt_formula b b')
-    | D (a, b), D (a', b') ->
-      D (abstract_wrt_formula a a', abstract_wrt_formula b b')
-    | I (a, _, b), I (a', x, b') ->
-      I (abstract_wrt_formula a a', x, abstract_wrt_formula b b')
-    | FF, FF -> FF
-    | TT, TT -> TT
-    | N x, N y -> N (abstract_wrt_formula x y)
+    | AND (b, f1, f2), AND (_, f1', f2') ->
+      AND (b, abstract_wrt_formula f1 f1', abstract_wrt_formula f2 f2')
+    | OR (b, f1, f2), OR (_, f1', f2') ->
+      OR (b, abstract_wrt_formula f1 f1', abstract_wrt_formula f2 f2')
+    | IMPL (b, f1, _, f2), IMPL (_, f1', x, f2') ->
+      IMPL (b, abstract_wrt_formula f1 f1', x, abstract_wrt_formula f2 f2')
+    | IFF (b, f1, f2), IFF (_, f1', f2') ->
+      IFF (b, abstract_wrt_formula f1 f1', abstract_wrt_formula f2 f2')
+    | EQ (f1, f2), EQ (f1', f2') ->
+      EQ (abstract_wrt_formula f1 f1', abstract_wrt_formula f2 f2')
+    | FF b, FF _ -> FF b
+    | TT b, TT _ -> TT b
+    | NOT (b, x), NOT (_, y) -> NOT (b, abstract_wrt_formula x y)
     | _ -> failwith "abstract_wrt_formula")
 
 (**
@@ -1746,7 +1904,7 @@ let formula_hyps_concl hyps concl =
     (fun (id, f) (cc, ids) ->
       match f with
       | Mc.X _ -> (cc, ids)
-      | _ -> (Mc.I (f, Some id, cc), id :: ids))
+      | _ -> (Mc.IMPL (true, f, Some id, cc), id :: ids))
     hyps (concl, [])
 
 (* let time str f x =
@@ -1764,7 +1922,7 @@ let micromega_tauto pre_process cnf spec prover env
   let mt = CamlToCoq.positive (max_tag ff) in
   (* Construction of cnf *)
   let pre_ff = pre_process mt (ff : 'a formula) in
-  let cnf_ff, cnf_ff_tags = cnf pre_ff in
+  let cnf_ff, cnf_ff_tags = cnf true pre_ff in
   match witness_list_tags prover cnf_ff with
   | Model m -> Model m
   | Unknown -> Unknown
@@ -1790,7 +1948,7 @@ let micromega_tauto pre_process cnf spec prover env
     in
     let ff' = abstract_formula deps ff in
     let pre_ff' = pre_process mt ff' in
-    let cnf_ff', _ = cnf pre_ff' in
+    let cnf_ff', _ = cnf true pre_ff' in
     if debug then begin
       output_string stdout "\n";
       Printf.printf "TForm    : %a\n" pp_formula ff;
@@ -1816,7 +1974,7 @@ let micromega_tauto pre_process cnf spec prover env
            | Some res -> ()
        end ; *)
     let res' = compact_proofs spec.coeff_eq cnf_ff res cnf_ff' in
-    let ff', res', ids = (ff', res', Mc.ids_of_formula ff') in
+    let ff', res', ids = (ff', res', Mc.ids_of_formula true ff') in
     let res' = dump_list spec.proof_typ spec.dump_proof res' in
     Prf (ids, ff', res')
 
@@ -1888,9 +2046,11 @@ let micromega_gen parse_arith pre_process cnf spec dumpexpr prover tac =
                   env' ff_arith ]
           in
           let goal_props =
-            List.rev (Env.elements (prop_env_of_formula gl0 ff'))
+            List.rev (List.map fst (Env.elements (prop_env_of_formula gl0 ff')))
           in
-          let goal_vars = List.map (fun (_, i) -> List.nth env (i - 1)) vars in
+          let goal_vars =
+            List.map (fun (_, i) -> fst (List.nth env (i - 1))) vars
+          in
           let arith_args = goal_props @ goal_vars in
           let kill_arith = Tacticals.New.tclTHEN tac_arith tac in
           (*
@@ -1942,7 +2102,9 @@ let micromega_order_changer cert env ff =
             (set
                [ ( "__ff"
                  , ff
-                 , EConstr.mkApp (Lazy.force coq_Formula, [|formula_typ|]) )
+                 , EConstr.mkApp
+                     ( Lazy.force coq_Formula
+                     , [|formula_typ; Lazy.force coq_true|] ) )
                ; ( "__varmap"
                  , vm
                  , EConstr.mkApp
@@ -1980,11 +2142,14 @@ let micromega_genr prover tac =
         let hyps' =
           List.map
             (fun (n, f) ->
-              (n, Mc.map_bformula (Micromega.map_Formula Micromega.q_of_Rcst) f))
+              ( n
+              , Mc.map_bformula true
+                  (Micromega.map_Formula Micromega.q_of_Rcst)
+                  f ))
             hyps
         in
         let concl' =
-          Mc.map_bformula (Micromega.map_Formula Micromega.q_of_Rcst) concl
+          Mc.map_bformula true (Micromega.map_Formula Micromega.q_of_Rcst) concl
         in
         match
           micromega_tauto
@@ -2022,9 +2187,11 @@ let micromega_genr prover tac =
               ; micromega_order_changer res' env' ff_arith ]
           in
           let goal_props =
-            List.rev (Env.elements (prop_env_of_formula gl0 ff'))
+            List.rev (List.map fst (Env.elements (prop_env_of_formula gl0 ff')))
           in
-          let goal_vars = List.map (fun (_, i) -> List.nth env (i - 1)) vars in
+          let goal_vars =
+            List.map (fun (_, i) -> fst (List.nth env (i - 1))) vars
+          in
           let arith_args = goal_props @ goal_vars in
           let kill_arith = Tacticals.New.tclTHEN tac_arith tac in
           (* Tacticals.New.tclTHEN

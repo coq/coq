@@ -248,10 +248,12 @@ module EBinOpT = struct
       source1 : EConstr.t
     ; source2 : EConstr.t
     ; source3 : EConstr.t
-    ; target : EConstr.t
-    ; inj1 : EInjT.t (* InjTyp source1 target *)
-    ; inj2 : EInjT.t (* InjTyp source2 target *)
-    ; inj3 : EInjT.t (* InjTyp source3 target *)
+    ; target1 : EConstr.t
+    ; target2 : EConstr.t
+    ; target3 : EConstr.t
+    ; inj1 : EInjT.t (* InjTyp source1 target1 *)
+    ; inj2 : EInjT.t (* InjTyp source2 target2 *)
+    ; inj3 : EInjT.t (* InjTyp source3 target3 *)
     ; bop : EConstr.t (* BOP *)
     ; tbop : EConstr.t (* TBOP *)
     ; tbopinj : EConstr.t (* TBOpInj *)
@@ -272,7 +274,8 @@ module EUnOpT = struct
   type t =
     { source1 : EConstr.t
     ; source2 : EConstr.t
-    ; target : EConstr.t
+    ; target1 : EConstr.t
+    ; target2 : EConstr.t
     ; uop : EConstr.t
     ; inj1_t : EInjT.t
     ; inj2_t : EInjT.t
@@ -392,24 +395,26 @@ module EBinOp = struct
   let table = table
 
   let mk_elt evd i a =
-    let i1 = get_inj evd a.(5) in
-    let i2 = get_inj evd a.(6) in
-    let i3 = get_inj evd a.(7) in
-    let tbop = a.(8) in
+    let i1 = get_inj evd a.(7) in
+    let i2 = get_inj evd a.(8) in
+    let i3 = get_inj evd a.(9) in
+    let tbop = a.(10) in
     { source1 = a.(0)
     ; source2 = a.(1)
     ; source3 = a.(2)
-    ; target = a.(3)
+    ; target1 = a.(3)
+    ; target2 = a.(4)
+    ; target3 = a.(5)
     ; inj1 = i1
     ; inj2 = i2
     ; inj3 = i3
-    ; bop = a.(4)
-    ; tbop = a.(8)
-    ; tbopinj = a.(9)
+    ; bop = a.(6)
+    ; tbop
+    ; tbopinj = a.(11)
     ; classify_binop =
-        classify_op (mkconvert_binop i1 i2 i3) i1.EInjT.inj a.(4) tbop }
+        classify_op (mkconvert_binop i1 i2 i3) i3.EInjT.inj a.(6) tbop }
 
-  let get_key = 4
+  let get_key = 6
   let cast x = BinOp x
   let dest = function BinOp x -> Some x | _ -> None
 end
@@ -452,23 +457,24 @@ module EUnOp = struct
   let dest = function UnOp x -> Some x | _ -> None
 
   let mk_elt evd i a =
-    let i1 = get_inj evd a.(4) in
-    let i2 = get_inj evd a.(5) in
-    let uop = a.(3) in
-    let tuop = a.(6) in
+    let i1 = get_inj evd a.(5) in
+    let i2 = get_inj evd a.(6) in
+    let uop = a.(4) in
+    let tuop = a.(7) in
     { source1 = a.(0)
     ; source2 = a.(1)
-    ; target = a.(2)
+    ; target1 = a.(2)
+    ; target2 = a.(3)
     ; uop
     ; inj1_t = i1
     ; inj2_t = i2
     ; tuop
-    ; tuopinj = a.(7)
+    ; tuopinj = a.(8)
     ; is_construct = EConstr.isConstruct evd uop
-    ; classify_unop = classify_op (mkconvert_unop i1 i2) i1.EInjT.inj uop tuop
+    ; classify_unop = classify_op (mkconvert_unop i1 i2) i2.EInjT.inj uop tuop
     }
 
-  let get_key = 3
+  let get_key = 4
 end
 
 module EBinRel = struct
@@ -788,7 +794,8 @@ let app_unop evd src unop arg prf =
             ( force mkapp
             , [| unop.source1
                ; unop.source2
-               ; unop.target
+               ; unop.target1
+               ; unop.target2
                ; unop.uop
                ; unop.inj1_t.EInjT.inj
                ; unop.inj2_t.EInjT.inj
@@ -859,7 +866,9 @@ let app_binop evd src binop arg1 prf1 arg2 prf2 =
             , [| binop.source1
                ; binop.source2
                ; binop.source3
-               ; binop.target
+               ; binop.target1
+               ; binop.target2
+               ; binop.target3
                ; binop.bop
                ; binop.inj1.EInjT.inj
                ; binop.inj2.EInjT.inj
