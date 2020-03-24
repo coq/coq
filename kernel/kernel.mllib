@@ -27,7 +27,7 @@ Conv_oracle
 Environ
 Primred
 CClosure
-Retypeops
+Relevanceops
 Reduction
 Clambda
 Nativelambda

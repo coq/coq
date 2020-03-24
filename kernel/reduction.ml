@@ -331,7 +331,7 @@ let skip_pattern infos n c1 c2 =
 
 let is_irrelevant infos lft c =
   let env = info_env infos.cnv_inf in
-  try Retypeops.relevance_of_fterm env infos.relevances lft c == Sorts.Irrelevant with _ -> false
+  try Relevanceops.relevance_of_fterm env infos.relevances lft c == Sorts.Irrelevant with _ -> false
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
