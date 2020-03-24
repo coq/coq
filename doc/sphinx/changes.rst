@@ -4,7 +4,7 @@
 Recent changes
 --------------
 
-.. ifconfig:: not coq_config.is_a_released_version
+.. ifconfig:: not is_a_released_version
 
    .. include:: ../unreleased.rst
 
