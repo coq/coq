@@ -44,19 +44,6 @@ module Proof_ending : sig
 
 end
 
-module Recthm : sig
-  type t =
-    { name : Id.t
-    (** Name of theorem *)
-    ; typ : Constr.t
-    (** Type of theorem  *)
-    ; args : Name.t list
-    (** Names to pre-introduce  *)
-    ; impargs : Impargs.manual_implicits
-    (** Explicitily declared implicit arguments  *)
-    }
-end
-
 module Info : sig
 
   type t
@@ -104,7 +91,7 @@ val start_lemma_with_initialization
   -> udecl:UState.universe_decl
   -> Evd.evar_map
   -> (bool * lemma_possible_guards * Constr.t option list option) option
-  -> Recthm.t list
+  -> DeclareDef.Recthm.t list
   -> int list option
   -> t
 

@@ -59,6 +59,35 @@ val declare_assumption
   -> Entries.parameter_entry
   -> GlobRef.t
 
+module Recthm : sig
+  type t =
+    { name : Id.t
+    (** Name of theorem *)
+    ; typ : Constr.t
+    (** Type of theorem  *)
+    ; args : Name.t list
+    (** Names to pre-introduce  *)
+    ; impargs : Impargs.manual_implicits
+    (** Explicitily declared implicit arguments  *)
+    }
+end
+
+val declare_mutually_recursive
+  : opaque:bool
+  -> scope:locality
+  -> kind:Decls.logical_kind
+  -> poly:bool
+  -> uctx:UState.t
+  -> udecl:UState.universe_decl
+  -> ntns:Vernacexpr.decl_notation list
+  -> rec_declaration:Constr.rec_declaration
+  -> possible_indexes:int list list option
+  -> ?restrict_ucontext:bool
+  (** XXX: restrict_ucontext should be always true, this seems like a
+     bug in obligations, so this parameter should go away *)
+  -> Recthm.t list
+  -> Names.GlobRef.t list
+
 val prepare_definition
   :  allow_evars:bool
   -> ?opaque:bool

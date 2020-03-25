@@ -436,48 +436,35 @@ let declare_mutual_definition l =
         (xdef :: defs, xobls @ obls)) l ([], [])
   in
   (*   let fixdefs = List.map reduce_fix fixdefs in *)
-  let fixdefs, fixrs,fixtypes, fiximps = List.split4 defs in
+  let fixdefs, fixrs, fixtypes, fixitems =
+    List.fold_right2 (fun (d,r,typ,impargs) name (a1,a2,a3,a4) ->
+        d :: a1, r :: a2, typ :: a3,
+        DeclareDef.Recthm.{ name; typ; impargs; args = [] } :: a4
+      ) defs first.prg_deps ([],[],[],[])
+  in
   let fixkind = Option.get first.prg_fixkind in
   let arrrec, recvec = (Array.of_list fixtypes, Array.of_list fixdefs) in
   let rvec = Array.of_list fixrs in
   let namevec = Array.of_list (List.map (fun x -> Name x.prg_name) l) in
-  let fixdecls = (Array.map2 make_annot namevec rvec, arrrec, recvec) in
-  let fixnames = first.prg_deps in
-  let opaque = first.prg_opaque in
-  let indexes, fixdecls =
+  let rec_declaration = (Array.map2 make_annot namevec rvec, arrrec, recvec) in
+  let possible_indexes =
     match fixkind with
     | IsFixpoint wfl ->
-      let possible_indexes =
-        List.map3 compute_possible_guardness_evidences wfl fixdefs fixtypes
-      in
-      let indexes =
-        Pretyping.search_guard (Global.env ()) possible_indexes fixdecls
-      in
-      ( Some indexes
-      , List.map_i (fun i _ -> mkFix ((indexes, i), fixdecls)) 0 l
-      )
-    | IsCoFixpoint ->
-      (None, List.map_i (fun i _ -> mkCoFix (i, fixdecls)) 0 l)
+      Some (List.map3 compute_possible_guardness_evidences wfl fixdefs fixtypes)
+    | IsCoFixpoint -> None
   in
+  (* In the future we will pack all this in a proper record *)
+  let poly, scope, ntns, opaque = first.prg_poly, first.prg_scope, first.prg_notations, first.prg_opaque in
+  let kind = if fixkind != IsCoFixpoint then Decls.(IsDefinition Fixpoint) else Decls.(IsDefinition CoFixpoint) in
   (* Declare the recursive definitions *)
-  let poly = first.prg_poly in
-  let scope = first.prg_scope in
-  let univs = UState.univ_entry ~poly first.prg_ctx in
-  let fix_exn = Hook.get get_fix_exn () in
-  let kind = Decls.IsDefinition (if fixkind != IsCoFixpoint then Decls.Fixpoint else Decls.CoFixpoint) in
-  let ubind = UnivNames.empty_binders in
+  let udecl = UState.default_univ_decl in
   let kns =
-    List.map4
-      (fun name body types impargs ->
-         let ce = Declare.definition_entry ~opaque ~types ~univs body in
-         DeclareDef.declare_definition ~name ~scope ~kind ~ubind ~impargs ce)
-      fixnames fixdecls fixtypes fiximps
+    DeclareDef.declare_mutually_recursive ~scope ~opaque ~kind
+      ~udecl ~ntns ~uctx:first.prg_ctx ~rec_declaration ~possible_indexes ~poly
+      ~restrict_ucontext:false fixitems
   in
-  (* Declare notations *)
-  List.iter
-    (Metasyntax.add_notation_interpretation (Global.env ()))
-    first.prg_notations;
-  Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
+  (* Only for the first constant *)
+  let fix_exn = Hook.get get_fix_exn () in
   let dref = List.hd kns in
   DeclareDef.Hook.(call ?hook:first.prg_hook ~fix_exn { S.uctx = first.prg_ctx; obls; scope; dref });
   List.iter progmap_remove l;

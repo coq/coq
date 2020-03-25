@@ -501,7 +501,7 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   let recguard,thms,snl = RecLemmas.look_for_possibly_mutual_statements evd thms in
   let evd = Evd.minimize_universes evd in
   let thms = List.map (fun (name, (typ, (args, impargs))) ->
-      { Lemmas.Recthm.name; typ = EConstr.to_constr evd typ; args; impargs} ) thms in
+      { DeclareDef.Recthm.name; typ = EConstr.to_constr evd typ; args; impargs} ) thms in
   let () =
     let open UState in
     if not (udecl.univdecl_extensible_instance && udecl.univdecl_extensible_constraints) then
