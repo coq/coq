@@ -82,7 +82,9 @@ val declare_mutually_recursive
   -> ntns:Vernacexpr.decl_notation list
   -> rec_declaration:Constr.rec_declaration
   -> possible_indexes:int list list option
-  -> restrict_ucontext:bool
+  -> ?restrict_ucontext:bool
+  (** XXX: restrict_ucontext should be always true, this seems like a
+     bug in obligations, so this parameter should go away *)
   -> Recthm.t list
   -> Names.GlobRef.t list
 

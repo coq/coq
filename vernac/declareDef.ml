@@ -95,11 +95,11 @@ module Recthm = struct
     }
 end
 
-let declare_mutually_recursive ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~rec_declaration ~possible_indexes ~restrict_ucontext fixitems =
+let declare_mutually_recursive ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) fixitems =
   let vars, fixdecls, indexes =
     mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes in
   let ubind, univs =
-    (* XXX: Note that obligations don't do this, is that a bug? *)
+    (* XXX: Obligations don't do this, this seems like a bug? *)
     if restrict_ucontext
     then
       let evd = Evd.from_ctx uctx in
