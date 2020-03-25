@@ -179,3 +179,36 @@ let create ~name ~category ?(default=Enabled) pp =
 let with_warn warn (f:'b -> 'a) x =
   let s = get_flags () in
   Util.try_finally (fun x -> set_flags (s^","^warn);f x) x set_flags s
+
+module Dump = struct
+
+  module S = struct
+    type t =
+      { name : string
+      ; category : string
+      ; default: status
+      }
+  end
+
+  let get () =
+    Hashtbl.fold
+      (fun name {category;default} acc ->
+         {S.name;category;default} :: acc)
+      warnings []
+    |> List.sort (fun {S.name=n1} {S.name=n2} -> String.compare n1 n2)
+
+  include S
+
+  let pp_status =
+    function
+    | Disabled -> Pp.str "disabled"
+    | Enabled -> Pp.str "enabled"
+    | AsError -> Pp.str "as_error"
+
+  let pp {name; category; default} =
+    Pp.(surround_gen ~l:(str "{") ~r:(str "}")
+          (seq [ str "name: "; str name; pr_comma ()
+               ; str "category: "; str category; pr_comma ()
+               ; str "default: "; pp_status default
+               ]))
+end

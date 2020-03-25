@@ -300,7 +300,8 @@ let prvect_with_sep sep elem v = prvecti_with_sep sep (fun _ -> elem) v
 
 let prvect elem v = prvect_with_sep mt elem v
 
-let surround p = hov 1 (str"(" ++ p ++ str")")
+let surround_gen ~l ~r p = hov 1 (l ++ p ++ r)
+let surround p = surround_gen ~l:(str "(") ~r:(str ")") p
 
 (*** DEBUG code ***)
 

@@ -71,6 +71,7 @@ type coqargs_query =
   | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
   | PrintHelp of Usage.specific_usage
+  | Warnings
 
 type coqargs_main =
   | Queries of coqargs_query list

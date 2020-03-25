@@ -26,3 +26,18 @@ val normalize_flags_string : string -> string
    raises an exception. If both f and restoring the warnings raise
    exceptions, the latter is raised. *)
 val with_warn: string -> ('b -> 'a) -> 'b -> 'a
+
+(** Dumping warnings, extracting the messages for documentation
+    requires a reifycation of the Pp.t type, that's possible to do tho *)
+module Dump : sig
+
+  (* Should move for create to use *)
+  type t =
+    { name : string
+    ; category : string
+    ; default: status
+    }
+
+  val get : unit -> t list
+  val pp : t -> Pp.t
+end

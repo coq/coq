@@ -176,8 +176,11 @@ val pr_enum : ('a -> t) -> 'a list -> t
 val pr_sequence : ('a -> t) -> 'a list -> t
 (** Sequence of objects separated by space (unless an element is empty). *)
 
+val surround_gen : l:t -> r:t -> t -> t
+(** Print [l term r]. *)
+
 val surround : t -> t
-(** Surround with parenthesis. *)
+(** Surround with parenthesis, surround ~l:"(" ~r:")" term. *)
 
 val pr_vertical_list : ('b -> t) -> 'b list -> t
 

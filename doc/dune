@@ -59,6 +59,11 @@
 ; generate the whole Coq documentation.  And the result under
 ; _build/install/default/doc/coq-doc looks just right!
 
+(rule
+ (targets warnings.json)
+ (mode promote)
+ (action (with-stdout-to %{targets} (run coqc -dump-warnings))))
+
 (install
  (files (refman-html as html/refman) (refman-pdf as pdf/refman))
  (section doc)

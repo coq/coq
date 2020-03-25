@@ -74,6 +74,7 @@ type coqargs_query =
   | PrintWhere | PrintConfig
   | PrintVersion | PrintMachineReadableVersion
   | PrintHelp of Usage.specific_usage
+  | Warnings
 
 type coqargs_main =
   | Queries of coqargs_query list
@@ -382,12 +383,14 @@ let parse_args ~usage ~init arglist : t * string list =
 
     |"-debug" -> add_set_debug oval "all"
     |"-d" | "-D" -> add_set_debug oval (next())
+    |"-dump-warnings" -> set_query oval Warnings
 
     (* -xml-debug implies -debug. TODO don't be imperative here. *)
     |"-xml-debug" -> Flags.xml_debug := true; add_set_debug oval "all"
 
     |"-diffs" ->
       add_set_option oval Proof_diffs.opt_name @@ OptionSet (Some (next ()))
+
     |"-emacs" -> set_emacs oval
     |"-impredicative-set" ->
       set_logic (fun o -> { o with impredicative_set = Declarations.ImpredicativeSet }) oval

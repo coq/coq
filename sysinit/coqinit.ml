@@ -66,6 +66,11 @@ let print_query opts = let open Coqargs in function
   | PrintConfig ->
     let () = init_coqlib opts in
     Envars.print_config stdout Coq_config.all_src_dirs
+  | Warnings ->
+    Format.set_margin max_int;
+    CWarnings.Dump.get ()
+    |> List.map CWarnings.Dump.pp
+    |> Format.(printf "@[<h>%a@]@\n" (pp_print_list ~pp_sep:pp_print_newline Pp.pp_with))
 
 let parse_arguments ~parse_extra ~usage ?(initial_args=Coqargs.default) () =
   let opts, extras =
