@@ -690,7 +690,7 @@ Proof. now intros h; rewrite (to_Z_inj _ 0 h). Qed.
 Lemma tail00_spec x : φ  x = 0 -> φ (tail0 x) = φ digits.
 Proof. now intros h; rewrite (to_Z_inj _ 0 h). Qed.
 
-Infix "≡" := (eqm wB) (at level 80) : int63_scope.
+Infix "≡" := (eqm wB) (at level 70, no associativity) : int63_scope.
 
 Lemma eqm_mod x y : x mod wB ≡ y mod wB → x ≡ y.
 Proof.
