@@ -996,7 +996,7 @@ are now available through the dot notation.
    Including multiple modules is a single :cmd:`Include` is equivalent to including each module
    in a separate :cmd:`Include` command.
 
-.. cmd:: Include Type @module_type_inl {* <+ @module_type_inl }
+.. cmd:: Include Type {+<+ @module_type_inl }
 
    .. deprecated:: 8.3
 
