@@ -697,21 +697,12 @@ let mutual_make_bodies ~typing_flags ~fixitems ~rec_declaration ~possible_indexe
     let vars = Vars.universes_of_constr (List.hd fixdecls) in
     vars, fixdecls, None
 
-let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) () =
+let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declaration ~possible_indexes () =
   let { Info.poly; udecl; scope; clearbody; kind; typing_flags; deprecation; _ } = info in
   let vars, fixdecls, indexes =
     mutual_make_bodies ~typing_flags ~fixitems:cinfo ~rec_declaration ~possible_indexes in
-  let uctx, univs =
-    (* XXX: Obligations don't do this, this seems like a bug? *)
-    if restrict_ucontext
-    then
-      let uctx = UState.restrict uctx vars in
-      let univs = UState.check_univ_decl ~poly uctx udecl in
-      uctx, univs
-    else
-      let univs = UState.univ_entry ~poly uctx in
-      uctx, univs
-  in
+  let uctx = UState.restrict uctx vars in
+  let univs = UState.check_univ_decl ~poly uctx udecl in
   let csts = CList.map2
       (fun CInfo.{ name; typ; impargs; using } body ->
          let entry = definition_entry ~opaque ~types:typ ~univs ?using body in
@@ -724,7 +715,7 @@ let declare_mutually_recursive_core ~info ~cinfo ~opaque ~ntns ~uctx ~rec_declar
   List.iter (Metasyntax.add_notation_interpretation ~local:(scope=Locality.Discharge) (Global.env())) ntns;
   csts
 
-let declare_mutually_recursive = declare_mutually_recursive_core ~restrict_ucontext:true ()
+let declare_mutually_recursive = declare_mutually_recursive_core ()
 
 let warn_let_as_axiom =
   CWarnings.create ~name:"let-as-axiom" ~category:CWarnings.CoreCategories.vernacular
@@ -1270,7 +1261,7 @@ let declare_mutual_definition ~pm l =
   let kns =
     declare_mutually_recursive_core ~info:first.prg_info ~ntns:first.prg_notations
       ~uctx:first.prg_uctx ~rec_declaration ~possible_indexes ~opaque:first.prg_opaque
-      ~restrict_ucontext:false ~cinfo:fixitems ()
+      ~cinfo:fixitems ()
   in
   (* Only for the first constant *)
   let dref = List.hd kns in
