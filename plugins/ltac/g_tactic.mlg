@@ -418,9 +418,19 @@ GRAMMAR EXTEND Gram
       | -> { None } ] ]
   ;
   orient_rw:
-    [ [ "->" -> { true }
-      | "<-" -> { false }
+    [ [ rightwards_arrow -> { true }
+      | leftwards_arrow -> { false }
       | -> { true } ] ]
+  ;
+  rightwards_arrow:
+    [ [ "->" ]
+    | [ "→" ]
+    ]
+  ;
+  leftwards_arrow:
+    [ [ "<-" ]
+    | [ "←" ]
+    ]
   ;
   simple_binder:
     [ [ na=name -> { ([na],Default Glob_term.Explicit, CAst.make ~loc @@
