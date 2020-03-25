@@ -54,8 +54,10 @@ voboot: plugins/ltac/dune
 states: voboot
 	dune build --display=short $(DUNEOPT) dev/shim/coqtop-prelude
 
+NONDOC_INSTALL_TARGETS:=coq.install coqide-server.install coqide.install
+
 world: voboot
-	dune build $(DUNEOPT) @install
+	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS)
 
 coq: voboot
 	dune build $(DUNEOPT) coq.install
@@ -67,7 +69,7 @@ coqide-server: voboot
 	dune build $(DUNEOPT) coqide-server.install
 
 watch: voboot
-	dune build $(DUNEOPT) @install -w
+	dune build $(DUNEOPT) $(NONDOC_INSTALL_TARGETS) -w
 
 check: voboot
 	dune build $(DUNEOPT) @check

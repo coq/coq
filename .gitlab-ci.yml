@@ -470,7 +470,7 @@ doc:refman:deploy:
     - rm -rf _deploy/$CI_COMMIT_REF_NAME/stdlib
     - mkdir -p _deploy/$CI_COMMIT_REF_NAME
     - cp -rv _build/default/_doc/_html _deploy/$CI_COMMIT_REF_NAME/api
-    - cp -rv _build/default/doc/sphinx_build/html _deploy/$CI_COMMIT_REF_NAME/refman
+    - cp -rv _build/default/doc/refman-html _deploy/$CI_COMMIT_REF_NAME/refman
     - cp -rv _build/default/doc/stdlib/html _deploy/$CI_COMMIT_REF_NAME/stdlib
     - cd _deploy/$CI_COMMIT_REF_NAME/
     - git add api refman stdlib
