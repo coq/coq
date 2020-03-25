@@ -322,7 +322,12 @@ GRAMMAR EXTEND Gram
   ;
   eqn:
     [ [ pll = LIST1 mult_pattern SEP "|";
-        "=>"; rhs = lconstr -> { (CAst.make ~loc (pll,rhs)) } ] ]
+        rightwards_double_arrow; rhs = lconstr -> { (CAst.make ~loc (pll,rhs)) } ] ]
+  ;
+  rightwards_double_arrow:
+    [ [ "=>" ]
+    | [ "⇒" ]
+    ]
   ;
   record_pattern:
     [ [ id = global; ":="; pat = pattern LEVEL "200" -> { (id, pat) } ] ]
