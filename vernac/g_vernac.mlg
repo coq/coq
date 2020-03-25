@@ -219,7 +219,7 @@ GRAMMAR EXTEND Gram
           { VernacRegister(g, RegisterCoqlib quid) }
       | IDENT "Register"; IDENT "Inline"; g = global ->
           { VernacRegister(g, RegisterInline) }
-      | IDENT "Primitive"; id = identref; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; ":="; r = register_token ->
+      | IDENT "Primitive"; id = identref; typopt = OPT [ ":"; typ = lconstr -> { typ } ]; colon_equals; r = register_token ->
           { VernacPrimitive(id, r, typopt) }
       | IDENT "Universe"; l = LIST1 identref -> { VernacUniverse l }
       | IDENT "Universes"; l = LIST1 identref -> { VernacUniverse l }
@@ -347,7 +347,7 @@ GRAMMAR EXTEND Gram
   ;
   (* Simple definitions *)
   def_body:
-    [ [ bl = binders; ":="; red = reduce; c = lconstr ->
+    [ [ bl = binders; colon_equals; red = reduce; c = lconstr ->
       { if List.exists (function CLocalPattern _ -> true | _ -> false) bl
       then
         (* FIXME: "red" will be applied to types in bl and Cast with remain *)
@@ -357,7 +357,7 @@ GRAMMAR EXTEND Gram
         (match c with
         | { CAst.v = CCast(c, CastConv t) } -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None)) }
-    | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
+    | bl = binders; ":"; t = lconstr; colon_equals; red = reduce; c = lconstr ->
         { let ((bl, c), tyo) =
           if List.exists (function CLocalPattern _ -> true | _ -> false) bl
           then
@@ -375,7 +375,7 @@ GRAMMAR EXTEND Gram
       | -> { None } ] ]
   ;
   decl_notation:
-    [ [ ntn = ne_lstring; ":="; c = constr; b = only_parsing;
+    [ [ ntn = ne_lstring; colon_equals; c = constr; b = only_parsing;
         scopt = OPT [ ":"; sc = IDENT -> { sc } ] ->
       { { decl_ntn_string = ntn; decl_ntn_interp = c;
           decl_ntn_only_parsing = b; decl_ntn_scope = scopt } } ] ]
@@ -389,7 +389,7 @@ GRAMMAR EXTEND Gram
   ;
   (* Inductives and records *)
   opt_constructors_or_fields:
-    [ [ ":="; lc = constructor_list_or_record_decl -> { lc }
+    [ [ colon_equals; lc = constructor_list_or_record_decl -> { lc }
       | -> { RecordDecl (None, []) } ] ]
   ;
   inductive_definition:
@@ -423,21 +423,21 @@ GRAMMAR EXTEND Gram
     [ [ id_decl = ident_decl;
         bl = binders_fixannot;
         rtype = type_cstr;
-        body_def = OPT [":="; def = lconstr -> { def } ]; notations = decl_notations ->
+        body_def = OPT [colon_equals; def = lconstr -> { def } ]; notations = decl_notations ->
           { let binders, rec_order = bl in
             {fname = fst id_decl; univs = snd id_decl; rec_order; binders; rtype; body_def; notations}
           } ] ]
   ;
   corec_definition:
     [ [ id_decl = ident_decl; binders = binders; rtype = type_cstr;
-        body_def = OPT [":="; def = lconstr -> { def }]; notations = decl_notations ->
+        body_def = OPT [colon_equals; def = lconstr -> { def }]; notations = decl_notations ->
         { {fname = fst id_decl; univs = snd id_decl; rec_order = (); binders; rtype; body_def; notations}
         } ]]
   ;
   (* Inductive schemes *)
   scheme:
     [ [ kind = scheme_kind -> { (None,kind) }
-      | id = identref; ":="; kind = scheme_kind -> { (Some id,kind) } ] ]
+      | id = identref; colon_equals; kind = scheme_kind -> { (Some id,kind) } ] ]
   ;
   scheme_kind:
     [ [ IDENT "Induction"; "for"; ind = smart_global;
@@ -481,9 +481,9 @@ GRAMMAR EXTEND Gram
     [ [ l = binders; oc = of_type_with_opt_coercion;
          t = lconstr -> { fun id -> (oc,AssumExpr (id,mkProdCN ~loc l t)) }
       | l = binders; oc = of_type_with_opt_coercion;
-         t = lconstr; ":="; b = lconstr -> { fun id ->
+         t = lconstr; colon_equals; b = lconstr -> { fun id ->
            (oc,DefExpr (id,mkLambdaCN ~loc l b,Some (mkProdCN ~loc l t))) }
-      | l = binders; ":="; b = lconstr -> { fun id ->
+      | l = binders; colon_equals; b = lconstr -> { fun id ->
          match b.CAst.v with
          | CCast(b', (CastConv t|CastVM t|CastNative t)) ->
              (None,DefExpr(id,mkLambdaCN ~loc l b',Some (mkProdCN ~loc l t)))
@@ -525,6 +525,12 @@ GRAMMAR EXTEND Gram
         | ":"; ">"; ">" -> { Some false }
         | ":"; ">" -> { Some true }
         | ":" -> { None } ] ]
+  ;
+
+  colon_equals:
+    [ [ ":=" ]
+    | [ "≔" ]
+    ]
   ;
 END
 
@@ -572,7 +578,7 @@ GRAMMAR EXTEND Gram
       | IDENT "End"; id = identref -> { VernacEndSegment id }
 
       (* Naming a set of section hyps *)
-      | IDENT "Collection"; id = identref; ":="; expr = section_subset_expr ->
+      | IDENT "Collection"; id = identref; colon_equals; expr = section_subset_expr ->
           { VernacNameSectionHypSet (id, expr) }
 
       (* Requiring an already compiled module *)
@@ -611,11 +617,11 @@ GRAMMAR EXTEND Gram
       | mtys = check_module_types -> { Check mtys } ] ]
   ;
   is_module_type:
-    [ [ ":="; mty = module_type_inl ; l = LIST0 ext_module_type -> { (mty::l) }
+    [ [ colon_equals; mty = module_type_inl ; l = LIST0 ext_module_type -> { (mty::l) }
       | -> { [] } ] ]
   ;
   is_module_expr:
-    [ [ ":="; mexpr = module_expr_inl; l = LIST0 ext_module_expr -> { (mexpr::l) }
+    [ [ colon_equals; mexpr = module_expr_inl; l = LIST0 ext_module_expr -> { (mexpr::l) }
       | -> { [] } ] ]
   ;
   functor_app_annot:
@@ -648,9 +654,9 @@ GRAMMAR EXTEND Gram
     [ [ qid = qualid -> { CAst.make ~loc @@ CMident qid } | "("; me = module_expr; ")" -> { me } ] ]
   ;
   with_declaration:
-    [ [ "Definition"; fqid = fullyqualid; udecl = OPT univ_decl; ":="; c = Constr.lconstr ->
+    [ [ "Definition"; fqid = fullyqualid; udecl = OPT univ_decl; colon_equals; c = Constr.lconstr ->
           { CWith_Definition (fqid,udecl,c) }
-      | IDENT "Module"; fqid = fullyqualid; ":="; qid = qualid ->
+      | IDENT "Module"; fqid = fullyqualid; colon_equals; qid = qualid ->
           { CWith_Module (fqid,qid) }
       ] ]
   ;
@@ -689,6 +695,12 @@ GRAMMAR EXTEND Gram
           { SsFwdClose(starredidentreflist_to_expr l) }
       | "("; e = ssexpr; ")"-> { e }
       | "("; e = ssexpr; ")"; "*" -> { SsFwdClose e } ] ]
+  ;
+
+  colon_equals:
+    [ [ ":=" ]
+    | [ "≔" ]
+    ]
   ;
 END
 
@@ -736,8 +748,8 @@ GRAMMAR EXTEND Gram
       | IDENT "Instance"; namesup = instance_name; ":";
          t = operconstr LEVEL "200";
          info = hint_info ;
-         props = [ ":="; "{"; r = record_declaration; "}" -> { Some (true,r) } |
-             ":="; c = lconstr -> { Some (false,c) } | -> { None } ] ->
+         props = [ colon_equals; "{"; r = record_declaration; "}" -> { Some (true,r) } |
+             colon_equals; c = lconstr -> { Some (false,c) } | -> { None } ] ->
            { VernacInstance (fst namesup,snd namesup,t,props,info) }
 
       | IDENT "Existing"; IDENT "Instance"; id = global;
@@ -873,6 +885,11 @@ GRAMMAR EXTEND Gram
     [ [ idl = LIST1 identref; ":"; c = lconstr -> { (idl,c) } ] ]
   ;
 
+  colon_equals:
+    [ [ ":=" ]
+    | [ "≔" ]
+    ]
+  ;
 END
 
 GRAMMAR EXTEND Gram
@@ -1130,7 +1147,7 @@ GRAMMAR EXTEND Gram
 
 (* registration of a custom reduction *)
 
-      | IDENT "Declare"; IDENT "Reduction"; s = IDENT; ":=";
+      | IDENT "Declare"; IDENT "Reduction"; s = IDENT; colon_equals;
          r = red_expr ->
            { VernacDeclareReduction (s,r) }
 
@@ -1140,6 +1157,11 @@ GRAMMAR EXTEND Gram
            { VernacDeclareCustomEntry s }
 
  ] ];
+  colon_equals:
+    [ [ ":=" ]
+    | [ "≔" ]
+    ]
+  ;
     END
 
 (* Grammar extensions *)
@@ -1162,15 +1184,15 @@ GRAMMAR EXTEND Gram
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with";
        refl = LIST1 class_rawexpr -> { VernacBindScope (sc,refl) }
 
-     | IDENT "Infix"; op = ne_lstring; ":="; p = constr;
+     | IDENT "Infix"; op = ne_lstring; colon_equals; p = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> { l } | -> { [] } ];
          sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
          { VernacInfix ((op,modl),p,sc) }
      | IDENT "Notation"; id = identref;
-         idl = LIST0 ident; ":="; c = constr; b = only_parsing ->
+         idl = LIST0 ident; colon_equals; c = constr; b = only_parsing ->
            { VernacSyntacticDefinition
              (id,(idl,c),{ onlyparsing = b }) }
-     | IDENT "Notation"; s = lstring; ":=";
+     | IDENT "Notation"; s = lstring; colon_equals;
          c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> { l } | -> { [] } ];
          sc = OPT [ ":"; sc = IDENT -> { sc } ] ->
@@ -1246,5 +1268,10 @@ GRAMMAR EXTEND Gram
     [ [ "as"; IDENT "ident" -> { Notation_term.AsIdent }
       | "as"; IDENT "pattern" -> { Notation_term.AsIdentOrPattern }
       | "as"; IDENT "strict"; IDENT "pattern" -> { Notation_term.AsStrictPattern } ] ]
+  ;
+  colon_equals:
+    [ [ ":=" ]
+    | [ "≔" ]
+    ]
   ;
 END

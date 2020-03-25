@@ -194,7 +194,7 @@ GRAMMAR EXTEND Gram
       | -> { [] } ] ]
   ;
   field_def:
-    [ [ id = global; bl = binders; ":="; c = lconstr ->
+    [ [ id = global; bl = binders; colon_equals; c = lconstr ->
         { (id, mkLambdaCN ~loc bl c) } ] ]
   ;
   binder_constr:
@@ -202,7 +202,7 @@ GRAMMAR EXTEND Gram
         { mkProdCN ~loc bl c }
       | "fun"; bl = open_binders; "=>"; c = operconstr LEVEL "200" ->
         { mkLambdaCN ~loc bl c }
-      | "let"; id=name; bl = binders; ty = let_type_cstr; ":=";
+      | "let"; id=name; bl = binders; ty = let_type_cstr; colon_equals;
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
         { let ty,c1 = match ty, c1 with
           | (_,None), { CAst.v = CCast(c, CastConv t) } -> (Loc.tag ?loc:(constr_loc t) @@ Some t), c (* Tolerance, see G_vernac.def_body *)
@@ -218,19 +218,19 @@ GRAMMAR EXTEND Gram
           let cofix = CAst.make ?loc:locf @@ CCoFix (lid,[dcl]) in
           CAst.make ~loc @@ CLetIn( CAst.make ?loc:li @@ Name id,cofix,None,c) }
       | "let"; lb = ["("; l=LIST0 name SEP ","; ")" -> { l } | "()" -> { [] } ];
-        po = return_type; ":="; c1 = operconstr LEVEL "200"; "in";
+        po = return_type; colon_equals; c1 = operconstr LEVEL "200"; "in";
         c2 = operconstr LEVEL "200" ->
         { CAst.make ~loc @@ CLetTuple (lb,po,c1,c2) }
-      | "let"; "'"; p = pattern LEVEL "200"; ":="; c1 = operconstr LEVEL "200";
+      | "let"; "'"; p = pattern LEVEL "200"; colon_equals; c1 = operconstr LEVEL "200";
         "in"; c2 = operconstr LEVEL "200" ->
         { CAst.make ~loc @@
           CCases (LetPatternStyle, None,    [c1, None, None],       [CAst.make ~loc ([[p]], c2)]) }
-      | "let"; "'"; p = pattern LEVEL "200"; ":="; c1 = operconstr LEVEL "200";
+      | "let"; "'"; p = pattern LEVEL "200"; colon_equals; c1 = operconstr LEVEL "200";
         rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
         { CAst.make ~loc @@
           CCases (LetPatternStyle, Some rt, [c1, aliasvar p, None], [CAst.make ~loc ([[p]], c2)]) }
       | "let"; "'"; p = pattern LEVEL "200"; "in"; t = pattern LEVEL "200";
-        ":="; c1 = operconstr LEVEL "200"; rt = case_type;
+        colon_equals; c1 = operconstr LEVEL "200"; rt = case_type;
         "in"; c2 = operconstr LEVEL "200" ->
         { CAst.make ~loc @@
           CCases (LetPatternStyle, Some rt, [c1, aliasvar p, Some t], [CAst.make ~loc ([[p]], c2)]) }
@@ -242,7 +242,7 @@ GRAMMAR EXTEND Gram
       | "cofix"; c = cofix_decls -> { let (id,dcls) = c in CAst.make ~loc @@ CCoFix (id,dcls) } ] ]
   ;
   appl_arg:
-    [ [ test_lpar_id_coloneq; "("; id = ident; ":="; c = lconstr; ")" -> { (c,Some (CAst.make ~loc @@ ExplByName id)) }
+    [ [ test_lpar_id_coloneq; "("; id = ident; colon_equals; c = lconstr; ")" -> { (c,Some (CAst.make ~loc @@ ExplByName id)) }
       | c=operconstr LEVEL "9" -> { (c,None) } ] ]
   ;
   atomic_constr:
@@ -256,7 +256,7 @@ GRAMMAR EXTEND Gram
       | id = pattern_ident; inst = evar_instance -> { CAst.make ~loc @@ CEvar(id,inst) } ] ]
   ;
   inst:
-    [ [ id = ident; ":="; c = lconstr -> { (id,c) } ] ]
+    [ [ id = ident; colon_equals; c = lconstr -> { (id,c) } ] ]
   ;
   evar_instance:
     [ [ "@{"; l = LIST1 inst SEP ";"; "}" -> { l }
@@ -285,12 +285,12 @@ GRAMMAR EXTEND Gram
         { (id,List.map (fun x -> x.CAst.v) (dcl::dcls)) } ] ]
   ;
   fix_decl:
-    [ [ id = identref; bl = binders_fixannot; ty = type_cstr; ":=";
+    [ [ id = identref; bl = binders_fixannot; ty = type_cstr; colon_equals;
         c = operconstr LEVEL "200" ->
         { CAst.make ~loc (id,snd bl,fst bl,ty,c) } ] ]
   ;
   cofix_decl:
-    [ [ id = identref; bl = binders; ty = type_cstr; ":=";
+    [ [ id = identref; bl = binders; ty = type_cstr; colon_equals;
         c = operconstr LEVEL "200" ->
         { CAst.make ~loc (id,bl,ty,c) } ] ]
   ;
@@ -330,7 +330,7 @@ GRAMMAR EXTEND Gram
     ]
   ;
   record_pattern:
-    [ [ id = global; ":="; pat = pattern LEVEL "200" -> { (id, pat) } ] ]
+    [ [ id = global; colon_equals; pat = pattern LEVEL "200" -> { (id, pat) } ] ]
   ;
   record_patterns:
     [ [ p = record_pattern; ";"; ps = record_patterns -> { p :: ps }
@@ -405,11 +405,11 @@ GRAMMAR EXTEND Gram
         { [CLocalAssum (id::idl,Default Explicit,c)] }
       | "("; id = name; ":"; c = lconstr; ")" ->
         { [CLocalAssum ([id],Default Explicit,c)] }
-      | "("; id = name; ":="; c = lconstr; ")" ->
+      | "("; id = name; colon_equals; c = lconstr; ")" ->
         { match c.CAst.v with
           | CCast(c, CastConv t) -> [CLocalDef (id,c,Some t)]
           | _ -> [CLocalDef (id,c,None)] }
-      | "("; id = name; ":"; t = lconstr; ":="; c = lconstr; ")" ->
+      | "("; id = name; ":"; t = lconstr; colon_equals; c = lconstr; ")" ->
         { [CLocalDef (id,c,Some t)] }
       | "{"; id = name; "}" ->
         { [CLocalAssum ([id],Default MaxImplicit, CAst.make ~loc @@ CHole (None, IntroAnonymous, None))] }
@@ -456,5 +456,10 @@ GRAMMAR EXTEND Gram
   ;
   let_type_cstr:
     [ [ c = OPT [":"; c = lconstr -> { c } ] -> { Loc.tag ~loc c } ] ]
+  ;
+  colon_equals:
+    [ [ ":=" ]
+    | [ "≔" ]
+    ]
   ;
   END
