@@ -59,6 +59,8 @@ let parse_user_entry s sep =
 
 let no_code = { code = ""; loc = { loc_start=Lexing.dummy_pos; loc_end=Lexing.dummy_pos} }
 
+let noop_code = { code = "()"; loc = { loc_start=Lexing.dummy_pos; loc_end=Lexing.dummy_pos} }
+
 %}
 
 %token <Coqpp_ast.code> CODE
@@ -385,6 +387,8 @@ rules:
 rule:
 | symbols_opt ARROW CODE
   { { gprod_symbs = $1; gprod_body = $3; } }
+| symbols
+  { { gprod_symbs = $1; gprod_body = noop_code; } }
 ;
 
 symbols_opt:
