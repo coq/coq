@@ -430,16 +430,20 @@ lstring: [
 ]
 
 integer: [
-| NUMERAL
-| test_minus_nat "-" NUMERAL
+| bigint
 ]
 
 natural: [
-| NUMERAL
+| bignat
 | _natural
 ]
 
 bigint: [
+| NUMERAL
+| test_minus_nat "-" NUMERAL
+]
+
+bignat: [
 | NUMERAL
 ]
 
@@ -2516,7 +2520,7 @@ field_mods: [
 
 numnotoption: [
 |
-| "(" "warning" "after" bigint ")"
-| "(" "abstract" "after" bigint ")"
+| "(" "warning" "after" bignat ")"
+| "(" "abstract" "after" bignat ")"
 ]
 

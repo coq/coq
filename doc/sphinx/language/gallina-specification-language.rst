@@ -290,7 +290,7 @@ More on sorts can be found in Section :ref:`sorts`.
 Binders
 -------
 
-.. insertprodn open_binders typeclass_constraint
+.. insertprodn open_binders binder
 
 .. prodn::
    open_binders ::= {+ @name } : @term
@@ -300,16 +300,10 @@ Binders
    binder ::= @name
    | ( {+ @name } : @type )
    | ( @name {? : @type } := @term )
+   | @implicit_binders
+   | @generalizing_binder
    | ( @name : @type %| @term )
-   | %{ {+ @name } {? : @type } %}
-   | [ {+ @name } {? : @type } ]
-   | `( {+, @typeclass_constraint } )
-   | `%{ {+, @typeclass_constraint } %}
-   | `[ {+, @typeclass_constraint } ]
    | ' @pattern0
-   typeclass_constraint ::= {? ! } @term
-   | %{ @name %} : {? ! } @term
-   | @name : {? ! } @term
 
 Various constructions such as :g:`fun`, :g:`forall`, :g:`fix` and :g:`cofix`
 *bind* variables. A binding is represented by an identifier. If the binding
@@ -620,6 +614,10 @@ The association of a single fixpoint and a local definition have a special
 syntax: :n:`let fix @ident {* @binder } := @term in` stands for
 :n:`let @ident := fix @ident {* @binder } := @term in`. The same applies for co-fixpoints.
 
+Some options of :n:`@fixannot` are only supported in specific constructs.  :n:`fix` and :n:`let fix`
+only support the :n:`struct` option, while :n:`wf` and :n:`measure` are only supported in
+commands such as :cmd:`Function` and :cmd:`Program Fixpoint`.
+
 .. insertprodn term_cofix cofix_body
 
 .. prodn::
@@ -646,7 +644,7 @@ The Vernacular
 The top-level input to |Coq| is a series of :production:`command`\s and :production:`tactic`\s,
 each terminated with a period
 and optionally decorated with :ref:`gallina-attributes`.  :n:`@ltac_expr` syntax supports both simple
-and compound tactics.  For example: ``split.`` is a simple tactic while ``split; auto.`` combines two
+and compound tactics.  For example: ``split`` is a simple tactic while ``split; auto`` combines two
 simple tactics.
 
 Tactics specify how to transform the current proof state as a step in creating a proof.  They
@@ -705,6 +703,8 @@ has type :n:`@type`.
    :n:`@ident`\s defined are only accessible within the section.  When the current section
    is closed, the :n:`@ident`\(s) become undefined and every object depending on them will be explicitly
    parameterized (i.e., the variables are *discharged*).  See Section :ref:`section-mechanism`.
+
+   The :n:`Inline` clause is only relevant inside functors.  See :cmd:`Module`.
 
 .. example:: Simple assumptions
 
@@ -771,8 +771,8 @@ Section :ref:`typing-rules`.
    :attr:`universes(monomorphic)`, :attr:`program` and
    :attr:`canonical` attributes.
 
-   If :n:`@term` is omitted, Coq enters the proof editing mode.  This can be
-   used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
+   If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof editing mode.
+   This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
 
@@ -799,17 +799,13 @@ Inductive types
 
 .. cmd:: Inductive @inductive_definition {* with @inductive_definition }
 
-   .. insertprodn inductive_definition field_body
+   .. insertprodn inductive_definition constructor
 
    .. prodn::
       inductive_definition ::= {? > } @ident_decl {* @binder } {? %| {* @binder } } {? : @type } {? := {? @constructors_or_record } } {? @decl_notations }
       constructors_or_record ::= {? %| } {+| @constructor }
-      | {? @ident } %{ {+; @record_field } %}
+      | {? @ident } %{ {*; @record_field } %}
       constructor ::= @ident {* @binder } {? @of_type }
-      record_field ::= {* #[ {*, @attr } ] } @name {? @field_body } {? %| @num } {? @decl_notations }
-      field_body ::= {* @binder } @of_type
-      | {* @binder } @of_type := @term
-      | {* @binder } := @term
 
    This command defines one or more
    inductive types and its constructors.  Coq generates destructors
@@ -866,7 +862,7 @@ mutually inductive types and private (matching) inductive types.
 Simple inductive types
 ~~~~~~~~~~~~~~~~~~~~~~
 
-A simple inductive type belongs to a universe that is a simple :n:`sort`.
+A simple inductive type belongs to a universe that is a simple :n:`@sort`.
 
 .. example::
 
@@ -1156,9 +1152,14 @@ Private (matching) inductive types
 Variants
 ~~~~~~~~
 
-.. cmd:: Variant @inductive_definition {* with @inductive_definition }
+.. cmd:: Variant @variant_definition {* with @variant_definition }
 
-   The :cmd:`Variant` command is identical to the :cmd:`Inductive` command, except
+   .. insertprodn variant_definition variant_definition
+
+   .. prodn::
+      variant_definition ::= @ident_decl {* @binder } {? %| {* @binder } } {? : @type } := {? %| } {+| @constructor } {? @decl_notations }
+
+   The :cmd:`Variant` command is similar to the :cmd:`Inductive` command, except
    that it disallows recursive definition of types (for instance, lists cannot
    be defined using :cmd:`Variant`). No induction scheme is generated for
    this variant, unless the :flag:`Nonrecursive Elimination Schemes` flag is on.
@@ -1319,7 +1320,7 @@ constructions.
    consequently :n:`forall {* @binder }, @type` and its value is equivalent
    to :n:`fun {* @binder } => @term`.
 
-   To be accepted, a :cmd:`Fixpoint` definition has to satisfy some syntactical
+   To be accepted, a :cmd:`Fixpoint` definition has to satisfy syntactical
    constraints on a special argument called the decreasing argument. They
    are needed to ensure that the :cmd:`Fixpoint` definition always terminates.
    The point of the :n:`{struct @ident}` annotation (see :n:`@fixannot`) is to
@@ -1329,11 +1330,14 @@ constructions.
    system successively tries arguments from left to right until it finds one
    that satisfies the decreasing condition.
 
+   :cmd:`Fixpoint` without the :attr:`program` attribute does not support the
+   :n:`wf` or :n:`measure` clauses of :n:`@fixannot`.
+
    The :n:`with` clause allows simultaneously defining several mutual fixpoints.
    It is especially useful when defining functions over mutually defined
    inductive types.  Example: :ref:`Mutual Fixpoints<example_mutual_fixpoints>`.
 
-   If :n:`@term` is omitted, :n:`@type` is required and Coq enters the proof editing mode.
+   If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof editing mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
@@ -1490,7 +1494,7 @@ Definitions of recursive objects in co-inductive types
    As in the :cmd:`Fixpoint` command, the :n:`with` clause allows simultaneously
    defining several mutual cofixpoints.
 
-   If :n:`@term` is omitted, :n:`@type` is required and Coq enters the proof editing mode.
+   If :n:`@term` is omitted, :n:`@type` is required and Coq enters proof editing mode.
    This can be used to define a term incrementally, in particular by relying on the :tacn:`refine` tactic.
    In this case, the proof should be terminated with :cmd:`Defined` in order to define a constant
    for which the computational behavior is relevant.  See :ref:`proof-editing-mode`.
@@ -1518,9 +1522,6 @@ Computations
    | pattern {+, @pattern_occ }
    | @ident
    delta_flag ::= {? - } [ {+ @smart_qualid } ]
-   smart_qualid ::= @qualid
-   | @by_notation
-   by_notation ::= @string {? % @ident }
    strategy_flag ::= {+ @red_flags }
    | @delta_flag
    red_flags ::= beta
@@ -1649,12 +1650,9 @@ Attributes
    attr ::= @ident {? @attr_value }
    attr_value ::= = @string
    | ( {*, @attr } )
-   legacy_attr ::= Local
-   | Global
-   | Polymorphic
-   | Monomorphic
-   | Cumulative
-   | NonCumulative
+   legacy_attr ::= {| Local | Global }
+   | {| Polymorphic | Monomorphic }
+   | {| Cumulative | NonCumulative }
    | Private
    | Program
 

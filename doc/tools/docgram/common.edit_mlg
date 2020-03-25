@@ -313,6 +313,7 @@ closed_binder: [
 | REPLACE "{" name LIST1 name ":" lconstr "}"
 | WITH "{" LIST1 name type_cstr "}"
 | DELETE "{" name ":" lconstr  "}"
+| MOVETO implicit_binders "{" LIST1 name type_cstr "}"
 
 | DELETE "[" name "]"
 | DELETE "[" name LIST1 name "]"
@@ -320,9 +321,14 @@ closed_binder: [
 | REPLACE "[" name LIST1 name ":" lconstr "]"
 | WITH "[" LIST1 name type_cstr "]"
 | DELETE "[" name ":" lconstr  "]"
+| MOVETO implicit_binders "[" LIST1 name type_cstr "]"
 
 | REPLACE "(" Prim.name ":" lconstr "|" lconstr ")"
 | WITH "(" Prim.name ":" type "|" lconstr ")"
+
+| MOVETO generalizing_binder "`(" LIST1 typeclass_constraint SEP "," ")"
+| MOVETO generalizing_binder "`{" LIST1 typeclass_constraint SEP "," "}"
+| MOVETO generalizing_binder "`[" LIST1 typeclass_constraint SEP "," "]"
 ]
 
 name_colon: [
@@ -383,6 +389,16 @@ evar_instance: [
 | OPTINREF
 ]
 
+(* No constructor syntax, OPT [ "|" binders ] is not supported for Record *)
+record_definition: [
+| opt_coercion ident_decl binders OPT [ ":" type ] OPT [ identref ] "{" record_fields "}"  decl_notations
+]
+
+(* No record syntax, opt_coercion not supported for Variant, := ... required *)
+variant_definition: [
+| ident_decl binders OPT [ "|" binders ] OPT [ ":" type ] ":=" OPT "|" LIST1 constructor SEP "|" decl_notations
+]
+
 gallina: [
 | REPLACE thm_token ident_decl binders ":" lconstr LIST0 [ "with" ident_decl binders ":" lconstr ]
 | WITH thm_token ident_decl binders ":" type LIST0 [ "with" ident_decl binders ":" type ]
@@ -390,8 +406,8 @@ gallina: [
 | REPLACE finite_token LIST1 inductive_definition SEP "with"
 | WITH "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
 |   "CoInductive" inductive_definition LIST0 ( "with" inductive_definition )
-|   "Variant" inductive_definition LIST0 ( "with" inductive_definition )
-|   [ "Record" | "Structure" ] inductive_definition LIST0 ( "with" inductive_definition )
+|   "Variant" variant_definition LIST0 ( "with" variant_definition )
+|   [ "Record" | "Structure" ] record_definition LIST0 ( "with" record_definition )
 |   "Class" inductive_definition LIST0 ( "with" inductive_definition )
 | REPLACE "Fixpoint" LIST1 rec_definition SEP "with"
 | WITH "Fixpoint" rec_definition LIST0 ( "with" rec_definition )
@@ -411,7 +427,7 @@ constructor_list_or_record_decl: [
 
 record_fields: [
 | REPLACE record_field ";" record_fields
-| WITH LIST1 record_field SEP ";"
+| WITH LIST0 record_field SEP ";"
 | DELETE record_field
 | DELETE (* empty *)
 ]
@@ -487,16 +503,39 @@ functor_app_annot: [
 ]
 
 is_module_expr: [
+| REPLACE ":=" module_expr_inl LIST0 ext_module_expr
+| WITH ":=" LIST1 module_expr_inl SEP "<+"
 | OPTINREF
 ]
 
 is_module_type: [
+| REPLACE ":=" module_type_inl LIST0 ext_module_type
+| WITH ":=" LIST1 module_type_inl SEP "<+"
 | OPTINREF
 ]
 
 gallina_ext: [
 | REPLACE "Arguments" smart_global LIST0 argument_spec_block OPT [ "," LIST1 [ LIST0 more_implicits_block ] SEP "," ] OPT [ ":" LIST1 arguments_modifier SEP "," ]
 | WITH "Arguments" smart_global LIST0 argument_spec_block    LIST0 [  "," LIST0 more_implicits_block ]                OPT [ ":" LIST1 arguments_modifier SEP "," ]
+| REPLACE "Implicit" "Type" reserv_list
+| WITH "Implicit" [ "Type" | "Types" ] reserv_list
+| DELETE "Implicit" "Types" reserv_list
+
+(* Per @Zimmi48, the global (qualid) must be a simple identifier if def_body is present
+   Note that smart_global is "qualid | by_notation" and that
+   ident_decl is "ident OPT univ_decl"; move
+ *)
+| REPLACE "Canonical" OPT "Structure" global OPT [ OPT univ_decl def_body ]
+| WITH "Canonical" OPT "Structure" ident_decl def_body
+| REPLACE "Canonical" OPT "Structure" by_notation
+| WITH "Canonical" OPT "Structure" smart_global
+
+| REPLACE "Include" "Type" module_type_inl LIST0 ext_module_type
+| WITH "Include" "Type" LIST1 module_type_inl SEP "<+"
+
+| REPLACE "Generalizable" [ "All" "Variables" | "No" "Variables" | [ "Variable" | "Variables" ] LIST1 identref ]
+| WITH "Generalizable" [  [ "Variable" | "Variables" ] LIST1 identref | "All" "Variables" | "No" "Variables" ]
+
 ]
 
 (* lexer stuff *)
@@ -661,7 +700,6 @@ command: [
 | WITH "Function" function_rec_definition_loc LIST0 ( "with" function_rec_definition_loc )      (* funind plugin *)
 | REPLACE "Functional" "Scheme" LIST1 fun_scheme_arg SEP "with"      (* funind plugin *)
 | WITH "Functional" "Scheme" fun_scheme_arg LIST0 ( "with" fun_scheme_arg )      (* funind plugin *)
-
 ]
 
 only_parsing: [
@@ -736,6 +774,18 @@ all_attrs: [
 | LIST0 ( "#[" LIST0 attribute SEP "," "]" ) LIST0 legacy_attr
 ]
 
+legacy_attr: [
+| REPLACE "Local"
+| WITH [ "Local" | "Global" ]
+| DELETE "Global"
+| REPLACE "Polymorphic"
+| WITH [ "Polymorphic" | "Monomorphic" ]
+| DELETE "Monomorphic"
+| REPLACE "Cumulative"
+| WITH [ "Cumulative" | "NonCumulative" ]
+| DELETE "NonCumulative"
+]
+
 vernacular: [
 | LIST0 ( OPT all_attrs [ command | tactic ] "." )
 ]
@@ -761,6 +811,7 @@ inductive_definition: [
 | WITH opt_coercion ident_decl binders OPT [ "|" binders ] OPT [ ":" type ] opt_constructors_or_fields decl_notations
 ]
 
+(* note that constructor -> identref constructor_type *)
 constructor_list_or_record_decl: [
 | DELETE "|" LIST1 constructor SEP "|"
 | REPLACE identref constructor_type "|" LIST1 constructor SEP "|"
@@ -775,6 +826,16 @@ record_binder: [
 | REPLACE name record_binder_body
 | WITH name OPT record_binder_body
 | DELETE name
+]
+
+of_module_type: [
+| (* empty *)
+| OPTINREF
+]
+
+simple_reserv: [
+| REPLACE LIST1 identref ":" lconstr
+| WITH LIST1 identref ":" type
 ]
 
 in_clause: [
@@ -800,6 +861,12 @@ decl_notations: [
 | REPLACE "where" LIST1 decl_notation SEP decl_sep
 | WITH "where" decl_notation LIST0 (decl_sep decl_notation )
 | OPTINREF
+]
+
+module_expr: [
+| REPLACE module_expr_atom
+| WITH LIST1 module_expr_atom
+| DELETE module_expr module_expr_atom
 ]
 
 SPLICE: [
@@ -935,8 +1002,14 @@ SPLICE: [
 | record_fields
 | constructor_type
 | record_binder
+| export_token
+| reserv_tuple
+| inst
 | opt_coercion
 | opt_constructors_or_fields
+| is_module_type
+| is_module_expr
+| module_expr
 ] (* end SPLICE *)
 
 RENAME: [
@@ -979,7 +1052,6 @@ RENAME: [
 | appl_arg arg
 | rec_definition fix_definition
 | corec_definition cofix_definition
-| inst evar_binding
 | univ_instance univ_annot
 | simple_assum_coe assumpt
 | of_type_with_opt_coercion of_type

@@ -337,7 +337,7 @@ class TacticNotationObject(NotationObject):
     """
     subdomain = "tacn"
     index_suffix = "(tactic)"
-    annotation = None
+    annotation = "Tactic"
 
 class AttributeNotationObject(NotationObject):
     """An attribute.

@@ -608,11 +608,11 @@ file is a particular case of module called *library file*.
 
       This loads and declares the module :n:`@qualid`
       and its dependencies then imports the contents of :n:`@qualid` as described
-      :ref:`here <import_qualid>`. It does not import the modules on which
-      qualid depends unless these modules were themselves required in module
+      for :cmd:`Import`. It does not import the modules that
+      :n:`@qualid` depends on unless these modules were themselves required in module
       :n:`@qualid`
-      using :cmd:`Require Export`, as described below, or recursively required
-      through a sequence of :cmd:`Require Export`.  If the module required has
+      using :cmd:`Require Export`, or recursively required
+      through a series of :cmd:`Require Export`.  If the module required has
       already been loaded, :cmd:`Require Import` :n:`@qualid` simply imports it, as
       :cmd:`Import` :n:`@qualid` would.
 
@@ -671,13 +671,9 @@ file is a particular case of module called *library file*.
       the time it was compiled.
 
 
-   .. exn:: Require is not allowed inside a module or a module type.
+   .. warn:: Require inside a module is deprecated and strongly discouraged. You can Require a module at toplevel and optionally Import it inside another one.
 
-      This command
-      is not allowed inside a module or a module type being defined. It is
-      meant to describe a dependency between compilation units. Note however
-      that the commands ``Import`` and ``Export`` alone can be used inside modules
-      (see Section :ref:`Import <import_qualid>`).
+      Note that the :cmd:`Import` and :cmd:`Export` commands can be used inside modules.
 
       .. seealso:: Chapter :ref:`thecoqcommands`
 
@@ -1178,7 +1174,7 @@ Controlling the locality of commands
      effect of the command to the current module if the command does not occur in a
      section and the :attr:`global` attribute extends the effect outside the current
      sections and current module if the command occurs in a section. As an example,
-     the :cmd:`Arguments <Arguments (implicits)>`, :cmd:`Ltac` or :cmd:`Notation` commands belong
+     the :cmd:`Arguments`, :cmd:`Ltac` or :cmd:`Notation` commands belong
      to this category. Notice that a subclass of these commands do not support
      extension of their scope outside sections at all and the :attr:`global` attribute is not
      applicable to them.
