@@ -1518,10 +1518,30 @@ module MiniEConstr = struct
     in
     UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c
 
+  let to_constr_and_univs ?(abort_on_undefined_evars=true) sigma c =
+    let evar_value =
+      if not abort_on_undefined_evars then fun ev -> safe_evar_value sigma ev
+      else fun ev ->
+        match safe_evar_value sigma ev with
+        | Some _ as v -> v
+        | None -> anomaly ~label:"econstr" Pp.(str "grounding a non evar-free term")
+    in
+    let evar_info v = evar_concl (find sigma v) in
+    UnivSubst.nf_evars_and_universes_opt_subst_and_univs evar_value evar_info (universe_subst sigma) c
+
   let to_constr_opt sigma c =
     let evar_value ev = Some (existential_value sigma ev) in
     try
       Some (UnivSubst.nf_evars_and_universes_opt_subst evar_value (universe_subst sigma) c)
+    with NotInstantiatedEvar ->
+      None
+
+  let to_constr_opt_and_univs sigma c =
+    let evar_value ev = Some (existential_value sigma ev) in
+    let evar_info v = evar_concl (find sigma v) in
+    try
+      let vars, constr = UnivSubst.nf_evars_and_universes_opt_subst_and_univs evar_value evar_info (universe_subst sigma) c in
+      Some (vars, constr)
     with NotInstantiatedEvar ->
       None
 

@@ -747,7 +747,9 @@ module MiniEConstr : sig
   val of_constr_array : Constr.t array -> t array
 
   val to_constr : ?abort_on_undefined_evars:bool -> evar_map -> t -> Constr.t
+  val to_constr_and_univs : ?abort_on_undefined_evars:bool -> evar_map -> t -> Univ.LSet.t * Constr.t
   val to_constr_opt : evar_map -> t -> Constr.t option
+  val to_constr_opt_and_univs : evar_map -> t -> (Univ.LSet.t * Constr.t) option
 
   val unsafe_to_constr : t -> Constr.t
   val unsafe_to_constr_array : t array -> Constr.t array

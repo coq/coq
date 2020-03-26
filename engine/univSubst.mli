@@ -48,6 +48,10 @@ val normalize_opt_subst : universe_opt_subst -> universe_opt_subst
 val nf_evars_and_universes_opt_subst : (existential -> constr option) ->
   universe_opt_subst -> constr -> constr
 
+val nf_evars_and_universes_opt_subst_and_univs : (existential -> constr option) ->
+  (Evar.t -> constr) ->
+  universe_opt_subst -> constr -> LSet.t * constr
+
 (** Pretty-printing *)
 
 val pr_universe_opt_subst : universe_opt_subst -> Pp.t

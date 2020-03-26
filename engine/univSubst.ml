@@ -161,6 +161,37 @@ let nf_evars_and_universes_opt_subst f subst =
     | _ -> Constr.map aux c
   in aux
 
+let nf_evars_and_universes_opt_subst_and_univs f ei subst c =
+  let subst = normalize_univ_variable_opt_subst subst in
+  let lsubst = level_subst_of subst in
+  let gu p s = LSet.fold LSet.add (Instance.levels (snd p)) s in
+  let rec aux s c =
+    match kind c with
+    | Evar (evk, args) ->
+      let s, args = List.fold_left_map aux s args in
+      let s = LSet.union (Vars.universes_of_constr (ei evk)) s in
+      (match try f (evk, args) with Not_found -> None with
+      | None -> s, mkEvar (evk, args)
+      | Some c -> aux s c)
+    | Const pu ->
+      let pu' = subst_univs_fn_puniverses lsubst pu in
+      ( gu pu' s
+      , if pu' == pu then c else mkConstU pu')
+    | Ind pu ->
+      let pu' = subst_univs_fn_puniverses lsubst pu in
+      ( gu pu' s
+      , if pu' == pu then c else mkIndU pu')
+    | Construct pu ->
+      let pu' = subst_univs_fn_puniverses lsubst pu in
+      ( gu pu' s
+      , if pu' == pu then c else mkConstructU pu')
+    | Sort (Type u) ->
+      let u' = Univ.subst_univs_universe subst u in
+      ( LSet.fold LSet.add (Universe.levels u') s
+      , if u' == u then c else mkSort (sort_of_univ u'))
+    | _ -> Constr.fold_map aux s c
+  in aux LSet.empty c
+
 let make_opt_subst s =
   fun x ->
     (match Univ.LMap.find x s with

@@ -1582,9 +1582,9 @@ let prepare_proof ~unsafe_typ { proof } =
   let eff = Evd.eval_side_effects evd in
   let evd = Evd.minimize_universes evd in
   let to_constr_body c =
-    match EConstr.to_constr_opt evd c with
+    match EConstr.to_constr_opt_and_univs evd c with
     | Some p ->
-      Vars.universes_of_constr p, p
+      p
     | None ->
       CErrors.user_err Pp.(str "Some unresolved existential variables remain")
   in
