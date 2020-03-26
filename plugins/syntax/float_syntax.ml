@@ -70,7 +70,8 @@ let interp_float ?loc n =
        else  (* e < 0 *)
          if e' <= e then check m' (-e) m (e - e')
          else check' m' (-e) (e' - e) m in
-  if inexact () then warn_inexact_float ?loc (sn, f);
+  if NumTok.(Signed.classify n = CDec) && inexact () then
+    warn_inexact_float ?loc (sn, f);
   DAst.make ?loc (GFloat f)
 
 (* Pretty printing is already handled in constrextern.ml *)

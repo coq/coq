@@ -74,7 +74,7 @@ val find_delimiters_scope : ?loc:Loc.t -> delimiters -> scope_name
 
 (** {6 Declare and uses back and forth an interpretation of primitive token } *)
 
-(** A numeral interpreter is the pair of an interpreter for **decimal**
+(** A numeral interpreter is the pair of an interpreter for **(hexa)decimal**
    numbers in terms and an optional interpreter in pattern, if
    non integer or negative numbers are not supported, the interpreter
    must fail with an appropriate error message *)
@@ -120,23 +120,32 @@ type numnot_option =
   | Abstract of NumTok.UnsignedNat.t
 
 type int_ty =
-  { uint : Names.inductive;
+  { dec_uint : Names.inductive;
+    dec_int : Names.inductive;
+    hex_uint : Names.inductive;
+    hex_int : Names.inductive;
+    uint : Names.inductive;
     int : Names.inductive }
 
 type z_pos_ty =
   { z_ty : Names.inductive;
     pos_ty : Names.inductive }
 
-type decimal_ty =
+type numeral_ty =
   { int : int_ty;
-    decimal : Names.inductive }
+    decimal : Names.inductive;
+    hexadecimal : Names.inductive;
+    numeral : Names.inductive }
 
 type target_kind =
-  | Int of int_ty (* Coq.Init.Decimal.int + uint *)
-  | UInt of Names.inductive (* Coq.Init.Decimal.uint *)
+  | Int of int_ty (* Coq.Init.Numeral.int + uint *)
+  | UInt of int_ty (* Coq.Init.Numeral.uint *)
   | Z of z_pos_ty (* Coq.Numbers.BinNums.Z and positive *)
   | Int63 (* Coq.Numbers.Cyclic.Int63.Int63.int *)
-  | Decimal of decimal_ty (* Coq.Init.Decimal.decimal + uint + int *)
+  | Numeral of numeral_ty (* Coq.Init.Numeral.numeral + uint + int *)
+  | DecimalInt of int_ty (* Coq.Init.Decimal.int + uint (deprecated) *)
+  | DecimalUInt of int_ty (* Coq.Init.Decimal.uint (deprecated) *)
+  | Decimal of numeral_ty (* Coq.Init.Decimal.Decimal + uint + int (deprecated) *)
 
 type string_target_kind =
   | ListByte

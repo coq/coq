@@ -12,6 +12,8 @@
     e.g. "e"/"E" or the presence of leading 0s, or the presence of a +
     in the exponent *)
 
+type num_class = CDec | CHex
+
 let string_del_head n s = String.sub s n (String.length s - n)
 
 module UnsignedNat =
@@ -22,12 +24,15 @@ struct
     assert (s.[0] >= '0' && s.[0] <= '9');
     s
   let to_string s =
-    String.(concat "" (split_on_char '_' s))
+    String.(map Char.lowercase_ascii (concat "" (split_on_char '_' s)))
 
   let sprint s = s
   let print s = Pp.str (sprint s)
 
-  (** Comparing two raw numbers (base 10, big-endian, non-negative).
+  let classify s =
+    if String.length s >= 2 && (s.[1] = 'x' || s.[1] = 'X') then CHex else CDec
+
+  (** Comparing two raw numbers (base 10 or 16, big-endian, non-negative).
       A bit nasty, but not critical: used e.g. to decide when a number
       is considered as large (see threshold warnings in notation.ml). *)
 
@@ -47,11 +52,19 @@ struct
         0
       with Comp c -> c
 
+  let compare n d =
+    assert (classify d = CDec);
+    match classify n with
+    | CDec -> compare (to_string n) (to_string d)
+    | CHex -> compare (string_del_head 2 (to_string n)) (to_string d)
+
   let is_zero s =
     compare s "0" = 0
 end
 
 type sign = SPlus | SMinus
+
+type 'a exp = EDec of 'a | EBin of 'a
 
 module SignedNat =
 struct
@@ -66,20 +79,83 @@ struct
     (sign,UnsignedNat.of_string n)
   let to_string (sign,n) =
     (match sign with SPlus -> "" | SMinus -> "-") ^ UnsignedNat.to_string n
-  let to_bigint n = Bigint.of_string (to_string n)
-  let of_bigint n =
+  let classify (_,n) = UnsignedNat.classify n
+  let bigint_of_string (sign,n) =
+    (* nasty code to remove when switching to zarith
+       since zarith's of_string handles hexadecimal *)
+    match UnsignedNat.classify n with
+    | CDec -> Bigint.of_string (to_string (sign,n))
+    | CHex ->
+       let int_of_char c = match c with
+         | 'a'..'f' -> 10 + int_of_char c - int_of_char 'a'
+         | _ -> int_of_char c - int_of_char '0' in
+       let c16 = Bigint.of_int 16 in
+       let s = UnsignedNat.to_string n in
+       let n = ref Bigint.zero in
+       let len = String.length s in
+       for d = 2 to len - 1 do
+         n := Bigint.(add (mult !n c16) (of_int (int_of_char s.[d])))
+       done;
+       match sign with SPlus -> !n | SMinus -> Bigint.neg !n
+  let to_bigint n = bigint_of_string n
+  let string_of_nonneg_bigint c n =
+    (* nasty code to remove when switching to zarith
+       since zarith's format handles hexadecimal *)
+    match c with
+    | CDec -> Bigint.to_string n
+    | CHex ->
+       let div16 n =
+         let n, r0 = Bigint.div2_with_rest n in
+         let n, r1 = Bigint.div2_with_rest n in
+         let n, r2 = Bigint.div2_with_rest n in
+         let n, r3 = Bigint.div2_with_rest n in
+         let r = match r3, r2, r1, r0 with
+           | false, false, false, false -> "0"
+           | false, false, false,  true -> "1"
+           | false, false,  true, false -> "2"
+           | false, false,  true,  true -> "3"
+           | false,  true, false, false -> "4"
+           | false,  true, false,  true -> "5"
+           | false,  true,  true, false -> "6"
+           | false,  true,  true,  true -> "7"
+           |  true, false, false, false -> "8"
+           |  true, false, false,  true -> "9"
+           |  true, false,  true, false -> "a"
+           |  true, false,  true,  true -> "b"
+           |  true,  true, false, false -> "c"
+           |  true,  true, false,  true -> "d"
+           |  true,  true,  true, false -> "e"
+           |  true,  true,  true,  true -> "f" in
+         n, r in
+       let n = ref n in
+       let l = ref [] in
+       while Bigint.is_strictly_pos !n do
+         let n', r = div16 !n in
+         n := n';
+         l := r :: !l
+       done;
+       "0x" ^ String.concat "" (List.rev !l)
+  let of_bigint c n =
     let sign, n = if Bigint.is_strictly_neg n then (SMinus, Bigint.neg n) else (SPlus, n) in
-    (sign, Bigint.to_string n)
+    (sign, string_of_nonneg_bigint c n)
 end
 
 module Unsigned =
 struct
 
   type t = {
-    int : string;  (** \[0-9\]\[0-9_\]* *)
-    frac : string;  (** empty or \[0-9_\]+ *)
-    exp : string  (** empty or \[eE\]\[+-\]?\[0-9\]\[0-9_\]* *)
+    int : string;
+    frac : string;
+    exp : string
   }
+  (**
+    - int: \[0-9\]\[0-9_\]*
+    - frac: empty or \[0-9_\]+
+    - exp: empty or \[eE\]\[+-\]?\[0-9\]\[0-9_\]*
+    or
+    - int: 0\[xX\]\[0-9a-fA-F\]\[0-9a-fA-F_\]*
+    - frac: empty or \[0-9a-fA-F_\]+
+    - exp: empty or \[pP\]\[+-\]?\[0-9\]\[0-9_\]* *)
 
   let equal n1 n2 =
     String.(equal n1.int n2.int && equal n1.frac n2.frac && equal n1.exp n2.exp)
@@ -98,19 +174,35 @@ struct
       | Some ('0'..'9' as c) -> Stream.junk s; number (store len c) s
       | Some ('_' as c) when len > 0 -> Stream.junk s; number (store len c) s
       | _ -> len in
+    (* reads [0-9a-fA-F_]* *)
+    let rec hex_number len s = match Stream.peek s with
+      | Some (('0'..'9' | 'a'..'f' | 'A'..'F') as c) ->
+         Stream.junk s; hex_number (store len c) s
+      | Some ('_' as c) when len > 0 ->
+         Stream.junk s; hex_number (store len c) s
+      | _ -> len in
     fun s ->
-    let i = get_buff (number 0 s) in
+    let hex, i =
+      match Stream.npeek 3 s with
+      | '0' :: (('x' | 'X') as x) :: (('0'..'9' | 'a'..'f' | 'A'..'F') as c) :: _ ->
+         Stream.junk s; Stream.junk s; Stream.junk s;
+         true, get_buff (hex_number (store (store (store 0 '0') x) c) s)
+      | _ -> false, get_buff (number 0 s) in
     assert (i <> "");
     let f =
-      match Stream.npeek 2 s with
-      | '.' :: (('0'..'9' | '_') as c) :: _ ->
+      match hex, Stream.npeek 2 s with
+      | true, '.' :: (('0'..'9' | 'a'..'f' | 'A'..'F' | '_') as c) :: _ ->
+         Stream.junk s; Stream.junk s; get_buff (hex_number (store 0 c) s)
+      | false, '.' :: (('0'..'9' | '_') as c) :: _ ->
          Stream.junk s; Stream.junk s; get_buff (number (store 0 c) s)
       | _ -> "" in
     let e =
-      match (Stream.npeek 2 s) with
-      | (('e'|'E') as e) :: ('0'..'9' as c) :: _ ->
+      match hex, Stream.npeek 2 s with
+      | true, (('p'|'P') as e) :: ('0'..'9' as c) :: _
+      | false, (('e'|'E') as e) :: ('0'..'9' as c) :: _ ->
          Stream.junk s; Stream.junk s; get_buff (number (store (store 0 e) c) s)
-      | (('e'|'E') as e) :: (('+'|'-') as sign) :: _ ->
+      | true, (('p'|'P') as e) :: (('+'|'-') as sign) :: _
+      | false, (('e'|'E') as e) :: (('+'|'-') as sign) :: _ ->
          begin match Stream.npeek 3 s with
          | _ :: _ :: ('0'..'9' as c) :: _ ->
             Stream.junk s; Stream.junk s; Stream.junk s;
@@ -148,6 +240,7 @@ struct
     | { int = _; frac = ""; exp = "" } -> true
     | _ -> false
 
+  let classify n = UnsignedNat.classify n.int
 end
 
 open Unsigned
@@ -165,8 +258,15 @@ struct
     | _ -> false
 
   let of_int_frac_and_exponent (sign,int) f e =
-    let exp = match e with Some e -> "e" ^ SignedNat.to_string e | None -> "" in
-    let frac = match f with Some f -> UnsignedNat.to_string f | None -> "" in
+    assert (match e with None -> true | Some e -> SignedNat.classify e = CDec);
+    let c = UnsignedNat.classify int in
+    let exp = match e with None -> "" | Some e ->
+      let e = SignedNat.to_string e in
+      match c with CDec -> "e" ^ e | CHex -> "p" ^ e in
+    let frac = match f with None -> "" | Some f ->
+      assert (c = UnsignedNat.classify f);
+      let f = UnsignedNat.to_string f in
+      match c with CDec -> f | CHex -> string_del_head 2 f in
     sign, { int; frac; exp }
 
   let to_int_frac_and_exponent (sign, { int; frac; exp }) =
@@ -176,7 +276,11 @@ struct
         | '-' -> SMinus, string_del_head 2 exp
         | '+' -> SPlus, string_del_head 2 exp
         | _ -> SPlus, string_del_head 1 exp) in
-    let f = if frac = "" then None else Some frac in
+    let f =
+      if frac = "" then None else
+        Some (match UnsignedNat.classify int with
+        | CDec -> frac
+        | CHex -> "0x" ^ frac) in
     (sign, int), f, e
 
   let of_nat i =
@@ -226,27 +330,31 @@ struct
       Some (SignedNat.to_bigint (sign,UnsignedNat.to_string n))
     | _ -> None
 
-  let of_bigint n =
-    let sign, int = SignedNat.of_bigint n in
-    (sign, { int; frac = ""; exp = "" })
+  let of_bigint c n =
+    of_int (SignedNat.of_bigint c n)
 
   let to_bigint_and_exponent (s, { int; frac; exp }) =
-    let s = match s with SPlus -> "" | SMinus -> "-" in
+    let c = UnsignedNat.classify int in
     let int = UnsignedNat.to_string int in
     let frac = UnsignedNat.to_string frac in
-    let i = Bigint.of_string (s ^ int ^ frac) in
+    let i = SignedNat.to_bigint (s, int ^ frac) in
     let e =
       let e = if exp = "" then Bigint.zero else match exp.[1] with
       | '+' -> Bigint.of_string (UnsignedNat.to_string (string_del_head 2 exp))
       | '-' -> Bigint.(neg (of_string (UnsignedNat.to_string (string_del_head 2 exp))))
       | _ -> Bigint.of_string (UnsignedNat.to_string (string_del_head 1 exp)) in
-      Bigint.(sub e (of_int (String.length (String.concat "" (String.split_on_char '_' frac))))) in
-    (i,e)
+      let l = String.length frac in
+      let l = match c with CDec -> l | CHex -> 4 * l in
+      Bigint.(sub e (of_int l)) in
+    (i, match c with CDec -> EDec e | CHex -> EBin e)
 
   let of_bigint_and_exponent i e =
-    of_int_frac_and_exponent (SignedNat.of_bigint i) None (Some (SignedNat.of_bigint e))
+    let c = match e with EDec _ -> CDec | EBin _ -> CHex in
+    let e = match e with EDec e | EBin e -> Some (SignedNat.of_bigint CDec e) in
+    of_int_frac_and_exponent (SignedNat.of_bigint c i) None e
 
   let is_bigger_int_than (s, { int; frac; exp }) i =
     frac = "" && exp = "" && UnsignedNat.compare int i >= 0
 
+  let classify (_, n) = Unsigned.classify n
 end

@@ -20,3 +20,18 @@ eq_refl : -1e-4 = -1e-4
      : -1e-4 = -1e-4
 eq_refl : -0.50 = -0.50
      : -0.50 = -0.50
+eq_refl : -26 = -26
+     : -26 = -26
+eq_refl : 2860 / IZR (BinIntDef.Z.pow_pos 2 8) = 2860 / IZR (Z.pow_pos 2 8)
+     : 2860 / IZR (BinIntDef.Z.pow_pos 2 8) = 2860 / IZR (Z.pow_pos 2 8)
+eq_refl : -6882 = -6882
+     : -6882 = -6882
+eq_refl : 2860 / IZR (BinIntDef.Z.pow_pos 2 6) = 2860 / IZR (Z.pow_pos 2 6)
+     : 2860 / IZR (BinIntDef.Z.pow_pos 2 6) = 2860 / IZR (Z.pow_pos 2 6)
+eq_refl : 2860 = 2860
+     : 2860 = 2860
+eq_refl
+:
+-2860 / IZR (BinIntDef.Z.pow_pos 2 10) = - (2860) / IZR (Z.pow_pos 2 10)
+     : -2860 / IZR (BinIntDef.Z.pow_pos 2 10) =
+       - (2860) / IZR (Z.pow_pos 2 10)

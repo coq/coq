@@ -595,6 +595,56 @@ Fixpoint of_uint (d:Decimal.uint) : N :=
   | Decimal.D9 l => Npos (of_uint_acc l 1~0~0~1)
   end.
 
+Local Notation sixteen := 1~0~0~0~0.
+
+Fixpoint of_hex_uint_acc (d:Hexadecimal.uint)(acc:positive) :=
+  match d with
+  | Hexadecimal.Nil => acc
+  | Hexadecimal.D0 l => of_hex_uint_acc l (mul sixteen acc)
+  | Hexadecimal.D1 l => of_hex_uint_acc l (add 1 (mul sixteen acc))
+  | Hexadecimal.D2 l => of_hex_uint_acc l (add 1~0 (mul sixteen acc))
+  | Hexadecimal.D3 l => of_hex_uint_acc l (add 1~1 (mul sixteen acc))
+  | Hexadecimal.D4 l => of_hex_uint_acc l (add 1~0~0 (mul sixteen acc))
+  | Hexadecimal.D5 l => of_hex_uint_acc l (add 1~0~1 (mul sixteen acc))
+  | Hexadecimal.D6 l => of_hex_uint_acc l (add 1~1~0 (mul sixteen acc))
+  | Hexadecimal.D7 l => of_hex_uint_acc l (add 1~1~1 (mul sixteen acc))
+  | Hexadecimal.D8 l => of_hex_uint_acc l (add 1~0~0~0 (mul sixteen acc))
+  | Hexadecimal.D9 l => of_hex_uint_acc l (add 1~0~0~1 (mul sixteen acc))
+  | Hexadecimal.Da l => of_hex_uint_acc l (add 1~0~1~0 (mul sixteen acc))
+  | Hexadecimal.Db l => of_hex_uint_acc l (add 1~0~1~1 (mul sixteen acc))
+  | Hexadecimal.Dc l => of_hex_uint_acc l (add 1~1~0~0 (mul sixteen acc))
+  | Hexadecimal.Dd l => of_hex_uint_acc l (add 1~1~0~1 (mul sixteen acc))
+  | Hexadecimal.De l => of_hex_uint_acc l (add 1~1~1~0 (mul sixteen acc))
+  | Hexadecimal.Df l => of_hex_uint_acc l (add 1~1~1~1 (mul sixteen acc))
+  end.
+
+Fixpoint of_hex_uint (d:Hexadecimal.uint) : N :=
+  match d with
+  | Hexadecimal.Nil => N0
+  | Hexadecimal.D0 l => of_hex_uint l
+  | Hexadecimal.D1 l => Npos (of_hex_uint_acc l 1)
+  | Hexadecimal.D2 l => Npos (of_hex_uint_acc l 1~0)
+  | Hexadecimal.D3 l => Npos (of_hex_uint_acc l 1~1)
+  | Hexadecimal.D4 l => Npos (of_hex_uint_acc l 1~0~0)
+  | Hexadecimal.D5 l => Npos (of_hex_uint_acc l 1~0~1)
+  | Hexadecimal.D6 l => Npos (of_hex_uint_acc l 1~1~0)
+  | Hexadecimal.D7 l => Npos (of_hex_uint_acc l 1~1~1)
+  | Hexadecimal.D8 l => Npos (of_hex_uint_acc l 1~0~0~0)
+  | Hexadecimal.D9 l => Npos (of_hex_uint_acc l 1~0~0~1)
+  | Hexadecimal.Da l => Npos (of_hex_uint_acc l 1~0~1~0)
+  | Hexadecimal.Db l => Npos (of_hex_uint_acc l 1~0~1~1)
+  | Hexadecimal.Dc l => Npos (of_hex_uint_acc l 1~1~0~0)
+  | Hexadecimal.Dd l => Npos (of_hex_uint_acc l 1~1~0~1)
+  | Hexadecimal.De l => Npos (of_hex_uint_acc l 1~1~1~0)
+  | Hexadecimal.Df l => Npos (of_hex_uint_acc l 1~1~1~1)
+  end.
+
+Definition of_num_uint (d:Numeral.uint) : N :=
+  match d with
+  | Numeral.UIntDec d => of_uint d
+  | Numeral.UIntHex d => of_hex_uint d
+  end.
+
 Definition of_int (d:Decimal.int) : option positive :=
   match d with
   | Decimal.Pos d =>
@@ -603,6 +653,22 @@ Definition of_int (d:Decimal.int) : option positive :=
     | Npos p => Some p
     end
   | Decimal.Neg _ => None
+  end.
+
+Definition of_hex_int (d:Hexadecimal.int) : option positive :=
+  match d with
+  | Hexadecimal.Pos d =>
+    match of_hex_uint d with
+    | N0 => None
+    | Npos p => Some p
+    end
+  | Hexadecimal.Neg _ => None
+  end.
+
+Definition of_num_int (d:Numeral.int) : option positive :=
+  match d with
+  | Numeral.IntDec d => of_int d
+  | Numeral.IntHex d => of_hex_int d
   end.
 
 Fixpoint to_little_uint p :=
@@ -614,11 +680,26 @@ Fixpoint to_little_uint p :=
 
 Definition to_uint p := Decimal.rev (to_little_uint p).
 
+Fixpoint to_little_hex_uint p :=
+  match p with
+  | 1 => Hexadecimal.D1 Hexadecimal.Nil
+  | p~1 => Hexadecimal.Little.succ_double (to_little_hex_uint p)
+  | p~0 => Hexadecimal.Little.double (to_little_hex_uint p)
+  end.
+
+Definition to_hex_uint p := Hexadecimal.rev (to_little_hex_uint p).
+
+Definition to_num_uint p := Numeral.UIntDec (to_uint p).
+
 Definition to_int n := Decimal.Pos (to_uint n).
 
-Numeral Notation positive of_int to_uint : positive_scope.
+Definition to_hex_int p := Hexadecimal.Pos (to_hex_uint p).
+
+Definition to_num_int n := Numeral.IntDec (to_int n).
+
+Numeral Notation positive of_num_int to_num_uint : positive_scope.
 
 End Pos.
 
 (** Re-export the notation for those who just [Import BinPosDef] *)
-Numeral Notation positive Pos.of_int Pos.to_uint : positive_scope.
+Numeral Notation positive Pos.of_num_int Pos.to_num_uint : positive_scope.

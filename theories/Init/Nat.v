@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import Notations Logic Datatypes.
-Require Decimal.
+Require Decimal Hexadecimal Numeral.
 Local Open Scope nat_scope.
 
 (**********************************************************************)
@@ -187,6 +187,37 @@ Fixpoint of_uint_acc (d:Decimal.uint)(acc:nat) :=
 
 Definition of_uint (d:Decimal.uint) := of_uint_acc d O.
 
+Local Notation sixteen := (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S O)))))))))))))))).
+
+Fixpoint of_hex_uint_acc (d:Hexadecimal.uint)(acc:nat) :=
+  match d with
+  | Hexadecimal.Nil => acc
+  | Hexadecimal.D0 d => of_hex_uint_acc d (tail_mul sixteen acc)
+  | Hexadecimal.D1 d => of_hex_uint_acc d (S (tail_mul sixteen acc))
+  | Hexadecimal.D2 d => of_hex_uint_acc d (S (S (tail_mul sixteen acc)))
+  | Hexadecimal.D3 d => of_hex_uint_acc d (S (S (S (tail_mul sixteen acc))))
+  | Hexadecimal.D4 d => of_hex_uint_acc d (S (S (S (S (tail_mul sixteen acc)))))
+  | Hexadecimal.D5 d => of_hex_uint_acc d (S (S (S (S (S (tail_mul sixteen acc))))))
+  | Hexadecimal.D6 d => of_hex_uint_acc d (S (S (S (S (S (S (tail_mul sixteen acc)))))))
+  | Hexadecimal.D7 d => of_hex_uint_acc d (S (S (S (S (S (S (S (tail_mul sixteen acc))))))))
+  | Hexadecimal.D8 d => of_hex_uint_acc d (S (S (S (S (S (S (S (S (tail_mul sixteen acc)))))))))
+  | Hexadecimal.D9 d => of_hex_uint_acc d (S (S (S (S (S (S (S (S (S (tail_mul sixteen acc))))))))))
+  | Hexadecimal.Da d => of_hex_uint_acc d (S (S (S (S (S (S (S (S (S (S (tail_mul sixteen acc)))))))))))
+  | Hexadecimal.Db d => of_hex_uint_acc d (S (S (S (S (S (S (S (S (S (S (S (tail_mul sixteen acc))))))))))))
+  | Hexadecimal.Dc d => of_hex_uint_acc d (S (S (S (S (S (S (S (S (S (S (S (S (tail_mul sixteen acc)))))))))))))
+  | Hexadecimal.Dd d => of_hex_uint_acc d (S (S (S (S (S (S (S (S (S (S (S (S (S (tail_mul sixteen acc))))))))))))))
+  | Hexadecimal.De d => of_hex_uint_acc d (S (S (S (S (S (S (S (S (S (S (S (S (S (S (tail_mul sixteen acc)))))))))))))))
+  | Hexadecimal.Df d => of_hex_uint_acc d (S (S (S (S (S (S (S (S (S (S (S (S (S (S (S (tail_mul sixteen acc))))))))))))))))
+  end.
+
+Definition of_hex_uint (d:Hexadecimal.uint) := of_hex_uint_acc d O.
+
+Definition of_num_uint (d:Numeral.uint) :=
+  match d with
+  | Numeral.UIntDec d => of_uint d
+  | Numeral.UIntHex d => of_hex_uint d
+  end.
+
 Fixpoint to_little_uint n acc :=
   match n with
   | O => acc
@@ -196,13 +227,42 @@ Fixpoint to_little_uint n acc :=
 Definition to_uint n :=
   Decimal.rev (to_little_uint n Decimal.zero).
 
+Fixpoint to_little_hex_uint n acc :=
+  match n with
+  | O => acc
+  | S n => to_little_hex_uint n (Hexadecimal.Little.succ acc)
+  end.
+
+Definition to_hex_uint n :=
+  Hexadecimal.rev (to_little_hex_uint n Hexadecimal.zero).
+
+Definition to_num_uint n := Numeral.UIntDec (to_uint n).
+
+Definition to_num_hex_uint n := Numeral.UIntHex (to_hex_uint n).
+
 Definition of_int (d:Decimal.int) : option nat :=
   match Decimal.norm d with
     | Decimal.Pos u => Some (of_uint u)
     | _ => None
   end.
 
+Definition of_hex_int (d:Hexadecimal.int) : option nat :=
+  match Hexadecimal.norm d with
+    | Hexadecimal.Pos u => Some (of_hex_uint u)
+    | _ => None
+  end.
+
+Definition of_num_int (d:Numeral.int) : option nat :=
+  match d with
+  | Numeral.IntDec d => of_int d
+  | Numeral.IntHex d => of_hex_int d
+  end.
+
 Definition to_int n := Decimal.Pos (to_uint n).
+
+Definition to_hex_int n := Hexadecimal.Pos (to_hex_uint n).
+
+Definition to_num_int n := Numeral.IntDec (to_int n).
 
 (** ** Euclidean division *)
 

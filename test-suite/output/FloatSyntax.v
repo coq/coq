@@ -20,6 +20,12 @@ Check 2.5e123.
 Check (-2.5e-123).
 Check (2 + 2).
 Check (2.5 + 2.5).
+Check -0x1a.
+Check 0xb.2c.
+Check -0x1ae2.
+Check 0xb.2cp2.
+Check 0xb.2cp8.
+Check -0xb.2cp-2.
 
 Check 1e309.
 Check -1e309.

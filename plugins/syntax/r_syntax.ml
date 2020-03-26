@@ -114,20 +114,21 @@ let glob_pow_pos = GlobRef.ConstRef (Constant.make2 z_modpath @@ Label.make "pow
 
 let r_of_rawnum ?loc n =
   let n,e = NumTok.Signed.to_bigint_and_exponent n in
+  let e,p = NumTok.(match e with EDec e -> e, 10 | EBin e -> e, 2) in
   let izr z =
     DAst.make @@ GApp (DAst.make @@ GRef(glob_IZR,None), [z]) in
   let rmult r r' =
     DAst.make @@ GApp (DAst.make @@ GRef(glob_Rmult,None), [r; r']) in
   let rdiv r r' =
     DAst.make @@ GApp (DAst.make @@ GRef(glob_Rdiv,None), [r; r']) in
-  let pow10 e =
-    let ten = z_of_int ?loc (Bigint.of_int 10) in
+  let pow p e =
+    let p = z_of_int ?loc (Bigint.of_int p) in
     let e = pos_of_bignat e in
-    DAst.make @@ GApp (DAst.make @@ GRef(glob_pow_pos,None), [ten; e]) in
+    DAst.make @@ GApp (DAst.make @@ GRef(glob_pow_pos,None), [p; e]) in
   let n =
     izr (z_of_int ?loc n) in
-  if Bigint.is_strictly_pos e then rmult n (izr (pow10 e))
-  else if Bigint.is_strictly_neg e then rdiv n (izr (pow10 (neg e)))
+  if Bigint.is_strictly_pos e then rmult n (izr (pow p e))
+  else if Bigint.is_strictly_neg e then rdiv n (izr (pow p (neg e)))
   else n  (* e = 0 *)
 
 (**********************************************************************)
@@ -149,7 +150,8 @@ let rawnum_of_r c =
         let le = String.length (Bigint.to_string e) in
         Bigint.(less_than (add (of_int li) (of_int le)) e) in
     (* print 123 * 10^-2 as 123e-2 *)
-    let numTok_exponent () = NumTok.Signed.of_bigint_and_exponent i e in
+    let numTok_exponent () =
+      NumTok.Signed.of_bigint_and_exponent i (NumTok.EDec e) in
     (* print 123 * 10^-2 as 1.23, precondition e < 0 *)
     let numTok_dot () =
       let s, i =
@@ -168,7 +170,7 @@ let rawnum_of_r c =
   match DAst.get c with
   | GApp (r, [a]) when is_gr r glob_IZR ->
      let n = bigint_of_z a in
-     NumTok.Signed.of_bigint n
+     NumTok.(Signed.of_bigint CDec n)
   | GApp (md,  [l; r]) when is_gr md glob_Rmult || is_gr md glob_Rdiv ->
      begin match DAst.get l, DAst.get r with
      | GApp (i, [l]), GApp (i', [r])

@@ -1,0 +1,34 @@
+42
+     : nat
+0
+     : nat
+0
+     : nat
+427
+     : nat
+427
+     : nat
+427
+     : nat
+427
+     : nat
+427
+     : nat
+The command has indeed failed with message:
+Cannot interpret this number as a value of type nat
+The command has indeed failed with message:
+Cannot interpret this number as a value of type nat
+0
+     : nat
+0
+     : nat
+The command has indeed failed with message:
+The reference xg was not found in the current environment.
+The command has indeed failed with message:
+The reference xG was not found in the current environment.
+The command has indeed failed with message:
+The reference x1 was not found in the current environment.
+The command has indeed failed with message:
+The reference x was not found in the current environment.
+0x2a
+     : nat

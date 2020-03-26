@@ -1290,7 +1290,7 @@ Bind Scope Z_scope with Z.t Z.
 
 (** Re-export Notations *)
 
-Numeral Notation Z Z.of_int Z.to_int : Z_scope.
+Numeral Notation Z Z.of_num_int Z.to_num_int : Z_scope.
 
 Infix "+" := Z.add : Z_scope.
 Notation "- x" := (Z.opp x) : Z_scope.

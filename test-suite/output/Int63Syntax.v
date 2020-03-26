@@ -5,6 +5,19 @@ Check (2 + 2)%int63.
 Open Scope int63_scope.
 Check 2.
 Check 9223372036854775807.
+Check 0x1ab.
+Check 0X1ab.
+Check 0x1Ab.
+Check 0x1aB.
+Check 0x1AB.
+Fail Check 0x1ap5.  (* exponents not implemented (yet?) *)
+Fail Check 0x1aP5.
+Check 0x0.
+Check 0x000.
+Fail Check 0xg.
+Fail Check 0xG.
+Fail Check 00x1.
+Fail Check 0x.
 Check (Int63.add 2 2).
 Check (2+2).
 Eval vm_compute in 2+2.
