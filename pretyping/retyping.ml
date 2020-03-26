@@ -97,6 +97,16 @@ let decomp_sort env sigma t =
 
 let destSort sigma s = ESorts.kind sigma (destSort sigma s)
 
+let betazetaevar_applist sigma n c l =
+  let rec stacklam n env t stack =
+    if Int.equal n 0 then applist (substl env t, stack) else
+    match EConstr.kind sigma t, stack with
+    | Lambda(_,_,c), arg::stacktl -> stacklam (n-1) (arg::env) c stacktl
+    | LetIn(_,b,_,c), _ -> stacklam (n-1) (substl env b::env) c stack
+    | Evar _, _ -> applist (substl env t, stack)
+    | _ -> anomaly (Pp.str "Not enough lambda/let's.") in
+  stacklam n [] c l
+
 let retype ?(polyprop=true) sigma =
   let rec type_of env cstr =
     match EConstr.kind sigma cstr with

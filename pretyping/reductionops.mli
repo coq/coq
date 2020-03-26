@@ -139,9 +139,8 @@ type stack_reduction_function = contextual_stack_reduction_function
 type local_stack_reduction_function =
     evar_map -> constr -> constr * constr list
 
-type contextual_state_reduction_function =
+type state_reduction_function =
     env -> evar_map -> state -> state
-type state_reduction_function = contextual_state_reduction_function
 type local_state_reduction_function = evar_map -> state -> state
 
 val pr_state : env -> evar_map -> state -> Pp.t
@@ -203,8 +202,8 @@ val whd_nored_state : local_state_reduction_function
 val whd_beta_state : local_state_reduction_function
 val whd_betaiota_state : local_state_reduction_function
 val whd_betaiotazeta_state : local_state_reduction_function
-val whd_all_state : contextual_state_reduction_function
-val whd_allnolet_state : contextual_state_reduction_function
+val whd_all_state : state_reduction_function
+val whd_allnolet_state : state_reduction_function
 val whd_betalet_state : local_state_reduction_function
 
 (** {6 Head normal forms } *)
@@ -309,13 +308,6 @@ val infer_conv_gen : (conv_pb -> l2r:bool -> evar_map -> TransparentState.t ->
   ?catch_incon:bool -> ?pb:conv_pb -> ?ts:TransparentState.t -> env ->
   evar_map -> constr -> constr -> evar_map option
 
-(** {6 Special-Purpose Reduction Functions } *)
-
-val whd_meta : local_reduction_function
-val plain_instance : evar_map -> constr Metamap.t -> constr -> constr
-val instance : evar_map -> constr Metamap.t -> constr -> constr
-val betazetaevar_applist : evar_map -> int -> constr -> constr list -> constr
-
 (** {6 Heuristic for Conversion with Evar } *)
 
 val whd_betaiota_deltazeta_for_iota_state :
@@ -324,4 +316,3 @@ val whd_betaiota_deltazeta_for_iota_state :
 (** {6 Meta-related reduction functions } *)
 val meta_instance : evar_map -> constr freelisted -> constr
 val nf_meta       : evar_map -> constr -> constr
-val meta_reducible_instance : evar_map -> constr freelisted -> constr

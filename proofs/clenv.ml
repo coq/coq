@@ -249,6 +249,63 @@ let clenv_dependent ce = clenv_dependent_gen false ce
 
 (******************************************************************)
 
+(* Instantiate metas that create beta/iota redexes *)
+
+let meta_reducible_instance evd b =
+  let fm = b.freemetas in
+  let fold mv accu =
+    let fvalue = try meta_opt_fvalue evd mv with Not_found -> None in
+    match fvalue with
+    | None -> accu
+    | Some (g, (_, s)) -> Metamap.add mv (g.rebus, s) accu
+  in
+  let metas = Metaset.fold fold fm Metamap.empty in
+  let rec irec u =
+    let u = whd_betaiota Evd.empty u (* FIXME *) in
+    match EConstr.kind evd u with
+    | Case (ci,p,c,bl) when EConstr.isMeta evd (strip_outer_cast evd c) ->
+        let m = destMeta evd (strip_outer_cast evd c) in
+        (match
+          try
+            let g, s = Metamap.find m metas in
+            let is_coerce = match s with CoerceToType -> true | _ -> false in
+            if isConstruct evd g || not is_coerce then Some g else None
+          with Not_found -> None
+          with
+            | Some g -> irec (mkCase (ci,p,g,bl))
+            | None -> mkCase (ci,irec p,c,Array.map irec bl))
+    | App (f,l) when EConstr.isMeta evd (strip_outer_cast evd f) ->
+        let m = destMeta evd (strip_outer_cast evd f) in
+        (match
+          try
+            let g, s = Metamap.find m metas in
+            let is_coerce = match s with CoerceToType -> true | _ -> false in
+            if isLambda evd g || not is_coerce then Some g else None
+          with Not_found -> None
+         with
+           | Some g -> irec (mkApp (g,l))
+           | None -> mkApp (f,Array.map irec l))
+    | Meta m ->
+        (try let g, s = Metamap.find m metas in
+          let is_coerce = match s with CoerceToType -> true | _ -> false in
+          if not is_coerce then irec g else u
+         with Not_found -> u)
+    | Proj (p,c) when isMeta evd c || isCast evd c && isMeta evd (pi1 (destCast evd c)) (* What if two nested casts? *) ->
+      let m = try destMeta evd c with _ -> destMeta evd (pi1 (destCast evd c)) (* idem *) in
+          (match
+          try
+            let g, s = Metamap.find m metas in
+            let is_coerce = match s with CoerceToType -> true | _ -> false in
+            if isConstruct evd g || not is_coerce then Some g else None
+          with Not_found -> None
+          with
+            | Some g -> irec (mkProj (p,g))
+            | None -> mkProj (p,c))
+    | _ -> EConstr.map evd irec u
+  in
+  if Metaset.is_empty fm then (* nf_betaiota? *) b.rebus
+  else irec b.rebus
+
 let clenv_unify ?(flags=default_unify_flags ()) cv_pb t1 t2 clenv =
   { clenv with
       evd = w_unify ~flags clenv.env clenv.evd cv_pb t1 t2 }
