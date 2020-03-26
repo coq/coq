@@ -1533,10 +1533,8 @@ Computations
    | delta {? @delta_flag }
    ref_or_pattern_occ ::= @smart_qualid {? at @occs_nums }
    | @one_term {? at @occs_nums }
-   occs_nums ::= {+ @num_or_var }
-   | - @num_or_var {* @int_or_var }
-   num_or_var ::= @num
-   | @ident
+   occs_nums ::= {+ {| @num | @ident } }
+   | - {| @num | @ident } {* @int_or_var }
    int_or_var ::= @int
    | @ident
    unfold_occ ::= @smart_qualid {? at @occs_nums }

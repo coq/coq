@@ -1,13 +1,13 @@
 # Grammar extraction tool for documentation
 
-`doc_grammar` extracts Coq's grammar from `.mlg` files, edits it and
-inserts it in chunks into `.rst` files.  The tool currently inserts
-Sphinx `productionlist` and `prodn` constructs (`productionlist` are
-gradually being replaced by `prodn` in the manual).  Updates to `tacn`
-and `cmd` constructs must be done manually since the grammar doesn't
-have names for them as it does for nonterminals.  There is an option
-to report which `tacn` and `cmd` were not found in the `.rst` files.
-`tacv` and `cmdv` constructs are not processed at all.
+`doc_grammar` extracts Coq's grammar from `.mlg` files, edits it and inserts it
+into `.rst` files.  The tool inserts `prodn` directives for  grammar productions.
+(`productionlist` are gradually being replaced by `prodn` in the manual.)
+It also updates `tacn` and `cmd` directives when they can be unambiguously matched to
+productions of the grammar (in practice, that's probably almost always).
+`tacv` and `cmdv` directives are not updated because matching them appears to require
+human judgement.  `doc_grammar` generates a few files that may be useful to
+developers and documentors.
 
 The mlg grammars present several challenges to generating an accurate grammar
 for documentation purposes:
@@ -34,46 +34,49 @@ for documentation purposes:
 
 ## What the tool does
 
-1. The tool reads all the `mlg` files and generates `fullGrammar`, which includes
-all the grammar without the actions for each production or the OCaml code.  This
-file is provided as a convenience to make it easier to examine the (mostly)
-unprocessed grammar of the mlg files with less clutter.  Nonterminals that use
-levels (`"5" RIGHTA` below) are modified, for example:
+1.  The tool reads all the `mlg` files and generates `fullGrammar`, which includes
+    all the grammar without the actions for each production or the OCaml code.  This
+    file is provided as a convenience to make it easier to examine the (mostly)
+    unprocessed grammar of the mlg files with less clutter.  Nonterminals that use
+    levels (`"5" RIGHTA` below) are modified, for example:
 
-```
-tactic_expr:
-  [ "5" RIGHTA
-    [ te = binder_tactic -> { te } ]
-```
+    ```
+    tactic_expr:
+      [ "5" RIGHTA
+        [ te = binder_tactic -> { te } ]
+    ```
 
-becomes
+    becomes
 
-```
-tactic_expr5: [
-| binder_tactic
-| tactic_expr4
-]
-```
+    ```
+    tactic_expr5: [
+    | binder_tactic
+    | tactic_expr4
+    ]
+    ```
 
-2. The tool applies grammar editing operations specified by `common.edit_mlg` to
-generate `editedGrammar`.
+2.  The tool applies grammar editing operations specified by `common.edit_mlg` to
+    generate `editedGrammar`.
 
-3. `orderedGrammar` gives the desired order for the nonterminals and productions
-in the documented grammar.  Developers should edit this file to change the order.
-`doc_grammar` updates `orderedGrammar` so it has the same set of nonterminals and productions
-as `editedGrammar`.  The update process removes manually-added comments from
-`orderedGrammar` while automatically-generated comments will be regenerated.
+3. `orderedGrammar` gives the desired order for nonterminals and individual productions
+    in the documented grammar.  Developers should edit this file only to reorder lines.
+    `doc_grammar` updates `orderedGrammar` so it has the same set of nonterminals and productions
+    as `editedGrammar` while retaining the previous ordering.  Since the position of
+    new or renamed nonterminals is unspecified, they tend to show up in the wrong
+    place in `orderedGrammar`, therefore users should review the output and make
+    appropriate adjustments to the order.
 
-4. The tool applies further edits to the grammar specified by `productionlist.edit_mlg`,
-then it updates the productionlists in the `.rst` files as specified by comments in the form
-`.. insertgram <first nt> <last nt>`.  The edits are primarily to expand
-`.mlg` constructs such as `LIST1` and `OPT` into separate productions.  The tool
-generates `productionlistGrammar`, which has the entire grammar in the form of `productionlists`.
+    The update process removes manually-added comments from `orderedGrammar` while
+    automatically-generated comments will be regenerated.
 
-5. Using the grammar produced in step 3, the tool applies edits specified by
-`prodn.edit_mlg` and generates `prodnGrammar`, representing each production as
-a Sphinx `prodn` construct.  Differently-edited grammars are used because `prodn`
-can naturally represent `LIST1 x SEP ','` whereas that is awkward for `productionlists`.
+4.  The tool updates the `.rst` files.  Comments in the form
+    `.. insertprodn <first nt> <last nt>` indicate inserting the productions for a
+    range of nonterminals.  `.. cmd::` and `.. tacn::` directives are updated using
+    prefixes in the form `[a-zA-Z0-9_ ]+` from the directive and the
+    grammar.  If there is unique match in the grammar, the directive is updated, if needed.
+    Multiple matches or no match gives an error message.
+
+5.  For reference, the tool generates `prodnGrammar`, which has the entire grammar in the form of `prodns`.
 
 ## How to use the tool
 
@@ -115,12 +118,12 @@ Other command line arguments:
 
 ### Grammar editing scripts
 
-The grammar editing scripts `*.edit_mlg` are similar in format to `.mlg` files stripped
+The grammar editing script `common.edit_mlg` is similar in format to `.mlg` files but stripped
 of all OCaml features.  This is an easy way to include productions to match or add without
 writing another parser.  The `DOC_GRAMMAR` token at the beginning of each file
-signals the use of streamlined syntax.
+signals the use of the streamlined syntax.
 
-Each edit file has a series of items in the form of productions.  Items are applied
+The edit file has a series of items in the form of productions.  Items are applied
 in the order they appear.  There are two types of editing operations:
 
 * Global edits - edit rules that apply to the entire grammar in a single operation.
@@ -137,7 +140,7 @@ such as `empty: [ | ]`, which adds a new non-terminal `empty` with an
 empty production on the right-hand side.
 
 Another example: `LEFTQMARK: [ | "?" ]` is a local edit that treats `LEFTQMARK` as
-the name of a non-terminal and adds one production for it.  (We know that LEFTQMARK
+the name of a non-terminal and adds a production for it.  (We know that LEFTQMARK
 is a token but doc_grammar does not.)  `SPLICE: [ | LEFTQMARK ]` requests replacing all
 uses of `LEFTQMARK` anywhere in the grammar with its productions and removing the
 non-terminal.  The combined effect of these two is to replace all uses of
@@ -192,7 +195,7 @@ that appear in the specified production:
 ```
 
 `MOVETO <destination> <production>` - moves the production to `<destination>` and,
- if needed, creates a new production <edited_nt> -> <destination>.
+ if needed, creates a new production <edited_nt> -> \<destination>.
 
 `OPTINREF` - verifies that <edited_nt> has an empty production.  If so, it removes
 the empty production and replaces all references to <edited_nt> throughout the
@@ -201,7 +204,7 @@ grammar with `OPT <edited_nt>`
 `PRINT` <nonterminal> - prints the nonterminal definition at that point in
   applying the edits.  Most useful when the edits get a bit complicated to follow.
 
-* (any other nonterminal name) - adds a new production (and possibly a new nonterminal)
+`(any other nonterminal name)` - adds a new production (and possibly a new nonterminal)
 to the grammar.
 
 ### `.rst` file updates

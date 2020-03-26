@@ -48,7 +48,7 @@ let default_args = {
   verify = false;
 }
 
-let start_symbols = ["vernac_toplevel"]
+let start_symbols = ["vernacular"]
 let tokens = [ "bullet"; "string"; "unicode_id_part"; "unicode_letter" ]
 
 (* translated symbols *)
@@ -1165,7 +1165,7 @@ let apply_edit_file g edits =
             in
             aux tl prods' add_nt
           | (Snterm "OPTINREF" :: _) :: tl ->
-            if not (List.mem [] prods) then
+            if not (has_match [] prods) then
               error "OPTINREF but no empty production for %s\n" nt;
             global_repl g [(Snterm nt)] [(Sopt (Snterm nt))];
             aux tl (remove_prod [] prods nt) add_nt
@@ -1618,8 +1618,11 @@ let finish_with_file old_file verify =
 let open_temp_bin file =
   open_out_bin (sprintf "%s_temp" file)
 
+let match_cmd_regex = Str.regexp "[a-zA-Z0-9_ ]+"
+
 let find_longest_match prods str =
-  (* todo: require a minimum length? *)
+  let get_pfx str = String.trim (if Str.string_match match_cmd_regex str 0 then Str.matched_string str else "") in
+  let prods = StringSet.fold (fun a lst -> a :: lst) prods [] in  (* todo: wasteful! *)
   let common_prefix_len s1 s2 =
     let limit = min (String.length s1) (String.length s2) in
     let rec aux off =
@@ -1631,13 +1634,16 @@ let find_longest_match prods str =
   in
 
   let slen = String.length str in
+  let str_pfx = get_pfx str in
   let rec longest best multi best_len prods =
     match prods with
     | [] -> best, multi, best_len
     | prod :: tl ->
-      let pstr = String.trim (prod_to_prodn prod) in
+      let pstr = String.trim prod in  (* todo: should be pretrimmed *)
       let clen = common_prefix_len str pstr in
-      if clen = slen && slen = String.length pstr then
+      if str_pfx = "" || str_pfx <> get_pfx pstr then
+        longest best multi best_len tl  (* prefixes don't match *)
+      else if clen = slen && slen = String.length pstr then
         pstr, false, clen  (* exact match *)
       else if clen > best_len then
         longest pstr false clen tl  (* better match *)
@@ -1651,6 +1657,7 @@ let find_longest_match prods str =
 type seen = {
   nts: (string * int) NTMap.t;
   tacs: (string * int) NTMap.t;
+  tacvs: (string * int) NTMap.t;
   cmds: (string * int) NTMap.t;
   cmdvs: (string * int) NTMap.t;
 }
@@ -1659,8 +1666,9 @@ let process_rst g file args seen tac_prods cmd_prods =
   let old_rst = open_in file in
   let new_rst = open_temp_bin file in
   let linenum = ref 0 in
-  let dir_regex = Str.regexp "^\\([ \t]*\\)\\.\\.[ \t]*\\([a-zA-Z0-9:]*\\)\\(.*\\)" in
-  let ig_args_regex = Str.regexp "^[ \t]*\\([a-zA-Z0-9_\\.]*\\)[ \t]*\\([a-zA-Z0-9_\\.]*\\)" in
+  let dir_regex = Str.regexp "^\\([ \t]*\\)\\.\\.[ \t]*\\([a-zA-Z0-9:]* *\\)\\(.*\\)" in
+  let contin_regex = Str.regexp "^\\([ \t]*\\)\\(.*\\)" in
+  let ip_args_regex = Str.regexp "^[ \t]*\\([a-zA-Z0-9_\\.]*\\)[ \t]*\\([a-zA-Z0-9_\\.]*\\)" in
   let blank_regex = Str.regexp "^[ \t]*$" in
   let end_prodlist_regex = Str.regexp "^[ \t]*$" in
   let getline () =
@@ -1692,7 +1700,7 @@ let process_rst g file args seen tac_prods cmd_prods =
   in
 
   let process_insertprodn line rhs =
-    if not (Str.string_match ig_args_regex rhs 0) then
+    if not (Str.string_match ip_args_regex rhs 0) then
       error "%s line %d: bad arguments '%s' for 'insertprodn'\n" file !linenum rhs
     else begin
       let start = Str.matched_group 1 rhs in
@@ -1703,8 +1711,8 @@ let process_rst g file args seen tac_prods cmd_prods =
         error "%s line %d: '%s' is undefined in insertprodn\n" file !linenum start;
       if end_index = None then
         error "%s line %d: '%s' is undefined in insertprodn\n" file !linenum end_;
-      if start_index <> None && end_index <> None then
-        check_range_consistency g start end_;
+(*      if start_index <> None && end_index <> None then*)
+(*        check_range_consistency g start end_;*)
       match start_index, end_index with
       | Some start_index, Some end_index ->
         if start_index > end_index then
@@ -1716,7 +1724,7 @@ let process_rst g file args seen tac_prods cmd_prods =
               error "%s line %d: expecting a blank line after 'insertprodn'\n" file !linenum
             else begin
               let line3 = getline() in
-              if not (Str.string_match dir_regex line3 0) || (Str.matched_group 2 line3) <> "prodn::" then
+              if not (Str.string_match dir_regex line3 0) || (String.trim (Str.matched_group 2 line3)) <> "prodn::" then
                 error "%s line %d: expecting '.. prodn::' after 'insertprodn'\n" file !linenum
               else begin
                 let indent = Str.matched_group 1 line3 in
@@ -1736,38 +1744,82 @@ let process_rst g file args seen tac_prods cmd_prods =
         end
       | _ -> ()
     end
-
   in
+
+(*  let skip_files = ["doc/sphinx/proof-engine/ltac.rst"; "doc/sphinx/proof-engine/ltac2.rst";*)
+(*    "doc/sphinx/proof-engine/ssreflect-proof-language.rst"]*)
+(*  in*)
+
+  let cmd_replace_files = [
+    "doc/sphinx/language/gallina-specification-language.rst";
+    "doc/sphinx/language/gallina-extensions.rst"
+  ]
+  in
+
+  let save_n_get_more direc pfx first_rhs seen_map prods =
+    let replace rhs prods =
+      if StringSet.is_empty prods || not (List.mem file cmd_replace_files) then
+        rhs (* no change *)
+      else
+        let mtch, multi, len = find_longest_match prods rhs in
+        if mtch = rhs then
+          rhs (* no change *)
+        else if mtch = "" then begin
+          warn "%s line %d: NO MATCH `%s`\n" file !linenum rhs;
+          rhs
+        end else if multi then begin
+          warn "%s line %d: MULTIMATCH `%s`\n" file !linenum rhs;
+          rhs
+        end else
+          mtch (* update cmd/tacn *)
+    in
+    let map = ref seen_map in
+    if NTMap.mem first_rhs !map then
+      warn "%s line %d: Repeated %s: '%s'\n" file !linenum direc first_rhs;
+(*    if not (StringSet.mem rhs seen_map) then*)
+(*      warn "%s line %d: Unknown tactic: '%s'\n" file !linenum rhs;*)
+
+    fprintf new_rst "%s%s\n" pfx (replace first_rhs prods);
+
+    map := NTMap.add first_rhs (file, !linenum) !map;
+    while
+      let nextline = getline() in
+      ignore (Str.string_match contin_regex nextline 0);
+      let indent = Str.matched_group 1 nextline in
+      let rhs = Str.matched_group 2 nextline in
+      let replaceable = rhs <> "" && rhs.[0] <> ':' in
+      let upd_rhs = if replaceable then (replace rhs prods) else rhs in
+      fprintf new_rst "%s%s\n" indent upd_rhs;
+      if replaceable then begin
+        map := NTMap.add rhs (file, !linenum) !map
+      end;
+      rhs <> ""
+    do
+      ()
+    done;
+    !map
+  in
+
   try
     while true do
       let line = getline() in
       if Str.string_match dir_regex line 0 then begin
-        let dir = Str.matched_group 2 line in
-        let rhs = String.trim (Str.matched_group 3 line) in
+        let dir = String.trim (Str.matched_group 2 line) in
+        let rhs = Str.matched_group 3 line in
+        let pfx = String.sub line 0 (Str.group_end 2) in
         match dir with
         | "prodn::" ->
           if rhs = "coq" then
             warn "%s line %d: Missing 'insertprodn' before 'prodn:: coq'\n" file !linenum;
           fprintf new_rst "%s\n" line;
         | "tacn::" when args.check_tacs ->
-          if not (StringSet.mem rhs tac_prods) then
-            warn "%s line %d: Unknown tactic: '%s'\n" file !linenum rhs;
-          if NTMap.mem rhs !seen.tacs then
-            warn "%s line %d: Repeated tactic: '%s'\n" file !linenum rhs;
-          seen := { !seen with tacs = (NTMap.add rhs (file, !linenum) !seen.tacs)};
-          fprintf new_rst "%s\n" line
+          seen := { !seen with tacs = save_n_get_more "tacn" pfx rhs !seen.tacs tac_prods }
+        | "tacv::" when args.check_tacs ->
+          seen := { !seen with tacvs = save_n_get_more "tacv" pfx rhs !seen.tacvs StringSet.empty }
         | "cmd::" when args.check_cmds ->
-(*
-          if not (StringSet.mem rhs cmd_prods) then
-            warn "%s line %d: Unknown command: '%s'\n" file !linenum rhs;
-          if NTMap.mem rhs !seen.cmds then
-            warn "%s line %d: Repeated command: '%s'\n" file !linenum rhs;
-*)
-          seen := { !seen with cmds = (NTMap.add rhs (file, !linenum) !seen.cmds)};
-          fprintf new_rst "%s\n" line
+          seen := { !seen with cmds = save_n_get_more "cmd" pfx rhs !seen.cmds cmd_prods }
         | "cmdv::" when args.check_cmds ->
-          seen := { !seen with cmdvs = (NTMap.add rhs (file, !linenum) !seen.cmdvs)};
-          fprintf new_rst "%s\n" line
+          seen := { !seen with cmdvs = save_n_get_more "cmdv" pfx rhs !seen.cmdvs StringSet.empty }
         | "insertprodn" ->
           process_insertprodn line rhs
         | _ -> fprintf new_rst "%s\n" line
@@ -1835,19 +1887,7 @@ let process_grammar args =
       let common_edits = read_mlg_edit "common.edit_mlg" in
       apply_edit_file g common_edits
     end;
-    let prodn_gram = ref { map = !g.map; order = !g.order } in
-
-    if !exit_code = 0 && not args.verify then begin
-      let prodlist_edits = read_mlg_edit "productionlist.edit_mlg" in
-      apply_edit_file g prodlist_edits;
-      let out = open_temp_bin (dir "productionlistGrammar") in
-      if args.verbose then
-        report_info g !symdef_map;
-      print_in_order out g `PRODLIST !g.order StringSet.empty;
-      (*print_chunks g out `PRODLIST ();*)
-      close_out out;
-      finish_with_file (dir "productionlistGrammar") args.verify;
-    end;
+    let prodn_gram = ref { map = !g.map; order = !g.order } in  (* todo: should just be 'g', right? *)
 
     if !exit_code = 0 && not args.verify then begin
       let out = open_temp_bin (dir "editedGrammar") in
@@ -1864,7 +1904,7 @@ let process_grammar args =
       let ordered_grammar = read_mlg_edit "orderedGrammar" in
       let out = open_temp_bin (dir "orderedGrammar") in
       fprintf out "%s\n%s\n\n"
-          ("(* Defines the order to apply to editedGrammar to get productionlistGrammar.\n" ^
+          ("(* Defines the order to apply to editedGrammar to get the final grammar for the doc.\n" ^
           "doc_grammar will modify this file to add/remove nonterminals and productions\n" ^
            "to match editedGrammar, which will remove comments.  Not compiled into Coq *)")
           "DOC_GRAMMAR";
@@ -1883,7 +1923,7 @@ let process_grammar args =
         list, StringSet.of_list list in
       let tac_list, tac_prods = plist "simple_tactic" in
       let cmd_list, cmd_prods = plist "command" in
-      let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; cmds=NTMap.empty; cmdvs=NTMap.empty } in
+      let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; tacvs=NTMap.empty; cmds=NTMap.empty; cmdvs=NTMap.empty } in
       List.iter (fun file -> process_rst g file args seen tac_prods cmd_prods) args.rst_files;
       report_omitted_prods !g.order !seen.nts "Nonterminal" "";
       let out = open_out (dir "updated_rsts") in
@@ -1894,38 +1934,42 @@ let process_grammar args =
       if args.check_cmds then
         report_omitted_prods cmd_list !seen.cmds "Command" "\n                  ";
 *)
+      (* generate report on cmds or tacs *)
+      let cmdReport outfile cmdStr cmd_nts cmds cmdvs =
+        let rstCmds = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings cmds)) in
+        let rstCmdvs = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings cmdvs)) in
+        let gramCmds = List.fold_left (fun set nt ->
+            StringSet.union set (StringSet.of_list (List.map (fun p -> String.trim (prod_to_prodn p)) (NTMap.find nt !prodn_gram.map)))
+          ) StringSet.empty cmd_nts in
+        let allCmds = StringSet.union rstCmdvs (StringSet.union rstCmds gramCmds) in
+        let out = open_out_bin (dir outfile) in
+        StringSet.iter (fun c ->
+            let rsts = StringSet.mem c rstCmds in
+            let gram = StringSet.mem c gramCmds in
+            let pfx = match rsts, gram with
+            | true, false -> "+"
+            | false, true -> "-"
+            | false, false -> "?"
+            | _, _ -> " "
+            in
+            let var = if StringSet.mem c rstCmdvs then "v" else " " in
+            fprintf out "%s%s  %s\n" pfx var c)
+          allCmds;
+        close_out out;
+        Printf.printf "# %s in rsts, gram, total = %d %d %d\n" cmdStr (StringSet.cardinal gramCmds)
+          (StringSet.cardinal rstCmds) (StringSet.cardinal allCmds);
+      in
 
-      let rstCmds = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings !seen.cmds)) in
-      let rstCmdvs = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings !seen.cmdvs)) in
-      let command_nts = ["command"; "gallina"; "gallina_ext"; "query_command"; "syntax"] in
+      let cmd_nts = ["command"] in
       (* TODO: need to handle tactic_mode (overlaps with query_command) and subprf *)
-      let gramCmds = List.fold_left (fun set nt ->
-          StringSet.union set (StringSet.of_list (List.map (fun p -> String.trim (prod_to_prodn p)) (NTMap.find nt !prodn_gram.map)))
-        ) StringSet.empty command_nts in
+      cmdReport "prodnCommands" "cmds" cmd_nts !seen.cmds !seen.cmdvs;
 
-      let allCmds = StringSet.union rstCmdvs (StringSet.union rstCmds gramCmds) in
-      let out = open_out_bin (dir "prodnCommands") in
-      StringSet.iter (fun c ->
-          let rsts = StringSet.mem c rstCmds in
-          let gram = StringSet.mem c gramCmds in
-          let pfx = match rsts, gram with
-          | true, false -> "+"
-          | false, true -> "-"
-          | false, false -> "?"
-          | _, _ -> " "
-          in
-          let var = if StringSet.mem c rstCmdvs then "v" else " " in
-          fprintf out "%s%s  %s\n" pfx var c)
-        allCmds;
-      close_out out;
-      Printf.printf "# cmds in rsts, gram, total = %d %d %d\n" (StringSet.cardinal gramCmds)
-        (StringSet.cardinal rstCmds) (StringSet.cardinal allCmds);
+      let tac_nts = ["simple_tactic"] in
+      cmdReport "prodnTactics" "tacs" tac_nts !seen.tacs !seen.tacvs
     end;
 
-    (* generate output for prodn: simple_tactic, command, also for Ltac?? *)
+    (* generate prodnGrammar for reference *)
     if !exit_code = 0 && not args.verify then begin
-      let prodn_edits = read_mlg_edit "prodn.edit_mlg" in
-      apply_edit_file prodn_gram prodn_edits;
       let out = open_temp_bin (dir "prodnGrammar") in
       print_in_order out prodn_gram `PRODN !prodn_gram.order StringSet.empty;
       close_out out;
