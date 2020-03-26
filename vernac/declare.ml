@@ -1395,6 +1395,11 @@ let obligation_terminator ~pm ~entry ~uctx ~oinfo:{name; num; auto; check_final}
   let obl = {obl with obl_status = (false, status)} in
   let poly = prg.prg_info.Info.poly in
   let uctx = if poly then uctx else UState.union prg.prg_uctx uctx in
+  (* XXX: use the combined to_constr_and_evars form when merged *)
+  let vars = Vars.universes_of_constr body in
+  let vars = Option.cata
+      (fun ty -> Univ.Level.Set.union (Vars.universes_of_constr ty) vars) vars ty in
+  let uctx = UState.restrict uctx vars in
   let defined, obl, cst = declare_obligation prg obl ~body ~types:ty ~uctx in
   let prg_ctx = obligation_uctx_terminator prg uctx ~poly ~defined in
   let pm =
