@@ -1501,7 +1501,7 @@ end = struct (* {{{ *)
       let wall_clock2 = Unix.gettimeofday () in
       Aux_file.record_in_aux_at ?loc "proof_build_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
-      let p = PG_compat.return_proof ~allow_partial:drop_pt () in
+      let p = if drop_pt then PG_compat.return_partial_proof () else PG_compat.return_proof () in
       if drop_pt then feedback ~id Complete;
       p)
 
@@ -1661,7 +1661,7 @@ end = struct (* {{{ *)
     try
       Reach.known_state ~doc:dummy_doc (* XXX should be document *) ~cache:false stop;
       if drop then
-        let _proof = PG_compat.return_proof ~allow_partial:true () in
+        let _proof = PG_compat.return_partial_proof () in
         `OK_ADMITTED
       else begin
       let opaque = Proof_global.Opaque in

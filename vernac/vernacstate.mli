@@ -65,7 +65,8 @@ module Proof_global : sig
   val with_current_proof :
       (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> 'a
 
-  val return_proof : ?allow_partial:bool -> unit -> Proof_global.closed_proof_output
+  val return_proof : unit -> Proof_global.closed_proof_output
+  val return_partial_proof : unit -> Proof_global.closed_proof_output
 
   type closed_proof = Proof_global.proof_object * Lemmas.Info.t
 

@@ -164,7 +164,8 @@ module Proof_global = struct
   type closed_proof = Proof_global.proof_object * Lemmas.Info.t
 
 
-  let return_proof ?allow_partial () = cc (return_proof ?allow_partial)
+  let return_proof () = cc return_proof
+  let return_partial_proof () = cc return_partial_proof
 
   let close_future_proof ~opaque ~feedback_id pf =
     cc_lemma (fun pt -> pf_fold (fun st -> close_future_proof ~opaque ~feedback_id st pf) pt,

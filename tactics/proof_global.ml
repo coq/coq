@@ -141,8 +141,35 @@ let private_poly_univs =
   in
   fun () -> !b
 
-let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id
-                ((elist, uctx) : closed_proof_output) ps =
+(* XXX: This is still separate from close_proof below due to drop_pt in the STM *)
+let return_proof { proof } =
+  let Proof.{name=pid;entry} = Proof.data proof in
+  let initial_goals = Proofview.initial_goals entry in
+  let evd = Proof.return ~pid proof in
+  let eff = Evd.eval_side_effects evd in
+  let evd = Evd.minimize_universes evd in
+  let proof_opt c =
+    match EConstr.to_constr_opt evd c with
+    | Some p -> p
+    | None -> CErrors.user_err Pp.(str "Some unresolved existential variables remain")
+  in
+  (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
+     side-effects... This may explain why one need to uniquize side-effects
+     thereafter... *)
+  (* EJGA: actually side-effects de-duplication and this codepath is
+     unrelated. Duplicated side-effects arise from incorrect scheme
+     generation code, the main bulk of it was mostly fixed by #9836
+     but duplication can still happen because of rewriting schemes I
+     think; however the code below is mostly untested, the only
+     code-paths that generate several proof entries are derive and
+     equations and so far there is no code in the CI that will
+     actually call those and do a side-effect, TTBOMK *)
+  (* EJGA: likely the right solution is to attach side effects to the first constant only? *)
+  let proofs = List.map (fun (c, _) -> (proof_opt c, eff)) initial_goals in
+  proofs, Evd.evar_universe_context evd
+
+let close_proof ~opaque ~keep_body_ucst_separate ps =
+  let elist, uctx = return_proof ps in
   let { section_vars; proof; udecl; initial_euctx } = ps in
   let Proof.{ name; poly; entry; sigma } = Proof.data proof in
   let opaque = match opaque with Opaque -> true | Transparent -> false in
@@ -200,7 +227,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id
   let entry_fn p (_, t) =
     let t = EConstr.Unsafe.to_constr t in
     let (typ, univs), ((body,univc),eff) = make_body t p in
-    Declare.definition_entry ~opaque ?feedback_id ?section_vars ~univs ~univc ~types:typ ~eff body
+    Declare.definition_entry ~opaque ?section_vars ~univs ~univc ~types:typ ~eff body
   in
   let entries = CList.map2 entry_fn elist (Proofview.initial_goals entry) in
   { name; entries; uctx }
@@ -254,48 +281,19 @@ let close_proof_delayed ~opaque ~keep_body_ucst_separate ?feedback_id
   let entries = Future.map2 entry_fn fpl (Proofview.initial_goals entry) in
   { name; entries; uctx }
 
-let return_proof ?(allow_partial=false) ps =
- let { proof } = ps in
- if allow_partial then begin
-  let proofs = Proof.partial_proof proof in
-  let Proof.{sigma=evd} = Proof.data proof in
-  let eff = Evd.eval_side_effects evd in
-  (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
+let return_partial_proof { proof } =
+ let proofs = Proof.partial_proof proof in
+ let Proof.{sigma=evd} = Proof.data proof in
+ let eff = Evd.eval_side_effects evd in
+ (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
      side-effects... This may explain why one need to uniquize side-effects
      thereafter... *)
-  let proofs = List.map (fun c -> EConstr.Unsafe.to_constr c, eff) proofs in
-    proofs, Evd.evar_universe_context evd
- end else
-  let Proof.{name=pid;entry} = Proof.data proof in
-  let initial_goals = Proofview.initial_goals entry in
-  let evd = Proof.return ~pid proof in
-  let eff = Evd.eval_side_effects evd in
-  let evd = Evd.minimize_universes evd in
-  let proof_opt c =
-    match EConstr.to_constr_opt evd c with
-    | Some p -> p
-    | None -> CErrors.user_err Pp.(str "Some unresolved existential variables remain")
-  in
-  (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
-     side-effects... This may explain why one need to uniquize side-effects
-     thereafter... *)
-  (* EJGA: actually side-effects de-duplication and this codepath is
-     unrelated. Duplicated side-effects arise from incorrect scheme
-     generation code, the main bulk of it was mostly fixed by #9836
-     but duplication can still happen because of rewriting schemes I
-     think; however the code below is mostly untested, the only
-     code-paths that generate several proof entries are derive and
-     equations and so far there is no code in the CI that will
-     actually call those and do a side-effect, TTBOMK *)
-  let proofs =
-    List.map (fun (c, _) -> (proof_opt c, eff)) initial_goals in
-    proofs, Evd.evar_universe_context evd
+ let proofs = List.map (fun c -> EConstr.Unsafe.to_constr c, eff) proofs in
+ proofs, Evd.evar_universe_context evd
 
 let close_future_proof ~opaque ~feedback_id ps proof =
   close_proof_delayed ~opaque ~keep_body_ucst_separate:true ~feedback_id proof ps
 
-let close_proof ~opaque ~keep_body_ucst_separate ps =
-  close_proof ~opaque ~keep_body_ucst_separate (return_proof ps) ps
 
 let update_global_env =
   map_proof (fun p ->
