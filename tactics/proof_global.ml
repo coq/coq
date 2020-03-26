@@ -180,9 +180,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
   let subst_evar k = Evd.existential_opt_value0 sigma k in
   let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar (UState.subst uctx) in
 
-  let make_body typ (body, eff) :
-    Constr.types Entries.in_universes_entry * Evd.side_effects Entries.proof_output =
-
+  let make_entry (body, eff) (_, typ) =
     let allow_deferred =
       not poly && (keep_body_ucst_separate ||
                    not (Safe_typing.empty_private_constants = eff.Evd.seff_private))
@@ -224,13 +222,9 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
         let utyp = UState.check_univ_decl ~poly ctx udecl in
         utyp, Univ.ContextSet.empty
     in
-    (typ, utyp), ((body, ubody), eff)
+    Declare.definition_entry ~opaque ?section_vars ~univs:utyp ~univc:ubody ~types:typ ~eff body
   in
-  let entry_fn p (_, t) =
-    let (typ, univs), ((body,univc),eff) = make_body t p in
-    Declare.definition_entry ~opaque ?section_vars ~univs ~univc ~types:typ ~eff body
-  in
-  let entries = CList.map2 entry_fn elist (Proofview.initial_goals entry) in
+  let entries = CList.map2 make_entry elist (Proofview.initial_goals entry) in
   { name; entries; uctx }
 
 let close_proof_delayed ~opaque ~keep_body_ucst_separate ?feedback_id
@@ -250,32 +244,28 @@ let close_proof_delayed ~opaque ~keep_body_ucst_separate ?feedback_id
   let subst_evar k = Evd.existential_opt_value0 sigma k in
   let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar (UState.subst initial_euctx) in
 
-  let make_body typ p =
+  let make_entry p (_, types) =
     (* Already checked the univ_decl for the type universes when starting the proof. *)
-    let univctx = UState.univ_entry ~poly:false initial_euctx in
-    let typ = nf (EConstr.Unsafe.to_constr typ) in
+    let univs = UState.univ_entry ~poly:false initial_euctx in
+    let types = nf (EConstr.Unsafe.to_constr types) in
 
-    (typ, univctx),
     Future.chain p (fun (pt,eff) ->
         (* Deferred proof, we already checked the universe declaration with
-           the initial universes, ensure that the final universes respect
-           the declaration as well. If the declaration is non-extensible,
-           this will prevent the body from adding universes and constraints. *)
+             the initial universes, ensure that the final universes respect
+             the declaration as well. If the declaration is non-extensible,
+             this will prevent the body from adding universes and constraints. *)
         let uctx = Future.force uctx in
         let uctx = UState.constrain_variables (fst (UState.context_set initial_euctx)) uctx in
         let used_univs = Univ.LSet.union
-            (Vars.universes_of_constr typ)
+            (Vars.universes_of_constr types)
             (Vars.universes_of_constr pt)
         in
         let univs = UState.restrict uctx used_univs in
         let univs = UState.check_mono_univ_decl univs udecl in
         (pt,univs),eff)
+    |> Declare.delayed_definition_entry ~opaque ?feedback_id ?section_vars ~univs ~types
   in
-  let entry_fn p (_, t) =
-    let (typ, utyp), body = make_body t p in
-    Declare.delayed_definition_entry ~opaque ?feedback_id ?section_vars ~univs:utyp ~types:typ body
-  in
-  let entries = Future.map2 entry_fn fpl (Proofview.initial_goals entry) in
+  let entries = Future.map2 make_entry fpl (Proofview.initial_goals entry) in
   { name; entries; uctx = initial_euctx }
 
 let return_partial_proof { proof } =
