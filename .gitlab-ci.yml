@@ -592,6 +592,9 @@ validate:quick:
 library:ci-argosy:
   extends: .ci-template
 
+library:ci-bbv:
+  extends: .ci-template
+
 library:ci-bedrock2:
   extends: .ci-template-flambda
   artifacts:

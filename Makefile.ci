@@ -11,6 +11,7 @@
 CI_TARGETS= \
     ci-aac_tactics \
     ci-argosy \
+    ci-bbv \
     ci-bedrock2 \
     ci-bignums \
     ci-color \
