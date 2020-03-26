@@ -14,7 +14,7 @@
 .. |c_1| replace:: `c`\ :math:`_{1}`
 .. |c_i| replace:: `c`\ :math:`_{i}`
 .. |c_n| replace:: `c`\ :math:`_{n}`
-.. |Cic| replace:: :smallcaps:`Cic`
+.. |Cic| replace:: CIC
 .. |Coq| replace:: :smallcaps:`Coq`
 .. |CoqIDE| replace:: :smallcaps:`CoqIDE`
 .. |eq_beta_delta_iota_zeta| replace:: `=`\ :math:`_{\beta\delta\iota\zeta}`
