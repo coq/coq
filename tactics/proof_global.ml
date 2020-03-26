@@ -226,8 +226,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
   let entries = CList.map2 make_entry elist (Proofview.initial_goals entry) in
   { name; entries; uctx }
 
-let close_proof_delayed ~opaque ~keep_body_ucst_separate ?feedback_id
-                (fpl : closed_proof_output Future.computation) ps =
+let close_proof_delayed ~opaque ?feedback_id (fpl : closed_proof_output Future.computation) ps =
   let { section_vars; proof; udecl; initial_euctx } = ps in
   let { Proof.name; poly; entry; sigma } = Proof.data proof in
 
@@ -278,7 +277,7 @@ let return_partial_proof { proof } =
  proofs, Evd.evar_universe_context evd
 
 let close_future_proof ~opaque ~feedback_id ps proof =
-  close_proof_delayed ~opaque ~keep_body_ucst_separate:true ~feedback_id proof ps
+  close_proof_delayed ~opaque ~feedback_id proof ps
 
 let update_global_env =
   map_proof (fun p ->
