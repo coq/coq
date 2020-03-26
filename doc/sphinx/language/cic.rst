@@ -47,8 +47,7 @@ provable. An object of type :math:`\Prop` is called a proposition.
 The sort :math:`\SProp` is like :math:`\Prop` but the propositions in
 :math:`\SProp` are known to have irrelevant proofs (all proofs are
 equal). Objects of type :math:`\SProp` are called strict propositions.
-:math:`\SProp` is rejected except when using the compiler option
-``-allow-sprop``. See :ref:`sprop` for information about using
+See :ref:`sprop` for information about using
 :math:`\SProp`, and :cite:`Gilbert:POPL2019` for meta theoretical
 considerations.
 
