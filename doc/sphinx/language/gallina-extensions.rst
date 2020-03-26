@@ -361,16 +361,12 @@ can be alternatively written
 
    Definition not (b:bool) := if b then false else true.
 
-More generally, for an inductive type with constructors |C_1| and |C_2|,
-we have the following equivalence
+More generally, for an inductive type with constructors :n:`@ident__1`
+and :n:`@ident__2`, the following terms are equal:
 
-::
+:n:`if @term__0 {? {? as @name } return @term } then @term__1 else @term__2`
 
-  if term [dep_ret_type] then term₁ else term₂ ≡
-  match term [dep_ret_type] with
-  | C₁ _ … _ => term₁
-  | C₂ _ … _ => term₂
-  end
+:n:`match @term__0 {? {? as @name } return @term } with | @ident__1 {* _ } => @term__1 | @ident__2 {* _ } => @term__2 end`
 
 .. example::
 
@@ -398,11 +394,13 @@ constructions. There are two variants of them.
 First destructuring let syntax
 ++++++++++++++++++++++++++++++
 
-The expression :g:`let (`\ |ident_1|:g:`, … ,` |ident_n|\ :g:`) :=` |term_0|\ :g:`in` |term_1| performs
-case analysis on |term_0| which must be in an inductive type with one
-constructor having itself :math:`n` arguments. Variables |ident_1| … |ident_n| are
-bound to the :math:`n` arguments of the constructor in expression |term_1|. For
-instance, the definition
+The expression :n:`let ( {*, @ident__i } ) := @term__0 in @term__1`
+performs case analysis on :n:`@term__0` whose type must be an
+inductive type with exactly one constructor.  The number of variables
+:n:`@ident__i` must correspond to the number of arguments of this
+contrustor.  Then, in :n:`@term__1`, these variables are bound to the
+arguments of the constructor in :n:`@term__0`.  For instance, the
+definition
 
 .. coqtop:: reset all
 
@@ -417,7 +415,7 @@ can be alternatively written
    Definition fst (A B:Set) (p:A * B) := let (x, _) := p in x.
 
 Notice that reduction is different from regular :g:`let … in …`
-construction since it happens only if |term_0| is in constructor form.
+construction since it happens only if :n:`@term__0` is in constructor form.
 Otherwise, the reduction is blocked.
 
 The pretty-printing of a definition by matching on a irrefutable
@@ -2286,7 +2284,7 @@ which they reside into another one. A *class* is either a sort
 (denoted by the keyword ``Sortclass``), a product type (denoted by the
 keyword ``Funclass``), or a type constructor (denoted by its name), e.g.
 an inductive type or any constant with a type of the form
-``forall (`` |x_1| : |A_1| ) … ``(``\ |x_n| : |A_n|\ ``)``, `s` where `s` is a sort.
+:n:`forall {+ @binder }, @sort`.
 
 Then the user is able to apply an object that is not a function, but
 can be coerced to a function, and more generally to consider that a

@@ -1,8 +1,12 @@
+.. |bdi| replace:: :math:`\beta\delta\iota`
 .. |ra| replace:: :math:`\rightarrow_{\beta\delta\iota}`
 .. |la| replace:: :math:`\leftarrow_{\beta\delta\iota}`
 .. |eq| replace:: `=`:sub:`(by the main correctness theorem)`
 .. |re| replace:: ``(PEeval`` `v` `ap`\ ``)``
 .. |le| replace:: ``(Pphi_dev`` `v` ``(norm`` `ap`\ ``))``
+.. |N| replace:: ``N``
+.. |nat| replace:: ``nat``
+.. |Z| replace:: ``Z``
 
 .. _theringandfieldtacticfamilies:
 

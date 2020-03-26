@@ -162,7 +162,7 @@ Program Definition
 
    This command types the value term in Russell and generates proof
    obligations. Once solved using the commands shown below, it binds the
-   final |Coq| term to the name ``ident`` in the environment.
+   final |Coq| term to the name :n:`@ident` in the environment.
 
    .. exn:: @ident already exists.
       :name: @ident already exists. (Program Definition)
@@ -170,12 +170,12 @@ Program Definition
 
    .. cmdv:: Program Definition @ident : @type := @term
 
-      It interprets the type ``type``, potentially generating proof
+      It interprets the type :n:`@type`, potentially generating proof
       obligations to be resolved. Once done with them, we have a |Coq|
-      type |type_0|. It then elaborates the preterm ``term`` into a |Coq|
-      term |term_0|, checking that the type of |term_0| is coercible to
-      |type_0|, and registers ``ident`` as being of type |type_0| once the
-      set of obligations generated during the interpretation of |term_0|
+      type :n:`@type__0`. It then elaborates the preterm :n:`@term` into a |Coq|
+      term :n:`@term__0`, checking that the type of :n:`@term__0` is coercible to
+      :n:`@type__0`, and registers :n:`@ident` as being of type :n:`@type__0` once the
+      set of obligations generated during the interpretation of :n:`@term__0`
       and the aforementioned coercion derivation are solved.
 
       .. exn:: In environment … the term: @term does not have type @type. Actually, it has type ...
@@ -185,7 +185,7 @@ Program Definition
 
       This is equivalent to:
 
-      :g:`Program Definition ident : forall binders, type := fun binders => term`.
+      :n:`Program Definition @ident : forall {* @binder }, @type := fun {* @binder } => @term`.
 
       .. TODO refer to production in alias
 
