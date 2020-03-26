@@ -185,10 +185,6 @@ let merge_occurrences loc cl = function
     in
     (Some p, ans)
 
-let warn_deprecated_eqn_syntax =
-  CWarnings.create ~name:"deprecated-eqn-syntax" ~category:"deprecated"
-         (fun arg -> strbrk (Printf.sprintf "Syntax \"_eqn:%s\" is deprecated. Please use \"eqn:%s\" instead." arg arg))
-
 (* Auxiliary grammar rules *)
 
 open Pvernac.Vernac_
@@ -461,10 +457,6 @@ GRAMMAR EXTEND Gram
   ;
   eqn_ipat:
     [ [ IDENT "eqn"; ":"; pat = naming_intropattern -> { Some (CAst.make ~loc pat) }
-      | IDENT "_eqn"; ":"; pat = naming_intropattern ->
-         { warn_deprecated_eqn_syntax ~loc "H"; Some (CAst.make ~loc pat) }
-      | IDENT "_eqn" ->
-         { warn_deprecated_eqn_syntax ~loc "?"; Some (CAst.make ~loc IntroAnonymous) }
       | -> { None } ] ]
   ;
   as_name:

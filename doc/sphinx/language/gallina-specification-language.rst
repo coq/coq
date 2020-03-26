@@ -117,7 +117,7 @@ Other tokens
 
     ! #[ % & ' ( () (bfs) (dfs) ) * ** + , - ->
     . .( .. ... / : ::= := :> :>> ; < <+ <- <:
-    <<: <= = => > >-> >= ? @ @{ [ [= ] _ _eqn
+    <<: <= = => > >-> >= ? @ @{ [ [= ] _
     `( `{ { {| | |- || }
 
   When multiple tokens match the beginning of a sequence of characters,
