@@ -1,0 +1,5 @@
+- **Changed:**
+  The names of ``Sorted_sort`` and ``LocallySorted_sort`` in ``Coq.Sorting.MergeSort``
+  have been swapped to appropriately reflect their meanings
+  (`#1185 <https://github.com/coq/coq/pull/1185>`_,
+  by Lysxia).
