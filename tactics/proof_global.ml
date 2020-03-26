@@ -175,9 +175,11 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
   let opaque = match opaque with Opaque -> true | Transparent -> false in
 
   let make_entry ((body, eff), typ) =
+
     let allow_deferred =
-      not poly && (keep_body_ucst_separate ||
-                   not (Safe_typing.empty_private_constants = eff.Evd.seff_private))
+      not poly &&
+      (keep_body_ucst_separate
+       || not (Safe_typing.is_empty_private_constants eff.Evd.seff_private))
     in
     let used_univs_body = Vars.universes_of_constr body in
     let used_univs_typ = Vars.universes_of_constr typ in

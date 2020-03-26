@@ -301,6 +301,7 @@ sig
   type t
   val repr : t -> side_effect list
   val empty : t
+  val is_empty : t -> bool
   val add : side_effect -> t -> t
   val concat : t -> t -> t
 end =
@@ -319,6 +320,7 @@ type t = { seff : side_effect list; elts : SeffSet.t }
 
 let repr eff = eff.seff
 let empty = { seff = []; elts = SeffSet.empty }
+let is_empty { seff; elts } = List.is_empty seff && SeffSet.is_empty elts
 let add x es =
   if SeffSet.mem x es.elts then es
   else { seff = x :: es.seff; elts = SeffSet.add x es.elts }
@@ -349,6 +351,7 @@ let push_private_constants env eff =
   List.fold_left add_if_undefined env eff
 
 let empty_private_constants = SideEffects.empty
+let is_empty_private_constants c = SideEffects.is_empty c
 let concat_private = SideEffects.concat
 
 let universes_of_private eff =
