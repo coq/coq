@@ -12,12 +12,12 @@ open NumCompat
 open Q.Notations
 open Mutils
 
-type var = int
 (** [t] is the type of vectors.
         A vector [(x1,v1) ; ... ; (xn,vn)] is such that:
         - variables indexes are ordered (x1 < ... < xn
         - values are all non-zero
  *)
+type var = int
 
 type mono = {var : var; coe : Q.t}
 type t = mono list

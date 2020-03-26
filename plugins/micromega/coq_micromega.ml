@@ -1476,6 +1476,9 @@ let parse_goal gl parse_arith (env : Env.t) hyps term =
   let lhyps, env, tg = parse_hyps gl parse_arith env tg hyps in
   (lhyps, f, env)
 
+(**
+  * The datastructures that aggregate theory-dependent proof values.
+  *)
 type ('synt_c, 'prf) domain_spec =
   { typ : EConstr.constr
   ; (* is the type of the interpretation domain - Z, Q, R*)
@@ -1485,9 +1488,6 @@ type ('synt_c, 'prf) domain_spec =
   ; proof_typ : EConstr.constr
   ; dump_proof : 'prf -> EConstr.constr
   ; coeff_eq : 'synt_c -> 'synt_c -> bool }
-(**
-  * The datastructures that aggregate theory-dependent proof values.
-  *)
 
 let zz_domain_spec =
   lazy

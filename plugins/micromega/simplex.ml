@@ -62,9 +62,9 @@ let get_profile_info () =
 
 type iset = unit IMap.t
 
-type tableau = Vect.t IMap.t
 (** Mapping basic variables to their equation.
                                  All variables >= than a threshold rst are restricted.*)
+type tableau = Vect.t IMap.t
 
 module Restricted = struct
   type t =
@@ -366,9 +366,9 @@ let push_real (opt : bool) (nw : var) (v : Vect.t) (rst : Restricted.t)
         let v' = safe_find "push_real" nw t' in
         Unsat (Vect.set nw Q.one (Vect.set 0 Q.zero (Vect.mul Q.neg_one v'))) )
 
-open Mutils
 (** One complication is that equalities needs some pre-processing.
  *)
+open Mutils
 
 open Polynomial
 

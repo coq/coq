@@ -26,8 +26,8 @@ end
 module IMap : sig
   include Map.S with type key = int
 
-  val from : key -> 'elt t -> 'elt t
   (** [from k  m] returns the submap of [m] with keys greater or equal k *)
+  val from : key -> 'elt t -> 'elt t
 end
 
 module Cmp : sig
