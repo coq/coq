@@ -142,78 +142,73 @@ let private_poly_univs =
   fun () -> !b
 
 let close_proof ~opaque ~keep_body_ucst_separate ?feedback_id
-                (fpl : closed_proof_output Future.computation) ps =
+                ((elist, uctx) : closed_proof_output) ps =
   let { section_vars; proof; udecl; initial_euctx } = ps in
-  let Proof.{ name; poly; entry } = Proof.data proof in
+  let Proof.{ name; poly; entry; sigma } = Proof.data proof in
   let opaque = match opaque with Opaque -> true | Transparent -> false in
   let constrain_variables ctx =
     UState.constrain_variables (fst (UState.context_set initial_euctx)) ctx
   in
-  let fpl, univs = Future.split2 fpl in
-  let uctx = Future.force univs in
   (* Because of dependent subgoals at the beginning of proofs, we could
      have existential variables in the initial types of goals, we need to
      normalise them for the kernel. *)
-  let subst_evar k =
-    let { Proof.sigma } = Proof.data proof in
-    Evd.existential_opt_value0 sigma k in
-  let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar
-    (UState.subst uctx) in
+  let subst_evar k = Evd.existential_opt_value0 sigma k in
+  let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar (UState.subst uctx) in
 
-  let make_body t (c, eff) =
+  let make_body typ (c, eff) :
+    Constr.types Entries.in_universes_entry * Evd.side_effects Entries.proof_output =
     let body = c in
     let allow_deferred =
       not poly && (keep_body_ucst_separate ||
                    not (Safe_typing.empty_private_constants = eff.Evd.seff_private))
     in
-    let typ = if allow_deferred then t else nf t in
+    let typ = if allow_deferred then typ else nf typ in
     let used_univs_body = Vars.universes_of_constr body in
     let used_univs_typ = Vars.universes_of_constr typ in
-    if allow_deferred then
-      let initunivs = UState.univ_entry ~poly initial_euctx in
-      let ctx = constrain_variables uctx in
-      (* For vi2vo compilation proofs are computed now but we need to
-         complement the univ constraints of the typ with the ones of
-         the body.  So we keep the two sets distinct. *)
-      let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
-      let ctx_body = UState.restrict ctx used_univs in
-      let univs = UState.check_mono_univ_decl ctx_body udecl in
-      (initunivs, typ), ((body, univs), eff)
-    else if poly && opaque && private_poly_univs () then
-      let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
-      let universes = UState.restrict uctx used_univs in
-      let typus = UState.restrict universes used_univs_typ in
-      let udecl = UState.check_univ_decl ~poly typus udecl in
-      let ubody = Univ.ContextSet.diff
-          (UState.context_set universes)
-          (UState.context_set typus)
-      in
-      (udecl, typ), ((body, ubody), eff)
-    else
-      (* Since the proof is computed now, we can simply have 1 set of
-         constraints in which we merge the ones for the body and the ones
-         for the typ. We recheck the declaration after restricting with
-         the actually used universes.
-         TODO: check if restrict is really necessary now. *)
-      let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
-      let ctx = UState.restrict uctx used_univs in
-      let univs = UState.check_univ_decl ~poly ctx udecl in
-      (univs, typ), ((body, Univ.ContextSet.empty), eff)
+    let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
+    let utyp, ubody =
+      if allow_deferred then
+        let utyp = UState.univ_entry ~poly initial_euctx in
+        let ctx = constrain_variables uctx in
+        (* For vi2vo compilation proofs are computed now but we need to
+           complement the univ constraints of the typ with the ones of
+           the body.  So we keep the two sets distinct. *)
+        let ctx_body = UState.restrict ctx used_univs in
+        let univs = UState.check_mono_univ_decl ctx_body udecl in
+        utyp, univs
+      else if poly && opaque && private_poly_univs () then
+        let universes = UState.restrict uctx used_univs in
+        let typus = UState.restrict universes used_univs_typ in
+        let utyp = UState.check_univ_decl ~poly typus udecl in
+        let ubody = Univ.ContextSet.diff
+            (UState.context_set universes)
+            (UState.context_set typus)
+        in
+        utyp, ubody
+      else
+        (* Since the proof is computed now, we can simply have 1 set of
+           constraints in which we merge the ones for the body and the ones
+           for the typ. We recheck the declaration after restricting with
+           the actually used universes.
+           TODO: check if restrict is really necessary now. *)
+        let ctx = UState.restrict uctx used_univs in
+        let utyp = UState.check_univ_decl ~poly ctx udecl in
+        utyp, Univ.ContextSet.empty
+    in
+    (typ, utyp), ((body, ubody), eff)
   in
-  let make_body t p = Future.split2 (Future.chain p (make_body t)) in
   let entry_fn p (_, t) =
     let t = EConstr.Unsafe.to_constr t in
-    let univstyp, body = make_body t p in
-    let univs, typ = Future.force univstyp in
-    Declare.delayed_definition_entry ~opaque ?feedback_id ?section_vars ~univs ~types:typ body
+    let (typ, univs), ((body,univc),eff) = make_body t p in
+    Declare.definition_entry ~opaque ?feedback_id ?section_vars ~univs ~univc ~types:typ ~eff body
   in
-  let entries = Future.map2 entry_fn fpl (Proofview.initial_goals entry) in
-  { name; entries; uctx; udecl }
+  let entries = CList.map2 entry_fn elist (Proofview.initial_goals entry) in
+  { name; entries; uctx }
 
 let close_proof_delayed ~opaque ~keep_body_ucst_separate ?feedback_id
                 (fpl : closed_proof_output Future.computation) ps =
   let { section_vars; proof; udecl; initial_euctx } = ps in
-  let Proof.{ name; poly; entry } = Proof.data proof in
+  let Proof.{ name; poly; entry; sigma } = Proof.data proof in
 
   (* We don't allow poly = true in this path *)
   if poly then
@@ -228,18 +223,14 @@ let close_proof_delayed ~opaque ~keep_body_ucst_separate ?feedback_id
   (* Because of dependent subgoals at the beginning of proofs, we could
      have existential variables in the initial types of goals, we need to
      normalise them for the kernel. *)
-  let subst_evar k =
-    let { Proof.sigma } = Proof.data proof in
-    Evd.existential_opt_value0 sigma k in
-
-  let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar
-    (UState.subst uctx) in
+  let subst_evar k = Evd.existential_opt_value0 sigma k in
+  let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar (UState.subst uctx) in
 
   let make_body t p =
     (* Already checked the univ_decl for the type universes when starting the proof. *)
     let univctx = UState.univ_entry ~poly:false uctx in
     let t = nf t in
-    Future.from_val (univctx, t),
+    (t, univctx),
     Future.chain p (fun (pt,eff) ->
         (* Deferred proof, we already checked the universe declaration with
            the initial universes, ensure that the final universes respect
@@ -257,9 +248,8 @@ let close_proof_delayed ~opaque ~keep_body_ucst_separate ?feedback_id
   in
   let entry_fn p (_, t) =
     let t = EConstr.Unsafe.to_constr t in
-    let univstyp, body = make_body t p in
-    let univs, typ = Future.force univstyp in
-    Declare.delayed_definition_entry ~opaque ?feedback_id ?section_vars ~univs ~types:typ body
+    let (typ, utyp), body = make_body t p in
+    Declare.delayed_definition_entry ~opaque ?feedback_id ?section_vars ~univs:utyp ~types:typ body
   in
   let entries = Future.map2 entry_fn fpl (Proofview.initial_goals entry) in
   { name; entries; uctx }
@@ -304,9 +294,8 @@ let return_proof ?(allow_partial=false) ps =
 let close_future_proof ~opaque ~feedback_id ps proof =
   close_proof_delayed ~opaque ~keep_body_ucst_separate:true ~feedback_id proof ps
 
-let close_proof ~opaque ~keep_body_ucst_separate fix_exn ps =
-  close_proof ~opaque ~keep_body_ucst_separate
-    (Future.from_val ~fix_exn (return_proof ps)) ps
+let close_proof ~opaque ~keep_body_ucst_separate ps =
+  close_proof ~opaque ~keep_body_ucst_separate (return_proof ps) ps
 
 let update_global_env =
   map_proof (fun p ->

@@ -122,7 +122,7 @@ let build_constant_by_tactic ~name ?(opaque=Proof_global.Transparent) ~uctx ~sig
   let pf = Proof_global.start_proof ~name ~poly ~udecl:UState.default_univ_decl evd goals in
   let pf, status = by tac pf in
   let open Proof_global in
-  let { entries; uctx } = close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) pf in
+  let { entries; uctx } = close_proof ~opaque ~keep_body_ucst_separate:false pf in
   match entries with
   | [entry] ->
     entry, status, uctx

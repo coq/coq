@@ -187,14 +187,14 @@ let record_aux env s_ty s_bo =
 
 let default_univ_entry = Monomorphic_entry Univ.ContextSet.empty
 
-let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
-    ?(univs=default_univ_entry) ?(eff=Evd.empty_side_effects) body =
-  { proof_entry_body = Future.from_val ?fix_exn ((body,Univ.ContextSet.empty), eff);
-    proof_entry_secctx = None;
+let definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?feedback_id ?section_vars ?types
+    ?(univs=default_univ_entry) ?(eff=Evd.empty_side_effects) ?(univc=Univ.ContextSet.empty) body =
+  { proof_entry_body = Future.from_val ?fix_exn ((body,univc), eff);
+    proof_entry_secctx = section_vars;
     proof_entry_type = types;
     proof_entry_universes = univs;
     proof_entry_opaque = opaque;
-    proof_entry_feedback = None;
+    proof_entry_feedback = feedback_id;
     proof_entry_inline_code = inline}
 
 let pure_definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types

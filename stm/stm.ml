@@ -1668,7 +1668,7 @@ end = struct (* {{{ *)
 
       (* The original terminator, a hook, has not been saved in the .vio*)
       let proof, _info =
-        PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true (fun x -> x) in
+        PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true in
 
       let info = Lemmas.Info.make () in
 
@@ -2518,9 +2518,11 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       | VtKeepOpaque -> Opaque | VtKeepDefined -> Transparent
                       | VtKeepAxiom -> assert false
                     in
-                      Some(PG_compat.close_proof ~opaque
-                                ~keep_body_ucst_separate:false
-                                (State.exn_on id ~valid:eop)) in
+                    try Some (PG_compat.close_proof ~opaque ~keep_body_ucst_separate:false)
+                    with exn ->
+                      let iexn = Exninfo.capture exn in
+                      Exninfo.iraise (State.exn_on id ~valid:eop iexn)
+                in
                 if keep <> VtKeep VtKeepAxiom then
                   reach view.next;
                 let wall_clock2 = Unix.gettimeofday () in

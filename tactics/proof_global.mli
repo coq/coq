@@ -67,7 +67,7 @@ val update_global_env : t -> t
 
 (* Takes a function to add to the exceptions data relative to the
    state in which the proof was built *)
-val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Future.fix_exn -> t -> proof_object
+val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> t -> proof_object
 
 (* Intermediate step necessary to delegate the future.
  * Both access the current proof state. The former is supposed to be

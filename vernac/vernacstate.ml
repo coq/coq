@@ -170,8 +170,8 @@ module Proof_global = struct
     cc_lemma (fun pt -> pf_fold (fun st -> close_future_proof ~opaque ~feedback_id st pf) pt,
                         Internal.get_info pt)
 
-  let close_proof ~opaque ~keep_body_ucst_separate f =
-    cc_lemma (fun pt -> pf_fold ((close_proof ~opaque ~keep_body_ucst_separate f)) pt,
+  let close_proof ~opaque ~keep_body_ucst_separate =
+    cc_lemma (fun pt -> pf_fold ((close_proof ~opaque ~keep_body_ucst_separate)) pt,
                         Internal.get_info pt)
 
   let discard_all () = s_lemmas := None
