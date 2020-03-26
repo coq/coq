@@ -118,8 +118,7 @@ let set_used_variables ps l =
     Environ.fold_named_context aux env ~init:(ctx,ctx_set) in
   if not (Option.is_empty ps.section_vars) then
     CErrors.user_err Pp.(str "Used section variables can be declared only once");
-  (* EJGA: This is always empty thus we should modify the type *)
-  (ctx, []), { ps with section_vars = Some (Context.Named.to_vars ctx) }
+  ctx, { ps with section_vars = Some (Context.Named.to_vars ctx) }
 
 let get_open_goals ps =
   let Proof.{ goals; stack; shelf } = Proof.data ps.proof in

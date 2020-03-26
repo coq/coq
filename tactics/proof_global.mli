@@ -94,7 +94,6 @@ val map_fold_proof_endline : (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) 
 val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
 
 (** Sets the section variables assumed by the proof, returns its closure
- * (w.r.t. type dependencies and let-ins covered by it) + a list of
- * ids to be cleared *)
+ * (w.r.t. type dependencies and let-ins covered by it) *)
 val set_used_variables : t ->
-  Names.Id.t list -> (Constr.named_context * Names.lident list) * t
+  Names.Id.t list -> Constr.named_context * t
