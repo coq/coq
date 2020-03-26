@@ -251,9 +251,9 @@ GRAMMAR EXTEND Gram
     ] ]
   ;
   match_context_rule:
-    [ [ largs = LIST0 match_hyps SEP ","; "|-"; mp = match_pattern;
+    [ [ largs = LIST0 match_hyps SEP ","; right_tack; mp = match_pattern;
         "=>"; te = tactic_expr -> { Pat (largs, mp, te) }
-      | "["; largs = LIST0 match_hyps SEP ","; "|-"; mp = match_pattern;
+      | "["; largs = LIST0 match_hyps SEP ","; right_tack; mp = match_pattern;
         "]"; "=>"; te = tactic_expr -> { Pat (largs, mp, te) }
       | "_"; "=>"; te = tactic_expr -> { All te } ] ]
   ;
@@ -348,6 +348,11 @@ GRAMMAR EXTEND Gram
     [ [ IDENT "ltac"; ":"; "("; tac = Pltac.tactic_expr; ")" ->
         { let arg = Genarg.in_gen (Genarg.rawwit Tacarg.wit_tactic) tac in
           CAst.make ~loc @@ CHole (None, IntroAnonymous, Some arg) } ] ]
+  ;
+  right_tack:
+    [ [ "|-" ]
+    | [ "⊢" ]
+    ]
   ;
   END
 
