@@ -259,7 +259,7 @@ Module NatOrder <: TotalLeBool.
     | _, 0 => false
     | S x', S y' => leb x' y'
     end.
-  Infix "<=?" := leb (at level 35).
+  Infix "<=?" := leb (at level 70, no associativity).
   Theorem leb_total : forall a1 a2, a1 <=? a2 \/ a2 <=? a1.
   Proof.
     induction a1; destruct a2; simpl; auto.
@@ -269,4 +269,3 @@ End NatOrder.
 Module Import NatSort := Sort NatOrder.
 
 Example SimpleMergeExample := Eval compute in sort [5;3;6;1;8;6;0].
-
