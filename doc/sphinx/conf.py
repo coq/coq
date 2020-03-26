@@ -100,7 +100,7 @@ def copy_formatspecific_files(app):
 
 def setup(app):
     app.connect('builder-inited', copy_formatspecific_files)
-    app.add_config_value('coq_config', coq_config, 'env')
+    app.add_config_value('is_a_released_version', coq_config.is_a_released_version, 'env')
 
 # The master toctree document.
 # We create this file in `copy_master_doc` above.
