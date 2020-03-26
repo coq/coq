@@ -167,8 +167,8 @@ module Proof_global = struct
   let return_proof () = cc return_proof
   let return_partial_proof () = cc return_partial_proof
 
-  let close_future_proof ~opaque ~feedback_id pf =
-    cc_lemma (fun pt -> pf_fold (fun st -> close_future_proof ~opaque ~feedback_id st pf) pt,
+  let close_future_proof ~feedback_id pf =
+    cc_lemma (fun pt -> pf_fold (fun st -> close_future_proof ~feedback_id st pf) pt,
                         Internal.get_info pt)
 
   let close_proof ~opaque ~keep_body_ucst_separate =

@@ -226,7 +226,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
   let entries = CList.map2 make_entry elist (Proofview.initial_goals entry) in
   { name; entries; uctx }
 
-let close_proof_delayed ~opaque ?feedback_id (fpl : closed_proof_output Future.computation) ps =
+let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.computation) =
   let { section_vars; proof; udecl; initial_euctx } = ps in
   let { Proof.name; poly; entry; sigma } = Proof.data proof in
 
@@ -234,7 +234,6 @@ let close_proof_delayed ~opaque ?feedback_id (fpl : closed_proof_output Future.c
   if poly then
     CErrors.anomaly (Pp.str "Cannot delay universe-polymorphic constants.");
 
-  let opaque = match opaque with Opaque -> true | Transparent -> false in
   let fpl, uctx = Future.split2 fpl in
   (* Because of dependent subgoals at the beginning of proofs, we could
      have existential variables in the initial types of goals, we need to
@@ -242,6 +241,9 @@ let close_proof_delayed ~opaque ?feedback_id (fpl : closed_proof_output Future.c
   let subst_evar k = Evd.existential_opt_value0 sigma k in
   let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar (UState.subst initial_euctx) in
 
+  (* We only support opaque proofs, this will be enforced by using
+     different entries soon *)
+  let opaque = true in
   let make_entry p (_, types) =
     (* Already checked the univ_decl for the type universes when starting the proof. *)
     let univs = UState.univ_entry ~poly:false initial_euctx in
@@ -261,10 +263,12 @@ let close_proof_delayed ~opaque ?feedback_id (fpl : closed_proof_output Future.c
         let univs = UState.restrict uctx used_univs in
         let univs = UState.check_mono_univ_decl univs udecl in
         (pt,univs),eff)
-    |> Declare.delayed_definition_entry ~opaque ?feedback_id ?section_vars ~univs ~types
+    |> Declare.delayed_definition_entry ~opaque ~feedback_id ?section_vars ~univs ~types
   in
   let entries = Future.map2 make_entry fpl (Proofview.initial_goals entry) in
   { name; entries; uctx = initial_euctx }
+
+let close_future_proof = close_proof_delayed
 
 let return_partial_proof { proof } =
  let proofs = Proof.partial_proof proof in
@@ -275,9 +279,6 @@ let return_partial_proof { proof } =
      thereafter... *)
  let proofs = List.map (fun c -> EConstr.Unsafe.to_constr c, eff) proofs in
  proofs, Evd.evar_universe_context evd
-
-let close_future_proof ~opaque ~feedback_id ps proof =
-  close_proof_delayed ~opaque ~feedback_id proof ps
 
 let update_global_env =
   map_proof (fun p ->

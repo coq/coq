@@ -71,7 +71,6 @@ module Proof_global : sig
   type closed_proof = Proof_global.proof_object * Lemmas.Info.t
 
   val close_future_proof :
-    opaque:Proof_global.opacity_flag ->
     feedback_id:Stateid.t ->
     Proof_global.closed_proof_output Future.computation -> closed_proof
 

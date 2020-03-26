@@ -81,8 +81,7 @@ val return_proof : t -> closed_proof_output
 (** An incomplete proof is allowed (no error), and a warn is given if
    the proof is complete. *)
 val return_partial_proof : t -> closed_proof_output
-val close_future_proof : opaque:opacity_flag -> feedback_id:Stateid.t -> t ->
-  closed_proof_output Future.computation -> proof_object
+val close_future_proof : feedback_id:Stateid.t -> t -> closed_proof_output Future.computation -> proof_object
 
 val get_open_goals : t -> int
 
