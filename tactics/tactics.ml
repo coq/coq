@@ -4239,23 +4239,20 @@ let recolle_clenv i params args elimclause gl =
           | _  -> user_err ~hdr:"elimination_clause"
               (str "The type of the elimination clause is not well-formed."))
       arr in
-  let k = match i with -1 -> Array.length lindmv - List.length args | _ -> i in
+  let k = match i with None -> Array.length lindmv - List.length args | Some i -> i in
   (* parameters correspond to first elts of lid. *)
-  let clauses_params =
-    List.map_i (fun i id -> mkVar id , pf_get_hyp_typ id gl, lindmv.(i))
-      0 params in
-  let clauses_args =
-    List.map_i (fun i id -> mkVar id , pf_get_hyp_typ id gl, lindmv.(k+i))
-      0 args in
+  let clauses_params = List.mapi (fun i id -> id, lindmv.(i)) params in
+  let clauses_args = List.mapi (fun i id -> id, lindmv.(k+i)) args in
   let clauses = clauses_params@clauses_args in
   (* iteration of clenv_fchain with all infos we have. *)
   List.fold_right
     (fun e acc ->
-      let x,y,i = e in
+      let x, i = e in
+      let y = pf_get_hyp_typ x gl in
       (* from_n (Some 0) means that x should be taken "as is" without
          trying to unify (which would lead to trying to apply it to
          evars if y is a product). *)
-      let indclause  = mk_clenv_from_n gl (Some 0) (x,y) in
+      let indclause  = mk_clenv_from_n gl (Some 0) (mkVar x, y) in
       let elimclause' = clenv_fchain ~with_univs:false i acc indclause in
       elimclause')
     (List.rev clauses)
@@ -4276,14 +4273,14 @@ let induction_tac with_evars params indvars (elim, elimt) =
     let elimc = mkCast (elimc, DEFAULTcast, elimt) in
     let elimclause = Tacmach.New.pf_apply mk_clenv_from_env gl None (elimc, elimt) in
     (* elimclause' is built from elimclause by instantiating all args and params. *)
-    recolle_clenv i params indvars elimclause gl
+    recolle_clenv (Some i) params indvars elimclause gl
   | ElimClause (elimc, lbindelimc) ->
     (* elimclause contains this: (elimc ?i ?j ?k...?l) *)
     let elimc = contract_letin_in_lam_header sigma elimc in
     let elimc = mkCast (elimc, DEFAULTcast, elimt) in
     let elimclause = Tacmach.New.pf_apply make_clenv_binding gl (elimc,elimt) lbindelimc in
     (* elimclause' is built from elimclause by instantiating all args and params. *)
-    recolle_clenv (-1) params indvars elimclause gl
+    recolle_clenv None params indvars elimclause gl
   in
   (* one last resolution (useless?) *)
   Clenv.res_pf ~with_evars ~flags:(elim_flags ()) elimclause'
