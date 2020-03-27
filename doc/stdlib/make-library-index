@@ -36,7 +36,8 @@ for k in $LIBDIRS; do
                 fi
 	    else
 	        if [ $h = 0 ]; then
-		    echo Warning: $k/$b.v will be hidden from the index
+		    # Skipping file from the index
+                    :
                 else
                     echo Error: none of $FILE and $HIDDEN mention $k/$b.v
                     exit 1
