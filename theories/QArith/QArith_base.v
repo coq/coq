@@ -44,13 +44,39 @@ Definition of_decimal (d:Decimal.decimal) : Q :=
   end.
 
 Definition to_decimal (q:Q) : option Decimal.decimal :=
+  (* choose between 123e-2 and 1.23, this is purely heuristic
+     and doesn't play any soundness role *)
+  let choose_exponent i ne :=
+    let i := match i with Decimal.Pos i | Decimal.Neg i => i end in
+    let li := Decimal.nb_digits i in
+    let le := Decimal.nb_digits (Nat.to_uint ne) in
+    Nat.ltb (Nat.add li le) ne in
+  (* print 123 / 100 as 123e-2 *)
+  let decimal_exponent i ne :=
+      let e := Z.to_int (Z.opp (Z.of_nat ne)) in
+      Decimal.DecimalExp i Decimal.Nil e in
+  (* print 123 / 100 as 1.23 *)
+  let decimal_dot i ne :=
+    let ai := match i with Decimal.Pos i | Decimal.Neg i => i end in
+    let ni := Decimal.nb_digits ai in
+    if Nat.ltb ne ni then
+      let i := Decimal.del_tail_int ne i in
+      let f := Decimal.del_head (Nat.sub ni ne) ai in
+      Decimal.Decimal i f
+    else
+      let z := match i with
+        | Decimal.Pos _ => Decimal.Pos (Decimal.zero)
+        | Decimal.Neg _ => Decimal.Neg (Decimal.zero) end in
+      Decimal.Decimal z (Nat.iter (Nat.sub ne ni) Decimal.D0 ai) in
   let num := Z.to_int (Qnum q) in
   let (den, e_den) := Decimal.nztail (Pos.to_uint (Qden q)) in
   match den with
   | Decimal.D1 Decimal.Nil =>
-    match Z.of_nat e_den with
-    | Z0 => Some (Decimal.Decimal num Decimal.Nil)
-    | e => Some (Decimal.DecimalExp num Decimal.Nil (Z.to_int (Z.opp e)))
+    match e_den with
+    | O => Some (Decimal.Decimal num Decimal.Nil)
+    | ne =>
+      if choose_exponent num ne then Some (decimal_exponent num ne)
+      else Some (decimal_dot num ne)
     end
   | _ => None
   end.
