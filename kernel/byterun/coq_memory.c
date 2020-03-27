@@ -9,10 +9,13 @@
 /***********************************************************************/
 
 #include <stdio.h>
-#include <string.h> 
+#include <string.h>
+
+#define CAML_INTERNALS
 #include <caml/alloc.h>
 #include <caml/address_class.h>
-#include "coq_gc.h"
+#include <caml/roots.h>
+
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
 #include "coq_memory.h"
