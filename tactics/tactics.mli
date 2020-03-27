@@ -274,11 +274,9 @@ type elim_scheme = {
 
 val compute_elim_sig : evar_map -> types -> elim_scheme
 
-(** elim principle with the index of its inductive arg *)
-type eliminator = {
-  elimindex : int option;  (** None = find it automatically *)
-  elimbody : constr with_bindings
-}
+type eliminator =
+| ElimTerm of EConstr.constr
+| ElimClause of EConstr.constr with_bindings
 
 val general_elim  : evars_flag -> clear_flag ->
   constr with_bindings -> eliminator -> unit Proofview.tactic
