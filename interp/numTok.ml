@@ -12,6 +12,8 @@
     e.g. "e"/"E" or the presence of leading 0s, or the presence of a +
     in the exponent *)
 
+let string_del_head n s = String.sub s n (String.length s - n)
+
 module UnsignedNat =
 struct
   type t = string
@@ -58,8 +60,8 @@ struct
     assert (String.length s > 0);
     let sign,n =
       match s.[0] with
-      | '-' -> (SMinus,String.sub s 1 (String.length s - 1))
-      | '+' -> (SPlus,String.sub s 1 (String.length s - 1))
+      | '-' -> (SMinus,string_del_head 1 s)
+      | '+' -> (SPlus,string_del_head 1 s)
       | _ -> (SPlus,s) in
     (sign,UnsignedNat.of_string n)
   let to_string (sign,n) =
@@ -171,9 +173,9 @@ struct
     let e =
       if exp = "" then None else
         Some (match exp.[1] with
-        | '-' -> SMinus, String.sub exp 2 (String.length exp - 2)
-        | '+' -> SPlus, String.sub exp 2 (String.length exp - 2)
-        | _ -> SPlus, String.sub exp 1 (String.length exp - 1)) in
+        | '-' -> SMinus, string_del_head 2 exp
+        | '+' -> SPlus, string_del_head 2 exp
+        | _ -> SPlus, string_del_head 1 exp) in
     let f = if frac = "" then None else Some frac in
     (sign, int), f, e
 
@@ -211,8 +213,8 @@ struct
   let of_string s =
     assert (s <> "");
     let sign,u = match s.[0] with
-    | '-' -> (SMinus, String.sub s 1 (String.length s - 1))
-    | '+' -> (SPlus, String.sub s 1 (String.length s - 1))
+    | '-' -> (SMinus, string_del_head 1 s)
+    | '+' -> (SPlus, string_del_head 1 s)
     | _ -> (SPlus, s) in
     (sign, Unsigned.of_string u)
 
@@ -235,9 +237,9 @@ struct
     let i = Bigint.of_string (s ^ int ^ frac) in
     let e =
       let e = if exp = "" then Bigint.zero else match exp.[1] with
-      | '+' -> Bigint.of_string (UnsignedNat.to_string (String.sub exp 2 (String.length exp - 2)))
-      | '-' -> Bigint.(neg (of_string (UnsignedNat.to_string (String.sub exp 2 (String.length exp - 2)))))
-      | _ -> Bigint.of_string (UnsignedNat.to_string (String.sub exp 1 (String.length exp - 1))) in
+      | '+' -> Bigint.of_string (UnsignedNat.to_string (string_del_head 2 exp))
+      | '-' -> Bigint.(neg (of_string (UnsignedNat.to_string (string_del_head 2 exp))))
+      | _ -> Bigint.of_string (UnsignedNat.to_string (string_del_head 1 exp)) in
       Bigint.(sub e (of_int (String.length (String.concat "" (String.split_on_char '_' frac))))) in
     (i,e)
 
