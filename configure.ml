@@ -923,7 +923,11 @@ let datadir,datadirsuffix = let (_,_,d,s) = select "DATADIR" in d,s
 
 (** * CC runtime flags *)
 
-let cflags_dflt = "-Wall -Wno-unused -g -O2 -std=c99 -fasm"
+(* Note that Coq's VM requires at least C99-compliant floating-point
+   arithmetic; this should be ensured by OCaml's own C flags, which
+   set a minimum of [--std=gnu99] ; modern compilers by default assume
+   C11 or later, so no explicit [--std=] flags are added by OCaml *)
+let cflags_dflt = "-Wall -Wno-unused -g -O2"
 
 let cflags_sse2 = "-msse2 -mfpmath=sse"
 
