@@ -422,7 +422,12 @@ are now available through the dot notation.
    If :n:`@module_binder`\s are specified, declares a functor with parameters given by the list of
    :token:`module_binder`\s.
 
-.. cmd:: Import {+ @qualid }
+.. cmd:: Import {+ @filtered_import }
+
+   .. insertprodn filtered_import filtered_import
+
+   .. prodn::
+      filtered_import ::= @qualid {? ( {+, @qualid {? ( .. ) } } ) }
 
    If :token:`qualid` denotes a valid basic module (i.e. its module type is a
    signature), makes its components available by their short names.
@@ -501,7 +506,7 @@ are now available through the dot notation.
          Fail Check B.U.
          Check A.B.U.
 
-.. cmd:: Export {+ @qualid }
+.. cmd:: Export {+ @filtered_import }
    :name: Export
 
    Similar to :cmd:`Import`, except that when the module containing this command

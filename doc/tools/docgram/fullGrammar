@@ -1031,8 +1031,8 @@ gallina_ext: [
 | "Collection" identref ":=" section_subset_expr
 | "Require" export_token LIST1 global
 | "From" global "Require" export_token LIST1 global
-| "Import" LIST1 global
-| "Export" LIST1 global
+| "Import" LIST1 filtered_import
+| "Export" LIST1 filtered_import
 | "Include" module_type_inl LIST0 ext_module_expr
 | "Include" "Type" module_type_inl LIST0 ext_module_type
 | "Transparent" LIST1 smart_global
@@ -1055,6 +1055,15 @@ gallina_ext: [
 | "Generalizable" [ "All" "Variables" | "No" "Variables" | [ "Variable" | "Variables" ] LIST1 identref ]
 | "Export" "Set" option_table option_setting
 | "Export" "Unset" option_table
+]
+
+filtered_import: [
+| global
+| global "(" LIST1 one_import_filter_name SEP "," ")"
+]
+
+one_import_filter_name: [
+| global OPT [ "(" ".." ")" ]
 ]
 
 export_token: [

@@ -497,6 +497,10 @@ constructor: [
 | ident LIST0 binder OPT of_type
 ]
 
+filtered_import: [
+| qualid OPT [ "(" LIST1 ( qualid OPT [ "(" ".." ")" ] ) SEP "," ")" ]
+]
+
 cofix_definition: [
 | ident_decl LIST0 binder OPT ( ":" type ) OPT [ ":=" term ] OPT decl_notations
 ]
@@ -849,8 +853,8 @@ command: [
 | "Collection" ident ":=" section_subset_expr
 | "Require" OPT [ "Import" | "Export" ] LIST1 qualid
 | "From" dirpath "Require" OPT [ "Import" | "Export" ] LIST1 qualid
-| "Import" LIST1 qualid
-| "Export" LIST1 qualid
+| "Import" LIST1 filtered_import
+| "Export" LIST1 filtered_import
 | "Include" module_type_inl LIST0 ( "<+" module_expr_inl )
 | "Include" "Type" LIST1 module_type_inl SEP "<+"
 | "Transparent" LIST1 smart_qualid
