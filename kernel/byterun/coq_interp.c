@@ -16,16 +16,36 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stdint.h>
+#include <math.h>
+
+#define CAML_INTERNALS
 #include <caml/memory.h>
 #include <caml/signals.h>
 #include <caml/version.h>
-#include <math.h>
-#include "coq_gc.h"
+
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
 #include "coq_memory.h"
 #include "coq_values.h"
 #include "coq_float64.h"
+
+#if OCAML_VERSION < 41000
+extern void caml_minor_collection(void);
+
+#undef Alloc_small
+#define Alloc_small(result, wosize, tag) do{                            \
+  caml_young_ptr -= Bhsize_wosize(wosize);                              \
+  if (caml_young_ptr < caml_young_limit) {                              \
+    caml_young_ptr += Bhsize_wosize(wosize);                            \
+    Setup_for_gc;                                                       \
+    caml_minor_collection();                                            \
+    Restore_after_gc;                                                   \
+    caml_young_ptr -= Bhsize_wosize(wosize);                            \
+  }                                                                     \
+  Hd_hp(caml_young_ptr) = Make_header((wosize), (tag), Caml_black);     \
+  (result) = Val_hp(caml_young_ptr);                                    \
+  }while(0)
+#endif
 
 #ifdef ARCH_SIXTYFOUR
 #include "coq_uint63_native.h"
