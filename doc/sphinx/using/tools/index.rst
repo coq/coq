@@ -16,5 +16,6 @@ on the `Coq website <https://coq.inria.fr/user-interfaces.html>`_.
 
    ../../practical-tools/coq-commands
    ../../practical-tools/utilities
+   coqdoc
    ../../practical-tools/coqide
    ../../addendum/parallel-proof-processing
