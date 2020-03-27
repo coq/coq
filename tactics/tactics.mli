@@ -254,7 +254,6 @@ val apply_delayed_in :
 (** [rel_contexts] and [rel_declaration] actually contain triples, and
    lists are actually in reverse order to fit [compose_prod]. *)
 type elim_scheme = {
-  elimc: constr with_bindings option;
   elimt: types;
   indref: GlobRef.t option;
   params: rel_context;      (** (prm1,tprm1);(prm2,tprm2)...(prmp,tprmp) *)
@@ -273,7 +272,7 @@ type elim_scheme = {
   farg_in_concl: bool;        (** true if (f...) appears at the end of conclusion *)
 }
 
-val compute_elim_sig : evar_map -> ?elimc:constr with_bindings -> types -> elim_scheme
+val compute_elim_sig : evar_map -> types -> elim_scheme
 
 (** elim principle with the index of its inductive arg *)
 type eliminator = {
