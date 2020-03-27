@@ -11,11 +11,11 @@ Displaying
 
 .. _Print:
 
-.. cmd:: Print @qualid
+.. cmd:: Print {? Term } @smart_qualid {? @%{ {* @name } %} }
    :name: Print
 
    This command displays on the screen information about the declared or
-   defined object referred by :n:`@qualid`.
+   defined object identified by :n:`@smart_qualid`.
 
    Error messages:
 
@@ -41,13 +41,15 @@ Displaying
       An underscore means the usual name is printed.
 
 
-.. cmd:: About @qualid
+.. cmd:: About @smart_qualid {? @%{ {* @name } %} }
    :name: About
 
    This displays various information about the object
    denoted by :n:`@qualid`: its kind (module, constant, assumption, inductive,
    constructor, abbreviation, …), long name, type, implicit arguments and
    argument scopes. It does not print the body of definitions or proofs.
+
+   .. todo: what does this variant add?
 
    .. cmdv:: About @qualid\@@name
 
@@ -60,11 +62,14 @@ Displaying
    This command displays information about the current state of the
    environment, including sections and modules.
 
-   .. cmdv:: Inspect @num
+   .. cmd:: Inspect @num
       :name: Inspect
 
       This command displays the :n:`@num` last objects of the
       current environment, including sections and modules.
+
+   .. why is this repeated here?  Syntax is essentially the same as for
+      the :cmd: Print Section.
 
    .. cmdv:: Print Section @ident
 
@@ -245,12 +250,20 @@ Requests to the environment
       Displays all assumptions and constants :n:`@qualid` relies on.
 
 
-.. cmd:: Search @qualid
+.. cmd:: Search @search_item {? {| {| inside | outside } {+ @qualid } | {+ @search_item } } }
+
+   .. insertprodn search_item search_item
+
+   .. prodn::
+      search_item ::= {? - } @string {? % @ident }
+      | {? - } @one_term
 
    This command displays the name and type of all objects (hypothesis of
    the current goal, theorems, axioms, etc) of the current context whose
    statement contains :n:`@qualid`. This command is useful to remind the user
    of the name of library lemmas.
+
+   .. todo Describe all the parameters
 
    .. exn:: The reference @qualid was not found in the current environment.
 
@@ -270,6 +283,8 @@ Requests to the environment
       The string string must be a notation or the main
       symbol of a notation which is then interpreted in the scope bound to
       the delimiting key :token:`ident` (see Section :ref:`LocalInterpretationRulesForNotations`).
+
+   .. term_pattern and term_pattern_string look like distinct nonterminals; they are merely @strings
 
    .. cmdv:: Search @term_pattern
 
@@ -300,6 +315,8 @@ Requests to the environment
       This restricts the search to constructions not defined in the modules
       named by the given :n:`qualid` sequence.
 
+   .. is this use of @selector any different from any other tactic?
+
    .. cmdv:: @selector: Search {+ {? -}@term_pattern_string}
 
       This specifies the goal on which to search hypothesis (see
@@ -320,6 +337,8 @@ Requests to the environment
             Search "+"%Z "*"%Z "distr" -positive -Prop.
 
             Search (?x * _ + ?x * _)%Z outside OmegaLemmas.
+
+   .. example of cmdv that should be a cmd
 
    .. cmdv:: SearchAbout
       :name: SearchAbout
@@ -476,12 +495,32 @@ Requests to the environment
       Use the :cmd:`Add @table` and :cmd:`Remove @table` commands to update the set of
       blacklisted strings.
 
-.. cmd:: Locate @qualid
+.. cmd:: Locate @locatable
+
+   .. insertprodn locatable locatable
+
+   .. prodn::
+      locatable ::= @smart_qualid
+      | Term @smart_qualid
+      | Module @qualid
+      | Ltac @qualid
+      | Library @qualid
+      | File @string
 
    This command displays the full name of objects whose name is a prefix
-   of the qualified identifier :n:`@qualid`, and consequently the |Coq| module in
+   of the specified value, and consequently the |Coq| module in
    which they are defined. It searches for objects from the different
    qualified namespaces of |Coq|: terms, modules, Ltac, etc.
+
+   The various :n:`@locatable`\s have the following behavior:
+
+   -  :n:`@smart_qualid` - displays the full name of objects whose name is a prefix
+      of :n:`@smart_qualid`, thereby showing the module they are defined in.
+   -  :n:`Term @smart_qualid` - limits the search to terms
+   -  :n:`Module @qualid` - limits the search to modules
+   -  :n:`Library @qualid` - limits the search to libraries
+   -  :n:`Ltac @qualid` - limits the search to Ltac-defines tactics
+   -  :n:`File @string` - ???
 
    .. example::
 
@@ -497,7 +536,18 @@ Requests to the environment
 
          Locate I.Dont.Exist.
 
-   .. cmdv:: Locate Term @qualid
+   .. NOTES: fixable items
+      No variants for Library, File or just @smart_qualid?  By plan or just out of date?
+
+      "As Locate" is not much of a description; the reader will have to jump to the
+      main definition above.  Can be reworded.
+
+      Hyperlinks not supported in .. cmdv/.. tacv (for linking to main entry)
+
+      For hyperlinking, for a few commands, the command name differs from the string a
+      variant would show, e.g. "From ... Require ..."
+
+   .. cmdv:: :cmd:`Locate` Term @qualid
 
       As Locate but restricted to terms.
 
