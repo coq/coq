@@ -113,8 +113,8 @@ let mkFullInd (ind,u) n =
     else mkIndU (ind,u)
 
 let check_bool_is_defined () =
-  try let _ = Typeops.type_of_global_in_context (Global.env ()) Coqlib.(lib_ref "core.bool.type") in ()
-  with e when CErrors.noncritical e -> raise (UndefinedCst "bool")
+  if not (Coqlib.has_ref "core.bool.type")
+  then raise (UndefinedCst "bool")
 
 let check_no_indices mib =
   if Array.exists (fun mip -> mip.mind_nrealargs <> 0) mib.mind_packets then
@@ -236,10 +236,11 @@ let build_beq_scheme mode kn =
                  (* Needs Hints, see test suite *)
                  let eq_lbl = Label.make ("eq_" ^ Label.to_string (Constant.label kn)) in
                  let kneq = Constant.change_label kn eq_lbl in
-                 try let _ = Environ.constant_opt_value_in env (kneq, u) in
+                 if Environ.mem_constant kneq env then
+                   let _ = Environ.constant_opt_value_in env (kneq, u) in
                    Term.applist (mkConst kneq,a),
                    Evd.empty_side_effects
-                 with Not_found -> raise (ParameterWithoutEquality (GlobRef.ConstRef kn)))
+                 else raise (ParameterWithoutEquality (GlobRef.ConstRef kn)))
         | Proj _ -> raise (EqUnknown "projection")
         | Construct _ -> raise (EqUnknown "constructor")
         | Case _ -> raise (EqUnknown "match")
@@ -373,7 +374,7 @@ so from Ai we can find the correct eq_Ai bl_ai or lb_ai
 let do_replace_lb mode lb_scheme_key aavoid narg p q =
   let open EConstr in
   let avoid = Array.of_list aavoid in
-  let do_arg sigma hd v offset =
+  let do_arg env sigma hd v offset =
     match kind sigma v with
     | Var s ->
     let x = narg*offset in
@@ -390,7 +391,9 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
          Parameter (see example "J" in test file SchemeEquality.v) *)
         let lbl = Label.to_string (Constant.label cst) in
         let newlbl = if Int.equal offset 1 then ("eq_" ^ lbl) else (lbl ^ "_lb") in
-        mkConst (Constant.change_label cst (Label.make newlbl))
+        let newcst = Constant.change_label cst (Label.make newlbl) in
+        if Environ.mem_constant newcst env then mkConst newcst
+        else raise (ConstructorWithNonParametricInductiveType (fst hd))
     | _ -> raise (ConstructorWithNonParametricInductiveType (fst hd))
 
   in
@@ -419,8 +422,8 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
        Proofview.tclEVARMAP >>= fun sigma ->
        let lb_args = Array.append (Array.append
                           v
-                          (Array.Smart.map (fun x -> do_arg sigma u x 1) v))
-                          (Array.Smart.map (fun x -> do_arg sigma u x 2) v)
+                          (Array.Smart.map (fun x -> do_arg env sigma u x 1) v))
+                          (Array.Smart.map (fun x -> do_arg env sigma u x 2) v)
         in let app =  if Array.is_empty lb_args
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
            in
@@ -433,7 +436,7 @@ let do_replace_lb mode lb_scheme_key aavoid narg p q =
 let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
   let open EConstr in
   let avoid = Array.of_list aavoid in
-  let do_arg sigma hd v offset =
+  let do_arg env sigma hd v offset =
     match kind sigma v with
     | Var s ->
     let x = narg*offset in
@@ -450,7 +453,9 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
          Parameter (see example "J" in test file SchemeEquality.v) *)
         let lbl = Label.to_string (Constant.label cst) in
         let newlbl = if Int.equal offset 1 then ("eq_" ^ lbl) else (lbl ^ "_bl") in
-        mkConst (Constant.change_label cst (Label.make newlbl))
+        let newcst = Constant.change_label cst (Label.make newlbl) in
+        if Environ.mem_constant newcst env then mkConst newcst
+        else raise (ConstructorWithNonParametricInductiveType (fst hd))
     | _ -> raise (ConstructorWithNonParametricInductiveType (fst hd))
   in
 
@@ -487,8 +492,8 @@ let do_replace_bl mode bl_scheme_key (ind,u as indu) aavoid narg lft rgt =
                in let bl_args =
                         Array.append (Array.append
                           v
-                          (Array.Smart.map (fun x -> do_arg sigma u x 1) v))
-                          (Array.Smart.map (fun x -> do_arg sigma u x 2) v )
+                          (Array.Smart.map (fun x -> do_arg env sigma u x 1) v))
+                          (Array.Smart.map (fun x -> do_arg env sigma u x 2) v )
                 in
                 let app =  if Array.is_empty bl_args
                            then bl_t1 else mkApp (bl_t1,bl_args)
@@ -837,8 +842,8 @@ let _ = lb_scheme_kind_aux := fun () -> lb_scheme_kind
 (* Decidable equality *)
 
 let check_not_is_defined () =
-  try ignore (Coqlib.lib_ref "core.not.type")
-  with Not_found -> raise (UndefinedCst "not")
+  if not (Coqlib.has_ref "core.not.type")
+  then raise (UndefinedCst "not")
 
 (* {n=m}+{n<>m}  part  *)
 let compute_dec_goal ind lnamesparrec nparrec =
