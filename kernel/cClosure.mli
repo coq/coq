@@ -227,6 +227,10 @@ val kni: clos_infos -> clos_tab -> fconstr -> stack -> fconstr * stack
 val knr: clos_infos -> clos_tab -> fconstr -> stack -> fconstr * stack
 val kl : clos_infos -> clos_tab -> fconstr -> constr
 
+val zip : fconstr -> stack -> fconstr
+
+val term_of_process : fconstr -> stack -> constr
+
 val to_constr : lift -> fconstr -> constr
 
 (** End of cbn debug section i*)
