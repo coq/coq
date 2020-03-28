@@ -1746,26 +1746,32 @@ let is_sort env sigma t =
 let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
   let refold = false in
   let tactic_mode = false in
-  let rec whrec csts s =
-    let (t, stack as s),csts' = whd_state_gen ~csts ~refold ~tactic_mode CClosure.betaiota env sigma s in
+  let all = CClosure.RedFlags.red_add_transparent CClosure.all ts in
+  (* Unset the sharing flag to get a call-by-name reduction. This matters for
+     the shape of the generated term. *)
+  let env' = Environ.set_typing_flags { (Environ.typing_flags env) with Declarations.share_reduction = false } env in
+  let whd c =
+    let r = clos_whd_flags all env' sigma (Stack.zip sigma c) in
+    let (r, args) = Termops.decompose_app_vect sigma r in
+    r, Stack.append_app args []
+  in
+  let rec whrec s =
+    let (t, stack as s), _ = whd_state_gen ~refold ~tactic_mode CClosure.betaiota env sigma s in
     match Stack.strip_app stack with
       |args, (Stack.Case _ :: _ as stack') ->
-        let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' ~refold ~tactic_mode
-          (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
-        if reducible_mind_case sigma t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
+        let (t_o, stack_o) = whd (t, args) in
+        if reducible_mind_case sigma t_o then whrec (t_o, stack_o@stack') else s
       |args, (Stack.Fix _ :: _ as stack') ->
-        let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' ~refold ~tactic_mode
-          (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
-        if isConstruct sigma t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
+        let (t_o, stack_o) = whd (t, args) in
+        if isConstruct sigma t_o then whrec (t_o, stack_o@stack') else s
       |args, (Stack.Proj (p,_) :: stack'') ->
-        let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' ~refold ~tactic_mode
-          (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
+        let (t_o, stack_o) = whd (t, args) in
         if isConstruct sigma t_o then
-          whrec Cst_stack.empty (Stack.nth stack_o (Projection.npars p + Projection.arg p), stack'')
-        else s,csts'
-      |_, ((Stack.App _|Stack.Cst _|Stack.Primitive _) :: _|[]) -> s,csts'
+          whrec (Stack.nth stack_o (Projection.npars p + Projection.arg p), stack'')
+        else s
+      |_, ((Stack.App _|Stack.Cst _|Stack.Primitive _) :: _|[]) -> s
   in
-  fst (whrec Cst_stack.empty s)
+  whrec s
 
 let find_conclusion env sigma =
   let rec decrec env c =
