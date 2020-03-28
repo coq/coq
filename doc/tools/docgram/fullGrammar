@@ -2454,8 +2454,6 @@ as_or_and_ipat: [
 
 eqn_ipat: [
 | "eqn" ":" naming_intropattern
-| "_eqn" ":" naming_intropattern
-| "_eqn"
 |
 ]
 
