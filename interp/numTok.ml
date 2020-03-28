@@ -47,8 +47,8 @@ struct
         0
       with Comp c -> c
 
-   let is_zero s =
-     compare s "0" = 0
+  let is_zero s =
+    compare s "0" = 0
 end
 
 type sign = SPlus | SMinus
@@ -164,12 +164,12 @@ struct
     | (SPlus,{int;frac;exp}) -> UnsignedNat.is_zero int && UnsignedNat.is_zero frac
     | _ -> false
 
-  let of_decimal_and_exponent (sign,int) f e =
+  let of_int_frac_and_exponent (sign,int) f e =
     let exp = match e with Some e -> "e" ^ SignedNat.to_string e | None -> "" in
     let frac = match f with Some f -> UnsignedNat.to_string f | None -> "" in
     sign, { int; frac; exp }
 
-  let to_decimal_and_exponent (sign, { int; frac; exp }) =
+  let to_int_frac_and_exponent (sign, { int; frac; exp }) =
     let e =
       if exp = "" then None else
         Some (match exp.[1] with
@@ -244,7 +244,7 @@ struct
     (i,e)
 
   let of_bigint_and_exponent i e =
-    of_decimal_and_exponent (SignedNat.of_bigint i) None (Some (SignedNat.of_bigint e))
+    of_int_frac_and_exponent (SignedNat.of_bigint i) None (Some (SignedNat.of_bigint e))
 
   let is_bigger_int_than (s, { int; frac; exp }) i =
     frac = "" && exp = "" && UnsignedNat.compare int i >= 0

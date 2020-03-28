@@ -163,7 +163,7 @@ let rawnum_of_r c =
         else "0", String.make (e - ni) '0' ^ i in
       let i = s, NumTok.UnsignedNat.of_string i in
       let f = NumTok.UnsignedNat.of_string f in
-      NumTok.Signed.of_decimal_and_exponent i (Some f) None in
+      NumTok.Signed.of_int_frac_and_exponent i (Some f) None in
     if choose_exponent then numTok_exponent () else numTok_dot () in
   match DAst.get c with
   | GApp (r, [a]) when is_gr r glob_IZR ->

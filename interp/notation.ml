@@ -626,7 +626,7 @@ let coqint_of_rawnum inds (sign,n) =
   mkApp (mkConstruct (inds.int, pos_neg), [|uint|])
 
 let coqdecimal_of_rawnum inds n =
-  let i, f, e = NumTok.Signed.to_decimal_and_exponent n in
+  let i, f, e = NumTok.Signed.to_int_frac_and_exponent n in
   let i = coqint_of_rawnum inds.int i in
   let f = coquint_of_rawnum inds.int.uint f in
   match e with
@@ -669,7 +669,7 @@ let rawnum_of_decimal c =
     let n = rawnum_of_coqint i in
     let f = try Some (rawnum_of_coquint f) with NotAValidPrimToken -> None in
     let e = match e with None -> None | Some e -> Some (rawnum_of_coqint e) in
-    NumTok.Signed.of_decimal_and_exponent n f e in
+    NumTok.Signed.of_int_frac_and_exponent n f e in
   match Constr.kind c with
   | App (_,[|i; f|]) -> of_ife i f None
   | App (_,[|i; f; e|]) -> of_ife i f (Some e)

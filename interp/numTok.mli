@@ -54,8 +54,8 @@ sig
   val to_string : t -> string
     (** Convert to a non-empty sequence of digit that does not contain "_" *)
 
-  val to_bigint : t -> Bigint.bigint
   val of_bigint : Bigint.bigint -> t
+  val to_bigint : t -> Bigint.bigint
 end
 
 (** {6 Unsigned decimal numerals } *)
@@ -118,12 +118,12 @@ sig
   val to_bigint : t -> Bigint.bigint option
     (** Convert from and to bigint when the denotation of a bigint *)
 
-  val of_decimal_and_exponent : SignedNat.t -> UnsignedNat.t option -> SignedNat.t option -> t
-  val to_decimal_and_exponent : t -> SignedNat.t * UnsignedNat.t option * SignedNat.t option
+  val of_int_frac_and_exponent : SignedNat.t -> UnsignedNat.t option -> SignedNat.t option -> t
+  val to_int_frac_and_exponent : t -> SignedNat.t * UnsignedNat.t option * SignedNat.t option
     (** n, p and q such that the number is n.p*10^q *)
 
-  val to_bigint_and_exponent : t -> Bigint.bigint * Bigint.bigint
   val of_bigint_and_exponent : Bigint.bigint -> Bigint.bigint -> t
+  val to_bigint_and_exponent : t -> Bigint.bigint * Bigint.bigint
     (** n and p such that the number is n*10^p *)
 
   val is_bigger_int_than : t -> UnsignedNat.t -> bool
