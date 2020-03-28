@@ -30,8 +30,7 @@ val blacklist_filter : filter_function
 val module_filter : DirPath.t list * bool -> filter_function
 (** Check whether a reference pertains or not to a set of modules *)
 
-val search_about_filter : glob_search_about_item -> filter_function
-(** Check whether a reference matches a SearchAbout query. *)
+val search_filter : glob_search_about_item -> filter_function
 
 (** {6 Specialized search functions}
 
@@ -45,7 +44,7 @@ val search_rewrite : ?pstate:Proof_global.t -> int option -> constr_pattern -> D
                   -> display_function -> unit
 val search_pattern : ?pstate:Proof_global.t -> int option -> constr_pattern -> DirPath.t list * bool
                   -> display_function -> unit
-val search_about   : ?pstate:Proof_global.t -> int option -> (bool * glob_search_about_item) list
+val search         : ?pstate:Proof_global.t -> int option -> (bool * glob_search_about_item) list
                   -> DirPath.t list * bool -> display_function -> unit
 
 type search_constraint =

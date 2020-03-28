@@ -23,8 +23,8 @@ module NamedDecl = Context.Named.Declaration
 type filter_function = GlobRef.t -> env -> constr -> bool
 type display_function = GlobRef.t -> env -> constr -> unit
 
-(* This option restricts the output of [SearchPattern ...],
-[SearchAbout ...], etc. to the names of the symbols matching the
+(* This option restricts the output of [SearchPattern ...], etc.
+to the names of the symbols matching the
 query, separated by a newline. This type of output is useful for
 editors (like emacs), to generate a list of completion candidates
 without having to parse through the types of all symbols. *)
@@ -226,7 +226,7 @@ let module_filter (mods, outside) ref env typ =
 
 let name_of_reference ref = Id.to_string (Nametab.basename_of_global ref)
 
-let search_about_filter query gr env typ = match query with
+let search_filter query gr env typ = match query with
 | GlobSearchSubPattern pat ->
   Constr_matching.is_matching_appsubterm ~closed:false env (Evd.from_env env) pat (EConstr.of_constr typ)
 | GlobSearchString s ->
@@ -283,14 +283,14 @@ let search_by_head ?pstate gopt pat mods pr_search =
   in
   generic_search ?pstate gopt iter
 
-(** SearchAbout *)
+(** Search *)
 
-let search_about ?pstate gopt items mods pr_search =
+let search ?pstate gopt items mods pr_search =
   let filter ref env typ =
     let eqb b1 b2 = if b1 then b2 else not b2 in
     module_filter mods ref env typ &&
     List.for_all
-      (fun (b,i) -> eqb b (search_about_filter i ref env typ)) items &&
+      (fun (b,i) -> eqb b (search_filter i ref env typ)) items &&
     blacklist_filter ref env typ
   in
   let iter ref env typ =

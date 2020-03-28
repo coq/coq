@@ -321,18 +321,6 @@ Requests to the environment
 
             Search (?x * _ + ?x * _)%Z outside OmegaLemmas.
 
-   .. cmdv:: SearchAbout
-      :name: SearchAbout
-
-      .. deprecated:: 8.5
-
-      Up to |Coq| version 8.4, :cmd:`Search` had the behavior of current
-      :cmd:`SearchHead` and the behavior of current :cmd:`Search` was obtained with
-      command :cmd:`SearchAbout`. For compatibility, the deprecated name
-      :cmd:`SearchAbout` can still be used as a synonym of :cmd:`Search`. For
-      compatibility, the list of objects to search when using :cmd:`SearchAbout`
-      may also be enclosed by optional ``[ ]`` delimiters.
-
 
 .. cmd:: SearchHead @term
 

@@ -1773,10 +1773,6 @@ let () =
       optread  = (fun () -> !search_output_name_only);
       optwrite = (:=) search_output_name_only }
 
-let warn_deprecated_search_about =
-  CWarnings.create ~name:"deprecated-search-about" ~category:"deprecated"
-         (fun () -> strbrk "The SearchAbout command is deprecated. Please use Search instead.")
-
 let vernac_search ~pstate ~atts s gopt r =
   let gopt = query_command_selector gopt in
   let r = interp_search_restriction r in
@@ -1809,12 +1805,8 @@ let vernac_search ~pstate ~atts s gopt r =
       (Search.search_rewrite ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
   | SearchHead c ->
       (Search.search_by_head ?pstate gopt (get_pattern c) r |> Search.prioritize_search) pr_search
-  | SearchAbout sl ->
-      warn_deprecated_search_about ();
-      (Search.search_about ?pstate gopt (List.map (on_snd (interp_search_about_item env Evd.(from_env env))) sl) r |>
-       Search.prioritize_search) pr_search
   | Search sl ->
-      (Search.search_about ?pstate gopt (List.map (on_snd (interp_search_about_item env Evd.(from_env env))) sl) r |>
+      (Search.search ?pstate gopt (List.map (on_snd (interp_search_about_item env Evd.(from_env env))) sl) r |>
        Search.prioritize_search) pr_search);
   Feedback.msg_notice (str "(use \"About\" for full details on implicit arguments)")
 

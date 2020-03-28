@@ -983,13 +983,6 @@ GRAMMAR EXTEND Gram
           { fun g -> VernacSearch (SearchRewrite c,g, l) }
       | IDENT "Search"; s = searchabout_query; l = searchabout_queries; "." ->
           { let (sl,m) = l in fun g -> VernacSearch (Search (s::sl),g, m) }
-      (* compatibility: SearchAbout *)
-      | IDENT "SearchAbout"; s = searchabout_query; l = searchabout_queries; "." ->
-          { fun g -> let (sl,m) = l in VernacSearch (SearchAbout (s::sl),g, m) }
-      (* compatibility: SearchAbout with "[ ... ]" *)
-      | IDENT "SearchAbout"; "["; sl = LIST1 searchabout_query; "]";
-        l = in_or_out_modules; "." ->
-         { fun g -> VernacSearch (SearchAbout sl,g, l) }
       ] ]
   ;
   printable:

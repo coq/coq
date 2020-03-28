@@ -1,3 +1,3 @@
-SearchAbout and.
+Search and.
 (* Anomaly: Mismatched instance and context when building universe substitution.
 Please report. *)
