@@ -111,18 +111,27 @@ Identifiers
 
 Numerals
   Numerals are sequences of digits with an optional fractional part
-  and exponent, optionally preceded by a minus sign. :n:`@int` is an integer;
-  a numeral without fractional or exponent parts. :n:`@num` is a non-negative
+  and exponent, optionally preceded by a minus sign. Hexadecimal numerals
+  start with ``0x`` or ``0X``. :n:`@int` is an integer;
+  a numeral without fractional nor exponent parts. :n:`@num` is a non-negative
   integer.  Underscores embedded in the digits are ignored, for example
   ``1_000_000`` is the same as ``1000000``.
 
   .. insertprodn numeral digit
 
   .. prodn::
-     numeral ::= {+ @digit } {? . {+ @digit } } {? {| e | E } {? {| + | - } } {+ @digit } }
-     int ::= {? - } {+ @digit }
-     num ::= {+ @digit }
      digit ::= 0 .. 9
+     digitu ::= {| @digit | _ }
+     hexdigit ::= {| 0 .. 9 | a..f | A..F }
+     hexdigitu ::= {| @hexdigit | _ }
+     decnum ::= @digit {* @digitu }
+     hexnum ::= {| 0x | 0X } @hexdigit {* @hexdigitu }
+     num ::= {| @decnum | @hexnum }
+     sign ::= {| + | - }
+     int ::= {? - } @num
+     decimal ::= @decnum {? . {+ @digitu } } {? {| e | E } {? @sign } @decnum }
+     hexadecimal ::= @hexnum {? . {+ @hexdigitu } } {? {| p | P } {? @sign } @decnum }
+     numeral ::= {? - } {| @decimal | @hexadecimal }
 
 Strings
   Strings begin and end with ``"`` (double quote).  Use ``""`` to represent
