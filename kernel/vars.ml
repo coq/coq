@@ -169,9 +169,6 @@ let subst_of_rel_context_instance sign l =
     | _ -> CErrors.anomaly (Pp.str "Instance and signature do not match.")
   in aux [] (List.rev sign) l
 
-let adjust_subst_to_rel_context sign l =
-  List.rev (subst_of_rel_context_instance sign l)
-
 let adjust_rel_to_rel_context sign n =
   let rec aux sign =
     let open RelDecl in
