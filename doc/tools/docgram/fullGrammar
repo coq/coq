@@ -1027,7 +1027,6 @@ gallina_ext: [
 | "Module" "Type" identref LIST0 module_binder check_module_types is_module_type
 | "Declare" "Module" export_token identref LIST0 module_binder ":" module_type_inl
 | "Section" identref
-| "Chapter" identref
 | "End" identref
 | "Collection" identref ":=" section_subset_expr
 | "Require" export_token LIST1 global

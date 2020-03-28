@@ -238,7 +238,7 @@ written using the first destructuring let syntax.
    Note that this only applies to pattern matching instances entered with :g:`match`.
    It doesn't affect pattern matching explicitly entered with a destructuring
    :g:`let`.
-   Use the :cmd:`Add @table` and :cmd:`Remove @table` commands to update this set.
+   Use the :cmd:`Add` and :cmd:`Remove` commands to update this set.
 
 
 Printing matching on booleans
@@ -252,7 +252,7 @@ which types are written this way:
    :name: Printing If
 
    Specifies a set of qualids for which pattern matching is displayed using
-   ``if`` … ``then`` … ``else`` ….  Use the :cmd:`Add @table` and :cmd:`Remove @table`
+   ``if`` … ``then`` … ``else`` ….  Use the :cmd:`Add` and :cmd:`Remove`
    commands to update this set.
 
 This example emphasizes what the printing settings offer.
@@ -719,7 +719,7 @@ accessible, absolute names can never be hidden.
 
        Locate nat.
 
-.. seealso:: Commands :cmd:`Locate` and :cmd:`Locate Library`.
+.. seealso:: Commands :cmd:`Locate`.
 
 .. _libraries-and-filesystem:
 

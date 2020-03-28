@@ -258,6 +258,9 @@ following form:
 Goal selectors
 ~~~~~~~~~~~~~~
 
+.. todo: mention this applies to Print commands and the Info command
+
+
 We can restrict the application of a tactic to a subset of the currently
 focused goals with:
 

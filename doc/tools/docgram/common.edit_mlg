@@ -151,8 +151,7 @@ fields: [ | DELETENT ]
 
 dirpath: [
 | REPLACE ident LIST0 field
-| WITH ident
-| dirpath field_ident
+| WITH LIST0 ( ident "." ) ident
 ]
 
 binders: [
@@ -220,6 +219,15 @@ tactic_expr0: [
 | WITH "[>" tactic_then_gen "]"
 ]
 
+(* lexer token *)
+IDENT: [
+| ident
+]
+
+scope: [
+| IDENT
+]
+
 operconstr100: [
 | MOVETO term_cast operconstr99 "<:" operconstr200
 | MOVETO term_cast operconstr99 "<<:" operconstr200
@@ -240,7 +248,9 @@ operconstr9: [
 
 operconstr1: [
 | REPLACE operconstr0 ".(" global LIST0 appl_arg ")"
-| WITH operconstr0 ".(" global LIST0 appl_arg ")"
+| WITH    operconstr0 ".(" global LIST0 appl_arg ")" (* huh? *)
+| REPLACE operconstr0 "%" IDENT
+| WITH operconstr0 "%" scope
 | MOVETO term_projection operconstr0 ".(" global LIST0 appl_arg ")"
 | MOVETO term_projection operconstr0 ".(" "@" global LIST0 ( operconstr9 ) ")"
 ]
@@ -364,6 +374,11 @@ pattern10: [
 | DELETE pattern1
 ]
 
+pattern1: [
+| REPLACE pattern0 "%" IDENT
+| WITH pattern0 "%" scope
+]
+
 pattern0: [
 | REPLACE "(" pattern200 ")"
 | WITH "(" LIST1 pattern200 SEP "|" ")"
@@ -419,6 +434,8 @@ gallina: [
 | WITH "Let" "CoFixpoint" corec_definition LIST0 ( "with" corec_definition )
 | REPLACE "Scheme" LIST1 scheme SEP "with"
 | WITH "Scheme" scheme LIST0 ( "with" scheme )
+| REPLACE "Primitive" identref OPT [ ":" lconstr ] ":=" register_token
+| WITH "Primitive" identref OPT [ ":" lconstr ] ":=" "#" identref
 ]
 
 constructor_list_or_record_decl: [
@@ -494,10 +511,6 @@ strategy_flag: [
 | OPTINREF
 ]
 
-export_token: [
-| OPTINREF
-]
-
 functor_app_annot: [
 | OPTINREF
 ]
@@ -536,20 +549,23 @@ gallina_ext: [
 | REPLACE "Generalizable" [ "All" "Variables" | "No" "Variables" | [ "Variable" | "Variables" ] LIST1 identref ]
 | WITH "Generalizable" [  [ "Variable" | "Variables" ] LIST1 identref | "All" "Variables" | "No" "Variables" ]
 
+(* don't show Export for Set, Unset *)
 | REPLACE "Export" "Set" option_table option_setting
-| WITH OPT "Export" "Set" option_table option_setting
+| WITH "Set" option_table option_setting
 | REPLACE "Export" "Unset" option_table
-| WITH OPT "Export" "Unset" option_table
+| WITH "Unset" option_table
 | REPLACE "Instance" instance_name ":" operconstr200 hint_info [ ":=" "{" record_declaration "}" | ":=" lconstr | ]
 | WITH "Instance" instance_name ":" operconstr200 hint_info OPT [ ":=" "{" record_declaration "}" | ":=" lconstr ]
 
+| REPLACE "From" global "Require" export_token LIST1 global
+| WITH "From" dirpath "Require" export_token LIST1 global
+]
+
+export_token: [
+| OPTINREF
 ]
 
 (* lexer stuff *)
-IDENT: [
-| ident
-]
-
 integer: [ | DELETENT ]
 RENAME: [
 | integer int (* todo: review uses in .mlg files, some should be "natural" *)
@@ -859,6 +875,7 @@ bar_cbrace: [
 printable: [
 | REPLACE [ "Sorted" | ] "Universes" OPT printunivs_subgraph OPT ne_string
 | WITH OPT "Sorted" "Universes" OPT printunivs_subgraph OPT ne_string
+| DELETE "Term" smart_global OPT univ_name_list  (* readded in commands *)
 | INSERTALL "Print"
 ]
 
@@ -878,15 +895,18 @@ command: [
 | DELETE "Back"
 | REPLACE "Back" natural
 | WITH "Back" OPT natural
-| REPLACE "Test" option_table "for" LIST1 option_ref_value
-| WITH "Test" option_table OPT ( "for" LIST1 option_ref_value )
-| DELETE "Test" option_table
 | REPLACE "Load" [ "Verbose" | ] [ ne_string | IDENT ]
 | WITH "Load" OPT "Verbose" [ ne_string | IDENT ]
 | DELETE "Unset" option_table
-| DELETE "Set" option_table option_setting
+| REPLACE "Set" option_table option_setting
+| WITH OPT "Export" "Set" option_table   (* set flag *)
+| REPLACE "Test" option_table "for" LIST1 option_ref_value
+| WITH "Test" option_table OPT ( "for" LIST1 option_ref_value )
+| DELETE "Test" option_table
+
+(* hide the fact that table names are limited to 2 IDENTs *)
 | REPLACE "Add" IDENT IDENT LIST1 option_ref_value
-| WITH "Add" IDENT OPT IDENT LIST1 option_ref_value
+| WITH "Add" option_table LIST1 option_ref_value
 | DELETE "Add" IDENT LIST1 option_ref_value
 | DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "symmetry" "proved" "by" constr "as" ident
 | DELETE "Add" "Parametric" "Relation" binders ":" constr constr "reflexivity" "proved" "by" constr "as" ident
@@ -941,7 +961,11 @@ command: [
 | REPLACE "Preterm" "of" ident
 | WITH "Preterm" OPT ( "of" ident )
 | DELETE "Preterm"
-| EDIT "Remove" ADD_OPT IDENT IDENT LIST1 option_ref_value
+
+(* hide the fact that table names are limited to 2 IDENTs *)
+| REPLACE "Remove" IDENT IDENT LIST1 option_ref_value
+| WITH "Remove" option_table LIST1 option_ref_value
+| DELETE "Remove" IDENT LIST1 option_ref_value
 | DELETE "Restore" "State" IDENT
 | DELETE "Restore" "State" ne_string
 | "Restore" "State" [ IDENT | ne_string ]
@@ -976,6 +1000,16 @@ command: [
 | REPLACE "Abort" identref
 | WITH "Abort" OPT [ "All" | identref ]
 
+(* show the locate options as separate commands *)
+| DELETE "Locate" locatable
+| locatable
+| REPLACE "Print" smart_global OPT univ_name_list
+| WITH "Print" OPT "Term" smart_global OPT univ_name_list
+
+]
+
+option_setting: [
+| OPTINREF
 ]
 
 only_parsing: [
@@ -1062,9 +1096,7 @@ legacy_attr: [
 | DELETE "NonCumulative"
 ]
 
-vernacular: [
-| LIST0 ( OPT all_attrs [ command | tactic ] "." )
-]
+sentence: [ ]  (* productions defined below *)
 
 rec_definition: [
 | REPLACE ident_decl binders_fixannot type_cstr OPT [ ":=" lconstr ] decl_notations
@@ -1124,7 +1156,7 @@ query_command: [
 | REPLACE "SearchRewrite" constr_pattern in_or_out_modules "."
 | WITH "SearchRewrite" constr_pattern in_or_out_modules
 | REPLACE "Search" searchabout_query searchabout_queries "."
-| WITH "Search" searchabout_query searchabout_queries
+| WITH "Search" searchabout_queries
 ]
 
 vernac_toplevel: [
@@ -1142,15 +1174,7 @@ vernac_toplevel: [
 | DELETE vernac_control
 ]
 
-positive_search_mark: [
-| OPTINREF
-]
-
 in_or_out_modules: [
-| OPTINREF
-]
-
-searchabout_queries: [
 | OPTINREF
 ]
 
@@ -1159,18 +1183,14 @@ vernac_control: [
    they can't refer to the vernac_toplevel commands.
    cover this the descriptions of these commands *)
 | REPLACE "Time" vernac_control
-| WITH "Time" command
+| WITH "Time" sentence
 | REPLACE "Redirect" ne_string vernac_control
-| WITH "Redirect" ne_string command
+| WITH "Redirect" ne_string sentence
 | REPLACE "Timeout" natural vernac_control
-| WITH "Timeout" natural command
+| WITH "Timeout" natural sentence
 | REPLACE "Fail" vernac_control
-| WITH "Fail" command
+| WITH "Fail" sentence
 | DELETE decorated_vernac
-]
-
-option_setting: [
-| OPTINREF
 ]
 
 orient: [
@@ -1351,6 +1371,51 @@ module_expr: [
 | DELETE module_expr module_expr_atom
 ]
 
+locatable: [
+| INSERTALL "Locate"
+]
+
+ne_in_or_out_modules: [
+| REPLACE "inside" LIST1 global
+| WITH [ "inside" | "outside" ] LIST1 global
+| DELETE "outside" LIST1 global
+]
+
+searchabout_query: [
+| REPLACE positive_search_mark ne_string OPT scope_delimiter
+| WITH ne_string OPT scope_delimiter
+| REPLACE positive_search_mark constr_pattern
+| WITH constr_pattern
+]
+
+searchabout_queries: [
+| DELETE ne_in_or_out_modules
+| REPLACE searchabout_query searchabout_queries
+| WITH LIST1 ( positive_search_mark searchabout_query ) OPT ne_in_or_out_modules
+| DELETE (* empty *)
+]
+
+positive_search_mark: [
+| OPTINREF
+]
+
+by_notation: [
+| REPLACE ne_string OPT [ "%" IDENT ]
+| WITH ne_string OPT [ "%" scope ]
+]
+
+scope_delimiter: [
+| REPLACE "%" IDENT
+| WITH "%" scope
+]
+
+(* Don't show these details *)
+DELETE: [
+| register_token
+| register_prim_token
+| register_type_token
+]
+
 SPLICE: [
 | noedit_mode
 | bigint
@@ -1435,9 +1500,7 @@ SPLICE: [
 | mode
 | mult_pattern
 | open_constr
-| option_table
 | record_declaration
-| register_type_token
 | tactic
 | uconstr
 | impl_ident_head
@@ -1466,14 +1529,12 @@ SPLICE: [
 | assum_coe
 | inline
 | occs
-| univ_name_list
 | ltac_info
 | field_mods
 | ltac_production_sep
 | ltac_tactic_level
 | printunivs_subgraph
 | ring_mods
-| scope_delimiter
 | eliminator  (* todo: splice or not? *)
 | quoted_attributes  (* todo: splice or not? *)
 | printable
@@ -1486,7 +1547,6 @@ SPLICE: [
 | option_ref_value
 | positive_search_mark
 | in_or_out_modules
-| register_prim_token
 | option_setting
 | orient
 | with_bindings
@@ -1518,6 +1578,10 @@ SPLICE: [
 | ltac_def_kind
 | intropatterns
 | instance_name
+| ne_in_or_out_modules
+| searchabout_queries
+| locatable
+| scope_delimiter
 ] (* end SPLICE *)
 
 RENAME: [
@@ -1567,7 +1631,11 @@ RENAME: [
 | record_binder_body field_body
 | class_rawexpr class
 | smart_global smart_qualid
+| searchabout_query search_item
+| option_table setting_name
 ]
+
+(* todo: positive_search_mark is a lousy name for OPT "-" *)
 
 (* todo: doesn't work if up above... maybe because 'clause' doesn't exist? *)
 clause_dft_concl: [
@@ -1656,3 +1724,18 @@ SPLICE: [
 | tactic_notation_tactics
 ]
 (* todo: ssrreflect*.rst ref to fix_body is incorrect *)
+
+(* not included in insertprodn; defined in rst with :production: *)
+control_command: [ ]
+query_command: [ ] (* re-add since previously spliced *)
+
+sentence: [
+| OPT all_attrs command "."
+| OPT all_attrs OPT ( num ":" ) query_command "."
+| OPT all_attrs OPT toplevel_selector ltac_expr [ "." | "..." ]
+| control_command
+]
+
+vernacular: [
+| LIST0 sentence
+]

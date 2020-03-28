@@ -248,7 +248,7 @@ PLUGIN_MLGS := $(wildcard plugins/*/*.mlg)
 OMITTED_PLUGIN_MLGS := plugins/ssr/ssrparser.mlg plugins/ssr/ssrvernac.mlg plugins/ssrmatching/g_ssrmatching.mlg
 DOC_MLGS := $(wildcard */*.mlg) $(sort $(filter-out $(OMITTED_PLUGIN_MLGS), $(PLUGIN_MLGS)))
 DOC_EDIT_MLGS := $(wildcard doc/tools/docgram/*.edit_mlg)
-DOC_RSTS := $(wildcard doc/sphinx/*/*.rst)
+DOC_RSTS := $(wildcard doc/sphinx/*/*.rst) $(wildcard doc/sphinx/*/*/*.rst)
 
 doc/tools/docgram/fullGrammar: $(DOC_GRAM) $(DOC_MLGS)
 	$(SHOW)'DOC_GRAM'

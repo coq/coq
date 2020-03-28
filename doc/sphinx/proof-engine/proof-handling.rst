@@ -41,8 +41,8 @@ terms are called *proof terms*.
 
 .. _proof-editing-mode:
 
-Switching on/off the proof editing mode
--------------------------------------------
+Entering and leaving proof editing mode
+---------------------------------------
 
 The proof editing mode is entered by asserting a statement, which typically is
 the assertion of a theorem using an assertion command like :cmd:`Theorem`. The
