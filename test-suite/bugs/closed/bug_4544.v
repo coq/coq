@@ -1003,7 +1003,8 @@ Proof.
           = loops_functor (group_loops_functor
                                  (pmap_compose psi phi)) g).
   rewrite <- p.
-  Fail Timeout 1 Time rewrite !loops_functor_group.
+  Timeout 1 Time rewrite !loops_functor_group.
+  Undo.
   (* 0.004 s in 8.5rc1, 8.677 s in 8.5 *)
   Timeout 1 do 3 rewrite loops_functor_group.
 Abort.
