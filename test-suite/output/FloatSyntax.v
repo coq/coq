@@ -21,6 +21,9 @@ Check (-2.5e-123).
 Check (2 + 2).
 Check (2.5 + 2.5).
 
+Check 1e309.
+Check -1e309.
+
 Open Scope nat_scope.
 
 Check 2.
