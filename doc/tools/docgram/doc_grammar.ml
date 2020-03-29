@@ -32,6 +32,7 @@ type args = {
   fullGrammar : bool;
   check_tacs : bool;
   check_cmds : bool;
+  no_update: bool;
   show_warn : bool;
   verbose : bool;
   verify : bool;
@@ -43,6 +44,7 @@ let default_args = {
   fullGrammar = false;
   check_tacs = false;
   check_cmds = false;
+  no_update = false;
   show_warn = true;
   verbose = false;
   verify = false;
@@ -1574,7 +1576,7 @@ let reorder_grammar eg reordered_rules file =
   g_reorder eg !og.map !og.order
 
 
-let finish_with_file old_file verify =
+let finish_with_file old_file args =
   let files_eq f1 f2 =
     let chunksize = 8192 in
     (try
@@ -1605,18 +1607,18 @@ let finish_with_file old_file verify =
     with Sys_error _ -> false)
   in
 
-  let temp_file = (old_file ^ "_temp") in
+  let temp_file = (old_file ^ ".new") in
   if !exit_code <> 0 then
     Sys.remove temp_file
-  else if verify then begin
+  else if args.verify then begin
     if not (files_eq old_file temp_file) then
       error "%s is not current\n" old_file;
     Sys.remove temp_file
-  end else
+  end else if not args.no_update then
     Sys.rename temp_file old_file
 
 let open_temp_bin file =
-  open_out_bin (sprintf "%s_temp" file)
+  open_out_bin (sprintf "%s.new" file)
 
 let match_cmd_regex = Str.regexp "[a-zA-Z0-9_ ]+"
 
@@ -1829,7 +1831,7 @@ let process_rst g file args seen tac_prods cmd_prods =
   with End_of_file -> ();
   close_in old_rst;
   close_out new_rst;
-  finish_with_file file args.verify
+  finish_with_file file args
 
 let report_omitted_prods entries seen label split =
   let maybe_warn first last n =
@@ -1877,7 +1879,7 @@ let process_grammar args =
       "DOC_GRAMMAR";
   print_in_order out g `MLG !g.order StringSet.empty;
   close_out out;
-  finish_with_file (dir "fullGrammar") args.verify;
+  finish_with_file (dir "fullGrammar") args;
   if args.verbose then
     print_special_tokens g;
 
@@ -1896,7 +1898,7 @@ let process_grammar args =
           "DOC_GRAMMAR";
       print_in_order out g `MLG !g.order StringSet.empty;
       close_out out;
-      finish_with_file (dir "editedGrammar") args.verify;
+      finish_with_file (dir "editedGrammar") args;
       report_bad_nts g "editedGrammar"
     end;
 
@@ -1911,11 +1913,13 @@ let process_grammar args =
       reorder_grammar g ordered_grammar "orderedGrammar";
       print_in_order out g `MLG !g.order StringSet.empty;
       close_out out;
-      finish_with_file (dir "orderedGrammar") args.verify;
+      finish_with_file (dir "orderedGrammar") args;
       check_singletons g
 (*      print_dominated g*)
     end;
 
+    let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; tacvs=NTMap.empty; cmds=NTMap.empty; cmdvs=NTMap.empty } in
+    let args = { args with no_update = false } in (* always update rsts in place for now *)
     if !exit_code = 0 then begin
       let plist nt =
         let list = (List.map (fun t -> String.trim (prod_to_prodn t))
@@ -1923,17 +1927,20 @@ let process_grammar args =
         list, StringSet.of_list list in
       let tac_list, tac_prods = plist "simple_tactic" in
       let cmd_list, cmd_prods = plist "command" in
-      let seen = ref { nts=NTMap.empty; tacs=NTMap.empty; tacvs=NTMap.empty; cmds=NTMap.empty; cmdvs=NTMap.empty } in
       List.iter (fun file -> process_rst g file args seen tac_prods cmd_prods) args.rst_files;
       report_omitted_prods !g.order !seen.nts "Nonterminal" "";
       let out = open_out (dir "updated_rsts") in
       close_out out;
+    end;
+
 (*
       if args.check_tacs then
         report_omitted_prods tac_list !seen.tacs "Tactic" "\n                 ";
       if args.check_cmds then
         report_omitted_prods cmd_list !seen.cmds "Command" "\n                  ";
 *)
+
+    if !exit_code = 0 then begin
       (* generate report on cmds or tacs *)
       let cmdReport outfile cmdStr cmd_nts cmds cmdvs =
         let rstCmds = StringSet.of_list (List.map (fun b -> let c, _ = b in c) (NTMap.bindings cmds)) in
@@ -1942,7 +1949,7 @@ let process_grammar args =
             StringSet.union set (StringSet.of_list (List.map (fun p -> String.trim (prod_to_prodn p)) (NTMap.find nt !prodn_gram.map)))
           ) StringSet.empty cmd_nts in
         let allCmds = StringSet.union rstCmdvs (StringSet.union rstCmds gramCmds) in
-        let out = open_out_bin (dir outfile) in
+        let out = open_temp_bin (dir outfile) in
         StringSet.iter (fun c ->
             let rsts = StringSet.mem c rstCmds in
             let gram = StringSet.mem c gramCmds in
@@ -1956,6 +1963,7 @@ let process_grammar args =
             fprintf out "%s%s  %s\n" pfx var c)
           allCmds;
         close_out out;
+        finish_with_file (dir outfile) args;
         Printf.printf "# %s in rsts, gram, total = %d %d %d\n" cmdStr (StringSet.cardinal gramCmds)
           (StringSet.cardinal rstCmds) (StringSet.cardinal allCmds);
       in
@@ -1973,7 +1981,7 @@ let process_grammar args =
       let out = open_temp_bin (dir "prodnGrammar") in
       print_in_order out prodn_gram `PRODN !prodn_gram.order StringSet.empty;
       close_out out;
-      finish_with_file (dir "prodnGrammar") args.verify
+      finish_with_file (dir "prodnGrammar") args
     end
   end
 
@@ -1985,6 +1993,7 @@ let parse_args () =
         | "-check-cmds" -> { args with check_cmds = true }
         | "-check-tacs" -> { args with check_tacs = true }
         | "-no-warn" -> show_warn := false; { args with show_warn = true }
+        | "-no-update" -> { args with no_update = true }
         | "-short" -> { args with fullGrammar = true }
         | "-verbose" -> { args with verbose = true }
         | "-verify" -> { args with verify = true }

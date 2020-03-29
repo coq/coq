@@ -110,6 +110,9 @@ Other command line arguments:
 
 * `-no-warn` suppresses printing of some warning messages
 
+* `-no-update` puts updates to `fullGrammar` and `orderedGrammar` into new files named
+  `*.new`, leaving the originals unmodified.  For use in Dune.
+
 * `-short` limits processing to updating/verifying only the `fullGrammar` file
 
 * `-verbose` prints more messages about the grammar

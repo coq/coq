@@ -246,16 +246,16 @@ $(DOC_GRAM): $(DOC_GRAMCMO) coqpp/coqpp_parser.mli coqpp/coqpp_parser.ml doc/too
 # user-contrib/*/*.mlg omitted for now (e.g. ltac2)
 PLUGIN_MLGS := $(wildcard plugins/*/*.mlg)
 OMITTED_PLUGIN_MLGS := plugins/ssr/ssrparser.mlg plugins/ssr/ssrvernac.mlg plugins/ssrmatching/g_ssrmatching.mlg
-DOC_MLGS := */*.mlg $(sort $(filter-out $(OMITTED_PLUGIN_MLGS), $(PLUGIN_MLGS)))
-DOC_EDIT_MLGS := doc/tools/docgram/*.edit_mlg
-DOC_RSTS := doc/sphinx/*/*.rst
+DOC_MLGS := $(wildcard */*.mlg) $(sort $(filter-out $(OMITTED_PLUGIN_MLGS), $(PLUGIN_MLGS)))
+DOC_EDIT_MLGS := $(wildcard doc/tools/docgram/*.edit_mlg)
+DOC_RSTS := $(wildcard doc/sphinx/*/*.rst)
 
 doc/tools/docgram/fullGrammar: $(DOC_GRAM) $(DOC_MLGS)
 	$(SHOW)'DOC_GRAM'
 	$(HIDE)$(DOC_GRAM) -short -no-warn $(DOC_MLGS)
 
 #todo: add a dependency of sphinx on updated_rsts when we're ready
-doc/tools/docgram/orderedGrammar doc/tools/docgram/updated_rsts: $(DOC_GRAM) $(DOC_EDIT_MLGS)
+doc/tools/docgram/orderedGrammar doc/tools/docgram/updated_rsts: doc/tools/docgram/fullGrammar $(DOC_GRAM) $(DOC_EDIT_MLGS)
 	$(SHOW)'DOC_GRAM_RSTS'
 	$(HIDE)$(DOC_GRAM) -check-cmds $(DOC_MLGS) $(DOC_RSTS)
 
