@@ -182,36 +182,9 @@ let marshal_in filename ch =
   | End_of_file -> error_corrupted filename "premature end of file"
   | Failure s -> error_corrupted filename s
 
-let digest_out = Digest.output
-let digest_in filename ch =
-  try Digest.input ch
-  with
-  | End_of_file -> error_corrupted filename "premature end of file"
-  | Failure s -> error_corrupted filename s
-
-let marshal_out_segment f ch v =
-  let start = pos_out ch in
-  output_binary_int ch 0;  (* dummy value for stop *)
-  marshal_out ch v;
-  let stop = pos_out ch in
-  seek_out ch start;
-  output_binary_int ch stop;
-  seek_out ch stop;
-  digest_out ch (Digest.file f)
-
-let marshal_in_segment f ch =
-  let stop = (input_binary_int f ch : int) in
-  let v = marshal_in f ch in
-  let digest = digest_in f ch in
-  v, stop, digest
-
-let skip_in_segment f ch =
-  let stop = (input_binary_int f ch : int) in
-  seek_in ch stop;
-  stop, digest_in f ch
-
-type magic_number_error = {filename: string; actual: int; expected: int}
+type magic_number_error = {filename: string; actual: int32; expected: int32}
 exception Bad_magic_number of magic_number_error
+exception Bad_version_number of magic_number_error
 
 let raw_extern_state magic filename =
   let channel = open_trapping_failure filename in
@@ -225,8 +198,8 @@ let raw_intern_state magic filename =
     if not (Int.equal actual_magic magic) then
         raise (Bad_magic_number {
             filename=filename;
-            actual=actual_magic;
-            expected=magic});
+            actual=Int32.of_int actual_magic;
+            expected=Int32.of_int magic});
     channel
   with
   | End_of_file -> error_corrupted filename "premature end of file"
@@ -256,12 +229,230 @@ let intern_state magic filename =
 
 let with_magic_number_check f a =
   try f a
-  with Bad_magic_number {filename=fname;actual=actual;expected=expected} ->
+  with
+  | Bad_magic_number {filename=fname; _} ->
     CErrors.user_err ~hdr:"with_magic_number_check"
-    (str"File " ++ str fname ++ strbrk" has bad magic number " ++
-    int actual ++ str" (expected " ++ int expected ++ str")." ++
+    (str"File " ++ str fname ++ strbrk" is corrupted.")
+  | Bad_version_number {filename=fname;actual=actual;expected=expected} ->
+    CErrors.user_err ~hdr:"with_magic_number_check"
+    (str"File " ++ str fname ++ strbrk" has bad version number " ++
+    (str @@ Int32.to_string actual) ++ str" (expected " ++ (str @@ Int32.to_string expected) ++ str")." ++
     spc () ++
     strbrk "It is corrupted or was compiled with another version of Coq.")
+
+module ObjFile =
+struct
+
+let magic_number = 0x436F7121l (* "Coq!" *)
+
+(*
+
+int32: big-endian, 4 bytes
+int64: big-endian, 8 bytes
+
+-- string --
+int32 | length of the next field
+data  |
+
+-- segment summary --
+string | name
+int64  | absolute position
+int64  | length (without hash)
+hash   | MD5 (16 bytes)
+
+-- segment --
+...  | binary data
+hash | MD5 (16 bytes)
+
+-- summary --
+int32 | number of segment summaries
+s1    |
+...   | segment summaries
+sn    |
+
+-- vo --
+int32   | magic number
+int32   | Coq version
+int64   | absolute position of the summary
+...     | segments
+summary |
+
+*)
+
+type segment = {
+  name : string;
+  pos : int64;
+  len : int64;
+  hash : Digest.t;
+}
+
+type in_handle = {
+  in_filename : string;
+  in_channel : in_channel;
+  in_segments : segment CString.Map.t;
+}
+
+type out_handle = {
+  out_filename : string;
+  out_channel : out_channel;
+  mutable out_segments : segment CString.Map.t;
+}
+
+let input_int32 ch =
+  let accu = ref 0l in
+  for _i = 0 to 3 do
+    let c = input_byte ch in
+    accu := Int32.add (Int32.shift_left !accu 8) (Int32.of_int c)
+  done;
+  !accu
+
+let input_int64 ch =
+  let accu = ref 0L in
+  for _i = 0 to 7 do
+    let c = input_byte ch in
+    accu := Int64.add (Int64.shift_left !accu 8) (Int64.of_int c)
+  done;
+  !accu
+
+let output_int32 ch n =
+  for i = 0 to 3 do
+    output_byte ch (Int32.to_int (Int32.shift_right_logical n (24 - 8 * i)))
+  done
+
+let output_int64 ch n =
+  for i = 0 to 7 do
+    output_byte ch (Int64.to_int (Int64.shift_right_logical n (56 - 8 * i)))
+  done
+
+let input_segment_summary ch =
+  let nlen = input_int32 ch in
+  let name = really_input_string ch (Int32.to_int nlen) in
+  let pos = input_int64 ch in
+  let len = input_int64 ch in
+  let hash = Digest.input ch in
+  { name; pos; len; hash }
+
+let output_segment_summary ch seg =
+  let nlen = Int32.of_int (String.length seg.name) in
+  let () = output_int32 ch nlen in
+  let () = output_string ch seg.name in
+  let () = output_int64 ch seg.pos in
+  let () = output_int64 ch seg.len in
+  let () = Digest.output ch seg.hash in
+  ()
+
+let rec input_segment_summaries ch n accu =
+  if Int32.equal n 0l then accu
+  else
+    let s = input_segment_summary ch in
+    let accu = CString.Map.add s.name s accu in
+    input_segment_summaries ch (Int32.pred n) accu
+
+let marshal_in_segment (type a) h ~segment : a * Digest.t =
+  let { in_channel = ch } = h in
+  let s = CString.Map.find segment h.in_segments in
+  let () = LargeFile.seek_in ch s.pos in
+  let (v : a) = marshal_in h.in_filename ch in
+  let () = assert (Int64.equal (LargeFile.pos_in ch) (Int64.add s.pos s.len)) in
+  let h = Digest.input ch in
+  let () = assert (String.equal h s.hash) in
+  (v, s.hash)
+
+let marshal_out_segment h ~segment v =
+  let { out_channel = ch } = h in
+  let () = assert (not (CString.Map.mem segment h.out_segments)) in
+  let pos = LargeFile.pos_out ch in
+  let () = Marshal.to_channel ch v [] in
+  let () = flush ch in
+  let pos' = LargeFile.pos_out ch in
+  let len = Int64.sub pos' pos in
+  let hash =
+    let in_ch = open_in h.out_filename in
+    let () = LargeFile.seek_in in_ch pos in
+    let digest = Digest.channel in_ch (Int64.to_int len) in
+    let () = close_in in_ch in
+    digest
+  in
+  let () = Digest.output ch hash in
+  let s = { name = segment; pos; len; hash } in
+  let () = h.out_segments <- CString.Map.add segment s h.out_segments in
+  ()
+
+let marshal_out_binary h ~segment =
+  let { out_channel = ch } = h in
+  let () = assert (not (CString.Map.mem segment h.out_segments)) in
+  let pos = LargeFile.pos_out ch in
+  let finish () =
+    let () = flush ch in
+    let pos' = LargeFile.pos_out ch in
+    let len = Int64.sub pos' pos in
+    let hash =
+      let in_ch = open_in h.out_filename in
+      let () = LargeFile.seek_in in_ch pos in
+      let digest = Digest.channel in_ch (Int64.to_int len) in
+      let () = close_in in_ch in
+      digest
+    in
+    let () = Digest.output ch hash in
+    let s = { name = segment; pos; len; hash } in
+    h.out_segments <- CString.Map.add segment s h.out_segments
+  in
+  ch, finish
+
+let open_in ~file =
+  try
+    let ch = open_in_bin file in
+    let magic = input_int32 ch in
+    let version = input_int32 ch in
+    let () =
+      if not (Int32.equal magic magic_number) then
+        let e = { filename = file; actual = version; expected = magic_number } in
+        raise (Bad_magic_number e)
+    in
+    let () =
+      let expected = Coq_config.vo_version in
+      if not (Int32.equal version expected) then
+        let e = { filename = file; actual = version; expected } in
+        raise (Bad_version_number e)
+    in
+    let summary_pos = input_int64 ch in
+    let () = LargeFile.seek_in ch summary_pos in
+    let nsum = input_int32 ch in
+    let seg = input_segment_summaries ch nsum CString.Map.empty in
+    { in_filename = file; in_channel = ch; in_segments = seg }
+  with
+  | End_of_file -> error_corrupted file "premature end of file"
+  | Failure s | Sys_error s -> error_corrupted file s
+
+let close_in ch =
+  close_in ch.in_channel
+
+let get_segment ch ~segment =
+  CString.Map.find segment ch.in_segments
+
+let segments ch = ch.in_segments
+
+let open_out ~file =
+  let ch = open_trapping_failure file in
+  let () = output_int32 ch magic_number in
+  let () = output_int32 ch Coq_config.vo_version in
+  let () = output_int64 ch 0L (* placeholder *) in
+  { out_channel = ch; out_segments = CString.Map.empty; out_filename = file }
+
+let close_out { out_channel = ch; out_segments = seg } =
+  let () = flush ch in
+  let pos = LargeFile.pos_out ch in
+  (* Write the segment summary *)
+  let () = output_int32 ch (Int32.of_int (CString.Map.cardinal seg)) in
+  let iter _ s = output_segment_summary ch s in
+  let () = CString.Map.iter iter seg in
+  (* Overwrite the position place holder *)
+  let () = LargeFile.seek_out ch 8L in
+  let () = output_int64 ch pos in
+  let () = flush ch in
+  close_out ch
+
+end
 
 (* Time stamps. *)
 

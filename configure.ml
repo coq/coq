@@ -1059,6 +1059,7 @@ let write_configml f =
   let pr_s = pr "let %s = %S\n" in
   let pr_b = pr "let %s = %B\n" in
   let pr_i = pr "let %s = %d\n" in
+  let pr_i32 = pr "let %s = %dl\n" in
   let pr_p s o = pr "let %s = %S\n" s
     (match o with Relative s -> s | Absolute s -> s) in
   let pr_li n l = pr "let %s = [%s]\n" n (String.concat ";" (List.map string_of_int l)) in
@@ -1086,7 +1087,7 @@ let write_configml f =
   pr_s "exec_extension" exe;
   pr "let gtk_platform = `%s\n" !idearchdef;
   pr_b "has_natdynlink" hasnatdynlink;
-  pr_i "vo_magic_number" vo_magic;
+  pr_i32 "vo_version" vo_magic;
   pr_i "state_magic_number" state_magic;
   pr_s "browser" browser;
   pr_s "wwwcoq" !prefs.coqwebsite;
