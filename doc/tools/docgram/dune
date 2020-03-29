@@ -43,9 +43,6 @@
   orderedGrammar)
  (action
   (progn
-   (bash "for f in fullGrammar orderedGrammar; do cp ${f} ${f}.old; done")
-   (chdir %{project_root} (run doc_grammar -check-cmds %{input}))
-   (bash "for f in fullGrammar orderedGrammar; do cp ${f} ${f}.new; done")
-   (bash "for f in fullGrammar orderedGrammar; do cp ${f}.old ${f}; done")
+   (chdir %{project_root} (run doc_grammar -check-cmds -no-update %{input}))
    (diff? fullGrammar fullGrammar.new)
    (diff? orderedGrammar orderedGrammar.new))))
