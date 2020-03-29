@@ -43,5 +43,5 @@ Numeral Notation nat Nat.of_uint Nat.to_uint : nat_scope (abstract after 5001).
 (* Printing/Parsing of bytes *)
 Export Byte.ByteSyntaxNotations.
 
-(* Default substrings not considered by queries like SearchAbout *)
+(* Default substrings not considered by queries like Search *)
 Add Search Blacklist "_subproof" "_subterm" "Private_".

@@ -402,7 +402,7 @@ let rec interp_search_about args accu = match args with
 | [] -> accu
 | (flag, arg) :: rem ->
   fun gr env typ ->
-    let ans = Search.search_about_filter arg gr env typ in
+    let ans = Search.search_filter arg gr env typ in
     (if flag then ans else not ans) && interp_search_about rem accu gr env typ
 
 let interp_search_arg arg =

@@ -1125,10 +1125,6 @@ query_command: [
 | WITH "SearchRewrite" constr_pattern in_or_out_modules
 | REPLACE "Search" searchabout_query searchabout_queries "."
 | WITH "Search" searchabout_query searchabout_queries
-| REPLACE "SearchAbout" searchabout_query searchabout_queries "."
-| WITH "SearchAbout" searchabout_query searchabout_queries
-| REPLACE "SearchAbout" "[" LIST1 searchabout_query "]" in_or_out_modules "."
-| WITH "SearchAbout" "[" LIST1 searchabout_query "]" in_or_out_modules
 ]
 
 vernac_toplevel: [

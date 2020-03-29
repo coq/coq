@@ -918,8 +918,6 @@ command: [
 | "SearchPattern" one_term OPT ne_in_or_out_modules
 | "SearchRewrite" one_term OPT ne_in_or_out_modules
 | "Search" searchabout_query OPT searchabout_queries
-| "SearchAbout" searchabout_query OPT searchabout_queries
-| "SearchAbout" "[" LIST1 searchabout_query "]" OPT ne_in_or_out_modules
 | "Time" command
 | "Redirect" string command
 | "Timeout" num command
@@ -1441,8 +1439,6 @@ as_or_and_ipat: [
 
 eqn_ipat: [
 | "eqn" ":" naming_intropattern
-| "_eqn" ":" naming_intropattern
-| "_eqn"
 ]
 
 as_name: [

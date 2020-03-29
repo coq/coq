@@ -142,7 +142,7 @@ open Pputils
     | SearchOutside [] -> mt()
     | SearchOutside l -> spc() ++ keyword "outside" ++ spc() ++ prlist_with_sep sep pr_module l
 
-  let pr_search_about (b,c) =
+  let pr_search (b,c) =
     (if b then str "-" else mt()) ++
       match c with
         | SearchSubPattern p ->
@@ -158,10 +158,8 @@ open Pputils
       | SearchHead c -> keyword "SearchHead" ++ spc() ++ pr_p c ++ pr_in_out_modules b
       | SearchPattern c -> keyword "SearchPattern" ++ spc() ++ pr_p c ++ pr_in_out_modules b
       | SearchRewrite c -> keyword "SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
-      | SearchAbout sl ->
-         keyword "SearchAbout" ++ spc() ++ prlist_with_sep spc pr_search_about sl ++ pr_in_out_modules b
       | Search sl ->
-         keyword "Search" ++ spc() ++ prlist_with_sep spc pr_search_about sl ++ pr_in_out_modules b
+         keyword "Search" ++ spc() ++ prlist_with_sep spc pr_search sl ++ pr_in_out_modules b
 
   let pr_option_ref_value = function
     | QualidRefValue id -> pr_qualid id

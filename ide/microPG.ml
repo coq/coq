@@ -289,7 +289,6 @@ let pg = insert pg "Proof General" [mC,_c,"c"; mC,_a,"a"] [
   mkE _p "p" "Print" (Callback (fun gui -> command gui "Print"));
   mkE _c "c" "Check" (Callback (fun gui -> command gui "Check"));
   mkE _b "b" "About" (Callback (fun gui -> command gui "About"));
-  mkE _a "a" "Search About" (Callback (fun gui -> command gui "SearchAbout"));
   mkE _o "o" "Search Pattern" (Callback (fun gui->command gui "SearchPattern"));
   mkE _l "l" "Locate" (Callback (fun gui -> command gui "Locate"));
   mkE _Return "RET" "match template" (Action("Templates","match"));

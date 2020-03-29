@@ -1244,8 +1244,6 @@ query_command: [
 | "SearchPattern" constr_pattern in_or_out_modules "."
 | "SearchRewrite" constr_pattern in_or_out_modules "."
 | "Search" searchabout_query searchabout_queries "."
-| "SearchAbout" searchabout_query searchabout_queries "."
-| "SearchAbout" "[" LIST1 searchabout_query "]" in_or_out_modules "."
 ]
 
 printable: [
@@ -2454,8 +2452,6 @@ as_or_and_ipat: [
 
 eqn_ipat: [
 | "eqn" ":" naming_intropattern
-| "_eqn" ":" naming_intropattern
-| "_eqn"
 |
 ]
 
