@@ -9,30 +9,13 @@
 (************************************************************************)
 
 open Names
-open Extend
 open Genarg
 open Constrexpr
 open Libnames
 
 (** The parser of Coq *)
 
-module Parsable :
-sig
-  type t
-  val make : ?loc:Loc.t -> char Stream.t -> t
-  (* Get comment parsing information from the Lexer *)
-  val comment_state : t -> ((int * int) * string) list
-end
-
-module Entry : sig
-  type 'a t = 'a Extend.entry
-  val create : string -> 'a t
-  val parse : 'a t -> Parsable.t -> 'a
-  val print : Format.formatter -> 'a t -> unit
-  val of_parser : string -> (Gramlib.Plexing.location_function -> Tok.t Stream.t -> 'a) -> 'a t
-  val parse_token_stream : 'a t -> Tok.t Stream.t -> 'a
-  val name : 'a t -> string
-end
+include Gramlib.Grammar.S with type te = Tok.t and type 'a pattern = 'a Tok.p
 
 module Lookahead : sig
   type t
@@ -222,24 +205,11 @@ module Module :
     val module_type : module_ast Entry.t
   end
 
-val epsilon_value : ('a -> 'self) -> ('self, _, 'a) Extend.symbol -> 'self option
+(** {5 Type-safe grammar extension} *)
+
+val epsilon_value : ('a -> 'self) -> ('self, _, 'a) Symbol.t -> 'self option
 
 (** {5 Extending the parser without synchronization} *)
-
-type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
-(** Type of reinitialization data *)
-
-type 'a single_extend_statement =
-  string option *
-  (* Level *)
-  Gramlib.Gramext.g_assoc option *
-  (* Associativity *)
-  'a production_rule list
-  (* Symbol list with the interpretation function *)
-
-type 'a extend_statement =
-  Gramlib.Gramext.position option *
-  'a single_extend_statement list
 
 val grammar_extend : 'a Entry.t -> 'a extend_statement -> unit
 (** Extend the grammar of Coq, without synchronizing it with the backtracking
@@ -256,6 +226,9 @@ module GramState : Store.S
 type 'a grammar_command
 (** Type of synchronized parsing extensions. The ['a] type should be
     marshallable. *)
+
+type gram_reinit = Gramlib.Gramext.g_assoc * Gramlib.Gramext.position
+(** Type of reinitialization data *)
 
 type extend_rule =
 | ExtendRule : 'a Entry.t * 'a extend_statement -> extend_rule

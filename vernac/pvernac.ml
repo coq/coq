@@ -51,14 +51,13 @@ module Vernac_ =
     let noedit_mode = gec_vernac "noedit_command"
 
     let () =
-      let open Extend in
       let act_vernac v loc = Some v in
       let act_eoi _ loc = None in
       let rule = [
-        Rule (Next (Stop, Atoken Tok.PEOI), act_eoi);
-        Rule (Next (Stop, Aentry vernac_control), act_vernac);
+        Pcoq.(Production.make (Rule.next Rule.stop (Symbol.token Tok.PEOI)) act_eoi);
+        Pcoq.(Production.make (Rule.next Rule.stop (Symbol.nterm vernac_control)) act_vernac);
       ] in
-      Pcoq.grammar_extend main_entry (None, [None, None, rule])
+      Pcoq.(grammar_extend main_entry {pos=None; data=[None, None, rule]})
 
     let select_tactic_entry spec =
       match spec with

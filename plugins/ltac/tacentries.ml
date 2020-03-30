@@ -44,11 +44,11 @@ let coincide s pat off =
   !break
 
 let atactic n =
-  if n = 5 then Aentry Pltac.binder_tactic
-  else Aentryl (Pltac.tactic_expr, string_of_int n)
+  if n = 5 then Pcoq.Symbol.nterm Pltac.binder_tactic
+  else Pcoq.Symbol.nterml Pltac.tactic_expr (string_of_int n)
 
 type entry_name = EntryName :
-  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, _, 'a) Extend.symbol -> entry_name
+  'a raw_abstract_argument_type * (Tacexpr.raw_tactic_expr, _, 'a) Pcoq.Symbol.t -> entry_name
 
 (** Quite ad-hoc *)
 let get_tacentry n m =
@@ -57,8 +57,8 @@ let get_tacentry n m =
     && not (Int.equal m 5) (* Because tactic5 is at binder_tactic *)
     && not (Int.equal m 0) (* Because tactic0 is at simple_tactic *)
   in
-  if check_lvl n then EntryName (rawwit Tacarg.wit_tactic, Aself)
-  else if check_lvl (n + 1) then EntryName (rawwit Tacarg.wit_tactic, Anext)
+  if check_lvl n then EntryName (rawwit Tacarg.wit_tactic, Pcoq.Symbol.self)
+  else if check_lvl (n + 1) then EntryName (rawwit Tacarg.wit_tactic, Pcoq.Symbol.next)
   else EntryName (rawwit Tacarg.wit_tactic, atactic n)
 
 let get_separator = function
@@ -140,23 +140,23 @@ let head_is_ident tg = match tg.tacgram_prods with
 let rec prod_item_of_symbol lev = function
 | Extend.Ulist1 s ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Alist1 e)
+  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list1 e)
 | Extend.Ulist0 s ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Alist0 e)
+  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list0 e)
 | Extend.Ulist1sep (s, sep) ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Alist1sep (e, Atoken (CLexer.terminal sep)))
+  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list1sep e (Pcoq.Symbol.token (CLexer.terminal sep)) false)
 | Extend.Ulist0sep (s, sep) ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (ListArg typ), Alist0sep (e, Atoken (CLexer.terminal sep)))
+  EntryName (Rawwit (ListArg typ), Pcoq.Symbol.list0sep e (Pcoq.Symbol.token (CLexer.terminal sep)) false)
 | Extend.Uopt s ->
   let EntryName (Rawwit typ, e) = prod_item_of_symbol lev s in
-  EntryName (Rawwit (OptArg typ), Aopt e)
+  EntryName (Rawwit (OptArg typ), Pcoq.Symbol.opt e)
 | Extend.Uentry arg ->
   let ArgT.Any tag = arg in
   let wit = ExtraArg tag in
-  EntryName (Rawwit wit, Extend.Aentry (genarg_grammar wit))
+  EntryName (Rawwit wit, Pcoq.Symbol.nterm (genarg_grammar wit))
 | Extend.Uentryl (s, n) ->
   let ArgT.Any tag = s in
   assert (coincide (ArgT.repr tag) "tactic" 0);
@@ -191,7 +191,7 @@ let add_tactic_entry (kn, ml, tg) state =
   in
   let prods = List.map map tg.tacgram_prods in
   let rules = make_rule mkact prods in
-  let r = ExtendRule (entry, (pos, [(None, None, [rules])])) in
+  let r = ExtendRule (entry, { pos; data=[(None, None, [rules])]}) in
   ([r], state)
 
 let tactic_grammar =
@@ -399,23 +399,29 @@ let create_ltac_quotation name cast (e, l) =
   in
   let () = ltac_quotations := String.Set.add name !ltac_quotations in
   let entry = match l with
-  | None -> Aentry e
-  | Some l -> Aentryl (e, string_of_int l)
+  | None -> Pcoq.Symbol.nterm e
+  | Some l -> Pcoq.Symbol.nterml e (string_of_int l)
   in
 (*   let level = Some "1" in *)
   let level = None in
   let assoc = None in
   let rule =
-    Next (Next (Next (Next (Next (Stop,
-      Atoken (CLexer.terminal name)),
-      Atoken (CLexer.terminal ":")),
-      Atoken (CLexer.terminal "(")),
-      entry),
-      Atoken (CLexer.terminal ")"))
+    Pcoq.(
+      Rule.next
+        (Rule.next
+           (Rule.next
+              (Rule.next
+                 (Rule.next
+                    Rule.stop
+                    (Symbol.token (CLexer.terminal name)))
+                 (Symbol.token (CLexer.terminal ":")))
+              (Symbol.token (CLexer.terminal "(")))
+           entry)
+        (Symbol.token (CLexer.terminal ")")))
   in
   let action _ v _ _ _ loc = cast (Some loc, v) in
-  let gram = (level, assoc, [Rule (rule, action)]) in
-  Pcoq.grammar_extend Pltac.tactic_arg (None, [gram])
+  let gram = (level, assoc, [Pcoq.Production.make rule action]) in
+  Pcoq.grammar_extend Pltac.tactic_arg {pos=None; data=[gram]}
 
 (** Command *)
 
@@ -759,7 +765,7 @@ let argument_extend (type a b c) ~name (arg : (a, b, c) tactic_argument) =
     e
   | Vernacextend.Arg_rules rules ->
     let e = Pcoq.create_generic_entry Pcoq.utactic name (Genarg.rawwit wit) in
-    let () = Pcoq.grammar_extend e (None, [(None, None, rules)]) in
+    let () = Pcoq.grammar_extend e {pos=None; data=[(None, None, rules)]} in
     e
   in
   let (rpr, gpr, tpr) = arg.arg_printer in

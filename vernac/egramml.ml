@@ -19,14 +19,14 @@ open Vernacexpr
 type 's grammar_prod_item =
   | GramTerminal of string
   | GramNonTerminal :
-      ('a raw_abstract_argument_type * ('s, _, 'a) symbol) Loc.located -> 's grammar_prod_item
+      ('a raw_abstract_argument_type * ('s, _, 'a) Symbol.t) Loc.located -> 's grammar_prod_item
 
 type 'a ty_arg = ('a -> raw_generic_argument)
 
 type ('self, 'tr, _, 'r) ty_rule =
-| TyStop : ('self, Extend.norec, 'r, 'r) ty_rule
-| TyNext : ('self, _, 'a, 'r) ty_rule * ('self, _, 'b) Extend.symbol * 'b ty_arg option ->
-  ('self, Extend.mayrec, 'b -> 'a, 'r) ty_rule
+| TyStop : ('self, Gramlib.Grammar.norec, 'r, 'r) ty_rule
+| TyNext : ('self, _, 'a, 'r) ty_rule * ('self, _, 'b) Symbol.t * 'b ty_arg option ->
+  ('self, Gramlib.Grammar.mayrec, 'b -> 'a, 'r) ty_rule
 
 type ('self, 'r) any_ty_rule =
 | AnyTyRule : ('self, _, 'act, Loc.t -> 'r) ty_rule -> ('self, 'r) any_ty_rule
@@ -35,7 +35,7 @@ let rec ty_rule_of_gram = function
 | [] -> AnyTyRule TyStop
 | GramTerminal s :: rem ->
   let AnyTyRule rem = ty_rule_of_gram rem in
-  let tok = Atoken (CLexer.terminal s) in
+  let tok = Pcoq.Symbol.token (CLexer.terminal s) in
   let r = TyNext (rem, tok, None) in
   AnyTyRule r
 | GramNonTerminal (_, (t, tok)) :: rem ->
@@ -44,9 +44,9 @@ let rec ty_rule_of_gram = function
   let r = TyNext (rem, tok, inj) in
   AnyTyRule r
 
-let rec ty_erase : type s tr a r. (s, tr, a, r) ty_rule -> (s, tr, a, r) Extend.rule = function
-| TyStop -> Extend.Stop
-| TyNext (rem, tok, _) -> Extend.Next (ty_erase rem, tok)
+let rec ty_erase : type s tr a r. (s, tr, a, r) ty_rule -> (s, tr, a, r) Pcoq.Rule.t = function
+| TyStop -> Pcoq.Rule.stop
+| TyNext (rem, tok, _) -> Pcoq.Rule.next (ty_erase rem) tok
 
 type 'r gen_eval = Loc.t -> raw_generic_argument list -> 'r
 
@@ -62,7 +62,7 @@ let make_rule f prod =
   let symb = ty_erase ty_rule in
   let f loc l = f loc (List.rev l) in
   let act = ty_eval ty_rule f in
-  Extend.Rule (symb, act)
+  Pcoq.Production.make symb act
 
 let rec proj_symbol : type a b c. (a, b, c) ty_user_symbol -> (a, b, c) genarg_type = function
 | TUentry a -> ExtraArg a
@@ -90,4 +90,4 @@ let extend_vernac_command_grammar s nt gl =
   vernac_exts := (s,gl) :: !vernac_exts;
   let mkact loc l = VernacExtend (s, l) in
   let rules = [make_rule mkact gl] in
-  grammar_extend nt (None, [None, None, rules])
+  grammar_extend nt { pos=None; data=[None, None, rules]}

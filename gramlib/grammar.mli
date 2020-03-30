@@ -15,8 +15,7 @@
        rule "an entry cannot call an entry of another grammar" by
        normal OCaml typing. *)
 
-module type GLexerType = Plexing.Lexer
-   (** The input signature for the functor [Grammar.GMake]: [te] is the
+(** The input signature for the functor [Grammar.GMake]: [te] is the
        type of the tokens. *)
 
 type norec
@@ -29,6 +28,7 @@ module type S = sig
   module Parsable : sig
     type t
     val make : ?loc:Loc.t -> char Stream.t -> t
+    val comments : t -> ((int * int) * string) list
   end
 
   val tokens : string -> (string option * int) list
@@ -36,6 +36,7 @@ module type S = sig
   module Entry : sig
     type 'a t
     val make : string -> 'a t
+    val create : string -> 'a t (* compat *)
     val parse : 'a t -> Parsable.t -> 'a
     val name : 'a t -> string
     val of_parser : string -> (Plexing.location_function -> te Stream.t -> 'a) -> 'a t
@@ -60,7 +61,7 @@ module type S = sig
     val self : ('self, mayrec, 'self) t
     val next : ('self, mayrec, 'self) t
     val token : 'c pattern -> ('self, norec, 'c) t
-    val rules : warning:(string -> unit) option -> 'a Rules.t list -> ('self, norec, 'a) t
+    val rules : 'a Rules.t list -> ('self, norec, 'a) t
 
   end and Rule : sig
 
@@ -86,17 +87,37 @@ module type S = sig
     val make : ('a, _, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
   end
 
-  module Unsafe :
-  sig
+  type 'a single_extend_statement =
+    string option * Gramext.g_assoc option * 'a Production.t list
+
+  type 'a extend_statement =
+    { pos : Gramext.position option
+    ; data : 'a single_extend_statement list
+    }
+
+  val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
+
+  val mk_rule : 'a pattern list -> string Rules.t
+
+  (* Used in custom entries, should tweak? *)
+  val level_of_nonterm : ('a, norec, 'c) Symbol.t -> string option
+
+end
+
+(* Interface private to clients  *)
+module type ExtS = sig
+
+  include S
+
+  val safe_extend : 'a Entry.t -> 'a extend_statement -> unit
+  val safe_delete_rule : 'a Entry.t -> 'a Production.t -> unit
+
+  module Unsafe : sig
     val clear_entry : 'a Entry.t -> unit
   end
-  val safe_extend : warning:(string -> unit) option ->
-    'a Entry.t -> Gramext.position option ->
-    (string option * Gramext.g_assoc option * 'a Production.t list)
-      list ->
-    unit
-  val safe_delete_rule : 'a Entry.t -> ('a, _, 'f, 'r) Rule.t -> unit
+
 end
+
 (** Signature type of the functor [Grammar.GMake]. The types and
     functions are almost the same than in generic interface, but:
     -      Grammars are not values. Functions holding a grammar as parameter
@@ -107,5 +128,4 @@ end
       type (instead of (string * string)); the module parameter
       must specify a way to show them as (string * string) *)
 
-module GMake (L : GLexerType) :
-  S with type te = L.te and type 'c pattern = 'c L.pattern
+module GMake (L : Plexing.S) : ExtS with type te = L.te and type 'c pattern = 'c L.pattern

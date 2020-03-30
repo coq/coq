@@ -392,22 +392,6 @@ let comments = ref []
 let current_comment = Buffer.create 8192
 let between_commands = ref true
 
-(* The state of the lexer visible from outside *)
-type lexer_state = int option * string * bool * ((int * int) * string) list
-
-let init_lexer_state () = (None,"",true,[])
-let set_lexer_state (o,s,b,c) =
-  comment_begin := o;
-  Buffer.clear current_comment; Buffer.add_string current_comment s;
-  between_commands := b;
-  comments := c
-let get_lexer_state () =
-  (!comment_begin, Buffer.contents current_comment, !between_commands, !comments)
-let drop_lexer_state () =
-    set_lexer_state (init_lexer_state ())
-
-let get_comment_state (_,_,_,c) = c
-
 let real_push_char c = Buffer.add_char current_comment c
 
 (* Add a char if it is between two commands, if it is a newline or
@@ -851,6 +835,24 @@ module MakeLexer (Diff : sig val mode : bool end) = struct
   let tok_removing = (fun _ -> ())
   let tok_match = Tok.match_pattern
   let tok_text = token_text
+
+  (* The state of the lexer visible from outside *)
+  module State = struct
+
+    type t = int option * string * bool * ((int * int) * string) list
+
+    let init () = (None,"",true,[])
+    let set (o,s,b,c) =
+      comment_begin := o;
+      Buffer.clear current_comment; Buffer.add_string current_comment s;
+      between_commands := b;
+      comments := c
+    let get () =
+      (!comment_begin, Buffer.contents current_comment, !between_commands, !comments)
+    let drop () = set (init ())
+    let get_comments (_,_,_,c) = c
+
+  end
 end
 
 module Lexer = MakeLexer (struct let mode = false end)

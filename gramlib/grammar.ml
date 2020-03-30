@@ -8,8 +8,6 @@ open Util
 
 (* Functorial interface *)
 
-module type GLexerType = Plexing.Lexer
-
 type norec
 type mayrec
 
@@ -20,6 +18,7 @@ module type S = sig
   module Parsable : sig
     type t
     val make : ?loc:Loc.t -> char Stream.t -> t
+    val comments : t -> ((int * int) * string) list
   end
 
   val tokens : string -> (string option * int) list
@@ -27,6 +26,7 @@ module type S = sig
   module Entry : sig
     type 'a t
     val make : string -> 'a t
+    val create : string -> 'a t
     val parse : 'a t -> Parsable.t -> 'a
     val name : 'a t -> string
     val of_parser : string -> (Plexing.location_function -> te Stream.t -> 'a) -> 'a t
@@ -51,7 +51,7 @@ module type S = sig
     val self : ('self, mayrec, 'self) t
     val next : ('self, mayrec, 'self) t
     val token : 'c pattern -> ('self, norec, 'c) t
-    val rules : warning:(string -> unit) option -> 'a Rules.t list -> ('self, norec, 'a) t
+    val rules : 'a Rules.t list -> ('self, norec, 'a) t
 
   end and Rule : sig
 
@@ -77,21 +77,39 @@ module type S = sig
     val make : ('a, _, 'f, Loc.t -> 'a) Rule.t -> 'f -> 'a t
   end
 
-  module Unsafe :
-  sig
+  type 'a single_extend_statement =
+    string option * Gramext.g_assoc option * 'a Production.t list
+
+  type 'a extend_statement =
+    { pos : Gramext.position option
+    ; data : 'a single_extend_statement list
+    }
+
+  val generalize_symbol : ('a, 'tr, 'c) Symbol.t -> ('a, norec, 'c) Symbol.t option
+
+  val mk_rule : 'a pattern list -> string Rules.t
+
+  (* Used in custom entries, should tweak? *)
+  val level_of_nonterm : ('a, norec, 'c) Symbol.t -> string option
+
+end
+
+module type ExtS = sig
+
+  include S
+
+  val safe_extend : 'a Entry.t -> 'a extend_statement -> unit
+  val safe_delete_rule : 'a Entry.t -> 'a Production.t -> unit
+
+  module Unsafe : sig
     val clear_entry : 'a Entry.t -> unit
   end
-  val safe_extend : warning:(string -> unit) option ->
-    'a Entry.t -> Gramext.position option ->
-    (string option * Gramext.g_assoc option * 'a Production.t list)
-      list ->
-    unit
-  val safe_delete_rule : 'a Entry.t -> ('a, _, 'f, 'r) Rule.t -> unit
+
 end
 
 (* Implementation *)
 
-module GMake (L : GLexerType) = struct
+module GMake (L : Plexing.S) = struct
 
 type te = L.te
 type 'c pattern = 'c L.pattern
@@ -324,7 +342,7 @@ let and_and_tree (type s tr' trt tr trn trs trb f) (ar : (tr', trt, tr) ty_and_r
   | MayRec2, _, MayRec -> MayRec2 | MayRec2, _, NoRec -> MayRec2
   | NoRec2, NoRec3, NoRec -> NoRec2
 
-let insert_tree (type s trs trt tr p k a) ~warning entry_name (ar : (trs, trt, tr) ty_and_ex) (gsymbols : (s, trs, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, trt, a) ty_tree) : (s, tr, a) ty_tree =
+let insert_tree (type s trs trt tr p k a) entry_name (ar : (trs, trt, tr) ty_and_ex) (gsymbols : (s, trs, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, trt, a) ty_tree) : (s, tr, a) ty_tree =
   let rec insert : type trs trt tr p f k. (trs, trt, tr) ty_and_ex -> (s, trs, p) ty_symbols -> (p, k, f) rel_prod -> (s, trt, f) ty_tree -> k -> (s, tr, f) ty_tree  =
     fun ar symbols pf tree action ->
     match symbols, pf with
@@ -338,15 +356,15 @@ let insert_tree (type s trs trt tr p k a) ~warning entry_name (ar : (trs, trt, t
         | NR10, Node (_, n) -> Node (MayRec3, node n)
         | NR11, Node (NoRec3, n) -> Node (NoRec3, node n)
         | NR11, LocAct (old_action, action_list) ->
-          begin match warning with
-            | None -> ()
-            | Some warn_fn ->
+          (* What to do about this warning? For now it is disabled *)
+          if false then
+            begin
               let msg =
                 "<W> Grammar extension: " ^
                 (if entry_name = "" then "" else "in ["^entry_name^"%s], ") ^
                 "some rule has been masked" in
-              warn_fn msg
-          end;
+              Feedback.msg_warning (Pp.str msg)
+            end;
           LocAct (action, old_action :: action_list)
         | NR11, DeadEnd -> LocAct (action, [])
   and insert_in_tree : type trs trs' trs'' trt tr a p f k. (trs'', trt, tr) ty_and_ex -> (trs, trs', trs'') ty_and_rec -> (s, trs, a) ty_symbol -> (s, trs', p) ty_symbols -> (p, k, a -> f) rel_prod -> (s, trt, f) ty_tree -> k -> (s, tr, f) ty_tree =
@@ -405,14 +423,14 @@ let insert_tree (type s trs trt tr p k a) ~warning entry_name (ar : (trs, trt, t
   in
   insert ar gsymbols pf tree action
 
-let insert_tree_norec (type s p k a) ~warning entry_name (gsymbols : (s, norec, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, norec, a) ty_tree) : (s, norec, a) ty_tree =
-  insert_tree ~warning entry_name NR11 gsymbols pf action tree
+let insert_tree_norec (type s p k a) entry_name (gsymbols : (s, norec, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, norec, a) ty_tree) : (s, norec, a) ty_tree =
+  insert_tree entry_name NR11 gsymbols pf action tree
 
-let insert_tree (type s trs trt p k a) ~warning entry_name (gsymbols : (s, trs, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, trt, a) ty_tree) : (s, a) ty_mayrec_tree =
+let insert_tree (type s trs trt p k a) entry_name (gsymbols : (s, trs, p) ty_symbols) (pf : (p, k, a) rel_prod) (action : k) (tree : (s, trt, a) ty_tree) : (s, a) ty_mayrec_tree =
   let MayRecNR ar = and_symbols_tree gsymbols tree in
-  MayRecTree (insert_tree ~warning entry_name ar gsymbols pf action tree)
+  MayRecTree (insert_tree entry_name ar gsymbols pf action tree)
 
-let srules (type self a) ~warning (rl : a ty_rules list) : (self, norec, a) ty_symbol =
+let srules (type self a) (rl : a ty_rules list) : (self, norec, a) ty_symbol =
   let rec retype_tree : type s a. (s, norec, a) ty_tree -> (self, norec, a) ty_tree =
     function
     | Node (NoRec3, {node = s; son = son; brother = bro}) ->
@@ -439,7 +457,7 @@ let srules (type self a) ~warning (rl : a ty_rules list) : (self, norec, a) ty_s
       (fun tree (TRules (symbols, action)) ->
         let symbols = retype_rule symbols in
         let AnyS (symbols, pf) = get_symbols symbols in
-        insert_tree_norec ~warning "" symbols pf action tree)
+        insert_tree_norec "" symbols pf action tree)
       DeadEnd rl
   in
   Stree t
@@ -449,19 +467,19 @@ let is_level_labelled n (Level lev) =
     Some n1 -> n = n1
   | None -> false
 
-let insert_level (type s tr p k) ~warning entry_name (symbols : (s, tr, p) ty_symbols) (pf : (p, k, Loc.t -> s) rel_prod) (action : k) (slev : s ty_level) : s ty_level =
+let insert_level (type s tr p k) entry_name (symbols : (s, tr, p) ty_symbols) (pf : (p, k, Loc.t -> s) rel_prod) (action : k) (slev : s ty_level) : s ty_level =
   match symbols with
   | TCns (_, Sself, symbols) ->
       let Level slev = slev in
       let RelS pf = pf in
-      let MayRecTree lsuffix = insert_tree ~warning entry_name symbols pf action slev.lsuffix in
+      let MayRecTree lsuffix = insert_tree entry_name symbols pf action slev.lsuffix in
       Level
       {assoc = slev.assoc; lname = slev.lname;
        lsuffix = lsuffix;
        lprefix = slev.lprefix}
   | _ ->
       let Level slev = slev in
-      let MayRecTree lprefix = insert_tree ~warning entry_name symbols pf action slev.lprefix in
+      let MayRecTree lprefix = insert_tree entry_name symbols pf action slev.lprefix in
       Level
       {assoc = slev.assoc; lname = slev.lname; lsuffix = slev.lsuffix;
        lprefix = lprefix}
@@ -475,34 +493,27 @@ let empty_lev lname assoc =
   Level
   {assoc = assoc; lname = lname; lsuffix = DeadEnd; lprefix = DeadEnd}
 
-let change_lev ~warning (Level lev) n lname assoc =
+let change_lev (Level lev) n lname assoc =
   let a =
     match assoc with
       None -> lev.assoc
     | Some a ->
       if a <> lev.assoc then
-        begin
-          match warning with
-          | None -> ()
-          | Some warn_fn ->
-            warn_fn ("<W> Changing associativity of level \""^n^"\"")
-        end;
-        a
+        Feedback.msg_warning (Pp.str ("<W> Changing associativity of level \""^n^"\""));
+      a
   in
-  begin match lname with
-    Some n ->
-      if lname <> lev.lname then
-        begin match warning with
-          | None -> ()
-          | Some warn_fn ->
-            warn_fn ("<W> Level label \""^n^"\" ignored")
-        end;
-  | None -> ()
+  begin
+    match lname with
+    | Some n ->
+      (* warning disabled; it was in the past *)
+      if false && lname <> lev.lname then
+        Feedback.msg_warning (Pp.str ("<W> Level label \""^n^"\" ignored"))
+    | None -> ()
   end;
   Level
   {assoc = a; lname = lev.lname; lsuffix = lev.lsuffix; lprefix = lev.lprefix}
 
-let get_level ~warning entry position levs =
+let get_level entry position levs =
   match position with
     Some First -> [], empty_lev, levs
   | Some Last -> levs, empty_lev, []
@@ -515,7 +526,7 @@ let get_level ~warning entry position levs =
             flush stderr;
             failwith "Grammar.extend"
         | lev :: levs ->
-            if is_level_labelled n lev then [], change_lev ~warning lev n, levs
+            if is_level_labelled n lev then [], change_lev lev n, levs
             else
               let (levs1, rlev, levs2) = get levs in lev :: levs1, rlev, levs2
       in
@@ -550,7 +561,7 @@ let get_level ~warning entry position levs =
       get levs
   | None ->
       match levs with
-        lev :: levs -> [], change_lev ~warning lev "<top>", levs
+        lev :: levs -> [], change_lev lev "<top>", levs
       | [] -> [], empty_lev, []
 
 let change_to_self0 (type s) (type trec) (type a) (entry : s ty_entry) : (s, trec, a) ty_symbol -> (s, a) ty_mayrec_symbol =
@@ -600,7 +611,7 @@ let insert_tokens gram symbols =
   in
   linsert symbols
 
-let levels_of_rules ~warning entry position rules =
+let levels_of_rules entry position rules =
   let elev =
     match entry.edesc with
       Dlevels elev -> elev
@@ -612,7 +623,7 @@ let levels_of_rules ~warning entry position rules =
   match rules with
   | [] -> elev
   | _ ->
-    let (levs1, make_lev, levs2) = get_level ~warning entry position elev in
+    let (levs1, make_lev, levs2) = get_level entry position elev in
     let (levs, _) =
       List.fold_left
         (fun (levs, make_lev) (lname, assoc, level) ->
@@ -623,7 +634,7 @@ let levels_of_rules ~warning entry position rules =
                   let MayRecRule symbols = change_to_self entry symbols in
                   let AnyS (symbols, pf) = get_symbols symbols in
                   insert_tokens egram symbols;
-                  insert_level ~warning entry.ename symbols pf action lev)
+                  insert_level entry.ename symbols pf action lev)
                lev level
            in
            lev :: levs, empty_lev)
@@ -1479,8 +1490,8 @@ let init_entry_functions entry =
        let f = continue_parser_of_entry entry in
        entry.econtinue <- f; f lev bp a strm)
 
-let extend_entry ~warning entry position rules =
-    let elev = levels_of_rules ~warning entry position rules in
+let extend_entry entry position rules =
+    let elev = levels_of_rules entry position rules in
     entry.edesc <- Dlevels elev; init_entry_functions entry
 
 (* Deleting a rule *)
@@ -1508,7 +1519,7 @@ module Parsable = struct
     { pa_chr_strm : char Stream.t
     ; pa_tok_strm : L.te Stream.t
     ; pa_loc_func : Plexing.location_function
-    }
+    ; lexer_state : L.State.t ref }
 
   let parse_parsable entry p =
     let efun = entry.estart 0 in
@@ -1544,9 +1555,26 @@ module Parsable = struct
       let loc = Stream.count cs, Stream.count cs + 1 in
       restore (); Ploc.raise (Ploc.make_unlined loc) exc
 
+  let parse_parsable e p =
+    L.State.set !(p.lexer_state);
+    try
+      let c = parse_parsable e p in
+      p.lexer_state := L.State.get ();
+      c
+    with Ploc.Exc (loc,e) ->
+      L.State.drop ();
+      let loc' = Loc.get_loc (Exninfo.info e) in
+      let loc = match loc' with None -> loc | Some loc -> loc in
+      Loc.raise ~loc e
+
   let make ?loc cs =
+    let lexer_state = ref (L.State.init ()) in
+    L.State.set !lexer_state;
     let (ts, lf) = L.tok_func ?loc cs in
-    {pa_chr_strm = cs; pa_tok_strm = ts; pa_loc_func = lf}
+    lexer_state := L.State.get ();
+    {pa_chr_strm = cs; pa_tok_strm = ts; pa_loc_func = lf; lexer_state}
+
+  let comments p = L.State.get_comments !(p.lexer_state)
 
 end
 
@@ -1557,6 +1585,7 @@ module Entry = struct
       econtinue =
         (fun _ _ _ (strm__ : _ Stream.t) -> raise Stream.Failure);
       edesc = Dlevels []}
+  let create = make
   let parse (e : 'a t) p : 'a =
     Parsable.parse_parsable e p
   let parse_token_stream (e : 'a t) ts : 'a =
@@ -1589,7 +1618,7 @@ module rec Symbol : sig
   val self : ('self, mayrec, 'self) t
   val next : ('self, mayrec, 'self) t
   val token : 'c pattern -> ('self, norec, 'c) t
-  val rules : warning:(string -> unit) option -> 'a Rules.t list -> ('self, norec, 'a) t
+  val rules : 'a Rules.t list -> ('self, norec, 'a) t
 
 end = struct
 
@@ -1604,7 +1633,7 @@ end = struct
   let self = Sself
   let next = Snext
   let token tok = Stoken tok
-  let rules ~warning (t : 'a Rules.t list) = srules ~warning t
+  let rules (t : 'a Rules.t list) = srules t
 
 end and Rule : sig
 
@@ -1656,14 +1685,87 @@ module Unsafe = struct
 
 end
 
-let safe_extend ~warning (e : 'a Entry.t) pos
-    (r :
-       (string option * Gramext.g_assoc option * 'a ty_production list)
-         list) =
-  extend_entry ~warning e pos r
+type 'a single_extend_statement =
+  string option * Gramext.g_assoc option * 'a ty_production list
 
-let safe_delete_rule e r =
+type 'a extend_statement =
+  { pos : Gramext.position option
+  ; data : 'a single_extend_statement list
+  }
+
+let safe_extend (e : 'a Entry.t) { pos; data } =
+  extend_entry e pos data
+
+let safe_delete_rule e (TProd (r,_act)) =
   let AnyS (symbols, _) = get_symbols r in
   delete_rule e symbols
+
+let level_of_nonterm sym = match sym with
+  | Snterml (_,l) -> Some l
+  | _ -> None
+
+exception SelfSymbol
+
+let rec generalize_symbol :
+  type a tr s. (s, tr, a) Symbol.t -> (s, norec, a) ty_symbol =
+  function
+  | Stoken tok ->
+    Stoken tok
+  | Slist1 e ->
+    Slist1 (generalize_symbol e)
+  | Slist1sep (e, sep, b) ->
+    let e = generalize_symbol e in
+    let sep = generalize_symbol sep in
+    Slist1sep (e, sep, b)
+  | Slist0 e ->
+    Slist0 (generalize_symbol e)
+  | Slist0sep (e, sep, b) ->
+    let e = generalize_symbol e in
+    let sep = generalize_symbol sep in
+    Slist0sep (e, sep, b)
+  | Sopt e ->
+    Sopt (generalize_symbol e)
+  | Sself ->
+    raise SelfSymbol
+  | Snext ->
+    raise SelfSymbol
+  | Snterm e ->
+    Snterm e
+  | Snterml (e, l) ->
+    Snterml (e, l)
+  | Stree r ->
+    Stree (generalize_tree r)
+and generalize_tree : type a tr s .
+  (s, tr, a) ty_tree -> (s, norec, a) ty_tree = fun r ->
+  match r with
+  | Node (fi, n) ->
+    let fi = match fi with
+      | NoRec3 -> NoRec3
+      | MayRec3 -> raise SelfSymbol
+    in
+    let n = match n with
+      | { node; son; brother } ->
+        let node = generalize_symbol node in
+        let son = generalize_tree son in
+        let brother = generalize_tree brother in
+        { node; son; brother }
+    in
+    Node (fi, n)
+  | LocAct _ as r -> r
+  | DeadEnd as r -> r
+
+let generalize_symbol s =
+  try Some (generalize_symbol s)
+  with SelfSymbol -> None
+
+let rec mk_rule tok =
+  match tok with
+  | [] ->
+    let stop_e = Rule.stop in
+    TRules (stop_e, fun _ -> (* dropped anyway: *) "")
+  | tkn :: rem ->
+    let TRules (r, f) = mk_rule rem in
+    let r = Rule.next_norec r (Symbol.token tkn) in
+    TRules (r, fun _ -> f)
 
 end

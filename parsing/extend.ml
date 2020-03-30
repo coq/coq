@@ -10,8 +10,6 @@
 
 (** Entry keys for constr notations *)
 
-type 'a entry = 'a Gramlib.Grammar.GMake(CLexer.Lexer).Entry.t
-
 type side = Left | Right
 
 type production_position =
@@ -77,36 +75,3 @@ type ('a,'b,'c) ty_user_symbol =
 | TUopt : ('a,'b,'c) ty_user_symbol -> ('a option, 'b option, 'c option) ty_user_symbol
 | TUentry : ('a, 'b, 'c) Genarg.ArgT.tag -> ('a,'b,'c) ty_user_symbol
 | TUentryl : ('a, 'b, 'c) Genarg.ArgT.tag * int -> ('a,'b,'c) ty_user_symbol
-
-(** {5 Type-safe grammar extension} *)
-
-(* Should be merged with gramlib's implementation *)
-
-type norec = Gramlib.Grammar.norec
-type mayrec = Gramlib.Grammar.mayrec
-
-type ('self, 'trec, 'a) symbol =
-| Atoken : 'c Tok.p -> ('self, norec, 'c) symbol
-| Alist1 : ('self, 'trec, 'a) symbol -> ('self, 'trec, 'a list) symbol
-| Alist1sep : ('self, 'trec, 'a) symbol * ('self, norec, _) symbol
-              -> ('self, 'trec, 'a list) symbol
-| Alist0 : ('self, 'trec, 'a) symbol -> ('self, 'trec, 'a list) symbol
-| Alist0sep : ('self, 'trec, 'a) symbol * ('self, norec, _) symbol
-              -> ('self, 'trec, 'a list) symbol
-| Aopt : ('self, 'trec, 'a) symbol -> ('self, 'trec, 'a option) symbol
-| Aself : ('self, mayrec, 'self) symbol
-| Anext : ('self, mayrec, 'self) symbol
-| Aentry : 'a entry -> ('self, norec, 'a) symbol
-| Aentryl : 'a entry * string -> ('self, norec, 'a) symbol
-| Arules : 'a rules list -> ('self, norec, 'a) symbol
-
-and ('self, 'trec, _, 'r) rule =
-| Stop : ('self, norec, 'r, 'r) rule
-| Next : ('self, _, 'a, 'r) rule * ('self, _, 'b) symbol -> ('self, mayrec, 'b -> 'a, 'r) rule
-| NextNoRec : ('self, norec, 'a, 'r) rule * ('self, norec, 'b) symbol -> ('self, norec, 'b -> 'a, 'r) rule
-
-and 'a rules =
-| Rules : (_, norec, 'act, Loc.t -> 'a) rule * 'act -> 'a rules
-
-type 'a production_rule =
-| Rule : ('a, _, 'act, Loc.t -> 'a) rule * 'act -> 'a production_rule
