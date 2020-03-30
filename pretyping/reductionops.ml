@@ -622,9 +622,8 @@ type stack_reduction_function = contextual_stack_reduction_function
 type local_stack_reduction_function =
     evar_map -> constr -> constr * constr list
 
-type contextual_state_reduction_function =
+type state_reduction_function =
     env -> evar_map -> state -> state
-type state_reduction_function = contextual_state_reduction_function
 type local_state_reduction_function = evar_map -> state -> state
 
 let pr_state env sigma (tm,sk) =
@@ -1571,10 +1570,6 @@ let vm_infer_conv ?(pb=Reduction.CUMUL) env t1 t2 =
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
 
-let whd_meta sigma c = match EConstr.kind sigma c with
-  | Meta p -> (try meta_value sigma p with Not_found -> c)
-  | _ -> c
-
 let default_plain_instance_ident = Id.of_string "H"
 
 (* Try to replace all metas. Does not replace metas in the metas' values
@@ -1810,70 +1805,3 @@ let meta_instance sigma b =
 let nf_meta sigma c =
   let cl = mk_freelisted c in
   meta_instance sigma { cl with rebus = cl.rebus }
-
-(* Instantiate metas that create beta/iota redexes *)
-
-let meta_reducible_instance evd b =
-  let fm = b.freemetas in
-  let fold mv accu =
-    let fvalue = try meta_opt_fvalue evd mv with Not_found -> None in
-    match fvalue with
-    | None -> accu
-    | Some (g, (_, s)) -> Metamap.add mv (g.rebus, s) accu
-  in
-  let metas = Metaset.fold fold fm Metamap.empty in
-  let rec irec u =
-    let u = whd_betaiota Evd.empty u (* FIXME *) in
-    match EConstr.kind evd u with
-    | Case (ci,p,c,bl) when EConstr.isMeta evd (strip_outer_cast evd c) ->
-        let m = destMeta evd (strip_outer_cast evd c) in
-        (match
-          try
-            let g, s = Metamap.find m metas in
-            let is_coerce = match s with CoerceToType -> true | _ -> false in
-            if isConstruct evd g || not is_coerce then Some g else None
-          with Not_found -> None
-          with
-            | Some g -> irec (mkCase (ci,p,g,bl))
-            | None -> mkCase (ci,irec p,c,Array.map irec bl))
-    | App (f,l) when EConstr.isMeta evd (strip_outer_cast evd f) ->
-        let m = destMeta evd (strip_outer_cast evd f) in
-        (match
-          try
-            let g, s = Metamap.find m metas in
-            let is_coerce = match s with CoerceToType -> true | _ -> false in
-            if isLambda evd g || not is_coerce then Some g else None
-          with Not_found -> None
-         with
-           | Some g -> irec (mkApp (g,l))
-           | None -> mkApp (f,Array.map irec l))
-    | Meta m ->
-        (try let g, s = Metamap.find m metas in
-          let is_coerce = match s with CoerceToType -> true | _ -> false in
-          if not is_coerce then irec g else u
-         with Not_found -> u)
-    | Proj (p,c) when isMeta evd c || isCast evd c && isMeta evd (pi1 (destCast evd c)) (* What if two nested casts? *) ->
-      let m = try destMeta evd c with _ -> destMeta evd (pi1 (destCast evd c)) (* idem *) in
-          (match
-          try
-            let g, s = Metamap.find m metas in
-            let is_coerce = match s with CoerceToType -> true | _ -> false in
-            if isConstruct evd g || not is_coerce then Some g else None
-          with Not_found -> None
-          with
-            | Some g -> irec (mkProj (p,g))
-            | None -> mkProj (p,c))
-    | _ -> EConstr.map evd irec u
-  in
-  if Metaset.is_empty fm then (* nf_betaiota? *) b.rebus
-  else irec b.rebus
-
-let betazetaevar_applist sigma n c l =
-  let rec stacklam n env t stack =
-    if Int.equal n 0 then applist (substl env t, stack) else
-    match EConstr.kind sigma t, stack with
-    | Lambda(_,_,c), arg::stacktl -> stacklam (n-1) (arg::env) c stacktl
-    | LetIn(_,b,_,c), _ -> stacklam (n-1) (substl env b::env) c stack
-    | Evar _, _ -> applist (substl env t, stack)
-    | _ -> anomaly (Pp.str "Not enough lambda/let's.") in
-  stacklam n [] c l

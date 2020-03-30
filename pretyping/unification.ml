@@ -87,6 +87,12 @@ let occur_meta_or_undefined_evar evd c =
     | _ -> Constr.iter occrec c
   in try occrec c; false with Occur | Not_found -> true
 
+let whd_meta sigma c = match EConstr.kind sigma c with
+  | Meta p ->
+    (try Evd.meta_value sigma p with Not_found -> c)
+    (* Not recursive, for some reason *)
+  | _ -> c
+
 let occur_meta_evd sigma mv c =
   let rec occrec c =
     (* Note: evars are not instantiated by terms with metas *)
