@@ -45,6 +45,13 @@ type typing_constraint =
   | WithoutTypeConstraint (** A term of unknown expected type *)
 
 type use_typeclasses = NoUseTC | UseTCForConv | UseTC
+(** Typeclasses are used in 2 ways:
+
+- through the "Typeclass Resolution For Conversion" option, if a
+  conversion problem fails we try again after resolving typeclasses
+  (UseTCForConv and UseTC)
+- after pretyping we resolve typeclasses (UseTC) (in [solve_remaining_evars])
+*)
 
 type inference_flags = {
   use_typeclasses : use_typeclasses;
