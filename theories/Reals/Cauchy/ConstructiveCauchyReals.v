@@ -275,12 +275,6 @@ Proof.
     pose proof (Pos2Nat.is_pos n). rewrite abs in H. inversion H.
 Qed.
 
-(* Alias the quotient order equality *)
-Definition CRealEq (x y : CReal) : Prop
-  := (CRealLt x y -> False) /\ (CRealLt y x -> False).
-
-Infix "==" := CRealEq : CReal_scope.
-
 (* Alias the large order *)
 Definition CRealLe (x y : CReal) : Prop
   := CRealLt y x -> False.
@@ -294,6 +288,12 @@ Notation "x <= y <= z" := (x <= y /\ y <= z) : CReal_scope.
 Notation "x <= y < z"  := (prod (x <= y) (y < z)) : CReal_scope.
 Notation "x < y < z"   := (prod (x < y) (y < z)) : CReal_scope.
 Notation "x < y <= z"  := (prod (x < y) (y <= z)) : CReal_scope.
+
+(* Alias the quotient order equality *)
+Definition CRealEq (x y : CReal) : Prop
+  := (CRealLe y x) /\ (CRealLe x y).
+
+Infix "==" := CRealEq : CReal_scope.
 
 Lemma CRealLe_not_lt : forall x y : CReal,
     (forall n:positive, Qle (proj1_sig x (Pos.to_nat n) - proj1_sig y (Pos.to_nat n))
@@ -322,13 +322,16 @@ Proof.
     setoid_replace (- (proj1_sig x (Pos.to_nat n) - proj1_sig y (Pos.to_nat n)))
       with (proj1_sig y (Pos.to_nat n) - proj1_sig x (Pos.to_nat n)).
     apply H2. assumption. ring.
-  - intros. split. apply CRealLe_not_lt. intro n. specialize (H n).
-    rewrite Qabs_Qminus in H.
-    apply (Qle_trans _ (Qabs (proj1_sig y (Pos.to_nat n) - proj1_sig x (Pos.to_nat n)))).
-    apply Qle_Qabs. apply H.
-    apply CRealLe_not_lt. intro n. specialize (H n).
-    apply (Qle_trans _ (Qabs (proj1_sig x (Pos.to_nat n) - proj1_sig y (Pos.to_nat n)))).
-    apply Qle_Qabs. apply H.
+  - intros. split.
+    + apply CRealLe_not_lt. intro n. specialize (H n).
+      rewrite Qabs_Qminus in H.
+      apply (Qle_trans _ (Qabs (proj1_sig y (Pos.to_nat n)
+                                - proj1_sig x (Pos.to_nat n)))).
+      apply Qle_Qabs. apply H.
+    + apply CRealLe_not_lt. intro n. specialize (H n).
+      apply (Qle_trans _ (Qabs (proj1_sig x (Pos.to_nat n)
+                                - proj1_sig y (Pos.to_nat n)))).
+      apply Qle_Qabs. apply H.
 Qed.
 
 (* The equality on Cauchy reals is just QSeqEquiv,
