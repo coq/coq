@@ -2226,7 +2226,7 @@ Section Int31_Specs.
       < ([|iter312_sqrt n rec ih il j|] + 1) ^ 2.
  Proof.
  revert rec ih il j; elim n; unfold iter312_sqrt; fold iter312_sqrt; clear n.
- intros rec ih il j Hi Hj Hij Hrec; apply sqrt312_step_correct; auto with zarith.
+ intros rec ih il j Hi Hj Hij Hrec; apply sqrt312_step_correct. 1-3: lia.
  intros; apply Hrec. 2: rewrite Z.pow_0_r. 1-3: lia.
  intros n Hrec rec ih il j Hi Hj Hij HHrec.
  apply sqrt312_step_correct; auto.
