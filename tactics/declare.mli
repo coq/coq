@@ -64,9 +64,9 @@ val definition_entry
   -> ?types:types
   -> ?univs:Entries.universes_entry
   -> ?eff:Evd.side_effects
-  -> ?univc:Univ.ContextSet.t
-  (** Universe-constraints attached to the body-only, used in vio /
-     vio-delayed opaque constants *)
+  -> ?univsbody:Univ.ContextSet.t
+  (** Universe-constraints attached to the body-only, used in
+     vio-delayed opaque constants and private poly universes *)
   -> constr
   -> Evd.side_effects proof_entry
 

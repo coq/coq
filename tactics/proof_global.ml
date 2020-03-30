@@ -221,7 +221,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
         let utyp = UState.check_univ_decl ~poly ctx udecl in
         utyp, Univ.ContextSet.empty
     in
-    Declare.definition_entry ~opaque ?section_vars ~univs:utyp ~univc:ubody ~types:typ ~eff body
+    Declare.definition_entry ~opaque ?section_vars ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
   in
   let entries = CList.map2 make_entry elist (Proofview.initial_goals entry) in
   { name; entries; uctx }
