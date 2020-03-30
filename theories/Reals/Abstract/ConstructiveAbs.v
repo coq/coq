@@ -198,7 +198,7 @@ Proof.
 Qed.
 
 Lemma CRabs_appart_0 : forall {R : ConstructiveReals} (x : CRcarrier R),
-    0 < CRabs R x -> CRapart R x 0.
+    0 < CRabs R x -> x ≶ 0.
 Proof.
   intros. destruct (CRltLinear R). clear p.
   pose proof (s _ x _ H) as [pos|neg].
@@ -224,8 +224,8 @@ Lemma CRabs_mult : forall {R : ConstructiveReals} (x y : CRcarrier R),
 Proof.
   intro R.
   assert (forall (x y : CRcarrier R),
-             CRapart R x 0
-             -> CRapart R y 0
+             x ≶ 0
+             -> y ≶ 0
              -> CRabs R (x * y) == CRabs R x * CRabs R y) as prep.
   { intros. destruct H, H0.
     + rewrite CRabs_right, CRabs_left, CRabs_left.
