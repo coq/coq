@@ -83,11 +83,4 @@ type hyp_info = {
   mutable done_: bool;
 }
 
-module StringMap :
-sig
-  type +'a t
-  val empty: hyp_info t
-  val add : string -> hyp_info -> hyp_info t -> hyp_info t
-end
-
-val diff_hyps : string list list -> hyp_info StringMap.t -> string list list -> hyp_info StringMap.t -> Pp.t list
+val diff_hyps : string list list -> hyp_info CString.Map.t -> string list list -> hyp_info CString.Map.t -> Pp.t list

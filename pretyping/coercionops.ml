@@ -67,8 +67,6 @@ end
 
 module ClTypMap = Map.Make(ClTyp)
 
-module IntMap = Map.Make(Int)
-
 let cl_typ_eq t1 t2 = Int.equal (cl_typ_ord t1 t2) 0
 
 type inheritance_path = coe_info_typ list
@@ -97,13 +95,13 @@ struct
 
   module Index = struct include Int let print = Pp.int end
 
-  type 'a t = { v : (cl_typ * 'a) IntMap.t; s : int; inv : int ClTypMap.t }
-  let empty = { v = IntMap.empty; s = 0; inv = ClTypMap.empty }
+  type 'a t = { v : (cl_typ * 'a) Int.Map.t; s : int; inv : int ClTypMap.t }
+  let empty = { v = Int.Map.empty; s = 0; inv = ClTypMap.empty }
   let mem y b = ClTypMap.mem y b.inv
-  let map x b = IntMap.find x b.v
-  let revmap y b = let n = ClTypMap.find y b.inv in (n, snd (IntMap.find n b.v))
+  let map x b = Int.Map.find x b.v
+  let revmap y b = let n = ClTypMap.find y b.inv in (n, snd (Int.Map.find n b.v))
   let add x y b =
-    { v = IntMap.add b.s (x,y) b.v; s = b.s+1; inv = ClTypMap.add x b.s b.inv }
+    { v = Int.Map.add b.s (x,y) b.v; s = b.s+1; inv = ClTypMap.add x b.s b.inv }
   let dom b = List.rev (ClTypMap.fold (fun x _ acc -> x::acc) b.inv [])
 end
 

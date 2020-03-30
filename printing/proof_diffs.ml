@@ -85,8 +85,6 @@ let log_out_ch = ref stdout
 let cprintf s = cfprintf !log_out_ch s
 [@@@ocaml.warning "+32"]
 
-module StringMap = Map.Make(String);;
-
 let tokenize_string s =
   (* todo: cLexer changes buff as it proceeds.  Seems like that should be saved, too.
   But I don't understand how it's used--it looks like things get appended to it but
@@ -124,22 +122,22 @@ type hyp_info = {
 let diff_hyps o_line_idents o_map n_line_idents n_map =
   let rv : Pp.t list ref = ref [] in
 
-  let is_done ident map = (StringMap.find ident map).done_ in
+  let is_done ident map = (CString.Map.find ident map).done_ in
   let exists ident map =
-    try let _ = StringMap.find ident map in true
+    try let _ = CString.Map.find ident map in true
     with Not_found -> false in
   let contains l ident = try [List.find (fun x  -> x = ident) l] with Not_found -> [] in
 
   let output old_ids_uo new_ids =
     (* use the order from the old line in case it's changed in the new *)
     let old_ids = if old_ids_uo = [] then [] else
-      let orig = (StringMap.find (List.hd old_ids_uo) o_map).idents in
+      let orig = (CString.Map.find (List.hd old_ids_uo) o_map).idents in
       List.concat (List.map (contains orig) old_ids_uo)
     in
 
     let setup ids map = if ids = [] then ("", Pp.mt ()) else
       let open Pp in
-      let rhs_pp = (StringMap.find (List.hd ids) map).rhs_pp in
+      let rhs_pp = (CString.Map.find (List.hd ids) map).rhs_pp in
       let pp_ids = List.map (fun x -> str x) ids in
       let hyp_pp = List.fold_left (fun l1 l2 -> l1 ++ str ", " ++ l2) (List.hd pp_ids) (List.tl pp_ids) ++ rhs_pp in
       (string_of_ppcmds hyp_pp, hyp_pp)
@@ -151,11 +149,11 @@ let diff_hyps o_line_idents o_map n_line_idents n_map =
     let hyp_diffs = diff_str ~tokenize_string o_line n_line in
     let (has_added, has_removed) = has_changes hyp_diffs in
     if show_removed () && has_removed then begin
-      List.iter (fun x -> (StringMap.find x o_map).done_ <- true) old_ids;
+      List.iter (fun x -> (CString.Map.find x o_map).done_ <- true) old_ids;
       rv := (add_diff_tags `Removed o_pp hyp_diffs) :: !rv;
     end;
     if n_line <> "" then begin
-      List.iter (fun x -> (StringMap.find x n_map).done_ <- true) new_ids;
+      List.iter (fun x -> (CString.Map.find x n_map).done_ <- true) new_ids;
       rv := (add_diff_tags `Added n_pp hyp_diffs) :: !rv
     end
   in
@@ -166,14 +164,14 @@ let diff_hyps o_line_idents o_map n_line_idents n_map =
     match dtype with
     | `Removed ->
       if dtype = `Removed then begin
-        let o_idents = (StringMap.find ident o_map).idents in
+        let o_idents = (CString.Map.find ident o_map).idents in
         (* only show lines that have all idents removed here; other removed idents appear later *)
         if show_removed () && not (is_done ident o_map) &&
             List.for_all (fun x -> not (exists x n_map)) o_idents then
           output (List.rev o_idents) []
       end
     | _ -> begin (* Added or Common case *)
-      let n_idents = (StringMap.find ident n_map).idents in
+      let n_idents = (CString.Map.find ident n_map).idents in
 
       (* Process a new hyp line, possibly splitting it.  Duplicates some of
          process_ident iteration, but easier to understand this way *)
@@ -184,13 +182,13 @@ let diff_hyps o_line_idents o_map n_line_idents n_map =
           let fst_omap_idents = ref None in
           let add ids id map =
             ids := id :: !ids;
-            (StringMap.find id map).done_ <- true in
+            (CString.Map.find id map).done_ <- true in
 
           (* get identifiers shared by one old and one new line, plus
              other Added in new and other Removed in old *)
           let process_split ident3 =
             if not (is_done ident3 n_map) then begin
-              let this_omap_idents = try Some (StringMap.find ident3 o_map).idents
+              let this_omap_idents = try Some (CString.Map.find ident3 o_map).idents
                                     with Not_found -> None in
               if !fst_omap_idents = None then
                 fst_omap_idents := this_omap_idents;
@@ -290,7 +288,7 @@ map will contain:
 concl_pp is the conclusion as a Pp.t
 *)
 let goal_info goal sigma =
-  let map = ref StringMap.empty in
+  let map = ref CString.Map.empty in
   let line_idents = ref [] in
   let build_hyp_info env sigma hyp =
     let (names, body, ty) = hyp in
@@ -308,7 +306,7 @@ let goal_info goal sigma =
     let rhs_pp = mid ++ str " : " ++ ts in
 
     let make_entry () = { idents; rhs_pp; done_ = false } in
-    List.iter (fun ident -> map := (StringMap.add ident (make_entry ()) !map); ()) idents
+    List.iter (fun ident -> map := (CString.Map.add ident (make_entry ()) !map); ()) idents
   in
 
   try
@@ -339,7 +337,7 @@ let unwrap g_s =
     let goal = Evd.sig_it g_s in
     let sigma = Refiner.project g_s in
     goal_info goal sigma
-  | None -> ([], StringMap.empty, Pp.mt ())
+  | None -> ([], CString.Map.empty, Pp.mt ())
 
 let diff_goal_ide og_s ng nsigma =
   diff_goal_info (unwrap og_s) (goal_info ng nsigma)
@@ -405,7 +403,7 @@ the call to db_goal_map and entering the following:
   (conj (conj ?Goal0 ?Goal1) ?Goal)             <--- goal 4 is still the rightmost goal in the proof
  *)
 let match_goals ot nt =
-  let nevar_to_oevar = ref StringMap.empty in
+  let nevar_to_oevar = ref CString.Map.empty in
   (* ogname is "" when there is no difference on the current path.
      It's set to the old goal's evar name once a rewritten goal is found,
      at which point the code only searches for the replacing goals
@@ -514,7 +512,7 @@ let match_goals ot nt =
     | CPatVar _, CPatVar _ -> ()
     | CEvar (n,l), CEvar (n2,l2) ->
       let oevar = if ogname = "" then Id.to_string n else ogname in
-      nevar_to_oevar := StringMap.add (Id.to_string n2) oevar !nevar_to_oevar;
+      nevar_to_oevar := CString.Map.add (Id.to_string n2) oevar !nevar_to_oevar;
       iter2  (fun x x2 -> let (_, g) = x and (_, g2) = x2 in constr_expr ogname g g2)  l l2
     | CEvar (n,l), nt' ->
       (* pass down the old goal evar name *)
@@ -641,16 +639,16 @@ let make_goal_map_i op np =
       (* >= 2 removals, >= 1 addition, need to match *)
       let nevar_to_oevar = match_goals (Some (to_constr op)) (to_constr np) in
 
-      let oevar_to_og = ref StringMap.empty in
+      let oevar_to_og = ref CString.Map.empty in
       let Proof.{sigma=osigma} = Proof.data op in
-      List.iter (fun og -> oevar_to_og := StringMap.add (goal_to_evar og osigma) og !oevar_to_og)
+      List.iter (fun og -> oevar_to_og := CString.Map.add (goal_to_evar og osigma) og !oevar_to_og)
           (Goal.Set.elements rem_gs);
 
       let Proof.{sigma=nsigma} = Proof.data np in
       let get_og ng =
         let nevar = goal_to_evar ng nsigma in
-        let oevar = StringMap.find nevar nevar_to_oevar in
-        let og = StringMap.find oevar !oevar_to_og in
+        let oevar = CString.Map.find nevar nevar_to_oevar in
+        let og = CString.Map.find oevar !oevar_to_og in
         og
       in
       Goal.Set.iter (fun ng ->
