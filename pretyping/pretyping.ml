@@ -231,7 +231,7 @@ let frozen_and_pending_holes (sigma, sigma') =
     end in
     FrozenProgress data
 
-let apply_typeclasses ~program_mode env sigma frozen fail_evar =
+let apply_typeclasses ~program_mode ~fail_evar env sigma frozen =
   let filter_frozen = match frozen with
     | FrozenId map -> fun evk -> Evar.Map.mem evk map
     | FrozenProgress (lazy (frozen, _)) -> fun evk -> Evar.Set.mem evk frozen
@@ -270,7 +270,7 @@ let apply_heuristics env sigma fail_evar =
 
 let check_typeclasses_instances_are_solved ~program_mode env current_sigma frozen =
   (* Naive way, call resolution again with failure flag *)
-  apply_typeclasses ~program_mode env current_sigma frozen true
+  apply_typeclasses ~program_mode ~fail_evar:true env current_sigma frozen
 
 let check_extra_evars_are_solved env current_sigma frozen = match frozen with
 | FrozenId _ -> ()
@@ -313,7 +313,7 @@ let solve_remaining_evars ?hook flags env ?initial sigma =
   let frozen = frozen_and_pending_holes (initial, sigma) in
   let sigma =
     if flags.use_typeclasses
-    then apply_typeclasses ~program_mode env sigma frozen false
+    then apply_typeclasses ~fail_evar:false ~program_mode env sigma frozen
     else sigma
   in
   let sigma = match hook with
