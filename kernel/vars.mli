@@ -72,9 +72,6 @@ type substl = constr list
    [c₁], as if usable for [substl]. *)
 val subst_of_rel_context_instance : Constr.rel_context -> constr list -> substl
 
-(** For compatibility: returns the substitution reversed *)
-val adjust_subst_to_rel_context : Constr.rel_context -> constr list -> constr list
-
 (** Take an index in an instance of a context and returns its index wrt to
     the full context (e.g. 2 in [x:A;y:=b;z:C] is 3, i.e. a reference to z) *)
 val adjust_rel_to_rel_context : ('a, 'b) Context.Rel.pt -> int -> int
