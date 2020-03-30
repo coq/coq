@@ -7,69 +7,76 @@ set -e
 
 dev/tools/check-overlays.sh
 
-if ! git diff --cached --name-only -z | xargs -0 dev/tools/check-eof-newline.sh ||
-        ! git diff-index --check --cached HEAD >/dev/null 2>&1 ;
+# Can we check and fix formatting?
+# NB: we will ignore errors from ocamlformat as it fails when
+# encountering OCaml syntax errors
+ocamlformat=$(command -v ocamlformat || echo true)
+if [ "$ocamlformat" = true ]
 then
-    1>&2 echo "Auto fixing whitespace issues..."
-
-    # We fix whitespace in the index and in the working tree
-    # separately to preserve non-added changes.
-    index=$(mktemp "git-fix-ws-index.XXXXXX")
-    fixed_index=$(mktemp "git-fix-ws-index-fixed.XXXXXX")
-    tree=$(mktemp "git-fix-ws-tree.XXXXXX")
-    1>&2 echo "Patches are saved in '$index', '$fixed_index' and '$tree'."
-    1>&2 echo "If an error destroys your changes you can recover using them."
-    1>&2 echo "(The files are cleaned up on success.)"
-    1>&2 echo #newline
-
-    git diff-index -p --cached HEAD > "$index"
-    git diff-index -p HEAD > "$tree"
-
-    # reset work tree and index
-    # NB: untracked files which were not added are untouched
-    git apply --whitespace=nowarn --cached -R "$index"
-    git apply --whitespace=nowarn -R "$tree"
-
-    # Fix index
-    # For end of file newlines we must go through the worktree
-    1>&2 echo "Fixing staged changes..."
-    git apply --cached --whitespace=fix "$index"
-    git apply --whitespace=fix "$index" 2>/dev/null # no need to repeat yourself
-    git diff --cached --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix
-    git add -u
-    1>&2 echo #newline
-
-    # reset work tree
-    git diff-index -p --cached HEAD > "$fixed_index"
-    # If all changes were bad whitespace changes the patch is empty
-    # making git fail. Don't fail now: we fix the worktree first.
-    if [ -s "$fixed_index" ]
-    then
-        git apply --whitespace=nowarn -R "$fixed_index"
-    fi
-
-    # Fix worktree
-    1>&2 echo "Fixing unstaged changes..."
-    git apply --whitespace=fix "$tree"
-    git diff --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix
-    1>&2 echo #newline
-
-    if ! [ -s "$fixed_index" ]
-    then
-        1>&2 echo "No changes after fixing whitespace issues!"
-        exit 1
-    fi
-
-    # Check that we did fix whitespace
-    if ! git diff-index --check --cached HEAD;
-    then
-        1>&2 echo "Auto-fixing whitespace failed: errors remain."
-        1>&2 echo "This may fix itself if you try again."
-        1>&2 echo "(Consider whether the number of errors decreases after each run.)"
-        exit 1
-    fi
-    1>&2 echo "Whitespace issues fixed!"
-
-    # clean up temporary files
-    rm "$index" "$tree" "$fixed_index"
+    1>&2 echo "Warning: ocamlformat is not in path. Cannot check formatting."
 fi
+
+1>&2 echo "Auto fixing whitespace and formatting issues..."
+
+# We fix whitespace in the index and in the working tree
+# separately to preserve non-added changes.
+index=$(mktemp "git-fix-ws-index.XXXXXX")
+fixed_index=$(mktemp "git-fix-ws-index-fixed.XXXXXX")
+tree=$(mktemp "git-fix-ws-tree.XXXXXX")
+1>&2 echo "Patches are saved in '$index', '$fixed_index' and '$tree'."
+1>&2 echo "If an error destroys your changes you can recover using them."
+1>&2 echo "(The files are cleaned up on success.)"
+1>&2 echo #newline
+
+git diff-index -p --cached HEAD > "$index"
+git diff-index -p HEAD > "$tree"
+
+# reset work tree and index
+# NB: untracked files which were not added are untouched
+git apply --whitespace=nowarn --cached -R "$index"
+git apply --whitespace=nowarn -R "$tree"
+
+# Fix index
+# For end of file newlines we must go through the worktree
+1>&2 echo "Fixing staged changes..."
+git apply --cached --whitespace=fix "$index"
+git apply --whitespace=fix "$index" 2>/dev/null # no need to repeat yourself
+git diff --cached --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix
+git diff --cached --name-only -z | grep -E '.*\.mli?$' -z | xargs -0 "$ocamlformat" -i || true
+git add -u
+1>&2 echo #newline
+
+# reset work tree
+git diff-index -p --cached HEAD > "$fixed_index"
+# If all changes were bad whitespace changes the patch is empty
+# making git fail. Don't fail now: we fix the worktree first.
+if [ -s "$fixed_index" ]
+then
+    git apply --whitespace=nowarn -R "$fixed_index"
+fi
+
+# Fix worktree
+1>&2 echo "Fixing unstaged changes..."
+git apply --whitespace=fix "$tree"
+git diff --name-only -z | xargs -0 dev/tools/check-eof-newline.sh --fix
+git diff --name-only -z | grep -E '.*\.mli?$' -z | xargs -0 "$ocamlformat" -i || true
+1>&2 echo #newline
+
+if ! [ -s "$fixed_index" ]
+then
+    1>&2 echo "No changes after fixing whitespace and formatting issues!"
+    exit 1
+fi
+
+# Check that we did fix whitespace
+if ! git diff-index --check --cached HEAD;
+then
+    1>&2 echo "Auto-fixing whitespace failed: errors remain."
+    1>&2 echo "This may fix itself if you try again."
+    1>&2 echo "(Consider whether the number of errors decreases after each run.)"
+    exit 1
+fi
+1>&2 echo "Whitespace and formatting pass complete."
+
+# clean up temporary files
+rm "$index" "$tree" "$fixed_index"
