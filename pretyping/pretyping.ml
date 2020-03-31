@@ -438,7 +438,15 @@ let pretype_ref ?loc sigma env ref us =
   match ref with
   | GlobRef.VarRef id ->
       (* Section variable *)
-      (try sigma, make_judge (mkVar id) (NamedDecl.get_type (lookup_named id !!env))
+    (try
+       let ty = NamedDecl.get_type (lookup_named id !!env) in
+       (match us with
+        | None | Some [] -> ()
+        | Some (_ :: _) ->
+          CErrors.user_err ?loc
+            Pp.(str "Section variables are not polymorphic:" ++ spc ()
+                ++ str "universe instance should have length 0."));
+       sigma, make_judge (mkVar id) ty
        with Not_found ->
          (* This may happen if env is a goal env and section variables have
             been cleared - section variables should be different from goal
