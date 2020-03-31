@@ -98,10 +98,10 @@ coercions.
 .. flag:: Program Mode
 
    Enables the program mode, in which 1) typechecking allows subset coercions and
-   2) the elaboration of pattern matching of :cmd:`Program Fixpoint` and
-   :cmd:`Program Definition` act
-   like Program Fixpoint/Definition, generating obligations if there are
-   unresolved holes after typechecking.
+   2) the elaboration of pattern matching of :cmd:`Fixpoint` and
+   :cmd:`Definition` act respectively like :cmd:`Program Fixpoint` and
+   :cmd:`Program Definition`, generating obligations if there are unresolved
+   holes after typechecking.
 
 .. _syntactic_control:
 
