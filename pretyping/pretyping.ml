@@ -306,7 +306,8 @@ let check_evars env ?initial sigma c =
 let check_evars_are_solved ~program_mode env sigma frozen =
   let sigma = check_typeclasses_instances_are_solved ~program_mode env sigma frozen in
   check_problems_are_solved env sigma;
-  check_extra_evars_are_solved env sigma frozen
+  check_extra_evars_are_solved env sigma frozen;
+  sigma
 
 (* Try typeclasses, hooks, unification heuristics ... *)
 
@@ -326,8 +327,8 @@ let solve_remaining_evars ?hook flags env ?initial sigma =
     then apply_heuristics env sigma false
     else sigma
   in
-  if flags.fail_evar then check_evars_are_solved ~program_mode env sigma frozen;
-  sigma
+  if flags.fail_evar then check_evars_are_solved ~program_mode env sigma frozen
+  else sigma
 
 let check_evars_are_solved ~program_mode env ?initial current_sigma =
   let frozen = frozen_and_pending_holes (initial, current_sigma) in

@@ -699,7 +699,7 @@ let prepare_obligation ~name ~types ~body sigma =
 
 let prepare_parameter ~poly ~udecl ~types sigma =
   let env = Global.env () in
-  Pretyping.check_evars_are_solved ~program_mode:false env sigma;
+  let sigma = Pretyping.check_evars_are_solved ~program_mode:false env sigma in
   let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:true
       sigma (fun nf -> nf types)
   in

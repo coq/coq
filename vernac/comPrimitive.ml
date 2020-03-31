@@ -44,7 +44,7 @@ let do_primitive id udecl prim typopt =
         Exninfo.iraise (Pretype_errors.(
             PretypeError (env,evd,CannotUnify (typ,expected_typ,Some e)),info))
     in
-    Pretyping.check_evars_are_solved ~program_mode:false env evd;
+    let evd = Pretyping.check_evars_are_solved ~program_mode:false env evd in
     let evd = Evd.minimize_universes evd in
     let uvars = EConstr.universes_of_constr evd typ in
     let evd = Evd.restrict_universe_context evd uvars in

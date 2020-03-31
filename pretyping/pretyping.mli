@@ -125,10 +125,10 @@ val solve_remaining_evars : ?hook:inference_hook -> inference_flags ->
   env -> ?initial:evar_map -> (* current map *) evar_map -> evar_map
 
 (** Checking evars and pending conversion problems are all solved,
-    reporting an appropriate error message *)
+    reporting an appropriate error message. This call TC inference. *)
 
 val check_evars_are_solved :
-  program_mode:bool -> env -> ?initial:evar_map -> (* current map: *) evar_map -> unit
+  program_mode:bool -> env -> ?initial:evar_map -> (* current map: *) evar_map -> evar_map
 
 (** [check_evars env ?initial sigma c] fails if some unresolved evar
    remains in [c] which isn't in [initial] (any unresolved evar if
