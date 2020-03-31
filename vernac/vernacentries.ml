@@ -487,8 +487,7 @@ let program_inference_hook env sigma ev =
 let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   let env0 = Global.env () in
   let flags = Pretyping.{ all_no_fail_flags with program_mode } in
-  let decl = fst (List.hd thms) in
-  let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env0 (snd decl) in
+  let evd, udecl = Constrexpr_ops.interp_univ_decl_opt env0 (snd (fst (List.hd thms))) in
   let evd, thms = List.fold_left_map (fun evd ((id, _), (bl, t)) ->
     let evd, (impls, ((env, ctx), imps)) =
       Constrintern.interp_context_evars ~program_mode env0 evd bl
@@ -505,11 +504,6 @@ let start_lemma_com ~program_mode ~poly ~scope ~kind ?hook thms =
   let evd = Evd.minimize_universes evd in
   let thms = List.map (fun (name, (typ, (args, impargs))) ->
       { DeclareDef.Recthm.name; typ = EConstr.to_constr evd typ; args; impargs} ) thms in
-  let () =
-    let open UState in
-    if not (udecl.univdecl_extensible_instance && udecl.univdecl_extensible_constraints) then
-       ignore (Evd.check_univ_decl ~poly evd udecl)
-  in
   let evd =
     if poly then evd
     else (* We fix the variables to ensure they won't be lowered to Set *)
