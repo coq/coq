@@ -28,8 +28,8 @@ let warn_inexact_float =
       Pp.strbrk
         (Printf.sprintf
            "The constant %s is not a binary64 floating-point value. \
-            A closest value will be used and unambiguously printed %s."
-           sn (Float64.to_string f)))
+            A closest value %s will be used and unambiguously printed %s."
+           sn (Float64.to_hex_string f) (Float64.to_string f)))
 
 let interp_float ?loc n =
   let sn = NumTok.Signed.to_string n in

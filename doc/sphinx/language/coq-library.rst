@@ -1062,10 +1062,16 @@ Floating-point constants are parsed and pretty-printed as (17-digit)
 decimal constants. This ensures that the composition
 :math:`\text{parse} \circ \text{print}` amounts to the identity.
 
-.. warn:: The constant @numeral is not a binary64 floating-point value.  A closest value will be used and unambiguously printed @numeral. [inexact-float,parsing]
+.. warn:: The constant @numeral is not a binary64 floating-point value.  A closest value @numeral will be used and unambiguously printed @numeral. [inexact-float,parsing]
 
    Not all decimal constants are floating-point values. This warning
    is generated when parsing such a constant (for instance ``0.1``).
+
+.. flag:: Printing Float
+
+   Turn this flag off (it is on by default) to deactivate decimal
+   printing of floating-point constants. They will then be printed
+   with an hexadecimal representation.
 
 .. example::
 
