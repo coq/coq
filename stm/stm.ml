@@ -1501,7 +1501,7 @@ end = struct (* {{{ *)
       let wall_clock2 = Unix.gettimeofday () in
       Aux_file.record_in_aux_at ?loc "proof_build_time"
         (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
-      let p = PG_compat.return_proof ~allow_partial:drop_pt () in
+      let p = if drop_pt then PG_compat.return_partial_proof () else PG_compat.return_proof () in
       if drop_pt then feedback ~id Complete;
       p)
 
@@ -1522,15 +1522,15 @@ end = struct (* {{{ *)
       let st = State.freeze () in
       if not drop then begin
         let checked_proof = Future.chain future_proof (fun p ->
-          let opaque = Proof_global.Opaque in
 
           (* Unfortunately close_future_proof and friends are not pure so we need
              to set the state manually here *)
           State.unfreeze st;
           let pobject, _info =
-            PG_compat.close_future_proof ~opaque ~feedback_id:stop (Future.from_val ~fix_exn p) in
+            PG_compat.close_future_proof ~feedback_id:stop (Future.from_val ~fix_exn p) in
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
+          let opaque = Proof_global.Opaque in
           stm_qed_delay_proof ~st ~id:stop
             ~proof:pobject ~info:(Lemmas.Info.make ()) ~loc ~control:[] (Proved (opaque,None))) in
         ignore(Future.join checked_proof);
@@ -1661,14 +1661,14 @@ end = struct (* {{{ *)
     try
       Reach.known_state ~doc:dummy_doc (* XXX should be document *) ~cache:false stop;
       if drop then
-        let _proof = PG_compat.return_proof ~allow_partial:true () in
+        let _proof = PG_compat.return_partial_proof () in
         `OK_ADMITTED
       else begin
       let opaque = Proof_global.Opaque in
 
       (* The original terminator, a hook, has not been saved in the .vio*)
       let proof, _info =
-        PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true (fun x -> x) in
+        PG_compat.close_proof ~opaque ~keep_body_ucst_separate:true in
 
       let info = Lemmas.Info.make () in
 
@@ -2479,13 +2479,13 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                           ~drop_pt exn_info block_stop, ref false
                     in
                     qed.fproof <- Some (Some fp, cancel);
-                    let opaque = match keep' with
-                      | VtKeepAxiom | VtKeepOpaque ->
-                        Proof_global.Opaque (* Admitted -> Opaque should be OK. *)
-                      | VtKeepDefined -> Proof_global.Transparent
+                    let () = match keep' with
+                      | VtKeepAxiom | VtKeepOpaque -> ()
+                      | VtKeepDefined ->
+                        CErrors.anomaly (Pp.str "Cannot delegate transparent proofs, this is a bug in the STM.")
                     in
                     let proof, info =
-                      PG_compat.close_future_proof ~opaque ~feedback_id:id fp in
+                      PG_compat.close_future_proof ~feedback_id:id fp in
                     if not delegate then ignore(Future.compute fp);
                     reach view.next;
                     let st = Vernacstate.freeze_interp_state ~marshallable:false in
@@ -2518,9 +2518,11 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                       | VtKeepOpaque -> Opaque | VtKeepDefined -> Transparent
                       | VtKeepAxiom -> assert false
                     in
-                      Some(PG_compat.close_proof ~opaque
-                                ~keep_body_ucst_separate:false
-                                (State.exn_on id ~valid:eop)) in
+                    try Some (PG_compat.close_proof ~opaque ~keep_body_ucst_separate:false)
+                    with exn ->
+                      let iexn = Exninfo.capture exn in
+                      Exninfo.iraise (State.exn_on id ~valid:eop iexn)
+                in
                 if keep <> VtKeep VtKeepAxiom then
                   reach view.next;
                 let wall_clock2 = Unix.gettimeofday () in

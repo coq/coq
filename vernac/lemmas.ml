@@ -403,7 +403,7 @@ let process_idopt_for_save ~idopt info =
 
 let save_lemma_proved ~lemma ~opaque ~idopt =
   (* Env and sigma are just used for error printing in save_remaining_recthms *)
-  let proof_obj = Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x) lemma.proof in
+  let proof_obj = Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false lemma.proof in
   let proof_info = process_idopt_for_save ~idopt lemma.info in
   finalize_proof proof_obj proof_info
 

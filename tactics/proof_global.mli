@@ -67,7 +67,7 @@ val update_global_env : t -> t
 
 (* Takes a function to add to the exceptions data relative to the
    state in which the proof was built *)
-val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Future.fix_exn -> t -> proof_object
+val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> t -> proof_object
 
 (* Intermediate step necessary to delegate the future.
  * Both access the current proof state. The former is supposed to be
@@ -75,11 +75,13 @@ val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Future.
 
 type closed_proof_output
 
-(* If allow_partial is set (default no) then an incomplete proof
- * is allowed (no error), and a warn is given if the proof is complete. *)
-val return_proof : ?allow_partial:bool -> t -> closed_proof_output
-val close_future_proof : opaque:opacity_flag -> feedback_id:Stateid.t -> t ->
-  closed_proof_output Future.computation -> proof_object
+(** Requires a complete proof. *)
+val return_proof : t -> closed_proof_output
+
+(** An incomplete proof is allowed (no error), and a warn is given if
+   the proof is complete. *)
+val return_partial_proof : t -> closed_proof_output
+val close_future_proof : feedback_id:Stateid.t -> t -> closed_proof_output Future.computation -> proof_object
 
 val get_open_goals : t -> int
 
@@ -91,7 +93,6 @@ val map_fold_proof_endline : (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) 
 val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
 
 (** Sets the section variables assumed by the proof, returns its closure
- * (w.r.t. type dependencies and let-ins covered by it) + a list of
- * ids to be cleared *)
+ * (w.r.t. type dependencies and let-ins covered by it) *)
 val set_used_variables : t ->
-  Names.Id.t list -> (Constr.named_context * Names.lident list) * t
+  Names.Id.t list -> Constr.named_context * t

@@ -65,16 +65,16 @@ module Proof_global : sig
   val with_current_proof :
       (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> 'a
 
-  val return_proof : ?allow_partial:bool -> unit -> Proof_global.closed_proof_output
+  val return_proof : unit -> Proof_global.closed_proof_output
+  val return_partial_proof : unit -> Proof_global.closed_proof_output
 
   type closed_proof = Proof_global.proof_object * Lemmas.Info.t
 
   val close_future_proof :
-    opaque:Proof_global.opacity_flag ->
     feedback_id:Stateid.t ->
     Proof_global.closed_proof_output Future.computation -> closed_proof
 
-  val close_proof : opaque:Proof_global.opacity_flag -> keep_body_ucst_separate:bool -> Future.fix_exn -> closed_proof
+  val close_proof : opaque:Proof_global.opacity_flag -> keep_body_ucst_separate:bool -> closed_proof
 
   val discard_all : unit -> unit
   val update_global_env : unit -> unit

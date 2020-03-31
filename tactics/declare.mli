@@ -59,9 +59,14 @@ val definition_entry
   : ?fix_exn:Future.fix_exn
   -> ?opaque:bool
   -> ?inline:bool
+  -> ?feedback_id:Stateid.t
+  -> ?section_vars:Id.Set.t
   -> ?types:types
   -> ?univs:Entries.universes_entry
   -> ?eff:Evd.side_effects
+  -> ?univsbody:Univ.ContextSet.t
+  (** Universe-constraints attached to the body-only, used in
+     vio-delayed opaque constants and private poly universes *)
   -> constr
   -> Evd.side_effects proof_entry
 
