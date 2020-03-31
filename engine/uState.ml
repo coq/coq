@@ -114,16 +114,11 @@ let constraints ctx = snd ctx.local
 
 let context ctx = ContextSet.to_context ctx.local
 
-let name_universe lvl =
-  (* Best-effort naming from the string representation of the level. This is
-     completely hackish and should be solved in upper layers instead. *)
-  Id.of_string_soft (Level.to_string lvl)
-
 let compute_instance_binders inst ubinders =
   let revmap = Id.Map.fold (fun id lvl accu -> LMap.add lvl id accu) ubinders LMap.empty in
   let map lvl =
     try Name (LMap.find lvl revmap)
-    with Not_found -> Name (name_universe lvl)
+    with Not_found -> Anonymous
   in
   Array.map map (Instance.to_array inst)
 

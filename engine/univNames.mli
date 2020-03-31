@@ -20,12 +20,3 @@ type universe_binders = Univ.Level.t Names.Id.Map.t
 val empty_binders : universe_binders
 
 type univ_name_list = Names.lname list
-
-(** [universe_binders_with_opt_names ref l]
-
-    If [l] is [Some univs] return the universe binders naming the bound levels
-    of [ref] by [univs] (skipping Anonymous). May error if the lengths mismatch.
-
-    Otherwise return the bound universe names registered for [ref]. *)
-val universe_binders_with_opt_names : AUContext.t ->
-  univ_name_list option -> universe_binders

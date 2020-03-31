@@ -132,6 +132,18 @@ val pr_universes  : evar_map ->
   ?variance:Univ.Variance.t array -> ?priv:Univ.ContextSet.t ->
   Declarations.universes -> Pp.t
 
+(** [universe_binders_with_opt_names ref l]
+
+    If [l] is [Some univs] return the universe binders naming the
+   bound levels of [ref] by [univs] (generating names for Anonymous).
+   May error if the lengths mismatch.
+
+    Otherwise return the bound universe names registered for [ref].
+
+    Inefficient on large contexts due to name generation. *)
+val universe_binders_with_opt_names : Univ.AUContext.t ->
+  UnivNames.univ_name_list option -> UnivNames.universe_binders
+
 (** Printing global references using names as short as possible *)
 
 val pr_global_env          : Id.Set.t -> GlobRef.t -> Pp.t
