@@ -4,7 +4,7 @@ fun '(x, y) => (y, x)
      : A * B -> B * A
 forall '(x, y), swap (x, y) = (y, x)
      : Prop
-proj_informative = fun '(exist _ x _) => x : A
+proj_informative = fun '(exist _ x _) => x
      : {x : A | P x} -> A
 foo = fun '(Bar n b tt p) => if b then n + p else n - p
      : Foo -> nat
@@ -29,8 +29,7 @@ exists '(x, y) '(z, w), swap (x, y) = (z, w)
 ∀ '(x, y), swap (x, y) = (y, x)
      : Prop
 both_z = 
-fun pat : nat * nat =>
-let '(n, p) as x := pat return (F x) in (Z n, Z p) : F (n, p)
+fun pat : nat * nat => let '(n, p) as x := pat return (F x) in (Z n, Z p)
      : forall pat : nat * nat, F pat
 fun '(x, y) '(z, t) => swap (x, y) = (z, t)
      : A * B -> B * A -> Prop
