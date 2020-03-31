@@ -239,7 +239,7 @@ let interp_refine ist gl rc =
   } in
   let kind = Pretyping.OfType (pf_concl gl) in
   let flags = {
-    Pretyping.use_typeclasses = true;
+    Pretyping.use_typeclasses = Pretyping.UseTC;
     solve_unification_constraints = true;
     fail_evar = false;
     expand_evars = true;

@@ -59,26 +59,37 @@ let () =
       optread  = (fun () -> !typeclasses_unique);
       optwrite = (fun b -> typeclasses_unique := b); }
 
-let interp_fields_evars env sigma impls_env nots l =
-  List.fold_left2
-    (fun (env, sigma, uimpls, params, impls) no ({CAst.loc;v=i}, b, t) ->
-      let sigma, (t', impl) = interp_type_evars_impls ~program_mode:false env sigma ~impls t in
-      let r = Retyping.relevance_of_type env sigma t' in
-      let sigma, b' =
-        Option.cata (fun x -> on_snd (fun x -> Some (fst x)) @@
-                      interp_casted_constr_evars_impls ~program_mode:false env sigma ~impls x t') (sigma,None) b in
-      let impls =
-        match i with
-        | Anonymous -> impls
-        | Name id -> Id.Map.add id (compute_internalization_data env sigma Constrintern.Method t' impl) impls
+let interp_fields_evars env sigma ~ninds ~nparams impls_env nots l =
+  let _, sigma, impls, newfs, _ =
+    List.fold_left2
+      (fun (env, sigma, uimpls, params, impls) no ({CAst.loc;v=i}, b, t) ->
+         let sigma, (t', impl) = interp_type_evars_impls env sigma ~impls t in
+         let r = Retyping.relevance_of_type env sigma t' in
+         let sigma, b' =
+           Option.cata (fun x -> on_snd (fun x -> Some (fst x)) @@
+                         interp_casted_constr_evars_impls ~program_mode:false env sigma ~impls x t') (sigma,None) b in
+         let impls =
+           match i with
+           | Anonymous -> impls
+           | Name id -> Id.Map.add id (compute_internalization_data env sigma Constrintern.Method t' impl) impls
+         in
+         let d = match b' with
+           | None -> LocalAssum (make_annot i r,t')
+           | Some b' -> LocalDef (make_annot i r,b',t')
+         in
+         List.iter (Metasyntax.set_notation_for_interpretation env impls) no;
+         (EConstr.push_rel d env, sigma, impl :: uimpls, d::params, impls))
+      (env, sigma, [], [], impls_env) nots l
+  in
+  let _, sigma = Context.Rel.fold_outside ~init:(env,sigma) (fun f (env,sigma) ->
+      let sigma = RelDecl.fold_constr (fun c sigma ->
+          ComInductive.maybe_unify_params_in env sigma ~ninds ~nparams c)
+          f sigma
       in
-      let d = match b' with
-              | None -> LocalAssum (make_annot i r,t')
-              | Some b' -> LocalDef (make_annot i r,b',t')
-      in
-      List.iter (Metasyntax.set_notation_for_interpretation env impls) no;
-      (EConstr.push_rel d env, sigma, impl :: uimpls, d::params, impls))
-    (env, sigma, [], [], impls_env) nots l
+      EConstr.push_rel f env, sigma)
+      newfs
+  in
+  sigma, (impls, newfs)
 
 let compute_constructor_level evars env l =
   List.fold_right (fun d (env, univ) ->
@@ -103,7 +114,7 @@ let check_anonymous_type ind =
   | { CAst.v = CSort (Glob_term.UAnonymous {rigid=true}) } -> true
   | _ -> false
 
-let typecheck_params_and_fields finite def poly pl ps records =
+let typecheck_params_and_fields def poly pl ps records =
   let env0 = Global.env () in
   (* Special case elaboration for template-polymorphic inductives,
      lower bound on introduced universes is Prop so that we do not miss
@@ -157,17 +168,15 @@ let typecheck_params_and_fields finite def poly pl ps records =
   let fold accu (id, _, _, _) arity r =
     EConstr.push_rel (LocalAssum (make_annot (Name id) r,arity)) accu in
   let env_ar = EConstr.push_rel_context newps (List.fold_left3 fold env0 records arities relevances) in
-  let assums = List.filter is_local_assum newps in
   let impls_env =
-    let params = List.map (RelDecl.get_name %> Name.get_id) assums in
-    let ty = Inductive (params, (finite != Declarations.BiFinite)) in
     let ids = List.map (fun (id, _, _, _) -> id) records in
     let imps = List.map (fun _ -> imps) arities in
-    compute_internalization_env env0 sigma ~impls:impls_env ty ids arities imps
+    compute_internalization_env env0 sigma ~impls:impls_env Inductive ids arities imps
   in
+  let ninds = List.length arities in
+  let nparams = List.length newps in
   let fold sigma (_, _, nots, fs) arity =
-    let _, sigma, impls, newfs, _ = interp_fields_evars env_ar sigma impls_env nots (binders_of_decls fs) in
-    (sigma, (impls, newfs))
+    interp_fields_evars env_ar sigma ~ninds ~nparams impls_env nots (binders_of_decls fs)
   in
   let (sigma, data) = List.fold_left2_map fold sigma records arities in
   let sigma =
@@ -702,7 +711,7 @@ let definition_structure udecl kind ~template ~cumulative ~poly finite records =
   let ps, data = extract_record_data records in
   let ubinders, univs, auto_template, params, implpars, data =
     States.with_state_protection (fun () ->
-      typecheck_params_and_fields finite (kind = Class true) poly udecl ps data) () in
+      typecheck_params_and_fields (kind = Class true) poly udecl ps data) () in
   let template = template, auto_template in
   match kind with
   | Class def ->

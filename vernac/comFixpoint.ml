@@ -107,7 +107,8 @@ let interp_fix_context ~program_mode ~cofix env sigma fix =
   sigma, ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)
 
 let interp_fix_ccl ~program_mode sigma impls (env,_) fix =
-  let sigma, (c, impl) = interp_type_evars_impls ~program_mode ~impls env sigma fix.Vernacexpr.rtype in
+  let flags = Pretyping.{ all_no_fail_flags with program_mode } in
+  let sigma, (c, impl) = interp_type_evars_impls ~flags ~impls env sigma fix.Vernacexpr.rtype in
   let r = Retyping.relevance_of_type env sigma c in
   sigma, (c, r, impl)
 

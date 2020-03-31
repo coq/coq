@@ -47,7 +47,7 @@ DECLARE PLUGIN "ltac_plugin"
 
 let with_delayed_uconstr ist c tac =
   let flags = {
-    Pretyping.use_typeclasses = false;
+    Pretyping.use_typeclasses = Pretyping.NoUseTC;
     solve_unification_constraints = true;
     fail_evar = false;
     expand_evars = true;
@@ -345,7 +345,7 @@ open EConstr
 open Vars
 
 let constr_flags () = {
-  Pretyping.use_typeclasses = true;
+  Pretyping.use_typeclasses = Pretyping.UseTC;
   Pretyping.solve_unification_constraints = Pfedit.use_unification_heuristics ();
   Pretyping.fail_evar = false;
   Pretyping.expand_evars = true;
@@ -375,22 +375,22 @@ let refine_tac ist simple with_classes c =
 
 TACTIC EXTEND refine
 | [ "refine" uconstr(c) ] ->
-   { refine_tac ist false true c }
+   { refine_tac ist false Pretyping.UseTC c }
 END
 
 TACTIC EXTEND simple_refine
 | [ "simple" "refine" uconstr(c) ] ->
-   { refine_tac ist true true c }
+   { refine_tac ist true Pretyping.UseTC c }
 END
 
 TACTIC EXTEND notcs_refine
 | [ "notypeclasses" "refine" uconstr(c) ] ->
-   { refine_tac ist false false c }
+   { refine_tac ist false Pretyping.NoUseTC c }
 END
 
 TACTIC EXTEND notcs_simple_refine
 | [ "simple" "notypeclasses" "refine" uconstr(c) ] ->
-   { refine_tac ist true false c }
+   { refine_tac ist true Pretyping.NoUseTC c }
 END
 
 (* Solve unification constraints using heuristics or fail if any remain *)
