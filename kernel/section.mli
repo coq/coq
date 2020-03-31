@@ -19,6 +19,9 @@ type 'a t
 val depth : 'a t -> int
 (** Number of nested sections. *)
 
+val map_custom : ('a -> 'a) -> 'a t -> 'a t
+(** Modify the custom data *)
+
 (** {6 Manipulating sections} *)
 
 type section_entry =
