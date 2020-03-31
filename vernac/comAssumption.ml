@@ -203,8 +203,12 @@ let context_insection sigma ~poly ctx =
           else Monomorphic_entry Univ.ContextSet.empty
         in
         let entry = Declare.definition_entry ~univs ~types:t b in
-        let _ : GlobRef.t = DeclareDef.declare_definition ~name ~scope:DeclareDef.Discharge
-            ~kind:Decls.(IsDefinition Definition) ~ubind:UnivNames.empty_binders ~impargs:[] entry
+        (* XXX Fixme: Use DeclareDef.prepare_definition *)
+        let uctx = Evd.evar_universe_context sigma in
+        let kind = Decls.(IsDefinition Definition) in
+        let _ : GlobRef.t =
+          DeclareDef.declare_entry ~name ~scope:DeclareDef.Discharge
+            ~kind ~impargs:[] ~uctx entry
         in
         ()
     in

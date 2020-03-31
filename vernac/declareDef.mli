@@ -36,17 +36,42 @@ module Hook : sig
   end
 
   val make : (S.t -> unit) -> t
-  val call : ?hook:t -> ?fix_exn:Future.fix_exn -> S.t -> unit
+  val call : ?hook:t -> S.t -> unit
 end
 
+(** Declare an interactively-defined constant *)
+val declare_entry
+  :  name:Id.t
+  -> scope:locality
+  -> kind:Decls.logical_kind
+  -> ?hook:Hook.t
+  -> ?obls:(Id.t * Constr.t) list
+  -> impargs:Impargs.manual_implicits
+  -> uctx:UState.t
+  -> Evd.side_effects Declare.proof_entry
+  -> GlobRef.t
+
+(** Declares a non-interactive constant; [body] and [types] will be
+   normalized w.r.t. the passed [evar_map] [sigma]. Universes should
+   be handled properly, including minimization and restriction. Note
+   that [sigma] is checked for unresolved evars, thus you should be
+   careful not to submit open terms or evar maps with stale,
+   unresolved existentials *)
 val declare_definition
   :  name:Id.t
   -> scope:locality
   -> kind:Decls.logical_kind
-  -> ?hook_data:(Hook.t * UState.t * (Id.t * Constr.t) list)
-  -> ubind:UnivNames.universe_binders
+  -> opaque:bool
   -> impargs:Impargs.manual_implicits
-  -> Evd.side_effects Declare.proof_entry
+  -> udecl:UState.universe_decl
+  -> ?hook:Hook.t
+  -> ?obls:(Id.t * Constr.t) list
+  -> poly:bool
+  -> ?inline:bool
+  -> types:EConstr.t option
+  -> body:EConstr.t
+  -> ?fix_exn:(Exninfo.iexn -> Exninfo.iexn)
+  -> Evd.evar_map
   -> GlobRef.t
 
 val declare_assumption
@@ -88,20 +113,19 @@ val declare_mutually_recursive
   -> Recthm.t list
   -> Names.GlobRef.t list
 
-val prepare_definition
-  :  allow_evars:bool
-  -> ?opaque:bool
+val prepare_obligation
+  :  ?opaque:bool
   -> ?inline:bool
+  -> name:Id.t
   -> poly:bool
   -> udecl:UState.universe_decl
   -> types:EConstr.t option
   -> body:EConstr.t
   -> Evd.evar_map
-  -> Evd.evar_map * Evd.side_effects Declare.proof_entry
+  -> Constr.constr * Constr.types * UState.t * RetrieveObl.obligation_info
 
 val prepare_parameter
-  : allow_evars:bool
-  -> poly:bool
+  : poly:bool
   -> udecl:UState.universe_decl
   -> types:EConstr.types
   -> Evd.evar_map

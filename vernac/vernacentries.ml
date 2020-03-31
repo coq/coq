@@ -527,8 +527,10 @@ let vernac_definition_hook ~canonical_instance ~local ~poly = let open Decls in 
   Some (DeclareDef.Hook.(make (fun { S.dref } -> Canonical.declare_canonical_structure dref)))
 | _ -> None
 
+let default_thm_id = Id.of_string "Unnamed_thm"
+
 let fresh_name_for_anonymous_theorem () =
-  Namegen.next_global_ident_away Lemmas.default_thm_id Id.Set.empty
+  Namegen.next_global_ident_away default_thm_id Id.Set.empty
 
 let vernac_definition_name lid local =
   let lid =
@@ -565,7 +567,9 @@ let vernac_definition ~atts (discharge, kind) (lid, pl) bl red_option c typ_opt 
       let env = Global.env () in
       let sigma = Evd.from_env env in
       Some (snd (Hook.get f_interp_redexp env sigma r)) in
-  ComDefinition.do_definition ~program_mode ~name:name.v
+  let do_definition =
+    ComDefinition.(if program_mode then do_definition_program else do_definition) in
+  do_definition ~name:name.v
     ~poly:atts.polymorphic ~scope ~kind pl bl red_option c typ_opt ?hook
 
 (* NB: pstate argument to use combinators easily *)

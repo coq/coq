@@ -199,7 +199,7 @@ let build_functional_principle ?(opaque=Proof_global.Transparent) (evd:Evd.evar_
   (*    end; *)
 
   let open Proof_global in
-  let { name; entries } = Lemmas.pf_fold (close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x)) lemma in
+  let { entries } = Lemmas.pf_fold (close_proof ~opaque ~keep_body_ucst_separate:false (fun x -> x)) lemma in
   match entries with
   | [entry] ->
     entry, hook
@@ -290,14 +290,12 @@ let generate_functional_principle (evd: Evd.evar_map ref)
      Don't forget to close the goal if an error is raised !!!!
   *)
   let uctx = Evd.evar_universe_context sigma in
-  let hook_data = hook, uctx, [] in
-  let _ : Names.GlobRef.t = DeclareDef.declare_definition
-      ~name:new_princ_name ~hook_data
+  let _ : Names.GlobRef.t = DeclareDef.declare_entry
+      ~name:new_princ_name ~hook
       ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
       ~kind:Decls.(IsProof Theorem)
-      ~ubind:UnivNames.empty_binders
       ~impargs:[]
-      entry in
+      ~uctx entry in
   ()
   with e when CErrors.noncritical e ->
     raise (Defining_principle e)
@@ -375,7 +373,6 @@ let register_struct is_rec fixpoint_exprl =
       | None ->
         CErrors.user_err ~hdr:"Function" Pp.(str "Body of Function must be given") in
     ComDefinition.do_definition
-      ~program_mode:false
       ~name:fname.CAst.v
       ~poly:false
       ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)

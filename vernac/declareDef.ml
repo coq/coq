@@ -9,7 +9,6 @@
 (************************************************************************)
 
 open Declare
-open Impargs
 
 type locality = Discharge | Global of Declare.import_status
 
@@ -34,40 +33,38 @@ module Hook = struct
 
   let make hook = CEphemeron.create hook
 
-  let call ?hook ?fix_exn x =
-    try Option.iter (fun hook -> CEphemeron.get hook x) hook
-    with e when CErrors.noncritical e ->
-      let e = Exninfo.capture e in
-      let e = Option.cata (fun fix -> fix e) e fix_exn in
-      Exninfo.iraise e
+  let call ?hook x = Option.iter (fun hook -> CEphemeron.get hook x) hook
+
 end
 
 (* Locality stuff *)
-let declare_definition ~name ~scope ~kind ?hook_data ~ubind ~impargs ce =
-  let fix_exn = Declare.Internal.get_fix_exn ce in
-  let should_suggest = ce.Declare.proof_entry_opaque &&
-                       Option.is_empty ce.Declare.proof_entry_secctx in
+let declare_entry ~name ~scope ~kind ?hook ?(obls=[]) ~impargs ~uctx entry =
+  let should_suggest = entry.Declare.proof_entry_opaque &&
+                       Option.is_empty entry.Declare.proof_entry_secctx in
+  let ubind = UState.universe_binders uctx in
   let dref = match scope with
   | Discharge ->
-    let () = declare_variable ~name ~kind (SectionLocalDef ce) in
+    let () = declare_variable ~name ~kind (SectionLocalDef entry) in
     if should_suggest then Proof_using.suggest_variable (Global.env ()) name;
     Names.GlobRef.VarRef name
   | Global local ->
-    let kn = declare_constant ~name ~local ~kind (DefinitionEntry ce) in
+    let kn = declare_constant ~name ~local ~kind (DefinitionEntry entry) in
     let gr = Names.GlobRef.ConstRef kn in
     if should_suggest then Proof_using.suggest_constant (Global.env ()) kn;
     let () = DeclareUniv.declare_univ_binders gr ubind in
     gr
   in
-  let () = maybe_declare_manual_implicits false dref impargs in
+  let () = Impargs.maybe_declare_manual_implicits false dref impargs in
   let () = definition_message name in
-  begin
-    match hook_data with
-    | None -> ()
-    | Some (hook, uctx, obls) ->
-      Hook.call ~fix_exn ~hook { Hook.S.uctx; obls; scope; dref }
-  end;
+  Option.iter (fun hook -> Hook.call ~hook { Hook.S.uctx; obls; scope; dref }) hook;
   dref
+
+let declare_entry ~name ~scope ~kind ?hook ?obls ~impargs ~uctx entry =
+  try declare_entry ~name ~scope ~kind ?hook ?obls ~impargs ~uctx entry
+  with exn ->
+    let exn = Exninfo.capture exn in
+    let fix_exn = Declare.Internal.get_fix_exn entry in
+    Exninfo.iraise (fix_exn exn)
 
 let mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes =
   match possible_indexes with
@@ -98,22 +95,21 @@ end
 let declare_mutually_recursive ~opaque ~scope ~kind ~poly ~uctx ~udecl ~ntns ~rec_declaration ~possible_indexes ?(restrict_ucontext=true) fixitems =
   let vars, fixdecls, indexes =
     mutual_make_bodies ~fixitems ~rec_declaration ~possible_indexes in
-  let ubind, univs =
+  let uctx, univs =
     (* XXX: Obligations don't do this, this seems like a bug? *)
     if restrict_ucontext
     then
-      let evd = Evd.from_ctx uctx in
-      let evd = Evd.restrict_universe_context evd vars in
-      let univs = Evd.check_univ_decl ~poly evd udecl in
-      Evd.universe_binders evd, univs
+      let uctx = UState.restrict uctx vars in
+      let univs = UState.check_univ_decl ~poly uctx udecl in
+      uctx, univs
     else
       let univs = UState.univ_entry ~poly uctx in
-      UnivNames.empty_binders, univs
+      uctx, univs
   in
   let csts = CList.map2
       (fun Recthm.{ name; typ; impargs } body ->
-         let ce = Declare.definition_entry ~opaque ~types:typ ~univs body in
-         declare_definition ~name ~scope ~kind ~ubind ~impargs ce)
+         let entry = Declare.definition_entry ~opaque ~types:typ ~univs body in
+         declare_entry ~name ~scope ~kind ~impargs ~uctx entry)
       fixitems fixdecls
   in
   let isfix = Option.is_empty possible_indexes in
@@ -127,7 +123,7 @@ let warn_let_as_axiom =
     Pp.(fun id -> strbrk "Let definition" ++ spc () ++ Names.Id.print id ++
                   spc () ++ strbrk "declared as an axiom.")
 
-let declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe =
+let declare_assumption ~name ~scope ~hook ~impargs ~uctx pe =
   let local = match scope with
     | Discharge -> warn_let_as_axiom name; Declare.ImportNeedQualified
     | Global local -> local
@@ -139,26 +135,58 @@ let declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe =
   let () = Impargs.maybe_declare_manual_implicits false dref impargs in
   let () = Declare.assumption_message name in
   let () = DeclareUniv.declare_univ_binders dref (UState.universe_binders uctx) in
-  let () = Hook.(call ?fix_exn ?hook { S.uctx; obls = []; scope; dref}) in
+  let () = Hook.(call ?hook { S.uctx; obls = []; scope; dref}) in
   dref
+
+let declare_assumption ?fix_exn ~name ~scope ~hook ~impargs ~uctx pe =
+  try declare_assumption ~name ~scope ~hook ~impargs ~uctx pe
+  with exn ->
+    let exn = Exninfo.capture exn in
+    let exn = Option.cata (fun fix -> fix exn) exn fix_exn in
+    Exninfo.iraise exn
 
 (* Preparing proof entries *)
 
-let check_definition_evars ~allow_evars sigma =
+let prepare_definition ?opaque ?inline ?fix_exn ~poly ~udecl ~types ~body sigma =
   let env = Global.env () in
-  if not allow_evars then Pretyping.check_evars_are_solved ~program_mode:false env sigma
-
-let prepare_definition ~allow_evars ?opaque ?inline ~poly ~udecl ~types ~body sigma =
-  check_definition_evars ~allow_evars sigma;
-  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:(not allow_evars)
+  Pretyping.check_evars_are_solved ~program_mode:false env sigma;
+  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:true
       sigma (fun nf -> nf body, Option.map nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in
-  sigma, definition_entry ?opaque ?inline ?types ~univs body
+  let entry = definition_entry ?fix_exn ?opaque ?inline ?types ~univs body in
+  let uctx = Evd.evar_universe_context sigma in
+  entry, uctx
 
-let prepare_parameter ~allow_evars ~poly ~udecl ~types sigma =
-  check_definition_evars ~allow_evars sigma;
-  let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:(not allow_evars)
+let declare_definition ~name ~scope ~kind ~opaque ~impargs ~udecl ?hook
+    ?obls ~poly ?inline ~types ~body ?fix_exn sigma =
+  let entry, uctx = prepare_definition ?fix_exn ~opaque ~poly ~udecl ~types ~body ?inline sigma in
+  declare_entry ~name ~scope ~kind ~impargs ?obls ?hook ~uctx entry
+
+let prepare_obligation ?opaque ?inline ~name ~poly ~udecl ~types ~body sigma =
+  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false
+      sigma (fun nf -> nf body, Option.map nf types)
+  in
+  let univs = Evd.check_univ_decl ~poly sigma udecl in
+  let ce = definition_entry ?opaque ?inline ?types ~univs body in
+  let env = Global.env () in
+  let (c,ctx), sideff = Future.force ce.Declare.proof_entry_body in
+  assert(Safe_typing.empty_private_constants = sideff.Evd.seff_private);
+  assert(Univ.ContextSet.is_empty ctx);
+  RetrieveObl.check_evars env sigma;
+  let c = EConstr.of_constr c in
+  let typ = match ce.Declare.proof_entry_type with
+    | Some t -> EConstr.of_constr t
+    | None -> Retyping.get_type_of env sigma c
+  in
+  let obls, _, c, cty = RetrieveObl.retrieve_obligations env name sigma 0 c typ in
+  let uctx = Evd.evar_universe_context sigma in
+  c, cty, uctx, obls
+
+let prepare_parameter ~poly ~udecl ~types sigma =
+  let env = Global.env () in
+  Pretyping.check_evars_are_solved ~program_mode:false env sigma;
+  let sigma, typ = Evarutil.finalize ~abort_on_undefined_evars:true
       sigma (fun nf -> nf types)
   in
   let univs = Evd.check_univ_decl ~poly sigma udecl in

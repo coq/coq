@@ -35,12 +35,12 @@ module Proof_ending : sig
     | Regular
     | End_obligation of DeclareObl.obligation_qed_info
     | End_derive of { f : Id.t; name : Id.t }
-    | End_equations of { hook : Constant.t list -> Evd.evar_map -> unit
-                       ; i : Id.t
-                       ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
-                       ; wits : EConstr.t list ref
-                       ; sigma : Evd.evar_map
-                       }
+    | End_equations of
+        { hook : Constant.t list -> Evd.evar_map -> unit
+        ; i : Id.t
+        ; types : (Environ.env * Evar.t * Evd.evar_info * EConstr.named_context * Evd.econstr) list
+        ; sigma : Evd.evar_map
+        }
 
 end
 
@@ -68,6 +68,7 @@ val start_lemma
   -> poly:bool
   -> ?udecl:UState.universe_decl
   -> ?info:Info.t
+  -> ?impargs:Impargs.manual_implicits
   -> Evd.evar_map
   -> EConstr.types
   -> t
@@ -94,8 +95,6 @@ val start_lemma_with_initialization
   -> DeclareDef.Recthm.t list
   -> int list option
   -> t
-
-val default_thm_id : Names.Id.t
 
 (** {4 Saving proofs} *)
 

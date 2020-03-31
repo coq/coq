@@ -362,34 +362,21 @@ let get_fix_exn, stm_get_fix_exn = Hook.make ()
 
 let declare_definition prg =
   let varsubst = obligation_substitution true prg in
-  let body, typ = subst_prog varsubst prg in
-  let nf =
-    UnivSubst.nf_evars_and_universes_opt_subst
-      (fun x -> None)
-      (UState.subst prg.prg_ctx)
-  in
-  let opaque = prg.prg_opaque in
+  let sigma = Evd.from_ctx prg.prg_ctx in
+  let body, types = subst_prog varsubst prg in
+  let body, types = EConstr.(of_constr body, Some (of_constr types)) in
+  (* All these should be grouped into a struct a some point *)
+  let opaque, poly, udecl, hook = prg.prg_opaque, prg.prg_poly, prg.prg_univdecl, prg.prg_hook in
+  let name, scope, kind, impargs = prg.prg_name, prg.prg_scope, Decls.(IsDefinition prg.prg_kind), prg.prg_implicits in
   let fix_exn = Hook.get get_fix_exn () in
-  let typ = nf typ in
-  let body = nf body in
-  let obls = List.map (fun (id, (_, c)) -> (id, nf c)) varsubst in
-  let uvars =
-    Univ.LSet.union
-      (Vars.universes_of_constr typ)
-      (Vars.universes_of_constr body)
-  in
-  let uctx = UState.restrict prg.prg_ctx uvars in
-  let univs =
-    UState.check_univ_decl ~poly:prg.prg_poly uctx prg.prg_univdecl
-  in
-  let ce = Declare.definition_entry ~fix_exn ~opaque ~types:typ ~univs body in
+  let obls = List.map (fun (id, (_, c)) -> (id, c)) varsubst in
+  (* XXX: This is doing normalization twice *)
   let () = progmap_remove prg in
-  let ubind = UState.universe_binders uctx in
-  let hook_data = Option.map (fun hook -> hook, uctx, obls) prg.prg_hook in
-  DeclareDef.declare_definition
-    ~name:prg.prg_name ~scope:prg.prg_scope ~ubind
-    ~kind:Decls.(IsDefinition prg.prg_kind) ce
-    ~impargs:prg.prg_implicits ?hook_data
+  let kn =
+    DeclareDef.declare_definition ~name ~scope ~kind ~impargs ?hook ~obls
+      ~fix_exn ~opaque ~poly ~udecl ~types ~body sigma
+  in
+  kn
 
 let rec lam_index n t acc =
   match Constr.kind t with
@@ -464,9 +451,8 @@ let declare_mutual_definition l =
       ~restrict_ucontext:false fixitems
   in
   (* Only for the first constant *)
-  let fix_exn = Hook.get get_fix_exn () in
   let dref = List.hd kns in
-  DeclareDef.Hook.(call ?hook:first.prg_hook ~fix_exn { S.uctx = first.prg_ctx; obls; scope; dref });
+  DeclareDef.Hook.(call ?hook:first.prg_hook { S.uctx = first.prg_ctx; obls; scope; dref });
   List.iter progmap_remove l;
   dref
 
@@ -529,10 +515,6 @@ let obligation_terminator entries uctx { name; num; auto } =
     Inductiveops.control_only_guard (Global.env ()) sigma (EConstr.of_constr body);
     (* Declare the obligation ourselves and drop the hook *)
     let prg = CEphemeron.get (ProgMap.find name !from_prg) in
-    (* Ensure universes are substituted properly in body and type *)
-    let body = EConstr.to_constr sigma (EConstr.of_constr body) in
-    let ty = Option.map (fun x -> EConstr.to_constr sigma (EConstr.of_constr x)) ty in
-    let ctx = Evd.evar_universe_context sigma in
     let { obls; remaining=rem } = prg.prg_obligations in
     let obl = obls.(num) in
     let status =
@@ -545,24 +527,24 @@ let obligation_terminator entries uctx { name; num; auto } =
       | (_, status), false -> status
     in
     let obl = { obl with obl_status = false, status } in
-    let ctx =
-      if prg.prg_poly then ctx
-      else UState.union prg.prg_ctx ctx
+    let uctx =
+      if prg.prg_poly then uctx
+      else UState.union prg.prg_ctx uctx
     in
-    let uctx = UState.univ_entry ~poly:prg.prg_poly ctx in
-    let (defined, obl) = declare_obligation prg obl body ty uctx in
+    let univs = UState.univ_entry ~poly:prg.prg_poly uctx in
+    let (defined, obl) = declare_obligation prg obl body ty univs in
     let prg_ctx =
       if prg.prg_poly then (* Polymorphic *)
         (* We merge the new universes and constraints of the
            polymorphic obligation with the existing ones *)
-        UState.union prg.prg_ctx ctx
+        UState.union prg.prg_ctx uctx
       else
         (* The first obligation, if defined,
            declares the univs of the constant,
            each subsequent obligation declares its own additional
            universes and constraints if any *)
         if defined then UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ())
-        else ctx
+        else uctx
     in
     update_program_decl_on_defined prg obls num obl ~uctx:prg_ctx rem ~auto
   | _ ->

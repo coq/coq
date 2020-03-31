@@ -15,8 +15,7 @@ open Constrexpr
 (** {6 Definitions/Let} *)
 
 val do_definition
-  :  program_mode:bool
-  -> ?hook:DeclareDef.Hook.t
+  :  ?hook:DeclareDef.Hook.t
   -> name:Id.t
   -> scope:DeclareDef.locality
   -> poly:bool
@@ -28,18 +27,15 @@ val do_definition
   -> constr_expr option
   -> unit
 
-(************************************************************************)
-(** Internal API  *)
-(************************************************************************)
-
-(** Not used anywhere. *)
-val interp_definition
-  :  program_mode:bool
+val do_definition_program
+  :  ?hook:DeclareDef.Hook.t
+  -> name:Id.t
+  -> scope:DeclareDef.locality
+  -> poly:bool
+  -> kind:Decls.definition_object_kind
   -> universe_decl_expr option
   -> local_binder_expr list
-  -> poly:bool
   -> red_expr option
   -> constr_expr
   -> constr_expr option
-  -> Evd.side_effects Declare.proof_entry *
-     Evd.evar_map * UState.universe_decl * Impargs.manual_implicits
+  -> unit
