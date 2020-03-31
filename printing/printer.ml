@@ -905,7 +905,7 @@ let pr_assumptionset env sigma s =
     let pr_axiom env ax typ =
       match ax with
       | Constant kn ->
-          safe_pr_constant env kn ++ safe_pr_ltype env sigma typ
+          hov 1 (safe_pr_constant env kn ++ cut() ++ safe_pr_ltype env sigma typ)
       | Positive m ->
           hov 2 (safe_pr_inductive env m ++ spc () ++ strbrk"is assumed to be positive.")
       | Guarded gr ->
@@ -917,17 +917,17 @@ let pr_assumptionset env sigma s =
       let (v, a, o, tr) = accu in
       match t with
       | Variable id ->
-        let var = pr_id id ++ str " : " ++ pr_ltype_env env sigma typ in
+        let var = pr_id id ++ spc() ++ str ": " ++ pr_ltype_env env sigma typ in
         (var :: v, a, o, tr)
       | Axiom (axiom, []) ->
         let ax = pr_axiom env axiom typ in
         (v, ax :: a, o, tr)
       | Axiom (axiom,l) ->
         let ax = pr_axiom env axiom typ ++
-          cut() ++
+          spc() ++
           prlist_with_sep cut (fun (lbl, ctx, ty) ->
-            str " used in " ++ Label.print lbl ++
-            str " to prove:" ++ safe_pr_ltype_relctx (ctx,ty))
+            str "used in " ++ Label.print lbl ++
+            str " to prove" ++ fnl() ++ safe_pr_ltype_relctx (ctx,ty))
           l in
         (v, ax :: a, o, tr)
       | Opaque kn ->
