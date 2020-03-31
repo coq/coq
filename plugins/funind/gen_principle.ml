@@ -39,7 +39,7 @@ let build_newrecursive lnameargsardef =
     List.fold_left
       (fun (env,impls) { Vernacexpr.fname={CAst.v=recname}; binders; rtype } ->
          let arityc = Constrexpr_ops.mkCProdN binders rtype in
-         let arity,ctx = Constrintern.interp_type env0 sigma arityc in
+         let arity,_ctx = Constrintern.interp_type env0 sigma arityc in
          let evd = Evd.from_env env0 in
          let evd, (_, (_, impls')) = Constrintern.interp_context_evars ~program_mode:false env evd binders in
          let impl = Constrintern.compute_internalization_data env0 evd Constrintern.Recursive arity impls' in
@@ -164,7 +164,7 @@ let prepare_body { Vernacexpr.binders } rt =
   let fun_args,rt' = chop_rlambda_n n rt in
   (fun_args,rt')
 
-let build_functional_principle ?(opaque=Proof_global.Transparent) (evd:Evd.evar_map ref) interactive_proof old_princ_type sorts funs i proof_tac hook =
+let build_functional_principle ?(opaque=Proof_global.Transparent) (evd:Evd.evar_map ref) old_princ_type sorts funs _i proof_tac hook =
   (* First we get the type of the old graph principle *)
   let mutr_nparams = (Tactics.compute_elim_sig !evd (EConstr.of_constr old_princ_type)).Tactics.nparams in
   (*   let time1 = System.get_time ()  in *)
@@ -235,7 +235,6 @@ let change_property_sort evd toSort princ princName =
     (List.map (fun d -> Termops.map_rel_decl EConstr.Unsafe.to_constr d) princ_info.Tactics.params)
 
 let generate_functional_principle (evd: Evd.evar_map ref)
-    interactive_proof
     old_princ_type sorts new_princ_name funs i proof_tac
     =
   try
@@ -283,7 +282,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
       register_with_sort Sorts.InSet
   in
   let entry, hook =
-    build_functional_principle evd interactive_proof old_princ_type new_sorts funs i
+    build_functional_principle evd old_princ_type new_sorts funs i
     proof_tac hook
   in
   (* Pr  1278 :
@@ -301,7 +300,7 @@ let generate_functional_principle (evd: Evd.evar_map ref)
     raise (Defining_principle e)
 
 let generate_principle (evd:Evd.evar_map ref) pconstants on_error
-    is_general do_built fix_rec_l recdefs interactive_proof
+    is_general do_built fix_rec_l recdefs
     (continue_proof : int -> Names.Constant.t array -> EConstr.constr array -> int ->
      Tacmach.tactic) : unit =
   let names = List.map (function { Vernacexpr.fname = {CAst.v=name} } -> name) fix_rec_l in
@@ -334,7 +333,7 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
         let funs_kn = Array.of_list (List.map fname_kn fix_rec_l) in
         let _ =
           List.map_i
-            (fun i x ->
+            (fun i _x ->
                let env = Global.env () in
                let princ = Indrec.lookup_eliminator env (ind_kn,i) (Sorts.InProp) in
                let evd = ref (Evd.from_env env) in
@@ -345,7 +344,6 @@ let generate_principle (evd:Evd.evar_map ref) pconstants on_error
                let princ_type = EConstr.Unsafe.to_constr princ_type in
                generate_functional_principle
                  evd
-                 interactive_proof
                  princ_type
                  None
                  None
@@ -410,7 +408,7 @@ let register_struct is_rec fixpoint_exprl =
     None,evd,List.rev rev_pconstants
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref
-    is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
+    is_mes functional_ref eq_ref rec_arg_num rec_arg_type relation
     (_: int) (_:Names.Constant.t array) (_:EConstr.constr array) (_:int) : Tacmach.tactic =
   Functional_principles_proofs.prove_principle_for_gen
     (f_ref,functional_ref,eq_ref)
@@ -428,7 +426,7 @@ let generate_correction_proof_wf f_ref tcc_lemma_ref
    res = fv \rightarrow graph\ x_1\ldots x_n\ res\] decomposed as the context and the conclusion
 *)
 
-let generate_type evd g_to_f f graph i =
+let generate_type evd g_to_f f graph =
   let open Context.Rel.Declaration in
   let open EConstr in
   let open EConstr.Vars in
@@ -496,7 +494,7 @@ let generate_type evd g_to_f f graph i =
    WARNING: while convertible, [type_of body] and [type] can be non equal
 *)
 let find_induction_principle evd f =
-  let f_as_constant,u =  match EConstr.kind !evd f with
+  let f_as_constant, _u =  match EConstr.kind !evd f with
     | Constr.Const c' -> c'
     | _ -> CErrors.user_err Pp.(str "Must be used with a function")
   in
@@ -543,7 +541,7 @@ let rec generate_fresh_id x avoid i =
     let id = Namegen.next_ident_away_in_goal x (Id.Set.of_list avoid) in
     id::(generate_fresh_id x (id::avoid) (pred i))
 
-let prove_fun_correct evd funs_constr graphs_constr schemes lemmas_types_infos i : Tacmach.tactic =
+let prove_fun_correct evd graphs_constr schemes lemmas_types_infos i : Tacmach.tactic =
   let open Constr in
   let open EConstr in
   let open Context.Rel.Declaration in
@@ -1138,7 +1136,7 @@ let get_funs_constant mp =
        to prevent Reset strange thing
     *)
     let l_bodies = List.map find_constant_body (Array.to_list (Array.map fst l_const)) in
-    let l_params,l_fixes = List.split (List.map Term.decompose_lam l_bodies) in
+    let l_params, _l_fixes = List.split (List.map Term.decompose_lam l_bodies) in
     (* all the parameters must be equal*)
     let _check_params =
       let first_params = List.hd l_params  in
@@ -1238,7 +1236,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_ef
   in
   let entry, _hook =
     try
-      build_functional_principle ~opaque evd false
+      build_functional_principle ~opaque evd
         first_type
         (Array.of_list sorts)
         this_block_funs
@@ -1259,7 +1257,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_ef
       let sorts = Array.of_list sorts in
       List.map (Functional_principles_types.compute_new_princ_type_from_rel funs sorts) other_princ_types
     in
-    let first_princ_body,first_princ_type = Declare.(entry.proof_entry_body, entry.proof_entry_type) in
+    let first_princ_body = entry.Declare.proof_entry_body in
     let ctxt,fix = Term.decompose_lam_assum (fst(fst(Future.force first_princ_body))) in (* the principle has for forall ...., fix .*)
     let (idxs,_),(_,ta,_ as decl) = Constr.destFix fix in
     let other_result =
@@ -1289,7 +1287,6 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : Evd.side_ef
              let entry, _hook =
                build_functional_principle
                  evd
-                 false
                  (List.nth other_princ_types (!i - 1))
                  (Array.of_list sorts)
                  this_block_funs
@@ -1328,9 +1325,8 @@ let derive_correctness (funs: Constr.pconstant list) (graphs:inductive list) =
        let lemmas_types_infos =
          Util.Array.map2_i
            (fun i f_constr graph ->
-              (* let const_of_f,u = destConst f_constr in *)
               let (type_of_lemma_ctxt,type_of_lemma_concl,graph) =
-                generate_type evd false f_constr graph i
+                generate_type evd false f_constr graph
               in
               let type_info = (type_of_lemma_ctxt,type_of_lemma_concl) in
               graphs_constr.(i) <- graph;
@@ -1365,7 +1361,7 @@ let derive_correctness (funs: Constr.pconstant list) (graphs:inductive list) =
            )
        in
        let proving_tac =
-         prove_fun_correct !evd funs_constr graphs_constr schemes lemmas_types_infos
+         prove_fun_correct !evd graphs_constr schemes lemmas_types_infos
        in
        Array.iteri
          (fun i f_as_constant ->
@@ -1395,8 +1391,8 @@ let derive_correctness (funs: Constr.pconstant list) (graphs:inductive list) =
        let lemmas_types_infos =
          Util.Array.map2_i
            (fun i f_constr graph ->
-              let (type_of_lemma_ctxt,type_of_lemma_concl,graph)   =
-                generate_type evd true f_constr graph i
+              let (type_of_lemma_ctxt,type_of_lemma_concl,graph) =
+                generate_type evd true f_constr graph
               in
               let type_info = (type_of_lemma_ctxt,type_of_lemma_concl) in
               graphs_constr.(i) <- graph;
@@ -1412,7 +1408,7 @@ let derive_correctness (funs: Constr.pconstant list) (graphs:inductive list) =
        in
 
        let (kn,_) as graph_ind,u  = (destInd !evd graphs_constr.(0)) in
-       let mib,mip = Global.lookup_inductive graph_ind in
+       let mib, _mip = Global.lookup_inductive graph_ind in
        let sigma, scheme =
          (Indrec.build_mutual_induction_scheme (Global.env ()) !evd
             (Array.to_list
@@ -1482,7 +1478,7 @@ let derive_inversion fix_names =
     *)
     List.iter (fun c -> ignore (find_Function_infos (fst c))) fix_names_as_constant ;
     try
-      let evd', lind =
+      let _evd', lind =
         List.fold_right
           (fun id (evd,l) ->
              let evd,id =
@@ -1533,11 +1529,11 @@ let register_wf interactive_proof ?(is_mes=false) fname rec_impls wf_rel_expr wf
   in
   let eq = Constrexpr_ops.mkCProdN args unbounded_eq in
   let hook ((f_ref,_) as fconst) tcc_lemma_ref (functional_ref,_) (eq_ref,_) rec_arg_num rec_arg_type
-      nb_args relation =
+      _nb_args relation =
     try
       pre_hook [fconst]
         (generate_correction_proof_wf f_ref tcc_lemma_ref is_mes
-           functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
+           functional_ref eq_ref rec_arg_num rec_arg_type relation
         );
       derive_inversion [fname]
     with e when CErrors.noncritical e ->
@@ -1559,7 +1555,7 @@ let register_mes interactive_proof fname rec_impls wf_mes_expr wf_rel_expr_opt w
     | None ->
       begin
         match args with
-        | [Constrexpr.CLocalAssum ([{CAst.v=Name x}],k,t)] -> t,x
+        | [Constrexpr.CLocalAssum ([{CAst.v=Name x}],_k,t)] -> t,x
         | _ -> CErrors.user_err (Pp.str "Recursive argument must be specified")
       end
     | Some wf_args ->
@@ -1567,7 +1563,7 @@ let register_mes interactive_proof fname rec_impls wf_mes_expr wf_rel_expr_opt w
         match
           List.find
             (function
-              | Constrexpr.CLocalAssum(l,k,t) ->
+              | Constrexpr.CLocalAssum(l,_k,t) ->
                 List.exists
                   (function {CAst.v=Name id} -> Id.equal id wf_args | _ -> false)
                   l
@@ -1575,7 +1571,7 @@ let register_mes interactive_proof fname rec_impls wf_mes_expr wf_rel_expr_opt w
             )
             args
         with
-        | Constrexpr.CLocalAssum(_,k,t)  ->           t,wf_args
+        | Constrexpr.CLocalAssum(_,_k,t)  ->           t,wf_args
         | _ -> assert false
       with Not_found -> assert false
   in
@@ -1623,7 +1619,7 @@ let do_generate_principle_aux pconstants on_error register_built interactive_pro
   let lemma, _is_struct =
     match fixpoint_exprl with
     | [{ Vernacexpr.rec_order = Some {CAst.v = Constrexpr.CWfRec (wf_x,wf_rel)} } as fixpoint_expr] ->
-      let { Vernacexpr.fname; univs; binders; rtype; body_def } as fixpoint_expr =
+      let { Vernacexpr.fname; univs = _; binders; rtype; body_def } as fixpoint_expr =
         match recompute_binder_list [fixpoint_expr] with
         | [e] -> e
         | _ -> assert false
@@ -1642,13 +1638,12 @@ let do_generate_principle_aux pconstants on_error register_built interactive_pro
           register_built
           fixpoint_exprl
           recdefs
-          true
       in
       if register_built
       then register_wf interactive_proof fname.CAst.v rec_impls wf_rel wf_x.CAst.v using_lemmas binders rtype body pre_hook, false
       else None, false
     | [{ Vernacexpr.rec_order = Some {CAst.v = Constrexpr.CMeasureRec(wf_x,wf_mes,wf_rel_opt)} } as fixpoint_expr] ->
-      let { Vernacexpr.fname; univs; binders; rtype; body_def} as fixpoint_expr =
+      let { Vernacexpr.fname; univs = _; binders; rtype; body_def} as fixpoint_expr =
         match recompute_binder_list [fixpoint_expr] with
         | [e] -> e
         | _ -> assert false
@@ -1669,7 +1664,6 @@ let do_generate_principle_aux pconstants on_error register_built interactive_pro
           register_built
           fixpoint_exprl
           recdefs
-          true
       in
       if register_built
       then register_mes interactive_proof fname.CAst.v rec_impls wf_mes wf_rel_opt
@@ -1687,7 +1681,7 @@ let do_generate_principle_aux pconstants on_error register_built interactive_pro
       let fixpoint_exprl = recompute_binder_list fixpoint_exprl in
       let fix_names = List.map (function { Vernacexpr.fname } -> fname.CAst.v) fixpoint_exprl in
       (* ok all the expressions are structural *)
-      let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
+      let recdefs, _rec_impls = build_newrecursive fixpoint_exprl in
       let is_rec = List.exists (is_rec fix_names) recdefs in
       let lemma,evd,pconstants =
         if register_built
@@ -1703,7 +1697,6 @@ let do_generate_principle_aux pconstants on_error register_built interactive_pro
         register_built
         fixpoint_exprl
         recdefs
-        interactive_proof
         (Functional_principles_proofs.prove_princ_for_struct evd interactive_proof);
       if register_built then
         begin derive_inversion fix_names; end;
@@ -2064,7 +2057,6 @@ let build_case_scheme fa =
   *)
     generate_functional_principle
       (ref (Evd.from_env (Global.env ())))
-      false
       scheme_type
       (Some ([|sorts|]))
       (Some princ_name)
