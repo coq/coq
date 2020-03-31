@@ -17,6 +17,7 @@ Require Import CMTbase.
 Require Import CMTIntegrableFunctions.
 Require Import CMTFullSets.
 Require Import CMTIntegrableSets.
+Require Import CMTprofile.
 
 Local Open Scope ConstructiveReals.
 
@@ -55,13 +56,12 @@ Qed.
 
 Lemma MeasurableFunctionFull
   : forall {IS : IntegrationSpace}
-           (f : PartialFunction (X (ElemFunc IS)))
-           (A : (X (ElemFunc IS)) -> Prop),
+      (f : PartialFunction (X (ElemFunc IS))),
     MeasurableFunction f
-    -> IntegrableSet A
     -> almost_everywhere (Domain f).
 Proof.
-  intros IS f A fMes Aint.
+  intros IS f fMes.
+  destruct (@PositiveMeasureSubsetExists IS) as [A Aint Apos].
   specialize (fMes A 1%positive Aint).
   exists (XmaxConst (XminConst (Xmult (CharacFunc A) f) (CR_of_Q (RealT (ElemFunc IS)) 1))
               (CR_of_Q (RealT (ElemFunc IS)) (-1))).
@@ -374,3 +374,21 @@ Proof.
     rewrite CRplus_opp_r, CRabs_right, <- CR_of_Q_zero.
     apply CR_of_Q_le. discriminate. apply CRle_refl.
 Qed.
+
+Definition SetApprox {IS : IntegrationSpace}
+           (A B : (X (ElemFunc IS)) -> Prop)
+           (eps : CRcarrier (RealT (ElemFunc IS))) : Type
+  := { DiffInt : IntegrableSet (fun x => A x /\ ~B x)
+                 & MeasureSet DiffInt < eps }.
+
+Definition CvMeasure {IS : IntegrationSpace}
+           (fn : nat -> @PartialFunction (RealT (ElemFunc IS)) (X (ElemFunc IS)))
+           (f : @PartialFunction (RealT (ElemFunc IS)) (X (ElemFunc IS))) : Type
+  := forall (A : (X (ElemFunc IS)) -> Prop)
+       (eps : CRcarrier (RealT (ElemFunc IS))),
+    0 < eps
+    -> IntegrableSet A
+    -> { N : nat  &  forall n:nat,
+            le N n -> { B : (X (ElemFunc IS)) -> Prop
+                       & prod (SetApprox A B eps)
+                              (forall x xdf xdfn, B x -> CRabs _ (partialApply f x xdf - partialApply (fn n) x xdfn) < eps) } }.
