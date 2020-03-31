@@ -21,31 +21,31 @@ type section_entry =
 type 'a entry_map = 'a Cmap.t * 'a Mindmap.t
 
 type 'a t = {
-  sec_prev : 'a t option;
+  prev : 'a t option;
   (** Section surrounding the current one *)
-  sec_context : int;
+  context : int;
   (** Length of the named context suffix that has been introduced locally *)
-  sec_mono_universes : ContextSet.t;
-  sec_poly_universes : Name.t array * UContext.t;
+  mono_universes : ContextSet.t;
+  poly_universes : Name.t array * UContext.t;
   (** Universes local to the section *)
   all_poly_univs : Univ.Level.t array;
   (** All polymorphic universes, including from previous sections. *)
   has_poly_univs : bool;
   (** Are there polymorphic universes or constraints, including in previous sections. *)
-  sec_entries : section_entry list;
+  entries : section_entry list;
   (** Definitions introduced in the section *)
-  sec_data : (Instance.t * AUContext.t) entry_map;
+  data : (Instance.t * AUContext.t) entry_map;
   (** Additional data synchronized with the section *)
-  sec_custom : 'a;
+  custom : 'a;
 }
 
-let rec depth sec = 1 + match sec.sec_prev with None -> 0 | Some prev -> depth prev
+let rec depth sec = 1 + match sec.prev with None -> 0 | Some prev -> depth prev
 
 let has_poly_univs sec = sec.has_poly_univs
 
 let all_poly_univs sec = sec.all_poly_univs
 
-let map_custom f sec = {sec with sec_custom = f sec.sec_custom}
+let map_custom f sec = {sec with custom = f sec.custom}
 
 let find_emap e (cmap, imap) = match e with
 | SecDefinition con -> Cmap.find con cmap
@@ -56,22 +56,22 @@ let add_emap e v (cmap, imap) = match e with
 | SecInductive ind -> (cmap, Mindmap.add ind v imap)
 
 let push_local sec =
-  { sec with sec_context = sec.sec_context + 1 }
+  { sec with context = sec.context + 1 }
 
 let push_context (nas, ctx) sec =
   if UContext.is_empty ctx then sec
   else
-    let (snas, sctx) = sec.sec_poly_universes in
-    let sec_poly_universes = (Array.append snas nas, UContext.union sctx ctx) in
+    let (snas, sctx) = sec.poly_universes in
+    let poly_universes = (Array.append snas nas, UContext.union sctx ctx) in
     let all_poly_univs =
       Array.append sec.all_poly_univs (Instance.to_array @@ UContext.instance ctx)
     in
-    { sec with sec_poly_universes; all_poly_univs; has_poly_univs = true }
+    { sec with poly_universes; all_poly_univs; has_poly_univs = true }
 
 let rec is_polymorphic_univ u sec =
-  let (_, uctx) = sec.sec_poly_universes in
+  let (_, uctx) = sec.poly_universes in
   let here = Array.exists (fun u' -> Level.equal u u') (Instance.to_array (UContext.instance uctx)) in
-  here || Option.cata (is_polymorphic_univ u) false sec.sec_prev
+  here || Option.cata (is_polymorphic_univ u) false sec.prev
 
 let push_constraints uctx sec =
   if sec.has_poly_univs &&
@@ -80,25 +80,25 @@ let push_constraints uctx sec =
        (snd uctx)
   then CErrors.user_err
       Pp.(str "Cannot add monomorphic constraints which refer to section polymorphic universes.");
-  let uctx' = sec.sec_mono_universes in
-  let sec_mono_universes =  (ContextSet.union uctx uctx') in
-  { sec with sec_mono_universes }
+  let uctx' = sec.mono_universes in
+  let mono_universes =  (ContextSet.union uctx uctx') in
+  { sec with mono_universes }
 
-let open_section ~custom sec_prev =
+let open_section ~custom prev =
   {
-    sec_prev;
-    sec_context = 0;
-    sec_mono_universes = ContextSet.empty;
-    sec_poly_universes = ([||], UContext.empty);
-    all_poly_univs = Option.cata (fun sec -> sec.all_poly_univs) [| |] sec_prev;
-    has_poly_univs = Option.cata has_poly_univs false sec_prev;
-    sec_entries = [];
-    sec_data = (Cmap.empty, Mindmap.empty);
-    sec_custom = custom;
+    prev;
+    context = 0;
+    mono_universes = ContextSet.empty;
+    poly_universes = ([||], UContext.empty);
+    all_poly_univs = Option.cata (fun sec -> sec.all_poly_univs) [| |] prev;
+    has_poly_univs = Option.cata has_poly_univs false prev;
+    entries = [];
+    data = (Cmap.empty, Mindmap.empty);
+    custom = custom;
   }
 
 let close_section sec =
-  sec.sec_prev, sec.sec_entries, sec.sec_mono_universes, sec.sec_custom
+  sec.prev, sec.entries, sec.mono_universes, sec.custom
 
 let make_decl_univs (nas,uctx) = abstract_universes nas uctx
 
@@ -109,8 +109,8 @@ let push_global ~poly e sec =
                section polymorphic universes are present.")
   else
     { sec with
-      sec_entries = e :: sec.sec_entries;
-      sec_data = add_emap e (make_decl_univs sec.sec_poly_universes) sec.sec_data;
+      entries = e :: sec.entries;
+      data = add_emap e (make_decl_univs sec.poly_universes) sec.data;
     }
 
 let push_constant ~poly con s = push_global ~poly (SecDefinition con) s
@@ -131,7 +131,7 @@ let empty_segment = {
 
 let extract_hyps sec vars used =
   (* Keep the section-local segment of variables *)
-  let vars = List.firstn sec.sec_context vars in
+  let vars = List.firstn sec.context vars in
   (* Only keep the part that is used by the declaration *)
   List.filter (fun d -> Id.Set.mem (NamedDecl.get_id d) used) vars
 
@@ -139,7 +139,7 @@ let section_segment_of_entry vars e hyps sec =
   (* [vars] are the named hypotheses, [hyps] the subset that is declared by the
      global *)
   let hyps = extract_hyps sec vars hyps in
-  let inst, auctx = find_emap e sec.sec_data in
+  let inst, auctx = find_emap e sec.data in
   {
     abstr_ctx = hyps;
     abstr_subst = inst;
@@ -166,7 +166,7 @@ let extract_worklist info =
   info.abstr_subst, args
 
 let replacement_context env sec =
-  let cmap, imap = sec.sec_data in
+  let cmap, imap = sec.data in
   let cmap = Cmap.mapi (fun con _ -> extract_worklist @@ segment_of_constant env con sec) cmap in
   let imap = Mindmap.mapi (fun ind _ -> extract_worklist @@ segment_of_inductive env ind sec) imap in
   (cmap, imap)
@@ -175,9 +175,9 @@ let is_in_section env gr sec =
   let open GlobRef in
   match gr with
   | VarRef id ->
-    let vars = List.firstn sec.sec_context (Environ.named_context env) in
+    let vars = List.firstn sec.context (Environ.named_context env) in
     List.exists (fun decl -> Id.equal id (NamedDecl.get_id decl)) vars
   | ConstRef con ->
-    Cmap.mem con (fst sec.sec_data)
+    Cmap.mem con (fst sec.data)
   | IndRef (ind, _) | ConstructRef ((ind, _), _) ->
-    Mindmap.mem ind (snd sec.sec_data)
+    Mindmap.mem ind (snd sec.data)
