@@ -26,8 +26,8 @@ let pr_upper_id id = str (String.capitalize_ascii (Id.to_string id))
 let keywords =
   List.fold_right (fun s -> Id.Set.add (Id.of_string s))
   [ "Any"; "case"; "class"; "data"; "default"; "deriving"; "do"; "else";
-    "if"; "import"; "in"; "infix"; "infixl"; "infixr"; "instance";
-    "let"; "module"; "newtype"; "of"; "then"; "type"; "where"; "_"; "__";
+    "family"; "forall"; "foreign"; "if"; "import"; "in"; "infix"; "infixl"; "infixr"; "instance";
+    "let"; "mdo"; "module"; "newtype"; "of"; "proc"; "rec"; "then"; "type"; "where"; "_"; "__";
     "as"; "qualified"; "hiding" ; "unit" ; "unsafeCoerce" ]
   Id.Set.empty
 
