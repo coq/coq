@@ -121,9 +121,10 @@ let rec constr_expr_eq e1 e2 =
       constr_expr_eq a1 a2 &&
       Option.equal constr_expr_eq t1 t2 &&
       constr_expr_eq b1 b2
-    | CAppExpl((proj1,r1,_),al1), CAppExpl((proj2,r2,_),al2) ->
+    | CAppExpl((proj1,r1,u1),al1), CAppExpl((proj2,r2,u2),al2) ->
       Option.equal Int.equal proj1 proj2 &&
       qualid_eq r1 r2 &&
+      eq_universes u1 u2 &&
       List.equal constr_expr_eq al1 al2
     | CApp((proj1,e1),al1), CApp((proj2,e2),al2) ->
       Option.equal Int.equal proj1 proj2 &&
@@ -158,8 +159,8 @@ let rec constr_expr_eq e1 e2 =
       Id.equal id1 id2 && List.equal instance_eq c1 c2
     | CSort s1, CSort s2 ->
       Glob_ops.glob_sort_eq s1 s2
-  | CCast(t1,c1), CCast(t2,c2) ->
-    constr_expr_eq t1 t2 && cast_expr_eq c1 c2
+    | CCast(t1,c1), CCast(t2,c2) ->
+      constr_expr_eq t1 t2 && cast_expr_eq c1 c2
     | CNotation(inscope1, n1, s1), CNotation(inscope2, n2, s2) ->
       Option.equal notation_with_optional_scope_eq inscope1 inscope2 &&
       notation_eq n1 n2 &&

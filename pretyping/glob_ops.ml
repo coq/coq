@@ -60,11 +60,19 @@ let glob_sort_family = let open Sorts in function
   | UNamed [GSet,0] -> InSet
   | _ -> raise ComplexSort
 
-let glob_sort_eq u1 u2 = match u1, u2 with
+let glob_sort_expr_eq f u1 u2 =
+ match u1, u2 with
   | UAnonymous {rigid=r1}, UAnonymous {rigid=r2} -> r1 = r2
-  | UNamed l1, UNamed l2 ->
-    List.equal (fun (x,m) (y,n) -> glob_sort_name_eq x y && Int.equal m n) l1 l2
+  | UNamed l1, UNamed l2 -> f l1 l2
   | (UNamed _ | UAnonymous _), _ -> false
+
+let glob_sort_eq u1 u2 =
+  glob_sort_expr_eq
+    (List.equal (fun (x,m) (y,n) -> glob_sort_name_eq x y && Int.equal m n))
+    u1 u2
+
+let glob_level_eq u1 u2 =
+  glob_sort_expr_eq glob_sort_name_eq u1 u2
 
 let binding_kind_eq bk1 bk2 = match bk1, bk2 with
   | Explicit, Explicit -> true
@@ -123,7 +131,9 @@ let instance_eq f (x1,c1) (x2,c2) =
   Id.equal x1 x2 && f c1 c2
 
 let mk_glob_constr_eq f c1 c2 = match DAst.get c1, DAst.get c2 with
-  | GRef (gr1, _), GRef (gr2, _) -> GlobRef.equal gr1 gr2
+  | GRef (gr1, u1), GRef (gr2, u2) ->
+    GlobRef.equal gr1 gr2 &&
+    Option.equal (List.equal glob_level_eq) u1 u2
   | GVar id1, GVar id2 -> Id.equal id1 id2
   | GEvar (id1, arg1), GEvar (id2, arg2) ->
     Id.equal id1 id2 && List.equal (instance_eq f) arg1 arg2

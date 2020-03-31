@@ -1,0 +1,13 @@
+thing = forall x y : foo, bla x y
+     : Prop
+thing = 
+forall (x : foo@{thing.u0}) (y : foo@{thing.u1}), bla x y
+     : Prop
+(* {thing.u1 thing.u0} |= bla.u0 = thing.u0
+                          bla.u1 = thing.u1 *)
+thing = 
+forall (x : @foo@{thing.u0} True) (y : @foo@{thing.u1} True),
+@bla True True x y
+     : Prop
+(* {thing.u1 thing.u0} |= bla.u0 = thing.u0
+                          bla.u1 = thing.u1 *)
