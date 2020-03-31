@@ -943,16 +943,17 @@ Quitting and debugging
 
 .. cmd:: Fail @command
 
-   For debugging scripts, sometimes it is desirable to know
-   whether a command or a tactic fails. If the given :n:`@command`
-   fails, the ``Fail`` statement succeeds, without changing the proof
-   state, and in interactive mode, the system
-   prints a message confirming the failure.
-   If the given :n:`@command` succeeds, the statement is an error, and
-   it prints a message indicating that the failure did not occur.
+   For debugging scripts, sometimes it is desirable to know whether a
+   command or a tactic fails. If the given :n:`@command` fails, then
+   :n:`Fail @command` succeeds (excepts in the case of
+   critical errors, like a "stack overflow"), without changing the
+   proof state, and in interactive mode, the system prints a message
+   confirming the failure.
 
    .. exn:: The command has not failed!
-      :undocumented:
+
+      If the given :n:`@command` succeeds, then :n:`Fail @command`
+      fails with this error message.
 
 
 .. _controlling-display:

@@ -381,6 +381,10 @@ Changes in 8.11+beta1
   <https://github.com/coq/coq/issues/3890>`_ and `#4638
   <https://github.com/coq/coq/issues/4638>`_
   by Maxime Dénès, review by Gaëtan Gilbert).
+- **Changed:**
+  :cmd:`Fail` does not catch critical errors (including "stack overflow")
+  anymore (`#10173 <https://github.com/coq/coq/pull/10173>`_,
+  by Gaëtan Gilbert).
 - **Removed:**
   Undocumented :n:`Instance : !@type` syntax
   (`#10185 <https://github.com/coq/coq/pull/10185>`_, by Gaëtan Gilbert).
