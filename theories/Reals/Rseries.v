@@ -8,14 +8,9 @@
 (*         *     (see LICENSE file for the text of the license)         *)
 (************************************************************************)
 
-Require Import QArith.
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import Compare.
-Require Import ConstructiveCauchyReals.
-Require Import ConstructiveReals.
-Require Import ConstructiveLimits.
-Require Import ClassicalConstructiveReals.
 Local Open Scope R_scope.
 
 Implicit Type r : R.
@@ -46,43 +41,6 @@ Section sequence.
     forall eps:R,
       eps > 0 ->
       exists N : nat, (forall n:nat, (n >= N)%nat -> R_dist (Un n) l < eps).
-
-(*********)
-  Lemma Un_mod_cv : forall (l:R),
-      CR_cv _ Un l -> Un_cv l.
-  Proof.
-    intros. intros eps epsPos.
-    pose proof (Un_cv_nat_real _ l H eps epsPos) as [n nmaj].
-    exists n. intros i imaj. specialize (nmaj i imaj). simpl in nmaj.
-    unfold R_dist. rewrite Rabs_CR. exact nmaj.
-  Qed.
-
-(*********)
-  Lemma Un_cv_mod : forall (l:R),
-      Un_cv l -> CR_cv _ Un l.
-  Proof.
-    intros. intro p. simpl.
-    apply ConstructiveEpsilon.constructive_indefinite_ground_description_nat.
-    - intro n. unfold IQR.
-      destruct (ClassicalDedekindReals.sig_forall_dec
-                  (fun i => (n <= i)%nat -> (Rabs_quot (Un i + - l)
-                                      <= Rabst (inject_Q (1 # p)))%ConstructiveReals)).
-      + intro i. destruct (le_lt_dec n i).
-        destruct (Rle_dec (Rabs_quot (Un i + - l)) (Rabst (inject_Q (1 # p)))).
-        left. intros _. intro abs. rewrite Rlt_def in abs.
-        apply CRealLtEpsilon in abs. rewrite Rrepr_le in r.
-        contradiction. right. intro abs. specialize (abs l0). apply n0.
-        rewrite Rrepr_le. intro abs2. apply abs. rewrite Rlt_def.
-        apply CRealLtForget. exact abs2.
-        left. intro abs. exfalso. exact (lt_not_le _ _ l0 abs).
-      + right. intro abs. destruct s. specialize (abs x). contradiction.
-      + left. exact c.
-    - destruct (H (IQR (1#p))) as [n nmaj]. unfold IQR.
-      unfold Rgt. rewrite Rlt_def. apply CRealLtForget.
-      rewrite Rquot2, Rrepr_0. apply inject_Q_lt. reflexivity.
-      exists n. intros. apply CRlt_asym. specialize (nmaj i H0).
-      unfold R_dist in nmaj. rewrite Rabs_CR in nmaj. exact nmaj.
-  Qed.
 
 (*********)
   Definition Cauchy_crit : Prop :=

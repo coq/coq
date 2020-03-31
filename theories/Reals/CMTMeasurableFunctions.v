@@ -391,4 +391,4 @@ Definition CvMeasure {IS : IntegrationSpace}
     -> { N : nat  &  forall n:nat,
             le N n -> { B : (X (ElemFunc IS)) -> Prop
                        & prod (SetApprox A B eps)
-                              (forall x xdf xdfn, B x -> CRabs _ (partialApply f x xdf - partialApply (fn n) x xdfn) < eps) } }.
+                              (forall x xdf xdfn, A x -> B x -> CRabs _ (partialApply f x xdf - partialApply (fn n) x xdfn) < eps) } }.
