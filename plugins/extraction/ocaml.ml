@@ -50,7 +50,7 @@ let keywords =
     "done"; "downto"; "else"; "end"; "exception"; "external"; "false";
     "for"; "fun"; "function"; "functor"; "if"; "in"; "include";
     "inherit"; "initializer"; "lazy"; "let"; "match"; "method";
-    "module"; "mutable"; "new"; "object"; "of"; "open"; "or";
+    "module"; "mutable"; "new"; "nonrec"; "object"; "of"; "open"; "or";
     "parser"; "private"; "rec"; "sig"; "struct"; "then"; "to"; "true";
     "try"; "type"; "val"; "virtual"; "when"; "while"; "with"; "mod";
     "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ; "_" ; "__" ]
