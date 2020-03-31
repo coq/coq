@@ -485,10 +485,8 @@ let do_instance env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri decl imp
     interp_props ~program_mode:false env' cty k u ctx ctx' subst sigma props
   in
   let termtype, sigma = do_instance_resolve_TC termtype sigma env in
-  if Evd.has_undefined sigma then
-    CErrors.user_err Pp.(str "Unsolved obligations remaining.")
-  else
-    declare_instance_constant pri global imps ?hook id decl poly sigma term termtype
+  Pretyping.check_evars_are_solved ~program_mode:false env sigma;
+  declare_instance_constant pri global imps ?hook id decl poly sigma term termtype
 
 let do_instance_program env env' sigma ?hook ~global ~poly cty k u ctx ctx' pri decl imps subst id opt_props =
   let term, termtype, sigma =
