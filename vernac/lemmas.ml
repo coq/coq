@@ -302,6 +302,7 @@ let save_lemma_admitted ~(lemma : t) : unit =
   let pproofs = Proof.partial_proof proof in
   let sec_vars = compute_proof_using_for_admitted lemma.proof typ pproofs in
   let uctx = Proof_global.get_initial_euctx lemma.proof in
+  let uctx = UState.restrict uctx (Vars.universes_of_constr typ) in
   let univs = UState.check_univ_decl ~poly uctx udecl in
   finish_admitted ~info:lemma.info ~uctx (sec_vars, (typ, univs), None)
 
