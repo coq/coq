@@ -113,11 +113,22 @@ type library_info = DirPath.t * vodigest
 (** Functor and funsig parameters, most recent first *)
 type module_parameters = (MBId.t * module_type_body) list
 
+type compiled_library = {
+  comp_name : DirPath.t;
+  comp_mod : module_body;
+  comp_deps : library_info array;
+  comp_enga : engagement;
+  comp_natsymbs : Nativevalues.symbols
+}
+
+type reimport = compiled_library * Univ.ContextSet.t * vodigest
+
 (** Part of the safe_env at a section opening time to be backtracked *)
 type section_data = {
   rev_env : Environ.env;
   rev_univ : Univ.ContextSet.t;
   rev_objlabels : Label.Set.t;
+  rev_reimport : reimport list;
 }
 
 type safe_environment =
@@ -943,76 +954,6 @@ let add_module l me inl senv =
   in
   (mp,mb.mod_delta),senv''
 
-(** {6 Interactive sections *)
-
-let open_section senv =
-  let custom = {
-    rev_env = senv.env;
-    rev_univ = senv.univ;
-    rev_objlabels = senv.objlabels;
-  } in
-  let sections = Section.open_section ~custom senv.sections in
-  { senv with sections }
-
-let close_section senv =
-  let open Section in
-  let sections0 = senv.sections in
-  let env0 = senv.env in
-  (* First phase: revert the declarations added in the section *)
-  let sections, entries, cstrs, revert = Section.close_section sections0 in
-  let rec pop_revstruct accu entries revstruct = match entries, revstruct with
-  | [], revstruct -> accu, revstruct
-  | _ :: _, [] ->
-    CErrors.anomaly (Pp.str "Unmatched section data")
-  | entry :: entries, (lbl, leaf) :: revstruct ->
-    let data = match entry, leaf with
-    | SecDefinition kn, SFBconst cb ->
-      let () = assert (Label.equal lbl (Constant.label kn)) in
-      `Definition (kn, cb)
-    | SecInductive ind, SFBmind mib ->
-      let () = assert (Label.equal lbl (MutInd.label ind)) in
-      `Inductive (ind, mib)
-    | (SecDefinition _ | SecInductive _), (SFBconst _ | SFBmind _) ->
-      CErrors.anomaly (Pp.str "Section content mismatch")
-    | (SecDefinition _ | SecInductive _), (SFBmodule _ | SFBmodtype _) ->
-      CErrors.anomaly (Pp.str "Module inside a section")
-    in
-    pop_revstruct (data :: accu) entries revstruct
-  in
-  let redo, revstruct = pop_revstruct [] entries senv.revstruct in
-  (* Don't revert the delayed constraints. If some delayed constraints were
-     forced inside the section, they have been turned into global monomorphic
-     that are going to be replayed. Those that are not forced are not readded
-     by {!add_constant_aux}. *)
-  let { rev_env = env; rev_univ = univ; rev_objlabels = objlabels } = revert in
-  (* Do not revert the opaque table, the discharged opaque constants are
-     referring to it. *)
-  let env = Environ.set_opaque_tables env (Environ.opaque_tables senv.env) in
-  let senv = { senv with env; revstruct; sections; univ; objlabels; } in
-  (* Second phase: replay the discharged section contents *)
-  let senv = add_constraints (Now cstrs) senv in
-  let modlist = Section.replacement_context env0 sections0 in
-  let cooking_info seg =
-    let { abstr_ctx; abstr_subst; abstr_uctx } = seg in
-    let abstract = (abstr_ctx, abstr_subst, abstr_uctx) in
-    { Opaqueproof.modlist; abstract }
-  in
-  let fold senv = function
-  | `Definition (kn, cb) ->
-    let info = cooking_info (Section.segment_of_constant env0 kn sections0) in
-    let r = { Cooking.from = cb; info } in
-    let cb = Term_typing.translate_recipe senv.env kn r in
-    (* Delayed constants are already in the global environment *)
-    add_constant_aux senv (kn, cb)
-  | `Inductive (ind, mib) ->
-    let info = cooking_info (Section.segment_of_inductive env0 ind sections0) in
-    let mie = Cooking.cook_inductive info mib in
-    let mie = InferCumulativity.infer_inductive senv.env mie in
-    let _, senv = add_mind (MutInd.label ind) mie senv in
-    senv
-  in
-  List.fold_left fold senv redo
-
 (** {6 Starting / ending interactive modules and module types } *)
 
 let start_module l senv =
@@ -1218,14 +1159,6 @@ let add_include me is_module inl senv =
 
 (** {6 Libraries, i.e. compiled modules } *)
 
-type compiled_library = {
-  comp_name : DirPath.t;
-  comp_mod : module_body;
-  comp_deps : library_info array;
-  comp_enga : engagement;
-  comp_natsymbs : Nativevalues.symbols
-}
-
 let module_of_library lib = lib.comp_mod
 
 type native_library = Nativecode.global list
@@ -1299,13 +1232,94 @@ let import lib cst vodigest senv =
     Modops.add_linked_module mb linkinfo env
   in
   let env = Environ.add_native_symbols lib.comp_name lib.comp_natsymbs env in
+  let sections =
+    Section.map_custom (fun custom ->
+      {custom with rev_reimport = (lib,cst,vodigest) :: custom.rev_reimport})
+      senv.sections
+  in
   mp,
   { senv with
     env;
     modresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.modresolver;
     required = DPmap.add lib.comp_name vodigest senv.required;
     loads = (mp,mb)::senv.loads;
+    sections;
   }
+
+(** {6 Interactive sections *)
+
+let open_section senv =
+  let custom = {
+    rev_env = senv.env;
+    rev_univ = senv.univ;
+    rev_objlabels = senv.objlabels;
+    rev_reimport = [];
+  } in
+  let sections = Section.open_section ~custom senv.sections in
+  { senv with sections }
+
+let close_section senv =
+  let open Section in
+  let sections0 = senv.sections in
+  let env0 = senv.env in
+  (* First phase: revert the declarations added in the section *)
+  let sections, entries, cstrs, revert = Section.close_section sections0 in
+  let rec pop_revstruct accu entries revstruct = match entries, revstruct with
+  | [], revstruct -> accu, revstruct
+  | _ :: _, [] ->
+    CErrors.anomaly (Pp.str "Unmatched section data")
+  | entry :: entries, (lbl, leaf) :: revstruct ->
+    let data = match entry, leaf with
+    | SecDefinition kn, SFBconst cb ->
+      let () = assert (Label.equal lbl (Constant.label kn)) in
+      `Definition (kn, cb)
+    | SecInductive ind, SFBmind mib ->
+      let () = assert (Label.equal lbl (MutInd.label ind)) in
+      `Inductive (ind, mib)
+    | (SecDefinition _ | SecInductive _), (SFBconst _ | SFBmind _) ->
+      CErrors.anomaly (Pp.str "Section content mismatch")
+    | (SecDefinition _ | SecInductive _), (SFBmodule _ | SFBmodtype _) ->
+      CErrors.anomaly (Pp.str "Module inside a section")
+    in
+    pop_revstruct (data :: accu) entries revstruct
+  in
+  let redo, revstruct = pop_revstruct [] entries senv.revstruct in
+  (* Don't revert the delayed constraints. If some delayed constraints were
+     forced inside the section, they have been turned into global monomorphic
+     that are going to be replayed. Those that are not forced are not readded
+     by {!add_constant_aux}. *)
+  let { rev_env = env; rev_univ = univ; rev_objlabels = objlabels; rev_reimport } = revert in
+  (* Do not revert the opaque table, the discharged opaque constants are
+     referring to it. *)
+  let env = Environ.set_opaque_tables env (Environ.opaque_tables senv.env) in
+  let senv = { senv with env; revstruct; sections; univ; objlabels; } in
+  (* Second phase: replay Requires *)
+  let senv = List.fold_left (fun senv (lib,cst,vodigest) -> snd (import lib cst vodigest senv))
+      senv (List.rev rev_reimport)
+  in
+  (* Third phase: replay the discharged section contents *)
+  let senv = add_constraints (Now cstrs) senv in
+  let modlist = Section.replacement_context env0 sections0 in
+  let cooking_info seg =
+    let { abstr_ctx; abstr_subst; abstr_uctx } = seg in
+    let abstract = (abstr_ctx, abstr_subst, abstr_uctx) in
+    { Opaqueproof.modlist; abstract }
+  in
+  let fold senv = function
+  | `Definition (kn, cb) ->
+    let info = cooking_info (Section.segment_of_constant env0 kn sections0) in
+    let r = { Cooking.from = cb; info } in
+    let cb = Term_typing.translate_recipe senv.env kn r in
+    (* Delayed constants are already in the global environment *)
+    add_constant_aux senv (kn, cb)
+  | `Inductive (ind, mib) ->
+    let info = cooking_info (Section.segment_of_inductive env0 ind sections0) in
+    let mie = Cooking.cook_inductive info mib in
+    let mie = InferCumulativity.infer_inductive senv.env mie in
+    let _, senv = add_mind (MutInd.label ind) mie senv in
+    senv
+  in
+  List.fold_left fold senv redo
 
 (** {6 Safe typing } *)
 

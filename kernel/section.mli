@@ -24,6 +24,9 @@ val is_empty : 'a t -> bool
 val depth : 'a t -> int
 (** Number of nested sections (0 if no sections are open) *)
 
+val map_custom : ('a -> 'a) -> 'a t -> 'a t
+(** Modify the custom data *)
+
 (** {6 Manipulating sections} *)
 
 type section_entry =
