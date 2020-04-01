@@ -43,23 +43,17 @@ type subst0 =
 module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 
-let keyed_unification = ref (false)
-let () = Goptions.(declare_bool_option {
-  optdepr = false;
-  optkey = ["Keyed";"Unification"];
-  optread = (fun () -> !keyed_unification);
-  optwrite = (fun a -> keyed_unification:=a);
-})
+let is_keyed_unification =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Keyed";"Unification"]
+    ~value:false
 
-let is_keyed_unification () = !keyed_unification
-
-let debug_unification = ref (false)
-let () = Goptions.(declare_bool_option {
-  optdepr = false;
-  optkey = ["Debug";"Tactic";"Unification"];
-  optread = (fun () -> !debug_unification);
-  optwrite = (fun a -> debug_unification:=a);
-})
+let debug_unification =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Debug";"Tactic";"Unification"]
+    ~value:false
 
 (** Making this unification algorithm correct w.r.t. the evar-map abstraction
     breaks too much stuff. So we redefine incorrect functions here. *)
@@ -702,7 +696,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     let cM = Evarutil.whd_head_evar sigma curm
     and cN = Evarutil.whd_head_evar sigma curn in
     let () =
-      if !debug_unification then
+      if debug_unification () then
         Feedback.msg_debug (
           Termops.Internal.print_constr_env curenv sigma cM ++ str" ~= " ++
           Termops.Internal.print_constr_env curenv sigma cN)
@@ -1127,7 +1121,7 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
   in
 
-  if !debug_unification then Feedback.msg_debug (str "Starting unification");
+  if debug_unification () then Feedback.msg_debug (str "Starting unification");
   let opt = { at_top = conv_at_top; with_types = false; with_cs = true } in
   try
   let res =
@@ -1152,11 +1146,11 @@ let rec unify_0_with_initial_metas (sigma,ms,es as subst : subst0) conv_at_top e
     let a = match res with
     | Some sigma -> sigma, ms, es
     | None -> unirec_rec (env,0) cv_pb opt subst m n in
-    if !debug_unification then Feedback.msg_debug (str "Leaving unification with success");
+    if debug_unification () then Feedback.msg_debug (str "Leaving unification with success");
     a
   with e ->
     let e = Exninfo.capture e in
-    if !debug_unification then Feedback.msg_debug (str "Leaving unification with failure");
+    if debug_unification () then Feedback.msg_debug (str "Leaving unification with failure");
     Exninfo.iraise e
 
 let unify_0 env sigma = unify_0_with_initial_metas (sigma,[],[]) true env
@@ -1745,7 +1739,7 @@ let make_abstraction env evd ccl abs =
         env evd c ty occs check_occs ccl
 
 let keyed_unify env evd kop =
-  if not !keyed_unification then fun cl -> true
+  if not (is_keyed_unification ()) then fun cl -> true
   else
     match kop with
     | None -> fun _ -> true
@@ -1767,7 +1761,7 @@ let w_unify_to_subterm env evd ?(flags=default_unify_flags ()) (op,cl) =
     (try
        if closed0 evd cl && not (isEvar evd cl) && keyed_unify env evd kop cl then
        (try
-         if !keyed_unification then
+         if is_keyed_unification () then
            let f1, l1 = decompose_app_vect evd op in
            let f2, l2 = decompose_app_vect evd cl in
            w_typed_unify_array env evd flags f1 l1 f2 l2,cl
@@ -1913,7 +1907,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
       else
         let allow_K = flags.allow_K_in_toplevel_higher_order_unification in
         let flags =
-          if unsafe_occur_meta_or_existential op || !keyed_unification then
+          if unsafe_occur_meta_or_existential op || is_keyed_unification () then
             (* This is up to delta for subterms w/o metas ... *)
             flags
           else

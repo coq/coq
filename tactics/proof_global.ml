@@ -130,15 +130,10 @@ let get_open_goals ps =
 type closed_proof_output = (Constr.t * Evd.side_effects) list * UState.t
 
 let private_poly_univs =
-  let b = ref true in
-  let _ = Goptions.(declare_bool_option {
-      optdepr = false;
-      optkey = ["Private";"Polymorphic";"Universes"];
-      optread = (fun () -> !b);
-      optwrite = ((:=) b);
-    })
-  in
-  fun () -> !b
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Private";"Polymorphic";"Universes"]
+    ~value:true
 
 (* XXX: This is still separate from close_proof below due to drop_pt in the STM *)
 let return_proof { proof } =

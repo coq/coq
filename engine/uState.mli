@@ -69,8 +69,6 @@ val univ_entry : poly:bool -> t -> Entries.universes_entry
 
 (** {5 Constraints handling} *)
 
-val drop_weak_constraints : bool ref
-
 val add_constraints : t -> Univ.Constraint.t -> t
 (**
   @raise UniversesDiffer when universes differ

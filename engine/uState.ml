@@ -176,8 +176,11 @@ let instantiate_variable l b v =
 
 exception UniversesDiffer
 
-let drop_weak_constraints = ref false
-
+let drop_weak_constraints =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Cumulativity";"Weak";"Constraints"]
+    ~value:false
 
 let process_universe_constraints ctx cstrs =
   let open UnivSubst in
@@ -270,7 +273,7 @@ let process_universe_constraints ctx cstrs =
           | ULub (l, r) ->
               equalize_variables true (Universe.make l) l (Universe.make r) r local
           | UWeak (l, r) ->
-            if not !drop_weak_constraints then weak := UPairSet.add (l,r) !weak; local
+            if not (drop_weak_constraints ()) then weak := UPairSet.add (l,r) !weak; local
           | UEq (l, r) -> equalize_universes l r local
   in
   let local =

@@ -107,9 +107,9 @@ let with_full_print f a =
   and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in
   let old_rawprint = !Flags.raw_print in
   let old_printuniverses = !Constrextern.print_universes in
-  let old_printallowmatchdefaultclause = !Detyping.print_allow_match_default_clause in
+  let old_printallowmatchdefaultclause = Detyping.print_allow_match_default_clause () in
   Constrextern.print_universes := true;
-  Detyping.print_allow_match_default_clause := false;
+  Goptions.set_bool_option_value Detyping.print_allow_match_default_opt_name false;
   Flags.raw_print := true;
   Impargs.make_implicit_args false;
   Impargs.make_strict_implicit_args false;
@@ -122,7 +122,7 @@ let with_full_print f a =
     Impargs.make_contextual_implicit_args old_contextual_implicit_args;
     Flags.raw_print := old_rawprint;
     Constrextern.print_universes := old_printuniverses;
-    Detyping.print_allow_match_default_clause := old_printallowmatchdefaultclause;
+    Goptions.set_bool_option_value Detyping.print_allow_match_default_opt_name old_printallowmatchdefaultclause;
     Dumpglob.continue ();
     res
   with
@@ -132,7 +132,7 @@ let with_full_print f a =
         Impargs.make_contextual_implicit_args old_contextual_implicit_args;
         Flags.raw_print := old_rawprint;
         Constrextern.print_universes := old_printuniverses;
-        Detyping.print_allow_match_default_clause := old_printallowmatchdefaultclause;
+        Goptions.set_bool_option_value Detyping.print_allow_match_default_opt_name old_printallowmatchdefaultclause;
         Dumpglob.continue ();
         raise reraise
 
@@ -309,33 +309,18 @@ let add_Function is_general f =
 let pr_table env sigma = pr_table env sigma !from_function
 (*********************************)
 (* Debugging *)
-let functional_induction_rewrite_dependent_proofs = ref true
-let function_debug = ref false
-open Goptions
 
-let functional_induction_rewrite_dependent_proofs_sig =
-  {
-    optdepr = false;
-    optkey =  ["Functional";"Induction";"Rewrite";"Dependent"];
-    optread = (fun () -> !functional_induction_rewrite_dependent_proofs);
-    optwrite = (fun b -> functional_induction_rewrite_dependent_proofs := b)
-  }
-let () = declare_bool_option functional_induction_rewrite_dependent_proofs_sig
+let do_rewrite_dependent =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Functional";"Induction";"Rewrite";"Dependent"]
+    ~value:true
 
-let do_rewrite_dependent () = !functional_induction_rewrite_dependent_proofs = true
-
-let function_debug_sig =
-  {
-    optdepr = false;
-    optkey =  ["Function_debug"];
-    optread = (fun () -> !function_debug);
-    optwrite = (fun b -> function_debug := b)
-  }
-
-let () = declare_bool_option function_debug_sig
-
-
-let do_observe () = !function_debug
+let do_observe =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Function_debug"]
+    ~value:false
 
 let observe strm =
   if do_observe ()
@@ -405,18 +390,11 @@ let observe_tac ~header s tac =
 
 end
 
-let strict_tcc = ref false
-let is_strict_tcc () = !strict_tcc
-let strict_tcc_sig =
-  {
-    optdepr = false;
-    optkey =  ["Function_raw_tcc"];
-    optread = (fun () -> !strict_tcc);
-    optwrite = (fun b -> strict_tcc := b)
-  }
-
-let () = declare_bool_option strict_tcc_sig
-
+let is_strict_tcc =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Function_raw_tcc"]
+    ~value:false
 
 exception Building_graph of exn
 exception Defining_principle of exn

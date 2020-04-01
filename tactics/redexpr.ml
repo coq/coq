@@ -53,13 +53,8 @@ let whd_cbn flags env sigma t =
 let strong_cbn flags =
   strong_with_flags whd_cbn flags
 
-let simplIsCbn = ref (false)
-let () = Goptions.(declare_bool_option {
-  optdepr = false;
-  optkey = ["SimplIsCbn"];
-  optread = (fun () -> !simplIsCbn);
-  optwrite = (fun a -> simplIsCbn:=a);
-})
+let simplIsCbn =
+  Goptions.declare_bool_option_and_ref ~depr:false ~key:["SimplIsCbn"] ~value:false
 
 let set_strategy_one ref l  =
   let k =
@@ -228,10 +223,10 @@ let reduction_of_red_expr env =
       else (e_red red_product,DEFAULTcast)
   | Hnf -> (e_red hnf_constr,DEFAULTcast)
   | Simpl (f,o) ->
-     let whd_am = if !simplIsCbn then whd_cbn (make_flag f) else whd_simpl in
-     let am = if !simplIsCbn then strong_cbn (make_flag f) else simpl in
+     let whd_am = if simplIsCbn () then whd_cbn (make_flag f) else whd_simpl in
+     let am = if simplIsCbn () then strong_cbn (make_flag f) else simpl in
      let () =
-       if not (!simplIsCbn || List.is_empty f.rConst) then
+       if not (simplIsCbn () || List.is_empty f.rConst) then
          warn_simpl_unfolding_modifiers () in
      (contextualize (if head_style then whd_am else am) am o,DEFAULTcast)
   | Cbv f -> (e_red (cbv_norm_flags (make_flag f)),DEFAULTcast)

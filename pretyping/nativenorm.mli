@@ -14,16 +14,6 @@ open Evd
 
 (** This module implements normalization by evaluation to OCaml code *)
 
-val get_profile_filename : unit -> string
-val set_profile_filename : string -> unit
-
-val get_profiling_enabled : unit -> bool
-val set_profiling_enabled : bool -> unit
-
-val get_timing_enabled : unit -> bool
-val set_timing_enabled : bool -> unit
-
-
 val native_norm : env -> evar_map -> constr -> types -> constr
 
 (** Conversion with inference of universe constraints *)

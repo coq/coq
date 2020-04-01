@@ -221,27 +221,17 @@ let build_env gamma=
                      mkApp(force node_count l_push,[|mkProp;p;e|]))
     gamma.env (mkApp (force node_count l_empty,[|mkProp|]))
 
-open Goptions
+let verbose =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Rtauto";"Verbose"]
+    ~value:false
 
-let verbose = ref false
-
-let opt_verbose=
-  {optdepr=false;
-   optkey=["Rtauto";"Verbose"];
-   optread=(fun () -> !verbose);
-   optwrite=(fun b -> verbose:=b)}
-
-let () = declare_bool_option opt_verbose
-
-let check = ref false
-
-let opt_check=
-  {optdepr=false;
-   optkey=["Rtauto";"Check"];
-   optread=(fun () -> !check);
-   optwrite=(fun b -> check:=b)}
-
-let () = declare_bool_option opt_check
+let check =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Rtauto";"Check"]
+    ~value:false
 
 open Pp
 
@@ -267,7 +257,7 @@ let rtauto_tac =
     let () =
       begin
         reset_info ();
-        if !verbose then
+        if verbose () then
           Feedback.msg_info (str "Starting proof-search ...");
       end in
     let search_start_time = System.get_time () in
@@ -276,7 +266,7 @@ let rtauto_tac =
       with Not_found ->
         user_err ~hdr:"rtauto" (Pp.str "rtauto couldn't find any proof") in
     let search_end_time = System.get_time () in
-    let () = if !verbose then
+    let () = if verbose () then
         begin
           Feedback.msg_info (str "Proof tree found in " ++
                              System.fmt_time_difference search_start_time search_end_time);
@@ -292,7 +282,7 @@ let rtauto_tac =
     let term=
       applistc main (List.rev_map (fun (id,_) -> mkVar id.binder_name) hyps) in
     let build_end_time=System.get_time () in
-    let () = if !verbose then
+    let () = if verbose () then
         begin
           Feedback.msg_info (str "Proof term built in " ++
                              System.fmt_time_difference build_start_time build_end_time ++
@@ -306,14 +296,14 @@ let rtauto_tac =
     let tac_start_time = System.get_time () in
     let term = EConstr.of_constr term in
     let result=
-      if !check then
+      if check () then
         Tactics.exact_check term
       else
         Tactics.exact_no_check term in
     let tac_end_time = System.get_time () in
     let () =
-      if !check then Feedback.msg_info (str "Proof term type-checking is on");
-      if !verbose then
+      if check () then Feedback.msg_info (str "Proof term type-checking is on");
+      if verbose () then
         Feedback.msg_info (str "Internal tactic executed in " ++
                            System.fmt_time_difference tac_start_time tac_end_time) in
     result

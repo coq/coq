@@ -188,27 +188,26 @@ type hints_expr =
   | HintsConstructors of qualid list
   | HintsExtern of int * Constrexpr.constr_expr option * Genarg.raw_generic_argument
 
-type import_level = [ `LAX | `WARN | `STRICT ]
+type import_level = HintLax | HintWarn | HintStrict
 
-let warn_hint : import_level ref = ref `LAX
-let read_warn_hint () = match !warn_hint with
-| `LAX -> "Lax"
-| `WARN -> "Warn"
-| `STRICT -> "Strict"
+let warn_hint_to_string = function
+| HintLax -> "Lax"
+| HintWarn -> "Warn"
+| HintStrict -> "Strict"
 
-let write_warn_hint = function
-| "Lax" -> warn_hint := `LAX
-| "Warn" -> warn_hint := `WARN
-| "Strict" -> warn_hint := `STRICT
-| _ -> user_err Pp.(str "Only the following flags are accepted: Lax, Warn, Strict.")
+let string_to_warn_hint = function
+| "Lax" -> HintLax
+| "Warn" -> HintWarn
+| "Strict" -> HintStrict
+| _ -> user_err Pp.(str "Only the following values are accepted: Lax, Warn, Strict.")
 
-let () =
-  Goptions.(declare_string_option
-    { optdepr  = false;
-      optkey   = ["Loose"; "Hint"; "Behavior"];
-      optread  = read_warn_hint;
-      optwrite = write_warn_hint;
-    })
+let warn_hint =
+  Goptions.declare_interpreted_string_option_and_ref
+    ~depr:false
+    ~key:["Loose"; "Hint"; "Behavior"]
+    ~value:HintLax
+    string_to_warn_hint
+    warn_hint_to_string
 
 let fresh_key =
   let id = Summary.ref ~name:"HINT-COUNTER" 0 in
@@ -1690,12 +1689,12 @@ let wrap_hint_warning_fun env sigma t =
   in
   (ans, set_extra_data store sigma)
 
-let run_hint tac k = match !warn_hint with
-| `LAX -> k tac.obj
-| `WARN ->
+let run_hint tac k = match warn_hint () with
+| HintLax -> k tac.obj
+| HintWarn ->
   if is_imported tac then k tac.obj
   else Proofview.tclTHEN (log_hint tac) (k tac.obj)
-| `STRICT ->
+| HintStrict ->
   if is_imported tac then k tac.obj
   else Proofview.tclZERO (UserError (None, (str "Tactic failure.")))
 

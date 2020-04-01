@@ -44,7 +44,6 @@ type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
   indices_matter    : bool;
   toplevel_name     : Stm.interactive_top;
-  allow_sprop       : bool;
   cumulative_sprop  : bool;
 }
 
@@ -59,7 +58,6 @@ type coqargs_config = {
   native_include_dirs : CUnix.physical_path list;
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
-  diffs_set   : bool;
   time        : bool;
   print_emacs : bool;
   set_options : (Goptions.option_name * option_command) list;
@@ -112,7 +110,6 @@ let default_logic_config = {
   impredicative_set = Declarations.PredicativeSet;
   indices_matter = false;
   toplevel_name = Stm.TopLogical default_toplevel;
-  allow_sprop = true;
   cumulative_sprop = false;
 }
 
@@ -127,7 +124,6 @@ let default_config = {
   native_include_dirs = [];
   stm_flags    = Stm.AsyncOpts.default_opts;
   debug        = false;
-  diffs_set    = false;
   time         = false;
   print_emacs  = false;
   set_options  = [];
@@ -178,9 +174,12 @@ let add_vo_require opts d p export =
 let add_load_vernacular opts verb s =
   { opts with pre = { opts.pre with load_vernacular_list = (CUnix.make_suffix s ".v",verb) :: opts.pre.load_vernacular_list }}
 
+let add_set_option opts opt_name value =
+  { opts with config = { opts.config with set_options = (opt_name, value) :: opts.config.set_options }}
+
 (** Options for proof general *)
 let set_emacs opts =
-  Printer.enable_goal_tags_printing := true;
+  Goptions.set_bool_option_value Printer.print_goal_tag_opt_name true;
   { opts with config = { opts.config with color = `EMACS; print_emacs = true }}
 
 let set_logic f oval =
@@ -481,14 +480,11 @@ let parse_args ~help ~init arglist : t * string list =
       { oval with config = { oval.config with native_compiler }}
 
     | "-set" ->
-      let opt = next() in
-      let opt, v = parse_option_set opt in
-      { oval with config = { oval.config with set_options = (opt, OptionSet v) :: oval.config.set_options }}
+      let opt, v = parse_option_set @@ next() in
+      add_set_option oval opt (OptionSet v)
 
     | "-unset" ->
-      let opt = next() in
-      let opt = to_opt_key opt in
-      { oval with config = { oval.config with set_options = (opt, OptionUnset) :: oval.config.set_options }}
+      add_set_option oval (to_opt_key @@ next ()) OptionUnset
 
     |"-native-output-dir" ->
       let native_output_dir = next () in
@@ -511,18 +507,16 @@ let parse_args ~help ~init arglist : t * string list =
     |"-color" -> set_color oval (next ())
     |"-config"|"--config" -> set_query oval PrintConfig
     |"-debug" -> Coqinit.set_debug (); oval
-    |"-diffs" -> let opt = next () in
-                  if List.exists (fun x -> opt = x) ["off"; "on"; "removed"] then
-                    Proof_diffs.write_diffs_option opt
-                  else
-                    error_wrong_arg "Error: on|off|removed expected after -diffs";
-                  { oval with config = { oval.config with diffs_set = true }}
+    |"-diffs" ->
+      add_set_option oval Proof_diffs.opt_name @@ OptionSet (Some (next ()))
     |"-stm-debug" -> Stm.stm_debug := true; oval
     |"-emacs" -> set_emacs oval
     |"-impredicative-set" ->
       set_logic (fun o -> { o with impredicative_set = Declarations.ImpredicativeSet }) oval
-    |"-allow-sprop" -> set_logic (fun o -> { o with allow_sprop = true }) oval
-    |"-disallow-sprop" -> set_logic (fun o -> { o with allow_sprop = false }) oval
+    |"-allow-sprop" ->
+      add_set_option oval Vernacentries.allow_sprop_opt_name (OptionSet None)
+    |"-disallow-sprop" ->
+      add_set_option oval Vernacentries.allow_sprop_opt_name OptionUnset
     |"-sprop-cumulative" -> set_logic (fun o -> { o with cumulative_sprop = true }) oval
     |"-indices-matter" -> set_logic (fun o -> { o with indices_matter = true }) oval
     |"-m"|"--memory" -> { oval with post = { oval.post with memory_stat = true }}

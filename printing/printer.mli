@@ -19,9 +19,7 @@ open Notation_term
 
 (** These are the entry points for printing terms, context, tac, ... *)
 
-val enable_unfocused_goal_printing: bool ref
-val enable_goal_tags_printing      : bool ref
-val enable_goal_names_printing     : bool ref
+val print_goal_tag_opt_name : string list
 
 (** Terms *)
 

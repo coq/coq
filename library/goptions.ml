@@ -296,6 +296,48 @@ let declare_stringopt_option =
     (function StringOptValue v -> v | _ -> anomaly (Pp.str "async_option."))
     (fun _ _ -> anomaly (Pp.str "async_option."))
 
+
+type 'a opt_decl = depr:bool -> key:option_name -> 'a
+
+let declare_int_option_and_ref ~depr ~key ~(value:int) =
+  let r_opt = ref value in
+  let optwrite v = r_opt := Option.default value v in
+  let optread () = Some !r_opt in
+  let _ = declare_int_option {
+      optdepr = depr;
+      optkey = key;
+      optread; optwrite
+    } in
+  fun () -> !r_opt
+
+let declare_intopt_option_and_ref ~depr ~key =
+  let r_opt = ref None in
+  let optwrite v = r_opt := v in
+  let optread () = !r_opt in
+  let _ = declare_int_option {
+      optdepr = depr;
+      optkey = key;
+      optread; optwrite
+    } in
+  optread
+
+let declare_nat_option_and_ref ~depr ~key ~(value:int) =
+  assert (value >= 0);
+  let r_opt = ref value in
+  let optwrite v =
+    let v = Option.default value v in
+    if v < 0 then
+      CErrors.user_err Pp.(str "This option expects a non-negative value.");
+    r_opt := v
+  in
+  let optread () = Some !r_opt in
+  let _ = declare_int_option {
+      optdepr = depr;
+      optkey = key;
+      optread; optwrite
+    } in
+  fun () -> !r_opt
+
 let declare_bool_option_and_ref ~depr ~key ~(value:bool) =
   let r_opt = ref value in
   let optwrite v = r_opt := v in
@@ -306,6 +348,39 @@ let declare_bool_option_and_ref ~depr ~key ~(value:bool) =
       optread; optwrite
     } in
   optread
+
+let declare_string_option_and_ref ~depr ~key ~(value:string) =
+  let r_opt = ref value in
+  let optwrite v = r_opt := Option.default value v in
+  let optread () = Some !r_opt in
+  let _ = declare_stringopt_option {
+      optdepr = depr;
+      optkey = key;
+      optread; optwrite
+    } in
+  fun () -> !r_opt
+
+let declare_stringopt_option_and_ref ~depr ~key =
+  let r_opt = ref None in
+  let optwrite v = r_opt := v in
+  let optread () = !r_opt in
+  let _ = declare_stringopt_option {
+      optdepr = depr;
+      optkey = key;
+      optread; optwrite
+    } in
+  optread
+
+let declare_interpreted_string_option_and_ref ~depr ~key ~(value:'a) from_string to_string =
+  let r_opt = ref value in
+  let optwrite v = r_opt := Option.default value @@ Option.map from_string v in
+  let optread () = Some (to_string !r_opt) in
+  let _ = declare_stringopt_option {
+      optdepr = depr;
+      optkey = key;
+      optread; optwrite
+    } in
+  fun () -> !r_opt
 
 (* 3- User accessible commands *)
 

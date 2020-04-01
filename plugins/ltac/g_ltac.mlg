@@ -359,21 +359,15 @@ open Vernacextend
 open Goptions
 open Libnames
 
-let print_info_trace = ref None
-
-let () = declare_int_option {
-  optdepr = false;
-  optkey = ["Info" ; "Level"];
-  optread = (fun () -> !print_info_trace);
-  optwrite = fun n -> print_info_trace := n;
-}
+let print_info_trace =
+  declare_intopt_option_and_ref ~depr:false ~key:["Info" ; "Level"]
 
 let vernac_solve ~pstate n info tcom b =
   let open Goal_select in
   let pstate, status = Proof_global.map_fold_proof_endline (fun etac p ->
       let with_end_tac = if b then Some etac else None in
       let global = match n with SelectAll | SelectList _ -> true | _ -> false in
-      let info = Option.append info !print_info_trace in
+      let info = Option.append info (print_info_trace ()) in
       let (p,status) =
         Pfedit.solve n info (Tacinterp.hide_interp global tcom None) ?with_end_tac p
       in

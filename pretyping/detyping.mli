@@ -29,11 +29,12 @@ val print_evar_arguments : bool ref
 
 (** If true, contract branches with same r.h.s. and same matching
     variables in a disjunctive pattern *)
-val print_factorize_match_patterns : bool ref
+val print_factorize_match_patterns : unit -> bool
 
-(** If true and the last non unique clause of a "match" is a
+(** If this flag is true and the last non unique clause of a "match" is a
     variable-free disjunctive pattern, turn it into a catch-call case *)
-val print_allow_match_default_clause : bool ref
+val print_allow_match_default_clause : unit -> bool
+val print_allow_match_default_opt_name : string list
 
 val subst_cases_pattern : substitution -> cases_pattern -> cases_pattern
 

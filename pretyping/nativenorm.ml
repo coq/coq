@@ -28,15 +28,21 @@ exception Find_at of int
 
 (* timing *)
 
-let timing_enabled = ref false
+let get_timing_enabled =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["NativeCompute"; "Timing"]
+    ~value:false
 
 (* profiling *)
 
-let profiling_enabled = ref false
+let get_profiling_enabled =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["NativeCompute"; "Profiling"]
+    ~value:false
 
 (* for supported platforms, filename for profiler results *)
-
-let profile_filename = ref "native_compute_profile.data"
 
 let profiler_platform () =
   match [@warning "-8"] Sys.os_type with
@@ -48,10 +54,11 @@ let profiler_platform () =
   | "Win32" -> "Windows (Win32)"
   | "Cygwin" -> "Windows (Cygwin)"
 
-let get_profile_filename () = !profile_filename
-
-let set_profile_filename fn =
-  profile_filename := fn
+let get_profile_filename =
+  Goptions.declare_string_option_and_ref
+    ~depr:false
+    ~key:["NativeCompute"; "Profile"; "Filename"]
+    ~value:"native_compute_profile.data"
 
 (* find unused profile filename *)
 let get_available_profile_filename () =
@@ -76,18 +83,6 @@ let get_available_profile_filename () =
     let msg = "When trying to find native_compute profile output file: " ^ s in
     let _ = Feedback.msg_info (Pp.str msg) in
     assert false
-
-let get_profiling_enabled () =
-  !profiling_enabled
-
-let set_profiling_enabled b =
-  profiling_enabled := b
-
-let get_timing_enabled () =
-  !timing_enabled
-
-let set_timing_enabled b =
-  timing_enabled := b
 
 let invert_tag cst tag reloc_tbl =
   try

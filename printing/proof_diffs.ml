@@ -46,36 +46,37 @@ let write_color_enabled enabled =
 
 let color_enabled () = !term_color
 
-let diff_option = ref `OFF
+type diffOpt = DiffOff | DiffOn | DiffRemoved
 
-let read_diffs_option () = match !diff_option with
-| `OFF -> "off"
-| `ON -> "on"
-| `REMOVED -> "removed"
+let diffs_to_string = function
+  | DiffOff -> "off"
+  | DiffOn -> "on"
+  | DiffRemoved -> "removed"
 
-let write_diffs_option opt =
-  let enable opt =
-    if not (color_enabled ()) then
-      CErrors.user_err Pp.(str "Enabling Diffs requires setting the \"-color\" command line argument to \"on\" or \"auto\".")
-    else
-      diff_option := opt
-  in
-  match opt with
-  | "off" -> diff_option := `OFF
-  | "on" -> enable `ON
-  | "removed" -> enable `REMOVED
+
+let assert_color_enabled () =
+  if not (color_enabled ()) then
+    CErrors.user_err
+      Pp.(str "Enabling Diffs requires setting the \"-color\" command line argument to \"on\" or \"auto\".")
+
+let string_to_diffs = function
+  | "off" -> DiffOff
+  | "on" -> assert_color_enabled (); DiffOn
+  | "removed" -> assert_color_enabled (); DiffRemoved
   | _ -> CErrors.user_err Pp.(str "Diffs option only accepts the following values: \"off\", \"on\", \"removed\".")
 
-let () =
-  Goptions.(declare_string_option {
-    optdepr = false;
-    optkey = ["Diffs"];
-    optread = read_diffs_option;
-    optwrite = write_diffs_option
-  })
+let opt_name = ["Diffs"]
 
-let show_diffs () = !diff_option <> `OFF;;
-let show_removed () = !diff_option = `REMOVED;;
+let diff_option =
+  Goptions.declare_interpreted_string_option_and_ref
+    ~depr:false
+    ~key:opt_name
+    ~value:DiffOff
+    string_to_diffs
+    diffs_to_string
+
+let show_diffs () = match diff_option () with DiffOff -> false | _ -> true
+let show_removed () = match diff_option () with DiffRemoved -> true | _ -> false
 
 
 (* DEBUG/UNIT TEST *)
