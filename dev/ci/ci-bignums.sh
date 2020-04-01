@@ -5,4 +5,4 @@ ci_dir="$(dirname "$0")"
 
 git_download bignums
 
-( cd "${CI_BUILD_DIR}/bignums" && make && make install)
+( cd "${CI_BUILD_DIR}/bignums" && make && make install && cd tests && make)
