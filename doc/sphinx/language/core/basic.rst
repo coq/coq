@@ -57,7 +57,7 @@ appending the level to the nonterminal name (as in :n:`@term100` or
 
    |Coq| uses an extensible parser.  Plugins and the :ref:`notation
    system <syntax-extensions-and-notation-scopes>` can extend the
-   syntax at run time.  Some notations are defined in the prelude,
+   syntax at run time.  Some notations are defined in the :term:`prelude`,
    which is loaded by default.  The documented grammar doesn't include
    these notations.  Precedence levels not used by the base grammar
    are omitted from the documentation, even though they could still be
@@ -119,21 +119,19 @@ Numerals
   integer.  Underscores embedded in the digits are ignored, for example
   ``1_000_000`` is the same as ``1000000``.
 
-  .. insertprodn numeral digit
+  .. insertprodn numeral hexdigit
 
   .. prodn::
-     digit ::= 0 .. 9
-     digitu ::= {| @digit | _ }
-     hexdigit ::= {| 0 .. 9 | a..f | A..F }
-     hexdigitu ::= {| @hexdigit | _ }
-     decnum ::= @digit {* @digitu }
-     hexnum ::= {| 0x | 0X } @hexdigit {* @hexdigitu }
-     num ::= {| @decnum | @hexnum }
-     sign ::= {| + | - }
+     numeral ::= {? - } @decnum {? . {+ {| @digit | _ } } } {? {| e | E } {? {| + | - } } @decnum }
+     | {? - } @hexnum {? . {+ {| @hexdigit | _ } } } {? {| p | P } {? {| + | - } } @decnum }
      int ::= {? - } @num
-     decimal ::= @decnum {? . {+ @digitu } } {? {| e | E } {? @sign } @decnum }
-     hexadecimal ::= @hexnum {? . {+ @hexdigitu } } {? {| p | P } {? @sign } @decnum }
-     numeral ::= {? - } {| @decimal | @hexadecimal }
+     num ::= {| @decnum | @hexnum }
+     decnum ::= @digit {* {| @digit | _ } }
+     digit ::= 0 .. 9
+     hexnum ::= {| 0x | 0X } @hexdigit {* {| @hexdigit | _ } }
+     hexdigit ::= {| 0 .. 9 | a .. f | A .. F }
+
+  .. todo PR need some code fixes for hex, see PR 11948
 
 Strings
   Strings begin and end with ``"`` (double quote).  Use ``""`` to represent
@@ -294,7 +292,7 @@ rest of the |Coq| manual: :term:`terms <term>` and :term:`types
         document ::= {* @sentence }
         sentence ::= {? @attributes } @command .
         | {? @attributes } {? @num : } @query_command .
-        | {? @attributes } {? @toplevel_selector } @ltac_expr {| . | ... }
+        | {? @attributes } {? @toplevel_selector : } @ltac_expr {| . | ... }
         | @control_command
 
      :n:`@ltac_expr` syntax supports both simple and compound

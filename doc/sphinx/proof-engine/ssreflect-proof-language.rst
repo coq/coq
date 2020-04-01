@@ -1336,7 +1336,7 @@ Discharge
 The general syntax of the discharging tactical ``:`` is:
 
 .. tacn:: @tactic {? @ident } : {+ @d_item } {? @clear_switch }
-   :name: ... : ... (ssreflect)
+   :name: … : … (ssreflect)
    :undocumented:
 
 .. prodn::
@@ -5658,7 +5658,7 @@ respectively.
 
    application (see :ref:`the_defective_tactics_ssr`)
 
-.. tacv:: abstract
+.. tacv:: abstract: {+ @d_item}
 
    see :ref:`abstract_ssr` and :ref:`generating_let_ssr`
 
