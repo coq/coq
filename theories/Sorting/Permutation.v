@@ -15,7 +15,7 @@
 (* Adapted in May 2006 by Jean-Marc Notin from initial contents by
    Laurent Théry (Huffmann contribution, October 2003) *)
 
-Require Import List Setoid Compare_dec Morphisms FinFun.
+Require Import List Setoid Compare_dec Morphisms FinFun PeanoNat.
 Import ListNotations. (* For notations [] and [a;b;c] *)
 Set Implicit Arguments.
 (* Set Universe Polymorphism. *)
@@ -56,6 +56,11 @@ Proof.
   induction l; constructor. exact IHl.
 Qed.
 
+Instance Permutation_refl' : Proper (Logic.eq ==> Permutation) id.
+Proof.
+  intros x y Heq; rewrite Heq; apply Permutation_refl.
+Qed.
+
 Theorem Permutation_sym : forall l l' : list A,
  Permutation l l' -> Permutation l' l.
 Proof.
@@ -87,15 +92,28 @@ Instance Permutation_Equivalence A : Equivalence (@Permutation A) | 10 := {
   Equivalence_Symmetric := @Permutation_sym A ;
   Equivalence_Transitive := @Permutation_trans A }.
 
+Lemma Permutation_morph_transp A : forall P : list A -> Prop,
+ (forall a b l1 l2, P (l1 ++ a :: b :: l2) -> P (l1 ++ b :: a :: l2)) ->
+ Proper (@Permutation A ==> Basics.impl) P.
+Proof.
+  intros P HT l1 l2 HP.
+  enough (forall l0, P (l0 ++ l1) -> P (l0 ++ l2)) as IH
+    by (intro; rewrite <- (app_nil_l l2); now apply (IH nil)).
+  induction HP; intuition.
+  rewrite <- (app_nil_l l'), app_comm_cons, app_assoc.
+  now apply IHHP; rewrite <- app_assoc.
+Qed.
+
 Instance Permutation_cons A :
  Proper (Logic.eq ==> @Permutation A ==> @Permutation A) (@cons A) | 10.
 Proof.
   repeat intro; subst; auto using perm_skip.
 Qed.
 
+
 Section Permutation_properties.
 
-Variable A:Type.
+Variable A B:Type.
 
 Implicit Types a b : A.
 Implicit Types l m : list A.
@@ -168,6 +186,30 @@ Proof.
 Qed.
 Local Hint Resolve Permutation_app_comm : core.
 
+Lemma Permutation_app_rot : forall l1 l2 l3: list A,
+  Permutation (l1 ++ l2 ++ l3) (l2 ++ l3 ++ l1).
+Proof.
+  intros l1 l2 l3; now rewrite (app_assoc l2).
+Qed.
+Local Hint Resolve Permutation_app_rot : core.
+
+Lemma Permutation_app_swap_app : forall l1 l2 l3: list A,
+  Permutation (l1 ++ l2 ++ l3) (l2 ++ l1 ++ l3).
+Proof.
+  intros.
+  rewrite 2 app_assoc.
+  apply Permutation_app_tail, Permutation_app_comm.
+Qed.
+Local Hint Resolve Permutation_app_swap_app : core.
+
+Lemma Permutation_app_middle : forall l l1 l2 l3 l4,
+ Permutation (l1 ++ l2) (l3 ++ l4) ->
+ Permutation (l1 ++ l ++ l2) (l3 ++ l ++ l4).
+Proof.
+  intros l l1 l2 l3 l4 HP.
+  now rewrite Permutation_app_swap_app, HP, Permutation_app_swap_app.
+Qed.
+
 Theorem Permutation_cons_app : forall (l l1 l2:list A) a,
   Permutation l (l1 ++ l2) -> Permutation (a :: l) (l1 ++ a :: l2).
 Proof.
@@ -190,6 +232,24 @@ Proof.
 Qed.
 Local Hint Resolve Permutation_middle : core.
 
+Lemma Permutation_middle2 : forall l1 l2 l3 a b,
+  Permutation (a :: b :: l1 ++ l2 ++ l3) (l1 ++ a :: l2 ++ b :: l3).
+Proof.
+  intros l1 l2 l3 a b.
+  apply Permutation_cons_app.
+  rewrite 2 app_assoc.
+  now apply Permutation_cons_app.
+Qed.
+Local Hint Resolve Permutation_middle2 : core.
+
+Lemma Permutation_elt : forall l1 l2 l1' l2' (a:A),
+ Permutation (l1 ++ l2) (l1' ++ l2') ->
+ Permutation (l1 ++ a :: l2) (l1' ++ a :: l2').
+Proof.
+  intros l1 l2 l1' l2' a HP.
+  transitivity (a :: l1 ++ l2); auto.
+Qed.
+
 Theorem Permutation_rev : forall (l : list A), Permutation l (rev l).
 Proof.
   induction l as [| x l]; simpl; trivial. now rewrite IHl at 1.
@@ -211,6 +271,46 @@ Global Instance Permutation_length' :
  Proper (@Permutation A ==> Logic.eq) (@length A) | 10.
 Proof.
   exact Permutation_length.
+Qed.
+
+Instance Permutation_Forall (P : A -> Prop) :
+ Proper ((@Permutation A) ==> Basics.impl) (Forall P).
+Proof.
+  intros l1 l2 HP.
+  induction HP; intro HF; auto.
+  - inversion_clear HF; auto.
+  - inversion_clear HF as [ | ? ? HF1 HF2].
+    inversion_clear HF2; auto.
+Qed.
+
+Instance Permutation_Exists (P : A -> Prop) :
+ Proper ((@Permutation A) ==> Basics.impl) (Exists P).
+Proof.
+  intros l1 l2 HP.
+  induction HP; intro HF; auto.
+  - inversion_clear HF; auto.
+  - inversion_clear HF as [ | ? ? HF1 ]; auto.
+    inversion_clear HF1; auto.
+Qed.
+
+Lemma Permutation_Forall2 (P : A -> B -> Prop) :
+ forall l1 l1' (l2 : list B), Permutation l1 l1' -> Forall2 P l1 l2 ->
+ exists l2' : list B, Permutation l2 l2' /\ Forall2 P l1' l2'.
+Proof.
+  intros l1 l1' l2 HP.
+  revert l2; induction HP; intros l2 HF; inversion HF as [ | ? b ? ? HF1 HF2 ]; subst.
+  - now exists nil.
+  - apply IHHP in HF2 as [l2' [HP2 HF2]].
+    exists (b :: l2'); auto.
+  - inversion_clear HF2 as [ | ? b' ? l2' HF3 HF4 ].
+    exists (b' :: b :: l2'); auto.
+  - apply Permutation_nil in HP1; subst.
+    apply Permutation_nil in HP2; subst.
+    now exists nil.
+  - apply IHHP1 in HF as [l2' [HP2' HF2']].
+    apply IHHP2 in HF2' as [l2'' [HP2'' HF2'']].
+    exists l2''; split; auto.
+    now transitivity l2'.
 Qed.
 
 Theorem Permutation_ind_bis :
@@ -301,6 +401,16 @@ Proof.
  rewrite 2 (Permutation_app_comm _ l). apply Permutation_app_inv_l.
 Qed.
 
+Lemma Permutation_app_inv_m l l1 l2 l3 l4 :
+ Permutation (l1 ++ l ++ l2) (l3 ++ l ++ l4) ->
+ Permutation (l1 ++ l2) (l3 ++ l4).
+Proof.
+  intros HP.
+  apply (Permutation_app_inv_l l).
+  transitivity (l1 ++ l ++ l2); auto.
+  transitivity (l3 ++ l ++ l4); auto.
+Qed.
+
 Lemma Permutation_length_1_inv: forall a l, Permutation [a] l -> l = [a].
 Proof.
   intros a l H; remember [a] as m in H.
@@ -335,6 +445,38 @@ Proof.
   apply Permutation_length_2_inv in H as [H|H]; injection H as [= -> ->]; auto.
 Qed.
 
+Lemma Permutation_vs_elt_inv : forall l l1 l2 a,
+ Permutation l (l1 ++ a :: l2) -> exists l' l'', l = l' ++ a :: l''.
+Proof.
+  intros l l1 l2 a HP.
+  symmetry in HP.
+  apply (Permutation_in a), in_split in HP; trivial.
+  apply in_elt.
+Qed.
+
+Lemma Permutation_vs_cons_inv : forall l l1 a,
+  Permutation l (a :: l1) -> exists l' l'', l = l' ++ a :: l''.
+Proof.
+  intros l l1 a HP.
+  rewrite <- (app_nil_l (a :: l1)) in HP.
+  apply (Permutation_vs_elt_inv _ _ _ HP).
+Qed.
+
+Lemma Permutation_vs_cons_cons_inv : forall l l' a b,
+ Permutation l (a :: b :: l') ->
+ exists l1 l2 l3, l = l1 ++ a :: l2 ++ b :: l3 \/ l = l1 ++ b :: l2 ++ a :: l3.
+Proof.
+  intros l l' a b HP.
+  destruct (Permutation_vs_cons_inv HP) as [l1 [l2]]; subst.
+  symmetry in HP.
+  apply Permutation_cons_app_inv in HP.
+  apply (Permutation_in b), in_app_or in HP; [|now apply in_eq].
+  destruct HP as [(l3 & l4 & ->)%in_split | (l3 & l4 & ->)%in_split].
+  - exists l3, l4, l2; right.
+    now rewrite <-app_assoc; simpl.
+  - now exists l1, l3, l4; left.
+Qed.
+
 Lemma NoDup_Permutation l l' : NoDup l -> NoDup l' ->
   (forall x:A, In x l <-> In x l') -> Permutation l l'.
 Proof.
@@ -367,8 +509,8 @@ Qed.
 Lemma Permutation_NoDup l l' : Permutation l l' -> NoDup l -> NoDup l'.
 Proof.
  induction 1; auto.
- * inversion_clear 1; constructor; eauto using Permutation_in.
- * inversion_clear 1 as [|? ? H1 H2]. inversion_clear H2; simpl in *.
+ - inversion_clear 1; constructor; eauto using Permutation_in.
+ - inversion_clear 1 as [|? ? H1 H2]. inversion_clear H2; simpl in *.
    constructor. simpl; intuition. constructor; intuition.
 Qed.
 
@@ -395,6 +537,63 @@ Global Instance Permutation_map' :
   Proper (@Permutation A ==> @Permutation B) (map f) | 10.
 Proof.
   exact Permutation_map.
+Qed.
+
+Lemma Permutation_map_inv : forall l1 l2,
+ Permutation l1 (map f l2) -> exists l3, l1 = map f l3 /\ Permutation l2 l3.
+Proof.
+  induction l1; intros l2 HP.
+  - exists nil; split; auto.
+    apply Permutation_nil in HP.
+    destruct l2; auto.
+    inversion HP.
+  - symmetry in HP.
+    destruct (Permutation_vs_cons_inv HP) as [l3 [l4 Heq]].
+    destruct (map_eq_app _ _ _ _ Heq) as [l1' [l2' [Heq1 [Heq2 Heq3]]]]; subst.
+    symmetry in Heq3.
+    destruct (map_eq_cons _ _ Heq3) as [b [l1'' [Heq1' [Heq2' Heq3']]]]; subst.
+    rewrite map_app in HP; simpl in HP.
+    symmetry in HP.
+    apply Permutation_cons_app_inv in HP.
+    rewrite <- map_app in HP.
+    destruct (IHl1 _ HP) as [l3 [Heq1'' Heq2'']]; subst.
+    exists (b :: l3); split; auto.
+    symmetry in Heq2''; symmetry; apply (Permutation_cons_app _ _ _ Heq2'').
+Qed.
+
+Lemma Permutation_image : forall a l l',
+ Permutation (a :: l) (map f l') -> exists a', a = f a'.
+Proof.
+  intros a l l' HP.
+  destruct (Permutation_map_inv _ HP) as [l'' [Heq _]].
+  destruct l'' as [ | a' l'']; inversion_clear Heq.
+  now exists a'.
+Qed.
+
+Lemma Permutation_elt_map_inv: forall l1 l2 l3 l4 a,
+ Permutation (l1 ++ a :: l2) (l3 ++ map f l4) -> (forall b, a <> f b) ->
+ exists l1' l2', l3 = l1' ++ a :: l2'.
+Proof.
+  intros l1 l2 l3 l4 a HP Hf.
+  apply (Permutation_in a), in_app_or in HP; [| now apply in_elt].
+  destruct HP as [HP%in_split | (x & Heq & ?)%in_map_iff]; trivial; subst.
+  now contradiction (Hf x).
+Qed.
+
+Instance Permutation_flat_map (g : A -> list B) :
+ Proper ((@Permutation A) ==> (@Permutation B)) (flat_map g).
+Proof.
+  intros l1; induction l1; intros l2 HP.
+  - now apply Permutation_nil in HP; subst.
+  - symmetry in HP.
+    destruct (Permutation_vs_cons_inv HP) as [l' [l'']]; subst.
+    symmetry in HP.
+    apply Permutation_cons_app_inv in HP.
+    rewrite flat_map_app; simpl.
+    rewrite <- (app_nil_l _).
+    apply Permutation_app_middle; simpl.
+    rewrite <- flat_map_app.
+    apply (IHl1 _ HP).
 Qed.
 
 End Permutation_map.
@@ -572,6 +771,86 @@ Proof.
 Qed.
 
 End Permutation_alt.
+
+Instance Permutation_list_sum : Proper (@Permutation nat ==> eq) list_sum.
+Proof.
+  intros l1 l2 HP; induction HP; simpl; intuition.
+  - rewrite 2 (Nat.add_comm x).
+    apply Nat.add_assoc.
+  - now transitivity (list_sum l').
+Qed.
+
+Instance Permutation_list_max : Proper (@Permutation nat ==> eq) list_max.
+Proof.
+  intros l1 l2 HP; induction HP; simpl; intuition.
+  - rewrite 2 (Nat.max_comm x).
+    apply Nat.max_assoc.
+  - now transitivity (list_max l').
+Qed.
+
+Section Permutation_transp.
+
+Variable A:Type.
+
+(** Permutation definition based on transpositions for induction with fixed length *)
+Inductive Permutation_transp : list A -> list A -> Prop :=
+| perm_t_refl : forall l, Permutation_transp l l
+| perm_t_swap : forall x y l1 l2, Permutation_transp (l1 ++ y :: x :: l2) (l1 ++ x :: y :: l2)
+| perm_t_trans l l' l'' :
+    Permutation_transp l l' -> Permutation_transp l' l'' -> Permutation_transp l l''.
+
+Instance Permutation_transp_sym : Symmetric Permutation_transp.
+Proof.
+  intros l1 l2 HP; induction HP; subst; try (now constructor).
+  now apply (perm_t_trans IHHP2).
+Qed.
+
+Instance Permutation_transp_equiv : Equivalence Permutation_transp.
+Proof.
+  split.
+  - intros l; apply perm_t_refl.
+  - apply Permutation_transp_sym.
+  - intros l1 l2 l3 ;apply perm_t_trans.
+Qed.
+
+Lemma Permutation_transp_cons : forall (x : A) l1 l2,
+ Permutation_transp l1 l2 -> Permutation_transp (x :: l1) (x :: l2).
+Proof.
+  intros x l1 l2 HP.
+  induction HP.
+  - reflexivity.
+  - rewrite 2 app_comm_cons.
+    apply perm_t_swap.
+  - now transitivity (x :: l').
+Qed.
+
+Lemma Permutation_Permutation_transp : forall l1 l2 : list A,
+ Permutation l1 l2 <-> Permutation_transp l1 l2.
+Proof.
+  intros l1 l2; split; intros HP; induction HP; intuition.
+  - now apply Permutation_transp_cons.
+  - rewrite <- (app_nil_l (y :: _)).
+    rewrite <- (app_nil_l (x :: y :: _)).
+    apply perm_t_swap.
+  - now transitivity l'.
+  - apply Permutation_app_head.
+    apply perm_swap.
+  - now transitivity l'.
+Qed.
+
+Lemma Permutation_ind_transp : forall P : list A -> list A -> Prop,
+  (forall l, P l l) ->
+  (forall x y l1 l2, P (l1 ++ y :: x :: l2) (l1 ++ x :: y :: l2)) ->
+  (forall l l' l'',
+     Permutation l l' -> P l l' -> Permutation l' l'' -> P l' l'' -> P l l'') ->
+  forall l1 l2, Permutation l1 l2 -> P l1 l2.
+Proof.
+  intros P Hr Ht Htr l1 l2 HP; apply Permutation_Permutation_transp in HP.
+  revert Hr Ht Htr; induction HP; intros Hr Ht Htr; auto.
+  apply (Htr _ l'); intuition; now apply Permutation_Permutation_transp.
+Qed.
+
+End Permutation_transp.
 
 (* begin hide *)
 Notation Permutation_app_swap := Permutation_app_comm (only parsing).
