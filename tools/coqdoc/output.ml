@@ -469,6 +469,11 @@ module Latex = struct
 
   let stop_emph () = printf "}"
 
+  let start_details _ = ()
+
+  let stop_details () = ()
+
+
   let start_comment () = printf "\\begin{coqdoccomment}\n"
 
   let end_comment () = printf "\\end{coqdoccomment}\n"
@@ -739,6 +744,12 @@ module Html = struct
   let start_emph () = printf "<i>"
 
   let stop_emph () = printf "</i>"
+
+  let start_details = function
+    | Some s -> printf "<details><summary>%s</summary>" s
+    | _ -> printf "<details>"
+
+  let stop_details () = printf "</details>"
 
   let start_comment () = printf "<span class=\"comment\">(*"
 
@@ -1053,6 +1064,9 @@ module TeXmacs = struct
   let start_emph () = printf "<with|font shape|italic|"
   let stop_emph () = printf ">"
 
+  let start_details _ = ()
+  let stop_details () = ()
+
   let start_comment () = ()
   let end_comment () = ()
 
@@ -1158,6 +1172,9 @@ module Raw = struct
 
   let start_emph () = printf "_"
   let stop_emph () = printf "_"
+
+  let start_details _ = ()
+  let stop_details () = ()
 
   let start_comment () = printf "(*"
   let end_comment () = printf "*)"
@@ -1271,6 +1288,11 @@ let start_emph =
   select Latex.start_emph Html.start_emph TeXmacs.start_emph Raw.start_emph
 let stop_emph =
   select Latex.stop_emph Html.stop_emph TeXmacs.stop_emph Raw.stop_emph
+
+let start_details =
+  select Latex.start_details Html.start_details TeXmacs.start_details Raw.start_details
+let stop_details =
+  select Latex.stop_details Html.stop_details TeXmacs.stop_details Raw.stop_details
 
 let start_latex_math =
   select Latex.start_latex_math Html.start_latex_math TeXmacs.start_latex_math Raw.start_latex_math

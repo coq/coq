@@ -116,6 +116,11 @@
   let begin_show () = save_state (); Cdglobals.gallina := false; Cdglobals.light := false
   let end_show () = restore_state ()
 
+  let begin_details s =
+    save_state (); Cdglobals.gallina := false; Cdglobals.light := false;
+    Output.start_details s
+  let end_details () = Output.stop_details (); restore_state ()
+
   (* Reset the globals *)
 
   let reset () =
@@ -434,6 +439,8 @@ let begin_hide = "(*" space* "begin" space+ "hide" space* "*)" space* nl
 let end_hide = "(*" space* "end" space+ "hide" space* "*)" space* nl
 let begin_show = "(*" space* "begin" space+ "show" space* "*)" space* nl
 let end_show = "(*" space* "end" space+ "show" space* "*)" space* nl
+let begin_details = "(*" space* "begin" space+ "details" space*
+let end_details = "(*" space* "end" space+ "details" space* "*)" space* nl
 (*
 let begin_verb = "(*" space* "begin" space+ "verb" space* "*)"
 let end_verb = "(*" space* "end" space+ "verb" space* "*)"
@@ -460,6 +467,11 @@ rule coq_bol = parse
       { begin_show (); coq_bol lexbuf }
   | space* end_show
       { end_show (); coq_bol lexbuf }
+  | space* begin_details
+      { let s = details_body lexbuf in
+        Output.end_coq (); begin_details s; Output.start_coq (); coq_bol lexbuf }
+  | space* end_details
+      { Output.end_coq (); end_details (); Output.start_coq (); coq_bol lexbuf }
   | space* (("Local"|"Global") space+)? gallina_kw_to_hide
       { let s = lexeme lexbuf in
 	  if !Cdglobals.light && section_or_end s then
@@ -1220,6 +1232,19 @@ and printing_token_body = parse
 	  s }
   | _   { Buffer.add_string token_buffer (lexeme lexbuf);
 	  printing_token_body lexbuf }
+
+and details_body = parse
+  | "*)" space* nl? | eof
+        { None }
+  | ":" space*  { details_body_rec lexbuf }
+
+and details_body_rec = parse
+  | "*)" space* nl? | eof
+        { let s = Buffer.contents token_buffer in
+          Buffer.clear token_buffer;
+          Some s }
+  | _   { Buffer.add_string token_buffer (lexeme lexbuf);
+          details_body_rec lexbuf }
 
 (*s These handle inference rules, parsing the body segments of things
     enclosed in [[[  ]]] brackets *)
