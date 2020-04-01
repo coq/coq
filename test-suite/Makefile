@@ -38,7 +38,8 @@ ROOT='$(shell cd ..; pwd)'
 
 ifneq ($(wildcard ../_build),)
 BIN:=$(ROOT)/_build/install/default/bin/
-COQLIB:=$(ROOT)/_build/install/default/lib/coq
+# COQLIB is an env variable so no quotes
+COQLIB:=$(shell cd ..; pwd)/_build/install/default/lib/coq
 else
 BIN := $(ROOT)/bin/
 
