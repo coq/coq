@@ -128,7 +128,6 @@ end
 type state = constr * constr Stack.t
 
 type reduction_function = env -> evar_map -> constr -> constr
-type local_reduction_function = evar_map -> constr -> constr
 
 type e_reduction_function = env -> evar_map -> constr -> evar_map * constr
 
@@ -150,8 +149,6 @@ val strong_with_flags :
   (CClosure.RedFlags.reds -> reduction_function) ->
   (CClosure.RedFlags.reds -> reduction_function)
 val strong : reduction_function -> reduction_function
-val local_strong : local_reduction_function -> local_reduction_function
-val strong_prodspine : local_reduction_function -> local_reduction_function
 (*i
 val stack_reduction_of_reduction :
   'a reduction_function -> 'a state_reduction_function

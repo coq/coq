@@ -604,7 +604,6 @@ end
 type state = constr * constr Stack.t
 
 type reduction_function = env -> evar_map -> constr -> constr
-type local_reduction_function = evar_map -> constr -> constr
 type e_reduction_function = env -> evar_map -> constr -> evar_map * constr
 
 type contextual_stack_reduction_function =
@@ -648,16 +647,6 @@ let strong whdfun env sigma t =
   let rec strongrec env t =
     map_constr_with_full_binders sigma push_rel strongrec env (whdfun env sigma t) in
   strongrec env t
-
-let local_strong whdfun sigma =
-  let rec strongrec t = EConstr.map sigma strongrec (whdfun sigma t) in
-  strongrec
-
-let rec strong_prodspine redfun sigma c =
-  let x = redfun sigma c in
-  match EConstr.kind sigma x with
-    | Prod (na,a,b) -> mkProd (na,a,strong_prodspine redfun sigma b)
-    | _ -> x
 
 (*************************************)
 (*** Reduction using bindingss ***)

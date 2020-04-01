@@ -1641,7 +1641,8 @@ let make_pattern_test from_prefix_of_ind is_correct_type env sigma (pending,c) =
   (fun test -> match test.testing_state with
   | None -> None
   | Some (sigma,_,l) ->
-     let c = applist (local_strong whd_meta sigma c, l) in
+    let rec strong_whd_meta t = EConstr.map sigma strong_whd_meta (whd_meta sigma t) in
+    let c = applist (strong_whd_meta c, l) in
      Some (sigma, c))
 
 let make_eq_test env evd c =
