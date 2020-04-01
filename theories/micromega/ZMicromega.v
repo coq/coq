@@ -564,9 +564,13 @@ Inductive ZArithProof :=
 .
 (*| SplitProof :   PolC Z -> ZArithProof -> ZArithProof -> ZArithProof.*)
 
+Register ZArithProof as micromega.ZArithProof.type.
+Register DoneProof   as micromega.ZArithProof.DoneProof.
+Register RatProof    as micromega.ZArithProof.RatProof.
+Register CutProof    as micromega.ZArithProof.CutProof.
+Register EnumProof   as micromega.ZArithProof.EnumProof.
+Register ExProof     as micromega.ZArithProof.ExProof.
 
-
-(* n/d <= x  -> d*x - n >= 0 *)
 
 
 (* In order to compute the 'cut', we need to express a polynomial P as a * Q + b.

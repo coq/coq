@@ -25,6 +25,8 @@ Inductive Empty_set : Set :=.
 Inductive unit : Set :=
     tt : unit.
 
+Register unit as core.unit.type.
+Register tt as core.unit.tt.
 
 (********************************************************************)
 (** * The boolean datatype *)
@@ -196,6 +198,10 @@ Notation "x + y" := (sum x y) : type_scope.
 
 Arguments inl {A B} _ , [A] B _.
 Arguments inr {A B} _ , A [B] _.
+
+Register sum as core.sum.type.
+Register inl as core.sum.inl.
+Register inr as core.sum.inr.
 
 (** [prod A B], written [A * B], is the product of [A] and [B];
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)

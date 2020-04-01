@@ -298,6 +298,15 @@ Inductive Psatz : Type :=
 | PsatzC    : C -> Psatz
 | PsatzZ    : Psatz.
 
+Register PsatzIn     as micromega.Psatz.PsatzIn.
+Register PsatzSquare as micromega.Psatz.PsatzSquare.
+Register PsatzMulC   as micromega.Psatz.PsatzMulC.
+Register PsatzMulE   as micromega.Psatz.PsatzMulE.
+Register PsatzAdd    as micromega.Psatz.PsatzAdd.
+Register PsatzC      as micromega.Psatz.PsatzC.
+Register PsatzZ      as micromega.Psatz.PsatzZ.
+
+
 (** Given a list [l] of NFormula and an extended polynomial expression
    [e], if [eval_Psatz l e] succeeds (= Some f) then [f] is a
    logic consequence of the conjunction of the formulae in l.
@@ -672,6 +681,13 @@ Inductive Op2 : Set := (* binary relations *)
 | OpLt
 | OpGt.
 
+Register OpEq  as micromega.Op2.OpEq.
+Register OpNEq as micromega.Op2.OpNEq.
+Register OpLe  as micromega.Op2.OpLe.
+Register OpGe  as micromega.Op2.OpGe.
+Register OpLt  as micromega.Op2.OpLt.
+Register OpGt  as micromega.Op2.OpGt.
+
 Definition eval_op2 (o : Op2) : R -> R -> Prop :=
 match o with
 | OpEq => req
@@ -686,11 +702,14 @@ Definition  eval_pexpr : PolEnv -> PExpr C -> R :=
  PEeval rplus rtimes rminus ropp phi pow_phi rpow.
 
 #[universes(template)]
-Record Formula (T:Type) : Type := {
+Record Formula (T:Type) : Type := Build_Formula{
   Flhs : PExpr T;
   Fop : Op2;
   Frhs : PExpr T
 }.
+
+Register Formula as micromega.Formula.type.
+Register Build_Formula as micromega.Formula.Build_Formula.
 
 Definition eval_formula (env : PolEnv) (f : Formula C) : Prop :=
   let (lhs, op, rhs) := f in

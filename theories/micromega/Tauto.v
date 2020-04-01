@@ -37,6 +37,16 @@ Section S.
   | N    : GFormula  -> GFormula
   | I    : GFormula  -> option AF -> GFormula  -> GFormula.
 
+  Register TT as micromega.GFormula.TT.
+  Register FF as micromega.GFormula.FF.
+  Register X  as micromega.GFormula.X.
+  Register A  as micromega.GFormula.A.
+  Register Cj as micromega.GFormula.Cj.
+  Register D  as micromega.GFormula.D.
+  Register N  as micromega.GFormula.N.
+  Register I  as micromega.GFormula.I.
+
+
   Section MAPX.
     Variable F : TX -> TX.
 
@@ -136,6 +146,8 @@ End S.
 
 (** Typical boolean formulae *)
 Definition BFormula (A : Type) := @GFormula A Prop unit unit.
+
+Register BFormula as micromega.BFormula.type.
 
 Section MAPATOMS.
   Context {TA TA':Type}.

@@ -35,6 +35,7 @@ Require Import List.
 (** Ground terms (see [GT] below) are built inductively from declared constants. *)
 
 Class DeclaredConstant {T : Type} (F : T).
+Register DeclaredConstant as micromega.DeclaredConstant.type.
 
 Class GT {T : Type} (F : T).
 

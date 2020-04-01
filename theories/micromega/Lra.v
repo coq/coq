@@ -20,6 +20,7 @@ Require Import Rdefinitions.
 Require Import RingMicromega.
 Require Import VarMap.
 Require Coq.micromega.Tauto.
+Require Import Rregisternames.
 Declare ML Module "micromega_plugin".
 
 Ltac rchange := 

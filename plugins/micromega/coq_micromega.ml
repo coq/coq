@@ -171,249 +171,142 @@ let selecti s m =
       *)
 module M = struct
   (**
-    * Location of the Coq libraries.
-    *)
-
-  let logic_dir = ["Coq"; "Logic"; "Decidable"]
-
-  let mic_modules =
-    [ ["Coq"; "Lists"; "List"]
-    ; ["Coq"; "micromega"; "ZMicromega"]
-    ; ["Coq"; "micromega"; "Tauto"]
-    ; ["Coq"; "micromega"; "DeclConstant"]
-    ; ["Coq"; "micromega"; "RingMicromega"]
-    ; ["Coq"; "micromega"; "EnvRing"]
-    ; ["Coq"; "micromega"; "ZMicromega"]
-    ; ["Coq"; "micromega"; "RMicromega"]
-    ; ["Coq"; "micromega"; "Tauto"]
-    ; ["Coq"; "micromega"; "RingMicromega"]
-    ; ["Coq"; "micromega"; "EnvRing"]
-    ; ["Coq"; "QArith"; "QArith_base"]
-    ; ["Coq"; "Reals"; "Rdefinitions"]
-    ; ["Coq"; "Reals"; "Rpow_def"]
-    ; ["LRing_normalise"] ]
-
-  [@@@ocaml.warning "-3"]
-
-  let coq_modules =
-    Coqlib.(
-      init_modules @ [logic_dir] @ arith_modules @ zarith_base_modules
-      @ mic_modules)
-
-  let bin_module = [["Coq"; "Numbers"; "BinNums"]]
-
-  let r_modules =
-    [ ["Coq"; "Reals"; "Rdefinitions"]
-    ; ["Coq"; "Reals"; "Rpow_def"]
-    ; ["Coq"; "Reals"; "Raxioms"]
-    ; ["Coq"; "QArith"; "Qreals"] ]
-
-  let z_modules = [["Coq"; "ZArith"; "BinInt"]]
-
-  (**
     * Initialization : a large amount of Caml symbols are derived from
     * ZMicromega.v
     *)
 
-  let gen_constant_in_modules s m n =
+  let constr_of_ref str =
     EConstr.of_constr
-      ( UnivGen.constr_of_monomorphic_global
-      @@ Coqlib.gen_reference_in_modules s m n )
+      (UnivGen.constr_of_monomorphic_global (Coqlib.lib_ref str))
 
-  let init_constant = gen_constant_in_modules "ZMicromega" Coqlib.init_modules
-
-  [@@@ocaml.warning "+3"]
-
-  let constant = gen_constant_in_modules "ZMicromega" coq_modules
-  let bin_constant = gen_constant_in_modules "ZMicromega" bin_module
-  let r_constant = gen_constant_in_modules "ZMicromega" r_modules
-  let z_constant = gen_constant_in_modules "ZMicromega" z_modules
-  let m_constant = gen_constant_in_modules "ZMicromega" mic_modules
-  let coq_and = lazy (init_constant "and")
-  let coq_or = lazy (init_constant "or")
-  let coq_not = lazy (init_constant "not")
-  let coq_iff = lazy (init_constant "iff")
-  let coq_True = lazy (init_constant "True")
-  let coq_False = lazy (init_constant "False")
-  let coq_cons = lazy (constant "cons")
-  let coq_nil = lazy (constant "nil")
-  let coq_list = lazy (constant "list")
-  let coq_O = lazy (init_constant "O")
-  let coq_S = lazy (init_constant "S")
-  let coq_nat = lazy (init_constant "nat")
-  let coq_unit = lazy (init_constant "unit")
+  let coq_and = lazy (constr_of_ref "core.and.type")
+  let coq_or = lazy (constr_of_ref "core.or.type")
+  let coq_not = lazy (constr_of_ref "core.not.type")
+  let coq_iff = lazy (constr_of_ref "core.iff.type")
+  let coq_True = lazy (constr_of_ref "core.True.type")
+  let coq_False = lazy (constr_of_ref "core.False.type")
+  let coq_cons = lazy (constr_of_ref "core.list.cons")
+  let coq_nil = lazy (constr_of_ref "core.list.nil")
+  let coq_list = lazy (constr_of_ref "core.list.type")
+  let coq_O = lazy (constr_of_ref "num.nat.O")
+  let coq_S = lazy (constr_of_ref "num.nat.S")
+  let coq_nat = lazy (constr_of_ref "num.nat.type")
+  let coq_unit = lazy (constr_of_ref "core.unit.type")
 
   (*  let coq_option = lazy (init_constant "option")*)
-  let coq_None = lazy (init_constant "None")
-  let coq_tt = lazy (init_constant "tt")
-  let coq_Inl = lazy (init_constant "inl")
-  let coq_Inr = lazy (init_constant "inr")
-  let coq_N0 = lazy (bin_constant "N0")
-  let coq_Npos = lazy (bin_constant "Npos")
-  let coq_xH = lazy (bin_constant "xH")
-  let coq_xO = lazy (bin_constant "xO")
-  let coq_xI = lazy (bin_constant "xI")
-  let coq_Z = lazy (bin_constant "Z")
-  let coq_ZERO = lazy (bin_constant "Z0")
-  let coq_POS = lazy (bin_constant "Zpos")
-  let coq_NEG = lazy (bin_constant "Zneg")
-  let coq_Q = lazy (constant "Q")
-  let coq_R = lazy (constant "R")
-  let coq_Qmake = lazy (constant "Qmake")
-  let coq_Rcst = lazy (constant "Rcst")
-  let coq_C0 = lazy (m_constant "C0")
-  let coq_C1 = lazy (m_constant "C1")
-  let coq_CQ = lazy (m_constant "CQ")
-  let coq_CZ = lazy (m_constant "CZ")
-  let coq_CPlus = lazy (m_constant "CPlus")
-  let coq_CMinus = lazy (m_constant "CMinus")
-  let coq_CMult = lazy (m_constant "CMult")
-  let coq_CPow = lazy (m_constant "CPow")
-  let coq_CInv = lazy (m_constant "CInv")
-  let coq_COpp = lazy (m_constant "COpp")
-  let coq_R0 = lazy (constant "R0")
-  let coq_R1 = lazy (constant "R1")
-  let coq_proofTerm = lazy (constant "ZArithProof")
-  let coq_doneProof = lazy (constant "DoneProof")
-  let coq_ratProof = lazy (constant "RatProof")
-  let coq_cutProof = lazy (constant "CutProof")
-  let coq_enumProof = lazy (constant "EnumProof")
-  let coq_ExProof = lazy (constant "ExProof")
-  let coq_Zgt = lazy (z_constant "Z.gt")
-  let coq_Zge = lazy (z_constant "Z.ge")
-  let coq_Zle = lazy (z_constant "Z.le")
-  let coq_Zlt = lazy (z_constant "Z.lt")
-  let coq_Eq = lazy (init_constant "eq")
-  let coq_Zplus = lazy (z_constant "Z.add")
-  let coq_Zminus = lazy (z_constant "Z.sub")
-  let coq_Zopp = lazy (z_constant "Z.opp")
-  let coq_Zmult = lazy (z_constant "Z.mul")
-  let coq_Zpower = lazy (z_constant "Z.pow")
-  let coq_Qle = lazy (constant "Qle")
-  let coq_Qlt = lazy (constant "Qlt")
-  let coq_Qeq = lazy (constant "Qeq")
-  let coq_Qplus = lazy (constant "Qplus")
-  let coq_Qminus = lazy (constant "Qminus")
-  let coq_Qopp = lazy (constant "Qopp")
-  let coq_Qmult = lazy (constant "Qmult")
-  let coq_Qpower = lazy (constant "Qpower")
-  let coq_Rgt = lazy (r_constant "Rgt")
-  let coq_Rge = lazy (r_constant "Rge")
-  let coq_Rle = lazy (r_constant "Rle")
-  let coq_Rlt = lazy (r_constant "Rlt")
-  let coq_Rplus = lazy (r_constant "Rplus")
-  let coq_Rminus = lazy (r_constant "Rminus")
-  let coq_Ropp = lazy (r_constant "Ropp")
-  let coq_Rmult = lazy (r_constant "Rmult")
-  let coq_Rinv = lazy (r_constant "Rinv")
-  let coq_Rpower = lazy (r_constant "pow")
-  let coq_powerZR = lazy (r_constant "powerRZ")
-  let coq_IZR = lazy (r_constant "IZR")
-  let coq_IQR = lazy (r_constant "Q2R")
-  let coq_PEX = lazy (constant "PEX")
-  let coq_PEc = lazy (constant "PEc")
-  let coq_PEadd = lazy (constant "PEadd")
-  let coq_PEopp = lazy (constant "PEopp")
-  let coq_PEmul = lazy (constant "PEmul")
-  let coq_PEsub = lazy (constant "PEsub")
-  let coq_PEpow = lazy (constant "PEpow")
-  let coq_PX = lazy (constant "PX")
-  let coq_Pc = lazy (constant "Pc")
-  let coq_Pinj = lazy (constant "Pinj")
-  let coq_OpEq = lazy (constant "OpEq")
-  let coq_OpNEq = lazy (constant "OpNEq")
-  let coq_OpLe = lazy (constant "OpLe")
-  let coq_OpLt = lazy (constant "OpLt")
-  let coq_OpGe = lazy (constant "OpGe")
-  let coq_OpGt = lazy (constant "OpGt")
-  let coq_PsatzIn = lazy (constant "PsatzIn")
-  let coq_PsatzSquare = lazy (constant "PsatzSquare")
-  let coq_PsatzMulE = lazy (constant "PsatzMulE")
-  let coq_PsatzMultC = lazy (constant "PsatzMulC")
-  let coq_PsatzAdd = lazy (constant "PsatzAdd")
-  let coq_PsatzC = lazy (constant "PsatzC")
-  let coq_PsatzZ = lazy (constant "PsatzZ")
+  let coq_None = lazy (constr_of_ref "core.option.None")
+  let coq_tt = lazy (constr_of_ref "core.unit.tt")
+  let coq_Inl = lazy (constr_of_ref "core.sum.inl")
+  let coq_Inr = lazy (constr_of_ref "core.sum.inr")
+  let coq_N0 = lazy (constr_of_ref "num.N.N0")
+  let coq_Npos = lazy (constr_of_ref "num.N.Npos")
+  let coq_xH = lazy (constr_of_ref "num.pos.xH")
+  let coq_xO = lazy (constr_of_ref "num.pos.xO")
+  let coq_xI = lazy (constr_of_ref "num.pos.xI")
+  let coq_Z = lazy (constr_of_ref "num.Z.type")
+  let coq_ZERO = lazy (constr_of_ref "num.Z.Z0")
+  let coq_POS = lazy (constr_of_ref "num.Z.Zpos")
+  let coq_NEG = lazy (constr_of_ref "num.Z.Zneg")
+  let coq_Q = lazy (constr_of_ref "rat.Q.type")
+  let coq_Qmake = lazy (constr_of_ref "rat.Q.Qmake")
+  let coq_R = lazy (constr_of_ref "reals.R.type")
+  let coq_Rcst = lazy (constr_of_ref "micromega.Rcst.type")
+  let coq_C0 = lazy (constr_of_ref "micromega.Rcst.C0")
+  let coq_C1 = lazy (constr_of_ref "micromega.Rcst.C1")
+  let coq_CQ = lazy (constr_of_ref "micromega.Rcst.CQ")
+  let coq_CZ = lazy (constr_of_ref "micromega.Rcst.CZ")
+  let coq_CPlus = lazy (constr_of_ref "micromega.Rcst.CPlus")
+  let coq_CMinus = lazy (constr_of_ref "micromega.Rcst.CMinus")
+  let coq_CMult = lazy (constr_of_ref "micromega.Rcst.CMult")
+  let coq_CPow = lazy (constr_of_ref "micromega.Rcst.CPow")
+  let coq_CInv = lazy (constr_of_ref "micromega.Rcst.CInv")
+  let coq_COpp = lazy (constr_of_ref "micromega.Rcst.COpp")
+  let coq_R0 = lazy (constr_of_ref "reals.R.R0")
+  let coq_R1 = lazy (constr_of_ref "reals.R.R1")
+  let coq_proofTerm = lazy (constr_of_ref "micromega.ZArithProof.type")
+  let coq_doneProof = lazy (constr_of_ref "micromega.ZArithProof.DoneProof")
+  let coq_ratProof = lazy (constr_of_ref "micromega.ZArithProof.RatProof")
+  let coq_cutProof = lazy (constr_of_ref "micromega.ZArithProof.CutProof")
+  let coq_enumProof = lazy (constr_of_ref "micromega.ZArithProof.EnumProof")
+  let coq_ExProof = lazy (constr_of_ref "micromega.ZArithProof.ExProof")
+  let coq_Zgt = lazy (constr_of_ref "num.Z.gt")
+  let coq_Zge = lazy (constr_of_ref "num.Z.ge")
+  let coq_Zle = lazy (constr_of_ref "num.Z.le")
+  let coq_Zlt = lazy (constr_of_ref "num.Z.lt")
+  let coq_Eq = lazy (constr_of_ref "core.eq.type")
+  let coq_Zplus = lazy (constr_of_ref "num.Z.add")
+  let coq_Zminus = lazy (constr_of_ref "num.Z.sub")
+  let coq_Zopp = lazy (constr_of_ref "num.Z.opp")
+  let coq_Zmult = lazy (constr_of_ref "num.Z.mul")
+  let coq_Zpower = lazy (constr_of_ref "num.Z.pow")
+  let coq_Qle = lazy (constr_of_ref "rat.Q.Qle")
+  let coq_Qlt = lazy (constr_of_ref "rat.Q.Qlt")
+  let coq_Qeq = lazy (constr_of_ref "rat.Q.Qeq")
+  let coq_Qplus = lazy (constr_of_ref "rat.Q.Qplus")
+  let coq_Qminus = lazy (constr_of_ref "rat.Q.Qminus")
+  let coq_Qopp = lazy (constr_of_ref "rat.Q.Qopp")
+  let coq_Qmult = lazy (constr_of_ref "rat.Q.Qmult")
+  let coq_Qpower = lazy (constr_of_ref "rat.Q.Qpower")
+  let coq_Rgt = lazy (constr_of_ref "reals.R.Rgt")
+  let coq_Rge = lazy (constr_of_ref "reals.R.Rge")
+  let coq_Rle = lazy (constr_of_ref "reals.R.Rle")
+  let coq_Rlt = lazy (constr_of_ref "reals.R.Rlt")
+  let coq_Rplus = lazy (constr_of_ref "reals.R.Rplus")
+  let coq_Rminus = lazy (constr_of_ref "reals.R.Rminus")
+  let coq_Ropp = lazy (constr_of_ref "reals.R.Ropp")
+  let coq_Rmult = lazy (constr_of_ref "reals.R.Rmult")
+  let coq_Rinv = lazy (constr_of_ref "reals.R.Rinv")
+  let coq_Rpower = lazy (constr_of_ref "reals.R.pow")
+  let coq_powerZR = lazy (constr_of_ref "reals.R.powerRZ")
+  let coq_IZR = lazy (constr_of_ref "reals.R.IZR")
+  let coq_IQR = lazy (constr_of_ref "reals.R.Q2R")
+  let coq_PEX = lazy (constr_of_ref "micromega.PExpr.PEX")
+  let coq_PEc = lazy (constr_of_ref "micromega.PExpr.PEc")
+  let coq_PEadd = lazy (constr_of_ref "micromega.PExpr.PEadd")
+  let coq_PEopp = lazy (constr_of_ref "micromega.PExpr.PEopp")
+  let coq_PEmul = lazy (constr_of_ref "micromega.PExpr.PEmul")
+  let coq_PEsub = lazy (constr_of_ref "micromega.PExpr.PEsub")
+  let coq_PEpow = lazy (constr_of_ref "micromega.PExpr.PEpow")
+  let coq_PX = lazy (constr_of_ref "micromega.Pol.PX")
+  let coq_Pc = lazy (constr_of_ref "micromega.Pol.Pc")
+  let coq_Pinj = lazy (constr_of_ref "micromega.Pol.Pinj")
+  let coq_OpEq = lazy (constr_of_ref "micromega.Op2.OpEq")
+  let coq_OpNEq = lazy (constr_of_ref "micromega.Op2.OpNEq")
+  let coq_OpLe = lazy (constr_of_ref "micromega.Op2.OpLe")
+  let coq_OpLt = lazy (constr_of_ref "micromega.Op2.OpLt")
+  let coq_OpGe = lazy (constr_of_ref "micromega.Op2.OpGe")
+  let coq_OpGt = lazy (constr_of_ref "micromega.Op2.OpGt")
+  let coq_PsatzIn = lazy (constr_of_ref "micromega.Psatz.PsatzIn")
+  let coq_PsatzSquare = lazy (constr_of_ref "micromega.Psatz.PsatzSquare")
+  let coq_PsatzMulE = lazy (constr_of_ref "micromega.Psatz.PsatzMulE")
+  let coq_PsatzMultC = lazy (constr_of_ref "micromega.Psatz.PsatzMulC")
+  let coq_PsatzAdd = lazy (constr_of_ref "micromega.Psatz.PsatzAdd")
+  let coq_PsatzC = lazy (constr_of_ref "micromega.Psatz.PsatzC")
+  let coq_PsatzZ = lazy (constr_of_ref "micromega.Psatz.PsatzZ")
 
   (*  let coq_GT     = lazy (m_constant "GT")*)
 
-  let coq_DeclaredConstant = lazy (m_constant "DeclaredConstant")
+  let coq_DeclaredConstant =
+    lazy (constr_of_ref "micromega.DeclaredConstant.type")
 
-  let coq_TT =
-    lazy
-      (gen_constant_in_modules "ZMicromega"
-         [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
-         "TT")
-
-  let coq_FF =
-    lazy
-      (gen_constant_in_modules "ZMicromega"
-         [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
-         "FF")
-
-  let coq_And =
-    lazy
-      (gen_constant_in_modules "ZMicromega"
-         [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
-         "Cj")
-
-  let coq_Or =
-    lazy
-      (gen_constant_in_modules "ZMicromega"
-         [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
-         "D")
-
-  let coq_Neg =
-    lazy
-      (gen_constant_in_modules "ZMicromega"
-         [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
-         "N")
-
-  let coq_Atom =
-    lazy
-      (gen_constant_in_modules "ZMicromega"
-         [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
-         "A")
-
-  let coq_X =
-    lazy
-      (gen_constant_in_modules "ZMicromega"
-         [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
-         "X")
-
-  let coq_Impl =
-    lazy
-      (gen_constant_in_modules "ZMicromega"
-         [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
-         "I")
-
-  let coq_Formula =
-    lazy
-      (gen_constant_in_modules "ZMicromega"
-         [["Coq"; "micromega"; "Tauto"]; ["Tauto"]]
-         "BFormula")
+  let coq_TT = lazy (constr_of_ref "micromega.GFormula.TT")
+  let coq_FF = lazy (constr_of_ref "micromega.GFormula.FF")
+  let coq_And = lazy (constr_of_ref "micromega.GFormula.Cj")
+  let coq_Or = lazy (constr_of_ref "micromega.GFormula.D")
+  let coq_Neg = lazy (constr_of_ref "micromega.GFormula.N")
+  let coq_Atom = lazy (constr_of_ref "micromega.GFormula.A")
+  let coq_X = lazy (constr_of_ref "micromega.GFormula.X")
+  let coq_Impl = lazy (constr_of_ref "micromega.GFormula.I")
+  let coq_Formula = lazy (constr_of_ref "micromega.BFormula.type")
 
   (**
     * Initialization : a few Caml symbols are derived from other libraries;
     * QMicromega, ZArithRing, RingMicromega.
     *)
 
-  let coq_QWitness =
-    lazy
-      (gen_constant_in_modules "QMicromega"
-         [["Coq"; "micromega"; "QMicromega"]]
-         "QWitness")
-
-  let coq_Build =
-    lazy
-      (gen_constant_in_modules "RingMicromega"
-         [["Coq"; "micromega"; "RingMicromega"]; ["RingMicromega"]]
-         "Build_Formula")
-
-  let coq_Cstr =
-    lazy
-      (gen_constant_in_modules "RingMicromega"
-         [["Coq"; "micromega"; "RingMicromega"]; ["RingMicromega"]]
-         "Formula")
+  let coq_QWitness = lazy (constr_of_ref "micromega.QWitness.type")
+  let coq_Build = lazy (constr_of_ref "micromega.Formula.Build_Formula")
+  let coq_Cstr = lazy (constr_of_ref "micromega.Formula.type")
 
   (**
     * Parsing and dumping : transformation functions between Caml and Coq
@@ -1361,29 +1254,10 @@ end
 
 open M
 
-let coq_Branch =
-  lazy
-    (gen_constant_in_modules "VarMap"
-       [["Coq"; "micromega"; "VarMap"]; ["VarMap"]]
-       "Branch")
-
-let coq_Elt =
-  lazy
-    (gen_constant_in_modules "VarMap"
-       [["Coq"; "micromega"; "VarMap"]; ["VarMap"]]
-       "Elt")
-
-let coq_Empty =
-  lazy
-    (gen_constant_in_modules "VarMap"
-       [["Coq"; "micromega"; "VarMap"]; ["VarMap"]]
-       "Empty")
-
-let coq_VarMap =
-  lazy
-    (gen_constant_in_modules "VarMap"
-       [["Coq"; "micromega"; "VarMap"]; ["VarMap"]]
-       "t")
+let coq_Branch = lazy (constr_of_ref "micromega.VarMap.Branch")
+let coq_Elt = lazy (constr_of_ref "micromega.VarMap.Elt")
+let coq_Empty = lazy (constr_of_ref "micromega.VarMap.Empty")
+let coq_VarMap = lazy (constr_of_ref "micromega.VarMap.type")
 
 let rec dump_varmap typ m =
   match m with
@@ -1943,13 +1817,7 @@ let micromega_order_changer cert env ff =
                [ ( "__ff"
                  , ff
                  , EConstr.mkApp (Lazy.force coq_Formula, [|formula_typ|]) )
-               ; ( "__varmap"
-                 , vm
-                 , EConstr.mkApp
-                     ( gen_constant_in_modules "VarMap"
-                         [["Coq"; "micromega"; "VarMap"]; ["VarMap"]]
-                         "t"
-                     , [|typ|] ) )
+               ; ("__varmap", vm, EConstr.mkApp (Lazy.force coq_VarMap, [|typ|]))
                ; ("__wit", cert, cert_typ) ]
                (Tacmach.New.pf_concl gl))
           (*      Tacticals.New.tclTHENLIST (List.map (fun id ->  (Tactics.introduction id)) ids)*)
