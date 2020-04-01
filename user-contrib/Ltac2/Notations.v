@@ -396,6 +396,39 @@ Ltac2 Notation "native_compute" pl(opt(seq(pattern, occurrences))) cl(opt(clause
   Std.native pl (default_on_concl cl).
 Ltac2 Notation native_compute := native_compute.
 
+Ltac2 Notation "eval" "red" "in" c(constr) :=
+  Std.eval_red c.
+
+Ltac2 Notation "eval" "hnf" "in" c(constr) :=
+  Std.eval_hnf c.
+
+Ltac2 Notation "eval" "simpl" s(strategy) pl(opt(seq(pattern, occurrences))) "in" c(constr) :=
+  Std.eval_simpl s pl c.
+
+Ltac2 Notation "eval" "cbv" s(strategy) "in" c(constr) :=
+  Std.eval_cbv s c.
+
+Ltac2 Notation "eval" "cbn" s(strategy) "in" c(constr) :=
+  Std.eval_cbn s c.
+
+Ltac2 Notation "eval" "lazy" s(strategy) "in" c(constr) :=
+  Std.eval_lazy s c.
+
+Ltac2 Notation "eval" "unfold" pl(list1(seq(reference, occurrences), ",")) "in" c(constr) :=
+  Std.eval_unfold pl c.
+
+Ltac2 Notation "eval" "fold" pl(thunk(list1(open_constr))) "in" c(constr) :=
+  Std.eval_fold (pl ()) c.
+
+Ltac2 Notation "eval" "pattern" pl(list1(seq(constr, occurrences), ",")) "in" c(constr) :=
+  Std.eval_pattern pl c.
+
+Ltac2 Notation "eval" "vm_compute" pl(opt(seq(pattern, occurrences))) "in" c(constr) :=
+  Std.eval_vm pl c.
+
+Ltac2 Notation "eval" "native_compute" pl(opt(seq(pattern, occurrences))) "in" c(constr) :=
+  Std.eval_native pl c.
+
 Ltac2 change0 p cl :=
   let (pat, c) := p in
   Std.change pat c (default_on_concl cl).
