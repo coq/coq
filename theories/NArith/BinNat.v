@@ -943,6 +943,64 @@ Proof.
  destruct p; simpl; trivial.
 Qed.
 
+(** ** Properties of [iter] *)
+
+Lemma iter_swap_gen : forall A B (f:A -> B) (g:A -> A) (h:B -> B),
+ (forall a, f (g a) = h (f a)) -> forall n a,
+ f (iter n g a) = iter n h (f a).
+Proof.
+ destruct n; simpl; intros; rewrite ?H; trivial.
+ now apply Pos.iter_swap_gen.
+Qed.
+
+Theorem iter_swap :
+  forall n (A:Type) (f:A -> A) (x:A),
+    iter n f (f x) = f (iter n f x).
+Proof.
+ intros. symmetry. now apply iter_swap_gen.
+Qed.
+
+Theorem iter_succ :
+  forall n (A:Type) (f:A -> A) (x:A),
+    iter (succ n) f x = f (iter n f x).
+Proof.
+ destruct n; intros; simpl; trivial.
+ now apply Pos.iter_succ.
+Qed.
+
+Theorem iter_succ_r :
+  forall n (A:Type) (f:A -> A) (x:A),
+    iter (succ n) f x = iter n f (f x).
+Proof.
+ intros; now rewrite iter_succ, iter_swap.
+Qed.
+
+Theorem iter_add :
+  forall p q (A:Type) (f:A -> A) (x:A),
+    iter (p+q) f x = iter p f (iter q f x).
+Proof.
+ induction p using peano_ind; intros; trivial.
+ now rewrite add_succ_l, !iter_succ, IHp.
+Qed.
+
+Theorem iter_ind :
+  forall (A:Type) (f:A -> A) (a:A) (P:N -> A -> Prop),
+    P 0 a ->
+    (forall n a', P n a' -> P (succ n) (f a')) ->
+    forall n, P n (iter n f a).
+Proof.
+ induction n using peano_ind; trivial.
+ rewrite iter_succ; auto.
+Qed.
+
+Theorem iter_invariant :
+  forall (n:N) (A:Type) (f:A -> A) (Inv:A -> Prop),
+    (forall x:A, Inv x -> Inv (f x)) ->
+    forall x:A, Inv x -> Inv (iter n f x).
+Proof.
+ intros; apply iter_ind with (P := fun _ => Inv); trivial.
+Qed.
+
 End N.
 
 Bind Scope N_scope with N.t N.
