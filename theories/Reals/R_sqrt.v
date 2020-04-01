@@ -100,6 +100,9 @@ Lemma sqrt_pow2 : forall x, 0 <= x -> sqrt (x ^ 2) = x.
 intros; simpl; rewrite Rmult_1_r, sqrt_square; auto.
 Qed.
 
+Lemma pow2_sqrt x : 0 <= x -> sqrt x ^ 2 = x.
+Proof. now intros x0; simpl; rewrite -> Rmult_1_r, sqrt_sqrt. Qed.
+
 Lemma sqrt_Rsqr_abs : forall x:R, sqrt (Rsqr x) = Rabs x.
 Proof.
   intro x; rewrite Rsqr_abs; apply sqrt_Rsqr; apply Rabs_pos.
@@ -290,6 +293,14 @@ Proof.
   now apply sqrt_le_1_alt.
 Qed.
 
+Lemma sqrt_neg_0 x : x <= 0 -> sqrt x = 0.
+Proof.
+  intros Hx.
+  apply Rle_le_eq; split.
+  - rewrite <- sqrt_0; apply sqrt_le_1_alt, Hx.
+  - apply sqrt_pos.
+Qed.
+
 Lemma sqrt_inj : forall x y:R, 0 <= x -> 0 <= y -> sqrt x = sqrt y -> x = y.
 Proof.
   intros; cut (Rsqr (sqrt x) = Rsqr (sqrt y)).
@@ -325,6 +336,20 @@ Proof.
         intro H4; elim H4; intros H5 H6; rewrite <- H5; pattern x at 1;
           rewrite <- (sqrt_def x (Rlt_le 0 x H1));
             apply (Rmult_lt_compat_l (sqrt x) (sqrt x) 1 (sqrt_lt_R0 x H1) H3).
+Qed.
+
+Lemma inv_sqrt x : 0 < x -> / sqrt x = sqrt (/ x).
+Proof.
+intros x0.
+assert (sqrt x <> 0).
+  apply Rgt_not_eq.
+  now apply sqrt_lt_R0.
+apply Rmult_eq_reg_r with (sqrt x); auto.
+rewrite Rinv_l; auto.
+rewrite <- sqrt_mult_alt.
+  now rewrite -> Rinv_l, sqrt_1; auto with real.
+apply Rlt_le.
+now apply Rinv_0_lt_compat.
 Qed.
 
 Lemma sqrt_cauchy :

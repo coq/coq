@@ -558,6 +558,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/Rtrigo_fun.v
     theories/Reals/Rtrigo1.v
     theories/Reals/Rtrigo.v
+    theories/Reals/Rtrigo_facts.v
     theories/Reals/Ratan.v
     theories/Reals/Machin.v
     theories/Reals/SplitAbsolu.v

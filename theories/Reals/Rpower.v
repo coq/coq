@@ -768,8 +768,6 @@ assert (t: forall x y z, x - z = y -> x - y - z = 0);[ | apply t; clear t].
  intros a b c H; rewrite <- H; ring.
 apply Rmult_eq_reg_l with (2 * (x + sqrt (x ^ 2 + 1)));[ |
  apply Rgt_not_eq, Rmult_lt_0_compat;[apply Rlt_0_2 | assumption]].
-assert (pow2_sqrt : forall x, 0 <= x -> sqrt x ^ 2 = x) by
- (intros; simpl; rewrite Rmult_1_r, sqrt_sqrt; auto).
 field_simplify;[rewrite pow2_sqrt;[field | ] | apply Rgt_not_eq; lra].
 apply Rplus_le_le_0_compat;[simpl; rewrite Rmult_1_r; apply (Rle_0_sqr x)|apply Rlt_le, Rlt_0_1].
 Qed.

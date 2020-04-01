@@ -27,6 +27,7 @@ Definition div_fct f1 f2 (x:R) : R := f1 x / f2 x.
 Definition div_real_fct (a:R) f (x:R) : R := a / f x.
 Definition comp f1 f2 (x:R) : R := f1 (f2 x).
 Definition inv_fct f (x:R) : R := / f x.
+Definition mirr_fct f (x:R) : R := f (- x).
 
 Declare Scope Rfun_scope.
 Delimit Scope Rfun_scope with F.
@@ -40,6 +41,7 @@ Arguments opp_fct f%F x%R.
 Arguments mult_real_fct a%R f%F x%R.
 Arguments div_real_fct a%R f%F x%R.
 Arguments comp (f1 f2)%F x%R.
+Arguments mirr_fct f%F x%R.
 
 Infix "+" := plus_fct : Rfun_scope.
 Notation "- x" := (opp_fct x) : Rfun_scope.
@@ -92,7 +94,7 @@ exists (Rmin a a'); split.
 intros y cy; rewrite <- !q.
   apply Pa'.
   split;[| apply Rlt_le_trans with (Rmin a a');[ | apply Rmin_r]];tauto.
- rewrite R_dist_eq; assumption.   
+ rewrite R_dist_eq; assumption.
 apply Rlt_le_trans with (Rmin a a');[ | apply Rmin_l]; tauto.
 Qed.
 
@@ -499,7 +501,7 @@ Qed.
 
 (* Extensionally equal functions have the same derivative. *)
 
-Lemma derivable_pt_lim_ext : forall f g x l, (forall z, f z = g z) -> 
+Lemma derivable_pt_lim_ext : forall f g x l, (forall z, f z = g z) ->
   derivable_pt_lim f x l -> derivable_pt_lim g x l.
 intros f g x l fg df e ep; destruct (df e ep) as [d pd]; exists d; intros h;
 rewrite <- !fg; apply pd.
@@ -507,7 +509,7 @@ Qed.
 
 (* extensionally equal functions have the same derivative, locally. *)
 
-Lemma derivable_pt_lim_locally_ext : forall f g x a b l, 
+Lemma derivable_pt_lim_locally_ext : forall f g x a b l,
   a < x < b ->
   (forall z, a < z < b -> f z = g z) ->
   derivable_pt_lim f x l -> derivable_pt_lim g x l.
@@ -577,6 +579,124 @@ Qed.
 (** *                    Main rules                             *)
 (****************************************************************)
 
+(** ** Rules for derivable_pt_lim (value of the derivative at a point) *)
+
+Lemma derivable_pt_lim_id : forall x:R, derivable_pt_lim id x 1.
+Proof.
+  intro; unfold derivable_pt_lim.
+  intros eps Heps; exists (mkposreal eps Heps); intros h H1 H2;
+    unfold id; replace ((x + h - x) / h - 1) with 0.
+  rewrite Rabs_R0; apply Rle_lt_trans with (Rabs h).
+  apply Rabs_pos.
+  assumption.
+  unfold Rminus; rewrite Rplus_assoc; rewrite (Rplus_comm x);
+    rewrite Rplus_assoc.
+  rewrite Rplus_opp_l; rewrite Rplus_0_r; unfold Rdiv;
+    rewrite <- Rinv_r_sym.
+  symmetry ; apply Rplus_opp_r.
+  assumption.
+Qed.
+
+Lemma derivable_pt_lim_comp :
+  forall f1 f2 (x l1 l2:R),
+    derivable_pt_lim f1 x l1 ->
+    derivable_pt_lim f2 (f1 x) l2 -> derivable_pt_lim (f2 o f1) x (l2 * l1).
+Proof.
+  intros; assert (H1 := derivable_pt_lim_D_in f1 (fun y:R => l1) x).
+  elim H1; intros.
+  assert (H4 := H3 H).
+  assert (H5 := derivable_pt_lim_D_in f2 (fun y:R => l2) (f1 x)).
+  elim H5; intros.
+  assert (H8 := H7 H0).
+  clear H1 H2 H3 H5 H6 H7.
+  assert (H1 := derivable_pt_lim_D_in (f2 o f1)%F (fun y:R => l2 * l1) x).
+  elim H1; intros.
+  clear H1 H3; apply H2.
+  unfold comp;
+    cut
+      (D_in (fun x0:R => f2 (f1 x0)) (fun y:R => l2 * l1)
+        (Dgf no_cond no_cond f1) x ->
+        D_in (fun x0:R => f2 (f1 x0)) (fun y:R => l2 * l1) no_cond x).
+  intro; apply H1.
+  rewrite Rmult_comm;
+    apply (Dcomp no_cond no_cond (fun y:R => l1) (fun y:R => l2) f1 f2 x);
+      assumption.
+  unfold Dgf, D_in, no_cond; unfold limit1_in;
+    unfold limit_in; unfold dist; simpl;
+      unfold R_dist; intros.
+  elim (H1 eps H3); intros.
+  exists x0; intros; split.
+  elim H5; intros; assumption.
+  intros; elim H5; intros; apply H9; split.
+  unfold D_x; split.
+  split; trivial.
+  elim H6; intros; unfold D_x in H10; elim H10; intros; assumption.
+  elim H6; intros; assumption.
+Qed.
+
+Lemma derivable_pt_lim_opp :
+  forall f (x l:R), derivable_pt_lim f x l -> derivable_pt_lim (- f) x (- l).
+Proof.
+  intros f x l H.
+  apply uniqueness_step3.
+  unfold opp_fct, limit1_in, limit_in, dist; simpl; unfold R_dist.
+  apply uniqueness_step2 in H.
+  unfold limit1_in, limit_in, dist in H; simpl in H; unfold R_dist in H.
+  intros eps Heps; specialize (H eps Heps).
+  destruct H as [alp [Halp H]]; exists alp.
+  split; [assumption|].
+  intros x0 Hx0; specialize(H x0 Hx0).
+  rewrite <- Rabs_Ropp in H.
+  match goal with H:Rabs(?a)<eps |- Rabs(?b)<eps => replace b with a by (field; tauto) end.
+  assumption.
+Qed.
+
+Lemma derivable_pt_lim_opp_fwd :
+  forall f (x l:R), derivable_pt_lim f x (- l) -> derivable_pt_lim (- f) x l.
+Proof.
+  intros f x l H.
+  apply uniqueness_step3.
+  unfold opp_fct, limit1_in, limit_in, dist; simpl; unfold R_dist.
+  apply uniqueness_step2 in H.
+  unfold limit1_in, limit_in, dist in H; simpl in H; unfold R_dist in H.
+  intros eps Heps; specialize (H eps Heps).
+  destruct H as [alp [Halp H]]; exists alp.
+  split; [assumption|].
+  intros x0 Hx0; specialize(H x0 Hx0).
+  rewrite <- Rabs_Ropp in H.
+  match goal with H:Rabs(?a)<eps |- Rabs(?b)<eps => replace b with a by (field; tauto) end.
+  assumption.
+Qed.
+
+Lemma derivable_pt_lim_opp_rev :
+  forall f (x l:R), derivable_pt_lim (- f) x (- l) -> derivable_pt_lim f x l.
+Proof.
+  intros f x l H.
+  apply derivable_pt_lim_ext with (f := fun x => - - (f x)).
+  - intros; rewrite Ropp_involutive; reflexivity.
+  - apply derivable_pt_lim_opp_fwd; exact H.
+Qed.
+
+Lemma derivable_pt_lim_mirr_fwd :
+  forall f (x l:R), derivable_pt_lim f (- x) (- l) -> derivable_pt_lim (mirr_fct f) x l.
+Proof.
+  intros f x l H.
+  change (mirr_fct f) with (comp f (opp_fct id)).
+  replace l with ((-l) * -1) by ring.
+  apply derivable_pt_lim_comp; [| exact H].
+  apply derivable_pt_lim_opp.
+  apply derivable_pt_lim_id.
+Qed.
+
+Lemma derivable_pt_lim_mirr_rev :
+  forall f (x l:R), derivable_pt_lim (mirr_fct f) (- x) (- l) -> derivable_pt_lim f x l.
+Proof.
+  intros f x l H.
+  apply derivable_pt_lim_ext with (f := fun x => (mirr_fct f (- x))).
+  - intros; unfold mirr_fct; rewrite Ropp_involutive; reflexivity.
+  - apply derivable_pt_lim_mirr_fwd; exact H.
+Qed.
+
 Lemma derivable_pt_lim_plus :
   forall f1 f2 (x l1 l2:R),
     derivable_pt_lim f1 x l1 ->
@@ -602,28 +722,6 @@ Lemma derivable_pt_lim_plus :
   split.
   assumption.
   intros; rewrite H3; apply H8; assumption.
-  intro; unfold Rdiv; ring.
-Qed.
-
-Lemma derivable_pt_lim_opp :
-  forall f (x l:R), derivable_pt_lim f x l -> derivable_pt_lim (- f) x (- l).
-Proof.
-  intros.
-  apply uniqueness_step3.
-  assert (H1 := uniqueness_step2 _ _ _ H).
-  unfold opp_fct.
-  cut (forall h:R, (- f (x + h) - - f x) / h = - ((f (x + h) - f x) / h)).
-  intro.
-  generalize
-    (limit_Ropp (fun h:R => (f (x + h) - f x) / h) (fun h:R => h <> 0) l 0 H1).
-  unfold limit1_in; unfold limit_in; unfold dist;
-    simpl; unfold R_dist; intros.
-  elim (H2 eps H3); intros.
-  exists x0.
-  elim H4; intros.
-  split.
-  assumption.
-  intros; rewrite H0; apply H6; assumption.
   intro; unfold Rdiv; ring.
 Qed.
 
@@ -718,22 +816,6 @@ intros f x l a df;
 unfold Rdiv; rewrite Rmult_comm; apply derivable_pt_lim_scal; assumption.
 Qed.
 
-Lemma derivable_pt_lim_id : forall x:R, derivable_pt_lim id x 1.
-Proof.
-  intro; unfold derivable_pt_lim.
-  intros eps Heps; exists (mkposreal eps Heps); intros h H1 H2;
-    unfold id; replace ((x + h - x) / h - 1) with 0.
-  rewrite Rabs_R0; apply Rle_lt_trans with (Rabs h).
-  apply Rabs_pos.
-  assumption.
-  unfold Rminus; rewrite Rplus_assoc; rewrite (Rplus_comm x);
-    rewrite Rplus_assoc.
-  rewrite Rplus_opp_l; rewrite Rplus_0_r; unfold Rdiv;
-    rewrite <- Rinv_r_sym.
-  symmetry ; apply Rplus_opp_r.
-  assumption.
-Qed.
-
 Lemma derivable_pt_lim_Rsqr : forall x:R, derivable_pt_lim Rsqr x (2 * x).
 Proof.
   intro; unfold derivable_pt_lim.
@@ -748,41 +830,80 @@ Proof.
   ring.
 Qed.
 
-Lemma derivable_pt_lim_comp :
-  forall f1 f2 (x l1 l2:R),
-    derivable_pt_lim f1 x l1 ->
-    derivable_pt_lim f2 (f1 x) l2 -> derivable_pt_lim (f2 o f1) x (l2 * l1).
+(** ** Rules for derivable_pt (derivability at a point) *)
+
+Lemma derivable_pt_id : forall x:R, derivable_pt id x.
 Proof.
-  intros; assert (H1 := derivable_pt_lim_D_in f1 (fun y:R => l1) x).
-  elim H1; intros.
-  assert (H4 := H3 H).
-  assert (H5 := derivable_pt_lim_D_in f2 (fun y:R => l2) (f1 x)).
-  elim H5; intros.
-  assert (H8 := H7 H0).
-  clear H1 H2 H3 H5 H6 H7.
-  assert (H1 := derivable_pt_lim_D_in (f2 o f1)%F (fun y:R => l2 * l1) x).
-  elim H1; intros.
-  clear H1 H3; apply H2.
-  unfold comp;
-    cut
-      (D_in (fun x0:R => f2 (f1 x0)) (fun y:R => l2 * l1)
-        (Dgf no_cond no_cond f1) x ->
-        D_in (fun x0:R => f2 (f1 x0)) (fun y:R => l2 * l1) no_cond x).
-  intro; apply H1.
-  rewrite Rmult_comm;
-    apply (Dcomp no_cond no_cond (fun y:R => l1) (fun y:R => l2) f1 f2 x);
-      assumption.
-  unfold Dgf, D_in, no_cond; unfold limit1_in;
-    unfold limit_in; unfold dist; simpl;
-      unfold R_dist; intros.
-  elim (H1 eps H3); intros.
-  exists x0; intros; split.
-  elim H5; intros; assumption.
-  intros; elim H5; intros; apply H9; split.
-  unfold D_x; split.
-  split; trivial.
-  elim H6; intros; unfold D_x in H10; elim H10; intros; assumption.
-  elim H6; intros; assumption.
+  unfold derivable_pt; intro.
+  exists 1.
+  apply derivable_pt_lim_id.
+Qed.
+
+Lemma derivable_pt_comp :
+  forall f1 f2 (x:R),
+    derivable_pt f1 x -> derivable_pt f2 (f1 x) -> derivable_pt (f2 o f1) x.
+Proof.
+  unfold derivable_pt; intros f1 f2 x X X0.
+  elim X; intros.
+  elim X0; intros.
+  exists (x1 * x0).
+  apply derivable_pt_lim_comp; assumption.
+Qed.
+
+Lemma derivable_pt_xeq:
+  forall (f : R -> R) (x1 x2 : R), x1=x2 -> derivable_pt f x1 -> derivable_pt f x2.
+Proof.
+  intros f x1 x2 Heq H.
+  subst; assumption.
+Qed.
+
+Lemma derivable_pt_opp :
+  forall (f : R -> R) (x:R), derivable_pt f x -> derivable_pt (- f) x.
+Proof.
+  intros f x H.
+  unfold derivable_pt in H.
+  destruct H as [l H]; exists (-l).
+  apply derivable_pt_lim_opp; assumption.
+Qed.
+
+Lemma derivable_pt_opp_rev:
+  forall (f : R -> R) (x : R), derivable_pt (- f) x -> derivable_pt f x.
+Proof.
+  intros f x H.
+  unfold derivable_pt in H.
+  destruct H as [l H]; exists (-l).
+  apply derivable_pt_lim_opp_rev.
+  rewrite Ropp_involutive; assumption.
+Qed.
+
+Lemma derivable_pt_mirr:
+  forall (f : R -> R) (x : R), derivable_pt f (-x) -> derivable_pt (mirr_fct f) x.
+Proof.
+  intros f x H.
+  unfold derivable_pt in H.
+  destruct H as [l H]; exists (-l).
+  apply derivable_pt_lim_mirr_fwd.
+  rewrite Ropp_involutive; assumption.
+Qed.
+
+Lemma derivable_pt_mirr_rev:
+  forall (f : R -> R) (x : R), derivable_pt (mirr_fct f) (- x) -> derivable_pt f x.
+Proof.
+  intros f x H.
+  unfold derivable_pt in H.
+  destruct H as [l H]; exists (-l).
+  apply derivable_pt_lim_mirr_rev.
+  rewrite Ropp_involutive; assumption.
+Qed.
+
+Lemma derivable_pt_mirr_prem:
+  forall (f : R -> R) (x : R), derivable_pt (mirr_fct f) x -> derivable_pt f (-x).
+Proof.
+  intros f x H.
+  unfold derivable_pt in H.
+  destruct H as [l H]; exists (-l).
+  apply derivable_pt_lim_mirr_rev.
+  repeat rewrite Ropp_involutive; assumption.
 Qed.
 
 Lemma derivable_pt_plus :
@@ -794,15 +915,6 @@ Proof.
   elim X0; intros.
   exists (x0 + x1).
   apply derivable_pt_lim_plus; assumption.
-Qed.
-
-Lemma derivable_pt_opp :
-  forall f (x:R), derivable_pt f x -> derivable_pt (- f) x.
-Proof.
-  unfold derivable_pt; intros f x X.
-  elim X; intros.
-  exists (- x0).
-  apply derivable_pt_lim_opp; assumption.
 Qed.
 
 Lemma derivable_pt_minus :
@@ -843,28 +955,36 @@ Proof.
   apply derivable_pt_lim_scal; assumption.
 Qed.
 
-Lemma derivable_pt_id : forall x:R, derivable_pt id x.
-Proof.
-  unfold derivable_pt; intro.
-  exists 1.
-  apply derivable_pt_lim_id.
-Qed.
-
 Lemma derivable_pt_Rsqr : forall x:R, derivable_pt Rsqr x.
 Proof.
   unfold derivable_pt; intro; exists (2 * x).
   apply derivable_pt_lim_Rsqr.
 Qed.
 
-Lemma derivable_pt_comp :
-  forall f1 f2 (x:R),
-    derivable_pt f1 x -> derivable_pt f2 (f1 x) -> derivable_pt (f2 o f1) x.
+(** ** Rules for derivable (derivability on whole domain) *)
+
+Lemma derivable_id : derivable id.
 Proof.
-  unfold derivable_pt; intros f1 f2 x X X0.
-  elim X; intros.
-  elim X0; intros.
-  exists (x1 * x0).
-  apply derivable_pt_lim_comp; assumption.
+  unfold derivable; intro; apply derivable_pt_id.
+Qed.
+
+Lemma derivable_comp :
+  forall f1 f2, derivable f1 -> derivable f2 -> derivable (f2 o f1).
+Proof.
+  unfold derivable; intros f1 f2 X X0 x.
+  apply (derivable_pt_comp _ _ x (X _) (X0 _)).
+Qed.
+
+Lemma derivable_opp : forall f, derivable f -> derivable (- f).
+Proof.
+  unfold derivable; intros f X x.
+  apply (derivable_pt_opp _ x (X _)).
+Qed.
+
+Lemma derivable_mirr : forall f, derivable f -> derivable (mirr_fct f).
+Proof.
+  unfold derivable; intros f X x.
+  apply (derivable_pt_mirr _ x (X _)).
 Qed.
 
 Lemma derivable_plus :
@@ -872,12 +992,6 @@ Lemma derivable_plus :
 Proof.
   unfold derivable; intros f1 f2 X X0 x.
   apply (derivable_pt_plus _ _ x (X _) (X0 _)).
-Qed.
-
-Lemma derivable_opp : forall f, derivable f -> derivable (- f).
-Proof.
-  unfold derivable; intros f X x.
-  apply (derivable_pt_opp _ x (X _)).
 Qed.
 
 Lemma derivable_minus :
@@ -907,21 +1021,87 @@ Proof.
   apply (derivable_pt_scal _ a x (X _)).
 Qed.
 
-Lemma derivable_id : derivable id.
-Proof.
-  unfold derivable; intro; apply derivable_pt_id.
-Qed.
-
 Lemma derivable_Rsqr : derivable Rsqr.
 Proof.
   unfold derivable; intro; apply derivable_pt_Rsqr.
 Qed.
 
-Lemma derivable_comp :
-  forall f1 f2, derivable f1 -> derivable f2 -> derivable (f2 o f1).
+(** ** Rules for derive_pt (derivative function on whole domain) *)
+
+Lemma derive_pt_id : forall x:R, derive_pt id x (derivable_pt_id _) = 1.
 Proof.
-  unfold derivable; intros f1 f2 X X0 x.
-  apply (derivable_pt_comp _ _ x (X _) (X0 _)).
+  intros.
+  apply derive_pt_eq_0.
+  apply derivable_pt_lim_id.
+Qed.
+
+Lemma derive_pt_comp :
+  forall f1 f2 (x:R) (pr1:derivable_pt f1 x) (pr2:derivable_pt f2 (f1 x)),
+    derive_pt (f2 o f1) x (derivable_pt_comp _ _ _ pr1 pr2) =
+    derive_pt f2 (f1 x) pr2 * derive_pt f1 x pr1.
+Proof.
+  intros.
+  assert (H := derivable_derive f1 x pr1).
+  assert (H0 := derivable_derive f2 (f1 x) pr2).
+  assert
+    (H1 := derivable_derive (f2 o f1)%F x (derivable_pt_comp _ _ _ pr1 pr2)).
+  elim H; clear H; intros l1 H.
+  elim H0; clear H0; intros l2 H0.
+  elim H1; clear H1; intros l H1.
+  rewrite H; rewrite H0; apply derive_pt_eq_0.
+  assert (H3 := proj2_sig pr1).
+  unfold derive_pt in H; rewrite H in H3.
+  assert (H4 := proj2_sig pr2).
+  unfold derive_pt in H0; rewrite H0 in H4.
+  apply derivable_pt_lim_comp; assumption.
+Qed.
+
+Lemma derive_pt_opp :
+  forall f (x:R) (pr1:derivable_pt f x),
+    derive_pt (- f) x (derivable_pt_opp _ _ pr1) = - derive_pt f x pr1.
+Proof.
+  intros.
+  apply derive_pt_eq_0.
+  apply derivable_pt_lim_opp_fwd.
+  rewrite Ropp_involutive.
+  apply (derive_pt_eq_1 _ _ _ pr1).
+  reflexivity.
+Qed.
+
+Lemma derive_pt_opp_rev :
+  forall f (x:R) (pr1:derivable_pt (- f) x),
+    derive_pt (- f) x pr1 = - derive_pt f x (derivable_pt_opp_rev _ _ pr1).
+Proof.
+  intros.
+  apply derive_pt_eq_0.
+  apply derivable_pt_lim_opp_fwd.
+  rewrite Ropp_involutive.
+  apply (derive_pt_eq_1 _ _ _ (derivable_pt_opp_rev _ _ pr1)).
+  reflexivity.
+Qed.
+
+Lemma derive_pt_mirr :
+  forall f (x:R) (pr1:derivable_pt f (-x)),
+    derive_pt (mirr_fct f) x (derivable_pt_mirr _ _ pr1) = - derive_pt f (-x) pr1.
+Proof.
+  intros.
+  apply derive_pt_eq_0.
+  apply derivable_pt_lim_mirr_fwd.
+  rewrite Ropp_involutive.
+  apply (derive_pt_eq_1 _ _ _ pr1).
+  reflexivity.
+Qed.
+
+Lemma derive_pt_mirr_rev :
+  forall f (x:R) (pr1:derivable_pt (mirr_fct f) x),
+    derive_pt (mirr_fct f) x pr1 = - derive_pt f (-x) (derivable_pt_mirr_prem f x pr1).
+Proof.
+  intros.
+  apply derive_pt_eq_0.
+  apply derivable_pt_lim_mirr_fwd.
+  rewrite Ropp_involutive.
+  apply (derive_pt_eq_1 _ _ _ (derivable_pt_mirr_prem f x pr1)).
+  reflexivity.
 Qed.
 
 Lemma derive_pt_plus :
@@ -943,21 +1123,6 @@ Proof.
   assert (H4 := proj2_sig pr2).
   unfold derive_pt in H0; rewrite H0 in H4.
   apply derivable_pt_lim_plus; assumption.
-Qed.
-
-Lemma derive_pt_opp :
-  forall f (x:R) (pr1:derivable_pt f x),
-    derive_pt (- f) x (derivable_pt_opp _ _ pr1) = - derive_pt f x pr1.
-Proof.
-  intros.
-  assert (H := derivable_derive f x pr1).
-  assert (H0 := derivable_derive (- f)%F x (derivable_pt_opp _ _ pr1)).
-  elim H; clear H; intros l1 H.
-  elim H0; clear H0; intros l2 H0.
-  rewrite H; apply derive_pt_eq_0.
-  assert (H3 := proj2_sig pr1).
-  unfold derive_pt in H; rewrite H in H3.
-  apply derivable_pt_lim_opp; assumption.
 Qed.
 
 Lemma derive_pt_minus :
@@ -1027,13 +1192,6 @@ Proof.
   apply derivable_pt_lim_scal; assumption.
 Qed.
 
-Lemma derive_pt_id : forall x:R, derive_pt id x (derivable_pt_id _) = 1.
-Proof.
-  intros.
-  apply derive_pt_eq_0.
-  apply derivable_pt_lim_id.
-Qed.
-
 Lemma derive_pt_Rsqr :
   forall x:R, derive_pt Rsqr x (derivable_pt_Rsqr _) = 2 * x.
 Proof.
@@ -1042,28 +1200,8 @@ Proof.
   apply derivable_pt_lim_Rsqr.
 Qed.
 
-Lemma derive_pt_comp :
-  forall f1 f2 (x:R) (pr1:derivable_pt f1 x) (pr2:derivable_pt f2 (f1 x)),
-    derive_pt (f2 o f1) x (derivable_pt_comp _ _ _ pr1 pr2) =
-    derive_pt f2 (f1 x) pr2 * derive_pt f1 x pr1.
-Proof.
-  intros.
-  assert (H := derivable_derive f1 x pr1).
-  assert (H0 := derivable_derive f2 (f1 x) pr2).
-  assert
-    (H1 := derivable_derive (f2 o f1)%F x (derivable_pt_comp _ _ _ pr1 pr2)).
-  elim H; clear H; intros l1 H.
-  elim H0; clear H0; intros l2 H0.
-  elim H1; clear H1; intros l H1.
-  rewrite H; rewrite H0; apply derive_pt_eq_0.
-  assert (H3 := proj2_sig pr1).
-  unfold derive_pt in H; rewrite H in H3.
-  assert (H4 := proj2_sig pr2).
-  unfold derive_pt in H0; rewrite H0 in H4.
-  apply derivable_pt_lim_comp; assumption.
-Qed.
+(** ** Definition and derivative of power function with natural number exponent *)
 
-(* Pow *)
 Definition pow_fct (n:nat) (y:R) : R := y ^ n.
 
 Lemma derivable_pt_lim_pow_pos :
@@ -1141,6 +1279,8 @@ Proof.
   apply derivable_pt_lim_pow.
 Qed.
 
+(** ** Irrelevance of derivability proof for derivative *)
+
 Lemma pr_nu :
   forall f (x:R) (pr1 pr2:derivable_pt f x),
     derive_pt f x pr1 = derive_pt f x pr2.
@@ -1149,6 +1289,16 @@ Proof.
   apply (uniqueness_limite f x x0 x1 H0 H1).
 Qed.
 
+(** In dependently typed environments it is sometimes hard to rewrite.
+    Having pr_nu for separate x with a proof that they are equal helps. *)
+
+Lemma pr_nu_xeq :
+  forall f (x1 x2:R) (pr1:derivable_pt f x1) (pr2:derivable_pt f x2),
+    x1 = x2 -> derive_pt f x1 pr1 = derive_pt f x2 pr2.
+Proof.
+  intros f x1 x2 H1 H2 Heq.
+  subst. apply pr_nu.
+Qed.
 
 (************************************************************)
 (** *           Local extremum's condition                  *)

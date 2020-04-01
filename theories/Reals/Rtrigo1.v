@@ -1173,6 +1173,18 @@ Proof.
   apply (sin_increasing_1 (x - PI) (y - PI) H7 H8 H5 H6 H4).
 Qed.
 
+Lemma sin_inj x y : -(PI/2)  <= x <= PI/2 -> -(PI/2) <= y <= PI/2 -> sin x = sin y -> x = y.
+Proof.
+intros xP yP Hsin.
+destruct (total_order_T x y) as [[H|H]|H]; auto.
+- assert (sin x < sin y).
+    now apply sin_increasing_1; lra.
+  now lra.
+- assert (sin y < sin x).
+    now apply sin_increasing_1; lra.
+  now lra.
+Qed.
+
 Lemma cos_increasing_0 :
   forall x y:R,
     PI <= x -> x <= 2 * PI -> PI <= y -> y <= 2 * PI -> cos x < cos y -> x < y.
@@ -1251,6 +1263,18 @@ Proof.
   rewrite <- double.
   generalize (Rplus_lt_compat_l PI x y H3); clear H H0 H1 H2 H3; intros;
     apply (cos_increasing_1 (PI + x) (PI + y) H3 H2 H1 H0 H).
+Qed.
+
+Lemma cos_inj x y : 0 <= x <= PI -> 0 <= y <= PI -> cos x = cos y -> x = y.
+Proof.
+intros xP yP Hcos.
+destruct (total_order_T x y) as [[H|H]|H]; auto.
+- assert (cos y < cos x).
+    now apply cos_decreasing_1; lra.
+  now lra.
+- assert (cos x < cos y).
+    now apply cos_decreasing_1; lra.
+  now lra.
 Qed.
 
 Lemma tan_diff :

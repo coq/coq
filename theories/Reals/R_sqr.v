@@ -72,7 +72,7 @@ Proof.
   rewrite Rinv_mult_distr.
   repeat rewrite Rmult_assoc.
   apply Rmult_eq_compat_l.
-  rewrite Rmult_comm. 
+  rewrite Rmult_comm.
   repeat rewrite Rmult_assoc.
   apply Rmult_eq_compat_l.
   reflexivity.
@@ -179,6 +179,38 @@ Proof.
   apply Rge_le in Hle;
   assert (0 <= y) by (apply Rle_trans with x; assumption).
   apply Rsqr_incr_1; assumption.
+Qed.
+
+Lemma neg_pos_Rsqr_lt : forall x y : R, - y < x -> x < y -> Rsqr x < Rsqr y.
+Proof.
+  intros x y Hneg Hpos.
+  destruct (Rcase_abs x) as [Hlt|HLe].
+  - rewrite (Rsqr_neg x); apply Rsqr_incrst_1.
+    + rewrite <- (Ropp_involutive y); apply Ropp_lt_contravar; exact Hneg.
+    + rewrite <- (Ropp_0). apply Ropp_le_contravar, Rlt_le; exact Hlt.
+    + apply (Rlt_trans _ _ _ Hneg) in Hlt.
+      rewrite <- (Ropp_0) in Hlt; apply Ropp_lt_cancel in Hlt; apply Rlt_le; exact Hlt.
+  - apply Rsqr_incrst_1.
+    + exact Hpos.
+    + apply Rge_le; exact HLe.
+    + apply Rge_le in HLe.
+      apply (Rle_lt_trans _ _ _ HLe), Rlt_le in Hpos; exact Hpos.
+Qed.
+
+Lemma Rsqr_bounds_le : forall a b:R, -a <= b <= a -> 0 <= Rsqr b <= Rsqr a.
+Proof.
+  intros a b [H1 H2].
+  split.
+  - apply Rle_0_sqr.
+  - apply neg_pos_Rsqr_le; assumption.
+Qed.
+
+Lemma Rsqr_bounds_lt : forall a b:R, -a < b < a -> 0 <= Rsqr b < Rsqr a.
+Proof.
+  intros a b [H1 H2].
+  split.
+  - apply Rle_0_sqr.
+  - apply neg_pos_Rsqr_lt; assumption.
 Qed.
 
 Lemma Rsqr_abs : forall x:R, Rsqr x = Rsqr (Rabs x).
