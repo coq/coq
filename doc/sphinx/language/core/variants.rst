@@ -52,7 +52,7 @@ Private (matching) inductive types
 
 .. index:: match ... with ...
 
-.. _match:
+.. _match_term:
 
 Definition by cases: match
 --------------------------

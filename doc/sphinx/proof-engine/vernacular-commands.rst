@@ -11,14 +11,14 @@ Displaying
 
 .. _Print:
 
-.. cmd:: Print {? Term } @smart_qualid {? @univ_name_list }
+.. cmd:: Print {? Term } @reference {? @univ_name_list }
 
    .. insertprodn univ_name_list univ_name_list
 
    .. prodn::
       univ_name_list ::= @%{ {* @name } %}
 
-   Displays definitions of terms, including opaque terms, for the object :n:`@smart_qualid`.
+   Displays definitions of terms, including opaque terms, for the object :n:`@reference`.
 
    * :n:`Term` - a syntactic marker to allow printing a term
      that is the same as one of the various :n:`Print` commands.  For example,
@@ -26,7 +26,7 @@ Displaying
      information on the object whose name is ":n:`All`".
 
    * :n:`@univ_name_list` - locally renames the
-     polymorphic universes of :n:`@smart_qualid`.
+     polymorphic universes of :n:`@reference`.
      The name `_` means the usual name is printed.
 
    .. exn:: @qualid not a defined object.
@@ -65,14 +65,14 @@ If no selector is provided,
 the command applies to the current goal.  If no proof is open, then the command only applies
 to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 
-.. cmd:: About @smart_qualid {? @univ_name_list }
+.. cmd:: About @reference {? @univ_name_list }
 
-   Displays information about the :n:`@smart_qualid` object, which,
+   Displays information about the :n:`@reference` object, which,
    if a proof is open,  may be a hypothesis of the selected goal,
    or an accessible theorem, axiom, etc.:
    its kind (module, constant, assumption, inductive,
    constructor, abbreviation, …), long name, type, implicit arguments and
-   argument scopes (as set in the definition of :token:`smart_qualid` or
+   argument scopes (as set in the definition of :token:`reference` or
    subsequently with the :cmd:`Arguments` command). It does not print the body of definitions or proofs.
 
 .. cmd:: Check @term
@@ -120,10 +120,10 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 
    :n:`- @search_query`
       Excludes the objects that would be filtered by
-      :n:`@search_query`.  Cf. :ref:`this example
+      :n:`@search_query`.  See :ref:`this example
       <search-disambiguate-notation>`.
 
-   :n:`[ @search_query ... @search_query | ... | @search_query ... @search_query ]`
+   :n:`[ {+ @search_query } | ... | {+ @search_query } ]`
       This is a disjunction of conjunctions of queries.  A simple
       conjunction can be expressed by having a single disjunctive
       branch.  For a conjunction at top-level, the surrounding
@@ -146,48 +146,45 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
       pattern :n:`@one_term`.  Holes of the pattern are indicated by
       `_` or :n:`?@ident`.  If the same :n:`?@ident` occurs more than
       once in the pattern, all occurrences in the subterm must be
-      identical.  Cf. :ref:`this example <search-pattern>`.
+      identical.  See :ref:`this example <search-pattern>`.
 
    :n:`@string {? % @scope_key }`
       - If :n:`@string` is a substring of a valid identifier and no
         :n:`% @scope_key` is provided, search for objects whose name
-        contains :n:`@string`.  Cf. :ref:`this example
+        contains :n:`@string`.  See :ref:`this example
         <search-part-ident>`.
 
-      - If :n:`@string` is not a substring of a valid identifier or if
-        the optional :n:`% @scope_key` is provided, search for objects
+      - Otherwise, search for objects
         whose type contains the reference that this string,
-        interpreted as a notation, is attached to (as in
-        :n:`@smart_qualid`).  Cf. :ref:`this example
-        <search-by-notation>`.
+        interpreted as a notation, is attached to (as described in
+        :n:`@reference`).  See :ref:`this example <search-by-notation>`.
 
-      .. note::
+     .. note::
 
-         If the string is a substring of a valid identifier but you
-         still want to look for a reference by notation, you can put
-         it between single quotes or provide a scope explictly.
-         Cf. :ref:`this example <search-disambiguate-notation>`.
+        To refer to a string used in a notation that is a substring of a valid identifier,
+        put it between single quotes or explicitly provide a scope.
+        See :ref:`this example <search-disambiguate-notation>`.
 
    :n:`hyp:`
       The provided pattern or reference is matched against any subterm
-      of an hypothesis of the type of the objects.  Cf. :ref:`this
+      of an hypothesis of the type of the objects.  See :ref:`this
       example <search-hyp>`.
 
    :n:`headhyp:`
       The provided pattern or reference is matched against the
       subterms in head position (any partial applicative subterm) of
-      the hypotheses of the type of the objects.  Cf. :ref:`the
+      the hypotheses of the type of the objects.  See :ref:`the
       previous example <search-hyp>`.
 
    :n:`concl:`
       The provided pattern or reference is matched against any subterm
-      of the conclusion of the type of the objects.  Cf. :ref:`this
+      of the conclusion of the type of the objects.  See :ref:`this
       example <search-concl>`.
 
    :n:`headconcl:`
       The provided pattern or reference is matched against the
       subterms in head position (any partial applicative subterm) of
-      the conclusion of the type of the objects.  Cf. :ref:`the
+      the conclusion of the type of the objects.  See :ref:`the
       previous example <search-concl>`.
 
    :n:`head:`
@@ -197,24 +194,17 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
       .. insertprodn logical_kind logical_kind
 
       .. prodn::
-         logical_kind ::= @thm_token
-         | @assumption_token
-         | Context
-         | Definition
-         | Example
-         | Coercion
-         | Instance
-         | Scheme
-         | Canonical
-         | Field
-         | Method
-         | Primitive
+         logical_kind ::= {| @thm_token | @assumption_token }
+         | {| Definition | Example | Context | Primitive }
+         | {| Coercion | Instance | Scheme | Canonical | SubClass }
+         | {| Field | Method }
 
       Filters objects by the keyword that was used to define them
       (`Theorem`, `Lemma`, `Axiom`, `Variable`, `Context`,
       `Primitive`...) or its status (`Coercion`, `Instance`, `Scheme`,
-      `Canonical`, `Field` for record fields, `Method` for class
-      fields).  Cf. :ref:`this example <search-by-keyword>`.
+      `Canonical`, `SubClass`, Field` for record fields, `Method` for class
+      fields).  Note that `Coercion`\s, `Canonical Structure`\s, Instance`\s and `Scheme`\s can be
+      defined without using those keywords.  See :ref:`this example <search-by-keyword>`.
 
    Additional clauses:
 
@@ -415,7 +405,7 @@ to accessible objects.  (see Section :ref:`invocation-of-tactics`).
 Requests to the environment
 -------------------------------
 
-.. cmd:: Print Assumptions @smart_qualid
+.. cmd:: Print Assumptions @reference
 
    Displays all the assumptions (axioms, parameters and
    variables) a theorem or definition depends on.
@@ -423,41 +413,44 @@ Requests to the environment
    The message "Closed under the global context" indicates that the theorem or
    definition has no dependencies.
 
-.. cmd:: Print Opaque Dependencies @smart_qualid
+.. cmd:: Print Opaque Dependencies @reference
 
-   Displays the assumptions and opaque constants that :n:`@smart_qualid` depends on.
+   Displays the assumptions and opaque constants that :n:`@reference` depends on.
 
-.. cmd:: Print Transparent Dependencies @smart_qualid
+.. cmd:: Print Transparent Dependencies @reference
 
-   Displays the assumptions and  transparent constants that :n:`@smart_qualid` depends on.
+   Displays the assumptions and  transparent constants that :n:`@reference` depends on.
 
-.. cmd:: Print All Dependencies @smart_qualid
+.. cmd:: Print All Dependencies @reference
 
-   Displays all the assumptions and constants :n:`@smart_qualid` depends on.
+   Displays all the assumptions and constants :n:`@reference` depends on.
 
-.. cmd:: Locate @smart_qualid
+.. cmd:: Locate @reference
 
-   .. insertprodn smart_qualid by_notation
+   .. insertprodn reference reference
 
    .. prodn::
-      smart_qualid ::= @qualid
-      | @by_notation
-      by_notation ::= @string {? % @scope_key }
+      reference ::= @qualid
+      | @string {? % @scope_key }
 
    Displays the full name of objects from |Coq|'s various qualified namespaces such as terms,
-   modules and Ltac.  It also displays notation definitions.
+   modules and Ltac, thereby showing the module they are defined in.  It also displays notation definitions.
 
-   If the argument is:
+   :n:`@qualid`
+     refers to object names that end with :n:`@qualid`.
 
-   * :n:`@qualid` - displays the full name of objects that
-     end with :n:`@qualid`, thereby showing the module they are defined in.
-   * :n:`@string {? "%" @ident }` - displays the definition of a notation.  :n:`@string`
+   :n:`@string {? % @scope_key }`
+     refers to definitions of notations.  :n:`@string`
      can be a single token in the notation such as "`->`" or a pattern that matches the
      notation.  See :ref:`locating-notations`.
 
+     :n:`% @scope_key`, if present, limits the reference to the scope bound to the delimiting
+     key :n:`@scope_key`, such as, for example, :n:`%nat`.  (see Section
+     :ref:`LocalInterpretationRulesForNotations`)
+
    .. todo somewhere we should list all the qualified namespaces
 
-.. cmd:: Locate Term @smart_qualid
+.. cmd:: Locate Term @reference
 
    Like :cmd:`Locate`, but limits the search to terms
 
@@ -587,13 +580,13 @@ file is a particular case of a module called a *library file*.
    several files match, one of them is picked in an unspecified fashion.
    Therefore, library authors should use a unique name for each module and
    users are encouraged to use fully-qualified names
-   or the :cmd:`From ... Require` command to load files.
+   or the :cmd:`From … Require` command to load files.
 
 
    .. todo common user error on dirpaths see https://github.com/coq/coq/pull/11961#discussion_r402852390
 
    .. cmd:: From @dirpath Require {? {| Import | Export } } {+ @qualid }
-      :name: From ... Require
+      :name: From … Require
 
       Works like :cmd:`Require`, but loads, for each :n:`@qualid`,
       the library whose fully-qualified name matches :n:`@dirpath.{* @ident . }@qualid`
@@ -626,7 +619,7 @@ file is a particular case of a module called a *library file*.
    .. exn:: The file @ident.vo contains library @qualid__1 and not library @qualid__2.
 
       The library :n:`@qualid__2` is indirectly required by a :cmd:`Require` or
-      :cmd:`From ... Require` command.  The loadpath maps :n:`@qualid__2` to :n:`@ident.vo`,
+      :cmd:`From … Require` command.  The loadpath maps :n:`@qualid__2` to :n:`@ident.vo`,
       which was compiled using a loadpath that bound it to :n:`@qualid__1`.  Usually
       the appropriate solution is to recompile :n:`@ident.v` using the correct loadpath.
       See :ref:`libraries-and-filesystem`.
@@ -738,10 +731,10 @@ the toplevel, and using them in source files is discouraged.
    (cf. :cmd:`Declare ML Module`).
 
 
-.. _backtracking:
+.. _backtracking_subsection:
 
 Backtracking
-----------------
+------------
 
 The backtracking commands described in this section can only be used
 interactively, they cannot be part of a vernacular file loaded via
@@ -980,7 +973,7 @@ as numbers, and for reflection-based tactics. The commands to fine-
 tune the reduction strategies and the lazy conversion algorithm are
 described first.
 
-.. cmd:: Opaque {+ @smart_qualid }
+.. cmd:: Opaque {+ @reference }
 
    This command accepts the :attr:`global` attribute.  By default, the scope
    of :cmd:`Opaque` is limited to the current section or module.
@@ -989,7 +982,7 @@ described first.
    defined by :cmd:`Definition` or :cmd:`Let` (with an explicit body), or by a command
    assimilated to a definition such as :cmd:`Fixpoint`, :cmd:`Program Definition`, etc,
    or by a proof ended by :cmd:`Defined`. The command tells not to unfold the
-   constants in the :n:`@smart_qualid` sequence in tactics using δ-conversion (unfolding
+   constants in the :n:`@reference` sequence in tactics using δ-conversion (unfolding
    a constant is replacing it by its definition).
 
    :cmd:`Opaque` has also an effect on the conversion algorithm of |Coq|, telling
@@ -1002,7 +995,7 @@ described first.
       Sections :ref:`performingcomputations`, :ref:`tactics-automating`,
       :ref:`proof-editing-mode`
 
-.. cmd:: Transparent {+ @smart_qualid }
+.. cmd:: Transparent {+ @reference }
 
    This command accepts the :attr:`global` attribute.  By default, the scope
    of :cmd:`Transparent` is limited to the current section or module.
@@ -1029,7 +1022,7 @@ described first.
 
 .. _vernac-strategy:
 
-.. cmd:: Strategy {+ @strategy_level [ {+ @smart_qualid } ] }
+.. cmd:: Strategy {+ @strategy_level [ {+ @reference } ] }
 
    .. insertprodn strategy_level strategy_level_or_var
 
@@ -1048,7 +1041,7 @@ described first.
    This command generalizes the behavior of the :cmd:`Opaque` and :cmd:`Transparent`
    commands. It is used to fine-tune the strategy for unfolding
    constants, both at the tactic level and at the kernel level. This
-   command associates a :n:`@strategy_level` with the qualified names in the :n:`@smart_qualid`
+   command associates a :n:`@strategy_level` with the qualified names in the :n:`@reference`
    sequence. Whenever two
    expressions with two distinct head constants are compared (for
    instance, this comparison can be triggered by a type cast), the one
@@ -1069,10 +1062,10 @@ described first.
       like −∞)
     + ``transparent`` : Equivalent to level 0
 
-.. cmd:: Print Strategy @smart_qualid
+.. cmd:: Print Strategy @reference
 
-   This command prints the strategy currently associated with :n:`@smart_qualid`. It
-   fails if :n:`@smart_qualid` is not an unfoldable reference, that is, neither a
+   This command prints the strategy currently associated with :n:`@reference`. It
+   fails if :n:`@reference` is not an unfoldable reference, that is, neither a
    variable nor a constant.
 
    .. exn:: The reference is not unfoldable.

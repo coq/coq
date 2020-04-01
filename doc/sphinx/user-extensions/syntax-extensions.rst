@@ -1747,18 +1747,18 @@ Tactic notations allow customizing the syntax of tactics.
 
    The nonterminals that can specified in the tactic notation are:
 
-   .. todo uconstr represents a type with holes.  At the moment uconstr doesn't
-      appear in the documented grammar.  Maybe worth ressurecting with a better name,
-      maybe "open_term"?
-      see https://github.com/coq/coq/pull/11718#discussion_r413721234
+     .. todo uconstr represents a type with holes.  At the moment uconstr doesn't
+        appear in the documented grammar.  Maybe worth ressurecting with a better name,
+        maybe "open_term"?
+        see https://github.com/coq/coq/pull/11718#discussion_r413721234
 
-   .. todo 'open_constr' appears to be another possible value based on the
-      the message from "Tactic Notation open_constr := idtac".
-      Also (at least) "ref", "string", "preident", "int" and "ssrpatternarg".
-      (from reading .v files).
-      Looks like any string passed to "make0" in the code is valid.  But do
-      we want to support all these?
-      @JasonGross's opinion here: https://github.com/coq/coq/pull/11718#discussion_r415387421
+     .. todo 'open_constr' appears to be another possible value based on the
+        the message from "Tactic Notation open_constr := idtac".
+        Also (at least) "ref", "string", "preident", "int" and "ssrpatternarg".
+        (from reading .v files).
+        Looks like any string passed to "make0" in the code is valid.  But do
+        we want to support all these?
+        @JasonGross's opinion here: https://github.com/coq/coq/pull/11718#discussion_r415387421
 
    .. list-table::
       :header-rows: 1
@@ -1789,7 +1789,7 @@ Tactic notations allow customizing the syntax of tactics.
         - :tacn:`unfold`
 
       * - ``smart_global``
-        - :token:`smart_qualid`
+        - :token:`reference`
         - a global reference of term
         - :tacn:`with_strategy`
 
@@ -1871,7 +1871,7 @@ Tactic notations allow customizing the syntax of tactics.
              entries can be used in primitive tactics or in other
              notations at places where a list of the underlying entry
              can be used: entry is either ``constr``, ``hyp``,
-             ``integer``, ``smart_qualid``, ``strategy_level``,
+             ``integer``, ``reference``, ``strategy_level``,
              ``strategy_level_or_var``, or ``int_or_var``.
 
 

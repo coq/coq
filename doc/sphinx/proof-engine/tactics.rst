@@ -83,7 +83,7 @@ specified, the default selector is used.
    single focused goal or with a local selector (’’strict focusing
    mode’’).
 
-   Although more selectors are available, only ``all``, ``!`` or a
+   Although other selectors are available, only ``all``, ``!`` or a
    single natural number are valid default goal selectors.
 
 .. _bindingslist:
@@ -268,7 +268,7 @@ These patterns can be used when the hypothesis is an equality:
   :ref:`Example <intropattern_2stars_ex>`
 
 * :n:`@simple_intropattern_closed {* % @term}` — first applies each of the terms
-  with the :tacn:`apply ... in` tactic on the hypothesis to be introduced, then it uses
+  with the :tacn:`apply … in` tactic on the hypothesis to be introduced, then it uses
   :n:`@simple_intropattern_closed`.
   :ref:`Example <intropattern_injection_ex>`
 
@@ -851,10 +851,10 @@ Applying theorems
 .. flag:: Universal Lemma Under Conjunction
 
    This flag, which preserves compatibility with versions of Coq prior to
-   8.4 is also available for :n:`apply @term in @ident` (see :tacn:`apply ... in`).
+   8.4 is also available for :n:`apply @term in @ident` (see :tacn:`apply … in`).
 
 .. tacn:: apply @term in @ident
-   :name: apply ... in
+   :name: apply … in
 
    This tactic applies to any goal. The argument :token:`term` is a term
    well-formed in the local context and the argument :token:`ident` is an
@@ -897,18 +897,18 @@ Applying theorems
 
    .. tacv:: eapply {+, @term {? with @bindings_list } } in @ident
 
-      This works as :tacn:`apply ... in` but turns unresolved bindings into
+      This works as :tacn:`apply … in` but turns unresolved bindings into
       existential variables, if any, instead of failing.
 
    .. tacv:: apply {+, @term {? with @bindings_list } } in @ident as @simple_intropattern
-      :name: apply ... in ... as
+      :name: apply … in … as
 
-      This works as :tacn:`apply ... in` then applies the :token:`simple_intropattern`
+      This works as :tacn:`apply … in` then applies the :token:`simple_intropattern`
       to the hypothesis :token:`ident`.
 
    .. tacv:: simple apply @term in @ident
 
-      This behaves like :tacn:`apply ... in` but it reasons modulo conversion
+      This behaves like :tacn:`apply … in` but it reasons modulo conversion
       only on subterms that contain no variables to instantiate. For instance,
       if :g:`id := fun x:nat => x` and :g:`H: forall y, id y = y -> True` and
       :g:`H0 : O = O` then :g:`simple apply H in H0` does not succeed because it
@@ -1107,9 +1107,9 @@ Managing the local context
       or at the bottom of the local context. All hypotheses on which the new
       hypothesis depends are moved too so as to respect the order of
       dependencies between hypotheses. It is equivalent to :n:`intro {? @ident__1 }`
-      followed by the appropriate call to :tacn:`move ... after ...`,
-      :tacn:`move ... before ...`, :tacn:`move ... at top`,
-      or :tacn:`move ... at bottom`.
+      followed by the appropriate call to :tacn:`move … after …`,
+      :tacn:`move … before …`, :tacn:`move … at top`,
+      or :tacn:`move … at bottom`.
 
       .. note::
 
@@ -1119,7 +1119,7 @@ Managing the local context
          :undocumented:
 
 .. tacn:: intros @intropattern_list
-   :name: intros ...
+   :name: intros …
 
    Introduces one or more variables or hypotheses from the goal by matching the
    intro patterns.  See the description in :ref:`intropatterns`.
@@ -1127,7 +1127,7 @@ Managing the local context
 .. tacn:: eintros @intropattern_list
    :name: eintros
 
-   Works just like :tacn:`intros ...` except that it creates existential variables
+   Works just like :tacn:`intros …` except that it creates existential variables
    for any unresolved variables rather than failing.
 
 .. tacn:: clear @ident
@@ -1194,7 +1194,7 @@ Managing the local context
       hypotheses that depend on it.
 
 .. tacn:: move @ident__1 after @ident__2
-   :name: move ... after ...
+   :name: move … after …
 
    This moves the hypothesis named :n:`@ident__1` in the local context after
    the hypothesis named :n:`@ident__2`, where “after” is in reference to the
@@ -1212,23 +1212,23 @@ Managing the local context
    dependencies.
 
    .. tacv:: move @ident__1 before @ident__2
-      :name: move ... before ...
+      :name: move … before …
 
       This moves :n:`@ident__1` towards and just before the hypothesis
-      named :n:`@ident__2`.  As for :tacn:`move ... after ...`, dependencies
+      named :n:`@ident__2`.  As for :tacn:`move … after …`, dependencies
       over :n:`@ident__1` (when :n:`@ident__1` comes before :n:`@ident__2` in
       the order of dependencies) or in the type of :n:`@ident__1`
       (when :n:`@ident__1` comes after :n:`@ident__2` in the order of
       dependencies) are moved too.
 
    .. tacv:: move @ident at top
-      :name: move ... at top
+      :name: move … at top
 
       This moves :token:`ident` at the top of the local context (at the beginning
       of the context).
 
    .. tacv:: move @ident at bottom
-      :name: move ... at bottom
+      :name: move … at bottom
 
       This moves :token:`ident` at the bottom of the local context (at the end of
       the context).
@@ -1765,7 +1765,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
       chaining destruction of a hypothesis.
 
    .. tacv:: destruct @term eqn:@naming_intropattern
-      :name: destruct ... eqn:
+      :name: destruct … eqn:
 
       This behaves as :n:`destruct @term` but adds an equation
       between :token:`term` and the value that it takes in each of the
@@ -1894,7 +1894,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
 
 .. exn:: Unable to find an instance for the variables @ident ... @ident.
 
-   Use in this case the variant :tacn:`elim ... with` below.
+   Use in this case the variant :tacn:`elim … with` below.
 
 .. tacv:: induction @term as @or_and_intropattern_loc
 
@@ -1907,7 +1907,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    name from the list :n:`p`:sub:`i1` :n:`... p`:sub:`in` in order. If there are
    not enough names, induction invents names for the remaining variables to
    introduce. More generally, the :n:`p`:sub:`ij` can be any
-   disjunctive/conjunctive introduction pattern (see :tacn:`intros ...`). For
+   disjunctive/conjunctive introduction pattern (see :tacn:`intros …`). For
    instance, for an inductive type with  one constructor, the pattern notation
    :n:`(p`:sub:`1` :n:`, ... , p`:sub:`n` :n:`)` can be used instead of
    :n:`[ p`:sub:`1` :n:`... p`:sub:`n` :n:`]`.
@@ -1926,7 +1926,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    later, in the same way as :tacn:`eapply` does.
 
 .. tacv:: induction @term using @term
-   :name: induction ... using ...
+   :name: induction … using …
 
    This behaves as :tacn:`induction`  but using :n:`@term` as induction scheme.
    It does not expect the conclusion of the type of the first :n:`@term` to be
@@ -1934,7 +1934,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
 
 .. tacv:: induction @term using @term with @bindings_list
 
-   This behaves as :tacn:`induction ... using ...` but also providing instances
+   This behaves as :tacn:`induction … using …` but also providing instances
    for the premises of the type of the second :n:`@term`.
 
 .. tacv:: induction {+, @term} using @qualid
@@ -1985,7 +1985,7 @@ analysis on inductive or co-inductive objects (see :ref:`inductive-definitions`)
    lemma applies and fails otherwise.
 
 .. tacv:: elim @term with @bindings_list
-   :name: elim ... with
+   :name: elim … with
 
    Allows to give explicit instances to the premises of the type of :n:`@term`
    (see :ref:`bindings list <bindingslist>`).
@@ -2434,7 +2434,7 @@ and an explanation of the underlying technique.
    :n:`dependent inversion_clear @ident`.
 
 .. tacv:: dependent inversion @ident with @term
-   :name: dependent inversion ... with ...
+   :name: dependent inversion … with …
 
    This variant allows you to specify the generalization of the goal. It is
    useful when the system fails to generalize the goal automatically. If
@@ -2449,7 +2449,7 @@ and an explanation of the underlying technique.
 
 .. tacv:: dependent inversion_clear @ident with @term
 
-   Like :tacn:`dependent inversion ... with ...` with but clears :n:`@ident` from the
+   Like :tacn:`dependent inversion … with …` with but clears :n:`@ident` from the
    local context.
 
 .. tacv:: dependent inversion_clear @ident as @or_and_intropattern_loc with @term
@@ -2468,8 +2468,11 @@ and an explanation of the underlying technique.
    This allows naming the hypotheses introduced in the context by
    ``simple inversion``.
 
-.. tacv:: inversion @ident using @ident
+.. tacn:: inversion @ident using @ident
    :name: inversion ... using ...
+
+   .. todo using … instead of ... in the name above gives a Sphinx error, even though
+      this works just find for :tacn:`move … after …`
 
    Let :n:`@ident` have type :g:`(I t)` (:g:`I` an inductive predicate) in the
    local context, and :n:`@ident` be a (dependent) inversion lemma. Then, this
@@ -2993,7 +2996,7 @@ Performing computations
    | fold {+ @one_term }
    | pattern {+, @pattern_occ }
    | @ident
-   delta_flag ::= {? - } [ {+ @smart_qualid } ]
+   delta_flag ::= {? - } [ {+ @reference } ]
    strategy_flag ::= {+ @red_flags }
    | @delta_flag
    red_flags ::= beta
@@ -3003,13 +3006,13 @@ Performing computations
    | cofix
    | zeta
    | delta {? @delta_flag }
-   ref_or_pattern_occ ::= @smart_qualid {? at @occs_nums }
+   ref_or_pattern_occ ::= @reference {? at @occs_nums }
    | @one_term {? at @occs_nums }
    occs_nums ::= {+ {| @num | @ident } }
    | - {| @num | @ident } {* @int_or_var }
    int_or_var ::= @int
    | @ident
-   unfold_occ ::= @smart_qualid {? at @occs_nums }
+   unfold_occ ::= @reference {? at @occs_nums }
    pattern_occ ::= @one_term {? at @occs_nums }
 
 This set of tactics implements different specialized usages of the
@@ -3418,7 +3421,7 @@ the conversion in hypotheses :n:`{+ @ident}`.
 
    This is the most general syntax that combines the different variants.
 
-.. tacn:: with_strategy @strategy_level_or_var [ {+ @smart_qualid } ] @ltac_expr3
+.. tacn:: with_strategy @strategy_level_or_var [ {+ @reference } ] @ltac_expr3
    :name: with_strategy
 
    Executes :token:`ltac_expr3`, applying the alternate unfolding
@@ -4710,32 +4713,9 @@ Automating
       The goal is not of the form :g:`t = u`. Especially note that :tacn:`btauto`
       doesn't introduce variables into the context on its own.
 
-.. tacn:: ring
-   :name: ring
-
-   This tactic solves equations upon polynomial expressions of a ring
-   (or semiring) structure. It proceeds by normalizing both hand sides
-   of the equation (w.r.t. associativity, commutativity and
-   distributivity, constant propagation) and comparing syntactically the
-   results.
-
-.. tacn:: ring_simplify {* @term}
-   :name: ring_simplify
-
-   This tactic applies the normalization procedure described above to
-   the given terms. The tactic then replaces all occurrences of the terms
-   given in the conclusion of the goal by their normal forms. If no term
-   is given, then the conclusion should be an equation and both hand
-   sides are normalized.
-
-See :ref:`Theringandfieldtacticfamilies` for more information on
-the tactic and how to declare new ring structures. All declared field structures
-can be printed with the ``Print Rings`` command.
-
-.. tacn:: field
+.. tacv:: field
           field_simplify {* @term}
           field_simplify_eq
-   :name: field; field_simplify; field_simplify_eq
 
    The field tactic is built on the same ideas as ring: this is a
    reflexive tactic that solves or simplifies equations in a field
@@ -4801,8 +4781,8 @@ Non-logical tactics
    :name: swap
 
    This tactic switches the position of the goals of indices :n:`@num` and
-   :n:`@num`. If either :n:`@num` or :n:`@num` is negative then goals are
-   counted from the end of the focused goal list. Goals are indexed from 1,
+   :n:`@num`.  Negative values for:n:`@num` indicate counting goals
+   backward from the end of the focused goal list. Goals are indexed from 1,
    there is no goal with position 0.
 
 .. example::
@@ -4917,7 +4897,7 @@ Performance-oriented tactic variants
 .. tacn:: change_no_check @term
    :name: change_no_check
 
-   For advanced usage. Similar to :n:`change @term`, but as an optimization,
+   For advanced usage. Similar to :tacn:`change` :n:`@term`, but as an optimization,
    it skips checking that :n:`@term` is convertible to the goal.
 
    Recall that the Coq kernel typechecks proofs again when they are concluded to
@@ -4929,7 +4909,7 @@ Performance-oriented tactic variants
    indeed convertible to the goal.
 
    In the following example, :tacn:`change_no_check` replaces :g:`False` by
-   :g:`True`, but :g:`Qed` then rejects the proof, ensuring consistency.
+   :g:`True`, but :cmd:`Qed` then rejects the proof, ensuring consistency.
 
    .. example::
 
@@ -4940,7 +4920,7 @@ Performance-oriented tactic variants
            exact I.
          Fail Qed.
 
-   :tacn:`change_no_check` supports all of `change`'s variants.
+   :tacn:`change_no_check` supports all of :tacn:`change`'s variants.
 
    .. tacv:: change_no_check @term with @term’
       :undocumented:
@@ -4971,9 +4951,9 @@ Performance-oriented tactic variants
 .. tacn:: exact_no_check @term
    :name: exact_no_check
 
-   For advanced usage. Similar to :n:`exact @term`, but as an optimization,
+   For advanced usage. Similar to :tacn:`exact` :n:`@term`, but as an optimization,
    it skips checking that :n:`@term` has the goal's type, relying on the kernel
-   check instead. See :tacn:`change_no_check` for more explanations.
+   check instead. See :tacn:`change_no_check` for more explanation.
 
    .. example::
 
@@ -4986,7 +4966,7 @@ Performance-oriented tactic variants
    .. tacv:: vm_cast_no_check @term
       :name: vm_cast_no_check
 
-      For advanced usage. Similar to :n:`exact_no_check @term`, but additionally
+      For advanced usage. Similar to :tacn:`exact_no_check` :n:`@term`, but additionally
       instructs the kernel to use :tacn:`vm_compute` to compare the
       goal's type with the :n:`@term`'s type.
 
@@ -5001,7 +4981,7 @@ Performance-oriented tactic variants
    .. tacv:: native_cast_no_check @term
       :name: native_cast_no_check
 
-      for advanced usage. similar to :n:`exact_no_check @term`, but additionally
+      for advanced usage. similar to :tacn:`exact_no_check` :n:`@term`, but additionally
       instructs the kernel to use :tacn:`native_compute` to compare the goal's
       type with the :n:`@term`'s type.
 

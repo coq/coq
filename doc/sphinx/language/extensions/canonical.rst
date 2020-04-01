@@ -27,11 +27,11 @@ applied to an unknown structure instance (an implicit argument) and a
 value. The complete documentation of canonical structures can be found
 in :ref:`canonicalstructures`; here only a simple example is given.
 
-.. cmd:: Canonical {? Structure } @smart_qualid
+.. cmd:: Canonical {? Structure } @reference
          Canonical {? Structure } @ident_decl @def_body
    :name: Canonical Structure; _
 
-   The first form of this command declares an existing :n:`@smart_qualid` as a
+   The first form of this command declares an existing :n:`@reference` as a
    canonical instance of a structure (a record).
 
    The second form defines a new constant as if the :cmd:`Definition` command
@@ -111,7 +111,7 @@ in :ref:`canonicalstructures`; here only a simple example is given.
    It is equivalent to having a :cmd:`Canonical Structure` declaration just
    after the command.
 
-.. cmd:: Print Canonical Projections {* @smart_qualid }
+.. cmd:: Print Canonical Projections {* @reference }
 
    This displays the list of global names that are components of some
    canonical structure. For each of them, the canonical structure of

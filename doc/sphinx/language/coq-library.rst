@@ -34,7 +34,7 @@ The prelude
 This section lists the basic notions and results which are directly
 available in the standard |Coq| system. Most of these constructions
 are defined in the ``Prelude`` module in directory ``theories/Init``
-at the |Coq| root directory; this includes the modules
+in the |Coq| root directory; this includes the modules
 ``Notations``,
 ``Logic``,
 ``Datatypes``,

@@ -779,7 +779,7 @@ let rec edit_prod g top edit_map prod =
         begin
           try let splice_prods = NTMap.find nt !g.map in
             match splice_prods with
-            | [] -> assert false
+            | [] -> error "Empty splice for '%s'\n" nt; []
             | [p] -> List.rev (remove_Sedit2 p)
             | _ -> [Sprod (List.map remove_Sedit2 splice_prods)]
           with Not_found -> error "Missing nt '%s' for splice\n" nt; [Snterm nt]
@@ -1828,10 +1828,10 @@ let process_rst g file args seen tac_prods cmd_prods =
     "doc/sphinx/language/core/sections.rst";
     "doc/sphinx/language/extensions/implicit-arguments.rst";
     "doc/sphinx/language/extensions/arguments-command.rst";
-    "doc/sphinx/language/using/libraries/funind.rst";
-
-    "doc/sphinx/language/gallina-specification-language.rst";
     "doc/sphinx/language/gallina-extensions.rst";
+    "doc/sphinx/language/gallina-specification-language.rst";
+    "doc/sphinx/language/using/libraries/funind.rst";
+    "doc/sphinx/proof-engine/ltac.rst";
     "doc/sphinx/proof-engine/vernacular-commands.rst";
     "doc/sphinx/user-extensions/syntax-extensions.rst"
   ]
@@ -2059,10 +2059,12 @@ let process_grammar args =
 
       let cmd_nts = ["command"] in
       (* TODO: need to handle tactic_mode (overlaps with query_command) and subprf *)
-      cmdReport "prodnCommands" "cmds" cmd_nts !seen.cmds !seen.cmdvs;
+      if args.check_cmds then
+        cmdReport "prodnCommands" "cmds" cmd_nts !seen.cmds !seen.cmdvs;
 
       let tac_nts = ["simple_tactic"] in
-      cmdReport "prodnTactics" "tacs" tac_nts !seen.tacs !seen.tacvs
+      if args.check_tacs then
+        cmdReport "prodnTactics" "tacs" tac_nts !seen.tacs !seen.tacvs
     end;
 
     (* generate prodnGrammar for reference *)
