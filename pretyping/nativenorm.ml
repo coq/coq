@@ -496,8 +496,8 @@ let stop_profiler m_pid =
 let native_norm env sigma c ty =
   let c = EConstr.Unsafe.to_constr c in
   let ty = EConstr.Unsafe.to_constr ty in
-  if not Coq_config.native_compiler then
-    user_err Pp.(str "Native_compute reduction has been disabled at configure time.")
+  if not (Flags.get_native_compiler ()) then
+    user_err Pp.(str "Native_compute reduction has been disabled.")
   else
   (*
   Format.eprintf "Numbers of free variables (named): %i\n" (List.length vl1);

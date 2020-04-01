@@ -37,7 +37,7 @@ let warn_native_compute_disabled =
    strbrk "native_compute disabled at configure time; falling back to vm_compute.")
 
 let cbv_native env sigma c =
-  if Coq_config.native_compiler then
+  if Flags.get_native_compiler () then
     let ctyp = Retyping.get_type_of env sigma c in
     Nativenorm.native_norm env sigma c ctyp
   else
