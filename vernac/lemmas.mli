@@ -19,10 +19,10 @@ type t
 val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
 (** [set_endline_tactic tac lemma] set ending tactic for [lemma] *)
 
-val pf_map : (Proof_global.t -> Proof_global.t) -> t -> t
+val pf_map : (Declare.t -> Declare.t) -> t -> t
 (** [pf_map f l] map the underlying proof object *)
 
-val pf_fold : (Proof_global.t -> 'a) -> t -> 'a
+val pf_fold : (Declare.t -> 'a) -> t -> 'a
 (** [pf_fold f l] fold over the underlying proof object *)
 
 val by : unit Proofview.tactic -> t -> t * bool
@@ -101,21 +101,21 @@ val start_lemma_with_initialization
 val save_lemma_admitted : lemma:t -> unit
 val save_lemma_proved
   :  lemma:t
-  -> opaque:Proof_global.opacity_flag
+  -> opaque:Declare.opacity_flag
   -> idopt:Names.lident option
   -> unit
 
 (** To be removed, don't use! *)
 module Internal : sig
   val get_info : t -> Info.t
-  (** Only needed due to the Proof_global compatibility layer. *)
+  (** Only needed due to the Declare compatibility layer. *)
 end
 
 (** Special cases for delayed proofs, in this case we must provide the
    proof information so the proof won't be forced. *)
-val save_lemma_admitted_delayed : proof:Proof_global.proof_object -> info:Info.t -> unit
+val save_lemma_admitted_delayed : proof:Declare.proof_object -> info:Info.t -> unit
 val save_lemma_proved_delayed
-  :  proof:Proof_global.proof_object
+  :  proof:Declare.proof_object
   -> info:Info.t
   -> idopt:Names.lident option
   -> unit

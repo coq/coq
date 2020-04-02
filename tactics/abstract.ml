@@ -91,7 +91,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) Tactics.intro) tac) in
   let ectx = Evd.evar_universe_context sigma in
   let (const, safe, ectx) =
-    try Proof_global.build_constant_by_tactic ~name ~opaque:Proof_global.Transparent ~poly ~uctx:ectx ~sign:secsign concl solve_tac
+    try Declare.build_constant_by_tactic ~name ~opaque:Declare.Transparent ~poly ~uctx:ectx ~sign:secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
@@ -106,7 +106,7 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
   (* EJGA: Hack related to the above call to
      `build_constant_by_tactic` with `~opaque:Transparent`. Even if
      the abstracted term is destined to be opaque, if we trigger the
-     `if poly && opaque && private_poly_univs ()` in `Proof_global`
+     `if poly && opaque && private_poly_univs ()` in `Declare`
      kernel will boom. This deserves more investigation. *)
   let const = Declare.Internal.set_opacity ~opaque const in
   let const, args = Declare.Internal.shrink_entry sign const in

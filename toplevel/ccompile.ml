@@ -131,7 +131,7 @@ let set_options = List.iter set_option
 let compile opts copts ~echo ~f_in ~f_out =
   let open Vernac.State in
   let check_pending_proofs () =
-    let pfs = Vernacstate.Proof_global.get_all_proof_names () [@ocaml.warning "-3"] in
+    let pfs = Vernacstate.Declare.get_all_proof_names () [@ocaml.warning "-3"] in
     if not (CList.is_empty pfs) then
       fatal_error (str "There are pending proofs: "
                     ++ (pfs

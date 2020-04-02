@@ -202,7 +202,7 @@ type syntax_modifier =
 type proof_end =
   | Admitted
   (*                         name in `Save ident` when closing goal *)
-  | Proved of Proof_global.opacity_flag * lident option
+  | Proved of Declare.opacity_flag * lident option
 
 type scheme =
   | InductionScheme of bool * qualid or_by_notation * sort_expr

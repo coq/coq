@@ -59,8 +59,8 @@ let prrecarg = function
 let ppwf_paths x = pp (Rtree.pp_tree prrecarg x)
 
 let get_current_context () =
-  try Vernacstate.Proof_global.get_current_context ()
-  with Vernacstate.Proof_global.NoCurrentProof ->
+  try Vernacstate.Declare.get_current_context ()
+  with Vernacstate.Declare.NoCurrentProof ->
     let env = Global.env() in
     Evd.from_env env, env
   [@@ocaml.warning "-3"]

@@ -61,7 +61,7 @@ let iter_named_context_name_type f =
 let get_current_or_goal_context ?pstate glnum =
   match pstate with
   | None -> let env = Global.env () in Evd.(from_env env, env)
-  | Some p -> Proof_global.get_goal_context p glnum
+  | Some p -> Declare.get_goal_context p glnum
 
 (* General search over hypothesis of a goal *)
 let iter_hypothesis ?pstate glnum (fn : GlobRef.t -> env -> constr -> unit) =

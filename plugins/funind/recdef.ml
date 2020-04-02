@@ -58,7 +58,7 @@ let declare_fun name kind ?univs value =
   GlobRef.ConstRef (declare_constant ~name ~kind (DefinitionEntry ce))
 
 let defined lemma =
-  Lemmas.save_lemma_proved ~lemma ~opaque:Proof_global.Transparent ~idopt:None
+  Lemmas.save_lemma_proved ~lemma ~opaque:Declare.Transparent ~idopt:None
 
 let def_of_const t =
   match Constr.kind t with
@@ -1336,7 +1336,7 @@ let whole_start concl_tac nb_args is_mes func input_type relation rec_arg_num :
     g
 
 let get_current_subgoals_types pstate =
-  let p = Proof_global.get_proof pstate in
+  let p = Declare.get_proof pstate in
   let Proof.{goals = sgs; sigma; _} = Proof.data p in
   (sigma, List.map (Goal.V82.abstract_type sigma) sgs)
 
@@ -1408,15 +1408,15 @@ let build_new_goal_type lemma =
 let is_opaque_constant c =
   let cb = Global.lookup_constant c in
   match cb.Declarations.const_body with
-  | Declarations.OpaqueDef _ -> Proof_global.Opaque
-  | Declarations.Undef _ -> Proof_global.Opaque
-  | Declarations.Def _ -> Proof_global.Transparent
-  | Declarations.Primitive _ -> Proof_global.Opaque
+  | Declarations.OpaqueDef _ -> Declare.Opaque
+  | Declarations.Undef _ -> Declare.Opaque
+  | Declarations.Def _ -> Declare.Transparent
+  | Declarations.Primitive _ -> Declare.Opaque
 
 let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
     (gls_type, decompose_and_tac, nb_goal) =
   (* Pp.msgnl (str "gls_type := " ++ Printer.pr_lconstr gls_type); *)
-  let current_proof_name = Lemmas.pf_fold Proof_global.get_proof_name lemma in
+  let current_proof_name = Lemmas.pf_fold Declare.get_proof_name lemma in
   let name =
     match goal_name with
     | Some s -> s
@@ -1514,7 +1514,7 @@ let open_new_goal ~lemma build_proof sigma using_lemmas ref_ goal_name
                   g))
            lemma
   in
-  if Lemmas.(pf_fold Proof_global.get_open_goals) lemma = 0 then (
+  if Lemmas.(pf_fold Declare.get_open_goals) lemma = 0 then (
     defined lemma; None )
   else Some lemma
 

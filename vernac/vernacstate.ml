@@ -45,7 +45,7 @@ module LemmaStack = struct
     | Some (l,ls) -> a, (l :: ls)
 
   let get_all_proof_names (pf : t) =
-    let prj x = Lemmas.pf_fold Proof_global.get_proof x in
+    let prj x = Lemmas.pf_fold Declare.get_proof x in
     let (pn, pns) = map Proof.(function pf -> (data (prj pf)).name) pf in
     pn :: pns
 
@@ -105,7 +105,7 @@ let make_shallow st =
   }
 
 (* Compatibility module *)
-module Proof_global = struct
+module Declare = struct
 
   let get () = !s_lemmas
   let set x = s_lemmas := x
@@ -126,7 +126,7 @@ module Proof_global = struct
     end
 
   open Lemmas
-  open Proof_global
+  open Declare
 
   let cc f = match !s_lemmas with
     | None -> raise NoCurrentProof
@@ -161,7 +161,7 @@ module Proof_global = struct
       s_lemmas := Some stack;
       res
 
-  type closed_proof = Proof_global.proof_object * Lemmas.Info.t
+  type closed_proof = Declare.proof_object * Lemmas.Info.t
 
 
   let return_proof () = cc return_proof
@@ -169,16 +169,16 @@ module Proof_global = struct
 
   let close_future_proof ~feedback_id pf =
     cc_lemma (fun pt -> pf_fold (fun st -> close_future_proof ~feedback_id st pf) pt,
-                        Internal.get_info pt)
+                        Lemmas.Internal.get_info pt)
 
   let close_proof ~opaque ~keep_body_ucst_separate =
     cc_lemma (fun pt -> pf_fold ((close_proof ~opaque ~keep_body_ucst_separate)) pt,
-                        Internal.get_info pt)
+                        Lemmas.Internal.get_info pt)
 
   let discard_all () = s_lemmas := None
   let update_global_env () = dd (update_global_env)
 
-  let get_current_context () = cc Proof_global.get_current_context
+  let get_current_context () = cc Declare.get_current_context
 
   let get_all_proof_names () =
     try cc_stack LemmaStack.get_all_proof_names

@@ -232,32 +232,32 @@ let goals () =
   let doc = get_doc () in
   set_doc @@ Stm.finish ~doc;
   try
-    let newp = Vernacstate.Proof_global.give_me_the_proof () in
+    let newp = Vernacstate.Declare.give_me_the_proof () in
     if Proof_diffs.show_diffs () then begin
       let oldp = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
       let diff_goal_map = Proof_diffs.make_goal_map oldp newp in
       Some (export_pre_goals Proof.(data newp) (process_goal_diffs diff_goal_map oldp))
     end else
       Some (export_pre_goals Proof.(data newp) process_goal)
-  with Vernacstate.Proof_global.NoCurrentProof -> None
+  with Vernacstate.Declare.NoCurrentProof -> None
   [@@ocaml.warning "-3"];;
 
 let evars () =
   try
     let doc = get_doc () in
     set_doc @@ Stm.finish ~doc;
-    let pfts = Vernacstate.Proof_global.give_me_the_proof () in
+    let pfts = Vernacstate.Declare.give_me_the_proof () in
     let Proof.{ sigma } = Proof.data pfts in
     let exl = Evar.Map.bindings (Evd.undefined_map sigma) in
     let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar sigma ev); } in
     let el = List.map map_evar exl in
     Some el
-  with Vernacstate.Proof_global.NoCurrentProof -> None
+  with Vernacstate.Declare.NoCurrentProof -> None
   [@@ocaml.warning "-3"]
 
 let hints () =
   try
-    let pfts = Vernacstate.Proof_global.give_me_the_proof () in
+    let pfts = Vernacstate.Declare.give_me_the_proof () in
     let Proof.{ goals; sigma } = Proof.data pfts in
     match goals with
     | [] -> None
@@ -266,7 +266,7 @@ let hints () =
       let get_hint_hyp env d accu = hyp_next_tac sigma env d :: accu in
       let hint_hyps = List.rev (Environ.fold_named_context get_hint_hyp env ~init: []) in
       Some (hint_hyps, concl_next_tac)
-  with Vernacstate.Proof_global.NoCurrentProof -> None
+  with Vernacstate.Declare.NoCurrentProof -> None
   [@@ocaml.warning "-3"]
 
 (** Other API calls *)
@@ -287,11 +287,11 @@ let status force =
     List.rev_map Names.Id.to_string l
   in
   let proof =
-    try Some (Names.Id.to_string (Vernacstate.Proof_global.get_current_proof_name ()))
-    with Vernacstate.Proof_global.NoCurrentProof -> None
+    try Some (Names.Id.to_string (Vernacstate.Declare.get_current_proof_name ()))
+    with Vernacstate.Declare.NoCurrentProof -> None
   in
   let allproofs =
-    let l = Vernacstate.Proof_global.get_all_proof_names () in
+    let l = Vernacstate.Declare.get_all_proof_names () in
     List.map Names.Id.to_string l
   in
   {
@@ -340,7 +340,7 @@ let import_search_constraint = function
   | Interface.Include_Blacklist -> Search.Include_Blacklist
 
 let search flags =
-  let pstate = Vernacstate.Proof_global.get_pstate () in
+  let pstate = Vernacstate.Declare.get_pstate () in
   List.map export_coq_object (Search.interface_search ?pstate (
     List.map (fun (c, b) -> (import_search_constraint c, b)) flags)
   )

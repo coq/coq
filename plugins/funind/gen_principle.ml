@@ -191,7 +191,7 @@ let prepare_body {Vernacexpr.binders} rt =
   let fun_args, rt' = chop_rlambda_n n rt in
   (fun_args, rt')
 
-let build_functional_principle ?(opaque = Proof_global.Transparent)
+let build_functional_principle ?(opaque = Declare.Transparent)
     (evd : Evd.evar_map ref) old_princ_type sorts funs _i proof_tac hook =
   (* First we get the type of the old graph principle *)
   let mutr_nparams =
@@ -233,9 +233,10 @@ let build_functional_principle ?(opaque = Proof_global.Transparent)
   (*      let dur1 = System.time_difference tim1 tim2 in *)
   (*      Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1)); *)
   (*    end; *)
-  let open Proof_global in
-  let {entries} =
-    Lemmas.pf_fold (close_proof ~opaque ~keep_body_ucst_separate:false) lemma
+  let {Declare.entries} =
+    Lemmas.pf_fold
+      (Declare.close_proof ~opaque ~keep_body_ucst_separate:false)
+      lemma
   in
   match entries with
   | [entry] -> (entry, hook)
@@ -1394,7 +1395,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) :
       | None -> raise Not_found
       | Some finfos -> finfos
     in
-    let open Proof_global in
+    let open Declare in
     match finfos.equation_lemma with
     | None -> Transparent (* non recursive definition *)
     | Some equation ->
@@ -1550,7 +1551,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
             fst @@ Lemmas.by (Proofview.V82.tactic (proving_tac i)) lemma
           in
           let () =
-            Lemmas.save_lemma_proved ~lemma ~opaque:Proof_global.Transparent
+            Lemmas.save_lemma_proved ~lemma ~opaque:Declare.Transparent
               ~idopt:None
           in
           let finfo =
@@ -1621,7 +1622,7 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
                  lemma)
           in
           let () =
-            Lemmas.save_lemma_proved ~lemma ~opaque:Proof_global.Transparent
+            Lemmas.save_lemma_proved ~lemma ~opaque:Declare.Transparent
               ~idopt:None
           in
           let finfo =

@@ -27,7 +27,7 @@ open Feedback
 open Vernacexpr
 open Vernacextend
 
-module PG_compat = Vernacstate.Proof_global [@@ocaml.warning "-3"]
+module PG_compat = Vernacstate.Declare [@@ocaml.warning "-3"]
 
 let is_vtkeep = function VtKeep _ -> true | _ -> false
 let get_vtkeep = function VtKeep x -> x | _ -> assert false
@@ -147,7 +147,7 @@ let update_global_env () =
     PG_compat.update_global_env ()
 
 module Vcs_ = Vcs.Make(Stateid.Self)
-type future_proof = Proof_global.closed_proof_output Future.computation
+type future_proof = Declare.closed_proof_output Future.computation
 
 type depth = int
 type branch_type =
@@ -1164,7 +1164,7 @@ end = struct (* {{{ *)
 
   let get_proof ~doc id =
     match state_of_id ~doc id with
-    | `Valid (Some vstate) -> Option.map (Vernacstate.LemmaStack.with_top_pstate ~f:Proof_global.get_proof) vstate.Vernacstate.lemmas
+    | `Valid (Some vstate) -> Option.map (Vernacstate.LemmaStack.with_top_pstate ~f:Declare.get_proof) vstate.Vernacstate.lemmas
     | _ -> None
 
   let undo_vernac_classifier v ~doc =
@@ -1358,7 +1358,7 @@ module rec ProofTask : sig
     t_stop     : Stateid.t;
     t_drop     : bool;
     t_states   : competence;
-    t_assign   : Proof_global.closed_proof_output Future.assignment -> unit;
+    t_assign   : Declare.closed_proof_output Future.assignment -> unit;
     t_loc      : Loc.t option;
     t_uuid     : Future.UUID.t;
     t_name     : string }
@@ -1381,7 +1381,7 @@ module rec ProofTask : sig
     ?loc:Loc.t ->
     drop_pt:bool ->
     Stateid.t * Stateid.t -> Stateid.t ->
-      Proof_global.closed_proof_output Future.computation
+      Declare.closed_proof_output Future.computation
 
   (* If set, only tasks overlapping with this list are processed *)
   val set_perspective : Stateid.t list -> unit
@@ -1397,7 +1397,7 @@ end = struct (* {{{ *)
     t_stop     : Stateid.t;
     t_drop     : bool;
     t_states   : competence;
-    t_assign   : Proof_global.closed_proof_output Future.assignment -> unit;
+    t_assign   : Declare.closed_proof_output Future.assignment -> unit;
     t_loc      : Loc.t option;
     t_uuid     : Future.UUID.t;
     t_name     : string }
@@ -1419,7 +1419,7 @@ end = struct (* {{{ *)
     e_safe_states : Stateid.t list }
 
   type response =
-    | RespBuiltProof of Proof_global.closed_proof_output * float
+    | RespBuiltProof of Declare.closed_proof_output * float
     | RespError of error
     | RespStates of (Stateid.t * State.partial_state) list
 
@@ -1530,7 +1530,7 @@ end = struct (* {{{ *)
             PG_compat.close_future_proof ~feedback_id:stop (Future.from_val ~fix_exn p) in
 
           let st = Vernacstate.freeze_interp_state ~marshallable:false in
-          let opaque = Proof_global.Opaque in
+          let opaque = Declare.Opaque in
           stm_qed_delay_proof ~st ~id:stop
             ~proof:pobject ~info:(Lemmas.Info.make ()) ~loc ~control:[] (Proved (opaque,None))) in
         ignore(Future.join checked_proof);
@@ -1664,7 +1664,7 @@ end = struct (* {{{ *)
         let _proof = PG_compat.return_partial_proof () in
         `OK_ADMITTED
       else begin
-      let opaque = Proof_global.Opaque in
+      let opaque = Declare.Opaque in
 
       (* The original terminator, a hook, has not been saved in the .vio*)
       let proof, _info =
@@ -1723,7 +1723,7 @@ end = struct (* {{{ *)
     | `ERROR -> exit 1
     | `ERROR_ADMITTED -> cst, false
     | `OK_ADMITTED -> cst, false
-    | `OK { Proof_global.name } ->
+    | `OK { Declare.name } ->
         let con = Nametab.locate_constant (Libnames.qualid_of_ident name) in
         let c = Global.lookup_constant con in
         let o = match c.Declarations.const_body with
@@ -2149,7 +2149,7 @@ let collect_proof keep cur hd brkind id =
    | id :: _ -> Names.Id.to_string id in
  let loc = (snd cur).expr.CAst.loc in
  let is_defined_expr = function
-   | VernacEndProof (Proved (Proof_global.Transparent,_)) -> true
+   | VernacEndProof (Proved (Declare.Transparent,_)) -> true
    | _ -> false in
  let is_defined = function
    | _, { expr = e } -> is_defined_expr e.CAst.v.expr
@@ -2514,7 +2514,7 @@ let known_state ~doc ?(redefine_qed=false) ~cache id =
                   | VtKeep VtKeepAxiom ->
                       qed.fproof <- Some (None, ref false); None
                   | VtKeep opaque ->
-                    let opaque = let open Proof_global in  match opaque with
+                    let opaque = let open Declare in  match opaque with
                       | VtKeepOpaque -> Opaque | VtKeepDefined -> Transparent
                       | VtKeepAxiom -> assert false
                     in
