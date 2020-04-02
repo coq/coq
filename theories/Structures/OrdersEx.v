@@ -13,14 +13,15 @@
  * Institution: LRI, CNRS UMR 8623 - Université Paris Sud
  *              91405 Orsay, France *)
 
-Require Import Orders PeanoNat POrderedType BinNat BinInt
+Require Import Orders BoolOrder PeanoNat POrderedType BinNat BinInt
  RelationPairs EqualitiesFacts.
 
 (** * Examples of Ordered Type structures. *)
 
 
-(** Ordered Type for [nat], [Positive], [N], [Z] with the usual order. *)
+(** Ordered Type for [bool], [nat], [Positive], [N], [Z] with the usual order. *)
 
+Module Bool_as_OT := BoolOrder.BoolOrd.
 Module Nat_as_OT := PeanoNat.Nat.
 Module Positive_as_OT := BinPos.Pos.
 Module N_as_OT := BinNat.N.
@@ -30,8 +31,9 @@ Module Z_as_OT := BinInt.Z.
 
 Module OT_as_DT (O:OrderedType) <: DecidableType := O.
 
-(** (Usual) Decidable Type for [nat], [positive], [N], [Z] *)
+(** (Usual) Decidable Type for [bool], [nat], [positive], [N], [Z] *)
 
+Module Bool_as_DT <: UsualDecidableType := Bool_as_OT.
 Module Nat_as_DT <: UsualDecidableType := Nat_as_OT.
 Module Positive_as_DT <: UsualDecidableType := Positive_as_OT.
 Module N_as_DT <: UsualDecidableType := N_as_OT.

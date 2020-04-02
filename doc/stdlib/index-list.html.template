@@ -99,6 +99,7 @@ through the <tt>Require Import</tt> command.</p>
   <dd>
     theories/Bool/Bool.v
     theories/Bool/BoolEq.v
+    theories/Bool/BoolOrder.v
     theories/Bool/DecBool.v
     theories/Bool/IfProp.v
     theories/Bool/Sumbool.v

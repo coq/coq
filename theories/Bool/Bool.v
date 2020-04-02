@@ -91,7 +91,24 @@ Proof.
   destr_bool; intuition.
 Qed.
 
-(* Infix "<=" := leb : bool_scope. *)
+Definition ltb (b1 b2:bool) :=
+  match b1 with
+    | true => False
+    | false => b2 = true
+  end.
+Hint Unfold ltb: bool.
+
+Definition compareb (b1 b2 : bool) :=
+  match b1, b2 with
+   | false, true => Lt
+   | true, false => Gt
+   | _, _ => Eq
+  end.
+
+Lemma compareb_spec : forall b1 b2,
+  CompareSpec (b1 = b2) (ltb b1 b2) (ltb b2 b1) (compareb b1 b2).
+Proof. destr_bool; auto. Qed.
+
 
 (*************)
 (** * Equality *)
@@ -823,3 +840,11 @@ Lemma eqb_spec (b b' : bool) : reflect (b = b') (eqb b b').
 Proof.
  destruct b, b'; now constructor.
 Defined.
+
+(** Notations *)
+Module BoolNotations.
+Infix "<=" := leb : bool_scope.
+Infix "<" := ltb : bool_scope.
+Infix "?=" := compareb (at level 70) : bool_scope.
+Infix "=?" := eqb (at level 70) : bool_scope.
+End BoolNotations.
