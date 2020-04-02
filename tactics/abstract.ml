@@ -80,57 +80,9 @@ let cache_term_by_tactic_then ~opaque ~name_op ?(goal_type=None) tac tacK =
     try flush_and_check_evars sigma concl
     with Uninstantiated_evar _ ->
       CErrors.user_err Pp.(str "\"abstract\" cannot handle existentials.") in
-
-  let sigma, ctx, concl =
-    (* FIXME: should be done only if the tactic succeeds *)
-    let sigma = Evd.minimize_universes sigma in
-    let ctx = Evd.universe_context_set sigma in
-    sigma, ctx, Evarutil.nf_evars_universes sigma concl
-  in
-  let concl = EConstr.of_constr concl in
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) Tactics.intro) tac) in
-  let ectx = Evd.evar_universe_context sigma in
-  let (const, safe, ectx) =
-    try Declare.build_constant_by_tactic ~name ~opaque:Declare.Transparent ~poly ~uctx:ectx ~sign:secsign concl solve_tac
-    with Logic_monad.TacticFailure e as src ->
-    (* if the tactic [tac] fails, it reports a [TacticFailure e],
-       which is an error irrelevant to the proof system (in fact it
-       means that [e] comes from [tac] failing to yield enough
-       success). Hence it reraises [e]. *)
-    let (_, info) = Exninfo.capture src in
-    Exninfo.iraise (e, info)
-  in
-  let body, effs = Future.force const.Declare.proof_entry_body in
-  (* We drop the side-effects from the entry, they already exist in the ambient environment *)
-  let const = Declare.Internal.map_entry_body const ~f:(fun _ -> body, ()) in
-  (* EJGA: Hack related to the above call to
-     `build_constant_by_tactic` with `~opaque:Transparent`. Even if
-     the abstracted term is destined to be opaque, if we trigger the
-     `if poly && opaque && private_poly_univs ()` in `Declare`
-     kernel will boom. This deserves more investigation. *)
-  let const = Declare.Internal.set_opacity ~opaque const in
-  let const, args = Declare.Internal.shrink_entry sign const in
-  let args = List.map EConstr.of_constr args in
-  let cst () =
-    (* do not compute the implicit arguments, it may be costly *)
-    let () = Impargs.make_implicit_args false in
-    (* ppedrot: seems legit to have abstracted subproofs as local*)
-    Declare.declare_private_constant ~local:Declare.ImportNeedQualified ~name ~kind const
-  in
-  let cst, eff = Impargs.with_implicit_protection cst () in
-  let inst = match const.Declare.proof_entry_universes with
-  | Entries.Monomorphic_entry _ -> EInstance.empty
-  | Entries.Polymorphic_entry (_, ctx) ->
-    (* We mimic what the kernel does, that is ensuring that no additional
-       constraints appear in the body of polymorphic constants. Ideally this
-       should be enforced statically. *)
-    let (_, body_uctx), _ = Future.force const.Declare.proof_entry_body in
-    let () = assert (Univ.ContextSet.is_empty body_uctx) in
-    EInstance.make (Univ.UContext.instance ctx)
-  in
-  let lem = mkConstU (cst, inst) in
-  let sigma = Evd.set_universe_context sigma ectx in
-  let effs = Evd.concat_side_effects eff effs in
+  let effs, sigma, lem, args, safe =
+    Declare.declare_abstract ~name ~poly ~sign ~secsign ~kind ~opaque ~solve_tac sigma concl in
   let solve =
     Proofview.tclEFFECTS effs <*>
     tacK lem args

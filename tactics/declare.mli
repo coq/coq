@@ -261,18 +261,18 @@ val get_open_goals : t -> int
     Returns [false] if an unsafe tactic has been used. *)
 val by : unit Proofview.tactic -> t -> t * bool
 
-(** [build_by_tactic typ tac] returns a term of type [typ] by calling
-    [tac]. The return boolean, if [false] indicates the use of an unsafe
-    tactic. *)
-val build_constant_by_tactic
-  :  name:Names.Id.t
-  -> ?opaque:opacity_flag
-  -> uctx:UState.t
-  -> sign:Environ.named_context_val
+(** Declare abstract constant *)
+val declare_abstract :
+     name:Names.Id.t
   -> poly:bool
-  -> EConstr.types
-  -> unit Proofview.tactic
-  -> Evd.side_effects proof_entry * bool * UState.t
+  -> kind:Decls.logical_kind
+  -> sign:EConstr.named_context
+  -> secsign:Environ.named_context_val
+  -> opaque:bool
+  -> solve_tac:unit Proofview.tactic
+  -> Evd.evar_map
+  -> Constr.t
+  -> Evd.side_effects * Evd.evar_map * EConstr.t * EConstr.t list * bool
 
 val build_by_tactic
   :  ?side_eff:bool

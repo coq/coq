@@ -806,6 +806,58 @@ let build_by_tactic ?(side_eff=true) env ~uctx ~poly ~typ tac =
   in
   cb, ce.proof_entry_type, status, univs
 
+let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma concl =
+  let sigma, ctx, concl =
+    (* FIXME: should be done only if the tactic succeeds *)
+    let sigma = Evd.minimize_universes sigma in
+    let ctx = Evd.universe_context_set sigma in
+    sigma, ctx, Evarutil.nf_evars_universes sigma concl
+  in
+  let concl = EConstr.of_constr concl in
+  let ectx = Evd.evar_universe_context sigma in
+  let (const, safe, ectx) =
+    try build_constant_by_tactic ~name ~opaque:Transparent ~poly ~uctx:ectx ~sign:secsign concl solve_tac
+    with Logic_monad.TacticFailure e as src ->
+    (* if the tactic [tac] fails, it reports a [TacticFailure e],
+       which is an error irrelevant to the proof system (in fact it
+       means that [e] comes from [tac] failing to yield enough
+       success). Hence it reraises [e]. *)
+    let (_, info) = Exninfo.capture src in
+    Exninfo.iraise (e, info)
+  in
+  let body, effs = Future.force const.proof_entry_body in
+  (* We drop the side-effects from the entry, they already exist in the ambient environment *)
+  let const = Internal.map_entry_body const ~f:(fun _ -> body, ()) in
+  (* EJGA: Hack related to the above call to
+     `build_constant_by_tactic` with `~opaque:Transparent`. Even if
+     the abstracted term is destined to be opaque, if we trigger the
+     `if poly && opaque && private_poly_univs ()` in `Proof_global`
+     kernel will boom. This deserves more investigation. *)
+  let const = Internal.set_opacity ~opaque const in
+  let const, args = Internal.shrink_entry sign const in
+  let cst () =
+    (* do not compute the implicit arguments, it may be costly *)
+    let () = Impargs.make_implicit_args false in
+    (* ppedrot: seems legit to have abstracted subproofs as local*)
+    declare_private_constant ~local:ImportNeedQualified ~name ~kind const
+  in
+  let cst, eff = Impargs.with_implicit_protection cst () in
+  let inst = match const.proof_entry_universes with
+  | Entries.Monomorphic_entry _ -> EConstr.EInstance.empty
+  | Entries.Polymorphic_entry (_, ctx) ->
+    (* We mimic what the kernel does, that is ensuring that no additional
+       constraints appear in the body of polymorphic constants. Ideally this
+       should be enforced statically. *)
+    let (_, body_uctx), _ = Future.force const.proof_entry_body in
+    let () = assert (Univ.ContextSet.is_empty body_uctx) in
+    EConstr.EInstance.make (Univ.UContext.instance ctx)
+  in
+  let args = List.map EConstr.of_constr args in
+  let lem = EConstr.mkConstU (cst, inst) in
+  let sigma = Evd.set_universe_context sigma ectx in
+  let effs = Evd.concat_side_effects eff effs in
+  effs, sigma, lem, args, safe
+
 exception NoSuchGoal
 let () = CErrors.register_handler begin function
   | NoSuchGoal -> Some Pp.(str "No such goal.")
