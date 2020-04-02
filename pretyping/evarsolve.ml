@@ -907,13 +907,11 @@ let rec find_projectable_vars with_evars aliases sigma y subst =
 
 let filter_solution = function
   | [] -> raise Not_found
-  | (id,p)::_::_ -> raise NotUnique
-  | [id,p] -> (mkVar id, p)
+  | _ :: _ :: _ -> raise NotUnique
+  | [id, _] -> mkVar id
 
-let project_with_effects aliases sigma effects t subst =
-  let c, p =
-    filter_solution (find_projectable_vars false aliases sigma t subst) in
-  effects := p :: !effects;
+let project_with_effects aliases sigma t subst =
+  let c = filter_solution (find_projectable_vars false aliases sigma t subst) in
   c
 
 open Context.Named.Declaration
@@ -974,28 +972,27 @@ let rec do_projection_effects unify flags define_fun env ty evd = function
 
 type projectibility_kind =
   | NoUniqueProjection
-  | UniqueProjection of EConstr.constr * evar_projection list
+  | UniqueProjection of EConstr.constr
 
 type projectibility_status =
   | CannotInvert
   | Invertible of projectibility_kind
 
 let invert_arg_from_subst evd aliases k0 subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders =
-  let effects = ref [] in
   let rec aux k t =
     match EConstr.kind evd t with
     | Rel i when i>k0+k -> aux' k (RelAlias (i-k))
     | Var id -> aux' k (VarAlias id)
     | _ -> map_with_binders evd succ aux k t
   and aux' k t =
-    try project_with_effects aliases evd effects t subst_in_env_extended_with_k_binders
+    try project_with_effects aliases evd t subst_in_env_extended_with_k_binders
     with Not_found ->
       match expand_alias_once evd aliases t with
       | None -> raise Not_found
       | Some c -> aux k (Alias.eval (Alias.lift k c)) in
   try
     let c = aux 0 c_in_env_extended_with_k_binders in
-    Invertible (UniqueProjection (c,!effects))
+    Invertible (UniqueProjection c)
   with
     | Not_found -> CannotInvert
     | NotUnique -> Invertible NoUniqueProjection
@@ -1003,7 +1000,7 @@ let invert_arg_from_subst evd aliases k0 subst_in_env_extended_with_k_binders c_
 let invert_arg fullenv evd aliases k evk subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders =
   let res = invert_arg_from_subst evd aliases k subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders in
   match res with
-  | Invertible (UniqueProjection (c,_)) when not (noccur_evar fullenv evd evk c)
+  | Invertible (UniqueProjection c) when not (noccur_evar fullenv evd evk c)
       ->
       CannotInvert
   | _ ->
@@ -1012,7 +1009,7 @@ let invert_arg fullenv evd aliases k evk subst_in_env_extended_with_k_binders c_
 exception NotEnoughInformationToInvert
 
 let extract_unique_projection = function
-| Invertible (UniqueProjection (c,_)) -> c
+| Invertible (UniqueProjection c) -> c
 | _ ->
     (* For instance, there are evars with non-invertible arguments and *)
     (* we cannot arbitrarily restrict these evars before knowing if there *)
