@@ -172,7 +172,6 @@ and ``coqtop``, unless stated otherwise:
   This is equivalent to running :n:`From` :n:`@dirpath` :cmd:`Require Import` :n:`@qualid`.
 :-refrom *dirpath* *qualid*, -require-export-from *dirpath* *qualid*: Load |Coq| compiled library :n:`@qualid` and transitively import it.
   This is equivalent to running :n:`From` :n:`@dirpath` :cmd:`Require Export` :n:`@qualid`.
-:-require *qualid*: Deprecated; use ``-ri`` *qualid*.
 :-batch: Exit just after argument parsing. Available for ``coqtop`` only.
 :-compile *file.v*: Deprecated; use ``coqc`` instead. Compile file *file.v* into *file.vo*. This option
   implies -batch (exit just after argument parsing). It is available only
