@@ -416,19 +416,10 @@ let get_alias_chain_of sigma aliases x = match x with
   | RelAlias n -> (try Int.Map.find n aliases.rel_aliases with Not_found -> empty_aliasing)
   | VarAlias id -> (try cast_aliasing (Id.Map.find id aliases.var_aliases) with Not_found -> empty_aliasing)
 
-let normalize_alias_opt_alias sigma aliases x =
-  match get_alias_chain_of sigma aliases x with
-  | _, []  -> None
-  | _, a :: _ -> Some a
-
-let normalize_alias_opt sigma aliases x = match to_alias sigma x with
-| None -> None
-| Some a -> normalize_alias_opt_alias sigma aliases a
-
 let normalize_alias sigma aliases x =
-  match normalize_alias_opt_alias sigma aliases x with
-  | Some a -> a
-  | None -> x
+  match get_alias_chain_of sigma aliases x with
+  | _, []  -> x
+  | _, a :: _ -> a
 
 let normalize_alias_var sigma var_aliases id =
   let aliases = { var_aliases; rel_aliases = Int.Map.empty } in
@@ -862,25 +853,27 @@ type evar_projection =
 exception NotUnique
 exception NotUniqueInType of (Id.t * evar_projection) list
 
-let rec assoc_up_to_alias sigma aliases y yc = function
+let rec assoc_up_to_alias sigma aliases y = function
   | [] -> raise Not_found
   | (c, id)::l ->
-      if is_alias sigma c y then id
+    match to_alias sigma c with
+    | None -> assoc_up_to_alias sigma aliases y l
+    | Some c ->
+      if eq_alias c y then id
       else
         match l with
-        | _ :: _ -> assoc_up_to_alias sigma aliases y yc l
+        | _ :: _ -> assoc_up_to_alias sigma aliases y l
         | [] ->
           (* Last chance, we reason up to alias conversion *)
-          match (normalize_alias_opt sigma aliases c) with
-          | Some cc when eq_alias yc cc -> id
-          | _ -> if is_alias sigma c yc then id else raise Not_found
+          let cc = normalize_alias sigma aliases c in
+          let yc = normalize_alias sigma aliases y in
+          if eq_alias cc yc then id else raise Not_found
 
 let rec find_projectable_vars with_evars aliases sigma y subst =
-  let yc = normalize_alias sigma aliases y in
   let is_projectable _ idcl (subst1,subst2 as subst') =
     (* First test if some [id] aliased to [idc] is bound to [y] in [subst] *)
     try
-      let id = assoc_up_to_alias sigma aliases y yc idcl in
+      let id = assoc_up_to_alias sigma aliases y idcl in
       (id,ProjectVar)::subst1,subst2
     with Not_found ->
     (* Then test if [idc] is (indirectly) bound in [subst] to some evar *)
