@@ -34,12 +34,12 @@ let (f_interp_redexp, interp_redexp_hook) = Hook.make ()
 let get_current_or_global_context ~pstate =
   match pstate with
   | None -> let env = Global.env () in Evd.(from_env env, env)
-  | Some p -> Pfedit.get_current_context p
+  | Some p -> Proof_global.get_current_context p
 
 let get_goal_or_global_context ~pstate glnum =
   match pstate with
   | None -> let env = Global.env () in Evd.(from_env env, env)
-  | Some p -> Pfedit.get_goal_context p glnum
+  | Some p -> Proof_global.get_goal_context p glnum
 
 let cl_of_qualid = function
   | FunClass -> Coercionops.CL_FUN
@@ -95,12 +95,12 @@ let show_proof ~pstate =
   try
     let pstate = Option.get pstate in
     let p = Proof_global.get_proof pstate in
-    let sigma, env = Pfedit.get_current_context pstate in
+    let sigma, env = Proof_global.get_current_context pstate in
     let pprf = Proof.partial_proof p in
     Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
   (* We print nothing if there are no goals left *)
   with
-  | Pfedit.NoSuchGoal
+  | Proof_global.NoSuchGoal
   | Option.IsNone ->
     user_err (str "No goals to show.")
 
@@ -476,7 +476,7 @@ let program_inference_hook env sigma ev =
     then None
     else
       let c, _, _, ctx =
-        Pfedit.build_by_tactic ~poly:false env ~uctx:(Evd.evar_universe_context sigma) ~typ:concl tac
+        Proof_global.build_by_tactic ~poly:false env ~uctx:(Evd.evar_universe_context sigma) ~typ:concl tac
       in
       Some (Evd.set_universe_context sigma ctx, EConstr.of_constr c)
   with
@@ -1589,8 +1589,8 @@ let get_current_context_of_args ~pstate =
     let env = Global.env () in Evd.(from_env env, env)
   | Some lemma ->
     function
-    | Some n -> Pfedit.get_goal_context lemma n
-    | None -> Pfedit.get_current_context lemma
+    | Some n -> Proof_global.get_goal_context lemma n
+    | None -> Proof_global.get_current_context lemma
 
 let query_command_selector ?loc = function
   | None -> None
@@ -1690,7 +1690,7 @@ let print_about_hyp_globs ~pstate ?loc ref_or_by_not udecl glopt =
     let natureofid = match decl with
                      | LocalAssum _ -> "Hypothesis"
                      | LocalDef (_,bdy,_) ->"Constant (let in)" in
-    let sigma, env = Pfedit.get_current_context pstate in
+    let sigma, env = Proof_global.get_current_context pstate in
     v 0 (Id.print id ++ str":" ++ pr_econstr_env env sigma (NamedDecl.get_type decl) ++ fnl() ++ fnl()
          ++ str natureofid ++ str " of the goal context.")
   with (* fallback to globals *)

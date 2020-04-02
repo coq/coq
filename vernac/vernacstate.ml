@@ -178,7 +178,7 @@ module Proof_global = struct
   let discard_all () = s_lemmas := None
   let update_global_env () = dd (update_global_env)
 
-  let get_current_context () = cc Pfedit.get_current_context
+  let get_current_context () = cc Proof_global.get_current_context
 
   let get_all_proof_names () =
     try cc_stack LemmaStack.get_all_proof_names

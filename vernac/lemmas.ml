@@ -81,7 +81,7 @@ module Internal = struct
 end
 
 let by tac pf =
-  let proof, res = Pfedit.by tac pf.proof in
+  let proof, res = Proof_global.by tac pf.proof in
   { pf with proof }, res
 
 (************************************************************************)

@@ -96,3 +96,54 @@ val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
  * (w.r.t. type dependencies and let-ins covered by it) *)
 val set_used_variables : t ->
   Names.Id.t list -> Constr.named_context * t
+
+(** [by tac] applies tactic [tac] to the 1st subgoal of the current
+    focused proof.
+    Returns [false] if an unsafe tactic has been used. *)
+val by : unit Proofview.tactic -> t -> t * bool
+
+(** [build_by_tactic typ tac] returns a term of type [typ] by calling
+    [tac]. The return boolean, if [false] indicates the use of an unsafe
+    tactic. *)
+val build_constant_by_tactic
+  :  name:Names.Id.t
+  -> ?opaque:opacity_flag
+  -> uctx:UState.t
+  -> sign:Environ.named_context_val
+  -> poly:bool
+  -> EConstr.types
+  -> unit Proofview.tactic
+  -> Evd.side_effects Declare.proof_entry * bool * UState.t
+
+val build_by_tactic
+  :  ?side_eff:bool
+  -> Environ.env
+  -> uctx:UState.t
+  -> poly:bool
+  -> typ:EConstr.types
+  -> unit Proofview.tactic
+  -> Constr.constr * Constr.types option * bool * UState.t
+
+(** {6 ... } *)
+
+exception NoSuchGoal
+
+(** [get_goal_context n] returns the context of the [n]th subgoal of
+   the current focused proof or raises a [UserError] if there is no
+   focused proof or if there is no more subgoals *)
+
+val get_goal_context : t -> int -> Evd.evar_map * Environ.env
+
+(** [get_current_goal_context ()] works as [get_goal_context 1] *)
+val get_current_goal_context : t -> Evd.evar_map * Environ.env
+
+(** [get_proof_context ()] gets the goal context for the first subgoal
+    of the proof *)
+val get_proof_context : Proof.t -> Evd.evar_map * Environ.env
+
+(** [get_current_context ()] returns the context of the
+  current focused goal. If there is no focused goal but there
+  is a proof in progress, it returns the corresponding evar_map.
+  If there is no pending proof then it returns the current global
+  environment and empty evar_map. *)
+val get_current_context : t -> Evd.evar_map * Environ.env

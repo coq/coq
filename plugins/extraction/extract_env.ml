@@ -729,7 +729,7 @@ let extract_and_compile l =
 let show_extraction ~pstate =
   init ~inner:true false false;
   let prf = Proof_global.get_proof pstate in
-  let sigma, env = Pfedit.get_current_context pstate in
+  let sigma, env = Proof_global.get_current_context pstate in
   let trms = Proof.partial_proof prf in
   let extr_term t =
     let ast, ty = extract_constr env sigma t in

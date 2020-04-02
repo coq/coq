@@ -282,3 +282,74 @@ let update_global_env =
       let tac = Proofview.Unsafe.tclEVARS (Evd.update_sigma_env sigma (Global.env ())) in
       let p, (status,info), _ = Proof.run_tactic (Global.env ()) tac p in
       p)
+
+let next = let n = ref 0 in fun () -> incr n; !n
+
+let by tac = map_fold_proof (Pfedit.solve (Goal_select.SelectNth 1) None tac)
+
+let build_constant_by_tactic ~name ?(opaque=Transparent) ~uctx ~sign ~poly typ tac =
+  let evd = Evd.from_ctx uctx in
+  let goals = [ (Global.env_of_context sign , typ) ] in
+  let pf = start_proof ~name ~poly ~udecl:UState.default_univ_decl evd goals in
+  let pf, status = by tac pf in
+  let { entries; uctx } = close_proof ~opaque ~keep_body_ucst_separate:false pf in
+  match entries with
+  | [entry] ->
+    entry, status, uctx
+  | _ ->
+    CErrors.anomaly Pp.(str "[build_constant_by_tactic] close_proof returned more than one proof term")
+
+let build_by_tactic ?(side_eff=true) env ~uctx ~poly ~typ tac =
+  let name = Id.of_string ("temporary_proof"^string_of_int (next())) in
+  let sign = Environ.(val_of_named_context (named_context env)) in
+  let ce, status, univs = build_constant_by_tactic ~name ~uctx ~sign ~poly typ tac in
+  let cb, uctx =
+    if side_eff then Declare.inline_private_constants ~uctx env ce
+    else
+      (* GG: side effects won't get reset: no need to treat their universes specially *)
+      let (cb, ctx), _eff = Future.force ce.Declare.proof_entry_body in
+      cb, UState.merge ~sideff:false Evd.univ_rigid uctx ctx
+  in
+  cb, ce.Declare.proof_entry_type, status, univs
+
+exception NoSuchGoal
+let () = CErrors.register_handler begin function
+  | NoSuchGoal -> Some Pp.(str "No such goal.")
+  | _ -> None
+end
+
+let get_nth_V82_goal p i =
+  let Proof.{ sigma; goals } = Proof.data p in
+  try { Evd.it = List.nth goals (i-1) ; sigma }
+  with Failure _ -> raise NoSuchGoal
+
+let get_goal_context_gen pf i =
+  let { Evd.it=goal ; sigma=sigma; } = get_nth_V82_goal pf i in
+  (sigma, Refiner.pf_env { Evd.it=goal ; sigma=sigma; })
+
+let get_goal_context pf i =
+  let p = get_proof pf in
+  get_goal_context_gen p i
+
+let get_current_goal_context pf =
+  let p = get_proof pf in
+  try get_goal_context_gen p 1
+  with
+  | NoSuchGoal ->
+    (* spiwack: returning empty evar_map, since if there is no goal,
+       under focus, there is no accessible evar either. EJGA: this
+       seems strange, as we have pf *)
+    let env = Global.env () in
+    Evd.from_env env, env
+
+let get_proof_context p =
+  try get_goal_context_gen p 1
+  with
+  | NoSuchGoal ->
+    (* No more focused goals *)
+    let { Proof.sigma } = Proof.data p in
+    sigma, Global.env ()
+
+let get_current_context pf =
+  let p = get_proof pf in
+  get_proof_context p
