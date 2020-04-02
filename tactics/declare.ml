@@ -807,16 +807,22 @@ let build_by_tactic ?(side_eff=true) env ~uctx ~poly ~typ tac =
   cb, ce.proof_entry_type, status, univs
 
 let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma concl =
-  let sigma, ctx, concl =
+  (* EJGA: flush_and_check_evars is only used in abstract, could we
+     use a different API? *)
+  let concl =
+    try Evarutil.flush_and_check_evars sigma concl
+    with Evarutil.Uninstantiated_evar _ ->
+      CErrors.user_err Pp.(str "\"abstract\" cannot handle existentials.")
+  in
+  let sigma, concl =
     (* FIXME: should be done only if the tactic succeeds *)
     let sigma = Evd.minimize_universes sigma in
-    let ctx = Evd.universe_context_set sigma in
-    sigma, ctx, Evarutil.nf_evars_universes sigma concl
+    sigma, Evarutil.nf_evars_universes sigma concl
   in
   let concl = EConstr.of_constr concl in
-  let ectx = Evd.evar_universe_context sigma in
-  let (const, safe, ectx) =
-    try build_constant_by_tactic ~name ~opaque:Transparent ~poly ~uctx:ectx ~sign:secsign concl solve_tac
+  let uctx = Evd.evar_universe_context sigma in
+  let (const, safe, uctx) =
+    try build_constant_by_tactic ~name ~opaque:Transparent ~poly ~uctx ~sign:secsign concl solve_tac
     with Logic_monad.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
@@ -825,6 +831,7 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
     let (_, info) = Exninfo.capture src in
     Exninfo.iraise (e, info)
   in
+  let sigma = Evd.set_universe_context sigma uctx in
   let body, effs = Future.force const.proof_entry_body in
   (* We drop the side-effects from the entry, they already exist in the ambient environment *)
   let const = Internal.map_entry_body const ~f:(fun _ -> body, ()) in
@@ -854,7 +861,6 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
   in
   let args = List.map EConstr.of_constr args in
   let lem = EConstr.mkConstU (cst, inst) in
-  let sigma = Evd.set_universe_context sigma ectx in
   let effs = Evd.concat_side_effects eff effs in
   effs, sigma, lem, args, safe
 

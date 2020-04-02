@@ -257,7 +257,7 @@ val get_open_goals : t -> int
     Returns [false] if an unsafe tactic has been used. *)
 val by : unit Proofview.tactic -> t -> t * bool
 
-(** Declare abstract constant *)
+(** Declare abstract constant; will check no evars are possible; *)
 val declare_abstract :
      name:Names.Id.t
   -> poly:bool
@@ -267,7 +267,7 @@ val declare_abstract :
   -> opaque:bool
   -> solve_tac:unit Proofview.tactic
   -> Evd.evar_map
-  -> Constr.t
+  -> EConstr.t
   -> Evd.side_effects * Evd.evar_map * EConstr.t * EConstr.t list * bool
 
 val build_by_tactic
