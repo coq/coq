@@ -678,7 +678,7 @@ let make_projectable_subst aliases sigma evi args =
                   let l = try Constrmap.find (fst cstr) cstrs with Not_found -> [] in
                   Constrmap.add (fst cstr) ((args,id)::l) cstrs
               | _ -> cstrs in
-            let all = Int.Map.add i [a,normalize_alias_opt sigma aliases a,id] all in
+            let all = Int.Map.add i [a, id] all in
             (rest,all,cstrs,revmap)
         | LocalDef ({binder_name=id},c,_), a::rest ->
             let revmap = Id.Map.add id i revmap in
@@ -688,13 +688,13 @@ let make_projectable_subst aliases sigma evi args =
                 let ic, sub =
                   try let ic = Id.Map.find idc revmap in ic, Int.Map.find ic all
                   with Not_found -> i, [] (* e.g. [idc] is a filtered variable: treat [id] as an assumption *) in
-                if List.exists (fun (c,_,_) -> EConstr.eq_constr sigma a c) sub then
+                if List.exists (fun (c, _) -> EConstr.eq_constr sigma a c) sub then
                   (rest,all,cstrs,revmap)
                 else
-                  let all = Int.Map.add ic ((a,normalize_alias_opt sigma aliases a,id)::sub) all in
+                  let all = Int.Map.add ic ((a, id)::sub) all in
                   (rest,all,cstrs,revmap)
             | _ ->
-                let all = Int.Map.add i [a,normalize_alias_opt sigma aliases a,id] all in
+                let all = Int.Map.add i [a, id] all in
                 (rest,all,cstrs,revmap))
         | _ -> anomaly (Pp.str "Instance does not match its signature.")) 0
       sign (Array.rev_to_list args,Int.Map.empty,Constrmap.empty,Id.Map.empty) in
@@ -864,7 +864,7 @@ exception NotUniqueInType of (Id.t * evar_projection) list
 
 let rec assoc_up_to_alias sigma aliases y yc = function
   | [] -> raise Not_found
-  | (c,cc,id)::l ->
+  | (c, id)::l ->
       if is_alias sigma c y then id
       else
         match l with
@@ -877,7 +877,7 @@ let rec assoc_up_to_alias sigma aliases y yc = function
 
 let rec find_projectable_vars with_evars aliases sigma y subst =
   let yc = normalize_alias sigma aliases y in
-  let is_projectable idc idcl (subst1,subst2 as subst') =
+  let is_projectable _ idcl (subst1,subst2 as subst') =
     (* First test if some [id] aliased to [idc] is bound to [y] in [subst] *)
     try
       let id = assoc_up_to_alias sigma aliases y yc idcl in
@@ -886,10 +886,10 @@ let rec find_projectable_vars with_evars aliases sigma y subst =
     (* Then test if [idc] is (indirectly) bound in [subst] to some evar *)
     (* projectable on [y] *)
       if with_evars then
-        let f (c,_,id) = isEvar sigma c in
+        let f (c, id) = isEvar sigma c in
         let idcl' = List.filter f idcl in
         match idcl' with
-        | [c,_,id] ->
+        | [c, id] ->
           begin
             let (evk,argsv as t) = destEvar sigma c in
             let evi = Evd.find sigma evk in
