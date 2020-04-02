@@ -245,6 +245,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/HexadecimalN.v
     theories/Numbers/HexadecimalZ.v
     theories/Numbers/HexadecimalQ.v
+    theories/Numbers/HexadecimalString.v
     </dd>
 
     <dt> <b>&nbsp;&nbsp;NatInt</b>:
