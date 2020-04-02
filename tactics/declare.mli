@@ -37,12 +37,10 @@ type t
 (* Should be moved into a proper view *)
 val get_proof : t -> Proof.t
 val get_proof_name : t -> Names.Id.t
+
+(** XXX: These 3 are only used in lemmas  *)
 val get_used_variables : t -> Names.Id.Set.t option
-
-(** Get the universe declaration associated to the current proof. *)
 val get_universe_decl : t -> UState.universe_decl
-
-(** Get initial universe state *)
 val get_initial_euctx : t -> UState.t
 
 val compact_the_proof : t -> t
@@ -90,7 +88,9 @@ val start_dependent_proof
 val update_global_env : t -> t
 
 (** Proof entries represent a proof that has been finished, but still
-   not registered with the kernel. *)
+   not registered with the kernel.
+
+   XXX: Scheduled for removal from public API, don't rely on it *)
 type 'a proof_entry = private {
   proof_entry_body   : 'a Entries.const_entry_body;
   (* List of section variables *)
@@ -103,8 +103,8 @@ type 'a proof_entry = private {
   proof_entry_inline_code : bool;
 }
 
-(** When a proof is closed, it is reified into a [proof_object] *)
-type proof_object =
+(** XXX: Scheduled for removal from public API, don't rely on it *)
+type proof_object = private
   { name : Names.Id.t
   (** name of the proof *)
   ; entries : Evd.side_effects proof_entry list
@@ -117,10 +117,12 @@ val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> t -> pr
 
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 
+(** XXX: Scheduled for removal from public API, don't rely on it *)
 type variable_declaration =
   | SectionLocalDef of Evd.side_effects proof_entry
   | SectionLocalAssum of { typ:types; impl:Glob_term.binding_kind; }
 
+(** XXX: Scheduled for removal from public API, don't rely on it *)
 type 'a constant_entry =
   | DefinitionEntry of 'a proof_entry
   | ParameterEntry of parameter_entry
@@ -135,9 +137,9 @@ val declare_variable
   -> unit
 
 (** Declaration of global constructions
-   i.e. Definition/Theorem/Axiom/Parameter/... *)
+   i.e. Definition/Theorem/Axiom/Parameter/...
 
-(* Default definition entries, transparent with no secctx or proj information *)
+   XXX: Scheduled for removal from public API, use `DeclareDef` instead *)
 val definition_entry
   : ?fix_exn:Future.fix_exn
   -> ?opaque:bool
@@ -153,6 +155,7 @@ val definition_entry
   -> constr
   -> Evd.side_effects proof_entry
 
+(** XXX: Scheduled for removal from public API, use `DeclareDef` instead *)
 val pure_definition_entry
   : ?fix_exn:Future.fix_exn
   -> ?opaque:bool
@@ -162,17 +165,6 @@ val pure_definition_entry
   -> constr
   -> unit proof_entry
 
-(* Delayed definition entries *)
-val delayed_definition_entry
-  :  ?opaque:bool
-  -> ?inline:bool
-  -> ?feedback_id:Stateid.t
-  -> ?section_vars:Id.Set.t
-  -> ?univs:Entries.universes_entry
-  -> ?types:types
-  -> 'a Entries.const_entry_body
-  -> 'a proof_entry
-
 type import_status = ImportDefaultBehavior | ImportNeedQualified
 
 (** [declare_constant id cd] declares a global declaration
@@ -180,7 +172,9 @@ type import_status = ImportDefaultBehavior | ImportNeedQualified
    the full path of the declaration
 
   internal specify if the constant has been created by the kernel or by the
-  user, and in the former case, if its errors should be silent *)
+  user, and in the former case, if its errors should be silent
+
+  XXX: Scheduled for removal from public API, use `DeclareDef` instead *)
 val declare_constant
   :  ?local:import_status
   -> name:Id.t
@@ -198,7 +192,9 @@ val declare_private_constant
 
 (** [inline_private_constants ~sideff ~uctx env ce] will inline the
    constants in [ce]'s body and return the body plus the updated
-   [UState.t]. *)
+   [UState.t].
+
+   XXX: Scheduled for removal from public API, don't rely on it *)
 val inline_private_constants
   :  uctx:UState.t
   -> Environ.env
@@ -207,10 +203,10 @@ val inline_private_constants
 
 (** Declaration messages *)
 
+(** XXX: Scheduled for removal from public API, do not use *)
 val definition_message : Id.t -> unit
 val assumption_message : Id.t -> unit
 val fixpoint_message : int array option -> Id.t list -> unit
-val cofixpoint_message : Id.t list -> unit
 val recursive_message : bool (** true = fixpoint *) ->
   int array option -> Id.t list -> unit
 
@@ -283,7 +279,7 @@ val build_by_tactic
   -> unit Proofview.tactic
   -> Constr.constr * Constr.types option * bool * UState.t
 
-(** {6 ... } *)
+(** {6 Helpers to obtain proof state when in an interactive proof } *)
 
 exception NoSuchGoal
 

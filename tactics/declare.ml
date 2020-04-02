@@ -404,14 +404,14 @@ let pure_definition_entry ?fix_exn ?(opaque=false) ?(inline=false) ?types
     proof_entry_feedback = None;
     proof_entry_inline_code = inline}
 
-let delayed_definition_entry ?(opaque=false) ?(inline=false) ?feedback_id ?section_vars ?(univs=default_univ_entry) ?types body =
+let delayed_definition_entry ~opaque ?feedback_id ~section_vars ~univs ?types body =
   { proof_entry_body = body
   ; proof_entry_secctx = section_vars
   ; proof_entry_type = types
   ; proof_entry_universes = univs
   ; proof_entry_opaque = opaque
   ; proof_entry_feedback = feedback_id
-  ; proof_entry_inline_code = inline
+  ; proof_entry_inline_code = false
   }
 
 let cast_proof_entry e =
@@ -749,7 +749,7 @@ let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.comput
         let univs = UState.restrict uctx used_univs in
         let univs = UState.check_mono_univ_decl univs udecl in
         (pt,univs),eff)
-    |> delayed_definition_entry ~opaque ~feedback_id ?section_vars ~univs ~types
+    |> delayed_definition_entry ~opaque ~feedback_id ~section_vars ~univs ~types
   in
   let entries = Future.map2 make_entry fpl (Proofview.initial_goals entry) in
   { name; entries; uctx = initial_euctx }
