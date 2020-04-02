@@ -323,38 +323,38 @@ let set_option_value ?(locality = OptDefault) check_and_cast key v =
   | Some (depr, (read,write,append)) ->
     write locality (check_and_cast v (read ()))
 
-let show_value_type = function
-  | BoolValue _ -> "bool"
-  | IntValue _ -> "int"
-  | StringValue _ -> "string"
-  | StringOptValue _ -> "string"
-
-let bad_type_error opt_value actual_type =
+let bad_type_error ~expected ~got =
   user_err Pp.(str "Bad type of value for this option:" ++ spc() ++
-               str "expected " ++ str (show_value_type opt_value) ++
-               str ", got " ++ str actual_type ++ str ".")
+               str "expected " ++ str expected ++
+               str ", got " ++ str got ++ str ".")
+
+let error_flag () =
+  user_err Pp.(str "This is a flag. It does not take a value.")
 
 let check_int_value v = function
+  | BoolValue _ -> error_flag ()
   | IntValue _ -> IntValue v
-  | optv -> bad_type_error optv "int"
+  | StringValue _ | StringOptValue _ ->
+     bad_type_error ~expected:"string" ~got:"int"
 
 let check_bool_value v = function
   | BoolValue _ -> BoolValue v
-  | optv -> bad_type_error optv "bool"
+  | _ -> user_err Pp.(str "This is an option. A value must be provided.")
 
 let check_string_value v = function
+  | BoolValue _ -> error_flag ()
+  | IntValue _ -> bad_type_error ~expected:"int" ~got:"string"
   | StringValue _ -> StringValue v
   | StringOptValue _ -> StringOptValue (Some v)
-  | optv -> bad_type_error optv "string"
 
 let check_unset_value v = function
   | BoolValue _ -> BoolValue false
   | IntValue _ -> IntValue None
   | StringOptValue _ -> StringOptValue None
-  | optv -> bad_type_error optv "nothing"
+  | StringValue _ -> user_err Pp.(str "This option does not support the \"Unset\" command.")
 
 (* Nota: For compatibility reasons, some errors are treated as
-   warning. This allows a script to refer to an option that doesn't
+   warnings. This allows a script to refer to an option that doesn't
    exist anymore *)
 
 let set_int_option_value_gen ?locality =
