@@ -1092,7 +1092,6 @@ class CoqVernacIndex(CoqSubdomainsIndex):
 class CoqTacticIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "tacindex", "Tactic Index", "tactics", ["tacn"]
 
-# Attribute index is generated but not included in output
 class CoqAttributeIndex(CoqSubdomainsIndex):
     name, localname, shortname, subdomains = "attrindex", "Attribute Index", "attributes", ["attr"]
 
@@ -1217,7 +1216,7 @@ class CoqDomain(Domain):
         'g': CoqCodeRole
     }
 
-    indices = [CoqVernacIndex, CoqTacticIndex, CoqOptionIndex, CoqGallinaIndex, CoqExceptionIndex]
+    indices = [CoqVernacIndex, CoqTacticIndex, CoqOptionIndex, CoqGallinaIndex, CoqExceptionIndex, CoqAttributeIndex]
 
     data_version = 1
     initial_data = {
