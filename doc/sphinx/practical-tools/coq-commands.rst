@@ -164,6 +164,8 @@ and ``coqtop``, unless stated otherwise:
   it is executed.
 :-load-vernac-object *qualid*: Load |Coq| compiled library :n:`@qualid`. This
   is equivalent to running :cmd:`Require` :n:`qualid`.
+:-rfrom *dirpath* *qualid*: Load |Coq| compiled library :n:`@qualid`.
+  This is equivalent to running :n:`From` :n:`@dirpath` :cmd:`Require Import` :n:`@qualid`.
 :-ri *qualid*, -require-import *qualid*: Load |Coq| compiled library :n:`@qualid` and import it.
   This is equivalent to running :cmd:`Require Import` :n:`@qualid`.
 :-re *qualid*, -require-export *qualid*: Load |Coq| compiled library :n:`@qualid` and transitively import it.
