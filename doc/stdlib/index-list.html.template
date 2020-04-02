@@ -239,6 +239,12 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/DecimalZ.v
     theories/Numbers/DecimalQ.v
     theories/Numbers/DecimalString.v
+    theories/Numbers/HexadecimalFacts.v
+    theories/Numbers/HexadecimalNat.v
+    theories/Numbers/HexadecimalPos.v
+    theories/Numbers/HexadecimalN.v
+    theories/Numbers/HexadecimalZ.v
+    theories/Numbers/HexadecimalQ.v
     </dd>
 
     <dt> <b>&nbsp;&nbsp;NatInt</b>:
