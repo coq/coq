@@ -32,6 +32,8 @@ will have to check their output.
 
    ../gallina-specification-language
    ../cic
+   records
    ../../addendum/universe-polymorphism
    ../../addendum/sprop
+   sections
    ../module-system

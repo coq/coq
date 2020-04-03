@@ -22,3 +22,4 @@ installed with the `opam package manager
    ../../language/coq-library
    ../../addendum/extraction
    ../../addendum/miscellaneous-extensions
+   funind
