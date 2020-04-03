@@ -11,6 +11,8 @@ Ind_tables
 Eqschemes
 Elimschemes
 Genredexpr
+Redexprintern
+Redexprinterp
 Redops
 Redexpr
 Ppred

@@ -18,3 +18,5 @@ Implicit_quantifiers
 Constrintern
 Modintern
 Constrextern
+Constrmetaintern
+Constrmetainterp
