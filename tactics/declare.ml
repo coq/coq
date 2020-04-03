@@ -779,7 +779,7 @@ let update_global_env =
 
 let next = let n = ref 0 in fun () -> incr n; !n
 
-let by tac = map_fold_proof (Pfedit.solve (Goal_select.SelectNth 1) None tac)
+let by tac = map_fold_proof (Proof.solve (Goal_select.SelectNth 1) None tac)
 
 let build_constant_by_tactic ~name ?(opaque=Transparent) ~uctx ~sign ~poly typ tac =
   let evd = Evd.from_ctx uctx in

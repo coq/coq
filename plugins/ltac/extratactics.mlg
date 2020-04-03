@@ -346,7 +346,7 @@ open Vars
 
 let constr_flags () = {
   Pretyping.use_typeclasses = Pretyping.UseTC;
-  Pretyping.solve_unification_constraints = Pfedit.use_unification_heuristics ();
+  Pretyping.solve_unification_constraints = Proof.use_unification_heuristics ();
   Pretyping.fail_evar = false;
   Pretyping.expand_evars = true;
   Pretyping.program_mode = false;
