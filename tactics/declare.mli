@@ -301,3 +301,14 @@ val get_current_goal_context : Proof.t -> Evd.evar_map * Environ.env
   If there is no pending proof then it returns the current global
   environment and empty evar_map. *)
 val get_current_context : Proof.t -> Evd.evar_map * Environ.env
+
+(** Temporarily re-exported for 3rd party code; don't use  *)
+val build_constant_by_tactic :
+  name:Names.Id.t ->
+  ?opaque:opacity_flag ->
+  uctx:UState.t ->
+  sign:Environ.named_context_val ->
+  poly:bool ->
+  EConstr.types ->
+  unit Proofview.tactic ->
+  Evd.side_effects proof_entry * bool * UState.t
