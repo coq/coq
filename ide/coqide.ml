@@ -787,25 +787,28 @@ let coqtop_arguments sn =
   let dialog = GWindow.dialog ~title:"Coqtop arguments" () in
   let coqtop = sn.coqtop in
   (* Text entry *)
-  let args = Coq.get_arguments coqtop in
-  let text = String.concat " " args in
+  let text = Ideutils.encode_string_list (Coq.get_arguments coqtop) in
   let entry = GEdit.entry ~text ~packing:dialog#vbox#add () in
   (* Buttons *)
   let box = dialog#action_area in
   let ok = GButton.button ~stock:`OK ~packing:box#add () in
+  let fail s =
+    let msg = Printf.sprintf "Invalid arguments: %s" s in
+    let () = sn.messages#default_route#clear in
+    sn.messages#default_route#push Feedback.Error (Pp.str msg) in
   let ok_cb () =
-    let nargs = String.split_on_char ' ' entry#text in
-    if nargs <> args then
+    let ntext = entry#text in
+    if ntext <> text then
+      match try Util.Inr (Ideutils.decode_string_list ntext) with Failure s -> Util.Inl s with
+      | Util.Inl s -> fail s
+      | Util.Inr nargs ->
       let failed = Coq.filter_coq_opts nargs in
       match failed with
       | [] ->
         let () = Coq.set_arguments coqtop nargs in
         dialog#destroy ()
       | args ->
-        let args = String.concat " " args in
-        let msg = Printf.sprintf "Invalid arguments: %s" args in
-        let () = sn.messages#default_route#clear in
-        sn.messages#default_route#push Feedback.Error (Pp.str msg)
+        fail (String.concat " " args)
     else dialog#destroy ()
   in
   let _ = entry#connect#activate ~callback:ok_cb in

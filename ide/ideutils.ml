@@ -536,3 +536,72 @@ let rec is_valid (s : Pp.t) = match Pp.repr s with
   | Pp.Ppcmd_comment s -> List.for_all Glib.Utf8.validate s
 let validate s =
   if is_valid s then s else Pp.str "This error massage can't be printed."
+
+(** encoding list of strings as a string in a shell-like compatible way:
+   string with spaces and no ' -> '...'
+   string with spaces and ' -> split string into substrings separated with \'
+   ' -> \'
+   \ -> \\
+ *)
+
+let decode_string_list s =
+  let l = String.length s in
+  let fail_backslash () =
+    failwith "Backslash is used to quote single quotes in quoted strings; it should otherwise be doubled" in
+  let rec find_word quoted b i =
+    if i = l then
+      if quoted then failwith "Unmatched single quote"
+      else i
+    else
+      let c = s.[i] in
+      if c = ' ' && not quoted then i+1
+    else if c = '\'' then find_word (not quoted) b (i+1)
+    else if c = '\\' && not quoted then
+      if i = l-1 then fail_backslash ()
+      else
+        let c = s.[i+1] in
+        if c = '\'' || c = '\\' then
+        (Buffer.add_char b c; find_word quoted b (i+2))
+      else fail_backslash ()
+    else
+      (Buffer.add_char b c;
+       find_word quoted b (i+1)) in
+  let rec collect_words i =
+    if i = l then [] else
+      let b = Buffer.create l in
+      let i = find_word false b i in
+      Buffer.contents b :: collect_words i in
+  collect_words 0
+
+let needs_quote s i =
+  (* Tells if there is a space and if a space, before the next single quote *)
+  match CString.index_from_opt s i ' ', CString.index_from_opt s i '\'' with
+  | Some _, None -> true
+  | Some i, Some j -> i < j
+  | _ -> false
+
+let encode_string s =
+  (* Could be optimized so that "a b'c" is "'a b'\'c" rather than "'a b'\''c'" *)
+  let l = String.length s in
+  let b = Buffer.create (l + 10) in
+  let close quoted = if quoted then Buffer.add_char b '\'' in
+  let rec aux quoted i =
+    if i = l then close quoted
+    else
+      let c = s.[i] in
+      if c = '\'' then
+        (close quoted;
+         Buffer.add_string b "\\'";
+         start (i+1))
+      else if c = '\\' && not quoted then
+        (Buffer.add_string b "\\\\"; aux quoted (i+1))
+      else
+        (Buffer.add_char b c; aux quoted (i+1))
+  and start i =
+    let q = needs_quote s i in
+    if q then Buffer.add_char b '\'';
+    aux q i in
+  start 0;
+  Buffer.contents b
+
+let encode_string_list l = String.concat " " (List.map encode_string l)
