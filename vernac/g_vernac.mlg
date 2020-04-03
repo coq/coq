@@ -552,7 +552,6 @@ GRAMMAR EXTEND Gram
           { VernacDeclareModule (export, id, bl, mty) }
       (* Section beginning *)
       | IDENT "Section"; id = identref -> { VernacBeginSection id }
-      | IDENT "Chapter"; id = identref -> { VernacBeginSection id }
 
       (* This end a Section a Module or a Module Type *)
       | IDENT "End"; id = identref -> { VernacEndSegment id }
