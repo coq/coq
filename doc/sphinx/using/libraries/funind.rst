@@ -2,7 +2,7 @@ Functional induction
 ====================
 
 .. _advanced-recursive-functions:
-       
+
 Advanced recursive functions
 ----------------------------
 
