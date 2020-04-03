@@ -647,6 +647,57 @@ Changes in 8.11.0
   (`#11227 <https://github.com/coq/coq/pull/11227>`_,
   by Bernhard M. Wiedemann).
 
+Changes in 8.11.1
+~~~~~~~~~~~~~~~~~
+
+**Kernel**
+
+- **Fixed:**
+  Allow more inductive types in `Unset Positivity Checking` mode
+  (`#11811 <https://github.com/coq/coq/pull/11811>`_,
+  by SimonBoulier).
+
+**Notations**
+
+- **Fixed:**
+  Bugs in dealing with precedences of notations in custom entries
+  (`#11530 <https://github.com/coq/coq/pull/11530>`_,
+  by Hugo Herbelin, fixing in particular
+  `#9517 <https://github.com/coq/coq/pull/9517>`_,
+  `#9519 <https://github.com/coq/coq/pull/9519>`_,
+  `#9521 <https://github.com/coq/coq/pull/9521>`_,
+  `#11331 <https://github.com/coq/coq/pull/11331>`_).
+- **Added:**
+  In primitive floats, print a warning when parsing a decimal value
+  that is not exactly a binary64 floating-point number.
+  For instance, parsing 0.1 will print a warning whereas parsing 0.5 won't.
+  (`#11859 <https://github.com/coq/coq/pull/11859>`_,
+  by Pierre Roux).
+
+**CoqIDE**
+
+- **Fixed:**
+  Compiling file paths containing spaces
+  (`#10008 <https://github.com/coq/coq/pull/10008>`_,
+  by snyke7, fixing `#11595 <https://github.com/coq/coq/pull/11595>`_).
+
+**Infrastructure and dependencies**
+
+- **Added:**
+  Bump official OCaml support and CI testing to 4.10.0
+  (`#11131 <https://github.com/coq/coq/pull/11131>`_,
+  `#11123 <https://github.com/coq/coq/pull/11123>`_,
+  `#11102 <https://github.com/coq/coq/pull/11123>`_,
+  by Emilio Jesus Gallego Arias, Jacques-Henri Jourdan,
+  Guillaume Melquiond, and Guillaume Munch-Maccagnoni).
+
+**Miscellaneous**
+
+- **Fixed:**
+  :cmd:`Extraction Implicit` on the constructor of a record was leading to an anomaly
+  (`#11329 <https://github.com/coq/coq/pull/11329>`_,
+  by Hugo Herbelin, fixes `#11114 <https://github.com/coq/coq/pull/11114>`_).
+
 Version 8.10
 ------------
 
