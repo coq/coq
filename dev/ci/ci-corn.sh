@@ -5,4 +5,4 @@ ci_dir="$(dirname "$0")"
 
 git_download Corn
 
-( cd "${CI_BUILD_DIR}/Corn" && make && make install )
+( cd "${CI_BUILD_DIR}/Corn" && ./configure.sh && make && make install )
