@@ -17,6 +17,7 @@ language presented in the :ref:`previous chapter <core-language>`.
    :maxdepth: 1
 
    ../gallina-extensions
+   implicit-arguments
    ../../addendum/extended-pattern-matching
    ../../user-extensions/syntax-extensions
    ../../addendum/implicit-coercions

@@ -35,4 +35,5 @@ will have to check their output.
    records
    ../../addendum/universe-polymorphism
    ../../addendum/sprop
+   sections
    ../module-system
