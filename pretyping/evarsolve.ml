@@ -869,7 +869,7 @@ let rec assoc_up_to_alias sigma aliases y = function
           let yc = normalize_alias sigma aliases y in
           if eq_alias cc yc then id else raise Not_found
 
-let rec find_projectable_vars with_evars aliases sigma y subst =
+let rec find_projectable_vars aliases sigma y subst =
   let is_projectable _ idcl (subst1,subst2 as subst') =
     (* First test if some [id] aliased to [idc] is bound to [y] in [subst] *)
     try
@@ -878,24 +878,22 @@ let rec find_projectable_vars with_evars aliases sigma y subst =
     with Not_found ->
     (* Then test if [idc] is (indirectly) bound in [subst] to some evar *)
     (* projectable on [y] *)
-      if with_evars then
-        let f (c, id) = isEvar sigma c in
-        let idcl' = List.filter f idcl in
-        match idcl' with
-        | [c, id] ->
-          begin
-            let (evk,argsv as t) = destEvar sigma c in
-            let evi = Evd.find sigma evk in
-            let subst,_ = make_projectable_subst aliases sigma evi argsv in
-            let l = find_projectable_vars with_evars aliases sigma y subst in
-            match l with
-            | [id',p] -> (subst1,(id,ProjectEvar (t,evi,id',p))::subst2)
-            | _ -> subst'
-          end
-        | [] -> subst'
-        | _ -> anomaly (Pp.str "More than one non var in aliases class of evar instance.")
-      else
-        subst' in
+      let f (c, id) = isEvar sigma c in
+      let idcl' = List.filter f idcl in
+      match idcl' with
+      | [c, id] ->
+        begin
+          let (evk,argsv as t) = destEvar sigma c in
+          let evi = Evd.find sigma evk in
+          let subst,_ = make_projectable_subst aliases sigma evi argsv in
+          let l = find_projectable_vars aliases sigma y subst in
+          match l with
+          | [id',p] -> (subst1,(id,ProjectEvar (t,evi,id',p))::subst2)
+          | _ -> subst'
+        end
+      | [] -> subst'
+      | _ -> anomaly (Pp.str "More than one non var in aliases class of evar instance.")
+  in
   let subst1,subst2 = Int.Map.fold is_projectable subst ([],[]) in
   (* We return the substitution with ProjectVar first (from most
      recent to oldest var), followed by ProjectEvar (from most recent
@@ -908,11 +906,14 @@ let rec find_projectable_vars with_evars aliases sigma y subst =
 let filter_solution = function
   | [] -> raise Not_found
   | _ :: _ :: _ -> raise NotUnique
-  | [id, _] -> mkVar id
+  | [id] -> mkVar id
 
 let project_with_effects aliases sigma t subst =
-  let c = filter_solution (find_projectable_vars false aliases sigma t subst) in
-  c
+  let is_projectable _ idcl accu =
+    try assoc_up_to_alias sigma aliases t idcl :: accu
+    with Not_found -> accu
+  in
+  filter_solution (Int.Map.fold is_projectable subst [])
 
 open Context.Named.Declaration
 let rec find_solution_type evarenv = function
@@ -1508,7 +1509,7 @@ let rec invert_definition unify flags choose imitate_defs
   let project_variable t =
     (* Evar/Var problem: unifiable iff variable projectable from ev subst *)
     try
-      let sols = find_projectable_vars true aliases !evdref t subst in
+      let sols = find_projectable_vars aliases !evdref t subst in
       let c, p = match sols with
         | [] -> raise Not_found
         | [id,p] -> (mkVar id, p)
