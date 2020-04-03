@@ -5,4 +5,4 @@ ci_dir="$(dirname "$0")"
 
 git_download Flocq
 
-( cd "${CI_BUILD_DIR}/Flocq" && ./autogen.sh && ./configure && ./remake "-j${NJOBS}" )
+( cd "${CI_BUILD_DIR}/Flocq" && autoconf && ./configure && ./remake "-j${NJOBS}" )
