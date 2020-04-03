@@ -34,4 +34,5 @@ will have to check their output.
    ../cic
    ../../addendum/universe-polymorphism
    ../../addendum/sprop
+   sections
    ../module-system
