@@ -305,6 +305,11 @@ Proof.
 Qed.
 Hint Resolve orb_negb_r: bool.
 
+Lemma orb_negb_l : forall b:bool, negb b || b = true.
+Proof.
+  destr_bool.
+Qed.
+
 Notation orb_neg_b := orb_negb_r (only parsing).
 
 (** Commutativity *)
@@ -404,6 +409,11 @@ Proof.
 Qed.
 Hint Resolve andb_negb_r: bool.
 
+Lemma andb_negb_l : forall b:bool, negb b && b = false.
+Proof.
+  destr_bool.
+Qed.
+
 Notation andb_neg_b := andb_negb_r (only parsing).
 
 (** Commutativity *)
@@ -475,6 +485,75 @@ Qed.
 Notation absoption_andb := absorption_andb (only parsing).
 Notation absoption_orb := absorption_orb (only parsing).
 (* end hide *)
+
+(*********************************)
+(** * Properties of [implb]      *)
+(*********************************)
+
+Lemma implb_true_iff : forall b1 b2:bool, implb b1 b2 = true <-> (b1 = true -> b2 = true).
+Proof.
+  destr_bool; intuition.
+Qed.
+
+Lemma implb_false_iff : forall b1 b2:bool, implb b1 b2 = false <-> (b1 = true /\ b2 = false).
+Proof.
+  destr_bool; intuition.
+Qed.
+
+Lemma implb_true_r : forall b:bool, implb b true = true.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_false_r : forall b:bool, implb b false = negb b.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_true_l : forall b:bool, implb true b = b.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_false_l : forall b:bool, implb false b = true.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_same : forall b:bool, implb b b = true.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_contrapositive : forall b1 b2:bool, implb (negb b1) (negb b2) = implb b2 b1.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_negb : forall b1 b2:bool, implb (negb b1) b2 = implb (negb b2) b1.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_curry : forall b1 b2 b3:bool, implb (b1 && b2) b3 = implb b1 (implb b2 b3).
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_andb_distrib_r : forall b1 b2 b3:bool, implb b1 (b2 && b3) = implb b1 b2 && implb b1 b3.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_orb_distrib_r : forall b1 b2 b3:bool, implb b1 (b2 || b3) = implb b1 b2 || implb b1 b3.
+Proof.
+  destr_bool.
+Qed.
+
+Lemma implb_orb_distrib_l : forall b1 b2 b3:bool, implb (b1 || b2) b3 = implb b1 b3 && implb b2 b3.
+Proof.
+  destr_bool.
+Qed.
 
 (*********************************)
 (** * Properties of [xorb]       *)
