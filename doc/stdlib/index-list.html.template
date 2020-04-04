@@ -235,6 +235,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/DecimalPos.v
     theories/Numbers/DecimalN.v
     theories/Numbers/DecimalZ.v
+    theories/Numbers/DecimalQ.v
     theories/Numbers/DecimalString.v
     </dd>
 
