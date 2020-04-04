@@ -1007,7 +1007,7 @@ let declare_definition ~name ~scope ~kind ~opaque ~impargs ~udecl ?hook
   let entry, uctx = prepare_definition ?fix_exn ~opaque ~poly ~udecl ~types ~body ?inline sigma in
   declare_entry ~name ~scope ~kind ~impargs ?obls ?hook ~uctx entry
 
-let prepare_obligation ?opaque ?inline ~name ~poly ~udecl ~types ~body sigma =
+let prepare_obligation ~name ~types ~body sigma =
   let env = Global.env () in
   let types = match types with
     | Some t -> t

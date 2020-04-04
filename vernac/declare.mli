@@ -367,11 +367,7 @@ val declare_mutually_recursive
 
 (** Prepare API, to be removed once we provide the corresponding 1-step API *)
 val prepare_obligation
-  :  ?opaque:bool
-  -> ?inline:bool
-  -> name:Id.t
-  -> poly:bool
-  -> udecl:UState.universe_decl
+  :  name:Id.t
   -> types:EConstr.t option
   -> body:EConstr.t
   -> Evd.evar_map
