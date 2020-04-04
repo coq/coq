@@ -16,7 +16,7 @@
     We represent numbers in base 10 as lists of decimal digits,
     in big-endian order (most significant digit comes first). *)
 
-Require Import Datatypes.
+Require Import Datatypes Specif.
 
 (** Unsigned integers are just lists of digits.
     For instance, ten is (D1 (D0 Nil)) *)
@@ -52,6 +52,10 @@ Variant int := Pos (d:uint) | Neg (d:uint).
 Variant decimal :=
  | Decimal (i:int) (f:uint)
  | DecimalExp (i:int) (f:uint) (e:int).
+
+Scheme Equality for uint.
+Scheme Equality for int.
+Scheme Equality for decimal.
 
 Declare Scope dec_uint_scope.
 Delimit Scope dec_uint_scope with uint.
@@ -172,8 +176,8 @@ Fixpoint del_head n d :=
 
 Definition del_head_int n d :=
   match d with
-  | Pos d => Pos (del_head n d)
-  | Neg d => Neg (del_head n d)
+  | Pos d => del_head n d
+  | Neg d => del_head n d
   end.
 
 (** [del_tail n d] removes [n] digits at end of [d]

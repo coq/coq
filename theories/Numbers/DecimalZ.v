@@ -73,3 +73,30 @@ Proof.
   split. apply of_inj. intros E. rewrite <- of_int_norm, E.
   apply of_int_norm.
 Qed.
+
+(** Various lemmas *)
+
+Lemma of_uint_iter_D0 d n :
+  Z.of_uint (app d (Nat.iter n D0 Nil)) = Nat.iter n (Z.mul 10) (Z.of_uint d).
+Proof.
+  unfold Z.of_uint.
+  unfold app; rewrite <-rev_revapp.
+  rewrite Unsigned.of_lu_rev, Unsigned.of_lu_revapp.
+  rewrite <-!Unsigned.of_lu_rev, !rev_rev.
+  assert (H' : Pos.of_uint (Nat.iter n D0 Nil) = 0%N).
+  { now induction n; [|rewrite Unsigned.nat_iter_S]. }
+  rewrite H', N.add_0_l; clear H'.
+  induction n; [now simpl; rewrite N.mul_1_r|].
+  rewrite !Unsigned.nat_iter_S, <-IHn.
+  simpl Unsigned.usize; rewrite N.pow_succ_r'.
+  rewrite !N2Z.inj_mul; simpl Z.of_N; ring.
+Qed.
+
+Lemma of_int_iter_D0 d n :
+  Z.of_int (app_int d (Nat.iter n D0 Nil)) = Nat.iter n (Z.mul 10) (Z.of_int d).
+Proof.
+  case d; clear d; intro d; simpl.
+  - now rewrite of_uint_iter_D0.
+  - rewrite of_uint_iter_D0; induction n; [now simpl|].
+    rewrite !Unsigned.nat_iter_S, <-IHn; ring.
+Qed.

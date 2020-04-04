@@ -325,6 +325,21 @@ Proof.
   apply of_uint_norm.
 Qed.
 
+Lemma nztail_to_uint p :
+  let (h, n) := Decimal.nztail (Pos.to_uint p) in
+  Npos p = Pos.of_uint h * 10^(N.of_nat n).
+Proof.
+  rewrite <-(of_to p), <-(rev_rev (Pos.to_uint p)), of_lu_rev.
+  unfold Decimal.nztail.
+  rewrite rev_rev.
+  induction (rev (Pos.to_uint p)); [reflexivity| |
+    now simpl N.of_nat; simpl N.pow; rewrite N.mul_1_r, of_lu_rev..].
+  revert IHu.
+  set (t := _ u); case t; clear t; intros u0 n H.
+  rewrite of_lu_eqn; unfold hd, tl.
+  rewrite N.add_0_l, H, Nat2N.inj_succ, N.pow_succ_r'; ring.
+Qed.
+
 End Unsigned.
 
 (** Conversion from/to signed decimal numbers *)
