@@ -1008,19 +1008,19 @@ let declare_definition ~name ~scope ~kind ~opaque ~impargs ~udecl ?hook
   declare_entry ~name ~scope ~kind ~impargs ?obls ?hook ~uctx entry
 
 let prepare_obligation ?opaque ?inline ~name ~poly ~udecl ~types ~body sigma =
-  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false
-      sigma (fun nf -> nf body, Option.map nf types)
-  in
   let env = Global.env () in
-  RetrieveObl.check_evars env sigma;
-  let body = EConstr.of_constr body in
-  let typ = match types with
-    | Some t -> EConstr.of_constr t
+  let types = match types with
+    | Some t -> t
     | None -> Retyping.get_type_of env sigma body
   in
-  let obls, _, c, cty = RetrieveObl.retrieve_obligations env name sigma 0 body typ in
+  let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false
+      sigma (fun nf -> nf body, nf types)
+  in
+  RetrieveObl.check_evars env sigma;
+  let body, types = EConstr.(of_constr body, of_constr types) in
+  let obls, _, body, cty = RetrieveObl.retrieve_obligations env name sigma 0 body types in
   let uctx = Evd.evar_universe_context sigma in
-  c, cty, uctx, obls
+  body, cty, uctx, obls
 
 let prepare_parameter ~poly ~udecl ~types sigma =
   let env = Global.env () in
