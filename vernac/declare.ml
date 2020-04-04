@@ -1011,19 +1011,14 @@ let prepare_obligation ?opaque ?inline ~name ~poly ~udecl ~types ~body sigma =
   let sigma, (body, types) = Evarutil.finalize ~abort_on_undefined_evars:false
       sigma (fun nf -> nf body, Option.map nf types)
   in
-  let univs = Evd.check_univ_decl ~poly sigma udecl in
-  let ce = definition_entry ?opaque ?inline ?types ~univs body in
   let env = Global.env () in
-  let (c,ctx), sideff = Future.force ce.proof_entry_body in
-  assert(Safe_typing.is_empty_private_constants sideff.Evd.seff_private);
-  assert(Univ.ContextSet.is_empty ctx);
   RetrieveObl.check_evars env sigma;
-  let c = EConstr.of_constr c in
-  let typ = match ce.proof_entry_type with
+  let body = EConstr.of_constr body in
+  let typ = match types with
     | Some t -> EConstr.of_constr t
-    | None -> Retyping.get_type_of env sigma c
+    | None -> Retyping.get_type_of env sigma body
   in
-  let obls, _, c, cty = RetrieveObl.retrieve_obligations env name sigma 0 c typ in
+  let obls, _, c, cty = RetrieveObl.retrieve_obligations env name sigma 0 body typ in
   let uctx = Evd.evar_universe_context sigma in
   c, cty, uctx, obls
 
