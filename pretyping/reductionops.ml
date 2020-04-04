@@ -1192,11 +1192,15 @@ let vm_infer_conv ?(pb=Reduction.CUMUL) env t1 t2 =
 
 let default_plain_instance_ident = Id.of_string "H"
 
+type subst_fun = { sfun : metavariable -> EConstr.t }
+
 (* Try to replace all metas. Does not replace metas in the metas' values
  * Differs from (strong whd_meta). *)
-let plain_instance sigma s c =
+let plain_instance sigma s c = match s with
+| None -> c
+| Some s ->
   let rec irec n u = match EConstr.kind sigma u with
-    | Meta p -> (try lift n (Metamap.find p s) with Not_found -> u)
+    | Meta p -> (try lift n (s.sfun p) with Not_found -> u)
     | App (f,l) when isCast sigma f ->
         let (f,_,t) = destCast sigma f in
         let l' = Array.Fun1.Smart.map irec n l in
@@ -1205,7 +1209,7 @@ let plain_instance sigma s c =
             (* Don't flatten application nodes: this is used to extract a
                proof-term from a proof-tree and we want to keep the structure
                of the proof-tree *)
-            (try let g = Metamap.find p s in
+            (try let g = s.sfun p in
             match EConstr.kind sigma g with
             | App _ ->
                 let l' = Array.Fun1.Smart.map lift 1 l' in
@@ -1216,12 +1220,11 @@ let plain_instance sigma s c =
             with Not_found -> mkApp (f,l'))
         | _ -> mkApp (irec n f,l'))
     | Cast (m,_,_) when isMeta sigma m ->
-        (try lift n (Metamap.find (destMeta sigma m) s) with Not_found -> u)
+        (try lift n (s.sfun (destMeta sigma m)) with Not_found -> u)
     | _ ->
         map_with_binders sigma succ irec n u
   in
-  if Metamap.is_empty s then c
-  else irec 0 c
+  irec 0 c
 
 (* [instance] is used for [res_pf]; the call to [local_strong whd_betaiota]
    has (unfortunately) different subtle side effects:
@@ -1423,23 +1426,41 @@ let is_arity env sigma c =
 (*************************************)
 (* Metas *)
 
-let meta_value env evd mv =
-  let rec valrec mv =
-    match meta_opt_fvalue evd mv with
-    | Some (b,_) ->
-      let metas = Metamap.bind valrec b.freemetas in
-      instance env evd metas b.rebus
-    | None -> mkMeta mv
-  in
-  valrec mv
+type meta_instance_subst = {
+  sigma : Evd.evar_map;
+  mutable cache : EConstr.t Metamap.t;
+}
 
-let meta_instance env sigma b =
+let create_meta_instance_subst sigma = {
+  sigma;
+  cache = Metamap.empty;
+}
+
+let eval_subst env subst =
+  let rec ans mv =
+    try Metamap.find mv subst.cache
+    with Not_found ->
+      match meta_opt_fvalue subst.sigma mv with
+      | None -> mkMeta mv
+      | Some (b, _) ->
+        let metas =
+          if Metaset.is_empty b.freemetas then None
+          else Some { sfun = ans }
+        in
+        let res = instance env subst.sigma metas b.rebus in
+        let () = subst.cache <- Metamap.add mv res subst.cache in
+        res
+  in
+  { sfun = ans }
+
+let meta_instance env subst b =
   let fm = b.freemetas in
   if Metaset.is_empty fm then b.rebus
   else
-    let c_sigma = Metamap.bind (fun mv -> meta_value env sigma mv) fm in
-    instance env sigma c_sigma b.rebus
+    let sfun = eval_subst env subst in
+    instance env subst.sigma (Some sfun) b.rebus
 
 let nf_meta env sigma c =
+  let sigma = create_meta_instance_subst sigma in
   let cl = mk_freelisted c in
   meta_instance env sigma { cl with rebus = cl.rebus }

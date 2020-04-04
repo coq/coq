@@ -273,7 +273,11 @@ val whd_betaiota_deltazeta_for_iota_state :
   TransparentState.t -> Environ.env -> Evd.evar_map -> state -> state
 
 (** {6 Meta-related reduction functions } *)
-val meta_instance : env -> evar_map -> constr freelisted -> constr
+type meta_instance_subst
+
+val create_meta_instance_subst : Evd.evar_map -> meta_instance_subst
+
+val meta_instance : env -> meta_instance_subst -> constr freelisted -> constr
 val nf_meta       : env -> evar_map -> constr -> constr
 
 exception AnomalyInConversion of exn

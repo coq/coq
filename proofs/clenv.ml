@@ -42,10 +42,10 @@ type clausenv = {
 let cl_env ce = ce.env
 let cl_sigma ce =  ce.evd
 
-let clenv_term clenv c = meta_instance clenv.env clenv.evd c
+let clenv_term clenv c = meta_instance clenv.env (create_meta_instance_subst clenv.evd) c
 let clenv_meta_type clenv mv = Typing.meta_type clenv.env clenv.evd mv
-let clenv_value clenv = meta_instance clenv.env clenv.evd clenv.templval
-let clenv_type clenv = meta_instance clenv.env clenv.evd clenv.templtyp
+let clenv_value clenv = meta_instance clenv.env (create_meta_instance_subst clenv.evd) clenv.templval
+let clenv_type clenv = meta_instance clenv.env (create_meta_instance_subst clenv.evd) clenv.templtyp
 
 let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
@@ -203,7 +203,7 @@ let clenv_assign mv rhs clenv =
 *)
 
 let clenv_metas_in_type_of_meta env evd mv =
-  (mk_freelisted (meta_instance env evd (meta_ftype evd mv))).freemetas
+  (mk_freelisted (meta_instance env (create_meta_instance_subst evd) (meta_ftype evd mv))).freemetas
 
 let dependent_in_type_of_metas clenv mvs =
   List.fold_right
