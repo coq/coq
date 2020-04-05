@@ -199,6 +199,10 @@ tr.infrulemiddle hr {
     color: rgb(0%,40%,0%);
 }
 
+.id[title="tactic"] {
+    color: rgb(0%,40%,0%);
+}
+
 .id[title="inductive"] {
     color: rgb(0%,0%,80%);
 }

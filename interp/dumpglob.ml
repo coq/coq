@@ -252,6 +252,16 @@ let add_glob_kn ?loc kn =
     let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
     add_glob_gen ?loc sp lib_dp "syndef"
 
+let add_tactic ?loc kn =
+  if dump () then
+    let mp,id = Names.KerName.repr kn in
+    let lib_dp, ids = Lib.split_modpath mp in
+    let mod_dp_trunc = Names.DirPath.make ids in
+    let filepath = Names.DirPath.to_string lib_dp in
+    let modpath = Names.DirPath.to_string mod_dp_trunc in
+    let ident = Names.Label.to_string id in
+      dump_ref ?loc filepath modpath ident "tac"
+
 let dump_def ?loc ty secpath id = Option.iter (fun loc ->
   if get_output () = Feedback then
     Feedback.feedback (Feedback.GlobDef (loc, id, secpath, ty))
