@@ -324,6 +324,9 @@ let add_glob_tactic_notation local ~level ?deprecation prods forml ids tac =
     tacobj_body = { alias_args = ids; alias_body = tac; alias_deprecation = deprecation };
     tacobj_forml = forml;
   } in
+  if not forml then
+    (let id = CAst.make ?loc (Label.to_id (KerName.label key)) in
+     Dumpglob.dump_definition id false "tac");
   Lib.add_anonymous_leaf (inTacticGrammar tacobj)
 
 let add_tactic_notation local n ?deprecation prods e =
@@ -495,9 +498,11 @@ let register_ltac local ?deprecation tacl =
   let iter (loc, def, tac) = match def with
   | NewTac id ->
     Tacenv.register_ltac false local id tac ?deprecation;
+    Dumpglob.dump_definition (CAst.make ?loc id) false "tac";
     Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is defined")
   | UpdateTac kn ->
     Tacenv.redefine_ltac local kn tac ?deprecation;
+    (* TODO: unique coqdoc link for redefinitions *)
     let name = Tacenv.shortest_qualid_of_tactic kn in
     Flags.if_verbose Feedback.msg_info (Libnames.pr_qualid name ++ str " is redefined")
   in

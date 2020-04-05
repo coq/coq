@@ -20,11 +20,17 @@
 
 \begin{coqdoccode}
 \coqdocnoindent
-\coqdockw{Lemma} \coqdef{Coqdoc.bug5648.a}{a}{\coqdoclemma{a}} : \coqexternalref{True}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocinductive{True}}.\coqdoceol
+\coqdockw{Ltac} \coqdef{Coqdoc.bug5648.f}{f}{\coqdoctactic{f}} \coqdocvar{tac} := \coqdocvar{tac}.\coqdoceol
+\coqdocnoindent
+\coqdockw{Lemma} \coqdef{Coqdoc.bug5648.a}{a}{\coqdoclemma{a}} : \coqexternalref{True}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocinductive{True}} \coqexternalref{::type scope:x '/x5C' x}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocnotation{\ensuremath{\land}}} \coqexternalref{True}{http://coq.inria.fr/stdlib/Coq.Init.Logic}{\coqdocinductive{True}}.\coqdoceol
 \coqdocnoindent
 \coqdockw{Proof}.\coqdoceol
 \coqdocnoindent
-\coqdoctac{auto}.\coqdoceol
+\coqdoctac{split}.\coqdoceol
+\coqdocnoindent
+- \coqdoctac{auto}.\coqdoceol
+\coqdocnoindent
+- \coqref{Coqdoc.bug5648.f}{\coqdoctactic{f}} \coqdoctac{auto}.\coqdoceol
 \coqdocnoindent
 \coqdockw{Qed}.\coqdoceol
 \coqdocemptyline

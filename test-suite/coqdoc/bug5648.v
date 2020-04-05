@@ -1,6 +1,9 @@
-Lemma a : True.
+Ltac f tac := tac.
+Lemma a : True /\ True.
 Proof.
-auto.
+split.
+- auto.
+- f auto.
 Qed.
 
 Variant t :=

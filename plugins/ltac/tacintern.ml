@@ -122,7 +122,9 @@ let intern_constr_reference strict ist qid =
   else if qualid_is_ident qid && find_var (qualid_basename qid) ist then
     (DAst.make @@ GVar id), if strict then None else Some (make @@ CRef (qid,None))
   else
-    DAst.make @@ GRef (locate_global_with_alias qid,None),
+    let r = locate_global_with_alias qid in
+    Dumpglob.add_glob ?loc:qid.loc r;
+    DAst.make @@ GRef (r,None),
     if strict then None else Some (make @@ CRef (qid,None))
 
 (* Internalize an isolated reference in position of tactic *)
@@ -136,9 +138,16 @@ let warn_deprecated_alias =
     ~warning_name:"deprecated-tactic-notation"
     Pptactic.pr_alias_key
 
+let dump_tactic_reference ?loc kn =
+  try if not (Tacenv.is_ltac_for_ml_tactic kn) then Dumpglob.add_tactic ?loc kn
+  with Not_found ->
+    (* This is a not-yet registered Ltac recursive definition *)
+    Dumpglob.add_tactic ?loc kn
+
 let intern_isolated_global_tactic_reference qid =
   let loc = qid.CAst.loc in
   let kn = Tacenv.locate_tactic qid in
+  dump_tactic_reference ?loc kn;
   Option.iter (fun depr -> warn_deprecated_tactic ?loc (qid,depr)) @@
     Tacenv.tac_deprecation kn;
   TacCall (CAst.make ?loc (ArgArg (loc,kn),[]))
@@ -162,6 +171,7 @@ let intern_isolated_tactic_reference strict ist qid =
 let intern_applied_global_tactic_reference qid =
   let loc = qid.CAst.loc in
   let kn = Tacenv.locate_tactic qid in
+  dump_tactic_reference ?loc kn;
   Option.iter (fun depr -> warn_deprecated_tactic ?loc (qid,depr)) @@
     Tacenv.tac_deprecation kn;
   ArgArg (loc,kn)
@@ -679,6 +689,7 @@ and intern_tactic_seq onlytac ist tac =
   (* For extensions *)
   | TacAlias (s,isml,l) ->
       let alias = Tacenv.interp_alias s in
+      if not forml then Dumpglob.add_tactic ?loc s;
       Option.iter (fun o -> warn_deprecated_alias ?loc (s,o)) @@ alias.Tacenv.alias_deprecation;
       let l = List.map (intern_tacarg !strict_check false ist) l in
       ist.ltacvars, CAst.make ?loc (TacAlias (s,isml,l))
