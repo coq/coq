@@ -1432,6 +1432,7 @@ let sort_fields ~complete loc fields completer =
         let (first_field_glob_ref, record) =
           try
             let gr = locate_reference first_field_ref in
+            Dumpglob.add_glob ?loc:first_field_ref.CAst.loc gr;
             (gr, Recordops.find_projection gr)
           with Not_found ->
             raise (InternalizationError(first_field_ref.CAst.loc, NotAProjection first_field_ref))
@@ -1479,6 +1480,7 @@ let sort_fields ~complete loc fields completer =
                     by a let-in in the record declaration
                     (its value is fixed from other fields). *)
                  user_err ?loc  (str "No local fields allowed in a record construction.");
+               Dumpglob.add_glob ?loc:field_ref.CAst.loc field_glob_ref;
                index_fields fields remaining_projs ((field_index, field_value) :: acc)
             | [] ->
                let remaining_fields =

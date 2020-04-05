@@ -1,0 +1,27 @@
+\documentclass[12pt]{report}
+\usepackage[utf8x]{inputenc}
+
+%Warning: tipa declares many non-standard macros used by utf8x to
+%interpret utf8 characters but extra packages might have to be added
+%such as "textgreek" for Greek letters not already in tipa
+%or "stmaryrd" for mathematical symbols.
+%Utf8 codes missing a LaTeX interpretation can be defined by using
+%\DeclareUnicodeCharacter{code}{interpretation}.
+%Use coqdoc's option -p to add new packages or declarations.
+\usepackage{tipa}
+
+\usepackage[T1]{fontenc}
+\usepackage{fullpage}
+\usepackage{coqdoc}
+\usepackage{amsmath,amssymb}
+\usepackage{url}
+\begin{document}
+\coqlibrary{Coqdoc.Record}{Library }{Coqdoc.Record}
+
+\begin{coqdoccode}
+\coqdocnoindent
+\coqdockw{Record} \coqdef{Coqdoc.Record.a}{a}{\coqdocrecord{a}} := \{ \coqdef{Coqdoc.Record.b}{b}{\coqdocprojection{b}} : \coqexternalref{nat}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{nat}} ; \coqdef{Coqdoc.Record.c}{c}{\coqdocprojection{c}} : \coqexternalref{bool}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocinductive{bool}} \}.\coqdoceol
+\coqdocnoindent
+\coqdockw{Definition} \coqdef{Coqdoc.Record.d}{d}{\coqdocdefinition{d}} := \{| \coqref{Coqdoc.Record.b}{\coqdocprojection{b}} := 0 ; \coqref{Coqdoc.Record.c}{\coqdocprojection{c}} := \coqexternalref{true}{http://coq.inria.fr/stdlib/Coq.Init.Datatypes}{\coqdocconstructor{true}} |\}.\coqdoceol
+\end{coqdoccode}
+\end{document}
