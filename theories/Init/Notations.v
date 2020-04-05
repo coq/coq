@@ -132,6 +132,4 @@ Open Scope type_scope.
 
 (** ML Tactic Notations *)
 
-Declare ML Module "ltac_plugin".
-
-Global Set Default Proof Mode "Classic".
+Require Export Ltac.

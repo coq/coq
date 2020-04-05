@@ -13,6 +13,7 @@ through the <tt>Require Import</tt> command.</p>
     The core library (automatically loaded when starting Coq)
   </dt>
   <dd>
+    theories/Init/Ltac.v
     theories/Init/Notations.v
     theories/Init/Datatypes.v
     theories/Init/Logic.v
