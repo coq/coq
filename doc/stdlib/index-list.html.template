@@ -444,6 +444,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Sorting/PermutSetoid.v
     theories/Sorting/Mergesort.v
     theories/Sorting/Sorted.v
+    theories/Sorting/CPermutation.v
   </dd>
 
   <dt> <b>Wellfounded</b>:
