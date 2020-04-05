@@ -366,7 +366,7 @@ let extend_atomic_tactic name entries =
     let args = List.map (fun a -> Tacexp a) args in
     let entry = { mltac_name = name; mltac_index = i } in
     let body = CAst.make (TacML (entry, args)) in
-    Tacenv.register_ltac false false (Names.Id.of_string id) body
+    Tacenv.register_ltac true false (Names.Id.of_string id) body
   in
   List.iteri add_atomic entries
 
