@@ -284,7 +284,7 @@ let identifier =
 (* This misses unicode stuff, and it adds "[" and "]".  It's only an
    approximation of idents - used for detecting whether an underscore
    is part of an identifier or meant to indicate emphasis *)
-let nonidentchar = [^ 'A'-'Z' 'a'-'z' '_' '[' ']' '\'' '0'-'9' '@' ]
+let nonidentchar = [^ 'A'-'Z' 'a'-'z' '_' '[' ']' '\'' '0'-'9' '@' '\"' '\'' '`']
 
 let printing_token = [^ ' ' '\t']*
 
