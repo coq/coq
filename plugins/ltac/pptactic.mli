@@ -21,7 +21,7 @@ open Tacexpr
 open Tactypes
 
 type 'a grammar_tactic_prod_item_expr =
-| TacTerm of string
+| TacTerm of string Loc.located
 | TacNonTerm of ('a * Names.Id.t option) Loc.located
 
 type 'a raw_extra_genarg_printer =

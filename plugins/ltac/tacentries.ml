@@ -22,7 +22,7 @@ open Libnames
 open Nameops
 
 type 'a grammar_tactic_prod_item_expr = 'a Pptactic.grammar_tactic_prod_item_expr =
-| TacTerm of string
+| TacTerm of string Loc.located
 | TacNonTerm of ('a * Names.Id.t option) Loc.located
 
 type raw_argument = string * string option
@@ -181,7 +181,7 @@ let add_tactic_entry (kn, ml, tg) state =
       user_err Pp.(str "Notation for simple tactic must start with an identifier.")
   in
   let map = function
-  | TacTerm s -> GramTerminal s
+  | TacTerm (_loc,s) -> GramTerminal s
   | TacNonTerm (loc, (s, ido)) ->
     let EntryName (typ, e) = prod_item_of_symbol tg.tacgram_level s in
     GramNonTerminal (Loc.tag ?loc @@ (typ, e))
@@ -209,7 +209,7 @@ let register_tactic_notation_entry name entry =
   entry_names := String.Map.add name entry !entry_names
 
 let interp_prod_item = function
-  | TacTerm s -> TacTerm s
+  | TacTerm (loc,s) -> TacTerm (loc,s)
   | TacNonTerm (loc, ((nt, sep), ido)) ->
     let symbol = parse_user_entry ?loc nt sep in
     let interp s = function
@@ -236,16 +236,18 @@ let make_fresh_key =
   fun prods ->
     let cur = incr id; !id in
     let map = function
-    | TacTerm s -> s
-    | TacNonTerm _ -> "#"
+    | TacTerm (loc,s) -> (loc,s)
+    | TacNonTerm (loc,_) -> (loc,"#")
     in
-    let prods = String.concat "_" (List.map map prods) in
+    let locs, keys = List.split (List.map map prods) in
+    let prods = String.concat "_" keys in
+    let loc = Loc.merge_opt (List.hd locs) (List.last locs) in
     (* We embed the hash of the kernel name in the label so that the identifier
        should be mostly unique. This ensures that including two modules
        together won't confuse the corresponding labels. *)
     let hash = (cur lxor (ModPath.hash (Lib.current_mp ()))) land 0x7FFFFFFF in
     let lbl = Id.of_string_soft (Printf.sprintf "%s_%08X" prods hash) in
-    Lib.make_kn lbl
+    loc, Lib.make_kn lbl
 
 type tactic_grammar_obj = {
   tacobj_key : KerName.t;
@@ -314,8 +316,9 @@ let add_glob_tactic_notation local ~level ?deprecation prods forml ids tac =
     tacgram_prods = prods;
   } in
   let open Tacenv in
+  let loc, key = make_fresh_key prods in
   let tacobj = {
-    tacobj_key = make_fresh_key prods;
+    tacobj_key = key;
     tacobj_local = local;
     tacobj_tacgram = parule;
     tacobj_body = { alias_args = ids; alias_body = tac; alias_deprecation = deprecation };
@@ -340,7 +343,7 @@ let extend_atomic_tactic name entries =
   let open Tacexpr in
   let map_prod prods =
     let (hd, rem) = match prods with
-    | TacTerm s :: rem -> (s, rem)
+    | TacTerm (_, s) :: rem -> (s, rem)
     | _ -> assert false (* Not handled by the ML extension syntax *)
     in
     let empty_value = function
@@ -455,7 +458,7 @@ let register_ltac local ?deprecation tacl =
           with e when CErrors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
         in
         let () = if is_shadowed then warn_unusable_identifier id in
-        NewTac id, body
+        loc, NewTac id, body
     | Tacexpr.TacticRedefinition (qid, body) ->
         let kn =
           try Tacenv.locate_tactic qid
@@ -463,20 +466,20 @@ let register_ltac local ?deprecation tacl =
             CErrors.user_err ?loc:qid.CAst.loc
                        (str "There is no Ltac named " ++ pr_qualid qid ++ str ".")
         in
-        UpdateTac kn, body
+        qid.CAst.loc, UpdateTac kn, body
   in
   let rfun = List.map map tacl in
   let recvars =
-    let fold accu (op, _) = match op with
+    let fold accu (_, op, _) = match op with
     | UpdateTac _ -> accu
     | NewTac id -> (Lib.make_path id, Lib.make_kn id) :: accu
     in
     List.fold_left fold [] rfun
   in
   let ist = Tacintern.make_empty_glob_sign () in
-  let map (name, body) =
+  let map (loc, name, body) =
     let body = Flags.with_option Tacintern.strict_check (Tacintern.intern_tactic_or_tacarg ist) body in
-    (name, body)
+    (loc, name, body)
   in
   let defs () =
     (* Register locally the tactic to handle recursivity. This
@@ -489,7 +492,7 @@ let register_ltac local ?deprecation tacl =
   (* STATE XXX: Review what is going on here. Why does this needs
      protection? Why is not the STM level protection enough? Fishy *)
   let defs = Vernacstate.System.protect defs () in
-  let iter (def, tac) = match def with
+  let iter (loc, def, tac) = match def with
   | NewTac id ->
     Tacenv.register_ltac false local id tac ?deprecation;
     Flags.if_verbose Feedback.msg_info (Id.print id ++ str " is defined")
@@ -621,7 +624,7 @@ let rec untype_user_symbol : type a b c. (a,b,c) ty_user_symbol -> Genarg.ArgT.a
 let rec clause_of_sign : type a. int -> a ty_sig -> Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list =
   fun i sign -> match sign with
   | TyNil -> []
-  | TyIdent (s, sig') -> TacTerm s :: clause_of_sign i sig'
+  | TyIdent (s, sig') -> TacTerm (None, s) :: clause_of_sign i sig'
   | TyArg (a, sig') ->
     let id = Some (get_identifier i) in
     TacNonTerm (None, (untype_user_symbol a, id)) :: clause_of_sign (i + 1) sig'
