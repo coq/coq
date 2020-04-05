@@ -1439,11 +1439,7 @@ let sort_fields ~complete loc fields completer =
         (* the number of parameters *)
         let nparams = record.Recordops.s_EXPECTEDPARAM in
         (* the reference constructor of the record *)
-        let base_constructor =
-          let global_record_id = GlobRef.ConstructRef record.Recordops.s_CONST in
-          try Nametab.shortest_qualid_of_global ?loc Id.Set.empty global_record_id
-          with Not_found ->
-            anomaly (str "Environment corruption for records.") in
+        let base_constructor = GlobRef.ConstructRef record.Recordops.s_CONST in
         let () = check_duplicate ?loc fields in
         let (end_index,    (* one past the last field index *)
              first_field_index,  (* index of the first field of the record *)
@@ -1677,9 +1673,9 @@ let drop_notations_pattern looked_for genv =
             if get_asymmetric_patterns () then pl else
             let pars = List.make n (CAst.make ?loc @@ CPatAtom None) in
             List.rev_append pars pl in
-          match drop_syndef top scopes head pl with
-            | Some (a,b,c) -> DAst.make ?loc @@ RCPatCstr(a, b, c)
-            | None -> raise (InternalizationError (loc,NotAConstructor head))
+          let (_,argscs) = find_remaining_scopes [] pl head in
+          let pats = List.map2 (in_pat_sc scopes) argscs pl in
+          DAst.make ?loc @@ RCPatCstr(head, [], pats)
       end
     | CPatCstr (head, None, pl) ->
       begin
@@ -2076,10 +2072,12 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
           match fields with
             | None -> user_err ?loc ~hdr:"intern" (str"No constructor inference.")
             | Some (n, constrname, args) ->
+                let args_scopes = find_arguments_scope constrname in
                 let pars = List.make n (CAst.make ?loc @@ CHole (None, IntroAnonymous, None)) in
-                let app = CAst.make ?loc @@ CAppExpl ((None, constrname,None), List.rev_append pars args) in
-          intern env app
-        end
+                let args = intern_args env args_scopes (List.rev_append pars args) in
+                let hd = DAst.make @@ GRef (constrname,None) in
+                DAst.make ?loc @@ GApp (hd, args)
+       end
     | CCases (sty, rtnpo, tms, eqns) ->
         let as_in_vars = List.fold_left (fun acc (_,na,inb) ->
           (Option.fold_left (fun acc { CAst.v = y } -> Name.fold_right Id.Set.add y acc) acc na))
