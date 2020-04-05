@@ -222,9 +222,9 @@ and subst_tactic subst = CAst.map (function
   | TacSelect (s, tac) -> TacSelect (s, subst_tactic subst tac)
 
   (* For extensions *)
-  | TacAlias (s,l) ->
+  | TacAlias (s,forml,l) ->
       let s = subst_kn subst s in
-      TacAlias (s,List.map (subst_tacarg subst) l)
+      TacAlias (s,forml,List.map (subst_tacarg subst) l)
   | TacML (opn,l) -> TacML (opn,List.map (subst_tacarg subst) l)
   )
 

@@ -100,7 +100,7 @@ let register_ssrtac name f prods =
   let map id = Reference (Locus.ArgVar (CAst.make id)) in
   let get_id = function
     | TacTerm s -> None
-    | TacNonTerm (_, (_, ido)) -> ido in
+    | TacNonTerm {CAst.v = (_, ido)} -> ido in
   let ids = List.map_filter get_id prods in
   let tac = CAst.make (TacML (ssrtac_entry name, List.map map ids)) in
   let key = KerName.make path (Label.make ("ssrparser_" ^ name)) in
@@ -1696,11 +1696,11 @@ let _ = add_internal_name (is_tagged perm_tag)
 {
 
   let ssrtac_expr ?loc key args =
-    CAst.make ?loc (TacAlias (key, (List.map (fun x -> Tacexpr.TacGeneric (None, x)) args)))
+    CAst.make ?loc (TacAlias (key, true, (List.map (fun x -> Tacexpr.TacGeneric (None, x)) args)))
 
 let mk_non_term wit id =
   let open Pptactic in
-  TacNonTerm (None, (Extend.Uentry (Genarg.ArgT.Any (Genarg.get_arg_tag wit)), Some id))
+  TacNonTerm (CAst.make (Extend.Uentry (Genarg.ArgT.Any (Genarg.get_arg_tag wit)), Some id))
 
 let tclintroskey =
   let prods =
@@ -1801,7 +1801,7 @@ END
 
 let tcldokey =
   let open Pptactic in
-  let prods = [ TacTerm "do"; mk_non_term wit_ssrdoarg (Names.Id.of_string "arg") ] in
+  let prods = [ TacTerm (CAst.make "do"); mk_non_term wit_ssrdoarg (Names.Id.of_string "arg") ] in
   let tac = begin fun args ist -> match args with
     | [arg] ->
       let arg = cast_arg wit_ssrdoarg arg in

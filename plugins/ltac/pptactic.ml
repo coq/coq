@@ -1063,7 +1063,7 @@ let pr_goal_selector ~toplevel s =
               pr_tacarg a, latom
             | TacML (s,l) ->
               pr_with_comments ?loc (pr.pr_extend 1 s l), lcall
-            | TacAlias (kn,l) ->
+            | TacAlias (kn,_,l) ->
               pr_with_comments ?loc (pr.pr_alias (level_of inherited) kn l), latom
           )
           in

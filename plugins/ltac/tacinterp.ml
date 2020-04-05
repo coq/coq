@@ -1203,7 +1203,7 @@ and eval_tactic_ist ist tac : unit Proofview.tactic =
   | TacArg _ -> Ftactic.run (val_interp (ensure_loc loc ist) tac) (fun v -> tactic_of_value ist v)
   | TacSelect (sel, tac) -> Goal_select.tclSELECT sel (interp_tactic ist tac)
   (* For extensions *)
-  | TacAlias (s,l) ->
+  | TacAlias (s,_,l) ->
       let alias = Tacenv.interp_alias s in
       Proofview.tclProofInfo [@ocaml.warning "-3"] >>= fun (_name, poly) ->
       let (>>=) = Ftactic.bind in

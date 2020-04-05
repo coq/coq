@@ -238,7 +238,7 @@ and 'a gen_tactic_expr_r =
   (* For ML extensions *)
   | TacML of ml_tactic_entry * 'a gen_tactic_arg list
   (* For syntax extensions *)
-  | TacAlias of KerName.t * 'a gen_tactic_arg list
+  | TacAlias of KerName.t * bool * 'a gen_tactic_arg list
 
 constraint 'a = <
     term:'t;
