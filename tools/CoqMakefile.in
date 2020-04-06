@@ -616,6 +616,7 @@ cleanall:: clean
 	$(HIDE)rm -f $(VOFILES:.vo=.v.before-timing)
 	$(HIDE)rm -f $(VOFILES:.vo=.v.after-timing)
 	$(HIDE)rm -f $(VOFILES:.vo=.v.timing.diff)
+	$(HIDE)rm -f .lia.cache .nia.cache
 .PHONY: cleanall
 
 archclean::
