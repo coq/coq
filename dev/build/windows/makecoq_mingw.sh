@@ -983,6 +983,15 @@ function make_ocaml {
       cp Changes      "$PREFIXOCAML/license_readme/ocaml/Changes.txt"
     fi
 
+    # Since 4.07 this library is part of ocaml
+    mkdir -p "$PREFIXOCAML/libocaml/site-lib/seq/"
+    cat > "$PREFIXOCAML/libocaml/site-lib/seq/META" <<EOT
+name="seq"
+version="[distributed with OCaml 4.07 or above]"
+description="dummy backward-compatibility package for iterators"
+requires=""
+EOT
+
     build_post
   fi
 }
