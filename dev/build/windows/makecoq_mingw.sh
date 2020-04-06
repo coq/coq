@@ -1164,6 +1164,47 @@ function make_lablgtk {
   fi
 }
 
+##### Elpi #####
+
+function make_seq {
+  make_ocaml
+  # since 4.07 this package is part of ocaml
+
+}
+
+function make_re {
+  make_ocaml
+  make_dune
+  make_seq
+
+  if build_prep https://github.com/ocaml/ocaml-re/archive 1.9.0 tar.gz 1 ocaml-re; then
+
+    log2 dune build -p re
+    log2 dune install re
+
+    build_post
+  fi
+
+}
+
+function make_elpi {
+  make_ocaml
+  make_findlib
+  make_camlp5
+  make_dune
+  make_re
+
+  if build_prep https://github.com/LPCIC/elpi/archive v1.11.0 tar.gz; then
+
+    log2 make build DUNE_OPTS="-p elpi"
+    log2 make install DUNE_OPTS="-p elpi"
+
+    build_post
+
+  fi
+
+}
+
 ##### COQ #####
 
 # Copy one DLLfrom cygwin MINGW packages to Coq install folder
