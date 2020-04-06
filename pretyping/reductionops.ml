@@ -1746,26 +1746,46 @@ let is_sort env sigma t =
 let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
   let refold = false in
   let tactic_mode = false in
-  let rec whrec csts s =
-    let (t, stack as s),csts' = whd_state_gen ~csts ~refold ~tactic_mode CClosure.betaiota env sigma s in
+  let all' = CClosure.RedFlags.red_add_transparent CClosure.all ts in
+  (* Unset the sharing flag to get a call-by-name reduction. This matters for
+     the shape of the generated term. *)
+  let env' = Environ.set_typing_flags { (Environ.typing_flags env) with Declarations.share_reduction = false } env in
+  let whd_opt c =
+    let open CClosure in
+    let evars ev = safe_evar_value sigma ev in
+    let infos = create_clos_infos ~evars all' env' in
+    let tab = create_tab () in
+    let c = inject (EConstr.Unsafe.to_constr (Stack.zip sigma c)) in
+    let (c, stk) = whd_stack infos tab c [] in
+    match fterm_of c with
+    | (FConstruct _ | FCoFix _) ->
+      (* Non-neutral normal, can trigger reduction below *)
+      let c = EConstr.of_constr (term_of_process c stk) in
+      Some (decompose_app_vect sigma c)
+    | _ -> None
+  in
+  let rec whrec s =
+    let (t, stack as s), _ = whd_state_gen ~refold ~tactic_mode CClosure.betaiota env sigma s in
     match Stack.strip_app stack with
       |args, (Stack.Case _ :: _ as stack') ->
-        let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' ~refold ~tactic_mode
-          (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
-        if reducible_mind_case sigma t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
+        begin match whd_opt (t, args) with
+        | Some (t_o, args) when reducible_mind_case sigma t_o -> whrec (t_o, Stack.append_app args stack')
+        | (Some _ | None) -> s
+        end
       |args, (Stack.Fix _ :: _ as stack') ->
-        let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' ~refold ~tactic_mode
-          (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
-        if isConstruct sigma t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
+        begin match whd_opt (t, args) with
+        | Some (t_o, args) when isConstruct sigma t_o -> whrec (t_o, Stack.append_app args stack')
+        | (Some _ | None) -> s
+        end
       |args, (Stack.Proj (p,_) :: stack'') ->
-        let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' ~refold ~tactic_mode
-          (CClosure.RedFlags.red_add_transparent CClosure.all ts) env sigma (t,args) in
-        if isConstruct sigma t_o then
-          whrec Cst_stack.empty (Stack.nth stack_o (Projection.npars p + Projection.arg p), stack'')
-        else s,csts'
-      |_, ((Stack.App _|Stack.Cst _|Stack.Primitive _) :: _|[]) -> s,csts'
+        begin match whd_opt (t, args) with
+        | Some (t_o, args) when isConstruct sigma t_o ->
+          whrec (args.(Projection.npars p + Projection.arg p), stack'')
+        | (Some _ | None) -> s
+        end
+      |_, ((Stack.App _|Stack.Cst _|Stack.Primitive _) :: _|[]) -> s
   in
-  fst (whrec Cst_stack.empty s)
+  whrec s
 
 let find_conclusion env sigma =
   let rec decrec env c =

@@ -678,6 +678,8 @@ let rec zip m stk =
 
 let fapp_stack (m,stk) = zip m stk
 
+let term_of_process c stk = term_of_fconstr (zip c stk)
+
 (*********************************************************************)
 
 (* The assertions in the functions below are granted because they are
