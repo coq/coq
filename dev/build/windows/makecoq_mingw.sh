@@ -1955,6 +1955,21 @@ function make_addon_gappa {
   fi
 }
 
+# Elpi: extension language for Coq based. It lets one define commands in tactics
+# in a high level programming language with support for binders and unification
+# variables.
+
+function make_addon_elpi {
+  make_elpi
+  installer_addon_dependency elpi
+  if build_prep_overlay elpi ; then
+    installer_addon_section elpi "Elpi extension language" "Coq plugin for the Elpi extension language" ""
+    logn build make
+    logn installe make install
+    build_post
+  fi
+}
+
 # Main function for building addons
 
 function make_addons {
