@@ -252,7 +252,7 @@ let add_glob_kn ?loc kn =
     let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
     add_glob_gen ?loc sp lib_dp "syndef"
 
-let add_tactic ?loc kn =
+let add_tactic ?loc ~isml kn =
   if dump () then
     let mp,id = Names.KerName.repr kn in
     let lib_dp, ids = Lib.split_modpath mp in
@@ -260,7 +260,7 @@ let add_tactic ?loc kn =
     let filepath = Names.DirPath.to_string lib_dp in
     let modpath = Names.DirPath.to_string mod_dp_trunc in
     let ident = Names.Label.to_string id in
-      dump_ref ?loc filepath modpath ident "tac"
+    dump_ref ?loc filepath modpath ident (if isml then "mltac" else "tac")
 
 let dump_def ?loc ty secpath id = Option.iter (fun loc ->
   if get_output () = Feedback then

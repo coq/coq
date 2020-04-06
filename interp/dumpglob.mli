@@ -36,7 +36,7 @@ val continue : unit -> unit
 val add_glob : ?loc:Loc.t -> Names.GlobRef.t -> unit
 val add_glob_kn : ?loc:Loc.t -> Names.KerName.t -> unit
 
-val add_tactic : ?loc:Loc.t -> Names.KerName.t -> unit
+val add_tactic : ?loc:Loc.t -> isml:bool -> Names.KerName.t -> unit
   (* Add a name for tactic language [ml] *)
 
 val dump_definition : Names.lident -> bool -> string -> unit

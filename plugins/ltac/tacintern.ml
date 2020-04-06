@@ -139,10 +139,12 @@ let warn_deprecated_alias =
     Pptactic.pr_alias_key
 
 let dump_tactic_reference ?loc kn =
-  try if not (Tacenv.is_ltac_for_ml_tactic kn) then Dumpglob.add_tactic ?loc kn
-  with Not_found ->
-    (* This is a not-yet registered Ltac recursive definition *)
-    Dumpglob.add_tactic ?loc kn
+  let isml =
+    try Tacenv.is_ltac_for_ml_tactic kn
+    with Not_found ->
+      (* This is a not-yet registered Ltac recursive definition *)
+      false in
+  Dumpglob.add_tactic ?loc ~isml kn
 
 let intern_isolated_global_tactic_reference qid =
   let loc = qid.CAst.loc in
@@ -689,7 +691,7 @@ and intern_tactic_seq onlytac ist tac =
   (* For extensions *)
   | TacAlias (s,isml,l) ->
       let alias = Tacenv.interp_alias s in
-      if not forml then Dumpglob.add_tactic ?loc s;
+      Dumpglob.add_tactic ?loc ~isml s;
       Option.iter (fun o -> warn_deprecated_alias ?loc (s,o)) @@ alias.Tacenv.alias_deprecation;
       let l = List.map (intern_tacarg !strict_check false ist) l in
       ist.ltacvars, CAst.make ?loc (TacAlias (s,isml,l))
