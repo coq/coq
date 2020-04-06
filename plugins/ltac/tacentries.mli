@@ -22,8 +22,8 @@ val register_ltac : locality_flag -> ?deprecation:Deprecation.t ->
 (** {5 Tactic Notations} *)
 
 type 'a grammar_tactic_prod_item_expr = 'a Pptactic.grammar_tactic_prod_item_expr =
-| TacTerm of string Loc.located
-| TacNonTerm of ('a * Names.Id.t option) Loc.located
+| TacTerm of string CAst.t
+| TacNonTerm of ('a * Names.Id.t option) CAst.t
 
 type raw_argument = string * string option
 (** An argument type as provided in Tactic notations, i.e. a string like

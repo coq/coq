@@ -52,8 +52,8 @@ let tag_atomic_tactic_expr      = do_not_tag
 let pr_global x = Nametab.pr_global_env Id.Set.empty x
 
 type 'a grammar_tactic_prod_item_expr =
-| TacTerm of string Loc.located
-| TacNonTerm of ('a * Names.Id.t option) Loc.located
+| TacTerm of string CAst.t
+| TacNonTerm of ('a * Names.Id.t option) CAst.t
 
 type grammar_terminals = Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list
 
@@ -226,13 +226,13 @@ let string_of_genarg_arg (ArgumentType arg) =
 
   let rec tacarg_using_rule_token pr_gen = function
     | [] -> []
-    | TacTerm (_, s) :: l -> keyword s :: tacarg_using_rule_token pr_gen l
-    | TacNonTerm (_, ((symb, arg), _)) :: l  ->
+    | TacTerm { CAst.v = s } :: l -> keyword s :: tacarg_using_rule_token pr_gen l
+    | TacNonTerm { CAst.v = ((symb, arg), _) } :: l  ->
       pr_gen symb arg :: tacarg_using_rule_token pr_gen l
 
   let pr_tacarg_using_rule pr_gen l =
     let l = match l with
-    | TacTerm (_, s) :: l ->
+    | TacTerm { CAst.v = s } :: l ->
       (* First terminal token should be considered as the name of the tactic,
          so we tag it differently than the other terminal tokens. *)
       primitive s :: tacarg_using_rule_token pr_gen l
@@ -266,8 +266,8 @@ let string_of_genarg_arg (ArgumentType arg) =
     try
       let prods = (KNmap.find key !prnotation_tab).pptac_prods in
       let pr = function
-      | TacTerm (_, s) -> primitive s
-      | TacNonTerm (_, (symb, _)) -> str (Printf.sprintf "(%s)" (pr_user_symbol symb))
+      | TacTerm { CAst.v = s } -> primitive s
+      | TacNonTerm { CAst.v = (symb, _) } -> str (Printf.sprintf "(%s)" (pr_user_symbol symb))
       in
       pr_sequence pr prods
     with Not_found ->
@@ -281,9 +281,9 @@ let string_of_genarg_arg (ArgumentType arg) =
       let rec pack prods args = match prods, args with
       | [], [] -> []
       | TacTerm s :: prods, args -> TacTerm s :: pack prods args
-      | TacNonTerm (_, (_, None)) :: prods, args -> pack prods args
-      | TacNonTerm (loc, (symb, (Some _ as ido))) :: prods, arg :: args ->
-        TacNonTerm (loc, ((symb, arg), ido)) :: pack prods args
+      | TacNonTerm { CAst.v = (_, None) } :: prods, args -> pack prods args
+      | TacNonTerm { CAst.loc; CAst.v = (symb, (Some _ as ido)) } :: prods, arg :: args ->
+        TacNonTerm (CAst.make ?loc ((symb, arg), ido)) :: pack prods args
       | _ -> raise Not_found
       in
       let prods = pack pp.pptac_prods l in

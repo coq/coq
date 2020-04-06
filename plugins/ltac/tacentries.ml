@@ -22,8 +22,8 @@ open Libnames
 open Nameops
 
 type 'a grammar_tactic_prod_item_expr = 'a Pptactic.grammar_tactic_prod_item_expr =
-| TacTerm of string Loc.located
-| TacNonTerm of ('a * Names.Id.t option) Loc.located
+| TacTerm of string CAst.t
+| TacNonTerm of ('a * Names.Id.t option) CAst.t
 
 type raw_argument = string * string option
 type argument = Genarg.ArgT.any Extend.user_symbol
@@ -181,8 +181,8 @@ let add_tactic_entry (kn, ml, tg) state =
       user_err Pp.(str "Notation for simple tactic must start with an identifier.")
   in
   let map = function
-  | TacTerm (_loc,s) -> GramTerminal s
-  | TacNonTerm (loc, (s, ido)) ->
+  | TacTerm { CAst.v = s } -> GramTerminal s
+  | TacNonTerm { CAst.loc; CAst.v = (s, ido) } ->
     let EntryName (typ, e) = prod_item_of_symbol tg.tacgram_level s in
     GramNonTerminal (Loc.tag ?loc @@ (typ, e))
   in
@@ -209,8 +209,8 @@ let register_tactic_notation_entry name entry =
   entry_names := String.Map.add name entry !entry_names
 
 let interp_prod_item = function
-  | TacTerm (loc,s) -> TacTerm (loc,s)
-  | TacNonTerm (loc, ((nt, sep), ido)) ->
+  | TacTerm s -> TacTerm s
+  | TacNonTerm { CAst.loc; CAst.v = ((nt, sep), ido) } ->
     let symbol = parse_user_entry ?loc nt sep in
     let interp s = function
     | None ->
@@ -229,15 +229,15 @@ let interp_prod_item = function
       end
     in
     let symbol = interp_entry_name interp symbol in
-    TacNonTerm (loc, (symbol, ido))
+    TacNonTerm (CAst.make ?loc (symbol, ido))
 
 let make_fresh_key =
   let id = Summary.ref ~name:"TACTIC-NOTATION-COUNTER" 0 in
   fun prods ->
     let cur = incr id; !id in
     let map = function
-    | TacTerm (loc,s) -> (loc,s)
-    | TacNonTerm (loc,_) -> (loc,"#")
+    | TacTerm {CAst.loc; CAst.v = s} -> (loc,s)
+    | TacNonTerm {CAst.loc} -> (loc,"#")
     in
     let locs, keys = List.split (List.map map prods) in
     let prods = String.concat "_" keys in
@@ -308,7 +308,7 @@ let inTacticGrammar : tactic_grammar_obj -> obj =
 
 let cons_production_parameter = function
 | TacTerm _ -> None
-| TacNonTerm (_, (_, ido)) -> ido
+| TacNonTerm {CAst.v = (_, ido)} -> ido
 
 let add_glob_tactic_notation local ~level ?deprecation prods forml ids tac =
   let parule = {
@@ -343,12 +343,12 @@ let extend_atomic_tactic name entries =
   let open Tacexpr in
   let map_prod prods =
     let (hd, rem) = match prods with
-    | TacTerm (_, s) :: rem -> (s, rem)
+    | TacTerm {CAst.v = s} :: rem -> (s, rem)
     | _ -> assert false (* Not handled by the ML extension syntax *)
     in
     let empty_value = function
     | TacTerm s -> raise NonEmptyArgument
-    | TacNonTerm (_, (symb, _)) ->
+    | TacNonTerm {CAst.v = (symb, _)} ->
       let EntryName (typ, e) = prod_item_of_symbol 0 symb in
       let Genarg.Rawwit wit = typ in
       let inj x = CAst.make @@ TacArg ( TacGeneric (None, Genarg.in_gen typ x)) in
@@ -376,7 +376,7 @@ let add_ml_tactic_notation name ~level ?deprecation prods =
     let open Tacexpr in
     let get_id = function
     | TacTerm s -> None
-    | TacNonTerm (_, (_, ido)) -> ido
+    | TacNonTerm {CAst.v = (_, ido)} -> ido
     in
     let ids = List.map_filter get_id prods in
     let entry = { mltac_name = name; mltac_index = len - i - 1 } in
@@ -624,10 +624,10 @@ let rec untype_user_symbol : type a b c. (a,b,c) ty_user_symbol -> Genarg.ArgT.a
 let rec clause_of_sign : type a. int -> a ty_sig -> Genarg.ArgT.any Extend.user_symbol grammar_tactic_prod_item_expr list =
   fun i sign -> match sign with
   | TyNil -> []
-  | TyIdent (s, sig') -> TacTerm (None, s) :: clause_of_sign i sig'
+  | TyIdent (s, sig') -> TacTerm (CAst.make s) :: clause_of_sign i sig'
   | TyArg (a, sig') ->
     let id = Some (get_identifier i) in
-    TacNonTerm (None, (untype_user_symbol a, id)) :: clause_of_sign (i + 1) sig'
+    TacNonTerm (CAst.make (untype_user_symbol a, id)) :: clause_of_sign (i + 1) sig'
 
 let clause_of_ty_ml = function
   | TyML (t,_) -> clause_of_sign 1 t
