@@ -1,5 +1,6 @@
 Analyze
 
+CheckFlags
 CheckInductive
 Mod_checking
 CheckTypes
