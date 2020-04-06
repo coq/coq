@@ -240,3 +240,10 @@ so correctly converts ``x`` and ``y``.
   the kernel when it is passed a term with incorrect relevance marks.
   To avoid conversion issues as in ``late_mark`` you may wish to use
   it to find when your tactics are producing incorrect marks.
+
+.. flag:: Cumulative StrictProp
+   :name: Cumulative StrictProp
+
+   Set this flag (it is off by default) to make the kernel accept
+   cumulativity between |SProp| and other universes. This makes
+   typechecking incomplete.

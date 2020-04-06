@@ -1302,6 +1302,7 @@ let vernac_generalizable ~local =
   Implicit_quantifiers.declare_generalizable ~local
 
 let allow_sprop_opt_name = ["Allow";"StrictProp"]
+let cumul_sprop_opt_name = ["Cumulative";"StrictProp"]
 
 let () =
   declare_bool_option
@@ -1309,6 +1310,13 @@ let () =
       optkey   = allow_sprop_opt_name;
       optread  = (fun () -> Global.sprop_allowed());
       optwrite = Global.set_allow_sprop }
+
+let () =
+  declare_bool_option
+    { optdepr  = false;
+      optkey   = cumul_sprop_opt_name;
+      optread  = Global.is_cumulative_sprop;
+      optwrite = Global.set_cumulative_sprop }
 
 let () =
   declare_bool_option
@@ -1487,21 +1495,21 @@ let () =
       optread  = CWarnings.get_flags;
       optwrite = CWarnings.set_flags }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optkey   = ["Guard"; "Checking"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.check_guarded);
       optwrite = (fun b -> Global.set_check_guarded b) }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optkey   = ["Positivity"; "Checking"];
       optread  = (fun () -> (Global.typing_flags ()).Declarations.check_positive);
       optwrite = (fun b -> Global.set_check_positive b) }
 
-let _ =
+let () =
   declare_bool_option
     { optdepr  = false;
       optkey   = ["Universe"; "Checking"];

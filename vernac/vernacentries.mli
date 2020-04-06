@@ -26,3 +26,4 @@ val interp_redexp_hook : (Environ.env -> Evd.evar_map -> Genredexpr.raw_red_expr
 val command_focus : unit Proof.focus_kind
 
 val allow_sprop_opt_name : string list
+val cumul_sprop_opt_name : string list
