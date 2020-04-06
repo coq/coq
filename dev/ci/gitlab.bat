@@ -54,7 +54,9 @@ IF "%WINDOWS%" == "enabled_all_addons" (
     -addon=flocq ^
     -addon=interval ^
     -addon=gappa_tool ^
-    -addon=gappa
+    -addon=gappa ^
+    -addon=elpi ^
+    -addon=HB
 ) ELSE (
   SET "EXTRA_ADDONS= "
 )
