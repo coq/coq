@@ -36,7 +36,7 @@ val dump_secvar : ?loc:Loc.t -> Names.Id.t -> unit
 val dump_libref : ?loc:Loc.t -> Names.DirPath.t -> string -> unit
 val dump_notation_location : (int * int) list -> Constrexpr.notation ->
   (Notation.notation_location * Notation_term.scope_name option) -> unit
-val dump_binding : ?loc:Loc.t -> Names.Id.Set.elt -> unit
+val dump_binding : ?loc:Loc.t -> string -> unit
 val dump_notation :
   (Constrexpr.notation * Notation.notation_location) Loc.located ->
   Notation_term.scope_name option -> bool -> unit

@@ -230,6 +230,10 @@ tr.infrulemiddle hr {
     color: rgb(40%,0%,40%);
 }
 
+.id[title="binder"] {
+    color: rgb(40%,0%,40%);
+}
+
 .id[type="definition"] { 
     color: rgb(0%,40%,0%);
 }

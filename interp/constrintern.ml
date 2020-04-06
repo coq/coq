@@ -53,6 +53,12 @@ type var_internalization_type =
   | Method
   | Variable
 
+type var_unique_id = string
+
+let var_uid =
+  let count = ref 0 in
+  fun id -> incr count; Id.to_string id ^ ":" ^ string_of_int !count
+
 type var_internalization_data =
     (* type of the "free" variable, for coqdoc, e.g. while typing the
        constructor of JMeq, "JMeq" behaves as a variable of type Inductive *)
@@ -60,7 +66,9 @@ type var_internalization_data =
     (* signature of impargs of the variable *)
     Impargs.implicit_status list *
     (* subscopes of the args of the variable *)
-    scope_name option list
+    scope_name option list *
+    (* unique ID for coqdoc links *)
+    var_unique_id
 
 type internalization_env =
     (var_internalization_data) Id.Map.t
@@ -177,17 +185,17 @@ let parsing_explicit = ref false
 
 let empty_internalization_env = Id.Map.empty
 
-let compute_internalization_data env sigma ty typ impl =
+let compute_internalization_data env sigma id ty typ impl =
   let impl = compute_implicits_with_manual env sigma typ (is_implicit_args()) impl in
-  (ty, impl, compute_arguments_scope sigma typ)
+  (ty, impl, compute_arguments_scope sigma typ, var_uid id)
 
 let compute_internalization_env env sigma ?(impls=empty_internalization_env) ty =
   List.fold_left3
-    (fun map id typ impl -> Id.Map.add id (compute_internalization_data env sigma ty typ impl) map)
+    (fun map id typ impl -> Id.Map.add id (compute_internalization_data env sigma id ty typ impl) map)
     impls
 
-let extend_internalization_data (r, impls, scopes) impl scope =
-  (r, impls@[impl], scopes@[scope])
+let extend_internalization_data (r, impls, scopes, uid) impl scope =
+  (r, impls@[impl], scopes@[scope], uid)
 
 (**********************************************************************)
 (* Contracting "{ _ }" in notations *)
@@ -434,8 +442,9 @@ let push_name_env ntnvars implargs env =
       if Id.Map.is_empty ntnvars && Id.equal id ldots_var
         then error_ldots_var ?loc;
       set_var_scope ?loc id false (env.tmp_scope,env.scopes) ntnvars;
-      Dumpglob.dump_binding ?loc id;
-      pure_push_name_env (id,(Variable,implargs,[])) env
+      let uid = var_uid id in
+      Dumpglob.dump_binding ?loc uid;
+      pure_push_name_env (id,(Variable,implargs,[],uid)) env
 
 let remember_binders_impargs env bl =
   List.map_filter (fun (na,_,_,_) ->
@@ -1007,9 +1016,9 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
   else
   (* Is [id] registered with implicit arguments *)
   try
-    let ty,impls,argsc = Id.Map.find id env.impls in
+    let ty,impls,argsc,uid = Id.Map.find id env.impls in
     let tys = string_of_ty ty in
-    Dumpglob.dump_reference ?loc "<>" (Id.to_string id) tys;
+    Dumpglob.dump_reference ?loc "<>" uid tys;
     gvar (loc,id) us, make_implicits_list impls, argsc
   with Not_found ->
   (* Is [id] bound in current term or is an ltac var bound to constr *)

@@ -29,8 +29,8 @@
 | <a name="A"><span class="id" title="constructor">A</span></a> | <a name="Add"><span class="id" title="constructor">Add</span></a> | <a name="G"><span class="id" title="constructor">G</span></a> | <a name="Goal"><span class="id" title="constructor">Goal</span></a> | <a name="L"><span class="id" title="constructor">L</span></a> | <a name="Lemma"><span class="id" title="constructor">Lemma</span></a> | <a name="P"><span class="id" title="constructor">P</span></a> | <a name="Proof"><span class="id" title="constructor">Proof</span></a> .<br/>
 
 <br/>
-<span class="id" title="keyword">Definition</span> <a name="d"><span class="id" title="definition">d</span></a> <span class="id" title="var">x</span> :=<br/>
-&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="Coqdoc.bug5648.html#x"><span class="id" title="variable">x</span></a> <span class="id" title="keyword">with</span><br/>
+<span class="id" title="keyword">Definition</span> <a name="d"><span class="id" title="definition">d</span></a> <a name="x:3"><span class="id" title="binder">x</span></a> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <a class="idref" href="Coqdoc.bug5648.html#x:3"><span class="id" title="variable">x</span></a> <span class="id" title="keyword">with</span><br/>
 &nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#A"><span class="id" title="constructor">A</span></a> ⇒ 0<br/>
 &nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#Add"><span class="id" title="constructor">Add</span></a> ⇒ 1<br/>
 &nbsp;&nbsp;| <a class="idref" href="Coqdoc.bug5648.html#G"><span class="id" title="constructor">G</span></a> ⇒ 2<br/>

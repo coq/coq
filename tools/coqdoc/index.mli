@@ -30,6 +30,7 @@ type entry_type =
   | Abbreviation
   | Notation
   | Section
+  | Binder
 
 val type_name : entry_type -> string
 

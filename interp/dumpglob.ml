@@ -246,8 +246,6 @@ let add_glob_kn ?loc kn =
     let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
     add_glob_gen ?loc sp lib_dp "syndef"
 
-let dump_binding ?loc id = ()
-
 let dump_def ?loc ty secpath id = Option.iter (fun loc ->
   if !glob_output = Feedback then
     Feedback.feedback (Feedback.GlobDef (loc, id, secpath, ty))
@@ -275,3 +273,6 @@ let dump_notation (loc,(df,_)) sc sec = Option.iter (fun loc ->
   let location = (Loc.make_loc (i, i+1)) in
   dump_def ~loc:location "not" (Names.DirPath.to_string (Lib.current_dirpath sec)) (cook_notation df sc)
   ) loc
+
+let dump_binding ?loc uid =
+  dump_def ?loc "binder" "<>" uid

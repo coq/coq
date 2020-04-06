@@ -337,11 +337,8 @@ module Latex = struct
     let id = if fid <> "" then (m ^ "." ^ fid) else m in
     match find_module m with
       | Local ->
-          if typ = Variable then
-            printf "\\coqdoc%s{%s}" (type_name typ) s
-          else
-            (printf "\\coqref{"; label_ident id;
-             printf "}{\\coqdoc%s{%s}}" (type_name typ) s)
+          printf "\\coqref{"; label_ident id;
+          printf "}{\\coqdoc%s{%s}}" (type_name typ) s
       | External m when !externals ->
           printf "\\coqexternalref{"; label_ident fid;
           printf "}{%s}{\\coqdoc%s{%s}}" (escaped m) (type_name typ) s
@@ -615,6 +612,7 @@ module Html = struct
       else match s.[i] with
       | 'a'..'z' | 'A'..'Z' | '0'..'9' | '.' | '_' -> loop esc (i-1)
       | '<' | '>' | '&' | '\'' | '\"' -> loop true (i-1)
+      | '-' | ':' -> loop esc (i-1) (* should be safe in HTML5 attribute name syntax *)
       | _ ->
         (* This name contains complex characters:
            this is probably a notation string, we simply hash it. *)

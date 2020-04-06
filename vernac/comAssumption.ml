@@ -161,7 +161,7 @@ let do_assumptions ~program_mode ~poly ~scope ~kind nl l =
     let env =
       EConstr.push_named_context (List.map (fun {CAst.v=id} -> LocalAssum (make_annot id r,t)) idl) env in
     let ienv = List.fold_right (fun {CAst.v=id} ienv ->
-      let impls = compute_internalization_data env sigma Variable t imps in
+      let impls = compute_internalization_data env sigma id Variable t imps in
       Id.Map.add id impls ienv) idl ienv in
       ((sigma,env,ienv),((is_coe,idl),t,imps)))
     (sigma,env,empty_internalization_env) l

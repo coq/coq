@@ -46,7 +46,7 @@ let build_newrecursive lnameargsardef =
           Constrintern.interp_context_evars ~program_mode:false env evd binders
         in
         let impl =
-          Constrintern.compute_internalization_data env0 evd
+          Constrintern.compute_internalization_data env0 evd recname
             Constrintern.Recursive arity impls'
         in
         let open Context.Named.Declaration in

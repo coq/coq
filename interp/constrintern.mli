@@ -55,7 +55,7 @@ type internalization_env = var_internalization_data Id.Map.t
 
 val empty_internalization_env : internalization_env
 
-val compute_internalization_data : env -> evar_map -> var_internalization_type ->
+val compute_internalization_data : env -> evar_map -> Id.t -> var_internalization_type ->
   types -> Impargs.manual_implicits -> var_internalization_data
 
 val compute_internalization_env : env -> evar_map -> ?impls:internalization_env -> var_internalization_type ->

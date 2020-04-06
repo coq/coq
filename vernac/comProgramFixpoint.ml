@@ -196,7 +196,7 @@ let build_wellfounded (recname,pl,bl,arityc,body) poly r measure notation =
   let sigma, intern_body =
     let ctx = LocalAssum (make_annot (Name recname) Sorts.Relevant, get_type curry_fun) :: binders_rel in
     let interning_data =
-      Constrintern.compute_internalization_data env sigma
+      Constrintern.compute_internalization_data env sigma recname
         Constrintern.Recursive full_arity impls
     in
     let newimpls = Id.Map.singleton recname
