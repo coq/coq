@@ -1970,6 +1970,21 @@ function make_addon_elpi {
   fi
 }
 
+# Hierarchy Builder: high level language to declare a hierarchy of structures
+# compiled down to records and canonical structures.
+
+function make_addon_HB {
+  installer_addon_dependency_beg elpi_hb
+  make_addon_elpi
+  installer_addon_dependency_end
+  if build_prep_overlay elpi_hb ; then
+    installer_addon_section elpi_hb "Hierarchy Builder" "Coq library to declare algebraic hierarchies" ""
+    logn build make
+    logn install make install VFILES=structures.v
+    build_post
+  fi
+}
+
 # Main function for building addons
 
 function make_addons {
