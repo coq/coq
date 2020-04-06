@@ -1102,13 +1102,14 @@ function make_camlp5 {
   make_ocaml
   make_findlib
 
-  if build_prep https://github.com/camlp5/camlp5/archive rel707 tar.gz 1 camlp5-rel707; then
+  if build_prep https://github.com/camlp5/camlp5/archive rel711 tar.gz 1 camlp5-rel711; then
     logn configure ./configure
     # Somehow my virus scanner has the boot.new/SAVED directory locked after the move for a second => repeat until success
     sed -i 's/mv boot.new boot/until mv boot.new boot; do sleep 1; done/' Makefile
     # shellcheck disable=SC2086
     log1 make world.opt $MAKE_OPT
     log2 make install
+    cp lib/*.a "$PREFIXOCAML/libocaml/camlp5/"
     log2 make clean
     # For some reason META is not built / copied, but it is required
     log2 make -C etc META
