@@ -105,6 +105,7 @@ before_script:
   script:
     # flambda can be pretty stack hungry, specially with -O3
     # See also https://github.com/ocaml/ocaml/issues/7842#issuecomment-596863244
+    # and https://github.com/coq/coq/pull/11916#issuecomment-609977375
     - ulimit -s 16384
     - set -e
     - make -f Makefile.dune world
@@ -667,8 +668,11 @@ library:ci-cross-crypto:
 library:ci-fcsl-pcm:
   extends: .ci-template
 
+# We cannot use flambda due to
+# https://github.com/ocaml/ocaml/issues/7842, see
+# https://github.com/coq/coq/pull/11916#issuecomment-609977375
 library:ci-fiat-crypto:
-  extends: .ci-template-flambda
+  extends: .ci-template
   stage: stage-4
   needs:
   - build:edge+flambda
