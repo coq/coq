@@ -317,6 +317,82 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
 
 End PositiveOrderedTypeBits.
 
+Module Ascii_as_OT <: UsualOrderedType.
+  Definition t := ascii.
+
+  Definition eq := @eq ascii.
+  Definition eq_refl := @eq_refl t.
+  Definition eq_sym := @eq_sym t.
+  Definition eq_trans := @eq_trans t.
+
+  Definition cmp (a b : ascii) : comparison :=
+    N.compare (N_of_ascii a) (N_of_ascii b).
+
+  Lemma cmp_eq (a b : ascii):
+    cmp a b = Eq  <->  a = b.
+  Proof.
+    unfold cmp.
+    rewrite N.compare_eq_iff.
+    split. 2:{ intro. now subst. }
+    intro H.
+    rewrite<- (ascii_N_embedding a).
+    rewrite<- (ascii_N_embedding b).
+    now rewrite H.
+  Qed.
+
+  Lemma cmp_lt_nat (a b : ascii):
+    cmp a b = Lt  <->  (nat_of_ascii a < nat_of_ascii b)%nat.
+  Proof.
+    unfold cmp. unfold nat_of_ascii.
+    rewrite N2Nat.inj_compare.
+    rewrite Nat.compare_lt_iff.
+    reflexivity.
+  Qed.
+
+  Lemma cmp_antisym (a b : ascii):
+    cmp a b = CompOpp (cmp b a).
+  Proof.
+    unfold cmp.
+    apply N.compare_antisym.
+  Qed.
+
+  Definition lt (x y : ascii) := (N_of_ascii x < N_of_ascii y)%N.
+
+  Lemma lt_trans (x y z : ascii):
+    lt x y -> lt y z -> lt x z.
+  Proof.
+    apply N.lt_trans.
+  Qed.
+
+  Lemma lt_not_eq (x y : ascii):
+     lt x y -> x <> y.
+  Proof.
+    intros L H. subst.
+    exact (N.lt_irrefl _ L).
+  Qed.
+
+  Local Lemma compare_helper_eq {a b : ascii} (E : cmp a b = Eq):
+    a = b.
+  Proof.
+    now apply cmp_eq.
+  Qed.
+
+  Local Lemma compare_helper_gt {a b : ascii} (G : cmp a b = Gt):
+    lt b a.
+  Proof.
+    now apply N.compare_gt_iff.
+  Qed.
+
+  Definition compare (a b : ascii) : Compare lt eq a b :=
+    match cmp a b as z return _ = z -> _ with
+    | Lt => fun E => LT E
+    | Gt => fun E => GT (compare_helper_gt E)
+    | Eq => fun E => EQ (compare_helper_eq E)
+    end Logic.eq_refl.
+
+  Definition eq_dec (x y : ascii): {x = y} + { ~ (x = y)} := ascii_dec x y.
+End Ascii_as_OT.
+
 (** [String] is an ordered type with respect to the usual lexical order. *)
 
 Module String_as_OT <: UsualOrderedType.
@@ -378,121 +454,78 @@ Module String_as_OT <: UsualOrderedType.
         apply Nat.lt_irrefl in H2; auto.
   Qed.
 
-
-  Definition ascii_compare (a b : ascii) : comparison :=
-    N.compare (N_of_ascii a) (N_of_ascii b).
-
-  Lemma ascii_compare_eq (a b : ascii):
-    ascii_compare a b = Eq  <->  a = b.
-  Proof.
-    unfold ascii_compare.
-    rewrite N.compare_eq_iff.
-    split. 2:{ intro. now subst. }
-    intro H.
-    rewrite<- (ascii_N_embedding a).
-    rewrite<- (ascii_N_embedding b).
-    now rewrite H.
-  Qed.
-
-  Lemma ascii_compare_lt (a b : ascii):
-    ascii_compare a b = Lt  <->  (nat_of_ascii a < nat_of_ascii b)%nat.
-  Proof.
-    unfold ascii_compare. unfold nat_of_ascii.
-    rewrite N2Nat.inj_compare.
-    rewrite Nat.compare_lt_iff.
-    reflexivity.
-  Qed.
-
   Fixpoint cmp (a b : string) : comparison :=
-    match a with
-    | EmptyString =>
-        match b with
-        | EmptyString => Eq
-        | _ => Lt
-        end
-    | String a_head a_tail =>
-        match b with
-        | EmptyString => Gt
-        | String b_head b_tail =>
-            match ascii_compare a_head b_head with
-            | Lt => Lt
-            | Gt => Gt
-            | Eq => cmp a_tail b_tail
-            end
-        end
+    match a, b with
+    | EmptyString, EmptyString => Eq
+    | EmptyString, _ => Lt
+    | String _ _, EmptyString => Gt
+    | String a_head a_tail, String b_head b_tail =>
+      match Ascii_as_OT.cmp a_head b_head with
+      | Lt => Lt
+      | Gt => Gt
+      | Eq => cmp a_tail b_tail
+      end
     end.
 
   Lemma cmp_eq (a b : string):
     cmp a b = Eq  <->  a = b.
   Proof.
-  generalize b. clear b.
-  induction a; intro b. { induction b; easy. }
-  cbn.
-  destruct b. { easy. }
-  remember (ascii_compare _ _) as cmp. symmetry in Heqcmp.
-  destruct cmp; split; try discriminate;
-    try rewrite ascii_compare_eq in Heqcmp; try subst;
-    try rewrite IHa; intro H.
-  { now subst. }
-  { now inversion H. }
-  { inversion H; subst. rewrite<- Heqcmp. now rewrite ascii_compare_eq. }
-  { inversion H; subst. rewrite<- Heqcmp. now rewrite ascii_compare_eq. }
-  Qed.
-
-  Lemma ascii_compare_antisym (a b : ascii):
-    ascii_compare a b = CompOpp (ascii_compare b a).
-  Proof.
-  unfold ascii_compare.
-  apply N.compare_antisym.
+    revert b.
+    induction a, b; try easy.
+    cbn.
+    remember (Ascii_as_OT.cmp _ _) as c eqn:Heqc. symmetry in Heqc.
+    destruct c; split; try discriminate;
+      try rewrite Ascii_as_OT.cmp_eq in Heqc; try subst;
+      try rewrite IHa; intro H.
+    { now subst. }
+    { now inversion H. }
+    { inversion H; subst. rewrite<- Heqc. now rewrite Ascii_as_OT.cmp_eq. }
+    { inversion H; subst. rewrite<- Heqc. now rewrite Ascii_as_OT.cmp_eq. }
   Qed.
 
   Lemma cmp_antisym (a b : string):
     cmp a b = CompOpp (cmp b a).
   Proof.
-  generalize b. clear b.
-  induction a. { destruct b; easy. }
-  intro b. destruct b. { easy. }
-  cbn. rewrite IHa. clear IHa.
-  remember (ascii_compare _ _) as cmp. symmetry in Heqcmp.
-  destruct cmp; rewrite ascii_compare_antisym in Heqcmp; destruct ascii_compare; cbn in *; easy.
+    revert b.
+    induction a, b; try easy.
+    cbn. rewrite IHa. clear IHa.
+    remember (Ascii_as_OT.cmp _ _) as c eqn:Heqc. symmetry in Heqc.
+    destruct c; rewrite Ascii_as_OT.cmp_antisym in Heqc;
+      destruct Ascii_as_OT.cmp; cbn in *; easy.
   Qed.
 
   Lemma cmp_lt (a b : string):
     cmp a b = Lt  <->  lt a b.
   Proof.
-  generalize b. clear b.
-  induction a as [ | a_head a_tail ].
-  {
-    destruct b. { easy. }
-    cbn. split; trivial. intro. apply lts_empty.
-  }
-  intro b. cbn. destruct b. { easy. }
-  remember (ascii_compare _ _) as cmp. symmetry in Heqcmp.
-  destruct cmp; split; intro H; try discriminate; trivial.
-  {
-    rewrite ascii_compare_eq in Heqcmp. subst.
-    apply String_as_OT.lts_tail.
-    apply IHa_tail.
-    assumption.
-  }
-  {
-    rewrite ascii_compare_eq in Heqcmp. subst.
-    inversion H; subst. { rewrite IHa_tail. assumption. }
-    exfalso. apply (Nat.lt_irrefl (nat_of_ascii a)). assumption.
-  }
-  {
-    apply String_as_OT.lts_head.
-    rewrite<- ascii_compare_lt.
-    assumption.
-  }
-  {
-    exfalso. inversion H; subst.
+    revert b.
+    induction a as [ | a_head a_tail ], b; try easy; cbn.
+    { split; trivial. intro. apply lts_empty. }
+    remember (Ascii_as_OT.cmp _ _) as c eqn:Heqc. symmetry in Heqc.
+    destruct c; split; intro H; try discriminate; trivial.
     {
-       assert(X: ascii_compare a a = Eq). { apply ascii_compare_eq. trivial. }
-       rewrite Heqcmp in X. discriminate.
+      rewrite Ascii_as_OT.cmp_eq in Heqc. subst.
+      apply String_as_OT.lts_tail.
+      apply IHa_tail.
+      assumption.
     }
-    rewrite<- ascii_compare_lt in *. rewrite Heqcmp in *. discriminate.
-  }
+    {
+      rewrite Ascii_as_OT.cmp_eq in Heqc. subst.
+      inversion H; subst. { rewrite IHa_tail. assumption. }
+      exfalso. apply (Nat.lt_irrefl (nat_of_ascii a)). assumption.
+    }
+    {
+      apply String_as_OT.lts_head.
+      rewrite<- Ascii_as_OT.cmp_lt_nat.
+      assumption.
+    }
+    {
+      exfalso. inversion H; subst.
+      {
+         assert(X: Ascii_as_OT.cmp a a = Eq). { apply Ascii_as_OT.cmp_eq. trivial. }
+         rewrite Heqc in X. discriminate.
+      }
+      rewrite<- Ascii_as_OT.cmp_lt_nat in *. rewrite Heqc in *. discriminate.
+    }
   Qed.
 
   Local Lemma compare_helper_lt {a b : string} (L : cmp a b = Lt):
