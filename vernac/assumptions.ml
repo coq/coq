@@ -165,14 +165,27 @@ let label_of = let open GlobRef in function
   | ConstructRef ((kn,_),_) -> MutInd.label kn
   | VarRef id -> Label.of_id id
 
+let body_of_constant_body cb =
+  let open Declarations in
+  let otab = Environ.opaque_tables (Global.env ()) in
+  match cb.const_body with
+  | Undef _ | Primitive _ -> None
+  | Def c -> Some (fun () -> Mod_subst.force_constr c)
+  | OpaqueDef o ->
+    let c () =
+      let c, _ = Opaqueproof.force_proof Library.indirect_accessor otab o in
+      c
+    in
+    Some c
+
 let rec traverse current ctx accu t =
   let open GlobRef in
   match Constr.kind t with
 | Var id ->
-  let body () = id |> Global.lookup_named |> NamedDecl.get_value in
+  let body = Option.map (fun c () -> c) (id |> Global.lookup_named |> NamedDecl.get_value) in
   traverse_object accu body (VarRef id)
 | Const (kn, _) ->
-  let body () = Option.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in
+  let body = body_of_constant_body (lookup_constant kn) in
   traverse_object accu body (ConstRef kn)
 | Ind ((mind, _) as ind, _) ->
   traverse_inductive accu mind (IndRef ind)
@@ -185,7 +198,7 @@ let rec traverse current ctx accu t =
     | Lambda(_,_,oty), Const (kn, _)
       when Vars.noccurn 1 oty &&
       not (Declareops.constant_has_body (lookup_constant kn)) ->
-        let body () = Option.map pi1 (Global.body_of_constant_body Library.indirect_accessor (lookup_constant kn)) in
+        let body = body_of_constant_body (lookup_constant kn) in
         traverse_object
           ~inhabits:(current,ctx,Vars.subst1 mkProp oty) accu body (ConstRef kn)
     | _ ->
@@ -198,7 +211,7 @@ let rec traverse current ctx accu t =
 and traverse_object ?inhabits (curr, data, ax2ty) body obj =
   let data, ax2ty =
     let already_in = GlobRef.Map_env.mem obj data in
-    match body () with
+    match body with
     | None ->
         let data =
           if not already_in then GlobRef.Map_env.add obj GlobRef.Set_env.empty data else data in
@@ -212,7 +225,7 @@ and traverse_object ?inhabits (curr, data, ax2ty) body obj =
       if already_in then data, ax2ty else
       let contents,data,ax2ty =
         traverse (label_of obj) Context.Rel.empty
-                 (GlobRef.Set_env.empty,data,ax2ty) body in
+                 (GlobRef.Set_env.empty,data,ax2ty) (body ()) in
       GlobRef.Map_env.add obj contents data, ax2ty
   in
   (GlobRef.Set_env.add obj curr, data, ax2ty)
