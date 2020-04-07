@@ -378,32 +378,149 @@ Module String_as_OT <: UsualOrderedType.
         apply Nat.lt_irrefl in H2; auto.
   Qed.
 
-  Definition compare x y : Compare lt eq x y.
+
+  Definition ascii_compare (a b : ascii) : comparison :=
+    N.compare (N_of_ascii a) (N_of_ascii b).
+
+  Lemma ascii_compare_eq (a b : ascii):
+    ascii_compare a b = Eq  <->  a = b.
   Proof.
-    generalize dependent y.
-    induction x as [ | a s1]; destruct y as [ | b s2].
-    - apply EQ; constructor.
-    - apply LT; constructor.
-    - apply GT; constructor.
-    - destruct ((nat_of_ascii a) ?= (nat_of_ascii b))%nat eqn:ltb.
-      + assert (a = b).
-        {
-          apply Nat.compare_eq in ltb.
-          assert (ascii_of_nat (nat_of_ascii a)
-                  = ascii_of_nat (nat_of_ascii b)) by auto.
-          repeat rewrite ascii_nat_embedding in H.
-          auto.
-        }
-        subst.
-        destruct (IHs1 s2).
-        * apply LT; constructor; auto.
-        * apply EQ. unfold eq in e. subst. constructor; auto.
-        * apply GT; constructor; auto.
-      + apply nat_compare_lt in ltb.
-        apply LT; constructor; auto.
-      + apply nat_compare_gt in ltb.
-        apply GT; constructor; auto.
-  Defined.
+    unfold ascii_compare.
+    rewrite N.compare_eq_iff.
+    split. 2:{ intro. now subst. }
+    intro H.
+    rewrite<- (ascii_N_embedding a).
+    rewrite<- (ascii_N_embedding b).
+    now rewrite H.
+  Qed.
+
+  Lemma ascii_compare_lt (a b : ascii):
+    ascii_compare a b = Lt  <->  (nat_of_ascii a < nat_of_ascii b)%nat.
+  Proof.
+    unfold ascii_compare. unfold nat_of_ascii.
+    rewrite N2Nat.inj_compare.
+    rewrite Nat.compare_lt_iff.
+    reflexivity.
+  Qed.
+
+  Fixpoint cmp (a b : string) : comparison :=
+    match a with
+    | EmptyString =>
+        match b with
+        | EmptyString => Eq
+        | _ => Lt
+        end
+    | String a_head a_tail =>
+        match b with
+        | EmptyString => Gt
+        | String b_head b_tail =>
+            match ascii_compare a_head b_head with
+            | Lt => Lt
+            | Gt => Gt
+            | Eq => cmp a_tail b_tail
+            end
+        end
+    end.
+
+  Lemma cmp_eq (a b : string):
+    cmp a b = Eq  <->  a = b.
+  Proof.
+  generalize b. clear b.
+  induction a; intro b. { induction b; easy. }
+  cbn.
+  destruct b. { easy. }
+  remember (ascii_compare _ _) as cmp. symmetry in Heqcmp.
+  destruct cmp; split; try discriminate;
+    try rewrite ascii_compare_eq in Heqcmp; try subst;
+    try rewrite IHa; intro H.
+  { now subst. }
+  { now inversion H. }
+  { inversion H; subst. rewrite<- Heqcmp. now rewrite ascii_compare_eq. }
+  { inversion H; subst. rewrite<- Heqcmp. now rewrite ascii_compare_eq. }
+  Qed.
+
+  Lemma ascii_compare_antisym (a b : ascii):
+    ascii_compare a b = CompOpp (ascii_compare b a).
+  Proof.
+  unfold ascii_compare.
+  apply N.compare_antisym.
+  Qed.
+
+  Lemma cmp_antisym (a b : string):
+    cmp a b = CompOpp (cmp b a).
+  Proof.
+  generalize b. clear b.
+  induction a. { destruct b; easy. }
+  intro b. destruct b. { easy. }
+  cbn. rewrite IHa. clear IHa.
+  remember (ascii_compare _ _) as cmp. symmetry in Heqcmp.
+  destruct cmp; rewrite ascii_compare_antisym in Heqcmp; destruct ascii_compare; cbn in *; easy.
+  Qed.
+
+  Lemma cmp_lt (a b : string):
+    cmp a b = Lt  <->  lt a b.
+  Proof.
+  generalize b. clear b.
+  induction a as [ | a_head a_tail ].
+  {
+    destruct b. { easy. }
+    cbn. split; trivial. intro. apply lts_empty.
+  }
+  intro b. cbn. destruct b. { easy. }
+  remember (ascii_compare _ _) as cmp. symmetry in Heqcmp.
+  destruct cmp; split; intro H; try discriminate; trivial.
+  {
+    rewrite ascii_compare_eq in Heqcmp. subst.
+    apply String_as_OT.lts_tail.
+    apply IHa_tail.
+    assumption.
+  }
+  {
+    rewrite ascii_compare_eq in Heqcmp. subst.
+    inversion H; subst. { rewrite IHa_tail. assumption. }
+    exfalso. apply (Nat.lt_irrefl (nat_of_ascii a)). assumption.
+  }
+  {
+    apply String_as_OT.lts_head.
+    rewrite<- ascii_compare_lt.
+    assumption.
+  }
+  {
+    exfalso. inversion H; subst.
+    {
+       assert(X: ascii_compare a a = Eq). { apply ascii_compare_eq. trivial. }
+       rewrite Heqcmp in X. discriminate.
+    }
+    rewrite<- ascii_compare_lt in *. rewrite Heqcmp in *. discriminate.
+  }
+  Qed.
+
+  Local Lemma compare_helper_lt {a b : string} (L : cmp a b = Lt):
+    lt a b.
+  Proof.
+    now apply cmp_lt.
+  Qed.
+
+  Local Lemma compare_helper_gt {a b : string} (G : cmp a b = Gt):
+    lt b a.
+  Proof.
+    rewrite cmp_antisym in G.
+    rewrite CompOpp_iff in G.
+    now apply cmp_lt.
+  Qed.
+
+  Local Lemma compare_helper_eq {a b : string} (E : cmp a b = Eq):
+    a = b.
+  Proof.
+    now apply cmp_eq.
+  Qed.
+
+  Definition compare (a b : string) : Compare lt eq a b :=
+    match cmp a b as z return _ = z -> _ with
+    | Lt => fun E => LT (compare_helper_lt E)
+    | Gt => fun E => GT (compare_helper_gt E)
+    | Eq => fun E => EQ (compare_helper_eq E)
+    end Logic.eq_refl.
 
   Definition eq_dec (x y : string): {x = y} + { ~ (x = y)} := string_dec x y.
 End String_as_OT.
