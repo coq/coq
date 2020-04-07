@@ -1554,26 +1554,34 @@ let vernac_set_option ~locality table v = match v with
       vernac_set_option0 ~locality table v
 | _ -> vernac_set_option0 ~locality table v
 
-let vernac_add_option key lv =
-  let f = function
-    | StringRefValue s -> (get_string_table key).add (Global.env()) s
-    | QualidRefValue locqid -> (get_ref_table key).add (Global.env()) locqid
+(* We have to request twice the same polymorphic function as argument
+   because OCaml won't compute the same type for it in both cases. *)
+let iter_table ~f ~g key lv =
+  let aux = function
+    | StringRefValue s ->
+       begin
+         try f (get_string_table key) (Global.env()) s
+         with Not_found -> error_no_table_of_this_type ~kind:"string" key
+       end
+    | QualidRefValue locqid ->
+       begin
+         try g (get_ref_table key) (Global.env()) locqid
+         with Not_found -> error_no_table_of_this_type ~kind:"qualid" key
+       end
   in
-  try List.iter f lv with Not_found -> error_undeclared_key key
+  List.iter aux lv
 
-let vernac_remove_option key lv =
-  let f = function
-  | StringRefValue s -> (get_string_table key).remove (Global.env()) s
-  | QualidRefValue locqid -> (get_ref_table key).remove (Global.env()) locqid
-  in
-  try List.iter f lv with Not_found -> error_undeclared_key key
+let vernac_add_option =
+  let aux table = table.add in
+  iter_table ~f:aux ~g:aux
 
-let vernac_mem_option key lv =
-  let f = function
-  | StringRefValue s -> (get_string_table key).mem (Global.env()) s
-  | QualidRefValue locqid -> (get_ref_table key).mem (Global.env()) locqid
-  in
-  try List.iter f lv with Not_found -> error_undeclared_key key
+let vernac_remove_option =
+  let aux table = table.remove in
+  iter_table ~f:aux ~g:aux
+
+let vernac_mem_option =
+  let aux table = table.mem in
+  iter_table ~f:aux ~g:aux
 
 let vernac_print_option key =
   try (get_ref_table key).print ()

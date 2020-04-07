@@ -204,4 +204,5 @@ type option_state = {
 val get_tables : unit -> option_state OptionMap.t
 val print_tables : unit -> Pp.t
 
+val error_no_table_of_this_type : kind:string -> option_name -> 'a
 val error_undeclared_key : option_name -> 'a

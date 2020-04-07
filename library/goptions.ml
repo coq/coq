@@ -35,8 +35,13 @@ type option_state = {
 
 let nickname table = String.concat " " table
 
+let error_no_table_of_this_type ~kind key =
+  user_err ~hdr:"Goptions"
+    (str ("There is no " ^ kind ^ "-valued table with this name: \"" ^ nickname key ^ "\"."))
+
 let error_undeclared_key key =
-  user_err ~hdr:"Goptions" (str (nickname key) ++ str ": no table or option of this type")
+  user_err ~hdr:"Goptions"
+    (str ("There is no flag, option or table with this name: \"" ^ nickname key ^ "\"."))
 
 (****************************************************************************)
 (* 1- Tables                                                                *)
@@ -387,9 +392,10 @@ let declare_interpreted_string_option_and_ref ~depr ~key ~(value:'a) from_string
 (* Setting values of options *)
 
 let warn_unknown_option =
-  CWarnings.create ~name:"unknown-option" ~category:"option"
-                   (fun key -> strbrk "There is no option " ++
-                                 str (nickname key) ++ str ".")
+  CWarnings.create
+    ~name:"unknown-option" ~category:"option"
+    (fun key -> strbrk "There is no flag or option with this name: \"" ++
+                  str (nickname key) ++ str "\".")
 
 let set_option_value ?(locality = OptDefault) check_and_cast key v =
   let opt = try Some (get_option key) with Not_found -> None in
