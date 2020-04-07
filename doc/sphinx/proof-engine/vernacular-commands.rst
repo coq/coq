@@ -668,9 +668,7 @@ file is a particular case of module called *library file*.
 .. cmd:: Print Libraries
 
    This command displays the list of library files loaded in the
-   current |Coq| session. For each of these libraries, it also tells if it
-   is imported.
-
+   current |Coq| session.
 
 .. cmd:: Declare ML Module {+ @string }
 
