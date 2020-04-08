@@ -202,10 +202,6 @@ let warn_deprecated_inputstate =
   CWarnings.create ~name:"deprecated-inputstate" ~category:"deprecated"
          (fun () -> Pp.strbrk "The inputstate option is deprecated and discouraged.")
 
-let warn_deprecated_simple_require =
-  CWarnings.create ~name:"deprecated-boot" ~category:"deprecated"
-         (fun () -> Pp.strbrk "The -require option is deprecated, please use -require-import instead.")
-
 let set_inputstate opts s =
   warn_deprecated_inputstate ();
   { opts with pre = { opts.pre with inputstate = Some s }}
@@ -420,10 +416,6 @@ let parse_args ~help ~init arglist : t * string list =
 
     |"-rfrom" ->
       let from = next () in add_vo_require oval (next ()) (Some from) None
-
-    |"-require" ->
-      warn_deprecated_simple_require ();
-      add_vo_require oval (next ()) None (Some false)
 
     |"-require-import" | "-ri" -> add_vo_require oval (next ()) None (Some false)
 
