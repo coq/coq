@@ -27,6 +27,7 @@ Check [ << # 0 >> ].
 Axiom c : nat.
 Notation "x" := x (in custom myconstr at level 0, x global).
 Check [ b + c ].
+Check fun a => [ a + a ].
 
 End A.
 

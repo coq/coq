@@ -453,7 +453,8 @@ let rec extern_cases_pattern_in_scope (custom,scopes as allscopes) vars pat =
     with No_match ->
     let loc = pat.CAst.loc in
     match DAst.get pat with
-    | PatVar (Name id) when entry_has_ident custom -> CAst.make ?loc (CPatAtom (Some (qualid_of_ident ?loc id)))
+    | PatVar (Name id) when entry_has_global custom || entry_has_ident custom ->
+      CAst.make ?loc (CPatAtom (Some (qualid_of_ident ?loc id)))
     | pat ->
     match availability_of_entry_coercion custom InConstrEntrySomeLevel with
     | None -> raise No_match
@@ -935,7 +936,8 @@ let rec extern inctx ?impargs scopes vars r =
   match DAst.get r with
   | GRef (ref,us) when entry_has_global (fst scopes) -> CAst.make ?loc (extern_ref vars ref us)
 
-  | GVar id when entry_has_ident (fst scopes) -> CAst.make ?loc (extern_var ?loc id)
+  | GVar id when entry_has_global (fst scopes) || entry_has_ident (fst scopes) ->
+      CAst.make ?loc (extern_var ?loc id)
 
   | c ->
 
