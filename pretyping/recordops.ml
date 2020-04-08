@@ -250,26 +250,26 @@ let pr_cs_pattern = function
 let warn_redundant_canonical_projection =
   CWarnings.create ~name:"redundant-canonical-projection" ~category:"typechecker"
          (fun (hd_val,prj,new_can_s,old_can_s) ->
-          strbrk "Ignoring canonical projection to " ++ hd_val
+          strbrk "Removing canonical projection to " ++ hd_val
           ++ strbrk " by " ++ prj ++ strbrk " in "
-          ++ new_can_s ++ strbrk ": redundant with " ++ old_can_s)
+          ++ old_can_s ++ strbrk ": replaced by " ++ new_can_s)
 
 let register_canonical_structure ~warn env sigma o =
-    compute_canonical_projections env ~warn o |>
-    List.iter (fun ((proj, (cs_pat, _ as pat)), s) ->
+  compute_canonical_projections env ~warn o |>
+  List.iter (fun ((proj, (cs_pat, _ as pat)), s) ->
       let l = try GlobRef.Map.find proj !object_table with Not_found -> [] in
-      match assoc_pat cs_pat l with
-      | exception Not_found ->
-          object_table := GlobRef.Map.add proj ((pat, s) :: l) !object_table
-      | _, cs ->
-        if warn
-        then
-          let old_can_s = Termops.Internal.print_constr_env env sigma (EConstr.of_constr cs.o_DEF) in
-          let new_can_s = Termops.Internal.print_constr_env env sigma (EConstr.of_constr s.o_DEF) in
-          let prj = Nametab.pr_global_env Id.Set.empty proj in
-          let hd_val = pr_cs_pattern cs_pat in
-          warn_redundant_canonical_projection (hd_val, prj, new_can_s, old_can_s)
-      )
+      let l = match List.extract_first (fun ((pat,_),_) -> eq_cs_pattern cs_pat pat) l with
+        | exception Not_found -> l
+        | l, (_, cs) ->
+          if warn then begin
+            let pr_cs c = Termops.Internal.print_constr_env env sigma (EConstr.of_constr c.o_DEF) in
+            let prj = Nametab.pr_global_env Id.Set.empty proj in
+            let hd_val = pr_cs_pattern cs_pat in
+            warn_redundant_canonical_projection (hd_val, prj, pr_cs s, pr_cs cs)
+          end;
+          l
+      in
+      object_table := GlobRef.Map.add proj ((pat, s) :: l) !object_table)
 
 type cs = GlobRef.t * inductive
 
