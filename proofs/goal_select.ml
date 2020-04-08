@@ -22,11 +22,6 @@ type t =
   | SelectId of Id.t
   | SelectAll
 
-(* Default goal selector: selector chosen when a tactic is applied
-   without an explicit selector. *)
-let default_goal_selector = ref (SelectNth 1)
-let get_default_goal_selector () = !default_goal_selector
-
 let pr_range_selector (i, j) =
   if i = j then Pp.int i
   else Pp.(int i ++ str "-" ++ int j)
@@ -53,15 +48,12 @@ let parse_goal_selector = function
         with Failure _ -> CErrors.user_err Pp.(str err_msg)
       end
 
-let () = let open Goptions in
-  declare_string_option
-    { optdepr = false;
-      optkey  = ["Default";"Goal";"Selector"] ;
-      optread = begin fun () ->
-        Pp.string_of_ppcmds
-          (pr_goal_selector !default_goal_selector)
-      end;
-      optwrite = begin fun n ->
-        default_goal_selector := parse_goal_selector n
-      end
-    }
+(* Default goal selector: selector chosen when a tactic is applied
+   without an explicit selector. *)
+let get_default_goal_selector =
+  Goptions.declare_interpreted_string_option_and_ref
+    ~depr:false
+    ~key:["Default";"Goal";"Selector"]
+    ~value:(SelectNth 1)
+    parse_goal_selector
+    (fun v -> Pp.string_of_ppcmds @@ pr_goal_selector v)

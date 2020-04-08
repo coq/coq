@@ -219,22 +219,22 @@ let get_mangle_names =
     ~key:["Mangle";"Names"]
     ~value:false
 
-let mangle_names_prefix = ref (Id.of_string "_0")
+let mangle_names_prefix =
+  Goptions.declare_interpreted_string_option_and_ref
+    ~depr:false
+    ~key:["Mangle";"Names";"Prefix"]
+    ~value:(Id.of_string "_0")
+    (fun x ->
+      (try
+         Id.of_string x
+       with
+       | CErrors.UserError _ ->
+          CErrors.user_err Pp.(str ("Not a valid identifier: \"" ^ x ^ "\"."))
+      ) |> forget_subscript
+    )
+    (fun x -> Id.to_string x)
 
-let set_prefix x = mangle_names_prefix := forget_subscript x
-
-let () = Goptions.(
-    declare_string_option
-      { optdepr  = false;
-        optkey   = ["Mangle";"Names";"Prefix"];
-        optread  = (fun () -> Id.to_string !mangle_names_prefix);
-        optwrite = begin fun x ->
-                   set_prefix
-                     (try Id.of_string x
-                      with CErrors.UserError _ -> CErrors.user_err Pp.(str ("Not a valid identifier: \"" ^ x ^ "\".")))
-                   end })
-
-let mangle_id id = if get_mangle_names () then !mangle_names_prefix else id
+let mangle_id id = if get_mangle_names () then mangle_names_prefix () else id
 
 (* Looks for next "good" name by lifting subscript *)
 

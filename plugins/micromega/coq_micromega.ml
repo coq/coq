@@ -37,74 +37,31 @@ let debug = false
 let max_depth = max_int
 
 (* Search limit for provers over Q R *)
-let lra_proof_depth = ref max_depth
+let lra_proof_depth =
+  declare_int_option_and_ref ~depr:false ~key:["Lra"; "Depth"] ~value:max_depth
 
 (* Search limit for provers over Z *)
-let lia_enum = ref true
-let lia_proof_depth = ref max_depth
-let get_lia_option () = (!Certificate.use_simplex, !lia_enum, !lia_proof_depth)
-let get_lra_option () = !lra_proof_depth
+let lia_enum =
+  declare_bool_option_and_ref ~depr:false ~key:["Lia"; "Enum"] ~value:true
+
+let lia_proof_depth =
+  declare_int_option_and_ref ~depr:false ~key:["Lia"; "Depth"] ~value:max_depth
+
+let get_lia_option () =
+  (Certificate.use_simplex (), lia_enum (), lia_proof_depth ())
 
 (* Enable/disable caches *)
 
-let use_lia_cache = ref true
-let use_nia_cache = ref true
-let use_nra_cache = ref true
-let use_csdp_cache = ref true
+let use_lia_cache =
+  declare_bool_option_and_ref ~depr:false ~key:["Lia"; "Cache"] ~value:true
 
-let () =
-  let int_opt l vref =
-    { optdepr = false
-    ; optkey = l
-    ; optread = (fun () -> Some !vref)
-    ; optwrite =
-        (fun x -> vref := match x with None -> max_depth | Some v -> v) }
-  in
-  let lia_enum_opt =
-    { optdepr = false
-    ; optkey = ["Lia"; "Enum"]
-    ; optread = (fun () -> !lia_enum)
-    ; optwrite = (fun x -> lia_enum := x) }
-  in
-  let solver_opt =
-    { optdepr = false
-    ; optkey = ["Simplex"]
-    ; optread = (fun () -> !Certificate.use_simplex)
-    ; optwrite = (fun x -> Certificate.use_simplex := x) }
-  in
-  let dump_file_opt =
-    { optdepr = false
-    ; optkey = ["Dump"; "Arith"]
-    ; optread = (fun () -> !Certificate.dump_file)
-    ; optwrite = (fun x -> Certificate.dump_file := x) }
-  in
-  let lia_cache_opt =
-    { optdepr = false
-    ; optkey = ["Lia"; "Cache"]
-    ; optread = (fun () -> !use_lia_cache)
-    ; optwrite = (fun x -> use_lia_cache := x) }
-  in
-  let nia_cache_opt =
-    { optdepr = false
-    ; optkey = ["Nia"; "Cache"]
-    ; optread = (fun () -> !use_nia_cache)
-    ; optwrite = (fun x -> use_nia_cache := x) }
-  in
-  let nra_cache_opt =
-    { optdepr = false
-    ; optkey = ["Nra"; "Cache"]
-    ; optread = (fun () -> !use_nra_cache)
-    ; optwrite = (fun x -> use_nra_cache := x) }
-  in
-  let () = declare_bool_option solver_opt in
-  let () = declare_bool_option lia_cache_opt in
-  let () = declare_bool_option nia_cache_opt in
-  let () = declare_bool_option nra_cache_opt in
-  let () = declare_stringopt_option dump_file_opt in
-  let () = declare_int_option (int_opt ["Lra"; "Depth"] lra_proof_depth) in
-  let () = declare_int_option (int_opt ["Lia"; "Depth"] lia_proof_depth) in
-  let () = declare_bool_option lia_enum_opt in
-  ()
+let use_nia_cache =
+  declare_bool_option_and_ref ~depr:false ~key:["Nia"; "Cache"] ~value:true
+
+let use_nra_cache =
+  declare_bool_option_and_ref ~depr:false ~key:["Nra"; "Cache"] ~value:true
+
+let use_csdp_cache () = true
 
 (**
   * Initialize a tag type to the Tag module declaration (see Mutils).
@@ -2101,7 +2058,7 @@ struct
 
   let memo_opt use_cache cache_file f =
     let memof = memo cache_file f in
-    fun x -> if !use_cache then memof x else f x
+    fun x -> if use_cache () then memof x else f x
 end
 
 module CacheCsdp = MakeCache (struct
@@ -2281,7 +2238,7 @@ let memo_nra =
 
 let linear_prover_Q =
   { name = "linear prover"
-  ; get_option = get_lra_option
+  ; get_option = lra_proof_depth
   ; prover =
       (fun (o, l) ->
         lift_pexpr_prover (Certificate.linear_prover_with_cert o) l)
@@ -2292,7 +2249,7 @@ let linear_prover_Q =
 
 let linear_prover_R =
   { name = "linear prover"
-  ; get_option = get_lra_option
+  ; get_option = lra_proof_depth
   ; prover =
       (fun (o, l) ->
         lift_pexpr_prover (Certificate.linear_prover_with_cert o) l)
@@ -2303,7 +2260,7 @@ let linear_prover_R =
 
 let nlinear_prover_R =
   { name = "nra"
-  ; get_option = get_lra_option
+  ; get_option = lra_proof_depth
   ; prover = memo_nra
   ; hyps = hyps_of_cone
   ; compact = compact_cone

@@ -30,14 +30,6 @@ exception Elimconst
     their parameters in its stack.
 *)
 
-let () = Goptions.(declare_bool_option {
-  optdepr = false;
-  optkey = ["Cumulativity";"Weak";"Constraints"];
-  optread = (fun () -> not !UState.drop_weak_constraints);
-  optwrite = (fun a -> UState.drop_weak_constraints:=not a);
-})
-
-
 (** Support for reduction effects *)
 
 open Mod_subst
@@ -966,13 +958,11 @@ module CredNative = RedNative(CNativeEntries)
     contract_* in any case .
 *)
 
-let debug_RAKAM = ref (false)
-let () = Goptions.(declare_bool_option {
-  optdepr = false;
-  optkey = ["Debug";"RAKAM"];
-  optread = (fun () -> !debug_RAKAM);
-  optwrite = (fun a -> debug_RAKAM:=a);
-})
+let debug_RAKAM =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Debug";"RAKAM"]
+    ~value:false
 
 let equal_stacks sigma (x, l) (y, l') =
   let f_equal x y = eq_constr sigma x y in
@@ -983,7 +973,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
   let open Context.Named.Declaration in
   let open ReductionBehaviour in
   let rec whrec cst_l (x, stack) =
-    let () = if !debug_RAKAM then
+    let () = if debug_RAKAM () then
         let open Pp in
         let pr c = Termops.Internal.print_constr_env env sigma c in
         Feedback.msg_debug
@@ -994,7 +984,7 @@ let rec whd_state_gen ?csts ~refold ~tactic_mode flags env sigma =
     in
     let c0 = EConstr.kind sigma x in
     let fold () =
-      let () = if !debug_RAKAM then
+      let () = if debug_RAKAM () then
           let open Pp in Feedback.msg_debug (str "<><><><><>") in
       ((EConstr.of_kind c0, stack),cst_l)
     in

@@ -1251,10 +1251,12 @@ let vernac_generalizable ~local =
   let local = Option.default true local in
   Implicit_quantifiers.declare_generalizable ~local
 
+let allow_sprop_opt_name = ["Allow";"StrictProp"]
+
 let () =
   declare_bool_option
     { optdepr  = false;
-      optkey   = ["Allow";"StrictProp"];
+      optkey   = allow_sprop_opt_name;
       optread  = (fun () -> Global.sprop_allowed());
       optwrite = Global.set_allow_sprop }
 
@@ -1434,27 +1436,6 @@ let () =
       optkey   = ["Warnings"];
       optread  = CWarnings.get_flags;
       optwrite = CWarnings.set_flags }
-
-let () =
-  declare_string_option
-    { optdepr  = false;
-      optkey   = ["NativeCompute"; "Profile"; "Filename"];
-      optread  = Nativenorm.get_profile_filename;
-      optwrite = Nativenorm.set_profile_filename }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["NativeCompute"; "Profiling"];
-      optread  = Nativenorm.get_profiling_enabled;
-      optwrite = Nativenorm.set_profiling_enabled }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["NativeCompute"; "Timing"];
-      optread  = Nativenorm.get_timing_enabled;
-      optwrite = Nativenorm.set_timing_enabled }
 
 let _ =
   declare_bool_option

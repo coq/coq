@@ -38,33 +38,48 @@ let typeclasses_db = "typeclass_instances"
 (** Options handling *)
 
 let typeclasses_debug = ref 0
-let typeclasses_depth = ref None
+
+let typeclasses_depth_opt_name = ["Typeclasses";"Depth"]
+let get_typeclasses_depth =
+  Goptions.declare_intopt_option_and_ref
+    ~depr:false
+    ~key:typeclasses_depth_opt_name
+
+let set_typeclasses_depth =
+  Goptions.set_int_option_value typeclasses_depth_opt_name
 
 (** When this flag is enabled, the resolution of type classes tries to avoid
     useless introductions. This is no longer useful since we have eta, but is
     here for compatibility purposes. Another compatibility issues is that the
     cost (in terms of search depth) can differ. *)
-let typeclasses_limit_intros = ref true
-let set_typeclasses_limit_intros d = (:=) typeclasses_limit_intros d
-let get_typeclasses_limit_intros () = !typeclasses_limit_intros
+let get_typeclasses_limit_intros =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Typeclasses";"Limit";"Intros"]
+    ~value:true
 
-let typeclasses_dependency_order = ref false
-let set_typeclasses_dependency_order d = (:=) typeclasses_dependency_order d
-let get_typeclasses_dependency_order () = !typeclasses_dependency_order
+let get_typeclasses_dependency_order =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Typeclasses";"Dependency";"Order"]
+    ~value:false
 
-let typeclasses_iterative_deepening = ref false
-let set_typeclasses_iterative_deepening d = (:=) typeclasses_iterative_deepening d
-let get_typeclasses_iterative_deepening () = !typeclasses_iterative_deepening
+let iterative_deepening_opt_name = ["Typeclasses";"Iterative";"Deepening"]
+let get_typeclasses_iterative_deepening =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:iterative_deepening_opt_name
+    ~value:false
 
 (** [typeclasses_filtered_unif] governs the unification algorithm used by type
     classes. If enabled, a new algorithm based on pattern filtering and refine
     will be used. When disabled, the previous algorithm based on apply will be
     used. *)
-let typeclasses_filtered_unification = ref false
-let set_typeclasses_filtered_unification d =
-  (:=) typeclasses_filtered_unification d
-let get_typeclasses_filtered_unification () =
-  !typeclasses_filtered_unification
+let get_typeclasses_filtered_unification =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Typeclasses";"Filtered";"Unification"]
+    ~value:false
 
 let set_typeclasses_debug d = (:=) typeclasses_debug (if d then 1 else 0)
 let get_typeclasses_debug () = if !typeclasses_debug > 0 then true else false
@@ -75,40 +90,8 @@ let set_typeclasses_verbose =
 let get_typeclasses_verbose () =
   if !typeclasses_debug = 0 then None else Some !typeclasses_debug
 
-let set_typeclasses_depth d = (:=) typeclasses_depth d
-let get_typeclasses_depth () = !typeclasses_depth
-
-open Goptions
-
 let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Typeclasses";"Limit";"Intros"];
-      optread  = get_typeclasses_limit_intros;
-      optwrite = set_typeclasses_limit_intros; }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Typeclasses";"Dependency";"Order"];
-      optread  = get_typeclasses_dependency_order;
-      optwrite = set_typeclasses_dependency_order; }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Typeclasses";"Iterative";"Deepening"];
-      optread  = get_typeclasses_iterative_deepening;
-      optwrite = set_typeclasses_iterative_deepening; }
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Typeclasses";"Filtered";"Unification"];
-      optread  = get_typeclasses_filtered_unification;
-      optwrite = set_typeclasses_filtered_unification; }
-
-let () =
+  let open Goptions in
   declare_bool_option
     { optdepr  = false;
       optkey   = ["Typeclasses";"Debug"];
@@ -116,24 +99,18 @@ let () =
       optwrite = set_typeclasses_debug; }
 
 let _ =
+  let open Goptions in
   declare_int_option
     { optdepr  = false;
       optkey   = ["Typeclasses";"Debug";"Verbosity"];
       optread  = get_typeclasses_verbose;
       optwrite = set_typeclasses_verbose; }
 
-let () =
-  declare_int_option
-    { optdepr  = false;
-      optkey   = ["Typeclasses";"Depth"];
-      optread  = get_typeclasses_depth;
-      optwrite = set_typeclasses_depth; }
-
 type search_strategy = Dfs | Bfs
 
 let set_typeclasses_strategy = function
-  | Dfs -> set_typeclasses_iterative_deepening false
-  | Bfs -> set_typeclasses_iterative_deepening true
+  | Dfs -> Goptions.set_bool_option_value iterative_deepening_opt_name false
+  | Bfs -> Goptions.set_bool_option_value iterative_deepening_opt_name true
 
 let pr_ev evs ev =
   Printer.pr_econstr_env (Goal.V82.env evs ev) evs (Goal.V82.concl evs ev)
@@ -977,7 +954,7 @@ module Search = struct
     | None -> None (* This happens only because there's no evar having p *)
     | Some (goals, nongoals) ->
        let goalsl =
-         if !typeclasses_dependency_order then
+         if get_typeclasses_dependency_order () then
            top_sort evm goals
          else Evar.Set.elements goals
        in

@@ -25,19 +25,14 @@ open Util
 
 let init_size=5
 
-let cc_verbose=ref false
+let cc_verbose=
+  declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Congruence";"Verbose"]
+    ~value:false
 
 let debug x =
-  if !cc_verbose then Feedback.msg_debug (x ())
-
-let () =
-  let gdopt=
-    { optdepr=false;
-      optkey=["Congruence";"Verbose"];
-      optread=(fun ()-> !cc_verbose);
-      optwrite=(fun b -> cc_verbose := b)}
-  in
-    declare_bool_option gdopt
+  if cc_verbose () then Feedback.msg_debug (x ())
 
 (* Signature table *)
 

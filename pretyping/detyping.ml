@@ -221,53 +221,35 @@ module PrintingLet = Goptions.MakeRefTable(PrintingCasesLet)
 
 (* Flags.for printing or not wildcard and synthetisable types *)
 
-open Goptions
+let force_wildcard =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Printing";"Wildcard"]
+    ~value:true
 
-let wildcard_value = ref true
-let force_wildcard () = !wildcard_value
+let fast_name_generation =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Fast";"Name";"Printing"]
+    ~value:false
 
-let () = declare_bool_option
-          { optdepr  = false;
-            optkey   = ["Printing";"Wildcard"];
-            optread  = force_wildcard;
-            optwrite = (:=) wildcard_value }
+let synthetize_type =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Printing";"Synth"]
+    ~value:true
 
-let fast_name_generation = ref false
+let reverse_matching =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Printing";"Matching"]
+    ~value:true
 
-let () = declare_bool_option {
-  optdepr = false;
-  optkey = ["Fast";"Name";"Printing"];
-  optread = (fun () -> !fast_name_generation);
-  optwrite = (:=) fast_name_generation;
-}
-
-let synth_type_value = ref true
-let synthetize_type () = !synth_type_value
-
-let () = declare_bool_option
-          { optdepr  = false;
-            optkey   = ["Printing";"Synth"];
-            optread  = synthetize_type;
-            optwrite = (:=) synth_type_value }
-
-let reverse_matching_value = ref true
-let reverse_matching () = !reverse_matching_value
-
-let () = declare_bool_option
-          { optdepr  = false;
-            optkey   = ["Printing";"Matching"];
-            optread  = reverse_matching;
-            optwrite = (:=) reverse_matching_value }
-
-let print_primproj_params_value = ref false
-let print_primproj_params () = !print_primproj_params_value
-
-let () = declare_bool_option
-          { optdepr  = false;
-            optkey   = ["Printing";"Primitive";"Projection";"Parameters"];
-            optread  = print_primproj_params;
-            optwrite = (:=) print_primproj_params_value }
-
+let print_primproj_params =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Printing";"Primitive";"Projection";"Parameters"]
+    ~value:false
 
 (* Auxiliary function for MutCase printing *)
 (* [computable] tries to tell if the predicate typing the result is inferable*)
@@ -338,27 +320,23 @@ let lookup_index_as_renamed env sigma t n =
 (**********************************************************************)
 (* Factorization of match patterns *)
 
-let print_factorize_match_patterns = ref true
+let print_factorize_match_patterns =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Printing";"Factorizable";"Match";"Patterns"]
+    ~value:true
 
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Factorizable";"Match";"Patterns"];
-      optread  = (fun () -> !print_factorize_match_patterns);
-      optwrite = (fun b -> print_factorize_match_patterns := b) }
-
-let print_allow_match_default_clause = ref true
-
-let () =
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Allow";"Match";"Default";"Clause"];
-      optread  = (fun () -> !print_allow_match_default_clause);
-      optwrite = (fun b -> print_allow_match_default_clause := b) }
+let print_allow_match_default_opt_name =
+  ["Printing";"Allow";"Match";"Default";"Clause"]
+let print_allow_match_default_clause =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:print_allow_match_default_opt_name
+    ~value:true
 
 let rec join_eqns (ids,rhs as x) patll = function
   | ({CAst.loc; v=(ids',patl',rhs')} as eqn')::rest ->
-     if not !Flags.raw_print && !print_factorize_match_patterns &&
+     if not !Flags.raw_print && print_factorize_match_patterns () &&
         List.eq_set Id.equal ids ids' && glob_constr_eq rhs rhs'
      then
        join_eqns x (patl'::patll) rest
@@ -404,7 +382,7 @@ let factorize_eqns eqns =
   let eqns = aux [] (List.rev eqns) in
   let mk_anon patl = List.map (fun _ -> DAst.make @@ PatVar Anonymous) patl in
   let open CAst in
-  if not !Flags.raw_print && !print_allow_match_default_clause && eqns <> [] then
+  if not !Flags.raw_print && print_allow_match_default_clause () && eqns <> [] then
     match select_default_clause eqns with
     (* At least two clauses and the last one is disjunctive with no variables *)
     | Some {loc=gloc;v=([],patl::_::_,rhs)}, (_::_ as eqns) ->
@@ -925,16 +903,16 @@ let detype_rel_context d flags where avoid env sigma sign =
 
 let detype_names isgoal avoid nenv env sigma t =
   let flags = { flg_isgoal = isgoal; flg_lax = false } in
-  let avoid = Avoid.make ~fast:!fast_name_generation avoid in
+  let avoid = Avoid.make ~fast:(fast_name_generation ()) avoid in
   detype Now flags avoid (nenv,env) sigma t
 let detype d ?(lax=false) isgoal avoid env sigma t =
   let flags = { flg_isgoal = isgoal; flg_lax = lax } in
-  let avoid = Avoid.make ~fast:!fast_name_generation avoid in
+  let avoid = Avoid.make ~fast:(fast_name_generation ()) avoid in
   detype d flags avoid (names_of_rel_context env, env) sigma t
 
 let detype_rel_context d ?(lax = false) where avoid env sigma sign =
   let flags = { flg_isgoal = false; flg_lax = lax } in
-  let avoid = Avoid.make ~fast:!fast_name_generation avoid in
+  let avoid = Avoid.make ~fast:(fast_name_generation ()) avoid in
   detype_rel_context d flags where avoid env sigma sign
 
 let detype_closed_glob ?lax isgoal avoid env sigma t =

@@ -498,16 +498,8 @@ let info_file f =
 (* The objects defined below should survive an arbitrary time,
    so we register them to coq save/undo mechanism. *)
 
-let my_bool_option name initval =
-  let flag = ref initval in
-  let access = fun () -> !flag in
-  let () = declare_bool_option
-    {optdepr = false;
-     optkey = ["Extraction"; name];
-     optread = access;
-     optwrite = (:=) flag }
-  in
-  access
+let my_bool_option name value =
+  declare_bool_option_and_ref ~depr:false ~key:["Extraction"; name] ~value
 
 (*s Extraction AccessOpaque *)
 
@@ -588,25 +580,18 @@ let () = declare_int_option
 
 (* This option controls whether "dummy lambda" are removed when a
    toplevel constant is defined. *)
-let conservative_types_ref = ref false
-let conservative_types () = !conservative_types_ref
-
-let () = declare_bool_option
-  {optdepr = false;
-   optkey = ["Extraction"; "Conservative"; "Types"];
-   optread = (fun () -> !conservative_types_ref);
-   optwrite = (fun b -> conservative_types_ref := b) }
-
+let conservative_types =
+  declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Extraction"; "Conservative"; "Types"]
+    ~value:false
 
 (* Allows to print a comment at the beginning of the output files *)
-let file_comment_ref = ref ""
-let file_comment () = !file_comment_ref
-
-let () = declare_string_option
-  {optdepr = false;
-   optkey = ["Extraction"; "File"; "Comment"];
-   optread = (fun () -> !file_comment_ref);
-   optwrite = (fun s -> file_comment_ref := s) }
+let file_comment =
+  declare_string_option_and_ref
+    ~depr:false
+    ~key:["Extraction"; "File"; "Comment"]
+    ~value:""
 
 (*s Extraction Lang *)
 

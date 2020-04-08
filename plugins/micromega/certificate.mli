@@ -12,15 +12,11 @@ module Mc = Micromega
 
 (** [use_simplex] is bound to the Coq option Simplex.
     If set, use the Simplex method, otherwise use Fourier *)
-val use_simplex : bool ref
+val use_simplex : unit -> bool
 
 type ('prf, 'model) res = Prf of 'prf | Model of 'model | Unknown
 type zres = (Mc.zArithProof, int * Mc.z list) res
 type qres = (Mc.q Mc.psatz, int * Mc.q list) res
-
-(** [dump_file] is bound to the Coq option Dump Arith.
-    If set to some [file], arithmetic goals are dumped in filexxx.v *)
-val dump_file : string option ref
 
 (** [q_cert_of_pos prf] converts a Sos proof into a rational Coq proof *)
 val q_cert_of_pos : Sos_types.positivstellensatz -> Mc.q Mc.psatz

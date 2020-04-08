@@ -14,15 +14,11 @@ open Names
 open Environ
 open Evd
 
-let use_unification_heuristics_ref = ref true
-let () = Goptions.(declare_bool_option {
-  optdepr = false;
-  optkey = ["Solve";"Unification";"Constraints"];
-  optread = (fun () -> !use_unification_heuristics_ref);
-  optwrite = (fun a -> use_unification_heuristics_ref:=a);
-})
-
-let use_unification_heuristics () = !use_unification_heuristics_ref
+let use_unification_heuristics =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Solve";"Unification";"Constraints"]
+    ~value:true
 
 exception NoSuchGoal
 let () = CErrors.register_handler begin function

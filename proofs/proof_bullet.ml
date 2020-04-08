@@ -174,28 +174,22 @@ module Strict = struct
 end
 
 (* Current bullet behavior, controlled by the option *)
-let current_behavior = ref Strict.strict
-
-let () =
-  Goptions.(declare_string_option {
-    optdepr = false;
-    optkey = ["Bullet";"Behavior"];
-    optread = begin fun () ->
-      (!current_behavior).name
-    end;
-    optwrite = begin fun n ->
-      current_behavior :=
-        try Hashtbl.find behaviors n
-        with Not_found ->
-          CErrors.user_err Pp.(str ("Unknown bullet behavior: \"" ^ n ^ "\"."))
-    end
-  })
+let current_behavior =
+  Goptions.declare_interpreted_string_option_and_ref
+    ~depr:false
+    ~key:["Bullet";"Behavior"]
+    ~value:Strict.strict
+    (fun n ->
+      try Hashtbl.find behaviors n
+      with Not_found ->
+        CErrors.user_err Pp.(str ("Unknown bullet behavior: \"" ^ n ^ "\".")))
+    (fun v -> v.name)
 
 let put p b =
-  (!current_behavior).put p b
+  (current_behavior ()).put p b
 
 let suggest p =
-  (!current_behavior).suggest p
+  (current_behavior ()).suggest p
 
 (* Better printing for bullet exceptions *)
 exception SuggestNoSuchGoals of int * Proof.t

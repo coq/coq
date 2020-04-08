@@ -104,9 +104,15 @@ end
 
 (** {6 Options. } *)
 
-(** These types and function are for declaring a new option of name [key]
-   and access functions [read] and [write]; the parameter [name] is the option name
-   used when printing the option value (command "Print Toto Titi." *)
+(** These types and function are for declaring a new option of name
+   [key] and access functions [read] and [write]; the parameter [name]
+   is the option name used when printing the option value (command
+   "Print Toto Titi."
+
+   The declare_*_option functions are low-level, to be used when
+   implementing complex option workflows, e.g. when setting one option
+   changes the value of another.  For most use cases, you should use
+   the helper functions declare_*_option_and_ref. *)
 
 type 'a option_sig = {
   optdepr    : bool;
@@ -118,7 +124,11 @@ type 'a option_sig = {
 }
 
 (** The [preprocess] function is triggered before setting the option. It can be
-    used to emit a warning on certain values, and clean-up the final value. *)
+    used to emit a warning on certain values, and clean-up the final value.
+
+    [declare_stringopt_option] should be preferred to [declare_string_option]
+    because it supports "Unset".
+    Only "Warnings" option is declared using the latter.*)
 
 val declare_int_option   : ?preprocess:(int option -> int option) ->
                            int option option_sig -> unit
@@ -129,9 +139,18 @@ val declare_string_option: ?preprocess:(string -> string) ->
 val declare_stringopt_option: ?preprocess:(string option -> string option) ->
                               string option option_sig -> unit
 
-(** Helper to declare a reference controlled by an option. Read-only
+(** Helpers to declare a reference controlled by an option. Read-only
    as to avoid races. *)
-val declare_bool_option_and_ref : depr:bool -> key:option_name -> value:bool -> (unit -> bool)
+type 'a opt_decl = depr:bool -> key:option_name -> 'a
+
+val declare_int_option_and_ref : (value:int -> (unit -> int)) opt_decl
+val declare_intopt_option_and_ref : (unit -> int option) opt_decl
+val declare_nat_option_and_ref : (value:int -> (unit -> int)) opt_decl
+val declare_bool_option_and_ref : (value:bool -> (unit -> bool)) opt_decl
+val declare_string_option_and_ref : (value:string -> (unit -> string)) opt_decl
+val declare_stringopt_option_and_ref : (unit -> string option) opt_decl
+val declare_interpreted_string_option_and_ref :
+  (value:'a -> (string -> 'a) -> ('a -> string) -> (unit -> 'a)) opt_decl
 
 (** {6 Special functions supposed to be used only in vernacentries.ml } *)
 

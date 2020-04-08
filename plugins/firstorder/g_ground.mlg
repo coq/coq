@@ -31,20 +31,8 @@ DECLARE PLUGIN "ground_plugin"
 
 {
 
-let ground_depth=ref 3
-
-let ()=
-  let gdopt=
-    { optdepr=false;
-      optkey=["Firstorder";"Depth"];
-      optread=(fun ()->Some !ground_depth);
-      optwrite=
-   (function
-        None->ground_depth:=3
-      |	Some i->ground_depth:=(max i 0))}
-  in
-    declare_int_option gdopt
-
+let ground_depth =
+  declare_nat_option_and_ref ~depr:false ~key:["Firstorder";"Depth"] ~value:3
 
 let default_intuition_tac =
   let tac _ _ = Auto.h_auto None [] (Some []) in
@@ -85,7 +73,7 @@ let gen_ground_tac flag taco ids bases =
           | None-> snd (default_solver ()) in
       let startseq k =
         Proofview.Goal.enter begin fun gl ->
-        let seq=empty_seq !ground_depth in
+        let seq=empty_seq (ground_depth ()) in
         let seq, sigma = extend_with_ref_list (pf_env gl) (project gl) ids seq in
         let seq, sigma = extend_with_auto_hints (pf_env gl) sigma bases seq in
         tclTHEN (Proofview.Unsafe.tclEVARS sigma) (k seq)

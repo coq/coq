@@ -51,24 +51,17 @@ let interp_typed_vernac c ~stack =
 
 (* Default proof mode, to be set at the beginning of proofs for
    programs that cannot be statically classified. *)
-let default_proof_mode = ref (Pvernac.register_proof_mode "Noedit" Pvernac.Vernac_.noedit_mode)
-let get_default_proof_mode () = !default_proof_mode
-
-let get_default_proof_mode_opt () = Pvernac.proof_mode_to_string !default_proof_mode
-let set_default_proof_mode_opt name =
-  default_proof_mode :=
-    match Pvernac.lookup_proof_mode name with
-    | Some pm -> pm
-    | None -> CErrors.user_err Pp.(str (Format.sprintf "No proof mode named \"%s\"." name))
-
 let proof_mode_opt_name = ["Default";"Proof";"Mode"]
-let () =
-  Goptions.declare_string_option Goptions.{
-    optdepr = false;
-    optkey = proof_mode_opt_name;
-    optread = get_default_proof_mode_opt;
-    optwrite = set_default_proof_mode_opt;
-  }
+
+let get_default_proof_mode =
+  Goptions.declare_interpreted_string_option_and_ref
+    ~depr:false
+    ~key:proof_mode_opt_name
+    ~value:(Pvernac.register_proof_mode "Noedit" Pvernac.Vernac_.noedit_mode)
+    (fun name -> match Pvernac.lookup_proof_mode name with
+    | Some pm -> pm
+    | None -> CErrors.user_err Pp.(str (Format.sprintf "No proof mode named \"%s\"." name)))
+    Pvernac.proof_mode_to_string
 
 (** A global default timeout, controlled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)

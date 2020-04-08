@@ -25,42 +25,26 @@ module RelDecl = Context.Rel.Declaration
 module NamedDecl = Context.Named.Declaration
 module CompactedDecl = Context.Compacted.Declaration
 
-let enable_unfocused_goal_printing = ref false
-let enable_goal_tags_printing = ref false
-let enable_goal_names_printing = ref false
-
-let should_tag() = !enable_goal_tags_printing
-let should_unfoc() = !enable_unfocused_goal_printing
-let should_gname() = !enable_goal_names_printing
-
-
-let () =
-  let open Goptions in
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Unfocused"];
-      optread  = (fun () -> !enable_unfocused_goal_printing);
-      optwrite = (fun b -> enable_unfocused_goal_printing:=b) }
-
 (* This is set on by proofgeneral proof-tree mode. But may be used for
    other purposes *)
-let () =
-  let open Goptions in
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Goal";"Tags"];
-      optread  = (fun () -> !enable_goal_tags_printing);
-      optwrite = (fun b -> enable_goal_tags_printing:=b) }
+let print_goal_tag_opt_name = ["Printing";"Goal";"Tags"]
+let should_tag =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:print_goal_tag_opt_name
+    ~value:false
 
+let should_unfoc =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Printing";"Unfocused"]
+    ~value:false
 
-let () =
-  let open Goptions in
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Goal";"Names"];
-      optread  = (fun () -> !enable_goal_names_printing);
-      optwrite = (fun b -> enable_goal_names_printing:=b) }
-
+let should_gname =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Printing";"Goal";"Names"]
+    ~value:false
 
 (**********************************************************************)
 (** Terms                                                             *)
@@ -407,17 +391,10 @@ let pr_context_limit_compact ?n env sigma =
 
 (* The number of printed hypothesis in a goal *)
 (* If [None], no limit *)
-let print_hyps_limit = ref (None : int option)
+let print_hyps_limit =
+  Goptions.declare_intopt_option_and_ref ~depr:false ~key:["Hyps";"Limit"]
 
-let () =
-  let open Goptions in
-  declare_int_option
-    { optdepr  = false;
-      optkey   = ["Hyps";"Limit"];
-      optread  = (fun () -> !print_hyps_limit);
-      optwrite = (fun x -> print_hyps_limit := x) }
-
-let pr_context_of env sigma = match !print_hyps_limit with
+let pr_context_of env sigma = match print_hyps_limit () with
   | None -> hv 0 (pr_context_limit_compact env sigma)
   | Some n -> hv 0 (pr_context_limit_compact ~n env sigma)
 
@@ -615,18 +592,14 @@ let print_evar_constraints gl sigma =
         str" with candidates:" ++ fnl () ++ hov 0 ppcandidates
     else mt ()
 
-let should_print_dependent_evars = ref false
-
-let () =
-  let open Goptions in
-  declare_bool_option
-    { optdepr  = false;
-      optkey   = ["Printing";"Dependent";"Evars";"Line"];
-      optread  = (fun () -> !should_print_dependent_evars);
-      optwrite = (fun v -> should_print_dependent_evars := v) }
+let should_print_dependent_evars =
+  Goptions.declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Printing";"Dependent";"Evars";"Line"]
+    ~value:false
 
 let print_dependent_evars gl sigma seeds =
-  if !should_print_dependent_evars then
+  if should_print_dependent_evars () then
     let mt_pp = mt () in
     let evars = Evarutil.gather_dependent_evars sigma seeds in
     let evars_pp = Evar.Map.fold (fun e i s ->

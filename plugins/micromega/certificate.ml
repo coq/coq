@@ -27,7 +27,13 @@ open NumCompat
 open Q.Notations
 open Mutils
 
-let use_simplex = ref true
+let use_simplex =
+  Goptions.declare_bool_option_and_ref ~depr:false ~key:["Simplex"] ~value:true
+
+(* If set to some [file], arithmetic goals are dumped in [file].v *)
+
+let dump_file =
+  Goptions.declare_stringopt_option_and_ref ~depr:false ~key:["Dump"; "Arith"]
 
 type ('prf, 'model) res = Prf of 'prf | Model of 'model | Unknown
 type zres = (Mc.zArithProof, int * Mc.z list) res
@@ -203,19 +209,19 @@ let fourier_linear_prover l =
   | Inl _ -> None
 
 let direct_linear_prover l =
-  if !use_simplex then Simplex.find_unsat_certificate l
+  if use_simplex () then Simplex.find_unsat_certificate l
   else fourier_linear_prover l
 
 let find_point l =
   let open Util in
-  if !use_simplex then Simplex.find_point l
+  if use_simplex () then Simplex.find_point l
   else
     match Mfourier.Fourier.find_point l with
     | Inr _ -> None
     | Inl cert -> Some cert
 
 let optimise v l =
-  if !use_simplex then Simplex.optimise v l else Mfourier.Fourier.optimise v l
+  if use_simplex () then Simplex.optimise v l else Mfourier.Fourier.optimise v l
 
 let dual_raw_certificate l =
   if debug then begin
@@ -981,13 +987,11 @@ let xlia_simplex env red sys =
   with FoundProof prf -> compile_prf sys (Step (0, prf, Done))
 
 let xlia env0 en red sys =
-  if !use_simplex then xlia_simplex env0 red sys else xlia en red sys
-
-let dump_file = ref None
+  if use_simplex () then xlia_simplex env0 red sys else xlia en red sys
 
 let gen_bench (tac, prover) can_enum prfdepth sys =
   let res = prover can_enum prfdepth sys in
-  ( match !dump_file with
+  ( match dump_file () with
   | None -> ()
   | Some file ->
     let o = open_out (Filename.temp_file ~temp_dir:(Sys.getcwd ()) file ".v") in

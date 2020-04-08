@@ -20,7 +20,6 @@ type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
   indices_matter    : bool;
   toplevel_name     : Stm.interactive_top;
-  allow_sprop       : bool;
   cumulative_sprop  : bool;
 }
 
@@ -35,7 +34,6 @@ type coqargs_config = {
   native_include_dirs : CUnix.physical_path list;
   stm_flags   : Stm.AsyncOpts.stm_opt;
   debug       : bool;
-  diffs_set   : bool;
   time        : bool;
   print_emacs : bool;
   set_options : (Goptions.option_name * option_command) list;

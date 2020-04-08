@@ -10,8 +10,8 @@
 
 (* diff options *)
 
-(** Controls whether to show diffs.  Takes values "on", "off", "removed" *)
-val write_diffs_option : string -> unit
+(** Name of Diffs option *)
+val opt_name : string list
 
 (** Returns true if the diffs option is "on" or "removed" *)
 val show_diffs : unit -> bool

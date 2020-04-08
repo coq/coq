@@ -19,10 +19,8 @@ val catchable : exn -> bool
 [@@ocaml.deprecated "Use instead CErrors.noncritical, or the exact name of the exception that matters in the corresponding case."]
 
 val set_typeclasses_debug : bool -> unit
-val get_typeclasses_debug : unit -> bool
 
 val set_typeclasses_depth : int option -> unit
-val get_typeclasses_depth : unit -> int option
 
 type search_strategy = Dfs | Bfs
 

@@ -45,15 +45,11 @@ let reset_info () =
      s_info.branch_successes <- 0;
      s_info.nd_branching     <- 0
 
-let pruning = ref true
-
-let opt_pruning=
-  {optdepr=false;
-   optkey=["Rtauto";"Pruning"];
-   optread=(fun () -> !pruning);
-   optwrite=(fun b -> pruning:=b)}
-
-let () = declare_bool_option opt_pruning
+let pruning =
+  declare_bool_option_and_ref
+    ~depr:false
+    ~key:["Rtauto";"Pruning"]
+    ~value:true
 
 type form=
     Atom of int
@@ -182,7 +178,7 @@ let rec fill stack proof =
       [] -> Complete proof.dep_it
     | slice::super ->
         if
-          !pruning &&
+          pruning () &&
           List.is_empty slice.proofs_done &&
           not (slice.changes_goal && proof.dep_goal) &&
           not (Int.Set.exists
@@ -529,7 +525,7 @@ let pp =
 
 let pp_info () =
   let count_info =
-    if !pruning then
+    if pruning () then
         str "Proof steps : " ++
         int s_info.created_steps ++ str " created / " ++
         int s_info.pruned_steps ++ str " pruned" ++ fnl () ++
