@@ -186,6 +186,9 @@ let compute_internalization_env env sigma ?(impls=empty_internalization_env) ty 
     (fun map id typ impl -> Id.Map.add id (compute_internalization_data env sigma ty typ impl) map)
     impls
 
+let extend_internalization_data (r, impls, scopes) impl scope =
+  (r, impls@[impl], scopes@[scope])
+
 (**********************************************************************)
 (* Contracting "{ _ }" in notations *)
 

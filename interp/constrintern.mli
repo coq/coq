@@ -43,13 +43,12 @@ type var_internalization_type =
   | Method
   | Variable
 
-type var_internalization_data =
-    var_internalization_type *
-      (* type of the "free" variable, for coqdoc, e.g. while typing the
-         constructor of JMeq, "JMeq" behaves as a variable of type Inductive *)
-
-    Impargs.implicit_status list * (* signature of impargs of the variable *)
-    Notation_term.scope_name option list (* subscopes of the args of the variable *)
+(** This collects relevant information for interning local variables:
+   - their coqdoc kind (a recursive call in a inductive, fixpoint of class; or a bound variable)
+     e.g. while typing the constructor of JMeq, "JMeq" behaves as a variable of type Inductive
+   - their implicit arguments
+   - their argument scopes *)
+type var_internalization_data
 
 (** A map of free variables to their implicit arguments and scopes *)
 type internalization_env = var_internalization_data Id.Map.t
@@ -62,6 +61,9 @@ val compute_internalization_data : env -> evar_map -> var_internalization_type -
 val compute_internalization_env : env -> evar_map -> ?impls:internalization_env -> var_internalization_type ->
   Id.t list -> types list -> Impargs.manual_implicits list ->
   internalization_env
+
+val extend_internalization_data :
+  var_internalization_data -> Impargs.implicit_status -> scope_name option -> var_internalization_data
 
 type ltac_sign = {
   ltac_vars : Id.Set.t;
