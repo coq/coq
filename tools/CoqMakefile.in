@@ -54,7 +54,7 @@ OCAMLWARN         := $(COQMF_WARN)
 #
 # Parameters are make variable assignments.
 # They can be passed to (each call to) make on the command line.
-# They can also be put in @LOCAL_FILE@ once an for all.
+# They can also be put in @LOCAL_FILE@ once and for all.
 # For retro-compatibility reasons they can be put in the _CoqProject, but this
 # practice is discouraged since _CoqProject better not contain make specific
 # code (be nice to user interfaces).
