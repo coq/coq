@@ -851,7 +851,7 @@ command: [
 | thm_token ident_decl LIST0 binder ":" type LIST0 [ "with" ident_decl LIST0 binder ":" type ]
 | assumption_token OPT ( "Inline" OPT ( "(" num ")" ) ) [ LIST1 ( "(" assumpt ")" ) | assumpt ]
 | [ "Definition" | "Example" ] ident_decl def_body
-| "Let" ident def_body
+| "Let" ident_decl def_body
 | "Inductive" inductive_definition LIST0 ( "with" inductive_definition )
 | "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
 | "Let" "Fixpoint" fix_definition LIST0 ( "with" fix_definition )
@@ -873,7 +873,6 @@ command: [
 | "Module" "Type" ident LIST0 module_binder LIST0 ( "<:" module_type_inl ) OPT ( ":=" LIST1 module_type_inl SEP "<+" )
 | "Declare" "Module" OPT [ "Import" | "Export" ] ident LIST0 module_binder ":" module_type_inl
 | "Section" ident
-| "Chapter" ident
 | "End" ident
 | "Collection" ident ":=" section_subset_expr
 | "Require" OPT [ "Import" | "Export" ] LIST1 qualid

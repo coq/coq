@@ -199,8 +199,8 @@ GRAMMAR EXTEND Gram
             VernacAssumption (stre, nl, bl) }
       | d = def_token; id = ident_decl; b = def_body ->
           { VernacDefinition (d, name_of_ident_decl id, b) }
-      | IDENT "Let"; id = identref; b = def_body ->
-          { VernacDefinition ((DoDischarge, Let), (lname_of_lident id, None), b) }
+      | IDENT "Let"; id = ident_decl; b = def_body ->
+          { VernacDefinition ((DoDischarge, Let), name_of_ident_decl id, b) }
       (* Gallina inductive declarations *)
       | f = finite_token; indl = LIST1 inductive_definition SEP "with" ->
           { VernacInductive (f, indl) }

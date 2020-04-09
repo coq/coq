@@ -72,7 +72,7 @@ Sections create local contexts which can be shared across multiple definitions.
    Most commands, like :cmd:`Hint`, :cmd:`Notation`, option management, … which
    appear inside a section are canceled when the section is closed.
 
-.. cmd:: Let @ident @def_body
+.. cmd:: Let @ident_decl @def_body
          Let Fixpoint @fix_definition {* with @fix_definition }
          Let CoFixpoint @cofix_definition {* with @cofix_definition }
    :name: Let; Let Fixpoint; Let CoFixpoint
