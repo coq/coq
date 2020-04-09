@@ -189,6 +189,9 @@ let rec db_output_prodn = function
 and db_out_list prod = sprintf "(%s)" (map_and_concat db_output_prodn prod)
 and db_out_prods prods = sprintf "( %s )" (map_and_concat ~delim:" | " db_out_list prods)
 
+(* identify special chars that don't get a trailing space in output *)
+let omit_space s = List.mem s ["?"; "."; "#"]
+
 let rec output_prod plist need_semi = function
     | Sterm s -> if plist then sprintf "%s" s else sprintf "\"%s\"" s
     | Snterm s ->
@@ -225,7 +228,7 @@ let rec output_prod plist need_semi = function
 
 and prod_to_str_r plist prod =
   match prod with
-  | Sterm s :: Snterm "ident" :: tl when List.mem s ["?"; "."] && plist ->
+  | Sterm s :: Snterm "ident" :: tl when omit_space s && plist ->
     (sprintf "%s`ident`" s) :: (prod_to_str_r plist tl)
   | p :: tl ->
     let need_semi =
@@ -282,7 +285,7 @@ and output_sep sep =
 
 and prod_to_prodn_r prod =
   match prod with
-  | Sterm s :: Snterm "ident" :: tl when List.mem s ["?"; "."] ->
+  | Sterm s :: Snterm "ident" :: tl when omit_space s ->
     (sprintf "%s@ident" s) :: (prod_to_prodn_r tl)
   | p :: tl -> (output_prodn p) :: (prod_to_prodn_r tl)
   | [] -> []
