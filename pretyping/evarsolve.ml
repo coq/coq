@@ -416,19 +416,10 @@ let get_alias_chain_of sigma aliases x = match x with
   | RelAlias n -> (try Int.Map.find n aliases.rel_aliases with Not_found -> empty_aliasing)
   | VarAlias id -> (try cast_aliasing (Id.Map.find id aliases.var_aliases) with Not_found -> empty_aliasing)
 
-let normalize_alias_opt_alias sigma aliases x =
-  match get_alias_chain_of sigma aliases x with
-  | _, []  -> None
-  | _, a :: _ -> Some a
-
-let normalize_alias_opt sigma aliases x = match to_alias sigma x with
-| None -> None
-| Some a -> normalize_alias_opt_alias sigma aliases a
-
 let normalize_alias sigma aliases x =
-  match normalize_alias_opt_alias sigma aliases x with
-  | Some a -> a
-  | None -> x
+  match get_alias_chain_of sigma aliases x with
+  | _, []  -> x
+  | _, a :: _ -> a
 
 let normalize_alias_var sigma var_aliases id =
   let aliases = { var_aliases; rel_aliases = Int.Map.empty } in
@@ -678,7 +669,7 @@ let make_projectable_subst aliases sigma evi args =
                   let l = try Constrmap.find (fst cstr) cstrs with Not_found -> [] in
                   Constrmap.add (fst cstr) ((args,id)::l) cstrs
               | _ -> cstrs in
-            let all = Int.Map.add i [a,normalize_alias_opt sigma aliases a,id] all in
+            let all = Int.Map.add i [a, id] all in
             (rest,all,cstrs,revmap)
         | LocalDef ({binder_name=id},c,_), a::rest ->
             let revmap = Id.Map.add id i revmap in
@@ -688,13 +679,13 @@ let make_projectable_subst aliases sigma evi args =
                 let ic, sub =
                   try let ic = Id.Map.find idc revmap in ic, Int.Map.find ic all
                   with Not_found -> i, [] (* e.g. [idc] is a filtered variable: treat [id] as an assumption *) in
-                if List.exists (fun (c,_,_) -> EConstr.eq_constr sigma a c) sub then
+                if List.exists (fun (c, _) -> EConstr.eq_constr sigma a c) sub then
                   (rest,all,cstrs,revmap)
                 else
-                  let all = Int.Map.add ic ((a,normalize_alias_opt sigma aliases a,id)::sub) all in
+                  let all = Int.Map.add ic ((a, id)::sub) all in
                   (rest,all,cstrs,revmap)
             | _ ->
-                let all = Int.Map.add i [a,normalize_alias_opt sigma aliases a,id] all in
+                let all = Int.Map.add i [a, id] all in
                 (rest,all,cstrs,revmap))
         | _ -> anomaly (Pp.str "Instance does not match its signature.")) 0
       sign (Array.rev_to_list args,Int.Map.empty,Constrmap.empty,Id.Map.empty) in
@@ -862,47 +853,47 @@ type evar_projection =
 exception NotUnique
 exception NotUniqueInType of (Id.t * evar_projection) list
 
-let rec assoc_up_to_alias sigma aliases y yc = function
+let rec assoc_up_to_alias sigma aliases y = function
   | [] -> raise Not_found
-  | (c,cc,id)::l ->
-      if is_alias sigma c y then id
+  | (c, id)::l ->
+    match to_alias sigma c with
+    | None -> assoc_up_to_alias sigma aliases y l
+    | Some c ->
+      if eq_alias c y then id
       else
         match l with
-        | _ :: _ -> assoc_up_to_alias sigma aliases y yc l
+        | _ :: _ -> assoc_up_to_alias sigma aliases y l
         | [] ->
           (* Last chance, we reason up to alias conversion *)
-          match (normalize_alias_opt sigma aliases c) with
-          | Some cc when eq_alias yc cc -> id
-          | _ -> if is_alias sigma c yc then id else raise Not_found
+          let cc = normalize_alias sigma aliases c in
+          let yc = normalize_alias sigma aliases y in
+          if eq_alias cc yc then id else raise Not_found
 
-let rec find_projectable_vars with_evars aliases sigma y subst =
-  let yc = normalize_alias sigma aliases y in
-  let is_projectable idc idcl (subst1,subst2 as subst') =
+let rec find_projectable_vars aliases sigma y subst =
+  let is_projectable _ idcl (subst1,subst2 as subst') =
     (* First test if some [id] aliased to [idc] is bound to [y] in [subst] *)
     try
-      let id = assoc_up_to_alias sigma aliases y yc idcl in
+      let id = assoc_up_to_alias sigma aliases y idcl in
       (id,ProjectVar)::subst1,subst2
     with Not_found ->
     (* Then test if [idc] is (indirectly) bound in [subst] to some evar *)
     (* projectable on [y] *)
-      if with_evars then
-        let f (c,_,id) = isEvar sigma c in
-        let idcl' = List.filter f idcl in
-        match idcl' with
-        | [c,_,id] ->
-          begin
-            let (evk,argsv as t) = destEvar sigma c in
-            let evi = Evd.find sigma evk in
-            let subst,_ = make_projectable_subst aliases sigma evi argsv in
-            let l = find_projectable_vars with_evars aliases sigma y subst in
-            match l with
-            | [id',p] -> (subst1,(id,ProjectEvar (t,evi,id',p))::subst2)
-            | _ -> subst'
-          end
-        | [] -> subst'
-        | _ -> anomaly (Pp.str "More than one non var in aliases class of evar instance.")
-      else
-        subst' in
+      let f (c, id) = isEvar sigma c in
+      let idcl' = List.filter f idcl in
+      match idcl' with
+      | [c, id] ->
+        begin
+          let (evk,argsv as t) = destEvar sigma c in
+          let evi = Evd.find sigma evk in
+          let subst,_ = make_projectable_subst aliases sigma evi argsv in
+          let l = find_projectable_vars aliases sigma y subst in
+          match l with
+          | [id',p] -> (subst1,(id,ProjectEvar (t,evi,id',p))::subst2)
+          | _ -> subst'
+        end
+      | [] -> subst'
+      | _ -> anomaly (Pp.str "More than one non var in aliases class of evar instance.")
+  in
   let subst1,subst2 = Int.Map.fold is_projectable subst ([],[]) in
   (* We return the substitution with ProjectVar first (from most
      recent to oldest var), followed by ProjectEvar (from most recent
@@ -914,14 +905,15 @@ let rec find_projectable_vars with_evars aliases sigma y subst =
 
 let filter_solution = function
   | [] -> raise Not_found
-  | (id,p)::_::_ -> raise NotUnique
-  | [id,p] -> (mkVar id, p)
+  | _ :: _ :: _ -> raise NotUnique
+  | [id] -> mkVar id
 
-let project_with_effects aliases sigma effects t subst =
-  let c, p =
-    filter_solution (find_projectable_vars false aliases sigma t subst) in
-  effects := p :: !effects;
-  c
+let project_with_effects aliases sigma t subst =
+  let is_projectable _ idcl accu =
+    try assoc_up_to_alias sigma aliases t idcl :: accu
+    with Not_found -> accu
+  in
+  filter_solution (Int.Map.fold is_projectable subst [])
 
 open Context.Named.Declaration
 let rec find_solution_type evarenv = function
@@ -981,28 +973,27 @@ let rec do_projection_effects unify flags define_fun env ty evd = function
 
 type projectibility_kind =
   | NoUniqueProjection
-  | UniqueProjection of EConstr.constr * evar_projection list
+  | UniqueProjection of EConstr.constr
 
 type projectibility_status =
   | CannotInvert
   | Invertible of projectibility_kind
 
 let invert_arg_from_subst evd aliases k0 subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders =
-  let effects = ref [] in
   let rec aux k t =
     match EConstr.kind evd t with
     | Rel i when i>k0+k -> aux' k (RelAlias (i-k))
     | Var id -> aux' k (VarAlias id)
     | _ -> map_with_binders evd succ aux k t
   and aux' k t =
-    try project_with_effects aliases evd effects t subst_in_env_extended_with_k_binders
+    try project_with_effects aliases evd t subst_in_env_extended_with_k_binders
     with Not_found ->
       match expand_alias_once evd aliases t with
       | None -> raise Not_found
       | Some c -> aux k (Alias.eval (Alias.lift k c)) in
   try
     let c = aux 0 c_in_env_extended_with_k_binders in
-    Invertible (UniqueProjection (c,!effects))
+    Invertible (UniqueProjection c)
   with
     | Not_found -> CannotInvert
     | NotUnique -> Invertible NoUniqueProjection
@@ -1010,7 +1001,7 @@ let invert_arg_from_subst evd aliases k0 subst_in_env_extended_with_k_binders c_
 let invert_arg fullenv evd aliases k evk subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders =
   let res = invert_arg_from_subst evd aliases k subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders in
   match res with
-  | Invertible (UniqueProjection (c,_)) when not (noccur_evar fullenv evd evk c)
+  | Invertible (UniqueProjection c) when not (noccur_evar fullenv evd evk c)
       ->
       CannotInvert
   | _ ->
@@ -1019,7 +1010,7 @@ let invert_arg fullenv evd aliases k evk subst_in_env_extended_with_k_binders c_
 exception NotEnoughInformationToInvert
 
 let extract_unique_projection = function
-| Invertible (UniqueProjection (c,_)) -> c
+| Invertible (UniqueProjection c) -> c
 | _ ->
     (* For instance, there are evars with non-invertible arguments and *)
     (* we cannot arbitrarily restrict these evars before knowing if there *)
@@ -1518,7 +1509,7 @@ let rec invert_definition unify flags choose imitate_defs
   let project_variable t =
     (* Evar/Var problem: unifiable iff variable projectable from ev subst *)
     try
-      let sols = find_projectable_vars true aliases !evdref t subst in
+      let sols = find_projectable_vars aliases !evdref t subst in
       let c, p = match sols with
         | [] -> raise Not_found
         | [id,p] -> (mkVar id, p)
