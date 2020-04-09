@@ -29,6 +29,7 @@ sig
   val of_closure : Geninterp.interp_sign -> glob_tactic_expr -> t
   val cast : 'a typed_abstract_argument_type -> Geninterp.Val.t -> 'a
   val apply : t -> t list -> unit Proofview.tactic
+  val apply_val : t -> t list -> t Ftactic.t
 end
 
 (** Values for interpretation *)
