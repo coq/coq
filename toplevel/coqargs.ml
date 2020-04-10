@@ -38,8 +38,6 @@ type color = [`ON | `AUTO | `EMACS | `OFF]
 
 type native_compiler = NativeOff | NativeOn of { ondemand : bool }
 
-type option_command = OptionSet of string option | OptionUnset
-
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
   indices_matter    : bool;
@@ -59,7 +57,6 @@ type coqargs_config = {
   debug       : bool;
   time        : bool;
   print_emacs : bool;
-  set_options : (Goptions.option_name * option_command) list;
 }
 
 type coqargs_pre = {
@@ -69,10 +66,9 @@ type coqargs_pre = {
 
   ml_includes : string list;
   vo_includes : Loadpath.vo_path list;
-  vo_requires : (string * string option * bool option) list;
-  (* None = No Import; Some false = Import; Some true = Export *)
 
   load_vernacular_list : (string * bool) list;
+  injections  : Stm.injection_command list;
 
   inputstate  : string option;
 }
@@ -124,7 +120,6 @@ let default_config = {
   debug        = false;
   time         = false;
   print_emacs  = false;
-  set_options  = [];
 
   (* Quiet / verbosity options should be here *)
 }
@@ -135,8 +130,8 @@ let default_pre = {
   load_rcfile  = true;
   ml_includes  = [];
   vo_includes  = [];
-  vo_requires  = [];
   load_vernacular_list = [];
+  injections   = [];
   inputstate   = None;
 }
 
@@ -167,13 +162,13 @@ let add_vo_include opts unix_path coq_path implicit =
         unix_path; coq_path; has_ml = false; implicit; recursive = true } :: opts.pre.vo_includes }}
 
 let add_vo_require opts d p export =
-  { opts with pre = { opts.pre with vo_requires = (d, p, export) :: opts.pre.vo_requires }}
+  { opts with pre = { opts.pre with injections = Stm.RequireInjection (d, p, export) :: opts.pre.injections }}
 
 let add_load_vernacular opts verb s =
-  { opts with pre = { opts.pre with load_vernacular_list = (CUnix.make_suffix s ".v",verb) :: opts.pre.load_vernacular_list }}
+    { opts with pre = { opts.pre with load_vernacular_list = (CUnix.make_suffix s ".v",verb) :: opts.pre.load_vernacular_list }}
 
 let add_set_option opts opt_name value =
-  { opts with config = { opts.config with set_options = (opt_name, value) :: opts.config.set_options }}
+  { opts with pre = { opts.pre with injections = Stm.OptionInjection (opt_name, value) :: opts.pre.injections }}
 
 (** Options for proof general *)
 let set_emacs opts =
@@ -486,10 +481,10 @@ let parse_args ~help ~init arglist : t * string list =
 
     | "-set" ->
       let opt, v = parse_option_set @@ next() in
-      add_set_option oval opt (OptionSet v)
+      add_set_option oval opt (Stm.OptionSet v)
 
     | "-unset" ->
-      add_set_option oval (to_opt_key @@ next ()) OptionUnset
+      add_set_option oval (to_opt_key @@ next ()) Stm.OptionUnset
 
     |"-native-output-dir" ->
       let native_output_dir = next () in
@@ -513,18 +508,18 @@ let parse_args ~help ~init arglist : t * string list =
     |"-config"|"--config" -> set_query oval PrintConfig
     |"-debug" -> Coqinit.set_debug (); oval
     |"-diffs" ->
-      add_set_option oval Proof_diffs.opt_name @@ OptionSet (Some (next ()))
+      add_set_option oval Proof_diffs.opt_name @@ Stm.OptionSet (Some (next ()))
     |"-stm-debug" -> Stm.stm_debug := true; oval
     |"-emacs" -> set_emacs oval
     |"-impredicative-set" ->
       set_logic (fun o -> { o with impredicative_set = Declarations.ImpredicativeSet }) oval
     |"-allow-sprop" ->
-      add_set_option oval Vernacentries.allow_sprop_opt_name (OptionSet None)
+      add_set_option oval Vernacentries.allow_sprop_opt_name (Stm.OptionSet None)
     |"-disallow-sprop" ->
-      add_set_option oval Vernacentries.allow_sprop_opt_name OptionUnset
+      add_set_option oval Vernacentries.allow_sprop_opt_name Stm.OptionUnset
     |"-sprop-cumulative" ->
       warn_deprecated_sprop_cumul();
-      add_set_option oval Vernacentries.cumul_sprop_opt_name (OptionSet None)
+      add_set_option oval Vernacentries.cumul_sprop_opt_name (Stm.OptionSet None)
     |"-indices-matter" -> set_logic (fun o -> { o with indices_matter = true }) oval
     |"-m"|"--memory" -> { oval with post = { oval.post with memory_stat = true }}
     |"-noinit"|"-nois" -> { oval with pre = { oval.pre with load_init = false }}
@@ -564,12 +559,9 @@ let parse_args ~help ~init args =
       pre = { opts.pre with
               ml_includes = List.rev opts.pre.ml_includes
             ; vo_includes = List.rev opts.pre.vo_includes
-            ; vo_requires = List.rev opts.pre.vo_requires
             ; load_vernacular_list = List.rev opts.pre.load_vernacular_list
+            ; injections = List.rev opts.pre.injections
             }
-    ; config = { opts.config with
-                 set_options = List.rev opts.config.set_options
-               } ;
     } in
   opts, extra
 
@@ -579,8 +571,8 @@ let parse_args ~help ~init args =
 (* prelude_data == From Coq Require Import Prelude. *)
 let prelude_data = "Prelude", Some "Coq", Some false
 
-let require_libs opts =
-  if opts.pre.load_init then prelude_data :: opts.pre.vo_requires else opts.pre.vo_requires
+let injection_commands opts =
+  if opts.pre.load_init then Stm.RequireInjection prelude_data :: opts.pre.injections else opts.pre.injections
 
 let build_load_path opts =
   let ml_path, vo_path =

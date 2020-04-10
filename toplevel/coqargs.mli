@@ -14,8 +14,6 @@ val default_toplevel : Names.DirPath.t
 
 type native_compiler = NativeOff | NativeOn of { ondemand : bool }
 
-type option_command = OptionSet of string option | OptionUnset
-
 type coqargs_logic_config = {
   impredicative_set : Declarations.set_predicativity;
   indices_matter    : bool;
@@ -35,7 +33,6 @@ type coqargs_config = {
   debug       : bool;
   time        : bool;
   print_emacs : bool;
-  set_options : (Goptions.option_name * option_command) list;
 }
 
 type coqargs_pre = {
@@ -45,10 +42,10 @@ type coqargs_pre = {
 
   ml_includes : CUnix.physical_path list;
   vo_includes : Loadpath.vo_path list;
-  vo_requires : (string * string option * bool option) list;
-  (* None = No Import; Some false = Import; Some true = Export *)
 
   load_vernacular_list : (string * bool) list;
+  injections  : Stm.injection_command list;
+
   inputstate  : string option;
 }
 
@@ -79,5 +76,5 @@ val default : t
 val parse_args : help:Usage.specific_usage -> init:t -> string list -> t * string list
 val error_wrong_arg : string -> unit
 
-val require_libs : t -> (string * string option * bool option) list
+val injection_commands : t -> Stm.injection_command list
 val build_load_path : t -> CUnix.physical_path list * Loadpath.vo_path list
