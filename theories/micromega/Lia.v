@@ -21,7 +21,7 @@ Declare ML Module "micromega_plugin".
 
 
 Ltac zchecker :=
-  intros __wit __varmap __ff ;
+  intros ?__wit ?__varmap ?__ff ;
   exact (ZTautoChecker_sound __ff __wit
                                 (@eq_refl bool true <: @eq bool (ZTautoChecker __ff __wit) true)
                                 (@find Z Z0 __varmap)).
