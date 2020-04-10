@@ -1,6 +1,8 @@
 -R src test
 -R theories test
 -I src
+-arg -w
+-arg +native-compiler-disabled
 -arg -native-compiler
 -arg yes
 
