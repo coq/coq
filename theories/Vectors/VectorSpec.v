@@ -163,20 +163,20 @@ Proof. reflexivity. Qed.
 
 Lemma splitat_append {A} : forall {n m : nat} (v : t A n) (w : t A m),
     splitat n (v ++ w) = (v, w).
-Proof with simpl; auto.
+Proof.
   intros n m v.
   generalize dependent m.
-  induction v; intros...
-  rewrite IHv...
+  induction v; intros;simpl; auto.
+  rewrite IHv; simpl; auto.
 Qed.
 
 Lemma append_splitat {A} : forall {n m : nat} (v : t A n) (w : t A m) (vw : t A (n+m)),
     splitat n vw = (v, w) ->
     vw = v ++ w.
-Proof with auto.
+Proof.
   intros n m v.
   generalize dependent m.
-  induction v; intros; inversion H...
+  induction v; intros; inversion H; auto.
   destruct (splitat n (tl vw)) as [v' w'] eqn:Heq.
   apply pair_equal_spec in H1.
   destruct H1; subst.
@@ -184,6 +184,6 @@ Proof with auto.
   rewrite (eta vw).
   apply cons_inj in H0.
   destruct H0; subst.
-  f_equal...
-  apply IHv...
+  f_equal; auto.
+  apply IHv; auto.
 Qed.

@@ -246,14 +246,14 @@ Qed.
 Lemma pair_equal_spec :
   forall (A B : Type) (a1 a2 : A) (b1 b2 : B),
     (a1, b1) = (a2, b2) <-> a1 = a2 /\ b1 = b2.
-Proof with auto.
+Proof.
   split; intros.
   - split.
-    + replace a1 with (fst (a1, b1)); replace a2 with (fst (a2, b2))...
-      rewrite H...
-    + replace b1 with (snd (a1, b1)); replace b2 with (snd (a2, b2))...
-      rewrite H...
-  - destruct H; subst...
+    + replace a1 with (fst (a1, b1)); replace a2 with (fst (a2, b2)); auto.
+      rewrite H; auto.
+    + replace b1 with (snd (a1, b1)); replace b2 with (snd (a2, b2)); auto.
+      rewrite H; auto.
+  - destruct H; subst; auto.
 Qed.
 
 Definition prod_uncurry (A B C:Type) (f:A * B -> C)

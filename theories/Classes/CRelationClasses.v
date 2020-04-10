@@ -338,7 +338,7 @@ Section Binary.
    show that [R] is antisymmetric w.r.t. [eqA] *)
 
   Global Instance partial_order_antisym `(PartialOrder eqA R) : Antisymmetric eqA R.
-  Proof with auto.
+  Proof.
     reduce_goal.
     apply H. firstorder.
   Qed.

@@ -1641,9 +1641,9 @@ End Fold_Right_Recursor.
       filter (fun y => if eq_dec x y then false else true).
 
     Lemma remove_alt (x : A) (l : list A) : remove' x l = remove eq_dec x l.
-    Proof with intuition.
-      induction l...
-      simpl. destruct eq_dec; f_equal...
+    Proof.
+      induction l; intuition.
+      simpl. destruct eq_dec; f_equal; intuition.
     Qed.
 
     (** Counting occurrences by filtering *)
@@ -1653,9 +1653,9 @@ End Fold_Right_Recursor.
 
     Lemma count_occ_alt (l : list A) (x : A) :
       count_occ' l x = count_occ eq_dec l x.
-    Proof with intuition.
-      unfold count_occ'. induction l...
-      simpl; destruct eq_dec; simpl...
+    Proof.
+      unfold count_occ'. induction l; intuition.
+      simpl; destruct eq_dec; simpl; intuition.
     Qed.
 
   End Filtering.

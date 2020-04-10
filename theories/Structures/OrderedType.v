@@ -58,13 +58,15 @@ Module Type OrderedType.
 
 End OrderedType.
 
+Local Ltac auto_ordered := auto with ordered_type.
+
 Module MOT_to_OT (Import O : MiniOrderedType) <: OrderedType.
   Include O.
 
   Definition eq_dec : forall x y : t, {eq x y} + {~ eq x y}.
-  Proof with auto with ordered_type.
-   intros; elim (compare x y); intro H; [ right | left | right ]...
-   assert (~ eq y x)...
+  Proof.
+   intros; elim (compare x y); intro H; [ right | left | right ]; auto_ordered.
+   assert (~ eq y x); auto_ordered.
   Defined.
 
 End MOT_to_OT.
@@ -88,17 +90,17 @@ Module OrderedTypeFacts (Import O: OrderedType).
   Proof. split; [ exact lt_antirefl | exact lt_trans]. Qed.
 
   Lemma lt_eq : forall x y z, lt x y -> eq y z -> lt x z.
-  Proof with auto with ordered_type.
+  Proof.
    intros; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
-   elim (lt_not_eq H); apply eq_trans with z...
-   elim (lt_not_eq (lt_trans Hlt H))...
+   elim (lt_not_eq H); apply eq_trans with z; auto_ordered.
+   elim (lt_not_eq (lt_trans Hlt H)); auto_ordered.
   Qed.
 
   Lemma eq_lt : forall x y z, eq x y -> lt y z -> lt x z.
-  Proof with auto with ordered_type.
+  Proof.
    intros; destruct (compare x z) as [Hlt|Heq|Hlt]; auto.
-   elim (lt_not_eq H0); apply eq_trans with x...
-   elim (lt_not_eq (lt_trans H0 Hlt))...
+   elim (lt_not_eq H0); apply eq_trans with x; auto_ordered.
+   elim (lt_not_eq (lt_trans H0 Hlt)); auto_ordered.
   Qed.
 
   Instance lt_compat : Proper (eq==>eq==>iff) lt.
@@ -380,14 +382,14 @@ Module KeyOrderedType(O:OrderedType).
   (* An alternative formulation for [In k l] is [exists e, InA eqk (k,e) l] *)
 
   Lemma In_alt : forall k l, In k l <-> exists e, InA eqk (k,e) l.
-  Proof with auto with ordered_type.
+  Proof.
   firstorder.
-    exists x...
+    exists x; auto_ordered.
   induction H.
     destruct y.
-    exists e...
+    exists e; auto_ordered.
   destruct IHInA as [e H0].
-  exists e...
+  exists e; auto_ordered.
   Qed.
 
   Lemma MapsTo_eq : forall l x y e, eq x y -> MapsTo x e l -> MapsTo y e l.

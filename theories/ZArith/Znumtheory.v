@@ -153,22 +153,24 @@ Proof.
   + now apply Z.div_lt.
 Qed.
 
+Local Ltac auto_Z := auto using Z_lt_neq.
+
 Lemma Zmod_div_mod n m a:
  0 < n -> 0 < m -> (n | m) -> a mod n = (a mod m) mod n.
-Proof with auto using Z_lt_neq.
+Proof.
   intros H1 H2 (p,Hp).
-  rewrite (Z.div_mod a m) at 1...
+  rewrite (Z.div_mod a m) at 1; auto_Z.
   rewrite Hp at 1.
-  rewrite Z.mul_shuffle0, Z.add_comm, Z.mod_add...
+  rewrite Z.mul_shuffle0, Z.add_comm, Z.mod_add; auto_Z.
 Qed.
 
 Lemma Zmod_divide_minus a b c:
  0 < b -> a mod b = c -> (b | a - c).
-Proof with auto using Z_lt_neq.
-  intros H H1. apply Z.mod_divide...
+Proof.
+  intros H H1. apply Z.mod_divide; auto_Z.
   rewrite Zminus_mod.
   rewrite H1. rewrite <- (Z.mod_small c b) at 1.
-  rewrite Z.sub_diag, Z.mod_0_l...
+  rewrite Z.sub_diag, Z.mod_0_l; auto_Z.
   subst. now apply Z.mod_pos_bound.
 Qed.
 

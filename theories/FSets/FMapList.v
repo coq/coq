@@ -192,15 +192,16 @@ Proof.
  intros y' e'' eqky'; inversion_clear 1; intuition.
 Qed.
 
+Local Ltac auto_with := auto with ordered_type.
 
 Lemma add_3 : forall m x y e e',
   ~ X.eq x y -> MapsTo y e (add x e' m) -> MapsTo y e m.
-Proof with auto with ordered_type.
+Proof.
  intros m x y e e'. generalize y e; clear y e; unfold PX.MapsTo.
  functional induction (add x e' m);simpl; intros.
- apply (In_inv_3 H0)...
- apply (In_inv_3 H0)...
- constructor 2; apply (In_inv_3 H0)...
+ apply (In_inv_3 H0); auto_with.
+ apply (In_inv_3 H0); auto_with.
+ constructor 2; apply (In_inv_3 H0); auto_with.
  inversion_clear H0; auto.
 Qed.
 
@@ -374,13 +375,13 @@ Definition Equivb cmp m m' :=
 
 Lemma equal_1 : forall m (Hm:Sort m) m' (Hm': Sort m') cmp,
   Equivb cmp m m' -> equal cmp m m' = true.
-Proof with auto with ordered_type.
+Proof.
  intros m Hm m' Hm' cmp; generalize Hm Hm'; clear Hm Hm'.
  functional induction (equal cmp m m'); simpl; subst;auto; unfold Equivb;
  intuition; subst.
  match goal with H: X.compare _ _ = _ |- _ => clear H end.
  assert (cmp_e_e':cmp e e' = true).
-  apply H1 with x...
+  apply H1 with x; auto_with.
  rewrite cmp_e_e'; simpl.
  apply IHb; auto.
  inversion_clear Hm; auto.
@@ -388,7 +389,7 @@ Proof with auto with ordered_type.
  unfold Equivb; intuition.
  destruct (H0 k).
  assert (In k ((x,e) ::l)).
-  destruct H as (e'', hyp); exists e''...
+  destruct H as (e'', hyp); exists e''; auto_with.
  destruct (In_inv (H2 H4)); auto.
  inversion_clear Hm.
  elim (Sort_Inf_NotIn H6 H7).
@@ -396,20 +397,20 @@ Proof with auto with ordered_type.
  apply MapsTo_eq with k; auto; order.
  destruct (H0 k).
  assert (In k ((x',e') ::l')).
-  destruct H as (e'', hyp); exists e''...
+  destruct H as (e'', hyp); exists e''; auto_with.
  destruct (In_inv (H3 H4)); auto.
  inversion_clear Hm'.
  elim (Sort_Inf_NotIn H6 H7).
  destruct H as (e'', hyp); exists e''; auto.
  apply MapsTo_eq with k; auto; order.
- apply H1 with k; destruct (X.eq_dec x k)...
+ apply H1 with k; destruct (X.eq_dec x k); auto_with.
 
 
  destruct (X.compare x x') as [Hlt|Heq|Hlt]; try contradiction; clear y.
  destruct (H0 x).
  assert (In x ((x',e')::l')).
   apply H; auto.
-  exists e...
+  exists e; auto_with.
  destruct (In_inv H3).
  order.
  inversion_clear Hm'.
@@ -420,7 +421,7 @@ Proof with auto with ordered_type.
  destruct (H0 x').
  assert (In x' ((x,e)::l)).
   apply H2; auto.
-  exists e'...
+  exists e'; auto_with.
  destruct (In_inv H3).
  order.
  inversion_clear Hm.
@@ -434,13 +435,13 @@ Proof with auto with ordered_type.
  clear H1;destruct p as (k,e).
  destruct (H0 k).
  destruct H1.
- exists e...
+ exists e; auto_with.
  inversion H1.
 
  destruct p as (x,e).
  destruct (H0 x).
  destruct H.
- exists e...
+ exists e; auto_with.
  inversion H.
 
  destruct p;destruct p0;contradiction.
@@ -449,7 +450,7 @@ Qed.
 
 Lemma equal_2 : forall m (Hm:Sort m) m' (Hm:Sort m') cmp,
   equal cmp m m' = true -> Equivb cmp m m'.
-Proof with auto with ordered_type.
+Proof.
  intros m Hm m' Hm' cmp; generalize Hm Hm'; clear Hm Hm'.
  functional induction (equal cmp m m'); simpl; subst;auto; unfold Equivb;
   intuition; try discriminate; subst;
@@ -464,16 +465,16 @@ Proof with auto with ordered_type.
  exists e'; constructor; split; trivial; apply X.eq_trans with x; auto.
  destruct (H k).
  destruct (H9 H8) as (e'',hyp).
- exists e''...
+ exists e''; auto_with.
 
  inversion_clear Hm;inversion_clear Hm'.
  destruct (andb_prop _ _ H); clear H.
  destruct (IHb H1 H3 H6).
  destruct (In_inv H0).
- exists e; constructor; split; trivial; apply X.eq_trans with x'...
+ exists e; constructor; split; trivial; apply X.eq_trans with x'; auto_with.
  destruct (H k).
  destruct (H10 H8) as (e'',hyp).
- exists e''...
+ exists e''; auto_with.
 
  inversion_clear Hm;inversion_clear Hm'.
  destruct (andb_prop _ _ H); clear H.
