@@ -192,10 +192,10 @@ let prepare_body {Vernacexpr.binders} rt =
   (fun_args, rt')
 
 let build_functional_principle ?(opaque = Declare.Transparent)
-    (evd : Evd.evar_map ref) old_princ_type sorts funs _i proof_tac hook =
+    (sigma : Evd.evar_map) old_princ_type sorts funs _i proof_tac hook =
   (* First we get the type of the old graph principle *)
   let mutr_nparams =
-    (Tactics.compute_elim_sig !evd (EConstr.of_constr old_princ_type))
+    (Tactics.compute_elim_sig sigma (EConstr.of_constr old_princ_type))
       .Tactics.nparams
   in
   (*   let time1 = System.get_time ()  in *)
@@ -212,34 +212,27 @@ let build_functional_principle ?(opaque = Declare.Transparent)
       Id.Set.empty
   in
   let sigma, _ =
-    Typing.type_of ~refresh:true (Global.env ()) !evd
+    Typing.type_of ~refresh:true (Global.env ()) sigma
       (EConstr.of_constr new_principle_type)
   in
-  evd := sigma;
-  let hook = DeclareDef.Hook.make (hook new_principle_type) in
   let lemma =
-    Lemmas.start_lemma ~name:new_princ_name ~poly:false !evd
+    Lemmas.start_lemma ~name:new_princ_name ~poly:false sigma
       (EConstr.of_constr new_principle_type)
   in
-  (*       let _tim1 = System.get_time ()  in *)
   let map (c, u) = EConstr.mkConstU (c, EConstr.EInstance.make u) in
   let lemma, _ =
     Lemmas.by
       (Proofview.V82.tactic (proof_tac (Array.map map funs) mutr_nparams))
       lemma
   in
-  (*       let _tim2 =  System.get_time ()  in *)
-  (*    begin *)
-  (*      let dur1 = System.time_difference tim1 tim2 in *)
-  (*      Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1)); *)
-  (*    end; *)
+  let hook = DeclareDef.Hook.make (hook new_principle_type) in
   let {Declare.entries} =
     Lemmas.pf_fold
       (Declare.close_proof ~opaque ~keep_body_ucst_separate:false)
       lemma
   in
   match entries with
-  | [entry] -> (entry, hook)
+  | [entry] -> (entry, hook, sigma)
   | _ ->
     CErrors.anomaly
       Pp.(
@@ -333,10 +326,11 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
         register_with_sort Sorts.InProp;
         register_with_sort Sorts.InSet )
     in
-    let entry, hook =
-      build_functional_principle evd old_princ_type new_sorts funs i proof_tac
+    let entry, hook, sigma0 =
+      build_functional_principle !evd old_princ_type new_sorts funs i proof_tac
         hook
     in
+    evd := sigma0;
     (* Pr  1278 :
        Don't forget to close the goal if an error is raised !!!!
     *)
@@ -1402,15 +1396,16 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) :
       if Declareops.is_opaque (Global.lookup_constant equation) then Opaque
       else Transparent
   in
-  let entry, _hook =
+  let entry, _hook, sigma0 =
     try
-      build_functional_principle ~opaque evd first_type (Array.of_list sorts)
+      build_functional_principle ~opaque !evd first_type (Array.of_list sorts)
         this_block_funs 0
         (Functional_principles_proofs.prove_princ_for_struct evd false 0
            (Array.of_list (List.map fst funs)))
         (fun _ _ -> ())
     with e when CErrors.noncritical e -> raise (Defining_principle e)
   in
+  evd := sigma0;
   incr i;
   (* The others are just deduced *)
   if List.is_empty other_princ_types then [entry]
@@ -1457,8 +1452,8 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) :
             (* If we reach this point, the two principle are not mutually recursive
                We fall back to the previous method
             *)
-            let entry, _hook =
-              build_functional_principle evd
+            let entry, _hook, sigma0 =
+              build_functional_principle !evd
                 (List.nth other_princ_types (!i - 1))
                 (Array.of_list sorts) this_block_funs !i
                 (Functional_principles_proofs.prove_princ_for_struct evd false
@@ -1466,6 +1461,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) :
                    (Array.of_list (List.map fst funs)))
                 (fun _ _ -> ())
             in
+            evd := sigma0;
             entry
           with Found_type i ->
             let princ_body =
