@@ -1643,10 +1643,12 @@ let find_longest_match prods str =
     | prod :: tl ->
       let pstr = String.trim prod in  (* todo: should be pretrimmed *)
       let clen = common_prefix_len str pstr in
-      if str_pfx = "" || str_pfx <> get_pfx pstr then
+      if pstr = str then
+        pstr, false, clen  (* exact match of full line *)
+      else if str_pfx = "" || str_pfx <> get_pfx pstr then
         longest best multi best_len tl  (* prefixes don't match *)
       else if clen = slen && slen = String.length pstr then
-        pstr, false, clen  (* exact match *)
+        pstr, false, clen  (* exact match on prefix *)
       else if clen > best_len then
         longest pstr false clen tl  (* better match *)
       else if clen = best_len then
