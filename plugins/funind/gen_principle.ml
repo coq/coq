@@ -191,54 +191,35 @@ let prepare_body {Vernacexpr.binders} rt =
   let fun_args, rt' = chop_rlambda_n n rt in
   (fun_args, rt')
 
-let build_functional_principle ?(opaque = Declare.Transparent)
-    (sigma : Evd.evar_map) old_princ_type sorts funs _i proof_tac hook =
+let build_functional_principle (sigma : Evd.evar_map) old_princ_type sorts funs
+    _i proof_tac hook =
   (* First we get the type of the old graph principle *)
   let mutr_nparams =
     (Tactics.compute_elim_sig sigma (EConstr.of_constr old_princ_type))
       .Tactics.nparams
   in
-  (*   let time1 = System.get_time ()  in *)
   let new_principle_type =
     Functional_principles_types.compute_new_princ_type_from_rel
       (Array.map Constr.mkConstU funs)
       sorts old_princ_type
   in
-  (*    let time2 = System.get_time ()  in *)
-  (*    Pp.msgnl (str "computing principle type := " ++ System.fmt_time_difference time1 time2); *)
-  let new_princ_name =
-    Namegen.next_ident_away_in_goal
-      (Id.of_string "___________princ_________")
-      Id.Set.empty
-  in
   let sigma, _ =
     Typing.type_of ~refresh:true (Global.env ()) sigma
       (EConstr.of_constr new_principle_type)
   in
-  let lemma =
-    Lemmas.start_lemma ~name:new_princ_name ~poly:false sigma
-      (EConstr.of_constr new_principle_type)
-  in
   let map (c, u) = EConstr.mkConstU (c, EConstr.EInstance.make u) in
-  let lemma, _ =
-    Lemmas.by
-      (Proofview.V82.tactic (proof_tac (Array.map map funs) mutr_nparams))
-      lemma
+  let ftac =
+    Proofview.V82.tactic (proof_tac (Array.map map funs) mutr_nparams)
   in
+  let env = Global.env () in
+  let uctx = Evd.evar_universe_context sigma in
+  let typ = EConstr.of_constr new_principle_type in
+  let body, typ, univs, _safe, _uctx =
+    Declare.build_by_tactic env ~uctx ~poly:false ~typ ftac
+  in
+  (* uctx was ignored before *)
   let hook = DeclareDef.Hook.make (hook new_principle_type) in
-  let {Declare.entries} =
-    Lemmas.pf_fold
-      (Declare.close_proof ~opaque ~keep_body_ucst_separate:false)
-      lemma
-  in
-  match entries with
-  | [entry] -> (entry, hook, sigma)
-  | _ ->
-    CErrors.anomaly
-      Pp.(
-        str
-          "[build_functional_principle] close_proof returned more than one \
-           proof term")
+  (body, typ, univs, hook, sigma)
 
 let change_property_sort evd toSort princ princName =
   let open Context.Rel.Declaration in
@@ -326,7 +307,7 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
         register_with_sort Sorts.InProp;
         register_with_sort Sorts.InSet )
     in
-    let entry, hook, sigma0 =
+    let body, types, univs, hook, sigma0 =
       build_functional_principle !evd old_princ_type new_sorts funs i proof_tac
         hook
     in
@@ -335,6 +316,7 @@ let generate_functional_principle (evd : Evd.evar_map ref) old_princ_type sorts
        Don't forget to close the goal if an error is raised !!!!
     *)
     let uctx = Evd.evar_universe_context sigma in
+    let entry = Declare.definition_entry ~univs ?types body in
     let (_ : Names.GlobRef.t) =
       DeclareDef.declare_entry ~name:new_princ_name ~hook
         ~scope:(DeclareDef.Global Declare.ImportDefaultBehavior)
@@ -1328,8 +1310,7 @@ let get_funs_constant mp =
     in
     l_const
 
-let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) :
-    Evd.side_effects Declare.proof_entry list =
+let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) : _ list =
   let exception Found_type of int in
   let env = Global.env () in
   let funs = List.map fst fas in
@@ -1396,9 +1377,9 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) :
       if Declareops.is_opaque (Global.lookup_constant equation) then Opaque
       else Transparent
   in
-  let entry, _hook, sigma0 =
+  let body, typ, univs, _hook, sigma0 =
     try
-      build_functional_principle ~opaque !evd first_type (Array.of_list sorts)
+      build_functional_principle !evd first_type (Array.of_list sorts)
         this_block_funs 0
         (Functional_principles_proofs.prove_princ_for_struct evd false 0
            (Array.of_list (List.map fst funs)))
@@ -1408,7 +1389,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) :
   evd := sigma0;
   incr i;
   (* The others are just deduced *)
-  if List.is_empty other_princ_types then [entry]
+  if List.is_empty other_princ_types then [(body, typ, univs, opaque)]
   else
     let other_fun_princ_types =
       let funs = Array.map Constr.mkConstU this_block_funs in
@@ -1417,10 +1398,8 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) :
         (Functional_principles_types.compute_new_princ_type_from_rel funs sorts)
         other_princ_types
     in
-    let first_princ_body = entry.Declare.proof_entry_body in
-    let ctxt, fix =
-      Term.decompose_lam_assum (fst (fst (Future.force first_princ_body)))
-    in
+    let first_princ_body = body in
+    let ctxt, fix = Term.decompose_lam_assum first_princ_body in
     (* the principle has for forall ...., fix .*)
     let (idxs, _), ((_, ta, _) as decl) = Constr.destFix fix in
     let other_result =
@@ -1452,7 +1431,7 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) :
             (* If we reach this point, the two principle are not mutually recursive
                We fall back to the previous method
             *)
-            let entry, _hook, sigma0 =
+            let body, typ, univs, _hook, sigma0 =
               build_functional_principle !evd
                 (List.nth other_princ_types (!i - 1))
                 (Array.of_list sorts) this_block_funs !i
@@ -1462,15 +1441,15 @@ let make_scheme evd (fas : (Constr.pconstant * Sorts.family) list) :
                 (fun _ _ -> ())
             in
             evd := sigma0;
-            entry
+            (body, typ, univs, opaque)
           with Found_type i ->
             let princ_body =
               Termops.it_mkLambda_or_LetIn (Constr.mkFix ((idxs, i), decl)) ctxt
             in
-            Declare.definition_entry ~types:scheme_type princ_body)
+            (princ_body, Some scheme_type, univs, opaque))
         other_fun_princ_types
     in
-    entry :: other_result
+    (body, typ, univs, opaque) :: other_result
 
 (* [derive_correctness funs graphs] create correctness and completeness
    lemmas for each function in [funs] w.r.t. [graphs]
@@ -1523,11 +1502,8 @@ let derive_correctness (funs : Constr.pconstant list) (graphs : inductive list)
         with Not_found ->
           Array.of_list
             (List.map
-               (fun entry ->
-                 ( EConstr.of_constr
-                     (fst (fst (Future.force entry.Declare.proof_entry_body)))
-                 , EConstr.of_constr (Option.get entry.Declare.proof_entry_type)
-                 ))
+               (fun (body, typ, _opaque, _univs) ->
+                 (EConstr.of_constr body, EConstr.of_constr (Option.get typ)))
                (make_scheme evd
                   (Array.map_to_list (fun const -> (const, Sorts.InType)) funs)))
       in
@@ -2221,11 +2197,14 @@ let build_scheme fas =
   in
   let bodies_types = make_scheme evd pconstants in
   List.iter2
-    (fun (princ_id, _, _) def_entry ->
-      ignore
-        (Declare.declare_constant ~name:princ_id
-           ~kind:Decls.(IsProof Theorem)
-           (Declare.DefinitionEntry def_entry));
+    (fun (princ_id, _, _) (body, types, univs, opaque) ->
+      let (_ : Constant.t) =
+        let opaque = if opaque = Proof_global.Opaque then true else false in
+        let def_entry = Declare.definition_entry ~univs ~opaque ?types body in
+        Declare.declare_constant ~name:princ_id
+          ~kind:Decls.(IsProof Theorem)
+          (Declare.DefinitionEntry def_entry)
+      in
       Declare.definition_message princ_id)
     fas bodies_types
 

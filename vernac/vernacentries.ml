@@ -475,7 +475,7 @@ let program_inference_hook env sigma ev =
             Evarutil.is_ground_term sigma concl)
     then None
     else
-      let c, _, _, ctx =
+      let c, _, _, _, ctx =
         Declare.build_by_tactic ~poly:false env ~uctx:(Evd.evar_universe_context sigma) ~typ:concl tac
       in
       Some (Evd.set_universe_context sigma ctx, EConstr.of_constr c)

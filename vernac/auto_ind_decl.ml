@@ -710,7 +710,7 @@ let make_bl_scheme mode mind =
   let uctx = UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ()) in
   let side_eff = side_effect_of_mode mode in
   let bl_goal = EConstr.of_constr bl_goal in
-  let (ans, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff (Global.env()) ~uctx ~typ:bl_goal
+  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff (Global.env()) ~uctx ~typ:bl_goal
     (compute_bl_tact mode (!bl_scheme_kind_aux()) (ind, EConstr.EInstance.empty) lnamesparrec nparrec)
   in
   ([|ans|], ctx)
@@ -843,7 +843,7 @@ let make_lb_scheme mode mind =
   let uctx = UState.make ~lbound:(Global.universes_lbound ()) (Global.universes ()) in
   let side_eff = side_effect_of_mode mode in
   let lb_goal = EConstr.of_constr lb_goal in
-  let (ans, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff (Global.env()) ~uctx ~typ:lb_goal
+  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff (Global.env()) ~uctx ~typ:lb_goal
     (compute_lb_tact mode (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
   in
   ([|ans|], ctx)
@@ -1014,7 +1014,7 @@ let make_eq_decidability mode mind =
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let side_eff = side_effect_of_mode mode in
-  let (ans, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff (Global.env()) ~uctx
+  let (ans, _, _, _, ctx) = Declare.build_by_tactic ~poly:false ~side_eff (Global.env()) ~uctx
       ~typ:(EConstr.of_constr (compute_dec_goal (ind,u) lnamesparrec nparrec))
       (compute_dec_tact ind lnamesparrec nparrec)
   in
