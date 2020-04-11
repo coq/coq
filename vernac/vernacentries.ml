@@ -100,7 +100,7 @@ let show_proof ~pstate =
     Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
   (* We print nothing if there are no goals left *)
   with
-  | Declare.NoSuchGoal
+  | Proof.NoSuchGoal _
   | Option.IsNone ->
     user_err (str "No goals to show.")
 

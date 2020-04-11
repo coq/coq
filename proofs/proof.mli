@@ -143,6 +143,8 @@ exception CannotUnfocusThisWay
    Bullet.push. *)
 exception NoSuchGoals of int * int
 
+exception NoSuchGoal of Names.Id.t option
+
 (* Unfocusing command.
    Raises [FullyUnfocused] if the proof is not focused.
    Raises [CannotUnfocusThisWay] if the proof the unfocusing condition
@@ -238,3 +240,10 @@ val refine_by_tactic
     monad. *)
 
 exception SuggestNoSuchGoals of int * t
+
+(** {6 Helpers to obtain proof state when in an interactive proof } *)
+val get_goal_context_gen : t -> int -> Evd.evar_map * Environ.env
+
+(** [get_proof_context ()] gets the goal context for the first subgoal
+    of the proof *)
+val get_proof_context : t -> Evd.evar_map * Environ.env

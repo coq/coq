@@ -864,44 +864,21 @@ let declare_abstract ~name ~poly ~kind ~sign ~secsign ~opaque ~solve_tac sigma c
   let effs = Evd.concat_side_effects eff effs in
   effs, sigma, lem, args, safe
 
-exception NoSuchGoal
-let () = CErrors.register_handler begin function
-  | NoSuchGoal -> Some Pp.(str "No such goal.")
-  | _ -> None
-end
-
-let get_nth_V82_goal p i =
-  let Proof.{ sigma; goals } = Proof.data p in
-  try { Evd.it = List.nth goals (i-1) ; sigma }
-  with Failure _ -> raise NoSuchGoal
-
-let get_goal_context_gen pf i =
-  let { Evd.it=goal ; sigma=sigma; } = get_nth_V82_goal pf i in
-  (sigma, Refiner.pf_env { Evd.it=goal ; sigma=sigma; })
-
 let get_goal_context pf i =
   let p = get_proof pf in
-  get_goal_context_gen p i
+  Proof.get_goal_context_gen p i
 
 let get_current_goal_context pf =
   let p = get_proof pf in
-  try get_goal_context_gen p 1
+  try Proof.get_goal_context_gen p 1
   with
-  | NoSuchGoal ->
+  | Proof.NoSuchGoal _ ->
     (* spiwack: returning empty evar_map, since if there is no goal,
        under focus, there is no accessible evar either. EJGA: this
        seems strange, as we have pf *)
     let env = Global.env () in
     Evd.from_env env, env
 
-let get_proof_context p =
-  try get_goal_context_gen p 1
-  with
-  | NoSuchGoal ->
-    (* No more focused goals *)
-    let { Proof.sigma } = Proof.data p in
-    sigma, Global.env ()
-
 let get_current_context pf =
   let p = get_proof pf in
-  get_proof_context p
+  Proof.get_proof_context p

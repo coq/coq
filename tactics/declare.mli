@@ -281,8 +281,6 @@ val build_by_tactic
 
 (** {6 Helpers to obtain proof state when in an interactive proof } *)
 
-exception NoSuchGoal
-
 (** [get_goal_context n] returns the context of the [n]th subgoal of
    the current focused proof or raises a [UserError] if there is no
    focused proof or if there is no more subgoals *)
@@ -291,10 +289,6 @@ val get_goal_context : t -> int -> Evd.evar_map * Environ.env
 
 (** [get_current_goal_context ()] works as [get_goal_context 1] *)
 val get_current_goal_context : t -> Evd.evar_map * Environ.env
-
-(** [get_proof_context ()] gets the goal context for the first subgoal
-    of the proof *)
-val get_proof_context : Proof.t -> Evd.evar_map * Environ.env
 
 (** [get_current_context ()] returns the context of the
   current focused goal. If there is no focused goal but there

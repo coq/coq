@@ -63,7 +63,7 @@ exception CannotUnfocusThisWay
 (* Cannot focus on non-existing subgoals *)
 exception NoSuchGoals of int * int
 
-exception NoSuchGoal of Names.Id.t
+exception NoSuchGoal of Names.Id.t option
 
 exception FullyUnfocused
 
@@ -74,8 +74,10 @@ let _ = CErrors.register_handler begin function
     Some Pp.(str "[Focus] No such goal (" ++ int i ++ str").")
   | NoSuchGoals (i,j) ->
     Some Pp.(str "[Focus] Not every goal in range ["++ int i ++ str","++int j++str"] exist.")
-  | NoSuchGoal id ->
+  | NoSuchGoal (Some id) ->
     Some Pp.(str "[Focus] No such goal: " ++ str (Names.Id.to_string id) ++ str ".")
+  | NoSuchGoal None ->
+    Some Pp.(str "[Focus] No such goal.")
   | FullyUnfocused ->
     Some (Pp.str "The proof is not focused")
   | _ -> None
@@ -233,7 +235,7 @@ let focus_id cond inf id pr =
           raise CannotUnfocusThisWay
      end
   | None ->
-     raise (NoSuchGoal id)
+     raise (NoSuchGoal (Some id))
   end
 
 let rec unfocus kind pr () =
@@ -610,3 +612,20 @@ let refine_by_tactic ~name ~poly env sigma ty tac =
   let neff = neff.Evd.seff_private in
   let (ans, _) = Safe_typing.inline_private_constants env ((ans, Univ.ContextSet.empty), neff) in
   ans, sigma
+
+let get_nth_V82_goal p i =
+  let { sigma; goals } = data p in
+  try { Evd.it = List.nth goals (i-1) ; sigma }
+  with Failure _ -> raise (NoSuchGoal None)
+
+let get_goal_context_gen pf i =
+  let { Evd.it=goal ; sigma=sigma; } = get_nth_V82_goal pf i in
+  (sigma, Global.env_of_context (Goal.V82.hyps sigma goal))
+
+let get_proof_context p =
+  try get_goal_context_gen p 1
+  with
+  | NoSuchGoal _ ->
+    (* No more focused goals *)
+    let { sigma } = data p in
+    sigma, Global.env ()

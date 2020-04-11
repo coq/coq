@@ -375,7 +375,7 @@ let exit_on_error =
    point we should consolidate the code *)
 let show_proof_diff_to_pp pstate =
   let p = Option.get pstate in
-  let sigma, env = Declare.get_proof_context p in
+  let sigma, env = Proof.get_proof_context p in
   let pprf = Proof.partial_proof p in
   Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
 
@@ -392,7 +392,7 @@ let show_proof_diff_cmd ~state removed =
         let show_removed = Some removed in
         Pp_diff.diff_pp_combined ~tokenize_string ?show_removed o_pp n_pp
       with
-      | Declare.NoSuchGoal
+      | Proof.NoSuchGoal _
       | Option.IsNone -> n_pp
       | Pp_diff.Diff_Failure msg -> begin
           (* todo: print the unparsable string (if we know it) *)
@@ -403,7 +403,7 @@ let show_proof_diff_cmd ~state removed =
     else
       n_pp
   with
-  | Declare.NoSuchGoal
+  | Proof.NoSuchGoal _
   | Option.IsNone ->
     CErrors.user_err (str "No goals to show.")
 
