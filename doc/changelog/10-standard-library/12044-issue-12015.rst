@@ -1,0 +1,10 @@
+- **Fixed:**
+  Rewrote ``Structures.OrderedTypeEx.String_as_OT.compare``
+  to avoid huge proof terms
+  (Fixes `#12015 <https://github.com/coq/coq/issues/12015>`_,
+  `#12044 <https://github.com/coq/coq/pull/12044>`_,
+  by formalize.eth (formalize@protonmail.com)).
+- **Added:**
+  Added ``Structures.OrderedTypeEx.Ascii_as_OT``
+  (`#12044 <https://github.com/coq/coq/pull/12044>`_,
+  by formalize.eth (formalize@protonmail.com)).
