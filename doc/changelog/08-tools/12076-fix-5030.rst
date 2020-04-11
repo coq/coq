@@ -1,0 +1,4 @@
+- **Fixed:**
+  Fix #5030 (coqchk reports names from opaque modules as axioms)
+  (`#12076 <https://github.com/coq/coq/pull/12076>`_,
+  by Pierre Roux).

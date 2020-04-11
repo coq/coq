@@ -10,4 +10,4 @@
 val memory_stat : bool ref
 val output_context : bool ref
 
-val stats : Environ.env -> unit
+val stats : Environ.env -> Names.Cset.t Names.Cmap.t -> unit

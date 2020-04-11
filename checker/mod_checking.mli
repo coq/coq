@@ -10,4 +10,4 @@
 
 val set_indirect_accessor : Opaqueproof.indirect_accessor -> unit
 
-val check_module : Environ.env -> Names.ModPath.t -> Declarations.module_body -> unit
+val check_module : Environ.env -> Names.Cset.t Names.Cmap.t -> Names.ModPath.t -> Declarations.module_body -> Names.Cset.t Names.Cmap.t
