@@ -39,7 +39,8 @@ let pr_assumptions ass axs =
     hv 2 (str ass ++ str ":" ++ fnl() ++ prlist_with_sep fnl str axs)
 
 let pr_axioms env =
-  let csts = fold_constants (fun c cb acc -> if not (Declareops.constant_has_body cb) then Constant.to_string c :: acc else acc) env [] in
+  let csts = fold_constants (fun c cb acc -> if not (Declareops.constant_has_body cb) then Cset.add c acc else acc) env Cset.empty in
+  let csts = Cset.fold (fun c acc -> Constant.to_string c :: acc) csts [] in
   pr_assumptions "Axioms" csts
 
 let pr_type_in_type env =
