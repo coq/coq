@@ -45,7 +45,7 @@ module LemmaStack = struct
     | Some (l,ls) -> a, (l :: ls)
 
   let get_all_proof_names (pf : t) =
-    let prj x = Lemmas.pf_fold Declare.get_proof x in
+    let prj x = Lemmas.pf_fold Declare.Proof.get_proof x in
     let (pn, pns) = map Proof.(function pf -> (data (prj pf)).name) pf in
     pn :: pns
 
@@ -145,18 +145,18 @@ module Declare = struct
     | Some x -> s_lemmas := Some (LemmaStack.map_top_pstate ~f x)
 
   let there_are_pending_proofs () = !s_lemmas <> None
-  let get_open_goals () = cc get_open_goals
+  let get_open_goals () = cc Proof.get_open_goals
 
-  let give_me_the_proof_opt () = Option.map (LemmaStack.with_top_pstate ~f:get_proof) !s_lemmas
-  let give_me_the_proof () = cc get_proof
-  let get_current_proof_name () = cc get_proof_name
+  let give_me_the_proof_opt () = Option.map (LemmaStack.with_top_pstate ~f:Proof.get_proof) !s_lemmas
+  let give_me_the_proof () = cc Proof.get_proof
+  let get_current_proof_name () = cc Proof.get_proof_name
 
-  let map_proof f = dd (map_proof f)
+  let map_proof f = dd (Proof.map_proof f)
   let with_current_proof f =
     match !s_lemmas with
     | None -> raise NoCurrentProof
     | Some stack ->
-      let pf, res = LemmaStack.with_top_pstate stack ~f:(map_fold_proof_endline f) in
+      let pf, res = LemmaStack.with_top_pstate stack ~f:(Proof.map_fold_proof_endline f) in
       let stack = LemmaStack.map_top_pstate stack ~f:(fun _ -> pf) in
       s_lemmas := Some stack;
       res
@@ -176,7 +176,7 @@ module Declare = struct
                         Lemmas.Internal.get_info pt)
 
   let discard_all () = s_lemmas := None
-  let update_global_env () = dd (update_global_env)
+  let update_global_env () = dd (Proof.update_global_env)
 
   let get_current_context () = cc Declare.get_current_context
 

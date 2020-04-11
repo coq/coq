@@ -882,3 +882,20 @@ let get_current_goal_context pf =
 let get_current_context pf =
   let p = get_proof pf in
   Proof.get_proof_context p
+
+module Proof = struct
+  type nonrec t = t
+  let get_proof = get_proof
+  let get_proof_name = get_proof_name
+  let get_used_variables = get_used_variables
+  let get_universe_decl = get_universe_decl
+  let get_initial_euctx = get_initial_euctx
+  let map_proof = map_proof
+  let map_fold_proof = map_fold_proof
+  let map_fold_proof_endline = map_fold_proof_endline
+  let set_endline_tactic = set_endline_tactic
+  let set_used_variables = set_used_variables
+  let compact = compact_the_proof
+  let update_global_env = update_global_env
+  let get_open_goals = get_open_goals
+end

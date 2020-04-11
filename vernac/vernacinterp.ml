@@ -209,7 +209,7 @@ and interp_control ~st ({ CAst.v = cmd } as vernac) =
        let before_univs = Global.universes () in
        let pstack = interp_expr ~atts:cmd.attrs ~st cmd.expr in
        if before_univs == Global.universes () then pstack
-       else Option.map (Vernacstate.LemmaStack.map_top_pstate ~f:Declare.update_global_env) pstack)
+       else Option.map (Vernacstate.LemmaStack.map_top_pstate ~f:Declare.Proof.update_global_env) pstack)
     ~st
 
 (* XXX: This won't properly set the proof mode, as of today, it is

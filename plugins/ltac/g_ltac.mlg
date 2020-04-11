@@ -364,7 +364,7 @@ let print_info_trace =
 
 let vernac_solve ~pstate n info tcom b =
   let open Goal_select in
-  let pstate, status = Declare.map_fold_proof_endline (fun etac p ->
+  let pstate, status = Declare.Proof.map_fold_proof_endline (fun etac p ->
       let with_end_tac = if b then Some etac else None in
       let global = match n with SelectAll | SelectList _ -> true | _ -> false in
       let info = Option.append info (print_info_trace ()) in

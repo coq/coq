@@ -62,14 +62,14 @@ end
 
 (* Proofs with a save constant function *)
 type t =
-  { proof : Declare.t
+  { proof : Declare.Proof.t
   ; info : Info.t
   }
 
 let pf_map f pf = { pf with proof = f pf.proof }
 let pf_fold f pf = f pf.proof
 
-let set_endline_tactic t = pf_map (Declare.set_endline_tactic t)
+let set_endline_tactic t = pf_map (Declare.Proof.set_endline_tactic t)
 
 (* To be removed *)
 module Internal = struct
@@ -173,7 +173,7 @@ let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recgua
     (* start_lemma has the responsibility to add (name, impargs, typ)
        to thms, once Info.t is more refined this won't be necessary *)
     let lemma = start_lemma ~name ~impargs ~poly ~udecl ~info sigma (EConstr.of_constr typ) in
-    pf_map (Declare.map_proof (fun p ->
+    pf_map (Declare.Proof.map_proof (fun p ->
         pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)) lemma
 
 (************************************************************************)
@@ -275,7 +275,7 @@ let get_keep_admitted_vars =
 
 let compute_proof_using_for_admitted proof typ pproofs =
   if not (get_keep_admitted_vars ()) then None
-  else match Declare.get_used_variables proof, pproofs with
+  else match Declare.Proof.get_used_variables proof, pproofs with
     | Some _ as x, _ -> x
     | None, pproof :: _ ->
       let env = Global.env () in
@@ -291,17 +291,17 @@ let finish_admitted ~info ~uctx pe =
   ()
 
 let save_lemma_admitted ~(lemma : t) : unit =
-  let udecl = Declare.get_universe_decl lemma.proof in
-  let Proof.{ poly; entry } = Proof.data (Declare.get_proof lemma.proof) in
+  let udecl = Declare.Proof.get_universe_decl lemma.proof in
+  let Proof.{ poly; entry } = Proof.data (Declare.Proof.get_proof lemma.proof) in
   let typ = match Proofview.initial_goals entry with
     | [typ] -> snd typ
     | _ -> CErrors.anomaly ~label:"Lemmas.save_lemma_admitted" (Pp.str "more than one statement.")
   in
   let typ = EConstr.Unsafe.to_constr typ in
-  let proof = Declare.get_proof lemma.proof in
+  let proof = Declare.Proof.get_proof lemma.proof in
   let pproofs = Proof.partial_proof proof in
   let sec_vars = compute_proof_using_for_admitted lemma.proof typ pproofs in
-  let uctx = Declare.get_initial_euctx lemma.proof in
+  let uctx = Declare.Proof.get_initial_euctx lemma.proof in
   let univs = UState.check_univ_decl ~poly uctx udecl in
   finish_admitted ~info:lemma.info ~uctx (sec_vars, (typ, univs), None)
 

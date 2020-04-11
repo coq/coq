@@ -31,31 +31,43 @@ open Entries
 
  *)
 
-(** [Declare.t] Interactive, unsaved constant/proof. *)
-type t
+(** [Declare.Proof.t] Construction of constants using interactive proofs. *)
+module Proof : sig
 
-(* Should be moved into a proper view *)
-val get_proof : t -> Proof.t
-val get_proof_name : t -> Names.Id.t
+  type t
 
-(** XXX: These 3 are only used in lemmas  *)
-val get_used_variables : t -> Names.Id.Set.t option
-val get_universe_decl : t -> UState.universe_decl
-val get_initial_euctx : t -> UState.t
+  (** XXX: These are internal and will go away from publis API once
+     lemmas is merged here *)
+  val get_proof : t -> Proof.t
+  val get_proof_name : t -> Names.Id.t
 
-val compact_the_proof : t -> t
+  (** XXX: These 3 are only used in lemmas  *)
+  val get_used_variables : t -> Names.Id.Set.t option
+  val get_universe_decl : t -> UState.universe_decl
+  val get_initial_euctx : t -> UState.t
 
-val map_proof : (Proof.t -> Proof.t) -> t -> t
-val map_fold_proof : (Proof.t -> Proof.t * 'a) -> t -> t * 'a
-val map_fold_proof_endline : (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> t -> t * 'a
+  val map_proof : (Proof.t -> Proof.t) -> t -> t
+  val map_fold_proof : (Proof.t -> Proof.t * 'a) -> t -> t * 'a
+  val map_fold_proof_endline : (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> t -> t * 'a
 
-(** Sets the tactic to be used when a tactic line is closed with [...] *)
-val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
+  (** Sets the tactic to be used when a tactic line is closed with [...] *)
+  val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
 
-(** Sets the section variables assumed by the proof, returns its closure
- * (w.r.t. type dependencies and let-ins covered by it) *)
-val set_used_variables : t ->
-  Names.Id.t list -> Constr.named_context * t
+  (** Sets the section variables assumed by the proof, returns its closure
+   * (w.r.t. type dependencies and let-ins covered by it) *)
+  val set_used_variables : t ->
+    Names.Id.t list -> Constr.named_context * t
+
+  val compact : t -> t
+
+  (** Update the proofs global environment after a side-effecting command
+      (e.g. a sublemma definition) has been run inside it. Assumes
+      there_are_pending_proofs. *)
+  val update_global_env : t -> t
+
+  val get_open_goals : t -> int
+
+end
 
 type opacity_flag = Opaque | Transparent
 
@@ -71,7 +83,7 @@ val start_proof
   -> poly:bool
   -> Evd.evar_map
   -> (Environ.env * EConstr.types) list
-  -> t
+  -> Proof.t
 
 (** Like [start_proof] except that there may be dependencies between
     initial goals. *)
@@ -80,12 +92,7 @@ val start_dependent_proof
   -> udecl:UState.universe_decl
   -> poly:bool
   -> Proofview.telescope
-  -> t
-
-(** Update the proofs global environment after a side-effecting command
-  (e.g. a sublemma definition) has been run inside it. Assumes
-  there_are_pending_proofs. *)
-val update_global_env : t -> t
+  -> Proof.t
 
 (** Proof entries represent a proof that has been finished, but still
    not registered with the kernel.
@@ -113,7 +120,7 @@ type proof_object = private
   (** universe state *)
   }
 
-val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> t -> proof_object
+val close_proof : opaque:opacity_flag -> keep_body_ucst_separate:bool -> Proof.t -> proof_object
 
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 
@@ -243,19 +250,17 @@ end
 type closed_proof_output
 
 (** Requires a complete proof. *)
-val return_proof : t -> closed_proof_output
+val return_proof : Proof.t -> closed_proof_output
 
 (** An incomplete proof is allowed (no error), and a warn is given if
    the proof is complete. *)
-val return_partial_proof : t -> closed_proof_output
-val close_future_proof : feedback_id:Stateid.t -> t -> closed_proof_output Future.computation -> proof_object
-
-val get_open_goals : t -> int
+val return_partial_proof : Proof.t -> closed_proof_output
+val close_future_proof : feedback_id:Stateid.t -> Proof.t -> closed_proof_output Future.computation -> proof_object
 
 (** [by tac] applies tactic [tac] to the 1st subgoal of the current
     focused proof.
     Returns [false] if an unsafe tactic has been used. *)
-val by : unit Proofview.tactic -> t -> t * bool
+val by : unit Proofview.tactic -> Proof.t -> Proof.t * bool
 
 (** Declare abstract constant; will check no evars are possible; *)
 val declare_abstract :
@@ -285,14 +290,14 @@ val build_by_tactic
    the current focused proof or raises a [UserError] if there is no
    focused proof or if there is no more subgoals *)
 
-val get_goal_context : t -> int -> Evd.evar_map * Environ.env
+val get_goal_context : Proof.t -> int -> Evd.evar_map * Environ.env
 
 (** [get_current_goal_context ()] works as [get_goal_context 1] *)
-val get_current_goal_context : t -> Evd.evar_map * Environ.env
+val get_current_goal_context : Proof.t -> Evd.evar_map * Environ.env
 
 (** [get_current_context ()] returns the context of the
   current focused goal. If there is no focused goal but there
   is a proof in progress, it returns the corresponding evar_map.
   If there is no pending proof then it returns the current global
   environment and empty evar_map. *)
-val get_current_context : t -> Evd.evar_map * Environ.env
+val get_current_context : Proof.t -> Evd.evar_map * Environ.env

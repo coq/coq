@@ -31,7 +31,7 @@ val register_struct
 val register_notation : ?local:bool -> sexpr list -> int option ->
   raw_tacexpr -> unit
 
-val perform_eval : pstate:Declare.t option -> raw_tacexpr -> unit
+val perform_eval : pstate:Declare.Proof.t option -> raw_tacexpr -> unit
 
 (** {5 Notations} *)
 
@@ -53,7 +53,7 @@ val print_ltac : Libnames.qualid -> unit
 (** {5 Eval loop} *)
 
 (** Evaluate a tactic expression in the current environment *)
-val call : pstate:Declare.t -> default:bool -> raw_tacexpr -> Declare.t
+val call : pstate:Declare.Proof.t -> default:bool -> raw_tacexpr -> Declare.Proof.t
 
 (** {5 Toplevel exceptions} *)
 

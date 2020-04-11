@@ -1164,7 +1164,7 @@ end = struct (* {{{ *)
 
   let get_proof ~doc id =
     match state_of_id ~doc id with
-    | `Valid (Some vstate) -> Option.map (Vernacstate.LemmaStack.with_top_pstate ~f:Declare.get_proof) vstate.Vernacstate.lemmas
+    | `Valid (Some vstate) -> Option.map (Vernacstate.LemmaStack.with_top_pstate ~f:Declare.Proof.get_proof) vstate.Vernacstate.lemmas
     | _ -> None
 
   let undo_vernac_classifier v ~doc =

@@ -25,8 +25,8 @@ module LemmaStack : sig
   val pop : t -> Lemmas.t * t option
   val push : t option -> Lemmas.t -> t
 
-  val map_top_pstate : f:(Declare.t -> Declare.t) -> t -> t
-  val with_top_pstate : t -> f:(Declare.t -> 'a ) -> 'a
+  val map_top_pstate : f:(Declare.Proof.t -> Declare.Proof.t) -> t -> t
+  val with_top_pstate : t -> f:(Declare.Proof.t -> 'a ) -> 'a
 
 end
 
@@ -89,7 +89,7 @@ module Declare : sig
   val get : unit -> LemmaStack.t option
   val set : LemmaStack.t option -> unit
 
-  val get_pstate : unit -> Declare.t option
+  val get_pstate : unit -> Declare.Proof.t option
 
   val freeze : marshallable:bool -> LemmaStack.t option
   val unfreeze : LemmaStack.t -> unit

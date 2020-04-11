@@ -795,7 +795,7 @@ let perform_eval ~pstate e =
       Goal_select.SelectAll, Proof.start ~name ~poly sigma []
     | Some pstate ->
       Goal_select.get_default_goal_selector (),
-      Declare.get_proof pstate
+      Declare.Proof.get_proof pstate
   in
   let v = match selector with
   | Goal_select.SelectNth i -> Proofview.tclFOCUS i i v
@@ -899,7 +899,7 @@ let print_ltac qid =
 (** Calling tactics *)
 
 let solve ~pstate default tac =
-  let pstate, status = Declare.map_fold_proof_endline begin fun etac p ->
+  let pstate, status = Declare.Proof.map_fold_proof_endline begin fun etac p ->
     let with_end_tac = if default then Some etac else None in
     let g = Goal_select.get_default_goal_selector () in
     let (p, status) = Proof.solve g None tac ?with_end_tac p in

@@ -19,10 +19,10 @@ type t
 val set_endline_tactic : Genarg.glob_generic_argument -> t -> t
 (** [set_endline_tactic tac lemma] set ending tactic for [lemma] *)
 
-val pf_map : (Declare.t -> Declare.t) -> t -> t
+val pf_map : (Declare.Proof.t -> Declare.Proof.t) -> t -> t
 (** [pf_map f l] map the underlying proof object *)
 
-val pf_fold : (Declare.t -> 'a) -> t -> 'a
+val pf_fold : (Declare.Proof.t -> 'a) -> t -> 'a
 (** [pf_fold f l] fold over the underlying proof object *)
 
 val by : unit Proofview.tactic -> t -> t * bool
