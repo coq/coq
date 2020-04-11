@@ -257,7 +257,7 @@ Activating the Printing of Coercions
    :name: Printing Coercion
 
    Specifies a set of qualids for which coercions are always displayed.  Use the
-   :cmd:`Add @table` and :cmd:`Remove @table` commands to update the set of qualids.
+   :cmd:`Add` and :cmd:`Remove` commands to update the set of qualids.
 
 .. _coercions-classes-as-records:
 

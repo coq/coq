@@ -112,13 +112,13 @@ You can override the display format for specified types by adding entries to the
    :name: Printing Record
 
    Specifies a set of qualids which are displayed as records.  Use the
-   :cmd:`Add @table` and :cmd:`Remove @table` commands to update the set of qualids.
+   :cmd:`Add` and :cmd:`Remove` commands to update the set of qualids.
 
 .. table:: Printing Constructor @qualid
    :name: Printing Constructor
 
    Specifies a set of qualids which are displayed as constructors.  Use the
-   :cmd:`Add @table` and :cmd:`Remove @table` commands to update the set of qualids.
+   :cmd:`Add` and :cmd:`Remove` commands to update the set of qualids.
 
 This syntax can also be used for pattern matching.
 

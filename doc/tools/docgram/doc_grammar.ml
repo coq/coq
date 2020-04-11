@@ -189,6 +189,9 @@ let rec db_output_prodn = function
 and db_out_list prod = sprintf "(%s)" (map_and_concat db_output_prodn prod)
 and db_out_prods prods = sprintf "( %s )" (map_and_concat ~delim:" | " db_out_list prods)
 
+(* identify special chars that don't get a trailing space in output *)
+let omit_space s = List.mem s ["?"; "."; "#"]
+
 let rec output_prod plist need_semi = function
     | Sterm s -> if plist then sprintf "%s" s else sprintf "\"%s\"" s
     | Snterm s ->
@@ -225,7 +228,7 @@ let rec output_prod plist need_semi = function
 
 and prod_to_str_r plist prod =
   match prod with
-  | Sterm s :: Snterm "ident" :: tl when List.mem s ["?"; "."] && plist ->
+  | Sterm s :: Snterm "ident" :: tl when omit_space s && plist ->
     (sprintf "%s`ident`" s) :: (prod_to_str_r plist tl)
   | p :: tl ->
     let need_semi =
@@ -282,7 +285,7 @@ and output_sep sep =
 
 and prod_to_prodn_r prod =
   match prod with
-  | Sterm s :: Snterm "ident" :: tl when List.mem s ["?"; "."] ->
+  | Sterm s :: Snterm "ident" :: tl when omit_space s ->
     (sprintf "%s@ident" s) :: (prod_to_prodn_r tl)
   | p :: tl -> (output_prodn p) :: (prod_to_prodn_r tl)
   | [] -> []
@@ -1621,6 +1624,7 @@ let open_temp_bin file =
   open_out_bin (sprintf "%s.new" file)
 
 let match_cmd_regex = Str.regexp "[a-zA-Z0-9_ ]+"
+let match_subscripts = Str.regexp "__[a-zA-Z0-9]+"
 
 let find_longest_match prods str =
   let get_pfx str = String.trim (if Str.string_match match_cmd_regex str 0 then Str.matched_string str else "") in
@@ -1634,19 +1638,26 @@ let find_longest_match prods str =
     in
     aux 0
   in
+  let remove_subscrs str = Str.global_replace match_subscripts "" str in
 
   let slen = String.length str in
   let str_pfx = get_pfx str in
+  let no_subscrs = remove_subscrs str in
+  let has_subscrs = no_subscrs <> str in
   let rec longest best multi best_len prods =
     match prods with
     | [] -> best, multi, best_len
     | prod :: tl ->
       let pstr = String.trim prod in  (* todo: should be pretrimmed *)
       let clen = common_prefix_len str pstr in
-      if str_pfx = "" || str_pfx <> get_pfx pstr then
+      if has_subscrs && no_subscrs = pstr then
+        str, false, clen (* exact match ignoring subscripts *)
+      else if pstr = str then
+        pstr, false, clen  (* exact match of full line *)
+      else if str_pfx = "" || str_pfx <> get_pfx pstr then
         longest best multi best_len tl  (* prefixes don't match *)
       else if clen = slen && slen = String.length pstr then
-        pstr, false, clen  (* exact match *)
+        pstr, false, clen  (* exact match on prefix *)
       else if clen > best_len then
         longest pstr false clen tl  (* better match *)
       else if clen = best_len then
@@ -1654,7 +1665,11 @@ let find_longest_match prods str =
       else
         longest best multi best_len tl  (* worse match *)
   in
-  longest "" false 0 prods
+  let mtch, multi, _ = longest "" false 0 prods in
+  if has_subscrs && mtch <> str then
+    "", multi, mtch (* no match for subscripted entry *)
+  else
+    mtch, multi, ""
 
 type seen = {
   nts: (string * int) NTMap.t;
@@ -1753,8 +1768,14 @@ let process_rst g file args seen tac_prods cmd_prods =
 (*  in*)
 
   let cmd_replace_files = [
+    "doc/sphinx/language/core/records.rst";
+    "doc/sphinx/language/core/sections.rst";
+    "doc/sphinx/language/extensions/implicit-arguments.rst";
+    "doc/sphinx/language/using/libraries/funind.rst";
+
     "doc/sphinx/language/gallina-specification-language.rst";
-    "doc/sphinx/language/gallina-extensions.rst"
+    "doc/sphinx/language/gallina-extensions.rst";
+    "doc/sphinx/proof-engine/vernacular-commands.rst"
   ]
   in
 
@@ -1763,11 +1784,14 @@ let process_rst g file args seen tac_prods cmd_prods =
       if StringSet.is_empty prods || not (List.mem file cmd_replace_files) then
         rhs (* no change *)
       else
-        let mtch, multi, len = find_longest_match prods rhs in
+        let mtch, multi, best = find_longest_match prods rhs in
+(*        Printf.printf "mtch = '%s'  rhs = '%s'\n" mtch rhs;*)
         if mtch = rhs then
           rhs (* no change *)
         else if mtch = "" then begin
           warn "%s line %d: NO MATCH `%s`\n" file !linenum rhs;
+          if best <> "" then
+            warn "%s line %d: BEST `%s`\n" file !linenum best;
           rhs
         end else if multi then begin
           warn "%s line %d: MULTIMATCH `%s`\n" file !linenum rhs;

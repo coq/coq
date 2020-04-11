@@ -51,6 +51,11 @@ specified, the default selector is used.
      tactic_invocation : `toplevel_selector` : `tactic`.
                        : `tactic`.
 
+.. todo: fully describe selectors.  At the moment, ltac has a fairly complete description
+
+.. todo: mention selectors can be applied to some commands, such as
+   Check, Search, SearchHead, SearchPattern, SearchRewrite.
+
 .. opt:: Default Goal Selector "@toplevel_selector"
    :name: Default Goal Selector
 
@@ -3032,8 +3037,8 @@ following:
 For backward compatibility, the notation :n:`in {+ @ident}` performs
 the conversion in hypotheses :n:`{+ @ident}`.
 
-.. tacn:: cbv {* @flag}
-          lazy {* @flag}
+.. tacn:: {? @strategy_flag }
+          lazy {? @strategy_flag }
    :name: cbv; lazy
 
    These parameterized reduction tactics apply to any goal and perform

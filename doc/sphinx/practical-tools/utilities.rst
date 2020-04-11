@@ -42,6 +42,8 @@ As of today it is possible to build Coq projects using two tools:
 - coq_makefile, which is distributed by Coq and is based on generating a makefile,
 - Dune, the standard OCaml build tool, which, since version 1.9, supports building Coq libraries.
 
+.. _coq_makefile:
+
 Building a |Coq| project with coq_makefile
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

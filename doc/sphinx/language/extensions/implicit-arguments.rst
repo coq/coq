@@ -273,14 +273,14 @@ Declaring Implicit Arguments
    .. prodn::
       smart_qualid ::= @qualid
       | @by_notation
-      by_notation ::= @string {? % @ident }
+      by_notation ::= @string {? % @scope }
       argument_spec_block ::= @argument_spec
       | /
       | &
-      | ( {+ @argument_spec } ) {? % @ident }
-      | [ {+ @argument_spec } ] {? % @ident }
-      | %{ {+ @argument_spec } %} {? % @ident }
-      argument_spec ::= {? ! } @name {? % @ident }
+      | ( {+ @argument_spec } ) {? % @scope }
+      | [ {+ @argument_spec } ] {? % @scope }
+      | %{ {+ @argument_spec } %} {? % @scope }
+      argument_spec ::= {? ! } @name {? % @scope }
       more_implicits_block ::= @name
       | [ {+ @name } ]
       | %{ {+ @name } %}

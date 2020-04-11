@@ -380,7 +380,7 @@ Compiled libraries checker (coqchk)
 ----------------------------------------
 
 The ``coqchk`` command takes a list of library paths as argument, described either
-by their logical name or by their physical filename, hich must end in ``.vo``. The
+by their logical name or by their physical filename, which must end in ``.vo``. The
 corresponding compiled libraries (``.vo`` files) are searched in the path,
 recursively processing the libraries they depend on. The content of all these
 libraries is then type checked. The effect of ``coqchk`` is only to return with

@@ -161,7 +161,7 @@ is described in Chapter :ref:`syntaxextensionsandinterpretationscopes`.
    one_term ::= @term1
    | @ @qualid {? @univ_annot }
    term1 ::= @term_projection
-   | @term0 % @ident
+   | @term0 % @scope
    | @term0
    term0 ::= @qualid {? @univ_annot }
    | @sort
@@ -373,12 +373,10 @@ the propositional implication and function types.
 Applications
 ------------
 
-The expression :n:`@term__fun @term` denotes the application of
-:n:`@term__fun` (which is expected to have a function type) to
-:token:`term`.
+:n:`@term__fun @term` denotes applying the function :n:`@term__fun` to :token:`term`.
 
-The expression :n:`@term__fun {+ @term__i }` denotes the application
-of the term :n:`@term__fun` to the arguments :n:`@term__i`.  It is
+:n:`@term__fun {+ @term__i }` denotes applying
+:n:`@term__fun` to the arguments :n:`@term__i`.  It is
 equivalent to :n:`( … ( @term__fun @term__1 ) … ) @term__n`:
 associativity is to the left.
 
@@ -458,7 +456,7 @@ Definition by cases: match
    pattern10 ::= @pattern1 as @name
    | @pattern1 {* @pattern1 }
    | @ @qualid {* @pattern1 }
-   pattern1 ::= @pattern0 % @ident
+   pattern1 ::= @pattern0 % @scope
    | @pattern0
    pattern0 ::= @qualid
    | %{%| {* @qualid := @pattern } %|%}
@@ -636,13 +634,18 @@ co-recursion. It is the local counterpart of the :cmd:`CoFixpoint` command. When
 The Vernacular
 ==============
 
-.. insertprodn vernacular vernacular
+.. insertprodn vernacular sentence
 
 .. prodn::
-   vernacular ::= {* {? @all_attrs } {| @command | @ltac_expr } . }
+   vernacular ::= {* @sentence }
+   sentence ::= {? @all_attrs } @command .
+   | {? @all_attrs } {? @num : } @query_command .
+   | {? @all_attrs } {? @toplevel_selector } @ltac_expr {| . | ... }
+   | @control_command
 
-The top-level input to |Coq| is a series of :production:`command`\s and :production:`tactic`\s,
-each terminated with a period
+The top-level input to |Coq| is a series of :n:`@sentence`\s,
+which are :production:`tactic`\s or :production:`command`\s,
+generally terminated with a period
 and optionally decorated with :ref:`gallina-attributes`.  :n:`@ltac_expr` syntax supports both simple
 and compound tactics.  For example: ``split`` is a simple tactic while ``split; auto`` combines two
 simple tactics.
@@ -718,7 +721,7 @@ has type :n:`@type`.
    :name: @ident already exists. (Axiom)
    :undocumented:
 
-.. warn:: @ident is declared as a local axiom [local-declaration,scope]
+.. warn:: @ident is declared as a local axiom
 
    Warning generated when using :cmd:`Variable` or its equivalent
    instead of :n:`Local Parameter` or its equivalent.

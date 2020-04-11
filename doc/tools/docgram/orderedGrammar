@@ -47,7 +47,7 @@ one_term: [
 
 term1: [
 | term_projection
-| term0 "%" ident
+| term0 "%" scope
 | term0
 ]
 
@@ -159,7 +159,20 @@ where: [
 ]
 
 vernacular: [
-| LIST0 ( OPT all_attrs [ command | ltac_expr ] "." )
+| LIST0 sentence
+]
+
+sentence: [
+| OPT all_attrs command "."
+| OPT all_attrs OPT ( num ":" ) query_command "."
+| OPT all_attrs OPT toplevel_selector ltac_expr [ "." | "..." ]
+| control_command
+]
+
+control_command: [
+]
+
+query_command: [
 ]
 
 tacticals: [
@@ -330,7 +343,7 @@ pattern10: [
 ]
 
 pattern1: [
-| pattern0 "%" ident
+| pattern0 "%" scope
 | pattern0
 ]
 
@@ -365,53 +378,6 @@ decl_notations: [
 
 decl_notation: [
 | string ":=" one_term OPT ( "(" "only" "parsing" ")" ) OPT [ ":" ident ]
-]
-
-register_token: [
-| "#int63_type"
-| "#float64_type"
-| "#int63_head0"
-| "#int63_tail0"
-| "#int63_add"
-| "#int63_sub"
-| "#int63_mul"
-| "#int63_div"
-| "#int63_mod"
-| "#int63_lsr"
-| "#int63_lsl"
-| "#int63_land"
-| "#int63_lor"
-| "#int63_lxor"
-| "#int63_addc"
-| "#int63_subc"
-| "#int63_addcarryc"
-| "#int63_subcarryc"
-| "#int63_mulc"
-| "#int63_diveucl"
-| "#int63_div21"
-| "#int63_addmuldiv"
-| "#int63_eq"
-| "#int63_lt"
-| "#int63_le"
-| "#int63_compare"
-| "#float64_opp"
-| "#float64_abs"
-| "#float64_eq"
-| "#float64_lt"
-| "#float64_le"
-| "#float64_compare"
-| "#float64_classify"
-| "#float64_add"
-| "#float64_sub"
-| "#float64_mul"
-| "#float64_div"
-| "#float64_sqrt"
-| "#float64_of_int63"
-| "#float64_normfr_mantissa"
-| "#float64_frshiftexp"
-| "#float64_ldshiftexp"
-| "#float64_next_up"
-| "#float64_next_down"
 ]
 
 thm_token: [
@@ -601,20 +567,20 @@ smart_qualid: [
 ]
 
 by_notation: [
-| string OPT [ "%" ident ]
+| string OPT [ "%" scope ]
 ]
 
 argument_spec_block: [
 | argument_spec
 | "/"
 | "&"
-| "(" LIST1 argument_spec ")" OPT ( "%" ident )
-| "[" LIST1 argument_spec "]" OPT ( "%" ident )
-| "{" LIST1 argument_spec "}" OPT ( "%" ident )
+| "(" LIST1 argument_spec ")" OPT ( "%" scope )
+| "[" LIST1 argument_spec "]" OPT ( "%" scope )
+| "{" LIST1 argument_spec "}" OPT ( "%" scope )
 ]
 
 argument_spec: [
-| OPT "!" name OPT ( "%" ident )
+| OPT "!" name OPT ( "%" scope )
 ]
 
 more_implicits_block: [
@@ -637,10 +603,14 @@ arguments_modifier: [
 | "extra" "scopes"
 ]
 
+scope: [
+| ident
+]
+
 strategy_level: [
-| "expand"
 | "opaque"
 | int
+| "expand"
 | "transparent"
 ]
 
@@ -660,12 +630,16 @@ command: [
 | "Cd" OPT string
 | "Load" OPT "Verbose" [ string | ident ]
 | "Declare" "ML" "Module" LIST1 string
-| "Locate" locatable
+| "Locate" smart_qualid
+| "Locate" "Term" smart_qualid
+| "Locate" "Module" qualid
+| "Locate" "Ltac" qualid
+| "Locate" "Library" qualid
+| "Locate" "File" string
 | "Add" "LoadPath" string "as" dirpath
 | "Add" "Rec" "LoadPath" string "as" dirpath
 | "Remove" "LoadPath" string
 | "Type" term
-| "Print" "Term" smart_qualid OPT ( "@{" LIST0 name "}" )
 | "Print" "All"
 | "Print" "Section" qualid
 | "Print" "Grammar" ident
@@ -702,18 +676,17 @@ command: [
 | "Print" "Strategy" smart_qualid
 | "Print" "Strategies"
 | "Print" "Registered"
-| "Print" smart_qualid OPT ( "@{" LIST0 name "}" )
+| "Print" OPT "Term" smart_qualid OPT univ_name_list
 | "Print" "Module" "Type" qualid
 | "Print" "Module" qualid
 | "Print" "Namespace" dirpath
 | "Inspect" num
 | "Add" "ML" "Path" string
-| OPT "Export" "Set" LIST1 ident OPT [ int | string ]
-| OPT "Export" "Unset" LIST1 ident
-| "Print" "Table" LIST1 ident
-| "Add" ident OPT ident LIST1 [ qualid | string ]
-| "Test" LIST1 ident OPT ( "for" LIST1 [ qualid | string ] )
-| "Remove" OPT ident ident LIST1 [ qualid | string ]
+| OPT "Export" "Set" setting_name
+| "Print" "Table" setting_name
+| "Add" setting_name LIST1 [ qualid | string ]
+| "Test" setting_name OPT ( "for" LIST1 [ qualid | string ] )
+| "Remove" setting_name LIST1 [ qualid | string ]
 | "Write" "State" [ ident | string ]
 | "Restore" "State" [ ident | string ]
 | "Reset" "Initial"
@@ -806,7 +779,6 @@ command: [
 | "Tactic" "Notation" OPT ( "(" "at" "level" num ")" ) LIST1 ltac_production_item ":=" ltac_expr
 | "Print" "Rewrite" "HintDb" ident
 | "Print" "Ltac" qualid
-| "Locate" "Ltac" qualid
 | "Ltac" tacdef_body LIST0 ( "with" tacdef_body )
 | "Print" "Ltac" "Signatures"
 | "Set" "Firstorder" "Solver" ltac_expr
@@ -861,7 +833,7 @@ command: [
 | "Combined" "Scheme" ident "from" LIST1 ident SEP ","
 | "Register" qualid "as" qualid
 | "Register" "Inline" qualid
-| "Primitive" ident OPT [ ":" term ] ":=" register_token
+| "Primitive" ident OPT [ ":" term ] ":=" "#" ident
 | "Universe" LIST1 ident
 | "Universes" LIST1 ident
 | "Constraint" LIST1 univ_constraint SEP ","
@@ -876,7 +848,7 @@ command: [
 | "End" ident
 | "Collection" ident ":=" section_subset_expr
 | "Require" OPT [ "Import" | "Export" ] LIST1 qualid
-| "From" qualid "Require" OPT [ "Import" | "Export" ] LIST1 qualid
+| "From" dirpath "Require" OPT [ "Import" | "Export" ] LIST1 qualid
 | "Import" LIST1 qualid
 | "Export" LIST1 qualid
 | "Include" module_type_inl LIST0 ( "<+" module_expr_inl )
@@ -898,6 +870,8 @@ command: [
 | "Arguments" smart_qualid LIST0 argument_spec_block LIST0 [ "," LIST0 more_implicits_block ] OPT [ ":" LIST1 arguments_modifier SEP "," ]
 | "Implicit" [ "Type" | "Types" ] reserv_list
 | "Generalizable" [ [ "Variable" | "Variables" ] LIST1 ident | "All" "Variables" | "No" "Variables" ]
+| "Set" setting_name OPT [ int | string ]
+| "Unset" setting_name
 | "Open" "Scope" ident
 | "Close" "Scope" ident
 | "Delimit" "Scope" ident "with" ident
@@ -912,15 +886,15 @@ command: [
 | "Eval" red_expr "in" term
 | "Compute" term
 | "Check" term
-| "About" smart_qualid OPT ( "@{" LIST0 name "}" )
-| "SearchHead" one_term OPT ne_in_or_out_modules
-| "SearchPattern" one_term OPT ne_in_or_out_modules
-| "SearchRewrite" one_term OPT ne_in_or_out_modules
-| "Search" searchabout_query OPT searchabout_queries
-| "Time" command
-| "Redirect" string command
-| "Timeout" num command
-| "Fail" command
+| "About" smart_qualid OPT univ_name_list
+| "SearchHead" one_term OPT ( [ "inside" | "outside" ] LIST1 qualid )
+| "SearchPattern" one_term OPT ( [ "inside" | "outside" ] LIST1 qualid )
+| "SearchRewrite" one_term OPT ( [ "inside" | "outside" ] LIST1 qualid )
+| "Search" LIST1 ( OPT "-" search_item ) OPT ( [ "inside" | "outside" ] LIST1 qualid )
+| "Time" sentence
+| "Redirect" string sentence
+| "Timeout" num sentence
+| "Fail" sentence
 | "Drop"
 | "Quit"
 | "BackTo" num
@@ -959,26 +933,30 @@ starredidentref: [
 ]
 
 dirpath: [
-| ident
-| dirpath field_ident
+| LIST0 ( ident "." ) ident
 ]
 
 bignat: [
 | numeral
 ]
 
-locatable: [
-| smart_qualid
-| "Term" smart_qualid
-| "File" string
-| "Library" qualid
-| "Module" qualid
+setting_name: [
+| LIST1 ident
 ]
 
 comment: [
 | one_term
 | string
 | num
+]
+
+search_item: [
+| one_term
+| string OPT ( "%" scope )
+]
+
+univ_name_list: [
+| "@{" LIST0 name "}"
 ]
 
 hint: [
@@ -1066,21 +1044,6 @@ class: [
 | "Funclass"
 | "Sortclass"
 | smart_qualid
-]
-
-ne_in_or_out_modules: [
-| "inside" LIST1 qualid
-| "outside" LIST1 qualid
-]
-
-searchabout_query: [
-| OPT "-" string OPT ( "%" ident )
-| OPT "-" one_term
-]
-
-searchabout_queries: [
-| ne_in_or_out_modules
-| searchabout_query searchabout_queries
 ]
 
 level: [
