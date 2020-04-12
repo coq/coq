@@ -1882,3 +1882,60 @@ Check match O in nat return nat with O => O | _ => O end.
 (* Checking that aliases are substituted in the correct order *)
 
 Check match eq_refl (1,0) in _ = (y as z, y' as z) return z = z with eq_refl => eq_refl end : 0=0.
+
+(* Checking use of argument scopes *)
+
+Module Intern.
+
+Inductive I (A:Type) := C : nat -> let a:=0 in bool -> list bool -> bool -> I A.
+
+Close Scope nat_scope.
+Notation "0" := true : bool_scope.
+Notation "0" := nil : list_scope.
+Notation C' := @C (only parsing).
+Notation C'' := C (only parsing).
+Notation C''' := (C _ 0) (only parsing).
+
+Set Asymmetric Patterns.
+
+Check fun x => match x with C 0 0 0 0 => O | _ => O end. (* 8.5 regression *)
+Check fun x => match x with C 0 _ 0 0 0 => O | _ => O end. (* was not supported *)
+
+Check fun x => match x with C' 0 0 0 0 => O | _ => O end. (* 8.5 regression *)
+Check fun x => match x with C' _ 0 0 0 => O | _ => O end. (* 8.5 regression *)
+Check fun x => match x with C' 0 _ 0 0 0 => O | _ => O end. (* was not supported *)
+Check fun x => match x with C' _ _ 0 0 0 => O | _ => O end. (* was pre 8.5 bug *)
+
+Check fun x => match x with C'' 0 0 0 0 => O | _ => O end. (* 8.5 regression *)
+Check fun x => match x with C'' _ 0 0 0 => O | _ => O end. (* 8.5 regression *)
+Check fun x => match x with C'' 0 _ 0 0 0 => O | _ => O end. (* was not supported *)
+Check fun x => match x with C'' _ _ 0 0 0 => O | _ => O end. (* was pre 8.5 bug *)
+
+Check fun x => match x with C''' 0 0 0 => O | _ => O end. (* 8.5 regression *)
+Check fun x => match x with C''' _ 0 0 0 => O | _ => O end. (* was not supported  *)
+
+Unset Asymmetric Patterns.
+Arguments C {A} _ {x} _ _.
+
+Check fun x => match x with C 0 0 0 => O | _ => O end. (* was ok *)
+Check fun x => match x with C 0 _ 0 0 => O | _ => O end. (* was wrong scope on last argument with let-in *)
+
+Check fun x => match x with C' _ 0 _ 0 0 => O | _ => O end. (* was wrong scope *)
+Check fun x => match x with C' _ 0 _ 0 0 0 => O | _ => O end. (* was wrong scope *)
+
+Check fun x => match x with C'' _ 0 0 => O | _ => O end. (* was ok *)
+Check fun x => match x with C'' _ _ 0 0 => O | _ => O end. (* was wrong scope *)
+
+Check fun x => match x with C''' 0 0 => O | _ => O end. (* was wrong scope *)
+Check fun x => match x with C''' _ 0 0 => O | _ => O end. (* works by miscount compensating *)
+
+Check fun x => match x with (@C _ 0) _ 0 0 => O | _ => O end. (* was wrong scope *)
+Check fun x => match x with (@C _ 0) _ _ 0 0 => O | _ => O end. (* was wrong scope *)
+
+Check fun x => match x with @C _ 0 _ 0 0 => O | _ => O end. (* was ok *)
+Check fun x => match x with @C _ 0 _ _ 0 0 => O | _ => O end. (* was wrong scope *)
+
+Check fun x => match x with (@C) _ O _ 0 0 => O | _ => O end. (* was wrong scope *)
+Check fun x => match x with (@C) _ O _ _ 0 0 => O | _ => O end. (* was wrong scope *)
+
+End Intern.

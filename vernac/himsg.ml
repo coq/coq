@@ -1325,14 +1325,28 @@ let decline_string n s =
   else if Int.equal n 1 then str "1 " ++ str s
   else (int n ++ str " " ++ str s ++ str "s")
 
-let explain_wrong_numarg_constructor env cstr n =
-  str "The constructor " ++ pr_constructor env cstr ++
-  str " (in type " ++ pr_inductive env (inductive_of_constructor cstr) ++
-  str ") expects " ++ decline_string n "argument" ++ str "."
+let explain_wrong_numarg_pattern expanded nargs expected_nassums expected_ndecls pp =
+  (if expanded then
+    strbrk "Once notations are expanded, the resulting "
+  else
+    strbrk "The ") ++ pp ++
+  strbrk " is expected to be applied to " ++ decline_string expected_nassums "argument" ++
+  (if expected_nassums = expected_ndecls then mt () else
+     strbrk " (or " ++ decline_string expected_ndecls "argument" ++
+     strbrk " when including variables for local definitions)") ++
+  strbrk " while it is actually applied to " ++
+  decline_string nargs "argument" ++ str "."
 
-let explain_wrong_numarg_inductive env ind n =
-  str "The inductive type " ++ pr_inductive env ind ++
-  str " expects " ++ decline_string n "argument" ++ str "."
+let explain_wrong_numarg_constructor env cstr expanded nargs expected_nassums expected_ndecls =
+  let pp =
+    strbrk "constructor " ++ pr_constructor env cstr ++
+    strbrk " (in type " ++ pr_inductive env (inductive_of_constructor cstr) ++
+    strbrk ")" in
+  explain_wrong_numarg_pattern expanded nargs expected_nassums expected_ndecls pp
+
+let explain_wrong_numarg_inductive env ind expanded nargs expected_nassums expected_ndecls =
+  let pp = strbrk "inductive type " ++ pr_inductive env ind in
+  explain_wrong_numarg_pattern expanded nargs expected_nassums expected_ndecls pp
 
 let explain_unused_clause env pats =
   str "Pattern \"" ++ hov 0 (prlist_with_sep pr_comma pr_cases_pattern pats) ++ strbrk "\" is redundant in this clause."
@@ -1357,10 +1371,10 @@ let explain_pattern_matching_error env sigma = function
       explain_bad_pattern env sigma c t
   | BadConstructor (c,ind) ->
       explain_bad_constructor env c ind
-  | WrongNumargConstructor (c,n) ->
-      explain_wrong_numarg_constructor env c n
-  | WrongNumargInductive (c,n) ->
-      explain_wrong_numarg_inductive env c n
+  | WrongNumargConstructor (c,expanded,n,n1,n2) ->
+      explain_wrong_numarg_constructor env c expanded n n1 n2
+  | WrongNumargInductive (c,expanded,n,n1,n2) ->
+      explain_wrong_numarg_inductive env c expanded n n1 n2
   | UnusedClause tms ->
       explain_unused_clause env tms
   | NonExhaustive tms ->

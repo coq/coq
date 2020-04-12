@@ -254,3 +254,33 @@ Definition bar (f : foo) :=
   end.
 
 End Wish12762.
+
+Module ConstructorArgumentsNumber.
+
+Arguments cons {A} _ _.
+
+Inductive J' A {B} (C:=(A*B)%type) (c:C) := D' : forall n {m}, let p := n+m in m=m -> J' A c.
+
+Unset Asymmetric Patterns.
+
+Fail Check fun x => match x with (y,z) w => y+z+w end.
+Fail Check fun x => match x with cons y z w => 0 | nil => 0 end.
+Fail Check fun x => match x with cons y => 0 | nil => 0 end.
+
+(* Missing a let-in to be in let-in mode *)
+Fail Check fun x => match x with D' _ _ n p e => 0 end.
+Check fun x : J' bool (true,true) => match x with D' _ _ n e => existT (fun x => eq x x) _ e end.
+Check fun x : J' bool (true,true) => match x with D' _ _ _ n p e => n+p end.
+
+Set Asymmetric Patterns.
+
+Fail Check fun x => match x with (y,z) w => y+z+w end.
+Fail Check fun x => match x with cons y z w => 0 | nil => 0 end.
+Fail Check fun x => match x with cons y => 0 | nil => 0 end.
+
+Fail Check fun x => match x with D' n _ => 0 end.
+Fail Check fun x => match x with D' n m p e _ => 0 end.
+Check fun x : J' bool (true,true) => match x with D' n m e => existT (fun x => eq x x) m e end.
+Check fun x : J' bool (true,true) => match x with D' n m p e => (n,p) end.
+
+End ConstructorArgumentsNumber.
