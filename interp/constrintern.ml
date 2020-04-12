@@ -1378,15 +1378,6 @@ let check_or_pat_variables loc ids idsl =
        Id.print (List.hd ids'').v ++ strbrk " is not bound in all patterns).")
   | [] -> ()
 
-(** Use only when params were NOT asked to the user.
-    @return if letin are included *)
-let check_constructor_length env loc cstr len_pl pl0 =
-  let n = len_pl + List.length pl0 in
-  if Int.equal n (Inductiveops.constructor_nallargs env cstr) then false else
-    (Int.equal n (Inductiveops.constructor_nalldecls env cstr) ||
-      (error_wrong_numarg_constructor ?loc env cstr
-         (Inductiveops.constructor_nrealargs env cstr)))
-
 open Declarations
 
 (* Similar to Cases.adjust_local_defs but on RCPat *)
@@ -1470,7 +1461,7 @@ let chop_params_pattern loc ind args with_letin =
     | PatVar _ | PatCstr(_,_,_) -> error_parameter_not_implicit ?loc:c.CAst.loc) params;
   args
 
-let find_constructor loc add_params ref =
+let find_constructor loc ref =
   let open GlobRef in
   let (ind,_ as cstr) = match ref with
   | ConstructRef cstr -> cstr
@@ -1481,16 +1472,7 @@ let find_constructor loc add_params ref =
     let error = str "This reference is not a constructor." in
     user_err ?loc ~hdr:"find_constructor" error
   in
-  cstr, match add_params with
-    | Some nb_args ->
-      let env = Global.env () in
-      let nb =
-        if Int.equal nb_args (Inductiveops.constructor_nrealdecls env cstr)
-        then Inductiveops.inductive_nparamdecls env ind
-        else Inductiveops.inductive_nparams env ind
-      in
-      List.make nb ([], [(Id.Map.empty, DAst.make @@ PatVar Anonymous)])
-    | None -> []
+  cstr
 
 let find_pattern_variable qid =
   if qualid_is_ident qid then qualid_basename qid
@@ -1695,6 +1677,29 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       end
     | _ -> CErrors.anomaly Pp.(str "Invalid return pattern from Notation.interp_prim_token_cases_pattern_expr."))) x
   in
+  let add_pars ?loc g syndef_pl pl =
+    (* Asymmetric compatibility mode *)
+    if get_asymmetric_patterns () then
+      let expl_pl =
+        if syndef_pl = [] then
+          let env = Global.env () in
+          let n = match g with
+            | GlobRef.ConstructRef (ind,_ as cstr) ->
+              let n = List.length pl in
+              if Int.equal n (Inductiveops.constructor_nrealargs env cstr) then
+                Inductiveops.inductive_nparams env ind
+              else if Int.equal n (Inductiveops.constructor_nrealdecls env cstr) then
+                Inductiveops.inductive_nparamdecls env ind
+              else
+                error_wrong_numarg_constructor ?loc env cstr
+                  (Inductiveops.constructor_nrealargs env cstr)
+            | _ -> 0 in
+          List.make n (DAst.make @@ RCPatAtom None)
+        else
+          syndef_pl in
+      expl_pl @ pl, []
+    else
+      syndef_pl, pl in
   let rec drop_syndef test_kind ?loc scopes qid pats =
     try
       if qualid_is_ident qid && Option.cata (Id.Set.mem (qualid_basename qid)) false env.pat_ids then
@@ -1755,8 +1760,11 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
     | CPatCstr (head, None, pl) ->
       begin
         match drop_syndef test_kind ?loc scopes head pl with
-          | Some (a,b,c) -> DAst.make ?loc @@ RCPatCstr(a, b, c)
-          | None -> Loc.raise ?loc (InternalizationError (NotAConstructor head))
+        | Some (g,syndef_pl,pl) ->
+          let expl_pl, pl_wo_impl = add_pars ?loc g syndef_pl pl in
+          DAst.make ?loc @@ RCPatCstr(g, expl_pl, pl_wo_impl)
+        | None ->
+          Loc.raise ?loc (InternalizationError (NotAConstructor head))
       end
     | CPatCstr (qid, Some expl_pl, pl) ->
       begin
@@ -1785,8 +1793,11 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
     | CPatAtom (Some id) ->
       begin
         match drop_syndef test_kind ?loc scopes id [] with
-          | Some (a,b,c) -> DAst.make ?loc @@ RCPatCstr (a, b, c)
-          | None         -> DAst.make ?loc @@ RCPatAtom (Some ((make ?loc @@ find_pattern_variable id),scopes))
+          | Some (g,syndef_pl,empty_pl) ->
+            let expl_pl, pl_wo_impl = add_pars ?loc g syndef_pl empty_pl in
+            DAst.make ?loc @@ RCPatCstr (g, expl_pl, pl_wo_impl)
+          | None ->
+            DAst.make ?loc @@ RCPatAtom (Some ((make ?loc @@ find_pattern_variable id),scopes))
       end
     | CPatAtom None -> DAst.make ?loc @@ RCPatAtom None
     | CPatOr pl     -> DAst.make ?loc @@ RCPatOr (List.map (in_pat test_kind scopes) pl)
@@ -1867,17 +1878,9 @@ let rec intern_pat genv ntnvars aliases pat =
       let aliases' = merge_aliases aliases id in
       intern_pat genv ntnvars aliases' p
     | RCPatCstr (head, expl_pl, pl) ->
-      if get_asymmetric_patterns () then
-        let len = if List.is_empty expl_pl then Some (List.length pl) else None in
-        let c,idslpl1 = find_constructor loc len head in
-        let with_letin =
-          check_constructor_length genv loc c (List.length idslpl1 + List.length expl_pl) pl in
-        intern_cstr_with_all_args loc c with_letin idslpl1 (expl_pl@pl)
-      else
-        let c,idslpl1 = find_constructor loc None head in
-        let with_letin, pl2 =
-          add_implicits_check_constructor_length genv loc c (List.length idslpl1 + List.length expl_pl) pl in
-        intern_cstr_with_all_args loc c with_letin idslpl1 (expl_pl@pl2)
+      let c = find_constructor loc head in
+      let with_letin, pl2 = add_implicits_check_constructor_length genv loc c (List.length expl_pl) pl in
+      intern_cstr_with_all_args loc c with_letin [] (expl_pl@pl2)
     | RCPatAtom (Some ({loc;v=id},scopes)) ->
       let aliases = merge_aliases aliases (make ?loc @@ Name id) in
       set_var_scope ?loc id false scopes ntnvars;
