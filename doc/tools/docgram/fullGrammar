@@ -674,6 +674,9 @@ command: [
 | "Print" "Fields"      (* setoid_ring plugin *)
 | "Numeral" "Notation" reference reference reference ":" ident numnotoption
 | "String" "Notation" reference reference reference ":" ident
+| "Ltac2" ltac2_entry      (* Ltac2 plugin *)
+| "Ltac2" "Eval" ltac2_expr      (* Ltac2 plugin *)
+| "Print" "Ltac2" reference      (* Ltac2 plugin *)
 ]
 
 reference_or_constr: [
@@ -866,7 +869,7 @@ reduce: [
 ]
 
 decl_notation: [
-| ne_lstring ":=" constr only_parsing OPT [ ":" IDENT ]
+| ne_lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
 ]
 
 decl_sep: [
@@ -1347,12 +1350,12 @@ syntax: [
 | "Delimit" "Scope" IDENT; "with" IDENT
 | "Undelimit" "Scope" IDENT
 | "Bind" "Scope" IDENT; "with" LIST1 class_rawexpr
-| "Infix" ne_lstring ":=" constr [ "(" LIST1 syntax_modifier SEP "," ")" | ] OPT [ ":" IDENT ]
+| "Infix" ne_lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
 | "Notation" identref LIST0 ident ":=" constr only_parsing
-| "Notation" lstring ":=" constr [ "(" LIST1 syntax_modifier SEP "," ")" | ] OPT [ ":" IDENT ]
+| "Notation" lstring ":=" constr syntax_modifiers OPT [ ":" IDENT ]
 | "Format" "Notation" STRING STRING STRING
-| "Reserved" "Infix" ne_lstring [ "(" LIST1 syntax_modifier SEP "," ")" | ]
-| "Reserved" "Notation" ne_lstring [ "(" LIST1 syntax_modifier SEP "," ")" | ]
+| "Reserved" "Infix" ne_lstring syntax_modifiers
+| "Reserved" "Notation" ne_lstring syntax_modifiers
 ]
 
 only_parsing: [
@@ -1379,6 +1382,11 @@ syntax_modifier: [
 | IDENT; "at" level OPT constr_as_binder_kind
 | IDENT constr_as_binder_kind
 | IDENT syntax_extension_type
+]
+
+syntax_modifiers: [
+| "(" LIST1 syntax_modifier SEP "," ")"
+|
 ]
 
 syntax_extension_type: [
@@ -1585,6 +1593,7 @@ simple_tactic: [
 | "auto" OPT int_or_var auto_using hintbases
 | "info_auto" OPT int_or_var auto_using hintbases
 | "debug" "auto" OPT int_or_var auto_using hintbases
+| "prolog" "[" LIST0 uconstr "]" int_or_var
 | "eauto" OPT int_or_var OPT int_or_var auto_using hintbases
 | "new" "auto" OPT int_or_var auto_using hintbases
 | "debug" "eauto" OPT int_or_var OPT int_or_var auto_using hintbases
@@ -2540,5 +2549,644 @@ numnotoption: [
 |
 | "(" "warning" "after" bignat ")"
 | "(" "abstract" "after" bignat ")"
+]
+
+tac2pat1: [
+| Prim.qualid LIST1 tac2pat0      (* Ltac2 plugin *)
+| Prim.qualid      (* Ltac2 plugin *)
+| "[" "]"      (* Ltac2 plugin *)
+| tac2pat0 "::" tac2pat0      (* Ltac2 plugin *)
+| tac2pat0      (* Ltac2 plugin *)
+]
+
+tac2pat0: [
+| "_"      (* Ltac2 plugin *)
+| "()"      (* Ltac2 plugin *)
+| Prim.qualid      (* Ltac2 plugin *)
+| "(" atomic_tac2pat ")"      (* Ltac2 plugin *)
+]
+
+atomic_tac2pat: [
+|      (* Ltac2 plugin *)
+| tac2pat1 ":" tac2type5      (* Ltac2 plugin *)
+| tac2pat1 "," LIST0 tac2pat1 SEP ","      (* Ltac2 plugin *)
+| tac2pat1      (* Ltac2 plugin *)
+]
+
+tac2expr6: [
+| tac2expr5 ";" tac2expr6      (* Ltac2 plugin *)
+| tac2expr5      (* Ltac2 plugin *)
+]
+
+tac2expr5: [
+| "fun" LIST1 G_LTAC2_input_fun "=>" tac2expr6      (* Ltac2 plugin *)
+| "let" rec_flag LIST1 G_LTAC2_let_clause SEP "with" "in" tac2expr6      (* Ltac2 plugin *)
+| "match" tac2expr5 "with" G_LTAC2_branches "end"      (* Ltac2 plugin *)
+| tac2expr4      (* Ltac2 plugin *)
+]
+
+tac2expr4: [
+| tac2expr3      (* Ltac2 plugin *)
+]
+
+tac2expr3: [
+| tac2expr2 "," LIST1 tac2expr2 SEP ","      (* Ltac2 plugin *)
+| tac2expr2      (* Ltac2 plugin *)
+]
+
+tac2expr2: [
+| tac2expr1 "::" tac2expr2      (* Ltac2 plugin *)
+| tac2expr1      (* Ltac2 plugin *)
+]
+
+tac2expr1: [
+| tac2expr0 LIST1 tac2expr0      (* Ltac2 plugin *)
+| tac2expr0 ".(" Prim.qualid ")"      (* Ltac2 plugin *)
+| tac2expr0 ".(" Prim.qualid ")" ":=" tac2expr5      (* Ltac2 plugin *)
+| tac2expr0      (* Ltac2 plugin *)
+]
+
+tac2expr0: [
+| "(" tac2expr6 ")"      (* Ltac2 plugin *)
+| "(" tac2expr6 ":" tac2type5 ")"      (* Ltac2 plugin *)
+| "()"      (* Ltac2 plugin *)
+| "(" ")"      (* Ltac2 plugin *)
+| "[" LIST0 tac2expr5 SEP ";" "]"      (* Ltac2 plugin *)
+| "{" tac2rec_fieldexprs "}"      (* Ltac2 plugin *)
+| G_LTAC2_tactic_atom      (* Ltac2 plugin *)
+]
+
+G_LTAC2_branches: [
+|      (* Ltac2 plugin *)
+| "|" LIST1 branch SEP "|"      (* Ltac2 plugin *)
+| LIST1 branch SEP "|"      (* Ltac2 plugin *)
+]
+
+branch: [
+| tac2pat1 "=>" tac2expr6      (* Ltac2 plugin *)
+]
+
+rec_flag: [
+| "rec"      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+mut_flag: [
+| "mutable"      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+typ_param: [
+| "'" Prim.ident      (* Ltac2 plugin *)
+]
+
+G_LTAC2_tactic_atom: [
+| Prim.integer      (* Ltac2 plugin *)
+| Prim.string      (* Ltac2 plugin *)
+| Prim.qualid      (* Ltac2 plugin *)
+| "@" Prim.ident      (* Ltac2 plugin *)
+| "&" lident      (* Ltac2 plugin *)
+| "'" Constr.constr      (* Ltac2 plugin *)
+| "constr" ":" "(" Constr.lconstr ")"      (* Ltac2 plugin *)
+| "open_constr" ":" "(" Constr.lconstr ")"      (* Ltac2 plugin *)
+| "ident" ":" "(" lident ")"      (* Ltac2 plugin *)
+| "pattern" ":" "(" Constr.lconstr_pattern ")"      (* Ltac2 plugin *)
+| "reference" ":" "(" globref ")"      (* Ltac2 plugin *)
+| "ltac1" ":" "(" ltac1_expr_in_env ")"      (* Ltac2 plugin *)
+| "ltac1val" ":" "(" ltac1_expr_in_env ")"      (* Ltac2 plugin *)
+]
+
+ltac1_expr_in_env: [
+| test_ltac1_env LIST0 locident "|-" ltac1_expr      (* Ltac2 plugin *)
+| ltac1_expr      (* Ltac2 plugin *)
+]
+
+tac2expr_in_env: [
+| test_ltac1_env LIST0 locident "|-" tac2expr6      (* Ltac2 plugin *)
+| tac2expr6      (* Ltac2 plugin *)
+]
+
+G_LTAC2_let_clause: [
+| let_binder ":=" tac2expr6      (* Ltac2 plugin *)
+]
+
+let_binder: [
+| LIST1 G_LTAC2_input_fun      (* Ltac2 plugin *)
+]
+
+tac2type5: [
+| tac2type2 "->" tac2type5      (* Ltac2 plugin *)
+| tac2type2      (* Ltac2 plugin *)
+]
+
+tac2type2: [
+| tac2type1 "*" LIST1 tac2type1 SEP "*"      (* Ltac2 plugin *)
+| tac2type1      (* Ltac2 plugin *)
+]
+
+tac2type1: [
+| tac2type0 Prim.qualid      (* Ltac2 plugin *)
+| tac2type0      (* Ltac2 plugin *)
+]
+
+tac2type0: [
+| "(" LIST1 tac2type5 SEP "," ")" OPT Prim.qualid      (* Ltac2 plugin *)
+| typ_param      (* Ltac2 plugin *)
+| "_"      (* Ltac2 plugin *)
+| Prim.qualid      (* Ltac2 plugin *)
+]
+
+locident: [
+| Prim.ident      (* Ltac2 plugin *)
+]
+
+G_LTAC2_binder: [
+| "_"      (* Ltac2 plugin *)
+| Prim.ident      (* Ltac2 plugin *)
+]
+
+G_LTAC2_input_fun: [
+| tac2pat0      (* Ltac2 plugin *)
+]
+
+tac2def_body: [
+| G_LTAC2_binder LIST0 G_LTAC2_input_fun ":=" tac2expr6      (* Ltac2 plugin *)
+]
+
+tac2def_val: [
+| mut_flag rec_flag LIST1 tac2def_body SEP "with"      (* Ltac2 plugin *)
+]
+
+tac2def_mut: [
+| "Set" Prim.qualid OPT [ "as" locident ] ":=" tac2expr6      (* Ltac2 plugin *)
+]
+
+tac2typ_knd: [
+| tac2type5      (* Ltac2 plugin *)
+| "[" ".." "]"      (* Ltac2 plugin *)
+| "[" tac2alg_constructors "]"      (* Ltac2 plugin *)
+| "{" tac2rec_fields "}"      (* Ltac2 plugin *)
+]
+
+tac2alg_constructors: [
+| "|" LIST1 tac2alg_constructor SEP "|"      (* Ltac2 plugin *)
+| LIST0 tac2alg_constructor SEP "|"      (* Ltac2 plugin *)
+]
+
+tac2alg_constructor: [
+| Prim.ident      (* Ltac2 plugin *)
+| Prim.ident "(" LIST0 tac2type5 SEP "," ")"      (* Ltac2 plugin *)
+]
+
+tac2rec_fields: [
+| tac2rec_field ";" tac2rec_fields      (* Ltac2 plugin *)
+| tac2rec_field ";"      (* Ltac2 plugin *)
+| tac2rec_field      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+tac2rec_field: [
+| mut_flag Prim.ident ":" tac2type5      (* Ltac2 plugin *)
+]
+
+tac2rec_fieldexprs: [
+| tac2rec_fieldexpr ";" tac2rec_fieldexprs      (* Ltac2 plugin *)
+| tac2rec_fieldexpr ";"      (* Ltac2 plugin *)
+| tac2rec_fieldexpr      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+tac2rec_fieldexpr: [
+| Prim.qualid ":=" tac2expr1      (* Ltac2 plugin *)
+]
+
+tac2typ_prm: [
+|      (* Ltac2 plugin *)
+| typ_param      (* Ltac2 plugin *)
+| "(" LIST1 typ_param SEP "," ")"      (* Ltac2 plugin *)
+]
+
+tac2typ_def: [
+| tac2typ_prm Prim.qualid tac2type_body      (* Ltac2 plugin *)
+]
+
+tac2type_body: [
+|      (* Ltac2 plugin *)
+| ":=" tac2typ_knd      (* Ltac2 plugin *)
+| "::=" tac2typ_knd      (* Ltac2 plugin *)
+]
+
+tac2def_typ: [
+| "Type" rec_flag LIST1 tac2typ_def SEP "with"      (* Ltac2 plugin *)
+]
+
+tac2def_ext: [
+| "@" "external" locident ":" tac2type5 ":=" Prim.string Prim.string      (* Ltac2 plugin *)
+]
+
+syn_node: [
+| "_"      (* Ltac2 plugin *)
+| Prim.ident      (* Ltac2 plugin *)
+]
+
+sexpr: [
+| Prim.string      (* Ltac2 plugin *)
+| Prim.integer      (* Ltac2 plugin *)
+| syn_node      (* Ltac2 plugin *)
+| syn_node "(" LIST1 sexpr SEP "," ")"      (* Ltac2 plugin *)
+]
+
+syn_level: [
+|      (* Ltac2 plugin *)
+| ":" Prim.integer      (* Ltac2 plugin *)
+]
+
+tac2def_syn: [
+| "Notation" LIST1 sexpr syn_level ":=" tac2expr6      (* Ltac2 plugin *)
+]
+
+lident: [
+| Prim.ident      (* Ltac2 plugin *)
+]
+
+globref: [
+| "&" Prim.ident      (* Ltac2 plugin *)
+| Prim.qualid      (* Ltac2 plugin *)
+]
+
+anti: [
+| "$" Prim.ident      (* Ltac2 plugin *)
+]
+
+ident_or_anti: [
+| lident      (* Ltac2 plugin *)
+| "$" Prim.ident      (* Ltac2 plugin *)
+]
+
+lnatural: [
+| Prim.natural      (* Ltac2 plugin *)
+]
+
+q_ident: [
+| ident_or_anti      (* Ltac2 plugin *)
+]
+
+qhyp: [
+| anti      (* Ltac2 plugin *)
+| lnatural      (* Ltac2 plugin *)
+| lident      (* Ltac2 plugin *)
+]
+
+G_LTAC2_simple_binding: [
+| "(" qhyp ":=" Constr.lconstr ")"      (* Ltac2 plugin *)
+]
+
+G_LTAC2_bindings: [
+| test_lpar_idnum_coloneq LIST1 G_LTAC2_simple_binding      (* Ltac2 plugin *)
+| LIST1 Constr.constr      (* Ltac2 plugin *)
+]
+
+q_bindings: [
+| G_LTAC2_bindings      (* Ltac2 plugin *)
+]
+
+q_with_bindings: [
+| G_LTAC2_with_bindings      (* Ltac2 plugin *)
+]
+
+G_LTAC2_intropatterns: [
+| LIST0 nonsimple_intropattern      (* Ltac2 plugin *)
+]
+
+G_LTAC2_or_and_intropattern: [
+| "[" LIST1 G_LTAC2_intropatterns SEP "|" "]"      (* Ltac2 plugin *)
+| "()"      (* Ltac2 plugin *)
+| "(" G_LTAC2_simple_intropattern ")"      (* Ltac2 plugin *)
+| "(" G_LTAC2_simple_intropattern "," LIST1 G_LTAC2_simple_intropattern SEP "," ")"      (* Ltac2 plugin *)
+| "(" G_LTAC2_simple_intropattern "&" LIST1 G_LTAC2_simple_intropattern SEP "&" ")"      (* Ltac2 plugin *)
+]
+
+G_LTAC2_equality_intropattern: [
+| "->"      (* Ltac2 plugin *)
+| "<-"      (* Ltac2 plugin *)
+| "[=" G_LTAC2_intropatterns "]"      (* Ltac2 plugin *)
+]
+
+G_LTAC2_naming_intropattern: [
+| LEFTQMARK lident      (* Ltac2 plugin *)
+| "?$" lident      (* Ltac2 plugin *)
+| "?"      (* Ltac2 plugin *)
+| ident_or_anti      (* Ltac2 plugin *)
+]
+
+nonsimple_intropattern: [
+| G_LTAC2_simple_intropattern      (* Ltac2 plugin *)
+| "*"      (* Ltac2 plugin *)
+| "**"      (* Ltac2 plugin *)
+]
+
+G_LTAC2_simple_intropattern: [
+| G_LTAC2_simple_intropattern_closed      (* Ltac2 plugin *)
+]
+
+G_LTAC2_simple_intropattern_closed: [
+| G_LTAC2_or_and_intropattern      (* Ltac2 plugin *)
+| G_LTAC2_equality_intropattern      (* Ltac2 plugin *)
+| "_"      (* Ltac2 plugin *)
+| G_LTAC2_naming_intropattern      (* Ltac2 plugin *)
+]
+
+q_intropatterns: [
+| G_LTAC2_intropatterns      (* Ltac2 plugin *)
+]
+
+q_intropattern: [
+| G_LTAC2_simple_intropattern      (* Ltac2 plugin *)
+]
+
+nat_or_anti: [
+| lnatural      (* Ltac2 plugin *)
+| "$" Prim.ident      (* Ltac2 plugin *)
+]
+
+G_LTAC2_eqn_ipat: [
+| "eqn" ":" G_LTAC2_naming_intropattern      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+G_LTAC2_with_bindings: [
+| "with" G_LTAC2_bindings      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+G_LTAC2_constr_with_bindings: [
+| Constr.constr G_LTAC2_with_bindings      (* Ltac2 plugin *)
+]
+
+G_LTAC2_destruction_arg: [
+| lnatural      (* Ltac2 plugin *)
+| lident      (* Ltac2 plugin *)
+| G_LTAC2_constr_with_bindings      (* Ltac2 plugin *)
+]
+
+q_destruction_arg: [
+| G_LTAC2_destruction_arg      (* Ltac2 plugin *)
+]
+
+G_LTAC2_as_or_and_ipat: [
+| "as" G_LTAC2_or_and_intropattern      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+G_LTAC2_occs_nums: [
+| LIST1 nat_or_anti      (* Ltac2 plugin *)
+| "-" nat_or_anti LIST0 nat_or_anti      (* Ltac2 plugin *)
+]
+
+G_LTAC2_occs: [
+| "at" G_LTAC2_occs_nums      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+G_LTAC2_hypident: [
+| ident_or_anti      (* Ltac2 plugin *)
+| "(" "type" "of" ident_or_anti ")"      (* Ltac2 plugin *)
+| "(" "value" "of" ident_or_anti ")"      (* Ltac2 plugin *)
+]
+
+G_LTAC2_hypident_occ: [
+| G_LTAC2_hypident G_LTAC2_occs      (* Ltac2 plugin *)
+]
+
+G_LTAC2_in_clause: [
+| "*" G_LTAC2_occs      (* Ltac2 plugin *)
+| "*" "|-" G_LTAC2_concl_occ      (* Ltac2 plugin *)
+| LIST0 G_LTAC2_hypident_occ SEP "," "|-" G_LTAC2_concl_occ      (* Ltac2 plugin *)
+| LIST0 G_LTAC2_hypident_occ SEP ","      (* Ltac2 plugin *)
+]
+
+clause: [
+| "in" G_LTAC2_in_clause      (* Ltac2 plugin *)
+| "at" G_LTAC2_occs_nums      (* Ltac2 plugin *)
+]
+
+q_clause: [
+| clause      (* Ltac2 plugin *)
+]
+
+G_LTAC2_concl_occ: [
+| "*" G_LTAC2_occs      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+G_LTAC2_induction_clause: [
+| G_LTAC2_destruction_arg G_LTAC2_as_or_and_ipat G_LTAC2_eqn_ipat OPT clause      (* Ltac2 plugin *)
+]
+
+q_induction_clause: [
+| G_LTAC2_induction_clause      (* Ltac2 plugin *)
+]
+
+G_LTAC2_conversion: [
+| Constr.constr      (* Ltac2 plugin *)
+| Constr.constr "with" Constr.constr      (* Ltac2 plugin *)
+]
+
+q_conversion: [
+| G_LTAC2_conversion      (* Ltac2 plugin *)
+]
+
+ltac2_orient: [
+| "->"      (* Ltac2 plugin *)
+| "<-"      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+G_LTAC2_rewriter: [
+| "!" G_LTAC2_constr_with_bindings      (* Ltac2 plugin *)
+| [ "?" | LEFTQMARK ] G_LTAC2_constr_with_bindings      (* Ltac2 plugin *)
+| lnatural "!" G_LTAC2_constr_with_bindings      (* Ltac2 plugin *)
+| lnatural [ "?" | LEFTQMARK ] G_LTAC2_constr_with_bindings      (* Ltac2 plugin *)
+| lnatural G_LTAC2_constr_with_bindings      (* Ltac2 plugin *)
+| G_LTAC2_constr_with_bindings      (* Ltac2 plugin *)
+]
+
+G_LTAC2_oriented_rewriter: [
+| ltac2_orient G_LTAC2_rewriter      (* Ltac2 plugin *)
+]
+
+q_rewriting: [
+| G_LTAC2_oriented_rewriter      (* Ltac2 plugin *)
+]
+
+G_LTAC2_tactic_then_last: [
+| "|" LIST0 ( OPT tac2expr6 ) SEP "|"      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+G_LTAC2_tactic_then_gen: [
+| tac2expr6 "|" G_LTAC2_tactic_then_gen      (* Ltac2 plugin *)
+| tac2expr6 ".." G_LTAC2_tactic_then_last      (* Ltac2 plugin *)
+| ".." G_LTAC2_tactic_then_last      (* Ltac2 plugin *)
+| tac2expr6      (* Ltac2 plugin *)
+| "|" G_LTAC2_tactic_then_gen      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+q_dispatch: [
+| G_LTAC2_tactic_then_gen      (* Ltac2 plugin *)
+]
+
+q_occurrences: [
+| G_LTAC2_occs      (* Ltac2 plugin *)
+]
+
+red_flag: [
+| "beta"      (* Ltac2 plugin *)
+| "iota"      (* Ltac2 plugin *)
+| "match"      (* Ltac2 plugin *)
+| "fix"      (* Ltac2 plugin *)
+| "cofix"      (* Ltac2 plugin *)
+| "zeta"      (* Ltac2 plugin *)
+| "delta" G_LTAC2_delta_flag      (* Ltac2 plugin *)
+]
+
+refglobal: [
+| "&" Prim.ident      (* Ltac2 plugin *)
+| Prim.qualid      (* Ltac2 plugin *)
+| "$" Prim.ident      (* Ltac2 plugin *)
+]
+
+q_reference: [
+| refglobal      (* Ltac2 plugin *)
+]
+
+refglobals: [
+| LIST1 refglobal      (* Ltac2 plugin *)
+]
+
+G_LTAC2_delta_flag: [
+| "-" "[" refglobals "]"      (* Ltac2 plugin *)
+| "[" refglobals "]"      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+G_LTAC2_strategy_flag: [
+| LIST1 red_flag      (* Ltac2 plugin *)
+| G_LTAC2_delta_flag      (* Ltac2 plugin *)
+]
+
+q_strategy_flag: [
+| G_LTAC2_strategy_flag      (* Ltac2 plugin *)
+]
+
+hintdb: [
+| "*"      (* Ltac2 plugin *)
+| LIST1 ident_or_anti      (* Ltac2 plugin *)
+]
+
+q_hintdb: [
+| hintdb      (* Ltac2 plugin *)
+]
+
+G_LTAC2_match_pattern: [
+| "context" OPT Prim.ident "[" Constr.lconstr_pattern "]"      (* Ltac2 plugin *)
+| Constr.lconstr_pattern      (* Ltac2 plugin *)
+]
+
+G_LTAC2_match_rule: [
+| G_LTAC2_match_pattern "=>" tac2expr6      (* Ltac2 plugin *)
+]
+
+G_LTAC2_match_list: [
+| LIST1 G_LTAC2_match_rule SEP "|"      (* Ltac2 plugin *)
+| "|" LIST1 G_LTAC2_match_rule SEP "|"      (* Ltac2 plugin *)
+]
+
+q_constr_matching: [
+| G_LTAC2_match_list      (* Ltac2 plugin *)
+]
+
+gmatch_hyp_pattern: [
+| Prim.name ":" G_LTAC2_match_pattern      (* Ltac2 plugin *)
+]
+
+gmatch_pattern: [
+| "[" LIST0 gmatch_hyp_pattern SEP "," "|-" G_LTAC2_match_pattern "]"      (* Ltac2 plugin *)
+]
+
+gmatch_rule: [
+| gmatch_pattern "=>" tac2expr6      (* Ltac2 plugin *)
+]
+
+gmatch_list: [
+| LIST1 gmatch_rule SEP "|"      (* Ltac2 plugin *)
+| "|" LIST1 gmatch_rule SEP "|"      (* Ltac2 plugin *)
+]
+
+q_goal_matching: [
+| gmatch_list      (* Ltac2 plugin *)
+]
+
+move_location: [
+| "at" "top"      (* Ltac2 plugin *)
+| "at" "bottom"      (* Ltac2 plugin *)
+| "after" ident_or_anti      (* Ltac2 plugin *)
+| "before" ident_or_anti      (* Ltac2 plugin *)
+]
+
+q_move_location: [
+| move_location      (* Ltac2 plugin *)
+]
+
+G_LTAC2_as_name: [
+|      (* Ltac2 plugin *)
+| "as" ident_or_anti      (* Ltac2 plugin *)
+]
+
+pose: [
+| test_lpar_id_coloneq "(" ident_or_anti ":=" Constr.lconstr ")"      (* Ltac2 plugin *)
+| Constr.constr G_LTAC2_as_name      (* Ltac2 plugin *)
+]
+
+q_pose: [
+| pose      (* Ltac2 plugin *)
+]
+
+G_LTAC2_as_ipat: [
+| "as" G_LTAC2_simple_intropattern      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+G_LTAC2_by_tactic: [
+| "by" tac2expr6      (* Ltac2 plugin *)
+|      (* Ltac2 plugin *)
+]
+
+assertion: [
+| test_lpar_id_coloneq "(" ident_or_anti ":=" Constr.lconstr ")"      (* Ltac2 plugin *)
+| test_lpar_id_colon "(" ident_or_anti ":" Constr.lconstr ")" G_LTAC2_by_tactic      (* Ltac2 plugin *)
+| Constr.constr G_LTAC2_as_ipat G_LTAC2_by_tactic      (* Ltac2 plugin *)
+]
+
+q_assert: [
+| assertion      (* Ltac2 plugin *)
+]
+
+ltac2_entry: [
+| tac2def_val      (* Ltac2 plugin *)
+| tac2def_typ      (* Ltac2 plugin *)
+| tac2def_ext      (* Ltac2 plugin *)
+| tac2def_syn      (* Ltac2 plugin *)
+| tac2def_mut      (* Ltac2 plugin *)
+]
+
+ltac2_expr: [
+| tac2expr6      (* Ltac2 plugin *)
+]
+
+tac2mode: [
+| ltac2_expr ltac_use_default      (* Ltac2 plugin *)
+| G_vernac.query_command      (* Ltac2 plugin *)
 ]
 

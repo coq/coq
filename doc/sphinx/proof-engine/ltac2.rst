@@ -27,6 +27,50 @@ especially wherever an advanced tactic language is needed. The previous
 implementation of Ltac, described in the previous chapter, will be referred to
 as Ltac1.
 
+Current limitations include:
+
+- There are a number of tactics that are not yet supported in Ltac2 because
+  the interface OCaml and/or Ltac2 notations haven't been written.  See
+  :ref:`defining_tactics`.
+
+- Missing usability features such as:
+
+  - Printing functions are limited and awkward to use.  Only a few data types are
+    printable.
+  - Deep pattern matching and matching on tuples don't work.
+  - If statements on Ltac2 boolean values
+  - A convenient way to build terms with casts through the low-level API. Because the
+    cast type is opaque, building terms with casts currently requires an awkward construction like the
+    following, which also incurs extra overhead to repeat typechecking for each
+    call to `get_vm_cast`:
+
+    .. coqdoc::
+
+       Constr.Unsafe.make (Constr.Unsafe.Cast 'I (get_vm_cast ()) 'True)
+
+    with:
+
+    .. coqtop:: none
+
+       From Ltac2 Require Import Ltac2.
+
+    .. coqtop:: in
+
+       Ltac2 get_vm_cast () :=
+         match Constr.Unsafe.kind '(I <: True) with
+         | Constr.Unsafe.Cast _ cst _ => cst
+         | _ => Control.throw Not_found
+         end.
+
+- Missing low-level primitives that are convenient for writing automation, such as:
+
+  - An easy way to get the number of constructors of an inductive type.
+    Currently only way to do this is to destruct a variable of the inductive type
+    and count the number of goals that result.
+- The :attr:`deprecated` attribute is not supported for Ltac2 definitions.
+
+- Error messages may be cryptic.
+
 .. _ltac2_design:
 
 General design
@@ -49,7 +93,7 @@ In particular, Ltac2 is:
   Coq-side terms
 - a language featuring notation facilities to help write palatable scripts
 
-We describe more in details each point in the remainder of this document.
+We describe these in more detail in the remainder of this document.
 
 ML component
 ------------
@@ -84,7 +128,7 @@ which allows to ensure that Ltac2 satisfies the same equations as a generic ML
 with unspecified effects would do, e.g. function reduction is substitution
 by a value.
 
-To import Ltac2, use the following command:
+Use the following command to import Ltac2:
 
 .. coqtop:: in
 
@@ -96,17 +140,20 @@ Type Syntax
 At the level of terms, we simply elaborate on Ltac1 syntax, which is quite
 close to OCaml. Types follow the simply-typed syntax of OCaml.
 
-The non-terminal :production:`lident` designates identifiers starting with a
-lowercase.
+.. insertprodn ltac2_type ltac2_typevar
 
-.. productionlist:: coq
-   ltac2_type             : ( `ltac2_type`, ... , `ltac2_type` ) `ltac2_typeconst`
-                    : ( `ltac2_type` * ... * `ltac2_type` )
-                    : `ltac2_type` -> `ltac2_type`
-                    : `ltac2_typevar`
-   ltac2_typeconst        : ( `modpath` . )* `lident`
-   ltac2_typevar          : '`lident`
-   ltac2_typeparams       : ( `ltac2_typevar`, ... , `ltac2_typevar` )
+.. prodn::
+   ltac2_type ::= @ltac2_type2 -> @ltac2_type
+   | @ltac2_type2
+   ltac2_type2 ::= @ltac2_type1 * {+* @ltac2_type1 }
+   | @ltac2_type1
+   ltac2_type1 ::= @ltac2_type0 @qualid
+   | @ltac2_type0
+   ltac2_type0 ::= ( {+, @ltac2_type } ) {? @qualid }
+   | @ltac2_typevar
+   | _
+   | @qualid
+   ltac2_typevar ::= ' @ident
 
 The set of base types can be extended thanks to the usual ML type
 declarations such as algebraic datatypes and records.
@@ -126,114 +173,156 @@ Type declarations
 
 One can define new types with the following commands.
 
-.. cmd:: Ltac2 Type {? @ltac2_typeparams } @lident
+.. cmd:: Ltac2 Type {? rec } @tac2typ_def {* with @tac2typ_def }
    :name: Ltac2 Type
 
-   This command defines an abstract type. It has no use for the end user and
-   is dedicated to types representing data coming from the OCaml world.
+   .. insertprodn tac2typ_def tac2rec_field
 
-.. cmdv:: Ltac2 Type {? rec} {? @ltac2_typeparams } @lident := @ltac2_typedef
+   .. prodn::
+      tac2typ_def ::= {? @tac2typ_prm } @qualid {? {| := | ::= } @tac2typ_knd }
+      tac2typ_prm ::= @ltac2_typevar
+      | ( {+, @ltac2_typevar } )
+      tac2typ_knd ::= @ltac2_type
+      | [ {? {? %| } {+| @tac2alg_constructor } } ]
+      | [ .. ]
+      | %{ {? {+; @tac2rec_field } {? ; } } %}
+      tac2alg_constructor ::= @ident
+      | @ident ( {*, @ltac2_type } )
+      tac2rec_field ::= {? mutable } @ident : @ltac2_type
 
-   This command defines a type with a manifest. There are four possible
-   kinds of such definitions: alias, variant, record and open variant types.
+   :n:`:=`
+     Defines a type with with an explicit set of constructors
 
-   .. productionlist:: coq
-      ltac2_typedef    : `ltac2_type`
-                       : [ `ltac2_constructordef` | ... | `ltac2_constructordef` ]
-                       : { `ltac2_fielddef` ; ... ; `ltac2_fielddef` }
-                       : [ .. ]
-      ltac2_constructordef   : `uident` [ ( `ltac2_type` , ... , `ltac2_type` ) ]
-      ltac2_fielddef         : [ mutable ] `ident` : `ltac2_type`
+   :n:`::=`
+     Extends an existing open variant type, a special kind of variant type whose constructors are not
+     statically defined, but can instead be extended dynamically. A typical example
+     is the standard `exn` type for exceptions. Pattern matching on open variants must always
+     include a catch-all clause. They can be extended with this form, in which case
+     :token:`tac2typ_knd` should be in the form :n:`[ {? {? %| } {+| @tac2alg_constructor } } ]`.
 
-   Aliases are just a name for a given type expression and are transparently
-   unfoldable to it. They cannot be recursive. The non-terminal
-   :production:`uident` designates identifiers starting with an uppercase.
+   Without :n:`{| := | ::= }`
+     Defines an abstract type for use representing data from OCaml.  Not for
+     end users.
+
+   :n:`with @tac2typ_def`
+     Permits definition of mutually recursive type definitions.
+
+   Each production of :token:`tac2typ_knd` defines one of four possible kinds
+   of definitions, respectively: alias, variant, open variant and record types.
+
+   Aliases are names for a given type expression and are transparently
+   unfoldable to that expression. They cannot be recursive.
+
+   .. The non-terminal :token:`uident` designates identifiers starting with an uppercase.
 
    Variants are sum types defined by constructors and eliminated by
    pattern-matching. They can be recursive, but the `rec` flag must be
    explicitly set. Pattern matching must be exhaustive.
 
+   Open variants can be extended with additional constructors using the `::=` form.
+
    Records are product types with named fields and eliminated by projection.
    Likewise they can be recursive if the `rec` flag is set.
 
-   .. cmdv:: Ltac2 Type {? @ltac2_typeparams } @ltac2_qualid ::= [ @ltac2_constructordef ]
+.. cmd:: Ltac2 @ external @ident : @ltac2_type := @string @string
+   :name: Ltac2 external
 
-      Open variants are a special kind of variant types whose constructors are not
-      statically defined, but can instead be extended dynamically. A typical example
-      is the standard `exn` type. Pattern matching on open variants must always include a catch-all
-      clause. They can be extended with this command.
+   Declares abstract terms.  Frequently, these declare OCaml functions
+   defined in |Coq| and give their type information.  They can also declare
+   data structures from OCaml.  This command has no use for the end user.
+
+APIs
+~~~~
+
+Ltac2 provides over 150 API functions that provide various capabilities.  These
+are declared with :cmd:`Ltac2 external` in :n:`lib/coq/user-contrib/Ltac2/*.v`.
+For example, `Message.print` defined in `Message.v` is used to print messages:
+
+.. coqtop:: none
+
+   Goal True.
+
+.. coqtop:: all abort
+
+   Message.print (Message.of_string "fully qualified calls").
+   From Ltac2 Require Import Message.
+   print (of_string "unqualified calls").
 
 Term Syntax
 ~~~~~~~~~~~
 
-The syntax of the functional fragment is very close to the one of Ltac1, except
+The syntax of the functional fragment is very close to that of Ltac1, except
 that it adds a true pattern-matching feature, as well as a few standard
 constructs from ML.
 
-.. productionlist:: coq
-   ltac2_var        : `lident`
-   ltac2_qualid     : ( `modpath` . )* `lident`
-   ltac2_constructor: `uident`
-   ltac2_term       : `ltac2_qualid`
-                    : `ltac2_constructor`
-                    : `ltac2_term` `ltac2_term` ... `ltac2_term`
-                    : fun `ltac2_var` => `ltac2_term`
-                    : let `ltac2_var` := `ltac2_term` in `ltac2_term`
-                    : let rec `ltac2_var` := `ltac2_term` in `ltac2_term`
-                    : match `ltac2_term` with `ltac2_branch` ... `ltac2_branch` end
-                    : `int`
-                    : `string`
-                    : `ltac2_term` ; `ltac2_term`
-                    : [| `ltac2_term` ; ... ; `ltac2_term` |]
-                    : ( `ltac2_term` , ... , `ltac2_term` )
-                    : { `ltac2_field` `ltac2_field` ... `ltac2_field` }
-                    : `ltac2_term` . ( `ltac2_qualid` )
-                    : `ltac2_term` . ( `ltac2_qualid` ) := `ltac2_term`
-                    : [; `ltac2_term` ; ... ; `ltac2_term` ]
-                    : `ltac2_term` :: `ltac2_term`
-                    : ...
-   ltac2_branch     : `ltac2_pattern` => `ltac2_term`
-   ltac2_pattern    : `ltac2_var`
-                    : _
-                    : ( `ltac2_pattern` , ... , `ltac2_pattern` )
-                    : `ltac2_constructor` `ltac2_pattern` ... `ltac2_pattern`
-                    : [ ]
-                    : `ltac2_pattern` :: `ltac2_pattern`
-   ltac2_field      : `ltac2_qualid` := `ltac2_term`
-
-In practice, there is some additional syntactic sugar that allows e.g. to
-bind a variable and match on it at the same time, in the usual ML style.
+In practice, there is some additional syntactic sugar that allows the
+user to bind a variable and match on it at the same time, in the usual ML style.
 
 There is dedicated syntax for list and array literals.
 
-.. note::
+.. insertprodn ltac2_expr ltac2_tactic_atom
 
-   For now, deep pattern matching is not implemented.
+.. prodn::
+   ltac2_expr ::= @ltac2_expr5 ; @ltac2_expr
+   | @ltac2_expr5
+   ltac2_expr5 ::= fun {+ @tac2pat0 } => @ltac2_expr
+   | let {? rec } @ltac2_let_clause {* with @ltac2_let_clause } in @ltac2_expr
+   | @ltac2_expr3
+   ltac2_let_clause ::= {+ @tac2pat0 } := @ltac2_expr
+   ltac2_expr3 ::= {+, @ltac2_expr2 }
+   ltac2_expr2 ::= @ltac2_expr1 :: @ltac2_expr2
+   | @ltac2_expr1
+   ltac2_expr1 ::= @ltac2_expr0 {+ @ltac2_expr0 }
+   | @ltac2_expr0 .( @qualid )
+   | @ltac2_expr0 .( @qualid ) := @ltac2_expr5
+   | @ltac2_expr0
+   tac2rec_fieldexpr ::= @qualid := @ltac2_expr1
+   ltac2_expr0 ::= ( @ltac2_expr )
+   | ( @ltac2_expr : @ltac2_type )
+   | ()
+   | [ {*; @ltac2_expr5 } ]
+   | %{ {? {+ @tac2rec_fieldexpr } {? ; } } %}
+   | @ltac2_tactic_atom
+   ltac2_tactic_atom ::= @int
+   | @string
+   | @qualid
+   | @ @ident
+   | & @lident
+   | ' @term
+   | @ltac2_quotations
 
-Ltac Definitions
-~~~~~~~~~~~~~~~~
+The non-terminal :production:`lident` designates identifiers starting with a
+lowercase letter.
 
-.. cmd:: Ltac2 {? mutable} {? rec} @lident := @ltac2_value
+:n:`'@term` is equivalent to :n:`open_constr:(@term)`.
+
+
+
+Ltac2 Definitions
+~~~~~~~~~~~~~~~~~
+
+.. cmd:: Ltac2 {? mutable } {? rec } @tac2def_body {* with @tac2def_body }
    :name: Ltac2
 
-   This command defines a new global Ltac2 value.
+   .. insertprodn tac2def_body tac2def_body
+
+   .. prodn::
+      tac2def_body ::= {| _ | @ident } {* @tac2pat0 } := @ltac2_expr
+
+   This command defines a new global Ltac2 value.  If one or more :token:`tac2pat0`
+   are specified, the new value is a function.  This is a shortcut for one of the
+   :token:`ltac2_expr5` productions.  For example: :n:`Ltac2 foo a b := …` is equivalent
+   to :n:`Ltac2 foo := fun a b => …`.
 
    The body of an Ltac2 definition is required to be a syntactical value
    that is, a function, a constant, a pure constructor recursively applied to
    values or a (non-recursive) let binding of a value in a value.
 
-   .. productionlist:: coq
-      ltac2_value: fun `ltac2_var` => `ltac2_term`
-                       : `ltac2_qualid`
-                       : `ltac2_constructor` `ltac2_value` ... `ltac2_value`
-                       : `ltac2_var`
-                       : let `ltac2_var` := `ltac2_value` in `ltac2_value`
-
    If ``rec`` is set, the tactic is expanded into a recursive binding.
 
    If ``mutable`` is set, the definition can be redefined at a later stage (see below).
 
-.. cmd:: Ltac2 Set @qualid {? as @lident} := @ltac2_term
+.. cmd:: Ltac2 Set @qualid {? as @ident } := @ltac2_expr
    :name: Ltac2 Set
 
    This command redefines a previous ``mutable`` definition.
@@ -253,7 +342,6 @@ Ltac Definitions
          Ltac2 Eval y.
 
    .. example:: Interaction with recursive calls
-
 
       .. coqtop:: all
 
@@ -334,7 +422,7 @@ Intuitively a thunk of type :n:`unit -> 'a` can do the following:
   i.e. thunks can produce a lazy list of results where each
   tail is waiting for a continuation exception.
 - It can access a backtracking proof state, consisting among other things of
-  the current evar assignation and the list of goals under focus.
+  the current evar assignment and the list of goals under focus.
 
 We now describe more thoroughly the various effects in Ltac2.
 
@@ -348,8 +436,8 @@ Mutable fields of records can be modified using the set syntax. Likewise,
 built-in types like `string` and `array` feature imperative assignment. See
 modules `String` and `Array` respectively.
 
-A few printing primitives are provided in the `Message` module, allowing to
-display information to the user.
+A few printing primitives are provided in the `Message` module for
+displaying information to the user.
 
 Fatal errors
 ++++++++++++
@@ -458,19 +546,26 @@ Ltac2 makes these explicit using quoting and unquoting notation, although there
 are notations to do it in a short and elegant way so as not to be too cumbersome
 to the user.
 
-Generic Syntax for Quotations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In general, quotations can be introduced in terms using the following syntax, where
-:production:`quotentry` is some parsing entry.
-
-.. prodn::
-   ltac2_term += @ident : ( @quotentry )
+Quotations
+~~~~~~~~~~
 
 .. _ltac2_built-in-quotations:
 
 Built-in quotations
 +++++++++++++++++++
+
+.. insertprodn ltac2_quotations ltac1_expr_in_env
+
+.. prodn::
+   ltac2_quotations ::= ident : ( @lident )
+   | constr : ( @term )
+   | open_constr : ( @term )
+   | pattern : ( @cpattern )
+   | reference : ( {| & @ident | @qualid } )
+   | ltac1 : ( @ltac1_expr_in_env )
+   | ltac1val : ( @ltac1_expr_in_env )
+   ltac1_expr_in_env ::= @ltac_expr
+   | {* @ident } |- @ltac_expr
 
 The current implementation recognizes the following built-in quotations:
 
@@ -481,16 +576,17 @@ The current implementation recognizes the following built-in quotations:
   holes at runtime (type ``Init.constr`` as well).
 - ``pattern``, which parses Coq patterns and produces a pattern used for term
   matching (type ``Init.pattern``).
-- ``reference``, which parses either a :n:`@qualid` or :n:`&@ident`. Qualified names
+- ``reference``  Qualified names
   are globalized at internalization into the corresponding global reference,
   while ``&id`` is turned into ``Std.VarRef id``. This produces at runtime a
-  ``Std.reference``. There shall be no white space between the ampersand
-  symbol (``&``) and the identifier (:n:`@ident`).
+  ``Std.reference``.
+- ``ltac1``, for calling Ltac1 code, described in :ref:`simple_api`.
+- ``ltac1val``, for manipulating Ltac1 values, described in :ref:`low_level_api`.
 
-The following syntactic sugar is provided for two common cases.
+The following syntactic sugar is provided for two common cases:
 
 - ``@id`` is the same as ``ident:(id)``
-- ``'t`` is the same as ``open_constr:(t)``
+- :n:`'@term` is the same as :n:`open_constr:(@term)`
 
 Strict vs. non-strict mode
 ++++++++++++++++++++++++++
@@ -521,11 +617,11 @@ Term Antiquotations
 Syntax
 ++++++
 
-One can also insert Ltac2 code into Coq terms, similarly to what is possible in
+One can also insert Ltac2 code into Coq terms, similar to what is possible in
 Ltac1.
 
 .. prodn::
-   term += ltac2:( @ltac2_term )
+   term += ltac2:( @ltac2_expr )
 
 Antiquoted terms are expected to have type ``unit``, as they are only evaluated
 for their side-effects.
@@ -659,168 +755,473 @@ insert in a concise way an Ltac2 variable of type :n:`constr` into a Coq term.
 Match over terms
 ~~~~~~~~~~~~~~~~
 
-Ltac2 features a construction similar to Ltac1 :n:`match` over terms, although
+Ltac2 features a construction similar to Ltac1 :tacn:`match` over terms, although
 in a less hard-wired way.
 
-.. productionlist:: coq
-   ltac2_term       : match! `ltac2_term` with `constrmatching` .. `constrmatching` end
-                    : lazy_match! `ltac2_term` with `constrmatching` .. `constrmatching` end
-                    : multi_match! `ltac2_term` with `constrmatching` .. `constrmatching` end
-   constrmatching  : | `constrpattern` => `ltac2_term`
-   constrpattern   : `term`
-                   : context  [ `term` ]
-                   : context `lident` [ `term` ]
+.. tacn:: @ltac2_match_key @ltac2_expr__term with @ltac2_match_list end
+   :name: lazy_match!; match!; multi_match!
 
-This construction is not primitive and is desugared at parsing time into
-calls to term matching functions from the `Pattern` module. Internally, it is
-implemented thanks to a specific scope accepting the :n:`@constrmatching` syntax.
+   .. insertprodn ltac2_match_key ltac2_match_pattern
 
-Variables from the :n:`@constrpattern` are statically bound in the body of the branch, to
-values of type `constr` for the variables from the :n:`@term` pattern and to a
-value of type `Pattern.context` for the variable :n:`@lident`.
+   .. prodn::
+      ltac2_match_key ::= lazy_match!
+      | match!
+      | multi_match!
+      ltac2_match_list ::= {? %| } {+| @ltac2_match_rule }
+      ltac2_match_rule ::= @ltac2_match_pattern => @ltac2_expr
+      ltac2_match_pattern ::= @cpattern
+      | context {? @ident } [ @cpattern ]
 
-Note that unlike Ltac, only lowercase identifiers are valid as Ltac2
-bindings, so that there will be a syntax error if one of the bound variables
+   Evaluates :n:`@ltac2_expr__term`, which must yield a term, and matches it
+   sequentially with the :token:`ltac2_match_pattern`\s, which may contain
+   metavariables.  When a match is found, metavariable values are substituted
+   into :n:`@ltac2_expr`, which is then applied.
+
+   Matching may continue depending on whether  `lazy_match!`, `match!` or `multi_match!`
+   is specified.
+
+   In the :token:`ltac2_match_pattern`\s, metavariables have the form :n:`?@ident`, whereas
+   in the :n:`@ltac2_expr`\s, the question mark is omitted.
+
+   .. todo how does this differ from the 1-2 other unification routines elsewhere in Coq?
+
+   Matching is non-linear: if a
+   metavariable occurs more than once, each occurrence must match the same
+   expression.  Expressions match if they are syntactically equal or are
+   :term:`α-convertible <alpha-convertible>`.
+   Matching is first-order except on variables of the form :n:`@?@ident`
+   that occur in the head position of an application. For these variables,
+   matching is second-order and returns a functional term.
+
+   .. todo the `@?ident` form is in dangling_pattern_extension_rule, not included in the doc yet
+      maybe belongs with "Applications"
+
+   `lazy_match!`
+      Causes the match to commit to the first matching branch
+      rather than trying a new match if :n:`@ltac2_expr` fails.
+      :ref:`Example<ltac2_match_vs_lazymatch_ex>`.
+
+   `match!`
+      If :n:`@ltac2_expr` fails, continue matching with the next branch.
+      Failures in subsequent tactics (after the `match!`) will not cause selection
+      of a new branch.  Examples :ref:`here<ltac2_match_vs_lazymatch_ex>` and
+      :ref:`here<ltac2_match_vs_multimatch_ex>`.
+
+   `multi_match!`
+      If :n:`@ltac2_expr` fails, continue matching with the next branch.
+      When a :n:`@ltac2_expr` succeeds for a branch, subsequent failures
+      (after the `multi_match!`) causing consumption of all the successes
+      of :n:`@ltac2_expr` trigger selection of a new matching branch.
+      :ref:`Example<ltac2_match_vs_multimatch_ex>`.
+
+   :n:`@cpattern`
+      The syntax of :token:`cpattern` is
+      the same as that of :token:`term`\s, but it can contain pattern matching
+      metavariables in the form :n:`?@ident` and :n:`@?@ident`.  :g:`_` can be used to match
+      irrelevant terms.
+
+      .. todo more on @?@ident here: https://github.com/coq/coq/pull/12085#discussion_r467504046
+      .. todo Example is broken :ref:`Example<ltac2_match_with_holes_ex>`.
+
+      .. todo Didn't understand the following 2 paragraphs well enough to revise
+         see https://github.com/coq/coq/pull/12103#discussion_r436297754 for a
+         possible example
+
+      Unlike Ltac1, Ltac2 :n:`?id` metavariables only match closed terms.
+
+      There is also a special notation for second-order pattern matching: in an
+      applicative pattern of the form :n:`@?@ident @ident__1 … @ident__n`,
+      the variable :token:`ident` matches any complex expression with (possible)
+      dependencies in the variables :n:`@ident__i` and returns a functional term
+      of the form :n:`fun @ident__1 … @ident__n => @term`.
+
+   .. _match_term_context:
+
+   :n:`context {? @ident } [ @cpattern ]`
+      Matches any term with a subterm matching :token:`cpattern`. If there is a match
+      and :n:`@ident` is present, it is assigned the "matched
+      context", i.e. the initial term where the matched subterm is replaced by a
+      hole.  This hole in the matched context can be filled with the expression
+      :n:`Pattern.instantiate @ident @cpattern`.
+
+      For :tacn:`match!` and :tacn:`multi_match!`, if the evaluation of the :token:`ltac2_expr`
+      fails, the next matching subterm is tried. If no further subterm matches, the next branch
+      is tried.  Matching subterms are considered from top to bottom and from left to
+      right (with respect to the raw printing obtained by setting the
+      :flag:`Printing All` flag).  :ref:`Example<ltac2_match_term_context_ex>`.
+
+   .. todo There's a more realistic example from @JasonGross here:
+      https://github.com/coq/coq/pull/12103#discussion_r432996954
+
+   :n:`@ltac2_expr`
+      The tactic to apply if the construct matches.  Metavariable values from the pattern
+      match are statically bound as Ltac2 variables in :n:`@ltac2_expr` before
+      it is applied.
+
+      If :n:`@ltac2_expr` is a tactic with backtracking points, then subsequent
+      failures after a :tacn:`lazy_match!` or :tacn:`multi_match!` (but not :tacn:`match!`) can cause
+      backtracking into :n:`@ltac2_expr` to select its next success.
+
+   Variables from the :n:`@tac2pat1` are statically bound in the body of the branch.
+   Variables from the :n:`@term` pattern have values of type `constr`.
+   Variables from the :n:`@ident` in the `context` construct have values of type
+   `Pattern.context` (defined in `Pattern.v`).
+
+Note that unlike Ltac1, only lowercase identifiers are valid as Ltac2
+bindings.  Ltac2 will report an error if one of the bound variables
 starts with an uppercase character.
 
-The semantics of this construction is otherwise the same as the corresponding
+The semantics of this construction are otherwise the same as the corresponding
 one from Ltac1, except that it requires the goal to be focused.
+
+.. _ltac2_match_vs_lazymatch_ex:
+
+.. example:: Ltac2 Comparison of lazy_match! and match!
+
+   (Equivalent to this :ref:`Ltac1 example<match_vs_lazymatch_ex>`.)
+
+   These lines define a `msg` tactic that's used in several examples as a more-succinct
+   alternative to `print (to_string "...")`:
+
+   .. coqtop:: in
+
+      From Ltac2 Require Import Message.
+      Ltac2 msg x := print (of_string x).
+
+   .. coqtop:: none
+
+      Goal True.
+
+   In :tacn:`lazy_match!`, if :token:`ltac2_expr` fails, the :tacn:`lazy_match!` fails;
+   it doesn't look for further matches.  In :tacn:`match!`, if :token:`ltac2_expr` fails
+   in a matching branch, it will try to match on subsequent branches.  Note that
+   :n:`'@term` below is equivalent to :n:`open_constr:(@term)`.
+
+   .. coqtop:: all
+
+      Fail lazy_match! 'True with
+      | True => msg "branch 1"; fail
+      | _ => msg "branch 2"
+      end.
+
+      match! 'True with
+      | True => msg "branch 1"; fail
+      | _ => msg "branch 2"
+      end.
+
+.. _ltac2_match_vs_multimatch_ex:
+
+.. example:: Ltac2 Comparison of match! and multi_match!
+
+   (Equivalent to this :ref:`Ltac1 example<match_vs_multimatch_ex>`.)
+
+   :tacn:`match!` tactics are only evaluated once, whereas :tacn:`multi_match!`
+   tactics may be evaluated more than once if the following constructs trigger backtracking:
+
+   .. coqtop:: all
+
+      Fail match! 'True with
+      | True => msg "branch 1"
+      | _ => msg "branch 2"
+      end ;
+      msg "branch A"; fail.
+
+   .. coqtop:: all
+
+      Fail multi_match! 'True with
+      | True => msg "branch 1"
+      | _ => msg "branch 2"
+      end ;
+      msg "branch A"; fail.
+
+.. _ltac2_match_with_holes_ex:
+
+.. todo EXAMPLE DOESN'T WORK: Ltac2 does not (yet?) handle pattern variables matching open terms.
+   Matching a pattern with holes
+
+   (Equivalent to this :ref:`Ltac1 example<match_with_holes_ex>`.)
+
+   Notice the :tacn:`idtac` prints ``(z + 1)`` while the :tacn:`pose` substitutes
+   ``(x + 1)``.
+
+   .. coqtop:: all
+
+      match! constr:(fun x => (x + 1) * 3) with
+      | fun z => ?y * 3 => print (of_constr y); pose (fun z: nat => $y * 5)
+      end.
+
+.. _ltac2_match_term_context_ex:
+
+.. example:: Ltac2 Multiple matches for a "context" pattern.
+
+   (Equivalent to this :ref:`Ltac1 example<match_term_context_ex>`.)
+
+   Internally "x <> y" is represented as "(~ (x = y))", which produces the
+   first match.
+
+   .. coqtop:: in
+
+      Ltac2 f2 t := match! t with
+                    | context [ (~ ?t) ] => print (of_constr t); fail
+                    | _ => ()
+                    end.
+
+   .. coqtop:: all abort
+
+      f2 constr:((~ True) <> (~ False)).
 
 Match over goals
 ~~~~~~~~~~~~~~~~
 
-Similarly, there is a way to match over goals in an elegant way, which is
-just a notation desugared at parsing time.
+.. tacn:: @ltac2_match_key {? reverse } goal with @goal_match_list end
+   :name: lazy_match! goal; match! goal; multi_match! goal
 
-.. productionlist:: coq
-   ltac2_term             : match! [ reverse ] goal with `goalmatching` ... `goalmatching` end
-                    : lazy_match! [ reverse ] goal with `goalmatching` ... `goalmatching` end
-                    : multi_match! [ reverse ] goal with `goalmatching` ... `goalmatching` end
-   goalmatching     : | [ `hypmatching` ... `hypmatching` |- `constrpattern` ] => `ltac2_term`
-   hypmatching      : `lident` : `constrpattern`
-                    : _ : `constrpattern`
+   .. insertprodn goal_match_list gmatch_hyp_pattern
 
-Variables from :n:`@hypmatching` and :n:`@constrpattern` are bound in the body of the
-branch. Their types are:
+   .. prodn::
+      goal_match_list ::= {? %| } {+| @gmatch_rule }
+      gmatch_rule ::= @gmatch_pattern => @ltac2_expr
+      gmatch_pattern ::= [ {*, @gmatch_hyp_pattern } |- @ltac2_match_pattern ]
+      gmatch_hyp_pattern ::= @name : @ltac2_match_pattern
 
-- ``constr`` for pattern variables appearing in a :n:`@term`
-- ``Pattern.context`` for variables binding a context
-- ``ident`` for variables binding a hypothesis name.
+   Matches over goals, similar to Ltac1 :tacn:`match goal`.
+   Use this form to match hypotheses and/or goals in the proof context.  These patterns have zero or
+   more subpatterns to match hypotheses followed by a subpattern to match the conclusion.  Except for the
+   differences noted below, this works the same as the corresponding :n:`@ltac2_match_key @ltac2_expr` construct
+   (see :tacn:`match!`).  Each current goal is processed independently.
 
-The same identifier caveat as in the case of matching over constr applies, and
-this features has the same semantics as in Ltac1. In particular, a ``reverse``
-flag can be specified to match hypotheses from the more recently introduced to
-the least recently introduced one.
+   Matching is non-linear: if a
+   metavariable occurs more than once, each occurrence must match the same
+   expression.  Within a single term, expressions match if they are syntactically equal or
+   :term:`α-convertible <alpha-convertible>`.  When a metavariable is used across
+   multiple hypotheses or across a hypothesis and the current goal, the expressions match if
+   they are :term:`convertible`.
+
+   .. more detail here: https://github.com/coq/coq/pull/12085#discussion_r470406466
+
+   :n:`{*, @gmatch_pattern }`
+      Patterns to match with hypotheses.  Each pattern must match a distinct hypothesis in order
+      for the branch to match.
+
+      Hypotheses have the form :n:`@name {? := @term__binder } : @type`.  Currently Ltac2 doesn't
+      allow matching on or capturing the value of :n:`@term__binder`.  It only supports matching on
+      the :token:`name` and the :token:`type`, for example `n : ?t`.
+
+      .. currently only supports the first row
+         :list-table::
+         :widths: 2 1
+         :header-rows: 1
+
+         * - Pattern syntax
+           - Example pattern
+
+         * - :n:`@name : @ltac2_match_pattern`
+           - `n : ?t`
+
+         * - :n:`@name := @match_pattern__binder`
+           - `n := ?b`
+
+         * - :n:`@name := @term__binder : @type`
+           - `n := ?b : ?t`
+
+         * - :n:`@name := [ @match_pattern__binder ] : @ltac2_match_pattern`
+           - `n := [ ?b ] : ?t`
+
+         :token:`name` can't have a `?`.  Note that the last two forms are equivalent except that:
+
+         - if the `:` in the third form has been bound to something else in a notation, you must use the fourth form.
+           Note that cmd:`Require Import` `ssreflect` loads a notation that does this.
+         - a :n:`@term__binder` such as `[ ?l ]` (e.g., denoting a singleton list after
+           :cmd:`Import` `ListNotations`) must be parenthesized or, for the fourth form,
+           use double brackets: `[ [ ?l ] ]`.
+
+      If there are multiple :token:`gmatch_hyp_pattern`\s in a branch, there may be multiple ways to match them to hypotheses.
+      For :tacn:`match! goal` and :tacn:`multi_match! goal`, if the evaluation of the :token:`ltac2_expr` fails,
+      matching will continue with the next hypothesis combination.  When those are exhausted,
+      the next alternative from any `context` construct in the :token:`ltac2_match_pattern`\s is tried and then,
+      when the context alternatives are exhausted, the next branch is tried.
+      :ref:`Example<ltac2_match_goal_multiple_hyps_ex>`.
+
+   `reverse`
+      Hypothesis matching for :token:`gmatch_hyp_pattern`\s normally begins by matching them from left to right,
+      to hypotheses, last to first.  Specifying `reverse` begins matching in the reverse order, from
+      first to last.  :ref:`Normal<ltac2_match_goal_hyps_ex>` and :ref:`reverse<ltac2_match_goal_hyps_rev_ex>` examples.
+
+   :n:`|- @ltac2_match_pattern`
+      A pattern to match with the current goal
+
+   Note that unlike Ltac1, only lowercase identifiers are valid as Ltac2
+   bindings.  Ltac2 will report an error if you try to use a bound variable
+   that starts with an uppercase character.
+
+   Variables from :n:`@gmatch_hyp_pattern` and :n:`@ltac2_match_pattern` are
+   bound in the body of the branch. Their types are:
+
+   - ``constr`` for pattern variables appearing in a :n:`@term`
+   - ``Pattern.context`` for variables binding a context
+   - ``ident`` for variables binding a hypothesis name.
+
+   The same identifier caveat as in the case of matching over constr applies, and
+   this feature has the same semantics as in Ltac1.
+
+.. _ltac2_match_goal_hyps_ex:
+
+.. example:: Ltac2 Matching hypotheses
+
+   (Equivalent to this :ref:`Ltac1 example<match_goal_hyps_ex>`.)
+
+   Hypotheses are matched from the last hypothesis (which is by default the newest
+   hypothesis) to the first until the :tacn:`apply` succeeds.
+
+   .. coqtop:: all abort
+
+      Goal forall A B : Prop, A -> B -> (A->B).
+      intros.
+      match! goal with
+      | [ h : _ |- _ ] => let h := Control.hyp h in print (of_constr h); apply $h
+      end.
+
+.. _ltac2_match_goal_hyps_rev_ex:
+
+.. example:: Matching hypotheses with reverse
+
+   (Equivalent to this :ref:`Ltac1 example<match_goal_hyps_rev_ex>`.)
+
+   Hypotheses are matched from the first hypothesis to the last until the :tacn:`apply` succeeds.
+
+   .. coqtop:: all abort
+
+      Goal forall A B : Prop, A -> B -> (A->B).
+      intros.
+      match! reverse goal with
+      | [ h : _ |- _ ] => let h := Control.hyp h in print (of_constr h); apply $h
+      end.
+
+.. _ltac2_match_goal_multiple_hyps_ex:
+
+.. example:: Multiple ways to match a hypotheses
+
+   (Equivalent to this :ref:`Ltac1 example<match_goal_multiple_hyps_ex>`.)
+
+   Every possible match for the hypotheses is evaluated until the right-hand
+   side succeeds.  Note that `h1` and `h2` are never matched to the same hypothesis.
+   Observe that the number of permutations can grow as the factorial
+   of the number of hypotheses and hypothesis patterns.
+
+   .. coqtop:: all abort
+
+      Goal forall A B : Prop, A -> B -> (A->B).
+      intros A B H.
+      match! goal with
+      | [ h1 : _, h2 : _ |- _ ] =>
+         print (concat (of_string "match ")
+               (concat (of_constr (Control.hyp h1))
+               (concat (of_string " ")
+               (of_constr (Control.hyp h2)))));
+         fail
+      | [ |- _ ] => ()
+      end.
+
+
+Match on values
+~~~~~~~~~~~~~~~
+
+.. tacn:: match @ltac2_expr5 with {? @ltac2_branches } end
+   :name: match (Ltac2)
+
+   Matches a value, akin to the OCaml `match` construct.  By itself, it doesn't cause backtracking
+   as do the `*match*!` and `*match*! goal` constructs.
+
+   .. insertprodn ltac2_branches atomic_tac2pat
+
+   .. prodn::
+      ltac2_branches ::= {? %| } {+| @tac2pat1 => @ltac2_expr }
+      tac2pat1 ::= @qualid {+ @tac2pat0 }
+      | @qualid
+      | [ ]
+      | @tac2pat0 :: @tac2pat0
+      | @tac2pat0
+      tac2pat0 ::= _
+      | ()
+      | @qualid
+      | ( {? @atomic_tac2pat } )
+      atomic_tac2pat ::= @tac2pat1 : @ltac2_type
+      | @tac2pat1 , {*, @tac2pat1 }
+      | @tac2pat1
+
+.. note::
+
+   For now, deep pattern matching is not implemented.
+
 
 .. _ltac2_notations:
 
 Notations
 ---------
 
-Notations are the crux of the usability of Ltac1. We should be able to recover
-a feeling similar to the old implementation by using and abusing notations.
-
-Scopes
-~~~~~~
-
-A scope is a name given to a grammar entry used to produce some Ltac2 expression
-at parsing time. Scopes are described using a form of S-expression.
-
-.. prodn::
-   ltac2_scope ::= {| @string | @int | @lident ({+, @ltac2_scope}) }
-
-A few scopes contain antiquotation features. For the sake of uniformity, all
-antiquotations are introduced by the syntax :n:`$@lident`.
-
-The following scopes are built-in.
-
-- :n:`constr`:
-
-  + parses :n:`c = @term` and produces :n:`constr:(c)`
-
-  This scope can be parameterized by a list of delimiting keys of notation
-  scopes (as described in :ref:`LocalInterpretationRulesForNotations`),
-  describing how to interpret the parsed term. For instance, :n:`constr(A, B)`
-  parses :n:`c = @term` and produces :n:`constr:(c%A%B)`.
-
-- :n:`ident`:
-
-  + parses :n:`id = @ident` and produces :n:`ident:(id)`
-  + parses :n:`$(x = @ident)` and produces the variable :n:`x`
-
-- :n:`list0(@ltac2_scope)`:
-
-  + if :n:`@ltac2_scope` parses :n:`@quotentry`,
-    then it parses :n:`(@quotentry__0, ..., @quotentry__n)` and produces
-    :n:`[@quotentry__0; ...; @quotentry__n]`.
-
-- :n:`list0(@ltac2_scope, sep = @string__sep)`:
-
-  + if :n:`@ltac2_scope` parses :n:`@quotentry`,
-    then it parses :n:`(@quotentry__0 @string__sep ... @string__sep @quotentry__n)`
-    and produce :n:`[@quotentry__0; ...; @quotentry__n]`.
-
-- :n:`list1`: same as :n:`list0` (with or without separator) but parses :n:`{+ @quotentry}` instead
-  of :n:`{* @quotentry}`.
-
-- :n:`opt(@ltac2_scope)`
-
-  + if :n:`@ltac2_scope` parses :n:`@quotentry`, parses :n:`{? @quotentry}` and produces either :n:`None` or
-    :n:`Some x` where :n:`x` is the parsed expression.
-
-- :n:`self`:
-
-  + parses a Ltac2 expression at the current level and returns it as is.
-
-- :n:`next`:
-
-  + parses a Ltac2 expression at the next level and returns it as is.
-
-- :n:`tactic(n = @int)`:
-
-  + parses a Ltac2 expression at the provided level :n:`n` and returns it as is.
-
-- :n:`thunk(@ltac2_scope)`:
-
-  + parses the same as :n:`scope`, and if :n:`e` is the parsed expression, returns
-    :n:`fun () => e`.
-
-- :n:`STRING`:
-
-  + parses the corresponding string as an identifier and returns :n:`()`.
-
-- :n:`keyword(s = @string)`:
-
-  + parses the string :n:`s` as a keyword and returns `()`.
-
-- :n:`terminal(s = @string)`:
-
-  + parses the string :n:`s` as a keyword, if it is already a
-    keyword, otherwise as an :n:`@ident`. Returns `()`.
-
-- :n:`seq(@ltac2_scope__1, ..., @ltac2_scope__2)`:
-
-  + parses :n:`scope__1`, ..., :n:`scope__n` in this order, and produces a tuple made
-    out of the parsed values in the same order. As an optimization, all
-    subscopes of the form :n:`STRING` are left out of the returned tuple, instead
-    of returning a useless unit value. It is forbidden for the various
-    subscopes to refer to the global entry using :n:`self` or :n:`next`.
-
-A few other specific scopes exist to handle Ltac1-like syntax, but their use is
-discouraged and they are thus not documented.
-
-For now there is no way to declare new scopes from Ltac2 side, but this is
-planned.
-
-Notations
-~~~~~~~~~
-
-The Ltac2 parser can be extended with syntactic notations.
-
-.. cmd:: Ltac2 Notation {+ {| @lident (@ltac2_scope) | @string } } {? : @int} := @ltac2_term
+.. cmd:: Ltac2 Notation {+ @ltac2_scope } {? : @int } := @ltac2_expr
    :name: Ltac2 Notation
 
-   A Ltac2 notation adds a parsing rule to the Ltac2 grammar, which is expanded
+   .. todo seems like name maybe should use lident rather than ident, considering:
+
+      Ltac2 Notation "ex1" X(constr) := print (of_constr X).
+      ex1 1.
+
+      Unbound constructor X
+
+      This works fine with lower-case "x" in place of "X"
+
+   .. todo Ltac2 Notation := permits redefining same symbol (no warning)
+      Also allows defining a symbol beginning with uppercase, which is prohibited
+      in similar constructs.
+
+   :cmd:`Ltac2 Notation` provides a way to extend the syntax of Ltac2 tactics.  The left-hand
+   side (before the `:=`) defines the syntax to recognize and gives formal parameter
+   names for the syntactic values.  :n:`@int` is the level of the notation.
+   When the notation is used, the values are substituted
+   into the right-hand side.  The right-hand side is typechecked when the notation is used,
+   not when it is defined.  In the following example, `x` is the formal parameter name and
+   `constr` is its :ref:`syntactic class<syntactic_classes>`.  `print` and `of_constr` are
+   functions provided by |Coq| through `Message.v`.
+
+   .. todo "print" doesn't seem to pay attention to "Set Printing All"
+
+   .. example:: Printing a :n:`@term`
+
+      .. coqtop:: none
+
+         Goal True.
+
+      .. coqtop:: all
+
+         From Ltac2 Require Import Message.
+         Ltac2 Notation "ex1" x(constr) := print (of_constr x).
+         ex1 (1 + 2).
+
+      You can also print terms with a regular Ltac2 definition, but then the :n:`@term` must be in
+      the quotation `constr:( … )`:
+
+      .. coqtop:: all
+
+         Ltac2 ex2 x := print (of_constr x).
+         ex2 constr:(1+2).
+
+   There are also metasyntactic classes described :ref:`here<syntactic_classes>`
+   that combine other items.  For example, `list1(constr, ",")`
+   recognizes a comma-separated list of one or more :token:`term`\s.
+
+   .. example:: Parsing a list of :n:`@term`\s
+
+      .. coqtop:: abort all
+
+         Ltac2 rec print_list x := match x with
+         | a :: t => print (of_constr a); print_list t
+         | [] => ()
+         end.
+         Ltac2 Notation "ex2" x(list1(constr, ",")) := print_list x.
+         ex2 1, 2, 3.
+
+   An Ltac2 notation adds a parsing rule to the Ltac2 grammar, which is expanded
    to the provided body where every token from the notation is let-bound to the
    corresponding generated expression.
 
@@ -848,37 +1249,432 @@ The Ltac2 parser can be extended with syntactic notations.
 Abbreviations
 ~~~~~~~~~~~~~
 
-.. cmdv:: Ltac2 Notation @lident := @ltac2_term
+.. cmd:: Ltac2 Notation {| @string | @lident } := @ltac2_expr
+   :name: Ltac2 Notation (abbreviation)
 
-  This command introduces a special kind of notation, called an abbreviation,
-  that is designed so that it does not add any parsing rules. It is similar in
-  spirit to Coq abbreviations, insofar as its main purpose is to give an
-  absolute name to a piece of pure syntax, which can be transparently referred to
-  by this name as if it were a proper definition.
+   Introduces a special kind of notation, called an abbreviation,
+   that does not add any parsing rules. It is similar in
+   spirit to Coq abbreviations (see :cmd:`Notation (abbreviation)`,
+   insofar as its main purpose is to give an
+   absolute name to a piece of pure syntax, which can be transparently referred to
+   by this name as if it were a proper definition.
 
-  The abbreviation can then be manipulated just as a normal Ltac2 definition,
-  except that it is expanded at internalization time into the given expression.
-  Furthermore, in order to make this kind of construction useful in practice in
-  an effectful language such as Ltac2, any syntactic argument to an abbreviation
-  is thunked on-the-fly during its expansion.
+   The abbreviation can then be manipulated just like a normal Ltac2 definition,
+   except that it is expanded at internalization time into the given expression.
+   Furthermore, in order to make this kind of construction useful in practice in
+   an effectful language such as Ltac2, any syntactic argument to an abbreviation
+   is thunked on-the-fly during its expansion.
 
-For instance, suppose that we define the following.
+   For instance, suppose that we define the following.
 
-:n:`Ltac2 Notation foo := fun x => x ().`
+   :n:`Ltac2 Notation foo := fun x => x ().`
 
-Then we have the following expansion at internalization time.
+   Then we have the following expansion at internalization time.
 
-:n:`foo 0 ↦ (fun x => x ()) (fun _ => 0)`
+   :n:`foo 0 ↦ (fun x => x ()) (fun _ => 0)`
 
-Note that abbreviations are not typechecked at all, and may result in typing
-errors after expansion.
+   Note that abbreviations are not type checked at all, and may result in typing
+   errors after expansion.
+
+.. _defining_tactics:
+
+Defining tactics
+~~~~~~~~~~~~~~~~
+
+Built-in tactics (those defined in OCaml code in the |Coq| executable) and Ltac1 tactics,
+which are defined in `.v` files, must be defined through notations.  (Ltac2 tactics can be
+defined with :cmd:`Ltac2`.
+
+Notations for many but not all built-in tactics are defined in `Notations.v`, which is automatically
+loaded with Ltac2.  The Ltac2 syntax for these tactics is often identical or very similar to the
+tactic syntax described in other chapters of this documentation.  These notations rely on tactic functions
+declared in `Std.v`.  Functions corresponding to some built-in tactics may not yet be defined in the
+|Coq| executable or declared in `Std.v`.  Adding them may require code changes to |Coq| or defining
+workarounds through Ltac1 (described below).
+
+Two examples of syntax differences:
+
+- There is no notation defined that's equivalent to :n:`intros until {| @ident | @num }`.  There is,
+  however, already an ``intros_until`` tactic function defined ``Std.v``, so it may be possible for a user
+  to add the necessary notation.
+- The built-in `simpl` tactic in Ltac1 supports the use of scope keys in delta flags, e.g. :n:`simpl ["+"%nat]`
+  which is not accepted by Ltac2.  This is because Ltac2 uses a different
+  definition for :token:`delta_flag`; compare it to :token:`ltac2_delta_flag`.  This also affects
+  :tacn:`compute`.
+
+Ltac1 tactics are not automatically available in Ltac2.  (Note that some of the tactics described
+in the documentation are defined with Ltac1.)
+You can make them accessible in Ltac2 with commands similar to the following:
+
+.. coqtop:: in
+
+   From Coq Require Import Lia.
+   Local Ltac2 lia_ltac1 () := ltac1:(lia).
+   Ltac2 Notation "lia" := lia_ltac1 ().
+
+A similar approach can be used to access missing built-in tactics.  See :ref:`simple_api` for an
+example that passes two parameters to a missing build-in tactic.
+
+.. _syntactic_classes:
+
+Syntactic classes
+~~~~~~~~~~~~~~~~~
+
+The simplest syntactic classes in Ltac2 notations represent individual nonterminals
+from the |Coq| grammar.  Only a few selected nonterminals are available as syntactic classes.
+In addition, there are metasyntactic operations for describing
+more complex syntax, such as making an item optional or representing a list of items.
+When parsing, each syntactic class expression returns a value that's bound to a name in the
+notation definition.
+
+Syntactic classes are described with a form of S-expression:
+
+   .. insertprodn ltac2_scope ltac2_scope
+
+   .. prodn::
+      ltac2_scope ::= @string
+      | @int
+      | @name
+      | @name ( {+, @ltac2_scope } )
+
+.. todo no syn class for ints or strings?
+   parm names are not reserved (e.g the var can be named "list1")
+
+Metasyntactic operations that can be applied to other syntactic classes are:
+
+  :n:`opt(@ltac2_scope)`
+    Parses an optional :token:`ltac2_scope`.  The associated value is either :n:`None` or
+    enclosed in :n:`Some`
+
+  :n:`list1(@ltac2_scope {? , @string })`
+    Parses a list of one or more :token:`ltac2_scope`\s.  If :token:`string` is specified,
+    items must be separated by :token:`string`.
+
+  :n:`list0(@ltac2_scope {? , @string })`
+    Parses a list of zero or more :token:`ltac2_scope`\s.  If :token:`string` is specified,
+    items must be separated by :token:`string`.  For zero items, the associated value
+    is an empty list.
+
+  :n:`seq({+, @ltac2_scope })`
+    Parses the :token:`ltac2_scope`\s in order.  The associated value is a tuple,
+    omitting :token:`ltac2_scope`\s that are :token:`string`\s.
+    `self` and `next` are not permitted within `seq`.
+
+The following classes represent nonterminals with some special handling.  The
+table further down lists the classes that that are handled plainly.
+
+  :n:`constr {? ( {+, @scope_key } ) }`
+    Parses a :token:`term`.  If specified, the :token:`scope_key`\s are used to interpret
+    the term (as described in  :ref:`LocalInterpretationRulesForNotations`).  The last
+    :token:`scope_key` is the top of the scope stack that's applied to the :token:`term`.
+
+  :n:`open_constr`
+    Parses an open :token:`term`.
+
+  :n:`ident`
+    Parses :token:`ident` or :n:`$@ident`.  The first form returns :n:`ident:(@ident)`,
+    while the latter form returns the variable :n:`@ident`.
+
+  :n:`@string`
+    Accepts the specified string that is not a keyword, returning a value of `()`.
+
+  :n:`keyword(@string)`
+    Accepts the specified string that is a keyword, returning a value of `()`.
+
+  :n:`terminal(@string)`
+    Accepts the specified string whether it's a keyword or not, returning a value of `()`.
+
+  :n:`tactic {? (@int) }`
+    Parses an :token:`ltac2_expr`.  If :token:`int` is specified, the construct
+    parses a :n:`ltac2_expr@int`, for example `tactic(5)` parses :token:`ltac2_expr5`.
+    `tactic(6)` parses :token:`ltac2_expr`.
+    :token:`int` must be in the range `0 .. 6`.
+
+    You can also use `tactic` to accept an :token:`int` or a :token:`string`, but there's
+    no syntactic class that accepts *only* an :token:`int` or a :token:`string`.
+
+    .. todo this doesn't work as expected: "::" is in ltac2_expr1
+       Ltac2 Notation "ex4" x(tactic(0)) := x.
+       ex4 auto :: [auto].
+
+  .. not sure "self" and "next" do anything special.  I get the same error
+     message for both from constructs like
+
+     Ltac2 Notation "ex5" x(self) := auto.
+     ex5 match.
+
+     Syntax error: [tactic:tac2expr level 5] expected after 'match' (in [tactic:tac2expr]).
+
+  :n:`self`
+    parses an Ltac2 expression at the current level and returns it as is.
+
+  :n:`next`
+    parses an Ltac2 expression at the next level and returns it as is.
+
+  :n:`thunk(@ltac2_scope)`
+    Used for semantic effect only, parses the same as :token:`ltac2_scope`.
+    If :n:`e` is the parsed expression for :token:`ltac2_scope`, `thunk`
+    returns :n:`fun () => e`.
+
+  :n:`pattern`
+    parses a :token:`cpattern`
+
+A few syntactic classes contain antiquotation features. For the sake of uniformity, all
+antiquotations are introduced by the syntax :n:`$@lident`.
+
+A few other specific syntactic classes exist to handle Ltac1-like syntax, but their use is
+discouraged and they are thus not documented.
+
+For now there is no way to declare new syntactic classes from the Ltac2 side, but this is
+planned.
+
+Other nonterminals that have syntactic classes are listed here.
+
+   .. list-table::
+      :header-rows: 1
+
+      * - Syntactic class name
+        - Nonterminal
+        - Similar non-Ltac2 syntax
+
+      * - :n:`intropatterns`
+        - :token:`ltac2_intropatterns`
+        - :token:`intropattern_list`
+
+      * - :n:`intropattern`
+        - :token:`ltac2_simple_intropattern`
+        - :token:`simple_intropattern`
+
+      * - :n:`ident`
+        - :token:`ident_or_anti`
+        - :token:`ident`
+
+      * - :n:`destruction_arg`
+        - :token:`ltac2_destruction_arg`
+        - :token:`destruction_arg`
+
+      * - :n:`with_bindings`
+        - :token:`q_with_bindings`
+        - :n:`{? with @bindings }`
+
+      * - :n:`bindings`
+        - :token:`ltac2_bindings`
+        - :token:`bindings`
+
+      * - :n:`strategy`
+        - :token:`ltac2_strategy_flag`
+        - :token:`strategy_flag`
+
+      * - :n:`reference`
+        - :token:`refglobal`
+        - :token:`reference`
+
+      * - :n:`clause`
+        - :token:`ltac2_clause`
+        - :token:`clause_dft_concl`
+
+      * - :n:`occurrences`
+        - :token:`q_occurrences`
+        - :n:`{? at @occs_nums }`
+
+      * - :n:`induction_clause`
+        - :token:`ltac2_induction_clause`
+        - :token:`induction_clause`
+
+      * - :n:`conversion`
+        - :token:`ltac2_conversion`
+        - :token:`conversion`
+
+      * - :n:`rewriting`
+        - :token:`ltac2_oriented_rewriter`
+        - :token:`oriented_rewriter`
+
+      * - :n:`dispatch`
+        - :token:`ltac2_for_each_goal`
+        - :token:`for_each_goal`
+
+      * - :n:`hintdb`
+        - :token:`hintdb`
+        - :token:`hintbases`
+
+      * - :n:`move_location`
+        - :token:`move_location`
+        - :token:`where`
+
+      * - :n:`pose`
+        - :token:`pose`
+        - :token:`bindings_with_parameters`
+
+      * - :n:`assert`
+        - :token:`assertion`
+        - :n:`( @ident := @term )`
+
+      * - :n:`constr_matching`
+        - :token:`ltac2_match_list`
+        - See :tacn:`match`
+
+      * - :n:`goal_matching`
+        - :token:`goal_match_list`
+        - See :tacn:`match goal`
+
+Here is the syntax for the :n:`q_*` nonterminals:
+
+.. insertprodn ltac2_intropatterns nonsimple_intropattern
+
+.. prodn::
+   ltac2_intropatterns ::= {* @nonsimple_intropattern }
+   nonsimple_intropattern ::= *
+   | **
+   | @ltac2_simple_intropattern
+
+.. insertprodn ltac2_simple_intropattern ltac2_naming_intropattern
+
+.. prodn::
+   ltac2_simple_intropattern ::= @ltac2_naming_intropattern
+   | _
+   | @ltac2_or_and_intropattern
+   | @ltac2_equality_intropattern
+   ltac2_or_and_intropattern ::= [ {+| @ltac2_intropatterns } ]
+   | ()
+   | ( {+, @ltac2_simple_intropattern } )
+   | ( {+& @ltac2_simple_intropattern } )
+   ltac2_equality_intropattern ::= ->
+   | <-
+   | [= @ltac2_intropatterns ]
+   ltac2_naming_intropattern ::= ? @lident
+   | ?$ @lident
+   | ?
+   | @ident_or_anti
+
+.. insertprodn ident_or_anti ident_or_anti
+
+.. prodn::
+   ident_or_anti ::= @lident
+   | $ @ident
+
+.. insertprodn 	ltac2_destruction_arg ltac2_constr_with_bindings
+
+.. prodn::
+   ltac2_destruction_arg ::= @num
+   | @lident
+   | @ltac2_constr_with_bindings
+   ltac2_constr_with_bindings ::= @term {? with @ltac2_bindings }
+
+.. insertprodn q_with_bindings qhyp
+
+.. prodn::
+   q_with_bindings ::= {? with @ltac2_bindings }
+   ltac2_bindings ::= {+ @ltac2_simple_binding }
+   | {+ @term }
+   ltac2_simple_binding ::= ( @qhyp := @term )
+   qhyp ::= $ @ident
+   | @num
+   | @lident
+
+.. insertprodn ltac2_strategy_flag ltac2_delta_flag
+
+.. prodn::
+   ltac2_strategy_flag ::= {+ @ltac2_red_flag }
+   | {? @ltac2_delta_flag }
+   ltac2_red_flag ::= beta
+   | iota
+   | match
+   | fix
+   | cofix
+   | zeta
+   | delta {? @ltac2_delta_flag }
+   ltac2_delta_flag ::= {? - } [ {+ @refglobal } ]
+
+.. insertprodn refglobal refglobal
+
+.. prodn::
+   refglobal ::= & @ident
+   | @qualid
+   | $ @ident
+
+.. insertprodn ltac2_clause ltac2_in_clause
+
+.. prodn::
+   ltac2_clause ::= in @ltac2_in_clause
+   | at @ltac2_occs_nums
+   ltac2_in_clause ::= * {? @ltac2_occs }
+   | * |- {? @ltac2_concl_occ }
+   | {*, @ltac2_hypident_occ } {? |- {? @ltac2_concl_occ } }
+
+.. insertprodn q_occurrences ltac2_hypident
+
+.. prodn::
+   q_occurrences ::= {? @ltac2_occs }
+   ltac2_occs ::= at @ltac2_occs_nums
+   ltac2_occs_nums ::= {? - } {+ {| @num  | $ @ident } }
+   ltac2_concl_occ ::= * {? @ltac2_occs }
+   ltac2_hypident_occ ::= @ltac2_hypident {? @ltac2_occs }
+   ltac2_hypident ::= @ident_or_anti
+   | ( type of @ident_or_anti )
+   | ( value of @ident_or_anti )
+
+.. insertprodn ltac2_induction_clause ltac2_eqn_ipat
+
+.. prodn::
+   ltac2_induction_clause ::= @ltac2_destruction_arg {? @ltac2_as_or_and_ipat } {? @ltac2_eqn_ipat } {? @ltac2_clause }
+   ltac2_as_or_and_ipat ::= as @ltac2_or_and_intropattern
+   ltac2_eqn_ipat ::= eqn : @ltac2_naming_intropattern
+
+.. insertprodn ltac2_conversion ltac2_conversion
+
+.. prodn::
+   ltac2_conversion ::= @term
+   | @term with @term
+
+.. insertprodn ltac2_oriented_rewriter ltac2_rewriter
+
+.. prodn::
+   ltac2_oriented_rewriter ::= {| -> | <- } @ltac2_rewriter
+   ltac2_rewriter ::= {? @num } {? {| ? | ! } } @ltac2_constr_with_bindings
+
+.. insertprodn ltac2_for_each_goal ltac2_goal_tactics
+
+.. prodn::
+   ltac2_for_each_goal ::= @ltac2_goal_tactics
+   | {? @ltac2_goal_tactics %| } {? @ltac2_expr } .. {? %| @ltac2_goal_tactics }
+   ltac2_goal_tactics ::= {*| {? @ltac2_expr } }
+
+.. insertprodn hintdb hintdb
+
+.. prodn::
+   hintdb ::= *
+   | {+ @ident_or_anti }
+
+.. insertprodn move_location move_location
+
+.. prodn::
+   move_location ::= at top
+   | at bottom
+   | after @ident_or_anti
+   | before @ident_or_anti
+
+.. insertprodn pose ltac2_as_name
+
+.. prodn::
+   pose ::= ( @ident_or_anti := @term )
+   | @term {? @ltac2_as_name }
+   ltac2_as_name ::= as @ident_or_anti
+
+.. insertprodn assertion ltac2_by_tactic
+
+.. prodn::
+   assertion ::= ( @ident_or_anti := @term )
+   | ( @ident_or_anti : @term ) {? @ltac2_by_tactic }
+   | @term {? @ltac2_as_ipat } {? @ltac2_by_tactic }
+   ltac2_as_ipat ::= as @ltac2_simple_intropattern
+   ltac2_by_tactic ::= by @ltac2_expr
 
 Evaluation
 ----------
 
 Ltac2 features a toplevel loop that can be used to evaluate expressions.
 
-.. cmd:: Ltac2 Eval @ltac2_term
+.. cmd:: Ltac2 Eval @ltac2_expr
    :name: Ltac2 Eval
 
    This command evaluates the term in the current proof if there is one, or in the
@@ -899,28 +1695,34 @@ Compatibility layer with Ltac1
 Ltac1 from Ltac2
 ~~~~~~~~~~~~~~~~
 
+.. _simple_api:
+
 Simple API
 ++++++++++
 
-One can call Ltac1 code from Ltac2 by using the :n:`ltac1` quotation. It parses
+One can call Ltac1 code from Ltac2 by using the :n:`ltac1:(@ltac1_expr_in_env)` quotation.
+See :ref:`ltac2_built-in-quotations`.  It parses
 a Ltac1 expression, and semantics of this quotation is the evaluation of the
 corresponding code for its side effects. In particular, it cannot return values,
 and the quotation has type :n:`unit`.
 
-.. productionlist:: coq
-  ltac2_term : ltac1 : ( `ltac_expr` )
-
 Ltac1 **cannot** implicitly access variables from the Ltac2 scope, but this can
-be done with an explicit annotation on the :n:`ltac1` quotation.
+be done with an explicit annotation on the :n:`ltac1:({* @ident } |- @ltac_expr)`
+quotation.  See :ref:`ltac2_built-in-quotations`.  For example:
 
-.. productionlist:: coq
-  ltac2_term : ltac1 : ( `ident` ... `ident` |- `ltac_expr` )
+.. coqtop:: in
+
+   Local Ltac2 replace_with (lhs: constr) (rhs: constr) :=
+     ltac1:(lhs rhs |- replace lhs with rhs) (Ltac1.of_constr lhs) (Ltac1.of_constr rhs).
+   Ltac2 Notation "replace" lhs(constr) "with" rhs(constr) := replace_with lhs rhs.
 
 The return type of this expression is a function of the same arity as the number
 of identifiers, with arguments of type `Ltac2.Ltac1.t` (see below). This syntax
 will bind the variables in the quoted Ltac1 code as if they had been bound from
 Ltac1 itself. Similarly, the arguments applied to the quotation will be passed
 at runtime to the Ltac1 code.
+
+.. _low_level_api:
 
 Low-level API
 +++++++++++++
@@ -948,8 +1750,8 @@ Same as above by switching Ltac1 by Ltac2 and using the `ltac2` quotation
 instead.
 
 .. prodn::
-   ltac_expr += ltac2 : ( `ltac2_term` )
-   | ltac2 : ( `ident` ... `ident` |- `ltac2_term` )
+   ltac_expr += ltac2 : ( @ltac2_expr )
+   | ltac2 : ( {+ @ident } |- @ltac2_expr )
 
 The typing rules are dual, that is, the optional identifiers are bound
 with type `Ltac2.Ltac1.t` in the Ltac2 expression, which is expected to have
@@ -992,7 +1794,7 @@ Transition from Ltac1
 
 Owing to the use of a lot of notations, the transition should not be too
 difficult. In particular, it should be possible to do it incrementally. That
-said, we do *not* guarantee you it is going to be a blissful walk either.
+said, we do *not* guarantee it will be a blissful walk either.
 Hopefully, owing to the fact Ltac2 is typed, the interactive dialogue with Coq
 will help you.
 

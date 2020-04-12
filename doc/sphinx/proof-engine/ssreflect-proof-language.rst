@@ -5584,11 +5584,11 @@ context pattern see :ref:`contextual_patterns_ssr`
 
 discharge item see :ref:`discharge_ssr`
 
-.. prodn:: gen_item ::= {| {? @  } @ident | ( @ident ) | ( {? @  } @ident := @c_pattern ) }
+.. prodn:: gen_item ::= {| {? @ } @ident | ( @ident ) | ( {? @ } @ident := @c_pattern ) }
 
 generalization item see :ref:`structure_ssr`
 
-.. prodn:: i_pattern ::= {| @ident | > | _ | ? | * | + | {? @occ_switch } {| -> | <- } | [ {?|  @i_item } ] | - | [: {+ @ident } ] }
+.. prodn:: i_pattern ::= {| @ident | > | _ | ? | * | + | {? @occ_switch } {| -> | <- } | [ {?| @i_item } ] | - | [: {+ @ident } ] }
 
 intro pattern :ref:`introduction_ssr`
 
@@ -5602,7 +5602,7 @@ view :ref:`introduction_ssr`
 intro block :ref:`introduction_ssr`
 
 .. prodn::
-   i_block ::= {| [^ @ident ] | [^~ {| @ident |  @num } ] }
+   i_block ::= {| [^ @ident ] | [^~ {| @ident | @num } ] }
 
 intro item  see :ref:`introduction_ssr`
 
