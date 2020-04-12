@@ -1822,8 +1822,8 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
       DAst.make ?loc @@ RCPatCstr (g, [], List.map2 (in_pat_sc scopes) argscs args)
     | NApp (NRef g,pl) ->
       ensure_kind test_kind ?loc g;
-      let (argscs1,argscs2) = find_remaining_scopes pl args g in
-      let pl = List.map2 (fun x -> in_not test_kind_inner loc (x,snd scopes) fullsubst []) argscs1 pl in
+      let (_,argscs2) = find_remaining_scopes pl args g in
+      let pl = List.map (in_not test_kind_inner loc scopes fullsubst []) pl in
       let pl = add_local_defs_and_check_length loc genv g pl args in
       let args = List.map2 (fun x -> in_pat test_kind_inner (x,snd scopes)) argscs2 args in
       let pat =
