@@ -90,11 +90,15 @@ constructions. There are two variants of them.
 First destructuring let syntax
 ++++++++++++++++++++++++++++++
 
+.. todo explain that this applies to all of the "let" constructs (Gallina, Ltac1 and Ltac2)
+   also add "irrefutable pattern" to the glossary
+   note that in Ltac2 an upper case ident is a constructor, lower case is a variable
+
 The expression :n:`let ( {*, @ident__i } ) := @term__0 in @term__1`
 performs case analysis on :n:`@term__0` whose type must be an
 inductive type with exactly one constructor.  The number of variables
 :n:`@ident__i` must correspond to the number of arguments of this
-contrustor.  Then, in :n:`@term__1`, these variables are bound to the
+constructor.  Then, in :n:`@term__1`, these variables are bound to the
 arguments of the constructor in :n:`@term__0`.  For instance, the
 definition
 

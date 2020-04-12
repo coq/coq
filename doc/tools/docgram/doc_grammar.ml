@@ -732,6 +732,8 @@ let rec edit_prod g top edit_map prod =
   let splice_prods = match prod with
     | Snterm nt :: [] when is_splice nt ->
       get_splice_prods nt
+    | Snterm nt :: Sedit2 ("TAG", _) :: [] when is_splice nt ->
+      get_splice_prods nt
     | _ -> []
   in
   if top && splice_prods <> [] then
@@ -1901,7 +1903,8 @@ let process_rst g file args seen tac_prods cmd_prods =
     "doc/sphinx/proof-engine/ltac.rst";
     "doc/sphinx/proof-engine/ltac2.rst";
     "doc/sphinx/proof-engine/vernacular-commands.rst";
-    "doc/sphinx/user-extensions/syntax-extensions.rst"
+    "doc/sphinx/user-extensions/syntax-extensions.rst";
+    "doc/sphinx/proof-engine/vernacular-commands.rst"
   ]
   in
 

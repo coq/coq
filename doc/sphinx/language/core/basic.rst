@@ -227,6 +227,7 @@ rest of the |Coq| manual: :term:`terms <term>` and :term:`types
         | @term_match
         | @term_record
         | @term_generalizing
+        | [| {*; @term } %| @term {? : @type } |] {? @univ_annot }
         | @term_ltac
         | ( @term )
         qualid_annotated ::= @qualid {? @univ_annot }
