@@ -138,6 +138,10 @@ val constructor_nrealdecls : env -> constructor -> int
 val constructor_nrealdecls_env : env -> constructor -> int
 [@@ocaml.deprecated "Alias for Inductiveops.constructor_nrealdecls"]
 
+(** @return tags of all decls: true = assumption, false = letin *)
+val inductive_alltags : env -> inductive -> bool list
+val constructor_alltags : env -> constructor -> bool list
+
 (** Is there local defs in params or args ? *)
 val constructor_has_local_defs : env -> constructor -> bool
 val inductive_has_local_defs : env -> inductive -> bool
