@@ -60,6 +60,10 @@ coqtopbyte := $(BIN)coqtop.byte -q
 coqc_interactive := $(coqc) -test-mode -async-proofs-cache force
 coqdep := $(BIN)coqdep
 
+# This is the convention for coq_makefile
+OPT=-$(BEST)
+export OPT
+
 VERBOSE?=
 SHOW := $(if $(VERBOSE),@true,@echo)
 HIDE := $(if $(VERBOSE),,@)
