@@ -269,10 +269,6 @@ OPT:=
 BESTOBJ:=.cmo
 BESTLIB:=.cma
 BESTDYN:=.cma
-
-# needed while booting if non -local
-CAML_LD_LIBRARY_PATH := $(PWD)/kernel/byterun:$(CAML_LD_LIBRARY_PATH)
-export CAML_LD_LIBRARY_PATH
 endif
 
 define bestobj
