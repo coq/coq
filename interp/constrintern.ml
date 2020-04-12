@@ -1766,14 +1766,10 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
           let info = Option.cata (Loc.add_loc info) info loc in
           Exninfo.iraise (InternalizationError (NotAConstructor qid), info)
       in
-      if expl_pl == [] then
-        (* Convention: (@r) deactivates all further implicit arguments and scopes *)
-        DAst.make ?loc @@ RCPatCstr (g, List.map (in_pat test_kind_inner scopes) pl, [])
-      else
-        (* Convention: (@r expl_pl) deactivates implicit arguments in expl_pl and in pl *)
-        (* but not scopes in expl_pl *)
-        let (argscs1,_) = find_remaining_scopes expl_pl pl g in
-        DAst.make ?loc @@ RCPatCstr (g, List.map2 (in_pat_sc scopes) argscs1 expl_pl @ List.map (in_pat test_kind_inner scopes) pl, [])
+      (* Convention: (@r expl_pl) deactivates implicit arguments in expl_pl and in pl *)
+      (* but not scopes in expl_pl *)
+      let (argscs1,_) = find_remaining_scopes expl_pl pl g in
+      DAst.make ?loc @@ RCPatCstr (g, List.map2 (in_pat_sc scopes) argscs1 expl_pl @ List.map (in_pat test_kind_inner scopes) pl, [])
     | CPatNotation (_,(InConstrEntry,"- _"),([a],[]),[]) when is_non_zero_pat a ->
       let p = match a.CAst.v with CPatPrim (Number (_, p)) -> p | _ -> assert false in
       let pat, _df = Notation.interp_prim_token_cases_pattern_expr ?loc (ensure_kind test_kind_inner) (Number (SMinus,p)) scopes in
