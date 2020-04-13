@@ -207,24 +207,31 @@ Section Facts.
     now destruct Heq as [[Heq1 Heq2]|[Heq1 Heq2]]; inversion_clear Heq2.
   Qed.
 
-  Lemma app_inj_tail :
-    forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
+  Lemma app_inj_tail_iff :
+    forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] <-> x = y /\ a = b.
   Proof.
     induction x as [| x l IHl];
       [ destruct y as [| a l] | destruct y as [| a l0] ];
       simpl; auto.
-    - intros a b [= ].
-      auto.
-    - intros a0 b [= H1 H0].
-      apply app_cons_not_nil in H0 as [].
-    - intros a b [= H1 H0].
-      assert ([] = l ++ [a]) by auto.
-      apply app_cons_not_nil in H as [].
-    - intros a0 b [= <- H0].
-      destruct (IHl l0 a0 b H0) as (<-,<-).
-      split; auto.
+    - intros a b. split.
+      + intros [= ]. auto.
+      + intros [H0 H1]. subst. auto.
+    - intros a0 b. split.
+      + intros [= H1 H0]. apply app_cons_not_nil in H0 as [].
+      + intros [H0 H1]. inversion H0.
+    - intros a b. split.
+      + intros [= H1 H0]. assert ([] = l ++ [a]) by auto. apply app_cons_not_nil in H as [].
+      + intros [H0 H1]. inversion H0.
+    - intros a0 b. split.
+      + intros [= <- H0]. specialize (IHl l0 a0 b). apply IHl in H0. destruct H0. subst. split; auto.
+      + intros [H0 H1]. inversion H0. subst. auto.
   Qed.
 
+  Lemma app_inj_tail :
+    forall (x y:list A) (a b:A), x ++ [a] = y ++ [b] -> x = y /\ a = b.
+  Proof.
+    apply app_inj_tail_iff.
+  Qed.
 
   (** Compatibility with other operations *)
 
