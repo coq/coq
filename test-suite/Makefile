@@ -354,8 +354,7 @@ $(addsuffix .log,$(wildcard ssr/*.v success/*.v micromega/*.v modules/*.v primit
 	} > "$@"
 	@if ! grep -q -F "Error!" $@; then echo "CHECK     $<"; fi
 	$(HIDE)if ! grep -q -F "Error!" $@; then { \
-	opts="$(if $(findstring modules/,$<),-R modules Mods -norec Mods.$(shell basename $< .v),-I $(shell dirname $<) -norec $(shell basename $< .v))"; \
-	  $(coqchk) -silent $(call get_set_impredicativity,$<) $$opts 2>&1; R=$$?; \
+	  $(coqchk) -silent $(call get_set_impredicativity,$<) $(if $(findstring modules/,$<),-R modules Mods -norec Mods.$(shell basename $< .v),-Q $(shell dirname $<) "" -norec $(shell basename $< .v)) 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be checked (Error!)" ; \
@@ -381,7 +380,7 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	} > "$@"
 	@if ! grep -q -F "Error!" $@; then echo "CHECK     $<"; fi
 	$(HIDE)if ! grep -q -F "Error!" $@; then { \
-	  $(coqchk) -silent -I $(shell dirname $<) -norec $(shell basename $< .v) 2>&1; R=$$?; \
+	  $(coqchk) -silent -Q $(shell dirname $<) "" -norec $(shell basename $< .v) 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be checked (Error!)" ; \
@@ -405,7 +404,7 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v $(PREREQUISITELOG)
 	} > "$@"
 	@if ! grep -q -F "Error!" $@; then echo "CHECK     $<"; fi
 	$(HIDE)if ! grep -q -F "Error!" $@; then { \
-	  $(coqchk) -silent -I $(shell dirname $<) -norec $(shell basename $< .v) 2>&1; R=$$?; \
+	  $(coqchk) -silent -Q $(shell dirname $<) "" -norec $(shell basename $< .v) 2>&1; R=$$?; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be checked (Error!)" ; \
