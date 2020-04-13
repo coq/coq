@@ -1340,7 +1340,9 @@ let interp_reference vars r =
 (**********************************************************************)
 (** {5 Cases }                                                        *)
 
-(** Private internalization patterns *)
+(** Intermediate type common to the patterns of the "in" and of the
+    "with" clause of "match" *)
+
 type 'a raw_cases_pattern_expr_r =
   | RCPatAlias of 'a raw_cases_pattern_expr * lname
   | RCPatCstr  of GlobRef.t * 'a raw_cases_pattern_expr list
@@ -1349,6 +1351,7 @@ type 'a raw_cases_pattern_expr_r =
 and 'a raw_cases_pattern_expr = ('a raw_cases_pattern_expr_r, 'a) DAst.t
 
 (** {6 Elementary bricks } *)
+
 let apply_scope_env env = function
   | [] -> {env with tmp_scope = None}, []
   | sc::scl -> {env with tmp_scope = sc}, scl
@@ -1725,12 +1728,18 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
          duplicating the levels of the [pattern] rule. *)
       CErrors.user_err ?loc (Pp.strbrk "Casts are not supported in this pattern.")
   and in_pat_sc scopes x = in_pat test_kind_inner (x,snd scopes)
-  and in_patargs ?loc scopes g expanded no_impl ntnpats pats =
+  and in_patargs ?loc scopes
+    gr (* head of the pattern *)
+    expanded (* tell if comes from a notation (for error reporting) *)
+    no_impl (* tell if implicit are not expected (for asymmetric patterns, or @, or {| |} *)
+    ntnpats (* prefix of patterns obtained by expansion of notations or parameter insertion *)
+    pats (* user given patterns *)
+    =
     let default = DAst.make ?loc @@ RCPatAtom None in
     let npats = List.length pats in
     let n = List.length ntnpats in
     let ntnpats_with_letin, tags =
-      let tags = match g with
+      let tags = match gr with
       | GlobRef.ConstructRef cstr -> constructor_alltags (Global.env()) cstr
       | GlobRef.IndRef ind -> inductive_alltags (Global.env()) ind
       | _ -> assert false in
@@ -1739,12 +1748,12 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
     let imps =
       let imps =
         if no_impl then [] else
-          let impls_st = implicits_of_global g in
+          let impls_st = implicits_of_global gr in
           if Int.equal n 0 then select_impargs_size npats impls_st
           else List.skipn_at_least n (select_stronger_impargs impls_st) in
       adjust_to_down tags imps None in
-    let subscopes = adjust_to_down tags (List.skipn_at_least n (find_arguments_scope g)) None in
-    let has_letin = check_has_letin ?loc g expanded npats (List.count is_status_implicit imps) tags in
+    let subscopes = adjust_to_down tags (List.skipn_at_least n (find_arguments_scope gr)) None in
+    let has_letin = check_has_letin ?loc gr expanded npats (List.count is_status_implicit imps) tags in
     let rec aux imps subscopes tags pats =
     match imps, subscopes, tags, pats with
     | _, _, true::tags, p::pats when has_letin ->
@@ -1821,7 +1830,7 @@ let rec intern_pat genv ntnvars aliases pat =
       let aliases = merge_aliases aliases (make ?loc @@ Name id) in
       set_var_scope ?loc id false scopes ntnvars;
       (aliases.alias_ids,[aliases.alias_map, DAst.make ?loc @@ PatVar (alias_of aliases)]) (* TO CHECK: aura-t-on id? *)
-    | RCPatAtom (None) ->
+    | RCPatAtom None ->
       let { alias_ids = ids; alias_map = asubst; } = aliases in
       (ids, [asubst, DAst.make ?loc @@ PatVar (alias_of aliases)])
     | RCPatOr pl ->
