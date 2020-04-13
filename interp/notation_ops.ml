@@ -941,7 +941,7 @@ let bind_term_as_binding_env alp (terms,termlists,binders,binderlists as sigma) 
   try
     (* If already bound to a term, unify the binder and the term *)
     match DAst.get (Id.List.assoc var terms) with
-    | GVar id' ->
+    | GVar id' | GRef (GlobRef.VarRef id',None) ->
        (if not (Id.equal id id') then (fst alp,(id,id')::snd alp) else alp),
        sigma
     | t ->
