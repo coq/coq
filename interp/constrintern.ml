@@ -90,18 +90,6 @@ let for_grammar f x =
     a
 
 (**********************************************************************)
-(* Locating reference, possibly via an abbreviation *)
-
-let locate_reference qid =
-  Smartlocate.global_of_extended_global (Nametab.locate_extended qid)
-
-let is_global id =
-  try
-    let _ = locate_reference (qualid_of_ident id) in true
-  with Not_found ->
-    false
-
-(**********************************************************************)
 (* Internalization errors                                             *)
 
 type internalization_error =
@@ -1110,6 +1098,37 @@ let intern_var env (ltacvars,ntnvars) namedctx loc id us =
         (* [id] a goal variable *)
         gvar (loc,id) us
 
+(**********************************************************************)
+(* Locating reference, possibly via an abbreviation *)
+
+let locate_reference qid =
+  Smartlocate.global_of_extended_global (Nametab.locate_extended qid)
+
+let is_global id =
+  try
+    let _ = locate_reference (qualid_of_ident id) in true
+  with Not_found ->
+    false
+
+let dump_extended_global loc = function
+  | TrueGlobal ref -> (*feedback_global loc ref;*) Dumpglob.add_glob ?loc ref
+  | SynDef sp -> Dumpglob.add_glob_kn ?loc sp
+
+let intern_extended_global_of_qualid qid =
+  let r = Nametab.locate_extended qid in dump_extended_global qid.CAst.loc r; r
+
+let intern_reference qid =
+  let r =
+    try intern_extended_global_of_qualid qid
+    with Not_found as exn ->
+      let _, info = Exninfo.capture exn in
+      Nametab.error_global_not_found ~info qid
+  in
+  Smartlocate.global_of_extended_global r
+
+(**********************************************************************)
+(* Interpreting references                                            *)
+
 let find_appl_head_data env (_,ntnvars) c =
   match DAst.get c with
   | GVar id when not (Id.Map.mem id ntnvars) ->
@@ -1144,22 +1163,6 @@ let check_no_explicitation l =
   | (_, None) :: _ -> assert false
   | (_, Some {loc}) :: _ ->
     user_err ?loc  (str"Unexpected explicitation of the argument of an abbreviation.")
-
-let dump_extended_global loc = function
-  | TrueGlobal ref -> (*feedback_global loc ref;*) Dumpglob.add_glob ?loc ref
-  | SynDef sp -> Dumpglob.add_glob_kn ?loc sp
-
-let intern_extended_global_of_qualid qid =
-  let r = Nametab.locate_extended qid in dump_extended_global qid.CAst.loc r; r
-
-let intern_reference qid =
-  let r =
-    try intern_extended_global_of_qualid qid
-    with Not_found as exn ->
-      let _, info = Exninfo.capture exn in
-      Nametab.error_global_not_found ~info qid
-  in
-  Smartlocate.global_of_extended_global r
 
 let glob_sort_of_level (level: glob_level) : glob_sort =
   match level with
