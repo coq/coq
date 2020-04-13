@@ -136,16 +136,20 @@ let private_poly_univs =
     ~value:true
 
 (* XXX: This is still separate from close_proof below due to drop_pt in the STM *)
-let return_proof { proof } =
-  let Proof.{name=pid;entry} = Proof.data proof in
+(* XXX: Unsafe_typ:true is needed by vio files, see bf0499bc507d5a39c3d5e3bf1f69191339270729 *)
+let prepare_proof ~unsafe_typ { proof } =
+  let Proof.{name=pid;entry;poly} = Proof.data proof in
   let initial_goals = Proofview.initial_goals entry in
   let evd = Proof.return ~pid proof in
   let eff = Evd.eval_side_effects evd in
   let evd = Evd.minimize_universes evd in
-  let proof_opt c =
+  let to_constr_body c =
     match EConstr.to_constr_opt evd c with
     | Some p -> p
     | None -> CErrors.user_err Pp.(str "Some unresolved existential variables remain")
+  in
+  let to_constr_typ t =
+    if unsafe_typ then EConstr.Unsafe.to_constr t else to_constr_body t
   in
   (* ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
      side-effects... This may explain why one need to uniquize side-effects
@@ -159,31 +163,24 @@ let return_proof { proof } =
      equations and so far there is no code in the CI that will
      actually call those and do a side-effect, TTBOMK *)
   (* EJGA: likely the right solution is to attach side effects to the first constant only? *)
-  let proofs = List.map (fun (c, _) -> (proof_opt c, eff)) initial_goals in
+  let proofs = List.map (fun (body, typ) -> (to_constr_body body, eff), to_constr_typ typ) initial_goals in
   proofs, Evd.evar_universe_context evd
 
 let close_proof ~opaque ~keep_body_ucst_separate ps =
-  let elist, uctx = return_proof ps in
+
   let { section_vars; proof; udecl; initial_euctx } = ps in
-  let { Proof.name; poly; entry; sigma } = Proof.data proof in
+  let { Proof.name; poly } = Proof.data proof in
+  let unsafe_typ = keep_body_ucst_separate && not poly in
+  let elist, uctx = prepare_proof ~unsafe_typ ps in
   let opaque = match opaque with Opaque -> true | Transparent -> false in
 
-  (* Because of dependent subgoals at the beginning of proofs, we could
-     have existential variables in the initial types of goals, we need to
-     normalise them for the kernel. *)
-  let subst_evar k = Evd.existential_opt_value0 sigma k in
-  let nf = UnivSubst.nf_evars_and_universes_opt_subst subst_evar (UState.subst uctx) in
+  let make_entry ((body, eff), typ) =
 
-  let make_entry (body, eff) (_, typ) =
     let allow_deferred =
-      not poly && (keep_body_ucst_separate ||
-                   not (Safe_typing.empty_private_constants = eff.Evd.seff_private))
+      not poly &&
+      (keep_body_ucst_separate
+       || not (Safe_typing.is_empty_private_constants eff.Evd.seff_private))
     in
-    (* EJGA: Why are we doing things this way? *)
-    let typ = EConstr.Unsafe.to_constr typ in
-    let typ = if allow_deferred then typ else nf typ in
-    (* EJGA: End "Why are we doing things this way?" *)
-
     let used_univs_body = Vars.universes_of_constr body in
     let used_univs_typ = Vars.universes_of_constr typ in
     let used_univs = Univ.LSet.union used_univs_body used_univs_typ in
@@ -218,7 +215,7 @@ let close_proof ~opaque ~keep_body_ucst_separate ps =
     in
     Declare.definition_entry ~opaque ?section_vars ~univs:utyp ~univsbody:ubody ~types:typ ~eff body
   in
-  let entries = CList.map2 make_entry elist (Proofview.initial_goals entry) in
+  let entries = CList.map make_entry elist  in
   { name; entries; uctx }
 
 let close_proof_delayed ~feedback_id ps (fpl : closed_proof_output Future.computation) =
@@ -274,6 +271,10 @@ let return_partial_proof { proof } =
      thereafter... *)
  let proofs = List.map (fun c -> EConstr.Unsafe.to_constr c, eff) proofs in
  proofs, Evd.evar_universe_context evd
+
+let return_proof ps =
+  let p, uctx = prepare_proof ~unsafe_typ:false ps in
+  List.map fst p, uctx
 
 let update_global_env =
   map_proof (fun p ->

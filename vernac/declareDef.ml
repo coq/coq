@@ -171,7 +171,7 @@ let prepare_obligation ?opaque ?inline ~name ~poly ~udecl ~types ~body sigma =
   let ce = definition_entry ?opaque ?inline ?types ~univs body in
   let env = Global.env () in
   let (c,ctx), sideff = Future.force ce.Declare.proof_entry_body in
-  assert(Safe_typing.empty_private_constants = sideff.Evd.seff_private);
+  assert(Safe_typing.is_empty_private_constants sideff.Evd.seff_private);
   assert(Univ.ContextSet.is_empty ctx);
   RetrieveObl.check_evars env sigma;
   let c = EConstr.of_constr c in

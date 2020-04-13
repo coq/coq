@@ -50,6 +50,8 @@ type 'a safe_transformer = safe_environment -> 'a * safe_environment
 type private_constants
 
 val empty_private_constants : private_constants
+val is_empty_private_constants : private_constants -> bool
+
 val concat_private : private_constants -> private_constants -> private_constants
 (** [concat_private e1 e2] adds the constants of [e1] to [e2], i.e. constants in
     [e1] must be more recent than those of [e2]. *)
