@@ -265,9 +265,9 @@ type pattern_intern_env = {
 (* Remembering the parsing scope of variables in notations            *)
 
 let make_current_scope tmp scopes = match tmp, scopes with
-| Some tmp_scope, (sc :: _) when String.equal sc tmp_scope -> scopes
-| Some tmp_scope, scopes -> tmp_scope :: scopes
-| None, scopes -> scopes
+  | Some tmp_scope, (sc :: _) when String.equal sc tmp_scope -> scopes
+  | Some tmp_scope, scopes -> tmp_scope :: scopes
+  | None, scopes -> scopes
 
 let pr_scope_stack = function
   | [] -> str "the empty scope stack"
@@ -724,9 +724,9 @@ let set_type ty1 ty2 =
     user_err ?loc:t2.CAst.loc Pp.(str "Unexpected type constraint in notation already providing a type constraint.")
 
 let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renaming,env) na ty =
- match na with
- | Anonymous -> (renaming,env), None, Anonymous, Explicit, set_type ty None
- | Name id ->
+  match na with
+  | Anonymous -> (renaming,env), None, Anonymous, Explicit, set_type ty None
+  | Name id ->
   let store,get = set_temporary_memory () in
   let test_kind = test_kind_tolerant in
   try
@@ -766,10 +766,10 @@ let traverse_binder intern_pat ntnvars (terms,_,binders,_ as subst) avoid (renam
     (renaming',env), None, Name id', Explicit, set_type ty None
 
 type binder_action =
-| AddLetIn of lname * constr_expr * constr_expr option
-| AddTermIter of (constr_expr * subscopes) Names.Id.Map.t
-| AddPreBinderIter of Id.t * local_binder_expr (* A binder to be internalized *)
-| AddBinderIter of Id.t * extended_glob_local_binder (* A binder already internalized - used for generalized binders *)
+  | AddLetIn of lname * constr_expr * constr_expr option
+  | AddTermIter of (constr_expr * subscopes) Names.Id.Map.t
+  | AddPreBinderIter of Id.t * local_binder_expr (* A binder to be internalized *)
+  | AddBinderIter of Id.t * extended_glob_local_binder (* A binder already internalized - used for generalized binders *)
 
 let dmap_with_loc f n =
   CAst.map_with_loc (fun ?loc c -> f ?loc (DAst.get_thunk c)) n
@@ -1051,10 +1051,10 @@ let string_of_ty = function
   | Variable -> "var"
 
 let gvar (loc, id) us = match us with
-| None | Some [] -> DAst.make ?loc @@ GVar id
-| Some _ ->
-  user_err ?loc  (str "Variable " ++ Id.print id ++
-    str " cannot have a universe instance")
+  | None | Some [] -> DAst.make ?loc @@ GVar id
+  | Some _ ->
+    user_err ?loc  (str "Variable " ++ Id.print id ++
+      str " cannot have a universe instance")
 
 let intern_var env (ltacvars,ntnvars) namedctx loc id us =
   (* Is [id] a notation variable *)
@@ -1300,32 +1300,31 @@ let intern_applied_reference ~isproj intern env namedctx (_, ntnvars as lvar) us
   let loc = qid.CAst.loc in
   let us = intern_instance ~local_univs:env.local_univs us in
   if qualid_is_ident qid then
-      try
-        let res = intern_var env lvar namedctx loc (qualid_basename qid) us in
-        check_applied_projection isproj None qid;
-        res, args
-      with Not_found ->
-      try
-        let r, realref, args2 = intern_qualid ~no_secvar:true qid intern env ntnvars us args in
-        check_applied_projection isproj realref qid;
-        r, args2
-      with Not_found as exn ->
-        (* Extra allowance for non globalizing functions *)
-        if !interning_grammar || env.unb then
-          (* check_applied_projection ?? *)
-          gvar (loc,qualid_basename qid) us, args
-        else
-          let _, info = Exninfo.capture exn in
-          Nametab.error_global_not_found ~info qid
-  else
-    let r,realref,args2 =
-      try intern_qualid qid intern env ntnvars us args
-      with Not_found as exn ->
+    try
+      let res = intern_var env lvar namedctx loc (qualid_basename qid) us in
+      check_applied_projection isproj None qid;
+      res, args
+    with Not_found ->
+    try
+      let res, realref, args2 = intern_qualid ~no_secvar:true qid intern env ntnvars us args in
+      check_applied_projection isproj realref qid;
+      res, args2
+    with Not_found as exn ->
+      (* Extra allowance for non globalizing functions *)
+      if !interning_grammar || env.unb then
+        (* check_applied_projection ?? *)
+        gvar (loc,qualid_basename qid) us, args
+      else
         let _, info = Exninfo.capture exn in
         Nametab.error_global_not_found ~info qid
-    in
-    check_applied_projection isproj realref qid;
-    r, args2
+  else
+    try
+      let res, realref, args2 = intern_qualid qid intern env ntnvars us args in
+      check_applied_projection isproj realref qid;
+      res, args2
+    with Not_found as exn ->
+        let _, info = Exninfo.capture exn in
+        Nametab.error_global_not_found ~info qid
 
 let interp_reference vars r =
   let r,_ =
@@ -1562,8 +1561,8 @@ let merge_aliases aliases {loc;v=na} =
   { alias_ids; alias_map; }
 
 let alias_of als = match als.alias_ids with
-| [] -> Anonymous
-| {v=id} :: _ -> Name id
+  | [] -> Anonymous
+  | {v=id} :: _ -> Name id
 
 (** {6 Expanding notations }
 
@@ -1595,12 +1594,12 @@ let rec subst_pat_iterator y t = DAst.(map (function
   | RCPatOr pl -> RCPatOr (List.map (subst_pat_iterator y t) pl)))
 
 let is_non_zero c = match c with
-| { CAst.v = CPrim (Number p) } -> not (NumTok.Signed.is_zero p)
-| _ -> false
+  | { CAst.v = CPrim (Number p) } -> not (NumTok.Signed.is_zero p)
+  | _ -> false
 
 let is_non_zero_pat c = match c with
-| { CAst.v = CPatPrim (Number p) } -> not (NumTok.Signed.is_zero p)
-| _ -> false
+  | { CAst.v = CPatPrim (Number p) } -> not (NumTok.Signed.is_zero p)
+  | _ -> false
 
 let get_asymmetric_patterns = Goptions.declare_bool_option_and_ref
     ~depr:false
