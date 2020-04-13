@@ -1,0 +1,14 @@
+(coq.theory
+ (name Ltac2)
+ (package coq)
+ (synopsis "Ltac2 tactic language")
+ (libraries coq.plugins.ltac2))
+
+(library
+ (name ltac2_plugin)
+ (public_name coq.plugins.ltac2)
+ (synopsis "Ltac2 plugin")
+ (modules_without_implementation tac2expr tac2qexpr tac2types)
+ (libraries coq.plugins.ltac))
+
+(coq.pp (modules g_ltac2))

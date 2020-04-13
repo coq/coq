@@ -18,29 +18,10 @@
 ;
 ; (_ (flags :standard -rectypes)))
 
-; Rules for coq_dune
-(rule
- (targets .vfiles.d)
- (deps
-  (source_tree theories)
-  (source_tree plugins)
-  (source_tree user-contrib))
- (action
-  (with-stdout-to .vfiles.d
-   (bash "%{bin:coqdep} -dyndep both -noglob -boot -R theories Coq -Q user-contrib/Ltac2 Ltac2 -I user-contrib/Ltac2 \
-          `find plugins/ -maxdepth 1 -mindepth 1 -type d -printf '-I %p '` \
-          `find theories user-contrib -type f -name *.v`"))))
-
-(alias
- (name vodeps)
- (deps tools/coq_dune.exe .vfiles.d))
-  ; (action (run coq_dune .vfiles.d))))
-
 (install
  (section lib)
  (package coq)
- (files
-   revision))
+ (files revision))
 
 (rule
  (targets revision)

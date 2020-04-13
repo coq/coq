@@ -20,3 +20,5 @@
  (modules g_zify zify)
  (synopsis "Coq's zify plugin")
  (libraries coq.plugins.ltac))
+
+(coq.pp (modules g_micromega g_zify))

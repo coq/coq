@@ -1,11 +1,10 @@
-(lang dune 2.0)
+(lang dune 2.5)
 (name coq)
-(using coq 0.1)
+(using coq 0.2)
 
 (formatting
  (enabled_for ocaml))
 
-; We cannot set this to true until as long as the build is not
-; properly bootstrapped [that is, we remove the voboot target]
+; TODO
 ;
 ; (generate_opam_files true)

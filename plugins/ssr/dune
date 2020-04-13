@@ -5,3 +5,5 @@
  (modules_without_implementation ssrast)
  (flags :standard -open Gramlib)
  (libraries coq.plugins.ssrmatching))
+
+(coq.pp (modules ssrvernac ssrparser))

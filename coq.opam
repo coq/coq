@@ -22,13 +22,12 @@ version: "dev"
 
 depends: [
   "ocaml"     { >= "4.05.0" }
-  "dune"      { >= "2.0.0"  }
+  "dune"      { >= "2.5.0"  }
   "ocamlfind" { build }
   "num"
 ]
 
 build: [
   [ "./configure" "-prefix" prefix ]
-  [ "make" "-f" "Makefile.dune" "voboot" ]
   [ "dune" "build" "-p" name "-j" jobs ]
 ]

@@ -32,3 +32,5 @@
  (synopsis "Coq syntax plugin: float")
  (modules float_syntax)
  (libraries coq.vernac))
+
+(coq.pp (modules g_numeral g_string))
