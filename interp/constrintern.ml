@@ -100,8 +100,7 @@ type internalization_error =
   | NonLinearPattern of Id.t
   | BadPatternsNumber of int * int
   | NotAProjection of qualid
-  | NotAProjectionOf of qualid * qualid
-  | ProjectionsOfDifferentRecords of qualid * qualid
+  | ProjectionsOfDifferentRecords of Recordops.struc_typ * Recordops.struc_typ
 
 exception InternalizationError of internalization_error
 
@@ -127,13 +126,16 @@ let explain_bad_patterns_number n1 n2 =
   str "Expecting " ++ int n1 ++ str (String.plural n1 " pattern") ++
   str " but found " ++ int n2
 
+let inductive_of_record record =
+  let inductive = GlobRef.IndRef (inductive_of_constructor record.Recordops.s_CONST) in
+  Nametab.shortest_qualid_of_global Id.Set.empty inductive
+
 let explain_field_not_a_projection field_id =
   pr_qualid field_id ++ str ": Not a projection"
 
-let explain_field_not_a_projection_of field_id inductive_id =
-  pr_qualid field_id ++ str ": Not a projection of inductive " ++ pr_qualid inductive_id
-
-let explain_projections_of_diff_records inductive1_id inductive2_id =
+let explain_projections_of_diff_records record1 record2 =
+  let inductive1_id = inductive_of_record record1 in
+  let inductive2_id = inductive_of_record record2 in
   str "This record contains fields of both " ++ pr_qualid inductive1_id ++
   str " and " ++ pr_qualid inductive2_id
 
@@ -146,8 +148,6 @@ let explain_internalization_error e =
   | NonLinearPattern id -> explain_non_linear_pattern id
   | BadPatternsNumber (n1,n2) -> explain_bad_patterns_number n1 n2
   | NotAProjection field_id -> explain_field_not_a_projection field_id
-  | NotAProjectionOf (field_id, inductive_id) ->
-    explain_field_not_a_projection_of field_id inductive_id
   | ProjectionsOfDifferentRecords (inductive1_id, inductive2_id) ->
     explain_projections_of_diff_records inductive1_id inductive2_id
   in pp ++ str "."
@@ -1126,6 +1126,13 @@ let intern_reference qid =
   in
   Smartlocate.global_of_extended_global r
 
+let intern_projection qid =
+  try
+    let gr = Smartlocate.global_of_extended_global (intern_extended_global_of_qualid qid) in
+    (gr, Recordops.find_projection gr)
+  with Not_found ->
+    Loc.raise ?loc:qid.loc (InternalizationError (NotAProjection qid))
+
 (**********************************************************************)
 (* Interpreting references                                            *)
 
@@ -1459,10 +1466,6 @@ let check_duplicate ?loc fields =
     user_err ?loc (str "This record defines several times the field " ++
       pr_qualid r ++ str ".")
 
-let inductive_of_record loc record =
-  let inductive = GlobRef.IndRef (inductive_of_constructor record.Recordops.s_CONST) in
-  Nametab.shortest_qualid_of_global ?loc Id.Set.empty inductive
-
 (** [sort_fields ~complete loc fields completer] expects a list
     [fields] of field assignments [f = e1; g = e2; ...], where [f, g]
     are fields of a record and [e1] are "values" (either terms, when
@@ -1480,16 +1483,7 @@ let sort_fields ~complete loc fields completer =
   match fields with
     | [] -> None
     | (first_field_ref, _):: _ ->
-        let (first_field_glob_ref, record) =
-          try
-            let gr = locate_reference first_field_ref in
-            Dumpglob.add_glob ?loc:first_field_ref.CAst.loc gr;
-            (gr, Recordops.find_projection gr)
-          with Not_found as exn ->
-            let _, info = Exninfo.capture exn in
-            let info = Option.cata (Loc.add_loc info) info loc in
-            Exninfo.iraise (InternalizationError(NotAProjection first_field_ref), info)
-        in
+        let (first_field_glob_ref, record) = intern_projection first_field_ref in
         (* the number of parameters *)
         let nparams = record.Recordops.s_EXPECTEDPARAM in
         (* the reference constructor of the record *)
@@ -1508,25 +1502,14 @@ let sort_fields ~complete loc fields completer =
         let rec index_fields fields remaining_projs acc =
           match fields with
             | (field_ref, field_value) :: fields ->
-               let field_glob_ref = try locate_reference field_ref
-               with Not_found ->
-                 user_err ?loc:field_ref.CAst.loc ~hdr:"intern"
-                               (str "The field \"" ++ pr_qualid field_ref ++ str "\" does not exist.") in
+               let field_glob_ref,this_field_record = intern_projection field_ref in
                let remaining_projs, (field_index, _, regular) =
                  let the_proj = function
                    | (idx, Some glob_id, _) -> GlobRef.equal field_glob_ref (GlobRef.ConstRef glob_id)
                    | (idx, None, _) -> false in
                  try CList.extract_first the_proj remaining_projs
                  with Not_found ->
-                   let floc = field_ref.CAst.loc in
-                   let this_field_record =
-                     try Recordops.find_projection field_glob_ref
-                     with Not_found ->
-                       let inductive_ref = inductive_of_record floc record in
-                       Loc.raise ?loc:floc (InternalizationError(NotAProjectionOf (field_ref, inductive_ref))) in
-                   let ind1 = inductive_of_record floc record in
-                   let ind2 = inductive_of_record floc this_field_record in
-                   Loc.raise ?loc (InternalizationError(ProjectionsOfDifferentRecords (ind1, ind2)))
+                   Loc.raise ?loc (InternalizationError(ProjectionsOfDifferentRecords (record, this_field_record)))
                in
                if not regular && complete then
                  (* "regular" is false when the field is defined
