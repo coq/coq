@@ -1,0 +1,40 @@
+{0 = 0} + {0 < 1}
+     : Set
+(0 = 0) + {0 < 1}
+     : Set
+{x : nat | x = 1}
+     : Set
+{x : nat | x = 1 & 0 < x}
+     : Set
+{x : nat | x = 1}
+     : Set
+{x : nat | x = 1 & 0 < x}
+     : Set
+{x : nat & x = 1}
+     : Set
+{x : nat & x = 1 & 0 < x}
+     : Set
+{x : nat & x = 1}
+     : Set
+{x : nat & x = 1 & 0 < x}
+     : Set
+{'(x, _) : nat * ?T | x = 1}
+     : Type
+where
+?T : [pat : nat * ?T |- Type] (pat cannot be used)
+{'(x, y) : nat * nat | x = 1 & y = 0}
+     : Set
+{'(x, _) : nat * nat | x = 1}
+     : Set
+{'(x, y) : nat * nat | x = 1 & y = 0}
+     : Set
+{'(x, _) : nat * ?T & x = 1}
+     : Type
+where
+?T : [pat : nat * ?T |- Type] (pat cannot be used)
+{'(x, y) : nat * nat & x = 1 & y = 0}
+     : Type
+{'(x, _) : nat * nat & x = 1}
+     : Type
+{'(x, y) : nat * nat & x = 1 & y = 0}
+     : Type

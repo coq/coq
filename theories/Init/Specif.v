@@ -58,23 +58,26 @@ Arguments sig2 (A P Q)%type.
 Arguments sigT (A P)%type.
 Arguments sigT2 (A P Q)%type.
 
-Notation "{ x  |  P }" := (sig (fun x => P)) : type_scope.
-Notation "{ x  |  P  & Q }" := (sig2 (fun x => P) (fun x => Q)) : type_scope.
-Notation "{ x : A  |  P }" := (sig (A:=A) (fun x => P)) : type_scope.
-Notation "{ x : A  |  P  & Q }" := (sig2 (A:=A) (fun x => P) (fun x => Q)) :
+Notation "{ x | P }" := (sig (fun x => P)) : type_scope.
+Notation "{ x | P & Q }" := (sig2 (fun x => P) (fun x => Q)) : type_scope.
+Notation "{ x : A | P }" := (sig (A:=A) (fun x => P)) : type_scope.
+Notation "{ x : A | P & Q }" := (sig2 (A:=A) (fun x => P) (fun x => Q)) :
   type_scope.
-Notation "{ x  &  P }" := (sigT (fun x => P)) : type_scope.
-Notation "{ x : A  & P }" := (sigT (A:=A) (fun x => P)) : type_scope.
-Notation "{ x : A  & P  & Q }" := (sigT2 (A:=A) (fun x => P) (fun x => Q)) :
+Notation "{ x & P }" := (sigT (fun x => P)) : type_scope.
+Notation "{ x & P & Q }" := (sigT2 (fun x => P) (fun x => Q)) : type_scope.
+Notation "{ x : A & P }" := (sigT (A:=A) (fun x => P)) : type_scope.
+Notation "{ x : A & P & Q }" := (sigT2 (A:=A) (fun x => P) (fun x => Q)) :
   type_scope.
 
-Notation "{ ' pat  |  P }" := (sig (fun pat => P)) : type_scope.
-Notation "{ ' pat  |  P  & Q }" := (sig2 (fun pat => P) (fun pat => Q)) : type_scope.
-Notation "{ ' pat : A  |  P }" := (sig (A:=A) (fun pat => P)) : type_scope.
-Notation "{ ' pat : A  |  P  & Q }" := (sig2 (A:=A) (fun pat => P) (fun pat => Q)) :
+Notation "{ ' pat | P }" := (sig (fun pat => P)) : type_scope.
+Notation "{ ' pat | P & Q }" := (sig2 (fun pat => P) (fun pat => Q)) : type_scope.
+Notation "{ ' pat : A | P }" := (sig (A:=A) (fun pat => P)) : type_scope.
+Notation "{ ' pat : A | P & Q }" := (sig2 (A:=A) (fun pat => P) (fun pat => Q)) :
   type_scope.
-Notation "{ ' pat : A  & P }" := (sigT (A:=A) (fun pat => P)) : type_scope.
-Notation "{ ' pat : A  & P  & Q }" := (sigT2 (A:=A) (fun pat => P) (fun pat => Q)) :
+Notation "{ ' pat & P }" := (sigT (fun pat => P)) : type_scope.
+Notation "{ ' pat & P & Q }" := (sigT2 (fun pat => P) (fun pat => Q)) : type_scope.
+Notation "{ ' pat : A & P }" := (sigT (A:=A) (fun pat => P)) : type_scope.
+Notation "{ ' pat : A & P & Q }" := (sigT2 (A:=A) (fun pat => P) (fun pat => Q)) :
   type_scope.
 
 Add Printing Let sig.

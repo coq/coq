@@ -68,33 +68,40 @@ Reserved Notation "{ x }" (at level 0, x at level 99).
 
 (** Notations for sigma-types or subsets *)
 
-Reserved Notation "{ A }  + { B }" (at level 50, left associativity).
-Reserved Notation "A + { B }" (at level 50, left associativity).
+Reserved Notation "{ A }  +  { B }" (at level 50, left associativity).
+Reserved Notation "A  +  { B }" (at level 50, left associativity).
 
-Reserved Notation "{ x  |  P }" (at level 0, x at level 99).
-Reserved Notation "{ x  |  P  & Q }" (at level 0, x at level 99).
+Reserved Notation "{ x | P }" (at level 0, x at level 99).
+Reserved Notation "{ x | P & Q }" (at level 0, x at level 99).
 
-Reserved Notation "{ x : A  |  P }" (at level 0, x at level 99).
-Reserved Notation "{ x : A  |  P  & Q }" (at level 0, x at level 99).
+Reserved Notation "{ x : A | P }" (at level 0, x at level 99).
+Reserved Notation "{ x : A | P & Q }" (at level 0, x at level 99).
 
-Reserved Notation "{ x  &  P }" (at level 0, x at level 99).
-Reserved Notation "{ x : A  & P }" (at level 0, x at level 99).
-Reserved Notation "{ x : A  & P  & Q }" (at level 0, x at level 99).
+Reserved Notation "{ x & P }" (at level 0, x at level 99).
+Reserved Notation "{ x & P & Q }" (at level 0, x at level 99).
+
+Reserved Notation "{ x : A & P }" (at level 0, x at level 99).
+Reserved Notation "{ x : A & P & Q }" (at level 0, x at level 99).
 
 Reserved Notation "{ ' pat | P }"
-  (at level 0, pat strict pattern, format "{ ' pat  |  P  }").
+  (at level 0, pat strict pattern, format "{ ' pat  |  P }").
 Reserved Notation "{ ' pat | P & Q }"
-  (at level 0, pat strict pattern, format "{ ' pat  |  P  & Q }").
+  (at level 0, pat strict pattern, format "{ ' pat  |  P  &  Q }").
 
 Reserved Notation "{ ' pat : A | P }"
   (at level 0, pat strict pattern, format "{ ' pat  :  A  |  P }").
 Reserved Notation "{ ' pat : A | P & Q }"
-  (at level 0, pat strict pattern, format "{ ' pat  :  A  |  P  & Q }").
+  (at level 0, pat strict pattern, format "{ ' pat  :  A  |  P  &  Q }").
+
+Reserved Notation "{ ' pat & P }"
+  (at level 0, pat strict pattern, format "{ ' pat  &  P }").
+Reserved Notation "{ ' pat & P & Q }"
+  (at level 0, pat strict pattern, format "{ ' pat  &  P  &  Q }").
 
 Reserved Notation "{ ' pat : A & P }"
-  (at level 0, pat strict pattern, format "{ ' pat  :  A  & P }").
+  (at level 0, pat strict pattern, format "{ ' pat  :  A  &  P }").
 Reserved Notation "{ ' pat : A & P & Q }"
-  (at level 0, pat strict pattern, format "{ ' pat  :  A  & P  & Q }").
+  (at level 0, pat strict pattern, format "{ ' pat  :  A  &  P  &  Q }").
 
 (** Support for Gonthier-Ssreflect's "if c is pat then u else v" *)
 
