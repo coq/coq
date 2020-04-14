@@ -246,10 +246,18 @@ Section Facts.
     rewrite <- plus_n_Sm, plus_n_O; reflexivity.
   Qed.
 
+  Lemma app_inv_head_iff:
+   forall l l1 l2 : list A, l ++ l1 = l ++ l2 <-> l1 = l2.
+  Proof.
+    induction l; split; intros; simpl; auto.
+    - apply IHl. inversion H. auto.
+    - subst. auto.
+  Qed.
+
   Lemma app_inv_head:
    forall l l1 l2 : list A, l ++ l1 = l ++ l2 -> l1 = l2.
   Proof.
-    induction l; simpl; auto; injection 1; auto.
+    apply app_inv_head_iff.
   Qed.
 
   Lemma app_inv_tail:
@@ -265,6 +273,12 @@ Section Facts.
     simpl; rewrite app_length; auto with arith.
     rewrite H; auto with arith.
     injection H as [= H H0]; f_equal; eauto.
+  Qed.
+
+  Lemma app_inv_tail_iff:
+    forall l l1 l2 : list A, l1 ++ l = l2 ++ l <-> l1 = l2.
+  Proof.
+    split; [apply app_inv_tail | now intros ->].
   Qed.
 
   (************************)
