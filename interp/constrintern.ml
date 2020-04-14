@@ -989,7 +989,7 @@ let string_of_ty = function
   | Variable -> "var"
 
 let gvar (loc, id) us = match us with
-| None -> DAst.make ?loc @@ GVar id
+| None | Some [] -> DAst.make ?loc @@ GVar id
 | Some _ ->
   user_err ?loc  (str "Variable " ++ Id.print id ++
     str " cannot have a universe instance")
