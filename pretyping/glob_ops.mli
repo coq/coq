@@ -15,6 +15,8 @@ open Glob_term
 
 val glob_sort_eq : Glob_term.glob_sort -> Glob_term.glob_sort -> bool
 
+val glob_level_eq : Glob_term.glob_level -> Glob_term.glob_level -> bool
+
 val cases_pattern_eq : 'a cases_pattern_g -> 'a cases_pattern_g -> bool
 
 (** Expect a Prop/SProp/Set/Type universe; raise [ComplexSort] if
