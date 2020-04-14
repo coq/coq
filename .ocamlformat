@@ -1,4 +1,4 @@
-version=0.13.0
+version=0.14.0
 profile=ocamlformat
 
 # to enable a whole directory, put "disable=false" in dir/.ocamlformat
@@ -11,4 +11,4 @@ cases-exp-indent=2
 field-space=loose
 exp-grouping=preserve
 break-cases=fit
-doc-comments=before
+doc-comments-val=before
