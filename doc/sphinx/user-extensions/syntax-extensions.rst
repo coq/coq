@@ -618,6 +618,41 @@ the next command fails because p does not bind in the instance of n.
    Notation "[> a , .. , b <]" :=
      (cons a .. (cons b nil) .., cons b .. (cons a nil) ..).
 
+Notations with expressions used both as binder and term
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+It is possible to use parameters of the notation both in term and
+binding position. Here is an example:
+
+.. coqtop:: in
+
+   Definition force n (P:nat -> Prop) := forall n', n' >= n -> P n'.
+   Notation "▢_ n P" := (force n (fun n => P))
+     (at level 0, n ident, P at level 9, format "▢_ n  P").
+
+.. coqtop:: all
+
+   Check exists p, ▢_p (p >= 1).
+
+More generally, the parameter can be a pattern, as in the following
+variant:
+
+.. coqtop:: in reset
+
+   Definition force2 q (P:nat*nat -> Prop) :=
+     (forall n', n' >= fst q -> forall p', p' >= snd q -> P q).
+
+   Notation "▢_ p P" := (force2 p (fun p => P))
+     (at level 0, p pattern at level 0, P at level 9, format "▢_ p  P").
+
+.. coqtop:: all
+
+   Check exists x y, ▢_(x,y) (x >= 1 /\ y >= 2).
+
+This support is experimental. For instance, the notation is used for
+printing only if the occurrence of the parameter in term position
+comes in the right-hand side before the occurrence in binding position.
+
 .. _RecursiveNotations:
 
 Notations with recursive patterns
@@ -1382,6 +1417,17 @@ Abbreviations
    arguments and notation scopes of the constant. As an
    exception, if the right-hand side is just of the form :n:`@@qualid`,
    this conventionally stops the inheritance of implicit arguments.
+
+   Like for notations, it is possible to bind binders in
+   abbreviations. Here is an example:
+
+   .. coqtop:: in reset
+
+      Definition force2 q (P:nat*nat -> Prop) :=
+        (forall n', n' >= fst q -> forall p', p' >= snd q -> P q).
+
+      Notation F p P := (force2 p (fun p => P)).
+      Check exists x y, F (x,y) (x >= 1 /\ y >= 2).
 
 .. _numeral-notations:
 
