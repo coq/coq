@@ -757,6 +757,43 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   Definition Add x (e:elt) m m' := forall y, find y m' = find y (add x e m).
 
+  Lemma Add_transpose_neqkey : forall k1 k2 e1 e2 m1 m2 m3,
+    ~ E.eq k1 k2 -> Add k1 e1 m1 m2 -> Add k2 e2 m2 m3 ->
+    { m | Add k2 e2 m1 m /\ Add k1 e1 m m3 }.
+  Proof.
+  intros.
+  exists (add k2 e2 m1).
+  split.
+  easy.
+  unfold Add; intros.
+  rewrite -> H1.
+  destruct (E.eq_dec k1 y).
+
+  assert (~ E.eq k2 y).
+  contradict H.
+  apply E.eq_trans with (y:=y).
+  assumption. apply E.eq_sym. assumption.
+  rewrite add_neq_o by assumption.
+  rewrite add_eq_o by assumption.
+  rewrite -> H0.
+  rewrite add_eq_o by assumption.
+  reflexivity.
+
+  destruct (E.eq_dec k2 y).
+
+  rewrite add_eq_o by assumption.
+  rewrite add_neq_o by assumption.
+  rewrite add_eq_o by assumption.
+  reflexivity.
+
+  rewrite add_neq_o by assumption.
+  rewrite H0.
+  rewrite add_neq_o by assumption.
+  rewrite add_neq_o by assumption.
+  rewrite add_neq_o by assumption.
+  reflexivity.
+  Qed.
+
   Notation eqke := (@eq_key_elt elt).
   Notation eqk := (@eq_key elt).
 
@@ -1238,6 +1275,83 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   intros; do 2 rewrite cardinal_fold.
   change S with ((fun _ _ => S) x e).
   apply fold_Add with (eqA:=eq); compute; auto.
+  Qed.
+
+  Lemma cardinal_3 :
+    forall m m' x e, In x m -> Add x e m m' -> cardinal m' = cardinal m.
+  Proof.
+  intros m.
+  induction m using map_induction.
+
+  intros.
+  contradict H0. intros [ e' He' ]. apply H in He'. auto.
+
+  intros.
+  destruct  (E.eq_dec x x0).
+
+  enough (Add x0 e0 m1 m').
+  rewrite cardinal_2 with (m:=m1) (m':=m2) (x:=x) (e:=e).
+  rewrite cardinal_2 with (m:=m1) (m':=m') (x:=x0) (e:=e0).
+  reflexivity.
+  contradict H.
+  apply (In_iff m1 e1).
+  assumption.
+  assumption.
+  assumption.
+  assumption.
+
+  intro y.
+  destruct (E.eq_dec x0 y).
+  rewrite H2.
+  do 2 rewrite add_eq_o by assumption.
+  reflexivity.
+
+  rewrite H2.
+  do 2 rewrite add_neq_o by assumption.
+  rewrite H0.
+  assert (~E.eq x y).
+  contradict n.
+  apply E.eq_trans with (y:= x). apply E.eq_sym. assumption. assumption.
+  rewrite add_neq_o by assumption.
+  reflexivity.
+
+  destruct (Add_transpose_neqkey) with (k1:=x) (k2:=x0) (e1:=e) (e2:=e0) (m1:=m1) (m2:=m2) (m3:=m') as [ transposed [ Add_transposed_1 Add_transposed_2 ] ].
+  assumption.
+  assumption.
+  assumption.
+
+  rewrite cardinal_2 with (x:=x) (e:=e) (m:=transposed).
+  rewrite cardinal_2 with (x:=x) (e:=e) (m:=m1) (m':=m2).
+  rewrite IHm1 with (x:=x0) (e:=e0).
+  reflexivity.
+
+  destruct H1 as [ e' e'mapsto ].
+  exists e'.
+  apply M.add_3 with (x:=x) (e':=e).
+  assumption.
+  apply find_mapsto_iff.
+  rewrite <- H0.
+  apply find_mapsto_iff.
+  assumption.
+
+  assumption.
+  assumption.
+  assumption.
+
+  contradict n.
+  assert (In x (add x0 e0 m1)).
+  destruct n as [ e' e'mapsto ].
+  exists e'.
+  apply find_mapsto_iff.
+  rewrite <- Add_transposed_1.
+  apply find_mapsto_iff.
+  assumption.
+  apply add_in_iff in H3.
+  destruct H3.
+  apply E.eq_sym; assumption.
+  contradiction.
+
+  assumption.
   Qed.
 
   Lemma cardinal_inv_1 : forall m : t elt,
