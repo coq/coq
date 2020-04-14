@@ -81,6 +81,19 @@ module ModSubstObjs :
 
 let sobjs_no_functor (mbids,_) = List.is_empty mbids
 
+let subst_filtered sub (f,mp) =
+  let f = match f with
+    | Unfiltered -> Unfiltered
+    | Names ns ->
+      let module NSet = Globnames.ExtRefSet in
+      let ns =
+        NSet.fold (fun n ns -> NSet.add (Globnames.subst_extended_reference sub n) ns)
+          ns NSet.empty
+      in
+      Names ns
+  in
+  f, subst_mp sub mp
+
 let rec subst_aobjs sub = function
   | Objs o as objs ->
     let o' = subst_objects sub o in
@@ -109,7 +122,7 @@ and subst_objects subst seg =
       let aobjs' = subst_aobjs subst aobjs in
       if aobjs' == aobjs then node else (id, IncludeObject aobjs')
     | ExportObject { mpl } ->
-      let mpl' = List.map (subst_mp subst) mpl in
+      let mpl' = List.Smart.map (subst_filtered subst) mpl in
       if mpl'==mpl then node else (id, ExportObject { mpl = mpl' })
     | KeepObject _ -> assert false
   in
@@ -285,62 +298,51 @@ and load_keep i ((sp,kn),kobjs) =
 
 (** {6 Implementation of Import and Export commands} *)
 
-let mark_object obj (exports,acc) =
-  (exports, obj::acc)
+let mark_object f obj (exports,acc) =
+  (exports, (f,obj)::acc)
 
-let rec collect_module_objects mp acc =
+let rec collect_module_objects (f,mp) acc =
   (* May raise Not_found for unknown module and for functors *)
   let modobjs = ModObjs.get mp in
   let prefix = modobjs.module_prefix in
-  let acc = collect_objects 1 prefix modobjs.module_keep_objects acc in
-  collect_objects 1 prefix modobjs.module_substituted_objects acc
+  let acc = collect_objects f 1 prefix modobjs.module_keep_objects acc in
+  collect_objects f 1 prefix modobjs.module_substituted_objects acc
 
-and collect_object i (name, obj as o) acc =
+and collect_object f i (name, obj as o) acc =
   match obj with
-  | ExportObject { mpl; _ } -> collect_export i mpl acc
+  | ExportObject { mpl } -> collect_export f i mpl acc
   | AtomicObject _ | IncludeObject _ | KeepObject _
-  | ModuleObject _ | ModuleTypeObject _ -> mark_object o acc
+  | ModuleObject _ | ModuleTypeObject _ -> mark_object f o acc
 
-and collect_objects i prefix objs acc =
-  List.fold_right (fun (id, obj) acc -> collect_object i (Lib.make_oname prefix id, obj) acc) objs acc
+and collect_objects f i prefix objs acc =
+  List.fold_right (fun (id, obj) acc -> collect_object f i (Lib.make_oname prefix id, obj) acc) objs acc
 
-and collect_one_export mp (exports,objs as acc) =
-  if not (MPset.mem mp exports) then
-    collect_module_objects mp (MPset.add mp exports, objs)
-  else acc
+and collect_one_export f (f',mp) (exports,objs as acc) =
+  match filter_and f f' with
+  | None -> acc
+  | Some f ->
+    let exports' = MPmap.update mp (function
+        | None -> Some f
+        | Some f0 -> Some (filter_or f f0))
+        exports
+    in
+    (* If the map doesn't change there is nothing new to export.
 
-and collect_export i mpl acc =
+       It's possible that [filter_and] or [filter_or] mangled precise
+       filters such that we repeat uselessly, but the important
+       [Unfiltered] case is handled correctly.
+    *)
+    if exports == exports' then acc
+    else
+      collect_module_objects (f,mp) (exports', objs)
+
+
+and collect_export f i mpl acc =
   if Int.equal i 1 then
-    List.fold_right collect_one_export mpl acc
+    List.fold_right (collect_one_export f) mpl acc
   else acc
 
-let rec open_object i (name, obj) =
-  match obj with
-  | AtomicObject o -> Libobject.open_object i (name, o)
-  | ModuleObject sobjs ->
-    let dir = dir_of_sp (fst name) in
-    let mp = mp_of_kn (snd name) in
-    open_module i dir mp sobjs
-  | ModuleTypeObject sobjs -> open_modtype i (name, sobjs)
-  | IncludeObject aobjs -> open_include i (name, aobjs)
-  | ExportObject { mpl; _ } -> open_export i mpl
-  | KeepObject objs -> open_keep i (name, objs)
-
-and open_module i obj_dir obj_mp sobjs =
-  let prefix = Nametab.{ obj_dir ; obj_mp; } in
-  let dirinfo = Nametab.GlobDirRef.DirModule prefix in
-  consistency_checks true obj_dir dirinfo;
-  Nametab.push_dir (Nametab.Exactly i) obj_dir dirinfo;
-  (* If we're not a functor, let's iter on the internal components *)
-  if sobjs_no_functor sobjs then begin
-    let modobjs = ModObjs.get obj_mp in
-    open_objects (i+1) modobjs.module_prefix modobjs.module_substituted_objects
-  end
-
-and open_objects i prefix objs =
-  List.iter (fun (id, obj) -> open_object i (Lib.make_oname prefix id, obj)) objs
-
-and open_modtype i ((sp,kn),_) =
+let open_modtype i ((sp,kn),_) =
   let mp = mp_of_kn kn in
   let mp' =
     try Nametab.locate_modtype (qualid_of_path sp)
@@ -350,21 +352,49 @@ and open_modtype i ((sp,kn),_) =
   assert (ModPath.equal mp mp');
   Nametab.push_modtype (Nametab.Exactly i) sp mp
 
-and open_include i ((sp,kn), aobjs) =
+let rec open_object f i (name, obj) =
+  match obj with
+  | AtomicObject o -> Libobject.open_object f i (name, o)
+  | ModuleObject sobjs ->
+    let dir = dir_of_sp (fst name) in
+    let mp = mp_of_kn (snd name) in
+    open_module f i dir mp sobjs
+  | ModuleTypeObject sobjs -> open_modtype i (name, sobjs)
+  | IncludeObject aobjs -> open_include f i (name, aobjs)
+  | ExportObject { mpl } -> open_export f i mpl
+  | KeepObject objs -> open_keep f i (name, objs)
+
+and open_module f i obj_dir obj_mp sobjs =
+  let prefix = Nametab.{ obj_dir ; obj_mp; } in
+  let dirinfo = Nametab.GlobDirRef.DirModule prefix in
+  consistency_checks true obj_dir dirinfo;
+  (match f with
+   | Unfiltered -> Nametab.push_dir (Nametab.Exactly i) obj_dir dirinfo
+   | Names _ -> ());
+  (* If we're not a functor, let's iter on the internal components *)
+  if sobjs_no_functor sobjs then begin
+    let modobjs = ModObjs.get obj_mp in
+    open_objects f (i+1) modobjs.module_prefix modobjs.module_substituted_objects
+  end
+
+and open_objects f i prefix objs =
+  List.iter (fun (id, obj) -> open_object f i (Lib.make_oname prefix id, obj)) objs
+
+and open_include f i ((sp,kn), aobjs) =
   let obj_dir = Libnames.dirpath sp in
   let obj_mp = KerName.modpath kn in
   let prefix = Nametab.{ obj_dir; obj_mp; } in
   let o = expand_aobjs aobjs in
-  open_objects i prefix o
+  open_objects f i prefix o
 
-and open_export i mpl =
-  let _,objs = collect_export i mpl (MPset.empty, []) in
-  List.iter (open_object 1) objs
+and open_export f i mpl =
+  let _,objs = collect_export f i mpl (MPmap.empty, []) in
+  List.iter (fun (f,o) -> open_object f 1 o) objs
 
-and open_keep i ((sp,kn),kobjs) =
+and open_keep f i ((sp,kn),kobjs) =
   let obj_dir = dir_of_sp sp and obj_mp = mp_of_kn kn in
   let prefix = Nametab.{ obj_dir; obj_mp; } in
-  open_objects i prefix kobjs
+  open_objects f i prefix kobjs
 
 let rec cache_object (name, obj) =
   match obj with
@@ -383,7 +413,7 @@ and cache_include ((sp,kn), aobjs) =
   let prefix = Nametab.{ obj_dir; obj_mp; } in
   let o = expand_aobjs aobjs in
   load_objects 1 prefix o;
-  open_objects 1 prefix o
+  open_objects Unfiltered 1 prefix o
 
 and cache_keep ((sp,kn),kobjs) =
   anomaly (Pp.str "This module should not be cached!")
@@ -1023,12 +1053,12 @@ let end_library ?except ~output_native_objects dir =
   cenv,(substitute,keep),ast
 
 let import_modules ~export mpl =
-  let _,objs = List.fold_right collect_module_objects mpl (MPset.empty, []) in
-  List.iter (open_object 1) objs;
+  let _,objs = List.fold_right collect_module_objects mpl (MPmap.empty, []) in
+  List.iter (fun (f,o) -> open_object f 1 o) objs;
   if export then Lib.add_anonymous_entry (Lib.Leaf (ExportObject { mpl }))
 
-let import_module ~export mp =
-  import_modules ~export [mp]
+let import_module f ~export mp =
+  import_modules ~export [f,mp]
 
 (** {6 Iterators} *)
 
@@ -1073,6 +1103,6 @@ let debug_print_modtab _ =
 
 
 let mod_ops = {
-  Printmod.import_module = import_module;
+  Printmod.import_module = import_module Unfiltered;
   process_module_binding = process_module_binding;
 }

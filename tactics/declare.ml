@@ -93,13 +93,14 @@ let load_constant i ((sp,kn), obj) =
   Dumpglob.add_constant_kind con obj.cst_kind
 
 (* Opening means making the name without its module qualification available *)
-let open_constant i ((sp,kn), obj) =
+let open_constant f i ((sp,kn), obj) =
   (* Never open a local definition *)
   match obj.cst_locl with
   | ImportNeedQualified -> ()
   | ImportDefaultBehavior ->
     let con = Global.constant_of_delta_kn kn in
-    Nametab.push (Nametab.Exactly i) sp (GlobRef.ConstRef con)
+    if in_filter_ref (GlobRef.ConstRef con) f then
+      Nametab.push (Nametab.Exactly i) sp (GlobRef.ConstRef con)
 
 let exists_name id =
   Decls.variable_exists id || Global.exists_objlabel (Label.of_id id)

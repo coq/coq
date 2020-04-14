@@ -101,7 +101,14 @@ type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = bool option
   (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
+
 type export_flag    = bool (* true = Export;        false = Import         *)
+
+type one_import_filter_name = qualid * bool (* import inductive components *)
+type import_filter_expr =
+  | ImportAll
+  | ImportNames of one_import_filter_name list
+
 type onlyparsing_flag = { onlyparsing : bool }
  (* Some v = Parse only;  None = Print also.
     If v<>Current, it contains the name of the coq version
@@ -320,7 +327,7 @@ type nonrec vernac_expr =
   | VernacEndSegment of lident
   | VernacRequire of
       qualid option * export_flag option * qualid list
-  | VernacImport of export_flag * qualid list
+  | VernacImport of export_flag * (qualid * import_filter_expr) list
   | VernacCanonical of qualid or_by_notation
   | VernacCoercion of qualid or_by_notation *
       class_rawexpr * class_rawexpr

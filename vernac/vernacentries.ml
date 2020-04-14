@@ -872,12 +872,62 @@ let vernac_constraint ~poly l =
 (**********************)
 (* Modules            *)
 
+let add_subnames_of ns full_n n =
+  let open GlobRef in
+  let module NSet = Globnames.ExtRefSet in
+  let add1 r ns = NSet.add (Globnames.TrueGlobal r) ns in
+  match n with
+  | Globnames.SynDef _ | Globnames.TrueGlobal (ConstRef _ | ConstructRef _ | VarRef _) ->
+    CErrors.user_err Pp.(str "Only inductive types can be used with Import (...).")
+  | Globnames.TrueGlobal (IndRef (mind,i)) ->
+    let open Declarations in
+    let dp = Libnames.dirpath full_n in
+    let mib = Global.lookup_mind mind in
+    let mip = mib.mind_packets.(i) in
+    let ns = add1 (IndRef (mind,i)) ns in
+    let ns = Array.fold_left_i (fun j ns _ -> add1 (ConstructRef ((mind,i),j+1)) ns)
+        ns mip.mind_consnames
+    in
+    List.fold_left (fun ns f ->
+        let s = Indrec.elimination_suffix f in
+        let n_elim = Id.of_string (Id.to_string mip.mind_typename ^ s) in
+        match Nametab.extended_global_of_path (Libnames.make_path dp n_elim) with
+        | exception Not_found -> ns
+        | n_elim -> NSet.add n_elim ns)
+      ns Sorts.all_families
+
+let interp_filter_in m = function
+  | ImportAll ->  Libobject.Unfiltered
+  | ImportNames ns ->
+    let module NSet = Globnames.ExtRefSet in
+    let dp_m = Nametab.dirpath_of_module m in
+    let ns =
+      List.fold_left (fun ns (n,etc) ->
+          let full_n =
+            let dp_n,n = repr_qualid n in
+            make_path (append_dirpath dp_m dp_n) n
+          in
+          let n = try Nametab.extended_global_of_path full_n
+            with Not_found ->
+              CErrors.user_err
+                Pp.(str "Cannot find name " ++ pr_qualid n ++ spc() ++
+                    str "in module " ++ pr_qualid (Nametab.shortest_qualid_of_module m))
+          in
+          let ns = NSet.add n ns in
+          if etc then add_subnames_of ns full_n n else ns)
+        NSet.empty ns
+    in
+    Libobject.Names ns
+
 let vernac_import export refl =
-  let import_mod qid =
-    try Declaremods.import_module ~export @@ Nametab.locate_module qid
-    with Not_found ->
-      CErrors.user_err Pp.(str "Cannot find module " ++ pr_qualid qid)
-   in
+  let import_mod (qid,f) =
+    let m = try Nametab.locate_module qid
+      with Not_found ->
+        CErrors.user_err Pp.(str "Cannot find module " ++ pr_qualid qid)
+    in
+    let f = interp_filter_in m f in
+    Declaremods.import_module f ~export m
+  in
   List.iter import_mod refl
 
 let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
@@ -893,7 +943,7 @@ let vernac_declare_module export {loc;v=id} binders_ast mty_ast =
   let mp = Declaremods.declare_module id binders_ast (Declaremods.Enforce mty_ast) [] in
   Dumpglob.dump_moddef ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is declared");
-  Option.iter (fun export -> vernac_import export [qualid_of_ident id]) export
+  Option.iter (fun export -> vernac_import export [qualid_of_ident id, ImportAll]) export
 
 let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
@@ -914,7 +964,7 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
        List.iter
          (fun (export,id) ->
            Option.iter
-             (fun export -> vernac_import export [qualid_of_ident id]) export
+             (fun export -> vernac_import export [qualid_of_ident id, ImportAll]) export
          ) argsexport
     | _::_ ->
        let binders_ast = List.map
@@ -929,14 +979,14 @@ let vernac_define_module export {loc;v=id} (binders_ast : module_binder list) mt
        Dumpglob.dump_moddef ?loc mp "mod";
        Flags.if_verbose Feedback.msg_info
          (str "Module " ++ Id.print id ++ str " is defined");
-       Option.iter (fun export -> vernac_import export [qualid_of_ident id])
+       Option.iter (fun export -> vernac_import export [qualid_of_ident id, ImportAll])
          export
 
 let vernac_end_module export {loc;v=id} =
   let mp = Declaremods.end_module () in
   Dumpglob.dump_modref ?loc mp "mod";
   Flags.if_verbose Feedback.msg_info (str "Module " ++ Id.print id ++ str " is defined");
-  Option.iter (fun export -> vernac_import export [qualid_of_ident ?loc id]) export
+  Option.iter (fun export -> vernac_import export [qualid_of_ident ?loc id, ImportAll]) export
 
 let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
   if Global.sections_are_opened () then
@@ -957,7 +1007,7 @@ let vernac_declare_module_type {loc;v=id} binders_ast mty_sign mty_ast_l =
        List.iter
          (fun (export,id) ->
            Option.iter
-             (fun export -> vernac_import export [qualid_of_ident ?loc id]) export
+             (fun export -> vernac_import export [qualid_of_ident ?loc id, ImportAll]) export
          ) argsexport
 
     | _ :: _ ->

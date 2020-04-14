@@ -335,7 +335,11 @@ let load_require _ (_,(needed,modl,_)) =
   List.iter register_library needed
 
 let open_require i (_,(_,modl,export)) =
-  Option.iter (fun export -> Declaremods.import_modules ~export @@ List.map (fun m -> MPfile m) modl) export
+  Option.iter (fun export ->
+      let mpl = List.map (fun m -> Unfiltered, MPfile m) modl in
+      (* TODO support filters in Require *)
+      Declaremods.import_modules ~export mpl)
+    export
 
   (* [needed] is the ordered list of libraries not already loaded *)
 let cache_require o =
@@ -370,16 +374,17 @@ let require_library_from_dirpath ~lib_resolver modrefl export =
   let needed, contents = List.fold_left (rec_intern_library ~lib_resolver) ([], DPmap.empty) modrefl in
   let needed = List.rev_map (fun dir -> DPmap.find dir contents) needed in
   let modrefl = List.map fst modrefl in
-    if Lib.is_module_or_modtype () then
-      begin
-        warn_require_in_module ();
-              add_anonymous_leaf (in_require (needed,modrefl,None));
-        Option.iter (fun export ->
-          List.iter (fun m -> Declaremods.import_module ~export (MPfile m)) modrefl)
-                export
-      end
-    else
-      add_anonymous_leaf (in_require (needed,modrefl,export));
+  if Lib.is_module_or_modtype () then
+    begin
+      warn_require_in_module ();
+      add_anonymous_leaf (in_require (needed,modrefl,None));
+      Option.iter (fun export ->
+          (* TODO import filters *)
+          List.iter (fun m -> Declaremods.import_module Unfiltered ~export (MPfile m)) modrefl)
+        export
+    end
+  else
+    add_anonymous_leaf (in_require (needed,modrefl,export));
   ()
 
 (************************************************************************)

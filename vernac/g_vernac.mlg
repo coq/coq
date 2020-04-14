@@ -566,13 +566,20 @@ GRAMMAR EXTEND Gram
       | IDENT "From" ; ns = global ; IDENT "Require"; export = export_token
         ; qidl = LIST1 global ->
         { VernacRequire (Some ns, export, qidl) }
-      | IDENT "Import"; qidl = LIST1 global -> { VernacImport (false,qidl) }
-      | IDENT "Export"; qidl = LIST1 global -> { VernacImport (true,qidl) }
+      | IDENT "Import"; qidl = LIST1 filtered_import -> { VernacImport (false,qidl) }
+      | IDENT "Export"; qidl = LIST1 filtered_import -> { VernacImport (true,qidl) }
       | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
           { VernacInclude(e::l) }
       | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
          { warn_deprecated_include_type ~loc ();
         VernacInclude(e::l) } ] ]
+  ;
+  filtered_import:
+    [ [ m = global -> { (m, ImportAll) }
+      | m = global; "("; ns = LIST1 one_import_filter_name SEP ","; ")" -> { (m, ImportNames ns) } ] ]
+  ;
+  one_import_filter_name:
+    [ [ n = global; etc = OPT [ "("; ".."; ")" -> { () } ] -> { n, Option.has_some etc } ] ]
   ;
   export_token:
     [ [ IDENT "Import" -> { Some false }

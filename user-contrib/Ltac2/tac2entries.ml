@@ -91,7 +91,7 @@ let inTacDef : tacdef -> obj =
   declare_object {(default_object "TAC2-DEFINITION") with
      cache_function  = cache_tacdef;
      load_function   = load_tacdef;
-     open_function   = open_tacdef;
+     open_function   = simple_open open_tacdef;
      subst_function = subst_tacdef;
      classify_function = classify_tacdef}
 
@@ -198,7 +198,7 @@ let inTypDef : typdef -> obj =
   declare_object {(default_object "TAC2-TYPE-DEFINITION") with
      cache_function  = cache_typdef;
      load_function   = load_typdef;
-     open_function   = open_typdef;
+     open_function   = simple_open open_typdef;
      subst_function = subst_typdef;
      classify_function = classify_typdef}
 
@@ -268,7 +268,7 @@ let inTypExt : typext -> obj =
   declare_object {(default_object "TAC2-TYPE-EXTENSION") with
      cache_function  = cache_typext;
      load_function   = load_typext;
-     open_function   = open_typext;
+     open_function   = simple_open open_typext;
      subst_function = subst_typext;
      classify_function = classify_typext}
 
@@ -664,7 +664,7 @@ let classify_synext o =
 let inTac2Notation : synext -> obj =
   declare_object {(default_object "TAC2-NOTATION") with
      cache_function  = cache_synext;
-     open_function   = open_synext;
+     open_function   = simple_open open_synext;
      subst_function = subst_synext;
      classify_function = classify_synext}
 
@@ -694,7 +694,7 @@ let inTac2Abbreviation : abbreviation -> obj =
   declare_object {(default_object "TAC2-ABBREVIATION") with
      cache_function  = cache_abbreviation;
      load_function   = load_abbreviation;
-     open_function   = open_abbreviation;
+     open_function   = simple_open open_abbreviation;
      subst_function = subst_abbreviation;
      classify_function = classify_abbreviation}
 
@@ -747,7 +747,7 @@ let classify_redefinition o = Substitute o
 let inTac2Redefinition : redefinition -> obj =
   declare_object {(default_object "TAC2-REDEFINITION") with
      cache_function  = perform_redefinition;
-     open_function   = (fun _ -> perform_redefinition);
+     open_function   = simple_open (fun _ -> perform_redefinition);
      subst_function = subst_redefinition;
      classify_function = classify_redefinition }
 
@@ -962,7 +962,7 @@ let inTac2Init : unit -> obj =
   declare_object {(default_object "TAC2-INIT") with
     cache_function = cache_ltac2_init;
     load_function = load_ltac2_init;
-    open_function = open_ltac2_init;
+    open_function = simple_open open_ltac2_init;
   }
 
 let _ = Mltop.declare_cache_obj begin fun () ->

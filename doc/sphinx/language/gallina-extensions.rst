@@ -422,7 +422,12 @@ are now available through the dot notation.
    If :n:`@module_binder`\s are specified, declares a functor with parameters given by the list of
    :token:`module_binder`\s.
 
-.. cmd:: Import {+ @qualid }
+.. cmd:: Import {+ @filtered_import }
+
+   .. insertprodn filtered_import filtered_import
+
+   .. prodn::
+      filtered_import ::= @qualid {? ( {+, @qualid {? ( .. ) } } ) }
 
    If :token:`qualid` denotes a valid basic module (i.e. its module type is a
    signature), makes its components available by their short names.
@@ -465,11 +470,49 @@ are now available through the dot notation.
 
          Check B.T.
 
-.. cmd:: Export {+ @qualid }
+   Appending a module name with a parenthesized list of names will
+   make only those names available with short names, not other names
+   defined in the module nor will it activate other features.
+
+   The names to import may be constants, inductive types and
+   constructors, and notation aliases (for instance, Ltac definitions
+   cannot be selectively imported). If they are from an inner module
+   to the one being imported, they must be prefixed by the inner path.
+
+   The name of an inductive type may also be followed by ``(..)`` to
+   import it, its constructors and its eliminators if they exist. For
+   this purpose "eliminator" means a constant in the same module whose
+   name is the inductive type's name suffixed by one of ``_sind``,
+   ``_ind``, ``_rec`` or ``_rect``.
+
+   .. example::
+
+      .. coqtop:: reset in
+
+         Module A.
+         Module B.
+         Inductive T := C.
+         Definition U := nat.
+         End B.
+         Definition Z := Prop.
+         End A.
+         Import A(B.T(..), Z).
+
+      .. coqtop:: all
+
+         Check B.T.
+         Check B.C.
+         Check Z.
+         Fail Check B.U.
+         Check A.B.U.
+
+.. cmd:: Export {+ @filtered_import }
    :name: Export
 
    Similar to :cmd:`Import`, except that when the module containing this command
    is imported, the :n:`{+ @qualid }` are imported as well.
+
+   The selective import syntax also works with Export.
 
    .. exn:: @qualid is not a module.
       :undocumented:

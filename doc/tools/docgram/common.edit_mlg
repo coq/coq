@@ -511,6 +511,12 @@ strategy_flag: [
 | OPTINREF
 ]
 
+filtered_import: [
+| REPLACE global "(" LIST1 one_import_filter_name SEP "," ")"
+| WITH global OPT [ "(" LIST1 one_import_filter_name SEP "," ")" ]
+| DELETE global
+]
+
 functor_app_annot: [
 | OPTINREF
 ]
@@ -1582,6 +1588,7 @@ SPLICE: [
 | searchabout_queries
 | locatable
 | scope_delimiter
+| one_import_filter_name
 ] (* end SPLICE *)
 
 RENAME: [
