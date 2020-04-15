@@ -313,3 +313,104 @@ Notation "x" := x (in custom com_top at level 90, x custom com at level 90).
 Check fun x => <{ x ; (S x) }>.
 
 End CoercionEntryTransitivity.
+
+(* Some corner cases *)
+
+Module P.
+
+(* Basic rules:
+   - a section variable be used for itself and as a binding variable
+   - a global name cannot be used for itself and as a binding variable
+*)
+
+  Definition pseudo_force {A} (n:A) (P:A -> Prop) := forall n', n' = n -> P n'.
+
+  Module NotationMixedTermBinderAsIdent.
+
+  Notation "▢_ n P" := (pseudo_force n (fun n => P))
+    (at level 0, n ident, P at level 9, format "▢_ n  P").
+  Check exists p, ▢_p (p >= 1).
+  Section S.
+  Variable n:nat.
+  Check ▢_n (n >= 1).
+  End S.
+  Fail Check ▢_nat (nat = bool).
+  Fail Check ▢_O (O >= 1).
+  Axiom n:nat.
+  Fail Check ▢_n (n >= 1).
+
+  End NotationMixedTermBinderAsIdent.
+
+  Module NotationMixedTermBinderAsPattern.
+
+  Notation "▢_ n P" := (pseudo_force n (fun n => P))
+    (at level 0, n pattern, P at level 9, format "▢_ n  P").
+  Check exists x y, ▢_(x,y) (x >= 1 /\ y >= 2).
+  Section S.
+  Variable n:nat.
+  Check ▢_n (n >= 1).
+  End S.
+  Fail Check ▢_nat (nat = bool).
+  Check ▢_tt (tt = tt).
+  Axiom n:nat.
+  Fail Check ▢_n (n >= 1).
+
+  End NotationMixedTermBinderAsPattern.
+
+  Module NotationMixedTermBinderAsStrictPattern.
+
+  Notation "▢_ n P" := (pseudo_force n (fun n => P))
+    (at level 0, n strict pattern, P at level 9, format "▢_ n  P").
+  Check exists x y, ▢_(x,y) (x >= 1 /\ y >= 2).
+  Section S.
+  Variable n:nat.
+  Check ▢_n (n >= 1).
+  End S.
+  Fail Check ▢_nat (nat = bool).
+  Check ▢_tt (tt = tt).
+  Axiom n:nat.
+  Fail Check ▢_n (n >= 1).
+
+  End NotationMixedTermBinderAsStrictPattern.
+
+  Module AbbreviationMixedTermBinderAsStrictPattern.
+
+  Notation myforce n P := (pseudo_force n (fun n => P)).
+  Check exists x y, myforce (x,y) (x >= 1 /\ y >= 2).
+  Section S.
+  Variable n:nat.
+  Check myforce n (n >= 1). (* strict hence not used for printing *)
+  End S.
+  Fail Check myforce nat (nat = bool).
+  Check myforce tt (tt = tt).
+  Axiom n:nat.
+  Fail Check myforce n (n >= 1).
+
+  End AbbreviationMixedTermBinderAsStrictPattern.
+
+  Module Bug4765Part.
+
+  Notation id x := ((fun y => y) x).
+  Check id nat.
+
+  Notation id' x := ((fun x => x) x).
+  Check fun a : bool => id' a.
+  Check fun nat : bool => id' nat.
+  Fail Check id' nat.
+
+  End Bug4765Part.
+
+  Module NotationBinderNotMixedWithTerms.
+
+  Notation "!! x , P" := (forall x, P) (at level 200, x pattern).
+  Check !! nat, nat = true.
+
+  Notation "!!! x , P" := (forall x, P) (at level 200).
+  Check !!! nat, nat = true.
+
+  Notation "!!!! x , P" := (forall x, P) (at level 200, x strict pattern).
+  Check !!!! (nat,id), nat = true /\ id = false.
+
+  End NotationBinderNotMixedWithTerms.
+
+End P.
