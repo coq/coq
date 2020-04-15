@@ -30,5 +30,8 @@ val open_out : file:string -> out_handle
 val close_out : out_handle -> unit
 val marshal_out_segment : out_handle -> segment:string -> 'a -> unit
 val marshal_out_binary : out_handle -> segment:string -> out_channel * (unit -> unit)
-(** Low-level API. This function returns a channel and a closure. The channel
-    should only be written to, and once done, the closure should be invoked. *)
+(** [marshal_out_binary oh segment] is a low level, stateful, API returning
+    [oc, stop]. Once called no other API can be used on the same [oh] and only
+    [Stdlib.output_*] APIs should be used on [oc]. [stop ()] must be invoked in
+    order to signal that all data was written to [oc] (which should not be used
+    afterwards). Only after calling [stop] the other API can be used on [oh]. *)
