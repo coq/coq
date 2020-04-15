@@ -255,7 +255,7 @@ let try_locate_qualified_library lib = match lib with
 (*s Low-level interning of libraries from files *)
 
 let raw_intern_library f =
-  System.ObjFile.open_in ~file:f
+  ObjFile.open_in ~file:f
 
 (************************************************************************)
 (* Internalise libraries *)
@@ -295,13 +295,13 @@ type intern_mode = Rec | Root | Dep (* Rec = standard, Root = -norec, Dep = depe
 let depgraph = ref LibraryMap.empty
 
 let marshal_in_segment ~validate ~value ~segment f ch =
-  let () = LargeFile.seek_in ch segment.System.ObjFile.pos in
+  let () = LargeFile.seek_in ch segment.ObjFile.pos in
   if validate then
     let v =
       try
         let v = Analyze.parse_channel ch in
         let digest = Digest.input ch in
-        let () = if not (String.equal digest segment.System.ObjFile.hash) then raise Exit in
+        let () = if not (String.equal digest segment.ObjFile.hash) then raise Exit in
         v
       with _ ->
         user_err (str "Corrupted file " ++ quote (str f))
@@ -326,12 +326,12 @@ let intern_from_file ~intern_mode (dir, f) =
     try
       (* First pass to read the metadata of the file *)
       let ch = System.with_magic_number_check raw_intern_library f in
-      let seg_sd = System.ObjFile.get_segment ch ~segment:"summary" in
-      let seg_md = System.ObjFile.get_segment ch ~segment:"library" in
-      let seg_univs = System.ObjFile.get_segment ch ~segment:"universes" in
-      let seg_tasks = System.ObjFile.get_segment ch ~segment:"tasks" in
-      let seg_opaque = System.ObjFile.get_segment ch ~segment:"opaques" in
-      let () = System.ObjFile.close_in ch in
+      let seg_sd = ObjFile.get_segment ch ~segment:"summary" in
+      let seg_md = ObjFile.get_segment ch ~segment:"library" in
+      let seg_univs = ObjFile.get_segment ch ~segment:"universes" in
+      let seg_tasks = ObjFile.get_segment ch ~segment:"tasks" in
+      let seg_opaque = ObjFile.get_segment ch ~segment:"opaques" in
+      let () = ObjFile.close_in ch in
       (* Actually read the data *)
       let ch = open_in f in
 
@@ -360,7 +360,7 @@ let intern_from_file ~intern_mode (dir, f) =
       end;
       Flags.if_verbose chk_pp (str" done]" ++ fnl ());
       let digest =
-        let open System.ObjFile in
+        let open ObjFile in
         if opaque_csts <> None then Safe_typing.Dvivo (seg_md.hash, seg_univs.hash)
         else (Safe_typing.Dvo_or_vi seg_md.hash) in
       sd,md,table,opaque_csts,digest

@@ -20,11 +20,11 @@ open Libobject
 (*s Low-level interning/externing of libraries to files *)
 
 let raw_extern_library f =
-  System.ObjFile.open_out ~file:f
+  ObjFile.open_out ~file:f
 
 let raw_intern_library f =
   System.with_magic_number_check
-    (fun file -> System.ObjFile.open_in ~file) f
+    (fun file -> ObjFile.open_in ~file) f
 
 (************************************************************************)
 (** Serialized objects loaded on-the-fly *)
@@ -35,7 +35,7 @@ module Delayed :
 sig
 
 type 'a delayed
-val in_delayed : string -> System.ObjFile.in_handle -> segment:string -> 'a delayed * Digest.t
+val in_delayed : string -> ObjFile.in_handle -> segment:string -> 'a delayed * Digest.t
 val fetch_delayed : 'a delayed -> 'a
 
 end =
@@ -48,9 +48,9 @@ type 'a delayed = {
 }
 
 let in_delayed f ch ~segment =
-  let seg = System.ObjFile.get_segment ch ~segment in
-  let digest = seg.System.ObjFile.hash in
-  { del_file = f; del_digest = digest; del_off = seg.System.ObjFile.pos; }, digest
+  let seg = ObjFile.get_segment ch ~segment in
+  let digest = seg.ObjFile.hash in
+  { del_file = f; del_digest = digest; del_off = seg.ObjFile.pos; }, digest
 
 (** Fetching a table of opaque terms at position [pos] in file [f],
     expecting to find first a copy of [digest]. *)
@@ -242,11 +242,11 @@ let mk_summary m = {
 
 let intern_from_file f =
   let ch = raw_intern_library f in
-  let (lsd : seg_sum), digest_lsd = System.ObjFile.marshal_in_segment ch ~segment:"summary" in
+  let (lsd : seg_sum), digest_lsd = ObjFile.marshal_in_segment ch ~segment:"summary" in
   let ((lmd : seg_lib delayed), digest_lmd) = in_delayed f ch ~segment:"library" in
-  let (univs : seg_univ option), digest_u = System.ObjFile.marshal_in_segment ch ~segment:"universes" in
+  let (univs : seg_univ option), digest_u = ObjFile.marshal_in_segment ch ~segment:"universes" in
   let ((del_opaque : seg_proofs delayed),_) = in_delayed f ch ~segment:"opaques" in
-  System.ObjFile.close_in ch;
+  ObjFile.close_in ch;
   register_library_filename lsd.md_name f;
   add_opaque_table lsd.md_name (ToFetch del_opaque);
   let open Safe_typing in
@@ -296,7 +296,7 @@ let rec_intern_library ~lib_resolver libs (dir, f) =
 
 let native_name_from_filename f =
   let ch = raw_intern_library f in
-  let (lmd : seg_sum), digest_lmd = System.ObjFile.marshal_in_segment ch ~segment:"summary" in
+  let (lmd : seg_sum), digest_lmd = ObjFile.marshal_in_segment ch ~segment:"summary" in
   Nativecode.mod_uid_of_dirpath lmd.md_name
 
 (**********************************************************************)
@@ -391,12 +391,12 @@ let require_library_from_dirpath ~lib_resolver modrefl export =
 
 let load_library_todo f =
   let ch = raw_intern_library f in
-  let (s0 : seg_sum), _ = System.ObjFile.marshal_in_segment ch ~segment:"summary" in
-  let (s1 : seg_lib), _ = System.ObjFile.marshal_in_segment ch ~segment:"library" in
-  let (s2 : seg_univ option), _ = System.ObjFile.marshal_in_segment ch ~segment:"universes" in
-  let tasks, _ = System.ObjFile.marshal_in_segment ch ~segment:"tasks" in
-  let (s4 : seg_proofs), _ = System.ObjFile.marshal_in_segment ch ~segment:"opaques" in
-  System.ObjFile.close_in ch;
+  let (s0 : seg_sum), _ = ObjFile.marshal_in_segment ch ~segment:"summary" in
+  let (s1 : seg_lib), _ = ObjFile.marshal_in_segment ch ~segment:"library" in
+  let (s2 : seg_univ option), _ = ObjFile.marshal_in_segment ch ~segment:"universes" in
+  let tasks, _ = ObjFile.marshal_in_segment ch ~segment:"tasks" in
+  let (s4 : seg_proofs), _ = ObjFile.marshal_in_segment ch ~segment:"opaques" in
+  ObjFile.close_in ch;
   if tasks = None then user_err ~hdr:"restart" (str"not a .vio file");
   if s2 = None then user_err ~hdr:"restart" (str"not a .vio file");
   if snd (Option.get s2) then user_err ~hdr:"restart" (str"not a .vio file");
@@ -432,15 +432,15 @@ let error_recursively_dependent_library dir =
 let save_library_base f sum lib univs tasks proofs =
   let ch = raw_extern_library f in
   try
-    System.ObjFile.marshal_out_segment ch ~segment:"summary" (sum    : seg_sum);
-    System.ObjFile.marshal_out_segment ch ~segment:"library" (lib    : seg_lib);
-    System.ObjFile.marshal_out_segment ch ~segment:"universes" (univs  : seg_univ option);
-    System.ObjFile.marshal_out_segment ch ~segment:"tasks" (tasks  : 'tasks option);
-    System.ObjFile.marshal_out_segment ch ~segment:"opaques" (proofs : seg_proofs);
-    System.ObjFile.close_out ch
+    ObjFile.marshal_out_segment ch ~segment:"summary" (sum    : seg_sum);
+    ObjFile.marshal_out_segment ch ~segment:"library" (lib    : seg_lib);
+    ObjFile.marshal_out_segment ch ~segment:"universes" (univs  : seg_univ option);
+    ObjFile.marshal_out_segment ch ~segment:"tasks" (tasks  : 'tasks option);
+    ObjFile.marshal_out_segment ch ~segment:"opaques" (proofs : seg_proofs);
+    ObjFile.close_out ch
   with reraise ->
     let reraise = Exninfo.capture reraise in
-    System.ObjFile.close_out ch;
+    ObjFile.close_out ch;
     Feedback.msg_warning (str "Removed file " ++ str f);
     Sys.remove f;
     Exninfo.iraise reraise
