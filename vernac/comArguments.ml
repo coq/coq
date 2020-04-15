@@ -52,10 +52,10 @@ let warn_arguments_assert =
   CWarnings.create ~name:"arguments-assert" ~category:"vernacular"
     Pp.(fun sr ->
         strbrk "This command is just asserting the names of arguments of " ++
-        Printer.pr_global sr ++ strbrk". If this is what you want add " ++
+        Printer.pr_global sr ++ strbrk". If this is what you want, add " ++
         strbrk "': assert' to silence the warning. If you want " ++
-        strbrk "to clear implicit arguments add ': clear implicits'. " ++
-        strbrk "If you want to clear notation scopes add ': clear scopes'")
+        strbrk "to clear implicit arguments, add ': clear implicits'. " ++
+        strbrk "If you want to clear notation scopes, add ': clear scopes'")
 
 (* [nargs_for_red] is the number of arguments required to trigger reduction,
    [args] is the main list of arguments statuses,

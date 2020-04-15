@@ -2,9 +2,9 @@ The command has indeed failed with message:
 Flag "rename" expected to rename A into B.
 File "stdin", line 3, characters 0-25:
 Warning: This command is just asserting the names of arguments of identity.
-If this is what you want add ': assert' to silence the warning. If you want
-to clear implicit arguments add ': clear implicits'. If you want to clear
-notation scopes add ': clear scopes' [arguments-assert,vernacular]
+If this is what you want, add ': assert' to silence the warning. If you want
+to clear implicit arguments, add ': clear implicits'. If you want to clear
+notation scopes, add ': clear scopes' [arguments-assert,vernacular]
 @eq_refl
      : forall (B : Type) (y : B), y = y
 eq_refl
