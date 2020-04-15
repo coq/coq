@@ -1645,6 +1645,8 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
   in
   let rec drop_syndef test_kind ?loc scopes qid pats =
     try
+      if qualid_is_ident qid && Option.cata (Id.Set.mem (qualid_basename qid)) false env.pat_ids then
+        raise Not_found;
       match Nametab.locate_extended qid with
       | SynDef sp ->
         let filter (vars,a) =
