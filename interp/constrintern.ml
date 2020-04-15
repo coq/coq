@@ -263,6 +263,13 @@ type intern_env = {
   binder_block_names: (abstraction_kind option (* None = unknown *) * Id.Set.t) option;
 }
 
+type pattern_intern_env = {
+  pat_scopes: Notation_term.subscopes;
+  (* ids = Some means accept local variables; this is useful for
+     terms as patterns parsed as pattersn in notations *)
+  pat_ids: Id.Set.t option;
+}
+
 (**********************************************************************)
 (* Remembering the parsing scope of variables in notations            *)
 
@@ -316,6 +323,9 @@ let reset_tmp_scope env = {env with tmp_scope = None}
 
 let set_env_scopes env (scopt,subscopes) =
   {env with tmp_scope = scopt; scopes = subscopes @ env.scopes}
+
+let env_for_pattern env =
+  {pat_scopes = (env.tmp_scope, env.scopes); pat_ids = Some env.ids}
 
 let mkGProd ?loc (na,bk,t) body = DAst.make ?loc @@ GProd (na, bk, t, body)
 let mkGLambda ?loc (na,bk,t) body = DAst.make ?loc @@ GLambda (na, bk, t, body)
@@ -575,7 +585,7 @@ let intern_letin_binder intern ntnvars env (({loc;v=na} as locna),def,ty) =
 
 let intern_cases_pattern_as_binder ?loc test_kind ntnvars env p =
   let il,disjpat =
-    let (il, subst_disjpat) = !intern_cases_pattern_fwd test_kind ntnvars (None,env.scopes) p in
+    let (il, subst_disjpat) = !intern_cases_pattern_fwd test_kind ntnvars (env_for_pattern (reset_tmp_scope env)) p in
     let substl,disjpat = List.split subst_disjpat in
     if not (List.for_all (fun subst -> Id.Map.equal Id.equal subst Id.Map.empty) substl) then
       user_err ?loc (str "Unsupported nested \"as\" clause.");
@@ -1609,7 +1619,7 @@ let get_asymmetric_patterns = Goptions.declare_bool_option_and_ref
     ~key:["Asymmetric";"Patterns"]
     ~value:false
 
-let drop_notations_pattern (test_kind_top,test_kind_inner) genv =
+let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
   (* At toplevel, Constructors and Inductives are accepted, in recursive calls
      only constructor are allowed *)
   let ensure_kind test_kind ?loc g =
@@ -1797,7 +1807,7 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv =
       let () = assert (List.is_empty args) in
       DAst.make ?loc @@ RCPatAtom None
     | t -> error_invalid_pattern_notation ?loc ()
-  in in_pat test_kind_top
+  in in_pat test_kind_top env.pat_scopes pat
 
 let rec intern_pat genv ntnvars aliases pat =
   let intern_cstr_with_all_args loc c with_letin idslpl1 pl2 =
@@ -1838,16 +1848,16 @@ let rec intern_pat genv ntnvars aliases pat =
       check_or_pat_variables loc ids (List.tl idsl);
       (ids,List.flatten pl')
 
-let intern_cases_pattern test_kind genv ntnvars scopes aliases pat =
+let intern_cases_pattern test_kind genv ntnvars env aliases pat =
   intern_pat genv ntnvars aliases
-    (drop_notations_pattern (test_kind,test_kind) genv scopes pat)
+    (drop_notations_pattern (test_kind,test_kind) genv env pat)
 
 let _ =
   intern_cases_pattern_fwd :=
-    fun test_kind ntnvars scopes p ->
-    intern_cases_pattern test_kind (Global.env ()) ntnvars scopes empty_alias p
+    fun test_kind ntnvars env p ->
+    intern_cases_pattern test_kind (Global.env ()) ntnvars env empty_alias p
 
-let intern_ind_pattern genv ntnvars scopes pat =
+let intern_ind_pattern genv ntnvars env pat =
   let test_kind_top ?loc = function
     | GlobRef.IndRef _  -> ()
     | GlobRef.ConstructRef _ | GlobRef.ConstRef _ | GlobRef.VarRef _ ->
@@ -1860,7 +1870,7 @@ let intern_ind_pattern genv ntnvars scopes pat =
       raise Not_found in
   let no_not =
     try
-      drop_notations_pattern (test_kind_top,test_kind_inner) genv scopes pat
+      drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat
     with InternalizationError (NotAConstructor _) as exn ->
       let _, info = Exninfo.capture exn in
       error_bad_inductive_type ~info ()
@@ -2254,7 +2264,8 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
 
   (* Expands a multiple pattern into a disjunction of multiple patterns *)
   and intern_multiple_pattern env n pl =
-    let idsl_pll = List.map (intern_cases_pattern test_kind_tolerant globalenv ntnvars (None,env.scopes) empty_alias) pl in
+    let env = { pat_ids = None; pat_scopes = (None,env.scopes) } in
+    let idsl_pll = List.map (intern_cases_pattern test_kind_tolerant globalenv ntnvars env empty_alias) pl in
     let loc = loc_of_multiple_pattern pl in
     check_number_of_pattern loc n pl;
     product_of_cases_patterns empty_alias idsl_pll
@@ -2295,7 +2306,7 @@ let internalize globalenv env pattern_mode (_, ntnvars as lvar) c =
     let match_td,typ = match t with
     | Some t ->
         let with_letin,(ind,ind_ids,alias_subst,l) =
-          intern_ind_pattern globalenv ntnvars (None,env.scopes) t in
+          intern_ind_pattern globalenv ntnvars (env_for_pattern (set_type_scope env)) t in
         let (mib,mip) = Inductive.lookup_mind_specif globalenv ind in
         let nparams = (List.length (mib.Declarations.mind_params_ctxt)) in
         (* for "in Vect n", we answer (["n","n"],[(loc,"n")])
@@ -2436,7 +2447,8 @@ let intern_gen kind env sigma
 let intern_constr env sigma c = intern_gen WithoutTypeConstraint env sigma c
 let intern_type env sigma c = intern_gen IsType env sigma c
 let intern_pattern globalenv patt =
-  intern_cases_pattern test_kind_tolerant globalenv Id.Map.empty (None,[]) empty_alias patt
+  let env = {pat_ids = None; pat_scopes = (None, [])} in
+  intern_cases_pattern test_kind_tolerant globalenv Id.Map.empty env empty_alias patt
 
 (*********************************************************************)
 (* Functions to parse and interpret constructions *)
