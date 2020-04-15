@@ -1731,9 +1731,9 @@ let drop_notations_pattern (test_kind_top,test_kind_inner) genv env pat =
     | CPatNotation (_,ntn,fullargs,extrargs) ->
       let ntn,(terms,termlists) = contract_curly_brackets_pat ntn fullargs in
       let ((ids',c),df) = Notation.interp_notation ?loc ntn scopes in
-      let (terms,termlists) = split_by_type_pat ?loc ids' (terms,termlists) in
+      let subst = split_by_type_pat ?loc ids' (terms,termlists) in
       Dumpglob.dump_notation_location (patntn_loc ?loc fullargs ntn) ntn df;
-      in_not test_kind loc scopes (terms,termlists) extrargs c
+      in_not test_kind loc scopes subst extrargs c
     | CPatDelimiters (key, e) ->
       in_pat test_kind (None,find_delimiters_scope ?loc key::snd scopes) e
     | CPatPrim p ->
