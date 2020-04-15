@@ -1147,16 +1147,22 @@ let does_not_come_from_already_eta_expanded_var glob =
   (* checked). *)
   match DAst.get glob with GVar _ -> false | _ -> true
 
+let is_var_term = function
+  (* The kind of expressions allowed to be both a term and a binding variable *)
+  | GVar _ -> true
+  | GRef (GlobRef.VarRef _,None) -> true
+  | _ -> false
+
 let rec match_ inner u alp metas sigma a1 a2 =
   let open CAst in
   let loc = a1.loc in
   match DAst.get a1, a2 with
   (* Matching notation variable *)
   | r1, NVar id2 when is_term_meta id2 metas -> bind_term_env alp sigma id2 a1
-  | GVar _, NVar id2 when is_onlybinding_pattern_like_meta true id2 metas -> bind_binding_as_term_env alp sigma id2 a1
+  | r1, NVar id2 when is_var_term r1 && is_onlybinding_pattern_like_meta true id2 metas -> bind_binding_as_term_env alp sigma id2 a1
   | r1, NVar id2 when is_onlybinding_pattern_like_meta false id2 metas -> bind_binding_as_term_env alp sigma id2 a1
-  | GVar _, NVar id2 when is_onlybinding_strict_meta id2 metas -> raise No_match
-  | GVar _, NVar id2 when is_onlybinding_meta id2 metas -> bind_binding_as_term_env alp sigma id2 a1
+  | r1, NVar id2 when is_var_term r1 && is_onlybinding_strict_meta id2 metas -> raise No_match
+  | r1, NVar id2 when is_var_term r1 && is_onlybinding_meta id2 metas -> bind_binding_as_term_env alp sigma id2 a1
   | r1, NVar id2 when is_bindinglist_meta id2 metas -> bind_term_env alp sigma id2 a1
 
   (* Matching recursive notations for terms *)
