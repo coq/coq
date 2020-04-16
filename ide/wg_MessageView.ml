@@ -28,6 +28,7 @@ end
 class type message_view =
   object
     inherit GObj.widget
+    method source_buffer : GSourceView3.source_buffer
     method connect : message_view_signals
     method clear : unit
     method add : Pp.t -> unit
@@ -44,7 +45,9 @@ class type message_view =
 let message_view () : message_view =
   let buffer = GSourceView3.source_buffer
     ~highlight_matching_brackets:true
-    ~tag_table:Tags.Message.table ()
+    ~tag_table:Tags.Message.table
+    ?language:(lang_manager#language source_language#get)
+    ?style_scheme:(style_manager#style_scheme source_style#get) ()
   in
   let mark = buffer#create_mark ~left_gravity:false buffer#start_iter in
   let box = GPack.vbox () in
@@ -87,6 +90,8 @@ let message_view () : message_view =
     val mutable msgs = []
 
     val push = new GUtil.signal ()
+
+    method source_buffer = buffer
 
     method connect =
       new message_view_signals_impl box#as_widget push
