@@ -417,21 +417,34 @@ let add_symdef nt file symdef_map =
   in
   symdef_map := StringMap.add nt (Filename.basename file::ent) !symdef_map
 
-let rec edit_SELF nt cur_level next_level right_assoc prod =
+let rec edit_SELF nt cur_level next_level right_assoc inner prod =
+  let subedit sym = List.hd (edit_SELF nt cur_level next_level right_assoc true [sym]) in
   let len = List.length prod in
   List.mapi (fun i sym ->
     match sym with
-    | Snterm s -> begin match s with
-      | s when s = nt || s = "SELF" ->
-        if i = 0 then Snterm next_level
-        else if i+1 < len then sym
-        else if right_assoc then Snterm cur_level else Snterm next_level
-      | "NEXT" -> Snterm next_level
-      | _ -> sym
-    end
-    | Slist1 sym -> Slist1 (List.hd (edit_SELF nt cur_level next_level right_assoc [sym]))
-    | Slist0 sym -> Slist0 (List.hd (edit_SELF nt cur_level next_level right_assoc [sym]))
-    | x -> x)
+    | Sterm _ -> sym
+
+    | Snterm s when s = nt || s = "SELF"->
+      if inner then
+        Snterm nt (* first level *)
+      else if i = 0 then
+        Snterm next_level
+      else if i + 1 = len then
+        (if right_assoc then Snterm cur_level else Snterm next_level)
+      else
+        Snterm nt
+    | Snterm "NEXT" -> Snterm next_level
+    | Snterm _ -> sym
+
+    | Slist1 sym -> Slist1 (subedit sym)
+    | Slist0 sym -> Slist0 (subedit sym)
+    | Slist1sep (sym, sep) -> Slist1sep ((subedit sym), (subedit sep))
+    | Slist0sep (sym, sep) -> Slist0sep ((subedit sym), (subedit sep))
+    | Sopt sym -> Sopt (subedit sym)
+    | Sparen syms -> Sparen (List.map (fun sym -> subedit sym) syms)
+    | Sprod prods -> Sprod (List.map (fun prod -> edit_SELF nt cur_level next_level right_assoc true prod) prods)
+    | Sedit _ -> sym
+    | Sedit2 _ -> sym)
   prod
 
 
@@ -501,6 +514,7 @@ in
 let has_match p prods = List.exists (fun p2 -> ematch p p2) prods
 
 let plugin_regex = Str.regexp "^plugins/\\([a-zA-Z0-9_]+\\)/"
+let level_regex = Str.regexp "[a-zA-Z0-9_]*$"
 
 let read_mlg is_edit ast file level_renames symdef_map =
   let res = ref [] in
@@ -541,6 +555,10 @@ let read_mlg is_edit ast file level_renames symdef_map =
                   -> lev
                 (* Looks like FIRST/LAST can be ignored for documenting the current grammar *)
                 | _ -> "" in
+              if len > 1 && level = "" then
+                error "Missing level string for `%s`\n" nt
+              else if not (Str.string_match level_regex level 0) then
+                error "Invalid level string `%s` for `%s`\n" level nt;
               let cur_level = nt ^ level in
               let next_level = nt ^
                   if i+1 < len then (get_label (List.nth ent.gentry_rules (i+1)).grule_label) else "" in
@@ -552,7 +570,7 @@ let read_mlg is_edit ast file level_renames symdef_map =
               let cvted = List.map cvt_gram_prod rule.grule_prods in
               (* edit names for levels *)
               (* See https://camlp5.github.io/doc/html/grammars.html#b:Associativity *)
-              let edited = List.map (edit_SELF nt cur_level next_level right_assoc) cvted in
+              let edited = List.map (edit_SELF nt cur_level next_level right_assoc false) cvted in
               let prods_to_add =
                 if cur_level <> nt && i+1 < len then
                   edited @ [[Snterm next_level]]
