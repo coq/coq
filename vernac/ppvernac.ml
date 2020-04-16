@@ -791,7 +791,7 @@ let string_of_definition_object_kind = let open Decls in function
         return (keyword "Admitted")
 
       | VernacEndProof (Proved (opac,o)) -> return (
-        let open Proof_global in
+        let open Declare in
         match o with
           | None -> (match opac with
               | Transparent -> keyword "Defined"

@@ -209,7 +209,7 @@ and interp_control ~st ({ CAst.v = cmd } as vernac) =
        let before_univs = Global.universes () in
        let pstack = interp_expr ~atts:cmd.attrs ~st cmd.expr in
        if before_univs == Global.universes () then pstack
-       else Option.map (Vernacstate.LemmaStack.map_top_pstate ~f:Proof_global.update_global_env) pstack)
+       else Option.map (Vernacstate.LemmaStack.map_top_pstate ~f:Declare.Proof.update_global_env) pstack)
     ~st
 
 (* XXX: This won't properly set the proof mode, as of today, it is
@@ -251,7 +251,7 @@ let interp_gen ~verbosely ~st ~interp_fn cmd =
   try vernac_timeout (fun st ->
       let v_mod = if verbosely then Flags.verbosely else Flags.silently in
       let ontop = v_mod (interp_fn ~st) cmd in
-      Vernacstate.Proof_global.set ontop [@ocaml.warning "-3"];
+      Vernacstate.Declare.set ontop [@ocaml.warning "-3"];
       Vernacstate.freeze_interp_state ~marshallable:false
     ) st
   with exn ->

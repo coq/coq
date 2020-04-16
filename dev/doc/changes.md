@@ -9,6 +9,13 @@
 
 ### ML API
 
+Proof state and constant declaration:
+
+- A large consolidation of the API handling interactive and
+  non-interactive constant has been performed; low-level APIs are no
+  longer available, and the functionality of the `Proof_global` module
+  has been merged into `Declare`.
+
 Notations:
 
 - Most operators on numerals have moved to file numTok.ml.
@@ -67,7 +74,6 @@ Proof state:
   are represented by `Lemmas.t`, as they do contain additional
   information related to the constant declaration. Some functions have
   been renamed from `start_proof` to `start_lemma`
-
 
   Plugins that require access to the information about currently
   opened lemmas can add one of the `![proof]` attributes to their

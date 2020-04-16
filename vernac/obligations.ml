@@ -134,7 +134,7 @@ let solve_by_tac ?loc name evi t poly uctx =
     (* the status is dropped. *)
     let env = Global.env () in
     let body, types, _, uctx =
-      Pfedit.build_by_tactic env ~uctx ~poly ~typ:evi.evar_concl t in
+      Declare.build_by_tactic env ~uctx ~poly ~typ:evi.evar_concl t in
     Inductiveops.control_only_guard env (Evd.from_ctx uctx) (EConstr.of_constr body);
     Some (body, types, uctx)
   with

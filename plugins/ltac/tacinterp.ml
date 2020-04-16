@@ -2070,7 +2070,7 @@ let _ =
      *)
     let name, poly = Id.of_string "ltac_gen", poly in
     let name, poly = Id.of_string "ltac_gen", poly in
-    let (c, sigma) = Pfedit.refine_by_tactic ~name ~poly env sigma ty tac in
+    let (c, sigma) = Proof.refine_by_tactic ~name ~poly env sigma ty tac in
     (EConstr.of_constr c, sigma)
   in
   GlobEnv.register_constr_interp0 wit_tactic eval

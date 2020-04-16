@@ -136,7 +136,7 @@ h': newdef n <> n
 (use "About" for full details on implicit arguments)
 (use "About" for full details on implicit arguments)
 The command has indeed failed with message:
-No such goal.
+[Focus] No such goal.
 The command has indeed failed with message:
 Query commands only support the single numbered goal selector.
 The command has indeed failed with message:

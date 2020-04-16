@@ -847,7 +847,7 @@ let generate_equation_lemma evd fnames f fun_num nb_params nb_args rec_args_num
   in
   let lemma, _ = Lemmas.by (Proofview.V82.tactic prove_replacement) lemma in
   let () =
-    Lemmas.save_lemma_proved ~lemma ~opaque:Proof_global.Transparent ~idopt:None
+    Lemmas.save_lemma_proved ~lemma ~opaque:Declare.Transparent ~idopt:None
   in
   evd
 

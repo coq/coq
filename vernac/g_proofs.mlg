@@ -14,7 +14,6 @@ open Glob_term
 open Constrexpr
 open Vernacexpr
 open Hints
-open Proof_global
 
 open Pcoq
 open Pcoq.Prim
@@ -65,12 +64,12 @@ GRAMMAR EXTEND Gram
       | IDENT "Existential"; n = natural; c = constr_body ->
           { VernacSolveExistential (n,c) }
       | IDENT "Admitted" -> { VernacEndProof Admitted }
-      | IDENT "Qed" -> { VernacEndProof (Proved (Opaque,None)) }
+      | IDENT "Qed" -> { VernacEndProof (Proved (Declare.Opaque,None)) }
       | IDENT "Save"; id = identref ->
-          { VernacEndProof (Proved (Opaque, Some id)) }
-      | IDENT "Defined" -> { VernacEndProof (Proved (Transparent,None)) }
+          { VernacEndProof (Proved (Declare.Opaque, Some id)) }
+      | IDENT "Defined" -> { VernacEndProof (Proved (Declare.Transparent,None)) }
       |	IDENT "Defined"; id=identref ->
-          { VernacEndProof (Proved (Transparent,Some id)) }
+          { VernacEndProof (Proved (Declare.Transparent,Some id)) }
       | IDENT "Restart" -> { VernacRestart }
       | IDENT "Undo" -> { VernacUndo 1 }
       | IDENT "Undo"; n = natural -> { VernacUndo n }

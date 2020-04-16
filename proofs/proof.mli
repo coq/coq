@@ -143,6 +143,8 @@ exception CannotUnfocusThisWay
    Bullet.push. *)
 exception NoSuchGoals of int * int
 
+exception NoSuchGoal of Names.Id.t option
+
 (* Unfocusing command.
    Raises [FullyUnfocused] if the proof is not focused.
    Raises [CannotUnfocusThisWay] if the proof the unfocusing condition
@@ -207,3 +209,41 @@ end
 
 (* returns the set of all goals in the proof *)
 val all_goals : t -> Goal.Set.t
+
+(** [solve (SelectNth n) tac] applies tactic [tac] to the [n]th
+    subgoal of the current focused proof. [solve SelectAll
+    tac] applies [tac] to all subgoals. *)
+
+val solve :
+     ?with_end_tac:unit Proofview.tactic
+  -> Goal_select.t
+  -> int option
+  -> unit Proofview.tactic
+  -> t
+  -> t * bool
+
+(** Option telling if unification heuristics should be used. *)
+val use_unification_heuristics : unit -> bool
+
+val refine_by_tactic
+  :  name:Names.Id.t
+  -> poly:bool
+  -> Environ.env
+  -> Evd.evar_map
+  -> EConstr.types
+  -> unit Proofview.tactic
+  -> Constr.constr * Evd.evar_map
+(** A variant of the above function that handles open terms as well.
+    Caveat: all effects are purged in the returned term at the end, but other
+    evars solved by side-effects are NOT purged, so that unexpected failures may
+    occur. Ideally all code using this function should be rewritten in the
+    monad. *)
+
+exception SuggestNoSuchGoals of int * t
+
+(** {6 Helpers to obtain proof state when in an interactive proof } *)
+val get_goal_context_gen : t -> int -> Evd.evar_map * Environ.env
+
+(** [get_proof_context ()] gets the goal context for the first subgoal
+    of the proof *)
+val get_proof_context : t -> Evd.evar_map * Environ.env

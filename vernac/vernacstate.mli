@@ -25,8 +25,8 @@ module LemmaStack : sig
   val pop : t -> Lemmas.t * t option
   val push : t option -> Lemmas.t -> t
 
-  val map_top_pstate : f:(Proof_global.t -> Proof_global.t) -> t -> t
-  val with_top_pstate : t -> f:(Proof_global.t -> 'a ) -> 'a
+  val map_top_pstate : f:(Declare.Proof.t -> Declare.Proof.t) -> t -> t
+  val with_top_pstate : t -> f:(Declare.Proof.t -> 'a ) -> 'a
 
 end
 
@@ -50,7 +50,7 @@ val make_shallow : t -> t
 val invalidate_cache : unit -> unit
 
 (* Compatibility module: Do Not Use *)
-module Proof_global : sig
+module Declare : sig
 
   exception NoCurrentProof
 
@@ -65,16 +65,16 @@ module Proof_global : sig
   val with_current_proof :
       (unit Proofview.tactic -> Proof.t -> Proof.t * 'a) -> 'a
 
-  val return_proof : unit -> Proof_global.closed_proof_output
-  val return_partial_proof : unit -> Proof_global.closed_proof_output
+  val return_proof : unit -> Declare.closed_proof_output
+  val return_partial_proof : unit -> Declare.closed_proof_output
 
-  type closed_proof = Proof_global.proof_object * Lemmas.Info.t
+  type closed_proof = Declare.proof_object * Lemmas.Info.t
 
   val close_future_proof :
     feedback_id:Stateid.t ->
-    Proof_global.closed_proof_output Future.computation -> closed_proof
+    Declare.closed_proof_output Future.computation -> closed_proof
 
-  val close_proof : opaque:Proof_global.opacity_flag -> keep_body_ucst_separate:bool -> closed_proof
+  val close_proof : opaque:Declare.opacity_flag -> keep_body_ucst_separate:bool -> closed_proof
 
   val discard_all : unit -> unit
   val update_global_env : unit -> unit
@@ -89,7 +89,7 @@ module Proof_global : sig
   val get : unit -> LemmaStack.t option
   val set : LemmaStack.t option -> unit
 
-  val get_pstate : unit -> Proof_global.t option
+  val get_pstate : unit -> Declare.Proof.t option
 
   val freeze : marshallable:bool -> LemmaStack.t option
   val unfreeze : LemmaStack.t -> unit

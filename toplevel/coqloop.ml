@@ -191,8 +191,8 @@ end
     from cycling. *)
 let make_prompt () =
   try
-    (Names.Id.to_string (Vernacstate.Proof_global.get_current_proof_name ())) ^ " < "
-  with Vernacstate.Proof_global.NoCurrentProof ->
+    (Names.Id.to_string (Vernacstate.Declare.get_current_proof_name ())) ^ " < "
+  with Vernacstate.Declare.NoCurrentProof ->
     "Coq < "
   [@@ocaml.warning "-3"]
 
@@ -352,7 +352,7 @@ let print_anyway c =
 let top_goal_print ~doc c oldp newp =
   try
     let proof_changed = not (Option.equal cproof oldp newp) in
-    let print_goals = proof_changed && Vernacstate.Proof_global.there_are_pending_proofs () ||
+    let print_goals = proof_changed && Vernacstate.Declare.there_are_pending_proofs () ||
                       print_anyway c in
     if not !Flags.quiet && print_goals then begin
       let dproof = Stm.get_prev_proof ~doc (Stm.get_current_state ~doc) in
@@ -375,7 +375,7 @@ let exit_on_error =
    point we should consolidate the code *)
 let show_proof_diff_to_pp pstate =
   let p = Option.get pstate in
-  let sigma, env = Pfedit.get_proof_context p in
+  let sigma, env = Proof.get_proof_context p in
   let pprf = Proof.partial_proof p in
   Pp.prlist_with_sep Pp.fnl (Printer.pr_econstr_env env sigma) pprf
 
@@ -392,7 +392,7 @@ let show_proof_diff_cmd ~state removed =
         let show_removed = Some removed in
         Pp_diff.diff_pp_combined ~tokenize_string ?show_removed o_pp n_pp
       with
-      | Pfedit.NoSuchGoal
+      | Proof.NoSuchGoal _
       | Option.IsNone -> n_pp
       | Pp_diff.Diff_Failure msg -> begin
           (* todo: print the unparsable string (if we know it) *)
@@ -403,7 +403,7 @@ let show_proof_diff_cmd ~state removed =
     else
       n_pp
   with
-  | Pfedit.NoSuchGoal
+  | Proof.NoSuchGoal _
   | Option.IsNone ->
     CErrors.user_err (str "No goals to show.")
 

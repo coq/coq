@@ -45,7 +45,7 @@ module LemmaStack = struct
     | Some (l,ls) -> a, (l :: ls)
 
   let get_all_proof_names (pf : t) =
-    let prj x = Lemmas.pf_fold Proof_global.get_proof x in
+    let prj x = Lemmas.pf_fold Declare.Proof.get_proof x in
     let (pn, pns) = map Proof.(function pf -> (data (prj pf)).name) pf in
     pn :: pns
 
@@ -105,7 +105,7 @@ let make_shallow st =
   }
 
 (* Compatibility module *)
-module Proof_global = struct
+module Declare = struct
 
   let get () = !s_lemmas
   let set x = s_lemmas := x
@@ -126,7 +126,7 @@ module Proof_global = struct
     end
 
   open Lemmas
-  open Proof_global
+  open Declare
 
   let cc f = match !s_lemmas with
     | None -> raise NoCurrentProof
@@ -145,23 +145,23 @@ module Proof_global = struct
     | Some x -> s_lemmas := Some (LemmaStack.map_top_pstate ~f x)
 
   let there_are_pending_proofs () = !s_lemmas <> None
-  let get_open_goals () = cc get_open_goals
+  let get_open_goals () = cc Proof.get_open_goals
 
-  let give_me_the_proof_opt () = Option.map (LemmaStack.with_top_pstate ~f:get_proof) !s_lemmas
-  let give_me_the_proof () = cc get_proof
-  let get_current_proof_name () = cc get_proof_name
+  let give_me_the_proof_opt () = Option.map (LemmaStack.with_top_pstate ~f:Proof.get_proof) !s_lemmas
+  let give_me_the_proof () = cc Proof.get_proof
+  let get_current_proof_name () = cc Proof.get_proof_name
 
-  let map_proof f = dd (map_proof f)
+  let map_proof f = dd (Proof.map_proof f)
   let with_current_proof f =
     match !s_lemmas with
     | None -> raise NoCurrentProof
     | Some stack ->
-      let pf, res = LemmaStack.with_top_pstate stack ~f:(map_fold_proof_endline f) in
+      let pf, res = LemmaStack.with_top_pstate stack ~f:(Proof.map_fold_proof_endline f) in
       let stack = LemmaStack.map_top_pstate stack ~f:(fun _ -> pf) in
       s_lemmas := Some stack;
       res
 
-  type closed_proof = Proof_global.proof_object * Lemmas.Info.t
+  type closed_proof = Declare.proof_object * Lemmas.Info.t
 
 
   let return_proof () = cc return_proof
@@ -169,16 +169,16 @@ module Proof_global = struct
 
   let close_future_proof ~feedback_id pf =
     cc_lemma (fun pt -> pf_fold (fun st -> close_future_proof ~feedback_id st pf) pt,
-                        Internal.get_info pt)
+                        Lemmas.Internal.get_info pt)
 
   let close_proof ~opaque ~keep_body_ucst_separate =
     cc_lemma (fun pt -> pf_fold ((close_proof ~opaque ~keep_body_ucst_separate)) pt,
-                        Internal.get_info pt)
+                        Lemmas.Internal.get_info pt)
 
   let discard_all () = s_lemmas := None
-  let update_global_env () = dd (update_global_env)
+  let update_global_env () = dd (Proof.update_global_env)
 
-  let get_current_context () = cc Pfedit.get_current_context
+  let get_current_context () = cc Declare.get_current_context
 
   let get_all_proof_names () =
     try cc_stack LemmaStack.get_all_proof_names

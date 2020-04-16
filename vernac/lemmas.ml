@@ -62,14 +62,14 @@ end
 
 (* Proofs with a save constant function *)
 type t =
-  { proof : Proof_global.t
+  { proof : Declare.Proof.t
   ; info : Info.t
   }
 
 let pf_map f pf = { pf with proof = f pf.proof }
 let pf_fold f pf = f pf.proof
 
-let set_endline_tactic t = pf_map (Proof_global.set_endline_tactic t)
+let set_endline_tactic t = pf_map (Declare.Proof.set_endline_tactic t)
 
 (* To be removed *)
 module Internal = struct
@@ -81,7 +81,7 @@ module Internal = struct
 end
 
 let by tac pf =
-  let proof, res = Pfedit.by tac pf.proof in
+  let proof, res = Declare.by tac pf.proof in
   { pf with proof }, res
 
 (************************************************************************)
@@ -113,7 +113,7 @@ let start_lemma ~name ~poly
      "opaque", this is a hack tho, see #10446 *)
   let sign = initialize_named_context_for_proof () in
   let goals = [ Global.env_of_context sign , c ] in
-  let proof = Proof_global.start_proof sigma ~name ~udecl ~poly goals in
+  let proof = Declare.start_proof sigma ~name ~udecl ~poly goals in
   let info = add_first_thm ~info ~name ~typ:c ~impargs in
   { proof; info }
 
@@ -123,7 +123,7 @@ let start_lemma ~name ~poly
 let start_dependent_lemma ~name ~poly
     ?(udecl=UState.default_univ_decl)
     ?(info=Info.make ()) telescope =
-  let proof = Proof_global.start_dependent_proof ~name ~udecl ~poly telescope in
+  let proof = Declare.start_dependent_proof ~name ~udecl ~poly telescope in
   { proof; info }
 
 let rec_tac_initializer finite guard thms snl =
@@ -173,7 +173,7 @@ let start_lemma_with_initialization ?hook ~poly ~scope ~kind ~udecl sigma recgua
     (* start_lemma has the responsibility to add (name, impargs, typ)
        to thms, once Info.t is more refined this won't be necessary *)
     let lemma = start_lemma ~name ~impargs ~poly ~udecl ~info sigma (EConstr.of_constr typ) in
-    pf_map (Proof_global.map_proof (fun p ->
+    pf_map (Declare.Proof.map_proof (fun p ->
         pi1 @@ Proof.run_tactic Global.(env ()) init_tac p)) lemma
 
 (************************************************************************)
@@ -275,7 +275,7 @@ let get_keep_admitted_vars =
 
 let compute_proof_using_for_admitted proof typ pproofs =
   if not (get_keep_admitted_vars ()) then None
-  else match Proof_global.get_used_variables proof, pproofs with
+  else match Declare.Proof.get_used_variables proof, pproofs with
     | Some _ as x, _ -> x
     | None, pproof :: _ ->
       let env = Global.env () in
@@ -291,17 +291,17 @@ let finish_admitted ~info ~uctx pe =
   ()
 
 let save_lemma_admitted ~(lemma : t) : unit =
-  let udecl = Proof_global.get_universe_decl lemma.proof in
-  let Proof.{ poly; entry } = Proof.data (Proof_global.get_proof lemma.proof) in
+  let udecl = Declare.Proof.get_universe_decl lemma.proof in
+  let Proof.{ poly; entry } = Proof.data (Declare.Proof.get_proof lemma.proof) in
   let typ = match Proofview.initial_goals entry with
     | [typ] -> snd typ
     | _ -> CErrors.anomaly ~label:"Lemmas.save_lemma_admitted" (Pp.str "more than one statement.")
   in
   let typ = EConstr.Unsafe.to_constr typ in
-  let proof = Proof_global.get_proof lemma.proof in
+  let proof = Declare.Proof.get_proof lemma.proof in
   let pproofs = Proof.partial_proof proof in
   let sec_vars = compute_proof_using_for_admitted lemma.proof typ pproofs in
-  let uctx = Proof_global.get_initial_euctx lemma.proof in
+  let uctx = Declare.Proof.get_initial_euctx lemma.proof in
   let univs = UState.check_univ_decl ~poly uctx udecl in
   finish_admitted ~info:lemma.info ~uctx (sec_vars, (typ, univs), None)
 
@@ -310,7 +310,7 @@ let save_lemma_admitted ~(lemma : t) : unit =
 (************************************************************************)
 
 let finish_proved po info =
-  let open Proof_global in
+  let open Declare in
   match po with
   | { entries=[const]; uctx } ->
     let _r : Names.GlobRef.t list = MutualEntry.declare_mutdef ~info ~uctx const in
@@ -343,7 +343,7 @@ let finish_derived ~f ~name ~entries =
   let lemma_pretype typ =
     match typ with
     | Some t -> Some (substf t)
-    | None -> assert false (* Proof_global always sets type here. *)
+    | None -> assert false (* Declare always sets type here. *)
   in
   (* The references of [f] are subsituted appropriately. *)
   let lemma_def = Declare.Internal.map_entry_type lemma_def ~f:lemma_pretype in
@@ -368,12 +368,12 @@ let finish_proved_equations ~kind ~hook i proof_obj types sigma0 =
         let sigma, app = Evarutil.new_global sigma (GlobRef.ConstRef cst) in
         let sigma = Evd.define ev (EConstr.applist (app, List.map EConstr.of_constr args)) sigma in
         sigma, cst) sigma0
-      types proof_obj.Proof_global.entries
+      types proof_obj.Declare.entries
   in
   hook recobls sigma
 
 let finalize_proof proof_obj proof_info =
-  let open Proof_global in
+  let open Declare in
   let open Proof_ending in
   match CEphemeron.default proof_info.Info.proof_ending Regular with
   | Regular ->
@@ -403,7 +403,7 @@ let process_idopt_for_save ~idopt info =
 
 let save_lemma_proved ~lemma ~opaque ~idopt =
   (* Env and sigma are just used for error printing in save_remaining_recthms *)
-  let proof_obj = Proof_global.close_proof ~opaque ~keep_body_ucst_separate:false lemma.proof in
+  let proof_obj = Declare.close_proof ~opaque ~keep_body_ucst_separate:false lemma.proof in
   let proof_info = process_idopt_for_save ~idopt lemma.info in
   finalize_proof proof_obj proof_info
 
@@ -411,7 +411,7 @@ let save_lemma_proved ~lemma ~opaque ~idopt =
 (* Special case to close a lemma without forcing a proof               *)
 (***********************************************************************)
 let save_lemma_admitted_delayed ~proof ~info =
-  let open Proof_global in
+  let open Declare in
   let { entries; uctx } = proof in
   if List.length entries <> 1 then
     CErrors.user_err Pp.(str "Admitted does not support multiple statements");
@@ -430,7 +430,7 @@ let save_lemma_proved_delayed ~proof ~info ~idopt =
   (* vio2vo calls this but with invalid info, we have to workaround
      that to add the name to the info structure *)
   if CList.is_empty info.Info.thms then
-    let info = add_first_thm ~info ~name:proof.Proof_global.name ~typ:EConstr.mkSet ~impargs:[] in
+    let info = add_first_thm ~info ~name:proof.Declare.name ~typ:EConstr.mkSet ~impargs:[] in
     finalize_proof proof info
   else
     let info = process_idopt_for_save ~idopt info in

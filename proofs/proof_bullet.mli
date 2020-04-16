@@ -44,5 +44,3 @@ val register_behavior : behavior -> unit
      *)
 val put : Proof.t -> t -> Proof.t
 val suggest : Proof.t -> Pp.t
-
-exception SuggestNoSuchGoals of int * Proof.t

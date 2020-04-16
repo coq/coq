@@ -75,9 +75,9 @@ type typed_vernac =
   | VtNoProof of (unit -> unit)
   | VtCloseProof of (lemma:Lemmas.t -> unit)
   | VtOpenProof of (unit -> Lemmas.t)
-  | VtModifyProof of (pstate:Proof_global.t -> Proof_global.t)
-  | VtReadProofOpt of (pstate:Proof_global.t option -> unit)
-  | VtReadProof of (pstate:Proof_global.t -> unit)
+  | VtModifyProof of (pstate:Declare.Proof.t -> Declare.Proof.t)
+  | VtReadProofOpt of (pstate:Declare.Proof.t option -> unit)
+  | VtReadProof of (pstate:Declare.Proof.t -> unit)
 
 type vernac_command = atts:Attributes.vernac_flags -> typed_vernac
 
