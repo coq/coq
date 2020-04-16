@@ -195,6 +195,7 @@ type compiled_library
 type native_library = Nativecode.global list
 
 val module_of_library : compiled_library -> Declarations.module_body
+val univs_of_library : compiled_library -> Univ.ContextSet.t
 
 val start_library : DirPath.t -> ModPath.t safe_transformer
 

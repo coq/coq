@@ -163,7 +163,8 @@ let expand_mexpr env mpo me =
 
 let expand_modtype env mp me =
   let inl = Some (Flags.get_inline_level()) in
-  Mod_typing.translate_modtype env mp inl ([],me)
+  let mtb, _cst = Mod_typing.translate_modtype env mp inl ([],me) in
+  mtb
 
 let no_delta = Mod_subst.empty_delta_resolver
 

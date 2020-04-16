@@ -651,26 +651,28 @@ let mk_params_entry args =
 
 let mk_funct_type env args seb0 =
   List.fold_left
-    (fun seb (arg_id,arg_t,arg_inl) ->
+    (fun (seb,cst) (arg_id,arg_t,arg_inl) ->
       let mp = MPbound arg_id in
-      let arg_t = Mod_typing.translate_modtype env mp arg_inl ([],arg_t) in
-      MoreFunctor(arg_id,arg_t,seb))
+      let arg_t, cst' = Mod_typing.translate_modtype env mp arg_inl ([],arg_t) in
+      MoreFunctor(arg_id,arg_t,seb), Univ.Constraint.union cst cst')
     seb0 args
 
 (** Prepare the module type list for check of subtypes *)
 
 let build_subtypes env mp args mtys =
-  let (cst, ans) = List.fold_left_map
-    (fun cst (m,ann) ->
+  let (ctx, ans) = List.fold_left_map
+    (fun ctx (m,ann) ->
        let inl = inl2intopt ann in
-       let mte, _, cst' = Modintern.interp_module_ast env Modintern.ModType m in
-       let env = Environ.push_context_set ~strict:true cst' env in
-       let cst = Univ.ContextSet.union cst cst' in
-       let mtb = Mod_typing.translate_modtype env mp inl ([],mte) in
-       cst, { mtb with mod_type = mk_funct_type env args mtb.mod_type })
+       let mte, _, ctx' = Modintern.interp_module_ast env Modintern.ModType m in
+       let env = Environ.push_context_set ~strict:true ctx' env in
+       let ctx = Univ.ContextSet.union ctx ctx' in
+       let mtb, cst = Mod_typing.translate_modtype env mp inl ([],mte) in
+       let mod_type, cst = mk_funct_type env args (mtb.mod_type,cst) in
+       let ctx = Univ.ContextSet.add_constraints cst ctx in
+       ctx, { mtb with mod_type })
     Univ.ContextSet.empty mtys
   in
-  (ans, cst)
+  (ans, ctx)
 
 
 (** {6 Current module information}
@@ -703,23 +705,23 @@ module RawModOps = struct
 
 let start_module export id args res fs =
   let mp = Global.start_module id in
-  let arg_entries_r, cst = intern_args args in
-  let () = Global.push_context_set ~strict:true cst in
+  let arg_entries_r, ctx = intern_args args in
+  let () = Global.push_context_set ~strict:true ctx in
   let env = Global.env () in
-  let res_entry_o, subtyps, cst = match res with
+  let res_entry_o, subtyps, ctx = match res with
     | Enforce (res,ann) ->
         let inl = inl2intopt ann in
-        let (mte, _, cst) = Modintern.interp_module_ast env Modintern.ModType res in
-        let env = Environ.push_context_set ~strict:true cst env in
+        let (mte, _, ctx) = Modintern.interp_module_ast env Modintern.ModType res in
+        let env = Environ.push_context_set ~strict:true ctx env in
         (* We check immediately that mte is well-formed *)
-        let _, _, _, cst' = Mod_typing.translate_mse env None inl mte in
-        let cst = Univ.ContextSet.union cst cst' in
-        Some (mte, inl), [], cst
+        let _, _, _, cst = Mod_typing.translate_mse env None inl mte in
+        let ctx = Univ.ContextSet.add_constraints cst ctx in
+        Some (mte, inl), [], ctx
     | Check resl ->
-      let typs, cst = build_subtypes env mp arg_entries_r resl in
-      None, typs, cst
+      let typs, ctx = build_subtypes env mp arg_entries_r resl in
+      None, typs, ctx
   in
-  let () = Global.push_context_set ~strict:true cst in
+  let () = Global.push_context_set ~strict:true ctx in
   openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
   let prefix = Lib.start_module export id mp fs in
   Nametab.(push_dir (Until 1) (prefix.obj_dir) (GlobDirRef.DirOpenModule prefix));
@@ -763,37 +765,38 @@ let end_module () =
 
   mp
 
+(* TODO cleanup push universes directly to global env *)
 let declare_module id args res mexpr_o fs =
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
   let mp = Global.start_module id in
-  let arg_entries_r, cst = intern_args args in
+  let arg_entries_r, ctx = intern_args args in
   let params = mk_params_entry arg_entries_r in
   let env = Global.env () in
-  let env = Environ.push_context_set ~strict:true cst env in
-  let mty_entry_o, subs, inl_res, cst' = match res with
+  let env = Environ.push_context_set ~strict:true ctx env in
+  let mty_entry_o, subs, inl_res, ctx' = match res with
     | Enforce (mty,ann) ->
         let inl = inl2intopt ann in
-        let (mte, _, cst) = Modintern.interp_module_ast env Modintern.ModType mty in
-        let env = Environ.push_context_set ~strict:true cst env in
+        let (mte, _, ctx) = Modintern.interp_module_ast env Modintern.ModType mty in
+        let env = Environ.push_context_set ~strict:true ctx env in
         (* We check immediately that mte is well-formed *)
-        let _, _, _, cst' = Mod_typing.translate_mse env None inl mte in
-        let cst = Univ.ContextSet.union cst cst' in
-        Some mte, [], inl, cst
+        let _, _, _, cst = Mod_typing.translate_mse env None inl mte in
+        let ctx = Univ.ContextSet.add_constraints cst ctx in
+        Some mte, [], inl, ctx
     | Check mtys ->
-      let typs, cst = build_subtypes env mp arg_entries_r mtys in
-      None, typs, default_inline (), cst
+      let typs, ctx = build_subtypes env mp arg_entries_r mtys in
+      None, typs, default_inline (), ctx
   in
-  let env = Environ.push_context_set ~strict:true cst' env in
-  let cst = Univ.ContextSet.union cst cst' in
-  let mexpr_entry_o, inl_expr, cst' = match mexpr_o with
+  let env = Environ.push_context_set ~strict:true ctx' env in
+  let ctx = Univ.ContextSet.union ctx ctx' in
+  let mexpr_entry_o, inl_expr, ctx' = match mexpr_o with
     | None -> None, default_inline (), Univ.ContextSet.empty
     | Some (mexpr,ann) ->
-      let (mte, _, cst) = Modintern.interp_module_ast env Modintern.Module mexpr in
-      Some mte, inl2intopt ann, cst
+      let (mte, _, ctx) = Modintern.interp_module_ast env Modintern.Module mexpr in
+      Some mte, inl2intopt ann, ctx
   in
-  let env = Environ.push_context_set ~strict:true cst' env in
-  let cst = Univ.ContextSet.union cst cst' in
+  let env = Environ.push_context_set ~strict:true ctx' env in
+  let ctx = Univ.ContextSet.union ctx ctx' in
   let entry = match mexpr_entry_o, mty_entry_o with
     | None, None -> assert false (* No body, no type ... *)
     | None, Some typ -> MType (params, typ)
@@ -812,7 +815,7 @@ let declare_module id args res mexpr_o fs =
   | None -> None
   | _ -> inl_res
   in
-  let () = Global.push_context_set ~strict:true cst in
+  let () = Global.push_context_set ~strict:true ctx in
   let mp_env,resolver = Global.add_module id entry inl in
 
   (* Name consistency check : kernel vs. library *)
@@ -864,20 +867,20 @@ let declare_modtype id args mtys (mty,ann) fs =
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
   let mp = Global.start_modtype id in
-  let arg_entries_r, cst = intern_args args in
-  let () = Global.push_context_set ~strict:true cst in
+  let arg_entries_r, ctx = intern_args args in
+  let () = Global.push_context_set ~strict:true ctx in
   let params = mk_params_entry arg_entries_r in
   let env = Global.env () in
-  let mte, _, cst = Modintern.interp_module_ast env Modintern.ModType mty in
-  let () = Global.push_context_set ~strict:true cst in
+  let mte, _, ctx = Modintern.interp_module_ast env Modintern.ModType mty in
+  let () = Global.push_context_set ~strict:true ctx in
   let env = Global.env () in
   (* We check immediately that mte is well-formed *)
   let _, _, _, cst = Mod_typing.translate_mse env None inl mte in
-  let () = Global.push_context_set ~strict:true cst in
+  let () = Global.push_context_set ~strict:true (Univ.LSet.empty,cst) in
   let env = Global.env () in
   let entry = params, mte in
-  let sub_mty_l, cst = build_subtypes env mp arg_entries_r mtys in
-  let () = Global.push_context_set ~strict:true cst in
+  let sub_mty_l, ctx = build_subtypes env mp arg_entries_r mtys in
+  let () = Global.push_context_set ~strict:true ctx in
   let env = Global.env () in
   let sobjs = get_functor_sobjs false env inl entry in
   let subst = map_mp (get_module_path (snd entry)) mp empty_delta_resolver in

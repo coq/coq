@@ -102,6 +102,8 @@ val rel_context   : env -> Constr.rel_context
 val named_context : env -> Constr.named_context
 val named_context_val : env -> named_context_val
 
+val set_universes : UGraph.t -> env -> env
+
 val opaque_tables : env -> Opaqueproof.opaquetab
 val set_opaque_tables : env -> Opaqueproof.opaquetab -> env
 

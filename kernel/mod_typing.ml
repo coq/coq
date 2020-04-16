@@ -23,7 +23,7 @@ open Modops
 open Mod_subst
 
 type 'alg translation =
-  module_signature * 'alg * delta_resolver * Univ.ContextSet.t
+  module_signature * 'alg * delta_resolver * Univ.Constraint.t
 
 let rec mp_from_mexpr = function
   | MEident mp -> mp
@@ -53,8 +53,6 @@ let rec rebuild_mp mp l =
   match l with
   | []-> mp
   | i::r -> rebuild_mp (MPdot(mp,Label.of_id i)) r
-
-let (+++) = Univ.ContextSet.union
 
 let rec check_with_def env struc (idl,(c,ctx)) mp equiv =
   let lab,idl = match idl with
@@ -173,10 +171,10 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
         | Abstract ->
           let mtb_old = module_type_of_module old in
           let chk_cst = Subtyping.check_subtypes env' mtb_mp1 mtb_old in
-          Univ.ContextSet.add_constraints chk_cst old.mod_constraints
+          chk_cst
         | Algebraic (NoFunctor (MEident(mp'))) ->
           check_modpath_equiv env' mp1 mp';
-          old.mod_constraints
+          Univ.Constraint.empty
         | _ -> error_generative_module_expected lab
       in
       let mp' = MPdot (mp,lab) in
@@ -185,7 +183,7 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
         { new_mb with
           mod_mp = mp';
           mod_expr = Algebraic (NoFunctor (MEident mp1));
-          mod_constraints = cst }
+        }
       in
       let new_equiv = add_delta_resolver equiv new_mb.mod_delta in
       (* we propagate the new equality in the rest of the signature
@@ -219,7 +217,7 @@ let rec check_with_mod env struc (idl,mp1) mp equiv =
       | Algebraic (NoFunctor (MEident mp0)) ->
         let mpnew = rebuild_mp mp0 idl in
         check_modpath_equiv env' mpnew mp;
-        before@(lab,spec)::after, equiv, Univ.ContextSet.empty
+        before@(lab,spec)::after, equiv, Univ.Constraint.empty
       | _ -> error_generative_module_expected lab
       end
   with
@@ -231,11 +229,11 @@ let check_with env mp (sign,alg,reso,cst) = function
     let struc = destr_nofunctor sign in
     let struc', c', cst' = check_with_def env struc (idl, (c, ctx)) mp reso in
     let wd' = WithDef (idl, (c', ctx)) in
-    NoFunctor struc', MEwith (alg,wd'), reso, Univ.ContextSet.add_constraints cst' cst
+    NoFunctor struc', MEwith (alg,wd'), reso, Univ.Constraint.union cst' cst
   |WithMod(idl,mp1) as wd ->
     let struc = destr_nofunctor sign in
     let struc',reso',cst' = check_with_mod env struc (idl,mp1) mp reso in
-    NoFunctor struc', MEwith (alg,wd), reso', cst+++cst'
+    NoFunctor struc', MEwith (alg,wd), reso', Univ.Constraint.union cst' cst
 
 let translate_apply env inl (sign,alg,reso,cst1) mp1 mkalg =
   let farg_id, farg_b, fbody_b = destr_functor sign in
@@ -247,7 +245,7 @@ let translate_apply env inl (sign,alg,reso,cst1) mp1 mkalg =
   let body = subst_signature subst fbody_b in
   let alg' = mkalg alg mp1 in
   let reso' = subst_codom_delta_resolver subst reso in
-  body,alg',reso', Univ.ContextSet.add_constraints cst2 cst1
+  body,alg',reso', Univ.Constraint.union cst2 cst1
 
 (** Translation of a module struct entry :
     - We translate to a module when a [module_path] is given,
@@ -266,7 +264,7 @@ let rec translate_mse env mpo inl = function
         let mt = lookup_modtype mp1 env in
         module_body_of_type mt.mod_mp mt
     in
-    mb.mod_type, me, mb.mod_delta, Univ.ContextSet.empty
+    mb.mod_type, me, mb.mod_delta, Univ.Constraint.empty
   |MEapply (fe,mp1) ->
     translate_apply env inl (translate_mse env mpo inl fe) mp1 mk_alg_app
   |MEwith(me, with_decl) ->
@@ -274,17 +272,16 @@ let rec translate_mse env mpo inl = function
     let mp = mp_from_mexpr me in
     check_with env mp (translate_mse env None inl me) with_decl
 
-let mk_mod mp e ty cst reso =
+let mk_mod mp e ty reso =
   { mod_mp = mp;
     mod_expr = e;
     mod_type = ty;
     mod_type_alg = None;
-    mod_constraints = cst;
     mod_delta = reso;
     mod_retroknowledge = ModBodyRK []; }
 
-let mk_modtype mp ty cst reso =
-  let mb = mk_mod mp Abstract ty cst reso in
+let mk_modtype mp ty reso =
+  let mb = mk_mod mp Abstract ty reso in
   { mb with mod_expr = (); mod_retroknowledge = ModTypeRK }
 
 let rec translate_mse_funct env mpo inl mse = function
@@ -293,45 +290,45 @@ let rec translate_mse_funct env mpo inl mse = function
     sign, NoFunctor alg, reso, cst
   |(mbid, ty) :: params ->
     let mp_id = MPbound mbid in
-    let mtb = translate_modtype env mp_id inl ([],ty) in
+    let mtb, cst = translate_modtype env mp_id inl ([],ty) in
     let env' = add_module_type mp_id mtb env in
-    let sign,alg,reso,cst = translate_mse_funct env' mpo inl mse params in
+    let sign,alg,reso,cst' = translate_mse_funct env' mpo inl mse params in
     let alg' = MoreFunctor (mbid,mtb,alg) in
-    MoreFunctor (mbid, mtb, sign), alg',reso, cst +++ mtb.mod_constraints
+    MoreFunctor (mbid, mtb, sign), alg',reso, Univ.Constraint.union cst cst'
 
 and translate_modtype env mp inl (params,mte) =
   let sign,alg,reso,cst = translate_mse_funct env None inl mte params in
-  let mtb = mk_modtype (mp_from_mexpr mte) sign cst reso in
+  let mtb = mk_modtype (mp_from_mexpr mte) sign reso in
   let mtb' = subst_modtype_and_resolver mtb mp in
-  { mtb' with mod_type_alg = Some alg }
+  { mtb' with mod_type_alg = Some alg }, cst
 
 (** [finalize_module] :
     from an already-translated (or interactive) implementation and
     an (optional) signature entry, produces a final [module_body] *)
 
-let finalize_module env mp (sign,alg,reso,cst) restype = match restype with
-  |None ->
+let finalize_module env mp (sign,alg,reso,cst1) restype = match restype with
+  | None ->
     let impl = match alg with Some e -> Algebraic e | None -> FullStruct in
-    mk_mod mp impl sign cst reso
-  |Some (params_mte,inl) ->
-    let res_mtb = translate_modtype env mp inl params_mte in
-    let auto_mtb = mk_modtype mp sign Univ.ContextSet.empty reso in
-    let cst' = Subtyping.check_subtypes env auto_mtb res_mtb in
+    mk_mod mp impl sign reso, cst1
+  | Some (params_mte,inl) ->
+    let res_mtb, cst2 = translate_modtype env mp inl params_mte in
+    let auto_mtb = mk_modtype mp sign reso in
+    let cst3 = Subtyping.check_subtypes env auto_mtb res_mtb in
     let impl = match alg with Some e -> Algebraic e | None -> Struct sign in
     { res_mtb with
       mod_mp = mp;
       mod_expr = impl;
       mod_retroknowledge = ModBodyRK [];
-      (** cst from module body typing,
-          cst' from subtyping,
-          constraints from module type. *)
-      mod_constraints =
-        Univ.ContextSet.add_constraints cst' (cst +++ res_mtb.mod_constraints) }
+    },
+    (** cst from module body typing,
+        cst' from subtyping,
+        constraints from module type. *)
+    Univ.Constraint.(union cst1 (union cst2 cst3))
 
 let translate_module env mp inl = function
   |MType (params,ty) ->
-    let mtb = translate_modtype env mp inl (params,ty) in
-    module_body_of_type mp mtb
+    let mtb, cst = translate_modtype env mp inl (params,ty) in
+    module_body_of_type mp mtb, cst
   |MExpr (params,mse,oty) ->
     let (sg,alg,reso,cst) = translate_mse_funct env (Some mp) inl mse params in
     let restype = Option.map (fun ty -> ((params,ty),inl)) oty in
@@ -364,7 +361,7 @@ let rec translate_mse_inclmod env mp inl = function
   |MEident mp1 ->
     let mb = strengthen_and_subst_mb (lookup_module mp1 env) mp true in
     let sign = clean_bounded_mod_expr mb.mod_type in
-    sign,(),mb.mod_delta,Univ.ContextSet.empty
+    sign,(),mb.mod_delta,Univ.Constraint.empty
   |MEapply (fe,arg) ->
     let ftrans = translate_mse_inclmod env mp inl fe in
     translate_apply env inl ftrans arg (fun _ _ -> ())
@@ -375,6 +372,6 @@ let translate_mse_incl is_mod env mp inl me =
     let () = forbid_incl_signed_functor env me in
     translate_mse_inclmod env mp inl me
   else
-    let mtb = translate_modtype env mp inl ([],me) in
+    let mtb, cst = translate_modtype env mp inl ([],me) in
     let sign = clean_bounded_mod_expr mtb.mod_type in
-    sign,(),mtb.mod_delta,mtb.mod_constraints
+    sign, (), mtb.mod_delta, cst

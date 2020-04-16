@@ -225,8 +225,7 @@ and subst_body : 'a. _ -> _ -> (_ -> 'a -> 'a) -> _ -> 'a generic_module_body ->
      && retro==retro' && delta'==mb.mod_delta
   then mb
   else
-    { mb with
-      mod_mp = mp';
+    { mod_mp = mp';
       mod_expr = me';
       mod_type = ty';
       mod_type_alg = aty';
