@@ -41,6 +41,7 @@ docker-boot:
   except:
     variables:
       - $SKIP_DOCKER == "true"
+      - $ONLY_WINDOWS == "true"
   tags:
     - docker
 
@@ -62,6 +63,9 @@ before_script:
 # TODO figure out how to build doc for installed Coq
 .build-template:
   stage: stage-1
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
   interruptible: true
   artifacts:
     name: "$CI_JOB_NAME"
@@ -100,6 +104,9 @@ before_script:
 # Template for building Coq + stdlib, typical use: overload the switch
 .dune-template:
   stage: stage-1
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
   interruptible: true
   dependencies: []
   script:
@@ -124,6 +131,9 @@ before_script:
 
 .dune-ci-template:
   stage: stage-2
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
   interruptible: true
   needs:
     - build:edge+flambda:dune:dev
@@ -151,6 +161,9 @@ before_script:
 
 .doc-template:
   stage: stage-2
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
   interruptible: true
   dependencies:
     - not-a-real-job
@@ -167,6 +180,9 @@ before_script:
 # set dependencies when using
 .test-suite-template:
   stage: stage-2
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
   interruptible: true
   dependencies:
     - not-a-real-job
@@ -189,6 +205,9 @@ before_script:
 # set dependencies when using
 .validate-template:
   stage: stage-2
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
   interruptible: true
   dependencies:
     - not-a-real-job
@@ -206,6 +225,9 @@ before_script:
 
 .ci-template:
   stage: stage-2
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
   interruptible: true
   script:
     - set -e
@@ -249,6 +271,9 @@ before_script:
 
 .deploy-template:
   stage: deploy
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
   before_script:
     - which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )
     - eval $(ssh-agent -s)
@@ -350,6 +375,9 @@ pkg:opam:
 
 .nix-template:
   image: nixorg/nix:latest # Minimal NixOS image which doesn't even contain git
+  except:
+    variables:
+      - $ONLY_WINDOWS == "true"
   interruptible: true
   stage: stage-1
   variables:
