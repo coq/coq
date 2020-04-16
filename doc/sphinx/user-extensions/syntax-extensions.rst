@@ -1089,7 +1089,7 @@ Opening a notation scope locally
 .. insertprodn term_scope term_scope
 
 .. prodn::
-   term_scope ::= @term0 % @scope_key
+   term_scope ::= @term % @scope_key
 
 The notation scope stack can be locally extended within
 a :token:`term` with the syntax

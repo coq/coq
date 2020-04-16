@@ -204,7 +204,7 @@ Applications
 .. insertprodn term_application arg
 
 .. prodn::
-   term_application ::= @term1 {+ @arg }
+   term_application ::= @term {+ @arg }
    | @ @qualid_annotated {+ @term1 }
    arg ::= ( @ident := @term )
    | @term1
@@ -231,10 +231,10 @@ Type cast
 .. insertprodn term_cast term_cast
 
 .. prodn::
-   term_cast ::= @term10 <: @term
-   | @term10 <<: @term
-   | @term10 : @term
-   | @term10 :>
+   term_cast ::= @term <: @term
+   | @term <<: @term
+   | @term : @term
+   | @term :>
 
 The expression :n:`@term : @type` is a type cast expression. It enforces
 the type of :n:`@term` to be :n:`@type`.
@@ -287,12 +287,12 @@ Definition by cases: match
    term_match ::= match {+, @case_item } {? return @term100 } with {? %| } {*| @eqn } end
    case_item ::= @term100 {? as @name } {? in @pattern }
    eqn ::= {+| {+, @pattern } } => @term
-   pattern ::= @pattern10 : @term
+   pattern ::= @pattern : @term
    | @pattern10
-   pattern10 ::= @pattern1 as @name
-   | @pattern1 {* @pattern1 }
+   pattern10 ::= @pattern as @name
+   | @pattern {* @pattern1 }
    | @ @qualid {* @pattern1 }
-   pattern1 ::= @pattern0 % @scope_key
+   pattern1 ::= @pattern % @scope_key
    | @pattern0
    pattern0 ::= @qualid
    | %{%| {* @qualid := @pattern } %|%}

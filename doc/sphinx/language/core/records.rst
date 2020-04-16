@@ -170,8 +170,8 @@ available:
   .. insertprodn term_projection term_projection
 
   .. prodn::
-     term_projection ::= @term0 .( @qualid {* @arg } )
-     | @term0 .( @ @qualid {* @term1 } )
+     term_projection ::= @term .( @qualid {* @arg } )
+     | @term .( @ @qualid {* @term1 } )
 
   Syntax of Record projections
 

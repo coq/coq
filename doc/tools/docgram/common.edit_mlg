@@ -242,10 +242,10 @@ scope: [
 ]
 
 operconstr100: [
-| MOVETO term_cast operconstr99 "<:" operconstr200
-| MOVETO term_cast operconstr99 "<<:" operconstr200
-| MOVETO term_cast operconstr99 ":" operconstr200
-| MOVETO term_cast operconstr99 ":>"
+| MOVETO term_cast operconstr200 "<:" operconstr200
+| MOVETO term_cast operconstr200 "<<:" operconstr200
+| MOVETO term_cast operconstr200 ":" operconstr200
+| MOVETO term_cast operconstr200 ":>"
 ]
 
 constr: [
@@ -261,7 +261,7 @@ operconstr10: [
 | WITH "@" qualid_annotated LIST1 operconstr9
 | REPLACE operconstr9
 | WITH constr
-| MOVETO term_application operconstr9 LIST1 appl_arg
+| MOVETO term_application operconstr200 LIST1 appl_arg
 | MOVETO term_application "@" qualid_annotated LIST1 operconstr9
 (* fixme: add in as a prodn somewhere *)
 | MOVETO dangling_pattern_extension_rule "@" pattern_identref LIST1 identref
@@ -274,13 +274,13 @@ operconstr9: [
 ]
 
 operconstr1: [
-| REPLACE operconstr0 ".(" global LIST0 appl_arg ")"
-| WITH    operconstr0 ".(" global LIST0 appl_arg ")" (* huh? *)
-| REPLACE operconstr0 "%" IDENT
-| WITH operconstr0 "%" scope_key
-| MOVETO term_scope operconstr0 "%" scope_key
-| MOVETO term_projection operconstr0 ".(" global LIST0 appl_arg ")"
-| MOVETO term_projection operconstr0 ".(" "@" global LIST0 ( operconstr9 ) ")"
+| REPLACE operconstr200 ".(" global LIST0 appl_arg ")"
+| WITH    operconstr200 ".(" global LIST0 appl_arg ")" (* huh? *)
+| REPLACE operconstr200 "%" IDENT
+| WITH operconstr200 "%" scope_key
+| MOVETO term_scope operconstr200 "%" scope_key
+| MOVETO term_projection operconstr200 ".(" global LIST0 appl_arg ")"
+| MOVETO term_projection operconstr200 ".(" "@" global LIST0 ( operconstr9 ) ")"
 ]
 
 operconstr0: [
@@ -401,14 +401,14 @@ DELETE: [
 ]
 
 pattern10: [
-| REPLACE pattern1 LIST1 pattern1
-| WITH pattern1 LIST0 pattern1
+| REPLACE pattern200 LIST1 pattern1
+| WITH pattern200 LIST0 pattern1
 | DELETE pattern1
 ]
 
 pattern1: [
-| REPLACE pattern0 "%" IDENT
-| WITH pattern0 "%" scope_key
+| REPLACE pattern200 "%" IDENT
+| WITH pattern200 "%" scope_key
 ]
 
 pattern0: [
@@ -686,8 +686,8 @@ DELETE: [
 ]
 
 tactic_expr4: [
-| REPLACE tactic_expr3 ";" tactic_then_gen "]"
-| WITH tactic_expr3 ";" "[" tactic_then_gen "]"
+| REPLACE tactic_expr5 ";" tactic_then_gen "]"
+| WITH tactic_expr5 ";" "[" tactic_then_gen "]"
 | tactic_expr3 ";" "[" ">" tactic_then_gen "]"
 ]
 

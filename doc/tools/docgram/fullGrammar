@@ -73,10 +73,10 @@ operconstr200: [
 ]
 
 operconstr100: [
-| operconstr99 "<:" operconstr200
-| operconstr99 "<<:" operconstr200
-| operconstr99 ":" operconstr200
-| operconstr99 ":>"
+| operconstr200 "<:" operconstr200
+| operconstr200 "<<:" operconstr200
+| operconstr200 ":" operconstr200
+| operconstr200 ":>"
 | operconstr99
 ]
 
@@ -89,7 +89,7 @@ operconstr90: [
 ]
 
 operconstr10: [
-| operconstr9 LIST1 appl_arg
+| operconstr200 LIST1 appl_arg
 | "@" global univ_instance LIST0 operconstr9
 | "@" pattern_identref LIST1 identref
 | operconstr9
@@ -105,9 +105,9 @@ operconstr8: [
 ]
 
 operconstr1: [
-| operconstr0 ".(" global LIST0 appl_arg ")"
-| operconstr0 ".(" "@" global LIST0 ( operconstr9 ) ")"
-| operconstr0 "%" IDENT
+| operconstr200 ".(" global LIST0 appl_arg ")"
+| operconstr200 ".(" "@" global LIST0 ( operconstr9 ) ")"
+| operconstr200 "%" IDENT
 | operconstr0
 ]
 
@@ -250,7 +250,7 @@ pattern200: [
 ]
 
 pattern100: [
-| pattern99 ":" operconstr200
+| pattern200 ":" operconstr200
 | pattern99
 ]
 
@@ -263,14 +263,14 @@ pattern90: [
 ]
 
 pattern10: [
-| pattern1 "as" name
-| pattern1 LIST1 pattern1
+| pattern200 "as" name
+| pattern200 LIST1 pattern1
 | "@" Prim.reference LIST0 pattern1
 | pattern1
 ]
 
 pattern1: [
-| pattern0 "%" IDENT
+| pattern200 "%" IDENT
 | pattern0
 ]
 
@@ -1163,8 +1163,8 @@ ssexpr35: [
 ]
 
 ssexpr50: [
-| ssexpr0 "-" ssexpr0
-| ssexpr0 "+" ssexpr0
+| ssexpr35 "-" ssexpr0
+| ssexpr35 "+" ssexpr0
 | ssexpr0
 ]
 
@@ -1933,9 +1933,9 @@ tactic_expr5: [
 ]
 
 tactic_expr4: [
-| tactic_expr3 ";" binder_tactic
-| tactic_expr3 ";" tactic_expr3
-| tactic_expr3 ";" tactic_then_locality tactic_then_gen "]"
+| tactic_expr5 ";" binder_tactic
+| tactic_expr5 ";" tactic_expr3
+| tactic_expr5 ";" tactic_then_locality tactic_then_gen "]"
 | tactic_expr3
 ]
 
@@ -1956,11 +1956,11 @@ tactic_expr3: [
 ]
 
 tactic_expr2: [
-| tactic_expr1 "+" binder_tactic
-| tactic_expr1 "+" tactic_expr2
+| tactic_expr5 "+" binder_tactic
+| tactic_expr5 "+" tactic_expr2
 | "tryif" tactic_expr5 "then" tactic_expr5 "else" tactic_expr2
-| tactic_expr1 "||" binder_tactic
-| tactic_expr1 "||" tactic_expr2
+| tactic_expr5 "||" binder_tactic
+| tactic_expr5 "||" tactic_expr2
 | tactic_expr1
 ]
 
