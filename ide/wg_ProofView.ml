@@ -15,6 +15,7 @@ open Ideutils
 class type proof_view =
   object
     inherit GObj.widget
+    method source_buffer : GSourceView3.source_buffer
     method buffer : GText.buffer
     method refresh : force:bool -> unit
     method clear : unit -> unit
@@ -195,7 +196,9 @@ let display mode (view : #GText.view_skel) goals hints evars =
 let proof_view () =
   let buffer = GSourceView3.source_buffer
     ~highlight_matching_brackets:true
-    ~tag_table:Tags.Proof.table ()
+    ~tag_table:Tags.Proof.table
+    ?language:(lang_manager#language source_language#get)
+    ?style_scheme:(style_manager#style_scheme source_style#get) ()
   in
   let text_buffer = new GText.buffer buffer#as_buffer in
   let view = GSourceView3.source_view
@@ -216,6 +219,8 @@ let proof_view () =
     val mutable goals = None
     val mutable evars = None
     val mutable last_width = -1
+
+    method source_buffer = buffer
 
     method buffer = text_buffer
 
