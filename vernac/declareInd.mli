@@ -30,3 +30,6 @@ type inductive_obj
 val objInductive : inductive_obj Libobject.Dyn.tag
 
 end
+
+val declare_primitive_projection :
+  Names.Projection.Repr.t -> Names.Constant.t -> unit
