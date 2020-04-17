@@ -198,10 +198,6 @@ let absolute_file_name basename odir =
   let dir = match odir with Some dir -> dir | None -> "." in
   absolute_dir dir // basename
 
-let ops os =
-  match  os with
-  | Some s -> String.concat "" ("Some"::[s])
-  | None -> "None"
 (** [find_dir_logpath dir] Return the logical path of directory [dir]
     if it has been given one. Raise [Not_found] otherwise. In
     particular we can check if "." has been attributed a logical path
