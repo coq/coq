@@ -297,11 +297,10 @@ let rec phys_path_best_match (prefix: string list) (logpath: string list) :  (st
                     )
           | Some p -> Some p
 
-let phys_path (logpath: string list) : string =
-  let (ppath, suffix) = match phys_path_best_match [] logpath with
-                        | None  -> ("", logpath)
-                        | Some x -> x in
-  String.concat "" (ppath::[String.concat "/" (""::suffix)])
+let phys_path (logpath: string list) : string option =
+  match phys_path_best_match [] logpath with
+  | None  -> None
+  | Some (ppath, suffix) -> Some (String.concat "" (ppath::[String.concat "/" (""::suffix)]))
 
 let rec find_dependencies basename =
   let verbose = true in (* for past/future use? *)
@@ -344,7 +343,9 @@ let rec find_dependencies basename =
                       | Some pth -> pth @ str
                       in
                   warning_module_notfound f str;
-                  add_dep (DepRequire (phys_path str))
+                  (match (phys_path str) with
+                  | Some estimated_path -> add_dep (DepRequire estimated_path)
+                  | None -> ())
               end) strl
         | Declare sl ->
             let declare suff dir s =
