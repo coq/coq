@@ -30,17 +30,17 @@ well.
   - [Helping triage existing issues](#helping-triage-existing-issues)
 - [Code changes](#code-changes)
   - [Using GitHub pull requests](#using-github-pull-requests)
+    - [Fixing bugs and performing small changes](#fixing-bugs-and-performing-small-changes)
+    - [Proposing large changes: Coq Enhancement Proposals](#proposing-large-changes-coq-enhancement-proposals)
   - [Taking feedback into account](#taking-feedback-into-account)
     - [Understanding automatic feedback](#understanding-automatic-feedback)
     - [Understanding reviewers' feedback](#understanding-reviewers-feedback)
     - [Fixing your branch](#fixing-your-branch)
   - [Improving the official documentation](#improving-the-official-documentation)
   - [Contributing to the standard library](#contributing-to-the-standard-library)
-  - [Fixing bugs and performing small changes](#fixing-bugs-and-performing-small-changes)
-  - [Proposing large changes: Coq Enhancement Proposals](#proposing-large-changes-coq-enhancement-proposals)
-  - [Collaborating on a pull request](#collaborating-on-a-pull-request)
 - [Becoming a maintainer](#becoming-a-maintainer)
   - [Reviewing pull requests](#reviewing-pull-requests)
+    - [Collaborating on a pull request](#collaborating-on-a-pull-request)
   - [Merging pull requests](#merging-pull-requests)
     - [Additional notes for pull request reviewers and assignees](#additional-notes-for-pull-request-reviewers-and-assignees)
     - [Joining / leaving maintainer teams](#joining--leaving-maintainer-teams)
@@ -443,6 +443,58 @@ several months after your PR is merged).  That said, you can start
 using the latest Coq `master` branch to take advantage of all the new
 features, improvements, and fixes.
 
+#### Fixing bugs and performing small changes ####
+
+Before fixing a bug, it is best to check that it was reported before:
+
+- If it was already reported and you intend to fix it, self-assign the
+  issue (if you have the permission), or leave a comment marking your
+  intention to work on it (and a contributor with write-access may
+  then assign the issue to you).
+
+- If the issue already has an assignee, you should check with them if
+  they still intend to work on it.  If the assignment is several
+  weeks, months, or even years (!) old, there are good chances that it
+  does not reflect their current priorities.
+
+- If the bug has not been reported before, it can be a good idea to
+  open an issue about it, while stating that you are preparing a fix.
+  The issue can be the place to discuss about the bug itself while the
+  PR will be the place to discuss your proposed fix.
+
+In any case, feel free to just ignore the recommendation above, and
+jump ahead and open a PR with your fix.  If it is not yet complete, do
+not hesitate to open a [*draft PR*][GitHub-draft-PR] to get early
+feedback, and talk to developers on [Gitter][].
+
+It is generally a good idea to add a regression test to the
+test-suite. See the test-suite [README][test-suite-README] for how to
+do so.
+
+Small fixes do not need any documentation, or changelog update.  New,
+or updated, user-facing features, and major bug fixes do.  See above
+on how to contribute to the documentation, and the README in
+[`doc/changelog`][user-changelog] for how to add a changelog entry.
+
+#### Proposing large changes: Coq Enhancement Proposals ####
+
+You are always welcome to open a PR for a change of any size.
+However, you should be aware that the larger the change, the higher
+the chances it will take very long to review, and possibly never get
+merged.
+
+So it is recommended that before spending a lot of time coding, you
+seek feedback from maintainers to see if your change would be
+supported, and if they have recommendations about its implementation.
+You can do this informally by opening an issue, or more formally by
+producing a design document as a [Coq Enhancement Proposal][CEP].
+
+Another recommendation is that you do not put several unrelated
+changes in the same PR (even if you produced them together).  In
+particular, make sure you split bug fixes into separate PRs when this
+is possible.  More generally, smaller-sized PRs, or PRs changing less
+components, are more likely to be reviewed and merged promptly.
+
 ### Taking feedback into account ###
 
 #### Understanding automatic feedback ####
@@ -643,83 +695,6 @@ Add coqdoc comments to extend the [standard library
 documentation][stdlib-doc].  See the [coqdoc
 documentation][coqdoc-documentation] to learn more.
 
-### Fixing bugs and performing small changes ###
-
-Before fixing a bug, it is best to check that it was reported before:
-
-- If it was already reported and you intend to fix it, self-assign the
-  issue (if you have the permission), or leave a comment marking your
-  intention to work on it (and a contributor with write-access may
-  then assign the issue to you).
-
-- If the issue already has an assignee, you should check with them if
-  they still intend to work on it.  If the assignment is several
-  weeks, months, or even years (!) old, there are good chances that it
-  does not reflect their current priorities.
-
-- If the bug has not been reported before, it can be a good idea to
-  open an issue about it, while stating that you are preparing a fix.
-  The issue can be the place to discuss about the bug itself while the
-  PR will be the place to discuss your proposed fix.
-
-In any case, feel free to just ignore the recommendation above, and
-jump ahead and open a PR with your fix.  If it is not yet complete, do
-not hesitate to open a [*draft PR*][GitHub-draft-PR] to get early
-feedback, and talk to developers on [Gitter][].
-
-It is generally a good idea to add a regression test to the
-test-suite. See the test-suite [README][test-suite-README] for how to
-do so.
-
-Small fixes do not need any documentation, or changelog update.  New,
-or updated, user-facing features, and major bug fixes do.  See above
-on how to contribute to the documentation, and the README in
-[`doc/changelog`][user-changelog] for how to add a changelog entry.
-
-### Proposing large changes: Coq Enhancement Proposals ###
-
-You are always welcome to open a PR for a change of any size.
-However, you should be aware that the larger the change, the higher
-the chances it will take very long to review, and possibly never get
-merged.
-
-So it is recommended that before spending a lot of time coding, you
-seek feedback from maintainers to see if your change would be
-supported, and if they have recommendations about its implementation.
-You can do this informally by opening an issue, or more formally by
-producing a design document as a [Coq Enhancement Proposal][CEP].
-
-Another recommendation is that you do not put several unrelated
-changes in the same PR (even if you produced them together).  In
-particular, make sure you split bug fixes into separate PRs when this
-is possible.  More generally, smaller-sized PRs, or PRs changing less
-components, are more likely to be reviewed and merged promptly.
-
-### Collaborating on a pull request ###
-
-Beyond making suggestions to a PR author during the review process,
-you may want to collaborate further by checking out the code, making
-changes, and pushing them.  There are two main ways of doing this:
-
-- **Pull requests on pull requests:** You can checkout the PR branch
-  (GitHub provides the link to the remote to pull from and the branch
-  name on the top and the bottom of the PR discussion thread),
-  checkout a new personal branch from there, do some changes, commit
-  them, push to your fork, and open a new PR on the PR author's fork.
-- **Pushing to the PR branch:** If the PR author has not unchecked the
-  "Allow edit from maintainers" checkbox, and you have write-access to
-  the repository (i.e. you are in the **@coq/contributors** team),
-  then you can also push (and even force-push) directly to the PR
-  branch, on the main author's fork.  Obviously, don't do it without
-  coordinating with the PR author first (in particular, in case you
-  need to force-push).
-
-When several people have co-authored a single commit (e.g. because
-someone fixed something in a commit initially authored by someone
-else), this should be reflected by adding ["Co-authored-by:"
-tags][GitHub-co-authored-by] at the end of the commit message.  The
-line should contain the co-author name and committer e-mail address.
-
 ## Becoming a maintainer ##
 
 ### Reviewing pull requests ###
@@ -747,6 +722,31 @@ number of rounds of feedback that are needed by posting most of their
 comments at the same time.  If they are opposed to the change, they
 should clearly say so from the beginning to avoid the contributor
 spending time in vain.
+
+#### Collaborating on a pull request ####
+
+Beyond making suggestions to a PR author during the review process,
+you may want to collaborate further by checking out the code, making
+changes, and pushing them.  There are two main ways of doing this:
+
+- **Pull requests on pull requests:** You can checkout the PR branch
+  (GitHub provides the link to the remote to pull from and the branch
+  name on the top and the bottom of the PR discussion thread),
+  checkout a new personal branch from there, do some changes, commit
+  them, push to your fork, and open a new PR on the PR author's fork.
+- **Pushing to the PR branch:** If the PR author has not unchecked the
+  "Allow edit from maintainers" checkbox, and you have write-access to
+  the repository (i.e. you are in the **@coq/contributors** team),
+  then you can also push (and even force-push) directly to the PR
+  branch, on the main author's fork.  Obviously, don't do it without
+  coordinating with the PR author first (in particular, in case you
+  need to force-push).
+
+When several people have co-authored a single commit (e.g. because
+someone fixed something in a commit initially authored by someone
+else), this should be reflected by adding ["Co-authored-by:"
+tags][GitHub-co-authored-by] at the end of the commit message.  The
+line should contain the co-author name and committer e-mail address.
 
 ### Merging pull requests ###
 
