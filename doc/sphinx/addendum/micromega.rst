@@ -1,4 +1,4 @@
-.. _ micromega:
+.. _micromega:
 
 Micromega: tactics for solving arithmetic goals over ordered rings
 ==================================================================

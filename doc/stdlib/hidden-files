@@ -44,6 +44,7 @@ theories/micromega/Refl.v
 theories/micromega/RingMicromega.v
 theories/micromega/Tauto.v
 theories/micromega/VarMap.v
+theories/micromega/ZArith_hints.v
 theories/micromega/ZCoeff.v
 theories/micromega/ZMicromega.v
 theories/micromega/ZifyInst.v
