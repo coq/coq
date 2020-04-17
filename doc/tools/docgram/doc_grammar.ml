@@ -1163,6 +1163,10 @@ let report_undef_nts g prod rec_nt =
     nts
 
 let apply_edit_file g edits =
+  let moveto src_nt dest_nt oprod prods =
+    g_add_prod_after g (Some src_nt) dest_nt oprod;
+    remove_prod oprod prods src_nt      (* remove orig prod *)
+  in
   List.iter (fun b ->
       let (nt, eprod) = b in
       if not (edit_all_prods g nt eprod) then begin
@@ -1176,17 +1180,26 @@ let apply_edit_file g edits =
               error "DELETENT for undefined nonterminal `%s`\n" nt;
             g_remove g nt;
             aux tl prods false
-          | (Snterm "MOVETO" :: Snterm nt2 :: oprod) :: tl ->
-            g_add_prod_after g (Some nt) nt2 oprod;
-            let prods' = (try
+          | (Snterm "MOVETO" :: Snterm dest_nt :: oprod) :: tl ->
+            let prods = try (* add "nt -> dest_nt" production *)
               let posn = find_first oprod prods nt in
-              let prods = if List.mem [Snterm nt2] prods then prods
-                else insert_after posn [[Snterm nt2]] prods (* insert new prod *)
-              in
-              remove_prod oprod prods nt      (* remove orig prod *)
-              with Not_found -> prods)
-            in
+              if List.mem [Snterm dest_nt] prods then prods
+                else insert_after posn [[Snterm dest_nt]] prods (* insert new prod *)
+            with Not_found -> prods in
+            let prods' = moveto nt dest_nt oprod prods in
             aux tl prods' add_nt
+          | [Snterm "MOVEALLBUT"; Snterm dest_nt] :: tl ->
+            List.iter (fun tlprod ->
+                if not (List.mem tlprod prods) then
+                  error "MOVEALLBUT for %s can't find '%s'\n" nt (prod_to_str tlprod))
+              tl;
+            let prods' = List.fold_left (fun prods oprod ->
+                if not (List.mem oprod tl) then begin
+                  moveto nt dest_nt oprod prods
+                end else
+                  prods)
+              prods prods in
+            prods', add_nt
           | (Snterm "OPTINREF" :: _) :: tl ->
             if not (has_match [] prods) then
               error "OPTINREF but no empty production for %s\n" nt;
