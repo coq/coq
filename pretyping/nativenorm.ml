@@ -498,25 +498,29 @@ let native_norm env sigma c ty =
   Format.eprintf "Numbers of free variables (named): %i\n" (List.length vl1);
   Format.eprintf "Numbers of free variables (rel): %i\n" (List.length vl2);
   *)
-    let ml_filename, prefix = Nativelib.get_ml_filename () in
-    let code, upd = mk_norm_code env (evars_of_evar_map sigma) prefix c in
     let profile = get_profiling_enabled () in
     let print_timing = get_timing_enabled () in
-    let tc0 = Sys.time () in
+    let ml_filename, prefix = Nativelib.get_ml_filename () in
+    let tnc0 = Unix.gettimeofday () in
+    let code, upd = mk_norm_code env (evars_of_evar_map sigma) prefix c in
+    let tnc1 = Unix.gettimeofday () in
+    let time_info = Format.sprintf "native_compute: Conversion to native code done in %.5f" (tnc1 -. tnc0) in
+    if print_timing then Feedback.msg_info (Pp.str time_info);
+    let tc0 = Unix.gettimeofday () in
     let fn = Nativelib.compile ml_filename code ~profile:profile in
-    let tc1 = Sys.time () in
-    let time_info = Format.sprintf "native_compute: Compilation done in %.5f@." (tc1 -. tc0) in
+    let tc1 = Unix.gettimeofday () in
+    let time_info = Format.sprintf "native_compute: Compilation done in %.5f" (tc1 -. tc0) in
     if print_timing then Feedback.msg_info (Pp.str time_info);
     let profiler_pid = if profile then start_profiler () else None in
-    let t0 = Sys.time () in
+    let t0 = Unix.gettimeofday () in
     Nativelib.call_linker ~fatal:true env ~prefix fn (Some upd);
-    let t1 = Sys.time () in
+    let t1 = Unix.gettimeofday () in
     if profile then stop_profiler profiler_pid;
-    let time_info = Format.sprintf "native_compute: Evaluation done in %.5f@." (t1 -. t0) in
+    let time_info = Format.sprintf "native_compute: Evaluation done in %.5f" (t1 -. t0) in
     if print_timing then Feedback.msg_info (Pp.str time_info);
     let res = nf_val env sigma !Nativelib.rt1 ty in
-    let t2 = Sys.time () in
-    let time_info = Format.sprintf "native_compute: Reification done in %.5f@." (t2 -. t1) in
+    let t2 = Unix.gettimeofday () in
+    let time_info = Format.sprintf "native_compute: Reification done in %.5f" (t2 -. t1) in
     if print_timing then Feedback.msg_info (Pp.str time_info);
     EConstr.of_constr res
 

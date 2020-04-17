@@ -3134,8 +3134,10 @@ the conversion in hypotheses :n:`{+ @ident}`.
    .. flag:: NativeCompute Timing
 
       This flag causes all calls to the native compiler to print
-      timing information for the compilation, execution, and
-      reification phases of native compilation.
+      timing information for the conversion to native code,
+      compilation, execution, and reification phases of native
+      compilation.  Timing is printed in units of seconds of
+      wall-clock time.
 
    .. flag:: NativeCompute Profiling
 
