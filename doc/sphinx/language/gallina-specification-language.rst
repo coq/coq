@@ -349,6 +349,8 @@ Section :ref:`let-in`).
 
 .. index:: forall
 
+.. _product:
+
 Products: forall
 ----------------
 
@@ -373,7 +375,17 @@ the propositional implication and function types.
 Applications
 ------------
 
-:n:`@term__fun @term` denotes applying the function :n:`@term__fun` to :token:`term`.
+:n:`@term__fun @term` denotes applying the :term:`function`
+:n:`@term__fun` to :token:`term`.
+
+.. glossary::
+
+   function
+
+     Any Coq object whose type is a :ref:`product <product>`.
+
+     In particular, a non-dependent function has a non-dependent
+     product type :n:`@type -> @type`.
 
 :n:`@term__fun {+ @term__i }` denotes applying
 :n:`@term__fun` to the arguments :n:`@term__i`.  It is
