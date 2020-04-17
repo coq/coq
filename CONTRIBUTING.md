@@ -503,9 +503,10 @@ We have a linter that checks a few different things:
   [Style guide](#style-guide) for additional style recommendations.
 - **Code is properly formatted**: for some parts of the codebase,
   formatting will be enforced using the
-  [`ocamlformat`](https://github.com/ocaml-ppx/ocamlformat) tool. You
-  can integrate the formatter in your editor of choice (see docs) or
-  use `dune build @fmt --auto-promote` to fix this kind of errors.
+  [`ocamlformat`](https://github.com/ocaml-ppx/ocamlformat) tool.
+  Formatting issues will also be fixed automatically by the pre-commit
+  hook mentioned above (you may also use `dune build @fmt
+  --auto-promote` to fix this kind of errors).
 
 You may run the linter yourself with `dev/lint-repository.sh`.
 
