@@ -198,17 +198,25 @@ let absolute_file_name basename odir =
   let dir = match odir with Some dir -> dir | None -> "." in
   absolute_dir dir // basename
 
+let ops os =
+  match  os with
+  | Some s -> String.concat "" ("Some"::[s])
+  | None -> "None"
 (** [find_dir_logpath dir] Return the logical path of directory [dir]
     if it has been given one. Raise [Not_found] otherwise. In
     particular we can check if "." has been attributed a logical path
     after processing all options and silently give the default one if
     it hasn't. We may also use this to warn if ap hysical path is met
     twice.*)
-let register_dir_logpath,find_dir_logpath =
+let register_dir_logpath,find_dir_logpath,find_physpath =
   let tbl: (string, string list) Hashtbl.t = Hashtbl.create 19 in
-  let reg physdir logpath = Hashtbl.add tbl (absolute_dir physdir) logpath in
-  let fnd physdir = Hashtbl.find tbl (absolute_dir physdir) in
-  reg,fnd
+  let tbl_rev: (string list, string) Hashtbl.t = Hashtbl.create 19 in
+  let reg physdir logpath =
+    Hashtbl.add tbl (absolute_dir physdir) logpath ;
+    Hashtbl.add tbl_rev logpath (absolute_dir physdir) in
+  let fndl physdir = Hashtbl.find tbl (absolute_dir physdir) in
+  let fndp logpath = Hashtbl.find_opt tbl_rev logpath in
+  reg,fndl,fndp
 
 let file_name s = function
   | None     -> s
@@ -280,6 +288,25 @@ let string_of_dependency_list suffix_for_require deps =
     in
   String.concat " " (List.map string_of_dep deps)
 
+let rec phys_path_best_match (prefix: string list) (logpath: string list) :  (string (* physical path corresponding to a prefix of logpath *) * string list (* unmatched suffix *)) option =
+  match logpath with
+  | [] -> (match find_physpath prefix with
+          | None -> None
+          | Some p -> Some (p,[]))
+  | h::tl ->
+          match phys_path_best_match (prefix@[h]) tl with
+          | None -> (match find_physpath prefix with
+                    | None -> None
+                    | Some p -> Some (p,h::tl)
+                    )
+          | Some p -> Some p
+
+let phys_path (logpath: string list) : string =
+  let (ppath, suffix) = match phys_path_best_match [] logpath with
+                        | None  -> ("", logpath)
+                        | Some x -> x in
+  String.concat "" (ppath::[String.concat "/" (""::suffix)])
+
 let rec find_dependencies basename =
   let verbose = true in (* for past/future use? *)
   try
@@ -320,7 +347,8 @@ let rec find_dependencies basename =
                       | None -> str
                       | Some pth -> pth @ str
                       in
-                  warning_module_notfound f str
+                  warning_module_notfound f str;
+                  add_dep (DepRequire (phys_path str))
               end) strl
         | Declare sl ->
             let declare suff dir s =
