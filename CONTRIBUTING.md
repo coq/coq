@@ -32,6 +32,7 @@ well.
   - [Using GitHub pull requests](#using-github-pull-requests)
     - [Fixing bugs and performing small changes](#fixing-bugs-and-performing-small-changes)
     - [Proposing large changes: Coq Enhancement Proposals](#proposing-large-changes-coq-enhancement-proposals)
+    - [Seeking early feedback on work-in-progress](#seeking-early-feedback-on-work-in-progress)
   - [Taking feedback into account](#taking-feedback-into-account)
     - [Understanding automatic feedback](#understanding-automatic-feedback)
     - [Understanding reviewers' feedback](#understanding-reviewers-feedback)
@@ -462,11 +463,6 @@ Before fixing a bug, it is best to check that it was reported before:
   The issue can be the place to discuss about the bug itself while the
   PR will be the place to discuss your proposed fix.
 
-In any case, feel free to just ignore the recommendation above, and
-jump ahead and open a PR with your fix.  If it is not yet complete, do
-not hesitate to open a [*draft PR*][GitHub-draft-PR] to get early
-feedback, and talk to developers on [Gitter][].
-
 It is generally a good idea to add a regression test to the
 test-suite. See the test-suite [README][test-suite-README] for how to
 do so.
@@ -494,6 +490,25 @@ changes in the same PR (even if you produced them together).  In
 particular, make sure you split bug fixes into separate PRs when this
 is possible.  More generally, smaller-sized PRs, or PRs changing less
 components, are more likely to be reviewed and merged promptly.
+
+#### Seeking early feedback on work-in-progress ####
+
+You should always feel free to open your PR before the documentation,
+changelog entry and tests are ready.  That's the purpose of the
+checkboxes in the PR template which you can leave unticked.  This can
+be a way of getting reviewers' approval before spending time on
+writing the documentation (but you should still do it before your PR
+can be merged).
+
+If even the implementation is not ready but you are still looking for
+early feedback on your code changes, please use the [draft
+PR](#draft-pull-requests) mechanism.
+
+If you are looking for feedback on the design of your change, rather
+than on its implementation, then please refrain from opening a PR.
+You may open an issue to start a discussion, or create a [Coq
+Enhancement Proposal][CEP] if you have a clear enough view of the
+design to write a document about it.
 
 ### Taking feedback into account ###
 
@@ -751,11 +766,11 @@ line should contain the co-author name and committer e-mail address.
 ### Merging pull requests ###
 
 Our [CODEOWNERS][] file associates a team of maintainers to each
-component.  When a PR is opened (or a draft PR is marked as ready for
-review), GitHub will automatically request reviews to maintainer teams
-of affected components.  As soon as it is the case, one available
-member of a team that was requested a review should self-assign the
-PR, and will act as its shepherd from then on.
+component.  When a PR is opened (or a [draft PR](#draft-pull-requests)
+is marked as ready for review), GitHub will automatically request
+reviews to maintainer teams of affected components.  As soon as it is
+the case, one available member of a team that was requested a review
+should self-assign the PR, and will act as its shepherd from then on.
 
 The PR assignee is responsible for making sure that all the proposed
 changes have been reviewed by relevant maintainers (at least one
@@ -1098,6 +1113,33 @@ settings][GitHub-notification-settings], you can use the GitHub
 interface to mark as read, save for later or mute threads.  You can
 also manage your GitHub web notifications using a tool such as
 [Octobox][].
+
+##### Draft pull requests #####
+
+[Draft PRs][GitHub-draft-PR] are a mechanism proposed by GitHub to
+open a pull request before it is ready for review.
+
+Opening a draft PR is a way of announcing a change and seeking early
+feedback without formally requesting maintainers' reviews.  Indeed,
+you should avoid cluttering our maintainers' review request lists
+before a change is ready on your side.
+
+When opening a draft PR, make sure to give it a descriptive enough
+title so that interested developers still notice it in their
+notification feed.  You may also advertise it by talking about it in
+our [developer chat][Gitter].  If you know which developer would be
+able to provide useful feedback to you, you may also ping them.
+
+###### Turning a PR into draft mode ######
+
+If a PR was opened as ready for review, but it turns out that it still
+needs work, it can be transformed into a draft PR.
+
+In this case, previous review requests won't be removed automatically.
+Someone with write access to the repository should remove them
+manually.  Afterwards, upon marking the PR as ready for review,
+someone with write access will have to manually add the review
+requests that were previously removed.
 
 #### GitLab documentation, tips and tricks ####
 
